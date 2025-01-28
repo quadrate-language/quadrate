@@ -27,7 +27,7 @@ func (l *Lexer) Lex() []Token {
 
 		switch l.ch {
 		case '\n':
-			t := NewToken(NEW_LINE, "", l.line, l.column)
+			t := NewToken(NEW_LINE, "RET", l.line, l.column)
 			tokens = append(tokens, t)
 			l.line++
 			l.column = -1
@@ -52,12 +52,18 @@ func (l *Lexer) Lex() []Token {
 				line := l.line
 				column := l.column
 				literal := l.readIdentifier()
-				tokenType := l.lookupIdentifier(literal)
-				t := NewToken(tokenType, literal, line, column)
+				t := NewToken(IDENTIFIER, literal, line, column)
 				tokens = append(tokens, t)
 				continue
 			} else if isDigit(l.ch) {
-				//				literal := l.readNumber()
+				line := l.line
+				column := l.column
+				literal := l.readNumber()
+				t := NewToken(NUMERICAL_CONSTANT, literal, line, column)
+				tokens = append(tokens, t)
+			} else {
+				t := NewToken(ILLEGAL, string(l.ch), l.line, l.column)
+				tokens = append(tokens, t)
 			}
 		}
 		l.readChar()
@@ -85,6 +91,7 @@ func (l *Lexer) skipWhitespace() {
 }
 
 func (l *Lexer) readNumber() string {
+	// TODO: Peek so no extra readChar is needed
 	start := l.position
 
 	if l.ch == '-' {
@@ -117,17 +124,6 @@ func (l *Lexer) readIdentifier() string {
 		ch = l.ch
 	}
 	return l.source[start:l.position]
-}
-
-func (l *Lexer) lookupIdentifier(ident string) TokenType {
-	switch ident {
-	case "use":
-		return USE
-	case "fn":
-		return FUNCTION
-	default:
-		return IDENTIFIER
-	}
 }
 
 func (l *Lexer) peek() byte {
