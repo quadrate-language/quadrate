@@ -17,10 +17,10 @@ const (
 )
 
 type Token struct {
-	Type    TokenType
-	Literal string
-	Line    int
-	Column  int
+	Type    TokenType `json:"type"`
+	Literal string    `json:"literal"`
+	Line    int       `json:"line"`
+	Column  int       `json:"column"`
 }
 
 func NewToken(t TokenType, literal string, line, column int) Token {

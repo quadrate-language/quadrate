@@ -8,9 +8,9 @@ type Lexer struct {
 	source   string
 }
 
-func NewLexer(source string) *Lexer {
+func NewLexer(source []byte) *Lexer {
 	l := &Lexer{
-		source: source,
+		source: string(source),
 	}
 	return l
 }
