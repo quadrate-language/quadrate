@@ -9,10 +9,21 @@ import (
 func main() {
 	s := `use fmt
 	fn main() { // a comment
+		push 1.2
 	}`
 	l := quadrate.NewLexer(s)
 	tokens := l.Lex()
+	// if (-dump-tokens) {
 	for _, t := range tokens {
-		fmt.Printf("%s: '%s':%d:%d\n", t.Type, t.Literal, t.Line, t.Column)
+		switch t.Type {
+		case quadrate.NEW_LINE:
+			fmt.Println()
+		case quadrate.IDENTIFIER:
+			fmt.Printf("identifier '%s' [%d:%d]\n", t.Literal, t.Line, t.Column)
+		case quadrate.EOF:
+			fmt.Println("< EOF >")
+		default:
+			fmt.Printf("< '%s' >\n", t.Literal)
+		}
 	}
 }
