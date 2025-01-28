@@ -97,24 +97,29 @@ func (l *Lexer) skipWhitespace() {
 }
 
 func (l *Lexer) readNumber() string {
-	// TODO: Peek so no extra readChar is needed
+	// TODO: Fix.
 	start := l.position
 
 	if l.ch == '-' {
-		l.readChar()
-		if !isDigit(l.ch) && l.ch != '.' {
+		ch := l.peek()
+		if !isDigit(ch) && ch != '.' {
 			return ""
 		}
 	}
 
-	for isDigit(l.ch) {
+	l.readChar()
+	ch := l.ch
+	for isDigit(ch) {
 		l.readChar()
+		ch = l.peek()
 	}
 
-	if l.ch == '.' {
+	if ch == '.' {
 		l.readChar()
-		for isDigit(l.ch) {
+		ch = l.peek()
+		for isDigit(ch) {
 			l.readChar()
+			ch = l.ch
 		}
 	}
 	return l.source[start:l.position]
@@ -125,7 +130,6 @@ func (l *Lexer) readIdentifier() string {
 
 	ch := l.peek()
 	for isLetter(ch) || isDigit(ch) || ch == '_' {
-		//ch = l.peek()
 		l.readChar()
 		ch = l.ch
 	}

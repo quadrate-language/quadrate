@@ -22,7 +22,9 @@ func main() {
 	// debug
 	s := `use fmt
 	fn main() { // a comment
-		push 1.2
+		push 1
+		push 1.5
+		push 13.55
 	}`
 	l := quadrate.NewLexer([]byte(s))
 	tokens := l.Lex()
