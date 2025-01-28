@@ -3,8 +3,8 @@ package quadrate
 type TokenType string
 
 const (
-	BRACKET_LEFT       = "BRACKET_LEFT"
-	BRACKET_RIGHT      = "BRACKET_RIGHT"
+	CUR_BRACKET_LEFT   = "CUR_BRACKET_LEFT"
+	CUR_BRACKET_RIGHT  = "CUR_BRACKET_RIGHT"
 	EOF                = "EOF"
 	FUNCTION           = "FUNCTION"
 	IDENTIFIER         = "IDENTIFIER"
@@ -13,6 +13,8 @@ const (
 	NUMERICAL_CONSTANT = "NUMERICAL_CONSTANT"
 	PARAN_LEFT         = "PARAN_LEFT"
 	PARAN_RIGHT        = "PARAN_RIGHT"
+	SQR_BRACKET_LEFT   = "SQR_BRACKET_LEFT"
+	SQR_BRACKET_RIGHT  = "SQR_BRACKET_RIGHT"
 	USE                = "USE"
 )
 

@@ -1,8 +1,5 @@
 #include <stdarg.h>
-
-#define QD_STACK_DEPTH 1024
-#define QD_STACK_ELEMENT_SIZE 4
-#define __qd_real_t double
+#include "qd_base.h"
 
 __qd_real_t __qd_stack[QD_STACK_DEPTH][QD_STACK_ELEMENT_SIZE] = {0};
 int __qd_stack_ptr = 0;
@@ -26,5 +23,13 @@ void __qd_push(int n, ...) {
 
 void __qd_pop() {
 	--__qd_stack_ptr;
+}
+
+void __qd_add() {
+	__qd_stack[__qd_stack_ptr - 2][0] += __qd_stack[__qd_stack_ptr - 1][0];
+	__qd_stack[__qd_stack_ptr - 2][1] += __qd_stack[__qd_stack_ptr - 1][1];
+	__qd_stack[__qd_stack_ptr - 2][2] += __qd_stack[__qd_stack_ptr - 1][2];
+	__qd_stack[__qd_stack_ptr - 2][3] += __qd_stack[__qd_stack_ptr - 1][3];
+	__qd_pop();
 }
 

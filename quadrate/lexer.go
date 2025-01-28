@@ -38,13 +38,19 @@ func (l *Lexer) Lex() []Token {
 			t := NewToken(PARAN_RIGHT, ")", l.line, l.column)
 			tokens = append(tokens, t)
 		case '{':
-			t := NewToken(BRACKET_LEFT, "{", l.line, l.column)
+			t := NewToken(CUR_BRACKET_LEFT, "{", l.line, l.column)
 			tokens = append(tokens, t)
 		case '}':
-			t := NewToken(BRACKET_RIGHT, "}", l.line, l.column)
+			t := NewToken(CUR_BRACKET_RIGHT, "}", l.line, l.column)
+			tokens = append(tokens, t)
+		case '[':
+			t := NewToken(SQR_BRACKET_LEFT, "[", l.line, l.column)
+			tokens = append(tokens, t)
+		case ']':
+			t := NewToken(SQR_BRACKET_RIGHT, "]", l.line, l.column)
 			tokens = append(tokens, t)
 		case 0:
-			t := NewToken(EOF, "", 0, 0)
+			t := NewToken(EOF, "EOF", 0, 0)
 			tokens = append(tokens, t)
 			return tokens
 		default:
