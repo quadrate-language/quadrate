@@ -1,4 +1,6 @@
-fn main() {
+use fmt
+
+fn main {
 	push 1
-	add (2)
+	add 2
 }
