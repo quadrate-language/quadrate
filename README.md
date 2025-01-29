@@ -9,8 +9,10 @@
 
 ## Description
 Quad is a stack-based programming language under development.
+See https://quad.r8.rs for more information.
 
 ## Installation
+
 ```yaml
 $ git clone https://git.sr.ht:~/klahr/quadrate
 $ cd quadrate
