@@ -3,19 +3,19 @@ package quadrate
 type TokenType string
 
 const (
-	CUR_BRACKET_LEFT   = "CUR_BRACKET_LEFT"
-	CUR_BRACKET_RIGHT  = "CUR_BRACKET_RIGHT"
+	CurlyBracketLeft   = "curly_bracket_left"
+	CurlyBracketRight  = "curly_bracket_right"
 	EOF                = "EOF"
-	FUNCTION           = "FUNCTION"
-	IDENTIFIER         = "IDENTIFIER"
-	ILLEGAL            = "ILLEGAL"
-	NEW_LINE           = "NEW_LINE"
-	NUMERICAL_CONSTANT = "NUMERICAL_CONSTANT"
-	PARAN_LEFT         = "PARAN_LEFT"
-	PARAN_RIGHT        = "PARAN_RIGHT"
-	SQR_BRACKET_LEFT   = "SQR_BRACKET_LEFT"
-	SQR_BRACKET_RIGHT  = "SQR_BRACKET_RIGHT"
-	USE                = "USE"
+	Function           = "function"
+	Identifier         = "identifier"
+	Illegal            = "illegal"
+	NewLine            = "new_line"
+	NumericConstant    = "numeric_constant"
+	ParanthesisLeft    = "paranthesis_left"
+	ParanthesisRight   = "paranthesis_right"
+	SquareBracketLeft  = "square_bracket_left"
+	SquareBracketRight = "square_bracket_right"
+	Use                = "use"
 )
 
 type Token struct {

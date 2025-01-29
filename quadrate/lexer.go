@@ -27,27 +27,27 @@ func (l *Lexer) Lex() []Token {
 
 		switch l.ch {
 		case '\n':
-			t := NewToken(NEW_LINE, "RET", l.line, l.column)
+			t := NewToken(NewLine, "RET", l.line, l.column)
 			tokens = append(tokens, t)
 			l.line++
 			l.column = -1
 		case '(':
-			t := NewToken(PARAN_LEFT, "(", l.line, l.column)
+			t := NewToken(ParanthesisLeft, "(", l.line, l.column)
 			tokens = append(tokens, t)
 		case ')':
-			t := NewToken(PARAN_RIGHT, ")", l.line, l.column)
+			t := NewToken(ParanthesisRight, ")", l.line, l.column)
 			tokens = append(tokens, t)
 		case '{':
-			t := NewToken(CUR_BRACKET_LEFT, "{", l.line, l.column)
+			t := NewToken(CurlyBracketLeft, "{", l.line, l.column)
 			tokens = append(tokens, t)
 		case '}':
-			t := NewToken(CUR_BRACKET_RIGHT, "}", l.line, l.column)
+			t := NewToken(CurlyBracketRight, "}", l.line, l.column)
 			tokens = append(tokens, t)
 		case '[':
-			t := NewToken(SQR_BRACKET_LEFT, "[", l.line, l.column)
+			t := NewToken(SquareBracketLeft, "[", l.line, l.column)
 			tokens = append(tokens, t)
 		case ']':
-			t := NewToken(SQR_BRACKET_RIGHT, "]", l.line, l.column)
+			t := NewToken(SquareBracketRight, "]", l.line, l.column)
 			tokens = append(tokens, t)
 		case 0:
 			t := NewToken(EOF, "EOF", 0, 0)
@@ -58,17 +58,18 @@ func (l *Lexer) Lex() []Token {
 				line := l.line
 				column := l.column
 				literal := l.readIdentifier()
-				t := NewToken(IDENTIFIER, literal, line, column)
+				t := NewToken(l.lookupIdentifier(literal), literal, line, column)
 				tokens = append(tokens, t)
 				continue
 			} else if isDigit(l.ch) {
 				line := l.line
 				column := l.column
 				literal := l.readNumber()
-				t := NewToken(NUMERICAL_CONSTANT, literal, line, column)
+				t := NewToken(NumericConstant, literal, line, column)
 				tokens = append(tokens, t)
+				continue
 			} else {
-				t := NewToken(ILLEGAL, string(l.ch), l.line, l.column)
+				t := NewToken(Illegal, string(l.ch), l.line, l.column)
 				tokens = append(tokens, t)
 			}
 		}
@@ -86,6 +87,16 @@ func (l *Lexer) skipComment() {
 	}
 }
 
+func (l *Lexer) lookupIdentifier(i string) TokenType {
+	switch i {
+	case "use":
+		return Use
+	case "fn":
+		return Function
+	}
+	return Identifier
+}
+
 func (l *Lexer) skipWhitespace() {
 	for l.ch == ' ' || l.ch == '\t' || l.ch == '\r' || (l.ch == '/' && l.peek() == '/') {
 		if l.ch == '/' && l.peek() == '/' {
@@ -97,29 +108,24 @@ func (l *Lexer) skipWhitespace() {
 }
 
 func (l *Lexer) readNumber() string {
-	// TODO: Fix.
 	start := l.position
 
-	if l.ch == '-' {
-		ch := l.peek()
-		if !isDigit(ch) && ch != '.' {
+	if l.position > 0 && l.source[l.position-1] == '-' {
+		if !isDigit(l.ch) && l.ch != '.' {
 			return ""
 		}
+		start--
 	}
 
 	l.readChar()
-	ch := l.ch
-	for isDigit(ch) {
+	for isDigit(l.ch) {
 		l.readChar()
-		ch = l.peek()
 	}
 
-	if ch == '.' {
+	if l.ch == '.' {
 		l.readChar()
-		ch = l.peek()
-		for isDigit(ch) {
+		for isDigit(l.ch) {
 			l.readChar()
-			ch = l.ch
 		}
 	}
 	return l.source[start:l.position]
@@ -128,10 +134,9 @@ func (l *Lexer) readNumber() string {
 func (l *Lexer) readIdentifier() string {
 	start := l.position
 
-	ch := l.peek()
-	for isLetter(ch) || isDigit(ch) || ch == '_' {
+	l.readChar()
+	for isLetter(l.ch) || isDigit(l.ch) || l.ch == '_' {
 		l.readChar()
-		ch = l.ch
 	}
 	return l.source[start:l.position]
 }
