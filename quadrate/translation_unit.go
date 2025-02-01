@@ -21,8 +21,8 @@ func (tu *TranslationUnit) Lex() error {
 	if data, err := os.ReadFile(tu.filepath); err != nil {
 		return err
 	} else {
-		l := NewLexer(data)
-		tu.tokens = l.Lex()
+		l := NewLexer(tu.filepath, data)
+		tu.tokens = l.Lex().Tokens
 	}
 	return nil
 }

@@ -22,15 +22,16 @@ func main() {
 	args.Sources = flag.Args()
 
 	// debug
-	s := `use f
+	s := `use fmt
 	fn main() { // a comment
 		push -0.1
 		push -0.5
 		push -13.55
+		fmt::print [-1 2.0 -3.01 4.003]
 	}`
-	l := quadrate.NewLexer([]byte(s))
-	tokens := l.Lex()
-	for _, t := range tokens {
+	l := quadrate.NewLexer("main.qd", []byte(s))
+	lexResult := l.Lex()
+	for _, t := range lexResult.Tokens {
 		switch t.Type {
 		case quadrate.NewLine:
 			fmt.Println()

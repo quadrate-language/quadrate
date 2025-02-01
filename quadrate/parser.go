@@ -39,13 +39,6 @@ func NewParser(filename string, tokens *[]Token) *Parser {
 	}
 }
 
-type SyntaxError struct {
-	Message  string
-	Line     int
-	Column   int
-	Filename string
-}
-
 func (p *Parser) Parse() (*Program, *SyntaxError) {
 	var pgm Program
 

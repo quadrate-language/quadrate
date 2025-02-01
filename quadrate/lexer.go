@@ -3,20 +3,29 @@ package quadrate
 type Lexer struct {
 	ch       byte
 	column   int
+	filename string
 	line     int
 	position int
 	source   string
 }
 
-func NewLexer(source []byte) *Lexer {
+type LexResult struct {
+	Tokens   []Token
+	Filename string
+}
+
+func NewLexer(filename string, source []byte) *Lexer {
 	l := &Lexer{
-		source: string(source),
+		filename: filename,
+		source:   string(source),
 	}
 	return l
 }
 
-func (l *Lexer) Lex() []Token {
-	var tokens []Token
+func (l *Lexer) Lex() LexResult {
+	r := LexResult{
+		Filename: l.filename,
+	}
 	l.column = 0
 	l.line = 1
 	l.position = -1
@@ -28,49 +37,53 @@ func (l *Lexer) Lex() []Token {
 		switch l.ch {
 		case '\n':
 			t := NewToken(NewLine, "RET", l.line, l.column)
-			tokens = append(tokens, t)
+			r.Tokens = append(r.Tokens, t)
 			l.line++
 			l.column = -1
 		case '(':
 			t := NewToken(ParanthesisLeft, "(", l.line, l.column)
-			tokens = append(tokens, t)
+			r.Tokens = append(r.Tokens, t)
 		case ')':
 			t := NewToken(ParanthesisRight, ")", l.line, l.column)
-			tokens = append(tokens, t)
+			r.Tokens = append(r.Tokens, t)
 		case '{':
 			t := NewToken(CurlyBracketLeft, "{", l.line, l.column)
-			tokens = append(tokens, t)
+			r.Tokens = append(r.Tokens, t)
 		case '}':
 			t := NewToken(CurlyBracketRight, "}", l.line, l.column)
-			tokens = append(tokens, t)
+			r.Tokens = append(r.Tokens, t)
 		case '[':
 			t := NewToken(SquareBracketLeft, "[", l.line, l.column)
-			tokens = append(tokens, t)
+			r.Tokens = append(r.Tokens, t)
 		case ']':
 			t := NewToken(SquareBracketRight, "]", l.line, l.column)
-			tokens = append(tokens, t)
+			r.Tokens = append(r.Tokens, t)
 		case 0:
 			t := NewToken(EOF, "EOF", 0, 0)
-			tokens = append(tokens, t)
-			return tokens
+			r.Tokens = append(r.Tokens, t)
+			return r
 		default:
 			if isLetter(l.ch) {
 				line := l.line
 				column := l.column
 				literal := l.readIdentifier()
 				t := NewToken(l.lookupIdentifier(literal), literal, line, column)
-				tokens = append(tokens, t)
+				r.Tokens = append(r.Tokens, t)
 				continue
-			} else if isDigit(l.ch) {
+			} else if isDigit(l.ch) || (l.ch == '-' && isDigit(l.peek())) {
 				line := l.line
 				column := l.column
 				literal := l.readNumber()
 				t := NewToken(NumericConstant, literal, line, column)
-				tokens = append(tokens, t)
+				r.Tokens = append(r.Tokens, t)
 				continue
+			} else if l.ch == ':' && l.peek() == ':' {
+				t := NewToken(DoubleColon, "::", l.line, l.column)
+				r.Tokens = append(r.Tokens, t)
+				l.readChar()
 			} else {
 				t := NewToken(Illegal, string(l.ch), l.line, l.column)
-				tokens = append(tokens, t)
+				r.Tokens = append(r.Tokens, t)
 			}
 		}
 		l.readChar()

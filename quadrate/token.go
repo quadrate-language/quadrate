@@ -5,6 +5,7 @@ type TokenType string
 const (
 	CurlyBracketLeft   = "curly_bracket_left"
 	CurlyBracketRight  = "curly_bracket_right"
+	DoubleColon        = "double_colon"
 	EOF                = "EOF"
 	Function           = "function"
 	Identifier         = "identifier"
