@@ -30,6 +30,9 @@ func main() {
 		fmt::print [-1 2.0 -3.01 4.003]
 		__c {
 			int x = 4;
+			if (x == 4) {
+				return;
+			}
 		}
 	}`
 	l := quadrate.NewLexer("main.qd", []byte(s))
@@ -41,7 +44,7 @@ func main() {
 		case quadrate.Identifier:
 			fmt.Printf("identifier '%s' [%d:%d]\n", t.Literal, t.Line, t.Column)
 		case quadrate.InlineC:
-			fmt.Println("< inline c >")
+			fmt.Printf("< inline c > [%d:%d]\n%s\n", t.Line, t.Column, t.Literal)
 		case quadrate.EOF:
 			fmt.Println("< EOF >")
 		default:

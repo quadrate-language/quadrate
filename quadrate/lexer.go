@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 type Lexer struct {
@@ -79,7 +80,15 @@ func (l *Lexer) Lex() LexResult {
 				line := l.line
 				column := l.column
 				literal := l.readIdentifier()
-				t := NewToken(l.lookupIdentifier(literal), literal, line, column)
+				tokenType := l.lookupIdentifier(literal)
+				if tokenType == InlineC {
+					c := l.readCBlock()
+					t := NewToken(InlineC, c, line, column)
+					r.Tokens = append(r.Tokens, t)
+					l.readChar()
+					continue
+				}
+				t := NewToken(tokenType, literal, line, column)
 				if len(r.Tokens) > 0 && t.Type == Identifier && r.Tokens[len(r.Tokens)-1].Type == Use {
 					if _, err := os.Stat(literal + ".qd"); err == nil {
 						fmt.Println("found module:", literal+".qd")
@@ -179,11 +188,40 @@ func (l *Lexer) readIdentifier() string {
 	return l.source[start:l.position]
 }
 
+func (l *Lexer) readCBlock() string {
+	var c strings.Builder
+	brackets := 0
+	for l.ch != 0 {
+		if l.ch == '{' {
+			brackets++
+			if brackets == 1 {
+				l.readChar()
+				continue
+			}
+		} else if l.ch == '}' {
+			brackets--
+			if brackets == 0 {
+				break
+			}
+		}
+		c.WriteByte(l.ch)
+		l.readChar()
+	}
+	return c.String()
+}
+
 func (l *Lexer) peek() byte {
 	if l.position >= len(l.source)-1 {
 		return 0
 	}
 	return l.source[l.position+1]
+}
+
+func (l *Lexer) peekAhead(offset int) byte {
+	if l.position+offset >= len(l.source)-1 {
+		return 0
+	}
+	return l.source[l.position+offset+1]
 }
 
 func (l *Lexer) readChar() {
