@@ -1,5 +1,11 @@
 package quadrate
 
+import (
+	"fmt"
+	"os"
+	"path/filepath"
+)
+
 type Lexer struct {
 	ch       byte
 	column   int
@@ -7,6 +13,7 @@ type Lexer struct {
 	line     int
 	position int
 	source   string
+	Modules  []string
 }
 
 type LexResult struct {
@@ -18,6 +25,11 @@ func NewLexer(filename string, source []byte) *Lexer {
 	l := &Lexer{
 		filename: filename,
 		source:   string(source),
+	}
+	if module, err := filepath.Abs(filename); err == nil {
+		l.Modules = append(l.Modules, module)
+	} else {
+		panic(err)
 	}
 	return l
 }
@@ -68,8 +80,19 @@ func (l *Lexer) Lex() LexResult {
 				column := l.column
 				literal := l.readIdentifier()
 				t := NewToken(l.lookupIdentifier(literal), literal, line, column)
-				r.Tokens = append(r.Tokens, t)
-				continue
+				if len(r.Tokens) > 0 && t.Type == Identifier && r.Tokens[len(r.Tokens)-1].Type == Use {
+					if _, err := os.Stat(literal + ".qd"); err == nil {
+						fmt.Println("found module:", literal+".qd")
+					} else if _, err := os.Stat(literal + "/module.qd"); err == nil {
+						fmt.Println("found module:", literal+"/module.qd")
+					} else {
+						panic("module not found")
+					}
+					r.Tokens = r.Tokens[:len(r.Tokens)-1]
+				} else {
+					r.Tokens = append(r.Tokens, t)
+					continue
+				}
 			} else if isDigit(l.ch) || (l.ch == '-' && isDigit(l.peek())) {
 				line := l.line
 				column := l.column
@@ -106,6 +129,8 @@ func (l *Lexer) lookupIdentifier(i string) TokenType {
 		return Use
 	case "fn":
 		return Function
+	case "__c":
+		return InlineC
 	}
 	return Identifier
 }

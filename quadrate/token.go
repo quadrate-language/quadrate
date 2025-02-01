@@ -10,6 +10,7 @@ const (
 	Function           = "function"
 	Identifier         = "identifier"
 	Illegal            = "illegal"
+	InlineC            = "inline_c"
 	NewLine            = "new_line"
 	NumericConstant    = "numeric_constant"
 	ParanthesisLeft    = "paranthesis_left"
