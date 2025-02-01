@@ -35,7 +35,7 @@ func main() {
 			}
 		}
 	}`
-	l := quadrate.NewLexer("main.qd", []byte(s))
+	l := quadrate.NewLexer("main.qd", []byte(s), "")
 	lexResult := l.Lex()
 	for _, t := range lexResult.Tokens {
 		switch t.Type {
@@ -45,6 +45,8 @@ func main() {
 			fmt.Printf("identifier '%s' [%d:%d]\n", t.Literal, t.Line, t.Column)
 		case quadrate.InlineC:
 			fmt.Printf("< inline c > [%d:%d]\n%s\n", t.Line, t.Column, t.Literal)
+		case quadrate.Module:
+			fmt.Printf("< module '%s' > [%d:%d]\n", t.Literal, t.Line, t.Column)
 		case quadrate.EOF:
 			fmt.Println("< EOF >")
 		default:
@@ -52,8 +54,8 @@ func main() {
 		}
 	}
 
-	args.Sources = append(args.Sources, "data/alpha.qd")
-	args.Sources = append(args.Sources, "data/bravo.qd")
+	//args.Sources = append(args.Sources, "data/alpha.qd")
+	//args.Sources = append(args.Sources, "data/bravo.qd")
 	// debug
 
 	if len(args.Sources) == 0 {

@@ -11,6 +11,7 @@ const (
 	Identifier         = "identifier"
 	Illegal            = "illegal"
 	InlineC            = "inline_c"
+	Module             = "module"
 	NewLine            = "new_line"
 	NumericConstant    = "numeric_constant"
 	ParanthesisLeft    = "paranthesis_left"

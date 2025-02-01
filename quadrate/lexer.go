@@ -1,7 +1,6 @@
 package quadrate
 
 import (
-	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -12,6 +11,7 @@ type Lexer struct {
 	column   int
 	filename string
 	line     int
+	name     string
 	position int
 	source   string
 	Modules  []string
@@ -22,9 +22,10 @@ type LexResult struct {
 	Filename string
 }
 
-func NewLexer(filename string, source []byte) *Lexer {
+func NewLexer(filename string, source []byte, name string) *Lexer {
 	l := &Lexer{
 		filename: filename,
+		name:     name,
 		source:   string(source),
 	}
 	if module, err := filepath.Abs(filename); err == nil {
@@ -91,13 +92,17 @@ func (l *Lexer) Lex() LexResult {
 				t := NewToken(tokenType, literal, line, column)
 				if len(r.Tokens) > 0 && t.Type == Identifier && r.Tokens[len(r.Tokens)-1].Type == Use {
 					if _, err := os.Stat(literal + ".qd"); err == nil {
-						fmt.Println("found module:", literal+".qd")
+						l.Modules = append(l.Modules, literal+".qd")
+						t := NewToken(Module, literal+".qd", line, column)
+						r.Tokens = append(r.Tokens, t)
 					} else if _, err := os.Stat(literal + "/module.qd"); err == nil {
-						fmt.Println("found module:", literal+"/module.qd")
+						l.Modules = append(l.Modules, literal+"/module.qd")
+						t := NewToken(Module, literal+"/module.qd", line, column)
+						r.Tokens = append(r.Tokens, t)
 					} else {
 						panic("module not found")
 					}
-					r.Tokens = r.Tokens[:len(r.Tokens)-1]
+					continue
 				} else {
 					r.Tokens = append(r.Tokens, t)
 					continue
