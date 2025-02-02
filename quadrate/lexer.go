@@ -55,10 +55,10 @@ func (l *Lexer) Lex() LexResult {
 			l.line++
 			l.column = -1
 		case '(':
-			t := NewToken(ParanthesisLeft, "(", l.line, l.column)
+			t := NewToken(ParenthesisLeft, "(", l.line, l.column)
 			r.Tokens = append(r.Tokens, t)
 		case ')':
-			t := NewToken(ParanthesisRight, ")", l.line, l.column)
+			t := NewToken(ParenthesisRight, ")", l.line, l.column)
 			r.Tokens = append(r.Tokens, t)
 		case '{':
 			t := NewToken(CurlyBracketLeft, "{", l.line, l.column)
@@ -71,6 +71,9 @@ func (l *Lexer) Lex() LexResult {
 			r.Tokens = append(r.Tokens, t)
 		case ']':
 			t := NewToken(SquareBracketRight, "]", l.line, l.column)
+			r.Tokens = append(r.Tokens, t)
+		case ',':
+			t := NewToken(Comma, ",", l.line, l.column)
 			r.Tokens = append(r.Tokens, t)
 		case 0:
 			t := NewToken(EOF, "EOF", 0, 0)
@@ -142,7 +145,7 @@ func (l *Lexer) lookupIdentifier(i string) TokenType {
 	case "use":
 		return Use
 	case "fn":
-		return Function
+		return FnSignature
 	case "__c":
 		return InlineC
 	}

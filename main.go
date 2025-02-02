@@ -23,10 +23,15 @@ func main() {
 
 	// debug
 	s := `use fmt
+	fn foo(a, b) {
+		push [4 5] 1 2 3
+	}
+
 	fn main() { // a comment
 		push -0.1
 		push -0.5
 		push -13.55
+		pop [1] 1
 		fmt::print [-1 2.0 -3.01 4.003]
 		__c {
 			int x = 4;
@@ -51,6 +56,15 @@ func main() {
 			fmt.Println("< EOF >")
 		default:
 			fmt.Printf("< '%s' >\n", t.Literal)
+		}
+	}
+
+	p := quadrate.NewParser(lexResult.Filename, &lexResult.Tokens)
+	if program, err := p.Parse(); err != nil {
+		panic(err.Message)
+	} else {
+		for _, stmt := range program.Statements {
+			fmt.Println(stmt)
 		}
 	}
 

@@ -18,17 +18,28 @@ type ImportDirective struct {
 	Module string
 }
 
+type Parameter struct {
+	Type string
+	Name string
+}
+
 type FunctionDeclaration struct {
 	ReturnType string
 	Name       string
+	Parameters []Parameter
 }
 
 type FunctionCall struct {
-	Name string
-	Args []string
+	Name     string
+	PushArgs []string
+	Args     []string
 }
 
-type Scope struct {
+type InlineCCode struct {
+	Code string
+}
+
+type Body struct {
 	Statements []Node
 }
 
@@ -54,8 +65,8 @@ func (p *Parser) Parse() (*Program, *SyntaxError) {
 			} else {
 				pgm.Statements = append(pgm.Statements, n)
 			}
-		case Function:
-			if n, err := p.parseFunction(); err != nil {
+		case FnSignature:
+			if n, err := p.parseFnSignature(); err != nil {
 				return nil, err
 			} else {
 				pgm.Statements = append(pgm.Statements, n)
@@ -76,7 +87,11 @@ func (p *Parser) Parse() (*Program, *SyntaxError) {
 					}
 				} else {
 					p.current++
-					pgm.Statements = append(pgm.Statements, Scope{})
+					if n, err := p.parseBody(); err != nil {
+						return nil, err
+					} else {
+						pgm.Statements = append(pgm.Statements, n)
+					}
 				}
 			}
 		default:
@@ -92,20 +107,95 @@ func (p *Parser) parseStatement() (Node, *SyntaxError) {
 	switch t.Type {
 	case Use:
 		return p.parseUse()
-	case Function:
-		return p.parseFunction()
+	case FnSignature:
+		return p.parseFnSignature()
 	}
 	return nil, nil
 }
 
-func (p *Parser) parseScope() (Node, error) {
-	return nil, nil
+func (p *Parser) parseBody() (Node, *SyntaxError) {
+	t := (*p.tokens)[p.current]
+	var stmts []Node
+
+body_loop:
+	for p.current < len(*p.tokens) {
+		p.current++
+		t = (*p.tokens)[p.current]
+		switch t.Type {
+		case CurlyBracketRight:
+			p.current++
+			break body_loop
+		case NewLine:
+			continue
+		case InlineC:
+			stmts = append(stmts, InlineCCode{
+				Code: t.Literal,
+			})
+		default:
+			if fnCall, err := p.parseFunctionCall(); err != nil {
+				return nil, err
+			} else {
+				stmts = append(stmts, fnCall)
+			}
+		}
+	}
+
+	return Body{
+		Statements: stmts,
+	}, nil
+}
+
+func (p *Parser) parseFunctionCall() (Node, *SyntaxError) {
+	functionCall := FunctionCall{
+		Name: (*p.tokens)[p.current].Literal,
+	}
+	for p.current < len(*p.tokens) {
+		p.current++
+		t := (*p.tokens)[p.current]
+		if t.Type == NewLine {
+			break
+		} else if t.Type == Identifier || t.Type == NumericConstant {
+			functionCall.Args = append(functionCall.Args, t.Literal)
+		} else if t.Type == SquareBracketLeft {
+			t = (*p.tokens)[p.current]
+			for p.current < len(*p.tokens) {
+				p.current++
+				t = (*p.tokens)[p.current]
+				if t.Type == SquareBracketRight {
+					break
+				} else if t.Type == NumericConstant {
+					functionCall.PushArgs = append(functionCall.PushArgs, t.Literal)
+				} else {
+					return nil, &SyntaxError{
+						Message:  fmt.Sprintf("expected numeric constant but got ‘%s‘", t.Literal),
+						Line:     t.Line,
+						Column:   t.Column,
+						Filename: p.filename,
+					}
+				}
+			}
+		} else if t.Type == DoubleColon {
+			p.current++
+			t = (*p.tokens)[p.current]
+			if t.Type == Identifier {
+				functionCall.Name += "__" + t.Literal
+			}
+		} else {
+			return nil, &SyntaxError{
+				Message:  fmt.Sprintf("expected identifier but got ‘%s‘", t.Literal),
+				Line:     t.Line,
+				Column:   t.Column,
+				Filename: p.filename,
+			}
+		}
+	}
+	return functionCall, nil
 }
 
 func (p *Parser) parseUse() (Node, *SyntaxError) {
 	p.current++
 	t := (*p.tokens)[p.current]
-	if t.Type != Identifier {
+	if t.Type != Module {
 		return nil, &SyntaxError{
 			Message:  "expected identifier after ‘use‘",
 			Line:     t.Line,
@@ -119,7 +209,7 @@ func (p *Parser) parseUse() (Node, *SyntaxError) {
 	}, nil
 }
 
-func (p *Parser) parseFunction() (Node, *SyntaxError) {
+func (p *Parser) parseFnSignature() (Node, *SyntaxError) {
 	p.current++
 	t := (*p.tokens)[p.current]
 	if t.Type != Identifier {
@@ -143,5 +233,36 @@ func (p *Parser) parseFunction() (Node, *SyntaxError) {
 
 	p.current++
 
+	t = (*p.tokens)[p.current]
+	if t.Type != ParenthesisLeft {
+		return nil, &SyntaxError{
+			Message:  fmt.Sprintf("expected ‘(‘ but got ‘%s‘", t.Literal),
+			Line:     t.Line,
+			Column:   t.Column,
+			Filename: p.filename,
+		}
+	}
+
+	for p.current < len(*p.tokens) {
+		p.current++
+		t = (*p.tokens)[p.current]
+		if t.Type == ParenthesisRight {
+			p.current++
+			break
+		} else if t.Type == Identifier {
+			fd.Parameters = append(fd.Parameters, Parameter{
+				Type: "real",
+				Name: t.Literal,
+			})
+		} else if t.Type == Comma {
+		} else {
+			return nil, &SyntaxError{
+				Message:  fmt.Sprintf("expected identifier but got ‘%s‘", t.Literal),
+				Line:     t.Line,
+				Column:   t.Column,
+				Filename: p.filename,
+			}
+		}
+	}
 	return fd, nil
 }
