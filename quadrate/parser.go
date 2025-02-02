@@ -10,8 +10,9 @@ type Parser struct {
 
 type Node interface{}
 
-type Program struct {
+type ProgramModule struct {
 	Statements []Node
+	Submodules []string
 }
 
 type ImportDirective struct {
@@ -50,8 +51,8 @@ func NewParser(filename string, tokens *[]Token) *Parser {
 	}
 }
 
-func (p *Parser) Parse() (*Program, *SyntaxError) {
-	var pgm Program
+func (p *Parser) Parse() (*ProgramModule, *SyntaxError) {
+	var pgm ProgramModule
 
 	for p.current < len(*p.tokens) {
 		t := (*p.tokens)[p.current]
@@ -63,6 +64,7 @@ func (p *Parser) Parse() (*Program, *SyntaxError) {
 			if n, err := p.parseUse(); err != nil {
 				return nil, err
 			} else {
+				pgm.Submodules = append(pgm.Submodules, n.(ImportDirective).Module)
 				pgm.Statements = append(pgm.Statements, n)
 			}
 		case FnSignature:

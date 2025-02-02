@@ -1,6 +1,6 @@
-use fmt
+use bravo
 
-fn main {
+fn main() {
 	push 1
-	add 2
+	func
 }

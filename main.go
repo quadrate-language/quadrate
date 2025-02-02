@@ -1,11 +1,11 @@
 package main
 
 import (
-	"encoding/json"
 	"flag"
 	"fmt"
 	"log"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"git.sr.ht/~klahr/quadrate/quadrate"
@@ -60,16 +60,19 @@ func main() {
 	}
 
 	p := quadrate.NewParser(lexResult.Filename, &lexResult.Tokens)
-	if program, err := p.Parse(); err != nil {
+	if module, err := p.Parse(); err != nil {
 		panic(err.Message)
 	} else {
-		for _, stmt := range program.Statements {
+		for _, stmt := range module.Statements {
 			fmt.Println(stmt)
+		}
+		for _, m := range module.Submodules {
+			fmt.Println(m)
 		}
 	}
 
-	//args.Sources = append(args.Sources, "data/alpha.qd")
-	//args.Sources = append(args.Sources, "data/bravo.qd")
+	args.Sources = append(args.Sources, "data/alpha.qd")
+	args.Sources = append(args.Sources, "data/bravo.qd")
 	// debug
 
 	if len(args.Sources) == 0 {
@@ -77,39 +80,36 @@ func main() {
 		os.Exit(1)
 	}
 
-	tus := make([]*quadrate.TranslationUnit, 0, len(args.Sources))
-	for _, src := range args.Sources {
-		tu := quadrate.NewTranslationUnit(src)
-		if err := tu.Lex(); err != nil {
-			log.Fatalf("quadrate: error: %s\n", err.Error())
+	var absFilepaths []string
+	for _, file := range args.Sources {
+		if _, err := os.Stat(file); os.IsNotExist(err) {
+			log.Fatalf("quadrate: error: no such file or directory: %s\n", file)
 			os.Exit(1)
-		}
-		if err := tu.Parse(); err != nil {
-			if b, e := os.ReadFile(err.Filename); e != nil {
-				log.Fatalf("quadrate: error: %s\n", e.Error())
-			} else {
-				lines := strings.Split(string(b), "\n")
-				fmt.Printf("\033[1m%s:%d:%d: \033[31merror:\033[0m %s\n", err.Filename, err.Line, err.Column, err.Message)
-				fmt.Printf("%d | %s\n", err.Line, lines[err.Line-1])
-				fmt.Printf("%s | %s\033[1;31m^\033[0m\n", strings.Repeat(" ", len(fmt.Sprintf("%d", err.Line))), strings.Repeat(" ", err.Column-1))
-			}
-			os.Exit(1)
-		}
-		fmt.Print(tu.GetProgram())
-		tus = append(tus, tu)
-	}
-
-	os.Mkdir(".qd_output", 0755)
-
-	for _, tu := range tus {
-		if b, err := json.Marshal(tu.GetTokens()); err != nil {
-			panic(err)
 		} else {
-			os.WriteFile(".qd_output/"+tu.GetFilename()+".json", b, 0644)
+			if absPath, err := filepath.Abs(file); err != nil {
+				log.Fatalf("quadrate: error: %s\n", err.Error())
+				os.Exit(1)
+			} else {
+				absFilepaths = append(absFilepaths, absPath)
+			}
 		}
 	}
 
-	if !args.SaveTemps {
-		os.RemoveAll(".qd_output")
+	compiler := quadrate.NewCompiler()
+	if tus, err := compiler.Compile(absFilepaths); err != nil {
+		if b, e := os.ReadFile(err.Filename); e != nil {
+			log.Fatalf("quadrate: error: %s\n", e.Error())
+		} else {
+			lines := strings.Split(string(b), "\n")
+			fmt.Printf("\033[1m%s:%d:%d: \033[31merror:\033[0m %s\n", err.Filename, err.Line, err.Column, err.Message)
+			fmt.Printf("%d | %s\n", err.Line, lines[err.Line-1])
+			fmt.Printf("%s | %s\033[1;31m^\033[0m\n", strings.Repeat(" ", len(fmt.Sprintf("%d", err.Line))), strings.Repeat(" ", err.Column-1))
+		}
+		os.Exit(1)
+	} else {
+		for _, tu := range *tus {
+			tu.Print()
+		}
+		os.Exit(0)
 	}
 }

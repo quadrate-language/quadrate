@@ -94,13 +94,14 @@ func (l *Lexer) Lex() LexResult {
 				}
 				t := NewToken(tokenType, literal, line, column)
 				if len(r.Tokens) > 0 && t.Type == Identifier && r.Tokens[len(r.Tokens)-1].Type == Use {
-					if _, err := os.Stat(literal + ".qd"); err == nil {
-						l.Modules = append(l.Modules, literal+".qd")
-						t := NewToken(Module, literal+".qd", line, column)
+					path := filepath.Dir(l.filename)
+					if _, err := os.Stat(path + "/" + literal + ".qd"); err == nil {
+						l.Modules = append(l.Modules, path+"/"+literal+".qd")
+						t := NewToken(Module, path+"/"+literal+".qd", line, column)
 						r.Tokens = append(r.Tokens, t)
-					} else if _, err := os.Stat(literal + "/module.qd"); err == nil {
-						l.Modules = append(l.Modules, literal+"/module.qd")
-						t := NewToken(Module, literal+"/module.qd", line, column)
+					} else if _, err := os.Stat(path + "/" + literal + "/module.qd"); err == nil {
+						l.Modules = append(l.Modules, path+"/"+literal+"/module.qd")
+						t := NewToken(Module, path+"/"+literal+"/module.qd", line, column)
 						r.Tokens = append(r.Tokens, t)
 					} else {
 						panic("module not found")
