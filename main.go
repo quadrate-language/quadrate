@@ -72,7 +72,6 @@ func main() {
 	}
 
 	args.Sources = append(args.Sources, "data/alpha.qd")
-	args.Sources = append(args.Sources, "data/bravo.qd")
 	// debug
 
 	if len(args.Sources) == 0 {

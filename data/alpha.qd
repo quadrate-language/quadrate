@@ -1,8 +1,8 @@
-use bravo
+use math
 
 fn main() {
 	push 1
-	func
+	math::add
 	__c {
 		int x = 0;
 	}
