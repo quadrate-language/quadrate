@@ -60,17 +60,8 @@ func (cg *CGenerator) writeHeader(tu *TranslationUnit, sb *strings.Builder) {
 				sb.WriteString(p.Type + " " + p.Name)
 			}
 			sb.WriteString(");\n")
-		case FunctionCall:
-			sb.WriteString("void " + cg.prefix + n.Name + "(")
-			for i, arg := range n.Args {
-				if i > 0 {
-					sb.WriteString(", ")
-				}
-				sb.WriteString(arg)
-			}
-			sb.WriteString(");\n")
-		case InlineCCode:
-			sb.WriteString(n.Code + "\n")
+		default:
+			continue
 		}
 	}
 
