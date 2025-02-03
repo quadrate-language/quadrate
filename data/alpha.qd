@@ -3,4 +3,7 @@ use bravo
 fn main() {
 	push 1
 	func
+	__c {
+		int x = 0;
+	}
 }

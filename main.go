@@ -110,6 +110,13 @@ func main() {
 		for _, tu := range *tus {
 			tu.Print()
 		}
+		generator := quadrate.NewCGenerator(".")
+		for _, tu := range *tus {
+			if err := generator.Generate(&tu); err != nil {
+				log.Fatalf("quadrate: error: %s\n", err.Message)
+				os.Exit(1)
+			}
+		}
 		os.Exit(0)
 	}
 }
