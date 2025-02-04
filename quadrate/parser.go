@@ -101,6 +101,11 @@ func (p *Parser) Parse() (*ProgramModule, *SyntaxError) {
 					}
 				}
 			}
+		case InlineC:
+			pgm.Statements = append(pgm.Statements, InlineCCode{
+				Code: t.Literal,
+			})
+			p.current++
 		default:
 			p.current++
 		}
@@ -185,7 +190,7 @@ func (p *Parser) parseFunctionCall() (Node, *SyntaxError) {
 			p.current++
 			t = (*p.tokens)[p.current]
 			if t.Type == Identifier {
-				functionCall.Name += "__" + t.Literal
+				functionCall.Name += "_" + t.Literal
 			}
 		} else {
 			return nil, &SyntaxError{

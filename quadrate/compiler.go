@@ -1,7 +1,11 @@
 package quadrate
 
 import (
+	"fmt"
 	"log"
+	"os"
+	"os/exec"
+	"path/filepath"
 )
 
 type ModuleToCompile struct {
@@ -62,6 +66,7 @@ func (c *Compiler) Compile(files []string) (*[]TranslationUnit, *SyntaxError) {
 			}
 		}
 	}
+	c.compileAndLink()
 	return &c.translationUnits, nil
 }
 
@@ -74,6 +79,41 @@ func (c *Compiler) compile(file, name string) (*TranslationUnit, *SyntaxError) {
 	if err := tu.Parse(); err != nil {
 		return nil, err
 	}
-	// TODO: Generate intermediate representation
+
 	return tu, nil
+}
+
+func (c *Compiler) compileAndLink() {
+	folderPath := ".qd_gen"
+
+	cFiles, err := filepath.Glob(filepath.Join(folderPath, "*.c"))
+	if err != nil {
+		fmt.Println("Error finding C files:", err)
+		return
+	}
+
+	if len(cFiles) == 0 {
+		fmt.Println("No C files found")
+		return
+	}
+
+	outputFile := "program.out"
+
+	var args []string
+	args = append(args, "-o", outputFile, "-I", folderPath)
+	args = append(args, cFiles...)
+
+	cmd := exec.Command("gcc", args...)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	fmt.Println("Running command:", cmd.String())
+
+	err = cmd.Run()
+	if err != nil {
+		fmt.Println("Compilation failed:", err)
+		return
+	}
+
+	fmt.Println("Compilation successful! Executable:", outputFile)
 }
