@@ -64,6 +64,8 @@ func main() {
 			}
 		}
 
+		compiler.CompileAndLink()
+
 		if !args.SaveTemps {
 			os.RemoveAll("./.qd_gen")
 		}

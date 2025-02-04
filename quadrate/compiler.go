@@ -75,7 +75,6 @@ func (c *Compiler) Compile(files []string) (*[]TranslationUnit, *SyntaxError) {
 			tu.Print()
 		}
 	}
-	c.compileAndLink()
 	return &c.translationUnits, nil
 }
 
@@ -92,7 +91,7 @@ func (c *Compiler) compile(file, name string) (*TranslationUnit, *SyntaxError) {
 	return tu, nil
 }
 
-func (c *Compiler) compileAndLink() {
+func (c *Compiler) CompileAndLink() {
 	folderPath := ".qd_gen"
 
 	cFiles, err := filepath.Glob(filepath.Join(folderPath, "*.c"))
@@ -101,7 +100,7 @@ func (c *Compiler) compileAndLink() {
 	}
 
 	if len(cFiles) == 0 {
-		fmt.Printf("\033[1mquadc: \033[31mfatal error:\033[0m no input files\n")
+		fmt.Printf("\033[1mquadc: \033[31mfatal error:\033[0m no intermediate files\n")
 		return
 	}
 

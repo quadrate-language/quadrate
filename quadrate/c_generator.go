@@ -29,8 +29,12 @@ func NewCGenerator(outputDir string) *CGenerator {
 	os.RemoveAll(cg.outputDir)
 	os.Mkdir(cg.outputDir, 0755)
 
-	os.WriteFile(path.Join(cg.outputDir, "qd_base.h"), []byte(baseHeader), 0644)
-	os.WriteFile(path.Join(cg.outputDir, "qd_base.c"), []byte(baseSource), 0644)
+	if err := os.WriteFile(path.Join(cg.outputDir, "qd_base.h"), []byte(baseHeader), 0644); err != nil {
+		panic(err)
+	}
+	if err := os.WriteFile(path.Join(cg.outputDir, "qd_base.c"), []byte(baseSource), 0644); err != nil {
+		panic(err)
+	}
 
 	return &cg
 }
