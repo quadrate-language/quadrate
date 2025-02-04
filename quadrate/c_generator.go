@@ -46,8 +46,6 @@ func (cg *CGenerator) Generate(tu *TranslationUnit) *SyntaxError {
 	cg.writeSource(tu, &sb)
 	os.WriteFile(fmt.Sprintf("%s.c", filename), []byte(sb.String()), 0644)
 
-	fmt.Println(sb.String())
-
 	return nil
 }
 

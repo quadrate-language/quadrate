@@ -2,7 +2,6 @@ package quadrate
 
 import (
 	"fmt"
-	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -17,10 +16,13 @@ type ModuleToCompile struct {
 type Compiler struct {
 	modulesToCompile []ModuleToCompile
 	translationUnits []TranslationUnit
+	dumpTokens       bool
 }
 
-func NewCompiler() *Compiler {
-	return &Compiler{}
+func NewCompiler(dumpTokens bool) *Compiler {
+	return &Compiler{
+		dumpTokens: dumpTokens,
+	}
 }
 
 func (c *Compiler) Compile(files []string) (*[]TranslationUnit, *SyntaxError) {
@@ -66,6 +68,11 @@ func (c *Compiler) Compile(files []string) (*[]TranslationUnit, *SyntaxError) {
 			}
 		}
 	}
+	if c.dumpTokens {
+		for _, tu := range c.translationUnits {
+			tu.Print()
+		}
+	}
 	c.compileAndLink()
 	return &c.translationUnits, nil
 }
@@ -73,7 +80,7 @@ func (c *Compiler) Compile(files []string) (*[]TranslationUnit, *SyntaxError) {
 func (c *Compiler) compile(file, name string) (*TranslationUnit, *SyntaxError) {
 	tu := NewTranslationUnit(file, name)
 	if err := tu.Lex(); err != nil {
-		log.Fatalf("quadrate: error: %s\n", err.Message)
+		fmt.Printf("\033[1mquadc: \033[31merror:\033[0m %s\n", err.Message)
 		return nil, err
 	}
 	if err := tu.Parse(); err != nil {
@@ -88,12 +95,11 @@ func (c *Compiler) compileAndLink() {
 
 	cFiles, err := filepath.Glob(filepath.Join(folderPath, "*.c"))
 	if err != nil {
-		fmt.Println("Error finding C files:", err)
-		return
+		panic(err)
 	}
 
 	if len(cFiles) == 0 {
-		fmt.Println("No C files found")
+		fmt.Printf("\033[1mquadc: \033[31mfatal error:\033[0m no input files\n")
 		return
 	}
 
@@ -107,13 +113,9 @@ func (c *Compiler) compileAndLink() {
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 
-	fmt.Println("Running command:", cmd.String())
-
 	err = cmd.Run()
 	if err != nil {
-		fmt.Println("Compilation failed:", err)
+		fmt.Printf("\033[1mquadc: \033[31merror:\033[0m %s\n", err.Error())
 		return
 	}
-
-	fmt.Println("Compilation successful! Executable:", outputFile)
 }
