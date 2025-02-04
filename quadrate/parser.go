@@ -1,6 +1,9 @@
 package quadrate
 
-import "fmt"
+import (
+	"fmt"
+	"path/filepath"
+)
 
 type Parser struct {
 	tokens   *[]Token
@@ -11,12 +14,14 @@ type Parser struct {
 type Node interface{}
 
 type ProgramModule struct {
+	Name       string
 	Statements []Node
-	Submodules []string
+	Submodules []ImportDirective
 }
 
 type ImportDirective struct {
 	Module string
+	Name   string
 }
 
 type Parameter struct {
@@ -64,7 +69,7 @@ func (p *Parser) Parse() (*ProgramModule, *SyntaxError) {
 			if n, err := p.parseUse(); err != nil {
 				return nil, err
 			} else {
-				pgm.Submodules = append(pgm.Submodules, n.(ImportDirective).Module)
+				pgm.Submodules = append(pgm.Submodules, n.(ImportDirective))
 				pgm.Statements = append(pgm.Statements, n)
 			}
 		case FnSignature:
@@ -205,9 +210,11 @@ func (p *Parser) parseUse() (Node, *SyntaxError) {
 			Filename: p.filename,
 		}
 	}
+	name := filepath.Base(filepath.Dir(t.Literal))
 	p.current++
 	return ImportDirective{
 		Module: t.Literal,
+		Name:   name,
 	}, nil
 }
 

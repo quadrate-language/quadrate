@@ -5,13 +5,14 @@ import (
 )
 
 type ModuleToCompile struct {
-	Module   string
 	Compiled bool
+	Module   string
+	Name     string
 }
 
 type Compiler struct {
-	translationUnits []TranslationUnit
 	modulesToCompile []ModuleToCompile
+	translationUnits []TranslationUnit
 }
 
 func NewCompiler() *Compiler {
@@ -21,8 +22,9 @@ func NewCompiler() *Compiler {
 func (c *Compiler) Compile(files []string) (*[]TranslationUnit, *SyntaxError) {
 	for _, file := range files {
 		c.modulesToCompile = append(c.modulesToCompile, ModuleToCompile{
-			Module:   file,
 			Compiled: false,
+			Module:   file,
+			Name:     "",
 		})
 	}
 
@@ -34,7 +36,7 @@ func (c *Compiler) Compile(files []string) (*[]TranslationUnit, *SyntaxError) {
 				continue
 			} else {
 				allCompiled = false
-				tu, err := c.compile(module.Module)
+				tu, err := c.compile(module.Module, module.Name)
 				if err != nil {
 					return nil, err
 				}
@@ -43,15 +45,16 @@ func (c *Compiler) Compile(files []string) (*[]TranslationUnit, *SyntaxError) {
 				for _, submodule := range tu.module.Submodules {
 					alreadyAdded := false
 					for _, compiledModule := range c.modulesToCompile {
-						if compiledModule.Module == submodule {
+						if compiledModule.Module == submodule.Module {
 							alreadyAdded = true
 							break
 						}
 					}
 					if !alreadyAdded {
 						c.modulesToCompile = append(c.modulesToCompile, ModuleToCompile{
-							Module:   submodule,
+							Module:   submodule.Module,
 							Compiled: false,
+							Name:     submodule.Name,
 						})
 					}
 				}
@@ -62,8 +65,8 @@ func (c *Compiler) Compile(files []string) (*[]TranslationUnit, *SyntaxError) {
 	return &c.translationUnits, nil
 }
 
-func (c *Compiler) compile(file string) (*TranslationUnit, *SyntaxError) {
-	tu := NewTranslationUnit(file)
+func (c *Compiler) compile(file, name string) (*TranslationUnit, *SyntaxError) {
+	tu := NewTranslationUnit(file, name)
 	if err := tu.Lex(); err != nil {
 		log.Fatalf("quadrate: error: %s\n", err.Message)
 		return nil, err

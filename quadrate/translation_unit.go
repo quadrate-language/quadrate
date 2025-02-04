@@ -7,13 +7,15 @@ import (
 
 type TranslationUnit struct {
 	filepath string
-	tokens   []Token
 	module   *ProgramModule
+	name     string
+	tokens   []Token
 }
 
-func NewTranslationUnit(filepath string) *TranslationUnit {
+func NewTranslationUnit(filepath string, name string) *TranslationUnit {
 	return &TranslationUnit{
 		filepath: filepath,
+		name:     name,
 	}
 }
 
@@ -23,7 +25,7 @@ func (tu *TranslationUnit) Lex() *SyntaxError {
 			Message: err.Error(),
 		}
 	} else {
-		l := NewLexer(tu.filepath, data, "")
+		l := NewLexer(tu.filepath, data, tu.name)
 		tu.tokens = l.Lex().Tokens
 	}
 	return nil

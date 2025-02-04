@@ -1,5 +1,5 @@
-#ifndef __QD_BASE_H__
-#define __QD_BASE_H__
+#ifndef QD_BASE_H
+#define QD_BASE_H
 
 #define QD_STACK_DEPTH 1024
 #define QD_STACK_ELEMENT_SIZE 4
