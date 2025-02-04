@@ -27,10 +27,10 @@ func NewCGenerator(outputDir string) *CGenerator {
 		prefix:    "__qd",
 	}
 	os.RemoveAll(cg.outputDir)
-	os.Mkdir(cg.outputDir, 777)
+	os.Mkdir(cg.outputDir, 0755)
 
-	os.WriteFile(path.Join(cg.outputDir, "qd_base.h"), []byte(baseHeader), 777)
-	os.WriteFile(path.Join(cg.outputDir, "qd_base.c"), []byte(baseSource), 777)
+	os.WriteFile(path.Join(cg.outputDir, "qd_base.h"), []byte(baseHeader), 0644)
+	os.WriteFile(path.Join(cg.outputDir, "qd_base.c"), []byte(baseSource), 0644)
 
 	return &cg
 }
@@ -40,11 +40,11 @@ func (cg *CGenerator) Generate(tu *TranslationUnit) *SyntaxError {
 
 	cg.writeHeader(tu, &sb)
 	filename := path.Join(cg.outputDir, cg.generateFilename(tu.filepath, tu.name))
-	os.WriteFile(fmt.Sprintf("%s.h", filename), []byte(sb.String()), 777)
+	os.WriteFile(fmt.Sprintf("%s.h", filename), []byte(sb.String()), 0644)
 
 	sb.Reset()
 	cg.writeSource(tu, &sb)
-	os.WriteFile(fmt.Sprintf("%s.c", filename), []byte(sb.String()), 777)
+	os.WriteFile(fmt.Sprintf("%s.c", filename), []byte(sb.String()), 0644)
 
 	fmt.Println(sb.String())
 
@@ -64,18 +64,19 @@ func (cg *CGenerator) writeHeader(tu *TranslationUnit, sb *strings.Builder) {
 				sb.WriteString("int main(int argc, char** argv);\n")
 				continue
 			}
-			sb.WriteString(fmt.Sprintf("void %s_%s_%s(", cg.prefix, tu.name, n.Name))
-			if len(n.Parameters) == 0 {
-				sb.WriteString("void")
-			} else {
-				for i, p := range n.Parameters {
-					if i > 0 {
-						sb.WriteString(", ")
-					}
-					sb.WriteString(p.Type + " " + p.Name)
-				}
-			}
-			sb.WriteString(");\n")
+			sb.WriteString(fmt.Sprintf("void %s_%s_%s(int n, ...);\n", cg.prefix, tu.name, n.Name))
+			/*			if len(n.Parameters) == 0 {
+							sb.WriteString("void")
+						} else {
+							for i, p := range n.Parameters {
+								if i > 0 {
+									sb.WriteString(", ")
+								}
+								sb.WriteString(p.Type + " " + p.Name)
+							}
+						}
+						sb.WriteString(");\n")
+			*/
 		default:
 			continue
 		}
@@ -96,29 +97,37 @@ func (cg *CGenerator) writeSource(tu *TranslationUnit, sb *strings.Builder) {
 				sb.WriteString("int main(int argc, char** argv)")
 				continue
 			}
-			sb.WriteString(fmt.Sprintf("void %s_%s_%s(", cg.prefix, tu.name, n.Name))
-			if len(n.Parameters) == 0 {
-				sb.WriteString("void")
-			} else {
-				for i, p := range n.Parameters {
-					if i > 0 {
-						sb.WriteString(", ")
-					}
-					sb.WriteString(p.Type + " " + p.Name)
-				}
-			}
-			sb.WriteString(")")
+			sb.WriteString(fmt.Sprintf("void %s_%s_%s(int n, ...)", cg.prefix, tu.name, n.Name))
+			/*			if len(n.Parameters) == 0 {
+							sb.WriteString("void")
+						} else {
+							for i, p := range n.Parameters {
+								if i > 0 {
+									sb.WriteString(", ")
+								}
+								sb.WriteString(p.Type + " " + p.Name)
+							}
+						}
+						sb.WriteString(")")
+			*/
 		case Body:
 			sb.WriteString(" {\n")
 			for _, stmt := range n.Statements {
 				switch n := stmt.(type) {
 				case FunctionCall:
 					sb.WriteString(fmt.Sprintf("\t%s_%s(", cg.prefix, n.Name))
-					for i, arg := range n.Args {
-						if i > 0 {
-							sb.WriteString(", ")
+					if len(n.Args) == 0 {
+						sb.WriteString("0")
+					} else {
+						for i, arg := range n.Args {
+							if i > 0 {
+								sb.WriteString(", ")
+							} else {
+								sb.WriteString(fmt.Sprintf("%d, (__qd_real_t)%s", len(n.Args), arg))
+								continue
+							}
+							sb.WriteString("(__qd_real_t)" + arg)
 						}
-						sb.WriteString(arg)
 					}
 					sb.WriteString(");\n")
 				case InlineCCode:
