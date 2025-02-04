@@ -113,7 +113,7 @@ func (cg *CGenerator) writeSource(tu *TranslationUnit, sb *strings.Builder) {
 			for _, stmt := range n.Statements {
 				switch n := stmt.(type) {
 				case FunctionCall:
-					sb.WriteString(fmt.Sprintf("\t%s_%s_%s(", cg.prefix, tu.name, n.Name))
+					sb.WriteString(fmt.Sprintf("\t%s_%s(", cg.prefix, n.Name))
 					for i, arg := range n.Args {
 						if i > 0 {
 							sb.WriteString(", ")
