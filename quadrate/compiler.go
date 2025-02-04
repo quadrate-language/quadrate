@@ -17,11 +17,13 @@ type Compiler struct {
 	modulesToCompile []ModuleToCompile
 	translationUnits []TranslationUnit
 	dumpTokens       bool
+	output           string
 }
 
-func NewCompiler(dumpTokens bool) *Compiler {
+func NewCompiler(dumpTokens bool, output string) *Compiler {
 	return &Compiler{
 		dumpTokens: dumpTokens,
+		output:     output,
 	}
 }
 
@@ -103,10 +105,8 @@ func (c *Compiler) compileAndLink() {
 		return
 	}
 
-	outputFile := "program.out"
-
 	var args []string
-	args = append(args, "-o", outputFile, "-I", folderPath)
+	args = append(args, "-o", c.output, "-I", folderPath)
 	args = append(args, cFiles...)
 
 	cmd := exec.Command("gcc", args...)

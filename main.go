@@ -19,7 +19,7 @@ func main() {
 	flag.Parse()
 
 	args.Sources = flag.Args()
-	args.Sources = append(args.Sources, "data/main.qd")
+	//	args.Sources = append(args.Sources, "data/main.qd")
 
 	if len(args.Sources) == 0 {
 		fmt.Printf("\033[1mquadc: \033[31mfatal error:\033[0m no input files\n")
@@ -41,7 +41,7 @@ func main() {
 		}
 	}
 
-	compiler := quadrate.NewCompiler(args.DumpTokens)
+	compiler := quadrate.NewCompiler(args.DumpTokens, args.Output)
 	if tus, err := compiler.Compile(absFilepaths); err != nil {
 		if b, e := os.ReadFile(err.Filename); e != nil {
 			fmt.Printf("\033[1mquadc: \033[31merror:\033[0m %s\n", e.Error())
