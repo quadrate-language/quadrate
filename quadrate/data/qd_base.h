@@ -14,5 +14,8 @@ extern void __qd_add();
 extern void __qd_pop();
 extern void __qd_push(int n, ...);
 
+extern void __qd_panic_stack_underflow();
+extern void __qd_panic_stack_overflow();
+
 #endif
 
