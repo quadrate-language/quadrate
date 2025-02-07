@@ -63,6 +63,22 @@ func (p *Parser) Parse() (*ProgramModule, *SyntaxError) {
 		t := (*p.tokens)[p.current]
 
 		switch t.Type {
+		case Identifier:
+			message := fmt.Sprintf("unexpected identifier ‘%s‘", t.Literal)
+			return nil, &SyntaxError{
+				Message:  message,
+				Line:     t.Line,
+				Column:   t.Column + 1,
+				Filename: p.filename,
+			}
+		case NumericConstant:
+			message := fmt.Sprintf("unexpected numeric constant ‘%s‘", t.Literal)
+			return nil, &SyntaxError{
+				Message:  message,
+				Line:     t.Line,
+				Column:   t.Column + 1,
+				Filename: p.filename,
+			}
 		case NewLine:
 			p.current++
 		case Use:
@@ -106,8 +122,16 @@ func (p *Parser) Parse() (*ProgramModule, *SyntaxError) {
 				Code: t.Literal,
 			})
 			p.current++
-		default:
+		case EOF:
 			p.current++
+		default:
+			return nil, &SyntaxError{
+				Message:  fmt.Sprintf("unexpected token ‘%s‘", t.Literal),
+				Line:     t.Line,
+				Column:   t.Column + 1,
+				Filename: p.filename,
+			}
+			//p.current++
 		}
 	}
 	return &pgm, nil
@@ -161,8 +185,16 @@ func (p *Parser) parseFunctionCall() (Node, *SyntaxError) {
 	functionCall := FunctionCall{
 		Name: (*p.tokens)[p.current].Literal,
 	}
-	for p.current < len(*p.tokens) {
-		p.current++
+	if p.current >= len(*p.tokens)-1 {
+		return nil, &SyntaxError{
+			Message:  "expected declaration or statement at end of input",
+			Line:     (*p.tokens)[p.current].Line,
+			Column:   (*p.tokens)[p.current].Column,
+			Filename: p.filename,
+		}
+	}
+	p.current++
+	for p.current < len(*p.tokens)-1 {
 		t := (*p.tokens)[p.current]
 		if t.Type == NewLine {
 			break
@@ -200,6 +232,7 @@ func (p *Parser) parseFunctionCall() (Node, *SyntaxError) {
 				Filename: p.filename,
 			}
 		}
+		p.current++
 	}
 	return functionCall, nil
 }

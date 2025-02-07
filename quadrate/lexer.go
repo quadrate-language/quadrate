@@ -103,8 +103,6 @@ func (l *Lexer) Lex() LexResult {
 						l.Modules = append(l.Modules, path+"/"+literal+"/module.qd")
 						t := NewToken(Module, path+"/"+literal+"/module.qd", line, column)
 						r.Tokens = append(r.Tokens, t)
-					} else {
-						panic("module not found")
 					}
 					continue
 				} else {
