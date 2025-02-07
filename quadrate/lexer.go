@@ -139,6 +139,18 @@ func (l *Lexer) skipComment() {
 	}
 }
 
+func (l *Lexer) skipBlockComment() {
+	if l.ch == '/' && l.peek() == '*' {
+		l.readChar()
+		l.readChar()
+		for l.ch != 0 && (l.ch != '*' && l.peek() != '/') {
+			l.readChar()
+		}
+		l.readChar()
+		l.readChar()
+	}
+}
+
 func (l *Lexer) lookupIdentifier(i string) TokenType {
 	switch i {
 	case "use":
@@ -152,9 +164,11 @@ func (l *Lexer) lookupIdentifier(i string) TokenType {
 }
 
 func (l *Lexer) skipWhitespace() {
-	for l.ch == ' ' || l.ch == '\t' || l.ch == '\r' || (l.ch == '/' && l.peek() == '/') {
+	for l.ch == ' ' || l.ch == '\t' || l.ch == '\r' || (l.ch == '/' && l.peek() == '/') || (l.ch == '/' && l.peek() == '*') {
 		if l.ch == '/' && l.peek() == '/' {
 			l.skipComment()
+		} else if l.ch == '/' && l.peek() == '*' {
+			l.skipBlockComment()
 		} else {
 			l.readChar()
 		}
