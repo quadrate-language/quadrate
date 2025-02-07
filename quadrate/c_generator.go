@@ -99,7 +99,9 @@ func (cg *CGenerator) writeSource(tu *TranslationUnit, sb *strings.Builder) {
 				sb.WriteString("int main(int argc, char** argv)")
 				continue
 			}
-			sb.WriteString(fmt.Sprintf("void %s_%s_%s(int n, ...)", cg.prefix, tu.name, n.Name))
+			s := fmt.Sprintf("void %s_%s_%s(int n, ...)", cg.prefix, tu.name, n.Name)
+			s = strings.ReplaceAll(s, "__qd__", "__qd_")
+			sb.WriteString(s)
 			/*			if len(n.Parameters) == 0 {
 							sb.WriteString("void")
 						} else {
