@@ -105,7 +105,7 @@ func (c *Compiler) CompileAndLink() {
 	}
 
 	var args []string
-	args = append(args, "-o", c.output, "-I", folderPath)
+	args = append(args, "-o", c.output, "-I", folderPath, "-lm")
 	args = append(args, cFiles...)
 
 	cmd := exec.Command("gcc", args...)
