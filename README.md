@@ -20,7 +20,18 @@ $ go install
 ```
 
 ## Usage
-TODO.
+```
+// main.qd
+use std
+
+fn main() {
+	push 1.0
+	std::print
+}
+```
+```bash
+$ quadc -o one main.qd && ./one
+```
 
 ## Maintainers
 [~klahr](https://sr.ht/~klahr)
