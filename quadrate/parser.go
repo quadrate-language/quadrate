@@ -45,6 +45,11 @@ type InlineCCode struct {
 	Code string
 }
 
+type ConstValue struct {
+	Name  string
+	Value string
+}
+
 type Body struct {
 	Statements []Node
 }
@@ -122,6 +127,13 @@ func (p *Parser) Parse() (*ProgramModule, *SyntaxError) {
 				Code: t.Literal,
 			})
 			p.current++
+		case Const:
+			if c, err := p.parseConstValue(); err != nil {
+				return nil, err
+			} else {
+				pgm.Statements = append(pgm.Statements, c)
+			}
+			p.current++
 		case EOF:
 			p.current++
 		case BeginScopeComment:
@@ -139,6 +151,26 @@ func (p *Parser) Parse() (*ProgramModule, *SyntaxError) {
 		}
 	}
 	return &pgm, nil
+}
+
+func (p *Parser) parseConstValue() (Node, *SyntaxError) {
+	p.current++
+	t := (*p.tokens)[p.current]
+	c := ConstValue{
+		Name: t.Literal,
+	}
+	p.current++
+	t = (*p.tokens)[p.current]
+	if t.Type != NumericConstant {
+		return nil, &SyntaxError{
+			Message:  fmt.Sprintf("expected numeric constant but got ‘%s‘", t.Literal),
+			Line:     t.Line,
+			Column:   t.Column,
+			Filename: p.filename,
+		}
+	}
+	c.Value = t.Literal
+	return c, nil
 }
 
 func (p *Parser) parseStatement() (Node, *SyntaxError) {

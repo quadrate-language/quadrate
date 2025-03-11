@@ -141,6 +141,8 @@ func (cg *CGenerator) writeSource(tu *TranslationUnit, sb *strings.Builder) {
 			sb.WriteString("}\n")
 		case InlineCCode:
 			sb.WriteString(n.Code + "\n")
+		case ConstValue:
+			sb.WriteString(fmt.Sprintf("const __qd_real_t %s = %s;\n", n.Name, n.Value))
 		}
 	}
 }

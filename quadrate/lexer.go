@@ -172,6 +172,8 @@ func (l *Lexer) lookupIdentifier(i string) TokenType {
 		return FnSignature
 	case "__c":
 		return InlineC
+	case "const":
+		return Const
 	}
 	return Identifier
 }
@@ -247,13 +249,6 @@ func (l *Lexer) peek() byte {
 		return 0
 	}
 	return l.source[l.position+1]
-}
-
-func (l *Lexer) peekAhead(offset int) byte {
-	if l.position+offset >= len(l.source)-1 {
-		return 0
-	}
-	return l.source[l.position+offset+1]
 }
 
 func (l *Lexer) readChar() {
