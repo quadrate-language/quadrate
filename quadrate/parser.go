@@ -173,18 +173,6 @@ func (p *Parser) parseConstValue() (Node, *SyntaxError) {
 	return c, nil
 }
 
-func (p *Parser) parseStatement() (Node, *SyntaxError) {
-	t := (*p.tokens)[p.current]
-
-	switch t.Type {
-	case Use:
-		return p.parseUse()
-	case FnSignature:
-		return p.parseFnSignature()
-	}
-	return nil, nil
-}
-
 func (p *Parser) parseBody() (Node, *SyntaxError) {
 	t := (*p.tokens)[p.current]
 	var stmts []Node
@@ -238,25 +226,17 @@ func (p *Parser) parseFunctionCall() (Node, *SyntaxError) {
 		t := (*p.tokens)[p.current]
 		if t.Type == NewLine {
 			break
-		} else if t.Type == Identifier || t.Type == NumericConstant {
+		} else if t.Type == NumericConstant {
 			functionCall.Args = append(functionCall.Args, t.Literal)
-		} else if t.Type == SquareBracketLeft {
-			t = (*p.tokens)[p.current]
-			for p.current < len(*p.tokens) {
+		} else if t.Type == Identifier {
+			if p.peek() == DoubleColon {
+				m := t.Literal
 				p.current++
-				t = (*p.tokens)[p.current]
-				if t.Type == SquareBracketRight {
-					break
-				} else if t.Type == NumericConstant {
-					functionCall.PushArgs = append(functionCall.PushArgs, t.Literal)
-				} else {
-					return nil, &SyntaxError{
-						Message:  fmt.Sprintf("expected numeric constant but got ‘%s‘", t.Literal),
-						Line:     t.Line,
-						Column:   t.Column,
-						Filename: p.filename,
-					}
-				}
+				p.current++
+				t := (*p.tokens)[p.current]
+				functionCall.Args = append(functionCall.Args, fmt.Sprintf("__qd_%s_%s", m, t.Literal))
+			} else {
+				functionCall.Args = append(functionCall.Args, fmt.Sprintf("__qd_%s", t.Literal))
 			}
 		} else if t.Type == DoubleColon {
 			p.current++
@@ -275,6 +255,13 @@ func (p *Parser) parseFunctionCall() (Node, *SyntaxError) {
 		p.current++
 	}
 	return functionCall, nil
+}
+
+func (p *Parser) peek() TokenType {
+	if p.current >= len(*p.tokens)-1 {
+		return EOF
+	}
+	return (*p.tokens)[p.current+1].Type
 }
 
 func (p *Parser) parseUse() (Node, *SyntaxError) {

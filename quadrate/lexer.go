@@ -66,12 +66,6 @@ func (l *Lexer) Lex() LexResult {
 		case '}':
 			t := NewToken(CurlyBracketRight, "}", l.line, l.column)
 			r.Tokens = append(r.Tokens, t)
-		case '[':
-			t := NewToken(SquareBracketLeft, "[", l.line, l.column)
-			r.Tokens = append(r.Tokens, t)
-		case ']':
-			t := NewToken(SquareBracketRight, "]", l.line, l.column)
-			r.Tokens = append(r.Tokens, t)
 		case ',':
 			t := NewToken(Comma, ",", l.line, l.column)
 			r.Tokens = append(r.Tokens, t)

@@ -79,6 +79,10 @@ func (cg *CGenerator) writeHeader(tu *TranslationUnit, sb *strings.Builder) {
 						}
 						sb.WriteString(");\n")
 			*/
+		case ConstValue:
+			s := fmt.Sprintf("extern const __qd_real_t %s_%s_%s;\n", cg.prefix, tu.name, n.Name)
+			s = strings.ReplaceAll(s, "__qd__", "__qd_")
+			sb.WriteString(s)
 		default:
 			continue
 		}
@@ -142,7 +146,9 @@ func (cg *CGenerator) writeSource(tu *TranslationUnit, sb *strings.Builder) {
 		case InlineCCode:
 			sb.WriteString(n.Code + "\n")
 		case ConstValue:
-			sb.WriteString(fmt.Sprintf("const __qd_real_t %s = %s;\n", n.Name, n.Value))
+			s := fmt.Sprintf("const __qd_real_t %s_%s_%s = %s;\n", cg.prefix, tu.name, n.Name, n.Value)
+			s = strings.ReplaceAll(s, "__qd__", "__qd_")
+			sb.WriteString(s)
 		}
 	}
 }
