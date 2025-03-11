@@ -11,7 +11,7 @@ type Parser struct {
 	filename string
 }
 
-type Node interface{}
+type Node any
 
 type ProgramModule struct {
 	Name       string
@@ -124,6 +124,11 @@ func (p *Parser) Parse() (*ProgramModule, *SyntaxError) {
 			p.current++
 		case EOF:
 			p.current++
+		case BeginScopeComment:
+			if err := p.parseScopeComment(); err != nil {
+				return nil, err
+			}
+			p.current++
 		default:
 			return nil, &SyntaxError{
 				Message:  fmt.Sprintf("unexpected token ‘%s‘", t.Literal),
@@ -131,7 +136,6 @@ func (p *Parser) Parse() (*ProgramModule, *SyntaxError) {
 				Column:   t.Column + 1,
 				Filename: p.filename,
 			}
-			//p.current++
 		}
 	}
 	return &pgm, nil
@@ -167,6 +171,10 @@ body_loop:
 			stmts = append(stmts, InlineCCode{
 				Code: t.Literal,
 			})
+		case BeginScopeComment:
+			if err := p.parseScopeComment(); err != nil {
+				return nil, err
+			}
 		default:
 			if fnCall, err := p.parseFunctionCall(); err != nil {
 				return nil, err
@@ -254,6 +262,24 @@ func (p *Parser) parseUse() (Node, *SyntaxError) {
 		Module: t.Literal,
 		Name:   name,
 	}, nil
+}
+
+func (p *Parser) parseScopeComment() *SyntaxError {
+	begin := p.current
+	p.current++
+	for p.current < len(*p.tokens) {
+		t := (*p.tokens)[p.current]
+		if t.Type == EndScopeComment {
+			return nil
+		}
+		p.current++
+	}
+	return &SyntaxError{
+		Message:  "unterminated comment",
+		Line:     (*p.tokens)[begin].Line,
+		Column:   (*p.tokens)[begin].Column,
+		Filename: p.filename,
+	}
 }
 
 func (p *Parser) parseFnSignature() (Node, *SyntaxError) {

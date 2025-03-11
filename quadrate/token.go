@@ -3,11 +3,13 @@ package quadrate
 type TokenType string
 
 const (
+	BeginScopeComment  = "begin_scope_comment"
 	Comma              = "comma"
 	CurlyBracketLeft   = "curly_bracket_left"
 	CurlyBracketRight  = "curly_bracket_right"
 	DoubleColon        = "double_colon"
 	EOF                = "EOF"
+	EndScopeComment    = "end_scope_comment"
 	FnSignature        = "fn_signature"
 	Identifier         = "identifier"
 	Illegal            = "illegal"

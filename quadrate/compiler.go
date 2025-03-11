@@ -70,17 +70,12 @@ func (c *Compiler) Compile(files []string) (*[]TranslationUnit, *SyntaxError) {
 			}
 		}
 	}
-	if c.dumpTokens {
-		for _, tu := range c.translationUnits {
-			tu.Print()
-		}
-	}
 	return &c.translationUnits, nil
 }
 
 func (c *Compiler) compile(file, name string) (*TranslationUnit, *SyntaxError) {
 	tu := NewTranslationUnit(file, name)
-	if err := tu.Lex(); err != nil {
+	if err := tu.Lex(c.dumpTokens); err != nil {
 		fmt.Printf("\033[1mquadc: \033[31merror:\033[0m %s\n", err.Message)
 		return nil, err
 	}

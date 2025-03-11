@@ -19,7 +19,7 @@ func NewTranslationUnit(filepath string, name string) *TranslationUnit {
 	}
 }
 
-func (tu *TranslationUnit) Lex() *SyntaxError {
+func (tu *TranslationUnit) Lex(dumpTokens bool) *SyntaxError {
 	if data, err := os.ReadFile(tu.filepath); err != nil {
 		return &SyntaxError{
 			Message: err.Error(),
@@ -27,6 +27,9 @@ func (tu *TranslationUnit) Lex() *SyntaxError {
 	} else {
 		l := NewLexer(tu.filepath, data, tu.name)
 		tu.tokens = l.Lex().Tokens
+		if dumpTokens {
+			tu.Print()
+		}
 	}
 	return nil
 }
@@ -53,6 +56,10 @@ func (tu *TranslationUnit) Print() {
 			fmt.Printf("< inline c > [%d:%d]\n%s\n", t.Line, t.Column, t.Literal)
 		case Module:
 			fmt.Printf("< module '%s' > [%d:%d]\n", t.Literal, t.Line, t.Column)
+		case BeginScopeComment:
+			fmt.Printf("< begin scope comment > [%d:%d]\n", t.Line, t.Column)
+		case EndScopeComment:
+			fmt.Printf("< end scope comment > [%d:%d]\n", t.Line, t.Column)
 		case EOF:
 			fmt.Println("< EOF >")
 		default:

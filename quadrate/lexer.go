@@ -120,6 +120,14 @@ func (l *Lexer) Lex() LexResult {
 				t := NewToken(DoubleColon, "::", l.line, l.column)
 				r.Tokens = append(r.Tokens, t)
 				l.readChar()
+			} else if l.ch == '/' && l.peek() == '*' {
+				print("block comment")
+				t := NewToken(BeginScopeComment, "/*", l.line, l.column)
+				r.Tokens = append(r.Tokens, t)
+				if l.skipBlockComment() {
+					t := NewToken(EndScopeComment, "*/", l.line, l.column-2)
+					r.Tokens = append(r.Tokens, t)
+				}
 			} else {
 				t := NewToken(Illegal, string(l.ch), l.line, l.column)
 				r.Tokens = append(r.Tokens, t)
@@ -139,16 +147,21 @@ func (l *Lexer) skipComment() {
 	}
 }
 
-func (l *Lexer) skipBlockComment() {
+func (l *Lexer) skipBlockComment() bool {
 	if l.ch == '/' && l.peek() == '*' {
 		l.readChar()
 		l.readChar()
-		for l.ch != 0 && (l.ch != '*' && l.peek() != '/') {
-			l.readChar()
+		for l.ch != 0 {
+			if l.ch == '*' && l.peek() == '/' {
+				l.readChar()
+				l.readChar()
+				return true
+			} else {
+				l.readChar()
+			}
 		}
-		l.readChar()
-		l.readChar()
 	}
+	return false
 }
 
 func (l *Lexer) lookupIdentifier(i string) TokenType {
@@ -164,11 +177,9 @@ func (l *Lexer) lookupIdentifier(i string) TokenType {
 }
 
 func (l *Lexer) skipWhitespace() {
-	for l.ch == ' ' || l.ch == '\t' || l.ch == '\r' || (l.ch == '/' && l.peek() == '/') || (l.ch == '/' && l.peek() == '*') {
+	for l.ch == ' ' || l.ch == '\t' || l.ch == '\r' || (l.ch == '/' && l.peek() == '/') {
 		if l.ch == '/' && l.peek() == '/' {
 			l.skipComment()
-		} else if l.ch == '/' && l.peek() == '*' {
-			l.skipBlockComment()
 		} else {
 			l.readChar()
 		}
