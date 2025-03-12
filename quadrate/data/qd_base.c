@@ -26,11 +26,24 @@ void __qd_push(int n, ...) {
 	va_end(args);
 }
 
-void __qd_pop(int n) {
-	if (__qd_stack_ptr == 0) {
-		__qd_panic_stack_underflow();
+void __qd_pop(int n, ...) {
+	va_list args;
+	va_start(args, n);
+	if (n == 0) {
+		if (__qd_stack_ptr == 0) {
+			__qd_panic_stack_underflow();
+		}
+		--__qd_stack_ptr;
+	} else {
+		int x = (int)va_arg(args, __qd_real_t);
+		for (int i = 0; i < x; ++i) {
+			if (__qd_stack_ptr == 0) {
+				__qd_panic_stack_underflow();
+			}
+			--__qd_stack_ptr;
+		}
 	}
-	--__qd_stack_ptr;
+	va_end(args);
 }
 
 void __qd_depth(int n) {

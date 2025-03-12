@@ -10,7 +10,7 @@ extern int __qd_stack_ptr;
 extern void __qd_arg_push(__qd_real_t x);
 
 extern void __qd_add(int n);
-extern void __qd_pop(int n);
+extern void __qd_pop(int n, ...);
 extern void __qd_push(int n, ...);
 extern void __qd_depth(int n);
 extern void __qd_sub(int n);
