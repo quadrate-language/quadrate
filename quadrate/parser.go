@@ -76,7 +76,7 @@ func (p *Parser) Parse() (*ProgramModule, *SyntaxError) {
 			return nil, &SyntaxError{
 				Message:  message,
 				Line:     t.Line,
-				Column:   t.Column + 1,
+				Column:   t.Column,
 				Filename: p.filename,
 			}
 		case NumericConstant:
@@ -84,7 +84,7 @@ func (p *Parser) Parse() (*ProgramModule, *SyntaxError) {
 			return nil, &SyntaxError{
 				Message:  message,
 				Line:     t.Line,
-				Column:   t.Column + 1,
+				Column:   t.Column,
 				Filename: p.filename,
 			}
 		case NewLine:
