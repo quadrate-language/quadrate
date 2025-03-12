@@ -1,7 +1,7 @@
 BINARY_NAME := quadc
 INSTALL_BIN := /usr/bin
-INSTALL_LIB := /usr/lib/quadc
-#SRC_FOLDERS := fmt math os std vec
+INSTALL_LIB := /usr/lib/quadrate
+STD_LIB := stdlib
 
 .PHONY: build
 build:
@@ -13,10 +13,10 @@ install: build
 	install -Dm755 $(BINARY_NAME) $(INSTALL_BIN)/$(BINARY_NAME)
 	@echo "Installing folders to $(INSTALL_LIB)..."
 	mkdir -p $(INSTALL_LIB)
-#	for folder in $(SRC_FOLDERS); do \
-#		echo "Copying $$folder to $(INSTALL_LIB)..."; \
-#		cp -r $$folder $(INSTALL_LIB)/; \
-#	done
+	for folder in $(STD_LIB); do \
+		echo "Copying $$folder to $(INSTALL_LIB)..."; \
+		cp -r $$folder/* $(INSTALL_LIB)/; \
+	done
 	@echo "Installation complete."
 
 # Uninstall the binary and folders

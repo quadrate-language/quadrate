@@ -1,3 +1,0 @@
-fn subtract() {
-	push 1 2
-}
