@@ -1,0 +1,9 @@
+__c {
+	#include <stdlib.h>
+}
+
+fn exit() {
+	__c {
+		exit(0);
+	}	
+}

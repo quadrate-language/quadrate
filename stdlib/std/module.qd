@@ -1,0 +1,12 @@
+__c {
+	#include <stdio.h>
+}
+
+fn print() {
+	__c {
+		for (int i = 0; i < __qd_stack_ptr; ++i) {
+			printf("%f\n", __qd_stack[i]);
+		}
+	}
+}
+
