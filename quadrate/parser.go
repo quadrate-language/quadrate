@@ -176,6 +176,7 @@ func (p *Parser) parseConstValue() (Node, *SyntaxError) {
 func (p *Parser) parseBody() (Node, *SyntaxError) {
 	t := (*p.tokens)[p.current]
 	var stmts []Node
+	var deferStmts []Node
 
 body_loop:
 	for p.current < len(*p.tokens) {
@@ -195,6 +196,12 @@ body_loop:
 			if err := p.parseScopeComment(); err != nil {
 				return nil, err
 			}
+		case Defer:
+			if n, err := p.parseDefer(); err != nil {
+				return nil, err
+			} else {
+				deferStmts = append(deferStmts, n)
+			}
 		default:
 			if fnCall, err := p.parseFunctionCall(); err != nil {
 				return nil, err
@@ -202,6 +209,9 @@ body_loop:
 				stmts = append(stmts, fnCall)
 			}
 		}
+	}
+	for _, stmt := range deferStmts {
+		stmts = append(stmts, stmt)
 	}
 
 	return Body{
@@ -281,6 +291,15 @@ func (p *Parser) parseUse() (Node, *SyntaxError) {
 		Module: t.Literal,
 		Name:   name,
 	}, nil
+}
+
+func (p *Parser) parseDefer() (Node, *SyntaxError) {
+	p.current++
+	if n, err := p.parseFunctionCall(); err != nil {
+		return nil, err
+	} else {
+		return n, nil
+	}
 }
 
 func (p *Parser) parseScopeComment() *SyntaxError {

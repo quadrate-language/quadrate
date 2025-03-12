@@ -168,6 +168,8 @@ func (l *Lexer) lookupIdentifier(i string) TokenType {
 		return InlineC
 	case "const":
 		return Const
+	case "defer":
+		return Defer
 	}
 	return Identifier
 }

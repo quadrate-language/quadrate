@@ -8,6 +8,7 @@ const (
 	Const             = "const"
 	CurlyBracketLeft  = "curly_bracket_left"
 	CurlyBracketRight = "curly_bracket_right"
+	Defer             = "defer"
 	DoubleColon       = "double_colon"
 	EOF               = "EOF"
 	EndScopeComment   = "end_scope_comment"
