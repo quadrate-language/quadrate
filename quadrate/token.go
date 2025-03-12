@@ -21,6 +21,7 @@ const (
 	NumericConstant   = "numeric_constant"
 	ParenthesisLeft   = "parenthesis_left"
 	ParenthesisRight  = "parenthesis_right"
+	Return            = "return"
 	Scope             = "scope"
 	Use               = "use"
 )

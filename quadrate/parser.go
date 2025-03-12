@@ -54,6 +54,9 @@ type Body struct {
 	Statements []Node
 }
 
+type ReturnStatement struct {
+}
+
 func NewParser(filename string, tokens *[]Token) *Parser {
 	return &Parser{
 		filename: filename,
@@ -202,6 +205,11 @@ body_loop:
 			} else {
 				deferStmts = append(deferStmts, n)
 			}
+		case Return:
+			for _, stmt := range deferStmts {
+				stmts = append(stmts, stmt)
+			}
+			stmts = append(stmts, ReturnStatement{})
 		default:
 			if fnCall, err := p.parseFunctionCall(); err != nil {
 				return nil, err

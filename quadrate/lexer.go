@@ -170,6 +170,8 @@ func (l *Lexer) lookupIdentifier(i string) TokenType {
 		return Const
 	case "defer":
 		return Defer
+	case "return":
+		return Return
 	}
 	return Identifier
 }

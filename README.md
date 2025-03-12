@@ -16,7 +16,7 @@ See https://quad.r8.rs for more information.
 ```yaml
 $ git clone https://git.sr.ht:~/klahr/quadrate
 $ cd quadrate
-$ go install
+$ make && sudo make install
 ```
 
 ## Usage

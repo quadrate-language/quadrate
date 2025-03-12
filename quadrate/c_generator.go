@@ -140,6 +140,8 @@ func (cg *CGenerator) writeSource(tu *TranslationUnit, sb *strings.Builder) {
 					sb.WriteString(");\n")
 				case InlineCCode:
 					sb.WriteString(n.Code + "\n")
+				case ReturnStatement:
+					sb.WriteString("\treturn;\n")
 				}
 			}
 			sb.WriteString("}\n")
