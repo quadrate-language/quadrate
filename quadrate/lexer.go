@@ -124,10 +124,15 @@ func (l *Lexer) Lex() LexResult {
 				t := NewToken(NumericConstant, literal, line, column)
 				r.Tokens = append(r.Tokens, t)
 				continue
-			} else if l.ch == ':' && l.peek() == ':' {
-				t := NewToken(DoubleColon, "::", l.line, l.column)
-				r.Tokens = append(r.Tokens, t)
-				l.readChar()
+			} else if l.ch == ':' {
+				if l.peek() == ':' {
+					t := NewToken(DoubleColon, "::", l.line, l.column)
+					r.Tokens = append(r.Tokens, t)
+					l.readChar()
+				} else {
+					t := NewToken(Colon, ":", l.line, l.column)
+					r.Tokens = append(r.Tokens, t)
+				}
 			} else if l.ch == '/' && l.peek() == '*' {
 				t := NewToken(BeginScopeComment, "/*", l.line, l.column)
 				r.Tokens = append(r.Tokens, t)

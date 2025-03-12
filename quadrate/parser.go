@@ -57,6 +57,10 @@ type Body struct {
 type ReturnStatement struct {
 }
 
+type Label struct {
+	Name string
+}
+
 func NewParser(filename string, tokens *[]Token) *Parser {
 	return &Parser{
 		filename: filename,
@@ -224,10 +228,16 @@ body_loop:
 			}
 			stmts = append(stmts, ReturnStatement{})
 		default:
-			if fnCall, err := p.parseFunctionCall(); err != nil {
-				return nil, err
+			if (*p.tokens)[p.current+1].Type == Colon {
+				stmts = append(stmts, Label{
+					Name: t.Literal,
+				})
 			} else {
-				stmts = append(stmts, fnCall)
+				if fnCall, err := p.parseFunctionCall(); err != nil {
+					return nil, err
+				} else {
+					stmts = append(stmts, fnCall)
+				}
 			}
 		}
 	}
