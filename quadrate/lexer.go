@@ -126,7 +126,6 @@ func (l *Lexer) Lex() LexResult {
 				r.Tokens = append(r.Tokens, t)
 				l.readChar()
 			} else if l.ch == '/' && l.peek() == '*' {
-				print("block comment")
 				t := NewToken(BeginScopeComment, "/*", l.line, l.column)
 				r.Tokens = append(r.Tokens, t)
 				if l.skipBlockComment() {
@@ -160,7 +159,13 @@ func (l *Lexer) skipBlockComment() bool {
 			if l.ch == '*' && l.peek() == '/' {
 				l.readChar()
 				l.readChar()
+				if l.ch == '\n' {
+					l.line++
+				}
 				return true
+			} else if l.ch == '\n' {
+				l.line++
+				l.readChar()
 			} else {
 				l.readChar()
 			}
