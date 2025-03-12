@@ -8,7 +8,7 @@
 - [Contributing](#contributing)
 
 ## Description
-Quad is a stack-based programming language under development.
+Quadrate is a stack-based programming language under development.
 See https://quad.r8.rs for more information.
 
 ## Installation
