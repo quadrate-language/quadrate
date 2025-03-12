@@ -73,6 +73,9 @@ func (l *Lexer) Lex() LexResult {
 			t := NewToken(EOF, "EOF", 0, 0)
 			r.Tokens = append(r.Tokens, t)
 			return r
+		case '"':
+			t := NewToken(String, l.readString(), l.line, l.column)
+			r.Tokens = append(r.Tokens, t)
 		default:
 			if isLetter(l.ch) {
 				line := l.line
@@ -231,6 +234,15 @@ func (l *Lexer) readIdentifier() string {
 
 	l.readChar()
 	for isLetter(l.ch) || isDigit(l.ch) || l.ch == '_' {
+		l.readChar()
+	}
+	return l.source[start:l.position]
+}
+
+func (l *Lexer) readString() string {
+	l.readChar()
+	start := l.position
+	for l.ch != '"' && l.ch != 0 {
 		l.readChar()
 	}
 	return l.source[start:l.position]

@@ -23,6 +23,7 @@ const (
 	ParenthesisRight  = "parenthesis_right"
 	Return            = "return"
 	Scope             = "scope"
+	String            = "string"
 	Use               = "use"
 )
 

@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
+#include <ctype.h>
 #include "qd_base.h"
 
 __qd_real_t __qd_stack[QD_STACK_DEPTH] = {0};
@@ -60,9 +61,10 @@ void __qd_div(int n) {
 	if (__qd_stack_ptr < 2) {
 		__qd_panic_stack_underflow();
 	}
-	if (__qd_stack[__qd_stack_ptr - 1] != 0.0) {
-		__qd_stack[__qd_stack_ptr - 2] /= __qd_stack[__qd_stack_ptr - 1];
+	if (__qd_stack[__qd_stack_ptr - 1] == 0.0) {
+		__qd_panic_division_by_zero();
 	}
+	__qd_stack[__qd_stack_ptr - 2] /= __qd_stack[__qd_stack_ptr - 1];
 	__qd_pop(0);
 }
 
@@ -219,6 +221,16 @@ void __qd_pow(int n) {
 	__qd_pop(0);
 }
 
+void __qd_mod(int n) {
+	if (__qd_stack_ptr < 2) {
+		__qd_panic_stack_underflow();
+	}
+	if (__qd_stack[__qd_stack_ptr - 1] != 0.0) {
+		__qd_stack[__qd_stack_ptr - 2] = fmod(__qd_stack[__qd_stack_ptr - 2], __qd_stack[__qd_stack_ptr - 1]);
+	}
+	__qd_pop(0);
+}
+
 void __qd_read(int n) {
 	char input[1024];
 	if (fgets(input, sizeof(input), stdin) != NULL) {
@@ -277,6 +289,36 @@ void __qd_write(int n) {
 	}
 }
 
+void __qd_eval(int n, const char* expression) {
+	char* expr_copy = strdup(expression);
+	if (expr_copy == NULL) {
+		return;
+	}
+	char* token = strtok((char*)expr_copy, " ");
+	while (token != NULL) {
+		if (isdigit(token[0]) || (token[0] == '-' && isdigit(token[1]))) {
+			__qd_arg_push(atof(token));
+		} else if (strcmp(token, "+") == 0) {
+			__qd_add(0);
+		} else if (strcmp(token, "-") == 0) {
+			__qd_sub(0);
+		} else if (strcmp(token, "*") == 0) {
+			__qd_mul(0);
+		} else if (strcmp(token, "/") == 0) {
+			__qd_div(0);
+		} else if (strcmp(token, "d") == 0) {
+			__qd_dup(0);
+		} else if (strcmp(token, "v") == 0) {
+			__qd_sqrt(0);
+		} else if (strcmp(token, "^") == 0) {
+			__qd_pow(0);
+		} else if (strcmp(token, "%") == 0) {
+			__qd_mod(0);
+		}
+		token = strtok(NULL, " ");
+	}
+}
+
 void __qd_panic_stack_underflow() {
 	fprintf(stderr, "panic: stack underflow\n");
 	exit(1);
@@ -287,3 +329,7 @@ void __qd_panic_stack_overflow() {
 	exit(1);
 }
 
+void __qd_panic_division_by_zero() {
+	fprintf(stderr, "panic: division by zero\n");
+	exit(1);
+}

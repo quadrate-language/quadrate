@@ -6,6 +6,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"unicode"
 )
@@ -91,6 +92,11 @@ func (cg *CGenerator) writeHeader(tu *TranslationUnit, sb *strings.Builder) {
 	sb.WriteString("\n#endif\n")
 }
 
+func isFloat(s string) bool {
+	_, err := strconv.ParseFloat(s, 64)
+	return err == nil
+}
+
 func (cg *CGenerator) writeSource(tu *TranslationUnit, sb *strings.Builder) {
 	sb.WriteString("#include \"" + cg.generateFilename(tu.filepath, tu.name) + ".h\"\n")
 
@@ -131,7 +137,11 @@ func (cg *CGenerator) writeSource(tu *TranslationUnit, sb *strings.Builder) {
 							if i > 0 {
 								sb.WriteString(", ")
 							} else {
-								sb.WriteString(fmt.Sprintf("%d, (__qd_real_t)%s", len(n.Args), arg))
+								if isFloat(arg) {
+									sb.WriteString(fmt.Sprintf("%d, (__qd_real_t)%s", len(n.Args), arg))
+								} else {
+									sb.WriteString(fmt.Sprintf("%d, \"%s\"", len(n.Args), arg))
+								}
 								continue
 							}
 							sb.WriteString("(__qd_real_t)" + arg)

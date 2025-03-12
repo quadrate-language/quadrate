@@ -275,6 +275,8 @@ func (p *Parser) parseFunctionCall() (Node, *SyntaxError) {
 			if t.Type == Identifier {
 				functionCall.Name += "_" + t.Literal
 			}
+		} else if t.Type == String {
+			functionCall.Args = append(functionCall.Args, t.Literal)
 		} else {
 			return nil, &SyntaxError{
 				Message:  fmt.Sprintf("expected identifier but got ‘%s‘", t.Literal),
