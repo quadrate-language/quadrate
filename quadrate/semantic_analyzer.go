@@ -137,6 +137,7 @@ func (sa *SemanticAnalyzer) isKeyword(name string) bool {
 		"pop",
 		"pow",
 		"push",
+		"read",
 		"rot",
 		"rot2",
 		"sin",
@@ -145,6 +146,7 @@ func (sa *SemanticAnalyzer) isKeyword(name string) bool {
 		"sub",
 		"swap",
 		"tan",
+		"write",
 	}
 	return slices.Contains(keywords, name)
 }

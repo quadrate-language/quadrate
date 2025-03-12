@@ -1,6 +1,7 @@
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <math.h>
 #include "qd_base.h"
 
@@ -218,6 +219,17 @@ void __qd_pow(int n) {
 	__qd_pop(0);
 }
 
+void __qd_read(int n) {
+	char input[1024];
+	if (fgets(input, sizeof(input), stdin) != NULL) {
+		char* token = strtok(input, " ");
+		while (token != NULL) {
+			__qd_arg_push(atof(token));
+			token = strtok(NULL, " ");
+		}
+	}
+}
+
 void __qd_rot(int n) {
 	if (__qd_stack_ptr < 3) {
 		__qd_panic_stack_underflow();
@@ -256,6 +268,15 @@ void __qd_sqrt(int n) {
 	}
 }
 
+void __qd_write(int n) {
+	for (int i = 0; i < __qd_stack_ptr; ++i) {
+		if (i != 0) {
+			printf(" ");
+		}
+		printf("%f", __qd_stack[i]);
+	}
+}
+
 void __qd_panic_stack_underflow() {
 	fprintf(stderr, "panic: stack underflow\n");
 	exit(1);
@@ -265,3 +286,4 @@ void __qd_panic_stack_overflow() {
 	fprintf(stderr, "panic: stack overflow\n");
 	exit(1);
 }
+

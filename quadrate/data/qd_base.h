@@ -36,10 +36,12 @@ extern void __qd_log10(int n);
 extern void __qd_neg(int n);
 extern void __qd_over(int n);
 extern void __qd_pow(int n);
+extern void __qd_read(int n);
 extern void __qd_rot(int n);
 extern void __qd_rot2(int n);
 extern void __qd_sq(int n);
 extern void __qd_sqrt(int n);
+extern void __qd_write(int n);
 
 extern void __qd_panic_stack_underflow();
 extern void __qd_panic_stack_overflow();
