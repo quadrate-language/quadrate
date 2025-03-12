@@ -117,7 +117,6 @@ func (p *Parser) Parse() (*ProgramModule, *SyntaxError) {
 						Filename: p.filename,
 					}
 				} else {
-					p.current++
 					if n, err := p.parseBody(); err != nil {
 						return nil, err
 					} else {
@@ -186,6 +185,13 @@ body_loop:
 		p.current++
 		t = (*p.tokens)[p.current]
 		switch t.Type {
+		case CurlyBracketLeft:
+			return nil, &SyntaxError{
+				Message:  "unexpected ‘{‘",
+				Line:     t.Line,
+				Column:   t.Column,
+				Filename: p.filename,
+			}
 		case CurlyBracketRight:
 			p.current++
 			break body_loop
