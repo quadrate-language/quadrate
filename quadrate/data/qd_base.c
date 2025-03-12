@@ -315,6 +315,8 @@ void __qd_eval(int n, const char* expression) {
 			__qd_pow(0);
 		} else if (strcmp(token, "%") == 0) {
 			__qd_mod(0);
+		} else {
+			__qd_panic_invalid_input();
 		}
 		token = strtok(NULL, " ");
 	}
@@ -332,5 +334,10 @@ void __qd_panic_stack_overflow() {
 
 void __qd_panic_division_by_zero() {
 	fprintf(stderr, "panic: division by zero\n");
+	exit(1);
+}
+
+void __qd_panic_invalid_input() {
+	fprintf(stderr, "panic: invalid input\n");
 	exit(1);
 }
