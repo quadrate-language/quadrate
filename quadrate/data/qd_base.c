@@ -33,6 +33,10 @@ void __qd_pop(int n) {
 	--__qd_stack_ptr;
 }
 
+void __qd_depth(int n) {
+	__qd_arg_push(__qd_stack_ptr);
+}
+
 void __qd_add(int n) {
 	if (__qd_stack_ptr < 2) {
 		__qd_panic_stack_underflow();

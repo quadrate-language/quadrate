@@ -124,6 +124,7 @@ func (sa *SemanticAnalyzer) isKeyword(name string) bool {
 		"clear",
 		"cos",
 		"dec",
+		"depth",
 		"div",
 		"dup",
 		"eval",
