@@ -136,6 +136,7 @@ func (sa *SemanticAnalyzer) isKeyword(name string) bool {
 		"mul",
 		"neg",
 		"over",
+		"print",
 		"pop",
 		"pow",
 		"push",

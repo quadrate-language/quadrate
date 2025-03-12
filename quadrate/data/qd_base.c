@@ -304,6 +304,13 @@ void __qd_write(int n) {
 	}
 }
 
+void __qd_print(int n) {
+	if (__qd_stack_ptr < 1) {
+		__qd_panic_stack_underflow();
+	}
+	printf("%f\n", __qd_stack[__qd_stack_ptr - 1]);
+}
+
 void __qd_eval(int n, const char* expression) {
 	char* expr_copy = strdup(expression);
 	if (expr_copy == NULL) {
@@ -311,7 +318,6 @@ void __qd_eval(int n, const char* expression) {
 	}
 	char* token = strtok((char*)expr_copy, " ");
 	while (token != NULL) {
-		printf("%s, %d\n", token, strlen(token));
 		if (isdigit(token[0]) || (token[0] == '-' && isdigit(token[1]))) {
 			__qd_arg_push(atof(token));
 		} else if (strcmp(token, "+") == 0) {
@@ -330,6 +336,8 @@ void __qd_eval(int n, const char* expression) {
 			__qd_pow(0);
 		} else if (strcmp(token, "%") == 0) {
 			__qd_mod(0);
+		} else if (strcmp(token, "p") == 0) {
+			__qd_print(0);
 		} else {
 			__qd_panic_invalid_input();
 		}

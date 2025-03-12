@@ -42,6 +42,7 @@ extern void __qd_rot2(int n);
 extern void __qd_sq(int n);
 extern void __qd_sqrt(int n);
 extern void __qd_write(int n);
+extern void __qd_print(int n);
 extern void __qd_eval(int n, const char* expression);
 
 extern void __qd_panic_stack_underflow();
