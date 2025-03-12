@@ -225,9 +225,10 @@ void __qd_mod(int n) {
 	if (__qd_stack_ptr < 2) {
 		__qd_panic_stack_underflow();
 	}
-	if (__qd_stack[__qd_stack_ptr - 1] != 0.0) {
-		__qd_stack[__qd_stack_ptr - 2] = fmod(__qd_stack[__qd_stack_ptr - 2], __qd_stack[__qd_stack_ptr - 1]);
+	if (__qd_stack[__qd_stack_ptr - 1] == 0.0) {
+		__qd_panic_division_by_zero();
 	}
+	__qd_stack[__qd_stack_ptr - 2] = fmod(__qd_stack[__qd_stack_ptr - 2], __qd_stack[__qd_stack_ptr - 1]);
 	__qd_pop(0);
 }
 
