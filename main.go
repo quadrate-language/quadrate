@@ -48,7 +48,7 @@ func main() {
 			lines := strings.Split(string(b), "\n")
 			fmt.Printf("\033[1m%s:%d:%d: \033[31merror:\033[0m %s\n", err.Filename, err.Line, err.Column+1, err.Message)
 			if err.Line >= 1 {
-				fmt.Printf("%d | %s\n", err.Line, lines[err.Line-1])
+				fmt.Printf("%d | %s\n", err.Line, strings.Replace(lines[err.Line-1], "\t", " ", -1))
 				fmt.Printf("%s | %s\033[1;31m^\033[0m\n", strings.Repeat(" ", len(fmt.Sprintf("%d", err.Line))), strings.Repeat(" ", err.Column))
 			}
 		}
@@ -62,7 +62,7 @@ func main() {
 				lines := strings.Split(string(b), "\n")
 				fmt.Printf("\033[1m%s:%d:%d: \033[31merror:\033[0m %s\n", err.Filename, err.Line, err.Column+1, err.Message)
 				if err.Line >= 1 {
-					fmt.Printf("%d | %s\n", err.Line, lines[err.Line-1])
+					fmt.Printf("%d | %s\n", err.Line, strings.Replace(lines[err.Line-1], "\t", " ", -1))
 					fmt.Printf("%s | %s\033[1;31m^\033[0m\n", strings.Repeat(" ", len(fmt.Sprintf("%d", err.Line))), strings.Repeat(" ", err.Column))
 				}
 			}
