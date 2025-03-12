@@ -97,6 +97,17 @@ func (l *Lexer) Lex() LexResult {
 						l.Modules = append(l.Modules, path+"/"+literal+"/module.qd")
 						t := NewToken(Module, path+"/"+literal+"/module.qd", line, column)
 						r.Tokens = append(r.Tokens, t)
+					} else {
+						path := os.Getenv("PATH")
+						for p := range strings.SplitSeq(path, string(os.PathListSeparator)) {
+							modPath := filepath.Join(p, literal, "module.qd")
+							if _, err := os.Stat(modPath); err == nil {
+								l.Modules = append(l.Modules, modPath)
+								t := NewToken(Module, modPath, line, column)
+								r.Tokens = append(r.Tokens, t)
+								break
+							}
+						}
 					}
 					continue
 				} else {
