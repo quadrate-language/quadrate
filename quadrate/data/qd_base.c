@@ -232,14 +232,28 @@ void __qd_mod(int n) {
 	__qd_pop(0);
 }
 
+void trim(char* str) {
+	int start = 0;
+	while (isspace(str[start])) {
+		start++;
+	}
+
+	int end = strlen(str) - 1;
+	while (end >= start && isspace(str[end])) {
+		end--;
+	}
+
+	int length = end - start + 1;
+	memmove(str, str + start, length);
+
+	str[length] = '\0';
+}
+
 void __qd_read(int n) {
-	char input[1024];
+	char input[1024] = {0};
 	if (fgets(input, sizeof(input), stdin) != NULL) {
-		char* token = strtok(input, " ");
-		while (token != NULL) {
-			__qd_arg_push(atof(token));
-			token = strtok(NULL, " ");
-		}
+		trim(input);
+		__qd_eval(0, input);
 	}
 }
 
@@ -297,6 +311,7 @@ void __qd_eval(int n, const char* expression) {
 	}
 	char* token = strtok((char*)expr_copy, " ");
 	while (token != NULL) {
+		printf("%s, %d\n", token, strlen(token));
 		if (isdigit(token[0]) || (token[0] == '-' && isdigit(token[1]))) {
 			__qd_arg_push(atof(token));
 		} else if (strcmp(token, "+") == 0) {
