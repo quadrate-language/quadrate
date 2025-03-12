@@ -39,7 +39,7 @@ func (sa *SemanticAnalyzer) Analyze(tus *[]TranslationUnit) *SemanticError {
 				var module string
 				if i > 1 && tu.tokens[i-1].Type == DoubleColon {
 					module = tu.tokens[i-2].Literal
-				} else if i > 1 && tu.tokens[i-1].Type == Const || tu.tokens[i-1].Type == FnSignature {
+				} else if i > 0 && tu.tokens[i-1].Type == Const || tu.tokens[i-1].Type == FnSignature {
 					continue
 				}
 				var name string
