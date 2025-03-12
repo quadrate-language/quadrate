@@ -6,3 +6,5 @@ type SyntaxError struct {
 	Column   int
 	Filename string
 }
+
+type SemanticError SyntaxError

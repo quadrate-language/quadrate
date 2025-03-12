@@ -199,6 +199,13 @@ body_loop:
 			if err := p.parseScopeComment(); err != nil {
 				return nil, err
 			}
+		case Const:
+			return nil, &SyntaxError{
+				Message:  "unexpected ‘const‘",
+				Line:     t.Line,
+				Column:   t.Column,
+				Filename: p.filename,
+			}
 		case Defer:
 			if n, err := p.parseDefer(); err != nil {
 				return nil, err
