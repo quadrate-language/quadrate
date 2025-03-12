@@ -19,6 +19,13 @@ $ cd quadrate
 $ make && sudo make install
 ```
 
+### Standrad library
+The standard library is included in the repository and is installed by default to `/usr/lib/quadrate`. You must add this path to you `PATH` env.
+
+```bash
+$ export PATH=$PATH:/usr/lib/quadrate
+```
+
 ## Usage
 ```
 // main.qd
