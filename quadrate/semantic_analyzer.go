@@ -6,6 +6,7 @@ import (
 )
 
 type SemanticAnalyzer struct {
+	dumpTokens bool
 }
 
 type Symbol struct {
@@ -15,8 +16,10 @@ type Symbol struct {
 	Column   int
 }
 
-func NewSemanticAnalyzer() *SemanticAnalyzer {
-	return &SemanticAnalyzer{}
+func NewSemanticAnalyzer(dumpTokens bool) *SemanticAnalyzer {
+	return &SemanticAnalyzer{
+		dumpTokens: dumpTokens,
+	}
 }
 
 func (sa *SemanticAnalyzer) Analyze(tus *[]TranslationUnit) *SemanticError {
@@ -162,7 +165,9 @@ func (sa *SemanticAnalyzer) getSymbols(tus *[]TranslationUnit) []Symbol {
 						Line:     t.Line,
 						Column:   t.Column,
 					})
-					println(fmt.Sprintf("F: %s%s %s:%d:%d", prefix, t.Literal, tu.filepath, t.Line, t.Column+1))
+					if sa.dumpTokens {
+						println(fmt.Sprintf("F: %s%s %s:%d:%d", prefix, t.Literal, tu.filepath, t.Line, t.Column+1))
+					}
 				} else if tu.tokens[i-1].Type == Const {
 					symbols = append(symbols, Symbol{
 						Name:     fmt.Sprintf("%s%s", prefix, t.Literal),
@@ -170,7 +175,9 @@ func (sa *SemanticAnalyzer) getSymbols(tus *[]TranslationUnit) []Symbol {
 						Line:     t.Line,
 						Column:   t.Column,
 					})
-					println(fmt.Sprintf("C: %s%s %s:%d:%d", prefix, t.Literal, tu.filepath, t.Line, t.Column+1))
+					if sa.dumpTokens {
+						println(fmt.Sprintf("C: %s%s %s:%d:%d", prefix, t.Literal, tu.filepath, t.Line, t.Column+1))
+					}
 				}
 			}
 		}

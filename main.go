@@ -54,7 +54,7 @@ func main() {
 		}
 		os.Exit(1)
 	} else {
-		sa := quadrate.NewSemanticAnalyzer()
+		sa := quadrate.NewSemanticAnalyzer(args.DumpTokens)
 		if err := sa.Analyze(tus); err != nil {
 			if b, e := os.ReadFile(err.Filename); e != nil {
 				fmt.Printf("\033[1mquadc: \033[31merror:\033[0m %s\n", e.Error())
