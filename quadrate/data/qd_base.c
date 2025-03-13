@@ -7,6 +7,7 @@
 #include "qd_base.h"
 
 __qd_real_t __qd_stack[QD_STACK_DEPTH] = {0};
+__qd_real_t __qd_err = 0.0;
 int __qd_stack_ptr = 0;
 
 void __qd_arg_push(__qd_real_t x) {
@@ -15,6 +16,11 @@ void __qd_arg_push(__qd_real_t x) {
 	}
 	__qd_stack[__qd_stack_ptr] = x;
 	__qd_stack_ptr++;
+}
+
+void __qd_error(int n) {
+	__qd_arg_push(__qd_err);
+	__qd_err = 0.0;
 }
 
 void __qd_push(int n, ...) {
@@ -383,21 +389,25 @@ void __qd_eval(int n, const char* expression) {
 }
 
 void __qd_panic_stack_underflow() {
-	fprintf(stderr, "panic: stack underflow\n");
-	exit(1);
+	__qd_err = 2.2;
+	//fprintf(stderr, "panic: stack underflow\n");
+	//exit(1);
 }
 
 void __qd_panic_stack_overflow() {
-	fprintf(stderr, "panic: stack overflow\n");
-	exit(1);
+	__qd_err = 2.1;
+	//fprintf(stderr, "panic: stack overflow\n");
+	//exit(1);
 }
 
 void __qd_panic_division_by_zero() {
-	fprintf(stderr, "panic: division by zero\n");
-	exit(1);
+	__qd_err = 1.1;
+	//fprintf(stderr, "panic: division by zero\n");
+	//exit(1);
 }
 
 void __qd_panic_invalid_input() {
-	fprintf(stderr, "panic: invalid input\n");
-	exit(1);
+	__qd_err = 3.1;
+	//fprintf(stderr, "panic: invalid input\n");
+	//exit(1);
 }
