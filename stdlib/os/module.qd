@@ -1,9 +1,14 @@
 __c {
 	#include <stdlib.h>
+	#include <stdarg.h>
 }
 
 fn exit() {
 	__c {
-		exit(0);
+		va_list args;
+		va_start(args, n);
+		int x = (int)va_arg(args, __qd_real_t);
+		va_end(args);
+		exit(x);
 	}	
 }
