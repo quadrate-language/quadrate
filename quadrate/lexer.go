@@ -89,6 +89,11 @@ func (l *Lexer) Lex() LexResult {
 					l.readChar()
 					continue
 				}
+				if tokenType == Jump {
+					t := NewToken(Jump, literal, line, column)
+					r.Tokens = append(r.Tokens, t)
+					continue
+				}
 				t := NewToken(tokenType, literal, line, column)
 				if len(r.Tokens) > 0 && t.Type == Identifier && r.Tokens[len(r.Tokens)-1].Type == Use {
 					path := filepath.Dir(l.filename)
@@ -196,6 +201,8 @@ func (l *Lexer) lookupIdentifier(i string) TokenType {
 		return Defer
 	case "return":
 		return Return
+	case "jmp":
+		return Jump
 	}
 	return Identifier
 }

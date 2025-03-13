@@ -61,6 +61,10 @@ type Label struct {
 	Name string
 }
 
+type Jmp struct {
+	Label string
+}
+
 func NewParser(filename string, tokens *[]Token) *Parser {
 	return &Parser{
 		filename: filename,
@@ -227,11 +231,26 @@ body_loop:
 				stmts = append(stmts, stmt)
 			}
 			stmts = append(stmts, ReturnStatement{})
+		case Jump:
+			if p.peek() == Identifier {
+				p.current++
+				stmts = append(stmts, Jmp{
+					Label: (*p.tokens)[p.current].Literal,
+				})
+			} else {
+				return nil, &SyntaxError{
+					Message:  "expected ‘label‘ after ‘jmp‘",
+					Line:     t.Line,
+					Column:   t.Column,
+					Filename: p.filename,
+				}
+			}
 		default:
 			if (*p.tokens)[p.current+1].Type == Colon {
 				stmts = append(stmts, Label{
 					Name: t.Literal,
 				})
+				p.current++
 			} else {
 				if fnCall, err := p.parseFunctionCall(); err != nil {
 					return nil, err

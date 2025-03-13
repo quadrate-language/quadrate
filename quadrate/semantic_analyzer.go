@@ -131,6 +131,7 @@ func (sa *SemanticAnalyzer) isKeyword(name string) bool {
 		"floor",
 		"inc",
 		"inv",
+		"jmp",
 		"ln",
 		"log10",
 		"mod",

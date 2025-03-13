@@ -17,6 +17,7 @@ const (
 	Identifier        = "identifier"
 	Illegal           = "illegal"
 	InlineC           = "inline_c"
+	Jump              = "jmp"
 	Module            = "module"
 	NewLine           = "new_line"
 	NumericConstant   = "numeric_constant"

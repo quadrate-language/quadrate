@@ -154,6 +154,8 @@ func (cg *CGenerator) writeSource(tu *TranslationUnit, sb *strings.Builder) {
 					sb.WriteString("\treturn;\n")
 				case Label:
 					sb.WriteString(n.Name + ":;\n")
+				case Jmp:
+					sb.WriteString("\tgoto " + n.Label + ";\n")
 				}
 			}
 			sb.WriteString("}\n")
