@@ -1,6 +1,7 @@
 // Print Tau
 // build: quadc -o hello-tau hello-tau.qd
 // usage: ./hello-tau
+
 use math
 
 fn main() {

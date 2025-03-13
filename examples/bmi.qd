@@ -2,6 +2,7 @@
 // build: quadc -o bmi bmi.qd
 // usage: echo <weight> <height> | ./bmi
 // example: echo 70 1.75 | ./bmi
+
 fn main() {
 	read
 	dup
