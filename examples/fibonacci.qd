@@ -26,5 +26,5 @@ run:
 fn main() {
 	read
 	fibonacci
-	print
+	write
 }

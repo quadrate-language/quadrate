@@ -7,5 +7,5 @@ fn main() {
 	dup
 	mul
 	div
-	print
+	write
 }
