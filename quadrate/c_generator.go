@@ -156,6 +156,9 @@ func (cg *CGenerator) writeSource(tu *TranslationUnit, sb *strings.Builder) {
 					sb.WriteString(n.Name + ":;\n")
 				case Jmp:
 					sb.WriteString("\tgoto " + n.Label + ";\n")
+				case Je:
+					sb.WriteString("\tif (__qd_stack_ptr <= 1) {\n\t\t__qd_panic_stack_underflow();\n\t}\n")
+					sb.WriteString("\tif (__qd_stack[__qd_stack_ptr-1] == __qd_stack[__qd_stack_ptr-2]) {\n\t\tgoto " + n.Label + ";\n\t}\n")
 				}
 			}
 			sb.WriteString("}\n")

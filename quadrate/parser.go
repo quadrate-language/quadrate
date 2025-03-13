@@ -64,6 +64,14 @@ type Label struct {
 type Jmp struct {
 	Label string
 }
+type Je Jmp
+type Jge Jmp
+type Jg Jmp
+type Jle Jmp
+type Jl Jmp
+type Jne Jmp
+type Jnz Jmp
+type Jz Jmp
 
 func NewParser(filename string, tokens *[]Token) *Parser {
 	return &Parser{
@@ -240,6 +248,118 @@ body_loop:
 			} else {
 				return nil, &SyntaxError{
 					Message:  "expected ‘label‘ after ‘jmp‘",
+					Line:     t.Line,
+					Column:   t.Column,
+					Filename: p.filename,
+				}
+			}
+		case JumpEqual:
+			if p.peek() == Identifier {
+				p.current++
+				stmts = append(stmts, Je{
+					Label: (*p.tokens)[p.current].Literal,
+				})
+			} else {
+				return nil, &SyntaxError{
+					Message:  "expected ‘label‘ after ‘je‘",
+					Line:     t.Line,
+					Column:   t.Column,
+					Filename: p.filename,
+				}
+			}
+		case JumpGreater:
+			if p.peek() == Identifier {
+				p.current++
+				stmts = append(stmts, Jg{
+					Label: (*p.tokens)[p.current].Literal,
+				})
+			} else {
+				return nil, &SyntaxError{
+					Message:  "expected ‘label‘ after ‘jg‘",
+					Line:     t.Line,
+					Column:   t.Column,
+					Filename: p.filename,
+				}
+			}
+		case JumpGreaterEqual:
+			if p.peek() == Identifier {
+				p.current++
+				stmts = append(stmts, Jge{
+					Label: (*p.tokens)[p.current].Literal,
+				})
+			} else {
+				return nil, &SyntaxError{
+					Message:  "expected ‘label‘ after ‘jge‘",
+					Line:     t.Line,
+					Column:   t.Column,
+					Filename: p.filename,
+				}
+			}
+		case JumpLesser:
+			if p.peek() == Identifier {
+				p.current++
+				stmts = append(stmts, Jl{
+					Label: (*p.tokens)[p.current].Literal,
+				})
+			} else {
+				return nil, &SyntaxError{
+					Message:  "expected ‘label‘ after ‘jl‘",
+					Line:     t.Line,
+					Column:   t.Column,
+					Filename: p.filename,
+				}
+			}
+		case JumpLesserEqual:
+			if p.peek() == Identifier {
+				p.current++
+				stmts = append(stmts, Jle{
+					Label: (*p.tokens)[p.current].Literal,
+				})
+			} else {
+				return nil, &SyntaxError{
+					Message:  "expected ‘label‘ after ‘jle‘",
+					Line:     t.Line,
+					Column:   t.Column,
+					Filename: p.filename,
+				}
+			}
+		case JumpNotEqual:
+			if p.peek() == Identifier {
+				p.current++
+				stmts = append(stmts, Jne{
+					Label: (*p.tokens)[p.current].Literal,
+				})
+			} else {
+				return nil, &SyntaxError{
+					Message:  "expected ‘label‘ after ‘jne‘",
+					Line:     t.Line,
+					Column:   t.Column,
+					Filename: p.filename,
+				}
+			}
+		case JumpNotZero:
+			if p.peek() == Identifier {
+				p.current++
+				stmts = append(stmts, Jnz{
+					Label: (*p.tokens)[p.current].Literal,
+				})
+			} else {
+				return nil, &SyntaxError{
+					Message:  "expected ‘label‘ after ‘jnz‘",
+					Line:     t.Line,
+					Column:   t.Column,
+					Filename: p.filename,
+				}
+			}
+		case JumpZero:
+			if p.peek() == Identifier {
+				p.current++
+				stmts = append(stmts, Jz{
+					Label: (*p.tokens)[p.current].Literal,
+				})
+			} else {
+				return nil, &SyntaxError{
+					Message:  "expected ‘label‘ after ‘jz‘",
 					Line:     t.Line,
 					Column:   t.Column,
 					Filename: p.filename,
