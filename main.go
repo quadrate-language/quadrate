@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 
@@ -19,6 +20,10 @@ func main() {
 	flag.Parse()
 
 	args.Sources = flag.Args()
+
+	if args.Run {
+		args.Output = "./.qd_gen/a.out"
+	}
 
 	if len(args.Sources) == 0 {
 		fmt.Printf("\033[1mquadc: \033[31mfatal error:\033[0m no input files\n")
@@ -83,6 +88,15 @@ func main() {
 		}
 
 		compiler.CompileAndLink()
+
+		if args.Run {
+			cmd := exec.Command(args.Output)
+			cmd.Stdout = os.Stdout
+			cmd.Stderr = os.Stderr
+			if err := cmd.Run(); err != nil {
+				fmt.Printf("\033[1mquadc: \033[31merror:\033[0m %s\n", err.Error())
+			}
+		}
 
 		if !args.SaveTemps {
 			os.RemoveAll("./.qd_gen")
