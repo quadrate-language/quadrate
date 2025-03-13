@@ -390,24 +390,32 @@ void __qd_eval(int n, const char* expression) {
 
 void __qd_panic_stack_underflow() {
 	__qd_err = 2.2;
-	//fprintf(stderr, "panic: stack underflow\n");
-	//exit(1);
+#ifdef QD_ENABLE_PANIC
+	fprintf(stderr, "panic: stack underflow\n");
+	exit(1);
+#endif
 }
 
 void __qd_panic_stack_overflow() {
 	__qd_err = 2.1;
-	//fprintf(stderr, "panic: stack overflow\n");
-	//exit(1);
+#ifdef QD_ENABLE_PANIC
+	fprintf(stderr, "panic: stack overflow\n");
+	exit(1);
+#endif
 }
 
 void __qd_panic_division_by_zero() {
 	__qd_err = 1.1;
-	//fprintf(stderr, "panic: division by zero\n");
-	//exit(1);
+#ifdef QD_ENABLE_PANIC
+	fprintf(stderr, "panic: division by zero\n");
+	exit(1);
+#endif
 }
 
 void __qd_panic_invalid_input() {
 	__qd_err = 3.1;
-	//fprintf(stderr, "panic: invalid input\n");
-	//exit(1);
+#ifdef QD_ENABLE_PANIC
+	fprintf(stderr, "panic: invalid input\n");
+	exit(1);
+#endif
 }

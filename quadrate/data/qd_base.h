@@ -2,6 +2,7 @@
 #define QD_BASE_H
 
 #define QD_STACK_DEPTH 1024
+//#define QD_ENABLE_PANIC
 #define __qd_real_t double
 
 extern __qd_real_t __qd_stack[QD_STACK_DEPTH];
