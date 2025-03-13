@@ -1,0 +1,5 @@
+const OK              0.0
+const DIV_BY_ZERO     1.1
+const STACK_OVERFLOW  2.1
+const STACK_UNDERFLOW 2.2
+const INVALID_INPUT   3.1
