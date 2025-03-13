@@ -1,0 +1,6 @@
+// Desktop Calculator clone
+// build: quadc -o dc dc.qd
+// usage: echo "2 3 + p" | ./dc
+fn main() {
+	read
+}
