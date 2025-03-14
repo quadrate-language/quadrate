@@ -9,6 +9,7 @@
 __qd_real_t __qd_stack[QD_STACK_DEPTH] = {0};
 __qd_real_t __qd_err = 0.0;
 int __qd_stack_ptr = 0;
+int __qd_precision = 2;
 
 void __qd_arg_push(__qd_real_t x) {
 	if (__qd_stack_ptr >= QD_STACK_DEPTH) {
@@ -343,7 +344,7 @@ void __qd_write(int n) {
 		if (i != 0) {
 			printf(" ");
 		}
-		printf("%f", __qd_stack[i]);
+		printf("%.*f", __qd_precision, __qd_stack[i]);
 	}
 }
 
@@ -351,7 +352,7 @@ void __qd_print(int n) {
 	if (__qd_stack_ptr < 1) {
 		__qd_panic_stack_underflow();
 	}
-	printf("%f\n", __qd_stack[__qd_stack_ptr - 1]);
+	printf("%.*f\n", __qd_precision, __qd_stack[__qd_stack_ptr - 1]);
 }
 
 void __qd_eval(int n, const char* expression) {
@@ -381,11 +382,25 @@ void __qd_eval(int n, const char* expression) {
 			__qd_mod(0);
 		} else if (strcmp(token, "p") == 0) {
 			__qd_print(0);
+		} else if (strcmp(token, "k") == 0) {
+			__qd_scale(0);
 		} else {
 			__qd_panic_invalid_input();
 		}
 		token = strtok(NULL, " ");
 	}
+}
+
+void __qd_scale(int n, ...) {
+	va_list args;
+	va_start(args, n);
+	if (n > 0) {
+		__qd_push(n, va_arg(args, __qd_real_t));
+	}
+	if (__qd_stack_ptr < 1) {
+		__qd_panic_stack_underflow();
+	}
+	__qd_precision = (int)__qd_stack[__qd_stack_ptr - 1];
 }
 
 void __qd_panic_stack_underflow() {

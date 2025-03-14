@@ -15,7 +15,7 @@ fn print() {
 			} else {
 				printf(" ");
 			}
-			printf("%f", __qd_stack[i]);
+			printf("%.*f", __qd_precision, __qd_stack[i]);
 		}
 		if (__qd_stack_ptr > 0) {
 			printf("\n");

@@ -8,6 +8,7 @@
 extern __qd_real_t __qd_stack[QD_STACK_DEPTH];
 extern __qd_real_t __qd_err;
 extern int __qd_stack_ptr;
+extern int __qd_precision;
 
 extern void __qd_arg_push(__qd_real_t x);
 
@@ -48,6 +49,7 @@ extern void __qd_sqrt(int n);
 extern void __qd_write(int n);
 extern void __qd_print(int n);
 extern void __qd_eval(int n, const char* expression);
+extern void __qd_scale(int n, ...);
 
 extern void __qd_panic_stack_underflow();
 extern void __qd_panic_stack_overflow();
