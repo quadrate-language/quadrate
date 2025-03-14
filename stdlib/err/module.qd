@@ -1,5 +1,27 @@
+__c {
+	#include <stdio.h>
+}
+
 const OK              0.0
 const DIV_BY_ZERO     1.1
 const STACK_OVERFLOW  2.1
 const STACK_UNDERFLOW 2.2
 const INVALID_INPUT   3.1
+
+fn print() {
+	__c {
+		if (__qd_err == __qd_err_OK) {
+			return;
+		} else if (__qd_err == __qd_err_DIV_BY_ZERO) {
+			printf("DIV_BY_ZERO\n");
+		} else if (__qd_err == __qd_err_STACK_OVERFLOW) {
+			printf("STACK_OVERFLOW\n");
+		} else if (__qd_err == __qd_err_STACK_UNDERFLOW) {
+			printf("STACK_UNDERFLOW\n");
+		} else if (__qd_err == __qd_err_INVALID_INPUT) {
+			printf("INVALID_INPUT\n");
+		} else {
+			printf("UNKNOWN ERROR\n");
+		}
+	}
+}
