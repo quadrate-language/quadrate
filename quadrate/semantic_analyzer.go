@@ -48,7 +48,7 @@ func (sa *SemanticAnalyzer) Analyze(tus *[]TranslationUnit) *SemanticError {
 				} else {
 					name = t.Literal
 				}
-				if sa.isKeyword(name) {
+				if sa.isPrimitiveInstruction(name) {
 					continue
 				}
 				if sa.isModule(tus, name) {
@@ -112,7 +112,7 @@ func (sa *SemanticAnalyzer) isModule(tus *[]TranslationUnit, name string) bool {
 	return false
 }
 
-func (sa *SemanticAnalyzer) isKeyword(name string) bool {
+func (sa *SemanticAnalyzer) isPrimitiveInstruction(name string) bool {
 	keywords := []string{
 		"abs",
 		"acos",
