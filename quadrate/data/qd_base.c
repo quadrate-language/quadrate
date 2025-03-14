@@ -384,6 +384,8 @@ void __qd_eval(int n, const char* expression) {
 			__qd_print(0);
 		} else if (strcmp(token, "k") == 0) {
 			__qd_scale(0);
+		} else if (strcmp(token, "z") == 0) {
+			__qd_depth(0);
 		} else {
 			__qd_panic_invalid_input();
 		}
