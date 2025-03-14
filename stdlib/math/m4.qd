@@ -1,0 +1,63 @@
+fn m4m4mul() {
+	__c {
+		if (__qd_stack_ptr < 32) {
+			__qd_panic_stack_underflow();
+			return;
+		}
+		__qd_real_t b44 = __qd_stack[--__qd_stack_ptr];
+		__qd_real_t b43 = __qd_stack[--__qd_stack_ptr];
+		__qd_real_t b42 = __qd_stack[--__qd_stack_ptr];
+		__qd_real_t b41 = __qd_stack[--__qd_stack_ptr];
+		__qd_real_t b34 = __qd_stack[--__qd_stack_ptr];
+		__qd_real_t b33 = __qd_stack[--__qd_stack_ptr];
+		__qd_real_t b32 = __qd_stack[--__qd_stack_ptr];
+		__qd_real_t b31 = __qd_stack[--__qd_stack_ptr];
+		__qd_real_t b24 = __qd_stack[--__qd_stack_ptr];
+		__qd_real_t b23 = __qd_stack[--__qd_stack_ptr];
+		__qd_real_t b22 = __qd_stack[--__qd_stack_ptr];
+		__qd_real_t b21 = __qd_stack[--__qd_stack_ptr];
+		__qd_real_t b14 = __qd_stack[--__qd_stack_ptr];
+		__qd_real_t b13 = __qd_stack[--__qd_stack_ptr];
+		__qd_real_t b12 = __qd_stack[--__qd_stack_ptr];
+		__qd_real_t b11 = __qd_stack[--__qd_stack_ptr];
+
+		__qd_real_t a44 = __qd_stack[--__qd_stack_ptr];
+		__qd_real_t a43 = __qd_stack[--__qd_stack_ptr];
+		__qd_real_t a42 = __qd_stack[--__qd_stack_ptr];
+		__qd_real_t a41 = __qd_stack[--__qd_stack_ptr];
+		__qd_real_t a34 = __qd_stack[--__qd_stack_ptr];
+		__qd_real_t a33 = __qd_stack[--__qd_stack_ptr];
+		__qd_real_t a32 = __qd_stack[--__qd_stack_ptr];
+		__qd_real_t a31 = __qd_stack[--__qd_stack_ptr];
+		__qd_real_t a24 = __qd_stack[--__qd_stack_ptr];
+		__qd_real_t a23 = __qd_stack[--__qd_stack_ptr];
+		__qd_real_t a22 = __qd_stack[--__qd_stack_ptr];
+		__qd_real_t a21 = __qd_stack[--__qd_stack_ptr];
+		__qd_real_t a14 = __qd_stack[--__qd_stack_ptr];
+		__qd_real_t a13 = __qd_stack[--__qd_stack_ptr];
+		__qd_real_t a12 = __qd_stack[--__qd_stack_ptr];
+		__qd_real_t a11 = __qd_stack[--__qd_stack_ptr];
+
+		__qd_real_t c11 = a11 * b11 + a12 * b21 + a13 * b31 + a14 * b41;
+		__qd_real_t c12 = a11 * b12 + a12 * b22 + a13 * b32 + a14 * b42;
+		__qd_real_t c13 = a11 * b13 + a12 * b23 + a13 * b33 + a14 * b43;
+		__qd_real_t c14 = a11 * b14 + a12 * b24 + a13 * b34 + a14 * b44;
+
+		__qd_real_t c21 = a21 * b11 + a22 * b21 + a23 * b31 + a24 * b41;
+		__qd_real_t c22 = a21 * b12 + a22 * b22 + a23 * b32 + a24 * b42;
+		__qd_real_t c23 = a21 * b13 + a22 * b23 + a23 * b33 + a24 * b43;
+		__qd_real_t c24 = a21 * b14 + a22 * b24 + a23 * b34 + a24 * b44;
+
+		__qd_real_t c31 = a31 * b11 + a32 * b21 + a33 * b31 + a34 * b41;
+		__qd_real_t c32 = a31 * b12 + a32 * b22 + a33 * b32 + a34 * b42;
+		__qd_real_t c33 = a31 * b13 + a32 * b23 + a33 * b33 + a34 * b43;
+		__qd_real_t c34 = a31 * b14 + a32 * b24 + a33 * b34 + a34 * b44;
+
+		__qd_real_t c41 = a41 * b11 + a42 * b21 + a43 * b31 + a44 * b41;
+		__qd_real_t c42 = a41 * b12 + a42 * b22 + a43 * b32 + a44 * b42;
+		__qd_real_t c43 = a41 * b13 + a42 * b23 + a43 * b33 + a44 * b43;
+		__qd_real_t c44 = a41 * b14 + a42 * b24 + a43 * b34 + a44 * b44;
+
+		__qd_push(16, c11, c12, c13, c14, c21, c22, c23, c24, c31, c32, c33, c34, c41, c42, c43, c44);
+	}
+}
