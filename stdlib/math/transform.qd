@@ -1,0 +1,88 @@
+__c {
+	#include <math.h>
+}
+
+fn v3translate() {
+	__c {
+		if (__qd_stack_ptr < 6) {
+			__qd_panic_stack_underflow();
+			return;
+		}
+
+		const __qd_real_t m[4][4] = {
+			{1.0, 0.0, 0.0, __qd_stack[__qd_stack_ptr - 3]},
+			{0.0, 1.0, 0.0, __qd_stack[__qd_stack_ptr - 2]},
+			{0.0, 0.0, 1.0, __qd_stack[__qd_stack_ptr - 1]},
+			{0.0, 0.0, 0.0, 1.0}
+		};
+
+		__qd_real_t x = m[0][0] * __qd_stack[__qd_stack_ptr - 6] + m[0][1] * __qd_stack[__qd_stack_ptr - 5] + m[0][2] * __qd_stack[__qd_stack_ptr - 4] + m[0][3];
+		__qd_real_t y = m[1][0] * __qd_stack[__qd_stack_ptr - 6] + m[1][1] * __qd_stack[__qd_stack_ptr - 5] + m[1][2] * __qd_stack[__qd_stack_ptr - 4] + m[1][3];
+		__qd_real_t z = m[2][0] * __qd_stack[__qd_stack_ptr - 6] + m[2][1] * __qd_stack[__qd_stack_ptr - 5] + m[2][2] * __qd_stack[__qd_stack_ptr - 4] + m[2][3];
+
+		__qd_stack_ptr -= 6;
+		__qd_push(3, x, y, z);
+	}
+}
+
+fn v3scale() {
+	__c {
+		if (__qd_stack_ptr < 6) {
+			__qd_panic_stack_underflow();
+			return;
+		}
+
+		const __qd_real_t m[4][4] = {
+			{__qd_stack[__qd_stack_ptr - 3], 0.0, 0.0, 0.0},
+			{0.0, __qd_stack[__qd_stack_ptr - 2], 0.0, 0.0},
+			{0.0, 0.0, __qd_stack[__qd_stack_ptr - 1], 0.0},
+			{0.0, 0.0, 0.0, 1.0}
+		};
+
+		__qd_real_t x = m[0][0] * __qd_stack[__qd_stack_ptr - 6] + m[0][1] * __qd_stack[__qd_stack_ptr - 5] + m[0][2] * __qd_stack[__qd_stack_ptr - 4] + m[0][3];
+		__qd_real_t y = m[1][0] * __qd_stack[__qd_stack_ptr - 6] + m[1][1] * __qd_stack[__qd_stack_ptr - 5] + m[1][2] * __qd_stack[__qd_stack_ptr - 4] + m[1][3];
+		__qd_real_t z = m[2][0] * __qd_stack[__qd_stack_ptr - 6] + m[2][1] * __qd_stack[__qd_stack_ptr - 5] + m[2][2] * __qd_stack[__qd_stack_ptr - 4] + m[2][3];
+
+		__qd_stack_ptr -= 6;
+		__qd_push(3, x, y, z);
+	}
+}
+
+fn v3rotate() {
+	__c {
+		if (__qd_stack_ptr < 7) {
+			__qd_panic_stack_underflow();
+			return;
+		}
+
+		__qd_real_t x = __qd_stack[__qd_stack_ptr - 7];
+		__qd_real_t y = __qd_stack[__qd_stack_ptr - 6];
+		__qd_real_t z = __qd_stack[__qd_stack_ptr - 5];
+
+		__qd_real_t ax = __qd_stack[__qd_stack_ptr - 4];
+		__qd_real_t ay = __qd_stack[__qd_stack_ptr - 3];
+		__qd_real_t az = __qd_stack[__qd_stack_ptr - 2];
+
+		__qd_real_t angle = __qd_stack[__qd_stack_ptr - 1];
+
+		__qd_real_t axis_length = sqrt(ax * ax + ay * ay + az * az);
+		ax /= axis_length;
+		ay /= axis_length;
+		az /= axis_length;
+
+		__qd_real_t cos_theta = cos(angle);
+		__qd_real_t sin_theta = sin(angle);
+		
+		__qd_real_t dot = x * ax + y * ay + z * az;
+		__qd_real_t cross_x = ay * z - az * y;
+		__qd_real_t cross_y = az * x - ax * z;
+		__qd_real_t cross_z = ax * y - ay * x;
+
+		__qd_real_t x_rot = x * cos_theta + cross_x * sin_theta + ax * dot * (1.0 - cos_theta);
+		__qd_real_t y_rot = y * cos_theta + cross_y * sin_theta + ay * dot * (1.0 - cos_theta);
+		__qd_real_t z_rot = z * cos_theta + cross_z * sin_theta + az * dot * (1.0 - cos_theta);
+
+		__qd_stack_ptr -= 7;
+		__qd_push(3, x_rot, y_rot, z_rot);
+	}
+}
