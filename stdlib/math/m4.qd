@@ -5,8 +5,75 @@ fn m4identity() {
 	push 0 0 0 1
 }
 
+fn m4dup() {
+	__c {
+		if (__qd_stack_ptr < 16) {
+			__qd_panic_stack_underflow();
+			return;
+		}
+
+		__qd_real_t m44 = __qd_stack[__qd_stack_ptr - 1];
+		__qd_real_t m43 = __qd_stack[__qd_stack_ptr - 2];
+		__qd_real_t m42 = __qd_stack[__qd_stack_ptr - 3];
+		__qd_real_t m41 = __qd_stack[__qd_stack_ptr - 4];
+		__qd_real_t m34 = __qd_stack[__qd_stack_ptr - 5];
+		__qd_real_t m33 = __qd_stack[__qd_stack_ptr - 6];
+		__qd_real_t m32 = __qd_stack[__qd_stack_ptr - 7];
+		__qd_real_t m31 = __qd_stack[__qd_stack_ptr - 8];
+		__qd_real_t m24 = __qd_stack[__qd_stack_ptr - 9];
+		__qd_real_t m23 = __qd_stack[__qd_stack_ptr - 10];
+		__qd_real_t m22 = __qd_stack[__qd_stack_ptr - 11];
+		__qd_real_t m21 = __qd_stack[__qd_stack_ptr - 12];
+		__qd_real_t m14 = __qd_stack[__qd_stack_ptr - 13];
+		__qd_real_t m13 = __qd_stack[__qd_stack_ptr - 14];
+		__qd_real_t m12 = __qd_stack[__qd_stack_ptr - 15];
+		__qd_real_t m11 = __qd_stack[__qd_stack_ptr - 16];
+
+		__qd_push(16, m11, m12, m13, m14, m21, m22, m23, m24, m31, m32, m33, m34, m41, m42, m43, m44);
+	}
+}
+
+fn m4determinant() {
+	__c {
+		if (__qd_stack_ptr < 16) {
+			__qd_panic_stack_underflow();
+			return;
+		}
+
+		__qd_real_t m44 = __qd_stack[--__qd_stack_ptr];
+		__qd_real_t m43 = __qd_stack[--__qd_stack_ptr];
+		__qd_real_t m42 = __qd_stack[--__qd_stack_ptr];
+		__qd_real_t m41 = __qd_stack[--__qd_stack_ptr];
+		__qd_real_t m34 = __qd_stack[--__qd_stack_ptr];
+		__qd_real_t m33 = __qd_stack[--__qd_stack_ptr];
+		__qd_real_t m32 = __qd_stack[--__qd_stack_ptr];
+		__qd_real_t m31 = __qd_stack[--__qd_stack_ptr];
+		__qd_real_t m24 = __qd_stack[--__qd_stack_ptr];
+		__qd_real_t m23 = __qd_stack[--__qd_stack_ptr];
+		__qd_real_t m22 = __qd_stack[--__qd_stack_ptr];
+		__qd_real_t m21 = __qd_stack[--__qd_stack_ptr];
+		__qd_real_t m14 = __qd_stack[--__qd_stack_ptr];
+		__qd_real_t m13 = __qd_stack[--__qd_stack_ptr];
+		__qd_real_t m12 = __qd_stack[--__qd_stack_ptr];
+		__qd_real_t m11 = __qd_stack[--__qd_stack_ptr];
+
+		__qd_real_t det = 
+			m11 * (m22 * (m33 * m44 - m34 * m43) - m23 * (m32 * m44 - m34 * m42) + m24 * (m32 * m43 - m33 * m42)) -
+			m12 * (m21 * (m33 * m44 - m34 * m43) - m23 * (m31 * m44 - m34 * m41) + m24 * (m31 * m43 - m33 * m41)) +
+			m13 * (m21 * (m32 * m44 - m34 * m42) - m22 * (m31 * m44 - m34 * m41) + m24 * (m31 * m42 - m32 * m41)) -
+			m14 * (m21 * (m32 * m43 - m33 * m42) - m22 * (m31 * m43 - m33 * m41) + m23 * (m31 * m42 - m32 * m41));
+
+		__qd_arg_push(det);
+	}
+}
+
 fn m4transpose() {
 	__c {
+		if (__qd_stack_ptr < 16) {
+			__qd_panic_stack_underflow();
+			return;
+		}
+
 		__qd_real_t m44 = __qd_stack[--__qd_stack_ptr];
 		__qd_real_t m43 = __qd_stack[--__qd_stack_ptr];
 		__qd_real_t m42 = __qd_stack[--__qd_stack_ptr];
@@ -35,6 +102,11 @@ fn m4transpose() {
 
 fn m4inverse() {
 	__c {
+		if (__qd_stack_ptr < 16) {
+			__qd_panic_stack_underflow();
+			return;
+		}
+
 		__qd_real_t m44 = __qd_stack[--__qd_stack_ptr];
 		__qd_real_t m43 = __qd_stack[--__qd_stack_ptr];
 		__qd_real_t m42 = __qd_stack[--__qd_stack_ptr];
@@ -103,6 +175,7 @@ fn m4m4mul() {
 			__qd_panic_stack_underflow();
 			return;
 		}
+
 		__qd_real_t b44 = __qd_stack[--__qd_stack_ptr];
 		__qd_real_t b43 = __qd_stack[--__qd_stack_ptr];
 		__qd_real_t b42 = __qd_stack[--__qd_stack_ptr];
