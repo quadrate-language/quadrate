@@ -25,3 +25,9 @@ fn print() {
 		}
 	}
 }
+
+fn clear() {
+	__c {
+		__qd_err = __qd_err_OK;
+	}
+}
