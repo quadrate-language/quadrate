@@ -419,3 +419,12 @@ void __qd_panic_invalid_input() {
 	exit(1);
 #endif
 }
+
+void __qd_panic_invalid_data() {
+	__qd_err = 3.2;
+#ifdef QD_ENABLE_PANIC
+	fprintf(stderr, "panic: invalid data\n");
+	exit(1);
+#endif
+}
+

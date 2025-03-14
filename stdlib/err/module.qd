@@ -7,6 +7,7 @@ const DIV_BY_ZERO     1.1
 const STACK_OVERFLOW  2.1
 const STACK_UNDERFLOW 2.2
 const INVALID_INPUT   3.1
+const INVALID_DATA    3.2
 
 fn print() {
 	__c {
@@ -20,6 +21,8 @@ fn print() {
 			printf("STACK_UNDERFLOW\n");
 		} else if (__qd_err == __qd_err_INVALID_INPUT) {
 			printf("INVALID_INPUT\n");
+		} else if (__qd_err == __qd_err_INVALID_DATA) {
+			printf("INVALID_DATA\n");
 		} else {
 			printf("UNKNOWN ERROR\n");
 		}
