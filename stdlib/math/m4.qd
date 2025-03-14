@@ -33,6 +33,70 @@ fn m4transpose() {
 	}
 }
 
+fn m4inverse() {
+	__c {
+		__qd_real_t m44 = __qd_stack[--__qd_stack_ptr];
+		__qd_real_t m43 = __qd_stack[--__qd_stack_ptr];
+		__qd_real_t m42 = __qd_stack[--__qd_stack_ptr];
+		__qd_real_t m41 = __qd_stack[--__qd_stack_ptr];
+		__qd_real_t m34 = __qd_stack[--__qd_stack_ptr];
+		__qd_real_t m33 = __qd_stack[--__qd_stack_ptr];
+		__qd_real_t m32 = __qd_stack[--__qd_stack_ptr];
+		__qd_real_t m31 = __qd_stack[--__qd_stack_ptr];
+		__qd_real_t m24 = __qd_stack[--__qd_stack_ptr];
+		__qd_real_t m23 = __qd_stack[--__qd_stack_ptr];
+		__qd_real_t m22 = __qd_stack[--__qd_stack_ptr];
+		__qd_real_t m21 = __qd_stack[--__qd_stack_ptr];
+		__qd_real_t m14 = __qd_stack[--__qd_stack_ptr];
+		__qd_real_t m13 = __qd_stack[--__qd_stack_ptr];
+		__qd_real_t m12 = __qd_stack[--__qd_stack_ptr];
+		__qd_real_t m11 = __qd_stack[--__qd_stack_ptr];
+
+		__qd_real_t det = 
+			m11 * (m22 * (m33 * m44 - m34 * m43) - m23 * (m32 * m44 - m34 * m42) + m24 * (m32 * m43 - m33 * m42)) -
+			m12 * (m21 * (m33 * m44 - m34 * m43) - m23 * (m31 * m44 - m34 * m41) + m24 * (m31 * m43 - m33 * m41)) +
+			m13 * (m21 * (m32 * m44 - m34 * m42) - m22 * (m31 * m44 - m34 * m41) + m24 * (m31 * m42 - m32 * m41)) -
+			m14 * (m21 * (m32 * m43 - m33 * m42) - m22 * (m31 * m43 - m33 * m41) + m23 * (m31 * m42 - m32 * m41));
+
+		if (det == 0) {
+			__qd_panic_invalid_data();
+			return;
+		}
+
+		__qd_real_t adj[16];
+
+		adj[0]  =  m22 * (m33 * m44 - m34 * m43) - m23 * (m32 * m44 - m34 * m42) + m24 * (m32 * m43 - m33 * m42);
+		adj[1]  = -m12 * (m33 * m44 - m34 * m43) + m13 * (m32 * m44 - m34 * m42) - m14 * (m32 * m43 - m33 * m42);
+		adj[2]  =  m12 * (m23 * m44 - m24 * m43) - m13 * (m22 * m44 - m24 * m42) + m14 * (m22 * m43 - m23 * m42);
+		adj[3] = -m12 * (m23 * m34 - m24 * m33) + m13 * (m22 * m34 - m24 * m32) - m14 * (m22 * m33 - m23 * m32);
+
+		adj[4]  = -m21 * (m33 * m44 - m34 * m43) + m23 * (m31 * m44 - m34 * m41) - m24 * (m31 * m43 - m33 * m41);
+		adj[5]  =  m11 * (m33 * m44 - m34 * m43) - m13 * (m31 * m44 - m34 * m41) + m14 * (m31 * m43 - m33 * m41);
+		adj[6]  = -m11 * (m23 * m44 - m24 * m43) + m13 * (m21 * m44 - m24 * m41) - m14 * (m21 * m43 - m23 * m41);
+		adj[7] =  m11 * (m23 * m34 - m24 * m33) - m13 * (m21 * m34 - m24 * m31) + m14 * (m21 * m33 - m23 * m31);
+
+		adj[8]  =  m21 * (m32 * m44 - m34 * m42) - m22 * (m31 * m44 - m34 * m41) + m24 * (m31 * m42 - m32 * m41);
+		adj[9]  = -m11 * (m32 * m44 - m34 * m42) + m12 * (m31 * m44 - m34 * m41) - m14 * (m31 * m42 - m32 * m41);
+		adj[10] =  m11 * (m22 * m44 - m24 * m42) - m12 * (m21 * m44 - m24 * m41) + m14 * (m21 * m42 - m22 * m41);
+		adj[11] = -m11 * (m22 * m34 - m24 * m32) + m12 * (m21 * m34 - m24 * m31) - m14 * (m21 * m32 - m22 * m31);
+
+		adj[12]  = -m21 * (m32 * m43 - m33 * m42) + m22 * (m31 * m43 - m33 * m41) - m23 * (m31 * m42 - m32 * m41);
+		adj[13]  =  m11 * (m32 * m43 - m33 * m42) - m12 * (m31 * m43 - m33 * m41) + m13 * (m31 * m42 - m32 * m41);
+		adj[14] = -m11 * (m22 * m43 - m23 * m42) + m12 * (m21 * m43 - m23 * m41) - m13 * (m21 * m42 - m22 * m41);
+		adj[15] =  m11 * (m22 * m33 - m23 * m32) - m12 * (m21 * m33 - m23 * m31) + m13 * (m21 * m32 - m22 * m31);
+
+		for (int i = 0; i < 16; i++) {
+			adj[i] /= det;
+		}
+
+		__qd_push(16,
+			adj[0], adj[1], adj[2], adj[3],
+			adj[4], adj[5], adj[6], adj[7],
+			adj[8], adj[9], adj[10], adj[11],
+			adj[12], adj[13], adj[14], adj[15]);
+	}
+}
+
 fn m4m4mul() {
 	__c {
 		if (__qd_stack_ptr < 32) {
