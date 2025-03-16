@@ -143,6 +143,8 @@ func (sa *SemanticAnalyzer) isPrimitiveInstruction(name string) bool {
 		"jz",
 		"ln",
 		"log10",
+		"max",
+		"min",
 		"mod",
 		"mul",
 		"neg",

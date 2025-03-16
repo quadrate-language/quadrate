@@ -223,6 +223,24 @@ void __qd_log10(int n, ...) {
 	}
 }
 
+void __qd_max(int n, ...) {
+	if (__qd_stack_ptr < 2) {
+		__qd_panic_stack_underflow();
+	}
+	__qd_real_t max = __qd_stack[__qd_stack_ptr - 2] > __qd_stack[__qd_stack_ptr - 1] ? __qd_stack[__qd_stack_ptr - 2] : __qd_stack[__qd_stack_ptr - 1];
+	__qd_stack_ptr -= 2;
+	__qd_arg_push(max);
+}
+
+void __qd_min(int n, ...) {
+	if (__qd_stack_ptr < 2) {
+		__qd_panic_stack_underflow();
+	}
+	__qd_real_t min = __qd_stack[__qd_stack_ptr - 2] < __qd_stack[__qd_stack_ptr - 1] ? __qd_stack[__qd_stack_ptr - 2] : __qd_stack[__qd_stack_ptr - 1];
+	__qd_stack_ptr -= 2;
+	__qd_arg_push(min);
+}
+
 void __qd_neg(int n, ...) {
 	if (__qd_stack_ptr < 1) {
 		__qd_panic_stack_underflow();
