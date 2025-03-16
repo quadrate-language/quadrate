@@ -5,10 +5,9 @@ __c {
 
 fn exit() {
 	__c {
-		va_list args;
-		va_start(args, n);
-		int x = (int)va_arg(args, __qd_real_t);
-		va_end(args);
-		exit(x);
+		if (__qd_stack_ptr == 0) {
+			exit(0);
+		}
+		exit(__qd_stack[__qd_stack_ptr-1]);
 	}	
 }
