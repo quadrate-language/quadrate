@@ -1,5 +1,6 @@
 __c {
 	#include <stdio.h>
+	#include <math.h>
 }
 
 fn mean() {
@@ -14,6 +15,27 @@ fn mean() {
 			sum += __qd_stack[i];
 		}
 		__qd_stack[0] = sum / __qd_stack_ptr;
+		__qd_stack_ptr = 1;
+	}
+}
+
+fn stddev() {
+	__c {
+		if (__qd_stack_ptr == 0) {
+			__qd_stack[0] = 0;
+			__qd_stack_ptr = 1;
+			return;
+		}
+		__qd_real_t sum = 0;
+		for (int i = 0; i < __qd_stack_ptr; i++) {
+			sum += __qd_stack[i];
+		}
+		__qd_real_t mean = sum / __qd_stack_ptr;
+		__qd_real_t variance = 0;
+		for (int i = 0; i < __qd_stack_ptr; i++) {
+			variance += (__qd_stack[i] - mean) * (__qd_stack[i] - mean);
+		}
+		__qd_stack[0] = sqrt(variance / __qd_stack_ptr);
 		__qd_stack_ptr = 1;
 	}
 }
