@@ -70,3 +70,20 @@ fn reverse() {
 		}
 	}
 }
+
+fn median() {
+	__c {
+		if (__qd_stack_ptr == 0) {
+			__qd_stack[0] = 0;
+			__qd_stack_ptr = 1;
+			return;
+		}
+		qsort(__qd_stack, __qd_stack_ptr, sizeof(__qd_real_t), compare);
+		if (__qd_stack_ptr % 2 == 0) {
+			__qd_stack[0] = (__qd_stack[__qd_stack_ptr / 2 - 1] + __qd_stack[__qd_stack_ptr / 2]) / 2;
+		} else {
+			__qd_stack[0] = __qd_stack[__qd_stack_ptr / 2];
+		}
+		__qd_stack_ptr = 1;
+	}
+}
