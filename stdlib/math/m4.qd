@@ -100,7 +100,7 @@ fn m4transpose() {
 	}
 }
 
-fn m4inverse() {
+fn m4inv() {
 	__c {
 		if (__qd_stack_ptr < 16) {
 			__qd_panic_stack_underflow();
@@ -169,7 +169,7 @@ fn m4inverse() {
 	}
 }
 
-fn m4m4mul() {
+fn m4mul() {
 	__c {
 		if (__qd_stack_ptr < 32) {
 			__qd_panic_stack_underflow();
