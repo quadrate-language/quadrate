@@ -400,7 +400,7 @@ void __qd_scale(int n, ...) {
 	if (__qd_stack_ptr < 1) {
 		__qd_panic_stack_underflow();
 	}
-	__qd_precision = (int)__qd_stack[__qd_stack_ptr - 1];
+	__qd_precision = (int)__qd_stack[--__qd_stack_ptr];
 }
 
 void __qd_panic_stack_underflow() {
