@@ -1,0 +1,34 @@
+__c {
+	#include <stdlib.h>
+}
+
+fn seed() {
+	__c {
+		if (__qd_stack_ptr < 1) {
+			__qd_panic_stack_underflow();
+			return;
+		}
+		srand((unsigned int)__qd_stack[--__qd_stack_ptr]);
+	}
+}
+
+fn int() {
+	__c {
+		if (__qd_stack_ptr < 1) {
+			__qd_panic_stack_underflow();
+			return;
+		}
+		int x = (int)__qd_stack[--__qd_stack_ptr];
+		if (x <= 0) {
+			__qd_panic_invalid_data();
+			return;
+		}
+		__qd_arg_push((__qd_real_t)(rand() % x));
+	}
+}
+
+fn float() {
+	__c {
+		__qd_arg_push((__qd_real_t)rand() / (__qd_real_t)RAND_MAX);
+	}
+}
