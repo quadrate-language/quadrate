@@ -139,6 +139,7 @@ func (sa *SemanticAnalyzer) isPrimitiveInstruction(name string) bool {
 		"jle",
 		"jl",
 		"jne",
+		"jnz",
 		"jz",
 		"ln",
 		"log10",
