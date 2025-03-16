@@ -58,11 +58,6 @@ void __qd_depth(int n, ...) {
 }
 
 void __qd_add(int n, ...) {
-	va_list args;
-	va_start(args, n);
-	if (n > 0) {
-		__qd_push(n, va_arg(args, __qd_real_t));
-	}
 	if (__qd_stack_ptr < 2) {
 		__qd_panic_stack_underflow();
 	}
@@ -71,11 +66,6 @@ void __qd_add(int n, ...) {
 }
 
 void __qd_sub(int n, ...) {
-	va_list args;
-	va_start(args, n);
-	if (n > 0) {
-		__qd_push(n, va_arg(args, __qd_real_t));
-	}
 	if (__qd_stack_ptr < 2) {
 		__qd_panic_stack_underflow();
 	}
@@ -84,11 +74,6 @@ void __qd_sub(int n, ...) {
 }
 
 void __qd_mul(int n, ...) {
-	va_list args;
-	va_start(args, n);
-	if (n > 0) {
-		__qd_push(n, va_arg(args, __qd_real_t));
-	}
 	if (__qd_stack_ptr < 2) {
 		__qd_panic_stack_underflow();
 	}
@@ -97,11 +82,6 @@ void __qd_mul(int n, ...) {
 }
 
 void __qd_div(int n, ...) {
-	va_list args;
-	va_start(args, n);
-	if (n > 0) {
-		__qd_push(n, va_arg(args, __qd_real_t));
-	}
 	if (__qd_stack_ptr < 2) {
 		__qd_panic_stack_underflow();
 	}
