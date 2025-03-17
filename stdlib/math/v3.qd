@@ -14,6 +14,86 @@ fn v3unitz() {
 	push 0 0 1
 }
 
+fn v3add() {
+	__c {
+		if (__qd_stack_ptr < 6) {
+			__qd_panic_stack_underflow();
+			return;
+		}
+		const __qd_real_t x1 = __qd_stack[__qd_stack_ptr - 6];
+		const __qd_real_t y1 = __qd_stack[__qd_stack_ptr - 5];
+		const __qd_real_t z1 = __qd_stack[__qd_stack_ptr - 4];
+		const __qd_real_t x2 = __qd_stack[__qd_stack_ptr - 3];
+		const __qd_real_t y2 = __qd_stack[__qd_stack_ptr - 2];
+		const __qd_real_t z2 = __qd_stack[__qd_stack_ptr - 1];
+		__qd_stack_ptr -= 6;
+		__qd_arg_push(x1 + x2);
+		__qd_arg_push(y1 + y2);
+		__qd_arg_push(z1 + z2);
+	}
+}
+
+fn v3sub() {
+	__c {
+		if (__qd_stack_ptr < 6) {
+			__qd_panic_stack_underflow();
+			return;
+		}
+		const __qd_real_t x1 = __qd_stack[__qd_stack_ptr - 6];
+		const __qd_real_t y1 = __qd_stack[__qd_stack_ptr - 5];
+		const __qd_real_t z1 = __qd_stack[__qd_stack_ptr - 4];
+		const __qd_real_t x2 = __qd_stack[__qd_stack_ptr - 3];
+		const __qd_real_t y2 = __qd_stack[__qd_stack_ptr - 2];
+		const __qd_real_t z2 = __qd_stack[__qd_stack_ptr - 1];
+		__qd_stack_ptr -= 6;
+		__qd_arg_push(x1 - x2);
+		__qd_arg_push(y1 - y2);
+		__qd_arg_push(z1 - z2);
+	}
+}
+
+fn v3mul() {
+	__c {
+		if (__qd_stack_ptr < 6) {
+			__qd_panic_stack_underflow();
+			return;
+		}
+		const __qd_real_t x1 = __qd_stack[__qd_stack_ptr - 6];
+		const __qd_real_t y1 = __qd_stack[__qd_stack_ptr - 5];
+		const __qd_real_t z1 = __qd_stack[__qd_stack_ptr - 4];
+		const __qd_real_t x2 = __qd_stack[__qd_stack_ptr - 3];
+		const __qd_real_t y2 = __qd_stack[__qd_stack_ptr - 2];
+		const __qd_real_t z2 = __qd_stack[__qd_stack_ptr - 1];
+		__qd_stack_ptr -= 6;
+		__qd_arg_push(x1 * x2);
+		__qd_arg_push(y1 * y2);
+		__qd_arg_push(z1 * z2);
+	}
+}
+
+fn v3div() {
+	__c {
+		if (__qd_stack_ptr < 6) {
+			__qd_panic_stack_underflow();
+			return;
+		}
+		const __qd_real_t x1 = __qd_stack[__qd_stack_ptr - 6];
+		const __qd_real_t y1 = __qd_stack[__qd_stack_ptr - 5];
+		const __qd_real_t z1 = __qd_stack[__qd_stack_ptr - 4];
+		const __qd_real_t x2 = __qd_stack[__qd_stack_ptr - 3];
+		const __qd_real_t y2 = __qd_stack[__qd_stack_ptr - 2];
+		const __qd_real_t z2 = __qd_stack[__qd_stack_ptr - 1];
+		if (x2 == 0 || y2 == 0 || z2 == 0) {
+			__qd_panic_division_by_zero();
+			return;
+		}
+		__qd_stack_ptr -= 6;
+		__qd_arg_push(x1 / x2);
+		__qd_arg_push(y1 / y2);
+		__qd_arg_push(z1 / z2);
+	}
+}
+
 fn v3dup() {
 	__c {
 		if (__qd_stack_ptr < 3) {
