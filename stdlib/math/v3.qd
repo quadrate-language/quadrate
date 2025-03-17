@@ -75,3 +75,24 @@ fn v3length() {
 		__qd_arg_push(sqrt(x * x + y * y + z * z));
 	}
 }
+
+fn v3normalize() {
+	__c {
+		if (__qd_stack_ptr < 3) {
+			__qd_panic_stack_underflow();
+			return;
+		}
+		const __qd_real_t x = __qd_stack[__qd_stack_ptr - 3];
+		const __qd_real_t y = __qd_stack[__qd_stack_ptr - 2];
+		const __qd_real_t z = __qd_stack[__qd_stack_ptr - 1];
+		const __qd_real_t len = sqrt(x * x + y * y + z * z);
+		if (len == 0) {
+			__qd_panic_division_by_zero();
+			return;
+		}
+		__qd_stack_ptr -= 3;
+		__qd_arg_push(x / len);
+		__qd_arg_push(y / len);
+		__qd_arg_push(z / len);
+	}
+}
