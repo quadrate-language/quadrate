@@ -1,3 +1,7 @@
+__c {
+	#include <math.h>
+}
+
 use m4
 use transform
 
@@ -12,6 +16,27 @@ fn deg2rad() {
 		}
 
 		__qd_stack[__qd_stack_ptr - 1] *= __qd_math_PI / 180.0;
+	}
+}
+
+fn gamma() {
+	__c {
+		if (__qd_stack_ptr < 1) {
+			__qd_panic_stack_underflow();
+			return;
+		}
+
+		const __qd_real_t x = __qd_stack[--__qd_stack_ptr];
+		if (x < 0) {
+			__qd_panic_invalid_data();
+			return;
+		}
+		double gamma = tgamma((double)x);
+		if (gamma == INFINITY) {
+			__qd_panic_value_infinity();
+			return;
+		}
+		__qd_arg_push((__qd_real_t)gamma);
 	}
 }
 

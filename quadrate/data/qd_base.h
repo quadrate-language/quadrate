@@ -55,6 +55,7 @@ extern void __qd_scale(int n, ...);
 
 extern void __qd_panic_stack_underflow();
 extern void __qd_panic_stack_overflow();
+extern void __qd_panic_value_infinity();
 extern void __qd_panic_division_by_zero();
 extern void __qd_panic_invalid_input();
 extern void __qd_panic_invalid_data();

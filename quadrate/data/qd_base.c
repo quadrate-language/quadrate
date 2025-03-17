@@ -419,6 +419,14 @@ void __qd_panic_stack_overflow() {
 #endif
 }
 
+void __qd_panic_value_infinity() {
+	__qd_err = 2.3;
+#ifdef QD_ENABLE_PANIC
+	fprintf(stderr, "panic: value infinity\n");
+	exit(1);
+#endif
+}
+
 void __qd_panic_division_by_zero() {
 	__qd_err = 1.1;
 #ifdef QD_ENABLE_PANIC
