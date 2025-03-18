@@ -156,6 +156,7 @@ func (sa *SemanticAnalyzer) isPrimitiveInstruction(name string) bool {
 		"read",
 		"rot",
 		"rot2",
+		"round",
 		"scale",
 		"sin",
 		"sq",

@@ -321,6 +321,13 @@ void __qd_rot2(int n, ...) {
 	__qd_stack[__qd_stack_ptr - 1] = tmp;
 }
 
+void __qd_round(int n, ...) {
+	if (__qd_stack_ptr < 1) {
+		__qd_panic_stack_underflow();
+	}
+	__qd_stack[__qd_stack_ptr - 1] = round(__qd_stack[__qd_stack_ptr - 1]);
+}
+
 void __qd_sq(int n, ...) {
 	if (__qd_stack_ptr < 1) {
 		__qd_panic_stack_underflow();

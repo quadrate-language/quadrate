@@ -46,6 +46,7 @@ extern void __qd_pow(int n, ...);
 extern void __qd_read(int n, ...);
 extern void __qd_rot(int n, ...);
 extern void __qd_rot2(int n, ...);
+extern void __qd_round(int n, ...);
 extern void __qd_sq(int n, ...);
 extern void __qd_sqrt(int n, ...);
 extern void __qd_write(int n, ...);
