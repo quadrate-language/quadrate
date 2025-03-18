@@ -22,3 +22,36 @@ fn print() {
 		}
 	}
 }
+
+fn printb() {
+	__c {
+		va_list args;
+		va_start(args, n);
+		int columns = (int)va_arg(args, __qd_real_t);
+		va_end(args);
+		int bits = 8;
+		for (int i = 0; i < __qd_stack_ptr; ++i) {
+			if (__qd_stack[i] > 65535 && bits < 32) {
+				bits = 32;
+				break;
+			} else if (__qd_stack[i] > 255 && bits < 16) {
+				bits = 16;
+				break;
+			}
+		}
+		for (int i = 0; i < __qd_stack_ptr; ++i) {
+			if (i % columns == 0) {
+				printf("\n");
+			} else {
+				printf(" ");
+			}
+			for (int j = bits - 1; j >= 0; j--) {
+				unsigned int mask = 1u << j;
+				putchar(((unsigned int)__qd_stack[i] & mask) ? '1' : '0');
+			}
+		}
+		if (__qd_stack_ptr > 0) {
+			printf("\n");
+		}
+	}
+}

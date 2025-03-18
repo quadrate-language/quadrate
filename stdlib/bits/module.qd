@@ -1,0 +1,146 @@
+fn or() {
+	__c {
+		if (__qd_stack_ptr < 2) {
+			__qd_panic_stack_underflow();
+			return;
+		}
+		unsigned int a = (unsigned int)__qd_stack[--__qd_stack_ptr];
+		unsigned int b = (unsigned int)__qd_stack[--__qd_stack_ptr];
+		__qd_arg_push((__qd_real_t)(a | b));
+	}
+}
+
+fn xor() {
+	__c {
+		if (__qd_stack_ptr < 2) {
+			__qd_panic_stack_underflow();
+			return;
+		}
+		unsigned int a = (unsigned int)__qd_stack[--__qd_stack_ptr];
+		unsigned int b = (unsigned int)__qd_stack[--__qd_stack_ptr];
+		__qd_arg_push((__qd_real_t)(a ^ b));
+	}
+}
+
+fn and() {
+	__c {
+		if (__qd_stack_ptr < 2) {
+			__qd_panic_stack_underflow();
+			return;
+		}
+		unsigned int a = (unsigned int)__qd_stack[--__qd_stack_ptr];
+		unsigned int b = (unsigned int)__qd_stack[--__qd_stack_ptr];
+		__qd_arg_push((__qd_real_t)(a & b));
+	}
+}
+
+fn not() {
+	__c {
+		if (__qd_stack_ptr < 1) {
+			__qd_panic_stack_underflow();
+			return;
+		}
+		unsigned int a = (unsigned int)__qd_stack[--__qd_stack_ptr];
+		__qd_arg_push((__qd_real_t)(~a));
+	}
+}
+
+fn nand() {
+	__c {
+		if (__qd_stack_ptr < 2) {
+			__qd_panic_stack_underflow();
+			return;
+		}
+		unsigned int a = (unsigned int)__qd_stack[--__qd_stack_ptr];
+		unsigned int b = (unsigned int)__qd_stack[--__qd_stack_ptr];
+		__qd_arg_push((__qd_real_t)(~(a & b)));
+	}
+}
+
+fn nor() {
+	__c {
+		if (__qd_stack_ptr < 2) {
+			__qd_panic_stack_underflow();
+			return;
+		}
+		unsigned int a = (unsigned int)__qd_stack[--__qd_stack_ptr];
+		unsigned int b = (unsigned int)__qd_stack[--__qd_stack_ptr];
+		__qd_arg_push((__qd_real_t)(~(a | b)));
+	}
+}
+
+fn xnor() {
+	__c {
+		if (__qd_stack_ptr < 2) {
+			__qd_panic_stack_underflow();
+			return;
+		}
+		unsigned int a = (unsigned int)__qd_stack[--__qd_stack_ptr];
+		unsigned int b = (unsigned int)__qd_stack[--__qd_stack_ptr];
+		__qd_arg_push((__qd_real_t)(~(a ^ b)));
+	}
+}
+
+fn lshift() {
+	__c {
+		if (__qd_stack_ptr < 2) {
+			__qd_panic_stack_underflow();
+			return;
+		}
+		unsigned int a = (unsigned int)__qd_stack[--__qd_stack_ptr];
+		unsigned int b = (unsigned int)__qd_stack[--__qd_stack_ptr];
+		__qd_arg_push((__qd_real_t)(a << b));
+	}
+}
+
+fn rshift() {
+	__c {
+		if (__qd_stack_ptr < 2) {
+			__qd_panic_stack_underflow();
+			return;
+		}
+		unsigned int a = (unsigned int)__qd_stack[--__qd_stack_ptr];
+		unsigned int b = (unsigned int)__qd_stack[--__qd_stack_ptr];
+		__qd_arg_push((__qd_real_t)(b >> a));
+	}
+}
+
+fn popcount() {
+	__c {
+		if (__qd_stack_ptr < 1) {
+			__qd_panic_stack_underflow();
+			return;
+		}
+		unsigned int a = (unsigned int)__qd_stack[--__qd_stack_ptr];
+		unsigned int count = 0;
+		while (a) {
+			count += a & 1;
+			a >>= 1;
+		}
+		__qd_arg_push((__qd_real_t)count);
+	}
+}
+
+fn lrot() {
+	__c {
+		if (__qd_stack_ptr < 2) {
+			__qd_panic_stack_underflow();
+			return;
+		}
+		unsigned int a = (unsigned int)__qd_stack[--__qd_stack_ptr];
+		unsigned int b = (unsigned int)__qd_stack[--__qd_stack_ptr];
+		__qd_arg_push((__qd_real_t)((b << a) | (b >> (32 - a))));
+	}
+}
+
+fn rrot() {
+	__c {
+		if (__qd_stack_ptr < 2) {
+			__qd_panic_stack_underflow();
+			return;
+		}
+		unsigned int a = (unsigned int)__qd_stack[--__qd_stack_ptr];
+		unsigned int b = (unsigned int)__qd_stack[--__qd_stack_ptr];
+		__qd_arg_push((__qd_real_t)((b >> a) | (b << (32 - a))));
+	}
+}
