@@ -240,3 +240,63 @@ fn m4mul() {
 		__qd_push(16, c11, c12, c13, c14, c21, c22, c23, c24, c31, c32, c33, c34, c41, c42, c43, c44);
 	}
 }
+
+fn m4sadd() {
+	__c {
+		if (__qd_stack_ptr < 17) {
+			__qd_panic_stack_underflow();
+			return;
+		}
+
+		__qd_real_t s = __qd_stack[--__qd_stack_ptr];
+		for (int i = 0; i < 16; i++) {
+			__qd_stack[i] += s;
+		}
+	}
+}
+
+fn m4ssub() {
+	__c {
+		if (__qd_stack_ptr < 17) {
+			__qd_panic_stack_underflow();
+			return;
+		}
+
+		__qd_real_t s = __qd_stack[--__qd_stack_ptr];
+		for (int i = 0; i < 16; i++) {
+			__qd_stack[i] -= s;
+		}
+	}
+}
+
+fn m4smul() {
+	__c {
+		if (__qd_stack_ptr < 17) {
+			__qd_panic_stack_underflow();
+			return;
+		}
+
+		__qd_real_t s = __qd_stack[--__qd_stack_ptr];
+		for (int i = 0; i < 16; i++) {
+			__qd_stack[i] *= s;
+		}
+	}
+}
+
+fn m4sdiv() {
+	__c {
+		if (__qd_stack_ptr < 17) {
+			__qd_panic_stack_underflow();
+			return;
+		}
+
+		__qd_real_t s = __qd_stack[--__qd_stack_ptr];
+		if (s == 0) {
+			__qd_panic_division_by_zero();
+			return;
+		}
+		for (int i = 0; i < 16; i++) {
+			__qd_stack[i] /= s;
+		}
+	}
+}
