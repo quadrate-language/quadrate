@@ -60,6 +60,7 @@ extern void __qd_panic_value_infinity();
 extern void __qd_panic_division_by_zero();
 extern void __qd_panic_invalid_input();
 extern void __qd_panic_invalid_data();
+extern void __qd_panic_out_of_memory();
 
 #endif
 

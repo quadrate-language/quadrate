@@ -365,7 +365,7 @@ void __qd_eval(int n, const char* expression, ...) {
 	if (expr_copy == NULL) {
 		return;
 	}
-	char* token = strtok((char*)expr_copy, " ");
+	char* token = strtok((char*)expr_copy, " \t\r\n");
 	while (token != NULL) {
 		if (isdigit(token[0]) || (token[0] == '-' && isdigit(token[1]))) {
 			__qd_arg_push(atof(token));
@@ -394,7 +394,7 @@ void __qd_eval(int n, const char* expression, ...) {
 		} else {
 			__qd_panic_invalid_input();
 		}
-		token = strtok(NULL, " ");
+		token = strtok(NULL, " \t\r\n");
 	}
 }
 
@@ -454,6 +454,14 @@ void __qd_panic_invalid_data() {
 	__qd_err = 3.2;
 #ifdef QD_ENABLE_PANIC
 	fprintf(stderr, "panic: invalid data\n");
+	exit(1);
+#endif
+}
+
+void __qd_panic_out_of_memory() {
+	__qd_err = 4.1;
+#ifdef QD_ENABLE_PANIC
+	fprintf(stderr, "panic: out of memory\n");
 	exit(1);
 #endif
 }

@@ -282,7 +282,7 @@ func (l *Lexer) readString() string {
 	for l.ch != '"' && l.ch != 0 {
 		l.readChar()
 	}
-	return l.source[start:l.position]
+	return "\"" + l.source[start:l.position] + "\""
 }
 
 func (l *Lexer) readCBlock() string {

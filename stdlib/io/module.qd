@@ -1,0 +1,88 @@
+__c {
+	#include <stdio.h>
+	#include <stdlib.h>
+	#include <stdarg.h>
+}
+
+fn readfile() {
+	__c {
+		va_list args;
+		va_start(args, n);
+		const char* filename = (const char*)va_arg(args, const char*);
+		va_end(args);
+
+		FILE* f = fopen(filename, "r");
+		if (!f) {
+			__qd_panic_invalid_input();
+			return;
+		}
+
+		if (fseek(f, 0, SEEK_END) != 0) {
+			fclose(f);
+			__qd_panic_invalid_input();
+			return;
+		}
+
+		long size = ftell(f);
+		if (size < 0) {
+			fclose(f);
+			__qd_panic_invalid_input();
+			return;
+		}
+
+		rewind(f);
+
+		char* buffer = malloc(size + 1);
+		if (!buffer) {
+			fclose(f);
+			__qd_panic_out_of_memory();
+			return;
+		}
+
+		size_t read = fread(buffer, 1, size, f);
+		if (read != size) {
+			fclose(f);
+			free(buffer);
+			__qd_panic_invalid_data();
+			return;
+		}
+
+		buffer[size] = '\0';
+		fclose(f);
+
+		__qd_eval(0, buffer);
+		free(buffer);
+	}
+}
+
+fn writefile() {
+	__c {
+		va_list args;
+		va_start(args, n);
+		const char* filename = (const char*)va_arg(args, const char*);
+		va_end(args);
+
+		FILE* f = fopen(filename, "w");
+		if (!f) {
+			__qd_panic_invalid_input();
+			return;
+		}
+
+		for (int i = 0; i < __qd_stack_ptr; i++) {
+			if (fprintf(f, "%.*f\n", __qd_precision, __qd_stack[i]) < 0) {
+				fclose(f);
+				__qd_panic_out_of_memory();
+				return;
+			}
+		}
+
+		if (ferror(f)) {
+			fclose(f);
+			__qd_panic_out_of_memory();
+			return;
+		}
+
+		fclose(f);
+	}
+}
+

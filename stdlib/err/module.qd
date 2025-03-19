@@ -9,6 +9,7 @@ const STACK_UNDERFLOW 2.2
 const VALUE_INFINITY  2.3
 const INVALID_INPUT   3.1
 const INVALID_DATA    3.2
+const OUT_OF_MEMORY   4.1
 
 fn print() {
 	__c {
@@ -26,6 +27,8 @@ fn print() {
 			printf("VALUE_INFINITY\n");
 		} else if (__qd_err == __qd_err_INVALID_DATA) {
 			printf("INVALID_DATA\n");
+		} else if (__qd_err == __qd_err_OUT_OF_MEMORY) {
+			printf("OUT_OF_MEMORY\n");
 		} else {
 			printf("UNKNOWN ERROR\n");
 		}

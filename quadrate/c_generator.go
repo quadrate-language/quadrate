@@ -140,11 +140,7 @@ func (cg *CGenerator) writeSource(tu *TranslationUnit, sb *strings.Builder) {
 								if isFloat(arg) {
 									sb.WriteString(fmt.Sprintf("%d, (__qd_real_t)%s", len(n.Args), arg))
 								} else {
-									if n.Name == "eval" {
-										sb.WriteString(fmt.Sprintf("%d, \"%s\"", len(n.Args), arg))
-									} else {
-										sb.WriteString(fmt.Sprintf("%d, %s", len(n.Args), arg))
-									}
+									sb.WriteString(fmt.Sprintf("%d, %s", len(n.Args), arg))
 								}
 								continue
 							}
