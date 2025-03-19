@@ -16,7 +16,7 @@ fn deg2rad() {
 			return;
 		}
 
-		__qd_stack[__qd_stack_ptr - 1] *= __qd_math_PI / 180.0;
+		__qd_stack[__qd_stack_ptr - 1] *= __qd_math_Pi / 180.0;
 	}
 }
 
@@ -48,6 +48,6 @@ fn rad2deg() {
 			return;
 		}
 
-		__qd_stack[__qd_stack_ptr - 1] *= 180.0 / __qd_math_PI;
+		__qd_stack[__qd_stack_ptr - 1] *= 180.0 / __qd_math_Pi;
 	}
 }
