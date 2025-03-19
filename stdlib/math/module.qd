@@ -6,8 +6,8 @@ use m4
 use transform
 use v3
 
-const PI 3.141592653589793
-const TAU 6.283185307179586
+const Pi 3.141592653589793
+const Tau 6.283185307179586
 
 fn deg2rad() {
 	__c {

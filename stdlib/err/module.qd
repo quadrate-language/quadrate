@@ -2,35 +2,35 @@ __c {
 	#include <stdio.h>
 }
 
-const OK              0.0
-const DIV_BY_ZERO     1.1
-const STACK_OVERFLOW  2.1
-const STACK_UNDERFLOW 2.2
-const VALUE_INFINITY  2.3
-const INVALID_INPUT   3.1
-const INVALID_DATA    3.2
-const OUT_OF_MEMORY   4.1
+const OK             0.0
+const DivByZero      1.1
+const StackOverflow  2.1
+const StackUnderflow 2.2
+const ValueInfinity  2.3
+const InvalidInput   3.1
+const InvalidData    3.2
+const OutOfMemory    4.1
 
 fn print() {
 	__c {
 		if (__qd_err == __qd_err_OK) {
 			return;
-		} else if (__qd_err == __qd_err_DIV_BY_ZERO) {
-			printf("DIV_BY_ZERO\n");
-		} else if (__qd_err == __qd_err_STACK_OVERFLOW) {
-			printf("STACK_OVERFLOW\n");
-		} else if (__qd_err == __qd_err_STACK_UNDERFLOW) {
-			printf("STACK_UNDERFLOW\n");
-		} else if (__qd_err == __qd_err_INVALID_INPUT) {
-			printf("INVALID_INPUT\n");
-		} else if (__qd_err == __qd_err_VALUE_INFINITY) {
-			printf("VALUE_INFINITY\n");
-		} else if (__qd_err == __qd_err_INVALID_DATA) {
-			printf("INVALID_DATA\n");
-		} else if (__qd_err == __qd_err_OUT_OF_MEMORY) {
-			printf("OUT_OF_MEMORY\n");
+		} else if (__qd_err == __qd_err_DivByZero) {
+			printf("DivByZero\n");
+		} else if (__qd_err == __qd_err_StackOverflow) {
+			printf("StackOverflow\n");
+		} else if (__qd_err == __qd_err_StackUnderflow) {
+			printf("StackUnderflow\n");
+		} else if (__qd_err == __qd_err_InvalidInput) {
+			printf("InvalidInput\n");
+		} else if (__qd_err == __qd_err_ValueInfinity) {
+			printf("ValueInfinity\n");
+		} else if (__qd_err == __qd_err_InvalidData) {
+			printf("InvalidData\n");
+		} else if (__qd_err == __qd_err_OutOfMemory) {
+			printf("OutOfMemory\n");
 		} else {
-			printf("UNKNOWN ERROR\n");
+			printf("UnknownError\n");
 		}
 	}
 }
