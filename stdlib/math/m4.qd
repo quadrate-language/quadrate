@@ -1,3 +1,8 @@
+__c {
+	#include <stdlib.h>
+	#include <time.h>
+}
+
 fn m4identity() {
 	push 1 0 0 0
 	push 0 1 0 0
@@ -10,6 +15,15 @@ fn m4zero() {
 	push 0 0 0 0
 	push 0 0 0 0
 	push 0 0 0 0
+}
+
+fn m4rand() {
+	__c {
+		srand((unsigned int)time(NULL));
+		for (int i = 0; i < 16; i++) {
+			__qd_arg_push((rand() % 1000) / 1000.0);
+		}
+	}
 }
 
 fn m4dup() {
