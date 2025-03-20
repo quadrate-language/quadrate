@@ -53,6 +53,33 @@ void __qd_pop(int n, ...) {
 	va_end(args);
 }
 
+void __qd_avg(int n, ...) {
+	if (__qd_stack_ptr < 1) {
+		__qd_stack_ptr = 0;
+		__qd_arg_push(0);
+		return;
+	}
+
+	__qd_real_t summed = 0;
+	for (int i = 0; i < __qd_stack_ptr; ++i) {
+		summed += __qd_stack[i];
+	}
+
+	summed /= (__qd_stack_ptr);
+	__qd_stack_ptr = 0;
+	__qd_arg_push(summed);
+}
+
+void __qd_sum(int n, ...) {
+	__qd_real_t summed = 0;
+	for (int i = 0; i < __qd_stack_ptr; ++i) {
+		summed += __qd_stack[i];
+	}
+
+	__qd_stack_ptr = 0;
+	__qd_arg_push(summed);
+}
+
 void __qd_depth(int n, ...) {
 	__qd_arg_push(__qd_stack_ptr);
 }
