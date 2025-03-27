@@ -228,6 +228,8 @@ func (l *Lexer) lookupIdentifier(i string) TokenType {
 		return JumpNotZero
 	case "jz":
 		return JumpZero
+	case "reduce":
+		return Reduce
 	}
 	return Identifier
 }

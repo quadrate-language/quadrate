@@ -326,6 +326,46 @@ void __qd_read(int n, ...) {
 	}
 }
 
+void __qd_reduce_add(int n, ...) {
+	__qd_real_t result = 0;
+	for (int i = 0; i < __qd_stack_ptr; ++i) {
+		result += __qd_stack[i];
+	}
+	__qd_stack_ptr = 0;
+	__qd_arg_push(result);
+}
+
+void __qd_reduce_div(int n, ...) {
+	__qd_real_t result = __qd_stack[0];
+	for (int i = 1; i < __qd_stack_ptr; ++i) {
+		if (__qd_stack[i] == 0.0) {
+			__qd_panic_division_by_zero();
+			return;
+		}
+		result /= __qd_stack[i];
+	}
+	__qd_stack_ptr = 0;
+	__qd_arg_push(result);
+}
+
+void __qd_reduce_mul(int n, ...) {
+	__qd_real_t result = 1;
+	for (int i = 0; i < __qd_stack_ptr; ++i) {
+		result *= __qd_stack[i];
+	}
+	__qd_stack_ptr = 0;
+	__qd_arg_push(result);
+}
+
+void __qd_reduce_sub(int n, ...) {
+	__qd_real_t result = __qd_stack[0];
+	for (int i = 1; i < __qd_stack_ptr; ++i) {
+		result -= __qd_stack[i];
+	}
+	__qd_stack_ptr = 0;
+	__qd_arg_push(result);
+}
+
 void __qd_rot(int n, ...) {
 	if (__qd_stack_ptr < 3) {
 		__qd_panic_stack_underflow();

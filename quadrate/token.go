@@ -31,6 +31,7 @@ const (
 	NumericConstant   = "numeric_constant"
 	ParenthesisLeft   = "parenthesis_left"
 	ParenthesisRight  = "parenthesis_right"
+	Reduce            = "reduce"
 	Return            = "return"
 	Scope             = "scope"
 	String            = "string"

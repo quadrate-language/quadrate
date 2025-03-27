@@ -64,6 +64,11 @@ type Label struct {
 type Jmp struct {
 	Label string
 }
+
+type ReduceStmt struct {
+	Identifier string
+}
+
 type Je Jmp
 type Jge Jmp
 type Jg Jmp
@@ -233,6 +238,34 @@ body_loop:
 				return nil, err
 			} else {
 				deferStmts = append(deferStmts, n)
+			}
+		case Reduce:
+			if p.peek() == Identifier {
+				p.current++
+				literal := (*p.tokens)[p.current].Literal
+				switch literal {
+				case "add":
+				case "sub":
+				case "mul":
+				case "div":
+				default:
+					return nil, &SyntaxError{
+						Message:  fmt.Sprintf("unknown reduction ‘%s‘", literal),
+						Line:     t.Line,
+						Column:   t.Column,
+						Filename: p.filename,
+					}
+				}
+				stmts = append(stmts, ReduceStmt{
+					Identifier: literal,
+				})
+			} else {
+				return nil, &SyntaxError{
+					Message:  "expected ‘add, div, mul or sub‘ after ‘reduce‘",
+					Line:     t.Line,
+					Column:   t.Column,
+					Filename: p.filename,
+				}
 			}
 		case Return:
 			for _, stmt := range deferStmts {

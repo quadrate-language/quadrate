@@ -150,6 +150,8 @@ func (cg *CGenerator) writeSource(tu *TranslationUnit, sb *strings.Builder) {
 					sb.WriteString(");\n")
 				case InlineCCode:
 					sb.WriteString(n.Code + "\n")
+				case ReduceStmt:
+					sb.WriteString(fmt.Sprintf("\t%s_reduce_%s(0);\n", cg.prefix, n.Identifier))
 				case ReturnStatement:
 					sb.WriteString("\treturn;\n")
 				case Label:
