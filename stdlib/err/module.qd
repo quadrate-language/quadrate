@@ -2,14 +2,16 @@ __c {
 	#include <stdio.h>
 }
 
-const OK             0.0
-const DivByZero      1.1
-const StackOverflow  2.1
-const StackUnderflow 2.2
-const ValueInfinity  2.3
-const InvalidInput   3.1
-const InvalidData    3.2
-const OutOfMemory    4.1
+const OK                 0.0
+const DivByZero          1.1
+const StackOverflow      2.1
+const StackUnderflow     2.2
+const ValueInfinity      2.3
+const MarkStackOverflow  2.4
+const MarkStackUnderflow 2.5
+const InvalidInput       3.1
+const InvalidData        3.2
+const OutOfMemory        4.1
 
 fn print() {
 	__c {
@@ -29,6 +31,10 @@ fn print() {
 			printf("InvalidData\n");
 		} else if (__qd_err == __qd_err_OutOfMemory) {
 			printf("OutOfMemory\n");
+		} else if (__qd_err == __qd_err_MarkStackOverflow) {
+			printf("MarkStackOverflow\n");
+		} else if (__qd_err == __qd_err_MarkStackUnderflow) {
+			printf("MarkStackUnderflow\n");
 		} else {
 			printf("UnknownError\n");
 		}

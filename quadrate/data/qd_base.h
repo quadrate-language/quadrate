@@ -2,12 +2,16 @@
 #define QD_BASE_H
 
 #define QD_STACK_DEPTH 1024
+#define QD_MARK_STACK_DEPTH 8
 //#define QD_ENABLE_PANIC
 #define __qd_real_t double
 
 extern __qd_real_t __qd_stack[QD_STACK_DEPTH];
+extern __qd_real_t __qd_mark_stacks[QD_MARK_STACK_DEPTH][QD_STACK_DEPTH];
 extern __qd_real_t __qd_err;
 extern int __qd_stack_ptr;
+extern int __qd_mark_stack_ptr;
+extern int __qd_mark_stacks_ptrs[QD_MARK_STACK_DEPTH];
 extern int __qd_precision;
 
 extern void __qd_arg_push(__qd_real_t x);
@@ -33,6 +37,7 @@ extern void __qd_inc(int n, ...);
 extern void __qd_inv(int n, ...);
 extern void __qd_ln(int n, ...);
 extern void __qd_log10(int n, ...);
+extern void __qd_mark(int n, ...);
 extern void __qd_max(int n, ...);
 extern void __qd_min(int n, ...);
 extern void __qd_mul(int n, ...);
@@ -47,6 +52,7 @@ extern void __qd_reduce_add(int n, ...);
 extern void __qd_reduce_div(int n, ...);
 extern void __qd_reduce_mul(int n, ...);
 extern void __qd_reduce_sub(int n, ...);
+extern void __qd_revert(int n, ...);
 extern void __qd_rot(int n, ...);
 extern void __qd_rot2(int n, ...);
 extern void __qd_round(int n, ...);
@@ -60,6 +66,8 @@ extern void __qd_swap(int n, ...);
 extern void __qd_tan(int n, ...);
 extern void __qd_write(int n, ...);
 
+extern void __qd_panic_mark_stack_overflow();
+extern void __qd_panic_mark_stack_underflow();
 extern void __qd_panic_stack_underflow();
 extern void __qd_panic_stack_overflow();
 extern void __qd_panic_value_infinity();

@@ -7,8 +7,11 @@
 #include "qd_base.h"
 
 __qd_real_t __qd_stack[QD_STACK_DEPTH] = {0};
+__qd_real_t __qd_mark_stacks[QD_MARK_STACK_DEPTH][QD_STACK_DEPTH] = {0};
 __qd_real_t __qd_err = 0.0;
 int __qd_stack_ptr = 0;
+int __qd_mark_stack_ptr = 0;
+int __qd_mark_stacks_ptrs[QD_MARK_STACK_DEPTH] = {0};
 int __qd_precision = 2;
 
 void __qd_arg_push(__qd_real_t x) {
@@ -290,6 +293,25 @@ void __qd_pow(int n, ...) {
 	__qd_pop(0);
 }
 
+void __qd_mark(int n, ...) {
+	if (__qd_mark_stack_ptr >= QD_MARK_STACK_DEPTH) {
+		__qd_panic_mark_stack_overflow();
+		return;
+	}
+	__qd_mark_stacks_ptrs[__qd_mark_stack_ptr] = __qd_stack_ptr;
+	memcpy(__qd_mark_stacks[__qd_mark_stack_ptr], __qd_stack, sizeof(__qd_stack));
+	__qd_mark_stack_ptr++;
+}
+
+void __qd_revert(int n, ...) {
+	if (__qd_mark_stack_ptr == 0) {
+		__qd_panic_mark_stack_underflow();
+		return;
+	}
+	__qd_stack_ptr = __qd_mark_stacks_ptrs[--__qd_mark_stack_ptr];
+	memcpy(__qd_stack, __qd_mark_stacks[__qd_mark_stack_ptr], sizeof(__qd_stack));
+}
+
 void __qd_mod(int n, ...) {
 	if (__qd_stack_ptr < 2) {
 		__qd_panic_stack_underflow();
@@ -475,6 +497,22 @@ void __qd_scale(int n, ...) {
 		__qd_panic_stack_underflow();
 	}
 	__qd_precision = (int)__qd_stack[--__qd_stack_ptr];
+}
+
+void __qd_panic_mark_stack_overflow() {
+	__qd_err = 2.4;
+#ifdef QD_ENABLE_PANIC
+	fprintf(stderr, "panic: mark stack overflow\n");
+	exit(1);
+#endif
+}
+
+void __qd_panic_mark_stack_underflow() {
+	__qd_err = 2.5;
+#ifdef QD_ENABLE_PANIC
+	fprintf(stderr, "panic: mark stack underflow\n");
+	exit(1);
+#endif
 }
 
 void __qd_panic_stack_underflow() {
