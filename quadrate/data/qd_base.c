@@ -81,8 +81,6 @@ void __qd_sum(int n, ...) {
 	for (int i = 0; i < __qd_stack_ptr; ++i) {
 		summed += __qd_stack[i];
 	}
-
-	__qd_stack_ptr = 0;
 	__qd_arg_push(summed);
 }
 
