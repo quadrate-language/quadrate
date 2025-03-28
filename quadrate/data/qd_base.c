@@ -333,6 +333,18 @@ void __qd_over(int n, ...) {
 	__qd_arg_push(__qd_stack[__qd_stack_ptr - 2]);
 }
 
+void __qd_pick(int n, ...) {
+	va_list args;
+	va_start(args, n);
+	int x = (int)va_arg(args, __qd_real_t);
+	if (x < 0 || x >= __qd_stack_ptr) {
+		__qd_panic_invalid_data();
+		return;
+	}
+	__qd_arg_push(__qd_stack[__qd_stack_ptr - x - 1]);
+	va_end(args);
+}
+
 void __qd_pow(int n, ...) {
 	if (__qd_stack_ptr < 2) {
 		__qd_panic_stack_underflow();
