@@ -42,6 +42,7 @@ extern void __qd_max(int n, ...);
 extern void __qd_min(int n, ...);
 extern void __qd_mul(int n, ...);
 extern void __qd_neg(int n, ...);
+extern void __qd_nip(int n, ...);
 extern void __qd_over(int n, ...);
 extern void __qd_pop(int n, ...);
 extern void __qd_pow(int n, ...);

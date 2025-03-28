@@ -150,6 +150,7 @@ func (sa *SemanticAnalyzer) isPrimitiveInstruction(name string) bool {
 		"mod",
 		"mul",
 		"neg",
+		"nip",
 		"over",
 		"print",
 		"pop",
