@@ -334,6 +334,10 @@ void __qd_over(int n, ...) {
 }
 
 void __qd_pick(int n, ...) {
+	if (n == 0) {
+		__qd_panic_invalid_input();
+		return;
+	}
 	va_list args;
 	va_start(args, n);
 	int x = (int)va_arg(args, __qd_real_t);
