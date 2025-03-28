@@ -375,6 +375,27 @@ void __qd_revert(int n, ...) {
 	memcpy(__qd_stack, __qd_mark_stacks[__qd_mark_stack_ptr], sizeof(__qd_stack));
 }
 
+void __qd_roll(int n, ...) {
+	if (n == 0) {
+		__qd_panic_invalid_input();
+		return;
+	}
+	va_list args;
+	va_start(args, n);
+	int x = (int)va_arg(args, __qd_real_t);
+	if (x < 0 || x >= __qd_stack_ptr) {
+		__qd_panic_invalid_data();
+		return;
+	}
+	__qd_real_t tmp = __qd_stack[__qd_stack_ptr - x - 1];
+	for (int i = __qd_stack_ptr - x - 1; i < __qd_stack_ptr - 1; ++i) {
+		__qd_stack[i] = __qd_stack[i + 1];
+	}
+	__qd_pop(0);
+	__qd_arg_push(tmp);
+	va_end(args);
+}
+
 void __qd_mod(int n, ...) {
 	if (__qd_stack_ptr < 2) {
 		__qd_panic_stack_underflow();

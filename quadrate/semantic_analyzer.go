@@ -159,6 +159,7 @@ func (sa *SemanticAnalyzer) isPrimitiveInstruction(name string) bool {
 		"push",
 		"read",
 		"revert",
+		"roll",
 		"rot",
 		"rot2",
 		"round",

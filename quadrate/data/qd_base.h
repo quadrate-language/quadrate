@@ -55,6 +55,7 @@ extern void __qd_reduce_div(int n, ...);
 extern void __qd_reduce_mul(int n, ...);
 extern void __qd_reduce_sub(int n, ...);
 extern void __qd_revert(int n, ...);
+extern void __qd_roll(int n, ...);
 extern void __qd_rot(int n, ...);
 extern void __qd_rot2(int n, ...);
 extern void __qd_round(int n, ...);
