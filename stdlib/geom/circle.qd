@@ -1,0 +1,18 @@
+use math
+
+fn circlea() {
+	sq
+	push math::Pi
+	mul
+}
+
+fn circlec() {
+	push math::Tau
+	mul
+}
+
+fn circler() {
+	push math::Pi
+	div
+	sqrt
+}

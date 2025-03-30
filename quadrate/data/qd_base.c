@@ -595,72 +595,72 @@ void __qd_scale(int n, ...) {
 
 void __qd_panic_mark_stack_overflow() {
 	__qd_err = 2.4;
-#ifdef QD_ENABLE_PANIC
 	fprintf(stderr, "panic: mark stack overflow\n");
+#ifdef QD_ENABLE_PANIC
 	exit(1);
 #endif
 }
 
 void __qd_panic_mark_stack_underflow() {
 	__qd_err = 2.5;
-#ifdef QD_ENABLE_PANIC
 	fprintf(stderr, "panic: mark stack underflow\n");
+#ifdef QD_ENABLE_PANIC
 	exit(1);
 #endif
 }
 
 void __qd_panic_stack_underflow() {
 	__qd_err = 2.2;
-#ifdef QD_ENABLE_PANIC
 	fprintf(stderr, "panic: stack underflow\n");
+#ifdef QD_ENABLE_PANIC
 	exit(1);
 #endif
 }
 
 void __qd_panic_stack_overflow() {
 	__qd_err = 2.1;
-#ifdef QD_ENABLE_PANIC
 	fprintf(stderr, "panic: stack overflow\n");
+#ifdef QD_ENABLE_PANIC
 	exit(1);
 #endif
 }
 
 void __qd_panic_value_infinity() {
 	__qd_err = 2.3;
-#ifdef QD_ENABLE_PANIC
 	fprintf(stderr, "panic: value infinity\n");
+#ifdef QD_ENABLE_PANIC
 	exit(1);
 #endif
 }
 
 void __qd_panic_division_by_zero() {
 	__qd_err = 1.1;
-#ifdef QD_ENABLE_PANIC
 	fprintf(stderr, "panic: division by zero\n");
+#ifdef QD_ENABLE_PANIC
 	exit(1);
 #endif
 }
 
 void __qd_panic_invalid_input() {
 	__qd_err = 3.1;
-#ifdef QD_ENABLE_PANIC
 	fprintf(stderr, "panic: invalid input\n");
+#ifdef QD_ENABLE_PANIC
 	exit(1);
 #endif
 }
 
 void __qd_panic_invalid_data() {
 	__qd_err = 3.2;
-#ifdef QD_ENABLE_PANIC
 	fprintf(stderr, "panic: invalid data\n");
+#ifdef QD_ENABLE_PANIC
 	exit(1);
 #endif
 }
 
 void __qd_panic_out_of_memory() {
 	__qd_err = 4.1;
-#ifdef QD_ENABLE_PANIC
 	fprintf(stderr, "panic: out of memory\n");
+#ifdef QD_ENABLE_PANIC
 	exit(1);
 #endif
 }

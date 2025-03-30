@@ -1,0 +1,17 @@
+fn rectanglea() {
+	mul
+}
+
+fn rectangled() {
+	sq
+	swap
+	sq
+	add
+	sqrt
+}
+
+fn rectanglep() {
+	add
+	push 2
+	mul
+}
