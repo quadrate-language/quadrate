@@ -9,21 +9,21 @@
 
 ## Description
 Quadrate is a stack-based programming language under development.
-See https://quad.r8.rs for more information.
+See https://quad.r8.rs for more information and documentation.
 
 ## Installation
 
 ```yaml
 $ git clone https://git.sr.ht:~/klahr/quadrate
 $ cd quadrate
-$ make && sudo make install
+$ make && sudo -E make install
 ```
 
 ### Standrad library
-The standard library is included in the repository and is installed by default to `/usr/lib/quadrate`. You must add this path to you `PATH` env.
+The standard library is included in the repository and is installed by default to `/$HOME/quadrate`. You may overrie by setting QUADRATE_ROOT env.
 
 ```bash
-$ export PATH=$PATH:/usr/lib/quadrate
+$ export QUADRATE_ROOT=~/custom-quadrate
 ```
 
 ## Usage

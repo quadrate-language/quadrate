@@ -1,6 +1,6 @@
 BINARY_NAME := quadc
 INSTALL_BIN := /usr/bin
-INSTALL_LIB := /usr/lib/quadrate
+INSTALL_LIB := $(if $(QUADRATE_ROOT),$(QUADRATE_ROOT),$(shell eval echo ~$$(logname))/quadrate)
 STD_LIB := stdlib
 
 .PHONY: build
@@ -17,6 +17,7 @@ install: build
 		echo "Copying $$folder to $(INSTALL_LIB)..."; \
 		cp -r $$folder/* $(INSTALL_LIB)/; \
 	done
+	chown -R $(shell logname):$(shell id -gn $(shell logname)) $(INSTALL_LIB)
 	@echo "Installation complete."
 
 # Uninstall the binary and folders
