@@ -1,0 +1,31 @@
+fn cuboida() {
+	pick 2
+	pick 2
+	mul
+	roll 2
+	pick 2
+	mul
+	roll 3
+	roll 3
+	mul
+	add
+	add
+	push 2
+	mul
+}
+
+fn cuboidd() {
+	sq
+	roll 1
+	sq
+	roll 2
+	sq
+	add
+	add
+	sqrt
+}
+
+fn cuboidv() {
+	mul
+	mul
+}
