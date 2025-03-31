@@ -1,0 +1,18 @@
+fn cubea() {
+	sq
+	push 6
+	mul
+}
+
+fn cubed() {
+	push 3
+	sqrt
+	mul
+}
+
+fn cubev() {
+	dup
+	dup
+	mul
+	mul
+}
