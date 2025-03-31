@@ -116,6 +116,9 @@ func (l *Lexer) Lex() LexResult {
 						r.Tokens = append(r.Tokens, t)
 					} else {
 						path := os.Getenv("QUADRATE_ROOT")
+						if path == "" {
+							path = filepath.Join(os.Getenv("HOME"), "quadrate")
+						}
 						for p := range strings.SplitSeq(path, string(os.PathListSeparator)) {
 							modPath := filepath.Join(p, literal, "module.qd")
 							if _, err := os.Stat(modPath); err == nil {
