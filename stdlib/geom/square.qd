@@ -1,0 +1,14 @@
+fn squarea() {
+	sq
+}
+
+fn squared() {
+	push 2
+	sqrt
+	mul
+}
+
+fn squarep() {
+	push 4
+	mul
+}
