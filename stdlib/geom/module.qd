@@ -3,3 +3,4 @@ use circle
 use rectangle
 use square
 use trapezium
+use triangle

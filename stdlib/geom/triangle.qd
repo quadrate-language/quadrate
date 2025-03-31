@@ -1,0 +1,29 @@
+fn trianglea() {
+	mul
+	push 2
+	div
+}
+
+fn trianglep() {
+	add
+	add
+}
+
+fn rtrianglea() {
+	mul
+	push 2
+	div
+}
+
+fn rtrianglep() {
+	dup
+	sq
+	roll 2
+	dup
+	sq
+	roll 2
+	add
+	sqrt
+	add
+	add
+}
