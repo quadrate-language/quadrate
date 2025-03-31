@@ -1,3 +1,5 @@
+use arc
 use circle
 use rectangle
 use square
+use trapezium

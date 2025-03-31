@@ -1,0 +1,8 @@
+fn trapeziuma() {
+	rot
+	rot
+	add
+	push 2
+	div
+	mul
+}
