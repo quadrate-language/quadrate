@@ -1,5 +1,6 @@
 use arc
 use circle
+use parallelogram
 use rectangle
 use square
 use trapezium

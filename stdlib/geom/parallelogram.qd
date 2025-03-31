@@ -1,0 +1,9 @@
+fn parallelograma() {
+	mul
+}
+
+fn parallelogramp() {
+	add
+	push 2
+	mul
+}
