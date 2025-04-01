@@ -11,8 +11,5 @@ fn cubed() {
 }
 
 fn cubev() {
-	dup
-	dup
-	mul
-	mul
+	cb
 }
