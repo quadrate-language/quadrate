@@ -1,0 +1,17 @@
+use math
+
+fn spherea() {
+	sq
+	push 4 math::Pi
+	mul
+	mul
+}
+
+fn spherev() {
+	cb
+	push math::Pi
+	mul
+	push 4 3
+	div
+	mul
+}

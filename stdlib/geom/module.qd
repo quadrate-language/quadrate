@@ -6,6 +6,7 @@ use cuboid
 use cylinder
 use parallelogram
 use rectangle
+use sphere
 use square
 use trapezium
 use triangle
