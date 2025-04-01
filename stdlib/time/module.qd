@@ -1,9 +1,16 @@
 __c {
 	#include <time.h>
+	#include <unistd.h>
 }
 
 fn unix() {
 	__c {
 		__qd_arg_push((__qd_real_t)time(NULL));
+	}
+}
+
+fn sleep() {
+	__c {
+		usleep((useconds_t)__qd_stack[--__qd_stack_ptr] * 1000);
 	}
 }
