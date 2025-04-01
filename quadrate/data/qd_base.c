@@ -204,6 +204,14 @@ void __qd_tuck(int n, ...) {
 	__qd_arg_push(tmp);
 }
 
+void __qd_cb(int n, ...) {
+	if (__qd_stack_ptr < 1) {
+		__qd_panic_stack_underflow();
+		return;
+	}
+	__qd_stack[__qd_stack_ptr - 1] = __qd_stack[__qd_stack_ptr - 1] * __qd_stack[__qd_stack_ptr - 1] * __qd_stack[__qd_stack_ptr - 1];
+}
+
 void __qd_cbrt(int n, ...) {
 	if (__qd_stack_ptr < 1) {
 		__qd_panic_stack_underflow();

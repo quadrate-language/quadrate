@@ -22,6 +22,7 @@ extern void __qd_add(int n, ...);
 extern void __qd_asin(int n, ...);
 extern void __qd_atan(int n, ...);
 extern void __qd_avg(int n, ...);
+extern void __qd_cb(int n, ...);
 extern void __qd_cbrt(int n, ...);
 extern void __qd_ceil(int n, ...);
 extern void __qd_clear(int n, ...);

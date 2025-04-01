@@ -100,12 +100,14 @@ func isFloat(s string) bool {
 func (cg *CGenerator) writeSource(tu *TranslationUnit, sb *strings.Builder) {
 	sb.WriteString("#include \"" + cg.generateFilename(tu.filepath, tu.name) + ".h\"\n")
 
+	isMain := false
 	for _, stmt := range tu.module.Statements {
 		switch n := stmt.(type) {
 		case ImportDirective:
 			//sb.WriteString("#include \"" + n.Module + ".h\"\n")
 		case FunctionDeclaration:
 			if n.Name == "main" {
+				isMain = true
 				sb.WriteString("int main(int argc, char** argv)")
 				continue
 			}
@@ -153,7 +155,11 @@ func (cg *CGenerator) writeSource(tu *TranslationUnit, sb *strings.Builder) {
 				case ReduceStmt:
 					sb.WriteString(fmt.Sprintf("\t%s_reduce_%s(0);\n", cg.prefix, n.Identifier))
 				case ReturnStatement:
-					sb.WriteString("\treturn;\n")
+					if isMain {
+						sb.WriteString("\treturn 0;\n")
+					} else {
+						sb.WriteString("\treturn;\n")
+					}
 				case Label:
 					sb.WriteString(n.Name + ":;\n")
 				case Jmp:
@@ -184,6 +190,7 @@ func (cg *CGenerator) writeSource(tu *TranslationUnit, sb *strings.Builder) {
 					sb.WriteString("\tif (__qd_stack[__qd_stack_ptr-1] == 0.0) {\n\t\tgoto " + n.Label + ";\n\t}\n")
 				}
 			}
+			isMain = false
 			sb.WriteString("}\n")
 		case InlineCCode:
 			sb.WriteString(n.Code + "\n")
