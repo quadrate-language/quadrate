@@ -2,6 +2,7 @@ use arc
 use circle
 use cube
 use cuboid
+use cylinder
 use parallelogram
 use rectangle
 use square

@@ -1,0 +1,24 @@
+use math
+
+fn cylindera() {
+	over
+	add
+	mul
+	push math::Tau
+	mul
+}
+
+fn cylinderr() {
+	push math::Pi
+	mul
+	div
+	sqrt
+}
+
+fn cylinderv() {
+	swap
+	sq
+	mul
+	push math::Pi
+	mul
+}
