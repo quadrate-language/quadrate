@@ -1,5 +1,6 @@
 use arc
 use circle
+use cone
 use cube
 use cuboid
 use cylinder

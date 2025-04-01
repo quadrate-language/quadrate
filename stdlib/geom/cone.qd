@@ -1,0 +1,32 @@
+use math
+
+fn conea() {
+	sq
+	over
+	sq
+	add
+	sqrt
+	over
+	add
+	push math::Pi
+	mul
+	mul
+}
+
+fn conesh() {
+	sq
+	swap
+	sq
+	add
+	sqrt
+}
+
+fn conev() {
+	swap
+	sq
+	push math::Pi
+	mul
+	mul
+	push 3
+	div
+}
