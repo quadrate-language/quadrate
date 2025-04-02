@@ -484,7 +484,7 @@ func (p *Parser) parseUse() (Node, *SyntaxError) {
 	t := (*p.tokens)[p.current]
 	if t.Type != Module {
 		return nil, &SyntaxError{
-			Message:  "expected identifier after ‘use‘",
+			Message:  "path not found after ‘use‘",
 			Line:     t.Line,
 			Column:   t.Column,
 			Filename: p.filename,

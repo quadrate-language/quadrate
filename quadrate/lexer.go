@@ -75,7 +75,41 @@ func (l *Lexer) Lex() LexResult {
 			return r
 		case '"':
 			t := NewToken(String, l.readString(), l.line, l.column)
-			r.Tokens = append(r.Tokens, t)
+
+			if len(r.Tokens) > 0 && r.Tokens[len(r.Tokens)-1].Type == Use {
+				literal := strings.ReplaceAll(t.Literal, "\"", "")
+				var path string
+				if strings.HasPrefix(literal, "/") {
+					path = ""
+				} else {
+					path = filepath.Dir(l.filename) + "/"
+				}
+				if _, err := os.Stat(path + literal + ".qd"); err == nil {
+					l.Modules = append(l.Modules, path+literal+".qd")
+					t := NewToken(Module, path+literal+".qd", l.line, l.column)
+					r.Tokens = append(r.Tokens, t)
+				} else if _, err := os.Stat(path + literal + "/module.qd"); err == nil {
+					l.Modules = append(l.Modules, path+literal+"/module.qd")
+					t := NewToken(Module, path+literal+"/module.qd", l.line, l.column)
+					r.Tokens = append(r.Tokens, t)
+				} else {
+					path := os.Getenv("QUADRATE_ROOT")
+					if path == "" {
+						path = filepath.Join(os.Getenv("HOME"), "quadrate")
+					}
+					for p := range strings.SplitSeq(path, string(os.PathListSeparator)) {
+						modPath := filepath.Join(p, literal, "module.qd")
+						if _, err := os.Stat(modPath); err == nil {
+							l.Modules = append(l.Modules, modPath)
+							t := NewToken(Module, modPath, l.line, l.column)
+							r.Tokens = append(r.Tokens, t)
+							break
+						}
+					}
+				}
+			} else {
+				r.Tokens = append(r.Tokens, t)
+			}
 		default:
 			if isLetter(l.ch) {
 				line := l.line
