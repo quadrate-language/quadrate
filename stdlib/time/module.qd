@@ -14,3 +14,11 @@ fn sleep() {
 		usleep((useconds_t)(__qd_stack[--__qd_stack_ptr] * 1000000.0));
 	}
 }
+
+fn timestamp() {
+	__c {
+		struct timespec ts;
+		clock_gettime(CLOCK_MONOTONIC, &ts);
+		__qd_arg_push((__qd_real_t)(ts.tv_sec + ts.tv_nsec / 1e9));
+	}
+}
