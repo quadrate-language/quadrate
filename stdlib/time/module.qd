@@ -11,6 +11,6 @@ fn unix() {
 
 fn sleep() {
 	__c {
-		usleep((useconds_t)__qd_stack[--__qd_stack_ptr] * 1000);
+		usleep((useconds_t)(__qd_stack[--__qd_stack_ptr] * 1000000.0));
 	}
 }
