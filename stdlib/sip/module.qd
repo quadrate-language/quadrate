@@ -1,0 +1,119 @@
+fn atto() {
+	push 1e-18
+	mul
+}
+
+fn centi() {
+	push 1e-2
+	mul
+}
+
+fn deca() {
+	push 1e1
+	mul
+}
+
+fn deci() {
+	push 1e-1
+	mul
+}
+
+fn exa() {
+	push 1e18
+	mul
+}
+
+fn femto() {
+	push 1e15
+	mul
+}
+
+fn giga() {
+	push 1e9
+	mul
+}
+
+fn hecto() {
+	push 1e2
+	mul
+}
+
+fn kilo() {
+	push 1e3
+	mul
+}
+
+fn mega() {
+	push 1e6
+	mul
+}
+
+fn micro() {
+	push 1e-6
+	mul
+}
+
+fn milli() {
+	push 1e-3
+	mul
+}
+
+fn nano() {
+	push 1e-9
+	mul
+}
+
+fn peta() {
+	push 1e15
+	mul
+}
+
+fn pico() {
+	push 1e-12
+	mul
+}
+
+fn quecto() {
+	push 1e-30
+	mul
+}
+
+fn quetta() {
+	push 1e30
+	mul
+}
+
+fn ronna() {
+	push 1e27
+	mul
+}
+
+fn ronto() {
+	push 1e-27
+	mul
+}
+
+fn tera() {
+	push 1e12
+	mul
+}
+
+fn yocto() {
+	push 1e-24
+	mul
+}
+
+fn yotta() {
+	push 1e24
+	mul
+}
+
+fn zepto() {
+	push 1e-21
+	mul
+}
+
+fn zetta() {
+	push 1e21
+	mul
+}
