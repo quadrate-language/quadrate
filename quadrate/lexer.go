@@ -302,6 +302,23 @@ func (l *Lexer) readNumber() string {
 			l.readChar()
 		}
 	}
+
+	if l.ch == 'e' || l.ch == 'E' {
+		l.readChar()
+
+		if l.ch == '+' || l.ch == '-' {
+			l.readChar()
+		}
+
+		if !isDigit(l.ch) {
+			return l.source[start:l.position] // Return what we got so far
+		}
+
+		for isDigit(l.ch) {
+			l.readChar()
+		}
+	}
+
 	return l.source[start:l.position]
 }
 
