@@ -36,6 +36,7 @@ const (
 	Scope             = "scope"
 	String            = "string"
 	Use               = "use"
+	Pointer           = "pointer"
 )
 
 type Token struct {

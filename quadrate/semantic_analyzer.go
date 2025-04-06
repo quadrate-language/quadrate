@@ -120,6 +120,7 @@ func (sa *SemanticAnalyzer) isPrimitiveInstruction(name string) bool {
 		"asin",
 		"atan",
 		"avg",
+		"call",
 		"cb",
 		"cbrt",
 		"ceil",

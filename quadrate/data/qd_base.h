@@ -14,6 +14,9 @@ extern int __qd_mark_stack_ptr;
 extern int __qd_mark_stacks_ptrs[QD_MARK_STACK_DEPTH];
 extern int __qd_precision;
 
+extern __qd_real_t __qd_ptr_to_real(void (*fn)(int, ...));
+extern void (*__qd_real_to_ptr(__qd_real_t ptr))(int, ...);
+
 extern void __qd_arg_push(__qd_real_t x);
 
 extern void __qd_abs(int n, ...);
@@ -22,6 +25,7 @@ extern void __qd_add(int n, ...);
 extern void __qd_asin(int n, ...);
 extern void __qd_atan(int n, ...);
 extern void __qd_avg(int n, ...);
+extern void __qd_call(int n, ...);
 extern void __qd_cb(int n, ...);
 extern void __qd_cbrt(int n, ...);
 extern void __qd_ceil(int n, ...);

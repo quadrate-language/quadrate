@@ -459,6 +459,12 @@ func (p *Parser) parseFunctionCall() (Node, *SyntaxError) {
 			}
 		} else if t.Type == String {
 			functionCall.Args = append(functionCall.Args, t.Literal)
+		} else if t.Type == Pointer {
+			p.current++
+			t = (*p.tokens)[p.current]
+			if t.Type == Identifier {
+				functionCall.Args = append(functionCall.Args, "__qd_ptr_to_real(__qd_"+t.Literal+")")
+			}
 		} else {
 			return nil, &SyntaxError{
 				Message:  fmt.Sprintf("expected identifier but got ‘%s‘", t.Literal),
