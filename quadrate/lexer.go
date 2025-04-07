@@ -258,8 +258,16 @@ func (l *Lexer) lookupIdentifier(i string) TokenType {
 		return JumpGreaterEqual
 	case "jg":
 		return JumpGreater
+	case "jgz":
+		return JumpGreaterZero
+	case "jgez":
+		return JumpGreaterEqualZero
 	case "jle":
 		return JumpLesserEqual
+	case "jlz":
+		return JumpLesserZero
+	case "jlez":
+		return JumpLesserEqualZero
 	case "jl":
 		return JumpLesser
 	case "jne":
