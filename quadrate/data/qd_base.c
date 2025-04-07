@@ -15,7 +15,7 @@ int __qd_mark_stacks_ptrs[QD_MARK_STACK_DEPTH] = {0};
 int __qd_precision = 2;
 
 __qd_real_t __qd_ptr_to_real(void (*fn)(int, ...)) {
-	__qd_real_t result;
+	__qd_real_t result = 0;
 	memcpy(&result, &fn, sizeof(result));
 	return result;
 }
