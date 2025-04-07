@@ -5,8 +5,7 @@
 
 fn main() {
 	read
-	dup
-	mul
+	sq
 	div
 	write
 }
