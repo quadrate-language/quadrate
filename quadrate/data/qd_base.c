@@ -163,6 +163,19 @@ void __qd_swap(int n, ...) {
 	__qd_stack[__qd_stack_ptr - 1] = tmp;
 }
 
+void __qd_swap2(int n, ...) {
+	if (__qd_stack_ptr < 4) {
+		__qd_panic_stack_underflow();
+		return;
+	}
+	__qd_real_t tmp = __qd_stack[__qd_stack_ptr - 4];
+	__qd_real_t tmp2 =  __qd_stack[__qd_stack_ptr - 3];
+	__qd_stack[__qd_stack_ptr - 4] = __qd_stack[__qd_stack_ptr - 2];
+	__qd_stack[__qd_stack_ptr - 3] = __qd_stack[__qd_stack_ptr - 1];
+	__qd_stack[__qd_stack_ptr - 2] = tmp;
+	__qd_stack[__qd_stack_ptr - 1] = tmp2;
+}
+
 void __qd_abs(int n, ...) {
 	if (__qd_stack_ptr < 1) {
 		__qd_panic_stack_underflow();
@@ -287,6 +300,15 @@ void __qd_dup(int n, ...) {
 		return;
 	}
 	__qd_arg_push(__qd_stack[__qd_stack_ptr - 1]);
+}
+
+void __qd_dup2(int n, ...) {
+	if (__qd_stack_ptr < 2) {
+		__qd_panic_stack_underflow();
+		return;
+	}
+	__qd_arg_push(__qd_stack[__qd_stack_ptr - 2]);
+	__qd_arg_push(__qd_stack[__qd_stack_ptr - 2]);
 }
 
 void __qd_inv(int n, ...) {
