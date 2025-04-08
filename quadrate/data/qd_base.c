@@ -658,7 +658,7 @@ void __qd_within(int n, ...) {
 	__qd_real_t low = __qd_stack[__qd_stack_ptr - 2];
 	__qd_real_t high = __qd_stack[__qd_stack_ptr - 1];
 	__qd_stack_ptr -= 3;
-	if (x >= low && x < high) {
+	if (x >= low && x <= high) {
 		__qd_arg_push(1);
 	} else {
 		__qd_arg_push(0);
