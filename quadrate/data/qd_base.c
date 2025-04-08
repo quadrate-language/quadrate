@@ -648,6 +648,23 @@ void __qd_scale(int n, ...) {
 	__qd_precision = (int)__qd_stack[--__qd_stack_ptr];
 }
 
+void __qd_within(int n, ...) {
+	if (__qd_stack_ptr < 3) {
+		__qd_panic_stack_underflow();
+		return;
+	}
+
+	__qd_real_t x = __qd_stack[__qd_stack_ptr - 3];
+	__qd_real_t low = __qd_stack[__qd_stack_ptr - 2];
+	__qd_real_t high = __qd_stack[__qd_stack_ptr - 1];
+	__qd_stack_ptr -= 3;
+	if (x >= low && x < high) {
+		__qd_arg_push(1);
+	} else {
+		__qd_arg_push(0);
+	}
+}
+
 void __qd_panic_mark_stack_overflow() {
 	__qd_err = 2.4;
 	fprintf(stderr, "panic: mark stack overflow\n");

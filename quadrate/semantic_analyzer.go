@@ -180,6 +180,7 @@ func (sa *SemanticAnalyzer) isPrimitiveInstruction(name string) bool {
 		"swap2",
 		"tan",
 		"tuck",
+		"within",
 		"write",
 	}
 	return slices.Contains(keywords, name)

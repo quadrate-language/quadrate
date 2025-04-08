@@ -75,6 +75,7 @@ extern void __qd_swap(int n, ...);
 extern void __qd_swap2(int n, ...);
 extern void __qd_tan(int n, ...);
 extern void __qd_tuck(int n, ...);
+extern void __qd_within(int n, ...);
 extern void __qd_write(int n, ...);
 
 extern void __qd_panic_mark_stack_overflow();
