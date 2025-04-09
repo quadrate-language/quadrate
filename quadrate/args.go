@@ -1,9 +1,10 @@
 package quadrate
 
 type Args struct {
+	DumpTokens bool
 	Output     string
-	Sources    []string
 	Run        bool
 	SaveTemps  bool
-	DumpTokens bool
+	Sources    []string
+	Version    bool
 }
