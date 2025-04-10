@@ -160,6 +160,10 @@ func (cg *CGenerator) writeSource(tu *TranslationUnit, sb *strings.Builder) {
 					} else {
 						sb.WriteString("\treturn;\n")
 					}
+				case ForLoop:
+					sb.WriteString(fmt.Sprintf("\tfor (__qd_real_t __qd_itr = (__qd_real_t)%s; __qd_itr < (__qd_real_t)%s; __qd_itr += (__qd_real_t)%s) {\n", n.Start, n.End, n.Step))
+				case EndStatement:
+					sb.WriteString("\t}\n")
 				case Label:
 					sb.WriteString(n.Name + ":;\n")
 				case Jmp:

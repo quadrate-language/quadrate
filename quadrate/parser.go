@@ -54,6 +54,9 @@ type Body struct {
 	Statements []Node
 }
 
+type EndStatement struct {
+}
+
 type ReturnStatement struct {
 }
 
@@ -67,6 +70,12 @@ type Jmp struct {
 
 type ReduceStmt struct {
 	Identifier string
+}
+
+type ForLoop struct {
+	Start string
+	Step  string
+	End   string
 }
 
 type Je Jmp
@@ -220,6 +229,12 @@ body_loop:
 		case CurlyBracketRight:
 			p.current++
 			break body_loop
+		case For:
+			if n, err := p.parseForLoop(); err != nil {
+				return nil, err
+			} else {
+				stmts = append(stmts, n)
+			}
 		case NewLine:
 			continue
 		case InlineC:
@@ -276,6 +291,8 @@ body_loop:
 				stmts = append(stmts, stmt)
 			}
 			stmts = append(stmts, ReturnStatement{})
+		case End:
+			stmts = append(stmts, EndStatement{})
 		case Jump:
 			if p.peek() == Identifier {
 				p.current++
@@ -647,4 +664,48 @@ func (p *Parser) parseFnSignature() (Node, *SyntaxError) {
 		}
 	}
 	return fd, nil
+}
+
+func (p *Parser) parseForLoop() (Node, *SyntaxError) {
+	p.current++
+	t := (*p.tokens)[p.current]
+	if t.Type != NumericConstant {
+		return nil, &SyntaxError{
+			Message:  fmt.Sprintf("expected numeric constant but got ‘%s‘", t.Literal),
+			Line:     t.Line,
+			Column:   t.Column,
+			Filename: p.filename,
+		}
+	}
+	start := t.Literal
+	p.current++
+	t = (*p.tokens)[p.current]
+	if t.Type != NumericConstant {
+		return nil, &SyntaxError{
+			Message:  fmt.Sprintf("expected numeric constant but got ‘%s‘", t.Literal),
+			Line:     t.Line,
+			Column:   t.Column,
+			Filename: p.filename,
+		}
+	}
+	step := t.Literal
+	p.current++
+	t = (*p.tokens)[p.current]
+	if t.Type != NumericConstant {
+		return nil, &SyntaxError{
+			Message:  fmt.Sprintf("expected numeric constant but got ‘%s‘", t.Literal),
+			Line:     t.Line,
+			Column:   t.Column,
+			Filename: p.filename,
+		}
+	}
+	end := t.Literal
+
+	fl := ForLoop{
+		Start: start,
+		Step:  step,
+		End:   end,
+	}
+
+	return fl, nil
 }
