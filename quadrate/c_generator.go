@@ -68,18 +68,6 @@ func (cg *CGenerator) writeHeader(tu *TranslationUnit, sb *strings.Builder) {
 				continue
 			}
 			sb.WriteString(fmt.Sprintf("void %s_%s_%s(int n, ...);\n", cg.prefix, tu.name, n.Name))
-			/*			if len(n.Parameters) == 0 {
-							sb.WriteString("void")
-						} else {
-							for i, p := range n.Parameters {
-								if i > 0 {
-									sb.WriteString(", ")
-								}
-								sb.WriteString(p.Type + " " + p.Name)
-							}
-						}
-						sb.WriteString(");\n")
-			*/
 		case ConstValue:
 			s := fmt.Sprintf("extern const __qd_real_t %s_%s_%s;\n", cg.prefix, tu.name, n.Name)
 			s = strings.ReplaceAll(s, "__qd__", "__qd_")
@@ -114,18 +102,6 @@ func (cg *CGenerator) writeSource(tu *TranslationUnit, sb *strings.Builder) {
 			s := fmt.Sprintf("void %s_%s_%s(int n, ...)", cg.prefix, tu.name, n.Name)
 			s = strings.ReplaceAll(s, "__qd__", "__qd_")
 			sb.WriteString(s)
-			/*			if len(n.Parameters) == 0 {
-							sb.WriteString("void")
-						} else {
-							for i, p := range n.Parameters {
-								if i > 0 {
-									sb.WriteString(", ")
-								}
-								sb.WriteString(p.Type + " " + p.Name)
-							}
-						}
-						sb.WriteString(")")
-			*/
 		case Body:
 			sb.WriteString(" {\n")
 			for _, stmt := range n.Statements {
