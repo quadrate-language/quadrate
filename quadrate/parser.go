@@ -60,6 +60,12 @@ type EndStatement struct {
 type ReturnStatement struct {
 }
 
+type ContinueStatement struct {
+}
+
+type BreakStatement struct {
+}
+
 type Label struct {
 	Name string
 }
@@ -214,6 +220,8 @@ func (p *Parser) parseBody() (Node, *SyntaxError) {
 	var stmts []Node
 	var deferStmts []Node
 
+	loopDepth := 0
+
 body_loop:
 	for p.current < len(*p.tokens) {
 		p.current++
@@ -230,6 +238,7 @@ body_loop:
 			p.current++
 			break body_loop
 		case For:
+			loopDepth++
 			if n, err := p.parseForLoop(); err != nil {
 				return nil, err
 			} else {
@@ -237,6 +246,26 @@ body_loop:
 			}
 		case NewLine:
 			continue
+		case Break:
+			if loopDepth <= 0 {
+				return nil, &SyntaxError{
+					Message:  "unexpected ‘break‘",
+					Line:     t.Line,
+					Column:   t.Column,
+					Filename: p.filename,
+				}
+			}
+			stmts = append(stmts, BreakStatement{})
+		case Continue:
+			if loopDepth <= 0 {
+				return nil, &SyntaxError{
+					Message:  "unexpected ‘continue‘",
+					Line:     t.Line,
+					Column:   t.Column,
+					Filename: p.filename,
+				}
+			}
+			stmts = append(stmts, ContinueStatement{})
 		case InlineC:
 			stmts = append(stmts, InlineCCode{
 				Code: t.Literal,
@@ -292,6 +321,15 @@ body_loop:
 			}
 			stmts = append(stmts, ReturnStatement{})
 		case End:
+			if loopDepth <= 0 {
+				return nil, &SyntaxError{
+					Message:  "unexpected ‘end‘",
+					Line:     t.Line,
+					Column:   t.Column,
+					Filename: p.filename,
+				}
+			}
+			loopDepth--
 			stmts = append(stmts, EndStatement{})
 		case Jump:
 			if p.peek() == Identifier {
@@ -492,6 +530,15 @@ body_loop:
 	}
 	for _, stmt := range deferStmts {
 		stmts = append(stmts, stmt)
+	}
+
+	if loopDepth != 0 {
+		return nil, &SyntaxError{
+			Message:  "missing ‘end‘",
+			Line:     t.Line,
+			Column:   t.Column,
+			Filename: p.filename,
+		}
 	}
 
 	return Body{

@@ -4,9 +4,11 @@ type TokenType string
 
 const (
 	BeginScopeComment    = "begin_scope_comment"
+	Break                = "break"
 	Colon                = "colon"
 	Comma                = "comma"
 	Const                = "const"
+	Continue             = "continue"
 	CurlyBracketLeft     = "curly_bracket_left"
 	CurlyBracketRight    = "curly_bracket_right"
 	Defer                = "defer"

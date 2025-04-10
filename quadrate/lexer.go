@@ -242,6 +242,10 @@ func (l *Lexer) lookupIdentifier(i string) TokenType {
 		return Use
 	case "fn":
 		return FnSignature
+	case "break":
+		return Break
+	case "continue":
+		return Continue
 	case "__c":
 		return InlineC
 	case "const":
