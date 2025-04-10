@@ -11,15 +11,23 @@ import (
 	"git.sr.ht/~klahr/quadrate/quadrate"
 )
 
+var Version string
+
 func main() {
 	var args quadrate.Args
 	flag.StringVar(&args.Output, "o", "a.out", "Output filename")
 	flag.BoolVar(&args.Run, "run", false, "Run the compiled program")
 	flag.BoolVar(&args.SaveTemps, "save-temps", false, "Save temporary files")
 	flag.BoolVar(&args.DumpTokens, "dump-tokens", false, "Print tokens")
+	flag.BoolVar(&args.Version, "version", false, "Print version information")
 	flag.Parse()
 
 	args.Sources = flag.Args()
+
+	if args.Version {
+		fmt.Printf("quadc %s\n", Version)
+		os.Exit(0)
+	}
 
 	if args.Run {
 		args.Output = "./.qd_gen/a.out"
