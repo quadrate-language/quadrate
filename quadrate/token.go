@@ -21,6 +21,7 @@ const (
 	Identifier           = "identifier"
 	Illegal              = "illegal"
 	InlineC              = "inline_c"
+	Iterator             = "iterator"
 	Jump                 = "jmp"
 	JumpEqual            = "je"
 	JumpGreater          = "jg"

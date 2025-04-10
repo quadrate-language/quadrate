@@ -72,6 +72,9 @@ func (l *Lexer) Lex() LexResult {
 		case '&':
 			t := NewToken(Pointer, "&", l.line, l.column)
 			r.Tokens = append(r.Tokens, t)
+		case '$':
+			t := NewToken(Iterator, "$", l.line, l.column)
+			r.Tokens = append(r.Tokens, t)
 		case 0:
 			t := NewToken(EOF, "EOF", 0, 0)
 			r.Tokens = append(r.Tokens, t)

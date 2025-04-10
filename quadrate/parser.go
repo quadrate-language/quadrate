@@ -66,6 +66,9 @@ type ContinueStatement struct {
 type BreakStatement struct {
 }
 
+type IteratorStatement struct {
+}
+
 type Label struct {
 	Name string
 }
@@ -246,6 +249,16 @@ body_loop:
 			}
 		case NewLine:
 			continue
+		case Iterator:
+			if loopDepth <= 0 {
+				return nil, &SyntaxError{
+					Message:  "unexpected ‘$‘",
+					Line:     t.Line,
+					Column:   t.Column,
+					Filename: p.filename,
+				}
+			}
+			stmts = append(stmts, IteratorStatement{})
 		case Break:
 			if loopDepth <= 0 {
 				return nil, &SyntaxError{
@@ -520,7 +533,7 @@ body_loop:
 				})
 				p.current++
 			} else {
-				if fnCall, err := p.parseFunctionCall(); err != nil {
+				if fnCall, err := p.parseFunctionCall(loopDepth); err != nil {
 					return nil, err
 				} else {
 					stmts = append(stmts, fnCall)
@@ -546,7 +559,7 @@ body_loop:
 	}, nil
 }
 
-func (p *Parser) parseFunctionCall() (Node, *SyntaxError) {
+func (p *Parser) parseFunctionCall(loopDepth int) (Node, *SyntaxError) {
 	functionCall := FunctionCall{
 		Name: (*p.tokens)[p.current].Literal,
 	}
@@ -589,6 +602,16 @@ func (p *Parser) parseFunctionCall() (Node, *SyntaxError) {
 			if t.Type == Identifier {
 				functionCall.Args = append(functionCall.Args, "__qd_ptr_to_real(__qd_"+t.Literal+")")
 			}
+		} else if t.Type == Iterator {
+			if loopDepth <= 0 {
+				return nil, &SyntaxError{
+					Message:  "unexpected ‘$‘",
+					Line:     t.Line,
+					Column:   t.Column,
+					Filename: p.filename,
+				}
+			}
+			functionCall.Args = append(functionCall.Args, "__qd_itr")
 		} else {
 			return nil, &SyntaxError{
 				Message:  fmt.Sprintf("expected identifier but got ‘%s‘", t.Literal),
@@ -630,7 +653,7 @@ func (p *Parser) parseUse() (Node, *SyntaxError) {
 
 func (p *Parser) parseDefer() (Node, *SyntaxError) {
 	p.current++
-	if n, err := p.parseFunctionCall(); err != nil {
+	if n, err := p.parseFunctionCall(0); err != nil {
 		return nil, err
 	} else {
 		return n, nil
