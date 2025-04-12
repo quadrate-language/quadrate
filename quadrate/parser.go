@@ -87,6 +87,9 @@ type ForLoop struct {
 	End   string
 }
 
+type LoopLoop struct {
+}
+
 type Je Jmp
 type Jge Jmp
 type Jg Jmp
@@ -247,6 +250,9 @@ body_loop:
 			} else {
 				stmts = append(stmts, n)
 			}
+		case Loop:
+			loopDepth++
+			stmts = append(stmts, LoopLoop{})
 		case NewLine:
 			continue
 		case Iterator:

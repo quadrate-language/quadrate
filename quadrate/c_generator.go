@@ -138,6 +138,8 @@ func (cg *CGenerator) writeSource(tu *TranslationUnit, sb *strings.Builder) {
 					}
 				case ForLoop:
 					sb.WriteString(fmt.Sprintf("\tfor (__qd_real_t __qd_itr = (__qd_real_t)%s; __qd_itr < (__qd_real_t)%s; __qd_itr += (__qd_real_t)%s) {\n", n.Start, n.End, n.Step))
+				case LoopLoop:
+					sb.WriteString("\tfor (__qd_real_t __qd_itr = (__qd_real_t)0; ; __qd_itr += (__qd_real_t)1) {\n")
 				case ContinueStatement:
 					sb.WriteString("\t\tcontinue;\n")
 				case BreakStatement:

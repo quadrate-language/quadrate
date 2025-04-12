@@ -35,6 +35,7 @@ const (
 	JumpNotEqual         = "jne"
 	JumpNotZero          = "jnz"
 	JumpZero             = "jz"
+	Loop                 = "loop"
 	Module               = "module"
 	NewLine              = "new_line"
 	NumericConstant      = "numeric_constant"
