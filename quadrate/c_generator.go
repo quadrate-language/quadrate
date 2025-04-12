@@ -152,40 +152,40 @@ func (cg *CGenerator) writeSource(tu *TranslationUnit, sb *strings.Builder) {
 					sb.WriteString("\tgoto " + n.Label + ";\n")
 				case Je:
 					sb.WriteString("\tif (__qd_stack_ptr <= 1) {\n\t\t__qd_panic_stack_underflow();\n\t}\n")
-					sb.WriteString("\tif (__qd_stack[__qd_stack_ptr-1] == __qd_stack[__qd_stack_ptr-2]) {\n\t\tgoto " + n.Label + ";\n\t}\n")
+					sb.WriteString("\tif (__qd_stack[--__qd_stack_ptr] == __qd_stack[--__qd_stack_ptr]) {\n\t\tgoto " + n.Label + ";\n\t}\n")
 				case Jg:
 					sb.WriteString("\tif (__qd_stack_ptr <= 1) {\n\t\t__qd_panic_stack_underflow();\n\t}\n")
-					sb.WriteString("\tif (__qd_stack[__qd_stack_ptr-2] > __qd_stack[__qd_stack_ptr-1]) {\n\t\tgoto " + n.Label + ";\n\t}\n")
+					sb.WriteString("\tif (__qd_stack[--__qd_stack_ptr] < __qd_stack[--__qd_stack_ptr]) {\n\t\tgoto " + n.Label + ";\n\t}\n")
 				case Jge:
 					sb.WriteString("\tif (__qd_stack_ptr <= 1) {\n\t\t__qd_panic_stack_underflow();\n\t}\n")
-					sb.WriteString("\tif (__qd_stack[__qd_stack_ptr-2] >= __qd_stack[__qd_stack_ptr-1]) {\n\t\tgoto " + n.Label + ";\n\t}\n")
+					sb.WriteString("\tif (__qd_stack[--__qd_stack_ptr] <= __qd_stack[--__qd_stack_ptr]) {\n\t\tgoto " + n.Label + ";\n\t}\n")
 				case Jl:
 					sb.WriteString("\tif (__qd_stack_ptr <= 1) {\n\t\t__qd_panic_stack_underflow();\n\t}\n")
-					sb.WriteString("\tif (__qd_stack[__qd_stack_ptr-2] < __qd_stack[__qd_stack_ptr-1]) {\n\t\tgoto " + n.Label + ";\n\t}\n")
+					sb.WriteString("\tif (__qd_stack[--__qd_stack_ptr] > __qd_stack[--__qd_stack_ptr]) {\n\t\tgoto " + n.Label + ";\n\t}\n")
 				case Jle:
 					sb.WriteString("\tif (__qd_stack_ptr <= 1) {\n\t\t__qd_panic_stack_underflow();\n\t}\n")
-					sb.WriteString("\tif (__qd_stack[__qd_stack_ptr-2] <= __qd_stack[__qd_stack_ptr-1]) {\n\t\tgoto " + n.Label + ";\n\t}\n")
+					sb.WriteString("\tif (__qd_stack[--__qd_stack_ptr] >= __qd_stack[--__qd_stack_ptr]) {\n\t\tgoto " + n.Label + ";\n\t}\n")
 				case Jne:
 					sb.WriteString("\tif (__qd_stack_ptr <= 1) {\n\t\t__qd_panic_stack_underflow();\n\t}\n")
-					sb.WriteString("\tif (__qd_stack[__qd_stack_ptr-1] != __qd_stack[__qd_stack_ptr-2]) {\n\t\tgoto " + n.Label + ";\n\t}\n")
+					sb.WriteString("\tif (__qd_stack[--__qd_stack_ptr] != __qd_stack[--__qd_stack_ptr]) {\n\t\tgoto " + n.Label + ";\n\t}\n")
 				case Jnz:
 					sb.WriteString("\tif (__qd_stack_ptr == 0) {\n\t\t__qd_panic_stack_underflow();\n\t}\n")
-					sb.WriteString("\tif (__qd_stack[__qd_stack_ptr-1] != 0.0) {\n\t\tgoto " + n.Label + ";\n\t}\n")
+					sb.WriteString("\tif (__qd_stack[--__qd_stack_ptr] != 0.0) {\n\t\tgoto " + n.Label + ";\n\t}\n")
 				case Jz:
 					sb.WriteString("\tif (__qd_stack_ptr == 0) {\n\t\t__qd_panic_stack_underflow();\n\t}\n")
-					sb.WriteString("\tif (__qd_stack[__qd_stack_ptr-1] == 0.0) {\n\t\tgoto " + n.Label + ";\n\t}\n")
+					sb.WriteString("\tif (__qd_stack[--__qd_stack_ptr] == 0.0) {\n\t\tgoto " + n.Label + ";\n\t}\n")
 				case Jgez:
 					sb.WriteString("\tif (__qd_stack_ptr == 0) {\n\t\t__qd_panic_stack_underflow();\n\t}\n")
-					sb.WriteString("\tif (__qd_stack[__qd_stack_ptr-1] >= 0.0) {\n\t\tgoto " + n.Label + ";\n\t}\n")
+					sb.WriteString("\tif (__qd_stack[--__qd_stack_ptr] >= 0.0) {\n\t\tgoto " + n.Label + ";\n\t}\n")
 				case Jlez:
 					sb.WriteString("\tif (__qd_stack_ptr == 0) {\n\t\t__qd_panic_stack_underflow();\n\t}\n")
-					sb.WriteString("\tif (__qd_stack[__qd_stack_ptr-1] <= 0.0) {\n\t\tgoto " + n.Label + ";\n\t}\n")
+					sb.WriteString("\tif (__qd_stack[--__qd_stack_ptr] <= 0.0) {\n\t\tgoto " + n.Label + ";\n\t}\n")
 				case Jgz:
 					sb.WriteString("\tif (__qd_stack_ptr == 0) {\n\t\t__qd_panic_stack_underflow();\n\t}\n")
-					sb.WriteString("\tif (__qd_stack[__qd_stack_ptr-1] > 0.0) {\n\t\tgoto " + n.Label + ";\n\t}\n")
+					sb.WriteString("\tif (__qd_stack[--__qd_stack_ptr] > 0.0) {\n\t\tgoto " + n.Label + ";\n\t}\n")
 				case Jlz:
 					sb.WriteString("\tif (__qd_stack_ptr == 0) {\n\t\t__qd_panic_stack_underflow();\n\t}\n")
-					sb.WriteString("\tif (__qd_stack[__qd_stack_ptr-1] < 0.0) {\n\t\tgoto " + n.Label + ";\n\t}\n")
+					sb.WriteString("\tif (__qd_stack[--__qd_stack_ptr] < 0.0) {\n\t\tgoto " + n.Label + ";\n\t}\n")
 				}
 			}
 			isMain = false
