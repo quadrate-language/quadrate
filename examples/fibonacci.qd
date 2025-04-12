@@ -5,13 +5,12 @@
 
 // Fn = Fn-1 + Fn-2, for n > 1
 fn fibonacci() {
+	dup
 	push 1
 	jg run
-	pop
 	return
 
 run:
-	pop
 	dup
 	dec
 	fibonacci
