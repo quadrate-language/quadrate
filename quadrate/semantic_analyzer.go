@@ -136,6 +136,7 @@ func (sa *SemanticAnalyzer) isPrimitiveInstruction(name string) bool {
 		"end",
 		"error",
 		"eval",
+		"fac",
 		"floor",
 		"for",
 		"inc",

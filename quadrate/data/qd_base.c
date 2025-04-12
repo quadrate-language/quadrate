@@ -232,6 +232,22 @@ void __qd_tan(int n, ...) {
 	__qd_stack[__qd_stack_ptr - 1] = tan(__qd_stack[__qd_stack_ptr - 1]);
 }
 
+void __qd_fac(int n, ...) {
+	if (__qd_stack_ptr < 1) {
+		__qd_panic_stack_underflow();
+		return;
+	}
+	if (__qd_stack[__qd_stack_ptr - 1] < 0.0) {
+		__qd_panic_invalid_data();
+		return;
+	}
+	__qd_real_t result = 1;
+	for (__qd_real_t i = 1; i <= __qd_stack[__qd_stack_ptr - 1]; ++i) {
+		result *= i;
+	}
+	__qd_stack[__qd_stack_ptr - 1] = result;
+}
+
 void __qd_tuck(int n, ...) {
 	if (__qd_stack_ptr < 2) {
 		__qd_panic_stack_underflow();
