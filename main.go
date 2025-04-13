@@ -40,7 +40,14 @@ func main() {
 	}
 
 	if args.Run {
-		args.Output = "./.qd_gen/a.out"
+		if f, err := os.CreateTemp("", "qd-*.out"); err != nil {
+			printMessage(fmt.Sprintf("\033[1mquadc: \033[31mfatal error:\033[0m %s\n", err.Error()), args.NoColors)
+			os.Exit(1)
+		} else {
+			args.Output = f.Name()
+			defer os.Remove(args.Output)
+			f.Close()
+		}
 	}
 
 	if len(args.Sources) == 0 {
