@@ -5,6 +5,8 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+
+	"github.com/acarl005/stripansi"
 )
 
 type ModuleToCompile struct {
@@ -95,7 +97,7 @@ func (c *Compiler) CompileAndLink() {
 	}
 
 	if len(cFiles) == 0 {
-		fmt.Printf("\033[1mquadc: \033[31mfatal error:\033[0m no intermediate files\n")
+		fmt.Println(stripansi.Strip("\033[1mquadc: \033[31mfatal error:\033[0m no intermediate files\n"))
 		return
 	}
 
@@ -109,7 +111,7 @@ func (c *Compiler) CompileAndLink() {
 
 	err = cmd.Run()
 	if err != nil {
-		fmt.Printf("\033[1mquadc: \033[31merror:\033[0m %s\n", err.Error())
+		fmt.Println(stripansi.Strip(fmt.Sprintf("\033[1mquadc: \033[31merror:\033[0m %s\n", err.Error())))
 		return
 	}
 }
