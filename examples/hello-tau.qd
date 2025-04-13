@@ -5,7 +5,7 @@
 use math
 
 fn main() {
-	push math::PI math::PI
+	push math::Pi math::Pi
 	add
 	print
 }
