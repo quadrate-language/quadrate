@@ -616,6 +616,7 @@ void __qd_test(int n, ...) {
 		}
 	}
 	va_end(args);
+	__qd_stack_ptr = 0;
 }
 
 void __qd_write(int n, ...) {

@@ -1,0 +1,113 @@
+fn test_abs() {
+	push 1
+	abs
+	test "abs" 1
+
+	push -1
+	abs
+	test "abs" 1
+}
+
+fn test_acos() {
+	push 1
+	acos
+	test "acos" 0
+}
+
+fn test_add() {
+	push 1 2
+	add
+	test "add" 3
+
+	push 1 -2
+	add
+	test "add" -1
+
+	push -1 -2
+	add
+	test "add" -3
+
+	push 1.5 2.5
+	add
+	test "add" 4.0
+
+	push 1.5 -2.5
+	add
+	test "add" -1.0
+
+	push -1.5 -2.5
+	add
+	test "add" -4.0
+}
+
+fn test_asin() {
+	push 1
+	asin
+	test "asin" 1.5707963267948966
+
+	push -1
+	asin
+	test "asin" -1.5707963267948966
+
+	push 0
+	asin
+	test "asin" 0
+}
+
+fn test_atan() {
+	push 1
+	atan
+	test "atan" 0.7853981633974483
+
+	push -1
+	atan
+	test "atan" -0.7853981633974483
+
+	push 0
+	atan
+	test "atan" 0
+}
+
+fn test_avg() {
+	push 1 2 3
+	avg
+	test "avg" 2
+
+	push 1.5 2.5 3.5
+	avg
+	test "avg" 2.5
+
+	push -1 -2 -3
+	avg
+	test "avg" -2
+
+	push -1.5 -2.5 -3.5
+	avg
+	test "avg" -2.5
+}
+
+fn test_pop() {
+	push 1 2 3
+	pop
+	test "pop" 1 2
+
+	push 1 2 3
+	pop 3
+	test "pop"
+}
+
+fn test_push() {
+	push 1 2 3
+	test "push" 1 2 3
+}
+
+fn main() {
+	test_abs
+	test_acos
+	test_asin
+	test_atan
+	test_avg
+	test_add
+	test_pop
+	test_push
+}
