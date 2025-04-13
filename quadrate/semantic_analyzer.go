@@ -185,6 +185,7 @@ func (sa *SemanticAnalyzer) isPrimitiveInstruction(name string) bool {
 		"swap",
 		"swap2",
 		"tan",
+		"test",
 		"tuck",
 		"within",
 		"write",
