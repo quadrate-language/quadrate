@@ -146,6 +146,7 @@ void __qd_div(int n, ...) {
 		return;
 	}
 	if (__qd_stack[__qd_stack_ptr - 1] == 0.0) {
+		__qd_stack_ptr -= 2;
 		__qd_panic_division_by_zero();
 		return;
 	}
@@ -238,6 +239,7 @@ void __qd_fac(int n, ...) {
 		return;
 	}
 	if (__qd_stack[__qd_stack_ptr - 1] < 0.0) {
+		__qd_stack_ptr -= 1;
 		__qd_panic_invalid_data();
 		return;
 	}
@@ -473,6 +475,7 @@ void __qd_mod(int n, ...) {
 		return;
 	}
 	if (__qd_stack[__qd_stack_ptr - 1] == 0.0) {
+		__qd_stack_ptr -= 2;
 		__qd_panic_division_by_zero();
 		return;
 	}
@@ -518,6 +521,8 @@ void __qd_reduce_div(int n, ...) {
 	__qd_real_t result = __qd_stack[0];
 	for (int i = 1; i < __qd_stack_ptr; ++i) {
 		if (__qd_stack[i] == 0.0) {
+			__qd_stack_ptr = 0;
+			__qd_arg_push(0);
 			__qd_panic_division_by_zero();
 			return;
 		}
