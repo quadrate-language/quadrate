@@ -29,11 +29,11 @@ $ export QUADRATE_ROOT=~/custom-quadrate
 ## Usage
 ```
 // main.qd
-use std
+use fmt
 
 fn main() {
 	push 1.0
-	std::print
+	fmt::print
 }
 ```
 ```bash
