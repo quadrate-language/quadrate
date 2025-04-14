@@ -1,7 +1,7 @@
 fn test_abs() {
 	push 1
 	abs
-	test "abs" 1
+	test "abs" 2
 
 	push -1
 	abs
