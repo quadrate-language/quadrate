@@ -1,3 +1,5 @@
+use math
+
 fn test_abs() {
 	push 1
 	abs
@@ -475,6 +477,175 @@ fn test_loop() {
 	test "loop" 0 1 2 3 4 5
 }
 
+fn test_mark() {
+	push 1 2 3
+	mark
+	clear
+	test "mark"
+	revert
+	test "mark" 1 2 3
+}
+
+fn test_max() {
+	push 1 2
+	max
+	test "max" 2
+
+	push -1 -2
+	max
+	test "max" -1
+
+	push 1.5 2.5
+	max
+	test "max" 2.5
+
+	push -1.5 -2.5
+	max
+	test "max" -1.5
+
+	push 1.5 -2.5
+	max
+	test "max" 1.5
+
+	push -1.5 2.5
+	max
+	test "max" 2.5
+
+	push -1.5 -2.5
+	max
+	test "max" -1.5
+}
+
+fn test_min() {
+	push 1 2
+	min
+	test "min" 1
+
+	push -1 -2
+	min
+	test "min" -2
+
+	push 1.5 2.5
+	min
+	test "min" 1.5
+
+	push -1.5 -2.5
+	min
+	test "min" -2.5
+
+	push 1.5 -2.5
+	min
+	test "min" -2.5
+
+	push -1.5 2.5
+	min
+	test "min" -1.5
+
+	push -1.5 -2.5
+	min
+	test "min" -2.5
+}
+
+fn test_mod() {
+	push 3 2
+	mod
+	test "mod" 1
+
+	push 2.5 2
+	mod
+	test "mod" 0.5
+}
+
+fn test_mul() {
+	push 1 2
+	mul
+	test "mul" 2
+
+	push -1 -2
+	mul
+	test "mul" 2
+
+	push 1.5 2.5
+	mul
+	test "mul" 3.75
+
+	push -1.5 -2.5
+	mul
+	test "mul" 3.75
+
+	push 1.5 -2.5
+	mul
+	test "mul" -3.75
+
+	push -1.5 2.5
+	mul
+	test "mul" -3.75
+
+	push -1.5 -2.5
+	mul
+	test "mul" 3.75
+}
+
+fn test_neg() {
+	push 1
+	neg
+	test "neg" -1
+
+	push -1
+	neg
+	test "neg" 1
+}
+
+fn test_nip() {
+	push 1 2 3
+	nip
+	test "nip" 1 3
+
+	push -1 -2 -3
+	nip
+	test "nip" -1 -3
+
+	push 1.5 2.5 3.5
+	nip
+	test "nip" 1.5 3.5
+
+	push -1.5 -2.5 -3.5
+	nip
+	test "nip" -1.5 -3.5
+}
+
+fn test_over() {
+	push 1 2 3
+	over
+	test "over" 1 2 3 2
+
+	push -1 -2 -3
+	over
+	test "over" -1 -2 -3 -2
+
+	push 1.5 2.5 3.5
+	over
+	test "over" 1.5 2.5 3.5 2.5
+
+	push -1.5 -2.5 -3.5
+	over
+	test "over" -1.5 -2.5 -3.5 -2.5
+}
+
+fn test_pick() {
+	push 1 2 3
+	pick 1
+	test "pick" 1 2 3 2
+
+	push -1 -2 -3
+	pick 0
+	test "pick" -1 -2 -3 -3
+
+	push 1.5 2.5 3.5
+	pick 2
+	test "pick" 1.5 2.5 3.5 1.5
+}
+
 fn test_pop() {
 	push 1 2 3
 	pop
@@ -485,9 +656,253 @@ fn test_pop() {
 	test "pop"
 }
 
+fn test_pow() {
+	push 2 3
+	pow
+	test "pow" 8
+
+	push -2 3
+	pow
+	test "pow" -8
+
+	push 2 -3
+	pow
+	test "pow" 0.125
+
+	push -2 -3
+	pow
+	test "pow" -0.125
+}
+
 fn test_push() {
 	push 1 2 3
 	test "push" 1 2 3
+}
+
+fn test_reduce() {
+	push 1 2 3
+	reduce add
+	test "reduce" 6
+
+	push 1 2 3
+	reduce mul
+	test "reduce" 6
+
+	push 1 2 3
+	reduce sub
+	test "reduce" -4
+
+	push 16 4 2
+	reduce div
+	test "reduce" 2
+}
+
+fn test_rot() {
+	push 1 2 3
+	rot
+	test "rot" 2 3 1
+
+	push -1 -2 -3
+	rot
+	test "rot" -2 -3 -1
+
+	push 1.5 2.5 3.5
+	rot
+	test "rot" 2.5 3.5 1.5
+
+	push -1.5 -2.5 -3.5
+	rot
+	test "rot" -2.5 -3.5 -1.5
+}
+
+fn test_rot2() {
+	push 1 2 3 4
+	rot2
+	test "rot2" 3 4 1 2
+
+	push -1 -2 -3 -4
+	rot2
+	test "rot2" -3 -4 -1 -2
+
+	push 1.5 2.5 3.5 4.5
+	rot2
+	test "rot2" 3.5 4.5 1.5 2.5
+
+	push -1.5 -2.5 -3.5 -4.5
+	rot2
+	test "rot2" -3.5 -4.5 -1.5 -2.5
+}
+
+fn test_roll() {
+	push 1 2 3 4
+	roll 2
+	test "roll" 1 3 4 2
+
+	push 1 2 3 4
+	roll 0
+	test "roll" 1 2 3 4
+}
+
+fn test_round() {
+	push 1.5
+	round
+	test "round" 2
+
+	push -1.5
+	round
+	test "round" -2
+
+	push 0.5
+	round
+	test "round" 1
+
+	push -0.5
+	round
+	test "round" -1
+
+	push 1.25
+	round
+	test "round" 1
+
+	push -1.25
+	round
+	test "round" -1
+}
+
+fn test_sin() {
+	push 0
+	sin
+	test "sin" 0
+}
+
+fn test_sq() {
+	push 1
+	sq
+	test "sq" 1
+
+	push -1
+	sq
+	test "sq" 1
+
+	push 2
+	sq
+	test "sq" 4
+
+	push -2
+	sq
+	test "sq" 4
+
+	push 1.5
+	sq
+	test "sq" 2.25
+
+	push -1.5
+	sq
+	test "sq" 2.25
+
+	push 0
+	sq
+	test "sq" 0
+}
+
+fn test_sqrt() {
+	push 4
+	sqrt
+	test "sqrt" 2
+
+	push 0
+	sqrt
+	test "sqrt" 0
+
+	push 1
+	sqrt
+	test "sqrt" 1
+
+	push 2.25
+	sqrt
+	test "sqrt" 1.5
+}
+
+fn test_sub() {
+	push 1 2
+	sub
+	test "sub" -1
+
+	push -1 -2
+	sub
+	test "sub" 1
+
+	push 1.5 2.5
+	sub
+	test "sub" -1.0
+
+	push -1.5 -2.5
+	sub
+	test "sub" 1.0
+
+	push 1.5 -2.5
+	sub
+	test "sub" 4.0
+
+	push -1.5 2.5
+	sub
+	test "sub" -4.0
+
+	push -1.5 -2.5
+	sub
+	test "sub" 1.0
+}
+
+fn test_sum() {
+	push 1 2 3
+	sum
+	test "sum" 1 2 3 6
+
+	push -1 -2 -3
+	sum
+	test "sum" -1 -2 -3 -6
+}
+
+fn test_swap() {
+	push 1 2
+	swap
+	test "swap" 2 1
+}
+
+fn test_swap2() {
+	push 1 2 3 4
+	swap2
+	test "swap2" 3 4 1 2
+}
+
+fn test_tan() {
+	push 0
+	tan
+	test "tan" 0
+
+	push 1
+	tan
+	test "tan" 1.5574077246549023
+
+	push -1
+	tan
+	test "tan" -1.5574077246549023
+}
+
+fn test_tuck() {
+	push 1 2 3 4
+	tuck
+	test "tuck" 1 2 4 3 4
+}
+
+fn test_within() {
+	push 2 1 3
+	within
+	test "within" 1
+
+	push 2 4 3
+	within
+	test "within" 0
 }
 
 fn main() {
@@ -531,6 +946,31 @@ fn main() {
 	test_ln
 	test_log10
 	test_loop
+	test_mark
+	test_max
+	test_min
+	test_mod
+	test_mul
+	test_neg
+	test_nip
+	test_over
+	test_pick
 	test_pop
+	test_pow
 	test_push
+	test_reduce
+	test_rot
+	test_rot2
+	test_roll
+	test_round
+	test_sin
+	test_sq
+	test_sqrt
+	test_sub
+	test_sum
+	test_swap
+	test_swap2
+	test_tan
+	test_tuck
+	test_within
 }
