@@ -3,6 +3,9 @@ package quadrate
 import (
 	"fmt"
 	"os"
+	"regexp"
+	"strconv"
+	"strings"
 )
 
 type TranslationUnit struct {
@@ -25,7 +28,23 @@ func (tu *TranslationUnit) Lex(dumpTokens bool) *SyntaxError {
 			Message: err.Error(),
 		}
 	} else {
-		l := NewLexer(tu.filepath, data, tu.name)
+		lines := strings.Split(string(data), "\n")
+		for i, line := range lines {
+			re := regexp.MustCompile(`(^|[^a-zA-Z0-9_])#LINE([^a-zA-Z0-9_]|$)`)
+			result := re.ReplaceAllStringFunc(line, func(m string) string {
+				submatches := re.FindStringSubmatch(m)
+				return submatches[1] + strconv.Itoa(i+1) + submatches[2]
+			})
+
+			rf := regexp.MustCompile(`(^|[^a-zA-Z0-9_])#FILE([^a-zA-Z0-9_]|$)`)
+			result2 := rf.ReplaceAllStringFunc(result, func(m string) string {
+				submatches := rf.FindStringSubmatch(m)
+				return submatches[1] + "\"" + tu.filepath + "\"" + submatches[2]
+			})
+
+			lines[i] = result2
+		}
+		l := NewLexer(tu.filepath, []byte(strings.Join(lines, "\n")), tu.name)
 		tu.tokens = l.Lex().Tokens
 		if dumpTokens {
 			tu.Print()
