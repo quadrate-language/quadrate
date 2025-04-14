@@ -47,6 +47,7 @@ extern void __qd_log10(int n, ...);
 extern void __qd_mark(int n, ...);
 extern void __qd_max(int n, ...);
 extern void __qd_min(int n, ...);
+extern void __qd_mod(int n, ...);
 extern void __qd_mul(int n, ...);
 extern void __qd_neg(int n, ...);
 extern void __qd_nip(int n, ...);
