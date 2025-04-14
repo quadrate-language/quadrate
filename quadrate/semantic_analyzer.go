@@ -14,6 +14,7 @@ type Symbol struct {
 	Filename string
 	Line     int
 	Column   int
+	Scope    string
 }
 
 func NewSemanticAnalyzer(dumpTokens bool) *SemanticAnalyzer {
@@ -71,7 +72,7 @@ func (sa *SemanticAnalyzer) checkRedefinitions(symbols []Symbol) *SemanticError 
 	for _, symbol := range symbols {
 		count := 0
 		for _, s := range symbols {
-			if symbol.Name == s.Name {
+			if symbol.Name == s.Name && symbol.Scope == s.Scope {
 				count++
 				if count > 1 {
 					return &SemanticError{
@@ -195,6 +196,7 @@ func (sa *SemanticAnalyzer) isPrimitiveInstruction(name string) bool {
 
 func (sa *SemanticAnalyzer) getSymbols(tus *[]TranslationUnit) []Symbol {
 	symbols := []Symbol{}
+	currentScope := ""
 	for _, tu := range *tus {
 		for i, t := range tu.tokens {
 			if i > 0 && t.Type == Identifier {
@@ -209,6 +211,7 @@ func (sa *SemanticAnalyzer) getSymbols(tus *[]TranslationUnit) []Symbol {
 						Line:     t.Line,
 						Column:   t.Column,
 					})
+					currentScope = symbols[len(symbols)-1].Name
 					if sa.dumpTokens {
 						println(fmt.Sprintf("F: %s%s %s:%d:%d", prefix, t.Literal, tu.filepath, t.Line, t.Column+1))
 					}
@@ -228,6 +231,7 @@ func (sa *SemanticAnalyzer) getSymbols(tus *[]TranslationUnit) []Symbol {
 						Filename: tu.filepath,
 						Line:     t.Line,
 						Column:   t.Column,
+						Scope:    currentScope,
 					})
 					if sa.dumpTokens {
 						println(fmt.Sprintf("L: %s%s %s:%d:%d", prefix, t.Literal, tu.filepath, t.Line, t.Column+1))
