@@ -1,9 +1,0 @@
-use std
-
-fn main () {
-	push 1 2 3
-	add
-	add
-	add
-	std::print
-} 
