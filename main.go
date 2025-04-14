@@ -120,6 +120,13 @@ func main() {
 			cmd.Stderr = os.Stderr
 			if err := cmd.Run(); err != nil {
 				printMessage(fmt.Sprintf("\033[1mquadc: \033[31merror:\033[0m %s\n", err.Error()), args.NoColors)
+				if exitErr, ok := err.(*exec.ExitError); ok {
+					if status, ok := exitErr.ProcessState.Sys().(interface{ ExitStatus() int }); ok {
+						os.Exit(status.ExitStatus())
+					} else {
+						os.Exit(1)
+					}
+				}
 			}
 		}
 
