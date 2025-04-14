@@ -86,6 +86,395 @@ fn test_avg() {
 	test "avg" -2.5
 }
 
+fn test_break() {
+	loop
+		push 1
+		break
+		push 2
+		break
+	end
+	test "break" 1
+}
+
+fn foo() {
+	push 1
+}
+
+fn test_call() {
+	push &foo
+	call
+	test "call" 1
+}
+
+fn test_cb() {
+	push 2
+	cb
+	test "cb" 8
+
+	push -2
+	cb
+	test "cb" -8
+}
+
+fn test_cbrt() {
+	push 8
+	cbrt
+	test "cbrt" 2
+
+	push -8
+	cbrt
+	test "cbrt" -2
+
+	push 0
+	cbrt
+	test "cbrt" 0
+}
+
+fn test_ceil() {
+	push 1.5
+	ceil
+	test "ceil" 2
+
+	push -1.5
+	ceil
+	test "ceil" -1
+
+	push 0.5
+	ceil
+	test "ceil" 1
+
+	push -0.5
+	ceil
+	test "ceil" 0
+}
+
+fn test_clear() {
+	push 1 2 3
+	clear
+	test "clear"
+}
+
+fn test_continue() {
+	for 0 1 3
+		push $
+		continue
+		push 2
+	end
+	test "continue" 0 1 2
+}
+
+fn test_cos() {
+	push 0
+	cos
+	test "cos" 1
+
+	push 1
+	cos
+	test "cos" 0.5403023058681398
+
+	push -1
+	cos
+	test "cos" 0.5403023058681398
+
+	push 3.141592653589793
+	cos
+	test "cos" -1
+
+	push -3.141592653589793
+	cos
+	test "cos" -1
+
+	push 6.283185307179586
+	cos
+	test "cos" 1
+}
+
+fn test_dec() {
+	push 1
+	dec
+	test "dec" 0
+
+	push -1
+	dec
+	test "dec" -2
+
+	push 0
+	dec
+	test "dec" -1
+
+	push 1.5
+	dec
+	test "dec" 0.5
+
+	push -1.5
+	dec
+	test "dec" -2.5
+
+	push 0.5
+	dec
+	test "dec" -0.5
+
+	push -0.5
+	dec
+	test "dec" -1.5
+}
+
+fn test_depth() {
+	push 1 2 3
+	depth
+	test "depth" 1 2 3 3
+
+	push 1
+	depth
+	test "depth" 1 1
+
+	push 1 2
+	depth
+	test "depth" 1 2 2
+
+	push 1 2 3 4
+	depth
+	test "depth" 1 2 3 4 4
+}
+
+fn test_div() {
+	push 1 2
+	div
+	test "div" 0.5
+
+	push -1 2
+	div
+	test "div" -0.5
+
+	push 1 -2
+	div
+	test "div" -0.5
+
+	push -1 -2
+	div
+	test "div" 0.5
+
+	push 1.5 2.5
+	div
+	test "div" 0.6
+
+	push -1.5 2.5
+	div
+	test "div" -0.6
+
+	push 1.5 -2.5
+	div
+	test "div" -0.6
+
+	push -1.5 -2.5
+	div
+	test "div" 0.6
+}
+
+fn test_dup() {
+	push 1 2 3
+	dup
+	test "dup" 1 2 3 3
+
+	push -1 -2 -3
+	dup
+	test "dup" -1 -2 -3 -3
+
+	push 1.5 2.5 3.5
+	dup
+	test "dup" 1.5 2.5 3.5 3.5
+
+	push -1.5 -2.5 -3.5
+	dup
+	test "dup" -1.5 -2.5 -3.5 -3.5
+}
+
+fn test_dup2() {
+	push 1 2 3
+	dup2
+	test "dup2" 1 2 3 2 3
+
+	push -1 -2 -3
+	dup2
+	test "dup2" -1 -2 -3 -2 -3
+
+	push 1.5 2.5 3.5
+	dup2
+	test "dup2" 1.5 2.5 3.5 2.5 3.5
+
+	push -1.5 -2.5 -3.5
+	dup2
+	test "dup2" -1.5 -2.5 -3.5 -2.5 -3.5
+}
+
+fn test_eval() {
+	eval "2 4 *"
+	test "eval" 8
+}
+
+fn test_fac() {
+	push 5
+	fac
+	test "fac" 120
+
+	push 0
+	fac
+	test "fac" 1
+
+	push 1
+	fac
+	test "fac" 1
+}
+
+fn test_floor() {
+	push 1.5
+	floor
+	test "floor" 1
+
+	push -1.5
+	floor
+	test "floor" -2
+
+	push 0.5
+	floor
+	test "floor" 0
+
+	push -0.5
+	floor
+	test "floor" -1
+}
+
+fn test_for() {
+	for 0 1 3
+		push $
+	end
+	test "for" 0 1 2
+}
+
+fn test_inc() {
+	push 1
+	inc
+	test "inc" 2
+
+	push -1
+	inc
+	test "inc" 0
+
+	push 0
+	inc
+	test "inc" 1
+
+	push 1.5
+	inc
+	test "inc" 2.5
+
+	push -1.5
+	inc
+	test "inc" -0.5
+
+	push 0.5
+	inc
+	test "inc" 1.5
+
+	push -0.5
+	inc
+	test "inc" 0.5
+}
+
+fn test_inv() {
+	push 1
+	inv
+	test "inv" 1
+
+	push 2
+	inv
+	test "inv" 0.5
+
+	push -2
+	inv
+	test "inv" -0.5
+}
+
+fn test_je() {
+}
+
+fn test_jg() {
+}
+
+fn test_jge() {
+}
+
+fn test_jgez() {
+}
+
+fn test_jgz() {
+}
+
+fn test_jl() {
+}
+
+fn test_jle() {
+}
+
+fn test_jlez() {
+}
+
+fn test_jmp() {
+}
+
+fn test_jne() {
+}
+
+fn test_jnz() {
+}
+
+fn test_jz() {
+}
+
+fn test_ln() {
+	push 1
+	ln
+	test "ln" 0
+
+	push 2
+	ln
+	test "ln" 0.6931471805599453
+
+	push 1.5
+	ln
+	test "ln" 0.4054651081081644
+}
+
+fn test_log10() {
+	push 1
+	log10
+	test "log10" 0
+
+	push 10
+	log10
+	test "log10" 1
+
+	push 100
+	log10
+	test "log10" 2
+
+	push 1000
+	log10
+	test "log10" 3
+}
+
+fn test_loop() {
+	loop
+		push $
+		dup
+		push 5
+		jl L1
+		break
+	L1:
+	end
+	test "loop" 0 1 2 3 4 5
+}
+
 fn test_pop() {
 	push 1 2 3
 	pop
@@ -104,10 +493,44 @@ fn test_push() {
 fn main() {
 	test_abs
 	test_acos
+	test_add
 	test_asin
 	test_atan
 	test_avg
-	test_add
+	test_break
+	test_call
+	test_cb
+	test_cbrt
+	test_ceil
+	test_clear
+	test_continue
+	test_cos
+	test_dec
+	test_depth
+	test_div
+	test_dup
+	test_dup2
+	test_eval
+	test_fac
+	test_floor
+	test_for
+	test_inc
+	test_inv
+	test_je
+	test_jg
+	test_jge
+	test_jgez
+	test_jgz
+	test_jl
+	test_jle
+	test_jlez
+	test_jmp
+	test_jne
+	test_jnz
+	test_jz
+	test_ln
+	test_log10
+	test_loop
 	test_pop
 	test_push
 }
