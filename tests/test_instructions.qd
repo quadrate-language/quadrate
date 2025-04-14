@@ -448,30 +448,143 @@ Error:
 }
 
 fn test_jgez() {
+	push 0
+	jgez L1
+	jmp Error
+L1:
+	push 1
+	jgez L2
+	jmp Error
+L2:
+	push -1
+	jgez Error
+	return
+
+Error:
+	push -1
+	test "jgez" 1
 }
 
 fn test_jgz() {
+	push 1
+	jgz L1
+	jmp Error
+L1:
+	push -1
+	jgz Error
+	push 0
+	jgz Error
+	return
+
+Error:
+	push -1
+	test "jgz" 1
 }
 
 fn test_jl() {
+	push 1 2
+	jl L1
+	jmp Error
+L1:
+	push 0 0
+	jl Error
+	push 1 0
+	jl Error
+	return
+
+Error:
+	push -1
+	test "jl" 1
 }
 
 fn test_jle() {
+	push 1 1
+	jle L1
+	jmp Error
+L1:
+	push 1 2
+	jle L2
+	jmp Error
+L2:
+	push 1 0
+	jle Error
+	return
+
+Error:
+	push -1
+	test "jle" 1
 }
 
 fn test_jlez() {
+	push 0
+	jlez L1
+	jmp Error
+L1:
+	push -1
+	jlez L2
+	jmp Error
+L2:
+	push 1
+	jlez Error
+	return
+
+Error:
+	push -1
+	test "jlez" 1
 }
 
 fn test_jmp() {
+	jmp L1
+	push -1
+L1:
+	push 1
+	test "jmp" 1
 }
 
 fn test_jne() {
+	push 1 0
+	jne L1
+	jmp Error
+L1:
+	push 1 1
+	jne Error
+	return
+
+Error:
+	push -1
+	test "jne" 1
 }
 
 fn test_jnz() {
+	push 1
+	jnz L1
+	jmp Error
+L1:
+	push -1
+	jnz L2
+	jmp Error
+L2:
+	push 0
+	jnz Error
+	return
+
+Error:
+	push -1
+	test "jnz" 1
 }
 
 fn test_jz() {
+	push 0
+	jz L1
+	jmp Error
+L1:
+	push 1
+	jz Error
+	return
+
+Error:
+	push -1
+	test "jz" 1
 }
 
 fn test_ln() {
