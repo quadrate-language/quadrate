@@ -398,12 +398,53 @@ fn test_inv() {
 }
 
 fn test_je() {
+	push 1 1
+	je L1
+	jmp Error
+L1:
+	push 1 0
+	je Error
+	push 0 1
+	je Error
+	return
+
+Error:
+	push -1
+	test "je" 1
 }
 
 fn test_jg() {
+	push 2 1
+	jg L1
+	jmp Error
+L1:
+	push 0 0
+	jg Error
+	push 0 1
+	jg Error
+	return
+
+Error:
+	push -1
+	test "jg" 1
 }
 
 fn test_jge() {
+	push 1 1
+	jge L1
+	jmp Error
+L1:
+	push 2 1
+	jge L2
+	jmp Error
+L2:
+	push 0 1
+	jge Error
+	return
+
+Error:
+	push -1
+	test "jge" 1
 }
 
 fn test_jgez() {
