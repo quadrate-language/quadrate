@@ -41,7 +41,7 @@ func main() {
 
 	if args.Run {
 		if f, err := os.CreateTemp("", "qd-*.out"); err != nil {
-			printMessage(fmt.Sprintf("\033[1mquadc: \033[31mfatal error:\033[0m %s\n", err.Error()), args.NoColors)
+			printMessage(fmt.Sprintf("\033[1mquadc: \033[31mfatal error:\033[0m %s", err.Error()), args.NoColors)
 			os.Exit(1)
 		} else {
 			args.Output = f.Name()
@@ -51,18 +51,18 @@ func main() {
 	}
 
 	if len(args.Sources) == 0 {
-		printMessage(fmt.Sprintf("\033[1mquadc: \033[31mfatal error:\033[0m no input files\n"), args.NoColors)
+		printMessage(fmt.Sprintf("\033[1mquadc: \033[31mfatal error:\033[0m no input files"), args.NoColors)
 		os.Exit(1)
 	}
 
 	var absFilepaths []string
 	for _, file := range args.Sources {
 		if _, err := os.Stat(file); os.IsNotExist(err) {
-			printMessage(fmt.Sprintf("\033[1mquadc: \033[31merror:\033[0m no such file or directory: %s\n", file), args.NoColors)
+			printMessage(fmt.Sprintf("\033[1mquadc: \033[31merror:\033[0m no such file or directory: %s", file), args.NoColors)
 			os.Exit(1)
 		} else {
 			if absPath, err := filepath.Abs(file); err != nil {
-				printMessage(fmt.Sprintf("\033[1mquadc: \033[31merror:\033[0m %s\n", err.Error()), args.NoColors)
+				printMessage(fmt.Sprintf("\033[1mquadc: \033[31merror:\033[0m %s", err.Error()), args.NoColors)
 				os.Exit(1)
 			} else {
 				absFilepaths = append(absFilepaths, absPath)
@@ -73,13 +73,13 @@ func main() {
 	compiler := quadrate.NewCompiler(args.DumpTokens, args.Output)
 	if tus, err := compiler.Compile(absFilepaths); err != nil {
 		if b, e := os.ReadFile(err.Filename); e != nil {
-			printMessage(fmt.Sprintf("\033[1mquadc: \033[31merror:\033[0m %s\n", e.Error()), args.NoColors)
+			printMessage(fmt.Sprintf("\033[1mquadc: \033[31merror:\033[0m %s", e.Error()), args.NoColors)
 		} else {
 			lines := strings.Split(string(b), "\n")
-			printMessage(fmt.Sprintf("\033[1m%s:%d:%d: \033[31merror:\033[0m %s\n", err.Filename, err.Line, err.Column+1, err.Message), args.NoColors)
+			printMessage(fmt.Sprintf("\033[1m%s:%d:%d: \033[31merror:\033[0m %s", err.Filename, err.Line, err.Column+1, err.Message), args.NoColors)
 			if err.Line >= 1 {
-				printMessage(fmt.Sprintf("%d | %s\n", err.Line, strings.Replace(lines[err.Line-1], "\t", " ", -1)), args.NoColors)
-				printMessage(fmt.Sprintf("%s | %s\033[1;31m^\033[0m\n", strings.Repeat(" ", len(fmt.Sprintf("%d", err.Line))), strings.Repeat(" ", err.Column)), args.NoColors)
+				printMessage(fmt.Sprintf("%d | %s", err.Line, strings.Replace(lines[err.Line-1], "\t", " ", -1)), args.NoColors)
+				printMessage(fmt.Sprintf("%s | %s\033[1;31m^\033[0m", strings.Repeat(" ", len(fmt.Sprintf("%d", err.Line))), strings.Repeat(" ", err.Column)), args.NoColors)
 			}
 		}
 		os.Exit(1)
@@ -87,13 +87,13 @@ func main() {
 		sa := quadrate.NewSemanticAnalyzer(args.DumpTokens)
 		if err := sa.Analyze(tus); err != nil {
 			if b, e := os.ReadFile(err.Filename); e != nil {
-				printMessage(fmt.Sprintf("\033[1mquadc: \033[31merror:\033[0m %s\n", e.Error()), args.NoColors)
+				printMessage(fmt.Sprintf("\033[1mquadc: \033[31merror:\033[0m %s", e.Error()), args.NoColors)
 			} else {
 				lines := strings.Split(string(b), "\n")
-				printMessage(fmt.Sprintf("\033[1m%s:%d:%d: \033[31merror:\033[0m %s\n", err.Filename, err.Line, err.Column+1, err.Message), args.NoColors)
+				printMessage(fmt.Sprintf("\033[1m%s:%d:%d: \033[31merror:\033[0m %s", err.Filename, err.Line, err.Column+1, err.Message), args.NoColors)
 				if err.Line >= 1 {
-					printMessage(fmt.Sprintf("%d | %s\n", err.Line, strings.Replace(lines[err.Line-1], "\t", " ", -1)), args.NoColors)
-					printMessage(fmt.Sprintf("%s | %s\033[1;31m^\033[0m\n", strings.Repeat(" ", len(fmt.Sprintf("%d", err.Line))), strings.Repeat(" ", err.Column)), args.NoColors)
+					printMessage(fmt.Sprintf("%d | %s", err.Line, strings.Replace(lines[err.Line-1], "\t", " ", -1)), args.NoColors)
+					printMessage(fmt.Sprintf("%s | %s\033[1;31m^\033[0m", strings.Repeat(" ", len(fmt.Sprintf("%d", err.Line))), strings.Repeat(" ", err.Column)), args.NoColors)
 				}
 			}
 			if !args.SaveTemps {
@@ -104,7 +104,7 @@ func main() {
 		generator := quadrate.NewCGenerator("./.qd_gen")
 		for _, tu := range *tus {
 			if err := generator.Generate(&tu); err != nil {
-				printMessage(fmt.Sprintf("\033[1mquadc: \033[31merror:\033[0m %s\n", err.Message), args.NoColors)
+				printMessage(fmt.Sprintf("\033[1mquadc: \033[31merror:\033[0m %s", err.Message), args.NoColors)
 				if !args.SaveTemps {
 					os.RemoveAll("./.qd_gen")
 				}
@@ -119,7 +119,7 @@ func main() {
 			cmd.Stdout = os.Stdout
 			cmd.Stderr = os.Stderr
 			if err := cmd.Run(); err != nil {
-				printMessage(fmt.Sprintf("\033[1mquadc: \033[31merror:\033[0m %s\n", err.Error()), args.NoColors)
+				printMessage(fmt.Sprintf("\033[1mquadc: \033[31merror:\033[0m %s", err.Error()), args.NoColors)
 				if exitErr, ok := err.(*exec.ExitError); ok {
 					if status, ok := exitErr.ProcessState.Sys().(interface{ ExitStatus() int }); ok {
 						os.Exit(status.ExitStatus())
