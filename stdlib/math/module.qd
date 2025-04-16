@@ -16,9 +16,9 @@ __c {
 	#include <math.h>
 }
 
-const Pi 3.141592653589793
+const Pi  3.141592653589793
 const Tau 6.283185307179586
-const e 2.718281828459045
+const e   2.718281828459045
 
 fn deg2rad() {
 	__c {
@@ -26,9 +26,12 @@ fn deg2rad() {
 			__qd_panic_stack_underflow();
 			return;
 		}
-
-		__qd_stack[__qd_stack_ptr - 1] *= __qd_math_Pi / 180.0;
 	}
+
+	push math::Pi
+	push 180
+	div
+	mul
 }
 
 fn gamma() {
@@ -58,7 +61,9 @@ fn rad2deg() {
 			__qd_panic_stack_underflow();
 			return;
 		}
-
-		__qd_stack[__qd_stack_ptr - 1] *= 180.0 / __qd_math_Pi;
 	}
+
+	push 180 math::Pi
+	div
+	mul
 }
