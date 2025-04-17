@@ -227,14 +227,14 @@ func (sa *SemanticAnalyzer) getSymbols(tus *[]TranslationUnit) []Symbol {
 					}
 				} else if tu.tokens[i+1].Type == Colon {
 					symbols = append(symbols, Symbol{
-						Name:     fmt.Sprintf("%s%s", prefix, t.Literal),
+						Name:     t.Literal,
 						Filename: tu.filepath,
 						Line:     t.Line,
 						Column:   t.Column,
 						Scope:    currentScope,
 					})
 					if sa.dumpTokens {
-						println(fmt.Sprintf("L: %s%s %s:%d:%d", prefix, t.Literal, tu.filepath, t.Line, t.Column+1))
+						println(fmt.Sprintf("L: %s %s:%d:%d", t.Literal, tu.filepath, t.Line, t.Column+1))
 					}
 				}
 			}
