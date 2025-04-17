@@ -51,7 +51,7 @@ type ConstValue struct {
 }
 
 type LocalValue struct {
-	Name string
+	Names []string
 }
 
 type Body struct {
@@ -537,18 +537,10 @@ body_loop:
 				}
 			}
 		case Local:
-			if p.peek() == Identifier {
-				p.current++
-				stmts = append(stmts, LocalValue{
-					Name: (*p.tokens)[p.current].Literal,
-				})
+			if l, err := p.parseLocal(); err != nil {
+				return nil, err
 			} else {
-				return nil, &SyntaxError{
-					Message:  "expected identifier after ‘local‘",
-					Line:     t.Line,
-					Column:   t.Column,
-					Filename: p.filename,
-				}
+				stmts = append(stmts, l)
 			}
 		default:
 			if (*p.tokens)[p.current+1].Type == Colon {
@@ -581,6 +573,37 @@ body_loop:
 	return Body{
 		Statements: stmts,
 	}, nil
+}
+
+func (p *Parser) parseLocal() (Node, *SyntaxError) {
+	p.current++
+	t := (*p.tokens)[p.current]
+	if t.Type == Identifier {
+		l := LocalValue{}
+		for p.current < len(*p.tokens)-1 {
+			if t.Type == NewLine {
+				break
+			} else if t.Type != Identifier {
+				return nil, &SyntaxError{
+					Message:  fmt.Sprintf("expected identifier but got ‘%s‘", t.Literal),
+					Line:     t.Line,
+					Column:   t.Column,
+					Filename: p.filename,
+				}
+			}
+			l.Names = append(l.Names, t.Literal)
+			p.current++
+			t = (*p.tokens)[p.current]
+		}
+		return l, nil
+	} else {
+		return nil, &SyntaxError{
+			Message:  fmt.Sprintf("expected identifier but got ‘%s‘", t.Literal),
+			Line:     t.Line,
+			Column:   t.Column,
+			Filename: p.filename,
+		}
+	}
 }
 
 func (p *Parser) parseFunctionCall(loopDepth int) (Node, *SyntaxError) {

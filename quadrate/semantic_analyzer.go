@@ -197,6 +197,18 @@ func (sa *SemanticAnalyzer) isPrimitiveInstruction(name string) bool {
 	return slices.Contains(keywords, name)
 }
 
+func (sa *SemanticAnalyzer) isLocal(t Token, i int, tokens []Token) bool {
+	for j := i - 1; j >= 0; j-- {
+		if tokens[j].Type == Local {
+			return true
+		}
+		if tokens[j].Type == NewLine {
+			break
+		}
+	}
+	return false
+}
+
 func (sa *SemanticAnalyzer) getSymbols(tus *[]TranslationUnit) []Symbol {
 	symbols := []Symbol{}
 	currentScope := ""
@@ -228,7 +240,7 @@ func (sa *SemanticAnalyzer) getSymbols(tus *[]TranslationUnit) []Symbol {
 					if sa.dumpTokens {
 						println(fmt.Sprintf("C: %s%s %s:%d:%d", prefix, t.Literal, tu.filepath, t.Line, t.Column+1))
 					}
-				} else if tu.tokens[i-1].Type == Local {
+				} else if sa.isLocal(t, i, tu.tokens) {
 					symbols = append(symbols, Symbol{
 						Name:     t.Literal,
 						Filename: tu.filepath,
