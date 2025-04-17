@@ -158,6 +158,7 @@ func (sa *SemanticAnalyzer) isPrimitiveInstruction(name string) bool {
 		"jnz",
 		"jz",
 		"ln",
+		"local",
 		"log10",
 		"loop",
 		"mark",
@@ -226,6 +227,17 @@ func (sa *SemanticAnalyzer) getSymbols(tus *[]TranslationUnit) []Symbol {
 					})
 					if sa.dumpTokens {
 						println(fmt.Sprintf("C: %s%s %s:%d:%d", prefix, t.Literal, tu.filepath, t.Line, t.Column+1))
+					}
+				} else if tu.tokens[i-1].Type == Local {
+					symbols = append(symbols, Symbol{
+						Name:     t.Literal,
+						Filename: tu.filepath,
+						Line:     t.Line,
+						Column:   t.Column,
+						Scope:    currentScope,
+					})
+					if sa.dumpTokens {
+						println(fmt.Sprintf("V: %s %s:%d:%d", t.Literal, tu.filepath, t.Line, t.Column+1))
 					}
 				} else if tu.tokens[i+1].Type == Colon {
 					symbols = append(symbols, Symbol{

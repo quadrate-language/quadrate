@@ -186,6 +186,9 @@ func (cg *CGenerator) writeSource(tu *TranslationUnit, sb *strings.Builder) {
 				case Jlz:
 					sb.WriteString("\tif (__qd_stack_ptr == 0) {\n\t\t__qd_panic_stack_underflow();\n\t}\n")
 					sb.WriteString("\tif (__qd_stack[--__qd_stack_ptr] < 0.0) {\n\t\tgoto " + n.Label + ";\n\t}\n")
+				case LocalValue:
+					s := fmt.Sprintf("\t__qd_real_t %s_%s = (__qd_real_t)0;\n\tif (__qd_stack_ptr > 0) {\n\t\t%s_%s = __qd_stack[--__qd_stack_ptr];\n\t} else {\n\t\t__qd_panic_stack_underflow();\n\t}\n", cg.prefix, n.Name, cg.prefix, n.Name)
+					sb.WriteString(s)
 				}
 			}
 			isMain = false

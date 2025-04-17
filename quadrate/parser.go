@@ -50,6 +50,10 @@ type ConstValue struct {
 	Value string
 }
 
+type LocalValue struct {
+	Name string
+}
+
 type Body struct {
 	Statements []Node
 }
@@ -527,6 +531,20 @@ body_loop:
 			} else {
 				return nil, &SyntaxError{
 					Message:  "expected ‘label‘ after ‘jlz‘",
+					Line:     t.Line,
+					Column:   t.Column,
+					Filename: p.filename,
+				}
+			}
+		case Local:
+			if p.peek() == Identifier {
+				p.current++
+				stmts = append(stmts, LocalValue{
+					Name: (*p.tokens)[p.current].Literal,
+				})
+			} else {
+				return nil, &SyntaxError{
+					Message:  "expected identifier after ‘local‘",
 					Line:     t.Line,
 					Column:   t.Column,
 					Filename: p.filename,

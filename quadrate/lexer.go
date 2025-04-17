@@ -287,6 +287,8 @@ func (l *Lexer) lookupIdentifier(i string) TokenType {
 		return JumpNotZero
 	case "jz":
 		return JumpZero
+	case "local":
+		return Local
 	case "loop":
 		return Loop
 	case "reduce":
