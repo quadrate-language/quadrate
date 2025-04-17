@@ -42,7 +42,7 @@ void (*__qd_real_to_ptr(__qd_real_t ptr))(int, ...) {
 
 void __qd_arg_push(__qd_real_t x) {
 	if (__qd_stack_ptr >= QD_STACK_DEPTH) {
-		__qd_panic_stack_overflow();
+		__qd___panic_stack_overflow(0);
 		return;
 	}
 	__qd_stack[__qd_stack_ptr] = x;
@@ -68,7 +68,7 @@ void __qd_pop(int n, ...) {
 	va_start(args, n);
 	if (n == 0) {
 		if (__qd_stack_ptr == 0) {
-			__qd_panic_stack_underflow();
+			__qd___panic_stack_underflow(0);
 			return;
 		}
 		--__qd_stack_ptr;
@@ -76,7 +76,7 @@ void __qd_pop(int n, ...) {
 		int x = (int)va_arg(args, __qd_real_t);
 		for (int i = 0; i < x; ++i) {
 			if (__qd_stack_ptr == 0) {
-				__qd_panic_stack_underflow();
+				__qd___panic_stack_underflow(0);
 				return;
 			}
 			--__qd_stack_ptr;
@@ -104,7 +104,7 @@ void __qd_avg(int n, ...) {
 
 void __qd_call(int n, ...) {
 	if (__qd_stack_ptr < 1) {
-		__qd_panic_stack_underflow();
+		__qd___panic_stack_underflow(0);
 		return;
 	}
 	void (*fn_ptr)(int, ...) = __qd_real_to_ptr(__qd_stack[--__qd_stack_ptr]);
@@ -129,7 +129,7 @@ void __qd_depth(int n, ...) {
 
 void __qd_add(int n, ...) {
 	if (__qd_stack_ptr < 2) {
-		__qd_panic_stack_underflow();
+		__qd___panic_stack_underflow(0);
 		return;
 	}
 	__qd_stack[__qd_stack_ptr - 2] += __qd_stack[__qd_stack_ptr - 1];
@@ -138,7 +138,7 @@ void __qd_add(int n, ...) {
 
 void __qd_sub(int n, ...) {
 	if (__qd_stack_ptr < 2) {
-		__qd_panic_stack_underflow();
+		__qd___panic_stack_underflow(0);
 		return;
 	}
 	__qd_stack[__qd_stack_ptr - 2] -= __qd_stack[__qd_stack_ptr - 1];
@@ -147,7 +147,7 @@ void __qd_sub(int n, ...) {
 
 void __qd_mul(int n, ...) {
 	if (__qd_stack_ptr < 2) {
-		__qd_panic_stack_underflow();
+		__qd___panic_stack_underflow(0);
 		return;
 	}
 	__qd_stack[__qd_stack_ptr - 2] *= __qd_stack[__qd_stack_ptr - 1];
@@ -156,7 +156,7 @@ void __qd_mul(int n, ...) {
 
 void __qd_div(int n, ...) {
 	if (__qd_stack_ptr < 2) {
-		__qd_panic_stack_underflow();
+		__qd___panic_stack_underflow(0);
 		return;
 	}
 	if (__qd_stack[__qd_stack_ptr - 1] == 0.0) {
@@ -170,7 +170,7 @@ void __qd_div(int n, ...) {
 
 void __qd_swap(int n, ...) {
 	if (__qd_stack_ptr < 2) {
-		__qd_panic_stack_underflow();
+		__qd___panic_stack_underflow(0);
 		return;
 	}
 	__qd_real_t tmp = __qd_stack[__qd_stack_ptr - 2];
@@ -180,7 +180,7 @@ void __qd_swap(int n, ...) {
 
 void __qd_swap2(int n, ...) {
 	if (__qd_stack_ptr < 4) {
-		__qd_panic_stack_underflow();
+		__qd___panic_stack_underflow(0);
 		return;
 	}
 	__qd_real_t tmp = __qd_stack[__qd_stack_ptr - 4];
@@ -193,7 +193,7 @@ void __qd_swap2(int n, ...) {
 
 void __qd_abs(int n, ...) {
 	if (__qd_stack_ptr < 1) {
-		__qd_panic_stack_underflow();
+		__qd___panic_stack_underflow(0);
 		return;
 	}
 	__qd_stack[__qd_stack_ptr - 1] = fabs(__qd_stack[__qd_stack_ptr - 1]);
@@ -201,7 +201,7 @@ void __qd_abs(int n, ...) {
 
 void __qd_acos(int n, ...) {
 	if (__qd_stack_ptr < 1) {
-		__qd_panic_stack_underflow();
+		__qd___panic_stack_underflow(0);
 		return;
 	}
 	__qd_stack[__qd_stack_ptr - 1] = acos(__qd_stack[__qd_stack_ptr - 1]);
@@ -209,7 +209,7 @@ void __qd_acos(int n, ...) {
 
 void __qd_asin(int n, ...) {
 	if (__qd_stack_ptr < 1) {
-		__qd_panic_stack_underflow();
+		__qd___panic_stack_underflow(0);
 		return;
 	}
 	__qd_stack[__qd_stack_ptr - 1] = asin(__qd_stack[__qd_stack_ptr - 1]);
@@ -217,7 +217,7 @@ void __qd_asin(int n, ...) {
 
 void __qd_atan(int n, ...) {
 	if (__qd_stack_ptr < 1) {
-		__qd_panic_stack_underflow();
+		__qd___panic_stack_underflow(0);
 		return;
 	}
 	__qd_stack[__qd_stack_ptr - 1] = atan(__qd_stack[__qd_stack_ptr - 1]);
@@ -225,7 +225,7 @@ void __qd_atan(int n, ...) {
 
 void __qd_cos(int n, ...) {
 	if (__qd_stack_ptr < 1) {
-		__qd_panic_stack_underflow();
+		__qd___panic_stack_underflow(0);
 		return;
 	}
 	__qd_stack[__qd_stack_ptr - 1] = cos(__qd_stack[__qd_stack_ptr - 1]);
@@ -233,7 +233,7 @@ void __qd_cos(int n, ...) {
 
 void __qd_sin(int n, ...) {
 	if (__qd_stack_ptr < 1) {
-		__qd_panic_stack_underflow();
+		__qd___panic_stack_underflow(0);
 		return;
 	}
 	__qd_stack[__qd_stack_ptr - 1] = sin(__qd_stack[__qd_stack_ptr - 1]);
@@ -241,7 +241,7 @@ void __qd_sin(int n, ...) {
 
 void __qd_tan(int n, ...) {
 	if (__qd_stack_ptr < 1) {
-		__qd_panic_stack_underflow();
+		__qd___panic_stack_underflow(0);
 		return;
 	}
 	__qd_stack[__qd_stack_ptr - 1] = tan(__qd_stack[__qd_stack_ptr - 1]);
@@ -249,7 +249,7 @@ void __qd_tan(int n, ...) {
 
 void __qd_fac(int n, ...) {
 	if (__qd_stack_ptr < 1) {
-		__qd_panic_stack_underflow();
+		__qd___panic_stack_underflow(0);
 		return;
 	}
 	if (__qd_stack[__qd_stack_ptr - 1] < 0.0) {
@@ -266,7 +266,7 @@ void __qd_fac(int n, ...) {
 
 void __qd_tuck(int n, ...) {
 	if (__qd_stack_ptr < 2) {
-		__qd_panic_stack_underflow();
+		__qd___panic_stack_underflow(0);
 		return;
 	}
 	__qd_real_t tmp = __qd_stack[__qd_stack_ptr - 1];
@@ -276,7 +276,7 @@ void __qd_tuck(int n, ...) {
 
 void __qd_cb(int n, ...) {
 	if (__qd_stack_ptr < 1) {
-		__qd_panic_stack_underflow();
+		__qd___panic_stack_underflow(0);
 		return;
 	}
 	__qd_stack[__qd_stack_ptr - 1] = __qd_stack[__qd_stack_ptr - 1] * __qd_stack[__qd_stack_ptr - 1] * __qd_stack[__qd_stack_ptr - 1];
@@ -284,7 +284,7 @@ void __qd_cb(int n, ...) {
 
 void __qd_cbrt(int n, ...) {
 	if (__qd_stack_ptr < 1) {
-		__qd_panic_stack_underflow();
+		__qd___panic_stack_underflow(0);
 		return;
 	}
 	__qd_stack[__qd_stack_ptr - 1] = cbrt(__qd_stack[__qd_stack_ptr - 1]);
@@ -292,7 +292,7 @@ void __qd_cbrt(int n, ...) {
 
 void __qd_ceil(int n, ...) {
 	if (__qd_stack_ptr < 1) {
-		__qd_panic_stack_underflow();
+		__qd___panic_stack_underflow(0);
 		return;
 	}
 	__qd_stack[__qd_stack_ptr - 1] = ceil(__qd_stack[__qd_stack_ptr - 1]);
@@ -300,7 +300,7 @@ void __qd_ceil(int n, ...) {
 
 void __qd_floor(int n, ...) {
 	if (__qd_stack_ptr < 1) {
-		__qd_panic_stack_underflow();
+		__qd___panic_stack_underflow(0);
 		return;
 	}
 	__qd_stack[__qd_stack_ptr - 1] = floor(__qd_stack[__qd_stack_ptr - 1]);
@@ -312,7 +312,7 @@ void __qd_clear(int n, ...) {
 
 void __qd_dec(int n, ...) {
 	if (__qd_stack_ptr < 1) {
-		__qd_panic_stack_underflow();
+		__qd___panic_stack_underflow(0);
 		return;
 	}
 	--__qd_stack[__qd_stack_ptr - 1];
@@ -320,7 +320,7 @@ void __qd_dec(int n, ...) {
 
 void __qd_inc(int n, ...) {
 	if (__qd_stack_ptr < 1) {
-		__qd_panic_stack_underflow();
+		__qd___panic_stack_underflow(0);
 		return;
 	}
 	++__qd_stack[__qd_stack_ptr - 1];
@@ -328,7 +328,7 @@ void __qd_inc(int n, ...) {
 
 void __qd_dup(int n, ...) {
 	if (__qd_stack_ptr < 1) {
-		__qd_panic_stack_underflow();
+		__qd___panic_stack_underflow(0);
 		return;
 	}
 	__qd_arg_push(__qd_stack[__qd_stack_ptr - 1]);
@@ -336,7 +336,7 @@ void __qd_dup(int n, ...) {
 
 void __qd_dup2(int n, ...) {
 	if (__qd_stack_ptr < 2) {
-		__qd_panic_stack_underflow();
+		__qd___panic_stack_underflow(0);
 		return;
 	}
 	__qd_arg_push(__qd_stack[__qd_stack_ptr - 2]);
@@ -345,7 +345,7 @@ void __qd_dup2(int n, ...) {
 
 void __qd_inv(int n, ...) {
 	if (__qd_stack_ptr < 1) {
-		__qd_panic_stack_underflow();
+		__qd___panic_stack_underflow(0);
 		return;
 	}
 	if (__qd_stack[__qd_stack_ptr - 1] != 0.0) {
@@ -355,7 +355,7 @@ void __qd_inv(int n, ...) {
 
 void __qd_ln(int n, ...) {
 	if (__qd_stack_ptr < 1) {
-		__qd_panic_stack_underflow();
+		__qd___panic_stack_underflow(0);
 		return;
 	}
 	if (__qd_stack[__qd_stack_ptr - 1] > 0.0) {
@@ -365,7 +365,7 @@ void __qd_ln(int n, ...) {
 
 void __qd_log10(int n, ...) {
 	if (__qd_stack_ptr < 1) {
-		__qd_panic_stack_underflow();
+		__qd___panic_stack_underflow(0);
 		return;
 	}
 	if (__qd_stack[__qd_stack_ptr - 1] > 0.0) {
@@ -375,7 +375,7 @@ void __qd_log10(int n, ...) {
 
 void __qd_max(int n, ...) {
 	if (__qd_stack_ptr < 2) {
-		__qd_panic_stack_underflow();
+		__qd___panic_stack_underflow(0);
 		return;
 	}
 	__qd_real_t max = __qd_stack[__qd_stack_ptr - 2] > __qd_stack[__qd_stack_ptr - 1] ? __qd_stack[__qd_stack_ptr - 2] : __qd_stack[__qd_stack_ptr - 1];
@@ -385,7 +385,7 @@ void __qd_max(int n, ...) {
 
 void __qd_min(int n, ...) {
 	if (__qd_stack_ptr < 2) {
-		__qd_panic_stack_underflow();
+		__qd___panic_stack_underflow(0);
 		return;
 	}
 	__qd_real_t min = __qd_stack[__qd_stack_ptr - 2] < __qd_stack[__qd_stack_ptr - 1] ? __qd_stack[__qd_stack_ptr - 2] : __qd_stack[__qd_stack_ptr - 1];
@@ -395,7 +395,7 @@ void __qd_min(int n, ...) {
 
 void __qd_neg(int n, ...) {
 	if (__qd_stack_ptr < 1) {
-		__qd_panic_stack_underflow();
+		__qd___panic_stack_underflow(0);
 		return;
 	}
 	__qd_stack[__qd_stack_ptr - 1] = -__qd_stack[__qd_stack_ptr - 1];
@@ -403,7 +403,7 @@ void __qd_neg(int n, ...) {
 
 void __qd_nip(int n, ...) {
 	if (__qd_stack_ptr < 1) {
-		__qd_panic_stack_underflow();
+		__qd___panic_stack_underflow(0);
 		return;
 	}
 	__qd_swap(0);
@@ -412,7 +412,7 @@ void __qd_nip(int n, ...) {
 
 void __qd_over(int n, ...) {
 	if (__qd_stack_ptr < 2) {
-		__qd_panic_stack_underflow();
+		__qd___panic_stack_underflow(0);
 		return;
 	}
 	__qd_arg_push(__qd_stack[__qd_stack_ptr - 2]);
@@ -436,7 +436,7 @@ void __qd_pick(int n, ...) {
 
 void __qd_pow(int n, ...) {
 	if (__qd_stack_ptr < 2) {
-		__qd_panic_stack_underflow();
+		__qd___panic_stack_underflow(0);
 		return;
 	}
 	__qd_stack[__qd_stack_ptr - 2] = pow(__qd_stack[__qd_stack_ptr - 2], __qd_stack[__qd_stack_ptr - 1]);
@@ -485,7 +485,7 @@ void __qd_roll(int n, ...) {
 
 void __qd_mod(int n, ...) {
 	if (__qd_stack_ptr < 2) {
-		__qd_panic_stack_underflow();
+		__qd___panic_stack_underflow(0);
 		return;
 	}
 	if (__qd_stack[__qd_stack_ptr - 1] == 0.0) {
@@ -566,7 +566,7 @@ void __qd_reduce_sub(int n, ...) {
 
 void __qd_rot(int n, ...) {
 	if (__qd_stack_ptr < 3) {
-		__qd_panic_stack_underflow();
+		__qd___panic_stack_underflow(0);
 		return;
 	}
 	__qd_real_t tmp = __qd_stack[__qd_stack_ptr - 3];
@@ -577,7 +577,7 @@ void __qd_rot(int n, ...) {
 
 void __qd_rot2(int n, ...) {
 	if (__qd_stack_ptr < 4) {
-		__qd_panic_stack_underflow();
+		__qd___panic_stack_underflow(0);
 		return;
 	}
 	__qd_real_t tmp = __qd_stack[__qd_stack_ptr - 4];
@@ -590,7 +590,7 @@ void __qd_rot2(int n, ...) {
 
 void __qd_round(int n, ...) {
 	if (__qd_stack_ptr < 1) {
-		__qd_panic_stack_underflow();
+		__qd___panic_stack_underflow(0);
 		return;
 	}
 	__qd_stack[__qd_stack_ptr - 1] = round(__qd_stack[__qd_stack_ptr - 1]);
@@ -598,7 +598,7 @@ void __qd_round(int n, ...) {
 
 void __qd_sq(int n, ...) {
 	if (__qd_stack_ptr < 1) {
-		__qd_panic_stack_underflow();
+		__qd___panic_stack_underflow(0);
 		return;
 	}
 	__qd_stack[__qd_stack_ptr - 1] *= __qd_stack[__qd_stack_ptr - 1];
@@ -606,7 +606,7 @@ void __qd_sq(int n, ...) {
 
 void __qd_sqrt(int n, ...) {
 	if (__qd_stack_ptr < 1) {
-		__qd_panic_stack_underflow();
+		__qd___panic_stack_underflow(0);
 		return;
 	}
 	if (__qd_stack[__qd_stack_ptr - 1] >= 0.0) {
@@ -649,7 +649,7 @@ void __qd_write(int n, ...) {
 
 void __qd_print(int n, ...) {
 	if (__qd_stack_ptr < 1) {
-		__qd_panic_stack_underflow();
+		__qd___panic_stack_underflow(0);
 		return;
 	}
 	printf("%.*f\n", __qd_precision, __qd_stack[__qd_stack_ptr - 1]);
@@ -701,7 +701,7 @@ void __qd_scale(int n, ...) {
 		__qd_push(n, va_arg(args, __qd_real_t));
 	}
 	if (__qd_stack_ptr < 1) {
-		__qd_panic_stack_underflow();
+		__qd___panic_stack_underflow(0);
 		return;
 	}
 	__qd_precision = (int)__qd_stack[--__qd_stack_ptr];
@@ -709,7 +709,7 @@ void __qd_scale(int n, ...) {
 
 void __qd_within(int n, ...) {
 	if (__qd_stack_ptr < 3) {
-		__qd_panic_stack_underflow();
+		__qd___panic_stack_underflow(0);
 		return;
 	}
 
@@ -724,6 +724,14 @@ void __qd_within(int n, ...) {
 	}
 }
 
+void __qd___panic_stack_overflow(int n, ...) {
+	__qd_err = 2.1;
+	fprintf(stderr, "panic: stack overflow\n");
+#ifdef QD_ENABLE_PANIC
+	exit(1);
+#endif
+}
+
 void __qd_panic_mark_stack_overflow() {
 	__qd_err = 2.4;
 	fprintf(stderr, "panic: mark stack overflow\n");
@@ -735,6 +743,14 @@ void __qd_panic_mark_stack_overflow() {
 void __qd_panic_mark_stack_underflow() {
 	__qd_err = 2.5;
 	fprintf(stderr, "panic: mark stack underflow\n");
+#ifdef QD_ENABLE_PANIC
+	exit(1);
+#endif
+}
+
+void __qd___panic_stack_underflow(int n, ...) {
+	__qd_err = 2.2;
+	fprintf(stderr, "panic: stack underflow\n");
 #ifdef QD_ENABLE_PANIC
 	exit(1);
 #endif

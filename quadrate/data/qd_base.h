@@ -95,6 +95,8 @@ extern void __qd_tuck(int n, ...);
 extern void __qd_within(int n, ...);
 extern void __qd_write(int n, ...);
 
+extern void __qd___panic_stack_underflow(int n, ...);
+extern void __qd___panic_stack_overflow(int n, ...);
 extern void __qd_panic_mark_stack_overflow();
 extern void __qd_panic_mark_stack_underflow();
 extern void __qd_panic_stack_underflow();

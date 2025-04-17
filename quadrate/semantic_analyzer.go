@@ -115,6 +115,8 @@ func (sa *SemanticAnalyzer) isModule(tus *[]TranslationUnit, name string) bool {
 
 func (sa *SemanticAnalyzer) isPrimitiveInstruction(name string) bool {
 	keywords := []string{
+		"__panic_stack_underflow",
+		"__panic_stack_overflow",
 		"abs",
 		"acos",
 		"add",

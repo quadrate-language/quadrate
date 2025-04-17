@@ -21,13 +21,11 @@ const Tau 6.283185307179586
 const e   2.718281828459045
 
 fn deg2rad() {
-	__c {
-		if (__qd_stack_ptr < 1) {
-			__qd_panic_stack_underflow();
-			return;
-		}
-	}
-
+	depth
+	jgz L1
+	__panic_stack_underflow
+	return
+L1:
 	push math::Pi
 	push 180
 	div
@@ -35,12 +33,12 @@ fn deg2rad() {
 }
 
 fn gamma() {
+	depth
+	jgz L1
+	__panic_stack_underflow
+	return
+L1:
 	__c {
-		if (__qd_stack_ptr < 1) {
-			__qd_panic_stack_underflow();
-			return;
-		}
-
 		const __qd_real_t x = __qd_stack[--__qd_stack_ptr];
 		if (x < 0) {
 			__qd_panic_invalid_data();
@@ -56,13 +54,11 @@ fn gamma() {
 }
 
 fn rad2deg() {
-	__c {
-		if (__qd_stack_ptr < 1) {
-			__qd_panic_stack_underflow();
-			return;
-		}
-	}
-
+	depth
+	jgz L1
+	__panic_stack_underflow
+	return
+L1:
 	push 180 math::Pi
 	div
 	mul
