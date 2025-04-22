@@ -82,7 +82,7 @@ fn printh() {
 			} else {
 				printf(" ");
 			}
-			printf("0x%x", (unsigned int)__qd_stack[i]);
+			printf("%x", (unsigned int)__qd_stack[i]);
 		}
 		if (__qd_stack_ptr > 0) {
 			printf("\n");
