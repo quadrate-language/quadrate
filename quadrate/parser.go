@@ -647,7 +647,7 @@ func (p *Parser) parseFunctionCall(loopDepth int) (Node, *SyntaxError) {
 			p.current++
 			t = (*p.tokens)[p.current]
 			if t.Type == Identifier {
-				functionCall.Args = append(functionCall.Args, "__qd_ptr_to_real(__qd_"+t.Literal+")")
+				functionCall.Args = append(functionCall.Args, "__qd_fnptr_to_real(__qd_"+t.Literal+")")
 			}
 		} else if t.Type == Iterator {
 			if loopDepth <= 0 {

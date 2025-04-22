@@ -28,13 +28,25 @@ int __qd_mark_stack_ptr = 0;
 int __qd_mark_stacks_ptrs[QD_MARK_STACK_DEPTH] = {0};
 int __qd_precision = 2;
 
-__qd_real_t __qd_ptr_to_real(void (*fn)(int, ...)) {
+__qd_real_t __qd_ptr_to_real(void* ptr) {
+	__qd_real_t result = 0;
+	memcpy(&result, &ptr, sizeof(result));
+	return result;
+}
+
+void* __qd_real_to_ptr(__qd_real_t ptr) {
+	void* result;
+	memcpy(&result, &ptr, sizeof(result));
+	return result;
+}
+
+__qd_real_t __qd_fnptr_to_real(void (*fn)(int, ...)) {
 	__qd_real_t result = 0;
 	memcpy(&result, &fn, sizeof(result));
 	return result;
 }
 
-void (*__qd_real_to_ptr(__qd_real_t ptr))(int, ...) {
+void (*__qd_real_to_fnptr(__qd_real_t ptr))(int, ...) {
 	void (*result)(int, ...);
 	memcpy(&result, &ptr, sizeof(result));
 	return result;
@@ -107,7 +119,7 @@ void __qd_call(int n, ...) {
 		__qd___panic_stack_underflow(0);
 		return;
 	}
-	void (*fn_ptr)(int, ...) = __qd_real_to_ptr(__qd_stack[--__qd_stack_ptr]);
+	void (*fn_ptr)(int, ...) = __qd_real_to_fnptr(__qd_stack[--__qd_stack_ptr]);
 	if (fn_ptr == NULL) {
 		__qd_panic_invalid_input();
 		return;

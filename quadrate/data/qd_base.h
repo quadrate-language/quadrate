@@ -28,8 +28,10 @@ extern int __qd_mark_stack_ptr;
 extern int __qd_mark_stacks_ptrs[QD_MARK_STACK_DEPTH];
 extern int __qd_precision;
 
-extern __qd_real_t __qd_ptr_to_real(void (*fn)(int, ...));
-extern void (*__qd_real_to_ptr(__qd_real_t ptr))(int, ...);
+extern __qd_real_t __qd_ptr_to_real(void* ptr);
+extern void* __qd_real_to_ptr(__qd_real_t ptr);
+extern __qd_real_t __qd_fnptr_to_real(void (*fn)(int, ...));
+extern void (*__qd_real_to_fnptr(__qd_real_t ptr))(int, ...);
 
 extern void __qd_arg_push(__qd_real_t x);
 
