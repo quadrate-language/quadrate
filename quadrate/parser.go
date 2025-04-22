@@ -786,37 +786,22 @@ func (p *Parser) parseFnSignature() (Node, *SyntaxError) {
 func (p *Parser) parseForLoop() (Node, *SyntaxError) {
 	p.current++
 	t := (*p.tokens)[p.current]
-	if t.Type != NumericConstant {
-		return nil, &SyntaxError{
-			Message:  fmt.Sprintf("expected numeric constant but got ‘%s‘", t.Literal),
-			Line:     t.Line,
-			Column:   t.Column,
-			Filename: p.filename,
-		}
-	}
 	start := t.Literal
+	if t.Type == Identifier {
+		start = fmt.Sprintf("__qd_%s", t.Literal)
+	}
 	p.current++
 	t = (*p.tokens)[p.current]
-	if t.Type != NumericConstant {
-		return nil, &SyntaxError{
-			Message:  fmt.Sprintf("expected numeric constant but got ‘%s‘", t.Literal),
-			Line:     t.Line,
-			Column:   t.Column,
-			Filename: p.filename,
-		}
-	}
 	step := t.Literal
+	if t.Type == Identifier {
+		step = fmt.Sprintf("__qd_%s", t.Literal)
+	}
 	p.current++
 	t = (*p.tokens)[p.current]
-	if t.Type != NumericConstant {
-		return nil, &SyntaxError{
-			Message:  fmt.Sprintf("expected numeric constant but got ‘%s‘", t.Literal),
-			Line:     t.Line,
-			Column:   t.Column,
-			Filename: p.filename,
-		}
-	}
 	end := t.Literal
+	if t.Type == Identifier {
+		end = fmt.Sprintf("__qd_%s", t.Literal)
+	}
 
 	fl := ForLoop{
 		Start: start,
