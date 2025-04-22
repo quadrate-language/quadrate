@@ -1,0 +1,57 @@
+__c {
+	#include <stdlib.h>
+	#include <stdio.h>
+	#include <string.h>
+}
+
+fn new() {
+	__c {
+		if (__qd_stack_ptr < 1) {
+			__qd_panic_stack_underflow();
+			return;
+		}
+		size_t elements = (size_t)__qd_stack[--__qd_stack_ptr];
+		void* ptr = malloc(sizeof(__qd_real_t) * elements);
+		memset(ptr, 0, sizeof(__qd_real_t) * elements);
+		__qd_arg_push(__qd_ptr_to_real(ptr));
+	}
+}
+
+fn free() {
+	__c {
+		if (__qd_stack_ptr < 1) {
+			__qd_panic_stack_underflow();
+			return;
+		}
+		void* ptr = __qd_real_to_ptr(__qd_stack[--__qd_stack_ptr]);
+		free(ptr);
+	}
+}
+
+fn store() {
+	__c {
+		if (__qd_stack_ptr < 3) {
+			__qd_panic_stack_underflow();
+			return;
+		}
+		void* ptr = __qd_real_to_ptr(__qd_stack[--__qd_stack_ptr]);
+		size_t offset = (size_t)__qd_stack[--__qd_stack_ptr];
+		size_t elements = (size_t)__qd_stack[--__qd_stack_ptr];
+		// TODO: Stack overflow check
+		memcpy(ptr + offset * sizeof(__qd_real_t), __qd_stack, sizeof(__qd_real_t) * elements);
+	}
+}
+
+fn load() {
+	__c {
+		if (__qd_stack_ptr < 3) {
+			__qd_panic_stack_underflow();
+			return;
+		}
+		void* ptr = __qd_real_to_ptr(__qd_stack[--__qd_stack_ptr]);
+		size_t offset = (size_t)__qd_stack[--__qd_stack_ptr];
+		size_t elements = (size_t)__qd_stack[--__qd_stack_ptr];
+		memcpy(__qd_stack, ptr + offset * sizeof(__qd_real_t), sizeof(__qd_real_t) * elements);
+		__qd_stack_ptr += elements;
+	}
+}
