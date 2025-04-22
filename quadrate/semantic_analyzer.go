@@ -128,6 +128,7 @@ func (sa *SemanticAnalyzer) isPrimitiveInstruction(name string) bool {
 		"cb",
 		"cbrt",
 		"ceil",
+		"cell",
 		"clear",
 		"continue",
 		"cos",

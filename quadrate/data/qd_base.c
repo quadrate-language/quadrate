@@ -127,6 +127,11 @@ void __qd_call(int n, ...) {
 	fn_ptr(0);
 }
 
+void __qd_cell(int n, ...) {
+	size_t cell_size = sizeof(__qd_real_t);
+	__qd_arg_push((__qd_real_t)cell_size);
+}
+
 void __qd_sum(int n, ...) {
 	__qd_real_t summed = 0;
 	for (int i = 0; i < __qd_stack_ptr; ++i) {
