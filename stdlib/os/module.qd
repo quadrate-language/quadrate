@@ -27,6 +27,86 @@ fn exit() {
 	}	
 }
 
+fn fopen() {
+	__c {
+		va_list args;
+		va_start(args, n);
+		const char* filename = (const char*)va_arg(args, const char*);
+		va_end(args);
+
+		FILE* f = fopen(filename, "rb");
+		if (!f) {
+			__qd_panic_invalid_input();
+			return;
+		}
+		__qd_arg_push(__qd_ptr_to_real(f));
+	}
+}
+
+fn fclose() {
+	__c {
+		if (__qd_stack_ptr < 1) {
+			__qd_panic_stack_underflow();
+			return;
+		}
+		FILE* f = (FILE*)__qd_real_to_ptr(__qd_stack[--__qd_stack_ptr]);
+		if (fclose(f) != 0) {
+			__qd_panic_invalid_input();
+			return;
+		}
+	}
+}
+
+fn fsize() {
+	__c {
+		if (__qd_stack_ptr < 1) {
+			__qd_panic_stack_underflow();
+			return;
+		}
+		FILE* f = (FILE*)__qd_real_to_ptr(__qd_stack[--__qd_stack_ptr]);
+		if (fseek(f, 0, SEEK_END) != 0) {
+			__qd_panic_invalid_input();
+			return;
+		}
+		long size = ftell(f);
+		if (size < 0) {
+			__qd_panic_invalid_input();
+			return;
+		}
+		rewind(f);
+		__qd_arg_push((__qd_real_t)size);
+	}
+}
+
+fn ftell() {
+	__c  {
+		if (__qd_stack_ptr < 1) {
+			__qd_panic_stack_underflow();
+			return;
+		}
+		FILE* f = (FILE*)__qd_real_to_ptr(__qd_stack[--__qd_stack_ptr]);
+		long pos = ftell(f);
+		if (pos < 0) {
+			__qd_panic_invalid_input();
+			return;
+		}
+		__qd_arg_push((__qd_real_t)pos);
+	}
+}
+
+fn fread() {
+	__c {
+		if (__qd_stack_ptr < 1) {
+			__qd_panic_stack_underflow();
+			return;
+		}
+		FILE* f = (FILE*)__qd_real_to_ptr(__qd_stack[--__qd_stack_ptr]);
+		unsigned char c;
+		size_t read = fread(&c, 1, 1, f);
+		__qd_arg_push((__qd_real_t)c);
+	}
+}
+
 fn readfile() {
 	__c {
 		va_list args;
