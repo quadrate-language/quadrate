@@ -15,10 +15,8 @@
 #ifndef QD_BASE_H
 #define QD_BASE_H
 
-#define QD_STACK_DEPTH 16384
-#define QD_MARK_STACK_DEPTH 8
 //#define QD_ENABLE_PANIC
-#define __qd_real_t double
+#define __qd_real_t QD_CELL_TYPE
 
 extern __qd_real_t __qd_stack[QD_STACK_DEPTH];
 extern __qd_real_t __qd_mark_stacks[QD_MARK_STACK_DEPTH][QD_STACK_DEPTH];

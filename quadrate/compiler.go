@@ -20,12 +20,16 @@ type Compiler struct {
 	translationUnits []TranslationUnit
 	dumpTokens       bool
 	output           string
+	stackDepth       int
+	markStackDepth   int
 }
 
-func NewCompiler(dumpTokens bool, output string) *Compiler {
+func NewCompiler(dumpTokens bool, stackDepth, markStackDepth int, output string) *Compiler {
 	return &Compiler{
-		dumpTokens: dumpTokens,
-		output:     output,
+		dumpTokens:     dumpTokens,
+		output:         output,
+		stackDepth:     stackDepth,
+		markStackDepth: markStackDepth,
 	}
 }
 
@@ -105,6 +109,9 @@ func (c *Compiler) CompileAndLink() {
 	args = append(args, "-o", c.output, "-I", folderPath)
 	args = append(args, cFiles...)
 	args = append(args, "-lm")
+	args = append(args, fmt.Sprintf("-DQD_STACK_DEPTH=%d", c.stackDepth))
+	args = append(args, fmt.Sprintf("-DQD_MARK_STACK_DEPTH=%d", c.markStackDepth))
+	args = append(args, "-DQD_CELL_TYPE=double")
 
 	cmd := exec.Command("gcc", args...)
 	cmd.Stdout = os.Stdout
