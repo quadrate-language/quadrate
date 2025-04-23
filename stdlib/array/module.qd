@@ -11,8 +11,9 @@ fn new() {
 			return;
 		}
 		size_t elements = (size_t)__qd_stack[--__qd_stack_ptr];
-		void* ptr = malloc(sizeof(__qd_real_t) * elements);
-		memset(ptr, 0, sizeof(__qd_real_t) * elements);
+		__qd_real_t* ptr = malloc(sizeof(__qd_real_t) * elements + 1);
+		memset(ptr, 0, sizeof(__qd_real_t) * elements + 1);
+		ptr[0] = elements;
 		__qd_arg_push(__qd_ptr_to_real(ptr));
 	}
 }
@@ -23,7 +24,7 @@ fn free() {
 			__qd_panic_stack_underflow();
 			return;
 		}
-		void* ptr = __qd_real_to_ptr(__qd_stack[--__qd_stack_ptr]);
+		__qd_real_t* ptr = __qd_real_to_ptr(__qd_stack[--__qd_stack_ptr]);
 		free(ptr);
 	}
 }
@@ -38,7 +39,7 @@ fn store() {
 		size_t offset = (size_t)__qd_stack[--__qd_stack_ptr];
 		size_t elements = (size_t)__qd_stack[--__qd_stack_ptr];
 		// TODO: Stack overflow check
-		memcpy(ptr + offset, __qd_stack, sizeof(__qd_real_t) * elements);
+		memcpy(ptr + offset + 1, __qd_stack, sizeof(__qd_real_t) * elements);
 	}
 }
 
@@ -51,7 +52,35 @@ fn load() {
 		__qd_real_t* ptr = __qd_real_to_ptr(__qd_stack[--__qd_stack_ptr]);
 		size_t offset = (size_t)__qd_stack[--__qd_stack_ptr];
 		size_t elements = (size_t)__qd_stack[--__qd_stack_ptr];
-		memcpy(__qd_stack + __qd_stack_ptr, ptr + offset, sizeof(__qd_real_t) * elements);
+		memcpy(__qd_stack + __qd_stack_ptr, ptr + offset + 1, sizeof(__qd_real_t) * elements);
 		__qd_stack_ptr += elements;
+	}
+}
+
+fn length() {
+	__c {
+		if (__qd_stack_ptr < 1) {
+			__qd_panic_stack_underflow();
+			return;
+		}
+		__qd_real_t* ptr = __qd_real_to_ptr(__qd_stack[--__qd_stack_ptr]);
+		__qd_real_t length = ptr[0];
+		__qd_arg_push(length);
+	}
+}
+
+fn foreach() {
+	__c {
+		if (__qd_stack_ptr < 2) {
+			__qd_panic_stack_underflow();
+			return;
+		}
+		__qd_real_t* ptr = __qd_real_to_ptr(__qd_stack[--__qd_stack_ptr]);
+		void (*fn_ptr)(int, ...) = __qd_real_to_fnptr(__qd_stack[--__qd_stack_ptr]);
+		for (size_t i = 0; i < ptr[0]; i++) {
+			__qd_real_t x = ptr[i + 1];
+			__qd_arg_push(x);
+			fn_ptr(0);
+		}
 	}
 }
