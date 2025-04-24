@@ -39,7 +39,8 @@ fn store() {
 		size_t offset = (size_t)__qd_stack[--__qd_stack_ptr];
 		size_t elements = (size_t)__qd_stack[--__qd_stack_ptr];
 		// TODO: Stack overflow check
-		memcpy(ptr + offset + 1, __qd_stack, sizeof(__qd_real_t) * elements);
+		memcpy(ptr + offset + 1, __qd_stack + __qd_stack_ptr, sizeof(__qd_real_t) * elements);
+		__qd_stack_ptr -= elements;
 	}
 }
 
@@ -81,6 +82,21 @@ fn foreach() {
 			__qd_real_t x = ptr[i + 1];
 			__qd_arg_push(x);
 			fn_ptr(0);
+		}
+	}
+}
+
+fn print() {
+	__c {
+		if (__qd_stack_ptr < 1) {
+			__qd_panic_stack_underflow();
+			return;
+		}
+		__qd_real_t* ptr = __qd_real_to_ptr(__qd_stack[--__qd_stack_ptr]);
+		for (size_t i = 0; i < ptr[0]; i++) {
+			__qd_real_t x = ptr[i + 1];
+			__qd_arg_push(x);
+			__qd_print(0);
 		}
 	}
 }
