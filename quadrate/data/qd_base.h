@@ -21,9 +21,9 @@
 extern __qd_real_t __qd_stack[QD_STACK_DEPTH];
 extern __qd_real_t __qd_mark_stacks[QD_MARK_STACK_DEPTH][QD_STACK_DEPTH];
 extern __qd_real_t __qd_err;
-extern int __qd_stack_ptr;
-extern int __qd_mark_stack_ptr;
-extern int __qd_mark_stacks_ptrs[QD_MARK_STACK_DEPTH];
+extern long long __qd_stack_ptr;
+extern long long __qd_mark_stack_ptr;
+extern long long __qd_mark_stacks_ptrs[QD_MARK_STACK_DEPTH];
 extern int __qd_precision;
 
 extern __qd_real_t __qd_ptr_to_real(void* ptr);

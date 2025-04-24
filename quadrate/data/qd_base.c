@@ -23,9 +23,9 @@
 __qd_real_t __qd_stack[QD_STACK_DEPTH] = {0};
 __qd_real_t __qd_mark_stacks[QD_MARK_STACK_DEPTH][QD_STACK_DEPTH] = {0};
 __qd_real_t __qd_err = 0.0;
-int __qd_stack_ptr = 0;
-int __qd_mark_stack_ptr = 0;
-int __qd_mark_stacks_ptrs[QD_MARK_STACK_DEPTH] = {0};
+long long __qd_stack_ptr = 0;
+long long __qd_mark_stack_ptr = 0;
+long long __qd_mark_stacks_ptrs[QD_MARK_STACK_DEPTH] = {0};
 int __qd_precision = 2;
 
 __qd_real_t __qd_ptr_to_real(void* ptr) {
@@ -35,7 +35,7 @@ __qd_real_t __qd_ptr_to_real(void* ptr) {
 }
 
 void* __qd_real_to_ptr(__qd_real_t ptr) {
-	void* result;
+	__qd_real_t* result;
 	memcpy(&result, &ptr, sizeof(result));
 	return result;
 }
@@ -661,6 +661,7 @@ void __qd_write(int n, ...) {
 			printf(" ");
 		}
 		printf("%.*f", __qd_precision, __qd_stack[i]);
+		fflush(stdout);
 	}
 }
 
@@ -670,6 +671,7 @@ void __qd_print(int n, ...) {
 		return;
 	}
 	printf("%.*f\n", __qd_precision, __qd_stack[__qd_stack_ptr - 1]);
+	fflush(stdout);
 }
 
 void __qd_eval(int n, const char* expression, ...) {
