@@ -110,3 +110,9 @@ fn printc() {
 		}
 	}
 }
+
+fn putc() {
+	__c {
+		putchar((unsigned char)__qd_stack[__qd_stack_ptr - 1]);
+	}
+}
