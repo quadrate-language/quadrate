@@ -11,7 +11,7 @@ fn new() {
 			return;
 		}
 		size_t elements = (size_t)__qd_stack[--__qd_stack_ptr];
-		__qd_real_t* ptr = malloc(sizeof(__qd_real_t) * elements + 1);
+		__qd_real_t* ptr = malloc(sizeof(__qd_real_t) * (elements + 1));
 		memset(ptr, 0, sizeof(__qd_real_t) * elements + 1);
 		ptr[0] = elements;
 		__qd_arg_push(__qd_ptr_to_real(ptr));
