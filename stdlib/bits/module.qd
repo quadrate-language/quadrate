@@ -103,7 +103,7 @@ fn lshift() {
 		}
 		unsigned int a = (unsigned int)__qd_stack[--__qd_stack_ptr];
 		unsigned int b = (unsigned int)__qd_stack[--__qd_stack_ptr];
-		__qd_arg_push((__qd_real_t)(a << b));
+		__qd_arg_push((__qd_real_t)(b << a));
 	}
 }
 
