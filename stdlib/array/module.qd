@@ -110,7 +110,7 @@ fn print() {
 		for (size_t i = 0; i < ptr[0]; i++) {
 			__qd_real_t x = ptr[i + 1];
 			__qd_arg_push(x);
-			__qd_print(0);
 		}
+		__qd_print(0);
 	}
 }
