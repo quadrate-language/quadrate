@@ -667,7 +667,6 @@ void __qd_write(int n, ...) {
 
 void __qd_print(int n, ...) {
 	if (__qd_stack_ptr < 1) {
-		__qd___panic_stack_underflow(0);
 		return;
 	}
 	printf("%.*f\n", __qd_precision, __qd_stack[__qd_stack_ptr - 1]);
