@@ -122,7 +122,11 @@ func (cg *CGenerator) writeSource(tu *TranslationUnit, sb *strings.Builder) {
 								}
 								continue
 							}
-							sb.WriteString("(__qd_real_t)" + arg)
+							if isFloat(arg) {
+								sb.WriteString("(__qd_real_t)" + arg)
+							} else {
+								sb.WriteString(arg)
+							}
 						}
 					}
 					sb.WriteString(");\n")
