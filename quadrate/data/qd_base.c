@@ -713,11 +713,6 @@ void __qd_eval(int n, const char* expression, ...) {
 }
 
 void __qd_scale(int n, ...) {
-	va_list args;
-	va_start(args, n);
-	if (n > 0) {
-		__qd_push(n, va_arg(args, __qd_real_t));
-	}
 	if (__qd_stack_ptr < 1) {
 		__qd___panic_stack_underflow(0);
 		return;
