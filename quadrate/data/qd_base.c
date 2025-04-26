@@ -57,8 +57,7 @@ void __qd_arg_push(__qd_real_t x) {
 		__qd___panic_stack_overflow(0);
 		return;
 	}
-	__qd_stack[__qd_stack_ptr] = x;
-	__qd_stack_ptr++;
+	__qd_stack[__qd_stack_ptr++] = x;
 }
 
 void __qd_error(int n, ...) {
