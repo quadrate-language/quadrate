@@ -2,9 +2,33 @@ __c {
 	#include <stdio.h>
 }
 
+fn pop() {
+	__c {
+		if (__qd_stack_ptr < 2) {
+			__qd_panic_stack_underflow();
+			return;
+		}
+
+		if (__qd_stack[__qd_stack_ptr - 1] != 0) {
+			return;
+		}
+		int length = __qd_stack[__qd_stack_ptr - 2];
+		__qd_stack_ptr -= length + 2;
+	}
+}
+
 fn print() {
 	__c {
-		for (int i = 0; i < QD_STACK_DEPTH; ++i) {
+		if (__qd_stack_ptr < 2) {
+			__qd_panic_stack_underflow();
+			return;
+		}
+
+		if (__qd_stack[__qd_stack_ptr - 1] != 0) {
+			return;
+		}
+		int length = __qd_stack[__qd_stack_ptr - 2];
+		for (int i = __qd_stack_ptr - length - 2; i < QD_STACK_DEPTH; i++) {
 			unsigned char c = __qd_stack[i];
 			if (c == 0) {
 				break;

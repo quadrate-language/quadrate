@@ -132,6 +132,7 @@ func (cg *CGenerator) writeSource(tu *TranslationUnit, sb *strings.Builder) {
 										}
 									}
 								}
+								arguments = append(arguments, fmt.Sprintf("(__qd_real_t)%d", len(arg)-2))
 								arguments = append(arguments, "(__qd_real_t)0")
 							}
 						}
