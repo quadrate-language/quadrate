@@ -17,6 +17,21 @@ fn pop() {
 	}
 }
 
+fn length() {
+	__c {
+		if (__qd_stack_ptr < 2) {
+			__qd_panic_stack_underflow();
+			return;
+		}
+
+		if (__qd_stack[__qd_stack_ptr - 1] != 0) {
+			__qd_arg_push(-1); // TODO: Error
+			return;
+		}
+		__qd_arg_push(__qd_stack[__qd_stack_ptr - 2]);
+	}
+}
+
 fn print() {
 	__c {
 		if (__qd_stack_ptr < 2) {
@@ -35,5 +50,6 @@ fn print() {
 			}
 			putchar(c);
 		}
+		putchar('\n');
 	}
 }
