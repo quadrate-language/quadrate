@@ -111,41 +111,13 @@ func (cg *CGenerator) writeSource(tu *TranslationUnit, sb *strings.Builder) {
 					if len(n.Args) == 0 {
 						sb.WriteString("0")
 					} else {
-						for i, arg := range n.Args {
-							if i > 0 {
-								sb.WriteString(", ")
-							} else {
-								if isFloat(arg) {
-									sb.WriteString(fmt.Sprintf("%d, (__qd_real_t)%s", len(n.Args), arg))
-								} else {
-									sb.WriteString(fmt.Sprintf("%d", len(arg)-1))
-									escaped := false
-									for _, c := range arg {
-										switch c {
-										case '"':
-											break
-										case '\\':
-											escaped = true
-										default:
-											if escaped {
-												sb.WriteString(fmt.Sprintf(", (__qd_real_t)'\\%c'", c))
-												escaped = false
-											} else {
-												sb.WriteString(fmt.Sprintf(", (__qd_real_t)%d", c))
-											}
-										}
-									}
-									sb.WriteString(", 0")
-								}
-								continue
-							}
+						var arguments []string
+						for _, arg := range n.Args {
 							if isFloat(arg) {
-								sb.WriteString("(__qd_real_t)" + arg)
+								arguments = append(arguments, fmt.Sprintf("(__qd_real_t)%s", arg))
 							} else {
-								sb.WriteString(fmt.Sprintf("%d", len(arg)-1))
 								escaped := false
 								for _, c := range arg {
-									println(c)
 									switch c {
 									case '"':
 										break
@@ -153,15 +125,20 @@ func (cg *CGenerator) writeSource(tu *TranslationUnit, sb *strings.Builder) {
 										escaped = true
 									default:
 										if escaped {
-											sb.WriteString(fmt.Sprintf(", (__qd_real_t)'\\%c'", c))
+											arguments = append(arguments, fmt.Sprintf("(__qd_real_t)'\\%c'", c))
 											escaped = false
 										} else {
-											sb.WriteString(fmt.Sprintf(", (__qd_real_t)%d", c))
+											arguments = append(arguments, fmt.Sprintf("(__qd_real_t)%d", c))
 										}
 									}
 								}
-								sb.WriteString(", 0")
+								arguments = append(arguments, "(__qd_real_t)0")
 							}
+						}
+						sb.WriteString(fmt.Sprintf("%d", len(arguments)))
+						for _, arg := range arguments {
+							sb.WriteString(", ")
+							sb.WriteString(arg)
 						}
 					}
 					sb.WriteString(");\n")
