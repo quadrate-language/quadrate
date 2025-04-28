@@ -113,7 +113,7 @@ func (cg *CGenerator) writeSource(tu *TranslationUnit, sb *strings.Builder) {
 					} else {
 						var arguments []string
 						for _, arg := range n.Args {
-							if isFloat(arg) {
+							if isFloat(arg) || strings.HasPrefix(arg, "__qd_") {
 								arguments = append(arguments, fmt.Sprintf("(__qd_real_t)%s", arg))
 							} else {
 								escaped := false
