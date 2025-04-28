@@ -52,7 +52,7 @@ extern void __qd_div(int n, ...);
 extern void __qd_dup(int n, ...);
 extern void __qd_dup2(int n, ...);
 extern void __qd_error(int n, ...);
-extern void __qd_eval(int n, const char* expression, ...);
+extern void __qd_eval(int n, ...);
 extern void __qd_fac(int n, ...);
 extern void __qd_floor(int n, ...);
 extern void __qd_inc(int n, ...);

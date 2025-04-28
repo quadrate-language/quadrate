@@ -532,9 +532,19 @@ void trim(char* str) {
 
 void __qd_read(int n, ...) {
 	char input[1024] = {0};
+	int length = 0;
 	if (fgets(input, sizeof(input), stdin) != NULL) {
 		trim(input);
-		__qd_eval(0, input);
+		for (int i = 0; i < sizeof(input); ++i) {
+			if (input[i] == '\0') {
+				break;
+			}
+			__qd_arg_push((__qd_real_t)input[i]);
+			++length;
+		}
+		__qd_arg_push((__qd_real_t)length);
+		__qd_arg_push((__qd_real_t)0);
+		__qd_eval(0);
 	}
 }
 
@@ -672,11 +682,36 @@ void __qd_print(int n, ...) {
 	fflush(stdout);
 }
 
-void __qd_eval(int n, const char* expression, ...) {
+void __qd_eval(int n, ...) {
+	if (__qd_stack_ptr < 2) {
+		__qd_panic_stack_underflow();
+		return;
+	}
+
+	if (__qd_stack[__qd_stack_ptr - 1] != 0) {
+		return;
+	}
+	int length = __qd_stack[__qd_stack_ptr - 2];
+	char expression[256] = {0};
+	int j = 0;
+	for (int i = __qd_stack_ptr - length - 2; i < QD_STACK_DEPTH; i++) {
+		if (j >= sizeof(expression) - 1) {
+			break;
+		}
+		char c = __qd_stack[i];
+		if (c == 0) {
+			expression[j-1] = 0;
+			break;
+		}
+		expression[j++] = c;
+	}
+
+	trim(expression);
 	char* expr_copy = strdup(expression);
 	if (expr_copy == NULL) {
 		return;
 	}
+
 	char* token = strtok((char*)expr_copy, " \t\r\n");
 	while (token != NULL) {
 		if (isdigit(token[0]) || (token[0] == '-' && isdigit(token[1]))) {
