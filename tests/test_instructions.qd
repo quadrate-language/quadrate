@@ -310,7 +310,8 @@ fn test_dup2() {
 }
 
 fn test_eval() {
-	eval "2 4 *"
+	push "2 4 *"
+	eval
 	test "eval" 8
 }
 
