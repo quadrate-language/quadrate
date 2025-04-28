@@ -647,16 +647,16 @@ void __qd_test(int n, ...) {
 	}
 	va_list args;
 	va_start(args, n);
-	const char* name = va_arg(args, const char*);
-	if (n - 1 != __qd_stack_ptr) {
-		printf("test: [%s] expected stack depth %d, got %d\n", name, n - 1, __qd_stack_ptr);
+
+	if (n != __qd_stack_ptr) {
+		printf("test: expected stack depth %d, got %d\n", n, __qd_stack_ptr);
 		exit(1);
 	}
 
-	for (int i = 0; i < n-1; ++i) {
+	for (int i = 0; i < n; ++i) {
 		__qd_real_t x = va_arg(args, __qd_real_t);
 		if (x != __qd_stack[i]) {
-			printf("test: [%s] expected %.*f, got %.*f\n", name, __qd_precision, x, __qd_precision, __qd_stack[i]);
+			printf("test: expected %.*f, got %.*f\n", __qd_precision, x, __qd_precision, __qd_stack[i]);
 			exit(1);
 		}
 	}
