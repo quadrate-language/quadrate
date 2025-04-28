@@ -641,10 +641,6 @@ void __qd_sqrt(int n, ...) {
 }
 
 void __qd_test(int n, ...) {
-	if (n == 0) {
-		__qd_panic_invalid_data();
-		exit(1);
-	}
 	va_list args;
 	va_start(args, n);
 
@@ -712,6 +708,7 @@ void __qd_eval(int n, ...) {
 		return;
 	}
 
+	__qd_stack_ptr -= length + 2;
 	char* token = strtok((char*)expr_copy, " \t\r\n");
 	while (token != NULL) {
 		if (isdigit(token[0]) || (token[0] == '-' && isdigit(token[1]))) {
