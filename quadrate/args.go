@@ -10,4 +10,5 @@ type Args struct {
 	Version        bool
 	StackDepth     int
 	MarkStackDepth int
+	CLinkLibraries StringSlice
 }

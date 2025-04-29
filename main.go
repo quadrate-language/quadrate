@@ -32,6 +32,7 @@ func main() {
 	flag.BoolVar(&args.NoColors, "no-colors", false, "Disable colored output")
 	flag.IntVar(&args.StackDepth, "stack-depth", 16384, "Set stack depth")
 	flag.IntVar(&args.MarkStackDepth, "mark-stack-depth", 8, "Set mark stack depth")
+	flag.Var(&args.CLinkLibraries, "cl", "C link library")
 	flag.Parse()
 
 	args.Sources = flag.Args()
@@ -72,7 +73,7 @@ func main() {
 		}
 	}
 
-	compiler := quadrate.NewCompiler(args.DumpTokens, args.StackDepth, args.MarkStackDepth, args.Output)
+	compiler := quadrate.NewCompiler(args.DumpTokens, args.StackDepth, args.MarkStackDepth, args.Output, args.CLinkLibraries)
 	if tus, err := compiler.Compile(absFilepaths); err != nil {
 		if b, e := os.ReadFile(err.Filename); e != nil {
 			printMessage(fmt.Sprintf("\033[1mquadc: \033[31merror:\033[0m %s", e.Error()), args.NoColors)

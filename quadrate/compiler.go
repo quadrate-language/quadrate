@@ -22,14 +22,16 @@ type Compiler struct {
 	output           string
 	stackDepth       int
 	markStackDepth   int
+	cLinkLibraries   StringSlice
 }
 
-func NewCompiler(dumpTokens bool, stackDepth, markStackDepth int, output string) *Compiler {
+func NewCompiler(dumpTokens bool, stackDepth, markStackDepth int, output string, cLinkLibraries StringSlice) *Compiler {
 	return &Compiler{
 		dumpTokens:     dumpTokens,
 		output:         output,
 		stackDepth:     stackDepth,
 		markStackDepth: markStackDepth,
+		cLinkLibraries: cLinkLibraries,
 	}
 }
 
@@ -112,6 +114,12 @@ func (c *Compiler) CompileAndLink() {
 	args = append(args, fmt.Sprintf("-DQD_STACK_DEPTH=%d", c.stackDepth))
 	args = append(args, fmt.Sprintf("-DQD_MARK_STACK_DEPTH=%d", c.markStackDepth))
 	args = append(args, "-DQD_CELL_TYPE=double")
+	for _, lib := range c.cLinkLibraries {
+		args = append(args, "-l"+lib)
+	}
+	for _, a := range args {
+		println(a)
+	}
 
 	cmd := exec.Command("gcc", args...)
 	cmd.Stdout = os.Stdout
