@@ -3,89 +3,89 @@ use math
 fn test_abs() {
 	push 1
 	abs
-	test "abs" 1
+	test 1
 
 	push -1
 	abs
-	test "abs" 1
+	test 1
 }
 
 fn test_acos() {
 	push 1
 	acos
-	test "acos" 0
+	test 0
 }
 
 fn test_add() {
 	push 1 2
 	add
-	test "add" 3
+	test 3
 
 	push 1 -2
 	add
-	test "add" -1
+	test -1
 
 	push -1 -2
 	add
-	test "add" -3
+	test -3
 
 	push 1.5 2.5
 	add
-	test "add" 4.0
+	test 4.0
 
 	push 1.5 -2.5
 	add
-	test "add" -1.0
+	test -1.0
 
 	push -1.5 -2.5
 	add
-	test "add" -4.0
+	test -4.0
 }
 
 fn test_asin() {
 	push 1
 	asin
-	test "asin" 1.5707963267948966
+	test 1.5707963267948966
 
 	push -1
 	asin
-	test "asin" -1.5707963267948966
+	test -1.5707963267948966
 
 	push 0
 	asin
-	test "asin" 0
+	test 0
 }
 
 fn test_atan() {
 	push 1
 	atan
-	test "atan" 0.7853981633974483
+	test 0.7853981633974483
 
 	push -1
 	atan
-	test "atan" -0.7853981633974483
+	test -0.7853981633974483
 
 	push 0
 	atan
-	test "atan" 0
+	test 0
 }
 
 fn test_avg() {
 	push 1 2 3
 	avg
-	test "avg" 2
+	test 2
 
 	push 1.5 2.5 3.5
 	avg
-	test "avg" 2.5
+	test 2.5
 
 	push -1 -2 -3
 	avg
-	test "avg" -2
+	test -2
 
 	push -1.5 -2.5 -3.5
 	avg
-	test "avg" -2.5
+	test -2.5
 }
 
 fn test_break() {
@@ -95,7 +95,7 @@ fn test_break() {
 		push 2
 		break
 	end
-	test "break" 1
+	test 1
 }
 
 fn foo() {
@@ -105,55 +105,55 @@ fn foo() {
 fn test_call() {
 	push &foo
 	call
-	test "call" 1
+	test 1
 }
 
 fn test_cb() {
 	push 2
 	cb
-	test "cb" 8
+	test 8
 
 	push -2
 	cb
-	test "cb" -8
+	test -8
 }
 
 fn test_cbrt() {
 	push 8
 	cbrt
-	test "cbrt" 2
+	test 2
 
 	push -8
 	cbrt
-	test "cbrt" -2
+	test -2
 
 	push 0
 	cbrt
-	test "cbrt" 0
+	test 0
 }
 
 fn test_ceil() {
 	push 1.5
 	ceil
-	test "ceil" 2
+	test 2
 
 	push -1.5
 	ceil
-	test "ceil" -1
+	test -1
 
 	push 0.5
 	ceil
-	test "ceil" 1
+	test 1
 
 	push -0.5
 	ceil
-	test "ceil" 0
+	test 0
 }
 
 fn test_clear() {
 	push 1 2 3
 	clear
-	test "clear"
+	test
 }
 
 fn test_continue() {
@@ -162,240 +162,240 @@ fn test_continue() {
 		continue
 		push 2
 	end
-	test "continue" 0 1 2
+	test 0 1 2
 }
 
 fn test_cos() {
 	push 0
 	cos
-	test "cos" 1
+	test 1
 
 	push 1
 	cos
-	test "cos" 0.5403023058681398
+	test 0.5403023058681398
 
 	push -1
 	cos
-	test "cos" 0.5403023058681398
+	test 0.5403023058681398
 
 	push 3.141592653589793
 	cos
-	test "cos" -1
+	test -1
 
 	push -3.141592653589793
 	cos
-	test "cos" -1
+	test -1
 
 	push 6.283185307179586
 	cos
-	test "cos" 1
+	test 1
 }
 
 fn test_dec() {
 	push 1
 	dec
-	test "dec" 0
+	test 0
 
 	push -1
 	dec
-	test "dec" -2
+	test -2
 
 	push 0
 	dec
-	test "dec" -1
+	test -1
 
 	push 1.5
 	dec
-	test "dec" 0.5
+	test 0.5
 
 	push -1.5
 	dec
-	test "dec" -2.5
+	test -2.5
 
 	push 0.5
 	dec
-	test "dec" -0.5
+	test -0.5
 
 	push -0.5
 	dec
-	test "dec" -1.5
+	test -1.5
 }
 
 fn test_depth() {
 	push 1 2 3
 	depth
-	test "depth" 1 2 3 3
+	test 1 2 3 3
 
 	push 1
 	depth
-	test "depth" 1 1
+	test 1 1
 
 	push 1 2
 	depth
-	test "depth" 1 2 2
+	test 1 2 2
 
 	push 1 2 3 4
 	depth
-	test "depth" 1 2 3 4 4
+	test 1 2 3 4 4
 }
 
 fn test_div() {
 	push 1 2
 	div
-	test "div" 0.5
+	test 0.5
 
 	push -1 2
 	div
-	test "div" -0.5
+	test -0.5
 
 	push 1 -2
 	div
-	test "div" -0.5
+	test -0.5
 
 	push -1 -2
 	div
-	test "div" 0.5
+	test 0.5
 
 	push 1.5 2.5
 	div
-	test "div" 0.6
+	test 0.6
 
 	push -1.5 2.5
 	div
-	test "div" -0.6
+	test -0.6
 
 	push 1.5 -2.5
 	div
-	test "div" -0.6
+	test -0.6
 
 	push -1.5 -2.5
 	div
-	test "div" 0.6
+	test 0.6
 }
 
 fn test_dup() {
 	push 1 2 3
 	dup
-	test "dup" 1 2 3 3
+	test 1 2 3 3
 
 	push -1 -2 -3
 	dup
-	test "dup" -1 -2 -3 -3
+	test -1 -2 -3 -3
 
 	push 1.5 2.5 3.5
 	dup
-	test "dup" 1.5 2.5 3.5 3.5
+	test 1.5 2.5 3.5 3.5
 
 	push -1.5 -2.5 -3.5
 	dup
-	test "dup" -1.5 -2.5 -3.5 -3.5
+	test -1.5 -2.5 -3.5 -3.5
 }
 
 fn test_dup2() {
 	push 1 2 3
 	dup2
-	test "dup2" 1 2 3 2 3
+	test 1 2 3 2 3
 
 	push -1 -2 -3
 	dup2
-	test "dup2" -1 -2 -3 -2 -3
+	test -1 -2 -3 -2 -3
 
 	push 1.5 2.5 3.5
 	dup2
-	test "dup2" 1.5 2.5 3.5 2.5 3.5
+	test 1.5 2.5 3.5 2.5 3.5
 
 	push -1.5 -2.5 -3.5
 	dup2
-	test "dup2" -1.5 -2.5 -3.5 -2.5 -3.5
+	test -1.5 -2.5 -3.5 -2.5 -3.5
 }
 
 fn test_eval() {
 	push "2 4 *"
 	eval
-	test "eval" 8
+	test 8
 }
 
 fn test_fac() {
 	push 5
 	fac
-	test "fac" 120
+	test 120
 
 	push 0
 	fac
-	test "fac" 1
+	test 1
 
 	push 1
 	fac
-	test "fac" 1
+	test 1
 }
 
 fn test_floor() {
 	push 1.5
 	floor
-	test "floor" 1
+	test 1
 
 	push -1.5
 	floor
-	test "floor" -2
+	test -2
 
 	push 0.5
 	floor
-	test "floor" 0
+	test 0
 
 	push -0.5
 	floor
-	test "floor" -1
+	test -1
 }
 
 fn test_for() {
 	for 0 1 3
 		push $
 	end
-	test "for" 0 1 2
+	test 0 1 2
 }
 
 fn test_inc() {
 	push 1
 	inc
-	test "inc" 2
+	test 2
 
 	push -1
 	inc
-	test "inc" 0
+	test 0
 
 	push 0
 	inc
-	test "inc" 1
+	test 1
 
 	push 1.5
 	inc
-	test "inc" 2.5
+	test 2.5
 
 	push -1.5
 	inc
-	test "inc" -0.5
+	test -0.5
 
 	push 0.5
 	inc
-	test "inc" 1.5
+	test 1.5
 
 	push -0.5
 	inc
-	test "inc" 0.5
+	test 0.5
 }
 
 fn test_inv() {
 	push 1
 	inv
-	test "inv" 1
+	test 1
 
 	push 2
 	inv
-	test "inv" 0.5
+	test 0.5
 
 	push -2
 	inv
-	test "inv" -0.5
+	test -0.5
 }
 
 fn test_je() {
@@ -411,7 +411,7 @@ L1:
 
 Error:
 	push -1
-	test "je" 1
+	test 1
 }
 
 fn test_jg() {
@@ -427,7 +427,7 @@ L1:
 
 Error:
 	push -1
-	test "jg" 1
+	test 1
 }
 
 fn test_jge() {
@@ -445,7 +445,7 @@ L2:
 
 Error:
 	push -1
-	test "jge" 1
+	test 1
 }
 
 fn test_jgez() {
@@ -463,7 +463,7 @@ L2:
 
 Error:
 	push -1
-	test "jgez" 1
+	test 1
 }
 
 fn test_jgz() {
@@ -479,7 +479,7 @@ L1:
 
 Error:
 	push -1
-	test "jgz" 1
+	test 1
 }
 
 fn test_jl() {
@@ -495,7 +495,7 @@ L1:
 
 Error:
 	push -1
-	test "jl" 1
+	test 1
 }
 
 fn test_jle() {
@@ -513,7 +513,7 @@ L2:
 
 Error:
 	push -1
-	test "jle" 1
+	test 1
 }
 
 fn test_jlez() {
@@ -531,7 +531,7 @@ L2:
 
 Error:
 	push -1
-	test "jlez" 1
+	test 1
 }
 
 fn test_jmp() {
@@ -539,7 +539,7 @@ fn test_jmp() {
 	push -1
 L1:
 	push 1
-	test "jmp" 1
+	test 1
 }
 
 fn test_jne() {
@@ -553,7 +553,7 @@ L1:
 
 Error:
 	push -1
-	test "jne" 1
+	test 1
 }
 
 fn test_jnz() {
@@ -571,7 +571,7 @@ L2:
 
 Error:
 	push -1
-	test "jnz" 1
+	test 1
 }
 
 fn test_jz() {
@@ -585,39 +585,39 @@ L1:
 
 Error:
 	push -1
-	test "jz" 1
+	test 1
 }
 
 fn test_ln() {
 	push 1
 	ln
-	test "ln" 0
+	test 0
 
 	push 2
 	ln
-	test "ln" 0.6931471805599453
+	test 0.6931471805599453
 
 	push 1.5
 	ln
-	test "ln" 0.4054651081081644
+	test 0.4054651081081644
 }
 
 fn test_log10() {
 	push 1
 	log10
-	test "log10" 0
+	test 0
 
 	push 10
 	log10
-	test "log10" 1
+	test 1
 
 	push 100
 	log10
-	test "log10" 2
+	test 2
 
 	push 1000
 	log10
-	test "log10" 3
+	test 3
 }
 
 fn test_loop() {
@@ -629,435 +629,435 @@ fn test_loop() {
 		break
 	L1:
 	end
-	test "loop" 0 1 2 3 4 5
+	test 0 1 2 3 4 5
 }
 
 fn test_mark() {
 	push 1 2 3
 	mark
 	clear
-	test "mark"
+	test 
 	revert
-	test "mark" 1 2 3
+	test 1 2 3
 }
 
 fn test_max() {
 	push 1 2
 	max
-	test "max" 2
+	test 2
 
 	push -1 -2
 	max
-	test "max" -1
+	test -1
 
 	push 1.5 2.5
 	max
-	test "max" 2.5
+	test 2.5
 
 	push -1.5 -2.5
 	max
-	test "max" -1.5
+	test -1.5
 
 	push 1.5 -2.5
 	max
-	test "max" 1.5
+	test 1.5
 
 	push -1.5 2.5
 	max
-	test "max" 2.5
+	test 2.5
 
 	push -1.5 -2.5
 	max
-	test "max" -1.5
+	test -1.5
 }
 
 fn test_min() {
 	push 1 2
 	min
-	test "min" 1
+	test 1
 
 	push -1 -2
 	min
-	test "min" -2
+	test -2
 
 	push 1.5 2.5
 	min
-	test "min" 1.5
+	test 1.5
 
 	push -1.5 -2.5
 	min
-	test "min" -2.5
+	test -2.5
 
 	push 1.5 -2.5
 	min
-	test "min" -2.5
+	test -2.5
 
 	push -1.5 2.5
 	min
-	test "min" -1.5
+	test -1.5
 
 	push -1.5 -2.5
 	min
-	test "min" -2.5
+	test -2.5
 }
 
 fn test_mod() {
 	push 3 2
 	mod
-	test "mod" 1
+	test 1
 
 	push 2.5 2
 	mod
-	test "mod" 0.5
+	test 0.5
 }
 
 fn test_mul() {
 	push 1 2
 	mul
-	test "mul" 2
+	test 2
 
 	push -1 -2
 	mul
-	test "mul" 2
+	test 2
 
 	push 1.5 2.5
 	mul
-	test "mul" 3.75
+	test 3.75
 
 	push -1.5 -2.5
 	mul
-	test "mul" 3.75
+	test 3.75
 
 	push 1.5 -2.5
 	mul
-	test "mul" -3.75
+	test -3.75
 
 	push -1.5 2.5
 	mul
-	test "mul" -3.75
+	test -3.75
 
 	push -1.5 -2.5
 	mul
-	test "mul" 3.75
+	test 3.75
 }
 
 fn test_neg() {
 	push 1
 	neg
-	test "neg" -1
+	test -1
 
 	push -1
 	neg
-	test "neg" 1
+	test 1
 }
 
 fn test_nip() {
 	push 1 2 3
 	nip
-	test "nip" 1 3
+	test 1 3
 
 	push -1 -2 -3
 	nip
-	test "nip" -1 -3
+	test -1 -3
 
 	push 1.5 2.5 3.5
 	nip
-	test "nip" 1.5 3.5
+	test 1.5 3.5
 
 	push -1.5 -2.5 -3.5
 	nip
-	test "nip" -1.5 -3.5
+	test -1.5 -3.5
 }
 
 fn test_over() {
 	push 1 2 3
 	over
-	test "over" 1 2 3 2
+	test 1 2 3 2
 
 	push -1 -2 -3
 	over
-	test "over" -1 -2 -3 -2
+	test -1 -2 -3 -2
 
 	push 1.5 2.5 3.5
 	over
-	test "over" 1.5 2.5 3.5 2.5
+	test 1.5 2.5 3.5 2.5
 
 	push -1.5 -2.5 -3.5
 	over
-	test "over" -1.5 -2.5 -3.5 -2.5
+	test -1.5 -2.5 -3.5 -2.5
 }
 
 fn test_pick() {
 	push 1 2 3
 	pick 1
-	test "pick" 1 2 3 2
+	test 1 2 3 2
 
 	push -1 -2 -3
 	pick 0
-	test "pick" -1 -2 -3 -3
+	test -1 -2 -3 -3
 
 	push 1.5 2.5 3.5
 	pick 2
-	test "pick" 1.5 2.5 3.5 1.5
+	test 1.5 2.5 3.5 1.5
 }
 
 fn test_pop() {
 	push 1 2 3
 	pop
-	test "pop" 1 2
+	test 1 2
 
 	push 1 2 3
 	pop 3
-	test "pop"
+	test 
 }
 
 fn test_pow() {
 	push 2 3
 	pow
-	test "pow" 8
+	test 8
 
 	push -2 3
 	pow
-	test "pow" -8
+	test -8
 
 	push 2 -3
 	pow
-	test "pow" 0.125
+	test 0.125
 
 	push -2 -3
 	pow
-	test "pow" -0.125
+	test -0.125
 }
 
 fn test_push() {
 	push 1 2 3
-	test "push" 1 2 3
+	test 1 2 3
 }
 
 fn test_reduce() {
 	push 1 2 3
 	reduce add
-	test "reduce" 6
+	test 6
 
 	push 1 2 3
 	reduce mul
-	test "reduce" 6
+	test 6
 
 	push 1 2 3
 	reduce sub
-	test "reduce" -4
+	test -4
 
 	push 16 4 2
 	reduce div
-	test "reduce" 2
+	test 2
 }
 
 fn test_rot() {
 	push 1 2 3
 	rot
-	test "rot" 2 3 1
+	test 2 3 1
 
 	push -1 -2 -3
 	rot
-	test "rot" -2 -3 -1
+	test -2 -3 -1
 
 	push 1.5 2.5 3.5
 	rot
-	test "rot" 2.5 3.5 1.5
+	test 2.5 3.5 1.5
 
 	push -1.5 -2.5 -3.5
 	rot
-	test "rot" -2.5 -3.5 -1.5
+	test -2.5 -3.5 -1.5
 }
 
 fn test_rot2() {
 	push 1 2 3 4
 	rot2
-	test "rot2" 3 4 1 2
+	test 3 4 1 2
 
 	push -1 -2 -3 -4
 	rot2
-	test "rot2" -3 -4 -1 -2
+	test -3 -4 -1 -2
 
 	push 1.5 2.5 3.5 4.5
 	rot2
-	test "rot2" 3.5 4.5 1.5 2.5
+	test 3.5 4.5 1.5 2.5
 
 	push -1.5 -2.5 -3.5 -4.5
 	rot2
-	test "rot2" -3.5 -4.5 -1.5 -2.5
+	test -3.5 -4.5 -1.5 -2.5
 }
 
 fn test_roll() {
 	push 1 2 3 4
 	roll 2
-	test "roll" 1 3 4 2
+	test 1 3 4 2
 
 	push 1 2 3 4
 	roll 0
-	test "roll" 1 2 3 4
+	test 1 2 3 4
 }
 
 fn test_round() {
 	push 1.5
 	round
-	test "round" 2
+	test 2
 
 	push -1.5
 	round
-	test "round" -2
+	test -2
 
 	push 0.5
 	round
-	test "round" 1
+	test 1
 
 	push -0.5
 	round
-	test "round" -1
+	test -1
 
 	push 1.25
 	round
-	test "round" 1
+	test 1
 
 	push -1.25
 	round
-	test "round" -1
+	test -1
 }
 
 fn test_sin() {
 	push 0
 	sin
-	test "sin" 0
+	test 0
 }
 
 fn test_sq() {
 	push 1
 	sq
-	test "sq" 1
+	test 1
 
 	push -1
 	sq
-	test "sq" 1
+	test 1
 
 	push 2
 	sq
-	test "sq" 4
+	test 4
 
 	push -2
 	sq
-	test "sq" 4
+	test 4
 
 	push 1.5
 	sq
-	test "sq" 2.25
+	test 2.25
 
 	push -1.5
 	sq
-	test "sq" 2.25
+	test 2.25
 
 	push 0
 	sq
-	test "sq" 0
+	test 0
 }
 
 fn test_sqrt() {
 	push 4
 	sqrt
-	test "sqrt" 2
+	test 2
 
 	push 0
 	sqrt
-	test "sqrt" 0
+	test 0
 
 	push 1
 	sqrt
-	test "sqrt" 1
+	test 1
 
 	push 2.25
 	sqrt
-	test "sqrt" 1.5
+	test 1.5
 }
 
 fn test_sub() {
 	push 1 2
 	sub
-	test "sub" -1
+	test -1
 
 	push -1 -2
 	sub
-	test "sub" 1
+	test 1
 
 	push 1.5 2.5
 	sub
-	test "sub" -1.0
+	test -1.0
 
 	push -1.5 -2.5
 	sub
-	test "sub" 1.0
+	test 1.0
 
 	push 1.5 -2.5
 	sub
-	test "sub" 4.0
+	test 4.0
 
 	push -1.5 2.5
 	sub
-	test "sub" -4.0
+	test -4.0
 
 	push -1.5 -2.5
 	sub
-	test "sub" 1.0
+	test 1.0
 }
 
 fn test_sum() {
 	push 1 2 3
 	sum
-	test "sum" 1 2 3 6
+	test 1 2 3 6
 
 	push -1 -2 -3
 	sum
-	test "sum" -1 -2 -3 -6
+	test -1 -2 -3 -6
 }
 
 fn test_swap() {
 	push 1 2
 	swap
-	test "swap" 2 1
+	test 2 1
 }
 
 fn test_swap2() {
 	push 1 2 3 4
 	swap2
-	test "swap2" 3 4 1 2
+	test 3 4 1 2
 }
 
 fn test_tan() {
 	push 0
 	tan
-	test "tan" 0
+	test 0
 
 	push 1
 	tan
-	test "tan" 1.5574077246549023
+	test 1.5574077246549023
 
 	push -1
 	tan
-	test "tan" -1.5574077246549023
+	test -1.5574077246549023
 }
 
 fn test_tuck() {
 	push 1 2 3 4
 	tuck
-	test "tuck" 1 2 4 3 4
+	test 1 2 4 3 4
 }
 
 fn test_within() {
 	push 2 1 3
 	within
-	test "within" 1
+	test 1
 
 	push 2 4 3
 	within
-	test "within" 0
+	test 0
 }
 
 fn main() {
