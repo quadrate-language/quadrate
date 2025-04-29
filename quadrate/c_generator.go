@@ -81,6 +81,10 @@ func (cg *CGenerator) writeHeader(tu *TranslationUnit, sb *strings.Builder) {
 }
 
 func isFloat(s string) bool {
+	if strings.HasPrefix(s, "0x") {
+		return true
+	}
+
 	_, err := strconv.ParseFloat(s, 64)
 	return err == nil
 }
