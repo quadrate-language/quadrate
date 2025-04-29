@@ -117,9 +117,6 @@ func (c *Compiler) CompileAndLink() {
 	for _, lib := range c.cLinkLibraries {
 		args = append(args, "-l"+lib)
 	}
-	for _, a := range args {
-		println(a)
-	}
 
 	cmd := exec.Command("gcc", args...)
 	cmd.Stdout = os.Stdout
