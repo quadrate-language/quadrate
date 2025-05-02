@@ -26,6 +26,7 @@ const MarkStackUnderflow 2.5
 const InvalidInput       3.1
 const InvalidData        3.2
 const OutOfMemory        4.1
+const Unknown            5.1
 
 fn print() {
 	__c {
@@ -50,7 +51,7 @@ fn print() {
 		} else if (__qd_err == __qd_err_MarkStackUnderflow) {
 			printf("MarkStackUnderflow\n");
 		} else {
-			printf("UnknownError\n");
+			printf("Unknown\n");
 		}
 	}
 }
