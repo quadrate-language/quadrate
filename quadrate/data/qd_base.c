@@ -856,3 +856,11 @@ void __qd_panic_out_of_memory() {
 #endif
 }
 
+void __qd_panic() {
+	__qd_err = 5.1;
+	fprintf(stderr, "panic: unknown\n");
+#ifdef QD_ENABLE_PANIC
+	exit(1);
+#endif
+}
+
