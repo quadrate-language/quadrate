@@ -581,7 +581,7 @@ func (p *Parser) parseLocal() (Node, *SyntaxError) {
 	if t.Type == Identifier {
 		l := LocalValue{}
 		for p.current < len(*p.tokens)-1 {
-			if t.Type == NewLine {
+			if t.Type == NewLine || t.Type == SemiColon {
 				break
 			} else if t.Type != Identifier {
 				return nil, &SyntaxError{
@@ -621,7 +621,7 @@ func (p *Parser) parseFunctionCall(loopDepth int) (Node, *SyntaxError) {
 	p.current++
 	for p.current < len(*p.tokens)-1 {
 		t := (*p.tokens)[p.current]
-		if t.Type == NewLine {
+		if t.Type == NewLine || t.Type == SemiColon {
 			break
 		} else if t.Type == NumericConstant {
 			functionCall.Args = append(functionCall.Args, t.Literal)

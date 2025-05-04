@@ -203,7 +203,7 @@ func (sa *SemanticAnalyzer) isLocal(i int, tokens []Token) bool {
 		if tokens[j].Type == Local {
 			return true
 		}
-		if tokens[j].Type == NewLine {
+		if tokens[j].Type == NewLine || tokens[j].Type == SemiColon {
 			break
 		}
 	}

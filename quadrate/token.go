@@ -46,6 +46,7 @@ const (
 	Reduce               = "reduce"
 	Return               = "return"
 	Scope                = "scope"
+	SemiColon            = "semicolon"
 	String               = "string"
 	Use                  = "use"
 )
