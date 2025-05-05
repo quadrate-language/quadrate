@@ -95,7 +95,7 @@ func (c *Compiler) compile(file, name string) (*TranslationUnit, *SyntaxError) {
 }
 
 func (c *Compiler) CompileAndLink() {
-	folderPath := ".qd_gen"
+	folderPath := ".intermediate"
 
 	cFiles, err := filepath.Glob(filepath.Join(folderPath, "*.c"))
 	if err != nil {

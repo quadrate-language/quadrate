@@ -100,16 +100,16 @@ func main() {
 				}
 			}
 			if !args.SaveTemps {
-				os.RemoveAll("./.qd_gen")
+				os.RemoveAll("./.intermediate")
 			}
 			os.Exit(1)
 		}
-		generator := quadrate.NewCGenerator("./.qd_gen")
+		generator := quadrate.NewCGenerator("./.intermediate")
 		for _, tu := range *tus {
 			if err := generator.Generate(&tu); err != nil {
 				printMessage(fmt.Sprintf("\033[1mquadc: \033[31merror:\033[0m %s", err.Message), args.NoColors)
 				if !args.SaveTemps {
-					os.RemoveAll("./.qd_gen")
+					os.RemoveAll("./.intermediate")
 				}
 				os.Exit(1)
 			}
@@ -134,7 +134,7 @@ func main() {
 		}
 
 		if !args.SaveTemps {
-			os.RemoveAll("./.qd_gen")
+			os.RemoveAll("./.intermediate")
 		}
 		os.Exit(0)
 	}
