@@ -52,6 +52,22 @@ void (*__qd_real_to_fnptr(__qd_real_t ptr))(int, ...) {
 	return result;
 }
 
+void __qd_to_string(char str[]) {
+	if (__qd_stack_ptr < 2) {
+		__qd___panic_stack_underflow(0);
+		return;
+	}
+	long long length = __qd_stack[__qd_stack_ptr - 2];
+	for (long long i = 0; i < length; ++i) {
+		char c = __qd_stack[__qd_stack_ptr - length - 2 + i];
+		if (c == 0) {
+			str[i] = 0;
+			break;
+		}
+		str[i] = c;
+	}
+}
+
 void __qd_arg_push(__qd_real_t x) {
 	if (__qd_stack_ptr >= QD_STACK_DEPTH) {
 		__qd___panic_stack_overflow(0);

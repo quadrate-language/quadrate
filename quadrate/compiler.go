@@ -114,6 +114,7 @@ func (c *Compiler) CompileAndLink() {
 	args = append(args, fmt.Sprintf("-DQD_STACK_DEPTH=%d", c.stackDepth))
 	args = append(args, fmt.Sprintf("-DQD_MARK_STACK_DEPTH=%d", c.markStackDepth))
 	args = append(args, "-DQD_CELL_TYPE=double")
+	args = append(args, "-DQD_STRING_LENGTH=256")
 	for _, lib := range c.cLinkLibraries {
 		args = append(args, "-l"+lib)
 	}

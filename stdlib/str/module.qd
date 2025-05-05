@@ -43,7 +43,7 @@ fn print() {
 			return;
 		}
 		int length = __qd_stack[__qd_stack_ptr - 2];
-		for (int i = __qd_stack_ptr - length - 2; i < QD_STACK_DEPTH; i++) {
+		for (int i = __qd_stack_ptr - length - 2; i < QD_STRING_LENGTH - 1; i++) {
 			unsigned char c = __qd_stack[i];
 			if (c == 0) {
 				break;
