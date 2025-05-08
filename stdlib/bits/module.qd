@@ -12,119 +12,79 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-fn or() {
+fn or(a b -- x) {
 	__c {
-		if (__qd_stack_ptr < 2) {
-			__qd_panic_stack_underflow();
-			return;
-		}
 		unsigned long long a = (unsigned long long)__qd_stack[--__qd_stack_ptr];
 		unsigned long long b = (unsigned long long)__qd_stack[--__qd_stack_ptr];
 		__qd_arg_push((__qd_real_t)(a | b));
 	}
 }
 
-fn xor() {
+fn xor(a b --x) {
 	__c {
-		if (__qd_stack_ptr < 2) {
-			__qd_panic_stack_underflow();
-			return;
-		}
 		unsigned long long a = (unsigned long long)__qd_stack[--__qd_stack_ptr];
 		unsigned long long b = (unsigned long long)__qd_stack[--__qd_stack_ptr];
 		__qd_arg_push((__qd_real_t)(a ^ b));
 	}
 }
 
-fn and() {
+fn and(a b -- x) {
 	__c {
-		if (__qd_stack_ptr < 2) {
-			__qd_panic_stack_underflow();
-			return;
-		}
 		unsigned long long a = (unsigned long long)__qd_stack[--__qd_stack_ptr];
 		unsigned long long b = (unsigned long long)__qd_stack[--__qd_stack_ptr];
 		__qd_arg_push((__qd_real_t)(a & b));
 	}
 }
 
-fn not() {
+fn not(a -- x) {
 	__c {
-		if (__qd_stack_ptr < 1) {
-			__qd_panic_stack_underflow();
-			return;
-		}
 		unsigned long long a = (unsigned long long)__qd_stack[--__qd_stack_ptr];
 		__qd_arg_push((__qd_real_t)(~a));
 	}
 }
 
-fn nand() {
+fn nand(a b -- x) {
 	__c {
-		if (__qd_stack_ptr < 2) {
-			__qd_panic_stack_underflow();
-			return;
-		}
 		unsigned long long a = (unsigned long long)__qd_stack[--__qd_stack_ptr];
 		unsigned long long b = (unsigned long long)__qd_stack[--__qd_stack_ptr];
 		__qd_arg_push((__qd_real_t)(~(a & b)));
 	}
 }
 
-fn nor() {
+fn nor(a b -- x) {
 	__c {
-		if (__qd_stack_ptr < 2) {
-			__qd_panic_stack_underflow();
-			return;
-		}
 		unsigned long long a = (unsigned long long)__qd_stack[--__qd_stack_ptr];
 		unsigned long long b = (unsigned long long)__qd_stack[--__qd_stack_ptr];
 		__qd_arg_push((__qd_real_t)(~(a | b)));
 	}
 }
 
-fn xnor() {
+fn xnor(a b -- x) {
 	__c {
-		if (__qd_stack_ptr < 2) {
-			__qd_panic_stack_underflow();
-			return;
-		}
 		unsigned long long a = (unsigned long long)__qd_stack[--__qd_stack_ptr];
 		unsigned long long b = (unsigned long long)__qd_stack[--__qd_stack_ptr];
 		__qd_arg_push((__qd_real_t)(~(a ^ b)));
 	}
 }
 
-fn lshift() {
+fn lshift(a b -- x) {
 	__c {
-		if (__qd_stack_ptr < 2) {
-			__qd_panic_stack_underflow();
-			return;
-		}
 		unsigned long long a = (unsigned long long)__qd_stack[--__qd_stack_ptr];
 		unsigned long long b = (unsigned long long)__qd_stack[--__qd_stack_ptr];
 		__qd_arg_push((__qd_real_t)(b << a));
 	}
 }
 
-fn rshift() {
+fn rshift(a b -- x) {
 	__c {
-		if (__qd_stack_ptr < 2) {
-			__qd_panic_stack_underflow();
-			return;
-		}
 		unsigned long long a = (unsigned long long)__qd_stack[--__qd_stack_ptr];
 		unsigned long long b = (unsigned long long)__qd_stack[--__qd_stack_ptr];
 		__qd_arg_push((__qd_real_t)(b >> a));
 	}
 }
 
-fn popcount() {
+fn popcount(a -- x) {
 	__c {
-		if (__qd_stack_ptr < 1) {
-			__qd_panic_stack_underflow();
-			return;
-		}
 		unsigned long long a = (unsigned long long)__qd_stack[--__qd_stack_ptr];
 		unsigned long long count = 0;
 		while (a) {
@@ -135,24 +95,16 @@ fn popcount() {
 	}
 }
 
-fn lrot() {
+fn lrot(a b -- x) {
 	__c {
-		if (__qd_stack_ptr < 2) {
-			__qd_panic_stack_underflow();
-			return;
-		}
 		unsigned long long a = (unsigned long long)__qd_stack[--__qd_stack_ptr];
 		unsigned long long b = (unsigned long long)__qd_stack[--__qd_stack_ptr];
 		__qd_arg_push((__qd_real_t)((b << a) | (b >> (32 - a))));
 	}
 }
 
-fn rrot() {
+fn rrot(a b -- x) {
 	__c {
-		if (__qd_stack_ptr < 2) {
-			__qd_panic_stack_underflow();
-			return;
-		}
 		unsigned long long a = (unsigned long long)__qd_stack[--__qd_stack_ptr];
 		unsigned long long b = (unsigned long long)__qd_stack[--__qd_stack_ptr];
 		__qd_arg_push((__qd_real_t)((b >> a) | (b << (32 - a))));
