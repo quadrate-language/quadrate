@@ -18,12 +18,8 @@ __c {
 	#include <string.h>
 }
 
-fn new() {
+fn new(count -- ptr) {
 	__c {
-		if (__qd_stack_ptr < 1) {
-			__qd_panic_stack_underflow();
-			return;
-		}
 		size_t elements = (size_t)__qd_stack[--__qd_stack_ptr];
 		__qd_real_t* ptr = malloc(sizeof(__qd_real_t) * (elements + 1));
 		memset(ptr, 0, sizeof(__qd_real_t) * elements + 1);
@@ -32,23 +28,15 @@ fn new() {
 	}
 }
 
-fn free() {
+fn free(ptr --) {
 	__c {
-		if (__qd_stack_ptr < 1) {
-			__qd_panic_stack_underflow();
-			return;
-		}
 		__qd_real_t* ptr = __qd_real_to_ptr(__qd_stack[--__qd_stack_ptr]);
 		free(ptr);
 	}
 }
 
-fn store() {
+fn store(ptr offset elements --) {
 	__c {
-		if (__qd_stack_ptr < 3) {
-			__qd_panic_stack_underflow();
-			return;
-		}
 		__qd_real_t* ptr = __qd_real_to_ptr(__qd_stack[--__qd_stack_ptr]);
 		size_t offset = (size_t)__qd_stack[--__qd_stack_ptr];
 		size_t elements = (size_t)__qd_stack[--__qd_stack_ptr];
@@ -58,12 +46,8 @@ fn store() {
 	}
 }
 
-fn load() {
+fn load(ptr offset elements --) {
 	__c {
-		if (__qd_stack_ptr < 3) {
-			__qd_panic_stack_underflow();
-			return;
-		}
 		__qd_real_t* ptr = __qd_real_to_ptr(__qd_stack[--__qd_stack_ptr]);
 		size_t offset = (size_t)__qd_stack[--__qd_stack_ptr];
 		size_t elements = (size_t)__qd_stack[--__qd_stack_ptr];
@@ -72,24 +56,16 @@ fn load() {
 	}
 }
 
-fn length() {
+fn length(ptr --) {
 	__c {
-		if (__qd_stack_ptr < 1) {
-			__qd_panic_stack_underflow();
-			return;
-		}
 		__qd_real_t* ptr = __qd_real_to_ptr(__qd_stack[--__qd_stack_ptr]);
 		__qd_real_t length = ptr[0];
 		__qd_arg_push(length);
 	}
 }
 
-fn foreach() {
+fn foreach(ptr fn_ptr --) {
 	__c {
-		if (__qd_stack_ptr < 2) {
-			__qd_panic_stack_underflow();
-			return;
-		}
 		__qd_real_t* ptr = __qd_real_to_ptr(__qd_stack[--__qd_stack_ptr]);
 		void (*fn_ptr)(int, ...) = __qd_real_to_fnptr(__qd_stack[--__qd_stack_ptr]);
 		for (size_t i = 0; i < ptr[0]; i++) {
@@ -100,12 +76,8 @@ fn foreach() {
 	}
 }
 
-fn print() {
+fn print(ptr --) {
 	__c {
-		if (__qd_stack_ptr < 1) {
-			__qd_panic_stack_underflow();
-			return;
-		}
 		__qd_real_t* ptr = __qd_real_to_ptr(__qd_stack[--__qd_stack_ptr]);
 		for (size_t i = 0; i < ptr[0]; i++) {
 			__qd_real_t x = ptr[i + 1];
