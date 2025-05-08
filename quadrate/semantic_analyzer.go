@@ -35,7 +35,17 @@ func (sa *SemanticAnalyzer) Analyze(tus *[]TranslationUnit) *SemanticError {
 	}
 
 	for _, tu := range *tus {
+		skipNext := false
 		for i, t := range tu.tokens {
+			if skipNext {
+				if t.Type == ParenthesisRight {
+					skipNext = false
+				}
+				continue
+			}
+			if t.Type == ParenthesisLeft {
+				skipNext = true
+			}
 			if t.Type == Identifier {
 				var module string
 				if i > 1 && tu.tokens[i-1].Type == DoubleColon {

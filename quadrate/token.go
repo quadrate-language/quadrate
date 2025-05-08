@@ -11,6 +11,7 @@ const (
 	Continue             = "continue"
 	CurlyBracketLeft     = "curly_bracket_left"
 	CurlyBracketRight    = "curly_bracket_right"
+	DashDash             = "dash_dash"
 	Defer                = "defer"
 	DoubleColon          = "double_colon"
 	EOF                  = "EOF"

@@ -33,6 +33,8 @@ type FunctionDeclaration struct {
 	ReturnType string
 	Name       string
 	Parameters []Parameter
+	Inputs     []string
+	Outputs    []string
 }
 
 type FunctionCall struct {
@@ -759,6 +761,7 @@ func (p *Parser) parseFnSignature() (Node, *SyntaxError) {
 		}
 	}
 
+	input := true
 	for p.current < len(*p.tokens) {
 		p.current++
 		t = (*p.tokens)[p.current]
@@ -766,11 +769,21 @@ func (p *Parser) parseFnSignature() (Node, *SyntaxError) {
 			p.current++
 			break
 		} else if t.Type == Identifier {
-			fd.Parameters = append(fd.Parameters, Parameter{
-				Type: "real",
-				Name: t.Literal,
-			})
-		} else if t.Type == Comma {
+			if input {
+				fd.Inputs = append(fd.Inputs, t.Literal)
+			} else {
+				fd.Outputs = append(fd.Outputs, t.Literal)
+			}
+		} else if t.Type == DashDash {
+			if !input {
+				return nil, &SyntaxError{
+					Message:  fmt.Sprintf("expected identifier but got ‘%s‘", t.Literal),
+					Line:     t.Line,
+					Column:   t.Column,
+					Filename: p.filename,
+				}
+			}
+			input = false
 		} else {
 			return nil, &SyntaxError{
 				Message:  fmt.Sprintf("expected identifier but got ‘%s‘", t.Literal),

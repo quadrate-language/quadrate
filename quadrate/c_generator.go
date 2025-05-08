@@ -92,6 +92,8 @@ func isFloat(s string) bool {
 func (cg *CGenerator) writeSource(tu *TranslationUnit, sb *strings.Builder) {
 	sb.WriteString("#include \"" + cg.generateFilename(tu.filepath, tu.name) + ".h\"\n")
 
+	inputs := 0
+	outputs := 0
 	isMain := false
 	for _, stmt := range tu.module.Statements {
 		switch n := stmt.(type) {
@@ -101,22 +103,30 @@ func (cg *CGenerator) writeSource(tu *TranslationUnit, sb *strings.Builder) {
 			if n.Name == "main" {
 				isMain = true
 				sb.WriteString("int main(int argc, char** argv)")
+				inputs = 0
+				outputs = 0
 				continue
 			}
 			s := fmt.Sprintf("void %s_%s_%s(int n, ...)", cg.prefix, tu.name, n.Name)
 			s = strings.ReplaceAll(s, "__qd__", "__qd_")
 			sb.WriteString(s)
+			inputs = len(n.Inputs)
+			outputs = len(n.Outputs)
 		case Body:
 			sb.WriteString(" {\n")
+			if inputs > 0 {
+				sb.WriteString(fmt.Sprintf("\tif (__qd_stack_ptr < %d) { __qd___panic_stack_underflow(0); return; }\n", inputs))
+			}
+
 			for _, stmt := range n.Statements {
-				switch n := stmt.(type) {
+				switch m := stmt.(type) {
 				case FunctionCall:
-					sb.WriteString(fmt.Sprintf("\t%s_%s(", cg.prefix, n.Name))
-					if len(n.Args) == 0 {
+					sb.WriteString(fmt.Sprintf("\t%s_%s(", cg.prefix, m.Name))
+					if len(m.Args) == 0 {
 						sb.WriteString("0")
 					} else {
 						var arguments []string
-						for _, arg := range n.Args {
+						for _, arg := range m.Args {
 							if isFloat(arg) || strings.HasPrefix(arg, "__qd_") {
 								arguments = append(arguments, fmt.Sprintf("(__qd_real_t)%s", arg))
 							} else {
@@ -148,9 +158,9 @@ func (cg *CGenerator) writeSource(tu *TranslationUnit, sb *strings.Builder) {
 					}
 					sb.WriteString(");\n")
 				case InlineCCode:
-					sb.WriteString(n.Code + "\n")
+					sb.WriteString(m.Code + "\n")
 				case ReduceStmt:
-					sb.WriteString(fmt.Sprintf("\t%s_reduce_%s(0);\n", cg.prefix, n.Identifier))
+					sb.WriteString(fmt.Sprintf("\t%s_reduce_%s(0);\n", cg.prefix, m.Identifier))
 				case ReturnStatement:
 					if isMain {
 						sb.WriteString("\treturn 0;\n")
@@ -158,7 +168,7 @@ func (cg *CGenerator) writeSource(tu *TranslationUnit, sb *strings.Builder) {
 						sb.WriteString("\treturn;\n")
 					}
 				case ForLoop:
-					sb.WriteString(fmt.Sprintf("\tfor (__qd_real_t __qd_itr = (__qd_real_t)%s; __qd_itr < (__qd_real_t)%s; __qd_itr += (__qd_real_t)%s) {\n", n.Start, n.End, n.Step))
+					sb.WriteString(fmt.Sprintf("\tfor (__qd_real_t __qd_itr = (__qd_real_t)%s; __qd_itr < (__qd_real_t)%s; __qd_itr += (__qd_real_t)%s) {\n", m.Start, m.End, m.Step))
 				case LoopLoop:
 					sb.WriteString("\tfor (__qd_real_t __qd_itr = (__qd_real_t)0; ; __qd_itr += (__qd_real_t)1) {\n")
 				case ContinueStatement:
@@ -168,53 +178,57 @@ func (cg *CGenerator) writeSource(tu *TranslationUnit, sb *strings.Builder) {
 				case EndStatement:
 					sb.WriteString("\t}\n")
 				case Label:
-					sb.WriteString(n.Name + ":;\n")
+					sb.WriteString(m.Name + ":;\n")
 				case Jmp:
-					sb.WriteString("\tgoto " + n.Label + ";\n")
+					sb.WriteString("\tgoto " + m.Label + ";\n")
 				case Je:
 					sb.WriteString("\tif (__qd_stack_ptr <= 1) {\n\t\t__qd_panic_stack_underflow();\n\t}\n")
-					sb.WriteString("\tif (__qd_stack[--__qd_stack_ptr] == __qd_stack[--__qd_stack_ptr]) {\n\t\tgoto " + n.Label + ";\n\t}\n")
+					sb.WriteString("\tif (__qd_stack[--__qd_stack_ptr] == __qd_stack[--__qd_stack_ptr]) {\n\t\tgoto " + m.Label + ";\n\t}\n")
 				case Jg:
 					sb.WriteString("\tif (__qd_stack_ptr <= 1) {\n\t\t__qd_panic_stack_underflow();\n\t}\n")
-					sb.WriteString("\tif (__qd_stack[--__qd_stack_ptr] < __qd_stack[--__qd_stack_ptr]) {\n\t\tgoto " + n.Label + ";\n\t}\n")
+					sb.WriteString("\tif (__qd_stack[--__qd_stack_ptr] < __qd_stack[--__qd_stack_ptr]) {\n\t\tgoto " + m.Label + ";\n\t}\n")
 				case Jge:
 					sb.WriteString("\tif (__qd_stack_ptr <= 1) {\n\t\t__qd_panic_stack_underflow();\n\t}\n")
-					sb.WriteString("\tif (__qd_stack[--__qd_stack_ptr] <= __qd_stack[--__qd_stack_ptr]) {\n\t\tgoto " + n.Label + ";\n\t}\n")
+					sb.WriteString("\tif (__qd_stack[--__qd_stack_ptr] <= __qd_stack[--__qd_stack_ptr]) {\n\t\tgoto " + m.Label + ";\n\t}\n")
 				case Jl:
 					sb.WriteString("\tif (__qd_stack_ptr <= 1) {\n\t\t__qd_panic_stack_underflow();\n\t}\n")
-					sb.WriteString("\tif (__qd_stack[--__qd_stack_ptr] > __qd_stack[--__qd_stack_ptr]) {\n\t\tgoto " + n.Label + ";\n\t}\n")
+					sb.WriteString("\tif (__qd_stack[--__qd_stack_ptr] > __qd_stack[--__qd_stack_ptr]) {\n\t\tgoto " + m.Label + ";\n\t}\n")
 				case Jle:
 					sb.WriteString("\tif (__qd_stack_ptr <= 1) {\n\t\t__qd_panic_stack_underflow();\n\t}\n")
-					sb.WriteString("\tif (__qd_stack[--__qd_stack_ptr] >= __qd_stack[--__qd_stack_ptr]) {\n\t\tgoto " + n.Label + ";\n\t}\n")
+					sb.WriteString("\tif (__qd_stack[--__qd_stack_ptr] >= __qd_stack[--__qd_stack_ptr]) {\n\t\tgoto " + m.Label + ";\n\t}\n")
 				case Jne:
 					sb.WriteString("\tif (__qd_stack_ptr <= 1) {\n\t\t__qd_panic_stack_underflow();\n\t}\n")
-					sb.WriteString("\tif (__qd_stack[--__qd_stack_ptr] != __qd_stack[--__qd_stack_ptr]) {\n\t\tgoto " + n.Label + ";\n\t}\n")
+					sb.WriteString("\tif (__qd_stack[--__qd_stack_ptr] != __qd_stack[--__qd_stack_ptr]) {\n\t\tgoto " + m.Label + ";\n\t}\n")
 				case Jnz:
 					sb.WriteString("\tif (__qd_stack_ptr == 0) {\n\t\t__qd_panic_stack_underflow();\n\t}\n")
-					sb.WriteString("\tif (__qd_stack[--__qd_stack_ptr] != 0.0) {\n\t\tgoto " + n.Label + ";\n\t}\n")
+					sb.WriteString("\tif (__qd_stack[--__qd_stack_ptr] != 0.0) {\n\t\tgoto " + m.Label + ";\n\t}\n")
 				case Jz:
 					sb.WriteString("\tif (__qd_stack_ptr == 0) {\n\t\t__qd_panic_stack_underflow();\n\t}\n")
-					sb.WriteString("\tif (__qd_stack[--__qd_stack_ptr] == 0.0) {\n\t\tgoto " + n.Label + ";\n\t}\n")
+					sb.WriteString("\tif (__qd_stack[--__qd_stack_ptr] == 0.0) {\n\t\tgoto " + m.Label + ";\n\t}\n")
 				case Jgez:
 					sb.WriteString("\tif (__qd_stack_ptr == 0) {\n\t\t__qd_panic_stack_underflow();\n\t}\n")
-					sb.WriteString("\tif (__qd_stack[--__qd_stack_ptr] >= 0.0) {\n\t\tgoto " + n.Label + ";\n\t}\n")
+					sb.WriteString("\tif (__qd_stack[--__qd_stack_ptr] >= 0.0) {\n\t\tgoto " + m.Label + ";\n\t}\n")
 				case Jlez:
 					sb.WriteString("\tif (__qd_stack_ptr == 0) {\n\t\t__qd_panic_stack_underflow();\n\t}\n")
-					sb.WriteString("\tif (__qd_stack[--__qd_stack_ptr] <= 0.0) {\n\t\tgoto " + n.Label + ";\n\t}\n")
+					sb.WriteString("\tif (__qd_stack[--__qd_stack_ptr] <= 0.0) {\n\t\tgoto " + m.Label + ";\n\t}\n")
 				case Jgz:
 					sb.WriteString("\tif (__qd_stack_ptr == 0) {\n\t\t__qd_panic_stack_underflow();\n\t}\n")
-					sb.WriteString("\tif (__qd_stack[--__qd_stack_ptr] > 0.0) {\n\t\tgoto " + n.Label + ";\n\t}\n")
+					sb.WriteString("\tif (__qd_stack[--__qd_stack_ptr] > 0.0) {\n\t\tgoto " + m.Label + ";\n\t}\n")
 				case Jlz:
 					sb.WriteString("\tif (__qd_stack_ptr == 0) {\n\t\t__qd_panic_stack_underflow();\n\t}\n")
-					sb.WriteString("\tif (__qd_stack[--__qd_stack_ptr] < 0.0) {\n\t\tgoto " + n.Label + ";\n\t}\n")
+					sb.WriteString("\tif (__qd_stack[--__qd_stack_ptr] < 0.0) {\n\t\tgoto " + m.Label + ";\n\t}\n")
 				case LocalValue:
-					for _, name := range n.Names {
+					for _, name := range m.Names {
 						s := fmt.Sprintf("\t__qd_real_t %s_%s = (__qd_real_t)0;\n\tif (__qd_stack_ptr > 0) {\n\t\t%s_%s = __qd_stack[--__qd_stack_ptr];\n\t} else {\n\t\t__qd_panic_stack_underflow();\n\t}\n", cg.prefix, name, cg.prefix, name)
 						sb.WriteString(s)
 					}
 				}
 			}
 			isMain = false
+			if outputs > 0 {
+				sb.WriteString(fmt.Sprintf("\tif (__qd_stack_ptr < %d) { __qd___panic_stack_underflow(0); return; }\n", outputs))
+			}
+
 			sb.WriteString("}\n")
 		case InlineCCode:
 			sb.WriteString(n.Code + "\n")

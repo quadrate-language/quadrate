@@ -200,6 +200,11 @@ func (l *Lexer) Lex() LexResult {
 					t := NewToken(EndScopeComment, "*/", l.line, l.column-2)
 					r.Tokens = append(r.Tokens, t)
 				}
+			} else if l.ch == '-' && l.peek() == '-' {
+				t := NewToken(DashDash, "--", l.line, l.column)
+				r.Tokens = append(r.Tokens, t)
+				l.readChar()
+				l.readChar()
 			} else {
 				t := NewToken(Illegal, string(l.ch), l.line, l.column)
 				r.Tokens = append(r.Tokens, t)
