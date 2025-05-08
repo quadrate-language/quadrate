@@ -204,7 +204,6 @@ func (l *Lexer) Lex() LexResult {
 				t := NewToken(DashDash, "--", l.line, l.column)
 				r.Tokens = append(r.Tokens, t)
 				l.readChar()
-				l.readChar()
 			} else {
 				t := NewToken(Illegal, string(l.ch), l.line, l.column)
 				r.Tokens = append(r.Tokens, t)
