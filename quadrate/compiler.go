@@ -16,22 +16,24 @@ type ModuleToCompile struct {
 }
 
 type Compiler struct {
-	modulesToCompile []ModuleToCompile
-	translationUnits []TranslationUnit
-	dumpTokens       bool
-	output           string
-	stackDepth       int
-	markStackDepth   int
-	cLinkLibraries   StringSlice
+	modulesToCompile  []ModuleToCompile
+	translationUnits  []TranslationUnit
+	dumpTokens        bool
+	output            string
+	stackDepth        int
+	markStackDepth    int
+	cLinkLibraries    StringSlice
+	cLinkLibraryPaths StringSlice
 }
 
-func NewCompiler(dumpTokens bool, stackDepth, markStackDepth int, output string, cLinkLibraries StringSlice) *Compiler {
+func NewCompiler(dumpTokens bool, stackDepth, markStackDepth int, output string, cLinkLibraries, cLinkLibraryPaths StringSlice) *Compiler {
 	return &Compiler{
-		dumpTokens:     dumpTokens,
-		output:         output,
-		stackDepth:     stackDepth,
-		markStackDepth: markStackDepth,
-		cLinkLibraries: cLinkLibraries,
+		dumpTokens:        dumpTokens,
+		output:            output,
+		stackDepth:        stackDepth,
+		markStackDepth:    markStackDepth,
+		cLinkLibraries:    cLinkLibraries,
+		cLinkLibraryPaths: cLinkLibraryPaths,
 	}
 }
 
@@ -115,6 +117,9 @@ func (c *Compiler) CompileAndLink() {
 	args = append(args, fmt.Sprintf("-DQD_MARK_STACK_DEPTH=%d", c.markStackDepth))
 	args = append(args, "-DQD_CELL_TYPE=double")
 	args = append(args, "-DQD_STRING_LENGTH=256")
+	for _, path := range c.cLinkLibraryPaths {
+		args = append(args, "-L"+path)
+	}
 	for _, lib := range c.cLinkLibraries {
 		args = append(args, "-l"+lib)
 	}
