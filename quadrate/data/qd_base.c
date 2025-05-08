@@ -880,3 +880,19 @@ void __qd_panic() {
 #endif
 }
 
+void __qd_panic_mismatched_inputs(const char* fn, int expected, int actual) {
+	__qd_err = 2.6;
+	fprintf(stderr, "panic: mismatched inputs in call to function ´%s´, expected ´%d´, have ´%d´\n", fn, expected, actual);
+#ifdef QD_ENABLE_PANIC
+	exit(1);
+#endif
+}
+
+void __qd_panic_mismatched_outputs(const char* fn, int expected, int actual) {
+	__qd_err = 2.7;
+	fprintf(stderr, "panic: mismatched outputs in call to function ´%s´, expected ´%d´, have ´%d´\n", fn, expected, actual);
+#ifdef QD_ENABLE_PANIC
+	exit(1);
+#endif
+}
+

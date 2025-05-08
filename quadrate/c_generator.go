@@ -94,6 +94,7 @@ func (cg *CGenerator) writeSource(tu *TranslationUnit, sb *strings.Builder) {
 
 	inputs := 0
 	outputs := 0
+	fnName := ""
 	isMain := false
 	for _, stmt := range tu.module.Statements {
 		switch n := stmt.(type) {
@@ -105,6 +106,7 @@ func (cg *CGenerator) writeSource(tu *TranslationUnit, sb *strings.Builder) {
 				sb.WriteString("int main(int argc, char** argv)")
 				inputs = 0
 				outputs = 0
+				fnName = ""
 				continue
 			}
 			s := fmt.Sprintf("void %s_%s_%s(int n, ...)", cg.prefix, tu.name, n.Name)
@@ -112,10 +114,15 @@ func (cg *CGenerator) writeSource(tu *TranslationUnit, sb *strings.Builder) {
 			sb.WriteString(s)
 			inputs = len(n.Inputs)
 			outputs = len(n.Outputs)
+			if tu.name != "" {
+				fnName = fmt.Sprintf("%s::%s", tu.name, n.Name)
+			} else {
+				fnName = n.Name
+			}
 		case Body:
 			sb.WriteString(" {\n")
 			if inputs > 0 {
-				sb.WriteString(fmt.Sprintf("\tif (__qd_stack_ptr < %d) { __qd___panic_stack_underflow(0); return; }\n", inputs))
+				sb.WriteString(fmt.Sprintf("\tif (__qd_stack_ptr < %d) { __qd_panic_mismatched_inputs(\"%s\", %d, __qd_stack_ptr); return; }\n", inputs, fnName, inputs))
 			}
 
 			for _, stmt := range n.Statements {
@@ -226,7 +233,7 @@ func (cg *CGenerator) writeSource(tu *TranslationUnit, sb *strings.Builder) {
 			}
 			isMain = false
 			if outputs > 0 {
-				sb.WriteString(fmt.Sprintf("\tif (__qd_stack_ptr < %d) { __qd___panic_stack_underflow(0); return; }\n", outputs))
+				sb.WriteString(fmt.Sprintf("\tif (__qd_stack_ptr < %d) { __qd_panic_mismatched_outputs(\"%s\", %d, __qd_stack_ptr); return; }\n", outputs, fnName, outputs))
 			}
 
 			sb.WriteString("}\n")

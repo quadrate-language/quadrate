@@ -109,6 +109,8 @@ extern void __qd_panic_invalid_input();
 extern void __qd_panic_invalid_data();
 extern void __qd_panic_out_of_memory();
 extern void __qd_panic();
+extern void __qd_panic_mismatched_inputs(const char* fn, int expected, int actual);
+extern void __qd_panic_mismatched_outputs(const char* fn, int expected, int actual);
 
 #endif
 

@@ -20,7 +20,7 @@ const Pi  3.141592653589793
 const Tau 6.283185307179586
 const e   2.718281828459045
 
-fn deg2rad() {
+fn deg2rad(def -- rad) {
 	depth
 	jgz L1
 	__panic_stack_underflow

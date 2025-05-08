@@ -23,6 +23,8 @@ const StackUnderflow     2.2
 const ValueInfinity      2.3
 const MarkStackOverflow  2.4
 const MarkStackUnderflow 2.5
+const MismatchInputs     2.6
+const MismatchOutputs    2.7
 const InvalidInput       3.1
 const InvalidData        3.2
 const OutOfMemory        4.1
@@ -50,6 +52,10 @@ fn print() {
 			printf("MarkStackOverflow\n");
 		} else if (__qd_err == __qd_err_MarkStackUnderflow) {
 			printf("MarkStackUnderflow\n");
+		} else if (__qd_err == __qd_err_MismatchInputs) {
+			printf("MismatchInputs\n");
+		} else if (__qd_err == __qd_err_MismatchOutputs) {
+			printf("MismatchOutputs\n");
 		} else {
 			printf("Unknown\n");
 		}
