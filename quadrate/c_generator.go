@@ -92,8 +92,8 @@ func isFloat(s string) bool {
 func (cg *CGenerator) writeSource(tu *TranslationUnit, sb *strings.Builder) {
 	sb.WriteString("#include \"" + cg.generateFilename(tu.filepath, tu.name) + ".h\"\n")
 
-	inputs := 0
-	outputs := 0
+	var inputs []string
+	var outputs []string
 	fnName := ""
 	isMain := false
 	for _, stmt := range tu.module.Statements {
@@ -104,16 +104,16 @@ func (cg *CGenerator) writeSource(tu *TranslationUnit, sb *strings.Builder) {
 			if n.Name == "main" {
 				isMain = true
 				sb.WriteString("int main(int argc, char** argv)")
-				inputs = 0
-				outputs = 0
+				inputs = []string{}
+				outputs = []string{}
 				fnName = ""
 				continue
 			}
 			s := fmt.Sprintf("void %s_%s_%s(int n, ...)", cg.prefix, tu.name, n.Name)
 			s = strings.ReplaceAll(s, "__qd__", "__qd_")
 			sb.WriteString(s)
-			inputs = len(n.Inputs)
-			outputs = len(n.Outputs)
+			inputs = n.Inputs
+			outputs = n.Outputs
 			if tu.name != "" {
 				fnName = fmt.Sprintf("%s::%s", tu.name, n.Name)
 			} else {
@@ -121,8 +121,8 @@ func (cg *CGenerator) writeSource(tu *TranslationUnit, sb *strings.Builder) {
 			}
 		case Body:
 			sb.WriteString(" {\n")
-			if inputs > 0 {
-				sb.WriteString(fmt.Sprintf("\tif (__qd_stack_ptr < %d) { __qd_panic_mismatched_inputs(\"%s\", %d, __qd_stack_ptr); return; }\n", inputs, fnName, inputs))
+			if len(inputs) > 0 {
+				sb.WriteString(fmt.Sprintf("\tif (__qd_stack_ptr < %d) { __qd_panic_mismatched_inputs(\"%s: in%v\", %d, __qd_stack_ptr); return; }\n", len(inputs), fnName, inputs, len(inputs)))
 			}
 
 			for _, stmt := range n.Statements {
@@ -232,8 +232,8 @@ func (cg *CGenerator) writeSource(tu *TranslationUnit, sb *strings.Builder) {
 				}
 			}
 			isMain = false
-			if outputs > 0 {
-				sb.WriteString(fmt.Sprintf("\tif (__qd_stack_ptr < %d) { __qd_panic_mismatched_outputs(\"%s\", %d, __qd_stack_ptr); return; }\n", outputs, fnName, outputs))
+			if len(outputs) > 0 {
+				sb.WriteString(fmt.Sprintf("\tif (__qd_stack_ptr < %d) { __qd_panic_mismatched_outputs(\"%s: out%v\", %d, __qd_stack_ptr); return; }\n", len(inputs), fnName, outputs, len(inputs)))
 			}
 
 			sb.WriteString("}\n")
