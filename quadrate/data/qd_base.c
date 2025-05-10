@@ -68,6 +68,15 @@ void __qd_to_string(char str[]) {
 	}
 }
 
+void __qd_push_str(char str[], long long length) {
+	__qd_stack_ptr += length + 2;
+	for (long long i = 0; i < length; ++i) {
+		__qd_stack[__qd_stack_ptr - length - 2 + i] = str[i];
+	}
+	__qd_stack[__qd_stack_ptr - 2] = length;
+	__qd_stack[__qd_stack_ptr - 1] = 0;
+}
+
 void __qd_arg_push(__qd_real_t x) {
 	if (__qd_stack_ptr >= QD_STACK_DEPTH) {
 		__qd___panic_stack_overflow(0);

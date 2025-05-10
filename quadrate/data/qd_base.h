@@ -31,6 +31,7 @@ extern void* __qd_real_to_ptr(__qd_real_t ptr);
 extern __qd_real_t __qd_fnptr_to_real(void (*fn)(int, ...));
 extern void (*__qd_real_to_fnptr(__qd_real_t ptr))(int, ...);
 extern void __qd_to_string(char str[]);
+extern void __qd_push_str(char str[], long long length);
 
 extern void __qd_arg_push(__qd_real_t x);
 

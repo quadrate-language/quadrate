@@ -16,6 +16,7 @@ __c {
 	#include <stdio.h>
 	#include <stdlib.h>
 	#include <stdarg.h>
+	#include <string.h>
 }
 
 fn exit() {
@@ -29,10 +30,9 @@ fn exit() {
 
 fn fopen() {
 	__c {
-		va_list args;
-		va_start(args, n);
-		const char* filename = (const char*)va_arg(args, const char*);
-		va_end(args);
+		char filename[QD_STRING_LENGTH] = {0};
+		__qd_to_string(filename);
+		__qd_stack_ptr -= strlen(filename) + 2;
 
 		FILE* f = fopen(filename, "rb");
 		if (!f) {
@@ -109,10 +109,9 @@ fn fread() {
 
 fn readfile() {
 	__c {
-		va_list args;
-		va_start(args, n);
-		const char* filename = (const char*)va_arg(args, const char*);
-		va_end(args);
+		char filename[QD_STRING_LENGTH] = {0};
+		__qd_to_string(filename);
+		__qd_stack_ptr -= strlen(filename) + 2;
 
 		FILE* f = fopen(filename, "r");
 		if (!f) {
@@ -153,17 +152,17 @@ fn readfile() {
 		buffer[size] = '\0';
 		fclose(f);
 
-		__qd_eval(0, buffer);
+		__qd_push_str(buffer, strlen(buffer));
+		__qd_eval(0);
 		free(buffer);
 	}
 }
 
 fn writefile() {
 	__c {
-		va_list args;
-		va_start(args, n);
-		const char* filename = (const char*)va_arg(args, const char*);
-		va_end(args);
+		char filename[QD_STRING_LENGTH] = {0};
+		__qd_to_string(filename);
+		__qd_stack_ptr -= strlen(filename) + 2;
 
 		FILE* f = fopen(filename, "w");
 		if (!f) {
