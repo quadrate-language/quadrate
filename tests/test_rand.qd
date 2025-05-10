@@ -20,8 +20,6 @@ fn test_float() {
 }
 
 fn main() {
-	push 20
-	scale
 	test_seed
 	test_int
 	test_float

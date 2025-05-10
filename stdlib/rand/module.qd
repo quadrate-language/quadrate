@@ -24,10 +24,6 @@ fn seed(seed --) {
 
 fn int(max -- x) {
 	__c {
-		if (__qd_stack_ptr < 1) {
-			__qd_panic_stack_underflow();
-			return;
-		}
 		int x = (int)__qd_stack[--__qd_stack_ptr];
 		if (x <= 0) {
 			__qd_panic_invalid_data();

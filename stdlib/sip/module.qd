@@ -12,122 +12,122 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-fn atto() {
+fn atto(a -- x) {
 	push 1e-18
 	mul
 }
 
-fn centi() {
+fn centi(a -- x) {
 	push 1e-2
 	mul
 }
 
-fn deca() {
+fn deca(a -- x) {
 	push 1e1
 	mul
 }
 
-fn deci() {
+fn deci(a -- x) {
 	push 1e-1
 	mul
 }
 
-fn exa() {
+fn exa(a -- x) {
 	push 1e18
 	mul
 }
 
-fn femto() {
+fn femto(a -- x) {
 	push 1e15
 	mul
 }
 
-fn giga() {
+fn giga(a -- x) {
 	push 1e9
 	mul
 }
 
-fn hecto() {
+fn hecto(a -- x) {
 	push 1e2
 	mul
 }
 
-fn kilo() {
+fn kilo(a -- x) {
 	push 1e3
 	mul
 }
 
-fn mega() {
+fn mega(a -- x) {
 	push 1e6
 	mul
 }
 
-fn micro() {
+fn micro(a -- x) {
 	push 1e-6
 	mul
 }
 
-fn milli() {
+fn milli(a -- x) {
 	push 1e-3
 	mul
 }
 
-fn nano() {
+fn nano(a -- x) {
 	push 1e-9
 	mul
 }
 
-fn peta() {
+fn peta(a -- x) {
 	push 1e15
 	mul
 }
 
-fn pico() {
+fn pico(a -- x) {
 	push 1e-12
 	mul
 }
 
-fn quecto() {
+fn quecto(a -- x) {
 	push 1e-30
 	mul
 }
 
-fn quetta() {
+fn quetta(a -- x) {
 	push 1e30
 	mul
 }
 
-fn ronna() {
+fn ronna(a -- x) {
 	push 1e27
 	mul
 }
 
-fn ronto() {
+fn ronto(a -- x) {
 	push 1e-27
 	mul
 }
 
-fn tera() {
+fn tera(a -- x) {
 	push 1e12
 	mul
 }
 
-fn yocto() {
+fn yocto(a -- x) {
 	push 1e-24
 	mul
 }
 
-fn yotta() {
+fn yotta(a -- x) {
 	push 1e24
 	mul
 }
 
-fn zepto() {
+fn zepto(a -- x) {
 	push 1e-21
 	mul
 }
 
-fn zetta() {
+fn zetta(a -- x) {
 	push 1e21
 	mul
 }

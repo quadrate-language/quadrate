@@ -1,0 +1,197 @@
+use sip
+
+fn test_atto() {
+	push 1
+	sip::atto
+	test 1e-18
+	clear
+}
+
+fn test_centi() {
+	push 1
+	sip::centi
+	test 1e-2
+	clear
+}
+
+fn test_deca() {
+	push 1
+	sip::deca
+	test 1e1
+	clear
+}
+
+fn test_deci() {
+	push 1
+	sip::deci
+	test 1e-1
+	clear
+}
+
+fn test_exa() {
+	push 1
+	sip::exa
+	test 1e18
+	clear
+}
+
+fn test_femto() {
+	push 1
+	sip::femto
+	test 1e15
+	clear
+}
+
+fn test_giga() {
+	push 1
+	sip::giga
+	test 1e9
+	clear
+}
+
+fn test_hecto() {
+	push 1
+	sip::hecto
+	test 1e2
+	clear
+}
+
+fn test_kilo() {
+	push 1
+	sip::kilo
+	test 1e3
+	clear
+}
+
+fn test_mega() {
+	push 1
+	sip::mega
+	test 1e6
+	clear
+}
+
+fn test_micro() {
+	push 1
+	sip::micro
+	test 1e-6
+	clear
+}
+
+fn test_milli() {
+	push 1
+	sip::milli
+	test 1e-3
+	clear
+}
+
+fn test_nano() {
+	push 1
+	sip::nano
+	test 1e-9
+	clear
+}
+
+fn test_peta() {
+	push 1
+	sip::peta
+	test 1e15
+	clear
+}
+
+fn test_pico() {
+	push 1
+	sip::pico
+	test 1e-12
+	clear
+}
+
+fn test_quecto() {
+	push 1
+	sip::quecto
+	test 1e-30
+	clear
+}
+
+fn test_quetta() {
+	push 1
+	sip::quetta
+	test 1e30
+	clear
+}
+
+fn test_ronna() {
+	push 1
+	sip::ronna
+	test 1e27
+	clear
+}
+
+fn test_ronto() {
+	push 1
+	sip::ronto
+	test 1e-27
+	clear
+}
+
+fn test_tera() {
+	push 1
+	sip::tera
+	test 1e12
+	clear
+}
+
+fn test_yocto() {
+	push 1
+	sip::yocto
+	test 1e-24
+	clear
+}
+
+fn test_yotta() {
+	push 1
+	sip::yotta
+	test 1e24
+	clear
+}
+
+fn test_zepto() {
+	push 1
+	sip::zepto
+	test 1e-21
+	clear
+}
+
+fn test_zetta() {
+	push 1
+	sip::zetta
+	test 1e21
+	clear
+}
+
+fn main() {
+	push 20 ; scale
+	test_atto
+	test_centi
+	test_deca
+	test_deci
+	test_exa
+	test_femto
+	test_giga
+	test_hecto
+	test_kilo
+	test_mega
+	test_micro
+	test_milli
+	test_nano
+	test_peta
+	test_pico
+	test_quecto
+	test_quetta
+	test_ronna
+	test_ronto
+	test_tera
+	test_yocto
+	test_yotta
+	test_zepto
+	test_zetta
+}
