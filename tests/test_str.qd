@@ -1,0 +1,21 @@
+use str
+
+fn test_pop() {
+	push "hello"
+	str::pop
+	depth
+	test 0
+	clear
+}
+
+fn test_length() {
+	push "hello"
+	str::length
+	test 104 101 108 108 111 5 0 5
+	clear
+}
+
+fn main() {
+	test_pop
+	test_length
+}

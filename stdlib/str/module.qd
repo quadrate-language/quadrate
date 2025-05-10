@@ -2,13 +2,8 @@ __c {
 	#include <stdio.h>
 }
 
-fn pop() {
+fn pop(len null --) {
 	__c {
-		if (__qd_stack_ptr < 2) {
-			__qd_panic_stack_underflow();
-			return;
-		}
-
 		if (__qd_stack[__qd_stack_ptr - 1] != 0) {
 			return;
 		}
@@ -17,13 +12,8 @@ fn pop() {
 	}
 }
 
-fn length() {
+fn length(len null -- len) {
 	__c {
-		if (__qd_stack_ptr < 2) {
-			__qd_panic_stack_underflow();
-			return;
-		}
-
 		if (__qd_stack[__qd_stack_ptr - 1] != 0) {
 			__qd_arg_push(-1); // TODO: Error
 			return;
@@ -32,13 +22,8 @@ fn length() {
 	}
 }
 
-fn print() {
+fn print(len null --) {
 	__c {
-		if (__qd_stack_ptr < 2) {
-			__qd_panic_stack_underflow();
-			return;
-		}
-
 		if (__qd_stack[__qd_stack_ptr - 1] != 0) {
 			return;
 		}
