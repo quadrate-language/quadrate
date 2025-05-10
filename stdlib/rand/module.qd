@@ -16,17 +16,13 @@ __c {
 	#include <stdlib.h>
 }
 
-fn seed() {
+fn seed(seed --) {
 	__c {
-		if (__qd_stack_ptr < 1) {
-			__qd_panic_stack_underflow();
-			return;
-		}
 		srand((unsigned int)__qd_stack[--__qd_stack_ptr]);
 	}
 }
 
-fn int() {
+fn int(max -- x) {
 	__c {
 		if (__qd_stack_ptr < 1) {
 			__qd_panic_stack_underflow();
@@ -41,7 +37,7 @@ fn int() {
 	}
 }
 
-fn float() {
+fn float(-- x) {
 	__c {
 		__qd_arg_push((__qd_real_t)rand() / (__qd_real_t)RAND_MAX);
 	}
