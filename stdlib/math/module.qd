@@ -20,24 +20,14 @@ const Pi  3.141592653589793
 const Tau 6.283185307179586
 const e   2.718281828459045
 
-fn deg2rad(deg -- rad) {
-	depth
-	jgz L1
-	__panic_stack_underflow
-	return
-L1:
+fn deg2rad(x -- x) {
 	push math::Pi
 	push 180
 	div
 	mul
 }
 
-fn gamma() {
-	depth
-	jgz L1
-	__panic_stack_underflow
-	return
-L1:
+fn gamma(x -- x) {
 	__c {
 		const __qd_real_t x = __qd_stack[--__qd_stack_ptr];
 		if (x < 0) {
@@ -53,12 +43,7 @@ L1:
 	}
 }
 
-fn rad2deg(rad -- deg) {
-	depth
-	jgz L1
-	__panic_stack_underflow
-	return
-L1:
+fn rad2deg(x -- x) {
 	push 180 math::Pi
 	div
 	mul
