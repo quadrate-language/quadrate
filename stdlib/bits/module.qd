@@ -20,7 +20,7 @@ fn or(x2 x1 -- x) {
 	}
 }
 
-fn xor(x2 x1 --x) {
+fn xor(x2 x1 -- x) {
 	__c {
 		unsigned long long a = (unsigned long long)__qd_stack[--__qd_stack_ptr];
 		unsigned long long b = (unsigned long long)__qd_stack[--__qd_stack_ptr];
@@ -43,7 +43,7 @@ fn not(x -- x) {
 	}
 }
 
-fn nand(x2 x1-- x) {
+fn nand(x2 x1 -- x) {
 	__c {
 		unsigned long long a = (unsigned long long)__qd_stack[--__qd_stack_ptr];
 		unsigned long long b = (unsigned long long)__qd_stack[--__qd_stack_ptr];
@@ -51,7 +51,7 @@ fn nand(x2 x1-- x) {
 	}
 }
 
-fn nor(x2 x1-- x) {
+fn nor(x2 x1 -- x) {
 	__c {
 		unsigned long long a = (unsigned long long)__qd_stack[--__qd_stack_ptr];
 		unsigned long long b = (unsigned long long)__qd_stack[--__qd_stack_ptr];
