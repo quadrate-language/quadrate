@@ -16,13 +16,13 @@ __c {
 	#include <stdlib.h>
 }
 
-fn seed(seed --) {
+fn seed(x --) {
 	__c {
 		srand((unsigned int)__qd_stack[--__qd_stack_ptr]);
 	}
 }
 
-fn int(max -- x) {
+fn int(x -- x) {
 	__c {
 		int x = (int)__qd_stack[--__qd_stack_ptr];
 		if (x <= 0) {
