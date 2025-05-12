@@ -96,6 +96,15 @@ type ForLoop struct {
 type LoopLoop struct {
 }
 
+type IfStmt struct {
+	Condition string
+}
+
+type ElseifStmt IfStmt
+
+type ElseStmt struct {
+}
+
 type Je Jmp
 type Jge Jmp
 type Jg Jmp
@@ -232,7 +241,7 @@ func (p *Parser) parseBody() (Node, *SyntaxError) {
 	var stmts []Node
 	var deferStmts []Node
 
-	loopDepth := 0
+	scopeDepth := 0
 
 body_loop:
 	for p.current < len(*p.tokens) {
@@ -250,19 +259,38 @@ body_loop:
 			p.current++
 			break body_loop
 		case For:
-			loopDepth++
+			scopeDepth++
 			if n, err := p.parseForLoop(); err != nil {
 				return nil, err
 			} else {
 				stmts = append(stmts, n)
 			}
 		case Loop:
-			loopDepth++
+			scopeDepth++
 			stmts = append(stmts, LoopLoop{})
+		case If:
+			scopeDepth++
+			if n, err := p.parseIf(); err != nil {
+				return nil, err
+			} else {
+				stmts = append(stmts, n)
+			}
+		case Elseif:
+			if n, err := p.parseElseif(); err != nil {
+				return nil, err
+			} else {
+				stmts = append(stmts, n)
+			}
+		case Else:
+			if n, err := p.parseElse(); err != nil {
+				return nil, err
+			} else {
+				stmts = append(stmts, n)
+			}
 		case NewLine:
 			continue
 		case Iterator:
-			if loopDepth <= 0 {
+			if scopeDepth <= 0 {
 				return nil, &SyntaxError{
 					Message:  "unexpected ‘$‘",
 					Line:     t.Line,
@@ -272,7 +300,7 @@ body_loop:
 			}
 			stmts = append(stmts, IteratorStatement{})
 		case Break:
-			if loopDepth <= 0 {
+			if scopeDepth <= 0 {
 				return nil, &SyntaxError{
 					Message:  "unexpected ‘break‘",
 					Line:     t.Line,
@@ -282,7 +310,7 @@ body_loop:
 			}
 			stmts = append(stmts, BreakStatement{})
 		case Continue:
-			if loopDepth <= 0 {
+			if scopeDepth <= 0 {
 				return nil, &SyntaxError{
 					Message:  "unexpected ‘continue‘",
 					Line:     t.Line,
@@ -346,7 +374,7 @@ body_loop:
 			}
 			stmts = append(stmts, ReturnStatement{})
 		case End:
-			if loopDepth <= 0 {
+			if scopeDepth <= 0 {
 				return nil, &SyntaxError{
 					Message:  "unexpected ‘end‘",
 					Line:     t.Line,
@@ -354,7 +382,7 @@ body_loop:
 					Filename: p.filename,
 				}
 			}
-			loopDepth--
+			scopeDepth--
 			stmts = append(stmts, EndStatement{})
 		case Jump:
 			if p.peek() == Identifier {
@@ -551,7 +579,7 @@ body_loop:
 				})
 				p.current++
 			} else {
-				if fnCall, err := p.parseFunctionCall(loopDepth); err != nil {
+				if fnCall, err := p.parseFunctionCall(scopeDepth); err != nil {
 					return nil, err
 				} else {
 					stmts = append(stmts, fnCall)
@@ -563,7 +591,7 @@ body_loop:
 		stmts = append(stmts, stmt)
 	}
 
-	if loopDepth != 0 {
+	if scopeDepth != 0 {
 		return nil, &SyntaxError{
 			Message:  "missing ‘end‘",
 			Line:     t.Line,
@@ -823,4 +851,47 @@ func (p *Parser) parseForLoop() (Node, *SyntaxError) {
 	}
 
 	return fl, nil
+}
+
+func (p *Parser) parseIf() (Node, *SyntaxError) {
+	p.current++
+	t := (*p.tokens)[p.current]
+	if t.Type != Identifier {
+		return nil, &SyntaxError{
+			Message:  fmt.Sprintf("expected identifier but got ‘%s‘", t.Literal),
+			Line:     t.Line,
+			Column:   t.Column,
+			Filename: p.filename,
+		}
+	}
+	// TODO: Different supported condition types
+
+	p.current++
+	return IfStmt{
+		Condition: t.Literal,
+	}, nil
+}
+
+func (p *Parser) parseElseif() (Node, *SyntaxError) {
+	p.current++
+	t := (*p.tokens)[p.current]
+	if t.Type != Identifier {
+		return nil, &SyntaxError{
+			Message:  fmt.Sprintf("expected identifier but got ‘%s‘", t.Literal),
+			Line:     t.Line,
+			Column:   t.Column,
+			Filename: p.filename,
+		}
+	}
+	// TODO: Different supported condition types
+
+	p.current++
+	return ElseifStmt{
+		Condition: t.Literal,
+	}, nil
+}
+
+func (p *Parser) parseElse() (Node, *SyntaxError) {
+	p.current++
+	return ElseStmt{}, nil
 }

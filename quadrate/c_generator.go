@@ -178,6 +178,43 @@ func (cg *CGenerator) writeSource(tu *TranslationUnit, sb *strings.Builder) {
 					sb.WriteString(fmt.Sprintf("\tfor (__qd_real_t __qd_itr = (__qd_real_t)%s; __qd_itr < (__qd_real_t)%s; __qd_itr += (__qd_real_t)%s) {\n", m.Start, m.End, m.Step))
 				case LoopLoop:
 					sb.WriteString("\tfor (__qd_real_t __qd_itr = (__qd_real_t)0; ; __qd_itr += (__qd_real_t)1) {\n")
+				case IfStmt:
+					sb.WriteString("\n\t\t__qd_stack_ptr -= 2;\n")
+					switch m.Condition {
+					case "eq":
+						sb.WriteString("\tif (__qd_stack[__qd_stack_ptr] == __qd_stack[__qd_stack_ptr + 1]) {\n")
+					case "ge":
+						sb.WriteString("\tif (__qd_stack[__qd_stack_ptr] >= __qd_stack[__qd_stack_ptr + 1]) {\n")
+					case "gt":
+						sb.WriteString("\tif (__qd_stack[__qd_stack_ptr] > __qd_stack[__qd_stack_ptr + 1]) {\n")
+					case "le":
+						sb.WriteString("\tif (__qd_stack[__qd_stack_ptr] <= __qd_stack[__qd_stack_ptr + 1]) {\n")
+					case "lt":
+						sb.WriteString("\tif (__qd_stack[__qd_stack_ptr] < __qd_stack[__qd_stack_ptr + 1]) {\n")
+					case "ne":
+						sb.WriteString("\tif (__qd_stack[__qd_stack_ptr] != __qd_stack[__qd_stack_ptr + 1]) {\n")
+					default:
+						panic("unsupported condition")
+					}
+				case ElseStmt:
+					sb.WriteString("\t} else {\n")
+				case ElseifStmt:
+					switch m.Condition {
+					case "eq":
+						sb.WriteString("\t} else if (__qd_stack[__qd_stack_ptr] == __qd_stack[__qd_stack_ptr + 1]) {\n")
+					case "ge":
+						sb.WriteString("\t} else if (__qd_stack[__qd_stack_ptr] >= __qd_stack[__qd_stack_ptr + 1]) {\n")
+					case "gt":
+						sb.WriteString("\t} else if (__qd_stack[__qd_stack_ptr] > __qd_stack[__qd_stack_ptr + 1]) {\n")
+					case "le":
+						sb.WriteString("\t} else if (__qd_stack[__qd_stack_ptr] <= __qd_stack[__qd_stack_ptr + 1]) {\n")
+					case "lt":
+						sb.WriteString("\t} else if (__qd_stack[__qd_stack_ptr] < __qd_stack[__qd_stack_ptr + 1]) {\n")
+					case "ne":
+						sb.WriteString("\t} else if (__qd_stack[__qd_stack_ptr] != __qd_stack[__qd_stack_ptr + 1]) {\n")
+					default:
+						panic("unsupported condition")
+					}
 				case ContinueStatement:
 					sb.WriteString("\t\tcontinue;\n")
 				case BreakStatement:

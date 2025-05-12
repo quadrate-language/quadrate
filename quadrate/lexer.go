@@ -266,6 +266,12 @@ func (l *Lexer) lookupIdentifier(i string) TokenType {
 		return End
 	case "for":
 		return For
+	case "if":
+		return If
+	case "else":
+		return Else
+	case "elseif":
+		return Elseif
 	case "return":
 		return Return
 	case "jmp":
