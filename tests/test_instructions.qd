@@ -309,6 +309,28 @@ fn test_dup2() {
 	test -1.5 -2.5 -3.5 -2.5 -3.5
 }
 
+fn test_else() {
+	push 1 2
+	if gt
+		push 1
+	else
+		push 2
+	end
+	test 2
+}
+
+fn test_elseif() {
+	push 1 2
+	if gt
+		push 1
+	elseif lt
+		push 2
+	else
+		push 3
+	end
+	test 2
+}
+
 fn test_eval() {
 	push "2 4 *"
 	eval
@@ -352,6 +374,34 @@ fn test_for() {
 		push $
 	end
 	test 0 1 2
+}
+
+fn test_if() {
+	push 1 2
+	if gt
+		push 1
+	end
+	push 1 2
+	if lt
+		push 2
+	end
+	push 1 2
+	if ge
+		push 3
+	end
+	push 1 2
+	if le
+		push 4
+	end
+	push 1 2
+	if eq
+		push 5
+	end
+	push 1 2
+	if ne
+		push 6
+	end
+	test 2 4 6
 }
 
 fn test_inc() {
@@ -1080,10 +1130,13 @@ fn main() {
 	test_div
 	test_dup
 	test_dup2
+	test_else
+	test_elseif
 	test_eval
 	test_fac
 	test_floor
 	test_for
+	test_if
 	test_inc
 	test_inv
 	test_je
