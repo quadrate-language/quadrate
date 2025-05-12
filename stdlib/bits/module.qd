@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-fn or(a b -- x) {
+fn or(x2 x1 -- x) {
 	__c {
 		unsigned long long a = (unsigned long long)__qd_stack[--__qd_stack_ptr];
 		unsigned long long b = (unsigned long long)__qd_stack[--__qd_stack_ptr];
@@ -20,7 +20,7 @@ fn or(a b -- x) {
 	}
 }
 
-fn xor(a b --x) {
+fn xor(x2 x1 -- x) {
 	__c {
 		unsigned long long a = (unsigned long long)__qd_stack[--__qd_stack_ptr];
 		unsigned long long b = (unsigned long long)__qd_stack[--__qd_stack_ptr];
@@ -28,7 +28,7 @@ fn xor(a b --x) {
 	}
 }
 
-fn and(a b -- x) {
+fn and(x2 x1 -- x) {
 	__c {
 		unsigned long long a = (unsigned long long)__qd_stack[--__qd_stack_ptr];
 		unsigned long long b = (unsigned long long)__qd_stack[--__qd_stack_ptr];
@@ -36,14 +36,14 @@ fn and(a b -- x) {
 	}
 }
 
-fn not(a -- x) {
+fn not(x -- x) {
 	__c {
 		unsigned long long a = (unsigned long long)__qd_stack[--__qd_stack_ptr];
 		__qd_arg_push((__qd_real_t)(~a));
 	}
 }
 
-fn nand(a b -- x) {
+fn nand(x2 x1 -- x) {
 	__c {
 		unsigned long long a = (unsigned long long)__qd_stack[--__qd_stack_ptr];
 		unsigned long long b = (unsigned long long)__qd_stack[--__qd_stack_ptr];
@@ -51,7 +51,7 @@ fn nand(a b -- x) {
 	}
 }
 
-fn nor(a b -- x) {
+fn nor(x2 x1 -- x) {
 	__c {
 		unsigned long long a = (unsigned long long)__qd_stack[--__qd_stack_ptr];
 		unsigned long long b = (unsigned long long)__qd_stack[--__qd_stack_ptr];
@@ -59,7 +59,7 @@ fn nor(a b -- x) {
 	}
 }
 
-fn xnor(a b -- x) {
+fn xnor(x2 x1 -- x) {
 	__c {
 		unsigned long long a = (unsigned long long)__qd_stack[--__qd_stack_ptr];
 		unsigned long long b = (unsigned long long)__qd_stack[--__qd_stack_ptr];
@@ -67,7 +67,7 @@ fn xnor(a b -- x) {
 	}
 }
 
-fn lshift(a b -- x) {
+fn lshift(x2 x1 -- x) {
 	__c {
 		unsigned long long a = (unsigned long long)__qd_stack[--__qd_stack_ptr];
 		unsigned long long b = (unsigned long long)__qd_stack[--__qd_stack_ptr];
@@ -75,7 +75,7 @@ fn lshift(a b -- x) {
 	}
 }
 
-fn rshift(a b -- x) {
+fn rshift(x2 x1 -- x) {
 	__c {
 		unsigned long long a = (unsigned long long)__qd_stack[--__qd_stack_ptr];
 		unsigned long long b = (unsigned long long)__qd_stack[--__qd_stack_ptr];
@@ -83,7 +83,7 @@ fn rshift(a b -- x) {
 	}
 }
 
-fn popcount(a -- x) {
+fn popcount(x -- x) {
 	__c {
 		unsigned long long a = (unsigned long long)__qd_stack[--__qd_stack_ptr];
 		unsigned long long count = 0;
@@ -95,7 +95,7 @@ fn popcount(a -- x) {
 	}
 }
 
-fn lrot(a b -- x) {
+fn lrot(x2 x1 -- x) {
 	__c {
 		unsigned long long a = (unsigned long long)__qd_stack[--__qd_stack_ptr];
 		unsigned long long b = (unsigned long long)__qd_stack[--__qd_stack_ptr];
@@ -103,7 +103,7 @@ fn lrot(a b -- x) {
 	}
 }
 
-fn rrot(a b -- x) {
+fn rrot(x2 x1 -- x) {
 	__c {
 		unsigned long long a = (unsigned long long)__qd_stack[--__qd_stack_ptr];
 		unsigned long long b = (unsigned long long)__qd_stack[--__qd_stack_ptr];

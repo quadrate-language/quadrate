@@ -18,7 +18,7 @@ __c {
 	#include <string.h>
 }
 
-fn new(count -- ptr) {
+fn new(x -- a) {
 	__c {
 		size_t elements = (size_t)__qd_stack[--__qd_stack_ptr];
 		__qd_real_t* ptr = malloc(sizeof(__qd_real_t) * (elements + 1));
@@ -28,14 +28,14 @@ fn new(count -- ptr) {
 	}
 }
 
-fn free(ptr --) {
+fn free(a --) {
 	__c {
 		__qd_real_t* ptr = __qd_real_to_ptr(__qd_stack[--__qd_stack_ptr]);
 		free(ptr);
 	}
 }
 
-fn store(ptr offset elements --) {
+fn store(a3 x2 x1 --) {
 	__c {
 		__qd_real_t* ptr = __qd_real_to_ptr(__qd_stack[--__qd_stack_ptr]);
 		size_t offset = (size_t)__qd_stack[--__qd_stack_ptr];
@@ -46,7 +46,7 @@ fn store(ptr offset elements --) {
 	}
 }
 
-fn load(ptr offset elements --) {
+fn load(a3 x2 x1 --) {
 	__c {
 		__qd_real_t* ptr = __qd_real_to_ptr(__qd_stack[--__qd_stack_ptr]);
 		size_t offset = (size_t)__qd_stack[--__qd_stack_ptr];
@@ -56,7 +56,7 @@ fn load(ptr offset elements --) {
 	}
 }
 
-fn length(ptr --) {
+fn length(a --) {
 	__c {
 		__qd_real_t* ptr = __qd_real_to_ptr(__qd_stack[--__qd_stack_ptr]);
 		__qd_real_t length = ptr[0];
@@ -64,7 +64,7 @@ fn length(ptr --) {
 	}
 }
 
-fn foreach(ptr fn_ptr --) {
+fn foreach(a2 a1 --) {
 	__c {
 		__qd_real_t* ptr = __qd_real_to_ptr(__qd_stack[--__qd_stack_ptr]);
 		void (*fn_ptr)(int, ...) = __qd_real_to_fnptr(__qd_stack[--__qd_stack_ptr]);
@@ -76,7 +76,7 @@ fn foreach(ptr fn_ptr --) {
 	}
 }
 
-fn print(ptr --) {
+fn print(a --) {
 	__c {
 		__qd_real_t* ptr = __qd_real_to_ptr(__qd_stack[--__qd_stack_ptr]);
 		for (size_t i = 0; i < ptr[0]; i++) {

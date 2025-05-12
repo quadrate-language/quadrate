@@ -2,7 +2,7 @@ __c {
 	#include <stdio.h>
 }
 
-fn pop(len null --) {
+fn pop(x2 x1 --) {
 	__c {
 		if (__qd_stack[__qd_stack_ptr - 1] != 0) {
 			return;
@@ -12,7 +12,7 @@ fn pop(len null --) {
 	}
 }
 
-fn length(len null -- len) {
+fn length(x2 x1 -- x) {
 	__c {
 		if (__qd_stack[__qd_stack_ptr - 1] != 0) {
 			__qd_arg_push(-1); // TODO: Error
@@ -22,7 +22,7 @@ fn length(len null -- len) {
 	}
 }
 
-fn print(len null --) {
+fn print(x2 x1 --x2 x1) {
 	__c {
 		if (__qd_stack[__qd_stack_ptr - 1] != 0) {
 			return;
