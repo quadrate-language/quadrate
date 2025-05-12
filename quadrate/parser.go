@@ -864,7 +864,28 @@ func (p *Parser) parseIf() (Node, *SyntaxError) {
 			Filename: p.filename,
 		}
 	}
-	// TODO: Different supported condition types
+
+	switch (*p.tokens)[p.current].Literal {
+	case "gt":
+		break
+	case "lt":
+		break
+	case "ge":
+		break
+	case "le":
+		break
+	case "eq":
+		break
+	case "ne":
+		break
+	default:
+		return nil, &SyntaxError{
+			Message:  fmt.Sprintf("expected comparison operator after ‘if‘ got ‘%s‘", t.Literal),
+			Line:     t.Line,
+			Column:   t.Column,
+			Filename: p.filename,
+		}
+	}
 
 	p.current++
 	return IfStmt{
@@ -883,7 +904,28 @@ func (p *Parser) parseElseif() (Node, *SyntaxError) {
 			Filename: p.filename,
 		}
 	}
-	// TODO: Different supported condition types
+
+	switch (*p.tokens)[p.current].Literal {
+	case "gt":
+		break
+	case "lt":
+		break
+	case "ge":
+		break
+	case "le":
+		break
+	case "eq":
+		break
+	case "ne":
+		break
+	default:
+		return nil, &SyntaxError{
+			Message:  fmt.Sprintf("expected comparison operator after ‘elseif‘ got ‘%s‘", t.Literal),
+			Line:     t.Line,
+			Column:   t.Column,
+			Filename: p.filename,
+		}
+	}
 
 	p.current++
 	return ElseifStmt{
