@@ -270,7 +270,7 @@ func (cg *CGenerator) writeSource(tu *TranslationUnit, sb *strings.Builder) {
 			}
 			isMain = false
 			if len(outputs) > 0 {
-				sb.WriteString(fmt.Sprintf("\tif (__qd_stack_ptr < %d) { __qd_panic_mismatched_outputs(\"%s: out%v\", %d, __qd_stack_ptr); return; }\n", len(inputs), fnName, outputs, len(inputs)))
+				sb.WriteString(fmt.Sprintf("\tif (__qd_stack_ptr < %d) { __qd_panic_mismatched_outputs(\"%s: out%v\", %d, __qd_stack_ptr); return; }\n", len(outputs), fnName, outputs, len(outputs)))
 			}
 
 			sb.WriteString("}\n")
