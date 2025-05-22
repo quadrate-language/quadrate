@@ -180,6 +180,10 @@ fn v2zero() {
 	push 0 0
 }
 
+fn v2pop() {
+	pop 2
+}
+
 fn v2reflect() {
 	__c {
 		if (__qd_stack_ptr < 4) {
