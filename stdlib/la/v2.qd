@@ -99,7 +99,7 @@ fn v2dup() {
 			return;
 		}
 		__qd_arg_push(__qd_stack[__qd_stack_ptr - 2]);
-		__qd_arg_push(__qd_stack[__qd_stack_ptr - 1]);
+		__qd_arg_push(__qd_stack[__qd_stack_ptr - 2]);
 	}
 }
 
