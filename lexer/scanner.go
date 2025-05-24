@@ -106,12 +106,12 @@ func (l *Scanner) peekChar() rune {
 
 func (l *Scanner) readPunctuation(tokenType TokenType, length int) Token {
 	return Token{
-		Type:      tokenType,
-		Value:     string(l.cursorChar()),
-		Line:      l.line,
-		Character: l.column,
-		Length:    length,
-		Offset:    l.cursor,
+		Type:   tokenType,
+		Value:  string(l.cursorChar()),
+		Line:   l.line,
+		Column: l.column,
+		Length: length,
+		Offset: l.cursor,
 	}
 }
 
@@ -131,12 +131,12 @@ func (l *Scanner) readIdentifier() (Token, error) {
 	l.column--
 
 	return Token{
-		Type:      l.lookupType(value),
-		Value:     value,
-		Line:      line,
-		Character: column,
-		Length:    len(value),
-		Offset:    l.cursor + 1 - len(value),
+		Type:   l.lookupType(value),
+		Value:  value,
+		Line:   line,
+		Column: column,
+		Length: len(value),
+		Offset: l.cursor + 1 - len(value),
 	}, nil
 }
 
@@ -170,12 +170,12 @@ func (l *Scanner) readNumber() (Token, error) {
 		l.cursor--
 		l.column--
 		return Token{
-			Type:      HexNumber,
-			Value:     value,
-			Line:      line,
-			Character: column,
-			Length:    len(value),
-			Offset:    l.cursor - len(value),
+			Type:   HexNumber,
+			Value:  value,
+			Line:   line,
+			Column: column,
+			Length: len(value),
+			Offset: l.cursor - len(value),
 		}, nil
 	}
 
@@ -214,34 +214,34 @@ func (l *Scanner) readNumber() (Token, error) {
 	l.cursor--
 	l.column--
 	return Token{
-		Type:      Number,
-		Value:     value,
-		Line:      line,
-		Character: column,
-		Length:    len(value),
-		Offset:    l.cursor + 1 - len(value),
+		Type:   Number,
+		Value:  value,
+		Line:   line,
+		Column: column,
+		Length: len(value),
+		Offset: l.cursor + 1 - len(value),
 	}, nil
 }
 
 func (l *Scanner) readEOL() Token {
 	return Token{
-		Type:      EOL,
-		Value:     "EOL",
-		Line:      l.line,
-		Character: l.column,
-		Length:    1,
-		Offset:    l.cursor,
+		Type:   EOL,
+		Value:  "EOL",
+		Line:   l.line,
+		Column: l.column,
+		Length: 1,
+		Offset: l.cursor,
 	}
 }
 
 func (l *Scanner) readEOF() Token {
 	return Token{
-		Type:      EOF,
-		Value:     "EOF",
-		Line:      l.line,
-		Character: l.column,
-		Length:    0,
-		Offset:    l.cursor,
+		Type:   EOF,
+		Value:  "EOF",
+		Line:   l.line,
+		Column: l.column,
+		Length: 0,
+		Offset: l.cursor,
 	}
 }
 
