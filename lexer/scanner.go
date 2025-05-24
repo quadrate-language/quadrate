@@ -38,13 +38,13 @@ func (l *Scanner) Lex() ([]Token, error) {
 
 itr:
 	for {
-		//l.skipWhitespaces()
-
 		fmt.Printf("Current cursor position: %d, character: '%c'\n", l.cursor, c)
 
 		switch c {
-		case ' ', '\t':
+		case ' ':
 			break
+		case '\t':
+			l.column += 3
 		case '\n':
 			tokens = append(tokens, l.readEOL())
 			l.column = 0
@@ -80,20 +80,6 @@ itr:
 	}
 
 	return tokens, nil
-}
-
-func (l *Scanner) skipWhitespaces() error {
-	c := l.cursorChar()
-	var err error
-	for {
-		if c != ' ' && c != '\t' {
-			break
-		}
-		if c, err = l.read(); err != nil {
-			return err
-		}
-	}
-	return nil
 }
 
 func (l *Scanner) isLetter(c rune) bool {
@@ -240,7 +226,7 @@ func (l *Scanner) readNumber() (Token, error) {
 func (l *Scanner) readEOL() Token {
 	return Token{
 		Type:      EOL,
-		Value:     "",
+		Value:     "EOL",
 		Line:      l.line,
 		Character: l.column,
 		Length:    1,
@@ -251,7 +237,7 @@ func (l *Scanner) readEOL() Token {
 func (l *Scanner) readEOF() Token {
 	return Token{
 		Type:      EOF,
-		Value:     "",
+		Value:     "EOF",
 		Line:      l.line,
 		Character: l.column,
 		Length:    0,
