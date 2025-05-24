@@ -6,20 +6,17 @@
 // Fn = Fn-1 + Fn-2, for n > 1
 fn fibonacci() {
 	dup
-	push 1
-	jg run
-	return
-
-run:
-	dup
-	dec
-	fibonacci
-	swap
-	push 2
-	sub
-	fibonacci
-	swap
-	add
+	push 1 ; if gt
+		dup
+		dec
+		fibonacci
+		swap
+		push 2
+		sub
+		fibonacci
+		swap
+		add
+	end
 }
 
 fn main() {
