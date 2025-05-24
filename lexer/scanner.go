@@ -142,9 +142,10 @@ func (l *Scanner) readIdentifier() (Token, error) {
 	}
 
 	l.cursor--
+	l.column--
 
 	return Token{
-		Type:      l.lookupIdentifier(value),
+		Type:      l.lookupType(value),
 		Value:     value,
 		Line:      line,
 		Character: column,
@@ -153,7 +154,7 @@ func (l *Scanner) readIdentifier() (Token, error) {
 	}, nil
 }
 
-func (l *Scanner) lookupIdentifier(literal string) TokenType {
+func (l *Scanner) lookupType(literal string) TokenType {
 	switch literal {
 	case "fn":
 		return Function
