@@ -47,7 +47,7 @@ itr:
 			break
 		case '\n':
 			tokens = append(tokens, l.readEOL())
-			l.column = 1
+			l.column = 0
 			l.line++
 		case '(':
 			tokens = append(tokens, l.readPunctuation(LParen, 1))
@@ -121,7 +121,7 @@ func (l *Scanner) peekChar() rune {
 func (l *Scanner) readPunctuation(tokenType TokenType, length int) Token {
 	return Token{
 		Type:      tokenType,
-		Value:     "",
+		Value:     string(l.cursorChar()),
 		Line:      l.line,
 		Character: l.column,
 		Length:    length,
@@ -165,6 +165,8 @@ func (l *Scanner) lookupType(literal string) TokenType {
 
 func (l *Scanner) readNumber() (Token, error) {
 	value := ""
+	line := l.line
+	column := l.column
 
 	if l.cursorChar() == '0' && l.peekChar() == 'x' {
 		value += "0x"
@@ -179,11 +181,13 @@ func (l *Scanner) readNumber() (Token, error) {
 				return Token{}, err
 			}
 		}
+		l.cursor--
+		l.column--
 		return Token{
 			Type:      HexNumber,
 			Value:     value,
-			Line:      l.line,
-			Character: l.column,
+			Line:      line,
+			Character: column,
 			Length:    len(value),
 			Offset:    l.cursor - len(value),
 		}, nil
@@ -221,13 +225,15 @@ func (l *Scanner) readNumber() (Token, error) {
 			return Token{}, errors.New("invalid number format: expected digit after decimal point")
 		}
 	}
+	l.cursor--
+	l.column--
 	return Token{
 		Type:      Number,
 		Value:     value,
-		Line:      l.line,
-		Character: l.column,
+		Line:      line,
+		Character: column,
 		Length:    len(value),
-		Offset:    l.cursor - len(value),
+		Offset:    l.cursor + 1 - len(value),
 	}, nil
 }
 

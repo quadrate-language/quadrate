@@ -5,7 +5,9 @@ import (
 	"testing"
 )
 
-const sampleSource = `fn  main() {}`
+const sampleSource = `fn main() {
+	push 4
+}`
 
 func TestLex(t *testing.T) {
 	source := []rune(sampleSource)
@@ -16,13 +18,15 @@ func TestLex(t *testing.T) {
 		{Type: Identifier, Value: "main", Line: 1, Character: 4, Length: 4, Offset: 3},
 		{Type: LParen, Value: "(", Line: 1, Character: 8, Length: 1, Offset: 7},
 		{Type: RParen, Value: ")", Line: 1, Character: 9, Length: 1, Offset: 8},
-		{Type: LBrace, Value: "{", Line: 1, Character: 10, Length: 1, Offset: 9},
-		{Type: Identifier, Value: "push", Line: 2, Character: 1, Length: 4, Offset: 11},
-		{Type: Number, Value: "4", Line: 2, Character: 6, Length: 1, Offset: 15},
-		{Type: RBrace, Value: "}", Line: 3, Character: 1, Length: 1, Offset: 16},
-		{Type: EOF, Value: "", Line: 4, Character: 1, Length: 0, Offset: 17},
+		{Type: LBrace, Value: "{", Line: 1, Character: 11, Length: 1, Offset: 10},
+		{Type: EOL, Value: "", Line: 1, Character: 12, Length: 1, Offset: 11},
+		{Type: Identifier, Value: "push", Line: 2, Character: 2, Length: 4, Offset: 13},
+		{Type: Number, Value: "4", Line: 2, Character: 7, Length: 1, Offset: 18},
+		{Type: EOL, Value: "", Line: 2, Character: 8, Length: 1, Offset: 19},
+		{Type: RBrace, Value: "}", Line: 3, Character: 1, Length: 1, Offset: 20},
+		{Type: EOF, Value: "", Line: 3, Character: 2, Length: 0, Offset: 20},
 	}
-	if len(expectedTokens) != 9 {
+	if len(expectedTokens) != 11 {
 		t.Fatalf("Expected 9 tokens, got %d", len(expectedTokens))
 	}
 
