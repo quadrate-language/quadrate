@@ -7,7 +7,7 @@ import (
 )
 
 func main() {
-	s := lexer.NewScanner([]rune("use fmt use os fn main() {push 4\npush 2\nadd}"))
+	s := lexer.NewScanner([]rune("use fmt use os fn main() {push 45;push 0xa5\npush 2\nadd\npush 4e04;if eq { push 1\n}for 0 1 10 { push 1}}"))
 	if tokens, err := s.Lex(); err != nil {
 		panic(err)
 	} else {
@@ -16,7 +16,7 @@ func main() {
 		for _, t := range tokens {
 			fmt.Printf("%s: %s\n", t.Type, t.Value)
 		}
-		indent := 0
+		ind := 0
 		for _, t := range tokens {
 			if use && t.Type != lexer.Identifier && t.Type != lexer.Use {
 				fmt.Printf("\n")
@@ -31,11 +31,14 @@ func main() {
 				}
 			case lexer.Function:
 				fmt.Printf("fn ")
+			case lexer.Semicolon:
+				fmt.Printf(" ;")
+			case lexer.If:
+				indent(ind, previousT)
+				fmt.Printf("if ")
 			case lexer.Identifier:
-				if indent > 0 {
-					for range indent {
-						fmt.Printf("\t")
-					}
+				if previousT.Type != lexer.If {
+					indent(ind, previousT)
 				}
 				fmt.Printf("%s", t.Value)
 				if previousT.Type == lexer.Use {
@@ -47,10 +50,14 @@ func main() {
 				fmt.Printf(")")
 			case lexer.LBrace:
 				fmt.Printf(" {\n")
-				indent++
+				ind++
 			case lexer.RBrace:
-				fmt.Printf("\n}")
-				indent--
+				if previousT.Type != lexer.EOL && previousT.Type != lexer.RBrace {
+					fmt.Printf("\n")
+				}
+				ind--
+				indent(ind, previousT)
+				fmt.Printf("}\n")
 			case lexer.HexNumber:
 				fmt.Printf(" %s", t.Value)
 			case lexer.Number:
@@ -66,6 +73,16 @@ func main() {
 
 			previousT = t
 			//println(t.Type, t.Value)
+		}
+	}
+}
+
+func indent(i int, previousT lexer.Token) {
+	if previousT.Type == lexer.Semicolon {
+		fmt.Printf(" ")
+	} else {
+		for range i {
+			fmt.Printf("\t")
 		}
 	}
 }

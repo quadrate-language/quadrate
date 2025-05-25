@@ -57,6 +57,8 @@ itr:
 			tokens = append(tokens, l.readPunctuation(LBrace, 1))
 		case '}':
 			tokens = append(tokens, l.readPunctuation(RBrace, 1))
+		case ';':
+			tokens = append(tokens, l.readPunctuation(Semicolon, 1))
 		default:
 			if l.isDigit(c) || (c == '-' && l.isDigit(l.peekChar())) {
 				if t, err := l.readNumber(); err != nil {
@@ -144,6 +146,8 @@ func (l *Scanner) lookupType(literal string) TokenType {
 	switch literal {
 	case "fn":
 		return Function
+	case "if":
+		return If
 	case "use":
 		return Use
 	default:
