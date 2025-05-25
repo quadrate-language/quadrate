@@ -7,7 +7,7 @@ import (
 )
 
 func main() {
-	s := lexer.NewScanner([]rune("use fmt use os fn main() {push 45;push 0xa5\npush 2\nadd\npush 4e04;if eq { push 1\n}for 0 1 10 { push 1}}"))
+	s := lexer.NewScanner([]rune("use fmt use os fn main() {push -45;push 0xa5\npush 2.5\nadd\npush 4e04;if eq { push 1\n}for 0 1 10 { push 1}}"))
 	if tokens, err := s.Lex(); err != nil {
 		panic(err)
 	} else {

@@ -195,28 +195,21 @@ func (l *Scanner) readNumber() (Token, error) {
 		}
 	}
 
-	if l.cursorChar() == '.' {
-		return Token{}, errors.New("invalid number format: unexpected decimal point at the start")
-	}
-
-	if !l.isDigit(l.cursorChar()) {
-		return Token{}, errors.New("invalid number format: expected digit at the start")
-	}
-
-	value += string(l.cursorChar())
-	if _, err := l.read(); err != nil {
-		return Token{}, err
-	}
-
-	if l.cursor < len(l.source) && l.cursorChar() == '.' || l.cursorChar() == 'e' || l.cursorChar() == 'E' {
+	for l.cursor < len(l.source) && l.isDigit(l.cursorChar()) {
 		value += string(l.cursorChar())
-		if _, err := l.read(); err != nil {
-			return Token{}, err
-		}
-		if l.cursor >= len(l.source) || !l.isDigit(l.cursorChar()) {
-			return Token{}, errors.New("invalid number format: expected digit after decimal point")
+		l.read()
+	}
+
+	if l.cursorChar() == '.' || l.cursorChar() == 'e' || l.cursorChar() == 'E' {
+		value += string(l.cursorChar())
+		l.read()
+
+		for l.cursor < len(l.source) && l.isDigit(l.cursorChar()) {
+			value += string(l.cursorChar())
+			l.read()
 		}
 	}
+
 	l.cursor--
 	l.column--
 	return Token{
