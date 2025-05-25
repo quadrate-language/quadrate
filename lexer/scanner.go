@@ -144,6 +144,8 @@ func (l *Scanner) lookupType(literal string) TokenType {
 	switch literal {
 	case "fn":
 		return Function
+	case "use":
+		return Use
 	default:
 		return Identifier
 	}

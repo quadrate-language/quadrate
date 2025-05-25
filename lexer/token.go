@@ -3,26 +3,27 @@ package lexer
 type TokenType string
 
 const (
+	Comment    = "COMMENT"
 	EOF        = "EOF"
 	EOL        = "EOL"
 	Function   = "FUNCTION"
-	Identifier = "IDENTIFIER"
-	LParen     = "LPAREN"
-	RParen     = "RPAREN"
-	LBrace     = "LBRACE"
-	RBrace     = "RBRACE"
 	HexNumber  = "HEX_NUMBER"
+	Identifier = "IDENTIFIER"
+	LBrace     = "LBRACE"
+	LParen     = "LPAREN"
 	Number     = "NUMBER"
+	RBrace     = "RBRACE"
+	RParen     = "RPAREN"
 	String     = "STRING"
-	Comment    = "COMMENT"
 	Unknown    = "UNKNOWN"
+	Use        = "USE"
 )
 
 type Token struct {
-	Type   TokenType `json:"type"`
-	Value  string    `json:"value"`
-	Line   int       `json:"line"`
 	Column int       `json:"column"`
 	Length int       `json:"length"`
+	Line   int       `json:"line"`
 	Offset int       `json:"offset"`
+	Type   TokenType `json:"type"`
+	Value  string    `json:"value"`
 }
