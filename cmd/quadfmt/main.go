@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"strings"
 
 	"git.sr.ht/~klahr/quadrate/lexer"
 )
@@ -11,6 +12,8 @@ func main() {
 	if tokens, err := s.Lex(); err != nil {
 		panic(err)
 	} else {
+		sb := strings.Builder{}
+
 		use := false
 		var previousT lexer.Token
 		for _, t := range tokens {
@@ -19,7 +22,7 @@ func main() {
 		ind := 0
 		for _, t := range tokens {
 			if use && t.Type != lexer.Identifier && t.Type != lexer.Use {
-				fmt.Printf("\n")
+				sb.WriteString("\n")
 				use = false
 			}
 			switch t.Type {
@@ -27,46 +30,46 @@ func main() {
 				t.Value = "EOF"
 			case lexer.EOL:
 				if previousT.Type == lexer.Identifier || previousT.Type == lexer.Number || previousT.Type == lexer.HexNumber || previousT.Type == lexer.String {
-					fmt.Printf("\n")
+					sb.WriteString("\n")
 				}
 			case lexer.Function:
-				fmt.Printf("fn ")
+				sb.WriteString("fn ")
 			case lexer.Semicolon:
-				fmt.Printf(" ;")
+				sb.WriteString(" ;")
 			case lexer.If:
-				indent(ind, previousT)
-				fmt.Printf("if ")
+				indent(&sb, ind, previousT)
+				sb.WriteString("if ")
 			case lexer.Identifier:
 				if previousT.Type != lexer.If {
-					indent(ind, previousT)
+					indent(&sb, ind, previousT)
 				}
-				fmt.Printf("%s", t.Value)
+				sb.WriteString(fmt.Sprintf("%s", t.Value))
 				if previousT.Type == lexer.Use {
-					fmt.Printf("\n")
+					sb.WriteString("\n")
 				}
 			case lexer.LParen:
-				fmt.Printf("(")
+				sb.WriteString("(")
 			case lexer.RParen:
-				fmt.Printf(")")
+				sb.WriteString(")")
 			case lexer.LBrace:
-				fmt.Printf(" {\n")
+				sb.WriteString(" {\n")
 				ind++
 			case lexer.RBrace:
 				if previousT.Type != lexer.EOL && previousT.Type != lexer.RBrace {
-					fmt.Printf("\n")
+					sb.WriteString("\n")
 				}
 				ind--
-				indent(ind, previousT)
-				fmt.Printf("}\n")
+				indent(&sb, ind, previousT)
+				sb.WriteString("}\n")
 			case lexer.HexNumber:
-				fmt.Printf(" %s", t.Value)
+				sb.WriteString(fmt.Sprintf(" %s", t.Value))
 			case lexer.Number:
-				fmt.Printf(" %s", t.Value)
+				sb.WriteString(fmt.Sprintf(" %s", t.Value))
 			case lexer.String:
-				fmt.Printf("\"%s\"", t.Value)
+				sb.WriteString(fmt.Sprintf("\"%s\"", t.Value))
 			case lexer.Use:
 				use = true
-				fmt.Printf("use ")
+				sb.WriteString("use ")
 			case lexer.Comment:
 			case lexer.Unknown:
 			}
@@ -74,15 +77,17 @@ func main() {
 			previousT = t
 			//println(t.Type, t.Value)
 		}
+
+		fmt.Printf("%s", sb.String())
 	}
 }
 
-func indent(i int, previousT lexer.Token) {
+func indent(sb *strings.Builder, i int, previousT lexer.Token) {
 	if previousT.Type == lexer.Semicolon {
-		fmt.Printf(" ")
+		sb.WriteString(" ")
 	} else {
 		for range i {
-			fmt.Printf("\t")
+			sb.WriteString("\t")
 		}
 	}
 }
