@@ -148,10 +148,62 @@ func (l *Scanner) readIdentifier() (Token, error) {
 
 func (l *Scanner) lookupType(literal string) TokenType {
 	switch literal {
+	case "break":
+		return Break
+	case "continue":
+		return Continue
+	case "__c":
+		return InlineC
+	case "const":
+		return Const
+	case "defer":
+		return Defer
+	case "end":
+		return End
 	case "fn":
 		return Function
+	case "for":
+		return For
 	case "if":
 		return If
+	case "else":
+		return Else
+	case "elseif":
+		return ElseIf
+	case "return":
+		return Return
+	case "jmp":
+		return Jump
+	case "je":
+		return JumpEqual
+	case "jge":
+		return JumpGreaterEqual
+	case "jg":
+		return JumpGreater
+	case "jgz":
+		return JumpGreaterZero
+	case "jgez":
+		return JumpGreaterEqualZero
+	case "jle":
+		return JumpLesserEqual
+	case "jlz":
+		return JumpLesserZero
+	case "jlez":
+		return JumpLesserEqualZero
+	case "jl":
+		return JumpLesser
+	case "jne":
+		return JumpNotEqual
+	case "jnz":
+		return JumpNotZero
+	case "jz":
+		return JumpZero
+	case "local":
+		return Local
+	case "loop":
+		return Loop
+	case "reduce":
+		return Reduce
 	case "use":
 		return Use
 	default:

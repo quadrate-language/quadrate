@@ -34,6 +34,8 @@ func main() {
 				}
 			case lexer.Function:
 				sb.WriteString("fn ")
+			case lexer.For:
+				sb.WriteString("for ")
 			case lexer.Semicolon:
 				sb.WriteString(" ;")
 			case lexer.Dollar:
