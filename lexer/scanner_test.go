@@ -35,7 +35,7 @@ func TestLex(t *testing.T) {
 		t.Fatalf("Expected 14 tokens, got %d", len(expectedTokens))
 	}
 
-	tokens, err := scanner.Lex2()
+	tokens, err := scanner.Lex()
 	if err != nil {
 		t.Fatalf("Lexing failed: %v", err)
 	}
