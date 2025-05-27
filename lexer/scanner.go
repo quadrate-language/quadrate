@@ -3,6 +3,8 @@ package lexer
 import (
 	"errors"
 	"fmt"
+	"strings"
+	"text/scanner"
 )
 
 type Scanner struct {
@@ -23,6 +25,58 @@ func NewScanner(source []rune) *Scanner {
 		line:   1,
 		column: 1,
 	}
+}
+
+func (l *Scanner) Lex2() ([]Token, error) {
+	tokens := make([]Token, 0)
+	var s scanner.Scanner
+
+	s.Init(strings.NewReader(string(l.source)))
+	s.Whitespace = 1 << ' '
+	for t := s.Scan(); t != scanner.EOF; t = s.Scan() {
+		fmt.Printf("Token: %s\n", s.TokenText())
+		switch t {
+		case scanner.Ident:
+			tokens = append(tokens, l.readToken(l.lookupType(s.TokenText()), s))
+		case scanner.Int, scanner.Float:
+			tokens = append(tokens, l.readToken(Number, s))
+		case scanner.String:
+			tokens = append(tokens, l.readToken(String, s))
+		case '\n':
+			tokens = append(tokens, l.readToken(EOL, s))
+		case ';':
+			tokens = append(tokens, l.readToken(Semicolon, s))
+		case '(':
+			tokens = append(tokens, l.readToken(LParen, s))
+		case ')':
+			tokens = append(tokens, l.readToken(RParen, s))
+		case '{':
+			tokens = append(tokens, l.readToken(LBrace, s))
+		case '}':
+			tokens = append(tokens, l.readToken(RBrace, s))
+		case '&':
+			tokens = append(tokens, l.readToken(Ampersand, s))
+		case '$':
+			tokens = append(tokens, l.readToken(Dollar, s))
+		case '-':
+			t = s.Scan()
+			if t == scanner.Int || t == scanner.Float {
+				tokens = append(tokens, Token{
+					Type:   Number,
+					Value:  "-" + s.TokenText(),
+					Line:   s.Line,
+					Column: s.Column,
+					Length: len(s.TokenText()) + 1,
+					Offset: s.Offset,
+				})
+			} else {
+				panic(fmt.Sprintf("Unexpected token '-' at line %d, column %d", s.Line, s.Column))
+			}
+		default:
+		}
+	}
+
+	return tokens, nil
 }
 
 func (l *Scanner) Lex() ([]Token, error) {
@@ -108,6 +162,17 @@ func (l *Scanner) peekChar() rune {
 		return l.source[l.cursor+1]
 	}
 	return 0
+}
+
+func (l *Scanner) readToken(tokenType TokenType, s scanner.Scanner) Token {
+	return Token{
+		Type:   tokenType,
+		Value:  s.TokenText(),
+		Line:   s.Line,
+		Column: s.Column,
+		Length: len(s.TokenText()),
+		Offset: s.Offset,
+	}
 }
 
 func (l *Scanner) readPunctuation(tokenType TokenType, length int) Token {
