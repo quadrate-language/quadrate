@@ -59,6 +59,10 @@ itr:
 			tokens = append(tokens, l.readPunctuation(RBrace, 1))
 		case ';':
 			tokens = append(tokens, l.readPunctuation(Semicolon, 1))
+		case '&':
+			tokens = append(tokens, l.readPunctuation(Ampersand, 1))
+		case '$':
+			tokens = append(tokens, l.readPunctuation(Dollar, 1))
 		default:
 			if l.isDigit(c) || (c == '-' && l.isDigit(l.peekChar())) {
 				if t, err := l.readNumber(); err != nil {

@@ -3,7 +3,9 @@ package lexer
 type TokenType string
 
 const (
+	Ampersand  = "AMPERSAND"
 	Comment    = "COMMENT"
+	Dollar     = "DOLLAR"
 	EOF        = "EOF"
 	EOL        = "EOL"
 	Function   = "FUNCTION"

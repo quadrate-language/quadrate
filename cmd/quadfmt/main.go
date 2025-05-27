@@ -36,6 +36,10 @@ func main() {
 				sb.WriteString("fn ")
 			case lexer.Semicolon:
 				sb.WriteString(" ;")
+			case lexer.Dollar:
+				sb.WriteString(" $")
+			case lexer.Ampersand:
+				sb.WriteString(" &")
 			case lexer.If:
 				indent(&sb, ind, previousT)
 				sb.WriteString("if ")
