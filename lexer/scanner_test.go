@@ -29,7 +29,7 @@ func TestLex(t *testing.T) {
 		{Type: String, Value: "\"Hello, world!\"", Line: 3, Column: 7, Length: 15},
 		{Type: EOL, Value: "\n", Line: 3, Column: 22, Length: 1},
 		{Type: RBrace, Value: "}", Line: 4, Column: 1, Length: 1},
-		{Type: EOF, Value: "EOF", Line: 4, Column: 2, Length: 0},
+		{Type: EOF, Value: "", Line: 4, Column: 2, Length: 0},
 	}
 	if len(expectedTokens) != 14 {
 		t.Fatalf("Expected 14 tokens, got %d", len(expectedTokens))

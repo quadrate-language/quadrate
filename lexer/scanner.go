@@ -31,9 +31,13 @@ func (l *Scanner) Lex() ([]Token, error) {
 	var s scanner.Scanner
 
 	s.Init(strings.NewReader(string(l.source)))
-	s.Whitespace = 1 << ' '
-	for t := s.Scan(); t != scanner.EOF; t = s.Scan() {
+	s.Whitespace = 1<<' ' | 1<<'\t'
+done:
+	for t := s.Scan(); ; t = s.Scan() {
 		switch t {
+		case scanner.EOF:
+			tokens = append(tokens, l.readToken(EOF, s))
+			break done
 		case scanner.Ident:
 			tokens = append(tokens, l.readToken(l.lookupType(s.TokenText()), s))
 		case scanner.Int, scanner.Float:
@@ -71,6 +75,7 @@ func (l *Scanner) Lex() ([]Token, error) {
 				panic(fmt.Sprintf("Unexpected token '-' at line %d, column %d", s.Line, s.Column))
 			}
 		default:
+			panic(fmt.Sprintf("Unexpected token '%s' at line %d, column %d", s.TokenText(), s.Line, s.Column))
 		}
 	}
 
