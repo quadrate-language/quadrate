@@ -1,6 +1,7 @@
 package lexer
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 	"text/scanner"
@@ -72,7 +73,7 @@ done:
 					Offset: s.Offset,
 				})
 			} else {
-				panic(fmt.Sprintf("Unexpected token '-' at line %d, column %d", s.Line, s.Column))
+				return nil, errors.New(fmt.Sprintf("Unexpected token '-' at line %d, column %d", s.Line, s.Column))
 			}
 		default:
 			tokens = append(tokens, l.readToken(Illegal, s))
