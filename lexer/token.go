@@ -20,6 +20,7 @@ const (
 	HexNumber            = "HEX_NUMBER"
 	Identifier           = "IDENTIFIER"
 	If                   = "IF"
+	Illegal              = "ILLEGAL"
 	InlineC              = "INLINE_C"
 	Jump                 = "JMP"
 	JumpEqual            = "JE"

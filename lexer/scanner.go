@@ -75,7 +75,7 @@ done:
 				panic(fmt.Sprintf("Unexpected token '-' at line %d, column %d", s.Line, s.Column))
 			}
 		default:
-			panic(fmt.Sprintf("Unexpected token '%s' at line %d, column %d", s.TokenText(), s.Line, s.Column))
+			tokens = append(tokens, l.readToken(Illegal, s))
 		}
 	}
 
@@ -83,9 +83,17 @@ done:
 }
 
 func (l *Scanner) readToken(tokenType TokenType, s scanner.Scanner) Token {
+	var value string
+	switch tokenType {
+	case EOF, EOL:
+		value = ""
+	default:
+		value = s.TokenText()
+	}
+
 	return Token{
 		Type:   tokenType,
-		Value:  s.TokenText(),
+		Value:  value,
 		Line:   s.Line,
 		Column: s.Column,
 		Length: len(s.TokenText()),
