@@ -82,9 +82,9 @@ func TestLexFn(t *testing.T) {
 		t.Fatalf("Expected 15 tokens, got %d", len(expectedTokens))
 	}
 
-	tokens, err := scanner.Lex()
-	if err != nil {
-		t.Fatalf("Lexing failed: %v", err)
+	tokens, issue := scanner.Lex()
+	if issue != nil {
+		t.Fatalf("Lexing failed: %v", issue)
 	}
 
 	if js, err := json.MarshalIndent(tokens, "", "  "); err == nil {

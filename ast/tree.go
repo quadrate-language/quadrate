@@ -1,5 +1,5 @@
 package ast
 
 type Tree struct {
-	Root *Node
+	Root Node
 }

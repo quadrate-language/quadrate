@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"strings"
 	"text/scanner"
+
+	"git.sr.ht/~klahr/quadrate/diagnostic"
 )
 
 type Scanner struct {
@@ -26,7 +28,7 @@ func NewScanner(source []rune) *Scanner {
 	}
 }
 
-func (l *Scanner) Lex() ([]Token, error) {
+func (l *Scanner) Lex() ([]Token, *diagnostic.Issue) {
 	tokens := make([]Token, 0)
 	var s scanner.Scanner
 
@@ -88,7 +90,11 @@ done:
 			case '-':
 				tokens = append(tokens, l.readToken(DoubleDash, s))
 			default:
-				return nil, fmt.Errorf("Unexpected token '-' at line %d, column %d", s.Line, s.Column)
+				return nil, &diagnostic.Issue{
+					Severity: diagnostic.SeverityError,
+					Message:  fmt.Sprintf("Unexpected token '-' at line %d, column %d", s.Line, s.Column),
+					Category: diagnostic.CategoryLexer,
+				}
 			}
 		default:
 			tokens = append(tokens, l.readToken(Illegal, s))

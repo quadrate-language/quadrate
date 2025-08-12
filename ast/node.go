@@ -1,3 +1,6 @@
 package ast
 
-type Node any
+type Node interface {
+	Items() []Node
+	Append(item Node)
+}
