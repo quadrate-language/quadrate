@@ -2,16 +2,26 @@ package parser
 
 import "git.sr.ht/~klahr/quadrate/ast"
 
+type DefaultDecl struct {
+}
+
+func (d *DefaultDecl) Items() []ast.Node {
+	return nil
+}
+
+func (d *DefaultDecl) Append(item ast.Node) {
+}
+
 type ModuleDecl struct {
-	items []ast.Node
+	Children []ast.Node `json:"items"`
 }
 
 func (m *ModuleDecl) Items() []ast.Node {
-	return m.items
+	return m.Children
 }
 
 func (m *ModuleDecl) Append(item ast.Node) {
-	m.items = append(m.items, item)
+	m.Children = append(m.Children, item)
 }
 
 type FunctionDecl struct {
@@ -30,13 +40,8 @@ func (f *FunctionDecl) Append(item ast.Node) {
 }
 
 type UseDecl struct {
+	DefaultDecl
+
 	Type AstNodeType `json:"type"`
 	Path string      `json:"path"`
-}
-
-func (u *UseDecl) Items() []ast.Node {
-	return nil
-}
-
-func (u *UseDecl) Append(item ast.Node) {
 }

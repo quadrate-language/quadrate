@@ -21,7 +21,7 @@ func TestParse(t *testing.T) {
 		if module, issues := parser.Build(tokens); issues != nil {
 			t.Fatalf("Parsing failed: %v", issues.Error())
 		} else {
-			if js, err := json.MarshalIndent(module.Root.Items(), "", "  "); err == nil {
+			if js, err := json.MarshalIndent(module, "", "  "); err == nil {
 				fmt.Println(string(js))
 			}
 			t.FailNow()
