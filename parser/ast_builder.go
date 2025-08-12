@@ -46,6 +46,11 @@ func (b *ASTBuilder) Build(tokens []lexer.Token) (*ast.Tree, diagnostic.Issues) 
 						SourceSpan: t.SourceSpan,
 					})
 				} else {
+					if body, issue := b.parseBody(); issue != nil {
+						issues = append(issues, issue)
+					} else {
+						parseFn.Body = body.Items()
+					}
 				}
 			}
 		case lexer.Use:
@@ -74,6 +79,34 @@ func (b *ASTBuilder) Build(tokens []lexer.Token) (*ast.Tree, diagnostic.Issues) 
 	return p, nil
 }
 
+func (b *ASTBuilder) parseBody() (*Body, *diagnostic.Issue) {
+	b.read()
+
+	body := &Body{
+		Type:     AstNodeTypeBody,
+		Children: []ast.Node{},
+	}
+
+body_loop:
+	for b.current < len(b.tokens) {
+		t := b.tokens[b.current]
+
+		switch t.Type {
+		case lexer.Return:
+			body.Append(&ReturnStmt{
+				Type: AstNodeTypeReturnStatement,
+			})
+			b.read()
+		case lexer.RBrace:
+			b.read()
+			break body_loop
+		default:
+			b.read()
+		}
+	}
+	return body, nil
+}
+
 func (b *ASTBuilder) parseFunctionDecl() (*FunctionDecl, *diagnostic.Issue) {
 	if t, issue := b.read(); issue != nil {
 		return nil, issue
@@ -86,13 +119,11 @@ func (b *ASTBuilder) parseFunctionDecl() (*FunctionDecl, *diagnostic.Issue) {
 		}
 	} else {
 		fn := &FunctionDecl{
-			Type: AstNodeTypeFunctionDeclaration,
-			Name: t.Value,
-			StackNotation: StackNotation{
-				Inputs:  []Parameter{},
-				Outputs: []Parameter{},
-			},
-			Body: []ast.Node{},
+			Type:    AstNodeTypeFunctionDeclaration,
+			Name:    t.Value,
+			Body:    []ast.Node{},
+			Inputs:  []FunctionParameter{},
+			Outputs: []FunctionParameter{},
 		}
 		if t, issue := b.read(); issue != nil {
 			return nil, issue
@@ -118,12 +149,12 @@ func (b *ASTBuilder) parseFunctionDecl() (*FunctionDecl, *diagnostic.Issue) {
 							return nil, issue
 						} else if t3.Type == lexer.Int || t3.Type == lexer.Float || t3.Type == lexer.String {
 							if ddFound {
-								fn.StackNotation.Outputs = append(fn.StackNotation.Outputs, Parameter{
+								fn.Inputs = append(fn.Inputs, FunctionParameter{
 									Name: t.Value,
 									Type: t3.Type,
 								})
 							} else {
-								fn.StackNotation.Inputs = append(fn.StackNotation.Inputs, Parameter{
+								fn.Outputs = append(fn.Outputs, FunctionParameter{
 									Name: t.Value,
 									Type: t3.Type,
 								})

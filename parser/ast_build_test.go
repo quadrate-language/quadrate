@@ -11,6 +11,7 @@ import (
 func TestParse(t *testing.T) {
 	source := []rune(`use fmt
 	fn hello(a:int b:float --c:str) {
+		return
 	}
 	fn dj() {
 	}

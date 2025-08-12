@@ -3,6 +3,8 @@ package parser
 type AstNodeType string
 
 const (
-	AstNodeTypeUseDeclaration      = "UseDeclaration"
+	AstNodeTypeBody                = "Body"
 	AstNodeTypeFunctionDeclaration = "FunctionDeclaration"
+	AstNodeTypeUseDeclaration      = "UseDeclaration"
+	AstNodeTypeReturnStatement     = "ReturnStatement"
 )

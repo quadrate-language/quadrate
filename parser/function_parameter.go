@@ -2,12 +2,7 @@ package parser
 
 import "git.sr.ht/~klahr/quadrate/lexer"
 
-type Parameter struct {
+type FunctionParameter struct {
 	Name string          `json:"name"`
 	Type lexer.TokenType `json:"type"`
-}
-
-type StackNotation struct {
-	Inputs  []Parameter `json:"inputs"`
-	Outputs []Parameter `json:"outputs"`
 }
