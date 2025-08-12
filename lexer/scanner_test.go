@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"testing"
+
+	"git.sr.ht/~klahr/quadrate/diagnostic"
 )
 
 func TestLexMain(t *testing.T) {
@@ -14,20 +16,104 @@ func TestLexMain(t *testing.T) {
 	scanner := NewScanner(source)
 
 	expectedTokens := []Token{
-		{Type: Function, Value: "fn", Line: 1, Column: 1, Length: 2},
-		{Type: Identifier, Value: "main", Line: 1, Column: 4, Length: 4},
-		{Type: LParen, Value: "(", Line: 1, Column: 8, Length: 1},
-		{Type: RParen, Value: ")", Line: 1, Column: 9, Length: 1},
-		{Type: LBrace, Value: "{", Line: 1, Column: 11, Length: 1},
-		{Type: EOL, Value: "", Line: 1, Column: 12, Length: 1},
-		{Type: Identifier, Value: "push", Line: 2, Column: 2, Length: 4},
-		{Type: IntLiteral, Value: "-8", Line: 2, Column: 8, Length: 2},
-		{Type: EOL, Value: "", Line: 2, Column: 9, Length: 1},
-		{Type: Identifier, Value: "push", Line: 3, Column: 2, Length: 4},
-		{Type: StringLiteral, Value: "\"Hello, world!\"", Line: 3, Column: 7, Length: 15},
-		{Type: EOL, Value: "", Line: 3, Column: 22, Length: 1},
-		{Type: RBrace, Value: "}", Line: 4, Column: 1, Length: 1},
-		{Type: EOF, Value: "", Line: 4, Column: 2, Length: 0},
+		{
+			Type: Function, Value: "fn", SourceSpan: diagnostic.SourceSpan{
+				Line:   1,
+				Column: 1,
+				Length: 2,
+			},
+		},
+		{
+			Type: Identifier, Value: "main", SourceSpan: diagnostic.SourceSpan{
+				Line:   1,
+				Column: 4,
+				Length: 4,
+			},
+		},
+		{
+			Type: LParen, Value: "(", SourceSpan: diagnostic.SourceSpan{
+				Line:   1,
+				Column: 8,
+				Length: 1,
+			},
+		},
+		{
+			Type: RParen, Value: ")", SourceSpan: diagnostic.SourceSpan{
+				Line:   1,
+				Column: 9,
+				Length: 1,
+			},
+		},
+		{
+			Type: LBrace, Value: "{", SourceSpan: diagnostic.SourceSpan{
+				Line:   1,
+				Column: 11,
+				Length: 1,
+			},
+		},
+		{
+			Type: EOL, Value: "", SourceSpan: diagnostic.SourceSpan{
+				Line:   1,
+				Column: 12,
+				Length: 1,
+			},
+		},
+		{
+			Type: Identifier, Value: "push", SourceSpan: diagnostic.SourceSpan{
+				Line:   2,
+				Column: 2,
+				Length: 4,
+			},
+		},
+		{
+			Type: IntLiteral, Value: "-8", SourceSpan: diagnostic.SourceSpan{
+				Line:   2,
+				Column: 8,
+				Length: 2,
+			},
+		},
+		{
+			Type: EOL, Value: "", SourceSpan: diagnostic.SourceSpan{
+				Line:   2,
+				Column: 9,
+				Length: 1,
+			},
+		},
+		{
+			Type: Identifier, Value: "push", SourceSpan: diagnostic.SourceSpan{
+				Line:   3,
+				Column: 2,
+				Length: 4,
+			},
+		},
+		{
+			Type: StringLiteral, Value: "\"Hello, world!\"", SourceSpan: diagnostic.SourceSpan{
+				Line:   3,
+				Column: 7,
+				Length: 15,
+			},
+		},
+		{
+			Type: EOL, Value: "", SourceSpan: diagnostic.SourceSpan{
+				Line:   3,
+				Column: 22,
+				Length: 1,
+			},
+		},
+		{
+			Type: RBrace, Value: "}", SourceSpan: diagnostic.SourceSpan{
+				Line:   4,
+				Column: 1,
+				Length: 1,
+			},
+		},
+		{
+			Type: EOF, Value: "", SourceSpan: diagnostic.SourceSpan{
+				Line:   4,
+				Column: 2,
+				Length: 0,
+			},
+		},
 	}
 	if len(expectedTokens) != 14 {
 		t.Fatalf("Expected 14 tokens, got %d", len(expectedTokens))

@@ -14,6 +14,7 @@ func (i Issues) Error() string {
 }
 
 type Issue struct {
+	SourceSpan
 	Message  string
 	Notes    []string
 	Category int

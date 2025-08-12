@@ -71,21 +71,25 @@ done:
 			switch t {
 			case scanner.Int:
 				tokens = append(tokens, Token{
-					Type:   IntLiteral,
-					Value:  "-" + s.TokenText(),
-					Line:   s.Line,
-					Column: s.Column,
-					Length: len(s.TokenText()) + 1,
-					Offset: s.Offset,
+					Type:  IntLiteral,
+					Value: "-" + s.TokenText(),
+					SourceSpan: diagnostic.SourceSpan{
+						Line:   s.Line,
+						Column: s.Column,
+						Length: len(s.TokenText()) + 1,
+						Offset: s.Offset,
+					},
 				})
 			case scanner.Float:
 				tokens = append(tokens, Token{
-					Type:   FloatLiteral,
-					Value:  "-" + s.TokenText(),
-					Line:   s.Line,
-					Column: s.Column,
-					Length: len(s.TokenText()) + 1,
-					Offset: s.Offset,
+					Type:  FloatLiteral,
+					Value: "-" + s.TokenText(),
+					SourceSpan: diagnostic.SourceSpan{
+						Line:   s.Line,
+						Column: s.Column,
+						Length: len(s.TokenText()) + 1,
+						Offset: s.Offset,
+					},
 				})
 			case '-':
 				tokens = append(tokens, l.readToken(DoubleDash, s))
@@ -116,12 +120,14 @@ func (l *Scanner) readToken(tokenType TokenType, s scanner.Scanner) Token {
 	}
 
 	return Token{
-		Type:   tokenType,
-		Value:  value,
-		Line:   s.Line,
-		Column: s.Column,
-		Length: len(s.TokenText()),
-		Offset: s.Offset,
+		Type:  tokenType,
+		Value: value,
+		SourceSpan: diagnostic.SourceSpan{
+			Line:   s.Line,
+			Column: s.Column,
+			Length: len(s.TokenText()),
+			Offset: s.Offset,
+		},
 	}
 }
 

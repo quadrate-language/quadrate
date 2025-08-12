@@ -1,5 +1,7 @@
 package lexer
 
+import "git.sr.ht/~klahr/quadrate/diagnostic"
+
 type TokenType string
 
 const (
@@ -57,10 +59,7 @@ const (
 )
 
 type Token struct {
-	Column int       `json:"column"`
-	Length int       `json:"length"`
-	Line   int       `json:"line"`
-	Offset int       `json:"offset"`
-	Type   TokenType `json:"type"`
-	Value  string    `json:"value"`
+	diagnostic.SourceSpan
+	Type  TokenType `json:"type"`
+	Value string    `json:"value"`
 }

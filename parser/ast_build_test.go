@@ -10,7 +10,11 @@ import (
 
 func TestParse(t *testing.T) {
 	source := []rune(`use fmt
-	fn main(a:str--b:int c:float) {
+	fn hello(a:int b:float --c:str) {
+	}
+	fn dj() {
+	}
+	fn main() {
 }`)
 
 	scanner := lexer.NewScanner(source)

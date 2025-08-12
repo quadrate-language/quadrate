@@ -35,6 +35,18 @@ func (b *ASTBuilder) Build(tokens []lexer.Token) (*ast.Tree, diagnostic.Issues) 
 				issues = append(issues, issue)
 			} else {
 				node.Append(parseFn)
+
+				if t, issue := b.read(); issue != nil {
+					issues = append(issues, issue)
+				} else if t.Type != lexer.LBrace {
+					issues = append(issues, &diagnostic.Issue{
+						Message:    "Expected '{' after function declaration",
+						Category:   diagnostic.CategoryParser,
+						Severity:   diagnostic.SeverityError,
+						SourceSpan: t.SourceSpan,
+					})
+				} else {
+				}
 			}
 		case lexer.Use:
 			if parseUse, issue := b.parseUseDecl(); issue != nil {
@@ -42,6 +54,15 @@ func (b *ASTBuilder) Build(tokens []lexer.Token) (*ast.Tree, diagnostic.Issues) 
 			} else {
 				node.Append(parseUse)
 			}
+		case lexer.Identifier:
+			issues = append(issues, &diagnostic.Issue{
+				Message:    "Unexpected identifier outside of function declaration",
+				Category:   diagnostic.CategoryParser,
+				Severity:   diagnostic.SeverityError,
+				Notes:      []string{"Identifiers should be part of a function declaration or use statement."},
+				SourceSpan: t.SourceSpan,
+			})
+			b.read() // Skip the identifier
 		default:
 			b.read()
 		}
@@ -58,24 +79,29 @@ func (b *ASTBuilder) parseFunctionDecl() (*FunctionDecl, *diagnostic.Issue) {
 		return nil, issue
 	} else if t.Type != lexer.Identifier {
 		return nil, &diagnostic.Issue{
-			Message:  "Expected function name after 'fn'",
-			Category: diagnostic.CategoryParser,
-			Severity: diagnostic.SeverityError,
+			Message:    "Expected function name after 'fn'",
+			Category:   diagnostic.CategoryParser,
+			Severity:   diagnostic.SeverityError,
+			SourceSpan: t.SourceSpan,
 		}
 	} else {
 		fn := &FunctionDecl{
-			Type:          AstNodeTypeFunctionDeclaration,
-			Name:          t.Value,
-			StackNotation: StackNotation{},
-			Body:          []ast.Node{},
+			Type: AstNodeTypeFunctionDeclaration,
+			Name: t.Value,
+			StackNotation: StackNotation{
+				Inputs:  []Parameter{},
+				Outputs: []Parameter{},
+			},
+			Body: []ast.Node{},
 		}
 		if t, issue := b.read(); issue != nil {
 			return nil, issue
 		} else if t.Type != lexer.LParen {
 			return nil, &diagnostic.Issue{
-				Message:  "Expected '(' after function name",
-				Category: diagnostic.CategoryParser,
-				Severity: diagnostic.SeverityError,
+				Message:    "Expected '(' after function name",
+				Category:   diagnostic.CategoryParser,
+				Severity:   diagnostic.SeverityError,
+				SourceSpan: t.SourceSpan,
 			}
 		} else {
 			ddFound := false
@@ -104,17 +130,19 @@ func (b *ASTBuilder) parseFunctionDecl() (*FunctionDecl, *diagnostic.Issue) {
 							}
 						} else {
 							return nil, &diagnostic.Issue{
-								Message:  "Expected type after ':'",
-								Category: diagnostic.CategoryParser,
-								Severity: diagnostic.SeverityError,
-								Notes:    []string{"Expected 'int', 'float', or 'str' after ':'"},
+								Message:    "Expected type after ':'",
+								Category:   diagnostic.CategoryParser,
+								Severity:   diagnostic.SeverityError,
+								Notes:      []string{"Expected 'int', 'float', or 'str' after ':'"},
+								SourceSpan: t3.SourceSpan,
 							}
 						}
 					} else {
 						return nil, &diagnostic.Issue{
-							Message:  "Expected ':' after parameter name",
-							Category: diagnostic.CategoryParser,
-							Severity: diagnostic.SeverityError,
+							Message:    "Expected ':' after parameter name",
+							Category:   diagnostic.CategoryParser,
+							Severity:   diagnostic.SeverityError,
+							SourceSpan: t2.SourceSpan,
 						}
 					}
 				} else if t.Type == lexer.DoubleDash {
@@ -130,6 +158,7 @@ func (b *ASTBuilder) parseUseDecl() (*UseDecl, *diagnostic.Issue) {
 	if t, issue := b.read(); issue != nil {
 		return nil, issue
 	} else {
+		b.read()
 		return &UseDecl{
 			Type: AstNodeTypeUseDeclaration,
 			Path: t.Value,
