@@ -1,7 +1,6 @@
 package lexer
 
 import (
-	"errors"
 	"fmt"
 	"strings"
 	"text/scanner"
@@ -41,12 +40,16 @@ done:
 			break done
 		case scanner.Ident:
 			tokens = append(tokens, l.readToken(l.lookupType(s.TokenText()), s))
-		case scanner.Int, scanner.Float:
-			tokens = append(tokens, l.readToken(Number, s))
+		case scanner.Int:
+			tokens = append(tokens, l.readToken(IntLiteral, s))
+		case scanner.Float:
+			tokens = append(tokens, l.readToken(FloatLiteral, s))
 		case scanner.String:
-			tokens = append(tokens, l.readToken(String, s))
+			tokens = append(tokens, l.readToken(StringLiteral, s))
 		case '\n':
 			tokens = append(tokens, l.readToken(EOL, s))
+		case ':':
+			tokens = append(tokens, l.readToken(Colon, s))
 		case ';':
 			tokens = append(tokens, l.readToken(Semicolon, s))
 		case '(':
@@ -63,17 +66,29 @@ done:
 			tokens = append(tokens, l.readToken(Dollar, s))
 		case '-':
 			t = s.Scan()
-			if t == scanner.Int || t == scanner.Float {
+			switch t {
+			case scanner.Int:
 				tokens = append(tokens, Token{
-					Type:   Number,
+					Type:   IntLiteral,
 					Value:  "-" + s.TokenText(),
 					Line:   s.Line,
 					Column: s.Column,
 					Length: len(s.TokenText()) + 1,
 					Offset: s.Offset,
 				})
-			} else {
-				return nil, errors.New(fmt.Sprintf("Unexpected token '-' at line %d, column %d", s.Line, s.Column))
+			case scanner.Float:
+				tokens = append(tokens, Token{
+					Type:   FloatLiteral,
+					Value:  "-" + s.TokenText(),
+					Line:   s.Line,
+					Column: s.Column,
+					Length: len(s.TokenText()) + 1,
+					Offset: s.Offset,
+				})
+			case '-':
+				tokens = append(tokens, l.readToken(DoubleDash, s))
+			default:
+				return nil, fmt.Errorf("Unexpected token '-' at line %d, column %d", s.Line, s.Column)
 			}
 		default:
 			tokens = append(tokens, l.readToken(Illegal, s))
@@ -88,6 +103,8 @@ func (l *Scanner) readToken(tokenType TokenType, s scanner.Scanner) Token {
 	switch tokenType {
 	case EOF, EOL:
 		value = ""
+	case DoubleDash:
+		value = "--"
 	default:
 		value = s.TokenText()
 	}
@@ -116,12 +133,16 @@ func (l *Scanner) lookupType(literal string) TokenType {
 		return Defer
 	case "end":
 		return End
+	case "float":
+		return Float
 	case "fn":
 		return Function
 	case "for":
 		return For
 	case "if":
 		return If
+	case "int":
+		return Int
 	case "else":
 		return Else
 	case "elseif":
@@ -160,6 +181,8 @@ func (l *Scanner) lookupType(literal string) TokenType {
 		return Loop
 	case "reduce":
 		return Reduce
+	case "str":
+		return String
 	case "use":
 		return Use
 	default:
