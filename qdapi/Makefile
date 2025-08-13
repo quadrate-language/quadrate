@@ -7,7 +7,7 @@ LIB_NAME        := libqd.so
 ORG_HEADER_NAME := libqd.h
 HEADER_NAME     := qd.h
 
-GO_SRC := qd.go
+GO_SRC := main.go qd.go
 
 all: $(LIB_DIR)/$(LIB_NAME) $(INCLUDE_DIR)/$(HEADER_NAME)
 
