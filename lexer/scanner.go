@@ -51,7 +51,12 @@ done:
 		case '\n':
 			tokens = append(tokens, l.readToken(EOL, s))
 		case ':':
-			tokens = append(tokens, l.readToken(Colon, s))
+			if s.Peek() == ':' {
+				t = s.Scan()
+				tokens = append(tokens, l.readToken(DoubleColon, s))
+			} else {
+				tokens = append(tokens, l.readToken(Colon, s))
+			}
 		case ';':
 			tokens = append(tokens, l.readToken(Semicolon, s))
 		case '(':
@@ -115,6 +120,8 @@ func (l *Scanner) readToken(tokenType TokenType, s scanner.Scanner) Token {
 		value = ""
 	case DoubleDash:
 		value = "--"
+	case DoubleColon:
+		value = "::"
 	default:
 		value = s.TokenText()
 	}
@@ -122,6 +129,7 @@ func (l *Scanner) readToken(tokenType TokenType, s scanner.Scanner) Token {
 	return Token{
 		Type:  tokenType,
 		Value: value,
+
 		SourceSpan: diagnostic.SourceSpan{
 			Line:   s.Line,
 			Column: s.Column,

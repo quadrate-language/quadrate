@@ -21,12 +21,16 @@ func TestParse(t *testing.T) {
 		"world"
 		pop
 		pop
+		fmt::print
 }`)
 
 	scanner := lexer.NewScanner(source)
 	if tokens, err := scanner.Lex(); err != nil {
 		t.Fatalf("Lexing failed: %v", err)
 	} else {
+		for _, t := range tokens {
+			fmt.Printf("%s: %s\n", t.Type, t.Value)
+		}
 		parser := NewASTBuilder()
 		if module, issues := parser.Build(tokens); issues != nil {
 			t.Fatalf("Parsing failed: %v", issues.Error())

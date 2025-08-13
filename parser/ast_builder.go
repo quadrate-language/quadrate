@@ -135,14 +135,13 @@ func (b *ASTBuilder) parseFunctionCall() (*FunctionCall, *diagnostic.Issue) {
 	fnCall := &FunctionCall{
 		Type: AstNodeTypeFunctionCall,
 	}
-	// TODO: Support double colon
-	//if b.peek() == lexer.DoubleColon {
-	//fnCall.Module = b.tokens[b.current].Value
-	//	b.read() // Move past the double colon
-	//fnCall.Name = b.tokens[b.current].Value
-	// } else {
+
+	if b.peek() == lexer.DoubleColon {
+		fnCall.Module = b.tokens[b.current].Value
+		b.read()
+		b.read()
+	}
 	fnCall.Name = b.tokens[b.current].Value
-	// }
 
 	b.read()
 	return fnCall, nil

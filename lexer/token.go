@@ -13,6 +13,7 @@ const (
 	Continue             = "CONTINUE"
 	Defer                = "DEFER"
 	Dollar               = "DOLLAR"
+	DoubleColon          = "DOUBLE_COLON"
 	DoubleDash           = "DOUBLE_DASH"
 	Else                 = "ELSE"
 	ElseIf               = "ELSEIF"
