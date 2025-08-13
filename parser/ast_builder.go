@@ -97,14 +97,55 @@ body_loop:
 				Type: AstNodeTypeReturnStatement,
 			})
 			b.read()
+		case lexer.FloatLiteral, lexer.IntLiteral, lexer.StringLiteral:
+			body.Append(&Push{
+				Type:      AstNodeTypePush,
+				Value:     t.Value,
+				ValueType: t.Type,
+			})
+			b.read()
 		case lexer.RBrace:
 			b.read()
 			break body_loop
 		default:
-			b.read()
+			if t.Type == lexer.Identifier {
+				if fnCall, issue := b.parseFunctionCall(); issue != nil {
+					return nil, issue
+				} else {
+					body.Append(fnCall)
+					b.read() // Move past the identifier
+				}
+			} else {
+				b.read()
+				// TODO:
+			}
 		}
 	}
 	return body, nil
+}
+
+func (b *ASTBuilder) peek() lexer.TokenType {
+	if b.current+1 >= len(b.tokens) {
+		return lexer.EOF
+	}
+	return b.tokens[b.current+1].Type
+}
+
+func (b *ASTBuilder) parseFunctionCall() (*FunctionCall, *diagnostic.Issue) {
+	fnCall := &FunctionCall{
+		Type: AstNodeTypeFunctionCall,
+	}
+	// TODO: Support double colon
+	//if b.peek() == lexer.DoubleColon {
+	//fnCall.Module = b.tokens[b.current].Value
+	//	b.read() // Move past the double colon
+	//fnCall.Name = b.tokens[b.current].Value
+	// } else {
+	fnCall.Name = b.tokens[b.current].Value
+	// }
+
+	b.read()
+	return fnCall, nil
 }
 
 func (b *ASTBuilder) parseFunctionDecl() (*FunctionDecl, *diagnostic.Issue) {

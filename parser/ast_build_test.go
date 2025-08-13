@@ -16,6 +16,11 @@ func TestParse(t *testing.T) {
 	fn dj() {
 	}
 	fn main() {
+		1 2
+		3.1 4.5 -4.3 "hello"
+		"world"
+		pop
+		pop
 }`)
 
 	scanner := lexer.NewScanner(source)

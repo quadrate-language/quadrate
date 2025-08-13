@@ -4,7 +4,9 @@ type AstNodeType string
 
 const (
 	AstNodeTypeBody                = "Body"
+	AstNodeTypeFunctionCall        = "FunctionCall"
 	AstNodeTypeFunctionDeclaration = "FunctionDeclaration"
-	AstNodeTypeUseDeclaration      = "UseDeclaration"
+	AstNodeTypePush                = "Push"
 	AstNodeTypeReturnStatement     = "ReturnStatement"
+	AstNodeTypeUseDeclaration      = "UseDeclaration"
 )
