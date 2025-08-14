@@ -1,6 +1,6 @@
 package parser
 
-import "git.sr.ht/~klahr/quadrate/ast"
+import "git.sr.ht/~klahr/quadrate/pkg/ast"
 
 type Body struct {
 	Type     AstNodeType `json:"type"`

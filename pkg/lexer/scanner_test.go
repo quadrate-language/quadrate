@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"testing"
 
-	"git.sr.ht/~klahr/quadrate/diagnostic"
+	"git.sr.ht/~klahr/quadrate/pkg/diagnostic"
 )
 
 func TestLexMain(t *testing.T) {

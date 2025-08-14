@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"testing"
 
-	"git.sr.ht/~klahr/quadrate/lexer"
+	"git.sr.ht/~klahr/quadrate/pkg/lexer"
 )
 
 func TestParse(t *testing.T) {

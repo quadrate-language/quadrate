@@ -1,9 +1,9 @@
 package parser
 
 import (
-	"git.sr.ht/~klahr/quadrate/ast"
-	"git.sr.ht/~klahr/quadrate/diagnostic"
-	"git.sr.ht/~klahr/quadrate/lexer"
+	"git.sr.ht/~klahr/quadrate/pkg/ast"
+	"git.sr.ht/~klahr/quadrate/pkg/diagnostic"
+	"git.sr.ht/~klahr/quadrate/pkg/lexer"
 )
 
 type ASTBuilder struct {

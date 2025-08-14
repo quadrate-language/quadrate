@@ -1,6 +1,6 @@
 package lexer
 
-import "git.sr.ht/~klahr/quadrate/diagnostic"
+import "git.sr.ht/~klahr/quadrate/pkg/diagnostic"
 
 type TokenType string
 
