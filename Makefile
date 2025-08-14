@@ -1,36 +1,57 @@
-BINARY_NAME := quadc
-INSTALL_BIN := /usr/bin
-INSTALL_LIB := $(if $(QUADRATE_ROOT),$(QUADRATE_ROOT),$(shell eval echo ~$$(logname))/quadrate)
-STD_LIB := stdlib
+PREFIX                ?= /usr
+INSTALL_BIN_DIR       := $(PREFIX)/bin
+INSTALL_LIB_DIR       := $(PREFIX)/lib
+INSTALL_INCLUDE_DIR   := $(PREFIX)/include
+INSTALL_PKGCONFIG_DIR := $(INSTALL_LIB_DIR)/pkgconfig
 
-.PHONY: build
-build:
-	go build -o $(BINARY_NAME)
+CMDS                  := quadc quadfmt
+BIN_DIR               := dist/bin
+LIB_DIR               := dist/lib
+INCLUDE_DIR           := dist/include
+PKGCONFIG_DIR         := dist/pkgconfig
 
-.PHONY: install
-install: build
-	@echo "Installing binary to $(INSTALL_BIN)..."
-	install -Dm755 $(BINARY_NAME) $(INSTALL_BIN)/$(BINARY_NAME)
-	@echo "Installing folders to $(INSTALL_LIB)..."
-	mkdir -p $(INSTALL_LIB)
-	for folder in $(STD_LIB); do \
-		echo "Copying $$folder to $(INSTALL_LIB)..."; \
-		cp -r $$folder/* $(INSTALL_LIB)/; \
-	done
-	chown -R $(shell logname):$(shell id -gn $(shell logname)) $(INSTALL_LIB)
-	@echo "Installation complete."
+# ====== Phony ======
+.PHONY: all libquadrate cmds install uninstall clean
 
-# Uninstall the binary and folders
-.PHONY: uninstall
+# ====== Default: build everything ======
+all: cmds libquadrate
+
+cmds: $(CMDS:%=$(BIN_DIR)/%)
+
+$(BIN_DIR)/%: cmd/%/main.go
+	@mkdir -p $(BIN_DIR)
+	$(GOENV) go build -o $@ ./cmd/$*
+
+# Build the shared library + header + .pc by delegating to sub-Makefile
+libquadrate:
+	$(MAKE) -C libquadrate all
+	mkdir -p dist/lib dist/include/quadrate dist/pkgconfig
+	cp libquadrate/lib/libquadrate.so dist/lib/libquadrate.so
+	cp libquadrate/include/quadrate/qd.h dist/include/quadrate/qd.h
+	cp libquadrate/pkgconfig/libquadrate.pc dist/pkgconfig/libquadrate.pc
+
+install: all
+	@echo "==> Installing CLIs to $(INSTALL_BIN_DIR)"
+	install -d "$(INSTALL_BIN_DIR)"
+	install -m 0755 "$(BIN_DIR)/quadc"   "$(INSTALL_BIN_DIR)/quadc"
+	install -m 0755 "$(BIN_DIR)/quadfmt" "$(INSTALL_BIN_DIR)/quadfmt"
+
+	@echo "==> Installing libquadrate (.so, header, pc)"
+	install -d "$(INSTALL_LIB_DIR)" "$(INSTALL_INCLUDE_DIR)/quadrate" "$(INSTALL_PKGCONFIG_DIR)"
+	install -m 0644 "$(LIB_DIR)/libquadrate.so"       "$(INSTALL_LIB_DIR)/libquadrate.so"
+	install -m 0644 "$(INCLUDE_DIR)/quadrate/qd.h"    "$(INSTALL_INCLUDE_DIR)/quadrate/qd.h"
+	install -m 0644 "$(PKGCONFIG_DIR)/libquadrate.pc" "$(INSTALL_PKGCONFIG_DIR)/libquadrate.pc"
+
 uninstall:
-	@echo "Removing binary from $(INSTALL_BIN)..."
-	rm -f $(INSTALL_BIN)/$(BINARY_NAME)
-	@echo "Removing folders from $(INSTALL_LIB)..."
-	rm -rf $(INSTALL_LIB)
-	@echo "Uninstallation complete."
+	@echo "==> Removing CLIs from $(INSTALL_BIN_DIR)"
+	-rm -f "$(INSTALL_BIN_DIR)/quadc" "$(INSTALL_BIN_DIR)/quadfmt"
 
-# Clean up build artifacts
-.PHONY: clean
+	@echo "==> Removing libquadrate (.so, header, pc)"
+	-rm -f "$(INSTALL_LIB_DIR)/libquadrate.so"
+	-rm -rf "$(INSTALL_INCLUDE_DIR)/quadrate"
+	-rm -f "$(INSTALL_PKGCONFIG_DIR)/libquadrate.pc"
+
 clean:
-	@echo "Cleaning up build artifacts..."
-	rm -f $(BINARY_NAME)
+	-rm -rf dist
+	$(MAKE) -C libquadrate clean
+
