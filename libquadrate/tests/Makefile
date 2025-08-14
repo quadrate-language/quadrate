@@ -1,6 +1,6 @@
 CC      := gcc
 CFLAGS  := -I../include -Wall -Wextra
-LDFLAGS := -L../lib -lqd
+LDFLAGS := -L../lib -lquadrate
 
 TARGET  := qdapi_test
 

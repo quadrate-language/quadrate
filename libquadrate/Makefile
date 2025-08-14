@@ -3,8 +3,8 @@ INCLUDE_DIR     := include/quadrate
 INSTALL_LIB_DIR := /usr/lib
 INSTALL_INC_DIR := /usr/include
 
-LIB_NAME        := libqd.so
-ORG_HEADER_NAME := libqd.h
+LIB_NAME        := libquadrate.so
+ORG_HEADER_NAME := libquadrate.h
 HEADER_NAME     := qd.h
 
 GO_SRC := main.go qd.go
