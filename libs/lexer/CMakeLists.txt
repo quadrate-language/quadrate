@@ -1,5 +1,6 @@
 add_library(lexer STATIC
 	src/scanner.cc
+	src/tokenizer.cc
 )
 
 target_include_directories(lexer PUBLIC
