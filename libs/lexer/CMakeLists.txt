@@ -1,6 +1,5 @@
 add_library(lexer STATIC
 	src/scanner.cc
-	src/tokenizer.cc
 )
 
 target_include_directories(lexer PUBLIC
@@ -9,6 +8,7 @@ target_include_directories(lexer PUBLIC
 
 target_link_libraries(lexer PUBLIC
 	diagnostic
+	u8
 )
 
 if(BUILD_TESTS)

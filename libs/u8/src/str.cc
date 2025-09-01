@@ -6,8 +6,8 @@ namespace U8 {
 		return utf8::is_valid(str.begin(), str.end());
 	}
 
-	void Str::append(char32_t c, std::string& str) {
-		utf8::append(c, std::back_inserter(str));
+	void Str::append(Rune r, std::string& str) {
+		utf8::append(r, std::back_inserter(str));
 	}
 
 	char32_t Str::next(std::string::const_iterator& itr, std::string::const_iterator end) {
