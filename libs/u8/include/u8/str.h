@@ -1,9 +1,10 @@
-#ifndef U8_STR_H
-#define U8_STR_H
+#ifndef QD_U8_STR_H
+#define QD_U8_STR_H
 
 #include <string>
+#include "rune.h"
 
-namespace U8 {
+namespace Qd {
 	typedef char32_t Rune;
 
 	class Str {

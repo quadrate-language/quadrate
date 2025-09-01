@@ -8,7 +8,14 @@ TEST(ScannerTest) {
 	})";
 
 	Qd::Scanner scanner(source);
-	scanner.lex();
+	std::vector<Qd::Token> tokens;
+	scanner.lex(tokens);
+
+	printf("Tokens: %d\n", tokens.size());
+	for (auto token : tokens) {
+		printf("Token: %s\n", token.value.c_str());
+	}
+	fflush(stdout);
 	ASSERT_TRUE(false, "always passes");
 }
 

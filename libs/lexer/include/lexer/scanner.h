@@ -2,13 +2,15 @@
 #define QD_LEXER_SCANNER_H
 
 #include <string>
+#include <vector>
+#include "token.h"
 
 namespace Qd {
 	class Scanner {
 	public:
 		Scanner(const std::string& source);
 
-		void lex();
+		void lex(std::vector<Token>& tokens);
 	
 	private:
 		const std::string& mSource;

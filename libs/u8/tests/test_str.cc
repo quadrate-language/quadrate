@@ -4,17 +4,17 @@
 
 TEST(StrValidTest) {
 	std::string str = "Hello!";
-	ASSERT(U8::Str::isValid(str), "String should be valid UTF-8");
+	ASSERT(Qd::Str::isValid(str), "String should be valid UTF-8");
 }
 
 TEST(StrInvalidTest) {
 	std::string invalid = "\xC1\x81";
-	ASSERT_FALSE(U8::Str::isValid(invalid), "String should be invalid UTF-8");
+	ASSERT_FALSE(Qd::Str::isValid(invalid), "String should be invalid UTF-8");
 }
 
 TEST(StrAppendTest) {
 	std::string str = "Hello!";
-	U8::Str::append(U'ö', str);
+	Qd::Str::append(U'ö', str);
 
 	std::string expected = "Hello!\xC3\xB6";
 	ASSERT(str == expected, "Strings should be equal");
@@ -29,7 +29,7 @@ TEST(StrNextTest) {
 
 	std::string::const_iterator itr = str.begin();
 	while (itr != str.end()) {
-		char32_t cp = U8::Str::next(itr, str.end());
+		char32_t cp = Qd::Str::next(itr, str.end());
 		actual.push_back(cp);
 	}
 

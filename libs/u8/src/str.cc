@@ -1,7 +1,7 @@
 #include <u8/str.h>
 #include "utf8.h"
 
-namespace U8 {
+namespace Qd {
 	bool Str::isValid(const std::string& str) {
 		return utf8::is_valid(str.begin(), str.end());
 	}

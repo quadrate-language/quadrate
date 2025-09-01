@@ -5,9 +5,17 @@
 #include <string>
 
 namespace Qd {
+	enum class TokenType {
+		Function,
+		LBrace,
+		LParen,
+		RBrace,
+		RParen
+	};
+
 	struct Token {
 		SourceSpan span;
-		std::string type;
+		TokenType type;
 		std::string value;
 	};
 }
