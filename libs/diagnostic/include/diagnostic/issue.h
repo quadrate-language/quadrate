@@ -1,7 +1,6 @@
 #ifndef QD_DIAGNOSTIC_ISSUE_H
 #define QD_DIAGNOSTIC_ISSUE_H
 
-#include <cstdint>
 #include <string>
 #include <vector>
 #include "source_span.h"
