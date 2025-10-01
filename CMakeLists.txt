@@ -10,10 +10,11 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 include(CTest)
 
-add_subdirectory(libs/diagnostic)
-add_subdirectory(libs/qc)
-add_subdirectory(libs/u8)
-add_subdirectory(quadc)
+add_subdirectory(lib/diagnostic)
+add_subdirectory(lib/qc)
+add_subdirectory(lib/u8)
+add_subdirectory(bin/quadc)
+add_subdirectory(bin/quadfmt)
 
 if(BUILD_TESTS)
 	message(STATUS "Building tests")
