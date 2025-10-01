@@ -17,6 +17,11 @@ add_subdirectory(lib/quadrate)
 add_subdirectory(bin/quadc)
 add_subdirectory(bin/quadfmt)
 
+option(BUILD_EXAMPLES "Build examples" OFF)
+if(BUILD_EXAMPLES)
+	add_subdirectory(examples)
+endif()
+
 if(BUILD_TESTS)
 	message(STATUS "Building tests")
 endif()
