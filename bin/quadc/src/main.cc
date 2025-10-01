@@ -37,10 +37,15 @@ int main(int argc, char** argv) {
 				continue;
 			}
 			file.seekg(0, std::ios::end);
-			size_t size = file.tellg();
-			std::string buffer(size, ' ');
+			auto pos = file.tellg();
 			file.seekg(0);
-			file.read(&buffer[0], size);
+			if (pos < 0) {
+				std::cerr << "quadc: error reading " << arg.value() << std::endl;
+				continue;
+			}
+			size_t size = static_cast<size_t>(pos);
+			std::string buffer(size, ' ');
+			file.read(&buffer[0], static_cast<std::streamsize>(size));
 			compiler.compile(buffer.c_str());
 		}
 	}

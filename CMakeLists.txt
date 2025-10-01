@@ -8,6 +8,23 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
+add_compile_options(
+	-Wall
+	-Wextra
+	-Wpedantic
+	-Wconversion
+	-Wsign-conversion
+	-Wshadow
+	-Wnon-virtual-dtor
+	-Wold-style-cast
+	-Wcast-align
+	-Wunused
+	-Woverloaded-virtual
+	-Wnull-dereference
+	-Wdouble-promotion
+	-Wformat=2
+)
+
 include(CTest)
 
 add_subdirectory(lib)
