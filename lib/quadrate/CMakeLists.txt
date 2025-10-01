@@ -9,6 +9,7 @@ target_include_directories(quadrate
 
 set_target_properties(quadrate PROPERTIES
 	LIBRARY_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/dist/lib
+	INSTALL_RPATH "$ORIGIN"
 )
 
 add_custom_command(TARGET quadrate POST_BUILD
