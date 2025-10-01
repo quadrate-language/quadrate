@@ -1,17 +1,14 @@
-#include "cxxopts.hpp"
-#include <iostream>
-#include <fstream>
 #include "compiler.h"
+#include "cxxopts.hpp"
+#include <fstream>
+#include <iostream>
 
 #define QUADC_VERSION "0.1.0"
 
 int main(int argc, char** argv) {
 	cxxopts::Options options("quadc", "Quadrate compiler");
-	options.add_options()
-		("h,help", "Display help.")
-		("v,version", "Display compiler version.")
-		("files", "Input files", cxxopts::value<std::vector<std::string>>())
-		;
+	options.add_options()("h,help", "Display help.")("v,version", "Display compiler version.")(
+		"files", "Input files", cxxopts::value<std::vector<std::string>>());
 
 	options.parse_positional({"files"});
 	auto result = options.parse(argc, argv);
@@ -52,4 +49,3 @@ int main(int argc, char** argv) {
 
 	return 0;
 }
-

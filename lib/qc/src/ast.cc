@@ -10,4 +10,3 @@ namespace Qd {
 		return nullptr;
 	}
 }
-

@@ -1,9 +1,9 @@
 #ifndef QD_DIAGNOSTIC_ISSUE_H
 #define QD_DIAGNOSTIC_ISSUE_H
 
+#include "source_span.h"
 #include <string>
 #include <vector>
-#include "source_span.h"
 
 namespace Qd {
 	enum class Category;
@@ -19,4 +19,3 @@ namespace Qd {
 }
 
 #endif
-

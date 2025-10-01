@@ -1,8 +1,8 @@
 #ifndef QD_U8_STR_H
 #define QD_U8_STR_H
 
-#include <string>
 #include "rune.h"
+#include <string>
 
 namespace Qd {
 	typedef char32_t Rune;
@@ -16,4 +16,3 @@ namespace Qd {
 }
 
 #endif
-

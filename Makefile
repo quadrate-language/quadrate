@@ -3,7 +3,7 @@ BUILD_DIR_RELEASE := build/release
 
 CMAKE_FLAGS := -S . -DBUILD_TESTS=ON
 
-.PHONY: all debug release tests examples clean
+.PHONY: all debug release tests examples format clean
 
 all: debug
 
@@ -21,6 +21,9 @@ tests: debug
 examples:
 	cmake $(CMAKE_FLAGS) -B $(BUILD_DIR_DEBUG) -DCMAKE_BUILD_TYPE=Debug -DBUILD_EXAMPLES=ON
 	cmake --build $(BUILD_DIR_DEBUG) --parallel
+
+format:
+	find bin lib examples -type f \( -name '*.cc' -o -name '*.h' \) -not -name 'utf8.h' -not -path '*/utf8/*' -exec clang-format -i {} +
 
 clean:
 	rm -rf build

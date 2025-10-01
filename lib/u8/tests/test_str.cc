@@ -23,7 +23,7 @@ TEST(StrAppendTest) {
 TEST(StrNextTest) {
 	std::string str = "Hello!\xC3\xB6";
 
-	std::vector<char32_t> expected = { U'H', U'e', U'l', U'l', U'o', U'!', U'ö' };
+	std::vector<char32_t> expected = {U'H', U'e', U'l', U'l', U'o', U'!', U'ö'};
 	std::vector<char32_t> actual;
 	actual.reserve(expected.size());
 
@@ -42,4 +42,3 @@ TEST(StrNextTest) {
 int main() {
 	return UC_PrintResults();
 }
-

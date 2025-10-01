@@ -14,21 +14,20 @@ void Compiler::compile(const char* source) {
 		}
 
 		switch (token) {
-			case U8T_IDENTIFIER:
-				printf("Identifier: %s\n", scanner._token_text);
-				break;
-			case U8T_INTEGER:
-				printf("Integer: %s\n", scanner._token_text);
-				break;
-			case U8T_FLOAT:
-				printf("Float: %s\n", scanner._token_text);
-				break;
-			case U8T_STRING:
-				printf("String: %s\n", scanner._token_text);
-				break;
-			default:
-				break;
+		case U8T_IDENTIFIER:
+			printf("Identifier: %s\n", scanner._token_text);
+			break;
+		case U8T_INTEGER:
+			printf("Integer: %s\n", scanner._token_text);
+			break;
+		case U8T_FLOAT:
+			printf("Float: %s\n", scanner._token_text);
+			break;
+		case U8T_STRING:
+			printf("String: %s\n", scanner._token_text);
+			break;
+		default:
+			break;
 		}
-
 	}
 }

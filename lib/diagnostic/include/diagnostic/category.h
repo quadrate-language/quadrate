@@ -9,4 +9,3 @@ namespace Qd {
 }
 
 #endif
-

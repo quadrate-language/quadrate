@@ -1,5 +1,5 @@
-#include <u8/str.h>
 #include "utf8.h"
+#include <u8/str.h>
 
 namespace Qd {
 	bool Str::isValid(const std::string& str) {
@@ -14,4 +14,3 @@ namespace Qd {
 		return utf8::next(itr, end);
 	}
 }
-
