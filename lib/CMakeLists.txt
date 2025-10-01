@@ -1,0 +1,4 @@
+add_subdirectory(diagnostic)
+add_subdirectory(qc)
+add_subdirectory(u8)
+add_subdirectory(quadrate)

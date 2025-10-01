@@ -10,12 +10,8 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 include(CTest)
 
-add_subdirectory(lib/diagnostic)
-add_subdirectory(lib/qc)
-add_subdirectory(lib/u8)
-add_subdirectory(lib/quadrate)
-add_subdirectory(bin/quadc)
-add_subdirectory(bin/quadfmt)
+add_subdirectory(lib)
+add_subdirectory(bin)
 
 option(BUILD_EXAMPLES "Build examples" OFF)
 if(BUILD_EXAMPLES)
