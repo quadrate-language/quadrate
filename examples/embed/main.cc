@@ -1,7 +1,7 @@
 #include <quadrate/qd.h>
 #include <stdio.h>
 
-void my_func(void) {
+void my_func() {
 	printf("This is a custom function!\n");
 }
 

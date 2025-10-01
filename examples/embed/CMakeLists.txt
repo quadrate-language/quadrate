@@ -1,5 +1,5 @@
 add_executable(embed
-	main.c
+	main.cc
 )
 
 target_link_libraries(embed

@@ -1,5 +1,5 @@
 add_library(quadrate SHARED
-	src/qd.c
+	src/qd.cc
 )
 
 target_include_directories(quadrate
