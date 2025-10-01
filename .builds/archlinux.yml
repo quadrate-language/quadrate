@@ -1,0 +1,10 @@
+image: archlinux
+packages:
+  - cmake
+sources:
+  - https://git.sr.ht/~klahr/quadrate
+tasks:
+  - build: |
+      cd quadrate
+      make release
+

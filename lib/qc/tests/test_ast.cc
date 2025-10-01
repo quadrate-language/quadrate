@@ -2,5 +2,8 @@
 #include <unit-check/uc.h>
 
 TEST(StrValidTest) {
-	ASSERT(1);
+}
+
+int main() {
+	return UC_PrintResults();
 }
