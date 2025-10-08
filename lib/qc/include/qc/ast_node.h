@@ -22,7 +22,9 @@ namespace Qd {
 			UnaryExpression,
 			Literal,
 			Identifier,
-			UseStatement
+			UseStatement,
+			ConstantDeclaration,
+			Label
 		};
 		virtual ~IAstNode() = default;
 

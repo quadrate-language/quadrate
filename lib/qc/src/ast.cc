@@ -2,15 +2,18 @@
 #include <qc/ast.h>
 #include <qc/ast_node.h>
 #include <qc/ast_node_block.h>
+#include <qc/ast_node_constant.h>
 #include <qc/ast_node_for.h>
 #include <qc/ast_node_function.h>
 #include <qc/ast_node_identifier.h>
 #include <qc/ast_node_if.h>
+#include <qc/ast_node_label.h>
 #include <qc/ast_node_literal.h>
 #include <qc/ast_node_parameter.h>
 #include <qc/ast_node_program.h>
 #include <qc/ast_node_switch.h>
 #include <qc/ast_node_use.h>
+#include <qc/ast_node_return.h>
 #include <u8t/scanner.h>
 #include <vector>
 
@@ -131,6 +134,16 @@ namespace Qd {
 						switchStmt->setParent(body);
 						body->addChild(switchStmt);
 					}
+				} else if (strcmp(text, "return") == 0) {
+					for (auto* node : tempNodes) {
+						node->setParent(body);
+						body->addChild(node);
+					}
+					tempNodes.clear();
+
+					AstNodeReturn* returnStmt = new AstNodeReturn();
+					returnStmt->setParent(body);
+					body->addChild(returnStmt);
 				} else {
 					AstNodeIdentifier* id = new AstNodeIdentifier(text);
 					tempNodes.push_back(id);
@@ -147,6 +160,28 @@ namespace Qd {
 				const char* text = u8t_scanner_token_text(scanner, &n);
 				AstNodeLiteral* lit = new AstNodeLiteral(text, AstNodeLiteral::LiteralType::String);
 				tempNodes.push_back(lit);
+			} else if (token == ':') {
+				char32_t nextChar = u8t_scanner_peek(scanner);
+				if (nextChar == ':') {
+					u8t_scanner_scan(scanner);
+					AstNodeIdentifier* colonColon = new AstNodeIdentifier("::");
+					tempNodes.push_back(colonColon);
+				} else if (!tempNodes.empty()) {
+					IAstNode* lastNode = tempNodes.back();
+					if (lastNode->type() == IAstNode::Type::Identifier) {
+						tempNodes.pop_back();
+						for (auto* node : tempNodes) {
+							node->setParent(body);
+							body->addChild(node);
+						}
+						tempNodes.clear();
+						AstNodeIdentifier* id = static_cast<AstNodeIdentifier*>(lastNode);
+						AstNodeLabel* label = new AstNodeLabel(id->name());
+						delete id;
+						label->setParent(body);
+						body->addChild(label);
+					}
+				}
 			}
 		}
 
@@ -495,6 +530,35 @@ namespace Qd {
 						program->addChild(useStmt);
 					} else {
 						fprintf(stderr, "Error: Expected module name after 'use'\n");
+					}
+				} else if (strcmp(text, "const") == 0) {
+					token = u8t_scanner_scan(&scanner);
+					if (token == U8T_IDENTIFIER) {
+						const char* constName = u8t_scanner_token_text(&scanner, &n);
+						std::string constNameStr(constName);
+						token = u8t_scanner_scan(&scanner);
+						if (token == '=') {
+							token = u8t_scanner_scan(&scanner);
+							IAstNode* value = nullptr;
+							if (token == U8T_INTEGER) {
+								const char* valueText = u8t_scanner_token_text(&scanner, &n);
+								value = new AstNodeLiteral(valueText, AstNodeLiteral::LiteralType::Integer);
+							} else if (token == U8T_FLOAT) {
+								const char* valueText = u8t_scanner_token_text(&scanner, &n);
+								value = new AstNodeLiteral(valueText, AstNodeLiteral::LiteralType::Float);
+							} else if (token == U8T_STRING) {
+								const char* valueText = u8t_scanner_token_text(&scanner, &n);
+								value = new AstNodeLiteral(valueText, AstNodeLiteral::LiteralType::String);
+							}
+							if (value) {
+								AstNodeConstant* constDecl = new AstNodeConstant(constNameStr, value);
+								value->setParent(constDecl);
+								constDecl->setParent(program);
+								program->addChild(constDecl);
+							}
+						}
+					} else {
+						fprintf(stderr, "Error: Expected constant name after 'const'\n");
 					}
 				} else {
 					printf("Identifier: %s\n", text);

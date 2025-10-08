@@ -1,8 +1,10 @@
 #include <qc/ast_node_block.h>
+#include <qc/ast_node_constant.h>
 #include <qc/ast_node_for.h>
 #include <qc/ast_node_function.h>
 #include <qc/ast_node_identifier.h>
 #include <qc/ast_node_if.h>
+#include <qc/ast_node_label.h>
 #include <qc/ast_node_literal.h>
 #include <qc/ast_node_parameter.h>
 #include <qc/ast_node_program.h>
@@ -47,6 +49,10 @@ namespace Qd {
 			return "Identifier";
 		case IAstNode::Type::UseStatement:
 			return "UseStatement";
+		case IAstNode::Type::ConstantDeclaration:
+			return "ConstantDeclaration";
+		case IAstNode::Type::Label:
+			return "Label";
 		default:
 			return "Unknown";
 		}
@@ -102,10 +108,17 @@ namespace Qd {
 			}
 		} else if (node->type() == IAstNode::Type::VariableDeclaration) {
 			const AstNodeParameter* param = static_cast<const AstNodeParameter*>(node);
-			printf(" '%s:%s' (%s)", param->name().c_str(), param->typeString().c_str(), param->isOutput() ? "output" : "input");
+			printf(" '%s:%s' (%s)", param->name().c_str(), param->typeString().c_str(),
+				   param->isOutput() ? "output" : "input");
 		} else if (node->type() == IAstNode::Type::UseStatement) {
 			const AstNodeUse* useStmt = static_cast<const AstNodeUse*>(node);
 			printf(" '%s'", useStmt->module().c_str());
+		} else if (node->type() == IAstNode::Type::ConstantDeclaration) {
+			const AstNodeConstant* constDecl = static_cast<const AstNodeConstant*>(node);
+			printf(" '%s'", constDecl->name().c_str());
+		} else if (node->type() == IAstNode::Type::Label) {
+			const AstNodeLabel* label = static_cast<const AstNodeLabel*>(node);
+			printf(" '%s'", label->name().c_str());
 		}
 
 		printf("\n");

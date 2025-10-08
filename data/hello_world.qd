@@ -1,12 +1,15 @@
 use std
+use math
+
+const tau = 6.283185307179586
 
 fn multiply( x:float y:float -- z:float ) {
 	mul
 }
 
 fn main( -- ) {
-	3.0 4.0 multiply
 
+	tau multiply
 	0 10 1 for i {
 		i add
 	}
@@ -24,6 +27,9 @@ fn main( -- ) {
 		}
 	}
 
+	1 1
+	je L1
+
 	switch {
 		case 1 {
 			100 200 add
@@ -35,4 +41,7 @@ fn main( -- ) {
 			-1
 		}
 	}
+
+L1:
+	return
 }
