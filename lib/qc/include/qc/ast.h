@@ -8,7 +8,12 @@ namespace Qd {
 
 	class Ast {
 	public:
-		IAstNode* generate(const char* src) const;
+		~Ast();
+
+		IAstNode* generate(const char* src);
+
+	private:
+		IAstNode* mRoot = nullptr;
 	};
 }
 

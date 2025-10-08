@@ -1,0 +1,7 @@
+fn hello_world() {
+	1 2 add
+}
+
+fn main() {
+	hello_world
+}

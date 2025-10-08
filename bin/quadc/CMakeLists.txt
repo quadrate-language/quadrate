@@ -4,7 +4,8 @@ add_executable(quadc
 )
 
 target_link_libraries(quadc
-	PRIVATE u8t
+	PRIVATE
+		qc
 )
 
 set_target_properties(quadc PROPERTIES

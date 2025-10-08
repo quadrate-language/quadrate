@@ -1,5 +1,6 @@
 add_library(qc STATIC
 	src/ast.cc
+	src/ast_printer.cc
 )
 
 find_library(U8T
@@ -9,8 +10,8 @@ find_library(U8T
 )
 
 target_link_libraries(qc
-	PRIVATE
-	${U8T_LIBRARIES})
+	PUBLIC
+		${U8T})
 
 target_include_directories(qc
 	PUBLIC
