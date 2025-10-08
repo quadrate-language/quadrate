@@ -7,6 +7,7 @@
 #include <qc/ast_node_parameter.h>
 #include <qc/ast_node_program.h>
 #include <qc/ast_node_switch.h>
+#include <qc/ast_node_use.h>
 #include <qc/ast_printer.h>
 #include <stdio.h>
 #include <string>
@@ -44,6 +45,8 @@ namespace Qd {
 			return "Literal";
 		case IAstNode::Type::Identifier:
 			return "Identifier";
+		case IAstNode::Type::UseStatement:
+			return "UseStatement";
 		default:
 			return "Unknown";
 		}
@@ -99,7 +102,10 @@ namespace Qd {
 			}
 		} else if (node->type() == IAstNode::Type::VariableDeclaration) {
 			const AstNodeParameter* param = static_cast<const AstNodeParameter*>(node);
-		printf(" '%s:%s' (%s)", param->name().c_str(), param->typeString().c_str(), param->isOutput() ? "output" : "input");
+			printf(" '%s:%s' (%s)", param->name().c_str(), param->typeString().c_str(), param->isOutput() ? "output" : "input");
+		} else if (node->type() == IAstNode::Type::UseStatement) {
+			const AstNodeUse* useStmt = static_cast<const AstNodeUse*>(node);
+			printf(" '%s'", useStmt->module().c_str());
 		}
 
 		printf("\n");

@@ -10,6 +10,7 @@
 #include <qc/ast_node_parameter.h>
 #include <qc/ast_node_program.h>
 #include <qc/ast_node_switch.h>
+#include <qc/ast_node_use.h>
 #include <u8t/scanner.h>
 #include <vector>
 
@@ -484,6 +485,16 @@ namespace Qd {
 					if (func) {
 						func->setParent(program);
 						program->addChild(func);
+					}
+				} else if (strcmp(text, "use") == 0) {
+					token = u8t_scanner_scan(&scanner);
+					if (token == U8T_IDENTIFIER) {
+						const char* moduleName = u8t_scanner_token_text(&scanner, &n);
+						AstNodeUse* useStmt = new AstNodeUse(moduleName);
+						useStmt->setParent(program);
+						program->addChild(useStmt);
+					} else {
+						fprintf(stderr, "Error: Expected module name after 'use'\n");
 					}
 				} else {
 					printf("Identifier: %s\n", text);

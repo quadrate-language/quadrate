@@ -21,7 +21,8 @@ namespace Qd {
 			BinaryExpression,
 			UnaryExpression,
 			Literal,
-			Identifier
+			Identifier,
+			UseStatement
 		};
 		virtual ~IAstNode() = default;
 
