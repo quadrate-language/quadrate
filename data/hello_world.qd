@@ -21,4 +21,16 @@ fn main() {
 			5 6 sub
 		}
 	}
+
+	switch {
+		case 1 {
+			100 200 add
+		}
+		case 2 {
+			1000 2000 add
+		}
+		default {
+			-1
+		}
+	}
 }

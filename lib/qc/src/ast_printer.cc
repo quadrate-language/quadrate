@@ -5,6 +5,7 @@
 #include <qc/ast_node_if.h>
 #include <qc/ast_node_literal.h>
 #include <qc/ast_node_program.h>
+#include <qc/ast_node_switch.h>
 #include <qc/ast_printer.h>
 #include <stdio.h>
 #include <string>
@@ -28,6 +29,10 @@ namespace Qd {
 			return "IfStatement";
 		case IAstNode::Type::ForStatement:
 			return "ForStatement";
+		case IAstNode::Type::SwitchStatement:
+			return "SwitchStatement";
+		case IAstNode::Type::CaseStatement:
+			return "CaseStatement";
 		case IAstNode::Type::ReturnStatement:
 			return "ReturnStatement";
 		case IAstNode::Type::BinaryExpression:
@@ -86,6 +91,11 @@ namespace Qd {
 		} else if (node->type() == IAstNode::Type::ForStatement) {
 			const AstNodeForStatement* forStmt = static_cast<const AstNodeForStatement*>(node);
 			printf(" '%s'", forStmt->loopVar().c_str());
+		} else if (node->type() == IAstNode::Type::CaseStatement) {
+			const AstNodeCase* caseStmt = static_cast<const AstNodeCase*>(node);
+			if (caseStmt->isDefault()) {
+				printf(" (default)");
+			}
 		}
 
 		printf("\n");

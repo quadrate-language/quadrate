@@ -15,6 +15,8 @@ namespace Qd {
 			ExpressionStatement,
 			IfStatement,
 			ForStatement,
+			SwitchStatement,
+			CaseStatement,
 			ReturnStatement,
 			BinaryExpression,
 			UnaryExpression,
