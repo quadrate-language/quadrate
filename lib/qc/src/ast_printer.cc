@@ -39,6 +39,8 @@ namespace Qd {
 			return "CaseStatement";
 		case IAstNode::Type::ReturnStatement:
 			return "ReturnStatement";
+		case IAstNode::Type::BreakStatement:
+			return "BreakStatement";
 		case IAstNode::Type::BinaryExpression:
 			return "BinaryExpression";
 		case IAstNode::Type::UnaryExpression:

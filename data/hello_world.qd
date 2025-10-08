@@ -12,6 +12,9 @@ fn main( -- ) {
 	tau multiply
 	0 10 1 for i {
 		i add
+		if {
+			break
+		}
 	}
 
 	1 1

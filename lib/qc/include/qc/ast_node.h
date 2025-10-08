@@ -18,6 +18,7 @@ namespace Qd {
 			SwitchStatement,
 			CaseStatement,
 			ReturnStatement,
+			BreakStatement,
 			BinaryExpression,
 			UnaryExpression,
 			Literal,

@@ -14,6 +14,7 @@
 #include <qc/ast_node_switch.h>
 #include <qc/ast_node_use.h>
 #include <qc/ast_node_return.h>
+#include <qc/ast_node_break.h>
 #include <u8t/scanner.h>
 #include <vector>
 
@@ -231,6 +232,16 @@ namespace Qd {
 						nestedFor->setParent(body);
 						body->addChild(nestedFor);
 					}
+				} else if (strcmp(text, "if") == 0) {
+					IAstNode* ifStmt = parseIfStatement(scanner);
+					if (ifStmt) {
+						ifStmt->setParent(body);
+						body->addChild(ifStmt);
+					}
+				} else if (strcmp(text, "break") == 0) {
+					AstNodeBreak* breakStmt = new AstNodeBreak();
+					breakStmt->setParent(body);
+					body->addChild(breakStmt);
 				} else {
 					AstNodeIdentifier* id = new AstNodeIdentifier(text);
 					id->setParent(body);
@@ -286,6 +297,10 @@ namespace Qd {
 						nestedIf->setParent(thenBody);
 						thenBody->addChild(nestedIf);
 					}
+				} else if (strcmp(text, "break") == 0) {
+					AstNodeBreak* breakStmt = new AstNodeBreak();
+					breakStmt->setParent(thenBody);
+					thenBody->addChild(breakStmt);
 				} else {
 					AstNodeIdentifier* id = new AstNodeIdentifier(text);
 					id->setParent(thenBody);
@@ -334,6 +349,10 @@ namespace Qd {
 									nestedIf->setParent(elseBody);
 									elseBody->addChild(nestedIf);
 								}
+							} else if (strcmp(elseText, "break") == 0) {
+								AstNodeBreak* breakStmt = new AstNodeBreak();
+								breakStmt->setParent(elseBody);
+								elseBody->addChild(breakStmt);
 							} else {
 								AstNodeIdentifier* id = new AstNodeIdentifier(elseText);
 								id->setParent(elseBody);
@@ -423,9 +442,15 @@ namespace Qd {
 
 						if (token == U8T_IDENTIFIER) {
 							const char* bodyText = u8t_scanner_token_text(scanner, &n);
-							AstNodeIdentifier* id = new AstNodeIdentifier(bodyText);
-							id->setParent(caseBody);
-							caseBody->addChild(id);
+							if (strcmp(bodyText, "break") == 0) {
+								AstNodeBreak* breakStmt = new AstNodeBreak();
+								breakStmt->setParent(caseBody);
+								caseBody->addChild(breakStmt);
+							} else {
+								AstNodeIdentifier* id = new AstNodeIdentifier(bodyText);
+								id->setParent(caseBody);
+								caseBody->addChild(id);
+							}
 						} else if (token == U8T_INTEGER) {
 							const char* bodyText = u8t_scanner_token_text(scanner, &n);
 							AstNodeLiteral* lit = new AstNodeLiteral(bodyText, AstNodeLiteral::LiteralType::Integer);
@@ -465,9 +490,15 @@ namespace Qd {
 
 						if (token == U8T_IDENTIFIER) {
 							const char* bodyText = u8t_scanner_token_text(scanner, &n);
-							AstNodeIdentifier* id = new AstNodeIdentifier(bodyText);
-							id->setParent(defaultBody);
-							defaultBody->addChild(id);
+							if (strcmp(bodyText, "break") == 0) {
+								AstNodeBreak* breakStmt = new AstNodeBreak();
+								breakStmt->setParent(defaultBody);
+								defaultBody->addChild(breakStmt);
+							} else {
+								AstNodeIdentifier* id = new AstNodeIdentifier(bodyText);
+								id->setParent(defaultBody);
+								defaultBody->addChild(id);
+							}
 						} else if (token == U8T_INTEGER) {
 							const char* bodyText = u8t_scanner_token_text(scanner, &n);
 							AstNodeLiteral* lit = new AstNodeLiteral(bodyText, AstNodeLiteral::LiteralType::Integer);
