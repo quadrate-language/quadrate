@@ -58,33 +58,68 @@ namespace Qd {
 		}
 	}
 
-	void AstPrinter::print(const IAstNode* node) {
-		if (!node) {
-			printf("(null)\n");
-			return;
+	static void escapeJsonString(const char* str) {
+		while (*str) {
+			switch (*str) {
+			case '"':
+				printf("\\\"");
+				break;
+			case '\\':
+				printf("\\\\");
+				break;
+			case '\n':
+				printf("\\n");
+				break;
+			case '\r':
+				printf("\\r");
+				break;
+			case '\t':
+				printf("\\t");
+				break;
+			default:
+				printf("%c", *str);
+				break;
+			}
+			str++;
 		}
-		printTree(node, "", true);
 	}
 
-	void AstPrinter::printTree(const IAstNode* node, const char* prefix, bool isLast) {
+	static void printJsonNode(const IAstNode* node, int indent);
+
+	static void printIndent(int indent) {
+		for (int i = 0; i < indent; i++) {
+			printf("  ");
+		}
+	}
+
+	static void printJsonNode(const IAstNode* node, int indent) {
 		if (!node) {
+			printf("null");
 			return;
 		}
 
-		printf("%s", prefix);
-		printf("%s", isLast ? "└── " : "├── ");
-
-		const char* typeName = getTypeName(node->type());
-		printf("%s", typeName);
+		printf("{\n");
+		printIndent(indent + 1);
+		printf("\"type\": \"%s\"", getTypeName(node->type()));
 
 		if (node->type() == IAstNode::Type::FunctionDeclaration) {
 			const AstNodeFunctionDeclaration* func = static_cast<const AstNodeFunctionDeclaration*>(node);
-			printf(" '%s'", func->name().c_str());
+			printf(",\n");
+			printIndent(indent + 1);
+			printf("\"name\": \"");
+			escapeJsonString(func->name().c_str());
+			printf("\"");
 		} else if (node->type() == IAstNode::Type::Identifier) {
 			const AstNodeIdentifier* id = static_cast<const AstNodeIdentifier*>(node);
-			printf(" '%s'", id->name().c_str());
+			printf(",\n");
+			printIndent(indent + 1);
+			printf("\"name\": \"");
+			escapeJsonString(id->name().c_str());
+			printf("\"");
 		} else if (node->type() == IAstNode::Type::Literal) {
 			const AstNodeLiteral* lit = static_cast<const AstNodeLiteral*>(node);
+			printf(",\n");
+			printIndent(indent + 1);
 			const char* typeStr = "";
 			switch (lit->literalType()) {
 			case AstNodeLiteral::LiteralType::Integer:
@@ -97,39 +132,93 @@ namespace Qd {
 				typeStr = "String";
 				break;
 			}
-			printf(" %s '%s'", typeStr, lit->value().c_str());
+			printf("\"literalType\": \"%s\",\n", typeStr);
+			printIndent(indent + 1);
+			printf("\"value\": \"");
+			escapeJsonString(lit->value().c_str());
+			printf("\"");
 		} else if (node->type() == IAstNode::Type::ForStatement) {
 			const AstNodeForStatement* forStmt = static_cast<const AstNodeForStatement*>(node);
-			printf(" '%s'", forStmt->loopVar().c_str());
+			printf(",\n");
+			printIndent(indent + 1);
+			printf("\"loopVar\": \"");
+			escapeJsonString(forStmt->loopVar().c_str());
+			printf("\"");
 		} else if (node->type() == IAstNode::Type::CaseStatement) {
 			const AstNodeCase* caseStmt = static_cast<const AstNodeCase*>(node);
-			if (caseStmt->isDefault()) {
-				printf(" (default)");
-			}
+			printf(",\n");
+			printIndent(indent + 1);
+			printf("\"isDefault\": %s", caseStmt->isDefault() ? "true" : "false");
 		} else if (node->type() == IAstNode::Type::VariableDeclaration) {
 			const AstNodeParameter* param = static_cast<const AstNodeParameter*>(node);
-			printf(" '%s:%s' (%s)", param->name().c_str(), param->typeString().c_str(),
-				   param->isOutput() ? "output" : "input");
+			printf(",\n");
+			printIndent(indent + 1);
+			printf("\"name\": \"");
+			escapeJsonString(param->name().c_str());
+			printf("\",\n");
+			printIndent(indent + 1);
+			printf("\"paramType\": \"");
+			escapeJsonString(param->typeString().c_str());
+			printf("\",\n");
+			printIndent(indent + 1);
+			printf("\"isOutput\": %s", param->isOutput() ? "true" : "false");
 		} else if (node->type() == IAstNode::Type::UseStatement) {
 			const AstNodeUse* useStmt = static_cast<const AstNodeUse*>(node);
-			printf(" '%s'", useStmt->module().c_str());
+			printf(",\n");
+			printIndent(indent + 1);
+			printf("\"module\": \"");
+			escapeJsonString(useStmt->module().c_str());
+			printf("\"");
 		} else if (node->type() == IAstNode::Type::ConstantDeclaration) {
 			const AstNodeConstant* constDecl = static_cast<const AstNodeConstant*>(node);
-			printf(" '%s'", constDecl->name().c_str());
+			printf(",\n");
+			printIndent(indent + 1);
+			printf("\"name\": \"");
+			escapeJsonString(constDecl->name().c_str());
+			printf("\"");
 		} else if (node->type() == IAstNode::Type::Label) {
 			const AstNodeLabel* label = static_cast<const AstNodeLabel*>(node);
-			printf(" '%s'", label->name().c_str());
+			printf(",\n");
+			printIndent(indent + 1);
+			printf("\"name\": \"");
+			escapeJsonString(label->name().c_str());
+			printf("\"");
+		}
+
+		size_t childCount = node->childCount();
+		if (childCount > 0) {
+			printf(",\n");
+			printIndent(indent + 1);
+			printf("\"children\": [\n");
+			for (size_t i = 0; i < childCount; i++) {
+				printIndent(indent + 2);
+				IAstNode* child = node->child(i);
+				printJsonNode(child, indent + 2);
+				if (i < childCount - 1) {
+					printf(",");
+				}
+				printf("\n");
+			}
+			printIndent(indent + 1);
+			printf("]");
 		}
 
 		printf("\n");
+		printIndent(indent);
+		printf("}");
+	}
 
-		size_t childCount = node->childCount();
-		for (size_t i = 0; i < childCount; i++) {
-			std::string newPrefix = prefix;
-			newPrefix += isLast ? "    " : "│   ";
-
-			IAstNode* child = node->child(i);
-			printTree(child, newPrefix.c_str(), i == childCount - 1);
+	void AstPrinter::print(const IAstNode* node) {
+		if (!node) {
+			printf("null\n");
+			return;
 		}
+		printJsonNode(node, 0);
+		printf("\n");
+	}
+
+	void AstPrinter::printTree(const IAstNode* node, const char*, bool) {
+		// Deprecated - now using JSON output
+		print(node);
 	}
 }

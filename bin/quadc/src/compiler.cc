@@ -6,6 +6,5 @@ void Compiler::compile(const char* source) {
 	Qd::Ast ast;
 	Qd::IAstNode* root = ast.generate(source);
 
-	printf("\n=== AST ===\n");
 	Qd::AstPrinter::print(root);
 }
