@@ -1,8 +1,10 @@
-#include <qc/ast_printer.h>
+#include <qc/ast_node_block.h>
+#include <qc/ast_node_for.h>
 #include <qc/ast_node_function.h>
 #include <qc/ast_node_identifier.h>
+#include <qc/ast_node_literal.h>
 #include <qc/ast_node_program.h>
-#include <qc/ast_node_block.h>
+#include <qc/ast_printer.h>
 #include <stdio.h>
 #include <string>
 
@@ -51,25 +53,40 @@ namespace Qd {
 			return;
 		}
 
-		// Print the current node
 		printf("%s", prefix);
 		printf("%s", isLast ? "└── " : "├── ");
 
 		const char* typeName = getTypeName(node->type());
 		printf("%s", typeName);
 
-		// Print additional info based on node type
 		if (node->type() == IAstNode::Type::FunctionDeclaration) {
 			const AstNodeFunctionDeclaration* func = static_cast<const AstNodeFunctionDeclaration*>(node);
 			printf(" '%s'", func->name().c_str());
 		} else if (node->type() == IAstNode::Type::Identifier) {
 			const AstNodeIdentifier* id = static_cast<const AstNodeIdentifier*>(node);
 			printf(" '%s'", id->name().c_str());
+		} else if (node->type() == IAstNode::Type::Literal) {
+			const AstNodeLiteral* lit = static_cast<const AstNodeLiteral*>(node);
+			const char* typeStr = "";
+			switch (lit->literalType()) {
+			case AstNodeLiteral::LiteralType::Integer:
+				typeStr = "Integer";
+				break;
+			case AstNodeLiteral::LiteralType::Float:
+				typeStr = "Float";
+				break;
+			case AstNodeLiteral::LiteralType::String:
+				typeStr = "String";
+				break;
+			}
+			printf(" %s '%s'", typeStr, lit->value().c_str());
+		} else if (node->type() == IAstNode::Type::WhileStatement) {
+			const AstNodeForStatement* forStmt = static_cast<const AstNodeForStatement*>(node);
+			printf(" '%s'", forStmt->loopVar().c_str());
 		}
 
 		printf("\n");
 
-		// Print children
 		size_t childCount = node->childCount();
 		for (size_t i = 0; i < childCount; i++) {
 			std::string newPrefix = prefix;

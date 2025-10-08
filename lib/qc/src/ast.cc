@@ -1,13 +1,18 @@
+#include <cstring>
 #include <qc/ast.h>
 #include <qc/ast_node.h>
-#include <qc/ast_node_program.h>
+#include <qc/ast_node_block.h>
+#include <qc/ast_node_for.h>
 #include <qc/ast_node_function.h>
 #include <qc/ast_node_identifier.h>
-#include <qc/ast_node_block.h>
+#include <qc/ast_node_literal.h>
+#include <qc/ast_node_program.h>
 #include <u8t/scanner.h>
-#include <cstring>
+#include <vector>
 
 namespace Qd {
+	static IAstNode* parseForStatement(u8t_scanner* scanner);
+
 	Ast::~Ast() {
 		if (mRoot) {
 			delete mRoot;
@@ -33,17 +38,104 @@ namespace Qd {
 			return nullptr;
 		}
 
-		token = u8t_scanner_scan(scanner);
-		if (token != ')') {
-			fprintf(stderr, "Error: Expected ')' after parameters\n");
-			delete func;
-			return nullptr;
+		while ((token = u8t_scanner_scan(scanner)) != U8T_EOF) {
+			if (token == ')') {
+				break;
+			}
 		}
 
 		token = u8t_scanner_scan(scanner);
 		if (token != '{') {
 			fprintf(stderr, "Error: Expected '{' after function signature\n");
 			delete func;
+			return nullptr;
+		}
+
+		AstNodeBlock* body = new AstNodeBlock();
+
+		std::vector<IAstNode*> tempNodes;
+
+		while ((token = u8t_scanner_scan(scanner)) != U8T_EOF) {
+			if (token == '}') {
+				break;
+			}
+
+			if (token == U8T_IDENTIFIER) {
+				const char* text = u8t_scanner_token_text(scanner, &n);
+
+				if (strcmp(text, "for") == 0) {
+					IAstNode* forStmt = parseForStatement(scanner);
+					if (forStmt) {
+						AstNodeForStatement* forNode = static_cast<AstNodeForStatement*>(forStmt);
+
+						if (tempNodes.size() >= 3) {
+							IAstNode* step = tempNodes.back();
+							tempNodes.pop_back();
+							IAstNode* end = tempNodes.back();
+							tempNodes.pop_back();
+							IAstNode* start = tempNodes.back();
+							tempNodes.pop_back();
+
+							forNode->setStart(start);
+							forNode->setEnd(end);
+							forNode->setStep(step);
+						}
+
+						for (auto* node : tempNodes) {
+							node->setParent(body);
+							body->addChild(node);
+						}
+						tempNodes.clear();
+
+						forStmt->setParent(body);
+						body->addChild(forStmt);
+					}
+				} else {
+					AstNodeIdentifier* id = new AstNodeIdentifier(text);
+					tempNodes.push_back(id);
+				}
+			} else if (token == U8T_INTEGER) {
+				const char* text = u8t_scanner_token_text(scanner, &n);
+				AstNodeLiteral* lit = new AstNodeLiteral(text, AstNodeLiteral::LiteralType::Integer);
+				tempNodes.push_back(lit);
+			} else if (token == U8T_FLOAT) {
+				const char* text = u8t_scanner_token_text(scanner, &n);
+				AstNodeLiteral* lit = new AstNodeLiteral(text, AstNodeLiteral::LiteralType::Float);
+				tempNodes.push_back(lit);
+			} else if (token == U8T_STRING) {
+				const char* text = u8t_scanner_token_text(scanner, &n);
+				AstNodeLiteral* lit = new AstNodeLiteral(text, AstNodeLiteral::LiteralType::String);
+				tempNodes.push_back(lit);
+			}
+		}
+
+		for (auto* node : tempNodes) {
+			node->setParent(body);
+			body->addChild(node);
+		}
+
+		body->setParent(func);
+		func->setBody(body);
+
+		return func;
+	}
+
+	static IAstNode* parseForStatement(u8t_scanner* scanner) {
+		size_t n;
+		char32_t token = u8t_scanner_scan(scanner);
+
+		if (token != U8T_IDENTIFIER) {
+			fprintf(stderr, "Error: Expected loop variable after 'for'\n");
+			return nullptr;
+		}
+
+		const char* loopVar = u8t_scanner_token_text(scanner, &n);
+		AstNodeForStatement* forStmt = new AstNodeForStatement(loopVar);
+
+		token = u8t_scanner_scan(scanner);
+		if (token != '{') {
+			fprintf(stderr, "Error: Expected '{' after loop variable\n");
+			delete forStmt;
 			return nullptr;
 		}
 
@@ -56,19 +148,40 @@ namespace Qd {
 
 			if (token == U8T_IDENTIFIER) {
 				const char* text = u8t_scanner_token_text(scanner, &n);
-				AstNodeIdentifier* id = new AstNodeIdentifier(text);
-				id->setParent(body);
-				body->addChild(id);
-			} else if (token == U8T_INTEGER || token == U8T_FLOAT || token == U8T_STRING) {
+
+				if (strcmp(text, "for") == 0) {
+					IAstNode* nestedFor = parseForStatement(scanner);
+					if (nestedFor) {
+						nestedFor->setParent(body);
+						body->addChild(nestedFor);
+					}
+				} else {
+					AstNodeIdentifier* id = new AstNodeIdentifier(text);
+					id->setParent(body);
+					body->addChild(id);
+				}
+			} else if (token == U8T_INTEGER) {
 				const char* text = u8t_scanner_token_text(scanner, &n);
-				printf("Literal in body: %s\n", text);
+				AstNodeLiteral* lit = new AstNodeLiteral(text, AstNodeLiteral::LiteralType::Integer);
+				lit->setParent(body);
+				body->addChild(lit);
+			} else if (token == U8T_FLOAT) {
+				const char* text = u8t_scanner_token_text(scanner, &n);
+				AstNodeLiteral* lit = new AstNodeLiteral(text, AstNodeLiteral::LiteralType::Float);
+				lit->setParent(body);
+				body->addChild(lit);
+			} else if (token == U8T_STRING) {
+				const char* text = u8t_scanner_token_text(scanner, &n);
+				AstNodeLiteral* lit = new AstNodeLiteral(text, AstNodeLiteral::LiteralType::String);
+				lit->setParent(body);
+				body->addChild(lit);
 			}
 		}
 
-		body->setParent(func);
-		func->setBody(body);
+		body->setParent(forStmt);
+		forStmt->setBody(body);
 
-		return func;
+		return forStmt;
 	}
 
 	IAstNode* Ast::generate(const char* src) {
