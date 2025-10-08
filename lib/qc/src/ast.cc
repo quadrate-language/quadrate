@@ -7,6 +7,7 @@
 #include <qc/ast_node_identifier.h>
 #include <qc/ast_node_if.h>
 #include <qc/ast_node_literal.h>
+#include <qc/ast_node_parameter.h>
 #include <qc/ast_node_program.h>
 #include <qc/ast_node_switch.h>
 #include <u8t/scanner.h>
@@ -42,9 +43,35 @@ namespace Qd {
 			return nullptr;
 		}
 
+		bool isOutput = false;
 		while ((token = u8t_scanner_scan(scanner)) != U8T_EOF) {
 			if (token == ')') {
 				break;
+			}
+
+			if (token == '-') {
+				char32_t nextToken = u8t_scanner_scan(scanner);
+				if (nextToken == '-') {
+					isOutput = true;
+				}
+			} else if (token == U8T_IDENTIFIER) {
+				const char* paramName = u8t_scanner_token_text(scanner, &n);
+				std::string paramNameStr(paramName);
+
+				token = u8t_scanner_scan(scanner);
+				if (token == ':') {
+					token = u8t_scanner_scan(scanner);
+					if (token == U8T_IDENTIFIER) {
+						const char* paramType = u8t_scanner_token_text(scanner, &n);
+						AstNodeParameter* param = new AstNodeParameter(paramNameStr, paramType, isOutput);
+						param->setParent(func);
+						if (isOutput) {
+							func->addOutputParameter(param);
+						} else {
+							func->addInputParameter(param);
+						}
+					}
+				}
 			}
 		}
 

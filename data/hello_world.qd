@@ -2,7 +2,7 @@ fn multiply( x:float y:float -- z:float ) {
 	mul
 }
 
-fn main() {
+fn main( -- ) {
 	3.0 4.0 multiply
 
 	0 10 1 for i {

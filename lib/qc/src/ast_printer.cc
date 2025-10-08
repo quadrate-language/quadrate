@@ -4,6 +4,7 @@
 #include <qc/ast_node_identifier.h>
 #include <qc/ast_node_if.h>
 #include <qc/ast_node_literal.h>
+#include <qc/ast_node_parameter.h>
 #include <qc/ast_node_program.h>
 #include <qc/ast_node_switch.h>
 #include <qc/ast_printer.h>
@@ -96,6 +97,9 @@ namespace Qd {
 			if (caseStmt->isDefault()) {
 				printf(" (default)");
 			}
+		} else if (node->type() == IAstNode::Type::VariableDeclaration) {
+			const AstNodeParameter* param = static_cast<const AstNodeParameter*>(node);
+		printf(" '%s:%s' (%s)", param->name().c_str(), param->typeString().c_str(), param->isOutput() ? "output" : "input");
 		}
 
 		printf("\n");

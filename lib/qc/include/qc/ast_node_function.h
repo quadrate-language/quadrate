@@ -15,7 +15,10 @@ namespace Qd {
 			if (mBody) {
 				delete mBody;
 			}
-			for (auto* param : mParameters) {
+			for (auto* param : mInputParameters) {
+				delete param;
+			}
+			for (auto* param : mOutputParameters) {
 				delete param;
 			}
 		}
@@ -25,11 +28,28 @@ namespace Qd {
 		}
 
 		size_t childCount() const override {
-			return mBody ? 1 : 0;
+			size_t count = 0;
+			count += mInputParameters.size();
+			count += mOutputParameters.size();
+			if (mBody) {
+				count++;
+			}
+			return count;
 		}
 
 		IAstNode* child(size_t index) const override {
-			if (index == 0 && mBody) {
+			size_t currentIndex = 0;
+			for (auto* param : mInputParameters) {
+				if (index == currentIndex++) {
+					return param;
+				}
+			}
+			for (auto* param : mOutputParameters) {
+				if (index == currentIndex++) {
+					return param;
+				}
+			}
+			if (mBody && index == currentIndex++) {
 				return mBody;
 			}
 			return nullptr;
@@ -55,19 +75,28 @@ namespace Qd {
 			return mBody;
 		}
 
-		void addParameter(IAstNode* param) {
-			mParameters.push_back(param);
+		void addInputParameter(IAstNode* param) {
+			mInputParameters.push_back(param);
 		}
 
-		const std::vector<IAstNode*>& parameters() const {
-			return mParameters;
+		void addOutputParameter(IAstNode* param) {
+			mOutputParameters.push_back(param);
+		}
+
+		const std::vector<IAstNode*>& inputParameters() const {
+			return mInputParameters;
+		}
+
+		const std::vector<IAstNode*>& outputParameters() const {
+			return mOutputParameters;
 		}
 
 	private:
 		std::string mName;
 		IAstNode* mParent;
 		IAstNode* mBody;
-		std::vector<IAstNode*> mParameters;
+		std::vector<IAstNode*> mInputParameters;
+		std::vector<IAstNode*> mOutputParameters;
 	};
 }
 
