@@ -9,11 +9,12 @@ namespace Qd {
 		enum class Type {
 			Unknown,
 			Program,
+			Block,
 			FunctionDeclaration,
 			VariableDeclaration,
 			ExpressionStatement,
 			IfStatement,
-			WhileStatement,
+			ForStatement,
 			ReturnStatement,
 			BinaryExpression,
 			UnaryExpression,

@@ -5,6 +5,7 @@
 #include <qc/ast_node_for.h>
 #include <qc/ast_node_function.h>
 #include <qc/ast_node_identifier.h>
+#include <qc/ast_node_if.h>
 #include <qc/ast_node_literal.h>
 #include <qc/ast_node_program.h>
 #include <u8t/scanner.h>
@@ -12,6 +13,7 @@
 
 namespace Qd {
 	static IAstNode* parseForStatement(u8t_scanner* scanner);
+	static IAstNode* parseIfStatement(u8t_scanner* scanner);
 
 	Ast::~Ast() {
 		if (mRoot) {
@@ -66,21 +68,6 @@ namespace Qd {
 				if (strcmp(text, "for") == 0) {
 					IAstNode* forStmt = parseForStatement(scanner);
 					if (forStmt) {
-						AstNodeForStatement* forNode = static_cast<AstNodeForStatement*>(forStmt);
-
-						if (tempNodes.size() >= 3) {
-							IAstNode* step = tempNodes.back();
-							tempNodes.pop_back();
-							IAstNode* end = tempNodes.back();
-							tempNodes.pop_back();
-							IAstNode* start = tempNodes.back();
-							tempNodes.pop_back();
-
-							forNode->setStart(start);
-							forNode->setEnd(end);
-							forNode->setStep(step);
-						}
-
 						for (auto* node : tempNodes) {
 							node->setParent(body);
 							body->addChild(node);
@@ -89,6 +76,18 @@ namespace Qd {
 
 						forStmt->setParent(body);
 						body->addChild(forStmt);
+					}
+				} else if (strcmp(text, "if") == 0) {
+					IAstNode* ifStmt = parseIfStatement(scanner);
+					if (ifStmt) {
+						for (auto* node : tempNodes) {
+							node->setParent(body);
+							body->addChild(node);
+						}
+						tempNodes.clear();
+
+						ifStmt->setParent(body);
+						body->addChild(ifStmt);
 					}
 				} else {
 					AstNodeIdentifier* id = new AstNodeIdentifier(text);
@@ -182,6 +181,112 @@ namespace Qd {
 		forStmt->setBody(body);
 
 		return forStmt;
+	}
+
+	static IAstNode* parseIfStatement(u8t_scanner* scanner) {
+		size_t n;
+		char32_t token = u8t_scanner_scan(scanner);
+
+		if (token != '{') {
+			fprintf(stderr, "Error: Expected '{' after 'if'\n");
+			return nullptr;
+		}
+
+		AstNodeIfStatement* ifStmt = new AstNodeIfStatement();
+		AstNodeBlock* thenBody = new AstNodeBlock();
+
+		while ((token = u8t_scanner_scan(scanner)) != U8T_EOF) {
+			if (token == '}') {
+				break;
+			}
+
+			if (token == U8T_IDENTIFIER) {
+				const char* text = u8t_scanner_token_text(scanner, &n);
+
+				if (strcmp(text, "if") == 0) {
+					IAstNode* nestedIf = parseIfStatement(scanner);
+					if (nestedIf) {
+						nestedIf->setParent(thenBody);
+						thenBody->addChild(nestedIf);
+					}
+				} else {
+					AstNodeIdentifier* id = new AstNodeIdentifier(text);
+					id->setParent(thenBody);
+					thenBody->addChild(id);
+				}
+			} else if (token == U8T_INTEGER) {
+				const char* text = u8t_scanner_token_text(scanner, &n);
+				AstNodeLiteral* lit = new AstNodeLiteral(text, AstNodeLiteral::LiteralType::Integer);
+				lit->setParent(thenBody);
+				thenBody->addChild(lit);
+			} else if (token == U8T_FLOAT) {
+				const char* text = u8t_scanner_token_text(scanner, &n);
+				AstNodeLiteral* lit = new AstNodeLiteral(text, AstNodeLiteral::LiteralType::Float);
+				lit->setParent(thenBody);
+				thenBody->addChild(lit);
+			} else if (token == U8T_STRING) {
+				const char* text = u8t_scanner_token_text(scanner, &n);
+				AstNodeLiteral* lit = new AstNodeLiteral(text, AstNodeLiteral::LiteralType::String);
+				lit->setParent(thenBody);
+				thenBody->addChild(lit);
+			}
+		}
+
+		thenBody->setParent(ifStmt);
+		ifStmt->setThenBody(thenBody);
+
+		token = u8t_scanner_scan(scanner);
+		if (token == U8T_IDENTIFIER) {
+			const char* text = u8t_scanner_token_text(scanner, &n);
+			if (strcmp(text, "else") == 0) {
+				token = u8t_scanner_scan(scanner);
+				if (token == '{') {
+					AstNodeBlock* elseBody = new AstNodeBlock();
+
+					while ((token = u8t_scanner_scan(scanner)) != U8T_EOF) {
+						if (token == '}') {
+							break;
+						}
+
+						if (token == U8T_IDENTIFIER) {
+							const char* elseText = u8t_scanner_token_text(scanner, &n);
+
+							if (strcmp(elseText, "if") == 0) {
+								IAstNode* nestedIf = parseIfStatement(scanner);
+								if (nestedIf) {
+									nestedIf->setParent(elseBody);
+									elseBody->addChild(nestedIf);
+								}
+							} else {
+								AstNodeIdentifier* id = new AstNodeIdentifier(elseText);
+								id->setParent(elseBody);
+								elseBody->addChild(id);
+							}
+						} else if (token == U8T_INTEGER) {
+							const char* elseText = u8t_scanner_token_text(scanner, &n);
+							AstNodeLiteral* lit = new AstNodeLiteral(elseText, AstNodeLiteral::LiteralType::Integer);
+							lit->setParent(elseBody);
+							elseBody->addChild(lit);
+						} else if (token == U8T_FLOAT) {
+							const char* elseText = u8t_scanner_token_text(scanner, &n);
+							AstNodeLiteral* lit = new AstNodeLiteral(elseText, AstNodeLiteral::LiteralType::Float);
+							lit->setParent(elseBody);
+							elseBody->addChild(lit);
+						} else if (token == U8T_STRING) {
+							const char* elseText = u8t_scanner_token_text(scanner, &n);
+							AstNodeLiteral* lit = new AstNodeLiteral(elseText, AstNodeLiteral::LiteralType::String);
+							lit->setParent(elseBody);
+							elseBody->addChild(lit);
+						}
+					}
+
+					elseBody->setParent(ifStmt);
+					ifStmt->setElseBody(elseBody);
+				}
+			}
+		}
+
+		return ifStmt;
 	}
 
 	IAstNode* Ast::generate(const char* src) {

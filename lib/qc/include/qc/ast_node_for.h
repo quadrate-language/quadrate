@@ -7,58 +7,25 @@
 namespace Qd {
 	class AstNodeForStatement : public IAstNode {
 	public:
-		AstNodeForStatement(const std::string& loopVar)
-			: mLoopVar(loopVar), mParent(nullptr), mStart(nullptr), mEnd(nullptr), mStep(nullptr), mBody(nullptr) {
+		AstNodeForStatement(const std::string& loopVar) : mLoopVar(loopVar), mParent(nullptr), mBody(nullptr) {
 		}
 
 		~AstNodeForStatement() {
-			if (mStart) {
-				delete mStart;
-			}
-			if (mEnd) {
-				delete mEnd;
-			}
-			if (mStep) {
-				delete mStep;
-			}
 			if (mBody) {
 				delete mBody;
 			}
 		}
 
 		IAstNode::Type type() const override {
-			return Type::WhileStatement;
+			return Type::ForStatement;
 		}
 
 		size_t childCount() const override {
-			size_t count = 0;
-			if (mStart) {
-				count++;
-			}
-			if (mEnd) {
-				count++;
-			}
-			if (mStep) {
-				count++;
-			}
-			if (mBody) {
-				count++;
-			}
-			return count;
+			return mBody ? 1 : 0;
 		}
 
 		IAstNode* child(size_t index) const override {
-			size_t currentIndex = 0;
-			if (mStart && index == currentIndex++) {
-				return mStart;
-			}
-			if (mEnd && index == currentIndex++) {
-				return mEnd;
-			}
-			if (mStep && index == currentIndex++) {
-				return mStep;
-			}
-			if (mBody && index == currentIndex++) {
+			if (index == 0 && mBody) {
 				return mBody;
 			}
 			return nullptr;
@@ -76,32 +43,8 @@ namespace Qd {
 			return mLoopVar;
 		}
 
-		void setStart(IAstNode* start) {
-			mStart = start;
-		}
-
-		void setEnd(IAstNode* end) {
-			mEnd = end;
-		}
-
-		void setStep(IAstNode* step) {
-			mStep = step;
-		}
-
 		void setBody(IAstNode* body) {
 			mBody = body;
-		}
-
-		IAstNode* start() const {
-			return mStart;
-		}
-
-		IAstNode* end() const {
-			return mEnd;
-		}
-
-		IAstNode* step() const {
-			return mStep;
 		}
 
 		IAstNode* body() const {
@@ -111,9 +54,6 @@ namespace Qd {
 	private:
 		std::string mLoopVar;
 		IAstNode* mParent;
-		IAstNode* mStart;
-		IAstNode* mEnd;
-		IAstNode* mStep;
 		IAstNode* mBody;
 	};
 }

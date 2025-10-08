@@ -14,7 +14,7 @@ namespace Qd {
 		}
 
 		IAstNode::Type type() const override {
-			return Type::Program; // Using Program as a generic block type for now
+			return Type::Block;
 		}
 
 		size_t childCount() const override {

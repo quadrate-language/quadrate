@@ -2,6 +2,7 @@
 #include <qc/ast_node_for.h>
 #include <qc/ast_node_function.h>
 #include <qc/ast_node_identifier.h>
+#include <qc/ast_node_if.h>
 #include <qc/ast_node_literal.h>
 #include <qc/ast_node_program.h>
 #include <qc/ast_printer.h>
@@ -15,6 +16,8 @@ namespace Qd {
 			return "Unknown";
 		case IAstNode::Type::Program:
 			return "Program";
+		case IAstNode::Type::Block:
+			return "Block";
 		case IAstNode::Type::FunctionDeclaration:
 			return "FunctionDeclaration";
 		case IAstNode::Type::VariableDeclaration:
@@ -23,8 +26,8 @@ namespace Qd {
 			return "ExpressionStatement";
 		case IAstNode::Type::IfStatement:
 			return "IfStatement";
-		case IAstNode::Type::WhileStatement:
-			return "WhileStatement";
+		case IAstNode::Type::ForStatement:
+			return "ForStatement";
 		case IAstNode::Type::ReturnStatement:
 			return "ReturnStatement";
 		case IAstNode::Type::BinaryExpression:
@@ -80,7 +83,7 @@ namespace Qd {
 				break;
 			}
 			printf(" %s '%s'", typeStr, lit->value().c_str());
-		} else if (node->type() == IAstNode::Type::WhileStatement) {
+		} else if (node->type() == IAstNode::Type::ForStatement) {
 			const AstNodeForStatement* forStmt = static_cast<const AstNodeForStatement*>(node);
 			printf(" '%s'", forStmt->loopVar().c_str());
 		}
