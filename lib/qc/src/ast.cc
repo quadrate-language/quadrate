@@ -191,19 +191,113 @@ namespace Qd {
 						}
 						tempNodes.clear();
 
+						// Check for else clause
+						char32_t peek = u8t_scanner_peek(scanner);
+						if (peek != 0) {
+							token = u8t_scanner_scan(scanner);
+							if (token == U8T_IDENTIFIER) {
+								const char* elseText = u8t_scanner_token_text(scanner, &n);
+								if (strcmp(elseText, "else") == 0) {
+									// Parse else block - must have {
+									token = u8t_scanner_scan(scanner);
+									if (token != '{') {
+										fprintf(stderr, "Error: Expected '{' after 'else'\n");
+										// Else without block - just ignore the else keyword and continue
+										// Put the token back into tempNodes so it gets processed
+										if (token == U8T_INTEGER) {
+											const char* tokenText = u8t_scanner_token_text(scanner, &n);
+											AstNodeLiteral* lit = new AstNodeLiteral(tokenText, AstNodeLiteral::LiteralType::Integer);
+											tempNodes.push_back(lit);
+										} else if (token == U8T_FLOAT) {
+											const char* tokenText = u8t_scanner_token_text(scanner, &n);
+											AstNodeLiteral* lit = new AstNodeLiteral(tokenText, AstNodeLiteral::LiteralType::Float);
+											tempNodes.push_back(lit);
+										} else if (token == U8T_STRING) {
+											const char* tokenText = u8t_scanner_token_text(scanner, &n);
+											AstNodeLiteral* lit = new AstNodeLiteral(tokenText, AstNodeLiteral::LiteralType::String);
+											tempNodes.push_back(lit);
+										} else if (token == U8T_IDENTIFIER) {
+											const char* tokenText = u8t_scanner_token_text(scanner, &n);
+											AstNodeIdentifier* id = new AstNodeIdentifier(tokenText);
+											tempNodes.push_back(id);
+										}
+									} else {
+										AstNodeBlock* elseBody = new AstNodeBlock();
+
+										while ((token = u8t_scanner_scan(scanner)) != U8T_EOF) {
+											if (token == '}') {
+												break;
+											}
+
+											if (token == U8T_IDENTIFIER) {
+												const char* elseBodyText = u8t_scanner_token_text(scanner, &n);
+
+												if (strcmp(elseBodyText, "if") == 0) {
+													IAstNode* nestedIf = parseIfStatement(scanner);
+													if (nestedIf) {
+														nestedIf->setParent(elseBody);
+														elseBody->addChild(nestedIf);
+													}
+												} else if (strcmp(elseBodyText, "break") == 0) {
+													AstNodeBreak* breakStmt = new AstNodeBreak();
+													breakStmt->setParent(elseBody);
+													elseBody->addChild(breakStmt);
+												} else if (strcmp(elseBodyText, "continue") == 0) {
+													AstNodeContinue* continueStmt = new AstNodeContinue();
+													continueStmt->setParent(elseBody);
+													elseBody->addChild(continueStmt);
+												} else {
+													AstNodeIdentifier* id = new AstNodeIdentifier(elseBodyText);
+													id->setParent(elseBody);
+													elseBody->addChild(id);
+												}
+											} else if (token == U8T_INTEGER) {
+												const char* elseBodyText = u8t_scanner_token_text(scanner, &n);
+												AstNodeLiteral* lit = new AstNodeLiteral(elseBodyText, AstNodeLiteral::LiteralType::Integer);
+												lit->setParent(elseBody);
+												elseBody->addChild(lit);
+											} else if (token == U8T_FLOAT) {
+												const char* elseBodyText = u8t_scanner_token_text(scanner, &n);
+												AstNodeLiteral* lit = new AstNodeLiteral(elseBodyText, AstNodeLiteral::LiteralType::Float);
+												lit->setParent(elseBody);
+												elseBody->addChild(lit);
+											} else if (token == U8T_STRING) {
+												const char* elseBodyText = u8t_scanner_token_text(scanner, &n);
+												AstNodeLiteral* lit = new AstNodeLiteral(elseBodyText, AstNodeLiteral::LiteralType::String);
+												lit->setParent(elseBody);
+												elseBody->addChild(lit);
+											}
+										}
+
+										elseBody->setParent(ifStmt);
+										static_cast<AstNodeIfStatement*>(ifStmt)->setElseBody(elseBody);
+									}
+								} else {
+									// Not "else", so this is a new statement - treat it as identifier
+									AstNodeIdentifier* id = new AstNodeIdentifier(elseText);
+									tempNodes.push_back(id);
+								}
+							} else {
+								// Not an identifier after if, need to handle this token in main loop
+								// We've already consumed it, so we need to process it here
+								if (token == U8T_INTEGER) {
+									const char* tokenText = u8t_scanner_token_text(scanner, &n);
+									AstNodeLiteral* lit = new AstNodeLiteral(tokenText, AstNodeLiteral::LiteralType::Integer);
+									tempNodes.push_back(lit);
+								} else if (token == U8T_FLOAT) {
+									const char* tokenText = u8t_scanner_token_text(scanner, &n);
+									AstNodeLiteral* lit = new AstNodeLiteral(tokenText, AstNodeLiteral::LiteralType::Float);
+									tempNodes.push_back(lit);
+								} else if (token == U8T_STRING) {
+									const char* tokenText = u8t_scanner_token_text(scanner, &n);
+									AstNodeLiteral* lit = new AstNodeLiteral(tokenText, AstNodeLiteral::LiteralType::String);
+									tempNodes.push_back(lit);
+								}
+							}
+						}
+
 						ifStmt->setParent(body);
 						body->addChild(ifStmt);
-					}
-				} else if (strcmp(text, "else") == 0) {
-					// Skip the else block entirely for now
-					// TODO: Properly implement else clause handling
-					token = u8t_scanner_scan(scanner);
-					if (token == '{') {
-						int braceDepth = 1;
-						while ((token = u8t_scanner_scan(scanner)) != U8T_EOF && braceDepth > 0) {
-							if (token == '{') braceDepth++;
-							if (token == '}') braceDepth--;
-						}
 					}
 				} else if (strcmp(text, "switch") == 0) {
 					IAstNode* switchStmt = parseSwitchStatement(scanner);
@@ -553,8 +647,71 @@ namespace Qd {
 		thenBody->setParent(ifStmt);
 		ifStmt->setThenBody(thenBody);
 
-		// TODO: Else clause support removed due to scanner peek() issues
-		// Need to implement else handling in the parent parser with proper token management
+		// Check for else clause
+		char32_t peek = u8t_scanner_peek(scanner);
+		if (peek != 0) {
+			token = u8t_scanner_scan(scanner);
+			if (token == U8T_IDENTIFIER) {
+				const char* elseText = u8t_scanner_token_text(scanner, &n);
+				if (strcmp(elseText, "else") == 0) {
+					// Parse else block - must have {
+					token = u8t_scanner_scan(scanner);
+					if (token != '{') {
+						fprintf(stderr, "Error: Expected '{' after 'else'\n");
+					} else {
+						AstNodeBlock* elseBody = new AstNodeBlock();
+
+						while ((token = u8t_scanner_scan(scanner)) != U8T_EOF) {
+							if (token == '}') {
+								break;
+							}
+
+							if (token == U8T_IDENTIFIER) {
+								const char* elseBodyText = u8t_scanner_token_text(scanner, &n);
+
+								if (strcmp(elseBodyText, "if") == 0) {
+									IAstNode* nestedIf = parseIfStatement(scanner);
+									if (nestedIf) {
+										nestedIf->setParent(elseBody);
+										elseBody->addChild(nestedIf);
+									}
+								} else if (strcmp(elseBodyText, "break") == 0) {
+									AstNodeBreak* breakStmt = new AstNodeBreak();
+									breakStmt->setParent(elseBody);
+									elseBody->addChild(breakStmt);
+								} else if (strcmp(elseBodyText, "continue") == 0) {
+									AstNodeContinue* continueStmt = new AstNodeContinue();
+									continueStmt->setParent(elseBody);
+									elseBody->addChild(continueStmt);
+								} else {
+									AstNodeIdentifier* id = new AstNodeIdentifier(elseBodyText);
+									id->setParent(elseBody);
+									elseBody->addChild(id);
+								}
+							} else if (token == U8T_INTEGER) {
+								const char* elseBodyText = u8t_scanner_token_text(scanner, &n);
+								AstNodeLiteral* lit = new AstNodeLiteral(elseBodyText, AstNodeLiteral::LiteralType::Integer);
+								lit->setParent(elseBody);
+								elseBody->addChild(lit);
+							} else if (token == U8T_FLOAT) {
+								const char* elseBodyText = u8t_scanner_token_text(scanner, &n);
+								AstNodeLiteral* lit = new AstNodeLiteral(elseBodyText, AstNodeLiteral::LiteralType::Float);
+								lit->setParent(elseBody);
+								elseBody->addChild(lit);
+							} else if (token == U8T_STRING) {
+								const char* elseBodyText = u8t_scanner_token_text(scanner, &n);
+								AstNodeLiteral* lit = new AstNodeLiteral(elseBodyText, AstNodeLiteral::LiteralType::String);
+								lit->setParent(elseBody);
+								elseBody->addChild(lit);
+							}
+						}
+
+						elseBody->setParent(ifStmt);
+						ifStmt->setElseBody(elseBody);
+					}
+				}
+			}
+		}
 
 		return ifStmt;
 	}

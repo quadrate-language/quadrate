@@ -242,6 +242,75 @@ TEST(IfStatement) {
 	ASSERT(ifStmt->type() == Qd::IAstNode::Type::IfStatement, "should be if statement");
 }
 
+TEST(IfElseStatement) {
+	Qd::Ast ast;
+	const char* src = "fn test() { if { foo } else { bar } }";
+	Qd::IAstNode* root = ast.generate(src);
+
+	ASSERT(root != nullptr, "root should not be null");
+	ASSERT(root->childCount() == 1, "should have 1 child");
+
+	Qd::IAstNode* func = root->child(0);
+	Qd::IAstNode* body = func->child(0);
+
+	ASSERT(body->childCount() == 1, "body should have 1 child");
+	Qd::IAstNode* ifStmt = body->child(0);
+	ASSERT(ifStmt->type() == Qd::IAstNode::Type::IfStatement, "should be if statement");
+
+	// If statement should have 2 children: then body and else body
+	ASSERT(ifStmt->childCount() == 2, "if should have then and else bodies");
+
+	Qd::IAstNode* thenBody = ifStmt->child(0);
+	ASSERT(thenBody != nullptr, "then body should exist");
+	ASSERT(thenBody->childCount() == 1, "then body should have 1 child");
+
+	Qd::IAstNode* elseBody = ifStmt->child(1);
+	ASSERT(elseBody != nullptr, "else body should exist");
+	ASSERT(elseBody->childCount() == 1, "else body should have 1 child");
+}
+
+TEST(NestedIfElse) {
+	Qd::Ast ast;
+	const char* src = "fn test() { if { a } else { if { b } else { c } } }";
+	Qd::IAstNode* root = ast.generate(src);
+
+	ASSERT(root != nullptr, "root should not be null");
+	Qd::IAstNode* func = root->child(0);
+	Qd::IAstNode* body = func->child(0);
+	Qd::IAstNode* outerIf = body->child(0);
+
+	ASSERT(outerIf->type() == Qd::IAstNode::Type::IfStatement, "should be if statement");
+	ASSERT(outerIf->childCount() == 2, "outer if should have then and else");
+
+	Qd::IAstNode* outerElse = outerIf->child(1);
+	ASSERT(outerElse->childCount() == 1, "outer else should have 1 child");
+
+	Qd::IAstNode* nestedIf = outerElse->child(0);
+	ASSERT(nestedIf->type() == Qd::IAstNode::Type::IfStatement, "nested should be if statement");
+	ASSERT(nestedIf->childCount() == 2, "nested if should have then and else");
+}
+
+TEST(DeeplyNestedIfElse) {
+	Qd::Ast ast;
+	const char* src = "fn test() { if { a } else { if { b } else { if { c } else { d } } } }";
+	Qd::IAstNode* root = ast.generate(src);
+
+	ASSERT(root != nullptr, "root should not be null");
+	Qd::IAstNode* func = root->child(0);
+	Qd::IAstNode* body = func->child(0);
+	Qd::IAstNode* level1 = body->child(0);
+
+	ASSERT(level1->childCount() == 2, "level 1 should have then and else");
+
+	Qd::IAstNode* level2 = level1->child(1)->child(0);
+	ASSERT(level2->type() == Qd::IAstNode::Type::IfStatement, "level 2 should be if");
+	ASSERT(level2->childCount() == 2, "level 2 should have then and else");
+
+	Qd::IAstNode* level3 = level2->child(1)->child(0);
+	ASSERT(level3->type() == Qd::IAstNode::Type::IfStatement, "level 3 should be if");
+	ASSERT(level3->childCount() == 2, "level 3 should have then and else");
+}
+
 TEST(ForStatement) {
 	Qd::Ast ast;
 	const char* src = "fn test() { for i { foo } }";
