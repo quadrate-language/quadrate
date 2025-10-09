@@ -26,6 +26,56 @@ namespace Qd {
 	static IAstNode* parseIfStatement(u8t_scanner* scanner);
 	static IAstNode* parseSwitchStatement(u8t_scanner* scanner);
 
+	// Helper to parse a single statement/expression token
+	// Returns nullptr if token was a control keyword that was handled
+	// Returns a node if it's a literal or identifier
+	static IAstNode* parseSimpleToken(char32_t token, u8t_scanner* scanner, size_t* n) {
+		if (token == U8T_INTEGER) {
+			const char* text = u8t_scanner_token_text(scanner, n);
+			return new AstNodeLiteral(text, AstNodeLiteral::LiteralType::Integer);
+		} else if (token == U8T_FLOAT) {
+			const char* text = u8t_scanner_token_text(scanner, n);
+			return new AstNodeLiteral(text, AstNodeLiteral::LiteralType::Float);
+		} else if (token == U8T_STRING) {
+			const char* text = u8t_scanner_token_text(scanner, n);
+			return new AstNodeLiteral(text, AstNodeLiteral::LiteralType::String);
+		} else if (token == U8T_IDENTIFIER) {
+			const char* text = u8t_scanner_token_text(scanner, n);
+			return new AstNodeIdentifier(text);
+		}
+		return nullptr;
+	}
+
+	// Helper to parse statements inside a block (handles if, break, continue, nested structures)
+	// Returns a node that should be added to the parent, or nullptr
+	// allowControlFlow: if false, only allows break/continue but not if/for/switch
+	static IAstNode* parseBlockStatement(char32_t token, u8t_scanner* scanner, size_t* n, bool allowControlFlow = true) {
+		if (token == U8T_IDENTIFIER) {
+			const char* text = u8t_scanner_token_text(scanner, n);
+
+			// break and continue are always allowed
+			if (strcmp(text, "break") == 0) {
+				return new AstNodeBreak();
+			} else if (strcmp(text, "continue") == 0) {
+				return new AstNodeContinue();
+			}
+
+			if (allowControlFlow) {
+				if (strcmp(text, "if") == 0) {
+					return parseIfStatement(scanner);
+				} else if (strcmp(text, "for") == 0) {
+					return parseForStatement(scanner);
+				} else if (strcmp(text, "switch") == 0) {
+					return parseSwitchStatement(scanner);
+				}
+			}
+
+			return new AstNodeIdentifier(text);
+		}
+
+		return parseSimpleToken(token, scanner, n);
+	}
+
 	Ast::~Ast() {
 		if (mRoot) {
 			delete mRoot;
@@ -535,49 +585,10 @@ namespace Qd {
 				break;
 			}
 
-			if (token == U8T_IDENTIFIER) {
-				const char* text = u8t_scanner_token_text(scanner, &n);
-
-				if (strcmp(text, "for") == 0) {
-					IAstNode* nestedFor = parseForStatement(scanner);
-					if (nestedFor) {
-						nestedFor->setParent(body);
-						body->addChild(nestedFor);
-					}
-				} else if (strcmp(text, "if") == 0) {
-					IAstNode* ifStmt = parseIfStatement(scanner);
-					if (ifStmt) {
-						ifStmt->setParent(body);
-						body->addChild(ifStmt);
-					}
-				} else if (strcmp(text, "break") == 0) {
-					AstNodeBreak* breakStmt = new AstNodeBreak();
-					breakStmt->setParent(body);
-					body->addChild(breakStmt);
-				} else if (strcmp(text, "continue") == 0) {
-					AstNodeContinue* continueStmt = new AstNodeContinue();
-					continueStmt->setParent(body);
-					body->addChild(continueStmt);
-				} else {
-					AstNodeIdentifier* id = new AstNodeIdentifier(text);
-					id->setParent(body);
-					body->addChild(id);
-				}
-			} else if (token == U8T_INTEGER) {
-				const char* text = u8t_scanner_token_text(scanner, &n);
-				AstNodeLiteral* lit = new AstNodeLiteral(text, AstNodeLiteral::LiteralType::Integer);
-				lit->setParent(body);
-				body->addChild(lit);
-			} else if (token == U8T_FLOAT) {
-				const char* text = u8t_scanner_token_text(scanner, &n);
-				AstNodeLiteral* lit = new AstNodeLiteral(text, AstNodeLiteral::LiteralType::Float);
-				lit->setParent(body);
-				body->addChild(lit);
-			} else if (token == U8T_STRING) {
-				const char* text = u8t_scanner_token_text(scanner, &n);
-				AstNodeLiteral* lit = new AstNodeLiteral(text, AstNodeLiteral::LiteralType::String);
-				lit->setParent(body);
-				body->addChild(lit);
+			IAstNode* node = parseBlockStatement(token, scanner, &n);
+			if (node) {
+				node->setParent(body);
+				body->addChild(node);
 			}
 		}
 
@@ -604,43 +615,10 @@ namespace Qd {
 				break;
 			}
 
-			if (token == U8T_IDENTIFIER) {
-				const char* text = u8t_scanner_token_text(scanner, &n);
-
-				if (strcmp(text, "if") == 0) {
-					IAstNode* nestedIf = parseIfStatement(scanner);
-					if (nestedIf) {
-						nestedIf->setParent(thenBody);
-						thenBody->addChild(nestedIf);
-					}
-				} else if (strcmp(text, "break") == 0) {
-					AstNodeBreak* breakStmt = new AstNodeBreak();
-					breakStmt->setParent(thenBody);
-					thenBody->addChild(breakStmt);
-				} else if (strcmp(text, "continue") == 0) {
-					AstNodeContinue* continueStmt = new AstNodeContinue();
-					continueStmt->setParent(thenBody);
-					thenBody->addChild(continueStmt);
-				} else {
-					AstNodeIdentifier* id = new AstNodeIdentifier(text);
-					id->setParent(thenBody);
-					thenBody->addChild(id);
-				}
-			} else if (token == U8T_INTEGER) {
-				const char* text = u8t_scanner_token_text(scanner, &n);
-				AstNodeLiteral* lit = new AstNodeLiteral(text, AstNodeLiteral::LiteralType::Integer);
-				lit->setParent(thenBody);
-				thenBody->addChild(lit);
-			} else if (token == U8T_FLOAT) {
-				const char* text = u8t_scanner_token_text(scanner, &n);
-				AstNodeLiteral* lit = new AstNodeLiteral(text, AstNodeLiteral::LiteralType::Float);
-				lit->setParent(thenBody);
-				thenBody->addChild(lit);
-			} else if (token == U8T_STRING) {
-				const char* text = u8t_scanner_token_text(scanner, &n);
-				AstNodeLiteral* lit = new AstNodeLiteral(text, AstNodeLiteral::LiteralType::String);
-				lit->setParent(thenBody);
-				thenBody->addChild(lit);
+			IAstNode* node = parseBlockStatement(token, scanner, &n);
+			if (node) {
+				node->setParent(thenBody);
+				thenBody->addChild(node);
 			}
 		}
 
@@ -666,43 +644,10 @@ namespace Qd {
 								break;
 							}
 
-							if (token == U8T_IDENTIFIER) {
-								const char* elseBodyText = u8t_scanner_token_text(scanner, &n);
-
-								if (strcmp(elseBodyText, "if") == 0) {
-									IAstNode* nestedIf = parseIfStatement(scanner);
-									if (nestedIf) {
-										nestedIf->setParent(elseBody);
-										elseBody->addChild(nestedIf);
-									}
-								} else if (strcmp(elseBodyText, "break") == 0) {
-									AstNodeBreak* breakStmt = new AstNodeBreak();
-									breakStmt->setParent(elseBody);
-									elseBody->addChild(breakStmt);
-								} else if (strcmp(elseBodyText, "continue") == 0) {
-									AstNodeContinue* continueStmt = new AstNodeContinue();
-									continueStmt->setParent(elseBody);
-									elseBody->addChild(continueStmt);
-								} else {
-									AstNodeIdentifier* id = new AstNodeIdentifier(elseBodyText);
-									id->setParent(elseBody);
-									elseBody->addChild(id);
-								}
-							} else if (token == U8T_INTEGER) {
-								const char* elseBodyText = u8t_scanner_token_text(scanner, &n);
-								AstNodeLiteral* lit = new AstNodeLiteral(elseBodyText, AstNodeLiteral::LiteralType::Integer);
-								lit->setParent(elseBody);
-								elseBody->addChild(lit);
-							} else if (token == U8T_FLOAT) {
-								const char* elseBodyText = u8t_scanner_token_text(scanner, &n);
-								AstNodeLiteral* lit = new AstNodeLiteral(elseBodyText, AstNodeLiteral::LiteralType::Float);
-								lit->setParent(elseBody);
-								elseBody->addChild(lit);
-							} else if (token == U8T_STRING) {
-								const char* elseBodyText = u8t_scanner_token_text(scanner, &n);
-								AstNodeLiteral* lit = new AstNodeLiteral(elseBodyText, AstNodeLiteral::LiteralType::String);
-								lit->setParent(elseBody);
-								elseBody->addChild(lit);
+							IAstNode* node = parseBlockStatement(token, scanner, &n);
+							if (node) {
+								node->setParent(elseBody);
+								elseBody->addChild(node);
 							}
 						}
 
@@ -771,36 +716,10 @@ namespace Qd {
 							break;
 						}
 
-						if (token == U8T_IDENTIFIER) {
-							const char* bodyText = u8t_scanner_token_text(scanner, &n);
-							if (strcmp(bodyText, "break") == 0) {
-								AstNodeBreak* breakStmt = new AstNodeBreak();
-								breakStmt->setParent(caseBody);
-								caseBody->addChild(breakStmt);
-							} else if (strcmp(bodyText, "continue") == 0) {
-								AstNodeContinue* continueStmt = new AstNodeContinue();
-								continueStmt->setParent(caseBody);
-								caseBody->addChild(continueStmt);
-							} else {
-								AstNodeIdentifier* id = new AstNodeIdentifier(bodyText);
-								id->setParent(caseBody);
-								caseBody->addChild(id);
-							}
-						} else if (token == U8T_INTEGER) {
-							const char* bodyText = u8t_scanner_token_text(scanner, &n);
-							AstNodeLiteral* lit = new AstNodeLiteral(bodyText, AstNodeLiteral::LiteralType::Integer);
-							lit->setParent(caseBody);
-							caseBody->addChild(lit);
-						} else if (token == U8T_FLOAT) {
-							const char* bodyText = u8t_scanner_token_text(scanner, &n);
-							AstNodeLiteral* lit = new AstNodeLiteral(bodyText, AstNodeLiteral::LiteralType::Float);
-							lit->setParent(caseBody);
-							caseBody->addChild(lit);
-						} else if (token == U8T_STRING) {
-							const char* bodyText = u8t_scanner_token_text(scanner, &n);
-							AstNodeLiteral* lit = new AstNodeLiteral(bodyText, AstNodeLiteral::LiteralType::String);
-							lit->setParent(caseBody);
-							caseBody->addChild(lit);
+						IAstNode* node = parseBlockStatement(token, scanner, &n, false);
+						if (node) {
+							node->setParent(caseBody);
+							caseBody->addChild(node);
 						}
 					}
 
@@ -823,36 +742,10 @@ namespace Qd {
 							break;
 						}
 
-						if (token == U8T_IDENTIFIER) {
-							const char* bodyText = u8t_scanner_token_text(scanner, &n);
-							if (strcmp(bodyText, "break") == 0) {
-								AstNodeBreak* breakStmt = new AstNodeBreak();
-								breakStmt->setParent(defaultBody);
-								defaultBody->addChild(breakStmt);
-							} else if (strcmp(bodyText, "continue") == 0) {
-								AstNodeContinue* continueStmt = new AstNodeContinue();
-								continueStmt->setParent(defaultBody);
-								defaultBody->addChild(continueStmt);
-							} else {
-								AstNodeIdentifier* id = new AstNodeIdentifier(bodyText);
-								id->setParent(defaultBody);
-								defaultBody->addChild(id);
-							}
-						} else if (token == U8T_INTEGER) {
-							const char* bodyText = u8t_scanner_token_text(scanner, &n);
-							AstNodeLiteral* lit = new AstNodeLiteral(bodyText, AstNodeLiteral::LiteralType::Integer);
-							lit->setParent(defaultBody);
-							defaultBody->addChild(lit);
-						} else if (token == U8T_FLOAT) {
-							const char* bodyText = u8t_scanner_token_text(scanner, &n);
-							AstNodeLiteral* lit = new AstNodeLiteral(bodyText, AstNodeLiteral::LiteralType::Float);
-							lit->setParent(defaultBody);
-							defaultBody->addChild(lit);
-						} else if (token == U8T_STRING) {
-							const char* bodyText = u8t_scanner_token_text(scanner, &n);
-							AstNodeLiteral* lit = new AstNodeLiteral(bodyText, AstNodeLiteral::LiteralType::String);
-							lit->setParent(defaultBody);
-							defaultBody->addChild(lit);
+						IAstNode* node = parseBlockStatement(token, scanner, &n, false);
+						if (node) {
+							node->setParent(defaultBody);
+							defaultBody->addChild(node);
 						}
 					}
 
