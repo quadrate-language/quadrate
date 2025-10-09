@@ -10,6 +10,7 @@
 #include <qc/ast_node_program.h>
 #include <qc/ast_node_switch.h>
 #include <qc/ast_node_use.h>
+#include <qc/ast_node_scoped.h>
 #include <qc/ast_printer.h>
 #include <stdio.h>
 #include <string>
@@ -43,6 +44,8 @@ namespace Qd {
 			return "BreakStatement";
 		case IAstNode::Type::ContinueStatement:
 			return "ContinueStatement";
+		case IAstNode::Type::DeferStatement:
+			return "DeferStatement";
 		case IAstNode::Type::BinaryExpression:
 			return "BinaryExpression";
 		case IAstNode::Type::UnaryExpression:
@@ -51,6 +54,8 @@ namespace Qd {
 			return "Literal";
 		case IAstNode::Type::Identifier:
 			return "Identifier";
+		case IAstNode::Type::ScopedIdentifier:
+			return "ScopedIdentifier";
 		case IAstNode::Type::UseStatement:
 			return "UseStatement";
 		case IAstNode::Type::ConstantDeclaration:
@@ -110,6 +115,15 @@ namespace Qd {
 			printf(",");
 			printf("\"name\":\"");
 			escapeJsonString(id->name().c_str());
+			printf("\"");
+		} else if (node->type() == IAstNode::Type::ScopedIdentifier) {
+			const AstNodeScopedIdentifier* scoped = static_cast<const AstNodeScopedIdentifier*>(node);
+			printf(",");
+			printf("\"scope\":\"");
+			escapeJsonString(scoped->scope().c_str());
+			printf("\",");
+			printf("\"name\":\"");
+			escapeJsonString(scoped->name().c_str());
 			printf("\"");
 		} else if (node->type() == IAstNode::Type::Literal) {
 			const AstNodeLiteral* lit = static_cast<const AstNodeLiteral*>(node);

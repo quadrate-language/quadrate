@@ -20,10 +20,12 @@ namespace Qd {
 			ReturnStatement,
 			BreakStatement,
 			ContinueStatement,
+			DeferStatement,
 			BinaryExpression,
 			UnaryExpression,
 			Literal,
 			Identifier,
+			ScopedIdentifier,
 			UseStatement,
 			ConstantDeclaration,
 			Label

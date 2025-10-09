@@ -8,8 +8,7 @@ fn multiply( x:float y:float -- z:float ) {
 }
 
 fn main( -- ) {
-
-	tau multiply
+	math::pi tau multiply
 	0 10 1 for i {
 		i add
 		if {
@@ -49,3 +48,12 @@ fn main( -- ) {
 L1:
 	return
 }
+
+fn something( -- ) {
+	defer {
+		2 3 add
+		4 5 mul
+	}
+	4 2 add
+}
+

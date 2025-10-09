@@ -16,6 +16,8 @@
 #include <qc/ast_node_return.h>
 #include <qc/ast_node_break.h>
 #include <qc/ast_node_continue.h>
+#include <qc/ast_node_defer.h>
+#include <qc/ast_node_scoped.h>
 #include <u8t/scanner.h>
 #include <vector>
 
@@ -91,10 +93,40 @@ namespace Qd {
 		AstNodeBlock* body = new AstNodeBlock();
 
 		std::vector<IAstNode*> tempNodes;
+		bool sawColon = false;
 
 		while ((token = u8t_scanner_scan(scanner)) != U8T_EOF) {
 			if (token == '}') {
 				break;
+			}
+
+			// Handle :: scope operator
+			if (sawColon && token == ':') {
+				// We have ::
+				sawColon = false;
+				if (!tempNodes.empty() && tempNodes.back()->type() == IAstNode::Type::Identifier) {
+					AstNodeIdentifier* scope = static_cast<AstNodeIdentifier*>(tempNodes.back());
+					tempNodes.pop_back();
+
+					// Get the next identifier after ::
+					token = u8t_scanner_scan(scanner);
+					if (token == U8T_IDENTIFIER) {
+						const char* memberName = u8t_scanner_token_text(scanner, &n);
+						AstNodeScopedIdentifier* scoped = new AstNodeScopedIdentifier(scope->name(), memberName);
+						delete scope;
+						tempNodes.push_back(scoped);
+					} else {
+						// No identifier after ::, put tokens back
+						tempNodes.push_back(scope);
+						// Can't really handle this case properly without putback
+					}
+				}
+				continue;
+			}
+
+			sawColon = (token == ':');
+			if (sawColon) {
+				continue;  // Wait for next token to see if it's another colon
 			}
 
 			if (token == U8T_IDENTIFIER) {
@@ -146,6 +178,164 @@ namespace Qd {
 					AstNodeReturn* returnStmt = new AstNodeReturn();
 					returnStmt->setParent(body);
 					body->addChild(returnStmt);
+				} else if (strcmp(text, "defer") == 0) {
+					for (auto* node : tempNodes) {
+						node->setParent(body);
+						body->addChild(node);
+					}
+					tempNodes.clear();
+
+					AstNodeDefer* deferStmt = new AstNodeDefer();
+					token = u8t_scanner_scan(scanner);
+
+					// Check if defer has a block
+					if (token == '{') {
+						// Parse defer block
+						std::vector<IAstNode*> deferNodes;
+
+						while ((token = u8t_scanner_scan(scanner)) != U8T_EOF) {
+							if (token == '}') {
+								break;
+							}
+
+							if (token == U8T_IDENTIFIER) {
+								const char* deferText = u8t_scanner_token_text(scanner, &n);
+								AstNodeIdentifier* id = new AstNodeIdentifier(deferText);
+								deferNodes.push_back(id);
+							} else if (token == U8T_INTEGER) {
+								const char* deferText = u8t_scanner_token_text(scanner, &n);
+								AstNodeLiteral* lit = new AstNodeLiteral(deferText, AstNodeLiteral::LiteralType::Integer);
+								deferNodes.push_back(lit);
+							} else if (token == U8T_FLOAT) {
+								const char* deferText = u8t_scanner_token_text(scanner, &n);
+								AstNodeLiteral* lit = new AstNodeLiteral(deferText, AstNodeLiteral::LiteralType::Float);
+								deferNodes.push_back(lit);
+							} else if (token == U8T_STRING) {
+								const char* deferText = u8t_scanner_token_text(scanner, &n);
+								AstNodeLiteral* lit = new AstNodeLiteral(deferText, AstNodeLiteral::LiteralType::String);
+								deferNodes.push_back(lit);
+							} else if (token == ':') {
+								char32_t nextChar = u8t_scanner_peek(scanner);
+								if (nextChar == ':') {
+									u8t_scanner_scan(scanner);
+									AstNodeIdentifier* colonColon = new AstNodeIdentifier("::");
+									deferNodes.push_back(colonColon);
+								}
+							}
+						}
+
+						for (auto* node : deferNodes) {
+							node->setParent(deferStmt);
+							deferStmt->addChild(node);
+						}
+					} else {
+						// Parse inline defer statement (backwards compatibility)
+						std::vector<IAstNode*> deferNodes;
+						bool hasSeenOperator = false;
+
+						// Process the first token we already scanned
+						if (token == U8T_IDENTIFIER) {
+							const char* deferText = u8t_scanner_token_text(scanner, &n);
+							hasSeenOperator = true;
+							AstNodeIdentifier* id = new AstNodeIdentifier(deferText);
+							deferNodes.push_back(id);
+						} else if (token == U8T_INTEGER) {
+							const char* deferText = u8t_scanner_token_text(scanner, &n);
+							AstNodeLiteral* lit = new AstNodeLiteral(deferText, AstNodeLiteral::LiteralType::Integer);
+							deferNodes.push_back(lit);
+						} else if (token == U8T_FLOAT) {
+							const char* deferText = u8t_scanner_token_text(scanner, &n);
+							AstNodeLiteral* lit = new AstNodeLiteral(deferText, AstNodeLiteral::LiteralType::Float);
+							deferNodes.push_back(lit);
+						} else if (token == U8T_STRING) {
+							const char* deferText = u8t_scanner_token_text(scanner, &n);
+							AstNodeLiteral* lit = new AstNodeLiteral(deferText, AstNodeLiteral::LiteralType::String);
+							deferNodes.push_back(lit);
+						}
+
+						// Continue parsing inline defer
+						while ((token = u8t_scanner_scan(scanner)) != U8T_EOF) {
+							if (token == '}') {
+								break;
+							}
+
+							if (token == U8T_IDENTIFIER) {
+								const char* deferText = u8t_scanner_token_text(scanner, &n);
+
+								// Check if it's a control structure keyword - this ends the defer
+								if (strcmp(deferText, "for") == 0 || strcmp(deferText, "if") == 0 ||
+								    strcmp(deferText, "switch") == 0 || strcmp(deferText, "return") == 0 ||
+								    strcmp(deferText, "defer") == 0 || strcmp(deferText, "break") == 0 ||
+								    strcmp(deferText, "continue") == 0) {
+									AstNodeIdentifier* id = new AstNodeIdentifier(deferText);
+									tempNodes.push_back(id);
+									break;
+								}
+
+								// Mark that we've seen an operator
+								hasSeenOperator = true;
+								IAstNode* id = new AstNodeIdentifier(deferText);
+								deferNodes.push_back(id);
+							} else if (token == U8T_INTEGER) {
+								const char* deferText = u8t_scanner_token_text(scanner, &n);
+
+								// If we've already seen an operator and the last node was an operator,
+								// this literal starts a new statement
+								if (hasSeenOperator && !deferNodes.empty() &&
+								    deferNodes.back()->type() == IAstNode::Type::Identifier) {
+									AstNodeLiteral* lit = new AstNodeLiteral(deferText, AstNodeLiteral::LiteralType::Integer);
+									tempNodes.push_back(lit);
+									break;
+								}
+
+								IAstNode* lit = new AstNodeLiteral(deferText, AstNodeLiteral::LiteralType::Integer);
+								deferNodes.push_back(lit);
+							} else if (token == U8T_FLOAT) {
+								const char* deferText = u8t_scanner_token_text(scanner, &n);
+
+								if (hasSeenOperator && !deferNodes.empty() &&
+								    deferNodes.back()->type() == IAstNode::Type::Identifier) {
+									AstNodeLiteral* lit = new AstNodeLiteral(deferText, AstNodeLiteral::LiteralType::Float);
+									tempNodes.push_back(lit);
+									break;
+								}
+
+								IAstNode* lit = new AstNodeLiteral(deferText, AstNodeLiteral::LiteralType::Float);
+								deferNodes.push_back(lit);
+							} else if (token == U8T_STRING) {
+								const char* deferText = u8t_scanner_token_text(scanner, &n);
+
+								if (hasSeenOperator && !deferNodes.empty() &&
+								    deferNodes.back()->type() == IAstNode::Type::Identifier) {
+									AstNodeLiteral* lit = new AstNodeLiteral(deferText, AstNodeLiteral::LiteralType::String);
+									tempNodes.push_back(lit);
+									break;
+								}
+
+								IAstNode* lit = new AstNodeLiteral(deferText, AstNodeLiteral::LiteralType::String);
+								deferNodes.push_back(lit);
+							} else if (token == ':') {
+								char32_t nextChar = u8t_scanner_peek(scanner);
+								if (nextChar == ':') {
+									u8t_scanner_scan(scanner);
+									IAstNode* colonColon = new AstNodeIdentifier("::");
+									deferNodes.push_back(colonColon);
+								} else {
+									break;
+								}
+							} else {
+								break;
+							}
+						}
+
+						for (auto* node : deferNodes) {
+							node->setParent(deferStmt);
+							deferStmt->addChild(node);
+						}
+					}
+
+					deferStmt->setParent(body);
+					body->addChild(deferStmt);
 				} else {
 					AstNodeIdentifier* id = new AstNodeIdentifier(text);
 					tempNodes.push_back(id);
@@ -162,28 +352,6 @@ namespace Qd {
 				const char* text = u8t_scanner_token_text(scanner, &n);
 				AstNodeLiteral* lit = new AstNodeLiteral(text, AstNodeLiteral::LiteralType::String);
 				tempNodes.push_back(lit);
-			} else if (token == ':') {
-				char32_t nextChar = u8t_scanner_peek(scanner);
-				if (nextChar == ':') {
-					u8t_scanner_scan(scanner);
-					AstNodeIdentifier* colonColon = new AstNodeIdentifier("::");
-					tempNodes.push_back(colonColon);
-				} else if (!tempNodes.empty()) {
-					IAstNode* lastNode = tempNodes.back();
-					if (lastNode->type() == IAstNode::Type::Identifier) {
-						tempNodes.pop_back();
-						for (auto* node : tempNodes) {
-							node->setParent(body);
-							body->addChild(node);
-						}
-						tempNodes.clear();
-						AstNodeIdentifier* id = static_cast<AstNodeIdentifier*>(lastNode);
-						AstNodeLabel* label = new AstNodeLabel(id->name());
-						delete id;
-						label->setParent(body);
-						body->addChild(label);
-					}
-				}
 			}
 		}
 
