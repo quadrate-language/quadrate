@@ -33,9 +33,9 @@ TEST(StrNextTest) {
 		actual.push_back(cp);
 	}
 
-	ASSERT_EQ(expected.size(), actual.size(), "Sizes should be equal");
+	ASSERT_EQ(static_cast<int>(expected.size()), static_cast<int>(actual.size()), "Sizes should be equal");
 	for (size_t i = 0; i < expected.size(); i++) {
-		ASSERT_EQ(expected[i], actual[i], "Codepoints should be equal");
+		ASSERT_EQ(static_cast<int>(expected[i]), static_cast<int>(actual[i]), "Codepoints should be equal");
 	}
 }
 
