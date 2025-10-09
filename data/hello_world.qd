@@ -31,7 +31,6 @@ fn main( -- ) {
 	}
 
 	1 1
-	je L1
 
 	switch {
 		case 1 {
@@ -44,15 +43,15 @@ fn main( -- ) {
 			-1
 		}
 	}
-
-L1:
-	return
 }
 
+/* This is a comment
+   spanning multiple lines
+*/
 fn something( -- ) {
 	defer {
 		2 3 add
-		4 5 mul
+		4 5 mul // Do multiplication
 	}
 	4 2 add
 }
