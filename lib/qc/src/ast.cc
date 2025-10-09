@@ -18,13 +18,14 @@
 #include <qc/ast_node_continue.h>
 #include <qc/ast_node_defer.h>
 #include <qc/ast_node_scoped.h>
+#include <qc/error_reporter.h>
 #include <u8t/scanner.h>
 #include <vector>
 
 namespace Qd {
-	static IAstNode* parseForStatement(u8t_scanner* scanner);
-	static IAstNode* parseIfStatement(u8t_scanner* scanner);
-	static IAstNode* parseSwitchStatement(u8t_scanner* scanner);
+	static IAstNode* parseForStatement(u8t_scanner* scanner, ErrorReporter* errorReporter);
+	static IAstNode* parseIfStatement(u8t_scanner* scanner, ErrorReporter* errorReporter);
+	static IAstNode* parseSwitchStatement(u8t_scanner* scanner, ErrorReporter* errorReporter);
 
 	// Helper to parse a single statement/expression token
 	// Returns nullptr if token was a control keyword that was handled
@@ -49,7 +50,7 @@ namespace Qd {
 	// Helper to parse statements inside a block (handles if, break, continue, nested structures)
 	// Returns a node that should be added to the parent, or nullptr
 	// allowControlFlow: if false, only allows break/continue but not if/for/switch
-	static IAstNode* parseBlockStatement(char32_t token, u8t_scanner* scanner, size_t* n, bool allowControlFlow = true) {
+	static IAstNode* parseBlockStatement(char32_t token, u8t_scanner* scanner, ErrorReporter* errorReporter, size_t* n, bool allowControlFlow = true) {
 		if (token == U8T_IDENTIFIER) {
 			const char* text = u8t_scanner_token_text(scanner, n);
 
@@ -62,11 +63,11 @@ namespace Qd {
 
 			if (allowControlFlow) {
 				if (strcmp(text, "if") == 0) {
-					return parseIfStatement(scanner);
+					return parseIfStatement(scanner, errorReporter);
 				} else if (strcmp(text, "for") == 0) {
-					return parseForStatement(scanner);
+					return parseForStatement(scanner, errorReporter);
 				} else if (strcmp(text, "switch") == 0) {
-					return parseSwitchStatement(scanner);
+					return parseSwitchStatement(scanner, errorReporter);
 				}
 			}
 
@@ -83,10 +84,10 @@ namespace Qd {
 		}
 	}
 
-	static IAstNode* parseFunctionDeclaration(u8t_scanner* scanner) {
+	static IAstNode* parseFunctionDeclaration(u8t_scanner* scanner, ErrorReporter* errorReporter) {
 		char32_t token = u8t_scanner_scan(scanner);
 		if (token != U8T_IDENTIFIER) {
-			fprintf(stderr, "Error: Expected function name after 'fn'\n");
+			errorReporter->reportError(scanner, "Expected function name after 'fn'");
 			return nullptr;
 		}
 
@@ -96,7 +97,7 @@ namespace Qd {
 
 		token = u8t_scanner_scan(scanner);
 		if (token != '(') {
-			fprintf(stderr, "Error: Expected '(' after function name\n");
+			errorReporter->reportError(scanner, "Expected '(' after function name");
 			delete func;
 			return nullptr;
 		}
@@ -135,7 +136,7 @@ namespace Qd {
 
 		token = u8t_scanner_scan(scanner);
 		if (token != '{') {
-			fprintf(stderr, "Error: Expected '{' after function signature\n");
+			errorReporter->reportError(scanner, "Expected '{' after function signature");
 			delete func;
 			return nullptr;
 		}
@@ -221,7 +222,7 @@ namespace Qd {
 				const char* text = u8t_scanner_token_text(scanner, &n);
 
 				if (strcmp(text, "for") == 0) {
-					IAstNode* forStmt = parseForStatement(scanner);
+					IAstNode* forStmt = parseForStatement(scanner, errorReporter);
 					if (forStmt) {
 						for (auto* node : tempNodes) {
 							node->setParent(body);
@@ -233,7 +234,7 @@ namespace Qd {
 						body->addChild(forStmt);
 					}
 				} else if (strcmp(text, "if") == 0) {
-					IAstNode* ifStmt = parseIfStatement(scanner);
+					IAstNode* ifStmt = parseIfStatement(scanner, errorReporter);
 					if (ifStmt) {
 						for (auto* node : tempNodes) {
 							node->setParent(body);
@@ -251,7 +252,7 @@ namespace Qd {
 									// Parse else block - must have {
 									token = u8t_scanner_scan(scanner);
 									if (token != '{') {
-										fprintf(stderr, "Error: Expected '{' after 'else'\n");
+										errorReporter->reportError(scanner, "Expected '{' after 'else'");
 										// Else without block - just ignore the else keyword and continue
 										// Put the token back into tempNodes so it gets processed
 										if (token == U8T_INTEGER) {
@@ -283,7 +284,7 @@ namespace Qd {
 												const char* elseBodyText = u8t_scanner_token_text(scanner, &n);
 
 												if (strcmp(elseBodyText, "if") == 0) {
-													IAstNode* nestedIf = parseIfStatement(scanner);
+													IAstNode* nestedIf = parseIfStatement(scanner, errorReporter);
 													if (nestedIf) {
 														nestedIf->setParent(elseBody);
 														elseBody->addChild(nestedIf);
@@ -350,7 +351,7 @@ namespace Qd {
 						body->addChild(ifStmt);
 					}
 				} else if (strcmp(text, "switch") == 0) {
-					IAstNode* switchStmt = parseSwitchStatement(scanner);
+					IAstNode* switchStmt = parseSwitchStatement(scanner, errorReporter);
 					if (switchStmt) {
 						for (auto* node : tempNodes) {
 							node->setParent(body);
@@ -559,12 +560,12 @@ namespace Qd {
 		return func;
 	}
 
-	static IAstNode* parseForStatement(u8t_scanner* scanner) {
+	static IAstNode* parseForStatement(u8t_scanner* scanner, ErrorReporter* errorReporter) {
 		size_t n;
 		char32_t token = u8t_scanner_scan(scanner);
 
 		if (token != U8T_IDENTIFIER) {
-			fprintf(stderr, "Error: Expected loop variable after 'for'\n");
+			errorReporter->reportError(scanner, "Expected loop variable after 'for'");
 			return nullptr;
 		}
 
@@ -573,7 +574,7 @@ namespace Qd {
 
 		token = u8t_scanner_scan(scanner);
 		if (token != '{') {
-			fprintf(stderr, "Error: Expected '{' after loop variable\n");
+			errorReporter->reportError(scanner, "Expected '{' after loop variable");
 			delete forStmt;
 			return nullptr;
 		}
@@ -585,7 +586,7 @@ namespace Qd {
 				break;
 			}
 
-			IAstNode* node = parseBlockStatement(token, scanner, &n);
+			IAstNode* node = parseBlockStatement(token, scanner, errorReporter, &n);
 			if (node) {
 				node->setParent(body);
 				body->addChild(node);
@@ -598,12 +599,12 @@ namespace Qd {
 		return forStmt;
 	}
 
-	static IAstNode* parseIfStatement(u8t_scanner* scanner) {
+	static IAstNode* parseIfStatement(u8t_scanner* scanner, ErrorReporter* errorReporter) {
 		size_t n;
 		char32_t token = u8t_scanner_scan(scanner);
 
 		if (token != '{') {
-			fprintf(stderr, "Error: Expected '{' after 'if'\n");
+			errorReporter->reportError(scanner, "Expected '{' after 'if'");
 			return nullptr;
 		}
 
@@ -615,7 +616,7 @@ namespace Qd {
 				break;
 			}
 
-			IAstNode* node = parseBlockStatement(token, scanner, &n);
+			IAstNode* node = parseBlockStatement(token, scanner, errorReporter, &n);
 			if (node) {
 				node->setParent(thenBody);
 				thenBody->addChild(node);
@@ -635,7 +636,7 @@ namespace Qd {
 					// Parse else block - must have {
 					token = u8t_scanner_scan(scanner);
 					if (token != '{') {
-						fprintf(stderr, "Error: Expected '{' after 'else'\n");
+						errorReporter->reportError(scanner, "Expected '{' after 'else'");
 					} else {
 						AstNodeBlock* elseBody = new AstNodeBlock();
 
@@ -644,7 +645,7 @@ namespace Qd {
 								break;
 							}
 
-							IAstNode* node = parseBlockStatement(token, scanner, &n);
+							IAstNode* node = parseBlockStatement(token, scanner, errorReporter, &n);
 							if (node) {
 								node->setParent(elseBody);
 								elseBody->addChild(node);
@@ -661,12 +662,12 @@ namespace Qd {
 		return ifStmt;
 	}
 
-	static IAstNode* parseSwitchStatement(u8t_scanner* scanner) {
+	static IAstNode* parseSwitchStatement(u8t_scanner* scanner, ErrorReporter* errorReporter) {
 		size_t n;
 		char32_t token = u8t_scanner_scan(scanner);
 
 		if (token != '{') {
-			fprintf(stderr, "Error: Expected '{' after 'switch'\n");
+			errorReporter->reportError(scanner, "Expected '{' after 'switch'");
 			return nullptr;
 		}
 
@@ -699,13 +700,13 @@ namespace Qd {
 					}
 
 					if (!caseValue) {
-						fprintf(stderr, "Error: Expected case value after 'case'\n");
+						errorReporter->reportError(scanner, "Expected case value after 'case'");
 						continue;
 					}
 
 					token = u8t_scanner_scan(scanner);
 					if (token != '{') {
-						fprintf(stderr, "Error: Expected '{' after case value\n");
+						errorReporter->reportError(scanner, "Expected '{' after case value");
 						delete caseValue;
 						continue;
 					}
@@ -716,7 +717,7 @@ namespace Qd {
 							break;
 						}
 
-						IAstNode* node = parseBlockStatement(token, scanner, &n, false);
+						IAstNode* node = parseBlockStatement(token, scanner, errorReporter, &n, false);
 						if (node) {
 							node->setParent(caseBody);
 							caseBody->addChild(node);
@@ -732,7 +733,7 @@ namespace Qd {
 				} else if (strcmp(text, "default") == 0) {
 					token = u8t_scanner_scan(scanner);
 					if (token != '{') {
-						fprintf(stderr, "Error: Expected '{' after 'default'\n");
+						errorReporter->reportError(scanner, "Expected '{' after 'default'");
 						continue;
 					}
 
@@ -742,7 +743,7 @@ namespace Qd {
 							break;
 						}
 
-						IAstNode* node = parseBlockStatement(token, scanner, &n, false);
+						IAstNode* node = parseBlockStatement(token, scanner, errorReporter, &n, false);
 						if (node) {
 							node->setParent(defaultBody);
 							defaultBody->addChild(node);
@@ -765,6 +766,8 @@ namespace Qd {
 		u8t_scanner scanner;
 		u8t_scanner_init(&scanner, src);
 
+		ErrorReporter errorReporter(src);
+
 		if (mRoot) {
 			delete mRoot;
 		}
@@ -779,7 +782,7 @@ namespace Qd {
 				const char* text = u8t_scanner_token_text(&scanner, &n);
 
 				if (strcmp(text, "fn") == 0) {
-					IAstNode* func = parseFunctionDeclaration(&scanner);
+					IAstNode* func = parseFunctionDeclaration(&scanner, &errorReporter);
 					if (func) {
 						func->setParent(program);
 						program->addChild(func);
@@ -792,7 +795,7 @@ namespace Qd {
 						useStmt->setParent(program);
 						program->addChild(useStmt);
 					} else {
-						fprintf(stderr, "Error: Expected module name after 'use'\n");
+						errorReporter.reportError(&scanner, "Expected module name after 'use'");
 					}
 				} else if (strcmp(text, "const") == 0) {
 					token = u8t_scanner_scan(&scanner);
@@ -821,7 +824,7 @@ namespace Qd {
 							}
 						}
 					} else {
-						fprintf(stderr, "Error: Expected constant name after 'const'\n");
+						errorReporter.reportError(&scanner, "Expected constant name after 'const'");
 					}
 				}
 				break;
