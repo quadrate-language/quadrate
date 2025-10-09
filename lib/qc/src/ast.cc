@@ -27,6 +27,30 @@ namespace Qd {
 	static IAstNode* parseIfStatement(u8t_scanner* scanner, ErrorReporter* errorReporter);
 	static IAstNode* parseSwitchStatement(u8t_scanner* scanner, ErrorReporter* errorReporter);
 
+	// Helper to synchronize parser after an error
+	// Skips tokens until a synchronization point is found
+	static void synchronize(u8t_scanner* scanner) {
+		char32_t token;
+		while ((token = u8t_scanner_scan(scanner)) != U8T_EOF) {
+			// Stop at statement boundaries
+			if (token == '}' || token == '{' || token == ';') {
+				return;
+			}
+
+			// Stop at keywords that start new declarations/statements
+			if (token == U8T_IDENTIFIER) {
+				size_t n;
+				const char* text = u8t_scanner_token_text(scanner, &n);
+				if (strcmp(text, "fn") == 0 || strcmp(text, "const") == 0 ||
+				    strcmp(text, "use") == 0 || strcmp(text, "if") == 0 ||
+				    strcmp(text, "for") == 0 || strcmp(text, "switch") == 0 ||
+				    strcmp(text, "return") == 0) {
+					return;
+				}
+			}
+		}
+	}
+
 	// Helper to parse a single statement/expression token
 	// Returns nullptr if token was a control keyword that was handled
 	// Returns a node if it's a literal or identifier
@@ -88,6 +112,7 @@ namespace Qd {
 		char32_t token = u8t_scanner_scan(scanner);
 		if (token != U8T_IDENTIFIER) {
 			errorReporter->reportError(scanner, "Expected function name after 'fn'");
+			synchronize(scanner);
 			return nullptr;
 		}
 
@@ -98,6 +123,7 @@ namespace Qd {
 		token = u8t_scanner_scan(scanner);
 		if (token != '(') {
 			errorReporter->reportError(scanner, "Expected '(' after function name");
+			synchronize(scanner);
 			delete func;
 			return nullptr;
 		}
@@ -137,8 +163,12 @@ namespace Qd {
 		token = u8t_scanner_scan(scanner);
 		if (token != '{') {
 			errorReporter->reportError(scanner, "Expected '{' after function signature");
-			delete func;
-			return nullptr;
+			// Recovery: create empty body and return partial function
+			AstNodeBlock* body = new AstNodeBlock();
+			body->setParent(func);
+			func->setBody(body);
+			synchronize(scanner);
+			return func;
 		}
 
 		AstNodeBlock* body = new AstNodeBlock();
@@ -566,6 +596,7 @@ namespace Qd {
 
 		if (token != U8T_IDENTIFIER) {
 			errorReporter->reportError(scanner, "Expected loop variable after 'for'");
+			synchronize(scanner);
 			return nullptr;
 		}
 
@@ -575,8 +606,12 @@ namespace Qd {
 		token = u8t_scanner_scan(scanner);
 		if (token != '{') {
 			errorReporter->reportError(scanner, "Expected '{' after loop variable");
-			delete forStmt;
-			return nullptr;
+			// Recovery: create empty body and return partial for statement
+			AstNodeBlock* body = new AstNodeBlock();
+			body->setParent(forStmt);
+			forStmt->setBody(body);
+			synchronize(scanner);
+			return forStmt;
 		}
 
 		AstNodeBlock* body = new AstNodeBlock();
@@ -605,7 +640,13 @@ namespace Qd {
 
 		if (token != '{') {
 			errorReporter->reportError(scanner, "Expected '{' after 'if'");
-			return nullptr;
+			// Recovery: create empty if statement and synchronize
+			AstNodeIfStatement* ifStmt = new AstNodeIfStatement();
+			AstNodeBlock* thenBody = new AstNodeBlock();
+			thenBody->setParent(ifStmt);
+			ifStmt->setThenBody(thenBody);
+			synchronize(scanner);
+			return ifStmt;
 		}
 
 		AstNodeIfStatement* ifStmt = new AstNodeIfStatement();
@@ -668,7 +709,10 @@ namespace Qd {
 
 		if (token != '{') {
 			errorReporter->reportError(scanner, "Expected '{' after 'switch'");
-			return nullptr;
+			// Recovery: create empty switch statement and synchronize
+			AstNodeSwitchStatement* switchStmt = new AstNodeSwitchStatement();
+			synchronize(scanner);
+			return switchStmt;
 		}
 
 		AstNodeSwitchStatement* switchStmt = new AstNodeSwitchStatement();

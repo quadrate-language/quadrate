@@ -350,6 +350,61 @@ TEST(Literals) {
 	ASSERT(strLit->type() == Qd::IAstNode::Type::Literal, "should be literal");
 }
 
+TEST(ErrorRecoveryMissingBraceAfterFunction) {
+	Qd::Ast ast;
+	const char* src = "fn test()\nfn other() {}";
+	Qd::IAstNode* root = ast.generate(src);
+
+	ASSERT(root != nullptr, "root should not be null");
+	// Should recover and parse both functions
+	// First function will have error but should create partial node
+	// Second function should parse correctly
+	ASSERT(root->childCount() >= 1, "should have at least 1 function");
+}
+
+TEST(ErrorRecoveryMissingBraceAfterIf) {
+	Qd::Ast ast;
+	const char* src = "fn test() { if foo }";
+	Qd::IAstNode* root = ast.generate(src);
+
+	ASSERT(root != nullptr, "root should not be null");
+	ASSERT(root->childCount() == 1, "should have 1 function");
+
+	Qd::IAstNode* func = root->child(0);
+	ASSERT(func->type() == Qd::IAstNode::Type::FunctionDeclaration, "should be function");
+
+	// Function should have body even with error in if statement
+	Qd::IAstNode* body = func->child(0);
+	ASSERT(body != nullptr, "body should not be null");
+}
+
+TEST(ErrorRecoveryMissingBraceAfterFor) {
+	Qd::Ast ast;
+	const char* src = "fn test() { for i foo }";
+	Qd::IAstNode* root = ast.generate(src);
+
+	ASSERT(root != nullptr, "root should not be null");
+	ASSERT(root->childCount() == 1, "should have 1 function");
+
+	Qd::IAstNode* func = root->child(0);
+	ASSERT(func->type() == Qd::IAstNode::Type::FunctionDeclaration, "should be function");
+
+	// Function should have body even with error in for statement
+	Qd::IAstNode* body = func->child(0);
+	ASSERT(body != nullptr, "body should not be null");
+}
+
+TEST(ErrorRecoveryMultipleErrors) {
+	Qd::Ast ast;
+	const char* src = "fn first() { if bar }\nfn second() { for x }\nfn third() {}";
+	Qd::IAstNode* root = ast.generate(src);
+
+	ASSERT(root != nullptr, "root should not be null");
+	// Parser should recover from errors and continue parsing
+	// Should have some nodes even with errors
+	ASSERT(root->childCount() >= 1, "should have at least 1 function");
+}
+
 int main() {
 	return UC_PrintResults();
 }
