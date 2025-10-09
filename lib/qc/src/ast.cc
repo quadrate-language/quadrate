@@ -15,6 +15,7 @@
 #include <qc/ast_node_use.h>
 #include <qc/ast_node_return.h>
 #include <qc/ast_node_break.h>
+#include <qc/ast_node_continue.h>
 #include <u8t/scanner.h>
 #include <vector>
 
@@ -242,6 +243,10 @@ namespace Qd {
 					AstNodeBreak* breakStmt = new AstNodeBreak();
 					breakStmt->setParent(body);
 					body->addChild(breakStmt);
+				} else if (strcmp(text, "continue") == 0) {
+					AstNodeContinue* continueStmt = new AstNodeContinue();
+					continueStmt->setParent(body);
+					body->addChild(continueStmt);
 				} else {
 					AstNodeIdentifier* id = new AstNodeIdentifier(text);
 					id->setParent(body);
@@ -301,6 +306,10 @@ namespace Qd {
 					AstNodeBreak* breakStmt = new AstNodeBreak();
 					breakStmt->setParent(thenBody);
 					thenBody->addChild(breakStmt);
+				} else if (strcmp(text, "continue") == 0) {
+					AstNodeContinue* continueStmt = new AstNodeContinue();
+					continueStmt->setParent(thenBody);
+					thenBody->addChild(continueStmt);
 				} else {
 					AstNodeIdentifier* id = new AstNodeIdentifier(text);
 					id->setParent(thenBody);
@@ -327,8 +336,9 @@ namespace Qd {
 		thenBody->setParent(ifStmt);
 		ifStmt->setThenBody(thenBody);
 
-		token = u8t_scanner_scan(scanner);
-		if (token == U8T_IDENTIFIER) {
+		char32_t nextToken = u8t_scanner_peek(scanner);
+		if (nextToken == U8T_IDENTIFIER) {
+			token = u8t_scanner_scan(scanner);
 			const char* text = u8t_scanner_token_text(scanner, &n);
 			if (strcmp(text, "else") == 0) {
 				token = u8t_scanner_scan(scanner);
@@ -353,6 +363,10 @@ namespace Qd {
 								AstNodeBreak* breakStmt = new AstNodeBreak();
 								breakStmt->setParent(elseBody);
 								elseBody->addChild(breakStmt);
+							} else if (strcmp(elseText, "continue") == 0) {
+								AstNodeContinue* continueStmt = new AstNodeContinue();
+								continueStmt->setParent(elseBody);
+								elseBody->addChild(continueStmt);
 							} else {
 								AstNodeIdentifier* id = new AstNodeIdentifier(elseText);
 								id->setParent(elseBody);
@@ -446,6 +460,10 @@ namespace Qd {
 								AstNodeBreak* breakStmt = new AstNodeBreak();
 								breakStmt->setParent(caseBody);
 								caseBody->addChild(breakStmt);
+							} else if (strcmp(bodyText, "continue") == 0) {
+								AstNodeContinue* continueStmt = new AstNodeContinue();
+								continueStmt->setParent(caseBody);
+								caseBody->addChild(continueStmt);
 							} else {
 								AstNodeIdentifier* id = new AstNodeIdentifier(bodyText);
 								id->setParent(caseBody);
@@ -494,6 +512,10 @@ namespace Qd {
 								AstNodeBreak* breakStmt = new AstNodeBreak();
 								breakStmt->setParent(defaultBody);
 								defaultBody->addChild(breakStmt);
+							} else if (strcmp(bodyText, "continue") == 0) {
+								AstNodeContinue* continueStmt = new AstNodeContinue();
+								continueStmt->setParent(defaultBody);
+								defaultBody->addChild(continueStmt);
 							} else {
 								AstNodeIdentifier* id = new AstNodeIdentifier(bodyText);
 								id->setParent(defaultBody);
@@ -591,22 +613,16 @@ namespace Qd {
 					} else {
 						fprintf(stderr, "Error: Expected constant name after 'const'\n");
 					}
-				} else {
-					printf("Identifier: %s\n", text);
 				}
 				break;
 			}
 			case U8T_INTEGER:
-				printf("Integer   : %s\n", u8t_scanner_token_text(&scanner, &n));
 				break;
 			case U8T_STRING:
-				printf("String    : %s\n", u8t_scanner_token_text(&scanner, &n));
 				break;
 			case U8T_FLOAT:
-				printf("Float     : %s\n", u8t_scanner_token_text(&scanner, &n));
 				break;
 			default:
-				printf("Token     : %c\n", token);
 				break;
 			}
 		}
