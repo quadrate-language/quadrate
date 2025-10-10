@@ -2,6 +2,7 @@ add_library(qc STATIC
 	src/ast.cc
 	src/ast_printer.cc
 	src/error_reporter.cc
+	src/stack.cc
 )
 
 find_library(U8T
