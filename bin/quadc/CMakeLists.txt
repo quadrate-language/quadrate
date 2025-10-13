@@ -5,6 +5,7 @@ add_executable(quadc
 
 target_link_libraries(quadc
 	PRIVATE
+		cgen
 		qc
 )
 

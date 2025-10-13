@@ -1,0 +1,276 @@
+#include <cgen/stack.h>
+#include <stdlib.h>
+#include <string.h>
+
+/* Internal element structure */
+typedef struct {
+	union {
+		int64_t i;
+		double d;
+		void* p;
+		char* s;
+	} value;
+	qd_stack_type_t type;
+} qd_stack_element_t;
+
+/* Stack structure definition */
+struct qd_stack {
+	qd_stack_element_t* data;
+	size_t capacity;
+	size_t size;
+};
+
+/* Lifecycle functions */
+
+qd_stack_error_t qd_stack_init(qd_stack_t** stack, size_t capacity) {
+	if (stack == NULL) {
+		return QD_STACK_ERR_NULL_POINTER;
+	}
+	if (capacity == 0) {
+		return QD_STACK_ERR_INVALID_CAPACITY;
+	}
+
+	qd_stack_t* s = (qd_stack_t*)malloc(sizeof(qd_stack_t));
+	if (s == NULL) {
+		return QD_STACK_ERR_ALLOC;
+	}
+
+	s->data = (qd_stack_element_t*)malloc(sizeof(qd_stack_element_t) * capacity);
+	if (s->data == NULL) {
+		free(s);
+		return QD_STACK_ERR_ALLOC;
+	}
+
+	s->capacity = capacity;
+	s->size = 0;
+	*stack = s;
+	return QD_STACK_OK;
+}
+
+void qd_stack_destroy(qd_stack_t* stack) {
+	if (stack == NULL) {
+		return;
+	}
+
+	/* Free all string allocations */
+	for (size_t i = 0; i < stack->size; i++) {
+		if (stack->data[i].type == QD_STACK_TYPE_STR) {
+			free(stack->data[i].value.s);
+		}
+	}
+
+	free(stack->data);
+	free(stack);
+}
+
+/* Push operations */
+
+qd_stack_error_t qd_stack_push_int(qd_stack_t* stack, int64_t value) {
+	if (stack == NULL) {
+		return QD_STACK_ERR_NULL_POINTER;
+	}
+	if (stack->size >= stack->capacity) {
+		return QD_STACK_ERR_OVERFLOW;
+	}
+
+	stack->data[stack->size].value.i = value;
+	stack->data[stack->size].type = QD_STACK_TYPE_INT;
+	stack->size++;
+	return QD_STACK_OK;
+}
+
+qd_stack_error_t qd_stack_push_double(qd_stack_t* stack, double value) {
+	if (stack == NULL) {
+		return QD_STACK_ERR_NULL_POINTER;
+	}
+	if (stack->size >= stack->capacity) {
+		return QD_STACK_ERR_OVERFLOW;
+	}
+
+	stack->data[stack->size].value.d = value;
+	stack->data[stack->size].type = QD_STACK_TYPE_DOUBLE;
+	stack->size++;
+	return QD_STACK_OK;
+}
+
+qd_stack_error_t qd_stack_push_ptr(qd_stack_t* stack, void* value) {
+	if (stack == NULL) {
+		return QD_STACK_ERR_NULL_POINTER;
+	}
+	if (stack->size >= stack->capacity) {
+		return QD_STACK_ERR_OVERFLOW;
+	}
+
+	stack->data[stack->size].value.p = value;
+	stack->data[stack->size].type = QD_STACK_TYPE_PTR;
+	stack->size++;
+	return QD_STACK_OK;
+}
+
+qd_stack_error_t qd_stack_push_str(qd_stack_t* stack, const char* value) {
+	if (stack == NULL || value == NULL) {
+		return QD_STACK_ERR_NULL_POINTER;
+	}
+	if (stack->size >= stack->capacity) {
+		return QD_STACK_ERR_OVERFLOW;
+	}
+
+	/* Copy the string to own the data */
+	size_t len = strlen(value);
+	char* copy = (char*)malloc(len + 1);
+	if (copy == NULL) {
+		return QD_STACK_ERR_ALLOC;
+	}
+	strcpy(copy, value);
+
+	stack->data[stack->size].value.s = copy;
+	stack->data[stack->size].type = QD_STACK_TYPE_STR;
+	stack->size++;
+	return QD_STACK_OK;
+}
+
+/* Pop operation */
+
+qd_stack_error_t qd_stack_pop(qd_stack_t* stack) {
+	if (stack == NULL) {
+		return QD_STACK_ERR_NULL_POINTER;
+	}
+	if (stack->size == 0) {
+		return QD_STACK_ERR_UNDERFLOW;
+	}
+
+	/* Free string memory if the top element is a string */
+	if (stack->data[stack->size - 1].type == QD_STACK_TYPE_STR) {
+		free(stack->data[stack->size - 1].value.s);
+	}
+
+	stack->size--;
+	return QD_STACK_OK;
+}
+
+/* Top operations */
+
+qd_stack_error_t qd_stack_top_type(const qd_stack_t* stack, qd_stack_type_t* type) {
+	if (stack == NULL || type == NULL) {
+		return QD_STACK_ERR_NULL_POINTER;
+	}
+	if (stack->size == 0) {
+		return QD_STACK_ERR_UNDERFLOW;
+	}
+
+	*type = stack->data[stack->size - 1].type;
+	return QD_STACK_OK;
+}
+
+qd_stack_error_t qd_stack_top_int(const qd_stack_t* stack, int64_t* value) {
+	if (stack == NULL || value == NULL) {
+		return QD_STACK_ERR_NULL_POINTER;
+	}
+	if (stack->size == 0) {
+		return QD_STACK_ERR_UNDERFLOW;
+	}
+	if (stack->data[stack->size - 1].type != QD_STACK_TYPE_INT) {
+		return QD_STACK_ERR_TYPE_MISMATCH;
+	}
+
+	*value = stack->data[stack->size - 1].value.i;
+	return QD_STACK_OK;
+}
+
+qd_stack_error_t qd_stack_top_double(const qd_stack_t* stack, double* value) {
+	if (stack == NULL || value == NULL) {
+		return QD_STACK_ERR_NULL_POINTER;
+	}
+	if (stack->size == 0) {
+		return QD_STACK_ERR_UNDERFLOW;
+	}
+	if (stack->data[stack->size - 1].type != QD_STACK_TYPE_DOUBLE) {
+		return QD_STACK_ERR_TYPE_MISMATCH;
+	}
+
+	*value = stack->data[stack->size - 1].value.d;
+	return QD_STACK_OK;
+}
+
+qd_stack_error_t qd_stack_top_ptr(const qd_stack_t* stack, void** value) {
+	if (stack == NULL || value == NULL) {
+		return QD_STACK_ERR_NULL_POINTER;
+	}
+	if (stack->size == 0) {
+		return QD_STACK_ERR_UNDERFLOW;
+	}
+	if (stack->data[stack->size - 1].type != QD_STACK_TYPE_PTR) {
+		return QD_STACK_ERR_TYPE_MISMATCH;
+	}
+
+	*value = stack->data[stack->size - 1].value.p;
+	return QD_STACK_OK;
+}
+
+qd_stack_error_t qd_stack_top_str(const qd_stack_t* stack, const char** value) {
+	if (stack == NULL || value == NULL) {
+		return QD_STACK_ERR_NULL_POINTER;
+	}
+	if (stack->size == 0) {
+		return QD_STACK_ERR_UNDERFLOW;
+	}
+	if (stack->data[stack->size - 1].type != QD_STACK_TYPE_STR) {
+		return QD_STACK_ERR_TYPE_MISMATCH;
+	}
+
+	*value = stack->data[stack->size - 1].value.s;
+	return QD_STACK_OK;
+}
+
+/* Introspection functions */
+
+size_t qd_stack_size(const qd_stack_t* stack) {
+	if (stack == NULL) {
+		return 0;
+	}
+	return stack->size;
+}
+
+size_t qd_stack_capacity(const qd_stack_t* stack) {
+	if (stack == NULL) {
+		return 0;
+	}
+	return stack->capacity;
+}
+
+bool qd_stack_is_empty(const qd_stack_t* stack) {
+	if (stack == NULL) {
+		return true;
+	}
+	return stack->size == 0;
+}
+
+bool qd_stack_is_full(const qd_stack_t* stack) {
+	if (stack == NULL) {
+		return true;
+	}
+	return stack->size >= stack->capacity;
+}
+
+/* Error message helper */
+
+const char* qd_stack_error_string(qd_stack_error_t error) {
+	switch (error) {
+		case QD_STACK_OK:
+			return "Success";
+		case QD_STACK_ERR_INVALID_CAPACITY:
+			return "Invalid capacity: must be greater than 0";
+		case QD_STACK_ERR_OVERFLOW:
+			return "Stack overflow: cannot push, stack is full";
+		case QD_STACK_ERR_UNDERFLOW:
+			return "Stack underflow: cannot access empty stack";
+		case QD_STACK_ERR_TYPE_MISMATCH:
+			return "Type mismatch: top element has different type";
+		case QD_STACK_ERR_NULL_POINTER:
+			return "Null pointer provided";
+		case QD_STACK_ERR_ALLOC:
+			return "Memory allocation failed";
+		default:
+			return "Unknown error";
+	}
+}
