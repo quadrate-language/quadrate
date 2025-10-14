@@ -10,5 +10,5 @@ void Compiler::compile(const char* source) {
 	Qd::AstPrinter::print(root);
 
 	Qd::Writer writer;
-	writer.write(root, "out.c");
+	writer.write(root, "main", "out.c");
 }

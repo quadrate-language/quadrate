@@ -6,23 +6,36 @@
 #include <sstream>
 
 namespace Qd {
-	void Writer::write(IAstNode* root, const char* filename) const {
-		if (root == nullptr || filename == nullptr) {
+	void Writer::write(IAstNode* root, const char* packageName, const char* filename) const {
+		if (root == nullptr || packageName == nullptr || filename == nullptr) {
 			return;
 		}
 
 		std::stringstream ss;
 
+		Writer::writeHeader(ss);
+
 		// Traverse the AST and generate code
-		traverse(root, ss);
+		traverse(root, packageName, ss);
+
+		Writer::writeFooter(ss);
 
 		printf("Writing AST to %s\n", ss.str().c_str());
 	}
 
-	void Writer::traverse(IAstNode* node, std::stringstream& out) const {
+	void Writer::writeHeader(std::stringstream& out) const {
+		out << "// Generated C code\n";
+		out << "#include <runtime/context.h>\n";
+		out << "#include <runtime/defs.h>\n\n";
+	}
+
+	void Writer::traverse(IAstNode* node, const char* packageName, std::stringstream& out, int indent) const {
 		if (node == nullptr) {
 			return;
 		}
+
+		// Helper to generate indentation string
+		auto makeIndent = [](int level) { return std::string(static_cast<size_t>(level * 4), ' '); };
 
 		// Process current node based on its type
 		switch (node->type()) {
@@ -33,15 +46,19 @@ namespace Qd {
 			out << "// Program\n";
 			break;
 		case IAstNode::Type::Block:
-			out << "{\n";
+			out << makeIndent(indent) << "{\n";
 			break;
 		case IAstNode::Type::FunctionDeclaration: {
 			AstNodeFunctionDeclaration* funcDecl = static_cast<AstNodeFunctionDeclaration*>(node);
-			out << "void " << funcDecl->name() << "(void) {\n";
-			out << "    // Function body\n";
-			traverse(funcDecl->body(), out);
-			out << "}\n";
-			break;
+			out << "\n"
+				<< makeIndent(indent) << "qd_exec_result " << packageName << "_" << funcDecl->name()
+				<< "(qd_context* ctx) {\n";
+			out << makeIndent(indent + 1) << "QD_REQUIRE_STACK(ctx, " << funcDecl->inputParameters().size() << ");\n\n";
+			traverse(funcDecl->body(), packageName, out, indent + 1);
+			out << "\n"
+				<< makeIndent(indent + 1) << "QD_REQUIRE_STACK(ctx, " << funcDecl->outputParameters().size() << ");\n ";
+			out << makeIndent(indent) << "}\n";
+			return; // Don't traverse children again
 		}
 		case IAstNode::Type::VariableDeclaration:
 			// TODO: Handle variable declaration
@@ -62,13 +79,13 @@ namespace Qd {
 			// TODO: Handle case statement
 			break;
 		case IAstNode::Type::ReturnStatement:
-			out << "return;\n";
+			out << makeIndent(indent) << "return;\n";
 			break;
 		case IAstNode::Type::BreakStatement:
-			out << "break;\n";
+			out << makeIndent(indent) << "break;\n";
 			break;
 		case IAstNode::Type::ContinueStatement:
-			out << "continue;\n";
+			out << makeIndent(indent) << "continue;\n";
 			break;
 		case IAstNode::Type::DeferStatement:
 			// TODO: Handle defer statement
@@ -93,7 +110,8 @@ namespace Qd {
 			break;
 		case IAstNode::Type::ConstantDeclaration: {
 			AstNodeConstant* constDecl = static_cast<AstNodeConstant*>(node);
-			out << "#define " << constDecl->name() << " " << constDecl->value() << "\n";
+			out << makeIndent(indent) << "#define " << packageName << "_" << constDecl->name() << " "
+				<< constDecl->value() << "\n";
 			break;
 		}
 		case IAstNode::Type::Label:
@@ -101,14 +119,24 @@ namespace Qd {
 			break;
 		}
 
+		// Determine the indentation level for children
+		int childIndent = indent;
+		if (node->type() == IAstNode::Type::Block) {
+			childIndent = indent + 1;
+		}
+
 		// Recursively traverse all children
 		for (size_t i = 0; i < node->childCount(); i++) {
-			traverse(node->child(i), out);
+			traverse(node->child(i), packageName, out, childIndent);
 		}
 
 		// Post-process node if needed
 		if (node->type() == IAstNode::Type::Block) {
-			out << "}\n";
+			out << makeIndent(indent) << "}\n";
 		}
+	}
+
+	void Writer::writeFooter(std::stringstream& out) const {
+		out << "\n// End of generated code\n";
 	}
 }

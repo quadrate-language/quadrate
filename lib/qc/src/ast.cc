@@ -2,7 +2,10 @@
 #include <qc/ast.h>
 #include <qc/ast_node.h>
 #include <qc/ast_node_block.h>
+#include <qc/ast_node_break.h>
 #include <qc/ast_node_constant.h>
+#include <qc/ast_node_continue.h>
+#include <qc/ast_node_defer.h>
 #include <qc/ast_node_for.h>
 #include <qc/ast_node_function.h>
 #include <qc/ast_node_identifier.h>
@@ -11,13 +14,10 @@
 #include <qc/ast_node_literal.h>
 #include <qc/ast_node_parameter.h>
 #include <qc/ast_node_program.h>
+#include <qc/ast_node_return.h>
+#include <qc/ast_node_scoped.h>
 #include <qc/ast_node_switch.h>
 #include <qc/ast_node_use.h>
-#include <qc/ast_node_return.h>
-#include <qc/ast_node_break.h>
-#include <qc/ast_node_continue.h>
-#include <qc/ast_node_defer.h>
-#include <qc/ast_node_scoped.h>
 #include <qc/error_reporter.h>
 #include <u8t/scanner.h>
 #include <vector>
@@ -41,10 +41,9 @@ namespace Qd {
 			if (token == U8T_IDENTIFIER) {
 				size_t n;
 				const char* text = u8t_scanner_token_text(scanner, &n);
-				if (strcmp(text, "fn") == 0 || strcmp(text, "const") == 0 ||
-				    strcmp(text, "use") == 0 || strcmp(text, "if") == 0 ||
-				    strcmp(text, "for") == 0 || strcmp(text, "switch") == 0 ||
-				    strcmp(text, "return") == 0) {
+				if (strcmp(text, "fn") == 0 || strcmp(text, "const") == 0 || strcmp(text, "use") == 0 ||
+					strcmp(text, "if") == 0 || strcmp(text, "for") == 0 || strcmp(text, "switch") == 0 ||
+					strcmp(text, "return") == 0) {
 					return;
 				}
 			}
@@ -74,7 +73,8 @@ namespace Qd {
 	// Helper to parse statements inside a block (handles if, break, continue, nested structures)
 	// Returns a node that should be added to the parent, or nullptr
 	// allowControlFlow: if false, only allows break/continue but not if/for/switch
-	static IAstNode* parseBlockStatement(char32_t token, u8t_scanner* scanner, ErrorReporter* errorReporter, size_t* n, bool allowControlFlow = true) {
+	static IAstNode* parseBlockStatement(char32_t token, u8t_scanner* scanner, ErrorReporter* errorReporter, size_t* n,
+										 bool allowControlFlow = true) {
 		if (token == U8T_IDENTIFIER) {
 			const char* text = u8t_scanner_token_text(scanner, n);
 
@@ -216,7 +216,7 @@ namespace Qd {
 
 			sawSlash = (token == '/');
 			if (sawSlash) {
-				continue;  // Wait for next token to see if it's a comment
+				continue; // Wait for next token to see if it's a comment
 			}
 
 			// Handle :: scope operator
@@ -245,7 +245,7 @@ namespace Qd {
 
 			sawColon = (token == ':');
 			if (sawColon) {
-				continue;  // Wait for next token to see if it's another colon
+				continue; // Wait for next token to see if it's another colon
 			}
 
 			if (token == U8T_IDENTIFIER) {
@@ -287,15 +287,18 @@ namespace Qd {
 										// Put the token back into tempNodes so it gets processed
 										if (token == U8T_INTEGER) {
 											const char* tokenText = u8t_scanner_token_text(scanner, &n);
-											AstNodeLiteral* lit = new AstNodeLiteral(tokenText, AstNodeLiteral::LiteralType::Integer);
+											AstNodeLiteral* lit =
+												new AstNodeLiteral(tokenText, AstNodeLiteral::LiteralType::Integer);
 											tempNodes.push_back(lit);
 										} else if (token == U8T_FLOAT) {
 											const char* tokenText = u8t_scanner_token_text(scanner, &n);
-											AstNodeLiteral* lit = new AstNodeLiteral(tokenText, AstNodeLiteral::LiteralType::Float);
+											AstNodeLiteral* lit =
+												new AstNodeLiteral(tokenText, AstNodeLiteral::LiteralType::Float);
 											tempNodes.push_back(lit);
 										} else if (token == U8T_STRING) {
 											const char* tokenText = u8t_scanner_token_text(scanner, &n);
-											AstNodeLiteral* lit = new AstNodeLiteral(tokenText, AstNodeLiteral::LiteralType::String);
+											AstNodeLiteral* lit =
+												new AstNodeLiteral(tokenText, AstNodeLiteral::LiteralType::String);
 											tempNodes.push_back(lit);
 										} else if (token == U8T_IDENTIFIER) {
 											const char* tokenText = u8t_scanner_token_text(scanner, &n);
@@ -334,17 +337,20 @@ namespace Qd {
 												}
 											} else if (token == U8T_INTEGER) {
 												const char* elseBodyText = u8t_scanner_token_text(scanner, &n);
-												AstNodeLiteral* lit = new AstNodeLiteral(elseBodyText, AstNodeLiteral::LiteralType::Integer);
+												AstNodeLiteral* lit = new AstNodeLiteral(
+													elseBodyText, AstNodeLiteral::LiteralType::Integer);
 												lit->setParent(elseBody);
 												elseBody->addChild(lit);
 											} else if (token == U8T_FLOAT) {
 												const char* elseBodyText = u8t_scanner_token_text(scanner, &n);
-												AstNodeLiteral* lit = new AstNodeLiteral(elseBodyText, AstNodeLiteral::LiteralType::Float);
+												AstNodeLiteral* lit = new AstNodeLiteral(
+													elseBodyText, AstNodeLiteral::LiteralType::Float);
 												lit->setParent(elseBody);
 												elseBody->addChild(lit);
 											} else if (token == U8T_STRING) {
 												const char* elseBodyText = u8t_scanner_token_text(scanner, &n);
-												AstNodeLiteral* lit = new AstNodeLiteral(elseBodyText, AstNodeLiteral::LiteralType::String);
+												AstNodeLiteral* lit = new AstNodeLiteral(
+													elseBodyText, AstNodeLiteral::LiteralType::String);
 												lit->setParent(elseBody);
 												elseBody->addChild(lit);
 											}
@@ -363,15 +369,18 @@ namespace Qd {
 								// We've already consumed it, so we need to process it here
 								if (token == U8T_INTEGER) {
 									const char* tokenText = u8t_scanner_token_text(scanner, &n);
-									AstNodeLiteral* lit = new AstNodeLiteral(tokenText, AstNodeLiteral::LiteralType::Integer);
+									AstNodeLiteral* lit =
+										new AstNodeLiteral(tokenText, AstNodeLiteral::LiteralType::Integer);
 									tempNodes.push_back(lit);
 								} else if (token == U8T_FLOAT) {
 									const char* tokenText = u8t_scanner_token_text(scanner, &n);
-									AstNodeLiteral* lit = new AstNodeLiteral(tokenText, AstNodeLiteral::LiteralType::Float);
+									AstNodeLiteral* lit =
+										new AstNodeLiteral(tokenText, AstNodeLiteral::LiteralType::Float);
 									tempNodes.push_back(lit);
 								} else if (token == U8T_STRING) {
 									const char* tokenText = u8t_scanner_token_text(scanner, &n);
-									AstNodeLiteral* lit = new AstNodeLiteral(tokenText, AstNodeLiteral::LiteralType::String);
+									AstNodeLiteral* lit =
+										new AstNodeLiteral(tokenText, AstNodeLiteral::LiteralType::String);
 									tempNodes.push_back(lit);
 								}
 							}
@@ -428,7 +437,8 @@ namespace Qd {
 								deferNodes.push_back(id);
 							} else if (token == U8T_INTEGER) {
 								const char* deferText = u8t_scanner_token_text(scanner, &n);
-								AstNodeLiteral* lit = new AstNodeLiteral(deferText, AstNodeLiteral::LiteralType::Integer);
+								AstNodeLiteral* lit =
+									new AstNodeLiteral(deferText, AstNodeLiteral::LiteralType::Integer);
 								deferNodes.push_back(lit);
 							} else if (token == U8T_FLOAT) {
 								const char* deferText = u8t_scanner_token_text(scanner, &n);
@@ -436,7 +446,8 @@ namespace Qd {
 								deferNodes.push_back(lit);
 							} else if (token == U8T_STRING) {
 								const char* deferText = u8t_scanner_token_text(scanner, &n);
-								AstNodeLiteral* lit = new AstNodeLiteral(deferText, AstNodeLiteral::LiteralType::String);
+								AstNodeLiteral* lit =
+									new AstNodeLiteral(deferText, AstNodeLiteral::LiteralType::String);
 								deferNodes.push_back(lit);
 							} else if (token == ':') {
 								char32_t nextChar = u8t_scanner_peek(scanner);
@@ -488,9 +499,9 @@ namespace Qd {
 
 								// Check if it's a control structure keyword - this ends the defer
 								if (strcmp(deferText, "for") == 0 || strcmp(deferText, "if") == 0 ||
-								    strcmp(deferText, "switch") == 0 || strcmp(deferText, "return") == 0 ||
-								    strcmp(deferText, "defer") == 0 || strcmp(deferText, "break") == 0 ||
-								    strcmp(deferText, "continue") == 0) {
+									strcmp(deferText, "switch") == 0 || strcmp(deferText, "return") == 0 ||
+									strcmp(deferText, "defer") == 0 || strcmp(deferText, "break") == 0 ||
+									strcmp(deferText, "continue") == 0) {
 									AstNodeIdentifier* id = new AstNodeIdentifier(deferText);
 									tempNodes.push_back(id);
 									break;
@@ -506,8 +517,9 @@ namespace Qd {
 								// If we've already seen an operator and the last node was an operator,
 								// this literal starts a new statement
 								if (hasSeenOperator && !deferNodes.empty() &&
-								    deferNodes.back()->type() == IAstNode::Type::Identifier) {
-									AstNodeLiteral* lit = new AstNodeLiteral(deferText, AstNodeLiteral::LiteralType::Integer);
+									deferNodes.back()->type() == IAstNode::Type::Identifier) {
+									AstNodeLiteral* lit =
+										new AstNodeLiteral(deferText, AstNodeLiteral::LiteralType::Integer);
 									tempNodes.push_back(lit);
 									break;
 								}
@@ -518,8 +530,9 @@ namespace Qd {
 								const char* deferText = u8t_scanner_token_text(scanner, &n);
 
 								if (hasSeenOperator && !deferNodes.empty() &&
-								    deferNodes.back()->type() == IAstNode::Type::Identifier) {
-									AstNodeLiteral* lit = new AstNodeLiteral(deferText, AstNodeLiteral::LiteralType::Float);
+									deferNodes.back()->type() == IAstNode::Type::Identifier) {
+									AstNodeLiteral* lit =
+										new AstNodeLiteral(deferText, AstNodeLiteral::LiteralType::Float);
 									tempNodes.push_back(lit);
 									break;
 								}
@@ -530,8 +543,9 @@ namespace Qd {
 								const char* deferText = u8t_scanner_token_text(scanner, &n);
 
 								if (hasSeenOperator && !deferNodes.empty() &&
-								    deferNodes.back()->type() == IAstNode::Type::Identifier) {
-									AstNodeLiteral* lit = new AstNodeLiteral(deferText, AstNodeLiteral::LiteralType::String);
+									deferNodes.back()->type() == IAstNode::Type::Identifier) {
+									AstNodeLiteral* lit =
+										new AstNodeLiteral(deferText, AstNodeLiteral::LiteralType::String);
 									tempNodes.push_back(lit);
 									break;
 								}
@@ -849,7 +863,7 @@ namespace Qd {
 						token = u8t_scanner_scan(&scanner);
 						if (token == '=') {
 							token = u8t_scanner_scan(&scanner);
-							IAstNode* value = nullptr;
+							AstNodeLiteral* value = nullptr;
 							if (token == U8T_INTEGER) {
 								const char* valueText = u8t_scanner_token_text(&scanner, &n);
 								value = new AstNodeLiteral(valueText, AstNodeLiteral::LiteralType::Integer);
@@ -861,7 +875,7 @@ namespace Qd {
 								value = new AstNodeLiteral(valueText, AstNodeLiteral::LiteralType::String);
 							}
 							if (value) {
-								AstNodeConstant* constDecl = new AstNodeConstant(constNameStr, value);
+								AstNodeConstant* constDecl = new AstNodeConstant(constNameStr, value->value().c_str());
 								value->setParent(constDecl);
 								constDecl->setParent(program);
 								program->addChild(constDecl);

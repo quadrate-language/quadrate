@@ -8,10 +8,12 @@ namespace Qd {
 
 	class Writer {
 	public:
-		void write(IAstNode* root, const char* filename) const;
+		void write(IAstNode* root, const char* packageName, const char* filename) const;
 
 	private:
-		void traverse(IAstNode* node, std::stringstream& out) const;
+		void writeHeader(std::stringstream& out) const;
+		void traverse(IAstNode* node, const char* packageName, std::stringstream& out, int indent = 0) const;
+		void writeFooter(std::stringstream& out) const;
 	};
 }
 

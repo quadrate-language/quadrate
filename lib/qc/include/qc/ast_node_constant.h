@@ -7,13 +7,7 @@
 namespace Qd {
 	class AstNodeConstant : public IAstNode {
 	public:
-		AstNodeConstant(const std::string& name, IAstNode* value) : mName(name), mValue(value), mParent(nullptr) {
-		}
-
-		~AstNodeConstant() {
-			if (mValue) {
-				delete mValue;
-			}
+		AstNodeConstant(const std::string& name, const char* value) : mName(name), mValue(value), mParent(nullptr) {
 		}
 
 		IAstNode::Type type() const override {
@@ -21,13 +15,10 @@ namespace Qd {
 		}
 
 		size_t childCount() const override {
-			return mValue ? 1 : 0;
+			return 1;
 		}
 
-		IAstNode* child(size_t index) const override {
-			if (index == 0 && mValue) {
-				return mValue;
-			}
+		IAstNode* child(size_t /*index*/) const override {
 			return nullptr;
 		}
 
@@ -43,13 +34,13 @@ namespace Qd {
 			return mName;
 		}
 
-		IAstNode* value() const {
-			return mValue;
+		const char* value() const {
+			return mValue.c_str();
 		}
 
 	private:
 		std::string mName;
-		IAstNode* mValue;
+		std::string mValue;
 		IAstNode* mParent;
 	};
 }
