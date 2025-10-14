@@ -15,15 +15,19 @@ add_compile_options(
 	-Wconversion
 	-Wsign-conversion
 	-Wshadow
-	-Wnon-virtual-dtor
-	-Wold-style-cast
 	-Wcast-align
 	-Wunused
-	-Woverloaded-virtual
 	-Wnull-dereference
 	-Wdouble-promotion
 	-Wformat=2
 	-Werror
+)
+
+# C++-specific warnings
+add_compile_options(
+	$<$<COMPILE_LANGUAGE:CXX>:-Wnon-virtual-dtor>
+	$<$<COMPILE_LANGUAGE:CXX>:-Wold-style-cast>
+	$<$<COMPILE_LANGUAGE:CXX>:-Woverloaded-virtual>
 )
 
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
