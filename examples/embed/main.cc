@@ -6,9 +6,9 @@ void my_func() {
 }
 
 int main(void) {
-	qd_context_t* ctx = qd_create_context();
+	qd_context* ctx = qd_create_context();
 
-	qd_module_t* os = qd_get_module(ctx, "os");
+	qd_module* os = qd_get_module(ctx, "os");
 	qd_add_script(os, "fn exit() {}");
 	qd_register_function(os, "my_func", my_func);
 	qd_build(os);

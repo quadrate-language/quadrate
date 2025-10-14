@@ -1,25 +1,25 @@
 #include <quadrate/qd.h>
 #include <stdlib.h>
 
-qd_context_t* qd_create_context() {
+qd_context* qd_create_context() {
 	return NULL;
 }
 
-void qd_free_context(qd_context_t*) {
+void qd_free_context(qd_context*) {
 }
 
-qd_module_t* qd_get_module(qd_context_t*, const char*) {
+qd_module* qd_get_module(qd_context*, const char*) {
 	return NULL;
 }
 
-void qd_add_script(qd_module_t*, const char*) {
+void qd_add_script(qd_module*, const char*) {
 }
 
-void qd_register_function(qd_module_t*, const char*, void (*)()) {
+void qd_register_function(qd_module*, const char*, void (*)()) {
 }
 
-void qd_build(qd_module_t*) {
+void qd_build(qd_module*) {
 }
 
-void qd_execute(qd_context_t*, const char*) {
+void qd_execute(qd_context*, const char*) {
 }
