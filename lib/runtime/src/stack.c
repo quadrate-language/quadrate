@@ -10,7 +10,7 @@ typedef struct {
 		void* p;
 		char* s;
 	} value;
-	qd_stack_type_t type;
+	qd_stack_type type;
 } qd_stack_element_t;
 
 /* Stack structure definition */
@@ -22,7 +22,7 @@ struct qd_stack {
 
 /* Lifecycle functions */
 
-qd_stack_error_t qd_stack_init(qd_stack_t** stack, size_t capacity) {
+qd_stack_error qd_stack_init(qd_stack** stack, size_t capacity) {
 	if (stack == NULL) {
 		return QD_STACK_ERR_NULL_POINTER;
 	}
@@ -30,7 +30,7 @@ qd_stack_error_t qd_stack_init(qd_stack_t** stack, size_t capacity) {
 		return QD_STACK_ERR_INVALID_CAPACITY;
 	}
 
-	qd_stack_t* s = (qd_stack_t*)malloc(sizeof(qd_stack_t));
+	qd_stack* s = (qd_stack*)malloc(sizeof(qd_stack));
 	if (s == NULL) {
 		return QD_STACK_ERR_ALLOC;
 	}
@@ -47,7 +47,7 @@ qd_stack_error_t qd_stack_init(qd_stack_t** stack, size_t capacity) {
 	return QD_STACK_OK;
 }
 
-void qd_stack_destroy(qd_stack_t* stack) {
+void qd_stack_destroy(qd_stack* stack) {
 	if (stack == NULL) {
 		return;
 	}
@@ -65,7 +65,7 @@ void qd_stack_destroy(qd_stack_t* stack) {
 
 /* Push operations */
 
-qd_stack_error_t qd_stack_push_int(qd_stack_t* stack, int64_t value) {
+qd_stack_error qd_stack_push_int(qd_stack* stack, int64_t value) {
 	if (stack == NULL) {
 		return QD_STACK_ERR_NULL_POINTER;
 	}
@@ -79,7 +79,7 @@ qd_stack_error_t qd_stack_push_int(qd_stack_t* stack, int64_t value) {
 	return QD_STACK_OK;
 }
 
-qd_stack_error_t qd_stack_push_double(qd_stack_t* stack, double value) {
+qd_stack_error qd_stack_push_double(qd_stack* stack, double value) {
 	if (stack == NULL) {
 		return QD_STACK_ERR_NULL_POINTER;
 	}
@@ -93,7 +93,7 @@ qd_stack_error_t qd_stack_push_double(qd_stack_t* stack, double value) {
 	return QD_STACK_OK;
 }
 
-qd_stack_error_t qd_stack_push_ptr(qd_stack_t* stack, void* value) {
+qd_stack_error qd_stack_push_ptr(qd_stack* stack, void* value) {
 	if (stack == NULL) {
 		return QD_STACK_ERR_NULL_POINTER;
 	}
@@ -107,7 +107,7 @@ qd_stack_error_t qd_stack_push_ptr(qd_stack_t* stack, void* value) {
 	return QD_STACK_OK;
 }
 
-qd_stack_error_t qd_stack_push_str(qd_stack_t* stack, const char* value) {
+qd_stack_error qd_stack_push_str(qd_stack* stack, const char* value) {
 	if (stack == NULL || value == NULL) {
 		return QD_STACK_ERR_NULL_POINTER;
 	}
@@ -131,7 +131,7 @@ qd_stack_error_t qd_stack_push_str(qd_stack_t* stack, const char* value) {
 
 /* Pop operation */
 
-qd_stack_error_t qd_stack_pop(qd_stack_t* stack) {
+qd_stack_error qd_stack_pop(qd_stack* stack) {
 	if (stack == NULL) {
 		return QD_STACK_ERR_NULL_POINTER;
 	}
@@ -150,7 +150,7 @@ qd_stack_error_t qd_stack_pop(qd_stack_t* stack) {
 
 /* Top operations */
 
-qd_stack_error_t qd_stack_top_type(const qd_stack_t* stack, qd_stack_type_t* type) {
+qd_stack_error qd_stack_top_type(const qd_stack* stack, qd_stack_type* type) {
 	if (stack == NULL || type == NULL) {
 		return QD_STACK_ERR_NULL_POINTER;
 	}
@@ -162,7 +162,7 @@ qd_stack_error_t qd_stack_top_type(const qd_stack_t* stack, qd_stack_type_t* typ
 	return QD_STACK_OK;
 }
 
-qd_stack_error_t qd_stack_top_int(const qd_stack_t* stack, int64_t* value) {
+qd_stack_error qd_stack_top_int(const qd_stack* stack, int64_t* value) {
 	if (stack == NULL || value == NULL) {
 		return QD_STACK_ERR_NULL_POINTER;
 	}
@@ -177,7 +177,7 @@ qd_stack_error_t qd_stack_top_int(const qd_stack_t* stack, int64_t* value) {
 	return QD_STACK_OK;
 }
 
-qd_stack_error_t qd_stack_top_double(const qd_stack_t* stack, double* value) {
+qd_stack_error qd_stack_top_double(const qd_stack* stack, double* value) {
 	if (stack == NULL || value == NULL) {
 		return QD_STACK_ERR_NULL_POINTER;
 	}
@@ -192,7 +192,7 @@ qd_stack_error_t qd_stack_top_double(const qd_stack_t* stack, double* value) {
 	return QD_STACK_OK;
 }
 
-qd_stack_error_t qd_stack_top_ptr(const qd_stack_t* stack, void** value) {
+qd_stack_error qd_stack_top_ptr(const qd_stack* stack, void** value) {
 	if (stack == NULL || value == NULL) {
 		return QD_STACK_ERR_NULL_POINTER;
 	}
@@ -207,7 +207,7 @@ qd_stack_error_t qd_stack_top_ptr(const qd_stack_t* stack, void** value) {
 	return QD_STACK_OK;
 }
 
-qd_stack_error_t qd_stack_top_str(const qd_stack_t* stack, const char** value) {
+qd_stack_error qd_stack_top_str(const qd_stack* stack, const char** value) {
 	if (stack == NULL || value == NULL) {
 		return QD_STACK_ERR_NULL_POINTER;
 	}
@@ -224,28 +224,28 @@ qd_stack_error_t qd_stack_top_str(const qd_stack_t* stack, const char** value) {
 
 /* Introspection functions */
 
-size_t qd_stack_size(const qd_stack_t* stack) {
+size_t qd_stack_size(const qd_stack* stack) {
 	if (stack == NULL) {
 		return 0;
 	}
 	return stack->size;
 }
 
-size_t qd_stack_capacity(const qd_stack_t* stack) {
+size_t qd_stack_capacity(const qd_stack* stack) {
 	if (stack == NULL) {
 		return 0;
 	}
 	return stack->capacity;
 }
 
-bool qd_stack_is_empty(const qd_stack_t* stack) {
+bool qd_stack_is_empty(const qd_stack* stack) {
 	if (stack == NULL) {
 		return true;
 	}
 	return stack->size == 0;
 }
 
-bool qd_stack_is_full(const qd_stack_t* stack) {
+bool qd_stack_is_full(const qd_stack* stack) {
 	if (stack == NULL) {
 		return true;
 	}
@@ -254,7 +254,7 @@ bool qd_stack_is_full(const qd_stack_t* stack) {
 
 /* Error message helper */
 
-const char* qd_stack_error_string(qd_stack_error_t error) {
+const char* qd_stack_error_string(qd_stack_error error) {
 	switch (error) {
 		case QD_STACK_OK:
 			return "Success";

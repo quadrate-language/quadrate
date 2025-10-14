@@ -2,6 +2,11 @@ add_library(quadrate SHARED
 	src/qd.cc
 )
 
+target_link_libraries(quadrate
+	PUBLIC
+		runtime
+)
+
 target_include_directories(quadrate
 	PUBLIC
 		$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>

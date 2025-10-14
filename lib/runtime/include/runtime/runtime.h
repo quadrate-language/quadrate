@@ -4,14 +4,13 @@
 #include <runtime/context.h>
 #include <runtime/exec_result.h>
 
-#ifndef __cplusplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 
 qd_exec_result qd_push(qd_context* ctx);
 
-
-#ifndef __cplusplus
+#ifdef __cplusplus
 }
 #endif
 

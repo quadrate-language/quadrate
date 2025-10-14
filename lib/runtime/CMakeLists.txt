@@ -1,4 +1,5 @@
 add_library(runtime STATIC
+	src/runtime.c
 	src/stack.c
 )
 

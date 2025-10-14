@@ -3,15 +3,15 @@
 
 #include <runtime/stack.h>
 
-#ifndef __cplusplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 
 typedef struct {
-	qd_stack st;
+	qd_stack* st;
 } qd_context;
 
-#ifndef __cplusplus
+#ifdef __cplusplus
 }
 #endif
 
