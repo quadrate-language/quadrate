@@ -1,4 +1,5 @@
 #include <cgen/writer.h>
+#include <fstream>
 #include <qc/ast.h>
 #include <qc/ast_node.h>
 #include <qc/ast_node_constant.h>
@@ -20,13 +21,28 @@ namespace Qd {
 
 		Writer::writeFooter(ss);
 
-		printf("Writing AST to %s\n", ss.str().c_str());
+		// Write to file
+		std::ofstream file(filename);
+		file << ss.str();
+		file.close();
+	}
+
+	void Writer::writeMain(const char* filename) const {
+		std::ofstream file(filename);
+		file << "// Generated main C code\n";
+		file << "#include <runtime/runtime.h>\n\n";
+		file << "extern qd_exec_result main_main(qd_context* ctx);\n\n";
+		file << "int main(void) {\n";
+		file << "    qd_context ctx;\n";
+		file << "    main_main(&ctx);\n";
+		file << "    return 0;\n";
+		file << "}\n";
+		file.close();
 	}
 
 	void Writer::writeHeader(std::stringstream& out) const {
 		out << "// Generated C code\n";
-		out << "#include <runtime/context.h>\n";
-		out << "#include <runtime/defs.h>\n\n";
+		out << "#include <runtime/runtime.h>\n\n";
 	}
 
 	void Writer::traverse(IAstNode* node, const char* packageName, std::stringstream& out, int indent) const {
@@ -56,6 +72,7 @@ namespace Qd {
 			out << makeIndent(indent + 1) << "QD_REQUIRE_STACK(ctx, " << funcDecl->inputParameters().size() << ");\n\n";
 			traverse(funcDecl->body(), packageName, out, indent + 1);
 			out << "\n"
+				<< makeIndent(indent) << "QD_DONE:;\n"
 				<< makeIndent(indent + 1) << "QD_REQUIRE_STACK(ctx, " << funcDecl->outputParameters().size() << ");\n ";
 			out << makeIndent(indent) << "}\n";
 			return; // Don't traverse children again
@@ -79,7 +96,7 @@ namespace Qd {
 			// TODO: Handle case statement
 			break;
 		case IAstNode::Type::ReturnStatement:
-			out << makeIndent(indent) << "return;\n";
+			out << makeIndent(indent) << "goto QD_DONE;\n";
 			break;
 		case IAstNode::Type::BreakStatement:
 			out << makeIndent(indent) << "break;\n";

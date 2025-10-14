@@ -9,6 +9,7 @@ namespace Qd {
 	class Writer {
 	public:
 		void write(IAstNode* root, const char* packageName, const char* filename) const;
+		void writeMain(const char* filename) const;
 
 	private:
 		void writeHeader(std::stringstream& out) const;
