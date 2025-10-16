@@ -8,7 +8,7 @@ extern "C" {
 #define QD_REQUIRE_STACK(ctx, n)                                                                                       \
 	do {                                                                                                               \
 		if (qd_stack_depth((ctx)->st) < (n)) {                                                                         \
-			qd_err_push((ctx), QD_STACK_UNDERFLOW);                                                                    \
+			qd_err_push((ctx), QD_STACK_ERR_UNDERFLOW);                                                                    \
 			return;                                                                                                    \
 		}                                                                                                              \
 	} while (0)

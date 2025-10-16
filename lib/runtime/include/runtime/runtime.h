@@ -9,6 +9,7 @@
 extern "C" {
 #endif
 
+qd_exec_result qd_pop(qd_context* ctx);
 qd_exec_result qd_push(qd_context* ctx);
 
 #ifdef __cplusplus
