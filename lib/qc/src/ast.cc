@@ -187,7 +187,7 @@ namespace Qd {
 				sawSlash = false;
 				// Skip until end of line
 				char32_t c;
-				while ((c = u8t_scanner_peek(scanner)) != 0 && c != '\n') {
+				while ((c = u8t_scanner_peek(scanner)) != 0 && c != '\n' && c != '\r') {
 					u8t_scanner_scan(scanner);
 				}
 				continue;
