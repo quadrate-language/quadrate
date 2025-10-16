@@ -876,7 +876,7 @@ namespace Qd {
 							}
 							if (value) {
 								AstNodeConstant* constDecl = new AstNodeConstant(constNameStr, value->value().c_str());
-								value->setParent(constDecl);
+								delete value;  // Value is copied, no longer needed
 								constDecl->setParent(program);
 								program->addChild(constDecl);
 							}
