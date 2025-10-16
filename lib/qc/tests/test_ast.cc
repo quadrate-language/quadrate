@@ -189,10 +189,8 @@ TEST(ConstDeclaration) {
 	Qd::IAstNode* constDecl = root->child(0);
 	ASSERT(constDecl->type() == Qd::IAstNode::Type::ConstantDeclaration, "should be constant");
 
-	// Const should have a value
-	ASSERT(constDecl->childCount() == 1, "constDecl should have 1 child");
-	Qd::IAstNode* value = constDecl->child(0);
-	ASSERT(value->type() == Qd::IAstNode::Type::Literal, "should be literal");
+	// Const declaration stores value internally, not as a child node
+	ASSERT(constDecl->childCount() == 0, "constDecl should have 0 children");
 }
 
 TEST(UseStatement) {

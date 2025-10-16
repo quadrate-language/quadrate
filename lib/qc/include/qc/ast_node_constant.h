@@ -15,7 +15,7 @@ namespace Qd {
 		}
 
 		size_t childCount() const override {
-			return 1;
+			return 0;
 		}
 
 		IAstNode* child(size_t /*index*/) const override {
