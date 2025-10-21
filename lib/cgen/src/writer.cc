@@ -72,7 +72,7 @@ namespace Qd {
 			out << makeIndent(indent + 1) << "QD_REQUIRE_STACK(ctx, " << funcDecl->inputParameters().size() << ");\n\n";
 			traverse(funcDecl->body(), packageName, out, indent + 1);
 			out << "\n"
-				<< makeIndent(indent) << "QD_DONE:;\n"
+				<< makeIndent(indent) << "qd_lbl_done:;\n"
 				<< makeIndent(indent + 1) << "QD_REQUIRE_STACK(ctx, " << funcDecl->outputParameters().size() << ");\n"
 				<< makeIndent(indent + 1) << "return (qd_exec_result){0};\n";
 			out << makeIndent(indent) << "}\n";
@@ -97,7 +97,7 @@ namespace Qd {
 			// TODO: Handle case statement
 			break;
 		case IAstNode::Type::ReturnStatement:
-			out << makeIndent(indent) << "goto QD_DONE;\n";
+			out << makeIndent(indent) << "goto qd_lbl_done;\n";
 			break;
 		case IAstNode::Type::BreakStatement:
 			out << makeIndent(indent) << "break;\n";
