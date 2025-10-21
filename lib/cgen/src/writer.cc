@@ -4,9 +4,15 @@
 #include <qc/ast_node.h>
 #include <qc/ast_node_constant.h>
 #include <qc/ast_node_function.h>
+#include <qc/ast_node_identifier.h>
+#include <qc/ast_node_literal.h>
+#include <qc/ast_node_scoped.h>
+#include <qc/ast_node_use.h>
 #include <sstream>
 
 namespace Qd {
+	static int varCounter = 0;
+
 	void Writer::write(IAstNode* root, const char* packageName, const char* filename) const {
 		if (root == nullptr || packageName == nullptr || filename == nullptr) {
 			return;
@@ -84,9 +90,17 @@ namespace Qd {
 		case IAstNode::Type::ExpressionStatement:
 			// TODO: Handle expression statement
 			break;
-		case IAstNode::Type::IfStatement:
-			// TODO: Handle if statement
+		case IAstNode::Type::IfStatement: {
+			int64_t currentVar = varCounter++;
+			std::string var = "qd_var_" + std::to_string(currentVar);
+			out << makeIndent(indent) << "int64_t " << var << " = qd_stack_pop_i(ctx);\n";
+			out << makeIndent(indent) << "if (" << var << " != 0) {\n";
+			if (node->childCount() > 0) {
+				traverse(node->child(0), packageName, out, indent + 1); // Then block
+			}
+			out << makeIndent(indent) << "}\n";
 			break;
+		}
 		case IAstNode::Type::ForStatement:
 			// TODO: Handle for statement
 			break;
@@ -114,18 +128,37 @@ namespace Qd {
 		case IAstNode::Type::UnaryExpression:
 			// TODO: Handle unary expression
 			break;
-		case IAstNode::Type::Literal:
-			// TODO: Handle literal
+		case IAstNode::Type::Literal: {
+			AstNodeLiteral* literal = static_cast<AstNodeLiteral*>(node);
+			switch (literal->literalType()) {
+			case AstNodeLiteral::LiteralType::Integer:
+				out << makeIndent(indent) << "qd_push_i(ctx, (int64_t)" << literal->value() << ");\n";
+				break;
+			case AstNodeLiteral::LiteralType::Float:
+				out << makeIndent(indent) << "qd_push_f(ctx, (double)" << literal->value() << ");\n";
+				break;
+			case AstNodeLiteral::LiteralType::String:
+				out << makeIndent(indent) << "qd_push_s(ctx, " << literal->value() << ");\n";
+				break;
+			}
 			break;
-		case IAstNode::Type::Identifier:
-			// TODO: Handle identifier
+		}
+		case IAstNode::Type::Identifier: {
+			AstNodeIdentifier* ident = static_cast<AstNodeIdentifier*>(node);
+			out << makeIndent(indent) << "qd_" << ident->name() << "(ctx);\n";
 			break;
-		case IAstNode::Type::ScopedIdentifier:
-			// TODO: Handle scoped identifier
+		}
+		case IAstNode::Type::ScopedIdentifier: {
+			AstNodeScopedIdentifier* scopedIdent = static_cast<AstNodeScopedIdentifier*>(node);
+			out << makeIndent(indent) << "qd_" << scopedIdent->scope() << "_" << scopedIdent->name() << "(ctx);\n";
 			break;
-		case IAstNode::Type::UseStatement:
+		}
+		case IAstNode::Type::UseStatement: {
 			// TODO: Handle use statement
+			AstNodeUse* use = static_cast<AstNodeUse*>(node);
+			out << makeIndent(0) << "#include <something/" << use->module() << ".h>\n";
 			break;
+		}
 		case IAstNode::Type::ConstantDeclaration: {
 			AstNodeConstant* constDecl = static_cast<AstNodeConstant*>(node);
 			out << makeIndent(indent) << "#define " << packageName << "_" << constDecl->name() << " "
