@@ -73,7 +73,8 @@ namespace Qd {
 			traverse(funcDecl->body(), packageName, out, indent + 1);
 			out << "\n"
 				<< makeIndent(indent) << "QD_DONE:;\n"
-				<< makeIndent(indent + 1) << "QD_REQUIRE_STACK(ctx, " << funcDecl->outputParameters().size() << ");\n ";
+				<< makeIndent(indent + 1) << "QD_REQUIRE_STACK(ctx, " << funcDecl->outputParameters().size() << ");\n"
+				<< makeIndent(indent + 1) << "return (qd_exec_result){0};\n";
 			out << makeIndent(indent) << "}\n";
 			return; // Don't traverse children again
 		}
