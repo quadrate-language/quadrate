@@ -2,25 +2,11 @@
 #include <stdlib.h>
 #include <string.h>
 
-/* Internal element structure */
-typedef struct {
-	union {
-		int64_t i;
-		double d;
-		void* p;
-		char* s;
-	} value;
-	qd_stack_type type;
-} qd_stack_element_t;
-
-/* Stack structure definition */
 struct qd_stack {
 	qd_stack_element_t* data;
 	size_t capacity;
 	size_t size;
 };
-
-/* Lifecycle functions */
 
 qd_stack_error qd_stack_init(qd_stack** stack, size_t capacity) {
 	if (stack == NULL) {
@@ -79,7 +65,7 @@ qd_stack_error qd_stack_push_int(qd_stack* stack, int64_t value) {
 	return QD_STACK_OK;
 }
 
-qd_stack_error qd_stack_push_double(qd_stack* stack, double value) {
+qd_stack_error qd_stack_push_float(qd_stack* stack, double value) {
 	if (stack == NULL) {
 		return QD_STACK_ERR_NULL_POINTER;
 	}
@@ -87,8 +73,8 @@ qd_stack_error qd_stack_push_double(qd_stack* stack, double value) {
 		return QD_STACK_ERR_OVERFLOW;
 	}
 
-	stack->data[stack->size].value.d = value;
-	stack->data[stack->size].type = QD_STACK_TYPE_DOUBLE;
+	stack->data[stack->size].value.f = value;
+	stack->data[stack->size].type = QD_STACK_TYPE_FLOAT;
 	stack->size++;
 	return QD_STACK_OK;
 }
@@ -129,7 +115,29 @@ qd_stack_error qd_stack_push_str(qd_stack* stack, const char* value) {
 	return QD_STACK_OK;
 }
 
-/* Pop operation */
+qd_stack_error qd_stack_element(qd_stack* stack, size_t index, qd_stack_element_t* element) {
+	if (stack == NULL || element == NULL) {
+		return QD_STACK_ERR_NULL_POINTER;
+	}
+	if (index >= stack->size) {
+		return QD_STACK_ERR_UNDERFLOW;
+	}
+
+	*element = stack->data[index];
+	return QD_STACK_OK;
+}
+
+qd_stack_error qd_stack_peek(qd_stack* stack, qd_stack_element_t* element) {
+	if (stack == NULL || element == NULL) {
+		return QD_STACK_ERR_NULL_POINTER;
+	}
+	if (stack->size == 0) {
+		return QD_STACK_ERR_UNDERFLOW;
+	}
+
+	*element = stack->data[stack->size - 1];
+	return QD_STACK_OK;
+}
 
 qd_stack_error qd_stack_pop(qd_stack* stack) {
 	if (stack == NULL) {
@@ -184,11 +192,11 @@ qd_stack_error qd_stack_top_double(const qd_stack* stack, double* value) {
 	if (stack->size == 0) {
 		return QD_STACK_ERR_UNDERFLOW;
 	}
-	if (stack->data[stack->size - 1].type != QD_STACK_TYPE_DOUBLE) {
+	if (stack->data[stack->size - 1].type != QD_STACK_TYPE_FLOAT) {
 		return QD_STACK_ERR_TYPE_MISMATCH;
 	}
 
-	*value = stack->data[stack->size - 1].value.d;
+	*value = stack->data[stack->size - 1].value.f;
 	return QD_STACK_OK;
 }
 

@@ -41,7 +41,9 @@ namespace Qd {
 		file << "extern qd_exec_result main_main(qd_context* ctx);\n\n";
 		file << "int main(void) {\n";
 		file << "    qd_context ctx;\n";
+		file << "    qd_stack_init(&ctx.st, 1024);\n";
 		file << "    main_main(&ctx);\n";
+		file << "    qd_stack_destroy(ctx.st);\n";
 		file << "    return 0;\n";
 		file << "}\n";
 		file.close();
