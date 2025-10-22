@@ -1,10 +1,7 @@
 add_library(quadrate SHARED
 	src/qd.cc
-)
-
-target_link_libraries(quadrate
-	PUBLIC
-		runtime
+	src/runtime/runtime.c
+	src/runtime/stack.c
 )
 
 target_include_directories(quadrate

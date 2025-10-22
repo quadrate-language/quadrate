@@ -1,5 +1,5 @@
-#ifndef QD_CGEN_STACK_H
-#define QD_CGEN_STACK_H
+#ifndef QD_QUADRATE_RUNTIME_STACK_H
+#define QD_QUADRATE_RUNTIME_STACK_H
 
 #include <stdbool.h>
 #include <stddef.h>

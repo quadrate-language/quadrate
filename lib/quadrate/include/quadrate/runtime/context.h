@@ -1,7 +1,7 @@
-#ifndef QD_RUNTIME_CONTEXT_H
-#define QD_RUNTIME_CONTEXT_H
+#ifndef QD_QUADRATE_RUNTIME_CONTEXT_H
+#define QD_QUADRATE_RUNTIME_CONTEXT_H
 
-#include <runtime/stack.h>
+#include <quadrate/runtime/stack.h>
 
 #ifdef __cplusplus
 extern "C" {
