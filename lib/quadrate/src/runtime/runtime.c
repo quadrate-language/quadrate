@@ -2,9 +2,6 @@
 #include <stdio.h>
 
 qd_exec_result qd_push_i(qd_context* ctx, int64_t value) {
-	if (ctx == NULL || ctx->st == NULL) {
-		return (qd_exec_result){-1};
-	}
 	qd_stack_error err = qd_stack_push_int(ctx->st, value);
 	if (err != QD_STACK_OK) {
 		return (qd_exec_result){-2};
@@ -13,9 +10,6 @@ qd_exec_result qd_push_i(qd_context* ctx, int64_t value) {
 }
 
 qd_exec_result qd_push_f(qd_context* ctx, double value) {
-	if (ctx == NULL || ctx->st == NULL) {
-		return (qd_exec_result){-1};
-	}
 	qd_stack_error err = qd_stack_push_float(ctx->st, value);
 	if (err != QD_STACK_OK) {
 		return (qd_exec_result){-2};
@@ -24,9 +18,6 @@ qd_exec_result qd_push_f(qd_context* ctx, double value) {
 }
 
 qd_exec_result qd_push_s(qd_context* ctx, const char* value) {
-	if (ctx == NULL || ctx->st == NULL || value == NULL) {
-		return (qd_exec_result){-1};
-	}
 	qd_stack_error err = qd_stack_push_str(ctx->st, value);
 	if (err != QD_STACK_OK) {
 		return (qd_exec_result){-2};
@@ -35,10 +26,6 @@ qd_exec_result qd_push_s(qd_context* ctx, const char* value) {
 }
 
 qd_exec_result qd_print(qd_context* ctx) {
-	if (ctx == NULL || ctx->st == NULL) {
-		return (qd_exec_result){-1};
-	}
-
 	const ssize_t stack_size = (ssize_t)qd_stack_size(ctx->st);
 	for (ssize_t i = stack_size - 1; i >= 0; i--) {
 		qd_stack_element_t val;
@@ -67,10 +54,36 @@ qd_exec_result qd_print(qd_context* ctx) {
 	return (qd_exec_result){0};
 }
 
-qd_exec_result qd_peek(qd_context* ctx) {
-	if (ctx == NULL || ctx->st == NULL) {
-		return (qd_exec_result){-1};
+qd_exec_result qd_printv(qd_context* ctx) {
+	const ssize_t stack_size = (ssize_t)qd_stack_size(ctx->st);
+	for (ssize_t i = stack_size - 1; i >= 0; i--) {
+		qd_stack_element_t val;
+		qd_stack_error err = qd_stack_element(ctx->st, (size_t)i, &val);
+		if (err != QD_STACK_OK) {
+			return (qd_exec_result){-2};
+		}
+		if (i < stack_size - 1) {
+			printf(" ");
+		}
+		switch (val.type) {
+			case QD_STACK_TYPE_INT:
+				printf("int:%ld", val.value.i);
+				break;
+			case QD_STACK_TYPE_FLOAT:
+				printf("flt:%f", val.value.f);
+				break;
+			case QD_STACK_TYPE_STR:
+				printf("str:\"%s\"", val.value.s);
+				break;
+			default:
+				return (qd_exec_result){-3};
+		}
 	}
+	printf("\n");
+	return (qd_exec_result){0};
+}
+
+qd_exec_result qd_peek(qd_context* ctx) {
 	qd_stack_element_t val;
 	qd_stack_error err = qd_stack_peek(ctx->st, &val);
 	if (err != QD_STACK_OK) {
