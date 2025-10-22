@@ -42,11 +42,11 @@ qd_stack_error qd_stack_push_str(qd_stack* stack, const char* value);
 
 qd_stack_error qd_stack_pop(qd_stack* stack);
 
-qd_stack_error qd_stackop_type(const qd_stack* stack, qd_stack_type* type);
-qd_stack_error qd_stackop_int(const qd_stack* stack, int64_t* value);
-qd_stack_error qd_stackop_double(const qd_stack* stack, double* value);
-qd_stack_error qd_stackop_ptr(const qd_stack* stack, void** value);
-qd_stack_error qd_stackop_str(const qd_stack* stack, const char** value);
+qd_stack_error qd_stack_pop_type(const qd_stack* stack, qd_stack_type* type);
+qd_stack_error qd_stack_pop_int(const qd_stack* stack, int64_t* value);
+qd_stack_error qd_stack_pop_double(const qd_stack* stack, double* value);
+qd_stack_error qd_stack_pop_ptr(const qd_stack* stack, void** value);
+qd_stack_error qd_stack_pop_str(const qd_stack* stack, const char** value);
 
 /* Introspection functions */
 size_t qd_stack_size(const qd_stack* stack);
