@@ -3,7 +3,6 @@
 
 #include "source_file.h"
 #include <optional>
-#include <string>
 
 namespace Qd {
 	class IAstNode;
