@@ -1,5 +1,4 @@
 add_executable(quadc
-	src/compiler.cc
 	src/main.cc
 )
 

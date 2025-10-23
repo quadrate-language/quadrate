@@ -1,5 +1,7 @@
 add_library(cgen STATIC
-	src/writer.cc
+	src/compiler.cc
+	src/linker.cc
+	src/transpiler.cc
 )
 
 set_target_properties(cgen PROPERTIES
