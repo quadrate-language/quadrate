@@ -10,9 +10,6 @@ namespace Qd {
 	class Transpiler {
 	public:
 		std::optional<SourceFile> emit(const char* filename, const char* package, const char* source) const;
-
-	private:
-		void traverse(IAstNode* node, const char* packageName, std::stringstream& out, int indent) const;
 	};
 }
 
