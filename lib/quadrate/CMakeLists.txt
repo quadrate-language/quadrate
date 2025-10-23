@@ -1,3 +1,4 @@
+# Shared library
 add_library(quadrate SHARED
 	src/qd.cc
 	src/runtime/runtime.c
@@ -12,6 +13,23 @@ target_include_directories(quadrate
 set_target_properties(quadrate PROPERTIES
 	LIBRARY_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/dist/lib
 	INSTALL_RPATH "$ORIGIN"
+)
+
+# Static library
+add_library(quadrate_static STATIC
+	src/qd.cc
+	src/runtime/runtime.c
+	src/runtime/stack.c
+)
+
+target_include_directories(quadrate_static
+	PUBLIC
+		$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+)
+
+set_target_properties(quadrate_static PROPERTIES
+	ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/dist/lib
+	OUTPUT_NAME quadrate_static
 )
 
 add_custom_command(TARGET quadrate POST_BUILD

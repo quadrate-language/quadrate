@@ -91,8 +91,8 @@ int main(int argc, char** argv) {
 			}
 		}
 
-		bool linkSuccess = compiler.link(
-				translationUnits, outputFilename.c_str(), "-I./dist/include -L./dist/lib -lquadrate -lm -pthread");
+		bool linkSuccess = compiler.link(translationUnits, outputFilename.c_str(),
+				"-I./dist/include -L./dist/lib -lquadrate_static -lm -pthread");
 		if (!linkSuccess) {
 			std::cerr << "quadc: linking failed" << std::endl;
 			return 1;
