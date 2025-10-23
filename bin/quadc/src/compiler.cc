@@ -5,47 +5,50 @@
 #include <iostream>
 #include <qc/ast.h>
 #include <qc/ast_printer.h>
+#include <sstream>
 
-void Compiler::compile(const char* source) {
+Compiler::Compiler(const char* outputDir) : mOutputDir(outputDir) {
+	std::filesystem::remove_all(mOutputDir);
+	std::filesystem::create_directory(mOutputDir);
+}
+
+bool Compiler::transpile(const char* filename, const char* package, const char* source) {
 	Qd::Ast ast;
 	Qd::IAstNode* root = ast.generate(source);
-
 	Qd::AstPrinter::print(root);
 
-	std::string outputFolder = ".out";
-	// Create output folder if it doesn't exist
-	std::filesystem::remove_all(outputFolder);
-	std::filesystem::create_directory(outputFolder);
-
 	Qd::Writer writer;
-	writer.write(root, "main", ".out/out.c");
+	std::filesystem::create_directory(mOutputDir + "/" + std::string(package));
+	std::string mainFilename = mOutputDir + "/" + std::string(package) + "/" + std::string(filename) + ".c";
+	writer.write(root, package, mainFilename.c_str());
 
-	writer.writeMain(".out/qd_main.c");
+	return true;
+}
 
-	// Compile C files to object files
-	std::cout << "Compiling out.c..." << std::endl;
-	int ret1 = std::system("gcc -c .out/out.c -o .out/out.o -I./lib/quadrate/include");
-	if (ret1 != 0) {
-		std::cerr << "Error: Failed to compile out.c" << std::endl;
-		exit(1);
+std::optional<TranslationUnit> Compiler::compile(const char* filename, const char* flags) {
+	std::string cmd = "gcc -c " + std::string(filename) + " -o " + std::string(filename) + ".o " + std::string(flags);
+	std::cout << "Compiling: " << cmd << std::endl;
+	int ret = std::system(cmd.c_str());
+	if (ret != 0) {
+		return std::nullopt;
+	}
+	return TranslationUnit{std::string(filename) + ".o"};
+}
+
+bool Compiler::link(
+		const std::vector<TranslationUnit>& translationUnits, const char* outputFilename, const char* flags) {
+	std::stringstream cmd;
+	cmd << "gcc ";
+	for (const auto& obj : translationUnits) {
+		cmd << obj.objectFilename << " ";
+	}
+	cmd << "-o " << outputFilename << " " << flags;
+
+	std::cout << "Linking: " << cmd.str() << std::endl;
+	int ret = std::system(cmd.str().c_str());
+	if (ret != 0) {
+		return false;
 	}
 
-	std::cout << "Compiling qd_main.c..." << std::endl;
-	int ret2 = std::system("gcc -c .out/qd_main.c -o .out/qd_main.o -I./lib/quadrate/include");
-	if (ret2 != 0) {
-		std::cerr << "Error: Failed to compile qd_main.c" << std::endl;
-		exit(1);
-	}
-
-	std::cout << "Compilation successful. Object files generated." << std::endl;
-
-	// Link object files into executable
-	std::cout << "Linking..." << std::endl;
-	int ret3 = std::system("gcc .out/out.o .out/qd_main.o -o ./main -L./dist/lib -lquadrate");
-	if (ret3 != 0) {
-		std::cerr << "Error: Failed to link" << std::endl;
-		exit(1);
-	}
-
-	std::cout << "Build successful. Executable: ./main" << std::endl;
+	return true;
 }

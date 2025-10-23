@@ -15,7 +15,7 @@ set_target_properties(quadrate PROPERTIES
 )
 
 add_custom_command(TARGET quadrate POST_BUILD
-	COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_SOURCE_DIR}/dist/include/quadrate
-	COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/include/quadrate/qd.h ${CMAKE_SOURCE_DIR}/dist/include/quadrate/qd.h
+	COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_SOURCE_DIR}/dist/include
+	COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/include/quadrate ${CMAKE_SOURCE_DIR}/dist/include/quadrate
 )
 
