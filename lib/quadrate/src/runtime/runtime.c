@@ -1,5 +1,6 @@
 #include <quadrate/runtime/runtime.h>
 #include <stdio.h>
+#include <stdint.h>
 
 qd_exec_result qd_push_i(qd_context* ctx, int64_t value) {
 	qd_stack_error err = qd_stack_push_int(ctx->st, value);
@@ -26,8 +27,8 @@ qd_exec_result qd_push_s(qd_context* ctx, const char* value) {
 }
 
 qd_exec_result qd_print(qd_context* ctx) {
-	const ssize_t stack_size = (ssize_t)qd_stack_size(ctx->st);
-	for (ssize_t i = stack_size - 1; i >= 0; i--) {
+	const int64_t stack_size = (int64_t)qd_stack_size(ctx->st);
+	for (int64_t i = stack_size - 1; i >= 0; i--) {
 		qd_stack_element_t val;
 		qd_stack_error err = qd_stack_element(ctx->st, (size_t)i, &val);
 		if (err != QD_STACK_OK) {
@@ -55,8 +56,8 @@ qd_exec_result qd_print(qd_context* ctx) {
 }
 
 qd_exec_result qd_printv(qd_context* ctx) {
-	const ssize_t stack_size = (ssize_t)qd_stack_size(ctx->st);
-	for (ssize_t i = stack_size - 1; i >= 0; i--) {
+	const int64_t stack_size = (int64_t)qd_stack_size(ctx->st);
+	for (int64_t i = stack_size - 1; i >= 0; i--) {
 		qd_stack_element_t val;
 		qd_stack_error err = qd_stack_element(ctx->st, (size_t)i, &val);
 		if (err != QD_STACK_OK) {
