@@ -3,7 +3,7 @@ BUILD_DIR_RELEASE := build/release
 
 MESON_FLAGS := -Dbuild_tests=true
 
-.PHONY: all debug release tests examples format clean
+.PHONY: all debug release tests valgrind examples format clean
 
 all: debug
 
@@ -29,6 +29,9 @@ release:
 
 tests: debug
 	meson test -C $(BUILD_DIR_DEBUG) --print-errorlogs
+
+valgrind: debug
+	meson test -C $(BUILD_DIR_DEBUG) --setup=valgrind --print-errorlogs
 
 examples:
 	meson setup $(BUILD_DIR_DEBUG) --buildtype=debug -Dbuild_examples=true $(MESON_FLAGS)

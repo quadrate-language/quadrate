@@ -39,3 +39,17 @@ subdir('bin')
 if get_option('build_examples')
 		subdir('examples')
 endif
+
+# Test setup for valgrind
+if get_option('build_tests')
+		valgrind = find_program('valgrind', required: false)
+		if valgrind.found()
+				add_test_setup('valgrind',
+						exe_wrapper: [valgrind,
+								'--leak-check=full',
+								'--show-leak-kinds=all',
+								'--track-origins=yes',
+								'--error-exitcode=1'],
+						timeout_multiplier: 10)
+		endif
+endif

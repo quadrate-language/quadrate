@@ -23,6 +23,9 @@ tasks:
   - test: |
       cd quadrate
       make tests
+  - valgrind: |
+      cd quadrate
+      make valgrind
 triggers:
   - action: email
     condition: failure
