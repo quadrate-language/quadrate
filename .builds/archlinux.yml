@@ -11,12 +11,12 @@ tasks:
       cd unit-check
       cmake -S . -B build
       cmake --build build --config Release
-      cmake --install build
+      sudo cmake --install build
   - setup_u8t: |
       cd libu8t
       cmake -S . -B build
       cmake --build build --config Release
-      cmake --install build
+      sudo cmake --install build
   - build: |
       cd quadrate
       make release
