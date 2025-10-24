@@ -1,9 +1,22 @@
 image: archlinux
 packages:
+  - cmake
   - meson
 sources:
   - https://git.sr.ht/~klahr/quadrate
+  - https://git.sr.ht/~klahr/libu8t
+  - https://git.sr.ht/~klahr/unit-check
 tasks:
+  - setup_u8t: |
+      cd libu8t
+      cmake -S . -B build
+      cmake --build build --config Release
+      cmake --install build
+  - setup_unitcheck: |
+      cd unit-check
+      cmake -S . -B build
+      cmake --build build --config Release
+      cmake --install build
   - build: |
       cd quadrate
       make release
