@@ -1,10 +1,13 @@
 image: archlinux
 packages:
-  - cmake
+  - meson
 sources:
   - https://git.sr.ht/~klahr/quadrate
 tasks:
   - build: |
       cd quadrate
       make release
+  - test: |
+      cd quadrate
+      make tests
 
