@@ -3,6 +3,8 @@
 #include <stdint.h>
 #include <stdlib.h>
 
+static void dump_stack(qd_context* ctx);
+
 qd_exec_result qd_push_i(qd_context* ctx, int64_t value) {
 	qd_stack_error err = qd_stack_push_int(ctx->st, value);
 	if (err != QD_STACK_OK) {
@@ -114,6 +116,33 @@ qd_exec_result qd_err_push(qd_context* ctx, qd_stack_error value) {
 }
 
 qd_exec_result qd_div(qd_context* ctx) {
+	// Check we have at least 2 elements
+	size_t stack_size = qd_stack_size(ctx->st);
+	if (stack_size < 2) {
+		fprintf(stderr, "Fatal error in div: Stack underflow (required 2 elements, have %zu)\n", stack_size);
+		dump_stack(ctx);
+		abort();
+	}
+
+	// Check both are numeric types
+	qd_stack_element_t check_b, check_a;
+	qd_stack_error check_err = qd_stack_element(ctx->st, stack_size - 1, &check_b);
+	if (check_err == QD_STACK_OK) {
+		check_err = qd_stack_element(ctx->st, stack_size - 2, &check_a);
+	}
+	if (check_err != QD_STACK_OK) {
+		fprintf(stderr, "Fatal error in div: Failed to access stack elements\n");
+		dump_stack(ctx);
+		abort();
+	}
+
+	if ((check_a.type != QD_STACK_TYPE_INT && check_a.type != QD_STACK_TYPE_FLOAT) ||
+	    (check_b.type != QD_STACK_TYPE_INT && check_b.type != QD_STACK_TYPE_FLOAT)) {
+		fprintf(stderr, "Fatal error in div: Type error (expected numeric types for division)\n");
+		dump_stack(ctx);
+		abort();
+	}
+
 	qd_stack_element_t b;
 	qd_stack_error err = qd_stack_pop(ctx->st, &b);
 	if (err != QD_STACK_OK) {
@@ -158,8 +187,32 @@ qd_exec_result qd_div(qd_context* ctx) {
 }
 
 qd_exec_result qd_sq(qd_context* ctx) {
+	// Check we have at least 1 element
+	size_t stack_size = qd_stack_size(ctx->st);
+	if (stack_size < 1) {
+		fprintf(stderr, "Fatal error in sq: Stack underflow (required 1 element, have %zu)\n", stack_size);
+		dump_stack(ctx);
+		abort();
+	}
+
+	// Check it's a numeric type (int or float)
 	qd_stack_element_t a;
-	qd_stack_error err = qd_stack_pop(ctx->st, &a);
+	qd_stack_error err = qd_stack_peek(ctx->st, &a);
+	if (err != QD_STACK_OK) {
+		fprintf(stderr, "Fatal error in sq: Failed to peek stack\n");
+		dump_stack(ctx);
+		abort();
+	}
+	if (a.type != QD_STACK_TYPE_INT && a.type != QD_STACK_TYPE_FLOAT) {
+		const char* type_name = "unknown";
+		if (a.type == QD_STACK_TYPE_STR) type_name = "str";
+		else if (a.type == QD_STACK_TYPE_PTR) type_name = "ptr";
+		fprintf(stderr, "Fatal error in sq: Type error (expected int or float, got %s)\n", type_name);
+		dump_stack(ctx);
+		abort();
+	}
+
+	err = qd_stack_pop(ctx->st, &a);
 	if (err != QD_STACK_OK) {
 		return (qd_exec_result){-2};
 	}
