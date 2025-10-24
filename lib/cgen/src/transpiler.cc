@@ -34,7 +34,7 @@ namespace Qd {
 		case IAstNode::Type::FunctionDeclaration: {
 			AstNodeFunctionDeclaration* funcDecl = static_cast<AstNodeFunctionDeclaration*>(node);
 			out << "\n"
-				<< makeIndent(indent) << "qd_exec_result " << packageName << "_" << funcDecl->name()
+				<< makeIndent(indent) << "qd_exec_result usr_" << packageName << "_" << funcDecl->name()
 				<< "(qd_context* ctx) {\n";
 			out << makeIndent(indent + 1) << "QD_REQUIRE_STACK(ctx, " << funcDecl->inputParameters().size() << ");\n\n";
 			traverse(funcDecl->body(), packageName, out, indent + 1);
@@ -106,12 +106,12 @@ namespace Qd {
 		}
 		case IAstNode::Type::Identifier: {
 			AstNodeIdentifier* ident = static_cast<AstNodeIdentifier*>(node);
-			out << makeIndent(indent) << "qd_" << ident->name() << "(ctx);\n";
+			out << makeIndent(indent) << "usr_main_" << ident->name() << "(ctx);\n";
 			break;
 		}
 		case IAstNode::Type::ScopedIdentifier: {
 			AstNodeScopedIdentifier* scopedIdent = static_cast<AstNodeScopedIdentifier*>(node);
-			out << makeIndent(indent) << "qd_" << scopedIdent->scope() << "_" << scopedIdent->name() << "(ctx);\n";
+			out << makeIndent(indent) << "usr_" << scopedIdent->scope() << "_" << scopedIdent->name() << "(ctx);\n";
 			break;
 		}
 		case IAstNode::Type::UseStatement: {

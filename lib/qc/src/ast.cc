@@ -143,8 +143,12 @@ namespace Qd {
 				const char* paramName = u8t_scanner_token_text(scanner, &n);
 				std::string paramNameStr(paramName);
 
-				token = u8t_scanner_scan(scanner);
-				if (token == ':') {
+				// Check if there's a type annotation
+				char32_t peek = u8t_scanner_peek(scanner);
+				if (peek == ':') {
+					// Consume the ':'
+					u8t_scanner_scan(scanner);
+					// Get the type
 					token = u8t_scanner_scan(scanner);
 					if (token == U8T_IDENTIFIER) {
 						const char* paramType = u8t_scanner_token_text(scanner, &n);
@@ -155,6 +159,15 @@ namespace Qd {
 						} else {
 							func->addInputParameter(param);
 						}
+					}
+				} else {
+					// Untyped parameter - use empty string as type
+					AstNodeParameter* param = new AstNodeParameter(paramNameStr, "", isOutput);
+					param->setParent(func);
+					if (isOutput) {
+						func->addOutputParameter(param);
+					} else {
+						func->addInputParameter(param);
 					}
 				}
 			}
@@ -833,8 +846,45 @@ namespace Qd {
 		mRoot = program;
 
 		char32_t token;
+		bool sawSlash = false;
 		while ((token = u8t_scanner_scan(&scanner)) != U8T_EOF) {
 			size_t n;
+
+			// Handle // line comments
+			if (sawSlash && token == '/') {
+				sawSlash = false;
+				// Skip until end of line
+				char32_t c;
+				while ((c = u8t_scanner_peek(&scanner)) != 0 && c != '\n' && c != '\r') {
+					u8t_scanner_scan(&scanner);
+				}
+				continue;
+			}
+
+			// Handle /* block comments */
+			if (sawSlash && token == '*') {
+				sawSlash = false;
+				// Skip until */
+				bool foundStar = false;
+				while ((token = u8t_scanner_scan(&scanner)) != U8T_EOF) {
+					if (foundStar && token == '/') {
+						break;
+					}
+					foundStar = (token == '*');
+				}
+				continue;
+			}
+
+			// If we saw a slash but it wasn't a comment, reset the flag
+			if (sawSlash) {
+				sawSlash = false;
+			}
+
+			sawSlash = (token == '/');
+			if (sawSlash) {
+				continue; // Wait for next token to see if it's a comment
+			}
+
 			switch (token) {
 			case U8T_IDENTIFIER: {
 				const char* text = u8t_scanner_token_text(&scanner, &n);

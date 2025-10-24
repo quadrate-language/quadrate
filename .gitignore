@@ -4,3 +4,4 @@ dist
 *.out
 .cache/clangd/index
 compile_commands.json
+.tmp*

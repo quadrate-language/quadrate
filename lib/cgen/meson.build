@@ -1,5 +1,6 @@
 cgen_sources = files(
 		'src/compiler.cc',
+		'src/keywords.cc',
 		'src/linker.cc',
 		'src/transpiler.cc',
 )

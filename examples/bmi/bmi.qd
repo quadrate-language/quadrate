@@ -1,0 +1,8 @@
+fn bmi( weight height -- bmi) {
+	sq
+	div
+}
+
+fn main() {
+	70 1.75 bmi print
+}

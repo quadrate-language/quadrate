@@ -3,5 +3,5 @@ hello_world_example = custom_target('hello-world',
 	output: 'hello-world',
 	command: [quadc, '@INPUT@', '-o', '@OUTPUT@'],
 	depends: quadc,
-	build_by_default: true
+	build_by_default: false
 )

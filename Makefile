@@ -36,8 +36,8 @@ valgrind: debug
 	meson test -C $(BUILD_DIR_DEBUG) --setup=valgrind --print-errorlogs
 
 examples:
-	meson setup $(BUILD_DIR_DEBUG) --buildtype=debug -Dbuild_examples=true $(MESON_FLAGS)
-	meson compile -C $(BUILD_DIR_DEBUG)
+	meson setup $(BUILD_DIR_DEBUG) --buildtype=debug --reconfigure -Dbuild_examples=true $(MESON_FLAGS)
+	meson compile -C $(BUILD_DIR_DEBUG) examples/embed/embed examples/hello-world/hello-world examples/bmi/bmi
 
 format:
 	find bin lib examples -type f \( -name '*.cc' -o -name '*.h' \) -not -name 'utf8.h' -not -path '*/utf8/*' -exec clang-format -i {} +

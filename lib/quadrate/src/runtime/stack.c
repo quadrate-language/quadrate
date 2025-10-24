@@ -49,8 +49,6 @@ void qd_stack_destroy(qd_stack* stack) {
 	free(stack);
 }
 
-/* Push operations */
-
 qd_stack_error qd_stack_push_int(qd_stack* stack, int64_t value) {
 	if (stack == NULL) {
 		return QD_STACK_ERR_NULL_POINTER;
@@ -139,24 +137,23 @@ qd_stack_error qd_stack_peek(qd_stack* stack, qd_stack_element_t* element) {
 	return QD_STACK_OK;
 }
 
-qd_stack_error qd_stack_pop(qd_stack* stack) {
+qd_stack_error qd_stack_pop(qd_stack* stack, qd_stack_element_t* element) {
 	if (stack == NULL) {
 		return QD_STACK_ERR_NULL_POINTER;
 	}
 	if (stack->size == 0) {
 		return QD_STACK_ERR_UNDERFLOW;
 	}
-
-	/* Free string memory if the top element is a string */
-	if (stack->data[stack->size - 1].type == QD_STACK_TYPE_STR) {
-		free(stack->data[stack->size - 1].value.s);
-	}
-
 	stack->size--;
+	if (element != NULL) {
+		*element = stack->data[stack->size];
+	} else {
+		if (stack->data[stack->size].type == QD_STACK_TYPE_STR) {
+			free(stack->data[stack->size].value.s);
+		}
+	}
 	return QD_STACK_OK;
 }
-
-/* Top operations */
 
 qd_stack_error qd_stack_top_type(const qd_stack* stack, qd_stack_type* type) {
 	if (stack == NULL || type == NULL) {
@@ -230,8 +227,6 @@ qd_stack_error qd_stack_top_str(const qd_stack* stack, const char** value) {
 	return QD_STACK_OK;
 }
 
-/* Introspection functions */
-
 size_t qd_stack_size(const qd_stack* stack) {
 	if (stack == NULL) {
 		return 0;
@@ -259,8 +254,6 @@ bool qd_stack_is_full(const qd_stack* stack) {
 	}
 	return stack->size >= stack->capacity;
 }
-
-/* Error message helper */
 
 const char* qd_stack_error_string(qd_stack_error error) {
 	switch (error) {

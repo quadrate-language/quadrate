@@ -1,6 +1,7 @@
 #include <quadrate/runtime/runtime.h>
 #include <stdio.h>
 #include <stdint.h>
+#include <stdlib.h>
 
 qd_exec_result qd_push_i(qd_context* ctx, int64_t value) {
 	qd_stack_error err = qd_stack_push_int(ctx->st, value);
@@ -109,5 +110,73 @@ qd_exec_result qd_peek(qd_context* ctx) {
 qd_exec_result qd_err_push(qd_context* ctx, qd_stack_error value) {
 	(void)ctx;
 	(void)value;
+	return (qd_exec_result){0};
+}
+
+qd_exec_result qd_div(qd_context* ctx) {
+	qd_stack_element_t b;
+	qd_stack_error err = qd_stack_pop(ctx->st, &b);
+	if (err != QD_STACK_OK) {
+		return (qd_exec_result){-2};
+	}
+	qd_stack_element_t a;
+	err = qd_stack_pop(ctx->st, &a);
+	if (err != QD_STACK_OK) {
+		return (qd_exec_result){-2};
+	}
+	if (a.type == QD_STACK_TYPE_INT && b.type == QD_STACK_TYPE_INT) {
+		if (b.value.i == 0) {
+			return (qd_exec_result){-4};
+		}
+		int64_t result = a.value.i / b.value.i;
+		err = qd_stack_push_int(ctx->st, result);
+		if (err != QD_STACK_OK) {
+			return (qd_exec_result){-2};
+		}
+	} else if ((a.type == QD_STACK_TYPE_INT || a.type == QD_STACK_TYPE_FLOAT) &&
+	           (b.type == QD_STACK_TYPE_INT || b.type == QD_STACK_TYPE_FLOAT)) {
+		double af = (a.type == QD_STACK_TYPE_INT) ? (double)a.value.i : a.value.f;
+		double bf = (b.type == QD_STACK_TYPE_INT) ? (double)b.value.i : b.value.f;
+		if (bf == 0.0) {
+			return (qd_exec_result){-4};
+		}
+		double result = af / bf;
+		err = qd_stack_push_float(ctx->st, result);
+		if (err != QD_STACK_OK) {
+			return (qd_exec_result){-2};
+		}
+	} else {
+		if (b.type == QD_STACK_TYPE_STR) {
+			free(b.value.s);
+		}
+		if (a.type == QD_STACK_TYPE_STR) {
+			free(a.value.s);
+		}
+		return (qd_exec_result){-5};
+	}
+	return (qd_exec_result){0};
+}
+
+qd_exec_result qd_sq(qd_context* ctx) {
+	qd_stack_element_t a;
+	qd_stack_error err = qd_stack_pop(ctx->st, &a);
+	if (err != QD_STACK_OK) {
+		return (qd_exec_result){-2};
+	}
+	if (a.type == QD_STACK_TYPE_INT) {
+		int64_t result = a.value.i * a.value.i;
+		err = qd_stack_push_int(ctx->st, result);
+		if (err != QD_STACK_OK) {
+			return (qd_exec_result){-2};
+		}
+	} else if (a.type == QD_STACK_TYPE_FLOAT) {
+		double result = a.value.f * a.value.f;
+		err = qd_stack_push_float(ctx->st, result);
+		if (err != QD_STACK_OK) {
+			return (qd_exec_result){-2};
+		}
+	} else {
+		return (qd_exec_result){-5};
+	}
 	return (qd_exec_result){0};
 }
