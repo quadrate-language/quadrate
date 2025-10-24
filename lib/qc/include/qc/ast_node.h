@@ -25,6 +25,7 @@ namespace Qd {
 			UnaryExpression,
 			Literal,
 			Identifier,
+			Instruction,
 			ScopedIdentifier,
 			UseStatement,
 			ConstantDeclaration,

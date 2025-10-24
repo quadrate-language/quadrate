@@ -1,4 +1,4 @@
-fn bmi( weight height -- bmi) {
+fn bmi( weight height -- bmi ) {
 	sq
 	div
 }

@@ -5,6 +5,7 @@
 #include <qc/ast_node_constant.h>
 #include <qc/ast_node_function.h>
 #include <qc/ast_node_identifier.h>
+#include <qc/ast_node_instruction.h>
 #include <qc/ast_node_literal.h>
 #include <qc/ast_node_scoped.h>
 #include <qc/ast_node_use.h>
@@ -106,7 +107,12 @@ namespace Qd {
 		}
 		case IAstNode::Type::Identifier: {
 			AstNodeIdentifier* ident = static_cast<AstNodeIdentifier*>(node);
-			out << makeIndent(indent) << "usr_main_" << ident->name() << "(ctx);\n";
+			out << makeIndent(indent) << "usr_" << packageName << "_" << ident->name() << "(ctx);\n";
+			break;
+		}
+		case IAstNode::Type::Instruction: {
+			AstNodeInstruction* instr = static_cast<AstNodeInstruction*>(node);
+			out << makeIndent(indent) << "qd_" << instr->name() << "(ctx);\n";
 			break;
 		}
 		case IAstNode::Type::ScopedIdentifier: {

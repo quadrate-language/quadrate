@@ -4,6 +4,7 @@
 #include <qc/ast_node_function.h>
 #include <qc/ast_node_identifier.h>
 #include <qc/ast_node_if.h>
+#include <qc/ast_node_instruction.h>
 #include <qc/ast_node_label.h>
 #include <qc/ast_node_literal.h>
 #include <qc/ast_node_parameter.h>
@@ -54,6 +55,8 @@ namespace Qd {
 			return "Literal";
 		case IAstNode::Type::Identifier:
 			return "Identifier";
+		case IAstNode::Type::Instruction:
+			return "Instruction";
 		case IAstNode::Type::ScopedIdentifier:
 			return "ScopedIdentifier";
 		case IAstNode::Type::UseStatement:
@@ -115,6 +118,12 @@ namespace Qd {
 			printf(",");
 			printf("\"name\":\"");
 			escapeJsonString(id->name().c_str());
+			printf("\"");
+		} else if (node->type() == IAstNode::Type::Instruction) {
+			const AstNodeInstruction* instr = static_cast<const AstNodeInstruction*>(node);
+			printf(",");
+			printf("\"name\":\"");
+			escapeJsonString(instr->name().c_str());
 			printf("\"");
 		} else if (node->type() == IAstNode::Type::ScopedIdentifier) {
 			const AstNodeScopedIdentifier* scoped = static_cast<const AstNodeScopedIdentifier*>(node);

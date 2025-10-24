@@ -10,6 +10,7 @@
 #include <qc/ast_node_function.h>
 #include <qc/ast_node_identifier.h>
 #include <qc/ast_node_if.h>
+#include <qc/ast_node_instruction.h>
 #include <qc/ast_node_label.h>
 #include <qc/ast_node_literal.h>
 #include <qc/ast_node_parameter.h>
@@ -23,6 +24,29 @@
 #include <vector>
 
 namespace Qd {
+	// Helper function to check if an identifier is a built-in instruction
+	static bool isBuiltInInstruction(const char* name) {
+		static const char* instructions[] = {
+			"div", "dup", "print", "printv", "rot", "sq", "swap"
+		};
+		static const size_t count = sizeof(instructions) / sizeof(instructions[0]);
+
+		for (size_t i = 0; i < count; i++) {
+			if (strcmp(name, instructions[i]) == 0) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	// Helper function to create either an Instruction or Identifier node
+	static IAstNode* createIdentifierOrInstruction(const char* name) {
+		if (isBuiltInInstruction(name)) {
+			return new AstNodeInstruction(name);
+		}
+		return new AstNodeIdentifier(name);
+	}
+
 	static IAstNode* parseForStatement(u8t_scanner* scanner, ErrorReporter* errorReporter);
 	static IAstNode* parseIfStatement(u8t_scanner* scanner, ErrorReporter* errorReporter);
 	static IAstNode* parseSwitchStatement(u8t_scanner* scanner, ErrorReporter* errorReporter);
@@ -65,6 +89,9 @@ namespace Qd {
 			return new AstNodeLiteral(text, AstNodeLiteral::LiteralType::String);
 		} else if (token == U8T_IDENTIFIER) {
 			const char* text = u8t_scanner_token_text(scanner, n);
+			if (isBuiltInInstruction(text)) {
+				return new AstNodeInstruction(text);
+			}
 			return new AstNodeIdentifier(text);
 		}
 		return nullptr;
@@ -95,6 +122,9 @@ namespace Qd {
 				}
 			}
 
+			if (isBuiltInInstruction(text)) {
+				return new AstNodeInstruction(text);
+			}
 			return new AstNodeIdentifier(text);
 		}
 
@@ -315,7 +345,7 @@ namespace Qd {
 											tempNodes.push_back(lit);
 										} else if (token == U8T_IDENTIFIER) {
 											const char* tokenText = u8t_scanner_token_text(scanner, &n);
-											AstNodeIdentifier* id = new AstNodeIdentifier(tokenText);
+											IAstNode* id = createIdentifierOrInstruction(tokenText);
 											tempNodes.push_back(id);
 										}
 									} else {
@@ -344,7 +374,7 @@ namespace Qd {
 													continueStmt->setParent(elseBody);
 													elseBody->addChild(continueStmt);
 												} else {
-													AstNodeIdentifier* id = new AstNodeIdentifier(elseBodyText);
+													IAstNode* id = createIdentifierOrInstruction(elseBodyText);
 													id->setParent(elseBody);
 													elseBody->addChild(id);
 												}
@@ -374,7 +404,7 @@ namespace Qd {
 									}
 								} else {
 									// Not "else", so this is a new statement - treat it as identifier
-									AstNodeIdentifier* id = new AstNodeIdentifier(elseText);
+									IAstNode* id = createIdentifierOrInstruction(elseText);
 									tempNodes.push_back(id);
 								}
 							} else {
@@ -446,7 +476,7 @@ namespace Qd {
 
 							if (token == U8T_IDENTIFIER) {
 								const char* deferText = u8t_scanner_token_text(scanner, &n);
-								AstNodeIdentifier* id = new AstNodeIdentifier(deferText);
+								IAstNode* id = createIdentifierOrInstruction(deferText);
 								deferNodes.push_back(id);
 							} else if (token == U8T_INTEGER) {
 								const char* deferText = u8t_scanner_token_text(scanner, &n);
@@ -466,7 +496,7 @@ namespace Qd {
 								char32_t nextChar = u8t_scanner_peek(scanner);
 								if (nextChar == ':') {
 									u8t_scanner_scan(scanner);
-									AstNodeIdentifier* colonColon = new AstNodeIdentifier("::");
+									IAstNode* colonColon = new AstNodeIdentifier("::");
 									deferNodes.push_back(colonColon);
 								}
 							}
@@ -485,7 +515,7 @@ namespace Qd {
 						if (token == U8T_IDENTIFIER) {
 							const char* deferText = u8t_scanner_token_text(scanner, &n);
 							hasSeenOperator = true;
-							AstNodeIdentifier* id = new AstNodeIdentifier(deferText);
+							IAstNode* id = createIdentifierOrInstruction(deferText);
 							deferNodes.push_back(id);
 						} else if (token == U8T_INTEGER) {
 							const char* deferText = u8t_scanner_token_text(scanner, &n);
@@ -515,14 +545,14 @@ namespace Qd {
 									strcmp(deferText, "switch") == 0 || strcmp(deferText, "return") == 0 ||
 									strcmp(deferText, "defer") == 0 || strcmp(deferText, "break") == 0 ||
 									strcmp(deferText, "continue") == 0) {
-									AstNodeIdentifier* id = new AstNodeIdentifier(deferText);
+									IAstNode* id = createIdentifierOrInstruction(deferText);
 									tempNodes.push_back(id);
 									break;
 								}
 
 								// Mark that we've seen an operator
 								hasSeenOperator = true;
-								IAstNode* id = new AstNodeIdentifier(deferText);
+								IAstNode* id = createIdentifierOrInstruction(deferText);
 								deferNodes.push_back(id);
 							} else if (token == U8T_INTEGER) {
 								const char* deferText = u8t_scanner_token_text(scanner, &n);
@@ -588,7 +618,7 @@ namespace Qd {
 					deferStmt->setParent(body);
 					body->addChild(deferStmt);
 				} else {
-					AstNodeIdentifier* id = new AstNodeIdentifier(text);
+					IAstNode* id = createIdentifierOrInstruction(text);
 					tempNodes.push_back(id);
 				}
 			} else if (token == U8T_INTEGER) {
@@ -767,7 +797,7 @@ namespace Qd {
 						caseValue = new AstNodeLiteral(valueText, AstNodeLiteral::LiteralType::String);
 					} else if (token == U8T_IDENTIFIER) {
 						const char* valueText = u8t_scanner_token_text(scanner, &n);
-						caseValue = new AstNodeIdentifier(valueText);
+						caseValue = createIdentifierOrInstruction(valueText);
 					}
 
 					if (!caseValue) {
