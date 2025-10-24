@@ -180,3 +180,94 @@ qd_exec_result qd_sq(qd_context* ctx) {
 	}
 	return (qd_exec_result){0};
 }
+
+// Dump current stack contents for debugging
+static void dump_stack(qd_context* ctx) {
+	size_t stack_size = qd_stack_size(ctx->st);
+	fprintf(stderr, "\nStack dump (%zu elements):\n", stack_size);
+
+	if (stack_size == 0) {
+		fprintf(stderr, "  (empty)\n");
+		return;
+	}
+
+	for (size_t i = 0; i < stack_size; i++) {
+		qd_stack_element_t elem;
+		qd_stack_error err = qd_stack_element(ctx->st, i, &elem);
+		if (err != QD_STACK_OK) {
+			fprintf(stderr, "  [%zu]: <error reading element>\n", i);
+			continue;
+		}
+
+		fprintf(stderr, "  [%zu]: ", i);
+		switch (elem.type) {
+			case QD_STACK_TYPE_INT:
+				fprintf(stderr, "int = %ld\n", elem.value.i);
+				break;
+			case QD_STACK_TYPE_FLOAT:
+				fprintf(stderr, "float = %f\n", elem.value.f);
+				break;
+			case QD_STACK_TYPE_STR:
+				fprintf(stderr, "str = \"%s\"\n", elem.value.s);
+				break;
+			case QD_STACK_TYPE_PTR:
+				fprintf(stderr, "ptr = %p\n", elem.value.p);
+				break;
+			default:
+				fprintf(stderr, "<unknown type>\n");
+				break;
+		}
+	}
+}
+
+void qd_check_stack(qd_context* ctx, size_t count, const qd_stack_type* types, const char* func_name) {
+	// Check stack has enough elements
+	size_t stack_size = qd_stack_size(ctx->st);
+	if (stack_size < count) {
+		fprintf(stderr, "Fatal error in %s: Stack underflow (required %zu elements, have %zu)\n",
+			func_name, count, stack_size);
+		dump_stack(ctx);
+		abort();
+	}
+
+	// Check types match (from bottom to top of required elements)
+	for (size_t i = 0; i < count; i++) {
+		// Skip type check for untyped parameters (marked with QD_STACK_TYPE_PTR)
+		if (types[i] == QD_STACK_TYPE_PTR) {
+			continue;
+		}
+
+		qd_stack_element_t elem;
+		size_t stack_index = stack_size - count + i;
+		qd_stack_error err = qd_stack_element(ctx->st, stack_index, &elem);
+		if (err != QD_STACK_OK) {
+			fprintf(stderr, "Fatal error in %s: Failed to access stack element at index %zu\n",
+				func_name, stack_index);
+			abort();
+		}
+
+		if (elem.type != types[i]) {
+			const char* expected_type_name = "";
+			const char* actual_type_name = "";
+
+			switch (types[i]) {
+				case QD_STACK_TYPE_INT: expected_type_name = "int"; break;
+				case QD_STACK_TYPE_FLOAT: expected_type_name = "float"; break;
+				case QD_STACK_TYPE_STR: expected_type_name = "str"; break;
+				case QD_STACK_TYPE_PTR: expected_type_name = "ptr"; break;
+			}
+
+			switch (elem.type) {
+				case QD_STACK_TYPE_INT: actual_type_name = "int"; break;
+				case QD_STACK_TYPE_FLOAT: actual_type_name = "float"; break;
+				case QD_STACK_TYPE_STR: actual_type_name = "str"; break;
+				case QD_STACK_TYPE_PTR: actual_type_name = "ptr"; break;
+			}
+
+			fprintf(stderr, "Fatal error in %s: Type mismatch for parameter %zu (expected %s, got %s)\n",
+				func_name, i + 1, expected_type_name, actual_type_name);
+			dump_stack(ctx);
+			abort();
+		}
+	}
+}

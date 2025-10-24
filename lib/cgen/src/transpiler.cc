@@ -7,6 +7,7 @@
 #include <qc/ast_node_identifier.h>
 #include <qc/ast_node_instruction.h>
 #include <qc/ast_node_literal.h>
+#include <qc/ast_node_parameter.h>
 #include <qc/ast_node_scoped.h>
 #include <qc/ast_node_use.h>
 #include <qc/ast_printer.h>
@@ -14,6 +15,21 @@
 
 namespace Qd {
 	static int varCounter = 0;
+
+	// Map parameter type string to qd_stack_type constant name
+	static const char* mapTypeToStackType(const std::string& paramType) {
+		if (paramType.empty()) {
+			return "QD_STACK_TYPE_PTR"; // Untyped - skip type check
+		} else if (paramType == "int" || paramType == "i64") {
+			return "QD_STACK_TYPE_INT";
+		} else if (paramType == "float" || paramType == "f64") {
+			return "QD_STACK_TYPE_FLOAT";
+		} else if (paramType == "str" || paramType == "string") {
+			return "QD_STACK_TYPE_STR";
+		} else {
+			return "QD_STACK_TYPE_PTR"; // Unknown type - skip check
+		}
+	}
 
 	void traverse(IAstNode* node, const char* packageName, std::stringstream& out, int indent) {
 		if (node == nullptr) {
@@ -32,20 +48,46 @@ namespace Qd {
 		case IAstNode::Type::Block:
 			out << makeIndent(indent) << "{\n";
 			break;
-		case IAstNode::Type::FunctionDeclaration: {
-			AstNodeFunctionDeclaration* funcDecl = static_cast<AstNodeFunctionDeclaration*>(node);
-			out << "\n"
-				<< makeIndent(indent) << "qd_exec_result usr_" << packageName << "_" << funcDecl->name()
-				<< "(qd_context* ctx) {\n";
-			out << makeIndent(indent + 1) << "QD_REQUIRE_STACK(ctx, " << funcDecl->inputParameters().size() << ");\n\n";
-			traverse(funcDecl->body(), packageName, out, indent + 1);
-			out << "\n"
-				<< makeIndent(indent) << "qd_lbl_done:;\n"
-				<< makeIndent(indent + 1) << "QD_REQUIRE_STACK(ctx, " << funcDecl->outputParameters().size() << ");\n"
-				<< makeIndent(indent + 1) << "return (qd_exec_result){0};\n";
-			out << makeIndent(indent) << "}\n";
-			return; // Don't traverse children again
+	case IAstNode::Type::FunctionDeclaration: {
+		AstNodeFunctionDeclaration* funcDecl = static_cast<AstNodeFunctionDeclaration*>(node);
+		out << "\n"
+			<< makeIndent(indent) << "qd_exec_result usr_" << packageName << "_" << funcDecl->name()
+			<< "(qd_context* ctx) {\n";
+
+		// Generate type check for input parameters
+		if (!funcDecl->inputParameters().empty()) {
+			out << makeIndent(indent + 1) << "qd_stack_type input_types[] = {";
+			for (size_t i = 0; i < funcDecl->inputParameters().size(); i++) {
+				if (i > 0) out << ", ";
+				AstNodeParameter* param = static_cast<AstNodeParameter*>(funcDecl->inputParameters()[i]);
+				out << mapTypeToStackType(param->typeString());
+			}
+			out << "};\n";
+			out << makeIndent(indent + 1) << "qd_check_stack(ctx, " << funcDecl->inputParameters().size()
+				<< ", input_types, __func__);\n\n";
 		}
+
+		traverse(funcDecl->body(), packageName, out, indent + 1);
+		out << "\n"
+			<< makeIndent(indent) << "qd_lbl_done:;\n";
+
+		// Generate type check for output parameters
+		if (!funcDecl->outputParameters().empty()) {
+			out << makeIndent(indent + 1) << "qd_stack_type output_types[] = {";
+			for (size_t i = 0; i < funcDecl->outputParameters().size(); i++) {
+				if (i > 0) out << ", ";
+				AstNodeParameter* param = static_cast<AstNodeParameter*>(funcDecl->outputParameters()[i]);
+				out << mapTypeToStackType(param->typeString());
+			}
+			out << "};\n";
+			out << makeIndent(indent + 1) << "qd_check_stack(ctx, " << funcDecl->outputParameters().size()
+				<< ", output_types, __func__);\n";
+		}
+
+		out << makeIndent(indent + 1) << "return (qd_exec_result){0};\n";
+		out << makeIndent(indent) << "}\n";
+		return; // Don't traverse children again
+	}
 		case IAstNode::Type::VariableDeclaration:
 			// TODO: Handle variable declaration
 			break;
