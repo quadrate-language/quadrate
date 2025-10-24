@@ -2,6 +2,7 @@ image: archlinux
 packages:
   - cmake
   - meson
+  - valgrind
 sources:
   - https://git.sr.ht/~klahr/quadrate
   - https://git.sr.ht/~klahr/libu8t
