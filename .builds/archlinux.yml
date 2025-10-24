@@ -7,13 +7,13 @@ sources:
   - https://git.sr.ht/~klahr/libu8t
   - https://git.sr.ht/~klahr/unit-check
 tasks:
-  - setup_u8t: |
-      cd libu8t
+  - setup_unitcheck: |
+      cd unit-check
       cmake -S . -B build
       cmake --build build --config Release
       cmake --install build
-  - setup_unitcheck: |
-      cd unit-check
+  - setup_u8t: |
+      cd libu8t
       cmake -S . -B build
       cmake --build build --config Release
       cmake --install build
