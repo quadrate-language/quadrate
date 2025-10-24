@@ -1,4 +1,4 @@
-hello_world_example = custom_target('hello-world',
+custom_target('hello-world',
 	input: 'hello-world.qd',
 	output: 'hello-world',
 	command: [quadc, '@INPUT@', '-o', '@OUTPUT@'],

@@ -1,4 +1,4 @@
-embed_example = executable('embed',
+executable('embed',
 	'main.cc',
 	dependencies: quadrate_dep,
 	build_by_default: false
