@@ -1,6 +1,9 @@
 #ifndef QD_QUADRATE_RUNTIME_DEFS_H
 #define QD_QUADRATE_RUNTIME_DEFS_H
 
+#include <stdio.h>
+#include <stdlib.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -8,8 +11,9 @@ extern "C" {
 #define QD_REQUIRE_STACK(ctx, n)                                                                                       \
 	do {                                                                                                               \
 		if (qd_stack_size((ctx)->st) < (n)) {                                                                          \
-			qd_err_push((ctx), QD_STACK_ERR_UNDERFLOW);                                                                \
-			return (qd_exec_result){.code = QD_STACK_ERR_UNDERFLOW};                                                   \
+			fprintf(stderr, "Fatal error in %s: Stack underflow (required %zu elements, have %zu)\n",                  \
+				__func__, (size_t)(n), qd_stack_size((ctx)->st));                                                      \
+			abort();                                                                                                    \
 		}                                                                                                              \
 	} while (0)
 

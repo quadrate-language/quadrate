@@ -4,5 +4,6 @@ fn bmi( weight height -- bmi ) {
 }
 
 fn main() {
-	70 1.75 bmi print
+	70 1.75 bmi
+	print
 }
