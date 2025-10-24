@@ -1,26 +1,38 @@
 BUILD_DIR_DEBUG   := build/debug
 BUILD_DIR_RELEASE := build/release
 
-CMAKE_FLAGS := -S . -DBUILD_TESTS=ON
+MESON_FLAGS := -Dbuild_tests=true
 
 .PHONY: all debug release tests examples format clean
 
 all: debug
 
 debug:
-	cmake $(CMAKE_FLAGS) -B $(BUILD_DIR_DEBUG) -DCMAKE_BUILD_TYPE=Debug
-	cmake --build $(BUILD_DIR_DEBUG) --parallel
+	meson setup $(BUILD_DIR_DEBUG) --buildtype=debug $(MESON_FLAGS)
+	meson compile -C $(BUILD_DIR_DEBUG)
+	@mkdir -p dist/bin dist/lib dist/include
+	@cp -f $(BUILD_DIR_DEBUG)/bin/quadc/quadc dist/bin/
+	@cp -f $(BUILD_DIR_DEBUG)/bin/quadfmt/quadfmt dist/bin/
+	@cp -f $(BUILD_DIR_DEBUG)/lib/quadrate/libquadrate.so dist/lib/
+	@cp -f $(BUILD_DIR_DEBUG)/lib/quadrate/libquadrate_static.a dist/lib/
+	@cp -rf lib/quadrate/include/quadrate dist/include/
 
 release:
-	cmake $(CMAKE_FLAGS) -B $(BUILD_DIR_RELEASE) -DCMAKE_BUILD_TYPE=Release
-	cmake --build $(BUILD_DIR_RELEASE) --parallel
+	meson setup $(BUILD_DIR_RELEASE) --buildtype=release $(MESON_FLAGS)
+	meson compile -C $(BUILD_DIR_RELEASE)
+	@mkdir -p dist/bin dist/lib dist/include
+	@cp -f $(BUILD_DIR_RELEASE)/bin/quadc/quadc dist/bin/
+	@cp -f $(BUILD_DIR_RELEASE)/bin/quadfmt/quadfmt dist/bin/
+	@cp -f $(BUILD_DIR_RELEASE)/lib/quadrate/libquadrate.so dist/lib/
+	@cp -f $(BUILD_DIR_RELEASE)/lib/quadrate/libquadrate_static.a dist/lib/
+	@cp -rf lib/quadrate/include/quadrate dist/include/
 
 tests: debug
-	ctest --test-dir $(BUILD_DIR_DEBUG) --output-on-failure
+	meson test -C $(BUILD_DIR_DEBUG) --print-errorlogs
 
 examples:
-	cmake $(CMAKE_FLAGS) -B $(BUILD_DIR_DEBUG) -DCMAKE_BUILD_TYPE=Debug -DBUILD_EXAMPLES=ON
-	cmake --build $(BUILD_DIR_DEBUG) --parallel
+	meson setup $(BUILD_DIR_DEBUG) --buildtype=debug -Dbuild_examples=true $(MESON_FLAGS)
+	meson compile -C $(BUILD_DIR_DEBUG)
 
 format:
 	find bin lib examples -type f \( -name '*.cc' -o -name '*.h' \) -not -name 'utf8.h' -not -path '*/utf8/*' -exec clang-format -i {} +
