@@ -3,7 +3,9 @@ BUILD_DIR_RELEASE := build/release
 
 MESON_FLAGS := -Dbuild_tests=true
 
-.PHONY: all debug release tests valgrind examples format clean
+PREFIX ?= /usr/local
+
+.PHONY: all debug release tests valgrind examples format install uninstall clean
 
 all: debug
 
@@ -39,6 +41,23 @@ examples:
 
 format:
 	find bin lib examples -type f \( -name '*.cc' -o -name '*.h' \) -not -name 'utf8.h' -not -path '*/utf8/*' -exec clang-format -i {} +
+
+install: release
+	install -d $(DESTDIR)$(PREFIX)/bin
+	install -d $(DESTDIR)$(PREFIX)/lib
+	install -d $(DESTDIR)$(PREFIX)/include
+	install -m 755 dist/bin/quadc $(DESTDIR)$(PREFIX)/bin/
+	install -m 755 dist/bin/quadfmt $(DESTDIR)$(PREFIX)/bin/
+	install -m 644 dist/lib/libquadrate.so $(DESTDIR)$(PREFIX)/lib/
+	install -m 644 dist/lib/libquadrate_static.a $(DESTDIR)$(PREFIX)/lib/
+	cp -r dist/include/quadrate $(DESTDIR)$(PREFIX)/include/
+
+uninstall:
+	rm -f $(DESTDIR)$(PREFIX)/bin/quadc
+	rm -f $(DESTDIR)$(PREFIX)/bin/quadfmt
+	rm -f $(DESTDIR)$(PREFIX)/lib/libquadrate.so
+	rm -f $(DESTDIR)$(PREFIX)/lib/libquadrate_static.a
+	rm -rf $(DESTDIR)$(PREFIX)/include/quadrate
 
 clean:
 	rm -rf build

@@ -11,6 +11,34 @@
 
 #define QUADC_VERSION "0.1.0"
 
+std::string getCompilerFlags() {
+	if (std::filesystem::exists("./dist/include")) {
+		return "-I./dist/include";
+	}
+	const char* home = getenv("HOME");
+	if (home) {
+		std::filesystem::path localInclude = std::filesystem::path(home) / ".local" / "include";
+		if (std::filesystem::exists(localInclude)) {
+			return "-I" + localInclude.string();
+		}
+	}
+	return "";
+}
+
+std::string getLinkerFlags() {
+	if (std::filesystem::exists("./dist/lib")) {
+		return "-L./dist/lib -lquadrate_static -lm -pthread";
+	}
+	const char* home = getenv("HOME");
+	if (home) {
+		std::filesystem::path localLib = std::filesystem::path(home) / ".local" / "lib";
+		if (std::filesystem::exists(localLib)) {
+			return "-L" + localLib.string() + " -Wl,-rpath," + localLib.string() + " -lquadrate -lm -pthread";
+		}
+	}
+	return "-lquadrate -lm -pthread";
+}
+
 std::string createTempDir() {
 	std::random_device rd;
 	std::mt19937 gen(rd());
@@ -115,9 +143,10 @@ int main(int argc, char** argv) {
 
 		std::vector<TranslationUnit> translationUnits;
 		Qd::Compiler compiler;
+		std::string compilerFlags = getCompilerFlags();
 		for (auto& source : transpiledSources) {
 			if (auto tu = compiler.compile(
-						(std::filesystem::path(outputDir) / source.filename).c_str(), "-I./dist/include")) {
+						(std::filesystem::path(outputDir) / source.filename).c_str(), compilerFlags.c_str())) {
 				translationUnits.push_back(*tu);
 			} else {
 				std::cerr << "quadc: compilation failed for " << source.filename << std::endl;
@@ -144,7 +173,7 @@ int main(int argc, char** argv) {
 		}
 
 		std::filesystem::path mainCPath = std::filesystem::path(outputDir) / "main.c";
-		if (auto tu = compiler.compile(mainCPath.string().c_str(), "-I./dist/include")) {
+		if (auto tu = compiler.compile(mainCPath.string().c_str(), compilerFlags.c_str())) {
 			translationUnits.push_back(*tu);
 		} else {
 			std::cerr << "quadc: compilation failed for main.c" << std::endl;
@@ -152,8 +181,8 @@ int main(int argc, char** argv) {
 		}
 
 		Qd::Linker linker;
-		bool linkSuccess = linker.link(translationUnits, outputFilename.c_str(),
-				"-I./dist/include -L./dist/lib -lquadrate_static -lm -pthread");
+		std::string linkerFlags = getLinkerFlags();
+		bool linkSuccess = linker.link(translationUnits, outputFilename.c_str(), linkerFlags.c_str());
 		if (!linkSuccess) {
 			std::cerr << "quadc: linking failed" << std::endl;
 			return 1;
