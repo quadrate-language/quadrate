@@ -20,12 +20,14 @@ namespace Qd {
 	static const char* mapTypeToStackType(const std::string& paramType) {
 		if (paramType.empty()) {
 			return "QD_STACK_TYPE_PTR"; // Untyped - skip type check
-		} else if (paramType == "int" || paramType == "i64") {
+		} else if (paramType == "i") {
 			return "QD_STACK_TYPE_INT";
-		} else if (paramType == "float" || paramType == "f64") {
+		} else if (paramType == "f") {
 			return "QD_STACK_TYPE_FLOAT";
-		} else if (paramType == "str" || paramType == "string") {
+		} else if (paramType == "s") {
 			return "QD_STACK_TYPE_STR";
+		} else if (paramType == "p") {
+			return "QD_STACK_TYPE_PTR";
 		} else {
 			return "QD_STACK_TYPE_PTR"; // Unknown type - skip check
 		}

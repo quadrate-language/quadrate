@@ -1,9 +1,8 @@
-fn bmi( weight:float height:float -- bmi:float ) {
+fn bmi(weight:f height:f -- bmi:f) {
 	sq
 	div
 }
 
 fn main() {
-	70.0 1.75 bmi
-	print
+	70.0 1.75 bmi print
 }
