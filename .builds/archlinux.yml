@@ -26,6 +26,7 @@ tasks:
       make tests
   - valgrind: |
       cd quadrate
+      export DEBUGINFOD_URLS="https://debuginfod.archlinux.org"
       make valgrind
 triggers:
   - action: email
