@@ -23,4 +23,7 @@ tasks:
   - test: |
       cd quadrate
       make tests
-
+triggers:
+  - action: email
+    condition: failure
+    to: klahr@r8.rs
