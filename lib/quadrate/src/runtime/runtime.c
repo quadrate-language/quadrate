@@ -499,6 +499,54 @@ qd_exec_result qd_sq(qd_context* ctx) {
 	return (qd_exec_result){0};
 }
 
+qd_exec_result qd_abs(qd_context* ctx) {
+	// Check we have at least 1 element
+	size_t stack_size = qd_stack_size(ctx->st);
+	if (stack_size < 1) {
+		fprintf(stderr, "Fatal error in abs: Stack underflow (required 1 element, have %zu)\n", stack_size);
+		dump_stack(ctx);
+		abort();
+	}
+
+	// Check it's a numeric type (int or float)
+	qd_stack_element_t a;
+	qd_stack_error err = qd_stack_peek(ctx->st, &a);
+	if (err != QD_STACK_OK) {
+		fprintf(stderr, "Fatal error in abs: Failed to peek stack\n");
+		dump_stack(ctx);
+		abort();
+	}
+	if (a.type != QD_STACK_TYPE_INT && a.type != QD_STACK_TYPE_FLOAT) {
+		const char* type_name = "unknown";
+		if (a.type == QD_STACK_TYPE_STR) type_name = "str";
+		else if (a.type == QD_STACK_TYPE_PTR) type_name = "ptr";
+		fprintf(stderr, "Fatal error in abs: Type error (expected int or float, got %s)\n", type_name);
+		dump_stack(ctx);
+		abort();
+	}
+
+	err = qd_stack_pop(ctx->st, &a);
+	if (err != QD_STACK_OK) {
+		return (qd_exec_result){-2};
+	}
+	if (a.type == QD_STACK_TYPE_INT) {
+		int64_t result = a.value.i < 0 ? -a.value.i : a.value.i;
+		err = qd_stack_push_int(ctx->st, result);
+		if (err != QD_STACK_OK) {
+			return (qd_exec_result){-2};
+		}
+	} else if (a.type == QD_STACK_TYPE_FLOAT) {
+		double result = a.value.f < 0.0 ? -a.value.f : a.value.f;
+		err = qd_stack_push_float(ctx->st, result);
+		if (err != QD_STACK_OK) {
+			return (qd_exec_result){-2};
+		}
+	} else {
+		return (qd_exec_result){-5};
+	}
+	return (qd_exec_result){0};
+}
+
 qd_exec_result qd_dup(qd_context* ctx) {
 	// Duplicate the top element of the stack
 	size_t stack_size = qd_stack_size(ctx->st);

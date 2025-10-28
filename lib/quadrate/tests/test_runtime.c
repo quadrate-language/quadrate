@@ -604,6 +604,114 @@ TEST(PrintsvMixedTypesTest) {
 	destroy_test_context(ctx);
 }
 
+// ========== qd_abs tests ==========
+
+TEST(AbsPositiveIntegerTest) {
+	qd_context* ctx = create_test_context();
+
+	qd_push_i(ctx, 42);
+	qd_exec_result result = qd_abs(ctx);
+
+	ASSERT_EQ(result.code, 0, "abs should succeed");
+	ASSERT_EQ((int)qd_stack_size(ctx->st), 1, "Stack should have 1 element");
+
+	qd_stack_element_t elem;
+	qd_stack_error err = qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ(err, QD_STACK_OK, "pop should succeed");
+	ASSERT_EQ(elem.type, QD_STACK_TYPE_INT, "result should be int");
+	ASSERT_EQ((int)elem.value.i, 42, "abs(42) should be 42");
+
+	destroy_test_context(ctx);
+}
+
+TEST(AbsNegativeIntegerTest) {
+	qd_context* ctx = create_test_context();
+
+	qd_push_i(ctx, -42);
+	qd_exec_result result = qd_abs(ctx);
+
+	ASSERT_EQ(result.code, 0, "abs should succeed");
+	ASSERT_EQ((int)qd_stack_size(ctx->st), 1, "Stack should have 1 element");
+
+	qd_stack_element_t elem;
+	qd_stack_error err = qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ(err, QD_STACK_OK, "pop should succeed");
+	ASSERT_EQ(elem.type, QD_STACK_TYPE_INT, "result should be int");
+	ASSERT_EQ((int)elem.value.i, 42, "abs(-42) should be 42");
+
+	destroy_test_context(ctx);
+}
+
+TEST(AbsZeroTest) {
+	qd_context* ctx = create_test_context();
+
+	qd_push_i(ctx, 0);
+	qd_exec_result result = qd_abs(ctx);
+
+	ASSERT_EQ(result.code, 0, "abs should succeed");
+	ASSERT_EQ((int)qd_stack_size(ctx->st), 1, "Stack should have 1 element");
+
+	qd_stack_element_t elem;
+	qd_stack_error err = qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ(err, QD_STACK_OK, "pop should succeed");
+	ASSERT_EQ(elem.type, QD_STACK_TYPE_INT, "result should be int");
+	ASSERT_EQ((int)elem.value.i, 0, "abs(0) should be 0");
+
+	destroy_test_context(ctx);
+}
+
+TEST(AbsPositiveFloatTest) {
+	qd_context* ctx = create_test_context();
+
+	qd_push_f(ctx, 3.14);
+	qd_exec_result result = qd_abs(ctx);
+
+	ASSERT_EQ(result.code, 0, "abs should succeed");
+	ASSERT_EQ((int)qd_stack_size(ctx->st), 1, "Stack should have 1 element");
+
+	qd_stack_element_t elem;
+	qd_stack_error err = qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ(err, QD_STACK_OK, "pop should succeed");
+	ASSERT_EQ(elem.type, QD_STACK_TYPE_FLOAT, "result should be float");
+	ASSERT(float_eq(elem.value.f, 3.14), "abs(3.14) should be 3.14");
+
+	destroy_test_context(ctx);
+}
+
+TEST(AbsNegativeFloatTest) {
+	qd_context* ctx = create_test_context();
+
+	qd_push_f(ctx, -3.14);
+	qd_exec_result result = qd_abs(ctx);
+
+	ASSERT_EQ(result.code, 0, "abs should succeed");
+	ASSERT_EQ((int)qd_stack_size(ctx->st), 1, "Stack should have 1 element");
+
+	qd_stack_element_t elem;
+	qd_stack_error err = qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ(err, QD_STACK_OK, "pop should succeed");
+	ASSERT_EQ(elem.type, QD_STACK_TYPE_FLOAT, "result should be float");
+	ASSERT(float_eq(elem.value.f, 3.14), "abs(-3.14) should be 3.14");
+
+	destroy_test_context(ctx);
+}
+
+TEST(AbsLargeNegativeTest) {
+	qd_context* ctx = create_test_context();
+
+	qd_push_i(ctx, -1000000);
+	qd_exec_result result = qd_abs(ctx);
+
+	ASSERT_EQ(result.code, 0, "abs should succeed");
+
+	qd_stack_element_t elem;
+	qd_stack_error err = qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ(err, QD_STACK_OK, "pop should succeed");
+	ASSERT_EQ((int)elem.value.i, 1000000, "abs(-1000000) should be 1000000");
+
+	destroy_test_context(ctx);
+}
+
 // ========== qd_dup tests ==========
 
 TEST(DupIntegerTest) {
