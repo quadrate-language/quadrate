@@ -94,22 +94,53 @@ qd_exec_result qd_prints(qd_context* ctx) {
 }
 
 qd_exec_result qd_printv(qd_context* ctx) {
-	const int64_t stack_size = (int64_t)qd_stack_size(ctx->st);
-	for (int64_t i = stack_size - 1; i >= 0; i--) {
+	// Forth-style verbose: pop and print the top element with type info
+	qd_stack_element_t val;
+	qd_stack_error err = qd_stack_pop(ctx->st, &val);
+	if (err != QD_STACK_OK) {
+		return (qd_exec_result){-2};
+	}
+
+	switch (val.type) {
+		case QD_STACK_TYPE_INT:
+			printf("int:%ld\n", val.value.i);
+			break;
+		case QD_STACK_TYPE_FLOAT:
+			printf("flt:%g\n", val.value.f);
+			break;
+		case QD_STACK_TYPE_STR:
+			printf("str:\"%s\"\n", val.value.s);
+			free(val.value.s);  // Free the string memory after printing
+			break;
+		default:
+			return (qd_exec_result){-3};
+	}
+
+	return (qd_exec_result){0};
+}
+
+qd_exec_result qd_printsv(qd_context* ctx) {
+	// Print entire stack with type info (non-destructive)
+	const size_t stack_size = qd_stack_size(ctx->st);
+
+	// Print from bottom to top, all on one line
+	for (size_t i = 0; i < stack_size; i++) {
 		qd_stack_element_t val;
-		qd_stack_error err = qd_stack_element(ctx->st, (size_t)i, &val);
+		qd_stack_error err = qd_stack_element(ctx->st, i, &val);
 		if (err != QD_STACK_OK) {
 			return (qd_exec_result){-2};
 		}
-		if (i < stack_size - 1) {
+
+		if (i > 0) {
 			printf(" ");
 		}
+
 		switch (val.type) {
 			case QD_STACK_TYPE_INT:
 				printf("int:%ld", val.value.i);
 				break;
 			case QD_STACK_TYPE_FLOAT:
-				printf("flt:%f", val.value.f);
+				printf("flt:%g", val.value.f);
 				break;
 			case QD_STACK_TYPE_STR:
 				printf("str:\"%s\"", val.value.s);
@@ -118,7 +149,11 @@ qd_exec_result qd_printv(qd_context* ctx) {
 				return (qd_exec_result){-3};
 		}
 	}
-	printf("\n");
+
+	if (stack_size > 0) {
+		printf("\n");
+	}
+
 	return (qd_exec_result){0};
 }
 

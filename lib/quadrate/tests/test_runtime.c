@@ -462,3 +462,144 @@ TEST(PrintStringTest) {
 
 	destroy_test_context(ctx);
 }
+
+TEST(PrintvPopsStackTest) {
+	qd_context* ctx = create_test_context();
+
+	// Push three values
+	qd_push_i(ctx, 1);
+	qd_push_i(ctx, 2);
+	qd_push_i(ctx, 3);
+
+	// Stack should have 3 elements
+	ASSERT_EQ((int)qd_stack_size(ctx->st), 3, "Stack should have 3 elements");
+
+	// Printv (pop) the top element
+	qd_exec_result result = qd_printv(ctx);
+	ASSERT_EQ(result.code, 0, "printv should succeed");
+
+	// Stack should now have 2 elements
+	ASSERT_EQ((int)qd_stack_size(ctx->st), 2, "Stack should have 2 elements after printv");
+
+	// Top element should be 2 now
+	qd_stack_element_t elem;
+	qd_stack_error err = qd_stack_peek(ctx->st, &elem);
+	ASSERT_EQ(err, QD_STACK_OK, "peek should succeed");
+	ASSERT_EQ((int)elem.value.i, 2, "Top element should be 2");
+
+	destroy_test_context(ctx);
+}
+
+TEST(PrintvIntegerTest) {
+	qd_context* ctx = create_test_context();
+
+	qd_push_i(ctx, 42);
+	qd_exec_result result = qd_printv(ctx);
+
+	ASSERT_EQ(result.code, 0, "printv should succeed");
+	ASSERT_EQ((int)qd_stack_size(ctx->st), 0, "Stack should be empty after printv");
+
+	destroy_test_context(ctx);
+}
+
+TEST(PrintvFloatTest) {
+	qd_context* ctx = create_test_context();
+
+	qd_push_f(ctx, 3.14);
+	qd_exec_result result = qd_printv(ctx);
+
+	ASSERT_EQ(result.code, 0, "printv should succeed");
+	ASSERT_EQ((int)qd_stack_size(ctx->st), 0, "Stack should be empty after printv");
+
+	destroy_test_context(ctx);
+}
+
+TEST(PrintsNonDestructiveTest) {
+	qd_context* ctx = create_test_context();
+
+	// Push three values
+	qd_push_i(ctx, 1);
+	qd_push_i(ctx, 2);
+	qd_push_i(ctx, 3);
+
+	// Stack should have 3 elements
+	ASSERT_EQ((int)qd_stack_size(ctx->st), 3, "Stack should have 3 elements");
+
+	// Prints (non-destructive)
+	qd_exec_result result = qd_prints(ctx);
+	ASSERT_EQ(result.code, 0, "prints should succeed");
+
+	// Stack should still have 3 elements (non-destructive)
+	ASSERT_EQ((int)qd_stack_size(ctx->st), 3, "Stack should still have 3 elements after prints");
+
+	destroy_test_context(ctx);
+}
+
+TEST(PrintsEmptyStackTest) {
+	qd_context* ctx = create_test_context();
+
+	// Prints on empty stack should succeed but output nothing
+	qd_exec_result result = qd_prints(ctx);
+	ASSERT_EQ(result.code, 0, "prints on empty stack should succeed");
+
+	destroy_test_context(ctx);
+}
+
+TEST(PrintsMixedTypesTest) {
+	qd_context* ctx = create_test_context();
+
+	qd_push_i(ctx, 42);
+	qd_push_f(ctx, 3.14);
+	qd_push_s(ctx, "hello");
+
+	qd_exec_result result = qd_prints(ctx);
+	ASSERT_EQ(result.code, 0, "prints should succeed with mixed types");
+	ASSERT_EQ((int)qd_stack_size(ctx->st), 3, "Stack should still have 3 elements");
+
+	destroy_test_context(ctx);
+}
+
+TEST(PrintsvNonDestructiveTest) {
+	qd_context* ctx = create_test_context();
+
+	// Push three values
+	qd_push_i(ctx, 1);
+	qd_push_i(ctx, 2);
+	qd_push_i(ctx, 3);
+
+	// Stack should have 3 elements
+	ASSERT_EQ((int)qd_stack_size(ctx->st), 3, "Stack should have 3 elements");
+
+	// Printsv (non-destructive with types)
+	qd_exec_result result = qd_printsv(ctx);
+	ASSERT_EQ(result.code, 0, "printsv should succeed");
+
+	// Stack should still have 3 elements (non-destructive)
+	ASSERT_EQ((int)qd_stack_size(ctx->st), 3, "Stack should still have 3 elements after printsv");
+
+	destroy_test_context(ctx);
+}
+
+TEST(PrintsvEmptyStackTest) {
+	qd_context* ctx = create_test_context();
+
+	// Printsv on empty stack should succeed but output nothing
+	qd_exec_result result = qd_printsv(ctx);
+	ASSERT_EQ(result.code, 0, "printsv on empty stack should succeed");
+
+	destroy_test_context(ctx);
+}
+
+TEST(PrintsvMixedTypesTest) {
+	qd_context* ctx = create_test_context();
+
+	qd_push_i(ctx, 42);
+	qd_push_f(ctx, 3.14);
+	qd_push_s(ctx, "hello");
+
+	qd_exec_result result = qd_printsv(ctx);
+	ASSERT_EQ(result.code, 0, "printsv should succeed with mixed types");
+	ASSERT_EQ((int)qd_stack_size(ctx->st), 3, "Stack should still have 3 elements");
+
+	destroy_test_context(ctx);
+}
