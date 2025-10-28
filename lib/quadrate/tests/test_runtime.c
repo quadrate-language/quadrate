@@ -1080,6 +1080,485 @@ TEST(SwapDoesNotAffectRestOfStackTest) {
 	destroy_test_context(ctx);
 }
 
+// ========== qd_over tests ==========
+
+TEST(OverIntegersTest) {
+	qd_context* ctx = create_test_context();
+
+	qd_push_i(ctx, 10);
+	qd_push_i(ctx, 20);
+	qd_exec_result result = qd_over(ctx);
+
+	ASSERT_EQ(result.code, 0, "over should succeed");
+	ASSERT_EQ((int)qd_stack_size(ctx->st), 3, "Stack should have 3 elements after over");
+
+	// Stack should be: 10, 20, 10 (from bottom to top)
+	qd_stack_element_t elem;
+	qd_stack_error err = qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ(err, QD_STACK_OK, "pop should succeed");
+	ASSERT_EQ(elem.type, QD_STACK_TYPE_INT, "top element should be int");
+	ASSERT_EQ((int)elem.value.i, 10, "top element should be 10");
+
+	err = qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ(err, QD_STACK_OK, "second pop should succeed");
+	ASSERT_EQ(elem.type, QD_STACK_TYPE_INT, "second element should be int");
+	ASSERT_EQ((int)elem.value.i, 20, "second element should be 20");
+
+	err = qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ(err, QD_STACK_OK, "third pop should succeed");
+	ASSERT_EQ(elem.type, QD_STACK_TYPE_INT, "third element should be int");
+	ASSERT_EQ((int)elem.value.i, 10, "third element should be 10");
+
+	destroy_test_context(ctx);
+}
+
+TEST(OverMixedTypesTest) {
+	qd_context* ctx = create_test_context();
+
+	qd_push_i(ctx, 42);
+	qd_push_f(ctx, 3.14);
+	qd_exec_result result = qd_over(ctx);
+
+	ASSERT_EQ(result.code, 0, "over should succeed with mixed types");
+	ASSERT_EQ((int)qd_stack_size(ctx->st), 3, "Stack should have 3 elements after over");
+
+	// Stack should be: 42, 3.14, 42
+	qd_stack_element_t elem;
+	qd_stack_error err = qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ(err, QD_STACK_OK, "pop should succeed");
+	ASSERT_EQ(elem.type, QD_STACK_TYPE_INT, "top element should be int");
+	ASSERT_EQ((int)elem.value.i, 42, "top element should be 42");
+
+	err = qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ(err, QD_STACK_OK, "second pop should succeed");
+	ASSERT_EQ(elem.type, QD_STACK_TYPE_FLOAT, "second element should be float");
+	ASSERT(float_eq(elem.value.f, 3.14), "second element should be 3.14");
+
+	err = qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ(err, QD_STACK_OK, "third pop should succeed");
+	ASSERT_EQ(elem.type, QD_STACK_TYPE_INT, "third element should be int");
+	ASSERT_EQ((int)elem.value.i, 42, "third element should be 42");
+
+	destroy_test_context(ctx);
+}
+
+TEST(OverStringsTest) {
+	qd_context* ctx = create_test_context();
+
+	qd_push_s(ctx, "hello");
+	qd_push_s(ctx, "world");
+	qd_exec_result result = qd_over(ctx);
+
+	ASSERT_EQ(result.code, 0, "over should succeed with strings");
+	ASSERT_EQ((int)qd_stack_size(ctx->st), 3, "Stack should have 3 elements after over");
+
+	// Stack should be: "hello", "world", "hello"
+	qd_stack_element_t elem;
+	qd_stack_error err = qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ(err, QD_STACK_OK, "pop should succeed");
+	ASSERT_EQ(elem.type, QD_STACK_TYPE_STR, "top element should be string");
+	ASSERT_STR_EQ(elem.value.s, "hello", "top element should be 'hello'");
+	free(elem.value.s);
+
+	err = qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ(err, QD_STACK_OK, "second pop should succeed");
+	ASSERT_EQ(elem.type, QD_STACK_TYPE_STR, "second element should be string");
+	ASSERT_STR_EQ(elem.value.s, "world", "second element should be 'world'");
+	free(elem.value.s);
+
+	err = qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ(err, QD_STACK_OK, "third pop should succeed");
+	ASSERT_EQ(elem.type, QD_STACK_TYPE_STR, "third element should be string");
+	ASSERT_STR_EQ(elem.value.s, "hello", "third element should be 'hello'");
+	free(elem.value.s);
+
+	destroy_test_context(ctx);
+}
+
+TEST(OverPreservesRestOfStackTest) {
+	qd_context* ctx = create_test_context();
+
+	// Push multiple elements
+	qd_push_i(ctx, 1);
+	qd_push_i(ctx, 2);
+	qd_push_i(ctx, 3);
+	qd_push_i(ctx, 4);
+
+	// Over copies the second element (3) to the top
+	qd_exec_result result = qd_over(ctx);
+	ASSERT_EQ(result.code, 0, "over should succeed");
+	ASSERT_EQ((int)qd_stack_size(ctx->st), 5, "Stack should have 5 elements");
+
+	// Check order: should be 1, 2, 3, 4, 3 (from bottom to top)
+	qd_stack_element_t elem;
+	qd_stack_error err = qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ(err, QD_STACK_OK, "pop should succeed");
+	ASSERT_EQ((int)elem.value.i, 3, "top element should be 3");
+
+	err = qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ(err, QD_STACK_OK, "pop should succeed");
+	ASSERT_EQ((int)elem.value.i, 4, "second element should be 4");
+
+	err = qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ(err, QD_STACK_OK, "pop should succeed");
+	ASSERT_EQ((int)elem.value.i, 3, "third element should be 3");
+
+	err = qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ(err, QD_STACK_OK, "pop should succeed");
+	ASSERT_EQ((int)elem.value.i, 2, "fourth element should be 2");
+
+	err = qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ(err, QD_STACK_OK, "pop should succeed");
+	ASSERT_EQ((int)elem.value.i, 1, "fifth element should be 1");
+
+	destroy_test_context(ctx);
+}
+
+// ========== qd_nip tests ==========
+
+TEST(NipIntegersTest) {
+	qd_context* ctx = create_test_context();
+
+	qd_push_i(ctx, 10);
+	qd_push_i(ctx, 20);
+	qd_exec_result result = qd_nip(ctx);
+
+	ASSERT_EQ(result.code, 0, "nip should succeed");
+	ASSERT_EQ((int)qd_stack_size(ctx->st), 1, "Stack should have 1 element after nip");
+
+	// Stack should be: 20
+	qd_stack_element_t elem;
+	qd_stack_error err = qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ(err, QD_STACK_OK, "pop should succeed");
+	ASSERT_EQ(elem.type, QD_STACK_TYPE_INT, "element should be int");
+	ASSERT_EQ((int)elem.value.i, 20, "element should be 20");
+
+	destroy_test_context(ctx);
+}
+
+TEST(NipMixedTypesTest) {
+	qd_context* ctx = create_test_context();
+
+	qd_push_f(ctx, 3.14);
+	qd_push_i(ctx, 42);
+	qd_exec_result result = qd_nip(ctx);
+
+	ASSERT_EQ(result.code, 0, "nip should succeed with mixed types");
+	ASSERT_EQ((int)qd_stack_size(ctx->st), 1, "Stack should have 1 element after nip");
+
+	// Stack should be: 42
+	qd_stack_element_t elem;
+	qd_stack_error err = qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ(err, QD_STACK_OK, "pop should succeed");
+	ASSERT_EQ(elem.type, QD_STACK_TYPE_INT, "element should be int");
+	ASSERT_EQ((int)elem.value.i, 42, "element should be 42");
+
+	destroy_test_context(ctx);
+}
+
+TEST(NipStringsTest) {
+	qd_context* ctx = create_test_context();
+
+	qd_push_s(ctx, "hello");
+	qd_push_s(ctx, "world");
+	qd_exec_result result = qd_nip(ctx);
+
+	ASSERT_EQ(result.code, 0, "nip should succeed with strings");
+	ASSERT_EQ((int)qd_stack_size(ctx->st), 1, "Stack should have 1 element after nip");
+
+	// Stack should be: "world"
+	qd_stack_element_t elem;
+	qd_stack_error err = qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ(err, QD_STACK_OK, "pop should succeed");
+	ASSERT_EQ(elem.type, QD_STACK_TYPE_STR, "element should be string");
+	ASSERT_STR_EQ(elem.value.s, "world", "element should be 'world'");
+	free(elem.value.s);
+
+	destroy_test_context(ctx);
+}
+
+TEST(NipPreservesRestOfStackTest) {
+	qd_context* ctx = create_test_context();
+
+	// Push multiple elements
+	qd_push_i(ctx, 1);
+	qd_push_i(ctx, 2);
+	qd_push_i(ctx, 3);
+	qd_push_i(ctx, 4);
+
+	// Nip removes the second element (3), leaving 4 on top
+	qd_exec_result result = qd_nip(ctx);
+	ASSERT_EQ(result.code, 0, "nip should succeed");
+	ASSERT_EQ((int)qd_stack_size(ctx->st), 3, "Stack should have 3 elements");
+
+	// Check order: should be 1, 2, 4 (from bottom to top)
+	qd_stack_element_t elem;
+	qd_stack_error err = qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ(err, QD_STACK_OK, "pop should succeed");
+	ASSERT_EQ((int)elem.value.i, 4, "top element should be 4");
+
+	err = qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ(err, QD_STACK_OK, "pop should succeed");
+	ASSERT_EQ((int)elem.value.i, 2, "second element should be 2");
+
+	err = qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ(err, QD_STACK_OK, "pop should succeed");
+	ASSERT_EQ((int)elem.value.i, 1, "third element should be 1");
+
+	destroy_test_context(ctx);
+}
+
+// ========== Trigonometric function tests ==========
+
+TEST(SinZeroTest) {
+	qd_context* ctx = create_test_context();
+
+	qd_push_i(ctx, 0);
+	qd_exec_result result = qd_sin(ctx);
+
+	ASSERT_EQ(result.code, 0, "sin should succeed");
+	ASSERT_EQ((int)qd_stack_size(ctx->st), 1, "Stack should have 1 element");
+
+	qd_stack_element_t elem;
+	qd_stack_error err = qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ(err, QD_STACK_OK, "pop should succeed");
+	ASSERT_EQ(elem.type, QD_STACK_TYPE_FLOAT, "result should be float");
+	ASSERT(float_eq(elem.value.f, 0.0), "sin(0) should be 0.0");
+
+	destroy_test_context(ctx);
+}
+
+TEST(SinPiOver2Test) {
+	qd_context* ctx = create_test_context();
+
+	// sin(π/2) = 1
+	qd_push_f(ctx, 3.14159265358979323846 / 2.0);
+	qd_exec_result result = qd_sin(ctx);
+
+	ASSERT_EQ(result.code, 0, "sin should succeed");
+
+	qd_stack_element_t elem;
+	qd_stack_error err = qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ(err, QD_STACK_OK, "pop should succeed");
+	ASSERT_EQ(elem.type, QD_STACK_TYPE_FLOAT, "result should be float");
+	ASSERT(float_eq(elem.value.f, 1.0), "sin(π/2) should be 1.0");
+
+	destroy_test_context(ctx);
+}
+
+TEST(CosZeroTest) {
+	qd_context* ctx = create_test_context();
+
+	qd_push_i(ctx, 0);
+	qd_exec_result result = qd_cos(ctx);
+
+	ASSERT_EQ(result.code, 0, "cos should succeed");
+
+	qd_stack_element_t elem;
+	qd_stack_error err = qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ(err, QD_STACK_OK, "pop should succeed");
+	ASSERT_EQ(elem.type, QD_STACK_TYPE_FLOAT, "result should be float");
+	ASSERT(float_eq(elem.value.f, 1.0), "cos(0) should be 1.0");
+
+	destroy_test_context(ctx);
+}
+
+TEST(CosPiTest) {
+	qd_context* ctx = create_test_context();
+
+	// cos(π) = -1
+	qd_push_f(ctx, 3.14159265358979323846);
+	qd_exec_result result = qd_cos(ctx);
+
+	ASSERT_EQ(result.code, 0, "cos should succeed");
+
+	qd_stack_element_t elem;
+	qd_stack_error err = qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ(err, QD_STACK_OK, "pop should succeed");
+	ASSERT_EQ(elem.type, QD_STACK_TYPE_FLOAT, "result should be float");
+	ASSERT(float_eq(elem.value.f, -1.0), "cos(π) should be -1.0");
+
+	destroy_test_context(ctx);
+}
+
+TEST(TanZeroTest) {
+	qd_context* ctx = create_test_context();
+
+	qd_push_i(ctx, 0);
+	qd_exec_result result = qd_tan(ctx);
+
+	ASSERT_EQ(result.code, 0, "tan should succeed");
+
+	qd_stack_element_t elem;
+	qd_stack_error err = qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ(err, QD_STACK_OK, "pop should succeed");
+	ASSERT_EQ(elem.type, QD_STACK_TYPE_FLOAT, "result should be float");
+	ASSERT(float_eq(elem.value.f, 0.0), "tan(0) should be 0.0");
+
+	destroy_test_context(ctx);
+}
+
+TEST(TanPiOver4Test) {
+	qd_context* ctx = create_test_context();
+
+	// tan(π/4) = 1
+	qd_push_f(ctx, 3.14159265358979323846 / 4.0);
+	qd_exec_result result = qd_tan(ctx);
+
+	ASSERT_EQ(result.code, 0, "tan should succeed");
+
+	qd_stack_element_t elem;
+	qd_stack_error err = qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ(err, QD_STACK_OK, "pop should succeed");
+	ASSERT_EQ(elem.type, QD_STACK_TYPE_FLOAT, "result should be float");
+	ASSERT(float_eq(elem.value.f, 1.0), "tan(π/4) should be 1.0");
+
+	destroy_test_context(ctx);
+}
+
+TEST(AsinZeroTest) {
+	qd_context* ctx = create_test_context();
+
+	qd_push_i(ctx, 0);
+	qd_exec_result result = qd_asin(ctx);
+
+	ASSERT_EQ(result.code, 0, "asin should succeed");
+
+	qd_stack_element_t elem;
+	qd_stack_error err = qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ(err, QD_STACK_OK, "pop should succeed");
+	ASSERT_EQ(elem.type, QD_STACK_TYPE_FLOAT, "result should be float");
+	ASSERT(float_eq(elem.value.f, 0.0), "asin(0) should be 0.0");
+
+	destroy_test_context(ctx);
+}
+
+TEST(AsinOneTest) {
+	qd_context* ctx = create_test_context();
+
+	// asin(1) = π/2
+	qd_push_f(ctx, 1.0);
+	qd_exec_result result = qd_asin(ctx);
+
+	ASSERT_EQ(result.code, 0, "asin should succeed");
+
+	qd_stack_element_t elem;
+	qd_stack_error err = qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ(err, QD_STACK_OK, "pop should succeed");
+	ASSERT_EQ(elem.type, QD_STACK_TYPE_FLOAT, "result should be float");
+	ASSERT(float_eq(elem.value.f, 3.14159265358979323846 / 2.0), "asin(1) should be π/2");
+
+	destroy_test_context(ctx);
+}
+
+TEST(AcosZeroTest) {
+	qd_context* ctx = create_test_context();
+
+	// acos(0) = π/2
+	qd_push_i(ctx, 0);
+	qd_exec_result result = qd_acos(ctx);
+
+	ASSERT_EQ(result.code, 0, "acos should succeed");
+
+	qd_stack_element_t elem;
+	qd_stack_error err = qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ(err, QD_STACK_OK, "pop should succeed");
+	ASSERT_EQ(elem.type, QD_STACK_TYPE_FLOAT, "result should be float");
+	ASSERT(float_eq(elem.value.f, 3.14159265358979323846 / 2.0), "acos(0) should be π/2");
+
+	destroy_test_context(ctx);
+}
+
+TEST(AcosOneTest) {
+	qd_context* ctx = create_test_context();
+
+	// acos(1) = 0
+	qd_push_f(ctx, 1.0);
+	qd_exec_result result = qd_acos(ctx);
+
+	ASSERT_EQ(result.code, 0, "acos should succeed");
+
+	qd_stack_element_t elem;
+	qd_stack_error err = qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ(err, QD_STACK_OK, "pop should succeed");
+	ASSERT_EQ(elem.type, QD_STACK_TYPE_FLOAT, "result should be float");
+	ASSERT(float_eq(elem.value.f, 0.0), "acos(1) should be 0.0");
+
+	destroy_test_context(ctx);
+}
+
+TEST(AtanZeroTest) {
+	qd_context* ctx = create_test_context();
+
+	qd_push_i(ctx, 0);
+	qd_exec_result result = qd_atan(ctx);
+
+	ASSERT_EQ(result.code, 0, "atan should succeed");
+
+	qd_stack_element_t elem;
+	qd_stack_error err = qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ(err, QD_STACK_OK, "pop should succeed");
+	ASSERT_EQ(elem.type, QD_STACK_TYPE_FLOAT, "result should be float");
+	ASSERT(float_eq(elem.value.f, 0.0), "atan(0) should be 0.0");
+
+	destroy_test_context(ctx);
+}
+
+TEST(AtanOneTest) {
+	qd_context* ctx = create_test_context();
+
+	// atan(1) = π/4
+	qd_push_f(ctx, 1.0);
+	qd_exec_result result = qd_atan(ctx);
+
+	ASSERT_EQ(result.code, 0, "atan should succeed");
+
+	qd_stack_element_t elem;
+	qd_stack_error err = qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ(err, QD_STACK_OK, "pop should succeed");
+	ASSERT_EQ(elem.type, QD_STACK_TYPE_FLOAT, "result should be float");
+	ASSERT(float_eq(elem.value.f, 3.14159265358979323846 / 4.0), "atan(1) should be π/4");
+
+	destroy_test_context(ctx);
+}
+
+TEST(TrigIntegerInputTest) {
+	qd_context* ctx = create_test_context();
+
+	// Test that integer input gets converted to float
+	qd_push_i(ctx, 0);
+	qd_sin(ctx);
+	qd_stack_element_t elem;
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ(elem.type, QD_STACK_TYPE_FLOAT, "sin should return float even with int input");
+
+	qd_push_i(ctx, 0);
+	qd_cos(ctx);
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ(elem.type, QD_STACK_TYPE_FLOAT, "cos should return float even with int input");
+
+	destroy_test_context(ctx);
+}
+
+TEST(TrigNegativeValuesTest) {
+	qd_context* ctx = create_test_context();
+
+	// sin(-x) = -sin(x)
+	qd_push_f(ctx, -3.14159265358979323846 / 2.0);
+	qd_sin(ctx);
+	qd_stack_element_t elem;
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT(float_eq(elem.value.f, -1.0), "sin(-π/2) should be -1.0");
+
+	// asin(-1) = -π/2
+	qd_push_f(ctx, -1.0);
+	qd_asin(ctx);
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT(float_eq(elem.value.f, -3.14159265358979323846 / 2.0), "asin(-1) should be -π/2");
+
+	destroy_test_context(ctx);
+}
+
 TEST(SwapWithDupTest) {
 	qd_context* ctx = create_test_context();
 

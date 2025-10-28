@@ -13,8 +13,9 @@
 namespace Qd {
 
 	// List of built-in instructions (must match ast.cc)
-	static const char* BUILTIN_INSTRUCTIONS[] = {"*", "+", "-", ".", "/", "abs", "add", "div", "dup", "mul", "print",
-			"prints", "printsv", "printv", "rot", "sq", "sub", "swap"};
+	static const char* BUILTIN_INSTRUCTIONS[] = {"*", "+", "-", ".", "/", "abs", "acos", "add", "asin", "atan", "cos",
+			"div", "dup", "mul", "nip", "over", "print", "prints", "printsv", "printv", "rot", "sin", "sq", "sub",
+			"swap", "tan"};
 
 	SemanticValidator::SemanticValidator() : filename_(nullptr), error_count_(0) {
 	}
@@ -219,7 +220,7 @@ namespace Qd {
 			name = "sub";
 		}
 
-		// Arithmetic operations: abs, sq
+		// Arithmetic operations: abs, sq (preserve type)
 		if (strcmp(name, "abs") == 0 || strcmp(name, "sq") == 0) {
 			if (type_stack.empty()) {
 				std::string error_msg = "Type error in '";
@@ -239,6 +240,30 @@ namespace Qd {
 				return;
 			}
 			// Type remains the same (already on stack)
+		}
+		// Trigonometric functions: sin, cos, tan, asin, acos, atan (always return float)
+		else if (strcmp(name, "sin") == 0 || strcmp(name, "cos") == 0 || strcmp(name, "tan") == 0 ||
+				 strcmp(name, "asin") == 0 || strcmp(name, "acos") == 0 || strcmp(name, "atan") == 0) {
+			if (type_stack.empty()) {
+				std::string error_msg = "Type error in '";
+				error_msg += name;
+				error_msg += "': Stack underflow (requires 1 numeric value)";
+				reportError(error_msg.c_str());
+				return;
+			}
+
+			StackValueType top = type_stack.back();
+			if (!isNumericType(top)) {
+				std::string error_msg = "Type error in '";
+				error_msg += name;
+				error_msg += "': Expected numeric type, got ";
+				error_msg += typeToString(top);
+				reportError(error_msg.c_str());
+				return;
+			}
+			// Pop and push float (trig functions always return float)
+			type_stack.pop_back();
+			type_stack.push_back(StackValueType::FLOAT);
 		}
 		// Binary arithmetic operations: add, sub, mul, div
 		else if (strcmp(name, "add") == 0 || strcmp(name, "sub") == 0 || strcmp(name, "mul") == 0 ||
@@ -308,6 +333,28 @@ namespace Qd {
 			type_stack.pop_back();
 			type_stack.push_back(a);
 			type_stack.push_back(b);
+		}
+		// Stack operations: over ( a b -- a b a )
+		else if (strcmp(name, "over") == 0) {
+			if (type_stack.size() < 2) {
+				reportError("Type error in 'over': Stack underflow (requires 2 values)");
+				return;
+			}
+			// Get the second element
+			StackValueType second = type_stack[type_stack.size() - 2];
+			// Push a copy of it to the top
+			type_stack.push_back(second);
+		}
+		// Stack operations: nip ( a b -- b )
+		else if (strcmp(name, "nip") == 0) {
+			if (type_stack.size() < 2) {
+				reportError("Type error in 'nip': Stack underflow (requires 2 values)");
+				return;
+			}
+			StackValueType top = type_stack.back();
+			type_stack.pop_back();
+			type_stack.pop_back();	   // Remove second element
+			type_stack.push_back(top); // Push top back
 		}
 	}
 

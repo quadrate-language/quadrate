@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <math.h>
 
 static void dump_stack(qd_context* ctx);
 
@@ -651,6 +652,361 @@ qd_exec_result qd_swap(qd_context* ctx) {
 		default:
 			return (qd_exec_result){-3};
 	}
+	if (err != QD_STACK_OK) {
+		return (qd_exec_result){-2};
+	}
+
+	return (qd_exec_result){0};
+}
+
+qd_exec_result qd_over(qd_context* ctx) {
+	// Copy the second element to the top: ( a b -- a b a )
+	size_t stack_size = qd_stack_size(ctx->st);
+	if (stack_size < 2) {
+		fprintf(stderr, "Fatal error in over: Stack underflow (required 2 elements, have %zu)\n", stack_size);
+		dump_stack(ctx);
+		abort();
+	}
+
+	// Get the second element (without popping)
+	qd_stack_element_t second;
+	qd_stack_error err = qd_stack_element(ctx->st, stack_size - 2, &second);
+	if (err != QD_STACK_OK) {
+		fprintf(stderr, "Fatal error in over: Failed to access second element\n");
+		dump_stack(ctx);
+		abort();
+	}
+
+	// Push a copy of the second element to the top
+	switch (second.type) {
+		case QD_STACK_TYPE_INT:
+			err = qd_stack_push_int(ctx->st, second.value.i);
+			break;
+		case QD_STACK_TYPE_FLOAT:
+			err = qd_stack_push_float(ctx->st, second.value.f);
+			break;
+		case QD_STACK_TYPE_STR:
+			// Need to duplicate the string
+			err = qd_stack_push_str(ctx->st, second.value.s);
+			break;
+		case QD_STACK_TYPE_PTR:
+			err = qd_stack_push_ptr(ctx->st, second.value.p);
+			break;
+		default:
+			return (qd_exec_result){-3};
+	}
+
+	if (err != QD_STACK_OK) {
+		return (qd_exec_result){-2};
+	}
+
+	return (qd_exec_result){0};
+}
+
+qd_exec_result qd_nip(qd_context* ctx) {
+	// Remove the second element: ( a b -- b )
+	size_t stack_size = qd_stack_size(ctx->st);
+	if (stack_size < 2) {
+		fprintf(stderr, "Fatal error in nip: Stack underflow (required 2 elements, have %zu)\n", stack_size);
+		dump_stack(ctx);
+		abort();
+	}
+
+	// Pop the top element
+	qd_stack_element_t top;
+	qd_stack_error err = qd_stack_pop(ctx->st, &top);
+	if (err != QD_STACK_OK) {
+		return (qd_exec_result){-2};
+	}
+
+	// Pop the second element (which we want to discard)
+	qd_stack_element_t second;
+	err = qd_stack_pop(ctx->st, &second);
+	if (err != QD_STACK_OK) {
+		return (qd_exec_result){-2};
+	}
+
+	// Free string memory if necessary
+	if (second.type == QD_STACK_TYPE_STR) {
+		free(second.value.s);
+	}
+
+	// Push the top element back
+	switch (top.type) {
+		case QD_STACK_TYPE_INT:
+			err = qd_stack_push_int(ctx->st, top.value.i);
+			break;
+		case QD_STACK_TYPE_FLOAT:
+			err = qd_stack_push_float(ctx->st, top.value.f);
+			break;
+		case QD_STACK_TYPE_STR:
+			err = qd_stack_push_str(ctx->st, top.value.s);
+			free(top.value.s);  // Free the original since push_str makes a copy
+			break;
+		case QD_STACK_TYPE_PTR:
+			err = qd_stack_push_ptr(ctx->st, top.value.p);
+			break;
+		default:
+			return (qd_exec_result){-3};
+	}
+
+	if (err != QD_STACK_OK) {
+		return (qd_exec_result){-2};
+	}
+
+	return (qd_exec_result){0};
+}
+
+qd_exec_result qd_sin(qd_context* ctx) {
+	// Compute sine of the top value (in radians)
+	size_t stack_size = qd_stack_size(ctx->st);
+	if (stack_size < 1) {
+		fprintf(stderr, "Fatal error in sin: Stack underflow (required 1 element, have %zu)\n", stack_size);
+		dump_stack(ctx);
+		abort();
+	}
+
+	// Check it's a numeric type (int or float)
+	qd_stack_element_t a;
+	qd_stack_error err = qd_stack_peek(ctx->st, &a);
+	if (err != QD_STACK_OK) {
+		fprintf(stderr, "Fatal error in sin: Failed to peek stack\n");
+		dump_stack(ctx);
+		abort();
+	}
+	if (a.type != QD_STACK_TYPE_INT && a.type != QD_STACK_TYPE_FLOAT) {
+		const char* type_name = "unknown";
+		if (a.type == QD_STACK_TYPE_STR) type_name = "str";
+		else if (a.type == QD_STACK_TYPE_PTR) type_name = "ptr";
+		fprintf(stderr, "Fatal error in sin: Type error (expected int or float, got %s)\n", type_name);
+		dump_stack(ctx);
+		abort();
+	}
+
+	err = qd_stack_pop(ctx->st, &a);
+	if (err != QD_STACK_OK) {
+		return (qd_exec_result){-2};
+	}
+
+	double value = (a.type == QD_STACK_TYPE_INT) ? (double)a.value.i : a.value.f;
+	double result = sin(value);
+	err = qd_stack_push_float(ctx->st, result);
+	if (err != QD_STACK_OK) {
+		return (qd_exec_result){-2};
+	}
+
+	return (qd_exec_result){0};
+}
+
+qd_exec_result qd_cos(qd_context* ctx) {
+	// Compute cosine of the top value (in radians)
+	size_t stack_size = qd_stack_size(ctx->st);
+	if (stack_size < 1) {
+		fprintf(stderr, "Fatal error in cos: Stack underflow (required 1 element, have %zu)\n", stack_size);
+		dump_stack(ctx);
+		abort();
+	}
+
+	qd_stack_element_t a;
+	qd_stack_error err = qd_stack_peek(ctx->st, &a);
+	if (err != QD_STACK_OK) {
+		fprintf(stderr, "Fatal error in cos: Failed to peek stack\n");
+		dump_stack(ctx);
+		abort();
+	}
+	if (a.type != QD_STACK_TYPE_INT && a.type != QD_STACK_TYPE_FLOAT) {
+		const char* type_name = "unknown";
+		if (a.type == QD_STACK_TYPE_STR) type_name = "str";
+		else if (a.type == QD_STACK_TYPE_PTR) type_name = "ptr";
+		fprintf(stderr, "Fatal error in cos: Type error (expected int or float, got %s)\n", type_name);
+		dump_stack(ctx);
+		abort();
+	}
+
+	err = qd_stack_pop(ctx->st, &a);
+	if (err != QD_STACK_OK) {
+		return (qd_exec_result){-2};
+	}
+
+	double value = (a.type == QD_STACK_TYPE_INT) ? (double)a.value.i : a.value.f;
+	double result = cos(value);
+	err = qd_stack_push_float(ctx->st, result);
+	if (err != QD_STACK_OK) {
+		return (qd_exec_result){-2};
+	}
+
+	return (qd_exec_result){0};
+}
+
+qd_exec_result qd_tan(qd_context* ctx) {
+	// Compute tangent of the top value (in radians)
+	size_t stack_size = qd_stack_size(ctx->st);
+	if (stack_size < 1) {
+		fprintf(stderr, "Fatal error in tan: Stack underflow (required 1 element, have %zu)\n", stack_size);
+		dump_stack(ctx);
+		abort();
+	}
+
+	qd_stack_element_t a;
+	qd_stack_error err = qd_stack_peek(ctx->st, &a);
+	if (err != QD_STACK_OK) {
+		fprintf(stderr, "Fatal error in tan: Failed to peek stack\n");
+		dump_stack(ctx);
+		abort();
+	}
+	if (a.type != QD_STACK_TYPE_INT && a.type != QD_STACK_TYPE_FLOAT) {
+		const char* type_name = "unknown";
+		if (a.type == QD_STACK_TYPE_STR) type_name = "str";
+		else if (a.type == QD_STACK_TYPE_PTR) type_name = "ptr";
+		fprintf(stderr, "Fatal error in tan: Type error (expected int or float, got %s)\n", type_name);
+		dump_stack(ctx);
+		abort();
+	}
+
+	err = qd_stack_pop(ctx->st, &a);
+	if (err != QD_STACK_OK) {
+		return (qd_exec_result){-2};
+	}
+
+	double value = (a.type == QD_STACK_TYPE_INT) ? (double)a.value.i : a.value.f;
+	double result = tan(value);
+	err = qd_stack_push_float(ctx->st, result);
+	if (err != QD_STACK_OK) {
+		return (qd_exec_result){-2};
+	}
+
+	return (qd_exec_result){0};
+}
+
+qd_exec_result qd_asin(qd_context* ctx) {
+	// Compute arcsine of the top value (result in radians)
+	size_t stack_size = qd_stack_size(ctx->st);
+	if (stack_size < 1) {
+		fprintf(stderr, "Fatal error in asin: Stack underflow (required 1 element, have %zu)\n", stack_size);
+		dump_stack(ctx);
+		abort();
+	}
+
+	qd_stack_element_t a;
+	qd_stack_error err = qd_stack_peek(ctx->st, &a);
+	if (err != QD_STACK_OK) {
+		fprintf(stderr, "Fatal error in asin: Failed to peek stack\n");
+		dump_stack(ctx);
+		abort();
+	}
+	if (a.type != QD_STACK_TYPE_INT && a.type != QD_STACK_TYPE_FLOAT) {
+		const char* type_name = "unknown";
+		if (a.type == QD_STACK_TYPE_STR) type_name = "str";
+		else if (a.type == QD_STACK_TYPE_PTR) type_name = "ptr";
+		fprintf(stderr, "Fatal error in asin: Type error (expected int or float, got %s)\n", type_name);
+		dump_stack(ctx);
+		abort();
+	}
+
+	err = qd_stack_pop(ctx->st, &a);
+	if (err != QD_STACK_OK) {
+		return (qd_exec_result){-2};
+	}
+
+	double value = (a.type == QD_STACK_TYPE_INT) ? (double)a.value.i : a.value.f;
+
+	// Check domain: asin requires value in [-1, 1]
+	if (value < -1.0 || value > 1.0) {
+		fprintf(stderr, "Fatal error in asin: Domain error (value %f is outside [-1, 1])\n", value);
+		dump_stack(ctx);
+		abort();
+	}
+
+	double result = asin(value);
+	err = qd_stack_push_float(ctx->st, result);
+	if (err != QD_STACK_OK) {
+		return (qd_exec_result){-2};
+	}
+
+	return (qd_exec_result){0};
+}
+
+qd_exec_result qd_acos(qd_context* ctx) {
+	// Compute arccosine of the top value (result in radians)
+	size_t stack_size = qd_stack_size(ctx->st);
+	if (stack_size < 1) {
+		fprintf(stderr, "Fatal error in acos: Stack underflow (required 1 element, have %zu)\n", stack_size);
+		dump_stack(ctx);
+		abort();
+	}
+
+	qd_stack_element_t a;
+	qd_stack_error err = qd_stack_peek(ctx->st, &a);
+	if (err != QD_STACK_OK) {
+		fprintf(stderr, "Fatal error in acos: Failed to peek stack\n");
+		dump_stack(ctx);
+		abort();
+	}
+	if (a.type != QD_STACK_TYPE_INT && a.type != QD_STACK_TYPE_FLOAT) {
+		const char* type_name = "unknown";
+		if (a.type == QD_STACK_TYPE_STR) type_name = "str";
+		else if (a.type == QD_STACK_TYPE_PTR) type_name = "ptr";
+		fprintf(stderr, "Fatal error in acos: Type error (expected int or float, got %s)\n", type_name);
+		dump_stack(ctx);
+		abort();
+	}
+
+	err = qd_stack_pop(ctx->st, &a);
+	if (err != QD_STACK_OK) {
+		return (qd_exec_result){-2};
+	}
+
+	double value = (a.type == QD_STACK_TYPE_INT) ? (double)a.value.i : a.value.f;
+
+	// Check domain: acos requires value in [-1, 1]
+	if (value < -1.0 || value > 1.0) {
+		fprintf(stderr, "Fatal error in acos: Domain error (value %f is outside [-1, 1])\n", value);
+		dump_stack(ctx);
+		abort();
+	}
+
+	double result = acos(value);
+	err = qd_stack_push_float(ctx->st, result);
+	if (err != QD_STACK_OK) {
+		return (qd_exec_result){-2};
+	}
+
+	return (qd_exec_result){0};
+}
+
+qd_exec_result qd_atan(qd_context* ctx) {
+	// Compute arctangent of the top value (result in radians)
+	size_t stack_size = qd_stack_size(ctx->st);
+	if (stack_size < 1) {
+		fprintf(stderr, "Fatal error in atan: Stack underflow (required 1 element, have %zu)\n", stack_size);
+		dump_stack(ctx);
+		abort();
+	}
+
+	qd_stack_element_t a;
+	qd_stack_error err = qd_stack_peek(ctx->st, &a);
+	if (err != QD_STACK_OK) {
+		fprintf(stderr, "Fatal error in atan: Failed to peek stack\n");
+		dump_stack(ctx);
+		abort();
+	}
+	if (a.type != QD_STACK_TYPE_INT && a.type != QD_STACK_TYPE_FLOAT) {
+		const char* type_name = "unknown";
+		if (a.type == QD_STACK_TYPE_STR) type_name = "str";
+		else if (a.type == QD_STACK_TYPE_PTR) type_name = "ptr";
+		fprintf(stderr, "Fatal error in atan: Type error (expected int or float, got %s)\n", type_name);
+		dump_stack(ctx);
+		abort();
+	}
+
+	err = qd_stack_pop(ctx->st, &a);
+	if (err != QD_STACK_OK) {
+		return (qd_exec_result){-2};
+	}
+
+	double value = (a.type == QD_STACK_TYPE_INT) ? (double)a.value.i : a.value.f;
+	double result = atan(value);
+	err = qd_stack_push_float(ctx->st, result);
 	if (err != QD_STACK_OK) {
 		return (qd_exec_result){-2};
 	}
