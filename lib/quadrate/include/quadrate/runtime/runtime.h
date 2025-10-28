@@ -35,6 +35,10 @@ qd_exec_result qd_atan(qd_context* ctx);
 qd_exec_result qd_sqrt(qd_context* ctx);
 qd_exec_result qd_cb(qd_context* ctx);
 qd_exec_result qd_cbrt(qd_context* ctx);
+qd_exec_result qd_ceil(qd_context* ctx);
+qd_exec_result qd_floor(qd_context* ctx);
+qd_exec_result qd_dec(qd_context* ctx);
+qd_exec_result qd_inc(qd_context* ctx);
 
 qd_exec_result qd_err_push(qd_context* ctx, qd_stack_error value);
 

@@ -1138,6 +1138,158 @@ qd_exec_result qd_cbrt(qd_context* ctx) {
 	return (qd_exec_result){0};
 }
 
+// ceil - ceiling (round up)
+qd_exec_result qd_ceil(qd_context* ctx) {
+	// Pop one numeric value, push float result
+	size_t stack_size = qd_stack_size(ctx->st);
+	if (stack_size < 1) {
+		fprintf(stderr, "Fatal error in ceil: Stack underflow (requires 1 value)\n");
+		dump_stack(ctx);
+		abort();
+	}
+
+	qd_stack_element_t elem;
+	qd_stack_error err = qd_stack_pop(ctx->st, &elem);
+	if (err != QD_STACK_OK) {
+		fprintf(stderr, "Fatal error in ceil: Failed to pop value\n");
+		dump_stack(ctx);
+		abort();
+	}
+
+	double value;
+	if (elem.type == QD_STACK_TYPE_INT) {
+		value = (double)elem.value.i;
+	} else if (elem.type == QD_STACK_TYPE_FLOAT) {
+		value = elem.value.f;
+	} else {
+		fprintf(stderr, "Fatal error in ceil: Invalid type (expected int or float)\n");
+		dump_stack(ctx);
+		abort();
+	}
+
+	double result = ceil(value);
+
+	err = qd_stack_push_float(ctx->st, result);
+	if (err != QD_STACK_OK) {
+		return (qd_exec_result){-2};
+	}
+
+	return (qd_exec_result){0};
+}
+
+// floor - floor (round down)
+qd_exec_result qd_floor(qd_context* ctx) {
+	// Pop one numeric value, push float result
+	size_t stack_size = qd_stack_size(ctx->st);
+	if (stack_size < 1) {
+		fprintf(stderr, "Fatal error in floor: Stack underflow (requires 1 value)\n");
+		dump_stack(ctx);
+		abort();
+	}
+
+	qd_stack_element_t elem;
+	qd_stack_error err = qd_stack_pop(ctx->st, &elem);
+	if (err != QD_STACK_OK) {
+		fprintf(stderr, "Fatal error in floor: Failed to pop value\n");
+		dump_stack(ctx);
+		abort();
+	}
+
+	double value;
+	if (elem.type == QD_STACK_TYPE_INT) {
+		value = (double)elem.value.i;
+	} else if (elem.type == QD_STACK_TYPE_FLOAT) {
+		value = elem.value.f;
+	} else {
+		fprintf(stderr, "Fatal error in floor: Invalid type (expected int or float)\n");
+		dump_stack(ctx);
+		abort();
+	}
+
+	double result = floor(value);
+
+	err = qd_stack_push_float(ctx->st, result);
+	if (err != QD_STACK_OK) {
+		return (qd_exec_result){-2};
+	}
+
+	return (qd_exec_result){0};
+}
+
+// dec - decrement (subtract 1, preserves type)
+qd_exec_result qd_dec(qd_context* ctx) {
+	// Pop one numeric value, subtract 1, push result with same type
+	size_t stack_size = qd_stack_size(ctx->st);
+	if (stack_size < 1) {
+		fprintf(stderr, "Fatal error in dec: Stack underflow (requires 1 value)\n");
+		dump_stack(ctx);
+		abort();
+	}
+
+	qd_stack_element_t elem;
+	qd_stack_error err = qd_stack_pop(ctx->st, &elem);
+	if (err != QD_STACK_OK) {
+		fprintf(stderr, "Fatal error in dec: Failed to pop value\n");
+		dump_stack(ctx);
+		abort();
+	}
+
+	if (elem.type == QD_STACK_TYPE_INT) {
+		int64_t result = elem.value.i - 1;
+		err = qd_stack_push_int(ctx->st, result);
+	} else if (elem.type == QD_STACK_TYPE_FLOAT) {
+		double result = elem.value.f - 1.0;
+		err = qd_stack_push_float(ctx->st, result);
+	} else {
+		fprintf(stderr, "Fatal error in dec: Invalid type (expected int or float)\n");
+		dump_stack(ctx);
+		abort();
+	}
+
+	if (err != QD_STACK_OK) {
+		return (qd_exec_result){-2};
+	}
+
+	return (qd_exec_result){0};
+}
+
+// inc - increment (add 1, preserves type)
+qd_exec_result qd_inc(qd_context* ctx) {
+	// Pop one numeric value, add 1, push result with same type
+	size_t stack_size = qd_stack_size(ctx->st);
+	if (stack_size < 1) {
+		fprintf(stderr, "Fatal error in inc: Stack underflow (requires 1 value)\n");
+		dump_stack(ctx);
+		abort();
+	}
+
+	qd_stack_element_t elem;
+	qd_stack_error err = qd_stack_pop(ctx->st, &elem);
+	if (err != QD_STACK_OK) {
+		fprintf(stderr, "Fatal error in inc: Failed to pop value\n");
+		dump_stack(ctx);
+		abort();
+	}
+
+	if (elem.type == QD_STACK_TYPE_INT) {
+		int64_t result = elem.value.i + 1;
+		err = qd_stack_push_int(ctx->st, result);
+	} else if (elem.type == QD_STACK_TYPE_FLOAT) {
+		double result = elem.value.f + 1.0;
+		err = qd_stack_push_float(ctx->st, result);
+	} else {
+		fprintf(stderr, "Fatal error in inc: Invalid type (expected int or float)\n");
+		dump_stack(ctx);
+		abort();
+	}
+
+	if (err != QD_STACK_OK) {
+		return (qd_exec_result){-2};
+	}
+
+	return (qd_exec_result){0};
+}
+
 // Dump current stack contents for debugging
 static void dump_stack(qd_context* ctx) {
 	size_t stack_size = qd_stack_size(ctx->st);

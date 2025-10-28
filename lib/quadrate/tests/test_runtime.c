@@ -1720,6 +1720,202 @@ TEST(CbrtIntegerInputTest) {
 	destroy_test_context(ctx);
 }
 
+// ceil tests
+TEST(CeilPositiveTest) {
+	qd_context* ctx = create_test_context();
+
+	// ceil(2.3) = 3.0
+	qd_push_f(ctx, 2.3);
+	qd_ceil(ctx);
+	qd_stack_element_t elem;
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ(elem.type, QD_STACK_TYPE_FLOAT, "ceil should return float");
+	ASSERT(float_eq(elem.value.f, 3.0), "ceil(2.3) should be 3.0");
+
+	// ceil(4.0) = 4.0 (already integer)
+	qd_push_f(ctx, 4.0);
+	qd_ceil(ctx);
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT(float_eq(elem.value.f, 4.0), "ceil(4.0) should be 4.0");
+
+	destroy_test_context(ctx);
+}
+
+TEST(CeilNegativeTest) {
+	qd_context* ctx = create_test_context();
+
+	// ceil(-2.3) = -2.0
+	qd_push_f(ctx, -2.3);
+	qd_ceil(ctx);
+	qd_stack_element_t elem;
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ(elem.type, QD_STACK_TYPE_FLOAT, "ceil should return float");
+	ASSERT(float_eq(elem.value.f, -2.0), "ceil(-2.3) should be -2.0");
+
+	destroy_test_context(ctx);
+}
+
+TEST(CeilIntegerInputTest) {
+	qd_context* ctx = create_test_context();
+
+	// ceil(5) = 5.0 (integer input)
+	qd_push_i(ctx, 5);
+	qd_ceil(ctx);
+	qd_stack_element_t elem;
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ(elem.type, QD_STACK_TYPE_FLOAT, "ceil should return float even with int input");
+	ASSERT(float_eq(elem.value.f, 5.0), "ceil(5) should be 5.0");
+
+	destroy_test_context(ctx);
+}
+
+// floor tests
+TEST(FloorPositiveTest) {
+	qd_context* ctx = create_test_context();
+
+	// floor(2.7) = 2.0
+	qd_push_f(ctx, 2.7);
+	qd_floor(ctx);
+	qd_stack_element_t elem;
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ(elem.type, QD_STACK_TYPE_FLOAT, "floor should return float");
+	ASSERT(float_eq(elem.value.f, 2.0), "floor(2.7) should be 2.0");
+
+	// floor(4.0) = 4.0 (already integer)
+	qd_push_f(ctx, 4.0);
+	qd_floor(ctx);
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT(float_eq(elem.value.f, 4.0), "floor(4.0) should be 4.0");
+
+	destroy_test_context(ctx);
+}
+
+TEST(FloorNegativeTest) {
+	qd_context* ctx = create_test_context();
+
+	// floor(-2.3) = -3.0
+	qd_push_f(ctx, -2.3);
+	qd_floor(ctx);
+	qd_stack_element_t elem;
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ(elem.type, QD_STACK_TYPE_FLOAT, "floor should return float");
+	ASSERT(float_eq(elem.value.f, -3.0), "floor(-2.3) should be -3.0");
+
+	destroy_test_context(ctx);
+}
+
+TEST(FloorIntegerInputTest) {
+	qd_context* ctx = create_test_context();
+
+	// floor(7) = 7.0 (integer input)
+	qd_push_i(ctx, 7);
+	qd_floor(ctx);
+	qd_stack_element_t elem;
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ(elem.type, QD_STACK_TYPE_FLOAT, "floor should return float even with int input");
+	ASSERT(float_eq(elem.value.f, 7.0), "floor(7) should be 7.0");
+
+	destroy_test_context(ctx);
+}
+
+// inc tests
+TEST(IncIntegerTest) {
+	qd_context* ctx = create_test_context();
+
+	// inc(5) = 6
+	qd_push_i(ctx, 5);
+	qd_inc(ctx);
+	qd_stack_element_t elem;
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ(elem.type, QD_STACK_TYPE_INT, "inc should preserve int type");
+	ASSERT_EQ((int)elem.value.i, 6, "inc(5) should be 6");
+
+	// inc(-1) = 0
+	qd_push_i(ctx, -1);
+	qd_inc(ctx);
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ((int)elem.value.i, 0, "inc(-1) should be 0");
+
+	destroy_test_context(ctx);
+}
+
+TEST(IncFloatTest) {
+	qd_context* ctx = create_test_context();
+
+	// inc(2.5) = 3.5
+	qd_push_f(ctx, 2.5);
+	qd_inc(ctx);
+	qd_stack_element_t elem;
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ(elem.type, QD_STACK_TYPE_FLOAT, "inc should preserve float type");
+	ASSERT(float_eq(elem.value.f, 3.5), "inc(2.5) should be 3.5");
+
+	destroy_test_context(ctx);
+}
+
+TEST(IncZeroTest) {
+	qd_context* ctx = create_test_context();
+
+	// inc(0) = 1
+	qd_push_i(ctx, 0);
+	qd_inc(ctx);
+	qd_stack_element_t elem;
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ(elem.type, QD_STACK_TYPE_INT, "inc should preserve int type");
+	ASSERT_EQ((int)elem.value.i, 1, "inc(0) should be 1");
+
+	destroy_test_context(ctx);
+}
+
+// dec tests
+TEST(DecIntegerTest) {
+	qd_context* ctx = create_test_context();
+
+	// dec(5) = 4
+	qd_push_i(ctx, 5);
+	qd_dec(ctx);
+	qd_stack_element_t elem;
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ(elem.type, QD_STACK_TYPE_INT, "dec should preserve int type");
+	ASSERT_EQ((int)elem.value.i, 4, "dec(5) should be 4");
+
+	// dec(0) = -1
+	qd_push_i(ctx, 0);
+	qd_dec(ctx);
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ((int)elem.value.i, -1, "dec(0) should be -1");
+
+	destroy_test_context(ctx);
+}
+
+TEST(DecFloatTest) {
+	qd_context* ctx = create_test_context();
+
+	// dec(2.5) = 1.5
+	qd_push_f(ctx, 2.5);
+	qd_dec(ctx);
+	qd_stack_element_t elem;
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ(elem.type, QD_STACK_TYPE_FLOAT, "dec should preserve float type");
+	ASSERT(float_eq(elem.value.f, 1.5), "dec(2.5) should be 1.5");
+
+	destroy_test_context(ctx);
+}
+
+TEST(DecNegativeTest) {
+	qd_context* ctx = create_test_context();
+
+	// dec(-5) = -6
+	qd_push_i(ctx, -5);
+	qd_dec(ctx);
+	qd_stack_element_t elem;
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ(elem.type, QD_STACK_TYPE_INT, "dec should preserve int type");
+	ASSERT_EQ((int)elem.value.i, -6, "dec(-5) should be -6");
+
+	destroy_test_context(ctx);
+}
+
 TEST(SwapWithDupTest) {
 	qd_context* ctx = create_test_context();
 
