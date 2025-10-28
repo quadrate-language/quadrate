@@ -30,3 +30,8 @@ quadrate_static_dep = declare_dependency(
 		link_with: quadrate_static,
 		include_directories: quadrate_inc
 )
+
+# Tests
+if get_option('build_tests')
+	subdir('tests')
+endif
