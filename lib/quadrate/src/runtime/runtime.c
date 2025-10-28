@@ -591,6 +591,80 @@ qd_exec_result qd_dup(qd_context* ctx) {
 	return (qd_exec_result){0};
 }
 
+qd_exec_result qd_dup2(qd_context* ctx) {
+	// Duplicate the top two elements of the stack: ( a b -- a b a b )
+	size_t stack_size = qd_stack_size(ctx->st);
+	if (stack_size < 2) {
+		fprintf(stderr, "Fatal error in dup2: Stack underflow (required 2 elements, have %zu)\n", stack_size);
+		dump_stack(ctx);
+		abort();
+	}
+
+	// Get the second element (index stack_size - 2)
+	qd_stack_element_t second;
+	qd_stack_error err = qd_stack_element(ctx->st, stack_size - 2, &second);
+	if (err != QD_STACK_OK) {
+		fprintf(stderr, "Fatal error in dup2: Failed to access second element\n");
+		dump_stack(ctx);
+		abort();
+	}
+
+	// Get the top element (index stack_size - 1)
+	qd_stack_element_t top;
+	err = qd_stack_element(ctx->st, stack_size - 1, &top);
+	if (err != QD_STACK_OK) {
+		fprintf(stderr, "Fatal error in dup2: Failed to access top element\n");
+		dump_stack(ctx);
+		abort();
+	}
+
+	// Push a copy of the second element
+	switch (second.type) {
+		case QD_STACK_TYPE_INT:
+			err = qd_stack_push_int(ctx->st, second.value.i);
+			break;
+		case QD_STACK_TYPE_FLOAT:
+			err = qd_stack_push_float(ctx->st, second.value.f);
+			break;
+		case QD_STACK_TYPE_STR:
+			err = qd_stack_push_str(ctx->st, second.value.s);
+			break;
+		case QD_STACK_TYPE_PTR:
+			err = qd_stack_push_ptr(ctx->st, second.value.p);
+			break;
+		default:
+			return (qd_exec_result){-3};
+	}
+
+	if (err != QD_STACK_OK) {
+		return (qd_exec_result){-2};
+	}
+
+	// Push a copy of the top element
+	switch (top.type) {
+		case QD_STACK_TYPE_INT:
+			err = qd_stack_push_int(ctx->st, top.value.i);
+			break;
+		case QD_STACK_TYPE_FLOAT:
+			err = qd_stack_push_float(ctx->st, top.value.f);
+			break;
+		case QD_STACK_TYPE_STR:
+			err = qd_stack_push_str(ctx->st, top.value.s);
+			break;
+		case QD_STACK_TYPE_PTR:
+			err = qd_stack_push_ptr(ctx->st, top.value.p);
+			break;
+		default:
+			return (qd_exec_result){-3};
+	}
+
+	if (err != QD_STACK_OK) {
+		return (qd_exec_result){-2};
+	}
+
+	return (qd_exec_result){0};
+}
+
 qd_exec_result qd_swap(qd_context* ctx) {
 	// Swap the top two elements of the stack
 	size_t stack_size = qd_stack_size(ctx->st);

@@ -14,8 +14,8 @@ namespace Qd {
 
 	// List of built-in instructions (must match ast.cc)
 	static const char* BUILTIN_INSTRUCTIONS[] = {"*", "+", "-", ".", "/", "abs", "acos", "add", "asin", "atan", "cb",
-			"cbrt", "ceil", "clear", "cos", "dec", "depth", "div", "dup", "floor", "inc", "mul", "nip", "over", "print",
-			"prints", "printsv", "printv", "rot", "sin", "sq", "sqrt", "sub", "swap", "tan"};
+			"cbrt", "ceil", "clear", "cos", "dec", "depth", "div", "dup", "dup2", "floor", "inc", "mul", "nip", "over",
+			"print", "prints", "printsv", "printv", "rot", "sin", "sq", "sqrt", "sub", "swap", "tan"};
 
 	SemanticValidator::SemanticValidator() : filename_(nullptr), error_count_(0) {
 	}
@@ -365,6 +365,19 @@ namespace Qd {
 			}
 			StackValueType top = type_stack.back();
 			type_stack.push_back(top); // Duplicate
+		}
+		// Stack operations: dup2 ( a b -- a b a b )
+		else if (strcmp(name, "dup2") == 0) {
+			if (type_stack.size() < 2) {
+				reportError("Type error in 'dup2': Stack underflow (requires 2 values)");
+				return;
+			}
+			// Get the second and top elements
+			StackValueType second = type_stack[type_stack.size() - 2];
+			StackValueType top = type_stack.back();
+			// Push copies of both
+			type_stack.push_back(second);
+			type_stack.push_back(top);
 		}
 		// Stack operations: swap
 		else if (strcmp(name, "swap") == 0) {

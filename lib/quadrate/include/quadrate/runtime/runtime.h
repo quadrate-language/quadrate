@@ -23,6 +23,7 @@ qd_exec_result qd_sub(qd_context* ctx);
 qd_exec_result qd_sq(qd_context* ctx);
 qd_exec_result qd_abs(qd_context* ctx);
 qd_exec_result qd_dup(qd_context* ctx);
+qd_exec_result qd_dup2(qd_context* ctx);
 qd_exec_result qd_swap(qd_context* ctx);
 qd_exec_result qd_over(qd_context* ctx);
 qd_exec_result qd_nip(qd_context* ctx);
