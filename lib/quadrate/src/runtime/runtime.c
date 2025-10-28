@@ -106,10 +106,10 @@ qd_exec_result qd_printv(qd_context* ctx) {
 			printf("int:%ld\n", val.value.i);
 			break;
 		case QD_STACK_TYPE_FLOAT:
-			printf("flt:%g\n", val.value.f);
+			printf("float:%g\n", val.value.f);
 			break;
 		case QD_STACK_TYPE_STR:
-			printf("str:\"%s\"\n", val.value.s);
+			printf("string:\"%s\"\n", val.value.s);
 			free(val.value.s);  // Free the string memory after printing
 			break;
 		default:
@@ -140,10 +140,10 @@ qd_exec_result qd_printsv(qd_context* ctx) {
 				printf("int:%ld", val.value.i);
 				break;
 			case QD_STACK_TYPE_FLOAT:
-				printf("flt:%g", val.value.f);
+				printf("float:%g", val.value.f);
 				break;
 			case QD_STACK_TYPE_STR:
-				printf("str:\"%s\"", val.value.s);
+				printf("string:\"%s\"", val.value.s);
 				break;
 			default:
 				return (qd_exec_result){-3};
