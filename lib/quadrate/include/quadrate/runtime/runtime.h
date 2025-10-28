@@ -32,6 +32,9 @@ qd_exec_result qd_tan(qd_context* ctx);
 qd_exec_result qd_asin(qd_context* ctx);
 qd_exec_result qd_acos(qd_context* ctx);
 qd_exec_result qd_atan(qd_context* ctx);
+qd_exec_result qd_sqrt(qd_context* ctx);
+qd_exec_result qd_cb(qd_context* ctx);
+qd_exec_result qd_cbrt(qd_context* ctx);
 
 qd_exec_result qd_err_push(qd_context* ctx, qd_stack_error value);
 

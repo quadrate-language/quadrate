@@ -1014,6 +1014,130 @@ qd_exec_result qd_atan(qd_context* ctx) {
 	return (qd_exec_result){0};
 }
 
+// sqrt - square root
+qd_exec_result qd_sqrt(qd_context* ctx) {
+	// Pop one numeric value, push float result
+	size_t stack_size = qd_stack_size(ctx->st);
+	if (stack_size < 1) {
+		fprintf(stderr, "Fatal error in sqrt: Stack underflow (requires 1 value)\n");
+		dump_stack(ctx);
+		abort();
+	}
+
+	qd_stack_element_t elem;
+	qd_stack_error err = qd_stack_pop(ctx->st, &elem);
+	if (err != QD_STACK_OK) {
+		fprintf(stderr, "Fatal error in sqrt: Failed to pop value\n");
+		dump_stack(ctx);
+		abort();
+	}
+
+	double value;
+	if (elem.type == QD_STACK_TYPE_INT) {
+		value = (double)elem.value.i;
+	} else if (elem.type == QD_STACK_TYPE_FLOAT) {
+		value = elem.value.f;
+	} else {
+		fprintf(stderr, "Fatal error in sqrt: Invalid type (expected int or float)\n");
+		dump_stack(ctx);
+		abort();
+	}
+
+	// Check domain: sqrt requires non-negative values
+	if (value < 0.0) {
+		fprintf(stderr, "Fatal error in sqrt: Domain error (requires non-negative value, got %f)\n", value);
+		dump_stack(ctx);
+		abort();
+	}
+
+	double result = sqrt(value);
+
+	err = qd_stack_push_float(ctx->st, result);
+	if (err != QD_STACK_OK) {
+		return (qd_exec_result){-2};
+	}
+
+	return (qd_exec_result){0};
+}
+
+// cb - cube (x^3)
+qd_exec_result qd_cb(qd_context* ctx) {
+	// Pop one numeric value, push float result
+	size_t stack_size = qd_stack_size(ctx->st);
+	if (stack_size < 1) {
+		fprintf(stderr, "Fatal error in cb: Stack underflow (requires 1 value)\n");
+		dump_stack(ctx);
+		abort();
+	}
+
+	qd_stack_element_t elem;
+	qd_stack_error err = qd_stack_pop(ctx->st, &elem);
+	if (err != QD_STACK_OK) {
+		fprintf(stderr, "Fatal error in cb: Failed to pop value\n");
+		dump_stack(ctx);
+		abort();
+	}
+
+	double value;
+	if (elem.type == QD_STACK_TYPE_INT) {
+		value = (double)elem.value.i;
+	} else if (elem.type == QD_STACK_TYPE_FLOAT) {
+		value = elem.value.f;
+	} else {
+		fprintf(stderr, "Fatal error in cb: Invalid type (expected int or float)\n");
+		dump_stack(ctx);
+		abort();
+	}
+
+	double result = value * value * value;
+
+	err = qd_stack_push_float(ctx->st, result);
+	if (err != QD_STACK_OK) {
+		return (qd_exec_result){-2};
+	}
+
+	return (qd_exec_result){0};
+}
+
+// cbrt - cube root
+qd_exec_result qd_cbrt(qd_context* ctx) {
+	// Pop one numeric value, push float result
+	size_t stack_size = qd_stack_size(ctx->st);
+	if (stack_size < 1) {
+		fprintf(stderr, "Fatal error in cbrt: Stack underflow (requires 1 value)\n");
+		dump_stack(ctx);
+		abort();
+	}
+
+	qd_stack_element_t elem;
+	qd_stack_error err = qd_stack_pop(ctx->st, &elem);
+	if (err != QD_STACK_OK) {
+		fprintf(stderr, "Fatal error in cbrt: Failed to pop value\n");
+		dump_stack(ctx);
+		abort();
+	}
+
+	double value;
+	if (elem.type == QD_STACK_TYPE_INT) {
+		value = (double)elem.value.i;
+	} else if (elem.type == QD_STACK_TYPE_FLOAT) {
+		value = elem.value.f;
+	} else {
+		fprintf(stderr, "Fatal error in cbrt: Invalid type (expected int or float)\n");
+		dump_stack(ctx);
+		abort();
+	}
+
+	double result = cbrt(value);
+
+	err = qd_stack_push_float(ctx->st, result);
+	if (err != QD_STACK_OK) {
+		return (qd_exec_result){-2};
+	}
+
+	return (qd_exec_result){0};
+}
+
 // Dump current stack contents for debugging
 static void dump_stack(qd_context* ctx) {
 	size_t stack_size = qd_stack_size(ctx->st);

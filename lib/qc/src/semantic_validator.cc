@@ -13,9 +13,9 @@
 namespace Qd {
 
 	// List of built-in instructions (must match ast.cc)
-	static const char* BUILTIN_INSTRUCTIONS[] = {"*", "+", "-", ".", "/", "abs", "acos", "add", "asin", "atan", "cos",
-			"div", "dup", "mul", "nip", "over", "print", "prints", "printsv", "printv", "rot", "sin", "sq", "sub",
-			"swap", "tan"};
+	static const char* BUILTIN_INSTRUCTIONS[] = {"*", "+", "-", ".", "/", "abs", "acos", "add", "asin", "atan", "cb",
+			"cbrt", "cos", "div", "dup", "mul", "nip", "over", "print", "prints", "printsv", "printv", "rot", "sin",
+			"sq", "sqrt", "sub", "swap", "tan"};
 
 	SemanticValidator::SemanticValidator() : filename_(nullptr), error_count_(0) {
 	}
@@ -262,6 +262,29 @@ namespace Qd {
 				return;
 			}
 			// Pop and push float (trig functions always return float)
+			type_stack.pop_back();
+			type_stack.push_back(StackValueType::FLOAT);
+		}
+		// Math functions: sqrt, cb, cbrt (always return float)
+		else if (strcmp(name, "sqrt") == 0 || strcmp(name, "cb") == 0 || strcmp(name, "cbrt") == 0) {
+			if (type_stack.empty()) {
+				std::string error_msg = "Type error in '";
+				error_msg += name;
+				error_msg += "': Stack underflow (requires 1 numeric value)";
+				reportError(error_msg.c_str());
+				return;
+			}
+
+			StackValueType top = type_stack.back();
+			if (!isNumericType(top)) {
+				std::string error_msg = "Type error in '";
+				error_msg += name;
+				error_msg += "': Expected numeric type, got ";
+				error_msg += typeToString(top);
+				reportError(error_msg.c_str());
+				return;
+			}
+			// Pop and push float (math functions always return float)
 			type_stack.pop_back();
 			type_stack.push_back(StackValueType::FLOAT);
 		}

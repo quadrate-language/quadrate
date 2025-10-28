@@ -1559,6 +1559,167 @@ TEST(TrigNegativeValuesTest) {
 	destroy_test_context(ctx);
 }
 
+// sqrt tests
+TEST(SqrtPositiveTest) {
+	qd_context* ctx = create_test_context();
+
+	// sqrt(4) = 2.0
+	qd_push_i(ctx, 4);
+	qd_sqrt(ctx);
+	qd_stack_element_t elem;
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ(elem.type, QD_STACK_TYPE_FLOAT, "sqrt should return float");
+	ASSERT(float_eq(elem.value.f, 2.0), "sqrt(4) should be 2.0");
+
+	// sqrt(9.0) = 3.0
+	qd_push_f(ctx, 9.0);
+	qd_sqrt(ctx);
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT(float_eq(elem.value.f, 3.0), "sqrt(9.0) should be 3.0");
+
+	destroy_test_context(ctx);
+}
+
+TEST(SqrtZeroTest) {
+	qd_context* ctx = create_test_context();
+
+	// sqrt(0) = 0.0
+	qd_push_i(ctx, 0);
+	qd_sqrt(ctx);
+	qd_stack_element_t elem;
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ(elem.type, QD_STACK_TYPE_FLOAT, "sqrt should return float");
+	ASSERT(float_eq(elem.value.f, 0.0), "sqrt(0) should be 0.0");
+
+	destroy_test_context(ctx);
+}
+
+TEST(SqrtIntegerInputTest) {
+	qd_context* ctx = create_test_context();
+
+	// sqrt(16) = 4.0 (integer input)
+	qd_push_i(ctx, 16);
+	qd_sqrt(ctx);
+	qd_stack_element_t elem;
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ(elem.type, QD_STACK_TYPE_FLOAT, "sqrt should return float even with int input");
+	ASSERT(float_eq(elem.value.f, 4.0), "sqrt(16) should be 4.0");
+
+	destroy_test_context(ctx);
+}
+
+// cb (cube) tests
+TEST(CbPositiveTest) {
+	qd_context* ctx = create_test_context();
+
+	// cb(2) = 8.0
+	qd_push_i(ctx, 2);
+	qd_cb(ctx);
+	qd_stack_element_t elem;
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ(elem.type, QD_STACK_TYPE_FLOAT, "cb should return float");
+	ASSERT(float_eq(elem.value.f, 8.0), "cb(2) should be 8.0");
+
+	// cb(3.0) = 27.0
+	qd_push_f(ctx, 3.0);
+	qd_cb(ctx);
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT(float_eq(elem.value.f, 27.0), "cb(3.0) should be 27.0");
+
+	destroy_test_context(ctx);
+}
+
+TEST(CbNegativeTest) {
+	qd_context* ctx = create_test_context();
+
+	// cb(-2) = -8.0
+	qd_push_i(ctx, -2);
+	qd_cb(ctx);
+	qd_stack_element_t elem;
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ(elem.type, QD_STACK_TYPE_FLOAT, "cb should return float");
+	ASSERT(float_eq(elem.value.f, -8.0), "cb(-2) should be -8.0");
+
+	destroy_test_context(ctx);
+}
+
+TEST(CbZeroTest) {
+	qd_context* ctx = create_test_context();
+
+	// cb(0) = 0.0
+	qd_push_i(ctx, 0);
+	qd_cb(ctx);
+	qd_stack_element_t elem;
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ(elem.type, QD_STACK_TYPE_FLOAT, "cb should return float");
+	ASSERT(float_eq(elem.value.f, 0.0), "cb(0) should be 0.0");
+
+	destroy_test_context(ctx);
+}
+
+// cbrt (cube root) tests
+TEST(CbrtPositiveTest) {
+	qd_context* ctx = create_test_context();
+
+	// cbrt(8) = 2.0
+	qd_push_i(ctx, 8);
+	qd_cbrt(ctx);
+	qd_stack_element_t elem;
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ(elem.type, QD_STACK_TYPE_FLOAT, "cbrt should return float");
+	ASSERT(float_eq(elem.value.f, 2.0), "cbrt(8) should be 2.0");
+
+	// cbrt(27.0) = 3.0
+	qd_push_f(ctx, 27.0);
+	qd_cbrt(ctx);
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT(float_eq(elem.value.f, 3.0), "cbrt(27.0) should be 3.0");
+
+	destroy_test_context(ctx);
+}
+
+TEST(CbrtNegativeTest) {
+	qd_context* ctx = create_test_context();
+
+	// cbrt(-8) = -2.0
+	qd_push_i(ctx, -8);
+	qd_cbrt(ctx);
+	qd_stack_element_t elem;
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ(elem.type, QD_STACK_TYPE_FLOAT, "cbrt should return float");
+	ASSERT(float_eq(elem.value.f, -2.0), "cbrt(-8) should be -2.0");
+
+	destroy_test_context(ctx);
+}
+
+TEST(CbrtZeroTest) {
+	qd_context* ctx = create_test_context();
+
+	// cbrt(0) = 0.0
+	qd_push_i(ctx, 0);
+	qd_cbrt(ctx);
+	qd_stack_element_t elem;
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ(elem.type, QD_STACK_TYPE_FLOAT, "cbrt should return float");
+	ASSERT(float_eq(elem.value.f, 0.0), "cbrt(0) should be 0.0");
+
+	destroy_test_context(ctx);
+}
+
+TEST(CbrtIntegerInputTest) {
+	qd_context* ctx = create_test_context();
+
+	// cbrt(64) = 4.0 (integer input)
+	qd_push_i(ctx, 64);
+	qd_cbrt(ctx);
+	qd_stack_element_t elem;
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ(elem.type, QD_STACK_TYPE_FLOAT, "cbrt should return float even with int input");
+	ASSERT(float_eq(elem.value.f, 4.0), "cbrt(64) should be 4.0");
+
+	destroy_test_context(ctx);
+}
+
 TEST(SwapWithDupTest) {
 	qd_context* ctx = create_test_context();
 
