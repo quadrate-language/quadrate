@@ -13,31 +13,37 @@
 #define QUADC_VERSION "0.1.0"
 
 std::string getCompilerFlags() {
+	// Optimization flags for tiny executables
+	std::string opts = "-Os -flto -ffunction-sections -fdata-sections -fno-asynchronous-unwind-tables -fno-ident";
+
 	if (std::filesystem::exists("./dist/include")) {
-		return "-I./dist/include";
+		return opts + " -I./dist/include";
 	}
 	const char* home = getenv("HOME");
 	if (home) {
 		std::filesystem::path localInclude = std::filesystem::path(home) / ".local" / "include";
 		if (std::filesystem::exists(localInclude)) {
-			return "-I" + localInclude.string();
+			return opts + " -I" + localInclude.string();
 		}
 	}
-	return "";
+	return opts;
 }
 
 std::string getLinkerFlags() {
+	// Optimization flags for tiny executables
+	std::string opts = "-flto -Wl,--gc-sections -s";
+
 	if (std::filesystem::exists("./dist/lib")) {
-		return "-L./dist/lib -Wl,-rpath,./dist/lib -lquadrate -lm -pthread";
+		return opts + " -L./dist/lib -Wl,-rpath,./dist/lib -lquadrate -lm -pthread";
 	}
 	const char* home = getenv("HOME");
 	if (home) {
 		std::filesystem::path localLib = std::filesystem::path(home) / ".local" / "lib";
 		if (std::filesystem::exists(localLib)) {
-			return "-L" + localLib.string() + " -Wl,-rpath," + localLib.string() + " -lquadrate -lm -pthread";
+			return opts + " -L" + localLib.string() + " -Wl,-rpath," + localLib.string() + " -lquadrate -lm -pthread";
 		}
 	}
-	return "-lquadrate -lm -pthread";
+	return opts + " -lquadrate -lm -pthread";
 }
 
 std::string createTempDir() {
