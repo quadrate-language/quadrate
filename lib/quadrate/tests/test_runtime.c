@@ -387,3 +387,78 @@ TEST(SubTypeErrorTest) {
 int main(void) {
 	return UC_PrintResults();
 }
+
+// ========== print behavior tests ==========
+
+TEST(PrintPopsStackTest) {
+	qd_context* ctx = create_test_context();
+
+	// Push three values
+	qd_push_i(ctx, 1);
+	qd_push_i(ctx, 2);
+	qd_push_i(ctx, 3);
+
+	// Stack should have 3 elements
+	ASSERT_EQ((int)qd_stack_size(ctx->st), 3, "Stack should have 3 elements");
+
+	// Print (pop) the top element
+	qd_exec_result result = qd_print(ctx);
+	ASSERT_EQ(result.code, 0, "print should succeed");
+
+	// Stack should now have 2 elements
+	ASSERT_EQ((int)qd_stack_size(ctx->st), 2, "Stack should have 2 elements after print");
+
+	// Top element should be 2 now
+	qd_stack_element_t elem;
+	qd_stack_error err = qd_stack_peek(ctx->st, &elem);
+	ASSERT_EQ(err, QD_STACK_OK, "peek should succeed");
+	ASSERT_EQ((int)elem.value.i, 2, "Top element should be 2");
+
+	destroy_test_context(ctx);
+}
+
+TEST(PrintEmptyStackTest) {
+	qd_context* ctx = create_test_context();
+
+	// Try to print from empty stack
+	qd_exec_result result = qd_print(ctx);
+	ASSERT(result.code != 0, "print on empty stack should fail");
+
+	destroy_test_context(ctx);
+}
+
+TEST(PrintIntegerTest) {
+	qd_context* ctx = create_test_context();
+
+	qd_push_i(ctx, 42);
+	qd_exec_result result = qd_print(ctx);
+
+	ASSERT_EQ(result.code, 0, "print should succeed");
+	ASSERT_EQ((int)qd_stack_size(ctx->st), 0, "Stack should be empty after print");
+
+	destroy_test_context(ctx);
+}
+
+TEST(PrintFloatTest) {
+	qd_context* ctx = create_test_context();
+
+	qd_push_f(ctx, 3.14);
+	qd_exec_result result = qd_print(ctx);
+
+	ASSERT_EQ(result.code, 0, "print should succeed");
+	ASSERT_EQ((int)qd_stack_size(ctx->st), 0, "Stack should be empty after print");
+
+	destroy_test_context(ctx);
+}
+
+TEST(PrintStringTest) {
+	qd_context* ctx = create_test_context();
+
+	qd_push_s(ctx, "hello");
+	qd_exec_result result = qd_print(ctx);
+
+	ASSERT_EQ(result.code, 0, "print should succeed");
+	ASSERT_EQ((int)qd_stack_size(ctx->st), 0, "Stack should be empty after print");
+
+	destroy_test_context(ctx);
+}

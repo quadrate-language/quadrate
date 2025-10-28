@@ -30,31 +30,28 @@ qd_exec_result qd_push_s(qd_context* ctx, const char* value) {
 }
 
 qd_exec_result qd_print(qd_context* ctx) {
-	const int64_t stack_size = (int64_t)qd_stack_size(ctx->st);
-	for (int64_t i = stack_size - 1; i >= 0; i--) {
-		qd_stack_element_t val;
-		qd_stack_error err = qd_stack_element(ctx->st, (size_t)i, &val);
-		if (err != QD_STACK_OK) {
-			return (qd_exec_result){-2};
-		}
-		if (i < stack_size - 1) {
-			printf(" ");
-		}
-		switch (val.type) {
-			case QD_STACK_TYPE_INT:
-				printf("%ld", val.value.i);
-				break;
-			case QD_STACK_TYPE_FLOAT:
-				printf("%f", val.value.f);
-				break;
-			case QD_STACK_TYPE_STR:
-				printf("\"%s\"", val.value.s);
-				break;
-			default:
-				return (qd_exec_result){-3};
-		}
+	// Forth-style: pop and print the top element only
+	qd_stack_element_t val;
+	qd_stack_error err = qd_stack_pop(ctx->st, &val);
+	if (err != QD_STACK_OK) {
+		return (qd_exec_result){-2};
 	}
-	printf("\n");
+
+	switch (val.type) {
+		case QD_STACK_TYPE_INT:
+			printf("%ld\n", val.value.i);
+			break;
+		case QD_STACK_TYPE_FLOAT:
+			printf("%f\n", val.value.f);
+			break;
+		case QD_STACK_TYPE_STR:
+			printf("\"%s\"\n", val.value.s);
+			free(val.value.s);  // Free the string memory after printing
+			break;
+		default:
+			return (qd_exec_result){-3};
+	}
+
 	return (qd_exec_result){0};
 }
 
