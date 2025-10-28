@@ -4,10 +4,20 @@
 #include "ast.h"
 #include <string>
 #include <unordered_set>
+#include <vector>
 
 namespace Qd {
 
 	class IAstNode;
+
+	// Stack value type for type checking
+	enum class StackValueType {
+		INT,
+		FLOAT,
+		STRING,
+		ANY,	// For operations that accept any type
+		UNKNOWN // For unresolved types
+	};
 
 	// Semantic validator - checks for errors that would slip through to GCC/runtime
 	class SemanticValidator {
@@ -30,8 +40,19 @@ namespace Qd {
 		// Pass 2: Validate all function calls and references
 		void validateReferences(IAstNode* node);
 
+		// Pass 3: Type check the AST
+		void typeCheckFunction(IAstNode* node);
+		void typeCheckBlock(IAstNode* node, std::vector<StackValueType>& type_stack);
+		void typeCheckInstruction(const char* name, std::vector<StackValueType>& type_stack);
+
 		// Check if a name is a built-in instruction
 		bool isBuiltInInstruction(const char* name) const;
+
+		// Helper: Check if type is numeric (int or float)
+		bool isNumericType(StackValueType type) const;
+
+		// Helper: Get string representation of type
+		const char* typeToString(StackValueType type) const;
 
 		// Report an error (gcc/clang style)
 		void reportError(const char* message);

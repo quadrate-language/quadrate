@@ -4,6 +4,8 @@
 #include <qc/ast_node.h>
 #include <qc/ast_node_function.h>
 #include <qc/ast_node_identifier.h>
+#include <qc/ast_node_instruction.h>
+#include <qc/ast_node_literal.h>
 #include <qc/colors.h>
 #include <qc/semantic_validator.h>
 
@@ -47,6 +49,9 @@ namespace Qd {
 
 		// Pass 2: Validate all references
 		validateReferences(program);
+
+		// Pass 3: Type check
+		typeCheckFunction(program);
 
 		return error_count_;
 	}
@@ -97,6 +102,214 @@ namespace Qd {
 		// Recursively process children
 		for (size_t i = 0; i < node->childCount(); i++) {
 			validateReferences(node->child(i));
+		}
+	}
+
+	void SemanticValidator::typeCheckFunction(IAstNode* node) {
+		if (!node) {
+			return;
+		}
+
+		// Type check each function definition
+		if (node->type() == IAstNode::Type::FunctionDeclaration) {
+			AstNodeFunctionDeclaration* func = static_cast<AstNodeFunctionDeclaration*>(node);
+			std::vector<StackValueType> type_stack;
+
+			// Type check the function body
+			if (func->body()) {
+				typeCheckBlock(func->body(), type_stack);
+			}
+		}
+
+		// Recursively process children
+		for (size_t i = 0; i < node->childCount(); i++) {
+			typeCheckFunction(node->child(i));
+		}
+	}
+
+	void SemanticValidator::typeCheckBlock(IAstNode* node, std::vector<StackValueType>& type_stack) {
+		if (!node) {
+			return;
+		}
+
+		// Process each child in the block
+		for (size_t i = 0; i < node->childCount(); i++) {
+			IAstNode* child = node->child(i);
+			if (!child) {
+				continue;
+			}
+
+			switch (child->type()) {
+			case IAstNode::Type::Literal: {
+				AstNodeLiteral* lit = static_cast<AstNodeLiteral*>(child);
+				switch (lit->literalType()) {
+				case AstNodeLiteral::LiteralType::Integer:
+					type_stack.push_back(StackValueType::INT);
+					break;
+				case AstNodeLiteral::LiteralType::Float:
+					type_stack.push_back(StackValueType::FLOAT);
+					break;
+				case AstNodeLiteral::LiteralType::String:
+					type_stack.push_back(StackValueType::STRING);
+					break;
+				}
+				break;
+			}
+
+			case IAstNode::Type::Instruction: {
+				AstNodeInstruction* instr = static_cast<AstNodeInstruction*>(child);
+				typeCheckInstruction(instr->name().c_str(), type_stack);
+				break;
+			}
+
+			case IAstNode::Type::Block: {
+				// Recursively check nested blocks
+				typeCheckBlock(child, type_stack);
+				break;
+			}
+
+			case IAstNode::Type::IfStatement: {
+				// For now, skip control flow type checking
+				// (more complex - would need to merge type states from branches)
+				break;
+			}
+
+			case IAstNode::Type::ForStatement: {
+				// For now, skip loop type checking
+				break;
+			}
+
+			default:
+				// Other node types don't affect the type stack
+				break;
+			}
+		}
+	}
+
+	void SemanticValidator::typeCheckInstruction(const char* name, std::vector<StackValueType>& type_stack) {
+		// Handle instruction aliases
+		if (strcmp(name, ".") == 0) {
+			name = "print";
+		} else if (strcmp(name, "/") == 0) {
+			name = "div";
+		} else if (strcmp(name, "*") == 0) {
+			name = "mul";
+		} else if (strcmp(name, "+") == 0) {
+			name = "add";
+		} else if (strcmp(name, "-") == 0) {
+			name = "sub";
+		}
+
+		// Arithmetic operations: abs, sq
+		if (strcmp(name, "abs") == 0 || strcmp(name, "sq") == 0) {
+			if (type_stack.empty()) {
+				std::string error_msg = "Type error in '";
+				error_msg += name;
+				error_msg += "': Stack underflow (requires 1 numeric value)";
+				reportError(error_msg.c_str());
+				return;
+			}
+
+			StackValueType top = type_stack.back();
+			if (!isNumericType(top)) {
+				std::string error_msg = "Type error in '";
+				error_msg += name;
+				error_msg += "': Expected numeric type, got ";
+				error_msg += typeToString(top);
+				reportError(error_msg.c_str());
+				return;
+			}
+			// Type remains the same (already on stack)
+		}
+		// Binary arithmetic operations: add, sub, mul, div
+		else if (strcmp(name, "add") == 0 || strcmp(name, "sub") == 0 || strcmp(name, "mul") == 0 ||
+				 strcmp(name, "div") == 0) {
+			if (type_stack.size() < 2) {
+				std::string error_msg = "Type error in '";
+				error_msg += name;
+				error_msg += "': Stack underflow (requires 2 numeric values)";
+				reportError(error_msg.c_str());
+				return;
+			}
+
+			StackValueType b = type_stack.back();
+			type_stack.pop_back();
+			StackValueType a = type_stack.back();
+			type_stack.pop_back();
+
+			if (!isNumericType(a) || !isNumericType(b)) {
+				std::string error_msg = "Type error in '";
+				error_msg += name;
+				error_msg += "': Expected numeric types, got ";
+				error_msg += typeToString(a);
+				error_msg += " and ";
+				error_msg += typeToString(b);
+				reportError(error_msg.c_str());
+				return;
+			}
+
+			// Result is float if either operand is float, otherwise int
+			StackValueType result = (a == StackValueType::FLOAT || b == StackValueType::FLOAT) ? StackValueType::FLOAT
+																							   : StackValueType::INT;
+			type_stack.push_back(result);
+		}
+		// Print operations: print, printv
+		else if (strcmp(name, "print") == 0 || strcmp(name, "printv") == 0) {
+			if (type_stack.empty()) {
+				std::string error_msg = "Type error in '";
+				error_msg += name;
+				error_msg += "': Stack underflow (requires 1 value)";
+				reportError(error_msg.c_str());
+				return;
+			}
+			type_stack.pop_back(); // Pop the value
+		}
+		// Non-destructive print: prints, printsv
+		else if (strcmp(name, "prints") == 0 || strcmp(name, "printsv") == 0) {
+			// These don't modify the stack
+		}
+		// Stack operations: dup
+		else if (strcmp(name, "dup") == 0) {
+			if (type_stack.empty()) {
+				reportError("Type error in 'dup': Stack underflow (requires 1 value)");
+				return;
+			}
+			StackValueType top = type_stack.back();
+			type_stack.push_back(top); // Duplicate
+		}
+		// Stack operations: swap
+		else if (strcmp(name, "swap") == 0) {
+			if (type_stack.size() < 2) {
+				reportError("Type error in 'swap': Stack underflow (requires 2 values)");
+				return;
+			}
+			StackValueType a = type_stack.back();
+			type_stack.pop_back();
+			StackValueType b = type_stack.back();
+			type_stack.pop_back();
+			type_stack.push_back(a);
+			type_stack.push_back(b);
+		}
+	}
+
+	bool SemanticValidator::isNumericType(StackValueType type) const {
+		return type == StackValueType::INT || type == StackValueType::FLOAT;
+	}
+
+	const char* SemanticValidator::typeToString(StackValueType type) const {
+		switch (type) {
+		case StackValueType::INT:
+			return "int";
+		case StackValueType::FLOAT:
+			return "float";
+		case StackValueType::STRING:
+			return "string";
+		case StackValueType::ANY:
+			return "any";
+		case StackValueType::UNKNOWN:
+			return "unknown";
+		default:
+			return "unknown";
 		}
 	}
 
