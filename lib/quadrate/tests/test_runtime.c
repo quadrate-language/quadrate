@@ -603,3 +603,249 @@ TEST(PrintsvMixedTypesTest) {
 
 	destroy_test_context(ctx);
 }
+
+// ========== qd_dup tests ==========
+
+TEST(DupIntegerTest) {
+	qd_context* ctx = create_test_context();
+
+	qd_push_i(ctx, 42);
+	qd_exec_result result = qd_dup(ctx);
+
+	ASSERT_EQ(result.code, 0, "dup should succeed");
+	ASSERT_EQ((int)qd_stack_size(ctx->st), 2, "Stack should have 2 elements after dup");
+
+	qd_stack_element_t elem1, elem2;
+	qd_stack_error err = qd_stack_pop(ctx->st, &elem1);
+	ASSERT_EQ(err, QD_STACK_OK, "pop should succeed");
+	ASSERT_EQ(elem1.type, QD_STACK_TYPE_INT, "top element should be int");
+	ASSERT_EQ((int)elem1.value.i, 42, "top element should be 42");
+
+	err = qd_stack_pop(ctx->st, &elem2);
+	ASSERT_EQ(err, QD_STACK_OK, "second pop should succeed");
+	ASSERT_EQ(elem2.type, QD_STACK_TYPE_INT, "second element should be int");
+	ASSERT_EQ((int)elem2.value.i, 42, "second element should be 42");
+
+	destroy_test_context(ctx);
+}
+
+TEST(DupFloatTest) {
+	qd_context* ctx = create_test_context();
+
+	qd_push_f(ctx, 3.14);
+	qd_exec_result result = qd_dup(ctx);
+
+	ASSERT_EQ(result.code, 0, "dup should succeed");
+	ASSERT_EQ((int)qd_stack_size(ctx->st), 2, "Stack should have 2 elements after dup");
+
+	qd_stack_element_t elem1, elem2;
+	qd_stack_error err = qd_stack_pop(ctx->st, &elem1);
+	ASSERT_EQ(err, QD_STACK_OK, "pop should succeed");
+	ASSERT_EQ(elem1.type, QD_STACK_TYPE_FLOAT, "top element should be float");
+	ASSERT(float_eq(elem1.value.f, 3.14), "top element should be 3.14");
+
+	err = qd_stack_pop(ctx->st, &elem2);
+	ASSERT_EQ(err, QD_STACK_OK, "second pop should succeed");
+	ASSERT_EQ(elem2.type, QD_STACK_TYPE_FLOAT, "second element should be float");
+	ASSERT(float_eq(elem2.value.f, 3.14), "second element should be 3.14");
+
+	destroy_test_context(ctx);
+}
+
+TEST(DupStringTest) {
+	qd_context* ctx = create_test_context();
+
+	qd_push_s(ctx, "hello");
+	qd_exec_result result = qd_dup(ctx);
+
+	ASSERT_EQ(result.code, 0, "dup should succeed");
+	ASSERT_EQ((int)qd_stack_size(ctx->st), 2, "Stack should have 2 elements after dup");
+
+	qd_stack_element_t elem1, elem2;
+	qd_stack_error err = qd_stack_pop(ctx->st, &elem1);
+	ASSERT_EQ(err, QD_STACK_OK, "pop should succeed");
+	ASSERT_EQ(elem1.type, QD_STACK_TYPE_STR, "top element should be string");
+	ASSERT_STR_EQ(elem1.value.s, "hello", "top element should be 'hello'");
+
+	err = qd_stack_pop(ctx->st, &elem2);
+	ASSERT_EQ(err, QD_STACK_OK, "second pop should succeed");
+	ASSERT_EQ(elem2.type, QD_STACK_TYPE_STR, "second element should be string");
+	ASSERT_STR_EQ(elem2.value.s, "hello", "second element should be 'hello'");
+
+	free(elem1.value.s);
+	free(elem2.value.s);
+	destroy_test_context(ctx);
+}
+
+TEST(DupNonDestructiveTest) {
+	qd_context* ctx = create_test_context();
+
+	// Push multiple elements
+	qd_push_i(ctx, 10);
+	qd_push_i(ctx, 20);
+	qd_push_i(ctx, 30);
+
+	// Dup the top element
+	qd_exec_result result = qd_dup(ctx);
+	ASSERT_EQ(result.code, 0, "dup should succeed");
+	ASSERT_EQ((int)qd_stack_size(ctx->st), 4, "Stack should have 4 elements after dup");
+
+	// Top two should be 30, 30
+	qd_stack_element_t elem;
+	qd_stack_error err = qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ(err, QD_STACK_OK, "pop should succeed");
+	ASSERT_EQ((int)elem.value.i, 30, "top element should be 30");
+
+	err = qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ(err, QD_STACK_OK, "pop should succeed");
+	ASSERT_EQ((int)elem.value.i, 30, "second element should be 30");
+
+	// Then 20 and 10
+	err = qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ(err, QD_STACK_OK, "pop should succeed");
+	ASSERT_EQ((int)elem.value.i, 20, "third element should be 20");
+
+	err = qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ(err, QD_STACK_OK, "pop should succeed");
+	ASSERT_EQ((int)elem.value.i, 10, "fourth element should be 10");
+
+	destroy_test_context(ctx);
+}
+
+// ========== qd_swap tests ==========
+
+TEST(SwapIntegersTest) {
+	qd_context* ctx = create_test_context();
+
+	qd_push_i(ctx, 10);
+	qd_push_i(ctx, 20);
+	qd_exec_result result = qd_swap(ctx);
+
+	ASSERT_EQ(result.code, 0, "swap should succeed");
+	ASSERT_EQ((int)qd_stack_size(ctx->st), 2, "Stack should have 2 elements after swap");
+
+	qd_stack_element_t elem1, elem2;
+	qd_stack_error err = qd_stack_pop(ctx->st, &elem1);
+	ASSERT_EQ(err, QD_STACK_OK, "pop should succeed");
+	ASSERT_EQ(elem1.type, QD_STACK_TYPE_INT, "top element should be int");
+	ASSERT_EQ((int)elem1.value.i, 10, "top element should be 10 after swap");
+
+	err = qd_stack_pop(ctx->st, &elem2);
+	ASSERT_EQ(err, QD_STACK_OK, "second pop should succeed");
+	ASSERT_EQ(elem2.type, QD_STACK_TYPE_INT, "second element should be int");
+	ASSERT_EQ((int)elem2.value.i, 20, "second element should be 20 after swap");
+
+	destroy_test_context(ctx);
+}
+
+TEST(SwapMixedTypesTest) {
+	qd_context* ctx = create_test_context();
+
+	qd_push_i(ctx, 42);
+	qd_push_f(ctx, 3.14);
+	qd_exec_result result = qd_swap(ctx);
+
+	ASSERT_EQ(result.code, 0, "swap should succeed with mixed types");
+	ASSERT_EQ((int)qd_stack_size(ctx->st), 2, "Stack should have 2 elements after swap");
+
+	qd_stack_element_t elem1, elem2;
+	qd_stack_error err = qd_stack_pop(ctx->st, &elem1);
+	ASSERT_EQ(err, QD_STACK_OK, "pop should succeed");
+	ASSERT_EQ(elem1.type, QD_STACK_TYPE_INT, "top element should be int");
+	ASSERT_EQ((int)elem1.value.i, 42, "top element should be 42 after swap");
+
+	err = qd_stack_pop(ctx->st, &elem2);
+	ASSERT_EQ(err, QD_STACK_OK, "second pop should succeed");
+	ASSERT_EQ(elem2.type, QD_STACK_TYPE_FLOAT, "second element should be float");
+	ASSERT(float_eq(elem2.value.f, 3.14), "second element should be 3.14 after swap");
+
+	destroy_test_context(ctx);
+}
+
+TEST(SwapStringsTest) {
+	qd_context* ctx = create_test_context();
+
+	qd_push_s(ctx, "hello");
+	qd_push_s(ctx, "world");
+	qd_exec_result result = qd_swap(ctx);
+
+	ASSERT_EQ(result.code, 0, "swap should succeed with strings");
+	ASSERT_EQ((int)qd_stack_size(ctx->st), 2, "Stack should have 2 elements after swap");
+
+	qd_stack_element_t elem1, elem2;
+	qd_stack_error err = qd_stack_pop(ctx->st, &elem1);
+	ASSERT_EQ(err, QD_STACK_OK, "pop should succeed");
+	ASSERT_EQ(elem1.type, QD_STACK_TYPE_STR, "top element should be string");
+	ASSERT_STR_EQ(elem1.value.s, "hello", "top element should be 'hello' after swap");
+
+	err = qd_stack_pop(ctx->st, &elem2);
+	ASSERT_EQ(err, QD_STACK_OK, "second pop should succeed");
+	ASSERT_EQ(elem2.type, QD_STACK_TYPE_STR, "second element should be string");
+	ASSERT_STR_EQ(elem2.value.s, "world", "second element should be 'world' after swap");
+
+	free(elem1.value.s);
+	free(elem2.value.s);
+	destroy_test_context(ctx);
+}
+
+TEST(SwapDoesNotAffectRestOfStackTest) {
+	qd_context* ctx = create_test_context();
+
+	// Push multiple elements
+	qd_push_i(ctx, 1);
+	qd_push_i(ctx, 2);
+	qd_push_i(ctx, 3);
+	qd_push_i(ctx, 4);
+
+	// Swap top two (3 and 4)
+	qd_exec_result result = qd_swap(ctx);
+	ASSERT_EQ(result.code, 0, "swap should succeed");
+	ASSERT_EQ((int)qd_stack_size(ctx->st), 4, "Stack should still have 4 elements");
+
+	// Check order: should be 1, 2, 4, 3 (from bottom to top)
+	qd_stack_element_t elem;
+	qd_stack_error err = qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ(err, QD_STACK_OK, "pop should succeed");
+	ASSERT_EQ((int)elem.value.i, 3, "top element should be 3");
+
+	err = qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ(err, QD_STACK_OK, "pop should succeed");
+	ASSERT_EQ((int)elem.value.i, 4, "second element should be 4");
+
+	err = qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ(err, QD_STACK_OK, "pop should succeed");
+	ASSERT_EQ((int)elem.value.i, 2, "third element should be 2");
+
+	err = qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ(err, QD_STACK_OK, "pop should succeed");
+	ASSERT_EQ((int)elem.value.i, 1, "fourth element should be 1");
+
+	destroy_test_context(ctx);
+}
+
+TEST(SwapWithDupTest) {
+	qd_context* ctx = create_test_context();
+
+	// Test combining dup and swap
+	qd_push_i(ctx, 5);
+	qd_dup(ctx);  // Stack: 5, 5
+	qd_push_i(ctx, 10);  // Stack: 5, 5, 10
+	qd_swap(ctx);  // Stack: 5, 10, 5
+
+	ASSERT_EQ((int)qd_stack_size(ctx->st), 3, "Stack should have 3 elements");
+
+	qd_stack_element_t elem;
+	qd_stack_error err = qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ(err, QD_STACK_OK, "pop should succeed");
+	ASSERT_EQ((int)elem.value.i, 5, "top should be 5");
+
+	err = qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ(err, QD_STACK_OK, "pop should succeed");
+	ASSERT_EQ((int)elem.value.i, 10, "second should be 10");
+
+	err = qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ(err, QD_STACK_OK, "pop should succeed");
+	ASSERT_EQ((int)elem.value.i, 5, "third should be 5");
+
+	destroy_test_context(ctx);
+}

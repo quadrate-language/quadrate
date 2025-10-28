@@ -21,6 +21,8 @@ qd_exec_result qd_mul(qd_context* ctx);
 qd_exec_result qd_add(qd_context* ctx);
 qd_exec_result qd_sub(qd_context* ctx);
 qd_exec_result qd_sq(qd_context* ctx);
+qd_exec_result qd_dup(qd_context* ctx);
+qd_exec_result qd_swap(qd_context* ctx);
 
 qd_exec_result qd_err_push(qd_context* ctx, qd_stack_error value);
 

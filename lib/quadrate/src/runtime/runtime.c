@@ -499,6 +499,117 @@ qd_exec_result qd_sq(qd_context* ctx) {
 	return (qd_exec_result){0};
 }
 
+qd_exec_result qd_dup(qd_context* ctx) {
+	// Duplicate the top element of the stack
+	size_t stack_size = qd_stack_size(ctx->st);
+	if (stack_size < 1) {
+		fprintf(stderr, "Fatal error in dup: Stack underflow (required 1 element, have %zu)\n", stack_size);
+		dump_stack(ctx);
+		abort();
+	}
+
+	qd_stack_element_t top;
+	qd_stack_error err = qd_stack_peek(ctx->st, &top);
+	if (err != QD_STACK_OK) {
+		fprintf(stderr, "Fatal error in dup: Failed to peek stack\n");
+		dump_stack(ctx);
+		abort();
+	}
+
+	// Push a copy of the top element
+	switch (top.type) {
+		case QD_STACK_TYPE_INT:
+			err = qd_stack_push_int(ctx->st, top.value.i);
+			break;
+		case QD_STACK_TYPE_FLOAT:
+			err = qd_stack_push_float(ctx->st, top.value.f);
+			break;
+		case QD_STACK_TYPE_STR:
+			// Need to duplicate the string
+			err = qd_stack_push_str(ctx->st, top.value.s);
+			break;
+		case QD_STACK_TYPE_PTR:
+			err = qd_stack_push_ptr(ctx->st, top.value.p);
+			break;
+		default:
+			return (qd_exec_result){-3};
+	}
+
+	if (err != QD_STACK_OK) {
+		return (qd_exec_result){-2};
+	}
+
+	return (qd_exec_result){0};
+}
+
+qd_exec_result qd_swap(qd_context* ctx) {
+	// Swap the top two elements of the stack
+	size_t stack_size = qd_stack_size(ctx->st);
+	if (stack_size < 2) {
+		fprintf(stderr, "Fatal error in swap: Stack underflow (required 2 elements, have %zu)\n", stack_size);
+		dump_stack(ctx);
+		abort();
+	}
+
+	// Pop top two elements
+	qd_stack_element_t a, b;
+	qd_stack_error err = qd_stack_pop(ctx->st, &b);  // b is top
+	if (err != QD_STACK_OK) {
+		return (qd_exec_result){-2};
+	}
+	err = qd_stack_pop(ctx->st, &a);  // a is second
+	if (err != QD_STACK_OK) {
+		return (qd_exec_result){-2};
+	}
+
+	// Push them back in swapped order (b first, then a)
+	// Push b (was top, now will be second)
+	switch (b.type) {
+		case QD_STACK_TYPE_INT:
+			err = qd_stack_push_int(ctx->st, b.value.i);
+			break;
+		case QD_STACK_TYPE_FLOAT:
+			err = qd_stack_push_float(ctx->st, b.value.f);
+			break;
+		case QD_STACK_TYPE_STR:
+			err = qd_stack_push_str(ctx->st, b.value.s);
+			free(b.value.s);  // Free the original since push_str makes a copy
+			break;
+		case QD_STACK_TYPE_PTR:
+			err = qd_stack_push_ptr(ctx->st, b.value.p);
+			break;
+		default:
+			return (qd_exec_result){-3};
+	}
+	if (err != QD_STACK_OK) {
+		return (qd_exec_result){-2};
+	}
+
+	// Push a (was second, now will be top)
+	switch (a.type) {
+		case QD_STACK_TYPE_INT:
+			err = qd_stack_push_int(ctx->st, a.value.i);
+			break;
+		case QD_STACK_TYPE_FLOAT:
+			err = qd_stack_push_float(ctx->st, a.value.f);
+			break;
+		case QD_STACK_TYPE_STR:
+			err = qd_stack_push_str(ctx->st, a.value.s);
+			free(a.value.s);  // Free the original since push_str makes a copy
+			break;
+		case QD_STACK_TYPE_PTR:
+			err = qd_stack_push_ptr(ctx->st, a.value.p);
+			break;
+		default:
+			return (qd_exec_result){-3};
+	}
+	if (err != QD_STACK_OK) {
+		return (qd_exec_result){-2};
+	}
+
+	return (qd_exec_result){0};
+}
+
 // Dump current stack contents for debugging
 static void dump_stack(qd_context* ctx) {
 	size_t stack_size = qd_stack_size(ctx->st);
