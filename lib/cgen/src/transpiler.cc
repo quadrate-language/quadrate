@@ -1,4 +1,5 @@
 #include <cgen/transpiler.h>
+#include <cstring>
 #include <filesystem>
 #include <qc/ast.h>
 #include <qc/ast_node.h>
@@ -156,7 +157,9 @@ namespace Qd {
 		}
 		case IAstNode::Type::Instruction: {
 			AstNodeInstruction* instr = static_cast<AstNodeInstruction*>(node);
-			out << makeIndent(indent) << "qd_" << instr->name() << "(ctx);\n";
+			// Map "." to "print" (Forth-style alias)
+			const char* instrName = (strcmp(instr->name().c_str(), ".") == 0) ? "print" : instr->name().c_str();
+			out << makeIndent(indent) << "qd_" << instrName << "(ctx);\n";
 			break;
 		}
 		case IAstNode::Type::ScopedIdentifier: {
