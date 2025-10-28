@@ -12,6 +12,7 @@ qd_exec_result qd_push_i(qd_context* ctx, int64_t value);
 qd_exec_result qd_push_f(qd_context* ctx, double value);
 qd_exec_result qd_push_s(qd_context* ctx, const char* value);
 qd_exec_result qd_print(qd_context* ctx);
+qd_exec_result qd_prints(qd_context* ctx);
 qd_exec_result qd_printv(qd_context* ctx);
 qd_exec_result qd_peek(qd_context* ctx);
 qd_exec_result qd_div(qd_context* ctx);

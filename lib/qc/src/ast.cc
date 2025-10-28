@@ -26,7 +26,7 @@
 namespace Qd {
 	// Helper function to check if an identifier is a built-in instruction
 	static bool isBuiltInInstruction(const char* name) {
-		static const char* instructions[] = {"*", "+", "-", ".", "/", "add", "div", "dup", "mul", "print", "printv", "rot", "sq", "sub", "swap"};
+		static const char* instructions[] = {"*", "+", "-", ".", "/", "add", "div", "dup", "mul", "print", "prints", "printv", "rot", "sq", "sub", "swap"};
 		static const size_t count = sizeof(instructions) / sizeof(instructions[0]);
 
 		for (size_t i = 0; i < count; i++) {

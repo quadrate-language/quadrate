@@ -55,6 +55,44 @@ qd_exec_result qd_print(qd_context* ctx) {
 	return (qd_exec_result){0};
 }
 
+qd_exec_result qd_prints(qd_context* ctx) {
+	// Print entire stack (non-destructive) - output only values for piping
+	const size_t stack_size = qd_stack_size(ctx->st);
+
+	// Print from bottom to top, all on one line
+	for (size_t i = 0; i < stack_size; i++) {
+		qd_stack_element_t val;
+		qd_stack_error err = qd_stack_element(ctx->st, i, &val);
+		if (err != QD_STACK_OK) {
+			return (qd_exec_result){-2};
+		}
+
+		if (i > 0) {
+			printf(" ");
+		}
+
+		switch (val.type) {
+			case QD_STACK_TYPE_INT:
+				printf("%ld", val.value.i);
+				break;
+			case QD_STACK_TYPE_FLOAT:
+				printf("%g", val.value.f);
+				break;
+			case QD_STACK_TYPE_STR:
+				printf("%s", val.value.s);
+				break;
+			default:
+				return (qd_exec_result){-3};
+		}
+	}
+
+	if (stack_size > 0) {
+		printf("\n");
+	}
+
+	return (qd_exec_result){0};
+}
+
 qd_exec_result qd_printv(qd_context* ctx) {
 	const int64_t stack_size = (int64_t)qd_stack_size(ctx->st);
 	for (int64_t i = stack_size - 1; i >= 0; i--) {

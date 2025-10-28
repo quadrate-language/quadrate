@@ -51,6 +51,7 @@ namespace Qd {
 				"dup",
 				"mul",
 				"print",
+				"prints",
 				"printv",
 				"rot",
 				"sq",
