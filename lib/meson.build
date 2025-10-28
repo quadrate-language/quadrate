@@ -1,4 +1,3 @@
-subdir('diagnostic')
 subdir('qc')
 subdir('u8')
 subdir('quadrate')
