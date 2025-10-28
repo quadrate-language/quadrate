@@ -5,9 +5,12 @@ Thank you for your interest in contributing to Quadrate! We welcome contribution
 ## Building the Project
 
 ### Prerequisites
-- CMake 3.20 or higher
+- Meson 0.55 or higher
 - C++20 compatible compiler (GCC 10+, Clang 10+)
 - Make
+- u8t library (tokenizer/scanner - must be installed system-wide)
+- clang-format (for code formatting)
+- valgrind (optional, for memory leak testing)
 
 ### Build Commands
 
@@ -33,17 +36,22 @@ make clean
 
 Build outputs are placed in the `dist/` directory:
 - `dist/bin/` - Executables (quadc, quadfmt)
-- `dist/lib/` - Shared libraries
+- `dist/lib/` - Shared and static libraries (libquadrate.so, libquadrate_static.a)
 - `dist/include/` - Public headers
-- `dist/examples/` - Example binaries
+
+Intermediate build files are in `build/debug/` or `build/release/`.
 
 ## Running Tests
 
 ```bash
+# Run all tests
 make tests
+
+# Run tests with valgrind (memory leak detection)
+make valgrind
 ```
 
-Tests are located in `lib/*/tests/` directories and use CTest.
+Tests are located in `lib/*/tests/` directories and use Meson's built-in test framework.
 
 ## Code Style
 
@@ -86,7 +94,7 @@ quadrate/
 Each library follows the structure:
 ```
 lib/name/
-├── CMakeLists.txt
+├── meson.build
 ├── include/name/  # Public headers
 ├── src/           # Implementation files
 └── tests/         # Unit tests (optional)
@@ -133,9 +141,9 @@ Explain what changed and why, not how (the diff shows how).
 
 ### Before Submitting
 
-- [ ] Code compiles without warnings
+- [ ] Code compiles without warnings (`make debug` or `make release`)
 - [ ] Tests pass (`make tests`)
-- [ ] Code is formatted (`clang-format`)
+- [ ] Code is formatted (`make format`)
 - [ ] New features include tests
 - [ ] Public API changes are documented
 
