@@ -1,7 +1,7 @@
+#include <cstring>
 #include <qc/ast.h>
 #include <qc/ast_printer.h>
 #include <unit-check/uc.h>
-#include <cstring>
 
 TEST(SimpleFunctionDeclaration) {
 	Qd::Ast ast;

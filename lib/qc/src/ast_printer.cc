@@ -9,9 +9,9 @@
 #include <qc/ast_node_literal.h>
 #include <qc/ast_node_parameter.h>
 #include <qc/ast_node_program.h>
+#include <qc/ast_node_scoped.h>
 #include <qc/ast_node_switch.h>
 #include <qc/ast_node_use.h>
-#include <qc/ast_node_scoped.h>
 #include <qc/ast_printer.h>
 #include <stdio.h>
 #include <string>

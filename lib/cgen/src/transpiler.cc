@@ -12,6 +12,7 @@
 #include <qc/ast_node_scoped.h>
 #include <qc/ast_node_use.h>
 #include <qc/ast_printer.h>
+#include <qc/semantic_validator.h>
 #include <sstream>
 
 namespace Qd {
@@ -51,46 +52,49 @@ namespace Qd {
 		case IAstNode::Type::Block:
 			out << makeIndent(indent) << "{\n";
 			break;
-	case IAstNode::Type::FunctionDeclaration: {
-		AstNodeFunctionDeclaration* funcDecl = static_cast<AstNodeFunctionDeclaration*>(node);
-		out << "\n"
-			<< makeIndent(indent) << "qd_exec_result usr_" << packageName << "_" << funcDecl->name()
-			<< "(qd_context* ctx) {\n";
+		case IAstNode::Type::FunctionDeclaration: {
+			AstNodeFunctionDeclaration* funcDecl = static_cast<AstNodeFunctionDeclaration*>(node);
+			out << "\n"
+				<< makeIndent(indent) << "qd_exec_result usr_" << packageName << "_" << funcDecl->name()
+				<< "(qd_context* ctx) {\n";
 
-		// Generate type check for input parameters
-		if (!funcDecl->inputParameters().empty()) {
-			out << makeIndent(indent + 1) << "qd_stack_type input_types[] = {";
-			for (size_t i = 0; i < funcDecl->inputParameters().size(); i++) {
-				if (i > 0) out << ", ";
-				AstNodeParameter* param = static_cast<AstNodeParameter*>(funcDecl->inputParameters()[i]);
-				out << mapTypeToStackType(param->typeString());
+			// Generate type check for input parameters
+			if (!funcDecl->inputParameters().empty()) {
+				out << makeIndent(indent + 1) << "qd_stack_type input_types[] = {";
+				for (size_t i = 0; i < funcDecl->inputParameters().size(); i++) {
+					if (i > 0) {
+						out << ", ";
+					}
+					AstNodeParameter* param = static_cast<AstNodeParameter*>(funcDecl->inputParameters()[i]);
+					out << mapTypeToStackType(param->typeString());
+				}
+				out << "};\n";
+				out << makeIndent(indent + 1) << "qd_check_stack(ctx, " << funcDecl->inputParameters().size()
+					<< ", input_types, __func__);\n\n";
 			}
-			out << "};\n";
-			out << makeIndent(indent + 1) << "qd_check_stack(ctx, " << funcDecl->inputParameters().size()
-				<< ", input_types, __func__);\n\n";
-		}
 
-		traverse(funcDecl->body(), packageName, out, indent + 1);
-		out << "\n"
-			<< makeIndent(indent) << "qd_lbl_done:;\n";
+			traverse(funcDecl->body(), packageName, out, indent + 1);
+			out << "\n" << makeIndent(indent) << "qd_lbl_done:;\n";
 
-		// Generate type check for output parameters
-		if (!funcDecl->outputParameters().empty()) {
-			out << makeIndent(indent + 1) << "qd_stack_type output_types[] = {";
-			for (size_t i = 0; i < funcDecl->outputParameters().size(); i++) {
-				if (i > 0) out << ", ";
-				AstNodeParameter* param = static_cast<AstNodeParameter*>(funcDecl->outputParameters()[i]);
-				out << mapTypeToStackType(param->typeString());
+			// Generate type check for output parameters
+			if (!funcDecl->outputParameters().empty()) {
+				out << makeIndent(indent + 1) << "qd_stack_type output_types[] = {";
+				for (size_t i = 0; i < funcDecl->outputParameters().size(); i++) {
+					if (i > 0) {
+						out << ", ";
+					}
+					AstNodeParameter* param = static_cast<AstNodeParameter*>(funcDecl->outputParameters()[i]);
+					out << mapTypeToStackType(param->typeString());
+				}
+				out << "};\n";
+				out << makeIndent(indent + 1) << "qd_check_stack(ctx, " << funcDecl->outputParameters().size()
+					<< ", output_types, __func__);\n";
 			}
-			out << "};\n";
-			out << makeIndent(indent + 1) << "qd_check_stack(ctx, " << funcDecl->outputParameters().size()
-				<< ", output_types, __func__);\n";
-		}
 
-		out << makeIndent(indent + 1) << "return (qd_exec_result){0};\n";
-		out << makeIndent(indent) << "}\n";
-		return; // Don't traverse children again
-	}
+			out << makeIndent(indent + 1) << "return (qd_exec_result){0};\n";
+			out << makeIndent(indent) << "}\n";
+			return; // Don't traverse children again
+		}
 		case IAstNode::Type::VariableDeclaration:
 			// TODO: Handle variable declaration
 			break;
@@ -160,15 +164,15 @@ namespace Qd {
 			// Map aliases to their actual function names
 			const char* instrName = instr->name().c_str();
 			if (strcmp(instrName, ".") == 0) {
-				instrName = "print";  // Forth-style print
+				instrName = "print"; // Forth-style print
 			} else if (strcmp(instrName, "/") == 0) {
-				instrName = "div";    // Division operator
+				instrName = "div"; // Division operator
 			} else if (strcmp(instrName, "*") == 0) {
-				instrName = "mul";    // Multiplication operator
+				instrName = "mul"; // Multiplication operator
 			} else if (strcmp(instrName, "+") == 0) {
-				instrName = "add";    // Addition operator
+				instrName = "add"; // Addition operator
 			} else if (strcmp(instrName, "-") == 0) {
-				instrName = "sub";    // Subtraction operator
+				instrName = "sub"; // Subtraction operator
 			}
 			out << makeIndent(indent) << "qd_" << instrName << "(ctx);\n";
 			break;
@@ -216,7 +220,14 @@ namespace Qd {
 
 		Qd::Ast ast;
 		Qd::IAstNode* root = ast.generate(source);
-		Qd::AstPrinter::print(root);
+
+		// Semantic validation - catch errors before gcc
+		Qd::SemanticValidator validator;
+		size_t errorCount = validator.validate(root, filename);
+		if (errorCount > 0) {
+			// Validation failed - do not proceed with transpilation
+			return std::nullopt;
+		}
 
 		std::stringstream ss;
 

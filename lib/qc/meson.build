@@ -1,7 +1,9 @@
 qc_sources = files(
 		'src/ast.cc',
 		'src/ast_printer.cc',
+		'src/colors.cc',
 		'src/error_reporter.cc',
+		'src/semantic_validator.cc',
 )
 
 qc_inc = include_directories('include')

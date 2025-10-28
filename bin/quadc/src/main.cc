@@ -6,6 +6,7 @@
 #include <filesystem>
 #include <fstream>
 #include <iostream>
+#include <qc/colors.h>
 #include <random>
 #include <sstream>
 
@@ -58,13 +59,14 @@ std::string createTempDir() {
 int main(int argc, char** argv) {
 	cxxopts::Options options("quadc", "Quadrate compiler");
 	options.add_options()("h,help", "Display help.")("v,version", "Display compiler version.")(
-			"o", "Output filename", cxxopts::value<std::string>()->default_value("main"))(
-			"save-temps", "Save temporary files", cxxopts::value<bool>()->default_value("false"))(
-			"no-colors", "Disable colored output", cxxopts::value<bool>()->default_value("false"))(
-			"dump-tokens", "Print tokens", cxxopts::value<bool>()->default_value("false"))(
-			"r,run", "Run the compiled program", cxxopts::value<bool>()->default_value("false"))(
-			"shared", "Build a shared library", cxxopts::value<bool>()->default_value("false"))(
-			"static", "Build a static library", cxxopts::value<bool>()->default_value("false"))(
+			"o", "Output filename", cxxopts::value<std::string>()->default_value("main"))("save-temps",
+			"Save temporary files", cxxopts::value<bool>()->default_value("false")->implicit_value("true"))("no-colors",
+			"Disable colored output",
+			cxxopts::value<bool>()->default_value("false")->implicit_value("true"))("dump-tokens", "Print tokens",
+			cxxopts::value<bool>()->default_value("false")->implicit_value("true"))("r,run", "Run the compiled program",
+			cxxopts::value<bool>()->default_value("false")->implicit_value("true"))(
+			"shared", "Build a shared library", cxxopts::value<bool>()->default_value("false")->implicit_value("true"))(
+			"static", "Build a static library", cxxopts::value<bool>()->default_value("false")->implicit_value("true"))(
 			"files", "Input files", cxxopts::value<std::vector<std::string>>());
 
 	options.parse_positional({"files"});
@@ -79,6 +81,10 @@ int main(int argc, char** argv) {
 		std::cout << QUADC_VERSION << std::endl;
 		return 0;
 	}
+
+	// Configure colored output
+	const bool noColors = result["no-colors"].as<bool>();
+	Qd::Colors::setEnabled(!noColors);
 
 	std::string outputFilename = result["o"].as<std::string>();
 	const bool shared = result["shared"].as<bool>();
@@ -95,38 +101,32 @@ int main(int argc, char** argv) {
 
 	const std::string outputDir = createTempDir();
 
-	auto args = result.arguments();
-	if (args.size() > 0) {
+	if (result.count("files")) {
+		auto files = result["files"].as<std::vector<std::string>>();
 		Qd::Transpiler transpiler;
 		std::vector<Qd::SourceFile> transpiledSources;
-		for (const auto& arg : args) {
-			std::ifstream qdFile(arg.value());
+		for (const auto& file : files) {
+			std::ifstream qdFile(file);
 			if (!qdFile.is_open()) {
-				std::cerr << "quadc: cannot find " << arg.value() << ": No such file or directory" << std::endl;
+				std::cerr << "quadc: cannot find " << file << ": No such file or directory" << std::endl;
 				continue;
 			}
 			qdFile.seekg(0, std::ios::end);
 			auto pos = qdFile.tellg();
 			qdFile.seekg(0);
 			if (pos < 0) {
-				std::cerr << "quadc: error reading " << arg.value() << std::endl;
+				std::cerr << "quadc: error reading " << file << std::endl;
 				continue;
 			}
 			size_t size = static_cast<size_t>(pos);
 			std::string buffer(size, ' ');
 			qdFile.read(&buffer[0], static_cast<std::streamsize>(size));
-			std::string filename = std::filesystem::path(arg.value()).filename().string();
+			std::string filename = std::filesystem::path(file).filename().string();
 			if (auto ts = transpiler.emit(filename.c_str(), "main", buffer.c_str())) {
 				transpiledSources.push_back(*ts);
 			} else {
-				std::cerr << "quadc: transpilation failed for " << arg.value() << std::endl;
 				return 1;
 			}
-		}
-
-		// Debug
-		for (size_t i = 0; i < transpiledSources.size(); i++) {
-			std::cout << transpiledSources[i].filename << std::endl;
 		}
 
 		for (auto& source : transpiledSources) {

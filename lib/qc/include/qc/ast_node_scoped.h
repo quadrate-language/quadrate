@@ -8,7 +8,7 @@ namespace Qd {
 	class AstNodeScopedIdentifier : public IAstNode {
 	public:
 		AstNodeScopedIdentifier(const std::string& scope, const std::string& name)
-		    : mScope(scope), mName(name), mParent(nullptr) {
+			: mScope(scope), mName(name), mParent(nullptr) {
 		}
 
 		IAstNode::Type type() const override {

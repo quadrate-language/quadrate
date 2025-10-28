@@ -79,7 +79,7 @@ qd_exec_result qd_prints(qd_context* ctx) {
 				printf("%g", val.value.f);
 				break;
 			case QD_STACK_TYPE_STR:
-				printf("%s", val.value.s);
+				printf("\"%s\"", val.value.s);
 				break;
 			default:
 				return (qd_exec_result){-3};
