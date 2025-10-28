@@ -26,7 +26,7 @@
 namespace Qd {
 	// Helper function to check if an identifier is a built-in instruction
 	static bool isBuiltInInstruction(const char* name) {
-		static const char* instructions[] = {".", "div", "dup", "print", "printv", "rot", "sq", "swap"};
+		static const char* instructions[] = {".", "/", "div", "dup", "print", "printv", "rot", "sq", "swap"};
 		static const size_t count = sizeof(instructions) / sizeof(instructions[0]);
 
 		for (size_t i = 0; i < count; i++) {
@@ -86,6 +86,9 @@ namespace Qd {
 		} else if (token == '.') {
 			// Handle '.' as alias for 'print' (Forth-style)
 			return new AstNodeInstruction(".");
+		} else if (token == '/') {
+			// Handle '/' as alias for 'div'
+			return new AstNodeInstruction("/");
 		}
 		return nullptr;
 	}
@@ -214,9 +217,6 @@ namespace Qd {
 		bool sawSlash = false;
 
 		while ((token = u8t_scanner_scan(scanner)) != U8T_EOF) {
-			if (token == '}') {
-				break;
-			}
 
 			// Handle // line comments
 			if (sawSlash && token == '/') {
@@ -243,11 +243,16 @@ namespace Qd {
 				continue;
 			}
 
-			// If we saw a slash but it wasn't a comment, it's just a division operator
-			// (though we don't have those in this language yet)
+			// If we saw a slash but it wasn't a comment, it's a division operator
 			if (sawSlash) {
 				sawSlash = false;
-				// Would handle division here if needed
+				// Add division instruction to tempNodes
+				AstNodeInstruction* divInstr = new AstNodeInstruction("/");
+				tempNodes.push_back(divInstr);
+			}
+
+			if (token == '}') {
+				break;
 			}
 
 			sawSlash = (token == '/');

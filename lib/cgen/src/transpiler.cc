@@ -157,8 +157,13 @@ namespace Qd {
 		}
 		case IAstNode::Type::Instruction: {
 			AstNodeInstruction* instr = static_cast<AstNodeInstruction*>(node);
-			// Map "." to "print" (Forth-style alias)
-			const char* instrName = (strcmp(instr->name().c_str(), ".") == 0) ? "print" : instr->name().c_str();
+			// Map aliases to their actual function names
+			const char* instrName = instr->name().c_str();
+			if (strcmp(instrName, ".") == 0) {
+				instrName = "print";  // Forth-style print
+			} else if (strcmp(instrName, "/") == 0) {
+				instrName = "div";    // Division operator
+			}
 			out << makeIndent(indent) << "qd_" << instrName << "(ctx);\n";
 			break;
 		}
