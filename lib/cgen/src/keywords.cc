@@ -41,14 +41,20 @@ namespace Qd {
 
 		// List of all built-in instructions (stack operations)
 		static const char* instructions[] = {
+				"*",
+				"+",
+				"-",
 				".",
 				"/",
+				"add",
 				"div",
 				"dup",
+				"mul",
 				"print",
 				"printv",
 				"rot",
 				"sq",
+				"sub",
 				"swap",
 		};
 

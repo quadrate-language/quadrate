@@ -26,7 +26,7 @@
 namespace Qd {
 	// Helper function to check if an identifier is a built-in instruction
 	static bool isBuiltInInstruction(const char* name) {
-		static const char* instructions[] = {".", "/", "div", "dup", "print", "printv", "rot", "sq", "swap"};
+		static const char* instructions[] = {"*", "+", "-", ".", "/", "add", "div", "dup", "mul", "print", "printv", "rot", "sq", "sub", "swap"};
 		static const size_t count = sizeof(instructions) / sizeof(instructions[0]);
 
 		for (size_t i = 0; i < count; i++) {
@@ -89,6 +89,15 @@ namespace Qd {
 		} else if (token == '/') {
 			// Handle '/' as alias for 'div'
 			return new AstNodeInstruction("/");
+		} else if (token == '*') {
+			// Handle '*' as alias for 'mul'
+			return new AstNodeInstruction("*");
+		} else if (token == '+') {
+			// Handle '+' as alias for 'add'
+			return new AstNodeInstruction("+");
+		} else if (token == '-') {
+			// Handle '-' as alias for 'sub'
+			return new AstNodeInstruction("-");
 		}
 		return nullptr;
 	}
@@ -653,6 +662,18 @@ namespace Qd {
 			} else if (token == '.') {
 				// Handle '.' as alias for 'print' (Forth-style)
 				AstNodeInstruction* instr = new AstNodeInstruction(".");
+				tempNodes.push_back(instr);
+			} else if (token == '*') {
+				// Handle '*' as alias for 'mul'
+				AstNodeInstruction* instr = new AstNodeInstruction("*");
+				tempNodes.push_back(instr);
+			} else if (token == '+') {
+				// Handle '+' as alias for 'add'
+				AstNodeInstruction* instr = new AstNodeInstruction("+");
+				tempNodes.push_back(instr);
+			} else if (token == '-') {
+				// Handle '-' as alias for 'sub'
+				AstNodeInstruction* instr = new AstNodeInstruction("-");
 				tempNodes.push_back(instr);
 			}
 		}

@@ -163,6 +163,12 @@ namespace Qd {
 				instrName = "print";  // Forth-style print
 			} else if (strcmp(instrName, "/") == 0) {
 				instrName = "div";    // Division operator
+			} else if (strcmp(instrName, "*") == 0) {
+				instrName = "mul";    // Multiplication operator
+			} else if (strcmp(instrName, "+") == 0) {
+				instrName = "add";    // Addition operator
+			} else if (strcmp(instrName, "-") == 0) {
+				instrName = "sub";    // Subtraction operator
 			}
 			out << makeIndent(indent) << "qd_" << instrName << "(ctx);\n";
 			break;
