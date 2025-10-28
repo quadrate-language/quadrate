@@ -1022,6 +1022,9 @@ namespace Qd {
 			}
 		}
 
+		// Store the error count for later checking
+		mErrorCount = errorReporter.errorCount();
+
 		return mRoot;
 	}
 }

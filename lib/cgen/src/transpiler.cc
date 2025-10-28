@@ -221,6 +221,18 @@ namespace Qd {
 		Qd::Ast ast;
 		Qd::IAstNode* root = ast.generate(source);
 
+		// Check if there were any parse errors
+		if (ast.hasErrors()) {
+			// Parse errors were reported, do not proceed with transpilation
+			return std::nullopt;
+		}
+
+		// Check if AST generation failed
+		if (root == nullptr) {
+			// AST is null (shouldn't happen unless out of memory)
+			return std::nullopt;
+		}
+
 		// Semantic validation - catch errors before gcc
 		Qd::SemanticValidator validator;
 		size_t errorCount = validator.validate(root, filename);

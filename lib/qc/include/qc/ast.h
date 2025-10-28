@@ -12,8 +12,19 @@ namespace Qd {
 
 		IAstNode* generate(const char* src);
 
+		// Get the number of parse errors encountered
+		size_t errorCount() const {
+			return mErrorCount;
+		}
+
+		// Check if there were any parse errors
+		bool hasErrors() const {
+			return mErrorCount > 0;
+		}
+
 	private:
 		IAstNode* mRoot = nullptr;
+		size_t mErrorCount = 0;
 	};
 }
 

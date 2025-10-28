@@ -6,6 +6,7 @@
 #include <qc/ast_node_identifier.h>
 #include <qc/ast_node_instruction.h>
 #include <qc/ast_node_literal.h>
+#include <qc/ast_node_parameter.h>
 #include <qc/colors.h>
 #include <qc/semantic_validator.h>
 
@@ -114,6 +115,24 @@ namespace Qd {
 		if (node->type() == IAstNode::Type::FunctionDeclaration) {
 			AstNodeFunctionDeclaration* func = static_cast<AstNodeFunctionDeclaration*>(node);
 			std::vector<StackValueType> type_stack;
+
+			// Initialize type stack with input parameters
+			// Input parameters are on the stack when the function starts
+			for (size_t i = 0; i < func->inputParameters().size(); i++) {
+				AstNodeParameter* param = static_cast<AstNodeParameter*>(func->inputParameters()[i]);
+				const std::string& typeStr = param->typeString();
+
+				if (typeStr == "i") {
+					type_stack.push_back(StackValueType::INT);
+				} else if (typeStr == "f") {
+					type_stack.push_back(StackValueType::FLOAT);
+				} else if (typeStr == "s") {
+					type_stack.push_back(StackValueType::STRING);
+				} else {
+					// Untyped or unknown - treat as ANY
+					type_stack.push_back(StackValueType::ANY);
+				}
+			}
 
 			// Type check the function body
 			if (func->body()) {
