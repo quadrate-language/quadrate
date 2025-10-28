@@ -1916,6 +1916,155 @@ TEST(DecNegativeTest) {
 	destroy_test_context(ctx);
 }
 
+// clear tests
+TEST(ClearEmptyStackTest) {
+	qd_context* ctx = create_test_context();
+
+	// Clear an already empty stack
+	qd_clear(ctx);
+	ASSERT_EQ((int)qd_stack_size(ctx->st), 0, "Stack should be empty after clearing empty stack");
+
+	destroy_test_context(ctx);
+}
+
+TEST(ClearSingleElementTest) {
+	qd_context* ctx = create_test_context();
+
+	// Push one element and clear
+	qd_push_i(ctx, 42);
+	ASSERT_EQ((int)qd_stack_size(ctx->st), 1, "Stack should have 1 element");
+	qd_clear(ctx);
+	ASSERT_EQ((int)qd_stack_size(ctx->st), 0, "Stack should be empty after clear");
+
+	destroy_test_context(ctx);
+}
+
+TEST(ClearMultipleElementsTest) {
+	qd_context* ctx = create_test_context();
+
+	// Push multiple elements of different types and clear
+	qd_push_i(ctx, 10);
+	qd_push_f(ctx, 3.14);
+	qd_push_i(ctx, 20);
+	qd_push_f(ctx, 2.71);
+	ASSERT_EQ((int)qd_stack_size(ctx->st), 4, "Stack should have 4 elements");
+
+	qd_clear(ctx);
+	ASSERT_EQ((int)qd_stack_size(ctx->st), 0, "Stack should be empty after clear");
+
+	// Verify we can still use the stack after clearing
+	qd_push_i(ctx, 99);
+	qd_stack_element_t elem;
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ((int)elem.value.i, 99, "Should be able to push after clear");
+
+	destroy_test_context(ctx);
+}
+
+TEST(ClearWithStringsTest) {
+	qd_context* ctx = create_test_context();
+
+	// Push strings (which need memory management) and clear
+	qd_push_s(ctx, "hello");
+	qd_push_i(ctx, 42);
+	qd_push_s(ctx, "world");
+	ASSERT_EQ((int)qd_stack_size(ctx->st), 3, "Stack should have 3 elements");
+
+	qd_clear(ctx);
+	ASSERT_EQ((int)qd_stack_size(ctx->st), 0, "Stack should be empty after clear");
+
+	destroy_test_context(ctx);
+}
+
+// depth tests
+TEST(DepthEmptyStackTest) {
+	qd_context* ctx = create_test_context();
+
+	// Get depth of empty stack
+	qd_depth(ctx);
+	ASSERT_EQ((int)qd_stack_size(ctx->st), 1, "Stack should have 1 element (the depth)");
+
+	qd_stack_element_t elem;
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ(elem.type, QD_STACK_TYPE_INT, "depth should return int");
+	ASSERT_EQ((int)elem.value.i, 0, "depth of empty stack should be 0");
+
+	destroy_test_context(ctx);
+}
+
+TEST(DepthSingleElementTest) {
+	qd_context* ctx = create_test_context();
+
+	// Push one element and get depth
+	qd_push_i(ctx, 42);
+	qd_depth(ctx);
+
+	ASSERT_EQ((int)qd_stack_size(ctx->st), 2, "Stack should have 2 elements (value + depth)");
+
+	qd_stack_element_t elem;
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ(elem.type, QD_STACK_TYPE_INT, "depth should return int");
+	ASSERT_EQ((int)elem.value.i, 1, "depth should be 1");
+
+	destroy_test_context(ctx);
+}
+
+TEST(DepthMultipleElementsTest) {
+	qd_context* ctx = create_test_context();
+
+	// Push multiple elements and get depth
+	qd_push_i(ctx, 10);
+	qd_push_f(ctx, 3.14);
+	qd_push_i(ctx, 20);
+	qd_depth(ctx);
+
+	ASSERT_EQ((int)qd_stack_size(ctx->st), 4, "Stack should have 4 elements (3 values + depth)");
+
+	qd_stack_element_t elem;
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ(elem.type, QD_STACK_TYPE_INT, "depth should return int");
+	ASSERT_EQ((int)elem.value.i, 3, "depth should be 3");
+
+	destroy_test_context(ctx);
+}
+
+TEST(DepthAfterClearTest) {
+	qd_context* ctx = create_test_context();
+
+	// Push elements, clear, then get depth
+	qd_push_i(ctx, 10);
+	qd_push_i(ctx, 20);
+	qd_push_i(ctx, 30);
+	qd_clear(ctx);
+	qd_depth(ctx);
+
+	qd_stack_element_t elem;
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ(elem.type, QD_STACK_TYPE_INT, "depth should return int");
+	ASSERT_EQ((int)elem.value.i, 0, "depth after clear should be 0");
+
+	destroy_test_context(ctx);
+}
+
+TEST(DepthIncludesItselfTest) {
+	qd_context* ctx = create_test_context();
+
+	// Verify that depth counts elements BEFORE the depth is pushed
+	qd_push_i(ctx, 1);
+	qd_push_i(ctx, 2);
+	qd_depth(ctx);  // Should push 2, not 3
+	qd_depth(ctx);  // Should push 3 (1, 2, depth_result)
+
+	qd_stack_element_t elem;
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ((int)elem.value.i, 3, "second depth should be 3");
+
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ((int)elem.value.i, 2, "first depth should be 2");
+
+	destroy_test_context(ctx);
+}
+
 TEST(SwapWithDupTest) {
 	qd_context* ctx = create_test_context();
 

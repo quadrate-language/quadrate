@@ -1290,6 +1290,39 @@ qd_exec_result qd_inc(qd_context* ctx) {
 	return (qd_exec_result){0};
 }
 
+// clear - empty the entire stack
+qd_exec_result qd_clear(qd_context* ctx) {
+	// Pop all elements from the stack until empty
+	qd_stack_element_t elem;
+	while (!qd_stack_is_empty(ctx->st)) {
+		qd_stack_error err = qd_stack_pop(ctx->st, &elem);
+		if (err != QD_STACK_OK) {
+			fprintf(stderr, "Fatal error in clear: Failed to pop element\n");
+			dump_stack(ctx);
+			abort();
+		}
+		// Free string memory if it was a string element
+		if (elem.type == QD_STACK_TYPE_STR) {
+			free(elem.value.s);
+		}
+	}
+
+	return (qd_exec_result){0};
+}
+
+// depth - push the current stack depth onto the stack
+qd_exec_result qd_depth(qd_context* ctx) {
+	// Get current stack size and push it as an integer
+	size_t stack_size = qd_stack_size(ctx->st);
+
+	qd_stack_error err = qd_stack_push_int(ctx->st, (int64_t)stack_size);
+	if (err != QD_STACK_OK) {
+		return (qd_exec_result){-2};
+	}
+
+	return (qd_exec_result){0};
+}
+
 // Dump current stack contents for debugging
 static void dump_stack(qd_context* ctx) {
 	size_t stack_size = qd_stack_size(ctx->st);

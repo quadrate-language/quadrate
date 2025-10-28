@@ -39,6 +39,8 @@ qd_exec_result qd_ceil(qd_context* ctx);
 qd_exec_result qd_floor(qd_context* ctx);
 qd_exec_result qd_dec(qd_context* ctx);
 qd_exec_result qd_inc(qd_context* ctx);
+qd_exec_result qd_clear(qd_context* ctx);
+qd_exec_result qd_depth(qd_context* ctx);
 
 qd_exec_result qd_err_push(qd_context* ctx, qd_stack_error value);
 

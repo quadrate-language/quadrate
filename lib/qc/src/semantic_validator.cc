@@ -14,8 +14,8 @@ namespace Qd {
 
 	// List of built-in instructions (must match ast.cc)
 	static const char* BUILTIN_INSTRUCTIONS[] = {"*", "+", "-", ".", "/", "abs", "acos", "add", "asin", "atan", "cb",
-			"cbrt", "ceil", "cos", "dec", "div", "dup", "floor", "inc", "mul", "nip", "over", "print", "prints",
-			"printsv", "printv", "rot", "sin", "sq", "sqrt", "sub", "swap", "tan"};
+			"cbrt", "ceil", "clear", "cos", "dec", "depth", "div", "dup", "floor", "inc", "mul", "nip", "over", "print",
+			"prints", "printsv", "printv", "rot", "sin", "sq", "sqrt", "sub", "swap", "tan"};
 
 	SemanticValidator::SemanticValidator() : filename_(nullptr), error_count_(0) {
 	}
@@ -400,6 +400,16 @@ namespace Qd {
 			type_stack.pop_back();
 			type_stack.pop_back();	   // Remove second element
 			type_stack.push_back(top); // Push top back
+		}
+		// Stack operations: clear (empties the entire stack)
+		else if (strcmp(name, "clear") == 0) {
+			// Clear all elements from the type stack
+			type_stack.clear();
+		}
+		// Stack operations: depth (pushes the current stack depth as an integer)
+		else if (strcmp(name, "depth") == 0) {
+			// Push an int type onto the stack (depth is always an integer)
+			type_stack.push_back(StackValueType::INT);
 		}
 	}
 
