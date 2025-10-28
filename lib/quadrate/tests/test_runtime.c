@@ -604,6 +604,155 @@ TEST(PrintsvMixedTypesTest) {
 	destroy_test_context(ctx);
 }
 
+// ========== qd_sq tests ==========
+
+TEST(SqPositiveIntegerTest) {
+	qd_context* ctx = create_test_context();
+
+	qd_push_i(ctx, 5);
+	qd_exec_result result = qd_sq(ctx);
+
+	ASSERT_EQ(result.code, 0, "sq should succeed");
+	ASSERT_EQ((int)qd_stack_size(ctx->st), 1, "Stack should have 1 element");
+
+	qd_stack_element_t elem;
+	qd_stack_error err = qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ(err, QD_STACK_OK, "pop should succeed");
+	ASSERT_EQ(elem.type, QD_STACK_TYPE_INT, "result should be int");
+	ASSERT_EQ((int)elem.value.i, 25, "sq(5) should be 25");
+
+	destroy_test_context(ctx);
+}
+
+TEST(SqNegativeIntegerTest) {
+	qd_context* ctx = create_test_context();
+
+	qd_push_i(ctx, -4);
+	qd_exec_result result = qd_sq(ctx);
+
+	ASSERT_EQ(result.code, 0, "sq should succeed");
+	ASSERT_EQ((int)qd_stack_size(ctx->st), 1, "Stack should have 1 element");
+
+	qd_stack_element_t elem;
+	qd_stack_error err = qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ(err, QD_STACK_OK, "pop should succeed");
+	ASSERT_EQ(elem.type, QD_STACK_TYPE_INT, "result should be int");
+	ASSERT_EQ((int)elem.value.i, 16, "sq(-4) should be 16");
+
+	destroy_test_context(ctx);
+}
+
+TEST(SqZeroTest) {
+	qd_context* ctx = create_test_context();
+
+	qd_push_i(ctx, 0);
+	qd_exec_result result = qd_sq(ctx);
+
+	ASSERT_EQ(result.code, 0, "sq should succeed");
+	ASSERT_EQ((int)qd_stack_size(ctx->st), 1, "Stack should have 1 element");
+
+	qd_stack_element_t elem;
+	qd_stack_error err = qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ(err, QD_STACK_OK, "pop should succeed");
+	ASSERT_EQ(elem.type, QD_STACK_TYPE_INT, "result should be int");
+	ASSERT_EQ((int)elem.value.i, 0, "sq(0) should be 0");
+
+	destroy_test_context(ctx);
+}
+
+TEST(SqPositiveFloatTest) {
+	qd_context* ctx = create_test_context();
+
+	qd_push_f(ctx, 3.0);
+	qd_exec_result result = qd_sq(ctx);
+
+	ASSERT_EQ(result.code, 0, "sq should succeed");
+	ASSERT_EQ((int)qd_stack_size(ctx->st), 1, "Stack should have 1 element");
+
+	qd_stack_element_t elem;
+	qd_stack_error err = qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ(err, QD_STACK_OK, "pop should succeed");
+	ASSERT_EQ(elem.type, QD_STACK_TYPE_FLOAT, "result should be float");
+	ASSERT(float_eq(elem.value.f, 9.0), "sq(3.0) should be 9.0");
+
+	destroy_test_context(ctx);
+}
+
+TEST(SqNegativeFloatTest) {
+	qd_context* ctx = create_test_context();
+
+	qd_push_f(ctx, -2.5);
+	qd_exec_result result = qd_sq(ctx);
+
+	ASSERT_EQ(result.code, 0, "sq should succeed");
+	ASSERT_EQ((int)qd_stack_size(ctx->st), 1, "Stack should have 1 element");
+
+	qd_stack_element_t elem;
+	qd_stack_error err = qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ(err, QD_STACK_OK, "pop should succeed");
+	ASSERT_EQ(elem.type, QD_STACK_TYPE_FLOAT, "result should be float");
+	ASSERT(float_eq(elem.value.f, 6.25), "sq(-2.5) should be 6.25");
+
+	destroy_test_context(ctx);
+}
+
+TEST(SqLargeIntegerTest) {
+	qd_context* ctx = create_test_context();
+
+	qd_push_i(ctx, 100);
+	qd_exec_result result = qd_sq(ctx);
+
+	ASSERT_EQ(result.code, 0, "sq should succeed");
+	ASSERT_EQ((int)qd_stack_size(ctx->st), 1, "Stack should have 1 element");
+
+	qd_stack_element_t elem;
+	qd_stack_error err = qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ(err, QD_STACK_OK, "pop should succeed");
+	ASSERT_EQ(elem.type, QD_STACK_TYPE_INT, "result should be int");
+	ASSERT_EQ((int)elem.value.i, 10000, "sq(100) should be 10000");
+
+	destroy_test_context(ctx);
+}
+
+TEST(SqOneTest) {
+	qd_context* ctx = create_test_context();
+
+	qd_push_i(ctx, 1);
+	qd_exec_result result = qd_sq(ctx);
+
+	ASSERT_EQ(result.code, 0, "sq should succeed");
+	ASSERT_EQ((int)qd_stack_size(ctx->st), 1, "Stack should have 1 element");
+
+	qd_stack_element_t elem;
+	qd_stack_error err = qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ(err, QD_STACK_OK, "pop should succeed");
+	ASSERT_EQ(elem.type, QD_STACK_TYPE_INT, "result should be int");
+	ASSERT_EQ((int)elem.value.i, 1, "sq(1) should be 1");
+
+	destroy_test_context(ctx);
+}
+
+TEST(SqPreservesTypeTest) {
+	qd_context* ctx = create_test_context();
+
+	// Test that int->int and float->float
+	qd_push_i(ctx, 7);
+	qd_sq(ctx);
+	qd_stack_element_t elem_int;
+	qd_stack_pop(ctx->st, &elem_int);
+	ASSERT_EQ(elem_int.type, QD_STACK_TYPE_INT, "int squared should remain int");
+	ASSERT_EQ((int)elem_int.value.i, 49, "7*7 should be 49");
+
+	qd_push_f(ctx, 7.0);
+	qd_sq(ctx);
+	qd_stack_element_t elem_float;
+	qd_stack_pop(ctx->st, &elem_float);
+	ASSERT_EQ(elem_float.type, QD_STACK_TYPE_FLOAT, "float squared should remain float");
+	ASSERT(float_eq(elem_float.value.f, 49.0), "7.0*7.0 should be 49.0");
+
+	destroy_test_context(ctx);
+}
+
 // ========== qd_abs tests ==========
 
 TEST(AbsPositiveIntegerTest) {
