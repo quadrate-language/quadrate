@@ -14,8 +14,8 @@ namespace Qd {
 
 	// List of built-in instructions (must match ast.cc)
 	static const char* BUILTIN_INSTRUCTIONS[] = {"*", "+", "-", ".", "/", "abs", "acos", "add", "asin", "atan", "cb",
-			"cbrt", "ceil", "clear", "cos", "dec", "depth", "div", "dup", "dup2", "floor", "inc", "mul", "nip", "over",
-			"print", "prints", "printsv", "printv", "rot", "sin", "sq", "sqrt", "sub", "swap", "tan"};
+			"cbrt", "ceil", "clear", "cos", "dec", "depth", "div", "dup", "dup2", "fac", "floor", "inc", "inv", "mul",
+			"nip", "over", "print", "prints", "printsv", "printv", "rot", "sin", "sq", "sqrt", "sub", "swap", "tan"};
 
 	SemanticValidator::SemanticValidator() : mFilename(nullptr), mErrorCount(0) {
 	}
@@ -485,6 +485,22 @@ namespace Qd {
 			typeStack.pop_back();
 			typeStack.push_back(StackValueType::FLOAT);
 		}
+		// Factorial function: fac (integer only, returns integer)
+		else if (strcmp(name, "fac") == 0) {
+			if (typeStack.empty()) {
+				reportError(node, "Type error in 'fac': Stack underflow (requires 1 integer value)");
+				return;
+			}
+
+			StackValueType top = typeStack.back();
+			if (top != StackValueType::INT) {
+				std::string errorMsg = "Type error in 'fac': Expected integer type, got ";
+				errorMsg += typeToString(top);
+				reportError(node, errorMsg.c_str());
+				return;
+			}
+			// Type remains integer (already on stack)
+		}
 		// Increment/Decrement functions: inc, dec (preserve type)
 		else if (strcmp(name, "inc") == 0 || strcmp(name, "dec") == 0) {
 			if (typeStack.empty()) {
@@ -505,6 +521,24 @@ namespace Qd {
 				return;
 			}
 			// Type remains the same (already on stack)
+		}
+		// Inverse function: inv (numeric input, returns float)
+		else if (strcmp(name, "inv") == 0) {
+			if (typeStack.empty()) {
+				reportError(node, "Type error in 'inv': Stack underflow (requires 1 numeric value)");
+				return;
+			}
+
+			StackValueType top = typeStack.back();
+			if (!isNumericType(top)) {
+				std::string errorMsg = "Type error in 'inv': Expected numeric type, got ";
+				errorMsg += typeToString(top);
+				reportError(node, errorMsg.c_str());
+				return;
+			}
+			// Pop and push float (inv always returns float)
+			typeStack.pop_back();
+			typeStack.push_back(StackValueType::FLOAT);
 		}
 		// Binary arithmetic operations: add, sub, mul, div
 		else if (strcmp(name, "add") == 0 || strcmp(name, "sub") == 0 || strcmp(name, "mul") == 0 ||

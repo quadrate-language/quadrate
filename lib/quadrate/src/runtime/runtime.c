@@ -1397,6 +1397,106 @@ qd_exec_result qd_depth(qd_context* ctx) {
 	return (qd_exec_result){0};
 }
 
+// fac - factorial (n!)
+qd_exec_result qd_fac(qd_context* ctx) {
+	// Pop one integer value, compute factorial, push integer result
+	size_t stack_size = qd_stack_size(ctx->st);
+	if (stack_size < 1) {
+		fprintf(stderr, "Fatal error in fac: Stack underflow (requires 1 value)\n");
+		dump_stack(ctx);
+		abort();
+	}
+
+	qd_stack_element_t elem;
+	qd_stack_error err = qd_stack_pop(ctx->st, &elem);
+	if (err != QD_STACK_OK) {
+		fprintf(stderr, "Fatal error in fac: Failed to pop value\n");
+		dump_stack(ctx);
+		abort();
+	}
+
+	if (elem.type != QD_STACK_TYPE_INT) {
+		fprintf(stderr, "Fatal error in fac: Invalid type (expected int)\n");
+		dump_stack(ctx);
+		abort();
+	}
+
+	int64_t n = elem.value.i;
+
+	// Check for negative numbers
+	if (n < 0) {
+		fprintf(stderr, "Fatal error in fac: Factorial of negative number (%ld)\n", n);
+		dump_stack(ctx);
+		abort();
+	}
+
+	// Compute factorial
+	int64_t result = 1;
+	for (int64_t i = 2; i <= n; i++) {
+		// Check for overflow
+		if (result > INT64_MAX / i) {
+			fprintf(stderr, "Fatal error in fac: Factorial overflow for %ld\n", n);
+			dump_stack(ctx);
+			abort();
+		}
+		result *= i;
+	}
+
+	err = qd_stack_push_int(ctx->st, result);
+	if (err != QD_STACK_OK) {
+		return (qd_exec_result){-2};
+	}
+
+	return (qd_exec_result){0};
+}
+
+// inv - inverse/reciprocal (1/x, returns float)
+qd_exec_result qd_inv(qd_context* ctx) {
+	// Pop one numeric value, compute 1/x, push float result
+	size_t stack_size = qd_stack_size(ctx->st);
+	if (stack_size < 1) {
+		fprintf(stderr, "Fatal error in inv: Stack underflow (requires 1 value)\n");
+		dump_stack(ctx);
+		abort();
+	}
+
+	qd_stack_element_t elem;
+	qd_stack_error err = qd_stack_pop(ctx->st, &elem);
+	if (err != QD_STACK_OK) {
+		fprintf(stderr, "Fatal error in inv: Failed to pop value\n");
+		dump_stack(ctx);
+		abort();
+	}
+
+	double value;
+	if (elem.type == QD_STACK_TYPE_INT) {
+		value = (double)elem.value.i;
+	} else if (elem.type == QD_STACK_TYPE_FLOAT) {
+		value = elem.value.f;
+	} else {
+		fprintf(stderr, "Fatal error in inv: Invalid type (expected int or float)\n");
+		dump_stack(ctx);
+		abort();
+	}
+
+	// Check for division by zero
+	if (value == 0.0) {
+		fprintf(stderr, "Fatal error in inv: Division by zero\n");
+		dump_stack(ctx);
+		abort();
+	}
+
+	// Compute 1/x as float
+	double result = 1.0 / value;
+
+	err = qd_stack_push_float(ctx->st, result);
+	if (err != QD_STACK_OK) {
+		return (qd_exec_result){-2};
+	}
+
+	return (qd_exec_result){0};
+}
+
 // Dump current stack contents for debugging
 static void dump_stack(qd_context* ctx) {
 	size_t stack_size = qd_stack_size(ctx->st);

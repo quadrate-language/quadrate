@@ -2229,3 +2229,200 @@ TEST(SwapWithDupTest) {
 
 	destroy_test_context(ctx);
 }
+
+// ========== factorial tests ==========
+
+TEST(FacBasicTest) {
+	qd_context* ctx = create_test_context();
+
+	// Test 5! = 120
+	qd_push_i(ctx, 5);
+	qd_exec_result result = qd_fac(ctx);
+
+	ASSERT_EQ(result.code, 0, "fac should succeed");
+	ASSERT_EQ((int)qd_stack_size(ctx->st), 1, "Stack should have 1 element");
+
+	qd_stack_element_t elem;
+	qd_stack_error err = qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ(err, QD_STACK_OK, "pop should succeed");
+	ASSERT_EQ(elem.type, QD_STACK_TYPE_INT, "result should be int");
+	ASSERT_EQ((int)elem.value.i, 120, "5! should be 120");
+
+	destroy_test_context(ctx);
+}
+
+TEST(FacZeroTest) {
+	qd_context* ctx = create_test_context();
+
+	// Test 0! = 1
+	qd_push_i(ctx, 0);
+	qd_exec_result result = qd_fac(ctx);
+
+	ASSERT_EQ(result.code, 0, "fac should succeed");
+	ASSERT_EQ((int)qd_stack_size(ctx->st), 1, "Stack should have 1 element");
+
+	qd_stack_element_t elem;
+	qd_stack_error err = qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ(err, QD_STACK_OK, "pop should succeed");
+	ASSERT_EQ(elem.type, QD_STACK_TYPE_INT, "result should be int");
+	ASSERT_EQ((int)elem.value.i, 1, "0! should be 1");
+
+	destroy_test_context(ctx);
+}
+
+TEST(FacOneTest) {
+	qd_context* ctx = create_test_context();
+
+	// Test 1! = 1
+	qd_push_i(ctx, 1);
+	qd_exec_result result = qd_fac(ctx);
+
+	ASSERT_EQ(result.code, 0, "fac should succeed");
+	ASSERT_EQ((int)qd_stack_size(ctx->st), 1, "Stack should have 1 element");
+
+	qd_stack_element_t elem;
+	qd_stack_error err = qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ(err, QD_STACK_OK, "pop should succeed");
+	ASSERT_EQ(elem.type, QD_STACK_TYPE_INT, "result should be int");
+	ASSERT_EQ((int)elem.value.i, 1, "1! should be 1");
+
+	destroy_test_context(ctx);
+}
+
+TEST(FacLargerTest) {
+	qd_context* ctx = create_test_context();
+
+	// Test 10! = 3628800
+	qd_push_i(ctx, 10);
+	qd_exec_result result = qd_fac(ctx);
+
+	ASSERT_EQ(result.code, 0, "fac should succeed");
+	ASSERT_EQ((int)qd_stack_size(ctx->st), 1, "Stack should have 1 element");
+
+	qd_stack_element_t elem;
+	qd_stack_error err = qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ(err, QD_STACK_OK, "pop should succeed");
+	ASSERT_EQ(elem.type, QD_STACK_TYPE_INT, "result should be int");
+	ASSERT_EQ((int)elem.value.i, 3628800, "10! should be 3628800");
+
+	destroy_test_context(ctx);
+}
+
+TEST(FacPreservesStackTest) {
+	qd_context* ctx = create_test_context();
+
+	// Test that fac only affects the top element
+	qd_push_i(ctx, 100);
+	qd_push_i(ctx, 4);
+	qd_fac(ctx);  // 4! = 24
+
+	ASSERT_EQ((int)qd_stack_size(ctx->st), 2, "Stack should have 2 elements");
+
+	qd_stack_element_t elem;
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ((int)elem.value.i, 24, "top should be 24");
+
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ((int)elem.value.i, 100, "bottom should be 100");
+
+	destroy_test_context(ctx);
+}
+
+// ========== inverse tests ==========
+
+TEST(InvBasicIntTest) {
+	qd_context* ctx = create_test_context();
+
+	// Test inv(4) = 0.25
+	qd_push_i(ctx, 4);
+	qd_exec_result result = qd_inv(ctx);
+
+	ASSERT_EQ(result.code, 0, "inv should succeed");
+	ASSERT_EQ((int)qd_stack_size(ctx->st), 1, "Stack should have 1 element");
+
+	qd_stack_element_t elem;
+	qd_stack_error err = qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ(err, QD_STACK_OK, "pop should succeed");
+	ASSERT_EQ(elem.type, QD_STACK_TYPE_FLOAT, "result should be float");
+	ASSERT(float_eq(elem.value.f, 0.25), "inv(4) should be 0.25");
+
+	destroy_test_context(ctx);
+}
+
+TEST(InvBasicFloatTest) {
+	qd_context* ctx = create_test_context();
+
+	// Test inv(2.5) = 0.4
+	qd_push_f(ctx, 2.5);
+	qd_exec_result result = qd_inv(ctx);
+
+	ASSERT_EQ(result.code, 0, "inv should succeed");
+	ASSERT_EQ((int)qd_stack_size(ctx->st), 1, "Stack should have 1 element");
+
+	qd_stack_element_t elem;
+	qd_stack_error err = qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ(err, QD_STACK_OK, "pop should succeed");
+	ASSERT_EQ(elem.type, QD_STACK_TYPE_FLOAT, "result should be float");
+	ASSERT(float_eq(elem.value.f, 0.4), "inv(2.5) should be 0.4");
+
+	destroy_test_context(ctx);
+}
+
+TEST(InvOneTest) {
+	qd_context* ctx = create_test_context();
+
+	// Test inv(1) = 1.0
+	qd_push_i(ctx, 1);
+	qd_exec_result result = qd_inv(ctx);
+
+	ASSERT_EQ(result.code, 0, "inv should succeed");
+	ASSERT_EQ((int)qd_stack_size(ctx->st), 1, "Stack should have 1 element");
+
+	qd_stack_element_t elem;
+	qd_stack_error err = qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ(err, QD_STACK_OK, "pop should succeed");
+	ASSERT_EQ(elem.type, QD_STACK_TYPE_FLOAT, "result should be float");
+	ASSERT(float_eq(elem.value.f, 1.0), "inv(1) should be 1.0");
+
+	destroy_test_context(ctx);
+}
+
+TEST(InvNegativeTest) {
+	qd_context* ctx = create_test_context();
+
+	// Test inv(-2) = -0.5
+	qd_push_i(ctx, -2);
+	qd_exec_result result = qd_inv(ctx);
+
+	ASSERT_EQ(result.code, 0, "inv should succeed");
+	ASSERT_EQ((int)qd_stack_size(ctx->st), 1, "Stack should have 1 element");
+
+	qd_stack_element_t elem;
+	qd_stack_error err = qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ(err, QD_STACK_OK, "pop should succeed");
+	ASSERT_EQ(elem.type, QD_STACK_TYPE_FLOAT, "result should be float");
+	ASSERT(float_eq(elem.value.f, -0.5), "inv(-2) should be -0.5");
+
+	destroy_test_context(ctx);
+}
+
+TEST(InvPreservesStackTest) {
+	qd_context* ctx = create_test_context();
+
+	// Test that inv only affects the top element
+	qd_push_i(ctx, 100);
+	qd_push_i(ctx, 2);
+	qd_inv(ctx);  // inv(2) = 0.5
+
+	ASSERT_EQ((int)qd_stack_size(ctx->st), 2, "Stack should have 2 elements");
+
+	qd_stack_element_t elem;
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ(elem.type, QD_STACK_TYPE_FLOAT, "top should be float");
+	ASSERT(float_eq(elem.value.f, 0.5), "top should be 0.5");
+
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ((int)elem.value.i, 100, "bottom should be 100");
+
+	destroy_test_context(ctx);
+}
