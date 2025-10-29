@@ -9,7 +9,8 @@ namespace Qd {
 
 	class Transpiler {
 	public:
-		std::optional<SourceFile> emit(const char* filename, const char* package, const char* source) const;
+		std::optional<SourceFile> emit(
+				const char* filename, const char* package, const char* source, bool verbose) const;
 	};
 }
 

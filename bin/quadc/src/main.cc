@@ -165,7 +165,7 @@ int main(int argc, char** argv) {
 			std::string buffer(size, ' ');
 			qdFile.read(&buffer[0], static_cast<std::streamsize>(size));
 			std::string filename = std::filesystem::path(file).filename().string();
-			if (auto ts = transpiler.emit(filename.c_str(), "main", buffer.c_str())) {
+			if (auto ts = transpiler.emit(filename.c_str(), "main", buffer.c_str(), verbose)) {
 				transpiledSources.push_back(*ts);
 			} else {
 				return 1;

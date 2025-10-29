@@ -1,6 +1,7 @@
 #include <cgen/transpiler.h>
 #include <cstring>
 #include <filesystem>
+#include <iostream>
 #include <qc/ast.h>
 #include <qc/ast_node.h>
 #include <qc/ast_node_constant.h>
@@ -12,6 +13,7 @@
 #include <qc/ast_node_scoped.h>
 #include <qc/ast_node_use.h>
 #include <qc/ast_printer.h>
+#include <qc/colors.h>
 #include <qc/semantic_validator.h>
 #include <sstream>
 
@@ -213,9 +215,13 @@ namespace Qd {
 		}
 	}
 
-	std::optional<SourceFile> Transpiler::emit(const char* filename, const char* package, const char* source) const {
+	std::optional<SourceFile> Transpiler::emit(const char* filename, const char* package, const char* source, bool verbose) const {
 		if (filename == nullptr || package == nullptr || source == nullptr) {
 			return std::nullopt;
+		}
+
+		if (verbose) {
+			std::cout << Colors::bold() << "quadc: " << Colors::reset() << "transpiling " << filename << std::endl;
 		}
 
 		Qd::Ast ast;
