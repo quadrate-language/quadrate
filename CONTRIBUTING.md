@@ -83,7 +83,6 @@ quadrate/
 │   ├── quadc/    # Compiler frontend
 │   └── quadfmt/  # Code formatter
 ├── lib/          # Library sources
-│   ├── diagnostic/  # Diagnostic system (header-only)
 │   ├── qc/          # Quadrate compiler core
 │   ├── quadrate/    # C API (libquadrate.so)
 │   └── u8/          # UTF-8 utilities
@@ -165,4 +164,4 @@ Include:
 
 ## License
 
-By contributing, you agree that your contributions will be licensed under the same license as the project (see COPYING).
+By contributing, you agree that your contributions will be licensed under the same license as the project (see LICENSE).
