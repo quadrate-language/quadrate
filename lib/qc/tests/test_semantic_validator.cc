@@ -6,7 +6,7 @@
 // Helper function to validate code and return error count
 size_t validateCode(const char* src) {
 	Qd::Ast ast;
-	Qd::IAstNode* root = ast.generate(src);
+	Qd::IAstNode* root = ast.generate(src, false);
 	Qd::SemanticValidator validator;
 	return validator.validate(root, "test.qd");
 }

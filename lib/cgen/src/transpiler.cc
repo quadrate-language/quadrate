@@ -215,7 +215,8 @@ namespace Qd {
 		}
 	}
 
-	std::optional<SourceFile> Transpiler::emit(const char* filename, const char* package, const char* source, bool verbose) const {
+	std::optional<SourceFile> Transpiler::emit(
+			const char* filename, const char* package, const char* source, bool verbose, bool dumpTokens) const {
 		if (filename == nullptr || package == nullptr || source == nullptr) {
 			return std::nullopt;
 		}
@@ -225,7 +226,7 @@ namespace Qd {
 		}
 
 		Qd::Ast ast;
-		Qd::IAstNode* root = ast.generate(source);
+		Qd::IAstNode* root = ast.generate(source, dumpTokens);
 
 		// Check if there were any parse errors
 		if (ast.hasErrors()) {

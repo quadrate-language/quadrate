@@ -6,7 +6,7 @@
 TEST(SimpleFunctionDeclaration) {
 	Qd::Ast ast;
 	const char* src = "fn main() {}";
-	Qd::IAstNode* root = ast.generate(src);
+	Qd::IAstNode* root = ast.generate(src, false);
 
 	ASSERT(root != nullptr, "root should not be null");
 	ASSERT(root->type() == Qd::IAstNode::Type::Program, "root should be a Program");
@@ -19,7 +19,7 @@ TEST(SimpleFunctionDeclaration) {
 TEST(FunctionWithParameters) {
 	Qd::Ast ast;
 	const char* src = "fn add(a: int b: int -- result: int) {}";
-	Qd::IAstNode* root = ast.generate(src);
+	Qd::IAstNode* root = ast.generate(src, false);
 
 	ASSERT(root != nullptr, "root != nullptr");
 	ASSERT(root->childCount() == 1, "should have 1 child");
@@ -31,7 +31,7 @@ TEST(FunctionWithParameters) {
 TEST(ScopedIdentifier) {
 	Qd::Ast ast;
 	const char* src = "fn test() { std::print }";
-	Qd::IAstNode* root = ast.generate(src);
+	Qd::IAstNode* root = ast.generate(src, false);
 
 	ASSERT(root != nullptr, "root != nullptr");
 	ASSERT(root->childCount() == 1, "should have 1 child");
@@ -52,7 +52,7 @@ TEST(ScopedIdentifier) {
 TEST(LineComment) {
 	Qd::Ast ast;
 	const char* src = "fn test() { // comment\nfoo }";
-	Qd::IAstNode* root = ast.generate(src);
+	Qd::IAstNode* root = ast.generate(src, false);
 
 	ASSERT(root != nullptr, "root != nullptr");
 	ASSERT(root->childCount() == 1, "should have 1 child");
@@ -70,7 +70,7 @@ TEST(LineComment) {
 TEST(BlockComment) {
 	Qd::Ast ast;
 	const char* src = "fn test() { /* block comment */ foo }";
-	Qd::IAstNode* root = ast.generate(src);
+	Qd::IAstNode* root = ast.generate(src, false);
 
 	ASSERT(root != nullptr, "root != nullptr");
 	ASSERT(root->childCount() == 1, "should have 1 child");
@@ -85,7 +85,7 @@ TEST(BlockComment) {
 TEST(BreakStatement) {
 	Qd::Ast ast;
 	const char* src = "fn test() { for i { break } }";
-	Qd::IAstNode* root = ast.generate(src);
+	Qd::IAstNode* root = ast.generate(src, false);
 
 	ASSERT(root != nullptr, "root != nullptr");
 	ASSERT(root->childCount() == 1, "should have 1 child");
@@ -107,7 +107,7 @@ TEST(BreakStatement) {
 TEST(ContinueStatement) {
 	Qd::Ast ast;
 	const char* src = "fn test() { for i { continue } }";
-	Qd::IAstNode* root = ast.generate(src);
+	Qd::IAstNode* root = ast.generate(src, false);
 
 	ASSERT(root != nullptr, "root != nullptr");
 	ASSERT(root->childCount() == 1, "should have 1 child");
@@ -125,7 +125,7 @@ TEST(ContinueStatement) {
 TEST(DeferStatement) {
 	Qd::Ast ast;
 	const char* src = "fn test() { defer close }";
-	Qd::IAstNode* root = ast.generate(src);
+	Qd::IAstNode* root = ast.generate(src, false);
 
 	ASSERT(root != nullptr, "root != nullptr");
 	ASSERT(root->childCount() == 1, "should have 1 child");
@@ -146,7 +146,7 @@ TEST(DeferStatement) {
 TEST(DeferBlock) {
 	Qd::Ast ast;
 	const char* src = "fn test() { defer { close } }";
-	Qd::IAstNode* root = ast.generate(src);
+	Qd::IAstNode* root = ast.generate(src, false);
 
 	ASSERT(root != nullptr, "root != nullptr");
 	ASSERT(root->childCount() == 1, "should have 1 child");
@@ -165,7 +165,7 @@ TEST(DeferBlock) {
 TEST(ReturnStatement) {
 	Qd::Ast ast;
 	const char* src = "fn test() { return }";
-	Qd::IAstNode* root = ast.generate(src);
+	Qd::IAstNode* root = ast.generate(src, false);
 
 	ASSERT(root != nullptr, "root != nullptr");
 	ASSERT(root->childCount() == 1, "should have 1 child");
@@ -181,7 +181,7 @@ TEST(ReturnStatement) {
 TEST(ConstDeclaration) {
 	Qd::Ast ast;
 	const char* src = "const PI = 3.14";
-	Qd::IAstNode* root = ast.generate(src);
+	Qd::IAstNode* root = ast.generate(src, false);
 
 	ASSERT(root != nullptr, "root != nullptr");
 	ASSERT(root->childCount() == 1, "should have 1 child");
@@ -196,7 +196,7 @@ TEST(ConstDeclaration) {
 TEST(UseStatement) {
 	Qd::Ast ast;
 	const char* src = "use std";
-	Qd::IAstNode* root = ast.generate(src);
+	Qd::IAstNode* root = ast.generate(src, false);
 
 	ASSERT(root != nullptr, "root != nullptr");
 	ASSERT(root->childCount() == 1, "should have 1 child");
@@ -208,7 +208,7 @@ TEST(UseStatement) {
 TEST(SwitchStatement) {
 	Qd::Ast ast;
 	const char* src = "fn test() { switch { case 1 { foo } default { bar } } }";
-	Qd::IAstNode* root = ast.generate(src);
+	Qd::IAstNode* root = ast.generate(src, false);
 
 	ASSERT(root != nullptr, "root != nullptr");
 	ASSERT(root->childCount() == 1, "should have 1 child");
@@ -227,7 +227,7 @@ TEST(SwitchStatement) {
 TEST(IfStatement) {
 	Qd::Ast ast;
 	const char* src = "fn test() { if { foo } }";
-	Qd::IAstNode* root = ast.generate(src);
+	Qd::IAstNode* root = ast.generate(src, false);
 
 	ASSERT(root != nullptr, "root != nullptr");
 	ASSERT(root->childCount() == 1, "should have 1 child");
@@ -243,7 +243,7 @@ TEST(IfStatement) {
 TEST(IfElseStatement) {
 	Qd::Ast ast;
 	const char* src = "fn test() { if { foo } else { bar } }";
-	Qd::IAstNode* root = ast.generate(src);
+	Qd::IAstNode* root = ast.generate(src, false);
 
 	ASSERT(root != nullptr, "root should not be null");
 	ASSERT(root->childCount() == 1, "should have 1 child");
@@ -270,7 +270,7 @@ TEST(IfElseStatement) {
 TEST(NestedIfElse) {
 	Qd::Ast ast;
 	const char* src = "fn test() { if { a } else { if { b } else { c } } }";
-	Qd::IAstNode* root = ast.generate(src);
+	Qd::IAstNode* root = ast.generate(src, false);
 
 	ASSERT(root != nullptr, "root should not be null");
 	Qd::IAstNode* func = root->child(0);
@@ -291,7 +291,7 @@ TEST(NestedIfElse) {
 TEST(DeeplyNestedIfElse) {
 	Qd::Ast ast;
 	const char* src = "fn test() { if { a } else { if { b } else { if { c } else { d } } } }";
-	Qd::IAstNode* root = ast.generate(src);
+	Qd::IAstNode* root = ast.generate(src, false);
 
 	ASSERT(root != nullptr, "root should not be null");
 	Qd::IAstNode* func = root->child(0);
@@ -312,7 +312,7 @@ TEST(DeeplyNestedIfElse) {
 TEST(ForStatement) {
 	Qd::Ast ast;
 	const char* src = "fn test() { for i { foo } }";
-	Qd::IAstNode* root = ast.generate(src);
+	Qd::IAstNode* root = ast.generate(src, false);
 
 	ASSERT(root != nullptr, "root != nullptr");
 	ASSERT(root->childCount() == 1, "should have 1 child");
@@ -328,7 +328,7 @@ TEST(ForStatement) {
 TEST(Literals) {
 	Qd::Ast ast;
 	const char* src = "fn test() { 42 3.14 \"hello\" }";
-	Qd::IAstNode* root = ast.generate(src);
+	Qd::IAstNode* root = ast.generate(src, false);
 
 	ASSERT(root != nullptr, "root != nullptr");
 	ASSERT(root->childCount() == 1, "should have 1 child");
@@ -351,7 +351,7 @@ TEST(Literals) {
 TEST(ErrorRecoveryMissingBraceAfterFunction) {
 	Qd::Ast ast;
 	const char* src = "fn test()\nfn other() {}";
-	Qd::IAstNode* root = ast.generate(src);
+	Qd::IAstNode* root = ast.generate(src, false);
 
 	ASSERT(root != nullptr, "root should not be null");
 	// Should recover and parse both functions
@@ -363,7 +363,7 @@ TEST(ErrorRecoveryMissingBraceAfterFunction) {
 TEST(ErrorRecoveryMissingBraceAfterIf) {
 	Qd::Ast ast;
 	const char* src = "fn test() { if foo }";
-	Qd::IAstNode* root = ast.generate(src);
+	Qd::IAstNode* root = ast.generate(src, false);
 
 	ASSERT(root != nullptr, "root should not be null");
 	ASSERT(root->childCount() == 1, "should have 1 function");
@@ -379,7 +379,7 @@ TEST(ErrorRecoveryMissingBraceAfterIf) {
 TEST(ErrorRecoveryMissingBraceAfterFor) {
 	Qd::Ast ast;
 	const char* src = "fn test() { for i foo }";
-	Qd::IAstNode* root = ast.generate(src);
+	Qd::IAstNode* root = ast.generate(src, false);
 
 	ASSERT(root != nullptr, "root should not be null");
 	ASSERT(root->childCount() == 1, "should have 1 function");
@@ -395,7 +395,7 @@ TEST(ErrorRecoveryMissingBraceAfterFor) {
 TEST(ErrorRecoveryMultipleErrors) {
 	Qd::Ast ast;
 	const char* src = "fn first() { if bar }\nfn second() { for x }\nfn third() {}";
-	Qd::IAstNode* root = ast.generate(src);
+	Qd::IAstNode* root = ast.generate(src, false);
 
 	ASSERT(root != nullptr, "root should not be null");
 	// Parser should recover from errors and continue parsing

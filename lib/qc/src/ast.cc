@@ -1,4 +1,5 @@
 #include <cstring>
+#include <iostream>
 #include <qc/ast.h>
 #include <qc/ast_node.h>
 #include <qc/ast_node_block.h>
@@ -19,6 +20,7 @@
 #include <qc/ast_node_scoped.h>
 #include <qc/ast_node_switch.h>
 #include <qc/ast_node_use.h>
+#include <qc/colors.h>
 #include <qc/error_reporter.h>
 #include <u8t/scanner.h>
 #include <vector>
@@ -908,9 +910,47 @@ namespace Qd {
 		return switchStmt;
 	}
 
-	IAstNode* Ast::generate(const char* src) {
+	IAstNode* Ast::generate(const char* src, bool dumpTokens) {
 		u8t_scanner scanner;
 		u8t_scanner_init(&scanner, src);
+
+		// If dumpTokens is true, scan and print all tokens, then reset the scanner
+		if (dumpTokens) {
+			std::cout << Colors::bold() << "Tokens:" << Colors::reset() << std::endl;
+			char32_t token;
+			while ((token = u8t_scanner_scan(&scanner)) != U8T_EOF) {
+				size_t n;
+				const char* text = u8t_scanner_token_text(&scanner, &n);
+				size_t start = u8t_scanner_token_start(&scanner);
+
+				std::cout << "  " << Colors::cyan() << start << Colors::reset() << " ";
+
+				switch (token) {
+				case U8T_IDENTIFIER:
+					std::cout << Colors::green() << "IDENTIFIER" << Colors::reset();
+					break;
+				case U8T_INTEGER:
+					std::cout << Colors::cyan() << "INTEGER   " << Colors::reset();
+					break;
+				case U8T_FLOAT:
+					std::cout << Colors::cyan() << "FLOAT     " << Colors::reset();
+					break;
+				case U8T_STRING:
+					std::cout << Colors::magenta() << "STRING    " << Colors::reset();
+					break;
+				default:
+					// Character token
+					std::cout << Colors::red() << "CHAR      " << Colors::reset();
+					break;
+				}
+
+				std::cout << " \"" << text << "\"" << std::endl;
+			}
+			std::cout << std::endl;
+
+			// Reset scanner for actual parsing
+			u8t_scanner_init(&scanner, src);
+		}
 
 		ErrorReporter errorReporter(src);
 

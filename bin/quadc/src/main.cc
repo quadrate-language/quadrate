@@ -144,6 +144,9 @@ int main(int argc, char** argv) {
 	// Check if verbose output is enabled
 	const bool verbose = result["verbose"].as<bool>();
 
+	// Check if token dumping is enabled
+	const bool dumpTokens = result["dump-tokens"].as<bool>();
+
 	if (result.count("files")) {
 		auto files = result["files"].as<std::vector<std::string>>();
 		Qd::Transpiler transpiler;
@@ -165,7 +168,7 @@ int main(int argc, char** argv) {
 			std::string buffer(size, ' ');
 			qdFile.read(&buffer[0], static_cast<std::streamsize>(size));
 			std::string filename = std::filesystem::path(file).filename().string();
-			if (auto ts = transpiler.emit(filename.c_str(), "main", buffer.c_str(), verbose)) {
+			if (auto ts = transpiler.emit(filename.c_str(), "main", buffer.c_str(), verbose, dumpTokens)) {
 				transpiledSources.push_back(*ts);
 			} else {
 				return 1;
