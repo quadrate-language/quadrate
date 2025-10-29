@@ -8,7 +8,7 @@ namespace Qd {
 	class AstNodeCase : public IAstNode {
 	public:
 		AstNodeCase(IAstNode* value, bool isDefault = false)
-			: mValue(value), mIsDefault(isDefault), mParent(nullptr), mBody(nullptr) {
+			: mValue(value), mIsDefault(isDefault), mParent(nullptr), mBody(nullptr), mLine(0), mColumn(0) {
 		}
 
 		~AstNodeCase() {
@@ -54,6 +54,19 @@ namespace Qd {
 			mParent = parent;
 		}
 
+		size_t line() const override {
+			return mLine;
+		}
+
+		size_t column() const override {
+			return mColumn;
+		}
+
+		void setPosition(size_t line, size_t column) override {
+			mLine = line;
+			mColumn = column;
+		}
+
 		bool isDefault() const {
 			return mIsDefault;
 		}
@@ -75,11 +88,13 @@ namespace Qd {
 		bool mIsDefault;
 		IAstNode* mParent;
 		IAstNode* mBody;
+		size_t mLine;
+		size_t mColumn;
 	};
 
 	class AstNodeSwitchStatement : public IAstNode {
 	public:
-		AstNodeSwitchStatement() : mParent(nullptr) {
+		AstNodeSwitchStatement() : mParent(nullptr), mLine(0), mColumn(0) {
 		}
 
 		~AstNodeSwitchStatement() {
@@ -111,6 +126,19 @@ namespace Qd {
 			mParent = parent;
 		}
 
+		size_t line() const override {
+			return mLine;
+		}
+
+		size_t column() const override {
+			return mColumn;
+		}
+
+		void setPosition(size_t line, size_t column) override {
+			mLine = line;
+			mColumn = column;
+		}
+
 		void addCase(AstNodeCase* caseNode) {
 			mCases.push_back(caseNode);
 		}
@@ -122,6 +150,8 @@ namespace Qd {
 	private:
 		IAstNode* mParent;
 		std::vector<AstNodeCase*> mCases;
+		size_t mLine;
+		size_t mColumn;
 	};
 }
 

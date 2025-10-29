@@ -14,7 +14,7 @@ namespace Qd {
 		};
 
 		AstNodeLiteral(const std::string& value, LiteralType literalType)
-			: mValue(value), mLiteralType(literalType), mParent(nullptr) {
+			: mValue(value), mLiteralType(literalType), mParent(nullptr), mLine(0), mColumn(0) {
 		}
 
 		IAstNode::Type type() const override {
@@ -37,6 +37,19 @@ namespace Qd {
 			mParent = parent;
 		}
 
+		size_t line() const override {
+			return mLine;
+		}
+
+		size_t column() const override {
+			return mColumn;
+		}
+
+		void setPosition(size_t line, size_t column) override {
+			mLine = line;
+			mColumn = column;
+		}
+
 		const std::string& value() const {
 			return mValue;
 		}
@@ -49,6 +62,8 @@ namespace Qd {
 		std::string mValue;
 		LiteralType mLiteralType;
 		IAstNode* mParent;
+		size_t mLine;
+		size_t mColumn;
 	};
 }
 

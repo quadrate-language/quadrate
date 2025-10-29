@@ -8,7 +8,8 @@
 namespace Qd {
 	class AstNodeFunctionDeclaration : public IAstNode {
 	public:
-		AstNodeFunctionDeclaration(const std::string& name) : mName(name), mParent(nullptr), mBody(nullptr) {
+		AstNodeFunctionDeclaration(const std::string& name)
+			: mName(name), mParent(nullptr), mBody(nullptr), mLine(0), mColumn(0) {
 		}
 
 		~AstNodeFunctionDeclaration() {
@@ -63,6 +64,19 @@ namespace Qd {
 			mParent = parent;
 		}
 
+		size_t line() const override {
+			return mLine;
+		}
+
+		size_t column() const override {
+			return mColumn;
+		}
+
+		void setPosition(size_t line, size_t column) override {
+			mLine = line;
+			mColumn = column;
+		}
+
 		const std::string& name() const {
 			return mName;
 		}
@@ -97,6 +111,8 @@ namespace Qd {
 		IAstNode* mBody;
 		std::vector<IAstNode*> mInputParameters;
 		std::vector<IAstNode*> mOutputParameters;
+		size_t mLine;
+		size_t mColumn;
 	};
 }
 

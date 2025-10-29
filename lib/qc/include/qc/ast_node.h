@@ -39,6 +39,10 @@ namespace Qd {
 		virtual IAstNode* child(size_t index) const = 0;
 		virtual IAstNode* parent() const = 0;
 		virtual void setParent(IAstNode* parent) = 0;
+
+		virtual size_t line() const = 0;
+		virtual size_t column() const = 0;
+		virtual void setPosition(size_t line, size_t column) = 0;
 	};
 }
 

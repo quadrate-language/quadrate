@@ -10,7 +10,7 @@ namespace Qd {
 	public:
 		~Ast();
 
-		IAstNode* generate(const char* src, bool dumpTokens);
+		IAstNode* generate(const char* src, bool dumpTokens, const char* filename);
 
 		// Get the number of parse errors encountered
 		size_t errorCount() const {

@@ -7,7 +7,7 @@
 namespace Qd {
 	class AstNodeIfStatement : public IAstNode {
 	public:
-		AstNodeIfStatement() : mParent(nullptr), mThenBody(nullptr), mElseBody(nullptr) {
+		AstNodeIfStatement() : mParent(nullptr), mThenBody(nullptr), mElseBody(nullptr), mLine(0), mColumn(0) {
 		}
 
 		~AstNodeIfStatement() {
@@ -53,6 +53,19 @@ namespace Qd {
 			mParent = parent;
 		}
 
+		size_t line() const override {
+			return mLine;
+		}
+
+		size_t column() const override {
+			return mColumn;
+		}
+
+		void setPosition(size_t line, size_t column) override {
+			mLine = line;
+			mColumn = column;
+		}
+
 		void setThenBody(IAstNode* thenBody) {
 			mThenBody = thenBody;
 		}
@@ -73,6 +86,8 @@ namespace Qd {
 		IAstNode* mParent;
 		IAstNode* mThenBody;
 		IAstNode* mElseBody;
+		size_t mLine;
+		size_t mColumn;
 	};
 }
 

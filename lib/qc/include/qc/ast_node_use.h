@@ -7,7 +7,7 @@
 namespace Qd {
 	class AstNodeUse : public IAstNode {
 	public:
-		AstNodeUse(const std::string& module) : mModule(module), mParent(nullptr) {
+		AstNodeUse(const std::string& module) : mModule(module), mParent(nullptr), mLine(0), mColumn(0) {
 		}
 
 		IAstNode::Type type() const override {
@@ -30,6 +30,19 @@ namespace Qd {
 			mParent = parent;
 		}
 
+		size_t line() const override {
+			return mLine;
+		}
+
+		size_t column() const override {
+			return mColumn;
+		}
+
+		void setPosition(size_t line, size_t column) override {
+			mLine = line;
+			mColumn = column;
+		}
+
 		const std::string& module() const {
 			return mModule;
 		}
@@ -37,6 +50,8 @@ namespace Qd {
 	private:
 		std::string mModule;
 		IAstNode* mParent;
+		size_t mLine;
+		size_t mColumn;
 	};
 }
 

@@ -7,7 +7,7 @@
 namespace Qd {
 	class AstNodeDefer : public IAstNode {
 	public:
-		AstNodeDefer() : mParent(nullptr) {
+		AstNodeDefer() : mParent(nullptr), mLine(0), mColumn(0) {
 		}
 
 		~AstNodeDefer() override {
@@ -43,9 +43,24 @@ namespace Qd {
 			mParent = parent;
 		}
 
+		size_t line() const override {
+			return mLine;
+		}
+
+		size_t column() const override {
+			return mColumn;
+		}
+
+		void setPosition(size_t line, size_t column) override {
+			mLine = line;
+			mColumn = column;
+		}
+
 	private:
 		IAstNode* mParent;
 		std::vector<IAstNode*> mChildren;
+		size_t mLine;
+		size_t mColumn;
 	};
 }
 

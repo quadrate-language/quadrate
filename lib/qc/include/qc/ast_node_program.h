@@ -35,12 +35,27 @@ namespace Qd {
 		virtual void setParent(IAstNode*) override {
 		}
 
+		size_t line() const override {
+			return mLine;
+		}
+
+		size_t column() const override {
+			return mColumn;
+		}
+
+		void setPosition(size_t line, size_t column) override {
+			mLine = line;
+			mColumn = column;
+		}
+
 		void addChild(IAstNode* node) {
 			mChildren.push_back(node);
 		}
 
 	private:
 		std::vector<IAstNode*> mChildren;
+		size_t mLine = 0;
+		size_t mColumn = 0;
 	};
 }
 

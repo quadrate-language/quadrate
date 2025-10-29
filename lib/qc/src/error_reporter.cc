@@ -1,3 +1,5 @@
+#include <iostream>
+#include <qc/colors.h>
 #include <qc/error_reporter.h>
 #include <string.h>
 
@@ -24,7 +26,15 @@ namespace Qd {
 	}
 
 	void ErrorReporter::reportError(size_t line, size_t column, const char* message) {
-		fprintf(stderr, "Error at line %zu, column %zu: %s\n", line, column, message);
+		// Format: filename:line:column: error: message
+		std::cerr << Colors::bold() << "quadc: " << Colors::reset();
+		if (mFilename) {
+			std::cerr << Colors::bold() << mFilename << ":" << line << ":" << column << ":" << Colors::reset() << " ";
+		} else {
+			std::cerr << Colors::bold() << line << ":" << column << ":" << Colors::reset() << " ";
+		}
+		std::cerr << Colors::bold() << Colors::red() << "error:" << Colors::reset() << " ";
+		std::cerr << Colors::bold() << message << Colors::reset() << std::endl;
 		printSourceContext(line, column);
 		mErrorCount++;
 	}

@@ -53,14 +53,14 @@ namespace Qd {
 		// Pass 3b: Type check the AST
 		void typeCheckFunction(IAstNode* node);
 		void typeCheckBlock(IAstNode* node, std::vector<StackValueType>& type_stack);
-		void typeCheckInstruction(const char* name, std::vector<StackValueType>& type_stack);
+		void typeCheckInstruction(IAstNode* node, const char* name, std::vector<StackValueType>& type_stack);
 
 		// Helper: Analyze a block in isolation (for determining function signatures)
 		void analyzeBlockInIsolation(IAstNode* node, std::vector<StackValueType>& type_stack);
 
 		// Helper: Type check an instruction (with optional error suppression for signature analysis)
 		void typeCheckInstructionInternal(
-				const char* name, std::vector<StackValueType>& type_stack, bool report_errors);
+				IAstNode* node, const char* name, std::vector<StackValueType>& type_stack, bool report_errors);
 
 		// Check if a name is a built-in instruction
 		bool isBuiltInInstruction(const char* name) const;
@@ -73,9 +73,11 @@ namespace Qd {
 
 		// Report an error (gcc/clang style)
 		void reportError(const char* message);
+		void reportError(IAstNode* node, const char* message);
 
 		// Report an error conditionally (for signature analysis)
 		void reportErrorConditional(const char* message, bool should_report);
+		void reportErrorConditional(IAstNode* node, const char* message, bool should_report);
 
 		// Current filename being validated
 		const char* mFilename;

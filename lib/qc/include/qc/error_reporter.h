@@ -7,7 +7,8 @@
 namespace Qd {
 	class ErrorReporter {
 	public:
-		ErrorReporter(const char* src) : mSource(src), mErrorCount(0) {
+		ErrorReporter(const char* src, const char* filename = nullptr)
+			: mSource(src), mFilename(filename), mErrorCount(0) {
 		}
 
 		void reportError(u8t_scanner* scanner, const char* message);
@@ -23,6 +24,7 @@ namespace Qd {
 
 	private:
 		const char* mSource;
+		const char* mFilename;
 		size_t mErrorCount;
 
 		void printSourceContext(size_t line, size_t column);

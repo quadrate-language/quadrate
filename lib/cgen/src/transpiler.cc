@@ -226,7 +226,7 @@ namespace Qd {
 		}
 
 		Qd::Ast ast;
-		Qd::IAstNode* root = ast.generate(source, dumpTokens);
+		Qd::IAstNode* root = ast.generate(source, dumpTokens, filename);
 
 		// Check if there were any parse errors
 		if (ast.hasErrors()) {

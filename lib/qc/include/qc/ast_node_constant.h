@@ -7,7 +7,8 @@
 namespace Qd {
 	class AstNodeConstant : public IAstNode {
 	public:
-		AstNodeConstant(const std::string& name, const char* value) : mName(name), mValue(value), mParent(nullptr) {
+		AstNodeConstant(const std::string& name, const char* value)
+			: mName(name), mValue(value), mParent(nullptr), mLine(0), mColumn(0) {
 		}
 
 		IAstNode::Type type() const override {
@@ -30,6 +31,19 @@ namespace Qd {
 			mParent = parent;
 		}
 
+		size_t line() const override {
+			return mLine;
+		}
+
+		size_t column() const override {
+			return mColumn;
+		}
+
+		void setPosition(size_t line, size_t column) override {
+			mLine = line;
+			mColumn = column;
+		}
+
 		const std::string& name() const {
 			return mName;
 		}
@@ -42,6 +56,8 @@ namespace Qd {
 		std::string mName;
 		std::string mValue;
 		IAstNode* mParent;
+		size_t mLine;
+		size_t mColumn;
 	};
 }
 

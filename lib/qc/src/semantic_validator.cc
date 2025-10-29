@@ -34,6 +34,10 @@ namespace Qd {
 		reportErrorConditional(message, true);
 	}
 
+	void SemanticValidator::reportError(IAstNode* node, const char* message) {
+		reportErrorConditional(node, message, true);
+	}
+
 	void SemanticValidator::reportErrorConditional(const char* message, bool should_report) {
 		if (!should_report) {
 			return;
@@ -41,6 +45,23 @@ namespace Qd {
 		// GCC/Clang style: quadc: filename: error: message
 		std::cerr << Colors::bold() << "quadc: " << Colors::reset();
 		if (mFilename) {
+			std::cerr << Colors::bold() << mFilename << ":" << Colors::reset() << " ";
+		}
+		std::cerr << Colors::bold() << Colors::red() << "error:" << Colors::reset() << " ";
+		std::cerr << Colors::bold() << message << Colors::reset() << std::endl;
+		mErrorCount++;
+	}
+
+	void SemanticValidator::reportErrorConditional(IAstNode* node, const char* message, bool should_report) {
+		if (!should_report) {
+			return;
+		}
+		// GCC/Clang style: quadc: filename:line:column: error: message
+		std::cerr << Colors::bold() << "quadc: " << Colors::reset();
+		if (mFilename && node) {
+			std::cerr << Colors::bold() << mFilename << ":" << node->line() << ":" << node->column() << ":"
+					  << Colors::reset() << " ";
+		} else if (mFilename) {
 			std::cerr << Colors::bold() << mFilename << ":" << Colors::reset() << " ";
 		}
 		std::cerr << Colors::bold() << Colors::red() << "error:" << Colors::reset() << " ";
@@ -149,7 +170,7 @@ namespace Qd {
 				std::string error_msg = "Undefined function '";
 				error_msg += name;
 				error_msg += "'";
-				reportError(error_msg.c_str());
+				reportError(ident, error_msg.c_str());
 			}
 		}
 
@@ -219,7 +240,7 @@ namespace Qd {
 			case IAstNode::Type::Instruction: {
 				AstNodeInstruction* instr = static_cast<AstNodeInstruction*>(child);
 				// During signature analysis, don't report errors - just simulate the stack
-				typeCheckInstructionInternal(instr->name().c_str(), type_stack, false);
+				typeCheckInstructionInternal(child, instr->name().c_str(), type_stack, false);
 				break;
 			}
 
@@ -324,7 +345,7 @@ namespace Qd {
 
 			case IAstNode::Type::Instruction: {
 				AstNodeInstruction* instr = static_cast<AstNodeInstruction*>(child);
-				typeCheckInstruction(instr->name().c_str(), type_stack);
+				typeCheckInstruction(child, instr->name().c_str(), type_stack);
 				break;
 			}
 
@@ -375,12 +396,13 @@ namespace Qd {
 		}
 	}
 
-	void SemanticValidator::typeCheckInstruction(const char* name, std::vector<StackValueType>& type_stack) {
-		typeCheckInstructionInternal(name, type_stack, true);
+	void SemanticValidator::typeCheckInstruction(
+			IAstNode* node, const char* name, std::vector<StackValueType>& type_stack) {
+		typeCheckInstructionInternal(node, name, type_stack, true);
 	}
 
 	void SemanticValidator::typeCheckInstructionInternal(
-			const char* name, std::vector<StackValueType>& type_stack, bool report_errors) {
+			IAstNode* node, const char* name, std::vector<StackValueType>& type_stack, bool report_errors) {
 		// Handle instruction aliases
 		if (strcmp(name, ".") == 0) {
 			name = "print";
@@ -400,7 +422,7 @@ namespace Qd {
 				std::string error_msg = "Type error in '";
 				error_msg += name;
 				error_msg += "': Stack underflow (requires 1 numeric value)";
-				reportErrorConditional(error_msg.c_str(), report_errors);
+				reportErrorConditional(node, error_msg.c_str(), report_errors);
 				return;
 			}
 
@@ -410,7 +432,7 @@ namespace Qd {
 				error_msg += name;
 				error_msg += "': Expected numeric type, got ";
 				error_msg += typeToString(top);
-				reportErrorConditional(error_msg.c_str(), report_errors);
+				reportErrorConditional(node, error_msg.c_str(), report_errors);
 				return;
 			}
 			// Type remains the same (already on stack)
@@ -422,7 +444,7 @@ namespace Qd {
 				std::string error_msg = "Type error in '";
 				error_msg += name;
 				error_msg += "': Stack underflow (requires 1 numeric value)";
-				reportError(error_msg.c_str());
+				reportError(node, error_msg.c_str());
 				return;
 			}
 
@@ -432,7 +454,7 @@ namespace Qd {
 				error_msg += name;
 				error_msg += "': Expected numeric type, got ";
 				error_msg += typeToString(top);
-				reportError(error_msg.c_str());
+				reportError(node, error_msg.c_str());
 				return;
 			}
 			// Pop and push float (trig functions always return float)
@@ -446,7 +468,7 @@ namespace Qd {
 				std::string error_msg = "Type error in '";
 				error_msg += name;
 				error_msg += "': Stack underflow (requires 1 numeric value)";
-				reportError(error_msg.c_str());
+				reportError(node, error_msg.c_str());
 				return;
 			}
 
@@ -456,7 +478,7 @@ namespace Qd {
 				error_msg += name;
 				error_msg += "': Expected numeric type, got ";
 				error_msg += typeToString(top);
-				reportError(error_msg.c_str());
+				reportError(node, error_msg.c_str());
 				return;
 			}
 			// Pop and push float (math functions always return float)
@@ -469,7 +491,7 @@ namespace Qd {
 				std::string error_msg = "Type error in '";
 				error_msg += name;
 				error_msg += "': Stack underflow (requires 1 numeric value)";
-				reportError(error_msg.c_str());
+				reportError(node, error_msg.c_str());
 				return;
 			}
 
@@ -479,7 +501,7 @@ namespace Qd {
 				error_msg += name;
 				error_msg += "': Expected numeric type, got ";
 				error_msg += typeToString(top);
-				reportError(error_msg.c_str());
+				reportError(node, error_msg.c_str());
 				return;
 			}
 			// Type remains the same (already on stack)
@@ -491,7 +513,7 @@ namespace Qd {
 				std::string error_msg = "Type error in '";
 				error_msg += name;
 				error_msg += "': Stack underflow (requires 2 numeric values)";
-				reportErrorConditional(error_msg.c_str(), report_errors);
+				reportErrorConditional(node, error_msg.c_str(), report_errors);
 				return;
 			}
 
@@ -507,7 +529,7 @@ namespace Qd {
 				error_msg += typeToString(a);
 				error_msg += " and ";
 				error_msg += typeToString(b);
-				reportErrorConditional(error_msg.c_str(), report_errors);
+				reportErrorConditional(node, error_msg.c_str(), report_errors);
 				return;
 			}
 
@@ -522,7 +544,7 @@ namespace Qd {
 				std::string error_msg = "Type error in '";
 				error_msg += name;
 				error_msg += "': Stack underflow (requires 1 value)";
-				reportErrorConditional(error_msg.c_str(), report_errors);
+				reportErrorConditional(node, error_msg.c_str(), report_errors);
 				return;
 			}
 			type_stack.pop_back(); // Pop the value
@@ -534,7 +556,7 @@ namespace Qd {
 		// Stack operations: dup
 		else if (strcmp(name, "dup") == 0) {
 			if (type_stack.empty()) {
-				reportErrorConditional("Type error in 'dup': Stack underflow (requires 1 value)", report_errors);
+				reportErrorConditional(node, "Type error in 'dup': Stack underflow (requires 1 value)", report_errors);
 				return;
 			}
 			StackValueType top = type_stack.back();
@@ -543,7 +565,7 @@ namespace Qd {
 		// Stack operations: dup2 ( a b -- a b a b )
 		else if (strcmp(name, "dup2") == 0) {
 			if (type_stack.size() < 2) {
-				reportError("Type error in 'dup2': Stack underflow (requires 2 values)");
+				reportError(node, "Type error in 'dup2': Stack underflow (requires 2 values)");
 				return;
 			}
 			// Get the second and top elements
@@ -556,7 +578,8 @@ namespace Qd {
 		// Stack operations: swap
 		else if (strcmp(name, "swap") == 0) {
 			if (type_stack.size() < 2) {
-				reportErrorConditional("Type error in 'swap': Stack underflow (requires 2 values)", report_errors);
+				reportErrorConditional(
+						node, "Type error in 'swap': Stack underflow (requires 2 values)", report_errors);
 				return;
 			}
 			StackValueType a = type_stack.back();
@@ -569,7 +592,7 @@ namespace Qd {
 		// Stack operations: over ( a b -- a b a )
 		else if (strcmp(name, "over") == 0) {
 			if (type_stack.size() < 2) {
-				reportError("Type error in 'over': Stack underflow (requires 2 values)");
+				reportError(node, "Type error in 'over': Stack underflow (requires 2 values)");
 				return;
 			}
 			// Get the second element
@@ -580,7 +603,7 @@ namespace Qd {
 		// Stack operations: nip ( a b -- b )
 		else if (strcmp(name, "nip") == 0) {
 			if (type_stack.size() < 2) {
-				reportError("Type error in 'nip': Stack underflow (requires 2 values)");
+				reportError(node, "Type error in 'nip': Stack underflow (requires 2 values)");
 				return;
 			}
 			StackValueType top = type_stack.back();
