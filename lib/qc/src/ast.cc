@@ -916,14 +916,13 @@ namespace Qd {
 
 		// If dumpTokens is true, scan and print all tokens, then reset the scanner
 		if (dumpTokens) {
-			std::cout << Colors::bold() << "Tokens:" << Colors::reset() << std::endl;
 			char32_t token;
 			while ((token = u8t_scanner_scan(&scanner)) != U8T_EOF) {
 				size_t n;
 				const char* text = u8t_scanner_token_text(&scanner, &n);
 				size_t start = u8t_scanner_token_start(&scanner);
 
-				std::cout << "  " << Colors::cyan() << start << Colors::reset() << " ";
+				std::cout << Colors::cyan() << start << Colors::reset() << " ";
 
 				switch (token) {
 				case U8T_IDENTIFIER:
