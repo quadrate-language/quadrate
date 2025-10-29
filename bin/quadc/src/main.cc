@@ -52,10 +52,12 @@ std::string createTempDir() {
 	std::uniform_int_distribution<> dis(0, 15);
 
 	std::stringstream ss;
-	ss << ".tmp_";
+	ss << ".";
 	for (int i = 0; i < 8; i++) {
 		ss << std::hex << dis(gen);
 	}
+
+	ss << ".qdproj";
 
 	std::string tmpDir = ss.str();
 	std::filesystem::create_directory(tmpDir);
