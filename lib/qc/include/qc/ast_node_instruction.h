@@ -15,7 +15,7 @@ namespace Qd {
 		}
 
 		IAstNode::Type type() const override {
-			return Type::Instruction;
+			return Type::INSTRUCTION;
 		}
 
 		size_t childCount() const override {

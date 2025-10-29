@@ -52,15 +52,15 @@ namespace Qd {
 
 		// Pass 3b: Type check the AST
 		void typeCheckFunction(IAstNode* node);
-		void typeCheckBlock(IAstNode* node, std::vector<StackValueType>& type_stack);
-		void typeCheckInstruction(IAstNode* node, const char* name, std::vector<StackValueType>& type_stack);
+		void typeCheckBlock(IAstNode* node, std::vector<StackValueType>& typeStack);
+		void typeCheckInstruction(IAstNode* node, const char* name, std::vector<StackValueType>& typeStack);
 
 		// Helper: Analyze a block in isolation (for determining function signatures)
-		void analyzeBlockInIsolation(IAstNode* node, std::vector<StackValueType>& type_stack);
+		void analyzeBlockInIsolation(IAstNode* node, std::vector<StackValueType>& typeStack);
 
 		// Helper: Type check an instruction (with optional error suppression for signature analysis)
 		void typeCheckInstructionInternal(
-				IAstNode* node, const char* name, std::vector<StackValueType>& type_stack, bool report_errors);
+				IAstNode* node, const char* name, std::vector<StackValueType>& typeStack, bool reportErrors);
 
 		// Check if a name is a built-in instruction
 		bool isBuiltInInstruction(const char* name) const;
@@ -76,8 +76,8 @@ namespace Qd {
 		void reportError(IAstNode* node, const char* message);
 
 		// Report an error conditionally (for signature analysis)
-		void reportErrorConditional(const char* message, bool should_report);
-		void reportErrorConditional(IAstNode* node, const char* message, bool should_report);
+		void reportErrorConditional(const char* message, bool shouldReport);
+		void reportErrorConditional(IAstNode* node, const char* message, bool shouldReport);
 
 		// Current filename being validated
 		const char* mFilename;

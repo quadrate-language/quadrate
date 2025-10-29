@@ -38,8 +38,8 @@ namespace Qd {
 		reportErrorConditional(node, message, true);
 	}
 
-	void SemanticValidator::reportErrorConditional(const char* message, bool should_report) {
-		if (!should_report) {
+	void SemanticValidator::reportErrorConditional(const char* message, bool shouldReport) {
+		if (!shouldReport) {
 			return;
 		}
 		// GCC/Clang style: quadc: filename: error: message
@@ -52,8 +52,8 @@ namespace Qd {
 		mErrorCount++;
 	}
 
-	void SemanticValidator::reportErrorConditional(IAstNode* node, const char* message, bool should_report) {
-		if (!should_report) {
+	void SemanticValidator::reportErrorConditional(IAstNode* node, const char* message, bool shouldReport) {
+		if (!shouldReport) {
 			return;
 		}
 		// GCC/Clang style: quadc: filename:line:column: error: message
@@ -83,34 +83,34 @@ namespace Qd {
 
 		// Pass 3a: Analyze function signatures (stack effects)
 		// Use iterative analysis until signatures converge (fixed point)
-		bool signatures_changed = true;
+		bool signaturesChanged = true;
 		int iteration = 0;
-		const int max_iterations = 100; // Prevent infinite loops
+		const int maxIterations = 100; // Prevent infinite loops
 
-		while (signatures_changed && iteration < max_iterations) {
-			signatures_changed = false;
+		while (signaturesChanged && iteration < maxIterations) {
+			signaturesChanged = false;
 
 			// Store old signatures to detect changes
-			auto old_signatures = mFunctionSignatures;
+			auto oldSignatures = mFunctionSignatures;
 
 			// Re-analyze all functions with current signatures
 			analyzeFunctionSignatures(program);
 
 			// Check if any signatures changed
 			for (const auto& pair : mFunctionSignatures) {
-				auto old_it = old_signatures.find(pair.first);
-				if (old_it == old_signatures.end() || old_it->second.produces.size() != pair.second.produces.size()) {
-					signatures_changed = true;
+				auto oldIt = oldSignatures.find(pair.first);
+				if (oldIt == oldSignatures.end() || oldIt->second.produces.size() != pair.second.produces.size()) {
+					signaturesChanged = true;
 					break;
 				}
 				// Check if types differ
 				for (size_t i = 0; i < pair.second.produces.size(); i++) {
-					if (old_it->second.produces[i] != pair.second.produces[i]) {
-						signatures_changed = true;
+					if (oldIt->second.produces[i] != pair.second.produces[i]) {
+						signaturesChanged = true;
 						break;
 					}
 				}
-				if (signatures_changed) {
+				if (signaturesChanged) {
 					break;
 				}
 			}
@@ -119,9 +119,9 @@ namespace Qd {
 		}
 
 		// Warn if we didn't converge
-		if (iteration >= max_iterations) {
+		if (iteration >= maxIterations) {
 			std::cerr << Colors::bold() << Colors::magenta() << "Warning: " << Colors::reset()
-					  << "Function signature analysis did not converge after " << max_iterations
+					  << "Function signature analysis did not converge after " << maxIterations
 					  << " iterations. Type checking may be incomplete." << std::endl;
 		}
 
@@ -137,7 +137,7 @@ namespace Qd {
 		}
 
 		// If this is a function declaration, add it to the symbol table
-		if (node->type() == IAstNode::Type::FunctionDeclaration) {
+		if (node->type() == IAstNode::Type::FUNCTION_DECLARATION) {
 			AstNodeFunctionDeclaration* func = static_cast<AstNodeFunctionDeclaration*>(node);
 			mDefinedFunctions.insert(func->name());
 		}
@@ -154,7 +154,7 @@ namespace Qd {
 		}
 
 		// Check if this is an identifier (function call)
-		if (node->type() == IAstNode::Type::Identifier) {
+		if (node->type() == IAstNode::Type::IDENTIFIER) {
 			AstNodeIdentifier* ident = static_cast<AstNodeIdentifier*>(node);
 			const char* name = ident->name().c_str();
 
@@ -167,10 +167,10 @@ namespace Qd {
 			// Check if it's a defined function
 			if (mDefinedFunctions.find(name) == mDefinedFunctions.end()) {
 				// Not found - report error
-				std::string error_msg = "Undefined function '";
-				error_msg += name;
-				error_msg += "'";
-				reportError(ident, error_msg.c_str());
+				std::string errorMsg = "Undefined function '";
+				errorMsg += name;
+				errorMsg += "'";
+				reportError(ident, errorMsg.c_str());
 			}
 		}
 
@@ -186,19 +186,19 @@ namespace Qd {
 		}
 
 		// Analyze each function definition to determine its stack effect
-		if (node->type() == IAstNode::Type::FunctionDeclaration) {
+		if (node->type() == IAstNode::Type::FUNCTION_DECLARATION) {
 			AstNodeFunctionDeclaration* func = static_cast<AstNodeFunctionDeclaration*>(node);
-			std::vector<StackValueType> type_stack;
+			std::vector<StackValueType> typeStack;
 
 			// Analyze the function body in isolation (without resolving function calls)
 			if (func->body()) {
-				analyzeBlockInIsolation(func->body(), type_stack);
+				analyzeBlockInIsolation(func->body(), typeStack);
 			}
 
 			// Store the signature - for now, assume functions consume nothing
 			// and produce whatever is left on the stack
 			FunctionSignature sig;
-			sig.produces = type_stack;
+			sig.produces = typeStack;
 			mFunctionSignatures[func->name()] = sig;
 		}
 
@@ -208,7 +208,7 @@ namespace Qd {
 		}
 	}
 
-	void SemanticValidator::analyzeBlockInIsolation(IAstNode* node, std::vector<StackValueType>& type_stack) {
+	void SemanticValidator::analyzeBlockInIsolation(IAstNode* node, std::vector<StackValueType>& typeStack) {
 		if (!node) {
 			return;
 		}
@@ -221,46 +221,46 @@ namespace Qd {
 			}
 
 			switch (child->type()) {
-			case IAstNode::Type::Literal: {
+			case IAstNode::Type::LITERAL: {
 				AstNodeLiteral* lit = static_cast<AstNodeLiteral*>(child);
 				switch (lit->literalType()) {
-				case AstNodeLiteral::LiteralType::Integer:
-					type_stack.push_back(StackValueType::INT);
+				case AstNodeLiteral::LiteralType::INTEGER:
+					typeStack.push_back(StackValueType::INT);
 					break;
-				case AstNodeLiteral::LiteralType::Float:
-					type_stack.push_back(StackValueType::FLOAT);
+				case AstNodeLiteral::LiteralType::FLOAT:
+					typeStack.push_back(StackValueType::FLOAT);
 					break;
-				case AstNodeLiteral::LiteralType::String:
-					type_stack.push_back(StackValueType::STRING);
+				case AstNodeLiteral::LiteralType::STRING:
+					typeStack.push_back(StackValueType::STRING);
 					break;
 				}
 				break;
 			}
 
-			case IAstNode::Type::Instruction: {
+			case IAstNode::Type::INSTRUCTION: {
 				AstNodeInstruction* instr = static_cast<AstNodeInstruction*>(child);
 				// During signature analysis, don't report errors - just simulate the stack
-				typeCheckInstructionInternal(child, instr->name().c_str(), type_stack, false);
+				typeCheckInstructionInternal(child, instr->name().c_str(), typeStack, false);
 				break;
 			}
 
-			case IAstNode::Type::Block: {
+			case IAstNode::Type::BLOCK: {
 				// Recursively analyze nested blocks
-				analyzeBlockInIsolation(child, type_stack);
+				analyzeBlockInIsolation(child, typeStack);
 				break;
 			}
 
-			case IAstNode::Type::Identifier: {
+			case IAstNode::Type::IDENTIFIER: {
 				// Apply function signature if known (for iterative analysis)
 				AstNodeIdentifier* ident = static_cast<AstNodeIdentifier*>(child);
 				const std::string& name = ident->name();
 
-				auto sig_it = mFunctionSignatures.find(name);
-				if (sig_it != mFunctionSignatures.end()) {
+				auto sigIt = mFunctionSignatures.find(name);
+				if (sigIt != mFunctionSignatures.end()) {
 					// Apply the known signature
-					const FunctionSignature& sig = sig_it->second;
+					const FunctionSignature& sig = sigIt->second;
 					for (const auto& type : sig.produces) {
-						type_stack.push_back(type);
+						typeStack.push_back(type);
 					}
 				}
 				// If signature not known yet, skip (will be resolved in next iteration)
@@ -280,9 +280,9 @@ namespace Qd {
 		}
 
 		// Type check each function definition
-		if (node->type() == IAstNode::Type::FunctionDeclaration) {
+		if (node->type() == IAstNode::Type::FUNCTION_DECLARATION) {
 			AstNodeFunctionDeclaration* func = static_cast<AstNodeFunctionDeclaration*>(node);
-			std::vector<StackValueType> type_stack;
+			std::vector<StackValueType> typeStack;
 
 			// Initialize type stack with input parameters
 			// Input parameters are on the stack when the function starts
@@ -291,20 +291,20 @@ namespace Qd {
 				const std::string& typeStr = param->typeString();
 
 				if (typeStr == "i") {
-					type_stack.push_back(StackValueType::INT);
+					typeStack.push_back(StackValueType::INT);
 				} else if (typeStr == "f") {
-					type_stack.push_back(StackValueType::FLOAT);
+					typeStack.push_back(StackValueType::FLOAT);
 				} else if (typeStr == "s") {
-					type_stack.push_back(StackValueType::STRING);
+					typeStack.push_back(StackValueType::STRING);
 				} else {
 					// Untyped or unknown - treat as ANY
-					type_stack.push_back(StackValueType::ANY);
+					typeStack.push_back(StackValueType::ANY);
 				}
 			}
 
 			// Type check the function body
 			if (func->body()) {
-				typeCheckBlock(func->body(), type_stack);
+				typeCheckBlock(func->body(), typeStack);
 			}
 		}
 
@@ -314,7 +314,7 @@ namespace Qd {
 		}
 	}
 
-	void SemanticValidator::typeCheckBlock(IAstNode* node, std::vector<StackValueType>& type_stack) {
+	void SemanticValidator::typeCheckBlock(IAstNode* node, std::vector<StackValueType>& typeStack) {
 		if (!node) {
 			return;
 		}
@@ -327,61 +327,61 @@ namespace Qd {
 			}
 
 			switch (child->type()) {
-			case IAstNode::Type::Literal: {
+			case IAstNode::Type::LITERAL: {
 				AstNodeLiteral* lit = static_cast<AstNodeLiteral*>(child);
 				switch (lit->literalType()) {
-				case AstNodeLiteral::LiteralType::Integer:
-					type_stack.push_back(StackValueType::INT);
+				case AstNodeLiteral::LiteralType::INTEGER:
+					typeStack.push_back(StackValueType::INT);
 					break;
-				case AstNodeLiteral::LiteralType::Float:
-					type_stack.push_back(StackValueType::FLOAT);
+				case AstNodeLiteral::LiteralType::FLOAT:
+					typeStack.push_back(StackValueType::FLOAT);
 					break;
-				case AstNodeLiteral::LiteralType::String:
-					type_stack.push_back(StackValueType::STRING);
+				case AstNodeLiteral::LiteralType::STRING:
+					typeStack.push_back(StackValueType::STRING);
 					break;
 				}
 				break;
 			}
 
-			case IAstNode::Type::Instruction: {
+			case IAstNode::Type::INSTRUCTION: {
 				AstNodeInstruction* instr = static_cast<AstNodeInstruction*>(child);
-				typeCheckInstruction(child, instr->name().c_str(), type_stack);
+				typeCheckInstruction(child, instr->name().c_str(), typeStack);
 				break;
 			}
 
-			case IAstNode::Type::Block: {
+			case IAstNode::Type::BLOCK: {
 				// Recursively check nested blocks
-				typeCheckBlock(child, type_stack);
+				typeCheckBlock(child, typeStack);
 				break;
 			}
 
-			case IAstNode::Type::IfStatement: {
+			case IAstNode::Type::IF_STATEMENT: {
 				// For now, skip control flow type checking
 				// (more complex - would need to merge type states from branches)
 				break;
 			}
 
-			case IAstNode::Type::ForStatement: {
+			case IAstNode::Type::FOR_STATEMENT: {
 				// For now, skip loop type checking
 				break;
 			}
 
-			case IAstNode::Type::Identifier: {
+			case IAstNode::Type::IDENTIFIER: {
 				// Handle function calls - apply their stack effect
 				AstNodeIdentifier* ident = static_cast<AstNodeIdentifier*>(child);
 				const std::string& name = ident->name();
 
 				// Check if this is a user-defined function
-				auto sig_it = mFunctionSignatures.find(name);
-				if (sig_it != mFunctionSignatures.end()) {
-					const FunctionSignature& sig = sig_it->second;
+				auto sigIt = mFunctionSignatures.find(name);
+				if (sigIt != mFunctionSignatures.end()) {
+					const FunctionSignature& sig = sigIt->second;
 
 					// TODO: In the future, check if stack has enough values for sig.consumes
 					// For now, we assume functions consume nothing
 
 					// Apply the produces effect
 					for (const auto& type : sig.produces) {
-						type_stack.push_back(type);
+						typeStack.push_back(type);
 					}
 				}
 				// If it's not a user function, it must be a built-in (already validated in pass 2)
@@ -397,12 +397,12 @@ namespace Qd {
 	}
 
 	void SemanticValidator::typeCheckInstruction(
-			IAstNode* node, const char* name, std::vector<StackValueType>& type_stack) {
-		typeCheckInstructionInternal(node, name, type_stack, true);
+			IAstNode* node, const char* name, std::vector<StackValueType>& typeStack) {
+		typeCheckInstructionInternal(node, name, typeStack, true);
 	}
 
 	void SemanticValidator::typeCheckInstructionInternal(
-			IAstNode* node, const char* name, std::vector<StackValueType>& type_stack, bool report_errors) {
+			IAstNode* node, const char* name, std::vector<StackValueType>& typeStack, bool reportErrors) {
 		// Handle instruction aliases
 		if (strcmp(name, ".") == 0) {
 			name = "print";
@@ -418,21 +418,21 @@ namespace Qd {
 
 		// Arithmetic operations: abs, sq (preserve type)
 		if (strcmp(name, "abs") == 0 || strcmp(name, "sq") == 0) {
-			if (type_stack.empty()) {
-				std::string error_msg = "Type error in '";
-				error_msg += name;
-				error_msg += "': Stack underflow (requires 1 numeric value)";
-				reportErrorConditional(node, error_msg.c_str(), report_errors);
+			if (typeStack.empty()) {
+				std::string errorMsg = "Type error in '";
+				errorMsg += name;
+				errorMsg += "': Stack underflow (requires 1 numeric value)";
+				reportErrorConditional(node, errorMsg.c_str(), reportErrors);
 				return;
 			}
 
-			StackValueType top = type_stack.back();
+			StackValueType top = typeStack.back();
 			if (!isNumericType(top)) {
-				std::string error_msg = "Type error in '";
-				error_msg += name;
-				error_msg += "': Expected numeric type, got ";
-				error_msg += typeToString(top);
-				reportErrorConditional(node, error_msg.c_str(), report_errors);
+				std::string errorMsg = "Type error in '";
+				errorMsg += name;
+				errorMsg += "': Expected numeric type, got ";
+				errorMsg += typeToString(top);
+				reportErrorConditional(node, errorMsg.c_str(), reportErrors);
 				return;
 			}
 			// Type remains the same (already on stack)
@@ -440,68 +440,68 @@ namespace Qd {
 		// Trigonometric functions: sin, cos, tan, asin, acos, atan (always return float)
 		else if (strcmp(name, "sin") == 0 || strcmp(name, "cos") == 0 || strcmp(name, "tan") == 0 ||
 				 strcmp(name, "asin") == 0 || strcmp(name, "acos") == 0 || strcmp(name, "atan") == 0) {
-			if (type_stack.empty()) {
-				std::string error_msg = "Type error in '";
-				error_msg += name;
-				error_msg += "': Stack underflow (requires 1 numeric value)";
-				reportError(node, error_msg.c_str());
+			if (typeStack.empty()) {
+				std::string errorMsg = "Type error in '";
+				errorMsg += name;
+				errorMsg += "': Stack underflow (requires 1 numeric value)";
+				reportError(node, errorMsg.c_str());
 				return;
 			}
 
-			StackValueType top = type_stack.back();
+			StackValueType top = typeStack.back();
 			if (!isNumericType(top)) {
-				std::string error_msg = "Type error in '";
-				error_msg += name;
-				error_msg += "': Expected numeric type, got ";
-				error_msg += typeToString(top);
-				reportError(node, error_msg.c_str());
+				std::string errorMsg = "Type error in '";
+				errorMsg += name;
+				errorMsg += "': Expected numeric type, got ";
+				errorMsg += typeToString(top);
+				reportError(node, errorMsg.c_str());
 				return;
 			}
 			// Pop and push float (trig functions always return float)
-			type_stack.pop_back();
-			type_stack.push_back(StackValueType::FLOAT);
+			typeStack.pop_back();
+			typeStack.push_back(StackValueType::FLOAT);
 		}
 		// Math functions: sqrt, cb, cbrt, ceil, floor (always return float)
 		else if (strcmp(name, "sqrt") == 0 || strcmp(name, "cb") == 0 || strcmp(name, "cbrt") == 0 ||
 				 strcmp(name, "ceil") == 0 || strcmp(name, "floor") == 0) {
-			if (type_stack.empty()) {
-				std::string error_msg = "Type error in '";
-				error_msg += name;
-				error_msg += "': Stack underflow (requires 1 numeric value)";
-				reportError(node, error_msg.c_str());
+			if (typeStack.empty()) {
+				std::string errorMsg = "Type error in '";
+				errorMsg += name;
+				errorMsg += "': Stack underflow (requires 1 numeric value)";
+				reportError(node, errorMsg.c_str());
 				return;
 			}
 
-			StackValueType top = type_stack.back();
+			StackValueType top = typeStack.back();
 			if (!isNumericType(top)) {
-				std::string error_msg = "Type error in '";
-				error_msg += name;
-				error_msg += "': Expected numeric type, got ";
-				error_msg += typeToString(top);
-				reportError(node, error_msg.c_str());
+				std::string errorMsg = "Type error in '";
+				errorMsg += name;
+				errorMsg += "': Expected numeric type, got ";
+				errorMsg += typeToString(top);
+				reportError(node, errorMsg.c_str());
 				return;
 			}
 			// Pop and push float (math functions always return float)
-			type_stack.pop_back();
-			type_stack.push_back(StackValueType::FLOAT);
+			typeStack.pop_back();
+			typeStack.push_back(StackValueType::FLOAT);
 		}
 		// Increment/Decrement functions: inc, dec (preserve type)
 		else if (strcmp(name, "inc") == 0 || strcmp(name, "dec") == 0) {
-			if (type_stack.empty()) {
-				std::string error_msg = "Type error in '";
-				error_msg += name;
-				error_msg += "': Stack underflow (requires 1 numeric value)";
-				reportError(node, error_msg.c_str());
+			if (typeStack.empty()) {
+				std::string errorMsg = "Type error in '";
+				errorMsg += name;
+				errorMsg += "': Stack underflow (requires 1 numeric value)";
+				reportError(node, errorMsg.c_str());
 				return;
 			}
 
-			StackValueType top = type_stack.back();
+			StackValueType top = typeStack.back();
 			if (!isNumericType(top)) {
-				std::string error_msg = "Type error in '";
-				error_msg += name;
-				error_msg += "': Expected numeric type, got ";
-				error_msg += typeToString(top);
-				reportError(node, error_msg.c_str());
+				std::string errorMsg = "Type error in '";
+				errorMsg += name;
+				errorMsg += "': Expected numeric type, got ";
+				errorMsg += typeToString(top);
+				reportError(node, errorMsg.c_str());
 				return;
 			}
 			// Type remains the same (already on stack)
@@ -509,45 +509,45 @@ namespace Qd {
 		// Binary arithmetic operations: add, sub, mul, div
 		else if (strcmp(name, "add") == 0 || strcmp(name, "sub") == 0 || strcmp(name, "mul") == 0 ||
 				 strcmp(name, "div") == 0) {
-			if (type_stack.size() < 2) {
-				std::string error_msg = "Type error in '";
-				error_msg += name;
-				error_msg += "': Stack underflow (requires 2 numeric values)";
-				reportErrorConditional(node, error_msg.c_str(), report_errors);
+			if (typeStack.size() < 2) {
+				std::string errorMsg = "Type error in '";
+				errorMsg += name;
+				errorMsg += "': Stack underflow (requires 2 numeric values)";
+				reportErrorConditional(node, errorMsg.c_str(), reportErrors);
 				return;
 			}
 
-			StackValueType b = type_stack.back();
-			type_stack.pop_back();
-			StackValueType a = type_stack.back();
-			type_stack.pop_back();
+			StackValueType b = typeStack.back();
+			typeStack.pop_back();
+			StackValueType a = typeStack.back();
+			typeStack.pop_back();
 
 			if (!isNumericType(a) || !isNumericType(b)) {
-				std::string error_msg = "Type error in '";
-				error_msg += name;
-				error_msg += "': Expected numeric types, got ";
-				error_msg += typeToString(a);
-				error_msg += " and ";
-				error_msg += typeToString(b);
-				reportErrorConditional(node, error_msg.c_str(), report_errors);
+				std::string errorMsg = "Type error in '";
+				errorMsg += name;
+				errorMsg += "': Expected numeric types, got ";
+				errorMsg += typeToString(a);
+				errorMsg += " and ";
+				errorMsg += typeToString(b);
+				reportErrorConditional(node, errorMsg.c_str(), reportErrors);
 				return;
 			}
 
 			// Result is float if either operand is float, otherwise int
 			StackValueType result = (a == StackValueType::FLOAT || b == StackValueType::FLOAT) ? StackValueType::FLOAT
 																							   : StackValueType::INT;
-			type_stack.push_back(result);
+			typeStack.push_back(result);
 		}
 		// Print operations: print, printv
 		else if (strcmp(name, "print") == 0 || strcmp(name, "printv") == 0) {
-			if (type_stack.empty()) {
-				std::string error_msg = "Type error in '";
-				error_msg += name;
-				error_msg += "': Stack underflow (requires 1 value)";
-				reportErrorConditional(node, error_msg.c_str(), report_errors);
+			if (typeStack.empty()) {
+				std::string errorMsg = "Type error in '";
+				errorMsg += name;
+				errorMsg += "': Stack underflow (requires 1 value)";
+				reportErrorConditional(node, errorMsg.c_str(), reportErrors);
 				return;
 			}
-			type_stack.pop_back(); // Pop the value
+			typeStack.pop_back(); // Pop the value
 		}
 		// Non-destructive print: prints, printsv
 		else if (strcmp(name, "prints") == 0 || strcmp(name, "printsv") == 0) {
@@ -555,71 +555,70 @@ namespace Qd {
 		}
 		// Stack operations: dup
 		else if (strcmp(name, "dup") == 0) {
-			if (type_stack.empty()) {
-				reportErrorConditional(node, "Type error in 'dup': Stack underflow (requires 1 value)", report_errors);
+			if (typeStack.empty()) {
+				reportErrorConditional(node, "Type error in 'dup': Stack underflow (requires 1 value)", reportErrors);
 				return;
 			}
-			StackValueType top = type_stack.back();
-			type_stack.push_back(top); // Duplicate
+			StackValueType top = typeStack.back();
+			typeStack.push_back(top); // Duplicate
 		}
 		// Stack operations: dup2 ( a b -- a b a b )
 		else if (strcmp(name, "dup2") == 0) {
-			if (type_stack.size() < 2) {
+			if (typeStack.size() < 2) {
 				reportError(node, "Type error in 'dup2': Stack underflow (requires 2 values)");
 				return;
 			}
 			// Get the second and top elements
-			StackValueType second = type_stack[type_stack.size() - 2];
-			StackValueType top = type_stack.back();
+			StackValueType second = typeStack[typeStack.size() - 2];
+			StackValueType top = typeStack.back();
 			// Push copies of both
-			type_stack.push_back(second);
-			type_stack.push_back(top);
+			typeStack.push_back(second);
+			typeStack.push_back(top);
 		}
 		// Stack operations: swap
 		else if (strcmp(name, "swap") == 0) {
-			if (type_stack.size() < 2) {
-				reportErrorConditional(
-						node, "Type error in 'swap': Stack underflow (requires 2 values)", report_errors);
+			if (typeStack.size() < 2) {
+				reportErrorConditional(node, "Type error in 'swap': Stack underflow (requires 2 values)", reportErrors);
 				return;
 			}
-			StackValueType a = type_stack.back();
-			type_stack.pop_back();
-			StackValueType b = type_stack.back();
-			type_stack.pop_back();
-			type_stack.push_back(a);
-			type_stack.push_back(b);
+			StackValueType a = typeStack.back();
+			typeStack.pop_back();
+			StackValueType b = typeStack.back();
+			typeStack.pop_back();
+			typeStack.push_back(a);
+			typeStack.push_back(b);
 		}
 		// Stack operations: over ( a b -- a b a )
 		else if (strcmp(name, "over") == 0) {
-			if (type_stack.size() < 2) {
+			if (typeStack.size() < 2) {
 				reportError(node, "Type error in 'over': Stack underflow (requires 2 values)");
 				return;
 			}
 			// Get the second element
-			StackValueType second = type_stack[type_stack.size() - 2];
+			StackValueType second = typeStack[typeStack.size() - 2];
 			// Push a copy of it to the top
-			type_stack.push_back(second);
+			typeStack.push_back(second);
 		}
 		// Stack operations: nip ( a b -- b )
 		else if (strcmp(name, "nip") == 0) {
-			if (type_stack.size() < 2) {
+			if (typeStack.size() < 2) {
 				reportError(node, "Type error in 'nip': Stack underflow (requires 2 values)");
 				return;
 			}
-			StackValueType top = type_stack.back();
-			type_stack.pop_back();
-			type_stack.pop_back();	   // Remove second element
-			type_stack.push_back(top); // Push top back
+			StackValueType top = typeStack.back();
+			typeStack.pop_back();
+			typeStack.pop_back();	  // Remove second element
+			typeStack.push_back(top); // Push top back
 		}
 		// Stack operations: clear (empties the entire stack)
 		else if (strcmp(name, "clear") == 0) {
 			// Clear all elements from the type stack
-			type_stack.clear();
+			typeStack.clear();
 		}
 		// Stack operations: depth (pushes the current stack depth as an integer)
 		else if (strcmp(name, "depth") == 0) {
 			// Push an int type onto the stack (depth is always an integer)
-			type_stack.push_back(StackValueType::INT);
+			typeStack.push_back(StackValueType::INT);
 		}
 	}
 

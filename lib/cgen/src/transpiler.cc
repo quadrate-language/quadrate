@@ -45,16 +45,16 @@ namespace Qd {
 		auto makeIndent = [](int level) { return std::string(static_cast<size_t>(level * 4), ' '); };
 
 		switch (node->type()) {
-		case IAstNode::Type::Unknown:
+		case IAstNode::Type::UNKNOWN:
 			// Unknown node type, skip
 			break;
-		case IAstNode::Type::Program:
+		case IAstNode::Type::PROGRAM:
 			out << "// Program\n";
 			break;
-		case IAstNode::Type::Block:
+		case IAstNode::Type::BLOCK:
 			out << makeIndent(indent) << "{\n";
 			break;
-		case IAstNode::Type::FunctionDeclaration: {
+		case IAstNode::Type::FUNCTION_DECLARATION: {
 			AstNodeFunctionDeclaration* funcDecl = static_cast<AstNodeFunctionDeclaration*>(node);
 			out << "\n"
 				<< makeIndent(indent) << "qd_exec_result usr_" << packageName << "_" << funcDecl->name()
@@ -97,13 +97,13 @@ namespace Qd {
 			out << makeIndent(indent) << "}\n";
 			return; // Don't traverse children again
 		}
-		case IAstNode::Type::VariableDeclaration:
+		case IAstNode::Type::VARIABLE_DECLARATION:
 			// TODO: Handle variable declaration
 			break;
-		case IAstNode::Type::ExpressionStatement:
+		case IAstNode::Type::EXPRESSION_STATEMENT:
 			// TODO: Handle expression statement
 			break;
-		case IAstNode::Type::IfStatement: {
+		case IAstNode::Type::IF_STATEMENT: {
 			int64_t currentVar = varCounter++;
 			std::string var = "qd_var_" + std::to_string(currentVar);
 			out << makeIndent(indent) << "int64_t " << var << " = qd_stack_pop_i(ctx);\n";
@@ -114,54 +114,54 @@ namespace Qd {
 			out << makeIndent(indent) << "}\n";
 			break;
 		}
-		case IAstNode::Type::ForStatement:
+		case IAstNode::Type::FOR_STATEMENT:
 			// TODO: Handle for statement
 			break;
-		case IAstNode::Type::SwitchStatement:
+		case IAstNode::Type::SWITCH_STATEMENT:
 			// TODO: Handle switch statement
 			break;
-		case IAstNode::Type::CaseStatement:
+		case IAstNode::Type::CASE_STATEMENT:
 			// TODO: Handle case statement
 			break;
-		case IAstNode::Type::ReturnStatement:
+		case IAstNode::Type::RETURN_STATEMENT:
 			out << makeIndent(indent) << "goto qd_lbl_done;\n";
 			break;
-		case IAstNode::Type::BreakStatement:
+		case IAstNode::Type::BREAK_STATEMENT:
 			out << makeIndent(indent) << "break;\n";
 			break;
-		case IAstNode::Type::ContinueStatement:
+		case IAstNode::Type::CONTINUE_STATEMENT:
 			out << makeIndent(indent) << "continue;\n";
 			break;
-		case IAstNode::Type::DeferStatement:
+		case IAstNode::Type::DEFER_STATEMENT:
 			// TODO: Handle defer statement
 			break;
-		case IAstNode::Type::BinaryExpression:
+		case IAstNode::Type::BINARY_EXPRESSION:
 			// TODO: Handle binary expression
 			break;
-		case IAstNode::Type::UnaryExpression:
+		case IAstNode::Type::UNARY_EXPRESSION:
 			// TODO: Handle unary expression
 			break;
-		case IAstNode::Type::Literal: {
+		case IAstNode::Type::LITERAL: {
 			AstNodeLiteral* literal = static_cast<AstNodeLiteral*>(node);
 			switch (literal->literalType()) {
-			case AstNodeLiteral::LiteralType::Integer:
+			case AstNodeLiteral::LiteralType::INTEGER:
 				out << makeIndent(indent) << "qd_push_i(ctx, (int64_t)" << literal->value() << ");\n";
 				break;
-			case AstNodeLiteral::LiteralType::Float:
+			case AstNodeLiteral::LiteralType::FLOAT:
 				out << makeIndent(indent) << "qd_push_f(ctx, (double)" << literal->value() << ");\n";
 				break;
-			case AstNodeLiteral::LiteralType::String:
+			case AstNodeLiteral::LiteralType::STRING:
 				out << makeIndent(indent) << "qd_push_s(ctx, " << literal->value() << ");\n";
 				break;
 			}
 			break;
 		}
-		case IAstNode::Type::Identifier: {
+		case IAstNode::Type::IDENTIFIER: {
 			AstNodeIdentifier* ident = static_cast<AstNodeIdentifier*>(node);
 			out << makeIndent(indent) << "usr_" << packageName << "_" << ident->name() << "(ctx);\n";
 			break;
 		}
-		case IAstNode::Type::Instruction: {
+		case IAstNode::Type::INSTRUCTION: {
 			AstNodeInstruction* instr = static_cast<AstNodeInstruction*>(node);
 			// Map aliases to their actual function names
 			const char* instrName = instr->name().c_str();
@@ -179,30 +179,30 @@ namespace Qd {
 			out << makeIndent(indent) << "qd_" << instrName << "(ctx);\n";
 			break;
 		}
-		case IAstNode::Type::ScopedIdentifier: {
+		case IAstNode::Type::SCOPED_IDENTIFIER: {
 			AstNodeScopedIdentifier* scopedIdent = static_cast<AstNodeScopedIdentifier*>(node);
 			out << makeIndent(indent) << "usr_" << scopedIdent->scope() << "_" << scopedIdent->name() << "(ctx);\n";
 			break;
 		}
-		case IAstNode::Type::UseStatement: {
+		case IAstNode::Type::USE_STATEMENT: {
 			// TODO: Handle use statement
 			AstNodeUse* use = static_cast<AstNodeUse*>(node);
 			out << makeIndent(0) << "#include \"" << use->module() << "\\module.h\"\n";
 			break;
 		}
-		case IAstNode::Type::ConstantDeclaration: {
+		case IAstNode::Type::CONSTANT_DECLARATION: {
 			AstNodeConstant* constDecl = static_cast<AstNodeConstant*>(node);
 			out << makeIndent(indent) << "#define " << packageName << "_" << constDecl->name() << " "
 				<< constDecl->value() << "\n";
 			break;
 		}
-		case IAstNode::Type::Label:
+		case IAstNode::Type::LABEL:
 			// TODO: Handle label
 			break;
 		}
 
 		int childIndent = indent;
-		if (node->type() == IAstNode::Type::Block) {
+		if (node->type() == IAstNode::Type::BLOCK) {
 			childIndent = indent + 1;
 		}
 
@@ -210,7 +210,7 @@ namespace Qd {
 			traverse(node->child(i), packageName, out, childIndent);
 		}
 
-		if (node->type() == IAstNode::Type::Block) {
+		if (node->type() == IAstNode::Type::BLOCK) {
 			out << makeIndent(indent) << "}\n";
 		}
 	}

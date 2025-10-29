@@ -19,51 +19,51 @@
 namespace Qd {
 	static const char* getTypeName(IAstNode::Type type) {
 		switch (type) {
-		case IAstNode::Type::Unknown:
+		case IAstNode::Type::UNKNOWN:
 			return "Unknown";
-		case IAstNode::Type::Program:
+		case IAstNode::Type::PROGRAM:
 			return "Program";
-		case IAstNode::Type::Block:
+		case IAstNode::Type::BLOCK:
 			return "Block";
-		case IAstNode::Type::FunctionDeclaration:
+		case IAstNode::Type::FUNCTION_DECLARATION:
 			return "FunctionDeclaration";
-		case IAstNode::Type::VariableDeclaration:
+		case IAstNode::Type::VARIABLE_DECLARATION:
 			return "VariableDeclaration";
-		case IAstNode::Type::ExpressionStatement:
+		case IAstNode::Type::EXPRESSION_STATEMENT:
 			return "ExpressionStatement";
-		case IAstNode::Type::IfStatement:
+		case IAstNode::Type::IF_STATEMENT:
 			return "IfStatement";
-		case IAstNode::Type::ForStatement:
+		case IAstNode::Type::FOR_STATEMENT:
 			return "ForStatement";
-		case IAstNode::Type::SwitchStatement:
+		case IAstNode::Type::SWITCH_STATEMENT:
 			return "SwitchStatement";
-		case IAstNode::Type::CaseStatement:
+		case IAstNode::Type::CASE_STATEMENT:
 			return "CaseStatement";
-		case IAstNode::Type::ReturnStatement:
+		case IAstNode::Type::RETURN_STATEMENT:
 			return "ReturnStatement";
-		case IAstNode::Type::BreakStatement:
+		case IAstNode::Type::BREAK_STATEMENT:
 			return "BreakStatement";
-		case IAstNode::Type::ContinueStatement:
+		case IAstNode::Type::CONTINUE_STATEMENT:
 			return "ContinueStatement";
-		case IAstNode::Type::DeferStatement:
+		case IAstNode::Type::DEFER_STATEMENT:
 			return "DeferStatement";
-		case IAstNode::Type::BinaryExpression:
+		case IAstNode::Type::BINARY_EXPRESSION:
 			return "BinaryExpression";
-		case IAstNode::Type::UnaryExpression:
+		case IAstNode::Type::UNARY_EXPRESSION:
 			return "UnaryExpression";
-		case IAstNode::Type::Literal:
+		case IAstNode::Type::LITERAL:
 			return "Literal";
-		case IAstNode::Type::Identifier:
+		case IAstNode::Type::IDENTIFIER:
 			return "Identifier";
-		case IAstNode::Type::Instruction:
+		case IAstNode::Type::INSTRUCTION:
 			return "Instruction";
-		case IAstNode::Type::ScopedIdentifier:
+		case IAstNode::Type::SCOPED_IDENTIFIER:
 			return "ScopedIdentifier";
-		case IAstNode::Type::UseStatement:
+		case IAstNode::Type::USE_STATEMENT:
 			return "UseStatement";
-		case IAstNode::Type::ConstantDeclaration:
+		case IAstNode::Type::CONSTANT_DECLARATION:
 			return "ConstantDeclaration";
-		case IAstNode::Type::Label:
+		case IAstNode::Type::LABEL:
 			return "Label";
 		default:
 			return "Unknown";
@@ -107,25 +107,25 @@ namespace Qd {
 		printf("{");
 		printf("\"type\":\"%s\"", getTypeName(node->type()));
 
-		if (node->type() == IAstNode::Type::FunctionDeclaration) {
+		if (node->type() == IAstNode::Type::FUNCTION_DECLARATION) {
 			const AstNodeFunctionDeclaration* func = static_cast<const AstNodeFunctionDeclaration*>(node);
 			printf(",");
 			printf("\"name\":\"");
 			escapeJsonString(func->name().c_str());
 			printf("\"");
-		} else if (node->type() == IAstNode::Type::Identifier) {
+		} else if (node->type() == IAstNode::Type::IDENTIFIER) {
 			const AstNodeIdentifier* id = static_cast<const AstNodeIdentifier*>(node);
 			printf(",");
 			printf("\"name\":\"");
 			escapeJsonString(id->name().c_str());
 			printf("\"");
-		} else if (node->type() == IAstNode::Type::Instruction) {
+		} else if (node->type() == IAstNode::Type::INSTRUCTION) {
 			const AstNodeInstruction* instr = static_cast<const AstNodeInstruction*>(node);
 			printf(",");
 			printf("\"name\":\"");
 			escapeJsonString(instr->name().c_str());
 			printf("\"");
-		} else if (node->type() == IAstNode::Type::ScopedIdentifier) {
+		} else if (node->type() == IAstNode::Type::SCOPED_IDENTIFIER) {
 			const AstNodeScopedIdentifier* scoped = static_cast<const AstNodeScopedIdentifier*>(node);
 			printf(",");
 			printf("\"scope\":\"");
@@ -134,18 +134,18 @@ namespace Qd {
 			printf("\"name\":\"");
 			escapeJsonString(scoped->name().c_str());
 			printf("\"");
-		} else if (node->type() == IAstNode::Type::Literal) {
+		} else if (node->type() == IAstNode::Type::LITERAL) {
 			const AstNodeLiteral* lit = static_cast<const AstNodeLiteral*>(node);
 			printf(",");
 			const char* typeStr = "";
 			switch (lit->literalType()) {
-			case AstNodeLiteral::LiteralType::Integer:
+			case AstNodeLiteral::LiteralType::INTEGER:
 				typeStr = "Integer";
 				break;
-			case AstNodeLiteral::LiteralType::Float:
+			case AstNodeLiteral::LiteralType::FLOAT:
 				typeStr = "Float";
 				break;
-			case AstNodeLiteral::LiteralType::String:
+			case AstNodeLiteral::LiteralType::STRING:
 				typeStr = "String";
 				break;
 			}
@@ -153,17 +153,17 @@ namespace Qd {
 			printf("\"value\":\"");
 			escapeJsonString(lit->value().c_str());
 			printf("\"");
-		} else if (node->type() == IAstNode::Type::ForStatement) {
+		} else if (node->type() == IAstNode::Type::FOR_STATEMENT) {
 			const AstNodeForStatement* forStmt = static_cast<const AstNodeForStatement*>(node);
 			printf(",");
 			printf("\"loopVar\":\"");
 			escapeJsonString(forStmt->loopVar().c_str());
 			printf("\"");
-		} else if (node->type() == IAstNode::Type::CaseStatement) {
+		} else if (node->type() == IAstNode::Type::CASE_STATEMENT) {
 			const AstNodeCase* caseStmt = static_cast<const AstNodeCase*>(node);
 			printf(",");
 			printf("\"isDefault\":%s", caseStmt->isDefault() ? "true" : "false");
-		} else if (node->type() == IAstNode::Type::VariableDeclaration) {
+		} else if (node->type() == IAstNode::Type::VARIABLE_DECLARATION) {
 			const AstNodeParameter* param = static_cast<const AstNodeParameter*>(node);
 			printf(",");
 			printf("\"name\":\"");
@@ -173,19 +173,19 @@ namespace Qd {
 			escapeJsonString(param->typeString().c_str());
 			printf("\",");
 			printf("\"isOutput\":%s", param->isOutput() ? "true" : "false");
-		} else if (node->type() == IAstNode::Type::UseStatement) {
+		} else if (node->type() == IAstNode::Type::USE_STATEMENT) {
 			const AstNodeUse* useStmt = static_cast<const AstNodeUse*>(node);
 			printf(",");
 			printf("\"module\":\"");
 			escapeJsonString(useStmt->module().c_str());
 			printf("\"");
-		} else if (node->type() == IAstNode::Type::ConstantDeclaration) {
+		} else if (node->type() == IAstNode::Type::CONSTANT_DECLARATION) {
 			const AstNodeConstant* constDecl = static_cast<const AstNodeConstant*>(node);
 			printf(",");
 			printf("\"name\":\"");
 			escapeJsonString(constDecl->name().c_str());
 			printf("\"");
-		} else if (node->type() == IAstNode::Type::Label) {
+		} else if (node->type() == IAstNode::Type::LABEL) {
 			const AstNodeLabel* label = static_cast<const AstNodeLabel*>(node);
 			printf(",");
 			printf("\"name\":\"");

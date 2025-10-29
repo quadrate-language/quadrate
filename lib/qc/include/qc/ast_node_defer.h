@@ -17,7 +17,7 @@ namespace Qd {
 		}
 
 		IAstNode::Type type() const override {
-			return Type::DeferStatement;
+			return Type::DEFER_STATEMENT;
 		}
 
 		void addChild(IAstNode* child) {

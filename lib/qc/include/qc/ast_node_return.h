@@ -10,7 +10,7 @@ namespace Qd {
 		}
 
 		IAstNode::Type type() const override {
-			return Type::ReturnStatement;
+			return Type::RETURN_STATEMENT;
 		}
 
 		size_t childCount() const override {

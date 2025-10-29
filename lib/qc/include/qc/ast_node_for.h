@@ -18,7 +18,7 @@ namespace Qd {
 		}
 
 		IAstNode::Type type() const override {
-			return Type::ForStatement;
+			return Type::FOR_STATEMENT;
 		}
 
 		size_t childCount() const override {

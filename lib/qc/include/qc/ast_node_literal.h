@@ -8,9 +8,9 @@ namespace Qd {
 	class AstNodeLiteral : public IAstNode {
 	public:
 		enum class LiteralType {
-			Integer,
-			Float,
-			String
+			INTEGER,
+			FLOAT,
+			STRING
 		};
 
 		AstNodeLiteral(const std::string& value, LiteralType literalType)
@@ -18,7 +18,7 @@ namespace Qd {
 		}
 
 		IAstNode::Type type() const override {
-			return Type::Literal;
+			return Type::LITERAL;
 		}
 
 		size_t childCount() const override {

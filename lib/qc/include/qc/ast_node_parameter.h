@@ -12,7 +12,7 @@ namespace Qd {
 		}
 
 		IAstNode::Type type() const override {
-			return Type::VariableDeclaration;
+			return Type::VARIABLE_DECLARATION;
 		}
 
 		size_t childCount() const override {

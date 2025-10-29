@@ -21,7 +21,7 @@ namespace Qd {
 		}
 
 		IAstNode::Type type() const override {
-			return Type::CaseStatement;
+			return Type::CASE_STATEMENT;
 		}
 
 		size_t childCount() const override {
@@ -104,7 +104,7 @@ namespace Qd {
 		}
 
 		IAstNode::Type type() const override {
-			return Type::SwitchStatement;
+			return Type::SWITCH_STATEMENT;
 		}
 
 		size_t childCount() const override {

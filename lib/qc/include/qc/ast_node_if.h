@@ -20,7 +20,7 @@ namespace Qd {
 		}
 
 		IAstNode::Type type() const override {
-			return Type::IfStatement;
+			return Type::IF_STATEMENT;
 		}
 
 		size_t childCount() const override {

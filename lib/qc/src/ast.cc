@@ -97,17 +97,17 @@ namespace Qd {
 			char32_t token, u8t_scanner* scanner, size_t* n, const char* src) {
 		if (token == U8T_INTEGER) {
 			const char* text = u8t_scanner_token_text(scanner, n);
-			IAstNode* node = new AstNodeLiteral(text, AstNodeLiteral::LiteralType::Integer);
+			IAstNode* node = new AstNodeLiteral(text, AstNodeLiteral::LiteralType::INTEGER);
 			setNodePosition(node, scanner, src);
 			return node;
 		} else if (token == U8T_FLOAT) {
 			const char* text = u8t_scanner_token_text(scanner, n);
-			IAstNode* node = new AstNodeLiteral(text, AstNodeLiteral::LiteralType::Float);
+			IAstNode* node = new AstNodeLiteral(text, AstNodeLiteral::LiteralType::FLOAT);
 			setNodePosition(node, scanner, src);
 			return node;
 		} else if (token == U8T_STRING) {
 			const char* text = u8t_scanner_token_text(scanner, n);
-			IAstNode* node = new AstNodeLiteral(text, AstNodeLiteral::LiteralType::String);
+			IAstNode* node = new AstNodeLiteral(text, AstNodeLiteral::LiteralType::STRING);
 			setNodePosition(node, scanner, src);
 			return node;
 		} else if (token == U8T_IDENTIFIER) {
@@ -333,7 +333,7 @@ namespace Qd {
 			if (sawColon && token == ':') {
 				// We have ::
 				sawColon = false;
-				if (!tempNodes.empty() && tempNodes.back()->type() == IAstNode::Type::Identifier) {
+				if (!tempNodes.empty() && tempNodes.back()->type() == IAstNode::Type::IDENTIFIER) {
 					AstNodeIdentifier* scope = static_cast<AstNodeIdentifier*>(tempNodes.back());
 					tempNodes.pop_back();
 
@@ -399,19 +399,19 @@ namespace Qd {
 										if (token == U8T_INTEGER) {
 											const char* tokenText = u8t_scanner_token_text(scanner, &n);
 											AstNodeLiteral* lit =
-													new AstNodeLiteral(tokenText, AstNodeLiteral::LiteralType::Integer);
+													new AstNodeLiteral(tokenText, AstNodeLiteral::LiteralType::INTEGER);
 											setNodePosition(lit, scanner, src);
 											tempNodes.push_back(lit);
 										} else if (token == U8T_FLOAT) {
 											const char* tokenText = u8t_scanner_token_text(scanner, &n);
 											AstNodeLiteral* lit =
-													new AstNodeLiteral(tokenText, AstNodeLiteral::LiteralType::Float);
+													new AstNodeLiteral(tokenText, AstNodeLiteral::LiteralType::FLOAT);
 											setNodePosition(lit, scanner, src);
 											tempNodes.push_back(lit);
 										} else if (token == U8T_STRING) {
 											const char* tokenText = u8t_scanner_token_text(scanner, &n);
 											AstNodeLiteral* lit =
-													new AstNodeLiteral(tokenText, AstNodeLiteral::LiteralType::String);
+													new AstNodeLiteral(tokenText, AstNodeLiteral::LiteralType::STRING);
 											setNodePosition(lit, scanner, src);
 											tempNodes.push_back(lit);
 										} else if (token == U8T_IDENTIFIER) {
@@ -465,21 +465,21 @@ namespace Qd {
 											} else if (token == U8T_INTEGER) {
 												const char* elseBodyText = u8t_scanner_token_text(scanner, &n);
 												AstNodeLiteral* lit = new AstNodeLiteral(
-														elseBodyText, AstNodeLiteral::LiteralType::Integer);
+														elseBodyText, AstNodeLiteral::LiteralType::INTEGER);
 												setNodePosition(lit, scanner, src);
 												lit->setParent(elseBody);
 												elseBody->addChild(lit);
 											} else if (token == U8T_FLOAT) {
 												const char* elseBodyText = u8t_scanner_token_text(scanner, &n);
 												AstNodeLiteral* lit = new AstNodeLiteral(
-														elseBodyText, AstNodeLiteral::LiteralType::Float);
+														elseBodyText, AstNodeLiteral::LiteralType::FLOAT);
 												setNodePosition(lit, scanner, src);
 												lit->setParent(elseBody);
 												elseBody->addChild(lit);
 											} else if (token == U8T_STRING) {
 												const char* elseBodyText = u8t_scanner_token_text(scanner, &n);
 												AstNodeLiteral* lit = new AstNodeLiteral(
-														elseBodyText, AstNodeLiteral::LiteralType::String);
+														elseBodyText, AstNodeLiteral::LiteralType::STRING);
 												setNodePosition(lit, scanner, src);
 												lit->setParent(elseBody);
 												elseBody->addChild(lit);
@@ -503,19 +503,19 @@ namespace Qd {
 								if (token == U8T_INTEGER) {
 									const char* tokenText = u8t_scanner_token_text(scanner, &n);
 									AstNodeLiteral* lit =
-											new AstNodeLiteral(tokenText, AstNodeLiteral::LiteralType::Integer);
+											new AstNodeLiteral(tokenText, AstNodeLiteral::LiteralType::INTEGER);
 									setNodePosition(lit, scanner, src);
 									tempNodes.push_back(lit);
 								} else if (token == U8T_FLOAT) {
 									const char* tokenText = u8t_scanner_token_text(scanner, &n);
 									AstNodeLiteral* lit =
-											new AstNodeLiteral(tokenText, AstNodeLiteral::LiteralType::Float);
+											new AstNodeLiteral(tokenText, AstNodeLiteral::LiteralType::FLOAT);
 									setNodePosition(lit, scanner, src);
 									tempNodes.push_back(lit);
 								} else if (token == U8T_STRING) {
 									const char* tokenText = u8t_scanner_token_text(scanner, &n);
 									AstNodeLiteral* lit =
-											new AstNodeLiteral(tokenText, AstNodeLiteral::LiteralType::String);
+											new AstNodeLiteral(tokenText, AstNodeLiteral::LiteralType::STRING);
 									setNodePosition(lit, scanner, src);
 									tempNodes.push_back(lit);
 								}
@@ -579,18 +579,18 @@ namespace Qd {
 							} else if (token == U8T_INTEGER) {
 								const char* deferText = u8t_scanner_token_text(scanner, &n);
 								AstNodeLiteral* lit =
-										new AstNodeLiteral(deferText, AstNodeLiteral::LiteralType::Integer);
+										new AstNodeLiteral(deferText, AstNodeLiteral::LiteralType::INTEGER);
 								setNodePosition(lit, scanner, src);
 								deferNodes.push_back(lit);
 							} else if (token == U8T_FLOAT) {
 								const char* deferText = u8t_scanner_token_text(scanner, &n);
-								AstNodeLiteral* lit = new AstNodeLiteral(deferText, AstNodeLiteral::LiteralType::Float);
+								AstNodeLiteral* lit = new AstNodeLiteral(deferText, AstNodeLiteral::LiteralType::FLOAT);
 								setNodePosition(lit, scanner, src);
 								deferNodes.push_back(lit);
 							} else if (token == U8T_STRING) {
 								const char* deferText = u8t_scanner_token_text(scanner, &n);
 								AstNodeLiteral* lit =
-										new AstNodeLiteral(deferText, AstNodeLiteral::LiteralType::String);
+										new AstNodeLiteral(deferText, AstNodeLiteral::LiteralType::STRING);
 								setNodePosition(lit, scanner, src);
 								deferNodes.push_back(lit);
 							} else if (token == ':') {
@@ -624,17 +624,17 @@ namespace Qd {
 							deferNodes.push_back(id);
 						} else if (token == U8T_INTEGER) {
 							const char* deferText = u8t_scanner_token_text(scanner, &n);
-							AstNodeLiteral* lit = new AstNodeLiteral(deferText, AstNodeLiteral::LiteralType::Integer);
+							AstNodeLiteral* lit = new AstNodeLiteral(deferText, AstNodeLiteral::LiteralType::INTEGER);
 							setNodePosition(lit, scanner, src);
 							deferNodes.push_back(lit);
 						} else if (token == U8T_FLOAT) {
 							const char* deferText = u8t_scanner_token_text(scanner, &n);
-							AstNodeLiteral* lit = new AstNodeLiteral(deferText, AstNodeLiteral::LiteralType::Float);
+							AstNodeLiteral* lit = new AstNodeLiteral(deferText, AstNodeLiteral::LiteralType::FLOAT);
 							setNodePosition(lit, scanner, src);
 							deferNodes.push_back(lit);
 						} else if (token == U8T_STRING) {
 							const char* deferText = u8t_scanner_token_text(scanner, &n);
-							AstNodeLiteral* lit = new AstNodeLiteral(deferText, AstNodeLiteral::LiteralType::String);
+							AstNodeLiteral* lit = new AstNodeLiteral(deferText, AstNodeLiteral::LiteralType::STRING);
 							setNodePosition(lit, scanner, src);
 							deferNodes.push_back(lit);
 						}
@@ -674,45 +674,45 @@ namespace Qd {
 								// If we've already seen an operator and the last node was an operator,
 								// this literal starts a new statement
 								if (hasSeenOperator && !deferNodes.empty() &&
-										deferNodes.back()->type() == IAstNode::Type::Identifier) {
+										deferNodes.back()->type() == IAstNode::Type::IDENTIFIER) {
 									AstNodeLiteral* lit =
-											new AstNodeLiteral(deferText, AstNodeLiteral::LiteralType::Integer);
+											new AstNodeLiteral(deferText, AstNodeLiteral::LiteralType::INTEGER);
 									setNodePosition(lit, scanner, src);
 									tempNodes.push_back(lit);
 									break;
 								}
 
-								IAstNode* lit = new AstNodeLiteral(deferText, AstNodeLiteral::LiteralType::Integer);
+								IAstNode* lit = new AstNodeLiteral(deferText, AstNodeLiteral::LiteralType::INTEGER);
 								setNodePosition(lit, scanner, src);
 								deferNodes.push_back(lit);
 							} else if (token == U8T_FLOAT) {
 								const char* deferText = u8t_scanner_token_text(scanner, &n);
 
 								if (hasSeenOperator && !deferNodes.empty() &&
-										deferNodes.back()->type() == IAstNode::Type::Identifier) {
+										deferNodes.back()->type() == IAstNode::Type::IDENTIFIER) {
 									AstNodeLiteral* lit =
-											new AstNodeLiteral(deferText, AstNodeLiteral::LiteralType::Float);
+											new AstNodeLiteral(deferText, AstNodeLiteral::LiteralType::FLOAT);
 									setNodePosition(lit, scanner, src);
 									tempNodes.push_back(lit);
 									break;
 								}
 
-								IAstNode* lit = new AstNodeLiteral(deferText, AstNodeLiteral::LiteralType::Float);
+								IAstNode* lit = new AstNodeLiteral(deferText, AstNodeLiteral::LiteralType::FLOAT);
 								setNodePosition(lit, scanner, src);
 								deferNodes.push_back(lit);
 							} else if (token == U8T_STRING) {
 								const char* deferText = u8t_scanner_token_text(scanner, &n);
 
 								if (hasSeenOperator && !deferNodes.empty() &&
-										deferNodes.back()->type() == IAstNode::Type::Identifier) {
+										deferNodes.back()->type() == IAstNode::Type::IDENTIFIER) {
 									AstNodeLiteral* lit =
-											new AstNodeLiteral(deferText, AstNodeLiteral::LiteralType::String);
+											new AstNodeLiteral(deferText, AstNodeLiteral::LiteralType::STRING);
 									setNodePosition(lit, scanner, src);
 									tempNodes.push_back(lit);
 									break;
 								}
 
-								IAstNode* lit = new AstNodeLiteral(deferText, AstNodeLiteral::LiteralType::String);
+								IAstNode* lit = new AstNodeLiteral(deferText, AstNodeLiteral::LiteralType::STRING);
 								setNodePosition(lit, scanner, src);
 								deferNodes.push_back(lit);
 							} else if (token == ':') {
@@ -746,17 +746,17 @@ namespace Qd {
 				}
 			} else if (token == U8T_INTEGER) {
 				const char* text = u8t_scanner_token_text(scanner, &n);
-				AstNodeLiteral* lit = new AstNodeLiteral(text, AstNodeLiteral::LiteralType::Integer);
+				AstNodeLiteral* lit = new AstNodeLiteral(text, AstNodeLiteral::LiteralType::INTEGER);
 				setNodePosition(lit, scanner, src);
 				tempNodes.push_back(lit);
 			} else if (token == U8T_FLOAT) {
 				const char* text = u8t_scanner_token_text(scanner, &n);
-				AstNodeLiteral* lit = new AstNodeLiteral(text, AstNodeLiteral::LiteralType::Float);
+				AstNodeLiteral* lit = new AstNodeLiteral(text, AstNodeLiteral::LiteralType::FLOAT);
 				setNodePosition(lit, scanner, src);
 				tempNodes.push_back(lit);
 			} else if (token == U8T_STRING) {
 				const char* text = u8t_scanner_token_text(scanner, &n);
-				AstNodeLiteral* lit = new AstNodeLiteral(text, AstNodeLiteral::LiteralType::String);
+				AstNodeLiteral* lit = new AstNodeLiteral(text, AstNodeLiteral::LiteralType::STRING);
 				setNodePosition(lit, scanner, src);
 				tempNodes.push_back(lit);
 			} else if (token == '.') {
@@ -944,15 +944,15 @@ namespace Qd {
 					IAstNode* caseValue = nullptr;
 					if (token == U8T_INTEGER) {
 						const char* valueText = u8t_scanner_token_text(scanner, &n);
-						caseValue = new AstNodeLiteral(valueText, AstNodeLiteral::LiteralType::Integer);
+						caseValue = new AstNodeLiteral(valueText, AstNodeLiteral::LiteralType::INTEGER);
 						setNodePosition(caseValue, scanner, src);
 					} else if (token == U8T_FLOAT) {
 						const char* valueText = u8t_scanner_token_text(scanner, &n);
-						caseValue = new AstNodeLiteral(valueText, AstNodeLiteral::LiteralType::Float);
+						caseValue = new AstNodeLiteral(valueText, AstNodeLiteral::LiteralType::FLOAT);
 						setNodePosition(caseValue, scanner, src);
 					} else if (token == U8T_STRING) {
 						const char* valueText = u8t_scanner_token_text(scanner, &n);
-						caseValue = new AstNodeLiteral(valueText, AstNodeLiteral::LiteralType::String);
+						caseValue = new AstNodeLiteral(valueText, AstNodeLiteral::LiteralType::STRING);
 						setNodePosition(caseValue, scanner, src);
 					} else if (token == U8T_IDENTIFIER) {
 						const char* valueText = u8t_scanner_token_text(scanner, &n);
@@ -1151,15 +1151,15 @@ namespace Qd {
 							AstNodeLiteral* value = nullptr;
 							if (token == U8T_INTEGER) {
 								const char* valueText = u8t_scanner_token_text(&scanner, &n);
-								value = new AstNodeLiteral(valueText, AstNodeLiteral::LiteralType::Integer);
+								value = new AstNodeLiteral(valueText, AstNodeLiteral::LiteralType::INTEGER);
 								setNodePosition(value, &scanner, src);
 							} else if (token == U8T_FLOAT) {
 								const char* valueText = u8t_scanner_token_text(&scanner, &n);
-								value = new AstNodeLiteral(valueText, AstNodeLiteral::LiteralType::Float);
+								value = new AstNodeLiteral(valueText, AstNodeLiteral::LiteralType::FLOAT);
 								setNodePosition(value, &scanner, src);
 							} else if (token == U8T_STRING) {
 								const char* valueText = u8t_scanner_token_text(&scanner, &n);
-								value = new AstNodeLiteral(valueText, AstNodeLiteral::LiteralType::String);
+								value = new AstNodeLiteral(valueText, AstNodeLiteral::LiteralType::STRING);
 								setNodePosition(value, &scanner, src);
 							}
 							if (value) {

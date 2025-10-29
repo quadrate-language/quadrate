@@ -14,7 +14,7 @@ namespace Qd {
 		}
 
 		IAstNode::Type type() const override {
-			return Type::Program;
+			return Type::PROGRAM;
 		}
 
 		virtual size_t childCount() const override {

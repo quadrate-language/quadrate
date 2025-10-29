@@ -12,7 +12,7 @@ namespace Qd {
 		}
 
 		IAstNode::Type type() const override {
-			return Type::ScopedIdentifier;
+			return Type::SCOPED_IDENTIFIER;
 		}
 
 		const std::string& scope() const {

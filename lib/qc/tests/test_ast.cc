@@ -9,11 +9,11 @@ TEST(SimpleFunctionDeclaration) {
 	Qd::IAstNode* root = ast.generate(src, false, nullptr);
 
 	ASSERT(root != nullptr, "root should not be null");
-	ASSERT(root->type() == Qd::IAstNode::Type::Program, "root should be a Program");
+	ASSERT(root->type() == Qd::IAstNode::Type::PROGRAM, "root should be a Program");
 	ASSERT(root->childCount() == 1, "program should have 1 child");
 
 	Qd::IAstNode* func = root->child(0);
-	ASSERT(func->type() == Qd::IAstNode::Type::FunctionDeclaration, "child should be function declaration");
+	ASSERT(func->type() == Qd::IAstNode::Type::FUNCTION_DECLARATION, "child should be function declaration");
 }
 
 TEST(FunctionWithParameters) {
@@ -25,7 +25,7 @@ TEST(FunctionWithParameters) {
 	ASSERT(root->childCount() == 1, "should have 1 child");
 
 	Qd::IAstNode* func = root->child(0);
-	ASSERT(func->type() == Qd::IAstNode::Type::FunctionDeclaration, "should be function");
+	ASSERT(func->type() == Qd::IAstNode::Type::FUNCTION_DECLARATION, "should be function");
 }
 
 TEST(ScopedIdentifier) {
@@ -37,7 +37,7 @@ TEST(ScopedIdentifier) {
 	ASSERT(root->childCount() == 1, "should have 1 child");
 
 	Qd::IAstNode* func = root->child(0);
-	ASSERT(func->type() == Qd::IAstNode::Type::FunctionDeclaration, "should be function");
+	ASSERT(func->type() == Qd::IAstNode::Type::FUNCTION_DECLARATION, "should be function");
 
 	// Function should have a body
 	Qd::IAstNode* body = func->child(0);
@@ -46,7 +46,7 @@ TEST(ScopedIdentifier) {
 
 	// Body should contain scoped identifier
 	Qd::IAstNode* scoped = body->child(0);
-	ASSERT(scoped->type() == Qd::IAstNode::Type::ScopedIdentifier, "should be scoped identifier");
+	ASSERT(scoped->type() == Qd::IAstNode::Type::SCOPED_IDENTIFIER, "should be scoped identifier");
 }
 
 TEST(LineComment) {
@@ -64,7 +64,7 @@ TEST(LineComment) {
 	ASSERT(body->childCount() == 1, "body should have 1 child");
 
 	Qd::IAstNode* id = body->child(0);
-	ASSERT(id->type() == Qd::IAstNode::Type::Identifier, "should be identifier");
+	ASSERT(id->type() == Qd::IAstNode::Type::IDENTIFIER, "should be identifier");
 }
 
 TEST(BlockComment) {
@@ -95,13 +95,13 @@ TEST(BreakStatement) {
 	ASSERT(funcBody->childCount() == 1, "funcBody should have 1 child");
 
 	Qd::IAstNode* forStmt = funcBody->child(0);
-	ASSERT(forStmt->type() == Qd::IAstNode::Type::ForStatement, "should be for");
+	ASSERT(forStmt->type() == Qd::IAstNode::Type::FOR_STATEMENT, "should be for");
 
 	Qd::IAstNode* forBody = forStmt->child(0);
 	ASSERT(forBody->childCount() == 1, "forBody should have 1 child");
 
 	Qd::IAstNode* breakStmt = forBody->child(0);
-	ASSERT(breakStmt->type() == Qd::IAstNode::Type::BreakStatement, "should be break");
+	ASSERT(breakStmt->type() == Qd::IAstNode::Type::BREAK_STATEMENT, "should be break");
 }
 
 TEST(ContinueStatement) {
@@ -119,7 +119,7 @@ TEST(ContinueStatement) {
 
 	ASSERT(forBody->childCount() == 1, "forBody should have 1 child");
 	Qd::IAstNode* continueStmt = forBody->child(0);
-	ASSERT(continueStmt->type() == Qd::IAstNode::Type::ContinueStatement, "should be continue");
+	ASSERT(continueStmt->type() == Qd::IAstNode::Type::CONTINUE_STATEMENT, "should be continue");
 }
 
 TEST(DeferStatement) {
@@ -135,12 +135,12 @@ TEST(DeferStatement) {
 
 	ASSERT(body->childCount() == 1, "body should have 1 child");
 	Qd::IAstNode* deferStmt = body->child(0);
-	ASSERT(deferStmt->type() == Qd::IAstNode::Type::DeferStatement, "should be defer");
+	ASSERT(deferStmt->type() == Qd::IAstNode::Type::DEFER_STATEMENT, "should be defer");
 
 	// Defer should contain the identifier
 	ASSERT(deferStmt->childCount() == 1, "deferStmt should have 1 child");
 	Qd::IAstNode* id = deferStmt->child(0);
-	ASSERT(id->type() == Qd::IAstNode::Type::Identifier, "should be identifier");
+	ASSERT(id->type() == Qd::IAstNode::Type::IDENTIFIER, "should be identifier");
 }
 
 TEST(DeferBlock) {
@@ -156,7 +156,7 @@ TEST(DeferBlock) {
 
 	ASSERT(body->childCount() == 1, "body should have 1 child");
 	Qd::IAstNode* deferStmt = body->child(0);
-	ASSERT(deferStmt->type() == Qd::IAstNode::Type::DeferStatement, "should be defer");
+	ASSERT(deferStmt->type() == Qd::IAstNode::Type::DEFER_STATEMENT, "should be defer");
 
 	// Defer should contain the identifier
 	ASSERT(deferStmt->childCount() == 1, "deferStmt should have 1 child");
@@ -175,7 +175,7 @@ TEST(ReturnStatement) {
 
 	ASSERT(body->childCount() == 1, "body should have 1 child");
 	Qd::IAstNode* returnStmt = body->child(0);
-	ASSERT(returnStmt->type() == Qd::IAstNode::Type::ReturnStatement, "should be return");
+	ASSERT(returnStmt->type() == Qd::IAstNode::Type::RETURN_STATEMENT, "should be return");
 }
 
 TEST(ConstDeclaration) {
@@ -187,7 +187,7 @@ TEST(ConstDeclaration) {
 	ASSERT(root->childCount() == 1, "should have 1 child");
 
 	Qd::IAstNode* constDecl = root->child(0);
-	ASSERT(constDecl->type() == Qd::IAstNode::Type::ConstantDeclaration, "should be constant");
+	ASSERT(constDecl->type() == Qd::IAstNode::Type::CONSTANT_DECLARATION, "should be constant");
 
 	// Const declaration stores value internally, not as a child node
 	ASSERT(constDecl->childCount() == 0, "constDecl should have 0 children");
@@ -202,7 +202,7 @@ TEST(UseStatement) {
 	ASSERT(root->childCount() == 1, "should have 1 child");
 
 	Qd::IAstNode* useStmt = root->child(0);
-	ASSERT(useStmt->type() == Qd::IAstNode::Type::UseStatement, "should be use statement");
+	ASSERT(useStmt->type() == Qd::IAstNode::Type::USE_STATEMENT, "should be use statement");
 }
 
 TEST(SwitchStatement) {
@@ -218,7 +218,7 @@ TEST(SwitchStatement) {
 
 	ASSERT(body->childCount() == 1, "body should have 1 child");
 	Qd::IAstNode* switchStmt = body->child(0);
-	ASSERT(switchStmt->type() == Qd::IAstNode::Type::SwitchStatement, "should be switch");
+	ASSERT(switchStmt->type() == Qd::IAstNode::Type::SWITCH_STATEMENT, "should be switch");
 
 	// Switch should have 2 cases (case 1 and default)
 	ASSERT(switchStmt->childCount() == 2, "switch should have 2 cases");
@@ -237,7 +237,7 @@ TEST(IfStatement) {
 
 	ASSERT(body->childCount() == 1, "body should have 1 child");
 	Qd::IAstNode* ifStmt = body->child(0);
-	ASSERT(ifStmt->type() == Qd::IAstNode::Type::IfStatement, "should be if statement");
+	ASSERT(ifStmt->type() == Qd::IAstNode::Type::IF_STATEMENT, "should be if statement");
 }
 
 TEST(IfElseStatement) {
@@ -253,7 +253,7 @@ TEST(IfElseStatement) {
 
 	ASSERT(body->childCount() == 1, "body should have 1 child");
 	Qd::IAstNode* ifStmt = body->child(0);
-	ASSERT(ifStmt->type() == Qd::IAstNode::Type::IfStatement, "should be if statement");
+	ASSERT(ifStmt->type() == Qd::IAstNode::Type::IF_STATEMENT, "should be if statement");
 
 	// If statement should have 2 children: then body and else body
 	ASSERT(ifStmt->childCount() == 2, "if should have then and else bodies");
@@ -277,14 +277,14 @@ TEST(NestedIfElse) {
 	Qd::IAstNode* body = func->child(0);
 	Qd::IAstNode* outerIf = body->child(0);
 
-	ASSERT(outerIf->type() == Qd::IAstNode::Type::IfStatement, "should be if statement");
+	ASSERT(outerIf->type() == Qd::IAstNode::Type::IF_STATEMENT, "should be if statement");
 	ASSERT(outerIf->childCount() == 2, "outer if should have then and else");
 
 	Qd::IAstNode* outerElse = outerIf->child(1);
 	ASSERT(outerElse->childCount() == 1, "outer else should have 1 child");
 
 	Qd::IAstNode* nestedIf = outerElse->child(0);
-	ASSERT(nestedIf->type() == Qd::IAstNode::Type::IfStatement, "nested should be if statement");
+	ASSERT(nestedIf->type() == Qd::IAstNode::Type::IF_STATEMENT, "nested should be if statement");
 	ASSERT(nestedIf->childCount() == 2, "nested if should have then and else");
 }
 
@@ -301,11 +301,11 @@ TEST(DeeplyNestedIfElse) {
 	ASSERT(level1->childCount() == 2, "level 1 should have then and else");
 
 	Qd::IAstNode* level2 = level1->child(1)->child(0);
-	ASSERT(level2->type() == Qd::IAstNode::Type::IfStatement, "level 2 should be if");
+	ASSERT(level2->type() == Qd::IAstNode::Type::IF_STATEMENT, "level 2 should be if");
 	ASSERT(level2->childCount() == 2, "level 2 should have then and else");
 
 	Qd::IAstNode* level3 = level2->child(1)->child(0);
-	ASSERT(level3->type() == Qd::IAstNode::Type::IfStatement, "level 3 should be if");
+	ASSERT(level3->type() == Qd::IAstNode::Type::IF_STATEMENT, "level 3 should be if");
 	ASSERT(level3->childCount() == 2, "level 3 should have then and else");
 }
 
@@ -322,7 +322,7 @@ TEST(ForStatement) {
 
 	ASSERT(body->childCount() == 1, "body should have 1 child");
 	Qd::IAstNode* forStmt = body->child(0);
-	ASSERT(forStmt->type() == Qd::IAstNode::Type::ForStatement, "should be for");
+	ASSERT(forStmt->type() == Qd::IAstNode::Type::FOR_STATEMENT, "should be for");
 }
 
 TEST(Literals) {
@@ -339,13 +339,13 @@ TEST(Literals) {
 	ASSERT(body->childCount() == 3, "body should have 3 children");
 
 	Qd::IAstNode* intLit = body->child(0);
-	ASSERT(intLit->type() == Qd::IAstNode::Type::Literal, "should be literal");
+	ASSERT(intLit->type() == Qd::IAstNode::Type::LITERAL, "should be literal");
 
 	Qd::IAstNode* floatLit = body->child(1);
-	ASSERT(floatLit->type() == Qd::IAstNode::Type::Literal, "should be literal");
+	ASSERT(floatLit->type() == Qd::IAstNode::Type::LITERAL, "should be literal");
 
 	Qd::IAstNode* strLit = body->child(2);
-	ASSERT(strLit->type() == Qd::IAstNode::Type::Literal, "should be literal");
+	ASSERT(strLit->type() == Qd::IAstNode::Type::LITERAL, "should be literal");
 }
 
 TEST(ErrorRecoveryMissingBraceAfterFunction) {
@@ -369,7 +369,7 @@ TEST(ErrorRecoveryMissingBraceAfterIf) {
 	ASSERT(root->childCount() == 1, "should have 1 function");
 
 	Qd::IAstNode* func = root->child(0);
-	ASSERT(func->type() == Qd::IAstNode::Type::FunctionDeclaration, "should be function");
+	ASSERT(func->type() == Qd::IAstNode::Type::FUNCTION_DECLARATION, "should be function");
 
 	// Function should have body even with error in if statement
 	Qd::IAstNode* body = func->child(0);
@@ -385,7 +385,7 @@ TEST(ErrorRecoveryMissingBraceAfterFor) {
 	ASSERT(root->childCount() == 1, "should have 1 function");
 
 	Qd::IAstNode* func = root->child(0);
-	ASSERT(func->type() == Qd::IAstNode::Type::FunctionDeclaration, "should be function");
+	ASSERT(func->type() == Qd::IAstNode::Type::FUNCTION_DECLARATION, "should be function");
 
 	// Function should have body even with error in for statement
 	Qd::IAstNode* body = func->child(0);
