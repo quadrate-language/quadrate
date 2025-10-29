@@ -62,6 +62,30 @@ std::string createTempDir() {
 	return tmpDir;
 }
 
+// RAII guard for automatic temp directory cleanup
+class TempDirGuard {
+public:
+	explicit TempDirGuard(const std::string& path) : mPath(path), mShouldDelete(true) {}
+
+	~TempDirGuard() {
+		if (mShouldDelete && !mPath.empty()) {
+			std::filesystem::remove_all(mPath);
+		}
+	}
+
+	void release() {
+		mShouldDelete = false;
+	}
+
+	// Prevent copying
+	TempDirGuard(const TempDirGuard&) = delete;
+	TempDirGuard& operator=(const TempDirGuard&) = delete;
+
+private:
+	std::string mPath;
+	bool mShouldDelete;
+};
+
 int main(int argc, char** argv) {
 	cxxopts::Options options("quadc", "Quadrate compiler");
 	options.add_options()("h,help", "Display help.")("v,version", "Display compiler version.")(
@@ -106,6 +130,14 @@ int main(int argc, char** argv) {
 	}
 
 	const std::string outputDir = createTempDir();
+	TempDirGuard tempGuard(outputDir);
+
+	// Check if we should preserve temp files
+	const bool saveTemps = result["save-temps"].as<bool>();
+	if (saveTemps) {
+		tempGuard.release();
+		std::cout << "Temporary files saved in: " << outputDir << std::endl;
+	}
 
 	if (result.count("files")) {
 		auto files = result["files"].as<std::vector<std::string>>();
