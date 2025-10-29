@@ -37,7 +37,7 @@ namespace Qd {
 
 		// Get error count
 		size_t errorCount() const {
-			return error_count_;
+			return mErrorCount;
 		}
 
 	private:
@@ -59,8 +59,8 @@ namespace Qd {
 		void analyzeBlockInIsolation(IAstNode* node, std::vector<StackValueType>& type_stack);
 
 		// Helper: Type check an instruction (with optional error suppression for signature analysis)
-		void typeCheckInstructionInternal(const char* name, std::vector<StackValueType>& type_stack,
-				bool report_errors);
+		void typeCheckInstructionInternal(
+				const char* name, std::vector<StackValueType>& type_stack, bool report_errors);
 
 		// Check if a name is a built-in instruction
 		bool isBuiltInInstruction(const char* name) const;
@@ -78,16 +78,16 @@ namespace Qd {
 		void reportErrorConditional(const char* message, bool should_report);
 
 		// Current filename being validated
-		const char* filename_;
+		const char* mFilename;
 
 		// Symbol table: all defined functions
-		std::unordered_set<std::string> defined_functions_;
+		std::unordered_set<std::string> mDefinedFunctions;
 
 		// Function signatures: stack effect of each function
-		std::unordered_map<std::string, FunctionSignature> function_signatures_;
+		std::unordered_map<std::string, FunctionSignature> mFunctionSignatures;
 
 		// Error count
-		size_t error_count_;
+		size_t mErrorCount;
 	};
 
 } // namespace Qd

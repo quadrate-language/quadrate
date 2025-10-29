@@ -20,7 +20,7 @@ namespace Qd {
 		static const char* green();	  // Success
 
 	private:
-		static bool enabled_;
+		static bool mEnabled;
 	};
 
 } // namespace Qd

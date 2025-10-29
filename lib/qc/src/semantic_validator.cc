@@ -17,7 +17,7 @@ namespace Qd {
 			"cbrt", "ceil", "clear", "cos", "dec", "depth", "div", "dup", "dup2", "floor", "inc", "mul", "nip", "over",
 			"print", "prints", "printsv", "printv", "rot", "sin", "sq", "sqrt", "sub", "swap", "tan"};
 
-	SemanticValidator::SemanticValidator() : filename_(nullptr), error_count_(0) {
+	SemanticValidator::SemanticValidator() : mFilename(nullptr), mErrorCount(0) {
 	}
 
 	bool SemanticValidator::isBuiltInInstruction(const char* name) const {
@@ -40,19 +40,19 @@ namespace Qd {
 		}
 		// GCC/Clang style: quadc: filename: error: message
 		std::cerr << Colors::bold() << "quadc: " << Colors::reset();
-		if (filename_) {
-			std::cerr << Colors::bold() << filename_ << ":" << Colors::reset() << " ";
+		if (mFilename) {
+			std::cerr << Colors::bold() << mFilename << ":" << Colors::reset() << " ";
 		}
 		std::cerr << Colors::bold() << Colors::red() << "error:" << Colors::reset() << " ";
 		std::cerr << Colors::bold() << message << Colors::reset() << std::endl;
-		error_count_++;
+		mErrorCount++;
 	}
 
 	size_t SemanticValidator::validate(IAstNode* program, const char* filename) {
-		error_count_ = 0;
-		filename_ = filename;
-		defined_functions_.clear();
-		function_signatures_.clear();
+		mErrorCount = 0;
+		mFilename = filename;
+		mDefinedFunctions.clear();
+		mFunctionSignatures.clear();
 
 		// Pass 1: Collect all function definitions
 		collectDefinitions(program);
@@ -70,16 +70,15 @@ namespace Qd {
 			signatures_changed = false;
 
 			// Store old signatures to detect changes
-			auto old_signatures = function_signatures_;
+			auto old_signatures = mFunctionSignatures;
 
 			// Re-analyze all functions with current signatures
 			analyzeFunctionSignatures(program);
 
 			// Check if any signatures changed
-			for (const auto& pair : function_signatures_) {
+			for (const auto& pair : mFunctionSignatures) {
 				auto old_it = old_signatures.find(pair.first);
-				if (old_it == old_signatures.end() ||
-					old_it->second.produces.size() != pair.second.produces.size()) {
+				if (old_it == old_signatures.end() || old_it->second.produces.size() != pair.second.produces.size()) {
 					signatures_changed = true;
 					break;
 				}
@@ -90,7 +89,9 @@ namespace Qd {
 						break;
 					}
 				}
-				if (signatures_changed) break;
+				if (signatures_changed) {
+					break;
+				}
 			}
 
 			iteration++;
@@ -99,14 +100,14 @@ namespace Qd {
 		// Warn if we didn't converge
 		if (iteration >= max_iterations) {
 			std::cerr << Colors::bold() << Colors::magenta() << "Warning: " << Colors::reset()
-			          << "Function signature analysis did not converge after " << max_iterations
-			          << " iterations. Type checking may be incomplete." << std::endl;
+					  << "Function signature analysis did not converge after " << max_iterations
+					  << " iterations. Type checking may be incomplete." << std::endl;
 		}
 
 		// Pass 3b: Type check using function signatures
 		typeCheckFunction(program);
 
-		return error_count_;
+		return mErrorCount;
 	}
 
 	void SemanticValidator::collectDefinitions(IAstNode* node) {
@@ -117,7 +118,7 @@ namespace Qd {
 		// If this is a function declaration, add it to the symbol table
 		if (node->type() == IAstNode::Type::FunctionDeclaration) {
 			AstNodeFunctionDeclaration* func = static_cast<AstNodeFunctionDeclaration*>(node);
-			defined_functions_.insert(func->name());
+			mDefinedFunctions.insert(func->name());
 		}
 
 		// Recursively process children
@@ -143,7 +144,7 @@ namespace Qd {
 			}
 
 			// Check if it's a defined function
-			if (defined_functions_.find(name) == defined_functions_.end()) {
+			if (mDefinedFunctions.find(name) == mDefinedFunctions.end()) {
 				// Not found - report error
 				std::string error_msg = "Undefined function '";
 				error_msg += name;
@@ -177,7 +178,7 @@ namespace Qd {
 			// and produce whatever is left on the stack
 			FunctionSignature sig;
 			sig.produces = type_stack;
-			function_signatures_[func->name()] = sig;
+			mFunctionSignatures[func->name()] = sig;
 		}
 
 		// Recursively process children
@@ -233,8 +234,8 @@ namespace Qd {
 				AstNodeIdentifier* ident = static_cast<AstNodeIdentifier*>(child);
 				const std::string& name = ident->name();
 
-				auto sig_it = function_signatures_.find(name);
-				if (sig_it != function_signatures_.end()) {
+				auto sig_it = mFunctionSignatures.find(name);
+				if (sig_it != mFunctionSignatures.end()) {
 					// Apply the known signature
 					const FunctionSignature& sig = sig_it->second;
 					for (const auto& type : sig.produces) {
@@ -350,8 +351,8 @@ namespace Qd {
 				const std::string& name = ident->name();
 
 				// Check if this is a user-defined function
-				auto sig_it = function_signatures_.find(name);
-				if (sig_it != function_signatures_.end()) {
+				auto sig_it = mFunctionSignatures.find(name);
+				if (sig_it != mFunctionSignatures.end()) {
 					const FunctionSignature& sig = sig_it->second;
 
 					// TODO: In the future, check if stack has enough values for sig.consumes
@@ -378,8 +379,8 @@ namespace Qd {
 		typeCheckInstructionInternal(name, type_stack, true);
 	}
 
-	void SemanticValidator::typeCheckInstructionInternal(const char* name, std::vector<StackValueType>& type_stack,
-			bool report_errors) {
+	void SemanticValidator::typeCheckInstructionInternal(
+			const char* name, std::vector<StackValueType>& type_stack, bool report_errors) {
 		// Handle instruction aliases
 		if (strcmp(name, ".") == 0) {
 			name = "print";
@@ -533,8 +534,7 @@ namespace Qd {
 		// Stack operations: dup
 		else if (strcmp(name, "dup") == 0) {
 			if (type_stack.empty()) {
-				reportErrorConditional("Type error in 'dup': Stack underflow (requires 1 value)",
-						report_errors);
+				reportErrorConditional("Type error in 'dup': Stack underflow (requires 1 value)", report_errors);
 				return;
 			}
 			StackValueType top = type_stack.back();
@@ -556,8 +556,7 @@ namespace Qd {
 		// Stack operations: swap
 		else if (strcmp(name, "swap") == 0) {
 			if (type_stack.size() < 2) {
-				reportErrorConditional("Type error in 'swap': Stack underflow (requires 2 values)",
-						report_errors);
+				reportErrorConditional("Type error in 'swap': Stack underflow (requires 2 values)", report_errors);
 				return;
 			}
 			StackValueType a = type_stack.back();
