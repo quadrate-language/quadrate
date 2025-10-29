@@ -65,7 +65,8 @@ std::string createTempDir() {
 // RAII guard for automatic temp directory cleanup
 class TempDirGuard {
 public:
-	explicit TempDirGuard(const std::string& path) : mPath(path), mShouldDelete(true) {}
+	explicit TempDirGuard(const std::string& path) : mPath(path), mShouldDelete(true) {
+	}
 
 	~TempDirGuard() {
 		if (mShouldDelete && !mPath.empty()) {
@@ -91,7 +92,8 @@ int main(int argc, char** argv) {
 	options.add_options()("h,help", "Display help.")("v,version", "Display compiler version.")(
 			"o", "Output filename", cxxopts::value<std::string>()->default_value("main"))("save-temps",
 			"Save temporary files", cxxopts::value<bool>()->default_value("false")->implicit_value("true"))("no-colors",
-			"Disable colored output",
+			"Disable colored output", cxxopts::value<bool>()->default_value("false")->implicit_value("true"))("verbose",
+			"Print compilation commands",
 			cxxopts::value<bool>()->default_value("false")->implicit_value("true"))("dump-tokens", "Print tokens",
 			cxxopts::value<bool>()->default_value("false")->implicit_value("true"))("r,run", "Run the compiled program",
 			cxxopts::value<bool>()->default_value("false")->implicit_value("true"))(
@@ -138,6 +140,9 @@ int main(int argc, char** argv) {
 		tempGuard.release();
 		std::cout << "Temporary files saved in: " << outputDir << std::endl;
 	}
+
+	// Check if verbose output is enabled
+	const bool verbose = result["verbose"].as<bool>();
 
 	if (result.count("files")) {
 		auto files = result["files"].as<std::vector<std::string>>();
@@ -203,7 +208,7 @@ int main(int argc, char** argv) {
 		std::string compilerFlags = getCompilerFlags();
 		for (auto& source : transpiledSources) {
 			if (auto tu = compiler.compile(
-						(std::filesystem::path(outputDir) / source.filename).c_str(), compilerFlags.c_str())) {
+						(std::filesystem::path(outputDir) / source.filename).c_str(), compilerFlags.c_str(), verbose)) {
 				translationUnits.push_back(*tu);
 			} else {
 				std::cerr << "quadc: compilation failed for " << source.filename << std::endl;
@@ -214,7 +219,7 @@ int main(int argc, char** argv) {
 		// Compile main.c only if it was generated (not building shared/static library)
 		if (!shared && !statik) {
 			std::filesystem::path mainCPath = std::filesystem::path(outputDir) / "main.c";
-			if (auto tu = compiler.compile(mainCPath.string().c_str(), compilerFlags.c_str())) {
+			if (auto tu = compiler.compile(mainCPath.string().c_str(), compilerFlags.c_str(), verbose)) {
 				translationUnits.push_back(*tu);
 			} else {
 				std::cerr << "quadc: compilation failed for main.c" << std::endl;
@@ -224,7 +229,7 @@ int main(int argc, char** argv) {
 
 		Qd::Linker linker;
 		std::string linkerFlags = getLinkerFlags();
-		bool linkSuccess = linker.link(translationUnits, outputFilename.c_str(), linkerFlags.c_str());
+		bool linkSuccess = linker.link(translationUnits, outputFilename.c_str(), linkerFlags.c_str(), verbose);
 		if (!linkSuccess) {
 			std::cerr << "quadc: linking failed" << std::endl;
 			return 1;

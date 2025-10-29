@@ -7,7 +7,7 @@
 namespace Qd {
 	class Compiler {
 	public:
-		std::optional<TranslationUnit> compile(const char* filename, const char* flags) const;
+		std::optional<TranslationUnit> compile(const char* filename, const char* flags, bool verbose) const;
 	};
 }
 

@@ -7,8 +7,8 @@
 namespace Qd {
 	class Linker {
 	public:
-		bool link(const std::vector<TranslationUnit>& translationUnits, const char* outputFilename,
-				const char* flags) const;
+		bool link(const std::vector<TranslationUnit>& translationUnits, const char* outputFilename, const char* flags,
+				bool verbose) const;
 	};
 }
 
