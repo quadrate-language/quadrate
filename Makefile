@@ -3,7 +3,7 @@ BUILD_DIR_RELEASE := build/release
 
 MESON_FLAGS := -Dbuild_tests=true
 
-PREFIX ?= /usr/local
+PREFIX ?= /usr
 
 .PHONY: all debug release tests valgrind examples format install uninstall clean
 

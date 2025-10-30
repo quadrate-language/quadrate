@@ -1,6 +1,7 @@
 #ifndef QUADRATE_QD_H
 #define QUADRATE_QD_H
 
+#include <quadrate/runtime/exec_result.h>
 #include <quadrate/runtime/runtime.h>
 
 #ifdef __cplusplus
