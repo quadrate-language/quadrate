@@ -1821,6 +1821,70 @@ qd_exec_result qd_gte(qd_context* ctx) {
 	return (qd_exec_result){0};
 }
 
+// within - check if value is within range [min, max]: ( value min max -- result )
+// Pops three values, pushes 1 if min <= value <= max, 0 otherwise
+qd_exec_result qd_within(qd_context* ctx) {
+	// Check we have at least 3 elements
+	size_t stack_size = qd_stack_size(ctx->st);
+	if (stack_size < 3) {
+		fprintf(stderr, "Fatal error in within: Stack underflow (required 3 elements, have %zu)\n", stack_size);
+		dump_stack(ctx);
+		abort();
+	}
+
+	// Check all three are numeric types
+	qd_stack_element_t check_max, check_min, check_value;
+	qd_stack_error check_err = qd_stack_element(ctx->st, stack_size - 1, &check_max);
+	if (check_err == QD_STACK_OK) {
+		check_err = qd_stack_element(ctx->st, stack_size - 2, &check_min);
+	}
+	if (check_err == QD_STACK_OK) {
+		check_err = qd_stack_element(ctx->st, stack_size - 3, &check_value);
+	}
+	if (check_err != QD_STACK_OK) {
+		fprintf(stderr, "Fatal error in within: Failed to access stack elements\n");
+		dump_stack(ctx);
+		abort();
+	}
+
+	if ((check_value.type != QD_STACK_TYPE_INT && check_value.type != QD_STACK_TYPE_FLOAT) ||
+	    (check_min.type != QD_STACK_TYPE_INT && check_min.type != QD_STACK_TYPE_FLOAT) ||
+	    (check_max.type != QD_STACK_TYPE_INT && check_max.type != QD_STACK_TYPE_FLOAT)) {
+		fprintf(stderr, "Fatal error in within: Type error (expected numeric types for comparison)\n");
+		dump_stack(ctx);
+		abort();
+	}
+
+	// Pop the three values
+	qd_stack_element_t max, min, value;
+	qd_stack_error err = qd_stack_pop(ctx->st, &max);
+	if (err != QD_STACK_OK) {
+		return (qd_exec_result){-2};
+	}
+	err = qd_stack_pop(ctx->st, &min);
+	if (err != QD_STACK_OK) {
+		return (qd_exec_result){-2};
+	}
+	err = qd_stack_pop(ctx->st, &value);
+	if (err != QD_STACK_OK) {
+		return (qd_exec_result){-2};
+	}
+
+	// Convert to double for comparison
+	double value_f = (value.type == QD_STACK_TYPE_INT) ? (double)value.value.i : value.value.f;
+	double min_f = (min.type == QD_STACK_TYPE_INT) ? (double)min.value.i : min.value.f;
+	double max_f = (max.type == QD_STACK_TYPE_INT) ? (double)max.value.i : max.value.f;
+
+	// Check if value is within [min, max]
+	int64_t result = (value_f >= min_f && value_f <= max_f) ? 1 : 0;
+	err = qd_stack_push_int(ctx->st, result);
+	if (err != QD_STACK_OK) {
+		return (qd_exec_result){-2};
+	}
+
+	return (qd_exec_result){0};
+}
+
 // Dump current stack contents for debugging
 static void dump_stack(qd_context* ctx) {
 	size_t stack_size = qd_stack_size(ctx->st);

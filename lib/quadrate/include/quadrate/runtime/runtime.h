@@ -50,6 +50,7 @@ qd_exec_result qd_lt(qd_context* ctx);
 qd_exec_result qd_gt(qd_context* ctx);
 qd_exec_result qd_lte(qd_context* ctx);
 qd_exec_result qd_gte(qd_context* ctx);
+qd_exec_result qd_within(qd_context* ctx);
 
 qd_exec_result qd_err_push(qd_context* ctx, qd_stack_error value);
 

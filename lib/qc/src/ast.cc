@@ -31,7 +31,7 @@ namespace Qd {
 		static const char* instructions[] = {"*", "+", "-", ".", "/", "abs", "acos", "add", "asin", "atan", "cb",
 				"cbrt", "ceil", "clear", "cos", "dec", "depth", "div", "dup", "dup2", "eq", "fac", "floor", "gt", "gte",
 				"inc", "inv", "lt", "lte", "mul", "neq", "nip", "over", "print", "prints", "printsv", "printv", "rot",
-				"sin", "sq", "sqrt", "sub", "swap", "tan"};
+				"sin", "sq", "sqrt", "sub", "swap", "tan", "within"};
 		static const size_t count = sizeof(instructions) / sizeof(instructions[0]);
 
 		for (size_t i = 0; i < count; i++) {

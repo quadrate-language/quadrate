@@ -3049,3 +3049,358 @@ TEST(ComparisonChainTest) {
 
 	destroy_test_context(ctx);
 }
+
+// ========== qd_within tests ==========
+
+TEST(WithinValueInRangeIntegersTest) {
+	qd_context* ctx = create_test_context();
+
+	// Test 5 within [3, 10] (should return 1)
+	qd_push_i(ctx, 5);
+	qd_push_i(ctx, 3);
+	qd_push_i(ctx, 10);
+	qd_exec_result result = qd_within(ctx);
+
+	ASSERT_EQ(result.code, 0, "within should succeed");
+	ASSERT_EQ((int)qd_stack_size(ctx->st), 1, "Stack should have 1 element");
+
+	qd_stack_element_t elem;
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ(elem.type, QD_STACK_TYPE_INT, "result should be int");
+	ASSERT_EQ((int)elem.value.i, 1, "5 within [3, 10] should be 1");
+
+	destroy_test_context(ctx);
+}
+
+TEST(WithinValueBelowRangeTest) {
+	qd_context* ctx = create_test_context();
+
+	// Test 2 within [3, 10] (should return 0)
+	qd_push_i(ctx, 2);
+	qd_push_i(ctx, 3);
+	qd_push_i(ctx, 10);
+	qd_exec_result result = qd_within(ctx);
+
+	ASSERT_EQ(result.code, 0, "within should succeed");
+
+	qd_stack_element_t elem;
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ((int)elem.value.i, 0, "2 within [3, 10] should be 0");
+
+	destroy_test_context(ctx);
+}
+
+TEST(WithinValueAboveRangeTest) {
+	qd_context* ctx = create_test_context();
+
+	// Test 15 within [3, 10] (should return 0)
+	qd_push_i(ctx, 15);
+	qd_push_i(ctx, 3);
+	qd_push_i(ctx, 10);
+	qd_exec_result result = qd_within(ctx);
+
+	ASSERT_EQ(result.code, 0, "within should succeed");
+
+	qd_stack_element_t elem;
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ((int)elem.value.i, 0, "15 within [3, 10] should be 0");
+
+	destroy_test_context(ctx);
+}
+
+TEST(WithinValueEqualsMinBoundaryTest) {
+	qd_context* ctx = create_test_context();
+
+	// Test 3 within [3, 10] (should return 1, inclusive)
+	qd_push_i(ctx, 3);
+	qd_push_i(ctx, 3);
+	qd_push_i(ctx, 10);
+	qd_exec_result result = qd_within(ctx);
+
+	ASSERT_EQ(result.code, 0, "within should succeed");
+
+	qd_stack_element_t elem;
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ((int)elem.value.i, 1, "3 within [3, 10] should be 1 (inclusive)");
+
+	destroy_test_context(ctx);
+}
+
+TEST(WithinValueEqualsMaxBoundaryTest) {
+	qd_context* ctx = create_test_context();
+
+	// Test 10 within [3, 10] (should return 1, inclusive)
+	qd_push_i(ctx, 10);
+	qd_push_i(ctx, 3);
+	qd_push_i(ctx, 10);
+	qd_exec_result result = qd_within(ctx);
+
+	ASSERT_EQ(result.code, 0, "within should succeed");
+
+	qd_stack_element_t elem;
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ((int)elem.value.i, 1, "10 within [3, 10] should be 1 (inclusive)");
+
+	destroy_test_context(ctx);
+}
+
+TEST(WithinFloatsInRangeTest) {
+	qd_context* ctx = create_test_context();
+
+	// Test 5.5 within [3.2, 10.8] (should return 1)
+	qd_push_f(ctx, 5.5);
+	qd_push_f(ctx, 3.2);
+	qd_push_f(ctx, 10.8);
+	qd_exec_result result = qd_within(ctx);
+
+	ASSERT_EQ(result.code, 0, "within should succeed");
+
+	qd_stack_element_t elem;
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ((int)elem.value.i, 1, "5.5 within [3.2, 10.8] should be 1");
+
+	destroy_test_context(ctx);
+}
+
+TEST(WithinFloatsOutOfRangeTest) {
+	qd_context* ctx = create_test_context();
+
+	// Test 2.5 within [3.0, 10.0] (should return 0)
+	qd_push_f(ctx, 2.5);
+	qd_push_f(ctx, 3.0);
+	qd_push_f(ctx, 10.0);
+	qd_exec_result result = qd_within(ctx);
+
+	ASSERT_EQ(result.code, 0, "within should succeed");
+
+	qd_stack_element_t elem;
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ((int)elem.value.i, 0, "2.5 within [3.0, 10.0] should be 0");
+
+	destroy_test_context(ctx);
+}
+
+TEST(WithinMixedTypesTest) {
+	qd_context* ctx = create_test_context();
+
+	// Test 5.5 (float) within [3 (int), 10 (int)] (should return 1)
+	qd_push_f(ctx, 5.5);
+	qd_push_i(ctx, 3);
+	qd_push_i(ctx, 10);
+	qd_exec_result result = qd_within(ctx);
+
+	ASSERT_EQ(result.code, 0, "within should succeed with mixed types");
+
+	qd_stack_element_t elem;
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ((int)elem.value.i, 1, "5.5 within [3, 10] should be 1");
+
+	destroy_test_context(ctx);
+}
+
+TEST(WithinMixedTypesOutOfRangeTest) {
+	qd_context* ctx = create_test_context();
+
+	// Test 2.5 (float) within [3 (int), 10 (int)] (should return 0)
+	qd_push_f(ctx, 2.5);
+	qd_push_i(ctx, 3);
+	qd_push_i(ctx, 10);
+	qd_exec_result result = qd_within(ctx);
+
+	ASSERT_EQ(result.code, 0, "within should succeed with mixed types");
+
+	qd_stack_element_t elem;
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ((int)elem.value.i, 0, "2.5 within [3, 10] should be 0");
+
+	destroy_test_context(ctx);
+}
+
+TEST(WithinNegativeRangeTest) {
+	qd_context* ctx = create_test_context();
+
+	// Test -5 within [-10, -3] (should return 1)
+	qd_push_i(ctx, -5);
+	qd_push_i(ctx, -10);
+	qd_push_i(ctx, -3);
+	qd_exec_result result = qd_within(ctx);
+
+	ASSERT_EQ(result.code, 0, "within should succeed");
+
+	qd_stack_element_t elem;
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ((int)elem.value.i, 1, "-5 within [-10, -3] should be 1");
+
+	destroy_test_context(ctx);
+}
+
+TEST(WithinNegativeOutOfRangeTest) {
+	qd_context* ctx = create_test_context();
+
+	// Test -15 within [-10, -3] (should return 0)
+	qd_push_i(ctx, -15);
+	qd_push_i(ctx, -10);
+	qd_push_i(ctx, -3);
+	qd_exec_result result = qd_within(ctx);
+
+	ASSERT_EQ(result.code, 0, "within should succeed");
+
+	qd_stack_element_t elem;
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ((int)elem.value.i, 0, "-15 within [-10, -3] should be 0");
+
+	destroy_test_context(ctx);
+}
+
+TEST(WithinSinglePointRangeTest) {
+	qd_context* ctx = create_test_context();
+
+	// Test 5 within [5, 5] (should return 1, single point)
+	qd_push_i(ctx, 5);
+	qd_push_i(ctx, 5);
+	qd_push_i(ctx, 5);
+	qd_exec_result result = qd_within(ctx);
+
+	ASSERT_EQ(result.code, 0, "within should succeed");
+
+	qd_stack_element_t elem;
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ((int)elem.value.i, 1, "5 within [5, 5] should be 1");
+
+	destroy_test_context(ctx);
+}
+
+TEST(WithinSinglePointRangeOutsideTest) {
+	qd_context* ctx = create_test_context();
+
+	// Test 6 within [5, 5] (should return 0)
+	qd_push_i(ctx, 6);
+	qd_push_i(ctx, 5);
+	qd_push_i(ctx, 5);
+	qd_exec_result result = qd_within(ctx);
+
+	ASSERT_EQ(result.code, 0, "within should succeed");
+
+	qd_stack_element_t elem;
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ((int)elem.value.i, 0, "6 within [5, 5] should be 0");
+
+	destroy_test_context(ctx);
+}
+
+TEST(WithinZeroInRangeTest) {
+	qd_context* ctx = create_test_context();
+
+	// Test 0 within [-5, 5] (should return 1)
+	qd_push_i(ctx, 0);
+	qd_push_i(ctx, -5);
+	qd_push_i(ctx, 5);
+	qd_exec_result result = qd_within(ctx);
+
+	ASSERT_EQ(result.code, 0, "within should succeed");
+
+	qd_stack_element_t elem;
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ((int)elem.value.i, 1, "0 within [-5, 5] should be 1");
+
+	destroy_test_context(ctx);
+}
+
+TEST(WithinLargeRangeTest) {
+	qd_context* ctx = create_test_context();
+
+	// Test 500 within [100, 1000] (should return 1)
+	qd_push_i(ctx, 500);
+	qd_push_i(ctx, 100);
+	qd_push_i(ctx, 1000);
+	qd_exec_result result = qd_within(ctx);
+
+	ASSERT_EQ(result.code, 0, "within should succeed");
+
+	qd_stack_element_t elem;
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ((int)elem.value.i, 1, "500 within [100, 1000] should be 1");
+
+	destroy_test_context(ctx);
+}
+
+TEST(WithinFloatBoundaryTest) {
+	qd_context* ctx = create_test_context();
+
+	// Test 3.0 within [3.0, 10.0] (should return 1, exact boundary)
+	qd_push_f(ctx, 3.0);
+	qd_push_f(ctx, 3.0);
+	qd_push_f(ctx, 10.0);
+	qd_exec_result result = qd_within(ctx);
+
+	ASSERT_EQ(result.code, 0, "within should succeed");
+
+	qd_stack_element_t elem;
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ((int)elem.value.i, 1, "3.0 within [3.0, 10.0] should be 1");
+
+	destroy_test_context(ctx);
+}
+
+TEST(WithinPreservesRestOfStackTest) {
+	qd_context* ctx = create_test_context();
+
+	// Test that within only affects top 3 elements
+	qd_push_i(ctx, 100);
+	qd_push_i(ctx, 200);
+	qd_push_i(ctx, 5);   // value
+	qd_push_i(ctx, 3);   // min
+	qd_push_i(ctx, 10);  // max
+	qd_within(ctx);
+
+	ASSERT_EQ((int)qd_stack_size(ctx->st), 3, "Stack should have 3 elements");
+
+	qd_stack_element_t elem;
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ((int)elem.value.i, 1, "top should be 1 (result of 5 within [3, 10])");
+
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ((int)elem.value.i, 200, "second should be 200");
+
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ((int)elem.value.i, 100, "third should be 100");
+
+	destroy_test_context(ctx);
+}
+
+TEST(WithinChainedWithComparisonTest) {
+	qd_context* ctx = create_test_context();
+
+	// Test chaining: (5 within [3, 10]) == 1 should work
+	qd_push_i(ctx, 5);
+	qd_push_i(ctx, 3);
+	qd_push_i(ctx, 10);
+	qd_within(ctx);  // Result: 1
+
+	qd_push_i(ctx, 1);
+	qd_eq(ctx);  // Result: 1 == 1 = 1
+
+	qd_stack_element_t elem;
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ((int)elem.value.i, 1, "chained within and eq should work");
+
+	destroy_test_context(ctx);
+}
+
+TEST(WithinInvertedRangeTest) {
+	qd_context* ctx = create_test_context();
+
+	// Test 5 within [10, 3] (inverted range, should return 0)
+	qd_push_i(ctx, 5);
+	qd_push_i(ctx, 10);
+	qd_push_i(ctx, 3);
+	qd_exec_result result = qd_within(ctx);
+
+	ASSERT_EQ(result.code, 0, "within should succeed");
+
+	qd_stack_element_t elem;
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ((int)elem.value.i, 0, "5 within [10, 3] (inverted) should be 0");
+
+	destroy_test_context(ctx);
+}
