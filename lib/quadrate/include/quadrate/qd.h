@@ -1,11 +1,12 @@
 #ifndef QUADRATE_QD_H
 #define QUADRATE_QD_H
 
+#include <quadrate/runtime/runtime.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-typedef struct qd_context qd_context;
 typedef struct qd_module qd_module;
 
 qd_context* qd_create_context();
