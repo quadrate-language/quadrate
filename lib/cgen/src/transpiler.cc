@@ -7,6 +7,7 @@
 #include <qc/ast_node_constant.h>
 #include <qc/ast_node_function.h>
 #include <qc/ast_node_identifier.h>
+#include <qc/ast_node_if.h>
 #include <qc/ast_node_instruction.h>
 #include <qc/ast_node_literal.h>
 #include <qc/ast_node_parameter.h>
@@ -104,15 +105,35 @@ namespace Qd {
 			// TODO: Handle expression statement
 			break;
 		case IAstNode::Type::IF_STATEMENT: {
+			AstNodeIfStatement* ifStmt = static_cast<AstNodeIfStatement*>(node);
 			int64_t currentVar = varCounter++;
 			std::string var = "qd_var_" + std::to_string(currentVar);
-			out << makeIndent(indent) << "int64_t " << var << " = qd_stack_pop_i(ctx);\n";
-			out << makeIndent(indent) << "if (" << var << " != 0) {\n";
-			if (node->childCount() > 0) {
-				traverse(node->child(0), packageName, out, indent + 1); // Then block
-			}
+
+			// Pop the condition value from the stack
+			out << makeIndent(indent) << "qd_stack_element_t " << var << ";\n";
+			out << makeIndent(indent) << "qd_stack_error " << var << "_err = qd_stack_pop(ctx->st, &" << var << ");\n";
+			out << makeIndent(indent) << "if (" << var << "_err != QD_STACK_OK) {\n";
+			out << makeIndent(indent + 1) << "return (qd_exec_result){-2};\n";
 			out << makeIndent(indent) << "}\n";
-			break;
+
+			// Check the condition (non-zero integer means true)
+			out << makeIndent(indent) << "if (" << var << ".type == QD_STACK_TYPE_INT && " << var
+				<< ".value.i != 0) {\n";
+
+			// Then block
+			if (ifStmt->thenBody()) {
+				traverse(ifStmt->thenBody(), packageName, out, indent + 1);
+			}
+			out << makeIndent(indent) << "}";
+
+			// Else block (if present)
+			if (ifStmt->elseBody()) {
+				out << " else {\n";
+				traverse(ifStmt->elseBody(), packageName, out, indent + 1);
+				out << makeIndent(indent) << "}";
+			}
+			out << "\n";
+			return; // Don't traverse children again
 		}
 		case IAstNode::Type::FOR_STATEMENT:
 			// TODO: Handle for statement
