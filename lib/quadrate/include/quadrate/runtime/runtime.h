@@ -44,6 +44,12 @@ qd_exec_result qd_clear(qd_context* ctx);
 qd_exec_result qd_depth(qd_context* ctx);
 qd_exec_result qd_fac(qd_context* ctx);
 qd_exec_result qd_inv(qd_context* ctx);
+qd_exec_result qd_eq(qd_context* ctx);
+qd_exec_result qd_neq(qd_context* ctx);
+qd_exec_result qd_lt(qd_context* ctx);
+qd_exec_result qd_gt(qd_context* ctx);
+qd_exec_result qd_lte(qd_context* ctx);
+qd_exec_result qd_gte(qd_context* ctx);
 
 qd_exec_result qd_err_push(qd_context* ctx, qd_stack_error value);
 

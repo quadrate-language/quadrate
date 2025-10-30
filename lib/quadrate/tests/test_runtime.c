@@ -2426,3 +2426,626 @@ TEST(InvPreservesStackTest) {
 
 	destroy_test_context(ctx);
 }
+
+// ========== comparison tests ==========
+
+// qd_eq tests
+TEST(EqIntegersEqualTest) {
+	qd_context* ctx = create_test_context();
+
+	// Test 5 == 5 (should return 1)
+	qd_push_i(ctx, 5);
+	qd_push_i(ctx, 5);
+	qd_exec_result result = qd_eq(ctx);
+
+	ASSERT_EQ(result.code, 0, "eq should succeed");
+	ASSERT_EQ((int)qd_stack_size(ctx->st), 1, "Stack should have 1 element");
+
+	qd_stack_element_t elem;
+	qd_stack_error err = qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ(err, QD_STACK_OK, "pop should succeed");
+	ASSERT_EQ(elem.type, QD_STACK_TYPE_INT, "result should be int");
+	ASSERT_EQ((int)elem.value.i, 1, "5 == 5 should be 1");
+
+	destroy_test_context(ctx);
+}
+
+TEST(EqIntegersNotEqualTest) {
+	qd_context* ctx = create_test_context();
+
+	// Test 5 == 3 (should return 0)
+	qd_push_i(ctx, 5);
+	qd_push_i(ctx, 3);
+	qd_exec_result result = qd_eq(ctx);
+
+	ASSERT_EQ(result.code, 0, "eq should succeed");
+	ASSERT_EQ((int)qd_stack_size(ctx->st), 1, "Stack should have 1 element");
+
+	qd_stack_element_t elem;
+	qd_stack_error err = qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ(err, QD_STACK_OK, "pop should succeed");
+	ASSERT_EQ(elem.type, QD_STACK_TYPE_INT, "result should be int");
+	ASSERT_EQ((int)elem.value.i, 0, "5 == 3 should be 0");
+
+	destroy_test_context(ctx);
+}
+
+TEST(EqFloatsEqualTest) {
+	qd_context* ctx = create_test_context();
+
+	// Test 3.14 == 3.14 (should return 1)
+	qd_push_f(ctx, 3.14);
+	qd_push_f(ctx, 3.14);
+	qd_exec_result result = qd_eq(ctx);
+
+	ASSERT_EQ(result.code, 0, "eq should succeed");
+	ASSERT_EQ((int)qd_stack_size(ctx->st), 1, "Stack should have 1 element");
+
+	qd_stack_element_t elem;
+	qd_stack_error err = qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ(err, QD_STACK_OK, "pop should succeed");
+	ASSERT_EQ(elem.type, QD_STACK_TYPE_INT, "result should be int");
+	ASSERT_EQ((int)elem.value.i, 1, "3.14 == 3.14 should be 1");
+
+	destroy_test_context(ctx);
+}
+
+TEST(EqMixedTypesEqualTest) {
+	qd_context* ctx = create_test_context();
+
+	// Test 5 (int) == 5.0 (float) (should return 1)
+	qd_push_i(ctx, 5);
+	qd_push_f(ctx, 5.0);
+	qd_exec_result result = qd_eq(ctx);
+
+	ASSERT_EQ(result.code, 0, "eq should succeed");
+	ASSERT_EQ((int)qd_stack_size(ctx->st), 1, "Stack should have 1 element");
+
+	qd_stack_element_t elem;
+	qd_stack_error err = qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ(err, QD_STACK_OK, "pop should succeed");
+	ASSERT_EQ(elem.type, QD_STACK_TYPE_INT, "result should be int");
+	ASSERT_EQ((int)elem.value.i, 1, "5 == 5.0 should be 1");
+
+	destroy_test_context(ctx);
+}
+
+TEST(EqNegativeNumbersTest) {
+	qd_context* ctx = create_test_context();
+
+	// Test -5 == -5 (should return 1)
+	qd_push_i(ctx, -5);
+	qd_push_i(ctx, -5);
+	qd_exec_result result = qd_eq(ctx);
+
+	ASSERT_EQ(result.code, 0, "eq should succeed");
+
+	qd_stack_element_t elem;
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ((int)elem.value.i, 1, "-5 == -5 should be 1");
+
+	destroy_test_context(ctx);
+}
+
+TEST(EqZeroTest) {
+	qd_context* ctx = create_test_context();
+
+	// Test 0 == 0 (should return 1)
+	qd_push_i(ctx, 0);
+	qd_push_i(ctx, 0);
+	qd_exec_result result = qd_eq(ctx);
+
+	ASSERT_EQ(result.code, 0, "eq should succeed");
+
+	qd_stack_element_t elem;
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ((int)elem.value.i, 1, "0 == 0 should be 1");
+
+	destroy_test_context(ctx);
+}
+
+// qd_neq tests
+TEST(NeqIntegersNotEqualTest) {
+	qd_context* ctx = create_test_context();
+
+	// Test 5 != 3 (should return 1)
+	qd_push_i(ctx, 5);
+	qd_push_i(ctx, 3);
+	qd_exec_result result = qd_neq(ctx);
+
+	ASSERT_EQ(result.code, 0, "neq should succeed");
+	ASSERT_EQ((int)qd_stack_size(ctx->st), 1, "Stack should have 1 element");
+
+	qd_stack_element_t elem;
+	qd_stack_error err = qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ(err, QD_STACK_OK, "pop should succeed");
+	ASSERT_EQ(elem.type, QD_STACK_TYPE_INT, "result should be int");
+	ASSERT_EQ((int)elem.value.i, 1, "5 != 3 should be 1");
+
+	destroy_test_context(ctx);
+}
+
+TEST(NeqIntegersEqualTest) {
+	qd_context* ctx = create_test_context();
+
+	// Test 5 != 5 (should return 0)
+	qd_push_i(ctx, 5);
+	qd_push_i(ctx, 5);
+	qd_exec_result result = qd_neq(ctx);
+
+	ASSERT_EQ(result.code, 0, "neq should succeed");
+
+	qd_stack_element_t elem;
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ((int)elem.value.i, 0, "5 != 5 should be 0");
+
+	destroy_test_context(ctx);
+}
+
+TEST(NeqFloatsNotEqualTest) {
+	qd_context* ctx = create_test_context();
+
+	// Test 3.14 != 2.71 (should return 1)
+	qd_push_f(ctx, 3.14);
+	qd_push_f(ctx, 2.71);
+	qd_exec_result result = qd_neq(ctx);
+
+	ASSERT_EQ(result.code, 0, "neq should succeed");
+
+	qd_stack_element_t elem;
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ((int)elem.value.i, 1, "3.14 != 2.71 should be 1");
+
+	destroy_test_context(ctx);
+}
+
+TEST(NeqMixedTypesTest) {
+	qd_context* ctx = create_test_context();
+
+	// Test 5 (int) != 5.5 (float) (should return 1)
+	qd_push_i(ctx, 5);
+	qd_push_f(ctx, 5.5);
+	qd_exec_result result = qd_neq(ctx);
+
+	ASSERT_EQ(result.code, 0, "neq should succeed");
+
+	qd_stack_element_t elem;
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ((int)elem.value.i, 1, "5 != 5.5 should be 1");
+
+	destroy_test_context(ctx);
+}
+
+// qd_lt tests
+TEST(LtIntegersLessThanTest) {
+	qd_context* ctx = create_test_context();
+
+	// Test 3 < 5 (should return 1)
+	qd_push_i(ctx, 3);
+	qd_push_i(ctx, 5);
+	qd_exec_result result = qd_lt(ctx);
+
+	ASSERT_EQ(result.code, 0, "lt should succeed");
+	ASSERT_EQ((int)qd_stack_size(ctx->st), 1, "Stack should have 1 element");
+
+	qd_stack_element_t elem;
+	qd_stack_error err = qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ(err, QD_STACK_OK, "pop should succeed");
+	ASSERT_EQ(elem.type, QD_STACK_TYPE_INT, "result should be int");
+	ASSERT_EQ((int)elem.value.i, 1, "3 < 5 should be 1");
+
+	destroy_test_context(ctx);
+}
+
+TEST(LtIntegersGreaterThanTest) {
+	qd_context* ctx = create_test_context();
+
+	// Test 5 < 3 (should return 0)
+	qd_push_i(ctx, 5);
+	qd_push_i(ctx, 3);
+	qd_exec_result result = qd_lt(ctx);
+
+	ASSERT_EQ(result.code, 0, "lt should succeed");
+
+	qd_stack_element_t elem;
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ((int)elem.value.i, 0, "5 < 3 should be 0");
+
+	destroy_test_context(ctx);
+}
+
+TEST(LtIntegersEqualTest) {
+	qd_context* ctx = create_test_context();
+
+	// Test 5 < 5 (should return 0)
+	qd_push_i(ctx, 5);
+	qd_push_i(ctx, 5);
+	qd_exec_result result = qd_lt(ctx);
+
+	ASSERT_EQ(result.code, 0, "lt should succeed");
+
+	qd_stack_element_t elem;
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ((int)elem.value.i, 0, "5 < 5 should be 0");
+
+	destroy_test_context(ctx);
+}
+
+TEST(LtFloatsTest) {
+	qd_context* ctx = create_test_context();
+
+	// Test 2.5 < 3.7 (should return 1)
+	qd_push_f(ctx, 2.5);
+	qd_push_f(ctx, 3.7);
+	qd_exec_result result = qd_lt(ctx);
+
+	ASSERT_EQ(result.code, 0, "lt should succeed");
+
+	qd_stack_element_t elem;
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ((int)elem.value.i, 1, "2.5 < 3.7 should be 1");
+
+	destroy_test_context(ctx);
+}
+
+TEST(LtMixedTypesTest) {
+	qd_context* ctx = create_test_context();
+
+	// Test 3 (int) < 5.5 (float) (should return 1)
+	qd_push_i(ctx, 3);
+	qd_push_f(ctx, 5.5);
+	qd_exec_result result = qd_lt(ctx);
+
+	ASSERT_EQ(result.code, 0, "lt should succeed");
+
+	qd_stack_element_t elem;
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ((int)elem.value.i, 1, "3 < 5.5 should be 1");
+
+	destroy_test_context(ctx);
+}
+
+TEST(LtNegativeNumbersTest) {
+	qd_context* ctx = create_test_context();
+
+	// Test -5 < -3 (should return 1)
+	qd_push_i(ctx, -5);
+	qd_push_i(ctx, -3);
+	qd_exec_result result = qd_lt(ctx);
+
+	ASSERT_EQ(result.code, 0, "lt should succeed");
+
+	qd_stack_element_t elem;
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ((int)elem.value.i, 1, "-5 < -3 should be 1");
+
+	destroy_test_context(ctx);
+}
+
+// qd_gt tests
+TEST(GtIntegersGreaterThanTest) {
+	qd_context* ctx = create_test_context();
+
+	// Test 5 > 3 (should return 1)
+	qd_push_i(ctx, 5);
+	qd_push_i(ctx, 3);
+	qd_exec_result result = qd_gt(ctx);
+
+	ASSERT_EQ(result.code, 0, "gt should succeed");
+	ASSERT_EQ((int)qd_stack_size(ctx->st), 1, "Stack should have 1 element");
+
+	qd_stack_element_t elem;
+	qd_stack_error err = qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ(err, QD_STACK_OK, "pop should succeed");
+	ASSERT_EQ(elem.type, QD_STACK_TYPE_INT, "result should be int");
+	ASSERT_EQ((int)elem.value.i, 1, "5 > 3 should be 1");
+
+	destroy_test_context(ctx);
+}
+
+TEST(GtIntegersLessThanTest) {
+	qd_context* ctx = create_test_context();
+
+	// Test 3 > 5 (should return 0)
+	qd_push_i(ctx, 3);
+	qd_push_i(ctx, 5);
+	qd_exec_result result = qd_gt(ctx);
+
+	ASSERT_EQ(result.code, 0, "gt should succeed");
+
+	qd_stack_element_t elem;
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ((int)elem.value.i, 0, "3 > 5 should be 0");
+
+	destroy_test_context(ctx);
+}
+
+TEST(GtIntegersEqualTest) {
+	qd_context* ctx = create_test_context();
+
+	// Test 5 > 5 (should return 0)
+	qd_push_i(ctx, 5);
+	qd_push_i(ctx, 5);
+	qd_exec_result result = qd_gt(ctx);
+
+	ASSERT_EQ(result.code, 0, "gt should succeed");
+
+	qd_stack_element_t elem;
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ((int)elem.value.i, 0, "5 > 5 should be 0");
+
+	destroy_test_context(ctx);
+}
+
+TEST(GtFloatsTest) {
+	qd_context* ctx = create_test_context();
+
+	// Test 5.2 > 3.1 (should return 1)
+	qd_push_f(ctx, 5.2);
+	qd_push_f(ctx, 3.1);
+	qd_exec_result result = qd_gt(ctx);
+
+	ASSERT_EQ(result.code, 0, "gt should succeed");
+
+	qd_stack_element_t elem;
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ((int)elem.value.i, 1, "5.2 > 3.1 should be 1");
+
+	destroy_test_context(ctx);
+}
+
+TEST(GtMixedTypesTest) {
+	qd_context* ctx = create_test_context();
+
+	// Test 5.5 (float) > 3 (int) (should return 1)
+	qd_push_f(ctx, 5.5);
+	qd_push_i(ctx, 3);
+	qd_exec_result result = qd_gt(ctx);
+
+	ASSERT_EQ(result.code, 0, "gt should succeed");
+
+	qd_stack_element_t elem;
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ((int)elem.value.i, 1, "5.5 > 3 should be 1");
+
+	destroy_test_context(ctx);
+}
+
+TEST(GtNegativeNumbersTest) {
+	qd_context* ctx = create_test_context();
+
+	// Test -3 > -5 (should return 1)
+	qd_push_i(ctx, -3);
+	qd_push_i(ctx, -5);
+	qd_exec_result result = qd_gt(ctx);
+
+	ASSERT_EQ(result.code, 0, "gt should succeed");
+
+	qd_stack_element_t elem;
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ((int)elem.value.i, 1, "-3 > -5 should be 1");
+
+	destroy_test_context(ctx);
+}
+
+// qd_lte tests
+TEST(LteIntegersLessThanTest) {
+	qd_context* ctx = create_test_context();
+
+	// Test 3 <= 5 (should return 1)
+	qd_push_i(ctx, 3);
+	qd_push_i(ctx, 5);
+	qd_exec_result result = qd_lte(ctx);
+
+	ASSERT_EQ(result.code, 0, "lte should succeed");
+	ASSERT_EQ((int)qd_stack_size(ctx->st), 1, "Stack should have 1 element");
+
+	qd_stack_element_t elem;
+	qd_stack_error err = qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ(err, QD_STACK_OK, "pop should succeed");
+	ASSERT_EQ(elem.type, QD_STACK_TYPE_INT, "result should be int");
+	ASSERT_EQ((int)elem.value.i, 1, "3 <= 5 should be 1");
+
+	destroy_test_context(ctx);
+}
+
+TEST(LteIntegersEqualTest) {
+	qd_context* ctx = create_test_context();
+
+	// Test 5 <= 5 (should return 1)
+	qd_push_i(ctx, 5);
+	qd_push_i(ctx, 5);
+	qd_exec_result result = qd_lte(ctx);
+
+	ASSERT_EQ(result.code, 0, "lte should succeed");
+
+	qd_stack_element_t elem;
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ((int)elem.value.i, 1, "5 <= 5 should be 1");
+
+	destroy_test_context(ctx);
+}
+
+TEST(LteIntegersGreaterThanTest) {
+	qd_context* ctx = create_test_context();
+
+	// Test 5 <= 3 (should return 0)
+	qd_push_i(ctx, 5);
+	qd_push_i(ctx, 3);
+	qd_exec_result result = qd_lte(ctx);
+
+	ASSERT_EQ(result.code, 0, "lte should succeed");
+
+	qd_stack_element_t elem;
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ((int)elem.value.i, 0, "5 <= 3 should be 0");
+
+	destroy_test_context(ctx);
+}
+
+TEST(LteFloatsTest) {
+	qd_context* ctx = create_test_context();
+
+	// Test 2.5 <= 2.5 (should return 1)
+	qd_push_f(ctx, 2.5);
+	qd_push_f(ctx, 2.5);
+	qd_exec_result result = qd_lte(ctx);
+
+	ASSERT_EQ(result.code, 0, "lte should succeed");
+
+	qd_stack_element_t elem;
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ((int)elem.value.i, 1, "2.5 <= 2.5 should be 1");
+
+	destroy_test_context(ctx);
+}
+
+TEST(LteMixedTypesTest) {
+	qd_context* ctx = create_test_context();
+
+	// Test 3 (int) <= 5.0 (float) (should return 1)
+	qd_push_i(ctx, 3);
+	qd_push_f(ctx, 5.0);
+	qd_exec_result result = qd_lte(ctx);
+
+	ASSERT_EQ(result.code, 0, "lte should succeed");
+
+	qd_stack_element_t elem;
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ((int)elem.value.i, 1, "3 <= 5.0 should be 1");
+
+	destroy_test_context(ctx);
+}
+
+// qd_gte tests
+TEST(GteIntegersGreaterThanTest) {
+	qd_context* ctx = create_test_context();
+
+	// Test 5 >= 3 (should return 1)
+	qd_push_i(ctx, 5);
+	qd_push_i(ctx, 3);
+	qd_exec_result result = qd_gte(ctx);
+
+	ASSERT_EQ(result.code, 0, "gte should succeed");
+	ASSERT_EQ((int)qd_stack_size(ctx->st), 1, "Stack should have 1 element");
+
+	qd_stack_element_t elem;
+	qd_stack_error err = qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ(err, QD_STACK_OK, "pop should succeed");
+	ASSERT_EQ(elem.type, QD_STACK_TYPE_INT, "result should be int");
+	ASSERT_EQ((int)elem.value.i, 1, "5 >= 3 should be 1");
+
+	destroy_test_context(ctx);
+}
+
+TEST(GteIntegersEqualTest) {
+	qd_context* ctx = create_test_context();
+
+	// Test 5 >= 5 (should return 1)
+	qd_push_i(ctx, 5);
+	qd_push_i(ctx, 5);
+	qd_exec_result result = qd_gte(ctx);
+
+	ASSERT_EQ(result.code, 0, "gte should succeed");
+
+	qd_stack_element_t elem;
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ((int)elem.value.i, 1, "5 >= 5 should be 1");
+
+	destroy_test_context(ctx);
+}
+
+TEST(GteIntegersLessThanTest) {
+	qd_context* ctx = create_test_context();
+
+	// Test 3 >= 5 (should return 0)
+	qd_push_i(ctx, 3);
+	qd_push_i(ctx, 5);
+	qd_exec_result result = qd_gte(ctx);
+
+	ASSERT_EQ(result.code, 0, "gte should succeed");
+
+	qd_stack_element_t elem;
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ((int)elem.value.i, 0, "3 >= 5 should be 0");
+
+	destroy_test_context(ctx);
+}
+
+TEST(GteFloatsTest) {
+	qd_context* ctx = create_test_context();
+
+	// Test 5.2 >= 5.2 (should return 1)
+	qd_push_f(ctx, 5.2);
+	qd_push_f(ctx, 5.2);
+	qd_exec_result result = qd_gte(ctx);
+
+	ASSERT_EQ(result.code, 0, "gte should succeed");
+
+	qd_stack_element_t elem;
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ((int)elem.value.i, 1, "5.2 >= 5.2 should be 1");
+
+	destroy_test_context(ctx);
+}
+
+TEST(GteMixedTypesTest) {
+	qd_context* ctx = create_test_context();
+
+	// Test 5.0 (float) >= 3 (int) (should return 1)
+	qd_push_f(ctx, 5.0);
+	qd_push_i(ctx, 3);
+	qd_exec_result result = qd_gte(ctx);
+
+	ASSERT_EQ(result.code, 0, "gte should succeed");
+
+	qd_stack_element_t elem;
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ((int)elem.value.i, 1, "5.0 >= 3 should be 1");
+
+	destroy_test_context(ctx);
+}
+
+// Stack preservation tests
+TEST(ComparisonPreservesRestOfStackTest) {
+	qd_context* ctx = create_test_context();
+
+	// Test that comparison only affects top 2 elements
+	qd_push_i(ctx, 100);
+	qd_push_i(ctx, 200);
+	qd_push_i(ctx, 3);
+	qd_push_i(ctx, 5);
+	qd_lt(ctx);  // 3 < 5 = 1
+
+	ASSERT_EQ((int)qd_stack_size(ctx->st), 3, "Stack should have 3 elements");
+
+	qd_stack_element_t elem;
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ((int)elem.value.i, 1, "top should be 1 (result of 3 < 5)");
+
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ((int)elem.value.i, 200, "second should be 200");
+
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ((int)elem.value.i, 100, "third should be 100");
+
+	destroy_test_context(ctx);
+}
+
+TEST(ComparisonChainTest) {
+	qd_context* ctx = create_test_context();
+
+	// Test chaining comparisons: ((3 < 5) == 1) should work
+	qd_push_i(ctx, 3);
+	qd_push_i(ctx, 5);
+	qd_lt(ctx);  // Result: 1
+
+	qd_push_i(ctx, 1);
+	qd_eq(ctx);  // Result: 1 == 1 = 1
+
+	qd_stack_element_t elem;
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ((int)elem.value.i, 1, "chained comparison should work");
+
+	destroy_test_context(ctx);
+}
