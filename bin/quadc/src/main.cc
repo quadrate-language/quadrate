@@ -123,8 +123,14 @@ int main(int argc, char** argv) {
 	std::string outputFilename = result["o"].as<std::string>();
 	const bool shared = result["shared"].as<bool>();
 	const bool statik = result["static"].as<bool>();
+	const bool run = result["run"].as<bool>();
+
 	if (shared && statik) {
 		std::cerr << "quadc: cannot build both shared and static library at the same time." << std::endl;
+		return 1;
+	}
+	if (run && (shared || statik)) {
+		std::cerr << "quadc: cannot run a library" << std::endl;
 		return 1;
 	}
 	if (shared) {
@@ -135,6 +141,16 @@ int main(int argc, char** argv) {
 
 	const std::string outputDir = createTempDir();
 	TempDirGuard tempGuard(outputDir);
+
+	// When running, place executable in temp directory's bin subdirectory
+	std::string outputPath;
+	if (run) {
+		std::filesystem::path binDir = std::filesystem::path(outputDir) / "bin";
+		std::filesystem::create_directory(binDir);
+		outputPath = (binDir / outputFilename).string();
+	} else {
+		outputPath = outputFilename;
+	}
 
 	// Check if we should preserve temp files
 	const bool saveTemps = result["save-temps"].as<bool>();
@@ -234,10 +250,19 @@ int main(int argc, char** argv) {
 
 		Qd::Linker linker;
 		std::string linkerFlags = getLinkerFlags();
-		bool linkSuccess = linker.link(translationUnits, outputFilename.c_str(), linkerFlags.c_str(), verbose);
+		bool linkSuccess = linker.link(translationUnits, outputPath.c_str(), linkerFlags.c_str(), verbose);
 		if (!linkSuccess) {
 			std::cerr << "quadc: linking failed" << std::endl;
 			return 1;
+		}
+
+		// Run the program if requested
+		if (run) {
+			int exitCode = system(outputPath.c_str());
+			if (exitCode != 0) {
+				std::cerr << "quadc: program exited with code " << exitCode << std::endl;
+				return exitCode;
+			}
 		}
 	}
 
