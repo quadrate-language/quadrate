@@ -6,7 +6,7 @@ void my_func() {
 }
 
 int main(void) {
-	qd_context* ctx = qd_create_context();
+	qd_context* ctx = qd_create_context(1024);
 
 	qd_module* os = qd_get_module(ctx, "os");
 	qd_add_script(os, "fn exit() {}");
