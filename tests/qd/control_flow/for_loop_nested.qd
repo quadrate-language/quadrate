@@ -1,0 +1,11 @@
+fn main() {
+	// Nested for loops
+	0 3 1 for {
+		$
+		.
+		0 2 1 for {
+			$
+			.
+		}
+	}
+}

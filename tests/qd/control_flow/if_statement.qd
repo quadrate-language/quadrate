@@ -1,0 +1,29 @@
+fn main() {
+	// Test 1: True condition
+	1 if {
+		42 .
+	}
+
+	// Test 2: False condition
+	0 if {
+		99 .
+	}
+
+	// Test 3: Another true condition
+	5 if {
+		10 .
+	}
+
+	// Test 4: If with stack operations
+	3 dup if {
+		.
+	}
+
+	// Test 5: Sequential if statements
+	1 if {
+		20 .
+	}
+	1 if {
+		30 .
+	}
+}
