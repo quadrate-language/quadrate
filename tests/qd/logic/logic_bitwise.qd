@@ -1,0 +1,14 @@
+fn main() {
+	// Test and - bitwise AND
+	12 10 and .  // Should print: 8 (0b1100 & 0b1010 = 0b1000)
+	15 7 and .   // Should print: 7 (0b1111 & 0b0111 = 0b0111)
+
+	// Test or - bitwise OR
+	12 10 or .   // Should print: 14 (0b1100 | 0b1010 = 0b1110)
+	8 4 or .     // Should print: 12 (0b1000 | 0b0100 = 0b1100)
+
+	// Test not - bitwise NOT
+	0 not .      // Should print: -1 (all bits set)
+	-1 not .     // Should print: 0
+	5 not .      // Should print: -6
+}

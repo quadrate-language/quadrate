@@ -1,0 +1,11 @@
+fn main() {
+	// Test depth - get stack size
+	clear
+	1 2 3 depth .  // Should print: 3
+	clear
+
+	// Test clear - empty the stack
+	100 200 300
+	clear
+	depth .  // Should print: 0
+}

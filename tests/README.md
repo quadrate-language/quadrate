@@ -7,30 +7,33 @@ This directory contains the test suite for the Quadrate programming language (.q
 ```
 tests/
 ├── qd/                    # Quadrate test files (.qd)
-│   ├── basic/            # Basic language features
-│   │   ├── arithmetic.qd
-│   │   ├── stack_operations.qd
-│   │   ├── advanced_stack_ops.qd
-│   │   └── comparison_ops.qd
+│   ├── arithmetic/       # Arithmetic & mathematical operations
+│   │   ├── arith_basic.qd
+│   │   ├── arith_comparison.qd
+│   │   ├── arith_functions.qd
+│   │   └── arith_trigonometry.qd
+│   ├── stack/            # Stack manipulation operations
+│   │   ├── stack_basic.qd
+│   │   ├── stack_pairs.qd
+│   │   ├── stack_advanced.qd
+│   │   └── stack_utility.qd
+│   ├── logic/            # Logical & bitwise operations
+│   │   ├── logic_bitwise.qd
+│   │   └── logic_minmax.qd
 │   ├── control_flow/     # Control flow constructs
 │   │   ├── for_loop_simple.qd
 │   │   ├── for_loop_nested.qd
 │   │   ├── for_loop_break.qd
 │   │   ├── if_statement.qd
 │   │   └── complex_control_flow.qd
-│   ├── math/             # Mathematical functions
-│   │   ├── math_functions.qd
-│   │   └── trigonometry.qd
 │   ├── strings/          # String operations
 │   │   ├── string_operations.qd
 │   │   └── utf8_strings.qd
-│   ├── stack/            # Stack manipulation
-│   │   └── new_stack_ops.qd
 │   └── documentation/    # Documentation examples
 │       └── stack_notation.qd
 ├── expected/             # Expected output files (.out)
-│   ├── arithmetic.out
-│   ├── stack_operations.out
+│   ├── arith_basic.out
+│   ├── stack_basic.out
 │   └── ...
 └── run_qd_tests.sh       # Test runner script
 ```
@@ -61,27 +64,30 @@ Example output:
   Quadrate Language Test Suite
 ================================================
 
-PASS  advanced_stack_ops
-PASS  arithmetic
-PASS  comparison_ops
-PASS  stack_operations
+PASS  arith_basic
+PASS  arith_comparison
+PASS  arith_functions
+PASS  arith_trigonometry
+PASS  stack_basic
+PASS  stack_pairs
+PASS  stack_advanced
+PASS  stack_utility
+PASS  logic_bitwise
+PASS  logic_minmax
 PASS  complex_control_flow
 PASS  for_loop_break
 PASS  for_loop_nested
 PASS  for_loop_simple
 PASS  if_statement
 PASS  stack_notation
-PASS  math_functions
-PASS  trigonometry
-PASS  new_stack_ops
 PASS  string_operations
 PASS  utf8_strings
 
 ================================================
   Test Summary
 ================================================
-Tests run:    15
-Tests passed: 15
+Tests run:    18
+Tests passed: 18
 Tests failed: 0
 
 All tests passed!
@@ -102,68 +108,77 @@ All tests passed!
 
 ## Test Categories
 
-### basic/
-Tests for fundamental language features:
-- Arithmetic operations (add, sub, mul, div)
-- Stack operations (dup, swap, over, etc.)
-- Advanced stack operations (rot, nip, tuck, etc.)
-- Comparison operations (eq, lt, gt, etc.)
-- Literal values (integers, floats, strings)
+### arithmetic/
+Tests for arithmetic and mathematical operations:
+- **arith_basic.qd** - Basic arithmetic (add, sub, mul, div)
+- **arith_comparison.qd** - Comparison operations (eq, neq, lt, gt, lte, gte, within)
+- **arith_functions.qd** - Math functions (sq, abs, inc, dec, inv, fac, sqrt, cb, cbrt, ceil, floor)
+- **arith_trigonometry.qd** - Trigonometric functions (sin, cos, tan, asin, acos, atan)
+
+### stack/
+Tests for stack manipulation operations:
+- **stack_basic.qd** - Basic operations (dup, swap, over, drop, rot, nip)
+- **stack_pairs.qd** - Pair operations (dup2, drop2, swap2, over2)
+- **stack_advanced.qd** - Advanced operations (tuck, pick, roll)
+- **stack_utility.qd** - Utility operations (clear, depth)
+
+### logic/
+Tests for logical and bitwise operations:
+- **logic_bitwise.qd** - Bitwise operations (and, or, not)
+- **logic_minmax.qd** - Logical functions (min, max, neg, mod)
 
 ### control_flow/
 Tests for control flow constructs:
-- `if` statements
+- `if` statements with conditions
 - `for` loops (including $ iterator variable)
 - Nested loops
-- `break` and `continue`
+- `break` and `continue` statements
 - Complex control flow combinations
-
-### math/
-Tests for mathematical functions:
-- Basic math operations (abs, min, max, etc.)
-- Trigonometric functions (sin, cos, tan, etc.)
 
 ### strings/
 Tests for string operations:
-- Basic string operations (concat, length, etc.)
-- UTF-8 string handling
-
-### stack/
-Tests for advanced stack manipulation operations
+- Basic string printing and manipulation
+- UTF-8 string handling with various character sets
 
 ### documentation/
 Tests for documentation features:
 - Stack notation examples and validation
+- Function signature demonstrations
 
 ## Current Test Coverage
 
-**Basic Features:**
-- ✓ Arithmetic operations
-- ✓ Stack operations (dup, swap, over)
-- ✓ Advanced stack operations (rot, nip, tuck)
-- ✓ Comparison operations (eq, lt, gt)
+**Arithmetic Operations (4 tests):**
+- ✓ Basic operations (add, sub, mul, div)
+- ✓ Comparison operations (eq, neq, lt, gt, lte, gte, within)
+- ✓ Math functions (sq, abs, inc, dec, inv, fac, sqrt, cb, cbrt, ceil, floor)
+- ✓ Trigonometric functions (sin, cos, tan, asin, acos, atan)
 
-**Control Flow:**
+**Stack Manipulation (4 tests):**
+- ✓ Basic operations (dup, swap, over, drop, rot, nip)
+- ✓ Pair operations (dup2, drop2, swap2, over2)
+- ✓ Advanced operations (tuck, pick, roll)
+- ✓ Utility operations (clear, depth)
+
+**Logic Operations (2 tests):**
+- ✓ Bitwise operations (and, or, not)
+- ✓ Min/max and modulo (min, max, neg, mod)
+
+**Control Flow (5 tests):**
 - ✓ Simple for loops
 - ✓ Nested for loops
 - ✓ $ iterator variable in loops
-- ✓ if statements
+- ✓ if/else statements
 - ✓ break/continue
 - ✓ Complex control flow combinations
 
-**Mathematical Functions:**
-- ✓ Basic math operations (abs, min, max)
-- ✓ Trigonometric functions (sin, cos, tan)
-
-**String Operations:**
+**String Operations (2 tests):**
 - ✓ Basic string operations
 - ✓ UTF-8 string handling
 
-**Stack Operations:**
-- ✓ Advanced stack manipulation
-
-**Documentation:**
+**Documentation (1 test):**
 - ✓ Stack notation validation
+
+**Total: 18 language tests**
 
 ## Integration with Meson
 
