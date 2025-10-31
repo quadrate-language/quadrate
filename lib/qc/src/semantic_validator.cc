@@ -15,7 +15,7 @@ namespace Qd {
 	// List of built-in instructions (must match ast.cc)
 	static const char* BUILTIN_INSTRUCTIONS[] = {"*", "+", "-", ".", "/", "abs", "acos", "add", "and", "asin", "atan",
 			"cb", "cbrt", "ceil", "clear", "cos", "dec", "depth", "div", "drop", "drop2", "dup", "dup2", "eq", "fac",
-			"floor", "gt", "gte", "inc", "inv", "lt", "lte", "max", "min", "mod", "mul", "neq", "neg", "nip", "not",
+			"floor", "gt", "gte", "inc", "inv", "ln", "log10", "lt", "lte", "max", "min", "mod", "mul", "neq", "neg", "nip", "not",
 			"or", "over", "over2", "pick", "print", "prints", "printsv", "printv", "roll", "rot", "sin", "sq", "sqrt",
 			"sub", "swap", "swap2", "tan", "tuck", "within"};
 
@@ -477,9 +477,10 @@ namespace Qd {
 			typeStack.pop_back();
 			typeStack.push_back(StackValueType::FLOAT);
 		}
-		// Math functions: sqrt, cb, cbrt, ceil, floor (always return float)
+		// Math functions: sqrt, cb, cbrt, ceil, floor, ln, log10 (always return float)
 		else if (strcmp(name, "sqrt") == 0 || strcmp(name, "cb") == 0 || strcmp(name, "cbrt") == 0 ||
-				 strcmp(name, "ceil") == 0 || strcmp(name, "floor") == 0) {
+				 strcmp(name, "ceil") == 0 || strcmp(name, "floor") == 0 || strcmp(name, "ln") == 0 ||
+				 strcmp(name, "log10") == 0) {
 			if (typeStack.empty()) {
 				std::string errorMsg = "Type error in '";
 				errorMsg += name;

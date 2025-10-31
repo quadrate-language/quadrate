@@ -38,6 +38,8 @@ qd_exec_result qd_cb(qd_context* ctx);
 qd_exec_result qd_cbrt(qd_context* ctx);
 qd_exec_result qd_ceil(qd_context* ctx);
 qd_exec_result qd_floor(qd_context* ctx);
+qd_exec_result qd_ln(qd_context* ctx);
+qd_exec_result qd_log10(qd_context* ctx);
 qd_exec_result qd_dec(qd_context* ctx);
 qd_exec_result qd_inc(qd_context* ctx);
 qd_exec_result qd_clear(qd_context* ctx);

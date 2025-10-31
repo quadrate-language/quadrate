@@ -4082,3 +4082,123 @@ TEST(Over2Test) {
 
 	destroy_test_context(ctx);
 }
+
+TEST(LnIntegerTest) {
+	qd_context* ctx = create_test_context();
+
+	// Push e (approximately 2.718281828)
+	qd_push_f(ctx, 2.718281828);
+
+	// Calculate natural log
+	qd_exec_result result = qd_ln(ctx);
+	ASSERT_EQ(result.code, 0, "ln should succeed");
+
+	// Check result (ln(e) = 1)
+	qd_stack_element_t elem;
+	qd_stack_error err = qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ(err, QD_STACK_OK, "pop should succeed");
+	ASSERT_EQ(elem.type, QD_STACK_TYPE_FLOAT, "result should be float");
+	ASSERT(float_eq(elem.value.f, 1.0), "ln(e) should be approximately 1.0");
+
+	destroy_test_context(ctx);
+}
+
+TEST(LnFloatTest) {
+	qd_context* ctx = create_test_context();
+
+	// Push 1.0
+	qd_push_f(ctx, 1.0);
+
+	// Calculate natural log
+	qd_exec_result result = qd_ln(ctx);
+	ASSERT_EQ(result.code, 0, "ln should succeed");
+
+	// Check result (ln(1) = 0)
+	qd_stack_element_t elem;
+	qd_stack_error err = qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ(err, QD_STACK_OK, "pop should succeed");
+	ASSERT_EQ(elem.type, QD_STACK_TYPE_FLOAT, "result should be float");
+	ASSERT(float_eq(elem.value.f, 0.0), "ln(1) should be 0.0");
+
+	destroy_test_context(ctx);
+}
+
+TEST(LnIntegerInputTest) {
+	qd_context* ctx = create_test_context();
+
+	// Push integer 10
+	qd_push_i(ctx, 10);
+
+	// Calculate natural log
+	qd_exec_result result = qd_ln(ctx);
+	ASSERT_EQ(result.code, 0, "ln should succeed with integer input");
+
+	// Check result (ln(10) ≈ 2.302585)
+	qd_stack_element_t elem;
+	qd_stack_error err = qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ(err, QD_STACK_OK, "pop should succeed");
+	ASSERT_EQ(elem.type, QD_STACK_TYPE_FLOAT, "result should be float");
+	ASSERT(float_eq(elem.value.f, 2.302585), "ln(10) should be approximately 2.302585");
+
+	destroy_test_context(ctx);
+}
+
+TEST(Log10IntegerTest) {
+	qd_context* ctx = create_test_context();
+
+	// Push 100.0
+	qd_push_f(ctx, 100.0);
+
+	// Calculate log10
+	qd_exec_result result = qd_log10(ctx);
+	ASSERT_EQ(result.code, 0, "log10 should succeed");
+
+	// Check result (log10(100) = 2)
+	qd_stack_element_t elem;
+	qd_stack_error err = qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ(err, QD_STACK_OK, "pop should succeed");
+	ASSERT_EQ(elem.type, QD_STACK_TYPE_FLOAT, "result should be float");
+	ASSERT(float_eq(elem.value.f, 2.0), "log10(100) should be 2.0");
+
+	destroy_test_context(ctx);
+}
+
+TEST(Log10FloatTest) {
+	qd_context* ctx = create_test_context();
+
+	// Push 1000.0
+	qd_push_f(ctx, 1000.0);
+
+	// Calculate log10
+	qd_exec_result result = qd_log10(ctx);
+	ASSERT_EQ(result.code, 0, "log10 should succeed");
+
+	// Check result (log10(1000) = 3)
+	qd_stack_element_t elem;
+	qd_stack_error err = qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ(err, QD_STACK_OK, "pop should succeed");
+	ASSERT_EQ(elem.type, QD_STACK_TYPE_FLOAT, "result should be float");
+	ASSERT(float_eq(elem.value.f, 3.0), "log10(1000) should be 3.0");
+
+	destroy_test_context(ctx);
+}
+
+TEST(Log10IntegerInputTest) {
+	qd_context* ctx = create_test_context();
+
+	// Push integer 10
+	qd_push_i(ctx, 10);
+
+	// Calculate log10
+	qd_exec_result result = qd_log10(ctx);
+	ASSERT_EQ(result.code, 0, "log10 should succeed with integer input");
+
+	// Check result (log10(10) = 1)
+	qd_stack_element_t elem;
+	qd_stack_error err = qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ(err, QD_STACK_OK, "pop should succeed");
+	ASSERT_EQ(elem.type, QD_STACK_TYPE_FLOAT, "result should be float");
+	ASSERT(float_eq(elem.value.f, 1.0), "log10(10) should be 1.0");
+
+	destroy_test_context(ctx);
+}
