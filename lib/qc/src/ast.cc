@@ -146,6 +146,11 @@ namespace Qd {
 			IAstNode* node = new AstNodeInstruction("-");
 			setNodePosition(node, scanner, src);
 			return node;
+		} else if (token == '$') {
+			// Handle '$' as for loop iterator variable
+			IAstNode* node = new AstNodeIdentifier("$");
+			setNodePosition(node, scanner, src);
+			return node;
 		}
 		return nullptr;
 	}
@@ -780,6 +785,11 @@ namespace Qd {
 				AstNodeInstruction* instr = new AstNodeInstruction("-");
 				setNodePosition(instr, scanner, src);
 				tempNodes.push_back(instr);
+			} else if (token == '$') {
+				// Handle '$' as for loop iterator variable
+				AstNodeIdentifier* ident = new AstNodeIdentifier("$");
+				setNodePosition(ident, scanner, src);
+				tempNodes.push_back(ident);
 			}
 		}
 

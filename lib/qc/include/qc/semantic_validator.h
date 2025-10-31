@@ -45,7 +45,7 @@ namespace Qd {
 		void collectDefinitions(IAstNode* node);
 
 		// Pass 2: Validate all function calls and references
-		void validateReferences(IAstNode* node);
+		void validateReferences(IAstNode* node, bool insideForLoop = false);
 
 		// Pass 3a: Analyze function signatures (what each function consumes/produces)
 		void analyzeFunctionSignatures(IAstNode* node);

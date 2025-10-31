@@ -148,7 +148,7 @@ namespace Qd {
 		}
 	}
 
-	void SemanticValidator::validateReferences(IAstNode* node) {
+	void SemanticValidator::validateReferences(IAstNode* node, bool insideForLoop) {
 		if (!node) {
 			return;
 		}
@@ -157,6 +157,14 @@ namespace Qd {
 		if (node->type() == IAstNode::Type::IDENTIFIER) {
 			AstNodeIdentifier* ident = static_cast<AstNodeIdentifier*>(node);
 			const char* name = ident->name().c_str();
+
+			// Check if it's $ (for loop iterator variable)
+			if (strcmp(name, "$") == 0) {
+				if (!insideForLoop) {
+					reportError(ident, "Iterator variable '$' can only be used inside a for loop");
+				}
+				return;
+			}
 
 			// Check if it's a built-in instruction
 			if (isBuiltInInstruction(name)) {
@@ -174,9 +182,15 @@ namespace Qd {
 			}
 		}
 
+		// Track when we enter a for loop
+		bool childrenInsideForLoop = insideForLoop;
+		if (node->type() == IAstNode::Type::FOR_STATEMENT) {
+			childrenInsideForLoop = true;
+		}
+
 		// Recursively process children
 		for (size_t i = 0; i < node->childCount(); i++) {
-			validateReferences(node->child(i));
+			validateReferences(node->child(i), childrenInsideForLoop);
 		}
 	}
 

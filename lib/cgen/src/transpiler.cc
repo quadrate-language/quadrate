@@ -39,7 +39,7 @@ namespace Qd {
 		}
 	}
 
-	void traverse(IAstNode* node, const char* packageName, std::stringstream& out, int indent) {
+	void traverse(IAstNode* node, const char* packageName, std::stringstream& out, int indent, const std::string& currentForIterator = "") {
 		if (node == nullptr) {
 			return;
 		}
@@ -77,7 +77,7 @@ namespace Qd {
 					<< ", input_types, __func__);\n\n";
 			}
 
-			traverse(funcDecl->body(), packageName, out, indent + 1);
+			traverse(funcDecl->body(), packageName, out, indent + 1, currentForIterator);
 			out << "\n" << makeIndent(indent) << "qd_lbl_done:;\n";
 
 			// Generate type check for output parameters
@@ -130,14 +130,14 @@ namespace Qd {
 
 			// Then block
 			if (ifStmt->thenBody()) {
-				traverse(ifStmt->thenBody(), packageName, out, indent + 1);
+				traverse(ifStmt->thenBody(), packageName, out, indent + 1, currentForIterator);
 			}
 			out << makeIndent(indent) << "}";
 
 			// Else block (if present)
 			if (ifStmt->elseBody()) {
 				out << " else {\n";
-				traverse(ifStmt->elseBody(), packageName, out, indent + 1);
+				traverse(ifStmt->elseBody(), packageName, out, indent + 1, currentForIterator);
 				out << makeIndent(indent) << "}";
 			}
 			out << "\n";
@@ -187,12 +187,9 @@ namespace Qd {
 				<< varI << " < " << varEnd << ".value.i; "
 				<< varI << " += " << varStep << ".value.i) {\n";
 
-			// Push loop counter onto stack before body
-			out << makeIndent(indent + 2) << "qd_push_i(ctx, " << varI << ");\n";
-
-			// Loop body
+			// Loop body - pass iterator variable name for $ handling
 			if (forStmt->body()) {
-				traverse(forStmt->body(), packageName, out, indent + 2);
+				traverse(forStmt->body(), packageName, out, indent + 2, varI);
 			}
 
 			out << makeIndent(indent + 1) << "}\n";
@@ -240,7 +237,17 @@ namespace Qd {
 		}
 		case IAstNode::Type::IDENTIFIER: {
 			AstNodeIdentifier* ident = static_cast<AstNodeIdentifier*>(node);
-			out << makeIndent(indent) << "usr_" << packageName << "_" << ident->name() << "(ctx);\n";
+			// Handle $ as iterator variable in for loops
+			if (ident->name() == "$") {
+				if (!currentForIterator.empty()) {
+					out << makeIndent(indent) << "qd_push_i(ctx, " << currentForIterator << ");\n";
+				} else {
+					// $ outside of for loop - error or ignore?
+					// For now, generate nothing (semantic validator should catch this)
+				}
+			} else {
+				out << makeIndent(indent) << "usr_" << packageName << "_" << ident->name() << "(ctx);\n";
+			}
 			break;
 		}
 		case IAstNode::Type::INSTRUCTION: {
@@ -289,7 +296,7 @@ namespace Qd {
 		}
 
 		for (size_t i = 0; i < node->childCount(); i++) {
-			traverse(node->child(i), packageName, out, childIndent);
+			traverse(node->child(i), packageName, out, childIndent, currentForIterator);
 		}
 
 		if (node->type() == IAstNode::Type::BLOCK) {
