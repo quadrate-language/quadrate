@@ -5,3 +5,4 @@ dist
 .cache/clangd/index
 compile_commands.json
 .tmp*
+CLAUDE.md
