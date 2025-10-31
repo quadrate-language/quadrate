@@ -39,7 +39,8 @@ namespace Qd {
 		}
 	}
 
-	void traverse(IAstNode* node, const char* packageName, std::stringstream& out, int indent, const std::string& currentForIterator = "") {
+	void traverse(IAstNode* node, const char* packageName, std::stringstream& out, int indent,
+			const std::string& currentForIterator = "") {
 		if (node == nullptr) {
 			return;
 		}
@@ -112,7 +113,9 @@ namespace Qd {
 
 			// Check stack has enough values
 			out << makeIndent(indent) << "if (qd_stack_size(ctx->st) < 1) {\n";
-			out << makeIndent(indent + 1) << "fprintf(stderr, \"Fatal error in if: Stack underflow (requires 1 value, have %zu)\\n\", qd_stack_size(ctx->st));\n";
+			out << makeIndent(indent + 1)
+				<< "fprintf(stderr, \"Fatal error in if: Stack underflow (requires 1 value, have %zu)\\n\", "
+				   "qd_stack_size(ctx->st));\n";
 			out << makeIndent(indent + 1) << "abort();\n";
 			out << makeIndent(indent) << "}\n";
 
@@ -153,39 +156,42 @@ namespace Qd {
 
 			// Check stack has enough values
 			out << makeIndent(indent) << "if (qd_stack_size(ctx->st) < 3) {\n";
-			out << makeIndent(indent + 1) << "fprintf(stderr, \"Fatal error in for: Stack underflow (requires 3 values, have %zu)\\n\", qd_stack_size(ctx->st));\n";
+			out << makeIndent(indent + 1)
+				<< "fprintf(stderr, \"Fatal error in for: Stack underflow (requires 3 values, have %zu)\\n\", "
+				   "qd_stack_size(ctx->st));\n";
 			out << makeIndent(indent + 1) << "abort();\n";
 			out << makeIndent(indent) << "}\n";
 
 			// Pop step, end, start from the stack (in reverse order)
 			out << makeIndent(indent) << "qd_stack_element_t " << varStep << ";\n";
-			out << makeIndent(indent) << "qd_stack_error " << varStep << "_err = qd_stack_pop(ctx->st, &" << varStep << ");\n";
+			out << makeIndent(indent) << "qd_stack_error " << varStep << "_err = qd_stack_pop(ctx->st, &" << varStep
+				<< ");\n";
 			out << makeIndent(indent) << "if (" << varStep << "_err != QD_STACK_OK) {\n";
 			out << makeIndent(indent + 1) << "fprintf(stderr, \"Fatal error in for: Failed to pop step value\\n\");\n";
 			out << makeIndent(indent + 1) << "abort();\n";
 			out << makeIndent(indent) << "}\n";
 
 			out << makeIndent(indent) << "qd_stack_element_t " << varEnd << ";\n";
-			out << makeIndent(indent) << "qd_stack_error " << varEnd << "_err = qd_stack_pop(ctx->st, &" << varEnd << ");\n";
+			out << makeIndent(indent) << "qd_stack_error " << varEnd << "_err = qd_stack_pop(ctx->st, &" << varEnd
+				<< ");\n";
 			out << makeIndent(indent) << "if (" << varEnd << "_err != QD_STACK_OK) {\n";
 			out << makeIndent(indent + 1) << "fprintf(stderr, \"Fatal error in for: Failed to pop end value\\n\");\n";
 			out << makeIndent(indent + 1) << "abort();\n";
 			out << makeIndent(indent) << "}\n";
 
 			out << makeIndent(indent) << "qd_stack_element_t " << varStart << ";\n";
-			out << makeIndent(indent) << "qd_stack_error " << varStart << "_err = qd_stack_pop(ctx->st, &" << varStart << ");\n";
+			out << makeIndent(indent) << "qd_stack_error " << varStart << "_err = qd_stack_pop(ctx->st, &" << varStart
+				<< ");\n";
 			out << makeIndent(indent) << "if (" << varStart << "_err != QD_STACK_OK) {\n";
 			out << makeIndent(indent + 1) << "fprintf(stderr, \"Fatal error in for: Failed to pop start value\\n\");\n";
 			out << makeIndent(indent + 1) << "abort();\n";
 			out << makeIndent(indent) << "}\n";
 
 			// Generate C for loop with the values
-			out << makeIndent(indent) << "if (" << varStart << ".type == QD_STACK_TYPE_INT && "
-				<< varEnd << ".type == QD_STACK_TYPE_INT && "
-				<< varStep << ".type == QD_STACK_TYPE_INT) {\n";
-			out << makeIndent(indent + 1) << "for (int64_t " << varI << " = " << varStart << ".value.i; "
-				<< varI << " < " << varEnd << ".value.i; "
-				<< varI << " += " << varStep << ".value.i) {\n";
+			out << makeIndent(indent) << "if (" << varStart << ".type == QD_STACK_TYPE_INT && " << varEnd
+				<< ".type == QD_STACK_TYPE_INT && " << varStep << ".type == QD_STACK_TYPE_INT) {\n";
+			out << makeIndent(indent + 1) << "for (int64_t " << varI << " = " << varStart << ".value.i; " << varI
+				<< " < " << varEnd << ".value.i; " << varI << " += " << varStep << ".value.i) {\n";
 
 			// Loop body - pass iterator variable name for $ handling
 			if (forStmt->body()) {

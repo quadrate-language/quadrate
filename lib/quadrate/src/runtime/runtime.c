@@ -1975,3 +1975,495 @@ void qd_check_stack(qd_context* ctx, size_t count, const qd_stack_type* types, c
 		}
 	}
 }
+
+// drop - remove top element from stack: ( a -- )
+qd_exec_result qd_drop(qd_context* ctx) {
+	size_t stack_size = qd_stack_size(ctx->st);
+	if (stack_size < 1) {
+		fprintf(stderr, "Fatal error in drop: Stack underflow (required 1 element, have %zu)\n", stack_size);
+		dump_stack(ctx);
+		abort();
+	}
+
+	qd_stack_element_t val;
+	qd_stack_error err = qd_stack_pop(ctx->st, &val);
+	if (err != QD_STACK_OK) {
+		return (qd_exec_result){-2};
+	}
+
+	// Free string if needed
+	if (val.type == QD_STACK_TYPE_STR) {
+		free(val.value.s);
+	}
+
+	return (qd_exec_result){0};
+}
+
+// drop2 - remove top 2 elements from stack: ( a b -- )
+qd_exec_result qd_drop2(qd_context* ctx) {
+	size_t stack_size = qd_stack_size(ctx->st);
+	if (stack_size < 2) {
+		fprintf(stderr, "Fatal error in drop2: Stack underflow (required 2 elements, have %zu)\n", stack_size);
+		dump_stack(ctx);
+		abort();
+	}
+
+	qd_stack_element_t val;
+	// Drop first element
+	qd_stack_error err = qd_stack_pop(ctx->st, &val);
+	if (err != QD_STACK_OK) {
+		return (qd_exec_result){-2};
+	}
+	if (val.type == QD_STACK_TYPE_STR) {
+		free(val.value.s);
+	}
+
+	// Drop second element
+	err = qd_stack_pop(ctx->st, &val);
+	if (err != QD_STACK_OK) {
+		return (qd_exec_result){-2};
+	}
+	if (val.type == QD_STACK_TYPE_STR) {
+		free(val.value.s);
+	}
+
+	return (qd_exec_result){0};
+}
+
+// rot - rotate top 3 elements: ( a b c -- b c a )
+qd_exec_result qd_rot(qd_context* ctx) {
+	size_t stack_size = qd_stack_size(ctx->st);
+	if (stack_size < 3) {
+		fprintf(stderr, "Fatal error in rot: Stack underflow (required 3 elements, have %zu)\n", stack_size);
+		dump_stack(ctx);
+		abort();
+	}
+
+	// Pop c, b, a
+	qd_stack_element_t c, b, a;
+	qd_stack_error err = qd_stack_pop(ctx->st, &c);
+	if (err != QD_STACK_OK) {
+		return (qd_exec_result){-2};
+	}
+	err = qd_stack_pop(ctx->st, &b);
+	if (err != QD_STACK_OK) {
+		return (qd_exec_result){-2};
+	}
+	err = qd_stack_pop(ctx->st, &a);
+	if (err != QD_STACK_OK) {
+		return (qd_exec_result){-2};
+	}
+
+	// Push in order: b, c, a
+	// Push b
+	switch (b.type) {
+		case QD_STACK_TYPE_INT:
+			err = qd_stack_push_int(ctx->st, b.value.i);
+			break;
+		case QD_STACK_TYPE_FLOAT:
+			err = qd_stack_push_float(ctx->st, b.value.f);
+			break;
+		case QD_STACK_TYPE_STR:
+			err = qd_stack_push_str(ctx->st, b.value.s);
+			free(b.value.s);
+			break;
+		case QD_STACK_TYPE_PTR:
+			err = qd_stack_push_ptr(ctx->st, b.value.p);
+			break;
+		default:
+			return (qd_exec_result){-3};
+	}
+	if (err != QD_STACK_OK) {
+		return (qd_exec_result){-2};
+	}
+
+	// Push c
+	switch (c.type) {
+		case QD_STACK_TYPE_INT:
+			err = qd_stack_push_int(ctx->st, c.value.i);
+			break;
+		case QD_STACK_TYPE_FLOAT:
+			err = qd_stack_push_float(ctx->st, c.value.f);
+			break;
+		case QD_STACK_TYPE_STR:
+			err = qd_stack_push_str(ctx->st, c.value.s);
+			free(c.value.s);
+			break;
+		case QD_STACK_TYPE_PTR:
+			err = qd_stack_push_ptr(ctx->st, c.value.p);
+			break;
+		default:
+			return (qd_exec_result){-3};
+	}
+	if (err != QD_STACK_OK) {
+		return (qd_exec_result){-2};
+	}
+
+	// Push a
+	switch (a.type) {
+		case QD_STACK_TYPE_INT:
+			err = qd_stack_push_int(ctx->st, a.value.i);
+			break;
+		case QD_STACK_TYPE_FLOAT:
+			err = qd_stack_push_float(ctx->st, a.value.f);
+			break;
+		case QD_STACK_TYPE_STR:
+			err = qd_stack_push_str(ctx->st, a.value.s);
+			free(a.value.s);
+			break;
+		case QD_STACK_TYPE_PTR:
+			err = qd_stack_push_ptr(ctx->st, a.value.p);
+			break;
+		default:
+			return (qd_exec_result){-3};
+	}
+	if (err != QD_STACK_OK) {
+		return (qd_exec_result){-2};
+	}
+
+	return (qd_exec_result){0};
+}
+
+// mod - modulo operation: ( a b -- a%b )
+qd_exec_result qd_mod(qd_context* ctx) {
+	size_t stack_size = qd_stack_size(ctx->st);
+	if (stack_size < 2) {
+		fprintf(stderr, "Fatal error in mod: Stack underflow (required 2 elements, have %zu)\n", stack_size);
+		dump_stack(ctx);
+		abort();
+	}
+
+	// Check types
+	qd_stack_element_t check_b, check_a;
+	qd_stack_error check_err = qd_stack_element(ctx->st, stack_size - 1, &check_b);
+	if (check_err == QD_STACK_OK) {
+		check_err = qd_stack_element(ctx->st, stack_size - 2, &check_a);
+	}
+	if (check_err != QD_STACK_OK) {
+		fprintf(stderr, "Fatal error in mod: Failed to access stack elements\n");
+		dump_stack(ctx);
+		abort();
+	}
+
+	if (check_a.type != QD_STACK_TYPE_INT || check_b.type != QD_STACK_TYPE_INT) {
+		fprintf(stderr, "Fatal error in mod: Type error (expected int for modulo)\n");
+		dump_stack(ctx);
+		abort();
+	}
+
+	qd_stack_element_t b, a;
+	qd_stack_error err = qd_stack_pop(ctx->st, &b);
+	if (err != QD_STACK_OK) {
+		return (qd_exec_result){-2};
+	}
+	err = qd_stack_pop(ctx->st, &a);
+	if (err != QD_STACK_OK) {
+		return (qd_exec_result){-2};
+	}
+
+	if (b.value.i == 0) {
+		fprintf(stderr, "Fatal error in mod: Division by zero\n");
+		dump_stack(ctx);
+		abort();
+	}
+
+	int64_t result = a.value.i % b.value.i;
+
+	err = qd_stack_push_int(ctx->st, result);
+	if (err != QD_STACK_OK) {
+		return (qd_exec_result){-2};
+	}
+
+	return (qd_exec_result){0};
+}
+
+// neg - negate top element: ( a -- -a )
+qd_exec_result qd_neg(qd_context* ctx) {
+	size_t stack_size = qd_stack_size(ctx->st);
+	if (stack_size < 1) {
+		fprintf(stderr, "Fatal error in neg: Stack underflow (required 1 element, have %zu)\n", stack_size);
+		dump_stack(ctx);
+		abort();
+	}
+
+	qd_stack_element_t check_val;
+	qd_stack_error check_err = qd_stack_element(ctx->st, stack_size - 1, &check_val);
+	if (check_err != QD_STACK_OK) {
+		fprintf(stderr, "Fatal error in neg: Failed to access stack element\n");
+		dump_stack(ctx);
+		abort();
+	}
+
+	if (check_val.type != QD_STACK_TYPE_INT && check_val.type != QD_STACK_TYPE_FLOAT) {
+		fprintf(stderr, "Fatal error in neg: Type error (expected numeric type)\n");
+		dump_stack(ctx);
+		abort();
+	}
+
+	qd_stack_element_t val;
+	qd_stack_error err = qd_stack_pop(ctx->st, &val);
+	if (err != QD_STACK_OK) {
+		return (qd_exec_result){-2};
+	}
+
+	if (val.type == QD_STACK_TYPE_INT) {
+		val.value.i = -val.value.i;
+		err = qd_stack_push_int(ctx->st, val.value.i);
+	} else {
+		val.value.f = -val.value.f;
+		err = qd_stack_push_float(ctx->st, val.value.f);
+	}
+
+	if (err != QD_STACK_OK) {
+		return (qd_exec_result){-2};
+	}
+
+	return (qd_exec_result){0};
+}
+
+// min - minimum of top 2 elements: ( a b -- min(a,b) )
+qd_exec_result qd_min(qd_context* ctx) {
+	size_t stack_size = qd_stack_size(ctx->st);
+	if (stack_size < 2) {
+		fprintf(stderr, "Fatal error in min: Stack underflow (required 2 elements, have %zu)\n", stack_size);
+		dump_stack(ctx);
+		abort();
+	}
+
+	qd_stack_element_t check_b, check_a;
+	qd_stack_error check_err = qd_stack_element(ctx->st, stack_size - 1, &check_b);
+	if (check_err == QD_STACK_OK) {
+		check_err = qd_stack_element(ctx->st, stack_size - 2, &check_a);
+	}
+	if (check_err != QD_STACK_OK) {
+		fprintf(stderr, "Fatal error in min: Failed to access stack elements\n");
+		dump_stack(ctx);
+		abort();
+	}
+
+	if ((check_a.type != QD_STACK_TYPE_INT && check_a.type != QD_STACK_TYPE_FLOAT) ||
+	    (check_b.type != QD_STACK_TYPE_INT && check_b.type != QD_STACK_TYPE_FLOAT)) {
+		fprintf(stderr, "Fatal error in min: Type error (expected numeric types)\n");
+		dump_stack(ctx);
+		abort();
+	}
+
+	qd_stack_element_t b, a;
+	qd_stack_error err = qd_stack_pop(ctx->st, &b);
+	if (err != QD_STACK_OK) {
+		return (qd_exec_result){-2};
+	}
+	err = qd_stack_pop(ctx->st, &a);
+	if (err != QD_STACK_OK) {
+		return (qd_exec_result){-2};
+	}
+
+	// Convert to common type and compare
+	double a_val = (a.type == QD_STACK_TYPE_INT) ? (double)a.value.i : a.value.f;
+	double b_val = (b.type == QD_STACK_TYPE_INT) ? (double)b.value.i : b.value.f;
+
+	double min_val = (a_val <= b_val) ? a_val : b_val;
+
+	// If either operand is float, result is float (type promotion)
+	if (a.type == QD_STACK_TYPE_FLOAT || b.type == QD_STACK_TYPE_FLOAT) {
+		err = qd_stack_push_float(ctx->st, min_val);
+	} else {
+		// Both are INT
+		err = qd_stack_push_int(ctx->st, (int64_t)min_val);
+	}
+
+	if (err != QD_STACK_OK) {
+		return (qd_exec_result){-2};
+	}
+
+	return (qd_exec_result){0};
+}
+
+// max - maximum of top 2 elements: ( a b -- max(a,b) )
+qd_exec_result qd_max(qd_context* ctx) {
+	size_t stack_size = qd_stack_size(ctx->st);
+	if (stack_size < 2) {
+		fprintf(stderr, "Fatal error in max: Stack underflow (required 2 elements, have %zu)\n", stack_size);
+		dump_stack(ctx);
+		abort();
+	}
+
+	qd_stack_element_t check_b, check_a;
+	qd_stack_error check_err = qd_stack_element(ctx->st, stack_size - 1, &check_b);
+	if (check_err == QD_STACK_OK) {
+		check_err = qd_stack_element(ctx->st, stack_size - 2, &check_a);
+	}
+	if (check_err != QD_STACK_OK) {
+		fprintf(stderr, "Fatal error in max: Failed to access stack elements\n");
+		dump_stack(ctx);
+		abort();
+	}
+
+	if ((check_a.type != QD_STACK_TYPE_INT && check_a.type != QD_STACK_TYPE_FLOAT) ||
+	    (check_b.type != QD_STACK_TYPE_INT && check_b.type != QD_STACK_TYPE_FLOAT)) {
+		fprintf(stderr, "Fatal error in max: Type error (expected numeric types)\n");
+		dump_stack(ctx);
+		abort();
+	}
+
+	qd_stack_element_t b, a;
+	qd_stack_error err = qd_stack_pop(ctx->st, &b);
+	if (err != QD_STACK_OK) {
+		return (qd_exec_result){-2};
+	}
+	err = qd_stack_pop(ctx->st, &a);
+	if (err != QD_STACK_OK) {
+		return (qd_exec_result){-2};
+	}
+
+	// Convert to common type and compare
+	double a_val = (a.type == QD_STACK_TYPE_INT) ? (double)a.value.i : a.value.f;
+	double b_val = (b.type == QD_STACK_TYPE_INT) ? (double)b.value.i : b.value.f;
+
+	double max_val = (a_val >= b_val) ? a_val : b_val;
+
+	// If either operand is float, result is float (type promotion)
+	if (a.type == QD_STACK_TYPE_FLOAT || b.type == QD_STACK_TYPE_FLOAT) {
+		err = qd_stack_push_float(ctx->st, max_val);
+	} else {
+		// Both are INT
+		err = qd_stack_push_int(ctx->st, (int64_t)max_val);
+	}
+
+	if (err != QD_STACK_OK) {
+		return (qd_exec_result){-2};
+	}
+
+	return (qd_exec_result){0};
+}
+
+// and - bitwise/logical AND: ( a b -- a&b )
+qd_exec_result qd_and(qd_context* ctx) {
+	size_t stack_size = qd_stack_size(ctx->st);
+	if (stack_size < 2) {
+		fprintf(stderr, "Fatal error in and: Stack underflow (required 2 elements, have %zu)\n", stack_size);
+		dump_stack(ctx);
+		abort();
+	}
+
+	qd_stack_element_t check_b, check_a;
+	qd_stack_error check_err = qd_stack_element(ctx->st, stack_size - 1, &check_b);
+	if (check_err == QD_STACK_OK) {
+		check_err = qd_stack_element(ctx->st, stack_size - 2, &check_a);
+	}
+	if (check_err != QD_STACK_OK) {
+		fprintf(stderr, "Fatal error in and: Failed to access stack elements\n");
+		dump_stack(ctx);
+		abort();
+	}
+
+	if (check_a.type != QD_STACK_TYPE_INT || check_b.type != QD_STACK_TYPE_INT) {
+		fprintf(stderr, "Fatal error in and: Type error (expected int for bitwise operation)\n");
+		dump_stack(ctx);
+		abort();
+	}
+
+	qd_stack_element_t b, a;
+	qd_stack_error err = qd_stack_pop(ctx->st, &b);
+	if (err != QD_STACK_OK) {
+		return (qd_exec_result){-2};
+	}
+	err = qd_stack_pop(ctx->st, &a);
+	if (err != QD_STACK_OK) {
+		return (qd_exec_result){-2};
+	}
+
+	int64_t result = a.value.i & b.value.i;
+
+	err = qd_stack_push_int(ctx->st, result);
+	if (err != QD_STACK_OK) {
+		return (qd_exec_result){-2};
+	}
+
+	return (qd_exec_result){0};
+}
+
+// or - bitwise/logical OR: ( a b -- a|b )
+qd_exec_result qd_or(qd_context* ctx) {
+	size_t stack_size = qd_stack_size(ctx->st);
+	if (stack_size < 2) {
+		fprintf(stderr, "Fatal error in or: Stack underflow (required 2 elements, have %zu)\n", stack_size);
+		dump_stack(ctx);
+		abort();
+	}
+
+	qd_stack_element_t check_b, check_a;
+	qd_stack_error check_err = qd_stack_element(ctx->st, stack_size - 1, &check_b);
+	if (check_err == QD_STACK_OK) {
+		check_err = qd_stack_element(ctx->st, stack_size - 2, &check_a);
+	}
+	if (check_err != QD_STACK_OK) {
+		fprintf(stderr, "Fatal error in or: Failed to access stack elements\n");
+		dump_stack(ctx);
+		abort();
+	}
+
+	if (check_a.type != QD_STACK_TYPE_INT || check_b.type != QD_STACK_TYPE_INT) {
+		fprintf(stderr, "Fatal error in or: Type error (expected int for bitwise operation)\n");
+		dump_stack(ctx);
+		abort();
+	}
+
+	qd_stack_element_t b, a;
+	qd_stack_error err = qd_stack_pop(ctx->st, &b);
+	if (err != QD_STACK_OK) {
+		return (qd_exec_result){-2};
+	}
+	err = qd_stack_pop(ctx->st, &a);
+	if (err != QD_STACK_OK) {
+		return (qd_exec_result){-2};
+	}
+
+	int64_t result = a.value.i | b.value.i;
+
+	err = qd_stack_push_int(ctx->st, result);
+	if (err != QD_STACK_OK) {
+		return (qd_exec_result){-2};
+	}
+
+	return (qd_exec_result){0};
+}
+
+// not - bitwise/logical NOT: ( a -- ~a )
+qd_exec_result qd_not(qd_context* ctx) {
+	size_t stack_size = qd_stack_size(ctx->st);
+	if (stack_size < 1) {
+		fprintf(stderr, "Fatal error in not: Stack underflow (required 1 element, have %zu)\n", stack_size);
+		dump_stack(ctx);
+		abort();
+	}
+
+	qd_stack_element_t check_val;
+	qd_stack_error check_err = qd_stack_element(ctx->st, stack_size - 1, &check_val);
+	if (check_err != QD_STACK_OK) {
+		fprintf(stderr, "Fatal error in not: Failed to access stack element\n");
+		dump_stack(ctx);
+		abort();
+	}
+
+	if (check_val.type != QD_STACK_TYPE_INT) {
+		fprintf(stderr, "Fatal error in not: Type error (expected int for bitwise operation)\n");
+		dump_stack(ctx);
+		abort();
+	}
+
+	qd_stack_element_t val;
+	qd_stack_error err = qd_stack_pop(ctx->st, &val);
+	if (err != QD_STACK_OK) {
+		return (qd_exec_result){-2};
+	}
+
+	int64_t result = ~val.value.i;
+
+	err = qd_stack_push_int(ctx->st, result);
+	if (err != QD_STACK_OK) {
+		return (qd_exec_result){-2};
+	}
+
+	return (qd_exec_result){0};
+}

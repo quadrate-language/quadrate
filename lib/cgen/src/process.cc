@@ -1,8 +1,8 @@
 #include <cgen/process.h>
+#include <cstring>
 #include <sys/wait.h>
 #include <unistd.h>
 #include <vector>
-#include <cstring>
 
 namespace Qd {
 	int executeProcess(const std::string& program, const std::vector<std::string>& args) {

@@ -259,7 +259,7 @@ int main(int argc, char** argv) {
 		// Run the program if requested
 		if (run) {
 			// Execute the compiled binary safely
-			std::vector<std::string> args;  // No arguments to the program
+			std::vector<std::string> args; // No arguments to the program
 			int exitCode = Qd::executeProcess(outputPath, args);
 			if (exitCode != 0) {
 				std::cerr << "quadc: program exited with code " << exitCode << std::endl;

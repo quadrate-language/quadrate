@@ -3404,3 +3404,537 @@ TEST(WithinInvertedRangeTest) {
 
 	destroy_test_context(ctx);
 }
+
+// ========== qd_drop tests ==========
+
+TEST(DropIntegerTest) {
+	qd_context* ctx = create_test_context();
+
+	// Push 10, 20, 30
+	qd_push_i(ctx, 10);
+	qd_push_i(ctx, 20);
+	qd_push_i(ctx, 30);
+
+	// Drop top element (30)
+	qd_exec_result result = qd_drop(ctx);
+	ASSERT_EQ(result.code, 0, "drop should succeed");
+
+	// Stack should have 10, 20
+	ASSERT_EQ((int)qd_stack_size(ctx->st), 2, "stack should have 2 elements");
+
+	qd_stack_element_t elem;
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ((int)elem.value.i, 20, "top should be 20");
+
+	destroy_test_context(ctx);
+}
+
+TEST(DropStringTest) {
+	qd_context* ctx = create_test_context();
+
+	// Push a string
+	qd_push_s(ctx, "test string");
+
+	// Drop it (should free the string)
+	qd_exec_result result = qd_drop(ctx);
+	ASSERT_EQ(result.code, 0, "drop should succeed");
+	ASSERT_EQ((int)qd_stack_size(ctx->st), 0, "stack should be empty");
+
+	destroy_test_context(ctx);
+}
+
+TEST(DropFloatTest) {
+	qd_context* ctx = create_test_context();
+
+	// Push floats
+	qd_push_f(ctx, 1.5);
+	qd_push_f(ctx, 2.5);
+
+	qd_drop(ctx);
+	ASSERT_EQ((int)qd_stack_size(ctx->st), 1, "stack should have 1 element");
+
+	qd_stack_element_t elem;
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ(elem.type, QD_STACK_TYPE_FLOAT, "should be float");
+	ASSERT(float_eq(elem.value.f, 1.5), "should be 1.5");
+
+	destroy_test_context(ctx);
+}
+
+// ========== qd_drop2 tests ==========
+
+TEST(Drop2Test) {
+	qd_context* ctx = create_test_context();
+
+	// Push 10, 20, 30, 40
+	qd_push_i(ctx, 10);
+	qd_push_i(ctx, 20);
+	qd_push_i(ctx, 30);
+	qd_push_i(ctx, 40);
+
+	// Drop top 2 elements (40, 30)
+	qd_exec_result result = qd_drop2(ctx);
+	ASSERT_EQ(result.code, 0, "drop2 should succeed");
+
+	// Stack should have 10, 20
+	ASSERT_EQ((int)qd_stack_size(ctx->st), 2, "stack should have 2 elements");
+
+	qd_stack_element_t elem;
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ((int)elem.value.i, 20, "top should be 20");
+
+	destroy_test_context(ctx);
+}
+
+TEST(Drop2StringsTest) {
+	qd_context* ctx = create_test_context();
+
+	// Push strings
+	qd_push_s(ctx, "first");
+	qd_push_s(ctx, "second");
+
+	// Drop both (should free both strings)
+	qd_exec_result result = qd_drop2(ctx);
+	ASSERT_EQ(result.code, 0, "drop2 should succeed");
+	ASSERT_EQ((int)qd_stack_size(ctx->st), 0, "stack should be empty");
+
+	destroy_test_context(ctx);
+}
+
+// ========== qd_rot tests ==========
+
+TEST(RotTest) {
+	qd_context* ctx = create_test_context();
+
+	// Push 10, 20, 30 (top is 30)
+	qd_push_i(ctx, 10);
+	qd_push_i(ctx, 20);
+	qd_push_i(ctx, 30);
+
+	// Rotate: (10 20 30) -> (20 30 10)
+	qd_exec_result result = qd_rot(ctx);
+	ASSERT_EQ(result.code, 0, "rot should succeed");
+
+	// Check order: top should be 10, then 30, then 20
+	qd_stack_element_t elem;
+
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ((int)elem.value.i, 10, "top should be 10");
+
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ((int)elem.value.i, 30, "second should be 30");
+
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ((int)elem.value.i, 20, "third should be 20");
+
+	destroy_test_context(ctx);
+}
+
+TEST(RotMixedTypesTest) {
+	qd_context* ctx = create_test_context();
+
+	// Push int, float, string
+	qd_push_i(ctx, 42);
+	qd_push_f(ctx, 3.14);
+	qd_push_s(ctx, "test");
+
+	qd_rot(ctx);
+
+	// Check types and values
+	qd_stack_element_t elem;
+
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ(elem.type, QD_STACK_TYPE_INT, "top should be int");
+	ASSERT_EQ((int)elem.value.i, 42, "top should be 42");
+
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ(elem.type, QD_STACK_TYPE_STR, "second should be string");
+	free(elem.value.s);
+
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ(elem.type, QD_STACK_TYPE_FLOAT, "third should be float");
+
+	destroy_test_context(ctx);
+}
+
+// ========== qd_mod tests ==========
+
+TEST(ModPositiveTest) {
+	qd_context* ctx = create_test_context();
+
+	// 17 % 5 = 2
+	qd_push_i(ctx, 17);
+	qd_push_i(ctx, 5);
+
+	qd_exec_result result = qd_mod(ctx);
+	ASSERT_EQ(result.code, 0, "mod should succeed");
+
+	qd_stack_element_t elem;
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ((int)elem.value.i, 2, "17 % 5 should be 2");
+
+	destroy_test_context(ctx);
+}
+
+TEST(ModNegativeTest) {
+	qd_context* ctx = create_test_context();
+
+	// -17 % 5 = -2
+	qd_push_i(ctx, -17);
+	qd_push_i(ctx, 5);
+
+	qd_mod(ctx);
+
+	qd_stack_element_t elem;
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ((int)elem.value.i, -2, "-17 % 5 should be -2");
+
+	destroy_test_context(ctx);
+}
+
+TEST(ModZeroTest) {
+	qd_context* ctx = create_test_context();
+
+	// 10 % 5 = 0
+	qd_push_i(ctx, 10);
+	qd_push_i(ctx, 5);
+
+	qd_mod(ctx);
+
+	qd_stack_element_t elem;
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ((int)elem.value.i, 0, "10 % 5 should be 0");
+
+	destroy_test_context(ctx);
+}
+
+// ========== qd_neg tests ==========
+
+TEST(NegIntegerTest) {
+	qd_context* ctx = create_test_context();
+
+	qd_push_i(ctx, 42);
+	qd_exec_result result = qd_neg(ctx);
+	ASSERT_EQ(result.code, 0, "neg should succeed");
+
+	qd_stack_element_t elem;
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ(elem.type, QD_STACK_TYPE_INT, "should remain int");
+	ASSERT_EQ((int)elem.value.i, -42, "42 negated should be -42");
+
+	destroy_test_context(ctx);
+}
+
+TEST(NegFloatTest) {
+	qd_context* ctx = create_test_context();
+
+	qd_push_f(ctx, 3.14);
+	qd_neg(ctx);
+
+	qd_stack_element_t elem;
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ(elem.type, QD_STACK_TYPE_FLOAT, "should remain float");
+	ASSERT(float_eq(elem.value.f, -3.14), "3.14 negated should be -3.14");
+
+	destroy_test_context(ctx);
+}
+
+TEST(NegZeroTest) {
+	qd_context* ctx = create_test_context();
+
+	qd_push_i(ctx, 0);
+	qd_neg(ctx);
+
+	qd_stack_element_t elem;
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ((int)elem.value.i, 0, "0 negated should be 0");
+
+	destroy_test_context(ctx);
+}
+
+TEST(NegNegativeTest) {
+	qd_context* ctx = create_test_context();
+
+	qd_push_i(ctx, -42);
+	qd_neg(ctx);
+
+	qd_stack_element_t elem;
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ((int)elem.value.i, 42, "-42 negated should be 42");
+
+	destroy_test_context(ctx);
+}
+
+// ========== qd_min tests ==========
+
+TEST(MinIntegersTest) {
+	qd_context* ctx = create_test_context();
+
+	qd_push_i(ctx, 20);
+	qd_push_i(ctx, 10);
+
+	qd_exec_result result = qd_min(ctx);
+	ASSERT_EQ(result.code, 0, "min should succeed");
+
+	qd_stack_element_t elem;
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ((int)elem.value.i, 10, "min(20, 10) should be 10");
+
+	destroy_test_context(ctx);
+}
+
+TEST(MinFloatsTest) {
+	qd_context* ctx = create_test_context();
+
+	qd_push_f(ctx, 3.14);
+	qd_push_f(ctx, 2.71);
+
+	qd_min(ctx);
+
+	qd_stack_element_t elem;
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ(elem.type, QD_STACK_TYPE_FLOAT, "should be float");
+	ASSERT(float_eq(elem.value.f, 2.71), "min(3.14, 2.71) should be 2.71");
+
+	destroy_test_context(ctx);
+}
+
+TEST(MinMixedTypesTest) {
+	qd_context* ctx = create_test_context();
+
+	qd_push_i(ctx, 5);
+	qd_push_f(ctx, 3.5);
+
+	qd_min(ctx);
+
+	qd_stack_element_t elem;
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ(elem.type, QD_STACK_TYPE_FLOAT, "result should be float");
+	ASSERT(float_eq(elem.value.f, 3.5), "min(5, 3.5) should be 3.5");
+
+	destroy_test_context(ctx);
+}
+
+TEST(MinNegativeTest) {
+	qd_context* ctx = create_test_context();
+
+	qd_push_i(ctx, -5);
+	qd_push_i(ctx, -10);
+
+	qd_min(ctx);
+
+	qd_stack_element_t elem;
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ((int)elem.value.i, -10, "min(-5, -10) should be -10");
+
+	destroy_test_context(ctx);
+}
+
+// ========== qd_max tests ==========
+
+TEST(MaxIntegersTest) {
+	qd_context* ctx = create_test_context();
+
+	qd_push_i(ctx, 20);
+	qd_push_i(ctx, 10);
+
+	qd_exec_result result = qd_max(ctx);
+	ASSERT_EQ(result.code, 0, "max should succeed");
+
+	qd_stack_element_t elem;
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ((int)elem.value.i, 20, "max(20, 10) should be 20");
+
+	destroy_test_context(ctx);
+}
+
+TEST(MaxFloatsTest) {
+	qd_context* ctx = create_test_context();
+
+	qd_push_f(ctx, 3.14);
+	qd_push_f(ctx, 2.71);
+
+	qd_max(ctx);
+
+	qd_stack_element_t elem;
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ(elem.type, QD_STACK_TYPE_FLOAT, "should be float");
+	ASSERT(float_eq(elem.value.f, 3.14), "max(3.14, 2.71) should be 3.14");
+
+	destroy_test_context(ctx);
+}
+
+TEST(MaxMixedTypesTest) {
+	qd_context* ctx = create_test_context();
+
+	qd_push_i(ctx, 5);
+	qd_push_f(ctx, 3.5);
+
+	qd_max(ctx);
+
+	qd_stack_element_t elem;
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ(elem.type, QD_STACK_TYPE_FLOAT, "result should be float");
+	ASSERT(float_eq(elem.value.f, 5.0), "max(5, 3.5) should be 5.0");
+
+	destroy_test_context(ctx);
+}
+
+TEST(MaxNegativeTest) {
+	qd_context* ctx = create_test_context();
+
+	qd_push_i(ctx, -5);
+	qd_push_i(ctx, -10);
+
+	qd_max(ctx);
+
+	qd_stack_element_t elem;
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ((int)elem.value.i, -5, "max(-5, -10) should be -5");
+
+	destroy_test_context(ctx);
+}
+
+// ========== qd_and tests ==========
+
+TEST(AndBasicTest) {
+	qd_context* ctx = create_test_context();
+
+	// 12 & 10 = 0b1100 & 0b1010 = 0b1000 = 8
+	qd_push_i(ctx, 12);
+	qd_push_i(ctx, 10);
+
+	qd_exec_result result = qd_and(ctx);
+	ASSERT_EQ(result.code, 0, "and should succeed");
+
+	qd_stack_element_t elem;
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ((int)elem.value.i, 8, "12 & 10 should be 8");
+
+	destroy_test_context(ctx);
+}
+
+TEST(AndZeroTest) {
+	qd_context* ctx = create_test_context();
+
+	qd_push_i(ctx, 15);
+	qd_push_i(ctx, 0);
+
+	qd_and(ctx);
+
+	qd_stack_element_t elem;
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ((int)elem.value.i, 0, "15 & 0 should be 0");
+
+	destroy_test_context(ctx);
+}
+
+TEST(AndAllOnesTest) {
+	qd_context* ctx = create_test_context();
+
+	qd_push_i(ctx, 42);
+	qd_push_i(ctx, -1);  // All bits set
+
+	qd_and(ctx);
+
+	qd_stack_element_t elem;
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ((int)elem.value.i, 42, "42 & -1 should be 42");
+
+	destroy_test_context(ctx);
+}
+
+// ========== qd_or tests ==========
+
+TEST(OrBasicTest) {
+	qd_context* ctx = create_test_context();
+
+	// 12 | 10 = 0b1100 | 0b1010 = 0b1110 = 14
+	qd_push_i(ctx, 12);
+	qd_push_i(ctx, 10);
+
+	qd_exec_result result = qd_or(ctx);
+	ASSERT_EQ(result.code, 0, "or should succeed");
+
+	qd_stack_element_t elem;
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ((int)elem.value.i, 14, "12 | 10 should be 14");
+
+	destroy_test_context(ctx);
+}
+
+TEST(OrZeroTest) {
+	qd_context* ctx = create_test_context();
+
+	qd_push_i(ctx, 15);
+	qd_push_i(ctx, 0);
+
+	qd_or(ctx);
+
+	qd_stack_element_t elem;
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ((int)elem.value.i, 15, "15 | 0 should be 15");
+
+	destroy_test_context(ctx);
+}
+
+TEST(OrSameValuesTest) {
+	qd_context* ctx = create_test_context();
+
+	qd_push_i(ctx, 42);
+	qd_push_i(ctx, 42);
+
+	qd_or(ctx);
+
+	qd_stack_element_t elem;
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ((int)elem.value.i, 42, "42 | 42 should be 42");
+
+	destroy_test_context(ctx);
+}
+
+// ========== qd_not tests ==========
+
+TEST(NotBasicTest) {
+	qd_context* ctx = create_test_context();
+
+	qd_push_i(ctx, 0);
+
+	qd_exec_result result = qd_not(ctx);
+	ASSERT_EQ(result.code, 0, "not should succeed");
+
+	qd_stack_element_t elem;
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ((int)elem.value.i, -1, "~0 should be -1 (all bits set)");
+
+	destroy_test_context(ctx);
+}
+
+TEST(NotNonZeroTest) {
+	qd_context* ctx = create_test_context();
+
+	qd_push_i(ctx, -1);
+
+	qd_not(ctx);
+
+	qd_stack_element_t elem;
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ((int)elem.value.i, 0, "~-1 should be 0");
+
+	destroy_test_context(ctx);
+}
+
+TEST(NotPositiveTest) {
+	qd_context* ctx = create_test_context();
+
+	// ~5 = ~0b0101 = 0b...11111010 = -6 (in two's complement)
+	qd_push_i(ctx, 5);
+
+	qd_not(ctx);
+
+	qd_stack_element_t elem;
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ((int)elem.value.i, -6, "~5 should be -6");
+
+	destroy_test_context(ctx);
+}

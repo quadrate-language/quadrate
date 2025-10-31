@@ -13,9 +13,11 @@
 namespace Qd {
 
 	// List of built-in instructions (must match ast.cc)
-	static const char* BUILTIN_INSTRUCTIONS[] = {"*", "+", "-", ".", "/", "abs", "acos", "add", "asin", "atan", "cb",
-			"cbrt", "ceil", "clear", "cos", "dec", "depth", "div", "dup", "dup2", "fac", "floor", "inc", "inv", "mul",
-			"nip", "over", "print", "prints", "printsv", "printv", "rot", "sin", "sq", "sqrt", "sub", "swap", "tan"};
+	static const char* BUILTIN_INSTRUCTIONS[] = {"*", "+", "-", ".", "/", "abs", "acos", "add", "and", "asin", "atan",
+			"cb", "cbrt", "ceil", "clear", "cos", "dec", "depth", "div", "drop", "drop2", "dup", "dup2", "eq", "fac",
+			"floor", "gt", "gte", "inc", "inv", "lt", "lte", "max", "min", "mod", "mul", "neq", "neg", "nip", "not",
+			"or", "over", "print", "prints", "printsv", "printv", "rot", "sin", "sq", "sqrt", "sub", "swap", "tan",
+			"within"};
 
 	SemanticValidator::SemanticValidator() : mFilename(nullptr), mErrorCount(0) {
 	}
