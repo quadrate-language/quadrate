@@ -1,0 +1,42 @@
+fn main() {
+	// Test printing strings with print (.)
+	"Basic print test" .
+
+	// Test multiple strings on stack
+	"First" "Second" "Third" .
+	// Should print "Third" and leave First and Second on stack
+	. .
+	// Should print "Second" then "First"
+
+	// Test empty strings
+	"" .
+	"Not empty" .
+	"" .
+
+	// Test strings with numbers
+	"Number: 42" .
+	"Pi: 3.14159" .
+
+	// Test strings with various whitespace
+	"Tab	here" .
+	"Multiple   spaces" .
+	"Leading whitespace" .
+	"Trailing whitespace " .
+
+	// Test very long string
+	"This is a very long string that tests whether the string handling can deal with longer text content without any issues whatsoever." .
+
+	// Test strings with repeated characters
+	"aaaaaaaaaa" .
+	"1111111111" .
+	"          " .
+
+	// Test single character strings (ASCII and Unicode)
+	"a" .
+	"Z" .
+	"0" .
+	"!" .
+	"ä" .
+	"世" .
+	"🎉" .
+}
