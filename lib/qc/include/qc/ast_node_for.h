@@ -7,8 +7,7 @@
 namespace Qd {
 	class AstNodeForStatement : public IAstNode {
 	public:
-		AstNodeForStatement(const std::string& loopVar)
-			: mLoopVar(loopVar), mParent(nullptr), mBody(nullptr), mLine(0), mColumn(0) {
+		AstNodeForStatement() : mParent(nullptr), mBody(nullptr), mLine(0), mColumn(0) {
 		}
 
 		~AstNodeForStatement() {
@@ -53,10 +52,6 @@ namespace Qd {
 			mColumn = column;
 		}
 
-		const std::string& loopVar() const {
-			return mLoopVar;
-		}
-
 		void setBody(IAstNode* body) {
 			mBody = body;
 		}
@@ -66,7 +61,6 @@ namespace Qd {
 		}
 
 	private:
-		std::string mLoopVar;
 		IAstNode* mParent;
 		IAstNode* mBody;
 		size_t mLine;

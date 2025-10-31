@@ -84,7 +84,7 @@ TEST(BlockComment) {
 
 TEST(BreakStatement) {
 	Qd::Ast ast;
-	const char* src = "fn test() { for i { break } }";
+	const char* src = "fn test() { for { break } }";
 	Qd::IAstNode* root = ast.generate(src, false, nullptr);
 
 	ASSERT(root != nullptr, "root != nullptr");
@@ -106,7 +106,7 @@ TEST(BreakStatement) {
 
 TEST(ContinueStatement) {
 	Qd::Ast ast;
-	const char* src = "fn test() { for i { continue } }";
+	const char* src = "fn test() { for { continue } }";
 	Qd::IAstNode* root = ast.generate(src, false, nullptr);
 
 	ASSERT(root != nullptr, "root != nullptr");
@@ -311,7 +311,7 @@ TEST(DeeplyNestedIfElse) {
 
 TEST(ForStatement) {
 	Qd::Ast ast;
-	const char* src = "fn test() { for i { foo } }";
+	const char* src = "fn test() { for { foo } }";
 	Qd::IAstNode* root = ast.generate(src, false, nullptr);
 
 	ASSERT(root != nullptr, "root != nullptr");
@@ -378,7 +378,7 @@ TEST(ErrorRecoveryMissingBraceAfterIf) {
 
 TEST(ErrorRecoveryMissingBraceAfterFor) {
 	Qd::Ast ast;
-	const char* src = "fn test() { for i foo }";
+	const char* src = "fn test() { for foo }";
 	Qd::IAstNode* root = ast.generate(src, false, nullptr);
 
 	ASSERT(root != nullptr, "root should not be null");

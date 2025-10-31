@@ -154,11 +154,7 @@ namespace Qd {
 			escapeJsonString(lit->value().c_str());
 			printf("\"");
 		} else if (node->type() == IAstNode::Type::FOR_STATEMENT) {
-			const AstNodeForStatement* forStmt = static_cast<const AstNodeForStatement*>(node);
-			printf(",");
-			printf("\"loopVar\":\"");
-			escapeJsonString(forStmt->loopVar().c_str());
-			printf("\"");
+			// For statement doesn't have extra properties to print
 		} else if (node->type() == IAstNode::Type::CASE_STATEMENT) {
 			const AstNodeCase* caseStmt = static_cast<const AstNodeCase*>(node);
 			printf(",");

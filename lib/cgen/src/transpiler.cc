@@ -5,6 +5,7 @@
 #include <qc/ast.h>
 #include <qc/ast_node.h>
 #include <qc/ast_node_constant.h>
+#include <qc/ast_node_for.h>
 #include <qc/ast_node_function.h>
 #include <qc/ast_node_identifier.h>
 #include <qc/ast_node_if.h>
@@ -135,9 +136,53 @@ namespace Qd {
 			out << "\n";
 			return; // Don't traverse children again
 		}
-		case IAstNode::Type::FOR_STATEMENT:
-			// TODO: Handle for statement
-			break;
+		case IAstNode::Type::FOR_STATEMENT: {
+			AstNodeForStatement* forStmt = static_cast<AstNodeForStatement*>(node);
+			int64_t currentVar = varCounter++;
+			std::string varStart = "qd_var_" + std::to_string(currentVar) + "_start";
+			std::string varEnd = "qd_var_" + std::to_string(currentVar) + "_end";
+			std::string varStep = "qd_var_" + std::to_string(currentVar) + "_step";
+			std::string varI = "qd_var_" + std::to_string(currentVar) + "_i";
+
+			// Pop step, end, start from the stack (in reverse order)
+			out << makeIndent(indent) << "qd_stack_element_t " << varStep << ";\n";
+			out << makeIndent(indent) << "qd_stack_error " << varStep << "_err = qd_stack_pop(ctx->st, &" << varStep << ");\n";
+			out << makeIndent(indent) << "if (" << varStep << "_err != QD_STACK_OK) {\n";
+			out << makeIndent(indent + 1) << "return (qd_exec_result){-2};\n";
+			out << makeIndent(indent) << "}\n";
+
+			out << makeIndent(indent) << "qd_stack_element_t " << varEnd << ";\n";
+			out << makeIndent(indent) << "qd_stack_error " << varEnd << "_err = qd_stack_pop(ctx->st, &" << varEnd << ");\n";
+			out << makeIndent(indent) << "if (" << varEnd << "_err != QD_STACK_OK) {\n";
+			out << makeIndent(indent + 1) << "return (qd_exec_result){-2};\n";
+			out << makeIndent(indent) << "}\n";
+
+			out << makeIndent(indent) << "qd_stack_element_t " << varStart << ";\n";
+			out << makeIndent(indent) << "qd_stack_error " << varStart << "_err = qd_stack_pop(ctx->st, &" << varStart << ");\n";
+			out << makeIndent(indent) << "if (" << varStart << "_err != QD_STACK_OK) {\n";
+			out << makeIndent(indent + 1) << "return (qd_exec_result){-2};\n";
+			out << makeIndent(indent) << "}\n";
+
+			// Generate C for loop with the values
+			out << makeIndent(indent) << "if (" << varStart << ".type == QD_STACK_TYPE_INT && "
+				<< varEnd << ".type == QD_STACK_TYPE_INT && "
+				<< varStep << ".type == QD_STACK_TYPE_INT) {\n";
+			out << makeIndent(indent + 1) << "for (int64_t " << varI << " = " << varStart << ".value.i; "
+				<< varI << " < " << varEnd << ".value.i; "
+				<< varI << " += " << varStep << ".value.i) {\n";
+
+			// Push loop counter onto stack before body
+			out << makeIndent(indent + 2) << "qd_push_i(ctx, " << varI << ");\n";
+
+			// Loop body
+			if (forStmt->body()) {
+				traverse(forStmt->body(), packageName, out, indent + 2);
+			}
+
+			out << makeIndent(indent + 1) << "}\n";
+			out << makeIndent(indent) << "}\n";
+			return; // Don't traverse children again
+		}
 		case IAstNode::Type::SWITCH_STATEMENT:
 			// TODO: Handle switch statement
 			break;

@@ -798,20 +798,11 @@ namespace Qd {
 		size_t n;
 		char32_t token = u8t_scanner_scan(scanner);
 
-		if (token != U8T_IDENTIFIER) {
-			errorReporter->reportError(scanner, "Expected loop variable after 'for'");
-			synchronize(scanner);
-			return nullptr;
-		}
-
-		const char* loopVar = u8t_scanner_token_text(scanner, &n);
-		AstNodeForStatement* forStmt = new AstNodeForStatement(loopVar);
-		setNodePosition(forStmt, scanner, src);
-
-		token = u8t_scanner_scan(scanner);
 		if (token != '{') {
-			errorReporter->reportError(scanner, "Expected '{' after loop variable");
-			// Recovery: create empty body and return partial for statement
+			errorReporter->reportError(scanner, "Expected '{' after 'for'");
+			// Recovery: create empty for statement and synchronize
+			AstNodeForStatement* forStmt = new AstNodeForStatement();
+			setNodePosition(forStmt, scanner, src);
 			AstNodeBlock* body = new AstNodeBlock();
 			setNodePosition(body, scanner, src);
 			body->setParent(forStmt);
@@ -820,6 +811,8 @@ namespace Qd {
 			return forStmt;
 		}
 
+		AstNodeForStatement* forStmt = new AstNodeForStatement();
+		setNodePosition(forStmt, scanner, src);
 		AstNodeBlock* body = new AstNodeBlock();
 		setNodePosition(body, scanner, src);
 
