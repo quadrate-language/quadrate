@@ -175,8 +175,9 @@ namespace Qd {
 				const char* tokenText = u8t_scanner_token_text(scanner, &n);
 				if (strcmp(tokenText, "else") == 0) {
 					// else must follow an if statement
-					if (block->childCount() > 0 && block->child(block->childCount() - 1)->type() == IAstNode::Type::IF_STATEMENT) {
-						AstNodeIfStatement* ifStmt = static_cast<AstNodeIfStatement*>(block->child(block->childCount() - 1));
+					IAstNode* lastChild = (block->childCount() > 0) ? block->child(block->childCount() - 1) : nullptr;
+					if (lastChild && lastChild->type() == IAstNode::Type::IF_STATEMENT) {
+						AstNodeIfStatement* ifStmt = static_cast<AstNodeIfStatement*>(lastChild);
 
 						// Parse else block - must have {
 						token = u8t_scanner_scan(scanner);
@@ -447,8 +448,9 @@ namespace Qd {
 					}
 				} else if (strcmp(text, "else") == 0) {
 					// else must follow an if statement
-					if (body->childCount() > 0 && body->child(body->childCount() - 1)->type() == IAstNode::Type::IF_STATEMENT) {
-						AstNodeIfStatement* ifStmt = static_cast<AstNodeIfStatement*>(body->child(body->childCount() - 1));
+					IAstNode* lastChild = (body->childCount() > 0) ? body->child(body->childCount() - 1) : nullptr;
+					if (lastChild && lastChild->type() == IAstNode::Type::IF_STATEMENT) {
+						AstNodeIfStatement* ifStmt = static_cast<AstNodeIfStatement*>(lastChild);
 
 						// Parse else block - must have {
 						token = u8t_scanner_scan(scanner);
