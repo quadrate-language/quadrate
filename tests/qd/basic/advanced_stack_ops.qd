@@ -1,0 +1,24 @@
+fn main() {
+	// Test dup2 - duplicates top 2 elements
+	1 2 dup2 .  // Should print: 1
+	. . .       // Should print: 2 2 1
+
+	// Test swap - swaps top 2 elements
+	10 20 swap . .  // Should print: 10 20
+
+	// Test over - copies second element to top
+	5 7 over . . .  // Should print: 5 7 5
+
+	// Test nip - removes second element
+	100 200 nip .   // Should print: 200
+
+	// Test depth - pushes stack depth
+	clear
+	1 2 3 depth .    // Should print: 3
+	clear
+
+	// Test clear and depth again
+	100 200 300
+	clear
+	depth .          // Should print: 0
+}

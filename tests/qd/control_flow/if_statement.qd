@@ -26,4 +26,49 @@ fn main() {
 	1 if {
 		30 .
 	}
+
+	// Test 6: Nested if statements
+	1 if {
+		1 if {
+			100 .
+		}
+	}
+
+	// Test 7: Nested if/else
+	1 if {
+		5 3 gt if {
+			200 .
+		} else {
+			300 .
+		}
+	}
+
+	// Test 8: Deeply nested if/else
+	1 if {
+		1 if {
+			1 if {
+				400 .
+			} else {
+				500 .
+			}
+		} else {
+			600 .
+		}
+	}
+
+	// Test 9: Nested if with false outer condition
+	0 if {
+		1 if {
+			700 .
+		}
+	}
+
+	// Test 10: Nested if/else with false inner condition
+	1 if {
+		0 if {
+			800 .
+		} else {
+			900 .
+		}
+	}
 }

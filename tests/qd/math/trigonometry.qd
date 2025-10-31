@@ -1,0 +1,18 @@
+fn main() {
+	// Test basic trig functions with 0
+	0 sin .         // Should print: 0
+	0 cos .         // Should print: 1
+	0 tan .         // Should print: 0
+
+	// Test with π/2 approximation (1.5708)
+	1.5708 sin .    // Should print: ~1
+	1.5708 cos .    // Should print: ~0
+
+	// Test inverse trig functions
+	0 asin .        // Should print: 0
+	1 acos .        // Should print: 0
+	0 atan .        // Should print: 0
+
+	// Test sin of 30 degrees (0.5236 radians)
+	0.5236 sin .    // Should print: ~0.5
+}

@@ -781,7 +781,6 @@ namespace Qd {
 	}
 
 	static IAstNode* parseIfStatement(u8t_scanner* scanner, ErrorReporter* errorReporter, const char* src) {
-		size_t n;
 		char32_t token = u8t_scanner_scan(scanner);
 
 		if (token != '{') {
@@ -802,17 +801,8 @@ namespace Qd {
 		AstNodeBlock* thenBody = new AstNodeBlock();
 		setNodePosition(thenBody, scanner, src);
 
-		while ((token = u8t_scanner_scan(scanner)) != U8T_EOF) {
-			if (token == '}') {
-				break;
-			}
-
-			IAstNode* node = parseBlockStatement(token, scanner, errorReporter, &n, src);
-			if (node) {
-				node->setParent(thenBody);
-				thenBody->addChild(node);
-			}
-		}
+		// Use parseBlockBody to handle nested else clauses properly
+		parseBlockBody(thenBody, scanner, errorReporter, src);
 
 		thenBody->setParent(ifStmt);
 		ifStmt->setThenBody(thenBody);
