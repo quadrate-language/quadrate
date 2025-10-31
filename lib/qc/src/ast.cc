@@ -1,4 +1,5 @@
 #include <cstring>
+#include <fstream>
 #include <iostream>
 #include <qc/ast.h>
 #include <qc/ast_node.h>
@@ -9,6 +10,7 @@
 #include <qc/ast_node_defer.h>
 #include <qc/ast_node_for.h>
 #include <qc/ast_node_function.h>
+#include <qc/ast_node_function_pointer.h>
 #include <qc/ast_node_identifier.h>
 #include <qc/ast_node_if.h>
 #include <qc/ast_node_instruction.h>
@@ -29,10 +31,10 @@ namespace Qd {
 	// Helper function to check if an identifier is a built-in instruction
 	static bool isBuiltInInstruction(const char* name) {
 		static const char* instructions[] = {"*", "+", "-", ".", "/", "abs", "acos", "add", "and", "asin", "atan", "cb",
-				"cbrt", "ceil", "clear", "cos", "dec", "depth", "div", "drop", "drop2", "dup", "dup2", "eq", "fac",
-				"floor", "gt", "gte", "inc", "inv", "ln", "log10", "lt", "lte", "max", "min", "mod", "mul", "neq", "neg",
-				"nip", "not", "or", "over", "over2", "pick", "print", "prints", "printsv", "printv", "roll", "rot", "sin",
-				"sq", "sqrt", "sub", "swap", "swap2", "tan", "tuck", "within"};
+				"cbrt", "ceil", "call", "clear", "cos", "dec", "depth", "div", "drop", "drop2", "dup", "dup2", "eq",
+				"fac", "floor", "gt", "gte", "inc", "inv", "ln", "log10", "lt", "lte", "max", "min", "mod", "mul",
+				"neq", "neg", "nip", "not", "or", "over", "over2", "pick", "print", "prints", "printsv", "printv",
+				"roll", "rot", "sin", "sq", "sqrt", "sub", "swap", "swap2", "tan", "tuck", "within"};
 		static const size_t count = sizeof(instructions) / sizeof(instructions[0]);
 
 		for (size_t i = 0; i < count; i++) {
@@ -152,6 +154,22 @@ namespace Qd {
 			IAstNode* node = new AstNodeIdentifier("$");
 			setNodePosition(node, scanner, src);
 			return node;
+		} else if (token == '&') {
+			// Handle '&' as function pointer reference
+			size_t ampPos = u8t_scanner_token_start(scanner);
+			char32_t nextToken = u8t_scanner_scan(scanner);
+			if (nextToken == U8T_IDENTIFIER) {
+				size_t n2;
+				const char* functionName = u8t_scanner_token_text(scanner, &n2);
+				IAstNode* node = new AstNodeFunctionPointerReference(functionName);
+				// Set position to the & token
+				size_t line, column;
+				calculateLineColumn(src, ampPos, &line, &column);
+				node->setPosition(line, column);
+				return node;
+			}
+			// If not followed by identifier, return nullptr (error will be handled by caller)
+			return nullptr;
 		}
 		return nullptr;
 	}
@@ -249,6 +267,23 @@ namespace Qd {
 			IAstNode* node = new AstNodeIdentifier(text);
 			setNodePosition(node, scanner, src);
 			return node;
+		}
+		if (token == '&') {
+			size_t ampPos = u8t_scanner_token_start(scanner);
+			char32_t nextToken = u8t_scanner_scan(scanner);
+			if (nextToken == U8T_IDENTIFIER) {
+				size_t n2;
+				const char* functionName = u8t_scanner_token_text(scanner, &n2);
+				IAstNode* node = new AstNodeFunctionPointerReference(functionName);
+				// Set position to the & token
+				size_t line, column;
+				calculateLineColumn(src, ampPos, &line, &column);
+				node->setPosition(line, column);
+				return node;
+			} else {
+				errorReporter->reportError(scanner, "Expected function name after '&'");
+				return nullptr;
+			}
 		}
 
 		return parseSimpleToken(token, scanner, n, src);
@@ -731,6 +766,20 @@ namespace Qd {
 				AstNodeIdentifier* ident = new AstNodeIdentifier("$");
 				setNodePosition(ident, scanner, src);
 				tempNodes.push_back(ident);
+			} else if (token == '&') {
+				// Handle '&' for function pointer references
+				size_t ampPos = u8t_scanner_token_start(scanner);
+				char32_t nextToken = u8t_scanner_scan(scanner);
+				if (nextToken == U8T_IDENTIFIER) {
+					const char* functionName = u8t_scanner_token_text(scanner, &n);
+					AstNodeFunctionPointerReference* funcPtr = new AstNodeFunctionPointerReference(functionName);
+					size_t line, column;
+					calculateLineColumn(src, ampPos, &line, &column);
+					funcPtr->setPosition(line, column);
+					tempNodes.push_back(funcPtr);
+				} else {
+					errorReporter->reportError(scanner, "Expected function name after '&'");
+				}
 			}
 		}
 

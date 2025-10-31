@@ -7,6 +7,7 @@
 #include <qc/ast_node_constant.h>
 #include <qc/ast_node_for.h>
 #include <qc/ast_node_function.h>
+#include <qc/ast_node_function_pointer.h>
 #include <qc/ast_node_identifier.h>
 #include <qc/ast_node_if.h>
 #include <qc/ast_node_instruction.h>
@@ -254,6 +255,13 @@ namespace Qd {
 			} else {
 				out << makeIndent(indent) << "usr_" << packageName << "_" << ident->name() << "(ctx);\n";
 			}
+			break;
+		}
+		case IAstNode::Type::FUNCTION_POINTER_REFERENCE: {
+			AstNodeFunctionPointerReference* funcPtr = static_cast<AstNodeFunctionPointerReference*>(node);
+			// Push the function pointer onto the stack
+			out << makeIndent(indent) << "qd_push_p(ctx, (void*)usr_" << packageName << "_" << funcPtr->functionName()
+				<< ");\n";
 			break;
 		}
 		case IAstNode::Type::INSTRUCTION: {

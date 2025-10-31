@@ -3,6 +3,7 @@
 #include <qc/ast.h>
 #include <qc/ast_node.h>
 #include <qc/ast_node_function.h>
+#include <qc/ast_node_function_pointer.h>
 #include <qc/ast_node_identifier.h>
 #include <qc/ast_node_instruction.h>
 #include <qc/ast_node_literal.h>
@@ -14,10 +15,10 @@ namespace Qd {
 
 	// List of built-in instructions (must match ast.cc)
 	static const char* BUILTIN_INSTRUCTIONS[] = {"*", "+", "-", ".", "/", "abs", "acos", "add", "and", "asin", "atan",
-			"cb", "cbrt", "ceil", "clear", "cos", "dec", "depth", "div", "drop", "drop2", "dup", "dup2", "eq", "fac",
-			"floor", "gt", "gte", "inc", "inv", "ln", "log10", "lt", "lte", "max", "min", "mod", "mul", "neq", "neg", "nip", "not",
-			"or", "over", "over2", "pick", "print", "prints", "printsv", "printv", "roll", "rot", "sin", "sq", "sqrt",
-			"sub", "swap", "swap2", "tan", "tuck", "within"};
+			"cb", "cbrt", "ceil", "call", "clear", "cos", "dec", "depth", "div", "drop", "drop2", "dup", "dup2", "eq",
+			"fac", "floor", "gt", "gte", "inc", "inv", "ln", "log10", "lt", "lte", "max", "min", "mod", "mul", "neq",
+			"neg", "nip", "not", "or", "over", "over2", "pick", "print", "prints", "printsv", "printv", "roll", "rot",
+			"sin", "sq", "sqrt", "sub", "swap", "swap2", "tan", "tuck", "within"};
 
 	SemanticValidator::SemanticValidator() : mFilename(nullptr), mErrorCount(0) {
 	}
@@ -184,6 +185,21 @@ namespace Qd {
 			}
 		}
 
+		// Check if this is a function pointer reference
+		if (node->type() == IAstNode::Type::FUNCTION_POINTER_REFERENCE) {
+			AstNodeFunctionPointerReference* funcPtr = static_cast<AstNodeFunctionPointerReference*>(node);
+			const char* name = funcPtr->functionName().c_str();
+
+			// Check if the referenced function is defined
+			if (mDefinedFunctions.find(name) == mDefinedFunctions.end()) {
+				// Not found - report error
+				std::string errorMsg = "Undefined function '";
+				errorMsg += name;
+				errorMsg += "' in function pointer reference";
+				reportError(funcPtr, errorMsg.c_str());
+			}
+		}
+
 		// Track when we enter a for loop
 		bool childrenInsideForLoop = insideForLoop;
 		if (node->type() == IAstNode::Type::FOR_STATEMENT) {
@@ -282,6 +298,11 @@ namespace Qd {
 				// If signature not known yet, skip (will be resolved in next iteration)
 				break;
 			}
+
+			case IAstNode::Type::FUNCTION_POINTER_REFERENCE:
+				// Function pointer references push a pointer type onto the stack
+				typeStack.push_back(StackValueType::PTR);
+				break;
 
 			default:
 				// Other node types don't affect the type stack during signature analysis
@@ -404,6 +425,11 @@ namespace Qd {
 				// Built-ins are handled as Instructions, not Identifiers in the AST
 				break;
 			}
+
+			case IAstNode::Type::FUNCTION_POINTER_REFERENCE:
+				// Function pointer references push a pointer type onto the stack
+				typeStack.push_back(StackValueType::PTR);
+				break;
 
 			default:
 				// Other node types don't affect the type stack
@@ -671,6 +697,17 @@ namespace Qd {
 			// Push an int type onto the stack (depth is always an integer)
 			typeStack.push_back(StackValueType::INT);
 		}
+		// call - invoke function pointer from stack
+		else if (strcmp(name, "call") == 0) {
+			if (typeStack.empty()) {
+				reportErrorConditional(node, "Type error in 'call': Stack underflow (requires 1 value)", reportErrors);
+				return;
+			}
+			// Pop the function pointer - runtime will verify it's a pointer type
+			typeStack.pop_back();
+			// We don't know what the called function will do to the stack
+			// So we can't track types accurately after this point
+		}
 	}
 
 	bool SemanticValidator::isNumericType(StackValueType type) const {
@@ -685,6 +722,8 @@ namespace Qd {
 			return "float";
 		case StackValueType::STRING:
 			return "string";
+		case StackValueType::PTR:
+			return "ptr";
 		case StackValueType::ANY:
 			return "any";
 		case StackValueType::UNKNOWN:

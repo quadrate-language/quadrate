@@ -16,6 +16,7 @@ namespace Qd {
 		INT,
 		FLOAT,
 		STRING,
+		PTR,	// For function pointers
 		ANY,	// For operations that accept any type
 		UNKNOWN // For unresolved types
 	};

@@ -29,7 +29,8 @@ namespace Qd {
 			SCOPED_IDENTIFIER,
 			USE_STATEMENT,
 			CONSTANT_DECLARATION,
-			LABEL
+			LABEL,
+			FUNCTION_POINTER_REFERENCE
 		};
 		virtual ~IAstNode() = default;
 

@@ -1,0 +1,7 @@
+int:1
+"Hello from greet!"
+"Goodbye from farewell!"
+int:42
+int:2
+"Goodbye from farewell!"
+"Hello from greet!"

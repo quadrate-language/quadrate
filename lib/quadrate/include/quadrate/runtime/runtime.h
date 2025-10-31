@@ -11,6 +11,7 @@ extern "C" {
 qd_exec_result qd_push_i(qd_context* ctx, int64_t value);
 qd_exec_result qd_push_f(qd_context* ctx, double value);
 qd_exec_result qd_push_s(qd_context* ctx, const char* value);
+qd_exec_result qd_push_p(qd_context* ctx, void* value);
 qd_exec_result qd_print(qd_context* ctx);
 qd_exec_result qd_printv(qd_context* ctx);
 qd_exec_result qd_prints(qd_context* ctx);
@@ -40,6 +41,7 @@ qd_exec_result qd_ceil(qd_context* ctx);
 qd_exec_result qd_floor(qd_context* ctx);
 qd_exec_result qd_ln(qd_context* ctx);
 qd_exec_result qd_log10(qd_context* ctx);
+qd_exec_result qd_call(qd_context* ctx);
 qd_exec_result qd_dec(qd_context* ctx);
 qd_exec_result qd_inc(qd_context* ctx);
 qd_exec_result qd_clear(qd_context* ctx);

@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <string.h>
 #include <math.h>
 
 static void dump_stack(qd_context* ctx);
@@ -24,6 +25,14 @@ qd_exec_result qd_push_f(qd_context* ctx, double value) {
 
 qd_exec_result qd_push_s(qd_context* ctx, const char* value) {
 	qd_stack_error err = qd_stack_push_str(ctx->st, value);
+	if (err != QD_STACK_OK) {
+		return (qd_exec_result){-2};
+	}
+	return (qd_exec_result){0};
+}
+
+qd_exec_result qd_push_p(qd_context* ctx, void* value) {
+	qd_stack_error err = qd_stack_push_ptr(ctx->st, value);
 	if (err != QD_STACK_OK) {
 		return (qd_exec_result){-2};
 	}
@@ -145,6 +154,9 @@ qd_exec_result qd_printsv(qd_context* ctx) {
 				break;
 			case QD_STACK_TYPE_STR:
 				printf("string:\"%s\"", val.value.s);
+				break;
+			case QD_STACK_TYPE_PTR:
+				printf("ptr:%p", val.value.p);
 				break;
 			default:
 				return (qd_exec_result){-3};
@@ -1380,6 +1392,42 @@ qd_exec_result qd_log10(qd_context* ctx) {
 	}
 
 	return (qd_exec_result){0};
+}
+
+// call - invoke function pointer from stack
+qd_exec_result qd_call(qd_context* ctx) {
+	// Pop function pointer and call it
+	qd_stack_element_t val;
+	qd_stack_error err = qd_stack_pop(ctx->st, &val);
+
+	if (err != QD_STACK_OK) {
+		fprintf(stderr, "Fatal error in call: Stack underflow\n");
+		dump_stack(ctx);
+		abort();
+	}
+
+	// Verify it's a pointer type
+	if (val.type != QD_STACK_TYPE_PTR) {
+		fprintf(stderr, "Fatal error in call: Expected pointer type, got %d\n", val.type);
+		dump_stack(ctx);
+		abort();
+	}
+
+	// Cast to function pointer and call it
+	// Function signature: qd_exec_result (*)(qd_context*)
+	// Use memcpy to avoid pedantic warnings about object-to-function pointer conversion
+	typedef qd_exec_result (*qd_function_ptr)(qd_context*);
+	qd_function_ptr func;
+	memcpy(&func, &val.value.p, sizeof(func));
+
+	if (func == NULL) {
+		fprintf(stderr, "Fatal error in call: NULL function pointer\n");
+		dump_stack(ctx);
+		abort();
+	}
+
+	// Call the function
+	return func(ctx);
 }
 
 // dec - decrement (subtract 1, preserves type)
