@@ -2,6 +2,7 @@ cgen_sources = files(
 		'src/compiler.cc',
 		'src/keywords.cc',
 		'src/linker.cc',
+		'src/process.cc',
 		'src/transpiler.cc',
 )
 

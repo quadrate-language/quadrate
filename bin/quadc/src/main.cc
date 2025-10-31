@@ -1,6 +1,7 @@
 #include "cxxopts.hpp"
 #include <cgen/compiler.h>
 #include <cgen/linker.h>
+#include <cgen/process.h>
 #include <cgen/source_file.h>
 #include <cgen/transpiler.h>
 #include <filesystem>
@@ -257,7 +258,9 @@ int main(int argc, char** argv) {
 
 		// Run the program if requested
 		if (run) {
-			int exitCode = system(outputPath.c_str());
+			// Execute the compiled binary safely
+			std::vector<std::string> args;  // No arguments to the program
+			int exitCode = Qd::executeProcess(outputPath, args);
 			if (exitCode != 0) {
 				std::cerr << "quadc: program exited with code " << exitCode << std::endl;
 				return exitCode;
