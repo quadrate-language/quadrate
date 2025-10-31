@@ -3938,3 +3938,147 @@ TEST(NotPositiveTest) {
 
 	destroy_test_context(ctx);
 }
+
+// ========== New Stack Manipulation Tests ==========
+
+TEST(TuckTest) {
+	qd_context* ctx = create_test_context();
+
+	// Setup: ( 10 20 -- 20 10 20 )
+	qd_push_i(ctx, 10);
+	qd_push_i(ctx, 20);
+
+	qd_tuck(ctx);
+
+	// Verify stack has 3 elements
+	ASSERT_EQ((int)qd_stack_size(ctx->st), 3, "stack should have 3 elements");
+
+	// Pop and verify: 20, 10, 20
+	qd_stack_element_t elem;
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ((int)elem.value.i, 20, "top should be 20");
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ((int)elem.value.i, 10, "second should be 10");
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ((int)elem.value.i, 20, "third should be 20");
+
+	destroy_test_context(ctx);
+}
+
+TEST(PickTest) {
+	qd_context* ctx = create_test_context();
+
+	// Setup stack: ( 10 20 30 40 )
+	qd_push_i(ctx, 10);
+	qd_push_i(ctx, 20);
+	qd_push_i(ctx, 30);
+	qd_push_i(ctx, 40);
+
+	// Pick index 2 (should copy 20 to top)
+	qd_push_i(ctx, 2);
+	qd_pick(ctx);
+
+	// Verify: ( 10 20 30 40 20 )
+	ASSERT_EQ((int)qd_stack_size(ctx->st), 5, "stack should have 5 elements");
+
+	qd_stack_element_t elem;
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ((int)elem.value.i, 20, "top should be 20 (picked)");
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ((int)elem.value.i, 40, "should be 40");
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ((int)elem.value.i, 30, "should be 30");
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ((int)elem.value.i, 20, "should be 20");
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ((int)elem.value.i, 10, "should be 10");
+
+	destroy_test_context(ctx);
+}
+
+TEST(RollTest) {
+	qd_context* ctx = create_test_context();
+
+	// Setup stack: ( 10 20 30 40 )
+	qd_push_i(ctx, 10);
+	qd_push_i(ctx, 20);
+	qd_push_i(ctx, 30);
+	qd_push_i(ctx, 40);
+
+	// Roll 3 elements: ( 10 20 30 40 ) -> ( 10 30 40 20 )
+	qd_push_i(ctx, 3);
+	qd_roll(ctx);
+
+	// Verify
+	ASSERT_EQ((int)qd_stack_size(ctx->st), 4, "stack should have 4 elements");
+
+	qd_stack_element_t elem;
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ((int)elem.value.i, 20, "top should be 20 (rolled from position 3)");
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ((int)elem.value.i, 40, "should be 40");
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ((int)elem.value.i, 30, "should be 30");
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ((int)elem.value.i, 10, "should be 10");
+
+	destroy_test_context(ctx);
+}
+
+TEST(Swap2Test) {
+	qd_context* ctx = create_test_context();
+
+	// Setup: ( 10 20 30 40 -- 30 40 10 20 )
+	qd_push_i(ctx, 10);
+	qd_push_i(ctx, 20);
+	qd_push_i(ctx, 30);
+	qd_push_i(ctx, 40);
+
+	qd_swap2(ctx);
+
+	// Verify
+	ASSERT_EQ((int)qd_stack_size(ctx->st), 4, "stack should have 4 elements");
+
+	qd_stack_element_t elem;
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ((int)elem.value.i, 20, "top should be 20");
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ((int)elem.value.i, 10, "should be 10");
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ((int)elem.value.i, 40, "should be 40");
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ((int)elem.value.i, 30, "should be 30");
+
+	destroy_test_context(ctx);
+}
+
+TEST(Over2Test) {
+	qd_context* ctx = create_test_context();
+
+	// Setup: ( 10 20 30 40 -- 10 20 30 40 10 20 )
+	qd_push_i(ctx, 10);
+	qd_push_i(ctx, 20);
+	qd_push_i(ctx, 30);
+	qd_push_i(ctx, 40);
+
+	qd_over2(ctx);
+
+	// Verify
+	ASSERT_EQ((int)qd_stack_size(ctx->st), 6, "stack should have 6 elements");
+
+	qd_stack_element_t elem;
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ((int)elem.value.i, 20, "top should be 20 (copy)");
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ((int)elem.value.i, 10, "should be 10 (copy)");
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ((int)elem.value.i, 40, "should be 40");
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ((int)elem.value.i, 30, "should be 30");
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ((int)elem.value.i, 20, "should be 20");
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ((int)elem.value.i, 10, "should be 10");
+
+	destroy_test_context(ctx);
+}

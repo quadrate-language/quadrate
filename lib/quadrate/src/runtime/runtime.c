@@ -2124,6 +2124,429 @@ qd_exec_result qd_rot(qd_context* ctx) {
 	return (qd_exec_result){0};
 }
 
+// tuck - insert copy of top below second: ( a b -- b a b )
+qd_exec_result qd_tuck(qd_context* ctx) {
+	size_t stack_size = qd_stack_size(ctx->st);
+	if (stack_size < 2) {
+		fprintf(stderr, "Fatal error in tuck: Stack underflow (required 2 elements, have %zu)\n", stack_size);
+		dump_stack(ctx);
+		abort();
+	}
+
+	// Pop b and a
+	qd_stack_element_t b, a;
+	qd_stack_error err = qd_stack_pop(ctx->st, &b);
+	if (err != QD_STACK_OK) {
+		return (qd_exec_result){-2};
+	}
+	err = qd_stack_pop(ctx->st, &a);
+	if (err != QD_STACK_OK) {
+		return (qd_exec_result){-2};
+	}
+
+	// Push in order: b, a, b
+	// Push b (first copy)
+	switch (b.type) {
+		case QD_STACK_TYPE_INT:
+			err = qd_stack_push_int(ctx->st, b.value.i);
+			break;
+		case QD_STACK_TYPE_FLOAT:
+			err = qd_stack_push_float(ctx->st, b.value.f);
+			break;
+		case QD_STACK_TYPE_STR:
+			err = qd_stack_push_str(ctx->st, b.value.s);
+			break;
+		case QD_STACK_TYPE_PTR:
+			err = qd_stack_push_ptr(ctx->st, b.value.p);
+			break;
+		default:
+			return (qd_exec_result){-3};
+	}
+	if (err != QD_STACK_OK) {
+		if (b.type == QD_STACK_TYPE_STR) free(b.value.s);
+		if (a.type == QD_STACK_TYPE_STR) free(a.value.s);
+		return (qd_exec_result){-2};
+	}
+
+	// Push a
+	switch (a.type) {
+		case QD_STACK_TYPE_INT:
+			err = qd_stack_push_int(ctx->st, a.value.i);
+			break;
+		case QD_STACK_TYPE_FLOAT:
+			err = qd_stack_push_float(ctx->st, a.value.f);
+			break;
+		case QD_STACK_TYPE_STR:
+			err = qd_stack_push_str(ctx->st, a.value.s);
+			free(a.value.s);
+			break;
+		case QD_STACK_TYPE_PTR:
+			err = qd_stack_push_ptr(ctx->st, a.value.p);
+			break;
+		default:
+			if (b.type == QD_STACK_TYPE_STR) free(b.value.s);
+			return (qd_exec_result){-3};
+	}
+	if (err != QD_STACK_OK) {
+		if (b.type == QD_STACK_TYPE_STR) free(b.value.s);
+		return (qd_exec_result){-2};
+	}
+
+	// Push b (second copy)
+	switch (b.type) {
+		case QD_STACK_TYPE_INT:
+			err = qd_stack_push_int(ctx->st, b.value.i);
+			break;
+		case QD_STACK_TYPE_FLOAT:
+			err = qd_stack_push_float(ctx->st, b.value.f);
+			break;
+		case QD_STACK_TYPE_STR:
+			err = qd_stack_push_str(ctx->st, b.value.s);
+			free(b.value.s);
+			break;
+		case QD_STACK_TYPE_PTR:
+			err = qd_stack_push_ptr(ctx->st, b.value.p);
+			break;
+		default:
+			if (b.type == QD_STACK_TYPE_STR) free(b.value.s);
+			return (qd_exec_result){-3};
+	}
+	if (err != QD_STACK_OK) {
+		return (qd_exec_result){-2};
+	}
+
+	return (qd_exec_result){0};
+}
+
+// pick - copy nth element to top (0-indexed from top): ( ... n -- ... nth )
+qd_exec_result qd_pick(qd_context* ctx) {
+	size_t stack_size = qd_stack_size(ctx->st);
+	if (stack_size < 1) {
+		fprintf(stderr, "Fatal error in pick: Stack underflow (need at least the index)\n");
+		dump_stack(ctx);
+		abort();
+	}
+
+	// Pop the index
+	qd_stack_element_t idx_elem;
+	qd_stack_error err = qd_stack_pop(ctx->st, &idx_elem);
+	if (err != QD_STACK_OK) {
+		return (qd_exec_result){-2};
+	}
+
+	if (idx_elem.type != QD_STACK_TYPE_INT) {
+		fprintf(stderr, "Fatal error in pick: Index must be an integer\n");
+		dump_stack(ctx);
+		abort();
+	}
+
+	int64_t n = idx_elem.value.i;
+	if (n < 0) {
+		fprintf(stderr, "Fatal error in pick: Index must be non-negative (got %ld)\n", n);
+		dump_stack(ctx);
+		abort();
+	}
+
+	stack_size = qd_stack_size(ctx->st);  // Update after popping index
+	if ((size_t)n >= stack_size) {
+		fprintf(stderr, "Fatal error in pick: Index %ld out of range (stack has %zu elements)\n", n, stack_size);
+		dump_stack(ctx);
+		abort();
+	}
+
+	// Get the nth element from the top (0 = top)
+	qd_stack_element_t elem;
+	err = qd_stack_element(ctx->st, stack_size - 1 - (size_t)n, &elem);
+	if (err != QD_STACK_OK) {
+		fprintf(stderr, "Fatal error in pick: Failed to access element\n");
+		dump_stack(ctx);
+		abort();
+	}
+
+	// Push a copy of that element
+	switch (elem.type) {
+		case QD_STACK_TYPE_INT:
+			err = qd_stack_push_int(ctx->st, elem.value.i);
+			break;
+		case QD_STACK_TYPE_FLOAT:
+			err = qd_stack_push_float(ctx->st, elem.value.f);
+			break;
+		case QD_STACK_TYPE_STR:
+			err = qd_stack_push_str(ctx->st, elem.value.s);
+			break;
+		case QD_STACK_TYPE_PTR:
+			err = qd_stack_push_ptr(ctx->st, elem.value.p);
+			break;
+		default:
+			return (qd_exec_result){-3};
+	}
+
+	if (err != QD_STACK_OK) {
+		return (qd_exec_result){-2};
+	}
+
+	return (qd_exec_result){0};
+}
+
+// roll - rotate n elements, moving nth to top: ( ... n -- ... )
+qd_exec_result qd_roll(qd_context* ctx) {
+	size_t stack_size = qd_stack_size(ctx->st);
+	if (stack_size < 1) {
+		fprintf(stderr, "Fatal error in roll: Stack underflow (need at least the count)\n");
+		dump_stack(ctx);
+		abort();
+	}
+
+	// Pop the count
+	qd_stack_element_t count_elem;
+	qd_stack_error err = qd_stack_pop(ctx->st, &count_elem);
+	if (err != QD_STACK_OK) {
+		return (qd_exec_result){-2};
+	}
+
+	if (count_elem.type != QD_STACK_TYPE_INT) {
+		fprintf(stderr, "Fatal error in roll: Count must be an integer\n");
+		dump_stack(ctx);
+		abort();
+	}
+
+	int64_t n = count_elem.value.i;
+	if (n < 0) {
+		fprintf(stderr, "Fatal error in roll: Count must be non-negative (got %ld)\n", n);
+		dump_stack(ctx);
+		abort();
+	}
+
+	if (n == 0) {
+		return (qd_exec_result){0};  // Nothing to do
+	}
+
+	stack_size = qd_stack_size(ctx->st);  // Update after popping count
+	if ((size_t)n > stack_size) {
+		fprintf(stderr, "Fatal error in roll: Count %ld exceeds stack size %zu\n", n, stack_size);
+		dump_stack(ctx);
+		abort();
+	}
+
+	// Allocate temporary storage for n elements
+	qd_stack_element_t* temp = malloc(sizeof(qd_stack_element_t) * (size_t)n);
+	if (!temp) {
+		fprintf(stderr, "Fatal error in roll: Memory allocation failed\n");
+		abort();
+	}
+
+	// Pop n elements
+	for (int64_t i = 0; i < n; i++) {
+		err = qd_stack_pop(ctx->st, &temp[n - 1 - i]);
+		if (err != QD_STACK_OK) {
+			free(temp);
+			return (qd_exec_result){-2};
+		}
+	}
+
+	// Push back in rotated order: the bottom element (temp[0]) goes to top
+	// Order after: temp[1], temp[2], ..., temp[n-1], temp[0]
+	for (int64_t i = 1; i < n; i++) {
+		switch (temp[i].type) {
+			case QD_STACK_TYPE_INT:
+				err = qd_stack_push_int(ctx->st, temp[i].value.i);
+				break;
+			case QD_STACK_TYPE_FLOAT:
+				err = qd_stack_push_float(ctx->st, temp[i].value.f);
+				break;
+			case QD_STACK_TYPE_STR:
+				err = qd_stack_push_str(ctx->st, temp[i].value.s);
+				free(temp[i].value.s);
+				break;
+			case QD_STACK_TYPE_PTR:
+				err = qd_stack_push_ptr(ctx->st, temp[i].value.p);
+				break;
+			default:
+				free(temp);
+				return (qd_exec_result){-3};
+		}
+		if (err != QD_STACK_OK) {
+			free(temp);
+			return (qd_exec_result){-2};
+		}
+	}
+
+	// Push temp[0] last (it becomes the top)
+	switch (temp[0].type) {
+		case QD_STACK_TYPE_INT:
+			err = qd_stack_push_int(ctx->st, temp[0].value.i);
+			break;
+		case QD_STACK_TYPE_FLOAT:
+			err = qd_stack_push_float(ctx->st, temp[0].value.f);
+			break;
+		case QD_STACK_TYPE_STR:
+			err = qd_stack_push_str(ctx->st, temp[0].value.s);
+			free(temp[0].value.s);
+			break;
+		case QD_STACK_TYPE_PTR:
+			err = qd_stack_push_ptr(ctx->st, temp[0].value.p);
+			break;
+		default:
+			free(temp);
+			return (qd_exec_result){-3};
+	}
+
+	free(temp);
+
+	if (err != QD_STACK_OK) {
+		return (qd_exec_result){-2};
+	}
+
+	return (qd_exec_result){0};
+}
+
+// swap2 - swap top two pairs: ( a b c d -- c d a b )
+qd_exec_result qd_swap2(qd_context* ctx) {
+	size_t stack_size = qd_stack_size(ctx->st);
+	if (stack_size < 4) {
+		fprintf(stderr, "Fatal error in swap2: Stack underflow (required 4 elements, have %zu)\n", stack_size);
+		dump_stack(ctx);
+		abort();
+	}
+
+	// Pop d, c, b, a
+	qd_stack_element_t d, c, b, a;
+	qd_stack_error err = qd_stack_pop(ctx->st, &d);
+	if (err != QD_STACK_OK) {
+		return (qd_exec_result){-2};
+	}
+	err = qd_stack_pop(ctx->st, &c);
+	if (err != QD_STACK_OK) {
+		if (d.type == QD_STACK_TYPE_STR) free(d.value.s);
+		return (qd_exec_result){-2};
+	}
+	err = qd_stack_pop(ctx->st, &b);
+	if (err != QD_STACK_OK) {
+		if (d.type == QD_STACK_TYPE_STR) free(d.value.s);
+		if (c.type == QD_STACK_TYPE_STR) free(c.value.s);
+		return (qd_exec_result){-2};
+	}
+	err = qd_stack_pop(ctx->st, &a);
+	if (err != QD_STACK_OK) {
+		if (d.type == QD_STACK_TYPE_STR) free(d.value.s);
+		if (c.type == QD_STACK_TYPE_STR) free(c.value.s);
+		if (b.type == QD_STACK_TYPE_STR) free(b.value.s);
+		return (qd_exec_result){-2};
+	}
+
+	// Push in order: c, d, a, b
+	// Helper macro to reduce code duplication
+	#define PUSH_ELEM(elem, cleanup_on_error) \
+		switch (elem.type) { \
+			case QD_STACK_TYPE_INT: \
+				err = qd_stack_push_int(ctx->st, elem.value.i); \
+				break; \
+			case QD_STACK_TYPE_FLOAT: \
+				err = qd_stack_push_float(ctx->st, elem.value.f); \
+				break; \
+			case QD_STACK_TYPE_STR: \
+				err = qd_stack_push_str(ctx->st, elem.value.s); \
+				free(elem.value.s); \
+				break; \
+			case QD_STACK_TYPE_PTR: \
+				err = qd_stack_push_ptr(ctx->st, elem.value.p); \
+				break; \
+			default: \
+				cleanup_on_error \
+				return (qd_exec_result){-3}; \
+		} \
+		if (err != QD_STACK_OK) { \
+			cleanup_on_error \
+			return (qd_exec_result){-2}; \
+		}
+
+	PUSH_ELEM(c, {
+		if (d.type == QD_STACK_TYPE_STR) free(d.value.s);
+		if (b.type == QD_STACK_TYPE_STR) free(b.value.s);
+		if (a.type == QD_STACK_TYPE_STR) free(a.value.s);
+	})
+	PUSH_ELEM(d, {
+		if (b.type == QD_STACK_TYPE_STR) free(b.value.s);
+		if (a.type == QD_STACK_TYPE_STR) free(a.value.s);
+	})
+	PUSH_ELEM(a, {
+		if (b.type == QD_STACK_TYPE_STR) free(b.value.s);
+	})
+	PUSH_ELEM(b, {})
+
+	#undef PUSH_ELEM
+
+	return (qd_exec_result){0};
+}
+
+// over2 - copy second pair to top: ( a b c d -- a b c d a b )
+qd_exec_result qd_over2(qd_context* ctx) {
+	size_t stack_size = qd_stack_size(ctx->st);
+	if (stack_size < 4) {
+		fprintf(stderr, "Fatal error in over2: Stack underflow (required 4 elements, have %zu)\n", stack_size);
+		dump_stack(ctx);
+		abort();
+	}
+
+	// Get the second pair (indices stack_size-4 and stack_size-3)
+	qd_stack_element_t elem_a, elem_b;
+	qd_stack_error err = qd_stack_element(ctx->st, stack_size - 4, &elem_a);
+	if (err != QD_STACK_OK) {
+		fprintf(stderr, "Fatal error in over2: Failed to access element\n");
+		dump_stack(ctx);
+		abort();
+	}
+	err = qd_stack_element(ctx->st, stack_size - 3, &elem_b);
+	if (err != QD_STACK_OK) {
+		fprintf(stderr, "Fatal error in over2: Failed to access element\n");
+		dump_stack(ctx);
+		abort();
+	}
+
+	// Push copies of elem_a and elem_b
+	switch (elem_a.type) {
+		case QD_STACK_TYPE_INT:
+			err = qd_stack_push_int(ctx->st, elem_a.value.i);
+			break;
+		case QD_STACK_TYPE_FLOAT:
+			err = qd_stack_push_float(ctx->st, elem_a.value.f);
+			break;
+		case QD_STACK_TYPE_STR:
+			err = qd_stack_push_str(ctx->st, elem_a.value.s);
+			break;
+		case QD_STACK_TYPE_PTR:
+			err = qd_stack_push_ptr(ctx->st, elem_a.value.p);
+			break;
+		default:
+			return (qd_exec_result){-3};
+	}
+	if (err != QD_STACK_OK) {
+		return (qd_exec_result){-2};
+	}
+
+	switch (elem_b.type) {
+		case QD_STACK_TYPE_INT:
+			err = qd_stack_push_int(ctx->st, elem_b.value.i);
+			break;
+		case QD_STACK_TYPE_FLOAT:
+			err = qd_stack_push_float(ctx->st, elem_b.value.f);
+			break;
+		case QD_STACK_TYPE_STR:
+			err = qd_stack_push_str(ctx->st, elem_b.value.s);
+			break;
+		case QD_STACK_TYPE_PTR:
+			err = qd_stack_push_ptr(ctx->st, elem_b.value.p);
+			break;
+		default:
+			return (qd_exec_result){-3};
+	}
+	if (err != QD_STACK_OK) {
+		return (qd_exec_result){-2};
+	}
+
+	return (qd_exec_result){0};
+}
+
 // mod - modulo operation: ( a b -- a%b )
 qd_exec_result qd_mod(qd_context* ctx) {
 	size_t stack_size = qd_stack_size(ctx->st);
