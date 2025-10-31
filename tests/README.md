@@ -9,14 +9,25 @@ tests/
 ├── qd/                    # Quadrate test files (.qd)
 │   ├── basic/            # Basic language features
 │   │   ├── arithmetic.qd
-│   │   └── stack_operations.qd
+│   │   ├── stack_operations.qd
+│   │   ├── advanced_stack_ops.qd
+│   │   └── comparison_ops.qd
 │   ├── control_flow/     # Control flow constructs
 │   │   ├── for_loop_simple.qd
 │   │   ├── for_loop_nested.qd
 │   │   ├── for_loop_break.qd
-│   │   └── if_statement.qd
-│   ├── functions/        # Function tests
-│   └── errors/           # Tests that should fail compilation
+│   │   ├── if_statement.qd
+│   │   └── complex_control_flow.qd
+│   ├── math/             # Mathematical functions
+│   │   ├── math_functions.qd
+│   │   └── trigonometry.qd
+│   ├── strings/          # String operations
+│   │   ├── string_operations.qd
+│   │   └── utf8_strings.qd
+│   ├── stack/            # Stack manipulation
+│   │   └── new_stack_ops.qd
+│   └── documentation/    # Documentation examples
+│       └── stack_notation.qd
 ├── expected/             # Expected output files (.out)
 │   ├── arithmetic.out
 │   ├── stack_operations.out
@@ -50,18 +61,27 @@ Example output:
   Quadrate Language Test Suite
 ================================================
 
+PASS  advanced_stack_ops
 PASS  arithmetic
+PASS  comparison_ops
 PASS  stack_operations
-SKIP  for_loop_break (no expected output file)
+PASS  complex_control_flow
+PASS  for_loop_break
 PASS  for_loop_nested
 PASS  for_loop_simple
 PASS  if_statement
+PASS  stack_notation
+PASS  math_functions
+PASS  trigonometry
+PASS  new_stack_ops
+PASS  string_operations
+PASS  utf8_strings
 
 ================================================
   Test Summary
 ================================================
-Tests run:    6
-Tests passed: 5
+Tests run:    15
+Tests passed: 15
 Tests failed: 0
 
 All tests passed!
@@ -86,6 +106,8 @@ All tests passed!
 Tests for fundamental language features:
 - Arithmetic operations (add, sub, mul, div)
 - Stack operations (dup, swap, over, etc.)
+- Advanced stack operations (rot, nip, tuck, etc.)
+- Comparison operations (eq, lt, gt, etc.)
 - Literal values (integers, floats, strings)
 
 ### control_flow/
@@ -94,40 +116,71 @@ Tests for control flow constructs:
 - `for` loops (including $ iterator variable)
 - Nested loops
 - `break` and `continue`
+- Complex control flow combinations
 
-### functions/
-Tests for function definitions and calls
+### math/
+Tests for mathematical functions:
+- Basic math operations (abs, min, max, etc.)
+- Trigonometric functions (sin, cos, tan, etc.)
 
-### errors/
-Tests that should fail compilation (for error message testing)
+### strings/
+Tests for string operations:
+- Basic string operations (concat, length, etc.)
+- UTF-8 string handling
+
+### stack/
+Tests for advanced stack manipulation operations
+
+### documentation/
+Tests for documentation features:
+- Stack notation examples and validation
 
 ## Current Test Coverage
 
 **Basic Features:**
 - ✓ Arithmetic operations
 - ✓ Stack operations (dup, swap, over)
+- ✓ Advanced stack operations (rot, nip, tuck)
+- ✓ Comparison operations (eq, lt, gt)
 
 **Control Flow:**
 - ✓ Simple for loops
 - ✓ Nested for loops
 - ✓ $ iterator variable in loops
 - ✓ if statements
-- ⚠ break/continue (test exists but needs validation)
+- ✓ break/continue
+- ✓ Complex control flow combinations
 
-**Functions:**
-- ✗ Not yet tested (type checker issues)
+**Mathematical Functions:**
+- ✓ Basic math operations (abs, min, max)
+- ✓ Trigonometric functions (sin, cos, tan)
+
+**String Operations:**
+- ✓ Basic string operations
+- ✓ UTF-8 string handling
+
+**Stack Operations:**
+- ✓ Advanced stack manipulation
+
+**Documentation:**
+- ✓ Stack notation validation
 
 ## Integration with Meson
 
-To integrate with meson build system, add to `tests/meson.build`:
+The tests are integrated with the meson build system. Run tests with:
 
-```python
-# Quadrate language tests
-test('qd_suite',
-     find_program('run_qd_tests.sh'),
-     workdir: meson.project_source_root(),
-     timeout: 60)
+```bash
+# Run all tests including .qd tests
+meson test -C build/debug --print-errorlogs
+
+# Run only .qd tests
+meson test -C build/debug qd_tests --print-errorlogs
+
+# Or use the Makefile shortcut
+make tests
 ```
+
+The integration is defined in `tests/meson.build` and automatically passes the correct `quadc` binary path to the test runner.
 
 ## Notes
 
