@@ -30,7 +30,11 @@ release:
 	@cp -rf lib/quadrate/include/quadrate dist/include/
 
 tests: debug
-	meson test -C $(BUILD_DIR_DEBUG) --print-errorlogs
+	@echo "=== Running C/C++ unit tests ==="
+	meson test -C $(BUILD_DIR_DEBUG) test_str test_runtime test_ast test_semantic_validator --print-errorlogs
+	@echo ""
+	@echo "=== Running Quadrate language tests ==="
+	QUADC=$(BUILD_DIR_DEBUG)/bin/quadc/quadc bash tests/run_qd_tests.sh
 
 valgrind: debug
 	meson test -C $(BUILD_DIR_DEBUG) --setup=valgrind --print-errorlogs

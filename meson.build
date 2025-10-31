@@ -34,6 +34,7 @@ add_project_arguments(cpp_args, language: 'cpp')
 # Subdirectories
 subdir('lib')
 subdir('bin')
+subdir('tests')
 
 # Examples (optional)
 if get_option('build_examples')
