@@ -1,7 +1,6 @@
 build
 dist
 .intermediate
-*.out
 .cache/clangd/index
 compile_commands.json
 .tmp*
