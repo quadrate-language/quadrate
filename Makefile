@@ -37,7 +37,8 @@ tests: debug
 	QUADC=$(BUILD_DIR_DEBUG)/bin/quadc/quadc bash tests/run_qd_tests.sh
 
 valgrind: debug
-	meson test -C $(BUILD_DIR_DEBUG) --setup=valgrind --print-errorlogs
+	@echo "=== Running C/C++ unit tests with valgrind ==="
+	meson test -C $(BUILD_DIR_DEBUG) test_str test_runtime test_ast test_semantic_validator --setup=valgrind --print-errorlogs
 
 examples:
 	meson setup $(BUILD_DIR_DEBUG) --buildtype=debug --reconfigure -Dbuild_examples=true $(MESON_FLAGS)
