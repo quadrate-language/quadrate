@@ -48,21 +48,28 @@ std::string getLinkerFlags() {
 	return opts + " -lquadrate -lm -pthread";
 }
 
-std::string createTempDir() {
+std::string createTempDir(bool useCwd) {
 	std::random_device rd;
 	std::mt19937 gen(rd());
 	std::uniform_int_distribution<> dis(0, 15);
 
+	// Determine base directory: use cwd if --save-temps, otherwise use system temp
+	std::filesystem::path baseDir;
+	if (useCwd) {
+		baseDir = std::filesystem::current_path();
+	} else {
+		baseDir = std::filesystem::temp_directory_path();
+	}
+
 	// Try up to 10 times to create a unique directory
 	for (int attempt = 0; attempt < 10; attempt++) {
 		std::stringstream ss;
-		ss << ".";
+		ss << "qd_";
 		for (int i = 0; i < 8; i++) {
 			ss << std::hex << dis(gen);
 		}
-		ss << ".qdproj";
 
-		std::string tmpDir = ss.str();
+		std::filesystem::path tmpDir = baseDir / ss.str();
 
 		// Check if directory already exists
 		if (std::filesystem::exists(tmpDir)) {
@@ -72,7 +79,7 @@ std::string createTempDir() {
 		// Try to create the directory
 		std::error_code ec;
 		if (std::filesystem::create_directory(tmpDir, ec)) {
-			return tmpDir;
+			return tmpDir.string();
 		}
 
 		// If creation failed for reasons other than "already exists", fail
@@ -162,7 +169,10 @@ int main(int argc, char** argv) {
 		outputFilename = "lib" + outputFilename + ".a";
 	}
 
-	const std::string outputDir = createTempDir();
+	// Check if we should preserve temp files (needed for temp dir location)
+	const bool saveTemps = result["save-temps"].as<bool>();
+
+	const std::string outputDir = createTempDir(saveTemps);
 	TempDirGuard tempGuard(outputDir);
 
 	// When running, place executable in temp directory's bin subdirectory
@@ -175,8 +185,7 @@ int main(int argc, char** argv) {
 		outputPath = outputFilename;
 	}
 
-	// Check if we should preserve temp files
-	const bool saveTemps = result["save-temps"].as<bool>();
+	// Preserve temp files if requested
 	if (saveTemps) {
 		tempGuard.release();
 		std::cout << "Temporary files saved in: " << outputDir << std::endl;
