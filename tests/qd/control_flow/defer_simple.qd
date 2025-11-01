@@ -1,0 +1,27 @@
+// Test simple defer functionality
+fn test_defer_basic( -- ) {
+    1 .
+    defer {
+        2 .
+    }
+    3 .
+}
+
+fn test_defer_multiple( -- ) {
+    10 .
+    defer {
+        20 .
+    }
+    defer {
+        30 .
+    }
+    defer {
+        40 .
+    }
+    50 .
+}
+
+fn main( -- ) {
+    test_defer_basic
+    test_defer_multiple
+}

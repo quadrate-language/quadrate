@@ -583,6 +583,12 @@ namespace Qd {
 									setNodePosition(colonColon, scanner, src);
 									deferNodes.push_back(colonColon);
 								}
+							} else if (token == '.' || token == '/' || token == '*' || token == '+' || token == '-') {
+								// Handle character-based instructions
+								const char* deferText = u8t_scanner_token_text(scanner, &n);
+								AstNodeInstruction* instr = new AstNodeInstruction(deferText);
+								setNodePosition(instr, scanner, src);
+								deferNodes.push_back(instr);
 							}
 						}
 

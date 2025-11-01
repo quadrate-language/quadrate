@@ -5,6 +5,7 @@
 #include <qc/ast.h>
 #include <qc/ast_node.h>
 #include <qc/ast_node_constant.h>
+#include <qc/ast_node_defer.h>
 #include <qc/ast_node_for.h>
 #include <qc/ast_node_function.h>
 #include <qc/ast_node_function_pointer.h>
@@ -60,7 +61,7 @@ namespace Qd {
 	}
 
 	void traverse(IAstNode* node, const char* packageName, std::stringstream& out, int indent, int& varCounter,
-			const std::string& currentForIterator = "") {
+			const std::string& currentForIterator = "", std::vector<IAstNode*>* deferStatements = nullptr) {
 		if (node == nullptr) {
 			return;
 		}
@@ -98,8 +99,29 @@ namespace Qd {
 					<< ", input_types, __func__);\n\n";
 			}
 
-			traverse(funcDecl->body(), packageName, out, indent + 1, varCounter, currentForIterator);
+			// Collect defer statements while traversing function body
+			std::vector<IAstNode*> localDeferStatements;
+			traverse(funcDecl->body(), packageName, out, indent + 1, varCounter, currentForIterator,
+					&localDeferStatements);
+
+			// Emit defer statements in reverse order (LIFO) before done label
 			out << "\n" << makeIndent(indent) << "qd_lbl_done:;\n";
+			for (auto it = localDeferStatements.rbegin(); it != localDeferStatements.rend(); ++it) {
+				AstNodeDefer* deferNode = static_cast<AstNodeDefer*>(*it);
+				// Traverse defer body without collecting more defers (nested defers not supported)
+				for (size_t i = 0; i < deferNode->childCount(); i++) {
+					IAstNode* child = deferNode->child(i);
+					// If the child is a block, traverse its children directly to avoid extra braces
+					if (child && child->type() == IAstNode::Type::BLOCK) {
+						for (size_t j = 0; j < child->childCount(); j++) {
+							traverse(child->child(j), packageName, out, indent + 1, varCounter, currentForIterator,
+									nullptr);
+						}
+					} else {
+						traverse(child, packageName, out, indent + 1, varCounter, currentForIterator, nullptr);
+					}
+				}
+			}
 
 			// Generate type check for output parameters
 			if (!funcDecl->outputParameters().empty()) {
@@ -143,14 +165,16 @@ namespace Qd {
 
 			// Then block
 			if (ifStmt->thenBody()) {
-				traverse(ifStmt->thenBody(), packageName, out, indent + 1, varCounter, currentForIterator);
+				traverse(ifStmt->thenBody(), packageName, out, indent + 1, varCounter, currentForIterator,
+						deferStatements);
 			}
 			out << makeIndent(indent) << "}";
 
 			// Else block (if present)
 			if (ifStmt->elseBody()) {
 				out << " else {\n";
-				traverse(ifStmt->elseBody(), packageName, out, indent + 1, varCounter, currentForIterator);
+				traverse(ifStmt->elseBody(), packageName, out, indent + 1, varCounter, currentForIterator,
+						deferStatements);
 				out << makeIndent(indent) << "}";
 			}
 			out << "\n";
@@ -180,7 +204,7 @@ namespace Qd {
 
 			// Loop body - pass iterator variable name for $ handling
 			if (forStmt->body()) {
-				traverse(forStmt->body(), packageName, out, indent + 2, varCounter, varI);
+				traverse(forStmt->body(), packageName, out, indent + 2, varCounter, varI, deferStatements);
 			}
 
 			out << makeIndent(indent + 1) << "}\n";
@@ -203,8 +227,12 @@ namespace Qd {
 			out << makeIndent(indent) << "continue;\n";
 			break;
 		case IAstNode::Type::DEFER_STATEMENT:
-			// TODO: Handle defer statement
-			break;
+			// Collect defer statement to be executed at function end
+			if (deferStatements != nullptr) {
+				deferStatements->push_back(node);
+			}
+			// Don't traverse children now - they'll be traversed when emitting defers
+			return;
 		case IAstNode::Type::BINARY_EXPRESSION:
 			// TODO: Handle binary expression
 			break;
@@ -294,7 +322,7 @@ namespace Qd {
 		}
 
 		for (size_t i = 0; i < node->childCount(); i++) {
-			traverse(node->child(i), packageName, out, childIndent, varCounter, currentForIterator);
+			traverse(node->child(i), packageName, out, childIndent, varCounter, currentForIterator, deferStatements);
 		}
 
 		if (node->type() == IAstNode::Type::BLOCK) {
