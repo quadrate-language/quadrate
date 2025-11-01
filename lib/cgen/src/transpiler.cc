@@ -21,8 +21,6 @@
 #include <sstream>
 
 namespace Qd {
-	static int varCounter = 0;
-
 	// Map parameter type string to qd_stack_type constant name
 	static const char* mapTypeToStackType(const std::string& paramType) {
 		if (paramType.empty()) {
@@ -40,7 +38,28 @@ namespace Qd {
 		}
 	}
 
-	void traverse(IAstNode* node, const char* packageName, std::stringstream& out, int indent,
+	// Helper to generate stack size check
+	static void emitStackSizeCheck(
+			std::stringstream& out, size_t required, const char* operation, const std::string& makeIndent) {
+		out << makeIndent << "if (qd_stack_size(ctx->st) < " << required << ") {\n";
+		out << makeIndent << "    fprintf(stderr, \"Fatal error in " << operation << ": Stack underflow (requires "
+			<< required << " value" << (required != 1 ? "s" : "") << ", have %zu)\\n\", qd_stack_size(ctx->st));\n";
+		out << makeIndent << "    abort();\n";
+		out << makeIndent << "}\n";
+	}
+
+	// Helper to generate stack pop with error checking
+	static void emitStackPop(std::stringstream& out, const std::string& varName, const char* operation,
+			const std::string& makeIndent, const char* errorMsg) {
+		out << makeIndent << "qd_stack_element_t " << varName << ";\n";
+		out << makeIndent << "qd_stack_error " << varName << "_err = qd_stack_pop(ctx->st, &" << varName << ");\n";
+		out << makeIndent << "if (" << varName << "_err != QD_STACK_OK) {\n";
+		out << makeIndent << "    fprintf(stderr, \"Fatal error in " << operation << ": " << errorMsg << "\\n\");\n";
+		out << makeIndent << "    abort();\n";
+		out << makeIndent << "}\n";
+	}
+
+	void traverse(IAstNode* node, const char* packageName, std::stringstream& out, int indent, int& varCounter,
 			const std::string& currentForIterator = "") {
 		if (node == nullptr) {
 			return;
@@ -79,7 +98,7 @@ namespace Qd {
 					<< ", input_types, __func__);\n\n";
 			}
 
-			traverse(funcDecl->body(), packageName, out, indent + 1, currentForIterator);
+			traverse(funcDecl->body(), packageName, out, indent + 1, varCounter, currentForIterator);
 			out << "\n" << makeIndent(indent) << "qd_lbl_done:;\n";
 
 			// Generate type check for output parameters
@@ -113,20 +132,10 @@ namespace Qd {
 			std::string var = "qd_var_" + std::to_string(currentVar);
 
 			// Check stack has enough values
-			out << makeIndent(indent) << "if (qd_stack_size(ctx->st) < 1) {\n";
-			out << makeIndent(indent + 1)
-				<< "fprintf(stderr, \"Fatal error in if: Stack underflow (requires 1 value, have %zu)\\n\", "
-				   "qd_stack_size(ctx->st));\n";
-			out << makeIndent(indent + 1) << "abort();\n";
-			out << makeIndent(indent) << "}\n";
+			emitStackSizeCheck(out, 1, "if", makeIndent(indent));
 
 			// Pop the condition value from the stack
-			out << makeIndent(indent) << "qd_stack_element_t " << var << ";\n";
-			out << makeIndent(indent) << "qd_stack_error " << var << "_err = qd_stack_pop(ctx->st, &" << var << ");\n";
-			out << makeIndent(indent) << "if (" << var << "_err != QD_STACK_OK) {\n";
-			out << makeIndent(indent + 1) << "fprintf(stderr, \"Fatal error in if: Failed to pop value\\n\");\n";
-			out << makeIndent(indent + 1) << "abort();\n";
-			out << makeIndent(indent) << "}\n";
+			emitStackPop(out, var, "if", makeIndent(indent), "Failed to pop value");
 
 			// Check the condition (non-zero integer means true)
 			out << makeIndent(indent) << "if (" << var << ".type == QD_STACK_TYPE_INT && " << var
@@ -134,14 +143,14 @@ namespace Qd {
 
 			// Then block
 			if (ifStmt->thenBody()) {
-				traverse(ifStmt->thenBody(), packageName, out, indent + 1, currentForIterator);
+				traverse(ifStmt->thenBody(), packageName, out, indent + 1, varCounter, currentForIterator);
 			}
 			out << makeIndent(indent) << "}";
 
 			// Else block (if present)
 			if (ifStmt->elseBody()) {
 				out << " else {\n";
-				traverse(ifStmt->elseBody(), packageName, out, indent + 1, currentForIterator);
+				traverse(ifStmt->elseBody(), packageName, out, indent + 1, varCounter, currentForIterator);
 				out << makeIndent(indent) << "}";
 			}
 			out << "\n";
@@ -156,37 +165,12 @@ namespace Qd {
 			std::string varI = "qd_var_" + std::to_string(currentVar) + "_i";
 
 			// Check stack has enough values
-			out << makeIndent(indent) << "if (qd_stack_size(ctx->st) < 3) {\n";
-			out << makeIndent(indent + 1)
-				<< "fprintf(stderr, \"Fatal error in for: Stack underflow (requires 3 values, have %zu)\\n\", "
-				   "qd_stack_size(ctx->st));\n";
-			out << makeIndent(indent + 1) << "abort();\n";
-			out << makeIndent(indent) << "}\n";
+			emitStackSizeCheck(out, 3, "for", makeIndent(indent));
 
 			// Pop step, end, start from the stack (in reverse order)
-			out << makeIndent(indent) << "qd_stack_element_t " << varStep << ";\n";
-			out << makeIndent(indent) << "qd_stack_error " << varStep << "_err = qd_stack_pop(ctx->st, &" << varStep
-				<< ");\n";
-			out << makeIndent(indent) << "if (" << varStep << "_err != QD_STACK_OK) {\n";
-			out << makeIndent(indent + 1) << "fprintf(stderr, \"Fatal error in for: Failed to pop step value\\n\");\n";
-			out << makeIndent(indent + 1) << "abort();\n";
-			out << makeIndent(indent) << "}\n";
-
-			out << makeIndent(indent) << "qd_stack_element_t " << varEnd << ";\n";
-			out << makeIndent(indent) << "qd_stack_error " << varEnd << "_err = qd_stack_pop(ctx->st, &" << varEnd
-				<< ");\n";
-			out << makeIndent(indent) << "if (" << varEnd << "_err != QD_STACK_OK) {\n";
-			out << makeIndent(indent + 1) << "fprintf(stderr, \"Fatal error in for: Failed to pop end value\\n\");\n";
-			out << makeIndent(indent + 1) << "abort();\n";
-			out << makeIndent(indent) << "}\n";
-
-			out << makeIndent(indent) << "qd_stack_element_t " << varStart << ";\n";
-			out << makeIndent(indent) << "qd_stack_error " << varStart << "_err = qd_stack_pop(ctx->st, &" << varStart
-				<< ");\n";
-			out << makeIndent(indent) << "if (" << varStart << "_err != QD_STACK_OK) {\n";
-			out << makeIndent(indent + 1) << "fprintf(stderr, \"Fatal error in for: Failed to pop start value\\n\");\n";
-			out << makeIndent(indent + 1) << "abort();\n";
-			out << makeIndent(indent) << "}\n";
+			emitStackPop(out, varStep, "for", makeIndent(indent), "Failed to pop step value");
+			emitStackPop(out, varEnd, "for", makeIndent(indent), "Failed to pop end value");
+			emitStackPop(out, varStart, "for", makeIndent(indent), "Failed to pop start value");
 
 			// Generate C for loop with the values
 			out << makeIndent(indent) << "if (" << varStart << ".type == QD_STACK_TYPE_INT && " << varEnd
@@ -196,7 +180,7 @@ namespace Qd {
 
 			// Loop body - pass iterator variable name for $ handling
 			if (forStmt->body()) {
-				traverse(forStmt->body(), packageName, out, indent + 2, varI);
+				traverse(forStmt->body(), packageName, out, indent + 2, varCounter, varI);
 			}
 
 			out << makeIndent(indent + 1) << "}\n";
@@ -290,7 +274,7 @@ namespace Qd {
 		case IAstNode::Type::USE_STATEMENT: {
 			// TODO: Handle use statement
 			AstNodeUse* use = static_cast<AstNodeUse*>(node);
-			out << makeIndent(0) << "#include \"" << use->module() << "\\module.h\"\n";
+			out << makeIndent(0) << "#include \"" << use->module() << "/module.h\"\n";
 			break;
 		}
 		case IAstNode::Type::CONSTANT_DECLARATION: {
@@ -310,7 +294,7 @@ namespace Qd {
 		}
 
 		for (size_t i = 0; i < node->childCount(); i++) {
-			traverse(node->child(i), packageName, out, childIndent, currentForIterator);
+			traverse(node->child(i), packageName, out, childIndent, varCounter, currentForIterator);
 		}
 
 		if (node->type() == IAstNode::Type::BLOCK) {
@@ -359,7 +343,9 @@ namespace Qd {
 		ss << "#include <stdio.h>\n";
 		ss << "#include <stdlib.h>\n\n";
 
-		traverse(root, package, ss, 0);
+		// Reset counter for each compilation unit
+		mVarCounter = 0;
+		traverse(root, package, ss, 0, mVarCounter);
 
 		std::filesystem::path filepath = std::filesystem::path(package) / (std::string(filename) + ".c");
 		return SourceFile{filepath, std::string(package), ss.str()};

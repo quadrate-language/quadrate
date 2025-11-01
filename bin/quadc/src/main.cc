@@ -1,4 +1,5 @@
 #include "cxxopts.hpp"
+#include <cerrno>
 #include <cgen/compiler.h>
 #include <cgen/linker.h>
 #include <cgen/process.h>
@@ -52,17 +53,38 @@ std::string createTempDir() {
 	std::mt19937 gen(rd());
 	std::uniform_int_distribution<> dis(0, 15);
 
-	std::stringstream ss;
-	ss << ".";
-	for (int i = 0; i < 8; i++) {
-		ss << std::hex << dis(gen);
+	// Try up to 10 times to create a unique directory
+	for (int attempt = 0; attempt < 10; attempt++) {
+		std::stringstream ss;
+		ss << ".";
+		for (int i = 0; i < 8; i++) {
+			ss << std::hex << dis(gen);
+		}
+		ss << ".qdproj";
+
+		std::string tmpDir = ss.str();
+
+		// Check if directory already exists
+		if (std::filesystem::exists(tmpDir)) {
+			continue;
+		}
+
+		// Try to create the directory
+		std::error_code ec;
+		if (std::filesystem::create_directory(tmpDir, ec)) {
+			return tmpDir;
+		}
+
+		// If creation failed for reasons other than "already exists", fail
+		if (ec && ec.value() != EEXIST) {
+			std::cerr << "quadc: failed to create temporary directory: " << ec.message() << std::endl;
+			exit(1);
+		}
 	}
 
-	ss << ".qdproj";
-
-	std::string tmpDir = ss.str();
-	std::filesystem::create_directory(tmpDir);
-	return tmpDir;
+	// Failed to create directory after multiple attempts
+	std::cerr << "quadc: failed to create temporary directory after 10 attempts" << std::endl;
+	exit(1);
 }
 
 // RAII guard for automatic temp directory cleanup
@@ -196,8 +218,11 @@ int main(int argc, char** argv) {
 
 		for (auto& source : transpiledSources) {
 			std::filesystem::path packageDir = std::filesystem::path(outputDir) / source.package;
-			if (!std::filesystem::create_directory(packageDir)) {
-				std::cerr << "Directory already exists or failed to create: " << packageDir << std::endl;
+			std::error_code ec;
+			std::filesystem::create_directory(packageDir, ec);
+			// Only fail if error is not "already exists"
+			if (ec && ec.value() != EEXIST) {
+				std::cerr << "quadc: failed to create directory " << packageDir << ": " << ec.message() << std::endl;
 				return 1;
 			}
 			std::filesystem::path filePath = std::filesystem::path(outputDir) / source.filename;
