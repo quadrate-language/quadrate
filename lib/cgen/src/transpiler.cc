@@ -60,6 +60,63 @@ namespace Qd {
 		out << makeIndent << "}\n";
 	}
 
+	// Helper to escape string literals for safe C code generation
+	// Prevents code injection via malicious string literals
+	static std::string escapeStringForC(const std::string& str) {
+		std::string result;
+		result.reserve(str.size());
+		for (char c : str) {
+			switch (c) {
+			case '"':
+				result += "\\\"";
+				break;
+			case '\\':
+				result += "\\\\";
+				break;
+			case '\n':
+				result += "\\n";
+				break;
+			case '\r':
+				result += "\\r";
+				break;
+			case '\t':
+				result += "\\t";
+				break;
+			default:
+				result += c;
+				break;
+			}
+		}
+		return result;
+	}
+
+	// Helper to validate module names
+	// Prevents path traversal attacks in use statements
+	static bool isValidModuleName(const std::string& name) {
+		if (name.empty()) {
+			return false;
+		}
+		// Check for path traversal sequences
+		if (name.find("..") != std::string::npos) {
+			return false;
+		}
+		// Check for absolute or relative paths
+		if (name.find('/') != std::string::npos || name.find('\\') != std::string::npos) {
+			return false;
+		}
+		// Check for leading dot (hidden files)
+		if (name[0] == '.') {
+			return false;
+		}
+		// Only allow alphanumeric characters and underscores
+		for (char c : name) {
+			if (!std::isalnum(static_cast<unsigned char>(c)) && c != '_') {
+				return false;
+			}
+		}
+		return true;
+	}
+
 	void traverse(IAstNode* node, const char* packageName, std::stringstream& out, int indent, int& varCounter,
 			const std::string& currentForIterator = "", std::vector<IAstNode*>* deferStatements = nullptr) {
 		if (node == nullptr) {
@@ -248,9 +305,20 @@ namespace Qd {
 			case AstNodeLiteral::LiteralType::FLOAT:
 				out << makeIndent(indent) << "qd_push_f(ctx, (double)" << literal->value() << ");\n";
 				break;
-			case AstNodeLiteral::LiteralType::STRING:
-				out << makeIndent(indent) << "qd_push_s(ctx, " << literal->value() << ");\n";
+			case AstNodeLiteral::LiteralType::STRING: {
+				// Extract the string content (remove surrounding quotes)
+				std::string rawValue = literal->value();
+				std::string content;
+				if (rawValue.size() >= 2 && rawValue.front() == '"' && rawValue.back() == '"') {
+					content = rawValue.substr(1, rawValue.size() - 2);
+				} else {
+					content = rawValue;
+				}
+				// Escape the content for safe C code generation
+				std::string escaped = escapeStringForC(content);
+				out << makeIndent(indent) << "qd_push_s(ctx, \"" << escaped << "\");\n";
 				break;
+			}
 			}
 			break;
 		}
@@ -300,9 +368,17 @@ namespace Qd {
 			break;
 		}
 		case IAstNode::Type::USE_STATEMENT: {
-			// TODO: Handle use statement
 			AstNodeUse* use = static_cast<AstNodeUse*>(node);
-			out << makeIndent(0) << "#include \"" << use->module() << "/module.h\"\n";
+			std::string moduleName = use->module();
+
+			// Validate module name to prevent path traversal attacks
+			if (!isValidModuleName(moduleName)) {
+				// Generate a compile-time error via invalid C code
+				out << makeIndent(0) << "#error \"Invalid module name: '" << moduleName
+					<< "'. Module names must be alphanumeric with underscores only.\"\n";
+			} else {
+				out << makeIndent(0) << "#include \"" << moduleName << "/module.h\"\n";
+			}
 			break;
 		}
 		case IAstNode::Type::CONSTANT_DECLARATION: {
