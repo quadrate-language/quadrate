@@ -1,0 +1,33 @@
+// Control flow operations in modules
+fn sign( x:f -- result:f ) {
+	dup 0.0 gt
+	if {
+		drop 1.0
+	} else {
+		dup 0.0 lt
+		if {
+			drop -1.0
+		} else {
+			drop 0.0
+		}
+	}
+}
+
+fn sum_to_n( n:f -- result:f ) {
+	0.0
+	swap
+	1.0 swap 1.0
+	for {
+		$ add
+	}
+}
+
+fn count_evens( max:f -- count:f ) {
+	0.0
+	swap
+	0.0 swap 2.0
+	for {
+		drop
+		1.0 add
+	}
+}

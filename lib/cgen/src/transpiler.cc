@@ -371,13 +371,21 @@ namespace Qd {
 			AstNodeUse* use = static_cast<AstNodeUse*>(node);
 			std::string moduleName = use->module();
 
-			// Validate module name to prevent path traversal attacks
-			if (!isValidModuleName(moduleName)) {
-				// Generate a compile-time error via invalid C code
-				out << makeIndent(0) << "#error \"Invalid module name: '" << moduleName
-					<< "'. Module names must be alphanumeric with underscores only.\"\n";
+			// Check if this is a .qd file import (same package)
+			bool isDirectFile = moduleName.size() >= 3 && moduleName.substr(moduleName.size() - 3) == ".qd";
+
+			if (isDirectFile) {
+				// .qd file imports don't need includes - functions are in the same package
+				// No output needed
 			} else {
-				out << makeIndent(0) << "#include \"" << moduleName << "/module.h\"\n";
+				// Validate module name to prevent path traversal attacks
+				if (!isValidModuleName(moduleName)) {
+					// Generate a compile-time error via invalid C code
+					out << makeIndent(0) << "#error \"Invalid module name: '" << moduleName
+						<< "'. Module names must be alphanumeric with underscores only.\"\n";
+				} else {
+					out << makeIndent(0) << "#include \"" << moduleName << "/module.h\"\n";
+				}
 			}
 			break;
 		}
@@ -451,7 +459,12 @@ namespace Qd {
 		mVarCounter = 0;
 		traverse(root, package, ss, 0, mVarCounter);
 
-		std::filesystem::path filepath = std::filesystem::path(package) / (std::string(filename) + ".c");
-		return SourceFile{filepath, std::string(package), ss.str()};
+		// Use basename for output file (filename might be a full path for validation purposes)
+		std::string basename = std::filesystem::path(filename).filename().string();
+		std::filesystem::path filepath = std::filesystem::path(package) / (basename + ".c");
+
+		// Return source file with imported modules and source directory
+		return SourceFile{
+				filepath, std::string(package), ss.str(), validator.importedModules(), validator.sourceDirectory()};
 	}
 }

@@ -1,0 +1,25 @@
+// Math helper functions
+fn abs( x:f -- y:f ) {
+	dup 0.0 lt
+	if {
+		neg
+	}
+}
+
+fn max( a:f b:f -- c:f ) {
+	dup rot dup rot
+	gt
+	if {
+		drop
+	} else {
+		nip
+	}
+}
+
+fn square( x:f -- y:f ) {
+	dup mul
+}
+
+fn add_ten( x:f -- y:f ) {
+	10.0 add
+}

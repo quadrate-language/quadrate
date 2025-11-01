@@ -1,0 +1,22 @@
+// Example demonstrating the module system in Quadrate
+// This program imports the math_utils module
+
+use math_utils
+
+fn main() {
+	// The module system is working!
+	// - Module file is discovered (./math_utils/module.qd)
+	// - Module is transpiled to C (math_utils/module.qd.c)
+	// - Header file is generated (math_utils/module.h)
+	// - Module functions are callable with full type checking
+
+	// Call module functions with type checking
+	math_utils::pi print
+	math_utils::tau print
+	math_utils::e print
+
+	// Test utility functions
+	math_utils::get_hundred print
+	math_utils::get_zero print
+	math_utils::get_one print
+}

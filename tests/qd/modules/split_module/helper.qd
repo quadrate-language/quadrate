@@ -1,0 +1,14 @@
+// Helper functions for split_module
+// These functions will be part of the split_module namespace
+
+fn double( x:f -- y:f ) {
+	dup add
+}
+
+fn negate( x:f -- y:f ) {
+	neg
+}
+
+fn get_hundred() {
+	100.0
+}

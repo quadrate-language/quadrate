@@ -1089,7 +1089,25 @@ namespace Qd {
 					token = u8t_scanner_scan(&scanner);
 					if (token == U8T_IDENTIFIER) {
 						const char* moduleName = u8t_scanner_token_text(&scanner, &n);
-						AstNodeUse* useStmt = new AstNodeUse(moduleName);
+						std::string moduleNameStr(moduleName);
+
+						// Check if this is a .qd file import (module.qd)
+						// Peek at next token to see if it's a dot
+						char32_t nextToken = u8t_scanner_peek(&scanner);
+						if (nextToken == static_cast<char32_t>('.')) {
+							// Consume the dot
+							u8t_scanner_scan(&scanner);
+							// Check if next token is 'qd'
+							token = u8t_scanner_scan(&scanner);
+							if (token == U8T_IDENTIFIER) {
+								const char* ext = u8t_scanner_token_text(&scanner, &n);
+								if (strcmp(ext, "qd") == 0) {
+									moduleNameStr += ".qd";
+								}
+							}
+						}
+
+						AstNodeUse* useStmt = new AstNodeUse(moduleNameStr.c_str());
 						setNodePosition(useStmt, &scanner, src);
 						useStmt->setParent(program);
 						program->addChild(useStmt);

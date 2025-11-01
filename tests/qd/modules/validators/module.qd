@@ -1,0 +1,27 @@
+// Validation functions
+fn is_positive( x:f -- result:f ) {
+	0.0 gt
+	if {
+		1.0
+	} else {
+		0.0
+	}
+}
+
+fn is_negative( x:f -- result:f ) {
+	0.0 lt
+	if {
+		1.0
+	} else {
+		0.0
+	}
+}
+
+fn is_zero( x:f -- result:f ) {
+	0.0 eq
+	if {
+		1.0
+	} else {
+		0.0
+	}
+}

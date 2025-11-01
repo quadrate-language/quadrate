@@ -41,9 +41,31 @@ namespace Qd {
 			return mErrorCount;
 		}
 
+		// Get the set of imported modules
+		const std::unordered_set<std::string>& importedModules() const {
+			return mImportedModules;
+		}
+
+		// Get the source directory (extracted from validated filename)
+		const std::string& sourceDirectory() const {
+			return mSourceDirectory;
+		}
+
 	private:
 		// Pass 1: Collect all function definitions
 		void collectDefinitions(IAstNode* node);
+
+		// Helper: Load module definitions from a module file
+		void loadModuleDefinitions(const std::string& moduleName, const std::string& currentPackage);
+
+		// Helper: Parse module source and collect function definitions
+		void parseModuleAndCollectFunctions(const std::string& moduleName, const std::string& source);
+
+		// Helper: Collect function definitions from a module AST
+		void collectModuleFunctions(IAstNode* node, std::unordered_set<std::string>& functions);
+
+		// Helper: Analyze function signatures in a module
+		void analyzeModuleFunctionSignatures(IAstNode* node, const std::string& moduleName);
 
 		// Pass 2: Validate all function calls and references
 		void validateReferences(IAstNode* node, bool insideForLoop = false);
@@ -83,8 +105,26 @@ namespace Qd {
 		// Current filename being validated
 		const char* mFilename;
 
+		// Source file directory (extracted from mFilename)
+		std::string mSourceDirectory;
+
+		// Current package name (extracted from mFilename)
+		std::string mCurrentPackage;
+
 		// Symbol table: all defined functions
 		std::unordered_set<std::string> mDefinedFunctions;
+
+		// Imported modules: tracks which modules have been imported via 'use' statements
+		std::unordered_set<std::string> mImportedModules;
+
+		// Loaded module files: tracks which specific files have been loaded (to prevent duplicate loads)
+		std::unordered_set<std::string> mLoadedModuleFiles;
+
+		// Module functions: maps module name -> set of function names in that module
+		std::unordered_map<std::string, std::unordered_set<std::string>> mModuleFunctions;
+
+		// Module directories: maps module name -> directory path where module was found
+		std::unordered_map<std::string, std::string> mModuleDirectories;
 
 		// Function signatures: stack effect of each function
 		std::unordered_map<std::string, FunctionSignature> mFunctionSignatures;

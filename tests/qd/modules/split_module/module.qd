@@ -1,0 +1,11 @@
+// Main module file
+// Imports helper.qd from the same module directory
+use helper.qd
+
+fn add_ten( x:f -- y:f ) {
+	10.0 add
+}
+
+fn multiply_by_three( x:f -- y:f ) {
+	3.0 mul
+}

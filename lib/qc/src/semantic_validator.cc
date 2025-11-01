@@ -1,4 +1,6 @@
+#include <cstdlib>
 #include <cstring>
+#include <fstream>
 #include <iostream>
 #include <qc/ast.h>
 #include <qc/ast_node.h>
@@ -8,6 +10,8 @@
 #include <qc/ast_node_instruction.h>
 #include <qc/ast_node_literal.h>
 #include <qc/ast_node_parameter.h>
+#include <qc/ast_node_scoped.h>
+#include <qc/ast_node_use.h>
 #include <qc/colors.h>
 #include <qc/semantic_validator.h>
 
@@ -77,6 +81,35 @@ namespace Qd {
 		mFilename = filename;
 		mDefinedFunctions.clear();
 		mFunctionSignatures.clear();
+		mImportedModules.clear();
+		mLoadedModuleFiles.clear();
+		mModuleFunctions.clear();
+
+		// Extract source directory and package name from filename
+		if (filename) {
+			std::string fullPath(filename);
+			size_t lastSlash = fullPath.find_last_of('/');
+			if (lastSlash != std::string::npos) {
+				mSourceDirectory = fullPath.substr(0, lastSlash);
+
+				// Extract package name from directory structure
+				// If file is math_utils/module.qd, package is "math_utils"
+				// If file is just main.qd, package is "main"
+				size_t secondLastSlash = mSourceDirectory.find_last_of('/');
+				if (secondLastSlash != std::string::npos) {
+					mCurrentPackage = mSourceDirectory.substr(secondLastSlash + 1);
+				} else {
+					// File is in current directory, use "main" as default
+					mCurrentPackage = "main";
+				}
+			} else {
+				mSourceDirectory = ".";
+				mCurrentPackage = "main";
+			}
+		} else {
+			mSourceDirectory = ".";
+			mCurrentPackage = "main";
+		}
 
 		// Pass 1: Collect all function definitions
 		collectDefinitions(program);
@@ -145,9 +178,239 @@ namespace Qd {
 			mDefinedFunctions.insert(func->name());
 		}
 
+		// If this is a use statement, add the module to imported modules and load its definitions
+		if (node->type() == IAstNode::Type::USE_STATEMENT) {
+			AstNodeUse* use = static_cast<AstNodeUse*>(node);
+			mImportedModules.insert(use->module());
+			loadModuleDefinitions(use->module(), mCurrentPackage);
+		}
+
 		// Recursively process children
 		for (size_t i = 0; i < node->childCount(); i++) {
 			collectDefinitions(node->child(i));
+		}
+	}
+
+	void SemanticValidator::loadModuleDefinitions(const std::string& moduleName, const std::string& currentPackage) {
+		// Check if we've already loaded this specific file (prevent duplicate loads)
+		if (mLoadedModuleFiles.count(moduleName)) {
+			return;
+		}
+		mLoadedModuleFiles.insert(moduleName);
+
+		// Check if this is a direct file import (ends with .qd)
+		bool isDirectFile = moduleName.size() >= 3 && moduleName.substr(moduleName.size() - 3) == ".qd";
+
+		std::string effectiveModuleName;
+		if (isDirectFile) {
+			// For .qd file imports, use the current package name
+			effectiveModuleName = currentPackage;
+		} else {
+			effectiveModuleName = moduleName;
+		}
+
+		std::string modulePath;
+		std::ifstream file;
+
+		if (isDirectFile) {
+			// Direct file import: look for helper.qd in the parent module's directory
+			// First check if we have a directory for the current package (parent module)
+			std::string searchDir = mSourceDirectory;
+			if (mModuleDirectories.count(currentPackage)) {
+				searchDir = mModuleDirectories[currentPackage];
+			}
+
+			// Try 1: Same directory as parent module
+			modulePath = searchDir + "/" + moduleName;
+			file.open(modulePath);
+			if (file.good()) {
+				std::string source((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
+				file.close();
+				// Parse and add to current package namespace
+				parseModuleAndCollectFunctions(currentPackage, source);
+				return;
+			}
+			file.close();
+
+			// If not found in same directory, try standard paths
+			// Try 2: QUADRATE_ROOT
+			const char* quadrateRoot = std::getenv("QUADRATE_ROOT");
+			if (quadrateRoot) {
+				modulePath = std::string(quadrateRoot) + "/" + moduleName;
+				file.open(modulePath);
+				if (file.good()) {
+					std::string source((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
+					file.close();
+					parseModuleAndCollectFunctions(currentPackage, source);
+					return;
+				}
+				file.close();
+			}
+
+			// Try 3: $HOME/quadrate
+			const char* home = std::getenv("HOME");
+			if (home) {
+				modulePath = std::string(home) + "/quadrate/" + moduleName;
+				file.open(modulePath);
+				if (file.good()) {
+					std::string source((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
+					file.close();
+					parseModuleAndCollectFunctions(currentPackage, source);
+					return;
+				}
+				file.close();
+			}
+		} else {
+			// Module directory import: use moduleName (looks for moduleName/module.qd)
+			// Try 1: Local path (relative to source file)
+			modulePath = mSourceDirectory + "/" + moduleName + "/module.qd";
+			file.open(modulePath);
+			if (file.good()) {
+				// Found it locally - store the module directory
+				mModuleDirectories[moduleName] = mSourceDirectory + "/" + moduleName;
+				std::string source((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
+				file.close();
+				parseModuleAndCollectFunctions(moduleName, source);
+				return;
+			}
+			file.close();
+
+			// Try 2: QUADRATE_ROOT environment variable
+			const char* quadrateRoot = std::getenv("QUADRATE_ROOT");
+			if (quadrateRoot) {
+				modulePath = std::string(quadrateRoot) + "/" + moduleName + "/module.qd";
+				file.open(modulePath);
+				if (file.good()) {
+					// Store the module directory
+					mModuleDirectories[moduleName] = std::string(quadrateRoot) + "/" + moduleName;
+					std::string source((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
+					file.close();
+					parseModuleAndCollectFunctions(moduleName, source);
+					return;
+				}
+				file.close();
+			}
+
+			// Try 3: $HOME/quadrate directory
+			const char* home = std::getenv("HOME");
+			if (home) {
+				modulePath = std::string(home) + "/quadrate/" + moduleName + "/module.qd";
+				file.open(modulePath);
+				if (file.good()) {
+					// Store the module directory
+					mModuleDirectories[moduleName] = std::string(home) + "/quadrate/" + moduleName;
+					std::string source((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
+					file.close();
+					parseModuleAndCollectFunctions(moduleName, source);
+					return;
+				}
+				file.close();
+			}
+		}
+
+		// Module file doesn't exist anywhere - skip silently
+		// This allows using 'use' statements before modules are installed
+	}
+
+	void SemanticValidator::parseModuleAndCollectFunctions(const std::string& moduleName, const std::string& source) {
+		// Parse the module file to AST
+		Ast moduleAst;
+		IAstNode* moduleAstRoot = moduleAst.generate(source.c_str(), false, nullptr);
+		if (!moduleAstRoot) {
+			// Failed to parse - skip silently
+			return;
+		}
+
+		// Process USE statements in the module first (to load .qd file imports)
+		// We need to recursively collect definitions, including from imported .qd files
+		for (size_t i = 0; i < moduleAstRoot->childCount(); i++) {
+			IAstNode* child = moduleAstRoot->child(i);
+			if (child && child->type() == IAstNode::Type::USE_STATEMENT) {
+				AstNodeUse* use = static_cast<AstNodeUse*>(child);
+				// Recursively load this module/file with the current module as context
+				loadModuleDefinitions(use->module(), moduleName);
+			}
+		}
+
+		// Collect function definitions from the module
+		std::unordered_set<std::string> moduleFunctions;
+		collectModuleFunctions(moduleAstRoot, moduleFunctions);
+
+		// Store the collected functions
+		// If this module already has functions (from .qd file imports), merge with existing set
+		if (mModuleFunctions.find(moduleName) != mModuleFunctions.end()) {
+			// Merge: add new functions to existing set
+			mModuleFunctions[moduleName].insert(moduleFunctions.begin(), moduleFunctions.end());
+		} else {
+			// Create new entry
+			mModuleFunctions[moduleName] = moduleFunctions;
+		}
+
+		// Analyze function signatures for module functions
+		// We use a simplified analysis since we don't need iterative convergence for modules
+		analyzeModuleFunctionSignatures(moduleAstRoot, moduleName);
+	}
+
+	void SemanticValidator::collectModuleFunctions(IAstNode* node, std::unordered_set<std::string>& functions) {
+		if (!node) {
+			return;
+		}
+
+		// If this is a function declaration, add it to the set
+		if (node->type() == IAstNode::Type::FUNCTION_DECLARATION) {
+			AstNodeFunctionDeclaration* func = static_cast<AstNodeFunctionDeclaration*>(node);
+			functions.insert(func->name());
+		}
+
+		// Recursively process children
+		for (size_t i = 0; i < node->childCount(); i++) {
+			collectModuleFunctions(node->child(i), functions);
+		}
+	}
+
+	void SemanticValidator::analyzeModuleFunctionSignatures(IAstNode* node, const std::string& moduleName) {
+		if (!node) {
+			return;
+		}
+
+		// Analyze each function definition in the module to determine its stack effect
+		if (node->type() == IAstNode::Type::FUNCTION_DECLARATION) {
+			AstNodeFunctionDeclaration* func = static_cast<AstNodeFunctionDeclaration*>(node);
+			std::vector<StackValueType> typeStack;
+
+			// Initialize type stack with input parameters
+			// Input parameters are on the stack when the function starts
+			for (size_t i = 0; i < func->inputParameters().size(); i++) {
+				AstNodeParameter* param = static_cast<AstNodeParameter*>(func->inputParameters()[i]);
+				const std::string& typeStr = param->typeString();
+
+				if (typeStr == "i") {
+					typeStack.push_back(StackValueType::INT);
+				} else if (typeStr == "f") {
+					typeStack.push_back(StackValueType::FLOAT);
+				} else if (typeStr == "s") {
+					typeStack.push_back(StackValueType::STRING);
+				} else {
+					// Untyped or unknown - treat as ANY
+					typeStack.push_back(StackValueType::ANY);
+				}
+			}
+
+			// Analyze the function body in isolation
+			if (func->body()) {
+				analyzeBlockInIsolation(func->body(), typeStack);
+			}
+
+			// Store the signature with qualified name: moduleName::functionName
+			FunctionSignature sig;
+			sig.produces = typeStack;
+			std::string qualifiedName = moduleName + "::" + func->name();
+			mFunctionSignatures[qualifiedName] = sig;
+		}
+
+		// Recursively process children
+		for (size_t i = 0; i < node->childCount(); i++) {
+			analyzeModuleFunctionSignatures(node->child(i), moduleName);
 		}
 	}
 
@@ -198,6 +461,40 @@ namespace Qd {
 				errorMsg += "' in function pointer reference";
 				reportError(funcPtr, errorMsg.c_str());
 			}
+		}
+
+		// Check if this is a scoped identifier (module function call like math::sqrt)
+		if (node->type() == IAstNode::Type::SCOPED_IDENTIFIER) {
+			AstNodeScopedIdentifier* scoped = static_cast<AstNodeScopedIdentifier*>(node);
+			const std::string& moduleName = scoped->scope();
+			const std::string& functionName = scoped->name();
+
+			// Check if the module was imported
+			if (mImportedModules.find(moduleName) == mImportedModules.end()) {
+				std::string errorMsg = "Module '";
+				errorMsg += moduleName;
+				errorMsg += "' not imported. Add 'use ";
+				errorMsg += moduleName;
+				errorMsg += "' to use this module";
+				reportError(scoped, errorMsg.c_str());
+				return;
+			}
+
+			// Check if the function exists in the module
+			auto moduleIt = mModuleFunctions.find(moduleName);
+			if (moduleIt != mModuleFunctions.end()) {
+				const auto& functions = moduleIt->second;
+				if (functions.find(functionName) == functions.end()) {
+					std::string errorMsg = "Function '";
+					errorMsg += functionName;
+					errorMsg += "' not found in module '";
+					errorMsg += moduleName;
+					errorMsg += "'";
+					reportError(scoped, errorMsg.c_str());
+				}
+			}
+			// If module not in mModuleFunctions, it means loadModuleDefinitions failed
+			// but we don't report an error here as it was likely already reported
 		}
 
 		// Track when we enter a for loop
@@ -423,6 +720,28 @@ namespace Qd {
 				}
 				// If it's not a user function, it must be a built-in (already validated in pass 2)
 				// Built-ins are handled as Instructions, not Identifiers in the AST
+				break;
+			}
+
+			case IAstNode::Type::SCOPED_IDENTIFIER: {
+				// Handle module function calls - apply their stack effect
+				AstNodeScopedIdentifier* scoped = static_cast<AstNodeScopedIdentifier*>(child);
+				const std::string& moduleName = scoped->scope();
+				const std::string& functionName = scoped->name();
+				std::string qualifiedName = moduleName + "::" + functionName;
+
+				// Look up the module function signature
+				auto sigIt = mFunctionSignatures.find(qualifiedName);
+				if (sigIt != mFunctionSignatures.end()) {
+					const FunctionSignature& sig = sigIt->second;
+
+					// Apply the produces effect
+					for (const auto& type : sig.produces) {
+						typeStack.push_back(type);
+					}
+				}
+				// If signature not found, module wasn't loaded or analyzed
+				// This was already checked in validation pass, so we can skip silently
 				break;
 			}
 

@@ -82,9 +82,12 @@ run_test() {
 }
 
 # Find and run all .qd test files
+# Exclude module component files (files in subdirectories of modules/)
 while IFS= read -r test_file; do
     run_test "$test_file"
-done < <(find "$TEST_DIR" -name "*.qd" -type f | sort)
+done < <(find "$TEST_DIR" -name "*.qd" -type f \
+    ! -path "*/modules/*/*" \
+    | sort)
 
 # Print summary
 echo ""

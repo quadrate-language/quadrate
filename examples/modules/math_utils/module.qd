@@ -1,0 +1,28 @@
+// Math utilities module
+// Demonstrates how to create and use modules in Quadrate
+
+// Constants
+fn pi() {
+	3.141592653589793
+}
+
+fn tau() {
+	6.283185307179586
+}
+
+fn e() {
+	2.718281828459045
+}
+
+// Utility functions that push commonly used values
+fn get_hundred() {
+	100.0
+}
+
+fn get_zero() {
+	0.0
+}
+
+fn get_one() {
+	1.0
+}

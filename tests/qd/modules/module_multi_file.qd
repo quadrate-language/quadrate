@@ -1,0 +1,23 @@
+// Test module with multiple .qd file imports
+use multi_file
+
+fn main() {
+	// Test arithmetic functions (from arithmetic.qd)
+	5.0 multi_file::increment print
+	10.0 multi_file::decrement print
+	7.0 multi_file::double print
+	8.0 multi_file::half print
+
+	// Test trigonometric functions (from trigonometry.qd)
+	5.0 multi_file::double_angle print
+	2.0 multi_file::add_pi print
+
+	// Test constants (from constants.qd)
+	multi_file::pi print
+	multi_file::e print
+	multi_file::tau print
+	multi_file::phi print
+
+	// Test function that uses multiple files
+	5.0 multi_file::calculate print
+}

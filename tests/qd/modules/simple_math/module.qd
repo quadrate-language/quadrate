@@ -1,0 +1,22 @@
+// Simple math module for testing
+// Provides basic mathematical constants and operations
+
+fn double( x:f -- y:f ) {
+	dup add
+}
+
+fn triple( x:f -- y:f ) {
+	3.0 mul
+}
+
+fn square( x:f -- y:f ) {
+	dup mul
+}
+
+fn ten() {
+	10.0
+}
+
+fn twenty() {
+	20.0
+}
