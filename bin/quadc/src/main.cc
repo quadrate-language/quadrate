@@ -71,22 +71,20 @@ std::string createTempDir(bool useCwd) {
 
 		std::filesystem::path tmpDir = baseDir / ss.str();
 
-		// Check if directory already exists
-		if (std::filesystem::exists(tmpDir)) {
-			continue;
-		}
-
-		// Try to create the directory
+		// Try to create the directory atomically (no TOCTOU race)
 		std::error_code ec;
 		if (std::filesystem::create_directory(tmpDir, ec)) {
 			return tmpDir.string();
 		}
 
-		// If creation failed for reasons other than "already exists", fail
-		if (ec && ec.value() != EEXIST) {
-			std::cerr << "quadc: failed to create temporary directory: " << ec.message() << std::endl;
-			exit(1);
+		// If directory already exists, try again with a different name
+		if (ec.value() == EEXIST) {
+			continue;
 		}
+
+		// For other errors, fail immediately
+		std::cerr << "quadc: failed to create temporary directory: " << ec.message() << std::endl;
+		exit(1);
 	}
 
 	// Failed to create directory after multiple attempts

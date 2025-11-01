@@ -105,7 +105,7 @@ qd_stack_error qd_stack_push_str(qd_stack* stack, const char* value) {
 	if (copy == NULL) {
 		return QD_STACK_ERR_ALLOC;
 	}
-	strcpy(copy, value);
+	memcpy(copy, value, len + 1);
 
 	stack->data[stack->size].value.s = copy;
 	stack->data[stack->size].type = QD_STACK_TYPE_STR;
