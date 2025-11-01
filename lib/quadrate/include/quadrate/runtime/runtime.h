@@ -44,6 +44,8 @@ qd_exec_result qd_log10(qd_context* ctx);
 qd_exec_result qd_call(qd_context* ctx);
 qd_exec_result qd_dec(qd_context* ctx);
 qd_exec_result qd_inc(qd_context* ctx);
+qd_exec_result qd_pow(qd_context* ctx);
+qd_exec_result qd_round(qd_context* ctx);
 qd_exec_result qd_clear(qd_context* ctx);
 qd_exec_result qd_depth(qd_context* ctx);
 qd_exec_result qd_fac(qd_context* ctx);

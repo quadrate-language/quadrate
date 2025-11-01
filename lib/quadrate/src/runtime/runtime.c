@@ -1504,6 +1504,110 @@ qd_exec_result qd_inc(qd_context* ctx) {
 	return (qd_exec_result){0};
 }
 
+// pow - exponentiation (base^exponent)
+qd_exec_result qd_pow(qd_context* ctx) {
+	// Pop two numeric values: base, then exponent
+	// Push result as float
+	size_t stack_size = qd_stack_size(ctx->st);
+	if (stack_size < 2) {
+		fprintf(stderr, "Fatal error in pow: Stack underflow (requires 2 values)\n");
+		dump_stack(ctx);
+		abort();
+	}
+
+	// Pop exponent (top of stack)
+	qd_stack_element_t exponent_elem;
+	qd_stack_error err = qd_stack_pop(ctx->st, &exponent_elem);
+	if (err != QD_STACK_OK) {
+		fprintf(stderr, "Fatal error in pow: Failed to pop exponent\n");
+		dump_stack(ctx);
+		abort();
+	}
+
+	// Pop base
+	qd_stack_element_t base_elem;
+	err = qd_stack_pop(ctx->st, &base_elem);
+	if (err != QD_STACK_OK) {
+		fprintf(stderr, "Fatal error in pow: Failed to pop base\n");
+		dump_stack(ctx);
+		abort();
+	}
+
+	// Convert both to double
+	double base, exponent;
+	if (base_elem.type == QD_STACK_TYPE_INT) {
+		base = (double)base_elem.value.i;
+	} else if (base_elem.type == QD_STACK_TYPE_FLOAT) {
+		base = base_elem.value.f;
+	} else {
+		fprintf(stderr, "Fatal error in pow: Invalid base type (expected int or float)\n");
+		dump_stack(ctx);
+		abort();
+	}
+
+	if (exponent_elem.type == QD_STACK_TYPE_INT) {
+		exponent = (double)exponent_elem.value.i;
+	} else if (exponent_elem.type == QD_STACK_TYPE_FLOAT) {
+		exponent = exponent_elem.value.f;
+	} else {
+		fprintf(stderr, "Fatal error in pow: Invalid exponent type (expected int or float)\n");
+		dump_stack(ctx);
+		abort();
+	}
+
+	// Compute base^exponent
+	double result = pow(base, exponent);
+
+	// Push result as float
+	err = qd_stack_push_float(ctx->st, result);
+	if (err != QD_STACK_OK) {
+		return (qd_exec_result){-2};
+	}
+
+	return (qd_exec_result){0};
+}
+
+// round - round to nearest integer
+qd_exec_result qd_round(qd_context* ctx) {
+	// Pop one numeric value, push float result
+	size_t stack_size = qd_stack_size(ctx->st);
+	if (stack_size < 1) {
+		fprintf(stderr, "Fatal error in round: Stack underflow (requires 1 value)\n");
+		dump_stack(ctx);
+		abort();
+	}
+
+	qd_stack_element_t elem;
+	qd_stack_error err = qd_stack_pop(ctx->st, &elem);
+	if (err != QD_STACK_OK) {
+		fprintf(stderr, "Fatal error in round: Failed to pop value\n");
+		dump_stack(ctx);
+		abort();
+	}
+
+	double value;
+	if (elem.type == QD_STACK_TYPE_INT) {
+		value = (double)elem.value.i;
+	} else if (elem.type == QD_STACK_TYPE_FLOAT) {
+		value = elem.value.f;
+	} else {
+		fprintf(stderr, "Fatal error in round: Invalid type (expected int or float)\n");
+		dump_stack(ctx);
+		abort();
+	}
+
+	// Round to nearest integer
+	double result = round(value);
+
+	// Push result as float
+	err = qd_stack_push_float(ctx->st, result);
+	if (err != QD_STACK_OK) {
+		return (qd_exec_result){-2};
+	}
+
+	return (qd_exec_result){0};
+}
+
 // clear - empty the entire stack
 qd_exec_result qd_clear(qd_context* ctx) {
 	// Pop all elements from the stack until empty

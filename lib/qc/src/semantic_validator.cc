@@ -17,8 +17,8 @@ namespace Qd {
 	static const char* BUILTIN_INSTRUCTIONS[] = {"*", "+", "-", ".", "/", "abs", "acos", "add", "and", "asin", "atan",
 			"cb", "cbrt", "ceil", "call", "clear", "cos", "dec", "depth", "div", "drop", "drop2", "dup", "dup2", "eq",
 			"fac", "floor", "gt", "gte", "inc", "inv", "ln", "log10", "lt", "lte", "max", "min", "mod", "mul", "neq",
-			"neg", "nip", "not", "or", "over", "over2", "pick", "print", "prints", "printsv", "printv", "roll", "rot",
-			"sin", "sq", "sqrt", "sub", "swap", "swap2", "tan", "tuck", "within"};
+			"neg", "nip", "not", "or", "over", "over2", "pick", "pow", "print", "prints", "printsv", "printv", "roll",
+			"rot", "round", "sin", "sq", "sqrt", "sub", "swap", "swap2", "tan", "tuck", "within"};
 
 	SemanticValidator::SemanticValidator() : mFilename(nullptr), mErrorCount(0) {
 	}
@@ -503,10 +503,10 @@ namespace Qd {
 			typeStack.pop_back();
 			typeStack.push_back(StackValueType::FLOAT);
 		}
-		// Math functions: sqrt, cb, cbrt, ceil, floor, ln, log10 (always return float)
+		// Math functions: sqrt, cb, cbrt, ceil, floor, ln, log10, round (always return float)
 		else if (strcmp(name, "sqrt") == 0 || strcmp(name, "cb") == 0 || strcmp(name, "cbrt") == 0 ||
 				 strcmp(name, "ceil") == 0 || strcmp(name, "floor") == 0 || strcmp(name, "ln") == 0 ||
-				 strcmp(name, "log10") == 0) {
+				 strcmp(name, "log10") == 0 || strcmp(name, "round") == 0) {
 			if (typeStack.empty()) {
 				std::string errorMsg = "Type error in '";
 				errorMsg += name;
@@ -583,9 +583,9 @@ namespace Qd {
 			typeStack.pop_back();
 			typeStack.push_back(StackValueType::FLOAT);
 		}
-		// Binary arithmetic operations: add, sub, mul, div
+		// Binary arithmetic operations: add, sub, mul, div, pow
 		else if (strcmp(name, "add") == 0 || strcmp(name, "sub") == 0 || strcmp(name, "mul") == 0 ||
-				 strcmp(name, "div") == 0) {
+				 strcmp(name, "div") == 0 || strcmp(name, "pow") == 0) {
 			if (typeStack.size() < 2) {
 				std::string errorMsg = "Type error in '";
 				errorMsg += name;

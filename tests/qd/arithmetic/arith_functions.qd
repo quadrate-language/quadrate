@@ -38,4 +38,16 @@ fn main() {
 	3.8 floor .     // Should print: 3
 	-2.3 ceil .     // Should print: -2
 	-2.7 floor .    // Should print: -3
+
+	// Test pow (exponentiation)
+	2 10 pow .      // Should print: 1024 (2^10)
+	3 3 pow .       // Should print: 27 (3^3)
+	5 2 pow .       // Should print: 25 (5^2)
+	2 0 pow .       // Should print: 1 (2^0)
+
+	// Test round (round to nearest integer)
+	2.5 round .     // Should print: 3
+	2.4 round .     // Should print: 2
+	-2.5 round .    // Should print: -2
+	3.7 round .     // Should print: 4
 }
