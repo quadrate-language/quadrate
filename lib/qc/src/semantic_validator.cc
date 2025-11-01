@@ -14,6 +14,7 @@
 #include <qc/ast_node_use.h>
 #include <qc/colors.h>
 #include <qc/semantic_validator.h>
+#include <sstream>
 
 namespace Qd {
 
@@ -224,7 +225,9 @@ namespace Qd {
 			modulePath = searchDir + "/" + moduleName;
 			file.open(modulePath);
 			if (file.good()) {
-				std::string source((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
+				std::stringstream buffer;
+				buffer << file.rdbuf();
+				std::string source = buffer.str();
 				file.close();
 				// Parse and add to current package namespace
 				parseModuleAndCollectFunctions(currentPackage, source);
@@ -239,7 +242,9 @@ namespace Qd {
 				modulePath = std::string(quadrateRoot) + "/" + moduleName;
 				file.open(modulePath);
 				if (file.good()) {
-					std::string source((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
+					std::stringstream buffer;
+					buffer << file.rdbuf();
+					std::string source = buffer.str();
 					file.close();
 					parseModuleAndCollectFunctions(currentPackage, source);
 					return;
@@ -253,7 +258,9 @@ namespace Qd {
 				modulePath = std::string(home) + "/quadrate/" + moduleName;
 				file.open(modulePath);
 				if (file.good()) {
-					std::string source((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
+					std::stringstream buffer;
+					buffer << file.rdbuf();
+					std::string source = buffer.str();
 					file.close();
 					parseModuleAndCollectFunctions(currentPackage, source);
 					return;
@@ -268,7 +275,9 @@ namespace Qd {
 			if (file.good()) {
 				// Found it locally - store the module directory
 				mModuleDirectories[moduleName] = mSourceDirectory + "/" + moduleName;
-				std::string source((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
+				std::stringstream buffer;
+				buffer << file.rdbuf();
+				std::string source = buffer.str();
 				file.close();
 				parseModuleAndCollectFunctions(moduleName, source);
 				return;
@@ -283,7 +292,9 @@ namespace Qd {
 				if (file.good()) {
 					// Store the module directory
 					mModuleDirectories[moduleName] = std::string(quadrateRoot) + "/" + moduleName;
-					std::string source((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
+					std::stringstream buffer;
+					buffer << file.rdbuf();
+					std::string source = buffer.str();
 					file.close();
 					parseModuleAndCollectFunctions(moduleName, source);
 					return;
@@ -299,7 +310,9 @@ namespace Qd {
 				if (file.good()) {
 					// Store the module directory
 					mModuleDirectories[moduleName] = std::string(home) + "/quadrate/" + moduleName;
-					std::string source((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
+					std::stringstream buffer;
+					buffer << file.rdbuf();
+					std::string source = buffer.str();
 					file.close();
 					parseModuleAndCollectFunctions(moduleName, source);
 					return;
