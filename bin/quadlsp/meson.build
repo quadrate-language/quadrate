@@ -2,9 +2,12 @@ quadlsp_sources = files(
 	'src/main.cc',
 )
 
+# Find jansson library for JSON handling
+jansson_dep = dependency('jansson', required: true)
+
 quadlsp_exe = executable('quadlsp',
 	quadlsp_sources,
-	dependencies: [qc_dep],
+	dependencies: [qc_dep, jansson_dep],
 	install: true
 )
 

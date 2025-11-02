@@ -11,6 +11,26 @@ A simple Language Server Protocol implementation for the Quadrate programming la
 
 ## Building
 
+### Dependencies
+
+- C++20 compatible compiler
+- Meson build system
+- jansson library (for JSON handling)
+
+Install jansson on your system:
+```bash
+# Arch Linux
+sudo pacman -S jansson
+
+# Debian/Ubuntu
+sudo apt install libjansson-dev
+
+# Fedora
+sudo dnf install jansson-devel
+```
+
+### Build Commands
+
 The LSP server is built as part of the Quadrate project:
 
 ```bash

@@ -1,276 +1,14 @@
 #include <cstring>
 #include <iostream>
+#include <jansson.h>
 #include <map>
 #include <qc/ast.h>
 #include <qc/ast_node.h>
 #include <qc/error_reporter.h>
-#include <sstream>
 #include <string>
 #include <vector>
 
-// Simple JSON builder (minimal implementation for LSP)
-class JsonBuilder {
-public:
-	JsonBuilder() {
-	}
-
-	void startObject() {
-		json_ << "{";
-		first_ = true;
-	}
-
-	void endObject() {
-		json_ << "}";
-		first_ = false; // Content was added
-	}
-
-	void startArray() {
-		json_ << "[";
-		first_ = true;
-	}
-
-	void endArray() {
-		json_ << "]";
-		first_ = false; // Content was added
-	}
-
-	void addKey(const std::string& key) {
-		if (!first_) {
-			json_ << ",";
-		}
-		json_ << "\"" << escapeString(key) << "\":";
-		first_ = false;
-	}
-
-	void addString(const std::string& value) {
-		json_ << "\"" << escapeString(value) << "\"";
-	}
-
-	void addNumber(int value) {
-		json_ << value;
-	}
-
-	void addBool(bool value) {
-		json_ << (value ? "true" : "false");
-	}
-
-	void addNull() {
-		json_ << "null";
-	}
-
-	void addRaw(const std::string& raw) {
-		json_ << raw;
-	}
-
-	std::string toString() {
-		return json_.str();
-	}
-
-	void reset() {
-		json_.str("");
-		json_.clear();
-		first_ = true;
-	}
-
-	void setNotFirst() {
-		first_ = false;
-	}
-
-private:
-	std::string escapeString(const std::string& str) {
-		std::string result;
-		for (char c : str) {
-			switch (c) {
-			case '"':
-				result += "\\\"";
-				break;
-			case '\\':
-				result += "\\\\";
-				break;
-			case '\n':
-				result += "\\n";
-				break;
-			case '\r':
-				result += "\\r";
-				break;
-			case '\t':
-				result += "\\t";
-				break;
-			default:
-				result += c;
-			}
-		}
-		return result;
-	}
-
-	std::ostringstream json_;
-	bool first_ = true;
-};
-
-// Simple JSON parser (minimal implementation for LSP)
-class JsonParser {
-public:
-	explicit JsonParser(const std::string& json) : json_(json), pos_(0) {
-	}
-
-	std::map<std::string, std::string> parseObject() {
-		std::map<std::string, std::string> result;
-		skipWhitespace();
-		if (json_[pos_] != '{') {
-			return result;
-		}
-		pos_++;
-
-		while (pos_ < json_.length()) {
-			skipWhitespace();
-			if (json_[pos_] == '}') {
-				pos_++;
-				break;
-			}
-			if (json_[pos_] == ',') {
-				pos_++;
-				continue;
-			}
-
-			// Parse key
-			std::string key = parseString();
-			skipWhitespace();
-			if (json_[pos_] == ':') {
-				pos_++;
-			}
-			skipWhitespace();
-
-			// Parse value (simplified - just capture as string)
-			std::string value = parseValue();
-			result[key] = value;
-		}
-
-		return result;
-	}
-
-	std::string getString(const std::map<std::string, std::string>& obj, const std::string& key) {
-		auto it = obj.find(key);
-		if (it != obj.end()) {
-			std::string val = it->second;
-			// Remove quotes if present
-			if (val.length() >= 2 && val[0] == '"' && val[val.length() - 1] == '"') {
-				return val.substr(1, val.length() - 2);
-			}
-			return val;
-		}
-		return "";
-	}
-
-	std::map<std::string, std::string> getObject(
-			const std::map<std::string, std::string>& obj, const std::string& key) {
-		auto it = obj.find(key);
-		if (it != obj.end()) {
-			JsonParser parser(it->second);
-			return parser.parseObject();
-		}
-		return std::map<std::string, std::string>();
-	}
-
-private:
-	void skipWhitespace() {
-		while (pos_ < json_.length() && std::isspace(static_cast<unsigned char>(json_[pos_]))) {
-			pos_++;
-		}
-	}
-
-	std::string parseString() {
-		std::string result;
-		if (json_[pos_] == '"') {
-			pos_++;
-			while (pos_ < json_.length() && json_[pos_] != '"') {
-				if (json_[pos_] == '\\' && pos_ + 1 < json_.length()) {
-					pos_++;
-					switch (json_[pos_]) {
-					case 'n':
-						result += '\n';
-						break;
-					case 'r':
-						result += '\r';
-						break;
-					case 't':
-						result += '\t';
-						break;
-					default:
-						result += json_[pos_];
-					}
-				} else {
-					result += json_[pos_];
-				}
-				pos_++;
-			}
-			if (json_[pos_] == '"') {
-				pos_++;
-			}
-		}
-		return result;
-	}
-
-	std::string parseValue() {
-		skipWhitespace();
-		size_t start = pos_;
-
-		if (json_[pos_] == '"') {
-			// String value
-			pos_++;
-			while (pos_ < json_.length() && json_[pos_] != '"') {
-				if (json_[pos_] == '\\') {
-					pos_++;
-				}
-				pos_++;
-			}
-			pos_++;
-			return json_.substr(start, pos_ - start);
-		} else if (json_[pos_] == '{') {
-			// Object value
-			int braceCount = 0;
-			while (pos_ < json_.length()) {
-				if (json_[pos_] == '{') {
-					braceCount++;
-				} else if (json_[pos_] == '}') {
-					braceCount--;
-					if (braceCount == 0) {
-						pos_++;
-						return json_.substr(start, pos_ - start);
-					}
-				}
-				pos_++;
-			}
-		} else if (json_[pos_] == '[') {
-			// Array value
-			int bracketCount = 0;
-			while (pos_ < json_.length()) {
-				if (json_[pos_] == '[') {
-					bracketCount++;
-				} else if (json_[pos_] == ']') {
-					bracketCount--;
-					if (bracketCount == 0) {
-						pos_++;
-						return json_.substr(start, pos_ - start);
-					}
-				}
-				pos_++;
-			}
-		} else {
-			// Number, bool, or null
-			while (pos_ < json_.length() && json_[pos_] != ',' && json_[pos_] != '}' && json_[pos_] != ']') {
-				pos_++;
-			}
-			return json_.substr(start, pos_ - start);
-		}
-
-		return "";
-	}
-
-	const std::string& json_;
-	size_t pos_;
-};
-
-// LSP Server
+// LSP Server using jansson for JSON handling
 class QuadrateLSP {
 public:
 	QuadrateLSP() : messageId_(0) {
@@ -314,89 +52,124 @@ private:
 		return content;
 	}
 
-	void sendMessage(const std::string& message) {
-		std::cout << "Content-Length: " << message.length() << "\r\n\r\n" << message << std::flush;
+	void sendMessage(json_t* json) {
+		char* message = json_dumps(json, JSON_COMPACT);
+		if (message) {
+			std::cout << "Content-Length: " << strlen(message) << "\r\n\r\n" << message << std::flush;
+			free(message);
+		}
+	}
+
+	std::string getJsonString(json_t* obj, const char* key) {
+		json_t* val = json_object_get(obj, key);
+		if (val && json_is_string(val)) {
+			return json_string_value(val);
+		}
+		return "";
+	}
+
+	json_t* getJsonObject(json_t* obj, const char* key) {
+		return json_object_get(obj, key);
 	}
 
 	void handleMessage(const std::string& message) {
-		JsonParser parser(message);
-		auto obj = parser.parseObject();
+		json_error_t error;
+		json_t* root = json_loads(message.c_str(), 0, &error);
 
-		std::string method = parser.getString(obj, "method");
-		std::string id = parser.getString(obj, "id");
+		if (!root) {
+			return; // Invalid JSON, ignore
+		}
+
+		std::string method = getJsonString(root, "method");
+		std::string id = getJsonString(root, "id");
+
+		// If id is not string, try integer
+		if (id.empty()) {
+			json_t* id_json = json_object_get(root, "id");
+			if (id_json && json_is_integer(id_json)) {
+				id = std::to_string(json_integer_value(id_json));
+			}
+		}
 
 		if (method == "initialize") {
 			handleInitialize(id);
 		} else if (method == "initialized") {
 			// Nothing to do
 		} else if (method == "textDocument/didOpen") {
-			auto params = parser.getObject(obj, "params");
-			auto textDoc = parser.getObject(params, "textDocument");
-			std::string uri = parser.getString(textDoc, "uri");
-			std::string text = parser.getString(textDoc, "text");
-			handleDidOpen(uri, text);
+			json_t* params = getJsonObject(root, "params");
+			if (params) {
+				json_t* textDoc = getJsonObject(params, "textDocument");
+				if (textDoc) {
+					std::string uri = getJsonString(textDoc, "uri");
+					std::string text = getJsonString(textDoc, "text");
+					handleDidOpen(uri, text);
+				}
+			}
 		} else if (method == "textDocument/didChange") {
-			auto params = parser.getObject(obj, "params");
-			auto textDoc = parser.getObject(params, "textDocument");
-			std::string uri = parser.getString(textDoc, "uri");
-			// Get content changes (simplified - assume full sync)
-			std::string changes = parser.getString(params, "contentChanges");
-			// For now, we'll re-parse on save
+			// For full sync, we could re-parse but we'll keep it simple
 		} else if (method == "textDocument/didSave") {
-			auto params = parser.getObject(obj, "params");
-			auto textDoc = parser.getObject(params, "textDocument");
-			std::string uri = parser.getString(textDoc, "uri");
-			std::string text = parser.getString(params, "text");
-			if (!text.empty()) {
-				handleDidOpen(uri, text);
+			json_t* params = getJsonObject(root, "params");
+			if (params) {
+				json_t* textDoc = getJsonObject(params, "textDocument");
+				if (textDoc) {
+					std::string uri = getJsonString(textDoc, "uri");
+					std::string text = getJsonString(params, "text");
+					if (!text.empty()) {
+						handleDidOpen(uri, text);
+					}
+				}
 			}
 		} else if (method == "textDocument/formatting") {
-			auto params = parser.getObject(obj, "params");
-			auto textDoc = parser.getObject(params, "textDocument");
-			std::string uri = parser.getString(textDoc, "uri");
-			handleFormatting(id, uri);
+			json_t* params = getJsonObject(root, "params");
+			if (params) {
+				json_t* textDoc = getJsonObject(params, "textDocument");
+				if (textDoc) {
+					std::string uri = getJsonString(textDoc, "uri");
+					handleFormatting(id, uri);
+				}
+			}
 		} else if (method == "textDocument/completion") {
-			auto params = parser.getObject(obj, "params");
-			auto textDoc = parser.getObject(params, "textDocument");
-			std::string uri = parser.getString(textDoc, "uri");
-			handleCompletion(id, uri);
+			json_t* params = getJsonObject(root, "params");
+			if (params) {
+				json_t* textDoc = getJsonObject(params, "textDocument");
+				if (textDoc) {
+					std::string uri = getJsonString(textDoc, "uri");
+					handleCompletion(id, uri);
+				}
+			}
 		} else if (method == "shutdown") {
 			handleShutdown(id);
 		} else if (method == "exit") {
+			json_decref(root);
 			exit(0);
 		}
+
+		json_decref(root);
 	}
 
 	void handleInitialize(const std::string& id) {
-		JsonBuilder json;
-		json.startObject();
-		json.addKey("jsonrpc");
-		json.addString("2.0");
-		json.addKey("id");
-		json.addNumber(std::stoi(id));
-		json.addKey("result");
-		json.startObject();
-		json.addKey("capabilities");
-		json.startObject();
-		json.addKey("textDocumentSync");
-		json.addNumber(1); // Full sync
-		json.addKey("documentFormattingProvider");
-		json.addBool(true);
-		json.addKey("completionProvider");
-		json.startObject();
-		json.endObject();
-		json.endObject();
-		json.addKey("serverInfo");
-		json.startObject();
-		json.addKey("name");
-		json.addString("quadlsp");
-		json.addKey("version");
-		json.addString("0.1.0");
-		json.endObject();
-		json.endObject();
-		json.endObject();
+		json_t* response = json_object();
+		json_object_set_new(response, "jsonrpc", json_string("2.0"));
+		json_object_set_new(response, "id", json_integer(std::stoi(id)));
 
-		sendMessage(json.toString());
+		json_t* result = json_object();
+		json_t* capabilities = json_object();
+
+		json_object_set_new(capabilities, "textDocumentSync", json_integer(1)); // Full sync
+		json_object_set_new(capabilities, "documentFormattingProvider", json_true());
+		json_object_set_new(capabilities, "completionProvider", json_object());
+
+		json_object_set_new(result, "capabilities", capabilities);
+
+		json_t* serverInfo = json_object();
+		json_object_set_new(serverInfo, "name", json_string("quadlsp"));
+		json_object_set_new(serverInfo, "version", json_string("0.1.0"));
+		json_object_set_new(result, "serverInfo", serverInfo);
+
+		json_object_set_new(response, "result", result);
+
+		sendMessage(response);
+		json_decref(response);
 	}
 
 	void handleDidOpen(const std::string& uri, const std::string& text) {
@@ -406,134 +179,97 @@ private:
 
 	void publishDiagnostics(const std::string& uri, const std::string& text) {
 		// Parse using Ast class
-		// Note: Ast::generate creates its own ErrorReporter internally and prints errors to stderr
-		// For a production LSP, we'd want to modify Ast to accept an ErrorReporter parameter
 		Qd::Ast ast;
 		Qd::IAstNode* root = ast.generate(text.c_str(), false, nullptr);
+		(void)root; // Suppress unused warning
 
-		JsonBuilder json;
-		json.startObject();
-		json.addKey("jsonrpc");
-		json.addString("2.0");
-		json.addKey("method");
-		json.addString("textDocument/publishDiagnostics");
-		json.addKey("params");
-		json.startObject();
-		json.addKey("uri");
-		json.addString(uri);
-		json.addKey("diagnostics");
-		json.startArray();
+		json_t* notification = json_object();
+		json_object_set_new(notification, "jsonrpc", json_string("2.0"));
+		json_object_set_new(notification, "method", json_string("textDocument/publishDiagnostics"));
 
-		// For now, if there are errors, show a generic diagnostic
-		// TODO: Modify Ast class to accept custom ErrorReporter for detailed diagnostics
+		json_t* params = json_object();
+		json_object_set_new(params, "uri", json_string(uri.c_str()));
+
+		json_t* diagnostics = json_array();
+
+		// If there are errors, show a generic diagnostic
 		if (ast.hasErrors()) {
-			json.startObject();
-			json.addKey("range");
-			json.startObject();
-			json.addKey("start");
-			json.startObject();
-			json.addKey("line");
-			json.addNumber(0);
-			json.addKey("character");
-			json.addNumber(0);
-			json.endObject();
-			json.addKey("end");
-			json.startObject();
-			json.addKey("line");
-			json.addNumber(0);
-			json.addKey("character");
-			json.addNumber(10);
-			json.endObject();
-			json.endObject();
-			json.addKey("severity");
-			json.addNumber(1); // Error
-			json.addKey("message");
-			json.addString("Syntax error(s) found. Check console for details.");
-			json.endObject();
+			json_t* diag = json_object();
+
+			json_t* range = json_object();
+			json_t* start = json_object();
+			json_object_set_new(start, "line", json_integer(0));
+			json_object_set_new(start, "character", json_integer(0));
+			json_t* end = json_object();
+			json_object_set_new(end, "line", json_integer(0));
+			json_object_set_new(end, "character", json_integer(10));
+			json_object_set_new(range, "start", start);
+			json_object_set_new(range, "end", end);
+
+			json_object_set_new(diag, "range", range);
+			json_object_set_new(diag, "severity", json_integer(1)); // Error
+			json_object_set_new(diag, "message", json_string("Syntax error(s) found. Check console for details."));
+
+			json_array_append_new(diagnostics, diag);
 		}
 
-		json.endArray();
-		json.endObject();
-		json.endObject();
+		json_object_set_new(params, "diagnostics", diagnostics);
+		json_object_set_new(notification, "params", params);
 
-		sendMessage(json.toString());
-
-		// Ast destructor will clean up the root node
-		(void)root; // Suppress unused warning
+		sendMessage(notification);
+		json_decref(notification);
 	}
 
 	void handleFormatting(const std::string& id, const std::string& uri) {
 		(void)uri; // Not used yet
-		// For formatting, we'd need to integrate with quadfmt
-		// For now, return empty edit list
-		JsonBuilder json;
-		json.startObject();
-		json.addKey("jsonrpc");
-		json.addString("2.0");
-		json.addKey("id");
-		json.addNumber(std::stoi(id));
-		json.addKey("result");
-		json.startArray();
-		json.endArray();
-		json.endObject();
 
-		sendMessage(json.toString());
+		json_t* response = json_object();
+		json_object_set_new(response, "jsonrpc", json_string("2.0"));
+		json_object_set_new(response, "id", json_integer(std::stoi(id)));
+		json_object_set_new(response, "result", json_array()); // Empty array for now
+
+		sendMessage(response);
+		json_decref(response);
 	}
 
 	void handleCompletion(const std::string& id, const std::string& uri) {
 		(void)uri; // Not used yet
-		// Return built-in instruction completions
+
 		static const char* instructions[] = {"add", "sub", "mul", "div", "dup", "swap", "drop", "over", "rot", "print",
 				"prints", "eq", "neq", "lt", "gt", "lte", "gte", "and", "or", "not", "inc", "dec", "abs", "sqrt", "sq",
 				"sin", "cos", "tan", "asin", "acos", "atan", "ln", "log10", "pow", "min", "max", "ceil", "floor",
 				"round", "if", "for", "switch", "case", "default", "break", "continue", "defer"};
 
-		JsonBuilder json;
-		json.startObject();
-		json.addKey("jsonrpc");
-		json.addString("2.0");
-		json.addKey("id");
-		json.addNumber(std::stoi(id));
-		json.addKey("result");
-		json.startObject();
-		json.addKey("isIncomplete");
-		json.addBool(false);
-		json.addKey("items");
-		json.startArray();
+		json_t* response = json_object();
+		json_object_set_new(response, "jsonrpc", json_string("2.0"));
+		json_object_set_new(response, "id", json_integer(std::stoi(id)));
 
-		bool firstItem = true;
+		json_t* result = json_object();
+		json_object_set_new(result, "isIncomplete", json_false());
+
+		json_t* items = json_array();
 		for (size_t i = 0; i < sizeof(instructions) / sizeof(instructions[0]); i++) {
-			if (!firstItem) {
-				json.addRaw(",");
-			}
-			firstItem = false;
-			json.startObject();
-			json.addKey("label");
-			json.addString(instructions[i]);
-			json.addKey("kind");
-			json.addNumber(3); // Function
-			json.endObject();
+			json_t* item = json_object();
+			json_object_set_new(item, "label", json_string(instructions[i]));
+			json_object_set_new(item, "kind", json_integer(3)); // Function
+			json_array_append_new(items, item);
 		}
 
-		json.endArray();
-		json.endObject();
-		json.endObject();
+		json_object_set_new(result, "items", items);
+		json_object_set_new(response, "result", result);
 
-		sendMessage(json.toString());
+		sendMessage(response);
+		json_decref(response);
 	}
 
 	void handleShutdown(const std::string& id) {
-		JsonBuilder json;
-		json.startObject();
-		json.addKey("jsonrpc");
-		json.addString("2.0");
-		json.addKey("id");
-		json.addNumber(std::stoi(id));
-		json.addKey("result");
-		json.addNull();
-		json.endObject();
+		json_t* response = json_object();
+		json_object_set_new(response, "jsonrpc", json_string("2.0"));
+		json_object_set_new(response, "id", json_integer(std::stoi(id)));
+		json_object_set_new(response, "result", json_null());
 
-		sendMessage(json.toString());
+		sendMessage(response);
+		json_decref(response);
 	}
 
 	std::map<std::string, std::string> documents_;
