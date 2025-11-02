@@ -13,6 +13,6 @@ u8t_dep = declare_dependency(
 
 quadfmt = executable('quadfmt',
 		quadfmt_sources,
-		dependencies: u8t_dep,
+		dependencies: [u8t_dep, qc_dep],
 		install: false
 )

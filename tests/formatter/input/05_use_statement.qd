@@ -1,0 +1,5 @@
+use math
+use  std
+
+
+fn main(){math::add print}
