@@ -15,6 +15,7 @@ debug:
 	@mkdir -p dist/bin dist/lib dist/include
 	@cp -f $(BUILD_DIR_DEBUG)/bin/quadc/quadc dist/bin/
 	@cp -f $(BUILD_DIR_DEBUG)/bin/quadfmt/quadfmt dist/bin/
+	@cp -f $(BUILD_DIR_DEBUG)/bin/quadlsp/quadlsp dist/bin/
 	@cp -f $(BUILD_DIR_DEBUG)/lib/quadrate/libquadrate.so dist/lib/
 	@cp -f $(BUILD_DIR_DEBUG)/lib/quadrate/libquadrate_static.a dist/lib/
 	@cp -rf lib/quadrate/include/quadrate dist/include/
@@ -25,6 +26,7 @@ release:
 	@mkdir -p dist/bin dist/lib dist/include
 	@cp -f $(BUILD_DIR_RELEASE)/bin/quadc/quadc dist/bin/
 	@cp -f $(BUILD_DIR_RELEASE)/bin/quadfmt/quadfmt dist/bin/
+	@cp -f $(BUILD_DIR_RELEASE)/bin/quadlsp/quadlsp dist/bin/
 	@cp -f $(BUILD_DIR_RELEASE)/lib/quadrate/libquadrate.so dist/lib/
 	@cp -f $(BUILD_DIR_RELEASE)/lib/quadrate/libquadrate_static.a dist/lib/
 	@cp -rf lib/quadrate/include/quadrate dist/include/
@@ -32,6 +34,9 @@ release:
 tests: debug
 	@echo "=== Running C/C++ unit tests ==="
 	meson test -C $(BUILD_DIR_DEBUG) test_str test_runtime test_ast test_semantic_validator --print-errorlogs
+	@echo ""
+	@echo "=== Running LSP tests ==="
+	meson test -C $(BUILD_DIR_DEBUG) test_lsp test_lsp_extended test_lsp_stress --print-errorlogs
 	@echo ""
 	@echo "=== Running Quadrate language tests ==="
 	QUADC=$(BUILD_DIR_DEBUG)/bin/quadc/quadc bash tests/run_qd_tests.sh
@@ -56,6 +61,7 @@ install: release
 	install -d $(DESTDIR)$(PREFIX)/include
 	install -m 755 dist/bin/quadc $(DESTDIR)$(PREFIX)/bin/
 	install -m 755 dist/bin/quadfmt $(DESTDIR)$(PREFIX)/bin/
+	install -m 755 dist/bin/quadlsp $(DESTDIR)$(PREFIX)/bin/
 	install -m 644 dist/lib/libquadrate.so $(DESTDIR)$(PREFIX)/lib/
 	install -m 644 dist/lib/libquadrate_static.a $(DESTDIR)$(PREFIX)/lib/
 	cp -r dist/include/quadrate $(DESTDIR)$(PREFIX)/include/
@@ -63,6 +69,7 @@ install: release
 uninstall:
 	rm -f $(DESTDIR)$(PREFIX)/bin/quadc
 	rm -f $(DESTDIR)$(PREFIX)/bin/quadfmt
+	rm -f $(DESTDIR)$(PREFIX)/bin/quadlsp
 	rm -f $(DESTDIR)$(PREFIX)/lib/libquadrate.so
 	rm -f $(DESTDIR)$(PREFIX)/lib/libquadrate_static.a
 	rm -rf $(DESTDIR)$(PREFIX)/include/quadrate
