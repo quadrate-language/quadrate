@@ -5,11 +5,9 @@
 
 set -e
 
-# Colors
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-NC='\033[0m' # No Color
+# Get script directory and source shared utilities
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/test_utils.sh"
 
 # Directories
 TEST_DIR="tests/formatter"
@@ -17,18 +15,10 @@ EXPECTED_DIR="tests/formatter/expected"
 TEMP_DIR=$(mktemp -d)
 QUADFMT="${QUADFMT:-dist/bin/quadfmt}"
 
-# Counters
-TESTS_RUN=0
-TESTS_PASSED=0
-TESTS_FAILED=0
-
 # Cleanup on exit
 trap "rm -rf $TEMP_DIR" EXIT
 
-echo "================================================"
-echo "  Quadrate Formatter Test Suite"
-echo "================================================"
-echo ""
+print_header "Quadrate Formatter Test Suite"
 
 # Function to run a single formatter test
 run_formatter_test() {
@@ -37,35 +27,29 @@ run_formatter_test() {
 	local expected_file="$EXPECTED_DIR/${test_name}.qd"
 	local output_file="$TEMP_DIR/${test_name}.qd"
 
-	TESTS_RUN=$((TESTS_RUN + 1))
+	increment_test_counter
 
 	# Check if expected output exists
 	if [ ! -f "$expected_file" ]; then
-		echo -e "${YELLOW}SKIP${NC}  $test_name (no expected output file)"
+		log_skip "$test_name" "no expected output file"
 		return
 	fi
 
 	# Run formatter
 	if ! "$QUADFMT" -w "$test_file" > "$output_file" 2>"$TEMP_DIR/${test_name}.err"; then
-		echo -e "${RED}FAIL${NC}  $test_name (formatter failed)"
+		log_fail "$test_name" "formatter failed"
 		cat "$TEMP_DIR/${test_name}.err"
-		TESTS_FAILED=$((TESTS_FAILED + 1))
 		return
 	fi
 
 	# Compare output with expected
 	if diff -q "$expected_file" "$output_file" > /dev/null 2>&1; then
-		echo -e "${GREEN}PASS${NC}  $test_name"
-		TESTS_PASSED=$((TESTS_PASSED + 1))
+		log_pass "$test_name"
 	else
-		echo -e "${RED}FAIL${NC}  $test_name (output mismatch)"
-		echo "  Expected:"
-		sed 's/^/    /' "$expected_file"
-		echo "  Got:"
-		sed 's/^/    /' "$output_file"
-		echo "  Diff:"
-		diff -u "$expected_file" "$output_file" | sed 's/^/    /' || true
-		TESTS_FAILED=$((TESTS_FAILED + 1))
+		log_fail "$test_name" "output mismatch"
+		print_indented "Expected" "$expected_file"
+		print_indented "Got" "$output_file"
+		print_diff "$expected_file" "$output_file"
 	fi
 }
 
@@ -76,32 +60,27 @@ run_idempotency_test() {
 	local first_format="$TEMP_DIR/${test_name}_1.qd"
 	local second_format="$TEMP_DIR/${test_name}_2.qd"
 
-	TESTS_RUN=$((TESTS_RUN + 1))
+	increment_test_counter
 
 	# Format once
 	if ! "$QUADFMT" -w "$test_file" > "$first_format" 2>/dev/null; then
-		echo -e "${YELLOW}SKIP${NC}  ${test_name}_idempotent (formatter failed)"
+		log_skip "${test_name}_idempotent" "formatter failed"
 		return
 	fi
 
 	# Format the formatted output
 	if ! "$QUADFMT" -w "$first_format" > "$second_format" 2>/dev/null; then
-		echo -e "${RED}FAIL${NC}  ${test_name}_idempotent (second format failed)"
-		TESTS_FAILED=$((TESTS_FAILED + 1))
+		log_fail "${test_name}_idempotent" "second format failed"
 		return
 	fi
 
 	# Compare
 	if diff -q "$first_format" "$second_format" > /dev/null 2>&1; then
-		echo -e "${GREEN}PASS${NC}  ${test_name}_idempotent"
-		TESTS_PASSED=$((TESTS_PASSED + 1))
+		log_pass "${test_name}_idempotent"
 	else
-		echo -e "${RED}FAIL${NC}  ${test_name}_idempotent (not idempotent)"
-		echo "  First format:"
-		sed 's/^/    /' "$first_format" | head -20
-		echo "  Second format:"
-		sed 's/^/    /' "$second_format" | head -20
-		TESTS_FAILED=$((TESTS_FAILED + 1))
+		log_fail "${test_name}_idempotent" "not idempotent"
+		print_indented "First format" "$first_format" 20
+		print_indented "Second format" "$second_format" 20
 	fi
 }
 
@@ -125,21 +104,6 @@ for test_file in tests/qd/*/*.qd tests/qd/*/*/*.qd; do
 	run_idempotency_test "$test_file"
 done
 
-# Print summary
-echo ""
-echo "================================================"
-echo "  Test Summary"
-echo "================================================"
-echo "Tests run:    $TESTS_RUN"
-echo -e "Tests passed: ${GREEN}$TESTS_PASSED${NC}"
-echo -e "Tests failed: ${RED}$TESTS_FAILED${NC}"
-echo ""
-
-# Exit with appropriate code
-if [ "$TESTS_FAILED" -eq 0 ]; then
-	echo -e "${GREEN}All tests passed!${NC}"
-	exit 0
-else
-	echo -e "${RED}Some tests failed!${NC}"
-	exit 1
-fi
+# Print summary and exit
+print_summary
+print_result_and_exit

@@ -5,21 +5,14 @@
 
 set -u  # Exit on undefined variable
 
-# Colors for output
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-NC='\033[0m' # No Color
+# Get script directory and source shared utilities
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/test_utils.sh"
 
 # Paths
 QUADC="${QUADC:-build/debug/bin/quadc/quadc}"
 TEST_DIR="tests/qd"
 TEMP_DIR="/tmp/qd_tests_$$"
-
-# Counters
-TESTS_RUN=0
-TESTS_PASSED=0
-TESTS_FAILED=0
 
 # Create temp directory
 mkdir -p "$TEMP_DIR"
@@ -27,10 +20,7 @@ mkdir -p "$TEMP_DIR"
 # Cleanup on exit
 trap "rm -rf $TEMP_DIR" EXIT
 
-echo "================================================"
-echo "  Quadrate Language Test Suite"
-echo "================================================"
-echo ""
+print_header "Quadrate Language Test Suite"
 
 # Function to run a single test
 run_test() {
@@ -40,43 +30,36 @@ run_test() {
     local output_file="$TEMP_DIR/${test_name}.out"
     local binary="$TEMP_DIR/${test_name}"
 
-    TESTS_RUN=$((TESTS_RUN + 1))
+    increment_test_counter
 
     # Check if expected output exists
     if [ ! -f "$expected_file" ]; then
-        echo -e "${YELLOW}SKIP${NC}  $test_name (no expected output file)"
+        log_skip "$test_name" "no expected output file"
         return
     fi
 
     # Compile the test
     if ! "$QUADC" "$test_file" -o "$binary" 2>"$TEMP_DIR/${test_name}.err"; then
-        echo -e "${RED}FAIL${NC}  $test_name (compilation failed)"
+        log_fail "$test_name" "compilation failed"
         cat "$TEMP_DIR/${test_name}.err"
-        TESTS_FAILED=$((TESTS_FAILED + 1))
         return
     fi
 
     # Run the test and capture output
     if ! "$binary" > "$output_file" 2>&1; then
-        echo -e "${RED}FAIL${NC}  $test_name (runtime error)"
+        log_fail "$test_name" "runtime error"
         cat "$output_file"
-        TESTS_FAILED=$((TESTS_FAILED + 1))
         return
     fi
 
     # Compare output with expected
     if diff -q "$expected_file" "$output_file" > /dev/null 2>&1; then
-        echo -e "${GREEN}PASS${NC}  $test_name"
-        TESTS_PASSED=$((TESTS_PASSED + 1))
+        log_pass "$test_name"
     else
-        echo -e "${RED}FAIL${NC}  $test_name (output mismatch)"
-        echo "  Expected:"
-        sed 's/^/    /' "$expected_file"
-        echo "  Got:"
-        sed 's/^/    /' "$output_file"
-        echo "  Diff:"
-        diff -u "$expected_file" "$output_file" | sed 's/^/    /'
-        TESTS_FAILED=$((TESTS_FAILED + 1))
+        log_fail "$test_name" "output mismatch"
+        print_indented "Expected" "$expected_file"
+        print_indented "Got" "$output_file"
+        print_diff "$expected_file" "$output_file"
     fi
 }
 
@@ -88,21 +71,6 @@ done < <(find "$TEST_DIR" -name "*.qd" -type f \
     ! -path "*/modules/*/*" \
     | sort)
 
-# Print summary
-echo ""
-echo "================================================"
-echo "  Test Summary"
-echo "================================================"
-echo "Tests run:    $TESTS_RUN"
-echo -e "Tests passed: ${GREEN}$TESTS_PASSED${NC}"
-echo -e "Tests failed: ${RED}$TESTS_FAILED${NC}"
-echo ""
-
-# Exit with appropriate code
-if [ "$TESTS_FAILED" -eq 0 ]; then
-    echo -e "${GREEN}All tests passed!${NC}"
-    exit 0
-else
-    echo -e "${RED}Some tests failed!${NC}"
-    exit 1
-fi
+# Print summary and exit
+print_summary
+print_result_and_exit
