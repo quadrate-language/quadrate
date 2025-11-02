@@ -1,12 +1,26 @@
 #include <cstring>
+#include <fstream>
 #include <iostream>
 #include <jansson.h>
 #include <map>
 #include <qc/ast.h>
 #include <qc/ast_node.h>
+#include <qc/ast_node_function.h>
+#include <qc/ast_node_parameter.h>
+#include <qc/ast_node_program.h>
 #include <qc/error_reporter.h>
+#include <sstream>
 #include <string>
 #include <vector>
+
+// Structure to hold function information for completions
+struct FunctionInfo {
+	std::string name;
+	std::vector<std::string> inputParams; // "name:type" format
+	std::vector<std::string> outputParams; // "name:type" format
+	std::string signature; // Full signature string
+	std::string snippet; // LSP snippet with placeholders
+};
 
 // LSP Server using jansson for JSON handling
 class QuadrateLSP {
@@ -157,7 +171,11 @@ private:
 
 		json_object_set_new(capabilities, "textDocumentSync", json_integer(1)); // Full sync
 		json_object_set_new(capabilities, "documentFormattingProvider", json_true());
-		json_object_set_new(capabilities, "completionProvider", json_object());
+
+		// Enable snippet support in completions
+		json_t* completionProvider = json_object();
+		json_object_set_new(completionProvider, "resolveProvider", json_false());
+		json_object_set_new(capabilities, "completionProvider", completionProvider);
 
 		json_object_set_new(result, "capabilities", capabilities);
 
@@ -233,8 +251,6 @@ private:
 	}
 
 	void handleCompletion(const std::string& id, const std::string& uri) {
-		(void)uri; // Not used yet
-
 		static const char* instructions[] = {"add", "sub", "mul", "div", "dup", "swap", "drop", "over", "rot", "print",
 				"prints", "eq", "neq", "lt", "gt", "lte", "gte", "and", "or", "not", "inc", "dec", "abs", "sqrt", "sq",
 				"sin", "cos", "tan", "asin", "acos", "atan", "ln", "log10", "pow", "min", "max", "ceil", "floor",
@@ -248,11 +264,78 @@ private:
 		json_object_set_new(result, "isIncomplete", json_false());
 
 		json_t* items = json_array();
+
+		// Add built-in instructions
 		for (size_t i = 0; i < sizeof(instructions) / sizeof(instructions[0]); i++) {
 			json_t* item = json_object();
 			json_object_set_new(item, "label", json_string(instructions[i]));
 			json_object_set_new(item, "kind", json_integer(3)); // Function
+			json_object_set_new(item, "detail", json_string("Built-in instruction"));
 			json_array_append_new(items, item);
+		}
+
+		// Add user-defined functions from the current document
+		std::string documentText;
+		auto docIter = documents_.find(uri);
+		if (docIter != documents_.end()) {
+			documentText = docIter->second;
+		} else {
+			// Try to read file from disk if it's a file:// URI
+			if (uri.substr(0, 7) == "file://") {
+				std::string filePath = uri.substr(7);
+				std::ifstream file(filePath);
+				if (file.good()) {
+					std::stringstream buffer;
+					buffer << file.rdbuf();
+					documentText = buffer.str();
+				}
+			}
+		}
+
+		if (!documentText.empty()) {
+			std::vector<FunctionInfo> functions = extractFunctions(documentText);
+
+			for (const auto& func : functions) {
+				json_t* item = json_object();
+				json_object_set_new(item, "label", json_string(func.name.c_str()));
+				json_object_set_new(item, "kind", json_integer(3)); // Function
+
+				// Add snippet with placeholders
+				json_t* insertTextFormat = json_integer(2); // Snippet format
+				json_object_set_new(item, "insertTextFormat", insertTextFormat);
+				json_object_set_new(item, "insertText", json_string(func.snippet.c_str()));
+
+				// Add signature as detail and documentation
+				json_object_set_new(item, "detail", json_string(func.signature.c_str()));
+
+				// Build documentation showing what needs to be on the stack
+				std::ostringstream docStream;
+				docStream << "**Function signature:**\n```quadrate\n" << func.signature << "\n```\n\n";
+				if (!func.inputParams.empty()) {
+					docStream << "**Stack before call:** ";
+					for (size_t i = 0; i < func.inputParams.size(); i++) {
+						if (i > 0)
+							docStream << ", ";
+						docStream << func.inputParams[i];
+					}
+					docStream << "\n";
+				}
+				if (!func.outputParams.empty()) {
+					docStream << "**Stack after call:** ";
+					for (size_t i = 0; i < func.outputParams.size(); i++) {
+						if (i > 0)
+							docStream << ", ";
+						docStream << func.outputParams[i];
+					}
+				}
+
+				json_t* documentation = json_object();
+				json_object_set_new(documentation, "kind", json_string("markdown"));
+				json_object_set_new(documentation, "value", json_string(docStream.str().c_str()));
+				json_object_set_new(item, "documentation", documentation);
+
+				json_array_append_new(items, item);
+			}
 		}
 
 		json_object_set_new(result, "items", items);
@@ -270,6 +353,91 @@ private:
 
 		sendMessage(response);
 		json_decref(response);
+	}
+
+	std::vector<FunctionInfo> extractFunctions(const std::string& text) {
+		std::vector<FunctionInfo> functions;
+
+		// Parse the document
+		Qd::Ast ast;
+		Qd::IAstNode* root = ast.generate(text.c_str(), false, nullptr);
+
+		if (!root || ast.hasErrors()) {
+			return functions; // Return empty on parse errors
+		}
+
+		// Root should be AstProgram
+		if (root->type() != Qd::IAstNode::Type::PROGRAM) {
+			return functions;
+		}
+
+		// Iterate through program children looking for function declarations
+		for (size_t i = 0; i < root->childCount(); i++) {
+			Qd::IAstNode* child = root->child(i);
+			if (child && child->type() == Qd::IAstNode::Type::FUNCTION_DECLARATION) {
+				Qd::AstNodeFunctionDeclaration* funcNode = static_cast<Qd::AstNodeFunctionDeclaration*>(child);
+
+				FunctionInfo info;
+				info.name = funcNode->name();
+
+				// Build signature parts
+				std::ostringstream sigStream;
+				sigStream << "fn " << info.name << "(";
+
+				// Extract input parameters
+				const auto& inputs = funcNode->inputParameters();
+				for (size_t j = 0; j < inputs.size(); j++) {
+					Qd::AstNodeParameter* param = static_cast<Qd::AstNodeParameter*>(inputs[j]);
+					std::string paramStr = param->name() + ":" + param->typeString();
+					info.inputParams.push_back(paramStr);
+
+					if (j > 0)
+						sigStream << " ";
+					sigStream << paramStr;
+				}
+
+				sigStream << " -- ";
+
+				// Extract output parameters
+				const auto& outputs = funcNode->outputParameters();
+				for (size_t j = 0; j < outputs.size(); j++) {
+					Qd::AstNodeParameter* param = static_cast<Qd::AstNodeParameter*>(outputs[j]);
+					std::string paramStr = param->name() + ":" + param->typeString();
+					info.outputParams.push_back(paramStr);
+
+					if (j > 0)
+						sigStream << " ";
+					sigStream << paramStr;
+				}
+
+				sigStream << ")";
+				info.signature = sigStream.str();
+
+				// Build snippet with placeholders for input parameters
+				std::ostringstream snippetStream;
+				for (size_t j = 0; j < info.inputParams.size(); j++) {
+					const std::string& param = info.inputParams[j];
+					// Extract just the name part (before the colon)
+					size_t colonPos = param.find(':');
+					std::string paramName = (colonPos != std::string::npos) ? param.substr(0, colonPos) : param;
+
+					snippetStream << "${" << (j + 1) << ":" << paramName << "}";
+					if (j < info.inputParams.size() - 1) {
+						snippetStream << " ";
+					}
+				}
+				if (!info.inputParams.empty()) {
+					snippetStream << " ";
+				}
+				snippetStream << info.name;
+
+				info.snippet = snippetStream.str();
+
+				functions.push_back(info);
+			}
+		}
+
+		return functions;
 	}
 
 	std::map<std::string, std::string> documents_;
