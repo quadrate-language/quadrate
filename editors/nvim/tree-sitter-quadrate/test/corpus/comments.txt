@@ -1,0 +1,72 @@
+================================================================================
+Line comments
+================================================================================
+
+// This is a comment
+fn test( -- ) {
+    // Comment in function
+    5 10 add
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (comment)
+  (function_definition
+    name: (identifier)
+    signature: (stack_signature)
+    body: (block
+      (comment)
+      (number)
+      (number)
+      (builtin_operation))))
+
+================================================================================
+Block comments
+================================================================================
+
+/* Block comment */
+fn test( -- ) {
+    /* Multi-line
+       block comment */
+    5 10 add
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (comment)
+  (function_definition
+    name: (identifier)
+    signature: (stack_signature)
+    body: (block
+      (comment)
+      (number)
+      (number)
+      (builtin_operation))))
+
+================================================================================
+Mixed comments
+================================================================================
+
+// Line comment
+/* Block comment */
+fn test( -- ) {
+    5 // inline comment
+    10 /* inline block */ add
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (comment)
+  (comment)
+  (function_definition
+    name: (identifier)
+    signature: (stack_signature)
+    body: (block
+      (number)
+      (comment)
+      (number)
+      (comment)
+      (builtin_operation))))

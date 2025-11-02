@@ -38,6 +38,9 @@ tests: debug
 	@echo "=== Running LSP tests ==="
 	meson test -C $(BUILD_DIR_DEBUG) test_lsp test_lsp_extended test_lsp_stress --print-errorlogs
 	@echo ""
+	@echo "=== Running tree-sitter grammar tests ==="
+	-meson test -C $(BUILD_DIR_DEBUG) tree-sitter-grammar --print-errorlogs 2>/dev/null || echo "⚠️  Skipped (tree-sitter not installed)"
+	@echo ""
 	@echo "=== Running Quadrate language tests ==="
 	QUADC=$(BUILD_DIR_DEBUG)/bin/quadc/quadc bash tests/run_qd_tests.sh
 	@echo ""

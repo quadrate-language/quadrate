@@ -1,0 +1,82 @@
+================================================================================
+Function definition without signature
+================================================================================
+
+fn test( -- ) {
+    5 10 add
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (function_definition
+    name: (identifier)
+    signature: (stack_signature)
+    body: (block
+      (number)
+      (number)
+      (builtin_operation))))
+
+================================================================================
+Function definition with parameters
+================================================================================
+
+fn multiply( x:float y:float -- z:float ) {
+    mul
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (function_definition
+    name: (identifier)
+    signature: (stack_signature
+      (parameter_list
+        (parameter
+          name: (identifier)
+          type: (type))
+        (parameter
+          name: (identifier)
+          type: (type)))
+      (parameter_list
+        (parameter
+          name: (identifier)
+          type: (type))))
+    body: (block
+      (builtin_operation))))
+
+================================================================================
+Multiple functions
+================================================================================
+
+fn add_two( x:float -- result:float ) {
+    2 add
+}
+
+fn main( -- ) {
+    5 add_two
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (function_definition
+    name: (identifier)
+    signature: (stack_signature
+      (parameter_list
+        (parameter
+          name: (identifier)
+          type: (type)))
+      (parameter_list
+        (parameter
+          name: (identifier)
+          type: (type))))
+    body: (block
+      (number)
+      (builtin_operation)))
+  (function_definition
+    name: (identifier)
+    signature: (stack_signature)
+    body: (block
+      (number)
+      (identifier))))

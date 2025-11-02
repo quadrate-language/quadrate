@@ -1,0 +1,54 @@
+================================================================================
+Constant definition
+================================================================================
+
+const pi = 3.14159
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (constant_definition
+    name: (identifier)
+    value: (number)))
+
+================================================================================
+Use statement
+================================================================================
+
+use std
+use math
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (use_statement
+    module: (identifier))
+  (use_statement
+    module: (identifier)))
+
+================================================================================
+Mixed declarations
+================================================================================
+
+use std
+
+const tau = 6.28
+
+fn main( -- ) {
+    tau print
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (use_statement
+    module: (identifier))
+  (constant_definition
+    name: (identifier)
+    value: (number))
+  (function_definition
+    name: (identifier)
+    signature: (stack_signature)
+    body: (block
+      (identifier)
+      (builtin_operation))))
