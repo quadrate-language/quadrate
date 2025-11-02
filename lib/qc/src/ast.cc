@@ -46,6 +46,35 @@ namespace Qd {
 		return false;
 	}
 
+	// Helper function to convert UTF-8 character index to byte offset
+	static size_t charIndexToByteOffset(const char* src, size_t charIndex) {
+		size_t byteOffset = 0;
+		size_t currentCharIndex = 0;
+
+		while (currentCharIndex < charIndex && src[byteOffset] != '\0') {
+			unsigned char c = static_cast<unsigned char>(src[byteOffset]);
+			if ((c & 0x80) == 0) {
+				// Single-byte character (ASCII)
+				byteOffset += 1;
+			} else if ((c & 0xE0) == 0xC0) {
+				// Two-byte character
+				byteOffset += 2;
+			} else if ((c & 0xF0) == 0xE0) {
+				// Three-byte character
+				byteOffset += 3;
+			} else if ((c & 0xF8) == 0xF0) {
+				// Four-byte character
+				byteOffset += 4;
+			} else {
+				// Invalid UTF-8, skip one byte
+				byteOffset += 1;
+			}
+			currentCharIndex++;
+		}
+
+		return byteOffset;
+	}
+
 	// Helper to calculate line and column from byte position
 	static void calculateLineColumn(const char* src, size_t pos, size_t* line, size_t* column) {
 		*line = 1;
@@ -388,18 +417,18 @@ namespace Qd {
 			// Handle // line comments
 			if (sawSlash && token == '/') {
 				sawSlash = false;
-				// Collect comment text by reading bytes directly from source
-				// Scanner position is right after the second '/', read from there
-				size_t tokenLen;
-				const char* tokenText = u8t_scanner_token_text(scanner, &tokenLen);
-				// Calculate position in source: current token position + token length
-				size_t commentStart = static_cast<size_t>(tokenText - src) + tokenLen;
-				size_t commentEnd = commentStart;
-				while (src[commentEnd] != '\0' && src[commentEnd] != '\n' && src[commentEnd] != '\r') {
+				// Get character position and convert to byte offset
+				size_t charPos = u8t_scanner_token_start(scanner);
+				size_t tokenLen = u8t_scanner_token_len(scanner);
+				size_t bytePos = charIndexToByteOffset(src, charPos + tokenLen);
+				// Read comment text directly from source
+				const char* commentStart = src + bytePos;
+				const char* commentEnd = commentStart;
+				while (*commentEnd != '\0' && *commentEnd != '\n' && *commentEnd != '\r') {
 					commentEnd++;
 				}
-				std::string commentText(src + commentStart, commentEnd - commentStart);
-				// Advance scanner to end of line
+				std::string commentText(commentStart, static_cast<size_t>(commentEnd - commentStart));
+				// Advance scanner past the comment
 				while (u8t_scanner_peek(scanner) != 0 && u8t_scanner_peek(scanner) != '\n' &&
 						u8t_scanner_peek(scanner) != '\r') {
 					u8t_scanner_scan(scanner);
@@ -414,20 +443,22 @@ namespace Qd {
 			// Handle /* block comments */
 			if (sawSlash && token == '*') {
 				sawSlash = false;
-				// Collect comment text by reading bytes directly from source
-				size_t tokenLen;
-				const char* tokenText = u8t_scanner_token_text(scanner, &tokenLen);
-				size_t commentStart = static_cast<size_t>(tokenText - src) + tokenLen;
-				size_t commentEnd = commentStart;
-				// Find the closing */
-				while (src[commentEnd] != '\0') {
-					if (src[commentEnd] == '*' && src[commentEnd + 1] == '/') {
+				// Get character position and convert to byte offset
+				size_t charPos = u8t_scanner_token_start(scanner);
+				size_t tokenLen = u8t_scanner_token_len(scanner);
+				size_t bytePos = charIndexToByteOffset(src, charPos + tokenLen);
+				// Read comment text directly from source
+				const char* commentStart = src + bytePos;
+				const char* commentEnd = commentStart;
+				// Read bytes until */
+				while (*commentEnd != '\0') {
+					if (*commentEnd == '*' && *(commentEnd + 1) == '/') {
 						break;
 					}
 					commentEnd++;
 				}
-				std::string commentText(src + commentStart, commentEnd - commentStart);
-				// Advance scanner to end of comment
+				std::string commentText(commentStart, static_cast<size_t>(commentEnd - commentStart));
+				// Advance scanner past the comment
 				bool foundStar = false;
 				while (u8t_scanner_peek(scanner) != 0) {
 					char32_t c = u8t_scanner_scan(scanner);
@@ -1077,15 +1108,18 @@ namespace Qd {
 			// Handle // line comments
 			if (sawSlash && token == '/') {
 				sawSlash = false;
-				// Collect comment text by reading bytes directly from source
-				const char* tokenText = u8t_scanner_token_text(&scanner, &n);
-				size_t commentStart = static_cast<size_t>(tokenText - src) + n;
-				size_t commentEnd = commentStart;
-				while (src[commentEnd] != '\0' && src[commentEnd] != '\n' && src[commentEnd] != '\r') {
+				// Get character position and convert to byte offset
+				size_t charPos = u8t_scanner_token_start(&scanner);
+				size_t tokenLen = u8t_scanner_token_len(&scanner);
+				size_t bytePos = charIndexToByteOffset(src, charPos + tokenLen);
+				// Read comment text directly from source
+				const char* commentStart = src + bytePos;
+				const char* commentEnd = commentStart;
+				while (*commentEnd != '\0' && *commentEnd != '\n' && *commentEnd != '\r') {
 					commentEnd++;
 				}
-				std::string commentText(src + commentStart, commentEnd - commentStart);
-				// Advance scanner to end of line
+				std::string commentText(commentStart, static_cast<size_t>(commentEnd - commentStart));
+				// Advance scanner past the comment
 				while (u8t_scanner_peek(&scanner) != 0 && u8t_scanner_peek(&scanner) != '\n' &&
 						u8t_scanner_peek(&scanner) != '\r') {
 					u8t_scanner_scan(&scanner);
@@ -1101,19 +1135,22 @@ namespace Qd {
 			// Handle /* block comments */
 			if (sawSlash && token == '*') {
 				sawSlash = false;
-				// Collect comment text by reading bytes directly from source
-				const char* tokenText = u8t_scanner_token_text(&scanner, &n);
-				size_t commentStart = static_cast<size_t>(tokenText - src) + n;
-				size_t commentEnd = commentStart;
-				// Find the closing */
-				while (src[commentEnd] != '\0') {
-					if (src[commentEnd] == '*' && src[commentEnd + 1] == '/') {
+				// Get character position and convert to byte offset
+				size_t charPos = u8t_scanner_token_start(&scanner);
+				size_t tokenLen = u8t_scanner_token_len(&scanner);
+				size_t bytePos = charIndexToByteOffset(src, charPos + tokenLen);
+				// Read comment text directly from source
+				const char* commentStart = src + bytePos;
+				const char* commentEnd = commentStart;
+				// Read bytes until */
+				while (*commentEnd != '\0') {
+					if (*commentEnd == '*' && *(commentEnd + 1) == '/') {
 						break;
 					}
 					commentEnd++;
 				}
-				std::string commentText(src + commentStart, commentEnd - commentStart);
-				// Advance scanner to end of comment
+				std::string commentText(commentStart, static_cast<size_t>(commentEnd - commentStart));
+				// Advance scanner past the comment
 				bool foundStar = false;
 				while (u8t_scanner_peek(&scanner) != 0) {
 					char32_t c = u8t_scanner_scan(&scanner);
