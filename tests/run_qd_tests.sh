@@ -14,7 +14,6 @@ NC='\033[0m' # No Color
 # Paths
 QUADC="${QUADC:-build/debug/bin/quadc/quadc}"
 TEST_DIR="tests/qd"
-EXPECTED_DIR="tests/expected"
 TEMP_DIR="/tmp/qd_tests_$$"
 
 # Counters
@@ -37,7 +36,7 @@ echo ""
 run_test() {
     local test_file="$1"
     local test_name=$(basename "$test_file" .qd)
-    local expected_file="$EXPECTED_DIR/${test_name}.out"
+    local expected_file="${test_file%.qd}.out"
     local output_file="$TEMP_DIR/${test_name}.out"
     local binary="$TEMP_DIR/${test_name}"
 

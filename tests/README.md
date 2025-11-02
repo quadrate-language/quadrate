@@ -6,35 +6,44 @@ This directory contains the test suite for the Quadrate programming language (.q
 
 ```
 tests/
-├── qd/                    # Quadrate test files (.qd)
+├── qd/                    # Quadrate test files with expected outputs
 │   ├── arithmetic/       # Arithmetic & mathematical operations
 │   │   ├── arith_basic.qd
+│   │   ├── arith_basic.out
 │   │   ├── arith_comparison.qd
+│   │   ├── arith_comparison.out
 │   │   ├── arith_functions.qd
+│   │   ├── arith_functions.out
 │   │   └── arith_trigonometry.qd
+│   │   └── arith_trigonometry.out
 │   ├── stack/            # Stack manipulation operations
 │   │   ├── stack_basic.qd
+│   │   ├── stack_basic.out
 │   │   ├── stack_pairs.qd
+│   │   ├── stack_pairs.out
 │   │   ├── stack_advanced.qd
-│   │   └── stack_utility.qd
+│   │   ├── stack_advanced.out
+│   │   ├── stack_utility.qd
+│   │   └── stack_utility.out
 │   ├── logic/            # Logical & bitwise operations
 │   │   ├── logic_bitwise.qd
-│   │   └── logic_minmax.qd
+│   │   ├── logic_bitwise.out
+│   │   ├── logic_minmax.qd
+│   │   └── logic_minmax.out
 │   ├── control_flow/     # Control flow constructs
 │   │   ├── for_loop_simple.qd
+│   │   ├── for_loop_simple.out
 │   │   ├── for_loop_nested.qd
-│   │   ├── for_loop_break.qd
-│   │   ├── if_statement.qd
-│   │   └── complex_control_flow.qd
+│   │   ├── for_loop_nested.out
+│   │   └── ...
 │   ├── strings/          # String operations
 │   │   ├── string_operations.qd
-│   │   └── utf8_strings.qd
+│   │   ├── string_operations.out
+│   │   ├── utf8_strings.qd
+│   │   └── utf8_strings.out
 │   └── documentation/    # Documentation examples
-│       └── stack_notation.qd
-├── expected/             # Expected output files (.out)
-│   ├── arith_basic.out
-│   ├── stack_basic.out
-│   └── ...
+│       ├── stack_notation.qd
+│       └── stack_notation.out
 └── run_qd_tests.sh       # Test runner script
 ```
 
@@ -55,7 +64,7 @@ QUADC=path/to/quadc ./tests/run_qd_tests.sh
 The test runner will:
 1. Compile each .qd file in `tests/qd/`
 2. Execute the compiled binary
-3. Compare output with the corresponding file in `tests/expected/`
+3. Compare output with the corresponding .out file in the same directory
 4. Report PASS/FAIL for each test
 
 Example output:
@@ -100,9 +109,9 @@ All tests passed!
    ```bash
    build/debug/bin/quadc/quadc tests/qd/category/test_name.qd -r
    ```
-3. Save the expected output to `tests/expected/test_name.out`:
+3. Save the expected output next to the test file:
    ```bash
-   build/debug/bin/quadc/quadc tests/qd/category/test_name.qd -r > tests/expected/test_name.out
+   build/debug/bin/quadc/quadc tests/qd/category/test_name.qd -r > tests/qd/category/test_name.out
    ```
 4. Run the test suite to verify the new test passes
 
@@ -199,7 +208,7 @@ The integration is defined in `tests/meson.build` and automatically passes the c
 
 ## Notes
 
-- Test names should match between `.qd` files and `.out` files (basename only)
+- Each `.qd` test file should have a corresponding `.out` file in the same directory with expected output
 - Tests should be deterministic (same output every run)
 - Keep tests small and focused on a single feature
 - Use comments in .qd files to document what is being tested
