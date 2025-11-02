@@ -16,10 +16,10 @@
 // Structure to hold function information for completions
 struct FunctionInfo {
 	std::string name;
-	std::vector<std::string> inputParams; // "name:type" format
+	std::vector<std::string> inputParams;  // "name:type" format
 	std::vector<std::string> outputParams; // "name:type" format
-	std::string signature; // Full signature string
-	std::string snippet; // LSP snippet with placeholders
+	std::string signature;				   // Full signature string
+	std::string snippet;				   // LSP snippet with placeholders
 };
 
 // LSP Server using jansson for JSON handling
@@ -314,8 +314,9 @@ private:
 				if (!func.inputParams.empty()) {
 					docStream << "**Stack before call:** ";
 					for (size_t i = 0; i < func.inputParams.size(); i++) {
-						if (i > 0)
+						if (i > 0) {
 							docStream << ", ";
+						}
 						docStream << func.inputParams[i];
 					}
 					docStream << "\n";
@@ -323,8 +324,9 @@ private:
 				if (!func.outputParams.empty()) {
 					docStream << "**Stack after call:** ";
 					for (size_t i = 0; i < func.outputParams.size(); i++) {
-						if (i > 0)
+						if (i > 0) {
 							docStream << ", ";
+						}
 						docStream << func.outputParams[i];
 					}
 				}
@@ -391,8 +393,9 @@ private:
 					std::string paramStr = param->name() + ":" + param->typeString();
 					info.inputParams.push_back(paramStr);
 
-					if (j > 0)
+					if (j > 0) {
 						sigStream << " ";
+					}
 					sigStream << paramStr;
 				}
 
@@ -405,8 +408,9 @@ private:
 					std::string paramStr = param->name() + ":" + param->typeString();
 					info.outputParams.push_back(paramStr);
 
-					if (j > 0)
+					if (j > 0) {
 						sigStream << " ";
+					}
 					sigStream << paramStr;
 				}
 
