@@ -2,6 +2,7 @@ image: archlinux
 packages:
   - cmake
   - meson
+  - nodejs
   - tree-sitter-cli
   - valgrind
 sources:
