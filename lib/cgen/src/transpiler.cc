@@ -359,6 +359,20 @@ namespace Qd {
 				instrName = "add"; // Addition operator
 			} else if (strcmp(instrName, "-") == 0) {
 				instrName = "sub"; // Subtraction operator
+			} else if (strcmp(instrName, "==") == 0) {
+				instrName = "eq"; // Equality operator
+			} else if (strcmp(instrName, "!=") == 0) {
+				instrName = "neq"; // Not equal operator
+			} else if (strcmp(instrName, "<") == 0) {
+				instrName = "lt"; // Less than operator
+			} else if (strcmp(instrName, ">") == 0) {
+				instrName = "gt"; // Greater than operator
+			} else if (strcmp(instrName, "<=") == 0) {
+				instrName = "lte"; // Less than or equal operator
+			} else if (strcmp(instrName, ">=") == 0) {
+				instrName = "gte"; // Greater than or equal operator
+			} else if (strcmp(instrName, "!") == 0) {
+				instrName = "not"; // Logical not operator
 			}
 			out << makeIndent(indent) << "qd_" << instrName << "(ctx);\n";
 			break;

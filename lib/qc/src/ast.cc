@@ -31,11 +31,12 @@
 namespace Qd {
 	// Helper function to check if an identifier is a built-in instruction
 	static bool isBuiltInInstruction(const char* name) {
-		static const char* instructions[] = {"*", "+", "-", ".", "/", "abs", "acos", "add", "and", "asin", "atan", "cb",
-				"cbrt", "ceil", "call", "clear", "cos", "dec", "depth", "div", "drop", "drop2", "dup", "dup2", "eq",
-				"fac", "floor", "gt", "gte", "inc", "inv", "ln", "log10", "lt", "lte", "max", "min", "mod", "mul",
-				"neq", "neg", "nip", "not", "or", "over", "over2", "pick", "pow", "print", "prints", "printsv",
-				"printv", "roll", "rot", "round", "sin", "sq", "sqrt", "sub", "swap", "swap2", "tan", "tuck", "within"};
+		static const char* instructions[] = {"!", "!=", "*", "+", "-", ".", "/", "<", "<=", "==", ">", ">=", "abs",
+				"acos", "add", "and", "asin", "atan", "cb", "cbrt", "ceil", "call", "clear", "cos", "dec", "depth",
+				"div", "drop", "drop2", "dup", "dup2", "eq", "fac", "floor", "gt", "gte", "inc", "inv", "ln", "log10",
+				"lt", "lte", "max", "min", "mod", "mul", "neq", "neg", "nip", "not", "or", "over", "over2", "pick",
+				"pow", "print", "prints", "printsv", "printv", "roll", "rot", "round", "sin", "sq", "sqrt", "sub",
+				"swap", "swap2", "tan", "tuck", "within"};
 		static const size_t count = sizeof(instructions) / sizeof(instructions[0]);
 
 		for (size_t i = 0; i < count; i++) {
@@ -177,6 +178,55 @@ namespace Qd {
 		} else if (token == '-') {
 			// Handle '-' as alias for 'sub'
 			IAstNode* node = new AstNodeInstruction("-");
+			setNodePosition(node, scanner, src);
+			return node;
+		} else if (token == '<') {
+			// Check if next token is '=' for '<='
+			char32_t nextToken = u8t_scanner_peek(scanner);
+			if (nextToken == '=') {
+				u8t_scanner_scan(scanner); // Consume '='
+				IAstNode* node = new AstNodeInstruction("<=");
+				setNodePosition(node, scanner, src);
+				return node;
+			}
+			// Handle '<' as alias for 'lt'
+			IAstNode* node = new AstNodeInstruction("<");
+			setNodePosition(node, scanner, src);
+			return node;
+		} else if (token == '>') {
+			// Check if next token is '=' for '>='
+			char32_t nextToken = u8t_scanner_peek(scanner);
+			if (nextToken == '=') {
+				u8t_scanner_scan(scanner); // Consume '='
+				IAstNode* node = new AstNodeInstruction(">=");
+				setNodePosition(node, scanner, src);
+				return node;
+			}
+			// Handle '>' as alias for 'gt'
+			IAstNode* node = new AstNodeInstruction(">");
+			setNodePosition(node, scanner, src);
+			return node;
+		} else if (token == '=') {
+			// Check if next token is '=' for '=='
+			char32_t nextToken = u8t_scanner_peek(scanner);
+			if (nextToken == '=') {
+				u8t_scanner_scan(scanner); // Consume '='
+				IAstNode* node = new AstNodeInstruction("==");
+				setNodePosition(node, scanner, src);
+				return node;
+			}
+			return nullptr;
+		} else if (token == '!') {
+			// Check if next token is '=' for '!='
+			char32_t nextToken = u8t_scanner_peek(scanner);
+			if (nextToken == '=') {
+				u8t_scanner_scan(scanner); // Consume '='
+				IAstNode* node = new AstNodeInstruction("!=");
+				setNodePosition(node, scanner, src);
+				return node;
+			}
+			// Handle '!' as alias for 'not'
+			IAstNode* node = new AstNodeInstruction("!");
 			setNodePosition(node, scanner, src);
 			return node;
 		} else if (token == '$') {
@@ -648,10 +698,22 @@ namespace Qd {
 									setNodePosition(colonColon, scanner, src);
 									deferNodes.push_back(colonColon);
 								}
-							} else if (token == '.' || token == '/' || token == '*' || token == '+' || token == '-') {
-								// Handle character-based instructions
+							} else if (token == '.' || token == '/' || token == '*' || token == '+' || token == '-' ||
+									   token == '<' || token == '>' || token == '=' || token == '!') {
+								// Handle character-based instructions (including multi-char ops)
 								const char* deferText = u8t_scanner_token_text(scanner, &n);
-								AstNodeInstruction* instr = new AstNodeInstruction(deferText);
+								std::string instrText(deferText);
+
+								// Check for multi-character operators
+								if (token == '<' || token == '>' || token == '=' || token == '!') {
+									char32_t nextChar = u8t_scanner_peek(scanner);
+									if (nextChar == '=') {
+										u8t_scanner_scan(scanner);
+										instrText += '=';
+									}
+								}
+
+								AstNodeInstruction* instr = new AstNodeInstruction(instrText.c_str());
 								setNodePosition(instr, scanner, src);
 								deferNodes.push_back(instr);
 							}
@@ -832,6 +894,57 @@ namespace Qd {
 				AstNodeInstruction* instr = new AstNodeInstruction("-");
 				setNodePosition(instr, scanner, src);
 				tempNodes.push_back(instr);
+			} else if (token == '<') {
+				// Check if next token is '=' for '<='
+				char32_t nextToken = u8t_scanner_peek(scanner);
+				if (nextToken == '=') {
+					u8t_scanner_scan(scanner); // Consume '='
+					AstNodeInstruction* instr = new AstNodeInstruction("<=");
+					setNodePosition(instr, scanner, src);
+					tempNodes.push_back(instr);
+				} else {
+					// Handle '<' as alias for 'lt'
+					AstNodeInstruction* instr = new AstNodeInstruction("<");
+					setNodePosition(instr, scanner, src);
+					tempNodes.push_back(instr);
+				}
+			} else if (token == '>') {
+				// Check if next token is '=' for '>='
+				char32_t nextToken = u8t_scanner_peek(scanner);
+				if (nextToken == '=') {
+					u8t_scanner_scan(scanner); // Consume '='
+					AstNodeInstruction* instr = new AstNodeInstruction(">=");
+					setNodePosition(instr, scanner, src);
+					tempNodes.push_back(instr);
+				} else {
+					// Handle '>' as alias for 'gt'
+					AstNodeInstruction* instr = new AstNodeInstruction(">");
+					setNodePosition(instr, scanner, src);
+					tempNodes.push_back(instr);
+				}
+			} else if (token == '=') {
+				// Check if next token is '=' for '=='
+				char32_t nextToken = u8t_scanner_peek(scanner);
+				if (nextToken == '=') {
+					u8t_scanner_scan(scanner); // Consume '='
+					AstNodeInstruction* instr = new AstNodeInstruction("==");
+					setNodePosition(instr, scanner, src);
+					tempNodes.push_back(instr);
+				}
+			} else if (token == '!') {
+				// Check if next token is '=' for '!='
+				char32_t nextToken = u8t_scanner_peek(scanner);
+				if (nextToken == '=') {
+					u8t_scanner_scan(scanner); // Consume '='
+					AstNodeInstruction* instr = new AstNodeInstruction("!=");
+					setNodePosition(instr, scanner, src);
+					tempNodes.push_back(instr);
+				} else {
+					// Handle '!' as alias for 'not'
+					AstNodeInstruction* instr = new AstNodeInstruction("!");
+					setNodePosition(instr, scanner, src);
+					tempNodes.push_back(instr);
+				}
 			} else if (token == '$') {
 				// Handle '$' as for loop iterator variable
 				AstNodeIdentifier* ident = new AstNodeIdentifier("$");
