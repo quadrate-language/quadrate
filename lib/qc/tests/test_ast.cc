@@ -60,10 +60,13 @@ TEST(LineComment) {
 	Qd::IAstNode* func = root->child(0);
 	Qd::IAstNode* body = func->child(0);
 
-	// Should have 1 child (foo), comment should be skipped
-	ASSERT(body->childCount() == 1, "body should have 1 child");
+	// Should have 2 children (comment and foo)
+	ASSERT(body->childCount() == 2, "body should have 2 children");
 
-	Qd::IAstNode* id = body->child(0);
+	Qd::IAstNode* comment = body->child(0);
+	ASSERT(comment->type() == Qd::IAstNode::Type::COMMENT, "should be comment");
+
+	Qd::IAstNode* id = body->child(1);
 	ASSERT(id->type() == Qd::IAstNode::Type::IDENTIFIER, "should be identifier");
 }
 
@@ -78,8 +81,14 @@ TEST(BlockComment) {
 	Qd::IAstNode* func = root->child(0);
 	Qd::IAstNode* body = func->child(0);
 
-	// Should have 1 child (foo), comment should be skipped
-	ASSERT(body->childCount() == 1, "body should have 1 child");
+	// Should have 2 children (comment and foo)
+	ASSERT(body->childCount() == 2, "body should have 2 children");
+
+	Qd::IAstNode* comment = body->child(0);
+	ASSERT(comment->type() == Qd::IAstNode::Type::COMMENT, "should be comment");
+
+	Qd::IAstNode* id = body->child(1);
+	ASSERT(id->type() == Qd::IAstNode::Type::IDENTIFIER, "should be identifier");
 }
 
 TEST(BreakStatement) {

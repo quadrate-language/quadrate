@@ -39,6 +39,7 @@ namespace Qd {
 		void formatScopedIdentifier(const IAstNode* node);
 		void formatBreak(const IAstNode* node);
 		void formatContinue(const IAstNode* node);
+		void formatComment(const IAstNode* node);
 
 		void indent();
 		void dedent();

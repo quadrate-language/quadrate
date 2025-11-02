@@ -4,6 +4,7 @@
 #include <iostream>
 #include <qc/ast.h>
 #include <qc/ast_node.h>
+#include <qc/ast_node_comment.h>
 #include <qc/ast_node_constant.h>
 #include <qc/ast_node_defer.h>
 #include <qc/ast_node_for.h>
@@ -398,6 +399,17 @@ namespace Qd {
 		case IAstNode::Type::LABEL:
 			// TODO: Handle label
 			break;
+		case IAstNode::Type::COMMENT: {
+			// Transpile comments directly to C
+			const AstNodeComment* comment = static_cast<const AstNodeComment*>(node);
+			out << makeIndent(indent);
+			if (comment->commentType() == AstNodeComment::CommentType::LINE) {
+				out << "//" << comment->text() << "\n";
+			} else {
+				out << "/*" << comment->text() << "*/\n";
+			}
+			break;
+		}
 		}
 
 		int childIndent = indent;

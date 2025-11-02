@@ -1,5 +1,5 @@
-#include <qc/formatter.h>
 #include <qc/ast_node_block.h>
+#include <qc/ast_node_comment.h>
 #include <qc/ast_node_constant.h>
 #include <qc/ast_node_for.h>
 #include <qc/ast_node_function.h>
@@ -13,6 +13,7 @@
 #include <qc/ast_node_scoped.h>
 #include <qc/ast_node_switch.h>
 #include <qc/ast_node_use.h>
+#include <qc/formatter.h>
 
 namespace Qd {
 
@@ -87,6 +88,9 @@ namespace Qd {
 			break;
 		case IAstNode::Type::CONTINUE_STATEMENT:
 			formatContinue(node);
+			break;
+		case IAstNode::Type::COMMENT:
+			formatComment(node);
 			break;
 		default:
 			// Unknown node type, skip
@@ -356,6 +360,21 @@ namespace Qd {
 	void Formatter::formatContinue(const IAstNode*) {
 		writeIndent();
 		write("continue");
+		newLine();
+	}
+
+	void Formatter::formatComment(const IAstNode* node) {
+		const AstNodeComment* comment = static_cast<const AstNodeComment*>(node);
+
+		writeIndent();
+		if (comment->commentType() == AstNodeComment::CommentType::LINE) {
+			write("//");
+			write(comment->text());
+		} else {
+			write("/*");
+			write(comment->text());
+			write("*/");
+		}
 		newLine();
 	}
 

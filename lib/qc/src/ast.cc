@@ -5,6 +5,7 @@
 #include <qc/ast_node.h>
 #include <qc/ast_node_block.h>
 #include <qc/ast_node_break.h>
+#include <qc/ast_node_comment.h>
 #include <qc/ast_node_constant.h>
 #include <qc/ast_node_continue.h>
 #include <qc/ast_node_defer.h>
@@ -387,25 +388,58 @@ namespace Qd {
 			// Handle // line comments
 			if (sawSlash && token == '/') {
 				sawSlash = false;
-				// Skip until end of line
-				char32_t c;
-				while ((c = u8t_scanner_peek(scanner)) != 0 && c != '\n' && c != '\r') {
+				// Collect comment text by reading bytes directly from source
+				// Scanner position is right after the second '/', read from there
+				size_t tokenLen;
+				const char* tokenText = u8t_scanner_token_text(scanner, &tokenLen);
+				// Calculate position in source: current token position + token length
+				size_t commentStart = static_cast<size_t>(tokenText - src) + tokenLen;
+				size_t commentEnd = commentStart;
+				while (src[commentEnd] != '\0' && src[commentEnd] != '\n' && src[commentEnd] != '\r') {
+					commentEnd++;
+				}
+				std::string commentText(src + commentStart, commentEnd - commentStart);
+				// Advance scanner to end of line
+				while (u8t_scanner_peek(scanner) != 0 && u8t_scanner_peek(scanner) != '\n' &&
+						u8t_scanner_peek(scanner) != '\r') {
 					u8t_scanner_scan(scanner);
 				}
+				// Create comment node
+				AstNodeComment* comment = new AstNodeComment(commentText, AstNodeComment::CommentType::LINE);
+				setNodePosition(comment, scanner, src);
+				tempNodes.push_back(comment);
 				continue;
 			}
 
 			// Handle /* block comments */
 			if (sawSlash && token == '*') {
 				sawSlash = false;
-				// Skip until */
-				bool foundStar = false;
-				while ((token = u8t_scanner_scan(scanner)) != U8T_EOF) {
-					if (foundStar && token == '/') {
+				// Collect comment text by reading bytes directly from source
+				size_t tokenLen;
+				const char* tokenText = u8t_scanner_token_text(scanner, &tokenLen);
+				size_t commentStart = static_cast<size_t>(tokenText - src) + tokenLen;
+				size_t commentEnd = commentStart;
+				// Find the closing */
+				while (src[commentEnd] != '\0') {
+					if (src[commentEnd] == '*' && src[commentEnd + 1] == '/') {
 						break;
 					}
-					foundStar = (token == '*');
+					commentEnd++;
 				}
+				std::string commentText(src + commentStart, commentEnd - commentStart);
+				// Advance scanner to end of comment
+				bool foundStar = false;
+				while (u8t_scanner_peek(scanner) != 0) {
+					char32_t c = u8t_scanner_scan(scanner);
+					if (foundStar && c == '/') {
+						break;
+					}
+					foundStar = (c == '*');
+				}
+				// Create comment node
+				AstNodeComment* comment = new AstNodeComment(commentText, AstNodeComment::CommentType::BLOCK);
+				setNodePosition(comment, scanner, src);
+				tempNodes.push_back(comment);
 				continue;
 			}
 
@@ -1043,25 +1077,56 @@ namespace Qd {
 			// Handle // line comments
 			if (sawSlash && token == '/') {
 				sawSlash = false;
-				// Skip until end of line
-				char32_t c;
-				while ((c = u8t_scanner_peek(&scanner)) != 0 && c != '\n' && c != '\r') {
+				// Collect comment text by reading bytes directly from source
+				const char* tokenText = u8t_scanner_token_text(&scanner, &n);
+				size_t commentStart = static_cast<size_t>(tokenText - src) + n;
+				size_t commentEnd = commentStart;
+				while (src[commentEnd] != '\0' && src[commentEnd] != '\n' && src[commentEnd] != '\r') {
+					commentEnd++;
+				}
+				std::string commentText(src + commentStart, commentEnd - commentStart);
+				// Advance scanner to end of line
+				while (u8t_scanner_peek(&scanner) != 0 && u8t_scanner_peek(&scanner) != '\n' &&
+						u8t_scanner_peek(&scanner) != '\r') {
 					u8t_scanner_scan(&scanner);
 				}
+				// Create comment node
+				AstNodeComment* comment = new AstNodeComment(commentText, AstNodeComment::CommentType::LINE);
+				setNodePosition(comment, &scanner, src);
+				comment->setParent(program);
+				program->addChild(comment);
 				continue;
 			}
 
 			// Handle /* block comments */
 			if (sawSlash && token == '*') {
 				sawSlash = false;
-				// Skip until */
-				bool foundStar = false;
-				while ((token = u8t_scanner_scan(&scanner)) != U8T_EOF) {
-					if (foundStar && token == '/') {
+				// Collect comment text by reading bytes directly from source
+				const char* tokenText = u8t_scanner_token_text(&scanner, &n);
+				size_t commentStart = static_cast<size_t>(tokenText - src) + n;
+				size_t commentEnd = commentStart;
+				// Find the closing */
+				while (src[commentEnd] != '\0') {
+					if (src[commentEnd] == '*' && src[commentEnd + 1] == '/') {
 						break;
 					}
-					foundStar = (token == '*');
+					commentEnd++;
 				}
+				std::string commentText(src + commentStart, commentEnd - commentStart);
+				// Advance scanner to end of comment
+				bool foundStar = false;
+				while (u8t_scanner_peek(&scanner) != 0) {
+					char32_t c = u8t_scanner_scan(&scanner);
+					if (foundStar && c == '/') {
+						break;
+					}
+					foundStar = (c == '*');
+				}
+				// Create comment node
+				AstNodeComment* comment = new AstNodeComment(commentText, AstNodeComment::CommentType::BLOCK);
+				setNodePosition(comment, &scanner, src);
+				comment->setParent(program);
+				program->addChild(comment);
 				continue;
 			}
 

@@ -30,7 +30,8 @@ namespace Qd {
 			USE_STATEMENT,
 			CONSTANT_DECLARATION,
 			LABEL,
-			FUNCTION_POINTER_REFERENCE
+			FUNCTION_POINTER_REFERENCE,
+			COMMENT
 		};
 		virtual ~IAstNode() = default;
 
