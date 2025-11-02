@@ -35,6 +35,9 @@ tests: debug
 	@echo ""
 	@echo "=== Running Quadrate language tests ==="
 	QUADC=$(BUILD_DIR_DEBUG)/bin/quadc/quadc bash tests/run_qd_tests.sh
+	@echo ""
+	@echo "=== Running formatter tests ==="
+	bash tests/run_formatter_tests.sh
 
 valgrind: debug
 	@echo "=== Running C/C++ unit tests with valgrind ==="
