@@ -5,9 +5,9 @@ tree_sitter = find_program('tree-sitter', required: false)
 
 if tree_sitter.found()
     # Test that runs tree-sitter tests
+    # Uses wrapper script that generates parser first (src/ is .gitignored)
     test('tree-sitter-grammar',
-        tree_sitter,
-        args: ['test'],
+        find_program('generate_and_test.sh'),
         workdir: meson.current_source_dir(),
         suite: 'tree-sitter',
         timeout: 30
