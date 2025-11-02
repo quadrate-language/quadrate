@@ -2,6 +2,7 @@ image: archlinux
 packages:
   - cmake
   - meson
+  - tree-sitter-cli
   - valgrind
 sources:
   - https://git.sr.ht/~klahr/quadrate
