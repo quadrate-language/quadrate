@@ -26,6 +26,18 @@ namespace Qd {
 	}
 
 	void ErrorReporter::reportError(size_t line, size_t column, const char* message) {
+		mErrorCount++;
+
+		// Store error if requested (for LSP)
+		if (mStoreErrors) {
+			ErrorInfo error;
+			error.line = line;
+			error.column = column;
+			error.message = message;
+			mErrors.push_back(error);
+			return; // Don't print to stderr when storing
+		}
+
 		// Format: filename:line:column: error: message
 		std::cerr << Colors::bold() << "quadc: " << Colors::reset();
 		if (mFilename) {
@@ -36,7 +48,6 @@ namespace Qd {
 		std::cerr << Colors::bold() << Colors::red() << "error:" << Colors::reset() << " ";
 		std::cerr << Colors::bold() << message << Colors::reset() << std::endl;
 		printSourceContext(line, column);
-		mErrorCount++;
 	}
 
 	void ErrorReporter::printSourceContext(size_t line, size_t column) {
