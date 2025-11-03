@@ -18,7 +18,10 @@ debug:
 	@cp -f $(BUILD_DIR_DEBUG)/bin/quadlsp/quadlsp dist/bin/
 	@cp -f $(BUILD_DIR_DEBUG)/lib/quadrate/libquadrate.so dist/lib/
 	@cp -f $(BUILD_DIR_DEBUG)/lib/quadrate/libquadrate_static.a dist/lib/
+	@cp -f $(BUILD_DIR_DEBUG)/lib/stdqd/libstdqd.so dist/lib/
+	@cp -f $(BUILD_DIR_DEBUG)/lib/stdqd/libstdqd_static.a dist/lib/
 	@cp -rf lib/quadrate/include/quadrate dist/include/
+	@cp -rf lib/stdqd/include/stdqd dist/include/
 
 release:
 	meson setup $(BUILD_DIR_RELEASE) --buildtype=release $(MESON_FLAGS)
@@ -29,11 +32,14 @@ release:
 	@cp -f $(BUILD_DIR_RELEASE)/bin/quadlsp/quadlsp dist/bin/
 	@cp -f $(BUILD_DIR_RELEASE)/lib/quadrate/libquadrate.so dist/lib/
 	@cp -f $(BUILD_DIR_RELEASE)/lib/quadrate/libquadrate_static.a dist/lib/
+	@cp -f $(BUILD_DIR_RELEASE)/lib/stdqd/libstdqd.so dist/lib/
+	@cp -f $(BUILD_DIR_RELEASE)/lib/stdqd/libstdqd_static.a dist/lib/
 	@cp -rf lib/quadrate/include/quadrate dist/include/
+	@cp -rf lib/stdqd/include/stdqd dist/include/
 
 tests: debug
 	@echo "=== Running C/C++ unit tests ==="
-	meson test -C $(BUILD_DIR_DEBUG) test_str test_runtime test_ast test_semantic_validator --print-errorlogs
+	meson test -C $(BUILD_DIR_DEBUG) test_str test_runtime test_ast test_semantic_validator stdqd --print-errorlogs
 	@echo ""
 	@echo "=== Running LSP tests ==="
 	meson test -C $(BUILD_DIR_DEBUG) test_lsp test_lsp_extended test_lsp_stress --print-errorlogs
@@ -49,7 +55,7 @@ tests: debug
 
 valgrind: debug
 	@echo "=== Running C/C++ unit tests with valgrind ==="
-	meson test -C $(BUILD_DIR_DEBUG) test_str test_runtime test_ast test_semantic_validator --setup=valgrind --print-errorlogs
+	meson test -C $(BUILD_DIR_DEBUG) test_str test_runtime test_ast test_semantic_validator stdqd --setup=valgrind --print-errorlogs
 
 examples:
 	meson setup $(BUILD_DIR_DEBUG) --buildtype=debug --reconfigure -Dbuild_examples=true $(MESON_FLAGS)
@@ -67,7 +73,10 @@ install: release
 	install -m 755 dist/bin/quadlsp $(DESTDIR)$(PREFIX)/bin/
 	install -m 644 dist/lib/libquadrate.so $(DESTDIR)$(PREFIX)/lib/
 	install -m 644 dist/lib/libquadrate_static.a $(DESTDIR)$(PREFIX)/lib/
+	install -m 644 dist/lib/libstdqd.so $(DESTDIR)$(PREFIX)/lib/
+	install -m 644 dist/lib/libstdqd_static.a $(DESTDIR)$(PREFIX)/lib/
 	cp -r dist/include/quadrate $(DESTDIR)$(PREFIX)/include/
+	cp -r dist/include/stdqd $(DESTDIR)$(PREFIX)/include/
 
 uninstall:
 	rm -f $(DESTDIR)$(PREFIX)/bin/quadc
@@ -75,7 +84,10 @@ uninstall:
 	rm -f $(DESTDIR)$(PREFIX)/bin/quadlsp
 	rm -f $(DESTDIR)$(PREFIX)/lib/libquadrate.so
 	rm -f $(DESTDIR)$(PREFIX)/lib/libquadrate_static.a
+	rm -f $(DESTDIR)$(PREFIX)/lib/libstdqd.so
+	rm -f $(DESTDIR)$(PREFIX)/lib/libstdqd_static.a
 	rm -rf $(DESTDIR)$(PREFIX)/include/quadrate
+	rm -rf $(DESTDIR)$(PREFIX)/include/stdqd
 
 clean:
 	rm -rf build
