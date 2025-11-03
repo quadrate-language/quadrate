@@ -2,13 +2,14 @@
 // advanced_ops imports base_ops, and we import advanced_ops
 use advanced_ops
 
-fn main() {
+fn main( -- ) {
 	// Test function that uses base_ops internally
-	10.0 advanced_ops::add_five_then_double print
-
+	10.0 advanced_ops::add_five_then_double
+	print
 	// Test function that calls base_ops::get_hundred
-	advanced_ops::get_two_hundred print
-
+	advanced_ops::get_two_hundred
+	print
 	// Test complex calculation
-	5.0 advanced_ops::complex_calc print
+	5.0 advanced_ops::complex_calc
+	print
 }

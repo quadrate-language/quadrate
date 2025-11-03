@@ -1,14 +1,11 @@
-fn main() {
+fn main( -- ) {
 	// Test basic arithmetic operations
 	// Addition
 	5 3 add .
-
 	// Subtraction
 	10 4 sub .
-
 	// Multiplication
 	6 7 mul .
-
 	// Division
 	20 5 div .
 }

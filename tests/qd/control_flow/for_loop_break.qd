@@ -1,7 +1,7 @@
-fn main() {
+fn main( -- ) {
 	0 10 1 for {
-		$ .
-		$ 5 > if {
+		$		. $
+		5 > if {
 			break
 		}
 	}

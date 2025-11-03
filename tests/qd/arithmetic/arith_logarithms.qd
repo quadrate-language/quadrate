@@ -1,12 +1,18 @@
-fn main() {
+fn main( -- ) {
 	// Test ln (natural logarithm)
-	1 ln .           // ln(1) = 0
-	2.718281828 ln . // ln(e) ≈ 1
-	10 ln .          // ln(10) ≈ 2.302585
-
+	1 ln .
+	// ln(1) = 0
+	2.718281828 ln .
+	// ln(e) ≈ 1
+	10 ln .
+	// ln(10) ≈ 2.302585
 	// Test log10 (base 10 logarithm)
-	1 log10 .        // log10(1) = 0
-	10 log10 .       // log10(10) = 1
-	100 log10 .      // log10(100) = 2
-	1000 log10 .     // log10(1000) = 3
+	1 log10 .
+	// log10(1) = 0
+	10 log10 .
+	// log10(10) = 1
+	100 log10 .
+	// log10(100) = 2
+	1000 log10 .
+	// log10(1000) = 3
 }

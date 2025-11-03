@@ -1,24 +1,20 @@
-fn main() {
+fn main( -- ) {
 	// Test 1: True condition
 	1 if {
 		42 .
 	}
-
 	// Test 2: False condition
 	0 if {
 		99 .
 	}
-
 	// Test 3: Another true condition
 	5 if {
 		10 .
 	}
-
 	// Test 4: If with stack operations
 	3 dup if {
 		.
 	}
-
 	// Test 5: Sequential if statements
 	1 if {
 		20 .
@@ -26,14 +22,12 @@ fn main() {
 	1 if {
 		30 .
 	}
-
 	// Test 6: Nested if statements
 	1 if {
 		1 if {
 			100 .
 		}
 	}
-
 	// Test 7: Nested if/else
 	1 if {
 		5 3 gt if {
@@ -42,7 +36,6 @@ fn main() {
 			300 .
 		}
 	}
-
 	// Test 8: Deeply nested if/else
 	1 if {
 		1 if {
@@ -55,14 +48,12 @@ fn main() {
 			600 .
 		}
 	}
-
 	// Test 9: Nested if with false outer condition
 	0 if {
 		1 if {
 			700 .
 		}
 	}
-
 	// Test 10: Nested if/else with false inner condition
 	1 if {
 		0 if {

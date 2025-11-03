@@ -2,32 +2,40 @@
 use math_helpers
 use validators
 
-fn main() {
+fn main( -- ) {
 	// Test math_helpers::abs
-	-5.5 math_helpers::abs print
-	3.2 math_helpers::abs print
-
+	-5.5 math_helpers::abs
+	print
+	3.2 math_helpers::abs
+	print
 	// Test math_helpers::max
-	10.0 20.0 math_helpers::max print
-	50.0 30.0 math_helpers::max print
-
+	10.0 20.0 math_helpers::max
+	print
+	50.0 30.0 math_helpers::max
+	print
 	// Test math_helpers::square
-	5.0 math_helpers::square print
-	7.0 math_helpers::square print
-
+	5.0 math_helpers::square
+	print
+	7.0 math_helpers::square
+	print
 	// Test math_helpers::add_ten
-	15.0 math_helpers::add_ten print
-	-5.0 math_helpers::add_ten print
-
+	15.0 math_helpers::add_ten
+	print
+	-5.0 math_helpers::add_ten
+	print
 	// Test validators::is_positive
-	5.0 validators::is_positive print
-	-3.0 validators::is_positive print
-
+	5.0 validators::is_positive
+	print
+	-3.0 validators::is_positive
+	print
 	// Test validators::is_negative
-	5.0 validators::is_negative print
-	-3.0 validators::is_negative print
-
+	5.0 validators::is_negative
+	print
+	-3.0 validators::is_negative
+	print
 	// Test validators::is_zero
-	0.0 validators::is_zero print
-	5.0 validators::is_zero print
+	0.0 validators::is_zero
+	print
+	5.0 validators::is_zero
+	print
 }

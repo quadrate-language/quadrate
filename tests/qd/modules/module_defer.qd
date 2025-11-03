@@ -1,19 +1,20 @@
 // Test defer blocks in modules
 use defer_ops
 
-fn main() {
+fn main( -- ) {
 	// Test simple defer
-	5.0 defer_ops::with_cleanup print
-
+	5.0 defer_ops::with_cleanup
+	print
 	// Test nested defer (LIFO order)
-	10.0 defer_ops::nested_defer print
-
+	10.0 defer_ops::nested_defer
+	print
 	// Test defer with computation
-	30.0 20.0 defer_ops::defer_with_computation print
-
+	30.0 20.0 defer_ops::defer_with_computation
+	print
 	// Test defer with early return (positive)
-	5.0 defer_ops::early_return print
-
+	5.0 defer_ops::early_return
+	print
 	// Test defer with early return (negative)
-	-3.0 defer_ops::early_return print
+	-3.0 defer_ops::early_return
+	print
 }

@@ -1,4 +1,4 @@
-fn main() {
+fn main( -- ) {
 	// Test if/else with comparisons
 	// 10 < 20, so should print 100
 	10 20 lt if {
@@ -6,14 +6,12 @@ fn main() {
 	} else {
 		200 .
 	}
-
 	// 10 >= 5, so should print 400
 	10 5 lt if {
 		300 .
 	} else {
 		400 .
 	}
-
 	// Nested if/else
 	// 5 > 3, so should print 500
 	1 if {
@@ -23,30 +21,30 @@ fn main() {
 			600 .
 		}
 	}
-
 	// For loop with conditionals
 	// Should print 1000 when $ == 2
 	0 5 1 for {
-		$ 2 eq if {
+		$
+		2 eq if {
 			1000 .
 		}
 	}
-
 	// For loop with break
 	// Should print: 0 1 2 3 4
 	0 10 1 for {
 		$
-		$ 5 eq if {
+		$
+		5 eq if {
 			break
 		}
 		.
 	}
-
 	// Nested for loops with conditionals
 	// Should print 99 three times (when inner loop $ == 1)
 	0 3 1 for {
 		0 2 1 for {
-			$ 1 eq if {
+			$
+			1 eq if {
 				99 .
 			}
 		}

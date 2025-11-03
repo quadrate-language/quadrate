@@ -2,13 +2,17 @@
 // Both files contribute to the split_module namespace
 use split_module
 
-fn main() {
+fn main( -- ) {
 	// Call functions from module.qd
-	5.0 split_module::add_ten print
-	4.0 split_module::multiply_by_three print
-
+	5.0 split_module::add_ten
+	print
+	4.0 split_module::multiply_by_three
+	print
 	// Call functions from helper.qd (same namespace!)
-	7.0 split_module::double print
-	-3.0 split_module::negate print
-	split_module::get_hundred print
+	7.0 split_module::double
+	print
+	-3.0 split_module::negate
+	print
+ split_module::get_hundred
+	print
 }

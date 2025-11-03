@@ -1,20 +1,23 @@
 // Test basic module functionality
 use simple_math
 
-fn main() {
+fn main( -- ) {
 	// Test double function
-	5.0 simple_math::double print
-
+	5.0 simple_math::double
+	print
 	// Test triple function
-	4.0 simple_math::triple print
-
+	4.0 simple_math::triple
+	print
 	// Test square function
-	3.0 simple_math::square print
-
+	3.0 simple_math::square
+	print
 	// Test constant functions
-	simple_math::ten print
-	simple_math::twenty print
-
+	simple_math::ten
+	print
+ simple_math::twenty
+	print
 	// Test chaining module functions
-	2.0 simple_math::double simple_math::double print
+	2.0 simple_math::double
+	simple_math::double
+	print
 }

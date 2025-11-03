@@ -1,36 +1,50 @@
-fn main() {
+fn main( -- ) {
 	// Test eq (equal)
-	5 5 eq .      // Should print: 1 (true)
-	5 7 eq .      // Should print: 0 (false)
-
+	5 5 eq .
+	// Should print: 1 (true)
+	5 7 eq .
+	// Should print: 0 (false)
 	// Test neq (not equal)
-	5 7 neq .     // Should print: 1 (true)
-	5 5 neq .     // Should print: 0 (false)
-
+	5 7 neq .
+	// Should print: 1 (true)
+	5 5 neq .
+	// Should print: 0 (false)
 	// Test lt (less than)
-	3 5 lt .      // Should print: 1 (true)
-	5 3 lt .      // Should print: 0 (false)
-	5 5 lt .      // Should print: 0 (false)
-
+	3 5 lt .
+	// Should print: 1 (true)
+	5 3 lt .
+	// Should print: 0 (false)
+	5 5 lt .
+	// Should print: 0 (false)
 	// Test gt (greater than)
-	5 3 gt .      // Should print: 1 (true)
-	3 5 gt .      // Should print: 0 (false)
-	5 5 gt .      // Should print: 0 (false)
-
+	5 3 gt .
+	// Should print: 1 (true)
+	3 5 gt .
+	// Should print: 0 (false)
+	5 5 gt .
+	// Should print: 0 (false)
 	// Test lte (less than or equal)
-	3 5 lte .     // Should print: 1 (true)
-	5 5 lte .     // Should print: 1 (true)
-	5 3 lte .     // Should print: 0 (false)
-
+	3 5 lte .
+	// Should print: 1 (true)
+	5 5 lte .
+	// Should print: 1 (true)
+	5 3 lte .
+	// Should print: 0 (false)
 	// Test gte (greater than or equal)
-	5 3 gte .     // Should print: 1 (true)
-	5 5 gte .     // Should print: 1 (true)
-	3 5 gte .     // Should print: 0 (false)
-
+	5 3 gte .
+	// Should print: 1 (true)
+	5 5 gte .
+	// Should print: 1 (true)
+	3 5 gte .
+	// Should print: 0 (false)
 	// Test within (x low high within -> bool)
 	// Tests if low <= x < high
-	5 3 7 within .    // Should print: 1 (true, 3 <= 5 < 7)
-	2 3 7 within .    // Should print: 0 (false, 2 < 3)
-	7 3 7 within .    // Should print: 0 (false, 7 >= 7)
-	4 3 7 within .    // Should print: 1 (true)
+	5 3 7 within .
+	// Should print: 1 (true, 3 <= 5 < 7)
+	2 3 7 within .
+	// Should print: 0 (false, 2 < 3)
+	7 3 7 within .
+	// Should print: 0 (false, 7 >= 7)
+	4 3 7 within .
+	// Should print: 1 (true)
 }

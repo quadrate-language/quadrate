@@ -1,33 +1,42 @@
-fn greet() {
+fn greet( -- ) {
 	"Hello from greet!" print
 }
 
-fn farewell() {
+fn farewell( -- ) {
 	"Goodbye from farewell!" print
 }
 
-fn pushNumber() {
+fn pushNumber( -- ) {
 	42 printv
 }
 
-fn main() {
+fn main( -- ) {
 	// Test 1: Push function pointer and check depth
 	&greet
-	depth printv  // Should print: int:1
+	depth
+	printv
+	// Should print: int:1
 	clear
-
 	// Test 2: Call greet via function pointer
-	&greet call   // Should print: "Hello from greet!"
-
+	&greet
+	call
+	// Should print: "Hello from greet!"
 	// Test 3: Call farewell via function pointer
-	&farewell call  // Should print: "Goodbye from farewell!"
-
+	&farewell
+	call
+	// Should print: "Goodbye from farewell!"
 	// Test 4: Call pushNumber which pushes a value
-	&pushNumber call  // Should print: int:42
-
+	&pushNumber
+	call
+	// Should print: int:42
 	// Test 5: Multiple function pointers on stack
-	&greet &farewell
-	depth printv  // Should print: int:2
-	call          // Calls farewell
-	call          // Calls greet
+	&greet
+	&farewell
+	depth
+	printv
+	// Should print: int:2
+	call
+	// Calls farewell
+	call
+	// Calls greet
 }

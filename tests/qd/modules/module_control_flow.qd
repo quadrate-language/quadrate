@@ -1,17 +1,22 @@
 // Test control flow in modules
 use control_flow
 
-fn main() {
+fn main( -- ) {
 	// Test sign function (if/else)
-	5.0 control_flow::sign print
-	-3.0 control_flow::sign print
-	0.0 control_flow::sign print
-
+	5.0 control_flow::sign
+	print
+	-3.0 control_flow::sign
+	print
+	0.0 control_flow::sign
+	print
 	// Test sum_to_n (for loop)
-	10.0 control_flow::sum_to_n print
-	5.0 control_flow::sum_to_n print
-
+	10.0 control_flow::sum_to_n
+	print
+	5.0 control_flow::sum_to_n
+	print
 	// Test count_evens
-	10.0 control_flow::count_evens print
-	20.0 control_flow::count_evens print
+	10.0 control_flow::count_evens
+	print
+	20.0 control_flow::count_evens
+	print
 }

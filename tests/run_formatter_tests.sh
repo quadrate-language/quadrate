@@ -36,7 +36,7 @@ run_formatter_test() {
 	fi
 
 	# Run formatter
-	if ! "$QUADFMT" -w "$test_file" > "$output_file" 2>"$TEMP_DIR/${test_name}.err"; then
+	if ! "$QUADFMT" "$test_file" > "$output_file" 2>"$TEMP_DIR/${test_name}.err"; then
 		log_fail "$test_name" "formatter failed"
 		cat "$TEMP_DIR/${test_name}.err"
 		return
@@ -63,13 +63,13 @@ run_idempotency_test() {
 	increment_test_counter
 
 	# Format once
-	if ! "$QUADFMT" -w "$test_file" > "$first_format" 2>/dev/null; then
+	if ! "$QUADFMT" "$test_file" > "$first_format" 2>/dev/null; then
 		log_skip "${test_name}_idempotent" "formatter failed"
 		return
 	fi
 
 	# Format the formatted output
-	if ! "$QUADFMT" -w "$first_format" > "$second_format" 2>/dev/null; then
+	if ! "$QUADFMT" "$first_format" > "$second_format" 2>/dev/null; then
 		log_fail "${test_name}_idempotent" "second format failed"
 		return
 	fi

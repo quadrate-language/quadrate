@@ -1,19 +1,16 @@
-fn main() {
+fn main( -- ) {
 	// Test dup2 - duplicate top 2 elements
 	1 2 dup2
 	prints
 	clear
-
 	// Test drop2 - remove top 2 elements
 	100 200 300 400 drop2
 	prints
 	clear
-
 	// Test swap2 - swap top two pairs
 	1 2 3 4 swap2
 	prints
 	clear
-
 	// Test over2 - copy second pair to top
 	5 6 7 8 over2
 	prints

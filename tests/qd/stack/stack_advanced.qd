@@ -1,17 +1,15 @@
-fn main() {
+fn main( -- ) {
 	// Test tuck - insert copy of top below second
 	10 20 tuck
 	prints
 	clear
-
 	// Test pick - copy nth element to top (0-indexed)
-	100 200 300 400
-	2 pick  // Copy element at index 2 (which is 200)
+	100 200 300 400 2 pick
+	// Copy element at index 2 (which is 200)
 	prints
 	clear
-
 	// Test roll - rotate n elements
-	10 20 30 40
-	3 roll  // Rotate top 3: 20 30 40 -> 30 40 20
+	10 20 30 40 3 roll
+	// Rotate top 3: 20 30 40 -> 30 40 20
 	prints
 }

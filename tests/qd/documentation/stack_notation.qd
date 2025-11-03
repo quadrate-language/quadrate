@@ -1,7 +1,6 @@
 // This test demonstrates Quadrate's stack notation in function declarations
 // Format: fn name(inputs -- outputs)
 // Where inputs and outputs have name:type annotations
-
 // Basic arithmetic with stack notation
 fn add_numbers(a:i b:i -- result:i) {
 	// a and b are consumed from stack, result is produced
@@ -31,21 +30,26 @@ fn swap_values(a:i b:i -- b:i a:i) {
 // Functions demonstrating stack effects
 fn square_and_double(x:i -- x2:i x_times_2:i) {
 	// Returns x*x and x*2
-	dup dup * swap 2 *
+	dup
+	dup * swap
+	2 *
 }
 
 // Min/max operations with stack notation
 fn triple_min(a:i b:i c:i -- min:i) {
-	min min
+	min
+	min
 }
 
 fn triple_max(a:i b:i c:i -- max:i) {
-	max max
+	max
+	max
 }
 
 // Logical operations
 fn bitwise_and_or(a:i b:i c:i -- result:i) {
-	and or
+	and
+	or
 }
 
 // Functions demonstrating drop
@@ -54,7 +58,8 @@ fn keep_first(a:i b:i -- a:i) {
 }
 
 fn keep_first_of_four(a:i b:i c:i d:i -- a:i) {
-	drop2 drop
+	drop2
+	drop
 }
 
 // Rotation example
@@ -69,61 +74,71 @@ fn int_to_float_calc(a:i b:f -- result:f) {
 }
 
 // Demonstrate stack notation with no parameters
-fn get_answer(-- answer:i) {
+fn get_answer( -- answer:i) {
 	42
 }
 
 // Consume but produce nothing
-fn consume_two(a:i b:i --) {
-	drop drop
+fn consume_two(a:i b:i -- ) {
+	drop
+	drop
 }
 
-fn main() {
+fn main( -- ) {
 	// Test basic arithmetic
-	5 3 add_numbers .           // Should print 8
-	2 3 4 multiply_then_add .   // Should print 14 ((3*4)+2)
-
+	5 3 add_numbers	.
+	// Should print 8
+	2 3 4 multiply_then_add	.
+	// Should print 14 ((3*4)+2)
 	// Test float operations
-	3.5 2.0 multiply_floats .   // Should print 7.000000
-	10.0 4.0 divide_floats .    // Should print 2.500000
-
+	3.5 2.0 multiply_floats	.
+	// Should print 7.000000
+	10.0 4.0 divide_floats	.
+	// Should print 2.500000
 	// Test stack manipulation
-	10 20 swap_values . .       // Should print 10, 20
-
+	10 20 swap_values	. .
+	// Should print 10, 20
 	// Test multiple outputs
-	5 square_and_double . .     // Should print 10, 25
-
+	5 square_and_double	. .
+	// Should print 10, 25
 	// Test triple min/max
-	5 3 8 triple_min .          // Should print 3
-	5 3 8 triple_max .          // Should print 8
-
+	5 3 8 triple_min	.
+	// Should print 3
+	5 3 8 triple_max	.
+	// Should print 8
 	// Test logical operations
-	12 10 3 bitwise_and_or .    // Should print 14 ((10 & 3) | 12 = 2 | 12)
-
+	12 10 3 bitwise_and_or	.
+	// Should print 14 ((10 & 3) | 12 = 2 | 12)
 	// Test drop operations
-	100 200 keep_first .        // Should print 100
-	1 2 3 4 keep_first_of_four . // Should print 1
-
+	100 200 keep_first	.
+	// Should print 100
+	1 2 3 4 keep_first_of_four	.
+	// Should print 1
 	// Test rotation
-	1 2 3 rotate_three . . .    // Should print 1, 3, 2
-
+	1 2 3 rotate_three	. . .
+	// Should print 1, 3, 2
 	// Test mixed types
-	5 3.5 int_to_float_calc .   // Should print 8.500000
-
+	5 3.5 int_to_float_calc	.
+	// Should print 8.500000
 	// Test function with no inputs
-	get_answer .                // Should print 42
-
+	get_answer	.
+	// Should print 42
 	// Test function with no outputs
-	99 88 consume_two           // Consumes but prints nothing
-
+	99 88 consume_two
+	// Consumes but prints nothing
 	// Test negation with clear stack effect
-	42 neg .                    // Should print -42
-
+	42 neg .
+	// Should print -42
 	// Test modulo
-	17 5 mod .                  // Should print 2
-
+	17 5 mod .
+	// Should print 2
 	// Demonstrate inline stack notation as comments
 	// (a b -- min max) Pattern: get both min and max
 	// We can't use dup2 on parameters yet, so we use explicit values
-	7 13 dup2 min rot rot max . .  // Should print 13, 7
+	7 13 dup2
+	min
+	rot
+	rot
+	max . .
+	// Should print 13, 7
 }
