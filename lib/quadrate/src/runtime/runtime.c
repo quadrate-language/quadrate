@@ -3134,3 +3134,156 @@ qd_exec_result qd_not(qd_context* ctx) {
 
 	return (qd_exec_result){0};
 }
+
+// xor - bitwise XOR: ( a b -- a^b )
+qd_exec_result qd_xor(qd_context* ctx) {
+	size_t stack_size = qd_stack_size(ctx->st);
+	if (stack_size < 2) {
+		fprintf(stderr, "Fatal error in xor: Stack underflow (required 2 elements, have %zu)\n", stack_size);
+		dump_stack(ctx);
+		abort();
+	}
+
+	qd_stack_element_t check_b, check_a;
+	qd_stack_error check_err = qd_stack_element(ctx->st, stack_size - 1, &check_b);
+	if (check_err == QD_STACK_OK) {
+		check_err = qd_stack_element(ctx->st, stack_size - 2, &check_a);
+	}
+	if (check_err != QD_STACK_OK) {
+		fprintf(stderr, "Fatal error in xor: Failed to access stack elements\n");
+		dump_stack(ctx);
+		abort();
+	}
+
+	if (check_a.type != QD_STACK_TYPE_INT || check_b.type != QD_STACK_TYPE_INT) {
+		fprintf(stderr, "Fatal error in xor: Type error (expected int for bitwise operation)\n");
+		dump_stack(ctx);
+		abort();
+	}
+
+	qd_stack_element_t b, a;
+	qd_stack_error err = qd_stack_pop(ctx->st, &b);
+	if (err != QD_STACK_OK) {
+		return (qd_exec_result){-2};
+	}
+	err = qd_stack_pop(ctx->st, &a);
+	if (err != QD_STACK_OK) {
+		return (qd_exec_result){-2};
+	}
+
+	int64_t result = a.value.i ^ b.value.i;
+
+	err = qd_stack_push_int(ctx->st, result);
+	if (err != QD_STACK_OK) {
+		return (qd_exec_result){-2};
+	}
+
+	return (qd_exec_result){0};
+}
+
+// lshift - logical shift left: ( x n -- x<<n )
+qd_exec_result qd_lshift(qd_context* ctx) {
+	size_t stack_size = qd_stack_size(ctx->st);
+	if (stack_size < 2) {
+		fprintf(stderr, "Fatal error in lshift: Stack underflow (required 2 elements, have %zu)\n", stack_size);
+		dump_stack(ctx);
+		abort();
+	}
+
+	qd_stack_element_t check_n, check_x;
+	qd_stack_error check_err = qd_stack_element(ctx->st, stack_size - 1, &check_n);
+	if (check_err == QD_STACK_OK) {
+		check_err = qd_stack_element(ctx->st, stack_size - 2, &check_x);
+	}
+	if (check_err != QD_STACK_OK) {
+		fprintf(stderr, "Fatal error in lshift: Failed to access stack elements\n");
+		dump_stack(ctx);
+		abort();
+	}
+
+	if (check_x.type != QD_STACK_TYPE_INT || check_n.type != QD_STACK_TYPE_INT) {
+		fprintf(stderr, "Fatal error in lshift: Type error (expected int for bitwise operation)\n");
+		dump_stack(ctx);
+		abort();
+	}
+
+	qd_stack_element_t n, x;
+	qd_stack_error err = qd_stack_pop(ctx->st, &n);
+	if (err != QD_STACK_OK) {
+		return (qd_exec_result){-2};
+	}
+	err = qd_stack_pop(ctx->st, &x);
+	if (err != QD_STACK_OK) {
+		return (qd_exec_result){-2};
+	}
+
+	// Check for negative or excessive shift counts
+	if (n.value.i < 0 || n.value.i >= 64) {
+		fprintf(stderr, "Fatal error in lshift: Shift count out of range (must be 0-63, got %ld)\n", n.value.i);
+		dump_stack(ctx);
+		abort();
+	}
+
+	int64_t result = x.value.i << n.value.i;
+
+	err = qd_stack_push_int(ctx->st, result);
+	if (err != QD_STACK_OK) {
+		return (qd_exec_result){-2};
+	}
+
+	return (qd_exec_result){0};
+}
+
+// rshift - logical shift right: ( x n -- x>>n )
+qd_exec_result qd_rshift(qd_context* ctx) {
+	size_t stack_size = qd_stack_size(ctx->st);
+	if (stack_size < 2) {
+		fprintf(stderr, "Fatal error in rshift: Stack underflow (required 2 elements, have %zu)\n", stack_size);
+		dump_stack(ctx);
+		abort();
+	}
+
+	qd_stack_element_t check_n, check_x;
+	qd_stack_error check_err = qd_stack_element(ctx->st, stack_size - 1, &check_n);
+	if (check_err == QD_STACK_OK) {
+		check_err = qd_stack_element(ctx->st, stack_size - 2, &check_x);
+	}
+	if (check_err != QD_STACK_OK) {
+		fprintf(stderr, "Fatal error in rshift: Failed to access stack elements\n");
+		dump_stack(ctx);
+		abort();
+	}
+
+	if (check_x.type != QD_STACK_TYPE_INT || check_n.type != QD_STACK_TYPE_INT) {
+		fprintf(stderr, "Fatal error in rshift: Type error (expected int for bitwise operation)\n");
+		dump_stack(ctx);
+		abort();
+	}
+
+	qd_stack_element_t n, x;
+	qd_stack_error err = qd_stack_pop(ctx->st, &n);
+	if (err != QD_STACK_OK) {
+		return (qd_exec_result){-2};
+	}
+	err = qd_stack_pop(ctx->st, &x);
+	if (err != QD_STACK_OK) {
+		return (qd_exec_result){-2};
+	}
+
+	// Check for negative or excessive shift counts
+	if (n.value.i < 0 || n.value.i >= 64) {
+		fprintf(stderr, "Fatal error in rshift: Shift count out of range (must be 0-63, got %ld)\n", n.value.i);
+		dump_stack(ctx);
+		abort();
+	}
+
+	// Logical shift right (unsigned)
+	int64_t result = (int64_t)((uint64_t)x.value.i >> n.value.i);
+
+	err = qd_stack_push_int(ctx->st, result);
+	if (err != QD_STACK_OK) {
+		return (qd_exec_result){-2};
+	}
+
+	return (qd_exec_result){0};
+}
