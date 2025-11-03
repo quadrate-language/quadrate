@@ -117,6 +117,12 @@ namespace Qd {
 		// Imported modules: tracks which modules have been imported via 'use' statements
 		std::unordered_set<std::string> mImportedModules;
 
+		// Imported libraries: maps namespace -> library name (e.g., "std" -> "libstdqd.so")
+		std::unordered_map<std::string, std::string> mImportedLibraries;
+
+		// Imported library functions: maps namespace::function -> true (e.g., "std::printf" -> true)
+		std::unordered_set<std::string> mImportedLibraryFunctions;
+
 		// Loaded module files: tracks which specific files have been loaded (to prevent duplicate loads)
 		std::unordered_set<std::string> mLoadedModuleFiles;
 

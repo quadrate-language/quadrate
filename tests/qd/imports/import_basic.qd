@@ -1,0 +1,9 @@
+// Basic import test - single function call
+
+import "libstdqd.so" as "stdqd" {
+    fn printf(format:s -- )
+}
+
+fn main() {
+    "World" "Hello, %s!\n" stdqd::printf
+}

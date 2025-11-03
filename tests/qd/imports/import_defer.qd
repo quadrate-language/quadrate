@@ -1,0 +1,22 @@
+// Import test - using imports with defer blocks
+
+import "libstdqd.so" as "stdqd" {
+    fn printf(format:s -- )
+}
+
+fn print_defer() {
+    "Defer executed\n" stdqd::printf
+}
+
+fn test_defer() {
+    defer {
+        print_defer
+    }
+    "Before defer\n" stdqd::printf
+}
+
+fn main() {
+    "Start\n" stdqd::printf
+    test_defer
+    "End\n" stdqd::printf
+}

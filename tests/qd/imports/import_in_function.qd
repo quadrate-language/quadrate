@@ -1,0 +1,14 @@
+// Import test - using imported function from helper function
+
+import "libstdqd.so" as "stdqd" {
+    fn printf(format:s -- )
+}
+
+fn greet(name:s -- ) {
+    "Hello from function, %s!\n" stdqd::printf
+}
+
+fn main() {
+    "Alice" greet
+    "Bob" greet
+}

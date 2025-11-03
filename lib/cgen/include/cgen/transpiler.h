@@ -3,6 +3,7 @@
 
 #include "source_file.h"
 #include <optional>
+#include <sstream>
 
 namespace Qd {
 	class IAstNode;
@@ -13,6 +14,8 @@ namespace Qd {
 				const char* filename, const char* package, const char* source, bool verbose, bool dumpTokens) const;
 
 	private:
+		void generateImportWrappers(IAstNode* node, const char* package, std::stringstream& out,
+				std::unordered_set<std::string>& importedLibraries) const;
 		mutable int mVarCounter = 0;
 	};
 }

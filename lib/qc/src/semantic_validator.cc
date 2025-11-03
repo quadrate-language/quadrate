@@ -7,6 +7,7 @@
 #include <qc/ast_node_function.h>
 #include <qc/ast_node_function_pointer.h>
 #include <qc/ast_node_identifier.h>
+#include <qc/ast_node_import.h>
 #include <qc/ast_node_instruction.h>
 #include <qc/ast_node_literal.h>
 #include <qc/ast_node_parameter.h>
@@ -84,6 +85,8 @@ namespace Qd {
 		mDefinedFunctions.clear();
 		mFunctionSignatures.clear();
 		mImportedModules.clear();
+		mImportedLibraries.clear();
+		mImportedLibraryFunctions.clear();
 		mLoadedModuleFiles.clear();
 		mModuleFunctions.clear();
 
@@ -185,6 +188,17 @@ namespace Qd {
 			AstNodeUse* use = static_cast<AstNodeUse*>(node);
 			mImportedModules.insert(use->module());
 			loadModuleDefinitions(use->module(), mCurrentPackage);
+		}
+
+		// If this is an import statement, collect imported library functions
+		if (node->type() == IAstNode::Type::IMPORT_STATEMENT) {
+			AstNodeImport* import = static_cast<AstNodeImport*>(node);
+			mImportedLibraries[import->namespaceName()] = import->library();
+			// Register all imported functions as namespace::function
+			for (const auto* func : import->functions()) {
+				std::string qualifiedName = import->namespaceName() + "::" + func->name;
+				mImportedLibraryFunctions.insert(qualifiedName);
+			}
 		}
 
 		// Recursively process children
@@ -477,32 +491,51 @@ namespace Qd {
 			}
 		}
 
-		// Check if this is a scoped identifier (module function call like math::sqrt)
+		// Check if this is a scoped identifier (module function call like math::sqrt or std::printf)
 		if (node->type() == IAstNode::Type::SCOPED_IDENTIFIER) {
 			AstNodeScopedIdentifier* scoped = static_cast<AstNodeScopedIdentifier*>(node);
-			const std::string& moduleName = scoped->scope();
+			const std::string& scopeName = scoped->scope();
 			const std::string& functionName = scoped->name();
+			std::string qualifiedName = scopeName + "::" + functionName;
+
+			// Check if this is an imported library function (e.g., std::printf)
+			if (mImportedLibraryFunctions.find(qualifiedName) != mImportedLibraryFunctions.end()) {
+				// Valid imported library function
+				return;
+			}
+
+			// Check if this is an imported library namespace (even if function not declared)
+			if (mImportedLibraries.find(scopeName) != mImportedLibraries.end()) {
+				// It's a library namespace, but function wasn't declared in import
+				std::string errorMsg = "Function '";
+				errorMsg += functionName;
+				errorMsg += "' not declared in library import '";
+				errorMsg += scopeName;
+				errorMsg += "'";
+				reportError(scoped, errorMsg.c_str());
+				return;
+			}
 
 			// Check if the module was imported
-			if (mImportedModules.find(moduleName) == mImportedModules.end()) {
+			if (mImportedModules.find(scopeName) == mImportedModules.end()) {
 				std::string errorMsg = "Module '";
-				errorMsg += moduleName;
+				errorMsg += scopeName;
 				errorMsg += "' not imported. Add 'use ";
-				errorMsg += moduleName;
+				errorMsg += scopeName;
 				errorMsg += "' to use this module";
 				reportError(scoped, errorMsg.c_str());
 				return;
 			}
 
 			// Check if the function exists in the module
-			auto moduleIt = mModuleFunctions.find(moduleName);
+			auto moduleIt = mModuleFunctions.find(scopeName);
 			if (moduleIt != mModuleFunctions.end()) {
 				const auto& functions = moduleIt->second;
 				if (functions.find(functionName) == functions.end()) {
 					std::string errorMsg = "Function '";
 					errorMsg += functionName;
 					errorMsg += "' not found in module '";
-					errorMsg += moduleName;
+					errorMsg += scopeName;
 					errorMsg += "'";
 					reportError(scoped, errorMsg.c_str());
 				}

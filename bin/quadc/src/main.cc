@@ -13,6 +13,7 @@
 #include <random>
 #include <set>
 #include <sstream>
+#include <unordered_set>
 
 #define QUADC_VERSION "0.1.0"
 
@@ -496,8 +497,32 @@ int main(int argc, char** argv) {
 			}
 		}
 
+		// Collect all imported libraries from all transpiled sources
+		std::unordered_set<std::string> allImportedLibraries;
+		for (const auto& source : transpiledSources) {
+			for (const auto& lib : source.importedLibraries) {
+				allImportedLibraries.insert(lib);
+			}
+		}
+
+		// Convert library names to linker flags (libstdqd.so -> -lstdqd)
+		std::string importedLibraryFlags;
+		for (const auto& lib : allImportedLibraries) {
+			// Extract library name from filename (e.g., "libstdqd.so" -> "stdqd")
+			std::string libName = lib;
+			if (libName.find("lib") == 0) {
+				libName = libName.substr(3); // Remove "lib" prefix
+			}
+			// Remove .so or .a extension
+			size_t dotPos = libName.find_last_of('.');
+			if (dotPos != std::string::npos) {
+				libName = libName.substr(0, dotPos);
+			}
+			importedLibraryFlags += " -l" + libName;
+		}
+
 		Qd::Linker linker;
-		std::string linkerFlags = getLinkerFlags();
+		std::string linkerFlags = getLinkerFlags() + importedLibraryFlags;
 		bool linkSuccess = linker.link(translationUnits, outputPath.c_str(), linkerFlags.c_str(), verbose);
 		if (!linkSuccess) {
 			std::cerr << "quadc: linking failed" << std::endl;

@@ -14,6 +14,7 @@
 #include <qc/ast_node_function_pointer.h>
 #include <qc/ast_node_identifier.h>
 #include <qc/ast_node_if.h>
+#include <qc/ast_node_import.h>
 #include <qc/ast_node_instruction.h>
 #include <qc/ast_node_label.h>
 #include <qc/ast_node_literal.h>
@@ -117,8 +118,8 @@ namespace Qd {
 				size_t n;
 				const char* text = u8t_scanner_token_text(scanner, &n);
 				if (strcmp(text, "fn") == 0 || strcmp(text, "const") == 0 || strcmp(text, "use") == 0 ||
-						strcmp(text, "if") == 0 || strcmp(text, "for") == 0 || strcmp(text, "switch") == 0 ||
-						strcmp(text, "return") == 0) {
+						strcmp(text, "import") == 0 || strcmp(text, "if") == 0 || strcmp(text, "for") == 0 ||
+						strcmp(text, "switch") == 0 || strcmp(text, "return") == 0) {
 					return;
 				}
 			}
@@ -1339,6 +1340,146 @@ namespace Qd {
 					} else {
 						errorReporter.reportError(&scanner, "Expected module name after 'use'");
 					}
+				} else if (strcmp(text, "import") == 0) {
+					// Parse: import "libname.so" as "namespace" { fn ... }
+					token = u8t_scanner_scan(&scanner);
+					if (token != U8T_STRING) {
+						errorReporter.reportError(&scanner, "Expected library name (string) after 'import'");
+						break;
+					}
+					const char* libName = u8t_scanner_token_text(&scanner, &n);
+					// Strip quotes from string literal
+					std::string library(libName);
+					if (library.length() >= 2 && library.front() == '"' && library.back() == '"') {
+						library = library.substr(1, library.length() - 2);
+					}
+
+					// Expect 'as'
+					token = u8t_scanner_scan(&scanner);
+					if (token != U8T_IDENTIFIER) {
+						errorReporter.reportError(&scanner, "Expected 'as' after library name");
+						break;
+					}
+					const char* asKeyword = u8t_scanner_token_text(&scanner, &n);
+					if (strcmp(asKeyword, "as") != 0) {
+						errorReporter.reportError(&scanner, "Expected 'as' after library name");
+						break;
+					}
+
+					// Expect namespace string
+					token = u8t_scanner_scan(&scanner);
+					if (token != U8T_STRING) {
+						errorReporter.reportError(&scanner, "Expected namespace name (string) after 'as'");
+						break;
+					}
+					const char* nsName = u8t_scanner_token_text(&scanner, &n);
+					// Strip quotes from string literal
+					std::string namespaceName(nsName);
+					if (namespaceName.length() >= 2 && namespaceName.front() == '"' && namespaceName.back() == '"') {
+						namespaceName = namespaceName.substr(1, namespaceName.length() - 2);
+					}
+
+					// Expect '{'
+					token = u8t_scanner_scan(&scanner);
+					if (token != '{') {
+						errorReporter.reportError(&scanner, "Expected '{' after namespace name");
+						break;
+					}
+
+					AstNodeImport* importStmt = new AstNodeImport(library, namespaceName);
+					setNodePosition(importStmt, &scanner, src);
+
+					// Parse function declarations
+					while (true) {
+						token = u8t_scanner_scan(&scanner);
+						if (token == '}') {
+							break;
+						}
+						if (token == U8T_IDENTIFIER) {
+							const char* keyword = u8t_scanner_token_text(&scanner, &n);
+							if (strcmp(keyword, "fn") == 0) {
+								// Parse function declaration
+								token = u8t_scanner_scan(&scanner);
+								if (token != U8T_IDENTIFIER) {
+									errorReporter.reportError(&scanner, "Expected function name after 'fn'");
+									continue;
+								}
+								const char* funcName = u8t_scanner_token_text(&scanner, &n);
+								ImportedFunction* func = new ImportedFunction();
+								func->name = funcName;
+
+								size_t funcLine, funcColumn;
+								size_t pos = u8t_scanner_token_start(&scanner);
+								calculateLineColumn(src, pos, &funcLine, &funcColumn);
+								func->line = funcLine;
+								func->column = funcColumn;
+
+								// Expect '('
+								token = u8t_scanner_scan(&scanner);
+								if (token != '(') {
+									errorReporter.reportError(&scanner, "Expected '(' after function name");
+									delete func;
+									continue;
+								}
+
+								// Parse parameters (simplified - name:type format)
+								while (true) {
+									token = u8t_scanner_scan(&scanner);
+									if (token == ')' || token == U8T_EOF) {
+										break;
+									}
+									if (token == '-') {
+										// Check for '--' separator
+										token = u8t_scanner_scan(&scanner);
+										if (token == '-') {
+											// Now parse output parameters
+											while (true) {
+												token = u8t_scanner_scan(&scanner);
+												if (token == ')' || token == U8T_EOF) {
+													break;
+												}
+												if (token == U8T_IDENTIFIER) {
+													const char* paramName = u8t_scanner_token_text(&scanner, &n);
+													// Expect ':'
+													token = u8t_scanner_scan(&scanner);
+													if (token == ':') {
+														token = u8t_scanner_scan(&scanner);
+														if (token == U8T_IDENTIFIER) {
+															const char* paramType =
+																	u8t_scanner_token_text(&scanner, &n);
+															AstNodeParameter* param =
+																	new AstNodeParameter(paramName, paramType, true);
+															func->outputParameters.push_back(param);
+														}
+													}
+												}
+											}
+											break;
+										}
+									}
+									if (token == U8T_IDENTIFIER) {
+										const char* paramName = u8t_scanner_token_text(&scanner, &n);
+										// Expect ':'
+										token = u8t_scanner_scan(&scanner);
+										if (token == ':') {
+											token = u8t_scanner_scan(&scanner);
+											if (token == U8T_IDENTIFIER) {
+												const char* paramType = u8t_scanner_token_text(&scanner, &n);
+												AstNodeParameter* param =
+														new AstNodeParameter(paramName, paramType, false);
+												func->inputParameters.push_back(param);
+											}
+										}
+									}
+								}
+
+								importStmt->addFunction(func);
+							}
+						}
+					}
+
+					importStmt->setParent(program);
+					program->addChild(importStmt);
 				} else if (strcmp(text, "const") == 0) {
 					token = u8t_scanner_scan(&scanner);
 					if (token == U8T_IDENTIFIER) {

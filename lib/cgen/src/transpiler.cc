@@ -12,6 +12,7 @@
 #include <qc/ast_node_function_pointer.h>
 #include <qc/ast_node_identifier.h>
 #include <qc/ast_node_if.h>
+#include <qc/ast_node_import.h>
 #include <qc/ast_node_instruction.h>
 #include <qc/ast_node_literal.h>
 #include <qc/ast_node_parameter.h>
@@ -406,6 +407,10 @@ namespace Qd {
 			}
 			break;
 		}
+		case IAstNode::Type::IMPORT_STATEMENT:
+			// Import statements are handled in the main emit() function
+			// They generate external declarations and wrapper functions
+			break;
 		case IAstNode::Type::CONSTANT_DECLARATION: {
 			AstNodeConstant* constDecl = static_cast<AstNodeConstant*>(node);
 			out << makeIndent(indent) << "#define " << packageName << "_" << constDecl->name() << " "
@@ -439,6 +444,57 @@ namespace Qd {
 
 		if (node->type() == IAstNode::Type::BLOCK) {
 			out << makeIndent(indent) << "}\n";
+		}
+	}
+
+	void Transpiler::generateImportWrappers(IAstNode* node, const char* package, std::stringstream& out,
+			std::unordered_set<std::string>& importedLibraries) const {
+		if (!node) {
+			return;
+		}
+
+		// If this is an import statement, generate wrappers
+		if (node->type() == IAstNode::Type::IMPORT_STATEMENT) {
+			AstNodeImport* import = static_cast<AstNodeImport*>(node);
+			const std::string& namespaceName = import->namespaceName();
+			const std::string& libraryName = import->library();
+
+			// Track this library for linking
+			importedLibraries.insert(libraryName);
+
+			// Extract C function prefix from library filename (e.g., "libstdqd.so" -> "stdqd")
+			std::string cPrefix = libraryName;
+			// Remove "lib" prefix if present
+			if (cPrefix.find("lib") == 0) {
+				cPrefix = cPrefix.substr(3);
+			}
+			// Remove extension (.so, .a, etc.)
+			size_t dotPos = cPrefix.find_last_of('.');
+			if (dotPos != std::string::npos) {
+				cPrefix = cPrefix.substr(0, dotPos);
+			}
+
+			out << "// Imported from " << libraryName << "\n";
+
+			// Generate external declarations and wrappers for each function
+			for (const auto* func : import->functions()) {
+				// External declaration: extern qd_exec_result qd_stdqd_printf(qd_context* ctx);
+				// C function name derived from library filename
+				std::string cFunctionName = "qd_" + cPrefix + "_" + func->name;
+				out << "extern qd_exec_result " << cFunctionName << "(qd_context* ctx);\n";
+
+				// Wrapper function: usr_std_printf calls qd_stdqd_printf
+				// Wrapper name uses the user-chosen namespace
+				std::string wrapperName = "usr_" + namespaceName + "_" + func->name;
+				out << "qd_exec_result " << wrapperName << "(qd_context* ctx) {\n";
+				out << "    return " << cFunctionName << "(ctx);\n";
+				out << "}\n\n";
+			}
+		}
+
+		// Recursively process children
+		for (size_t i = 0; i < node->childCount(); i++) {
+			generateImportWrappers(node->child(i), package, out, importedLibraries);
 		}
 	}
 
@@ -483,6 +539,10 @@ namespace Qd {
 		ss << "#include <stdio.h>\n";
 		ss << "#include <stdlib.h>\n\n";
 
+		// Generate external declarations and wrappers for imported library functions
+		std::unordered_set<std::string> importedLibraries;
+		generateImportWrappers(root, package, ss, importedLibraries);
+
 		// Reset counter for each compilation unit
 		mVarCounter = 0;
 		traverse(root, package, ss, 0, mVarCounter);
@@ -491,8 +551,8 @@ namespace Qd {
 		std::string basename = std::filesystem::path(filename).filename().string();
 		std::filesystem::path filepath = std::filesystem::path(package) / (basename + ".c");
 
-		// Return source file with imported modules and source directory
-		return SourceFile{
-				filepath, std::string(package), ss.str(), validator.importedModules(), validator.sourceDirectory()};
+		// Return source file with imported modules, imported libraries, and source directory
+		return SourceFile{filepath, std::string(package), ss.str(), validator.importedModules(), importedLibraries,
+				validator.sourceDirectory()};
 	}
 }

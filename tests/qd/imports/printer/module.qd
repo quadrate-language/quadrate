@@ -1,0 +1,18 @@
+// Module that uses imports internally
+
+import "libstdqd.so" as "stdqd" {
+    fn printf(format:s -- )
+}
+
+fn print_number(num:i -- ) {
+    "Number: %d\n" stdqd::printf
+}
+
+fn print_message(msg:s -- ) {
+    "Message: %s\n" stdqd::printf
+}
+
+fn main() {
+    123 print_number
+    "Testing printer module" print_message
+}

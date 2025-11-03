@@ -1,0 +1,9 @@
+// Test importing a module that itself uses imports
+
+use printer
+
+fn main() {
+    42 printer::print_number
+    "Hello Module" printer::print_message
+    100 printer::print_number
+}

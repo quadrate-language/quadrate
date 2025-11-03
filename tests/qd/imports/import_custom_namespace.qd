@@ -1,0 +1,9 @@
+// Import test - custom namespace name
+
+import "libstdqd.so" as "std" {
+    fn printf(format:s -- )
+}
+
+fn main() {
+    "custom" "Namespace: %s\n" std::printf
+}

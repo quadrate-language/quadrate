@@ -10,6 +10,7 @@ namespace Qd {
 		std::string package;
 		std::string content;
 		std::unordered_set<std::string> importedModules;
+		std::unordered_set<std::string> importedLibraries; // e.g., "libstdqd.so"
 		std::string sourceDirectory;
 	};
 }

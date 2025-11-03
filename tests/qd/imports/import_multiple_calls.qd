@@ -1,0 +1,12 @@
+// Import test - multiple function calls
+
+import "libstdqd.so" as "stdqd" {
+    fn printf(format:s -- )
+}
+
+fn main() {
+    "Alice" "Hello, %s!\n" stdqd::printf
+    "Bob" "Goodbye, %s!\n" stdqd::printf
+    42 "The answer is %d\n" stdqd::printf
+    3.14 "Pi is approximately %f\n" stdqd::printf
+}
