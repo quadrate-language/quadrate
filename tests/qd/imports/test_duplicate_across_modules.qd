@@ -1,0 +1,9 @@
+// Test: Two modules both import same library with same namespace
+
+use modA
+use modB
+
+fn main() {
+    modA::print_a
+    modB::print_b
+}

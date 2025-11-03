@@ -1,0 +1,13 @@
+// Module A - imports libstdqd as "io"
+
+import "libstdqd.so" as "io" {
+    fn printf(format:s -- )
+}
+
+fn print_a() {
+    "From module A\n" io::printf
+}
+
+fn main() {
+    print_a
+}

@@ -485,8 +485,10 @@ namespace Qd {
 
 				// Wrapper function: usr_std_printf calls qd_stdqd_printf
 				// Wrapper name uses the user-chosen namespace
+				// Use 'static inline' to avoid duplicate symbol errors when multiple modules
+				// import the same library with the same namespace
 				std::string wrapperName = "usr_" + namespaceName + "_" + func->name;
-				out << "qd_exec_result " << wrapperName << "(qd_context* ctx) {\n";
+				out << "static inline qd_exec_result " << wrapperName << "(qd_context* ctx) {\n";
 				out << "    return " << cFunctionName << "(ctx);\n";
 				out << "}\n\n";
 			}
