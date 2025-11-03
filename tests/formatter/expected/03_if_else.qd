@@ -1,12 +1,7 @@
 fn main( -- ) {
-	1.0
-	2.0
-	eq
-	if {
-		10.0
-		print
+	1.0 2.0 eq if {
+		10.0 print
 	} else {
-		20.0
-		print
+		20.0 print
 	}
 }

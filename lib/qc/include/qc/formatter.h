@@ -26,6 +26,7 @@ namespace Qd {
 		void formatProgram(const IAstNode* node);
 		void formatFunction(const IAstNode* node);
 		void formatBlock(const IAstNode* node);
+		void formatBlockInline(const IAstNode* node);
 		void formatIf(const IAstNode* node);
 		void formatFor(const IAstNode* node);
 		void formatSwitch(const IAstNode* node);
@@ -39,7 +40,9 @@ namespace Qd {
 		void formatScopedIdentifier(const IAstNode* node);
 		void formatBreak(const IAstNode* node);
 		void formatContinue(const IAstNode* node);
+		void formatReturn(const IAstNode* node);
 		void formatComment(const IAstNode* node);
+		bool isInlineNode(const IAstNode* node);
 
 		void indent();
 		void dedent();

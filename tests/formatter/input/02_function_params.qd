@@ -1,2 +1,7 @@
-fn double(x:f--y:f){dup add}
-fn triple(   x:f     y:f   --   z:f    ){   mul   }
+fn double(x:f -- y:f) {
+	dup add
+}
+
+fn triple(x:f y:f -- z:f) {
+	mul
+}

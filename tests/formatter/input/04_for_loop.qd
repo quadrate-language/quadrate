@@ -1,1 +1,6 @@
-fn main(){0 5 1 for{$ print}}
+fn main( -- ) {
+	0 5 1 for {
+		$
+		print
+	}
+}

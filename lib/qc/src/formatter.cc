@@ -3,6 +3,7 @@
 #include <qc/ast_node_constant.h>
 #include <qc/ast_node_for.h>
 #include <qc/ast_node_function.h>
+#include <qc/ast_node_function_pointer.h>
 #include <qc/ast_node_identifier.h>
 #include <qc/ast_node_if.h>
 #include <qc/ast_node_instruction.h>
@@ -10,6 +11,7 @@
 #include <qc/ast_node_literal.h>
 #include <qc/ast_node_parameter.h>
 #include <qc/ast_node_program.h>
+#include <qc/ast_node_return.h>
 #include <qc/ast_node_scoped.h>
 #include <qc/ast_node_switch.h>
 #include <qc/ast_node_use.h>
@@ -89,6 +91,9 @@ namespace Qd {
 		case IAstNode::Type::CONTINUE_STATEMENT:
 			formatContinue(node);
 			break;
+		case IAstNode::Type::RETURN_STATEMENT:
+			formatReturn(node);
+			break;
 		case IAstNode::Type::COMMENT:
 			formatComment(node);
 			break;
@@ -145,8 +150,10 @@ namespace Qd {
 			}
 			const AstNodeParameter* param = static_cast<const AstNodeParameter*>(inputs[i]);
 			write(param->name());
-			write(":");
-			write(param->typeString());
+			if (!param->typeString().empty()) {
+				write(":");
+				write(param->typeString());
+			}
 		}
 
 		// Format output parameters
@@ -159,20 +166,20 @@ namespace Qd {
 			}
 			const AstNodeParameter* param = static_cast<const AstNodeParameter*>(outputs[i]);
 			write(param->name());
-			write(":");
-			write(param->typeString());
+			if (!param->typeString().empty()) {
+				write(":");
+				write(param->typeString());
+			}
 		}
 
 		write(") {");
 		newLine();
 
-		// Format body
+		// Format body - keep instructions/literals inline
 		indent();
 		if (func->body()) {
 			const AstNodeBlock* body = static_cast<const AstNodeBlock*>(func->body());
-			for (size_t i = 0; i < body->childCount(); i++) {
-				formatNode(body->child(i));
-			}
+			formatBlockInline(body);
 		}
 		dedent();
 
@@ -189,16 +196,342 @@ namespace Qd {
 		}
 	}
 
+	static bool isOperator(const std::string& name) {
+		// Symbolic operators that should stay inline
+		static const char* operators[] = {"!", "!=", "*", "+", "-", ".", "/", "<", "<=", "==", ">", ">="};
+		static const size_t count = sizeof(operators) / sizeof(operators[0]);
+
+		for (size_t i = 0; i < count; i++) {
+			if (name == operators[i]) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	bool Formatter::isInlineNode(const IAstNode* node) {
+		if (!node) {
+			return false;
+		}
+
+		switch (node->type()) {
+		case IAstNode::Type::INSTRUCTION: {
+			// Only operators and literals stay inline, not named instructions
+			const AstNodeInstruction* instr = static_cast<const AstNodeInstruction*>(node);
+			return isOperator(instr->name());
+		}
+		case IAstNode::Type::LITERAL:
+			return true;
+		case IAstNode::Type::IDENTIFIER:
+		case IAstNode::Type::SCOPED_IDENTIFIER:
+		case IAstNode::Type::FUNCTION_POINTER_REFERENCE:
+			return false; // Function calls should break to new lines
+		default:
+			return false;
+		}
+	}
+
+	// Helper to check if the next node is an operator
+	static bool nextNodeIsOperator(const AstNodeBlock* block, size_t currentIndex) {
+		if (currentIndex + 1 >= block->childCount()) {
+			return false;
+		}
+		const IAstNode* nextNode = block->child(currentIndex + 1);
+		if (nextNode && nextNode->type() == IAstNode::Type::INSTRUCTION) {
+			const AstNodeInstruction* instr = static_cast<const AstNodeInstruction*>(nextNode);
+			return isOperator(instr->name());
+		}
+		return false;
+	}
+
+	void Formatter::formatBlockInline(const IAstNode* node) {
+		const AstNodeBlock* block = static_cast<const AstNodeBlock*>(node);
+
+		for (size_t i = 0; i < block->childCount(); i++) {
+			const IAstNode* child = block->child(i);
+
+			// Start a new line with inline nodes (operators and literals)
+			if (isInlineNode(child)) {
+				// Check if we're continuing from a previous named instruction
+				// This happens when previous was a named instruction that continued because we're an operator
+				bool continuingLine = false;
+				if (i > 0 && child->type() == IAstNode::Type::INSTRUCTION) {
+					const AstNodeInstruction* instr = static_cast<const AstNodeInstruction*>(child);
+					if (isOperator(instr->name())) {
+						const IAstNode* prevNode = block->child(i - 1);
+						// If previous is a named (non-operator) instruction, it would have continued to us
+						if (prevNode && prevNode->type() == IAstNode::Type::INSTRUCTION) {
+							const AstNodeInstruction* prevInstr = static_cast<const AstNodeInstruction*>(prevNode);
+							if (!isOperator(prevInstr->name())) {
+								continuingLine = true;
+							}
+						}
+					}
+				}
+
+				if (continuingLine) {
+					write(" ");
+				} else {
+					writeIndent();
+				}
+				size_t firstInlineIndex = i;
+				while (i < block->childCount() && isInlineNode(block->child(i))) {
+					if (i > firstInlineIndex) {
+						write(" ");
+					}
+
+					const IAstNode* inlineNode = block->child(i);
+					if (!inlineNode) {
+						break;
+					}
+					switch (inlineNode->type()) {
+					case IAstNode::Type::INSTRUCTION: {
+						const AstNodeInstruction* instr = static_cast<const AstNodeInstruction*>(inlineNode);
+						write(instr->name());
+						break;
+					}
+					case IAstNode::Type::LITERAL: {
+						const AstNodeLiteral* lit = static_cast<const AstNodeLiteral*>(inlineNode);
+						write(lit->value());
+						break;
+					}
+					default:
+						break;
+					}
+					i++;
+				}
+				i--; // Adjust because the for loop will increment
+
+				// After processing inline nodes, check what comes next
+				if (i + 1 < block->childCount()) {
+					const IAstNode* nextNode = block->child(i + 1);
+					// If next is if/for, process it on same line
+					if (nextNode && (nextNode->type() == IAstNode::Type::IF_STATEMENT ||
+											nextNode->type() == IAstNode::Type::FOR_STATEMENT)) {
+						write(" ");
+						i++;
+						formatNode(nextNode);
+						continue; // Skip the newline, formatNode already added it
+					}
+					// If next is a named instruction or identifier, don't newline - let it continue on this line
+					if (nextNode && (nextNode->type() == IAstNode::Type::INSTRUCTION ||
+											nextNode->type() == IAstNode::Type::IDENTIFIER ||
+											nextNode->type() == IAstNode::Type::SCOPED_IDENTIFIER)) {
+						// Don't newline, continue to next iteration which will process it on same line
+						continue;
+					}
+				}
+				newLine();
+			} else if (child->type() == IAstNode::Type::IF_STATEMENT ||
+					   child->type() == IAstNode::Type::FOR_STATEMENT) {
+				// if/for without preceding inline nodes still need indent
+				writeIndent();
+				formatNode(child);
+			} else if (child->type() == IAstNode::Type::INSTRUCTION) {
+				// Named instruction - check if we should continue from previous line or start new line
+				bool needsIndent = true;
+
+				// Check if previous node was an inline node or operator - if so, continue on same line
+				if (i > 0) {
+					const IAstNode* prevNode = block->child(i - 1);
+					if (prevNode) {
+						// If previous was a literal, we're continuing
+						if (prevNode->type() == IAstNode::Type::LITERAL) {
+							needsIndent = false;
+						}
+						// If previous was an operator, we're continuing
+						else if (prevNode->type() == IAstNode::Type::INSTRUCTION) {
+							const AstNodeInstruction* prevInstr = static_cast<const AstNodeInstruction*>(prevNode);
+							// Continue if previous was operator
+							if (isOperator(prevInstr->name())) {
+								needsIndent = false;
+							}
+						}
+					}
+				}
+
+				if (needsIndent) {
+					writeIndent();
+				} else {
+					write(" ");
+				}
+
+				const AstNodeInstruction* instr = static_cast<const AstNodeInstruction*>(child);
+				write(instr->name());
+
+				// Named instructions don't break if next is an operator
+				if (nextNodeIsOperator(block, i)) {
+					continue;
+				}
+
+				// If next is if/for, keep on same line
+				if (i + 1 < block->childCount()) {
+					const IAstNode* nextNode = block->child(i + 1);
+					if (nextNode && (nextNode->type() == IAstNode::Type::IF_STATEMENT ||
+											nextNode->type() == IAstNode::Type::FOR_STATEMENT)) {
+						write(" ");
+						i++;
+						formatNode(nextNode);
+						continue;
+					}
+				}
+
+				newLine();
+			} else if (child->type() == IAstNode::Type::IDENTIFIER) {
+				// Function calls - check if we should continue from previous line
+				bool needsIndent = true;
+				if (i > 0) {
+					const IAstNode* prevNode = block->child(i - 1);
+					if (prevNode) {
+						if (prevNode->type() == IAstNode::Type::LITERAL) {
+							needsIndent = false;
+						} else if (prevNode->type() == IAstNode::Type::INSTRUCTION) {
+							const AstNodeInstruction* prevInstr = static_cast<const AstNodeInstruction*>(prevNode);
+							// Continue if previous was operator or any instruction
+							if (isOperator(prevInstr->name())) {
+								needsIndent = false;
+							} else {
+								// Previous was a named instruction - continue
+								needsIndent = false;
+							}
+						}
+					}
+				}
+
+				if (needsIndent) {
+					writeIndent();
+				} else {
+					write(" ");
+				}
+
+				const AstNodeIdentifier* ident = static_cast<const AstNodeIdentifier*>(child);
+				write(ident->name());
+
+				// Identifiers don't break if next is an operator
+				if (nextNodeIsOperator(block, i)) {
+					continue;
+				}
+
+				// If next is if/for, keep on same line
+				if (i + 1 < block->childCount()) {
+					const IAstNode* nextNode = block->child(i + 1);
+					if (nextNode && (nextNode->type() == IAstNode::Type::IF_STATEMENT ||
+											nextNode->type() == IAstNode::Type::FOR_STATEMENT)) {
+						write(" ");
+						i++;
+						formatNode(nextNode);
+						continue;
+					}
+				}
+
+				newLine();
+			} else if (child->type() == IAstNode::Type::SCOPED_IDENTIFIER) {
+				// Scoped identifiers - check if we should continue from previous line
+				bool needsIndent = true;
+				if (i > 0) {
+					const IAstNode* prevNode = block->child(i - 1);
+					if (prevNode) {
+						if (prevNode->type() == IAstNode::Type::LITERAL) {
+							needsIndent = false;
+						} else if (prevNode->type() == IAstNode::Type::INSTRUCTION) {
+							const AstNodeInstruction* prevInstr = static_cast<const AstNodeInstruction*>(prevNode);
+							// Continue if previous was operator or any instruction
+							if (isOperator(prevInstr->name())) {
+								needsIndent = false;
+							} else {
+								// Previous was a named instruction - continue
+								needsIndent = false;
+							}
+						}
+					}
+				}
+
+				if (needsIndent) {
+					writeIndent();
+				} else {
+					write(" ");
+				}
+
+				const AstNodeScopedIdentifier* scoped = static_cast<const AstNodeScopedIdentifier*>(child);
+				write(scoped->scope());
+				write("::");
+				write(scoped->name());
+
+				// Scoped identifiers don't break if next is an operator
+				if (nextNodeIsOperator(block, i)) {
+					continue;
+				}
+
+				// If next is if/for, keep on same line
+				if (i + 1 < block->childCount()) {
+					const IAstNode* nextNode = block->child(i + 1);
+					if (nextNode && (nextNode->type() == IAstNode::Type::IF_STATEMENT ||
+											nextNode->type() == IAstNode::Type::FOR_STATEMENT)) {
+						write(" ");
+						i++;
+						formatNode(nextNode);
+						continue;
+					}
+				}
+
+				newLine();
+			} else if (child->type() == IAstNode::Type::FUNCTION_POINTER_REFERENCE) {
+				// Function pointers get their own line unless preceded by operator
+				bool needsIndent = true;
+				if (i > 0) {
+					const IAstNode* prevNode = block->child(i - 1);
+					if (prevNode && prevNode->type() == IAstNode::Type::INSTRUCTION) {
+						const AstNodeInstruction* prevInstr = static_cast<const AstNodeInstruction*>(prevNode);
+						if (isOperator(prevInstr->name())) {
+							needsIndent = false;
+						}
+					}
+				}
+
+				if (needsIndent) {
+					writeIndent();
+				} else {
+					write(" ");
+				}
+
+				const AstNodeFunctionPointerReference* funcPtr =
+						static_cast<const AstNodeFunctionPointerReference*>(child);
+				write("&");
+				write(funcPtr->functionName());
+
+				// If next node is an operator, continue on same line
+				if (nextNodeIsOperator(block, i)) {
+					continue;
+				}
+
+				// If next node is if/for, keep on same line
+				if (i + 1 < block->childCount()) {
+					const IAstNode* nextNode = block->child(i + 1);
+					if (nextNode && (nextNode->type() == IAstNode::Type::IF_STATEMENT ||
+											nextNode->type() == IAstNode::Type::FOR_STATEMENT)) {
+						write(" ");
+						i++;
+						formatNode(nextNode);
+						continue;
+					}
+				}
+				newLine();
+			} else {
+				// Other non-inline nodes (control structures, comments, etc.)
+				formatNode(child);
+			}
+		}
+	}
+
 	void Formatter::formatIf(const IAstNode* node) {
 		const AstNodeIfStatement* ifNode = static_cast<const AstNodeIfStatement*>(node);
 
-		writeIndent();
 		write("if {");
 		newLine();
 
 		indent();
 		if (ifNode->thenBody()) {
-			formatNode(ifNode->thenBody());
+			formatBlockInline(ifNode->thenBody());
 		}
 		dedent();
 
@@ -210,7 +543,7 @@ namespace Qd {
 			newLine();
 
 			indent();
-			formatNode(ifNode->elseBody());
+			formatBlockInline(ifNode->elseBody());
 			dedent();
 
 			writeIndent();
@@ -223,13 +556,12 @@ namespace Qd {
 	void Formatter::formatFor(const IAstNode* node) {
 		const AstNodeForStatement* forNode = static_cast<const AstNodeForStatement*>(node);
 
-		writeIndent();
 		write("for {");
 		newLine();
 
 		indent();
 		if (forNode->body()) {
-			formatNode(forNode->body());
+			formatBlockInline(forNode->body());
 		}
 		dedent();
 
@@ -257,21 +589,39 @@ namespace Qd {
 	}
 
 	void Formatter::formatCase(const IAstNode* node) {
+		const AstNodeCase* caseNode = static_cast<const AstNodeCase*>(node);
+
 		writeIndent();
-		write("case ");
-
-		// Format case value (first child)
-		if (node->childCount() > 0) {
-			formatNode(node->child(0));
+		if (caseNode->isDefault()) {
+			write("default {");
+		} else {
+			write("case ");
+			// Format case value inline
+			if (caseNode->value()) {
+				const IAstNode* val = caseNode->value();
+				switch (val->type()) {
+				case IAstNode::Type::LITERAL: {
+					const AstNodeLiteral* lit = static_cast<const AstNodeLiteral*>(val);
+					write(lit->value());
+					break;
+				}
+				case IAstNode::Type::IDENTIFIER: {
+					const AstNodeIdentifier* ident = static_cast<const AstNodeIdentifier*>(val);
+					write(ident->name());
+					break;
+				}
+				default:
+					break;
+				}
+			}
+			write(" {");
 		}
-
-		write(" {");
 		newLine();
 
-		// Format case body
+		// Format case body inline
 		indent();
-		for (size_t i = 1; i < node->childCount(); i++) {
-			formatNode(node->child(i));
+		if (caseNode->body()) {
+			formatBlockInline(caseNode->body());
 		}
 		dedent();
 
@@ -280,15 +630,262 @@ namespace Qd {
 		newLine();
 	}
 
+	// Helper to check if next node in generic parent is an operator
+	static bool nextChildIsOperator(const IAstNode* parent, size_t currentIndex) {
+		if (currentIndex + 1 >= parent->childCount()) {
+			return false;
+		}
+		const IAstNode* nextNode = parent->child(currentIndex + 1);
+		if (nextNode && nextNode->type() == IAstNode::Type::INSTRUCTION) {
+			const AstNodeInstruction* instr = static_cast<const AstNodeInstruction*>(nextNode);
+			return isOperator(instr->name());
+		}
+		return false;
+	}
+
 	void Formatter::formatDefer(const IAstNode* node) {
 		writeIndent();
 		write("defer {");
 		newLine();
 
 		indent();
-		// Format all children in the defer block
+		// Format defer body using the same inline logic
 		for (size_t i = 0; i < node->childCount(); i++) {
-			formatNode(node->child(i));
+			const IAstNode* child = node->child(i);
+
+			// Group inline nodes (operators and literals)
+			if (isInlineNode(child)) {
+				// Check if we're continuing from a previous non-inline instruction
+				bool continuingLine = false;
+				if (i > 0 && child->type() == IAstNode::Type::INSTRUCTION) {
+					const AstNodeInstruction* instr = static_cast<const AstNodeInstruction*>(child);
+					if (isOperator(instr->name())) {
+						const IAstNode* prevNode = node->child(i - 1);
+						if (prevNode && prevNode->type() == IAstNode::Type::INSTRUCTION) {
+							const AstNodeInstruction* prevInstr = static_cast<const AstNodeInstruction*>(prevNode);
+							if (!isOperator(prevInstr->name())) {
+								continuingLine = true;
+							}
+						}
+					}
+				}
+
+				if (continuingLine) {
+					write(" ");
+				} else {
+					writeIndent();
+				}
+				size_t firstInlineIndex = i;
+				while (i < node->childCount() && isInlineNode(node->child(i))) {
+					if (i > firstInlineIndex) {
+						write(" ");
+					}
+
+					const IAstNode* inlineNode = node->child(i);
+					if (!inlineNode) {
+						break;
+					}
+					switch (inlineNode->type()) {
+					case IAstNode::Type::INSTRUCTION: {
+						const AstNodeInstruction* instr = static_cast<const AstNodeInstruction*>(inlineNode);
+						write(instr->name());
+						break;
+					}
+					case IAstNode::Type::LITERAL: {
+						const AstNodeLiteral* lit = static_cast<const AstNodeLiteral*>(inlineNode);
+						write(lit->value());
+						break;
+					}
+					default:
+						break;
+					}
+					i++;
+				}
+				i--; // Adjust for the for loop increment
+
+				// Check if next node is a named instruction, identifier, or scoped identifier - keep on same line
+				if (i + 1 < node->childCount()) {
+					const IAstNode* nextNode = node->child(i + 1);
+					if (nextNode && (nextNode->type() == IAstNode::Type::INSTRUCTION ||
+											nextNode->type() == IAstNode::Type::IDENTIFIER ||
+											nextNode->type() == IAstNode::Type::SCOPED_IDENTIFIER ||
+											nextNode->type() == IAstNode::Type::FUNCTION_POINTER_REFERENCE)) {
+						write(" ");
+						i++;
+
+						// Write the instruction/identifier
+						switch (nextNode->type()) {
+						case IAstNode::Type::INSTRUCTION: {
+							const AstNodeInstruction* instr = static_cast<const AstNodeInstruction*>(nextNode);
+							write(instr->name());
+							break;
+						}
+						case IAstNode::Type::IDENTIFIER: {
+							const AstNodeIdentifier* ident = static_cast<const AstNodeIdentifier*>(nextNode);
+							write(ident->name());
+							break;
+						}
+						case IAstNode::Type::SCOPED_IDENTIFIER: {
+							const AstNodeScopedIdentifier* scoped =
+									static_cast<const AstNodeScopedIdentifier*>(nextNode);
+							write(scoped->scope());
+							write("::");
+							write(scoped->name());
+							break;
+						}
+						case IAstNode::Type::FUNCTION_POINTER_REFERENCE: {
+							const AstNodeFunctionPointerReference* funcPtr =
+									static_cast<const AstNodeFunctionPointerReference*>(nextNode);
+							write("&");
+							write(funcPtr->functionName());
+							break;
+						}
+						default:
+							break;
+						}
+
+						// Check if next node (after the instruction we just wrote) is if/for
+						if (i + 1 < node->childCount()) {
+							const IAstNode* nextNext = node->child(i + 1);
+							if (nextNext && (nextNext->type() == IAstNode::Type::IF_STATEMENT ||
+													nextNext->type() == IAstNode::Type::FOR_STATEMENT)) {
+								write(" ");
+								i++;
+								formatNode(nextNext);
+								continue;
+							}
+						}
+
+						newLine();
+						continue;
+					}
+				}
+				newLine();
+			} else if (child->type() == IAstNode::Type::INSTRUCTION) {
+				// Named instruction - check if next is an operator or control flow to keep on same line
+				bool needsIndent = true;
+
+				// Check if previous node ended with an operator (we're already on the same line)
+				if (i > 0) {
+					const IAstNode* prevNode = node->child(i - 1);
+					if (prevNode && prevNode->type() == IAstNode::Type::INSTRUCTION) {
+						const AstNodeInstruction* prevInstr = static_cast<const AstNodeInstruction*>(prevNode);
+						if (isOperator(prevInstr->name())) {
+							needsIndent = false;
+						}
+					}
+				}
+
+				if (needsIndent) {
+					writeIndent();
+				} else {
+					write(" ");
+				}
+
+				const AstNodeInstruction* instr = static_cast<const AstNodeInstruction*>(child);
+				write(instr->name());
+
+				// If next node is an operator, continue on same line
+				if (nextChildIsOperator(node, i)) {
+					continue;
+				}
+
+				// If next node is if/for, keep on same line
+				if (i + 1 < node->childCount()) {
+					const IAstNode* nextNode = node->child(i + 1);
+					if (nextNode && (nextNode->type() == IAstNode::Type::IF_STATEMENT ||
+											nextNode->type() == IAstNode::Type::FOR_STATEMENT)) {
+						write(" ");
+						i++;
+						formatNode(nextNode);
+						continue;
+					}
+				}
+				newLine();
+			} else if (child->type() == IAstNode::Type::IDENTIFIER) {
+				// Function calls get their own line unless preceded by operator
+				bool needsIndent = true;
+				if (i > 0) {
+					const IAstNode* prevNode = node->child(i - 1);
+					if (prevNode && prevNode->type() == IAstNode::Type::INSTRUCTION) {
+						const AstNodeInstruction* prevInstr = static_cast<const AstNodeInstruction*>(prevNode);
+						if (isOperator(prevInstr->name())) {
+							needsIndent = false;
+						}
+					}
+				}
+
+				if (needsIndent) {
+					writeIndent();
+				} else {
+					write(" ");
+				}
+
+				const AstNodeIdentifier* ident = static_cast<const AstNodeIdentifier*>(child);
+				write(ident->name());
+
+				// If next node is an operator, continue on same line
+				if (nextChildIsOperator(node, i)) {
+					continue;
+				}
+
+				// If next node is if/for, keep on same line
+				if (i + 1 < node->childCount()) {
+					const IAstNode* nextNode = node->child(i + 1);
+					if (nextNode && (nextNode->type() == IAstNode::Type::IF_STATEMENT ||
+											nextNode->type() == IAstNode::Type::FOR_STATEMENT)) {
+						write(" ");
+						i++;
+						formatNode(nextNode);
+						continue;
+					}
+				}
+				newLine();
+			} else if (child->type() == IAstNode::Type::SCOPED_IDENTIFIER) {
+				// Scoped identifiers get their own line unless preceded by operator
+				bool needsIndent = true;
+				if (i > 0) {
+					const IAstNode* prevNode = node->child(i - 1);
+					if (prevNode && prevNode->type() == IAstNode::Type::INSTRUCTION) {
+						const AstNodeInstruction* prevInstr = static_cast<const AstNodeInstruction*>(prevNode);
+						if (isOperator(prevInstr->name())) {
+							needsIndent = false;
+						}
+					}
+				}
+
+				if (needsIndent) {
+					writeIndent();
+				} else {
+					write(" ");
+				}
+
+				const AstNodeScopedIdentifier* scoped = static_cast<const AstNodeScopedIdentifier*>(child);
+				write(scoped->scope());
+				write("::");
+				write(scoped->name());
+
+				// If next node is an operator, continue on same line
+				if (nextChildIsOperator(node, i)) {
+					continue;
+				}
+
+				// If next node is if/for, keep on same line
+				if (i + 1 < node->childCount()) {
+					const IAstNode* nextNode = node->child(i + 1);
+					if (nextNode && (nextNode->type() == IAstNode::Type::IF_STATEMENT ||
+											nextNode->type() == IAstNode::Type::FOR_STATEMENT)) {
+						write(" ");
+						i++;
+						formatNode(nextNode);
+						continue;
+					}
+				}
+				newLine();
+			} else {
+				// Other nodes
+				formatNode(child);
+			}
 		}
 		dedent();
 
@@ -360,6 +957,12 @@ namespace Qd {
 	void Formatter::formatContinue(const IAstNode*) {
 		writeIndent();
 		write("continue");
+		newLine();
+	}
+
+	void Formatter::formatReturn(const IAstNode*) {
+		writeIndent();
+		write("return");
 		newLine();
 	}
 

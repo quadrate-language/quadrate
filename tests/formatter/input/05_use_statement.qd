@@ -1,5 +1,7 @@
 use math
-use  std
+use std
 
-
-fn main(){math::add print}
+fn main( -- ) {
+	math::add
+	print
+}

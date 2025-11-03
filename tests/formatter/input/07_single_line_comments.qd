@@ -1,7 +1,8 @@
 // Top-level comment
 fn main( -- ) {
 	// Comment before code
-	5 10 add    // Inline comment
+	5 10 add
+	// Inline comment
 	// Comment between statements
 	print
 }

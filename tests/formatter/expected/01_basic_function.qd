@@ -1,6 +1,4 @@
 fn main( -- ) {
-	10.0
-	20.0
-	add
+	10.0 20.0 add
 	print
 }

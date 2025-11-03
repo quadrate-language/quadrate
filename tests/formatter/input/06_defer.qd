@@ -1,1 +1,6 @@
-fn main(){defer{10.0 print}20.0 print}
+fn main( -- ) {
+	defer {
+		10.0 print
+	}
+	20.0 print
+}

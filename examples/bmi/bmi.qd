@@ -1,8 +1,12 @@
 fn bmi(weight:f height:f -- bmi:f) {
-	sq
-	div
+	sq /
 }
 
-fn main() {
-	70.0 1.75 bmi print
+fn main( -- ) {
+	70.0 1.75 bmi
+	25.0 > if {
+		"Overweight" .
+	} else {
+		"Normal weight" .
+	}
 }

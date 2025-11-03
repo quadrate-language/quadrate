@@ -1,1 +1,3 @@
-fn main(){10.0 20.0 add print}
+fn main( -- ) {
+	10.0 20.0 add print
+}

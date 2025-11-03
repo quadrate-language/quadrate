@@ -3,5 +3,7 @@ fn main( -- ) {
 	/* Multi-line
 	   block comment
 	   spanning lines */
-	5 10 add /* inline block */ print
+	5 10 add
+	/* inline block */
+	print
 }
