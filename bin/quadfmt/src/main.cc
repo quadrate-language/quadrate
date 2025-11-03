@@ -15,7 +15,7 @@ struct Options {
 	bool check = false;
 	bool help = false;
 	bool version = false;
-	bool inPlace = true;
+	bool inPlace = false;
 };
 
 void printHelp() {
@@ -25,9 +25,9 @@ void printHelp() {
 	std::cout << "  -h, --help       Show this help message\n";
 	std::cout << "  -v, --version    Show version information\n";
 	std::cout << "  -c, --check      Check if files are formatted (exit 1 if not)\n";
-	std::cout << "  -w, --write      Write formatted output to stdout instead of in-place\n";
+	std::cout << "  -w, --write      Write formatted output in-place (overwrite source file)\n";
 	std::cout << "\n";
-	std::cout << "By default, files are formatted in-place.\n";
+	std::cout << "By default, formatted output is written to stdout.\n";
 }
 
 void printVersion() {
@@ -47,7 +47,7 @@ bool parseArgs(int argc, char* argv[], Options& opts) {
 		} else if (arg == "-c" || arg == "--check") {
 			opts.check = true;
 		} else if (arg == "-w" || arg == "--write") {
-			opts.inPlace = false;
+			opts.inPlace = true;
 		} else if (arg[0] == '-') {
 			std::cerr << "quadfmt: unknown option: " << arg << "\n";
 			std::cerr << "Try 'quadfmt --help' for more information.\n";
