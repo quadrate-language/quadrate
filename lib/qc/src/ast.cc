@@ -31,7 +31,7 @@
 namespace Qd {
 	// Helper function to check if an identifier is a built-in instruction
 	static bool isBuiltInInstruction(const char* name) {
-		static const char* instructions[] = {"!", "!=", "*", "+", "-", ".", "/", "<", "<=", "==", ">", ">=", "abs",
+		static const char* instructions[] = {"!", "!=", "%", "*", "+", "-", ".", "/", "<", "<=", "==", ">", ">=", "abs",
 				"acos", "add", "and", "asin", "atan", "cb", "cbrt", "ceil", "call", "clear", "cos", "dec", "depth",
 				"div", "drop", "drop2", "dup", "dup2", "eq", "fac", "floor", "gt", "gte", "inc", "inv", "ln", "log10",
 				"lshift", "lt", "lte", "max", "min", "mod", "mul", "neq", "neg", "nip", "not", "or", "over", "over2",
@@ -178,6 +178,11 @@ namespace Qd {
 		} else if (token == '-') {
 			// Handle '-' as alias for 'sub'
 			IAstNode* node = new AstNodeInstruction("-");
+			setNodePosition(node, scanner, src);
+			return node;
+		} else if (token == '%') {
+			// Handle '%' as alias for 'mod'
+			IAstNode* node = new AstNodeInstruction("%");
 			setNodePosition(node, scanner, src);
 			return node;
 		} else if (token == '<') {
@@ -892,6 +897,11 @@ namespace Qd {
 			} else if (token == '-') {
 				// Handle '-' as alias for 'sub'
 				AstNodeInstruction* instr = new AstNodeInstruction("-");
+				setNodePosition(instr, scanner, src);
+				tempNodes.push_back(instr);
+			} else if (token == '%') {
+				// Handle '%' as alias for 'mod'
+				AstNodeInstruction* instr = new AstNodeInstruction("%");
 				setNodePosition(instr, scanner, src);
 				tempNodes.push_back(instr);
 			} else if (token == '<') {

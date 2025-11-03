@@ -359,6 +359,8 @@ namespace Qd {
 				instrName = "add"; // Addition operator
 			} else if (strcmp(instrName, "-") == 0) {
 				instrName = "sub"; // Subtraction operator
+			} else if (strcmp(instrName, "%") == 0) {
+				instrName = "mod"; // Modulo operator
 			} else if (strcmp(instrName, "==") == 0) {
 				instrName = "eq"; // Equality operator
 			} else if (strcmp(instrName, "!=") == 0) {

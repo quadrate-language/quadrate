@@ -19,12 +19,12 @@
 namespace Qd {
 
 	// List of built-in instructions (must match ast.cc)
-	static const char* BUILTIN_INSTRUCTIONS[] = {"*", "+", "-", ".", "/", "abs", "acos", "add", "and", "asin", "atan",
-			"cb", "cbrt", "ceil", "call", "clear", "cos", "dec", "depth", "div", "drop", "drop2", "dup", "dup2", "eq",
-			"fac", "floor", "gt", "gte", "inc", "inv", "ln", "log10", "lshift", "lt", "lte", "max", "min", "mod", "mul",
-			"neq", "neg", "nip", "not", "or", "over", "over2", "pick", "pow", "print", "prints", "printsv", "printv",
-			"roll", "rot", "round", "rshift", "sin", "sq", "sqrt", "sub", "swap", "swap2", "tan", "tuck", "within",
-			"xor"};
+	static const char* BUILTIN_INSTRUCTIONS[] = {"%", "*", "+", "-", ".", "/", "abs", "acos", "add", "and", "asin",
+			"atan", "cb", "cbrt", "ceil", "call", "clear", "cos", "dec", "depth", "div", "drop", "drop2", "dup", "dup2",
+			"eq", "fac", "floor", "gt", "gte", "inc", "inv", "ln", "log10", "lshift", "lt", "lte", "max", "min", "mod",
+			"mul", "neq", "neg", "nip", "not", "or", "over", "over2", "pick", "pow", "print", "prints", "printsv",
+			"printv", "roll", "rot", "round", "rshift", "sin", "sq", "sqrt", "sub", "swap", "swap2", "tan", "tuck",
+			"within", "xor"};
 
 	SemanticValidator::SemanticValidator() : mFilename(nullptr), mErrorCount(0) {
 	}
