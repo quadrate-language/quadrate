@@ -3,6 +3,8 @@
   "fn"
   "const"
   "use"
+  "import"
+  "as"
 ] @keyword
 
 ; Control flow keywords
@@ -34,6 +36,20 @@
 ; Use statements
 (use_statement
   module: (identifier) @namespace)
+
+; Import statements
+(import_statement
+  library: (string) @string.special
+  namespace: (string) @namespace)
+
+; Import function declarations
+(import_function
+  name: (identifier) @function)
+
+; Namespaced identifiers (function calls with namespace)
+(namespaced_identifier
+  namespace: (identifier) @namespace
+  name: (identifier) @function.call)
 
 ; Built-in stack operations
 (builtin_operation) @function.builtin
@@ -84,6 +100,7 @@
 [
   "--"
   ":"
+  "::"
   "="
 ] @operator
 

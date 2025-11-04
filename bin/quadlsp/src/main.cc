@@ -6,6 +6,7 @@
 #include <qc/ast.h>
 #include <qc/ast_node.h>
 #include <qc/ast_node_function.h>
+#include <qc/ast_node_import.h>
 #include <qc/ast_node_parameter.h>
 #include <qc/ast_node_program.h>
 #include <qc/error_reporter.h>
@@ -373,9 +374,10 @@ private:
 			return functions;
 		}
 
-		// Iterate through program children looking for function declarations
+		// Iterate through program children looking for function declarations and imports
 		for (size_t i = 0; i < root->childCount(); i++) {
 			Qd::IAstNode* child = root->child(i);
+
 			if (child && child->type() == Qd::IAstNode::Type::FUNCTION_DECLARATION) {
 				Qd::AstNodeFunctionDeclaration* funcNode = static_cast<Qd::AstNodeFunctionDeclaration*>(child);
 
@@ -438,6 +440,75 @@ private:
 				info.snippet = snippetStream.str();
 
 				functions.push_back(info);
+			} else if (child && child->type() == Qd::IAstNode::Type::IMPORT_STATEMENT) {
+				// Handle imported functions
+				Qd::AstNodeImport* importNode = static_cast<Qd::AstNodeImport*>(child);
+				std::string namespaceName = importNode->namespaceName();
+
+				// Iterate through imported functions
+				const auto& importedFuncs = importNode->functions();
+				for (const auto* importedFunc : importedFuncs) {
+					FunctionInfo info;
+					// Use namespace::function format
+					info.name = namespaceName + "::" + importedFunc->name;
+
+					// Build signature parts
+					std::ostringstream sigStream;
+					sigStream << "fn " << importedFunc->name << "(";
+
+					// Extract input parameters
+					const auto& inputs = importedFunc->inputParameters;
+					for (size_t j = 0; j < inputs.size(); j++) {
+						Qd::AstNodeParameter* param = inputs[j];
+						std::string paramStr = param->name() + ":" + param->typeString();
+						info.inputParams.push_back(paramStr);
+
+						if (j > 0) {
+							sigStream << " ";
+						}
+						sigStream << paramStr;
+					}
+
+					sigStream << " -- ";
+
+					// Extract output parameters
+					const auto& outputs = importedFunc->outputParameters;
+					for (size_t j = 0; j < outputs.size(); j++) {
+						Qd::AstNodeParameter* param = outputs[j];
+						std::string paramStr = param->name() + ":" + param->typeString();
+						info.outputParams.push_back(paramStr);
+
+						if (j > 0) {
+							sigStream << " ";
+						}
+						sigStream << paramStr;
+					}
+
+					sigStream << ")";
+					info.signature = sigStream.str();
+
+					// Build snippet with placeholders for input parameters
+					std::ostringstream snippetStream;
+					for (size_t j = 0; j < info.inputParams.size(); j++) {
+						const std::string& param = info.inputParams[j];
+						// Extract just the name part (before the colon)
+						size_t colonPos = param.find(':');
+						std::string paramName = (colonPos != std::string::npos) ? param.substr(0, colonPos) : param;
+
+						snippetStream << "${" << (j + 1) << ":" << paramName << "}";
+						if (j < info.inputParams.size() - 1) {
+							snippetStream << " ";
+						}
+					}
+					if (!info.inputParams.empty()) {
+						snippetStream << " ";
+					}
+					snippetStream << info.name;
+
+					info.snippet = snippetStream.str();
+
+					functions.push_back(info);
+				}
 			}
 		}
 

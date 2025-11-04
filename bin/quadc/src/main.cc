@@ -420,15 +420,63 @@ int main(int argc, char** argv) {
 			headerContent << "#define " << guardName << "_MODULE_H\n\n";
 			headerContent << "#include <quadrate/runtime/runtime.h>\n\n";
 
-			// Collect all function declarations from all sources in this package
-			std::set<std::string> functionSignatures; // Use set to avoid duplicates
+			// Collect all function declarations and definitions from all sources in this package
+			std::set<std::string> functionSignatures; // Regular function declarations
+			std::set<std::string> externDeclarations; // Extern declarations (for imported functions)
+			std::set<std::string> inlineFunctions;	  // Static inline functions with full body
 			for (size_t idx : sourceIndices) {
 				const auto& source = transpiledSources[idx];
 				std::stringstream ss(source.content);
 				std::string line;
+				std::string currentFunction;
+				bool inStaticInline = false;
+				int braceCount = 0;
+
 				while (std::getline(ss, line)) {
-					if (line.find("qd_exec_result usr_" + packageName + "_") != std::string::npos) {
-						// Extract the function signature
+					// Capture extern declarations for imported functions
+					if (line.find("extern qd_exec_result qd_") != std::string::npos) {
+						std::string externDecl = line;
+						externDecl.erase(0, externDecl.find_first_not_of(" \t"));
+						externDeclarations.insert(externDecl);
+					}
+					// Check if this is the start of a static inline function
+					else if (line.find("static inline qd_exec_result usr_" + packageName + "_") != std::string::npos) {
+						inStaticInline = true;
+						currentFunction = line + "\n";
+						// Count braces in this line
+						for (char c : line) {
+							if (c == '{') {
+								braceCount++;
+							}
+							if (c == '}') {
+								braceCount--;
+							}
+						}
+						if (braceCount == 0) {
+							// Single-line function
+							inlineFunctions.insert(currentFunction);
+							inStaticInline = false;
+							currentFunction.clear();
+						}
+					} else if (inStaticInline) {
+						currentFunction += line + "\n";
+						// Count braces
+						for (char c : line) {
+							if (c == '{') {
+								braceCount++;
+							}
+							if (c == '}') {
+								braceCount--;
+							}
+						}
+						if (braceCount == 0) {
+							// End of function
+							inlineFunctions.insert(currentFunction);
+							inStaticInline = false;
+							currentFunction.clear();
+						}
+					} else if (line.find("qd_exec_result usr_" + packageName + "_") != std::string::npos) {
+						// Regular function declaration
 						size_t parenPos = line.find("(qd_context* ctx)");
 						if (parenPos != std::string::npos) {
 							std::string funcSig = line.substr(0, parenPos + 17); // +17 for "(qd_context* ctx)"
@@ -440,7 +488,20 @@ int main(int argc, char** argv) {
 				}
 			}
 
-			// Write all function declarations
+			// Write extern declarations first
+			for (const auto& externDecl : externDeclarations) {
+				headerContent << externDecl << "\n";
+			}
+			if (!externDeclarations.empty()) {
+				headerContent << "\n";
+			}
+
+			// Write all inline function definitions
+			for (const auto& inlineFunc : inlineFunctions) {
+				headerContent << inlineFunc << "\n";
+			}
+
+			// Write all regular function declarations
 			for (const auto& funcSig : functionSignatures) {
 				headerContent << funcSig << ";\n";
 			}

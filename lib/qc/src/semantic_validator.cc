@@ -389,6 +389,14 @@ namespace Qd {
 			AstNodeFunctionDeclaration* func = static_cast<AstNodeFunctionDeclaration*>(node);
 			functions.insert(func->name());
 		}
+		// If this is an import statement, add imported functions to the set
+		else if (node->type() == IAstNode::Type::IMPORT_STATEMENT) {
+			AstNodeImport* import = static_cast<AstNodeImport*>(node);
+			const auto& importedFuncs = import->functions();
+			for (const auto* func : importedFuncs) {
+				functions.insert(func->name);
+			}
+		}
 
 		// Recursively process children
 		for (size_t i = 0; i < node->childCount(); i++) {
@@ -434,6 +442,56 @@ namespace Qd {
 			sig.produces = typeStack;
 			std::string qualifiedName = moduleName + "::" + func->name();
 			mFunctionSignatures[qualifiedName] = sig;
+		}
+		// Analyze imported functions and register them with the module's namespace
+		else if (node->type() == IAstNode::Type::IMPORT_STATEMENT) {
+			AstNodeImport* import = static_cast<AstNodeImport*>(node);
+			const auto& importedFuncs = import->functions();
+
+			for (const auto* func : importedFuncs) {
+				std::vector<StackValueType> typeStack;
+
+				// Initialize type stack with input parameters
+				for (size_t i = 0; i < func->inputParameters.size(); i++) {
+					AstNodeParameter* param = func->inputParameters[i];
+					const std::string& typeStr = param->typeString();
+
+					if (typeStr == "i") {
+						typeStack.push_back(StackValueType::INT);
+					} else if (typeStr == "f") {
+						typeStack.push_back(StackValueType::FLOAT);
+					} else if (typeStr == "s") {
+						typeStack.push_back(StackValueType::STRING);
+					} else {
+						// Untyped or unknown - treat as ANY
+						typeStack.push_back(StackValueType::ANY);
+					}
+				}
+
+				// Add output parameters to type stack
+				for (size_t i = 0; i < func->outputParameters.size(); i++) {
+					AstNodeParameter* param = func->outputParameters[i];
+					const std::string& typeStr = param->typeString();
+
+					if (typeStr == "i") {
+						typeStack.push_back(StackValueType::INT);
+					} else if (typeStr == "f") {
+						typeStack.push_back(StackValueType::FLOAT);
+					} else if (typeStr == "s") {
+						typeStack.push_back(StackValueType::STRING);
+					} else {
+						// Untyped or unknown - treat as ANY
+						typeStack.push_back(StackValueType::ANY);
+					}
+				}
+
+				// Store the signature with qualified name: moduleName::functionName
+				// This allows imported functions to be called with the module's namespace
+				FunctionSignature sig;
+				sig.produces = typeStack;
+				std::string qualifiedName = moduleName + "::" + func->name;
+				mFunctionSignatures[qualifiedName] = sig;
+			}
 		}
 
 		// Recursively process children

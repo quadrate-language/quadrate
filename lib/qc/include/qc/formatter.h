@@ -33,6 +33,7 @@ namespace Qd {
 		void formatCase(const IAstNode* node);
 		void formatDefer(const IAstNode* node);
 		void formatUse(const IAstNode* node);
+		void formatImport(const IAstNode* node);
 		void formatConstant(const IAstNode* node);
 		void formatInstruction(const IAstNode* node);
 		void formatLiteral(const IAstNode* node);

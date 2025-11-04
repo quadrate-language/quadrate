@@ -6,6 +6,7 @@
 #include <qc/ast_node_function_pointer.h>
 #include <qc/ast_node_identifier.h>
 #include <qc/ast_node_if.h>
+#include <qc/ast_node_import.h>
 #include <qc/ast_node_instruction.h>
 #include <qc/ast_node_label.h>
 #include <qc/ast_node_literal.h>
@@ -70,6 +71,9 @@ namespace Qd {
 		case IAstNode::Type::USE_STATEMENT:
 			formatUse(node);
 			break;
+		case IAstNode::Type::IMPORT_STATEMENT:
+			formatImport(node);
+			break;
 		case IAstNode::Type::CONSTANT_DECLARATION:
 			formatConstant(node);
 			break;
@@ -121,6 +125,12 @@ namespace Qd {
 				// Use statements: add blank line only if next is not a use statement
 				else if (current->type() == IAstNode::Type::USE_STATEMENT) {
 					if (next->type() != IAstNode::Type::USE_STATEMENT) {
+						newLine();
+					}
+				}
+				// Import statements: add blank line only if next is not an import statement
+				else if (current->type() == IAstNode::Type::IMPORT_STATEMENT) {
+					if (next->type() != IAstNode::Type::IMPORT_STATEMENT) {
 						newLine();
 					}
 				}
@@ -900,6 +910,66 @@ namespace Qd {
 		writeIndent();
 		write("use ");
 		write(useNode->module());
+		newLine();
+	}
+
+	void Formatter::formatImport(const IAstNode* node) {
+		const AstNodeImport* importNode = static_cast<const AstNodeImport*>(node);
+
+		writeIndent();
+		write("import \"");
+		write(importNode->library());
+		write("\" as \"");
+		write(importNode->namespaceName());
+		write("\" {");
+		newLine();
+
+		// Format imported function declarations
+		indent();
+		const auto& functions = importNode->functions();
+		for (const auto* func : functions) {
+			writeIndent();
+			write("fn ");
+			write(func->name);
+			write("(");
+
+			// Format input parameters
+			const auto& inputs = func->inputParameters;
+			for (size_t i = 0; i < inputs.size(); i++) {
+				if (i > 0) {
+					write(" ");
+				}
+				const AstNodeParameter* param = inputs[i];
+				write(param->name());
+				if (!param->typeString().empty()) {
+					write(":");
+					write(param->typeString());
+				}
+			}
+
+			write(" -- ");
+
+			// Format output parameters
+			const auto& outputs = func->outputParameters;
+			for (size_t i = 0; i < outputs.size(); i++) {
+				if (i > 0) {
+					write(" ");
+				}
+				const AstNodeParameter* param = outputs[i];
+				write(param->name());
+				if (!param->typeString().empty()) {
+					write(":");
+					write(param->typeString());
+				}
+			}
+
+			write(")");
+			newLine();
+		}
+		dedent();
+
+		writeIndent();
+		write("}");
 		newLine();
 	}
 

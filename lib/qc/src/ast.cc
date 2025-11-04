@@ -1440,6 +1440,7 @@ namespace Qd {
 												}
 												if (token == U8T_IDENTIFIER) {
 													const char* paramName = u8t_scanner_token_text(&scanner, &n);
+													std::string paramNameStr(paramName);
 													// Expect ':'
 													token = u8t_scanner_scan(&scanner);
 													if (token == ':') {
@@ -1447,8 +1448,9 @@ namespace Qd {
 														if (token == U8T_IDENTIFIER) {
 															const char* paramType =
 																	u8t_scanner_token_text(&scanner, &n);
-															AstNodeParameter* param =
-																	new AstNodeParameter(paramName, paramType, true);
+															std::string paramTypeStr(paramType);
+															AstNodeParameter* param = new AstNodeParameter(
+																	paramNameStr, paramTypeStr, true);
 															func->outputParameters.push_back(param);
 														}
 													}
@@ -1459,14 +1461,16 @@ namespace Qd {
 									}
 									if (token == U8T_IDENTIFIER) {
 										const char* paramName = u8t_scanner_token_text(&scanner, &n);
+										std::string paramNameStr(paramName);
 										// Expect ':'
 										token = u8t_scanner_scan(&scanner);
 										if (token == ':') {
 											token = u8t_scanner_scan(&scanner);
 											if (token == U8T_IDENTIFIER) {
 												const char* paramType = u8t_scanner_token_text(&scanner, &n);
+												std::string paramTypeStr(paramType);
 												AstNodeParameter* param =
-														new AstNodeParameter(paramName, paramType, false);
+														new AstNodeParameter(paramNameStr, paramTypeStr, false);
 												func->inputParameters.push_back(param);
 											}
 										}

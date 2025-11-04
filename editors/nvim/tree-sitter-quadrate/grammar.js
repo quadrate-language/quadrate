@@ -17,6 +17,7 @@ module.exports = grammar({
       $.function_definition,
       $.constant_definition,
       $.use_statement,
+      $.import_statement,
       $._expression,
     ),
 
@@ -28,12 +29,14 @@ module.exports = grammar({
       field('body', $.block),
     ),
 
-    // Stack signature: ( x:float y:float -- z:float )
+    // Stack signature: ( x:float y:float -- z:float ) or just ()
     stack_signature: $ => seq(
       '(',
-      optional($.parameter_list),
-      '--',
-      optional($.parameter_list),
+      optional(seq(
+        optional($.parameter_list),
+        '--',
+        optional($.parameter_list),
+      )),
       ')',
     ),
 
@@ -45,7 +48,7 @@ module.exports = grammar({
       field('type', $.type),
     ),
 
-    type: $ => 'float',
+    type: $ => $.identifier,
 
     // Constant: const name = value
     constant_definition: $ => seq(
@@ -61,6 +64,24 @@ module.exports = grammar({
       field('module', $.identifier),
     ),
 
+    // Import statement: import "library.so" as "namespace" { fn name(...) }
+    import_statement: $ => seq(
+      'import',
+      field('library', $.string),
+      'as',
+      field('namespace', $.string),
+      '{',
+      repeat($.import_function),
+      '}',
+    ),
+
+    // Function declaration within import: fn name(inputs -- outputs)
+    import_function: $ => seq(
+      'fn',
+      field('name', $.identifier),
+      field('signature', optional($.stack_signature)),
+    ),
+
     // Block: { ... }
     block: $ => seq(
       '{',
@@ -72,6 +93,7 @@ module.exports = grammar({
       $.number,
       $.string,
       $.identifier,
+      $.namespaced_identifier,
       $.if_expression,
       $.for_loop,
       $.switch_expression,
@@ -164,6 +186,13 @@ module.exports = grammar({
     ),
 
     identifier: $ => /[a-zA-Z_][a-zA-Z0-9_]*/,
+
+    // Namespaced identifier: namespace::function
+    namespaced_identifier: $ => seq(
+      field('namespace', $.identifier),
+      '::',
+      field('name', $.identifier),
+    ),
 
     // Comments
     comment: $ => choice(

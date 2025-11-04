@@ -77,6 +77,9 @@ install: release
 	install -m 644 dist/lib/libstdqd_static.a $(DESTDIR)$(PREFIX)/lib/
 	cp -r dist/include/quadrate $(DESTDIR)$(PREFIX)/include/
 	cp -r dist/include/stdqd $(DESTDIR)$(PREFIX)/include/
+	@echo "Installing Quadrate standard library modules to $(HOME)/quadrate/"
+	install -d $(HOME)/quadrate
+	@cd lib/stdqd/qd && find . -maxdepth 1 -type d -not -name "." -exec cp -r {} $(HOME)/quadrate/ \;
 
 uninstall:
 	rm -f $(DESTDIR)$(PREFIX)/bin/quadc
@@ -88,6 +91,8 @@ uninstall:
 	rm -f $(DESTDIR)$(PREFIX)/lib/libstdqd_static.a
 	rm -rf $(DESTDIR)$(PREFIX)/include/quadrate
 	rm -rf $(DESTDIR)$(PREFIX)/include/stdqd
+	@echo "Removing Quadrate standard library modules from $(HOME)/quadrate/"
+	rm -rf $(HOME)/quadrate/fmt
 
 clean:
 	rm -rf build

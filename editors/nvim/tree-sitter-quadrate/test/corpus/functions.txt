@@ -34,14 +34,17 @@ fn multiply( x:float y:float -- z:float ) {
       (parameter_list
         (parameter
           name: (identifier)
-          type: (type))
+          type: (type
+            (identifier)))
         (parameter
           name: (identifier)
-          type: (type)))
+          type: (type
+            (identifier))))
       (parameter_list
         (parameter
           name: (identifier)
-          type: (type))))
+          type: (type
+            (identifier)))))
     body: (block
       (builtin_operation))))
 
@@ -66,11 +69,13 @@ fn main( -- ) {
       (parameter_list
         (parameter
           name: (identifier)
-          type: (type)))
+          type: (type
+            (identifier))))
       (parameter_list
         (parameter
           name: (identifier)
-          type: (type))))
+          type: (type
+            (identifier)))))
     body: (block
       (number)
       (builtin_operation)))
