@@ -5,4 +5,5 @@ dist
 compile_commands.json
 .tmp*
 qd_*
+*.so
 CLAUDE.md
