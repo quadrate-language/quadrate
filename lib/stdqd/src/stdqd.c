@@ -4,13 +4,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-const char* stdqd_version(void) {
-	static char version_buf[32];
-	snprintf(version_buf, sizeof(version_buf), "%d.%d.%d",
-		STDQD_VERSION_MAJOR, STDQD_VERSION_MINOR, STDQD_VERSION_PATCH);
-	return version_buf;
-}
-
 // Helper function to count format specifiers in format string
 static int count_format_specifiers(const char* fmt) {
 	int count = 0;

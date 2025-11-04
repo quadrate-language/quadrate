@@ -45,7 +45,11 @@ tests: debug
 	meson test -C $(BUILD_DIR_DEBUG) test_lsp test_lsp_extended test_lsp_stress --print-errorlogs
 	@echo ""
 	@echo "=== Running tree-sitter grammar tests ==="
-	-meson test -C $(BUILD_DIR_DEBUG) tree-sitter-grammar --print-errorlogs 2>/dev/null || echo "⚠️  Skipped (tree-sitter not installed)"
+	@if command -v tree-sitter >/dev/null 2>&1; then \
+		meson test -C $(BUILD_DIR_DEBUG) tree-sitter-grammar --print-errorlogs; \
+	else \
+		echo "⚠️  Skipped (tree-sitter not installed)"; \
+	fi
 	@echo ""
 	@echo "=== Running Quadrate language tests ==="
 	QUADC=$(BUILD_DIR_DEBUG)/bin/quadc/quadc bash tests/run_qd_tests.sh

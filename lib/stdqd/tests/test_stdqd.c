@@ -6,14 +6,6 @@
 #include <string.h>
 #include <assert.h>
 
-void test_version(void) {
-	const char* version = stdqd_version();
-	printf("libstdqd version: %s\n", version);
-	assert(version != NULL);
-	assert(strlen(version) > 0);
-	assert(strcmp(version, "0.1.0") == 0);
-}
-
 void test_printf_simple(void) {
 	printf("\n=== test_printf_simple ===\n");
 
@@ -108,7 +100,6 @@ void test_printf_literal_percent(void) {
 int main(void) {
 	printf("Running libstdqd tests...\n");
 
-	test_version();
 	test_printf_simple();
 	test_printf_with_string();
 	test_printf_with_int();

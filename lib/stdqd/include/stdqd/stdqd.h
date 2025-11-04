@@ -8,29 +8,6 @@
 extern "C" {
 #endif
 
-/**
- * libstdqd - Quadrate Standard Library
- *
- * This library provides standard library functions for Quadrate programs,
- * including networking, file I/O, and other common utilities.
- *
- * All functions follow the convention:
- * - Take qd_context* as first parameter
- * - Return qd_exec_result
- * - Manipulate the stack for input/output
- */
-
-// Version information
-#define STDQD_VERSION_MAJOR 0
-#define STDQD_VERSION_MINOR 1
-#define STDQD_VERSION_PATCH 0
-
-/**
- * Get version string
- * Returns: "0.1.0"
- */
-const char* stdqd_version(void);
-
 // ============================================================================
 // Standard I/O Functions
 // ============================================================================
