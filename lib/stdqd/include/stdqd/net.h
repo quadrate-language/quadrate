@@ -13,6 +13,8 @@ qd_exec_result qd_stdqd_accept(qd_context* ctx);
 qd_exec_result qd_stdqd_connect(qd_context* ctx);
 qd_exec_result qd_stdqd_send(qd_context* ctx);
 qd_exec_result qd_stdqd_receive(qd_context* ctx);
+qd_exec_result qd_stdqd_shutdown(qd_context* ctx);
+qd_exec_result qd_stdqd_close(qd_context* ctx);
 
 #ifdef __cplusplus
 }

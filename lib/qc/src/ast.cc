@@ -1644,7 +1644,10 @@ namespace Qd {
 													}
 												}
 											}
-											break;
+											// After parsing output parameters, check if we hit ')'
+											if (token == ')' || token == U8T_EOF) {
+												break; // Break outer loop - we're done with all parameters
+											}
 										}
 									}
 									if (token == U8T_IDENTIFIER) {

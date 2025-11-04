@@ -63,6 +63,45 @@ namespace Qd {
 		out << makeIndent << "}\n";
 	}
 
+	// Helper to process escape sequences in Quadrate string literals
+	// Converts \n, \r, \t, \\, \" to actual characters
+	static std::string unescapeQuadrateString(const std::string& str) {
+		std::string result;
+		result.reserve(str.size());
+		for (size_t i = 0; i < str.size(); ++i) {
+			if (str[i] == '\\' && i + 1 < str.size()) {
+				switch (str[i + 1]) {
+				case 'n':
+					result += '\n';
+					++i;
+					break;
+				case 'r':
+					result += '\r';
+					++i;
+					break;
+				case 't':
+					result += '\t';
+					++i;
+					break;
+				case '\\':
+					result += '\\';
+					++i;
+					break;
+				case '"':
+					result += '"';
+					++i;
+					break;
+				default:
+					result += str[i];
+					break;
+				}
+			} else {
+				result += str[i];
+			}
+		}
+		return result;
+	}
+
 	// Helper to escape string literals for safe C code generation
 	// Prevents code injection via malicious string literals
 	static std::string escapeStringForC(const std::string& str) {
@@ -331,8 +370,10 @@ namespace Qd {
 				} else {
 					content = rawValue;
 				}
+				// Process escape sequences in Quadrate string
+				std::string unescaped = unescapeQuadrateString(content);
 				// Escape the content for safe C code generation
-				std::string escaped = escapeStringForC(content);
+				std::string escaped = escapeStringForC(unescaped);
 				out << makeIndent(indent) << "qd_push_s(ctx, \"" << escaped << "\");\n";
 				break;
 			}

@@ -4,4 +4,6 @@ import "libstdqd.so" as "net" {
 	fn connect(host:s port:i -- socket:i)
 	fn send(socket:i data:s -- bytes_sent:i)
 	fn receive(socket:i max_bytes:i -- data:s bytes_read:i)
+	fn shutdown(socket:i --)
+	fn close(socket:i --)
 }

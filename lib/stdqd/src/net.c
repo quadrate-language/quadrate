@@ -271,3 +271,45 @@ qd_exec_result qd_stdqd_receive(qd_context* ctx) {
 	return (qd_exec_result){0};
 }
 
+// Stack signature: ( socket:i -- )
+// Gracefully shuts down a socket for writing (SHUT_WR)
+qd_exec_result qd_stdqd_shutdown(qd_context* ctx) {
+	qd_stack_element_t socket_elem;
+	qd_stack_error err = qd_stack_pop(ctx->st, &socket_elem);
+	if (err != QD_STACK_OK) {
+		fprintf(stderr, "Fatal error in qd_stdqd_shutdown: stack underflow\n");
+		abort();
+	}
+
+	if (socket_elem.type != QD_STACK_TYPE_INT) {
+		fprintf(stderr, "Fatal error in qd_stdqd_shutdown: socket must be an integer\n");
+		abort();
+	}
+
+	int sock_fd = (int)socket_elem.value.i;
+	shutdown(sock_fd, SHUT_WR);
+
+	return (qd_exec_result){0};
+}
+
+// Stack signature: ( socket:i -- )
+// Closes a socket
+qd_exec_result qd_stdqd_close(qd_context* ctx) {
+	qd_stack_element_t socket_elem;
+	qd_stack_error err = qd_stack_pop(ctx->st, &socket_elem);
+	if (err != QD_STACK_OK) {
+		fprintf(stderr, "Fatal error in qd_stdqd_close: stack underflow\n");
+		abort();
+	}
+
+	if (socket_elem.type != QD_STACK_TYPE_INT) {
+		fprintf(stderr, "Fatal error in qd_stdqd_close: socket must be an integer\n");
+		abort();
+	}
+
+	int sock_fd = (int)socket_elem.value.i;
+	close(sock_fd);
+
+	return (qd_exec_result){0};
+}
+
