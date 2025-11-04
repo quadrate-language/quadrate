@@ -4,6 +4,7 @@
 - [Description](#description)
 - [Installation](#installation)
 - [Usage](#usage)
+- [License](#license)
 - [Maintainers](#maintainers)
 - [Contributing](#contributing)
 
@@ -39,6 +40,17 @@ fn main() {
 ```bash
 $ quadc -o one main.qd && ./one
 ```
+
+## License
+This repository contains source code generated with assistance from an AI model (Anthropic Claude).
+It may include or resemble material that is licensed under the GNU General Public License (GPL), version 3 or later.
+
+Therefore, all files in this repository are distributed **under the GPL v3**.
+
+The distributor makes **no claim of authorship or copyright ownership** of the generated content.
+This repository is provided solely for research and demonstration purposes.
+
+See the [`LICENSE`](./LICENSE) file for full terms.
 
 ## Maintainers
 [~klahr](https://sr.ht/~klahr)
