@@ -8,24 +8,16 @@ fn main( -- ) {
 
 	// Loop forever accepting connections
 	loop {
-		// Stack: [server_socket]
 		dup net::accept
-		// Stack: [server_socket client_socket]
 
 		// Read the request (ignore it)
 		dup 1024 net::receive
-		// Stack: [server_socket client_socket data bytes_read]
 		drop drop
-		// Stack: [server_socket client_socket]
 
 		// Send HTTP response
 		dup
-		// Stack: [server_socket client_socket client_socket]
 		"HTTP/1.0 200 OK\r\nContent-Type: text/plain\r\nContent-Length: 6\r\n\r\nHello!" net::send
-		// Stack: [server_socket client_socket bytes_sent]
 		drop
-		// Stack: [server_socket client_socket]
 		net::close
-		// Stack: [server_socket]
 	}
 }
