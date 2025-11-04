@@ -18,6 +18,7 @@
 #include <qc/ast_node_instruction.h>
 #include <qc/ast_node_label.h>
 #include <qc/ast_node_literal.h>
+#include <qc/ast_node_loop.h>
 #include <qc/ast_node_parameter.h>
 #include <qc/ast_node_program.h>
 #include <qc/ast_node_return.h>
@@ -100,6 +101,7 @@ namespace Qd {
 	}
 
 	static IAstNode* parseForStatement(u8t_scanner* scanner, ErrorReporter* errorReporter, const char* src);
+	static IAstNode* parseLoopStatement(u8t_scanner* scanner, ErrorReporter* errorReporter, const char* src);
 	static IAstNode* parseIfStatement(u8t_scanner* scanner, ErrorReporter* errorReporter, const char* src);
 	static IAstNode* parseSwitchStatement(u8t_scanner* scanner, ErrorReporter* errorReporter, const char* src);
 
@@ -119,7 +121,7 @@ namespace Qd {
 				const char* text = u8t_scanner_token_text(scanner, &n);
 				if (strcmp(text, "fn") == 0 || strcmp(text, "const") == 0 || strcmp(text, "use") == 0 ||
 						strcmp(text, "import") == 0 || strcmp(text, "if") == 0 || strcmp(text, "for") == 0 ||
-						strcmp(text, "switch") == 0 || strcmp(text, "return") == 0) {
+						strcmp(text, "loop") == 0 || strcmp(text, "switch") == 0 || strcmp(text, "return") == 0) {
 					return;
 				}
 			}
@@ -271,16 +273,143 @@ namespace Qd {
 			AstNodeBlock* block, u8t_scanner* scanner, ErrorReporter* errorReporter, const char* src) {
 		size_t n;
 		char32_t token;
+		bool sawSlash = false;
+		bool sawColon = false;
+		std::vector<IAstNode*> tempNodes;
 
 		while ((token = u8t_scanner_scan(scanner)) != U8T_EOF) {
+			// Handle :: scope operator
+			if (sawColon && token == ':') {
+				// We have ::
+				sawColon = false;
+				if (!tempNodes.empty() && tempNodes.back()->type() == IAstNode::Type::IDENTIFIER) {
+					AstNodeIdentifier* scope = static_cast<AstNodeIdentifier*>(tempNodes.back());
+					tempNodes.pop_back();
+
+					// Get the next identifier after ::
+					token = u8t_scanner_scan(scanner);
+					if (token == U8T_IDENTIFIER) {
+						const char* memberName = u8t_scanner_token_text(scanner, &n);
+						AstNodeScopedIdentifier* scoped = new AstNodeScopedIdentifier(scope->name(), memberName);
+						setNodePosition(scoped, scanner, src);
+						delete scope;
+						tempNodes.push_back(scoped);
+					} else {
+						// No identifier after ::, put scope back
+						tempNodes.push_back(scope);
+					}
+				}
+				continue;
+			}
+
+			// Handle // line comments
+			if (sawSlash && token == '/') {
+				sawSlash = false;
+				// Get character position and convert to byte offset
+				size_t charPos = u8t_scanner_token_start(scanner);
+				size_t tokenLen = u8t_scanner_token_len(scanner);
+				size_t bytePos = charIndexToByteOffset(src, charPos + tokenLen);
+				// Read comment text directly from source
+				const char* commentStart = src + bytePos;
+				const char* commentEnd = commentStart;
+				while (*commentEnd != '\0' && *commentEnd != '\n' && *commentEnd != '\r') {
+					commentEnd++;
+				}
+				std::string commentText(commentStart, static_cast<size_t>(commentEnd - commentStart));
+				// Advance scanner past the comment
+				while (u8t_scanner_peek(scanner) != 0 && u8t_scanner_peek(scanner) != '\n' &&
+						u8t_scanner_peek(scanner) != '\r') {
+					u8t_scanner_scan(scanner);
+				}
+				// Flush tempNodes before adding comment
+				for (auto* node : tempNodes) {
+					node->setParent(block);
+					block->addChild(node);
+				}
+				tempNodes.clear();
+				// Create comment node
+				AstNodeComment* comment = new AstNodeComment(commentText, AstNodeComment::CommentType::LINE);
+				setNodePosition(comment, scanner, src);
+				comment->setParent(block);
+				block->addChild(comment);
+				continue;
+			}
+
+			// Handle /* block comments */
+			if (sawSlash && token == '*') {
+				sawSlash = false;
+				// Get character position and convert to byte offset
+				size_t charPos = u8t_scanner_token_start(scanner);
+				size_t tokenLen = u8t_scanner_token_len(scanner);
+				size_t bytePos = charIndexToByteOffset(src, charPos + tokenLen);
+				// Read comment text directly from source
+				const char* commentStart = src + bytePos;
+				const char* commentEnd = commentStart;
+				// Read bytes until */
+				while (*commentEnd != '\0') {
+					if (*commentEnd == '*' && *(commentEnd + 1) == '/') {
+						break;
+					}
+					commentEnd++;
+				}
+				std::string commentText(commentStart, static_cast<size_t>(commentEnd - commentStart));
+				// Advance scanner past the comment
+				bool foundStar = false;
+				while (u8t_scanner_peek(scanner) != 0) {
+					char32_t c = u8t_scanner_scan(scanner);
+					if (foundStar && c == '/') {
+						break;
+					}
+					foundStar = (c == '*');
+				}
+				// Flush tempNodes before adding comment
+				for (auto* node : tempNodes) {
+					node->setParent(block);
+					block->addChild(node);
+				}
+				tempNodes.clear();
+				// Create comment node
+				AstNodeComment* comment = new AstNodeComment(commentText, AstNodeComment::CommentType::BLOCK);
+				setNodePosition(comment, scanner, src);
+				comment->setParent(block);
+				block->addChild(comment);
+				continue;
+			}
+
+			// If we saw a slash but it wasn't a comment, it's a division operator
+			if (sawSlash) {
+				sawSlash = false;
+				// Add division instruction to tempNodes
+				AstNodeInstruction* divInstr = new AstNodeInstruction("/");
+				setNodePosition(divInstr, scanner, src);
+				tempNodes.push_back(divInstr);
+			}
+
 			if (token == '}') {
 				break;
+			}
+
+			sawSlash = (token == '/');
+			if (sawSlash) {
+				continue; // Wait for next token to see if it's a comment
+			}
+
+			sawColon = (token == ':');
+			if (sawColon) {
+				continue; // Wait for next token to see if it's another colon
 			}
 
 			// Check if this token is an "else" keyword
 			if (token == U8T_IDENTIFIER) {
 				const char* tokenText = u8t_scanner_token_text(scanner, &n);
 				if (strcmp(tokenText, "else") == 0) {
+					// Flush tempNodes before handling else
+					for (auto* node : tempNodes) {
+						node->setParent(block);
+						block->addChild(node);
+					}
+					tempNodes.clear();
+
 					// else must follow an if statement
 					IAstNode* lastChild = (block->childCount() > 0) ? block->child(block->childCount() - 1) : nullptr;
 					if (lastChild && lastChild->type() == IAstNode::Type::IF_STATEMENT) {
@@ -310,9 +439,14 @@ namespace Qd {
 
 			IAstNode* node = parseBlockStatement(token, scanner, errorReporter, &n, src);
 			if (node) {
-				node->setParent(block);
-				block->addChild(node);
+				tempNodes.push_back(node);
 			}
+		}
+
+		// Flush remaining tempNodes
+		for (auto* node : tempNodes) {
+			node->setParent(block);
+			block->addChild(node);
 		}
 	}
 
@@ -340,6 +474,8 @@ namespace Qd {
 					return parseIfStatement(scanner, errorReporter, src);
 				} else if (strcmp(text, "for") == 0) {
 					return parseForStatement(scanner, errorReporter, src);
+				} else if (strcmp(text, "loop") == 0) {
+					return parseLoopStatement(scanner, errorReporter, src);
 				} else if (strcmp(text, "switch") == 0) {
 					return parseSwitchStatement(scanner, errorReporter, src);
 				}
@@ -593,6 +729,40 @@ namespace Qd {
 						forStmt->setParent(body);
 						body->addChild(forStmt);
 					}
+				} else if (strcmp(text, "loop") == 0) {
+					IAstNode* loopStmt = parseLoopStatement(scanner, errorReporter, src);
+					if (loopStmt) {
+						for (auto* node : tempNodes) {
+							node->setParent(body);
+							body->addChild(node);
+						}
+						tempNodes.clear();
+
+						loopStmt->setParent(body);
+						body->addChild(loopStmt);
+					}
+				} else if (strcmp(text, "break") == 0) {
+					IAstNode* breakStmt = new AstNodeBreak();
+					setNodePosition(breakStmt, scanner, src);
+					for (auto* node : tempNodes) {
+						node->setParent(body);
+						body->addChild(node);
+					}
+					tempNodes.clear();
+
+					breakStmt->setParent(body);
+					body->addChild(breakStmt);
+				} else if (strcmp(text, "continue") == 0) {
+					IAstNode* continueStmt = new AstNodeContinue();
+					setNodePosition(continueStmt, scanner, src);
+					for (auto* node : tempNodes) {
+						node->setParent(body);
+						body->addChild(node);
+					}
+					tempNodes.clear();
+
+					continueStmt->setParent(body);
+					body->addChild(continueStmt);
 				} else if (strcmp(text, "if") == 0) {
 					IAstNode* ifStmt = parseIfStatement(scanner, errorReporter, src);
 					if (ifStmt) {
@@ -770,10 +940,10 @@ namespace Qd {
 								const char* deferText = u8t_scanner_token_text(scanner, &n);
 
 								// Check if it's a control structure keyword - this ends the defer
-								if (strcmp(deferText, "for") == 0 || strcmp(deferText, "if") == 0 ||
-										strcmp(deferText, "switch") == 0 || strcmp(deferText, "return") == 0 ||
-										strcmp(deferText, "defer") == 0 || strcmp(deferText, "break") == 0 ||
-										strcmp(deferText, "continue") == 0) {
+								if (strcmp(deferText, "for") == 0 || strcmp(deferText, "loop") == 0 ||
+										strcmp(deferText, "if") == 0 || strcmp(deferText, "switch") == 0 ||
+										strcmp(deferText, "return") == 0 || strcmp(deferText, "defer") == 0 ||
+										strcmp(deferText, "break") == 0 || strcmp(deferText, "continue") == 0) {
 									IAstNode* id = isBuiltInInstruction(deferText)
 														   ? static_cast<IAstNode*>(new AstNodeInstruction(deferText))
 														   : static_cast<IAstNode*>(new AstNodeIdentifier(deferText));
@@ -990,7 +1160,6 @@ namespace Qd {
 	}
 
 	static IAstNode* parseForStatement(u8t_scanner* scanner, ErrorReporter* errorReporter, const char* src) {
-		size_t n;
 		char32_t token = u8t_scanner_scan(scanner);
 
 		if (token != '{') {
@@ -1011,22 +1180,41 @@ namespace Qd {
 		AstNodeBlock* body = new AstNodeBlock();
 		setNodePosition(body, scanner, src);
 
-		while ((token = u8t_scanner_scan(scanner)) != U8T_EOF) {
-			if (token == '}') {
-				break;
-			}
-
-			IAstNode* node = parseBlockStatement(token, scanner, errorReporter, &n, src);
-			if (node) {
-				node->setParent(body);
-				body->addChild(node);
-			}
-		}
+		parseBlockBody(body, scanner, errorReporter, src);
 
 		body->setParent(forStmt);
 		forStmt->setBody(body);
 
 		return forStmt;
+	}
+
+	static IAstNode* parseLoopStatement(u8t_scanner* scanner, ErrorReporter* errorReporter, const char* src) {
+		char32_t token = u8t_scanner_scan(scanner);
+
+		if (token != '{') {
+			errorReporter->reportError(scanner, "Expected '{' after 'loop'");
+			// Recovery: create empty loop statement and synchronize
+			AstNodeLoopStatement* loopStmt = new AstNodeLoopStatement();
+			setNodePosition(loopStmt, scanner, src);
+			AstNodeBlock* body = new AstNodeBlock();
+			setNodePosition(body, scanner, src);
+			body->setParent(loopStmt);
+			loopStmt->setBody(body);
+			synchronize(scanner);
+			return loopStmt;
+		}
+
+		AstNodeLoopStatement* loopStmt = new AstNodeLoopStatement();
+		setNodePosition(loopStmt, scanner, src);
+		AstNodeBlock* body = new AstNodeBlock();
+		setNodePosition(body, scanner, src);
+
+		parseBlockBody(body, scanner, errorReporter, src);
+
+		body->setParent(loopStmt);
+		loopStmt->setBody(body);
+
+		return loopStmt;
 	}
 
 	static IAstNode* parseIfStatement(u8t_scanner* scanner, ErrorReporter* errorReporter, const char* src) {

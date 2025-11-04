@@ -29,6 +29,7 @@ namespace Qd {
 		void formatBlockInline(const IAstNode* node);
 		void formatIf(const IAstNode* node);
 		void formatFor(const IAstNode* node);
+		void formatLoop(const IAstNode* node);
 		void formatSwitch(const IAstNode* node);
 		void formatCase(const IAstNode* node);
 		void formatDefer(const IAstNode* node);

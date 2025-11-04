@@ -602,9 +602,9 @@ namespace Qd {
 			// but we don't report an error here as it was likely already reported
 		}
 
-		// Track when we enter a for loop
+		// Track when we enter a for loop or infinite loop
 		bool childrenInsideForLoop = insideForLoop;
-		if (node->type() == IAstNode::Type::FOR_STATEMENT) {
+		if (node->type() == IAstNode::Type::FOR_STATEMENT || node->type() == IAstNode::Type::LOOP_STATEMENT) {
 			childrenInsideForLoop = true;
 		}
 
@@ -800,7 +800,8 @@ namespace Qd {
 				break;
 			}
 
-			case IAstNode::Type::FOR_STATEMENT: {
+			case IAstNode::Type::FOR_STATEMENT:
+			case IAstNode::Type::LOOP_STATEMENT: {
 				// For now, skip loop type checking
 				break;
 			}

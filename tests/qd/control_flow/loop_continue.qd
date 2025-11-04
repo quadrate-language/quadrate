@@ -1,0 +1,21 @@
+fn main( -- ) {
+	// Test loop with continue
+	0
+	loop {
+		1 add
+		dup 10 gt
+		if {
+			drop
+			break
+		}
+
+		// Skip even numbers
+		dup 2 mod 0 ==
+		if {
+			continue
+		}
+
+		// Print odd numbers
+		dup print
+	}
+}

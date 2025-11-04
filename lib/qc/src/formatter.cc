@@ -10,6 +10,7 @@
 #include <qc/ast_node_instruction.h>
 #include <qc/ast_node_label.h>
 #include <qc/ast_node_literal.h>
+#include <qc/ast_node_loop.h>
 #include <qc/ast_node_parameter.h>
 #include <qc/ast_node_program.h>
 #include <qc/ast_node_return.h>
@@ -58,6 +59,9 @@ namespace Qd {
 			break;
 		case IAstNode::Type::FOR_STATEMENT:
 			formatFor(node);
+			break;
+		case IAstNode::Type::LOOP_STATEMENT:
+			formatLoop(node);
 			break;
 		case IAstNode::Type::SWITCH_STATEMENT:
 			formatSwitch(node);
@@ -315,9 +319,10 @@ namespace Qd {
 				// After processing inline nodes, check what comes next
 				if (i + 1 < block->childCount()) {
 					const IAstNode* nextNode = block->child(i + 1);
-					// If next is if/for, process it on same line
+					// If next is if/for/loop, process it on same line
 					if (nextNode && (nextNode->type() == IAstNode::Type::IF_STATEMENT ||
-											nextNode->type() == IAstNode::Type::FOR_STATEMENT)) {
+											nextNode->type() == IAstNode::Type::FOR_STATEMENT ||
+											nextNode->type() == IAstNode::Type::LOOP_STATEMENT)) {
 						write(" ");
 						i++;
 						formatNode(nextNode);
@@ -333,7 +338,8 @@ namespace Qd {
 				}
 				newLine();
 			} else if (child->type() == IAstNode::Type::IF_STATEMENT ||
-					   child->type() == IAstNode::Type::FOR_STATEMENT) {
+					   child->type() == IAstNode::Type::FOR_STATEMENT ||
+					   child->type() == IAstNode::Type::LOOP_STATEMENT) {
 				// if/for without preceding inline nodes still need indent
 				writeIndent();
 				formatNode(child);
@@ -378,7 +384,8 @@ namespace Qd {
 				if (i + 1 < block->childCount()) {
 					const IAstNode* nextNode = block->child(i + 1);
 					if (nextNode && (nextNode->type() == IAstNode::Type::IF_STATEMENT ||
-											nextNode->type() == IAstNode::Type::FOR_STATEMENT)) {
+											nextNode->type() == IAstNode::Type::FOR_STATEMENT ||
+											nextNode->type() == IAstNode::Type::LOOP_STATEMENT)) {
 						write(" ");
 						i++;
 						formatNode(nextNode);
@@ -426,7 +433,8 @@ namespace Qd {
 				if (i + 1 < block->childCount()) {
 					const IAstNode* nextNode = block->child(i + 1);
 					if (nextNode && (nextNode->type() == IAstNode::Type::IF_STATEMENT ||
-											nextNode->type() == IAstNode::Type::FOR_STATEMENT)) {
+											nextNode->type() == IAstNode::Type::FOR_STATEMENT ||
+											nextNode->type() == IAstNode::Type::LOOP_STATEMENT)) {
 						write(" ");
 						i++;
 						formatNode(nextNode);
@@ -476,7 +484,8 @@ namespace Qd {
 				if (i + 1 < block->childCount()) {
 					const IAstNode* nextNode = block->child(i + 1);
 					if (nextNode && (nextNode->type() == IAstNode::Type::IF_STATEMENT ||
-											nextNode->type() == IAstNode::Type::FOR_STATEMENT)) {
+											nextNode->type() == IAstNode::Type::FOR_STATEMENT ||
+											nextNode->type() == IAstNode::Type::LOOP_STATEMENT)) {
 						write(" ");
 						i++;
 						formatNode(nextNode);
@@ -518,7 +527,8 @@ namespace Qd {
 				if (i + 1 < block->childCount()) {
 					const IAstNode* nextNode = block->child(i + 1);
 					if (nextNode && (nextNode->type() == IAstNode::Type::IF_STATEMENT ||
-											nextNode->type() == IAstNode::Type::FOR_STATEMENT)) {
+											nextNode->type() == IAstNode::Type::FOR_STATEMENT ||
+											nextNode->type() == IAstNode::Type::LOOP_STATEMENT)) {
 						write(" ");
 						i++;
 						formatNode(nextNode);
@@ -572,6 +582,23 @@ namespace Qd {
 		indent();
 		if (forNode->body()) {
 			formatBlockInline(forNode->body());
+		}
+		dedent();
+
+		writeIndent();
+		write("}");
+		newLine();
+	}
+
+	void Formatter::formatLoop(const IAstNode* node) {
+		const AstNodeLoopStatement* loopNode = static_cast<const AstNodeLoopStatement*>(node);
+
+		write("loop {");
+		newLine();
+
+		indent();
+		if (loopNode->body()) {
+			formatBlockInline(loopNode->body());
 		}
 		dedent();
 
@@ -758,7 +785,8 @@ namespace Qd {
 						if (i + 1 < node->childCount()) {
 							const IAstNode* nextNext = node->child(i + 1);
 							if (nextNext && (nextNext->type() == IAstNode::Type::IF_STATEMENT ||
-													nextNext->type() == IAstNode::Type::FOR_STATEMENT)) {
+													nextNext->type() == IAstNode::Type::FOR_STATEMENT ||
+													nextNext->type() == IAstNode::Type::LOOP_STATEMENT)) {
 								write(" ");
 								i++;
 								formatNode(nextNext);
@@ -804,7 +832,8 @@ namespace Qd {
 				if (i + 1 < node->childCount()) {
 					const IAstNode* nextNode = node->child(i + 1);
 					if (nextNode && (nextNode->type() == IAstNode::Type::IF_STATEMENT ||
-											nextNode->type() == IAstNode::Type::FOR_STATEMENT)) {
+											nextNode->type() == IAstNode::Type::FOR_STATEMENT ||
+											nextNode->type() == IAstNode::Type::LOOP_STATEMENT)) {
 						write(" ");
 						i++;
 						formatNode(nextNode);
@@ -843,7 +872,8 @@ namespace Qd {
 				if (i + 1 < node->childCount()) {
 					const IAstNode* nextNode = node->child(i + 1);
 					if (nextNode && (nextNode->type() == IAstNode::Type::IF_STATEMENT ||
-											nextNode->type() == IAstNode::Type::FOR_STATEMENT)) {
+											nextNode->type() == IAstNode::Type::FOR_STATEMENT ||
+											nextNode->type() == IAstNode::Type::LOOP_STATEMENT)) {
 						write(" ");
 						i++;
 						formatNode(nextNode);
@@ -884,7 +914,8 @@ namespace Qd {
 				if (i + 1 < node->childCount()) {
 					const IAstNode* nextNode = node->child(i + 1);
 					if (nextNode && (nextNode->type() == IAstNode::Type::IF_STATEMENT ||
-											nextNode->type() == IAstNode::Type::FOR_STATEMENT)) {
+											nextNode->type() == IAstNode::Type::FOR_STATEMENT ||
+											nextNode->type() == IAstNode::Type::LOOP_STATEMENT)) {
 						write(" ");
 						i++;
 						formatNode(nextNode);

@@ -96,6 +96,7 @@ module.exports = grammar({
       $.namespaced_identifier,
       $.if_expression,
       $.for_loop,
+      $.loop_statement,
       $.switch_expression,
       $.defer_block,
       $.builtin_operation,
@@ -115,6 +116,12 @@ module.exports = grammar({
     for_loop: $ => seq(
       'for',
       field('variable', optional($.identifier)),
+      field('body', $.block),
+    ),
+
+    // Infinite loop: loop { ... }
+    loop_statement: $ => seq(
+      'loop',
       field('body', $.block),
     ),
 

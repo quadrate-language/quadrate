@@ -2,7 +2,8 @@
 # Provides networking, file I/O, and other standard utilities
 
 stdqd_sources = files(
-	'src/stdqd.c',
+	'src/fmt.c',
+	'src/net.c',
 )
 
 stdqd_inc = include_directories('include')

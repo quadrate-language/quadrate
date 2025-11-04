@@ -1,5 +1,5 @@
-#ifndef STDQD_H
-#define STDQD_H
+#ifndef STDQD_FMT_H
+#define STDQD_FMT_H
 
 #include <quadrate/runtime/context.h>
 #include <quadrate/runtime/exec_result.h>

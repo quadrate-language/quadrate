@@ -1,0 +1,27 @@
+fn main( -- ) {
+	// Test nested loops
+	0
+	loop {
+		dup 3 gte
+		if {
+			drop
+			break
+		}
+
+		0
+		loop {
+			dup 3 gte
+			if {
+				drop
+				break
+			}
+
+			// Print i * 3 + j
+			over 3 mul over add print
+
+			1 add
+		}
+
+		1 add
+	}
+}

@@ -1,0 +1,14 @@
+fn main( -- ) {
+	// Test simple infinite loop with break
+	0
+	loop {
+		dup 5 lt
+		if {
+			dup print
+			1 add
+		} else {
+			break
+		}
+	}
+	drop
+}

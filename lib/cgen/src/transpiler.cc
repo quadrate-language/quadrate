@@ -15,6 +15,7 @@
 #include <qc/ast_node_import.h>
 #include <qc/ast_node_instruction.h>
 #include <qc/ast_node_literal.h>
+#include <qc/ast_node_loop.h>
 #include <qc/ast_node_parameter.h>
 #include <qc/ast_node_scoped.h>
 #include <qc/ast_node_use.h>
@@ -267,6 +268,20 @@ namespace Qd {
 			}
 
 			out << makeIndent(indent + 1) << "}\n";
+			out << makeIndent(indent) << "}\n";
+			return; // Don't traverse children again
+		}
+		case IAstNode::Type::LOOP_STATEMENT: {
+			AstNodeLoopStatement* loopStmt = static_cast<AstNodeLoopStatement*>(node);
+
+			// Generate infinite while loop
+			out << makeIndent(indent) << "while (1) {\n";
+
+			// Loop body (no iterator variable for infinite loop)
+			if (loopStmt->body()) {
+				traverse(loopStmt->body(), packageName, out, indent + 1, varCounter, "", deferStatements);
+			}
+
 			out << makeIndent(indent) << "}\n";
 			return; // Don't traverse children again
 		}

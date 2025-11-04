@@ -79,6 +79,44 @@ fn test( -- ) {
           (builtin_operation))))))
 
 ================================================================================
+Infinite loop statement
+================================================================================
+
+fn test( -- ) {
+    0
+    loop {
+        dup 10 lt if {
+            dup print
+            1 add
+        } else {
+            break
+        }
+    }
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (function_definition
+    name: (identifier)
+    signature: (stack_signature)
+    body: (block
+      (number)
+      (loop_statement
+        body: (block
+          (builtin_operation)
+          (number)
+          (builtin_operation)
+          (if_expression
+            then: (block
+              (builtin_operation)
+              (builtin_operation)
+              (number)
+              (builtin_operation))
+            else: (block
+              (break_statement))))))))
+
+================================================================================
 Switch statement
 ================================================================================
 
