@@ -150,6 +150,12 @@ std::string findModuleFile(const std::string& moduleName, const std::string& sou
 				return homePath;
 			}
 		}
+
+		// Try 4: System-wide installation
+		std::string systemPath = "/usr/share/quadrate/" + moduleName;
+		if (std::filesystem::exists(systemPath)) {
+			return systemPath;
+		}
 	} else {
 		// Module directory import (original behavior)
 		// Try 1: Local path (relative to source file)
@@ -174,6 +180,12 @@ std::string findModuleFile(const std::string& moduleName, const std::string& sou
 			if (std::filesystem::exists(homePath)) {
 				return homePath;
 			}
+		}
+
+		// Try 4: System-wide installation
+		std::string systemPath = "/usr/share/quadrate/" + moduleName + "/module.qd";
+		if (std::filesystem::exists(systemPath)) {
+			return systemPath;
 		}
 	}
 

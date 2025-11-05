@@ -91,9 +91,9 @@ install: release
 	cp -r dist/include/qdrt $(DESTDIR)$(PREFIX)/include/
 	cp -r dist/include/qd $(DESTDIR)$(PREFIX)/include/
 	cp -r dist/include/stdqd $(DESTDIR)$(PREFIX)/include/
-	@echo "Installing Quadrate standard library modules to $(HOME)/quadrate/"
-	install -d $(HOME)/quadrate
-	@cd lib/stdqd/qd && find . -maxdepth 1 -type d -not -name "." -exec cp -r {} $(HOME)/quadrate/ \;
+	@echo "Installing Quadrate standard library modules to $(DESTDIR)$(PREFIX)/share/quadrate/"
+	install -d $(DESTDIR)$(PREFIX)/share/quadrate
+	@cd lib/stdqd/qd && find . -maxdepth 1 -type d -not -name "." -exec cp -r {} $(DESTDIR)$(PREFIX)/share/quadrate/ \;
 
 uninstall:
 	rm -f $(DESTDIR)$(PREFIX)/bin/quadc
@@ -108,8 +108,8 @@ uninstall:
 	rm -rf $(DESTDIR)$(PREFIX)/include/qdrt
 	rm -rf $(DESTDIR)$(PREFIX)/include/qd
 	rm -rf $(DESTDIR)$(PREFIX)/include/stdqd
-	@echo "Removing Quadrate standard library modules from $(HOME)/quadrate/"
-	rm -rf $(HOME)/quadrate/fmt
+	@echo "Removing Quadrate standard library modules from $(DESTDIR)$(PREFIX)/share/quadrate/"
+	rm -rf $(DESTDIR)$(PREFIX)/share/quadrate
 
 clean:
 	rm -rf build
