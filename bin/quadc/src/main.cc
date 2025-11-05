@@ -418,7 +418,7 @@ int main(int argc, char** argv) {
 
 			headerContent << "#ifndef " << guardName << "_MODULE_H\n";
 			headerContent << "#define " << guardName << "_MODULE_H\n\n";
-			headerContent << "#include <quadrate/runtime/runtime.h>\n\n";
+			headerContent << "#include <runtime/runtime.h>\n\n";
 
 			// Collect all function declarations and definitions from all sources in this package
 			std::set<std::string> functionSignatures; // Regular function declarations

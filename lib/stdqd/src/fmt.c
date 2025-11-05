@@ -1,5 +1,5 @@
 #include <stdqd/fmt.h>
-#include <quadrate/runtime/stack.h>
+#include <runtime/stack.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

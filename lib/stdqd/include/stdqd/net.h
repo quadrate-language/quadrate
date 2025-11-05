@@ -1,8 +1,8 @@
 #ifndef STDQD_NET_H
 #define STDQD_NET_H
 
-#include <quadrate/runtime/context.h>
-#include <quadrate/runtime/exec_result.h>
+#include <runtime/context.h>
+#include <runtime/exec_result.h>
 
 #ifdef __cplusplus
 extern "C" {

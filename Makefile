@@ -20,6 +20,7 @@ debug:
 	@cp -f $(BUILD_DIR_DEBUG)/lib/quadrate/libquadrate_static.a dist/lib/
 	@cp -f $(BUILD_DIR_DEBUG)/lib/stdqd/libstdqd.so dist/lib/
 	@cp -f $(BUILD_DIR_DEBUG)/lib/stdqd/libstdqd_static.a dist/lib/
+	@cp -rf lib/runtime/include/runtime dist/include/
 	@cp -rf lib/quadrate/include/quadrate dist/include/
 	@cp -rf lib/stdqd/include/stdqd dist/include/
 
@@ -34,6 +35,7 @@ release:
 	@cp -f $(BUILD_DIR_RELEASE)/lib/quadrate/libquadrate_static.a dist/lib/
 	@cp -f $(BUILD_DIR_RELEASE)/lib/stdqd/libstdqd.so dist/lib/
 	@cp -f $(BUILD_DIR_RELEASE)/lib/stdqd/libstdqd_static.a dist/lib/
+	@cp -rf lib/runtime/include/runtime dist/include/
 	@cp -rf lib/quadrate/include/quadrate dist/include/
 	@cp -rf lib/stdqd/include/stdqd dist/include/
 
@@ -80,6 +82,7 @@ install: release
 	install -m 644 dist/lib/libquadrate_static.a $(DESTDIR)$(PREFIX)/lib/
 	install -m 644 dist/lib/libstdqd.so $(DESTDIR)$(PREFIX)/lib/
 	install -m 644 dist/lib/libstdqd_static.a $(DESTDIR)$(PREFIX)/lib/
+	cp -r dist/include/runtime $(DESTDIR)$(PREFIX)/include/
 	cp -r dist/include/quadrate $(DESTDIR)$(PREFIX)/include/
 	cp -r dist/include/stdqd $(DESTDIR)$(PREFIX)/include/
 	@echo "Installing Quadrate standard library modules to $(HOME)/quadrate/"
@@ -94,6 +97,7 @@ uninstall:
 	rm -f $(DESTDIR)$(PREFIX)/lib/libquadrate_static.a
 	rm -f $(DESTDIR)$(PREFIX)/lib/libstdqd.so
 	rm -f $(DESTDIR)$(PREFIX)/lib/libstdqd_static.a
+	rm -rf $(DESTDIR)$(PREFIX)/include/runtime
 	rm -rf $(DESTDIR)$(PREFIX)/include/quadrate
 	rm -rf $(DESTDIR)$(PREFIX)/include/stdqd
 	@echo "Removing Quadrate standard library modules from $(HOME)/quadrate/"

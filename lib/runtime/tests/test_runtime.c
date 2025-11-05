@@ -1,6 +1,6 @@
-#include <quadrate/runtime/runtime.h>
-#include <quadrate/runtime/context.h>
-#include <quadrate/runtime/stack.h>
+#include <runtime/runtime.h>
+#include <runtime/context.h>
+#include <runtime/stack.h>
 #include <unit-check/uc.h>
 #include <stdlib.h>
 #include <math.h>

@@ -7,8 +7,8 @@ unit_check_lib = cc.find_library('unit-check', required: true)
 test_stdqd = executable('test_stdqd',
 	'test_stdqd.c',
 	include_directories: [stdqd_inc, quadrate_inc],
-	link_with: [stdqd_static, quadrate_static],
-	dependencies: [unit_check_lib],
+	dependencies: [quadrate_static_dep, unit_check_lib],
+	link_with: [stdqd_static],
 	c_args: ['-DTEST_BUILD']
 )
 

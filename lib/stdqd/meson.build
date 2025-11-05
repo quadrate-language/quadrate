@@ -11,7 +11,7 @@ stdqd_inc = include_directories('include')
 # Shared library
 stdqd_shared = shared_library('stdqd',
 	stdqd_sources,
-	include_directories: [stdqd_inc, quadrate_inc],
+	include_directories: [stdqd_inc, quadrate_inc, runtime_inc],
 	link_with: quadrate_shared,
 	install_rpath: '$ORIGIN',
 	install: false
@@ -20,7 +20,7 @@ stdqd_shared = shared_library('stdqd',
 # Static library
 stdqd_static = static_library('stdqd_static',
 	stdqd_sources,
-	include_directories: [stdqd_inc, quadrate_inc],
+	include_directories: [stdqd_inc, quadrate_inc, runtime_inc],
 	install: false
 )
 

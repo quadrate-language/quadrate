@@ -1,4 +1,4 @@
-#include <quadrate/runtime/stack.h>
+#include <runtime/stack.h>
 #include <stdlib.h>
 #include <string.h>
 

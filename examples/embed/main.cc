@@ -9,10 +9,10 @@ int main(void) {
 	qd_context* ctx = qd_create_context(1024);
 
 	qd_module* os = qd_get_module(ctx, "os");
-	qd_add_script(os, "fn exit() {}");
-	qd_register_function(os, "my_func", my_func);
+	qd_add_script(os, "fn exit() { 666 . }");
+	//	qd_register_function(os, "my_func", my_func);
 	qd_build(os);
-	qd_execute(ctx, "os::exit");
+	qd_execute(ctx, "123.34 . os::exit");
 
 	qd_free_context(ctx);
 

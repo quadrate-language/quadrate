@@ -1,5 +1,6 @@
 subdir('qc')
 subdir('u8')
+subdir('runtime')
 subdir('quadrate')
 subdir('stdqd')
 subdir('cgen')

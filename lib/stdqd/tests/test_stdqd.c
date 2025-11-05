@@ -1,7 +1,7 @@
 #include <stdqd/fmt.h>
 #include <quadrate/qd.h>
-#include <quadrate/runtime/runtime.h>
-#include <quadrate/runtime/stack.h>
+#include <runtime/runtime.h>
+#include <runtime/stack.h>
 #include <unit-check/uc.h>
 
 int main(void) {
