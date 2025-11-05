@@ -1,47 +1,246 @@
 # Quadrate
 
+A stack-based programming language that compiles to C using GCC as a backend.
+
 ## Table of Contents
 - [Description](#description)
+- [Features](#features)
+- [Dependencies](#dependencies)
 - [Installation](#installation)
 - [Usage](#usage)
+- [Library Architecture](#library-architecture)
+- [Standard Library](#standard-library)
+- [Examples](#examples)
+- [Development](#development)
 - [License](#license)
 - [Maintainers](#maintainers)
 - [Contributing](#contributing)
 
 ## Description
-Quadrate is a stack-based programming language under development.
-See https://quad.r8.rs for more information and documentation.
+
+Quadrate is a stack-based programming language inspired by Forth. It compiles to C code and uses GCC for final compilation, producing optimized native executables. The language features a clean syntax with strong type checking, module system, and comprehensive standard library.
+
+For detailed documentation, visit https://quad.r8.rs
+
+## Features
+
+- **Stack-based execution** with type-tagged stack elements (int, float, string, pointer)
+- **Compiles to C** for maximum performance and portability
+- **Type checking** with multi-pass semantic validation
+- **Module system** with imports and namespacing
+- **Standard library** with networking, formatting, and file I/O
+- **Built-in functions** for math, stack manipulation, and control flow
+- **UTF-8 string support** via external tokenizer
+- **LSP server** for IDE integration
+- **Code formatter** for consistent style
+
+## Dependencies
+
+- **GCC** or compatible C compiler
+- **Meson** build system (used internally via Makefile)
+- **libu8t** - UTF-8 tokenization library (system-installed)
+- **libunit-check** - Unit testing framework (for building tests)
+- **Python 3** (for LSP tests)
+
+### Install Dependencies
+
+**Arch Linux:**
+```bash
+sudo pacman -S gcc meson
+# Install libu8t from AUR or build from source
+```
+
+**Debian/Ubuntu:**
+```bash
+sudo apt install gcc meson
+# Install libu8t from source
+```
 
 ## Installation
 
-```yaml
-$ git clone --branch 1.0.0 https://git.sr.ht/~klahr/quadrate
-$ cd quadrate
-$ make && sudo -E make install
+```bash
+git clone https://git.sr.ht/~klahr/quadrate
+cd quadrate
+make && sudo make install
 ```
 
-### Standrad library
-The standard library is included in the repository and is installed by default to `/$HOME/quadrate`. You may overrie by setting QUADRATE_ROOT env.
+This installs:
+- Binaries to `/usr/bin/` (quadc, quadfmt, quadlsp)
+- Libraries to `/usr/lib/` (libqdrt, libqd, libstdqd)
+- Headers to `/usr/include/`
+- Standard library to `/usr/share/quadrate/`
+
+### Custom Installation Prefix
 
 ```bash
-$ export QUADRATE_ROOT=~/custom-quadrate
+sudo make install PREFIX=/usr/local
+```
+
+### Uninstall
+
+```bash
+sudo make uninstall
 ```
 
 ## Usage
-```
-// main.qd
-use fmt
 
+### Hello World
+
+Create `hello.qd`:
+```quadrate
 fn main() {
-	push 1.0
-	fmt::print
+    "Hello, World!" print nl
 }
 ```
+
+Compile and run:
 ```bash
-$ quadc -o one main.qd && ./one
+quadc hello.qd -o hello
+./hello
 ```
 
+### Using Standard Library
+
+```quadrate
+use "fmt"
+
+fn main() {
+    "World" 42 "Hello %s! Answer: %d\n" fmt::printf
+}
+```
+
+### Run Without Saving Binary
+
+```bash
+quadc hello.qd --run
+```
+
+## Library Architecture
+
+Quadrate consists of three main libraries:
+
+### libqdrt (Quadrate Runtime)
+- **Files**: `libqdrt.so`, `libqdrt_static.a`
+- **Headers**: `<qdrt/runtime.h>`, `<qdrt/context.h>`, `<qdrt/stack.h>`
+- **Purpose**: Low-level runtime with stack operations, built-in instructions, context management
+- **Used by**: Compiled Quadrate programs, libqd, libstdqd
+
+### libqd (Quadrate Embedding API)
+- **Files**: `libqd.so`, `libqd_static.a`
+- **Headers**: `<qd/qd.h>`
+- **Purpose**: High-level API for embedding Quadrate in C programs
+- **Depends on**: libqdrt
+
+### libstdqd (Standard Library)
+- **Files**: `libstdqd.so`, `libstdqd_static.a`
+- **Headers**: `<stdqd/fmt.h>`, `<stdqd/net.h>`
+- **Purpose**: Networking, formatting, file I/O utilities
+- **Depends on**: libqdrt
+
+### Linking
+
+- **Compiled Quadrate programs**: `-lqdrt`
+- **C programs using runtime**: `-lqdrt`
+- **C programs embedding Quadrate**: `-lqd`
+
+## Standard Library
+
+The standard library is installed to `/usr/share/quadrate/` and includes:
+
+- **fmt**: Formatted printing and string operations
+- **net**: Networking (TCP sockets, listen, connect, send, receive)
+
+### Module Search Order
+
+The compiler searches for modules in this order:
+1. Local path (relative to source file)
+2. `$QUADRATE_ROOT` environment variable
+3. `$HOME/quadrate/`
+4. `/usr/share/quadrate/` (system-wide installation)
+
+### Override Standard Library Location
+
+```bash
+export QUADRATE_ROOT=~/custom-quadrate
+```
+
+## Examples
+
+See the `examples/` directory:
+- `hello-world/` - Simple hello world in Quadrate
+- `hello-world-c/` - Embedding Quadrate in C
+- `embed/` - Full embedding example
+- `bmi/` - BMI calculator
+- `web-server/` - Simple TCP web server
+
+Build examples:
+```bash
+make examples
+./dist/examples/hello-world
+```
+
+## Development
+
+### Build Commands
+
+All development tasks use the Makefile:
+
+```bash
+# Debug build (default)
+make
+
+# Release build
+make release
+
+# Run all tests
+make tests
+
+# Run tests with valgrind
+make valgrind
+
+# Build examples
+make examples
+
+# Format code
+make format
+
+# Clean all build artifacts
+make clean
+```
+
+### Project Structure
+
+```
+quadrate/
+├── bin/               # Executable tools
+│   ├── quadc/        # Compiler
+│   ├── quadfmt/      # Formatter
+│   └── quadlsp/      # LSP server
+├── lib/              # Libraries
+│   ├── qc/           # Compiler frontend (parser, validator)
+│   ├── cgen/         # C code generator (transpiler)
+│   ├── qdrt/         # Runtime library
+│   ├── qd/           # Embedding API
+│   └── stdqd/        # Standard library (C + Quadrate modules)
+├── tests/            # Test suites
+├── examples/         # Example programs
+└── editors/          # Editor integration (tree-sitter, nvim)
+```
+
+### Compilation Pipeline
+
+1. Parse `.qd` files → AST (using external u8t tokenizer)
+2. Multi-pass semantic validation
+3. Transpile AST → C source code
+4. Compile C files → object files (gcc)
+5. Link with `-lqdrt` runtime library
+
+### Build System
+
+Quadrate uses Meson as the underlying build system, but all interactions should be through the Makefile for consistency. The Makefile provides convenient targets that wrap Meson commands.
+
 ## License
+
 This repository contains source code generated with assistance from an AI model (Anthropic Claude).
 It may include or resemble material that is licensed under the GNU General Public License (GPL), version 3 or later.
 
@@ -53,7 +252,19 @@ This repository is provided solely for research and demonstration purposes.
 See the [`LICENSE`](./LICENSE) file for full terms.
 
 ## Maintainers
+
 [~klahr](https://sr.ht/~klahr)
 
 ## Contributing
+
 We enthusiastically encourage and welcome contributions.
+
+### Reporting Issues
+
+Report bugs and feature requests at: https://todo.sr.ht/~klahr/quadrate
+
+### Submitting Patches
+
+Send patches to: ~klahr/quadrate@lists.sr.ht
+
+Learn more about sourcehut workflows: https://man.sr.ht/git.sr.ht/send-email.md
