@@ -55,7 +55,7 @@ qd_exec_result qd_print(qd_context* ctx) {
 			printf("%f", val.value.f);
 			break;
 		case QD_STACK_TYPE_STR:
-			printf("\"%s\"", val.value.s);
+			printf("%s", val.value.s);
 			free(val.value.s);  // Free the string memory after printing
 			break;
 		default:

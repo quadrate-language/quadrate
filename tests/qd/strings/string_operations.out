@@ -1,24 +1,24 @@
-"Basic print test"
-"Third"
-"Second"
-"First"
-""
-"Not empty"
-""
-"Number: 42"
-"Pi: 3.14159"
-"Tab	here"
-"Multiple   spaces"
-"Leading whitespace"
-"Trailing whitespace "
-"This is a very long string that tests whether the string handling can deal with longer text content without any issues whatsoever."
-"aaaaaaaaaa"
-"1111111111"
-"          "
-"a"
-"Z"
-"0"
-"!"
-"ä"
-"世"
-"🎉"
+Basic print test
+Third
+Second
+First
+
+Not empty
+
+Number: 42
+Pi: 3.14159
+Tab	here
+Multiple   spaces
+Leading whitespace
+Trailing whitespace 
+This is a very long string that tests whether the string handling can deal with longer text content without any issues whatsoever.
+aaaaaaaaaa
+1111111111
+          
+a
+Z
+0
+!
+ä
+世
+🎉
