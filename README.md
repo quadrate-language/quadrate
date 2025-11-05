@@ -87,7 +87,7 @@ sudo make uninstall
 ### Hello World
 
 Create `hello.qd`:
-```quadrate
+```rust
 fn main() {
     "Hello, World!" print nl
 }
@@ -95,13 +95,13 @@ fn main() {
 
 Compile and run:
 ```bash
-quadc hello.qd -o hello
+quadc -o hello hello.qd
 ./hello
 ```
 
 ### Using Standard Library
 
-```quadrate
+```rust
 use "fmt"
 
 fn main() {
@@ -112,7 +112,7 @@ fn main() {
 ### Run Without Saving Binary
 
 ```bash
-quadc hello.qd --run
+quadc --run hello.qd
 ```
 
 ## Library Architecture
