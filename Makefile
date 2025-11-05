@@ -62,6 +62,7 @@ valgrind: debug
 	meson test -C $(BUILD_DIR_DEBUG) test_str test_runtime test_ast test_semantic_validator stdqd --setup=valgrind --print-errorlogs
 
 examples:
+	@mkdir -p dist/examples
 	meson setup $(BUILD_DIR_DEBUG) --buildtype=debug --reconfigure -Dbuild_examples=true $(MESON_FLAGS)
 	meson compile -C $(BUILD_DIR_DEBUG) examples/embed/embed examples/hello-world/hello-world examples/hello-world-c/hello-world-c examples/bmi/bmi examples/web-server/web-server
 

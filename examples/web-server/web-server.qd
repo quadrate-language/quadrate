@@ -1,7 +1,7 @@
 use net
 
 fn main( -- ) {
-	"Serving on http://localhost:8080/" print
+	"Serving on http://localhost:8080/" . nl
 
 	// Create server socket on port 8080
 	8080 net::listen
