@@ -1,5 +1,4 @@
 subdir('qc')
-subdir('u8')
 subdir('qdrt')
 subdir('qd')
 subdir('stdqd')

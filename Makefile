@@ -45,7 +45,7 @@ release:
 
 tests: debug
 	@echo "=== Running C/C++ unit tests ==="
-	meson test -C $(BUILD_DIR_DEBUG) test_str test_runtime test_ast test_semantic_validator stdqd --print-errorlogs
+	meson test -C $(BUILD_DIR_DEBUG) test_runtime test_ast test_semantic_validator stdqd --print-errorlogs
 	@echo ""
 	@echo "=== Running LSP tests ==="
 	meson test -C $(BUILD_DIR_DEBUG) test_lsp test_lsp_extended test_lsp_stress --print-errorlogs
@@ -65,7 +65,7 @@ tests: debug
 
 valgrind: debug
 	@echo "=== Running C/C++ unit tests with valgrind ==="
-	meson test -C $(BUILD_DIR_DEBUG) test_str test_runtime test_ast test_semantic_validator stdqd --setup=valgrind --print-errorlogs
+	meson test -C $(BUILD_DIR_DEBUG) test_runtime test_ast test_semantic_validator stdqd --setup=valgrind --print-errorlogs
 
 examples:
 	@mkdir -p dist/examples
