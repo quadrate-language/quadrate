@@ -5,37 +5,37 @@ use validators
 fn main( -- ) {
 	// Test math_helpers::abs
 	-5.5 math_helpers::abs
-	print
+	print nl
 	3.2 math_helpers::abs
-	print
+	print nl
 	// Test math_helpers::max
 	10.0 20.0 math_helpers::max
-	print
+	print nl
 	50.0 30.0 math_helpers::max
-	print
+	print nl
 	// Test math_helpers::square
 	5.0 math_helpers::square
-	print
+	print nl
 	7.0 math_helpers::square
-	print
+	print nl
 	// Test math_helpers::add_ten
 	15.0 math_helpers::add_ten
-	print
+	print nl
 	-5.0 math_helpers::add_ten
-	print
+	print nl
 	// Test validators::is_positive
 	5.0 validators::is_positive
-	print
+	print nl
 	-3.0 validators::is_positive
-	print
+	print nl
 	// Test validators::is_negative
 	5.0 validators::is_negative
-	print
+	print nl
 	-3.0 validators::is_negative
-	print
+	print nl
 	// Test validators::is_zero
 	0.0 validators::is_zero
-	print
+	print nl
 	5.0 validators::is_zero
-	print
+	print nl
 }

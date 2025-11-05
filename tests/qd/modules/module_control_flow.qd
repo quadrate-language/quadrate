@@ -4,19 +4,19 @@ use control_flow
 fn main( -- ) {
 	// Test sign function (if/else)
 	5.0 control_flow::sign
-	print
+	print nl
 	-3.0 control_flow::sign
-	print
+	print nl
 	0.0 control_flow::sign
-	print
+	print nl
 	// Test sum_to_n (for loop)
 	10.0 control_flow::sum_to_n
-	print
+	print nl
 	5.0 control_flow::sum_to_n
-	print
+	print nl
 	// Test count_evens
 	10.0 control_flow::count_evens
-	print
+	print nl
 	20.0 control_flow::count_evens
-	print
+	print nl
 }

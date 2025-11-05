@@ -17,7 +17,7 @@ fn main( -- ) {
 			}
 
 			// Print i * 3 + j
-			over 3 mul over add print
+			over 3 mul over add print nl
 
 			1 add
 		}

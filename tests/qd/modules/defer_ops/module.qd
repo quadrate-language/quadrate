@@ -1,34 +1,34 @@
 // Defer operations in modules
 fn with_cleanup( x:f -- result:f ) {
 	defer {
-		100.0 print
+		100.0 print nl
 	}
 	2.0 mul
 }
 
 fn nested_defer( x:f -- result:f ) {
 	defer {
-		300.0 print
+		300.0 print nl
 	}
 	defer {
-		200.0 print
+		200.0 print nl
 	}
 	10.0 add
 	defer {
-		100.0 print
+		100.0 print nl
 	}
 }
 
 fn defer_with_computation( x:f y:f -- result:f ) {
 	defer {
-		50.0 25.0 add print
+		50.0 25.0 add print nl
 	}
 	add
 }
 
 fn early_return( x:f -- result:f ) {
 	defer {
-		999.0 print
+		999.0 print nl
 	}
 	dup 0.0 lt
 	if {

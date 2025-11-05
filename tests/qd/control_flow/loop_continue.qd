@@ -16,6 +16,6 @@ fn main( -- ) {
 		}
 
 		// Print odd numbers
-		dup print
+		dup print nl
 	}
 }

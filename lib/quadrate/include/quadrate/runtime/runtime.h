@@ -16,6 +16,7 @@ qd_exec_result qd_print(qd_context* ctx);
 qd_exec_result qd_printv(qd_context* ctx);
 qd_exec_result qd_prints(qd_context* ctx);
 qd_exec_result qd_printsv(qd_context* ctx);
+qd_exec_result qd_nl(qd_context* ctx);
 qd_exec_result qd_peek(qd_context* ctx);
 qd_exec_result qd_div(qd_context* ctx);
 qd_exec_result qd_mul(qd_context* ctx);

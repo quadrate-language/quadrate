@@ -4,7 +4,7 @@ fn main( -- ) {
 	loop {
 		dup 5 lt
 		if {
-			dup print
+			dup print nl
 			1 add
 		} else {
 			break

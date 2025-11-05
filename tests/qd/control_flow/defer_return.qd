@@ -1,19 +1,19 @@
 // Test defer executes even with early return
 fn test_return( -- ) {
-	1 .
+	1 . nl
 	defer {
-		100 .
+		100 . nl
 	}
 	return
-	2 .
+	2 . nl
 }
 
 fn test_no_return( -- ) {
-	3 .
+	3 . nl
 	defer {
-		200 .
+		200 . nl
 	}
-	4 .
+	4 . nl
 }
 
 fn main( -- ) {

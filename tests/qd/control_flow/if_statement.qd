@@ -1,65 +1,65 @@
 fn main( -- ) {
 	// Test 1: True condition
 	1 if {
-		42 .
+		42 . nl
 	}
 	// Test 2: False condition
 	0 if {
-		99 .
+		99 . nl
 	}
 	// Test 3: Another true condition
 	5 if {
-		10 .
+		10 . nl
 	}
 	// Test 4: If with stack operations
 	3 dup if {
-		.
+	 . nl
 	}
 	// Test 5: Sequential if statements
 	1 if {
-		20 .
+		20 . nl
 	}
 	1 if {
-		30 .
+		30 . nl
 	}
 	// Test 6: Nested if statements
 	1 if {
 		1 if {
-			100 .
+			100 . nl
 		}
 	}
 	// Test 7: Nested if/else
 	1 if {
 		5 3 gt if {
-			200 .
+			200 . nl
 		} else {
-			300 .
+			300 . nl
 		}
 	}
 	// Test 8: Deeply nested if/else
 	1 if {
 		1 if {
 			1 if {
-				400 .
+				400 . nl
 			} else {
-				500 .
+				500 . nl
 			}
 		} else {
-			600 .
+			600 . nl
 		}
 	}
 	// Test 9: Nested if with false outer condition
 	0 if {
 		1 if {
-			700 .
+			700 . nl
 		}
 	}
 	// Test 10: Nested if/else with false inner condition
 	1 if {
 		0 if {
-			800 .
+			800 . nl
 		} else {
-			900 .
+			900 . nl
 		}
 	}
 }

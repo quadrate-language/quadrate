@@ -4,20 +4,20 @@ use simple_math
 fn main( -- ) {
 	// Test double function
 	5.0 simple_math::double
-	print
+	print nl
 	// Test triple function
 	4.0 simple_math::triple
-	print
+	print nl
 	// Test square function
 	3.0 simple_math::square
-	print
+	print nl
 	// Test constant functions
 	simple_math::ten
-	print
+	print nl
  simple_math::twenty
-	print
+	print nl
 	// Test chaining module functions
 	2.0 simple_math::double
 	simple_math::double
-	print
+	print nl
 }

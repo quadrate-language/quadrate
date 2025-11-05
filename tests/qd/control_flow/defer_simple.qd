@@ -1,24 +1,24 @@
 // Test simple defer functionality
 fn test_defer_basic( -- ) {
-	1 .
+	1 . nl
 	defer {
-		2 .
+		2 . nl
 	}
-	3 .
+	3 . nl
 }
 
 fn test_defer_multiple( -- ) {
-	10 .
+	10 . nl
 	defer {
-		20 .
+		20 . nl
 	}
 	defer {
-		30 .
+		30 . nl
 	}
 	defer {
-		40 .
+		40 . nl
 	}
-	50 .
+	50 . nl
 }
 
 fn main( -- ) {

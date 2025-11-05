@@ -5,11 +5,11 @@ use advanced_ops
 fn main( -- ) {
 	// Test function that uses base_ops internally
 	10.0 advanced_ops::add_five_then_double
-	print
+	print nl
 	// Test function that calls base_ops::get_hundred
 	advanced_ops::get_two_hundred
-	print
+	print nl
 	// Test complex calculation
 	5.0 advanced_ops::complex_calc
-	print
+	print nl
 }

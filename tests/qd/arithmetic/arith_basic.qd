@@ -1,11 +1,11 @@
 fn main( -- ) {
 	// Test basic arithmetic operations
 	// Addition
-	5 3 add .
+	5 3 add . nl
 	// Subtraction
-	10 4 sub .
+	10 4 sub . nl
 	// Multiplication
-	6 7 mul .
+	6 7 mul . nl
 	// Division
-	20 5 div .
+	20 5 div . nl
 }

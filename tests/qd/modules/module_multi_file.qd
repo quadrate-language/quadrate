@@ -4,28 +4,28 @@ use multi_file
 fn main( -- ) {
 	// Test arithmetic functions (from arithmetic.qd)
 	5.0 multi_file::increment
-	print
+	print nl
 	10.0 multi_file::decrement
-	print
+	print nl
 	7.0 multi_file::double
-	print
+	print nl
 	8.0 multi_file::half
-	print
+	print nl
 	// Test trigonometric functions (from trigonometry.qd)
 	5.0 multi_file::double_angle
-	print
+	print nl
 	2.0 multi_file::add_pi
-	print
+	print nl
 	// Test constants (from constants.qd)
 	multi_file::pi
-	print
+	print nl
  multi_file::e
-	print
+	print nl
  multi_file::tau
-	print
+	print nl
  multi_file::phi
-	print
+	print nl
 	// Test function that uses multiple files
 	5.0 multi_file::calculate
-	print
+	print nl
 }

@@ -5,14 +5,14 @@ use split_module
 fn main( -- ) {
 	// Call functions from module.qd
 	5.0 split_module::add_ten
-	print
+	print nl
 	4.0 split_module::multiply_by_three
-	print
+	print nl
 	// Call functions from helper.qd (same namespace!)
 	7.0 split_module::double
-	print
+	print nl
 	-3.0 split_module::negate
-	print
+	print nl
  split_module::get_hundred
-	print
+	print nl
 }

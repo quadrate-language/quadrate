@@ -49,19 +49,25 @@ qd_exec_result qd_print(qd_context* ctx) {
 
 	switch (val.type) {
 		case QD_STACK_TYPE_INT:
-			printf("%ld\n", val.value.i);
+			printf("%ld", val.value.i);
 			break;
 		case QD_STACK_TYPE_FLOAT:
-			printf("%f\n", val.value.f);
+			printf("%f", val.value.f);
 			break;
 		case QD_STACK_TYPE_STR:
-			printf("\"%s\"\n", val.value.s);
+			printf("\"%s\"", val.value.s);
 			free(val.value.s);  // Free the string memory after printing
 			break;
 		default:
 			return (qd_exec_result){-3};
 	}
 
+	return (qd_exec_result){0};
+}
+
+qd_exec_result qd_nl(qd_context* ctx) {
+	(void)ctx;  // Unused parameter
+	printf("\n");
 	return (qd_exec_result){0};
 }
 

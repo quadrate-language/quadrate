@@ -1,72 +1,72 @@
 fn main( -- ) {
 	// Test sq (square)
-	5 sq .
-	// Should print: 25
-	-3 sq .
-	// Should print: 9
+	5 sq . nl
+	// Should print nl: 25
+	-3 sq . nl
+	// Should print nl: 9
 	// Test sqrt (square root)
-	16 sqrt .
-	// Should print: 4
-	25 sqrt .
-	// Should print: 5
+	16 sqrt . nl
+	// Should print nl: 4
+	25 sqrt . nl
+	// Should print nl: 5
 	// Test cb (cube)
-	3 cb .
-	// Should print: 27
-	-2 cb .
-	// Should print: -8
+	3 cb . nl
+	// Should print nl: 27
+	-2 cb . nl
+	// Should print nl: -8
 	// Test cbrt (cube root)
-	27 cbrt .
-	// Should print: 3
-	8 cbrt .
-	// Should print: 2
+	27 cbrt . nl
+	// Should print nl: 3
+	8 cbrt . nl
+	// Should print nl: 2
 	// Test abs (absolute value)
-	-42 abs .
-	// Should print: 42
-	42 abs .
-	// Should print: 42
+	-42 abs . nl
+	// Should print nl: 42
+	42 abs . nl
+	// Should print nl: 42
 	// Test inv (inverse/reciprocal)
 	// 1/2 = 0.5
-	2 inv .
-	// Should print: 0.5
-	4 inv .
-	// Should print: 0.25
+	2 inv . nl
+	// Should print nl: 0.5
+	4 inv . nl
+	// Should print nl: 0.25
 	// Test inc/dec
-	5 inc .
-	// Should print: 6
-	5 dec .
-	// Should print: 4
+	5 inc . nl
+	// Should print nl: 6
+	5 dec . nl
+	// Should print nl: 4
 	// Test fac (factorial)
-	5 fac .
-	// Should print: 120
-	0 fac .
-	// Should print: 1
-	1 fac .
-	// Should print: 1
+	5 fac . nl
+	// Should print nl: 120
+	0 fac . nl
+	// Should print nl: 1
+	1 fac . nl
+	// Should print nl: 1
 	// Test ceil/floor
-	3.2 ceil .
-	// Should print: 4
-	3.8 floor .
-	// Should print: 3
-	-2.3 ceil .
-	// Should print: -2
-	-2.7 floor .
-	// Should print: -3
+	3.2 ceil . nl
+	// Should print nl: 4
+	3.8 floor . nl
+	// Should print nl: 3
+	-2.3 ceil . nl
+	// Should print nl: -2
+	-2.7 floor . nl
+	// Should print nl: -3
 	// Test pow (exponentiation)
-	2 10 pow .
-	// Should print: 1024 (2^10)
-	3 3 pow .
-	// Should print: 27 (3^3)
-	5 2 pow .
-	// Should print: 25 (5^2)
-	2 0 pow .
-	// Should print: 1 (2^0)
+	2 10 pow . nl
+	// Should print nl: 1024 (2^10)
+	3 3 pow . nl
+	// Should print nl: 27 (3^3)
+	5 2 pow . nl
+	// Should print nl: 25 (5^2)
+	2 0 pow . nl
+	// Should print nl: 1 (2^0)
 	// Test round (round to nearest integer)
-	2.5 round .
-	// Should print: 3
-	2.4 round .
-	// Should print: 2
-	-2.5 round .
-	// Should print: -2
-	3.7 round .
-	// Should print: 4
+	2.5 round . nl
+	// Should print nl: 3
+	2.4 round . nl
+	// Should print nl: 2
+	-2.5 round . nl
+	// Should print nl: -2
+	3.7 round . nl
+	// Should print nl: 4
 }

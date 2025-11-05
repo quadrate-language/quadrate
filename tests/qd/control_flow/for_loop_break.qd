@@ -1,6 +1,6 @@
 fn main( -- ) {
 	0 10 1 for {
-		$		. $
+		$	 . nl $
 		5 > if {
 			break
 		}

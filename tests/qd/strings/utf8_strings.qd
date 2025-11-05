@@ -1,35 +1,35 @@
 fn main( -- ) {
 	// Test basic ASCII string
-	"Hello, World!" .
+	"Hello, World!" . nl
 	// Test UTF-8 strings with various scripts
 	// Latin Extended (Swedish, German, French)
-	"Hej världen! Björn åker skidor." . "Grüße aus Deutschland! Übung macht den Meister." . "Bonjour le monde! Ça va très bien, merci!" .
+	"Hej världen! Björn åker skidor." . nl "Grüße aus Deutschland! Übung macht den Meister." . nl "Bonjour le monde! Ça va très bien, merci!" . nl
 	// Cyrillic (Russian)
-	"Привет мир! Добро пожаловать!" .
+	"Привет мир! Добро пожаловать!" . nl
 	// Greek
-	"Γεια σου κόσμε! Καλώς ήρθατε!" .
+	"Γεια σου κόσμε! Καλώς ήρθατε!" . nl
 	// Arabic (right-to-left)
-	"مرحبا بالعالم! أهلا وسهلا!" .
+	"مرحبا بالعالم! أهلا وسهلا!" . nl
 	// Hebrew (right-to-left)
-	"שלום עולם! ברוך הבא!" .
+	"שלום עולם! ברוך הבא!" . nl
 	// CJK - Chinese (Simplified and Traditional)
-	"你好世界！欢迎！" . "你好世界！歡迎！" .
+	"你好世界！欢迎！" . nl "你好世界！歡迎！" . nl
 	// CJK - Japanese (Hiragana, Katakana, Kanji)
-	"こんにちは世界！ようこそ！" . "コンニチハ世界！ヨウコソ！" .
+	"こんにちは世界！ようこそ！" . nl "コンニチハ世界！ヨウコソ！" . nl
 	// CJK - Korean (Hangul)
-	"안녕하세요 세계! 환영합니다!" .
+	"안녕하세요 세계! 환영합니다!" . nl
 	// Emoji and symbols
-	"Hello 👋 World 🌍!" . "Math: π ≈ 3.14159 ∫∑∏√∞" . "Arrows: ← → ↑ ↓ ⇐ ⇒ ⇑ ⇓" . "Currency: $ € £ ¥ ₹ ₽ ₿" .
+	"Hello 👋 World 🌍!" . nl "Math: π ≈ 3.14159 ∫∑∏√∞" . nl "Arrows: ← → ↑ ↓ ⇐ ⇒ ⇑ ⇓" . nl "Currency: $ € £ ¥ ₹ ₽ ₿" . nl
 	// Thai
-	"สวัสดีชาวโลก! ยินดีต้อนรับ!" .
+	"สวัสดีชาวโลก! ยินดีต้อนรับ!" . nl
 	// Devanagari (Hindi)
-	"नमस्ते दुनिया! स्वागत है!" .
+	"नमस्ते दुनिया! स्वागत है!" . nl
 	// Mixed scripts in one string
-	"Multi: Hello مرحبا Привет 你好 👋" .
+	"Multi: Hello مرحبا Привет 你好 👋" . nl
 	// Test empty string
-	"" .
+	"" . nl
 	// Test string with only spaces
-	"   " .
+	"   " . nl
 	// Test single character strings
-	"A" . "€" . "世" . "🌟" .
+	"A" . nl "€" . nl "世" . nl "🌟" . nl
 }
