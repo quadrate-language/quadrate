@@ -1,4 +1,4 @@
-#include <quadrate/qd.h>
+#include <qd/qd.h>
 
 // Context management functions (qd_create_context, qd_free_context) are now in libqdrt
 
