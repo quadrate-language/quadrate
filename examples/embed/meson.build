@@ -1,5 +1,5 @@
 executable('embed',
 	'main.cc',
-	dependencies: quadrate_dep,
+	dependencies: qd_dep,
 	build_by_default: false
 )

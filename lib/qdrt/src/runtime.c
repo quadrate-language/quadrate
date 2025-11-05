@@ -1,4 +1,4 @@
-#include <runtime/runtime.h>
+#include <qdrt/runtime.h>
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -3292,4 +3292,25 @@ qd_exec_result qd_rshift(qd_context* ctx) {
 	}
 
 	return (qd_exec_result){0};
+}
+
+// Context management functions
+qd_context* qd_create_context(size_t stack_size) {
+	qd_context* ctx = (qd_context*)malloc(sizeof(qd_context));
+	if (ctx) {
+		qd_stack_error err = qd_stack_init(&ctx->st, stack_size);
+		if (err != QD_STACK_OK) {
+			free(ctx);
+			return NULL;
+		}
+	}
+	return ctx;
+}
+
+void qd_free_context(qd_context* ctx) {
+	if (ctx == NULL) {
+		return;
+	}
+	qd_stack_destroy(ctx->st);
+	free(ctx);
 }

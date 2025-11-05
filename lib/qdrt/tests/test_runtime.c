@@ -1,6 +1,6 @@
-#include <runtime/runtime.h>
-#include <runtime/context.h>
-#include <runtime/stack.h>
+#include <qdrt/runtime.h>
+#include <qdrt/context.h>
+#include <qdrt/stack.h>
 #include <unit-check/uc.h>
 #include <stdlib.h>
 #include <math.h>

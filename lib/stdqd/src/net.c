@@ -1,6 +1,6 @@
 #include <stdqd/net.h>
-#include <runtime/runtime.h>
-#include <runtime/stack.h>
+#include <qdrt/runtime.h>
+#include <qdrt/stack.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

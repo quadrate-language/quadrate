@@ -16,12 +16,14 @@ debug:
 	@cp -f $(BUILD_DIR_DEBUG)/bin/quadc/quadc dist/bin/
 	@cp -f $(BUILD_DIR_DEBUG)/bin/quadfmt/quadfmt dist/bin/
 	@cp -f $(BUILD_DIR_DEBUG)/bin/quadlsp/quadlsp dist/bin/
-	@cp -f $(BUILD_DIR_DEBUG)/lib/quadrate/libquadrate.so dist/lib/
-	@cp -f $(BUILD_DIR_DEBUG)/lib/quadrate/libquadrate_static.a dist/lib/
+	@cp -f $(BUILD_DIR_DEBUG)/lib/qdrt/libqdrt.so dist/lib/
+	@cp -f $(BUILD_DIR_DEBUG)/lib/qdrt/libqdrt_static.a dist/lib/
+	@cp -f $(BUILD_DIR_DEBUG)/lib/qd/libqd.so dist/lib/
+	@cp -f $(BUILD_DIR_DEBUG)/lib/qd/libqd_static.a dist/lib/
 	@cp -f $(BUILD_DIR_DEBUG)/lib/stdqd/libstdqd.so dist/lib/
 	@cp -f $(BUILD_DIR_DEBUG)/lib/stdqd/libstdqd_static.a dist/lib/
-	@cp -rf lib/runtime/include/runtime dist/include/
-	@cp -rf lib/quadrate/include/quadrate dist/include/
+	@cp -rf lib/qdrt/include/qdrt dist/include/
+	@cp -rf lib/qd/include/qd dist/include/
 	@cp -rf lib/stdqd/include/stdqd dist/include/
 
 release:
@@ -31,12 +33,14 @@ release:
 	@cp -f $(BUILD_DIR_RELEASE)/bin/quadc/quadc dist/bin/
 	@cp -f $(BUILD_DIR_RELEASE)/bin/quadfmt/quadfmt dist/bin/
 	@cp -f $(BUILD_DIR_RELEASE)/bin/quadlsp/quadlsp dist/bin/
-	@cp -f $(BUILD_DIR_RELEASE)/lib/quadrate/libquadrate.so dist/lib/
-	@cp -f $(BUILD_DIR_RELEASE)/lib/quadrate/libquadrate_static.a dist/lib/
+	@cp -f $(BUILD_DIR_RELEASE)/lib/qdrt/libqdrt.so dist/lib/
+	@cp -f $(BUILD_DIR_RELEASE)/lib/qdrt/libqdrt_static.a dist/lib/
+	@cp -f $(BUILD_DIR_RELEASE)/lib/qd/libqd.so dist/lib/
+	@cp -f $(BUILD_DIR_RELEASE)/lib/qd/libqd_static.a dist/lib/
 	@cp -f $(BUILD_DIR_RELEASE)/lib/stdqd/libstdqd.so dist/lib/
 	@cp -f $(BUILD_DIR_RELEASE)/lib/stdqd/libstdqd_static.a dist/lib/
-	@cp -rf lib/runtime/include/runtime dist/include/
-	@cp -rf lib/quadrate/include/quadrate dist/include/
+	@cp -rf lib/qdrt/include/qdrt dist/include/
+	@cp -rf lib/qd/include/qd dist/include/
 	@cp -rf lib/stdqd/include/stdqd dist/include/
 
 tests: debug
@@ -78,12 +82,14 @@ install: release
 	install -m 755 dist/bin/quadc $(DESTDIR)$(PREFIX)/bin/
 	install -m 755 dist/bin/quadfmt $(DESTDIR)$(PREFIX)/bin/
 	install -m 755 dist/bin/quadlsp $(DESTDIR)$(PREFIX)/bin/
-	install -m 644 dist/lib/libquadrate.so $(DESTDIR)$(PREFIX)/lib/
-	install -m 644 dist/lib/libquadrate_static.a $(DESTDIR)$(PREFIX)/lib/
+	install -m 644 dist/lib/libqdrt.so $(DESTDIR)$(PREFIX)/lib/
+	install -m 644 dist/lib/libqdrt_static.a $(DESTDIR)$(PREFIX)/lib/
+	install -m 644 dist/lib/libqd.so $(DESTDIR)$(PREFIX)/lib/
+	install -m 644 dist/lib/libqd_static.a $(DESTDIR)$(PREFIX)/lib/
 	install -m 644 dist/lib/libstdqd.so $(DESTDIR)$(PREFIX)/lib/
 	install -m 644 dist/lib/libstdqd_static.a $(DESTDIR)$(PREFIX)/lib/
-	cp -r dist/include/runtime $(DESTDIR)$(PREFIX)/include/
-	cp -r dist/include/quadrate $(DESTDIR)$(PREFIX)/include/
+	cp -r dist/include/qdrt $(DESTDIR)$(PREFIX)/include/
+	cp -r dist/include/qd $(DESTDIR)$(PREFIX)/include/
 	cp -r dist/include/stdqd $(DESTDIR)$(PREFIX)/include/
 	@echo "Installing Quadrate standard library modules to $(HOME)/quadrate/"
 	install -d $(HOME)/quadrate
@@ -93,12 +99,14 @@ uninstall:
 	rm -f $(DESTDIR)$(PREFIX)/bin/quadc
 	rm -f $(DESTDIR)$(PREFIX)/bin/quadfmt
 	rm -f $(DESTDIR)$(PREFIX)/bin/quadlsp
-	rm -f $(DESTDIR)$(PREFIX)/lib/libquadrate.so
-	rm -f $(DESTDIR)$(PREFIX)/lib/libquadrate_static.a
+	rm -f $(DESTDIR)$(PREFIX)/lib/libqdrt.so
+	rm -f $(DESTDIR)$(PREFIX)/lib/libqdrt_static.a
+	rm -f $(DESTDIR)$(PREFIX)/lib/libqd.so
+	rm -f $(DESTDIR)$(PREFIX)/lib/libqd_static.a
 	rm -f $(DESTDIR)$(PREFIX)/lib/libstdqd.so
 	rm -f $(DESTDIR)$(PREFIX)/lib/libstdqd_static.a
-	rm -rf $(DESTDIR)$(PREFIX)/include/runtime
-	rm -rf $(DESTDIR)$(PREFIX)/include/quadrate
+	rm -rf $(DESTDIR)$(PREFIX)/include/qdrt
+	rm -rf $(DESTDIR)$(PREFIX)/include/qd
 	rm -rf $(DESTDIR)$(PREFIX)/include/stdqd
 	@echo "Removing Quadrate standard library modules from $(HOME)/quadrate/"
 	rm -rf $(HOME)/quadrate/fmt

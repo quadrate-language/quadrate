@@ -4,7 +4,7 @@ unit_check_lib = cc.find_library('unit-check', required: true)
 
 test_runtime = executable('test_runtime',
 	'test_runtime.c',
-	dependencies: [runtime_dep, unit_check_lib],
+	dependencies: [qdrt_static_dep, unit_check_lib],
 	build_by_default: true
 )
 

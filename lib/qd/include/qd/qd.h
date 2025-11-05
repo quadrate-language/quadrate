@@ -1,8 +1,8 @@
 #ifndef QUADRATE_QD_H
 #define QUADRATE_QD_H
 
-#include <runtime/exec_result.h>
-#include <runtime/runtime.h>
+#include <qdrt/exec_result.h>
+#include <qdrt/runtime.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -10,8 +10,8 @@ extern "C" {
 
 typedef struct qd_module qd_module;
 
-qd_context* qd_create_context(size_t stack_size);
-void qd_free_context(qd_context* ctx);
+// Context management functions are now in qdrt/runtime.h (included above)
+
 qd_module* qd_get_module(qd_context* ctx, const char* name);
 void qd_add_script(qd_module* mod, const char* script);
 void qd_register_function(qd_module* mod, const char* name, void (*fn)());

@@ -1,8 +1,8 @@
 #ifndef QD_QUADRATE_RUNTIME_RUNTIME_H
 #define QD_QUADRATE_RUNTIME_RUNTIME_H
 
-#include <runtime/context.h>
-#include <runtime/exec_result.h>
+#include <qdrt/context.h>
+#include <qdrt/exec_result.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -83,6 +83,10 @@ qd_exec_result qd_err_push(qd_context* ctx, qd_stack_error value);
 // types array should have 'count' elements, each specifying the expected type
 // Pass QD_STACK_TYPE_PTR for untyped parameters (will skip type check)
 void qd_check_stack(qd_context* ctx, size_t count, const qd_stack_type* types, const char* func_name);
+
+// Context management
+qd_context* qd_create_context(size_t stack_size);
+void qd_free_context(qd_context* ctx);
 
 #ifdef __cplusplus
 }
