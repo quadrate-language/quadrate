@@ -1,0 +1,19 @@
+fn alpha( -- ) {
+	0 10 1 for {
+		"alpha" . nl
+	}
+}
+
+fn bravo( -- ) {
+	0 10 1 for {
+		"bravo" . nl
+	}
+}
+
+fn main( -- ) {
+	&alpha spawn
+	&bravo spawn
+
+	detach
+	wait
+}

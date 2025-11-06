@@ -1,0 +1,11 @@
+// Basic threading test - spawn and wait
+
+fn worker() {
+	"Thread completed" . nl
+}
+
+fn main() {
+	&worker spawn
+	wait
+	"Main completed" . nl
+}

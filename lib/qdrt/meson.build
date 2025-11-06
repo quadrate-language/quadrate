@@ -8,12 +8,13 @@ qdrt_inc = include_directories('include')
 # Math library dependency
 cc = meson.get_compiler('c')
 m_dep = cc.find_library('m', required: false)
+pthread_dep = cc.find_library('pthread', required: true)
 
 # Shared library - public runtime API
 qdrt_shared = shared_library('qdrt',
 		qdrt_sources,
 		include_directories: qdrt_inc,
-		dependencies: m_dep,
+		dependencies: [m_dep, pthread_dep],
 		install_rpath: '$ORIGIN',
 		install: false
 )
@@ -22,7 +23,7 @@ qdrt_shared = shared_library('qdrt',
 qdrt_static = static_library('qdrt_static',
 		qdrt_sources,
 		include_directories: qdrt_inc,
-		dependencies: m_dep,
+		dependencies: [m_dep, pthread_dep],
 		install: false
 )
 
@@ -33,7 +34,7 @@ qdrt_dep = declare_dependency(
 
 qdrt_static_dep = declare_dependency(
 		link_with: qdrt_static,
-		dependencies: m_dep,
+		dependencies: [m_dep, pthread_dep],
 		include_directories: qdrt_inc
 )
 

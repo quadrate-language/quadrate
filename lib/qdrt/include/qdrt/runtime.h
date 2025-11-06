@@ -76,6 +76,9 @@ qd_exec_result qd_not(qd_context* ctx);
 qd_exec_result qd_xor(qd_context* ctx);
 qd_exec_result qd_lshift(qd_context* ctx);
 qd_exec_result qd_rshift(qd_context* ctx);
+qd_exec_result qd_spawn(qd_context* ctx);
+qd_exec_result qd_detach(qd_context* ctx);
+qd_exec_result qd_wait(qd_context* ctx);
 
 qd_exec_result qd_err_push(qd_context* ctx, qd_stack_error value);
 

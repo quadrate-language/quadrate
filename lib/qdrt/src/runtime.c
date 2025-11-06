@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
+#include <pthread.h>
 
 static void dump_stack(qd_context* ctx);
 
@@ -3290,6 +3291,165 @@ qd_exec_result qd_rshift(qd_context* ctx) {
 	if (err != QD_STACK_OK) {
 		return (qd_exec_result){-2};
 	}
+
+	return (qd_exec_result){0};
+}
+
+// Threading support
+typedef struct {
+	qd_context* ctx;
+	void* func_ptr;
+} qd_thread_info_t;
+
+// Wrapper function for pthread that calls the Quadrate function
+static void* qd_thread_wrapper(void* arg) {
+	qd_thread_info_t* info = (qd_thread_info_t*)arg;
+
+	// Call the function
+	typedef qd_exec_result (*qd_function_ptr)(qd_context*);
+	qd_function_ptr func;
+	memcpy(&func, &info->func_ptr, sizeof(func));
+
+	if (func) {
+		func(info->ctx);
+	}
+
+	// Clean up context
+	qd_free_context(info->ctx);
+	free(info);
+
+	return NULL;
+}
+
+// spawn - create a new thread ( fn:ptr -- thread_id:i )
+qd_exec_result qd_spawn(qd_context* ctx) {
+	// Pop function pointer
+	qd_stack_element_t val;
+	qd_stack_error err = qd_stack_pop(ctx->st, &val);
+
+	if (err != QD_STACK_OK) {
+		fprintf(stderr, "Fatal error in spawn: Stack underflow\n");
+		dump_stack(ctx);
+		abort();
+	}
+
+	// Verify it's a pointer type
+	if (val.type != QD_STACK_TYPE_PTR) {
+		fprintf(stderr, "Fatal error in spawn: Expected pointer type, got %d\n", val.type);
+		dump_stack(ctx);
+		abort();
+	}
+
+	// Create new context for the thread
+	qd_context* thread_ctx = qd_create_context(1024);
+	if (!thread_ctx) {
+		fprintf(stderr, "Fatal error in spawn: Failed to create context\n");
+		abort();
+	}
+
+	// Create thread info
+	qd_thread_info_t* info = malloc(sizeof(qd_thread_info_t));
+	if (!info) {
+		fprintf(stderr, "Fatal error in spawn: Failed to allocate thread info\n");
+		qd_free_context(thread_ctx);
+		abort();
+	}
+	info->ctx = thread_ctx;
+	info->func_ptr = val.value.p;
+
+	// Create thread
+	pthread_t* thread = malloc(sizeof(pthread_t));
+	if (!thread) {
+		fprintf(stderr, "Fatal error in spawn: Failed to allocate pthread_t\n");
+		qd_free_context(thread_ctx);
+		free(info);
+		abort();
+	}
+
+	int result = pthread_create(thread, NULL, qd_thread_wrapper, info);
+	if (result != 0) {
+		fprintf(stderr, "Fatal error in spawn: pthread_create failed with error %d\n", result);
+		qd_free_context(thread_ctx);
+		free(info);
+		free(thread);
+		abort();
+	}
+
+	// Push thread ID (as pointer cast to int64_t)
+	err = qd_stack_push_int(ctx->st, (int64_t)(uintptr_t)thread);
+	if (err != QD_STACK_OK) {
+		return (qd_exec_result){-2};
+	}
+
+	return (qd_exec_result){0};
+}
+
+// detach - detach a thread ( thread_id:i -- )
+qd_exec_result qd_detach(qd_context* ctx) {
+	// Pop thread ID
+	qd_stack_element_t val;
+	qd_stack_error err = qd_stack_pop(ctx->st, &val);
+
+	if (err != QD_STACK_OK) {
+		fprintf(stderr, "Fatal error in detach: Stack underflow\n");
+		dump_stack(ctx);
+		abort();
+	}
+
+	// Verify it's an integer type
+	if (val.type != QD_STACK_TYPE_INT) {
+		fprintf(stderr, "Fatal error in detach: Expected integer type, got %d\n", val.type);
+		dump_stack(ctx);
+		abort();
+	}
+
+	// Get pthread_t pointer
+	pthread_t* thread = (pthread_t*)(uintptr_t)val.value.i;
+
+	// Detach thread
+	int result = pthread_detach(*thread);
+	if (result != 0) {
+		fprintf(stderr, "Fatal error in detach: pthread_detach failed with error %d\n", result);
+		abort();
+	}
+
+	// Free the thread pointer (it's no longer needed after detach)
+	free(thread);
+
+	return (qd_exec_result){0};
+}
+
+// wait - join/wait for a thread ( thread_id:i -- )
+qd_exec_result qd_wait(qd_context* ctx) {
+	// Pop thread ID
+	qd_stack_element_t val;
+	qd_stack_error err = qd_stack_pop(ctx->st, &val);
+
+	if (err != QD_STACK_OK) {
+		fprintf(stderr, "Fatal error in wait: Stack underflow\n");
+		dump_stack(ctx);
+		abort();
+	}
+
+	// Verify it's an integer type
+	if (val.type != QD_STACK_TYPE_INT) {
+		fprintf(stderr, "Fatal error in wait: Expected integer type, got %d\n", val.type);
+		dump_stack(ctx);
+		abort();
+	}
+
+	// Get pthread_t pointer
+	pthread_t* thread = (pthread_t*)(uintptr_t)val.value.i;
+
+	// Join thread
+	int result = pthread_join(*thread, NULL);
+	if (result != 0) {
+		fprintf(stderr, "Fatal error in wait: pthread_join failed with error %d\n", result);
+		abort();
+	}
+
+	// Free the thread pointer
+	free(thread);
 
 	return (qd_exec_result){0};
 }
