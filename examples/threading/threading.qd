@@ -1,11 +1,15 @@
+use time
+
 fn alpha( -- ) {
-	0 10 1 for {
+	0 100 1 for {
+		10 time::Millisecond * time::sleep
 		"alpha" . nl
 	}
 }
 
 fn bravo( -- ) {
-	0 10 1 for {
+	0 100 1 for {
+		50 time::Millisecond * time::sleep
 		"bravo" . nl
 	}
 }
