@@ -203,14 +203,14 @@ use time
 fn alpha() {
     0 5 1 for {
         "Alpha working..." print nl
-        time::Millisecond 500 * time::sleep
+        500 time::Millisecond * time::sleep
     }
 }
 
 fn bravo() {
     0 5 1 for {
         "Bravo working..." print nl
-        time::Millisecond 500 * time::sleep
+        500 time::Millisecond * time::sleep
     }
 }
 
