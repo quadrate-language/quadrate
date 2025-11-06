@@ -1,0 +1,15 @@
+fn fib(n:i -- result:i) {
+	dup 2 gte if {
+		// Recursive case: fib(n-1) + fib(n-2)
+		dup 1 - fib
+		swap 2 - fib
+		+
+	}
+	// Base case: n < 2, result = n (already on stack)
+}
+
+fn main() {
+	0 20 1 for {
+		$ dup fib print nl
+	}
+}
