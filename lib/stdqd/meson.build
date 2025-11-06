@@ -4,6 +4,7 @@
 stdqd_sources = files(
 	'src/fmt.c',
 	'src/net.c',
+	'src/time.c',
 )
 
 stdqd_inc = include_directories('include')

@@ -1,0 +1,9 @@
+import "libstdqd.so" as "time" {
+    fn sleep(duration:i -- )
+    fn Nanosecond( -- duration:i)
+    fn Microsecond( -- duration:i)
+    fn Millisecond( -- duration:i)
+    fn Second( -- duration:i)
+    fn Minute( -- duration:i)
+    fn Hour( -- duation:i)
+}

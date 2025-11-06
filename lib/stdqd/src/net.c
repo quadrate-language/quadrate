@@ -8,7 +8,6 @@
 #include <arpa/inet.h>
 #include <sys/socket.h>
 #include <netdb.h>
-#include <errno.h>
 
 // Stack signature: ( port:i -- socket:i )
 // Creates a server socket, binds to the port, and listens

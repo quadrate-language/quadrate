@@ -13,6 +13,7 @@ source "$SCRIPT_DIR/test_utils.sh"
 QUADC="${QUADC:-build/debug/bin/quadc/quadc}"
 TEST_DIR="tests/qd"
 TEMP_DIR="/tmp/qd_tests_$$"
+export QUADRATE_ROOT="lib/stdqd/qd"
 
 # Create temp directory
 mkdir -p "$TEMP_DIR"

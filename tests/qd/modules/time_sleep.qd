@@ -1,0 +1,9 @@
+// Test time::sleep with duration constants
+
+use time
+
+fn main() {
+	"Before sleep" . nl
+	100 time::Millisecond * time::sleep
+	"After sleep" . nl
+}
