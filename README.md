@@ -105,7 +105,7 @@ quadc -o hello hello.qd
 use "fmt"
 
 fn main() {
-    "World" 42 "Hello %s! Answer: %d\n" fmt::printf
+    "Hello %s! Answer: %d\n" "World" 42 fmt::printf
 }
 ```
 

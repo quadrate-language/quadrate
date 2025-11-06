@@ -5,11 +5,11 @@ import "libstdqd.so" as "stdqd" {
 }
 
 fn print_number(num:i -- ) {
-    "Number: %d\n" stdqd::printf
+    "Number: %d\n" swap stdqd::printf
 }
 
 fn print_message(msg:s -- ) {
-    "Message: %s\n" stdqd::printf
+    "Message: %s\n" swap stdqd::printf
 }
 
 fn main() {

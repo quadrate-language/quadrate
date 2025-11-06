@@ -5,5 +5,5 @@ import "libstdqd.so" as "std" {
 }
 
 fn main() {
-    "custom" "Namespace: %s\n" std::printf
+    "Namespace: %s\n" "custom" std::printf
 }

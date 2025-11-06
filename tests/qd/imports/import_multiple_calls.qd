@@ -5,8 +5,8 @@ import "libstdqd.so" as "stdqd" {
 }
 
 fn main() {
-    "Alice" "Hello, %s!\n" stdqd::printf
-    "Bob" "Goodbye, %s!\n" stdqd::printf
-    42 "The answer is %d\n" stdqd::printf
-    3.14 "Pi is approximately %f\n" stdqd::printf
+    "Hello, %s!\n" "Alice" stdqd::printf
+    "Goodbye, %s!\n" "Bob" stdqd::printf
+    "The answer is %d\n" 42 stdqd::printf
+    "Pi is approximately %f\n" 3.14 stdqd::printf
 }

@@ -5,5 +5,5 @@ import "libstdqd.so" as "stdqd" {
 }
 
 fn main() {
-    "World" "Hello, %s!\n" stdqd::printf
+    "Hello, %s!\n" "World" stdqd::printf
 }

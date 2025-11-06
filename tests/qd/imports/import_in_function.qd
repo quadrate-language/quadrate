@@ -5,7 +5,7 @@ import "libstdqd.so" as "stdqd" {
 }
 
 fn greet(name:s -- ) {
-    "Hello from function, %s!\n" stdqd::printf
+    "Hello from function, %s!\n" swap stdqd::printf
 }
 
 fn main() {

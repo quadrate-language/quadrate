@@ -15,23 +15,24 @@ extern "C" {
 /**
  * qd_stdqd_printf - Formatted print function
  *
- * Stack signature: ( arg1 arg2 ... argN format:s -- )
+ * Stack signature: ( format:s arg1 arg2 ... argN -- )
  *
- * Pops a format string from the stack, then pops the required number of
- * arguments based on format specifiers, and prints the formatted output.
+ * Format string is pushed first (at bottom), then arguments are pushed on top.
+ * The function pops all stack elements, extracts the format string and arguments,
+ * and prints the formatted output.
  *
  * Supported format specifiers:
- * - %s - String (pops string from stack)
- * - %d, %i - Integer (pops int from stack)
- * - %f - Float (pops float from stack)
+ * - %s - String
+ * - %d, %i - Integer
+ * - %f - Float
  * - %% - Literal % character (no argument)
  *
  * Example in Quadrate:
- *   "World" 42 "Hello %s! The answer is %d\n" qd_stdqd_printf
+ *   "Hello %s! The answer is %d\n" "World" 42 fmt::printf
  *   Output: "Hello World! The answer is 42\n"
  *
- * Note: Arguments are pushed to stack in left-to-right order, but format
- * string is on top, so they're popped in reverse order during formatting.
+ * Note: Format string must be at the bottom of the stack (pushed first),
+ * followed by arguments in left-to-right order (last argument on top).
  */
 qd_exec_result qd_stdqd_printf(qd_context* ctx);
 

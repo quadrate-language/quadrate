@@ -6,14 +6,14 @@ import "libstdqd.so" as "stdqd" {
 
 fn main() {
     // Multiple arguments
-    "Alice" 25 1.75 "Name: %s, Age: %d, Height: %f\n" stdqd::printf
+    "Name: %s, Age: %d, Height: %f\n" "Alice" 25 1.75 stdqd::printf
 
     // Integer and float
-    42 3.14159 "Int: %d, Float: %f\n" stdqd::printf
+    "Int: %d, Float: %f\n" 42 3.14159 stdqd::printf
 
     // Percent literal
     "100%% complete\n" stdqd::printf
 
     // Multiple strings
-    "Hello" "World" "%s %s!\n" stdqd::printf
+    "%s %s!\n" "Hello" "World" stdqd::printf
 }
