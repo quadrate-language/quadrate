@@ -18,25 +18,25 @@ A stack-based programming language that compiles to C using GCC as a backend.
 
 ## Description
 
-Quadrate is a stack-based programming language inspired by Forth. It compiles to C code and uses GCC for final compilation, producing optimized native executables. The language features a clean syntax with strong type checking, module system, and comprehensive standard library.
+Quadrate is a stack-based programming language inspired by Forth. It produces optimized native executables with a clean syntax, strong type checking, module system, and comprehensive standard library.
 
 For detailed documentation, visit https://quad.r8.rs
 
 ## Features
 
 - **Stack-based execution** with type-tagged stack elements (int, float, string, pointer)
-- **Compiles to C** for maximum performance and portability
+- **Native compilation** for maximum performance and portability
 - **Type checking** with multi-pass semantic validation
 - **Module system** with imports and namespacing
-- **Standard library** with networking, formatting, and file I/O
+- **Standard library** with networking, formatting, time, and threading
 - **Built-in functions** for math, stack manipulation, and control flow
 - **UTF-8 string support** via external tokenizer
 - **LSP server** for IDE integration
 - **Code formatter** for consistent style
+- **Multithreading** with pthread-based thread spawning
 
 ## Dependencies
 
-- **GCC** or compatible C compiler
 - **Meson** build system (used internally via Makefile)
 - **libu8t** - UTF-8 tokenization library (system-installed)
 - **libunit-check** - Unit testing framework (for building tests)
@@ -46,13 +46,13 @@ For detailed documentation, visit https://quad.r8.rs
 
 **Arch Linux:**
 ```bash
-sudo pacman -S gcc meson
+sudo pacman -S meson
 # Install libu8t from AUR or build from source
 ```
 
 **Debian/Ubuntu:**
 ```bash
-sudo apt install gcc meson
+sudo apt install meson
 # Install libu8t from source
 ```
 
@@ -133,15 +133,15 @@ Quadrate consists of three main libraries:
 
 ### libstdqd (Standard Library)
 - **Files**: `libstdqd.so`, `libstdqd_static.a`
-- **Headers**: `<stdqd/fmt.h>`, `<stdqd/net.h>`
-- **Purpose**: Networking, formatting, file I/O utilities
+- **Headers**: `<stdqd/fmt.h>`, `<stdqd/net.h>`, `<stdqd/time.h>`
+- **Purpose**: Networking, formatting, time, and file I/O utilities
 - **Depends on**: libqdrt
 
 ### Linking
 
-- **Compiled Quadrate programs**: `-lqdrt`
-- **C programs using runtime**: `-lqdrt`
-- **C programs embedding Quadrate**: `-lqd`
+When embedding Quadrate or using the runtime from other languages:
+- **Runtime library**: `-lqdrt`
+- **Embedding API**: `-lqd`
 
 ## Standard Library
 
@@ -149,6 +149,7 @@ The standard library is installed to `/usr/share/quadrate/` and includes:
 
 - **fmt**: Formatted printing and string operations
 - **net**: Networking (TCP sockets, listen, connect, send, receive)
+- **time**: Sleep functions with nanosecond precision and duration constants
 
 ### Module Search Order
 
@@ -166,12 +167,53 @@ export QUADRATE_ROOT=~/custom-quadrate
 
 ## Examples
 
+### Hello World
+
+```rust
+fn main() {
+    "Hello, World!" print nl
+}
+```
+
+### Threading with Sleep
+
+```rust
+use time
+
+fn alpha() {
+    0 5 1 for {
+        "Alpha working..." print nl
+        time::Millisecond 500 * time::sleep
+    }
+}
+
+fn bravo() {
+    0 5 1 for {
+        "Bravo working..." print nl
+        time::Millisecond 500 * time::sleep
+    }
+}
+
+fn main() {
+    &alpha spawn
+    &bravo spawn
+
+    wait
+    wait
+
+    "All done!" print nl
+}
+```
+
+### More Examples
+
 See the `examples/` directory:
 - `hello-world/` - Simple hello world in Quadrate
-- `hello-world-c/` - Embedding Quadrate in C
+- `hello-world-c/` - Embedding example
 - `embed/` - Full embedding example
 - `bmi/` - BMI calculator
 - `web-server/` - Simple TCP web server
+- `threading/` - Multithreading example
 
 Build examples:
 ```bash
@@ -218,10 +260,10 @@ quadrate/
 │   └── quadlsp/      # LSP server
 ├── lib/              # Libraries
 │   ├── qc/           # Compiler frontend (parser, validator)
-│   ├── cgen/         # C code generator (transpiler)
+│   ├── cgen/         # Code generator (transpiler)
 │   ├── qdrt/         # Runtime library
 │   ├── qd/           # Embedding API
-│   └── stdqd/        # Standard library (C + Quadrate modules)
+│   └── stdqd/        # Standard library (native + Quadrate modules)
 ├── tests/            # Test suites
 ├── examples/         # Example programs
 └── editors/          # Editor integration (tree-sitter, nvim)
@@ -231,9 +273,8 @@ quadrate/
 
 1. Parse `.qd` files → AST (using external u8t tokenizer)
 2. Multi-pass semantic validation
-3. Transpile AST → C source code
-4. Compile C files → object files (gcc)
-5. Link with `-lqdrt` runtime library
+3. Transpile AST → native code
+4. Link with runtime library
 
 ### Build System
 
