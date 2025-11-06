@@ -1,4 +1,4 @@
-#include <quadrate/qd.h>
+#include <qd/qd.h>
 
 int main(void) {
 	qd_context* ctx = qd_create_context(1024);

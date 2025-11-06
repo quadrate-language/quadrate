@@ -1,5 +1,7 @@
+subdir('bmi')
 subdir('embed')
+subdir('fibonacci')
 subdir('hello-world')
 subdir('hello-world-c')
-subdir('bmi')
+subdir('threading')
 subdir('web-server')

@@ -1,4 +1,4 @@
-#include <quadrate/qd.h>
+#include <qd/qd.h>
 #include <stdio.h>
 
 void my_func() {
