@@ -8,7 +8,6 @@
 #include <time.h>
 
 // sleep - sleep for N nanoseconds ( nanoseconds:i -- )
-// Similar to Go's time.Sleep(duration)
 qd_exec_result qd_stdqd_sleep(qd_context* ctx) {
 	qd_stack_element_t val;
 	qd_stack_error err = qd_stack_pop(ctx->st, &val);
