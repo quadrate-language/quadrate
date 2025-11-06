@@ -102,7 +102,7 @@ quadc -o hello hello.qd
 ### Using Standard Library
 
 ```rust
-use "fmt"
+use fmt
 
 fn main() {
     "Hello %s! Answer: %d\n" "World" 42 fmt::printf
@@ -172,6 +172,27 @@ export QUADRATE_ROOT=~/custom-quadrate
 ```rust
 fn main() {
     "Hello, World!" print nl
+}
+```
+
+### Fibonacci
+
+```rust
+fn fib(n:i -- result:i) {
+    dup 2 lt if {
+        // Base case: fib(0) = 0, fib(1) = 1
+    } else {
+        // Recursive case: fib(n-1) + fib(n-2)
+        dup 1 - fib
+        swap 2 - fib
+        +
+    }
+}
+
+fn main() {
+    0 20 1 for {
+        dup fib print nl
+    }
 }
 ```
 
