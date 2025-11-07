@@ -1,8 +1,8 @@
 #ifndef QD_QUADRATE_RUNTIME_CONTEXT_H
 #define QD_QUADRATE_RUNTIME_CONTEXT_H
 
-#include <stdbool.h>
 #include <qdrt/stack.h>
+#include <stdbool.h>
 
 #ifdef __cplusplus
 extern "C" {

@@ -218,7 +218,8 @@ namespace Qd {
 									nullptr, throwsMap);
 						}
 					} else {
-						traverse(child, packageName, out, indent + 1, varCounter, currentForIterator, nullptr, throwsMap);
+						traverse(child, packageName, out, indent + 1, varCounter, currentForIterator, nullptr,
+								throwsMap);
 					}
 				}
 			}
@@ -403,13 +404,15 @@ namespace Qd {
 					if (ident->abortOnError()) {
 						// ! operator: check error and abort if set
 						out << makeIndent(indent) << "if (ctx->has_error) {\n";
-						out << makeIndent(indent + 1) << "fprintf(stderr, \"Fatal error: function '" << ident->name() << "' failed\\n\");\n";
+						out << makeIndent(indent + 1) << "fprintf(stderr, \"Fatal error: function '" << ident->name()
+							<< "' failed\\n\");\n";
 						out << makeIndent(indent + 1) << "abort();\n";
 						out << makeIndent(indent) << "}\n";
 					} else if (ident->checkError()) {
 						// ? operator: custom implementation to push success status
 						std::string varName = "qd_success_" + std::to_string(varCounter++);
-						out << makeIndent(indent) << "// Check error and push success status (1 = success, 0 = error)\n";
+						out << makeIndent(indent)
+							<< "// Check error and push success status (1 = success, 0 = error)\n";
 						out << makeIndent(indent) << "qd_stack_mark_top_tainted(ctx->st);\n";
 						out << makeIndent(indent) << "qd_stack_clear_top_taint(ctx->st);\n";
 						out << makeIndent(indent) << "int64_t " << varName << " = ctx->has_error ? 0 : 1;\n";
@@ -524,7 +527,8 @@ namespace Qd {
 		}
 
 		for (size_t i = 0; i < node->childCount(); i++) {
-			traverse(node->child(i), packageName, out, childIndent, varCounter, currentForIterator, deferStatements, throwsMap);
+			traverse(node->child(i), packageName, out, childIndent, varCounter, currentForIterator, deferStatements,
+					throwsMap);
 		}
 
 		if (node->type() == IAstNode::Type::BLOCK) {

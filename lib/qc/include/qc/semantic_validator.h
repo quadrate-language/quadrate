@@ -16,17 +16,17 @@ namespace Qd {
 		INT,
 		FLOAT,
 		STRING,
-		PTR,	// For function pointers
-		ANY,	// For operations that accept any type
+		PTR,	 // For function pointers
+		ANY,	 // For operations that accept any type
 		UNKNOWN, // For unresolved types
-		TAINTED	// For error-tainted values from throws functions
+		TAINTED	 // For error-tainted values from throws functions
 	};
 
 	// Function signature - describes stack effect of a function
 	struct FunctionSignature {
 		std::vector<StackValueType> consumes; // Types popped from stack (bottom to top)
 		std::vector<StackValueType> produces; // Types pushed to stack (bottom to top)
-		bool throws = false;					// Whether the function can throw errors
+		bool throws = false;				  // Whether the function can throw errors
 	};
 
 	// Semantic validator - checks for errors that would slip through to GCC/runtime

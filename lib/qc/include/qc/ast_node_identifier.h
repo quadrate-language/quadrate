@@ -7,7 +7,8 @@
 namespace Qd {
 	class AstNodeIdentifier : public IAstNode {
 	public:
-		AstNodeIdentifier(const std::string& name) : mName(name), mParent(nullptr), mAbortOnError(false), mCheckError(false), mLine(0), mColumn(0) {
+		AstNodeIdentifier(const std::string& name)
+			: mName(name), mParent(nullptr), mAbortOnError(false), mCheckError(false), mLine(0), mColumn(0) {
 		}
 
 		IAstNode::Type type() const override {
