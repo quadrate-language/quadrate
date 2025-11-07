@@ -9,7 +9,7 @@ namespace Qd {
 	class AstNodeFunctionDeclaration : public IAstNode {
 	public:
 		AstNodeFunctionDeclaration(const std::string& name)
-			: mName(name), mParent(nullptr), mBody(nullptr), mLine(0), mColumn(0) {
+			: mName(name), mParent(nullptr), mBody(nullptr), mThrows(false), mLine(0), mColumn(0) {
 		}
 
 		~AstNodeFunctionDeclaration() {
@@ -105,12 +105,21 @@ namespace Qd {
 			return mOutputParameters;
 		}
 
+		void setThrows(bool throws) {
+			mThrows = throws;
+		}
+
+		bool throws() const {
+			return mThrows;
+		}
+
 	private:
 		std::string mName;
 		IAstNode* mParent;
 		IAstNode* mBody;
 		std::vector<IAstNode*> mInputParameters;
 		std::vector<IAstNode*> mOutputParameters;
+		bool mThrows;
 		size_t mLine;
 		size_t mColumn;
 	};

@@ -25,6 +25,7 @@ namespace Qd {
 	struct FunctionSignature {
 		std::vector<StackValueType> consumes; // Types popped from stack (bottom to top)
 		std::vector<StackValueType> produces; // Types pushed to stack (bottom to top)
+		bool throws = false;					// Whether the function can throw errors
 	};
 
 	// Semantic validator - checks for errors that would slip through to GCC/runtime

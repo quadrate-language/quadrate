@@ -33,7 +33,7 @@
 namespace Qd {
 	// Helper function to check if an identifier is a built-in instruction
 	static bool isBuiltInInstruction(const char* name) {
-		static const char* instructions[] = {"!", "!=", "%", "*", "+", "-", ".", "/", "<", "<=", "==", ">", ">=", "abs",
+		static const char* instructions[] = {"!=", "%", "*", "+", "-", ".", "/", "<", "<=", "==", ">", ">=", "abs",
 				"acos", "add", "and", "asin", "atan", "cb", "cbrt", "ceil", "call", "clear", "cos", "dec", "depth",
 				"detach", "div", "drop", "drop2", "dup", "dup2", "eq", "fac", "floor", "gt", "gte", "inc", "inv", "ln",
 				"log10", "lshift", "lt", "lte", "max", "min", "mod", "mul", "neq", "neg", "nip", "nl", "not", "or",
@@ -155,8 +155,14 @@ namespace Qd {
 				setNodePosition(node, scanner, src);
 				return node;
 			}
-			IAstNode* node = new AstNodeIdentifier(text);
+			AstNodeIdentifier* node = new AstNodeIdentifier(text);
 			setNodePosition(node, scanner, src);
+			// Check for '!' suffix (abort-on-error)
+			char32_t nextToken = u8t_scanner_peek(scanner);
+			if (nextToken == '!') {
+				u8t_scanner_scan(scanner); // Consume the '!'
+				node->setAbortOnError(true);
+			}
 			return node;
 		} else if (token == '.') {
 			// Handle '.' as alias for 'print' (Forth-style)
@@ -233,10 +239,8 @@ namespace Qd {
 				setNodePosition(node, scanner, src);
 				return node;
 			}
-			// Handle '!' as alias for 'not'
-			IAstNode* node = new AstNodeInstruction("!");
-			setNodePosition(node, scanner, src);
-			return node;
+			// '!' by itself is not a standalone operator - it must be used as a suffix
+			return nullptr;
 		} else if (token == '$') {
 			// Handle '$' as for loop iterator variable
 			IAstNode* node = new AstNodeIdentifier("$");
@@ -486,8 +490,14 @@ namespace Qd {
 				setNodePosition(node, scanner, src);
 				return node;
 			}
-			IAstNode* node = new AstNodeIdentifier(text);
+			AstNodeIdentifier* node = new AstNodeIdentifier(text);
 			setNodePosition(node, scanner, src);
+			// Check for '!' suffix (abort-on-error)
+			char32_t nextToken = u8t_scanner_peek(scanner);
+			if (nextToken == '!') {
+				u8t_scanner_scan(scanner); // Consume the '!'
+				node->setAbortOnError(true);
+			}
 			return node;
 		}
 		if (token == '&') {
@@ -586,7 +596,16 @@ namespace Qd {
 			}
 		}
 
+		// Check for optional 'throws' keyword
 		token = u8t_scanner_scan(scanner);
+		if (token == U8T_IDENTIFIER) {
+			const char* keyword = u8t_scanner_token_text(scanner, &n);
+			if (strcmp(keyword, "throws") == 0) {
+				func->setThrows(true);
+				token = u8t_scanner_scan(scanner);
+			}
+		}
+
 		if (token != '{') {
 			errorReporter->reportError(scanner, "Expected '{' after function signature");
 			// Recovery: create empty body and return partial function
@@ -844,11 +863,21 @@ namespace Qd {
 
 							if (token == U8T_IDENTIFIER) {
 								const char* deferText = u8t_scanner_token_text(scanner, &n);
-								IAstNode* id = isBuiltInInstruction(deferText)
-													   ? static_cast<IAstNode*>(new AstNodeInstruction(deferText))
-													   : static_cast<IAstNode*>(new AstNodeIdentifier(deferText));
-								setNodePosition(id, scanner, src);
-								deferNodes.push_back(id);
+								if (isBuiltInInstruction(deferText)) {
+									IAstNode* id = new AstNodeInstruction(deferText);
+									setNodePosition(id, scanner, src);
+									deferNodes.push_back(id);
+								} else {
+									AstNodeIdentifier* id = new AstNodeIdentifier(deferText);
+									setNodePosition(id, scanner, src);
+									// Check for '!' suffix (abort-on-error)
+									char32_t nextToken = u8t_scanner_peek(scanner);
+									if (nextToken == '!') {
+										u8t_scanner_scan(scanner); // Consume the '!'
+										id->setAbortOnError(true);
+									}
+									deferNodes.push_back(id);
+								}
 							} else if (token == U8T_INTEGER) {
 								const char* deferText = u8t_scanner_token_text(scanner, &n);
 								AstNodeLiteral* lit =
@@ -944,21 +973,39 @@ namespace Qd {
 										strcmp(deferText, "if") == 0 || strcmp(deferText, "switch") == 0 ||
 										strcmp(deferText, "return") == 0 || strcmp(deferText, "defer") == 0 ||
 										strcmp(deferText, "break") == 0 || strcmp(deferText, "continue") == 0) {
-									IAstNode* id = isBuiltInInstruction(deferText)
-														   ? static_cast<IAstNode*>(new AstNodeInstruction(deferText))
-														   : static_cast<IAstNode*>(new AstNodeIdentifier(deferText));
-									setNodePosition(id, scanner, src);
-									tempNodes.push_back(id);
+									if (isBuiltInInstruction(deferText)) {
+										IAstNode* id = new AstNodeInstruction(deferText);
+										setNodePosition(id, scanner, src);
+										tempNodes.push_back(id);
+									} else {
+										AstNodeIdentifier* id = new AstNodeIdentifier(deferText);
+										setNodePosition(id, scanner, src);
+										char32_t nextToken = u8t_scanner_peek(scanner);
+										if (nextToken == '!') {
+											u8t_scanner_scan(scanner);
+											id->setAbortOnError(true);
+										}
+										tempNodes.push_back(id);
+									}
 									break;
 								}
 
 								// Mark that we've seen an operator
 								hasSeenOperator = true;
-								IAstNode* id = isBuiltInInstruction(deferText)
-													   ? static_cast<IAstNode*>(new AstNodeInstruction(deferText))
-													   : static_cast<IAstNode*>(new AstNodeIdentifier(deferText));
-								setNodePosition(id, scanner, src);
-								deferNodes.push_back(id);
+								if (isBuiltInInstruction(deferText)) {
+									IAstNode* id = new AstNodeInstruction(deferText);
+									setNodePosition(id, scanner, src);
+									deferNodes.push_back(id);
+								} else {
+									AstNodeIdentifier* id = new AstNodeIdentifier(deferText);
+									setNodePosition(id, scanner, src);
+									char32_t nextToken = u8t_scanner_peek(scanner);
+									if (nextToken == '!') {
+										u8t_scanner_scan(scanner);
+										id->setAbortOnError(true);
+									}
+									deferNodes.push_back(id);
+								}
 							} else if (token == U8T_INTEGER) {
 								const char* deferText = u8t_scanner_token_text(scanner, &n);
 
@@ -1030,10 +1077,21 @@ namespace Qd {
 					deferStmt->setParent(body);
 					body->addChild(deferStmt);
 				} else {
-					IAstNode* id = isBuiltInInstruction(text) ? static_cast<IAstNode*>(new AstNodeInstruction(text))
-															  : static_cast<IAstNode*>(new AstNodeIdentifier(text));
-					setNodePosition(id, scanner, src);
-					tempNodes.push_back(id);
+					if (isBuiltInInstruction(text)) {
+						IAstNode* id = new AstNodeInstruction(text);
+						setNodePosition(id, scanner, src);
+						tempNodes.push_back(id);
+					} else {
+						AstNodeIdentifier* id = new AstNodeIdentifier(text);
+						setNodePosition(id, scanner, src);
+						// Check for '!' suffix (abort-on-error)
+						char32_t nextToken = u8t_scanner_peek(scanner);
+						if (nextToken == '!') {
+							u8t_scanner_scan(scanner); // Consume the '!'
+							id->setAbortOnError(true);
+						}
+						tempNodes.push_back(id);
+					}
 				}
 			} else if (token == U8T_INTEGER) {
 				const char* text = u8t_scanner_token_text(scanner, &n);

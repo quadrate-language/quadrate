@@ -440,6 +440,7 @@ namespace Qd {
 			// Store the signature with qualified name: moduleName::functionName
 			FunctionSignature sig;
 			sig.produces = typeStack;
+			sig.throws = func->throws();
 			std::string qualifiedName = moduleName + "::" + func->name();
 			mFunctionSignatures[qualifiedName] = sig;
 		}
@@ -633,6 +634,7 @@ namespace Qd {
 			// and produce whatever is left on the stack
 			FunctionSignature sig;
 			sig.produces = typeStack;
+			sig.throws = func->throws();
 			mFunctionSignatures[func->name()] = sig;
 		}
 
@@ -815,6 +817,13 @@ namespace Qd {
 				auto sigIt = mFunctionSignatures.find(name);
 				if (sigIt != mFunctionSignatures.end()) {
 					const FunctionSignature& sig = sigIt->second;
+
+					// Validate '!' usage: only allowed on functions marked with 'throws'
+					if (ident->abortOnError() && !sig.throws) {
+						std::string errorMsg = "Cannot use '!' operator on function '" + name +
+											   "' which is not marked with 'throws'";
+						reportError(ident, errorMsg.c_str());
+					}
 
 					// TODO: In the future, check if stack has enough values for sig.consumes
 					// For now, we assume functions consume nothing
