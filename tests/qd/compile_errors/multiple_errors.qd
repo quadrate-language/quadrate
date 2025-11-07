@@ -1,0 +1,25 @@
+// Test: compiler should report multiple errors at once
+
+fn safe_div(a:i b:i -- c:i)! {
+	/
+}
+
+fn normal_func(x:i -- y:i) {
+	inc
+}
+
+fn main() {
+	// Error 1: undefined function
+	undefined_func
+
+	// Error 2: fallible without if
+	10 5 safe_div
+	. nl
+
+	// Error 3: ! on non-fallible
+	10 normal_func!
+	. nl
+
+	// Error 4: stack underflow
+	mul
+}

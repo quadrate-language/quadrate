@@ -86,13 +86,25 @@ run_negative_test() {
         return
     fi
 
-    # Check if error message contains expected text
-    local expected_pattern=$(cat "$expected_error_file")
-    if grep -qF "$expected_pattern" "$actual_error_file"; then
+    # Check if error message contains expected text (supports multiple patterns, one per line)
+    local all_patterns_found=true
+    local missing_patterns=""
+
+    while IFS= read -r expected_pattern; do
+        # Skip empty lines
+        [ -z "$expected_pattern" ] && continue
+
+        if ! grep -qF "$expected_pattern" "$actual_error_file"; then
+            all_patterns_found=false
+            missing_patterns="${missing_patterns}    - ${expected_pattern}\n"
+        fi
+    done < "$expected_error_file"
+
+    if $all_patterns_found; then
         log_pass "$test_name"
     else
-        log_fail "$test_name" "wrong error message"
-        echo "  Expected to contain: $expected_pattern"
+        log_fail "$test_name" "missing expected error patterns"
+        echo -e "  Missing patterns:\n${missing_patterns}"
         echo "  Actual error:"
         cat "$actual_error_file" | sed 's/^/    /'
     fi

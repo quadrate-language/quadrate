@@ -1,0 +1,4 @@
+Undefined function 'undefined_func'
+Fallible function 'safe_div' must be immediately followed by 'if'
+Cannot use '!' operator on function 'normal_func'
+Stack underflow
