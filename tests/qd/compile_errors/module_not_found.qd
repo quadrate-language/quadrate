@@ -1,0 +1,7 @@
+// Test: using module that doesn't exist
+
+use nonexistent_module
+
+fn main() {
+	10 . nl
+}

@@ -1,0 +1,5 @@
+// Test: using undefined constant
+
+fn main() {
+	UNDEFINED_CONST . nl
+}

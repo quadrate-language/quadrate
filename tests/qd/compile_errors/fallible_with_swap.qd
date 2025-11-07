@@ -1,0 +1,21 @@
+// Test: fallible function followed by something other than if
+
+fn safe_divide(a:i b:i -- result:i)! {
+	dup 0 eq if {
+		drop drop
+		0
+		error
+	} else {
+		/
+	}
+}
+
+fn main() {
+	10 2 safe_divide
+	swap  // Not an 'if' - should fail
+	if {
+		. nl
+	} else {
+		drop "Error" . nl
+	}
+}

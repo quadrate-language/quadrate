@@ -1,0 +1,5 @@
+// Test: stack underflow - not enough values for operation
+
+fn main() {
+	add  // needs 2 values, has 0
+}

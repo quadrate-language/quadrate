@@ -1,0 +1,5 @@
+// Test: using $ (loop variable) outside loop
+
+fn main() {
+	10 $ add . nl
+}
