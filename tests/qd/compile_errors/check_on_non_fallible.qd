@@ -1,0 +1,14 @@
+// Test: cannot use ? on non-fallible function
+
+fn normal_add(a:i b:i -- c:i) {
+	add
+}
+
+fn main() {
+	10 20 normal_add?
+	if {
+		. nl
+	} else {
+		drop "Error" . nl
+	}
+}

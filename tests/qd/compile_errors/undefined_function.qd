@@ -1,0 +1,5 @@
+// Test: calling undefined function should fail
+
+fn main() {
+	10 20 undefined_function
+}
