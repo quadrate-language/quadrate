@@ -22,7 +22,7 @@ namespace Qd {
 	// List of built-in instructions (must match ast.cc)
 	static const char* BUILTIN_INSTRUCTIONS[] = {"%", "*", "+", "-", ".", "/", "abs", "acos", "add", "and", "asin",
 			"atan", "cb", "cbrt", "ceil", "call", "clear", "cos", "dec", "depth", "div", "drop", "drop2", "dup", "dup2",
-			"eq", "fac", "floor", "gt", "gte", "inc", "inv", "ln", "log10", "lshift", "lt", "lte", "max", "min", "mod",
+			"eq", "error", "fac", "floor", "gt", "gte", "inc", "inv", "ln", "log10", "lshift", "lt", "lte", "max", "min", "mod",
 			"mul", "neq", "neg", "nip", "not", "or", "over", "over2", "pick", "pow", "print", "prints", "printsv",
 			"printv", "roll", "rot", "round", "rshift", "sin", "sq", "sqrt", "sub", "swap", "swap2", "tan", "tuck",
 			"within", "xor"};
@@ -818,10 +818,15 @@ namespace Qd {
 				if (sigIt != mFunctionSignatures.end()) {
 					const FunctionSignature& sig = sigIt->second;
 
-					// Validate '!' usage: only allowed on functions marked with 'throws'
+					// Validate '!' and '?' usage: only allowed on fallible functions (marked with '!')
 					if (ident->abortOnError() && !sig.throws) {
 						std::string errorMsg = "Cannot use '!' operator on function '" + name +
-											   "' which is not marked with 'throws'";
+											   "' which is not marked as fallible (add '!' after signature)";
+						reportError(ident, errorMsg.c_str());
+					}
+					if (ident->checkError() && !sig.throws) {
+						std::string errorMsg = "Cannot use '?' operator on function '" + name +
+											   "' which is not marked as fallible (add '!' after signature)";
 						reportError(ident, errorMsg.c_str());
 					}
 
@@ -829,8 +834,23 @@ namespace Qd {
 					// For now, we assume functions consume nothing
 
 					// Apply the produces effect
-					for (const auto& type : sig.produces) {
-						typeStack.push_back(type);
+					if (ident->checkError()) {
+						// func? - immediately check error
+						// Produces: value (untainted) + error_status (INT)
+						for (const auto& type : sig.produces) {
+							typeStack.push_back(type); // Push untainted value
+						}
+						typeStack.push_back(StackValueType::INT); // Error status (0 or 1)
+					} else {
+						// Normal call or func!
+						for (const auto& type : sig.produces) {
+							// If function throws and no '!' operator, mark results as tainted
+							if (sig.throws && !ident->abortOnError()) {
+								typeStack.push_back(StackValueType::TAINTED);
+							} else {
+								typeStack.push_back(type);
+							}
+						}
 					}
 				}
 				// If it's not a user function, it must be a built-in (already validated in pass 2)
@@ -890,6 +910,21 @@ namespace Qd {
 			name = "add";
 		} else if (strcmp(name, "-") == 0) {
 			name = "sub";
+		}
+
+		// error instruction: sets error flag (for use in 'throws' functions)
+		// Stack: [...] -> [...] (unchanged)
+		if (strcmp(name, "error") == 0) {
+			// No stack changes, just sets ctx->has_error = true at runtime
+			return;
+		}
+
+		// Check that no tainted values are on the stack for other operations
+		for (const auto& type : typeStack) {
+			if (type == StackValueType::TAINTED) {
+				reportErrorConditional(node, "Type error: Cannot use tainted value from fallible function without checking error status first (use '?' or '!' operator)", reportErrors);
+				return;
+			}
 		}
 
 		// Arithmetic operations: abs, sq (preserve type)
@@ -1162,6 +1197,8 @@ namespace Qd {
 			return "any";
 		case StackValueType::UNKNOWN:
 			return "unknown";
+		case StackValueType::TAINTED:
+			return "tainted";
 		default:
 			return "unknown";
 		}

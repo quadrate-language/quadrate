@@ -18,7 +18,8 @@ namespace Qd {
 		STRING,
 		PTR,	// For function pointers
 		ANY,	// For operations that accept any type
-		UNKNOWN // For unresolved types
+		UNKNOWN, // For unresolved types
+		TAINTED	// For error-tainted values from throws functions
 	};
 
 	// Function signature - describes stack effect of a function

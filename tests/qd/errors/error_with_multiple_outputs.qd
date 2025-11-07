@@ -1,0 +1,42 @@
+fn add_and_sub(a:i b:i -- sum:i diff:i)! {
+	swap dup rot dup rot add rot rot sub
+}
+
+fn divide_and_double(a:i b:i -- quotient:i doubled:i)! {
+	dup 0 > if {
+		/ dup 2 mul
+	} else {
+		drop drop
+		0 0
+		error
+	}
+}
+
+fn main() {
+	"5 add_and_sub 3:" . nl
+	5 3 add_and_sub? if {
+		"  Difference: " . . nl
+		"  Sum: " . . nl
+	} else {
+		drop drop
+		"  Error" . nl
+	}
+
+	"20 divide_and_double 4:" . nl
+	20 4 divide_and_double? if {
+		"  Doubled: " . . nl
+		"  Quotient: " . . nl
+	} else {
+		drop drop
+		"  Error" . nl
+	}
+
+	"10 divide_and_double 0:" . nl
+	10 0 divide_and_double? if {
+		"  Doubled: " . . nl
+		"  Quotient: " . . nl
+	} else {
+		drop drop
+		"  Error (expected)" . nl
+	}
+}

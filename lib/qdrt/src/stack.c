@@ -59,6 +59,7 @@ qd_stack_error qd_stack_push_int(qd_stack* stack, int64_t value) {
 
 	stack->data[stack->size].value.i = value;
 	stack->data[stack->size].type = QD_STACK_TYPE_INT;
+	stack->data[stack->size].is_error_tainted = false;
 	stack->size++;
 	return QD_STACK_OK;
 }
@@ -73,6 +74,7 @@ qd_stack_error qd_stack_push_float(qd_stack* stack, double value) {
 
 	stack->data[stack->size].value.f = value;
 	stack->data[stack->size].type = QD_STACK_TYPE_FLOAT;
+	stack->data[stack->size].is_error_tainted = false;
 	stack->size++;
 	return QD_STACK_OK;
 }
@@ -87,6 +89,7 @@ qd_stack_error qd_stack_push_ptr(qd_stack* stack, void* value) {
 
 	stack->data[stack->size].value.p = value;
 	stack->data[stack->size].type = QD_STACK_TYPE_PTR;
+	stack->data[stack->size].is_error_tainted = false;
 	stack->size++;
 	return QD_STACK_OK;
 }
@@ -109,6 +112,7 @@ qd_stack_error qd_stack_push_str(qd_stack* stack, const char* value) {
 
 	stack->data[stack->size].value.s = copy;
 	stack->data[stack->size].type = QD_STACK_TYPE_STR;
+	stack->data[stack->size].is_error_tainted = false;
 	stack->size++;
 	return QD_STACK_OK;
 }
@@ -253,6 +257,27 @@ bool qd_stack_is_full(const qd_stack* stack) {
 		return true;
 	}
 	return stack->size >= stack->capacity;
+}
+
+bool qd_stack_is_top_tainted(const qd_stack* stack) {
+	if (stack == NULL || stack->size == 0) {
+		return false;
+	}
+	return stack->data[stack->size - 1].is_error_tainted;
+}
+
+void qd_stack_mark_top_tainted(qd_stack* stack) {
+	if (stack == NULL || stack->size == 0) {
+		return;
+	}
+	stack->data[stack->size - 1].is_error_tainted = true;
+}
+
+void qd_stack_clear_top_taint(qd_stack* stack) {
+	if (stack == NULL || stack->size == 0) {
+		return;
+	}
+	stack->data[stack->size - 1].is_error_tainted = false;
 }
 
 const char* qd_stack_error_string(qd_stack_error error) {

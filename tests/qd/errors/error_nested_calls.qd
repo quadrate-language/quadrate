@@ -1,0 +1,39 @@
+fn validate(a:i -- result:i)! {
+	dup 0 < if {
+		0
+		error
+	}
+}
+
+fn process(a:i -- result:i)! {
+	validate? if {
+		2 mul
+	} else {
+		drop
+		-1
+		error
+	}
+}
+
+fn main() {
+	"Processing 5: " .
+	5 process? if {
+		. nl
+	} else {
+		drop "Failed" . nl
+	}
+
+	"Processing -3: " .
+	-3 process? if {
+		. nl
+	} else {
+		drop "Failed" . nl
+	}
+
+	"Processing 10: " .
+	10 process? if {
+		. nl
+	} else {
+		drop "Failed" . nl
+	}
+}

@@ -160,7 +160,8 @@ namespace Qd {
 	}
 
 	void traverse(IAstNode* node, const char* packageName, std::stringstream& out, int indent, int& varCounter,
-			const std::string& currentForIterator = "", std::vector<IAstNode*>* deferStatements = nullptr) {
+			const std::string& currentForIterator = "", std::vector<IAstNode*>* deferStatements = nullptr,
+			const std::unordered_map<std::string, bool>& throwsMap = {}) {
 		if (node == nullptr) {
 			return;
 		}
@@ -201,7 +202,7 @@ namespace Qd {
 			// Collect defer statements while traversing function body
 			std::vector<IAstNode*> localDeferStatements;
 			traverse(funcDecl->body(), packageName, out, indent + 1, varCounter, currentForIterator,
-					&localDeferStatements);
+					&localDeferStatements, throwsMap);
 
 			// Emit defer statements in reverse order (LIFO) before done label
 			out << "\n" << makeIndent(indent) << "qd_lbl_done:;\n";
@@ -214,10 +215,10 @@ namespace Qd {
 					if (child && child->type() == IAstNode::Type::BLOCK) {
 						for (size_t j = 0; j < child->childCount(); j++) {
 							traverse(child->child(j), packageName, out, indent + 1, varCounter, currentForIterator,
-									nullptr);
+									nullptr, throwsMap);
 						}
 					} else {
-						traverse(child, packageName, out, indent + 1, varCounter, currentForIterator, nullptr);
+						traverse(child, packageName, out, indent + 1, varCounter, currentForIterator, nullptr, throwsMap);
 					}
 				}
 			}
@@ -265,7 +266,7 @@ namespace Qd {
 			// Then block
 			if (ifStmt->thenBody()) {
 				traverse(ifStmt->thenBody(), packageName, out, indent + 1, varCounter, currentForIterator,
-						deferStatements);
+						deferStatements, throwsMap);
 			}
 			out << makeIndent(indent) << "}";
 
@@ -273,7 +274,7 @@ namespace Qd {
 			if (ifStmt->elseBody()) {
 				out << " else {\n";
 				traverse(ifStmt->elseBody(), packageName, out, indent + 1, varCounter, currentForIterator,
-						deferStatements);
+						deferStatements, throwsMap);
 				out << makeIndent(indent) << "}";
 			}
 			out << "\n";
@@ -303,7 +304,7 @@ namespace Qd {
 
 			// Loop body - pass iterator variable name for $ handling
 			if (forStmt->body()) {
-				traverse(forStmt->body(), packageName, out, indent + 2, varCounter, varI, deferStatements);
+				traverse(forStmt->body(), packageName, out, indent + 2, varCounter, varI, deferStatements, throwsMap);
 			}
 
 			out << makeIndent(indent + 1) << "}\n";
@@ -318,7 +319,7 @@ namespace Qd {
 
 			// Loop body (no iterator variable for infinite loop)
 			if (loopStmt->body()) {
-				traverse(loopStmt->body(), packageName, out, indent + 1, varCounter, "", deferStatements);
+				traverse(loopStmt->body(), packageName, out, indent + 1, varCounter, "", deferStatements, throwsMap);
 			}
 
 			out << makeIndent(indent) << "}\n";
@@ -391,7 +392,35 @@ namespace Qd {
 					// For now, generate nothing (semantic validator should catch this)
 				}
 			} else {
+				// Call the function
 				out << makeIndent(indent) << "usr_" << packageName << "_" << ident->name() << "(ctx);\n";
+
+				// Check if this function throws
+				auto throwsIt = throwsMap.find(ident->name());
+				bool functionThrows = (throwsIt != throwsMap.end() && throwsIt->second);
+
+				if (functionThrows) {
+					if (ident->abortOnError()) {
+						// ! operator: check error and abort if set
+						out << makeIndent(indent) << "if (ctx->has_error) {\n";
+						out << makeIndent(indent + 1) << "fprintf(stderr, \"Fatal error: function '" << ident->name() << "' failed\\n\");\n";
+						out << makeIndent(indent + 1) << "abort();\n";
+						out << makeIndent(indent) << "}\n";
+					} else if (ident->checkError()) {
+						// ? operator: custom implementation to push success status
+						std::string varName = "qd_success_" + std::to_string(varCounter++);
+						out << makeIndent(indent) << "// Check error and push success status (1 = success, 0 = error)\n";
+						out << makeIndent(indent) << "qd_stack_mark_top_tainted(ctx->st);\n";
+						out << makeIndent(indent) << "qd_stack_clear_top_taint(ctx->st);\n";
+						out << makeIndent(indent) << "int64_t " << varName << " = ctx->has_error ? 0 : 1;\n";
+						out << makeIndent(indent) << "ctx->has_error = false; // Clear error flag\n";
+						out << makeIndent(indent) << "qd_stack_push_int(ctx->st, " << varName << ");\n";
+					} else {
+						// No operator: mark top of stack as tainted
+						out << makeIndent(indent) << "// Mark result as error-tainted\n";
+						out << makeIndent(indent) << "qd_stack_mark_top_tainted(ctx->st);\n";
+					}
+				}
 			}
 			break;
 		}
@@ -495,11 +524,28 @@ namespace Qd {
 		}
 
 		for (size_t i = 0; i < node->childCount(); i++) {
-			traverse(node->child(i), packageName, out, childIndent, varCounter, currentForIterator, deferStatements);
+			traverse(node->child(i), packageName, out, childIndent, varCounter, currentForIterator, deferStatements, throwsMap);
 		}
 
 		if (node->type() == IAstNode::Type::BLOCK) {
 			out << makeIndent(indent) << "}\n";
+		}
+	}
+
+	void Transpiler::collectFunctionMetadata(IAstNode* node, std::unordered_map<std::string, bool>& throwsMap) const {
+		if (!node) {
+			return;
+		}
+
+		// Collect function declarations with their throws status
+		if (node->type() == IAstNode::Type::FUNCTION_DECLARATION) {
+			AstNodeFunctionDeclaration* funcDecl = static_cast<AstNodeFunctionDeclaration*>(node);
+			throwsMap[funcDecl->name()] = funcDecl->throws();
+		}
+
+		// Recursively process children
+		for (size_t i = 0; i < node->childCount(); i++) {
+			collectFunctionMetadata(node->child(i), throwsMap);
 		}
 	}
 
@@ -597,13 +643,17 @@ namespace Qd {
 		ss << "#include <stdio.h>\n";
 		ss << "#include <stdlib.h>\n\n";
 
+		// Collect function metadata (throws status)
+		std::unordered_map<std::string, bool> throwsMap;
+		collectFunctionMetadata(root, throwsMap);
+
 		// Generate external declarations and wrappers for imported library functions
 		std::unordered_set<std::string> importedLibraries;
 		generateImportWrappers(root, package, ss, importedLibraries);
 
 		// Reset counter for each compilation unit
 		mVarCounter = 0;
-		traverse(root, package, ss, 0, mVarCounter);
+		traverse(root, package, ss, 0, mVarCounter, "", nullptr, throwsMap);
 
 		// Use basename for output file (filename might be a full path for validation purposes)
 		std::string basename = std::filesystem::path(filename).filename().string();

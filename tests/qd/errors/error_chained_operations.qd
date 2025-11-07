@@ -1,0 +1,36 @@
+fn validate_positive(a:i -- result:i)! {
+	dup 0 > if {
+		dup
+	} else {
+		0
+		error
+	}
+}
+
+fn double_value(a:i -- result:i)! {
+	2 mul
+}
+
+fn main() {
+	"Test 1: 5 validated and doubled = " .
+	5 validate_positive? if {
+		double_value? if {
+			. nl
+		} else {
+			drop "Double failed" . nl
+		}
+	} else {
+		drop "Validation failed" . nl
+	}
+
+	"Test 2: -3 validated and doubled = " .
+	-3 validate_positive? if {
+		double_value? if {
+			. nl
+		} else {
+			drop "Double failed" . nl
+		}
+	} else {
+		drop "Validation failed" . nl
+	}
+}

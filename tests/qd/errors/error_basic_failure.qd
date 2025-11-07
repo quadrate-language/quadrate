@@ -1,0 +1,15 @@
+fn safe_operation(a:i -- result:i)! {
+	dup 0 > if {
+		dup mul
+	} else {
+		error
+	}
+}
+
+fn main() {
+	0 safe_operation? if {
+		"Success: result is " . . nl
+	} else {
+		drop "Error occurred" . nl
+	}
+}

@@ -35,7 +35,7 @@ namespace Qd {
 	static bool isBuiltInInstruction(const char* name) {
 		static const char* instructions[] = {"!=", "%", "*", "+", "-", ".", "/", "<", "<=", "==", ">", ">=", "abs",
 				"acos", "add", "and", "asin", "atan", "cb", "cbrt", "ceil", "call", "clear", "cos", "dec", "depth",
-				"detach", "div", "drop", "drop2", "dup", "dup2", "eq", "fac", "floor", "gt", "gte", "inc", "inv", "ln",
+				"detach", "div", "drop", "drop2", "dup", "dup2", "eq", "error", "fac", "floor", "gt", "gte", "inc", "inv", "ln",
 				"log10", "lshift", "lt", "lte", "max", "min", "mod", "mul", "neq", "neg", "nip", "nl", "not", "or",
 				"over", "over2", "pick", "pow", "print", "prints", "printsv", "printv", "roll", "rot", "round",
 				"rshift", "sin", "spawn", "sq", "sqrt", "sub", "swap", "swap2", "tan", "tuck", "wait", "within", "xor"};
@@ -157,11 +157,14 @@ namespace Qd {
 			}
 			AstNodeIdentifier* node = new AstNodeIdentifier(text);
 			setNodePosition(node, scanner, src);
-			// Check for '!' suffix (abort-on-error)
+			// Check for '!' or '?' suffix
 			char32_t nextToken = u8t_scanner_peek(scanner);
 			if (nextToken == '!') {
 				u8t_scanner_scan(scanner); // Consume the '!'
 				node->setAbortOnError(true);
+			} else if (nextToken == '?') {
+				u8t_scanner_scan(scanner); // Consume the '?'
+				node->setCheckError(true);
 			}
 			return node;
 		} else if (token == '.') {
@@ -492,11 +495,14 @@ namespace Qd {
 			}
 			AstNodeIdentifier* node = new AstNodeIdentifier(text);
 			setNodePosition(node, scanner, src);
-			// Check for '!' suffix (abort-on-error)
+			// Check for '!' or '?' suffix
 			char32_t nextToken = u8t_scanner_peek(scanner);
 			if (nextToken == '!') {
 				u8t_scanner_scan(scanner); // Consume the '!'
 				node->setAbortOnError(true);
+			} else if (nextToken == '?') {
+				u8t_scanner_scan(scanner); // Consume the '?'
+				node->setCheckError(true);
 			}
 			return node;
 		}
@@ -596,14 +602,11 @@ namespace Qd {
 			}
 		}
 
-		// Check for optional 'throws' keyword
+		// Check for optional '!' marker (fallible function)
 		token = u8t_scanner_scan(scanner);
-		if (token == U8T_IDENTIFIER) {
-			const char* keyword = u8t_scanner_token_text(scanner, &n);
-			if (strcmp(keyword, "throws") == 0) {
-				func->setThrows(true);
-				token = u8t_scanner_scan(scanner);
-			}
+		if (token == '!') {
+			func->setThrows(true);
+			token = u8t_scanner_scan(scanner);
 		}
 
 		if (token != '{') {
@@ -870,11 +873,14 @@ namespace Qd {
 								} else {
 									AstNodeIdentifier* id = new AstNodeIdentifier(deferText);
 									setNodePosition(id, scanner, src);
-									// Check for '!' suffix (abort-on-error)
+									// Check for '!' or '?' suffix
 									char32_t nextToken = u8t_scanner_peek(scanner);
 									if (nextToken == '!') {
 										u8t_scanner_scan(scanner); // Consume the '!'
 										id->setAbortOnError(true);
+									} else if (nextToken == '?') {
+										u8t_scanner_scan(scanner); // Consume the '?'
+										id->setCheckError(true);
 									}
 									deferNodes.push_back(id);
 								}
@@ -984,6 +990,9 @@ namespace Qd {
 										if (nextToken == '!') {
 											u8t_scanner_scan(scanner);
 											id->setAbortOnError(true);
+										} else if (nextToken == '?') {
+											u8t_scanner_scan(scanner);
+											id->setCheckError(true);
 										}
 										tempNodes.push_back(id);
 									}
@@ -1084,11 +1093,14 @@ namespace Qd {
 					} else {
 						AstNodeIdentifier* id = new AstNodeIdentifier(text);
 						setNodePosition(id, scanner, src);
-						// Check for '!' suffix (abort-on-error)
+						// Check for '!' or '?' suffix
 						char32_t nextToken = u8t_scanner_peek(scanner);
 						if (nextToken == '!') {
 							u8t_scanner_scan(scanner); // Consume the '!'
 							id->setAbortOnError(true);
+						} else if (nextToken == '?') {
+							u8t_scanner_scan(scanner); // Consume the '?'
+							id->setCheckError(true);
 						}
 						tempNodes.push_back(id);
 					}

@@ -1,0 +1,32 @@
+fn process(a:i b:i -- result:i)! {
+	dup 0 > if {
+		add
+	} else {
+		drop drop
+		-1
+		error
+	}
+}
+
+fn main() {
+	"5 + 3 = " .
+	5 3 process? if {
+		. nl
+	} else {
+		drop "Error" . nl
+	}
+
+	"10 + 0 = " .
+	10 0 process? if {
+		. nl
+	} else {
+		drop "Error (b was zero)" . nl
+	}
+
+	"7 + 2 = " .
+	7 2 process? if {
+		. nl
+	} else {
+		drop "Error" . nl
+	}
+}

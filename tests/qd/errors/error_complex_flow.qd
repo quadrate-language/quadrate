@@ -1,0 +1,83 @@
+fn parse_number(a:i -- result:i)! {
+	dup 0 < if {
+		0
+		error
+	}
+}
+
+fn validate_range(a:i -- result:i)! {
+	dup 100 > if {
+		0
+		error
+	}
+}
+
+fn compute(a:i -- result:i)! {
+	dup 50 > if {
+		10 add
+	} else {
+		5 add
+	}
+}
+
+fn main() {
+	"Input: 30" . nl
+	30 parse_number? if {
+		validate_range? if {
+			compute? if {
+				"Result: " . . nl
+			} else {
+				drop "Compute failed" . nl
+			}
+		} else {
+			drop "Range validation failed" . nl
+		}
+	} else {
+		drop "Parse failed" . nl
+	}
+
+	"Input: -5" . nl
+	-5 parse_number? if {
+		validate_range? if {
+			compute? if {
+				"Result: " . . nl
+			} else {
+				drop "Compute failed" . nl
+			}
+		} else {
+			drop "Range validation failed" . nl
+		}
+	} else {
+		drop "Parse failed" . nl
+	}
+
+	"Input: 150" . nl
+	150 parse_number? if {
+		validate_range? if {
+			compute? if {
+				"Result: " . . nl
+			} else {
+				drop "Compute failed" . nl
+			}
+		} else {
+			drop "Range validation failed" . nl
+		}
+	} else {
+		drop "Parse failed" . nl
+	}
+
+	"Input: 60" . nl
+	60 parse_number? if {
+		validate_range? if {
+			compute? if {
+				"Result: " . . nl
+			} else {
+				drop "Compute failed" . nl
+			}
+		} else {
+			drop "Range validation failed" . nl
+		}
+	} else {
+		drop "Parse failed" . nl
+	}
+}

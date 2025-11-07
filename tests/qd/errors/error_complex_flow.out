@@ -1,0 +1,8 @@
+Input: 30
+Result: 35
+Input: -5
+Parse failed
+Input: 150
+Range validation failed
+Input: 60
+Result: 70

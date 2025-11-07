@@ -1,0 +1,20 @@
+fn always_error(a:i -- result:i)! {
+	0
+	error
+}
+
+fn main() {
+	"Test 1: " .
+	42 always_error? if {
+		. nl
+	} else {
+		drop "Failed (expected)" . nl
+	}
+
+	"Test 2: " .
+	10 always_error? if {
+		. nl
+	} else {
+		drop "Failed (expected)" . nl
+	}
+}

@@ -1,0 +1,8 @@
+5 add_and_sub 3:
+  Difference: 2
+  Sum: 8
+20 divide_and_double 4:
+  Doubled: 10
+  Quotient: 5
+10 divide_and_double 0:
+  Error (expected)

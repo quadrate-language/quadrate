@@ -37,6 +37,7 @@ typedef struct {
 	} value;
 
 	qd_stack_type type;
+	bool is_error_tainted;
 } qd_stack_element_t;
 
 typedef struct qd_stack qd_stack;
@@ -57,6 +58,11 @@ size_t qd_stack_size(const qd_stack* stack);
 size_t qd_stack_capacity(const qd_stack* stack);
 bool qd_stack_is_empty(const qd_stack* stack);
 bool qd_stack_is_full(const qd_stack* stack);
+
+// Error taint operations
+bool qd_stack_is_top_tainted(const qd_stack* stack);
+void qd_stack_mark_top_tainted(qd_stack* stack);
+void qd_stack_clear_top_taint(qd_stack* stack);
 
 const char* qd_stack_error_string(qd_stack_error error);
 

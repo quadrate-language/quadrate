@@ -4,6 +4,8 @@
 #include "source_file.h"
 #include <optional>
 #include <sstream>
+#include <unordered_map>
+#include <string>
 
 namespace Qd {
 	class IAstNode;
@@ -16,6 +18,7 @@ namespace Qd {
 	private:
 		void generateImportWrappers(IAstNode* node, const char* package, std::stringstream& out,
 				std::unordered_set<std::string>& importedLibraries) const;
+		void collectFunctionMetadata(IAstNode* node, std::unordered_map<std::string, bool>& throwsMap) const;
 		mutable int mVarCounter = 0;
 	};
 }

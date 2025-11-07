@@ -3454,6 +3454,50 @@ qd_exec_result qd_wait(qd_context* ctx) {
 	return (qd_exec_result){0};
 }
 
+qd_exec_result qd_err(qd_context* ctx) {
+	// Check if top of stack is error-tainted and push the error status
+	// Stack before: [value (tainted)]
+	// Stack after: [value (untainted), error_status]
+	size_t stack_size = qd_stack_size(ctx->st);
+	if (stack_size < 1) {
+		fprintf(stderr, "Fatal error in err: Stack underflow (required 1 element, have %zu)\n", stack_size);
+		dump_stack(ctx);
+		abort();
+	}
+
+	// Check that top of stack is tainted
+	if (!qd_stack_is_top_tainted(ctx->st)) {
+		fprintf(stderr, "Fatal error in err: Top of stack is not error-tainted\n");
+		dump_stack(ctx);
+		abort();
+	}
+
+	// Remove the taint from the top element
+	qd_stack_clear_top_taint(ctx->st);
+
+	// Push error status (0 = no error, 1 = error)
+	int64_t error_status = ctx->has_error ? 1 : 0;
+	qd_stack_error err = qd_stack_push_int(ctx->st, error_status);
+	if (err != QD_STACK_OK) {
+		fprintf(stderr, "Fatal error in err: Failed to push error status\n");
+		dump_stack(ctx);
+		abort();
+	}
+
+	// Clear error flag after checking it
+	ctx->has_error = false;
+
+	return (qd_exec_result){0};
+}
+
+qd_exec_result qd_error(qd_context* ctx) {
+	// Set the error flag
+	// Stack before: [...anything...]
+	// Stack after: [...anything...] (unchanged)
+	ctx->has_error = true;
+	return (qd_exec_result){0};
+}
+
 // Context management functions
 qd_context* qd_create_context(size_t stack_size) {
 	qd_context* ctx = (qd_context*)malloc(sizeof(qd_context));
@@ -3463,6 +3507,7 @@ qd_context* qd_create_context(size_t stack_size) {
 			free(ctx);
 			return NULL;
 		}
+		ctx->has_error = false;
 	}
 	return ctx;
 }
