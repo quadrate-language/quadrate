@@ -5,25 +5,25 @@ fn might_fail(a:i -- result:i)! {
 }
 
 fn main() {
-	5 might_fail? if {
+	5 might_fail if {
 		"Check 1: Success with " . . nl
 	} else {
 		drop "Check 1: Failed" . nl
 	}
 
-	15 might_fail? if {
+	15 might_fail if {
 		"Check 2: Success with " . . nl
 	} else {
 		drop "Check 2: Failed" . nl
 	}
 
-	8 might_fail? if {
+	8 might_fail if {
 		"Check 3: Success with " . . nl
 	} else {
 		drop "Check 3: Failed" . nl
 	}
 
-	20 might_fail? if {
+	20 might_fail if {
 		"Check 4: Success with " . . nl
 	} else {
 		drop "Check 4: Failed" . nl

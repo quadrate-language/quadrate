@@ -830,6 +830,16 @@ namespace Qd {
 						reportError(ident, errorMsg.c_str());
 					}
 
+					// Check fallible functions without ! or ? must be followed by 'if'
+					if (sig.throws && !ident->abortOnError() && !ident->checkError()) {
+						IAstNode* nextNode = (i + 1 < node->childCount()) ? node->child(i + 1) : nullptr;
+						if (!nextNode || nextNode->type() != IAstNode::Type::IF_STATEMENT) {
+							std::string errorMsg = "Fallible function '" + name +
+												   "' must be immediately followed by 'if' to check for errors, or use '!' to abort on error";
+							reportError(ident, errorMsg.c_str());
+						}
+					}
+
 					// TODO: In the future, check if stack has enough values for sig.consumes
 					// For now, we assume functions consume nothing
 
@@ -841,15 +851,16 @@ namespace Qd {
 							typeStack.push_back(type); // Push untainted value
 						}
 						typeStack.push_back(StackValueType::INT); // Error status (0 or 1)
+					} else if (sig.throws && !ident->abortOnError()) {
+						// func without ! or ? - pushes result + error flag
+						for (const auto& type : sig.produces) {
+							typeStack.push_back(type);
+						}
+						typeStack.push_back(StackValueType::INT); // Error status (0 or 1)
 					} else {
 						// Normal call or func!
 						for (const auto& type : sig.produces) {
-							// If function throws and no '!' operator, mark results as tainted
-							if (sig.throws && !ident->abortOnError()) {
-								typeStack.push_back(StackValueType::TAINTED);
-							} else {
-								typeStack.push_back(type);
-							}
+							typeStack.push_back(type);
 						}
 					}
 				}
@@ -917,17 +928,6 @@ namespace Qd {
 		if (strcmp(name, "error") == 0) {
 			// No stack changes, just sets ctx->has_error = true at runtime
 			return;
-		}
-
-		// Check that no tainted values are on the stack for other operations
-		for (const auto& type : typeStack) {
-			if (type == StackValueType::TAINTED) {
-				reportErrorConditional(node,
-						"Type error: Cannot use tainted value from fallible function without checking error status "
-						"first (use '?' or '!' operator)",
-						reportErrors);
-				return;
-			}
 		}
 
 		// Arithmetic operations: abs, sq (preserve type)

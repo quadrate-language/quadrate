@@ -14,7 +14,7 @@ fn divide_and_double(a:i b:i -- quotient:i doubled:i)! {
 
 fn main() {
 	"5 add_and_sub 3:" . nl
-	5 3 add_and_sub? if {
+	5 3 add_and_sub if {
 		"  Difference: " . . nl
 		"  Sum: " . . nl
 	} else {
@@ -23,7 +23,7 @@ fn main() {
 	}
 
 	"20 divide_and_double 4:" . nl
-	20 4 divide_and_double? if {
+	20 4 divide_and_double if {
 		"  Doubled: " . . nl
 		"  Quotient: " . . nl
 	} else {
@@ -32,7 +32,7 @@ fn main() {
 	}
 
 	"10 divide_and_double 0:" . nl
-	10 0 divide_and_double? if {
+	10 0 divide_and_double if {
 		"  Doubled: " . . nl
 		"  Quotient: " . . nl
 	} else {

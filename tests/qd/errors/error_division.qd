@@ -10,21 +10,21 @@ fn safe_divide(a:i b:i -- result:i)! {
 
 fn main() {
 	"Test 1: 10 / 2 = " .
-	10 2 safe_divide? if {
+	10 2 safe_divide if {
 		. nl
 	} else {
 		drop "ERROR" . nl
 	}
 
 	"Test 2: 10 / 0 = " .
-	10 0 safe_divide? if {
+	10 0 safe_divide if {
 		. nl
 	} else {
 		drop "ERROR" . nl
 	}
 
 	"Test 3: 100 / 5 = " .
-	100 5 safe_divide? if {
+	100 5 safe_divide if {
 		. nl
 	} else {
 		drop "ERROR" . nl

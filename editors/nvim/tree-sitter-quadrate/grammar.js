@@ -48,7 +48,7 @@ module.exports = grammar({
       field('type', $.type),
     ),
 
-    type: $ => $.identifier,
+    type: $ => seq($.identifier),
 
     // Constant: const name = value
     constant_definition: $ => seq(
@@ -202,13 +202,16 @@ module.exports = grammar({
     ),
 
     // Comments
-    comment: $ => choice(
-      token(seq('//', /.*/)),
-      token(seq(
+    comment: $ => token(choice(
+      seq('//', /.*/),
+      seq(
         '/*',
-        /[^*]*\*+([^/*][^*]*\*+)*/,
-        '/',
-      )),
-    ),
+        repeat(choice(
+          /[^*]/,
+          seq('*', /[^/]/)
+        )),
+        '*/'
+      ),
+    )),
   },
 });

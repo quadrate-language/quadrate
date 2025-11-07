@@ -13,8 +13,8 @@ fn double_value(a:i -- result:i)! {
 
 fn main() {
 	"Test 1: 5 validated and doubled = " .
-	5 validate_positive? if {
-		double_value? if {
+	5 validate_positive if {
+		double_value if {
 			. nl
 		} else {
 			drop "Double failed" . nl
@@ -24,8 +24,8 @@ fn main() {
 	}
 
 	"Test 2: -3 validated and doubled = " .
-	-3 validate_positive? if {
-		double_value? if {
+	-3 validate_positive if {
+		double_value if {
 			. nl
 		} else {
 			drop "Double failed" . nl

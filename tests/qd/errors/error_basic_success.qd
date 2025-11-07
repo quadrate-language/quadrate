@@ -7,7 +7,7 @@ fn safe_operation(a:i -- result:i)! {
 }
 
 fn main() {
-	5 safe_operation? if {
+	5 safe_operation if {
 		"Success: result is " . . nl
 	} else {
 		drop "Error occurred" . nl

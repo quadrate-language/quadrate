@@ -22,9 +22,9 @@ fn compute(a:i -- result:i)! {
 
 fn main() {
 	"Input: 30" . nl
-	30 parse_number? if {
-		validate_range? if {
-			compute? if {
+	30 parse_number if {
+		validate_range if {
+			compute if {
 				"Result: " . . nl
 			} else {
 				drop "Compute failed" . nl
@@ -37,9 +37,9 @@ fn main() {
 	}
 
 	"Input: -5" . nl
-	-5 parse_number? if {
-		validate_range? if {
-			compute? if {
+	-5 parse_number if {
+		validate_range if {
+			compute if {
 				"Result: " . . nl
 			} else {
 				drop "Compute failed" . nl
@@ -52,9 +52,9 @@ fn main() {
 	}
 
 	"Input: 150" . nl
-	150 parse_number? if {
-		validate_range? if {
-			compute? if {
+	150 parse_number if {
+		validate_range if {
+			compute if {
 				"Result: " . . nl
 			} else {
 				drop "Compute failed" . nl
@@ -67,9 +67,9 @@ fn main() {
 	}
 
 	"Input: 60" . nl
-	60 parse_number? if {
-		validate_range? if {
-			compute? if {
+	60 parse_number if {
+		validate_range if {
+			compute if {
 				"Result: " . . nl
 			} else {
 				drop "Compute failed" . nl
