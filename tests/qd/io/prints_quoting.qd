@@ -1,0 +1,7 @@
+fn main() {
+	// Test smart quoting in prints
+	// Strings without whitespace should not be quoted
+	// Strings with whitespace should be quoted
+	10 "hello" "hello world" 3.14
+	prints
+}

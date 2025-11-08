@@ -74,6 +74,16 @@ qd_exec_result qd_nl(qd_context* ctx) {
 	return (qd_exec_result){0};
 }
 
+// Helper function to check if string contains whitespace
+static bool has_whitespace(const char* str) {
+	for (const char* p = str; *p; p++) {
+		if (*p == ' ' || *p == '\t' || *p == '\n' || *p == '\r') {
+			return true;
+		}
+	}
+	return false;
+}
+
 qd_exec_result qd_prints(qd_context* ctx) {
 	// Print entire stack (non-destructive) - output only values for piping
 	const size_t stack_size = qd_stack_size(ctx->st);
@@ -98,7 +108,12 @@ qd_exec_result qd_prints(qd_context* ctx) {
 				printf("%g", val.value.f);
 				break;
 			case QD_STACK_TYPE_STR:
-				printf("\"%s\"", val.value.s);
+				// Smart quoting: only quote if string contains whitespace
+				if (has_whitespace(val.value.s)) {
+					printf("\"%s\"", val.value.s);
+				} else {
+					printf("%s", val.value.s);
+				}
 				break;
 			default:
 				return (qd_exec_result){-3};
@@ -128,7 +143,12 @@ qd_exec_result qd_printv(qd_context* ctx) {
 			printf("float:%g\n", val.value.f);
 			break;
 		case QD_STACK_TYPE_STR:
-			printf("string:\"%s\"\n", val.value.s);
+			// Smart quoting: only quote if string contains whitespace
+			if (has_whitespace(val.value.s)) {
+				printf("string:\"%s\"\n", val.value.s);
+			} else {
+				printf("string:%s\n", val.value.s);
+			}
 			free(val.value.s);  // Free the string memory after printing
 			break;
 		default:
@@ -162,7 +182,12 @@ qd_exec_result qd_printsv(qd_context* ctx) {
 				printf("float:%g", val.value.f);
 				break;
 			case QD_STACK_TYPE_STR:
-				printf("string:\"%s\"", val.value.s);
+				// Smart quoting: only quote if string contains whitespace
+				if (has_whitespace(val.value.s)) {
+					printf("string:\"%s\"", val.value.s);
+				} else {
+					printf("string:%s", val.value.s);
+				}
 				break;
 			case QD_STACK_TYPE_PTR:
 				printf("ptr:%p", val.value.p);
