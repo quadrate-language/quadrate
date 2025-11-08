@@ -58,7 +58,7 @@ tests: debug
 	fi
 	@echo ""
 	@echo "=== Running Quadrate language tests ==="
-	QUADC=$(BUILD_DIR_DEBUG)/bin/quadc/quadc bash tests/run_qd_tests.sh
+	QUADC=$(BUILD_DIR_DEBUG)/bin/quadc/quadc bash tests/run_qd_tests_parallel.sh
 	@echo ""
 	@echo "=== Running formatter tests ==="
 	bash tests/run_formatter_tests.sh
@@ -66,6 +66,16 @@ tests: debug
 valgrind: debug
 	@echo "=== Running C/C++ unit tests with valgrind ==="
 	meson test -C $(BUILD_DIR_DEBUG) test_runtime test_ast test_semantic_validator stdqd --setup=valgrind --print-errorlogs
+	@echo ""
+	@echo "=== Running Quadrate language tests with valgrind ==="
+	QUADC=$(BUILD_DIR_DEBUG)/bin/quadc/quadc bash tests/run_qd_tests_valgrind_parallel.sh
+	@echo ""
+	@echo "=== Running LSP tests with valgrind ==="
+	@if command -v valgrind >/dev/null 2>&1; then \
+		meson test -C $(BUILD_DIR_DEBUG) test_lsp test_lsp_extended --setup=valgrind --print-errorlogs; \
+	else \
+		echo "⚠️  Valgrind not installed, skipping"; \
+	fi
 
 examples:
 	@mkdir -p dist/examples
