@@ -1,0 +1,53 @@
+use str
+
+fn main() {
+	// Test len with various strings
+	"hello" str::len . nl
+	"" str::len . nl
+	"a" str::len . nl
+	"hello world!" str::len . nl
+
+	// Test concat with multiple strings
+	"hello" " " str::concat . nl
+	"hello" " " str::concat "world" str::concat . nl
+	"" "test" str::concat . nl
+	"test" "" str::concat . nl
+
+	// Test contains
+	"hello world" "world" str::contains . nl
+	"hello world" "foo" str::contains . nl
+	"hello world" "" str::contains . nl
+	"" "test" str::contains . nl
+
+	// Test starts_with
+	"hello world" "hello" str::starts_with . nl
+	"hello world" "world" str::starts_with . nl
+	"hello world" "" str::starts_with . nl
+	"" "test" str::starts_with . nl
+
+	// Test ends_with
+	"hello world" "world" str::ends_with . nl
+	"hello world" "hello" str::ends_with . nl
+	"hello world" "" str::ends_with . nl
+	"" "test" str::ends_with . nl
+
+	// Test upper
+	"hello" str::upper . nl
+	"HELLO" str::upper . nl
+	"HeLLo WoRLd" str::upper . nl
+	"123 abc!" str::upper . nl
+
+	// Test lower
+	"HELLO" str::lower . nl
+	"hello" str::lower . nl
+	"HeLLo WoRLd" str::lower . nl
+	"123 ABC!" str::lower . nl
+
+	// Test trim
+	"  hello  " str::trim . nl
+	"hello" str::trim . nl
+	"  hello" str::trim . nl
+	"hello  " str::trim . nl
+	"   " str::trim . nl
+	"	hello	" str::trim . nl
+}

@@ -4,6 +4,7 @@
 stdqd_sources = files(
 	'src/fmt.c',
 	'src/net.c',
+	'src/str.c',
 	'src/time.c',
 )
 

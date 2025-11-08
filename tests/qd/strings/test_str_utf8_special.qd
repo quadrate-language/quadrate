@@ -1,0 +1,57 @@
+use str
+
+fn main() {
+	// UTF-8 length tests (note: strlen counts bytes, not characters)
+	"hello" str::len . nl
+	"héllo" str::len . nl
+	"世界" str::len . nl
+	"🌍" str::len . nl
+
+	// UTF-8 concat
+	"Hello " "世界" str::concat . nl
+	"Привет " "мир" str::concat . nl
+	"🌍" "🌎" str::concat . nl
+
+	// UTF-8 contains
+	"Hello 世界" "世界" str::contains . nl
+	"Привет мир" "мир" str::contains . nl
+	"test 🌍 string" "🌍" str::contains . nl
+
+	// UTF-8 starts_with
+	"世界 Hello" "世界" str::starts_with . nl
+	"Привет мир" "Привет" str::starts_with . nl
+	"🌍 world" "🌍" str::starts_with . nl
+
+	// UTF-8 ends_with
+	"Hello 世界" "世界" str::ends_with . nl
+	"Привет мир" "мир" str::ends_with . nl
+	"world 🌍" "🌍" str::ends_with . nl
+
+	// Strings with multiple spaces and tabs
+	"hello  world" "  " str::contains . nl
+	"	tab	here" "	" str::contains . nl
+	"multiple   spaces" "   " str::contains . nl
+
+	// Trim with various whitespace
+	"  spaces  " str::trim . nl
+	"		tabs		" str::trim . nl
+	"  mixed 	 " str::trim . nl
+
+	// Empty and whitespace edge cases
+	"" str::len . nl
+	"" "" str::concat str::len . nl
+	"" "test" str::contains . nl
+	"test" "" str::contains . nl
+
+	// Case conversion with UTF-8 (only ASCII affected)
+	"hello WORLD" str::upper . nl
+	"HELLO world" str::lower . nl
+	"test 世界 TEST" str::upper . nl
+	"TEST 世界 test" str::lower . nl
+
+	// UTF-8 case should not change non-ASCII
+	"héllo" str::upper . nl
+	"HÉLLO" str::lower . nl
+	"Привет" str::upper . nl
+	"ПРИВЕТ" str::lower . nl
+}
