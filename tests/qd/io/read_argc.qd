@@ -1,0 +1,5 @@
+fn main() {
+	// Just print the number of arguments
+	read
+	. nl
+}

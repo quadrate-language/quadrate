@@ -24,7 +24,7 @@ namespace Qd {
 			"atan", "cb", "cbrt", "ceil", "call", "clear", "cos", "dec", "depth", "div", "drop", "drop2", "dup", "dup2",
 			"eq", "error", "fac", "floor", "gt", "gte", "inc", "inv", "ln", "log10", "lshift", "lt", "lte", "max",
 			"min", "mod", "mul", "neq", "neg", "nip", "not", "or", "over", "over2", "pick", "pow", "print", "prints",
-			"printsv", "printv", "roll", "rot", "round", "rshift", "sin", "sq", "sqrt", "sub", "swap", "swap2", "tan",
+			"printsv", "printv", "read", "roll", "rot", "round", "rshift", "sin", "sq", "sqrt", "sub", "swap", "swap2", "tan",
 			"tuck", "within", "xor"};
 
 	SemanticValidator::SemanticValidator() : mFilename(nullptr), mErrorCount(0) {
@@ -927,6 +927,20 @@ namespace Qd {
 		// Stack: [...] -> [...] (unchanged)
 		if (strcmp(name, "error") == 0) {
 			// No stack changes, just sets ctx->has_error = true at runtime
+			return;
+		}
+
+		// read instruction: reads command-line arguments
+		// Stack: [...] -> [...] arg0 arg1 ... argN argc
+		// Since we don't know argc at compile-time, we push multiple values
+		// to allow reasonable operations after read (assumes up to 16 arguments)
+		if (strcmp(name, "read") == 0) {
+			typeStack.clear();
+			// Push 16 values (enough for most use cases) + argc
+			// This is a workaround for not knowing argc at compile time
+			for (int i = 0; i < 17; i++) {
+				typeStack.push_back(StackValueType::INT);
+			}
 			return;
 		}
 

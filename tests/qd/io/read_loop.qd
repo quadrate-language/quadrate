@@ -1,0 +1,14 @@
+fn main() {
+	read
+
+	// Stack: arg0 arg1 ... argN argc
+	// Use for loop to demonstrate iteration
+
+	dup "argc=" . . nl
+
+	// Iterate argc times using for loop
+	// Just print the iteration number
+	0 swap 1 for {
+		"iter" . $ . nl
+	}
+}

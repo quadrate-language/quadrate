@@ -1,3 +1,5 @@
+#define _POSIX_C_SOURCE 200809L
+
 #include <qdrt/runtime.h>
 #include <stdio.h>
 #include <stdint.h>
@@ -3498,6 +3500,141 @@ qd_exec_result qd_error(qd_context* ctx) {
 	return (qd_exec_result){0};
 }
 
+// Helper function to check if string is an integer
+static bool is_integer(const char* str) {
+	if (!str || *str == '\0') {
+		return false;
+	}
+
+	// Handle optional negative sign
+	if (*str == '-') {
+		str++;
+		if (*str == '\0') {
+			return false;
+		}
+	}
+
+	// Check all remaining chars are digits
+	while (*str) {
+		if (*str < '0' || *str > '9') {
+			return false;
+		}
+		str++;
+	}
+
+	return true;
+}
+
+// Helper function to check if string is a float
+static bool is_float(const char* str) {
+	if (!str || *str == '\0') {
+		return false;
+	}
+
+	// Handle optional negative sign
+	if (*str == '-') {
+		str++;
+		if (*str == '\0') {
+			return false;
+		}
+	}
+
+	// Must have digits before decimal point
+	if (*str < '0' || *str > '9') {
+		return false;
+	}
+
+	// Skip digits before decimal point
+	while (*str >= '0' && *str <= '9') {
+		str++;
+	}
+
+	// Must have decimal point
+	if (*str != '.') {
+		return false;
+	}
+	str++;
+
+	// Must have at least one digit after decimal point
+	if (*str < '0' || *str > '9') {
+		return false;
+	}
+
+	// Check remaining digits
+	while (*str) {
+		if (*str < '0' || *str > '9') {
+			return false;
+		}
+		str++;
+	}
+
+	return true;
+}
+
+// Helper function to remove quotes from a string
+static char* remove_quotes(const char* str) {
+	size_t len = strlen(str);
+
+	// Check if string is quoted
+	if (len >= 2 && str[0] == '"' && str[len - 1] == '"') {
+		// Allocate new string without quotes
+		char* result = (char*)malloc(len - 1);
+		if (result) {
+			memcpy(result, str + 1, len - 2);
+			result[len - 2] = '\0';
+		}
+		return result;
+	}
+
+	// Not quoted, return copy
+	return strdup(str);
+}
+
+qd_exec_result qd_read(qd_context* ctx) {
+	// Read command-line arguments and push onto stack with type inference
+	// Stack before: (empty or anything)
+	// Stack after: arg0 arg1 arg2 ... argN argc
+
+	if (ctx->argc == 0 || ctx->argv == NULL) {
+		// No arguments, just push 0
+		qd_push_i(ctx, 0);
+		return (qd_exec_result){0};
+	}
+
+	// Push each argument onto stack with type inference
+	for (int i = 0; i < ctx->argc; i++) {
+		const char* arg = ctx->argv[i];
+
+		// Try integer first
+		if (is_integer(arg)) {
+			int64_t value = atoll(arg);
+			qd_push_i(ctx, value);
+		}
+		// Try float
+		else if (is_float(arg)) {
+			double value = atof(arg);
+			qd_push_f(ctx, value);
+		}
+		// String (quoted or unquoted)
+		else {
+			char* str = remove_quotes(arg);
+			if (str) {
+				qd_push_s(ctx, str);
+				free(str);
+			} else {
+				// Memory allocation failed
+				fprintf(stderr, "Fatal error in read: Memory allocation failed\n");
+				abort();
+			}
+		}
+	}
+
+	// Finally push argc
+	qd_push_i(ctx, ctx->argc);
+
+	return (qd_exec_result){0};
+}
+
 // Context management functions
 qd_context* qd_create_context(size_t stack_size) {
 	qd_context* ctx = (qd_context*)malloc(sizeof(qd_context));
@@ -3508,6 +3645,8 @@ qd_context* qd_create_context(size_t stack_size) {
 			return NULL;
 		}
 		ctx->has_error = false;
+		ctx->argc = 0;
+		ctx->argv = NULL;
 	}
 	return ctx;
 }

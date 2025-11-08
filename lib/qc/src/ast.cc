@@ -37,7 +37,7 @@ namespace Qd {
 				"acos", "add", "and", "asin", "atan", "cb", "cbrt", "ceil", "call", "clear", "cos", "dec", "depth",
 				"detach", "div", "drop", "drop2", "dup", "dup2", "eq", "error", "fac", "floor", "gt", "gte", "inc",
 				"inv", "ln", "log10", "lshift", "lt", "lte", "max", "min", "mod", "mul", "neq", "neg", "nip", "nl",
-				"not", "or", "over", "over2", "pick", "pow", "print", "prints", "printsv", "printv", "roll", "rot",
+				"not", "or", "over", "over2", "pick", "pow", "print", "prints", "printsv", "printv", "read", "roll", "rot",
 				"round", "rshift", "sin", "spawn", "sq", "sqrt", "sub", "swap", "swap2", "tan", "tuck", "wait",
 				"within", "xor"};
 		static const size_t count = sizeof(instructions) / sizeof(instructions[0]);

@@ -11,6 +11,8 @@ extern "C" {
 typedef struct {
 	qd_stack* st;
 	bool has_error;
+	int argc;
+	char** argv;
 } qd_context;
 
 #ifdef __cplusplus
