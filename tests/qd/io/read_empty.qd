@@ -1,9 +1,9 @@
 fn main() {
-	// Test with no additional arguments (just program name)
+	// Test with no additional arguments
 	read
-	1 eq if {
-		"OK: one argument (program name)" . nl
+	0 eq if {
+		"OK: no additional arguments" . nl
 	} else {
-		"ERROR: expected 1 argument" . nl
+		"ERROR: expected 0 arguments" . nl
 	}
 }

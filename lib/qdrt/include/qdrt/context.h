@@ -13,6 +13,7 @@ typedef struct {
 	bool has_error;
 	int argc;
 	char** argv;
+	char* program_name;
 } qd_context;
 
 #ifdef __cplusplus

@@ -1,7 +1,8 @@
 fn main() {
 	read
 
-	// Stack: arg0 arg1 ... argN argc
+	// Stack: arg1 arg2 ... argN (argc-1)
+	// Program name (arg0) is excluded
 	// Use for loop to demonstrate iteration
 
 	dup "argc=" . . nl

@@ -3617,8 +3617,9 @@ static char* remove_quotes(const char* str) {
 
 qd_exec_result qd_read(qd_context* ctx) {
 	// Read command-line arguments and push onto stack with type inference
+	// argv[0] (program name) is saved to ctx->program_name, not pushed to stack
 	// Stack before: (empty or anything)
-	// Stack after: arg0 arg1 arg2 ... argN argc
+	// Stack after: arg1 arg2 ... argN (argc-1)
 
 	if (ctx->argc == 0 || ctx->argv == NULL) {
 		// No arguments, just push 0
@@ -3626,8 +3627,17 @@ qd_exec_result qd_read(qd_context* ctx) {
 		return (qd_exec_result){0};
 	}
 
-	// Push each argument onto stack with type inference
-	for (int i = 0; i < ctx->argc; i++) {
+	// Save program name (argv[0]) to context
+	if (ctx->argc > 0) {
+		ctx->program_name = strdup(ctx->argv[0]);
+		if (!ctx->program_name) {
+			fprintf(stderr, "Fatal error in read: Memory allocation failed for program name\n");
+			abort();
+		}
+	}
+
+	// Push arguments argv[1] onwards onto stack with type inference
+	for (int i = 1; i < ctx->argc; i++) {
 		const char* arg = ctx->argv[i];
 
 		// Try integer first
@@ -3654,8 +3664,8 @@ qd_exec_result qd_read(qd_context* ctx) {
 		}
 	}
 
-	// Finally push argc
-	qd_push_i(ctx, ctx->argc);
+	// Finally push argument count (argc - 1, excluding program name)
+	qd_push_i(ctx, ctx->argc - 1);
 
 	return (qd_exec_result){0};
 }
@@ -3672,6 +3682,7 @@ qd_context* qd_create_context(size_t stack_size) {
 		ctx->has_error = false;
 		ctx->argc = 0;
 		ctx->argv = NULL;
+		ctx->program_name = NULL;
 	}
 	return ctx;
 }
@@ -3681,5 +3692,8 @@ void qd_free_context(qd_context* ctx) {
 		return;
 	}
 	qd_stack_destroy(ctx->st);
+	if (ctx->program_name) {
+		free(ctx->program_name);
+	}
 	free(ctx);
 }
