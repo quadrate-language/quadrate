@@ -44,19 +44,26 @@ tests/
 │   └── documentation/    # Documentation examples
 │       ├── stack_notation.qd
 │       └── stack_notation.out
-└── run_qd_tests.sh       # Test runner script
+├── run_qd_tests_parallel.sh          # Parallel test runner
+├── run_qd_tests_valgrind_parallel.sh # Parallel valgrind test runner
+└── run_formatter_tests.sh            # Formatter test runner
 ```
 
 ## Running Tests
 
-### Run all tests:
+### Run all tests (parallel):
 ```bash
-./tests/run_qd_tests.sh
+./tests/run_qd_tests_parallel.sh
 ```
 
 ### Run with custom quadc binary:
 ```bash
-QUADC=path/to/quadc ./tests/run_qd_tests.sh
+QUADC=path/to/quadc ./tests/run_qd_tests_parallel.sh
+```
+
+### Run with valgrind memory leak detection (parallel):
+```bash
+QUADC=path/to/quadc ./tests/run_qd_tests_valgrind_parallel.sh
 ```
 
 ## Test Output
