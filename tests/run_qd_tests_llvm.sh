@@ -41,11 +41,19 @@ for cat in arithmetic control_flow documentation errors imports io logic modules
         for f in *.qd; do
             if [ -f "${f%.qd}.out" ]; then
                 tests=$((tests + 1))
-                if timeout 5 "$QUADC_LLVM" "$f" -r 2>&1 | diff -q "${f%.qd}.out" - >/dev/null 2>&1; then
+                actual_output=$(timeout 5 "$QUADC_LLVM" "$f" -r 2>&1)
+                if echo "$actual_output" | diff -q "${f%.qd}.out" - >/dev/null 2>&1; then
                     passed=$((passed + 1))
                     echo -e "${GREEN}PASS${NC}  $f"
                 else
                     echo -e "${RED}FAIL${NC}  $f (output mismatch)"
+                    echo "  Expected:"
+                    head -5 "${f%.qd}.out" | sed 's/^/    /'
+                    echo "  Actual:"
+                    echo "$actual_output" | head -5 | sed 's/^/    /'
+                    if [ $(echo "$actual_output" | wc -l) -gt 5 ]; then
+                        echo "    ..."
+                    fi
                 fi
             fi
         done
@@ -54,11 +62,19 @@ for cat in arithmetic control_flow documentation errors imports io logic modules
         for f in $cat/*.qd; do
             if [ -f "${f%.qd}.out" ]; then
                 tests=$((tests + 1))
-                if timeout 2 "$QUADC_LLVM" "$f" -r 2>&1 | diff -q "${f%.qd}.out" - >/dev/null 2>&1; then
+                actual_output=$(timeout 2 "$QUADC_LLVM" "$f" -r 2>&1)
+                if echo "$actual_output" | diff -q "${f%.qd}.out" - >/dev/null 2>&1; then
                     passed=$((passed + 1))
                     echo -e "${GREEN}PASS${NC}  $(basename $f)"
                 else
                     echo -e "${RED}FAIL${NC}  $(basename $f) (output mismatch)"
+                    echo "  Expected:"
+                    head -5 "${f%.qd}.out" | sed 's/^/    /'
+                    echo "  Actual:"
+                    echo "$actual_output" | head -5 | sed 's/^/    /'
+                    if [ $(echo "$actual_output" | wc -l) -gt 5 ]; then
+                        echo "    ..."
+                    fi
                 fi
             fi
         done
