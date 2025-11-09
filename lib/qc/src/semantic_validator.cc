@@ -24,8 +24,8 @@ namespace Qd {
 			"atan", "cb", "cbrt", "ceil", "call", "clear", "cos", "dec", "depth", "div", "drop", "drop2", "dup", "dup2",
 			"eq", "error", "fac", "floor", "gt", "gte", "inc", "inv", "ln", "log10", "lshift", "lt", "lte", "max",
 			"min", "mod", "mul", "neq", "neg", "nip", "not", "or", "over", "over2", "pick", "pow", "print", "prints",
-			"printsv", "printv", "read", "roll", "rot", "round", "rshift", "sin", "sq", "sqrt", "sub", "swap", "swap2", "tan",
-			"tuck", "within", "xor"};
+			"printsv", "printv", "read", "roll", "rot", "round", "rshift", "sin", "sq", "sqrt", "sub", "swap", "swap2",
+			"tan", "tuck", "within", "xor"};
 
 	SemanticValidator::SemanticValidator() : mFilename(nullptr), mErrorCount(0) {
 	}
@@ -835,7 +835,8 @@ namespace Qd {
 						IAstNode* nextNode = (i + 1 < node->childCount()) ? node->child(i + 1) : nullptr;
 						if (!nextNode || nextNode->type() != IAstNode::Type::IF_STATEMENT) {
 							std::string errorMsg = "Fallible function '" + name +
-												   "' must be immediately followed by 'if' to check for errors, or use '!' to abort on error";
+												   "' must be immediately followed by 'if' to check for errors, or use "
+												   "'!' to abort on error";
 							reportError(ident, errorMsg.c_str());
 						}
 					}

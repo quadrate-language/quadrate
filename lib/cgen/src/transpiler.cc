@@ -419,8 +419,7 @@ namespace Qd {
 					} else {
 						// No operator: automatically push error flag (will be checked by 'if')
 						std::string varName = "qd_success_" + std::to_string(varCounter++);
-						out << makeIndent(indent)
-							<< "// Fallible function - automatically push error status flag\n";
+						out << makeIndent(indent) << "// Fallible function - automatically push error status flag\n";
 						out << makeIndent(indent) << "int64_t " << varName << " = ctx->has_error ? 0 : 1;\n";
 						out << makeIndent(indent) << "ctx->has_error = false; // Clear error flag\n";
 						out << makeIndent(indent) << "qd_stack_push_int(ctx->st, " << varName << ");\n";
