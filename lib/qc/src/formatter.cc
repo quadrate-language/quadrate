@@ -267,16 +267,18 @@ namespace Qd {
 			// Start a new line with inline nodes (operators and literals)
 			if (isInlineNode(child)) {
 				// Check if we're continuing from a previous named instruction or identifier
-				// This happens when previous was a named instruction/identifier that continued because we're an operator
+				// This happens when previous was a named instruction/identifier that continued because we're an
+				// operator
 				bool continuingLine = false;
 				if (i > 0 && child->type() == IAstNode::Type::INSTRUCTION) {
 					const AstNodeInstruction* instr = static_cast<const AstNodeInstruction*>(child);
 					if (isOperator(instr->name())) {
 						const IAstNode* prevNode = block->child(i - 1);
-						// If previous is a named (non-operator) instruction, identifier, or scoped identifier, it would have continued to us
+						// If previous is a named (non-operator) instruction, identifier, or scoped identifier, it would
+						// have continued to us
 						if (prevNode && (prevNode->type() == IAstNode::Type::INSTRUCTION ||
-										 prevNode->type() == IAstNode::Type::IDENTIFIER ||
-										 prevNode->type() == IAstNode::Type::SCOPED_IDENTIFIER)) {
+												prevNode->type() == IAstNode::Type::IDENTIFIER ||
+												prevNode->type() == IAstNode::Type::SCOPED_IDENTIFIER)) {
 							if (prevNode->type() == IAstNode::Type::INSTRUCTION) {
 								const AstNodeInstruction* prevInstr = static_cast<const AstNodeInstruction*>(prevNode);
 								if (!isOperator(prevInstr->name())) {
@@ -329,7 +331,7 @@ namespace Qd {
 					}
 					i++;
 				}
-				end_inline_sequence:
+			end_inline_sequence:
 				i--; // Adjust because the for loop will increment
 
 				// Check if last inline node was '.' operator

@@ -178,8 +178,8 @@ int main(int argc, char** argv) {
 			"Print compilation commands",
 			cxxopts::value<bool>()->default_value("false")->implicit_value("true"))("dump-tokens", "Print tokens",
 			cxxopts::value<bool>()->default_value("false")->implicit_value("true"))("r,run", "Run the compiled program",
-			cxxopts::value<bool>()->default_value("false")->implicit_value("true"))("dump-ir", "Print LLVM IR",
 			cxxopts::value<bool>()->default_value("false")->implicit_value("true"))(
+			"dump-ir", "Print LLVM IR", cxxopts::value<bool>()->default_value("false")->implicit_value("true"))(
 			"files", "Input files", cxxopts::value<std::vector<std::string>>());
 
 	options.parse_positional({"files"});
@@ -301,7 +301,7 @@ int main(int argc, char** argv) {
 		// Track which package each import belongs to (for .qd file imports)
 		std::unordered_set<std::string> allModules;
 		std::unordered_set<std::string> processedModules;
-		std::unordered_map<std::string, std::string> moduleToPackage;	  // moduleName -> packageName
+		std::unordered_map<std::string, std::string> moduleToPackage;	// moduleName -> packageName
 		std::unordered_map<std::string, std::string> moduleToSourceDir; // moduleName -> sourceDirectory
 		std::string sourceDirectory;
 		for (const auto& module : parsedModules) {
@@ -409,8 +409,8 @@ int main(int argc, char** argv) {
 					allModules.insert(transitiveModule);
 
 					// Determine package for transitive imports
-					bool isDirectFile =
-							transitiveModule.size() >= 3 && transitiveModule.substr(transitiveModule.size() - 3) == ".qd";
+					bool isDirectFile = transitiveModule.size() >= 3 &&
+										transitiveModule.substr(transitiveModule.size() - 3) == ".qd";
 					if (isDirectFile) {
 						// .qd file imports use the same package as the module that imported them
 						moduleToPackage[transitiveModule] = packageName;
