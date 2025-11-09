@@ -1,16 +1,19 @@
 #!/bin/bash
 
 # Quadrate Language Tests for LLVM Backend
-# Usage: QUADC_LLVM=path/to/quadc-llvm QUADRATE_ROOT=path/to/stdqd bash run_qd_tests_llvm.sh
+# Usage: QUADC_LLVM=path/to/quadc-llvm QUADRATE_ROOT=path/to/stdqd QUADRATE_LIBDIR=path/to/lib bash run_qd_tests_llvm.sh
 
 QUADC_LLVM="${QUADC_LLVM:-../../build/debug/bin/quadc-llvm/quadc-llvm}"
 QUADRATE_ROOT="${QUADRATE_ROOT:-../../lib/stdqd/qd}"
+QUADRATE_LIBDIR="${QUADRATE_LIBDIR:-../../dist/lib}"
 
 # Convert to absolute paths
 QUADC_LLVM="$(cd "$(dirname "$QUADC_LLVM")" && pwd)/$(basename "$QUADC_LLVM")"
 QUADRATE_ROOT="$(cd "$QUADRATE_ROOT" && pwd)"
+QUADRATE_LIBDIR="$(cd "$QUADRATE_LIBDIR" && pwd)"
 
 export QUADRATE_ROOT
+export QUADRATE_LIBDIR
 
 # Color codes
 RED='\033[0;31m'
@@ -24,6 +27,7 @@ echo "================================================"
 echo ""
 echo "Compiler: $QUADC_LLVM"
 echo "Stdlib:   $QUADRATE_ROOT"
+echo "Libdir:   $QUADRATE_LIBDIR"
 echo ""
 
 total_passed=0

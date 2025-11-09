@@ -84,7 +84,7 @@ tests: debug
 	@echo ""
 	@if [ -f $(BUILD_DIR_DEBUG)/bin/quadc-llvm/quadc-llvm ]; then \
 		echo "=== Running Quadrate language tests (quadc-llvm) ==="; \
-		cd tests/qd && QUADRATE_ROOT=../../lib/stdqd/qd QUADC_LLVM=../../$(BUILD_DIR_DEBUG)/bin/quadc-llvm/quadc-llvm bash ../../tests/run_qd_tests_llvm.sh || true; \
+		cd tests/qd && QUADRATE_ROOT=../../lib/stdqd/qd QUADRATE_LIBDIR=../../dist/lib QUADC_LLVM=../../$(BUILD_DIR_DEBUG)/bin/quadc-llvm/quadc-llvm bash ../../tests/run_qd_tests_llvm.sh || true; \
 	else \
 		echo "⚠️  Skipped (quadc-llvm not built - LLVM not available)"; \
 	fi

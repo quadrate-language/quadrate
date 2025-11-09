@@ -35,6 +35,8 @@
 #include <map>
 #include <vector>
 #include <string>
+#include <filesystem>
+#include <cstdlib>
 
 namespace Qd {
 
@@ -1089,12 +1091,39 @@ bool LlvmGenerator::writeExecutable(const std::string& filename) {
 	}
 
 	// Link with runtime library using clang
-	// Use absolute path to build directory runtime library
-	const char* buildDir = "/home/klarre/dev/sourcehut/~klahr/quadrate/build/debug/lib/qdrt";
-	const char* stdqdDir = "/home/klarre/dev/sourcehut/~klahr/quadrate/build/debug/lib/stdqd";
+	// Check for library paths in order of preference: QUADRATE_LIBDIR, ./dist/lib, ~/.local/lib, system paths
+	std::string libraryFlags = "-lqdrt -lstdqd -lm -pthread";
+	std::string libraryPaths;
+	std::string rpathFlags;
+
+	// Check QUADRATE_LIBDIR environment variable first
+	if (const char* quadrateLibDir = std::getenv("QUADRATE_LIBDIR")) {
+		std::filesystem::path libDir(quadrateLibDir);
+		if (std::filesystem::exists(libDir)) {
+			libraryPaths = " -L" + libDir.string();
+			rpathFlags = " -Wl,-rpath," + libDir.string();
+		}
+	}
+	// Check ./dist/lib (development build) - use absolute path
+	else {
+		std::filesystem::path distLib = std::filesystem::absolute("./dist/lib");
+		if (std::filesystem::exists(distLib)) {
+			libraryPaths = " -L" + distLib.string();
+			rpathFlags = " -Wl,-rpath," + distLib.string();
+		}
+		// Check ~/.local/lib (user installation)
+		else if (const char* home = std::getenv("HOME")) {
+			std::filesystem::path localLib = std::filesystem::path(home) / ".local" / "lib";
+			if (std::filesystem::exists(localLib)) {
+				libraryPaths = " -L" + localLib.string();
+				rpathFlags = " -Wl,-rpath," + localLib.string();
+			}
+		}
+	}
+	// System paths will be checked automatically by clang
+
 	std::string linkCmd = "clang -o " + filename + " " + objFile +
-		" -L" + buildDir + " -L" + stdqdDir + " -L./dist/lib -lqdrt -lstdqd" +
-		" -Wl,-rpath," + buildDir + " -Wl,-rpath," + stdqdDir + " -Wl,-rpath,./dist/lib";
+		libraryPaths + rpathFlags + " " + libraryFlags;
 
 	int result = system(linkCmd.c_str());
 
