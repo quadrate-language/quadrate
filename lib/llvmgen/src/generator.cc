@@ -63,6 +63,8 @@ namespace Qd {
 		llvm::Function* nlFn = nullptr;
 		llvm::Function* stackPopFn = nullptr;
 		llvm::Function* stackSizeFn = nullptr;
+		llvm::Function* pushCallFn = nullptr;
+		llvm::Function* popCallFn = nullptr;
 
 		// Loop context for break/continue
 		struct LoopContext {
@@ -166,6 +168,15 @@ namespace Qd {
 		// qd_nl(qd_context* ctx) -> qd_exec_result
 		auto nlFnTy = llvm::FunctionType::get(execResultTy, {contextPtrTy}, false);
 		nlFn = llvm::Function::Create(nlFnTy, llvm::Function::ExternalLinkage, "qd_nl", *module);
+
+		// qd_push_call(qd_context* ctx, const char* func_name) -> void
+		auto pushCallFnTy = llvm::FunctionType::get(
+				builder->getVoidTy(), {contextPtrTy, llvm::PointerType::getUnqual(*context)}, false);
+		pushCallFn = llvm::Function::Create(pushCallFnTy, llvm::Function::ExternalLinkage, "qd_push_call", *module);
+
+		// qd_pop_call(qd_context* ctx) -> void
+		auto popCallFnTy = llvm::FunctionType::get(builder->getVoidTy(), {contextPtrTy}, false);
+		popCallFn = llvm::Function::Create(popCallFnTy, llvm::Function::ExternalLinkage, "qd_pop_call", *module);
 
 		// For if statements, we need: qd_stack_pop and qd_stack_size
 		// qd_stack_pop(qd_stack* st, qd_stack_element_t* elem) -> qd_stack_error (i32)
@@ -747,11 +758,19 @@ namespace Qd {
 			auto stackSize = builder->getInt64(1024);
 			auto ctx = builder->CreateCall(createContextFn, {stackSize}, "ctx");
 
+			// Push "main::main" onto call stack for debugging
+			std::string fullFuncName = namePrefix + "::" + funcNode->name();
+			auto funcNameStr = builder->CreateGlobalString(fullFuncName);
+			builder->CreateCall(pushCallFn, {ctx, funcNameStr});
+
 			// Generate function body
 			auto body = funcNode->body();
 			if (body) {
 				generateNode(body, ctx, nullptr);
 			}
+
+			// Pop from call stack
+			builder->CreateCall(popCallFn, {ctx});
 
 			// Free context
 			builder->CreateCall(freeContextFn, {ctx});
@@ -779,6 +798,11 @@ namespace Qd {
 			// Get context parameter
 			auto ctx = fn->getArg(0);
 			ctx->setName("ctx");
+
+			// Push function name onto call stack for debugging
+			std::string fullFuncName = namePrefix + "::" + funcNode->name();
+			auto funcNameStr = builder->CreateGlobalString(fullFuncName);
+			builder->CreateCall(pushCallFn, {ctx, funcNameStr});
 
 			// Set the return target for this function
 			currentFunctionReturnBlock = returnBB;
@@ -828,6 +852,9 @@ namespace Qd {
 
 			// Clear defer statements after use
 			currentDeferStatements.clear();
+
+			// Pop function from call stack before returning
+			builder->CreateCall(popCallFn, {ctx});
 
 			// Return success
 			auto result = llvm::ConstantStruct::get(llvm::cast<llvm::StructType>(execResultTy), {builder->getInt32(0)});

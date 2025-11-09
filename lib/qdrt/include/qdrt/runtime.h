@@ -94,6 +94,11 @@ void qd_check_stack(qd_context* ctx, size_t count, const qd_stack_type* types, c
 qd_context* qd_create_context(size_t stack_size);
 void qd_free_context(qd_context* ctx);
 
+// Call stack management for debugging/error reporting
+void qd_push_call(qd_context* ctx, const char* func_name);
+void qd_pop_call(qd_context* ctx);
+void qd_print_stack_trace(qd_context* ctx);
+
 #ifdef __cplusplus
 }
 #endif

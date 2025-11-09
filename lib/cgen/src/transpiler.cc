@@ -180,9 +180,13 @@ namespace Qd {
 			break;
 		case IAstNode::Type::FUNCTION_DECLARATION: {
 			AstNodeFunctionDeclaration* funcDecl = static_cast<AstNodeFunctionDeclaration*>(node);
+			std::string fullFuncName = std::string(packageName) + "::" + funcDecl->name();
 			out << "\n"
 				<< makeIndent(indent) << "qd_exec_result usr_" << packageName << "_" << funcDecl->name()
 				<< "(qd_context* ctx) {\n";
+
+			// Push function name onto call stack for debugging
+			out << makeIndent(indent + 1) << "qd_push_call(ctx, \"" << fullFuncName << "\");\n\n";
 
 			// Generate type check for input parameters
 			if (!funcDecl->inputParameters().empty()) {
@@ -239,6 +243,8 @@ namespace Qd {
 					<< ", output_types, __func__);\n";
 			}
 
+			// Pop function from call stack before returning
+			out << makeIndent(indent + 1) << "qd_pop_call(ctx);\n";
 			out << makeIndent(indent + 1) << "return (qd_exec_result){0};\n";
 			out << makeIndent(indent) << "}\n";
 			return; // Don't traverse children again

@@ -196,8 +196,7 @@ int main(int argc, char** argv) {
 	cxxopts::Options options("quadc", "Quadrate compiler");
 	options.add_options()("h,help", "Display help.")("v,version", "Display compiler version.")(
 			"o", "Output filename", cxxopts::value<std::string>()->default_value("main"))("save-temps",
-			"Save temporary files", cxxopts::value<bool>()->default_value("false")->implicit_value("true"))("no-colors",
-			"Disable colored output", cxxopts::value<bool>()->default_value("false")->implicit_value("true"))("verbose",
+			"Save temporary files", cxxopts::value<bool>()->default_value("false")->implicit_value("true"))("verbose",
 			"Print compilation commands",
 			cxxopts::value<bool>()->default_value("false")->implicit_value("true"))("dump-tokens", "Print tokens",
 			cxxopts::value<bool>()->default_value("false")->implicit_value("true"))("r,run", "Run the compiled program",
@@ -219,8 +218,8 @@ int main(int argc, char** argv) {
 		return 0;
 	}
 
-	// Configure colored output
-	const bool noColors = result["no-colors"].as<bool>();
+	// Configure colored output - check NO_COLOR environment variable
+	const bool noColors = std::getenv("NO_COLOR") != nullptr;
 	Qd::Colors::setEnabled(!noColors);
 
 	std::string outputFilename = result["o"].as<std::string>();
