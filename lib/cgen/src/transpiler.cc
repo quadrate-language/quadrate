@@ -309,6 +309,17 @@ namespace Qd {
 			}
 
 			out << makeIndent(indent + 1) << "}\n";
+			out << makeIndent(indent) << "} else if (" << varStart << ".type == QD_STACK_TYPE_FLOAT && " << varEnd
+				<< ".type == QD_STACK_TYPE_FLOAT && " << varStep << ".type == QD_STACK_TYPE_FLOAT) {\n";
+			out << makeIndent(indent + 1) << "for (double " << varI << " = " << varStart << ".value.f; " << varI
+				<< " < " << varEnd << ".value.f; " << varI << " += " << varStep << ".value.f) {\n";
+
+			// Loop body - pass iterator variable name for $ handling
+			if (forStmt->body()) {
+				traverse(forStmt->body(), packageName, out, indent + 2, varCounter, varI, deferStatements, throwsMap);
+			}
+
+			out << makeIndent(indent + 1) << "}\n";
 			out << makeIndent(indent) << "}\n";
 			return; // Don't traverse children again
 		}

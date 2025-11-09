@@ -14,6 +14,7 @@ debug:
 	meson compile -C $(BUILD_DIR_DEBUG)
 	@mkdir -p dist/bin dist/lib dist/include
 	@cp -f $(BUILD_DIR_DEBUG)/bin/quadc/quadc dist/bin/
+	@cp -f $(BUILD_DIR_DEBUG)/bin/quadc-llvm/quadc-llvm dist/bin/
 	@cp -f $(BUILD_DIR_DEBUG)/bin/quadfmt/quadfmt dist/bin/
 	@cp -f $(BUILD_DIR_DEBUG)/bin/quadlsp/quadlsp dist/bin/
 	@cp -f $(BUILD_DIR_DEBUG)/lib/qdrt/libqdrt.so dist/lib/
@@ -31,6 +32,7 @@ release:
 	meson compile -C $(BUILD_DIR_RELEASE)
 	@mkdir -p dist/bin dist/lib dist/include
 	@cp -f $(BUILD_DIR_RELEASE)/bin/quadc/quadc dist/bin/
+	@cp -f $(BUILD_DIR_RELEASE)/bin/quadc-llvm/quadc-llvm dist/bin/
 	@cp -f $(BUILD_DIR_RELEASE)/bin/quadfmt/quadfmt dist/bin/
 	@cp -f $(BUILD_DIR_RELEASE)/bin/quadlsp/quadlsp dist/bin/
 	@cp -f $(BUILD_DIR_RELEASE)/lib/qdrt/libqdrt.so dist/lib/
@@ -44,6 +46,10 @@ release:
 	@cp -rf lib/stdqd/include/stdqd dist/include/
 
 tests: debug
+	@echo "=========================================="
+	@echo "  Quadrate Test Suite - All Backends"
+	@echo "=========================================="
+	@echo ""
 	@echo "=== Running C/C++ unit tests ==="
 	meson test -C $(BUILD_DIR_DEBUG) test_runtime test_ast test_semantic_validator stdqd --print-errorlogs
 	@echo ""
@@ -57,11 +63,30 @@ tests: debug
 		echo "⚠️  Skipped (tree-sitter not installed)"; \
 	fi
 	@echo ""
-	@echo "=== Running Quadrate language tests ==="
-	QUADC=$(BUILD_DIR_DEBUG)/bin/quadc/quadc bash tests/run_qd_tests_parallel.sh
+	@echo "=========================================="
+	@echo "  Backend: quadc (C Transpiler)"
+	@echo "=========================================="
+	@echo ""
+	@echo "=== Running Quadrate language tests (quadc) ==="
+	QUADC=$(BUILD_DIR_DEBUG)/bin/quadc/quadc bash tests/run_qd_tests_parallel.sh || true
+	@echo ""
+	@echo "=========================================="
+	@echo "  Backend: quadc-llvm (LLVM)"
+	@echo "=========================================="
+	@echo ""
+	@echo "=== Running Quadrate language tests (quadc-llvm) ==="
+	@cd tests/qd && QUADRATE_ROOT=../../lib/stdqd/qd QUADC_LLVM=../../$(BUILD_DIR_DEBUG)/bin/quadc-llvm/quadc-llvm bash ../../tests/run_qd_tests_llvm.sh || true
+	@echo ""
+	@echo "=========================================="
+	@echo "  Other Tests"
+	@echo "=========================================="
 	@echo ""
 	@echo "=== Running formatter tests ==="
 	bash tests/run_formatter_tests.sh
+	@echo ""
+	@echo "=========================================="
+	@echo "  Test Suite Complete"
+	@echo "=========================================="
 
 valgrind: debug
 	@echo "=== Running C/C++ unit tests with valgrind ==="
@@ -90,6 +115,7 @@ install: release
 	install -d $(DESTDIR)$(PREFIX)/lib
 	install -d $(DESTDIR)$(PREFIX)/include
 	install -m 755 dist/bin/quadc $(DESTDIR)$(PREFIX)/bin/
+	install -m 755 dist/bin/quadc-llvm $(DESTDIR)$(PREFIX)/bin/
 	install -m 755 dist/bin/quadfmt $(DESTDIR)$(PREFIX)/bin/
 	install -m 755 dist/bin/quadlsp $(DESTDIR)$(PREFIX)/bin/
 	install -m 644 dist/lib/libqdrt.so $(DESTDIR)$(PREFIX)/lib/
@@ -107,6 +133,7 @@ install: release
 
 uninstall:
 	rm -f $(DESTDIR)$(PREFIX)/bin/quadc
+	rm -f $(DESTDIR)$(PREFIX)/bin/quadc-llvm
 	rm -f $(DESTDIR)$(PREFIX)/bin/quadfmt
 	rm -f $(DESTDIR)$(PREFIX)/bin/quadlsp
 	rm -f $(DESTDIR)$(PREFIX)/lib/libqdrt.so

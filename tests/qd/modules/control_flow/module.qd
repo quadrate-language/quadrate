@@ -27,7 +27,6 @@ fn count_evens( max:f -- count:f ) {
 	swap
 	0.0 swap 2.0
 	for {
-		drop
 		1.0 add
 	}
 }
