@@ -86,8 +86,11 @@ echo ""
 
 # Calculate percentage
 if [ $total_tests -gt 0 ]; then
-    percentage=$(echo "scale=1; $total_passed * 100 / $total_tests" | bc)
-    echo "Pass rate: ${percentage}%"
+    # Use bash arithmetic (no bc required)
+    percentage=$((total_passed * 1000 / total_tests))
+    integer_part=$((percentage / 10))
+    decimal_part=$((percentage % 10))
+    echo "Pass rate: ${integer_part}.${decimal_part}%"
     echo ""
 fi
 
