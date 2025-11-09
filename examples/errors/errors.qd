@@ -1,0 +1,16 @@
+fn division(a:i b:i -- x:i) throws {
+	dup 0 == if {
+		-1
+	}
+	div
+}
+
+fn main() {
+	1 0 division
+	err if {
+		"Error: Division by zero!"
+	} else {
+		"Result: " print
+	}
+	1 0 division!
+}

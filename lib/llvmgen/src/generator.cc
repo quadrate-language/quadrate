@@ -462,8 +462,14 @@ void LlvmGenerator::Impl::generateIf(AstNodeIfStatement* ifStmt, llvm::Value* ct
 		generateNode(ifStmt->thenBody(), ctx, forIterVar);
 	}
 	// Only add branch if block doesn't already have a terminator
-	if (!builder->GetInsertBlock()->getTerminator()) {
-		builder->CreateBr(mergeBB);
+	llvm::BasicBlock* thenBlock = builder->GetInsertBlock();
+	if (thenBlock) {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wnull-dereference"
+		if (!thenBlock->getTerminator()) {
+#pragma GCC diagnostic pop
+			builder->CreateBr(mergeBB);
+		}
 	}
 
 	// Generate else block if present
@@ -473,8 +479,14 @@ void LlvmGenerator::Impl::generateIf(AstNodeIfStatement* ifStmt, llvm::Value* ct
 			generateNode(ifStmt->elseBody(), ctx, forIterVar);
 		}
 		// Only add branch if block doesn't already have a terminator
-		if (!builder->GetInsertBlock()->getTerminator()) {
-			builder->CreateBr(mergeBB);
+		llvm::BasicBlock* elseBlock = builder->GetInsertBlock();
+		if (elseBlock) {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wnull-dereference"
+			if (!elseBlock->getTerminator()) {
+#pragma GCC diagnostic pop
+				builder->CreateBr(mergeBB);
+			}
 		}
 	}
 
@@ -573,8 +585,14 @@ void LlvmGenerator::Impl::generateFor(AstNodeForStatement* forStmt, llvm::Value*
 	loopStack.pop_back();
 
 	// Only add branch if block doesn't already have a terminator
-	if (!builder->GetInsertBlock()->getTerminator()) {
-		builder->CreateBr(loopIncBB);
+	llvm::BasicBlock* loopBodyBlock = builder->GetInsertBlock();
+	if (loopBodyBlock) {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wnull-dereference"
+		if (!loopBodyBlock->getTerminator()) {
+#pragma GCC diagnostic pop
+			builder->CreateBr(loopIncBB);
+		}
 	}
 
 	// Loop increment
@@ -611,8 +629,14 @@ void LlvmGenerator::Impl::generateLoop(AstNodeLoopStatement* loopStmt, llvm::Val
 	loopStack.pop_back();
 
 	// Only add branch if block doesn't already have a terminator
-	if (!builder->GetInsertBlock()->getTerminator()) {
-		builder->CreateBr(loopBodyBB); // Loop forever
+	llvm::BasicBlock* loopBlock = builder->GetInsertBlock();
+	if (loopBlock) {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wnull-dereference"
+		if (!loopBlock->getTerminator()) {
+#pragma GCC diagnostic pop
+			builder->CreateBr(loopBodyBB); // Loop forever
+		}
 	}
 
 	// Continue after loop (only reached via break)
@@ -674,8 +698,14 @@ void LlvmGenerator::Impl::generateNode(IAstNode* node, llvm::Value* ctx, llvm::V
 			for (size_t i = 0; i < node->childCount(); i++) {
 				generateNode(node->child(i), ctx, forIterVar);
 				// Stop if we've added a terminator (return, break, continue)
-				if (builder->GetInsertBlock()->getTerminator()) {
-					break;
+				llvm::BasicBlock* currentBlock = builder->GetInsertBlock();
+				if (currentBlock) {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wnull-dereference"
+					if (currentBlock->getTerminator()) {
+#pragma GCC diagnostic pop
+						break;
+					}
 				}
 			}
 			break;
@@ -762,8 +792,14 @@ bool LlvmGenerator::Impl::generateFunction(AstNodeFunctionDeclaration* funcNode,
 		currentFunctionReturnBlock = nullptr;
 
 		// If the block doesn't end with a terminator, branch to return block
-		if (!builder->GetInsertBlock()->getTerminator()) {
-			builder->CreateBr(returnBB);
+		llvm::BasicBlock* funcBodyBlock = builder->GetInsertBlock();
+		if (funcBodyBlock) {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wnull-dereference"
+			if (!funcBodyBlock->getTerminator()) {
+#pragma GCC diagnostic pop
+				builder->CreateBr(returnBB);
+			}
 		}
 
 		// Generate return block - this is where defers execute
