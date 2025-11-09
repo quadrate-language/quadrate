@@ -43,7 +43,7 @@ qd_exec_result qd_push_p(qd_context* ctx, void* value) {
 }
 
 qd_exec_result qd_print(qd_context* ctx) {
-	// Forth-style: pop and print the top element only
+	// Pop and print the top element followed by a space (Forth-style)
 	qd_stack_element_t val;
 	qd_stack_error err = qd_stack_pop(ctx->st, &val);
 	if (err != QD_STACK_OK) {
@@ -52,13 +52,13 @@ qd_exec_result qd_print(qd_context* ctx) {
 
 	switch (val.type) {
 		case QD_STACK_TYPE_INT:
-			printf("%ld", val.value.i);
+			printf("%ld ", val.value.i);
 			break;
 		case QD_STACK_TYPE_FLOAT:
-			printf("%f", val.value.f);
+			printf("%g ", val.value.f);
 			break;
 		case QD_STACK_TYPE_STR:
-			printf("%s", val.value.s);
+			printf("%s ", val.value.s);
 			free(val.value.s);  // Free the string memory after printing
 			break;
 		default:

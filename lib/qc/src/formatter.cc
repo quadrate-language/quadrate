@@ -266,17 +266,24 @@ namespace Qd {
 
 			// Start a new line with inline nodes (operators and literals)
 			if (isInlineNode(child)) {
-				// Check if we're continuing from a previous named instruction
-				// This happens when previous was a named instruction that continued because we're an operator
+				// Check if we're continuing from a previous named instruction or identifier
+				// This happens when previous was a named instruction/identifier that continued because we're an operator
 				bool continuingLine = false;
 				if (i > 0 && child->type() == IAstNode::Type::INSTRUCTION) {
 					const AstNodeInstruction* instr = static_cast<const AstNodeInstruction*>(child);
 					if (isOperator(instr->name())) {
 						const IAstNode* prevNode = block->child(i - 1);
-						// If previous is a named (non-operator) instruction, it would have continued to us
-						if (prevNode && prevNode->type() == IAstNode::Type::INSTRUCTION) {
-							const AstNodeInstruction* prevInstr = static_cast<const AstNodeInstruction*>(prevNode);
-							if (!isOperator(prevInstr->name())) {
+						// If previous is a named (non-operator) instruction, identifier, or scoped identifier, it would have continued to us
+						if (prevNode && (prevNode->type() == IAstNode::Type::INSTRUCTION ||
+										 prevNode->type() == IAstNode::Type::IDENTIFIER ||
+										 prevNode->type() == IAstNode::Type::SCOPED_IDENTIFIER)) {
+							if (prevNode->type() == IAstNode::Type::INSTRUCTION) {
+								const AstNodeInstruction* prevInstr = static_cast<const AstNodeInstruction*>(prevNode);
+								if (!isOperator(prevInstr->name())) {
+									continuingLine = true;
+								}
+							} else {
+								// Identifiers and scoped identifiers always continue
 								continuingLine = true;
 							}
 						}
@@ -289,6 +296,7 @@ namespace Qd {
 					writeIndent();
 				}
 				size_t firstInlineIndex = i;
+				const IAstNode* lastInlineNode = nullptr;
 				while (i < block->childCount() && isInlineNode(block->child(i))) {
 					if (i > firstInlineIndex) {
 						write(" ");
@@ -298,10 +306,17 @@ namespace Qd {
 					if (!inlineNode) {
 						break;
 					}
+					lastInlineNode = inlineNode;
 					switch (inlineNode->type()) {
 					case IAstNode::Type::INSTRUCTION: {
 						const AstNodeInstruction* instr = static_cast<const AstNodeInstruction*>(inlineNode);
 						write(instr->name());
+						// Break inline sequence after '.' operator
+						if (instr->name() == ".") {
+							i++;
+							lastInlineNode = inlineNode;
+							goto end_inline_sequence;
+						}
 						break;
 					}
 					case IAstNode::Type::LITERAL: {
@@ -314,7 +329,17 @@ namespace Qd {
 					}
 					i++;
 				}
+				end_inline_sequence:
 				i--; // Adjust because the for loop will increment
+
+				// Check if last inline node was '.' operator
+				bool lastWasPrint = false;
+				if (lastInlineNode && lastInlineNode->type() == IAstNode::Type::INSTRUCTION) {
+					const AstNodeInstruction* instr = static_cast<const AstNodeInstruction*>(lastInlineNode);
+					if (instr->name() == ".") {
+						lastWasPrint = true;
+					}
+				}
 
 				// After processing inline nodes, check what comes next
 				if (i + 1 < block->childCount()) {
@@ -328,6 +353,21 @@ namespace Qd {
 						formatNode(nextNode);
 						continue; // Skip the newline, formatNode already added it
 					}
+					// If last was '.', check if next is 'nl'
+					if (lastWasPrint && nextNode && nextNode->type() == IAstNode::Type::INSTRUCTION) {
+						const AstNodeInstruction* nextInstr = static_cast<const AstNodeInstruction*>(nextNode);
+						if (nextInstr->name() == "nl") {
+							// Keep '.' and 'nl' on same line
+							write(" nl");
+							i++; // Skip the nl instruction
+							newLine();
+							continue;
+						}
+						// If last was '.' but next is NOT 'nl', add newline now
+						newLine();
+						continue;
+					}
+
 					// If next is a named instruction or identifier, don't newline - let it continue on this line
 					if (nextNode && (nextNode->type() == IAstNode::Type::INSTRUCTION ||
 											nextNode->type() == IAstNode::Type::IDENTIFIER ||
@@ -336,6 +376,8 @@ namespace Qd {
 						continue;
 					}
 				}
+
+				// Add newline after '.', or after any inline sequence
 				newLine();
 			} else if (child->type() == IAstNode::Type::IF_STATEMENT ||
 					   child->type() == IAstNode::Type::FOR_STATEMENT ||
@@ -358,8 +400,8 @@ namespace Qd {
 						// If previous was an operator, we're continuing
 						else if (prevNode->type() == IAstNode::Type::INSTRUCTION) {
 							const AstNodeInstruction* prevInstr = static_cast<const AstNodeInstruction*>(prevNode);
-							// Continue if previous was operator
-							if (isOperator(prevInstr->name())) {
+							// Continue if previous was operator, EXCEPT for '.' which breaks to new line
+							if (isOperator(prevInstr->name()) && prevInstr->name() != ".") {
 								needsIndent = false;
 							}
 						}

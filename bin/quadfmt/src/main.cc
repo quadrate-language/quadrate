@@ -6,6 +6,7 @@
 #include <qc/error_reporter.h>
 #include <qc/formatter.h>
 #include <sstream>
+#include <u8t/scanner.h>
 #include <vector>
 
 using namespace Qd;
@@ -85,6 +86,24 @@ void writeFile(const std::string& filename, const std::string& content) {
 	file << content;
 }
 
+// Count significant tokens (non-whitespace, non-comment content)
+// This helps detect if formatting removed actual code
+size_t countSignificantTokens(const std::string& source) {
+	u8t_scanner scanner;
+	u8t_scanner_init(&scanner, source.c_str());
+
+	size_t count = 0;
+	char32_t token;
+	while ((token = u8t_scanner_scan(&scanner)) != U8T_EOF) {
+		// Count all tokens - identifiers, literals, operators, keywords, etc.
+		// The scanner will return U8T_IDENTIFIER, U8T_INTEGER, U8T_FLOAT, U8T_STRING
+		// or character tokens for operators/punctuation
+		count++;
+	}
+
+	return count;
+}
+
 bool formatFile(const std::string& filename, const Options& opts) {
 	try {
 		// Read source file
@@ -94,14 +113,33 @@ bool formatFile(const std::string& filename, const Options& opts) {
 		Ast ast;
 		IAstNode* root = ast.generate(source.c_str(), false, filename.c_str());
 
-		if (!root) {
-			std::cerr << "quadfmt: " << filename << ": failed to parse\n";
+		if (!root || ast.hasErrors()) {
+			std::cerr << "quadfmt: " << filename << ": failed to parse (contains errors)\n";
 			return false;
 		}
 
 		// Format AST
 		Formatter formatter;
 		std::string formatted = formatter.format(root);
+
+		// Validate formatted output by parsing it again
+		Ast validationAst;
+		IAstNode* validationRoot = validationAst.generate(formatted.c_str(), false, filename.c_str());
+
+		if (!validationRoot || validationAst.hasErrors()) {
+			std::cerr << "quadfmt: " << filename << ": formatter produced invalid output, not saving\n";
+			return false;
+		}
+
+		// Ensure no content was lost during formatting
+		size_t originalTokens = countSignificantTokens(source);
+		size_t formattedTokens = countSignificantTokens(formatted);
+
+		if (formattedTokens < originalTokens) {
+			std::cerr << "quadfmt: " << filename << ": formatter removed content (";
+			std::cerr << (originalTokens - formattedTokens) << " tokens lost), not saving\n";
+			return false;
+		}
 
 		if (opts.check) {
 			// Check mode: compare with original
