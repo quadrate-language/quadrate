@@ -429,10 +429,12 @@ int main(int argc, char** argv) {
 		// Now generate LLVM IR from all parsed modules
 		Qd::LlvmGenerator generator;
 
-		// Add all dependency modules first (everything except main)
-		for (auto& module : parsedModules) {
-			if (module.package != "main") {
-				generator.addModuleAST(module.package, module.root);
+		// Add all dependency modules in REVERSE order (dependencies first)
+		// Modules were loaded in breadth-first order (main first, then dependents, then their dependencies)
+		// but we need to generate them depth-first (deep dependencies first, then their dependents)
+		for (auto it = parsedModules.rbegin(); it != parsedModules.rend(); ++it) {
+			if (it->package != "main") {
+				generator.addModuleAST(it->package, it->root);
 			}
 		}
 

@@ -41,7 +41,7 @@ for cat in arithmetic control_flow documentation errors imports io logic modules
         for f in *.qd; do
             if [ -f "${f%.qd}.out" ]; then
                 tests=$((tests + 1))
-                if timeout 5 "$QUADC_LLVM" "$f" -r 2>&1 | sed -n '/=== Running/,$ {/=== Running/d; p}' | diff -q "${f%.qd}.out" - >/dev/null 2>&1; then
+                if timeout 5 "$QUADC_LLVM" "$f" -r 2>&1 | diff -q "${f%.qd}.out" - >/dev/null 2>&1; then
                     passed=$((passed + 1))
                     echo -e "${GREEN}PASS${NC}  $f"
                 else
@@ -54,7 +54,7 @@ for cat in arithmetic control_flow documentation errors imports io logic modules
         for f in $cat/*.qd; do
             if [ -f "${f%.qd}.out" ]; then
                 tests=$((tests + 1))
-                if timeout 2 "$QUADC_LLVM" "$f" -r 2>&1 | sed -n '/=== Running/,$ {/=== Running/d; p}' | diff -q "${f%.qd}.out" - >/dev/null 2>&1; then
+                if timeout 2 "$QUADC_LLVM" "$f" -r 2>&1 | diff -q "${f%.qd}.out" - >/dev/null 2>&1; then
                     passed=$((passed + 1))
                     echo -e "${GREEN}PASS${NC}  $(basename $f)"
                 else

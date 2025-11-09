@@ -516,7 +516,7 @@ private:
 	}
 
 	std::map<std::string, std::string> documents_;
-	int messageId_;
+	[[maybe_unused]] int messageId_;
 };
 
 int main() {
