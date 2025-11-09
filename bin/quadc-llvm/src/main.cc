@@ -9,6 +9,7 @@
 #include <qc/ast_node.h>
 #include <qc/ast_node_use.h>
 #include <qc/colors.h>
+#include <qc/semantic_validator.h>
 #include <random>
 #include <set>
 #include <sstream>
@@ -263,6 +264,14 @@ int main(int argc, char** argv) {
 				return 1;
 			}
 
+			// Semantic validation - catch errors before LLVM generation
+			Qd::SemanticValidator validator;
+			size_t errorCount = validator.validate(root, file.c_str());
+			if (errorCount > 0) {
+				// Validation failed - do not proceed
+				return 1;
+			}
+
 			// Get source directory for module resolution
 			std::filesystem::path filePath(file);
 			std::string sourceDirectory = filePath.parent_path().string();
@@ -370,6 +379,14 @@ int main(int argc, char** argv) {
 			auto root = ast->generate(buffer.c_str(), false, moduleFilePath.c_str());
 			if (!root || ast->hasErrors()) {
 				std::cerr << "quadc-llvm: failed to parse module: " << moduleName << std::endl;
+				return 1;
+			}
+
+			// Semantic validation - catch errors before LLVM generation
+			Qd::SemanticValidator validator;
+			size_t errorCount = validator.validate(root, moduleFilePath.c_str());
+			if (errorCount > 0) {
+				// Validation failed - do not proceed
 				return 1;
 			}
 

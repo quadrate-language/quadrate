@@ -27,6 +27,25 @@ namespace Qd {
 			"printsv", "printv", "read", "roll", "rot", "round", "rshift", "sin", "sq", "sqrt", "sub", "swap", "swap2",
 			"tan", "tuck", "within", "xor"};
 
+	static const char* stackValueTypeToString(StackValueType type) {
+		switch (type) {
+		case StackValueType::INT:
+			return "int";
+		case StackValueType::FLOAT:
+			return "float";
+		case StackValueType::STRING:
+			return "string";
+		case StackValueType::PTR:
+			return "ptr";
+		case StackValueType::ANY:
+			return "any";
+		case StackValueType::UNKNOWN:
+			return "unknown";
+		default:
+			return "unknown";
+		}
+	}
+
 	SemanticValidator::SemanticValidator() : mFilename(nullptr), mErrorCount(0) {
 	}
 
@@ -625,14 +644,50 @@ namespace Qd {
 			AstNodeFunctionDeclaration* func = static_cast<AstNodeFunctionDeclaration*>(node);
 			std::vector<StackValueType> typeStack;
 
+			// Initialize type stack with input parameters (they're on the stack when function starts)
+			for (auto* paramNode : func->inputParameters()) {
+				AstNodeParameter* param = static_cast<AstNodeParameter*>(paramNode);
+				std::string typeStr = param->typeString();
+				if (typeStr == "i") {
+					typeStack.push_back(StackValueType::INT);
+				} else if (typeStr == "f") {
+					typeStack.push_back(StackValueType::FLOAT);
+				} else if (typeStr == "s") {
+					typeStack.push_back(StackValueType::STRING);
+				} else if (typeStr == "p") {
+					typeStack.push_back(StackValueType::PTR);
+				} else {
+					// Untyped or unknown - use ANY
+					typeStack.push_back(StackValueType::ANY);
+				}
+			}
+
 			// Analyze the function body in isolation (without resolving function calls)
 			if (func->body()) {
 				analyzeBlockInIsolation(func->body(), typeStack);
 			}
 
-			// Store the signature - for now, assume functions consume nothing
-			// and produce whatever is left on the stack
+			// Store the signature with input parameters as consumes
 			FunctionSignature sig;
+
+			// Build consumes list from input parameters
+			for (auto* paramNode : func->inputParameters()) {
+				AstNodeParameter* param = static_cast<AstNodeParameter*>(paramNode);
+				std::string typeStr = param->typeString();
+				if (typeStr == "i") {
+					sig.consumes.push_back(StackValueType::INT);
+				} else if (typeStr == "f") {
+					sig.consumes.push_back(StackValueType::FLOAT);
+				} else if (typeStr == "s") {
+					sig.consumes.push_back(StackValueType::STRING);
+				} else if (typeStr == "p") {
+					sig.consumes.push_back(StackValueType::PTR);
+				} else {
+					// Untyped or unknown - use ANY
+					sig.consumes.push_back(StackValueType::ANY);
+				}
+			}
+
 			sig.produces = typeStack;
 			sig.throws = func->throws();
 			mFunctionSignatures[func->name()] = sig;
@@ -841,8 +896,53 @@ namespace Qd {
 						}
 					}
 
-					// TODO: In the future, check if stack has enough values for sig.consumes
-					// For now, we assume functions consume nothing
+					// Check if stack has enough values for function parameters
+					if (typeStack.size() < sig.consumes.size()) {
+						std::string errorMsg = "Type error in function call '";
+						errorMsg += name;
+						errorMsg += "': Stack underflow (requires ";
+						errorMsg += std::to_string(sig.consumes.size());
+						errorMsg += " values, have ";
+						errorMsg += std::to_string(typeStack.size());
+						errorMsg += ")";
+						reportError(ident, errorMsg.c_str());
+						break;
+					}
+
+					// Check if the types match
+					for (size_t j = 0; j < sig.consumes.size(); j++) {
+						size_t stackIdx = typeStack.size() - sig.consumes.size() + j;
+						StackValueType expected = sig.consumes[j];
+						StackValueType actual = typeStack[stackIdx];
+
+						// Skip check if expected type is ANY or UNKNOWN
+						if (expected == StackValueType::ANY || expected == StackValueType::UNKNOWN) {
+							continue;
+						}
+
+						// Skip check if actual type is UNKNOWN (can't determine type)
+						if (actual == StackValueType::UNKNOWN) {
+							continue;
+						}
+
+						// Check for type mismatch
+						if (actual != expected) {
+							std::string errorMsg = "Type error in function call '";
+							errorMsg += name;
+							errorMsg += "': Parameter ";
+							errorMsg += std::to_string(j + 1);
+							errorMsg += " expects ";
+							errorMsg += stackValueTypeToString(expected);
+							errorMsg += ", but got ";
+							errorMsg += stackValueTypeToString(actual);
+							reportError(ident, errorMsg.c_str());
+						}
+					}
+
+					// Consume the parameters from the stack
+					for (size_t j = 0; j < sig.consumes.size(); j++) {
+						typeStack.pop_back();
+					}
 
 					// Apply the produces effect
 					if (ident->checkError()) {
@@ -881,6 +981,54 @@ namespace Qd {
 				auto sigIt = mFunctionSignatures.find(qualifiedName);
 				if (sigIt != mFunctionSignatures.end()) {
 					const FunctionSignature& sig = sigIt->second;
+
+					// Check if stack has enough values for function parameters
+					if (typeStack.size() < sig.consumes.size()) {
+						std::string errorMsg = "Type error in function call '";
+						errorMsg += qualifiedName;
+						errorMsg += "': Stack underflow (requires ";
+						errorMsg += std::to_string(sig.consumes.size());
+						errorMsg += " values, have ";
+						errorMsg += std::to_string(typeStack.size());
+						errorMsg += ")";
+						reportError(scoped, errorMsg.c_str());
+						break;
+					}
+
+					// Check if the types match
+					for (size_t j = 0; j < sig.consumes.size(); j++) {
+						size_t stackIdx = typeStack.size() - sig.consumes.size() + j;
+						StackValueType expected = sig.consumes[j];
+						StackValueType actual = typeStack[stackIdx];
+
+						// Skip check if expected type is ANY or UNKNOWN
+						if (expected == StackValueType::ANY || expected == StackValueType::UNKNOWN) {
+							continue;
+						}
+
+						// Skip check if actual type is UNKNOWN (can't determine type)
+						if (actual == StackValueType::UNKNOWN) {
+							continue;
+						}
+
+						// Check for type mismatch
+						if (actual != expected) {
+							std::string errorMsg = "Type error in function call '";
+							errorMsg += qualifiedName;
+							errorMsg += "': Parameter ";
+							errorMsg += std::to_string(j + 1);
+							errorMsg += " expects ";
+							errorMsg += stackValueTypeToString(expected);
+							errorMsg += ", but got ";
+							errorMsg += stackValueTypeToString(actual);
+							reportError(scoped, errorMsg.c_str());
+						}
+					}
+
+					// Consume the parameters from the stack
+					for (size_t j = 0; j < sig.consumes.size(); j++) {
+						typeStack.pop_back();
+					}
 
 					// Apply the produces effect
 					for (const auto& type : sig.produces) {

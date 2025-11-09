@@ -65,6 +65,7 @@ namespace Qd {
 		llvm::Function* stackSizeFn = nullptr;
 		llvm::Function* pushCallFn = nullptr;
 		llvm::Function* popCallFn = nullptr;
+		llvm::Function* checkStackFn = nullptr;
 
 		// Loop context for break/continue
 		struct LoopContext {
@@ -177,6 +178,14 @@ namespace Qd {
 		// qd_pop_call(qd_context* ctx) -> void
 		auto popCallFnTy = llvm::FunctionType::get(builder->getVoidTy(), {contextPtrTy}, false);
 		popCallFn = llvm::Function::Create(popCallFnTy, llvm::Function::ExternalLinkage, "qd_pop_call", *module);
+
+		// qd_check_stack(qd_context* ctx, size_t count, const qd_stack_type* types, const char* func_name) -> void
+		auto checkStackFnTy = llvm::FunctionType::get(builder->getVoidTy(),
+				{contextPtrTy, builder->getInt64Ty(), llvm::PointerType::getUnqual(*context),
+						llvm::PointerType::getUnqual(*context)},
+				false);
+		checkStackFn =
+				llvm::Function::Create(checkStackFnTy, llvm::Function::ExternalLinkage, "qd_check_stack", *module);
 
 		// For if statements, we need: qd_stack_pop and qd_stack_size
 		// qd_stack_pop(qd_stack* st, qd_stack_element_t* elem) -> qd_stack_error (i32)
@@ -803,6 +812,42 @@ namespace Qd {
 			std::string fullFuncName = namePrefix + "::" + funcNode->name();
 			auto funcNameStr = builder->CreateGlobalString(fullFuncName);
 			builder->CreateCall(pushCallFn, {ctx, funcNameStr});
+
+			// Generate type check for input parameters
+			if (!funcNode->inputParameters().empty()) {
+				// Create array of types
+				std::vector<llvm::Constant*> typeValues;
+				for (auto* paramNode : funcNode->inputParameters()) {
+					AstNodeParameter* param = static_cast<AstNodeParameter*>(paramNode);
+					std::string typeStr = param->typeString();
+					uint32_t typeValue;
+					if (typeStr.empty()) {
+						typeValue = 2; // QD_STACK_TYPE_PTR - untyped
+					} else if (typeStr == "i") {
+						typeValue = 0; // QD_STACK_TYPE_INT
+					} else if (typeStr == "f") {
+						typeValue = 1; // QD_STACK_TYPE_FLOAT
+					} else if (typeStr == "s") {
+						typeValue = 3; // QD_STACK_TYPE_STR
+					} else if (typeStr == "p") {
+						typeValue = 2; // QD_STACK_TYPE_PTR
+					} else {
+						typeValue = 2; // QD_STACK_TYPE_PTR - unknown type
+					}
+					typeValues.push_back(builder->getInt32(typeValue));
+				}
+
+				// Create global array constant
+				auto arrayType = llvm::ArrayType::get(builder->getInt32Ty(), typeValues.size());
+				auto arrayInit = llvm::ConstantArray::get(arrayType, typeValues);
+				auto globalArray = new llvm::GlobalVariable(
+						*module, arrayType, true, llvm::GlobalValue::PrivateLinkage, arrayInit, "input_types");
+
+				// Call qd_check_stack(ctx, count, types, func_name)
+				auto arrayPtr = builder->CreateBitCast(globalArray, llvm::PointerType::getUnqual(*context));
+				builder->CreateCall(checkStackFn,
+						{ctx, builder->getInt64(funcNode->inputParameters().size()), arrayPtr, funcNameStr});
+			}
 
 			// Set the return target for this function
 			currentFunctionReturnBlock = returnBB;
