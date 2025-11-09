@@ -5,6 +5,10 @@ MESON_FLAGS := -Dbuild_tests=true
 
 PREFIX ?= /usr
 
+# Use clang by default for better LLVM integration
+export CC  := clang
+export CXX := clang++
+
 .PHONY: all debug release tests valgrind examples format install uninstall clean
 
 all: debug
