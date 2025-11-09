@@ -14,7 +14,9 @@ debug:
 	meson compile -C $(BUILD_DIR_DEBUG)
 	@mkdir -p dist/bin dist/lib dist/include
 	@cp -f $(BUILD_DIR_DEBUG)/bin/quadc/quadc dist/bin/
-	@cp -f $(BUILD_DIR_DEBUG)/bin/quadc-llvm/quadc-llvm dist/bin/
+	@if [ -f $(BUILD_DIR_DEBUG)/bin/quadc-llvm/quadc-llvm ]; then \
+		cp -f $(BUILD_DIR_DEBUG)/bin/quadc-llvm/quadc-llvm dist/bin/; \
+	fi
 	@cp -f $(BUILD_DIR_DEBUG)/bin/quadfmt/quadfmt dist/bin/
 	@cp -f $(BUILD_DIR_DEBUG)/bin/quadlsp/quadlsp dist/bin/
 	@cp -f $(BUILD_DIR_DEBUG)/lib/qdrt/libqdrt.so dist/lib/
@@ -32,7 +34,9 @@ release:
 	meson compile -C $(BUILD_DIR_RELEASE)
 	@mkdir -p dist/bin dist/lib dist/include
 	@cp -f $(BUILD_DIR_RELEASE)/bin/quadc/quadc dist/bin/
-	@cp -f $(BUILD_DIR_RELEASE)/bin/quadc-llvm/quadc-llvm dist/bin/
+	@if [ -f $(BUILD_DIR_RELEASE)/bin/quadc-llvm/quadc-llvm ]; then \
+		cp -f $(BUILD_DIR_RELEASE)/bin/quadc-llvm/quadc-llvm dist/bin/; \
+	fi
 	@cp -f $(BUILD_DIR_RELEASE)/bin/quadfmt/quadfmt dist/bin/
 	@cp -f $(BUILD_DIR_RELEASE)/bin/quadlsp/quadlsp dist/bin/
 	@cp -f $(BUILD_DIR_RELEASE)/lib/qdrt/libqdrt.so dist/lib/
@@ -74,8 +78,12 @@ tests: debug
 	@echo "  Backend: quadc-llvm (LLVM)"
 	@echo "=========================================="
 	@echo ""
-	@echo "=== Running Quadrate language tests (quadc-llvm) ==="
-	@cd tests/qd && QUADRATE_ROOT=../../lib/stdqd/qd QUADC_LLVM=../../$(BUILD_DIR_DEBUG)/bin/quadc-llvm/quadc-llvm bash ../../tests/run_qd_tests_llvm.sh || true
+	@if [ -f $(BUILD_DIR_DEBUG)/bin/quadc-llvm/quadc-llvm ]; then \
+		echo "=== Running Quadrate language tests (quadc-llvm) ==="; \
+		cd tests/qd && QUADRATE_ROOT=../../lib/stdqd/qd QUADC_LLVM=../../$(BUILD_DIR_DEBUG)/bin/quadc-llvm/quadc-llvm bash ../../tests/run_qd_tests_llvm.sh || true; \
+	else \
+		echo "⚠️  Skipped (quadc-llvm not built - LLVM not available)"; \
+	fi
 	@echo ""
 	@echo "=========================================="
 	@echo "  Other Tests"
@@ -115,7 +123,9 @@ install: release
 	install -d $(DESTDIR)$(PREFIX)/lib
 	install -d $(DESTDIR)$(PREFIX)/include
 	install -m 755 dist/bin/quadc $(DESTDIR)$(PREFIX)/bin/
-	install -m 755 dist/bin/quadc-llvm $(DESTDIR)$(PREFIX)/bin/
+	@if [ -f dist/bin/quadc-llvm ]; then \
+		install -m 755 dist/bin/quadc-llvm $(DESTDIR)$(PREFIX)/bin/; \
+	fi
 	install -m 755 dist/bin/quadfmt $(DESTDIR)$(PREFIX)/bin/
 	install -m 755 dist/bin/quadlsp $(DESTDIR)$(PREFIX)/bin/
 	install -m 644 dist/lib/libqdrt.so $(DESTDIR)$(PREFIX)/lib/
@@ -133,7 +143,9 @@ install: release
 
 uninstall:
 	rm -f $(DESTDIR)$(PREFIX)/bin/quadc
-	rm -f $(DESTDIR)$(PREFIX)/bin/quadc-llvm
+	@if [ -f $(DESTDIR)$(PREFIX)/bin/quadc-llvm ]; then \
+		rm -f $(DESTDIR)$(PREFIX)/bin/quadc-llvm; \
+	fi
 	rm -f $(DESTDIR)$(PREFIX)/bin/quadfmt
 	rm -f $(DESTDIR)$(PREFIX)/bin/quadlsp
 	rm -f $(DESTDIR)$(PREFIX)/lib/libqdrt.so

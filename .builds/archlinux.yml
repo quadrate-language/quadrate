@@ -2,6 +2,7 @@ image: archlinux
 packages:
   - clang
   - cmake
+  - llvm
   - meson
   - nodejs
   - tree-sitter-cli
