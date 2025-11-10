@@ -18,8 +18,8 @@ debug:
 	meson compile -C $(BUILD_DIR_DEBUG)
 	@mkdir -p dist/bin dist/lib dist/include
 	@cp -f $(BUILD_DIR_DEBUG)/bin/quadc/quadc dist/bin/
-	@if [ -f $(BUILD_DIR_DEBUG)/bin/quadc-llvm/quadc-llvm ]; then \
-		cp -f $(BUILD_DIR_DEBUG)/bin/quadc-llvm/quadc-llvm dist/bin/; \
+	@if [ -f $(BUILD_DIR_DEBUG)/bin/quadc-c/quadc-c ]; then \
+		cp -f $(BUILD_DIR_DEBUG)/bin/quadc-c/quadc-c dist/bin/; \
 	fi
 	@cp -f $(BUILD_DIR_DEBUG)/bin/quadfmt/quadfmt dist/bin/
 	@cp -f $(BUILD_DIR_DEBUG)/bin/quadlsp/quadlsp dist/bin/
@@ -38,8 +38,8 @@ release:
 	meson compile -C $(BUILD_DIR_RELEASE)
 	@mkdir -p dist/bin dist/lib dist/include
 	@cp -f $(BUILD_DIR_RELEASE)/bin/quadc/quadc dist/bin/
-	@if [ -f $(BUILD_DIR_RELEASE)/bin/quadc-llvm/quadc-llvm ]; then \
-		cp -f $(BUILD_DIR_RELEASE)/bin/quadc-llvm/quadc-llvm dist/bin/; \
+	@if [ -f $(BUILD_DIR_RELEASE)/bin/quadc-c/quadc-c ]; then \
+		cp -f $(BUILD_DIR_RELEASE)/bin/quadc-c/quadc-c dist/bin/; \
 	fi
 	@cp -f $(BUILD_DIR_RELEASE)/bin/quadfmt/quadfmt dist/bin/
 	@cp -f $(BUILD_DIR_RELEASE)/bin/quadlsp/quadlsp dist/bin/
@@ -72,21 +72,21 @@ tests: debug
 	fi
 	@echo ""
 	@echo "=========================================="
-	@echo "  Backend: quadc (C Transpiler)"
+	@echo "  Backend: quadc (LLVM - Default)"
 	@echo "=========================================="
 	@echo ""
 	@echo "=== Running Quadrate language tests (quadc) ==="
 	QUADC=$(BUILD_DIR_DEBUG)/bin/quadc/quadc bash tests/run_qd_tests_parallel.sh || true
 	@echo ""
 	@echo "=========================================="
-	@echo "  Backend: quadc-llvm (LLVM)"
+	@echo "  Backend: quadc-c (Legacy C Transpiler)"
 	@echo "=========================================="
 	@echo ""
-	@if [ -f $(BUILD_DIR_DEBUG)/bin/quadc-llvm/quadc-llvm ]; then \
-		echo "=== Running Quadrate language tests (quadc-llvm) ==="; \
-		cd tests/qd && QUADRATE_ROOT=../../lib/stdqd/qd QUADRATE_LIBDIR=../../dist/lib QUADC_LLVM=../../$(BUILD_DIR_DEBUG)/bin/quadc-llvm/quadc-llvm bash ../../tests/run_qd_tests_llvm.sh || true; \
+	@if [ -f $(BUILD_DIR_DEBUG)/bin/quadc-c/quadc-c ]; then \
+		echo "=== Running Quadrate language tests (quadc-c) ==="; \
+		QUADC=$(BUILD_DIR_DEBUG)/bin/quadc-c/quadc-c bash tests/run_qd_tests_parallel.sh || true; \
 	else \
-		echo "⚠️  Skipped (quadc-llvm not built - LLVM not available)"; \
+		echo "⚠️  Skipped (quadc-c not built)"; \
 	fi
 	@echo ""
 	@echo "=========================================="
@@ -104,7 +104,7 @@ valgrind: debug
 	@echo "=== Running C/C++ unit tests with valgrind ==="
 	meson test -C $(BUILD_DIR_DEBUG) test_runtime test_ast test_semantic_validator stdqd --setup=valgrind --print-errorlogs
 	@echo ""
-	@echo "=== Running Quadrate language tests with valgrind ==="
+	@echo "=== Running Quadrate language tests with valgrind (quadc - LLVM) ==="
 	QUADC=$(BUILD_DIR_DEBUG)/bin/quadc/quadc bash tests/run_qd_tests_valgrind_parallel.sh
 	@echo ""
 	@echo "=== Running LSP tests with valgrind ==="
@@ -127,8 +127,8 @@ install: release
 	install -d $(DESTDIR)$(PREFIX)/lib
 	install -d $(DESTDIR)$(PREFIX)/include
 	install -m 755 dist/bin/quadc $(DESTDIR)$(PREFIX)/bin/
-	@if [ -f dist/bin/quadc-llvm ]; then \
-		install -m 755 dist/bin/quadc-llvm $(DESTDIR)$(PREFIX)/bin/; \
+	@if [ -f dist/bin/quadc-c ]; then \
+		install -m 755 dist/bin/quadc-c $(DESTDIR)$(PREFIX)/bin/; \
 	fi
 	install -m 755 dist/bin/quadfmt $(DESTDIR)$(PREFIX)/bin/
 	install -m 755 dist/bin/quadlsp $(DESTDIR)$(PREFIX)/bin/
@@ -147,8 +147,8 @@ install: release
 
 uninstall:
 	rm -f $(DESTDIR)$(PREFIX)/bin/quadc
-	@if [ -f $(DESTDIR)$(PREFIX)/bin/quadc-llvm ]; then \
-		rm -f $(DESTDIR)$(PREFIX)/bin/quadc-llvm; \
+	@if [ -f $(DESTDIR)$(PREFIX)/bin/quadc-c ]; then \
+		rm -f $(DESTDIR)$(PREFIX)/bin/quadc-c; \
 	fi
 	rm -f $(DESTDIR)$(PREFIX)/bin/quadfmt
 	rm -f $(DESTDIR)$(PREFIX)/bin/quadlsp

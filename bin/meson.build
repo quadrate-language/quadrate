@@ -1,4 +1,4 @@
 subdir('quadc')
-subdir('quadc-llvm')
+subdir('quadc-c')
 subdir('quadfmt')
 subdir('quadlsp')

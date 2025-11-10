@@ -1,13 +1,18 @@
-quadc_sources = files(
+# quadc - LLVM backend compiler for Quadrate (default)
+
+if llvmgen_dep.found()
+	quadc_sources = files(
 		'src/main.cc',
-)
+	)
 
-# Declare as a global variable so it can be used by tests
-quadc_exe = executable('quadc',
+	quadc_exe = executable('quadc',
 		quadc_sources,
-		dependencies: [cgen_dep, qc_dep],
+		dependencies: [qc_dep, llvmgen_dep],
 		install: false
-)
+	)
 
-# Make available to parent scopes
-meson.override_find_program('quadc', quadc_exe)
+	# Make available to parent scopes
+	meson.override_find_program('quadc', quadc_exe)
+else
+	error('LLVM is required to build quadc (the default compiler)')
+endif

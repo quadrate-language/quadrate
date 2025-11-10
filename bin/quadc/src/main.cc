@@ -1,55 +1,23 @@
 #include "cxxopts.hpp"
 #include <algorithm>
 #include <cerrno>
-#include <cgen/compiler.h>
-#include <cgen/linker.h>
-#include <cgen/process.h>
-#include <cgen/source_file.h>
-#include <cgen/transpiler.h>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
+#include <llvmgen/generator.h>
+#include <qc/ast.h>
+#include <qc/ast_node.h>
+#include <qc/ast_node_use.h>
 #include <qc/colors.h>
+#include <qc/semantic_validator.h>
 #include <random>
 #include <set>
 #include <sstream>
+#include <unordered_map>
 #include <unordered_set>
+#include <vector>
 
-#define QUADC_VERSION "0.1.0"
-
-std::string getCompilerFlags() {
-	// Optimization flags for tiny executables
-	std::string opts = "-Os -flto -ffunction-sections -fdata-sections -fno-asynchronous-unwind-tables -fno-ident";
-
-	if (std::filesystem::exists("./dist/include")) {
-		return opts + " -I./dist/include";
-	}
-	const char* home = getenv("HOME");
-	if (home) {
-		std::filesystem::path localInclude = std::filesystem::path(home) / ".local" / "include";
-		if (std::filesystem::exists(localInclude)) {
-			return opts + " -I" + localInclude.string();
-		}
-	}
-	return opts;
-}
-
-std::string getLinkerFlags() {
-	// Optimization flags for tiny executables
-	std::string opts = "-flto -Wl,--gc-sections -s";
-
-	if (std::filesystem::exists("./dist/lib")) {
-		return opts + " -L./dist/lib -Wl,-rpath,./dist/lib -lqdrt -lm -pthread";
-	}
-	const char* home = getenv("HOME");
-	if (home) {
-		std::filesystem::path localLib = std::filesystem::path(home) / ".local" / "lib";
-		if (std::filesystem::exists(localLib)) {
-			return opts + " -L" + localLib.string() + " -Wl,-rpath," + localLib.string() + " -lqdrt -lm -pthread";
-		}
-	}
-	return opts + " -lqdrt -lm -pthread";
-}
+#define QUADC_LLVM_VERSION "0.1.0"
 
 std::string createTempDir(bool useCwd) {
 	std::random_device rd;
@@ -86,12 +54,12 @@ std::string createTempDir(bool useCwd) {
 		}
 
 		// For other errors, fail immediately
-		std::cerr << "quadc: failed to create temporary directory: " << ec.message() << std::endl;
+		std::cerr << "quadc-llvm: failed to create temporary directory: " << ec.message() << std::endl;
 		exit(1);
 	}
 
 	// Failed to create directory after multiple attempts
-	std::cerr << "quadc: failed to create temporary directory after 10 attempts" << std::endl;
+	std::cerr << "quadc-llvm: failed to create temporary directory after 10 attempts" << std::endl;
 	exit(1);
 }
 
@@ -192,8 +160,18 @@ std::string findModuleFile(const std::string& moduleName, const std::string& sou
 	return ""; // Not found
 }
 
+// Helper structure to hold parsed AST data
+struct ParsedModule {
+	std::string name;
+	std::string package;
+	std::string sourceDirectory;
+	std::unique_ptr<Qd::Ast> ast;
+	Qd::IAstNode* root;
+	std::vector<std::string> importedModules;
+};
+
 int main(int argc, char** argv) {
-	cxxopts::Options options("quadc", "Quadrate compiler");
+	cxxopts::Options options("quadc-llvm", "Quadrate compiler (LLVM backend)");
 	options.add_options()("h,help", "Display help.")("v,version", "Display compiler version.")(
 			"o", "Output filename", cxxopts::value<std::string>()->default_value("main"))("save-temps",
 			"Save temporary files", cxxopts::value<bool>()->default_value("false")->implicit_value("true"))("verbose",
@@ -201,8 +179,7 @@ int main(int argc, char** argv) {
 			cxxopts::value<bool>()->default_value("false")->implicit_value("true"))("dump-tokens", "Print tokens",
 			cxxopts::value<bool>()->default_value("false")->implicit_value("true"))("r,run", "Run the compiled program",
 			cxxopts::value<bool>()->default_value("false")->implicit_value("true"))(
-			"shared", "Build a shared library", cxxopts::value<bool>()->default_value("false")->implicit_value("true"))(
-			"static", "Build a static library", cxxopts::value<bool>()->default_value("false")->implicit_value("true"))(
+			"dump-ir", "Print LLVM IR", cxxopts::value<bool>()->default_value("false")->implicit_value("true"))(
 			"files", "Input files", cxxopts::value<std::vector<std::string>>());
 
 	options.parse_positional({"files"});
@@ -214,7 +191,7 @@ int main(int argc, char** argv) {
 	}
 
 	if (result.count("version")) {
-		std::cout << QUADC_VERSION << std::endl;
+		std::cout << QUADC_LLVM_VERSION << std::endl;
 		return 0;
 	}
 
@@ -223,23 +200,7 @@ int main(int argc, char** argv) {
 	Qd::Colors::setEnabled(!noColors);
 
 	std::string outputFilename = result["o"].as<std::string>();
-	const bool shared = result["shared"].as<bool>();
-	const bool statik = result["static"].as<bool>();
 	const bool run = result["run"].as<bool>();
-
-	if (shared && statik) {
-		std::cerr << "quadc: cannot build both shared and static library at the same time." << std::endl;
-		return 1;
-	}
-	if (run && (shared || statik)) {
-		std::cerr << "quadc: cannot run a library" << std::endl;
-		return 1;
-	}
-	if (shared) {
-		outputFilename = "lib" + outputFilename + ".so";
-	} else if (statik) {
-		outputFilename = "lib" + outputFilename + ".a";
-	}
 
 	// Check if we should preserve temp files (needed for temp dir location)
 	const bool saveTemps = result["save-temps"].as<bool>();
@@ -269,32 +230,79 @@ int main(int argc, char** argv) {
 	// Check if token dumping is enabled
 	const bool dumpTokens = result["dump-tokens"].as<bool>();
 
+	// Check if IR dumping is enabled
+	const bool dumpIR = result["dump-ir"].as<bool>();
+
 	if (result.count("files")) {
 		auto files = result["files"].as<std::vector<std::string>>();
-		Qd::Transpiler transpiler;
-		std::vector<Qd::SourceFile> transpiledSources;
+		std::vector<ParsedModule> parsedModules;
+
+		// Parse all main source files
 		for (const auto& file : files) {
 			std::ifstream qdFile(file);
 			if (!qdFile.is_open()) {
-				std::cerr << "quadc: cannot find " << file << ": No such file or directory" << std::endl;
+				std::cerr << "quadc-llvm: cannot find " << file << ": No such file or directory" << std::endl;
 				continue;
 			}
 			qdFile.seekg(0, std::ios::end);
 			auto pos = qdFile.tellg();
 			qdFile.seekg(0);
 			if (pos < 0) {
-				std::cerr << "quadc: error reading " << file << std::endl;
+				std::cerr << "quadc-llvm: error reading " << file << std::endl;
 				continue;
 			}
 			size_t size = static_cast<size_t>(pos);
 			std::string buffer(size, ' ');
 			qdFile.read(&buffer[0], static_cast<std::streamsize>(size));
-			// Pass the full path for semantic validation (needed for local module resolution)
-			if (auto ts = transpiler.emit(file.c_str(), "main", buffer.c_str(), verbose, dumpTokens)) {
-				transpiledSources.push_back(*ts);
-			} else {
+
+			// Parse the source
+			auto ast = std::make_unique<Qd::Ast>();
+			auto root = ast->generate(buffer.c_str(), dumpTokens, file.c_str());
+			if (!root || ast->hasErrors()) {
+				std::cerr << "quadc-llvm: parsing failed for " << file << " with " << ast->errorCount() << " errors"
+						  << std::endl;
 				return 1;
 			}
+
+			// Semantic validation - catch errors before LLVM generation
+			Qd::SemanticValidator validator;
+			size_t errorCount = validator.validate(root, file.c_str());
+			if (errorCount > 0) {
+				// Validation failed - do not proceed
+				return 1;
+			}
+
+			// Get source directory for module resolution
+			std::filesystem::path filePath(file);
+			std::string sourceDirectory = filePath.parent_path().string();
+			if (sourceDirectory.empty()) {
+				sourceDirectory = ".";
+			}
+
+			ParsedModule module;
+			module.name = file;
+			module.package = "main";
+			module.sourceDirectory = sourceDirectory;
+			module.root = root;
+			module.ast = std::move(ast);
+
+			// Collect imported modules
+			std::function<void(Qd::IAstNode*)> collectImports = [&](Qd::IAstNode* node) {
+				if (!node) {
+					return;
+				}
+				// Check for USE statement nodes (type == USE_STATEMENT)
+				if (node->type() == Qd::IAstNode::Type::USE_STATEMENT) {
+					auto* useNode = static_cast<Qd::AstNodeUse*>(node);
+					module.importedModules.push_back(useNode->module());
+				}
+				for (size_t i = 0; i < node->childCount(); i++) {
+					collectImports(node->child(i));
+				}
+			};
+			collectImports(root);
+
+			parsedModules.push_back(std::move(module));
 		}
 
 		// Collect all imported modules from main sources
@@ -304,25 +312,26 @@ int main(int argc, char** argv) {
 		std::unordered_map<std::string, std::string> moduleToPackage;	// moduleName -> packageName
 		std::unordered_map<std::string, std::string> moduleToSourceDir; // moduleName -> sourceDirectory
 		std::string sourceDirectory;
-		for (const auto& source : transpiledSources) {
-			for (const auto& module : source.importedModules) {
-				allModules.insert(module);
+		for (const auto& module : parsedModules) {
+			for (const auto& importedModule : module.importedModules) {
+				allModules.insert(importedModule);
 
 				// Check if this is a .qd file import
-				bool isDirectFile = module.size() >= 3 && module.substr(module.size() - 3) == ".qd";
+				bool isDirectFile =
+						importedModule.size() >= 3 && importedModule.substr(importedModule.size() - 3) == ".qd";
 				if (isDirectFile) {
 					// .qd file imports use the parent package name
-					moduleToPackage[module] = source.package;
-					moduleToSourceDir[module] = source.sourceDirectory;
+					moduleToPackage[importedModule] = module.package;
+					moduleToSourceDir[importedModule] = module.sourceDirectory;
 				} else {
 					// Regular module imports get their own package
-					moduleToPackage[module] = module;
-					moduleToSourceDir[module] = source.sourceDirectory;
+					moduleToPackage[importedModule] = importedModule;
+					moduleToSourceDir[importedModule] = module.sourceDirectory;
 				}
 			}
 			// Use source directory from first source (they should all be the same for now)
 			if (sourceDirectory.empty()) {
-				sourceDirectory = source.sourceDirectory;
+				sourceDirectory = module.sourceDirectory;
 			}
 		}
 
@@ -365,268 +374,156 @@ int main(int argc, char** argv) {
 			std::string buffer(size, ' ');
 			moduleFile.read(&buffer[0], static_cast<std::streamsize>(size));
 
-			// Transpile module with the determined package name
-			if (auto ts = transpiler.emit(
-						moduleFilePath.c_str(), packageName.c_str(), buffer.c_str(), verbose, false)) {
-				// Add any modules imported by this module to the set
-				for (const auto& transitiveModule : ts->importedModules) {
-					if (!processedModules.count(transitiveModule)) {
-						allModules.insert(transitiveModule);
+			// Parse the module
+			auto ast = std::make_unique<Qd::Ast>();
+			auto root = ast->generate(buffer.c_str(), false, moduleFilePath.c_str());
+			if (!root || ast->hasErrors()) {
+				std::cerr << "quadc-llvm: failed to parse module: " << moduleName << std::endl;
+				return 1;
+			}
 
-						// Determine package for transitive imports
-						bool isDirectFile = transitiveModule.size() >= 3 &&
-											transitiveModule.substr(transitiveModule.size() - 3) == ".qd";
-						if (isDirectFile) {
-							// .qd file imports use the same package as the module that imported them
-							moduleToPackage[transitiveModule] = packageName;
-							moduleToSourceDir[transitiveModule] = ts->sourceDirectory;
-						} else {
-							// Regular module imports get their own package and search from original source dir
-							moduleToPackage[transitiveModule] = transitiveModule;
-							moduleToSourceDir[transitiveModule] = sourceDirectory;
-						}
-					}
+			// Semantic validation - catch errors before LLVM generation
+			Qd::SemanticValidator validator;
+			size_t errorCount = validator.validate(root, moduleFilePath.c_str());
+			if (errorCount > 0) {
+				// Validation failed - do not proceed
+				return 1;
+			}
+
+			// Get module's source directory
+			std::filesystem::path moduleFilePathObj(moduleFilePath);
+			std::string moduleFileSourceDir = moduleFilePathObj.parent_path().string();
+			if (moduleFileSourceDir.empty()) {
+				moduleFileSourceDir = ".";
+			}
+
+			ParsedModule parsedMod;
+			parsedMod.name = moduleName;
+			parsedMod.package = packageName;
+			parsedMod.sourceDirectory = moduleFileSourceDir;
+			parsedMod.root = root;
+			parsedMod.ast = std::move(ast);
+
+			// Collect imports from this module
+			std::function<void(Qd::IAstNode*)> collectImports = [&](Qd::IAstNode* node) {
+				if (!node) {
+					return;
 				}
-				transpiledSources.push_back(*ts);
-			} else {
-				std::cerr << "quadc: failed to transpile module: " << moduleName << std::endl;
-				return 1;
-			}
-		}
+				if (node->type() == Qd::IAstNode::Type::USE_STATEMENT) {
+					auto* useNode = static_cast<Qd::AstNodeUse*>(node);
+					parsedMod.importedModules.push_back(useNode->module());
+				}
+				for (size_t i = 0; i < node->childCount(); i++) {
+					collectImports(node->child(i));
+				}
+			};
+			collectImports(root);
 
-		// Group sources by package for header generation
-		std::unordered_map<std::string, std::vector<size_t>> packageSources;
-		for (size_t i = 0; i < transpiledSources.size(); i++) {
-			packageSources[transpiledSources[i].package].push_back(i);
-		}
+			// Add any modules imported by this module to the set
+			for (const auto& transitiveModule : parsedMod.importedModules) {
+				if (!processedModules.count(transitiveModule)) {
+					allModules.insert(transitiveModule);
 
-		for (auto& source : transpiledSources) {
-			std::filesystem::path packageDir = std::filesystem::path(outputDir) / source.package;
-			std::error_code ec;
-			std::filesystem::create_directory(packageDir, ec);
-			// Only fail if error is not "already exists"
-			if (ec && ec.value() != EEXIST) {
-				std::cerr << "quadc: failed to create directory " << packageDir << ": " << ec.message() << std::endl;
-				return 1;
-			}
-			std::filesystem::path filePath = std::filesystem::path(outputDir) / source.filename;
-			std::ofstream outFile(filePath);
-			outFile << source.content;
-			outFile.close();
-		}
-
-		// Generate header files for modules (one per package)
-		for (const auto& [packageName, sourceIndices] : packageSources) {
-			if (packageName == "main") {
-				continue; // Skip main package
-			}
-
-			std::filesystem::path packageDir = std::filesystem::path(outputDir) / packageName;
-			std::stringstream headerContent;
-			std::string guardName = packageName;
-			// Convert to uppercase for header guard
-			std::transform(guardName.begin(), guardName.end(), guardName.begin(), ::toupper);
-
-			headerContent << "#ifndef " << guardName << "_MODULE_H\n";
-			headerContent << "#define " << guardName << "_MODULE_H\n\n";
-			headerContent << "#include <qdrt/runtime.h>\n\n";
-
-			// Collect all function declarations and definitions from all sources in this package
-			std::set<std::string> functionSignatures; // Regular function declarations
-			std::set<std::string> externDeclarations; // Extern declarations (for imported functions)
-			std::set<std::string> inlineFunctions;	  // Static inline functions with full body
-			std::set<std::string> constantDefines;	  // #define constants
-			for (size_t idx : sourceIndices) {
-				const auto& source = transpiledSources[idx];
-				std::stringstream ss(source.content);
-				std::string line;
-				std::string currentFunction;
-				bool inStaticInline = false;
-				int braceCount = 0;
-
-				while (std::getline(ss, line)) {
-					// Capture #define constants for this package
-					if (line.find("#define " + packageName + "_") != std::string::npos) {
-						std::string constDef = line;
-						constDef.erase(0, constDef.find_first_not_of(" \t"));
-						constantDefines.insert(constDef);
-					}
-					// Capture extern declarations for imported functions
-					else if (line.find("extern qd_exec_result qd_") != std::string::npos) {
-						std::string externDecl = line;
-						externDecl.erase(0, externDecl.find_first_not_of(" \t"));
-						externDeclarations.insert(externDecl);
-					}
-					// Check if this is the start of a static inline function
-					else if (line.find("static inline qd_exec_result usr_" + packageName + "_") != std::string::npos) {
-						inStaticInline = true;
-						currentFunction = line + "\n";
-						// Count braces in this line
-						for (char c : line) {
-							if (c == '{') {
-								braceCount++;
-							}
-							if (c == '}') {
-								braceCount--;
-							}
-						}
-						if (braceCount == 0) {
-							// Single-line function
-							inlineFunctions.insert(currentFunction);
-							inStaticInline = false;
-							currentFunction.clear();
-						}
-					} else if (inStaticInline) {
-						currentFunction += line + "\n";
-						// Count braces
-						for (char c : line) {
-							if (c == '{') {
-								braceCount++;
-							}
-							if (c == '}') {
-								braceCount--;
-							}
-						}
-						if (braceCount == 0) {
-							// End of function
-							inlineFunctions.insert(currentFunction);
-							inStaticInline = false;
-							currentFunction.clear();
-						}
-					} else if (line.find("qd_exec_result usr_" + packageName + "_") != std::string::npos) {
-						// Regular function declaration
-						size_t parenPos = line.find("(qd_context* ctx)");
-						if (parenPos != std::string::npos) {
-							std::string funcSig = line.substr(0, parenPos + 17); // +17 for "(qd_context* ctx)"
-							// Remove leading whitespace
-							funcSig.erase(0, funcSig.find_first_not_of(" \t"));
-							functionSignatures.insert(funcSig);
-						}
+					// Determine package for transitive imports
+					bool isDirectFile = transitiveModule.size() >= 3 &&
+										transitiveModule.substr(transitiveModule.size() - 3) == ".qd";
+					if (isDirectFile) {
+						// .qd file imports use the same package as the module that imported them
+						moduleToPackage[transitiveModule] = packageName;
+						moduleToSourceDir[transitiveModule] = moduleFileSourceDir;
+					} else {
+						// Regular module imports get their own package and search from original source dir
+						moduleToPackage[transitiveModule] = transitiveModule;
+						moduleToSourceDir[transitiveModule] = sourceDirectory;
 					}
 				}
 			}
 
-			// Write constant defines first
-			for (const auto& constDef : constantDefines) {
-				headerContent << constDef << "\n";
-			}
-			if (!constantDefines.empty()) {
-				headerContent << "\n";
-			}
-
-			// Write extern declarations
-			for (const auto& externDecl : externDeclarations) {
-				headerContent << externDecl << "\n";
-			}
-			if (!externDeclarations.empty()) {
-				headerContent << "\n";
-			}
-
-			// Write all inline function definitions
-			for (const auto& inlineFunc : inlineFunctions) {
-				headerContent << inlineFunc << "\n";
-			}
-
-			// Write all regular function declarations
-			for (const auto& funcSig : functionSignatures) {
-				headerContent << funcSig << ";\n";
-			}
-
-			headerContent << "\n#endif // " << guardName << "_MODULE_H\n";
-
-			// Write header file
-			std::filesystem::path headerPath = packageDir / "module.h";
-			std::ofstream headerFile(headerPath);
-			headerFile << headerContent.str();
-			headerFile.close();
+			parsedModules.push_back(std::move(parsedMod));
 		}
 
-		// Generate main.c before compiling any sources
-		if (!shared && !statik) {
-			const char* mainFile = "// This file is automatically generated by the Quadrate compiler.\n"
-								   "// Do not edit manually.\n\n"
-								   "#include <qd/qd.h>\n\n"
-								   "extern qd_exec_result usr_main_main(qd_context* ctx);\n\n"
-								   "int main(int argc, char** argv) {\n"
-								   "    qd_context* ctx = qd_create_context(1024);\n"
-								   "    ctx->argc = argc;\n"
-								   "    ctx->argv = argv;\n"
-								   "    qd_exec_result res = usr_main_main(ctx);\n"
-								   "    qd_free_context(ctx);\n"
-								   "    return res.code;\n"
-								   "}\n";
-			std::filesystem::path mainFilePath = std::filesystem::path(outputDir) / "main.c";
-			std::ofstream mainFileStream(mainFilePath);
-			mainFileStream << mainFile;
-			mainFileStream.close();
-		}
+		// Now generate LLVM IR from all parsed modules
+		Qd::LlvmGenerator generator;
 
-		std::vector<TranslationUnit> translationUnits;
-		Qd::Compiler compiler;
-		// Add temp directory to include path so gcc can find module headers
-		std::string compilerFlags = getCompilerFlags() + " -I" + outputDir;
-		for (auto& source : transpiledSources) {
-			if (auto tu = compiler.compile(
-						(std::filesystem::path(outputDir) / source.filename).c_str(), compilerFlags.c_str(), verbose)) {
-				translationUnits.push_back(*tu);
-			} else {
-				std::cerr << "quadc: compilation failed for " << source.filename << std::endl;
-				return 1;
+		// Add all dependency modules in REVERSE order (dependencies first)
+		// Modules were loaded in breadth-first order (main first, then dependents, then their dependencies)
+		// but we need to generate them depth-first (deep dependencies first, then their dependents)
+		for (auto it = parsedModules.rbegin(); it != parsedModules.rend(); ++it) {
+			if (it->package != "main") {
+				generator.addModuleAST(it->package, it->root);
 			}
 		}
 
-		// Compile main.c only if it was generated (not building shared/static library)
-		if (!shared && !statik) {
-			std::filesystem::path mainCPath = std::filesystem::path(outputDir) / "main.c";
-			if (auto tu = compiler.compile(mainCPath.string().c_str(), compilerFlags.c_str(), verbose)) {
-				translationUnits.push_back(*tu);
-			} else {
-				std::cerr << "quadc: compilation failed for main.c" << std::endl;
-				return 1;
+		// Generate main module last
+		Qd::IAstNode* mainRoot = nullptr;
+		for (auto& module : parsedModules) {
+			if (module.package == "main") {
+				mainRoot = module.root;
+				break;
 			}
 		}
 
-		// Collect all imported libraries from all transpiled sources
-		std::unordered_set<std::string> allImportedLibraries;
-		for (const auto& source : transpiledSources) {
-			for (const auto& lib : source.importedLibraries) {
-				allImportedLibraries.insert(lib);
-			}
-		}
-
-		// Convert library names to linker flags (libstdqd.so -> -lstdqd)
-		std::string importedLibraryFlags;
-		for (const auto& lib : allImportedLibraries) {
-			// Extract library name from filename (e.g., "libstdqd.so" -> "stdqd")
-			std::string libName = lib;
-			if (libName.find("lib") == 0) {
-				libName = libName.substr(3); // Remove "lib" prefix
-			}
-			// Remove .so or .a extension
-			size_t dotPos = libName.find_last_of('.');
-			if (dotPos != std::string::npos) {
-				libName = libName.substr(0, dotPos);
-			}
-			importedLibraryFlags += " -l" + libName;
-		}
-
-		Qd::Linker linker;
-		std::string linkerFlags = getLinkerFlags() + importedLibraryFlags;
-		bool linkSuccess = linker.link(translationUnits, outputPath.c_str(), linkerFlags.c_str(), verbose);
-		if (!linkSuccess) {
-			std::cerr << "quadc: linking failed" << std::endl;
+		if (!mainRoot) {
+			std::cerr << "quadc-llvm: no main module found" << std::endl;
 			return 1;
+		}
+
+		if (!generator.generate(mainRoot, "main")) {
+			std::cerr << "quadc-llvm: LLVM generation failed" << std::endl;
+			return 1;
+		}
+
+		// Print IR to stdout if requested
+		if (dumpIR || verbose) {
+			std::cout << "=== Generated LLVM IR ===" << std::endl;
+			std::cout << generator.getIRString() << std::endl;
+		}
+
+		// Write IR to file if save-temps is enabled
+		if (saveTemps) {
+			std::string irFile = (std::filesystem::path(outputDir) / (outputFilename + ".ll")).string();
+			if (!generator.writeIR(irFile)) {
+				std::cerr << "quadc-llvm: failed to write IR file" << std::endl;
+				return 1;
+			}
+			if (verbose) {
+				std::cout << "Written IR to " << irFile << std::endl;
+			}
+		}
+
+		// Write executable
+		if (!generator.writeExecutable(outputPath)) {
+			std::cerr << "quadc-llvm: failed to create executable" << std::endl;
+			return 1;
+		}
+
+		if (verbose) {
+			std::cout << "Written executable to " << outputPath << std::endl;
 		}
 
 		// Run the program if requested
 		if (run) {
-			// Execute the compiled binary safely
-			std::vector<std::string> args; // No arguments to the program
-			int exitCode = Qd::executeProcess(outputPath, args);
-			if (exitCode != 0) {
-				std::cerr << "quadc: program exited with code " << exitCode << std::endl;
-				return exitCode;
+			if (verbose) {
+				std::cout << "\n=== Running " << outputPath << " ===" << std::endl;
 			}
+			// Execute using system() and get exit code
+			int status = system(outputPath.c_str());
+			if (status == -1) {
+				std::cerr << "quadc-llvm: failed to execute program" << std::endl;
+				return 1;
+			}
+			// Check if process exited normally or was killed by signal
+			int exitCode;
+			if (WIFEXITED(status)) {
+				exitCode = WEXITSTATUS(status);
+			} else {
+				// Process was terminated by a signal
+				exitCode = -1;
+			}
+			if (exitCode != 0) {
+				std::cerr << "quadc-llvm: program exited with code " << exitCode << std::endl;
+			}
+			return exitCode;
 		}
 	}
 
