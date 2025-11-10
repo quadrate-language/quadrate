@@ -1,3 +1,4 @@
+#include <cstdint>
 #include <cstdlib>
 #include <cstring>
 #include <fstream>
@@ -13,12 +14,37 @@
 #include <qc/ast_node_literal.h>
 #include <qc/ast_node_parameter.h>
 #include <qc/ast_node_scoped.h>
+#include <qc/ast_node_switch.h>
 #include <qc/ast_node_use.h>
 #include <qc/colors.h>
 #include <qc/semantic_validator.h>
 #include <sstream>
 
 namespace Qd {
+
+	// Helper function to serialize a case value for comparison
+	static std::string serializeCaseValue(IAstNode* node) {
+		if (!node) {
+			return "";
+		}
+
+		// Handle literals
+		if (node->type() == IAstNode::Type::LITERAL) {
+			AstNodeLiteral* lit = static_cast<AstNodeLiteral*>(node);
+			switch (lit->literalType()) {
+			case AstNodeLiteral::LiteralType::INTEGER:
+				return "int:" + lit->value();
+			case AstNodeLiteral::LiteralType::FLOAT:
+				return "float:" + lit->value();
+			case AstNodeLiteral::LiteralType::STRING:
+				return "string:" + lit->value();
+			}
+		}
+
+		// For other node types, use a generic representation
+		// This is a simple approach - could be enhanced for complex expressions
+		return "node:" + std::to_string(reinterpret_cast<std::uintptr_t>(node));
+	}
 
 	// List of built-in instructions (must match ast.cc)
 	static const char* BUILTIN_INSTRUCTIONS[] = {"%", "*", "+", "-", ".", "/", "abs", "acos", "add", "and", "asin",
@@ -607,6 +633,34 @@ namespace Qd {
 				reportError(node, "continue statement not within a loop");
 			}
 			return;
+		}
+
+		// Check if this is a switch statement
+		if (node->type() == IAstNode::Type::SWITCH_STATEMENT) {
+			AstNodeSwitchStatement* switchStmt = static_cast<AstNodeSwitchStatement*>(node);
+
+			// Validate: switch must have at least one case
+			if (switchStmt->cases().empty()) {
+				reportError(switchStmt, "Switch statement must have at least one case");
+			}
+
+			// Validate: no duplicate case values
+			std::unordered_set<std::string> seenValues;
+			for (const auto* caseNode : switchStmt->cases()) {
+				if (!caseNode->isDefault() && caseNode->value()) {
+					// Get the case value as a string for comparison
+					// We need to serialize the AST node to compare values
+					std::string valueStr = serializeCaseValue(caseNode->value());
+
+					if (seenValues.find(valueStr) != seenValues.end()) {
+						std::string errorMsg = "Duplicate case value '";
+						errorMsg += valueStr;
+						errorMsg += "' in switch statement";
+						reportError(static_cast<IAstNode*>(const_cast<AstNodeCase*>(caseNode)), errorMsg.c_str());
+					}
+					seenValues.insert(valueStr);
+				}
+			}
 		}
 
 		// Check if this is an identifier (function call)

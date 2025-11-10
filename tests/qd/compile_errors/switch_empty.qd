@@ -1,0 +1,7 @@
+// Test: switch statement with no cases
+
+fn main() {
+	1 switch {
+	}
+	. nl
+}

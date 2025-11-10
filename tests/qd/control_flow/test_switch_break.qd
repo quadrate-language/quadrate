@@ -1,0 +1,38 @@
+// Test: switch statement with break in cases
+
+fn main() {
+	// Test that break exits the switch (200 should not print)
+	5 switch {
+		5 {
+			100 . nl
+			break
+			200 . nl
+		}
+		_ {
+			999 . nl
+		}
+	}
+
+	// Test break in default case (400 should not print)
+	10 switch {
+		1 {
+			10 . nl
+		}
+		_ {
+			300 . nl
+			break
+			400 . nl
+		}
+	}
+
+	// Test switch without break (both 500 and 600 should print)
+	7 switch {
+		7 {
+			500 . nl
+			600 . nl
+		}
+		_ {
+			999 . nl
+		}
+	}
+}
