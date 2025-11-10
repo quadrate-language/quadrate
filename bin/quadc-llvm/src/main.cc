@@ -512,8 +512,15 @@ int main(int argc, char** argv) {
 				std::cerr << "quadc-llvm: failed to execute program" << std::endl;
 				return 1;
 			}
-			int exitCode = WEXITSTATUS(status);
-			if (exitCode != 0 && verbose) {
+			// Check if process exited normally or was killed by signal
+			int exitCode;
+			if (WIFEXITED(status)) {
+				exitCode = WEXITSTATUS(status);
+			} else {
+				// Process was terminated by a signal
+				exitCode = -1;
+			}
+			if (exitCode != 0) {
 				std::cerr << "quadc-llvm: program exited with code " << exitCode << std::endl;
 			}
 			return exitCode;

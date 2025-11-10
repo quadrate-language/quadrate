@@ -161,7 +161,7 @@ namespace Qd {
 
 	void traverse(IAstNode* node, const char* packageName, std::stringstream& out, int indent, int& varCounter,
 			const std::string& currentForIterator = "", std::vector<IAstNode*>* deferStatements = nullptr,
-			const std::unordered_map<std::string, bool>& throwsMap = {}) {
+			const std::unordered_map<std::string, bool>& throwsMap = {}, bool currentFunctionIsFallible = false) {
 		if (node == nullptr) {
 			return;
 		}
@@ -203,10 +203,13 @@ namespace Qd {
 					<< ", input_types, __func__);\n\n";
 			}
 
+			// Check if this function is fallible
+			bool isFallible = funcDecl->throws();
+
 			// Collect defer statements while traversing function body
 			std::vector<IAstNode*> localDeferStatements;
 			traverse(funcDecl->body(), packageName, out, indent + 1, varCounter, currentForIterator,
-					&localDeferStatements, throwsMap);
+					&localDeferStatements, throwsMap, isFallible);
 
 			// Emit defer statements in reverse order (LIFO) before done label
 			out << "\n" << makeIndent(indent) << "qd_lbl_done:;\n";
@@ -219,18 +222,22 @@ namespace Qd {
 					if (child && child->type() == IAstNode::Type::BLOCK) {
 						for (size_t j = 0; j < child->childCount(); j++) {
 							traverse(child->child(j), packageName, out, indent + 1, varCounter, currentForIterator,
-									nullptr, throwsMap);
+									nullptr, throwsMap, isFallible);
 						}
 					} else {
 						traverse(child, packageName, out, indent + 1, varCounter, currentForIterator, nullptr,
-								throwsMap);
+								throwsMap, isFallible);
 					}
 				}
 			}
 
 			// Generate type check for output parameters
+			// For fallible functions, only check output types if no error occurred
 			if (!funcDecl->outputParameters().empty()) {
-				out << makeIndent(indent + 1) << "qd_stack_type output_types[] = {";
+				if (isFallible) {
+					out << makeIndent(indent + 1) << "if (!ctx->has_error) {\n";
+				}
+				out << makeIndent(isFallible ? indent + 2 : indent + 1) << "qd_stack_type output_types[] = {";
 				for (size_t i = 0; i < funcDecl->outputParameters().size(); i++) {
 					if (i > 0) {
 						out << ", ";
@@ -239,8 +246,11 @@ namespace Qd {
 					out << mapTypeToStackType(param->typeString());
 				}
 				out << "};\n";
-				out << makeIndent(indent + 1) << "qd_check_stack(ctx, " << funcDecl->outputParameters().size()
-					<< ", output_types, __func__);\n";
+				out << makeIndent(isFallible ? indent + 2 : indent + 1) << "qd_check_stack(ctx, "
+					<< funcDecl->outputParameters().size() << ", output_types, __func__);\n";
+				if (isFallible) {
+					out << makeIndent(indent + 1) << "}\n";
+				}
 			}
 
 			// Pop function from call stack before returning
@@ -273,7 +283,7 @@ namespace Qd {
 			// Then block
 			if (ifStmt->thenBody()) {
 				traverse(ifStmt->thenBody(), packageName, out, indent + 1, varCounter, currentForIterator,
-						deferStatements, throwsMap);
+						deferStatements, throwsMap, currentFunctionIsFallible);
 			}
 			out << makeIndent(indent) << "}";
 
@@ -281,7 +291,7 @@ namespace Qd {
 			if (ifStmt->elseBody()) {
 				out << " else {\n";
 				traverse(ifStmt->elseBody(), packageName, out, indent + 1, varCounter, currentForIterator,
-						deferStatements, throwsMap);
+						deferStatements, throwsMap, currentFunctionIsFallible);
 				out << makeIndent(indent) << "}";
 			}
 			out << "\n";
@@ -311,7 +321,8 @@ namespace Qd {
 
 			// Loop body - pass iterator variable name for $ handling
 			if (forStmt->body()) {
-				traverse(forStmt->body(), packageName, out, indent + 2, varCounter, varI, deferStatements, throwsMap);
+				traverse(forStmt->body(), packageName, out, indent + 2, varCounter, varI, deferStatements, throwsMap,
+						currentFunctionIsFallible);
 			}
 
 			out << makeIndent(indent + 1) << "}\n";
@@ -322,7 +333,8 @@ namespace Qd {
 
 			// Loop body - pass iterator variable name for $ handling
 			if (forStmt->body()) {
-				traverse(forStmt->body(), packageName, out, indent + 2, varCounter, varI, deferStatements, throwsMap);
+				traverse(forStmt->body(), packageName, out, indent + 2, varCounter, varI, deferStatements, throwsMap,
+						currentFunctionIsFallible);
 			}
 
 			out << makeIndent(indent + 1) << "}\n";
@@ -337,7 +349,8 @@ namespace Qd {
 
 			// Loop body (no iterator variable for infinite loop)
 			if (loopStmt->body()) {
-				traverse(loopStmt->body(), packageName, out, indent + 1, varCounter, "", deferStatements, throwsMap);
+				traverse(loopStmt->body(), packageName, out, indent + 1, varCounter, "", deferStatements, throwsMap,
+						currentFunctionIsFallible);
 			}
 
 			out << makeIndent(indent) << "}\n";
@@ -484,6 +497,12 @@ namespace Qd {
 				instrName = "not"; // Logical not operator
 			}
 			out << makeIndent(indent) << "qd_" << instrName << "(ctx);\n";
+
+			// Special handling for 'error' instruction in fallible functions
+			// After calling qd_error, we need to return immediately to prevent further execution
+			if (strcmp(instrName, "error") == 0 && currentFunctionIsFallible) {
+				out << makeIndent(indent) << "goto qd_lbl_done;\n";
+			}
 			break;
 		}
 		case IAstNode::Type::SCOPED_IDENTIFIER: {
@@ -546,7 +565,7 @@ namespace Qd {
 
 		for (size_t i = 0; i < node->childCount(); i++) {
 			traverse(node->child(i), packageName, out, childIndent, varCounter, currentForIterator, deferStatements,
-					throwsMap);
+					throwsMap, currentFunctionIsFallible);
 		}
 
 		if (node->type() == IAstNode::Type::BLOCK) {

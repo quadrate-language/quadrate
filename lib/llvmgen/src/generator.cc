@@ -84,6 +84,7 @@ namespace Qd {
 
 		// Function context for return
 		llvm::BasicBlock* currentFunctionReturnBlock = nullptr;
+		bool currentFunctionIsFallible = false;
 
 		// Defer statements collected during function generation
 		std::vector<AstNodeDefer*> currentDeferStatements;
@@ -312,6 +313,12 @@ namespace Qd {
 				runtimeFn = llvm::Function::Create(fnTy, llvm::Function::ExternalLinkage, fnName, *module);
 			}
 			builder->CreateCall(runtimeFn, {ctx});
+
+			// Special handling for 'error' instruction in fallible functions
+			// After calling qd_error, we need to return immediately to prevent further execution
+			if (name == "error" && currentFunctionIsFallible && currentFunctionReturnBlock) {
+				builder->CreateBr(currentFunctionReturnBlock);
+			}
 		}
 	}
 
@@ -348,15 +355,46 @@ namespace Qd {
 				auto hasErrorPtr = builder->CreateStructGEP(contextStructTy, ctx, 1, "has_error_ptr");
 				auto hasError = builder->CreateLoad(builder->getInt1Ty(), hasErrorPtr, "has_error");
 
-				// Convert bool to success status: true (error) -> 0, false (no error) -> 1
-				auto successStatus =
-						builder->CreateSelect(hasError, builder->getInt64(0), builder->getInt64(1), "success_status");
+				if (ident->abortOnError()) {
+					// ! operator: check error and abort if set
+					llvm::BasicBlock* errorBlock =
+							llvm::BasicBlock::Create(*context, "error_abort", builder->GetInsertBlock()->getParent());
+					llvm::BasicBlock* continueBlock =
+							llvm::BasicBlock::Create(*context, "no_error", builder->GetInsertBlock()->getParent());
 
-				// Clear the error flag
-				builder->CreateStore(builder->getInt1(false), hasErrorPtr);
+					builder->CreateCondBr(hasError, errorBlock, continueBlock);
 
-				// Push the success status onto the stack
-				builder->CreateCall(pushIntFn, {ctx, successStatus});
+					// Error block: print message and abort
+					builder->SetInsertPoint(errorBlock);
+					llvm::Value* errorMsg =
+							builder->CreateGlobalString("Fatal error: function '" + name + "' failed\n");
+					auto fprintfFn = module->getOrInsertFunction("fprintf",
+							llvm::FunctionType::get(builder->getInt32Ty(),
+									{llvm::PointerType::getUnqual(*context), llvm::PointerType::getUnqual(*context)},
+									true));
+					auto stderrGlobal = module->getOrInsertGlobal("stderr", llvm::PointerType::getUnqual(*context));
+					auto stderrVal = builder->CreateLoad(llvm::PointerType::getUnqual(*context), stderrGlobal);
+					builder->CreateCall(fprintfFn, {stderrVal, errorMsg});
+
+					auto abortFn =
+							module->getOrInsertFunction("abort", llvm::FunctionType::get(builder->getVoidTy(), false));
+					builder->CreateCall(abortFn);
+					builder->CreateUnreachable();
+
+					// Continue block
+					builder->SetInsertPoint(continueBlock);
+				} else {
+					// No operator or ? operator: push error status
+					// Convert bool to success status: true (error) -> 0, false (no error) -> 1
+					auto successStatus = builder->CreateSelect(
+							hasError, builder->getInt64(0), builder->getInt64(1), "success_status");
+
+					// Clear the error flag
+					builder->CreateStore(builder->getInt1(false), hasErrorPtr);
+
+					// Push the success status onto the stack
+					builder->CreateCall(pushIntFn, {ctx, successStatus});
+				}
 			}
 
 			return;
@@ -418,15 +456,76 @@ namespace Qd {
 			auto hasErrorPtr = builder->CreateStructGEP(contextStructTy, ctx, 1, "has_error_ptr");
 			auto hasError = builder->CreateLoad(builder->getInt1Ty(), hasErrorPtr, "has_error");
 
-			// Convert bool to success status: true (error) -> 0, false (no error) -> 1
-			auto successStatus =
-					builder->CreateSelect(hasError, builder->getInt64(0), builder->getInt64(1), "success_status");
+			if (scopedIdent->abortOnError()) {
+				// ! operator: check error and abort if set
+				llvm::BasicBlock* errorBlock =
+						llvm::BasicBlock::Create(*context, "error_abort", builder->GetInsertBlock()->getParent());
+				llvm::BasicBlock* continueBlock =
+						llvm::BasicBlock::Create(*context, "no_error", builder->GetInsertBlock()->getParent());
 
-			// Clear the error flag
-			builder->CreateStore(builder->getInt1(false), hasErrorPtr);
+				builder->CreateCondBr(hasError, errorBlock, continueBlock);
 
-			// Push the success status onto the stack
-			builder->CreateCall(pushIntFn, {ctx, successStatus});
+				// Error block: print message and abort
+				builder->SetInsertPoint(errorBlock);
+				llvm::Value* errorMsg = builder->CreateGlobalString("Fatal error: function '" + name + "' failed\n");
+				auto fprintfFn = module->getOrInsertFunction("fprintf",
+						llvm::FunctionType::get(builder->getInt32Ty(),
+								{llvm::PointerType::getUnqual(*context), llvm::PointerType::getUnqual(*context)},
+								true));
+				auto stderrGlobal = module->getOrInsertGlobal("stderr", llvm::PointerType::getUnqual(*context));
+				auto stderrVal = builder->CreateLoad(llvm::PointerType::getUnqual(*context), stderrGlobal);
+				builder->CreateCall(fprintfFn, {stderrVal, errorMsg});
+
+				auto abortFn =
+						module->getOrInsertFunction("abort", llvm::FunctionType::get(builder->getVoidTy(), false));
+				builder->CreateCall(abortFn);
+				builder->CreateUnreachable();
+
+				// Continue block
+				builder->SetInsertPoint(continueBlock);
+			} else {
+				// No operator or ? operator: push error status
+				if (scopedIdent->abortOnError()) {
+					// ! operator: check error and abort if set
+					llvm::BasicBlock* errorBlock =
+							llvm::BasicBlock::Create(*context, "error_abort", builder->GetInsertBlock()->getParent());
+					llvm::BasicBlock* continueBlock =
+							llvm::BasicBlock::Create(*context, "no_error", builder->GetInsertBlock()->getParent());
+
+					builder->CreateCondBr(hasError, errorBlock, continueBlock);
+
+					// Error block: print message and abort
+					builder->SetInsertPoint(errorBlock);
+					llvm::Value* errorMsg =
+							builder->CreateGlobalString("Fatal error: function '" + fullName + "' failed\n");
+					auto fprintfFn = module->getOrInsertFunction("fprintf",
+							llvm::FunctionType::get(builder->getInt32Ty(),
+									{llvm::PointerType::getUnqual(*context), llvm::PointerType::getUnqual(*context)},
+									true));
+					auto stderrGlobal = module->getOrInsertGlobal("stderr", llvm::PointerType::getUnqual(*context));
+					auto stderrVal = builder->CreateLoad(llvm::PointerType::getUnqual(*context), stderrGlobal);
+					builder->CreateCall(fprintfFn, {stderrVal, errorMsg});
+
+					auto abortFn =
+							module->getOrInsertFunction("abort", llvm::FunctionType::get(builder->getVoidTy(), false));
+					builder->CreateCall(abortFn);
+					builder->CreateUnreachable();
+
+					// Continue block
+					builder->SetInsertPoint(continueBlock);
+				} else {
+					// No operator or ? operator: push error status
+					// Convert bool to success status: true (error) -> 0, false (no error) -> 1
+					auto successStatus = builder->CreateSelect(
+							hasError, builder->getInt64(0), builder->getInt64(1), "success_status");
+
+					// Clear the error flag
+					builder->CreateStore(builder->getInt1(false), hasErrorPtr);
+
+					// Push the success status onto the stack
+					builder->CreateCall(pushIntFn, {ctx, successStatus});
+				}
+			}
 		}
 	}
 
@@ -851,6 +950,7 @@ namespace Qd {
 
 			// Set the return target for this function
 			currentFunctionReturnBlock = returnBB;
+			currentFunctionIsFallible = funcNode->throws();
 
 			// Clear defer statements from any previous function
 			currentDeferStatements.clear();
@@ -863,6 +963,7 @@ namespace Qd {
 
 			// Clear return target
 			currentFunctionReturnBlock = nullptr;
+			currentFunctionIsFallible = false;
 
 			// If the block doesn't end with a terminator, branch to return block
 			llvm::BasicBlock* funcBodyBlock = builder->GetInsertBlock();
