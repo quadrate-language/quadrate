@@ -757,6 +757,32 @@ namespace Qd {
 
 		// Continue with merge block
 		builder->SetInsertPoint(mergeBB);
+
+		// Clean up switch value if it's a string (need to free the allocated memory)
+		auto typePtr = builder->CreateStructGEP(switchElemTy, switchElem, 1, "type_ptr");
+		auto switchType = builder->CreateLoad(builder->getInt32Ty(), typePtr, "switch_type");
+		auto isString = builder->CreateICmpEQ(switchType, builder->getInt32(3), "is_string"); // QD_STACK_TYPE_STR = 3
+
+		llvm::BasicBlock* freeStringBB = llvm::BasicBlock::Create(*context, "free_string", currentFn);
+		llvm::BasicBlock* skipFreeBB = llvm::BasicBlock::Create(*context, "skip_free", currentFn);
+
+		builder->CreateCondBr(isString, freeStringBB, skipFreeBB);
+
+		// Free string block
+		builder->SetInsertPoint(freeStringBB);
+		auto valuePtr = builder->CreateStructGEP(switchElemTy, switchElem, 0, "value_ptr");
+		auto strPtr = builder->CreateLoad(llvm::PointerType::getUnqual(*context), valuePtr, "str_ptr");
+		auto freeFn = module->getFunction("free");
+		if (!freeFn) {
+			auto freeFnTy =
+					llvm::FunctionType::get(builder->getVoidTy(), {llvm::PointerType::getUnqual(*context)}, false);
+			freeFn = llvm::Function::Create(freeFnTy, llvm::Function::ExternalLinkage, "free", *module);
+		}
+		builder->CreateCall(freeFn, {strPtr});
+		builder->CreateBr(skipFreeBB);
+
+		// Skip free block
+		builder->SetInsertPoint(skipFreeBB);
 	}
 
 	void LlvmGenerator::Impl::generateIf(AstNodeIfStatement* ifStmt, llvm::Value* ctx, llvm::Value* forIterVar) {

@@ -1,0 +1,42 @@
+# Valgrind suppressions for Quadrate
+# LLVM global state that's cleaned up at program exit
+
+{
+   llvm_static_initialization
+   Memcheck:Leak
+   match-leak-kinds: reachable
+   ...
+   fun:_GLOBAL__sub_*
+}
+
+{
+   llvm_timer_globals
+   Memcheck:Leak
+   match-leak-kinds: reachable
+   ...
+   fun:*TimerGroup*
+}
+
+{
+   llvm_commandline_parser
+   Memcheck:Leak
+   match-leak-kinds: reachable
+   ...
+   fun:*CommandLineParser*
+}
+
+{
+   llvm_string_map
+   Memcheck:Leak
+   match-leak-kinds: reachable
+   ...
+   fun:*StringMap*
+}
+
+{
+   llvm_managed_static
+   Memcheck:Leak
+   match-leak-kinds: reachable
+   ...
+   fun:*ManagedStatic*
+}

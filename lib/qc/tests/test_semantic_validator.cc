@@ -393,7 +393,7 @@ TEST(ComprehensiveMixed) {
 	ASSERT(errors == 0, "comprehensive mixed scenario should work");
 }
 
-// Test that use statements are collected without errors
+// Test that missing modules are reported as errors
 TEST(UseStatementCollection) {
 	const char* src = R"(
 		use std
@@ -403,7 +403,7 @@ TEST(UseStatementCollection) {
 		}
 	)";
 	size_t errors = validateCode(src);
-	ASSERT(errors == 0, "use statements should be collected without errors");
+	ASSERT(errors == 2, "missing modules should be reported as errors");
 }
 
 // Test error when module is not imported

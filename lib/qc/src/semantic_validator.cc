@@ -47,7 +47,7 @@ namespace Qd {
 		}
 	}
 
-	SemanticValidator::SemanticValidator() : mFilename(nullptr), mErrorCount(0) {
+	SemanticValidator::SemanticValidator() : mFilename(nullptr), mErrorCount(0), mIsModuleFile(false) {
 	}
 
 	bool SemanticValidator::isBuiltInInstruction(const char* name) const {
@@ -99,9 +99,10 @@ namespace Qd {
 		mErrorCount++;
 	}
 
-	size_t SemanticValidator::validate(IAstNode* program, const char* filename) {
+	size_t SemanticValidator::validate(IAstNode* program, const char* filename, bool isModuleFile) {
 		mErrorCount = 0;
 		mFilename = filename;
+		mIsModuleFile = isModuleFile;
 		mDefinedFunctions.clear();
 		mFunctionSignatures.clear();
 		mImportedModules.clear();
@@ -207,7 +208,8 @@ namespace Qd {
 		if (node->type() == IAstNode::Type::USE_STATEMENT) {
 			AstNodeUse* use = static_cast<AstNodeUse*>(node);
 			mImportedModules.insert(use->module());
-			loadModuleDefinitions(use->module(), mCurrentPackage);
+			// Only report errors for missing modules if this is the main entry point (not a module file)
+			loadModuleDefinitions(use->module(), mCurrentPackage, !mIsModuleFile);
 		}
 
 		// If this is an import statement, collect imported library functions
@@ -227,7 +229,8 @@ namespace Qd {
 		}
 	}
 
-	void SemanticValidator::loadModuleDefinitions(const std::string& moduleName, const std::string& currentPackage) {
+	void SemanticValidator::loadModuleDefinitions(
+			const std::string& moduleName, const std::string& currentPackage, bool reportErrors) {
 		// Check if we've already loaded this specific file (prevent duplicate loads)
 		if (mLoadedModuleFiles.count(moduleName)) {
 			return;
@@ -356,8 +359,20 @@ namespace Qd {
 			}
 		}
 
-		// Module file doesn't exist anywhere - skip silently
-		// This allows using 'use' statements before modules are installed
+		// Module file doesn't exist anywhere
+		// Only report error if reportErrors is true (top-level import from user code)
+		// Nested imports from other modules silently skip (might be found via different paths)
+		if (reportErrors) {
+			if (isDirectFile) {
+				std::string errorMsg = "No such file or directory";
+				reportError(errorMsg.c_str());
+			} else {
+				std::string errorMsg = "Module '";
+				errorMsg += moduleName;
+				errorMsg += "' not found in any search path";
+				reportError(errorMsg.c_str());
+			}
+		}
 	}
 
 	void SemanticValidator::parseModuleAndCollectFunctions(const std::string& moduleName, const std::string& source) {
@@ -376,7 +391,8 @@ namespace Qd {
 			if (child && child->type() == IAstNode::Type::USE_STATEMENT) {
 				AstNodeUse* use = static_cast<AstNodeUse*>(child);
 				// Recursively load this module/file with the current module as context
-				loadModuleDefinitions(use->module(), moduleName);
+				// Pass false for reportErrors since this is a nested import
+				loadModuleDefinitions(use->module(), moduleName, false);
 			}
 		}
 
@@ -577,6 +593,22 @@ namespace Qd {
 			return;
 		}
 
+		// Check if this is a break statement
+		if (node->type() == IAstNode::Type::BREAK_STATEMENT) {
+			if (!insideForLoop) {
+				reportError(node, "break statement not within loop or switch");
+			}
+			return;
+		}
+
+		// Check if this is a continue statement
+		if (node->type() == IAstNode::Type::CONTINUE_STATEMENT) {
+			if (!insideForLoop) {
+				reportError(node, "continue statement not within a loop");
+			}
+			return;
+		}
+
 		// Check if this is an identifier (function call)
 		if (node->type() == IAstNode::Type::IDENTIFIER) {
 			AstNodeIdentifier* ident = static_cast<AstNodeIdentifier*>(node);
@@ -684,9 +716,10 @@ namespace Qd {
 			// but we don't report an error here as it was likely already reported
 		}
 
-		// Track when we enter a for loop or infinite loop
+		// Track when we enter a for loop, infinite loop, or switch statement
 		bool childrenInsideForLoop = insideForLoop;
-		if (node->type() == IAstNode::Type::FOR_STATEMENT || node->type() == IAstNode::Type::LOOP_STATEMENT) {
+		if (node->type() == IAstNode::Type::FOR_STATEMENT || node->type() == IAstNode::Type::LOOP_STATEMENT ||
+				node->type() == IAstNode::Type::SWITCH_STATEMENT) {
 			childrenInsideForLoop = true;
 		}
 

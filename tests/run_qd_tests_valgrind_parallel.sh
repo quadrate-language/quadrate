@@ -16,7 +16,12 @@ TEMP_DIR="/tmp/qd_tests_valgrind_$$"
 export QUADRATE_ROOT="lib/stdqd/qd"
 
 # Valgrind options
-VALGRIND_OPTS="--leak-check=full --error-exitcode=1 --quiet --suppressions=/dev/null"
+VALGRIND_SUPP="${SCRIPT_DIR}/valgrind.supp"
+if [ -f "$VALGRIND_SUPP" ]; then
+	VALGRIND_OPTS="--leak-check=full --error-exitcode=1 --quiet --suppressions=$VALGRIND_SUPP"
+else
+	VALGRIND_OPTS="--leak-check=full --error-exitcode=1 --quiet"
+fi
 
 # Create temp directory
 mkdir -p "$TEMP_DIR/results"

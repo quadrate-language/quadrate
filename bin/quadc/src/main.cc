@@ -383,8 +383,9 @@ int main(int argc, char** argv) {
 			}
 
 			// Semantic validation - catch errors before LLVM generation
+			// Pass true for isModuleFile to skip reporting errors for missing nested module imports
 			Qd::SemanticValidator validator;
-			size_t errorCount = validator.validate(root, moduleFilePath.c_str());
+			size_t errorCount = validator.validate(root, moduleFilePath.c_str(), true);
 			if (errorCount > 0) {
 				// Validation failed - do not proceed
 				return 1;

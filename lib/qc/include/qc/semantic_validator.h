@@ -36,7 +36,8 @@ namespace Qd {
 
 		// Validate an AST and return error count
 		// Returns 0 if valid, > 0 if errors were found
-		size_t validate(IAstNode* program, const char* filename = nullptr);
+		// If isModuleFile is true, missing module imports will not be reported as errors
+		size_t validate(IAstNode* program, const char* filename = nullptr, bool isModuleFile = false);
 
 		// Get error count
 		size_t errorCount() const {
@@ -68,7 +69,8 @@ namespace Qd {
 		void collectDefinitions(IAstNode* node);
 
 		// Helper: Load module definitions from a module file
-		void loadModuleDefinitions(const std::string& moduleName, const std::string& currentPackage);
+		void loadModuleDefinitions(
+				const std::string& moduleName, const std::string& currentPackage, bool reportErrors = true);
 
 		// Helper: Parse module source and collect function definitions
 		void parseModuleAndCollectFunctions(const std::string& moduleName, const std::string& source);
@@ -157,6 +159,9 @@ namespace Qd {
 
 		// Error count
 		size_t mErrorCount;
+
+		// Whether this is validating a module file (vs main entry point)
+		bool mIsModuleFile;
 	};
 
 } // namespace Qd
