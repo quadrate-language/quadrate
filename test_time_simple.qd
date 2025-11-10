@@ -1,7 +1,0 @@
-use time
-
-fn main() {
-	"Before" . nl
-	time::Millisecond time::sleep
-	"After" . nl
-}
