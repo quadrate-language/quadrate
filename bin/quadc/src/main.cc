@@ -435,6 +435,7 @@ int main(int argc, char** argv) {
 			std::set<std::string> functionSignatures; // Regular function declarations
 			std::set<std::string> externDeclarations; // Extern declarations (for imported functions)
 			std::set<std::string> inlineFunctions;	  // Static inline functions with full body
+			std::set<std::string> constantDefines;	  // #define constants
 			for (size_t idx : sourceIndices) {
 				const auto& source = transpiledSources[idx];
 				std::stringstream ss(source.content);
@@ -444,8 +445,14 @@ int main(int argc, char** argv) {
 				int braceCount = 0;
 
 				while (std::getline(ss, line)) {
+					// Capture #define constants for this package
+					if (line.find("#define " + packageName + "_") != std::string::npos) {
+						std::string constDef = line;
+						constDef.erase(0, constDef.find_first_not_of(" \t"));
+						constantDefines.insert(constDef);
+					}
 					// Capture extern declarations for imported functions
-					if (line.find("extern qd_exec_result qd_") != std::string::npos) {
+					else if (line.find("extern qd_exec_result qd_") != std::string::npos) {
 						std::string externDecl = line;
 						externDecl.erase(0, externDecl.find_first_not_of(" \t"));
 						externDeclarations.insert(externDecl);
@@ -499,7 +506,15 @@ int main(int argc, char** argv) {
 				}
 			}
 
-			// Write extern declarations first
+			// Write constant defines first
+			for (const auto& constDef : constantDefines) {
+				headerContent << constDef << "\n";
+			}
+			if (!constantDefines.empty()) {
+				headerContent << "\n";
+			}
+
+			// Write extern declarations
 			for (const auto& externDecl : externDeclarations) {
 				headerContent << externDecl << "\n";
 			}

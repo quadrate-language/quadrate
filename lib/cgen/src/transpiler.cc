@@ -161,7 +161,10 @@ namespace Qd {
 
 	void traverse(IAstNode* node, const char* packageName, std::stringstream& out, int indent, int& varCounter,
 			const std::string& currentForIterator = "", std::vector<IAstNode*>* deferStatements = nullptr,
-			const std::unordered_map<std::string, bool>& throwsMap = {}, bool currentFunctionIsFallible = false) {
+			const std::unordered_map<std::string, bool>& throwsMap = {},
+			const std::unordered_map<std::string, std::unordered_set<std::string>>& moduleConstants = {},
+			const std::unordered_map<std::string, std::string>& moduleConstantValues = {},
+			bool currentFunctionIsFallible = false) {
 		if (node == nullptr) {
 			return;
 		}
@@ -209,7 +212,7 @@ namespace Qd {
 			// Collect defer statements while traversing function body
 			std::vector<IAstNode*> localDeferStatements;
 			traverse(funcDecl->body(), packageName, out, indent + 1, varCounter, currentForIterator,
-					&localDeferStatements, throwsMap, isFallible);
+					&localDeferStatements, throwsMap, moduleConstants, moduleConstantValues, isFallible);
 
 			// Emit defer statements in reverse order (LIFO) before done label
 			out << "\n" << makeIndent(indent) << "qd_lbl_done:;\n";
@@ -222,11 +225,11 @@ namespace Qd {
 					if (child && child->type() == IAstNode::Type::BLOCK) {
 						for (size_t j = 0; j < child->childCount(); j++) {
 							traverse(child->child(j), packageName, out, indent + 1, varCounter, currentForIterator,
-									nullptr, throwsMap, isFallible);
+									nullptr, throwsMap, moduleConstants, moduleConstantValues, isFallible);
 						}
 					} else {
 						traverse(child, packageName, out, indent + 1, varCounter, currentForIterator, nullptr,
-								throwsMap, isFallible);
+								throwsMap, moduleConstants, moduleConstantValues, isFallible);
 					}
 				}
 			}
@@ -283,7 +286,7 @@ namespace Qd {
 			// Then block
 			if (ifStmt->thenBody()) {
 				traverse(ifStmt->thenBody(), packageName, out, indent + 1, varCounter, currentForIterator,
-						deferStatements, throwsMap, currentFunctionIsFallible);
+						deferStatements, throwsMap, moduleConstants, moduleConstantValues, currentFunctionIsFallible);
 			}
 			out << makeIndent(indent) << "}";
 
@@ -291,7 +294,7 @@ namespace Qd {
 			if (ifStmt->elseBody()) {
 				out << " else {\n";
 				traverse(ifStmt->elseBody(), packageName, out, indent + 1, varCounter, currentForIterator,
-						deferStatements, throwsMap, currentFunctionIsFallible);
+						deferStatements, throwsMap, moduleConstants, moduleConstantValues, currentFunctionIsFallible);
 				out << makeIndent(indent) << "}";
 			}
 			out << "\n";
@@ -322,7 +325,7 @@ namespace Qd {
 			// Loop body - pass iterator variable name for $ handling
 			if (forStmt->body()) {
 				traverse(forStmt->body(), packageName, out, indent + 2, varCounter, varI, deferStatements, throwsMap,
-						currentFunctionIsFallible);
+						moduleConstants, moduleConstantValues, currentFunctionIsFallible);
 			}
 
 			out << makeIndent(indent + 1) << "}\n";
@@ -334,7 +337,7 @@ namespace Qd {
 			// Loop body - pass iterator variable name for $ handling
 			if (forStmt->body()) {
 				traverse(forStmt->body(), packageName, out, indent + 2, varCounter, varI, deferStatements, throwsMap,
-						currentFunctionIsFallible);
+						moduleConstants, moduleConstantValues, currentFunctionIsFallible);
 			}
 
 			out << makeIndent(indent + 1) << "}\n";
@@ -350,7 +353,7 @@ namespace Qd {
 			// Loop body (no iterator variable for infinite loop)
 			if (loopStmt->body()) {
 				traverse(loopStmt->body(), packageName, out, indent + 1, varCounter, "", deferStatements, throwsMap,
-						currentFunctionIsFallible);
+						moduleConstants, moduleConstantValues, currentFunctionIsFallible);
 			}
 
 			out << makeIndent(indent) << "}\n";
@@ -507,7 +510,44 @@ namespace Qd {
 		}
 		case IAstNode::Type::SCOPED_IDENTIFIER: {
 			AstNodeScopedIdentifier* scopedIdent = static_cast<AstNodeScopedIdentifier*>(node);
-			out << makeIndent(indent) << "usr_" << scopedIdent->scope() << "_" << scopedIdent->name() << "(ctx);\n";
+			const std::string& moduleName = scopedIdent->scope();
+			const std::string& name = scopedIdent->name();
+
+			// Check if this is a constant
+			auto constIt = moduleConstants.find(moduleName);
+			if (constIt != moduleConstants.end()) {
+				const auto& constants = constIt->second;
+				if (constants.find(name) != constants.end()) {
+					// This is a constant - generate code to push the constant value
+					// The constant is defined as a #define in the module header
+					std::string qualifiedName = moduleName + "::" + name;
+					std::string constName = moduleName + "_" + name;
+
+					// Get the constant value to determine type
+					auto valueIt = moduleConstantValues.find(qualifiedName);
+					if (valueIt != moduleConstantValues.end()) {
+						const std::string& value = valueIt->second;
+						// Infer type from value
+						if (!value.empty() && value[0] == '"') {
+							// String constant
+							out << makeIndent(indent) << "qd_stack_push_str(ctx->st, " << constName << ");\n";
+						} else if (value.find('.') != std::string::npos) {
+							// Float constant
+							out << makeIndent(indent) << "qd_stack_push_float(ctx->st, " << constName << ");\n";
+						} else {
+							// Integer constant
+							out << makeIndent(indent) << "qd_stack_push_int(ctx->st, " << constName << ");\n";
+						}
+					} else {
+						// Fallback if value not found (shouldn't happen)
+						out << makeIndent(indent) << "qd_stack_push_int(ctx->st, " << constName << ");\n";
+					}
+					break;
+				}
+			}
+
+			// Not a constant, must be a function
+			out << makeIndent(indent) << "usr_" << moduleName << "_" << name << "(ctx);\n";
 			break;
 		}
 		case IAstNode::Type::USE_STATEMENT: {
@@ -565,7 +605,7 @@ namespace Qd {
 
 		for (size_t i = 0; i < node->childCount(); i++) {
 			traverse(node->child(i), packageName, out, childIndent, varCounter, currentForIterator, deferStatements,
-					throwsMap, currentFunctionIsFallible);
+					throwsMap, moduleConstants, moduleConstantValues, currentFunctionIsFallible);
 		}
 
 		if (node->type() == IAstNode::Type::BLOCK) {
@@ -694,7 +734,8 @@ namespace Qd {
 
 		// Reset counter for each compilation unit
 		mVarCounter = 0;
-		traverse(root, package, ss, 0, mVarCounter, "", nullptr, throwsMap);
+		traverse(root, package, ss, 0, mVarCounter, "", nullptr, throwsMap, validator.moduleConstants(),
+				validator.moduleConstantValues());
 
 		// Use basename for output file (filename might be a full path for validation purposes)
 		std::string basename = std::filesystem::path(filename).filename().string();

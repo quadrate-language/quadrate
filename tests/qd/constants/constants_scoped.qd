@@ -1,0 +1,18 @@
+use test_constants
+
+fn main() {
+    // Test integer constant
+    test_constants::MaxValue . nl
+
+    // Test float constant
+    test_constants::Pi . nl
+
+    // Test string constant
+    test_constants::AppName . nl
+
+    // Test constant in arithmetic
+    test_constants::MaxValue 10 add . nl
+
+    // Test multiple constant uses
+    test_constants::Pi test_constants::Pi mul . nl
+}

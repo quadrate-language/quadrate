@@ -4,6 +4,7 @@
 #include <iostream>
 #include <qc/ast.h>
 #include <qc/ast_node.h>
+#include <qc/ast_node_constant.h>
 #include <qc/ast_node_function.h>
 #include <qc/ast_node_function_pointer.h>
 #include <qc/ast_node_identifier.h>
@@ -393,6 +394,22 @@ namespace Qd {
 			mModuleFunctions[moduleName] = moduleFunctions;
 		}
 
+		// Collect constant definitions from the module
+		std::unordered_set<std::string> moduleConstants;
+		collectModuleConstants(moduleAstRoot, moduleConstants);
+
+		// Store the collected constants
+		if (mModuleConstants.find(moduleName) != mModuleConstants.end()) {
+			// Merge: add new constants to existing set
+			mModuleConstants[moduleName].insert(moduleConstants.begin(), moduleConstants.end());
+		} else {
+			// Create new entry
+			mModuleConstants[moduleName] = moduleConstants;
+		}
+
+		// Also collect constant values
+		collectModuleConstantValues(moduleAstRoot, moduleName);
+
 		// Analyze function signatures for module functions
 		// We use a simplified analysis since we don't need iterative convergence for modules
 		analyzeModuleFunctionSignatures(moduleAstRoot, moduleName);
@@ -420,6 +437,41 @@ namespace Qd {
 		// Recursively process children
 		for (size_t i = 0; i < node->childCount(); i++) {
 			collectModuleFunctions(node->child(i), functions);
+		}
+	}
+
+	void SemanticValidator::collectModuleConstants(IAstNode* node, std::unordered_set<std::string>& constants) {
+		if (!node) {
+			return;
+		}
+
+		// If this is a constant declaration, add it to the set
+		if (node->type() == IAstNode::Type::CONSTANT_DECLARATION) {
+			AstNodeConstant* constNode = static_cast<AstNodeConstant*>(node);
+			constants.insert(constNode->name());
+		}
+
+		// Recursively process children
+		for (size_t i = 0; i < node->childCount(); i++) {
+			collectModuleConstants(node->child(i), constants);
+		}
+	}
+
+	void SemanticValidator::collectModuleConstantValues(IAstNode* node, const std::string& moduleName) {
+		if (!node) {
+			return;
+		}
+
+		// If this is a constant declaration, store its value
+		if (node->type() == IAstNode::Type::CONSTANT_DECLARATION) {
+			AstNodeConstant* constNode = static_cast<AstNodeConstant*>(node);
+			std::string qualifiedName = moduleName + "::" + constNode->name();
+			mModuleConstantValues[qualifiedName] = constNode->value();
+		}
+
+		// Recursively process children
+		for (size_t i = 0; i < node->childCount(); i++) {
+			collectModuleConstantValues(node->child(i), moduleName);
 		}
 	}
 
@@ -605,12 +657,22 @@ namespace Qd {
 				return;
 			}
 
+			// Check if this is a constant (constants take precedence over functions)
+			auto constIt = mModuleConstants.find(scopeName);
+			if (constIt != mModuleConstants.end()) {
+				const auto& constants = constIt->second;
+				if (constants.find(functionName) != constants.end()) {
+					// This is a valid constant - no further checking needed
+					return;
+				}
+			}
+
 			// Check if the function exists in the module
 			auto moduleIt = mModuleFunctions.find(scopeName);
 			if (moduleIt != mModuleFunctions.end()) {
 				const auto& functions = moduleIt->second;
 				if (functions.find(functionName) == functions.end()) {
-					std::string errorMsg = "Function '";
+					std::string errorMsg = "Function or constant '";
 					errorMsg += functionName;
 					errorMsg += "' not found in module '";
 					errorMsg += scopeName;
@@ -971,11 +1033,36 @@ namespace Qd {
 			}
 
 			case IAstNode::Type::SCOPED_IDENTIFIER: {
-				// Handle module function calls - apply their stack effect
+				// Handle module constants or function calls
 				AstNodeScopedIdentifier* scoped = static_cast<AstNodeScopedIdentifier*>(child);
 				const std::string& moduleName = scoped->scope();
 				const std::string& functionName = scoped->name();
 				std::string qualifiedName = moduleName + "::" + functionName;
+
+				// Check if this is a constant first
+				auto constIt = mModuleConstants.find(moduleName);
+				if (constIt != mModuleConstants.end()) {
+					const auto& constants = constIt->second;
+					if (constants.find(functionName) != constants.end()) {
+						// This is a constant - determine its type and push onto the stack
+						std::string constQualifiedName = moduleName + "::" + functionName;
+						auto valueIt = mModuleConstantValues.find(constQualifiedName);
+						if (valueIt != mModuleConstantValues.end()) {
+							const std::string& value = valueIt->second;
+							// Infer type from value
+							if (!value.empty() && value[0] == '"') {
+								typeStack.push_back(StackValueType::STRING);
+							} else if (value.find('.') != std::string::npos || value.find('e') != std::string::npos || value.find('E') != std::string::npos) {
+								typeStack.push_back(StackValueType::FLOAT);
+							} else {
+								typeStack.push_back(StackValueType::INT);
+							}
+						} else {
+							typeStack.push_back(StackValueType::UNKNOWN);
+						}
+						break;
+					}
+				}
 
 				// Look up the module function signature
 				auto sigIt = mFunctionSignatures.find(qualifiedName);

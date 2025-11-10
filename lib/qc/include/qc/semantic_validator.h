@@ -53,6 +53,16 @@ namespace Qd {
 			return mSourceDirectory;
 		}
 
+		// Get the module constants map
+		const std::unordered_map<std::string, std::unordered_set<std::string>>& moduleConstants() const {
+			return mModuleConstants;
+		}
+
+		// Get the module constant values map
+		const std::unordered_map<std::string, std::string>& moduleConstantValues() const {
+			return mModuleConstantValues;
+		}
+
 	private:
 		// Pass 1: Collect all function definitions
 		void collectDefinitions(IAstNode* node);
@@ -65,6 +75,8 @@ namespace Qd {
 
 		// Helper: Collect function definitions from a module AST
 		void collectModuleFunctions(IAstNode* node, std::unordered_set<std::string>& functions);
+		void collectModuleConstants(IAstNode* node, std::unordered_set<std::string>& constants);
+		void collectModuleConstantValues(IAstNode* node, const std::string& moduleName);
 
 		// Helper: Analyze function signatures in a module
 		void analyzeModuleFunctionSignatures(IAstNode* node, const std::string& moduleName);
@@ -130,6 +142,12 @@ namespace Qd {
 
 		// Module functions: maps module name -> set of function names in that module
 		std::unordered_map<std::string, std::unordered_set<std::string>> mModuleFunctions;
+
+		// Module constants: maps module name -> set of constant names in that module
+		std::unordered_map<std::string, std::unordered_set<std::string>> mModuleConstants;
+
+		// Module constant values: maps "module::name" -> value string
+		std::unordered_map<std::string, std::string> mModuleConstantValues;
 
 		// Module directories: maps module name -> directory path where module was found
 		std::unordered_map<std::string, std::string> mModuleDirectories;

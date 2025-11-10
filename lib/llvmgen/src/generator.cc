@@ -15,6 +15,7 @@
 
 #include <qc/ast_node.h>
 #include <qc/ast_node_break.h>
+#include <qc/ast_node_constant.h>
 #include <qc/ast_node_continue.h>
 #include <qc/ast_node_defer.h>
 #include <qc/ast_node_for.h>
@@ -78,6 +79,9 @@ namespace Qd {
 		// User-defined functions
 		std::map<std::string, llvm::Function*> userFunctions;
 		std::map<std::string, bool> fallibleFunctions; // Track which functions can throw errors
+
+		// Module constants (scope::name -> value)
+		std::map<std::string, std::string> moduleConstants;
 
 		// Module ASTs to include (preserves insertion order for dependency resolution)
 		std::vector<std::pair<std::string, IAstNode*>> moduleASTs;
@@ -425,8 +429,32 @@ namespace Qd {
 		const std::string& scope = scopedIdent->scope();
 		const std::string& name = scopedIdent->name();
 
-		// Look up scoped function: scope::name -> usr_scope_name
+		// Look up scoped name: scope::name
 		std::string fullName = scope + "::" + name;
+
+		// Check if this is a constant first
+		auto constIt = moduleConstants.find(fullName);
+		if (constIt != moduleConstants.end()) {
+			// This is a constant - generate a literal push
+			const std::string& value = constIt->second;
+
+			// Determine literal type from the value string
+			AstNodeLiteral::LiteralType litType;
+			if (!value.empty() && value[0] == '"') {
+				litType = AstNodeLiteral::LiteralType::STRING;
+			} else if (value.find('.') != std::string::npos) {
+				litType = AstNodeLiteral::LiteralType::FLOAT;
+			} else {
+				litType = AstNodeLiteral::LiteralType::INTEGER;
+			}
+
+			// Create literal and generate push
+			AstNodeLiteral literal(value, litType);
+			generateLiteral(&literal, ctx);
+			return;
+		}
+
+		// Not a constant, must be a function
 		std::string mangledName = "usr_" + scope + "_" + name;
 
 		// Check if we have this function
@@ -1067,6 +1095,24 @@ namespace Qd {
 							builder->CreateRet(result);
 						}
 					}
+				}
+			}
+		}
+
+		// Collect constants from all modules
+		for (const auto& modulePair : moduleASTs) {
+			const std::string& moduleName = modulePair.first;
+			IAstNode* moduleRoot = modulePair.second;
+			if (!moduleRoot) {
+				continue;
+			}
+
+			for (size_t i = 0; i < moduleRoot->childCount(); i++) {
+				auto child = moduleRoot->child(i);
+				if (auto constNode = dynamic_cast<AstNodeConstant*>(child)) {
+					// Store constant with scope::name key
+					std::string fullName = moduleName + "::" + constNode->name();
+					moduleConstants[fullName] = constNode->value();
 				}
 			}
 		}
