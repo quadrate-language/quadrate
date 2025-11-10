@@ -18,9 +18,6 @@ debug:
 	meson compile -C $(BUILD_DIR_DEBUG)
 	@mkdir -p dist/bin dist/lib dist/include
 	@cp -f $(BUILD_DIR_DEBUG)/bin/quadc/quadc dist/bin/
-	@if [ -f $(BUILD_DIR_DEBUG)/bin/quadc-c/quadc-c ]; then \
-		cp -f $(BUILD_DIR_DEBUG)/bin/quadc-c/quadc-c dist/bin/; \
-	fi
 	@cp -f $(BUILD_DIR_DEBUG)/bin/quadfmt/quadfmt dist/bin/
 	@cp -f $(BUILD_DIR_DEBUG)/bin/quadlsp/quadlsp dist/bin/
 	@cp -f $(BUILD_DIR_DEBUG)/lib/qdrt/libqdrt.so dist/lib/
@@ -38,9 +35,6 @@ release:
 	meson compile -C $(BUILD_DIR_RELEASE)
 	@mkdir -p dist/bin dist/lib dist/include
 	@cp -f $(BUILD_DIR_RELEASE)/bin/quadc/quadc dist/bin/
-	@if [ -f $(BUILD_DIR_RELEASE)/bin/quadc-c/quadc-c ]; then \
-		cp -f $(BUILD_DIR_RELEASE)/bin/quadc-c/quadc-c dist/bin/; \
-	fi
 	@cp -f $(BUILD_DIR_RELEASE)/bin/quadfmt/quadfmt dist/bin/
 	@cp -f $(BUILD_DIR_RELEASE)/bin/quadlsp/quadlsp dist/bin/
 	@cp -f $(BUILD_DIR_RELEASE)/lib/qdrt/libqdrt.so dist/lib/
@@ -77,17 +71,6 @@ tests: debug
 	@echo ""
 	@echo "=== Running Quadrate language tests (quadc) ==="
 	QUADC=$(BUILD_DIR_DEBUG)/bin/quadc/quadc bash tests/run_qd_tests_parallel.sh || true
-	@echo ""
-	@echo "=========================================="
-	@echo "  Backend: quadc-c (Legacy C Transpiler)"
-	@echo "=========================================="
-	@echo ""
-	@if [ -f $(BUILD_DIR_DEBUG)/bin/quadc-c/quadc-c ]; then \
-		echo "=== Running Quadrate language tests (quadc-c) ==="; \
-		QUADC=$(BUILD_DIR_DEBUG)/bin/quadc-c/quadc-c bash tests/run_qd_tests_parallel.sh || true; \
-	else \
-		echo "⚠️  Skipped (quadc-c not built)"; \
-	fi
 	@echo ""
 	@echo "=========================================="
 	@echo "  Other Tests"
@@ -127,9 +110,6 @@ install: release
 	install -d $(DESTDIR)$(PREFIX)/lib
 	install -d $(DESTDIR)$(PREFIX)/include
 	install -m 755 dist/bin/quadc $(DESTDIR)$(PREFIX)/bin/
-	@if [ -f dist/bin/quadc-c ]; then \
-		install -m 755 dist/bin/quadc-c $(DESTDIR)$(PREFIX)/bin/; \
-	fi
 	install -m 755 dist/bin/quadfmt $(DESTDIR)$(PREFIX)/bin/
 	install -m 755 dist/bin/quadlsp $(DESTDIR)$(PREFIX)/bin/
 	install -m 644 dist/lib/libqdrt.so $(DESTDIR)$(PREFIX)/lib/
@@ -147,9 +127,6 @@ install: release
 
 uninstall:
 	rm -f $(DESTDIR)$(PREFIX)/bin/quadc
-	@if [ -f $(DESTDIR)$(PREFIX)/bin/quadc-c ]; then \
-		rm -f $(DESTDIR)$(PREFIX)/bin/quadc-c; \
-	fi
 	rm -f $(DESTDIR)$(PREFIX)/bin/quadfmt
 	rm -f $(DESTDIR)$(PREFIX)/bin/quadlsp
 	rm -f $(DESTDIR)$(PREFIX)/lib/libqdrt.so
