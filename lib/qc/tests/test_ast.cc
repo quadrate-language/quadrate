@@ -216,7 +216,7 @@ TEST(UseStatement) {
 
 TEST(SwitchStatement) {
 	Qd::Ast ast;
-	const char* src = "fn test() { switch { case 1 { foo } default { bar } } }";
+	const char* src = "fn test() { switch { 1 { foo } _ { bar } } }";
 	Qd::IAstNode* root = ast.generate(src, false, nullptr);
 
 	ASSERT(root != nullptr, "root != nullptr");

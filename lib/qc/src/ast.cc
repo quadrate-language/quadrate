@@ -1339,70 +1339,14 @@ namespace Qd {
 				break;
 			}
 
+			// Check for '_' (wildcard/default case)
 			if (token == U8T_IDENTIFIER) {
 				const char* text = u8t_scanner_token_text(scanner, &n);
-
-				if (strcmp(text, "case") == 0) {
-					token = u8t_scanner_scan(scanner);
-
-					IAstNode* caseValue = nullptr;
-					if (token == U8T_INTEGER) {
-						const char* valueText = u8t_scanner_token_text(scanner, &n);
-						caseValue = new AstNodeLiteral(valueText, AstNodeLiteral::LiteralType::INTEGER);
-						setNodePosition(caseValue, scanner, src);
-					} else if (token == U8T_FLOAT) {
-						const char* valueText = u8t_scanner_token_text(scanner, &n);
-						caseValue = new AstNodeLiteral(valueText, AstNodeLiteral::LiteralType::FLOAT);
-						setNodePosition(caseValue, scanner, src);
-					} else if (token == U8T_STRING) {
-						const char* valueText = u8t_scanner_token_text(scanner, &n);
-						caseValue = new AstNodeLiteral(valueText, AstNodeLiteral::LiteralType::STRING);
-						setNodePosition(caseValue, scanner, src);
-					} else if (token == U8T_IDENTIFIER) {
-						const char* valueText = u8t_scanner_token_text(scanner, &n);
-						caseValue = isBuiltInInstruction(valueText)
-											? static_cast<IAstNode*>(new AstNodeInstruction(valueText))
-											: static_cast<IAstNode*>(new AstNodeIdentifier(valueText));
-						setNodePosition(caseValue, scanner, src);
-					}
-
-					if (!caseValue) {
-						errorReporter->reportError(scanner, "Expected case value after 'case'");
-						continue;
-					}
-
+				if (strcmp(text, "_") == 0) {
+					// Default case
 					token = u8t_scanner_scan(scanner);
 					if (token != '{') {
-						errorReporter->reportError(scanner, "Expected '{' after case value");
-						delete caseValue;
-						continue;
-					}
-
-					AstNodeBlock* caseBody = new AstNodeBlock();
-					setNodePosition(caseBody, scanner, src);
-					while ((token = u8t_scanner_scan(scanner)) != U8T_EOF) {
-						if (token == '}') {
-							break;
-						}
-
-						IAstNode* node = parseBlockStatement(token, scanner, errorReporter, &n, src, false);
-						if (node) {
-							node->setParent(caseBody);
-							caseBody->addChild(node);
-						}
-					}
-
-					AstNodeCase* caseNode = new AstNodeCase(caseValue, false);
-					setNodePosition(caseNode, scanner, src);
-					caseBody->setParent(caseNode);
-					caseNode->setBody(caseBody);
-					caseNode->setParent(switchStmt);
-					switchStmt->addCase(caseNode);
-
-				} else if (strcmp(text, "default") == 0) {
-					token = u8t_scanner_scan(scanner);
-					if (token != '{') {
-						errorReporter->reportError(scanner, "Expected '{' after 'default'");
+						errorReporter->reportError(scanner, "Expected '{' after '_'");
 						continue;
 					}
 
@@ -1426,8 +1370,80 @@ namespace Qd {
 					defaultCase->setBody(defaultBody);
 					defaultCase->setParent(switchStmt);
 					switchStmt->addCase(defaultCase);
+					continue;
 				}
 			}
+
+			// Parse case value (no 'case' keyword)
+			IAstNode* caseValue = nullptr;
+			if (token == U8T_INTEGER) {
+				const char* valueText = u8t_scanner_token_text(scanner, &n);
+				caseValue = new AstNodeLiteral(valueText, AstNodeLiteral::LiteralType::INTEGER);
+				setNodePosition(caseValue, scanner, src);
+			} else if (token == U8T_FLOAT) {
+				const char* valueText = u8t_scanner_token_text(scanner, &n);
+				caseValue = new AstNodeLiteral(valueText, AstNodeLiteral::LiteralType::FLOAT);
+				setNodePosition(caseValue, scanner, src);
+			} else if (token == U8T_STRING) {
+				const char* valueText = u8t_scanner_token_text(scanner, &n);
+				caseValue = new AstNodeLiteral(valueText, AstNodeLiteral::LiteralType::STRING);
+				setNodePosition(caseValue, scanner, src);
+			} else if (token == U8T_IDENTIFIER) {
+				const char* valueText = u8t_scanner_token_text(scanner, &n);
+				// Check for scoped identifier (module::constant)
+				char32_t nextToken = u8t_scanner_peek(scanner);
+				if (nextToken == ':') {
+					u8t_scanner_scan(scanner); // consume ':'
+					char32_t doubleColon = u8t_scanner_scan(scanner);
+					if (doubleColon == ':') {
+						// This is a scoped identifier
+						char32_t nameToken = u8t_scanner_scan(scanner);
+						if (nameToken == U8T_IDENTIFIER) {
+							const char* nameText = u8t_scanner_token_text(scanner, &n);
+							caseValue = new AstNodeScopedIdentifier(valueText, nameText);
+							setNodePosition(caseValue, scanner, src);
+						}
+					}
+				} else {
+					caseValue = isBuiltInInstruction(valueText)
+										? static_cast<IAstNode*>(new AstNodeInstruction(valueText))
+										: static_cast<IAstNode*>(new AstNodeIdentifier(valueText));
+					setNodePosition(caseValue, scanner, src);
+				}
+			}
+
+			if (!caseValue) {
+				errorReporter->reportError(scanner, "Expected case value in switch statement");
+				continue;
+			}
+
+			token = u8t_scanner_scan(scanner);
+			if (token != '{') {
+				errorReporter->reportError(scanner, "Expected '{' after case value");
+				delete caseValue;
+				continue;
+			}
+
+			AstNodeBlock* caseBody = new AstNodeBlock();
+			setNodePosition(caseBody, scanner, src);
+			while ((token = u8t_scanner_scan(scanner)) != U8T_EOF) {
+				if (token == '}') {
+					break;
+				}
+
+				IAstNode* node = parseBlockStatement(token, scanner, errorReporter, &n, src, false);
+				if (node) {
+					node->setParent(caseBody);
+					caseBody->addChild(node);
+				}
+			}
+
+			AstNodeCase* caseNode = new AstNodeCase(caseValue, false);
+			setNodePosition(caseNode, scanner, src);
+			caseBody->setParent(caseNode);
+			caseNode->setBody(caseBody);
+			caseNode->setParent(switchStmt);
+			switchStmt->addCase(caseNode);
 		}
 
 		return switchStmt;

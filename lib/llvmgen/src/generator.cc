@@ -29,6 +29,7 @@
 #include <qc/ast_node_loop.h>
 #include <qc/ast_node_return.h>
 #include <qc/ast_node_scoped.h>
+#include <qc/ast_node_switch.h>
 #include <qc/ast_node_use.h>
 
 #include <cstdlib>
@@ -115,6 +116,7 @@ namespace Qd {
 		void generateIdentifier(AstNodeIdentifier* ident, llvm::Value* ctx, llvm::Value* forIterVar);
 		void generateFunctionPointer(AstNodeFunctionPointerReference* funcPtr, llvm::Value* ctx);
 		void generateScopedIdentifier(AstNodeScopedIdentifier* scopedIdent, llvm::Value* ctx);
+		void generateSwitchStatement(AstNodeSwitchStatement* switchStmt, llvm::Value* ctx, llvm::Value* forIterVar);
 	};
 
 	void LlvmGenerator::Impl::setupRuntimeDeclarations() {
@@ -557,6 +559,199 @@ namespace Qd {
 		}
 	}
 
+	void LlvmGenerator::Impl::generateSwitchStatement(
+			AstNodeSwitchStatement* switchStmt, llvm::Value* ctx, llvm::Value* forIterVar) {
+		// Get current function
+		llvm::Function* currentFn = builder->GetInsertBlock()->getParent();
+
+		// Get the runtime stack pop function
+		auto stackPopFunc = module->getFunction("qd_stack_pop");
+		auto switchElemTy = llvm::StructType::get(*context,
+				{builder->getInt64Ty(),			// value (union as i64)
+						builder->getInt32Ty(),	// type
+						builder->getInt1Ty()}); // is_error_tainted
+
+		// Pop the value to switch on from the stack
+		auto stackFieldPtr =
+				builder->CreateStructGEP(llvm::StructType::get(*context,
+												 {llvm::PointerType::getUnqual(*context),		   // qd_stack* st
+														 builder->getInt1Ty(),					   // bool has_error
+														 builder->getInt32Ty(),					   // int argc
+														 llvm::PointerType::getUnqual(*context),   // char** argv
+														 llvm::PointerType::getUnqual(*context)}), // char* program_name
+						ctx, 0, "st_ptr");
+		auto stack = builder->CreateLoad(llvm::PointerType::getUnqual(*context), stackFieldPtr, "st");
+		auto switchElem = builder->CreateAlloca(switchElemTy, nullptr, "switch_elem");
+		builder->CreateCall(stackPopFunc, {stack, switchElem});
+
+		// Create merge block (after all cases)
+		llvm::BasicBlock* mergeBB = llvm::BasicBlock::Create(*context, "switch.merge", currentFn);
+
+		// Generate cases as if-else chain
+		const auto& cases = switchStmt->cases();
+		llvm::BasicBlock* nextCaseBB = nullptr;
+		llvm::BasicBlock* defaultBB = nullptr;
+
+		// Find default case if present
+		for (auto* caseNode : cases) {
+			if (caseNode->isDefault()) {
+				defaultBB = llvm::BasicBlock::Create(*context, "switch.default", currentFn);
+				break;
+			}
+		}
+
+		// If no default, merge is the default
+		if (!defaultBB) {
+			defaultBB = mergeBB;
+		}
+
+		// Count non-default cases
+		size_t nonDefaultCaseCount = 0;
+		for (auto* caseNode : cases) {
+			if (!caseNode->isDefault()) {
+				nonDefaultCaseCount++;
+			}
+		}
+
+		// Generate each case
+		size_t processedCases = 0;
+		for (size_t i = 0; i < cases.size(); i++) {
+			AstNodeCase* caseNode = cases[i];
+
+			if (caseNode->isDefault()) {
+				// Handle default case at the end
+				continue;
+			}
+
+			// Create blocks for this case
+			llvm::BasicBlock* caseBB = llvm::BasicBlock::Create(*context, "switch.case", currentFn);
+			processedCases++;
+			nextCaseBB = (processedCases < nonDefaultCaseCount)
+								 ? llvm::BasicBlock::Create(*context, "switch.check", currentFn)
+								 : defaultBB;
+
+			// Generate comparison
+			IAstNode* caseValue = caseNode->value();
+			llvm::Value* matches = nullptr;
+
+			if (caseValue->type() == IAstNode::Type::LITERAL) {
+				AstNodeLiteral* lit = static_cast<AstNodeLiteral*>(caseValue);
+
+				if (lit->literalType() == AstNodeLiteral::LiteralType::INTEGER) {
+					// Compare switch value with case value (integer)
+					auto valuePtr = builder->CreateStructGEP(switchElemTy, switchElem, 0, "value_ptr");
+					auto switchVal = builder->CreateLoad(builder->getInt64Ty(), valuePtr, "switch_val");
+					auto caseVal = builder->getInt64(static_cast<uint64_t>(std::stoll(lit->value())));
+					matches = builder->CreateICmpEQ(switchVal, caseVal, "case_match");
+				} else if (lit->literalType() == AstNodeLiteral::LiteralType::FLOAT) {
+					// Compare float values
+					auto valuePtr = builder->CreateStructGEP(switchElemTy, switchElem, 0, "value_ptr");
+					auto switchVal = builder->CreateLoad(builder->getDoubleTy(), valuePtr, "switch_val_f");
+					auto caseVal = llvm::ConstantFP::get(builder->getDoubleTy(), std::stod(lit->value()));
+					matches = builder->CreateFCmpOEQ(switchVal, caseVal, "case_match");
+				} else if (lit->literalType() == AstNodeLiteral::LiteralType::STRING) {
+					// Compare strings using strcmp
+					auto strcmpFn = module->getFunction("strcmp");
+					if (!strcmpFn) {
+						// Declare strcmp if not already declared
+						auto charPtrTy = llvm::PointerType::getUnqual(*context);
+						auto strcmpTy = llvm::FunctionType::get(builder->getInt32Ty(), {charPtrTy, charPtrTy}, false);
+						strcmpFn = llvm::Function::Create(
+								strcmpTy, llvm::Function::ExternalLinkage, "strcmp", module.get());
+					}
+
+					// Get switch string value
+					auto valuePtr = builder->CreateStructGEP(switchElemTy, switchElem, 0, "value_ptr");
+					auto switchStrPtr =
+							builder->CreateLoad(llvm::PointerType::getUnqual(*context), valuePtr, "switch_str");
+
+					// Create case string constant
+					auto caseStr = builder->CreateGlobalString(lit->value().substr(1, lit->value().length() - 2));
+
+					// Call strcmp
+					auto cmpResult = builder->CreateCall(strcmpFn, {switchStrPtr, caseStr}, "strcmp_result");
+					matches = builder->CreateICmpEQ(cmpResult, builder->getInt32(0), "case_match");
+				}
+			} else if (caseValue->type() == IAstNode::Type::SCOPED_IDENTIFIER) {
+				// Handle scoped constants (module::ConstName)
+				AstNodeScopedIdentifier* scoped = static_cast<AstNodeScopedIdentifier*>(caseValue);
+				std::string constName = scoped->scope() + "_" + scoped->name();
+
+				// Get the constant global variable
+				auto constGlobal = module->getNamedGlobal(constName);
+				if (constGlobal) {
+					auto constType = constGlobal->getValueType();
+					auto valuePtr = builder->CreateStructGEP(switchElemTy, switchElem, 0, "value_ptr");
+
+					if (constType->isIntegerTy(64)) {
+						// Integer constant
+						auto switchVal = builder->CreateLoad(builder->getInt64Ty(), valuePtr, "switch_val");
+						auto caseVal = builder->CreateLoad(builder->getInt64Ty(), constGlobal, "const_val");
+						matches = builder->CreateICmpEQ(switchVal, caseVal, "case_match");
+					} else if (constType->isDoubleTy()) {
+						// Float constant
+						auto switchVal = builder->CreateLoad(builder->getDoubleTy(), valuePtr, "switch_val_f");
+						auto caseVal = builder->CreateLoad(builder->getDoubleTy(), constGlobal, "const_val");
+						matches = builder->CreateFCmpOEQ(switchVal, caseVal, "case_match");
+					} else if (constType->isPointerTy()) {
+						// String constant
+						auto strcmpFn = module->getFunction("strcmp");
+						if (!strcmpFn) {
+							auto charPtrTy = llvm::PointerType::getUnqual(*context);
+							auto strcmpTy =
+									llvm::FunctionType::get(builder->getInt32Ty(), {charPtrTy, charPtrTy}, false);
+							strcmpFn = llvm::Function::Create(
+									strcmpTy, llvm::Function::ExternalLinkage, "strcmp", module.get());
+						}
+
+						auto switchStrPtr =
+								builder->CreateLoad(llvm::PointerType::getUnqual(*context), valuePtr, "switch_str");
+						auto caseStrPtr =
+								builder->CreateLoad(llvm::PointerType::getUnqual(*context), constGlobal, "const_str");
+						auto cmpResult = builder->CreateCall(strcmpFn, {switchStrPtr, caseStrPtr}, "strcmp_result");
+						matches = builder->CreateICmpEQ(cmpResult, builder->getInt32(0), "case_match");
+					}
+				}
+			}
+
+			if (matches) {
+				builder->CreateCondBr(matches, caseBB, nextCaseBB);
+
+				// Generate case body
+				builder->SetInsertPoint(caseBB);
+				if (caseNode->body()) {
+					generateNode(caseNode->body(), ctx, forIterVar);
+				}
+				// Branch to merge (automatic break)
+				llvm::BasicBlock* caseBlock = builder->GetInsertBlock();
+				if (caseBlock && !caseBlock->getTerminator()) {
+					builder->CreateBr(mergeBB);
+				}
+
+				// Set up for next case
+				builder->SetInsertPoint(nextCaseBB);
+			}
+		}
+
+		// Generate default case if present
+		if (defaultBB != mergeBB) {
+			builder->SetInsertPoint(defaultBB);
+			for (auto* caseNode : cases) {
+				if (caseNode->isDefault() && caseNode->body()) {
+					generateNode(caseNode->body(), ctx, forIterVar);
+					break;
+				}
+			}
+			llvm::BasicBlock* defaultBlock = builder->GetInsertBlock();
+			if (defaultBlock && !defaultBlock->getTerminator()) {
+				builder->CreateBr(mergeBB);
+			}
+		}
+
+		// Continue with merge block
+		builder->SetInsertPoint(mergeBB);
+	}
+
 	void LlvmGenerator::Impl::generateIf(AstNodeIfStatement* ifStmt, llvm::Value* ctx, llvm::Value* forIterVar) {
 		// Get current function
 		llvm::Function* currentFn = builder->GetInsertBlock()->getParent();
@@ -815,6 +1010,9 @@ namespace Qd {
 			break;
 		case IAstNode::Type::LOOP_STATEMENT:
 			generateLoop(static_cast<AstNodeLoopStatement*>(node), ctx);
+			break;
+		case IAstNode::Type::SWITCH_STATEMENT:
+			generateSwitchStatement(static_cast<AstNodeSwitchStatement*>(node), ctx, forIterVar);
 			break;
 		case IAstNode::Type::BREAK_STATEMENT:
 			// Break from current loop
@@ -1281,8 +1479,8 @@ namespace Qd {
 		auto cpu = "generic";
 		auto features = "";
 		llvm::TargetOptions opt;
-		auto targetMachine = target->createTargetMachine(
-				targetTriple, cpu, features, opt, std::optional<llvm::Reloc::Model>(llvm::Reloc::PIC_));
+		std::unique_ptr<llvm::TargetMachine> targetMachine(target->createTargetMachine(
+				targetTriple, cpu, features, opt, std::optional<llvm::Reloc::Model>(llvm::Reloc::PIC_)));
 
 		impl->module->setDataLayout(targetMachine->createDataLayout());
 

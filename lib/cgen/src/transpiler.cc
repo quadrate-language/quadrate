@@ -18,6 +18,7 @@
 #include <qc/ast_node_loop.h>
 #include <qc/ast_node_parameter.h>
 #include <qc/ast_node_scoped.h>
+#include <qc/ast_node_switch.h>
 #include <qc/ast_node_use.h>
 #include <qc/ast_printer.h>
 #include <qc/colors.h>
@@ -359,11 +360,125 @@ namespace Qd {
 			out << makeIndent(indent) << "}\n";
 			return; // Don't traverse children again
 		}
-		case IAstNode::Type::SWITCH_STATEMENT:
-			// TODO: Handle switch statement
-			break;
+		case IAstNode::Type::SWITCH_STATEMENT: {
+			AstNodeSwitchStatement* switchStmt = static_cast<AstNodeSwitchStatement*>(node);
+
+			// Pop the value to switch on
+			std::string varName = "qd_switch_" + std::to_string(varCounter++);
+			out << makeIndent(indent) << "qd_stack_element_t " << varName << ";\n";
+			out << makeIndent(indent) << "qd_stack_pop(ctx->st, &" << varName << ");\n";
+
+			// Generate if-else chain for cases
+			const auto& cases = switchStmt->cases();
+			bool first = true;
+			bool hasDefault = false;
+
+			for (size_t i = 0; i < cases.size(); i++) {
+				AstNodeCase* caseNode = cases[i];
+
+				if (caseNode->isDefault()) {
+					// Default case - handle at the end
+					hasDefault = true;
+					continue;
+				}
+
+				// Generate condition
+				if (first) {
+					out << makeIndent(indent) << "if (";
+					first = false;
+				} else {
+					out << " else if (";
+				}
+
+				// Generate comparison based on case value type
+				IAstNode* caseValue = caseNode->value();
+				if (caseValue->type() == IAstNode::Type::LITERAL) {
+					AstNodeLiteral* lit = static_cast<AstNodeLiteral*>(caseValue);
+					if (lit->literalType() == AstNodeLiteral::LiteralType::INTEGER) {
+						out << varName << ".type == QD_STACK_TYPE_INT && " << varName << ".value.i == " << lit->value();
+					} else if (lit->literalType() == AstNodeLiteral::LiteralType::FLOAT) {
+						out << varName << ".type == QD_STACK_TYPE_FLOAT && " << varName
+							<< ".value.f == " << lit->value();
+					} else if (lit->literalType() == AstNodeLiteral::LiteralType::STRING) {
+						out << varName << ".type == QD_STACK_TYPE_STR && strcmp(" << varName << ".value.s, "
+							<< lit->value() << ") == 0";
+					}
+				} else if (caseValue->type() == IAstNode::Type::SCOPED_IDENTIFIER) {
+					// Handle scoped constants
+					AstNodeScopedIdentifier* scoped = static_cast<AstNodeScopedIdentifier*>(caseValue);
+					std::string constName = scoped->scope() + "_" + scoped->name();
+
+					// We need to determine the type - check if it's a string constant
+					auto constIt = moduleConstants.find(scoped->scope());
+					if (constIt != moduleConstants.end()) {
+						std::string qualifiedName = scoped->scope() + "::" + scoped->name();
+						auto valueIt = moduleConstantValues.find(qualifiedName);
+						if (valueIt != moduleConstantValues.end()) {
+							const std::string& value = valueIt->second;
+							if (!value.empty() && value[0] == '"') {
+								// String constant
+								out << varName << ".type == QD_STACK_TYPE_STR && strcmp(" << varName << ".value.s, "
+									<< constName << ") == 0";
+							} else if (value.find('.') != std::string::npos) {
+								// Float constant
+								out << varName << ".type == QD_STACK_TYPE_FLOAT && " << varName
+									<< ".value.f == " << constName;
+							} else {
+								// Integer constant
+								out << varName << ".type == QD_STACK_TYPE_INT && " << varName
+									<< ".value.i == " << constName;
+							}
+						}
+					}
+				}
+
+				out << ") {\n";
+
+				// Generate case body
+				if (caseNode->body()) {
+					traverse(caseNode->body(), packageName, out, indent + 1, varCounter, currentForIterator,
+							deferStatements, throwsMap, moduleConstants, moduleConstantValues,
+							currentFunctionIsFallible);
+				}
+
+				out << makeIndent(indent) << "}";
+			}
+
+			// Handle default case
+			if (hasDefault) {
+				for (auto* caseNode : cases) {
+					if (caseNode->isDefault()) {
+						if (!first) {
+							out << " else {\n";
+						} else {
+							out << makeIndent(indent) << "{\n";
+						}
+
+						if (caseNode->body()) {
+							traverse(caseNode->body(), packageName, out, indent + 1, varCounter, currentForIterator,
+									deferStatements, throwsMap, moduleConstants, moduleConstantValues,
+									currentFunctionIsFallible);
+						}
+
+						out << makeIndent(indent) << "}";
+						break;
+					}
+				}
+			}
+
+			if (!first) {
+				out << "\n";
+			}
+
+			// Free string if the switch value was a string
+			out << makeIndent(indent) << "if (" << varName << ".type == QD_STACK_TYPE_STR) {\n";
+			out << makeIndent(indent + 1) << "free(" << varName << ".value.s);\n";
+			out << makeIndent(indent) << "}\n";
+
+			return; // Don't traverse children again
+		}
 		case IAstNode::Type::CASE_STATEMENT:
-			// TODO: Handle case statement
+			// Case statements are handled within SWITCH_STATEMENT
 			break;
 		case IAstNode::Type::RETURN_STATEMENT:
 			out << makeIndent(indent) << "goto qd_lbl_done;\n";
@@ -722,7 +837,8 @@ namespace Qd {
 		ss << "// Do not edit manually.\n\n";
 		ss << "#include <qdrt/runtime.h>\n";
 		ss << "#include <stdio.h>\n";
-		ss << "#include <stdlib.h>\n\n";
+		ss << "#include <stdlib.h>\n";
+		ss << "#include <string.h>\n\n";
 
 		// Collect function metadata (throws status)
 		std::unordered_map<std::string, bool> throwsMap;

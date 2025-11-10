@@ -1,0 +1,40 @@
+fn main() {
+    // Test integer switch
+    42 switch {
+        42 {
+            "Matched 42" . nl
+        }
+        100 {
+            "Matched 100" . nl
+        }
+        _ {
+            "No match" . nl
+        }
+    }
+
+    // Test with different value
+    100 switch {
+        42 {
+            "Matched 42" . nl
+        }
+        100 {
+            "Matched 100" . nl
+        }
+        _ {
+            "No match" . nl
+        }
+    }
+
+    // Test default case
+    999 switch {
+        42 {
+            "Matched 42" . nl
+        }
+        100 {
+            "Matched 100" . nl
+        }
+        _ {
+            "Matched default" . nl
+        }
+    }
+}

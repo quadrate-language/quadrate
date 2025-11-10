@@ -1,0 +1,40 @@
+fn main() {
+    // Test string switch
+    "hello" switch {
+        "hello" {
+            "Matched hello" . nl
+        }
+        "world" {
+            "Matched world" . nl
+        }
+        _ {
+            "No match" . nl
+        }
+    }
+
+    // Test with different value
+    "world" switch {
+        "hello" {
+            "Matched hello" . nl
+        }
+        "world" {
+            "Matched world" . nl
+        }
+        _ {
+            "No match" . nl
+        }
+    }
+
+    // Test default case
+    "other" switch {
+        "hello" {
+            "Matched hello" . nl
+        }
+        "world" {
+            "Matched world" . nl
+        }
+        _ {
+            "Matched default" . nl
+        }
+    }
+}

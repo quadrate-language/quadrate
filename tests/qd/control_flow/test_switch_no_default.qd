@@ -1,0 +1,23 @@
+fn main() {
+    // Test switch without default case
+    42 switch {
+        42 {
+            "Matched 42" . nl
+        }
+        100 {
+            "Matched 100" . nl
+        }
+    }
+
+    // Test no match without default - should do nothing
+    999 switch {
+        42 {
+            "Matched 42" . nl
+        }
+        100 {
+            "Matched 100" . nl
+        }
+    }
+
+    "Done" . nl
+}

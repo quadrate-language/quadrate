@@ -1052,7 +1052,8 @@ namespace Qd {
 							// Infer type from value
 							if (!value.empty() && value[0] == '"') {
 								typeStack.push_back(StackValueType::STRING);
-							} else if (value.find('.') != std::string::npos || value.find('e') != std::string::npos || value.find('E') != std::string::npos) {
+							} else if (value.find('.') != std::string::npos || value.find('e') != std::string::npos ||
+									   value.find('E') != std::string::npos) {
 								typeStack.push_back(StackValueType::FLOAT);
 							} else {
 								typeStack.push_back(StackValueType::INT);
