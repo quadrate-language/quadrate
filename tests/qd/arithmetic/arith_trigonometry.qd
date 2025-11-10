@@ -1,3 +1,5 @@
+use math
+
 fn main( -- ) {
 	// Test basic trig functions with 0
 	0 sin . nl

@@ -1,0 +1,39 @@
+use math
+
+fn main( -- ) {
+	// Test constants
+	math::Pi . nl
+	math::E . nl
+	math::Tau . nl
+
+	// Test basic trig (builtins)
+	0 sin . nl
+	0 cos . nl
+
+	// Test sqrt and sq (builtins)
+	16 sqrt . nl
+	5 sq . nl
+
+	// Test abs (builtin)
+	-42 abs . nl
+
+	// Test min/max (builtins)
+	5 10 min . nl
+	5 10 max . nl
+
+	// Test rounding (builtins)
+	3.7 ceil . nl
+	3.7 floor . nl
+	3.5 round . nl
+
+	// Test deg_to_rad (module function)
+	180.0 math::deg_to_rad math::Pi sub abs 0.001 lt . nl
+
+	// Test clamp (module function)
+	15.0 0.0 10.0 math::clamp . nl
+	-5.0 0.0 10.0 math::clamp . nl
+	5.0 0.0 10.0 math::clamp . nl
+
+	// Test lerp (module function)
+	0.0 10.0 0.5 math::lerp . nl
+}

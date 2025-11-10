@@ -1,0 +1,33 @@
+// Example: Using the math module
+// Demonstrates mathematical constants and functions
+
+use math
+
+fn main( -- ) {
+	// Mathematical constants
+	math::Pi . nl
+	math::E . nl
+	math::Tau . nl
+	nl
+
+	// Trigonometric functions (built-ins)
+	math::Pi 6.0 / sin . nl
+	0 cos . nl
+	nl
+
+	// Power and root functions (built-ins)
+	144 sqrt . nl
+	5 3 pow . nl
+	nl
+
+	// Rounding functions (built-ins)
+	3.2 ceil . nl
+	3.8 floor . nl
+	nl
+
+	// Module utility functions
+	90.0 math::deg_to_rad . nl
+	15.0 0.0 10.0 math::clamp . nl
+	0.0 100.0 0.25 math::lerp . nl
+	8.0 2.0 math::log . nl
+}

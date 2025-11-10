@@ -1,0 +1,49 @@
+// Mathematical constants
+const Pi = 3.141592653589793
+const E = 2.718281828459045
+const Tau = 6.283185307179586
+
+// Note: Trigonometric, power, logarithmic, rounding, and basic math functions
+// (sin, cos, tan, asin, acos, atan, sqrt, sq, cb, cbrt, pow, ln, log10,
+//  ceil, floor, round, abs, min, max, fac, inv)
+// are available as built-in instructions and can be used directly after
+// importing this module.
+
+// Utility functions that combine built-in operations
+
+fn log(x:f base:f -- result:f) {
+	// log_base(x) = ln(x) / ln(base)
+	swap ln swap ln div
+}
+
+fn clamp(x:f min_val:f max_val:f -- result:f) {
+	// Clamp x between min_val and max_val
+	// clamp(x, min, max) = max(min, min(x, max))
+	// Stack: x min max
+	rot rot       // Stack: max x min
+	swap          // Stack: max min x
+	rot           // Stack: min x max
+	min           // Stack: min min(x,max)
+	max           // Stack: max(min, min(x,max))
+}
+
+fn lerp(a:f b:f t:f -- result:f) {
+	// Linear interpolation: a + (b - a) * t
+	// Stack: a b t
+	rot rot       // Stack: t a b
+	over          // Stack: t a b a
+	sub           // Stack: t a (b-a)
+	rot           // Stack: a (b-a) t
+	mul           // Stack: a ((b-a)*t)
+	add           // Stack: (a+(b-a)*t)
+}
+
+fn deg_to_rad(degrees:f -- radians:f) {
+	// radians = degrees * pi / 180
+	3.141592653589793 180 div mul
+}
+
+fn rad_to_deg(radians:f -- degrees:f) {
+	// degrees = radians * 180 / pi
+	180 mul 3.141592653589793 div
+}
