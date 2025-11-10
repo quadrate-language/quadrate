@@ -4,7 +4,7 @@ fn safe_divide(a:i b:i -- result:i)! {
 	} else {
 		drop drop
 		0
-		error
+		"Error occurred" 1 error
 	}
 }
 

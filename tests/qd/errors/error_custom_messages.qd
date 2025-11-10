@@ -1,0 +1,25 @@
+// Test custom error messages and codes
+fn divide(a:i b:i -- result:i)! {
+	dup 0 eq if {
+		drop drop
+		0  // Dummy result value
+		"Division by zero" 100 error
+	}
+	/
+}
+
+fn main() {
+	"Test 1: 10 / 2" . nl
+	10 2 divide if {
+		"Result: " . . nl
+	} else {
+		drop "Error" . nl
+	}
+
+	"Test 2: 10 / 0" . nl
+	10 0 divide if {
+		"Result: " . . nl
+	} else {
+		drop "Error (expected)" . nl
+	}
+}

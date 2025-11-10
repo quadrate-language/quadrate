@@ -318,6 +318,7 @@ namespace Qd {
 				auto fnTy = llvm::FunctionType::get(execResultTy, {contextPtrTy}, false);
 				runtimeFn = llvm::Function::Create(fnTy, llvm::Function::ExternalLinkage, fnName, *module);
 			}
+
 			builder->CreateCall(runtimeFn, {ctx});
 
 			// Special handling for 'error' instruction in fallible functions
@@ -347,19 +348,22 @@ namespace Qd {
 			auto fallibleIt = fallibleFunctions.find(name);
 			if (fallibleIt != fallibleFunctions.end() && fallibleIt->second) {
 				// This is a fallible function - push error status after the call
-				// Get the has_error field from context (field index 1)
-				// Context layout: {qd_stack* st, bool has_error, int argc, char** argv, char* program_name}
+				// Get the error_code field from context (field index 1)
+				// Context layout: {qd_stack* st, int64_t error_code, char* error_msg, int argc, char** argv, char*
+				// program_name}
 				auto contextStructTy = llvm::StructType::get(
 						*context, {
 										  llvm::PointerType::getUnqual(*context), // qd_stack* st
-										  builder->getInt1Ty(),					  // bool has_error
+										  builder->getInt64Ty(),				  // int64_t error_code
+										  llvm::PointerType::getUnqual(*context), // char* error_msg
 										  builder->getInt32Ty(),				  // int argc
 										  llvm::PointerType::getUnqual(*context), // char** argv
 										  llvm::PointerType::getUnqual(*context)  // char* program_name
 								  });
 
-				auto hasErrorPtr = builder->CreateStructGEP(contextStructTy, ctx, 1, "has_error_ptr");
-				auto hasError = builder->CreateLoad(builder->getInt1Ty(), hasErrorPtr, "has_error");
+				auto errorCodePtr = builder->CreateStructGEP(contextStructTy, ctx, 1, "error_code_ptr");
+				auto errorCode = builder->CreateLoad(builder->getInt64Ty(), errorCodePtr, "error_code");
+				auto hasError = builder->CreateICmpNE(errorCode, builder->getInt64(0), "has_error");
 
 				if (ident->abortOnError()) {
 					// ! operator: check error and abort if set
@@ -396,7 +400,7 @@ namespace Qd {
 							hasError, builder->getInt64(0), builder->getInt64(1), "success_status");
 
 					// Clear the error flag
-					builder->CreateStore(builder->getInt1(false), hasErrorPtr);
+					builder->CreateStore(builder->getInt64(0), errorCodePtr);
 
 					// Push the success status onto the stack
 					builder->CreateCall(pushIntFn, {ctx, successStatus});
@@ -477,14 +481,16 @@ namespace Qd {
 			auto contextStructTy =
 					llvm::StructType::get(*context, {
 															llvm::PointerType::getUnqual(*context), // qd_stack* st
-															builder->getInt1Ty(),					// bool has_error
+															builder->getInt64Ty(), // int64_t error_code
+															llvm::PointerType::getUnqual(*context), // char* error_msg
 															builder->getInt32Ty(),					// int argc
 															llvm::PointerType::getUnqual(*context), // char** argv
 															llvm::PointerType::getUnqual(*context) // char* program_name
 													});
 
-			auto hasErrorPtr = builder->CreateStructGEP(contextStructTy, ctx, 1, "has_error_ptr");
-			auto hasError = builder->CreateLoad(builder->getInt1Ty(), hasErrorPtr, "has_error");
+			auto errorCodePtr = builder->CreateStructGEP(contextStructTy, ctx, 1, "error_code_ptr");
+			auto errorCode = builder->CreateLoad(builder->getInt64Ty(), errorCodePtr, "error_code");
+			auto hasError = builder->CreateICmpNE(errorCode, builder->getInt64(0), "has_error");
 
 			if (scopedIdent->abortOnError()) {
 				// ! operator: check error and abort if set
@@ -550,7 +556,7 @@ namespace Qd {
 							hasError, builder->getInt64(0), builder->getInt64(1), "success_status");
 
 					// Clear the error flag
-					builder->CreateStore(builder->getInt1(false), hasErrorPtr);
+					builder->CreateStore(builder->getInt64(0), errorCodePtr);
 
 					// Push the success status onto the stack
 					builder->CreateCall(pushIntFn, {ctx, successStatus});
@@ -575,7 +581,8 @@ namespace Qd {
 		auto stackFieldPtr =
 				builder->CreateStructGEP(llvm::StructType::get(*context,
 												 {llvm::PointerType::getUnqual(*context),		   // qd_stack* st
-														 builder->getInt1Ty(),					   // bool has_error
+														 builder->getInt64Ty(),					   // int64_t error_code
+														 llvm::PointerType::getUnqual(*context),   // char* error_msg
 														 builder->getInt32Ty(),					   // int argc
 														 llvm::PointerType::getUnqual(*context),   // char** argv
 														 llvm::PointerType::getUnqual(*context)}), // char* program_name
@@ -769,7 +776,8 @@ namespace Qd {
 				builder->CreateStructGEP(llvm::StructType::get(*context,
 												 {
 														 llvm::PointerType::getUnqual(*context), // qd_stack* st
-														 builder->getInt1Ty(),					 // bool has_error
+														 builder->getInt64Ty(),					 // int64_t error_code
+														 llvm::PointerType::getUnqual(*context), // char* error_msg
 														 builder->getInt32Ty(),					 // int argc
 														 llvm::PointerType::getUnqual(*context), // char** argv
 														 llvm::PointerType::getUnqual(*context)	 // char* program_name
@@ -847,7 +855,8 @@ namespace Qd {
 				builder->CreateStructGEP(llvm::StructType::get(*context,
 												 {
 														 llvm::PointerType::getUnqual(*context), // qd_stack* st
-														 builder->getInt1Ty(),					 // bool has_error
+														 builder->getInt64Ty(),					 // int64_t error_code
+														 llvm::PointerType::getUnqual(*context), // char* error_msg
 														 builder->getInt32Ty(),					 // int argc
 														 llvm::PointerType::getUnqual(*context), // char** argv
 														 llvm::PointerType::getUnqual(*context)	 // char* program_name

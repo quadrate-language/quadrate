@@ -1,6 +1,6 @@
 fn always_error(a:i -- result:i)! {
 	0
-	error
+	"Error occurred" 1 error
 }
 
 fn main() {

@@ -1,6 +1,6 @@
 fn might_fail(a:i -- result:i)! {
 	dup 10 > if {
-		error
+		"Error occurred" 1 error
 	}
 }
 

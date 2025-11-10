@@ -4,6 +4,7 @@
 #include <qdrt/stack.h>
 #include <stdbool.h>
 #include <stddef.h>
+#include <stdint.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -13,7 +14,8 @@ extern "C" {
 
 typedef struct {
 	qd_stack* st;
-	bool has_error;
+	int64_t error_code;
+	char* error_msg;
 	int argc;
 	char** argv;
 	char* program_name;

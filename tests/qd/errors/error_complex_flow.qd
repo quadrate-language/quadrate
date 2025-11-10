@@ -1,14 +1,14 @@
 fn parse_number(a:i -- result:i)! {
 	dup 0 < if {
 		0
-		error
+		"Error occurred" 1 error
 	}
 }
 
 fn validate_range(a:i -- result:i)! {
 	dup 100 > if {
 		0
-		error
+		"Error occurred" 1 error
 	}
 }
 

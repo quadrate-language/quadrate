@@ -3657,9 +3657,9 @@ qd_exec_result qd_wait(qd_context* ctx) {
 }
 
 qd_exec_result qd_err(qd_context* ctx) {
-	// Check if top of stack is error-tainted and push the error status
+	// Check if top of stack is error-tainted and push error code, message, and status
 	// Stack before: [value (tainted)]
-	// Stack after: [value (untainted), error_status]
+	// Stack after: [value (untainted), error_msg:str, error_code:int, has_error:int]
 	size_t stack_size = qd_stack_size(ctx->st);
 	if (stack_size < 1) {
 		fprintf(stderr, "Fatal error in err: Stack underflow (required 1 element, have %zu)\n", stack_size);
@@ -3679,27 +3679,98 @@ qd_exec_result qd_err(qd_context* ctx) {
 	// Remove the taint from the top element
 	qd_stack_clear_top_taint(ctx->st);
 
-	// Push error status (0 = no error, 1 = error)
-	int64_t error_status = ctx->has_error ? 1 : 0;
-	qd_stack_error err = qd_stack_push_int(ctx->st, error_status);
+	// Push error message (empty string if no error)
+	const char* msg = (ctx->error_code != 0 && ctx->error_msg) ? ctx->error_msg : "";
+	qd_stack_error err = qd_stack_push_str(ctx->st, msg);
 	if (err != QD_STACK_OK) {
-		fprintf(stderr, "Fatal error in err: Failed to push error status\n");
+		fprintf(stderr, "Fatal error in err: Failed to push error message\n");
 		dump_stack(ctx);
 		qd_print_stack_trace(ctx);
 		abort();
 	}
 
-	// Clear error flag after checking it
-	ctx->has_error = false;
+	// Push error code
+	err = qd_stack_push_int(ctx->st, ctx->error_code);
+	if (err != QD_STACK_OK) {
+		fprintf(stderr, "Fatal error in err: Failed to push error code\n");
+		dump_stack(ctx);
+		qd_print_stack_trace(ctx);
+		abort();
+	}
+
+	// Push has_error flag (0 = no error, non-zero = error)
+	int64_t has_error = (ctx->error_code != 0) ? 1 : 0;
+	err = qd_stack_push_int(ctx->st, has_error);
+	if (err != QD_STACK_OK) {
+		fprintf(stderr, "Fatal error in err: Failed to push has_error flag\n");
+		dump_stack(ctx);
+		qd_print_stack_trace(ctx);
+		abort();
+	}
+
+	// Clear error state after checking it
+	ctx->error_code = 0;
+	if (ctx->error_msg) {
+		free(ctx->error_msg);
+		ctx->error_msg = NULL;
+	}
 
 	return (qd_exec_result){0};
 }
 
 qd_exec_result qd_error(qd_context* ctx) {
-	// Set the error flag
-	// Stack before: [...anything...]
-	// Stack after: [...anything...] (unchanged)
-	ctx->has_error = true;
+	// Pop error code and message from stack and set error state
+	// Stack before: [error_msg:str, error_code:int]
+	// Stack after: []
+	qd_stack_element_t error_msg_elem, error_code_elem;
+
+	// Pop error code (integer)
+	qd_stack_error err = qd_stack_pop(ctx->st, &error_code_elem);
+	if (err != QD_STACK_OK) {
+		fprintf(stderr, "Fatal error in error: Stack underflow when popping error code\n");
+		dump_stack(ctx);
+		qd_print_stack_trace(ctx);
+		abort();
+	}
+
+	if (error_code_elem.type != QD_STACK_TYPE_INT) {
+		fprintf(stderr, "Fatal error in error: Expected integer error code, got type %d\n", error_code_elem.type);
+		dump_stack(ctx);
+		qd_print_stack_trace(ctx);
+		abort();
+	}
+
+	// Pop error message (string)
+	err = qd_stack_pop(ctx->st, &error_msg_elem);
+	if (err != QD_STACK_OK) {
+		fprintf(stderr, "Fatal error in error: Stack underflow when popping error message\n");
+		dump_stack(ctx);
+		qd_print_stack_trace(ctx);
+		abort();
+	}
+
+	if (error_msg_elem.type != QD_STACK_TYPE_STR) {
+		fprintf(stderr, "Fatal error in error: Expected string error message, got type %d\n", error_msg_elem.type);
+		dump_stack(ctx);
+		qd_print_stack_trace(ctx);
+		// Free the error code's string if needed
+		if (error_code_elem.type == QD_STACK_TYPE_STR) {
+			free(error_code_elem.value.s);
+		}
+		abort();
+	}
+
+	// Set error code and message
+	ctx->error_code = error_code_elem.value.i;
+
+	// Free old error message if it exists
+	if (ctx->error_msg) {
+		free(ctx->error_msg);
+	}
+
+	// Take ownership of the error message string
+	ctx->error_msg = error_msg_elem.value.s;
+
 	return (qd_exec_result){0};
 }
 
@@ -3857,7 +3928,8 @@ qd_context* qd_create_context(size_t stack_size) {
 			free(ctx);
 			return NULL;
 		}
-		ctx->has_error = false;
+		ctx->error_code = 0;
+		ctx->error_msg = NULL;
 		ctx->argc = 0;
 		ctx->argv = NULL;
 		ctx->program_name = NULL;
@@ -3873,6 +3945,9 @@ void qd_free_context(qd_context* ctx) {
 	qd_stack_destroy(ctx->st);
 	if (ctx->program_name) {
 		free(ctx->program_name);
+	}
+	if (ctx->error_msg) {
+		free(ctx->error_msg);
 	}
 	free(ctx);
 }

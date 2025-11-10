@@ -239,7 +239,7 @@ namespace Qd {
 			// For fallible functions, only check output types if no error occurred
 			if (!funcDecl->outputParameters().empty()) {
 				if (isFallible) {
-					out << makeIndent(indent + 1) << "if (!ctx->has_error) {\n";
+					out << makeIndent(indent + 1) << "if (ctx->error_code == 0) {\n";
 				}
 				out << makeIndent(isFallible ? indent + 2 : indent + 1) << "qd_stack_type output_types[] = {";
 				for (size_t i = 0; i < funcDecl->outputParameters().size(); i++) {
@@ -551,7 +551,7 @@ namespace Qd {
 				if (functionThrows) {
 					if (ident->abortOnError()) {
 						// ! operator: check error and abort if set
-						out << makeIndent(indent) << "if (ctx->has_error) {\n";
+						out << makeIndent(indent) << "if (ctx->error_code != 0) {\n";
 						out << makeIndent(indent + 1) << "fprintf(stderr, \"Fatal error: function '" << ident->name()
 							<< "' failed\\n\");\n";
 						out << makeIndent(indent + 1) << "abort();\n";
@@ -561,15 +561,15 @@ namespace Qd {
 						std::string varName = "qd_success_" + std::to_string(varCounter++);
 						out << makeIndent(indent)
 							<< "// Check error and push success status (1 = success, 0 = error)\n";
-						out << makeIndent(indent) << "int64_t " << varName << " = ctx->has_error ? 0 : 1;\n";
-						out << makeIndent(indent) << "ctx->has_error = false; // Clear error flag\n";
+						out << makeIndent(indent) << "int64_t " << varName << " = ctx->error_code != 0 ? 0 : 1;\n";
+						out << makeIndent(indent) << "ctx->error_code = 0; // Clear error flag\n";
 						out << makeIndent(indent) << "qd_stack_push_int(ctx->st, " << varName << ");\n";
 					} else {
 						// No operator: automatically push error flag (will be checked by 'if')
 						std::string varName = "qd_success_" + std::to_string(varCounter++);
 						out << makeIndent(indent) << "// Fallible function - automatically push error status flag\n";
-						out << makeIndent(indent) << "int64_t " << varName << " = ctx->has_error ? 0 : 1;\n";
-						out << makeIndent(indent) << "ctx->has_error = false; // Clear error flag\n";
+						out << makeIndent(indent) << "int64_t " << varName << " = ctx->error_code != 0 ? 0 : 1;\n";
+						out << makeIndent(indent) << "ctx->error_code = 0; // Clear error flag\n";
 						out << makeIndent(indent) << "qd_stack_push_int(ctx->st, " << varName << ");\n";
 					}
 				}
@@ -614,9 +614,9 @@ namespace Qd {
 			} else if (strcmp(instrName, "!") == 0) {
 				instrName = "not"; // Logical not operator
 			}
+
 			out << makeIndent(indent) << "qd_" << instrName << "(ctx);\n";
 
-			// Special handling for 'error' instruction in fallible functions
 			// After calling qd_error, we need to return immediately to prevent further execution
 			if (strcmp(instrName, "error") == 0 && currentFunctionIsFallible) {
 				out << makeIndent(indent) << "goto qd_lbl_done;\n";

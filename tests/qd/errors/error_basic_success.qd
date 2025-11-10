@@ -2,7 +2,7 @@ fn safe_operation(a:i -- result:i)! {
 	dup 0 > if {
 		dup mul
 	} else {
-		error
+		"Error occurred" 1 error
 	}
 }
 

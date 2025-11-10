@@ -3,7 +3,7 @@ fn validate_positive(a:i -- result:i)! {
 		dup
 	} else {
 		0
-		error
+		"Error occurred" 1 error
 	}
 }
 
