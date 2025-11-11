@@ -1489,6 +1489,7 @@ namespace Qd {
 		}
 
 		ErrorReporter errorReporter(src, filename);
+		errorReporter.setStoreErrors(true);
 
 		if (mRoot) {
 			delete mRoot;
@@ -1807,8 +1808,9 @@ namespace Qd {
 			}
 		}
 
-		// Store the error count for later checking
+		// Store the error count and details for later checking
 		mErrorCount = errorReporter.errorCount();
+		mErrors = errorReporter.getErrors();
 
 		return mRoot;
 	}

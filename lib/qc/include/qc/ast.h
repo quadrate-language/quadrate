@@ -2,6 +2,8 @@
 #define QD_QC_AST_H
 
 #include <u8t/scanner.h>
+#include <vector>
+#include "error_reporter.h"
 
 namespace Qd {
 	class IAstNode;
@@ -22,9 +24,15 @@ namespace Qd {
 			return mErrorCount > 0;
 		}
 
+		// Get detailed error information
+		const std::vector<ErrorInfo>& getErrors() const {
+			return mErrors;
+		}
+
 	private:
 		IAstNode* mRoot = nullptr;
 		size_t mErrorCount = 0;
+		std::vector<ErrorInfo> mErrors;
 	};
 }
 

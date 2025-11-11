@@ -18,26 +18,17 @@ Full Language Server Protocol integration for Neovim with:
 
 See [nvim/README.md](nvim/README.md) for installation and usage.
 
-### VSCode / VSCodium
+### VSCode / VSCodium (`vscode/`)
 
-**Status**: 📝 Planned
+**Status**: ✅ Complete
 
-To use with VSCode, install a generic LSP client extension and configure:
+Full extension with:
+- **Syntax Highlighting**: TextMate grammar for `.qd` files
+- **Language Server**: Auto-completion and diagnostics via LSP
+- **Smart Editing**: Bracket matching, auto-closing pairs
+- **Configurable**: Custom quadlsp path and trace settings
 
-```json
-{
-  "lsp.servers": {
-    "quadrate": {
-      "command": "quadlsp",
-      "filetypes": ["quadrate"],
-      "rootPatterns": [".git/"]
-    }
-  }
-}
-```
-
-Example extensions:
-- [vscode-languageclient](https://marketplace.visualstudio.com/items?itemName=vscode.vscode-languageclient)
+See [vscode/README.md](vscode/README.md) for installation and testing instructions.
 
 ### Vim (classic)
 

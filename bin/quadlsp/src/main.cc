@@ -121,7 +121,22 @@ private:
 				}
 			}
 		} else if (method == "textDocument/didChange") {
-			// For full sync, we could re-parse but we'll keep it simple
+			json_t* params = getJsonObject(root, "params");
+			if (params) {
+				json_t* textDoc = getJsonObject(params, "textDocument");
+				json_t* contentChanges = getJsonObject(params, "contentChanges");
+				if (textDoc && contentChanges && json_is_array(contentChanges)) {
+					std::string uri = getJsonString(textDoc, "uri");
+					// For full sync, contentChanges[0] contains the full document
+					if (json_array_size(contentChanges) > 0) {
+						json_t* change = json_array_get(contentChanges, 0);
+						std::string text = getJsonString(change, "text");
+						if (!text.empty()) {
+							handleDidOpen(uri, text);
+						}
+					}
+				}
+			}
 		} else if (method == "textDocument/didSave") {
 			json_t* params = getJsonObject(root, "params");
 			if (params) {
@@ -152,6 +167,22 @@ private:
 					handleCompletion(id, uri);
 				}
 			}
+		} else if (method == "textDocument/hover") {
+			json_t* params = getJsonObject(root, "params");
+			if (params) {
+				json_t* textDoc = getJsonObject(params, "textDocument");
+				json_t* position = getJsonObject(params, "position");
+				if (textDoc && position) {
+					std::string uri = getJsonString(textDoc, "uri");
+					json_t* lineJson = json_object_get(position, "line");
+					json_t* charJson = json_object_get(position, "character");
+					if (lineJson && charJson && json_is_integer(lineJson) && json_is_integer(charJson)) {
+						size_t line = static_cast<size_t>(json_integer_value(lineJson));
+						size_t character = static_cast<size_t>(json_integer_value(charJson));
+						handleHover(id, uri, line, character);
+					}
+				}
+			}
 		} else if (method == "shutdown") {
 			handleShutdown(id);
 		} else if (method == "exit") {
@@ -172,6 +203,7 @@ private:
 
 		json_object_set_new(capabilities, "textDocumentSync", json_integer(1)); // Full sync
 		json_object_set_new(capabilities, "documentFormattingProvider", json_true());
+		json_object_set_new(capabilities, "hoverProvider", json_true());
 
 		// Enable snippet support in completions
 		json_t* completionProvider = json_object();
@@ -211,25 +243,33 @@ private:
 
 		json_t* diagnostics = json_array();
 
-		// If there are errors, show a generic diagnostic
+		// If there are errors, show detailed diagnostics
 		if (ast.hasErrors()) {
-			json_t* diag = json_object();
+			const auto& errors = ast.getErrors();
+			for (const auto& error : errors) {
+				json_t* diag = json_object();
 
-			json_t* range = json_object();
-			json_t* start = json_object();
-			json_object_set_new(start, "line", json_integer(0));
-			json_object_set_new(start, "character", json_integer(0));
-			json_t* end = json_object();
-			json_object_set_new(end, "line", json_integer(0));
-			json_object_set_new(end, "character", json_integer(10));
-			json_object_set_new(range, "start", start);
-			json_object_set_new(range, "end", end);
+				// LSP uses 0-based line and column numbers
+				size_t lspLine = (error.line > 0) ? error.line - 1 : 0;
+				size_t lspColumn = (error.column > 0) ? error.column - 1 : 0;
 
-			json_object_set_new(diag, "range", range);
-			json_object_set_new(diag, "severity", json_integer(1)); // Error
-			json_object_set_new(diag, "message", json_string("Syntax error(s) found. Check console for details."));
+				json_t* range = json_object();
+				json_t* start = json_object();
+				json_object_set_new(start, "line", json_integer(static_cast<json_int_t>(lspLine)));
+				json_object_set_new(start, "character", json_integer(static_cast<json_int_t>(lspColumn)));
+				json_t* end = json_object();
+				// End at the same position plus a reasonable offset for visibility
+				json_object_set_new(end, "line", json_integer(static_cast<json_int_t>(lspLine)));
+				json_object_set_new(end, "character", json_integer(static_cast<json_int_t>(lspColumn + 10)));
+				json_object_set_new(range, "start", start);
+				json_object_set_new(range, "end", end);
 
-			json_array_append_new(diagnostics, diag);
+				json_object_set_new(diag, "range", range);
+				json_object_set_new(diag, "severity", json_integer(1)); // Error
+				json_object_set_new(diag, "message", json_string(error.message.c_str()));
+
+				json_array_append_new(diagnostics, diag);
+			}
 		}
 
 		json_object_set_new(params, "diagnostics", diagnostics);
@@ -344,6 +384,164 @@ private:
 		json_object_set_new(result, "items", items);
 		json_object_set_new(response, "result", result);
 
+		sendMessage(response);
+		json_decref(response);
+	}
+
+	std::string getBuiltInDocumentation(const std::string& word) {
+		static const std::map<std::string, std::string> docs = {
+			{"add", "Add two numbers from the stack.\n\n**Stack effect:** `a b -- result`\n\nPops two values, pushes their sum."},
+			{"sub", "Subtract top from second.\n\n**Stack effect:** `a b -- result`\n\nPops two values, pushes `a - b`."},
+			{"mul", "Multiply two numbers.\n\n**Stack effect:** `a b -- result`\n\nPops two values, pushes their product."},
+			{"div", "Divide second by top.\n\n**Stack effect:** `a b -- result`\n\nPops two values, pushes `a / b`."},
+			{"dup", "Duplicate top of stack.\n\n**Stack effect:** `a -- a a`\n\nDuplicates the top stack value."},
+			{"swap", "Swap top two values.\n\n**Stack effect:** `a b -- b a`\n\nSwaps the top two stack values."},
+			{"drop", "Remove top of stack.\n\n**Stack effect:** `a --`\n\nRemoves the top value from the stack."},
+			{"over", "Copy second item to top.\n\n**Stack effect:** `a b -- a b a`\n\nCopies the second value to the top."},
+			{"rot", "Rotate top three items.\n\n**Stack effect:** `a b c -- b c a`\n\nRotates the top three values."},
+			{"print", "Print top value.\n\n**Stack effect:** `a --`\n\nPrints the top value and removes it."},
+			{"prints", "Print string.\n\n**Stack effect:** `str --`\n\nPrints a string value."},
+			{"eq", "Test equality.\n\n**Stack effect:** `a b -- bool`\n\nPushes 1 if equal, 0 otherwise."},
+			{"neq", "Test inequality.\n\n**Stack effect:** `a b -- bool`\n\nPushes 1 if not equal, 0 otherwise."},
+			{"lt", "Less than.\n\n**Stack effect:** `a b -- bool`\n\nPushes 1 if a < b, 0 otherwise."},
+			{"gt", "Greater than.\n\n**Stack effect:** `a b -- bool`\n\nPushes 1 if a > b, 0 otherwise."},
+			{"lte", "Less than or equal.\n\n**Stack effect:** `a b -- bool`"},
+			{"gte", "Greater than or equal.\n\n**Stack effect:** `a b -- bool`"},
+			{"and", "Logical AND.\n\n**Stack effect:** `a b -- bool`"},
+			{"or", "Logical OR.\n\n**Stack effect:** `a b -- bool`"},
+			{"not", "Logical NOT.\n\n**Stack effect:** `a -- bool`"},
+			{"abs", "Absolute value.\n\n**Stack effect:** `a -- result`"},
+			{"sqrt", "Square root.\n\n**Stack effect:** `a -- result`"},
+			{"sq", "Square.\n\n**Stack effect:** `a -- result`"},
+			{"sin", "Sine function.\n\n**Stack effect:** `a -- result`"},
+			{"cos", "Cosine function.\n\n**Stack effect:** `a -- result`"},
+			{"tan", "Tangent function.\n\n**Stack effect:** `a -- result`"},
+			{"if", "Conditional execution.\n\n**Syntax:** `condition if { ... } else { ... }`"},
+			{"for", "Loop construct.\n\n**Syntax:** `start end for { ... }`"},
+			{"loop", "Infinite loop.\n\n**Syntax:** `loop { ... }`"},
+		};
+
+		auto it = docs.find(word);
+		if (it != docs.end()) {
+			return it->second;
+		}
+		return "";
+	}
+
+	std::string getWordAtPosition(const std::string& text, size_t line, size_t character) {
+		// Split text into lines
+		std::vector<std::string> lines;
+		std::istringstream stream(text);
+		std::string currentLine;
+		while (std::getline(stream, currentLine)) {
+			lines.push_back(currentLine);
+		}
+
+		if (line >= lines.size()) {
+			return "";
+		}
+
+		const std::string& targetLine = lines[line];
+		if (character >= targetLine.length()) {
+			return "";
+		}
+
+		// Find word boundaries
+		size_t start = character;
+		size_t end = character;
+
+		// Move start backward to beginning of word
+		while (start > 0 && (isalnum(targetLine[start - 1]) || targetLine[start - 1] == '_' || targetLine[start - 1] == ':')) {
+			start--;
+		}
+
+		// Move end forward to end of word
+		while (end < targetLine.length() && (isalnum(targetLine[end]) || targetLine[end] == '_' || targetLine[end] == ':')) {
+			end++;
+		}
+
+		if (end > start) {
+			return targetLine.substr(start, end - start);
+		}
+		return "";
+	}
+
+	void handleHover(const std::string& id, const std::string& uri, size_t line, size_t character) {
+		json_t* response = json_object();
+		json_object_set_new(response, "jsonrpc", json_string("2.0"));
+		json_object_set_new(response, "id", json_integer(std::stoi(id)));
+
+		// Get document text
+		std::string documentText;
+		auto docIter = documents_.find(uri);
+		if (docIter != documents_.end()) {
+			documentText = docIter->second;
+		} else {
+			// Try to read from disk
+			if (uri.substr(0, 7) == "file://") {
+				std::string filePath = uri.substr(7);
+				std::ifstream file(filePath);
+				if (file.good()) {
+					std::stringstream buffer;
+					buffer << file.rdbuf();
+					documentText = buffer.str();
+				}
+			}
+		}
+
+		json_t* result = json_null();
+
+		if (!documentText.empty()) {
+			std::string word = getWordAtPosition(documentText, line, character);
+
+			if (!word.empty()) {
+				// Check if it's a built-in instruction
+				std::string doc = getBuiltInDocumentation(word);
+
+				if (!doc.empty()) {
+					// Create hover response with documentation
+					result = json_object();
+					json_t* contents = json_object();
+					json_object_set_new(contents, "kind", json_string("markdown"));
+					json_object_set_new(contents, "value", json_string(doc.c_str()));
+					json_object_set_new(result, "contents", contents);
+				} else {
+					// Check if it's a user-defined function
+					std::vector<FunctionInfo> functions = extractFunctions(documentText);
+					for (const auto& func : functions) {
+						if (func.name == word) {
+							// Build documentation for user function
+							std::ostringstream docStream;
+							docStream << "**Function:** `" << func.signature << "`\n\n";
+							if (!func.inputParams.empty()) {
+								docStream << "**Inputs:** ";
+								for (size_t i = 0; i < func.inputParams.size(); i++) {
+									if (i > 0) docStream << ", ";
+									docStream << "`" << func.inputParams[i] << "`";
+								}
+								docStream << "\n\n";
+							}
+							if (!func.outputParams.empty()) {
+								docStream << "**Outputs:** ";
+								for (size_t i = 0; i < func.outputParams.size(); i++) {
+									if (i > 0) docStream << ", ";
+									docStream << "`" << func.outputParams[i] << "`";
+								}
+							}
+
+							result = json_object();
+							json_t* contents = json_object();
+							json_object_set_new(contents, "kind", json_string("markdown"));
+							json_object_set_new(contents, "value", json_string(docStream.str().c_str()));
+							json_object_set_new(result, "contents", contents);
+							break;
+						}
+					}
+				}
+			}
+		}
+
+		json_object_set_new(response, "result", result);
 		sendMessage(response);
 		json_decref(response);
 	}

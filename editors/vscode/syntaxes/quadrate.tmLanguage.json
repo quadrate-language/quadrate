@@ -1,0 +1,80 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "Quadrate",
+  "scopeName": "source.quadrate",
+  "patterns": [
+    { "include": "#comments" },
+    { "include": "#keywords" },
+    { "include": "#strings" },
+    { "include": "#numbers" },
+    { "include": "#functions" },
+    { "include": "#builtins" },
+    { "include": "#types" }
+  ],
+  "repository": {
+    "comments": {
+      "patterns": [
+        {
+          "name": "comment.line.double-slash.quadrate",
+          "match": "//.*$"
+        },
+        {
+          "name": "comment.block.quadrate",
+          "begin": "/\\*",
+          "end": "\\*/"
+        }
+      ]
+    },
+    "keywords": {
+      "patterns": [
+        {
+          "name": "keyword.control.quadrate",
+          "match": "\\b(if|else|for|while|break|continue|defer|switch|case|default|return)\\b"
+        },
+        {
+          "name": "keyword.other.quadrate",
+          "match": "\\b(fn|use|const|let|struct|enum)\\b"
+        }
+      ]
+    },
+    "strings": {
+      "name": "string.quoted.double.quadrate",
+      "begin": "\"",
+      "end": "\"",
+      "patterns": [
+        {
+          "name": "constant.character.escape.quadrate",
+          "match": "\\\\."
+        }
+      ]
+    },
+    "numbers": {
+      "patterns": [
+        {
+          "name": "constant.numeric.float.quadrate",
+          "match": "\\b[0-9]+\\.[0-9]+\\b"
+        },
+        {
+          "name": "constant.numeric.integer.quadrate",
+          "match": "\\b[0-9]+\\b"
+        }
+      ]
+    },
+    "functions": {
+      "patterns": [
+        {
+          "name": "entity.name.function.quadrate",
+          "match": "\\b[a-zA-Z_][a-zA-Z0-9_]*(?=\\s*\\()"
+        }
+      ]
+    },
+    "builtins": {
+      "name": "support.function.builtin.quadrate",
+      "match": "\\b(add|sub|mul|div|mod|neg|abs|ceil|floor|sqrt|pow|sin|cos|tan|log|exp|min|max|eq|ne|lt|le|gt|ge|and|or|not|xor|dup|drop|swap|over|rot|nip|tuck|print|println|error)\\b"
+    },
+    "types": {
+      "name": "storage.type.quadrate",
+      "match": "\\b(int|float|string|bool|ptr|any)\\b"
+    }
+  }
+}

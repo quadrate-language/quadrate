@@ -1,0 +1,73 @@
+{
+  "name": "quadrate",
+  "displayName": "Quadrate Language Support",
+  "description": "Language support for Quadrate programming language",
+  "version": "0.1.0",
+  "publisher": "quadrate",
+  "engines": {
+    "vscode": "^1.75.0"
+  },
+  "categories": [
+    "Programming Languages"
+  ],
+  "activationEvents": [
+    "onLanguage:quadrate"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "languages": [
+      {
+        "id": "quadrate",
+        "aliases": [
+          "Quadrate",
+          "quadrate"
+        ],
+        "extensions": [
+          ".qd"
+        ],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "quadrate",
+        "scopeName": "source.quadrate",
+        "path": "./syntaxes/quadrate.tmLanguage.json"
+      }
+    ],
+    "configuration": {
+      "type": "object",
+      "title": "Quadrate",
+      "properties": {
+        "quadrate.lsp.path": {
+          "type": "string",
+          "default": "quadlsp",
+          "description": "Path to the quadlsp language server executable"
+        },
+        "quadrate.lsp.trace": {
+          "type": "string",
+          "enum": [
+            "off",
+            "messages",
+            "verbose"
+          ],
+          "default": "off",
+          "description": "Trace LSP communication"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./"
+  },
+  "devDependencies": {
+    "@types/node": "^18.0.0",
+    "@types/vscode": "^1.75.0",
+    "typescript": "^5.0.0"
+  },
+  "dependencies": {
+    "vscode-languageclient": "^9.0.0"
+  }
+}
