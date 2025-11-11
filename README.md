@@ -1,6 +1,6 @@
 # Quadrate
 
-A stack-based programming language that compiles to C using GCC as a backend.
+A stack-based programming language that compiles to native code via LLVM.
 
 ## Table of Contents
 - [Description](#description)
@@ -280,7 +280,7 @@ quadrate/
 │   └── quadlsp/      # LSP server
 ├── lib/              # Libraries
 │   ├── qc/           # Compiler frontend (parser, validator)
-│   ├── cgen/         # Code generator (transpiler)
+│   ├── llvmgen/      # Code generator (LLVM-based)
 │   ├── qdrt/         # Runtime library
 │   ├── qd/           # Embedding API
 │   └── stdqd/        # Standard library (native + Quadrate modules)
@@ -293,7 +293,7 @@ quadrate/
 
 1. Parse `.qd` files → AST (using external u8t tokenizer)
 2. Multi-pass semantic validation
-3. Transpile AST → native code
+3. Generate native code from AST via LLVM
 4. Link with runtime library
 
 ### Build System
