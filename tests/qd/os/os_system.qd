@@ -1,0 +1,17 @@
+// Test os::system function
+
+use os
+
+fn main( -- ) {
+	// Test simple echo command
+	"echo 'Hello from os::system'" os::system
+	. nl  // Should print 0 (success)
+
+	// Test true command
+	"true" os::system
+	. nl  // Should print 0 (success)
+
+	// Test false command (exits with non-zero)
+	"false" os::system
+	. nl  // Should print non-zero (typically 256 or 1 depending on shell)
+}

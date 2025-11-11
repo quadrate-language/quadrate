@@ -6,6 +6,7 @@ stdqd_sources = files(
 	'src/fmt.c',
 	'src/math.c',
 	'src/net.c',
+	'src/os.c',
 	'src/str.c',
 	'src/time.c',
 )
