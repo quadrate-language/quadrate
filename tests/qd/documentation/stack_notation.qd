@@ -3,6 +3,7 @@
 // Where inputs and outputs have name:type annotations
 
 use math
+use bits
 
 // Basic arithmetic with stack notation
 fn add_numbers(a:i b:i -- result:i) {
@@ -51,8 +52,8 @@ fn triple_max(a:i b:i c:i -- max:i) {
 
 // Logical operations
 fn bitwise_and_or(a:i b:i c:i -- result:i) {
-	and
-	or
+	bits::and
+	bits::or
 }
 
 // Functions demonstrating drop

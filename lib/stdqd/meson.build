@@ -2,6 +2,7 @@
 # Provides networking, file I/O, and other standard utilities
 
 stdqd_sources = files(
+	'src/bits.c',
 	'src/fmt.c',
 	'src/math.c',
 	'src/net.c',
