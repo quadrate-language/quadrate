@@ -7,8 +7,7 @@
 #include <qdrt/runtime.h>
 #include <qdrt/stack.h>
 #include <unit-check/uc.h>
-#include <math.h>
-#include <string.h>
+#include <stdlib.h>
 
 int main(void) {
 	return UC_PrintResults();
@@ -232,6 +231,7 @@ TEST(StrConcat) {
 	qd_stack_pop(ctx->st, &elem);
 	ASSERT_EQ(elem.type, QD_STACK_TYPE_STR, "result should be string");
 	ASSERT_STR_EQ(elem.value.s, "Hello, World!", "concat should work");
+	free(elem.value.s);
 
 	qd_free_context(ctx);
 }
@@ -247,6 +247,7 @@ TEST(StrUpper) {
 	qd_stack_pop(ctx->st, &elem);
 	ASSERT_EQ(elem.type, QD_STACK_TYPE_STR, "result should be string");
 	ASSERT_STR_EQ(elem.value.s, "HELLO", "upper should work");
+	free(elem.value.s);
 
 	qd_free_context(ctx);
 }
@@ -262,6 +263,7 @@ TEST(StrLower) {
 	qd_stack_pop(ctx->st, &elem);
 	ASSERT_EQ(elem.type, QD_STACK_TYPE_STR, "result should be string");
 	ASSERT_STR_EQ(elem.value.s, "world", "lower should work");
+	free(elem.value.s);
 
 	qd_free_context(ctx);
 }
@@ -277,6 +279,7 @@ TEST(StrTrim) {
 	qd_stack_pop(ctx->st, &elem);
 	ASSERT_EQ(elem.type, QD_STACK_TYPE_STR, "result should be string");
 	ASSERT_STR_EQ(elem.value.s, "hello", "trim should remove whitespace");
+	free(elem.value.s);
 
 	qd_free_context(ctx);
 }
