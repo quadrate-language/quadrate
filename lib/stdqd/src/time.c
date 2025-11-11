@@ -36,32 +36,3 @@ qd_exec_result qd_stdqd_sleep(qd_context* ctx) {
 	return (qd_exec_result){0};
 }
 
-qd_exec_result qd_stdqd_Nanosecond(qd_context* ctx) {
-	qd_push_i(ctx, 1);
-	return (qd_exec_result){0};
-}
-
-qd_exec_result qd_stdqd_Microsecond(qd_context* ctx) {
-	qd_push_i(ctx, 1000);
-	return (qd_exec_result){0};
-}
-
-qd_exec_result qd_stdqd_Millisecond(qd_context* ctx) {
-	qd_push_i(ctx, 1000000);
-	return (qd_exec_result){0};
-}
-
-qd_exec_result qd_stdqd_Second(qd_context* ctx) {
-	qd_push_i(ctx, 1000000000);
-	return (qd_exec_result){0};
-}
-
-qd_exec_result qd_stdqd_Minute(qd_context* ctx) {
-	qd_push_i(ctx, 60000000000);
-	return (qd_exec_result){0};
-}
-
-qd_exec_result qd_stdqd_Hour(qd_context* ctx) {
-	qd_push_i(ctx, 3600000000000);
-	return (qd_exec_result){0};
-}

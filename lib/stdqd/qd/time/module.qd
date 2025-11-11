@@ -1,9 +1,11 @@
+// Time duration constants (in nanoseconds)
+const Nanosecond = 1
+const Microsecond = 1000
+const Millisecond = 1000000
+const Second = 1000000000
+const Minute = 60000000000
+const Hour = 3600000000000
+
 import "libstdqd.so" as "time" {
     fn sleep(duration:i -- )
-    fn Nanosecond( -- duration:i)
-    fn Microsecond( -- duration:i)
-    fn Millisecond( -- duration:i)
-    fn Second( -- duration:i)
-    fn Minute( -- duration:i)
-    fn Hour( -- duation:i)
 }
