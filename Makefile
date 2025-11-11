@@ -49,7 +49,7 @@ release:
 
 tests: debug
 	@echo "=========================================="
-	@echo "  Quadrate Test Suite - All Backends"
+	@echo "  Quadrate Test Suite"
 	@echo "=========================================="
 	@echo ""
 	@echo "=== Running C/C++ unit tests ==="
@@ -65,19 +65,11 @@ tests: debug
 		echo "⚠️  Skipped (tree-sitter not installed)"; \
 	fi
 	@echo ""
-	@echo "=========================================="
-	@echo "  Backend: quadc (LLVM - Default)"
-	@echo "=========================================="
-	@echo ""
-	@echo "=== Running Quadrate language tests (quadc) ==="
-	QUADC=$(BUILD_DIR_DEBUG)/bin/quadc/quadc bash tests/run_qd_tests_parallel.sh || true
-	@echo ""
-	@echo "=========================================="
-	@echo "  Other Tests"
-	@echo "=========================================="
+	@echo "=== Running Quadrate language tests ==="
+	QUADC=$(BUILD_DIR_DEBUG)/bin/quadc/quadc bash tests/run_tests.sh qd || true
 	@echo ""
 	@echo "=== Running formatter tests ==="
-	bash tests/run_formatter_tests.sh
+	bash tests/run_tests.sh formatter
 	@echo ""
 	@echo "=========================================="
 	@echo "  Test Suite Complete"
@@ -87,8 +79,8 @@ valgrind: debug
 	@echo "=== Running C/C++ unit tests with valgrind ==="
 	meson test -C $(BUILD_DIR_DEBUG) test_runtime test_ast test_semantic_validator stdqd --setup=valgrind --print-errorlogs
 	@echo ""
-	@echo "=== Running Quadrate language tests with valgrind (quadc - LLVM) ==="
-	QUADC=$(BUILD_DIR_DEBUG)/bin/quadc/quadc bash tests/run_qd_tests_valgrind_parallel.sh
+	@echo "=== Running Quadrate language tests with valgrind ==="
+	QUADC=$(BUILD_DIR_DEBUG)/bin/quadc/quadc bash tests/run_tests.sh valgrind
 	@echo ""
 	@echo "=== Running LSP tests with valgrind ==="
 	@if command -v valgrind >/dev/null 2>&1; then \
