@@ -33,13 +33,11 @@
 namespace Qd {
 	// Helper function to check if an identifier is a built-in instruction
 	static bool isBuiltInInstruction(const char* name) {
-		static const char* instructions[] = {"!=", "%", "*", "+", "-", ".", "/", "<", "<=", "==", ">", ">=", "abs",
-				"acos", "add", "and", "asin", "atan", "cb", "cbrt", "ceil", "call", "clear", "cos", "dec", "depth",
-				"detach", "div", "drop", "drop2", "dup", "dup2", "eq", "error", "fac", "floor", "gt", "gte", "inc",
-				"inv", "ln", "log10", "lshift", "lt", "lte", "max", "min", "mod", "mul", "neq", "neg", "nip", "nl",
-				"not", "or", "over", "over2", "pick", "pow", "print", "prints", "printsv", "printv", "read", "roll",
-				"rot", "round", "rshift", "sin", "spawn", "sq", "sqrt", "sub", "swap", "swap2", "tan", "tuck", "wait",
-				"within", "xor"};
+		static const char* instructions[] = {"!=", "%", "*", "+", "-", ".", "/", "<", "<=", "==", ">", ">=", "add",
+				"and", "call", "clear", "dec", "depth", "detach", "div", "drop", "drop2", "dup", "dup2", "eq", "error",
+				"gt", "gte", "inc", "lshift", "lt", "lte", "mod", "mul", "neq", "neg", "nip", "nl", "not", "or", "over",
+				"over2", "pick", "print", "prints", "printsv", "printv", "read", "roll", "rot", "rshift", "spawn",
+				"sub", "swap", "swap2", "tuck", "wait", "within", "xor"};
 		static const size_t count = sizeof(instructions) / sizeof(instructions[0]);
 
 		for (size_t i = 0; i < count; i++) {

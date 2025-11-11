@@ -2,25 +2,25 @@ use math
 
 fn main( -- ) {
 	// Test basic trig functions with 0
-	0 sin . nl
+	0.0 math::sin . nl
 	// Should print nl: 0
-	0 cos . nl
+	0.0 math::cos . nl
 	// Should print nl: 1
-	0 tan . nl
+	0.0 math::tan . nl
 	// Should print nl: 0
 	// Test with π/2 approximation (1.5708)
-	1.5708 sin . nl
+	1.5708 math::sin . nl
 	// Should print nl: ~1
-	1.5708 cos . nl
+	1.5708 math::cos . nl
 	// Should print nl: ~0
 	// Test inverse trig functions
-	0 asin . nl
+	0.0 math::asin . nl
 	// Should print nl: 0
-	1 acos . nl
+	1.0 math::acos . nl
 	// Should print nl: 0
-	0 atan . nl
+	0.0 math::atan . nl
 	// Should print nl: 0
 	// Test sin of 30 degrees (0.5236 radians)
-	0.5236 sin . nl
+	0.5236 math::sin . nl
 	// Should print nl: ~0.5
 }

@@ -3,13 +3,41 @@ const Pi = 3.141592653589793
 const E = 2.718281828459045
 const Tau = 6.283185307179586
 
-// Note: Trigonometric, power, logarithmic, rounding, and basic math functions
-// (sin, cos, tan, asin, acos, atan, sqrt, sq, cb, cbrt, pow, ln, log10,
-//  ceil, floor, round, abs, min, max, fac, inv)
-// are available as built-in instructions and can be used directly after
-// importing this module.
+// Import native math functions from libstdqd
+import "libstdqd.so" as "math" {
+	// Trigonometric functions
+	fn sin(x:f -- result:f)
+	fn cos(x:f -- result:f)
+	fn tan(x:f -- result:f)
+	fn asin(x:f -- result:f)
+	fn acos(x:f -- result:f)
+	fn atan(x:f -- result:f)
 
-// Utility functions that combine built-in operations
+	// Power and root functions
+	fn sqrt(x:f -- result:f)
+	fn sq(x:f -- result:f)
+	fn cb(x:f -- result:f)
+	fn cbrt(x:f -- result:f)
+	fn pow(base:f exp:f -- result:f)
+
+	// Logarithmic functions
+	fn ln(x:f -- result:f)
+	fn log10(x:f -- result:f)
+
+	// Rounding functions
+	fn ceil(x:f -- result:f)
+	fn floor(x:f -- result:f)
+	fn round(x:f -- result:f)
+
+	// Utility functions
+	fn abs(x:f -- result:f)
+	fn min(a:f b:f -- result:f)
+	fn max(a:f b:f -- result:f)
+	fn fac(n:i -- result:i)
+	fn inv(x:f -- result:f)
+}
+
+// Additional utility functions
 
 fn log(x:f base:f -- result:f) {
 	// log_base(x) = ln(x) / ln(base)
@@ -18,13 +46,13 @@ fn log(x:f base:f -- result:f) {
 
 fn clamp(x:f min_val:f max_val:f -- result:f) {
 	// Clamp x between min_val and max_val
-	// clamp(x, min, max) = max(min, min(x, max))
-	// Stack: x min max
-	rot rot       // Stack: max x min
-	swap          // Stack: max min x
-	rot           // Stack: min x max
-	min           // Stack: min min(x,max)
-	max           // Stack: max(min, min(x,max))
+	// We want: max(min_val, min(x, max_val))
+	// Stack: x min_val max_val
+	swap          // Stack: x max_val min_val
+	rot           // Stack: max_val min_val x
+	rot           // Stack: min_val x max_val
+	math::min     // Stack: min_val min(x, max_val)
+	math::max     // Stack: max(min_val, min(x, max_val))
 }
 
 fn lerp(a:f b:f t:f -- result:f) {

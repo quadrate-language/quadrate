@@ -1,6 +1,9 @@
 // This test demonstrates Quadrate's stack notation in function declarations
 // Format: fn name(inputs -- outputs)
 // Where inputs and outputs have name:type annotations
+
+use math
+
 // Basic arithmetic with stack notation
 fn add_numbers(a:i b:i -- result:i) {
 	// a and b are consumed from stack, result is produced
@@ -37,13 +40,13 @@ fn square_and_double(x:i -- x2:i x_times_2:i) {
 
 // Min/max operations with stack notation
 fn triple_min(a:i b:i c:i -- min:i) {
-	min
-	min
+	math::min
+	math::min
 }
 
 fn triple_max(a:i b:i c:i -- max:i) {
-	max
-	max
+	math::max
+	math::max
 }
 
 // Logical operations
@@ -136,9 +139,9 @@ fn main( -- ) {
 	// (a b -- min max) Pattern: get both min and max
 	// We can't use dup2 on parameters yet, so we use explicit values
 	7 13 dup2
-	min
+	math::min
 	rot
 	rot
-	max . nl . nl
+	math::max . nl . nl
 	// Should print nl 13, 7
 }

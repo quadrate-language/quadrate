@@ -10,19 +10,19 @@ fn main( -- ) {
 	math::Tau . nl
 	nl
 
-	// Trigonometric functions (built-ins)
-	math::Pi 6.0 / sin . nl
-	0 cos . nl
+	// Trigonometric functions
+	math::Pi 6.0 / math::sin . nl
+	0.0 math::cos . nl
 	nl
 
-	// Power and root functions (built-ins)
-	144 sqrt . nl
-	5 3 pow . nl
+	// Power and root functions
+	144.0 math::sqrt . nl
+	5.0 3.0 math::pow . nl
 	nl
 
-	// Rounding functions (built-ins)
-	3.2 ceil . nl
-	3.8 floor . nl
+	// Rounding functions
+	3.2 math::ceil . nl
+	3.8 math::floor . nl
 	nl
 
 	// Module utility functions

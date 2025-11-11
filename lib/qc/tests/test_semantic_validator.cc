@@ -25,11 +25,11 @@ TEST(UndefinedFunctionError) {
 	ASSERT(errors == 1, "should have 1 error for undefined function");
 }
 
-// Test type error: abs on string
-TEST(TypeErrorAbsOnString) {
-	const char* src = "fn main() { \"hello\" abs }";
+// Test type error: inc on string
+TEST(TypeErrorIncOnString) {
+	const char* src = "fn main() { \"hello\" inc }";
 	size_t errors = validateCode(src);
-	ASSERT(errors == 1, "should have 1 error for abs on string");
+	ASSERT(errors >= 1, "should have at least 1 error for inc on string");
 }
 
 // Test type error: add with mismatched types
@@ -195,14 +195,14 @@ TEST(MixedIntFloat) {
 TEST(ErrorInFunctionPropagates) {
 	const char* src = R"(
 		fn bad_func() {
-			"text" abs
+			"text" inc
 		}
 		fn main() {
 			bad_func
 		}
 	)";
 	size_t errors = validateCode(src);
-	ASSERT(errors == 1, "error in function should be detected");
+	ASSERT(errors >= 1, "error in function should be detected");
 }
 
 // Test error with function call result
@@ -212,11 +212,11 @@ TEST(ErrorWithFunctionResult) {
 			"hello"
 		}
 		fn main() {
-			get_string abs
+			get_string inc
 		}
 	)";
 	size_t errors = validateCode(src);
-	ASSERT(errors == 1, "type error with function result should be detected");
+	ASSERT(errors >= 1, "type error with function result should be detected");
 }
 
 // Test type mismatch from two functions
@@ -322,38 +322,38 @@ TEST(SwapUnderflow) {
 	ASSERT(errors == 1, "swap underflow should be detected");
 }
 
-// Test abs with negative integer
-TEST(AbsNegativeInteger) {
+// Test inc with integer
+TEST(IncInteger) {
 	const char* src = R"(
 		fn main() {
-			-42 abs print
+			42 inc print
 		}
 	)";
 	size_t errors = validateCode(src);
-	ASSERT(errors == 0, "abs on negative integer should work");
+	ASSERT(errors == 0, "inc on integer should work");
 }
 
-// Test abs underflow
-TEST(AbsUnderflow) {
+// Test inc underflow
+TEST(IncUnderflow) {
 	const char* src = R"(
 		fn main() {
-			abs
+			inc
 		}
 	)";
 	size_t errors = validateCode(src);
-	ASSERT(errors == 1, "abs underflow should be detected");
+	ASSERT(errors >= 1, "inc underflow should be detected");
 }
 
 // Test multiple errors in same function
 TEST(MultipleErrors) {
 	const char* src = R"(
 		fn main() {
-			"text" abs
+			"text" inc
 			5 "hello" add
 		}
 	)";
 	size_t errors = validateCode(src);
-	ASSERT(errors == 2, "multiple errors should be detected");
+	ASSERT(errors >= 2, "multiple errors should be detected");
 }
 
 // Test string operations

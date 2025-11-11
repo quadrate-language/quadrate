@@ -2,35 +2,35 @@ use math
 
 fn main( -- ) {
 	// Test sq (square)
-	5 sq . nl
+	5.0 math::sq . nl
 	// Should print nl: 25
-	-3 sq . nl
+	-3.0 math::sq . nl
 	// Should print nl: 9
 	// Test sqrt (square root)
-	16 sqrt . nl
+	16.0 math::sqrt . nl
 	// Should print nl: 4
-	25 sqrt . nl
+	25.0 math::sqrt . nl
 	// Should print nl: 5
 	// Test cb (cube)
-	3 cb . nl
+	3.0 math::cb . nl
 	// Should print nl: 27
-	-2 cb . nl
+	-2.0 math::cb . nl
 	// Should print nl: -8
 	// Test cbrt (cube root)
-	27 cbrt . nl
+	27.0 math::cbrt . nl
 	// Should print nl: 3
-	8 cbrt . nl
+	8.0 math::cbrt . nl
 	// Should print nl: 2
 	// Test abs (absolute value)
-	-42 abs . nl
+	-42.0 math::abs . nl
 	// Should print nl: 42
-	42 abs . nl
+	42.0 math::abs . nl
 	// Should print nl: 42
 	// Test inv (inverse/reciprocal)
 	// 1/2 = 0.5
-	2 inv . nl
+	2.0 math::inv . nl
 	// Should print nl: 0.5
-	4 inv . nl
+	4.0 math::inv . nl
 	// Should print nl: 0.25
 	// Test inc/dec
 	5 inc . nl
@@ -38,37 +38,37 @@ fn main( -- ) {
 	5 dec . nl
 	// Should print nl: 4
 	// Test fac (factorial)
-	5 fac . nl
+	5 math::fac . nl
 	// Should print nl: 120
-	0 fac . nl
+	0 math::fac . nl
 	// Should print nl: 1
-	1 fac . nl
+	1 math::fac . nl
 	// Should print nl: 1
 	// Test ceil/floor
-	3.2 ceil . nl
+	3.2 math::ceil . nl
 	// Should print nl: 4
-	3.8 floor . nl
+	3.8 math::floor . nl
 	// Should print nl: 3
-	-2.3 ceil . nl
+	-2.3 math::ceil . nl
 	// Should print nl: -2
-	-2.7 floor . nl
+	-2.7 math::floor . nl
 	// Should print nl: -3
 	// Test pow (exponentiation)
-	2 10 pow . nl
+	2.0 10.0 math::pow . nl
 	// Should print nl: 1024 (2^10)
-	3 3 pow . nl
+	3.0 3.0 math::pow . nl
 	// Should print nl: 27 (3^3)
-	5 2 pow . nl
+	5.0 2.0 math::pow . nl
 	// Should print nl: 25 (5^2)
-	2 0 pow . nl
+	2.0 0.0 math::pow . nl
 	// Should print nl: 1 (2^0)
 	// Test round (round to nearest integer)
-	2.5 round . nl
+	2.5 math::round . nl
 	// Should print nl: 3
-	2.4 round . nl
+	2.4 math::round . nl
 	// Should print nl: 2
-	-2.5 round . nl
+	-2.5 math::round . nl
 	// Should print nl: -2
-	3.7 round . nl
+	3.7 math::round . nl
 	// Should print nl: 4
 }

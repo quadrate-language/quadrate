@@ -9,6 +9,7 @@ test('qd_tests',
 	workdir: meson.project_source_root(),
 	env: {
 		'QUADC': quadc.full_path(),
+		'QUADRATE_LIBDIR': meson.project_build_root() / 'lib',
 	},
 	depends: quadc,
 	timeout: 120

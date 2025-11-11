@@ -1,17 +1,19 @@
+use math
+
 fn main( -- ) {
 	// Test min - minimum of two values
-	10 20 min . nl
+	10 20 math::min . nl
 	// Should print nl: 10
-	5 3 min . nl
+	5 3 math::min . nl
 	// Should print nl: 3
-	3.5 2.7 min . nl
+	3.5 2.7 math::min . nl
 	// Should print nl: 2.7
 	// Test max - maximum of two values
-	10 20 max . nl
+	10 20 math::max . nl
 	// Should print nl: 20
-	5 3 max . nl
+	5 3 math::max . nl
 	// Should print nl: 5
-	3.5 2.7 max . nl
+	3.5 2.7 math::max . nl
 	// Should print nl: 3.5
 	// Test neg - negate
 	42 neg . nl
@@ -26,7 +28,7 @@ fn main( -- ) {
 	10 3 mod . nl
 	// Should print nl: 1
 	// Test combining operations
-	100 50 min
-	25 max . nl
+	100 50 math::min
+	25 math::max . nl
 	// min(100, 50) = 50, max(50, 25) = 50
 }
