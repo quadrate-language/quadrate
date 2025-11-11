@@ -34,7 +34,7 @@ namespace Qd {
 	// Helper function to check if an identifier is a built-in instruction
 	static bool isBuiltInInstruction(const char* name) {
 		static const char* instructions[] = {"!=", "%", "*", "+", "-", ".", "/", "<", "<=", "==", ">", ">=", "add",
-				"call", "clear", "dec", "depth", "detach", "div", "drop", "drop2", "dup", "dup2", "eq", "error", "gt",
+				"call", "clear", "dec", "depth", "detach", "div", "drop", "drop2", "dup", "dup2", "dupd", "nipd", "overd", "swapd", "eq", "error", "gt",
 				"gte", "inc", "lt", "lte", "mod", "mul", "neq", "neg", "nip", "nl", "over", "over2", "pick", "print",
 				"prints", "printsv", "printv", "read", "roll", "rot", "spawn", "sub", "swap", "swap2", "tuck", "wait",
 				"within"};

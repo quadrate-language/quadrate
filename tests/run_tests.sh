@@ -161,8 +161,15 @@ case "$MODE" in
         export TEMP_DIR
         export COMPILER
 
-        find "$TEST_DIR_QD" -name "*.qd" -type f | \
-            parallel --unsafe -j$(nproc) run_qd_test {} "$COMPILER" no
+        if command -v parallel &> /dev/null; then
+            # Use parallel if available
+            find "$TEST_DIR_QD" -name "*.qd" -type f | \
+                parallel --unsafe -j$(nproc) run_qd_test {} "$COMPILER" no
+        else
+            # Fallback to xargs for sequential execution
+            find "$TEST_DIR_QD" -name "*.qd" -type f | \
+                xargs -I {} bash -c 'run_qd_test "$@"' _ {} "$COMPILER" no
+        fi
 
         # Collect results
         for result_file in "$TEMP_DIR/results"/*.result; do

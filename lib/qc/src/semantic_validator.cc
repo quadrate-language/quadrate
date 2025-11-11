@@ -48,7 +48,7 @@ namespace Qd {
 
 	// List of built-in instructions (must match ast.cc)
 	static const char* BUILTIN_INSTRUCTIONS[] = {"%", "*", "+", "-", ".", "/", "abs", "acos", "add", "and", "asin",
-			"atan", "cb", "cbrt", "ceil", "call", "clear", "cos", "dec", "depth", "div", "drop", "drop2", "dup", "dup2",
+			"atan", "cb", "cbrt", "ceil", "call", "clear", "cos", "dec", "depth", "div", "drop", "drop2", "dup", "dup2", "dupd", "nipd", "overd", "swapd",
 			"eq", "error", "fac", "floor", "gt", "gte", "inc", "inv", "ln", "log10", "lshift", "lt", "lte", "max",
 			"min", "mod", "mul", "neq", "neg", "nip", "not", "or", "over", "over2", "pick", "pow", "print", "prints",
 			"printsv", "printv", "read", "roll", "rot", "round", "rshift", "sin", "sq", "sqrt", "sub", "swap", "swap2",
@@ -1462,6 +1462,63 @@ namespace Qd {
 			typeStack.push_back(second);
 			typeStack.push_back(top);
 		}
+	// Stack operations: dupd ( a b -- a a b )
+	else if (strcmp(name, "dupd") == 0) {
+		if (typeStack.size() < 2) {
+			reportError(node, "Type error in 'dupd': Stack underflow (requires 2 values)");
+			return;
+		}
+		// Get the second and top elements
+		StackValueType second = typeStack[typeStack.size() - 2];
+		StackValueType top = typeStack.back();
+		// Push: second (duplicate of second), then top
+		typeStack.push_back(second);
+		typeStack.push_back(top);
+	}
+	// Stack operations: swapd ( a b c -- b a c )
+	else if (strcmp(name, "swapd") == 0) {
+		if (typeStack.size() < 3) {
+			reportError(node, "Type error in 'swapd': Stack underflow (requires 3 values)");
+			return;
+		}
+		// Get third, second, and top elements
+		StackValueType third = typeStack[typeStack.size() - 3];
+		StackValueType second = typeStack[typeStack.size() - 2];
+		StackValueType top = typeStack.back();
+		// Remove all three
+		typeStack.pop_back();
+		typeStack.pop_back();
+		typeStack.pop_back();
+		// Push: second, third, top (swapped second and third)
+		typeStack.push_back(second);
+		typeStack.push_back(third);
+		typeStack.push_back(top);
+	}
+	// Stack operations: overd ( a b c -- a b a c )
+	else if (strcmp(name, "overd") == 0) {
+		if (typeStack.size() < 3) {
+			reportError(node, "Type error in 'overd': Stack underflow (requires 3 values)");
+			return;
+		}
+		// Get the third element
+		StackValueType third = typeStack[typeStack.size() - 3];
+		// Push a copy of it to the top
+		typeStack.push_back(third);
+	}
+	// Stack operations: nipd ( a b c -- a c )
+	else if (strcmp(name, "nipd") == 0) {
+		if (typeStack.size() < 3) {
+			reportError(node, "Type error in 'nipd': Stack underflow (requires 3 values)");
+			return;
+		}
+		// Get top element
+		StackValueType top = typeStack.back();
+		typeStack.pop_back();
+		// Remove second element
+		typeStack.pop_back();
+		// Push top back
+		typeStack.push_back(top);
+	}
 		// Stack operations: swap
 		else if (strcmp(name, "swap") == 0) {
 			if (typeStack.size() < 2) {

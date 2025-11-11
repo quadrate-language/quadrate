@@ -555,6 +555,120 @@ qd_exec_result qd_dup(qd_context* ctx) {
 	return (qd_exec_result){0};
 }
 
+qd_exec_result qd_dupd(qd_context* ctx) {
+	// Duplicate the second element of the stack: ( a b -- a a b )
+	size_t stack_size = qd_stack_size(ctx->st);
+	if (stack_size < 2) {
+		fprintf(stderr, "Fatal error in dupd: Stack underflow (required 2 elements, have %zu)\n", stack_size);
+		dump_stack(ctx);
+		qd_print_stack_trace(ctx);
+		abort();
+	}
+
+	// Pop top two elements
+	qd_stack_element_t a, b;
+	qd_stack_error err = qd_stack_pop(ctx->st, &b);  // b is top
+	if (err != QD_STACK_OK) {
+		fprintf(stderr, "Fatal error in dupd: Failed to pop top element\n");
+		dump_stack(ctx);
+		qd_print_stack_trace(ctx);
+		abort();
+	}
+	err = qd_stack_pop(ctx->st, &a);  // a is second
+	if (err != QD_STACK_OK) {
+		fprintf(stderr, "Fatal error in dupd: Failed to pop second element\n");
+		dump_stack(ctx);
+		qd_print_stack_trace(ctx);
+		abort();
+	}
+
+	// Push back: a, a, b
+	// Push first a
+	switch (a.type) {
+		case QD_STACK_TYPE_INT:
+			err = qd_stack_push_int(ctx->st, a.value.i);
+			break;
+		case QD_STACK_TYPE_FLOAT:
+			err = qd_stack_push_float(ctx->st, a.value.f);
+			break;
+		case QD_STACK_TYPE_STR:
+			err = qd_stack_push_str(ctx->st, a.value.s);
+			break;
+		case QD_STACK_TYPE_PTR:
+			err = qd_stack_push_ptr(ctx->st, a.value.p);
+			break;
+		default:
+			fprintf(stderr, "Fatal error in dupd: Unknown type for second element\n");
+			dump_stack(ctx);
+			qd_print_stack_trace(ctx);
+			abort();
+	}
+	if (err != QD_STACK_OK) {
+		fprintf(stderr, "Fatal error in dupd: Failed to push first copy of second element\n");
+		dump_stack(ctx);
+		qd_print_stack_trace(ctx);
+		abort();
+	}
+
+	// Push second a (duplicate)
+	switch (a.type) {
+		case QD_STACK_TYPE_INT:
+			err = qd_stack_push_int(ctx->st, a.value.i);
+			break;
+		case QD_STACK_TYPE_FLOAT:
+			err = qd_stack_push_float(ctx->st, a.value.f);
+			break;
+		case QD_STACK_TYPE_STR:
+			err = qd_stack_push_str(ctx->st, a.value.s);
+			free(a.value.s);  // Free the original since push_str makes a copy
+			break;
+		case QD_STACK_TYPE_PTR:
+			err = qd_stack_push_ptr(ctx->st, a.value.p);
+			break;
+		default:
+			fprintf(stderr, "Fatal error in dupd: Unknown type for second element\n");
+			dump_stack(ctx);
+			qd_print_stack_trace(ctx);
+			abort();
+	}
+	if (err != QD_STACK_OK) {
+		fprintf(stderr, "Fatal error in dupd: Failed to push second copy of second element\n");
+		dump_stack(ctx);
+		qd_print_stack_trace(ctx);
+		abort();
+	}
+
+	// Push b (top element)
+	switch (b.type) {
+		case QD_STACK_TYPE_INT:
+			err = qd_stack_push_int(ctx->st, b.value.i);
+			break;
+		case QD_STACK_TYPE_FLOAT:
+			err = qd_stack_push_float(ctx->st, b.value.f);
+			break;
+		case QD_STACK_TYPE_STR:
+			err = qd_stack_push_str(ctx->st, b.value.s);
+			free(b.value.s);  // Free the original since push_str makes a copy
+			break;
+		case QD_STACK_TYPE_PTR:
+			err = qd_stack_push_ptr(ctx->st, b.value.p);
+			break;
+		default:
+			fprintf(stderr, "Fatal error in dupd: Unknown type for top element\n");
+			dump_stack(ctx);
+			qd_print_stack_trace(ctx);
+			abort();
+	}
+	if (err != QD_STACK_OK) {
+		fprintf(stderr, "Fatal error in dupd: Failed to push top element\n");
+		dump_stack(ctx);
+		qd_print_stack_trace(ctx);
+		abort();
+	}
+
+	return (qd_exec_result){0};
+}
+
 qd_exec_result qd_dup2(qd_context* ctx) {
 	// Duplicate the top two elements of the stack: ( a b -- a b a b )
 	size_t stack_size = qd_stack_size(ctx->st);
@@ -627,6 +741,279 @@ qd_exec_result qd_dup2(qd_context* ctx) {
 
 	if (err != QD_STACK_OK) {
 		return (qd_exec_result){-2};
+	}
+
+	return (qd_exec_result){0};
+}
+
+qd_exec_result qd_swapd(qd_context* ctx) {
+	// Swap second and third elements: ( a b c -- b a c )
+	size_t stack_size = qd_stack_size(ctx->st);
+	if (stack_size < 3) {
+		fprintf(stderr, "Fatal error in swapd: Stack underflow (required 3 elements, have %zu)\n", stack_size);
+		dump_stack(ctx);
+		qd_print_stack_trace(ctx);
+		abort();
+	}
+
+	// Pop top three elements
+	qd_stack_element_t a, b, c;
+	qd_stack_error err = qd_stack_pop(ctx->st, &c);  // c is top
+	if (err != QD_STACK_OK) {
+		fprintf(stderr, "Fatal error in swapd: Failed to pop top element\n");
+		dump_stack(ctx);
+		qd_print_stack_trace(ctx);
+		abort();
+	}
+	err = qd_stack_pop(ctx->st, &b);  // b is second
+	if (err != QD_STACK_OK) {
+		fprintf(stderr, "Fatal error in swapd: Failed to pop second element\n");
+		dump_stack(ctx);
+		qd_print_stack_trace(ctx);
+		abort();
+	}
+	err = qd_stack_pop(ctx->st, &a);  // a is third
+	if (err != QD_STACK_OK) {
+		fprintf(stderr, "Fatal error in swapd: Failed to pop third element\n");
+		dump_stack(ctx);
+		qd_print_stack_trace(ctx);
+		abort();
+	}
+
+	// Push back: b, a, c (swapped second and third)
+	// Push b
+	switch (b.type) {
+		case QD_STACK_TYPE_INT:
+			err = qd_stack_push_int(ctx->st, b.value.i);
+			break;
+		case QD_STACK_TYPE_FLOAT:
+			err = qd_stack_push_float(ctx->st, b.value.f);
+			break;
+		case QD_STACK_TYPE_STR:
+			err = qd_stack_push_str(ctx->st, b.value.s);
+			free(b.value.s);
+			break;
+		case QD_STACK_TYPE_PTR:
+			err = qd_stack_push_ptr(ctx->st, b.value.p);
+			break;
+		default:
+			fprintf(stderr, "Fatal error in swapd: Unknown type for second element\n");
+			dump_stack(ctx);
+			qd_print_stack_trace(ctx);
+			abort();
+	}
+	if (err != QD_STACK_OK) {
+		fprintf(stderr, "Fatal error in swapd: Failed to push b\n");
+		dump_stack(ctx);
+		qd_print_stack_trace(ctx);
+		abort();
+	}
+
+	// Push a
+	switch (a.type) {
+		case QD_STACK_TYPE_INT:
+			err = qd_stack_push_int(ctx->st, a.value.i);
+			break;
+		case QD_STACK_TYPE_FLOAT:
+			err = qd_stack_push_float(ctx->st, a.value.f);
+			break;
+		case QD_STACK_TYPE_STR:
+			err = qd_stack_push_str(ctx->st, a.value.s);
+			free(a.value.s);
+			break;
+		case QD_STACK_TYPE_PTR:
+			err = qd_stack_push_ptr(ctx->st, a.value.p);
+			break;
+		default:
+			fprintf(stderr, "Fatal error in swapd: Unknown type for third element\n");
+			dump_stack(ctx);
+			qd_print_stack_trace(ctx);
+			abort();
+	}
+	if (err != QD_STACK_OK) {
+		fprintf(stderr, "Fatal error in swapd: Failed to push a\n");
+		dump_stack(ctx);
+		qd_print_stack_trace(ctx);
+		abort();
+	}
+
+	// Push c
+	switch (c.type) {
+		case QD_STACK_TYPE_INT:
+			err = qd_stack_push_int(ctx->st, c.value.i);
+			break;
+		case QD_STACK_TYPE_FLOAT:
+			err = qd_stack_push_float(ctx->st, c.value.f);
+			break;
+		case QD_STACK_TYPE_STR:
+			err = qd_stack_push_str(ctx->st, c.value.s);
+			free(c.value.s);
+			break;
+		case QD_STACK_TYPE_PTR:
+			err = qd_stack_push_ptr(ctx->st, c.value.p);
+			break;
+		default:
+			fprintf(stderr, "Fatal error in swapd: Unknown type for top element\n");
+			dump_stack(ctx);
+			qd_print_stack_trace(ctx);
+			abort();
+	}
+	if (err != QD_STACK_OK) {
+		fprintf(stderr, "Fatal error in swapd: Failed to push c\n");
+		dump_stack(ctx);
+		qd_print_stack_trace(ctx);
+		abort();
+	}
+
+	return (qd_exec_result){0};
+}
+
+qd_exec_result qd_overd(qd_context* ctx) {
+	// Copy third element between second and top: ( a b c -- a b a c )
+	size_t stack_size = qd_stack_size(ctx->st);
+	if (stack_size < 3) {
+		fprintf(stderr, "Fatal error in overd: Stack underflow (required 3 elements, have %zu)\n", stack_size);
+		dump_stack(ctx);
+		qd_print_stack_trace(ctx);
+		abort();
+	}
+
+	// Pop the top element
+	qd_stack_element_t top;
+	qd_stack_error err = qd_stack_pop(ctx->st, &top);
+	if (err != QD_STACK_OK) {
+		fprintf(stderr, "Fatal error in overd: Failed to pop top element\n");
+		dump_stack(ctx);
+		qd_print_stack_trace(ctx);
+		abort();
+	}
+
+	// Get the third element (now at index stack_size - 3, but stack is smaller by 1)
+	qd_stack_element_t third;
+	err = qd_stack_element(ctx->st, stack_size - 3, &third);
+	if (err != QD_STACK_OK) {
+		fprintf(stderr, "Fatal error in overd: Failed to access third element\n");
+		dump_stack(ctx);
+		qd_print_stack_trace(ctx);
+		abort();
+	}
+
+	// Push a copy of the third element
+	switch (third.type) {
+		case QD_STACK_TYPE_INT:
+			err = qd_stack_push_int(ctx->st, third.value.i);
+			break;
+		case QD_STACK_TYPE_FLOAT:
+			err = qd_stack_push_float(ctx->st, third.value.f);
+			break;
+		case QD_STACK_TYPE_STR:
+			err = qd_stack_push_str(ctx->st, third.value.s);
+			break;
+		case QD_STACK_TYPE_PTR:
+			err = qd_stack_push_ptr(ctx->st, third.value.p);
+			break;
+		default:
+			fprintf(stderr, "Fatal error in overd: Unknown type for third element\n");
+			dump_stack(ctx);
+			qd_print_stack_trace(ctx);
+			abort();
+	}
+	if (err != QD_STACK_OK) {
+		fprintf(stderr, "Fatal error in overd: Failed to push copy of third element\n");
+		dump_stack(ctx);
+		qd_print_stack_trace(ctx);
+		abort();
+	}
+
+	// Push the top element back
+	switch (top.type) {
+		case QD_STACK_TYPE_INT:
+			err = qd_stack_push_int(ctx->st, top.value.i);
+			break;
+		case QD_STACK_TYPE_FLOAT:
+			err = qd_stack_push_float(ctx->st, top.value.f);
+			break;
+		case QD_STACK_TYPE_STR:
+			err = qd_stack_push_str(ctx->st, top.value.s);
+			free(top.value.s);
+			break;
+		case QD_STACK_TYPE_PTR:
+			err = qd_stack_push_ptr(ctx->st, top.value.p);
+			break;
+		default:
+			fprintf(stderr, "Fatal error in overd: Unknown type for top element\n");
+			dump_stack(ctx);
+			qd_print_stack_trace(ctx);
+			abort();
+	}
+	if (err != QD_STACK_OK) {
+		fprintf(stderr, "Fatal error in overd: Failed to push top element\n");
+		dump_stack(ctx);
+		qd_print_stack_trace(ctx);
+		abort();
+	}
+
+	return (qd_exec_result){0};
+}
+
+qd_exec_result qd_nipd(qd_context* ctx) {
+	// Remove second element: ( a b c -- a c )
+	size_t stack_size = qd_stack_size(ctx->st);
+	if (stack_size < 3) {
+		fprintf(stderr, "Fatal error in nipd: Stack underflow (required 3 elements, have %zu)\n", stack_size);
+		dump_stack(ctx);
+		qd_print_stack_trace(ctx);
+		abort();
+	}
+
+	// Pop top two elements
+	qd_stack_element_t b, c;
+	qd_stack_error err = qd_stack_pop(ctx->st, &c);  // c is top
+	if (err != QD_STACK_OK) {
+		fprintf(stderr, "Fatal error in nipd: Failed to pop top element\n");
+		dump_stack(ctx);
+		qd_print_stack_trace(ctx);
+		abort();
+	}
+	err = qd_stack_pop(ctx->st, &b);  // b is second (to be removed)
+	if (err != QD_STACK_OK) {
+		fprintf(stderr, "Fatal error in nipd: Failed to pop second element\n");
+		dump_stack(ctx);
+		qd_print_stack_trace(ctx);
+		abort();
+	}
+
+	// Free b's resources if it's a string
+	if (b.type == QD_STACK_TYPE_STR) {
+		free(b.value.s);
+	}
+
+	// Push c back
+	switch (c.type) {
+		case QD_STACK_TYPE_INT:
+			err = qd_stack_push_int(ctx->st, c.value.i);
+			break;
+		case QD_STACK_TYPE_FLOAT:
+			err = qd_stack_push_float(ctx->st, c.value.f);
+			break;
+		case QD_STACK_TYPE_STR:
+			err = qd_stack_push_str(ctx->st, c.value.s);
+			free(c.value.s);
+			break;
+		case QD_STACK_TYPE_PTR:
+			err = qd_stack_push_ptr(ctx->st, c.value.p);
+			break;
+		default:
+			fprintf(stderr, "Fatal error in nipd: Unknown type for top element\n");
+			dump_stack(ctx);
+			qd_print_stack_trace(ctx);
+			abort();
+	}
+	if (err != QD_STACK_OK) {
+		fprintf(stderr, "Fatal error in nipd: Failed to push top element\n");
+		dump_stack(ctx);
+		qd_print_stack_trace(ctx);
+		abort();
 	}
 
 	return (qd_exec_result){0};

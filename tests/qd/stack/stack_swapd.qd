@@ -1,0 +1,17 @@
+// Test swapd (swap second and third): ( a b c -- b a c )
+
+fn main( -- ) {
+	// Test with integers
+	10 20 30 swapd
+	// Stack: 20 10 30
+	. nl   // 30
+	. nl   // 10
+	. nl   // 20
+
+	// Test with different values
+	100 200 300 swapd
+	// Stack: 200 100 300
+	. nl   // 300
+	. nl   // 100
+	. nl   // 200
+}

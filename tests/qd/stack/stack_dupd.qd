@@ -1,0 +1,24 @@
+// Test dupd (duplicate second element): ( a b -- a a b )
+
+fn main( -- ) {
+	// Test with integers
+	10 20 dupd
+	// Stack: 10 10 20
+	. nl   // 20
+	. nl   // 10
+	. nl   // 10
+
+	// Test with different values
+	100 200 dupd
+	// Stack: 100 100 200
+	. nl   // 200
+	. nl   // 100
+	. nl   // 100
+
+	// Test with floats
+	1.5 2.5 dupd
+	// Stack: 1.5 1.5 2.5
+	. nl   // 2.5
+	. nl   // 1.5
+	. nl   // 1.5
+}

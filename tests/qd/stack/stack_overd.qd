@@ -1,0 +1,19 @@
+// Test overd (copy third to second position): ( a b c -- a b a c )
+
+fn main( -- ) {
+	// Test with integers
+	10 20 30 overd
+	// Stack: 10 20 10 30
+	. nl   // 30
+	. nl   // 10
+	. nl   // 20
+	. nl   // 10
+
+	// Test with different values
+	100 200 300 overd
+	// Stack: 100 200 100 300
+	. nl   // 300
+	. nl   // 100
+	. nl   // 200
+	. nl   // 100
+}
