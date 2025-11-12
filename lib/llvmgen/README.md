@@ -40,7 +40,7 @@ make debug
 
 ```bash
 # Using the LLVM test compiler
-build/debug/bin/quadc-llvm/quadc-llvm input.qd output
+build/debug/bin/quadc/quadc input.qd output
 
 # This generates:
 # - output.ll   (LLVM IR - human readable)

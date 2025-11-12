@@ -1,5 +1,4 @@
 #include "cxxopts.hpp"
-#include <algorithm>
 #include <cerrno>
 #include <filesystem>
 #include <fstream>
@@ -11,13 +10,12 @@
 #include <qc/colors.h>
 #include <qc/semantic_validator.h>
 #include <random>
-#include <set>
 #include <sstream>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
 
-#define QUADC_LLVM_VERSION "0.1.0"
+#define QUADC_VERSION "0.1.0"
 
 std::string createTempDir(bool useCwd) {
 	std::random_device rd;
@@ -54,12 +52,12 @@ std::string createTempDir(bool useCwd) {
 		}
 
 		// For other errors, fail immediately
-		std::cerr << "quadc-llvm: failed to create temporary directory: " << ec.message() << std::endl;
+		std::cerr << "quadc: failed to create temporary directory: " << ec.message() << std::endl;
 		exit(1);
 	}
 
 	// Failed to create directory after multiple attempts
-	std::cerr << "quadc-llvm: failed to create temporary directory after 10 attempts" << std::endl;
+	std::cerr << "quadc: failed to create temporary directory after 10 attempts" << std::endl;
 	exit(1);
 }
 
@@ -171,7 +169,7 @@ struct ParsedModule {
 };
 
 int main(int argc, char** argv) {
-	cxxopts::Options options("quadc-llvm", "Quadrate compiler (LLVM backend)");
+	cxxopts::Options options("quadc", "Quadrate compiler (LLVM backend)");
 	options.add_options()("h,help", "Display help.")("v,version", "Display compiler version.")(
 			"o", "Output filename", cxxopts::value<std::string>()->default_value("main"))("save-temps",
 			"Save temporary files", cxxopts::value<bool>()->default_value("false")->implicit_value("true"))("verbose",
@@ -191,7 +189,7 @@ int main(int argc, char** argv) {
 	}
 
 	if (result.count("version")) {
-		std::cout << QUADC_LLVM_VERSION << std::endl;
+		std::cout << QUADC_VERSION << std::endl;
 		return 0;
 	}
 
@@ -241,14 +239,14 @@ int main(int argc, char** argv) {
 		for (const auto& file : files) {
 			std::ifstream qdFile(file);
 			if (!qdFile.is_open()) {
-				std::cerr << "quadc-llvm: cannot find " << file << ": No such file or directory" << std::endl;
+				std::cerr << "quadc: cannot find " << file << ": No such file or directory" << std::endl;
 				continue;
 			}
 			qdFile.seekg(0, std::ios::end);
 			auto pos = qdFile.tellg();
 			qdFile.seekg(0);
 			if (pos < 0) {
-				std::cerr << "quadc-llvm: error reading " << file << std::endl;
+				std::cerr << "quadc: error reading " << file << std::endl;
 				continue;
 			}
 			size_t size = static_cast<size_t>(pos);
@@ -259,7 +257,7 @@ int main(int argc, char** argv) {
 			auto ast = std::make_unique<Qd::Ast>();
 			auto root = ast->generate(buffer.c_str(), dumpTokens, file.c_str());
 			if (!root || ast->hasErrors()) {
-				std::cerr << "quadc-llvm: parsing failed for " << file << " with " << ast->errorCount() << " errors"
+				std::cerr << "quadc: parsing failed for " << file << " with " << ast->errorCount() << " errors"
 						  << std::endl;
 				return 1;
 			}
@@ -378,7 +376,7 @@ int main(int argc, char** argv) {
 			auto ast = std::make_unique<Qd::Ast>();
 			auto root = ast->generate(buffer.c_str(), false, moduleFilePath.c_str());
 			if (!root || ast->hasErrors()) {
-				std::cerr << "quadc-llvm: failed to parse module: " << moduleName << std::endl;
+				std::cerr << "quadc: failed to parse module: " << moduleName << std::endl;
 				return 1;
 			}
 
@@ -465,12 +463,12 @@ int main(int argc, char** argv) {
 		}
 
 		if (!mainRoot) {
-			std::cerr << "quadc-llvm: no main module found" << std::endl;
+			std::cerr << "quadc: no main module found" << std::endl;
 			return 1;
 		}
 
 		if (!generator.generate(mainRoot, "main")) {
-			std::cerr << "quadc-llvm: LLVM generation failed" << std::endl;
+			std::cerr << "quadc: LLVM generation failed" << std::endl;
 			return 1;
 		}
 
@@ -484,7 +482,7 @@ int main(int argc, char** argv) {
 		if (saveTemps) {
 			std::string irFile = (std::filesystem::path(outputDir) / (outputFilename + ".ll")).string();
 			if (!generator.writeIR(irFile)) {
-				std::cerr << "quadc-llvm: failed to write IR file" << std::endl;
+				std::cerr << "quadc: failed to write IR file" << std::endl;
 				return 1;
 			}
 			if (verbose) {
@@ -494,7 +492,7 @@ int main(int argc, char** argv) {
 
 		// Write executable
 		if (!generator.writeExecutable(outputPath)) {
-			std::cerr << "quadc-llvm: failed to create executable" << std::endl;
+			std::cerr << "quadc: failed to create executable" << std::endl;
 			return 1;
 		}
 
@@ -510,7 +508,7 @@ int main(int argc, char** argv) {
 			// Execute using system() and get exit code
 			int status = system(outputPath.c_str());
 			if (status == -1) {
-				std::cerr << "quadc-llvm: failed to execute program" << std::endl;
+				std::cerr << "quadc: failed to execute program" << std::endl;
 				return 1;
 			}
 			// Check if process exited normally or was killed by signal
@@ -522,7 +520,7 @@ int main(int argc, char** argv) {
 				exitCode = -1;
 			}
 			if (exitCode != 0) {
-				std::cerr << "quadc-llvm: program exited with code " << exitCode << std::endl;
+				std::cerr << "quadc: program exited with code " << exitCode << std::endl;
 			}
 			return exitCode;
 		}
