@@ -3,7 +3,7 @@ qc_sources = files(
 		'src/ast_printer.cc',
 		'src/colors.cc',
 		'src/error_reporter.cc',
-		'src/formatter.cc',
+		'src/source_formatter.cc',
 		'src/semantic_validator.cc',
 )
 

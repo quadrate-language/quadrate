@@ -109,7 +109,7 @@ bool formatFile(const std::string& filename, const Options& opts) {
 		// Read source file
 		std::string source = readFile(filename);
 
-		// Parse to AST
+		// Parse to check for errors
 		Ast ast;
 		IAstNode* root = ast.generate(source.c_str(), false, filename.c_str());
 
@@ -118,9 +118,8 @@ bool formatFile(const std::string& filename, const Options& opts) {
 			return false;
 		}
 
-		// Format AST
-		Formatter formatter;
-		std::string formatted = formatter.format(root);
+		// Format using source-based formatter
+		std::string formatted = formatSource(source);
 
 		// Validate formatted output by parsing it again
 		Ast validationAst;
