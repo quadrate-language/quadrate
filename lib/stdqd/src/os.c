@@ -77,3 +77,38 @@ qd_exec_result qd_stdqd_system(qd_context* ctx) {
 
 	return (qd_exec_result){0};
 }
+
+qd_exec_result qd_stdqd_getenv(qd_context* ctx) {
+	size_t stack_size = qd_stack_size(ctx->st);
+	if (stack_size < 1) {
+		fprintf(stderr, "Fatal error in os::getenv: Stack underflow (required 1 element, have %zu)\n", stack_size);
+		qd_print_stack_trace(ctx);
+		abort();
+	}
+
+	// Pop the variable name
+	qd_stack_element_t elem;
+	qd_stack_error err = qd_stack_pop(ctx->st, &elem);
+	if (err != QD_STACK_OK) {
+		fprintf(stderr, "Fatal error in os::getenv: Failed to pop variable name\n");
+		qd_print_stack_trace(ctx);
+		abort();
+	}
+
+	if (elem.type != QD_STACK_TYPE_STR) {
+		fprintf(stderr, "Fatal error in os::getenv: Expected string command, got type %d\n", elem.type);
+		qd_print_stack_trace(ctx);
+		abort();
+	}
+
+	// Get the environment variable
+	const char* value = getenv(elem.value.s);
+	err = qd_stack_push_str(ctx->st, value ? value : "");
+	if (err != QD_STACK_OK) {
+		fprintf(stderr, "Fatal error in os::getenv: Failed to push environment variable value\n");
+		qd_print_stack_trace(ctx);
+		abort();
+	}
+
+	return (qd_exec_result){0};
+}

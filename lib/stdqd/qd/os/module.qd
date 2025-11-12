@@ -1,11 +1,12 @@
 // Operating system interface module
-
 import "libstdqd.so" as "os" {
 	// Exit the program with the given exit code
 	// exit(code:i -- )
-	fn exit(code:i -- )
+	fn exit(code:i --)
 
 	// Execute a shell command and return the exit code
 	// system(cmd:s -- exitcode:i)
 	fn system(cmd:s -- exitcode:i)
+
+	fn getenv(name:s -- value:s)
 }
