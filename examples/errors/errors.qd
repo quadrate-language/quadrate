@@ -1,13 +1,12 @@
-fn division(a:i b:i -- x:i) throws {
+fn division(a:i b:i -- x:i)! {
 	dup 0 == if {
 		-1
 	}
 	div
 }
 
-fn main() {
-	1 0 division
-	err if {
+fn main( -- ) {
+	1 0 division if {
 		"Error: Division by zero!"
 	} else {
 		"Result: " print

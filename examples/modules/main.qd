@@ -3,7 +3,7 @@
 
 use math_utils
 
-fn main() {
+fn main( -- ) {
 	// The module system is working!
 	// - Module file is discovered (./math_utils/module.qd)
 	// - Module is transpiled to C (math_utils/module.qd.c)

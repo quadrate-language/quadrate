@@ -8,7 +8,7 @@ fn fib(n:i -- result:i) {
 	// Base case: n < 2, result = n (already on stack)
 }
 
-fn main() {
+fn main( -- ) {
 	0 20 1 for {
 		$ dup fib print nl
 	}

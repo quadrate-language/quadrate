@@ -99,12 +99,23 @@ namespace Qd {
 			formattedSig = " -- ";
 		}
 
-		// Check for opening brace
-		size_t bracePos = trimmed.find('{', closeParenPos);
+		// Check for '!' after the closing paren (error-returning function)
+		std::string suffix;
+		size_t pos = closeParenPos + 1;
+		while (pos < trimmed.length() && std::isspace(trimmed[pos])) {
+			pos++;
+		}
+		if (pos < trimmed.length() && trimmed[pos] == '!') {
+			suffix = "!";
+			pos++;
+		}
+
+		// Check for opening brace after any suffix
+		size_t bracePos = trimmed.find('{', pos);
 		bool hasBrace = (bracePos != std::string::npos);
 
-		// Format: fn name( params ) {
-		std::string result = "fn " + name + "(" + formattedSig + ")";
+		// Format: fn name( params )! {
+		std::string result = "fn " + name + "(" + formattedSig + ")" + suffix;
 		if (hasBrace) {
 			result += " {";
 		}
@@ -115,7 +126,16 @@ namespace Qd {
 	// Normalize }else to } else and add spacing
 	static std::string normalizeElse(const std::string& line) {
 		std::string result = line;
+
+		// First handle }else{ -> } else {
 		size_t pos = 0;
+		while ((pos = result.find("}else{", pos)) != std::string::npos) {
+			result.replace(pos, 6, "} else {");
+			pos += 8;
+		}
+
+		// Then handle }else (without brace after)
+		pos = 0;
 		while ((pos = result.find("}else", pos)) != std::string::npos) {
 			// Check if this is really }else (not part of a larger word)
 			if (pos + 5 >= result.length() || !std::isalnum(result[pos + 5])) {
@@ -128,6 +148,30 @@ namespace Qd {
 		return result;
 	}
 
+	// Normalize keyword{ to keyword { (add space before opening brace)
+	static std::string normalizeKeywordBraces(const std::string& line) {
+		std::string result = line;
+		const std::vector<std::string> keywords = {
+			"if", "else", "for", "loop", "defer", "switch", "case", "default", "fn"
+		};
+
+		for (const auto& keyword : keywords) {
+			std::string pattern = keyword + "{";
+			size_t pos = 0;
+			while ((pos = result.find(pattern, pos)) != std::string::npos) {
+				// Check if this is a standalone keyword (not part of a larger word)
+				bool validStart = (pos == 0 || !std::isalnum(static_cast<unsigned char>(result[pos - 1])));
+				if (validStart) {
+					result.replace(pos, pattern.length(), keyword + " {");
+					pos += keyword.length() + 2;
+				} else {
+					pos++;
+				}
+			}
+		}
+		return result;
+	}
+
 	// Preprocess source to merge standalone opening braces with previous line
 	static std::string mergeStandaloneBraces(const std::string& source) {
 		std::istringstream input(source);
@@ -135,8 +179,9 @@ namespace Qd {
 		std::string line;
 
 		while (std::getline(input, line)) {
-			// Normalize }else to } else
+			// Normalize }else to } else and keyword{ to keyword {
 			line = normalizeElse(line);
+			line = normalizeKeywordBraces(line);
 			lines.push_back(line);
 		}
 
