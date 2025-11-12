@@ -1,6 +1,5 @@
 // Example: Using the math module
 // Demonstrates mathematical constants and functions
-
 use math
 
 fn main( -- ) {

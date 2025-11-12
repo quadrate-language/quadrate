@@ -208,6 +208,79 @@ namespace Qd {
 		return output.str();
 	}
 
+	// Normalize spacing between top-level declarations
+	static std::string normalizeTopLevelSpacing(const std::string& source) {
+		std::istringstream input(source);
+		std::vector<std::string> lines;
+		std::string line;
+
+		while (std::getline(input, line)) {
+			lines.push_back(line);
+		}
+
+		std::ostringstream output;
+		std::string prevTopLevelType;  // "use", "fn_start", ""
+		int braceDepth = 0;
+		bool inFunction = false;
+
+		for (size_t i = 0; i < lines.size(); i++) {
+			std::string trimmed = trim(lines[i]);
+
+			if (trimmed.empty()) {
+				// Only output empty lines when inside functions
+				if (inFunction) {
+					output << '\n';
+				}
+				continue;
+			}
+
+			// Track brace depth to know when we exit a function
+			for (char c : trimmed) {
+				if (c == '{') braceDepth++;
+				if (c == '}') braceDepth--;
+			}
+
+			// Determine if this is a top-level declaration
+			bool isTopLevel = (braceDepth == 0 || (startsWithKeyword(trimmed, "fn") && !inFunction));
+			std::string currentType;
+
+			if (isTopLevel) {
+				if (startsWithKeyword(trimmed, "use") || startsWithKeyword(trimmed, "import")) {
+					currentType = "use";
+				} else if (startsWithKeyword(trimmed, "fn")) {
+					currentType = "fn_start";
+					inFunction = true;
+				}
+
+				// Add appropriate spacing before top-level declarations
+				if (!prevTopLevelType.empty()) {
+					if ((prevTopLevelType == "use" && currentType == "fn_start") ||
+					    (prevTopLevelType == "fn_start" && currentType == "fn_start") ||
+					    (prevTopLevelType == "fn_start" && currentType == "use")) {
+						// Exactly one empty line between:
+						// - use statements and first function
+						// - between functions
+						// - functions and subsequent use statements
+						output << '\n';
+					}
+				}
+
+				if (!currentType.empty()) {
+					prevTopLevelType = currentType;
+				}
+			}
+
+			output << lines[i] << '\n';
+
+			// Check if we just exited a function
+			if (braceDepth == 0 && inFunction) {
+				inFunction = false;
+			}
+		}
+
+		return output.str();
+	}
+
 	// Main formatting function that works on source text
 	std::string formatSource(const std::string& source) {
 		// First, merge any standalone opening braces with their preceding line
@@ -337,7 +410,8 @@ namespace Qd {
 			}
 		}
 
-		return output.str();
+		// Apply top-level spacing normalization as final step
+		return normalizeTopLevelSpacing(output.str());
 	}
 
 }
