@@ -1349,6 +1349,7 @@ qd_exec_result qd_casti(qd_context* ctx) {
 		result = (int64_t)elem.value.f;
 	} else if (elem.type == QD_STACK_TYPE_STR) {
 		result = atoll(elem.value.s);
+		free(elem.value.s);  // Free the string after conversion
 	} else {
 		fprintf(stderr, "Fatal error in casti: Cannot cast type to integer\n");
 		dump_stack(ctx);
@@ -1391,6 +1392,7 @@ qd_exec_result qd_castf(qd_context* ctx) {
 		result = elem.value.f;
 	} else if (elem.type == QD_STACK_TYPE_STR) {
 		result = atof(elem.value.s);
+		free(elem.value.s);  // Free the string after conversion
 	} else {
 		fprintf(stderr, "Fatal error in castf: Cannot cast type to float\n");
 		dump_stack(ctx);
