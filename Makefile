@@ -21,23 +21,23 @@ debug:
 	@cp -f $(BUILD_DIR_DEBUG)/bin/quadfmt/quadfmt dist/bin/
 	@cp -f $(BUILD_DIR_DEBUG)/bin/quadlsp/quadlsp dist/bin/
 	@cp -f $(BUILD_DIR_DEBUG)/lib/qdrt/libqdrt.so dist/lib/
-	@rm -f dist/lib/libqdrt_static.a && cd $(BUILD_DIR_DEBUG)/lib/qdrt && ar -t libqdrt_static.a | xargs ar rcs $(CURDIR)/dist/lib/libqdrt_static.a
+	@rm -f dist/lib/libqdrt_static.a && cd $(BUILD_DIR_DEBUG)/lib/qdrt && ar rcs $(CURDIR)/dist/lib/libqdrt_static.a $$(ar -t libqdrt_static.a)
 	@cp -f $(BUILD_DIR_DEBUG)/lib/qd/libqd.so dist/lib/
-	@cd $(BUILD_DIR_DEBUG)/lib/qd && ar -t libqd_static.a | xargs ar rcs $(CURDIR)/dist/lib/libqd_static.a
+	@rm -f dist/lib/libqd_static.a && cd $(BUILD_DIR_DEBUG)/lib/qd && ar rcs $(CURDIR)/dist/lib/libqd_static.a $$(ar -t libqd_static.a)
 	@cp -f $(BUILD_DIR_DEBUG)/lib/stdbitsqd/libstdbitsqd.so dist/lib/
-	@cd $(BUILD_DIR_DEBUG)/lib/stdbitsqd && ar -t libstdbitsqd_static.a | xargs ar rcs $(CURDIR)/dist/lib/libstdbitsqd_static.a
+	@rm -f dist/lib/libstdbitsqd_static.a && cd $(BUILD_DIR_DEBUG)/lib/stdbitsqd && ar rcs $(CURDIR)/dist/lib/libstdbitsqd_static.a $$(ar -t libstdbitsqd_static.a)
 	@cp -f $(BUILD_DIR_DEBUG)/lib/stdfmtqd/libstdfmtqd.so dist/lib/
-	@cd $(BUILD_DIR_DEBUG)/lib/stdfmtqd && ar -t libstdfmtqd_static.a | xargs ar rcs $(CURDIR)/dist/lib/libstdfmtqd_static.a
+	@rm -f dist/lib/libstdfmtqd_static.a && cd $(BUILD_DIR_DEBUG)/lib/stdfmtqd && ar rcs $(CURDIR)/dist/lib/libstdfmtqd_static.a $$(ar -t libstdfmtqd_static.a)
 	@cp -f $(BUILD_DIR_DEBUG)/lib/stdmathqd/libstdmathqd.so dist/lib/
-	@cd $(BUILD_DIR_DEBUG)/lib/stdmathqd && ar -t libstdmathqd_static.a | xargs ar rcs $(CURDIR)/dist/lib/libstdmathqd_static.a
+	@rm -f dist/lib/libstdmathqd_static.a && cd $(BUILD_DIR_DEBUG)/lib/stdmathqd && ar rcs $(CURDIR)/dist/lib/libstdmathqd_static.a $$(ar -t libstdmathqd_static.a)
 	@cp -f $(BUILD_DIR_DEBUG)/lib/stdnetqd/libstdnetqd.so dist/lib/
-	@cd $(BUILD_DIR_DEBUG)/lib/stdnetqd && ar -t libstdnetqd_static.a | xargs ar rcs $(CURDIR)/dist/lib/libstdnetqd_static.a
+	@rm -f dist/lib/libstdnetqd_static.a && cd $(BUILD_DIR_DEBUG)/lib/stdnetqd && ar rcs $(CURDIR)/dist/lib/libstdnetqd_static.a $$(ar -t libstdnetqd_static.a)
 	@cp -f $(BUILD_DIR_DEBUG)/lib/stdosqd/libstdosqd.so dist/lib/
-	@cd $(BUILD_DIR_DEBUG)/lib/stdosqd && ar -t libstdosqd_static.a | xargs ar rcs $(CURDIR)/dist/lib/libstdosqd_static.a
+	@rm -f dist/lib/libstdosqd_static.a && cd $(BUILD_DIR_DEBUG)/lib/stdosqd && ar rcs $(CURDIR)/dist/lib/libstdosqd_static.a $$(ar -t libstdosqd_static.a)
 	@cp -f $(BUILD_DIR_DEBUG)/lib/stdstrqd/libstdstrqd.so dist/lib/
-	@cd $(BUILD_DIR_DEBUG)/lib/stdstrqd && ar -t libstdstrqd_static.a | xargs ar rcs $(CURDIR)/dist/lib/libstdstrqd_static.a
+	@rm -f dist/lib/libstdstrqd_static.a && cd $(BUILD_DIR_DEBUG)/lib/stdstrqd && ar rcs $(CURDIR)/dist/lib/libstdstrqd_static.a $$(ar -t libstdstrqd_static.a)
 	@cp -f $(BUILD_DIR_DEBUG)/lib/stdtimeqd/libstdtimeqd.so dist/lib/
-	@cd $(BUILD_DIR_DEBUG)/lib/stdtimeqd && ar -t libstdtimeqd_static.a | xargs ar rcs $(CURDIR)/dist/lib/libstdtimeqd_static.a
+	@rm -f dist/lib/libstdtimeqd_static.a && cd $(BUILD_DIR_DEBUG)/lib/stdtimeqd && ar rcs $(CURDIR)/dist/lib/libstdtimeqd_static.a $$(ar -t libstdtimeqd_static.a)
 	@cp -rf lib/qdrt/include/qdrt dist/include/
 	@cp -rf lib/qd/include/qd dist/include/
 	@cp -rf lib/stdbitsqd/include/stdbitsqd dist/include/
@@ -64,23 +64,23 @@ release:
 	@cp -f $(BUILD_DIR_RELEASE)/bin/quadfmt/quadfmt dist/bin/
 	@cp -f $(BUILD_DIR_RELEASE)/bin/quadlsp/quadlsp dist/bin/
 	@cp -f $(BUILD_DIR_RELEASE)/lib/qdrt/libqdrt.so dist/lib/
-	@cd $(BUILD_DIR_RELEASE)/lib/qdrt && ar -t libqdrt_static.a | xargs ar rcs $(CURDIR)/dist/lib/libqdrt_static.a
+	@rm -f dist/lib/libqdrt_static.a && cd $(BUILD_DIR_RELEASE)/lib/qdrt && ar rcs $(CURDIR)/dist/lib/libqdrt_static.a $$(ar -t libqdrt_static.a)
 	@cp -f $(BUILD_DIR_RELEASE)/lib/qd/libqd.so dist/lib/
-	@cd $(BUILD_DIR_RELEASE)/lib/qd && ar -t libqd_static.a | xargs ar rcs $(CURDIR)/dist/lib/libqd_static.a
+	@rm -f dist/lib/libqd_static.a && cd $(BUILD_DIR_RELEASE)/lib/qd && ar rcs $(CURDIR)/dist/lib/libqd_static.a $$(ar -t libqd_static.a)
 	@cp -f $(BUILD_DIR_RELEASE)/lib/stdbitsqd/libstdbitsqd.so dist/lib/
-	@cd $(BUILD_DIR_RELEASE)/lib/stdbitsqd && ar -t libstdbitsqd_static.a | xargs ar rcs $(CURDIR)/dist/lib/libstdbitsqd_static.a
+	@rm -f dist/lib/libstdbitsqd_static.a && cd $(BUILD_DIR_RELEASE)/lib/stdbitsqd && ar rcs $(CURDIR)/dist/lib/libstdbitsqd_static.a $$(ar -t libstdbitsqd_static.a)
 	@cp -f $(BUILD_DIR_RELEASE)/lib/stdfmtqd/libstdfmtqd.so dist/lib/
-	@cd $(BUILD_DIR_RELEASE)/lib/stdfmtqd && ar -t libstdfmtqd_static.a | xargs ar rcs $(CURDIR)/dist/lib/libstdfmtqd_static.a
+	@rm -f dist/lib/libstdfmtqd_static.a && cd $(BUILD_DIR_RELEASE)/lib/stdfmtqd && ar rcs $(CURDIR)/dist/lib/libstdfmtqd_static.a $$(ar -t libstdfmtqd_static.a)
 	@cp -f $(BUILD_DIR_RELEASE)/lib/stdmathqd/libstdmathqd.so dist/lib/
-	@cd $(BUILD_DIR_RELEASE)/lib/stdmathqd && ar -t libstdmathqd_static.a | xargs ar rcs $(CURDIR)/dist/lib/libstdmathqd_static.a
+	@rm -f dist/lib/libstdmathqd_static.a && cd $(BUILD_DIR_RELEASE)/lib/stdmathqd && ar rcs $(CURDIR)/dist/lib/libstdmathqd_static.a $$(ar -t libstdmathqd_static.a)
 	@cp -f $(BUILD_DIR_RELEASE)/lib/stdnetqd/libstdnetqd.so dist/lib/
-	@cd $(BUILD_DIR_RELEASE)/lib/stdnetqd && ar -t libstdnetqd_static.a | xargs ar rcs $(CURDIR)/dist/lib/libstdnetqd_static.a
+	@rm -f dist/lib/libstdnetqd_static.a && cd $(BUILD_DIR_RELEASE)/lib/stdnetqd && ar rcs $(CURDIR)/dist/lib/libstdnetqd_static.a $$(ar -t libstdnetqd_static.a)
 	@cp -f $(BUILD_DIR_RELEASE)/lib/stdosqd/libstdosqd.so dist/lib/
-	@cd $(BUILD_DIR_RELEASE)/lib/stdosqd && ar -t libstdosqd_static.a | xargs ar rcs $(CURDIR)/dist/lib/libstdosqd_static.a
+	@rm -f dist/lib/libstdosqd_static.a && cd $(BUILD_DIR_RELEASE)/lib/stdosqd && ar rcs $(CURDIR)/dist/lib/libstdosqd_static.a $$(ar -t libstdosqd_static.a)
 	@cp -f $(BUILD_DIR_RELEASE)/lib/stdstrqd/libstdstrqd.so dist/lib/
-	@cd $(BUILD_DIR_RELEASE)/lib/stdstrqd && ar -t libstdstrqd_static.a | xargs ar rcs $(CURDIR)/dist/lib/libstdstrqd_static.a
+	@rm -f dist/lib/libstdstrqd_static.a && cd $(BUILD_DIR_RELEASE)/lib/stdstrqd && ar rcs $(CURDIR)/dist/lib/libstdstrqd_static.a $$(ar -t libstdstrqd_static.a)
 	@cp -f $(BUILD_DIR_RELEASE)/lib/stdtimeqd/libstdtimeqd.so dist/lib/
-	@cd $(BUILD_DIR_RELEASE)/lib/stdtimeqd && ar -t libstdtimeqd_static.a | xargs ar rcs $(CURDIR)/dist/lib/libstdtimeqd_static.a
+	@rm -f dist/lib/libstdtimeqd_static.a && cd $(BUILD_DIR_RELEASE)/lib/stdtimeqd && ar rcs $(CURDIR)/dist/lib/libstdtimeqd_static.a $$(ar -t libstdtimeqd_static.a)
 	@cp -rf lib/qdrt/include/qdrt dist/include/
 	@cp -rf lib/qd/include/qd dist/include/
 	@cp -rf lib/stdbitsqd/include/stdbitsqd dist/include/
