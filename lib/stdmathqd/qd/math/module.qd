@@ -4,7 +4,7 @@ const E = 2.718281828459045
 const Tau = 6.283185307179586
 
 // Import native math functions from libstdmathqd
-import "libstdmathqd.so" as "math" {
+import "libstdmathqd_static.a" as "math" {
 	// Trigonometric functions
 	fn sin(x:f -- result:f)
 	fn cos(x:f -- result:f)

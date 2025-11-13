@@ -1,5 +1,5 @@
 // Operating system interface module
-import "libstdosqd.so" as "os" {
+import "libstdosqd_static.a" as "os" {
 	fn exit(code:i --)
 	fn system(cmd:s -- exitcode:i)
 	fn getenv(name:s -- value:s)

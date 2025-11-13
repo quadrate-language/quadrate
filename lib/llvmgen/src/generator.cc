@@ -1602,26 +1602,30 @@ namespace Qd {
 		// Build library flags - link static libraries directly
 		std::string libraryFlags = libDir + "/libqdrt_static.a";
 
-		// Add static standard library files
+		// Add imported libraries
 		for (const auto& library : impl->importedLibraries) {
-			std::string libName = library;
-
-			// Remove "lib" prefix
-			if (libName.rfind("lib", 0) == 0) {
-				libName = libName.substr(3);
-			}
-
-			// Remove ".so" suffix
-			if (libName.size() >= 3 && libName.substr(libName.size() - 3) == ".so") {
-				libName = libName.substr(0, libName.size() - 3);
-			}
-
-			// Link static library directly
-			std::string staticLib = libDir + "/lib" + libName + "_static.a";
-			if (std::filesystem::exists(staticLib)) {
-				libraryFlags += " " + staticLib;
+			// Check if it's already a .a file (static library)
+			if (library.size() >= 2 && library.substr(library.size() - 2) == ".a") {
+				// It's a static library, link it directly
+				std::string staticLib = libDir + "/" + library;
+				if (std::filesystem::exists(staticLib)) {
+					libraryFlags += " " + staticLib;
+				} else {
+					// Try without libDir prefix
+					libraryFlags += " " + library;
+				}
 			} else {
-				// Fallback to dynamic library if static not found
+				// Handle .so libraries (dynamic linking)
+				std::string libName = library;
+
+				// Remove "lib" prefix and ".so" suffix to get library name
+				if (libName.rfind("lib", 0) == 0) {
+					libName = libName.substr(3);
+				}
+				if (libName.size() >= 3 && libName.substr(libName.size() - 3) == ".so") {
+					libName = libName.substr(0, libName.size() - 3);
+				}
+
 				libraryFlags += " -l" + libName;
 			}
 		}

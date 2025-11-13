@@ -1,4 +1,4 @@
-import "libstdnetqd.so" as "net" {
+import "libstdnetqd_static.a" as "net" {
 	fn listen(port:i -- socket:i)
 	fn accept(server_socket:i -- client_socket:i)
 	fn connect(host:s port:i -- socket:i)

@@ -1,6 +1,6 @@
 // Bitwise operations module
 
-import "libstdbitsqd.so" as "bits" {
+import "libstdbitsqd_static.a" as "bits" {
 	fn and(a:i b:i -- result:i)
 	fn or(a:i b:i -- result:i)
 	fn xor(a:i b:i -- result:i)
