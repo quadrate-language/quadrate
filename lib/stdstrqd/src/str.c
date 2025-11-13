@@ -1,6 +1,6 @@
 #define _POSIX_C_SOURCE 200809L
 
-#include <stdqd/str.h>
+#include <stdstrqd/str.h>
 #include <qdrt/stack.h>
 #include <qdrt/runtime.h>
 #include <stdio.h>

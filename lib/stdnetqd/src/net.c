@@ -1,4 +1,4 @@
-#include <stdqd/net.h>
+#include <stdnetqd/net.h>
 #include <qdrt/runtime.h>
 #include <qdrt/stack.h>
 #include <stdio.h>

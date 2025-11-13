@@ -1,4 +1,4 @@
-#include <stdqd/bits.h>
+#include <stdbitsqd/bits.h>
 #include <qdrt/stack.h>
 #include <qdrt/runtime.h>
 #include <stdio.h>

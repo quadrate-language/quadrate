@@ -1,4 +1,4 @@
-#include <stdqd/math.h>
+#include <stdmathqd/math.h>
 #include <qdrt/stack.h>
 #include <qdrt/runtime.h>
 #include <stdio.h>

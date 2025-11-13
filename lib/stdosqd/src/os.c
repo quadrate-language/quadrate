@@ -1,4 +1,4 @@
-#include <stdqd/os.h>
+#include <stdosqd/os.h>
 #include <qdrt/runtime.h>
 #include <qdrt/stack.h>
 #include <stdio.h>
