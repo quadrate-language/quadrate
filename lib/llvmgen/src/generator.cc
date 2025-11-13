@@ -1555,11 +1555,54 @@ namespace Qd {
 			return false;
 		}
 
-		// Build library flags from imported libraries
-		std::string libraryFlags = "-lqdrt";
+		// Determine library directory
+		std::string libDir;
 
-		// Convert library file names to linker flags
-		// e.g., "libstdmathqd.so" -> "-lstdmathqd"
+		// Check QUADRATE_LIBDIR environment variable first
+		if (const char* quadrateLibDir = std::getenv("QUADRATE_LIBDIR")) {
+			if (std::filesystem::exists(quadrateLibDir)) {
+				libDir = quadrateLibDir;
+			}
+		}
+		// Check ./dist/lib (development build) - use absolute path
+		if (libDir.empty()) {
+			std::filesystem::path distLib = std::filesystem::absolute("./dist/lib");
+			if (std::filesystem::exists(distLib)) {
+				libDir = distLib.string();
+			}
+		}
+		// Check relative to executable (installed binaries)
+		if (libDir.empty()) {
+			std::error_code ec;
+			std::filesystem::path exePath = std::filesystem::canonical("/proc/self/exe", ec);
+			if (!ec) {
+				std::filesystem::path exeDir = exePath.parent_path();
+				std::filesystem::path installedLib = exeDir / ".." / "lib";
+				if (std::filesystem::exists(installedLib)) {
+					libDir = installedLib.string();
+				}
+			}
+		}
+		// Check ~/.local/lib (user installation)
+		if (libDir.empty()) {
+			if (const char* home = std::getenv("HOME")) {
+				std::filesystem::path localLib = std::filesystem::path(home) / ".local" / "lib";
+				if (std::filesystem::exists(localLib)) {
+					libDir = localLib.string();
+				}
+			}
+		}
+		// Check system library path
+		if (libDir.empty()) {
+			if (std::filesystem::exists("/usr/lib")) {
+				libDir = "/usr/lib";
+			}
+		}
+
+		// Build library flags - link static libraries directly
+		std::string libraryFlags = libDir + "/libqdrt_static.a";
+
+		// Add static standard library files
 		for (const auto& library : impl->importedLibraries) {
 			std::string libName = library;
 
@@ -1573,42 +1616,20 @@ namespace Qd {
 				libName = libName.substr(0, libName.size() - 3);
 			}
 
-			libraryFlags += " -l" + libName;
-		}
-
-		// Add standard libraries
-		libraryFlags += " -lm -pthread";
-
-		std::string libraryPaths;
-		std::string rpathFlags;
-
-		// Check QUADRATE_LIBDIR environment variable first
-		if (const char* quadrateLibDir = std::getenv("QUADRATE_LIBDIR")) {
-			std::filesystem::path libDir(quadrateLibDir);
-			if (std::filesystem::exists(libDir)) {
-				libraryPaths = " -L" + libDir.string();
-				rpathFlags = " -Wl,-rpath," + libDir.string();
+			// Link static library directly
+			std::string staticLib = libDir + "/lib" + libName + "_static.a";
+			if (std::filesystem::exists(staticLib)) {
+				libraryFlags += " " + staticLib;
+			} else {
+				// Fallback to dynamic library if static not found
+				libraryFlags += " -l" + libName;
 			}
 		}
-		// Check ./dist/lib (development build) - use absolute path
-		else {
-			std::filesystem::path distLib = std::filesystem::absolute("./dist/lib");
-			if (std::filesystem::exists(distLib)) {
-				libraryPaths = " -L" + distLib.string();
-				rpathFlags = " -Wl,-rpath," + distLib.string();
-			}
-			// Check ~/.local/lib (user installation)
-			else if (const char* home = std::getenv("HOME")) {
-				std::filesystem::path localLib = std::filesystem::path(home) / ".local" / "lib";
-				if (std::filesystem::exists(localLib)) {
-					libraryPaths = " -L" + localLib.string();
-					rpathFlags = " -Wl,-rpath," + localLib.string();
-				}
-			}
-		}
-		// System paths will be checked automatically by clang
 
-		std::string linkCmd = "clang -o " + filename + " " + objFile + libraryPaths + rpathFlags + " " + libraryFlags;
+		// Add standard system libraries
+		libraryFlags += " -lm -lpthread";
+
+		std::string linkCmd = "clang -o " + filename + " " + objFile + " " + libraryFlags;
 
 		int result = system(linkCmd.c_str());
 
