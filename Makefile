@@ -47,6 +47,14 @@ debug:
 	@cp -rf lib/stdosqd/include/stdosqd dist/include/
 	@cp -rf lib/stdstrqd/include/stdstrqd dist/include/
 	@cp -rf lib/stdtimeqd/include/stdtimeqd dist/include/
+	@mkdir -p dist/share/quadrate
+	@cp -r lib/stdbitsqd/qd/bits dist/share/quadrate/
+	@cp -r lib/stdfmtqd/qd/fmt dist/share/quadrate/
+	@cp -r lib/stdmathqd/qd/math dist/share/quadrate/
+	@cp -r lib/stdnetqd/qd/net dist/share/quadrate/
+	@cp -r lib/stdosqd/qd/os dist/share/quadrate/
+	@cp -r lib/stdstrqd/qd/str dist/share/quadrate/
+	@cp -r lib/stdtimeqd/qd/time dist/share/quadrate/
 
 release:
 	meson setup $(BUILD_DIR_RELEASE) --buildtype=release $(MESON_FLAGS)
@@ -82,6 +90,14 @@ release:
 	@cp -rf lib/stdosqd/include/stdosqd dist/include/
 	@cp -rf lib/stdstrqd/include/stdstrqd dist/include/
 	@cp -rf lib/stdtimeqd/include/stdtimeqd dist/include/
+	@mkdir -p dist/share/quadrate
+	@cp -r lib/stdbitsqd/qd/bits dist/share/quadrate/
+	@cp -r lib/stdfmtqd/qd/fmt dist/share/quadrate/
+	@cp -r lib/stdmathqd/qd/math dist/share/quadrate/
+	@cp -r lib/stdnetqd/qd/net dist/share/quadrate/
+	@cp -r lib/stdosqd/qd/os dist/share/quadrate/
+	@cp -r lib/stdstrqd/qd/str dist/share/quadrate/
+	@cp -r lib/stdtimeqd/qd/time dist/share/quadrate/
 
 tests: debug
 	@echo "=========================================="

@@ -139,13 +139,26 @@ std::string findModuleFile(const std::string& moduleName, const std::string& sou
 			}
 		}
 
-		// Try 3: Standard library directories (e.g., lib/stdmathqd/qd/math for "math" module)
+		// Try 3: Standard library directories relative to current directory (for development)
 		std::string stdLibPath = "lib/std" + moduleName + "qd/qd/" + moduleName + "/module.qd";
 		if (std::filesystem::exists(stdLibPath)) {
 			return stdLibPath;
 		}
 
-		// Try 4: $HOME/quadrate directory
+		// Try 4: Standard library relative to executable (for installed binaries)
+		// Get executable path and look for ../share/quadrate/<module>/module.qd
+		try {
+			std::filesystem::path exePath = std::filesystem::canonical("/proc/self/exe");
+			std::filesystem::path exeDir = exePath.parent_path();
+			std::filesystem::path sharePath = exeDir / ".." / "share" / "quadrate" / moduleName / "module.qd";
+			if (std::filesystem::exists(sharePath)) {
+				return sharePath.string();
+			}
+		} catch (...) {
+			// Ignore errors reading executable path
+		}
+
+		// Try 5: $HOME/quadrate directory
 		const char* home = getenv("HOME");
 		if (home) {
 			std::string homePath = std::string(home) + "/quadrate/" + moduleName + "/module.qd";

@@ -1,6 +1,7 @@
 #include <cstdint>
 #include <cstdlib>
 #include <cstring>
+#include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <qc/ast.h>
@@ -366,7 +367,7 @@ namespace Qd {
 				file.close();
 			}
 
-			// Try 3: Standard library directories (e.g., lib/stdmathqd/qd/math for "math" module)
+			// Try 3: Standard library directories relative to current directory (for development)
 			std::string stdLibPath = "lib/std" + moduleName + "qd/qd/" + moduleName + "/module.qd";
 			file.open(stdLibPath);
 			if (file.good()) {
@@ -381,7 +382,31 @@ namespace Qd {
 			}
 			file.close();
 
-			// Try 4: $HOME/quadrate directory
+			// Try 4: Standard library relative to executable (for installed binaries)
+			// Get executable path and look for ../share/quadrate/<module>/module.qd
+			try {
+				std::filesystem::path exePath = std::filesystem::canonical("/proc/self/exe");
+				std::filesystem::path exeDir = exePath.parent_path();
+				std::filesystem::path sharePath = exeDir / ".." / "share" / "quadrate" / moduleName / "module.qd";
+				if (std::filesystem::exists(sharePath)) {
+					modulePath = sharePath.string();
+					file.open(modulePath);
+					if (file.good()) {
+						mModuleDirectories[moduleName] = sharePath.parent_path().string();
+						std::stringstream buffer;
+						buffer << file.rdbuf();
+						std::string source = buffer.str();
+						file.close();
+						parseModuleAndCollectFunctions(moduleName, source);
+						return;
+					}
+					file.close();
+				}
+			} catch (...) {
+				// Ignore errors reading executable path
+			}
+
+			// Try 5: $HOME/quadrate directory
 			const char* home = std::getenv("HOME");
 			if (home) {
 				modulePath = std::string(home) + "/quadrate/" + moduleName + "/module.qd";
