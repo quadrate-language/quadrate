@@ -1,11 +1,11 @@
 // Import test - using imported function from helper function
 
-import "libstdqd.so" as "stdqd" {
+import "libstdfmtqd_static.a" as "fmt" {
     fn printf(format:s -- )
 }
 
 fn greet(name:s -- ) {
-    "Hello from function, %s!\n" swap stdqd::printf
+    "Hello from function, %s!\n" swap fmt::printf
 }
 
 fn main() {

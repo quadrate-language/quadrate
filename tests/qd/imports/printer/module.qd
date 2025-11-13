@@ -1,15 +1,15 @@
 // Module that uses imports internally
 
-import "libstdqd.so" as "stdqd" {
+import "libstdfmtqd_static.a" as "fmt" {
     fn printf(format:s -- )
 }
 
 fn print_number(num:i -- ) {
-    "Number: %d\n" swap stdqd::printf
+    "Number: %d\n" swap fmt::printf
 }
 
 fn print_message(msg:s -- ) {
-    "Message: %s\n" swap stdqd::printf
+    "Message: %s\n" swap fmt::printf
 }
 
 fn main() {

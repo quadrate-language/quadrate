@@ -1,9 +1,9 @@
 // Import test - custom namespace name
 
-import "libstdqd.so" as "std" {
+import "libstdfmtqd_static.a" as "fmt" {
     fn printf(format:s -- )
 }
 
 fn main() {
-    "Namespace: %s\n" "custom" std::printf
+    "Namespace: %s\n" "custom" fmt::printf
 }

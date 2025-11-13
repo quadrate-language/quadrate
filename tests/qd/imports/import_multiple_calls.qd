@@ -1,12 +1,12 @@
 // Import test - multiple function calls
 
-import "libstdqd.so" as "stdqd" {
+import "libstdfmtqd_static.a" as "fmt" {
     fn printf(format:s -- )
 }
 
 fn main() {
-    "Hello, %s!\n" "Alice" stdqd::printf
-    "Goodbye, %s!\n" "Bob" stdqd::printf
-    "The answer is %d\n" 42 stdqd::printf
-    "Pi is approximately %f\n" 3.14 stdqd::printf
+    "Hello, %s!\n" "Alice" fmt::printf
+    "Goodbye, %s!\n" "Bob" fmt::printf
+    "The answer is %d\n" 42 fmt::printf
+    "Pi is approximately %f\n" 3.14 fmt::printf
 }

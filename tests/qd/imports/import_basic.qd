@@ -1,9 +1,9 @@
 // Basic import test - single function call
 
-import "libstdqd.so" as "stdqd" {
+import "libstdfmtqd_static.a" as "fmt" {
     fn printf(format:s -- )
 }
 
 fn main() {
-    "Hello, %s!\n" "World" stdqd::printf
+    "Hello, %s!\n" "World" fmt::printf
 }

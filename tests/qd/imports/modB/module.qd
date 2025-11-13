@@ -1,11 +1,11 @@
 // Module B - also imports libstdqd as "io" (same namespace!)
 
-import "libstdqd.so" as "io" {
+import "libstdfmtqd_static.a" as "fmt" {
     fn printf(format:s -- )
 }
 
 fn print_b() {
-    "From module B\n" io::printf
+    "From module B\n" fmt::printf
 }
 
 fn main() {
