@@ -169,7 +169,13 @@ install: release
 	cp -r dist/include/stdtimeqd $(DESTDIR)$(PREFIX)/include/
 	@echo "Installing Quadrate standard library modules to $(DESTDIR)$(PREFIX)/share/quadrate/"
 	install -d $(DESTDIR)$(PREFIX)/share/quadrate
-	@cp -rL lib/stdqd_root/* $(DESTDIR)$(PREFIX)/share/quadrate/
+	@cp -r lib/stdbitsqd/qd/bits $(DESTDIR)$(PREFIX)/share/quadrate/
+	@cp -r lib/stdfmtqd/qd/fmt $(DESTDIR)$(PREFIX)/share/quadrate/
+	@cp -r lib/stdmathqd/qd/math $(DESTDIR)$(PREFIX)/share/quadrate/
+	@cp -r lib/stdnetqd/qd/net $(DESTDIR)$(PREFIX)/share/quadrate/
+	@cp -r lib/stdosqd/qd/os $(DESTDIR)$(PREFIX)/share/quadrate/
+	@cp -r lib/stdstrqd/qd/str $(DESTDIR)$(PREFIX)/share/quadrate/
+	@cp -r lib/stdtimeqd/qd/time $(DESTDIR)$(PREFIX)/share/quadrate/
 
 uninstall:
 	rm -f $(DESTDIR)$(PREFIX)/bin/quadc

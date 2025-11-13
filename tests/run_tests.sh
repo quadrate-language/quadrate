@@ -15,7 +15,7 @@ MODE="${1:-qd}"  # qd, formatter, valgrind
 # Configuration
 QUADC="${QUADC:-build/debug/bin/quadc/quadc}"
 QUADFMT="${QUADFMT:-dist/bin/quadfmt}"
-QUADRATE_ROOT="${QUADRATE_ROOT:-lib/stdqd_root}"
+QUADRATE_ROOT="${QUADRATE_ROOT:-}"
 QUADRATE_LIBDIR="${QUADRATE_LIBDIR:-dist/lib}"
 TEST_DIR_QD="tests/qd"
 TEST_DIR_FORMATTER="tests/formatter"

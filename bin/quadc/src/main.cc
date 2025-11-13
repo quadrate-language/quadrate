@@ -139,7 +139,13 @@ std::string findModuleFile(const std::string& moduleName, const std::string& sou
 			}
 		}
 
-		// Try 3: $HOME/quadrate directory
+		// Try 3: Standard library directories (e.g., lib/stdmathqd/qd/math for "math" module)
+		std::string stdLibPath = "lib/std" + moduleName + "qd/qd/" + moduleName + "/module.qd";
+		if (std::filesystem::exists(stdLibPath)) {
+			return stdLibPath;
+		}
+
+		// Try 4: $HOME/quadrate directory
 		const char* home = getenv("HOME");
 		if (home) {
 			std::string homePath = std::string(home) + "/quadrate/" + moduleName + "/module.qd";
@@ -148,7 +154,7 @@ std::string findModuleFile(const std::string& moduleName, const std::string& sou
 			}
 		}
 
-		// Try 4: System-wide installation
+		// Try 5: System-wide installation
 		std::string systemPath = "/usr/share/quadrate/" + moduleName + "/module.qd";
 		if (std::filesystem::exists(systemPath)) {
 			return systemPath;

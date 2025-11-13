@@ -366,7 +366,22 @@ namespace Qd {
 				file.close();
 			}
 
-			// Try 3: $HOME/quadrate directory
+			// Try 3: Standard library directories (e.g., lib/stdmathqd/qd/math for "math" module)
+			std::string stdLibPath = "lib/std" + moduleName + "qd/qd/" + moduleName + "/module.qd";
+			file.open(stdLibPath);
+			if (file.good()) {
+				// Store the module directory
+				mModuleDirectories[moduleName] = "lib/std" + moduleName + "qd/qd/" + moduleName;
+				std::stringstream buffer;
+				buffer << file.rdbuf();
+				std::string source = buffer.str();
+				file.close();
+				parseModuleAndCollectFunctions(moduleName, source);
+				return;
+			}
+			file.close();
+
+			// Try 4: $HOME/quadrate directory
 			const char* home = std::getenv("HOME");
 			if (home) {
 				modulePath = std::string(home) + "/quadrate/" + moduleName + "/module.qd";

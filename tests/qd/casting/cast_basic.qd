@@ -1,0 +1,33 @@
+// Test basic type casting operations
+
+fn main() {
+	// Test casti - cast float to int (truncates)
+	3.14 casti . nl
+
+	// Test casti - cast string to int
+	"42" casti . nl
+
+	// Test casti - negative float
+	-5.9 casti . nl
+
+	// Test castf - cast int to float
+	10 castf . nl
+
+	// Test castf - cast string to float
+	"2.5" castf . nl
+
+	// Test castf - negative int
+	-7 castf . nl
+
+	// Test casts - cast int to string
+	100 casts . nl
+
+	// Test casts - cast float to string
+	3.14159 casts . nl
+
+	// Test casts - negative int
+	-50 casts . nl
+
+	// Test chaining: int -> float -> string
+	42 castf casts . nl
+}

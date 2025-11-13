@@ -1322,6 +1322,136 @@ qd_exec_result qd_inc(qd_context* ctx) {
 	return (qd_exec_result){0};
 }
 
+// casti - cast top stack element to integer
+qd_exec_result qd_casti(qd_context* ctx) {
+	// Pop one value, convert to integer, push result
+	size_t stack_size = qd_stack_size(ctx->st);
+	if (stack_size < 1) {
+		fprintf(stderr, "Fatal error in casti: Stack underflow (requires 1 value)\n");
+		dump_stack(ctx);
+		qd_print_stack_trace(ctx);
+		abort();
+	}
+
+	qd_stack_element_t elem;
+	qd_stack_error err = qd_stack_pop(ctx->st, &elem);
+	if (err != QD_STACK_OK) {
+		fprintf(stderr, "Fatal error in casti: Failed to pop value\n");
+		dump_stack(ctx);
+		qd_print_stack_trace(ctx);
+		abort();
+	}
+
+	int64_t result;
+	if (elem.type == QD_STACK_TYPE_INT) {
+		result = elem.value.i;
+	} else if (elem.type == QD_STACK_TYPE_FLOAT) {
+		result = (int64_t)elem.value.f;
+	} else if (elem.type == QD_STACK_TYPE_STR) {
+		result = atoll(elem.value.s);
+	} else {
+		fprintf(stderr, "Fatal error in casti: Cannot cast type to integer\n");
+		dump_stack(ctx);
+		qd_print_stack_trace(ctx);
+		abort();
+	}
+
+	err = qd_stack_push_int(ctx->st, result);
+	if (err != QD_STACK_OK) {
+		return (qd_exec_result){-2};
+	}
+
+	return (qd_exec_result){0};
+}
+
+// castf - cast top stack element to float
+qd_exec_result qd_castf(qd_context* ctx) {
+	// Pop one value, convert to float, push result
+	size_t stack_size = qd_stack_size(ctx->st);
+	if (stack_size < 1) {
+		fprintf(stderr, "Fatal error in castf: Stack underflow (requires 1 value)\n");
+		dump_stack(ctx);
+		qd_print_stack_trace(ctx);
+		abort();
+	}
+
+	qd_stack_element_t elem;
+	qd_stack_error err = qd_stack_pop(ctx->st, &elem);
+	if (err != QD_STACK_OK) {
+		fprintf(stderr, "Fatal error in castf: Failed to pop value\n");
+		dump_stack(ctx);
+		qd_print_stack_trace(ctx);
+		abort();
+	}
+
+	double result;
+	if (elem.type == QD_STACK_TYPE_INT) {
+		result = (double)elem.value.i;
+	} else if (elem.type == QD_STACK_TYPE_FLOAT) {
+		result = elem.value.f;
+	} else if (elem.type == QD_STACK_TYPE_STR) {
+		result = atof(elem.value.s);
+	} else {
+		fprintf(stderr, "Fatal error in castf: Cannot cast type to float\n");
+		dump_stack(ctx);
+		qd_print_stack_trace(ctx);
+		abort();
+	}
+
+	err = qd_stack_push_float(ctx->st, result);
+	if (err != QD_STACK_OK) {
+		return (qd_exec_result){-2};
+	}
+
+	return (qd_exec_result){0};
+}
+
+// casts - cast top stack element to string
+qd_exec_result qd_casts(qd_context* ctx) {
+	// Pop one value, convert to string, push result
+	size_t stack_size = qd_stack_size(ctx->st);
+	if (stack_size < 1) {
+		fprintf(stderr, "Fatal error in casts: Stack underflow (requires 1 value)\n");
+		dump_stack(ctx);
+		qd_print_stack_trace(ctx);
+		abort();
+	}
+
+	qd_stack_element_t elem;
+	qd_stack_error err = qd_stack_pop(ctx->st, &elem);
+	if (err != QD_STACK_OK) {
+		fprintf(stderr, "Fatal error in casts: Failed to pop value\n");
+		dump_stack(ctx);
+		qd_print_stack_trace(ctx);
+		abort();
+	}
+
+	char buffer[64];
+	if (elem.type == QD_STACK_TYPE_INT) {
+		snprintf(buffer, sizeof(buffer), "%ld", elem.value.i);
+	} else if (elem.type == QD_STACK_TYPE_FLOAT) {
+		snprintf(buffer, sizeof(buffer), "%g", elem.value.f);
+	} else if (elem.type == QD_STACK_TYPE_STR) {
+		err = qd_stack_push_str(ctx->st, elem.value.s);
+		if (err != QD_STACK_OK) {
+			return (qd_exec_result){-2};
+		}
+		return (qd_exec_result){0};
+	} else {
+		fprintf(stderr, "Fatal error in casts: Cannot cast type to string\n");
+		dump_stack(ctx);
+		qd_print_stack_trace(ctx);
+		abort();
+	}
+
+	err = qd_stack_push_str(ctx->st, buffer);
+	if (err != QD_STACK_OK) {
+		return (qd_exec_result){-2};
+	}
+
+	return (qd_exec_result){0};
+}
+
 // pow - exponentiation (base^exponent)
 
 // round - round to nearest integer
