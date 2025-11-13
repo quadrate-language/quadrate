@@ -21,23 +21,31 @@ debug:
 	@cp -f $(BUILD_DIR_DEBUG)/bin/quadfmt/quadfmt dist/bin/
 	@cp -f $(BUILD_DIR_DEBUG)/bin/quadlsp/quadlsp dist/bin/
 	@cp -f $(BUILD_DIR_DEBUG)/lib/qdrt/libqdrt.so dist/lib/
-	@rm -f dist/lib/libqdrt_static.a && cd $(BUILD_DIR_DEBUG)/lib/qdrt && ar rcs $(CURDIR)/dist/lib/libqdrt_static.a $$(ar -t libqdrt_static.a)
+	@echo "Creating full archive for libqdrt_static.a..."
+	@rm -f dist/lib/libqdrt_static.a && cd $(BUILD_DIR_DEBUG)/lib/qdrt && echo "Files in thin archive:" && ar -t libqdrt_static.a | head -3 && ar rcs $(CURDIR)/dist/lib/libqdrt_static.a $$(ar -t libqdrt_static.a) && echo "Archive created successfully"
 	@cp -f $(BUILD_DIR_DEBUG)/lib/qd/libqd.so dist/lib/
 	@rm -f dist/lib/libqd_static.a && cd $(BUILD_DIR_DEBUG)/lib/qd && ar rcs $(CURDIR)/dist/lib/libqd_static.a $$(ar -t libqd_static.a)
 	@cp -f $(BUILD_DIR_DEBUG)/lib/stdbitsqd/libstdbitsqd.so dist/lib/
-	@rm -f dist/lib/libstdbitsqd_static.a && cd $(BUILD_DIR_DEBUG)/lib/stdbitsqd && ar rcs $(CURDIR)/dist/lib/libstdbitsqd_static.a $$(ar -t libstdbitsqd_static.a)
+	@echo "Creating full archive for libstdbitsqd_static.a..."
+	@rm -f dist/lib/libstdbitsqd_static.a && cd $(BUILD_DIR_DEBUG)/lib/stdbitsqd && ar rcs $(CURDIR)/dist/lib/libstdbitsqd_static.a $$(ar -t libstdbitsqd_static.a) || (echo "ERROR: Failed to create libstdbitsqd_static.a" && exit 1)
 	@cp -f $(BUILD_DIR_DEBUG)/lib/stdfmtqd/libstdfmtqd.so dist/lib/
-	@rm -f dist/lib/libstdfmtqd_static.a && cd $(BUILD_DIR_DEBUG)/lib/stdfmtqd && ar rcs $(CURDIR)/dist/lib/libstdfmtqd_static.a $$(ar -t libstdfmtqd_static.a)
+	@echo "Creating full archive for libstdfmtqd_static.a..."
+	@rm -f dist/lib/libstdfmtqd_static.a && cd $(BUILD_DIR_DEBUG)/lib/stdfmtqd && ar rcs $(CURDIR)/dist/lib/libstdfmtqd_static.a $$(ar -t libstdfmtqd_static.a) || (echo "ERROR: Failed to create libstdfmtqd_static.a" && exit 1)
 	@cp -f $(BUILD_DIR_DEBUG)/lib/stdmathqd/libstdmathqd.so dist/lib/
-	@rm -f dist/lib/libstdmathqd_static.a && cd $(BUILD_DIR_DEBUG)/lib/stdmathqd && ar rcs $(CURDIR)/dist/lib/libstdmathqd_static.a $$(ar -t libstdmathqd_static.a)
+	@echo "Creating full archive for libstdmathqd_static.a..."
+	@rm -f dist/lib/libstdmathqd_static.a && cd $(BUILD_DIR_DEBUG)/lib/stdmathqd && ar rcs $(CURDIR)/dist/lib/libstdmathqd_static.a $$(ar -t libstdmathqd_static.a) || (echo "ERROR: Failed to create libstdmathqd_static.a" && exit 1)
 	@cp -f $(BUILD_DIR_DEBUG)/lib/stdnetqd/libstdnetqd.so dist/lib/
-	@rm -f dist/lib/libstdnetqd_static.a && cd $(BUILD_DIR_DEBUG)/lib/stdnetqd && ar rcs $(CURDIR)/dist/lib/libstdnetqd_static.a $$(ar -t libstdnetqd_static.a)
+	@echo "Creating full archive for libstdnetqd_static.a..."
+	@rm -f dist/lib/libstdnetqd_static.a && cd $(BUILD_DIR_DEBUG)/lib/stdnetqd && ar rcs $(CURDIR)/dist/lib/libstdnetqd_static.a $$(ar -t libstdnetqd_static.a) || (echo "ERROR: Failed to create libstdnetqd_static.a" && exit 1)
 	@cp -f $(BUILD_DIR_DEBUG)/lib/stdosqd/libstdosqd.so dist/lib/
-	@rm -f dist/lib/libstdosqd_static.a && cd $(BUILD_DIR_DEBUG)/lib/stdosqd && ar rcs $(CURDIR)/dist/lib/libstdosqd_static.a $$(ar -t libstdosqd_static.a)
+	@echo "Creating full archive for libstdosqd_static.a..."
+	@rm -f dist/lib/libstdosqd_static.a && cd $(BUILD_DIR_DEBUG)/lib/stdosqd && ar rcs $(CURDIR)/dist/lib/libstdosqd_static.a $$(ar -t libstdosqd_static.a) || (echo "ERROR: Failed to create libstdosqd_static.a" && exit 1)
 	@cp -f $(BUILD_DIR_DEBUG)/lib/stdstrqd/libstdstrqd.so dist/lib/
-	@rm -f dist/lib/libstdstrqd_static.a && cd $(BUILD_DIR_DEBUG)/lib/stdstrqd && ar rcs $(CURDIR)/dist/lib/libstdstrqd_static.a $$(ar -t libstdstrqd_static.a)
+	@echo "Creating full archive for libstdstrqd_static.a..."
+	@rm -f dist/lib/libstdstrqd_static.a && cd $(BUILD_DIR_DEBUG)/lib/stdstrqd && ar rcs $(CURDIR)/dist/lib/libstdstrqd_static.a $$(ar -t libstdstrqd_static.a) || (echo "ERROR: Failed to create libstdstrqd_static.a" && exit 1)
 	@cp -f $(BUILD_DIR_DEBUG)/lib/stdtimeqd/libstdtimeqd.so dist/lib/
-	@rm -f dist/lib/libstdtimeqd_static.a && cd $(BUILD_DIR_DEBUG)/lib/stdtimeqd && ar rcs $(CURDIR)/dist/lib/libstdtimeqd_static.a $$(ar -t libstdtimeqd_static.a)
+	@echo "Creating full archive for libstdtimeqd_static.a..."
+	@rm -f dist/lib/libstdtimeqd_static.a && cd $(BUILD_DIR_DEBUG)/lib/stdtimeqd && ar rcs $(CURDIR)/dist/lib/libstdtimeqd_static.a $$(ar -t libstdtimeqd_static.a) || (echo "ERROR: Failed to create libstdtimeqd_static.a" && exit 1)
 	@cp -rf lib/qdrt/include/qdrt dist/include/
 	@cp -rf lib/qd/include/qd dist/include/
 	@cp -rf lib/stdbitsqd/include/stdbitsqd dist/include/
@@ -55,6 +63,9 @@ debug:
 	@cp -r lib/stdosqd/qd/os dist/share/quadrate/
 	@cp -r lib/stdstrqd/qd/str dist/share/quadrate/
 	@cp -r lib/stdtimeqd/qd/time dist/share/quadrate/
+	@echo "Verifying static archives..."
+	@file dist/lib/libqdrt_static.a dist/lib/libstdosqd_static.a | head -2
+	@echo "Debug build complete - static libraries ready"
 
 release:
 	meson setup $(BUILD_DIR_RELEASE) --buildtype=release $(MESON_FLAGS)
@@ -64,23 +75,32 @@ release:
 	@cp -f $(BUILD_DIR_RELEASE)/bin/quadfmt/quadfmt dist/bin/
 	@cp -f $(BUILD_DIR_RELEASE)/bin/quadlsp/quadlsp dist/bin/
 	@cp -f $(BUILD_DIR_RELEASE)/lib/qdrt/libqdrt.so dist/lib/
-	@rm -f dist/lib/libqdrt_static.a && cd $(BUILD_DIR_RELEASE)/lib/qdrt && ar rcs $(CURDIR)/dist/lib/libqdrt_static.a $$(ar -t libqdrt_static.a)
+	@echo "Creating full archive for libqdrt_static.a (release)..."
+	@rm -f dist/lib/libqdrt_static.a && cd $(BUILD_DIR_RELEASE)/lib/qdrt && ar rcs $(CURDIR)/dist/lib/libqdrt_static.a $$(ar -t libqdrt_static.a) && echo "Archive created successfully"
 	@cp -f $(BUILD_DIR_RELEASE)/lib/qd/libqd.so dist/lib/
-	@rm -f dist/lib/libqd_static.a && cd $(BUILD_DIR_RELEASE)/lib/qd && ar rcs $(CURDIR)/dist/lib/libqd_static.a $$(ar -t libqd_static.a)
+	@echo "Creating full archive for libqd_static.a (release)..."
+	@rm -f dist/lib/libqd_static.a && cd $(BUILD_DIR_RELEASE)/lib/qd && ar rcs $(CURDIR)/dist/lib/libqd_static.a $$(ar -t libqd_static.a) || (echo "ERROR: Failed to create libqd_static.a" && exit 1)
 	@cp -f $(BUILD_DIR_RELEASE)/lib/stdbitsqd/libstdbitsqd.so dist/lib/
-	@rm -f dist/lib/libstdbitsqd_static.a && cd $(BUILD_DIR_RELEASE)/lib/stdbitsqd && ar rcs $(CURDIR)/dist/lib/libstdbitsqd_static.a $$(ar -t libstdbitsqd_static.a)
+	@echo "Creating full archive for libstdbitsqd_static.a (release)..."
+	@rm -f dist/lib/libstdbitsqd_static.a && cd $(BUILD_DIR_RELEASE)/lib/stdbitsqd && ar rcs $(CURDIR)/dist/lib/libstdbitsqd_static.a $$(ar -t libstdbitsqd_static.a) || (echo "ERROR: Failed to create libstdbitsqd_static.a" && exit 1)
 	@cp -f $(BUILD_DIR_RELEASE)/lib/stdfmtqd/libstdfmtqd.so dist/lib/
-	@rm -f dist/lib/libstdfmtqd_static.a && cd $(BUILD_DIR_RELEASE)/lib/stdfmtqd && ar rcs $(CURDIR)/dist/lib/libstdfmtqd_static.a $$(ar -t libstdfmtqd_static.a)
+	@echo "Creating full archive for libstdfmtqd_static.a (release)..."
+	@rm -f dist/lib/libstdfmtqd_static.a && cd $(BUILD_DIR_RELEASE)/lib/stdfmtqd && ar rcs $(CURDIR)/dist/lib/libstdfmtqd_static.a $$(ar -t libstdfmtqd_static.a) || (echo "ERROR: Failed to create libstdfmtqd_static.a" && exit 1)
 	@cp -f $(BUILD_DIR_RELEASE)/lib/stdmathqd/libstdmathqd.so dist/lib/
-	@rm -f dist/lib/libstdmathqd_static.a && cd $(BUILD_DIR_RELEASE)/lib/stdmathqd && ar rcs $(CURDIR)/dist/lib/libstdmathqd_static.a $$(ar -t libstdmathqd_static.a)
+	@echo "Creating full archive for libstdmathqd_static.a (release)..."
+	@rm -f dist/lib/libstdmathqd_static.a && cd $(BUILD_DIR_RELEASE)/lib/stdmathqd && ar rcs $(CURDIR)/dist/lib/libstdmathqd_static.a $$(ar -t libstdmathqd_static.a) || (echo "ERROR: Failed to create libstdmathqd_static.a" && exit 1)
 	@cp -f $(BUILD_DIR_RELEASE)/lib/stdnetqd/libstdnetqd.so dist/lib/
-	@rm -f dist/lib/libstdnetqd_static.a && cd $(BUILD_DIR_RELEASE)/lib/stdnetqd && ar rcs $(CURDIR)/dist/lib/libstdnetqd_static.a $$(ar -t libstdnetqd_static.a)
+	@echo "Creating full archive for libstdnetqd_static.a (release)..."
+	@rm -f dist/lib/libstdnetqd_static.a && cd $(BUILD_DIR_RELEASE)/lib/stdnetqd && ar rcs $(CURDIR)/dist/lib/libstdnetqd_static.a $$(ar -t libstdnetqd_static.a) || (echo "ERROR: Failed to create libstdnetqd_static.a" && exit 1)
 	@cp -f $(BUILD_DIR_RELEASE)/lib/stdosqd/libstdosqd.so dist/lib/
-	@rm -f dist/lib/libstdosqd_static.a && cd $(BUILD_DIR_RELEASE)/lib/stdosqd && ar rcs $(CURDIR)/dist/lib/libstdosqd_static.a $$(ar -t libstdosqd_static.a)
+	@echo "Creating full archive for libstdosqd_static.a (release)..."
+	@rm -f dist/lib/libstdosqd_static.a && cd $(BUILD_DIR_RELEASE)/lib/stdosqd && ar rcs $(CURDIR)/dist/lib/libstdosqd_static.a $$(ar -t libstdosqd_static.a) || (echo "ERROR: Failed to create libstdosqd_static.a" && exit 1)
 	@cp -f $(BUILD_DIR_RELEASE)/lib/stdstrqd/libstdstrqd.so dist/lib/
-	@rm -f dist/lib/libstdstrqd_static.a && cd $(BUILD_DIR_RELEASE)/lib/stdstrqd && ar rcs $(CURDIR)/dist/lib/libstdstrqd_static.a $$(ar -t libstdstrqd_static.a)
+	@echo "Creating full archive for libstdstrqd_static.a (release)..."
+	@rm -f dist/lib/libstdstrqd_static.a && cd $(BUILD_DIR_RELEASE)/lib/stdstrqd && ar rcs $(CURDIR)/dist/lib/libstdstrqd_static.a $$(ar -t libstdstrqd_static.a) || (echo "ERROR: Failed to create libstdstrqd_static.a" && exit 1)
 	@cp -f $(BUILD_DIR_RELEASE)/lib/stdtimeqd/libstdtimeqd.so dist/lib/
-	@rm -f dist/lib/libstdtimeqd_static.a && cd $(BUILD_DIR_RELEASE)/lib/stdtimeqd && ar rcs $(CURDIR)/dist/lib/libstdtimeqd_static.a $$(ar -t libstdtimeqd_static.a)
+	@echo "Creating full archive for libstdtimeqd_static.a (release)..."
+	@rm -f dist/lib/libstdtimeqd_static.a && cd $(BUILD_DIR_RELEASE)/lib/stdtimeqd && ar rcs $(CURDIR)/dist/lib/libstdtimeqd_static.a $$(ar -t libstdtimeqd_static.a) || (echo "ERROR: Failed to create libstdtimeqd_static.a" && exit 1)
 	@cp -rf lib/qdrt/include/qdrt dist/include/
 	@cp -rf lib/qd/include/qd dist/include/
 	@cp -rf lib/stdbitsqd/include/stdbitsqd dist/include/
@@ -98,6 +118,9 @@ release:
 	@cp -r lib/stdosqd/qd/os dist/share/quadrate/
 	@cp -r lib/stdstrqd/qd/str dist/share/quadrate/
 	@cp -r lib/stdtimeqd/qd/time dist/share/quadrate/
+	@echo "Verifying static archives (release)..."
+	@file dist/lib/libqdrt_static.a dist/lib/libstdosqd_static.a | head -2
+	@echo "Release build complete - static libraries ready"
 
 tests: debug
 	@echo "=========================================="
