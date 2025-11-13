@@ -37,6 +37,7 @@
 #include <iostream>
 #include <map>
 #include <memory>
+#include <set>
 #include <string>
 #include <vector>
 
@@ -86,6 +87,9 @@ namespace Qd {
 
 		// Module ASTs to include (preserves insertion order for dependency resolution)
 		std::vector<std::pair<std::string, IAstNode*>> moduleASTs;
+
+		// Track imported libraries for linking
+		std::set<std::string> importedLibraries;
 
 		// Function context for return
 		llvm::BasicBlock* currentFunctionReturnBlock = nullptr;
@@ -1293,6 +1297,9 @@ namespace Qd {
 					const std::string& namespaceName = importNode->namespaceName();
 					const std::string& library = importNode->library();
 
+					// Track library for linking
+					importedLibraries.insert(library);
+
 					for (const auto* func : importNode->functions()) {
 						// Determine mangled name based on library
 						std::string mangledName;
@@ -1356,6 +1363,9 @@ namespace Qd {
 			if (auto importNode = dynamic_cast<AstNodeImport*>(child)) {
 				const std::string& namespaceName = importNode->namespaceName();
 				const std::string& library = importNode->library();
+
+				// Track library for linking
+				importedLibraries.insert(library);
 
 				for (const auto* func : importNode->functions()) {
 					std::string mangledName;
@@ -1545,9 +1555,30 @@ namespace Qd {
 			return false;
 		}
 
-		// Link with runtime library using clang
-		// Check for library paths in order of preference: QUADRATE_LIBDIR, ./dist/lib, ~/.local/lib, system paths
-		std::string libraryFlags = "-lqdrt -lstdqd -lm -pthread";
+		// Build library flags from imported libraries
+		std::string libraryFlags = "-lqdrt";
+
+		// Convert library file names to linker flags
+		// e.g., "libstdmathqd.so" -> "-lstdmathqd"
+		for (const auto& library : impl->importedLibraries) {
+			std::string libName = library;
+
+			// Remove "lib" prefix
+			if (libName.rfind("lib", 0) == 0) {
+				libName = libName.substr(3);
+			}
+
+			// Remove ".so" suffix
+			if (libName.size() >= 3 && libName.substr(libName.size() - 3) == ".so") {
+				libName = libName.substr(0, libName.size() - 3);
+			}
+
+			libraryFlags += " -l" + libName;
+		}
+
+		// Add standard libraries
+		libraryFlags += " -lm -pthread";
+
 		std::string libraryPaths;
 		std::string rpathFlags;
 

@@ -1,3 +1,0 @@
-import "libstdqd.so" as "fmt" {
-    fn printf(format:s -- )
-}

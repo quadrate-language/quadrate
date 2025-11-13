@@ -1,0 +1,6 @@
+// Operating system interface module
+import "libstdosqd.so" as "os" {
+	fn exit(code:i --)
+	fn system(cmd:s -- exitcode:i)
+	fn getenv(name:s -- value:s)
+}

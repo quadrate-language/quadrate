@@ -1,0 +1,10 @@
+// Bitwise operations module
+
+import "libstdbitsqd.so" as "bits" {
+	fn and(a:i b:i -- result:i)
+	fn or(a:i b:i -- result:i)
+	fn xor(a:i b:i -- result:i)
+	fn not(a:i -- result:i)
+	fn lshift(value:i shift:i -- result:i)
+	fn rshift(value:i shift:i -- result:i)
+}

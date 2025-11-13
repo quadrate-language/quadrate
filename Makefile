@@ -24,11 +24,29 @@ debug:
 	@cp -f $(BUILD_DIR_DEBUG)/lib/qdrt/libqdrt_static.a dist/lib/
 	@cp -f $(BUILD_DIR_DEBUG)/lib/qd/libqd.so dist/lib/
 	@cp -f $(BUILD_DIR_DEBUG)/lib/qd/libqd_static.a dist/lib/
-	@cp -f $(BUILD_DIR_DEBUG)/lib/stdqd/libstdqd.so dist/lib/
-	@cp -f $(BUILD_DIR_DEBUG)/lib/stdqd/libstdqd_static.a dist/lib/
+	@cp -f $(BUILD_DIR_DEBUG)/lib/stdbitsqd/libstdbitsqd.so dist/lib/
+	@cp -f $(BUILD_DIR_DEBUG)/lib/stdbitsqd/libstdbitsqd_static.a dist/lib/
+	@cp -f $(BUILD_DIR_DEBUG)/lib/stdfmtqd/libstdfmtqd.so dist/lib/
+	@cp -f $(BUILD_DIR_DEBUG)/lib/stdfmtqd/libstdfmtqd_static.a dist/lib/
+	@cp -f $(BUILD_DIR_DEBUG)/lib/stdmathqd/libstdmathqd.so dist/lib/
+	@cp -f $(BUILD_DIR_DEBUG)/lib/stdmathqd/libstdmathqd_static.a dist/lib/
+	@cp -f $(BUILD_DIR_DEBUG)/lib/stdnetqd/libstdnetqd.so dist/lib/
+	@cp -f $(BUILD_DIR_DEBUG)/lib/stdnetqd/libstdnetqd_static.a dist/lib/
+	@cp -f $(BUILD_DIR_DEBUG)/lib/stdosqd/libstdosqd.so dist/lib/
+	@cp -f $(BUILD_DIR_DEBUG)/lib/stdosqd/libstdosqd_static.a dist/lib/
+	@cp -f $(BUILD_DIR_DEBUG)/lib/stdstrqd/libstdstrqd.so dist/lib/
+	@cp -f $(BUILD_DIR_DEBUG)/lib/stdstrqd/libstdstrqd_static.a dist/lib/
+	@cp -f $(BUILD_DIR_DEBUG)/lib/stdtimeqd/libstdtimeqd.so dist/lib/
+	@cp -f $(BUILD_DIR_DEBUG)/lib/stdtimeqd/libstdtimeqd_static.a dist/lib/
 	@cp -rf lib/qdrt/include/qdrt dist/include/
 	@cp -rf lib/qd/include/qd dist/include/
-	@cp -rf lib/stdqd/include/stdqd dist/include/
+	@cp -rf lib/stdbitsqd/include/stdbitsqd dist/include/
+	@cp -rf lib/stdfmtqd/include/stdfmtqd dist/include/
+	@cp -rf lib/stdmathqd/include/stdmathqd dist/include/
+	@cp -rf lib/stdnetqd/include/stdnetqd dist/include/
+	@cp -rf lib/stdosqd/include/stdosqd dist/include/
+	@cp -rf lib/stdstrqd/include/stdstrqd dist/include/
+	@cp -rf lib/stdtimeqd/include/stdtimeqd dist/include/
 
 release:
 	meson setup $(BUILD_DIR_RELEASE) --buildtype=release $(MESON_FLAGS)
@@ -41,11 +59,29 @@ release:
 	@cp -f $(BUILD_DIR_RELEASE)/lib/qdrt/libqdrt_static.a dist/lib/
 	@cp -f $(BUILD_DIR_RELEASE)/lib/qd/libqd.so dist/lib/
 	@cp -f $(BUILD_DIR_RELEASE)/lib/qd/libqd_static.a dist/lib/
-	@cp -f $(BUILD_DIR_RELEASE)/lib/stdqd/libstdqd.so dist/lib/
-	@cp -f $(BUILD_DIR_RELEASE)/lib/stdqd/libstdqd_static.a dist/lib/
+	@cp -f $(BUILD_DIR_RELEASE)/lib/stdbitsqd/libstdbitsqd.so dist/lib/
+	@cp -f $(BUILD_DIR_RELEASE)/lib/stdbitsqd/libstdbitsqd_static.a dist/lib/
+	@cp -f $(BUILD_DIR_RELEASE)/lib/stdfmtqd/libstdfmtqd.so dist/lib/
+	@cp -f $(BUILD_DIR_RELEASE)/lib/stdfmtqd/libstdfmtqd_static.a dist/lib/
+	@cp -f $(BUILD_DIR_RELEASE)/lib/stdmathqd/libstdmathqd.so dist/lib/
+	@cp -f $(BUILD_DIR_RELEASE)/lib/stdmathqd/libstdmathqd_static.a dist/lib/
+	@cp -f $(BUILD_DIR_RELEASE)/lib/stdnetqd/libstdnetqd.so dist/lib/
+	@cp -f $(BUILD_DIR_RELEASE)/lib/stdnetqd/libstdnetqd_static.a dist/lib/
+	@cp -f $(BUILD_DIR_RELEASE)/lib/stdosqd/libstdosqd.so dist/lib/
+	@cp -f $(BUILD_DIR_RELEASE)/lib/stdosqd/libstdosqd_static.a dist/lib/
+	@cp -f $(BUILD_DIR_RELEASE)/lib/stdstrqd/libstdstrqd.so dist/lib/
+	@cp -f $(BUILD_DIR_RELEASE)/lib/stdstrqd/libstdstrqd_static.a dist/lib/
+	@cp -f $(BUILD_DIR_RELEASE)/lib/stdtimeqd/libstdtimeqd.so dist/lib/
+	@cp -f $(BUILD_DIR_RELEASE)/lib/stdtimeqd/libstdtimeqd_static.a dist/lib/
 	@cp -rf lib/qdrt/include/qdrt dist/include/
 	@cp -rf lib/qd/include/qd dist/include/
-	@cp -rf lib/stdqd/include/stdqd dist/include/
+	@cp -rf lib/stdbitsqd/include/stdbitsqd dist/include/
+	@cp -rf lib/stdfmtqd/include/stdfmtqd dist/include/
+	@cp -rf lib/stdmathqd/include/stdmathqd dist/include/
+	@cp -rf lib/stdnetqd/include/stdnetqd dist/include/
+	@cp -rf lib/stdosqd/include/stdosqd dist/include/
+	@cp -rf lib/stdstrqd/include/stdstrqd dist/include/
+	@cp -rf lib/stdtimeqd/include/stdtimeqd dist/include/
 
 tests: debug
 	@echo "=========================================="
@@ -53,7 +89,7 @@ tests: debug
 	@echo "=========================================="
 	@echo ""
 	@echo "=== Running C/C++ unit tests ==="
-	meson test -C $(BUILD_DIR_DEBUG) test_runtime test_ast test_semantic_validator stdqd --print-errorlogs
+	meson test -C $(BUILD_DIR_DEBUG) test_runtime test_ast test_semantic_validator --print-errorlogs
 	@echo ""
 	@echo "=== Running LSP tests ==="
 	meson test -C $(BUILD_DIR_DEBUG) test_lsp test_lsp_extended test_lsp_stress --print-errorlogs
@@ -77,7 +113,7 @@ tests: debug
 
 valgrind: debug
 	@echo "=== Running C/C++ unit tests with valgrind ==="
-	meson test -C $(BUILD_DIR_DEBUG) test_runtime test_ast test_semantic_validator stdqd --setup=valgrind --print-errorlogs
+	meson test -C $(BUILD_DIR_DEBUG) test_runtime test_ast test_semantic_validator --setup=valgrind --print-errorlogs
 	@echo ""
 	@echo "=== Running Quadrate language tests with valgrind ==="
 	QUADC=$(BUILD_DIR_DEBUG)/bin/quadc/quadc bash tests/run_tests.sh valgrind
@@ -108,14 +144,32 @@ install: release
 	install -m 644 dist/lib/libqdrt_static.a $(DESTDIR)$(PREFIX)/lib/
 	install -m 644 dist/lib/libqd.so $(DESTDIR)$(PREFIX)/lib/
 	install -m 644 dist/lib/libqd_static.a $(DESTDIR)$(PREFIX)/lib/
-	install -m 644 dist/lib/libstdqd.so $(DESTDIR)$(PREFIX)/lib/
-	install -m 644 dist/lib/libstdqd_static.a $(DESTDIR)$(PREFIX)/lib/
+	install -m 644 dist/lib/libstdbitsqd.so $(DESTDIR)$(PREFIX)/lib/
+	install -m 644 dist/lib/libstdbitsqd_static.a $(DESTDIR)$(PREFIX)/lib/
+	install -m 644 dist/lib/libstdfmtqd.so $(DESTDIR)$(PREFIX)/lib/
+	install -m 644 dist/lib/libstdfmtqd_static.a $(DESTDIR)$(PREFIX)/lib/
+	install -m 644 dist/lib/libstdmathqd.so $(DESTDIR)$(PREFIX)/lib/
+	install -m 644 dist/lib/libstdmathqd_static.a $(DESTDIR)$(PREFIX)/lib/
+	install -m 644 dist/lib/libstdnetqd.so $(DESTDIR)$(PREFIX)/lib/
+	install -m 644 dist/lib/libstdnetqd_static.a $(DESTDIR)$(PREFIX)/lib/
+	install -m 644 dist/lib/libstdosqd.so $(DESTDIR)$(PREFIX)/lib/
+	install -m 644 dist/lib/libstdosqd_static.a $(DESTDIR)$(PREFIX)/lib/
+	install -m 644 dist/lib/libstdstrqd.so $(DESTDIR)$(PREFIX)/lib/
+	install -m 644 dist/lib/libstdstrqd_static.a $(DESTDIR)$(PREFIX)/lib/
+	install -m 644 dist/lib/libstdtimeqd.so $(DESTDIR)$(PREFIX)/lib/
+	install -m 644 dist/lib/libstdtimeqd_static.a $(DESTDIR)$(PREFIX)/lib/
 	cp -r dist/include/qdrt $(DESTDIR)$(PREFIX)/include/
 	cp -r dist/include/qd $(DESTDIR)$(PREFIX)/include/
-	cp -r dist/include/stdqd $(DESTDIR)$(PREFIX)/include/
+	cp -r dist/include/stdbitsqd $(DESTDIR)$(PREFIX)/include/
+	cp -r dist/include/stdfmtqd $(DESTDIR)$(PREFIX)/include/
+	cp -r dist/include/stdmathqd $(DESTDIR)$(PREFIX)/include/
+	cp -r dist/include/stdnetqd $(DESTDIR)$(PREFIX)/include/
+	cp -r dist/include/stdosqd $(DESTDIR)$(PREFIX)/include/
+	cp -r dist/include/stdstrqd $(DESTDIR)$(PREFIX)/include/
+	cp -r dist/include/stdtimeqd $(DESTDIR)$(PREFIX)/include/
 	@echo "Installing Quadrate standard library modules to $(DESTDIR)$(PREFIX)/share/quadrate/"
 	install -d $(DESTDIR)$(PREFIX)/share/quadrate
-	@cd lib/stdqd/qd && find . -maxdepth 1 -type d -not -name "." -exec cp -r {} $(DESTDIR)$(PREFIX)/share/quadrate/ \;
+	@cp -rL lib/stdqd_root/* $(DESTDIR)$(PREFIX)/share/quadrate/
 
 uninstall:
 	rm -f $(DESTDIR)$(PREFIX)/bin/quadc
@@ -125,11 +179,29 @@ uninstall:
 	rm -f $(DESTDIR)$(PREFIX)/lib/libqdrt_static.a
 	rm -f $(DESTDIR)$(PREFIX)/lib/libqd.so
 	rm -f $(DESTDIR)$(PREFIX)/lib/libqd_static.a
-	rm -f $(DESTDIR)$(PREFIX)/lib/libstdqd.so
-	rm -f $(DESTDIR)$(PREFIX)/lib/libstdqd_static.a
+	rm -f $(DESTDIR)$(PREFIX)/lib/libstdbitsqd.so
+	rm -f $(DESTDIR)$(PREFIX)/lib/libstdbitsqd_static.a
+	rm -f $(DESTDIR)$(PREFIX)/lib/libstdfmtqd.so
+	rm -f $(DESTDIR)$(PREFIX)/lib/libstdfmtqd_static.a
+	rm -f $(DESTDIR)$(PREFIX)/lib/libstdmathqd.so
+	rm -f $(DESTDIR)$(PREFIX)/lib/libstdmathqd_static.a
+	rm -f $(DESTDIR)$(PREFIX)/lib/libstdnetqd.so
+	rm -f $(DESTDIR)$(PREFIX)/lib/libstdnetqd_static.a
+	rm -f $(DESTDIR)$(PREFIX)/lib/libstdosqd.so
+	rm -f $(DESTDIR)$(PREFIX)/lib/libstdosqd_static.a
+	rm -f $(DESTDIR)$(PREFIX)/lib/libstdstrqd.so
+	rm -f $(DESTDIR)$(PREFIX)/lib/libstdstrqd_static.a
+	rm -f $(DESTDIR)$(PREFIX)/lib/libstdtimeqd.so
+	rm -f $(DESTDIR)$(PREFIX)/lib/libstdtimeqd_static.a
 	rm -rf $(DESTDIR)$(PREFIX)/include/qdrt
 	rm -rf $(DESTDIR)$(PREFIX)/include/qd
-	rm -rf $(DESTDIR)$(PREFIX)/include/stdqd
+	rm -rf $(DESTDIR)$(PREFIX)/include/stdbitsqd
+	rm -rf $(DESTDIR)$(PREFIX)/include/stdfmtqd
+	rm -rf $(DESTDIR)$(PREFIX)/include/stdmathqd
+	rm -rf $(DESTDIR)$(PREFIX)/include/stdnetqd
+	rm -rf $(DESTDIR)$(PREFIX)/include/stdosqd
+	rm -rf $(DESTDIR)$(PREFIX)/include/stdstrqd
+	rm -rf $(DESTDIR)$(PREFIX)/include/stdtimeqd
 	@echo "Removing Quadrate standard library modules from $(DESTDIR)$(PREFIX)/share/quadrate/"
 	rm -rf $(DESTDIR)$(PREFIX)/share/quadrate
 
