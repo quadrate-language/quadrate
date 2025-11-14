@@ -737,7 +737,7 @@ void printHelp() {
 }
 
 void printVersion() {
-	std::cout << "quadlsp version 0.1.0\n";
+	std::cout << "0.1.0\n";
 }
 
 int main(int argc, char* argv[]) {

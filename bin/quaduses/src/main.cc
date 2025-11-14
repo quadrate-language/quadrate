@@ -39,7 +39,7 @@ void printHelp() {
 }
 
 void printVersion() {
-	std::cout << "quaduses version 0.1.0\n";
+	std::cout << "0.1.0\n";
 }
 
 bool parseArgs(int argc, char* argv[], Options& opts) {
