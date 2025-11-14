@@ -1,3 +1,4 @@
+#include <cstdint>
 #include <cstring>
 #include <fstream>
 #include <iostream>
@@ -104,10 +105,61 @@ size_t countSignificantTokens(const std::string& source) {
 	return count;
 }
 
+// Validate UTF-8 encoding
+bool isValidUtf8(const std::string& source) {
+	size_t i = 0;
+	while (i < source.length()) {
+		unsigned char c = static_cast<unsigned char>(source[i]);
+
+		// Check for null bytes (binary file indicator)
+		if (c == 0) {
+			return false;
+		}
+
+		// ASCII (0xxxxxxx)
+		if ((c & 0x80) == 0) {
+			i++;
+			continue;
+		}
+
+		// Determine number of continuation bytes
+		size_t cont_bytes = 0;
+		if ((c & 0xE0) == 0xC0) cont_bytes = 1;      // 110xxxxx
+		else if ((c & 0xF0) == 0xE0) cont_bytes = 2; // 1110xxxx
+		else if ((c & 0xF8) == 0xF0) cont_bytes = 3; // 11110xxx
+		else return false; // Invalid UTF-8 start byte
+
+		// Check we have enough bytes
+		if (i + cont_bytes >= source.length()) {
+			return false;
+		}
+
+		// Validate continuation bytes (10xxxxxx)
+		for (size_t j = 1; j <= cont_bytes; j++) {
+			unsigned char next = static_cast<unsigned char>(source[i + j]);
+			if ((next & 0xC0) != 0x80) {
+				return false;
+			}
+		}
+
+		i += cont_bytes + 1;
+	}
+	return true;
+}
+
 bool formatFile(const std::string& filename, const Options& opts) {
 	try {
 		// Read source file
 		std::string source = readFile(filename);
+
+		// Validate UTF-8 encoding
+		if (!isValidUtf8(source)) {
+			std::cerr << "quadfmt: " << filename << ": invalid UTF-8 encoding or binary file\n";
+			return false;
+		}
+
+		// Count tokens before formatting
+		size_t originalTokens = countSignificantTokens(source);
 
 		// Parse to check for errors
 		Ast ast;
@@ -131,7 +183,6 @@ bool formatFile(const std::string& filename, const Options& opts) {
 		}
 
 		// Ensure no content was lost during formatting
-		size_t originalTokens = countSignificantTokens(source);
 		size_t formattedTokens = countSignificantTokens(formatted);
 
 		if (formattedTokens < originalTokens) {
