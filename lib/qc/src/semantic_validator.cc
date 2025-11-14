@@ -18,6 +18,7 @@
 #include <qc/ast_node_switch.h>
 #include <qc/ast_node_use.h>
 #include <qc/colors.h>
+#include <qc/instructions.h>
 #include <qc/semantic_validator.h>
 #include <sstream>
 
@@ -47,14 +48,6 @@ namespace Qd {
 		return "node:" + std::to_string(reinterpret_cast<std::uintptr_t>(node));
 	}
 
-	// List of built-in instructions (must match ast.cc)
-	static const char* BUILTIN_INSTRUCTIONS[] = {"%", "*", "+", "-", ".", "/", "abs", "acos", "add", "and", "asin",
-			"atan", "cb", "cbrt", "ceil", "call", "clear", "cos", "dec", "depth", "div", "drop", "drop2", "dup", "dup2", "dupd", "nipd", "overd", "swapd",
-			"eq", "error", "fac", "floor", "gt", "gte", "inc", "inv", "ln", "log10", "lshift", "lt", "lte", "max",
-			"min", "mod", "mul", "neq", "neg", "nip", "not", "or", "over", "over2", "pick", "pow", "print", "prints",
-			"printsv", "printv", "read", "roll", "rot", "round", "rshift", "sin", "sq", "sqrt", "sub", "swap", "swap2",
-			"tan", "tuck", "within", "xor"};
-
 	static const char* stackValueTypeToString(StackValueType type) {
 		switch (type) {
 		case StackValueType::INT:
@@ -78,13 +71,8 @@ namespace Qd {
 	}
 
 	bool SemanticValidator::isBuiltInInstruction(const char* name) const {
-		static const size_t count = sizeof(BUILTIN_INSTRUCTIONS) / sizeof(BUILTIN_INSTRUCTIONS[0]);
-		for (size_t i = 0; i < count; i++) {
-			if (strcmp(name, BUILTIN_INSTRUCTIONS[i]) == 0) {
-				return true;
-			}
-		}
-		return false;
+		// Use the extended validator list which includes stdlib imports
+		return Qd::isKnownInstruction(name);
 	}
 
 	void SemanticValidator::reportError(const char* message) {

@@ -27,26 +27,11 @@
 #include <qc/ast_node_use.h>
 #include <qc/colors.h>
 #include <qc/error_reporter.h>
+#include <qc/instructions.h>
 #include <u8t/scanner.h>
 #include <vector>
 
 namespace Qd {
-	// Helper function to check if an identifier is a built-in instruction
-	static bool isBuiltInInstruction(const char* name) {
-		static const char* instructions[] = {"!=", "%", "*", "+", "-", ".", "/", "<", "<=", "==", ">", ">=", "add",
-				"call", "castf", "casti", "casts", "clear", "dec", "depth", "detach", "div", "drop", "drop2", "dup", "dup2", "dupd", "nipd", "overd", "swapd", "eq", "error", "gt",
-				"gte", "inc", "lt", "lte", "mod", "mul", "neq", "neg", "nip", "nl", "over", "over2", "pick", "print",
-				"prints", "printsv", "printv", "read", "roll", "rot", "spawn", "sub", "swap", "swap2", "tuck", "wait",
-				"within"};
-		static const size_t count = sizeof(instructions) / sizeof(instructions[0]);
-
-		for (size_t i = 0; i < count; i++) {
-			if (strcmp(name, instructions[i]) == 0) {
-				return true;
-			}
-		}
-		return false;
-	}
 
 	// Helper function to convert UTF-8 character index to byte offset
 	static size_t charIndexToByteOffset(const char* src, size_t charIndex) {
@@ -99,6 +84,71 @@ namespace Qd {
 		node->setPosition(line, column);
 	}
 
+	// Helper to parse a comment (// or /* */)
+	// Returns the comment node, or nullptr if not a comment
+	static AstNodeComment* parseComment(u8t_scanner* scanner, const char* src, bool sawSlash, char32_t token) {
+		if (!sawSlash) {
+			return nullptr;
+		}
+
+		AstNodeComment::CommentType commentType;
+		if (token == '/') {
+			commentType = AstNodeComment::CommentType::LINE;
+		} else if (token == '*') {
+			commentType = AstNodeComment::CommentType::BLOCK;
+		} else {
+			return nullptr;
+		}
+
+		// Get character position and convert to byte offset
+		size_t charPos = u8t_scanner_token_start(scanner);
+		size_t tokenLen = u8t_scanner_token_len(scanner);
+		size_t bytePos = charIndexToByteOffset(src, charPos + tokenLen);
+
+		// Read comment text directly from source
+		const char* commentStart = src + bytePos;
+		const char* commentEnd = commentStart;
+
+		if (commentType == AstNodeComment::CommentType::LINE) {
+			// Read until end of line
+			while (*commentEnd != '\0' && *commentEnd != '\n' && *commentEnd != '\r') {
+				commentEnd++;
+			}
+		} else {
+			// Read until */
+			while (*commentEnd != '\0') {
+				if (*commentEnd == '*' && *(commentEnd + 1) == '/') {
+					break;
+				}
+				commentEnd++;
+			}
+		}
+
+		std::string commentText(commentStart, static_cast<size_t>(commentEnd - commentStart));
+
+		// Advance scanner past the comment
+		if (commentType == AstNodeComment::CommentType::LINE) {
+			while (u8t_scanner_peek(scanner) != 0 && u8t_scanner_peek(scanner) != '\n' &&
+					u8t_scanner_peek(scanner) != '\r') {
+				u8t_scanner_scan(scanner);
+			}
+		} else {
+			bool foundStar = false;
+			while (u8t_scanner_peek(scanner) != 0) {
+				char32_t c = u8t_scanner_scan(scanner);
+				if (foundStar && c == '/') {
+					break;
+				}
+				foundStar = (c == '*');
+			}
+		}
+
+		// Create and return comment node
+		AstNodeComment* comment = new AstNodeComment(commentText, commentType);
+		setNodePosition(comment, scanner, src);
+		return comment;
+	}
+
 	static IAstNode* parseForStatement(u8t_scanner* scanner, ErrorReporter* errorReporter, const char* src);
 	static IAstNode* parseLoopStatement(u8t_scanner* scanner, ErrorReporter* errorReporter, const char* src);
 	static IAstNode* parseIfStatement(u8t_scanner* scanner, ErrorReporter* errorReporter, const char* src);
@@ -106,7 +156,7 @@ namespace Qd {
 
 	// Helper to synchronize parser after an error
 	// Skips tokens until a synchronization point is found
-	[[maybe_unused]] static void synchronize(u8t_scanner* scanner) {
+	static void synchronize(u8t_scanner* scanner) {
 		char32_t token;
 		while ((token = u8t_scanner_scan(scanner)) != U8T_EOF) {
 			// Stop at statement boundaries
@@ -127,10 +177,37 @@ namespace Qd {
 		}
 	}
 
+	// Helper to check if a token is an operator alias and create the corresponding instruction node
+	// Returns the instruction node if it's an operator, nullptr otherwise
+	static IAstNode* tryParseOperatorAlias(char32_t token, u8t_scanner* scanner, const char* src) {
+		// Map of operator tokens to their instruction names
+		static const struct {
+			char32_t token;
+			const char* instruction;
+		} OPERATOR_ALIASES[] = {
+				{'.', "."}, // print
+				{'/', "/"}, // div
+				{'*', "*"}, // mul
+				{'+', "+"}, // add
+				{'-', "-"}, // sub
+				{'%', "%"}  // mod
+		};
+		static const size_t OPERATOR_COUNT = sizeof(OPERATOR_ALIASES) / sizeof(OPERATOR_ALIASES[0]);
+
+		for (size_t i = 0; i < OPERATOR_COUNT; i++) {
+			if (token == OPERATOR_ALIASES[i].token) {
+				IAstNode* node = new AstNodeInstruction(OPERATOR_ALIASES[i].instruction);
+				setNodePosition(node, scanner, src);
+				return node;
+			}
+		}
+		return nullptr;
+	}
+
 	// Helper to parse a single statement/expression token
 	// Returns nullptr if token was a control keyword that was handled
 	// Returns a node if it's a literal or identifier
-	[[maybe_unused]] static IAstNode* parseSimpleToken(
+	static IAstNode* parseSimpleToken(
 			char32_t token, u8t_scanner* scanner, size_t* n, const char* src) {
 		if (token == U8T_INTEGER) {
 			const char* text = u8t_scanner_token_text(scanner, n);
@@ -166,37 +243,15 @@ namespace Qd {
 				node->setCheckError(true);
 			}
 			return node;
-		} else if (token == '.') {
-			// Handle '.' as alias for 'print' (Forth-style)
-			IAstNode* node = new AstNodeInstruction(".");
-			setNodePosition(node, scanner, src);
-			return node;
-		} else if (token == '/') {
-			// Handle '/' as alias for 'div'
-			IAstNode* node = new AstNodeInstruction("/");
-			setNodePosition(node, scanner, src);
-			return node;
-		} else if (token == '*') {
-			// Handle '*' as alias for 'mul'
-			IAstNode* node = new AstNodeInstruction("*");
-			setNodePosition(node, scanner, src);
-			return node;
-		} else if (token == '+') {
-			// Handle '+' as alias for 'add'
-			IAstNode* node = new AstNodeInstruction("+");
-			setNodePosition(node, scanner, src);
-			return node;
-		} else if (token == '-') {
-			// Handle '-' as alias for 'sub'
-			IAstNode* node = new AstNodeInstruction("-");
-			setNodePosition(node, scanner, src);
-			return node;
-		} else if (token == '%') {
-			// Handle '%' as alias for 'mod'
-			IAstNode* node = new AstNodeInstruction("%");
-			setNodePosition(node, scanner, src);
-			return node;
-		} else if (token == '<') {
+		}
+
+		// Try to parse as operator alias
+		IAstNode* opNode = tryParseOperatorAlias(token, scanner, src);
+		if (opNode != nullptr) {
+			return opNode;
+		}
+
+		if (token == '<') {
 			// Check if next token is '=' for '<='
 			char32_t nextToken = u8t_scanner_peek(scanner);
 			if (nextToken == '=') {
@@ -308,75 +363,17 @@ namespace Qd {
 				continue;
 			}
 
-			// Handle // line comments
-			if (sawSlash && token == '/') {
+			// Handle comments (// and /* */)
+			AstNodeComment* comment = parseComment(scanner, src, sawSlash, token);
+			if (comment != nullptr) {
 				sawSlash = false;
-				// Get character position and convert to byte offset
-				size_t charPos = u8t_scanner_token_start(scanner);
-				size_t tokenLen = u8t_scanner_token_len(scanner);
-				size_t bytePos = charIndexToByteOffset(src, charPos + tokenLen);
-				// Read comment text directly from source
-				const char* commentStart = src + bytePos;
-				const char* commentEnd = commentStart;
-				while (*commentEnd != '\0' && *commentEnd != '\n' && *commentEnd != '\r') {
-					commentEnd++;
-				}
-				std::string commentText(commentStart, static_cast<size_t>(commentEnd - commentStart));
-				// Advance scanner past the comment
-				while (u8t_scanner_peek(scanner) != 0 && u8t_scanner_peek(scanner) != '\n' &&
-						u8t_scanner_peek(scanner) != '\r') {
-					u8t_scanner_scan(scanner);
-				}
 				// Flush tempNodes before adding comment
 				for (auto* node : tempNodes) {
 					node->setParent(block);
 					block->addChild(node);
 				}
 				tempNodes.clear();
-				// Create comment node
-				AstNodeComment* comment = new AstNodeComment(commentText, AstNodeComment::CommentType::LINE);
-				setNodePosition(comment, scanner, src);
-				comment->setParent(block);
-				block->addChild(comment);
-				continue;
-			}
-
-			// Handle /* block comments */
-			if (sawSlash && token == '*') {
-				sawSlash = false;
-				// Get character position and convert to byte offset
-				size_t charPos = u8t_scanner_token_start(scanner);
-				size_t tokenLen = u8t_scanner_token_len(scanner);
-				size_t bytePos = charIndexToByteOffset(src, charPos + tokenLen);
-				// Read comment text directly from source
-				const char* commentStart = src + bytePos;
-				const char* commentEnd = commentStart;
-				// Read bytes until */
-				while (*commentEnd != '\0') {
-					if (*commentEnd == '*' && *(commentEnd + 1) == '/') {
-						break;
-					}
-					commentEnd++;
-				}
-				std::string commentText(commentStart, static_cast<size_t>(commentEnd - commentStart));
-				// Advance scanner past the comment
-				bool foundStar = false;
-				while (u8t_scanner_peek(scanner) != 0) {
-					char32_t c = u8t_scanner_scan(scanner);
-					if (foundStar && c == '/') {
-						break;
-					}
-					foundStar = (c == '*');
-				}
-				// Flush tempNodes before adding comment
-				for (auto* node : tempNodes) {
-					node->setParent(block);
-					block->addChild(node);
-				}
-				tempNodes.clear();
-				// Create comment node
-				AstNodeComment* comment = new AstNodeComment(commentText, AstNodeComment::CommentType::BLOCK);
-				setNodePosition(comment, scanner, src);
+				// Add comment to block
 				comment->setParent(block);
 				block->addChild(comment);
 				continue;
@@ -627,62 +624,10 @@ namespace Qd {
 		bool sawSlash = false;
 
 		while ((token = u8t_scanner_scan(scanner)) != U8T_EOF) {
-			// Handle // line comments
-			if (sawSlash && token == '/') {
+			// Handle comments (// and /* */)
+			AstNodeComment* comment = parseComment(scanner, src, sawSlash, token);
+			if (comment != nullptr) {
 				sawSlash = false;
-				// Get character position and convert to byte offset
-				size_t charPos = u8t_scanner_token_start(scanner);
-				size_t tokenLen = u8t_scanner_token_len(scanner);
-				size_t bytePos = charIndexToByteOffset(src, charPos + tokenLen);
-				// Read comment text directly from source
-				const char* commentStart = src + bytePos;
-				const char* commentEnd = commentStart;
-				while (*commentEnd != '\0' && *commentEnd != '\n' && *commentEnd != '\r') {
-					commentEnd++;
-				}
-				std::string commentText(commentStart, static_cast<size_t>(commentEnd - commentStart));
-				// Advance scanner past the comment
-				while (u8t_scanner_peek(scanner) != 0 && u8t_scanner_peek(scanner) != '\n' &&
-						u8t_scanner_peek(scanner) != '\r') {
-					u8t_scanner_scan(scanner);
-				}
-				// Create comment node
-				AstNodeComment* comment = new AstNodeComment(commentText, AstNodeComment::CommentType::LINE);
-				setNodePosition(comment, scanner, src);
-				tempNodes.push_back(comment);
-				continue;
-			}
-
-			// Handle /* block comments */
-			if (sawSlash && token == '*') {
-				sawSlash = false;
-				// Get character position and convert to byte offset
-				size_t charPos = u8t_scanner_token_start(scanner);
-				size_t tokenLen = u8t_scanner_token_len(scanner);
-				size_t bytePos = charIndexToByteOffset(src, charPos + tokenLen);
-				// Read comment text directly from source
-				const char* commentStart = src + bytePos;
-				const char* commentEnd = commentStart;
-				// Read bytes until */
-				while (*commentEnd != '\0') {
-					if (*commentEnd == '*' && *(commentEnd + 1) == '/') {
-						break;
-					}
-					commentEnd++;
-				}
-				std::string commentText(commentStart, static_cast<size_t>(commentEnd - commentStart));
-				// Advance scanner past the comment
-				bool foundStar = false;
-				while (u8t_scanner_peek(scanner) != 0) {
-					char32_t c = u8t_scanner_scan(scanner);
-					if (foundStar && c == '/') {
-						break;
-					}
-					foundStar = (c == '*');
-				}
-				// Create comment node
-				AstNodeComment* comment = new AstNodeComment(commentText, AstNodeComment::CommentType::BLOCK);
-				setNodePosition(comment, scanner, src);
 				tempNodes.push_back(comment);
 				continue;
 			}
@@ -1119,31 +1064,12 @@ namespace Qd {
 				AstNodeLiteral* lit = new AstNodeLiteral(text, AstNodeLiteral::LiteralType::STRING);
 				setNodePosition(lit, scanner, src);
 				tempNodes.push_back(lit);
-			} else if (token == '.') {
-				// Handle '.' as alias for 'print' (Forth-style)
-				AstNodeInstruction* instr = new AstNodeInstruction(".");
-				setNodePosition(instr, scanner, src);
-				tempNodes.push_back(instr);
-			} else if (token == '*') {
-				// Handle '*' as alias for 'mul'
-				AstNodeInstruction* instr = new AstNodeInstruction("*");
-				setNodePosition(instr, scanner, src);
-				tempNodes.push_back(instr);
-			} else if (token == '+') {
-				// Handle '+' as alias for 'add'
-				AstNodeInstruction* instr = new AstNodeInstruction("+");
-				setNodePosition(instr, scanner, src);
-				tempNodes.push_back(instr);
-			} else if (token == '-') {
-				// Handle '-' as alias for 'sub'
-				AstNodeInstruction* instr = new AstNodeInstruction("-");
-				setNodePosition(instr, scanner, src);
-				tempNodes.push_back(instr);
-			} else if (token == '%') {
-				// Handle '%' as alias for 'mod'
-				AstNodeInstruction* instr = new AstNodeInstruction("%");
-				setNodePosition(instr, scanner, src);
-				tempNodes.push_back(instr);
+			}
+
+			// Try to parse as operator alias
+			IAstNode* opNode = tryParseOperatorAlias(token, scanner, src);
+			if (opNode != nullptr) {
+				tempNodes.push_back(opNode);
 			} else if (token == '<') {
 				// Check if next token is '=' for '<='
 				char32_t nextToken = u8t_scanner_peek(scanner);
@@ -1503,63 +1429,10 @@ namespace Qd {
 		while ((token = u8t_scanner_scan(&scanner)) != U8T_EOF) {
 			size_t n;
 
-			// Handle // line comments
-			if (sawSlash && token == '/') {
+			// Handle comments (// and /* */)
+			AstNodeComment* comment = parseComment(&scanner, src, sawSlash, token);
+			if (comment != nullptr) {
 				sawSlash = false;
-				// Get character position and convert to byte offset
-				size_t charPos = u8t_scanner_token_start(&scanner);
-				size_t tokenLen = u8t_scanner_token_len(&scanner);
-				size_t bytePos = charIndexToByteOffset(src, charPos + tokenLen);
-				// Read comment text directly from source
-				const char* commentStart = src + bytePos;
-				const char* commentEnd = commentStart;
-				while (*commentEnd != '\0' && *commentEnd != '\n' && *commentEnd != '\r') {
-					commentEnd++;
-				}
-				std::string commentText(commentStart, static_cast<size_t>(commentEnd - commentStart));
-				// Advance scanner past the comment
-				while (u8t_scanner_peek(&scanner) != 0 && u8t_scanner_peek(&scanner) != '\n' &&
-						u8t_scanner_peek(&scanner) != '\r') {
-					u8t_scanner_scan(&scanner);
-				}
-				// Create comment node
-				AstNodeComment* comment = new AstNodeComment(commentText, AstNodeComment::CommentType::LINE);
-				setNodePosition(comment, &scanner, src);
-				comment->setParent(program);
-				program->addChild(comment);
-				continue;
-			}
-
-			// Handle /* block comments */
-			if (sawSlash && token == '*') {
-				sawSlash = false;
-				// Get character position and convert to byte offset
-				size_t charPos = u8t_scanner_token_start(&scanner);
-				size_t tokenLen = u8t_scanner_token_len(&scanner);
-				size_t bytePos = charIndexToByteOffset(src, charPos + tokenLen);
-				// Read comment text directly from source
-				const char* commentStart = src + bytePos;
-				const char* commentEnd = commentStart;
-				// Read bytes until */
-				while (*commentEnd != '\0') {
-					if (*commentEnd == '*' && *(commentEnd + 1) == '/') {
-						break;
-					}
-					commentEnd++;
-				}
-				std::string commentText(commentStart, static_cast<size_t>(commentEnd - commentStart));
-				// Advance scanner past the comment
-				bool foundStar = false;
-				while (u8t_scanner_peek(&scanner) != 0) {
-					char32_t c = u8t_scanner_scan(&scanner);
-					if (foundStar && c == '/') {
-						break;
-					}
-					foundStar = (c == '*');
-				}
-				// Create comment node
-				AstNodeComment* comment = new AstNodeComment(commentText, AstNodeComment::CommentType::BLOCK);
-				setNodePosition(comment, &scanner, src);
 				comment->setParent(program);
 				program->addChild(comment);
 				continue;
