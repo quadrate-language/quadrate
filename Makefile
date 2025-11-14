@@ -9,7 +9,7 @@ PREFIX ?= /usr
 export CC  := clang
 export CXX := clang++
 
-.PHONY: all debug release tests valgrind examples format install uninstall clean
+.PHONY: all debug release tests valgrind examples format install uninstall clean docs
 
 all: debug
 
@@ -256,6 +256,31 @@ uninstall:
 	rm -rf $(DESTDIR)$(PREFIX)/include/stdtimeqd
 	@echo "Removing Quadrate standard library modules from $(DESTDIR)$(PREFIX)/share/quadrate/"
 	rm -rf $(DESTDIR)$(PREFIX)/share/quadrate
+
+docs:
+	@echo "=========================================="
+	@echo "  Generating API Documentation"
+	@echo "=========================================="
+	@if ! which doxygen > /dev/null 2>&1; then \
+		echo "" && \
+		echo "⚠️  Warning: doxygen not found - skipping documentation generation" && \
+		echo "" && \
+		echo "To generate documentation, install doxygen and graphviz (optional, for diagrams):" && \
+		echo "  Arch Linux:    sudo pacman -S doxygen graphviz" && \
+		echo "  Ubuntu/Debian: sudo apt install doxygen graphviz" && \
+		echo "  Fedora:        sudo dnf install doxygen graphviz" && \
+		echo "  macOS:         brew install doxygen graphviz" && \
+		echo ""; \
+	else \
+		echo "Running doxygen..." && \
+		doxygen Doxyfile && \
+		echo "" && \
+		echo "Documentation generated successfully!" && \
+		echo "HTML docs: dist/docs/html/index.html" && \
+		echo "" && \
+		echo "To view documentation, run:" && \
+		echo "  xdg-open dist/docs/html/index.html"; \
+	fi
 
 clean:
 	rm -rf build
