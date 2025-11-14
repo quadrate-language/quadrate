@@ -1,0 +1,7 @@
+use bits
+use math
+use os
+
+fn main( -- ) {
+	42 print nl
+}

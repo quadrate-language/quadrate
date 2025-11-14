@@ -40,6 +40,36 @@ namespace Qd {
 		return true;
 	}
 
+	// Normalize whitespace in use statements (e.g., "use  os" -> "use os")
+	static std::string normalizeUseStatement(const std::string& line) {
+		std::string trimmed = trim(line);
+
+		// Check if it's a use statement
+		if (!startsWithKeyword(trimmed, "use")) {
+			return trimmed;
+		}
+
+		// Find "use" keyword
+		size_t usePos = trimmed.find("use");
+		if (usePos == std::string::npos) {
+			return trimmed;
+		}
+
+		// Skip "use" and any whitespace after it
+		size_t pos = usePos + 3;
+		while (pos < trimmed.length() && std::isspace(static_cast<unsigned char>(trimmed[pos]))) {
+			pos++;
+		}
+
+		// Extract module name (everything after whitespace)
+		if (pos >= trimmed.length()) {
+			return "use";
+		}
+
+		std::string moduleName = trimmed.substr(pos);
+		return "use " + moduleName;
+	}
+
 	// Format a function signature line
 	static std::string formatFunctionSignature(const std::string& line) {
 		std::string trimmed = trim(line);
@@ -226,9 +256,13 @@ namespace Qd {
 
 		auto flushUseStatements = [&]() {
 			if (!useStatements.empty()) {
-				// Sort use statements alphabetically
-				std::sort(useStatements.begin(), useStatements.end());
+				// Normalize and sort use statements alphabetically
+				std::vector<std::string> normalizedUses;
 				for (const auto& useStmt : useStatements) {
+					normalizedUses.push_back(normalizeUseStatement(useStmt));
+				}
+				std::sort(normalizedUses.begin(), normalizedUses.end());
+				for (const auto& useStmt : normalizedUses) {
 					output << useStmt << '\n';
 				}
 				useStatements.clear();
@@ -418,7 +452,12 @@ namespace Qd {
 				for (int i = 0; i < indentLevel; i++) {
 					output << '\t';
 				}
-				output << trimmed << '\n';
+				// Normalize use statements to have single space
+				if (startsWithKeyword(trimmed, "use")) {
+					output << normalizeUseStatement(trimmed) << '\n';
+				} else {
+					output << trimmed << '\n';
+				}
 
 				if (trimmed.find('{') != std::string::npos) {
 					indentLevel++;
