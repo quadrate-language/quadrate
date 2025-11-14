@@ -3,9 +3,9 @@
 #include <iostream>
 #include <qc/ast.h>
 #include <qc/ast_node.h>
-#include <qc/ast_node_block.h>
+#include "ast_node_block.h"
 #include <qc/ast_node_break.h>
-#include <qc/ast_node_comment.h>
+#include "ast_node_comment.h"
 #include <qc/ast_node_constant.h>
 #include <qc/ast_node_continue.h>
 #include <qc/ast_node_defer.h>
@@ -16,7 +16,7 @@
 #include <qc/ast_node_if.h>
 #include <qc/ast_node_import.h>
 #include <qc/ast_node_instruction.h>
-#include <qc/ast_node_label.h>
+#include "ast_node_label.h"
 #include <qc/ast_node_literal.h>
 #include <qc/ast_node_loop.h>
 #include <qc/ast_node_parameter.h>

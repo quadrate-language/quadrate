@@ -1,23 +1,17 @@
-#ifndef QD_QC_AST_NODE_COMMENT_H
-#define QD_QC_AST_NODE_COMMENT_H
+#ifndef QD_QC_AST_NODE_LABEL_H
+#define QD_QC_AST_NODE_LABEL_H
 
-#include "ast_node.h"
+#include <qc/ast_node.h>
 #include <string>
 
 namespace Qd {
-	class AstNodeComment : public IAstNode {
+	class AstNodeLabel : public IAstNode {
 	public:
-		enum class CommentType {
-			LINE, // Single-line comment //
-			BLOCK // Multi-line comment /* */
-		};
-
-		AstNodeComment(const std::string& text, CommentType commentType)
-			: mText(text), mCommentType(commentType), mParent(nullptr), mLine(0), mColumn(0) {
+		AstNodeLabel(const std::string& name) : mName(name), mParent(nullptr), mLine(0), mColumn(0) {
 		}
 
 		IAstNode::Type type() const override {
-			return Type::COMMENT;
+			return Type::LABEL;
 		}
 
 		size_t childCount() const override {
@@ -49,17 +43,12 @@ namespace Qd {
 			mColumn = column;
 		}
 
-		const std::string& text() const {
-			return mText;
-		}
-
-		CommentType commentType() const {
-			return mCommentType;
+		const std::string& name() const {
+			return mName;
 		}
 
 	private:
-		std::string mText;
-		CommentType mCommentType;
+		std::string mName;
 		IAstNode* mParent;
 		size_t mLine;
 		size_t mColumn;

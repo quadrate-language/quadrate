@@ -1,7 +1,7 @@
 #ifndef QD_QC_AST_NODE_BLOCK_H
 #define QD_QC_AST_NODE_BLOCK_H
 
-#include "ast_node.h"
+#include <qc/ast_node.h>
 #include <vector>
 
 namespace Qd {

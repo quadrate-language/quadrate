@@ -1,5 +1,5 @@
-#include <qc/ast_node_block.h>
-#include <qc/ast_node_comment.h>
+#include "ast_node_block.h"
+#include "ast_node_comment.h"
 #include <qc/ast_node_constant.h>
 #include <qc/ast_node_for.h>
 #include <qc/ast_node_function.h>
@@ -8,7 +8,7 @@
 #include <qc/ast_node_if.h>
 #include <qc/ast_node_import.h>
 #include <qc/ast_node_instruction.h>
-#include <qc/ast_node_label.h>
+#include "ast_node_label.h"
 #include <qc/ast_node_literal.h>
 #include <qc/ast_node_loop.h>
 #include <qc/ast_node_parameter.h>
