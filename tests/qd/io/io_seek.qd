@@ -3,7 +3,7 @@ use io
 
 fn main( -- ) {
 	// Create a test file with known content
-	"/tmp/test_seek.txt" "w" io::open if {
+	"/tmp/test_seek.txt" io::Write io::open if {
 		dup "0123456789" io::write if {
 			drop
 			io::close
@@ -15,8 +15,8 @@ fn main( -- ) {
 	}
 
 	// Open for reading, seek and read
-	"/tmp/test_seek.txt" "r" io::open if {
-		dup 5 0 io::seekg if {
+	"/tmp/test_seek.txt" io::Read io::open if {
+		dup 5 io::SeekSet io::seekg if {
 			drop                    // Drop position
 			dup 3 io::read if {
 				drop                // Drop bytes_read

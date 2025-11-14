@@ -3,7 +3,7 @@ use io
 
 fn main( -- ) {
 	// Write initial content
-	"/tmp/test_append.txt" "w" io::open if {
+	"/tmp/test_append.txt" io::Write io::open if {
 		dup "Line 1\n" io::write if {
 			drop
 			io::close
@@ -15,7 +15,7 @@ fn main( -- ) {
 	}
 
 	// Append more content
-	"/tmp/test_append.txt" "a" io::open if {
+	"/tmp/test_append.txt" io::Append io::open if {
 		dup "Line 2\n" io::write if {
 			drop
 			io::close
@@ -27,7 +27,7 @@ fn main( -- ) {
 	}
 
 	// Read all content
-	"/tmp/test_append.txt" "r" io::open if {
+	"/tmp/test_append.txt" io::Read io::open if {
 		dup 100 io::read if {
 			drop swap
 			io::close

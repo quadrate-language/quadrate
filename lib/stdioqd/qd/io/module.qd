@@ -1,5 +1,18 @@
 // Quadrate Standard Library - File I/O Module
 
+// File open modes
+const Read = "r"
+const Write = "w"
+const Append = "a"
+const ReadWrite = "r+"
+const WriteRead = "w+"
+const AppendRead = "a+"
+
+// Seek whence values
+const SeekSet = 0
+const SeekCur = 1
+const SeekEnd = 2
+
 import "libstdioqd_static.a" as "io" {
 	fn open(path:s mode:s -- handle:p)!
 	fn close(handle:p --)
