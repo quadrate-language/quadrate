@@ -112,11 +112,11 @@ namespace Qd {
 
 		// Report an error (gcc/clang style)
 		void reportError(const char* message);
-		void reportError(IAstNode* node, const char* message);
+		void reportError(const IAstNode* node, const char* message);
 
 		// Report an error conditionally (for signature analysis)
 		void reportErrorConditional(const char* message, bool shouldReport);
-		void reportErrorConditional(IAstNode* node, const char* message, bool shouldReport);
+		void reportErrorConditional(const IAstNode* node, const char* message, bool shouldReport);
 
 		// Current filename being validated
 		const char* mFilename;

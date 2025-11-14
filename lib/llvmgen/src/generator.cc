@@ -43,6 +43,9 @@
 
 namespace Qd {
 
+	// Default stack size for runtime context creation
+	static const size_t DEFAULT_STACK_SIZE = 1024;
+
 	class LlvmGenerator::Impl {
 	public:
 		std::unique_ptr<llvm::LLVMContext> context;
@@ -1128,7 +1131,7 @@ namespace Qd {
 			builder->SetInsertPoint(entryBB);
 
 			// Create Quadrate context
-			auto stackSize = builder->getInt64(1024);
+			auto stackSize = builder->getInt64(DEFAULT_STACK_SIZE);
 			auto ctx = builder->CreateCall(createContextFn, {stackSize}, "ctx");
 
 			// Push "main::main" onto call stack for debugging

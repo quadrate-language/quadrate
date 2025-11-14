@@ -116,7 +116,8 @@ namespace Qd {
 			}
 		} else {
 			// Read until */
-			while (*commentEnd != '\0') {
+			// Check both current and next character to avoid buffer overflow
+			while (*commentEnd != '\0' && *(commentEnd + 1) != '\0') {
 				if (*commentEnd == '*' && *(commentEnd + 1) == '/') {
 					break;
 				}

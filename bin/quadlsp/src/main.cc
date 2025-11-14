@@ -14,6 +14,9 @@
 #include <string>
 #include <vector>
 
+// Default error span length in characters for diagnostic highlighting
+static const int ERROR_SPAN_LENGTH = 10;
+
 // Structure to hold function information for completions
 struct FunctionInfo {
 	std::string name;
@@ -260,7 +263,7 @@ private:
 				json_t* end = json_object();
 				// End at the same position plus a reasonable offset for visibility
 				json_object_set_new(end, "line", json_integer(static_cast<json_int_t>(lspLine)));
-				json_object_set_new(end, "character", json_integer(static_cast<json_int_t>(lspColumn + 10)));
+				json_object_set_new(end, "character", json_integer(static_cast<json_int_t>(lspColumn + ERROR_SPAN_LENGTH)));
 				json_object_set_new(range, "start", start);
 				json_object_set_new(range, "end", end);
 

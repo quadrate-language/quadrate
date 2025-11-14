@@ -79,7 +79,7 @@ namespace Qd {
 		reportErrorConditional(message, true);
 	}
 
-	void SemanticValidator::reportError(IAstNode* node, const char* message) {
+	void SemanticValidator::reportError(const IAstNode* node, const char* message) {
 		reportErrorConditional(node, message, true);
 	}
 
@@ -97,7 +97,7 @@ namespace Qd {
 		mErrorCount++;
 	}
 
-	void SemanticValidator::reportErrorConditional(IAstNode* node, const char* message, bool shouldReport) {
+	void SemanticValidator::reportErrorConditional(const IAstNode* node, const char* message, bool shouldReport) {
 		if (!shouldReport) {
 			return;
 		}
@@ -160,11 +160,11 @@ namespace Qd {
 
 		// Pass 3a: Analyze function signatures (stack effects)
 		// Use iterative analysis until signatures converge (fixed point)
+		static const int MAX_SIGNATURE_ANALYSIS_ITERATIONS = 100; // Prevent infinite loops in signature inference
 		bool signaturesChanged = true;
 		int iteration = 0;
-		const int maxIterations = 100; // Prevent infinite loops
 
-		while (signaturesChanged && iteration < maxIterations) {
+		while (signaturesChanged && iteration < MAX_SIGNATURE_ANALYSIS_ITERATIONS) {
 			signaturesChanged = false;
 
 			// Store old signatures to detect changes
@@ -196,9 +196,9 @@ namespace Qd {
 		}
 
 		// Warn if we didn't converge
-		if (iteration >= maxIterations) {
+		if (iteration >= MAX_SIGNATURE_ANALYSIS_ITERATIONS) {
 			std::cerr << Colors::bold() << Colors::magenta() << "Warning: " << Colors::reset()
-					  << "Function signature analysis did not converge after " << maxIterations
+					  << "Function signature analysis did not converge after " << MAX_SIGNATURE_ANALYSIS_ITERATIONS
 					  << " iterations. Type checking may be incomplete." << std::endl;
 		}
 
@@ -684,7 +684,7 @@ namespace Qd {
 						std::string errorMsg = "Duplicate case value '";
 						errorMsg += valueStr;
 						errorMsg += "' in switch statement";
-						reportError(static_cast<IAstNode*>(const_cast<AstNodeCase*>(caseNode)), errorMsg.c_str());
+						reportError(caseNode, errorMsg.c_str());
 					}
 					seenValues.insert(valueStr);
 				}
@@ -1286,11 +1286,13 @@ namespace Qd {
 		// Stack: [...] -> [...] arg0 arg1 ... argN argc
 		// Since we don't know argc at compile-time, we push multiple values
 		// to allow reasonable operations after read (assumes up to 16 arguments)
+		static const int READ_INSTRUCTION_MAX_ARGS = 16; // Maximum expected command-line arguments
+		static const int READ_INSTRUCTION_STACK_DEPTH = READ_INSTRUCTION_MAX_ARGS + 1; // +1 for argc itself
 		if (strcmp(name, "read") == 0) {
 			typeStack.clear();
 			// Push 16 values (enough for most use cases) + argc
 			// This is a workaround for not knowing argc at compile time
-			for (int i = 0; i < 17; i++) {
+			for (int i = 0; i < READ_INSTRUCTION_STACK_DEPTH; i++) {
 				typeStack.push_back(StackValueType::INT);
 			}
 			return;
