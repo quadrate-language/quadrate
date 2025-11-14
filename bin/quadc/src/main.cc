@@ -1,7 +1,8 @@
-#include "cxxopts.hpp"
 #include <cerrno>
+#include <cstring>
 #include <filesystem>
 #include <fstream>
+#include <functional>
 #include <iostream>
 #include <llvmgen/generator.h>
 #include <qc/ast.h>
@@ -17,6 +18,87 @@
 #include <vector>
 
 #define QUADC_VERSION "0.1.0"
+
+struct Options {
+	std::vector<std::string> files;
+	std::string outputName = "main";
+	bool help = false;
+	bool version = false;
+	bool saveTemps = false;
+	bool verbose = false;
+	bool dumpTokens = false;
+	bool run = false;
+	bool dumpIR = false;
+};
+
+void printHelp() {
+	std::cout << "quadc - Quadrate compiler\n\n";
+	std::cout << "Compiles .qd source files to native executables via LLVM.\n\n";
+	std::cout << "Usage: quadc [options] <file>...\n\n";
+	std::cout << "Options:\n";
+	std::cout << "  -h, --help         Show this help message\n";
+	std::cout << "  -v, --version      Show version information\n";
+	std::cout << "  -o <name>          Output executable name (default: main)\n";
+	std::cout << "  --save-temps       Keep temporary files for debugging\n";
+	std::cout << "  --verbose          Show detailed compilation steps\n";
+	std::cout << "  --dump-tokens      Print lexer tokens\n";
+	std::cout << "  -r, --run          Compile and run immediately\n";
+	std::cout << "  --dump-ir          Print generated LLVM IR\n";
+	std::cout << "\n";
+	std::cout << "Examples:\n";
+	std::cout << "  quadc main.qd              Compile to executable 'main'\n";
+	std::cout << "  quadc -o prog main.qd      Compile to executable 'prog'\n";
+	std::cout << "  quadc -r main.qd           Compile and run immediately\n";
+}
+
+void printVersion() {
+	std::cout << QUADC_VERSION << "\n";
+}
+
+bool parseArgs(int argc, char* argv[], Options& opts) {
+	for (int i = 1; i < argc; i++) {
+		std::string arg = argv[i];
+
+		if (arg == "-h" || arg == "--help") {
+			opts.help = true;
+			return true;
+		} else if (arg == "-v" || arg == "--version") {
+			opts.version = true;
+			return true;
+		} else if (arg == "-o") {
+			if (i + 1 >= argc) {
+				std::cerr << "quadc: option '-o' requires an argument\n";
+				std::cerr << "Try 'quadc --help' for more information.\n";
+				return false;
+			}
+			opts.outputName = argv[++i];
+		} else if (arg == "--save-temps") {
+			opts.saveTemps = true;
+		} else if (arg == "--verbose") {
+			opts.verbose = true;
+		} else if (arg == "--dump-tokens") {
+			opts.dumpTokens = true;
+		} else if (arg == "-r" || arg == "--run") {
+			opts.run = true;
+		} else if (arg == "--dump-ir") {
+			opts.dumpIR = true;
+		} else if (arg[0] == '-') {
+			std::cerr << "quadc: unknown option: " << arg << "\n";
+			std::cerr << "Try 'quadc --help' for more information.\n";
+			return false;
+		} else {
+			opts.files.push_back(arg);
+		}
+	}
+
+	if (opts.files.empty() && !opts.help && !opts.version) {
+		std::cerr << "quadc: no input files\n";
+		std::cerr << "Try 'quadc --help' for more information.\n";
+		return false;
+	}
+
+	return true;
+}
 
 std::string createTempDir(bool useCwd) {
 	std::random_device rd;
@@ -243,35 +325,25 @@ struct ParsedModule {
 };
 
 int main(int argc, char** argv) {
-	cxxopts::Options options("quadc", "Quadrate compiler\n\nCompiles .qd source files to native executables via LLVM.");
-	options.add_options()("h,help", "Show this help message")("v,version", "Show version information")(
-			"o", "Output executable name (default: main)", cxxopts::value<std::string>()->default_value("main"))("save-temps",
-			"Keep temporary files for debugging", cxxopts::value<bool>()->default_value("false")->implicit_value("true"))("verbose",
-			"Show detailed compilation steps",
-			cxxopts::value<bool>()->default_value("false")->implicit_value("true"))("dump-tokens", "Print lexer tokens",
-			cxxopts::value<bool>()->default_value("false")->implicit_value("true"))("r,run", "Compile and run immediately",
-			cxxopts::value<bool>()->default_value("false")->implicit_value("true"))(
-			"dump-ir", "Print generated LLVM IR", cxxopts::value<bool>()->default_value("false")->implicit_value("true"))(
-			"files", "Input .qd files", cxxopts::value<std::vector<std::string>>());
+	Options opts;
 
-	options.parse_positional({"files"});
-
-	cxxopts::ParseResult result;
-	try {
-		result = options.parse(argc, argv);
-	} catch (const cxxopts::exceptions::exception& e) {
-		std::cerr << "quadc: " << e.what() << std::endl;
-		std::cerr << "Try 'quadc --help' for more information." << std::endl;
-		return 1;
-	}
-
-	if (result.count("help") || argc == 1) {
-		std::cout << options.help() << std::endl;
+	// Show help if no arguments provided
+	if (argc == 1) {
+		printHelp();
 		return 0;
 	}
 
-	if (result.count("version")) {
-		std::cout << QUADC_VERSION << std::endl;
+	if (!parseArgs(argc, argv, opts)) {
+		return 1;
+	}
+
+	if (opts.help) {
+		printHelp();
+		return 0;
+	}
+
+	if (opts.version) {
+		printVersion();
 		return 0;
 	}
 
@@ -279,46 +351,30 @@ int main(int argc, char** argv) {
 	const bool noColors = std::getenv("NO_COLOR") != nullptr;
 	Qd::Colors::setEnabled(!noColors);
 
-	std::string outputFilename = result["o"].as<std::string>();
-	const bool run = result["run"].as<bool>();
-
-	// Check if we should preserve temp files (needed for temp dir location)
-	const bool saveTemps = result["save-temps"].as<bool>();
-
-	const std::string outputDir = createTempDir(saveTemps);
+	const std::string outputDir = createTempDir(opts.saveTemps);
 	TempDirGuard tempGuard(outputDir);
 
 	// When running, place executable in temp directory's bin subdirectory
 	std::string outputPath;
-	if (run) {
+	if (opts.run) {
 		std::filesystem::path binDir = std::filesystem::path(outputDir) / "bin";
 		std::filesystem::create_directory(binDir);
-		outputPath = (binDir / outputFilename).string();
+		outputPath = (binDir / opts.outputName).string();
 	} else {
-		outputPath = outputFilename;
+		outputPath = opts.outputName;
 	}
 
 	// Preserve temp files if requested
-	if (saveTemps) {
+	if (opts.saveTemps) {
 		tempGuard.release();
 		std::cout << "Temporary files saved in: " << outputDir << std::endl;
 	}
 
-	// Check if verbose output is enabled
-	const bool verbose = result["verbose"].as<bool>();
-
-	// Check if token dumping is enabled
-	const bool dumpTokens = result["dump-tokens"].as<bool>();
-
-	// Check if IR dumping is enabled
-	const bool dumpIR = result["dump-ir"].as<bool>();
-
-	if (result.count("files")) {
-		auto files = result["files"].as<std::vector<std::string>>();
+	if (!opts.files.empty()) {
 		std::vector<ParsedModule> parsedModules;
 
 		// Parse all main source files
-		for (const auto& file : files) {
+		for (const auto& file : opts.files) {
 			std::ifstream qdFile(file);
 			if (!qdFile.is_open()) {
 				std::cerr << "quadc: " << file << ": No such file or directory" << std::endl;
@@ -337,7 +393,7 @@ int main(int argc, char** argv) {
 
 			// Parse the source
 			auto ast = std::make_unique<Qd::Ast>();
-			auto root = ast->generate(buffer.c_str(), dumpTokens, file.c_str());
+			auto root = ast->generate(buffer.c_str(), opts.dumpTokens, file.c_str());
 			if (!root || ast->hasErrors()) {
 				std::cerr << "quadc: parsing failed for " << file << " with " << ast->errorCount() << " errors"
 						  << std::endl;
@@ -599,19 +655,19 @@ int main(int argc, char** argv) {
 		}
 
 		// Print IR to stdout if requested
-		if (dumpIR || verbose) {
+		if (opts.dumpIR || opts.verbose) {
 			std::cout << "=== Generated LLVM IR ===" << std::endl;
 			std::cout << generator.getIRString() << std::endl;
 		}
 
 		// Write IR to file if save-temps is enabled
-		if (saveTemps) {
-			std::string irFile = (std::filesystem::path(outputDir) / (outputFilename + ".ll")).string();
+		if (opts.saveTemps) {
+			std::string irFile = (std::filesystem::path(outputDir) / (opts.outputName + ".ll")).string();
 			if (!generator.writeIR(irFile)) {
 				std::cerr << "quadc: failed to write IR file" << std::endl;
 				return 1;
 			}
-			if (verbose) {
+			if (opts.verbose) {
 				std::cout << "Written IR to " << irFile << std::endl;
 			}
 		}
@@ -622,13 +678,13 @@ int main(int argc, char** argv) {
 			return 1;
 		}
 
-		if (verbose) {
+		if (opts.verbose) {
 			std::cout << "Written executable to " << outputPath << std::endl;
 		}
 
 		// Run the program if requested
-		if (run) {
-			if (verbose) {
+		if (opts.run) {
+			if (opts.verbose) {
 				std::cout << "\n=== Running " << outputPath << " ===" << std::endl;
 			}
 			// Execute using system() and get exit code
