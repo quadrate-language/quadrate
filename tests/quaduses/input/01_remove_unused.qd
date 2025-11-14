@@ -1,0 +1,9 @@
+use math
+use net
+use str
+use bits
+
+fn main( -- ) {
+	// Only using math
+	5.5 math::sqrt print nl
+}

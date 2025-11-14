@@ -1,0 +1,10 @@
+use bits
+use math
+use str
+
+fn main( -- ) {
+	// Complex expressions with multiple scoped calls
+	5.5 math::sqrt 2.0 math::pow print nl
+	"hello" str::upper " world" str::lower str::concat print nl
+	10 20 bits::band 5 bits::bor print nl
+}

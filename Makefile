@@ -20,6 +20,7 @@ debug:
 	@cp -f $(BUILD_DIR_DEBUG)/bin/quadc/quadc dist/bin/
 	@cp -f $(BUILD_DIR_DEBUG)/bin/quadfmt/quadfmt dist/bin/
 	@cp -f $(BUILD_DIR_DEBUG)/bin/quadlsp/quadlsp dist/bin/
+	@cp -f $(BUILD_DIR_DEBUG)/bin/quaduses/quaduses dist/bin/
 	@cp -f $(BUILD_DIR_DEBUG)/lib/qdrt/libqdrt.so dist/lib/
 	@echo "Creating full archive for libqdrt_static.a..."
 	@rm -f dist/lib/libqdrt_static.a && cd $(BUILD_DIR_DEBUG)/lib/qdrt && echo "Files in thin archive:" && ar -t libqdrt_static.a | head -3 && ar rcs $(CURDIR)/dist/lib/libqdrt_static.a $$(ar -t libqdrt_static.a) && echo "Archive created successfully"
@@ -74,6 +75,7 @@ release:
 	@cp -f $(BUILD_DIR_RELEASE)/bin/quadc/quadc dist/bin/
 	@cp -f $(BUILD_DIR_RELEASE)/bin/quadfmt/quadfmt dist/bin/
 	@cp -f $(BUILD_DIR_RELEASE)/bin/quadlsp/quadlsp dist/bin/
+	@cp -f $(BUILD_DIR_RELEASE)/bin/quaduses/quaduses dist/bin/
 	@cp -f $(BUILD_DIR_RELEASE)/lib/qdrt/libqdrt.so dist/lib/
 	@echo "Creating full archive for libqdrt_static.a (release)..."
 	@rm -f dist/lib/libqdrt_static.a && cd $(BUILD_DIR_RELEASE)/lib/qdrt && ar rcs $(CURDIR)/dist/lib/libqdrt_static.a $$(ar -t libqdrt_static.a) && echo "Archive created successfully"
@@ -146,6 +148,9 @@ tests: debug
 	@echo "=== Running formatter tests ==="
 	bash tests/run_tests.sh formatter
 	@echo ""
+	@echo "=== Running quaduses tests ==="
+	bash tests/run_tests.sh quaduses
+	@echo ""
 	@echo "=========================================="
 	@echo "  Test Suite Complete"
 	@echo "=========================================="
@@ -179,6 +184,7 @@ install: release
 	install -m 755 dist/bin/quadc $(DESTDIR)$(PREFIX)/bin/
 	install -m 755 dist/bin/quadfmt $(DESTDIR)$(PREFIX)/bin/
 	install -m 755 dist/bin/quadlsp $(DESTDIR)$(PREFIX)/bin/
+	install -m 755 dist/bin/quaduses $(DESTDIR)$(PREFIX)/bin/
 	install -m 644 dist/lib/libqdrt.so $(DESTDIR)$(PREFIX)/lib/
 	install -m 644 dist/lib/libqdrt_static.a $(DESTDIR)$(PREFIX)/lib/
 	install -m 644 dist/lib/libqd.so $(DESTDIR)$(PREFIX)/lib/
@@ -220,6 +226,7 @@ uninstall:
 	rm -f $(DESTDIR)$(PREFIX)/bin/quadc
 	rm -f $(DESTDIR)$(PREFIX)/bin/quadfmt
 	rm -f $(DESTDIR)$(PREFIX)/bin/quadlsp
+	rm -f $(DESTDIR)$(PREFIX)/bin/quaduses
 	rm -f $(DESTDIR)$(PREFIX)/lib/libqdrt.so
 	rm -f $(DESTDIR)$(PREFIX)/lib/libqdrt_static.a
 	rm -f $(DESTDIR)$(PREFIX)/lib/libqd.so

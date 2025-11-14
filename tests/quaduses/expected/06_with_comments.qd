@@ -1,0 +1,11 @@
+// Top level comment
+use math
+use str
+// Comment between uses
+// Function comment
+
+fn main( -- ) {
+	// Using math and str
+	5.5 math::sqrt print nl
+	"hello" str::upper print nl
+}

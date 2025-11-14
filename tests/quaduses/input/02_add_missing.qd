@@ -1,0 +1,5 @@
+fn main( -- ) {
+	5.5 math::sqrt print nl
+	"hello" str::upper print nl
+	10 20 bits::band print nl
+}

@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Unified test runner for Quadrate
-# Supports multiple test modes: qd tests (with C/LLVM backends), formatter tests, and valgrind
+# Supports multiple test modes: qd tests (with C/LLVM backends), formatter tests, quaduses tests, and valgrind
 
 set -u
 
@@ -10,16 +10,19 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/test_utils.sh"
 
 # Parse command line arguments
-MODE="${1:-qd}"  # qd, formatter, valgrind
+MODE="${1:-qd}"  # qd, formatter, quaduses, valgrind
 
 # Configuration
 QUADC="${QUADC:-build/debug/bin/quadc/quadc}"
 QUADFMT="${QUADFMT:-dist/bin/quadfmt}"
+QUADUSES="${QUADUSES:-dist/bin/quaduses}"
 QUADRATE_ROOT="${QUADRATE_ROOT:-}"
 QUADRATE_LIBDIR="${QUADRATE_LIBDIR:-dist/lib}"
 TEST_DIR_QD="tests/qd"
 TEST_DIR_FORMATTER="tests/formatter"
 EXPECTED_DIR_FORMATTER="tests/formatter/expected"
+TEST_DIR_QUADUSES="tests/quaduses"
+EXPECTED_DIR_QUADUSES="tests/quaduses/expected"
 TEMP_DIR="/tmp/qd_tests_$$"
 
 export QUADRATE_ROOT
@@ -149,6 +152,36 @@ run_formatter_test() {
     fi
 }
 
+# Function to run a quaduses test
+run_quaduses_test() {
+    local test_file="$1"
+    local test_name=$(basename "$test_file" .qd)
+    local expected_file="$EXPECTED_DIR_QUADUSES/${test_name}.qd"
+    local output_file="$TEMP_DIR/${test_name}.qd"
+
+    increment_test_counter
+
+    if [ ! -f "$expected_file" ]; then
+        log_skip "$test_name" "no expected output"
+        return
+    fi
+
+    # Copy input to temp and process with quaduses in place
+    cp "$test_file" "$output_file"
+    if ! "$QUADUSES" -w "$output_file" >/dev/null 2>&1; then
+        log_fail "$test_name" "quaduses failed"
+        return
+    fi
+
+    # Compare with expected
+    if diff -q "$expected_file" "$output_file" >/dev/null; then
+        log_pass "$test_name"
+    else
+        log_fail "$test_name" "output mismatch"
+        print_diff "$expected_file" "$output_file"
+    fi
+}
+
 # Main execution based on mode
 case "$MODE" in
     qd)
@@ -208,6 +241,18 @@ case "$MODE" in
         print_result_and_exit
         ;;
 
+    quaduses)
+        # Run quaduses tests
+        print_header "Quadrate Use Statement Manager Tests"
+
+        while IFS= read -r test_file; do
+            run_quaduses_test "$test_file"
+        done < <(find "$TEST_DIR_QUADUSES" -name "*.qd" -type f ! -path "*/expected/*")
+
+        print_summary
+        print_result_and_exit
+        ;;
+
     valgrind)
         # Run Quadrate tests with valgrind
         print_header "Quadrate Language Tests (with Valgrind)"
@@ -253,16 +298,18 @@ case "$MODE" in
         ;;
 
     *)
-        echo "Usage: $0 [qd|formatter|valgrind]"
+        echo "Usage: $0 [qd|formatter|quaduses|valgrind]"
         echo ""
         echo "Modes:"
         echo "  qd         - Run Quadrate language tests (default)"
         echo "  formatter  - Run formatter tests"
+        echo "  quaduses   - Run use statement manager tests"
         echo "  valgrind   - Run Quadrate tests with valgrind"
         echo ""
         echo "Environment variables:"
         echo "  QUADC            - Path to quadc compiler"
         echo "  QUADFMT          - Path to quadfmt formatter"
+        echo "  QUADUSES         - Path to quaduses tool"
         echo "  QUADRATE_ROOT    - Path to standard library"
         echo "  QUADRATE_LIBDIR  - Path to libraries"
         exit 1

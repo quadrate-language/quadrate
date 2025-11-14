@@ -208,7 +208,7 @@ namespace Qd {
 		return output.str();
 	}
 
-	// Normalize spacing between top-level declarations
+	// Normalize spacing between top-level declarations and sort use statements
 	static std::string normalizeTopLevelSpacing(const std::string& source) {
 		std::istringstream input(source);
 		std::vector<std::string> lines;
@@ -222,11 +222,27 @@ namespace Qd {
 		std::string prevTopLevelType;  // "use", "fn_start", ""
 		int braceDepth = 0;
 		bool inFunction = false;
+		std::vector<std::string> useStatements;  // Buffer for collecting consecutive use statements
+
+		auto flushUseStatements = [&]() {
+			if (!useStatements.empty()) {
+				// Sort use statements alphabetically
+				std::sort(useStatements.begin(), useStatements.end());
+				for (const auto& useStmt : useStatements) {
+					output << useStmt << '\n';
+				}
+				useStatements.clear();
+			}
+		};
 
 		for (size_t i = 0; i < lines.size(); i++) {
 			std::string trimmed = trim(lines[i]);
 
 			if (trimmed.empty()) {
+				// Flush any buffered use statements before outputting empty line
+				if (!useStatements.empty()) {
+					flushUseStatements();
+				}
 				// Only output empty lines when inside functions
 				if (inFunction) {
 					output << '\n';
@@ -245,11 +261,22 @@ namespace Qd {
 			std::string currentType;
 
 			if (isTopLevel) {
-				if (startsWithKeyword(trimmed, "use") || startsWithKeyword(trimmed, "import")) {
+				if (startsWithKeyword(trimmed, "use")) {
 					currentType = "use";
+					// Buffer use statements for sorting
+					useStatements.push_back(lines[i]);
+					prevTopLevelType = currentType;
+					continue;  // Don't output yet, wait to sort
+				} else if (startsWithKeyword(trimmed, "import")) {
+					currentType = "use";  // Treat import like use for spacing
 				} else if (startsWithKeyword(trimmed, "fn")) {
 					currentType = "fn_start";
 					inFunction = true;
+				}
+
+				// Flush any buffered use statements when we encounter non-use statement
+				if (!useStatements.empty() && currentType != "use") {
+					flushUseStatements();
 				}
 
 				// Add appropriate spacing before top-level declarations
@@ -277,6 +304,9 @@ namespace Qd {
 				inFunction = false;
 			}
 		}
+
+		// Flush any remaining use statements
+		flushUseStatements();
 
 		return output.str();
 	}

@@ -1,0 +1,17 @@
+use bits
+use math
+use str
+
+fn helper1(x:float -- result:float) {
+	x math::sqrt
+}
+
+fn helper2( -- ) {
+	"test" str::upper print nl
+	10 20 bits::band print nl
+}
+
+fn main( -- ) {
+	5.5 helper1 print nl
+	helper2
+}

@@ -1,0 +1,13 @@
+use unused
+
+fn main( -- ) {
+	5.5 math::sqrt if {
+		"positive" str::upper print nl
+	} else {
+		"negative" str::lower print nl
+	}
+
+	10 for {
+		i bits::inc print nl
+	}
+}

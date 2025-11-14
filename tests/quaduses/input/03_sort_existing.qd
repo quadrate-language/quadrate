@@ -1,0 +1,9 @@
+use zoo
+use apple
+use math
+
+fn main( -- ) {
+	5.5 math::sqrt print nl
+	"test" apple::process print nl
+	zoo::init
+}

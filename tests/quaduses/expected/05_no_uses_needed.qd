@@ -1,0 +1,4 @@
+fn main( -- ) {
+	42 print nl
+	"hello" print nl
+}
