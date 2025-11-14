@@ -3,14 +3,27 @@ use io
 
 fn main( -- ) {
 	// Create a small file
-	"/tmp/test_eof.txt" "w" io::open drop
-	dup "ABC" io::write drop drop
-	io::close
+	"/tmp/test_eof.txt" "w" io::open if {
+		dup "ABC" io::write if {
+			drop
+			io::close
+		} else {
+			drop io::close
+		}
+	} else {
+		drop
+	}
 
 	// Open and read
-	"/tmp/test_eof.txt" "r" io::open drop
-	dup 3 io::read drop
-	drop swap
-	io::close
-	prints
+	"/tmp/test_eof.txt" "r" io::open if {
+		dup 3 io::read if {
+			drop swap
+			io::close
+			prints
+		} else {
+			drop drop io::close
+		}
+	} else {
+		drop
+	}
 }

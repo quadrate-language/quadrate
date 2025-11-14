@@ -3,18 +3,39 @@ use io
 
 fn main( -- ) {
 	// Write initial content
-	"/tmp/test_append.txt" "w" io::open drop
-	dup "Line 1\n" io::write drop drop
-	io::close
+	"/tmp/test_append.txt" "w" io::open if {
+		dup "Line 1\n" io::write if {
+			drop
+			io::close
+		} else {
+			drop io::close
+		}
+	} else {
+		drop
+	}
 
 	// Append more content
-	"/tmp/test_append.txt" "a" io::open drop
-	dup "Line 2\n" io::write drop drop
-	io::close
+	"/tmp/test_append.txt" "a" io::open if {
+		dup "Line 2\n" io::write if {
+			drop
+			io::close
+		} else {
+			drop io::close
+		}
+	} else {
+		drop
+	}
 
 	// Read all content
-	"/tmp/test_append.txt" "r" io::open drop
-	dup 100 io::read drop drop swap
-	io::close
-	prints
+	"/tmp/test_append.txt" "r" io::open if {
+		dup 100 io::read if {
+			drop swap
+			io::close
+			prints
+		} else {
+			drop drop io::close
+		}
+	} else {
+		drop
+	}
 }

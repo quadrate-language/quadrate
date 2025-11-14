@@ -12,6 +12,7 @@ namespace Qd {
 		std::string name;								 // Function name in Quadrate (e.g., "printf")
 		std::vector<AstNodeParameter*> inputParameters;	 // Input parameters
 		std::vector<AstNodeParameter*> outputParameters; // Output parameters
+		bool throws = false;							 // Whether the function can throw errors (marked with '!')
 		size_t line;
 		size_t column;
 

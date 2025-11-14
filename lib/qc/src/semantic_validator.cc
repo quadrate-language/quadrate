@@ -763,6 +763,7 @@ namespace Qd {
 				// This allows imported functions to be called with the module's namespace
 				FunctionSignature sig;
 				sig.produces = typeStack;
+				sig.throws = func->throws;
 				std::string qualifiedName = moduleName + "::" + func->name;
 				mFunctionSignatures[qualifiedName] = sig;
 			}
@@ -1317,6 +1318,29 @@ namespace Qd {
 				if (sigIt != mFunctionSignatures.end()) {
 					const FunctionSignature& sig = sigIt->second;
 
+					// Validate '!' and '?' usage: only allowed on fallible functions (marked with '!')
+					if (scoped->abortOnError() && !sig.throws) {
+						std::string errorMsg = "Cannot use '!' operator on function '" + qualifiedName +
+											   "' which is not marked as fallible (add '!' after signature)";
+						reportError(scoped, errorMsg.c_str());
+					}
+					if (scoped->checkError() && !sig.throws) {
+						std::string errorMsg = "Cannot use '?' operator on function '" + qualifiedName +
+											   "' which is not marked as fallible (add '!' after signature)";
+						reportError(scoped, errorMsg.c_str());
+					}
+
+					// Check fallible functions without ! or ? must be followed by 'if'
+					if (sig.throws && !scoped->abortOnError() && !scoped->checkError()) {
+						IAstNode* nextNode = (i + 1 < node->childCount()) ? node->child(i + 1) : nullptr;
+						if (!nextNode || nextNode->type() != IAstNode::Type::IF_STATEMENT) {
+							std::string errorMsg = "Fallible function '" + qualifiedName +
+												   "' must be immediately followed by 'if' to check for errors, or use "
+												   "'!' to abort on error";
+							reportError(scoped, errorMsg.c_str());
+						}
+					}
+
 					// Check if stack has enough values for function parameters
 					if (typeStack.size() < sig.consumes.size()) {
 						std::string errorMsg = "Type error in function call '";
@@ -1366,8 +1390,24 @@ namespace Qd {
 					}
 
 					// Apply the produces effect
-					for (const auto& type : sig.produces) {
-						typeStack.push_back(type);
+					if (scoped->checkError()) {
+						// func? - immediately check error
+						// Produces: value (untainted) + error_status (INT)
+						for (const auto& type : sig.produces) {
+							typeStack.push_back(type); // Push untainted value
+						}
+						typeStack.push_back(StackValueType::INT); // Error status (0 or 1)
+					} else if (sig.throws && !scoped->abortOnError()) {
+						// func without ! or ? - pushes result + error flag
+						for (const auto& type : sig.produces) {
+							typeStack.push_back(type);
+						}
+						typeStack.push_back(StackValueType::INT); // Error status (0 or 1)
+					} else {
+						// Normal call or func!
+						for (const auto& type : sig.produces) {
+							typeStack.push_back(type);
+						}
 					}
 				}
 				// If signature not found, module wasn't loaded or analyzed

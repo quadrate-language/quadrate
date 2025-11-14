@@ -1,0 +1,7 @@
+use io
+
+fn main( -- ) {
+	"/tmp/test.txt" "w" io::open
+	// Missing 'if' here - should fail
+	drop drop
+}

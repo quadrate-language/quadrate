@@ -3,14 +3,33 @@ use io
 
 fn main( -- ) {
 	// Create a test file with known content
-	"/tmp/test_seek.txt" "w" io::open drop
-	dup "0123456789" io::write drop drop
-	io::close
+	"/tmp/test_seek.txt" "w" io::open if {
+		dup "0123456789" io::write if {
+			drop
+			io::close
+		} else {
+			drop io::close
+		}
+	} else {
+		drop
+	}
 
 	// Open for reading, seek and read
-	"/tmp/test_seek.txt" "r" io::open drop
-	dup 5 0 io::seekg drop drop
-	dup 3 io::read drop drop swap
-	io::close
-	prints
+	"/tmp/test_seek.txt" "r" io::open if {
+		dup 5 0 io::seekg if {
+			drop                    // Drop position
+			dup 3 io::read if {
+				drop                // Drop bytes_read
+				swap                // handle data -> data handle
+				io::close
+				prints
+			} else {
+				drop drop io::close
+			}
+		} else {
+			drop io::close
+		}
+	} else {
+		drop
+	}
 }

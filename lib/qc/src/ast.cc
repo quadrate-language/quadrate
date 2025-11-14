@@ -355,6 +355,15 @@ namespace Qd {
 						AstNodeScopedIdentifier* scoped = new AstNodeScopedIdentifier(scope->name(), memberName);
 						setNodePosition(scoped, scanner, src);
 						delete scope;
+						// Check for '!' or '?' suffix
+						char32_t nextToken = u8t_scanner_peek(scanner);
+						if (nextToken == '!') {
+							u8t_scanner_scan(scanner); // Consume the '!'
+							scoped->setAbortOnError(true);
+						} else if (nextToken == '?') {
+							u8t_scanner_scan(scanner); // Consume the '?'
+							scoped->setCheckError(true);
+						}
 						tempNodes.push_back(scoped);
 					} else {
 						// No identifier after ::, put scope back
@@ -666,6 +675,15 @@ namespace Qd {
 						AstNodeScopedIdentifier* scoped = new AstNodeScopedIdentifier(scope->name(), memberName);
 						setNodePosition(scoped, scanner, src);
 						delete scope;
+						// Check for '!' or '?' suffix
+						char32_t nextToken = u8t_scanner_peek(scanner);
+						if (nextToken == '!') {
+							u8t_scanner_scan(scanner); // Consume the '!'
+							scoped->setAbortOnError(true);
+						} else if (nextToken == '?') {
+							u8t_scanner_scan(scanner); // Consume the '?'
+							scoped->setCheckError(true);
+						}
 						tempNodes.push_back(scoped);
 					} else {
 						// No identifier after ::, put tokens back
@@ -1641,6 +1659,16 @@ namespace Qd {
 											}
 										}
 									}
+								}
+
+								// Check for optional '!' marker (fallible function)
+								if (token == ')') {
+									char32_t nextToken = u8t_scanner_peek(&scanner);
+									if (nextToken == '!') {
+										u8t_scanner_scan(&scanner); // Consume the '!'
+										func->throws = true;
+									}
+									// The outer loop at line 1574 will scan the next token
 								}
 
 								importStmt->addFunction(func);
