@@ -1,7 +1,9 @@
 #include <algorithm>
 #include <cstring>
 #include <fstream>
+#include <functional>
 #include <iostream>
+#include <map>
 #include <qc/ast.h>
 #include <qc/ast_node_program.h>
 #include <qc/ast_node_scoped.h>
@@ -170,12 +172,63 @@ bool isValidUtf8(const std::string& source) {
 	return true;
 }
 
-std::string generateWithUseStatements(const std::string& source, const std::set<std::string>& neededUses) {
+// Helper to extract package name from module identifier
+static std::string getPackageFromModuleName(const std::string& moduleName) {
+	// Check if this is a file path (ends with .qd)
+	bool isFilePath = moduleName.size() >= 3 && moduleName.substr(moduleName.size() - 3) == ".qd";
+
+	if (isFilePath) {
+		// Extract filename from path
+		size_t lastSlash = moduleName.find_last_of('/');
+		std::string filename = (lastSlash != std::string::npos) ? moduleName.substr(lastSlash + 1) : moduleName;
+
+		// Remove .qd extension
+		if (filename.size() >= 3 && filename.substr(filename.size() - 3) == ".qd") {
+			filename = filename.substr(0, filename.size() - 3);
+		}
+
+		return filename;
+	}
+
+	// Not a file path, return as-is
+	return moduleName;
+}
+
+std::string generateWithUseStatements(const std::string& source, const std::set<std::string>& neededUses,
+																			 const std::map<std::string, std::string>& scopeToOriginalImport) {
 	std::istringstream input(source);
 	std::ostringstream output;
 	std::string line;
 	bool inUseSection = false;
 	bool useStatementsWritten = false;
+
+	// Helper to format a use statement (with quotes if needed)
+	auto formatUseStatement = [&](const std::string& scope) -> std::string {
+		// Check if we have the original import format
+		auto it = scopeToOriginalImport.find(scope);
+		if (it != scopeToOriginalImport.end()) {
+			const std::string& original = it->second;
+			// Wrap in quotes if the path contains:
+			// - whitespace or special characters that would be invalid in the token stream
+			// - forward slash (path separator) since it would be tokenized separately
+			bool needsQuotes = false;
+			for (char c : original) {
+				if (std::isspace(static_cast<unsigned char>(c)) || c == '/' || c == '(' || c == ')' || c == '[' ||
+				    c == ']' || c == '{' || c == '}' || c == '<' || c == '>' || c == ',' || c == ';' || c == ':' ||
+				    c == '!' || c == '?' || c == '*' || c == '&' || c == '|' || c == '^' || c == '%' || c == '@' ||
+				    c == '#' || c == '$' || c == '`' || c == '~' || c == '\\') {
+					needsQuotes = true;
+					break;
+				}
+			}
+			if (needsQuotes) {
+				return "\"" + original + "\"";
+			}
+			return original;
+		}
+		// No original format found, use scope as-is
+		return scope;
+	};
 
 	// Helper to check if line starts with "use " (after trimming)
 	auto isUseLine = [](const std::string& l) {
@@ -224,7 +277,7 @@ std::string generateWithUseStatements(const std::string& source, const std::set<
 			std::sort(sortedUses.begin(), sortedUses.end());
 
 			for (const auto& use : sortedUses) {
-				output << "use " << use << '\n';
+				output << "use " << formatUseStatement(use) << '\n';
 			}
 
 			// Add blank line after use statements if there are any
@@ -243,7 +296,7 @@ std::string generateWithUseStatements(const std::string& source, const std::set<
 			std::sort(sortedUses.begin(), sortedUses.end());
 
 			for (const auto& use : sortedUses) {
-				output << "use " << use << '\n';
+				output << "use " << formatUseStatement(use) << '\n';
 			}
 
 			// Add blank line after use statements if there are any
@@ -264,7 +317,7 @@ std::string generateWithUseStatements(const std::string& source, const std::set<
 		std::sort(sortedUses.begin(), sortedUses.end());
 
 		for (const auto& use : sortedUses) {
-			output << "use " << use << '\n';
+			output << "use " << formatUseStatement(use) << '\n';
 		}
 	}
 
@@ -295,8 +348,34 @@ bool processFile(const std::string& filename, const Options& opts) {
 		std::set<std::string> usedScopes;
 		collectScopedIdentifiers(root, usedScopes);
 
+		// Collect original use statements to preserve file paths vs module names
+		std::map<std::string, std::string> scopeToOriginalImport;
+		std::set<std::string> explicitFileImports; // Track file imports that should always be preserved
+		std::function<void(IAstNode*)> collectOriginalUses = [&](IAstNode* node) {
+			if (!node)
+				return;
+			if (node->type() == IAstNode::Type::USE_STATEMENT) {
+				AstNodeUse* useNode = static_cast<AstNodeUse*>(node);
+				std::string moduleName = useNode->module();
+				std::string packageName = getPackageFromModuleName(moduleName);
+				scopeToOriginalImport[packageName] = moduleName;
+
+				// If this is a file import (ends with .qd), always preserve it
+				// This prevents confusing behavior where explicit file imports disappear
+				bool isFileImport = moduleName.size() >= 3 && moduleName.substr(moduleName.size() - 3) == ".qd";
+				if (isFileImport) {
+					explicitFileImports.insert(packageName);
+					usedScopes.insert(packageName); // Ensure it's included in output
+				}
+			}
+			for (size_t i = 0; i < node->childCount(); i++) {
+				collectOriginalUses(node->child(i));
+			}
+		};
+		collectOriginalUses(root);
+
 		// Generate new source with only needed use statements
-		std::string result = generateWithUseStatements(source, usedScopes);
+		std::string result = generateWithUseStatements(source, usedScopes, scopeToOriginalImport);
 
 		// Format the result to ensure proper formatting
 		result = formatSource(result);

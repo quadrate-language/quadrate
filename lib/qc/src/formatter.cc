@@ -984,7 +984,31 @@ namespace Qd {
 
 		writeIndent();
 		write("use ");
-		write(useNode->module());
+
+		std::string moduleName = useNode->module();
+
+		// Wrap in quotes if the path contains:
+		// - whitespace or special characters that would be invalid in the token stream
+		// - forward slash (path separator) since it would be tokenized separately
+		bool needsQuotes = false;
+		for (char c : moduleName) {
+			if (std::isspace(static_cast<unsigned char>(c)) || c == '/' || c == '(' || c == ')' || c == '[' ||
+			    c == ']' || c == '{' || c == '}' || c == '<' || c == '>' || c == ',' || c == ';' || c == ':' ||
+			    c == '!' || c == '?' || c == '*' || c == '&' || c == '|' || c == '^' || c == '%' || c == '@' ||
+			    c == '#' || c == '$' || c == '`' || c == '~' || c == '\\') {
+				needsQuotes = true;
+				break;
+			}
+		}
+
+		if (needsQuotes) {
+			write("\"");
+			write(moduleName);
+			write("\"");
+		} else {
+			write(moduleName);
+		}
+
 		newLine();
 	}
 

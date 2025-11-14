@@ -1461,9 +1461,22 @@ namespace Qd {
 					}
 				} else if (strcmp(text, "use") == 0) {
 					token = u8t_scanner_scan(&scanner);
-					if (token == U8T_IDENTIFIER) {
+					std::string moduleNameStr;
+
+					if (token == U8T_STRING) {
+						// Quoted path: use "path/to/file.qd"
+						const char* pathLiteral = u8t_scanner_token_text(&scanner, &n);
+						std::string path(pathLiteral);
+						// Strip quotes from string literal
+						if (path.length() >= 2 && path.front() == '"' && path.back() == '"') {
+							moduleNameStr = path.substr(1, path.length() - 2);
+						} else {
+							moduleNameStr = path;
+						}
+					} else if (token == U8T_IDENTIFIER) {
+						// Unquoted module name: use module or use module.qd
 						const char* moduleName = u8t_scanner_token_text(&scanner, &n);
-						std::string moduleNameStr(moduleName);
+						moduleNameStr = std::string(moduleName);
 
 						// Check if this is a .qd file import (module.qd)
 						// Peek at next token to see if it's a dot
@@ -1480,13 +1493,15 @@ namespace Qd {
 								}
 							}
 						}
+					} else {
+						errorReporter.reportError(&scanner, "Expected module name or quoted path after 'use'");
+					}
 
+					if (!moduleNameStr.empty()) {
 						AstNodeUse* useStmt = new AstNodeUse(moduleNameStr.c_str());
 						setNodePosition(useStmt, &scanner, src);
 						useStmt->setParent(program);
 						program->addChild(useStmt);
-					} else {
-						errorReporter.reportError(&scanner, "Expected module name after 'use'");
 					}
 				} else if (strcmp(text, "import") == 0) {
 					// Parse: import "libname.so" as "namespace" { fn ... }

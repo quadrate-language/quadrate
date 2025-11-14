@@ -24,6 +24,52 @@
 
 namespace Qd {
 
+	// Helper function to expand tilde (~) in file paths
+	static std::string expandTilde(const std::string& path) {
+		if (path.empty() || path[0] != '~') {
+			return path;
+		}
+
+		const char* home = std::getenv("HOME");
+		if (!home) {
+			return path; // Can't expand, return as-is
+		}
+
+		// Replace ~ or ~/ with home directory
+		if (path.length() == 1) {
+			return std::string(home);
+		} else if (path[1] == '/') {
+			return std::string(home) + path.substr(1);
+		}
+
+		// ~username syntax not supported, return as-is
+		return path;
+	}
+
+	// Helper function to extract package name from module identifier
+	// For file paths (ending in .qd), returns the filename without extension
+	// For module names, returns the module name as-is
+	static std::string getPackageFromModuleName(const std::string& moduleName) {
+		// Check if this is a file path (ends with .qd)
+		bool isFilePath = moduleName.size() >= 3 && moduleName.substr(moduleName.size() - 3) == ".qd";
+
+		if (isFilePath) {
+			// Extract filename from path
+			size_t lastSlash = moduleName.find_last_of('/');
+			std::string filename = (lastSlash != std::string::npos) ? moduleName.substr(lastSlash + 1) : moduleName;
+
+			// Remove .qd extension
+			if (filename.size() >= 3 && filename.substr(filename.size() - 3) == ".qd") {
+				filename = filename.substr(0, filename.size() - 3);
+			}
+
+			return filename;
+		}
+
+		// Not a file path, return as-is
+		return moduleName;
+	}
+
 	// Helper function to serialize a case value for comparison
 	static std::string serializeCaseValue(IAstNode* node) {
 		if (!node) {
@@ -222,9 +268,22 @@ namespace Qd {
 		// If this is a use statement, add the module to imported modules and load its definitions
 		if (node->type() == IAstNode::Type::USE_STATEMENT) {
 			AstNodeUse* use = static_cast<AstNodeUse*>(node);
-			mImportedModules.insert(use->module());
+			std::string moduleName = use->module();
+			mImportedModules.insert(moduleName);
+
+			// For top-level file imports (not intra-module imports), also register the derived namespace
+			// This allows "use "calculator.qd"" to work with "calculator::function"
+			// But for intra-module imports like "use helper.qd" inside a module, we want functions
+			// to remain in the parent module's namespace, not create a new "helper" namespace
+			if (!mIsModuleFile) {
+				std::string packageName = getPackageFromModuleName(moduleName);
+				if (packageName != moduleName) {
+					mImportedModules.insert(packageName);
+				}
+			}
+
 			// Only report errors for missing modules if this is the main entry point (not a module file)
-			loadModuleDefinitions(use->module(), mCurrentPackage, !mIsModuleFile);
+			loadModuleDefinitions(moduleName, mCurrentPackage, !mIsModuleFile);
 		}
 
 		// If this is an import statement, collect imported library functions
@@ -267,26 +326,47 @@ namespace Qd {
 		std::ifstream file;
 
 		if (isDirectFile) {
-			// Direct file import: look for helper.qd in the parent module's directory
-			// First check if we have a directory for the current package (parent module)
-			std::string searchDir = mSourceDirectory;
-			if (mModuleDirectories.count(currentPackage)) {
-				searchDir = mModuleDirectories[currentPackage];
-			}
+			// Direct file import: look for file.qd
+			// Expand tilde (~) in the path if present
+			std::string expandedModuleName = expandTilde(moduleName);
 
-			// Try 1: Same directory as parent module
-			modulePath = searchDir + "/" + moduleName;
-			file.open(modulePath);
-			if (file.good()) {
-				std::stringstream buffer;
-				buffer << file.rdbuf();
-				std::string source = buffer.str();
+			// Check if it's an absolute path (starts with / or was expanded from ~)
+			if (!expandedModuleName.empty() && expandedModuleName[0] == '/') {
+				// Absolute path - use directly
+				file.open(expandedModuleName);
+				if (file.good()) {
+					std::stringstream buffer;
+					buffer << file.rdbuf();
+					std::string source = buffer.str();
+					file.close();
+					// Parse and add to current package namespace
+					parseModuleAndCollectFunctions(currentPackage, source);
+					return;
+				}
 				file.close();
-				// Parse and add to current package namespace
-				parseModuleAndCollectFunctions(currentPackage, source);
-				return;
+				// Absolute path doesn't exist - will fail below
+			} else {
+				// Relative path - search in parent module's directory
+				// First check if we have a directory for the current package (parent module)
+				std::string searchDir = mSourceDirectory;
+				if (mModuleDirectories.count(currentPackage)) {
+					searchDir = mModuleDirectories[currentPackage];
+				}
+
+				// Try 1: Same directory as parent module
+				modulePath = searchDir + "/" + moduleName;
+				file.open(modulePath);
+				if (file.good()) {
+					std::stringstream buffer;
+					buffer << file.rdbuf();
+					std::string source = buffer.str();
+					file.close();
+					// Parse and add to current package namespace
+					parseModuleAndCollectFunctions(currentPackage, source);
+					return;
+				}
+				file.close();
 			}
-			file.close();
 
 			// If not found in same directory, try standard paths
 			// Try 2: QUADRATE_ROOT
@@ -418,12 +498,64 @@ namespace Qd {
 		// Nested imports from other modules silently skip (might be found via different paths)
 		if (reportErrors) {
 			if (isDirectFile) {
-				std::string errorMsg = "No such file or directory";
+				std::string errorMsg = "File '";
+				errorMsg += moduleName;
+				errorMsg += "': No such file or directory";
 				reportError(errorMsg.c_str());
 			} else {
-				std::string errorMsg = "Module '";
-				errorMsg += moduleName;
-				errorMsg += "' not found in any search path";
+				// Check if a directory with the module name exists but doesn't contain module.qd
+				bool foundDirectoryWithoutModuleFile = false;
+				std::string directoryPath;
+
+				// Check local path
+				std::string localDir = mSourceDirectory + "/" + moduleName;
+				if (std::filesystem::exists(localDir) && std::filesystem::is_directory(localDir)) {
+					foundDirectoryWithoutModuleFile = true;
+					directoryPath = localDir;
+				}
+
+				// Check QUADRATE_ROOT
+				if (!foundDirectoryWithoutModuleFile) {
+					const char* quadrateRoot = std::getenv("QUADRATE_ROOT");
+					if (quadrateRoot) {
+						std::string rootDir = std::string(quadrateRoot) + "/" + moduleName;
+						if (std::filesystem::exists(rootDir) && std::filesystem::is_directory(rootDir)) {
+							foundDirectoryWithoutModuleFile = true;
+							directoryPath = rootDir;
+						}
+					}
+				}
+
+				// Check $HOME/quadrate
+				if (!foundDirectoryWithoutModuleFile) {
+					const char* home = std::getenv("HOME");
+					if (home) {
+						std::string homeDir = std::string(home) + "/quadrate/" + moduleName;
+						if (std::filesystem::exists(homeDir) && std::filesystem::is_directory(homeDir)) {
+							foundDirectoryWithoutModuleFile = true;
+							directoryPath = homeDir;
+						}
+					}
+				}
+
+				std::string errorMsg;
+				if (foundDirectoryWithoutModuleFile) {
+					errorMsg = "Module '";
+					errorMsg += moduleName;
+					errorMsg += "' directory found at '";
+					errorMsg += directoryPath;
+					errorMsg += "', but it does not contain a 'module.qd' file.\n";
+					errorMsg += "Module directories must have a 'module.qd' file as the entry point.\n";
+					errorMsg += "Either create '";
+					errorMsg += directoryPath;
+					errorMsg += "/module.qd' or use a direct file import like: use \"";
+					errorMsg += moduleName;
+					errorMsg += "/filename.qd\"";
+				} else {
+					errorMsg = "Module '";
+					errorMsg += moduleName;
+					errorMsg += "' not found in any search path";
+				}
 				reportError(errorMsg.c_str());
 			}
 		}

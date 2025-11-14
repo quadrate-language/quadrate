@@ -1,0 +1,7 @@
+// Test that file imports are preserved even when unused
+use "utils/math.qd"
+use helper.qd
+
+fn main( -- ) {
+	42 prints nl
+}

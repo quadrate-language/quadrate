@@ -1,0 +1,6 @@
+// Test error message for directory without module.qd
+use badmodule
+
+fn main( -- ) {
+	42 prints nl
+}

@@ -1,0 +1,7 @@
+// Test basic file import with simple filename
+use helper.qd
+
+fn main( -- ) {
+	helper::get_value
+	helper::get_ten
+}

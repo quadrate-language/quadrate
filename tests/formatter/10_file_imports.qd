@@ -1,0 +1,9 @@
+// Test formatter with file imports
+use helper.qd
+use "utils/math.qd"
+use "my helper.qd"
+
+fn main( -- ) {
+	helper::test
+	math::test
+}

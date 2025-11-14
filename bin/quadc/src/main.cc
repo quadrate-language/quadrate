@@ -87,6 +87,52 @@ private:
 	bool mShouldDelete;
 };
 
+// Expand tilde (~) in file paths
+std::string expandTilde(const std::string& path) {
+	if (path.empty() || path[0] != '~') {
+		return path;
+	}
+
+	const char* home = std::getenv("HOME");
+	if (!home) {
+		return path; // Can't expand, return as-is
+	}
+
+	// Replace ~ or ~/ with home directory
+	if (path.length() == 1) {
+		return std::string(home);
+	} else if (path[1] == '/') {
+		return std::string(home) + path.substr(1);
+	}
+
+	// ~username syntax not supported, return as-is
+	return path;
+}
+
+// Get package name from a module identifier
+// For file paths (ending in .qd), returns the filename without extension
+// For module names, returns the module name as-is
+std::string getPackageFromModuleName(const std::string& moduleName) {
+	// Check if this is a file path (ends with .qd)
+	bool isFilePath = moduleName.size() >= 3 && moduleName.substr(moduleName.size() - 3) == ".qd";
+
+	if (isFilePath) {
+		// Extract filename from path
+		size_t lastSlash = moduleName.find_last_of('/');
+		std::string filename = (lastSlash != std::string::npos) ? moduleName.substr(lastSlash + 1) : moduleName;
+
+		// Remove .qd extension
+		if (filename.size() >= 3 && filename.substr(filename.size() - 3) == ".qd") {
+			filename = filename.substr(0, filename.size() - 3);
+		}
+
+		return filename;
+	}
+
+	// Not a file path, return as-is
+	return moduleName;
+}
+
 // Find a module file, searching in multiple locations
 // Returns the full path to the module file, or empty string if not found
 std::string findModuleFile(const std::string& moduleName, const std::string& sourceDir) {
@@ -94,35 +140,43 @@ std::string findModuleFile(const std::string& moduleName, const std::string& sou
 	bool isDirectFile = moduleName.size() >= 3 && moduleName.substr(moduleName.size() - 3) == ".qd";
 
 	if (isDirectFile) {
-		// Try 1: Local path (relative to source file)
-		std::string localPath = sourceDir + "/" + moduleName;
-		if (std::filesystem::exists(localPath)) {
-			return localPath;
+		// Expand tilde in the path
+		std::string expandedModuleName = expandTilde(moduleName);
+
+		// If it's an absolute path (starts with / or was expanded from ~), use it directly
+		if (!expandedModuleName.empty() && expandedModuleName[0] == '/') {
+			if (std::filesystem::exists(expandedModuleName)) {
+				return expandedModuleName;
+			}
+			return ""; // Absolute path doesn't exist
 		}
 
-		// Try 2: QUADRATE_ROOT environment variable
-		const char* quadrateRoot = getenv("QUADRATE_ROOT");
-		if (quadrateRoot) {
-			std::string rootPath = std::string(quadrateRoot) + "/" + moduleName;
-			if (std::filesystem::exists(rootPath)) {
-				return rootPath;
+		// For relative paths (including ./ and ../), resolve relative to source directory
+		std::filesystem::path filePath;
+		if (moduleName.size() >= 2 && (moduleName.substr(0, 2) == "./" || moduleName.substr(0, 3) == "../")) {
+			// Explicit relative path
+			filePath = std::filesystem::path(sourceDir) / moduleName;
+		} else {
+			// Implicit relative path (no leading ./ or ../)
+			filePath = std::filesystem::path(sourceDir) / moduleName;
+		}
+
+		// Normalize the path (resolve .. and .)
+		try {
+			filePath = std::filesystem::weakly_canonical(filePath);
+			if (std::filesystem::exists(filePath)) {
+				return filePath.string();
+			}
+		} catch (...) {
+			// If path resolution fails, try simple concatenation
+			std::string localPath = sourceDir + "/" + moduleName;
+			if (std::filesystem::exists(localPath)) {
+				return localPath;
 			}
 		}
 
-		// Try 3: $HOME/quadrate directory
-		const char* home = getenv("HOME");
-		if (home) {
-			std::string homePath = std::string(home) + "/quadrate/" + moduleName;
-			if (std::filesystem::exists(homePath)) {
-				return homePath;
-			}
-		}
-
-		// Try 4: System-wide installation
-		std::string systemPath = "/usr/share/quadrate/" + moduleName;
-		if (std::filesystem::exists(systemPath)) {
-			return systemPath;
-		}
+		// File not found
+		return "";
 	} else {
 		// Module directory import (original behavior)
 		// Try 1: Local path (relative to source file)
@@ -342,12 +396,27 @@ int main(int argc, char** argv) {
 			for (const auto& importedModule : module.importedModules) {
 				allModules.insert(importedModule);
 
-				// Check if this is a .qd file import
+				// Check if this is a .qd file import (direct file import)
 				bool isDirectFile =
 						importedModule.size() >= 3 && importedModule.substr(importedModule.size() - 3) == ".qd";
 				if (isDirectFile) {
-					// .qd file imports use the parent package name
-					moduleToPackage[importedModule] = module.package;
+					// Direct file imports: determine if this is an intra-module import or a top-level import
+					// Intra-module: parent is a module directory, file inherits parent's namespace
+					// Top-level: parent is standalone .qd, file gets its own namespace from filename
+
+					// Check if parent is a module directory (doesn't end in .qd)
+					bool parentIsModuleDirectory = !(module.name.size() >= 3 &&
+						module.name.substr(module.name.size() - 3) == ".qd");
+
+					if (parentIsModuleDirectory) {
+						// Intra-module import: use parent's package
+						// e.g., split_module module imports helper.qd → helper functions are split_module::*
+						moduleToPackage[importedModule] = module.package;
+					} else {
+						// Top-level import: derive package from imported filename
+						// e.g., main.qd imports calculator.qd → calculator functions are calculator::*
+						moduleToPackage[importedModule] = getPackageFromModuleName(importedModule);
+					}
 					moduleToSourceDir[importedModule] = module.sourceDirectory;
 				} else {
 					// Regular module imports get their own package
@@ -455,8 +524,18 @@ int main(int argc, char** argv) {
 					bool isDirectFile = transitiveModule.size() >= 3 &&
 										transitiveModule.substr(transitiveModule.size() - 3) == ".qd";
 					if (isDirectFile) {
-						// .qd file imports use the same package as the module that imported them
-						moduleToPackage[transitiveModule] = packageName;
+						// Check if importing file is a module directory (doesn't end in .qd)
+						bool importerIsModuleDirectory = !(moduleName.size() >= 3 &&
+							moduleName.substr(moduleName.size() - 3) == ".qd");
+
+						if (importerIsModuleDirectory) {
+							// Intra-module import: use importer's package
+							moduleToPackage[transitiveModule] = packageName;
+						} else {
+							// Top-level import: derive package from filename
+							moduleToPackage[transitiveModule] = getPackageFromModuleName(transitiveModule);
+						}
+						// File imports use the importing module's source directory
 						moduleToSourceDir[transitiveModule] = moduleFileSourceDir;
 					} else {
 						// Regular module imports get their own package and search from original source dir

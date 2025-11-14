@@ -1,0 +1,10 @@
+// Test multiple file imports
+use helper.qd
+use "utils/math.qd"
+
+fn main( -- ) {
+	helper::get_value
+	math::get_hundred
+	helper::get_ten
+	math::get_fifty
+}

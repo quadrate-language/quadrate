@@ -1,0 +1,7 @@
+// Test file import from subdirectory (requires quotes)
+use "utils/math.qd"
+
+fn main( -- ) {
+	math::get_hundred
+	math::get_fifty
+}

@@ -1,0 +1,8 @@
+// Helper file in subdirectory
+fn get_hundred( -- ) {
+	100 . nl
+}
+
+fn get_fifty( -- ) {
+	50 . nl
+}

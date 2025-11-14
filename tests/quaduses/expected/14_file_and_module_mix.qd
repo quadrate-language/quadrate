@@ -1,0 +1,8 @@
+// Test mixing file imports (preserved) and module imports (removed if unused)
+use "utils/calc.qd"
+use helper.qd
+
+fn main( -- ) {
+	helper::test
+	calc::test
+}

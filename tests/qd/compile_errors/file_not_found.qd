@@ -1,0 +1,6 @@
+// Test error message for missing file
+use "nonexistent.qd"
+
+fn main( -- ) {
+	42 prints nl
+}
