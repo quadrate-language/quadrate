@@ -22,14 +22,18 @@ struct Options {
 
 void printHelp() {
 	std::cout << "quadfmt - Quadrate code formatter\n\n";
+	std::cout << "Formats Quadrate source files with consistent style.\n\n";
 	std::cout << "Usage: quadfmt [options] <file>...\n\n";
 	std::cout << "Options:\n";
 	std::cout << "  -h, --help       Show this help message\n";
 	std::cout << "  -v, --version    Show version information\n";
 	std::cout << "  -c, --check      Check if files are formatted (exit 1 if not)\n";
-	std::cout << "  -w, --write      Write formatted output in-place (overwrite source file)\n";
+	std::cout << "  -w, --write      Format files in-place\n";
 	std::cout << "\n";
-	std::cout << "By default, formatted output is written to stdout.\n";
+	std::cout << "Examples:\n";
+	std::cout << "  quadfmt file.qd              Format to stdout\n";
+	std::cout << "  quadfmt -w file.qd           Format in-place\n";
+	std::cout << "  quadfmt -c *.qd              Check if files need formatting\n";
 }
 
 void printVersion() {
@@ -71,7 +75,7 @@ bool parseArgs(int argc, char* argv[], Options& opts) {
 std::string readFile(const std::string& filename) {
 	std::ifstream file(filename);
 	if (!file.good()) {
-		throw std::runtime_error("Cannot open file: " + filename);
+		throw std::runtime_error("No such file or directory");
 	}
 
 	std::stringstream buffer;
@@ -82,7 +86,7 @@ std::string readFile(const std::string& filename) {
 void writeFile(const std::string& filename, const std::string& content) {
 	std::ofstream file(filename);
 	if (!file.good()) {
-		throw std::runtime_error("Cannot write to file: " + filename);
+		throw std::runtime_error("Cannot write to file");
 	}
 	file << content;
 }

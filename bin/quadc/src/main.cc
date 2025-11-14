@@ -189,16 +189,16 @@ struct ParsedModule {
 };
 
 int main(int argc, char** argv) {
-	cxxopts::Options options("quadc", "Quadrate compiler (LLVM backend)");
-	options.add_options()("h,help", "Display help.")("v,version", "Display compiler version.")(
-			"o", "Output filename", cxxopts::value<std::string>()->default_value("main"))("save-temps",
-			"Save temporary files", cxxopts::value<bool>()->default_value("false")->implicit_value("true"))("verbose",
-			"Print compilation commands",
-			cxxopts::value<bool>()->default_value("false")->implicit_value("true"))("dump-tokens", "Print tokens",
-			cxxopts::value<bool>()->default_value("false")->implicit_value("true"))("r,run", "Run the compiled program",
+	cxxopts::Options options("quadc", "Quadrate compiler\n\nCompiles .qd source files to native executables via LLVM.");
+	options.add_options()("h,help", "Show this help message")("v,version", "Show version information")(
+			"o", "Output executable name (default: main)", cxxopts::value<std::string>()->default_value("main"))("save-temps",
+			"Keep temporary files for debugging", cxxopts::value<bool>()->default_value("false")->implicit_value("true"))("verbose",
+			"Show detailed compilation steps",
+			cxxopts::value<bool>()->default_value("false")->implicit_value("true"))("dump-tokens", "Print lexer tokens",
+			cxxopts::value<bool>()->default_value("false")->implicit_value("true"))("r,run", "Compile and run immediately",
 			cxxopts::value<bool>()->default_value("false")->implicit_value("true"))(
-			"dump-ir", "Print LLVM IR", cxxopts::value<bool>()->default_value("false")->implicit_value("true"))(
-			"files", "Input files", cxxopts::value<std::vector<std::string>>());
+			"dump-ir", "Print generated LLVM IR", cxxopts::value<bool>()->default_value("false")->implicit_value("true"))(
+			"files", "Input .qd files", cxxopts::value<std::vector<std::string>>());
 
 	options.parse_positional({"files"});
 
@@ -267,7 +267,7 @@ int main(int argc, char** argv) {
 		for (const auto& file : files) {
 			std::ifstream qdFile(file);
 			if (!qdFile.is_open()) {
-				std::cerr << "quadc: cannot find " << file << ": No such file or directory" << std::endl;
+				std::cerr << "quadc: " << file << ": No such file or directory" << std::endl;
 				continue;
 			}
 			qdFile.seekg(0, std::ios::end);

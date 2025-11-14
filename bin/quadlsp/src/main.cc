@@ -720,7 +720,39 @@ private:
 	[[maybe_unused]] int messageId_;
 };
 
-int main() {
+void printHelp() {
+	std::cout << "quadlsp - Quadrate Language Server Protocol\n\n";
+	std::cout << "Provides IDE features for Quadrate: diagnostics, completion, and hover.\n\n";
+	std::cout << "Usage: quadlsp [options]\n\n";
+	std::cout << "Options:\n";
+	std::cout << "  -h, --help       Show this help message\n";
+	std::cout << "  -v, --version    Show version information\n";
+	std::cout << "\n";
+	std::cout << "The LSP server communicates via stdin/stdout using JSON-RPC.\n";
+	std::cout << "Configure your editor to use 'quadlsp' as the language server.\n\n";
+	std::cout << "Supported features:\n";
+	std::cout << "  - Syntax error diagnostics\n";
+	std::cout << "  - Auto-completion for built-in instructions and user functions\n";
+	std::cout << "  - Hover documentation\n";
+}
+
+void printVersion() {
+	std::cout << "quadlsp version 0.1.0\n";
+}
+
+int main(int argc, char* argv[]) {
+	// Check for help or version flags
+	if (argc > 1) {
+		std::string arg = argv[1];
+		if (arg == "-h" || arg == "--help") {
+			printHelp();
+			return 0;
+		} else if (arg == "-v" || arg == "--version") {
+			printVersion();
+			return 0;
+		}
+	}
+
 	QuadrateLSP lsp;
 	lsp.run();
 	return 0;
