@@ -1,0 +1,16 @@
+// Test basic file read
+use io
+
+fn main( -- ) {
+	// Create a small file
+	"/tmp/test_eof.txt" "w" io::open drop
+	dup "ABC" io::write drop drop
+	io::close
+
+	// Open and read
+	"/tmp/test_eof.txt" "r" io::open drop
+	dup 3 io::read drop
+	drop swap
+	io::close
+	prints
+}

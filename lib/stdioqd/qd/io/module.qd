@@ -1,0 +1,10 @@
+// Quadrate Standard Library - File I/O Module
+
+import "libstdioqd_static.a" as "io" {
+	fn open(path:s mode:s -- handle:p)!
+	fn close(handle:p --)
+	fn read(handle:p count:i -- data:s bytes_read:i)!
+	fn write(handle:p data:s -- bytes_written:i)!
+	fn seekg(handle:p offset:i whence:i -- position:i)!
+	fn eof(handle:p -- handle:p is_eof:i)
+}

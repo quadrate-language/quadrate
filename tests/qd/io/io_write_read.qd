@@ -1,0 +1,16 @@
+// Test basic file write and read operations
+use io
+
+fn main( -- ) {
+	// Write to a file
+	"/tmp/test_quadrate_io.txt" "w" io::open drop
+	dup "Hello, Quadrate!\n" io::write drop drop
+	io::close
+
+	// Read from the file
+	"/tmp/test_quadrate_io.txt" "r" io::open drop
+	dup 100 io::read drop
+	drop swap
+	io::close
+	prints
+}

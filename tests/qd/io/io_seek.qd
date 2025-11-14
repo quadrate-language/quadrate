@@ -1,0 +1,16 @@
+// Test file seek operations
+use io
+
+fn main( -- ) {
+	// Create a test file with known content
+	"/tmp/test_seek.txt" "w" io::open drop
+	dup "0123456789" io::write drop drop
+	io::close
+
+	// Open for reading, seek and read
+	"/tmp/test_seek.txt" "r" io::open drop
+	dup 5 0 io::seekg drop drop
+	dup 3 io::read drop drop swap
+	io::close
+	prints
+}

@@ -32,6 +32,9 @@ debug:
 	@cp -f $(BUILD_DIR_DEBUG)/lib/stdfmtqd/libstdfmtqd.so dist/lib/
 	@echo "Creating full archive for libstdfmtqd_static.a..."
 	@rm -f dist/lib/libstdfmtqd_static.a && cd $(BUILD_DIR_DEBUG)/lib/stdfmtqd && ar rcs $(CURDIR)/dist/lib/libstdfmtqd_static.a $$(ar -t libstdfmtqd_static.a) || (echo "ERROR: Failed to create libstdfmtqd_static.a" && exit 1)
+	@cp -f $(BUILD_DIR_DEBUG)/lib/stdioqd/libstdioqd.so dist/lib/
+	@echo "Creating full archive for libstdioqd_static.a..."
+	@rm -f dist/lib/libstdioqd_static.a && cd $(BUILD_DIR_DEBUG)/lib/stdioqd && ar rcs $(CURDIR)/dist/lib/libstdioqd_static.a $$(ar -t libstdioqd_static.a) || (echo "ERROR: Failed to create libstdioqd_static.a" && exit 1)
 	@cp -f $(BUILD_DIR_DEBUG)/lib/stdmathqd/libstdmathqd.so dist/lib/
 	@echo "Creating full archive for libstdmathqd_static.a..."
 	@rm -f dist/lib/libstdmathqd_static.a && cd $(BUILD_DIR_DEBUG)/lib/stdmathqd && ar rcs $(CURDIR)/dist/lib/libstdmathqd_static.a $$(ar -t libstdmathqd_static.a) || (echo "ERROR: Failed to create libstdmathqd_static.a" && exit 1)
@@ -51,6 +54,7 @@ debug:
 	@cp -rf lib/qd/include/qd dist/include/
 	@cp -rf lib/stdbitsqd/include/stdbitsqd dist/include/
 	@cp -rf lib/stdfmtqd/include/stdfmtqd dist/include/
+	@cp -rf lib/stdioqd/include/stdioqd dist/include/
 	@cp -rf lib/stdmathqd/include/stdmathqd dist/include/
 	@cp -rf lib/stdnetqd/include/stdnetqd dist/include/
 	@cp -rf lib/stdosqd/include/stdosqd dist/include/
@@ -59,6 +63,7 @@ debug:
 	@mkdir -p dist/share/quadrate
 	@cp -r lib/stdbitsqd/qd/bits dist/share/quadrate/
 	@cp -r lib/stdfmtqd/qd/fmt dist/share/quadrate/
+	@cp -r lib/stdioqd/qd/io dist/share/quadrate/
 	@cp -r lib/stdmathqd/qd/math dist/share/quadrate/
 	@cp -r lib/stdnetqd/qd/net dist/share/quadrate/
 	@cp -r lib/stdosqd/qd/os dist/share/quadrate/
@@ -107,6 +112,7 @@ release:
 	@cp -rf lib/qd/include/qd dist/include/
 	@cp -rf lib/stdbitsqd/include/stdbitsqd dist/include/
 	@cp -rf lib/stdfmtqd/include/stdfmtqd dist/include/
+	@cp -rf lib/stdioqd/include/stdioqd dist/include/
 	@cp -rf lib/stdmathqd/include/stdmathqd dist/include/
 	@cp -rf lib/stdnetqd/include/stdnetqd dist/include/
 	@cp -rf lib/stdosqd/include/stdosqd dist/include/
@@ -115,6 +121,7 @@ release:
 	@mkdir -p dist/share/quadrate
 	@cp -r lib/stdbitsqd/qd/bits dist/share/quadrate/
 	@cp -r lib/stdfmtqd/qd/fmt dist/share/quadrate/
+	@cp -r lib/stdioqd/qd/io dist/share/quadrate/
 	@cp -r lib/stdmathqd/qd/math dist/share/quadrate/
 	@cp -r lib/stdnetqd/qd/net dist/share/quadrate/
 	@cp -r lib/stdosqd/qd/os dist/share/quadrate/

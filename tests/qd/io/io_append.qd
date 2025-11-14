@@ -1,0 +1,20 @@
+// Test file append mode
+use io
+
+fn main( -- ) {
+	// Write initial content
+	"/tmp/test_append.txt" "w" io::open drop
+	dup "Line 1\n" io::write drop drop
+	io::close
+
+	// Append more content
+	"/tmp/test_append.txt" "a" io::open drop
+	dup "Line 2\n" io::write drop drop
+	io::close
+
+	// Read all content
+	"/tmp/test_append.txt" "r" io::open drop
+	dup 100 io::read drop drop swap
+	io::close
+	prints
+}
