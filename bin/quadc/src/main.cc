@@ -6,6 +6,7 @@
 #include <llvmgen/generator.h>
 #include <qc/ast.h>
 #include <qc/ast_node.h>
+#include <qc/ast_node_function.h>
 #include <qc/ast_node_use.h>
 #include <qc/colors.h>
 #include <qc/semantic_validator.h>
@@ -200,7 +201,15 @@ int main(int argc, char** argv) {
 			"files", "Input files", cxxopts::value<std::vector<std::string>>());
 
 	options.parse_positional({"files"});
-	auto result = options.parse(argc, argv);
+
+	cxxopts::ParseResult result;
+	try {
+		result = options.parse(argc, argv);
+	} catch (const cxxopts::exceptions::exception& e) {
+		std::cerr << "quadc: " << e.what() << std::endl;
+		std::cerr << "Try 'quadc --help' for more information." << std::endl;
+		return 1;
+	}
 
 	if (result.count("help") || argc == 1) {
 		std::cout << options.help() << std::endl;
@@ -483,6 +492,25 @@ int main(int argc, char** argv) {
 
 		if (!mainRoot) {
 			std::cerr << "quadc: no main module found" << std::endl;
+			return 1;
+		}
+
+		// Check if main function exists in main module
+		bool hasMainFunction = false;
+		for (size_t i = 0; i < mainRoot->childCount(); i++) {
+			Qd::IAstNode* child = mainRoot->child(i);
+			if (child && child->type() == Qd::IAstNode::Type::FUNCTION_DECLARATION) {
+				auto* funcDecl = static_cast<Qd::AstNodeFunctionDeclaration*>(child);
+				if (funcDecl->name() == "main") {
+					hasMainFunction = true;
+					break;
+				}
+			}
+		}
+
+		if (!hasMainFunction) {
+			std::cerr << "quadc: error: no 'main' function found in main module" << std::endl;
+			std::cerr << "quadc: note: a Quadrate program must have a 'main' function as the entry point" << std::endl;
 			return 1;
 		}
 
