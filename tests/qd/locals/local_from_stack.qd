@@ -1,0 +1,10 @@
+// Test popping values from stack into local variables
+fn helper( x:i y:i -- z:i ) {
+    -> b
+    -> a
+    a b add
+}
+
+fn main( -- ) {
+    10 20 helper . nl
+}

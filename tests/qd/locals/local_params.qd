@@ -1,0 +1,12 @@
+// Test using stack parameters as local variables
+fn calculate( a:i b:i c:i -- result:i ) {
+    -> z
+    -> y
+    -> x
+    // Now compute: x * y + z
+    x y mul z add
+}
+
+fn main( -- ) {
+    5 3 2 calculate . nl
+}
