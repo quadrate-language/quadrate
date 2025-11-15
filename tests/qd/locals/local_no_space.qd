@@ -1,0 +1,5 @@
+// Test local variable without space before arrow
+fn main( -- ) {
+    15-> value
+    value . nl
+}

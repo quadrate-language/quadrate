@@ -1,0 +1,7 @@
+// Test using local variable in arithmetic operations
+fn main( -- ) {
+    10 -> x
+    x 5 add . nl
+    x 3 mul . nl
+    x 2 sub . nl
+}

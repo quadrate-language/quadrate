@@ -27,6 +27,7 @@
 #include <qc/ast_node_import.h>
 #include <qc/ast_node_instruction.h>
 #include <qc/ast_node_literal.h>
+#include <qc/ast_node_local.h>
 #include <qc/ast_node_loop.h>
 #include <qc/ast_node_return.h>
 #include <qc/ast_node_scoped.h>
@@ -114,6 +115,9 @@ namespace Qd {
 		// Counter for unique variable names
 		int varCounter = 0;
 
+		// Local variables (per function scope): name -> alloca instruction
+		std::map<std::string, llvm::AllocaInst*> localVariables;
+
 		Impl(const std::string& moduleName) {
 			context = std::make_unique<llvm::LLVMContext>();
 			module = std::make_unique<llvm::Module>(moduleName, *context);
@@ -134,6 +138,8 @@ namespace Qd {
 		void generateFunctionPointer(AstNodeFunctionPointerReference* funcPtr, llvm::Value* ctx);
 		void generateScopedIdentifier(AstNodeScopedIdentifier* scopedIdent, llvm::Value* ctx);
 		void generateSwitchStatement(AstNodeSwitchStatement* switchStmt, llvm::Value* ctx, llvm::Value* forIterVar);
+		void generateLocal(AstNodeLocal* local, llvm::Value* ctx);
+		void generateLocalCleanup();
 	};
 
 	void LlvmGenerator::Impl::setupRuntimeDeclarations() {
@@ -475,6 +481,62 @@ namespace Qd {
 
 	void LlvmGenerator::Impl::generateIdentifier(AstNodeIdentifier* ident, llvm::Value* ctx, llvm::Value* forIterVar) {
 		const std::string& name = ident->name();
+
+		// Check if it's a local variable
+		auto localIt = localVariables.find(name);
+		if (localIt != localVariables.end()) {
+			// Load from local variable and push to runtime stack
+			llvm::AllocaInst* localAlloca = localIt->second;
+
+			// Extract type field (field index 1 in qd_stack_element_t)
+			llvm::Value* typePtr = builder->CreateStructGEP(stackElementTy, localAlloca, 1, name + "_type_ptr");
+			llvm::Value* type = builder->CreateLoad(builder->getInt32Ty(), typePtr, name + "_type");
+
+			// Switch on type and push appropriate value
+			llvm::Value* valuePtr = builder->CreateStructGEP(stackElementTy, localAlloca, 0, name + "_value_ptr");
+
+			// Create basic blocks for each type
+			llvm::BasicBlock* intBlock = llvm::BasicBlock::Create(*context, "local_int", builder->GetInsertBlock()->getParent());
+			llvm::BasicBlock* floatBlock =
+					llvm::BasicBlock::Create(*context, "local_float", builder->GetInsertBlock()->getParent());
+			llvm::BasicBlock* strBlock = llvm::BasicBlock::Create(*context, "local_str", builder->GetInsertBlock()->getParent());
+			llvm::BasicBlock* ptrBlock = llvm::BasicBlock::Create(*context, "local_ptr", builder->GetInsertBlock()->getParent());
+			llvm::BasicBlock* endBlock = llvm::BasicBlock::Create(*context, "local_end", builder->GetInsertBlock()->getParent());
+
+			llvm::SwitchInst* switchInst = builder->CreateSwitch(type, endBlock, 4);
+			switchInst->addCase(builder->getInt32(0), intBlock); // QD_STACK_TYPE_INT = 0
+			switchInst->addCase(builder->getInt32(1), floatBlock); // QD_STACK_TYPE_FLOAT = 1
+			switchInst->addCase(builder->getInt32(2), ptrBlock); // QD_STACK_TYPE_PTR = 2
+			switchInst->addCase(builder->getInt32(3), strBlock); // QD_STACK_TYPE_STR = 3
+
+			// INT block: load i64 and push
+			builder->SetInsertPoint(intBlock);
+			llvm::Value* intVal = builder->CreateLoad(builder->getInt64Ty(), valuePtr, name + "_i");
+			builder->CreateCall(pushIntFn, {ctx, intVal});
+			builder->CreateBr(endBlock);
+
+			// FLOAT block: load double and push
+			builder->SetInsertPoint(floatBlock);
+			llvm::Value* floatVal = builder->CreateLoad(builder->getDoubleTy(), valuePtr, name + "_f");
+			builder->CreateCall(pushFloatFn, {ctx, floatVal});
+			builder->CreateBr(endBlock);
+
+			// STR block: load char* and push
+			builder->SetInsertPoint(strBlock);
+			llvm::Value* strVal = builder->CreateLoad(llvm::PointerType::getUnqual(*context), valuePtr, name + "_s");
+			builder->CreateCall(pushStrFn, {ctx, strVal});
+			builder->CreateBr(endBlock);
+
+			// PTR block: load void* and push
+			builder->SetInsertPoint(ptrBlock);
+			llvm::Value* ptrVal = builder->CreateLoad(llvm::PointerType::getUnqual(*context), valuePtr, name + "_p");
+			builder->CreateCall(pushPtrFn, {ctx, ptrVal});
+			builder->CreateBr(endBlock);
+
+			// Continue after type switch
+			builder->SetInsertPoint(endBlock);
+			return;
+		}
 
 		// Check if it's the loop iterator variable ($)
 		if (name == "$" && forIterVar) {
@@ -929,6 +991,87 @@ namespace Qd {
 		builder->SetInsertPoint(skipFreeBB);
 	}
 
+	void LlvmGenerator::Impl::generateLocal(AstNodeLocal* local, llvm::Value* ctx) {
+		const std::string& name = local->name();
+
+		// Check if this variable already exists (reuse the alloca if so)
+		llvm::AllocaInst* localAlloca;
+		auto it = localVariables.find(name);
+		if (it != localVariables.end()) {
+			// Variable already exists, reuse it
+			localAlloca = it->second;
+		} else {
+			// Create alloca for the stack element in the entry block
+			llvm::Function* currentFn = builder->GetInsertBlock()->getParent();
+			llvm::IRBuilder<> tmpBuilder(&currentFn->getEntryBlock(), currentFn->getEntryBlock().begin());
+			localAlloca = tmpBuilder.CreateAlloca(stackElementTy, nullptr, name);
+
+			// Store in local variables map
+			localVariables[name] = localAlloca;
+		}
+
+		// Get the stack pointer from context
+		// Context layout: {qd_stack* st, int64_t error_code, char* error_msg, int argc, char** argv, char* program_name}
+		auto contextStructTy = llvm::StructType::get(*context,
+				{
+						llvm::PointerType::getUnqual(*context), // qd_stack* st
+						builder->getInt64Ty(),					// int64_t error_code
+						llvm::PointerType::getUnqual(*context), // char* error_msg
+						builder->getInt32Ty(),					// int argc
+						llvm::PointerType::getUnqual(*context), // char** argv
+						llvm::PointerType::getUnqual(*context)	// char* program_name
+				});
+
+		llvm::Value* stackPtrPtr = builder->CreateStructGEP(contextStructTy, ctx, 0, "stack_ptr");
+		llvm::Value* stackPtr = builder->CreateLoad(llvm::PointerType::getUnqual(*context), stackPtrPtr, "stack");
+
+		// Call qd_stack_pop to pop the value from the runtime stack
+		builder->CreateCall(stackPopFn, {stackPtr, localAlloca});
+
+		// TODO: Check result for errors (0 = success, non-zero = error)
+		// For now, we assume success
+	}
+
+	void LlvmGenerator::Impl::generateLocalCleanup() {
+		// Free any string locals to prevent memory leaks
+		// Iterate through all local variables and check their type
+		for (const auto& pair : localVariables) {
+			const std::string& varName = pair.first;
+			llvm::AllocaInst* localAlloca = pair.second;
+
+			// Load the type field to check if it's a string
+			llvm::Value* typePtr = builder->CreateStructGEP(stackElementTy, localAlloca, 1, varName + "_cleanup_type_ptr");
+			llvm::Value* type = builder->CreateLoad(builder->getInt32Ty(), typePtr, varName + "_cleanup_type");
+
+			// Create basic blocks for conditional free
+			llvm::Function* currentFn = builder->GetInsertBlock()->getParent();
+			llvm::BasicBlock* freeStrBlock = llvm::BasicBlock::Create(*context, varName + "_free_str", currentFn);
+			llvm::BasicBlock* skipFreeBlock = llvm::BasicBlock::Create(*context, varName + "_skip_free", currentFn);
+
+			// Check if type == QD_STACK_TYPE_STR (3)
+			llvm::Value* isString = builder->CreateICmpEQ(type, builder->getInt32(3), varName + "_is_str");
+			builder->CreateCondBr(isString, freeStrBlock, skipFreeBlock);
+
+			// Free string block
+			builder->SetInsertPoint(freeStrBlock);
+			llvm::Value* valuePtr = builder->CreateStructGEP(stackElementTy, localAlloca, 0, varName + "_cleanup_value_ptr");
+			llvm::Value* strPtr = builder->CreateLoad(llvm::PointerType::getUnqual(*context), valuePtr, varName + "_cleanup_str");
+
+			// Call free() on the string
+			// Create free function declaration if not exists
+			llvm::Function* freeFn = module->getFunction("free");
+			if (!freeFn) {
+				auto freeFnTy = llvm::FunctionType::get(builder->getVoidTy(), {llvm::PointerType::getUnqual(*context)}, false);
+				freeFn = llvm::Function::Create(freeFnTy, llvm::Function::ExternalLinkage, "free", *module);
+			}
+			builder->CreateCall(freeFn, {strPtr});
+			builder->CreateBr(skipFreeBlock);
+
+			// Skip free block
+			builder->SetInsertPoint(skipFreeBlock);
+		}
+	}
+
 	void LlvmGenerator::Impl::generateIf(AstNodeIfStatement* ifStmt, llvm::Value* ctx, llvm::Value* forIterVar) {
 		// Get current function
 		llvm::Function* currentFn = builder->GetInsertBlock()->getParent();
@@ -1191,6 +1334,9 @@ namespace Qd {
 		case IAstNode::Type::INSTRUCTION:
 			generateInstruction(static_cast<AstNodeInstruction*>(node), ctx);
 			break;
+		case IAstNode::Type::LOCAL:
+			generateLocal(static_cast<AstNodeLocal*>(node), ctx);
+			break;
 		case IAstNode::Type::IF_STATEMENT:
 			generateIf(static_cast<AstNodeIfStatement*>(node), ctx, forIterVar);
 			break;
@@ -1265,6 +1411,9 @@ namespace Qd {
 
 	bool LlvmGenerator::Impl::generateFunction(
 			AstNodeFunctionDeclaration* funcNode, bool isMain, const std::string& namePrefix) {
+		// Clear local variables for this function
+		localVariables.clear();
+
 		llvm::Function* fn = nullptr;
 
 		if (isMain) {
@@ -1337,6 +1486,9 @@ namespace Qd {
 			if (body) {
 				generateNode(body, ctx, nullptr);
 			}
+
+			// Clean up local variables (free strings)
+			generateLocalCleanup();
 
 			// Pop from call stack
 			builder->CreateCall(popCallFn, {ctx});
@@ -1511,6 +1663,9 @@ namespace Qd {
 
 			// Clear defer statements after use
 			currentDeferStatements.clear();
+
+			// Clean up local variables (free strings)
+			generateLocalCleanup();
 
 			// Pop function from call stack before returning
 			builder->CreateCall(popCallFn, {ctx});
@@ -1835,8 +1990,13 @@ namespace Qd {
 
 		// Check QUADRATE_LIBDIR environment variable first
 		if (const char* quadrateLibDir = std::getenv("QUADRATE_LIBDIR")) {
-			if (std::filesystem::exists(quadrateLibDir)) {
-				libDir = quadrateLibDir;
+			std::filesystem::path libPath(quadrateLibDir);
+			// Convert to absolute path if relative
+			if (libPath.is_relative()) {
+				libPath = std::filesystem::absolute(libPath);
+			}
+			if (std::filesystem::exists(libPath)) {
+				libDir = libPath.string();
 			}
 		}
 		// Check ./dist/lib (development build) - use absolute path
@@ -1875,16 +2035,49 @@ namespace Qd {
 		}
 
 		// Build library flags - link static libraries directly
-		std::string libraryFlags = libDir + "/libqdrt_static.a";
+		// Check for nested structure (build directory) first, then flat structure (dist)
+		std::string qdrtStaticPath;
+		std::string nestedPath = libDir + "/qdrt/libqdrt_static.a";
+		std::string flatPath = libDir + "/libqdrt_static.a";
+
+		if (std::filesystem::exists(nestedPath)) {
+			qdrtStaticPath = nestedPath;
+		} else if (std::filesystem::exists(flatPath)) {
+			qdrtStaticPath = flatPath;
+		} else {
+			// Fallback to flat path (will error later if doesn't exist)
+			qdrtStaticPath = flatPath;
+		}
+
+		std::string libraryFlags = qdrtStaticPath;
 
 		// Add imported libraries
 		for (const auto& library : impl->importedLibraries) {
 			// Check if it's already a .a file (static library)
 			if (library.size() >= 2 && library.substr(library.size() - 2) == ".a") {
 				// It's a static library, link it directly
-				std::string staticLib = libDir + "/" + library;
-				if (std::filesystem::exists(staticLib)) {
-					libraryFlags += " " + staticLib;
+				std::string flatLib = libDir + "/" + library;
+
+				// Extract library name for nested search
+				// Examples: "libstdmathqd_static.a" -> "stdmathqd", "libqdrt_static.a" -> "qdrt"
+				std::string libBaseName = library;
+				if (libBaseName.rfind("lib", 0) == 0) {
+					libBaseName = libBaseName.substr(3);  // Remove "lib" prefix
+				}
+				// Remove ".a" suffix first
+				if (libBaseName.size() > 2 && libBaseName.substr(libBaseName.size() - 2) == ".a") {
+					libBaseName = libBaseName.substr(0, libBaseName.size() - 2);
+				}
+				// Remove "_static" suffix if present
+				if (libBaseName.size() > 7 && libBaseName.substr(libBaseName.size() - 7) == "_static") {
+					libBaseName = libBaseName.substr(0, libBaseName.size() - 7);
+				}
+				std::string nestedLib = libDir + "/" + libBaseName + "/" + library;
+
+				if (std::filesystem::exists(flatLib)) {
+					libraryFlags += " " + flatLib;
+				} else if (std::filesystem::exists(nestedLib)) {
+					libraryFlags += " " + nestedLib;
 				} else {
 					// Try without libDir prefix
 					libraryFlags += " " + library;

@@ -1,0 +1,5 @@
+// Test local variable with float values
+fn main( -- ) {
+    3.14 -> pi
+    pi 2.0 mul . nl
+}

@@ -1,0 +1,9 @@
+// Test multiple local variables
+fn main( -- ) {
+    10 -> x
+    20 -> y
+    30 -> z
+    x y add . nl
+    y z add . nl
+    x z add . nl
+}

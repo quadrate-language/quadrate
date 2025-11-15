@@ -13,6 +13,7 @@
 #include <qc/ast_node_import.h>
 #include <qc/ast_node_instruction.h>
 #include <qc/ast_node_literal.h>
+#include <qc/ast_node_local.h>
 #include <qc/ast_node_parameter.h>
 #include <qc/ast_node_scoped.h>
 #include <qc/ast_node_switch.h>
@@ -776,7 +777,20 @@ namespace Qd {
 	}
 
 	void SemanticValidator::validateReferences(IAstNode* node, bool insideForLoop) {
+		std::unordered_set<std::string> localVariables;
+		validateReferencesInternal(node, insideForLoop, localVariables);
+	}
+
+	void SemanticValidator::validateReferencesInternal(
+			IAstNode* node, bool insideForLoop, std::unordered_set<std::string>& localVariables) {
 		if (!node) {
+			return;
+		}
+
+		// Check if this is a local variable declaration
+		if (node->type() == IAstNode::Type::LOCAL) {
+			AstNodeLocal* local = static_cast<AstNodeLocal*>(node);
+			localVariables.insert(local->name());
 			return;
 		}
 
@@ -824,7 +838,7 @@ namespace Qd {
 			}
 		}
 
-		// Check if this is an identifier (function call)
+		// Check if this is an identifier (function call or local variable reference)
 		if (node->type() == IAstNode::Type::IDENTIFIER) {
 			AstNodeIdentifier* ident = static_cast<AstNodeIdentifier*>(node);
 			const char* name = ident->name().c_str();
@@ -834,6 +848,12 @@ namespace Qd {
 				if (!insideForLoop) {
 					reportError(ident, "Iterator variable '$' can only be used inside a for loop");
 				}
+				return;
+			}
+
+			// Check if it's a local variable
+			if (localVariables.find(name) != localVariables.end()) {
+				// Valid local variable reference
 				return;
 			}
 
@@ -940,7 +960,7 @@ namespace Qd {
 
 		// Recursively process children
 		for (size_t i = 0; i < node->childCount(); i++) {
-			validateReferences(node->child(i), childrenInsideForLoop);
+			validateReferencesInternal(node->child(i), childrenInsideForLoop, localVariables);
 		}
 	}
 
@@ -1089,6 +1109,7 @@ namespace Qd {
 		if (node->type() == IAstNode::Type::FUNCTION_DECLARATION) {
 			AstNodeFunctionDeclaration* func = static_cast<AstNodeFunctionDeclaration*>(node);
 			std::vector<StackValueType> typeStack;
+			std::unordered_map<std::string, StackValueType> localVariables;
 
 			// Initialize type stack with input parameters
 			// Input parameters are on the stack when the function starts
@@ -1110,7 +1131,7 @@ namespace Qd {
 
 			// Type check the function body
 			if (func->body()) {
-				typeCheckBlock(func->body(), typeStack);
+				typeCheckBlock(func->body(), typeStack, localVariables);
 			}
 		}
 
@@ -1120,7 +1141,8 @@ namespace Qd {
 		}
 	}
 
-	void SemanticValidator::typeCheckBlock(IAstNode* node, std::vector<StackValueType>& typeStack) {
+	void SemanticValidator::typeCheckBlock(IAstNode* node, std::vector<StackValueType>& typeStack,
+			std::unordered_map<std::string, StackValueType>& localVariables) {
 		if (!node) {
 			return;
 		}
@@ -1157,7 +1179,7 @@ namespace Qd {
 
 			case IAstNode::Type::BLOCK: {
 				// Recursively check nested blocks
-				typeCheckBlock(child, typeStack);
+				typeCheckBlock(child, typeStack, localVariables);
 				break;
 			}
 
@@ -1173,10 +1195,39 @@ namespace Qd {
 				break;
 			}
 
+			case IAstNode::Type::LOCAL: {
+				// Handle local variable declaration: pop value from stack and store
+				AstNodeLocal* local = static_cast<AstNodeLocal*>(child);
+				const std::string& varName = local->name();
+
+				// Check if stack is empty
+				if (typeStack.empty()) {
+					std::string errorMsg = "Type error in local variable '";
+					errorMsg += varName;
+					errorMsg += "': Stack underflow (no value to store)";
+					reportError(local, errorMsg.c_str());
+					break;
+				}
+
+				// Pop the value type from the stack and store it as the variable's type
+				StackValueType varType = typeStack.back();
+				typeStack.pop_back();
+				localVariables[varName] = varType;
+				break;
+			}
+
 			case IAstNode::Type::IDENTIFIER: {
 				// Handle function calls - apply their stack effect
 				AstNodeIdentifier* ident = static_cast<AstNodeIdentifier*>(child);
 				const std::string& name = ident->name();
+
+				// Check if it's a local variable reference
+				auto localIt = localVariables.find(name);
+				if (localIt != localVariables.end()) {
+					// Push the local variable's type onto the stack
+					typeStack.push_back(localIt->second);
+					break;
+				}
 
 				// Check if this is a user-defined function
 				auto sigIt = mFunctionSignatures.find(name);

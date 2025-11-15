@@ -1,0 +1,7 @@
+// Test overwriting a local variable
+fn main( -- ) {
+    10 -> x
+    x . nl
+    20 -> x
+    x . nl
+}

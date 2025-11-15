@@ -18,6 +18,7 @@
 #include <qc/ast_node_instruction.h>
 #include "ast_node_label.h"
 #include <qc/ast_node_literal.h>
+#include <qc/ast_node_local.h>
 #include <qc/ast_node_loop.h>
 #include <qc/ast_node_parameter.h>
 #include <qc/ast_node_program.h>
@@ -181,6 +182,18 @@ namespace Qd {
 	// Helper to check if a token is an operator alias and create the corresponding instruction node
 	// Returns the instruction node if it's an operator, nullptr otherwise
 	static IAstNode* tryParseOperatorAlias(char32_t token, u8t_scanner* scanner, const char* src) {
+		// Special handling for '-' to check for '->' (local variable declaration)
+		if (token == '-') {
+			// Check if the next character in source is '>' (forming '->')
+			size_t tokenStart = u8t_scanner_token_start(scanner);
+			size_t tokenLen = u8t_scanner_token_len(scanner);
+			size_t tokenEnd = tokenStart + tokenLen;
+			// If character immediately after '-' is '>', this is NOT subtraction
+			if (tokenEnd < strlen(src) && src[tokenEnd] == '>') {
+				return nullptr; // Not an operator alias, will be handled as local declaration
+			}
+		}
+
 		// Map of operator tokens to their instruction names
 		static const struct {
 			char32_t token;
@@ -250,6 +263,28 @@ namespace Qd {
 		IAstNode* opNode = tryParseOperatorAlias(token, scanner, src);
 		if (opNode != nullptr) {
 			return opNode;
+		}
+
+		// If tryParseOperatorAlias returned nullptr for '-', check if it's '->' (local variable)
+		if (token == '-') {
+			size_t tokenStart = u8t_scanner_token_start(scanner);
+			size_t tokenLen = u8t_scanner_token_len(scanner);
+			size_t tokenEnd = tokenStart + tokenLen;
+			if (tokenEnd < strlen(src) && src[tokenEnd] == '>') {
+				// This is '-> variableName'
+				u8t_scanner_scan(scanner); // Consume '>'
+				char32_t nextToken = u8t_scanner_scan(scanner); // Get variable name
+				if (nextToken == U8T_IDENTIFIER) {
+					const char* varName = u8t_scanner_token_text(scanner, n);
+					IAstNode* node = new AstNodeLocal(std::string(varName));
+					size_t line, column;
+					calculateLineColumn(src, tokenStart, &line, &column);
+					node->setPosition(line, column);
+					return node;
+				}
+				// If not followed by identifier, return nullptr (error will be handled by caller)
+				return nullptr;
+			}
 		}
 
 		if (token == '<') {
@@ -468,6 +503,35 @@ namespace Qd {
 	// allowControlFlow: if false, only allows break/continue but not if/for/switch
 	static IAstNode* parseBlockStatement(char32_t token, u8t_scanner* scanner, ErrorReporter* errorReporter, size_t* n,
 			const char* src, bool allowControlFlow) {
+		// Handle local variable declaration: -> variableName
+		// Check this early before other token processing
+		if (token == '-') {
+			// Check if the next character in source is '>' (forming '->')
+			// We need to look at the actual source position, not the next token
+			size_t tokenStart = u8t_scanner_token_start(scanner);
+			size_t tokenLen = u8t_scanner_token_len(scanner);
+			size_t tokenEnd = tokenStart + tokenLen;
+			// Check if character immediately after '-' is '>'
+			if (tokenEnd < strlen(src) && src[tokenEnd] == '>') {
+				// This is a local declaration: -> variableName
+				size_t arrowPos = tokenStart;
+				u8t_scanner_scan(scanner); // Consume '>'
+				token = u8t_scanner_scan(scanner); // Get next token (should be identifier)
+				if (token == U8T_IDENTIFIER) {
+					const char* varName = u8t_scanner_token_text(scanner, n);
+					IAstNode* node = new AstNodeLocal(std::string(varName));
+					size_t line, column;
+					calculateLineColumn(src, arrowPos, &line, &column);
+					node->setPosition(line, column);
+					return node;
+				} else {
+					errorReporter->reportError(scanner, "Expected variable name after '->'");
+					return nullptr;
+				}
+			}
+			// Not a local declaration, fall through to handle as subtraction
+		}
+
 		if (token == U8T_IDENTIFIER) {
 			const char* text = u8t_scanner_token_text(scanner, n);
 
@@ -1089,6 +1153,26 @@ namespace Qd {
 			IAstNode* opNode = tryParseOperatorAlias(token, scanner, src);
 			if (opNode != nullptr) {
 				tempNodes.push_back(opNode);
+			} else if (token == '-') {
+				// Check if this is '-> variableName' (local variable)
+				size_t tokenStart = u8t_scanner_token_start(scanner);
+				size_t tokenLen = u8t_scanner_token_len(scanner);
+				size_t tokenEnd = tokenStart + tokenLen;
+				if (tokenEnd < strlen(src) && src[tokenEnd] == '>') {
+					// This is '-> variableName'
+					u8t_scanner_scan(scanner); // Consume '>'
+					char32_t nextToken = u8t_scanner_scan(scanner); // Get variable name
+					if (nextToken == U8T_IDENTIFIER) {
+						const char* varName = u8t_scanner_token_text(scanner, &n);
+						IAstNode* node = new AstNodeLocal(std::string(varName));
+						size_t line, column;
+						calculateLineColumn(src, tokenStart, &line, &column);
+						node->setPosition(line, column);
+						tempNodes.push_back(node);
+					} else {
+						errorReporter->reportError(scanner, "Expected variable name after '->'");
+					}
+				}
 			} else if (token == '<') {
 				// Check if next token is '=' for '<='
 				char32_t nextToken = u8t_scanner_peek(scanner);

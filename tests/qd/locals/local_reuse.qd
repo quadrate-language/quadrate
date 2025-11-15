@@ -1,0 +1,6 @@
+// Test using the same local variable multiple times
+fn main( -- ) {
+    5 -> x
+    x x add . nl
+    x x x add add . nl
+}

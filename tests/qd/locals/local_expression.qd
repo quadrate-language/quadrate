@@ -1,0 +1,7 @@
+// Test storing result of expression in local variable
+fn main( -- ) {
+    5 3 add -> result
+    result . nl
+    10 2 mul -> doubled
+    doubled . nl
+}

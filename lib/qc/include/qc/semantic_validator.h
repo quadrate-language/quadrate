@@ -85,13 +85,16 @@ namespace Qd {
 
 		// Pass 2: Validate all function calls and references
 		void validateReferences(IAstNode* node, bool insideForLoop = false);
+		void validateReferencesInternal(
+				IAstNode* node, bool insideForLoop, std::unordered_set<std::string>& localVariables);
 
 		// Pass 3a: Analyze function signatures (what each function consumes/produces)
 		void analyzeFunctionSignatures(IAstNode* node);
 
 		// Pass 3b: Type check the AST
 		void typeCheckFunction(IAstNode* node);
-		void typeCheckBlock(IAstNode* node, std::vector<StackValueType>& typeStack);
+		void typeCheckBlock(IAstNode* node, std::vector<StackValueType>& typeStack,
+				std::unordered_map<std::string, StackValueType>& localVariables);
 		void typeCheckInstruction(IAstNode* node, const char* name, std::vector<StackValueType>& typeStack);
 
 		// Helper: Analyze a block in isolation (for determining function signatures)

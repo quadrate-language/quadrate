@@ -1,0 +1,5 @@
+// Test basic local variable storage and retrieval
+fn main( -- ) {
+    42 -> x
+    x . nl
+}

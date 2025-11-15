@@ -7,6 +7,7 @@
 #include <qc/ast_node_instruction.h>
 #include "ast_node_label.h"
 #include <qc/ast_node_literal.h>
+#include <qc/ast_node_local.h>
 #include <qc/ast_node_parameter.h>
 #include <qc/ast_node_program.h>
 #include <qc/ast_node_scoped.h>
@@ -65,6 +66,8 @@ namespace Qd {
 			return "ConstantDeclaration";
 		case IAstNode::Type::LABEL:
 			return "Label";
+		case IAstNode::Type::LOCAL:
+			return "Local";
 		default:
 			return "Unknown";
 		}
@@ -124,6 +127,12 @@ namespace Qd {
 			printf(",");
 			printf("\"name\":\"");
 			escapeJsonString(instr->name().c_str());
+			printf("\"");
+		} else if (node->type() == IAstNode::Type::LOCAL) {
+			const AstNodeLocal* local = static_cast<const AstNodeLocal*>(node);
+			printf(",");
+			printf("\"name\":\"");
+			escapeJsonString(local->name().c_str());
 			printf("\"");
 		} else if (node->type() == IAstNode::Type::SCOPED_IDENTIFIER) {
 			const AstNodeScopedIdentifier* scoped = static_cast<const AstNodeScopedIdentifier*>(node);

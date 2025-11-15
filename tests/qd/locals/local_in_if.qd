@@ -1,0 +1,9 @@
+// Test local variable with if statement
+fn main( -- ) {
+    10 -> x
+    x 5 gt if {
+        x . nl
+    } else {
+        0 . nl
+    }
+}
