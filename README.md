@@ -114,9 +114,63 @@ make examples  # Build example programs
 
 ## Tools
 
-- **quadc** - Compiler (`-r` to run, `-o name` for output)
+- **quadc** - Compiler (`-r` to run, `-o name` for output, `-g` for debug info)
 - **quadfmt** - Code formatter
 - **quadlsp** - Language server for IDE integration
+- **quadrepl** - Interactive REPL for quick experimentation
+- **quaduses** - Show module dependencies and usage
+
+## Interactive REPL
+
+Experiment with Quadrate interactively:
+
+```bash
+$ quadrepl
+Quadrate REPL v0.1.0
+Type 'help' for commands, 'exit' to quit
+
+> 5 3 add
+8
+> dup mul
+64
+> .s
+Stack (1 element): 64
+> clear
+> "Hello" " " "World" cat cat
+"Hello World"
+```
+
+REPL commands:
+- `.s` - Show current stack
+- `clear` - Clear the stack
+- `help` - Show available commands
+- `exit` or `Ctrl-D` - Exit REPL
+
+## Debugging
+
+Quadrate programs can be debugged with GDB or LLDB:
+
+```bash
+# Compile with debug information
+quadc myprogram.qd -g -o myprogram
+
+# Debug with GDB
+gdb ./myprogram
+```
+
+Inside GDB:
+```gdb
+(gdb) break 5              # Break at line 5
+(gdb) run
+(gdb) print ctx->st->size  # Check stack size
+(gdb) call (void)qd_debug_print_stack(ctx)  # Pretty-print the stack
+```
+
+The `-g` flag generates DWARF debug info with:
+- Source-level debugging (step through `.qd` files)
+- Breakpoints on line numbers and functions
+- Stack inspection via `ctx` variable
+- Full integration with IDE debuggers
 
 ## Installation
 
