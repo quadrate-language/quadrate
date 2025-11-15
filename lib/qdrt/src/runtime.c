@@ -3094,3 +3094,73 @@ void qd_print_stack_trace(qd_context* ctx) {
 		fprintf(stderr, "  %zu: %s\n", ctx->call_stack_depth - i, ctx->call_stack[i - 1]);
 	}
 }
+
+void qd_debug_print_stack(qd_context* ctx) {
+	if (!ctx || !ctx->st) {
+		fprintf(stderr, "Error: Invalid context\n");
+		return;
+	}
+
+	size_t stack_size = qd_stack_size(ctx->st);
+
+	// Check NO_COLOR environment variable
+	const bool use_color = getenv("NO_COLOR") == NULL;
+	const char* color_blue = use_color ? "\x1b[1;34m" : "";
+	const char* color_green = use_color ? "\x1b[0;32m" : "";
+	const char* color_yellow = use_color ? "\x1b[0;33m" : "";
+	const char* color_cyan = use_color ? "\x1b[0;36m" : "";
+	const char* color_end = use_color ? "\x1b[0m" : "";
+
+	fprintf(stderr, "\n%s=== Data Stack ===%s\n", color_blue, color_end);
+	fprintf(stderr, "Size: %zu element%s\n", stack_size, stack_size == 1 ? "" : "s");
+
+	if (stack_size == 0) {
+		fprintf(stderr, "(empty)\n");
+		return;
+	}
+
+	fprintf(stderr, "\nTop of stack (most recent):\n");
+	fprintf(stderr, "  %sIdx%s  %sType%s     %sValue%s\n", color_blue, color_end, color_green, color_end, color_yellow, color_end);
+	fprintf(stderr, "  ----------------------------------------\n");
+
+	// Print from top (most recent) to bottom
+	for (size_t i = stack_size; i > 0; i--) {
+		qd_stack_element_t elem;
+		qd_stack_error err = qd_stack_element(ctx->st, i - 1, &elem);
+		if (err != QD_STACK_OK) {
+			fprintf(stderr, "  [%zu]: <error reading element>\n", i - 1);
+			continue;
+		}
+
+		fprintf(stderr, "  %s[%2zu]%s ", color_blue, i - 1, color_end);
+
+		switch (elem.type) {
+		case QD_STACK_TYPE_INT:
+			fprintf(stderr, "%sint    %s %s%ld%s\n", color_green, color_end, color_yellow, elem.value.i, color_end);
+			break;
+		case QD_STACK_TYPE_FLOAT:
+			fprintf(stderr, "%sfloat  %s %s%g%s\n", color_green, color_end, color_yellow, elem.value.f, color_end);
+			break;
+		case QD_STACK_TYPE_STR:
+			if (elem.value.s) {
+				// Truncate long strings
+				if (strlen(elem.value.s) > 40) {
+					fprintf(stderr, "%sstring %s %s\"%.37s...\"%s\n", color_green, color_end, color_cyan, elem.value.s, color_end);
+				} else {
+					fprintf(stderr, "%sstring %s %s\"%s\"%s\n", color_green, color_end, color_cyan, elem.value.s, color_end);
+				}
+			} else {
+				fprintf(stderr, "%sstring %s %s<null>%s\n", color_green, color_end, color_cyan, color_end);
+			}
+			break;
+		case QD_STACK_TYPE_PTR:
+			fprintf(stderr, "%sptr    %s %s%p%s\n", color_green, color_end, color_yellow, elem.value.p, color_end);
+			break;
+		default:
+			fprintf(stderr, "<unknown type %d>\n", elem.type);
+			break;
+		}
+	}
+	fprintf(stderr, "Bottom of stack (oldest)\n");
+	fprintf(stderr, "\n");
+}

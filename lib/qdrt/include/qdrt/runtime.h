@@ -634,6 +634,16 @@ void qd_pop_call(qd_context* ctx);
  */
 void qd_print_stack_trace(qd_context* ctx);
 
+/**
+ * @brief Print the data stack contents for debugging
+ *
+ * Prints all values currently on the data stack to stderr.
+ * Useful for debugging in GDB: call qd_debug_print_stack(ctx)
+ *
+ * @param ctx Execution context
+ */
+void qd_debug_print_stack(qd_context* ctx);
+
 /** @} */ // end of CallStack group
 
 #ifdef __cplusplus

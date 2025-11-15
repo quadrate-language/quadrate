@@ -60,6 +60,7 @@ namespace Qd {
 		std::vector<llvm::DIScope*> debugScopeStack;
 		bool debugInfoEnabled = false;
 		std::string sourceFileName;
+		llvm::DIType* contextDebugType = nullptr;
 
 		// Runtime types
 		llvm::Type* contextPtrTy = nullptr;
@@ -254,6 +255,86 @@ namespace Qd {
 
 			// Initialize scope stack with compile unit
 			debugScopeStack.push_back(compileUnit);
+
+			// Create complete qd_context struct definition for debugging
+			// This allows GDB to inspect ctx members like ctx->st->size
+
+			// First create basic debug types
+			auto int64Type = debugBuilder->createBasicType("int64_t", 64, llvm::dwarf::DW_ATE_signed);
+			auto charPtrType = debugBuilder->createPointerType(
+					debugBuilder->createBasicType("char", 8, llvm::dwarf::DW_ATE_signed_char), 64);
+			auto intType = debugBuilder->createBasicType("int", 32, llvm::dwarf::DW_ATE_signed);
+			auto sizeType = debugBuilder->createBasicType("size_t", 64, llvm::dwarf::DW_ATE_unsigned);
+
+			// Create qd_stack_element_t union (simplified - just show as 64-bit int)
+			auto stackElemType = debugBuilder->createStructType(
+					compileUnit, "qd_stack_element_t", debugFile, 0,
+					128, 64, llvm::DINode::FlagZero, nullptr,
+					debugBuilder->getOrCreateArray({}));
+
+			// Create qd_stack struct with data, capacity, size
+			llvm::SmallVector<llvm::Metadata*, 3> stackFields;
+			auto stackElemPtrType = debugBuilder->createPointerType(stackElemType, 64);
+			stackFields.push_back(debugBuilder->createMemberType(
+					compileUnit, "data", debugFile, 0, 64, 64, 0,
+					llvm::DINode::FlagZero, stackElemPtrType));
+			stackFields.push_back(debugBuilder->createMemberType(
+					compileUnit, "capacity", debugFile, 0, 64, 64, 64,
+					llvm::DINode::FlagZero, sizeType));
+			stackFields.push_back(debugBuilder->createMemberType(
+					compileUnit, "size", debugFile, 0, 64, 64, 128,
+					llvm::DINode::FlagZero, sizeType));
+
+			auto stackType = debugBuilder->createStructType(
+					compileUnit, "qd_stack", debugFile, 0,
+					192, 64, llvm::DINode::FlagZero, nullptr,
+					debugBuilder->getOrCreateArray(stackFields));
+
+			auto stackPtrType = debugBuilder->createPointerType(stackType, 64);
+
+			// Create qd_context struct
+			llvm::SmallVector<llvm::Metadata*, 8> contextFields;
+
+			// qd_stack* st
+			contextFields.push_back(debugBuilder->createMemberType(
+					compileUnit, "st", debugFile, 0, 64, 64, 0,
+					llvm::DINode::FlagZero, stackPtrType));
+
+			// int64_t error_code
+			contextFields.push_back(debugBuilder->createMemberType(
+					compileUnit, "error_code", debugFile, 0, 64, 64, 64,
+					llvm::DINode::FlagZero, int64Type));
+
+			// char* error_msg
+			contextFields.push_back(debugBuilder->createMemberType(
+					compileUnit, "error_msg", debugFile, 0, 64, 64, 128,
+					llvm::DINode::FlagZero, charPtrType));
+
+			// int argc
+			contextFields.push_back(debugBuilder->createMemberType(
+					compileUnit, "argc", debugFile, 0, 32, 32, 192,
+					llvm::DINode::FlagZero, intType));
+
+			// char** argv
+			auto charPtrPtrType = debugBuilder->createPointerType(charPtrType, 64);
+			contextFields.push_back(debugBuilder->createMemberType(
+					compileUnit, "argv", debugFile, 0, 64, 64, 256,
+					llvm::DINode::FlagZero, charPtrPtrType));
+
+			// char* program_name
+			contextFields.push_back(debugBuilder->createMemberType(
+					compileUnit, "program_name", debugFile, 0, 64, 64, 320,
+					llvm::DINode::FlagZero, charPtrType));
+
+			// call_stack array and call_stack_depth (simplified, not showing full array)
+			contextFields.push_back(debugBuilder->createMemberType(
+					compileUnit, "call_stack_depth", debugFile, 0, 64, 64, 384,
+					llvm::DINode::FlagZero, sizeType));
+
+			contextDebugType = debugBuilder->createStructType(
+					compileUnit, "qd_context", debugFile, 0,
+					448, 64, llvm::DINode::FlagZero, nullptr,
+					debugBuilder->getOrCreateArray(contextFields));
 		}
 	}
 
@@ -1209,6 +1290,31 @@ namespace Qd {
 			auto stackSize = builder->getInt64(DEFAULT_STACK_SIZE);
 			auto ctx = builder->CreateCall(createContextFn, {stackSize}, "ctx");
 
+			// Add debug info for ctx local variable in main
+			if (debugInfoEnabled && debugBuilder && !debugScopeStack.empty() && contextDebugType) {
+				// Create pointer to qd_context struct
+				auto ctxPtrType = debugBuilder->createPointerType(contextDebugType, 64);
+
+				// Create local variable for ctx
+				auto localVar = debugBuilder->createAutoVariable(
+						debugScopeStack.back(),              // Scope (main function)
+						"ctx",                                // Name
+						debugFile,                            // File
+						static_cast<unsigned>(funcNode->line()), // Line
+						ctxPtrType,                           // Type
+						true                                  // Always preserve
+				);
+
+				// Insert declare to make it visible in debugger
+				debugBuilder->insertDeclare(
+						ctx,                                  // Storage
+						localVar,                             // Variable
+						debugBuilder->createExpression(),     // Expression
+						llvm::DILocation::get(*context, static_cast<unsigned>(funcNode->line()), 0, debugScopeStack.back()),
+						builder->GetInsertBlock()
+				);
+			}
+
 			// Push "main::main" onto call stack for debugging
 			std::string fullFuncName = namePrefix + "::" + funcNode->name();
 			auto funcNameStr = builder->CreateGlobalString(fullFuncName);
@@ -1275,6 +1381,32 @@ namespace Qd {
 			// Get context parameter
 			auto ctx = fn->getArg(0);
 			ctx->setName("ctx");
+
+			// Add debug info for ctx parameter
+			if (debugInfoEnabled && debugBuilder && !debugScopeStack.empty() && contextDebugType) {
+				// Create pointer to qd_context struct
+				auto ctxPtrType = debugBuilder->createPointerType(contextDebugType, 64);
+
+				// Create parameter variable for ctx
+				auto paramVar = debugBuilder->createParameterVariable(
+						debugScopeStack.back(),              // Scope (current function)
+						"ctx",                                // Name
+						1,                                    // Argument number
+						debugFile,                            // File
+						static_cast<unsigned>(funcNode->line()), // Line
+						ctxPtrType,                           // Type
+						true                                  // Always preserve
+				);
+
+				// Insert declare to make it visible in debugger
+				debugBuilder->insertDeclare(
+						ctx,                                  // Storage
+						paramVar,                             // Variable
+						debugBuilder->createExpression(),     // Expression
+						llvm::DILocation::get(*context, static_cast<unsigned>(funcNode->line()), 0, debugScopeStack.back()),
+						builder->GetInsertBlock()
+				);
+			}
 
 			// Push function name onto call stack for debugging
 			std::string fullFuncName = namePrefix + "::" + funcNode->name();
