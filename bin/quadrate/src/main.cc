@@ -26,6 +26,11 @@
 #define COLOR_YELLOW "\033[33m"
 #define COLOR_BLUE "\033[34m"
 #define COLOR_CYAN "\033[36m"
+#define COLOR_MAGENTA "\033[35m"
+#define COLOR_RED "\033[31m"
+
+// Stack display settings
+#define MAX_STACK_DISPLAY 5  // Show only top N elements
 
 class ReplSession {
 public:
@@ -42,14 +47,44 @@ public:
 		printWelcome();
 
 		while (true) {
-			// Build prompt string
+			// Build prompt string with color coding and truncation
 			std::stringstream promptStr;
 			promptStr << COLOR_CYAN << "[";
-			for (size_t i = 0; i < stackValues.size(); i++) {
-				if (i > 0) promptStr << " ";
-				promptStr << stackValues[i];
+
+			size_t startIndex = 0;
+
+			// Truncate if stack is too large
+			if (stackValues.size() > MAX_STACK_DISPLAY) {
+				promptStr << COLOR_DIM << "..." << COLOR_RESET << " ";
+				startIndex = stackValues.size() - MAX_STACK_DISPLAY;
 			}
-			promptStr << "]> " << COLOR_RESET;
+
+			for (size_t i = startIndex; i < stackValues.size(); i++) {
+				if (i > startIndex) promptStr << " ";
+
+				// Color code by type
+				const std::string& val = stackValues[i];
+				if (val.length() > 0) {
+					if (val[0] == '"') {
+						// String literal - green
+						promptStr << COLOR_GREEN << val << COLOR_RESET;
+					} else if (val[0] == '&') {
+						// Function pointer - magenta
+						promptStr << COLOR_MAGENTA << val << COLOR_RESET;
+					} else if (val.find('.') != std::string::npos) {
+						// Float - yellow
+						promptStr << COLOR_YELLOW << val << COLOR_RESET;
+					} else if (val == "?") {
+						// Unknown - red
+						promptStr << COLOR_RED << val << COLOR_RESET;
+					} else {
+						// Integer or other - blue
+						promptStr << COLOR_BLUE << val << COLOR_RESET;
+					}
+				}
+			}
+
+			promptStr << COLOR_CYAN << "]> " << COLOR_RESET;
 
 			// Use readline for input with history support
 			char* input = readline(promptStr.str().c_str());
@@ -509,6 +544,9 @@ private:
 				}
 			} else if (token == "clear") {
 				stackValues.clear();
+			} else if (token == "depth") {
+				// Push stack depth onto stack
+				stackValues.push_back(std::to_string(stackValues.size()));
 			} else if (token == "inc") {
 				if (!stackValues.empty()) {
 					try {
@@ -719,6 +757,9 @@ private:
 			source << "\t" << line << "\n";
 		}
 
+		// Add stack depth check at the end to sync our simulation
+		source << "\tnl \"__DEPTH__\" prints depth printv\n";
+
 		source << "}\n";
 
 		std::string sourceCode = source.str();
@@ -804,13 +845,55 @@ private:
 		// Skip output from previous lines (we track how many output lines we've seen)
 		size_t newOutputStart = lastOutputLineCount;
 
-		for (size_t i = newOutputStart; i < outputLines.size(); i++) {
-			std::cout << outputLines[i] << std::endl;
+		// Extract actual stack depth and filter out depth markers in one pass
+		int actualDepth = -1;
+		std::vector<std::string> userOutput;
+
+		for (size_t i = 0; i < outputLines.size(); i++) {
+			if (outputLines[i] == "__DEPTH__") {
+				// Next line should be "int:N" with the actual depth
+				if (i + 1 < outputLines.size()) {
+					const std::string& depthLine = outputLines[i + 1];
+					if (depthLine.find("int:") == 0) {
+						try {
+							actualDepth = std::stoi(depthLine.substr(4));
+						} catch (...) {
+							// Failed to parse depth
+						}
+					}
+				}
+				// Skip this line and the next (int:N)
+				i++;
+			} else {
+				userOutput.push_back(outputLines[i]);
+			}
+		}
+
+		// Sync our simulated stack with actual depth
+		if (actualDepth >= 0) {
+			size_t simulatedDepth = stackValues.size();
+			if (actualDepth != static_cast<int>(simulatedDepth)) {
+				// Stack simulation is out of sync - adjust it
+				if (actualDepth > static_cast<int>(simulatedDepth)) {
+					// Actual stack has more elements - add unknowns
+					for (int i = static_cast<int>(simulatedDepth); i < actualDepth; i++) {
+						stackValues.push_back("?");
+					}
+				} else {
+					// Actual stack has fewer elements - truncate
+					stackValues.resize(static_cast<size_t>(actualDepth));
+				}
+			}
+		}
+
+		// Show only NEW user output
+		for (size_t i = newOutputStart; i < userOutput.size(); i++) {
+			std::cout << userOutput[i] << std::endl;
 		}
 		std::cout.flush();
 
-		// Remember total output lines for next time
-		lastOutputLineCount = outputLines.size();
+		// Remember total output lines for next time (user output only, depth markers filtered out)
+		lastOutputLineCount = userOutput.size();
 
 		return true;
 	}
