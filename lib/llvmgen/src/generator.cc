@@ -326,14 +326,26 @@ namespace Qd {
 					compileUnit, "program_name", debugFile, 0, 64, 64, 320,
 					llvm::DINode::FlagZero, charPtrType));
 
-			// call_stack array and call_stack_depth (simplified, not showing full array)
+			// const char* call_stack[256] - array at offset 48 bytes = 384 bits
+			auto callStackArrayType = debugBuilder->createArrayType(
+					16384,                          // Size in bits: 256 elements * 64 bits = 16384 bits
+					64,                             // Alignment in bits
+					charPtrType,                    // Element type
+					debugBuilder->getOrCreateArray({
+							debugBuilder->getOrCreateSubrange(0, 255)  // 256 elements (0-255)
+					}));
 			contextFields.push_back(debugBuilder->createMemberType(
-					compileUnit, "call_stack_depth", debugFile, 0, 64, 64, 384,
+					compileUnit, "call_stack", debugFile, 0, 16384, 64, 384,
+					llvm::DINode::FlagZero, callStackArrayType));
+
+			// size_t call_stack_depth - at offset 2096 bytes = 16768 bits
+			contextFields.push_back(debugBuilder->createMemberType(
+					compileUnit, "call_stack_depth", debugFile, 0, 64, 64, 16768,
 					llvm::DINode::FlagZero, sizeType));
 
 			contextDebugType = debugBuilder->createStructType(
 					compileUnit, "qd_context", debugFile, 0,
-					448, 64, llvm::DINode::FlagZero, nullptr,
+					16832, 64, llvm::DINode::FlagZero, nullptr,  // Total: 2104 bytes = 16832 bits
 					debugBuilder->getOrCreateArray(contextFields));
 		}
 	}
