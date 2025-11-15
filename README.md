@@ -20,7 +20,7 @@ make && sudo make install
 Hello World (`hello.qd`):
 ```rust
 fn main() {
-    "Hello, World!" print nl
+    "Hello, World!" .  nl
 }
 ```
 
@@ -35,7 +35,7 @@ quadc hello.qd -r
 ```rust
 fn main() {
     5 3 +       // Push 5, push 3, add them
-    print nl    // Print result (8) and newline
+    . nl        // Print result (8) and newline
 }
 ```
 
@@ -46,7 +46,7 @@ fn square( x:float -- result:float ) {
 }
 
 fn main() {
-    7.0 square print nl    // Prints 49.0
+    7.0 square . nl    // Prints 49.0
 }
 ```
 
@@ -54,9 +54,9 @@ fn main() {
 ```rust
 fn main() {
     10 5 > if {
-        "10 is greater" print nl
+        "10 is greater" . nl
     } else {
-        "5 is greater" print nl
+        "5 is greater" . nl
     }
 }
 ```
@@ -65,7 +65,7 @@ fn main() {
 ```rust
 fn main() {
     0 10 1 for {
-        $ print nl    // $ is the loop counter
+        $ . nl    // $ is the loop counter
     }
 }
 ```
