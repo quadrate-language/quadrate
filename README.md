@@ -125,23 +125,19 @@ make examples  # Build example programs
 Experiment with Quadrate interactively:
 
 ```bash
-$ quadrepl
+$ quadrate
 Quadrate REPL v0.1.0
 Type 'help' for commands, 'exit' to quit
 
-> 5 3 add
-8
-> dup mul
-64
-> .s
-Stack (1 element): 64
-> clear
-> "Hello" " " "World" cat cat
-"Hello World"
+[]> 5 3
+[5 3]> add
+[8]> dup
+[8 8]> mul
+[64]> clear
+[]>
 ```
 
 REPL commands:
-- `.s` - Show current stack
 - `clear` - Clear the stack
 - `help` - Show available commands
 - `exit` or `Ctrl-D` - Exit REPL
@@ -163,7 +159,6 @@ Inside GDB:
 (gdb) break 5              # Break at line 5
 (gdb) run
 (gdb) print ctx->st->size  # Check stack size
-(gdb) call (void)qd_debug_print_stack(ctx)  # Pretty-print the stack
 ```
 
 The `-g` flag generates DWARF debug info with:
