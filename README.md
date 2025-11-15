@@ -6,7 +6,7 @@ A stack-based programming language that compiles to native code.
 
 ## What is Quadrate?
 
-Quadrate is a Forth-inspired stack language with modern features: static typing, modules, and native compilation via LLVM. Values live on an explicit stack, and functions manipulate that stack directly.
+Quadrate is a Forth-inspired stack language with modern features: static typing, modules, and native code generation via LLVM. Values live on an explicit stack, and functions manipulate that stack directly.
 
 ## Quick Start
 
