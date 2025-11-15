@@ -41,7 +41,7 @@ fn main() {
 
 ### Function with Stack Signature
 ```rust
-fn square( x:float -- result:float ) {
+fn square( x:f -- result:f ) {
     dup *       // Duplicate x, multiply
 }
 
@@ -82,7 +82,7 @@ fn main() {
 
 **Functions**: Can have stack signatures showing inputs and outputs
 ```rust
-fn add( a:float b:float -- sum:float ) {
+fn add( a:f b:f -- sum:f ) {
     +
 }
 ```
