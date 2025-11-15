@@ -29,6 +29,7 @@ struct Options {
 	bool dumpTokens = false;
 	bool run = false;
 	bool dumpIR = false;
+	bool debugInfo = false;
 };
 
 void printHelp() {
@@ -39,6 +40,7 @@ void printHelp() {
 	std::cout << "  -h, --help         Show this help message\n";
 	std::cout << "  -v, --version      Show version information\n";
 	std::cout << "  -o <name>          Output executable name (default: main)\n";
+	std::cout << "  -g                 Generate debug information for GDB/LLDB\n";
 	std::cout << "  --save-temps       Keep temporary files for debugging\n";
 	std::cout << "  --verbose          Show detailed compilation steps\n";
 	std::cout << "  --dump-tokens      Print lexer tokens\n";
@@ -82,6 +84,8 @@ bool parseArgs(int argc, char* argv[], Options& opts) {
 			opts.run = true;
 		} else if (arg == "--dump-ir") {
 			opts.dumpIR = true;
+		} else if (arg == "-g") {
+			opts.debugInfo = true;
 		} else if (arg[0] == '-') {
 			std::cerr << "quadc: unknown option: " << arg << "\n";
 			std::cerr << "Try 'quadc --help' for more information.\n";
@@ -607,6 +611,11 @@ int main(int argc, char** argv) {
 		// Now generate LLVM IR from all parsed modules
 		Qd::LlvmGenerator generator;
 
+		// Enable debug info if requested
+		if (opts.debugInfo) {
+			generator.setDebugInfo(true);
+		}
+
 		// Add all dependency modules in REVERSE order (dependencies first)
 		// Modules were loaded in breadth-first order (main first, then dependents, then their dependencies)
 		// but we need to generate them depth-first (deep dependencies first, then their dependents)
@@ -618,9 +627,11 @@ int main(int argc, char** argv) {
 
 		// Generate main module last
 		Qd::IAstNode* mainRoot = nullptr;
+		std::string mainSourceFile;
 		for (auto& module : parsedModules) {
 			if (module.package == "main") {
 				mainRoot = module.root;
+				mainSourceFile = module.name;
 				break;
 			}
 		}
@@ -649,7 +660,8 @@ int main(int argc, char** argv) {
 			return 1;
 		}
 
-		if (!generator.generate(mainRoot, "main")) {
+		// Pass the actual source file path for debug info
+		if (!generator.generate(mainRoot, mainSourceFile)) {
 			std::cerr << "quadc: LLVM generation failed" << std::endl;
 			return 1;
 		}

@@ -1,5 +1,6 @@
 #include <llvmgen/generator.h>
 
+#include <llvm/IR/DIBuilder.h>
 #include <llvm/IR/IRBuilder.h>
 #include <llvm/IR/LLVMContext.h>
 #include <llvm/IR/LegacyPassManager.h>
@@ -51,6 +52,14 @@ namespace Qd {
 		std::unique_ptr<llvm::LLVMContext> context;
 		std::unique_ptr<llvm::Module> module;
 		std::unique_ptr<llvm::IRBuilder<>> builder;
+
+		// Debug info generation
+		std::unique_ptr<llvm::DIBuilder> debugBuilder;
+		llvm::DICompileUnit* compileUnit = nullptr;
+		llvm::DIFile* debugFile = nullptr;
+		std::vector<llvm::DIScope*> debugScopeStack;
+		bool debugInfoEnabled = false;
+		std::string sourceFileName;
 
 		// Runtime types
 		llvm::Type* contextPtrTy = nullptr;
@@ -211,6 +220,41 @@ namespace Qd {
 		auto stackSizeFnTy =
 				llvm::FunctionType::get(builder->getInt64Ty(), {llvm::PointerType::getUnqual(*context)}, false);
 		stackSizeFn = llvm::Function::Create(stackSizeFnTy, llvm::Function::ExternalLinkage, "qd_stack_size", *module);
+
+		// Initialize debug info if enabled
+		if (debugInfoEnabled) {
+			debugBuilder = std::make_unique<llvm::DIBuilder>(*module);
+
+			// Extract directory and filename from source path
+			// Convert to absolute path for better debugger compatibility
+			std::filesystem::path srcPath(sourceFileName);
+			std::filesystem::path absPath = std::filesystem::absolute(srcPath);
+			std::string directory = absPath.parent_path().string();
+			std::string filename = absPath.filename().string();
+			if (directory.empty()) {
+				directory = ".";
+			}
+
+			// Create debug file with absolute path
+			debugFile = debugBuilder->createFile(filename, directory);
+
+			// Create compile unit
+			compileUnit = debugBuilder->createCompileUnit(
+					llvm::dwarf::DW_LANG_C99, // Use C99 as the base language (closest to stack machine)
+					debugFile,
+					"quadc",         // Producer
+					false,           // isOptimized (set to false for debugging)
+					"",              // Flags
+					0                // Runtime version
+			);
+
+			// Set module flags for debug info
+			module->addModuleFlag(llvm::Module::Warning, "Debug Info Version", llvm::DEBUG_METADATA_VERSION);
+			module->addModuleFlag(llvm::Module::Warning, "Dwarf Version", 4);
+
+			// Initialize scope stack with compile unit
+			debugScopeStack.push_back(compileUnit);
+		}
 	}
 
 	void LlvmGenerator::Impl::generateLiteral(AstNodeLiteral* lit, llvm::Value* ctx) {
@@ -1035,6 +1079,16 @@ namespace Qd {
 			return;
 		}
 
+		// Set debug location for this node
+		if (debugInfoEnabled && debugBuilder && !debugScopeStack.empty()) {
+			unsigned line = static_cast<unsigned>(node->line());
+			unsigned column = static_cast<unsigned>(node->column());
+			if (line > 0) {
+				auto debugLoc = llvm::DILocation::get(*context, line, column, debugScopeStack.back());
+				builder->SetCurrentDebugLocation(debugLoc);
+			}
+		}
+
 		auto nodeType = node->type();
 
 		switch (nodeType) {
@@ -1126,6 +1180,27 @@ namespace Qd {
 					builder->getInt32Ty(), {builder->getInt32Ty(), llvm::PointerType::getUnqual(*context)}, false);
 			fn = llvm::Function::Create(mainFnTy, llvm::Function::ExternalLinkage, "main", *module);
 
+			// Add debug info for main function
+			if (debugInfoEnabled && debugBuilder) {
+				auto funcType = debugBuilder->createSubroutineType(debugBuilder->getOrCreateTypeArray({}));
+				auto subprogram = debugBuilder->createFunction(
+						compileUnit,                          // Scope
+						funcNode->name(),                     // Name
+						"main",                               // Linkage name
+						debugFile,                            // File
+						static_cast<unsigned>(funcNode->line()),  // Line number
+						funcType,                             // Type
+						static_cast<unsigned>(funcNode->line()),  // Scope line
+						llvm::DINode::FlagPrototyped,
+						llvm::DISubprogram::SPFlagDefinition);
+				fn->setSubprogram(subprogram);
+				debugScopeStack.push_back(subprogram);
+
+				// Emit function start location
+				auto loc = llvm::DILocation::get(*context, static_cast<unsigned>(funcNode->line()), 0, subprogram);
+				builder->SetCurrentDebugLocation(loc);
+			}
+
 			// Create entry basic block
 			auto entryBB = llvm::BasicBlock::Create(*context, "entry", fn);
 			builder->SetInsertPoint(entryBB);
@@ -1153,11 +1228,37 @@ namespace Qd {
 
 			// Return 0
 			builder->CreateRet(builder->getInt32(0));
+
+			// Pop debug scope for main function
+			if (debugInfoEnabled && !debugScopeStack.empty()) {
+				debugScopeStack.pop_back();
+			}
 		} else {
 			// User-defined function: qd_exec_result usr_<prefix>_<name>(qd_context* ctx)
 			std::string fnName = "usr_" + namePrefix + "_" + funcNode->name();
 			auto fnTy = llvm::FunctionType::get(execResultTy, {contextPtrTy}, false);
 			fn = llvm::Function::Create(fnTy, llvm::Function::ExternalLinkage, fnName, *module);
+
+			// Add debug info for user function
+			if (debugInfoEnabled && debugBuilder) {
+				auto funcType = debugBuilder->createSubroutineType(debugBuilder->getOrCreateTypeArray({}));
+				auto subprogram = debugBuilder->createFunction(
+						compileUnit,                          // Scope
+						funcNode->name(),                     // Name
+						fnName.c_str(),                       // Linkage name
+						debugFile,                            // File
+						static_cast<unsigned>(funcNode->line()),  // Line number
+						funcType,                             // Type
+						static_cast<unsigned>(funcNode->line()),  // Scope line
+						llvm::DINode::FlagPrototyped,
+						llvm::DISubprogram::SPFlagDefinition);
+				fn->setSubprogram(subprogram);
+				debugScopeStack.push_back(subprogram);
+
+				// Emit function start location
+				auto loc = llvm::DILocation::get(*context, static_cast<unsigned>(funcNode->line()), 0, subprogram);
+				builder->SetCurrentDebugLocation(loc);
+			}
 
 			// Register the function with appropriate scope
 			std::string registerName =
@@ -1273,6 +1374,11 @@ namespace Qd {
 			// Return success
 			auto result = llvm::ConstantStruct::get(llvm::cast<llvm::StructType>(execResultTy), {builder->getInt32(0)});
 			builder->CreateRet(result);
+
+			// Pop debug scope for user function
+			if (debugInfoEnabled && !debugScopeStack.empty()) {
+				debugScopeStack.pop_back();
+			}
 		}
 
 		return true;
@@ -1443,6 +1549,11 @@ namespace Qd {
 		}
 
 		// Verify module
+		// Finalize debug info
+		if (debugInfoEnabled && debugBuilder) {
+			debugBuilder->finalize();
+		}
+
 		std::string errorMsg;
 		llvm::raw_string_ostream errorStream(errorMsg);
 		if (llvm::verifyModule(*module, &errorStream)) {
@@ -1460,9 +1571,26 @@ namespace Qd {
 
 	LlvmGenerator::~LlvmGenerator() = default;
 
+	void LlvmGenerator::setDebugInfo(bool enabled) {
+		if (!impl) {
+			// Create implementation with a temporary module name - will be recreated in generate()
+			impl = std::make_unique<Impl>("temp");
+		}
+		impl->debugInfoEnabled = enabled;
+	}
+
 	bool LlvmGenerator::generate(IAstNode* root, const std::string& moduleName) {
 		if (!impl) {
 			impl = std::make_unique<Impl>(moduleName);
+		}
+		// Store source filename for debug info
+		// If moduleName looks like a file path (contains / or ends with .qd), use it directly
+		// Otherwise append .qd extension
+		if (moduleName.find('/') != std::string::npos || moduleName.find('\\') != std::string::npos ||
+		    (moduleName.size() > 3 && moduleName.substr(moduleName.size() - 3) == ".qd")) {
+			impl->sourceFileName = moduleName;
+		} else {
+			impl->sourceFileName = moduleName + ".qd";
 		}
 		return impl->generateProgram(root);
 	}

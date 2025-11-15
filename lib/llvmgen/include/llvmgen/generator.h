@@ -146,6 +146,21 @@ namespace Qd {
 		 */
 		std::string getIRString() const;
 
+		/**
+		 * @brief Enable debug information generation
+		 *
+		 * Enables DWARF debug info generation for source-level debugging.
+		 * When enabled, the generated executable will contain debug metadata
+		 * allowing debuggers (GDB, LLDB) to map machine code back to Quadrate
+		 * source files.
+		 *
+		 * @param enabled True to enable debug info, false to disable
+		 *
+		 * @note Must be called before generate()
+		 * @note Increases binary size but enables breakpoints, stepping, etc.
+		 */
+		void setDebugInfo(bool enabled);
+
 	private:
 		/**
 		 * @brief Private implementation (Pimpl idiom)
