@@ -161,6 +161,24 @@ namespace Qd {
 		 */
 		void setDebugInfo(bool enabled);
 
+		/**
+		 * @brief Set optimization level
+		 *
+		 * Sets the LLVM optimization level for code generation.
+		 * Higher levels produce faster code but increase compilation time.
+		 *
+		 * @param level Optimization level (0-3):
+		 *              0 = No optimization (-O0, fastest compile, slowest execution)
+		 *              1 = Basic optimization (-O1, balanced)
+		 *              2 = Moderate optimization (-O2, recommended for release)
+		 *              3 = Aggressive optimization (-O3, slowest compile, fastest execution)
+		 *
+		 * @note Must be called before writeObject() or writeExecutable()
+		 * @note Default is 0 (no optimization)
+		 * @note Can be combined with debug info (-g -O2)
+		 */
+		void setOptimizationLevel(int level);
+
 	private:
 		/**
 		 * @brief Private implementation (Pimpl idiom)

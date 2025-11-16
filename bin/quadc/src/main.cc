@@ -22,6 +22,7 @@
 struct Options {
 	std::vector<std::string> files;
 	std::string outputName = "main";
+	int optLevel = 0; // 0-3 for -O0 through -O3
 	bool help = false;
 	bool version = false;
 	bool saveTemps = false;
@@ -41,6 +42,7 @@ void printHelp() {
 	std::cout << "  -h, --help         Show this help message\n";
 	std::cout << "  -v, --version      Show version information\n";
 	std::cout << "  -o <name>          Output executable name (default: main)\n";
+	std::cout << "  -O0, -O1, -O2, -O3 Set optimization level (default: -O0)\n";
 	std::cout << "  -g                 Generate debug information for GDB/LLDB\n";
 	std::cout << "  --save-temps       Keep temporary files for debugging\n";
 	std::cout << "  --verbose          Show detailed compilation steps\n";
@@ -90,6 +92,14 @@ bool parseArgs(int argc, char* argv[], Options& opts) {
 			opts.debugInfo = true;
 		} else if (arg == "--werror") {
 			opts.werror = true;
+		} else if (arg == "-O0") {
+			opts.optLevel = 0;
+		} else if (arg == "-O1") {
+			opts.optLevel = 1;
+		} else if (arg == "-O2") {
+			opts.optLevel = 2;
+		} else if (arg == "-O3") {
+			opts.optLevel = 3;
 		} else if (arg[0] == '-') {
 			std::cerr << "quadc: unknown option: " << arg << "\n";
 			std::cerr << "Try 'quadc --help' for more information.\n";
@@ -619,6 +629,9 @@ int main(int argc, char** argv) {
 		if (opts.debugInfo) {
 			generator.setDebugInfo(true);
 		}
+
+		// Set optimization level
+		generator.setOptimizationLevel(opts.optLevel);
 
 		// Add all dependency modules in REVERSE order (dependencies first)
 		// Modules were loaded in breadth-first order (main first, then dependents, then their dependencies)

@@ -13,6 +13,11 @@
 #include <llvm/Target/TargetMachine.h>
 #include <llvm/Target/TargetOptions.h>
 #include <llvm/TargetParser/Host.h>
+#include <llvm/Transforms/InstCombine/InstCombine.h>
+#include <llvm/Transforms/Scalar.h>
+#include <llvm/Transforms/Scalar/GVN.h>
+#include <llvm/Transforms/Utils.h>
+#include <llvm/Transforms/IPO.h>
 
 #include <qc/ast_node.h>
 #include <qc/ast_node_break.h>
@@ -62,6 +67,9 @@ namespace Qd {
 		bool debugInfoEnabled = false;
 		std::string sourceFileName;
 		llvm::DIType* contextDebugType = nullptr;
+
+		// Optimization level (0-3)
+		int optimizationLevel = 0;
 
 		// Runtime types
 		llvm::Type* contextPtrTy = nullptr;
@@ -2014,6 +2022,17 @@ namespace Qd {
 		impl->debugInfoEnabled = enabled;
 	}
 
+	void LlvmGenerator::setOptimizationLevel(int level) {
+		if (!impl) {
+			// Create implementation with a temporary module name - will be recreated in generate()
+			impl = std::make_unique<Impl>("temp");
+		}
+		// Clamp level to 0-3
+		if (level < 0) level = 0;
+		if (level > 3) level = 3;
+		impl->optimizationLevel = level;
+	}
+
 	bool LlvmGenerator::generate(IAstNode* root, const std::string& moduleName) {
 		if (!impl) {
 			impl = std::make_unique<Impl>(moduleName);
@@ -2094,6 +2113,47 @@ namespace Qd {
 				targetTriple, cpu, features, opt, std::optional<llvm::Reloc::Model>(llvm::Reloc::PIC_)));
 
 		impl->module->setDataLayout(targetMachine->createDataLayout());
+
+		// Run optimization passes if optimization level > 0
+		if (impl->optimizationLevel > 0) {
+			// Use legacy PassManager for optimization passes
+			llvm::legacy::FunctionPassManager fpm(impl->module.get());
+			llvm::legacy::PassManager mpm;
+
+			// Add function-level optimization passes based on level
+			if (impl->optimizationLevel >= 1) {
+				// Basic optimizations
+				fpm.add(llvm::createPromoteMemoryToRegisterPass());  // mem2reg
+				fpm.add(llvm::createInstructionCombiningPass());	  // instcombine
+				fpm.add(llvm::createReassociatePass());				  // reassociate
+				fpm.add(llvm::createCFGSimplificationPass());		  // simplifycfg
+			}
+
+			if (impl->optimizationLevel >= 2) {
+				// More aggressive optimizations
+				fpm.add(llvm::createGVNPass());				   // GVN (Global Value Numbering)
+				fpm.add(llvm::createDeadCodeEliminationPass());	// Dead Code Elimination
+				fpm.add(llvm::createSROAPass());			   // Scalar Replacement of Aggregates
+			}
+
+			if (impl->optimizationLevel >= 3) {
+				// Most aggressive optimizations
+				fpm.add(llvm::createLICMPass());  // Loop Invariant Code Motion
+				fpm.add(llvm::createLoopUnrollPass());
+			}
+
+			// Run function passes on all functions
+			fpm.doInitialization();
+			for (auto& func : *impl->module) {
+				if (!func.isDeclaration()) {
+					fpm.run(func);
+				}
+			}
+			fpm.doFinalization();
+
+			// Run module passes
+			mpm.run(*impl->module);
+		}
 
 		std::error_code ec;
 		llvm::raw_fd_ostream dest(filename, ec, llvm::sys::fs::OF_None);
