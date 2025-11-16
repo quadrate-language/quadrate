@@ -114,6 +114,17 @@ namespace Qd {
 		}
 	}
 
+	// Check if actual type can be implicitly cast to expected type
+	// Returns true if implicit cast is allowed (int <-> float)
+	static bool isImplicitCastAllowed(StackValueType actual, StackValueType expected) {
+		// Allow int -> float and float -> int implicit conversions
+		if ((actual == StackValueType::INT && expected == StackValueType::FLOAT) ||
+			(actual == StackValueType::FLOAT && expected == StackValueType::INT)) {
+			return true;
+		}
+		return false;
+	}
+
 	SemanticValidator::SemanticValidator() : mFilename(nullptr), mErrorCount(0), mIsModuleFile(false) {
 	}
 
@@ -159,6 +170,19 @@ namespace Qd {
 		std::cerr << Colors::bold() << Colors::red() << "error:" << Colors::reset() << " ";
 		std::cerr << Colors::bold() << message << Colors::reset() << std::endl;
 		mErrorCount++;
+	}
+
+	void SemanticValidator::reportWarning(const IAstNode* node, const char* message) {
+		// GCC/Clang style: quadc: filename:line:column: warning: message
+		std::cerr << Colors::bold() << "quadc: " << Colors::reset();
+		if (mFilename && node) {
+			std::cerr << Colors::bold() << mFilename << ":" << node->line() << ":" << node->column() << ":"
+					  << Colors::reset() << " ";
+		} else if (mFilename) {
+			std::cerr << Colors::bold() << mFilename << ":" << Colors::reset() << " ";
+		}
+		std::cerr << Colors::bold() << Colors::magenta() << "warning:" << Colors::reset() << " ";
+		std::cerr << Colors::bold() << message << Colors::reset() << std::endl;
 	}
 
 	size_t SemanticValidator::validate(IAstNode* program, const char* filename, bool isModuleFile) {
@@ -317,8 +341,13 @@ namespace Qd {
 
 		std::string effectiveModuleName;
 		if (isDirectFile) {
-			// For .qd file imports, use the current package name
-			effectiveModuleName = currentPackage;
+			// For .qd file imports from top-level files, derive package name from filename
+			// For intra-module imports (when currentPackage != mCurrentPackage), use the current package name
+			if (!mIsModuleFile && currentPackage == mCurrentPackage) {
+				effectiveModuleName = getPackageFromModuleName(moduleName);
+			} else {
+				effectiveModuleName = currentPackage;
+			}
 		} else {
 			effectiveModuleName = moduleName;
 		}
@@ -340,8 +369,8 @@ namespace Qd {
 					buffer << file.rdbuf();
 					std::string source = buffer.str();
 					file.close();
-					// Parse and add to current package namespace
-					parseModuleAndCollectFunctions(currentPackage, source);
+					// Parse and add to effective module namespace
+					parseModuleAndCollectFunctions(effectiveModuleName, source);
 					return;
 				}
 				file.close();
@@ -362,8 +391,8 @@ namespace Qd {
 					buffer << file.rdbuf();
 					std::string source = buffer.str();
 					file.close();
-					// Parse and add to current package namespace
-					parseModuleAndCollectFunctions(currentPackage, source);
+					// Parse and add to effective module namespace
+					parseModuleAndCollectFunctions(effectiveModuleName, source);
 					return;
 				}
 				file.close();
@@ -380,7 +409,7 @@ namespace Qd {
 					buffer << file.rdbuf();
 					std::string source = buffer.str();
 					file.close();
-					parseModuleAndCollectFunctions(currentPackage, source);
+					parseModuleAndCollectFunctions(effectiveModuleName, source);
 					return;
 				}
 				file.close();
@@ -396,7 +425,7 @@ namespace Qd {
 					buffer << file.rdbuf();
 					std::string source = buffer.str();
 					file.close();
-					parseModuleAndCollectFunctions(currentPackage, source);
+					parseModuleAndCollectFunctions(effectiveModuleName, source);
 					return;
 				}
 				file.close();
@@ -713,6 +742,26 @@ namespace Qd {
 
 			// Store the signature with qualified name: moduleName::functionName
 			FunctionSignature sig;
+
+			// Build consumes list from input parameters
+			for (size_t i = 0; i < func->inputParameters().size(); i++) {
+				AstNodeParameter* param = static_cast<AstNodeParameter*>(func->inputParameters()[i]);
+				const std::string& typeStr = param->typeString();
+
+				if (typeStr == "i") {
+					sig.consumes.push_back(StackValueType::INT);
+				} else if (typeStr == "f") {
+					sig.consumes.push_back(StackValueType::FLOAT);
+				} else if (typeStr == "s") {
+					sig.consumes.push_back(StackValueType::STRING);
+				} else if (typeStr == "p") {
+					sig.consumes.push_back(StackValueType::PTR);
+				} else {
+					// Untyped or unknown - use ANY
+					sig.consumes.push_back(StackValueType::ANY);
+				}
+			}
+
 			sig.produces = typeStack;
 			sig.throws = func->throws();
 			std::string qualifiedName = moduleName + "::" + func->name();
@@ -724,46 +773,48 @@ namespace Qd {
 			const auto& importedFuncs = import->functions();
 
 			for (const auto* func : importedFuncs) {
-				std::vector<StackValueType> typeStack;
+				FunctionSignature sig;
 
-				// Initialize type stack with input parameters
+				// Build consumes list from input parameters
 				for (size_t i = 0; i < func->inputParameters.size(); i++) {
 					AstNodeParameter* param = func->inputParameters[i];
 					const std::string& typeStr = param->typeString();
 
 					if (typeStr == "i") {
-						typeStack.push_back(StackValueType::INT);
+						sig.consumes.push_back(StackValueType::INT);
 					} else if (typeStr == "f") {
-						typeStack.push_back(StackValueType::FLOAT);
+						sig.consumes.push_back(StackValueType::FLOAT);
 					} else if (typeStr == "s") {
-						typeStack.push_back(StackValueType::STRING);
+						sig.consumes.push_back(StackValueType::STRING);
+					} else if (typeStr == "p") {
+						sig.consumes.push_back(StackValueType::PTR);
 					} else {
 						// Untyped or unknown - treat as ANY
-						typeStack.push_back(StackValueType::ANY);
+						sig.consumes.push_back(StackValueType::ANY);
 					}
 				}
 
-				// Add output parameters to type stack
+				// Build produces list from output parameters
 				for (size_t i = 0; i < func->outputParameters.size(); i++) {
 					AstNodeParameter* param = func->outputParameters[i];
 					const std::string& typeStr = param->typeString();
 
 					if (typeStr == "i") {
-						typeStack.push_back(StackValueType::INT);
+						sig.produces.push_back(StackValueType::INT);
 					} else if (typeStr == "f") {
-						typeStack.push_back(StackValueType::FLOAT);
+						sig.produces.push_back(StackValueType::FLOAT);
 					} else if (typeStr == "s") {
-						typeStack.push_back(StackValueType::STRING);
+						sig.produces.push_back(StackValueType::STRING);
+					} else if (typeStr == "p") {
+						sig.produces.push_back(StackValueType::PTR);
 					} else {
 						// Untyped or unknown - treat as ANY
-						typeStack.push_back(StackValueType::ANY);
+						sig.produces.push_back(StackValueType::ANY);
 					}
 				}
 
 				// Store the signature with qualified name: moduleName::functionName
 				// This allows imported functions to be called with the module's namespace
-				FunctionSignature sig;
-				sig.produces = typeStack;
 				sig.throws = func->throws;
 				std::string qualifiedName = moduleName + "::" + func->name;
 				mFunctionSignatures[qualifiedName] = sig;
@@ -1088,6 +1139,25 @@ namespace Qd {
 				break;
 			}
 
+			case IAstNode::Type::SCOPED_IDENTIFIER: {
+				// Apply module function signature if known
+				AstNodeScopedIdentifier* scoped = static_cast<AstNodeScopedIdentifier*>(child);
+				const std::string& moduleName = scoped->scope();
+				const std::string& functionName = scoped->name();
+				std::string qualifiedName = moduleName + "::" + functionName;
+
+				auto sigIt = mFunctionSignatures.find(qualifiedName);
+				if (sigIt != mFunctionSignatures.end()) {
+					// Apply the known signature
+					const FunctionSignature& sig = sigIt->second;
+					for (const auto& type : sig.produces) {
+						typeStack.push_back(type);
+					}
+				}
+				// If signature not known yet, skip (will be resolved in next iteration)
+				break;
+			}
+
 			case IAstNode::Type::FUNCTION_POINTER_REFERENCE:
 				// Function pointer references push a pointer type onto the stack
 				typeStack.push_back(StackValueType::PTR);
@@ -1288,15 +1358,30 @@ namespace Qd {
 
 						// Check for type mismatch
 						if (actual != expected) {
-							std::string errorMsg = "Type error in function call '";
-							errorMsg += name;
-							errorMsg += "': Parameter ";
-							errorMsg += std::to_string(j + 1);
-							errorMsg += " expects ";
-							errorMsg += stackValueTypeToString(expected);
-							errorMsg += ", but got ";
-							errorMsg += stackValueTypeToString(actual);
-							reportError(ident, errorMsg.c_str());
+							// Check if implicit cast is allowed (int <-> float)
+							if (isImplicitCastAllowed(actual, expected)) {
+								// Warn about implicit cast
+								std::string warnMsg = "Implicit cast in function call '";
+								warnMsg += name;
+								warnMsg += "': Parameter ";
+								warnMsg += std::to_string(j + 1);
+								warnMsg += " expects ";
+								warnMsg += stackValueTypeToString(expected);
+								warnMsg += ", but got ";
+								warnMsg += stackValueTypeToString(actual);
+								reportWarning(ident, warnMsg.c_str());
+							} else {
+								// Type mismatch error
+								std::string errorMsg = "Type error in function call '";
+								errorMsg += name;
+								errorMsg += "': Parameter ";
+								errorMsg += std::to_string(j + 1);
+								errorMsg += " expects ";
+								errorMsg += stackValueTypeToString(expected);
+								errorMsg += ", but got ";
+								errorMsg += stackValueTypeToString(actual);
+								reportError(ident, errorMsg.c_str());
+							}
 						}
 					}
 
@@ -1423,15 +1508,30 @@ namespace Qd {
 
 						// Check for type mismatch
 						if (actual != expected) {
-							std::string errorMsg = "Type error in function call '";
-							errorMsg += qualifiedName;
-							errorMsg += "': Parameter ";
-							errorMsg += std::to_string(j + 1);
-							errorMsg += " expects ";
-							errorMsg += stackValueTypeToString(expected);
-							errorMsg += ", but got ";
-							errorMsg += stackValueTypeToString(actual);
-							reportError(scoped, errorMsg.c_str());
+							// Check if implicit cast is allowed (int <-> float)
+							if (isImplicitCastAllowed(actual, expected)) {
+								// Warn about implicit cast
+								std::string warnMsg = "Implicit cast in function call '";
+								warnMsg += qualifiedName;
+								warnMsg += "': Parameter ";
+								warnMsg += std::to_string(j + 1);
+								warnMsg += " expects ";
+								warnMsg += stackValueTypeToString(expected);
+								warnMsg += ", but got ";
+								warnMsg += stackValueTypeToString(actual);
+								reportWarning(scoped, warnMsg.c_str());
+							} else {
+								// Type mismatch error
+								std::string errorMsg = "Type error in function call '";
+								errorMsg += qualifiedName;
+								errorMsg += "': Parameter ";
+								errorMsg += std::to_string(j + 1);
+								errorMsg += " expects ";
+								errorMsg += stackValueTypeToString(expected);
+								errorMsg += ", but got ";
+								errorMsg += stackValueTypeToString(actual);
+								reportError(scoped, errorMsg.c_str());
+							}
 						}
 					}
 

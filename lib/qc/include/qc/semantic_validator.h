@@ -121,6 +121,9 @@ namespace Qd {
 		void reportErrorConditional(const char* message, bool shouldReport);
 		void reportErrorConditional(const IAstNode* node, const char* message, bool shouldReport);
 
+		// Report a warning (gcc/clang style)
+		void reportWarning(const IAstNode* node, const char* message);
+
 		// Current filename being validated
 		const char* mFilename;
 
