@@ -15,8 +15,6 @@ import "libstdmathqd_static.a" as "math" {
 
 	// Power and root functions
 	fn sqrt(x:f -- result:f)
-	fn sq(x:f -- result:f)
-	fn cb(x:f -- result:f)
 	fn cbrt(x:f -- result:f)
 	fn pow(base:f exp:f -- result:f)
 
@@ -28,13 +26,58 @@ import "libstdmathqd_static.a" as "math" {
 	fn ceil(x:f -- result:f)
 	fn floor(x:f -- result:f)
 	fn round(x:f -- result:f)
+}
 
-	// Utility functions
-	fn abs(x:f -- result:f)
-	fn min(a:f b:f -- result:f)
-	fn max(a:f b:f -- result:f)
-	fn fac(n:i -- result:i)
-	fn inv(x:f -- result:f)
+// Pure Quadrate implementations (simpler than C equivalents)
+
+fn sq( x:f -- result:f ) {
+	// Square: x * x
+	dup mul
+}
+
+fn cb( x:f -- result:f ) {
+	// Cube: x * x * x
+	dup dup mul mul
+}
+
+fn abs( x:f -- result:f ) {
+	// Absolute value: |x|
+	dup 0.0 lt if {
+		neg
+	}
+}
+
+fn inv( x:f -- result:f ) {
+	// Reciprocal: 1/x
+	1.0 swap div
+}
+
+fn fac( n:i -- result:i ) {
+	// Factorial: n!
+	-> n
+	1 -> result
+	1 n 1 add 1 for {
+		result $ mul -> result
+	}
+	result
+}
+
+fn min( a:any b:any -- result:any ) {
+	// Minimum of two values (polymorphic - works with int or float)
+	over over lt if {
+		drop
+	} else {
+		nip
+	}
+}
+
+fn max( a:any b:any -- result:any ) {
+	// Maximum of two values (polymorphic - works with int or float)
+	over over gt if {
+		drop
+	} else {
+		nip
+	}
 }
 
 // Additional utility functions
@@ -46,13 +89,17 @@ fn log(x:f base:f -- result:f) {
 
 fn clamp(x:f min_val:f max_val:f -- result:f) {
 	// Clamp x between min_val and max_val
-	// We want: max(min_val, min(x, max_val))
+	// Inline implementation to avoid function call scoping issues
 	// Stack: x min_val max_val
-	swap          // Stack: x max_val min_val
-	rot           // Stack: max_val min_val x
-	rot           // Stack: min_val x max_val
-	math::min     // Stack: min_val min(x, max_val)
-	math::max     // Stack: max(min_val, min(x, max_val))
+	-> max_v
+	-> min_v
+	-> x_v
+
+	// First: min(x, max_val)
+	x_v max_v over over lt if { drop } else { nip } -> temp
+
+	// Then: max(min_val, temp)
+	min_v temp over over gt if { drop } else { nip }
 }
 
 fn lerp(a:f b:f t:f -- result:f) {

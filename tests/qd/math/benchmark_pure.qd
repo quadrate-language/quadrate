@@ -1,0 +1,31 @@
+// Benchmark test for pure Quadrate math implementations
+use math
+
+fn main( -- ) {
+	// Test sq
+	5.0 math::sq . nl
+
+	// Test cb
+	3.0 math::cb . nl
+
+	// Test abs
+	-10.5 math::abs . nl
+	10.5 math::abs . nl
+
+	// Test inv
+	2.0 math::inv . nl
+
+	// Test fac
+	5 math::fac . nl
+
+	// Test min
+	10.0 5.0 math::min . nl
+
+	// Test max
+	10.0 5.0 math::max . nl
+
+	// Test clamp
+	15.0 0.0 10.0 math::clamp . nl
+	5.0 0.0 10.0 math::clamp . nl
+	-5.0 0.0 10.0 math::clamp . nl
+}
