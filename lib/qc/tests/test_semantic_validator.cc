@@ -433,6 +433,96 @@ TEST(ScopedIdentifierModuleImported) {
 	ASSERT(true, "should not crash when using scoped identifier with imported module");
 }
 
+// Test implicit cast: int to float - should succeed with warning
+TEST(ImplicitCastIntToFloat) {
+	const char* src = R"(
+		fn add_float(a:f b:f -- result:f) {
+			+
+		}
+		fn main() {
+			10 20.5 add_float printv
+		}
+	)";
+	Qd::Ast ast;
+	Qd::IAstNode* root = ast.generate(src, false, nullptr);
+	Qd::SemanticValidator validator;
+	size_t errors = validator.validate(root, "test.qd");
+	ASSERT(errors == 0, "implicit cast int->float should succeed");
+	ASSERT(validator.warningCount() == 1, "should have 1 warning for implicit cast");
+}
+
+// Test implicit cast: float to int - should succeed with warning
+TEST(ImplicitCastFloatToInt) {
+	const char* src = R"(
+		fn add_int(a:i b:i -- result:i) {
+			+
+		}
+		fn main() {
+			10.5 20.3 add_int printv
+		}
+	)";
+	Qd::Ast ast;
+	Qd::IAstNode* root = ast.generate(src, false, nullptr);
+	Qd::SemanticValidator validator;
+	size_t errors = validator.validate(root, "test.qd");
+	ASSERT(errors == 0, "implicit cast float->int should succeed");
+	ASSERT(validator.warningCount() == 2, "should have 2 warnings for implicit casts");
+}
+
+// Test werror: warnings treated as errors
+TEST(WerrorTreatsWarningsAsErrors) {
+	const char* src = R"(
+		fn add_float(a:f b:f -- result:f) {
+			+
+		}
+		fn main() {
+			10 20.5 add_float printv
+		}
+	)";
+	Qd::Ast ast;
+	Qd::IAstNode* root = ast.generate(src, false, nullptr);
+	Qd::SemanticValidator validator;
+	size_t errors = validator.validate(root, "test.qd", false, true); // werror=true
+	ASSERT(errors > 0, "with werror, warnings should become errors");
+	ASSERT(validator.warningCount() == 0, "with werror, warning count should be 0 (converted to errors)");
+}
+
+// Test werror: clean code still passes
+TEST(WerrorCleanCodePasses) {
+	const char* src = R"(
+		fn add_int(a:i b:i -- result:i) {
+			+
+		}
+		fn main() {
+			10 20 add_int printv
+		}
+	)";
+	Qd::Ast ast;
+	Qd::IAstNode* root = ast.generate(src, false, nullptr);
+	Qd::SemanticValidator validator;
+	size_t errors = validator.validate(root, "test.qd", false, true); // werror=true
+	ASSERT(errors == 0, "with werror, clean code should still pass");
+	ASSERT(validator.warningCount() == 0, "should have no warnings");
+}
+
+// Test multiple implicit casts in one call
+TEST(MultipleImplicitCasts) {
+	const char* src = R"(
+		fn mix(a:i b:f c:i -- result:f) {
+			drop drop
+		}
+		fn main() {
+			10.5 20 30.5 mix printv
+		}
+	)";
+	Qd::Ast ast;
+	Qd::IAstNode* root = ast.generate(src, false, nullptr);
+	Qd::SemanticValidator validator;
+	size_t errors = validator.validate(root, "test.qd");
+	ASSERT(errors == 0, "multiple implicit casts should succeed");
+	ASSERT(validator.warningCount() == 3, "should have 3 warnings (all params need casts)");
+}
+
 int main() {
 	return UC_PrintResults();
 }

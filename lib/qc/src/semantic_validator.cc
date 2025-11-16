@@ -125,7 +125,8 @@ namespace Qd {
 		return false;
 	}
 
-	SemanticValidator::SemanticValidator() : mFilename(nullptr), mErrorCount(0), mIsModuleFile(false) {
+	SemanticValidator::SemanticValidator()
+		: mFilename(nullptr), mErrorCount(0), mWarningCount(0), mWerror(false), mIsModuleFile(false) {
 	}
 
 	bool SemanticValidator::isBuiltInInstruction(const char* name) const {
@@ -173,6 +174,12 @@ namespace Qd {
 	}
 
 	void SemanticValidator::reportWarning(const IAstNode* node, const char* message) {
+		// If werror is enabled, treat warnings as errors
+		if (mWerror) {
+			reportError(node, message);
+			return;
+		}
+
 		// GCC/Clang style: quadc: filename:line:column: warning: message
 		std::cerr << Colors::bold() << "quadc: " << Colors::reset();
 		if (mFilename && node) {
@@ -183,10 +190,13 @@ namespace Qd {
 		}
 		std::cerr << Colors::bold() << Colors::magenta() << "warning:" << Colors::reset() << " ";
 		std::cerr << Colors::bold() << message << Colors::reset() << std::endl;
+		mWarningCount++;
 	}
 
-	size_t SemanticValidator::validate(IAstNode* program, const char* filename, bool isModuleFile) {
+	size_t SemanticValidator::validate(IAstNode* program, const char* filename, bool isModuleFile, bool werror) {
 		mErrorCount = 0;
+		mWarningCount = 0;
+		mWerror = werror;
 		mFilename = filename;
 		mIsModuleFile = isModuleFile;
 		mDefinedFunctions.clear();
