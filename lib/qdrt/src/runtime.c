@@ -309,7 +309,10 @@ qd_exec_result qd_div(qd_context* ctx) {
 
 	if (a.type == QD_STACK_TYPE_INT && b.type == QD_STACK_TYPE_INT) {
 		if (b.value.i == 0) {
-			return (qd_exec_result){-4};
+			fprintf(stderr, "Fatal error in div: Division by zero\n");
+			dump_stack(ctx);
+			qd_print_stack_trace(ctx);
+			abort();
 		}
 		int64_t result = a.value.i / b.value.i;
 		qd_stack_error err = qd_stack_push_int(ctx->st, result);
@@ -320,7 +323,10 @@ qd_exec_result qd_div(qd_context* ctx) {
 		double af = to_double(&a);
 		double bf = to_double(&b);
 		if (bf == 0.0) {
-			return (qd_exec_result){-4};
+			fprintf(stderr, "Fatal error in div: Division by zero\n");
+			dump_stack(ctx);
+			qd_print_stack_trace(ctx);
+			abort();
 		}
 		double result = af / bf;
 		qd_stack_error err = qd_stack_push_float(ctx->st, result);
