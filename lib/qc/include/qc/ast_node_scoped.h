@@ -2,7 +2,9 @@
 #define QD_QC_AST_NODE_SCOPED_H
 
 #include "ast_node.h"
+#include "ast_node_identifier.h"  // For CastDirection enum
 #include <string>
+#include <vector>
 
 namespace Qd {
 	class AstNodeScopedIdentifier : public IAstNode {
@@ -69,6 +71,15 @@ namespace Qd {
 			return mCheckError;
 		}
 
+		// Set which parameter positions need implicit casts
+		void setParameterCasts(const std::vector<CastDirection>& casts) {
+			mParameterCasts = casts;
+		}
+
+		const std::vector<CastDirection>& parameterCasts() const {
+			return mParameterCasts;
+		}
+
 	private:
 		std::string mScope;
 		std::string mName;
@@ -77,6 +88,7 @@ namespace Qd {
 		bool mCheckError;
 		size_t mLine;
 		size_t mColumn;
+		std::vector<CastDirection> mParameterCasts;  // Which parameters need casts (indexed from bottom of stack)
 	};
 }
 

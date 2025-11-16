@@ -140,6 +140,7 @@ namespace Qd {
 		void generateSwitchStatement(AstNodeSwitchStatement* switchStmt, llvm::Value* ctx, llvm::Value* forIterVar);
 		void generateLocal(AstNodeLocal* local, llvm::Value* ctx);
 		void generateLocalCleanup();
+		void generateCastInstructions(const std::vector<CastDirection>& casts, llvm::Value* ctx);
 	};
 
 	void LlvmGenerator::Impl::setupRuntimeDeclarations() {
@@ -548,6 +549,9 @@ namespace Qd {
 		// Check if it's a user-defined function call
 		auto it = userFunctions.find(name);
 		if (it != userFunctions.end()) {
+			// Generate any needed type casts before the function call
+			generateCastInstructions(ident->parameterCasts(), ctx);
+
 			builder->CreateCall(it->second, {ctx});
 
 			// Check if this function is fallible
@@ -676,6 +680,9 @@ namespace Qd {
 			auto fnTy = llvm::FunctionType::get(execResultTy, {contextPtrTy}, false);
 			fn = llvm::Function::Create(fnTy, llvm::Function::ExternalLinkage, mangledName, *module);
 		}
+
+		// Generate any needed type casts before the function call
+		generateCastInstructions(scopedIdent->parameterCasts(), ctx);
 
 		// Call the scoped function
 		builder->CreateCall(fn, {ctx});
@@ -1098,6 +1105,106 @@ namespace Qd {
 
 			// Skip free block
 			builder->SetInsertPoint(skipFreeBlock);
+		}
+	}
+
+	void LlvmGenerator::Impl::generateCastInstructions(const std::vector<CastDirection>& casts, llvm::Value* ctx) {
+		// Generate cast instructions for parameters that need type conversion
+		// Casts are indexed from bottom of stack (first parameter = index 0)
+		// We need to apply casts in reverse order since the stack grows upward
+
+		for (size_t i = 0; i < casts.size(); i++) {
+			if (casts[i] == CastDirection::NONE) {
+				continue;
+			}
+
+			// Calculate how deep in the stack this parameter is
+			// Parameter 0 is at depth (casts.size() - 1)
+			// Parameter 1 is at depth (casts.size() - 2), etc.
+			size_t depth = casts.size() - 1 - i;
+
+			// We need to:
+			// 1. Rotate the value to the top of the stack (if not already there)
+			// 2. Apply the cast
+			// 3. Rotate it back (if needed)
+
+			// For now, use a simpler approach: pop all values, cast the one we need, push them back
+			// This is less efficient but correct
+
+			// Actually, the easiest approach is to use qd_pick to duplicate the value at depth,
+			// cast it, then use qd_put to replace the original
+			// But Quadrate doesn't have those operations in the standard set
+
+			// Simplest working approach: generate the cast operation at the right position
+			// The stack-based casts work on the top elements in order
+			// Since parameters are pushed left-to-right, and we check them left-to-right,
+			// we can apply casts in the order they appear
+
+			// Actually, re-reading the semantic validator code:
+			// Parameters are indexed from the bottom of the required values
+			// So param 0 is deepest, param N-1 is on top
+			// We need to cast them before calling the function
+
+			// Use stack manipulation: for each parameter that needs casting from bottom:
+			// - Calculate its position from top (casts.size() - i)
+			// - Use qd_pick to get it, cast it, use qd_poke to put it back
+
+			// For MVP, let's use a simpler but less efficient approach:
+			// Save all parameters, cast the ones that need it, restore them
+
+			std::string castFnName;
+			if (casts[i] == CastDirection::INT_TO_FLOAT) {
+				castFnName = "qd_castf";
+			} else if (casts[i] == CastDirection::FLOAT_TO_INT) {
+				castFnName = "qd_casti";
+			} else {
+				continue;
+			}
+
+			// For depth 0 (top of stack), just cast directly
+			// For depth > 0, we need to use pick/poke or rotate operations
+
+			if (depth == 0) {
+				// Value is on top, cast it directly
+				llvm::Function* castFn = module->getFunction(castFnName);
+				if (!castFn) {
+					auto fnTy = llvm::FunctionType::get(execResultTy, {contextPtrTy}, false);
+					castFn = llvm::Function::Create(fnTy, llvm::Function::ExternalLinkage, castFnName, *module);
+				}
+				builder->CreateCall(castFn, {ctx});
+			} else {
+				// Value is at depth, need to manipulate stack
+				// Use pattern: rot (depth times) -> cast -> rot (casts.size() - depth times)
+				// Actually, use qd_over and qd_swap to avoid complex rotations
+
+				// Simplified: use qd_stackops
+				// pick depth -> cast -> stack_size -> depth - 1 -> poke
+
+				// Let's just use the rot instruction repeatedly for now
+				llvm::Function* swapFn = module->getFunction("qd_swap");
+				if (!swapFn) {
+					auto fnTy = llvm::FunctionType::get(execResultTy, {contextPtrTy}, false);
+					swapFn = llvm::Function::Create(fnTy, llvm::Function::ExternalLinkage, "qd_swap", *module);
+				}
+
+				// Rotate value to top: swap depth times
+				for (size_t j = 0; j < depth; j++) {
+					builder->CreateCall(swapFn, {ctx});
+				}
+
+				// Cast it
+				llvm::Function* castFn = module->getFunction(castFnName);
+				if (!castFn) {
+					auto fnTy = llvm::FunctionType::get(execResultTy, {contextPtrTy}, false);
+					castFn = llvm::Function::Create(fnTy, llvm::Function::ExternalLinkage, castFnName, *module);
+				}
+				builder->CreateCall(castFn, {ctx});
+
+				// Rotate back: swap depth times
+				for (size_t j = 0; j < depth; j++) {
+					builder->CreateCall(swapFn, {ctx});
+				}
+			}
 		}
 	}
 

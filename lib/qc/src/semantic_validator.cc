@@ -1340,6 +1340,9 @@ namespace Qd {
 						break;
 					}
 
+					// Track which parameters need casts
+					std::vector<CastDirection> paramCasts(sig.consumes.size(), CastDirection::NONE);
+
 					// Check if the types match
 					for (size_t j = 0; j < sig.consumes.size(); j++) {
 						size_t stackIdx = typeStack.size() - sig.consumes.size() + j;
@@ -1370,6 +1373,17 @@ namespace Qd {
 								warnMsg += ", but got ";
 								warnMsg += stackValueTypeToString(actual);
 								reportWarning(ident, warnMsg.c_str());
+
+								// Record the cast direction
+								if (actual == StackValueType::INT && expected == StackValueType::FLOAT) {
+									paramCasts[j] = CastDirection::INT_TO_FLOAT;
+									// Update type stack to reflect the cast
+									typeStack[stackIdx] = StackValueType::FLOAT;
+								} else if (actual == StackValueType::FLOAT && expected == StackValueType::INT) {
+									paramCasts[j] = CastDirection::FLOAT_TO_INT;
+									// Update type stack to reflect the cast
+									typeStack[stackIdx] = StackValueType::INT;
+								}
 							} else {
 								// Type mismatch error
 								std::string errorMsg = "Type error in function call '";
@@ -1384,6 +1398,9 @@ namespace Qd {
 							}
 						}
 					}
+
+					// Store cast information in the identifier node
+					ident->setParameterCasts(paramCasts);
 
 					// Consume the parameters from the stack
 					for (size_t j = 0; j < sig.consumes.size(); j++) {
@@ -1490,6 +1507,9 @@ namespace Qd {
 						break;
 					}
 
+					// Track which parameters need casts
+					std::vector<CastDirection> paramCasts(sig.consumes.size(), CastDirection::NONE);
+
 					// Check if the types match
 					for (size_t j = 0; j < sig.consumes.size(); j++) {
 						size_t stackIdx = typeStack.size() - sig.consumes.size() + j;
@@ -1520,6 +1540,17 @@ namespace Qd {
 								warnMsg += ", but got ";
 								warnMsg += stackValueTypeToString(actual);
 								reportWarning(scoped, warnMsg.c_str());
+
+								// Record the cast direction
+								if (actual == StackValueType::INT && expected == StackValueType::FLOAT) {
+									paramCasts[j] = CastDirection::INT_TO_FLOAT;
+									// Update type stack to reflect the cast
+									typeStack[stackIdx] = StackValueType::FLOAT;
+								} else if (actual == StackValueType::FLOAT && expected == StackValueType::INT) {
+									paramCasts[j] = CastDirection::FLOAT_TO_INT;
+									// Update type stack to reflect the cast
+									typeStack[stackIdx] = StackValueType::INT;
+								}
 							} else {
 								// Type mismatch error
 								std::string errorMsg = "Type error in function call '";
@@ -1534,6 +1565,9 @@ namespace Qd {
 							}
 						}
 					}
+
+					// Store cast information in the scoped identifier node
+					scoped->setParameterCasts(paramCasts);
 
 					// Consume the parameters from the stack
 					for (size_t j = 0; j < sig.consumes.size(); j++) {

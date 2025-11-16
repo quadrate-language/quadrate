@@ -3,8 +3,16 @@
 
 #include "ast_node.h"
 #include <string>
+#include <vector>
 
 namespace Qd {
+	// Cast direction for implicit casts
+	enum class CastDirection {
+		NONE,
+		INT_TO_FLOAT,   // casti -> castf
+		FLOAT_TO_INT    // castf -> casti
+	};
+
 	class AstNodeIdentifier : public IAstNode {
 	public:
 		AstNodeIdentifier(const std::string& name)
@@ -64,6 +72,15 @@ namespace Qd {
 			return mCheckError;
 		}
 
+		// Set which parameter positions need implicit casts
+		void setParameterCasts(const std::vector<CastDirection>& casts) {
+			mParameterCasts = casts;
+		}
+
+		const std::vector<CastDirection>& parameterCasts() const {
+			return mParameterCasts;
+		}
+
 	private:
 		std::string mName;
 		IAstNode* mParent;
@@ -71,6 +88,7 @@ namespace Qd {
 		bool mCheckError;
 		size_t mLine;
 		size_t mColumn;
+		std::vector<CastDirection> mParameterCasts;  // Which parameters need casts (indexed from bottom of stack)
 	};
 }
 
