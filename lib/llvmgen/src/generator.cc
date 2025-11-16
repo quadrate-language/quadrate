@@ -997,10 +997,8 @@ namespace Qd {
 		// Check if this variable already exists (reuse the alloca if so)
 		llvm::AllocaInst* localAlloca;
 		auto it = localVariables.find(name);
-		if (it != localVariables.end()) {
-			// Variable already exists, reuse it
-			localAlloca = it->second;
-		} else {
+		bool isNewVariable = (it == localVariables.end());
+		if (isNewVariable) {
 			// Create alloca for the stack element in the entry block
 			llvm::Function* currentFn = builder->GetInsertBlock()->getParent();
 			llvm::IRBuilder<> tmpBuilder(&currentFn->getEntryBlock(), currentFn->getEntryBlock().begin());
@@ -1008,6 +1006,37 @@ namespace Qd {
 
 			// Store in local variables map
 			localVariables[name] = localAlloca;
+
+			// Add debug info for the local variable
+			if (debugInfoEnabled && debugBuilder && !debugScopeStack.empty()) {
+				// Create a pointer type to qd_stack_element_t
+				auto stackElemPtrType = debugBuilder->createPointerType(
+					debugBuilder->createBasicType("qd_stack_element_t", 128, llvm::dwarf::DW_ATE_unsigned),
+					64
+				);
+
+				// Create local variable debug info
+				auto localVar = debugBuilder->createAutoVariable(
+					debugScopeStack.back(),              // Scope (current function)
+					name,                                 // Variable name
+					debugFile,                            // File
+					static_cast<unsigned>(local->line()), // Line number
+					stackElemPtrType,                     // Type
+					true                                  // Always preserve
+				);
+
+				// Insert declare to make it visible in debugger
+				debugBuilder->insertDeclare(
+					localAlloca,                          // Storage (the alloca)
+					localVar,                             // Variable
+					debugBuilder->createExpression(),     // Expression
+					llvm::DILocation::get(*context, static_cast<unsigned>(local->line()), 0, debugScopeStack.back()),
+					builder->GetInsertBlock()
+				);
+			}
+		} else {
+			// Variable already exists, reuse it
+			localAlloca = it->second;
 		}
 
 		// Get the stack pointer from context

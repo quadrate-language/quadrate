@@ -94,6 +94,7 @@ module.exports = grammar({
       $.string,
       $.identifier,
       $.namespaced_identifier,
+      $.local_declaration,
       $.if_expression,
       $.for_loop,
       $.loop_statement,
@@ -198,6 +199,12 @@ module.exports = grammar({
     namespaced_identifier: $ => seq(
       field('namespace', $.identifier),
       '::',
+      field('name', $.identifier),
+    ),
+
+    // Local variable declaration: -> variable_name
+    local_declaration: $ => seq(
+      '->',
       field('name', $.identifier),
     ),
 
