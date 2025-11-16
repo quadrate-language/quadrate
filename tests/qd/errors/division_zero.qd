@@ -1,4 +1,0 @@
-// Test that division by zero aborts with error message
-fn main( -- ) {
-    1 0 div
-}

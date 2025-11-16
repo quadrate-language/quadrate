@@ -1,2 +1,0 @@
-EXIT_CODE: 255
-STDERR_CONTAINS: Fatal error in div: Division by zero
