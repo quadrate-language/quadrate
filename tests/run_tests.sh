@@ -39,6 +39,7 @@ run_qd_test() {
     local test_file="$1"
     local compiler="$2"
     local use_valgrind="${3:-no}"
+    local opt_flags="${4:-}"
     local test_name=$(basename "$test_file" .qd)
     local test_id=$(echo "$test_file" | md5sum | cut -d' ' -f1)
     local result_file="$TEMP_DIR/results/${test_id}.result"
@@ -52,7 +53,7 @@ run_qd_test() {
         local actual_error_file="$TEMP_DIR/${test_id}.err"
         local binary="$TEMP_DIR/${test_id}"
 
-        if "$compiler" "$test_file" -o "$binary" 2>"$actual_error_file" >/dev/null; then
+        if "$compiler" $opt_flags "$test_file" -o "$binary" 2>"$actual_error_file" >/dev/null; then
             echo "FAIL:compilation succeeded (should have failed)" >> "$result_file"
             echo -e "\033[0;31mFAIL\033[0m  $test_name (compilation succeeded)"
             return
@@ -90,7 +91,7 @@ run_qd_test() {
     local compile_log="$TEMP_DIR/${test_id}.compile"
 
     # Compile
-    if ! "$compiler" "$test_file" -o "$binary" 2>"$compile_log" >/dev/null; then
+    if ! "$compiler" $opt_flags "$test_file" -o "$binary" 2>"$compile_log" >/dev/null; then
         echo "FAIL:compilation failed" >> "$result_file"
         echo -e "\033[0;31mFAIL\033[0m  $test_name (compilation failed)"
         return
@@ -196,12 +197,12 @@ case "$MODE" in
 
         if command -v parallel &> /dev/null; then
             # Use parallel if available
-            find "$TEST_DIR_QD" -name "*.qd" -type f | \
-                parallel --unsafe -j$(nproc) run_qd_test {} "$COMPILER" no
+            find "$TEST_DIR_QD" -name "*.qd" -type f | sort | \
+                parallel --unsafe -j$(nproc) run_qd_test {} "$COMPILER" no ""
         else
             # Fallback to xargs for sequential execution
-            find "$TEST_DIR_QD" -name "*.qd" -type f | \
-                xargs -I {} bash -c 'run_qd_test "$@"' _ {} "$COMPILER" no
+            find "$TEST_DIR_QD" -name "*.qd" -type f | sort | \
+                xargs -I {} bash -c 'run_qd_test "$@"' _ {} "$COMPILER" no ""
         fi
 
         # Collect results
@@ -235,7 +236,7 @@ case "$MODE" in
 
         while IFS= read -r test_file; do
             run_formatter_test "$test_file"
-        done < <(find "$TEST_DIR_FORMATTER" -name "*.qd" -type f ! -path "*/expected/*")
+        done < <(find "$TEST_DIR_FORMATTER" -name "*.qd" -type f ! -path "*/expected/*" | sort)
 
         print_summary
         print_result_and_exit
@@ -247,7 +248,7 @@ case "$MODE" in
 
         while IFS= read -r test_file; do
             run_quaduses_test "$test_file"
-        done < <(find "$TEST_DIR_QUADUSES" -name "*.qd" -type f ! -path "*/expected/*")
+        done < <(find "$TEST_DIR_QUADUSES" -name "*.qd" -type f ! -path "*/expected/*" | sort)
 
         print_summary
         print_result_and_exit
@@ -268,8 +269,8 @@ case "$MODE" in
         export QUADC
 
         # Run tests sequentially (parallel + valgrind can be problematic)
-        find "$TEST_DIR_QD" -name "*.qd" -type f | while read test_file; do
-            run_qd_test "$test_file" "$QUADC" yes
+        find "$TEST_DIR_QD" -name "*.qd" -type f | sort | while read test_file; do
+            run_qd_test "$test_file" "$QUADC" yes ""
         done
 
         # Collect results
@@ -297,14 +298,66 @@ case "$MODE" in
         print_result_and_exit
         ;;
 
+    optimized)
+        # Run Quadrate tests with optimization enabled
+        OPT_LEVEL="${2:--O2}"
+        print_header "Quadrate Language Tests (with $OPT_LEVEL)"
+        COMPILER="$QUADC"
+
+        # Find and run all tests in parallel
+        export -f run_qd_test
+        export TEMP_DIR
+        export COMPILER
+        export OPT_LEVEL
+
+        if command -v parallel &> /dev/null; then
+            # Use parallel if available
+            find "$TEST_DIR_QD" -name "*.qd" -type f | sort | \
+                parallel --unsafe -j$(nproc) run_qd_test {} "$COMPILER" no "$OPT_LEVEL"
+        else
+            # Fallback to xargs for sequential execution
+            find "$TEST_DIR_QD" -name "*.qd" -type f | sort | \
+                xargs -I {} bash -c 'run_qd_test "$@"' _ {} "$COMPILER" no "$OPT_LEVEL"
+        fi
+
+        # Collect results
+        for result_file in "$TEMP_DIR/results"/*.result; do
+            [ -f "$result_file" ] || continue
+            increment_test_counter
+
+            test_name=$(grep "^NAME:" "$result_file" | cut -d: -f2-)
+            status=$(grep -v "^NAME:" "$result_file" | head -1)
+
+            case "$status" in
+                PASS)
+                    TESTS_PASSED=$((TESTS_PASSED + 1))
+                    ;;
+                SKIP*)
+                    TESTS_SKIPPED=$((TESTS_SKIPPED + 1))
+                    ;;
+                *)
+                    TESTS_FAILED=$((TESTS_FAILED + 1))
+                    ;;
+            esac
+        done
+
+        print_summary
+        print_result_and_exit
+        ;;
+
     *)
-        echo "Usage: $0 [qd|formatter|quaduses|valgrind]"
+        echo "Usage: $0 [qd|formatter|quaduses|valgrind|optimized] [optimization_level]"
         echo ""
         echo "Modes:"
         echo "  qd         - Run Quadrate language tests (default)"
         echo "  formatter  - Run formatter tests"
         echo "  quaduses   - Run use statement manager tests"
         echo "  valgrind   - Run Quadrate tests with valgrind"
+        echo "  optimized  - Run Quadrate tests with optimization (default: -O2)"
+        echo ""
+        echo "Examples:"
+        echo "  $0 optimized          # Run with -O2 optimization"
+        echo "  $0 optimized -O3      # Run with -O3 optimization"
         echo ""
         echo "Environment variables:"
         echo "  QUADC            - Path to quadc compiler"

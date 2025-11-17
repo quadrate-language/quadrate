@@ -10,6 +10,8 @@ module.exports = grammar({
     $.comment,
   ],
 
+  word: $ => $.identifier,
+
   rules: {
     source_file: $ => repeat($._statement),
 
@@ -180,8 +182,10 @@ module.exports = grammar({
 
     // Literals
     number: $ => token(choice(
-      /-?\d+\.\d+/,  // Float (with optional negative sign)
-      /-?\d+/,       // Integer (with optional negative sign)
+      /-\d+\.\d+/,   // Negative float
+      /\d+\.\d+/,    // Positive float
+      /-\d+/,        // Negative integer
+      /\d+/,         // Positive integer
     )),
 
     string: $ => seq(

@@ -22,6 +22,7 @@
 struct Options {
 	std::vector<std::string> files;
 	std::string outputName = "main";
+	int optLevel = 0; // 0-3 for -O0 through -O3
 	bool help = false;
 	bool version = false;
 	bool saveTemps = false;
@@ -30,6 +31,7 @@ struct Options {
 	bool run = false;
 	bool dumpIR = false;
 	bool debugInfo = false;
+	bool werror = false;
 };
 
 void printHelp() {
@@ -40,12 +42,14 @@ void printHelp() {
 	std::cout << "  -h, --help         Show this help message\n";
 	std::cout << "  -v, --version      Show version information\n";
 	std::cout << "  -o <name>          Output executable name (default: main)\n";
+	std::cout << "  -O0, -O1, -O2, -O3 Set optimization level (default: -O0)\n";
 	std::cout << "  -g                 Generate debug information for GDB/LLDB\n";
 	std::cout << "  --save-temps       Keep temporary files for debugging\n";
 	std::cout << "  --verbose          Show detailed compilation steps\n";
 	std::cout << "  --dump-tokens      Print lexer tokens\n";
 	std::cout << "  -r, --run          Compile and run immediately\n";
 	std::cout << "  --dump-ir          Print generated LLVM IR\n";
+	std::cout << "  --werror           Treat warnings as errors\n";
 	std::cout << "\n";
 	std::cout << "Examples:\n";
 	std::cout << "  quadc main.qd              Compile to executable 'main'\n";
@@ -86,6 +90,16 @@ bool parseArgs(int argc, char* argv[], Options& opts) {
 			opts.dumpIR = true;
 		} else if (arg == "-g") {
 			opts.debugInfo = true;
+		} else if (arg == "--werror") {
+			opts.werror = true;
+		} else if (arg == "-O0") {
+			opts.optLevel = 0;
+		} else if (arg == "-O1") {
+			opts.optLevel = 1;
+		} else if (arg == "-O2") {
+			opts.optLevel = 2;
+		} else if (arg == "-O3") {
+			opts.optLevel = 3;
 		} else if (arg[0] == '-') {
 			std::cerr << "quadc: unknown option: " << arg << "\n";
 			std::cerr << "Try 'quadc --help' for more information.\n";
@@ -406,7 +420,7 @@ int main(int argc, char** argv) {
 
 			// Semantic validation - catch errors before LLVM generation
 			Qd::SemanticValidator validator;
-			size_t errorCount = validator.validate(root, file.c_str());
+			size_t errorCount = validator.validate(root, file.c_str(), false, opts.werror);
 			if (errorCount > 0) {
 				// Validation failed - do not proceed
 				return 1;
@@ -540,7 +554,7 @@ int main(int argc, char** argv) {
 			// Semantic validation - catch errors before LLVM generation
 			// Pass true for isModuleFile to skip reporting errors for missing nested module imports
 			Qd::SemanticValidator validator;
-			size_t errorCount = validator.validate(root, moduleFilePath.c_str(), true);
+			size_t errorCount = validator.validate(root, moduleFilePath.c_str(), true, opts.werror);
 			if (errorCount > 0) {
 				// Validation failed - do not proceed
 				return 1;
@@ -615,6 +629,9 @@ int main(int argc, char** argv) {
 		if (opts.debugInfo) {
 			generator.setDebugInfo(true);
 		}
+
+		// Set optimization level
+		generator.setOptimizationLevel(opts.optLevel);
 
 		// Add all dependency modules in REVERSE order (dependencies first)
 		// Modules were loaded in breadth-first order (main first, then dependents, then their dependencies)

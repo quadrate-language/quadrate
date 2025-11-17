@@ -37,11 +37,17 @@ namespace Qd {
 		// Validate an AST and return error count
 		// Returns 0 if valid, > 0 if errors were found
 		// If isModuleFile is true, missing module imports will not be reported as errors
-		size_t validate(IAstNode* program, const char* filename = nullptr, bool isModuleFile = false);
+		// If werror is true, warnings are treated as errors
+		size_t validate(IAstNode* program, const char* filename = nullptr, bool isModuleFile = false, bool werror = false);
 
 		// Get error count
 		size_t errorCount() const {
 			return mErrorCount;
+		}
+
+		// Get warning count
+		size_t warningCount() const {
+			return mWarningCount;
 		}
 
 		// Get the set of imported modules
@@ -121,6 +127,9 @@ namespace Qd {
 		void reportErrorConditional(const char* message, bool shouldReport);
 		void reportErrorConditional(const IAstNode* node, const char* message, bool shouldReport);
 
+		// Report a warning (gcc/clang style)
+		void reportWarning(const IAstNode* node, const char* message);
+
 		// Current filename being validated
 		const char* mFilename;
 
@@ -162,6 +171,12 @@ namespace Qd {
 
 		// Error count
 		size_t mErrorCount;
+
+		// Warning count
+		size_t mWarningCount;
+
+		// Whether warnings should be treated as errors
+		bool mWerror;
 
 		// Whether this is validating a module file (vs main entry point)
 		bool mIsModuleFile;
