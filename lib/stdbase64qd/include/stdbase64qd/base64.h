@@ -15,7 +15,7 @@ extern "C" {
 qd_exec_result usr_base64_encode(qd_context* ctx);
 
 // Decode base64 string to binary data
-// Stack: encoded:s -- data:p data_len:i success:i
+// Stack: encoded:s -- data:p data_len:i
 qd_exec_result usr_base64_decode(qd_context* ctx);
 
 #ifdef __cplusplus

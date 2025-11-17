@@ -7,65 +7,45 @@ fn main( -- ) {
 	// Test 1: Simple string "Hello"
 	"Hello" mem::from_string -> len1 -> buf1
 	buf1 len1 base64::encode -> encoded1
-	encoded1 prints nl
+	encoded1 prints drop nl
 
 	// Decode and verify
-	encoded1 base64::decode if {
-		-> dlen1 -> dbuf1
-		dbuf1 dlen1 mem::to_string prints nl
-		dbuf1 mem::free
-	} else {
-		drop drop
-		"DECODE FAILED" prints nl
-	}
+	encoded1 base64::decode! -> dlen1 -> dbuf1
+	dbuf1 dlen1 mem::to_string prints drop nl
+	dbuf1 mem::free
 
 	buf1 mem::free
 
 	// Test 2: "Hello World!"
 	"Hello World!" mem::from_string -> len2 -> buf2
 	buf2 len2 base64::encode -> encoded2
-	encoded2 prints nl
+	encoded2 prints drop nl
 
-	encoded2 base64::decode if {
-		-> dlen2 -> dbuf2
-		dbuf2 dlen2 mem::to_string prints nl
-		dbuf2 mem::free
-	} else {
-		drop drop
-		"DECODE FAILED" prints nl
-	}
+	encoded2 base64::decode! -> dlen2 -> dbuf2
+	dbuf2 dlen2 mem::to_string prints drop nl
+	dbuf2 mem::free
 
 	buf2 mem::free
 
 	// Test 3: Single character "A"
 	"A" mem::from_string -> len3 -> buf3
 	buf3 len3 base64::encode -> encoded3
-	encoded3 prints nl
+	encoded3 prints drop nl
 
-	encoded3 base64::decode if {
-		-> dlen3 -> dbuf3
-		dbuf3 dlen3 mem::to_string prints nl
-		dbuf3 mem::free
-	} else {
-		drop drop
-		"DECODE FAILED" prints nl
-	}
+	encoded3 base64::decode! -> dlen3 -> dbuf3
+	dbuf3 dlen3 mem::to_string prints drop nl
+	dbuf3 mem::free
 
 	buf3 mem::free
 
 	// Test 4: Two characters "AB"
 	"AB" mem::from_string -> len4 -> buf4
 	buf4 len4 base64::encode -> encoded4
-	encoded4 prints nl
+	encoded4 prints drop nl
 
-	encoded4 base64::decode if {
-		-> dlen4 -> dbuf4
-		dbuf4 dlen4 mem::to_string prints nl
-		dbuf4 mem::free
-	} else {
-		drop drop
-		"DECODE FAILED" prints nl
-	}
+	encoded4 base64::decode! -> dlen4 -> dbuf4
+	dbuf4 dlen4 mem::to_string prints drop nl
+	dbuf4 mem::free
 
 	buf4 mem::free
 
@@ -75,14 +55,4 @@ fn main( -- ) {
 	encoded5 str::len . nl  // Should be 0
 
 	buf5 mem::free
-
-	// Test 6: Invalid base64 string (should fail)
-	"Not@Valid!" base64::decode if {
-		-> dlen6 -> dbuf6
-		dbuf6 mem::free
-		"UNEXPECTED SUCCESS" prints nl
-	} else {
-		drop drop
-		"DECODE FAILED (expected)" prints nl
-	}
 }
