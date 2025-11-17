@@ -1,0 +1,48 @@
+// Test new math utility functions: inc, dec, incf, decf, within
+use math
+
+fn main( -- ) {
+	// Test inc with integers
+	5 math::inc . nl
+
+	// Test dec with integers
+	10 math::dec . nl
+
+	// Test incf with floats
+	3.5 math::incf . nl
+
+	// Test decf with floats
+	7.2 math::decf . nl
+
+	// Test within - value in range
+	5 1 10 math::within . nl
+
+	// Test within - value at lower bound
+	1 1 10 math::within . nl
+
+	// Test within - value at upper bound
+	10 1 10 math::within . nl
+
+	// Test within - value below range
+	0 1 10 math::within . nl
+
+	// Test within - value above range
+	15 1 10 math::within . nl
+
+	// Test within with floats
+	5.5 1.0 10.0 math::within . nl
+
+	// Test sq (already existed, but verify)
+	4.0 math::sq . nl
+
+	// Test min (already existed, but verify)
+	5 3 math::min . nl
+
+	// Test max (already existed, but verify)
+	5 3 math::max . nl
+
+	// Test clamp (already existed, but verify)
+	15.0 0.0 10.0 math::clamp . nl
+	-5.0 0.0 10.0 math::clamp . nl
+	5.0 0.0 10.0 math::clamp . nl
+}

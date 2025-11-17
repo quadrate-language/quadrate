@@ -30,6 +30,26 @@ import "libstdmathqd_static.a" as "math" {
 
 // Pure Quadrate implementations (simpler than C equivalents)
 
+fn inc( x:i -- result:i ) {
+	// Increment integer by 1
+	1 add
+}
+
+fn incf( x:f -- result:f ) {
+	// Increment float by 1
+	1.0 add
+}
+
+fn dec( x:i -- result:i ) {
+	// Decrement integer by 1
+	1 sub
+}
+
+fn decf( x:f -- result:f ) {
+	// Decrement float by 1
+	1.0 sub
+}
+
 fn sq( x:f -- result:f ) {
 	// Square: x * x
 	dup mul
@@ -82,12 +102,12 @@ fn max( a:any b:any -- result:any ) {
 
 // Additional utility functions
 
-fn log(x:f base:f -- result:f) {
+fn log( x:f base:f -- result:f ) {
 	// log_base(x) = ln(x) / ln(base)
 	swap ln swap ln div
 }
 
-fn clamp(x:f min_val:f max_val:f -- result:f) {
+fn clamp( x:f min_val:f max_val:f -- result:f ) {
 	// Clamp x between min_val and max_val
 	// Inline implementation to avoid function call scoping issues
 	// Stack: x min_val max_val
@@ -102,7 +122,21 @@ fn clamp(x:f min_val:f max_val:f -- result:f) {
 	min_v temp over over gt if { drop } else { nip }
 }
 
-fn lerp(a:f b:f t:f -- result:f) {
+fn within( x:any min_val:any max_val:any -- result:i ) {
+	// Check if x is within [min_val, max_val] range (inclusive)
+	// Returns 1 (true) or 0 (false)
+	// Stack: x min_val max_val
+	-> max_v
+	-> min_v
+	-> x_v
+
+	// Check if x >= min_val AND x <= max_val
+	x_v min_v gte
+	x_v max_v lte
+	and
+}
+
+fn lerp( a:f b:f t:f -- result:f ) {
 	// Linear interpolation: a + (b - a) * t
 	// Stack: a b t
 	rot rot       // Stack: t a b
@@ -113,12 +147,12 @@ fn lerp(a:f b:f t:f -- result:f) {
 	add           // Stack: (a+(b-a)*t)
 }
 
-fn deg_to_rad(degrees:f -- radians:f) {
+fn deg_to_rad( degrees:f -- radians:f ) {
 	// radians = degrees * pi / 180
 	3.141592653589793 180 div mul
 }
 
-fn rad_to_deg(radians:f -- degrees:f) {
+fn rad_to_deg( radians:f -- degrees:f ) {
 	// degrees = radians * 180 / pi
 	180 mul 3.141592653589793 div
 }
