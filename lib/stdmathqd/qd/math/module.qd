@@ -35,19 +35,9 @@ fn inc( x:i -- result:i ) {
 	1 add
 }
 
-fn incf( x:f -- result:f ) {
-	// Increment float by 1
-	1.0 add
-}
-
 fn dec( x:i -- result:i ) {
 	// Decrement integer by 1
 	1 sub
-}
-
-fn decf( x:f -- result:f ) {
-	// Decrement float by 1
-	1.0 sub
 }
 
 fn sq( x:f -- result:f ) {

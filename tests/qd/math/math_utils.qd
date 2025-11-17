@@ -1,4 +1,4 @@
-// Test new math utility functions: inc, dec, incf, decf, within
+// Test new math utility functions: inc, dec, within
 use math
 
 fn main( -- ) {
@@ -8,11 +8,11 @@ fn main( -- ) {
 	// Test dec with integers
 	10 math::dec . nl
 
-	// Test incf with floats
-	3.5 math::incf . nl
+	// Test inc with floats (will give warning but works)
+	3.5 math::inc . nl
 
-	// Test decf with floats
-	7.2 math::decf . nl
+	// Test dec with floats (will give warning but works)
+	7.2 math::dec . nl
 
 	// Test within - value in range
 	5 1 10 math::within . nl
