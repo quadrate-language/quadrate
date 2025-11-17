@@ -1,6 +1,7 @@
 subdir('qc')
 subdir('qdrt')
 subdir('qd')
+subdir('stdbase64qd')
 subdir('stdbitsqd')
 subdir('stdfmtqd')
 subdir('stdioqd')

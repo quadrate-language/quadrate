@@ -27,6 +27,9 @@ debug:
 	@rm -f dist/lib/libqdrt_static.a && cd $(BUILD_DIR_DEBUG)/lib/qdrt && echo "Files in thin archive:" && ar -t libqdrt_static.a | head -3 && ar rcs $(CURDIR)/dist/lib/libqdrt_static.a $$(ar -t libqdrt_static.a) && echo "Archive created successfully"
 	@cp -f $(BUILD_DIR_DEBUG)/lib/qd/libqd.so dist/lib/
 	@rm -f dist/lib/libqd_static.a && cd $(BUILD_DIR_DEBUG)/lib/qd && ar rcs $(CURDIR)/dist/lib/libqd_static.a $$(ar -t libqd_static.a)
+	@cp -f $(BUILD_DIR_DEBUG)/lib/stdbase64qd/libstdbase64qd.so dist/lib/
+	@echo "Creating full archive for libstdbase64qd_static.a..."
+	@rm -f dist/lib/libstdbase64qd_static.a && cd $(BUILD_DIR_DEBUG)/lib/stdbase64qd && ar rcs $(CURDIR)/dist/lib/libstdbase64qd_static.a $$(ar -t libstdbase64qd_static.a) || (echo "ERROR: Failed to create libstdbase64qd_static.a" && exit 1)
 	@cp -f $(BUILD_DIR_DEBUG)/lib/stdbitsqd/libstdbitsqd.so dist/lib/
 	@echo "Creating full archive for libstdbitsqd_static.a..."
 	@rm -f dist/lib/libstdbitsqd_static.a && cd $(BUILD_DIR_DEBUG)/lib/stdbitsqd && ar rcs $(CURDIR)/dist/lib/libstdbitsqd_static.a $$(ar -t libstdbitsqd_static.a) || (echo "ERROR: Failed to create libstdbitsqd_static.a" && exit 1)
@@ -56,6 +59,7 @@ debug:
 	@rm -f dist/lib/libstdtimeqd_static.a && cd $(BUILD_DIR_DEBUG)/lib/stdtimeqd && ar rcs $(CURDIR)/dist/lib/libstdtimeqd_static.a $$(ar -t libstdtimeqd_static.a) || (echo "ERROR: Failed to create libstdtimeqd_static.a" && exit 1)
 	@cp -rf lib/qdrt/include/qdrt dist/include/
 	@cp -rf lib/qd/include/qd dist/include/
+	@cp -rf lib/stdbase64qd/include/stdbase64qd dist/include/
 	@cp -rf lib/stdbitsqd/include/stdbitsqd dist/include/
 	@cp -rf lib/stdfmtqd/include/stdfmtqd dist/include/
 	@cp -rf lib/stdioqd/include/stdioqd dist/include/
@@ -66,6 +70,7 @@ debug:
 	@cp -rf lib/stdstrqd/include/stdstrqd dist/include/
 	@cp -rf lib/stdtimeqd/include/stdtimeqd dist/include/
 	@mkdir -p dist/share/quadrate
+	@cp -r lib/stdbase64qd/qd/base64 dist/share/quadrate/
 	@cp -r lib/stdbitsqd/qd/bits dist/share/quadrate/
 	@cp -r lib/stdfmtqd/qd/fmt dist/share/quadrate/
 	@cp -r lib/stdioqd/qd/io dist/share/quadrate/
@@ -120,6 +125,7 @@ release:
 	@rm -f dist/lib/libstdtimeqd_static.a && cd $(BUILD_DIR_RELEASE)/lib/stdtimeqd && ar rcs $(CURDIR)/dist/lib/libstdtimeqd_static.a $$(ar -t libstdtimeqd_static.a) || (echo "ERROR: Failed to create libstdtimeqd_static.a" && exit 1)
 	@cp -rf lib/qdrt/include/qdrt dist/include/
 	@cp -rf lib/qd/include/qd dist/include/
+	@cp -rf lib/stdbase64qd/include/stdbase64qd dist/include/
 	@cp -rf lib/stdbitsqd/include/stdbitsqd dist/include/
 	@cp -rf lib/stdfmtqd/include/stdfmtqd dist/include/
 	@cp -rf lib/stdioqd/include/stdioqd dist/include/
@@ -130,6 +136,7 @@ release:
 	@cp -rf lib/stdstrqd/include/stdstrqd dist/include/
 	@cp -rf lib/stdtimeqd/include/stdtimeqd dist/include/
 	@mkdir -p dist/share/quadrate
+	@cp -r lib/stdbase64qd/qd/base64 dist/share/quadrate/
 	@cp -r lib/stdbitsqd/qd/bits dist/share/quadrate/
 	@cp -r lib/stdfmtqd/qd/fmt dist/share/quadrate/
 	@cp -r lib/stdioqd/qd/io dist/share/quadrate/
