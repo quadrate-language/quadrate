@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
+#include <stdio.h>
 
 // Base64 alphabet
 static const char base64_alphabet[] =
@@ -142,11 +143,13 @@ qd_exec_result usr_base64_decode(qd_context* ctx) {
 	qd_stack_element_t str_elem;
 	qd_stack_error err = qd_stack_pop(ctx->st, &str_elem);
 	if (err != QD_STACK_OK) {
-		return (qd_exec_result){-1};
+		fprintf(stderr, "Fatal error in base64::decode: Failed to pop string\n");
+		abort();
 	}
 	if (str_elem.type != QD_STACK_TYPE_STR) {
+		fprintf(stderr, "Fatal error in base64::decode: Expected string, got %d\n", str_elem.type);
 		free(str_elem.value.s);
-		return (qd_exec_result){-1};
+		abort();
 	}
 
 	char* encoded = str_elem.value.s;
@@ -154,11 +157,9 @@ qd_exec_result usr_base64_decode(qd_context* ctx) {
 
 	// Validate length (must be multiple of 4)
 	if (in_len % 4 != 0) {
+		fprintf(stderr, "Fatal error in base64::decode: Invalid base64 length (must be multiple of 4)\n");
 		free(encoded);
-		// Push failure: null, 0, 0
-		qd_push_p(ctx, NULL);
-		qd_push_i(ctx, 0);
-		return qd_push_i(ctx, 0);
+		abort();
 	}
 
 	// Calculate maximum output length
@@ -167,17 +168,15 @@ qd_exec_result usr_base64_decode(qd_context* ctx) {
 	// Allocate output buffer
 	uint8_t* out = malloc(max_out_len);
 	if (!out) {
+		fprintf(stderr, "Fatal error in base64::decode: Allocation failed\n");
 		free(encoded);
-		ctx->error_code = -1;
-		ctx->error_msg = "Allocation failed in base64::decode";
-		return (qd_exec_result){-1};
+		abort();
 	}
 
 	size_t out_pos = 0;
-	int valid = 1;
 
 	// Decode 4-character groups
-	for (size_t i = 0; i < in_len && valid; i += 4) {
+	for (size_t i = 0; i < in_len; i += 4) {
 		int8_t v1 = base64_decode_table[(uint8_t)encoded[i]];
 		int8_t v2 = base64_decode_table[(uint8_t)encoded[i + 1]];
 		int8_t v3 = base64_decode_table[(uint8_t)encoded[i + 2]];
@@ -185,16 +184,20 @@ qd_exec_result usr_base64_decode(qd_context* ctx) {
 
 		// Check for invalid characters
 		if (v1 < 0 || v2 < 0) {
-			valid = 0;
-			break;
+			fprintf(stderr, "Fatal error in base64::decode: Invalid base64 character\n");
+			free(out);
+			free(encoded);
+			abort();
 		}
 
 		// Handle padding
 		if (v3 == -2) {  // Third char is '='
 			// Must be last group
 			if (i + 4 != in_len) {
-				valid = 0;
-				break;
+				fprintf(stderr, "Fatal error in base64::decode: Padding character not at end\n");
+				free(out);
+				free(encoded);
+				abort();
 			}
 			// Only decode first byte
 			out[out_pos++] = (uint8_t)((v1 << 2) | (v2 >> 4));
@@ -204,8 +207,10 @@ qd_exec_result usr_base64_decode(qd_context* ctx) {
 		if (v4 == -2) {  // Fourth char is '='
 			// Must be last group
 			if (i + 4 != in_len) {
-				valid = 0;
-				break;
+				fprintf(stderr, "Fatal error in base64::decode: Padding character not at end\n");
+				free(out);
+				free(encoded);
+				abort();
 			}
 			// Decode first two bytes
 			out[out_pos++] = (uint8_t)((v1 << 2) | (v2 >> 4));
@@ -215,8 +220,10 @@ qd_exec_result usr_base64_decode(qd_context* ctx) {
 
 		// Check for other invalid values
 		if (v3 < 0 || v4 < 0) {
-			valid = 0;
-			break;
+			fprintf(stderr, "Fatal error in base64::decode: Invalid base64 character\n");
+			free(out);
+			free(encoded);
+			abort();
 		}
 
 		// Decode 3 bytes from 4 chars
@@ -227,16 +234,7 @@ qd_exec_result usr_base64_decode(qd_context* ctx) {
 
 	free(encoded);
 
-	if (valid) {
-		// Push success: data:p data_len:i success:i
-		qd_push_p(ctx, out);
-		qd_push_i(ctx, (int64_t)out_pos);
-		return qd_push_i(ctx, 1);
-	} else {
-		// Push failure: null, 0, 0
-		free(out);
-		qd_push_p(ctx, NULL);
-		qd_push_i(ctx, 0);
-		return qd_push_i(ctx, 0);
-	}
+	// Push data and length: data:p data_len:i
+	qd_push_p(ctx, out);
+	return qd_push_i(ctx, (int64_t)out_pos);
 }
