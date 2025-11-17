@@ -100,7 +100,13 @@ run_qd_test() {
     # Run (with or without valgrind)
     if [ "$use_valgrind" = "yes" ]; then
         local valgrind_log="$TEMP_DIR/${test_id}.valgrind"
-        if ! valgrind --leak-check=full --error-exitcode=1 --log-file="$valgrind_log" "$binary" >"$actual_output_file" 2>&1; then
+        # Enhanced valgrind options:
+        # --leak-check=full: Full leak detection
+        # --show-leak-kinds=all: Show all leak types
+        # --track-origins=yes: Track uninitialized values
+        # --track-fds=yes: Detect file descriptor leaks
+        # --error-exitcode=1: Exit with error code on issues
+        if ! valgrind --leak-check=full --show-leak-kinds=all --track-origins=yes --track-fds=yes --error-exitcode=1 --log-file="$valgrind_log" "$binary" >"$actual_output_file" 2>&1; then
             echo "FAIL:valgrind errors" >> "$result_file"
             echo -e "\033[0;31mFAIL\033[0m  $test_name (valgrind errors)"
             return
