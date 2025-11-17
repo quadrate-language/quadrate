@@ -1,0 +1,48 @@
+// Test ctx with stack operations
+fn test_ctx_dup( -- ) {
+	// Test: dup inside ctx
+	10
+	ctx {
+		5 dup mul
+	}
+	// Stack: [10, 25]
+	. nl
+	. nl
+}
+
+fn test_ctx_swap( -- ) {
+	// Test: swap inside ctx
+	1 2
+	ctx {
+		3 4 swap sub
+	}
+	// Stack: [1, 2, 1]
+	. nl
+	. nl
+	. nl
+}
+
+fn test_ctx_over( -- ) {
+	// Test: over inside ctx
+	ctx {
+		10 20 over add
+	}
+	// Stack: [30]
+	. nl
+}
+
+fn test_ctx_rot( -- ) {
+	// Test: rot inside ctx
+	ctx {
+		1 2 3 rot add add
+	}
+	// Stack: [6]
+	. nl
+}
+
+fn main( -- ) {
+	test_ctx_dup
+	test_ctx_swap
+	test_ctx_over
+	test_ctx_rot
+}

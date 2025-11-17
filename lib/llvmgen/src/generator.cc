@@ -18,6 +18,7 @@
 #include <qc/ast_node_break.h>
 #include <qc/ast_node_constant.h>
 #include <qc/ast_node_continue.h>
+#include <qc/ast_node_ctx.h>
 #include <qc/ast_node_defer.h>
 #include <qc/ast_node_for.h>
 #include <qc/ast_node_function.h>
@@ -71,6 +72,7 @@ namespace Qd {
 		// Runtime functions
 		llvm::Function* createContextFn = nullptr;
 		llvm::Function* freeContextFn = nullptr;
+		llvm::Function* cloneContextFn = nullptr;
 		llvm::Function* pushIntFn = nullptr;
 		llvm::Function* pushFloatFn = nullptr;
 		llvm::Function* pushStrFn = nullptr;
@@ -83,6 +85,7 @@ namespace Qd {
 		llvm::Function* pushCallFn = nullptr;
 		llvm::Function* popCallFn = nullptr;
 		llvm::Function* checkStackFn = nullptr;
+		llvm::Function* strdupFn = nullptr;
 
 		// Loop context for break/continue
 		struct LoopContext {
@@ -134,6 +137,7 @@ namespace Qd {
 		void generateIf(AstNodeIfStatement* ifStmt, llvm::Value* ctx, llvm::Value* forIterVar);
 		void generateFor(AstNodeForStatement* forStmt, llvm::Value* ctx);
 		void generateLoop(AstNodeLoopStatement* loopStmt, llvm::Value* ctx);
+		void generateCtxBlock(AstNodeCtx* ctxNode, llvm::Value* ctx, llvm::Value* forIterVar);
 		void generateIdentifier(AstNodeIdentifier* ident, llvm::Value* ctx, llvm::Value* forIterVar);
 		void generateFunctionPointer(AstNodeFunctionPointerReference* funcPtr, llvm::Value* ctx);
 		void generateScopedIdentifier(AstNodeScopedIdentifier* scopedIdent, llvm::Value* ctx);
@@ -169,6 +173,11 @@ namespace Qd {
 		auto freeContextFnTy = llvm::FunctionType::get(builder->getVoidTy(), {contextPtrTy}, false);
 		freeContextFn =
 				llvm::Function::Create(freeContextFnTy, llvm::Function::ExternalLinkage, "qd_free_context", *module);
+
+		// qd_clone_context(const qd_context* src) -> qd_context*
+		auto cloneContextFnTy = llvm::FunctionType::get(contextPtrTy, {contextPtrTy}, false);
+		cloneContextFn =
+				llvm::Function::Create(cloneContextFnTy, llvm::Function::ExternalLinkage, "qd_clone_context", *module);
 
 		// qd_push_i(qd_context* ctx, int64_t value) -> qd_exec_result
 		auto pushIntFnTy = llvm::FunctionType::get(execResultTy, {contextPtrTy, builder->getInt64Ty()}, false);
@@ -227,6 +236,11 @@ namespace Qd {
 		auto stackSizeFnTy =
 				llvm::FunctionType::get(builder->getInt64Ty(), {llvm::PointerType::getUnqual(*context)}, false);
 		stackSizeFn = llvm::Function::Create(stackSizeFnTy, llvm::Function::ExternalLinkage, "qd_stack_size", *module);
+
+		// strdup(const char* s) -> char*
+		auto strdupFnTy = llvm::FunctionType::get(llvm::PointerType::getUnqual(*context),
+				{llvm::PointerType::getUnqual(*context)}, false);
+		strdupFn = llvm::Function::Create(strdupFnTy, llvm::Function::ExternalLinkage, "strdup", *module);
 
 		// Initialize debug info if enabled
 		if (debugInfoEnabled) {
@@ -1339,6 +1353,96 @@ namespace Qd {
 		builder->SetInsertPoint(loopExitBB);
 	}
 
+	void LlvmGenerator::Impl::generateCtxBlock(AstNodeCtx* ctxNode, llvm::Value* ctx, llvm::Value* forIterVar) {
+		// Clone the parent context
+		auto clonedCtx = builder->CreateCall(cloneContextFn, {ctx}, "cloned_ctx");
+
+		// Execute the block with the cloned context
+		for (size_t i = 0; i < ctxNode->childCount(); i++) {
+			generateNode(ctxNode->child(i), clonedCtx, forIterVar);
+		}
+
+		// Get the stack from cloned context
+		auto stackFieldPtr =
+				builder->CreateStructGEP(llvm::StructType::get(*context,
+												 {
+														 llvm::PointerType::getUnqual(*context), // qd_stack* st
+														 builder->getInt64Ty(),					 // int64_t error_code
+														 llvm::PointerType::getUnqual(*context), // char* error_msg
+														 builder->getInt32Ty(),					 // int argc
+														 llvm::PointerType::getUnqual(*context), // char** argv
+														 llvm::PointerType::getUnqual(*context)	 // char* program_name
+												 }),
+						clonedCtx, 0, "cloned_st_ptr");
+		auto clonedStack = builder->CreateLoad(llvm::PointerType::getUnqual(*context), stackFieldPtr, "cloned_st");
+
+		// Pop exactly one value from the cloned stack
+		auto resultElemPtr = builder->CreateAlloca(stackElementTy, nullptr, "ctx_result_elem");
+		builder->CreateCall(stackPopFn, {clonedStack, resultElemPtr});
+
+		// Get the result value and type
+		auto resultValuePtr = builder->CreateStructGEP(stackElementTy, resultElemPtr, 0, "result_value_ptr");
+		auto resultValue = builder->CreateLoad(builder->getInt64Ty(), resultValuePtr, "result_value");
+		auto resultTypePtr = builder->CreateStructGEP(stackElementTy, resultElemPtr, 1, "result_type_ptr");
+		auto resultType = builder->CreateLoad(builder->getInt32Ty(), resultTypePtr, "result_type");
+
+		// Push the result to the parent context based on its type BEFORE freeing cloned context
+		// This is critical for strings: qd_push_s will duplicate the string, so we need
+		// the original string to still be valid when we call it
+		// Type field: 0=INT, 1=FLOAT, 2=PTR, 3=STR
+		llvm::Function* currentFn = builder->GetInsertBlock()->getParent();
+		llvm::BasicBlock* pushIntBB = llvm::BasicBlock::Create(*context, "ctx.push_int", currentFn);
+		llvm::BasicBlock* pushFloatBB = llvm::BasicBlock::Create(*context, "ctx.push_float", currentFn);
+		llvm::BasicBlock* pushPtrBB = llvm::BasicBlock::Create(*context, "ctx.push_ptr", currentFn);
+		llvm::BasicBlock* pushStrBB = llvm::BasicBlock::Create(*context, "ctx.push_str", currentFn);
+		llvm::BasicBlock* pushDoneBB = llvm::BasicBlock::Create(*context, "ctx.push_done", currentFn);
+
+		// Switch on type
+		auto switchInst = builder->CreateSwitch(resultType, pushDoneBB, 4);
+		switchInst->addCase(builder->getInt32(0), pushIntBB);  // INT
+		switchInst->addCase(builder->getInt32(1), pushFloatBB); // FLOAT
+		switchInst->addCase(builder->getInt32(2), pushPtrBB);   // PTR
+		switchInst->addCase(builder->getInt32(3), pushStrBB);   // STR
+
+		// Push INT
+		builder->SetInsertPoint(pushIntBB);
+		builder->CreateCall(pushIntFn, {ctx, resultValue});
+		builder->CreateBr(pushDoneBB);
+
+		// Push FLOAT
+		builder->SetInsertPoint(pushFloatBB);
+		auto floatValue = builder->CreateBitCast(resultValue, builder->getDoubleTy(), "float_value");
+		builder->CreateCall(pushFloatFn, {ctx, floatValue});
+		builder->CreateBr(pushDoneBB);
+
+		// Push PTR
+		builder->SetInsertPoint(pushPtrBB);
+		auto ptrValue = builder->CreateIntToPtr(resultValue, llvm::PointerType::getUnqual(*context), "ptr_value");
+		builder->CreateCall(pushPtrFn, {ctx, ptrValue});
+		builder->CreateBr(pushDoneBB);
+
+		// Push STR
+		builder->SetInsertPoint(pushStrBB);
+		auto strValue = builder->CreateIntToPtr(resultValue, llvm::PointerType::getUnqual(*context), "str_value");
+		builder->CreateCall(pushStrFn, {ctx, strValue});
+		// Free the popped string from cloned context (qd_push_s has duplicated it, so we own the original)
+		// When we popped with non-NULL element, the string wasn't freed, so we must free it manually
+		llvm::Function* freeFn = module->getFunction("free");
+		if (!freeFn) {
+			auto freeFnTy = llvm::FunctionType::get(builder->getVoidTy(), {llvm::PointerType::getUnqual(*context)}, false);
+			freeFn = llvm::Function::Create(freeFnTy, llvm::Function::ExternalLinkage, "free", *module);
+		}
+		builder->CreateCall(freeFn, {strValue});
+		builder->CreateBr(pushDoneBB);
+
+		// Free the cloned context AFTER pushing (qd_push_s has now duplicated the string)
+		builder->SetInsertPoint(pushDoneBB);
+		builder->CreateCall(freeContextFn, {clonedCtx});
+
+		// Continue after push
+		builder->SetInsertPoint(pushDoneBB);
+	}
+
 	void LlvmGenerator::Impl::generateNode(IAstNode* node, llvm::Value* ctx, llvm::Value* forIterVar) {
 		if (!node) {
 			return;
@@ -1400,6 +1504,9 @@ namespace Qd {
 			// Collect defer statement for later execution at function end
 			currentDeferStatements.push_back(static_cast<AstNodeDefer*>(node));
 			// Don't generate code now - will be generated in return block
+			break;
+		case IAstNode::Type::CTX_STATEMENT:
+			generateCtxBlock(static_cast<AstNodeCtx*>(node), ctx, forIterVar);
 			break;
 		case IAstNode::Type::IDENTIFIER:
 			generateIdentifier(static_cast<AstNodeIdentifier*>(node), ctx, forIterVar);

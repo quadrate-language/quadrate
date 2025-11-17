@@ -1,3 +1,5 @@
+#define _POSIX_C_SOURCE 200809L
+
 #include <qdrt/stack.h>
 #include <stdlib.h>
 #include <string.h>
@@ -47,6 +49,44 @@ void qd_stack_destroy(qd_stack* stack) {
 
 	free(stack->data);
 	free(stack);
+}
+
+qd_stack_error qd_stack_clone(qd_stack** dest, const qd_stack* src) {
+	if (dest == NULL || src == NULL) {
+		return QD_STACK_ERR_NULL_POINTER;
+	}
+
+	/* Create new stack with same capacity */
+	qd_stack_error err = qd_stack_init(dest, src->capacity);
+	if (err != QD_STACK_OK) {
+		return err;
+	}
+
+	qd_stack* d = *dest;
+
+	/* Copy all elements */
+	for (size_t i = 0; i < src->size; i++) {
+		d->data[i].type = src->data[i].type;
+		d->data[i].is_error_tainted = src->data[i].is_error_tainted;
+
+		/* Deep copy strings */
+		if (src->data[i].type == QD_STACK_TYPE_STR) {
+			d->data[i].value.s = strdup(src->data[i].value.s);
+			if (d->data[i].value.s == NULL) {
+				/* Cleanup on failure */
+				d->size = i; /* Set size to cleaned-up elements */
+				qd_stack_destroy(d);
+				*dest = NULL;
+				return QD_STACK_ERR_ALLOC;
+			}
+		} else {
+			/* Shallow copy for non-string types */
+			d->data[i].value = src->data[i].value;
+		}
+	}
+
+	d->size = src->size;
+	return QD_STACK_OK;
 }
 
 qd_stack_error qd_stack_push_int(qd_stack* stack, int64_t value) {

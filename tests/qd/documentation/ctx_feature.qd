@@ -1,0 +1,110 @@
+// Comprehensive ctx block feature demonstration
+// ctx blocks execute code in an isolated context
+// Syntax: ctx { ... }
+// Stack effect: ( S -- S r ) where r is the single returned value
+
+fn demo_basic_isolation( -- ) {
+	// Basic isolation - parent stack preserved
+	clear
+	"Demo 1: Basic Isolation" prints nl
+	1 2 3
+	ctx {
+		// Child starts with [1, 2, 3] (copy of parent)
+		mul  // 2 * 3 = 6
+		add  // 1 + 6 = 7
+	}
+	// Parent stack: [1, 2, 3, 7]
+	// Original values preserved, result added
+	. nl  // 7
+	. nl  // 3
+	. nl  // 2
+	. nl  // 1
+	nl
+	clear
+}
+
+fn demo_deep_copy( -- ) {
+	// Deep copy - child can modify without affecting parent
+	clear
+	"Demo 2: Deep Copy" prints nl
+	"original"
+	ctx {
+		drop
+		"modified"
+	}
+	// Stack: ["original", "modified"]
+	// Parent's string unchanged!
+	prints nl
+	prints nl
+	nl
+	clear
+}
+
+fn demo_clear_in_ctx( -- ) {
+	// Clear inside ctx - parent unaffected
+	clear
+	"Demo 3: Clear in ctx" prints nl
+	100 200 300
+	ctx {
+		clear
+		42
+	}
+	// Stack: [100, 200, 300, 42]
+	. nl  // 42
+	. nl  // 300
+	. nl  // 200
+	. nl  // 100
+	nl
+	clear
+}
+
+fn demo_chained_ctx( -- ) {
+	// Chained ctx blocks
+	clear
+	"Demo 4: Chained ctx blocks" prints nl
+	ctx {
+		10 20 add
+	}
+	ctx {
+		2 mul
+	}
+	ctx {
+		5 sub
+	}
+	// Stack: [30, 60, 55]
+	. nl  // 55
+	. nl  // 60
+	. nl  // 30
+	nl
+	clear
+}
+
+fn demo_with_control_flow( -- ) {
+	// ctx with control flow
+	clear
+	"Demo 5: With control flow" prints nl
+	10 5
+	ctx {
+		gt
+		if {
+			999
+		}
+	}
+	// Stack: [10, 5, 999]
+	. nl  // 999
+	. nl  // 5
+	. nl  // 10
+	nl
+	clear
+}
+
+fn main( -- ) {
+	"=== CTX Block Feature Demo ===" prints nl
+	nl
+	demo_basic_isolation
+	demo_deep_copy
+	demo_clear_in_ctx
+	demo_chained_ctx
+	demo_with_control_flow
+	"=== All demos complete ===" prints nl
+}

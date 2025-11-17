@@ -598,6 +598,21 @@ qd_context* qd_create_context(size_t stack_size);
  */
 void qd_free_context(qd_context* ctx);
 
+/**
+ * @brief Clone an execution context (deep copy)
+ *
+ * Creates a deep copy of the source context, including the entire stack.
+ * This is used by the ctx keyword to create an isolated execution context.
+ *
+ * @param src Source context to clone
+ * @return Pointer to the cloned context, or NULL on failure
+ *
+ * @note The caller is responsible for freeing the cloned context with qd_free_context()
+ * @note The stack and all string values are deep copied
+ * @note Command-line arguments and program name are shared (not copied)
+ */
+qd_context* qd_clone_context(const qd_context* src);
+
 /** @} */ // end of ContextManagement group
 
 /**

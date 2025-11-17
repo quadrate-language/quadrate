@@ -1,0 +1,40 @@
+// Test ctx with strings
+fn test_ctx_string_return( -- ) {
+	// Test: Return string from ctx
+	ctx {
+		"hello"
+	}
+	prints nl
+	clear
+}
+
+fn test_ctx_string_isolation( -- ) {
+	// Test: String isolation
+	"parent"
+	ctx {
+		drop
+		"child"
+	}
+	// Stack: ["parent", "child"]
+	prints nl
+	prints nl
+	clear
+}
+
+fn test_ctx_string_preserve( -- ) {
+	// Test: Parent string preserved
+	"original"
+	ctx {
+		"new"
+	}
+	// Stack: ["original", "new"]
+	prints nl
+	prints nl
+	clear
+}
+
+fn main( -- ) {
+	test_ctx_string_return
+	test_ctx_string_isolation
+	test_ctx_string_preserve
+}

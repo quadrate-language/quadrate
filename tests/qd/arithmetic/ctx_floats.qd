@@ -1,0 +1,40 @@
+// Test ctx with floating point numbers
+fn test_ctx_float_basic( -- ) {
+	// Test: Basic float operations
+	3.14
+	ctx {
+		2.0 mul
+	}
+	// Stack: [3.14, 6.28]
+	. nl
+	. nl
+}
+
+fn test_ctx_float_arithmetic( -- ) {
+	// Test: Float arithmetic
+	10.5 2.5
+	ctx {
+		// Stack: [10.5, 2.5]
+		div
+	}
+	// Stack: [10.5, 2.5, 4.2]
+	. nl
+	. nl
+	. nl
+}
+
+fn test_ctx_float_complex( -- ) {
+	// Test: Complex float operations
+	ctx {
+		1.5 2.5 add  // 4.0
+		3.0 mul      // 12.0
+		2.0 sub      // 10.0
+	}
+	. nl
+}
+
+fn main( -- ) {
+	test_ctx_float_basic
+	test_ctx_float_arithmetic
+	test_ctx_float_complex
+}

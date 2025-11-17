@@ -1,0 +1,33 @@
+// Test ctx with if statement
+fn test_ctx_simple_if_true( -- ) {
+	// Test: Simple if inside ctx (true)
+	ctx {
+		1 1 eq
+		if {
+			100
+		}
+	}
+	. nl
+}
+
+fn test_ctx_simple_if_false( -- ) {
+	// Test: Simple if inside ctx (false - no result issue)
+	// This shows a limitation: if false means no value left
+	5
+	ctx {
+		drop
+		0 if {
+			200
+		}
+		// If false, nothing on stack - need to handle this
+		// Add a fallback value
+		999
+	}
+	. nl
+	. nl
+}
+
+fn main( -- ) {
+	test_ctx_simple_if_true
+	test_ctx_simple_if_false
+}

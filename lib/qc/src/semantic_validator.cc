@@ -7,6 +7,7 @@
 #include <qc/ast.h>
 #include <qc/ast_node.h>
 #include <qc/ast_node_constant.h>
+#include <qc/ast_node_ctx.h>
 #include <qc/ast_node_function.h>
 #include <qc/ast_node_function_pointer.h>
 #include <qc/ast_node_identifier.h>
@@ -1192,6 +1193,15 @@ namespace Qd {
 			case IAstNode::Type::FOR_STATEMENT:
 			case IAstNode::Type::LOOP_STATEMENT: {
 				// For now, skip loop type checking
+				break;
+			}
+
+			case IAstNode::Type::CTX_STATEMENT: {
+				// For now, skip ctx type checking since it's complex
+				// (would need full stack effect analysis including clear, drop, etc.)
+				// The runtime enforces the single-value constraint anyway
+				// Just push a generic type to the parent stack
+				typeStack.push_back(StackValueType::INT);
 				break;
 			}
 

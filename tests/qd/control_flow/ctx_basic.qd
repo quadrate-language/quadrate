@@ -1,0 +1,48 @@
+// Test basic ctx functionality
+fn test_ctx_simple( -- ) {
+	// Test 1: Simple computation
+	10 20 30
+	ctx {
+		// Child gets [10, 20, 30]
+		add add  // 10 + 20 + 30 = 60
+	}
+	// Stack: [10, 20, 30, 60]
+	. nl  // 60
+	. nl  // 30
+	. nl  // 20
+	. nl  // 10
+}
+
+fn test_ctx_isolation( -- ) {
+	// Test 2: Isolation - parent unchanged
+	1 2 3
+	ctx {
+		// Child gets [1, 2, 3]
+		mul  // 2 * 3 = 6
+		add  // 1 + 6 = 7
+	}
+	// Stack: [1, 2, 3, 7]
+	. nl  // 7
+	. nl  // 3
+	. nl  // 2
+	. nl  // 1
+}
+
+fn test_ctx_clear( -- ) {
+	// Test 3: Clear inside ctx
+	100 200
+	ctx {
+		clear
+		42
+	}
+	// Stack: [100, 200, 42]
+	. nl  // 42
+	. nl  // 200
+	. nl  // 100
+}
+
+fn main( -- ) {
+	test_ctx_simple
+	test_ctx_isolation
+	test_ctx_clear
+}

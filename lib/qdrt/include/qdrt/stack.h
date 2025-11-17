@@ -90,6 +90,21 @@ qd_stack_error qd_stack_init(qd_stack** stack, size_t capacity);
 void qd_stack_destroy(qd_stack* stack);
 
 /**
+ * @brief Clone a stack (deep copy)
+ *
+ * Creates a deep copy of the source stack, including all string values.
+ * The cloned stack will have the same capacity and contents as the source.
+ *
+ * @param[out] dest Pointer to receive the cloned stack
+ * @param src Source stack to clone
+ * @return QD_STACK_OK on success, error code otherwise
+ *
+ * @note The caller is responsible for calling qd_stack_destroy() on the cloned stack
+ * @note All strings in the stack are deep copied
+ */
+qd_stack_error qd_stack_clone(qd_stack** dest, const qd_stack* src);
+
+/**
  * @brief Push a 64-bit integer onto the stack
  *
  * @param stack Target stack

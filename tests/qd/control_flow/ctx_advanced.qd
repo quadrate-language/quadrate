@@ -1,0 +1,54 @@
+// Advanced ctx tests with stack operations
+fn test_ctx_stack_ops( -- ) {
+	// Test: Stack operations inside ctx
+	1 2 3
+	ctx {
+		// Stack: [1, 2, 3]
+		swap  // [1, 3, 2]
+		drop  // [1, 3]
+		dup   // [1, 3, 3]
+		mul   // [1, 9]
+		add   // [10]
+	}
+	// Stack: [1, 2, 3, 10]
+	. nl  // 10
+	. nl  // 3
+	. nl  // 2
+	. nl  // 1
+}
+
+fn test_ctx_arithmetic( -- ) {
+	// Test: Complex arithmetic
+	5
+	ctx {
+		dup   // [5, 5]
+		mul   // [25]
+		2 add // [27]
+		3 div // [9]
+	}
+	// Stack: [5, 9]
+	. nl  // 9
+	. nl  // 5
+}
+
+fn test_ctx_comparison( -- ) {
+	// Test: Comparison operations
+	100 50
+	ctx {
+		// Stack: [100, 50]
+		gt    // [1] (true)
+		if {
+			777
+		}
+	}
+	// Stack: [100, 50, 777]
+	. nl  // 777
+	. nl  // 50
+	. nl  // 100
+}
+
+fn main( -- ) {
+	test_ctx_stack_ops
+	test_ctx_arithmetic
+	test_ctx_comparison
+}

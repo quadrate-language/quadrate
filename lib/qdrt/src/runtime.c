@@ -3072,6 +3072,65 @@ void qd_free_context(qd_context* ctx) {
 	free(ctx);
 }
 
+qd_context* qd_clone_context(const qd_context* src) {
+	if (src == NULL) {
+		return NULL;
+	}
+
+	/* Allocate new context */
+	qd_context* ctx = (qd_context*)malloc(sizeof(qd_context));
+	if (ctx == NULL) {
+		return NULL;
+	}
+
+	/* Clone the stack */
+	qd_stack_error err = qd_stack_clone(&ctx->st, src->st);
+	if (err != QD_STACK_OK) {
+		free(ctx);
+		return NULL;
+	}
+
+	/* Copy error state */
+	ctx->error_code = src->error_code;
+	if (src->error_msg != NULL) {
+		ctx->error_msg = strdup(src->error_msg);
+		if (ctx->error_msg == NULL) {
+			qd_stack_destroy(ctx->st);
+			free(ctx);
+			return NULL;
+		}
+	} else {
+		ctx->error_msg = NULL;
+	}
+
+	/* Share command-line arguments (not copied) */
+	ctx->argc = src->argc;
+	ctx->argv = src->argv;
+
+	/* Copy program name if present */
+	if (src->program_name != NULL) {
+		ctx->program_name = strdup(src->program_name);
+		if (ctx->program_name == NULL) {
+			if (ctx->error_msg) {
+				free(ctx->error_msg);
+			}
+			qd_stack_destroy(ctx->st);
+			free(ctx);
+			return NULL;
+		}
+	} else {
+		ctx->program_name = NULL;
+	}
+
+	/* Copy call stack */
+	ctx->call_stack_depth = src->call_stack_depth;
+	for (size_t i = 0; i < src->call_stack_depth; i++) {
+		ctx->call_stack[i] = src->call_stack[i];
+	}
+
+	return ctx;
+}
+
 // Call stack management for debugging/error reporting
 void qd_push_call(qd_context* ctx, const char* func_name) {
 	if (ctx->call_stack_depth < QD_MAX_CALL_STACK_DEPTH) {

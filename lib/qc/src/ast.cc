@@ -8,6 +8,7 @@
 #include "ast_node_comment.h"
 #include <qc/ast_node_constant.h>
 #include <qc/ast_node_continue.h>
+#include <qc/ast_node_ctx.h>
 #include <qc/ast_node_defer.h>
 #include <qc/ast_node_for.h>
 #include <qc/ast_node_function.h>
@@ -172,7 +173,8 @@ namespace Qd {
 				const char* text = u8t_scanner_token_text(scanner, &n);
 				if (strcmp(text, "fn") == 0 || strcmp(text, "const") == 0 || strcmp(text, "use") == 0 ||
 						strcmp(text, "import") == 0 || strcmp(text, "if") == 0 || strcmp(text, "for") == 0 ||
-						strcmp(text, "loop") == 0 || strcmp(text, "switch") == 0 || strcmp(text, "return") == 0) {
+						strcmp(text, "loop") == 0 || strcmp(text, "switch") == 0 || strcmp(text, "return") == 0 ||
+						strcmp(text, "ctx") == 0) {
 					return;
 				}
 			}
@@ -1005,7 +1007,8 @@ namespace Qd {
 								if (strcmp(deferText, "for") == 0 || strcmp(deferText, "loop") == 0 ||
 										strcmp(deferText, "if") == 0 || strcmp(deferText, "switch") == 0 ||
 										strcmp(deferText, "return") == 0 || strcmp(deferText, "defer") == 0 ||
-										strcmp(deferText, "break") == 0 || strcmp(deferText, "continue") == 0) {
+										strcmp(deferText, "break") == 0 || strcmp(deferText, "continue") == 0 ||
+										strcmp(deferText, "ctx") == 0) {
 									if (isBuiltInInstruction(deferText)) {
 										IAstNode* id = new AstNodeInstruction(deferText);
 										setNodePosition(id, scanner, src);
@@ -1112,6 +1115,79 @@ namespace Qd {
 
 					deferStmt->setParent(body);
 					body->addChild(deferStmt);
+				} else if (strcmp(text, "ctx") == 0) {
+					// Parse ctx block
+					for (auto* node : tempNodes) {
+						node->setParent(body);
+						body->addChild(node);
+					}
+					tempNodes.clear();
+
+					AstNodeCtx* ctxStmt = new AstNodeCtx();
+					setNodePosition(ctxStmt, scanner, src);
+					token = u8t_scanner_scan(scanner);
+
+					// ctx requires a block
+					if (token != '{') {
+						errorReporter->reportError(scanner, "Expected '{' after 'ctx'");
+						delete ctxStmt;
+					} else {
+						// Parse ctx block inline
+						// ctx blocks can contain control flow statements
+						std::vector<IAstNode*> ctxTempNodes;
+						bool ctxSawSlash = false;
+						bool ctxSawColon = false;
+
+						while ((token = u8t_scanner_scan(scanner)) != U8T_EOF) {
+							// Handle comments
+							AstNodeComment* ctxComment = parseComment(scanner, src, ctxSawSlash, token);
+							if (ctxComment != nullptr) {
+								ctxSawSlash = false;
+								for (auto* node : ctxTempNodes) {
+									node->setParent(ctxStmt);
+									ctxStmt->addChild(node);
+								}
+								ctxTempNodes.clear();
+								ctxComment->setParent(ctxStmt);
+								ctxStmt->addChild(ctxComment);
+								continue;
+							}
+
+							if (ctxSawSlash) {
+								ctxSawSlash = false;
+								AstNodeInstruction* divInstr = new AstNodeInstruction("/");
+								setNodePosition(divInstr, scanner, src);
+								ctxTempNodes.push_back(divInstr);
+							}
+
+							if (token == '}') {
+								break;
+							}
+
+							ctxSawSlash = (token == '/');
+							if (ctxSawSlash) {
+								continue;
+							}
+
+							ctxSawColon = (token == ':');
+							if (ctxSawColon) {
+								continue;
+							}
+
+							IAstNode* node = parseBlockStatement(token, scanner, errorReporter, &n, src, true);
+							if (node) {
+								ctxTempNodes.push_back(node);
+							}
+						}
+
+						for (auto* node : ctxTempNodes) {
+							node->setParent(ctxStmt);
+							ctxStmt->addChild(node);
+						}
+
+						ctxStmt->setParent(body);
+						body->addChild(ctxStmt);
+					}
 				} else {
 					if (isBuiltInInstruction(text)) {
 						IAstNode* id = new AstNodeInstruction(text);
