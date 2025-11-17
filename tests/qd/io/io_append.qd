@@ -1,41 +1,62 @@
 // Test file append mode
 use io
+use mem
 
 fn main( -- ) {
 	// Write initial content
+	"Line 1\n" mem::from_string
+	-> len1
+	-> buf1
+
 	"/tmp/test_append.txt" io::Write io::open if {
-		dup "Line 1\n" io::write if {
+		-> file
+		file buf1 len1 io::write if {
 			drop
-			io::close
+			file io::close
 		} else {
-			drop io::close
+			drop file io::close
 		}
 	} else {
 		drop
 	}
+
+	buf1 mem::free
 
 	// Append more content
+	"Line 2\n" mem::from_string
+	-> len2
+	-> buf2
+
 	"/tmp/test_append.txt" io::Append io::open if {
-		dup "Line 2\n" io::write if {
+		-> file
+		file buf2 len2 io::write if {
 			drop
-			io::close
+			file io::close
 		} else {
-			drop io::close
+			drop file io::close
 		}
 	} else {
 		drop
 	}
 
+	buf2 mem::free
+
 	// Read all content
+	100 mem::alloc -> read_buf
+
 	"/tmp/test_append.txt" io::Read io::open if {
-		dup 100 io::read if {
-			drop swap
-			io::close
-			prints
+		-> file
+		file read_buf 100 io::read if {
+			-> bytes_read
+			file io::close
+			read_buf bytes_read mem::to_string
+			prints       // Print string (non-destructive)
 		} else {
-			drop drop io::close
+			drop file io::close
 		}
 	} else {
 		drop
 	}
+
+	read_buf mem::free
 }

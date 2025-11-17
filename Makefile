@@ -39,6 +39,9 @@ debug:
 	@cp -f $(BUILD_DIR_DEBUG)/lib/stdmathqd/libstdmathqd.so dist/lib/
 	@echo "Creating full archive for libstdmathqd_static.a..."
 	@rm -f dist/lib/libstdmathqd_static.a && cd $(BUILD_DIR_DEBUG)/lib/stdmathqd && ar rcs $(CURDIR)/dist/lib/libstdmathqd_static.a $$(ar -t libstdmathqd_static.a) || (echo "ERROR: Failed to create libstdmathqd_static.a" && exit 1)
+	@cp -f $(BUILD_DIR_DEBUG)/lib/stdmemqd/libstdmemqd.so dist/lib/
+	@echo "Creating full archive for libstdmemqd_static.a..."
+	@rm -f dist/lib/libstdmemqd_static.a && cd $(BUILD_DIR_DEBUG)/lib/stdmemqd && ar rcs $(CURDIR)/dist/lib/libstdmemqd_static.a $$(ar -t libstdmemqd_static.a) || (echo "ERROR: Failed to create libstdmemqd_static.a" && exit 1)
 	@cp -f $(BUILD_DIR_DEBUG)/lib/stdnetqd/libstdnetqd.so dist/lib/
 	@echo "Creating full archive for libstdnetqd_static.a..."
 	@rm -f dist/lib/libstdnetqd_static.a && cd $(BUILD_DIR_DEBUG)/lib/stdnetqd && ar rcs $(CURDIR)/dist/lib/libstdnetqd_static.a $$(ar -t libstdnetqd_static.a) || (echo "ERROR: Failed to create libstdnetqd_static.a" && exit 1)
@@ -57,6 +60,7 @@ debug:
 	@cp -rf lib/stdfmtqd/include/stdfmtqd dist/include/
 	@cp -rf lib/stdioqd/include/stdioqd dist/include/
 	@cp -rf lib/stdmathqd/include/stdmathqd dist/include/
+	@cp -rf lib/stdmemqd/include/stdmemqd dist/include/
 	@cp -rf lib/stdnetqd/include/stdnetqd dist/include/
 	@cp -rf lib/stdosqd/include/stdosqd dist/include/
 	@cp -rf lib/stdstrqd/include/stdstrqd dist/include/
@@ -66,6 +70,7 @@ debug:
 	@cp -r lib/stdfmtqd/qd/fmt dist/share/quadrate/
 	@cp -r lib/stdioqd/qd/io dist/share/quadrate/
 	@cp -r lib/stdmathqd/qd/math dist/share/quadrate/
+	@cp -r lib/stdmemqd/qd/mem dist/share/quadrate/
 	@cp -r lib/stdnetqd/qd/net dist/share/quadrate/
 	@cp -r lib/stdosqd/qd/os dist/share/quadrate/
 	@cp -r lib/stdstrqd/qd/str dist/share/quadrate/
@@ -98,6 +103,9 @@ release:
 	@cp -f $(BUILD_DIR_RELEASE)/lib/stdmathqd/libstdmathqd.so dist/lib/
 	@echo "Creating full archive for libstdmathqd_static.a (release)..."
 	@rm -f dist/lib/libstdmathqd_static.a && cd $(BUILD_DIR_RELEASE)/lib/stdmathqd && ar rcs $(CURDIR)/dist/lib/libstdmathqd_static.a $$(ar -t libstdmathqd_static.a) || (echo "ERROR: Failed to create libstdmathqd_static.a" && exit 1)
+	@cp -f $(BUILD_DIR_RELEASE)/lib/stdmemqd/libstdmemqd.so dist/lib/
+	@echo "Creating full archive for libstdmemqd_static.a (release)..."
+	@rm -f dist/lib/libstdmemqd_static.a && cd $(BUILD_DIR_RELEASE)/lib/stdmemqd && ar rcs $(CURDIR)/dist/lib/libstdmemqd_static.a $$(ar -t libstdmemqd_static.a) || (echo "ERROR: Failed to create libstdmemqd_static.a" && exit 1)
 	@cp -f $(BUILD_DIR_RELEASE)/lib/stdnetqd/libstdnetqd.so dist/lib/
 	@echo "Creating full archive for libstdnetqd_static.a (release)..."
 	@rm -f dist/lib/libstdnetqd_static.a && cd $(BUILD_DIR_RELEASE)/lib/stdnetqd && ar rcs $(CURDIR)/dist/lib/libstdnetqd_static.a $$(ar -t libstdnetqd_static.a) || (echo "ERROR: Failed to create libstdnetqd_static.a" && exit 1)
@@ -116,6 +124,7 @@ release:
 	@cp -rf lib/stdfmtqd/include/stdfmtqd dist/include/
 	@cp -rf lib/stdioqd/include/stdioqd dist/include/
 	@cp -rf lib/stdmathqd/include/stdmathqd dist/include/
+	@cp -rf lib/stdmemqd/include/stdmemqd dist/include/
 	@cp -rf lib/stdnetqd/include/stdnetqd dist/include/
 	@cp -rf lib/stdosqd/include/stdosqd dist/include/
 	@cp -rf lib/stdstrqd/include/stdstrqd dist/include/
@@ -125,6 +134,7 @@ release:
 	@cp -r lib/stdfmtqd/qd/fmt dist/share/quadrate/
 	@cp -r lib/stdioqd/qd/io dist/share/quadrate/
 	@cp -r lib/stdmathqd/qd/math dist/share/quadrate/
+	@cp -r lib/stdmemqd/qd/mem dist/share/quadrate/
 	@cp -r lib/stdnetqd/qd/net dist/share/quadrate/
 	@cp -r lib/stdosqd/qd/os dist/share/quadrate/
 	@cp -r lib/stdstrqd/qd/str dist/share/quadrate/

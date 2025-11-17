@@ -1,12 +1,22 @@
 // Quadrate Standard Library - File I/O Module
+//
+// Unified buffer-based I/O API
+// All read/write operations work with memory buffers for consistency
+// Users manage memory allocation explicitly
 
-// File open modes
+// File open modes (text and binary)
 const Read = "r"
+const ReadBinary = "rb"
 const Write = "w"
+const WriteBinary = "wb"
 const Append = "a"
+const AppendBinary = "ab"
 const ReadWrite = "r+"
+const ReadWriteBinary = "rb+"
 const WriteRead = "w+"
+const WriteReadBinary = "wb+"
 const AppendRead = "a+"
+const AppendReadBinary = "ab+"
 
 // Seek whence values
 const SeekSet = 0
@@ -16,8 +26,27 @@ const SeekEnd = 2
 import "libstdioqd_static.a" as "io" {
 	fn open(path:s mode:s -- handle:p)!
 	fn close(handle:p --)
-	fn read(handle:p count:i -- data:s bytes_read:i)!
-	fn write(handle:p data:s -- bytes_written:i)!
-	fn seekg(handle:p offset:i whence:i -- position:i)!
+
+	// Unified buffer-based I/O
+	// Read into a pre-allocated buffer
+	fn read(handle:p buffer:p count:i -- bytes_read:i)!
+
+	// Write from a buffer
+	fn write(handle:p buffer:p count:i -- bytes_written:i)!
+
+	fn seek(handle:p offset:i whence:i -- position:i)!
+	fn tell(handle:p -- position:i)!
 	fn eof(handle:p -- handle:p is_eof:i)
 }
+
+// Text file helpers (implemented in Quadrate using mem::to_string)
+// These show the recommended pattern for text files
+
+// Example of reading text:
+// fn read_text(file:p max_bytes:i -- text:s) {
+//     max_bytes mem::alloc -> buf
+//     file buf max_bytes io::read! -> bytes_read
+//     buf bytes_read mem::to_string -> text
+//     buf mem::free
+//     text
+// }

@@ -1,35 +1,49 @@
 // Test file seek operations
 use io
+use mem
 
 fn main( -- ) {
 	// Create a test file with known content
+	"0123456789" mem::from_string
+	-> write_len
+	-> write_buf
+
 	"/tmp/test_seek.txt" io::Write io::open if {
-		dup "0123456789" io::write if {
+		-> file
+		file write_buf write_len io::write if {
 			drop
-			io::close
+			file io::close
 		} else {
-			drop io::close
+			drop file io::close
 		}
 	} else {
 		drop
 	}
 
+	write_buf mem::free
+
 	// Open for reading, seek and read
+	10 mem::alloc -> read_buf
+
 	"/tmp/test_seek.txt" io::Read io::open if {
-		dup 5 io::SeekSet io::seekg if {
+		-> file
+		file 5 io::SeekSet io::seek if {
 			drop                    // Drop position
-			dup 3 io::read if {
-				drop                // Drop bytes_read
-				swap                // handle data -> data handle
-				io::close
-				prints
+			file read_buf 3 io::read if {
+				-> bytes_read       // Get bytes_read
+				file io::close
+				read_buf bytes_read mem::to_string
+				.                 // Print string (destructive - frees it)
+				nl                // Print newline
 			} else {
-				drop drop io::close
+				drop file io::close
 			}
 		} else {
-			drop io::close
+			drop file io::close
 		}
 	} else {
 		drop
 	}
+
+	read_buf mem::free
 }

@@ -1,29 +1,43 @@
 // Test basic file write and read operations
 use io
+use mem
 
 fn main( -- ) {
-	// Write to a file
+	// Write to a file: convert string to buffer
+	"Hello, Quadrate!\n" mem::from_string
+	-> write_len
+	-> write_buf
+
 	"/tmp/test_quadrate_io.txt" io::Write io::open if {
-		dup "Hello, Quadrate!\n" io::write if {
+		-> file
+		file write_buf write_len io::write if {
 			drop
-			io::close
+			file io::close
 		} else {
-			drop io::close
+			drop file io::close
 		}
 	} else {
 		drop
 	}
 
-	// Read from the file
+	write_buf mem::free
+
+	// Read from the file: read to buffer, convert to string
+	100 mem::alloc -> read_buf
+
 	"/tmp/test_quadrate_io.txt" io::Read io::open if {
-		dup 100 io::read if {
-			drop swap
-			io::close
-			prints
+		-> file
+		file read_buf 100 io::read if {
+			-> bytes_read
+			file io::close
+			read_buf bytes_read mem::to_string
+			prints       // Print string (non-destructive)
 		} else {
-			drop drop io::close
+			drop file io::close
 		}
 	} else {
 		drop
 	}
+
+	read_buf mem::free
 }

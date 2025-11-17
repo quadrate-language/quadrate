@@ -1,6 +1,7 @@
 qdrt_sources = files(
 		'src/runtime.c',
 		'src/stack.c',
+		'src/memory.c',
 )
 
 qdrt_inc = include_directories('include')

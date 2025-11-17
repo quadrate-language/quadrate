@@ -1,0 +1,74 @@
+// Memory Management Module
+//
+// Provides low-level memory allocation and manipulation functions.
+//
+// SAFETY WARNING:
+// These are unsafe, low-level operations with no bounds checking.
+// Improper use can cause segmentation faults and memory corruption.
+//
+// Memory is represented using two stack types:
+// - PTR (p) - Pointers to memory regions
+// - INT (i) - Byte values (0-255) and sizes
+
+// Import native memory functions from libstdmemqd
+import "libstdmemqd_static.a" as "mem" {
+	// Memory allocation
+	// Returns null (0) on failure
+	fn alloc(bytes:i -- address:p)
+
+	// Free memory
+	// Passing null is safe (no-op)
+	// Double-free is undefined behavior
+	fn free(address:p -- )
+
+	// Reallocate memory
+	// Returns null on failure (original preserved)
+	// Passing null as address is equivalent to alloc
+	fn realloc(address:p new_bytes:i -- new_address:p)
+
+	// Byte operations (8-bit)
+	// offset is in bytes
+	fn set_byte(address:p offset:i value:i -- )
+	fn get_byte(address:p offset:i -- value:i)
+
+	// Word operations (64-bit integer)
+	// offset is in bytes (not aligned to 8-byte boundaries)
+	fn set(address:p offset:i value:i -- )
+	fn get(address:p offset:i -- value:i)
+
+	// Float operations (64-bit double)
+	// offset is in bytes
+	fn set_float(address:p offset:i value:f -- )
+	fn get_float(address:p offset:i -- value:f)
+
+	// Pointer operations (64-bit pointer)
+	// offset is in bytes
+	fn set_ptr(address:p offset:i value:p -- )
+	fn get_ptr(address:p offset:i -- value:p)
+
+	// Bulk operations
+	// copy: memcpy(dst, src, bytes)
+	fn copy(src:p dst:p bytes:i -- )
+
+	// zero: memset(address, 0, bytes)
+	fn zero(address:p bytes:i -- )
+
+	// fill: memset(address, value & 0xFF, bytes)
+	fn fill(address:p bytes:i value:i -- )
+
+	// Buffer to string conversion
+	// Creates a null-terminated string from buffer
+	fn to_string(buffer:p length:i -- text:s)
+
+	// String to buffer conversion
+	// Creates a buffer from string (returns buffer and length)
+	fn from_string(text:s -- buffer:p length:i)
+}
+
+// Helper functions implemented in Quadrate
+
+fn is_null( address:p -- is_null:i ) {
+	// Check if pointer is null
+	// Returns 1 if null, 0 otherwise
+	0 eq
+}

@@ -48,7 +48,36 @@ qd_exec_result usr_io_open(qd_context* ctx);
 qd_exec_result usr_io_close(qd_context* ctx);
 
 /**
- * @brief Read bytes from a file
+ * @brief Read bytes from a file into a buffer (unified buffer-based API)
+ *
+ * Stack effect: ( handle:p buffer:p count:i -- bytes_read:i )
+ *
+ * Reads up to 'count' bytes from the file into the provided buffer.
+ * The buffer must be pre-allocated with at least 'count' bytes.
+ * Returns the number of bytes actually read.
+ * Returns -1 on error.
+ *
+ * @param ctx Execution context
+ * @return Execution result
+ */
+qd_exec_result usr_io_read(qd_context* ctx);
+
+/**
+ * @brief Write bytes from a buffer to a file (unified buffer-based API)
+ *
+ * Stack effect: ( handle:p buffer:p count:i -- bytes_written:i )
+ *
+ * Writes 'count' bytes from the buffer to the file.
+ * Returns the number of bytes actually written.
+ * Returns -1 on error.
+ *
+ * @param ctx Execution context
+ * @return Execution result
+ */
+qd_exec_result usr_io_write(qd_context* ctx);
+
+/**
+ * @brief Read bytes from a file (legacy string-based API)
  *
  * Stack effect: ( handle:p count:i -- data:s bytes_read:i )
  *
@@ -60,10 +89,10 @@ qd_exec_result usr_io_close(qd_context* ctx);
  * @param ctx Execution context
  * @return Execution result
  */
-qd_exec_result usr_io_read(qd_context* ctx);
+qd_exec_result usr_io_read_string(qd_context* ctx);
 
 /**
- * @brief Write bytes to a file
+ * @brief Write bytes to a file (legacy string-based API)
  *
  * Stack effect: ( handle:p data:s -- bytes_written:i )
  *
@@ -74,7 +103,7 @@ qd_exec_result usr_io_read(qd_context* ctx);
  * @param ctx Execution context
  * @return Execution result
  */
-qd_exec_result usr_io_write(qd_context* ctx);
+qd_exec_result usr_io_write_string(qd_context* ctx);
 
 /**
  * @brief Seek to a position in a file
@@ -94,6 +123,22 @@ qd_exec_result usr_io_write(qd_context* ctx);
  * @param ctx Execution context
  * @return Execution result
  */
+qd_exec_result usr_io_seek(qd_context* ctx);
+
+/**
+ * @brief Get current position in a file
+ *
+ * Stack effect: ( handle:p -- position:i )
+ *
+ * Returns the current file position from the beginning of the file.
+ * Returns -1 on error.
+ *
+ * @param ctx Execution context
+ * @return Execution result
+ */
+qd_exec_result usr_io_tell(qd_context* ctx);
+
+// Legacy name for backwards compatibility
 qd_exec_result usr_io_seekg(qd_context* ctx);
 
 /**
