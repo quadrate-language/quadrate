@@ -12,6 +12,7 @@
 #include <qc/colors.h>
 #include <qc/semantic_validator.h>
 #include <random>
+#include <set>
 #include <sstream>
 #include <unordered_map>
 #include <unordered_set>
@@ -448,6 +449,7 @@ struct ParsedModule {
 	std::string name;
 	std::string package;
 	std::string sourceDirectory;
+	std::string packageDirectory; // For third-party packages, e.g., /path/to/packages/color@master
 	std::unique_ptr<Qd::Ast> ast;
 	Qd::IAstNode* root;
 	std::vector<std::string> importedModules;
@@ -681,10 +683,36 @@ int main(int argc, char** argv) {
 				moduleFileSourceDir = ".";
 			}
 
+			// Detect if this module is from a third-party package
+			// Package paths look like: /path/to/packages/modulename@version/module.qd
+			std::string packageDir;
+			std::string packagesDir = getPackagesDir();
+			if (!packagesDir.empty()) {
+				std::string normalizedModulePath = std::filesystem::absolute(moduleFilePath).string();
+				std::string normalizedPackagesDir = std::filesystem::absolute(packagesDir).string();
+
+				// Check if module path starts with packages directory
+				if (normalizedModulePath.size() > normalizedPackagesDir.size() &&
+						normalizedModulePath.substr(0, normalizedPackagesDir.size()) == normalizedPackagesDir) {
+					// Extract the package directory (e.g., /path/to/packages/color@master)
+					std::string relativePath = normalizedModulePath.substr(normalizedPackagesDir.size());
+					if (!relativePath.empty() && relativePath[0] == '/') {
+						relativePath = relativePath.substr(1);
+					}
+					// Get the first path component (modulename@version)
+					size_t slashPos = relativePath.find('/');
+					if (slashPos != std::string::npos) {
+						std::string packageDirName = relativePath.substr(0, slashPos);
+						packageDir = normalizedPackagesDir + "/" + packageDirName;
+					}
+				}
+			}
+
 			ParsedModule parsedMod;
 			parsedMod.name = moduleName;
 			parsedMod.package = packageName;
 			parsedMod.sourceDirectory = moduleFileSourceDir;
+			parsedMod.packageDirectory = packageDir;
 			parsedMod.root = root;
 			parsedMod.ast = std::move(ast);
 
@@ -746,6 +774,20 @@ int main(int argc, char** argv) {
 
 		// Set optimization level
 		generator.setOptimizationLevel(opts.optLevel);
+
+		// Add library search paths for third-party packages
+		// Track which packages we've already added to avoid duplicates
+		std::set<std::string> addedPackagePaths;
+		for (const auto& module : parsedModules) {
+			if (!module.packageDirectory.empty() && addedPackagePaths.find(module.packageDirectory) == addedPackagePaths.end()) {
+				// Add the package's lib directory to the linker search paths
+				std::string libPath = module.packageDirectory + "/lib";
+				if (std::filesystem::exists(libPath)) {
+					generator.addLibrarySearchPath(libPath);
+					addedPackagePaths.insert(module.packageDirectory);
+				}
+			}
+		}
 
 		// Add all dependency modules in REVERSE order (dependencies first)
 		// Modules were loaded in breadth-first order (main first, then dependents, then their dependencies)

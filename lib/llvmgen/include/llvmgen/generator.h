@@ -179,6 +179,19 @@ namespace Qd {
 		 */
 		void setOptimizationLevel(int level);
 
+		/**
+		 * @brief Add a library search path for linking
+		 *
+		 * Adds a directory to be searched for libraries during linking.
+		 * This is used for third-party package libraries.
+		 *
+		 * @param path Directory path to add (e.g., "/path/to/package/lib")
+		 *
+		 * @note Must be called before writeExecutable()
+		 * @note Multiple paths can be added
+		 */
+		void addLibrarySearchPath(const std::string& path);
+
 	private:
 		/**
 		 * @brief Private implementation (Pimpl idiom)

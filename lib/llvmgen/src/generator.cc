@@ -116,6 +116,9 @@ namespace Qd {
 		// Track imported libraries for linking
 		std::set<std::string> importedLibraries;
 
+		// Track additional library search paths (for third-party packages)
+		std::vector<std::string> librarySearchPaths;
+
 		// Function context for return
 		llvm::BasicBlock* currentFunctionReturnBlock = nullptr;
 		bool currentFunctionIsFallible = false;
@@ -1949,8 +1952,8 @@ namespace Qd {
 							// For libstdqd, use qd_stdqd_ prefix (matches C implementation)
 							mangledName = "qd_stdqd_" + func->name;
 						} else {
-							// For other libraries, use usr_namespace_ prefix
-							mangledName = "usr_" + namespaceName + "_" + func->name;
+							// For other libraries, use plain C function name
+							mangledName = func->name;
 						}
 
 						// Check if function already exists
@@ -1964,7 +1967,13 @@ namespace Qd {
 
 						// Also register this function in userFunctions with the scoped name
 						// so that namespace::function calls work
-						std::string scopedName = "usr_" + namespaceName + "_" + func->name;
+						std::string scopedName;
+						if (library == "libstdqd.so") {
+							scopedName = "usr_" + namespaceName + "_" + func->name;
+						} else {
+							// For external C libraries, use the namespace::function format directly
+							scopedName = "usr_" + namespaceName + "_" + func->name;
+						}
 						if (scopedName != mangledName && !module->getFunction(scopedName)) {
 							// Create alias with usr_ prefix that calls the actual function
 							auto aliasFn =
@@ -2014,7 +2023,8 @@ namespace Qd {
 					if (library == "libstdqd.so") {
 						mangledName = "qd_stdqd_" + func->name;
 					} else {
-						mangledName = "usr_" + namespaceName + "_" + func->name;
+						// For other libraries, use plain C function name
+						mangledName = func->name;
 					}
 
 					if (module->getFunction(mangledName)) {
@@ -2125,6 +2135,14 @@ namespace Qd {
 			level = 3;
 		}
 		impl->optimizationLevel = level;
+	}
+
+	void LlvmGenerator::addLibrarySearchPath(const std::string& path) {
+		if (!impl) {
+			// Create implementation with a temporary module name - will be recreated in generate()
+			impl = std::make_unique<Impl>("temp");
+		}
+		impl->librarySearchPaths.push_back(path);
 	}
 
 	bool LlvmGenerator::generate(IAstNode* root, const std::string& moduleName) {
@@ -2346,32 +2364,48 @@ namespace Qd {
 			// Check if it's already a .a file (static library)
 			if (library.size() >= 2 && library.substr(library.size() - 2) == ".a") {
 				// It's a static library, link it directly
-				std::string flatLib = libDir + "/" + library;
+				std::string foundLibPath;
 
-				// Extract library name for nested search
-				// Examples: "libstdmathqd_static.a" -> "stdmathqd", "libqdrt_static.a" -> "qdrt"
-				std::string libBaseName = library;
-				if (libBaseName.rfind("lib", 0) == 0) {
-					libBaseName = libBaseName.substr(3); // Remove "lib" prefix
+				// First, check in additional library search paths (third-party packages)
+				for (const auto& searchPath : impl->librarySearchPaths) {
+					std::string candidatePath = searchPath + "/" + library;
+					if (std::filesystem::exists(candidatePath)) {
+						foundLibPath = candidatePath;
+						break;
+					}
 				}
-				// Remove ".a" suffix first
-				if (libBaseName.size() > 2 && libBaseName.substr(libBaseName.size() - 2) == ".a") {
-					libBaseName = libBaseName.substr(0, libBaseName.size() - 2);
-				}
-				// Remove "_static" suffix if present
-				if (libBaseName.size() > 7 && libBaseName.substr(libBaseName.size() - 7) == "_static") {
-					libBaseName = libBaseName.substr(0, libBaseName.size() - 7);
-				}
-				std::string nestedLib = libDir + "/" + libBaseName + "/" + library;
 
-				if (std::filesystem::exists(flatLib)) {
-					libraryFlags += " " + flatLib;
-				} else if (std::filesystem::exists(nestedLib)) {
-					libraryFlags += " " + nestedLib;
-				} else {
-					// Try without libDir prefix
-					libraryFlags += " " + library;
+				// If not found in search paths, check main libDir
+				if (foundLibPath.empty()) {
+					std::string flatLib = libDir + "/" + library;
+
+					// Extract library name for nested search
+					// Examples: "libstdmathqd_static.a" -> "stdmathqd", "libqdrt_static.a" -> "qdrt"
+					std::string libBaseName = library;
+					if (libBaseName.rfind("lib", 0) == 0) {
+						libBaseName = libBaseName.substr(3); // Remove "lib" prefix
+					}
+					// Remove ".a" suffix first
+					if (libBaseName.size() > 2 && libBaseName.substr(libBaseName.size() - 2) == ".a") {
+						libBaseName = libBaseName.substr(0, libBaseName.size() - 2);
+					}
+					// Remove "_static" suffix if present
+					if (libBaseName.size() > 7 && libBaseName.substr(libBaseName.size() - 7) == "_static") {
+						libBaseName = libBaseName.substr(0, libBaseName.size() - 7);
+					}
+					std::string nestedLib = libDir + "/" + libBaseName + "/" + library;
+
+					if (std::filesystem::exists(flatLib)) {
+						foundLibPath = flatLib;
+					} else if (std::filesystem::exists(nestedLib)) {
+						foundLibPath = nestedLib;
+					} else {
+						// Try without libDir prefix (fallback)
+						foundLibPath = library;
+					}
 				}
+
+				libraryFlags += " " + foundLibPath;
 			} else {
 				// Handle .so libraries (dynamic linking)
 				std::string libName = library;
@@ -2391,7 +2425,13 @@ namespace Qd {
 		// Add standard system libraries
 		libraryFlags += " -lm -lpthread";
 
-		std::string linkCmd = "clang -o " + filename + " " + objFile + " " + libraryFlags;
+		// Build -L flags for additional library search paths (third-party packages)
+		std::string librarySearchFlags;
+		for (const auto& searchPath : impl->librarySearchPaths) {
+			librarySearchFlags += " -L" + searchPath;
+		}
+
+		std::string linkCmd = "clang -o " + filename + " " + objFile + " " + librarySearchFlags + " " + libraryFlags;
 
 		int result = system(linkCmd.c_str());
 
