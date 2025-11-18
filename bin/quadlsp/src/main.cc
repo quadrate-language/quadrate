@@ -6,9 +6,12 @@
 #include <qc/ast.h>
 #include <qc/ast_node.h>
 #include <qc/ast_node_function.h>
+#include <qc/ast_node_identifier.h>
 #include <qc/ast_node_import.h>
+#include <qc/ast_node_instruction.h>
 #include <qc/ast_node_parameter.h>
 #include <qc/ast_node_program.h>
+#include <qc/ast_node_scoped.h>
 #include <qc/error_reporter.h>
 #include <sstream>
 #include <string>
@@ -186,6 +189,64 @@ private:
 					}
 				}
 			}
+		} else if (method == "textDocument/documentSymbol") {
+			json_t* params = getJsonObject(root, "params");
+			if (params) {
+				json_t* textDoc = getJsonObject(params, "textDocument");
+				if (textDoc) {
+					std::string uri = getJsonString(textDoc, "uri");
+					handleDocumentSymbols(id, uri);
+				}
+			}
+		} else if (method == "textDocument/definition") {
+			json_t* params = getJsonObject(root, "params");
+			if (params) {
+				json_t* textDoc = getJsonObject(params, "textDocument");
+				json_t* position = getJsonObject(params, "position");
+				if (textDoc && position) {
+					std::string uri = getJsonString(textDoc, "uri");
+					json_t* lineJson = json_object_get(position, "line");
+					json_t* charJson = json_object_get(position, "character");
+					if (lineJson && charJson && json_is_integer(lineJson) && json_is_integer(charJson)) {
+						size_t line = static_cast<size_t>(json_integer_value(lineJson));
+						size_t character = static_cast<size_t>(json_integer_value(charJson));
+						handleDefinition(id, uri, line, character);
+					}
+				}
+			}
+		} else if (method == "textDocument/references") {
+			json_t* params = getJsonObject(root, "params");
+			if (params) {
+				json_t* textDoc = getJsonObject(params, "textDocument");
+				json_t* position = getJsonObject(params, "position");
+				if (textDoc && position) {
+					std::string uri = getJsonString(textDoc, "uri");
+					json_t* lineJson = json_object_get(position, "line");
+					json_t* charJson = json_object_get(position, "character");
+					if (lineJson && charJson && json_is_integer(lineJson) && json_is_integer(charJson)) {
+						size_t line = static_cast<size_t>(json_integer_value(lineJson));
+						size_t character = static_cast<size_t>(json_integer_value(charJson));
+						handleReferences(id, uri, line, character);
+					}
+				}
+			}
+		} else if (method == "textDocument/rename") {
+			json_t* params = getJsonObject(root, "params");
+			if (params) {
+				json_t* textDoc = getJsonObject(params, "textDocument");
+				json_t* position = getJsonObject(params, "position");
+				std::string newName = getJsonString(params, "newName");
+				if (textDoc && position && !newName.empty()) {
+					std::string uri = getJsonString(textDoc, "uri");
+					json_t* lineJson = json_object_get(position, "line");
+					json_t* charJson = json_object_get(position, "character");
+					if (lineJson && charJson && json_is_integer(lineJson) && json_is_integer(charJson)) {
+						size_t line = static_cast<size_t>(json_integer_value(lineJson));
+						size_t character = static_cast<size_t>(json_integer_value(charJson));
+						handleRename(id, uri, line, character, newName);
+					}
+				}
+			}
 		} else if (method == "shutdown") {
 			handleShutdown(id);
 		} else if (method == "exit") {
@@ -207,6 +268,10 @@ private:
 		json_object_set_new(capabilities, "textDocumentSync", json_integer(1)); // Full sync
 		json_object_set_new(capabilities, "documentFormattingProvider", json_true());
 		json_object_set_new(capabilities, "hoverProvider", json_true());
+		json_object_set_new(capabilities, "documentSymbolProvider", json_true());
+		json_object_set_new(capabilities, "definitionProvider", json_true());
+		json_object_set_new(capabilities, "referencesProvider", json_true());
+		json_object_set_new(capabilities, "renameProvider", json_true());
 
 		// Enable snippet support in completions
 		json_t* completionProvider = json_object();
@@ -549,6 +614,439 @@ private:
 		json_decref(response);
 	}
 
+	void handleDocumentSymbols(const std::string& id, const std::string& uri) {
+		json_t* response = json_object();
+		json_object_set_new(response, "jsonrpc", json_string("2.0"));
+		json_object_set_new(response, "id", json_integer(std::stoi(id)));
+
+		// Get document text
+		std::string documentText;
+		auto docIter = documents_.find(uri);
+		if (docIter != documents_.end()) {
+			documentText = docIter->second;
+		} else {
+			// Try to read from disk
+			if (uri.substr(0, 7) == "file://") {
+				std::string filePath = uri.substr(7);
+				std::ifstream file(filePath);
+				if (file.good()) {
+					std::stringstream buffer;
+					buffer << file.rdbuf();
+					documentText = buffer.str();
+				}
+			}
+		}
+
+		json_t* symbols = json_array();
+
+		if (!documentText.empty()) {
+			// Parse the document
+			Qd::Ast ast;
+			Qd::IAstNode* root = ast.generate(documentText.c_str(), false, nullptr);
+
+			if (root && !ast.hasErrors() && root->type() == Qd::IAstNode::Type::PROGRAM) {
+				// Iterate through program children looking for functions and imports
+				for (size_t i = 0; i < root->childCount(); i++) {
+					Qd::IAstNode* child = root->child(i);
+
+					if (child && child->type() == Qd::IAstNode::Type::FUNCTION_DECLARATION) {
+						Qd::AstNodeFunctionDeclaration* funcNode = static_cast<Qd::AstNodeFunctionDeclaration*>(child);
+
+						json_t* symbol = json_object();
+						json_object_set_new(symbol, "name", json_string(funcNode->name().c_str()));
+						json_object_set_new(symbol, "kind", json_integer(12)); // Function kind
+
+						// Build detail string with signature
+						std::ostringstream detailStream;
+						detailStream << "fn " << funcNode->name() << "(";
+
+						const auto& inputs = funcNode->inputParameters();
+						for (size_t j = 0; j < inputs.size(); j++) {
+							Qd::AstNodeParameter* param = static_cast<Qd::AstNodeParameter*>(inputs[j]);
+							if (j > 0) detailStream << " ";
+							detailStream << param->name() << ":" << param->typeString();
+						}
+
+						detailStream << " -- ";
+
+						const auto& outputs = funcNode->outputParameters();
+						for (size_t j = 0; j < outputs.size(); j++) {
+							Qd::AstNodeParameter* param = static_cast<Qd::AstNodeParameter*>(outputs[j]);
+							if (j > 0) detailStream << " ";
+							detailStream << param->name() << ":" << param->typeString();
+						}
+
+						detailStream << ")";
+						json_object_set_new(symbol, "detail", json_string(detailStream.str().c_str()));
+
+						// Add range (line is 1-based in AST, LSP uses 0-based)
+						json_t* range = json_object();
+						json_t* start = json_object();
+						size_t lspLine = (funcNode->line() > 0) ? funcNode->line() - 1 : 0;
+						json_object_set_new(start, "line", json_integer(static_cast<json_int_t>(lspLine)));
+						json_object_set_new(start, "character", json_integer(0));
+						json_object_set_new(range, "start", start);
+
+						json_t* end = json_object();
+						json_object_set_new(end, "line", json_integer(static_cast<json_int_t>(lspLine)));
+						json_object_set_new(end, "character", json_integer(static_cast<json_int_t>(funcNode->name().length())));
+						json_object_set_new(range, "end", end);
+
+						json_object_set_new(symbol, "range", range);
+						json_object_set_new(symbol, "selectionRange", json_deep_copy(range));
+
+						json_array_append_new(symbols, symbol);
+					} else if (child && child->type() == Qd::IAstNode::Type::IMPORT_STATEMENT) {
+						Qd::AstNodeImport* importNode = static_cast<Qd::AstNodeImport*>(child);
+						std::string namespaceName = importNode->namespaceName();
+
+						// Add imported functions as symbols
+						const auto& importedFuncs = importNode->functions();
+						for (const auto* importedFunc : importedFuncs) {
+							json_t* symbol = json_object();
+							std::string fullName = namespaceName + "::" + importedFunc->name;
+							json_object_set_new(symbol, "name", json_string(fullName.c_str()));
+							json_object_set_new(symbol, "kind", json_integer(12)); // Function kind
+
+							// Build detail string
+							std::ostringstream detailStream;
+							detailStream << "fn " << importedFunc->name << "(";
+
+							const auto& inputs = importedFunc->inputParameters;
+							for (size_t j = 0; j < inputs.size(); j++) {
+								if (j > 0) detailStream << " ";
+								detailStream << inputs[j]->name() << ":" << inputs[j]->typeString();
+							}
+
+							detailStream << " -- ";
+
+							const auto& outputs = importedFunc->outputParameters;
+							for (size_t j = 0; j < outputs.size(); j++) {
+								if (j > 0) detailStream << " ";
+								detailStream << outputs[j]->name() << ":" << outputs[j]->typeString();
+							}
+
+							detailStream << ") [imported from " << importNode->library() << "]";
+							json_object_set_new(symbol, "detail", json_string(detailStream.str().c_str()));
+
+							// Add range
+							json_t* range = json_object();
+							json_t* start = json_object();
+							size_t lspLine = (importedFunc->line > 0) ? importedFunc->line - 1 : 0;
+							json_object_set_new(start, "line", json_integer(static_cast<json_int_t>(lspLine)));
+							json_object_set_new(start, "character", json_integer(0));
+							json_object_set_new(range, "start", start);
+
+							json_t* end = json_object();
+							json_object_set_new(end, "line", json_integer(static_cast<json_int_t>(lspLine)));
+							json_object_set_new(end, "character", json_integer(static_cast<json_int_t>(importedFunc->name.length())));
+							json_object_set_new(range, "end", end);
+
+							json_object_set_new(symbol, "range", range);
+							json_object_set_new(symbol, "selectionRange", json_deep_copy(range));
+
+							json_array_append_new(symbols, symbol);
+						}
+					}
+				}
+			}
+		}
+
+		json_object_set_new(response, "result", symbols);
+		sendMessage(response);
+		json_decref(response);
+	}
+
+	// Helper function to recursively find all identifiers in AST
+	void findIdentifiersInNode(Qd::IAstNode* node, const std::string& targetName,
+							   std::vector<Qd::IAstNode*>& results) {
+		if (!node) return;
+
+		// Check if this node is a function declaration matching our target
+		if (node->type() == Qd::IAstNode::Type::FUNCTION_DECLARATION) {
+			Qd::AstNodeFunctionDeclaration* funcDecl = static_cast<Qd::AstNodeFunctionDeclaration*>(node);
+			if (funcDecl->name() == targetName) {
+				results.push_back(node);
+			}
+		}
+		// Check if this node is an identifier matching our target
+		else if (node->type() == Qd::IAstNode::Type::IDENTIFIER) {
+			Qd::AstNodeIdentifier* ident = static_cast<Qd::AstNodeIdentifier*>(node);
+			if (ident->name() == targetName) {
+				results.push_back(node);
+			}
+		} else if (node->type() == Qd::IAstNode::Type::SCOPED_IDENTIFIER) {
+			Qd::AstNodeScopedIdentifier* scoped = static_cast<Qd::AstNodeScopedIdentifier*>(node);
+			std::string fullName = scoped->scope() + "::" + scoped->name();
+			if (fullName == targetName || scoped->name() == targetName) {
+				results.push_back(node);
+			}
+		}
+
+		// Recursively search children
+		for (size_t i = 0; i < node->childCount(); i++) {
+			findIdentifiersInNode(node->child(i), targetName, results);
+		}
+	}
+
+	void handleDefinition(const std::string& id, const std::string& uri, size_t line, size_t character) {
+		json_t* response = json_object();
+		json_object_set_new(response, "jsonrpc", json_string("2.0"));
+		json_object_set_new(response, "id", json_integer(std::stoi(id)));
+
+		// Get document text
+		std::string documentText;
+		auto docIter = documents_.find(uri);
+		if (docIter != documents_.end()) {
+			documentText = docIter->second;
+		} else {
+			// Try to read from disk
+			if (uri.substr(0, 7) == "file://") {
+				std::string filePath = uri.substr(7);
+				std::ifstream file(filePath);
+				if (file.good()) {
+					std::stringstream buffer;
+					buffer << file.rdbuf();
+					documentText = buffer.str();
+				}
+			}
+		}
+
+		json_t* result = json_null();
+
+		if (!documentText.empty()) {
+			std::string word = getWordAtPosition(documentText, line, character);
+
+			if (!word.empty()) {
+				// Parse the document
+				Qd::Ast ast;
+				Qd::IAstNode* root = ast.generate(documentText.c_str(), false, nullptr);
+
+				if (root && !ast.hasErrors() && root->type() == Qd::IAstNode::Type::PROGRAM) {
+					// Search for function declaration matching the word
+					for (size_t i = 0; i < root->childCount(); i++) {
+						Qd::IAstNode* child = root->child(i);
+
+						if (child && child->type() == Qd::IAstNode::Type::FUNCTION_DECLARATION) {
+							Qd::AstNodeFunctionDeclaration* funcNode = static_cast<Qd::AstNodeFunctionDeclaration*>(child);
+
+							if (funcNode->name() == word) {
+								// Found the definition
+								json_t* location = json_object();
+								json_object_set_new(location, "uri", json_string(uri.c_str()));
+
+								json_t* range = json_object();
+								json_t* start = json_object();
+								size_t lspLine = (funcNode->line() > 0) ? funcNode->line() - 1 : 0;
+								json_object_set_new(start, "line", json_integer(static_cast<json_int_t>(lspLine)));
+								json_object_set_new(start, "character", json_integer(0));
+								json_object_set_new(range, "start", start);
+
+								json_t* end = json_object();
+								json_object_set_new(end, "line", json_integer(static_cast<json_int_t>(lspLine)));
+								json_object_set_new(end, "character", json_integer(static_cast<json_int_t>(funcNode->name().length())));
+								json_object_set_new(range, "end", end);
+
+								json_object_set_new(location, "range", range);
+								result = location;
+								break;
+			}
+						} else if (child && child->type() == Qd::IAstNode::Type::IMPORT_STATEMENT) {
+							// Check imported functions
+							Qd::AstNodeImport* importNode = static_cast<Qd::AstNodeImport*>(child);
+							std::string namespaceName = importNode->namespaceName();
+
+							const auto& importedFuncs = importNode->functions();
+							for (const auto* importedFunc : importedFuncs) {
+								std::string fullName = namespaceName + "::" + importedFunc->name;
+								if (fullName == word || importedFunc->name == word) {
+									// Found the imported function declaration
+									json_t* location = json_object();
+									json_object_set_new(location, "uri", json_string(uri.c_str()));
+
+									json_t* range = json_object();
+									json_t* start = json_object();
+									size_t lspLine = (importedFunc->line > 0) ? importedFunc->line - 1 : 0;
+									json_object_set_new(start, "line", json_integer(static_cast<json_int_t>(lspLine)));
+									json_object_set_new(start, "character", json_integer(0));
+									json_object_set_new(range, "start", start);
+
+									json_t* end = json_object();
+									json_object_set_new(end, "line", json_integer(static_cast<json_int_t>(lspLine)));
+									json_object_set_new(end, "character", json_integer(static_cast<json_int_t>(importedFunc->name.length())));
+									json_object_set_new(range, "end", end);
+
+									json_object_set_new(location, "range", range);
+									result = location;
+									break;
+								}
+							}
+							if (!json_is_null(result)) break;
+						}
+					}
+				}
+			}
+		}
+
+		json_object_set_new(response, "result", result);
+		sendMessage(response);
+		json_decref(response);
+	}
+
+	void handleReferences(const std::string& id, const std::string& uri, size_t line, size_t character) {
+		json_t* response = json_object();
+		json_object_set_new(response, "jsonrpc", json_string("2.0"));
+		json_object_set_new(response, "id", json_integer(std::stoi(id)));
+
+		// Get document text
+		std::string documentText;
+		auto docIter = documents_.find(uri);
+		if (docIter != documents_.end()) {
+			documentText = docIter->second;
+		} else {
+			// Try to read from disk
+			if (uri.substr(0, 7) == "file://") {
+				std::string filePath = uri.substr(7);
+				std::ifstream file(filePath);
+				if (file.good()) {
+					std::stringstream buffer;
+					buffer << file.rdbuf();
+					documentText = buffer.str();
+				}
+			}
+		}
+
+		json_t* locations = json_array();
+
+		if (!documentText.empty()) {
+			std::string word = getWordAtPosition(documentText, line, character);
+
+			if (!word.empty()) {
+				// Parse the document
+				Qd::Ast ast;
+				Qd::IAstNode* root = ast.generate(documentText.c_str(), false, nullptr);
+
+				if (root && !ast.hasErrors()) {
+					// Find all references to this identifier
+					std::vector<Qd::IAstNode*> references;
+					findIdentifiersInNode(root, word, references);
+
+					for (Qd::IAstNode* ref : references) {
+						json_t* location = json_object();
+						json_object_set_new(location, "uri", json_string(uri.c_str()));
+
+						json_t* range = json_object();
+						json_t* start = json_object();
+						size_t lspLine = (ref->line() > 0) ? ref->line() - 1 : 0;
+						size_t lspCol = (ref->column() > 0) ? ref->column() - 1 : 0;
+
+						// For function declarations, column should be 0
+						if (ref->type() == Qd::IAstNode::Type::FUNCTION_DECLARATION) {
+							lspCol = 0;
+						}
+
+						json_object_set_new(start, "line", json_integer(static_cast<json_int_t>(lspLine)));
+						json_object_set_new(start, "character", json_integer(static_cast<json_int_t>(lspCol)));
+						json_object_set_new(range, "start", start);
+
+						json_t* end = json_object();
+						json_object_set_new(end, "line", json_integer(static_cast<json_int_t>(lspLine)));
+						json_object_set_new(end, "character", json_integer(static_cast<json_int_t>(lspCol + word.length())));
+						json_object_set_new(range, "end", end);
+
+						json_object_set_new(location, "range", range);
+						json_array_append_new(locations, location);
+					}
+				}
+			}
+		}
+
+		json_object_set_new(response, "result", locations);
+		sendMessage(response);
+		json_decref(response);
+	}
+
+	void handleRename(const std::string& id, const std::string& uri, size_t line, size_t character,
+					  const std::string& newName) {
+		json_t* response = json_object();
+		json_object_set_new(response, "jsonrpc", json_string("2.0"));
+		json_object_set_new(response, "id", json_integer(std::stoi(id)));
+
+		// Get document text
+		std::string documentText;
+		auto docIter = documents_.find(uri);
+		if (docIter != documents_.end()) {
+			documentText = docIter->second;
+		} else {
+			// Try to read from disk
+			if (uri.substr(0, 7) == "file://") {
+				std::string filePath = uri.substr(7);
+				std::ifstream file(filePath);
+				if (file.good()) {
+					std::stringstream buffer;
+					buffer << file.rdbuf();
+					documentText = buffer.str();
+				}
+			}
+		}
+
+		json_t* workspaceEdit = json_object();
+		json_t* changes = json_object();
+
+		if (!documentText.empty()) {
+			std::string word = getWordAtPosition(documentText, line, character);
+
+			if (!word.empty()) {
+				// Parse the document
+				Qd::Ast ast;
+				Qd::IAstNode* root = ast.generate(documentText.c_str(), false, nullptr);
+
+				if (root && !ast.hasErrors()) {
+					// Find all references to rename
+					std::vector<Qd::IAstNode*> references;
+					findIdentifiersInNode(root, word, references);
+
+					json_t* edits = json_array();
+
+					for (Qd::IAstNode* ref : references) {
+						json_t* edit = json_object();
+
+						json_t* range = json_object();
+						json_t* start = json_object();
+						size_t lspLine = (ref->line() > 0) ? ref->line() - 1 : 0;
+						size_t lspCol = (ref->column() > 0) ? ref->column() - 1 : 0;
+
+						// For function declarations, column should be 0
+						if (ref->type() == Qd::IAstNode::Type::FUNCTION_DECLARATION) {
+							lspCol = 0;
+						}
+
+						json_object_set_new(start, "line", json_integer(static_cast<json_int_t>(lspLine)));
+						json_object_set_new(start, "character", json_integer(static_cast<json_int_t>(lspCol)));
+						json_object_set_new(range, "start", start);
+
+						json_t* end = json_object();
+						json_object_set_new(end, "line", json_integer(static_cast<json_int_t>(lspLine)));
+						json_object_set_new(end, "character", json_integer(static_cast<json_int_t>(lspCol + word.length())));
+						json_object_set_new(range, "end", end);
+
+						json_object_set_new(edit, "range", range);
+						json_object_set_new(edit, "newText", json_string(newName.c_str()));
+
+						json_array_append_new(edits, edit);
+					}
+
+					json_object_set_new(changes, uri.c_str(), edits);
+				}
+			}
+		}
+
+		json_object_set_new(workspaceEdit, "changes", changes);
+		json_object_set_new(response, "result", workspaceEdit);
+		sendMessage(response);
+		json_decref(response);
+	}
+
 	void handleShutdown(const std::string& id) {
 		json_t* response = json_object();
 		json_object_set_new(response, "jsonrpc", json_string("2.0"));
@@ -734,6 +1232,10 @@ void printHelp() {
 	std::cout << "  - Syntax error diagnostics\n";
 	std::cout << "  - Auto-completion for built-in instructions and user functions\n";
 	std::cout << "  - Hover documentation\n";
+	std::cout << "  - Document symbols (outline view of functions and imports)\n";
+	std::cout << "  - Go to definition (jump to function declarations)\n";
+	std::cout << "  - Find references (locate all function calls)\n";
+	std::cout << "  - Rename symbol (rename functions across the file)\n";
 }
 
 void printVersion() {

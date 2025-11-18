@@ -107,6 +107,21 @@ static void testJsonValidation() {
 	std::cout << "✓ JSON validation test passed" << std::endl;
 }
 
+static void testDocumentSymbols() {
+	std::cout << "Testing document symbols..." << std::endl;
+
+	std::string request =
+			R"(Content-Length: 139
+
+{"jsonrpc":"2.0","id":4,"method":"textDocument/documentSymbol","params":{"textDocument":{"uri":"file:///tmp/test_symbols.qd"}}})";
+
+	// Should receive symbol list
+	assert(runLspTest(request, "\"name\":"));
+	assert(runLspTest(request, "\"kind\":12"));
+
+	std::cout << "✓ Document symbols test passed" << std::endl;
+}
+
 int main() {
 	std::cout << "=== Running LSP Tests ===" << std::endl;
 
@@ -115,6 +130,7 @@ int main() {
 		testInitialize();
 		testShutdown();
 		testCompletion();
+		testDocumentSymbols();
 
 		std::cout << "\n✅ All LSP tests passed!" << std::endl;
 		return 0;
