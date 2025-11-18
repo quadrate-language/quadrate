@@ -179,6 +179,9 @@ tests: debug
 	@echo "=== Running quaduses tests ==="
 	bash tests/run_tests.sh quaduses
 	@echo ""
+	@echo "=== Running quadpm tests ==="
+	meson test -C $(BUILD_DIR_DEBUG) quadpm_tests --print-errorlogs
+	@echo ""
 	@echo "=========================================="
 	@echo "  Test Suite Complete"
 	@echo "=========================================="

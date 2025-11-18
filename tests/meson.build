@@ -15,3 +15,16 @@ test('qd_tests',
 	depends: quadc,
 	timeout: 120
 )
+
+# quadpm tests
+quadpm_exe = find_program('quadpm', required: false, dirs: meson.project_build_root() / 'bin/quadpm')
+if quadpm_exe.found()
+	test('quadpm_tests',
+		find_program('quadpm/test_quadpm.sh'),
+		workdir: meson.project_source_root(),
+		env: {
+			'QUADPM': quadpm_exe.full_path(),
+		},
+		timeout: 60
+	)
+endif

@@ -8,6 +8,7 @@
 #include <filesystem>
 #include <iostream>
 #include <string>
+#include <vector>
 
 namespace fs = std::filesystem;
 
@@ -172,6 +173,102 @@ bool gitClone(const GitRef& gitRef) {
 	} else {
 		std::cout << COLOR_YELLOW << "  ⚠ Warning: module.qd not found at root" << COLOR_RESET << "\n";
 		std::cout << "    Package may need to be structured with module.qd at root\n";
+	}
+
+	// Check for C source files and compile if found
+	std::string srcDir = targetDir + "/src";
+	if (fs::exists(srcDir) && fs::is_directory(srcDir)) {
+		std::cout << "  → Found src/ directory, compiling C sources...\n";
+
+		// Collect all .c files
+		std::vector<std::string> cFiles;
+		for (const auto& entry : fs::directory_iterator(srcDir)) {
+			if (entry.is_regular_file() && entry.path().extension() == ".c") {
+				cFiles.push_back(entry.path().string());
+			}
+		}
+
+		if (!cFiles.empty()) {
+			// Create lib directory
+			std::string libDir = targetDir + "/lib";
+			fs::create_directories(libDir);
+
+			// Library names
+			std::string libName = "lib" + gitRef.moduleName;
+			std::string sharedLib = libDir + "/" + libName + ".so";
+			std::string staticLib = libDir + "/" + libName + "_static.a";
+
+			// Prefer clang, fallback to gcc
+			std::string compiler = "gcc";
+			if (system("which clang > /dev/null 2>&1") == 0) {
+				compiler = "clang";
+			}
+
+			// Compile to object files
+			std::vector<std::string> objFiles;
+			bool compileFailed = false;
+
+			for (const auto& cFile : cFiles) {
+				std::string objFile = libDir + "/" + fs::path(cFile).stem().string() + ".o";
+				objFiles.push_back(objFile);
+
+				// Compile with -fPIC for shared library compatibility
+				// Try to find Quadrate headers in common locations
+				std::string includeFlags = "-I/usr/include";
+
+				// Check for local development build
+				if (fs::exists("dist/include/qdrt")) {
+					includeFlags += " -Idist/include";
+				}
+				// Check for installed headers
+				if (fs::exists("/usr/include/qdrt")) {
+					// Already in /usr/include
+				}
+
+				std::string compileCmd = compiler + " -c -fPIC -O2 -Wall " + includeFlags + " " + cFile + " -o " + objFile + " 2>&1";
+
+				int compileResult = execCommandLive(compileCmd);
+				if (compileResult != 0) {
+					std::cerr << COLOR_RED << "  ✗ Failed to compile " << COLOR_RESET << cFile << "\n";
+					compileFailed = true;
+					break;
+				}
+			}
+
+			if (!compileFailed && !objFiles.empty()) {
+				// Create shared library
+				std::string objList;
+				for (const auto& obj : objFiles) {
+					objList += obj + " ";
+				}
+
+				std::string linkSharedCmd = compiler + " -shared " + objList + "-o " + sharedLib + " 2>&1";
+				int linkResult = execCommandLive(linkSharedCmd);
+
+				if (linkResult == 0) {
+					std::cout << COLOR_GREEN << "  ✓ Built " << COLOR_RESET << libName << ".so\n";
+				} else {
+					std::cerr << COLOR_YELLOW << "  ⚠ Failed to build shared library" << COLOR_RESET << "\n";
+				}
+
+				// Create static library
+				std::string arCmd = "ar rcs " + staticLib + " " + objList + "2>&1";
+				int arResult = execCommandLive(arCmd);
+
+				if (arResult == 0) {
+					std::cout << COLOR_GREEN << "  ✓ Built " << COLOR_RESET << libName << "_static.a\n";
+				} else {
+					std::cerr << COLOR_YELLOW << "  ⚠ Failed to build static library" << COLOR_RESET << "\n";
+				}
+
+				// Clean up object files
+				for (const auto& obj : objFiles) {
+					fs::remove(obj);
+				}
+			}
+		} else {
+			std::cout << COLOR_YELLOW << "  ⚠ No .c files found in src/" << COLOR_RESET << "\n";
+		}
 	}
 
 	return true;
