@@ -20,6 +20,7 @@ debug:
 	@cp -f $(BUILD_DIR_DEBUG)/bin/quadc/quadc dist/bin/
 	@cp -f $(BUILD_DIR_DEBUG)/bin/quadfmt/quadfmt dist/bin/
 	@cp -f $(BUILD_DIR_DEBUG)/bin/quadlsp/quadlsp dist/bin/
+	@cp -f $(BUILD_DIR_DEBUG)/bin/quadpm/quadpm dist/bin/
 	@cp -f $(BUILD_DIR_DEBUG)/bin/quaduses/quaduses dist/bin/
 	@cp -f $(BUILD_DIR_DEBUG)/bin/quadrate/quadrate dist/bin/
 	@cp -f $(BUILD_DIR_DEBUG)/lib/qdrt/libqdrt.so dist/lib/
@@ -91,6 +92,7 @@ release:
 	@cp -f $(BUILD_DIR_RELEASE)/bin/quadc/quadc dist/bin/
 	@cp -f $(BUILD_DIR_RELEASE)/bin/quadfmt/quadfmt dist/bin/
 	@cp -f $(BUILD_DIR_RELEASE)/bin/quadlsp/quadlsp dist/bin/
+	@cp -f $(BUILD_DIR_RELEASE)/bin/quadpm/quadpm dist/bin/
 	@cp -f $(BUILD_DIR_RELEASE)/bin/quaduses/quaduses dist/bin/
 	@cp -f $(BUILD_DIR_RELEASE)/bin/quadrate/quadrate dist/bin/
 	@cp -f $(BUILD_DIR_RELEASE)/lib/qdrt/libqdrt.so dist/lib/
@@ -210,6 +212,7 @@ install: release
 	install -m 755 dist/bin/quadc $(DESTDIR)$(PREFIX)/bin/
 	install -m 755 dist/bin/quadfmt $(DESTDIR)$(PREFIX)/bin/
 	install -m 755 dist/bin/quadlsp $(DESTDIR)$(PREFIX)/bin/
+	install -m 755 dist/bin/quadpm $(DESTDIR)$(PREFIX)/bin/
 	install -m 755 dist/bin/quaduses $(DESTDIR)$(PREFIX)/bin/
 	install -m 755 dist/bin/quadrate $(DESTDIR)$(PREFIX)/bin/
 	install -m 644 dist/lib/libqdrt.so $(DESTDIR)$(PREFIX)/lib/
@@ -253,6 +256,7 @@ uninstall:
 	rm -f $(DESTDIR)$(PREFIX)/bin/quadc
 	rm -f $(DESTDIR)$(PREFIX)/bin/quadfmt
 	rm -f $(DESTDIR)$(PREFIX)/bin/quadlsp
+	rm -f $(DESTDIR)$(PREFIX)/bin/quadpm
 	rm -f $(DESTDIR)$(PREFIX)/bin/quaduses
 	rm -f $(DESTDIR)$(PREFIX)/bin/quadrate
 	rm -f $(DESTDIR)$(PREFIX)/lib/libqdrt.so
