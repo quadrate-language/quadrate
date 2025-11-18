@@ -16,6 +16,8 @@
   "case"
   "default"
   "defer"
+  "ctx"
+  "loop"
 ] @keyword.control
 
 ; Break and continue statements
@@ -55,7 +57,7 @@
 (builtin_operation) @function.builtin
 [
   "dup" "swap" "drop" "over" "rot" "nip" "tuck" "pick" "roll"
-  "dup2" "swap2" "over2" "drop2" "depth" "clear"
+  "dup2" "swap2" "over2" "drop2" "dupd" "swapd" "overd" "nipd" "depth" "clear"
 ] @function.builtin
 
 ; Built-in arithmetic operations
@@ -77,12 +79,32 @@
 
 ; Built-in logic operations
 [
-  "and" "or" "not"
+  "and" "or" "not" "xor"
+] @function.builtin
+
+; Built-in bitwise operations
+[
+  "lshift" "rshift"
+] @function.builtin
+
+; Built-in type casting operations
+[
+  "casti" "castf" "casts"
 ] @function.builtin
 
 ; Built-in I/O operations
 [
-  "print" "prints" "printv" "printsv" "call"
+  "print" "prints" "printv" "printsv" "call" "nl" "read"
+] @function.builtin
+
+; Built-in threading operations
+[
+  "spawn" "detach" "wait"
+] @function.builtin
+
+; Built-in error handling
+[
+  "error"
 ] @function.builtin
 
 ; Parameters in stack signatures
@@ -96,12 +118,23 @@
 ; Special variables
 (loop_variable) @variable.builtin
 
+; Local variable declarations
+(local_declaration
+  name: (identifier) @variable)
+
+; Pointer operations
+(pointer_operation) @operator
+
+; Operator symbols
+(operator_symbol) @operator
+
 ; Operators
 [
   "--"
   ":"
   "::"
   "="
+  "->"
 ] @operator
 
 ; Delimiters

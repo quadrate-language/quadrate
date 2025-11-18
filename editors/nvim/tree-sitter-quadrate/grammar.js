@@ -102,10 +102,13 @@ module.exports = grammar({
       $.loop_statement,
       $.switch_expression,
       $.defer_block,
+      $.ctx_block,
       $.builtin_operation,
+      $.operator_symbol,
       $.break_statement,
       $.continue_statement,
       $.loop_variable,
+      $.pointer_operation,
     ),
 
     // If expression: if { ... } else { ... }
@@ -154,6 +157,12 @@ module.exports = grammar({
       field('body', $.block),
     ),
 
+    // Ctx block: ctx { ... }
+    ctx_block: $ => seq(
+      'ctx',
+      field('body', $.block),
+    ),
+
     // Break and continue
     break_statement: $ => 'break',
     continue_statement: $ => 'continue',
@@ -161,11 +170,24 @@ module.exports = grammar({
     // Loop variable: $
     loop_variable: $ => '$',
 
+    // Pointer operations: @p, @i, @f, !p, !i, !f
+    pointer_operation: $ => choice(
+      '@p', '@i', '@f',
+      '!p', '!i', '!f',
+    ),
+
+    // Operator symbols (single-char and multi-char operators)
+    operator_symbol: $ => choice(
+      '.', '+', '-', '*', '/', '%',
+      '==', '!=', '<', '>', '<=', '>=',
+      '!',
+    ),
+
     // Built-in operations
     builtin_operation: $ => choice(
       // Stack operations
       'dup', 'swap', 'drop', 'over', 'rot', 'nip', 'tuck', 'pick', 'roll',
-      'dup2', 'swap2', 'over2', 'drop2', 'depth', 'clear',
+      'dup2', 'swap2', 'over2', 'drop2', 'dupd', 'swapd', 'overd', 'nipd', 'depth', 'clear',
       // Arithmetic
       'add', 'sub', 'mul', 'div', 'inc', 'dec', 'abs', 'sqrt', 'sq', 'pow', 'mod',
       'neg', 'inv', 'fac', 'cb', 'cbrt',
@@ -175,9 +197,17 @@ module.exports = grammar({
       // Comparison
       'eq', 'neq', 'lt', 'gt', 'lte', 'gte', 'within',
       // Logic
-      'and', 'or', 'not',
+      'and', 'or', 'not', 'xor',
+      // Bitwise
+      'lshift', 'rshift',
+      // Type casting
+      'casti', 'castf', 'casts',
       // I/O
-      'print', 'prints', 'printv', 'printsv', 'call',
+      'print', 'prints', 'printv', 'printsv', 'call', 'nl', 'read',
+      // Threading
+      'detach', 'spawn', 'wait',
+      // Error handling
+      'error',
     ),
 
     // Literals
