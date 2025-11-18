@@ -1,0 +1,28 @@
+/* Test: Code inside block comments shouldn't affect indentation */
+fn test_block( -- ) {
+	/* fn fake( -- ) {
+	if {
+	5 10 add
+	}
+	} */
+	5 10 add
+	/* Another fake function
+
+	fn broken( -- ) {
+	for i {
+	*/
+	print
+}
+
+fn main( -- ) {
+	/*
+	fn nested( -- ) {
+	if {
+	5 10 add
+	}
+	}
+	*/
+	1 2 add
+	/* fn inline( -- ) { */
+	test_block
+}

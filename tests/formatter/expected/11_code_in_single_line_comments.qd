@@ -1,0 +1,18 @@
+// Test: Code inside single-line comments shouldn't affect indentation
+fn test_single( -- ) {
+	// fn fake( -- ) {
+	//     if {
+	5 10 add
+	// }
+	print
+}
+
+fn main( -- ) {
+	// fn nested( -- ) {
+	//     for i {
+	//         5 10 add
+	//     }
+	// }
+	1 2 add
+	test_single
+}

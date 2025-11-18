@@ -1,8 +1,8 @@
 /* Top-level block comment */
 fn main( -- ) {
 	/* Multi-line
-	   block comment
-	   spanning lines */
+	block comment
+	spanning lines */
 	5 10 add
 	/* inline block */
 	print

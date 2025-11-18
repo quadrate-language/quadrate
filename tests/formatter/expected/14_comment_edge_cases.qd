@@ -1,0 +1,50 @@
+// Edge cases: unmatched braces, defer, nested structures in comments
+fn test_unmatched( -- ) {
+	// { { { unmatched opening braces
+	5 10 add
+	// } } } } } extra closing braces
+	print
+}
+
+fn test_defer_in_comment( -- ) {
+	/* defer {
+	10 20 add
+	} */
+	1 2 add
+	// defer { another_fake }
+	print
+}
+
+fn test_complex_structures( -- ) {
+	/*
+
+	fn outer( -- ) {
+	defer {
+	if {
+	for i {
+	switch {
+	*/
+	100 200 add
+	/* Multi-line with unmatched
+	{ { {
+	if {
+	*/
+	print
+	/*
+	}
+	}
+	}
+	}
+	}
+	*/
+}
+
+fn main( -- ) {
+	// fn { { { weird( -- ) {
+	test_unmatched
+	/* } } } */
+	test_defer_in_comment
+	// if { { {
+	test_complex_structures
+	// } } }
+}

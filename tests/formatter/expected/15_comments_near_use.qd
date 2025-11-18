@@ -1,0 +1,18 @@
+// Test: Comments with code near use statements
+// use fake_module
+use std
+/* use another_fake
+use math
+use yet_another */
+
+fn main( -- ) {
+	// use commented_module
+	5 10 add
+	/* use inline_fake */ print
+}
+// use trailing_comment
+/* use block_at_end {
+
+fn test( -- ) {
+if {
+*/

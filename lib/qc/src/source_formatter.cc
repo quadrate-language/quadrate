@@ -21,9 +21,19 @@ namespace Qd {
 		return str.substr(start, end - start);
 	}
 
-	// Check if line starts with a keyword (after trimming)
+	// Check if a line is a comment (single-line or starts a block comment)
+	static bool isComment(const std::string& line) {
+		std::string trimmed = trim(line);
+		return trimmed.length() >= 2 && (trimmed.substr(0, 2) == "//" || trimmed.substr(0, 2) == "/*");
+	}
+
+	// Check if line starts with a keyword (after trimming), but skip if it's a comment
 	static bool startsWithKeyword(const std::string& line, const std::string& keyword) {
 		std::string trimmed = trim(line);
+		// Don't detect keywords inside comments
+		if (isComment(trimmed)) {
+			return false;
+		}
 		if (trimmed.length() < keyword.length()) {
 			return false;
 		}
@@ -286,13 +296,15 @@ namespace Qd {
 				continue;
 			}
 
-			// Track brace depth to know when we exit a function
-			for (char c : trimmed) {
-				if (c == '{') {
-					braceDepth++;
-				}
-				if (c == '}') {
-					braceDepth--;
+			// Track brace depth to know when we exit a function, but skip comments
+			if (!isComment(trimmed)) {
+				for (char c : trimmed) {
+					if (c == '{') {
+						braceDepth++;
+					}
+					if (c == '}') {
+						braceDepth--;
+					}
 				}
 			}
 
@@ -365,14 +377,26 @@ namespace Qd {
 		while (std::getline(input, line)) {
 			std::string trimmed = trim(line);
 
+			// Handle single-line comments - just reindent them
+			if (trimmed.length() >= 2 && trimmed.substr(0, 2) == "//") {
+				for (int i = 0; i < indentLevel; i++) {
+					output << '\t';
+				}
+				output << trimmed << '\n';
+				continue;
+			}
+
 			// Handle multi-line comments
 			if (!inMultilineComment && trimmed.find("/*") != std::string::npos) {
 				inMultilineComment = true;
 			}
 
 			if (inMultilineComment) {
-				// Keep comment lines as-is
-				output << line << '\n';
+				// Indent block comment lines with current indentation
+				for (int i = 0; i < indentLevel; i++) {
+					output << '\t';
+				}
+				output << trimmed << '\n';
 				if (trimmed.find("*/") != std::string::npos) {
 					inMultilineComment = false;
 				}
@@ -470,10 +494,12 @@ namespace Qd {
 			}
 			output << trimmed << '\n';
 
-			// Track brace depth for other lines
-			for (char c : trimmed) {
-				if (c == '{') {
-					indentLevel++;
+			// Track brace depth for other lines (but not for comments)
+			if (!isComment(trimmed)) {
+				for (char c : trimmed) {
+					if (c == '{') {
+						indentLevel++;
+					}
 				}
 			}
 		}
