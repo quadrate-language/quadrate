@@ -417,6 +417,29 @@ namespace Qd {
 						processed += '\0';
 						i++;
 						break;
+					case 'e':
+						// ANSI escape character (ESC = 0x1B)
+						processed += '\x1b';
+						i++;
+						break;
+					case 'x':
+						// Hex escape sequence: \xNN
+						if (i + 3 < content.size() &&
+							isxdigit(static_cast<unsigned char>(content[i + 2])) &&
+							isxdigit(static_cast<unsigned char>(content[i + 3]))) {
+							// Valid hex digits
+							int val = 0;
+							char c1 = content[i + 2];
+							char c2 = content[i + 3];
+							val = (isdigit(c1) ? c1 - '0' : tolower(c1) - 'a' + 10) * 16 +
+							      (isdigit(c2) ? c2 - '0' : tolower(c2) - 'a' + 10);
+							processed += static_cast<char>(val);
+							i += 3; // Skip \xNN
+						} else {
+							// Invalid hex sequence, keep as-is
+							processed += content[i];
+						}
+						break;
 					default:
 						processed += content[i];
 						break;
