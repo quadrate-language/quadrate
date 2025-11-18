@@ -6,6 +6,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <filesystem>
+#include <fstream>
 #include <iostream>
 #include <string>
 #include <vector>
@@ -125,13 +126,75 @@ GitRef parseGitUrl(const std::string& input) {
 	return result;
 }
 
+// Parse package name from quadrate.toml
+// Returns empty string if file doesn't exist or name not found
+std::string parsePackageName(const std::string& manifestPath) {
+	std::ifstream file(manifestPath);
+	if (!file.is_open()) {
+		return "";
+	}
+
+	std::string line;
+	bool inPackageSection = false;
+
+	while (std::getline(file, line)) {
+		// Trim whitespace
+		line.erase(0, line.find_first_not_of(" \t\r\n"));
+		line.erase(line.find_last_not_of(" \t\r\n") + 1);
+
+		// Check for [package] section
+		if (line == "[package]") {
+			inPackageSection = true;
+			continue;
+		}
+
+		// Check for other sections
+		if (!line.empty() && line[0] == '[') {
+			inPackageSection = false;
+			continue;
+		}
+
+		// Skip comments and empty lines
+		if (line.empty() || line[0] == '#') {
+			continue;
+		}
+
+		// Look for name = "value" in package section
+		if (inPackageSection) {
+			size_t eqPos = line.find('=');
+			if (eqPos != std::string::npos) {
+				std::string key = line.substr(0, eqPos);
+				std::string value = line.substr(eqPos + 1);
+
+				// Trim key and value
+				key.erase(0, key.find_first_not_of(" \t"));
+				key.erase(key.find_last_not_of(" \t") + 1);
+				value.erase(0, value.find_first_not_of(" \t"));
+				value.erase(value.find_last_not_of(" \t") + 1);
+
+				if (key == "name") {
+					// Remove quotes from value
+					if (value.size() >= 2 && value[0] == '"' && value[value.size() - 1] == '"') {
+						return value.substr(1, value.size() - 2);
+					}
+					return value;
+				}
+			}
+		}
+	}
+
+	return "";
+}
+
 // Get the installed directory name for a module@ref
 std::string getInstalledDirName(const std::string& moduleName, const std::string& ref) {
 	return moduleName + "@" + ref;
 }
 
 // Clone a Git repository to the packages directory
-bool gitClone(const GitRef& gitRef) {
+// Returns the actual package name (from manifest if present, otherwise from git ref)
+// Returns empty string on failure
+std::string gitClone(const GitRef& gitRef) {
 	std::string packagesDir = getPackagesDir();
 
 	// Create packages directory if it doesn't exist
@@ -143,7 +206,7 @@ bool gitClone(const GitRef& gitRef) {
 	if (fs::exists(targetDir)) {
 		std::cout << COLOR_YELLOW << "Package already exists: " << COLOR_RESET << targetDir << "\n";
 		std::cout << COLOR_CYAN << "Use 'quadpm update' to update it" << COLOR_RESET << "\n";
-		return true;
+		return gitRef.moduleName;
 	}
 
 	std::cout << COLOR_CYAN << "Fetching " << COLOR_BOLD << gitRef.moduleName << COLOR_RESET << COLOR_CYAN << " "
@@ -161,13 +224,36 @@ bool gitClone(const GitRef& gitRef) {
 		if (fs::exists(targetDir)) {
 			fs::remove_all(targetDir);
 		}
-		return false;
+		return "";
 	}
 
-	std::cout << COLOR_GREEN << "  ✓ Installed to " << COLOR_RESET << targetDir << "\n";
+	// Check for quadrate.toml and use package name if specified
+	std::string manifestPath = targetDir + "/quadrate.toml";
+	std::string packageName = parsePackageName(manifestPath);
+	std::string finalDir = targetDir;
+	std::string actualPackageName = gitRef.moduleName;
+
+	if (!packageName.empty() && packageName != gitRef.moduleName) {
+		// Package specifies a different name, rename the directory
+		finalDir = packagesDir + "/" + getInstalledDirName(packageName, gitRef.ref);
+		actualPackageName = packageName;
+
+		// Check if target with new name already exists
+		if (fs::exists(finalDir)) {
+			std::cerr << COLOR_RED << "Error: Package '" << packageName << "' already exists at: " << COLOR_RESET
+					  << finalDir << "\n";
+			fs::remove_all(targetDir);
+			return "";
+		}
+
+		fs::rename(targetDir, finalDir);
+		std::cout << COLOR_GREEN << "  ✓ Installed as '" << packageName << "' to " << COLOR_RESET << finalDir << "\n";
+	} else {
+		std::cout << COLOR_GREEN << "  ✓ Installed to " << COLOR_RESET << finalDir << "\n";
+	}
 
 	// Show what module file was found
-	std::string moduleFile = targetDir + "/module.qd";
+	std::string moduleFile = finalDir + "/module.qd";
 	if (fs::exists(moduleFile)) {
 		std::cout << COLOR_GREEN << "  ✓ Found module.qd" << COLOR_RESET << "\n";
 	} else {
@@ -176,7 +262,7 @@ bool gitClone(const GitRef& gitRef) {
 	}
 
 	// Check for C source files and compile if found
-	std::string srcDir = targetDir + "/src";
+	std::string srcDir = finalDir + "/src";
 	if (fs::exists(srcDir) && fs::is_directory(srcDir)) {
 		std::cout << "  → Found src/ directory, compiling C sources...\n";
 
@@ -190,10 +276,10 @@ bool gitClone(const GitRef& gitRef) {
 
 		if (!cFiles.empty()) {
 			// Create lib directory
-			std::string libDir = targetDir + "/lib";
+			std::string libDir = finalDir + "/lib";
 			fs::create_directories(libDir);
 
-			// Library names
+			// Library names - always use the repository name for library files
 			std::string libName = "lib" + gitRef.moduleName;
 			std::string sharedLib = libDir + "/" + libName + ".so";
 			std::string staticLib = libDir + "/" + libName + "_static.a";
@@ -271,7 +357,7 @@ bool gitClone(const GitRef& gitRef) {
 		}
 	}
 
-	return true;
+	return actualPackageName;
 }
 
 // Print version information
@@ -375,14 +461,15 @@ int main(int argc, char** argv) {
 		std::string gitUrl = argv[2];
 		GitRef gitRef = parseGitUrl(gitUrl);
 
-		if (!gitClone(gitRef)) {
+		std::string installedName = gitClone(gitRef);
+		if (installedName.empty()) {
 			return 1;
 		}
 
 		std::cout << "\n"
 				  << COLOR_GREEN << "Success!" << COLOR_RESET
 				  << " You can now use this module in your Quadrate code:\n";
-		std::cout << "  " << COLOR_CYAN << "use " << gitRef.moduleName << COLOR_RESET << "\n";
+		std::cout << "  " << COLOR_CYAN << "use " << installedName << COLOR_RESET << "\n";
 
 		return 0;
 	}

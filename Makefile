@@ -180,7 +180,7 @@ tests: debug
 	bash tests/run_tests.sh quaduses
 	@echo ""
 	@echo "=== Running quadpm tests ==="
-	meson test -C $(BUILD_DIR_DEBUG) quadpm_tests --print-errorlogs
+	meson test -C $(BUILD_DIR_DEBUG) --suite quadpm --print-errorlogs
 	@echo ""
 	@echo "=========================================="
 	@echo "  Test Suite Complete"
