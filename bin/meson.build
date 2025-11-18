@@ -1,5 +1,6 @@
 subdir('quadc')
 subdir('quadfmt')
 subdir('quadlsp')
+subdir('quadpm')
 subdir('quaduses')
 subdir('quadrate')
