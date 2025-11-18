@@ -35,22 +35,23 @@
 (constant_definition
   name: (identifier) @constant)
 
-; Use statements
+; Use statements (module imports)
 (use_statement
-  module: (identifier) @namespace)
+  module: (identifier) @module)
 
 ; Import statements
 (import_statement
   library: (string) @string.special
-  namespace: (string) @namespace)
+  namespace: (string) @module)
 
 ; Import function declarations
 (import_function
   name: (identifier) @function)
 
-; Namespaced identifiers (function calls with namespace)
+; Namespaced identifiers (module::function or module::constant calls)
+; These have higher priority and should be matched before the catch-all identifier rule
 (namespaced_identifier
-  namespace: (identifier) @namespace
+  namespace: (identifier) @module
   name: (identifier) @function.call)
 
 ; Built-in stack operations
@@ -148,5 +149,5 @@
 ; Comments
 (comment) @comment @spell
 
-; Identifiers (catch-all for function calls)
+; Identifiers (catch-all for variables and unqualified function calls)
 (identifier) @variable
