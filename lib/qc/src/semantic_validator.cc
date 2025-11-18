@@ -410,7 +410,56 @@ namespace Qd {
 			}
 
 			// If not found in same directory, try standard paths
-			// Try 2: QUADRATE_ROOT
+			// Try 2: Third-party packages directory (installed via quadpm)
+			// Get packages directory
+			std::string packagesDir;
+			const char* quadrateCache = std::getenv("QUADRATE_CACHE");
+			if (quadrateCache) {
+				packagesDir = quadrateCache;
+			} else {
+				const char* xdgDataHome = std::getenv("XDG_DATA_HOME");
+				if (xdgDataHome) {
+					packagesDir = std::string(xdgDataHome) + "/quadrate/packages";
+				} else {
+					const char* pkgHome = std::getenv("HOME");
+					if (pkgHome) {
+						packagesDir = std::string(pkgHome) + "/quadrate/packages";
+					}
+				}
+			}
+
+			if (!packagesDir.empty() && std::filesystem::exists(packagesDir)) {
+				// Look for directories matching moduleName@*
+				try {
+					for (const auto& entry : std::filesystem::directory_iterator(packagesDir)) {
+						if (!entry.is_directory()) {
+							continue;
+						}
+						std::string dirName = entry.path().filename().string();
+						std::string prefix = moduleName + "@";
+						if (dirName.size() > prefix.size() && dirName.substr(0, prefix.size()) == prefix) {
+							// Found a matching package
+							modulePath = entry.path().string() + "/module.qd";
+							file.open(modulePath);
+							if (file.good()) {
+								mModuleDirectories[moduleName] = entry.path().string();
+								std::stringstream buffer;
+								buffer << file.rdbuf();
+								std::string source = buffer.str();
+								file.close();
+								parseModuleAndCollectFunctions(effectiveModuleName, source);
+								return;
+							}
+							file.close();
+							break; // Only try first matching version
+						}
+					}
+				} catch (...) {
+					// Ignore errors iterating directory
+				}
+			}
+
+			// Try 3: QUADRATE_ROOT
 			const char* quadrateRoot = std::getenv("QUADRATE_ROOT");
 			if (quadrateRoot) {
 				modulePath = std::string(quadrateRoot) + "/" + moduleName;
@@ -458,7 +507,55 @@ namespace Qd {
 			}
 			file.close();
 
-			// Try 2: QUADRATE_ROOT environment variable
+			// Try 2: Third-party packages directory (installed via quadpm)
+			std::string packagesDir;
+			const char* quadrateCache = std::getenv("QUADRATE_CACHE");
+			if (quadrateCache) {
+				packagesDir = quadrateCache;
+			} else {
+				const char* xdgDataHome = std::getenv("XDG_DATA_HOME");
+				if (xdgDataHome) {
+					packagesDir = std::string(xdgDataHome) + "/quadrate/packages";
+				} else {
+					const char* pkgHome = std::getenv("HOME");
+					if (pkgHome) {
+						packagesDir = std::string(pkgHome) + "/quadrate/packages";
+					}
+				}
+			}
+
+			if (!packagesDir.empty() && std::filesystem::exists(packagesDir)) {
+				// Look for directories matching moduleName@*
+				try {
+					for (const auto& entry : std::filesystem::directory_iterator(packagesDir)) {
+						if (!entry.is_directory()) {
+							continue;
+						}
+						std::string dirName = entry.path().filename().string();
+						std::string prefix = moduleName + "@";
+						if (dirName.size() > prefix.size() && dirName.substr(0, prefix.size()) == prefix) {
+							// Found a matching package
+							modulePath = entry.path().string() + "/module.qd";
+							file.open(modulePath);
+							if (file.good()) {
+								mModuleDirectories[moduleName] = entry.path().string();
+								std::stringstream buffer;
+								buffer << file.rdbuf();
+								std::string source = buffer.str();
+								file.close();
+								parseModuleAndCollectFunctions(moduleName, source);
+								return;
+							}
+							file.close();
+							break; // Only try first matching version
+						}
+					}
+				} catch (...) {
+					// Ignore errors iterating directory
+				}
+			}
+
+			// Try 3: QUADRATE_ROOT environment variable
 			const char* quadrateRoot = std::getenv("QUADRATE_ROOT");
 			if (quadrateRoot) {
 				modulePath = std::string(quadrateRoot) + "/" + moduleName + "/module.qd";
@@ -476,7 +573,7 @@ namespace Qd {
 				file.close();
 			}
 
-			// Try 3: Standard library directories relative to current directory (for development)
+			// Try 4: Standard library directories relative to current directory (for development)
 			std::string stdLibPath = "lib/std" + moduleName + "qd/qd/" + moduleName + "/module.qd";
 			file.open(stdLibPath);
 			if (file.good()) {
@@ -491,7 +588,7 @@ namespace Qd {
 			}
 			file.close();
 
-			// Try 4: Standard library relative to executable (for installed binaries)
+			// Try 5: Standard library relative to executable (for installed binaries)
 			// Get executable path and look for ../share/quadrate/<module>/module.qd
 			try {
 				std::filesystem::path exePath = std::filesystem::canonical("/proc/self/exe");
@@ -515,7 +612,7 @@ namespace Qd {
 				// Ignore errors reading executable path
 			}
 
-			// Try 5: $HOME/quadrate directory
+			// Try 6: $HOME/quadrate directory
 			const char* home = std::getenv("HOME");
 			if (home) {
 				modulePath = std::string(home) + "/quadrate/" + moduleName + "/module.qd";

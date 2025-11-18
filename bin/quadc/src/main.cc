@@ -19,6 +19,9 @@
 
 #define QUADC_VERSION "0.1.0"
 
+// Global module version pins (set from command-line -l flags)
+static std::unordered_map<std::string, std::string> g_moduleVersionPins;
+
 struct Options {
 	std::vector<std::string> files;
 	std::string outputName = "main";
@@ -32,6 +35,7 @@ struct Options {
 	bool dumpIR = false;
 	bool debugInfo = false;
 	bool werror = false;
+	std::unordered_map<std::string, std::string> moduleVersions; // module name -> version
 };
 
 void printHelp() {
@@ -44,6 +48,7 @@ void printHelp() {
 	std::cout << "  -o <name>          Output executable name (default: main)\n";
 	std::cout << "  -O0, -O1, -O2, -O3 Set optimization level (default: -O0)\n";
 	std::cout << "  -g                 Generate debug information for GDB/LLDB\n";
+	std::cout << "  -l <mod@ver>       Pin module to specific version (e.g., -l color@1.0.0)\n";
 	std::cout << "  --save-temps       Keep temporary files for debugging\n";
 	std::cout << "  --verbose          Show detailed compilation steps\n";
 	std::cout << "  --dump-tokens      Print lexer tokens\n";
@@ -90,6 +95,25 @@ bool parseArgs(int argc, char* argv[], Options& opts) {
 			opts.dumpIR = true;
 		} else if (arg == "-g") {
 			opts.debugInfo = true;
+		} else if (arg == "-l") {
+			if (i + 1 >= argc) {
+				std::cerr << "quadc: option '-l' requires an argument (module@version)\n";
+				std::cerr << "Try 'quadc --help' for more information.\n";
+				return false;
+			}
+			std::string moduleSpec = argv[++i];
+
+			// Parse module@version format
+			size_t atPos = moduleSpec.find('@');
+			if (atPos == std::string::npos || atPos == 0 || atPos == moduleSpec.size() - 1) {
+				std::cerr << "quadc: invalid format for '-l': '" << moduleSpec << "'\n";
+				std::cerr << "Expected format: module@version (e.g., color@1.0.0)\n";
+				return false;
+			}
+
+			std::string moduleName = moduleSpec.substr(0, atPos);
+			std::string version = moduleSpec.substr(atPos + 1);
+			opts.moduleVersions[moduleName] = version;
 		} else if (arg == "--werror") {
 			opts.werror = true;
 		} else if (arg == "-O0") {
@@ -209,6 +233,84 @@ std::string expandTilde(const std::string& path) {
 	return path;
 }
 
+// Get packages directory path (where quadpm installs third-party modules)
+std::string getPackagesDir() {
+	// Check QUADRATE_CACHE environment variable first
+	const char* quadrateCache = std::getenv("QUADRATE_CACHE");
+	if (quadrateCache) {
+		return std::string(quadrateCache);
+	}
+
+	// Check if XDG_DATA_HOME is set
+	const char* xdgDataHome = std::getenv("XDG_DATA_HOME");
+	if (xdgDataHome) {
+		return std::string(xdgDataHome) + "/quadrate/packages";
+	}
+
+	// Default to ~/quadrate/packages
+	const char* home = std::getenv("HOME");
+	if (home) {
+		return std::string(home) + "/quadrate/packages";
+	}
+
+	return ""; // No packages directory available
+}
+
+// Find a package in the packages directory
+// Checks g_moduleVersionPins first for pinned versions from -l flags
+// Returns the full path to the package directory, or empty string if not found
+std::string findLatestPackageVersion(const std::string& moduleName) {
+	std::string packagesDir = getPackagesDir();
+	if (packagesDir.empty() || !std::filesystem::exists(packagesDir)) {
+		return "";
+	}
+
+	// Check if this module has a pinned version from -l flag
+	std::string pinnedVersion;
+	if (g_moduleVersionPins.count(moduleName)) {
+		pinnedVersion = g_moduleVersionPins.at(moduleName);
+	}
+
+	// If version is pinned, look for exact match
+	if (!pinnedVersion.empty()) {
+		std::string exactPath = packagesDir + "/" + moduleName + "@" + pinnedVersion;
+		if (std::filesystem::exists(exactPath) && std::filesystem::is_directory(exactPath)) {
+			return exactPath;
+		}
+		return ""; // Pinned version not found
+	}
+
+	// No version specified - find any version
+	std::string latestVersion;
+	std::string latestPath;
+
+	try {
+		for (const auto& entry : std::filesystem::directory_iterator(packagesDir)) {
+			if (!entry.is_directory()) {
+				continue;
+			}
+
+			std::string dirName = entry.path().filename().string();
+
+			// Check if directory name starts with "moduleName@"
+			std::string prefix = moduleName + "@";
+			if (dirName.size() > prefix.size() && dirName.substr(0, prefix.size()) == prefix) {
+				std::string foundVersion = dirName.substr(prefix.size());
+
+				// For now, just use the first match (later could implement version comparison)
+				// If multiple versions exist, we use the last one found by directory iterator
+				latestVersion = foundVersion;
+				latestPath = entry.path().string();
+			}
+		}
+	} catch (...) {
+		// Ignore errors iterating directory
+		return "";
+	}
+
+	return latestPath;
+}
+
 // Get package name from a module identifier
 // For file paths (ending in .qd), returns the filename without extension
 // For module names, returns the module name as-is
@@ -285,7 +387,16 @@ std::string findModuleFile(const std::string& moduleName, const std::string& sou
 			return localPath;
 		}
 
-		// Try 2: QUADRATE_ROOT environment variable
+		// Try 2: Third-party packages directory (installed via quadpm)
+		std::string packagePath = findLatestPackageVersion(moduleName);
+		if (!packagePath.empty()) {
+			std::string moduleFile = packagePath + "/module.qd";
+			if (std::filesystem::exists(moduleFile)) {
+				return moduleFile;
+			}
+		}
+
+		// Try 3: QUADRATE_ROOT environment variable
 		const char* quadrateRoot = getenv("QUADRATE_ROOT");
 		if (quadrateRoot) {
 			std::string rootPath = std::string(quadrateRoot) + "/" + moduleName + "/module.qd";
@@ -294,13 +405,13 @@ std::string findModuleFile(const std::string& moduleName, const std::string& sou
 			}
 		}
 
-		// Try 3: Standard library directories relative to current directory (for development)
+		// Try 4: Standard library directories relative to current directory (for development)
 		std::string stdLibPath = "lib/std" + moduleName + "qd/qd/" + moduleName + "/module.qd";
 		if (std::filesystem::exists(stdLibPath)) {
 			return stdLibPath;
 		}
 
-		// Try 4: Standard library relative to executable (for installed binaries)
+		// Try 5: Standard library relative to executable (for installed binaries)
 		// Get executable path and look for ../share/quadrate/<module>/module.qd
 		try {
 			std::filesystem::path exePath = std::filesystem::canonical("/proc/self/exe");
@@ -313,7 +424,7 @@ std::string findModuleFile(const std::string& moduleName, const std::string& sou
 			// Ignore errors reading executable path
 		}
 
-		// Try 5: $HOME/quadrate directory
+		// Try 6: $HOME/quadrate directory
 		const char* home = getenv("HOME");
 		if (home) {
 			std::string homePath = std::string(home) + "/quadrate/" + moduleName + "/module.qd";
@@ -322,7 +433,7 @@ std::string findModuleFile(const std::string& moduleName, const std::string& sou
 			}
 		}
 
-		// Try 5: System-wide installation
+		// Try 7: System-wide installation
 		std::string systemPath = "/usr/share/quadrate/" + moduleName + "/module.qd";
 		if (std::filesystem::exists(systemPath)) {
 			return systemPath;
@@ -364,6 +475,9 @@ int main(int argc, char** argv) {
 		printVersion();
 		return 0;
 	}
+
+	// Set global module version pins from command-line options
+	g_moduleVersionPins = opts.moduleVersions;
 
 	// Configure colored output - check NO_COLOR environment variable
 	const bool noColors = std::getenv("NO_COLOR") != nullptr;
