@@ -1953,7 +1953,12 @@ namespace Qd {
 							mangledName = "qd_stdqd_" + func->name;
 						} else {
 							// For other libraries, use plain C function name
-							mangledName = func->name;
+							if (library.rfind("libstd", 0) == 0 &&
+							    (library.find("qd_static.a") != std::string::npos || library.find("qd.so") != std::string::npos)) {
+								mangledName = "usr_" + namespaceName + "_" + func->name;
+							} else {
+								mangledName = func->name;
+							}
 						}
 
 						// Check if function already exists
@@ -2024,7 +2029,12 @@ namespace Qd {
 						mangledName = "qd_stdqd_" + func->name;
 					} else {
 						// For other libraries, use plain C function name
-						mangledName = func->name;
+						if (library.rfind("libstd", 0) == 0 &&
+						    (library.find("qd_static.a") != std::string::npos || library.find("qd.so") != std::string::npos)) {
+							mangledName = "usr_" + namespaceName + "_" + func->name;
+						} else {
+							mangledName = func->name;
+						}
 					}
 
 					if (module->getFunction(mangledName)) {

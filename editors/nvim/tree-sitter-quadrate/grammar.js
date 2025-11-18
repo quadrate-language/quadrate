@@ -94,8 +94,10 @@ module.exports = grammar({
     _expression: $ => choice(
       $.number,
       $.string,
-      $.identifier,
+      $.builtin_operation,
+      $.operator_symbol,
       $.namespaced_identifier,
+      $.identifier,
       $.local_declaration,
       $.if_expression,
       $.for_loop,
@@ -103,8 +105,6 @@ module.exports = grammar({
       $.switch_expression,
       $.defer_block,
       $.ctx_block,
-      $.builtin_operation,
-      $.operator_symbol,
       $.break_statement,
       $.continue_statement,
       $.loop_variable,
@@ -177,14 +177,14 @@ module.exports = grammar({
     ),
 
     // Operator symbols (single-char and multi-char operators)
-    operator_symbol: $ => choice(
+    operator_symbol: $ => prec(1, choice(
       '.', '+', '-', '*', '/', '%',
       '==', '!=', '<', '>', '<=', '>=',
       '!',
-    ),
+    )),
 
     // Built-in operations
-    builtin_operation: $ => choice(
+    builtin_operation: $ => prec(1, choice(
       // Stack operations
       'dup', 'swap', 'drop', 'over', 'rot', 'nip', 'tuck', 'pick', 'roll',
       'dup2', 'swap2', 'over2', 'drop2', 'dupd', 'swapd', 'overd', 'nipd', 'depth', 'clear',
@@ -208,7 +208,7 @@ module.exports = grammar({
       'detach', 'spawn', 'wait',
       // Error handling
       'error',
-    ),
+    )),
 
     // Literals
     number: $ => token(choice(
