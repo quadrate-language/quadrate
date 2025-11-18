@@ -479,8 +479,8 @@ int main(int argc, char** argv) {
 					// Top-level: parent is standalone .qd, file gets its own namespace from filename
 
 					// Check if parent is a module directory (doesn't end in .qd)
-					bool parentIsModuleDirectory = !(module.name.size() >= 3 &&
-						module.name.substr(module.name.size() - 3) == ".qd");
+					bool parentIsModuleDirectory =
+							!(module.name.size() >= 3 && module.name.substr(module.name.size() - 3) == ".qd");
 
 					if (parentIsModuleDirectory) {
 						// Intra-module import: use parent's package
@@ -599,8 +599,8 @@ int main(int argc, char** argv) {
 										transitiveModule.substr(transitiveModule.size() - 3) == ".qd";
 					if (isDirectFile) {
 						// Check if importing file is a module directory (doesn't end in .qd)
-						bool importerIsModuleDirectory = !(moduleName.size() >= 3 &&
-							moduleName.substr(moduleName.size() - 3) == ".qd");
+						bool importerIsModuleDirectory =
+								!(moduleName.size() >= 3 && moduleName.substr(moduleName.size() - 3) == ".qd");
 
 						if (importerIsModuleDirectory) {
 							// Intra-module import: use importer's package

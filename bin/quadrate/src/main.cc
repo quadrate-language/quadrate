@@ -10,8 +10,8 @@
 #include <qc/colors.h>
 #include <qc/semantic_validator.h>
 #include <random>
-#include <readline/readline.h>
 #include <readline/history.h>
+#include <readline/readline.h>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -30,7 +30,7 @@
 #define COLOR_RED "\033[31m"
 
 // Stack display settings
-#define MAX_STACK_DISPLAY 5  // Show only top N elements
+#define MAX_STACK_DISPLAY 5 // Show only top N elements
 
 class ReplSession {
 public:
@@ -60,7 +60,9 @@ public:
 			}
 
 			for (size_t i = startIndex; i < stackValues.size(); i++) {
-				if (i > startIndex) promptStr << " ";
+				if (i > startIndex) {
+					promptStr << " ";
+				}
 
 				// Color code by type
 				const std::string& val = stackValues[i];
@@ -180,17 +182,19 @@ private:
 
 	std::string trim(const std::string& str) {
 		size_t first = str.find_first_not_of(" \t\n\r");
-		if (first == std::string::npos)
+		if (first == std::string::npos) {
 			return "";
+		}
 		size_t last = str.find_last_not_of(" \t\n\r");
 		return str.substr(first, (last - first + 1));
 	}
 
 	void printWelcome() {
 		std::cout << COLOR_BOLD << "Quadrate " << QUADRATE_VERSION << " REPL" << COLOR_RESET << std::endl;
-		std::cout << "Type " << COLOR_GREEN << "help" << COLOR_RESET << " for available commands, "
-				  << COLOR_GREEN << "exit" << COLOR_RESET << " to quit" << std::endl;
-		std::cout << COLOR_DIM << "Tip: Use 'print' to display integer/float values, 'prints' for strings" << COLOR_RESET << std::endl;
+		std::cout << "Type " << COLOR_GREEN << "help" << COLOR_RESET << " for available commands, " << COLOR_GREEN
+				  << "exit" << COLOR_RESET << " to quit" << std::endl;
+		std::cout << COLOR_DIM << "Tip: Use 'print' to display integer/float values, 'prints' for strings"
+				  << COLOR_RESET << std::endl;
 		std::cout << std::endl;
 	}
 
@@ -372,7 +376,9 @@ private:
 			while (pos < code.length() && std::isspace(code[pos])) {
 				pos++;
 			}
-			if (pos >= code.length()) break;
+			if (pos >= code.length()) {
+				break;
+			}
 
 			std::string token;
 
@@ -428,8 +434,8 @@ private:
 
 			if (isInt || isFloat) {
 				stackValues.push_back(token);
-			} else if (token == "+" || token == "-" || token == "*" || token == "/" || token == "%" ||
-					   token == "add" || token == "sub" || token == "mul" || token == "div" || token == "mod") {
+			} else if (token == "+" || token == "-" || token == "*" || token == "/" || token == "%" || token == "add" ||
+					   token == "sub" || token == "mul" || token == "div" || token == "mod") {
 				if (stackValues.size() >= 2) {
 					std::string b = stackValues.back();
 					stackValues.pop_back();
@@ -447,22 +453,34 @@ private:
 							double aVal = std::stod(a);
 							double bVal = std::stod(b);
 							double result = 0.0;
-							if (token == "add" || token == "+") result = aVal + bVal;
-							else if (token == "sub" || token == "-") result = aVal - bVal;
-							else if (token == "mul" || token == "*") result = aVal * bVal;
-							else if ((token == "div" || token == "/") && bVal != 0.0) result = aVal / bVal;
-							else if (token == "mod" || token == "%") result = std::fmod(aVal, bVal);
+							if (token == "add" || token == "+") {
+								result = aVal + bVal;
+							} else if (token == "sub" || token == "-") {
+								result = aVal - bVal;
+							} else if (token == "mul" || token == "*") {
+								result = aVal * bVal;
+							} else if ((token == "div" || token == "/") && bVal != 0.0) {
+								result = aVal / bVal;
+							} else if (token == "mod" || token == "%") {
+								result = std::fmod(aVal, bVal);
+							}
 							stackValues.push_back(std::to_string(result));
 						} else {
 							// Use integer arithmetic
 							long long aVal = std::stoll(a);
 							long long bVal = std::stoll(b);
 							long long result = 0;
-							if (token == "add" || token == "+") result = aVal + bVal;
-							else if (token == "sub" || token == "-") result = aVal - bVal;
-							else if (token == "mul" || token == "*") result = aVal * bVal;
-							else if ((token == "div" || token == "/") && bVal != 0) result = aVal / bVal;
-							else if ((token == "mod" || token == "%") && bVal != 0) result = aVal % bVal;
+							if (token == "add" || token == "+") {
+								result = aVal + bVal;
+							} else if (token == "sub" || token == "-") {
+								result = aVal - bVal;
+							} else if (token == "mul" || token == "*") {
+								result = aVal * bVal;
+							} else if ((token == "div" || token == "/") && bVal != 0) {
+								result = aVal / bVal;
+							} else if ((token == "mod" || token == "%") && bVal != 0) {
+								result = aVal % bVal;
+							}
 							stackValues.push_back(std::to_string(result));
 						}
 					} catch (...) {
@@ -480,7 +498,8 @@ private:
 					stackValues.push_back(second);
 					stackValues.push_back(first);
 				}
-			} else if (token == "drop" || token == "print" || token == "printv" || token == "prints" || token == "." || token == "call") {
+			} else if (token == "drop" || token == "print" || token == "printv" || token == "prints" || token == "." ||
+					   token == "call") {
 				if (!stackValues.empty()) {
 					stackValues.pop_back();
 				}
@@ -500,10 +519,14 @@ private:
 				}
 			} else if (token == "swap2") {
 				if (stackValues.size() >= 4) {
-					std::string d = stackValues.back(); stackValues.pop_back();
-					std::string c = stackValues.back(); stackValues.pop_back();
-					std::string b = stackValues.back(); stackValues.pop_back();
-					std::string a = stackValues.back(); stackValues.pop_back();
+					std::string d = stackValues.back();
+					stackValues.pop_back();
+					std::string c = stackValues.back();
+					stackValues.pop_back();
+					std::string b = stackValues.back();
+					stackValues.pop_back();
+					std::string a = stackValues.back();
+					stackValues.pop_back();
 					stackValues.push_back(c);
 					stackValues.push_back(d);
 					stackValues.push_back(a);
@@ -520,9 +543,12 @@ private:
 				}
 			} else if (token == "rot") {
 				if (stackValues.size() >= 3) {
-					std::string c = stackValues.back(); stackValues.pop_back();
-					std::string b = stackValues.back(); stackValues.pop_back();
-					std::string a = stackValues.back(); stackValues.pop_back();
+					std::string c = stackValues.back();
+					stackValues.pop_back();
+					std::string b = stackValues.back();
+					stackValues.pop_back();
+					std::string a = stackValues.back();
+					stackValues.pop_back();
 					stackValues.push_back(b);
 					stackValues.push_back(c);
 					stackValues.push_back(a);
@@ -536,8 +562,10 @@ private:
 				}
 			} else if (token == "tuck") {
 				if (stackValues.size() >= 2) {
-					std::string b = stackValues.back(); stackValues.pop_back();
-					std::string a = stackValues.back(); stackValues.pop_back();
+					std::string b = stackValues.back();
+					stackValues.pop_back();
+					std::string a = stackValues.back();
+					stackValues.pop_back();
 					stackValues.push_back(b);
 					stackValues.push_back(a);
 					stackValues.push_back(b);
@@ -634,9 +662,13 @@ private:
 						double d = std::stod(stackValues.back());
 						stackValues.pop_back();
 						double result;
-						if (token == "sin") result = std::sin(d);
-						else if (token == "cos") result = std::cos(d);
-						else result = std::tan(d);
+						if (token == "sin") {
+							result = std::sin(d);
+						} else if (token == "cos") {
+							result = std::cos(d);
+						} else {
+							result = std::tan(d);
+						}
 						stackValues.push_back(std::to_string(result));
 					} catch (...) {
 						stackValues.push_back("?");
@@ -648,9 +680,13 @@ private:
 						double d = std::stod(stackValues.back());
 						stackValues.pop_back();
 						double result;
-						if (token == "floor") result = std::floor(d);
-						else if (token == "ceil") result = std::ceil(d);
-						else result = std::round(d);
+						if (token == "floor") {
+							result = std::floor(d);
+						} else if (token == "ceil") {
+							result = std::ceil(d);
+						} else {
+							result = std::round(d);
+						}
 						stackValues.push_back(std::to_string(result));
 					} catch (...) {
 						stackValues.push_back("?");
@@ -659,8 +695,10 @@ private:
 			} else if (token == "min" || token == "max") {
 				if (stackValues.size() >= 2) {
 					try {
-						std::string b = stackValues.back(); stackValues.pop_back();
-						std::string a = stackValues.back(); stackValues.pop_back();
+						std::string b = stackValues.back();
+						stackValues.pop_back();
+						std::string a = stackValues.back();
+						stackValues.pop_back();
 						bool aIsFloat = (a.find('.') != std::string::npos);
 						bool bIsFloat = (b.find('.') != std::string::npos);
 						if (aIsFloat || bIsFloat) {

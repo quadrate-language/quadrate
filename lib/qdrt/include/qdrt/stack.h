@@ -21,13 +21,13 @@ extern "C" {
  * @brief Stack operation error codes
  */
 typedef enum {
-	QD_STACK_OK = 0,                  ///< Operation successful
+	QD_STACK_OK = 0,				   ///< Operation successful
 	QD_STACK_ERR_INVALID_CAPACITY = 1, ///< Invalid capacity specified
-	QD_STACK_ERR_OVERFLOW = 2,         ///< Stack overflow (capacity exceeded)
-	QD_STACK_ERR_UNDERFLOW = 3,        ///< Stack underflow (pop from empty stack)
-	QD_STACK_ERR_TYPE_MISMATCH = 4,    ///< Type mismatch in operation
-	QD_STACK_ERR_NULL_POINTER = 5,     ///< Null pointer argument
-	QD_STACK_ERR_ALLOC = 6            ///< Memory allocation failure
+	QD_STACK_ERR_OVERFLOW = 2,		   ///< Stack overflow (capacity exceeded)
+	QD_STACK_ERR_UNDERFLOW = 3,		   ///< Stack underflow (pop from empty stack)
+	QD_STACK_ERR_TYPE_MISMATCH = 4,	   ///< Type mismatch in operation
+	QD_STACK_ERR_NULL_POINTER = 5,	   ///< Null pointer argument
+	QD_STACK_ERR_ALLOC = 6			   ///< Memory allocation failure
 } qd_stack_error;
 
 /**
@@ -37,10 +37,10 @@ typedef enum {
  * enabling runtime type checking.
  */
 typedef enum {
-	QD_STACK_TYPE_INT,    ///< 64-bit signed integer
-	QD_STACK_TYPE_FLOAT,  ///< Double-precision floating point
-	QD_STACK_TYPE_PTR,    ///< Generic pointer
-	QD_STACK_TYPE_STR     ///< Null-terminated string
+	QD_STACK_TYPE_INT,	 ///< 64-bit signed integer
+	QD_STACK_TYPE_FLOAT, ///< Double-precision floating point
+	QD_STACK_TYPE_PTR,	 ///< Generic pointer
+	QD_STACK_TYPE_STR	 ///< Null-terminated string
 } qd_stack_type;
 
 /**
@@ -51,14 +51,14 @@ typedef enum {
  */
 typedef struct {
 	union {
-		int64_t i;  ///< Integer value
-		double f;   ///< Float value
-		void* p;    ///< Pointer value
-		char* s;    ///< String value (owned by stack)
+		int64_t i; ///< Integer value
+		double f;  ///< Float value
+		void* p;   ///< Pointer value
+		char* s;   ///< String value (owned by stack)
 	} value;
 
-	qd_stack_type type;        ///< Type of the stored value
-	bool is_error_tainted;     ///< Error propagation flag
+	qd_stack_type type;	   ///< Type of the stored value
+	bool is_error_tainted; ///< Error propagation flag
 } qd_stack_element_t;
 
 /**

@@ -18,7 +18,7 @@ extern "C" {
  * @note A code of 0 indicates success; non-zero indicates an error
  */
 typedef struct {
-	int code;  ///< Result code (0 = success, non-zero = error)
+	int code; ///< Result code (0 = success, non-zero = error)
 } qd_exec_result;
 
 #ifdef __cplusplus

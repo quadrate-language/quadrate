@@ -328,7 +328,8 @@ private:
 				json_t* end = json_object();
 				// End at the same position plus a reasonable offset for visibility
 				json_object_set_new(end, "line", json_integer(static_cast<json_int_t>(lspLine)));
-				json_object_set_new(end, "character", json_integer(static_cast<json_int_t>(lspColumn + ERROR_SPAN_LENGTH)));
+				json_object_set_new(
+						end, "character", json_integer(static_cast<json_int_t>(lspColumn + ERROR_SPAN_LENGTH)));
 				json_object_set_new(range, "start", start);
 				json_object_set_new(range, "end", end);
 
@@ -458,35 +459,41 @@ private:
 
 	std::string getBuiltInDocumentation(const std::string& word) {
 		static const std::map<std::string, std::string> docs = {
-			{"add", "Add two numbers from the stack.\n\n**Stack effect:** `a b -- result`\n\nPops two values, pushes their sum."},
-			{"sub", "Subtract top from second.\n\n**Stack effect:** `a b -- result`\n\nPops two values, pushes `a - b`."},
-			{"mul", "Multiply two numbers.\n\n**Stack effect:** `a b -- result`\n\nPops two values, pushes their product."},
-			{"div", "Divide second by top.\n\n**Stack effect:** `a b -- result`\n\nPops two values, pushes `a / b`."},
-			{"dup", "Duplicate top of stack.\n\n**Stack effect:** `a -- a a`\n\nDuplicates the top stack value."},
-			{"swap", "Swap top two values.\n\n**Stack effect:** `a b -- b a`\n\nSwaps the top two stack values."},
-			{"drop", "Remove top of stack.\n\n**Stack effect:** `a --`\n\nRemoves the top value from the stack."},
-			{"over", "Copy second item to top.\n\n**Stack effect:** `a b -- a b a`\n\nCopies the second value to the top."},
-			{"rot", "Rotate top three items.\n\n**Stack effect:** `a b c -- b c a`\n\nRotates the top three values."},
-			{"print", "Print top value.\n\n**Stack effect:** `a --`\n\nPrints the top value and removes it."},
-			{"prints", "Print string.\n\n**Stack effect:** `str --`\n\nPrints a string value."},
-			{"eq", "Test equality.\n\n**Stack effect:** `a b -- bool`\n\nPushes 1 if equal, 0 otherwise."},
-			{"neq", "Test inequality.\n\n**Stack effect:** `a b -- bool`\n\nPushes 1 if not equal, 0 otherwise."},
-			{"lt", "Less than.\n\n**Stack effect:** `a b -- bool`\n\nPushes 1 if a < b, 0 otherwise."},
-			{"gt", "Greater than.\n\n**Stack effect:** `a b -- bool`\n\nPushes 1 if a > b, 0 otherwise."},
-			{"lte", "Less than or equal.\n\n**Stack effect:** `a b -- bool`"},
-			{"gte", "Greater than or equal.\n\n**Stack effect:** `a b -- bool`"},
-			{"and", "Logical AND.\n\n**Stack effect:** `a b -- bool`"},
-			{"or", "Logical OR.\n\n**Stack effect:** `a b -- bool`"},
-			{"not", "Logical NOT.\n\n**Stack effect:** `a -- bool`"},
-			{"abs", "Absolute value.\n\n**Stack effect:** `a -- result`"},
-			{"sqrt", "Square root.\n\n**Stack effect:** `a -- result`"},
-			{"sq", "Square.\n\n**Stack effect:** `a -- result`"},
-			{"sin", "Sine function.\n\n**Stack effect:** `a -- result`"},
-			{"cos", "Cosine function.\n\n**Stack effect:** `a -- result`"},
-			{"tan", "Tangent function.\n\n**Stack effect:** `a -- result`"},
-			{"if", "Conditional execution.\n\n**Syntax:** `condition if { ... } else { ... }`"},
-			{"for", "Loop construct.\n\n**Syntax:** `start end for { ... }`"},
-			{"loop", "Infinite loop.\n\n**Syntax:** `loop { ... }`"},
+				{"add", "Add two numbers from the stack.\n\n**Stack effect:** `a b -- result`\n\nPops two values, "
+						"pushes their sum."},
+				{"sub", "Subtract top from second.\n\n**Stack effect:** `a b -- result`\n\nPops two values, pushes `a "
+						"- b`."},
+				{"mul", "Multiply two numbers.\n\n**Stack effect:** `a b -- result`\n\nPops two values, pushes their "
+						"product."},
+				{"div", "Divide second by top.\n\n**Stack effect:** `a b -- result`\n\nPops two values, pushes `a / "
+						"b`."},
+				{"dup", "Duplicate top of stack.\n\n**Stack effect:** `a -- a a`\n\nDuplicates the top stack value."},
+				{"swap", "Swap top two values.\n\n**Stack effect:** `a b -- b a`\n\nSwaps the top two stack values."},
+				{"drop", "Remove top of stack.\n\n**Stack effect:** `a --`\n\nRemoves the top value from the stack."},
+				{"over", "Copy second item to top.\n\n**Stack effect:** `a b -- a b a`\n\nCopies the second value to "
+						 "the top."},
+				{"rot", "Rotate top three items.\n\n**Stack effect:** `a b c -- b c a`\n\nRotates the top three "
+						"values."},
+				{"print", "Print top value.\n\n**Stack effect:** `a --`\n\nPrints the top value and removes it."},
+				{"prints", "Print string.\n\n**Stack effect:** `str --`\n\nPrints a string value."},
+				{"eq", "Test equality.\n\n**Stack effect:** `a b -- bool`\n\nPushes 1 if equal, 0 otherwise."},
+				{"neq", "Test inequality.\n\n**Stack effect:** `a b -- bool`\n\nPushes 1 if not equal, 0 otherwise."},
+				{"lt", "Less than.\n\n**Stack effect:** `a b -- bool`\n\nPushes 1 if a < b, 0 otherwise."},
+				{"gt", "Greater than.\n\n**Stack effect:** `a b -- bool`\n\nPushes 1 if a > b, 0 otherwise."},
+				{"lte", "Less than or equal.\n\n**Stack effect:** `a b -- bool`"},
+				{"gte", "Greater than or equal.\n\n**Stack effect:** `a b -- bool`"},
+				{"and", "Logical AND.\n\n**Stack effect:** `a b -- bool`"},
+				{"or", "Logical OR.\n\n**Stack effect:** `a b -- bool`"},
+				{"not", "Logical NOT.\n\n**Stack effect:** `a -- bool`"},
+				{"abs", "Absolute value.\n\n**Stack effect:** `a -- result`"},
+				{"sqrt", "Square root.\n\n**Stack effect:** `a -- result`"},
+				{"sq", "Square.\n\n**Stack effect:** `a -- result`"},
+				{"sin", "Sine function.\n\n**Stack effect:** `a -- result`"},
+				{"cos", "Cosine function.\n\n**Stack effect:** `a -- result`"},
+				{"tan", "Tangent function.\n\n**Stack effect:** `a -- result`"},
+				{"if", "Conditional execution.\n\n**Syntax:** `condition if { ... } else { ... }`"},
+				{"for", "Loop construct.\n\n**Syntax:** `start end for { ... }`"},
+				{"loop", "Infinite loop.\n\n**Syntax:** `loop { ... }`"},
 		};
 
 		auto it = docs.find(word);
@@ -519,12 +526,14 @@ private:
 		size_t end = character;
 
 		// Move start backward to beginning of word
-		while (start > 0 && (isalnum(targetLine[start - 1]) || targetLine[start - 1] == '_' || targetLine[start - 1] == ':')) {
+		while (start > 0 &&
+				(isalnum(targetLine[start - 1]) || targetLine[start - 1] == '_' || targetLine[start - 1] == ':')) {
 			start--;
 		}
 
 		// Move end forward to end of word
-		while (end < targetLine.length() && (isalnum(targetLine[end]) || targetLine[end] == '_' || targetLine[end] == ':')) {
+		while (end < targetLine.length() &&
+				(isalnum(targetLine[end]) || targetLine[end] == '_' || targetLine[end] == ':')) {
 			end++;
 		}
 
@@ -584,7 +593,9 @@ private:
 							if (!func.inputParams.empty()) {
 								docStream << "**Inputs:** ";
 								for (size_t i = 0; i < func.inputParams.size(); i++) {
-									if (i > 0) docStream << ", ";
+									if (i > 0) {
+										docStream << ", ";
+									}
 									docStream << "`" << func.inputParams[i] << "`";
 								}
 								docStream << "\n\n";
@@ -592,7 +603,9 @@ private:
 							if (!func.outputParams.empty()) {
 								docStream << "**Outputs:** ";
 								for (size_t i = 0; i < func.outputParams.size(); i++) {
-									if (i > 0) docStream << ", ";
+									if (i > 0) {
+										docStream << ", ";
+									}
 									docStream << "`" << func.outputParams[i] << "`";
 								}
 							}
@@ -663,7 +676,9 @@ private:
 						const auto& inputs = funcNode->inputParameters();
 						for (size_t j = 0; j < inputs.size(); j++) {
 							Qd::AstNodeParameter* param = static_cast<Qd::AstNodeParameter*>(inputs[j]);
-							if (j > 0) detailStream << " ";
+							if (j > 0) {
+								detailStream << " ";
+							}
 							detailStream << param->name() << ":" << param->typeString();
 						}
 
@@ -672,7 +687,9 @@ private:
 						const auto& outputs = funcNode->outputParameters();
 						for (size_t j = 0; j < outputs.size(); j++) {
 							Qd::AstNodeParameter* param = static_cast<Qd::AstNodeParameter*>(outputs[j]);
-							if (j > 0) detailStream << " ";
+							if (j > 0) {
+								detailStream << " ";
+							}
 							detailStream << param->name() << ":" << param->typeString();
 						}
 
@@ -689,7 +706,8 @@ private:
 
 						json_t* end = json_object();
 						json_object_set_new(end, "line", json_integer(static_cast<json_int_t>(lspLine)));
-						json_object_set_new(end, "character", json_integer(static_cast<json_int_t>(funcNode->name().length())));
+						json_object_set_new(
+								end, "character", json_integer(static_cast<json_int_t>(funcNode->name().length())));
 						json_object_set_new(range, "end", end);
 
 						json_object_set_new(symbol, "range", range);
@@ -714,7 +732,9 @@ private:
 
 							const auto& inputs = importedFunc->inputParameters;
 							for (size_t j = 0; j < inputs.size(); j++) {
-								if (j > 0) detailStream << " ";
+								if (j > 0) {
+									detailStream << " ";
+								}
 								detailStream << inputs[j]->name() << ":" << inputs[j]->typeString();
 							}
 
@@ -722,7 +742,9 @@ private:
 
 							const auto& outputs = importedFunc->outputParameters;
 							for (size_t j = 0; j < outputs.size(); j++) {
-								if (j > 0) detailStream << " ";
+								if (j > 0) {
+									detailStream << " ";
+								}
 								detailStream << outputs[j]->name() << ":" << outputs[j]->typeString();
 							}
 
@@ -739,7 +761,8 @@ private:
 
 							json_t* end = json_object();
 							json_object_set_new(end, "line", json_integer(static_cast<json_int_t>(lspLine)));
-							json_object_set_new(end, "character", json_integer(static_cast<json_int_t>(importedFunc->name.length())));
+							json_object_set_new(end, "character",
+									json_integer(static_cast<json_int_t>(importedFunc->name.length())));
 							json_object_set_new(range, "end", end);
 
 							json_object_set_new(symbol, "range", range);
@@ -758,9 +781,10 @@ private:
 	}
 
 	// Helper function to recursively find all identifiers in AST
-	void findIdentifiersInNode(Qd::IAstNode* node, const std::string& targetName,
-							   std::vector<Qd::IAstNode*>& results) {
-		if (!node) return;
+	void findIdentifiersInNode(Qd::IAstNode* node, const std::string& targetName, std::vector<Qd::IAstNode*>& results) {
+		if (!node) {
+			return;
+		}
 
 		// Check if this node is a function declaration matching our target
 		if (node->type() == Qd::IAstNode::Type::FUNCTION_DECLARATION) {
@@ -828,7 +852,8 @@ private:
 						Qd::IAstNode* child = root->child(i);
 
 						if (child && child->type() == Qd::IAstNode::Type::FUNCTION_DECLARATION) {
-							Qd::AstNodeFunctionDeclaration* funcNode = static_cast<Qd::AstNodeFunctionDeclaration*>(child);
+							Qd::AstNodeFunctionDeclaration* funcNode =
+									static_cast<Qd::AstNodeFunctionDeclaration*>(child);
 
 							if (funcNode->name() == word) {
 								// Found the definition
@@ -844,13 +869,14 @@ private:
 
 								json_t* end = json_object();
 								json_object_set_new(end, "line", json_integer(static_cast<json_int_t>(lspLine)));
-								json_object_set_new(end, "character", json_integer(static_cast<json_int_t>(funcNode->name().length())));
+								json_object_set_new(end, "character",
+										json_integer(static_cast<json_int_t>(funcNode->name().length())));
 								json_object_set_new(range, "end", end);
 
 								json_object_set_new(location, "range", range);
 								result = location;
 								break;
-			}
+							}
 						} else if (child && child->type() == Qd::IAstNode::Type::IMPORT_STATEMENT) {
 							// Check imported functions
 							Qd::AstNodeImport* importNode = static_cast<Qd::AstNodeImport*>(child);
@@ -873,7 +899,8 @@ private:
 
 									json_t* end = json_object();
 									json_object_set_new(end, "line", json_integer(static_cast<json_int_t>(lspLine)));
-									json_object_set_new(end, "character", json_integer(static_cast<json_int_t>(importedFunc->name.length())));
+									json_object_set_new(end, "character",
+											json_integer(static_cast<json_int_t>(importedFunc->name.length())));
 									json_object_set_new(range, "end", end);
 
 									json_object_set_new(location, "range", range);
@@ -881,7 +908,9 @@ private:
 									break;
 								}
 							}
-							if (!json_is_null(result)) break;
+							if (!json_is_null(result)) {
+								break;
+							}
 						}
 					}
 				}
@@ -951,7 +980,8 @@ private:
 
 						json_t* end = json_object();
 						json_object_set_new(end, "line", json_integer(static_cast<json_int_t>(lspLine)));
-						json_object_set_new(end, "character", json_integer(static_cast<json_int_t>(lspCol + word.length())));
+						json_object_set_new(
+								end, "character", json_integer(static_cast<json_int_t>(lspCol + word.length())));
 						json_object_set_new(range, "end", end);
 
 						json_object_set_new(location, "range", range);
@@ -966,8 +996,8 @@ private:
 		json_decref(response);
 	}
 
-	void handleRename(const std::string& id, const std::string& uri, size_t line, size_t character,
-					  const std::string& newName) {
+	void handleRename(
+			const std::string& id, const std::string& uri, size_t line, size_t character, const std::string& newName) {
 		json_t* response = json_object();
 		json_object_set_new(response, "jsonrpc", json_string("2.0"));
 		json_object_set_new(response, "id", json_integer(std::stoi(id)));
@@ -1027,7 +1057,8 @@ private:
 
 						json_t* end = json_object();
 						json_object_set_new(end, "line", json_integer(static_cast<json_int_t>(lspLine)));
-						json_object_set_new(end, "character", json_integer(static_cast<json_int_t>(lspCol + word.length())));
+						json_object_set_new(
+								end, "character", json_integer(static_cast<json_int_t>(lspCol + word.length())));
 						json_object_set_new(range, "end", end);
 
 						json_object_set_new(edit, "range", range);

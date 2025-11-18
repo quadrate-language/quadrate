@@ -1,7 +1,7 @@
+#include <algorithm>
+#include <cctype>
 #include <qc/formatter.h>
 #include <sstream>
-#include <cctype>
-#include <algorithm>
 #include <vector>
 
 namespace Qd {
@@ -101,7 +101,9 @@ namespace Qd {
 		int depth = 0;
 		size_t closeParenPos = parenPos;
 		for (size_t i = parenPos; i < trimmed.length(); i++) {
-			if (trimmed[i] == '(') depth++;
+			if (trimmed[i] == '(') {
+				depth++;
+			}
 			if (trimmed[i] == ')') {
 				depth--;
 				if (depth == 0) {
@@ -122,8 +124,9 @@ namespace Qd {
 		// Special case: if signature contains only "--" (with possible whitespace),
 		// format as " -- " to match expected style for empty parameters
 		std::string sigNoSpace = formattedSig;
-		sigNoSpace.erase(std::remove_if(sigNoSpace.begin(), sigNoSpace.end(),
-			[](unsigned char c) { return std::isspace(c); }), sigNoSpace.end());
+		sigNoSpace.erase(
+				std::remove_if(sigNoSpace.begin(), sigNoSpace.end(), [](unsigned char c) { return std::isspace(c); }),
+				sigNoSpace.end());
 
 		if (sigNoSpace == "--") {
 			formattedSig = " -- ";
@@ -182,8 +185,7 @@ namespace Qd {
 	static std::string normalizeKeywordBraces(const std::string& line) {
 		std::string result = line;
 		const std::vector<std::string> keywords = {
-			"if", "else", "for", "loop", "defer", "switch", "case", "default", "fn"
-		};
+				"if", "else", "for", "loop", "defer", "switch", "case", "default", "fn"};
 
 		for (const auto& keyword : keywords) {
 			std::string pattern = keyword + "{";
@@ -223,7 +225,7 @@ namespace Qd {
 				std::string nextTrimmed = trim(lines[i + 1]);
 				if (nextTrimmed == "{" && !trimmed.empty()) {
 					mergedLines.push_back(trimmed + " {");
-					i++;  // Skip the next line (the standalone brace)
+					i++; // Skip the next line (the standalone brace)
 					continue;
 				}
 			}
@@ -249,10 +251,10 @@ namespace Qd {
 		}
 
 		std::ostringstream output;
-		std::string prevTopLevelType;  // "use", "fn_start", ""
+		std::string prevTopLevelType; // "use", "fn_start", ""
 		int braceDepth = 0;
 		bool inFunction = false;
-		std::vector<std::string> useStatements;  // Buffer for collecting consecutive use statements
+		std::vector<std::string> useStatements; // Buffer for collecting consecutive use statements
 
 		auto flushUseStatements = [&]() {
 			if (!useStatements.empty()) {
@@ -286,8 +288,12 @@ namespace Qd {
 
 			// Track brace depth to know when we exit a function
 			for (char c : trimmed) {
-				if (c == '{') braceDepth++;
-				if (c == '}') braceDepth--;
+				if (c == '{') {
+					braceDepth++;
+				}
+				if (c == '}') {
+					braceDepth--;
+				}
 			}
 
 			// Determine if this is a top-level declaration
@@ -300,9 +306,9 @@ namespace Qd {
 					// Buffer use statements for sorting
 					useStatements.push_back(lines[i]);
 					prevTopLevelType = currentType;
-					continue;  // Don't output yet, wait to sort
+					continue; // Don't output yet, wait to sort
 				} else if (startsWithKeyword(trimmed, "import")) {
-					currentType = "use";  // Treat import like use for spacing
+					currentType = "use"; // Treat import like use for spacing
 				} else if (startsWithKeyword(trimmed, "fn")) {
 					currentType = "fn_start";
 					inFunction = true;
@@ -316,8 +322,8 @@ namespace Qd {
 				// Add appropriate spacing before top-level declarations
 				if (!prevTopLevelType.empty()) {
 					if ((prevTopLevelType == "use" && currentType == "fn_start") ||
-					    (prevTopLevelType == "fn_start" && currentType == "fn_start") ||
-					    (prevTopLevelType == "fn_start" && currentType == "use")) {
+							(prevTopLevelType == "fn_start" && currentType == "fn_start") ||
+							(prevTopLevelType == "fn_start" && currentType == "use")) {
 						// Exactly one empty line between:
 						// - use statements and first function
 						// - between functions
@@ -422,15 +428,10 @@ namespace Qd {
 			}
 
 			// Handle control flow keywords - keep on same line, fix indentation
-			if (startsWithKeyword(trimmed, "if") ||
-			    startsWithKeyword(trimmed, "for") ||
-			    startsWithKeyword(trimmed, "loop") ||
-			    startsWithKeyword(trimmed, "else") ||
-			    startsWithKeyword(trimmed, "switch") ||
-			    startsWithKeyword(trimmed, "case") ||
-			    startsWithKeyword(trimmed, "default") ||
-			    startsWithKeyword(trimmed, "defer")) {
-
+			if (startsWithKeyword(trimmed, "if") || startsWithKeyword(trimmed, "for") ||
+					startsWithKeyword(trimmed, "loop") || startsWithKeyword(trimmed, "else") ||
+					startsWithKeyword(trimmed, "switch") || startsWithKeyword(trimmed, "case") ||
+					startsWithKeyword(trimmed, "default") || startsWithKeyword(trimmed, "defer")) {
 				// Write with current indent
 				for (int i = 0; i < indentLevel; i++) {
 					output << '\t';
@@ -444,10 +445,8 @@ namespace Qd {
 			}
 
 			// Handle other top-level declarations
-			if (startsWithKeyword(trimmed, "use") ||
-			    startsWithKeyword(trimmed, "import") ||
-			    startsWithKeyword(trimmed, "const")) {
-
+			if (startsWithKeyword(trimmed, "use") || startsWithKeyword(trimmed, "import") ||
+					startsWithKeyword(trimmed, "const")) {
 				// Write with current indent (should be 0)
 				for (int i = 0; i < indentLevel; i++) {
 					output << '\t';

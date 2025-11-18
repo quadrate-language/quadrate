@@ -1,11 +1,12 @@
+#include "ast_node_block.h"
+#include "ast_node_comment.h"
+#include "ast_node_label.h"
 #include <cstring>
 #include <fstream>
 #include <iostream>
 #include <qc/ast.h>
 #include <qc/ast_node.h>
-#include "ast_node_block.h"
 #include <qc/ast_node_break.h>
-#include "ast_node_comment.h"
 #include <qc/ast_node_constant.h>
 #include <qc/ast_node_continue.h>
 #include <qc/ast_node_ctx.h>
@@ -17,7 +18,6 @@
 #include <qc/ast_node_if.h>
 #include <qc/ast_node_import.h>
 #include <qc/ast_node_instruction.h>
-#include "ast_node_label.h"
 #include <qc/ast_node_literal.h>
 #include <qc/ast_node_local.h>
 #include <qc/ast_node_loop.h>
@@ -206,8 +206,9 @@ namespace Qd {
 				{'*', "*"}, // mul
 				{'+', "+"}, // add
 				{'-', "-"}, // sub
-				{'%', "%"}  // mod
+				{'%', "%"}	// mod
 		};
+
 		static const size_t OPERATOR_COUNT = sizeof(OPERATOR_ALIASES) / sizeof(OPERATOR_ALIASES[0]);
 
 		for (size_t i = 0; i < OPERATOR_COUNT; i++) {
@@ -223,8 +224,7 @@ namespace Qd {
 	// Helper to parse a single statement/expression token
 	// Returns nullptr if token was a control keyword that was handled
 	// Returns a node if it's a literal or identifier
-	static IAstNode* parseSimpleToken(
-			char32_t token, u8t_scanner* scanner, size_t* n, const char* src) {
+	static IAstNode* parseSimpleToken(char32_t token, u8t_scanner* scanner, size_t* n, const char* src) {
 		if (token == U8T_INTEGER) {
 			const char* text = u8t_scanner_token_text(scanner, n);
 			IAstNode* node = new AstNodeLiteral(text, AstNodeLiteral::LiteralType::INTEGER);
@@ -274,7 +274,7 @@ namespace Qd {
 			size_t tokenEnd = tokenStart + tokenLen;
 			if (tokenEnd < strlen(src) && src[tokenEnd] == '>') {
 				// This is '-> variableName'
-				u8t_scanner_scan(scanner); // Consume '>'
+				u8t_scanner_scan(scanner);						// Consume '>'
 				char32_t nextToken = u8t_scanner_scan(scanner); // Get variable name
 				if (nextToken == U8T_IDENTIFIER) {
 					const char* varName = u8t_scanner_token_text(scanner, n);
@@ -517,7 +517,7 @@ namespace Qd {
 			if (tokenEnd < strlen(src) && src[tokenEnd] == '>') {
 				// This is a local declaration: -> variableName
 				size_t arrowPos = tokenStart;
-				u8t_scanner_scan(scanner); // Consume '>'
+				u8t_scanner_scan(scanner);		   // Consume '>'
 				token = u8t_scanner_scan(scanner); // Get next token (should be identifier)
 				if (token == U8T_IDENTIFIER) {
 					const char* varName = u8t_scanner_token_text(scanner, n);
@@ -1236,7 +1236,7 @@ namespace Qd {
 				size_t tokenEnd = tokenStart + tokenLen;
 				if (tokenEnd < strlen(src) && src[tokenEnd] == '>') {
 					// This is '-> variableName'
-					u8t_scanner_scan(scanner); // Consume '>'
+					u8t_scanner_scan(scanner);						// Consume '>'
 					char32_t nextToken = u8t_scanner_scan(scanner); // Get variable name
 					if (nextToken == U8T_IDENTIFIER) {
 						const char* varName = u8t_scanner_token_text(scanner, &n);

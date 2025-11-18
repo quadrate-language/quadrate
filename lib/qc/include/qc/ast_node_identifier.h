@@ -9,8 +9,8 @@ namespace Qd {
 	// Cast direction for implicit casts
 	enum class CastDirection {
 		NONE,
-		INT_TO_FLOAT,   // casti -> castf
-		FLOAT_TO_INT    // castf -> casti
+		INT_TO_FLOAT, // casti -> castf
+		FLOAT_TO_INT  // castf -> casti
 	};
 
 	class AstNodeIdentifier : public IAstNode {
@@ -88,7 +88,7 @@ namespace Qd {
 		bool mCheckError;
 		size_t mLine;
 		size_t mColumn;
-		std::vector<CastDirection> mParameterCasts;  // Which parameters need casts (indexed from bottom of stack)
+		std::vector<CastDirection> mParameterCasts; // Which parameters need casts (indexed from bottom of stack)
 	};
 }
 

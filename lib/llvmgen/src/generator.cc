@@ -13,11 +13,11 @@
 #include <llvm/Target/TargetMachine.h>
 #include <llvm/Target/TargetOptions.h>
 #include <llvm/TargetParser/Host.h>
+#include <llvm/Transforms/IPO.h>
 #include <llvm/Transforms/InstCombine/InstCombine.h>
 #include <llvm/Transforms/Scalar.h>
 #include <llvm/Transforms/Scalar/GVN.h>
 #include <llvm/Transforms/Utils.h>
-#include <llvm/Transforms/IPO.h>
 
 #include <qc/ast_node.h>
 #include <qc/ast_node_break.h>
@@ -247,8 +247,8 @@ namespace Qd {
 		stackSizeFn = llvm::Function::Create(stackSizeFnTy, llvm::Function::ExternalLinkage, "qd_stack_size", *module);
 
 		// strdup(const char* s) -> char*
-		auto strdupFnTy = llvm::FunctionType::get(llvm::PointerType::getUnqual(*context),
-				{llvm::PointerType::getUnqual(*context)}, false);
+		auto strdupFnTy = llvm::FunctionType::get(
+				llvm::PointerType::getUnqual(*context), {llvm::PointerType::getUnqual(*context)}, false);
 		strdupFn = llvm::Function::Create(strdupFnTy, llvm::Function::ExternalLinkage, "strdup", *module);
 
 		// Initialize debug info if enabled
@@ -272,10 +272,10 @@ namespace Qd {
 			compileUnit = debugBuilder->createCompileUnit(
 					llvm::dwarf::DW_LANG_C99, // Use C99 as the base language (closest to stack machine)
 					debugFile,
-					"quadc",         // Producer
-					false,           // isOptimized (set to false for debugging)
-					"",              // Flags
-					0                // Runtime version
+					"quadc", // Producer
+					false,	 // isOptimized (set to false for debugging)
+					"",		 // Flags
+					0		 // Runtime version
 			);
 
 			// Set module flags for debug info
@@ -296,28 +296,21 @@ namespace Qd {
 			auto sizeType = debugBuilder->createBasicType("size_t", 64, llvm::dwarf::DW_ATE_unsigned);
 
 			// Create qd_stack_element_t union (simplified - just show as 64-bit int)
-			auto stackElemType = debugBuilder->createStructType(
-					compileUnit, "qd_stack_element_t", debugFile, 0,
-					128, 64, llvm::DINode::FlagZero, nullptr,
-					debugBuilder->getOrCreateArray({}));
+			auto stackElemType = debugBuilder->createStructType(compileUnit, "qd_stack_element_t", debugFile, 0, 128,
+					64, llvm::DINode::FlagZero, nullptr, debugBuilder->getOrCreateArray({}));
 
 			// Create qd_stack struct with data, capacity, size
 			llvm::SmallVector<llvm::Metadata*, 3> stackFields;
 			auto stackElemPtrType = debugBuilder->createPointerType(stackElemType, 64);
 			stackFields.push_back(debugBuilder->createMemberType(
-					compileUnit, "data", debugFile, 0, 64, 64, 0,
-					llvm::DINode::FlagZero, stackElemPtrType));
+					compileUnit, "data", debugFile, 0, 64, 64, 0, llvm::DINode::FlagZero, stackElemPtrType));
 			stackFields.push_back(debugBuilder->createMemberType(
-					compileUnit, "capacity", debugFile, 0, 64, 64, 64,
-					llvm::DINode::FlagZero, sizeType));
+					compileUnit, "capacity", debugFile, 0, 64, 64, 64, llvm::DINode::FlagZero, sizeType));
 			stackFields.push_back(debugBuilder->createMemberType(
-					compileUnit, "size", debugFile, 0, 64, 64, 128,
-					llvm::DINode::FlagZero, sizeType));
+					compileUnit, "size", debugFile, 0, 64, 64, 128, llvm::DINode::FlagZero, sizeType));
 
-			auto stackType = debugBuilder->createStructType(
-					compileUnit, "qd_stack", debugFile, 0,
-					192, 64, llvm::DINode::FlagZero, nullptr,
-					debugBuilder->getOrCreateArray(stackFields));
+			auto stackType = debugBuilder->createStructType(compileUnit, "qd_stack", debugFile, 0, 192, 64,
+					llvm::DINode::FlagZero, nullptr, debugBuilder->getOrCreateArray(stackFields));
 
 			auto stackPtrType = debugBuilder->createPointerType(stackType, 64);
 
@@ -326,55 +319,46 @@ namespace Qd {
 
 			// qd_stack* st
 			contextFields.push_back(debugBuilder->createMemberType(
-					compileUnit, "st", debugFile, 0, 64, 64, 0,
-					llvm::DINode::FlagZero, stackPtrType));
+					compileUnit, "st", debugFile, 0, 64, 64, 0, llvm::DINode::FlagZero, stackPtrType));
 
 			// int64_t error_code
 			contextFields.push_back(debugBuilder->createMemberType(
-					compileUnit, "error_code", debugFile, 0, 64, 64, 64,
-					llvm::DINode::FlagZero, int64Type));
+					compileUnit, "error_code", debugFile, 0, 64, 64, 64, llvm::DINode::FlagZero, int64Type));
 
 			// char* error_msg
 			contextFields.push_back(debugBuilder->createMemberType(
-					compileUnit, "error_msg", debugFile, 0, 64, 64, 128,
-					llvm::DINode::FlagZero, charPtrType));
+					compileUnit, "error_msg", debugFile, 0, 64, 64, 128, llvm::DINode::FlagZero, charPtrType));
 
 			// int argc
 			contextFields.push_back(debugBuilder->createMemberType(
-					compileUnit, "argc", debugFile, 0, 32, 32, 192,
-					llvm::DINode::FlagZero, intType));
+					compileUnit, "argc", debugFile, 0, 32, 32, 192, llvm::DINode::FlagZero, intType));
 
 			// char** argv
 			auto charPtrPtrType = debugBuilder->createPointerType(charPtrType, 64);
 			contextFields.push_back(debugBuilder->createMemberType(
-					compileUnit, "argv", debugFile, 0, 64, 64, 256,
-					llvm::DINode::FlagZero, charPtrPtrType));
+					compileUnit, "argv", debugFile, 0, 64, 64, 256, llvm::DINode::FlagZero, charPtrPtrType));
 
 			// char* program_name
 			contextFields.push_back(debugBuilder->createMemberType(
-					compileUnit, "program_name", debugFile, 0, 64, 64, 320,
-					llvm::DINode::FlagZero, charPtrType));
+					compileUnit, "program_name", debugFile, 0, 64, 64, 320, llvm::DINode::FlagZero, charPtrType));
 
 			// const char* call_stack[256] - array at offset 48 bytes = 384 bits
-			auto callStackArrayType = debugBuilder->createArrayType(
-					16384,                          // Size in bits: 256 elements * 64 bits = 16384 bits
-					64,                             // Alignment in bits
-					charPtrType,                    // Element type
-					debugBuilder->getOrCreateArray({
-							debugBuilder->getOrCreateSubrange(0, 255)  // 256 elements (0-255)
-					}));
-			contextFields.push_back(debugBuilder->createMemberType(
-					compileUnit, "call_stack", debugFile, 0, 16384, 64, 384,
-					llvm::DINode::FlagZero, callStackArrayType));
+			auto callStackArrayType =
+					debugBuilder->createArrayType(16384, // Size in bits: 256 elements * 64 bits = 16384 bits
+							64,							 // Alignment in bits
+							charPtrType,				 // Element type
+							debugBuilder->getOrCreateArray({
+									debugBuilder->getOrCreateSubrange(0, 255) // 256 elements (0-255)
+							}));
+			contextFields.push_back(debugBuilder->createMemberType(compileUnit, "call_stack", debugFile, 0, 16384, 64,
+					384, llvm::DINode::FlagZero, callStackArrayType));
 
 			// size_t call_stack_depth - at offset 2096 bytes = 16768 bits
 			contextFields.push_back(debugBuilder->createMemberType(
-					compileUnit, "call_stack_depth", debugFile, 0, 64, 64, 16768,
-					llvm::DINode::FlagZero, sizeType));
+					compileUnit, "call_stack_depth", debugFile, 0, 64, 64, 16768, llvm::DINode::FlagZero, sizeType));
 
-			contextDebugType = debugBuilder->createStructType(
-					compileUnit, "qd_context", debugFile, 0,
-					16832, 64, llvm::DINode::FlagZero, nullptr,  // Total: 2104 bytes = 16832 bits
+			contextDebugType = debugBuilder->createStructType(compileUnit, "qd_context", debugFile, 0, 16832, 64,
+					llvm::DINode::FlagZero, nullptr, // Total: 2104 bytes = 16832 bits
 					debugBuilder->getOrCreateArray(contextFields));
 		}
 	}
@@ -519,18 +503,22 @@ namespace Qd {
 			llvm::Value* valuePtr = builder->CreateStructGEP(stackElementTy, localAlloca, 0, name + "_value_ptr");
 
 			// Create basic blocks for each type
-			llvm::BasicBlock* intBlock = llvm::BasicBlock::Create(*context, "local_int", builder->GetInsertBlock()->getParent());
+			llvm::BasicBlock* intBlock =
+					llvm::BasicBlock::Create(*context, "local_int", builder->GetInsertBlock()->getParent());
 			llvm::BasicBlock* floatBlock =
 					llvm::BasicBlock::Create(*context, "local_float", builder->GetInsertBlock()->getParent());
-			llvm::BasicBlock* strBlock = llvm::BasicBlock::Create(*context, "local_str", builder->GetInsertBlock()->getParent());
-			llvm::BasicBlock* ptrBlock = llvm::BasicBlock::Create(*context, "local_ptr", builder->GetInsertBlock()->getParent());
-			llvm::BasicBlock* endBlock = llvm::BasicBlock::Create(*context, "local_end", builder->GetInsertBlock()->getParent());
+			llvm::BasicBlock* strBlock =
+					llvm::BasicBlock::Create(*context, "local_str", builder->GetInsertBlock()->getParent());
+			llvm::BasicBlock* ptrBlock =
+					llvm::BasicBlock::Create(*context, "local_ptr", builder->GetInsertBlock()->getParent());
+			llvm::BasicBlock* endBlock =
+					llvm::BasicBlock::Create(*context, "local_end", builder->GetInsertBlock()->getParent());
 
 			llvm::SwitchInst* switchInst = builder->CreateSwitch(type, endBlock, 4);
-			switchInst->addCase(builder->getInt32(0), intBlock); // QD_STACK_TYPE_INT = 0
+			switchInst->addCase(builder->getInt32(0), intBlock);   // QD_STACK_TYPE_INT = 0
 			switchInst->addCase(builder->getInt32(1), floatBlock); // QD_STACK_TYPE_FLOAT = 1
-			switchInst->addCase(builder->getInt32(2), ptrBlock); // QD_STACK_TYPE_PTR = 2
-			switchInst->addCase(builder->getInt32(3), strBlock); // QD_STACK_TYPE_STR = 3
+			switchInst->addCase(builder->getInt32(2), ptrBlock);   // QD_STACK_TYPE_PTR = 2
+			switchInst->addCase(builder->getInt32(3), strBlock);   // QD_STACK_TYPE_STR = 3
 
 			// INT block: load i64 and push
 			builder->SetInsertPoint(intBlock);
@@ -1040,28 +1028,24 @@ namespace Qd {
 			if (debugInfoEnabled && debugBuilder && !debugScopeStack.empty()) {
 				// Create a pointer type to qd_stack_element_t
 				auto stackElemPtrType = debugBuilder->createPointerType(
-					debugBuilder->createBasicType("qd_stack_element_t", 128, llvm::dwarf::DW_ATE_unsigned),
-					64
-				);
+						debugBuilder->createBasicType("qd_stack_element_t", 128, llvm::dwarf::DW_ATE_unsigned), 64);
 
 				// Create local variable debug info
-				auto localVar = debugBuilder->createAutoVariable(
-					debugScopeStack.back(),              // Scope (current function)
-					name,                                 // Variable name
-					debugFile,                            // File
-					static_cast<unsigned>(local->line()), // Line number
-					stackElemPtrType,                     // Type
-					true                                  // Always preserve
+				auto localVar = debugBuilder->createAutoVariable(debugScopeStack.back(), // Scope (current function)
+						name,															 // Variable name
+						debugFile,														 // File
+						static_cast<unsigned>(local->line()),							 // Line number
+						stackElemPtrType,												 // Type
+						true															 // Always preserve
 				);
 
 				// Insert declare to make it visible in debugger
-				debugBuilder->insertDeclare(
-					localAlloca,                          // Storage (the alloca)
-					localVar,                             // Variable
-					debugBuilder->createExpression(),     // Expression
-					llvm::DILocation::get(*context, static_cast<unsigned>(local->line()), 0, debugScopeStack.back()),
-					builder->GetInsertBlock()
-				);
+				debugBuilder->insertDeclare(localAlloca,  // Storage (the alloca)
+						localVar,						  // Variable
+						debugBuilder->createExpression(), // Expression
+						llvm::DILocation::get(
+								*context, static_cast<unsigned>(local->line()), 0, debugScopeStack.back()),
+						builder->GetInsertBlock());
 			}
 		} else {
 			// Variable already exists, reuse it
@@ -1069,7 +1053,8 @@ namespace Qd {
 		}
 
 		// Get the stack pointer from context
-		// Context layout: {qd_stack* st, int64_t error_code, char* error_msg, int argc, char** argv, char* program_name}
+		// Context layout: {qd_stack* st, int64_t error_code, char* error_msg, int argc, char** argv, char*
+		// program_name}
 		auto contextStructTy = llvm::StructType::get(*context,
 				{
 						llvm::PointerType::getUnqual(*context), // qd_stack* st
@@ -1098,7 +1083,8 @@ namespace Qd {
 			llvm::AllocaInst* localAlloca = pair.second;
 
 			// Load the type field to check if it's a string
-			llvm::Value* typePtr = builder->CreateStructGEP(stackElementTy, localAlloca, 1, varName + "_cleanup_type_ptr");
+			llvm::Value* typePtr =
+					builder->CreateStructGEP(stackElementTy, localAlloca, 1, varName + "_cleanup_type_ptr");
 			llvm::Value* type = builder->CreateLoad(builder->getInt32Ty(), typePtr, varName + "_cleanup_type");
 
 			// Create basic blocks for conditional free
@@ -1112,14 +1098,17 @@ namespace Qd {
 
 			// Free string block
 			builder->SetInsertPoint(freeStrBlock);
-			llvm::Value* valuePtr = builder->CreateStructGEP(stackElementTy, localAlloca, 0, varName + "_cleanup_value_ptr");
-			llvm::Value* strPtr = builder->CreateLoad(llvm::PointerType::getUnqual(*context), valuePtr, varName + "_cleanup_str");
+			llvm::Value* valuePtr =
+					builder->CreateStructGEP(stackElementTy, localAlloca, 0, varName + "_cleanup_value_ptr");
+			llvm::Value* strPtr =
+					builder->CreateLoad(llvm::PointerType::getUnqual(*context), valuePtr, varName + "_cleanup_str");
 
 			// Call free() on the string
 			// Create free function declaration if not exists
 			llvm::Function* freeFn = module->getFunction("free");
 			if (!freeFn) {
-				auto freeFnTy = llvm::FunctionType::get(builder->getVoidTy(), {llvm::PointerType::getUnqual(*context)}, false);
+				auto freeFnTy =
+						llvm::FunctionType::get(builder->getVoidTy(), {llvm::PointerType::getUnqual(*context)}, false);
 				freeFn = llvm::Function::Create(freeFnTy, llvm::Function::ExternalLinkage, "free", *module);
 			}
 			builder->CreateCall(freeFn, {strPtr});
@@ -1514,10 +1503,10 @@ namespace Qd {
 
 		// Switch on type
 		auto switchInst = builder->CreateSwitch(resultType, pushDoneBB, 4);
-		switchInst->addCase(builder->getInt32(0), pushIntBB);  // INT
+		switchInst->addCase(builder->getInt32(0), pushIntBB);	// INT
 		switchInst->addCase(builder->getInt32(1), pushFloatBB); // FLOAT
-		switchInst->addCase(builder->getInt32(2), pushPtrBB);   // PTR
-		switchInst->addCase(builder->getInt32(3), pushStrBB);   // STR
+		switchInst->addCase(builder->getInt32(2), pushPtrBB);	// PTR
+		switchInst->addCase(builder->getInt32(3), pushStrBB);	// STR
 
 		// Push INT
 		builder->SetInsertPoint(pushIntBB);
@@ -1544,7 +1533,8 @@ namespace Qd {
 		// When we popped with non-NULL element, the string wasn't freed, so we must free it manually
 		llvm::Function* freeFn = module->getFunction("free");
 		if (!freeFn) {
-			auto freeFnTy = llvm::FunctionType::get(builder->getVoidTy(), {llvm::PointerType::getUnqual(*context)}, false);
+			auto freeFnTy =
+					llvm::FunctionType::get(builder->getVoidTy(), {llvm::PointerType::getUnqual(*context)}, false);
 			freeFn = llvm::Function::Create(freeFnTy, llvm::Function::ExternalLinkage, "free", *module);
 		}
 		builder->CreateCall(freeFn, {strValue});
@@ -1676,16 +1666,14 @@ namespace Qd {
 			// Add debug info for main function
 			if (debugInfoEnabled && debugBuilder) {
 				auto funcType = debugBuilder->createSubroutineType(debugBuilder->getOrCreateTypeArray({}));
-				auto subprogram = debugBuilder->createFunction(
-						compileUnit,                          // Scope
-						funcNode->name(),                     // Name
-						"main",                               // Linkage name
-						debugFile,                            // File
-						static_cast<unsigned>(funcNode->line()),  // Line number
-						funcType,                             // Type
-						static_cast<unsigned>(funcNode->line()),  // Scope line
-						llvm::DINode::FlagPrototyped,
-						llvm::DISubprogram::SPFlagDefinition);
+				auto subprogram = debugBuilder->createFunction(compileUnit, // Scope
+						funcNode->name(),									// Name
+						"main",												// Linkage name
+						debugFile,											// File
+						static_cast<unsigned>(funcNode->line()),			// Line number
+						funcType,											// Type
+						static_cast<unsigned>(funcNode->line()),			// Scope line
+						llvm::DINode::FlagPrototyped, llvm::DISubprogram::SPFlagDefinition);
 				fn->setSubprogram(subprogram);
 				debugScopeStack.push_back(subprogram);
 
@@ -1708,23 +1696,21 @@ namespace Qd {
 				auto ctxPtrType = debugBuilder->createPointerType(contextDebugType, 64);
 
 				// Create local variable for ctx
-				auto localVar = debugBuilder->createAutoVariable(
-						debugScopeStack.back(),              // Scope (main function)
-						"ctx",                                // Name
-						debugFile,                            // File
-						static_cast<unsigned>(funcNode->line()), // Line
-						ctxPtrType,                           // Type
-						true                                  // Always preserve
+				auto localVar = debugBuilder->createAutoVariable(debugScopeStack.back(), // Scope (main function)
+						"ctx",															 // Name
+						debugFile,														 // File
+						static_cast<unsigned>(funcNode->line()),						 // Line
+						ctxPtrType,														 // Type
+						true															 // Always preserve
 				);
 
 				// Insert declare to make it visible in debugger
-				debugBuilder->insertDeclare(
-						ctx,                                  // Storage
-						localVar,                             // Variable
-						debugBuilder->createExpression(),     // Expression
-						llvm::DILocation::get(*context, static_cast<unsigned>(funcNode->line()), 0, debugScopeStack.back()),
-						builder->GetInsertBlock()
-				);
+				debugBuilder->insertDeclare(ctx,		  // Storage
+						localVar,						  // Variable
+						debugBuilder->createExpression(), // Expression
+						llvm::DILocation::get(
+								*context, static_cast<unsigned>(funcNode->line()), 0, debugScopeStack.back()),
+						builder->GetInsertBlock());
 			}
 
 			// Push "main::main" onto call stack for debugging
@@ -1763,16 +1749,14 @@ namespace Qd {
 			// Add debug info for user function
 			if (debugInfoEnabled && debugBuilder) {
 				auto funcType = debugBuilder->createSubroutineType(debugBuilder->getOrCreateTypeArray({}));
-				auto subprogram = debugBuilder->createFunction(
-						compileUnit,                          // Scope
-						funcNode->name(),                     // Name
-						fnName.c_str(),                       // Linkage name
-						debugFile,                            // File
-						static_cast<unsigned>(funcNode->line()),  // Line number
-						funcType,                             // Type
-						static_cast<unsigned>(funcNode->line()),  // Scope line
-						llvm::DINode::FlagPrototyped,
-						llvm::DISubprogram::SPFlagDefinition);
+				auto subprogram = debugBuilder->createFunction(compileUnit, // Scope
+						funcNode->name(),									// Name
+						fnName.c_str(),										// Linkage name
+						debugFile,											// File
+						static_cast<unsigned>(funcNode->line()),			// Line number
+						funcType,											// Type
+						static_cast<unsigned>(funcNode->line()),			// Scope line
+						llvm::DINode::FlagPrototyped, llvm::DISubprogram::SPFlagDefinition);
 				fn->setSubprogram(subprogram);
 				debugScopeStack.push_back(subprogram);
 
@@ -1803,24 +1787,23 @@ namespace Qd {
 				auto ctxPtrType = debugBuilder->createPointerType(contextDebugType, 64);
 
 				// Create parameter variable for ctx
-				auto paramVar = debugBuilder->createParameterVariable(
-						debugScopeStack.back(),              // Scope (current function)
-						"ctx",                                // Name
-						1,                                    // Argument number
-						debugFile,                            // File
-						static_cast<unsigned>(funcNode->line()), // Line
-						ctxPtrType,                           // Type
-						true                                  // Always preserve
-				);
+				auto paramVar =
+						debugBuilder->createParameterVariable(debugScopeStack.back(), // Scope (current function)
+								"ctx",												  // Name
+								1,													  // Argument number
+								debugFile,											  // File
+								static_cast<unsigned>(funcNode->line()),			  // Line
+								ctxPtrType,											  // Type
+								true												  // Always preserve
+						);
 
 				// Insert declare to make it visible in debugger
-				debugBuilder->insertDeclare(
-						ctx,                                  // Storage
-						paramVar,                             // Variable
-						debugBuilder->createExpression(),     // Expression
-						llvm::DILocation::get(*context, static_cast<unsigned>(funcNode->line()), 0, debugScopeStack.back()),
-						builder->GetInsertBlock()
-				);
+				debugBuilder->insertDeclare(ctx,		  // Storage
+						paramVar,						  // Variable
+						debugBuilder->createExpression(), // Expression
+						llvm::DILocation::get(
+								*context, static_cast<unsigned>(funcNode->line()), 0, debugScopeStack.back()),
+						builder->GetInsertBlock());
 			}
 
 			// Push function name onto call stack for debugging
@@ -2135,8 +2118,12 @@ namespace Qd {
 			impl = std::make_unique<Impl>("temp");
 		}
 		// Clamp level to 0-3
-		if (level < 0) level = 0;
-		if (level > 3) level = 3;
+		if (level < 0) {
+			level = 0;
+		}
+		if (level > 3) {
+			level = 3;
+		}
 		impl->optimizationLevel = level;
 	}
 
@@ -2148,7 +2135,7 @@ namespace Qd {
 		// If moduleName looks like a file path (contains / or ends with .qd), use it directly
 		// Otherwise append .qd extension
 		if (moduleName.find('/') != std::string::npos || moduleName.find('\\') != std::string::npos ||
-		    (moduleName.size() > 3 && moduleName.substr(moduleName.size() - 3) == ".qd")) {
+				(moduleName.size() > 3 && moduleName.substr(moduleName.size() - 3) == ".qd")) {
 			impl->sourceFileName = moduleName;
 		} else {
 			impl->sourceFileName = moduleName + ".qd";
@@ -2230,22 +2217,22 @@ namespace Qd {
 			// Add function-level optimization passes based on level
 			if (impl->optimizationLevel >= 1) {
 				// Basic optimizations
-				fpm.add(llvm::createPromoteMemoryToRegisterPass());  // mem2reg
-				fpm.add(llvm::createInstructionCombiningPass());	  // instcombine
-				fpm.add(llvm::createReassociatePass());				  // reassociate
-				fpm.add(llvm::createCFGSimplificationPass());		  // simplifycfg
+				fpm.add(llvm::createPromoteMemoryToRegisterPass()); // mem2reg
+				fpm.add(llvm::createInstructionCombiningPass());	// instcombine
+				fpm.add(llvm::createReassociatePass());				// reassociate
+				fpm.add(llvm::createCFGSimplificationPass());		// simplifycfg
 			}
 
 			if (impl->optimizationLevel >= 2) {
 				// More aggressive optimizations
-				fpm.add(llvm::createGVNPass());				   // GVN (Global Value Numbering)
-				fpm.add(llvm::createDeadCodeEliminationPass());	// Dead Code Elimination
-				fpm.add(llvm::createSROAPass());			   // Scalar Replacement of Aggregates
+				fpm.add(llvm::createGVNPass());					// GVN (Global Value Numbering)
+				fpm.add(llvm::createDeadCodeEliminationPass()); // Dead Code Elimination
+				fpm.add(llvm::createSROAPass());				// Scalar Replacement of Aggregates
 			}
 
 			if (impl->optimizationLevel >= 3) {
 				// Most aggressive optimizations
-				fpm.add(llvm::createLICMPass());  // Loop Invariant Code Motion
+				fpm.add(llvm::createLICMPass()); // Loop Invariant Code Motion
 				fpm.add(llvm::createLoopUnrollPass());
 			}
 
@@ -2365,7 +2352,7 @@ namespace Qd {
 				// Examples: "libstdmathqd_static.a" -> "stdmathqd", "libqdrt_static.a" -> "qdrt"
 				std::string libBaseName = library;
 				if (libBaseName.rfind("lib", 0) == 0) {
-					libBaseName = libBaseName.substr(3);  // Remove "lib" prefix
+					libBaseName = libBaseName.substr(3); // Remove "lib" prefix
 				}
 				// Remove ".a" suffix first
 				if (libBaseName.size() > 2 && libBaseName.substr(libBaseName.size() - 2) == ".a") {

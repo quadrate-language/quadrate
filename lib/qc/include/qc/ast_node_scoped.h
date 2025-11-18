@@ -2,7 +2,7 @@
 #define QD_QC_AST_NODE_SCOPED_H
 
 #include "ast_node.h"
-#include "ast_node_identifier.h"  // For CastDirection enum
+#include "ast_node_identifier.h" // For CastDirection enum
 #include <string>
 #include <vector>
 
@@ -88,7 +88,7 @@ namespace Qd {
 		bool mCheckError;
 		size_t mLine;
 		size_t mColumn;
-		std::vector<CastDirection> mParameterCasts;  // Which parameters need casts (indexed from bottom of stack)
+		std::vector<CastDirection> mParameterCasts; // Which parameters need casts (indexed from bottom of stack)
 	};
 }
 

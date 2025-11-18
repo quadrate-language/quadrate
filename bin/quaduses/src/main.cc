@@ -149,10 +149,15 @@ bool isValidUtf8(const std::string& source) {
 
 		// Determine number of continuation bytes
 		size_t cont_bytes = 0;
-		if ((c & 0xE0) == 0xC0) cont_bytes = 1;      // 110xxxxx
-		else if ((c & 0xF0) == 0xE0) cont_bytes = 2; // 1110xxxx
-		else if ((c & 0xF8) == 0xF0) cont_bytes = 3; // 11110xxx
-		else return false; // Invalid UTF-8 start byte
+		if ((c & 0xE0) == 0xC0) {
+			cont_bytes = 1; // 110xxxxx
+		} else if ((c & 0xF0) == 0xE0) {
+			cont_bytes = 2; // 1110xxxx
+		} else if ((c & 0xF8) == 0xF0) {
+			cont_bytes = 3; // 11110xxx
+		} else {
+			return false; // Invalid UTF-8 start byte
+		}
 
 		// Check we have enough bytes
 		if (i + cont_bytes >= source.length()) {
@@ -195,7 +200,7 @@ static std::string getPackageFromModuleName(const std::string& moduleName) {
 }
 
 std::string generateWithUseStatements(const std::string& source, const std::set<std::string>& neededUses,
-																			 const std::map<std::string, std::string>& scopeToOriginalImport) {
+		const std::map<std::string, std::string>& scopeToOriginalImport) {
 	std::istringstream input(source);
 	std::ostringstream output;
 	std::string line;
@@ -214,9 +219,9 @@ std::string generateWithUseStatements(const std::string& source, const std::set<
 			bool needsQuotes = false;
 			for (char c : original) {
 				if (std::isspace(static_cast<unsigned char>(c)) || c == '/' || c == '(' || c == ')' || c == '[' ||
-				    c == ']' || c == '{' || c == '}' || c == '<' || c == '>' || c == ',' || c == ';' || c == ':' ||
-				    c == '!' || c == '?' || c == '*' || c == '&' || c == '|' || c == '^' || c == '%' || c == '@' ||
-				    c == '#' || c == '$' || c == '`' || c == '~' || c == '\\') {
+						c == ']' || c == '{' || c == '}' || c == '<' || c == '>' || c == ',' || c == ';' || c == ':' ||
+						c == '!' || c == '?' || c == '*' || c == '&' || c == '|' || c == '^' || c == '%' || c == '@' ||
+						c == '#' || c == '$' || c == '`' || c == '~' || c == '\\') {
 					needsQuotes = true;
 					break;
 				}
@@ -352,8 +357,9 @@ bool processFile(const std::string& filename, const Options& opts) {
 		std::map<std::string, std::string> scopeToOriginalImport;
 		std::set<std::string> explicitFileImports; // Track file imports that should always be preserved
 		std::function<void(IAstNode*)> collectOriginalUses = [&](IAstNode* node) {
-			if (!node)
+			if (!node) {
 				return;
+			}
 			if (node->type() == IAstNode::Type::USE_STATEMENT) {
 				AstNodeUse* useNode = static_cast<AstNodeUse*>(node);
 				std::string moduleName = useNode->module();

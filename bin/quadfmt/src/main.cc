@@ -128,10 +128,15 @@ bool isValidUtf8(const std::string& source) {
 
 		// Determine number of continuation bytes
 		size_t cont_bytes = 0;
-		if ((c & 0xE0) == 0xC0) cont_bytes = 1;      // 110xxxxx
-		else if ((c & 0xF0) == 0xE0) cont_bytes = 2; // 1110xxxx
-		else if ((c & 0xF8) == 0xF0) cont_bytes = 3; // 11110xxx
-		else return false; // Invalid UTF-8 start byte
+		if ((c & 0xE0) == 0xC0) {
+			cont_bytes = 1; // 110xxxxx
+		} else if ((c & 0xF0) == 0xE0) {
+			cont_bytes = 2; // 1110xxxx
+		} else if ((c & 0xF8) == 0xF0) {
+			cont_bytes = 3; // 11110xxx
+		} else {
+			return false; // Invalid UTF-8 start byte
+		}
 
 		// Check we have enough bytes
 		if (i + cont_bytes >= source.length()) {

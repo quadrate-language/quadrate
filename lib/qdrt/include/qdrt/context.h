@@ -42,16 +42,16 @@ extern "C" {
  * @endcode
  */
 typedef struct {
-	qd_stack* st;              ///< Data stack for stack-based operations
-	int64_t error_code;        ///< Current error code (0 = no error)
-	char* error_msg;           ///< Error message string (NULL if no error)
-	int argc;                  ///< Command-line argument count
-	char** argv;               ///< Command-line arguments
-	char* program_name;        ///< Name of the executing program
+	qd_stack* st;		///< Data stack for stack-based operations
+	int64_t error_code; ///< Current error code (0 = no error)
+	char* error_msg;	///< Error message string (NULL if no error)
+	int argc;			///< Command-line argument count
+	char** argv;		///< Command-line arguments
+	char* program_name; ///< Name of the executing program
 
 	/** @brief Call stack for error reporting and debugging */
 	const char* call_stack[QD_MAX_CALL_STACK_DEPTH];
-	size_t call_stack_depth;   ///< Current depth of the call stack
+	size_t call_stack_depth; ///< Current depth of the call stack
 } qd_context;
 
 #ifdef __cplusplus
