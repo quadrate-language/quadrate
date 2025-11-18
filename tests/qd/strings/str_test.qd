@@ -1,0 +1,68 @@
+// Comprehensive string module tests
+use str
+use mem
+
+fn main( -- ) {
+	// Test 1: str::len
+	"Hello" str::len . nl
+
+	// Test 2: str::concat
+	"Hello" " World" str::concat prints nl
+
+	// Test 3: str::contains
+	"Hello World" "World" str::contains . nl
+	"Hello World" "Foo" str::contains . nl
+
+	// Test 4: str::starts_with
+	"Hello World" "Hello" str::starts_with . nl
+	"Hello World" "World" str::starts_with . nl
+
+	// Test 5: str::ends_with
+	"Hello World" "World" str::ends_with . nl
+	"Hello World" "Hello" str::ends_with . nl
+
+	// Test 6: str::upper
+	"hello world" str::upper prints nl
+
+	// Test 7: str::lower
+	"HELLO WORLD" str::lower prints nl
+
+	// Test 8: str::trim
+	"  hello world  " str::trim prints nl
+	"hello" str::trim prints nl
+
+	// Test 9: str::substring
+	"Hello World" 0 5 str::substring! prints nl
+	"Hello World" 6 5 str::substring! prints nl
+
+	// Test 10: str::replace
+	"Hello World World" "World" "Universe" str::replace prints nl
+	"abc abc abc" "abc" "xyz" str::replace prints nl
+
+	// Test 11: str::compare
+	"aaa" "bbb" str::compare . nl
+	"bbb" "aaa" str::compare . nl
+	"aaa" "aaa" str::compare . nl
+
+	// Test 12: str::split
+	"one,two,three" "," str::split! -> count -> parts
+	count . nl
+	// Print each part
+	0 count 1 for i {
+		parts i 8 mul add @p prints nl
+	}
+	// Free parts
+	0 count 1 for i {
+		parts i 8 mul add @p mem::free
+	}
+	parts mem::free
+
+	// Test 13: Empty string tests
+	"" str::len . nl
+	"" "" str::concat str::len . nl
+	"test" "" str::contains . nl
+
+	// Test 14: Single character tests
+	"a" str::len . nl
+	"a" "b" str::concat prints nl
+}

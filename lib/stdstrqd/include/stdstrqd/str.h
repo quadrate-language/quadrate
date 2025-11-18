@@ -89,6 +89,47 @@ qd_exec_result usr_str_lower(qd_context* ctx);
  */
 qd_exec_result usr_str_trim(qd_context* ctx);
 
+/**
+ * @brief Extract substring
+ * @par Stack Effect: ( s:s start:i length:i -- result:s )
+ * @param ctx Execution context
+ * @return Execution result
+ *
+ * Returns substring starting at index 'start' with length 'length'.
+ * Aborts if indices are out of bounds.
+ */
+qd_exec_result usr_str_substring(qd_context* ctx);
+
+/**
+ * @brief Split string by delimiter
+ * @par Stack Effect: ( s:s delim:s -- parts:p count:i )
+ * @param ctx Execution context
+ * @return Execution result
+ *
+ * Returns pointer to array of strings and count. Caller must free each string and the array.
+ */
+qd_exec_result usr_str_split(qd_context* ctx);
+
+/**
+ * @brief Replace all occurrences of substring
+ * @par Stack Effect: ( s:s old:s new:s -- result:s )
+ * @param ctx Execution context
+ * @return Execution result
+ *
+ * Replaces all occurrences of 'old' with 'new' in string.
+ */
+qd_exec_result usr_str_replace(qd_context* ctx);
+
+/**
+ * @brief Compare two strings
+ * @par Stack Effect: ( s1:s s2:s -- result:i )
+ * @param ctx Execution context
+ * @return Execution result
+ *
+ * Returns -1 if s1 < s2, 0 if equal, 1 if s1 > s2.
+ */
+qd_exec_result usr_str_compare(qd_context* ctx);
+
 #ifdef __cplusplus
 }
 #endif

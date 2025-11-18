@@ -1,6 +1,29 @@
 // Operating system interface module
+
+// Error codes for file system operations
+const Success = 0             // No error
+const PermissionDenied = 13   // EACCES - Permission denied
+const FileExists = 17         // EEXIST - File already exists
+const NotADirectory = 20      // ENOTDIR - Path component is not a directory
+const IsADirectory = 21       // EISDIR - Is a directory (when file expected)
+const InvalidArgument = 22    // EINVAL - Invalid argument
+const FileNotFound = 2        // ENOENT - No such file or directory
+const NoSpaceLeft = 28        // ENOSPC - No space left on device
+const ReadOnlyFileSystem = 30 // EROFS - Read-only file system
+const NameTooLong = 36        // ENAMETOOLONG - File name too long
+const IoError = 5             // EIO - I/O error
+const OutOfMemory = 12        // ENOMEM - Out of memory
+
 import "libstdosqd_static.a" as "os" {
 	fn exit(code:i --)
 	fn system(cmd:s -- exitcode:i)
 	fn getenv(name:s -- value:s)
+
+	// File system operations
+	fn exists(path:s -- exists:i)
+	fn delete(path:s --)!
+	fn rename(oldpath:s newpath:s --)!
+	fn copy(srcpath:s dstpath:s --)!
+	fn mkdir(path:s --)!
+	fn list(path:s -- entries:p count:i)!
 }
