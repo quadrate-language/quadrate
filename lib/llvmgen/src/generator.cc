@@ -424,15 +424,14 @@ namespace Qd {
 						break;
 					case 'x':
 						// Hex escape sequence: \xNN
-						if (i + 3 < content.size() &&
-							isxdigit(static_cast<unsigned char>(content[i + 2])) &&
-							isxdigit(static_cast<unsigned char>(content[i + 3]))) {
+						if (i + 3 < content.size() && isxdigit(static_cast<unsigned char>(content[i + 2])) &&
+								isxdigit(static_cast<unsigned char>(content[i + 3]))) {
 							// Valid hex digits
 							int val = 0;
 							char c1 = content[i + 2];
 							char c2 = content[i + 3];
 							val = (isdigit(c1) ? c1 - '0' : tolower(c1) - 'a' + 10) * 16 +
-							      (isdigit(c2) ? c2 - '0' : tolower(c2) - 'a' + 10);
+								  (isdigit(c2) ? c2 - '0' : tolower(c2) - 'a' + 10);
 							processed += static_cast<char>(val);
 							i += 3; // Skip \xNN
 						} else {
@@ -1977,7 +1976,8 @@ namespace Qd {
 						} else {
 							// For other libraries, use plain C function name
 							if (library.rfind("libstd", 0) == 0 &&
-							    (library.find("qd_static.a") != std::string::npos || library.find("qd.so") != std::string::npos)) {
+									(library.find("qd_static.a") != std::string::npos ||
+											library.find("qd.so") != std::string::npos)) {
 								mangledName = "usr_" + namespaceName + "_" + func->name;
 							} else {
 								mangledName = func->name;
@@ -2052,8 +2052,8 @@ namespace Qd {
 						mangledName = "qd_stdqd_" + func->name;
 					} else {
 						// For other libraries, use plain C function name
-						if (library.rfind("libstd", 0) == 0 &&
-						    (library.find("qd_static.a") != std::string::npos || library.find("qd.so") != std::string::npos)) {
+						if (library.rfind("libstd", 0) == 0 && (library.find("qd_static.a") != std::string::npos ||
+																	   library.find("qd.so") != std::string::npos)) {
 							mangledName = "usr_" + namespaceName + "_" + func->name;
 						} else {
 							mangledName = func->name;

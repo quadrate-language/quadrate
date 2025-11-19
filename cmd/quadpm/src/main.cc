@@ -311,7 +311,8 @@ std::string gitClone(const GitRef& gitRef) {
 					// Already in /usr/include
 				}
 
-				std::string compileCmd = compiler + " -c -fPIC -O2 -Wall " + includeFlags + " " + cFile + " -o " + objFile + " 2>&1";
+				std::string compileCmd =
+						compiler + " -c -fPIC -O2 -Wall " + includeFlags + " " + cFile + " -o " + objFile + " 2>&1";
 
 				int compileResult = execCommandLive(compileCmd);
 				if (compileResult != 0) {

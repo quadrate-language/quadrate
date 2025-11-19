@@ -779,7 +779,8 @@ int main(int argc, char** argv) {
 		// Track which packages we've already added to avoid duplicates
 		std::set<std::string> addedPackagePaths;
 		for (const auto& module : parsedModules) {
-			if (!module.packageDirectory.empty() && addedPackagePaths.find(module.packageDirectory) == addedPackagePaths.end()) {
+			if (!module.packageDirectory.empty() &&
+					addedPackagePaths.find(module.packageDirectory) == addedPackagePaths.end()) {
 				// Add the package's lib directory to the linker search paths
 				std::string libPath = module.packageDirectory + "/lib";
 				if (std::filesystem::exists(libPath)) {
