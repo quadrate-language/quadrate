@@ -5,23 +5,23 @@
 // Users manage memory allocation explicitly
 
 // File open modes (text and binary)
-const Read = "r"
-const ReadBinary = "rb"
-const Write = "w"
-const WriteBinary = "wb"
-const Append = "a"
-const AppendBinary = "ab"
-const ReadWrite = "r+"
-const ReadWriteBinary = "rb+"
-const WriteRead = "w+"
-const WriteReadBinary = "wb+"
-const AppendRead = "a+"
-const AppendReadBinary = "ab+"
+pub const Read = "r"
+pub const ReadBinary = "rb"
+pub const Write = "w"
+pub const WriteBinary = "wb"
+pub const Append = "a"
+pub const AppendBinary = "ab"
+pub const ReadWrite = "r+"
+pub const ReadWriteBinary = "rb+"
+pub const WriteRead = "w+"
+pub const WriteReadBinary = "wb+"
+pub const AppendRead = "a+"
+pub const AppendReadBinary = "ab+"
 
 // Seek whence values
-const SeekSet = 0
-const SeekCur = 1
-const SeekEnd = 2
+pub const SeekSet = 0
+pub const SeekCur = 1
+pub const SeekEnd = 2
 
 import "libstdioqd_static.a" as "io" {
 	fn open(path:str mode:str -- handle:ptr)!

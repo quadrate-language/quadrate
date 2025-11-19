@@ -61,8 +61,8 @@ namespace Qd {
 			return mSourceDirectory;
 		}
 
-		// Get the module constants map
-		const std::unordered_map<std::string, std::unordered_set<std::string>>& moduleConstants() const {
+		// Get the module constants map (maps module name -> (constant name -> isPublic))
+		const std::unordered_map<std::string, std::unordered_map<std::string, bool>>& moduleConstants() const {
 			return mModuleConstants;
 		}
 
@@ -84,7 +84,7 @@ namespace Qd {
 
 		// Helper: Collect function definitions from a module AST
 		void collectModuleFunctions(IAstNode* node, std::unordered_map<std::string, bool>& functions);
-		void collectModuleConstants(IAstNode* node, std::unordered_set<std::string>& constants);
+		void collectModuleConstants(IAstNode* node, std::unordered_map<std::string, bool>& constants);
 		void collectModuleConstantValues(IAstNode* node, const std::string& moduleName);
 
 		// Helper: Analyze function signatures in a module
@@ -117,6 +117,9 @@ namespace Qd {
 		// Helper: Check if type is numeric (int or float)
 		bool isNumericType(StackValueType type) const;
 
+	// Helper: Determine the type of a constant value from its string representation
+	StackValueType getConstantType(const std::string& value) const;
+
 		// Helper: Get string representation of type
 		const char* typeToString(StackValueType type) const;
 
@@ -143,6 +146,12 @@ namespace Qd {
 		// Symbol table: all defined functions
 		std::unordered_set<std::string> mDefinedFunctions;
 
+		// Symbol table: all defined constants
+		std::unordered_set<std::string> mDefinedConstants;
+
+	// Constant values: maps constant name -> value string
+	std::unordered_map<std::string, std::string> mConstantValues;
+
 		// Imported modules: tracks which modules have been imported via 'use' statements
 		std::unordered_set<std::string> mImportedModules;
 
@@ -159,8 +168,8 @@ namespace Qd {
 		// Maps module name -> (function name -> isPublic flag)
 		std::unordered_map<std::string, std::unordered_map<std::string, bool>> mModuleFunctions;
 
-		// Module constants: maps module name -> set of constant names in that module
-		std::unordered_map<std::string, std::unordered_set<std::string>> mModuleConstants;
+		// Module constants: maps module name -> (constant name -> isPublic flag)
+		std::unordered_map<std::string, std::unordered_map<std::string, bool>> mModuleConstants;
 
 		// Module constant values: maps "module::name" -> value string
 		std::unordered_map<std::string, std::string> mModuleConstantValues;

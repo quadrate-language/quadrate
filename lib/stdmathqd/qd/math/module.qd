@@ -1,7 +1,7 @@
 // Mathematical constants
-const Pi = 3.141592653589793
-const E = 2.718281828459045
-const Tau = 6.283185307179586
+pub const Pi = 3.141592653589793
+pub const E = 2.718281828459045
+pub const Tau = 6.283185307179586
 
 // Import native math functions from libstdmathqd
 import "libstdmathqd_static.a" as "math" {

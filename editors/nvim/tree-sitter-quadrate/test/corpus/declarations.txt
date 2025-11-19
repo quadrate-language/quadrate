@@ -52,3 +52,19 @@ fn main( -- ) {
     body: (block
       (identifier)
       (builtin_operation))))
+================================================================================
+Public constant definition
+================================================================================
+
+pub const MaxValue = 100
+pub const Pi = 3.14159
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (constant_definition
+    name: (identifier)
+    value: (number))
+  (constant_definition
+    name: (identifier)
+    value: (number)))

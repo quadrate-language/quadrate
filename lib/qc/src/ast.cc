@@ -1633,7 +1633,7 @@ namespace Qd {
 				const char* text = u8t_scanner_token_text(&scanner, &n);
 
 				if (strcmp(text, "pub") == 0) {
-					// Check if next token is "fn"
+					// Check if next token is "fn" or "const"
 					token = u8t_scanner_scan(&scanner);
 					if (token == U8T_IDENTIFIER) {
 						const char* nextText = u8t_scanner_token_text(&scanner, &n);
@@ -1643,12 +1643,47 @@ namespace Qd {
 								func->setParent(program);
 								program->addChild(func);
 							}
+						} else if (strcmp(nextText, "const") == 0) {
+							// Parse public constant
+							token = u8t_scanner_scan(&scanner);
+							if (token == U8T_IDENTIFIER) {
+								const char* constName = u8t_scanner_token_text(&scanner, &n);
+								std::string constNameStr(constName);
+								token = u8t_scanner_scan(&scanner);
+								if (token == '=') {
+									token = u8t_scanner_scan(&scanner);
+									AstNodeLiteral* value = nullptr;
+									if (token == U8T_INTEGER) {
+										const char* valueText = u8t_scanner_token_text(&scanner, &n);
+										value = new AstNodeLiteral(valueText, AstNodeLiteral::LiteralType::INTEGER);
+										setNodePosition(value, &scanner, src);
+									} else if (token == U8T_FLOAT) {
+										const char* valueText = u8t_scanner_token_text(&scanner, &n);
+										value = new AstNodeLiteral(valueText, AstNodeLiteral::LiteralType::FLOAT);
+										setNodePosition(value, &scanner, src);
+									} else if (token == U8T_STRING) {
+										const char* valueText = u8t_scanner_token_text(&scanner, &n);
+										value = new AstNodeLiteral(valueText, AstNodeLiteral::LiteralType::STRING);
+										setNodePosition(value, &scanner, src);
+									}
+									if (value) {
+										AstNodeConstant* constDecl = new AstNodeConstant(constNameStr, value->value().c_str(), true);
+										setNodePosition(constDecl, &scanner, src);
+										delete value; // Value is copied, no longer needed
+										constDecl->setParent(program);
+										program->addChild(constDecl);
+									}
+								}
+							} else {
+								errorReporter.reportError(&scanner, "Expected constant name after 'pub const'");
+								synchronize(&scanner);
+							}
 						} else {
-							errorReporter.reportError(&scanner, "Expected 'fn' after 'pub'");
+							errorReporter.reportError(&scanner, "Expected 'fn' or 'const' after 'pub'");
 							synchronize(&scanner);
 						}
 					} else {
-						errorReporter.reportError(&scanner, "Expected 'fn' after 'pub'");
+						errorReporter.reportError(&scanner, "Expected 'fn' or 'const' after 'pub'");
 						synchronize(&scanner);
 					}
 				} else if (strcmp(text, "fn") == 0) {

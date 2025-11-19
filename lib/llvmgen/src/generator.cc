@@ -581,6 +581,31 @@ namespace Qd {
 			return;
 		}
 
+		// Check if it's a constant
+		auto constIt = moduleConstants.find(name);
+		if (constIt != moduleConstants.end()) {
+			const std::string& value = constIt->second;
+			
+			// Determine the type of the constant and push it
+			if (!value.empty() && value.size() >= 2 && value.front() == '"' && value.back() == '"') {
+				// String literal - create global string and push
+				std::string strValue = value.substr(1, value.length() - 2);
+				llvm::Value* strConst = builder->CreateGlobalString(strValue);
+				builder->CreateCall(pushStrFn, {ctx, strConst});
+			} else if (value.find('.') != std::string::npos) {
+				// Float constant
+				double floatValue = std::stod(value);
+				llvm::Value* floatConst = llvm::ConstantFP::get(builder->getDoubleTy(), floatValue);
+				builder->CreateCall(pushFloatFn, {ctx, floatConst});
+			} else {
+				// Integer constant
+				int64_t intValue = std::stoll(value);
+				llvm::Value* intConst = builder->getInt64(static_cast<uint64_t>(intValue));
+				builder->CreateCall(pushIntFn, {ctx, intConst});
+			}
+			return;
+		}
+
 		// Check if it's a user-defined function call
 		auto it = userFunctions.find(name);
 		if (it != userFunctions.end()) {
@@ -2032,7 +2057,18 @@ namespace Qd {
 					// Store constant with scope::name key
 					std::string fullName = moduleName + "::" + constNode->name();
 					moduleConstants[fullName] = constNode->value();
+					// Also store without scope for module-internal access
+					moduleConstants[constNode->name()] = constNode->value();
 				}
+			}
+		}
+
+		// Collect constants from main file
+		for (size_t i = 0; i < root->childCount(); i++) {
+			auto child = root->child(i);
+			if (auto constNode = dynamic_cast<AstNodeConstant*>(child)) {
+				// Store constant with just the name (no scope prefix for main file)
+				moduleConstants[constNode->name()] = constNode->value();
 			}
 		}
 

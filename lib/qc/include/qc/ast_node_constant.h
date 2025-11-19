@@ -7,8 +7,8 @@
 namespace Qd {
 	class AstNodeConstant : public IAstNode {
 	public:
-		AstNodeConstant(const std::string& name, const char* value)
-			: mName(name), mValue(value), mParent(nullptr), mLine(0), mColumn(0) {
+		AstNodeConstant(const std::string& name, const char* value, bool isPublic = false)
+			: mName(name), mValue(value), mIsPublic(isPublic), mParent(nullptr), mLine(0), mColumn(0) {
 		}
 
 		IAstNode::Type type() const override {
@@ -52,9 +52,14 @@ namespace Qd {
 			return mValue.c_str();
 		}
 
+		bool isPublic() const {
+			return mIsPublic;
+		}
+
 	private:
 		std::string mName;
 		std::string mValue;
+		bool mIsPublic;
 		IAstNode* mParent;
 		size_t mLine;
 		size_t mColumn;

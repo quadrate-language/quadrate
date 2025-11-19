@@ -126,12 +126,31 @@ namespace Qd {
 		return false;
 	}
 
+
 	// Validate that a type string is a valid type name
 	// Returns true if valid, false otherwise
 	static bool isValidTypeName(const std::string& typeStr) {
 		return typeStr == "i64" || typeStr == "f64" || typeStr == "str" || typeStr == "ptr" || typeStr == "any";
 	}
 
+	StackValueType SemanticValidator::getConstantType(const std::string& value) const {
+		if (value.empty()) {
+			return StackValueType::UNKNOWN;
+		}
+		
+		// Check if it's a string literal (starts and ends with quotes)
+		if (value.size() >= 2 && value.front() == '"' && value.back() == '"') {
+			return StackValueType::STRING;
+		}
+		
+		// Check if it contains a decimal point (float)
+		if (value.find('.') != std::string::npos) {
+			return StackValueType::FLOAT;
+		}
+		
+		// Otherwise it's an integer
+		return StackValueType::INT;
+	}
 	SemanticValidator::SemanticValidator()
 		: mFilename(nullptr), mErrorCount(0), mWarningCount(0), mWerror(false), mIsModuleFile(false) {
 	}
@@ -305,6 +324,13 @@ namespace Qd {
 		if (node->type() == IAstNode::Type::FUNCTION_DECLARATION) {
 			AstNodeFunctionDeclaration* func = static_cast<AstNodeFunctionDeclaration*>(node);
 			mDefinedFunctions.insert(func->name());
+		}
+
+		// If this is a constant declaration, add it to the symbol table
+		if (node->type() == IAstNode::Type::CONSTANT_DECLARATION) {
+			AstNodeConstant* constant = static_cast<AstNodeConstant*>(node);
+			mDefinedConstants.insert(constant->name());
+		mConstantValues[constant->name()] = constant->value();
 		}
 
 		// If this is a use statement, add the module to imported modules and load its definitions
@@ -743,13 +769,15 @@ namespace Qd {
 		}
 
 		// Collect constant definitions from the module
-		std::unordered_set<std::string> moduleConstants;
+		std::unordered_map<std::string, bool> moduleConstants;
 		collectModuleConstants(moduleAstRoot, moduleConstants);
 
 		// Store the collected constants
 		if (mModuleConstants.find(moduleName) != mModuleConstants.end()) {
-			// Merge: add new constants to existing set
-			mModuleConstants[moduleName].insert(moduleConstants.begin(), moduleConstants.end());
+			// Merge: add new constants to existing map
+			for (const auto& constant : moduleConstants) {
+				mModuleConstants[moduleName][constant.first] = constant.second;
+			}
 		} else {
 			// Create new entry
 			mModuleConstants[moduleName] = moduleConstants;
@@ -789,15 +817,15 @@ namespace Qd {
 		}
 	}
 
-	void SemanticValidator::collectModuleConstants(IAstNode* node, std::unordered_set<std::string>& constants) {
+	void SemanticValidator::collectModuleConstants(IAstNode* node, std::unordered_map<std::string, bool>& constants) {
 		if (!node) {
 			return;
 		}
 
-		// If this is a constant declaration, add it to the set
+		// If this is a constant declaration, add it with its visibility
 		if (node->type() == IAstNode::Type::CONSTANT_DECLARATION) {
 			AstNodeConstant* constNode = static_cast<AstNodeConstant*>(node);
-			constants.insert(constNode->name());
+			constants[constNode->name()] = constNode->isPublic();
 		}
 
 		// Recursively process children
@@ -1053,13 +1081,22 @@ namespace Qd {
 			}
 
 			// Check if it's a defined function
-			if (mDefinedFunctions.find(name) == mDefinedFunctions.end()) {
-				// Not found - report error
-				std::string errorMsg = "Undefined function '";
-				errorMsg += name;
-				errorMsg += "'";
-				reportError(ident, errorMsg.c_str());
+			if (mDefinedFunctions.find(name) != mDefinedFunctions.end()) {
+				// Valid function
+				return;
 			}
+
+			// Check if it's a defined constant
+			if (mDefinedConstants.find(name) != mDefinedConstants.end()) {
+				// Valid constant
+				return;
+			}
+
+			// Not found - report error
+			std::string errorMsg = "Undefined function '";
+			errorMsg += name;
+			errorMsg += "'";
+			reportError(ident, errorMsg.c_str());
 		}
 
 		// Check if this is a function pointer reference
@@ -1117,8 +1154,18 @@ namespace Qd {
 			auto constIt = mModuleConstants.find(scopeName);
 			if (constIt != mModuleConstants.end()) {
 				const auto& constants = constIt->second;
-				if (constants.find(functionName) != constants.end()) {
-					// This is a valid constant - no further checking needed
+				auto constantIt = constants.find(functionName);
+				if (constantIt != constants.end()) {
+					// Check if the constant is public
+					bool isPublic = constantIt->second;
+					if (!isPublic) {
+						std::string errorMsg = "Constant '";
+						errorMsg += functionName;
+						errorMsg += "' in module '";
+						errorMsg += scopeName;
+						errorMsg += "' is private and cannot be accessed from outside the module. Mark it as 'pub const' to export it.";
+						reportError(scoped, errorMsg.c_str());
+					}
 					return;
 				}
 			}
@@ -1305,16 +1352,24 @@ namespace Qd {
 				// Apply function signature if known (for iterative analysis)
 				AstNodeIdentifier* ident = static_cast<AstNodeIdentifier*>(child);
 				const std::string& name = ident->name();
-
-				auto sigIt = mFunctionSignatures.find(name);
-				if (sigIt != mFunctionSignatures.end()) {
-					// Apply the known signature
-					const FunctionSignature& sig = sigIt->second;
-					for (const auto& type : sig.produces) {
-						typeStack.push_back(type);
-					}
+			auto sigIt = mFunctionSignatures.find(name);
+			if (sigIt != mFunctionSignatures.end()) {
+				// Apply the known signature
+				const FunctionSignature& sig = sigIt->second;
+				for (const auto& type : sig.produces) {
+					typeStack.push_back(type);
 				}
-				// If signature not known yet, skip (will be resolved in next iteration)
+				break;
+			}
+
+			// Check if it's a constant
+			auto constIt = mConstantValues.find(name);
+			if (constIt != mConstantValues.end()) {
+				// Push the constant's type onto the stack
+				StackValueType constType = getConstantType(constIt->second);
+				typeStack.push_back(constType);
+			}
+			// If signature not known yet, skip (will be resolved in next iteration)
 				break;
 			}
 
@@ -1491,6 +1546,15 @@ namespace Qd {
 				if (localIt != localVariables.end()) {
 					// Push the local variable's type onto the stack
 					typeStack.push_back(localIt->second);
+					break;
+				}
+
+				// Check if it's a constant
+				auto constIt = mConstantValues.find(name);
+				if (constIt != mConstantValues.end()) {
+					// Push the constant's type onto the stack
+					StackValueType constType = getConstantType(constIt->second);
+					typeStack.push_back(constType);
 					break;
 				}
 

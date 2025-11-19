@@ -54,8 +54,9 @@ module.exports = grammar({
 
     type: $ => seq($.identifier),
 
-    // Constant: const name = value
+    // Constant: const name = value or pub const name = value
     constant_definition: $ => seq(
+      optional('pub'),
       'const',
       field('name', $.identifier),
       '=',
