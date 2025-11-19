@@ -80,6 +80,36 @@ namespace Qd {
 		return "use " + moduleName;
 	}
 
+	// Helper to normalize spacing around "--" in function signature
+	static std::string normalizeStackNotation(const std::string& sig) {
+		std::string result = sig;
+
+		// Find all occurrences of "--" and ensure they have spaces on both sides
+		size_t pos = 0;
+		while ((pos = result.find("--", pos)) != std::string::npos) {
+			// Check if there's a space before "--"
+			bool hasSpaceBefore = (pos > 0 && std::isspace(static_cast<unsigned char>(result[pos - 1])));
+			// Check if there's a space after "--"
+			bool hasSpaceAfter = (pos + 2 < result.length() && std::isspace(static_cast<unsigned char>(result[pos + 2])));
+
+			// If missing space before, add it
+			if (!hasSpaceBefore && pos > 0) {
+				result.insert(pos, " ");
+				pos++; // Adjust position after insertion
+			}
+
+			// If missing space after, add it
+			if (!hasSpaceAfter && pos + 2 < result.length()) {
+				result.insert(pos + 2, " ");
+			}
+
+			// Move past this "--"
+			pos += 2;
+		}
+
+		return result;
+	}
+
 	// Format a function signature line
 	static std::string formatFunctionSignature(const std::string& line) {
 		std::string trimmed = trim(line);
@@ -130,6 +160,9 @@ namespace Qd {
 		// Extract signature part (everything between parens)
 		std::string signature = trimmed.substr(parenPos + 1, closeParenPos - parenPos - 1);
 		std::string formattedSig = trim(signature);
+
+		// Normalize spacing around "--" to ensure spaces on both sides
+		formattedSig = normalizeStackNotation(formattedSig);
 
 		// Special case: if signature contains only "--" (with possible whitespace),
 		// format as " -- " to match expected style for empty parameters
@@ -261,7 +294,7 @@ namespace Qd {
 		}
 
 		std::ostringstream output;
-		std::string prevTopLevelType; // "use", "fn_start", ""
+		std::string prevTopLevelType; // "use", "const", "fn_start", ""
 		int braceDepth = 0;
 		bool inFunction = false;
 		std::vector<std::string> useStatements; // Buffer for collecting consecutive use statements
@@ -309,7 +342,8 @@ namespace Qd {
 			}
 
 			// Determine if this is a top-level declaration
-			bool isTopLevel = (braceDepth == 0 || (startsWithKeyword(trimmed, "fn") && !inFunction));
+			bool isTopLevel = (braceDepth == 0 ||
+			                   ((startsWithKeyword(trimmed, "fn") || startsWithKeyword(trimmed, "pub")) && !inFunction));
 			std::string currentType;
 
 			if (isTopLevel) {
@@ -321,6 +355,16 @@ namespace Qd {
 					continue; // Don't output yet, wait to sort
 				} else if (startsWithKeyword(trimmed, "import")) {
 					currentType = "use"; // Treat import like use for spacing
+				} else if (startsWithKeyword(trimmed, "pub")) {
+					// Handle pub fn and pub const
+					if (trimmed.find("pub fn") != std::string::npos) {
+						currentType = "fn_start";
+						inFunction = true;
+					} else if (trimmed.find("pub const") != std::string::npos) {
+						currentType = "const";
+					}
+				} else if (startsWithKeyword(trimmed, "const")) {
+					currentType = "const";
 				} else if (startsWithKeyword(trimmed, "fn")) {
 					currentType = "fn_start";
 					inFunction = true;
@@ -333,13 +377,19 @@ namespace Qd {
 
 				// Add appropriate spacing before top-level declarations
 				if (!prevTopLevelType.empty()) {
-					if ((prevTopLevelType == "use" && currentType == "fn_start") ||
+					if ((prevTopLevelType == "use" && currentType == "const") ||
+							(prevTopLevelType == "use" && currentType == "fn_start") ||
+							(prevTopLevelType == "const" && currentType == "fn_start") ||
 							(prevTopLevelType == "fn_start" && currentType == "fn_start") ||
-							(prevTopLevelType == "fn_start" && currentType == "use")) {
+							(prevTopLevelType == "fn_start" && currentType == "use") ||
+							(prevTopLevelType == "fn_start" && currentType == "const")) {
 						// Exactly one empty line between:
+						// - use statements and constants
 						// - use statements and first function
+						// - constants and first function
 						// - between functions
 						// - functions and subsequent use statements
+						// - functions and subsequent constants
 						output << '\n';
 					}
 				}
@@ -470,7 +520,7 @@ namespace Qd {
 
 			// Handle other top-level declarations
 			if (startsWithKeyword(trimmed, "use") || startsWithKeyword(trimmed, "import") ||
-					startsWithKeyword(trimmed, "const")) {
+					startsWithKeyword(trimmed, "const") || startsWithKeyword(trimmed, "pub")) {
 				// Write with current indent (should be 0)
 				for (int i = 0; i < indentLevel; i++) {
 					output << '\t';

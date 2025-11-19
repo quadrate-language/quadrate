@@ -114,7 +114,10 @@ namespace Qd {
 	void Formatter::formatProgram(const IAstNode* node) {
 		const AstProgram* program = static_cast<const AstProgram*>(node);
 
+		std::cerr << "DEBUG: formatProgram childCount = " << program->childCount() << std::endl;
+
 		for (size_t i = 0; i < program->childCount(); i++) {
+			std::cerr << "DEBUG: formatting child " << i << std::endl;
 			formatNode(program->child(i));
 
 			// Add blank line between top-level declarations
@@ -122,27 +125,40 @@ namespace Qd {
 				const IAstNode* current = program->child(i);
 				const IAstNode* next = program->child(i + 1);
 
+				// DEBUG
+				std::cerr << "DEBUG: current type = " << static_cast<int>(current->type())
+						  << ", next type = " << static_cast<int>(next->type()) << std::endl;
+
+				bool addBlankLine = false;
+
 				// Functions: always add blank line
 				if (current->type() == IAstNode::Type::FUNCTION_DECLARATION) {
-					newLine();
+					addBlankLine = true;
 				}
 				// Use statements: add blank line only if next is not a use statement
 				else if (current->type() == IAstNode::Type::USE_STATEMENT) {
-					if (next->type() != IAstNode::Type::USE_STATEMENT) {
-						newLine();
+					if (next->type() != IAstNode::Type::USE_STATEMENT &&
+							next->type() != IAstNode::Type::COMMENT) {
+						addBlankLine = true;
 					}
 				}
 				// Import statements: add blank line only if next is not an import statement
 				else if (current->type() == IAstNode::Type::IMPORT_STATEMENT) {
-					if (next->type() != IAstNode::Type::IMPORT_STATEMENT) {
-						newLine();
+					if (next->type() != IAstNode::Type::IMPORT_STATEMENT &&
+							next->type() != IAstNode::Type::COMMENT) {
+						addBlankLine = true;
 					}
 				}
 				// Constants: add blank line only if next is not a constant
 				else if (current->type() == IAstNode::Type::CONSTANT_DECLARATION) {
-					if (next->type() != IAstNode::Type::CONSTANT_DECLARATION) {
-						newLine();
+					if (next->type() != IAstNode::Type::CONSTANT_DECLARATION &&
+							next->type() != IAstNode::Type::COMMENT) {
+						addBlankLine = true;
 					}
+				}
+
+				if (addBlankLine) {
+					newLine();
 				}
 			}
 		}
@@ -152,6 +168,9 @@ namespace Qd {
 		const AstNodeFunctionDeclaration* func = static_cast<const AstNodeFunctionDeclaration*>(node);
 
 		writeIndent();
+		if (func->isPublic()) {
+			write("pub ");
+		}
 		write("fn ");
 		write(func->name());
 		write("(");
@@ -1076,6 +1095,9 @@ namespace Qd {
 		const AstNodeConstant* constNode = static_cast<const AstNodeConstant*>(node);
 
 		writeIndent();
+		if (constNode->isPublic()) {
+			write("pub ");
+		}
 		write("const ");
 		write(constNode->name());
 		write(" = ");
