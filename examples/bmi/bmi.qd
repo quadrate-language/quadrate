@@ -1,10 +1,9 @@
-fn bmi(weight:f height:f -- bmi:f) {
+fn bmi(weight:f64 height:f64 -- bmi:f64) {
 	sq /
 }
 
 fn main( -- ) {
-	70.0 1.75
-	bmi
+	70.0 1.75 bmi
 	25.0 > if {
 		"Overweight" . nl
 	} else {
