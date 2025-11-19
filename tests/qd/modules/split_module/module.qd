@@ -2,10 +2,10 @@
 // Imports helper.qd from the same module directory
 use helper.qd
 
-pub fn add_ten( x:f -- y:f ) {
+pub fn add_ten( x:f64 -- y:f64 ) {
 	10.0 add
 }
 
-pub fn multiply_by_three( x:f -- y:f ) {
+pub fn multiply_by_three( x:f64 -- y:f64 ) {
 	3.0 mul
 }

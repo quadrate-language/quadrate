@@ -1,4 +1,4 @@
-fn always_ok(a:i -- result:i)! {
+fn always_ok(a:i64 -- result:i64)! {
 	dup
 }
 

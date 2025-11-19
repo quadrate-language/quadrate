@@ -1,9 +1,9 @@
 import "libstdnetqd_static.a" as "net" {
-	fn listen(port:i -- socket:i)
-	fn accept(server_socket:i -- client_socket:i)
-	fn connect(host:s port:i -- socket:i)
-	fn send(socket:i data:s -- bytes_sent:i)
-	fn receive(socket:i max_bytes:i -- data:s bytes_read:i)
-	fn shutdown(socket:i --)
-	fn close(socket:i --)
+	fn listen(port:i64 -- socket:i64)
+	fn accept(server_socket:i64 -- client_socket:i64)
+	fn connect(host:str port:i64 -- socket:i64)
+	fn send(socket:i64 data:str -- bytes_sent:i64)
+	fn receive(socket:i64 max_bytes:i64 -- data:str bytes_read:i64)
+	fn shutdown(socket:i64 --)
+	fn close(socket:i64 --)
 }

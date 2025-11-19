@@ -24,29 +24,29 @@ const SeekCur = 1
 const SeekEnd = 2
 
 import "libstdioqd_static.a" as "io" {
-	fn open(path:s mode:s -- handle:p)!
-	fn close(handle:p --)
+	fn open(path:str mode:str -- handle:ptr)!
+	fn close(handle:ptr --)
 
 	// Unified buffer-based I/O
 	// Read into a pre-allocated buffer
-	fn read(handle:p buffer:p count:i -- bytes_read:i)!
+	fn read(handle:ptr buffer:ptr count:i64 -- bytes_read:i64)!
 
 	// Write from a buffer
-	fn write(handle:p buffer:p count:i -- bytes_written:i)!
+	fn write(handle:ptr buffer:ptr count:i64 -- bytes_written:i64)!
 
-	fn seek(handle:p offset:i whence:i -- position:i)!
-	fn tell(handle:p -- position:i)!
-	fn eof(handle:p -- handle:p is_eof:i)
+	fn seek(handle:ptr offset:i64 whence:i64 -- position:i64)!
+	fn tell(handle:ptr -- position:i64)!
+	fn eof(handle:ptr -- handle:ptr is_eof:i64)
 }
 
 // Text file helpers (implemented in Quadrate using mem::to_string)
 // These show the recommended pattern for text files
 
 // Example of reading text:
-// fn read_text(file:p max_bytes:i -- text:s) {
+// fn read_text(file:ptr max_bytes:i64 -- text:str) {
 //     max_bytes mem::alloc -> buf
 //     file buf max_bytes io::read! -> bytes_read
 //     buf bytes_read mem::to_string -> text
-//     buf mem::free
+//     buf mem::f64ree
 //     text
 // }

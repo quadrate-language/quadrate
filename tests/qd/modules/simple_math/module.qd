@@ -1,15 +1,15 @@
 // Simple math module for testing
 // Provides basic mathematical constants and operations
 
-pub fn double( x:f -- y:f ) {
+pub fn double( x:f64 -- y:f64 ) {
 	dup add
 }
 
-pub fn triple( x:f -- y:f ) {
+pub fn triple( x:f64 -- y:f64 ) {
 	3.0 mul
 }
 
-pub fn square( x:f -- y:f ) {
+pub fn square( x:f64 -- y:f64 ) {
 	dup mul
 }
 

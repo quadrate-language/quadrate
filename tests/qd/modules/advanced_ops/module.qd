@@ -2,7 +2,7 @@
 // Imports and builds on base_ops module
 use base_ops
 
-pub fn add_five_then_double( x:f -- y:f ) {
+pub fn add_five_then_double( x:f64 -- y:f64 ) {
 	// Uses base_ops functions
 	base_ops::add_five
 	base_ops::multiply_by_two
@@ -14,7 +14,7 @@ pub fn get_two_hundred() {
 	base_ops::multiply_by_two
 }
 
-pub fn complex_calc( x:f -- y:f ) {
+pub fn complex_calc( x:f64 -- y:f64 ) {
 	// Combines base operations
 	base_ops::add_five
 	base_ops::add_five

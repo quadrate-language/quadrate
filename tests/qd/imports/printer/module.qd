@@ -1,14 +1,14 @@
 // Module that uses imports internally
 
 import "libstdfmtqd_static.a" as "fmt" {
-    fn printf(format:s -- )
+    fn printf(format:str -- )
 }
 
-pub fn print_number(num:i -- ) {
+pub fn print_number(num:i64 -- ) {
     "Number: %d\n" swap fmt::printf
 }
 
-pub fn print_message(msg:s -- ) {
+pub fn print_message(msg:str -- ) {
     "Message: %s\n" swap fmt::printf
 }
 

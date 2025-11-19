@@ -6,11 +6,11 @@
 import "libstdbase64qd_static.a" as "base64" {
 	// Encode binary data to base64 string
 	// Example: 5-byte buffer containing "Hello" -> "SGVsbG8="
-	fn encode(data:p len:i -- encoded:s)
+	fn encode(data:ptr len:i64 -- encoded:str)
 
 	// Decode base64 string to binary data
 	// Returns: data pointer and length on success, aborts with error on failure
-	// Caller must free the returned data pointer using mem::free
+	// Caller must free the returned data pointer using mem::f64ree
 	// Example: "SGVsbG8=" -> buffer with "Hello", length=5
-	fn decode(encoded:s -- data:p data_len:i)!
+	fn decode(encoded:str -- data:ptr data_len:i64)!
 }

@@ -1,7 +1,7 @@
 // Import test - complex format strings
 
 import "libstdfmtqd_static.a" as "fmt" {
-    fn printf(format:s -- )
+    fn printf(format:str -- )
 }
 
 fn main() {

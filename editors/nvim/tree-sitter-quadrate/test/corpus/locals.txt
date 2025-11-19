@@ -2,7 +2,7 @@
 Local variable declaration
 ================================================================================
 
-fn test( x:i -- result:i ) {
+fn test( x:i64 -- result:i64 ) {
     -> y
     y
 }

@@ -1,7 +1,7 @@
 use unused1
 use math
 
-fn helper1(x:float -- result:float) {
+fn helper1(x:f64loat -- result:f64loat) {
 	x math::sqrt
 }
 

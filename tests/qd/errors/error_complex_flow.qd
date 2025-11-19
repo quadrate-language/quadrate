@@ -1,18 +1,18 @@
-fn parse_number(a:i -- result:i)! {
+fn parse_number(a:i64 -- result:i64)! {
 	dup 0 < if {
 		0
 		"Error occurred" 1 error
 	}
 }
 
-fn validate_range(a:i -- result:i)! {
+fn validate_range(a:i64 -- result:i64)! {
 	dup 100 > if {
 		0
 		"Error occurred" 1 error
 	}
 }
 
-fn compute(a:i -- result:i)! {
+fn compute(a:i64 -- result:i64)! {
 	dup 50 > if {
 		10 add
 	} else {

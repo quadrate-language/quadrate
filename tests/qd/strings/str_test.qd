@@ -44,8 +44,8 @@ fn main( -- ) {
 	"bbb" "aaa" str::compare . nl
 	"aaa" "aaa" str::compare . nl
 
-	// Test 12: str::split
-	"one,two,three" "," str::split! -> count -> parts
+	// Test 12: str::strplit
+	"one,two,three" "," str::strplit! -> count -> parts
 	count . nl
 	// Print each part
 	0 count 1 for i {

@@ -171,7 +171,7 @@ tests: debug
 	fi
 	@echo ""
 	@echo "=== Running Quadrate language tests ==="
-	QUADC=$(BUILD_DIR_DEBUG)/cmd/quadc/quadc bash tests/run_tests.sh qd || true
+	QUADC=$(BUILD_DIR_DEBUG)/cmd/quadc/quadc bash tests/run_tests.sh qd
 	@echo ""
 	@echo "=== Running formatter tests ==="
 	bash tests/run_tests.sh formatter

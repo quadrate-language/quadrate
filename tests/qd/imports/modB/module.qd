@@ -1,7 +1,7 @@
 // Module B - also imports libstdqd as "io" (same namespace!)
 
 import "libstdfmtqd_static.a" as "fmt" {
-    fn printf(format:s -- )
+    fn printf(format:str -- )
 }
 
 pub fn print_b() {

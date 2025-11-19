@@ -1,5 +1,5 @@
 // Test custom error messages and codes
-fn divide(a:i b:i -- result:i)! {
+fn divide(a:i64 b:i64 -- result:i64)! {
 	dup 0 eq if {
 		drop drop
 		0  // Dummy result value

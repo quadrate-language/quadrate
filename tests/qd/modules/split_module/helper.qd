@@ -1,11 +1,11 @@
 // Helper functions for split_module
 // These functions will be part of the split_module namespace
 
-pub fn double( x:f -- y:f ) {
+pub fn double( x:f64 -- y:f64 ) {
 	dup add
 }
 
-pub fn negate( x:f -- y:f ) {
+pub fn negate( x:f64 -- y:f64 ) {
 	neg
 }
 

@@ -1,4 +1,4 @@
-fn validate_positive(a:i -- result:i)! {
+fn validate_positive(a:i64 -- result:i64)! {
 	dup 0 > if {
 		dup
 	} else {
@@ -7,7 +7,7 @@ fn validate_positive(a:i -- result:i)! {
 	}
 }
 
-fn double_value(a:i -- result:i)! {
+fn double_value(a:i64 -- result:i64)! {
 	2 mul
 }
 

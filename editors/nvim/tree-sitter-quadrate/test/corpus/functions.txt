@@ -21,7 +21,7 @@ fn test( -- ) {
 Function definition with parameters
 ================================================================================
 
-fn multiply( x:float y:float -- z:float ) {
+fn multiply( x:f64 y:f64 -- z:f64 ) {
     mul
 }
 
@@ -52,7 +52,7 @@ fn multiply( x:float y:float -- z:float ) {
 Multiple functions
 ================================================================================
 
-fn add_two( x:float -- result:float ) {
+fn add_two( x:f64 -- result:f64 ) {
     2 add
 }
 
@@ -90,7 +90,7 @@ fn main( -- ) {
 Public function definition without parameters
 ================================================================================
 
-pub fn double( x:f -- y:f ) {
+pub fn double( x:f64 -- y:f64 ) {
 	dup add
 }
 
@@ -118,7 +118,7 @@ pub fn double( x:f -- y:f ) {
 Mixed public and private functions
 ================================================================================
 
-pub fn square( x:f -- y:f ) {
+pub fn square( x:f64 -- y:f64 ) {
 	dup mul
 }
 

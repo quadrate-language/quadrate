@@ -1,5 +1,5 @@
 // Test using stack parameters as local variables
-fn calculate( a:i b:i c:i -- result:i ) {
+fn calculate( a:i64 b:i64 c:i64 -- result:i64 ) {
     -> z
     -> y
     -> x

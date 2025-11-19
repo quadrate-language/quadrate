@@ -1,5 +1,5 @@
 // Test mixing stack parameters and computed locals
-fn process( base:i multiplier:i -- result:i ) {
+fn process( base:i64 multiplier:i64 -- result:i64 ) {
     -> mult
     -> val
     // Compute derived value

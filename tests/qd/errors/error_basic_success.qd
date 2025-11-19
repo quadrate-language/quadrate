@@ -1,4 +1,4 @@
-fn safe_operation(a:i -- result:i)! {
+fn safe_operation(a:i64 -- result:i64)! {
 	dup 0 > if {
 		dup mul
 	} else {

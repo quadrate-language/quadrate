@@ -1,5 +1,5 @@
 // Control flow operations in modules
-pub fn sign( x:f -- result:f ) {
+pub fn sign( x:f64 -- result:f64 ) {
 	dup 0.0 gt
 	if {
 		drop 1.0
@@ -13,7 +13,7 @@ pub fn sign( x:f -- result:f ) {
 	}
 }
 
-pub fn sum_to_n( n:f -- result:f ) {
+pub fn sum_to_n( n:f64 -- result:f64 ) {
 	0.0
 	swap
 	1.0 swap 1.0
@@ -22,7 +22,7 @@ pub fn sum_to_n( n:f -- result:f ) {
 	}
 }
 
-pub fn count_evens( max:f -- count:f ) {
+pub fn count_evens( max:f64 -- count:f64 ) {
 	0.0
 	swap
 	0.0 swap 2.0

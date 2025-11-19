@@ -1,10 +1,10 @@
 // Import test - using imported function from helper function
 
 import "libstdfmtqd_static.a" as "fmt" {
-    fn printf(format:s -- )
+    fn printf(format:str -- )
 }
 
-fn greet(name:s -- ) {
+fn greet(name:str -- ) {
     "Hello from function, %s!\n" swap fmt::printf
 }
 

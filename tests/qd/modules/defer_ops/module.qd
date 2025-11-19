@@ -1,12 +1,12 @@
 // Defer operations in modules
-pub fn with_cleanup( x:f -- result:f ) {
+pub fn with_cleanup( x:f64 -- result:f64 ) {
 	defer {
 		100.0 print nl
 	}
 	2.0 mul
 }
 
-pub fn nested_defer( x:f -- result:f ) {
+pub fn nested_defer( x:f64 -- result:f64 ) {
 	defer {
 		300.0 print nl
 	}
@@ -19,14 +19,14 @@ pub fn nested_defer( x:f -- result:f ) {
 	}
 }
 
-pub fn defer_with_computation( x:f y:f -- result:f ) {
+pub fn defer_with_computation( x:f64 y:f64 -- result:f64 ) {
 	defer {
 		50.0 25.0 add print nl
 	}
 	add
 }
 
-pub fn early_return( x:f -- result:f ) {
+pub fn early_return( x:f64 -- result:f64 ) {
 	defer {
 		999.0 print nl
 	}

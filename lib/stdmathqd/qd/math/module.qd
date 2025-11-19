@@ -6,63 +6,63 @@ const Tau = 6.283185307179586
 // Import native math functions from libstdmathqd
 import "libstdmathqd_static.a" as "math" {
 	// Trigonometric functions
-	fn sin(x:f -- result:f)
-	fn cos(x:f -- result:f)
-	fn tan(x:f -- result:f)
-	fn asin(x:f -- result:f)
-	fn acos(x:f -- result:f)
-	fn atan(x:f -- result:f)
+	fn sin(x:f64 -- result:f64)
+	fn cos(x:f64 -- result:f64)
+	fn tan(x:f64 -- result:f64)
+	fn asin(x:f64 -- result:f64)
+	fn acos(x:f64 -- result:f64)
+	fn atan(x:f64 -- result:f64)
 
 	// Power and root functions
-	fn sqrt(x:f -- result:f)
-	fn cbrt(x:f -- result:f)
-	fn pow(base:f exp:f -- result:f)
+	fn sqrt(x:f64 -- result:f64)
+	fn cbrt(x:f64 -- result:f64)
+	fn pow(base:f64 exp:f64 -- result:f64)
 
 	// Logarithmic functions
-	fn ln(x:f -- result:f)
-	fn log10(x:f -- result:f)
+	fn ln(x:f64 -- result:f64)
+	fn log10(x:f64 -- result:f64)
 
 	// Rounding functions
-	fn ceil(x:f -- result:f)
-	fn floor(x:f -- result:f)
-	fn round(x:f -- result:f)
+	fn ceil(x:f64 -- result:f64)
+	fn floor(x:f64 -- result:f64)
+	fn round(x:f64 -- result:f64)
 }
 
 // Pure Quadrate implementations (simpler than C equivalents)
 
-pub fn inc( x:i -- result:i ) {
+pub fn inc( x:i64 -- result:i64 ) {
 	// Increment integer by 1
 	1 add
 }
 
-pub fn dec( x:i -- result:i ) {
+pub fn dec( x:i64 -- result:i64 ) {
 	// Decrement integer by 1
 	1 sub
 }
 
-pub fn sq( x:f -- result:f ) {
+pub fn sq( x:f64 -- result:f64 ) {
 	// Square: x * x
 	dup mul
 }
 
-pub fn cb( x:f -- result:f ) {
+pub fn cb( x:f64 -- result:f64 ) {
 	// Cube: x * x * x
 	dup dup mul mul
 }
 
-pub fn abs( x:f -- result:f ) {
+pub fn abs( x:f64 -- result:f64 ) {
 	// Absolute value: |x|
 	dup 0.0 lt if {
 		neg
 	}
 }
 
-pub fn inv( x:f -- result:f ) {
+pub fn inv( x:f64 -- result:f64 ) {
 	// Reciprocal: 1/x
 	1.0 swap div
 }
 
-pub fn fac( n:i -- result:i ) {
+pub fn fac( n:i64 -- result:i64 ) {
 	// Factorial: n!
 	-> n
 	1 -> result
@@ -92,12 +92,12 @@ pub fn max( a:any b:any -- result:any ) {
 
 // Additional utility functions
 
-pub fn log( x:f base:f -- result:f ) {
+pub fn log( x:f64 base:f64 -- result:f64 ) {
 	// log_base(x) = ln(x) / ln(base)
 	swap ln swap ln div
 }
 
-pub fn clamp( x:f min_val:f max_val:f -- result:f ) {
+pub fn clamp( x:f64 min_val:f64 max_val:f64 -- result:f64 ) {
 	// Clamp x between min_val and max_val
 	// Inline implementation to avoid function call scoping issues
 	// Stack: x min_val max_val
@@ -112,7 +112,7 @@ pub fn clamp( x:f min_val:f max_val:f -- result:f ) {
 	min_v temp over over gt if { drop } else { nip }
 }
 
-pub fn within( x:any min_val:any max_val:any -- result:i ) {
+pub fn within( x:any min_val:any max_val:any -- result:i64 ) {
 	// Check if x is within [min_val, max_val] range (inclusive)
 	// Returns 1 (true) or 0 (false)
 	// Stack: x min_val max_val
@@ -126,7 +126,7 @@ pub fn within( x:any min_val:any max_val:any -- result:i ) {
 	and
 }
 
-pub fn lerp( a:f b:f t:f -- result:f ) {
+pub fn lerp( a:f64 b:f64 t:f64 -- result:f64 ) {
 	// Linear interpolation: a + (b - a) * t
 	// Stack: a b t
 	rot rot       // Stack: t a b
@@ -137,12 +137,12 @@ pub fn lerp( a:f b:f t:f -- result:f ) {
 	add           // Stack: (a+(b-a)*t)
 }
 
-pub fn deg_to_rad( degrees:f -- radians:f ) {
+pub fn deg_to_rad( degrees:f64 -- radians:f64 ) {
 	// radians = degrees * pi / 180
 	3.141592653589793 180 div mul
 }
 
-pub fn rad_to_deg( radians:f -- degrees:f ) {
+pub fn rad_to_deg( radians:f64 -- degrees:f64 ) {
 	// degrees = radians * 180 / pi
 	180 mul 3.141592653589793 div
 }

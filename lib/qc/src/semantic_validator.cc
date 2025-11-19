@@ -834,11 +834,11 @@ namespace Qd {
 				AstNodeParameter* param = static_cast<AstNodeParameter*>(func->inputParameters()[i]);
 				const std::string& typeStr = param->typeString();
 
-				if (typeStr == "i") {
+				if (typeStr == "i64") {
 					typeStack.push_back(StackValueType::INT);
-				} else if (typeStr == "f") {
+				} else if (typeStr == "f64") {
 					typeStack.push_back(StackValueType::FLOAT);
-				} else if (typeStr == "s") {
+				} else if (typeStr == "str") {
 					typeStack.push_back(StackValueType::STRING);
 				} else {
 					// Untyped or unknown - treat as ANY
@@ -859,13 +859,13 @@ namespace Qd {
 				AstNodeParameter* param = static_cast<AstNodeParameter*>(func->inputParameters()[i]);
 				const std::string& typeStr = param->typeString();
 
-				if (typeStr == "i") {
+				if (typeStr == "i64") {
 					sig.consumes.push_back(StackValueType::INT);
-				} else if (typeStr == "f") {
+				} else if (typeStr == "f64") {
 					sig.consumes.push_back(StackValueType::FLOAT);
-				} else if (typeStr == "s") {
+				} else if (typeStr == "str") {
 					sig.consumes.push_back(StackValueType::STRING);
-				} else if (typeStr == "p") {
+				} else if (typeStr == "ptr") {
 					sig.consumes.push_back(StackValueType::PTR);
 				} else {
 					// Untyped or unknown - use ANY
@@ -891,13 +891,13 @@ namespace Qd {
 					AstNodeParameter* param = func->inputParameters[i];
 					const std::string& typeStr = param->typeString();
 
-					if (typeStr == "i") {
+					if (typeStr == "i64") {
 						sig.consumes.push_back(StackValueType::INT);
-					} else if (typeStr == "f") {
+					} else if (typeStr == "f64") {
 						sig.consumes.push_back(StackValueType::FLOAT);
-					} else if (typeStr == "s") {
+					} else if (typeStr == "str") {
 						sig.consumes.push_back(StackValueType::STRING);
-					} else if (typeStr == "p") {
+					} else if (typeStr == "ptr") {
 						sig.consumes.push_back(StackValueType::PTR);
 					} else {
 						// Untyped or unknown - treat as ANY
@@ -910,13 +910,13 @@ namespace Qd {
 					AstNodeParameter* param = func->outputParameters[i];
 					const std::string& typeStr = param->typeString();
 
-					if (typeStr == "i") {
+					if (typeStr == "i64") {
 						sig.produces.push_back(StackValueType::INT);
-					} else if (typeStr == "f") {
+					} else if (typeStr == "f64") {
 						sig.produces.push_back(StackValueType::FLOAT);
-					} else if (typeStr == "s") {
+					} else if (typeStr == "str") {
 						sig.produces.push_back(StackValueType::STRING);
-					} else if (typeStr == "p") {
+					} else if (typeStr == "ptr") {
 						sig.produces.push_back(StackValueType::PTR);
 					} else {
 						// Untyped or unknown - treat as ANY
@@ -1152,13 +1152,13 @@ namespace Qd {
 			for (auto* paramNode : func->inputParameters()) {
 				AstNodeParameter* param = static_cast<AstNodeParameter*>(paramNode);
 				std::string typeStr = param->typeString();
-				if (typeStr == "i") {
+				if (typeStr == "i64") {
 					typeStack.push_back(StackValueType::INT);
-				} else if (typeStr == "f") {
+				} else if (typeStr == "f64") {
 					typeStack.push_back(StackValueType::FLOAT);
-				} else if (typeStr == "s") {
+				} else if (typeStr == "str") {
 					typeStack.push_back(StackValueType::STRING);
-				} else if (typeStr == "p") {
+				} else if (typeStr == "ptr") {
 					typeStack.push_back(StackValueType::PTR);
 				} else {
 					// Untyped or unknown - use ANY
@@ -1178,13 +1178,13 @@ namespace Qd {
 			for (auto* paramNode : func->inputParameters()) {
 				AstNodeParameter* param = static_cast<AstNodeParameter*>(paramNode);
 				std::string typeStr = param->typeString();
-				if (typeStr == "i") {
+				if (typeStr == "i64") {
 					sig.consumes.push_back(StackValueType::INT);
-				} else if (typeStr == "f") {
+				} else if (typeStr == "f64") {
 					sig.consumes.push_back(StackValueType::FLOAT);
-				} else if (typeStr == "s") {
+				} else if (typeStr == "str") {
 					sig.consumes.push_back(StackValueType::STRING);
-				} else if (typeStr == "p") {
+				} else if (typeStr == "ptr") {
 					sig.consumes.push_back(StackValueType::PTR);
 				} else {
 					// Untyped or unknown - use ANY
@@ -1310,11 +1310,11 @@ namespace Qd {
 				AstNodeParameter* param = static_cast<AstNodeParameter*>(func->inputParameters()[i]);
 				const std::string& typeStr = param->typeString();
 
-				if (typeStr == "i") {
+				if (typeStr == "i64") {
 					typeStack.push_back(StackValueType::INT);
-				} else if (typeStr == "f") {
+				} else if (typeStr == "f64") {
 					typeStack.push_back(StackValueType::FLOAT);
-				} else if (typeStr == "s") {
+				} else if (typeStr == "str") {
 					typeStack.push_back(StackValueType::STRING);
 				} else {
 					// Untyped or unknown - treat as ANY

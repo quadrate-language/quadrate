@@ -6,33 +6,33 @@ use math
 use bits
 
 // Basic arithmetic with stack notation
-fn add_numbers(a:i b:i -- result:i) {
+fn add_numbers(a:i64 b:i64 -- result:i64) {
 	// a and b are consumed from stack, result is produced
 	+
 }
 
-fn multiply_then_add(a:i b:i c:i -- result:i) {
+fn multiply_then_add(a:i64 b:i64 c:i64 -- result:i64) {
 	// Stack is [a, b, c] with c on top
 	// Computes (b * c) + a
 	* +
 }
 
 // Functions with float parameters
-fn multiply_floats(a:f b:f -- result:f) {
+fn multiply_floats(a:f64 b:f64 -- result:f64) {
 	*
 }
 
-fn divide_floats(a:f b:f -- result:f) {
+fn divide_floats(a:f64 b:f64 -- result:f64) {
 	/
 }
 
 // Stack manipulation operations
-fn swap_values(a:i b:i -- b:i a:i) {
+fn swap_values(a:i64 b:i64 -- b:i64 a:i64) {
 	swap
 }
 
 // Functions demonstrating stack effects
-fn square_and_double(x:i -- x2:i x_times_2:i) {
+fn square_and_double(x:i64 -- x2:i64 x_times_2:i64) {
 	// Returns x*x and x*2
 	dup
 	dup * swap
@@ -40,50 +40,50 @@ fn square_and_double(x:i -- x2:i x_times_2:i) {
 }
 
 // Min/max operations with stack notation
-fn triple_min(a:i b:i c:i -- min:i) {
+fn triple_min(a:i64 b:i64 c:i64 -- min:i64) {
 	math::min
 	math::min
 }
 
-fn triple_max(a:i b:i c:i -- max:i) {
+fn triple_max(a:i64 b:i64 c:i64 -- max:i64) {
 	math::max
 	math::max
 }
 
 // Logical operations
-fn bitwise_and_or(a:i b:i c:i -- result:i) {
+fn bitwise_and_or(a:i64 b:i64 c:i64 -- result:i64) {
 	bits::and
 	bits::or
 }
 
 // Functions demonstrating drop
-fn keep_first(a:i b:i -- a:i) {
+fn keep_first(a:i64 b:i64 -- a:i64) {
 	drop
 }
 
-fn keep_first_of_four(a:i b:i c:i d:i -- a:i) {
+fn keep_first_of_four(a:i64 b:i64 c:i64 d:i64 -- a:i64) {
 	drop2
 	drop
 }
 
 // Rotation example
-fn rotate_three(a:i b:i c:i -- b:i c:i a:i) {
+fn rotate_three(a:i64 b:i64 c:i64 -- b:i64 c:i64 a:i64) {
 	rot
 }
 
 // Mixed types
-fn int_to_float_calc(a:i b:f -- result:f) {
+fn int_to_float_calc(a:i64 b:f64 -- result:f64) {
 	// Integer is automatically promoted to float
 	+
 }
 
 // Demonstrate stack notation with no parameters
-fn get_answer( -- answer:i) {
+fn get_answer( -- answer:i64) {
 	42
 }
 
 // Consume but produce nothing
-fn consume_two(a:i b:i -- ) {
+fn consume_two(a:i64 b:i64 -- ) {
 	drop
 	drop
 }

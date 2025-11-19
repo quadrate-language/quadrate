@@ -1,30 +1,30 @@
 // Bitwise operations module
 
 import "libstdbitsqd_static.a" as "bits" {
-	fn and(a:i b:i -- result:i)
-	fn or(a:i b:i -- result:i)
-	fn xor(a:i b:i -- result:i)
-	fn not(a:i -- result:i)
-	fn lshift(value:i shift:i -- result:i)
-	fn rshift(value:i shift:i -- result:i)
+	fn and(a:i64 b:i64 -- result:i64)
+	fn or(a:i64 b:i64 -- result:i64)
+	fn xor(a:i64 b:i64 -- result:i64)
+	fn not(a:i64 -- result:i64)
+	fn lshift(value:i64 shift:i64 -- result:i64)
+	fn rshift(value:i64 shift:i64 -- result:i64)
 }
 
 // Helper functions for common bit operations (implemented in Quadrate)
 
-fn mask( value:i num_bits:i -- result:i ) {
+fn mask( value:i64 num_bits:i64 -- result:i64 ) {
 	// Keep only the bottom N bits
 	// Example: mask(0xFF, 6) = 0x3F (keeps bottom 6 bits)
 	// Create mask: (1 << num_bits) - 1
 	1 swap bits::lshift 1 sub bits::and
 }
 
-fn extract( value:i start_bit:i num_bits:i -- result:i ) {
+fn extract( value:i64 start_bit:i64 num_bits:i64 -- result:i64 ) {
 	// Extract num_bits starting from start_bit (0 = LSB)
 	// Example: extract(0b11010110, 2, 3) = 0b101 (bits 2-4)
 	swap bits::rshift swap mask
 }
 
-fn set_bits( target:i value:i start_bit:i num_bits:i -- result:i ) {
+fn set_bits( target:i64 value:i64 start_bit:i64 num_bits:i64 -- result:i64 ) {
 	// Set num_bits in target starting at start_bit to value
 	// Returns modified target
 	-> nb -> sb -> val -> tgt
@@ -42,7 +42,7 @@ fn set_bits( target:i value:i start_bit:i num_bits:i -- result:i ) {
 	val nb mask sb bits::lshift cleared bits::or
 }
 
-fn rotate_left( value:i bits:i width:i -- result:i ) {
+fn rotate_left( value:i64 bits:i64 width:i64 -- result:i64 ) {
 	// Rotate value left by bits positions within width bits
 	// Example: rotate_left(0b0011, 1, 4) = 0b0110
 	-> w -> b -> v
@@ -57,7 +57,7 @@ fn rotate_left( value:i bits:i width:i -- result:i ) {
 	high low bits::or
 }
 
-fn rotate_right( value:i bits:i width:i -- result:i ) {
+fn rotate_right( value:i64 bits:i64 width:i64 -- result:i64 ) {
 	// Rotate value right by bits positions within width bits
 	// Example: rotate_right(0b0110, 1, 4) = 0b0011
 	-> w -> b -> v
@@ -72,7 +72,7 @@ fn rotate_right( value:i bits:i width:i -- result:i ) {
 	high low bits::or
 }
 
-fn popcount( value:i -- count:i ) {
+fn popcount( value:i64 -- count:i64 ) {
 	// Count number of 1 bits (population count)
 	0 swap
 	64 0 1 for {
@@ -81,7 +81,7 @@ fn popcount( value:i -- count:i ) {
 	drop
 }
 
-fn reverse_bits( value:i width:i -- result:i ) {
+fn reverse_bits( value:i64 width:i64 -- result:i64 ) {
 	// Reverse the bottom width bits
 	// Example: reverse_bits(0b1011, 4) = 0b1101
 	-> w -> v
@@ -93,22 +93,22 @@ fn reverse_bits( value:i width:i -- result:i ) {
 	result
 }
 
-fn has_bit( value:i bit_pos:i -- flag:i ) {
+fn has_bit( value:i64 bit_pos:i64 -- flag:i64 ) {
 	// Check if bit at position is set (returns 1 or 0)
 	bits::rshift 1 bits::and
 }
 
-fn set_bit( value:i bit_pos:i -- result:i ) {
+fn set_bit( value:i64 bit_pos:i64 -- result:i64 ) {
 	// Set bit at position to 1
 	1 over bits::lshift bits::or
 }
 
-fn clear_bit( value:i bit_pos:i -- result:i ) {
+fn clear_bit( value:i64 bit_pos:i64 -- result:i64 ) {
 	// Clear bit at position to 0
 	1 swap bits::lshift bits::not bits::and
 }
 
-fn toggle_bit( value:i bit_pos:i -- result:i ) {
+fn toggle_bit( value:i64 bit_pos:i64 -- result:i64 ) {
 	// Toggle bit at position
 	1 swap bits::lshift bits::xor
 }

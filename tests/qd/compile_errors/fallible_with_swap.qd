@@ -1,6 +1,6 @@
 // Test: fallible function followed by something other than if
 
-fn safe_divide(a:i b:i -- result:i)! {
+fn safe_divide(a:i64 b:i64 -- result:i64)! {
 	dup 0 eq if {
 		drop drop
 		0

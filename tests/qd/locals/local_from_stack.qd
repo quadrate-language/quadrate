@@ -1,5 +1,5 @@
 // Test popping values from stack into local variables
-fn helper( x:i y:i -- z:i ) {
+fn helper( x:i64 y:i64 -- z:i64 ) {
     -> b
     -> a
     a b add

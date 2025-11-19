@@ -1,11 +1,11 @@
-fn validate(a:i -- result:i)! {
+fn validate(a:i64 -- result:i64)! {
 	dup 0 < if {
 		0
 		"Error occurred" 1 error
 	}
 }
 
-fn process(a:i -- result:i)! {
+fn process(a:i64 -- result:i64)! {
 	validate if {
 		2 mul
 	} else {

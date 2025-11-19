@@ -436,7 +436,7 @@ TEST(ScopedIdentifierModuleImported) {
 // Test implicit cast: int to float - should succeed with warning
 TEST(ImplicitCastIntToFloat) {
 	const char* src = R"(
-		fn add_float(a:f b:f -- result:f) {
+		fn add_float(a:f64 b:f64 -- result:f64) {
 			+
 		}
 		fn main() {
@@ -454,7 +454,7 @@ TEST(ImplicitCastIntToFloat) {
 // Test implicit cast: float to int - should succeed with warning
 TEST(ImplicitCastFloatToInt) {
 	const char* src = R"(
-		fn add_int(a:i b:i -- result:i) {
+		fn add_int(a:i64 b:i64 -- result:i64) {
 			+
 		}
 		fn main() {
@@ -472,7 +472,7 @@ TEST(ImplicitCastFloatToInt) {
 // Test werror: warnings treated as errors
 TEST(WerrorTreatsWarningsAsErrors) {
 	const char* src = R"(
-		fn add_float(a:f b:f -- result:f) {
+		fn add_float(a:f64 b:f64 -- result:f64) {
 			+
 		}
 		fn main() {
@@ -490,7 +490,7 @@ TEST(WerrorTreatsWarningsAsErrors) {
 // Test werror: clean code still passes
 TEST(WerrorCleanCodePasses) {
 	const char* src = R"(
-		fn add_int(a:i b:i -- result:i) {
+		fn add_int(a:i64 b:i64 -- result:i64) {
 			+
 		}
 		fn main() {
@@ -508,7 +508,7 @@ TEST(WerrorCleanCodePasses) {
 // Test multiple implicit casts in one call
 TEST(MultipleImplicitCasts) {
 	const char* src = R"(
-		fn mix(a:i b:f c:i -- result:f) {
+		fn mix(a:i64 b:f64 c:i64 -- result:f64) {
 			drop drop
 		}
 		fn main() {

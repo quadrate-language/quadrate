@@ -1,6 +1,6 @@
 // Test: cannot use ! on non-fallible function
 
-fn normal_add(a:i b:i -- c:i) {
+fn normal_add(a:i64 b:i64 -- c:i64) {
 	add
 }
 

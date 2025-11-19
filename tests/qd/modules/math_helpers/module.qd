@@ -1,12 +1,12 @@
 // Math helper functions
-pub fn abs( x:f -- y:f ) {
+pub fn abs( x:f64 -- y:f64 ) {
 	dup 0.0 lt
 	if {
 		neg
 	}
 }
 
-pub fn max( a:f b:f -- c:f ) {
+pub fn max( a:f64 b:f64 -- c:f64 ) {
 	dup rot dup rot
 	gt
 	if {
@@ -16,10 +16,10 @@ pub fn max( a:f b:f -- c:f ) {
 	}
 }
 
-pub fn square( x:f -- y:f ) {
+pub fn square( x:f64 -- y:f64 ) {
 	dup mul
 }
 
-pub fn add_ten( x:f -- y:f ) {
+pub fn add_ten( x:f64 -- y:f64 ) {
 	10.0 add
 }
