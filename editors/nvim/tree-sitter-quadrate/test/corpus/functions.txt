@@ -85,3 +85,77 @@ fn main( -- ) {
     body: (block
       (number)
       (identifier))))
+
+================================================================================
+Public function definition without parameters
+================================================================================
+
+pub fn double( x:f -- y:f ) {
+	dup add
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (function_definition
+    name: (identifier)
+    signature: (stack_signature
+      (parameter_list
+        (parameter
+          name: (identifier)
+          type: (type
+            (identifier))))
+      (parameter_list
+        (parameter
+          name: (identifier)
+          type: (type
+            (identifier)))))
+    body: (block
+      (builtin_operation)
+      (builtin_operation))))
+
+================================================================================
+Mixed public and private functions
+================================================================================
+
+pub fn square( x:f -- y:f ) {
+	dup mul
+}
+
+fn helper( -- ) {
+	10
+}
+
+pub fn ten() {
+	helper
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (function_definition
+    name: (identifier)
+    signature: (stack_signature
+      (parameter_list
+        (parameter
+          name: (identifier)
+          type: (type
+            (identifier))))
+      (parameter_list
+        (parameter
+          name: (identifier)
+          type: (type
+            (identifier)))))
+    body: (block
+      (builtin_operation)
+      (builtin_operation)))
+  (function_definition
+    name: (identifier)
+    signature: (stack_signature)
+    body: (block
+      (number)))
+  (function_definition
+    name: (identifier)
+    signature: (stack_signature)
+    body: (block
+      (identifier))))

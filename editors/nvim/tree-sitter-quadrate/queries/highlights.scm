@@ -1,5 +1,6 @@
 ; Keywords
 [
+  "pub"
   "fn"
   "const"
   "use"

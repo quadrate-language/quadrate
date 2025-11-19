@@ -24,7 +24,9 @@ module.exports = grammar({
     ),
 
     // Function definition: fn name( x:float y:float -- z:float ) { ... }
+    // or: pub fn name( x:float y:float -- z:float ) { ... }
     function_definition: $ => seq(
+      optional('pub'),
       'fn',
       field('name', $.identifier),
       field('signature', optional($.stack_signature)),
