@@ -29,3 +29,16 @@ if quadpm_exe.found()
 		timeout: 60
 	)
 endif
+
+# Embed examples tests
+if get_option('build_examples')
+	test('embed_tests',
+		find_program('run_embed_tests.sh'),
+		suite: 'embed',
+		workdir: meson.project_source_root(),
+		env: {
+			'LD_LIBRARY_PATH': meson.project_build_root() / 'lib/qdrt' + ':' + meson.project_build_root() / 'lib/qd',
+		},
+		timeout: 60
+	)
+endif

@@ -182,6 +182,10 @@ tests: debug
 	@echo "=== Running quadpm tests ==="
 	meson test -C $(BUILD_DIR_DEBUG) --suite quadpm --print-errorlogs
 	@echo ""
+	@echo "=== Building and testing embed examples ==="
+	@$(MAKE) examples
+	bash tests/run_embed_tests.sh
+	@echo ""
 	@echo "=========================================="
 	@echo "  Test Suite Complete"
 	@echo "=========================================="
@@ -199,11 +203,20 @@ valgrind: debug
 	else \
 		echo "⚠️  Valgrind not installed, skipping"; \
 	fi
+	@echo ""
+	@echo "=== Building and testing embed examples with valgrind ==="
+	@$(MAKE) examples
+	@if command -v valgrind >/dev/null 2>&1; then \
+		bash tests/run_embed_tests.sh valgrind; \
+	else \
+		echo "⚠️  Valgrind not installed, running without valgrind"; \
+		bash tests/run_embed_tests.sh; \
+	fi
 
-examples:
+examples: debug
 	@mkdir -p dist/examples
 	meson setup $(BUILD_DIR_DEBUG) --buildtype=debug --reconfigure -Dbuild_examples=true $(MESON_FLAGS)
-	meson compile -C $(BUILD_DIR_DEBUG) examples/embed/embed examples/hello-world/hello-world examples/hello-world-c/hello-world-c examples/bmi/bmi examples/web-server/web-server
+	meson compile -C $(BUILD_DIR_DEBUG) examples/embed/embed examples/embed/embed_copy examples/embed/multi_module_test examples/embed/multi_module_test_copy examples/embed/native_functions_test examples/embed/native_functions_test_copy examples/embed/incremental_test examples/embed/incremental_test_copy examples/hello-world/hello-world examples/hello-world-c/hello-world-c examples/bmi/bmi examples/fibonacci/fibonacci examples/threading/threading examples/web-server/web-server
 
 format:
 	find cmd lib examples -type f \( -name '*.cc' -o -name '*.h' \) -not -name 'utf8.h' -not -path '*/utf8/*' -exec clang-format -i {} +
