@@ -1,4 +1,4 @@
-fn fib(n:i -- result:i) {
+fn fib(n:i64 -- result:i64) {
 	dup 2 gte if {
 		// Recursive case: fib(n-1) + fib(n-2)
 		dup 1 - fib
