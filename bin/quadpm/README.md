@@ -32,7 +32,7 @@ quadpm ls
 
 Packages are installed to one of these locations (in order of precedence):
 
-1. `$QUADRATE_CACHE/` (if set)
+1. `$QUADRATE_PATH/` (if set)
 2. `$XDG_DATA_HOME/quadrate/packages/` (if XDG_DATA_HOME is set)
 3. `~/quadrate/packages/` (default)
 
@@ -47,13 +47,13 @@ Each package should have a `module.qd` file at the root.
 
 ### Environment Variables
 
-- **`QUADRATE_CACHE`**: Override package installation directory
+- **`QUADRATE_PATH`**: Override package installation directory
 - **`XDG_DATA_HOME`**: If set, packages install to `$XDG_DATA_HOME/quadrate/packages/`
 
 Examples:
 ```bash
-# Use custom cache location
-export QUADRATE_CACHE=/opt/quadrate-packages
+# Use custom package location
+export QUADRATE_PATH=/opt/quadrate-packages
 quadpm get https://git.sr.ht/~user/zlib@v1.2.0
 
 # Use XDG standard

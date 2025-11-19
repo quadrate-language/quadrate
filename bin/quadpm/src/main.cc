@@ -34,10 +34,10 @@ std::string getHomeDir() {
 
 // Get packages directory path
 std::string getPackagesDir() {
-	// Check QUADRATE_CACHE environment variable first
-	const char* quadrateCache = getenv("QUADRATE_CACHE");
-	if (quadrateCache) {
-		return std::string(quadrateCache);
+	// Check QUADRATE_PATH environment variable first
+	const char* quadratePath = getenv("QUADRATE_PATH");
+	if (quadratePath) {
+		return std::string(quadratePath);
 	}
 
 	// Check if XDG_DATA_HOME is set
@@ -382,7 +382,7 @@ void printUsage() {
 	std::cout << "  quadpm get https://github.com/user/http@main\n";
 	std::cout << "  quadpm list\n\n";
 	std::cout << "Environment:\n";
-	std::cout << "  QUADRATE_CACHE     Package installation directory\n";
+	std::cout << "  QUADRATE_PATH      Package installation directory\n";
 	std::cout << "  XDG_DATA_HOME      If set, uses $XDG_DATA_HOME/quadrate/packages\n";
 	std::cout << "  Default: ~/quadrate/packages\n";
 }

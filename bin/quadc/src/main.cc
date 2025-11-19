@@ -236,10 +236,10 @@ std::string expandTilde(const std::string& path) {
 
 // Get packages directory path (where quadpm installs third-party modules)
 std::string getPackagesDir() {
-	// Check QUADRATE_CACHE environment variable first
-	const char* quadrateCache = std::getenv("QUADRATE_CACHE");
-	if (quadrateCache) {
-		return std::string(quadrateCache);
+	// Check QUADRATE_PATH environment variable first
+	const char* quadratePath = std::getenv("QUADRATE_PATH");
+	if (quadratePath) {
+		return std::string(quadratePath);
 	}
 
 	// Check if XDG_DATA_HOME is set

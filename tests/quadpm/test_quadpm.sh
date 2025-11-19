@@ -129,7 +129,7 @@ fi
 # Test 6: list with empty cache
 echo ""
 echo "Test 6: list with empty cache"
-if output=$(QUADRATE_CACHE="$TEST_CACHE_DIR" "$QUADPM" list 2>&1); then
+if output=$(QUADRATE_PATH="$TEST_CACHE_DIR" "$QUADPM" list 2>&1); then
     if echo "$output" | grep -q "No packages installed"; then
         pass "Lists empty cache correctly"
     else
@@ -142,7 +142,7 @@ fi
 # Test 7: get from invalid URL
 echo ""
 echo "Test 7: get from non-existent URL"
-if output=$(QUADRATE_CACHE="$TEST_CACHE_DIR" "$QUADPM" get https://invalid.example.com/repo@v1.0.0 2>&1); then
+if output=$(QUADRATE_PATH="$TEST_CACHE_DIR" "$QUADPM" get https://invalid.example.com/repo@v1.0.0 2>&1); then
     fail "Should fail for invalid URL" "$output"
 else
     if echo "$output" | grep -q "Failed to clone"; then
@@ -165,7 +165,7 @@ git add module.qd
 git commit -q -m "Initial"
 
 # Try to get non-existent tag
-if output=$(QUADRATE_CACHE="$TEST_CACHE_DIR/cache" "$QUADPM" get "$TEST_REPO@nonexistent-tag" 2>&1); then
+if output=$(QUADRATE_PATH="$TEST_CACHE_DIR/cache" "$QUADPM" get "$TEST_REPO@nonexistent-tag" 2>&1); then
     fail "Should fail for non-existent ref" "$output"
 else
     if echo "$output" | grep -q "Failed to clone"; then
@@ -184,7 +184,7 @@ cd "$TEST_REPO"
 git tag -a v1.0.0 -m "Version 1.0.0"
 cd - > /dev/null
 
-if output=$(QUADRATE_CACHE="$TEST_CACHE_DIR/cache" "$QUADPM" get "$TEST_REPO@v1.0.0" 2>&1); then
+if output=$(QUADRATE_PATH="$TEST_CACHE_DIR/cache" "$QUADPM" get "$TEST_REPO@v1.0.0" 2>&1); then
     if echo "$output" | grep -q "✓ Installed to"; then
         if echo "$output" | grep -q "✓ Found module.qd"; then
             # Verify package was actually created
@@ -206,7 +206,7 @@ fi
 # Test 10: Duplicate installation
 echo ""
 echo "Test 10: Duplicate installation (should skip)"
-if output=$(QUADRATE_CACHE="$TEST_CACHE_DIR/cache" "$QUADPM" get "$TEST_REPO@v1.0.0" 2>&1); then
+if output=$(QUADRATE_PATH="$TEST_CACHE_DIR/cache" "$QUADPM" get "$TEST_REPO@v1.0.0" 2>&1); then
     if echo "$output" | grep -q "Package already exists"; then
         pass "Detects duplicate installation"
     else
@@ -219,7 +219,7 @@ fi
 # Test 11: list with installed package
 echo ""
 echo "Test 11: list with installed packages"
-if output=$(QUADRATE_CACHE="$TEST_CACHE_DIR/cache" "$QUADPM" list 2>&1); then
+if output=$(QUADRATE_PATH="$TEST_CACHE_DIR/cache" "$QUADPM" list 2>&1); then
     if echo "$output" | grep -q "test-repo"; then
         if echo "$output" | grep -q "v1.0.0"; then
             pass "Lists installed packages"
@@ -251,7 +251,7 @@ git commit -q -m "Initial"
 git tag -a v1.0.0 -m "Version 1.0.0"
 cd - > /dev/null
 
-if output=$(QUADRATE_CACHE="$TEST_CACHE_DIR/cache" "$QUADPM" get "$TEST_C_REPO@v1.0.0" 2>&1); then
+if output=$(QUADRATE_PATH="$TEST_CACHE_DIR/cache" "$QUADPM" get "$TEST_C_REPO@v1.0.0" 2>&1); then
     if echo "$output" | grep -q "Found src/ directory"; then
         if echo "$output" | grep -q "✓ Built"; then
             # Verify library was created
@@ -287,7 +287,7 @@ git commit -q -m "Initial"
 git tag -a v1.0.0 -m "Version 1.0.0"
 cd - > /dev/null
 
-if output=$(QUADRATE_CACHE="$TEST_CACHE_DIR/cache" "$QUADPM" get "$TEST_BAD_C_REPO@v1.0.0" 2>&1); then
+if output=$(QUADRATE_PATH="$TEST_CACHE_DIR/cache" "$QUADPM" get "$TEST_BAD_C_REPO@v1.0.0" 2>&1); then
     if echo "$output" | grep -q "✗ Failed to compile"; then
         # Should install but fail C compilation
         pass "Handles C compilation errors gracefully"
@@ -313,18 +313,18 @@ else
     fail "List with XDG_DATA_HOME failed" ""
 fi
 
-# Test 15: QUADRATE_CACHE override
+# Test 15: QUADRATE_PATH override
 echo ""
-echo "Test 15: QUADRATE_CACHE override"
+echo "Test 15: QUADRATE_PATH override"
 CUSTOM_CACHE="$TEST_CACHE_DIR/custom-cache"
-if output=$(QUADRATE_CACHE="$CUSTOM_CACHE" "$QUADPM" list 2>&1); then
+if output=$(QUADRATE_PATH="$CUSTOM_CACHE" "$QUADPM" list 2>&1); then
     if echo "$output" | grep -q "$CUSTOM_CACHE"; then
-        pass "Respects QUADRATE_CACHE"
+        pass "Respects QUADRATE_PATH"
     else
-        fail "QUADRATE_CACHE not used" "$output"
+        fail "QUADRATE_PATH not used" "$output"
     fi
 else
-    fail "List with QUADRATE_CACHE failed" ""
+    fail "List with QUADRATE_PATH failed" ""
 fi
 
 # Print summary

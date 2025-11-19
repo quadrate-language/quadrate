@@ -413,9 +413,9 @@ namespace Qd {
 			// Try 2: Third-party packages directory (installed via quadpm)
 			// Get packages directory
 			std::string packagesDir;
-			const char* quadrateCache = std::getenv("QUADRATE_CACHE");
-			if (quadrateCache) {
-				packagesDir = quadrateCache;
+			const char* quadratePath = std::getenv("QUADRATE_PATH");
+			if (quadratePath) {
+				packagesDir = quadratePath;
 			} else {
 				const char* xdgDataHome = std::getenv("XDG_DATA_HOME");
 				if (xdgDataHome) {
@@ -509,9 +509,9 @@ namespace Qd {
 
 			// Try 2: Third-party packages directory (installed via quadpm)
 			std::string packagesDir;
-			const char* quadrateCache = std::getenv("QUADRATE_CACHE");
-			if (quadrateCache) {
-				packagesDir = quadrateCache;
+			const char* quadratePath = std::getenv("QUADRATE_PATH");
+			if (quadratePath) {
+				packagesDir = quadratePath;
 			} else {
 				const char* xdgDataHome = std::getenv("XDG_DATA_HOME");
 				if (xdgDataHome) {
