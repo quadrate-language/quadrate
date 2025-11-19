@@ -1,0 +1,7 @@
+fn test( x:i65 -- result:i64 ) {
+    dup
+}
+
+fn main() {
+    42 test printv
+}

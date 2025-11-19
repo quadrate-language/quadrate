@@ -1,0 +1,1 @@
+Invalid type 'float64' in parameter 'result'. Valid types are: i64, f64, str, ptr, any

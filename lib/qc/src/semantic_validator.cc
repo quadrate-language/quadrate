@@ -126,6 +126,12 @@ namespace Qd {
 		return false;
 	}
 
+	// Validate that a type string is a valid type name
+	// Returns true if valid, false otherwise
+	static bool isValidTypeName(const std::string& typeStr) {
+		return typeStr == "i64" || typeStr == "f64" || typeStr == "str" || typeStr == "ptr" || typeStr == "any";
+	}
+
 	SemanticValidator::SemanticValidator()
 		: mFilename(nullptr), mErrorCount(0), mWarningCount(0), mWerror(false), mIsModuleFile(false) {
 	}
@@ -834,6 +840,13 @@ namespace Qd {
 				AstNodeParameter* param = static_cast<AstNodeParameter*>(func->inputParameters()[i]);
 				const std::string& typeStr = param->typeString();
 
+				// Validate type name
+				if (!isValidTypeName(typeStr)) {
+					reportError(param, ("Invalid type '" + typeStr + "' in parameter '" + param->name() +
+											   "'. Valid types are: i64, f64, str, ptr, any")
+											  .c_str());
+				}
+
 				if (typeStr == "i64") {
 					typeStack.push_back(StackValueType::INT);
 				} else if (typeStr == "f64") {
@@ -891,6 +904,13 @@ namespace Qd {
 					AstNodeParameter* param = func->inputParameters[i];
 					const std::string& typeStr = param->typeString();
 
+					// Validate type name
+					if (!isValidTypeName(typeStr)) {
+						reportError(param, ("Invalid type '" + typeStr + "' in parameter '" + param->name() +
+												   "'. Valid types are: i64, f64, str, ptr, any")
+												  .c_str());
+					}
+
 					if (typeStr == "i64") {
 						sig.consumes.push_back(StackValueType::INT);
 					} else if (typeStr == "f64") {
@@ -909,6 +929,13 @@ namespace Qd {
 				for (size_t i = 0; i < func->outputParameters.size(); i++) {
 					AstNodeParameter* param = func->outputParameters[i];
 					const std::string& typeStr = param->typeString();
+
+					// Validate type name
+					if (!isValidTypeName(typeStr)) {
+						reportError(param, ("Invalid type '" + typeStr + "' in parameter '" + param->name() +
+												   "'. Valid types are: i64, f64, str, ptr, any")
+												  .c_str());
+					}
 
 					if (typeStr == "i64") {
 						sig.produces.push_back(StackValueType::INT);
@@ -1152,6 +1179,14 @@ namespace Qd {
 			for (auto* paramNode : func->inputParameters()) {
 				AstNodeParameter* param = static_cast<AstNodeParameter*>(paramNode);
 				std::string typeStr = param->typeString();
+
+				// Validate type name
+				if (!isValidTypeName(typeStr)) {
+					reportError(param, ("Invalid type '" + typeStr + "' in parameter '" + param->name() +
+											   "'. Valid types are: i64, f64, str, ptr, any")
+											  .c_str());
+				}
+
 				if (typeStr == "i64") {
 					typeStack.push_back(StackValueType::INT);
 				} else if (typeStr == "f64") {
@@ -1178,6 +1213,14 @@ namespace Qd {
 			for (auto* paramNode : func->inputParameters()) {
 				AstNodeParameter* param = static_cast<AstNodeParameter*>(paramNode);
 				std::string typeStr = param->typeString();
+
+				// Validate type name
+				if (!isValidTypeName(typeStr)) {
+					reportError(param, ("Invalid type '" + typeStr + "' in parameter '" + param->name() +
+											   "'. Valid types are: i64, f64, str, ptr, any")
+											  .c_str());
+				}
+
 				if (typeStr == "i64") {
 					sig.consumes.push_back(StackValueType::INT);
 				} else if (typeStr == "f64") {
@@ -1189,6 +1232,19 @@ namespace Qd {
 				} else {
 					// Untyped or unknown - use ANY
 					sig.consumes.push_back(StackValueType::ANY);
+				}
+			}
+
+			// Validate declared output parameter types
+			for (auto* paramNode : func->outputParameters()) {
+				AstNodeParameter* param = static_cast<AstNodeParameter*>(paramNode);
+				std::string typeStr = param->typeString();
+
+				// Validate type name
+				if (!isValidTypeName(typeStr)) {
+					reportError(param, ("Invalid type '" + typeStr + "' in parameter '" + param->name() +
+											   "'. Valid types are: i64, f64, str, ptr, any")
+											  .c_str());
 				}
 			}
 
@@ -1309,6 +1365,13 @@ namespace Qd {
 			for (size_t i = 0; i < func->inputParameters().size(); i++) {
 				AstNodeParameter* param = static_cast<AstNodeParameter*>(func->inputParameters()[i]);
 				const std::string& typeStr = param->typeString();
+
+				// Validate type name
+				if (!isValidTypeName(typeStr)) {
+					reportError(param, ("Invalid type '" + typeStr + "' in parameter '" + param->name() +
+											   "'. Valid types are: i64, f64, str, ptr, any")
+											  .c_str());
+				}
 
 				if (typeStr == "i64") {
 					typeStack.push_back(StackValueType::INT);

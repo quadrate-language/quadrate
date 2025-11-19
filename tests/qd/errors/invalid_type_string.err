@@ -1,0 +1,1 @@
+Invalid type 'string' in parameter 's'. Valid types are: i64, f64, str, ptr, any

@@ -1,0 +1,7 @@
+fn test( s:string -- result:str ) {
+    // Should fail - 'string' is not a valid type
+}
+
+fn main() {
+    "hello" test .
+}
