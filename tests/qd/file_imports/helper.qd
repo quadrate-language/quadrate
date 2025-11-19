@@ -1,8 +1,8 @@
 // Simple helper file for testing file imports
-fn get_value( -- ) {
+pub fn get_value( -- ) {
 	42 . nl
 }
 
-fn get_ten( -- ) {
+pub fn get_ten( -- ) {
 	10 . nl
 }

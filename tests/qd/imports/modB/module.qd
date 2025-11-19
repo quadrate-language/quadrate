@@ -4,10 +4,10 @@ import "libstdfmtqd_static.a" as "fmt" {
     fn printf(format:s -- )
 }
 
-fn print_b() {
+pub fn print_b() {
     "From module B\n" fmt::printf
 }
 
-fn main() {
+pub fn main() {
     print_b
 }

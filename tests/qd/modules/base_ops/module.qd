@@ -1,14 +1,14 @@
 // Base operations module
 // Provides fundamental operations
 
-fn add_five( x:f -- y:f ) {
+pub fn add_five( x:f -- y:f ) {
 	5.0 add
 }
 
-fn multiply_by_two( x:f -- y:f ) {
+pub fn multiply_by_two( x:f -- y:f ) {
 	2.0 mul
 }
 
-fn get_hundred() {
+pub fn get_hundred() {
 	100.0
 }

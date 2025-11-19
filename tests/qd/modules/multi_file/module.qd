@@ -3,7 +3,7 @@ use arithmetic.qd
 use trigonometry.qd
 use constants.qd
 
-fn calculate( x:f -- result:f ) {
+pub fn calculate( x:f -- result:f ) {
 	1.0 add
 	2.0 mul
 	3.141592653589793 mul

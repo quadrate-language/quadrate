@@ -721,14 +721,16 @@ namespace Qd {
 		}
 
 		// Collect function definitions from the module
-		std::unordered_set<std::string> moduleFunctions;
+		std::unordered_map<std::string, bool> moduleFunctions;
 		collectModuleFunctions(moduleAstRoot, moduleFunctions);
 
 		// Store the collected functions
-		// If this module already has functions (from .qd file imports), merge with existing set
+		// If this module already has functions (from .qd file imports), merge with existing map
 		if (mModuleFunctions.find(moduleName) != mModuleFunctions.end()) {
-			// Merge: add new functions to existing set
-			mModuleFunctions[moduleName].insert(moduleFunctions.begin(), moduleFunctions.end());
+			// Merge: add new functions to existing map
+			for (const auto& func : moduleFunctions) {
+				mModuleFunctions[moduleName][func.first] = func.second;
+			}
 		} else {
 			// Create new entry
 			mModuleFunctions[moduleName] = moduleFunctions;
@@ -755,22 +757,23 @@ namespace Qd {
 		analyzeModuleFunctionSignatures(moduleAstRoot, moduleName);
 	}
 
-	void SemanticValidator::collectModuleFunctions(IAstNode* node, std::unordered_set<std::string>& functions) {
+	void SemanticValidator::collectModuleFunctions(IAstNode* node,
+												   std::unordered_map<std::string, bool>& functions) {
 		if (!node) {
 			return;
 		}
 
-		// If this is a function declaration, add it to the set
+		// If this is a function declaration, add it with its visibility
 		if (node->type() == IAstNode::Type::FUNCTION_DECLARATION) {
 			AstNodeFunctionDeclaration* func = static_cast<AstNodeFunctionDeclaration*>(node);
-			functions.insert(func->name());
+			functions[func->name()] = func->isPublic();
 		}
-		// If this is an import statement, add imported functions to the set
+		// If this is an import statement, add imported functions (always public for imported libs)
 		else if (node->type() == IAstNode::Type::IMPORT_STATEMENT) {
 			AstNodeImport* import = static_cast<AstNodeImport*>(node);
 			const auto& importedFuncs = import->functions();
 			for (const auto* func : importedFuncs) {
-				functions.insert(func->name);
+				functions[func->name] = true; // Imported C functions are always public
 			}
 		}
 
@@ -1097,13 +1100,25 @@ namespace Qd {
 			auto moduleIt = mModuleFunctions.find(scopeName);
 			if (moduleIt != mModuleFunctions.end()) {
 				const auto& functions = moduleIt->second;
-				if (functions.find(functionName) == functions.end()) {
+				auto funcIt = functions.find(functionName);
+				if (funcIt == functions.end()) {
 					std::string errorMsg = "Function or constant '";
 					errorMsg += functionName;
 					errorMsg += "' not found in module '";
 					errorMsg += scopeName;
 					errorMsg += "'";
 					reportError(scoped, errorMsg.c_str());
+				} else {
+					// Check if the function is public
+					bool isPublic = funcIt->second;
+					if (!isPublic) {
+						std::string errorMsg = "Function '";
+						errorMsg += functionName;
+						errorMsg += "' in module '";
+						errorMsg += scopeName;
+						errorMsg += "' is private and cannot be accessed from outside the module. Mark it as 'pub fn' to export it.";
+						reportError(scoped, errorMsg.c_str());
+					}
 				}
 			}
 			// If module not in mModuleFunctions, it means loadModuleDefinitions failed

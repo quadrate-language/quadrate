@@ -8,8 +8,9 @@
 namespace Qd {
 	class AstNodeFunctionDeclaration : public IAstNode {
 	public:
-		AstNodeFunctionDeclaration(const std::string& name)
-			: mName(name), mParent(nullptr), mBody(nullptr), mThrows(false), mLine(0), mColumn(0) {
+		AstNodeFunctionDeclaration(const std::string& name, bool isPublic = false)
+			: mName(name), mParent(nullptr), mBody(nullptr), mThrows(false), mIsPublic(isPublic), mLine(0),
+			  mColumn(0) {
 		}
 
 		~AstNodeFunctionDeclaration() {
@@ -113,6 +114,14 @@ namespace Qd {
 			return mThrows;
 		}
 
+		void setPublic(bool isPublic) {
+			mIsPublic = isPublic;
+		}
+
+		bool isPublic() const {
+			return mIsPublic;
+		}
+
 	private:
 		std::string mName;
 		IAstNode* mParent;
@@ -120,6 +129,7 @@ namespace Qd {
 		std::vector<IAstNode*> mInputParameters;
 		std::vector<IAstNode*> mOutputParameters;
 		bool mThrows;
+		bool mIsPublic;
 		size_t mLine;
 		size_t mColumn;
 	};

@@ -1,8 +1,8 @@
 // Trigonometric functions
-fn double_angle( x:f -- y:f ) {
+pub fn double_angle( x:f -- y:f ) {
 	2.0 mul
 }
 
-fn add_pi( x:f -- y:f ) {
+pub fn add_pi( x:f -- y:f ) {
 	3.141592653589793 add
 }

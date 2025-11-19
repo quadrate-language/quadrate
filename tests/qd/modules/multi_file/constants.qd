@@ -1,16 +1,16 @@
 // Mathematical constants
-fn pi() {
+pub fn pi() {
 	3.141592653589793
 }
 
-fn e() {
+pub fn e() {
 	2.718281828459045
 }
 
-fn tau() {
+pub fn tau() {
 	6.283185307179586
 }
 
-fn phi() {
+pub fn phi() {
 	1.618033988749895
 }

@@ -30,39 +30,39 @@ import "libstdmathqd_static.a" as "math" {
 
 // Pure Quadrate implementations (simpler than C equivalents)
 
-fn inc( x:i -- result:i ) {
+pub fn inc( x:i -- result:i ) {
 	// Increment integer by 1
 	1 add
 }
 
-fn dec( x:i -- result:i ) {
+pub fn dec( x:i -- result:i ) {
 	// Decrement integer by 1
 	1 sub
 }
 
-fn sq( x:f -- result:f ) {
+pub fn sq( x:f -- result:f ) {
 	// Square: x * x
 	dup mul
 }
 
-fn cb( x:f -- result:f ) {
+pub fn cb( x:f -- result:f ) {
 	// Cube: x * x * x
 	dup dup mul mul
 }
 
-fn abs( x:f -- result:f ) {
+pub fn abs( x:f -- result:f ) {
 	// Absolute value: |x|
 	dup 0.0 lt if {
 		neg
 	}
 }
 
-fn inv( x:f -- result:f ) {
+pub fn inv( x:f -- result:f ) {
 	// Reciprocal: 1/x
 	1.0 swap div
 }
 
-fn fac( n:i -- result:i ) {
+pub fn fac( n:i -- result:i ) {
 	// Factorial: n!
 	-> n
 	1 -> result
@@ -72,7 +72,7 @@ fn fac( n:i -- result:i ) {
 	result
 }
 
-fn min( a:any b:any -- result:any ) {
+pub fn min( a:any b:any -- result:any ) {
 	// Minimum of two values (polymorphic - works with int or float)
 	over over lt if {
 		drop
@@ -81,7 +81,7 @@ fn min( a:any b:any -- result:any ) {
 	}
 }
 
-fn max( a:any b:any -- result:any ) {
+pub fn max( a:any b:any -- result:any ) {
 	// Maximum of two values (polymorphic - works with int or float)
 	over over gt if {
 		drop
@@ -92,12 +92,12 @@ fn max( a:any b:any -- result:any ) {
 
 // Additional utility functions
 
-fn log( x:f base:f -- result:f ) {
+pub fn log( x:f base:f -- result:f ) {
 	// log_base(x) = ln(x) / ln(base)
 	swap ln swap ln div
 }
 
-fn clamp( x:f min_val:f max_val:f -- result:f ) {
+pub fn clamp( x:f min_val:f max_val:f -- result:f ) {
 	// Clamp x between min_val and max_val
 	// Inline implementation to avoid function call scoping issues
 	// Stack: x min_val max_val
@@ -112,7 +112,7 @@ fn clamp( x:f min_val:f max_val:f -- result:f ) {
 	min_v temp over over gt if { drop } else { nip }
 }
 
-fn within( x:any min_val:any max_val:any -- result:i ) {
+pub fn within( x:any min_val:any max_val:any -- result:i ) {
 	// Check if x is within [min_val, max_val] range (inclusive)
 	// Returns 1 (true) or 0 (false)
 	// Stack: x min_val max_val
@@ -126,7 +126,7 @@ fn within( x:any min_val:any max_val:any -- result:i ) {
 	and
 }
 
-fn lerp( a:f b:f t:f -- result:f ) {
+pub fn lerp( a:f b:f t:f -- result:f ) {
 	// Linear interpolation: a + (b - a) * t
 	// Stack: a b t
 	rot rot       // Stack: t a b
@@ -137,12 +137,12 @@ fn lerp( a:f b:f t:f -- result:f ) {
 	add           // Stack: (a+(b-a)*t)
 }
 
-fn deg_to_rad( degrees:f -- radians:f ) {
+pub fn deg_to_rad( degrees:f -- radians:f ) {
 	// radians = degrees * pi / 180
 	3.141592653589793 180 div mul
 }
 
-fn rad_to_deg( radians:f -- degrees:f ) {
+pub fn rad_to_deg( radians:f -- degrees:f ) {
 	// degrees = radians * 180 / pi
 	180 mul 3.141592653589793 div
 }

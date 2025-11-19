@@ -606,7 +606,8 @@ namespace Qd {
 		}
 	}
 
-	static IAstNode* parseFunctionDeclaration(u8t_scanner* scanner, ErrorReporter* errorReporter, const char* src) {
+	static IAstNode* parseFunctionDeclaration(u8t_scanner* scanner, ErrorReporter* errorReporter, const char* src,
+											   bool isPublic = false) {
 		char32_t token = u8t_scanner_scan(scanner);
 		if (token != U8T_IDENTIFIER) {
 			errorReporter->reportError(scanner, "Expected function name after 'fn'");
@@ -616,7 +617,7 @@ namespace Qd {
 
 		size_t n;
 		const char* name = u8t_scanner_token_text(scanner, &n);
-		AstNodeFunctionDeclaration* func = new AstNodeFunctionDeclaration(name);
+		AstNodeFunctionDeclaration* func = new AstNodeFunctionDeclaration(name, isPublic);
 		setNodePosition(func, scanner, src);
 
 		token = u8t_scanner_scan(scanner);
@@ -1631,8 +1632,27 @@ namespace Qd {
 			case U8T_IDENTIFIER: {
 				const char* text = u8t_scanner_token_text(&scanner, &n);
 
-				if (strcmp(text, "fn") == 0) {
-					IAstNode* func = parseFunctionDeclaration(&scanner, &errorReporter, src);
+				if (strcmp(text, "pub") == 0) {
+					// Check if next token is "fn"
+					token = u8t_scanner_scan(&scanner);
+					if (token == U8T_IDENTIFIER) {
+						const char* nextText = u8t_scanner_token_text(&scanner, &n);
+						if (strcmp(nextText, "fn") == 0) {
+							IAstNode* func = parseFunctionDeclaration(&scanner, &errorReporter, src, true);
+							if (func) {
+								func->setParent(program);
+								program->addChild(func);
+							}
+						} else {
+							errorReporter.reportError(&scanner, "Expected 'fn' after 'pub'");
+							synchronize(&scanner);
+						}
+					} else {
+						errorReporter.reportError(&scanner, "Expected 'fn' after 'pub'");
+						synchronize(&scanner);
+					}
+				} else if (strcmp(text, "fn") == 0) {
+					IAstNode* func = parseFunctionDeclaration(&scanner, &errorReporter, src, false);
 					if (func) {
 						func->setParent(program);
 						program->addChild(func);

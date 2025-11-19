@@ -139,10 +139,10 @@ else
     fail "List command failed" ""
 fi
 
-# Test 7: get from invalid URL
+# Test 7: get from invalid URL (local non-existent path, no network)
 echo ""
 echo "Test 7: get from non-existent URL"
-if output=$(QUADRATE_PATH="$TEST_CACHE_DIR" "$QUADPM" get https://invalid.example.com/repo@v1.0.0 2>&1); then
+if output=$(QUADRATE_PATH="$TEST_CACHE_DIR" "$QUADPM" get file:///nonexistent/path/to/repo@v1.0.0 2>&1); then
     fail "Should fail for invalid URL" "$output"
 else
     if echo "$output" | grep -q "Failed to clone"; then
@@ -160,6 +160,10 @@ TEST_REPO="$TEST_CACHE_DIR/test-repo"
 mkdir -p "$TEST_REPO"
 cd "$TEST_REPO"
 git init -q
+git config user.name "Test User"
+git config user.email "test@example.com"
+git config commit.gpgSign false
+git config tag.gpgSign false
 echo "fn test( -- ) { }" > module.qd
 git add module.qd
 git commit -q -m "Initial"
@@ -240,6 +244,10 @@ TEST_C_REPO="$TEST_CACHE_DIR/test-c-repo"
 mkdir -p "$TEST_C_REPO/src"
 cd "$TEST_C_REPO"
 git init -q
+git config user.name "Test User"
+git config user.email "test@example.com"
+git config commit.gpgSign false
+git config tag.gpgSign false
 echo "fn test( -- ) { }" > module.qd
 cat > src/test.c << 'EOF'
 int add(int a, int b) {
@@ -277,6 +285,10 @@ TEST_BAD_C_REPO="$TEST_CACHE_DIR/test-bad-c-repo"
 mkdir -p "$TEST_BAD_C_REPO/src"
 cd "$TEST_BAD_C_REPO"
 git init -q
+git config user.name "Test User"
+git config user.email "test@example.com"
+git config commit.gpgSign false
+git config tag.gpgSign false
 echo "fn test( -- ) { }" > module.qd
 cat > src/bad.c << 'EOF'
 #include <nonexistent.h>

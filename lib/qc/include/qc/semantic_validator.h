@@ -83,7 +83,7 @@ namespace Qd {
 		void parseModuleAndCollectFunctions(const std::string& moduleName, const std::string& source);
 
 		// Helper: Collect function definitions from a module AST
-		void collectModuleFunctions(IAstNode* node, std::unordered_set<std::string>& functions);
+		void collectModuleFunctions(IAstNode* node, std::unordered_map<std::string, bool>& functions);
 		void collectModuleConstants(IAstNode* node, std::unordered_set<std::string>& constants);
 		void collectModuleConstantValues(IAstNode* node, const std::string& moduleName);
 
@@ -156,7 +156,8 @@ namespace Qd {
 		std::unordered_set<std::string> mLoadedModuleFiles;
 
 		// Module functions: maps module name -> set of function names in that module
-		std::unordered_map<std::string, std::unordered_set<std::string>> mModuleFunctions;
+		// Maps module name -> (function name -> isPublic flag)
+		std::unordered_map<std::string, std::unordered_map<std::string, bool>> mModuleFunctions;
 
 		// Module constants: maps module name -> set of constant names in that module
 		std::unordered_map<std::string, std::unordered_set<std::string>> mModuleConstants;

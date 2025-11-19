@@ -1,16 +1,16 @@
 // Arithmetic operations
-fn increment( x:f -- y:f ) {
+pub fn increment( x:f -- y:f ) {
 	1.0 add
 }
 
-fn decrement( x:f -- y:f ) {
+pub fn decrement( x:f -- y:f ) {
 	1.0 sub
 }
 
-fn double( x:f -- y:f ) {
+pub fn double( x:f -- y:f ) {
 	2.0 mul
 }
 
-fn half( x:f -- y:f ) {
+pub fn half( x:f -- y:f ) {
 	2.0 div
 }
