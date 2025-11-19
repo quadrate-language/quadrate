@@ -223,4 +223,4 @@ These tests are automatically run by:
 
 - Ensure project is built: `make debug`
 - Check paths in test scripts
-- Verify LSP executable exists: `ls build/debug/bin/quadlsp/quadlsp`
+- Verify LSP executable exists: `ls build/debug/cmd/quadlsp/quadlsp`

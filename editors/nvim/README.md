@@ -37,7 +37,7 @@ make install
 Or use local build:
 ```bash
 make debug
-# Binary at: build/debug/bin/quadlsp/quadlsp
+# Binary at: build/debug/cmd/quadlsp/quadlsp
 ```
 
 ## Installation
@@ -158,7 +158,7 @@ If you haven't installed quadlsp system-wide, modify the cmd in `plugin/quadrate
 ```lua
 configs.quadlsp = {
   default_config = {
-    cmd = {'/path/to/quadrate/build/debug/bin/quadlsp/quadlsp'},
+    cmd = {'/path/to/quadrate/build/debug/cmd/quadlsp/quadlsp'},
     -- ... rest of config
   }
 }
@@ -167,7 +167,7 @@ configs.quadlsp = {
 Or set an alias in your shell:
 ```bash
 # In ~/.bashrc or ~/.zshrc
-alias quadlsp='/path/to/quadrate/build/debug/bin/quadlsp/quadlsp'
+alias quadlsp='/path/to/quadrate/build/debug/cmd/quadlsp/quadlsp'
 ```
 
 ### Custom Key Mappings
@@ -340,7 +340,7 @@ See [tree-sitter-quadrate/README.md](tree-sitter-quadrate/README.md) for details
 ## See Also
 
 - [Tree-sitter Grammar Documentation](tree-sitter-quadrate/README.md)
-- [Quadrate LSP Documentation](../../bin/quadlsp/README.md)
+- [Quadrate LSP Documentation](../../cmd/quadlsp/README.md)
 - [nvim-lspconfig Documentation](https://github.com/neovim/nvim-lspconfig)
 - [Neovim LSP Guide](https://neovim.io/doc/user/lsp.html)
 - [Tree-sitter Guide](https://tree-sitter.github.io/tree-sitter/)

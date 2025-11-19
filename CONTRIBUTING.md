@@ -35,7 +35,7 @@ make clean
 ```
 
 Build outputs are placed in the `dist/` directory:
-- `dist/bin/` - Executables (quadc, quadfmt)
+- `dist/bin/` - Executables (quadc, quadfmt) - built from `cmd/`
 - `dist/lib/` - Shared and static libraries (libquadrate.so, libquadrate_static.a)
 - `dist/include/` - Public headers
 

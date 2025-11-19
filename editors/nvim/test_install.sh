@@ -22,7 +22,7 @@ fi
 # Check if quadlsp is available
 if command -v quadlsp &> /dev/null; then
     echo "✓ quadlsp found in PATH"
-elif [ -f "../../build/debug/bin/quadlsp/quadlsp" ]; then
+elif [ -f "../../build/debug/cmd/quadlsp/quadlsp" ]; then
     echo "✓ quadlsp found in build directory"
     echo "  (Consider running 'make install' or adding to PATH)"
 else

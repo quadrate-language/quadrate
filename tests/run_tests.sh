@@ -13,7 +13,7 @@ source "$SCRIPT_DIR/test_utils.sh"
 MODE="${1:-qd}"  # qd, formatter, quaduses, valgrind
 
 # Configuration
-QUADC="${QUADC:-build/debug/bin/quadc/quadc}"
+QUADC="${QUADC:-build/debug/cmd/quadc/quadc}"
 QUADFMT="${QUADFMT:-dist/bin/quadfmt}"
 QUADUSES="${QUADUSES:-dist/bin/quaduses}"
 QUADRATE_ROOT="${QUADRATE_ROOT:-}"

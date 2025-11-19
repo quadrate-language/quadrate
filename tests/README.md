@@ -114,11 +114,11 @@ All tests passed!
 1. Create a `.qd` file in the appropriate subdirectory under `tests/qd/`
 2. Run the test manually to verify it works:
    ```bash
-   build/debug/bin/quadc/quadc tests/qd/category/test_name.qd -r
+   build/debug/cmd/quadc/quadc tests/qd/category/test_name.qd -r
    ```
 3. Save the expected output next to the test file:
    ```bash
-   build/debug/bin/quadc/quadc tests/qd/category/test_name.qd -r > tests/qd/category/test_name.out
+   build/debug/cmd/quadc/quadc tests/qd/category/test_name.qd -r > tests/qd/category/test_name.out
    ```
 4. Run the test suite to verify the new test passes
 

@@ -589,10 +589,10 @@ class ExtendedLSPTester:
 def main():
     # Find LSP executable
     possible_paths = [
-        Path("build/debug/bin/quadlsp/quadlsp"),
-        Path("build/release/bin/quadlsp/quadlsp"),
-        Path("bin/quadlsp/quadlsp"),
-        Path("../../../bin/quadlsp/quadlsp"),
+        Path("build/debug/cmd/quadlsp/quadlsp"),
+        Path("build/release/cmd/quadlsp/quadlsp"),
+        Path("cmd/quadlsp/quadlsp"),
+        Path("../../../cmd/quadlsp/quadlsp"),
     ]
 
     lsp_path = None

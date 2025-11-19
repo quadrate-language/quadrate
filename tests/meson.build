@@ -17,7 +17,7 @@ test('qd_tests',
 )
 
 # quadpm tests
-quadpm_exe = find_program('quadpm', required: false, dirs: meson.project_build_root() / 'bin/quadpm')
+quadpm_exe = find_program('quadpm', required: false, dirs: meson.project_build_root() / 'cmd/quadpm')
 if quadpm_exe.found()
 	test('quadpm_tests',
 		find_program('quadpm/test_quadpm.sh'),

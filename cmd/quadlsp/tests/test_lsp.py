@@ -234,10 +234,10 @@ class LSPTester:
 def main():
     # Find LSP executable - check multiple possible locations
     possible_paths = [
-        Path("build/debug/bin/quadlsp/quadlsp"),  # From project root
-        Path("build/release/bin/quadlsp/quadlsp"),  # From project root
-        Path("bin/quadlsp/quadlsp"),  # From build directory (when run by meson)
-        Path("../../../bin/quadlsp/quadlsp"),  # Relative from test location
+        Path("build/debug/cmd/quadlsp/quadlsp"),  # From project root
+        Path("build/release/cmd/quadlsp/quadlsp"),  # From project root
+        Path("cmd/quadlsp/quadlsp"),  # From build directory (when run by meson)
+        Path("../../../cmd/quadlsp/quadlsp"),  # Relative from test location
     ]
 
     lsp_path = None

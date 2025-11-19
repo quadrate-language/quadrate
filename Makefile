@@ -17,12 +17,12 @@ debug:
 	meson setup $(BUILD_DIR_DEBUG) --buildtype=debug $(MESON_FLAGS)
 	meson compile -C $(BUILD_DIR_DEBUG)
 	@mkdir -p dist/bin dist/lib dist/include
-	@cp -f $(BUILD_DIR_DEBUG)/bin/quadc/quadc dist/bin/
-	@cp -f $(BUILD_DIR_DEBUG)/bin/quadfmt/quadfmt dist/bin/
-	@cp -f $(BUILD_DIR_DEBUG)/bin/quadlsp/quadlsp dist/bin/
-	@cp -f $(BUILD_DIR_DEBUG)/bin/quadpm/quadpm dist/bin/
-	@cp -f $(BUILD_DIR_DEBUG)/bin/quaduses/quaduses dist/bin/
-	@cp -f $(BUILD_DIR_DEBUG)/bin/quadrate/quadrate dist/bin/
+	@cp -f $(BUILD_DIR_DEBUG)/cmd/quadc/quadc dist/bin/
+	@cp -f $(BUILD_DIR_DEBUG)/cmd/quadfmt/quadfmt dist/bin/
+	@cp -f $(BUILD_DIR_DEBUG)/cmd/quadlsp/quadlsp dist/bin/
+	@cp -f $(BUILD_DIR_DEBUG)/cmd/quadpm/quadpm dist/bin/
+	@cp -f $(BUILD_DIR_DEBUG)/cmd/quaduses/quaduses dist/bin/
+	@cp -f $(BUILD_DIR_DEBUG)/cmd/quadrate/quadrate dist/bin/
 	@cp -f $(BUILD_DIR_DEBUG)/lib/qdrt/libqdrt.so dist/lib/
 	@echo "Creating full archive for libqdrt_static.a..."
 	@rm -f dist/lib/libqdrt_static.a && cd $(BUILD_DIR_DEBUG)/lib/qdrt && echo "Files in thin archive:" && ar -t libqdrt_static.a | head -3 && ar rcs $(CURDIR)/dist/lib/libqdrt_static.a $$(ar -t libqdrt_static.a) && echo "Archive created successfully"
@@ -89,12 +89,12 @@ release:
 	meson setup $(BUILD_DIR_RELEASE) --buildtype=release $(MESON_FLAGS)
 	meson compile -C $(BUILD_DIR_RELEASE)
 	@mkdir -p dist/bin dist/lib dist/include
-	@cp -f $(BUILD_DIR_RELEASE)/bin/quadc/quadc dist/bin/
-	@cp -f $(BUILD_DIR_RELEASE)/bin/quadfmt/quadfmt dist/bin/
-	@cp -f $(BUILD_DIR_RELEASE)/bin/quadlsp/quadlsp dist/bin/
-	@cp -f $(BUILD_DIR_RELEASE)/bin/quadpm/quadpm dist/bin/
-	@cp -f $(BUILD_DIR_RELEASE)/bin/quaduses/quaduses dist/bin/
-	@cp -f $(BUILD_DIR_RELEASE)/bin/quadrate/quadrate dist/bin/
+	@cp -f $(BUILD_DIR_RELEASE)/cmd/quadc/quadc dist/bin/
+	@cp -f $(BUILD_DIR_RELEASE)/cmd/quadfmt/quadfmt dist/bin/
+	@cp -f $(BUILD_DIR_RELEASE)/cmd/quadlsp/quadlsp dist/bin/
+	@cp -f $(BUILD_DIR_RELEASE)/cmd/quadpm/quadpm dist/bin/
+	@cp -f $(BUILD_DIR_RELEASE)/cmd/quaduses/quaduses dist/bin/
+	@cp -f $(BUILD_DIR_RELEASE)/cmd/quadrate/quadrate dist/bin/
 	@cp -f $(BUILD_DIR_RELEASE)/lib/qdrt/libqdrt.so dist/lib/
 	@echo "Creating full archive for libqdrt_static.a (release)..."
 	@rm -f dist/lib/libqdrt_static.a && cd $(BUILD_DIR_RELEASE)/lib/qdrt && ar rcs $(CURDIR)/dist/lib/libqdrt_static.a $$(ar -t libqdrt_static.a) && echo "Archive created successfully"
@@ -171,7 +171,7 @@ tests: debug
 	fi
 	@echo ""
 	@echo "=== Running Quadrate language tests ==="
-	QUADC=$(BUILD_DIR_DEBUG)/bin/quadc/quadc bash tests/run_tests.sh qd || true
+	QUADC=$(BUILD_DIR_DEBUG)/cmd/quadc/quadc bash tests/run_tests.sh qd || true
 	@echo ""
 	@echo "=== Running formatter tests ==="
 	bash tests/run_tests.sh formatter
@@ -191,7 +191,7 @@ valgrind: debug
 	meson test -C $(BUILD_DIR_DEBUG) test_runtime test_ast test_semantic_validator --setup=valgrind --print-errorlogs
 	@echo ""
 	@echo "=== Running Quadrate language tests with valgrind ==="
-	QUADC=$(BUILD_DIR_DEBUG)/bin/quadc/quadc bash tests/run_tests.sh valgrind
+	QUADC=$(BUILD_DIR_DEBUG)/cmd/quadc/quadc bash tests/run_tests.sh valgrind
 	@echo ""
 	@echo "=== Running LSP tests with valgrind ==="
 	@if command -v valgrind >/dev/null 2>&1; then \
@@ -206,7 +206,7 @@ examples:
 	meson compile -C $(BUILD_DIR_DEBUG) examples/embed/embed examples/hello-world/hello-world examples/hello-world-c/hello-world-c examples/bmi/bmi examples/web-server/web-server
 
 format:
-	find bin lib examples -type f \( -name '*.cc' -o -name '*.h' \) -not -name 'utf8.h' -not -path '*/utf8/*' -exec clang-format -i {} +
+	find cmd lib examples -type f \( -name '*.cc' -o -name '*.h' \) -not -name 'utf8.h' -not -path '*/utf8/*' -exec clang-format -i {} +
 
 install: release
 	install -d $(DESTDIR)$(PREFIX)/bin

@@ -33,7 +33,7 @@ add_project_arguments(cpp_args, language: 'cpp')
 
 # Subdirectories
 subdir('lib')
-subdir('bin')
+subdir('cmd')
 subdir('tests')
 
 # Editor integrations (optional tests)

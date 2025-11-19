@@ -19,7 +19,7 @@ static bool runLspTest(const std::string& input, const std::string& expectedSubs
 	rewind(tmpInput);
 
 	// Run the LSP server with input from temp file
-	std::string command = "build/debug/bin/quadlsp/quadlsp < /dev/stdin";
+	std::string command = "build/debug/cmd/quadlsp/quadlsp < /dev/stdin";
 	FILE* pipe = popen(command.c_str(), "r");
 	if (!pipe) {
 		fclose(tmpInput);

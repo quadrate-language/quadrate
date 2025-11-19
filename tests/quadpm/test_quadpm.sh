@@ -16,7 +16,7 @@ TESTS_PASSED=0
 TESTS_FAILED=0
 
 # Get quadpm binary path (convert to absolute path)
-QUADPM="${QUADPM:-build/debug/bin/quadpm/quadpm}"
+QUADPM="${QUADPM:-build/debug/cmd/quadpm/quadpm}"
 # Convert to absolute path if relative
 if [[ "$QUADPM" != /* ]]; then
     QUADPM="$(pwd)/$QUADPM"

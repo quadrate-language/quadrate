@@ -17,7 +17,7 @@ bash tests/run_tests.sh valgrind
 
 ## Environment Variables
 
-- `QUADC` - Path to quadc compiler (default: `build/debug/bin/quadc/quadc`)
+- `QUADC` - Path to quadc compiler (default: `build/debug/cmd/quadc/quadc`)
 - `QUADFMT` - Path to quadfmt formatter (default: `dist/bin/quadfmt`)
 - `QUADRATE_ROOT` - Path to standard library (default: `lib/stdqd/qd`)
 - `QUADRATE_LIBDIR` - Path to libraries (default: `dist/lib`)

@@ -108,7 +108,7 @@ All integrations use the `quadlsp` Language Server Protocol server.
 make install
 ```
 
-This installs `quadlsp` to `/usr/bin/quadlsp`.
+This installs `quadlsp` to `/u../cmd/quadlsp`.
 
 ### Features
 
@@ -117,7 +117,7 @@ This installs `quadlsp` to `/usr/bin/quadlsp`.
 - **Formatting**: Document formatting support (stub)
 - **Protocol**: Full LSP compliance with extensive test coverage
 
-See [../bin/quadlsp/README.md](../bin/quadlsp/README.md) for more details.
+See [../cmd/quadlsp/README.md](../cmd/quadlsp/README.md) for more details.
 
 ## Contributing
 
