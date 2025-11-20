@@ -177,6 +177,12 @@ namespace Qd {
 
 		// Format input parameters
 		const auto& inputs = func->inputParameters();
+
+		// Add space after '(' if no input parameters
+		if (inputs.empty()) {
+			write(" ");
+		}
+
 		for (size_t i = 0; i < inputs.size(); i++) {
 			if (i > 0) {
 				write(" ");
@@ -203,6 +209,11 @@ namespace Qd {
 				write(":");
 				write(param->typeString());
 			}
+		}
+
+		// Add space before ')' if no output parameters
+		if (outputs.empty()) {
+			write(" ");
 		}
 
 		write(") {");
@@ -1053,6 +1064,12 @@ namespace Qd {
 
 			// Format input parameters
 			const auto& inputs = func->inputParameters;
+
+			// Add space after '(' if no input parameters
+			if (inputs.empty()) {
+				write(" ");
+			}
+
 			for (size_t i = 0; i < inputs.size(); i++) {
 				if (i > 0) {
 					write(" ");
@@ -1079,6 +1096,11 @@ namespace Qd {
 					write(":");
 					write(param->typeString());
 				}
+			}
+
+			// Add space before ')' if no output parameters
+			if (outputs.empty()) {
+				write(" ");
 			}
 
 			write(")");

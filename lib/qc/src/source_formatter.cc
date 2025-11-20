@@ -80,71 +80,52 @@ namespace Qd {
 		return "use " + moduleName;
 	}
 
-	// Helper to normalize spacing around "--" in function signature
-	static std::string normalizeStackNotation(const std::string& sig) {
-		std::string result = sig;
-
-		// Find all occurrences of "--" and ensure they have spaces on both sides
-		size_t pos = 0;
-		while ((pos = result.find("--", pos)) != std::string::npos) {
-			// Check if there's a space before "--"
-			bool hasSpaceBefore = (pos > 0 && std::isspace(static_cast<unsigned char>(result[pos - 1])));
-			// Check if there's a space after "--"
-			bool hasSpaceAfter = (pos + 2 < result.length() && std::isspace(static_cast<unsigned char>(result[pos + 2])));
-
-			// If missing space before, add it
-			if (!hasSpaceBefore && pos > 0) {
-				result.insert(pos, " ");
-				pos++; // Adjust position after insertion
-			}
-
-			// If missing space after, add it
-			if (!hasSpaceAfter && pos + 2 < result.length()) {
-				result.insert(pos + 2, " ");
-			}
-
-			// Move past this "--"
-			pos += 2;
-		}
-
-		return result;
-	}
-
 	// Format a function signature line
 	static std::string formatFunctionSignature(const std::string& line) {
 		std::string trimmed = trim(line);
 
-		// Must start with "fn "
-		if (!startsWithKeyword(trimmed, "fn")) {
+		// Check for optional "pub" keyword
+		bool isPublic = startsWithKeyword(trimmed, "pub");
+		std::string workingLine = trimmed;
+		if (isPublic) {
+			// Skip past "pub " to find "fn"
+			size_t pubEnd = trimmed.find("pub");
+			if (pubEnd != std::string::npos) {
+				workingLine = trim(trimmed.substr(pubEnd + 3));
+			}
+		}
+
+		// Must start with "fn " (after optional "pub")
+		if (!startsWithKeyword(workingLine, "fn")) {
 			return line;
 		}
 
 		// Find the function name, parameters, and opening brace
-		size_t fnPos = trimmed.find("fn ");
+		size_t fnPos = workingLine.find("fn ");
 		if (fnPos == std::string::npos) {
 			return line;
 		}
 
 		size_t nameStart = fnPos + 3;
-		while (nameStart < trimmed.length() && std::isspace(static_cast<unsigned char>(trimmed[nameStart]))) {
+		while (nameStart < workingLine.length() && std::isspace(static_cast<unsigned char>(workingLine[nameStart]))) {
 			nameStart++;
 		}
 
-		size_t parenPos = trimmed.find('(', nameStart);
+		size_t parenPos = workingLine.find('(', nameStart);
 		if (parenPos == std::string::npos) {
 			return line;
 		}
 
-		std::string name = trim(trimmed.substr(nameStart, parenPos - nameStart));
+		std::string name = trim(workingLine.substr(nameStart, parenPos - nameStart));
 
 		// Find matching closing paren
 		int depth = 0;
 		size_t closeParenPos = parenPos;
-		for (size_t i = parenPos; i < trimmed.length(); i++) {
-			if (trimmed[i] == '(') {
+		for (size_t i = parenPos; i < workingLine.length(); i++) {
+			if (workingLine[i] == '(') {
 				depth++;
 			}
-			if (trimmed[i] == ')') {
+			if (workingLine[i] == ')') {
 				depth--;
 				if (depth == 0) {
 					closeParenPos = i;
@@ -158,40 +139,71 @@ namespace Qd {
 		}
 
 		// Extract signature part (everything between parens)
-		std::string signature = trimmed.substr(parenPos + 1, closeParenPos - parenPos - 1);
+		std::string signature = workingLine.substr(parenPos + 1, closeParenPos - parenPos - 1);
 		std::string formattedSig = trim(signature);
 
-		// Normalize spacing around "--" to ensure spaces on both sides
-		formattedSig = normalizeStackNotation(formattedSig);
+		// Find the "--" separator to determine if inputs/outputs are present
+		size_t dashPos = formattedSig.find("--");
+		bool hasInputs = false;
+		bool hasOutputs = false;
 
-		// Special case: if signature contains only "--" (with possible whitespace),
-		// format as " -- " to match expected style for empty parameters
-		std::string sigNoSpace = formattedSig;
-		sigNoSpace.erase(
-				std::remove_if(sigNoSpace.begin(), sigNoSpace.end(), [](unsigned char c) { return std::isspace(c); }),
-				sigNoSpace.end());
+		if (dashPos != std::string::npos) {
+			// Check if there are non-whitespace characters before "--"
+			std::string beforeDash = formattedSig.substr(0, dashPos);
+			std::string trimmedInputs = trim(beforeDash);
+			hasInputs = (trimmedInputs.length() > 0);
 
-		if (sigNoSpace == "--") {
-			formattedSig = " -- ";
+			// Check if there are non-whitespace characters after "--"
+			std::string afterDash = formattedSig.substr(dashPos + 2);
+			std::string trimmedOutputs = trim(afterDash);
+			hasOutputs = (trimmedOutputs.length() > 0);
+
+			// Build formatted signature with proper spacing rules:
+			// - Space after '(' if no inputs
+			// - Always space before and after '--'
+			// - Space before ')' if no outputs (provided by space after '--')
+			std::string result;
+
+			// Build: [space] + inputs + space + "--"
+			if (!hasInputs) {
+				result = " --";
+			} else {
+				result = trimmedInputs + " --";
+			}
+
+			// Add space after '--'
+			result += " ";
+
+			// Add outputs if present (space after '--' becomes space before ')')
+			if (hasOutputs) {
+				result += trimmedOutputs;
+			}
+
+			formattedSig = result;
 		}
 
 		// Check for '!' after the closing paren (error-returning function)
 		std::string suffix;
 		size_t pos = closeParenPos + 1;
-		while (pos < trimmed.length() && std::isspace(trimmed[pos])) {
+		while (pos < workingLine.length() && std::isspace(workingLine[pos])) {
 			pos++;
 		}
-		if (pos < trimmed.length() && trimmed[pos] == '!') {
+		if (pos < workingLine.length() && workingLine[pos] == '!') {
 			suffix = "!";
 			pos++;
 		}
 
 		// Check for opening brace after any suffix
-		size_t bracePos = trimmed.find('{', pos);
+		size_t bracePos = workingLine.find('{', pos);
 		bool hasBrace = (bracePos != std::string::npos);
 
-		// Format: fn name( params )! {
-		std::string result = "fn " + name + "(" + formattedSig + ")" + suffix;
+		// Format: [pub] fn name( params )! {
+		std::string result;
+		if (isPublic) {
+			result = "pub fn " + name + "(" + formattedSig + ")" + suffix;
+		} else {
+			result = "fn " + name + "(" + formattedSig + ")" + suffix;
+		}
 		if (hasBrace) {
 			result += " {";
 		}
@@ -487,7 +499,7 @@ namespace Qd {
 			}
 
 			// Format function signatures
-			if (startsWithKeyword(trimmed, "fn")) {
+			if (startsWithKeyword(trimmed, "fn") || startsWithKeyword(trimmed, "pub")) {
 				std::string formatted = formatFunctionSignature(line);
 				// Write with current indent
 				for (int i = 0; i < indentLevel; i++) {
