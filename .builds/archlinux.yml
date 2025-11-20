@@ -1,4 +1,8 @@
 image: archlinux
+
+secrets:
+  - ea8ca0d9-1859-4db5-bb99-8f12baf60b59
+
 packages:
   - clang
   - cmake
@@ -7,10 +11,15 @@ packages:
   - nodejs
   - tree-sitter-cli
   - valgrind
+
 sources:
-  - https://git.sr.ht/~klahr/quadrate
+  - git+ssh://git@git.sr.ht/~klahr/quadrate
   - https://git.sr.ht/~klahr/libu8t
   - https://git.sr.ht/~klahr/unit-check
+
+environment:
+  GIT_SSH_COMMAND: "ssh -o StrictHostKeyChecking=no"
+
 tasks:
   - setup_unitcheck: |
       cd unit-check
@@ -36,6 +45,13 @@ tasks:
       cd quadrate
       export DEBUGINFOD_URLS="https://debuginfod.archlinux.org"
       make valgrind
+  - mirror-to-github: |
+      cd ~/quadrate
+      ssh-keyscan github.com >> ~/.ssh/known_hosts
+      git remote add github git@github.com:quadrate-language/quadrate.git || \
+        git remote set-url github git@github.com:quadrate-language/quadrate.git
+      git push --mirror github
+
 triggers:
   - action: email
     condition: failure
