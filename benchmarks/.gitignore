@@ -1,0 +1,6 @@
+# Compiled binaries
+arithmetic_qd
+arithmetic_c
+arithmetic_rust
+arithmetic_go
+*.out

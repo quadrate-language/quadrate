@@ -1,0 +1,48 @@
+use time
+use fmt
+
+// Benchmark: tight arithmetic loop
+fn benchmark_arithmetic(iterations:i64 -- result:i64) {
+    0 -> sum
+    0 swap 1 for {
+        sum $ add $ mul 3 add 7 mod -> sum
+    }
+    sum
+}
+
+// Benchmark: recursive fibonacci
+fn fib(n:i64 -- result:i64) {
+    dup 2 lt if {
+        // n < 2, return n
+    } else {
+        dup 1 sub fib
+        swap 2 sub fib
+        add
+    }
+}
+
+fn main( -- ) {
+    "=== Quadrate Benchmarks ===\n" fmt::printf
+    
+    // Benchmark 1: Arithmetic loop (10 million iterations)
+    10000000 -> iterations
+    
+    time::now -> start
+    iterations benchmark_arithmetic -> result
+    time::now start - -> elapsed
+    
+    iterations "Arithmetic loop (%d iterations):\n" fmt::printf
+    elapsed 1000000 div "  Time: %d ms\n" fmt::printf
+    result "  Result: %d\n" fmt::printf
+    
+    // Benchmark 2: Recursive fibonacci
+    35 -> n
+    
+    time::now -> start
+    n fib -> result
+    time::now start - -> elapsed
+    
+    n "Fibonacci (n=%d):\n" fmt::printf
+    elapsed 1000000 div "  Time: %d ms\n" fmt::printf
+    result "  Result: %d\n" fmt::printf
+}
