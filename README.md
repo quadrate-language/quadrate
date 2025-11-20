@@ -423,9 +423,9 @@ use net
 use fmt
 
 fn handle_client(client:i64 -- ) {
-    "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\n\r\nHello, World!"
-    client net::send drop
-    client net::close
+    dup "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\n\r\nHello, World!"
+    net::send drop
+    net::close
 }
 
 fn main( -- ) {
