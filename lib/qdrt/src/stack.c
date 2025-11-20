@@ -5,11 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-struct qd_stack {
-	qd_stack_element_t* data;
-	size_t capacity;
-	size_t size;
-};
+// Stack structure is now defined in the header for inline access
 
 qd_stack_error qd_stack_init(qd_stack** stack, size_t capacity) {
 	if (stack == NULL) {

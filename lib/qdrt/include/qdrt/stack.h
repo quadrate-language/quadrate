@@ -62,12 +62,16 @@ typedef struct {
 } qd_stack_element_t;
 
 /**
- * @brief Opaque stack structure
+ * @brief Stack structure
  *
- * The internal structure is hidden to maintain encapsulation.
- * Use the provided functions to interact with the stack.
+ * Exposed for performance-critical inline operations in LLVM codegen.
+ * Direct manipulation should be done carefully to avoid corrupting the stack.
  */
-typedef struct qd_stack qd_stack;
+typedef struct qd_stack {
+	qd_stack_element_t* data;  ///< Array of stack elements
+	size_t capacity;            ///< Maximum stack capacity
+	size_t size;                ///< Current number of elements
+} qd_stack;
 
 /**
  * @brief Initialize a new stack with the specified capacity

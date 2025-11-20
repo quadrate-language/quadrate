@@ -156,6 +156,12 @@ namespace Qd {
 		void generateLocal(AstNodeLocal* local, llvm::Value* ctx);
 		void generateLocalCleanup();
 		void generateCastInstructions(const std::vector<CastDirection>& casts, llvm::Value* ctx);
+
+		// Inline stack operations (performance optimization)
+		void generateInlinePushInt(llvm::Value* ctx, int64_t value);
+		void generateInlineIntAdd(llvm::Value* ctx);
+		void generateInlineIntSub(llvm::Value* ctx);
+		void generateInlineIntMul(llvm::Value* ctx);
 	};
 
 	void LlvmGenerator::Impl::setupRuntimeDeclarations() {
@@ -366,14 +372,206 @@ namespace Qd {
 		}
 	}
 
+	void LlvmGenerator::Impl::generateInlinePushInt(llvm::Value* ctx, int64_t value) {
+		// Inline implementation of qd_push_i to eliminate function call overhead
+		// This directly manipulates the stack structure:
+		// 1. Get ctx->st (qd_stack* at offset 0 in qd_context)
+		// 2. Get st->size, st->data
+		// 3. Calculate &data[size]
+		// 4. Store value, type, is_error_tainted
+		// 5. Increment size
+
+		// Define qd_context structure: { qd_stack* st, ... }
+		llvm::Type* contextTy = llvm::StructType::get(*context, {llvm::PointerType::get(*context, 0)}, false);
+
+		// Get ctx->st (field 0 of qd_context)
+		llvm::Value* stPtr = builder->CreateStructGEP(contextTy, ctx, 0, "st_ptr");
+		llvm::Value* st = builder->CreateLoad(llvm::PointerType::get(*context, 0), stPtr, "st");
+
+		// Define qd_stack structure: { qd_stack_element_t* data, size_t capacity, size_t size }
+		llvm::Type* stackTy = llvm::StructType::get(*context,
+				{
+						llvm::PointerType::get(*context, 0), // data (opaque pointer)
+						builder->getInt64Ty(),               // capacity
+						builder->getInt64Ty()                // size
+				},
+				false);
+
+		// Get st->size (field 2)
+		llvm::Value* sizePtr = builder->CreateStructGEP(stackTy, st, 2, "size_ptr");
+		llvm::Value* size = builder->CreateLoad(builder->getInt64Ty(), sizePtr, "size");
+
+		// Get st->data (field 0)
+		llvm::Value* dataPtr = builder->CreateStructGEP(stackTy, st, 0, "data_ptr");
+		llvm::Value* data = builder->CreateLoad(llvm::PointerType::get(*context, 0), dataPtr, "data");
+
+		// Calculate &data[size]
+		llvm::Value* elemPtr = builder->CreateGEP(stackElementTy, data, size, "elem_ptr");
+
+		// Set element value: elem->value.i = value (field 0)
+		llvm::Value* valuePtr = builder->CreateStructGEP(stackElementTy, elemPtr, 0, "value_ptr");
+		llvm::Value* valueiPtr = builder->CreateBitCast(valuePtr, llvm::PointerType::get(*context, 0));
+		builder->CreateStore(builder->getInt64(static_cast<uint64_t>(value)), valueiPtr);
+
+		// Set element type: elem->type = QD_STACK_TYPE_INT (0) (field 1)
+		llvm::Value* typePtr = builder->CreateStructGEP(stackElementTy, elemPtr, 1, "type_ptr");
+		builder->CreateStore(builder->getInt32(0), typePtr);
+
+		// Set element is_error_tainted: elem->is_error_tainted = false (field 2)
+		llvm::Value* taintedPtr = builder->CreateStructGEP(stackElementTy, elemPtr, 2, "tainted_ptr");
+		builder->CreateStore(builder->getInt1(false), taintedPtr);
+
+		// Increment size: st->size++
+		llvm::Value* newSize = builder->CreateAdd(size, builder->getInt64(1), "new_size");
+		builder->CreateStore(newSize, sizePtr);
+	}
+
+	void LlvmGenerator::Impl::generateInlineIntAdd(llvm::Value* ctx) {
+		// Inline implementation of integer add: ( a:int b:int -- result:int )
+		// Pops two integers from stack, adds them, pushes result
+		// Assumes both operands are integers (no type checking for performance)
+
+		// Get ctx->st
+		llvm::Type* contextTy = llvm::StructType::get(*context, {llvm::PointerType::get(*context, 0)}, false);
+		llvm::Value* stPtr = builder->CreateStructGEP(contextTy, ctx, 0, "st_ptr");
+		llvm::Value* st = builder->CreateLoad(llvm::PointerType::get(*context, 0), stPtr, "st");
+
+		// Get stack structure
+		llvm::Type* stackTy = llvm::StructType::get(*context,
+				{
+						llvm::PointerType::get(*context, 0),
+						builder->getInt64Ty(),
+						builder->getInt64Ty()
+				},
+				false);
+
+		// Get st->size
+		llvm::Value* sizePtr = builder->CreateStructGEP(stackTy, st, 2, "size_ptr");
+		llvm::Value* size = builder->CreateLoad(builder->getInt64Ty(), sizePtr, "size");
+
+		// Get st->data
+		llvm::Value* dataPtr = builder->CreateStructGEP(stackTy, st, 0, "data_ptr");
+		llvm::Value* data = builder->CreateLoad(llvm::PointerType::get(*context, 0), dataPtr, "data");
+
+		// Load first operand: data[size - 2]
+		llvm::Value* idx1 = builder->CreateSub(size, builder->getInt64(2), "idx1");
+		llvm::Value* elem1Ptr = builder->CreateGEP(stackElementTy, data, idx1, "elem1_ptr");
+		llvm::Value* value1Ptr = builder->CreateStructGEP(stackElementTy, elem1Ptr, 0, "value1_ptr");
+		llvm::Value* value1iPtrCast = builder->CreateBitCast(value1Ptr, llvm::PointerType::get(*context, 0));
+		llvm::Value* value1 = builder->CreateLoad(builder->getInt64Ty(), value1iPtrCast, "value1");
+
+		// Load second operand: data[size - 1]
+		llvm::Value* idx2 = builder->CreateSub(size, builder->getInt64(1), "idx2");
+		llvm::Value* elem2Ptr = builder->CreateGEP(stackElementTy, data, idx2, "elem2_ptr");
+		llvm::Value* value2Ptr = builder->CreateStructGEP(stackElementTy, elem2Ptr, 0, "value2_ptr");
+		llvm::Value* value2iPtrCast = builder->CreateBitCast(value2Ptr, llvm::PointerType::get(*context, 0));
+		llvm::Value* value2 = builder->CreateLoad(builder->getInt64Ty(), value2iPtrCast, "value2");
+
+		// Perform addition
+		llvm::Value* result = builder->CreateAdd(value1, value2, "add_result");
+
+		// Store result at data[size - 2]
+		builder->CreateStore(result, value1iPtrCast);
+
+		// Update size: size - 1 (net effect: pop 2, push 1)
+		llvm::Value* newSize = builder->CreateSub(size, builder->getInt64(1), "new_size");
+		builder->CreateStore(newSize, sizePtr);
+	}
+
+	void LlvmGenerator::Impl::generateInlineIntSub(llvm::Value* ctx) {
+		// Inline implementation of integer subtract: ( a:int b:int -- result:int )
+		// Same as add, but with subtraction
+
+		llvm::Type* contextTy = llvm::StructType::get(*context, {llvm::PointerType::get(*context, 0)}, false);
+		llvm::Value* stPtr = builder->CreateStructGEP(contextTy, ctx, 0, "st_ptr");
+		llvm::Value* st = builder->CreateLoad(llvm::PointerType::get(*context, 0), stPtr, "st");
+
+		llvm::Type* stackTy = llvm::StructType::get(*context,
+				{
+						llvm::PointerType::get(*context, 0),
+						builder->getInt64Ty(),
+						builder->getInt64Ty()
+				},
+				false);
+
+		llvm::Value* sizePtr = builder->CreateStructGEP(stackTy, st, 2, "size_ptr");
+		llvm::Value* size = builder->CreateLoad(builder->getInt64Ty(), sizePtr, "size");
+
+		llvm::Value* dataPtr = builder->CreateStructGEP(stackTy, st, 0, "data_ptr");
+		llvm::Value* data = builder->CreateLoad(llvm::PointerType::get(*context, 0), dataPtr, "data");
+
+		llvm::Value* idx1 = builder->CreateSub(size, builder->getInt64(2), "idx1");
+		llvm::Value* elem1Ptr = builder->CreateGEP(stackElementTy, data, idx1, "elem1_ptr");
+		llvm::Value* value1Ptr = builder->CreateStructGEP(stackElementTy, elem1Ptr, 0, "value1_ptr");
+		llvm::Value* value1iPtrCast = builder->CreateBitCast(value1Ptr, llvm::PointerType::get(*context, 0));
+		llvm::Value* value1 = builder->CreateLoad(builder->getInt64Ty(), value1iPtrCast, "value1");
+
+		llvm::Value* idx2 = builder->CreateSub(size, builder->getInt64(1), "idx2");
+		llvm::Value* elem2Ptr = builder->CreateGEP(stackElementTy, data, idx2, "elem2_ptr");
+		llvm::Value* value2Ptr = builder->CreateStructGEP(stackElementTy, elem2Ptr, 0, "value2_ptr");
+		llvm::Value* value2iPtrCast = builder->CreateBitCast(value2Ptr, llvm::PointerType::get(*context, 0));
+		llvm::Value* value2 = builder->CreateLoad(builder->getInt64Ty(), value2iPtrCast, "value2");
+
+		// Perform subtraction
+		llvm::Value* result = builder->CreateSub(value1, value2, "sub_result");
+
+		builder->CreateStore(result, value1iPtrCast);
+
+		llvm::Value* newSize = builder->CreateSub(size, builder->getInt64(1), "new_size");
+		builder->CreateStore(newSize, sizePtr);
+	}
+
+	void LlvmGenerator::Impl::generateInlineIntMul(llvm::Value* ctx) {
+		// Inline implementation of integer multiply: ( a:int b:int -- result:int )
+		// Same pattern as add/sub, but with multiplication
+
+		llvm::Type* contextTy = llvm::StructType::get(*context, {llvm::PointerType::get(*context, 0)}, false);
+		llvm::Value* stPtr = builder->CreateStructGEP(contextTy, ctx, 0, "st_ptr");
+		llvm::Value* st = builder->CreateLoad(llvm::PointerType::get(*context, 0), stPtr, "st");
+
+		llvm::Type* stackTy = llvm::StructType::get(*context,
+				{
+						llvm::PointerType::get(*context, 0),
+						builder->getInt64Ty(),
+						builder->getInt64Ty()
+				},
+				false);
+
+		llvm::Value* sizePtr = builder->CreateStructGEP(stackTy, st, 2, "size_ptr");
+		llvm::Value* size = builder->CreateLoad(builder->getInt64Ty(), sizePtr, "size");
+
+		llvm::Value* dataPtr = builder->CreateStructGEP(stackTy, st, 0, "data_ptr");
+		llvm::Value* data = builder->CreateLoad(llvm::PointerType::get(*context, 0), dataPtr, "data");
+
+		llvm::Value* idx1 = builder->CreateSub(size, builder->getInt64(2), "idx1");
+		llvm::Value* elem1Ptr = builder->CreateGEP(stackElementTy, data, idx1, "elem1_ptr");
+		llvm::Value* value1Ptr = builder->CreateStructGEP(stackElementTy, elem1Ptr, 0, "value1_ptr");
+		llvm::Value* value1iPtrCast = builder->CreateBitCast(value1Ptr, llvm::PointerType::get(*context, 0));
+		llvm::Value* value1 = builder->CreateLoad(builder->getInt64Ty(), value1iPtrCast, "value1");
+
+		llvm::Value* idx2 = builder->CreateSub(size, builder->getInt64(1), "idx2");
+		llvm::Value* elem2Ptr = builder->CreateGEP(stackElementTy, data, idx2, "elem2_ptr");
+		llvm::Value* value2Ptr = builder->CreateStructGEP(stackElementTy, elem2Ptr, 0, "value2_ptr");
+		llvm::Value* value2iPtrCast = builder->CreateBitCast(value2Ptr, llvm::PointerType::get(*context, 0));
+		llvm::Value* value2 = builder->CreateLoad(builder->getInt64Ty(), value2iPtrCast, "value2");
+
+		// Perform multiplication
+		llvm::Value* result = builder->CreateMul(value1, value2, "mul_result");
+
+		builder->CreateStore(result, value1iPtrCast);
+
+		llvm::Value* newSize = builder->CreateSub(size, builder->getInt64(1), "new_size");
+		builder->CreateStore(newSize, sizePtr);
+	}
+
 	void LlvmGenerator::Impl::generateLiteral(AstNodeLiteral* lit, llvm::Value* ctx) {
 		auto type = lit->literalType();
 		const auto& value = lit->value();
 
 		switch (type) {
 		case AstNodeLiteral::LiteralType::INTEGER: {
-			auto val = builder->getInt64(static_cast<uint64_t>(std::stoll(value)));
-			builder->CreateCall(pushIntFn, {ctx, val});
+			int64_t val = std::stoll(value);
+			generateInlinePushInt(ctx, val);
 			break;
 		}
 		case AstNodeLiteral::LiteralType::FLOAT: {
