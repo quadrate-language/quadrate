@@ -9,14 +9,8 @@ qc_sources = files(
 
 qc_inc = include_directories('include')
 
-# Find u8t library
-cc = meson.get_compiler('c')
-u8t_lib = cc.find_library('u8t', required: true)
-u8t_inc = include_directories('/usr/include')
-u8t_dep = declare_dependency(
-		dependencies: u8t_lib,
-		include_directories: u8t_inc
-)
+# u8t library (subproject only)
+u8t_dep = subproject('u8t').get_variable('u8t_dep')
 
 qc_lib = static_library('qc',
 		qc_sources,

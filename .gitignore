@@ -8,3 +8,8 @@ qd_*
 *.so
 CLAUDE.md
 main
+
+# Meson subprojects (downloaded dependencies)
+subprojects/*/
+!subprojects/*.wrap
+!subprojects/packagefiles/

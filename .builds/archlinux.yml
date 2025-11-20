@@ -5,7 +5,6 @@ secrets:
 
 packages:
   - clang
-  - cmake
   - llvm
   - meson
   - nodejs
@@ -14,23 +13,11 @@ packages:
 
 sources:
   - git+ssh://git@git.sr.ht/~klahr/quadrate
-  - https://git.sr.ht/~klahr/libu8t
-  - https://git.sr.ht/~klahr/unit-check
 
 environment:
   GIT_SSH_COMMAND: "ssh -o StrictHostKeyChecking=no"
 
 tasks:
-  - setup_unitcheck: |
-      cd unit-check
-      cmake -S . -B build
-      cmake --build build --config Release
-      sudo cmake --install build
-  - setup_u8t: |
-      cd libu8t
-      cmake -S . -B build
-      cmake --build build --config Release
-      sudo cmake --install build
   - build: |
       cd quadrate
       make release
