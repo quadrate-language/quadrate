@@ -444,8 +444,8 @@ use io
 use str
 use fmt
 
-fn count_lines(filename:ptr -- count:i64) {
-    filename "r" io::open
+fn count_lines(filename:str -- count:i64) {
+    "r" io::open
     0 swap  // count file_handle
     loop {
         dup io::read_line  // count fd line
