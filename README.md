@@ -175,7 +175,7 @@ Quadrate includes batteries for common tasks:
 | **net** | TCP networking | `listen`, `accept`, `connect`, `send`, `recv` |
 | **str** | String manipulation | `concat`, `split`, `substr`, `replace` |
 | **math** | Mathematics | `sin`, `cos`, `sqrt`, `pow`, `log` |
-| **time** | Time & sleep | `now`, `sleep`, `format_time` |
+| **time** | Time & sleep | `unix`, `now`, `sleep`, `Second`, `Millisecond` |
 | **os** | System interface | `env`, `exec`, `getpid`, `getcwd` |
 | **mem** | Memory ops | `alloc`, `free`, `copy`, `compare` |
 | **bits** | Bit manipulation | `and`, `or`, `xor`, `shl`, `shr` |
@@ -187,7 +187,7 @@ use fmt
 use time
 
 fn main( -- ) {
-    "Current time: %d\n" time::now fmt::printf
+    time::now "Current time: %d\n" fmt::printf
 }
 ```
 
@@ -443,25 +443,28 @@ fn main( -- ) {
 
 ```rust
 use io
-use str
+use mem
 use fmt
 
-fn count_lines(filename:str -- count:i64) {
-    "r" io::open
-    0 swap  // count file_handle
-    loop {
-        dup io::read_line  // count fd line
-        dup 0 == if {
-            drop drop break
-        }
-        drop swap inc swap  // Increment count
-    }
-    dup io::close drop
+fn process_file(filename:str -- ) {
+    // Open file for reading
+    io::Read io::open! -> file
+
+    // Allocate buffer for reading
+    1024 mem::alloc -> buffer
+
+    // Read and process data
+    file buffer 1024 io::read! -> bytes_read
+
+    bytes_read "Read %d bytes\n" fmt::printf
+
+    // Cleanup
+    buffer mem::free
+    file io::close
 }
 
 fn main( -- ) {
-    "input.txt" count_lines
-    "Lines: %d\n" swap fmt::printf
+    "input.txt" process_file
 }
 ```
 
@@ -470,7 +473,7 @@ fn main( -- ) {
 ```rust
 use time
 
-fn update(dt:f64 -- ) {
+fn update( -- ) {
     // Update game state
 }
 
@@ -479,17 +482,17 @@ fn render( -- ) {
 }
 
 fn main( -- ) {
-    0.016 // 60 FPS target (16ms)
+    time::Millisecond 16 mul -> frame_time  // 60 FPS = 16.67ms
+
     loop {
-        time::now // start_time dt
-        swap dup update
+        time::now -> start_time
+
+        update
         render
 
-        time::now swap - // frame_time dt
-        dup rot < if {
-            swap over - 1000.0 * i time::sleep
-        } else {
-            drop
+        time::now start_time - -> elapsed
+        frame_time elapsed > if {
+            frame_time elapsed - time::sleep
         }
     }
 }

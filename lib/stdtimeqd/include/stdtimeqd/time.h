@@ -16,6 +16,30 @@ extern "C" {
 #endif
 
 /**
+ * @brief Get current Unix timestamp in seconds
+ *
+ * @par Stack Effect: ( -- timestamp:i64 )
+ *
+ * Returns the number of seconds since Unix epoch (January 1, 1970 00:00:00 UTC).
+ *
+ * @param ctx Execution context
+ * @return Execution result
+ */
+qd_exec_result usr_time_unix(qd_context* ctx);
+
+/**
+ * @brief Get current time in nanoseconds since epoch
+ *
+ * @par Stack Effect: ( -- nanoseconds:i64 )
+ *
+ * Returns high-precision time as nanoseconds since Unix epoch.
+ *
+ * @param ctx Execution context
+ * @return Execution result
+ */
+qd_exec_result usr_time_now(qd_context* ctx);
+
+/**
  * @brief Sleep for a specified duration in nanoseconds
  *
  * @par Stack Effect: ( nanoseconds:i -- )

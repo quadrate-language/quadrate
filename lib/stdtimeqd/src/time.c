@@ -7,6 +7,36 @@
 #include <stdlib.h>
 #include <time.h>
 
+// unix - get current Unix timestamp in seconds ( -- timestamp:i64 )
+qd_exec_result usr_time_unix(qd_context* ctx) {
+	time_t now = time(NULL);
+	int64_t timestamp = (int64_t)now;
+
+	qd_stack_error err = qd_stack_push_int(ctx->st, timestamp);
+	if (err != QD_STACK_OK) {
+		fprintf(stderr, "Fatal error in time::unix: Stack overflow\n");
+		abort();
+	}
+
+	return (qd_exec_result){0};
+}
+
+// now - get current time in nanoseconds since epoch ( -- nanoseconds:i64 )
+qd_exec_result usr_time_now(qd_context* ctx) {
+	struct timespec ts;
+	clock_gettime(CLOCK_REALTIME, &ts);
+
+	int64_t nanoseconds = (int64_t)ts.tv_sec * 1000000000LL + (int64_t)ts.tv_nsec;
+
+	qd_stack_error err = qd_stack_push_int(ctx->st, nanoseconds);
+	if (err != QD_STACK_OK) {
+		fprintf(stderr, "Fatal error in time::now: Stack overflow\n");
+		abort();
+	}
+
+	return (qd_exec_result){0};
+}
+
 // sleep - sleep for N nanoseconds ( nanoseconds:i -- )
 qd_exec_result usr_time_sleep(qd_context* ctx) {
 	qd_stack_element_t val;

@@ -7,5 +7,7 @@ pub const Minute = 60000000000
 pub const Hour = 3600000000000
 
 import "libstdtimeqd_static.a" as "time" {
+    fn unix( -- timestamp:i64 )
+    fn now( -- nanoseconds:i64 )
     fn sleep(duration:i64 -- )
 }
