@@ -1688,12 +1688,8 @@ namespace Qd {
 			generateInlineDup(ctx);
 			return;
 		} else if (name == "swap") {
-			// Use inline swap
+			// Use inline swap (no string cleanup needed - just moving elements)
 			generateInlineSwap(ctx);
-			return;
-		} else if (name == "drop") {
-			// Use inline drop
-			generateInlineDrop(ctx);
 			return;
 		} else if (name == "!=") {
 			// Use type-aware inline not-equal
@@ -1714,14 +1710,6 @@ namespace Qd {
 		} else if (name == "%") {
 			// Use type-aware inline modulo
 			generateTypeAwareMod(ctx);
-			return;
-		} else if (name == "over") {
-			// Use inline over
-			generateInlineOver(ctx);
-			return;
-		} else if (name == "rot") {
-			// Use inline rot
-			generateInlineRot(ctx);
 			return;
 		} else {
 			// Map instruction name to runtime function name

@@ -15,3 +15,4 @@ subprojects/*/
 !subprojects/packagefiles/
 subprojects/.wraplock
 GEMINI.md
+benchmarks/arithmetic_qd_typeaware
