@@ -162,6 +162,9 @@ namespace Qd {
 		void generateInlineIntAdd(llvm::Value* ctx);
 		void generateInlineIntSub(llvm::Value* ctx);
 		void generateInlineIntMul(llvm::Value* ctx);
+		void generateTypeAwareAdd(llvm::Value* ctx);
+		void generateTypeAwareSub(llvm::Value* ctx);
+		void generateTypeAwareMul(llvm::Value* ctx);
 	};
 
 	void LlvmGenerator::Impl::setupRuntimeDeclarations() {
@@ -564,6 +567,252 @@ namespace Qd {
 		builder->CreateStore(newSize, sizePtr);
 	}
 
+	void LlvmGenerator::Impl::generateTypeAwareAdd(llvm::Value* ctx) {
+		// Type-aware inline add: checks types at runtime and uses fast path for integers
+		// If both operands are integers: inline add
+		// Otherwise: call qd_add() which handles all type combinations
+
+		// Get ctx->st
+		llvm::Type* contextTy = llvm::StructType::get(*context, {llvm::PointerType::get(*context, 0)}, false);
+		llvm::Value* stPtr = builder->CreateStructGEP(contextTy, ctx, 0, "st_ptr");
+		llvm::Value* st = builder->CreateLoad(llvm::PointerType::get(*context, 0), stPtr, "st");
+
+		// Get stack structure
+		llvm::Type* stackTy = llvm::StructType::get(*context,
+				{
+						llvm::PointerType::get(*context, 0),
+						builder->getInt64Ty(),
+						builder->getInt64Ty()
+				},
+				false);
+
+		// Get st->size
+		llvm::Value* sizePtr = builder->CreateStructGEP(stackTy, st, 2, "size_ptr");
+		llvm::Value* size = builder->CreateLoad(builder->getInt64Ty(), sizePtr, "size");
+
+		// Get st->data
+		llvm::Value* dataPtr = builder->CreateStructGEP(stackTy, st, 0, "data_ptr");
+		llvm::Value* data = builder->CreateLoad(llvm::PointerType::get(*context, 0), dataPtr, "data");
+
+		// Get pointers to top two elements
+		llvm::Value* idx1 = builder->CreateSub(size, builder->getInt64(2), "idx1");
+		llvm::Value* elem1Ptr = builder->CreateGEP(stackElementTy, data, idx1, "elem1_ptr");
+
+		llvm::Value* idx2 = builder->CreateSub(size, builder->getInt64(1), "idx2");
+		llvm::Value* elem2Ptr = builder->CreateGEP(stackElementTy, data, idx2, "elem2_ptr");
+
+		// Load types of both elements (field 1 of qd_stack_element_t)
+		llvm::Value* type1Ptr = builder->CreateStructGEP(stackElementTy, elem1Ptr, 1, "type1_ptr");
+		llvm::Value* type1 = builder->CreateLoad(builder->getInt32Ty(), type1Ptr, "type1");
+
+		llvm::Value* type2Ptr = builder->CreateStructGEP(stackElementTy, elem2Ptr, 1, "type2_ptr");
+		llvm::Value* type2 = builder->CreateLoad(builder->getInt32Ty(), type2Ptr, "type2");
+
+		// Check if both are integers (QD_STACK_TYPE_INT = 0)
+		llvm::Value* type1IsInt = builder->CreateICmpEQ(type1, builder->getInt32(0), "type1_is_int");
+		llvm::Value* type2IsInt = builder->CreateICmpEQ(type2, builder->getInt32(0), "type2_is_int");
+		llvm::Value* bothInts = builder->CreateAnd(type1IsInt, type2IsInt, "both_ints");
+
+		// Create basic blocks for fast path (inline) and slow path (runtime call)
+		llvm::BasicBlock* fastPath = llvm::BasicBlock::Create(*context, "fast_int_add", builder->GetInsertBlock()->getParent());
+		llvm::BasicBlock* slowPath = llvm::BasicBlock::Create(*context, "slow_add", builder->GetInsertBlock()->getParent());
+		llvm::BasicBlock* endBlock = llvm::BasicBlock::Create(*context, "add_end", builder->GetInsertBlock()->getParent());
+
+		builder->CreateCondBr(bothInts, fastPath, slowPath);
+
+		// Fast path: inline integer add
+		builder->SetInsertPoint(fastPath);
+		{
+			// Load integer values (field 0, accessed as i64)
+			llvm::Value* value1Ptr = builder->CreateStructGEP(stackElementTy, elem1Ptr, 0, "value1_ptr");
+			llvm::Value* value1iPtrCast = builder->CreateBitCast(value1Ptr, llvm::PointerType::get(*context, 0));
+			llvm::Value* value1 = builder->CreateLoad(builder->getInt64Ty(), value1iPtrCast, "value1");
+
+			llvm::Value* value2Ptr = builder->CreateStructGEP(stackElementTy, elem2Ptr, 0, "value2_ptr");
+			llvm::Value* value2iPtrCast = builder->CreateBitCast(value2Ptr, llvm::PointerType::get(*context, 0));
+			llvm::Value* value2 = builder->CreateLoad(builder->getInt64Ty(), value2iPtrCast, "value2");
+
+			// Perform addition
+			llvm::Value* result = builder->CreateAdd(value1, value2, "add_result");
+
+			// Store result at elem1 (reuse first position)
+			builder->CreateStore(result, value1iPtrCast);
+
+			// Decrement size by 1 (net: pop 2, push 1)
+			llvm::Value* newSize = builder->CreateSub(size, builder->getInt64(1), "new_size");
+			builder->CreateStore(newSize, sizePtr);
+
+			builder->CreateBr(endBlock);
+		}
+
+		// Slow path: call qd_add() runtime function
+		builder->SetInsertPoint(slowPath);
+		{
+			// Get or declare qd_add function
+			llvm::Function* addFn = module->getFunction("qd_add");
+			if (!addFn) {
+				auto fnTy = llvm::FunctionType::get(execResultTy, {contextPtrTy}, false);
+				addFn = llvm::Function::Create(fnTy, llvm::Function::ExternalLinkage, "qd_add", *module);
+			}
+			builder->CreateCall(addFn, {ctx});
+			builder->CreateBr(endBlock);
+		}
+
+		builder->SetInsertPoint(endBlock);
+	}
+
+	void LlvmGenerator::Impl::generateTypeAwareSub(llvm::Value* ctx) {
+		// Similar to generateTypeAwareAdd, but with subtraction
+
+		llvm::Type* contextTy = llvm::StructType::get(*context, {llvm::PointerType::get(*context, 0)}, false);
+		llvm::Value* stPtr = builder->CreateStructGEP(contextTy, ctx, 0, "st_ptr");
+		llvm::Value* st = builder->CreateLoad(llvm::PointerType::get(*context, 0), stPtr, "st");
+
+		llvm::Type* stackTy = llvm::StructType::get(*context,
+				{
+						llvm::PointerType::get(*context, 0),
+						builder->getInt64Ty(),
+						builder->getInt64Ty()
+				},
+				false);
+
+		llvm::Value* sizePtr = builder->CreateStructGEP(stackTy, st, 2, "size_ptr");
+		llvm::Value* size = builder->CreateLoad(builder->getInt64Ty(), sizePtr, "size");
+
+		llvm::Value* dataPtr = builder->CreateStructGEP(stackTy, st, 0, "data_ptr");
+		llvm::Value* data = builder->CreateLoad(llvm::PointerType::get(*context, 0), dataPtr, "data");
+
+		llvm::Value* idx1 = builder->CreateSub(size, builder->getInt64(2), "idx1");
+		llvm::Value* elem1Ptr = builder->CreateGEP(stackElementTy, data, idx1, "elem1_ptr");
+
+		llvm::Value* idx2 = builder->CreateSub(size, builder->getInt64(1), "idx2");
+		llvm::Value* elem2Ptr = builder->CreateGEP(stackElementTy, data, idx2, "elem2_ptr");
+
+		llvm::Value* type1Ptr = builder->CreateStructGEP(stackElementTy, elem1Ptr, 1, "type1_ptr");
+		llvm::Value* type1 = builder->CreateLoad(builder->getInt32Ty(), type1Ptr, "type1");
+
+		llvm::Value* type2Ptr = builder->CreateStructGEP(stackElementTy, elem2Ptr, 1, "type2_ptr");
+		llvm::Value* type2 = builder->CreateLoad(builder->getInt32Ty(), type2Ptr, "type2");
+
+		llvm::Value* type1IsInt = builder->CreateICmpEQ(type1, builder->getInt32(0), "type1_is_int");
+		llvm::Value* type2IsInt = builder->CreateICmpEQ(type2, builder->getInt32(0), "type2_is_int");
+		llvm::Value* bothInts = builder->CreateAnd(type1IsInt, type2IsInt, "both_ints");
+
+		llvm::BasicBlock* fastPath = llvm::BasicBlock::Create(*context, "fast_int_sub", builder->GetInsertBlock()->getParent());
+		llvm::BasicBlock* slowPath = llvm::BasicBlock::Create(*context, "slow_sub", builder->GetInsertBlock()->getParent());
+		llvm::BasicBlock* endBlock = llvm::BasicBlock::Create(*context, "sub_end", builder->GetInsertBlock()->getParent());
+
+		builder->CreateCondBr(bothInts, fastPath, slowPath);
+
+		builder->SetInsertPoint(fastPath);
+		{
+			llvm::Value* value1Ptr = builder->CreateStructGEP(stackElementTy, elem1Ptr, 0, "value1_ptr");
+			llvm::Value* value1iPtrCast = builder->CreateBitCast(value1Ptr, llvm::PointerType::get(*context, 0));
+			llvm::Value* value1 = builder->CreateLoad(builder->getInt64Ty(), value1iPtrCast, "value1");
+
+			llvm::Value* value2Ptr = builder->CreateStructGEP(stackElementTy, elem2Ptr, 0, "value2_ptr");
+			llvm::Value* value2iPtrCast = builder->CreateBitCast(value2Ptr, llvm::PointerType::get(*context, 0));
+			llvm::Value* value2 = builder->CreateLoad(builder->getInt64Ty(), value2iPtrCast, "value2");
+
+			llvm::Value* result = builder->CreateSub(value1, value2, "sub_result");
+			builder->CreateStore(result, value1iPtrCast);
+
+			llvm::Value* newSize = builder->CreateSub(size, builder->getInt64(1), "new_size");
+			builder->CreateStore(newSize, sizePtr);
+
+			builder->CreateBr(endBlock);
+		}
+
+		builder->SetInsertPoint(slowPath);
+		{
+			llvm::Function* subFn = module->getFunction("qd_sub");
+			if (!subFn) {
+				auto fnTy = llvm::FunctionType::get(execResultTy, {contextPtrTy}, false);
+				subFn = llvm::Function::Create(fnTy, llvm::Function::ExternalLinkage, "qd_sub", *module);
+			}
+			builder->CreateCall(subFn, {ctx});
+			builder->CreateBr(endBlock);
+		}
+
+		builder->SetInsertPoint(endBlock);
+	}
+
+	void LlvmGenerator::Impl::generateTypeAwareMul(llvm::Value* ctx) {
+		// Similar to generateTypeAwareAdd, but with multiplication
+
+		llvm::Type* contextTy = llvm::StructType::get(*context, {llvm::PointerType::get(*context, 0)}, false);
+		llvm::Value* stPtr = builder->CreateStructGEP(contextTy, ctx, 0, "st_ptr");
+		llvm::Value* st = builder->CreateLoad(llvm::PointerType::get(*context, 0), stPtr, "st");
+
+		llvm::Type* stackTy = llvm::StructType::get(*context,
+				{
+						llvm::PointerType::get(*context, 0),
+						builder->getInt64Ty(),
+						builder->getInt64Ty()
+				},
+				false);
+
+		llvm::Value* sizePtr = builder->CreateStructGEP(stackTy, st, 2, "size_ptr");
+		llvm::Value* size = builder->CreateLoad(builder->getInt64Ty(), sizePtr, "size");
+
+		llvm::Value* dataPtr = builder->CreateStructGEP(stackTy, st, 0, "data_ptr");
+		llvm::Value* data = builder->CreateLoad(llvm::PointerType::get(*context, 0), dataPtr, "data");
+
+		llvm::Value* idx1 = builder->CreateSub(size, builder->getInt64(2), "idx1");
+		llvm::Value* elem1Ptr = builder->CreateGEP(stackElementTy, data, idx1, "elem1_ptr");
+
+		llvm::Value* idx2 = builder->CreateSub(size, builder->getInt64(1), "idx2");
+		llvm::Value* elem2Ptr = builder->CreateGEP(stackElementTy, data, idx2, "elem2_ptr");
+
+		llvm::Value* type1Ptr = builder->CreateStructGEP(stackElementTy, elem1Ptr, 1, "type1_ptr");
+		llvm::Value* type1 = builder->CreateLoad(builder->getInt32Ty(), type1Ptr, "type1");
+
+		llvm::Value* type2Ptr = builder->CreateStructGEP(stackElementTy, elem2Ptr, 1, "type2_ptr");
+		llvm::Value* type2 = builder->CreateLoad(builder->getInt32Ty(), type2Ptr, "type2");
+
+		llvm::Value* type1IsInt = builder->CreateICmpEQ(type1, builder->getInt32(0), "type1_is_int");
+		llvm::Value* type2IsInt = builder->CreateICmpEQ(type2, builder->getInt32(0), "type2_is_int");
+		llvm::Value* bothInts = builder->CreateAnd(type1IsInt, type2IsInt, "both_ints");
+
+		llvm::BasicBlock* fastPath = llvm::BasicBlock::Create(*context, "fast_int_mul", builder->GetInsertBlock()->getParent());
+		llvm::BasicBlock* slowPath = llvm::BasicBlock::Create(*context, "slow_mul", builder->GetInsertBlock()->getParent());
+		llvm::BasicBlock* endBlock = llvm::BasicBlock::Create(*context, "mul_end", builder->GetInsertBlock()->getParent());
+
+		builder->CreateCondBr(bothInts, fastPath, slowPath);
+
+		builder->SetInsertPoint(fastPath);
+		{
+			llvm::Value* value1Ptr = builder->CreateStructGEP(stackElementTy, elem1Ptr, 0, "value1_ptr");
+			llvm::Value* value1iPtrCast = builder->CreateBitCast(value1Ptr, llvm::PointerType::get(*context, 0));
+			llvm::Value* value1 = builder->CreateLoad(builder->getInt64Ty(), value1iPtrCast, "value1");
+
+			llvm::Value* value2Ptr = builder->CreateStructGEP(stackElementTy, elem2Ptr, 0, "value2_ptr");
+			llvm::Value* value2iPtrCast = builder->CreateBitCast(value2Ptr, llvm::PointerType::get(*context, 0));
+			llvm::Value* value2 = builder->CreateLoad(builder->getInt64Ty(), value2iPtrCast, "value2");
+
+			llvm::Value* result = builder->CreateMul(value1, value2, "mul_result");
+			builder->CreateStore(result, value1iPtrCast);
+
+			llvm::Value* newSize = builder->CreateSub(size, builder->getInt64(1), "new_size");
+			builder->CreateStore(newSize, sizePtr);
+
+			builder->CreateBr(endBlock);
+		}
+
+		builder->SetInsertPoint(slowPath);
+		{
+			llvm::Function* mulFn = module->getFunction("qd_mul");
+			if (!mulFn) {
+				auto fnTy = llvm::FunctionType::get(execResultTy, {contextPtrTy}, false);
+				mulFn = llvm::Function::Create(fnTy, llvm::Function::ExternalLinkage, "qd_mul", *module);
+			}
+			builder->CreateCall(mulFn, {ctx});
+			builder->CreateBr(endBlock);
+		}
+
+		builder->SetInsertPoint(endBlock);
+	}
+
 	void LlvmGenerator::Impl::generateLiteral(AstNodeLiteral* lit, llvm::Value* ctx) {
 		auto type = lit->literalType();
 		const auto& value = lit->value();
@@ -660,17 +909,23 @@ namespace Qd {
 			builder->CreateCall(printsFn, {ctx});
 		} else if (name == "nl") {
 			builder->CreateCall(nlFn, {ctx});
+		} else if (name == "+") {
+			// Use type-aware inline add (fast path for integers, runtime call for floats)
+			generateTypeAwareAdd(ctx);
+			return;
+		} else if (name == "-") {
+			// Use type-aware inline subtract
+			generateTypeAwareSub(ctx);
+			return;
+		} else if (name == "*") {
+			// Use type-aware inline multiply
+			generateTypeAwareMul(ctx);
+			return;
 		} else {
 			// Map instruction name to runtime function name
 			std::string fnName;
 			if (name == ".") {
 				fnName = "qd_print";
-			} else if (name == "+") {
-				fnName = "qd_add";
-			} else if (name == "-") {
-				fnName = "qd_sub";
-			} else if (name == "*") {
-				fnName = "qd_mul";
 			} else if (name == "/") {
 				fnName = "qd_div";
 			} else if (name == "%") {
