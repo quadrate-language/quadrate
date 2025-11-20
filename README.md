@@ -1,3 +1,6 @@
+> **Canonical repository is hosted on SourceHut:** https://git.sr.ht/~klahr/quadrate  
+> Issues and patches are accepted on both SourceHut and GitHub.
+
 # Quadrate
 
 A stack-based programming language that compiles to native code.
@@ -301,15 +304,13 @@ For embedding (linking against libqd):
 
 ## License
 
-This repository contains source code generated with assistance from an AI model (Anthropic Claude).
-It may include or resemble material that is licensed under the GNU General Public License (GPL), version 3 or later.
+Quadrate is licensed under the **GNU General Public License v3**.  
+See [`LICENSE`](./LICENSE) for full terms.
 
-Therefore, all files in this repository are distributed **under the GPL v3**.
+### Note on AI assistance
 
-The distributor makes **no claim of authorship or copyright ownership** of the generated content.
-This repository is provided solely for research and demonstration purposes.
-
-See the [`LICENSE`](./LICENSE) file for full terms.
+Some parts of this codebase were originally drafted with assistance from an AI model
+and then reviewed and modified by a human maintainer.
 
 ## Maintainers
 
