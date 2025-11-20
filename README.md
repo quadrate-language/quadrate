@@ -81,15 +81,17 @@ fn main( -- ) {
 Functions declare their stack effects using type signatures:
 
 ```rust
+use math
+
 fn square(x:f64 -- result:f64) {
-    dup *       // Duplicate x, then multiply
+    math::sq
 }
 
 fn distance(x1:f64 y1:f64 x2:f64 y2:f64 -- dist:f64) {
     // (x2-x1)² + (y2-y1)²
-    swap rot - dup *      // Calculate (x2-x1)²
-    rot rot - dup *       // Calculate (y2-y1)²
-    + sqrt                // Add and take square root
+    swap rot - math::sq   // Calculate (x2-x1)²
+    rot rot - math::sq    // Calculate (y2-y1)²
+    + math::sqrt          // Add and take square root
 }
 
 fn main( -- ) {
@@ -137,9 +139,9 @@ fn main( -- ) {
 
     // Pattern matching
     42 switch {
-        case 0  { "zero" . nl }
-        case 42 { "answer" . nl }
-        default { "other" . nl }
+        0  { "zero" . nl }
+        42 { "answer" . nl }
+        _  { "other" . nl }
     }
 }
 ```
@@ -151,12 +153,12 @@ use math
 use fmt
 
 fn hypotenuse(a:f64 b:f64 -- c:f64) {
-    dup * swap dup * + math::sqrt
+    math::sq swap math::sq + math::sqrt
 }
 
 fn main( -- ) {
     3.0 4.0 hypotenuse
-    "Hypotenuse: %.2f\n" swap fmt::printf
+    "Hypotenuse: %f\n" fmt::printf
 }
 ```
 

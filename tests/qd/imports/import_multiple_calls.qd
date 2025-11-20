@@ -5,8 +5,8 @@ import "libstdfmtqd_static.a" as "fmt" {
 }
 
 fn main() {
-    "Hello, %s!\n" "Alice" fmt::printf
-    "Goodbye, %s!\n" "Bob" fmt::printf
-    "The answer is %d\n" 42 fmt::printf
-    "Pi is approximately %f\n" 3.14 fmt::printf
+    "Alice" "Hello, %s!\n" fmt::printf
+    "Bob" "Goodbye, %s!\n" fmt::printf
+    42 "The answer is %d\n" fmt::printf
+    3.14 "Pi is approximately %f\n" fmt::printf
 }

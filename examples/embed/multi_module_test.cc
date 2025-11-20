@@ -6,7 +6,7 @@ int main(void) {
 
 	// Module 1: math operations
 	qd_module* math_mod = qd_get_module(ctx, "math");
-	qd_add_script(math_mod, "fn square(x:i64 -- result:i64) { dup * }");
+	qd_add_script(math_mod, "fn square(x:i64 -- result:i64) { dup mul }");
 	qd_add_script(math_mod, "fn double(x:i64 -- result:i64) { 2 * }");
 	qd_build(math_mod);
 

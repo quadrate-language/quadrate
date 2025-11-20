@@ -5,5 +5,5 @@ import "libstdfmtqd_static.a" as "fmt" {
 }
 
 fn main() {
-    "Namespace: %s\n" "custom" fmt::printf
+    "custom" "Namespace: %s\n" fmt::printf
 }

@@ -6,14 +6,14 @@ import "libstdfmtqd_static.a" as "fmt" {
 
 fn main() {
     // Multiple arguments
-    "Name: %s, Age: %d, Height: %f\n" "Alice" 25 1.75 fmt::printf
+    "Alice" 25 1.75 "Name: %s, Age: %d, Height: %f\n" fmt::printf
 
     // Integer and float
-    "Int: %d, Float: %f\n" 42 3.14159 fmt::printf
+    42 3.14159 "Int: %d, Float: %f\n" fmt::printf
 
     // Percent literal
     "100%% complete\n" fmt::printf
 
     // Multiple strings
-    "%s %s!\n" "Hello" "World" fmt::printf
+    "Hello" "World" "%s %s!\n" fmt::printf
 }

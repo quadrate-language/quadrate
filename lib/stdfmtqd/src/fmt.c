@@ -22,67 +22,47 @@ static int count_format_specifiers(const char* fmt) {
 }
 
 qd_exec_result usr_fmt_printf(qd_context* ctx) {
-	// Stack order: ( format:s arg1 arg2 ... argN -- )
-	// Format string is at the bottom, arguments are on top
+	// Stack order: ( arg1 arg2 ... argN format:s -- )
+	// Format string is on top, arguments are below it
 
-	// First, we need to collect all arguments and find the format string
-	// We'll pop everything into a temporary array and find the bottommost string
-	size_t stack_size = qd_stack_size(ctx->st);
-	if (stack_size == 0) {
+	// Pop format string from top
+	qd_stack_element_t fmt_elem;
+	qd_stack_error err = qd_stack_pop(ctx->st, &fmt_elem);
+	if (err != QD_STACK_OK) {
 		fprintf(stderr, "Fatal error in usr_fmt_printf: Stack underflow\n");
 		abort();
 	}
 
-	// Pop all elements from stack
-	qd_stack_element_t* elements = malloc(sizeof(qd_stack_element_t) * stack_size);
-	if (!elements) {
-		fprintf(stderr, "Fatal error in usr_fmt_printf: Memory allocation failed\n");
+	if (fmt_elem.type != QD_STACK_TYPE_STR) {
+		fprintf(stderr, "Fatal error in usr_fmt_printf: Expected format string, got type %d\n", fmt_elem.type);
 		abort();
 	}
-
-	for (size_t i = 0; i < stack_size; i++) {
-		qd_stack_error err = qd_stack_pop(ctx->st, &elements[i]);
-		if (err != QD_STACK_OK) {
-			fprintf(stderr, "Fatal error in usr_fmt_printf: Failed to pop element\n");
-			free(elements);
-			abort();
-		}
-	}
-
-	// Find the bottommost string on the stack - that's the format string
-	// (There may be other values below it from control flow constructs)
-	int fmt_idx = -1;
-	for (int i = (int)stack_size - 1; i >= 0; i--) {
-		if (elements[i].type == QD_STACK_TYPE_STR) {
-			fmt_idx = i;
-			break; // Found the bottommost string
-		}
-	}
-
-	if (fmt_idx == -1) {
-		fprintf(stderr, "Fatal error in usr_fmt_printf: No format string found on stack\n");
-		for (size_t i = 0; i < stack_size; i++) {
-			if (elements[i].type == QD_STACK_TYPE_STR) free(elements[i].value.s);
-		}
-		free(elements);
-		abort();
-	}
-
-	qd_stack_element_t fmt_elem = elements[fmt_idx];
 
 	const char* format = fmt_elem.value.s;
 	int arg_count = count_format_specifiers(format);
 
-	// Arguments are the elements between format (fmt_idx) and top of stack (index 0)
-	// Available arguments: fmt_idx elements above format
-	if (fmt_idx < arg_count) {
-		fprintf(stderr, "Fatal error in usr_fmt_printf: Format requires %d arguments, but got %d\n",
-			arg_count, fmt_idx);
-		for (size_t i = 0; i < stack_size; i++) {
-			if (elements[i].type == QD_STACK_TYPE_STR) free(elements[i].value.s);
+	// Now pop exactly arg_count arguments from stack
+	qd_stack_element_t* elements = NULL;
+	if (arg_count > 0) {
+		elements = malloc(sizeof(qd_stack_element_t) * (size_t)arg_count);
+		if (!elements) {
+			fprintf(stderr, "Fatal error in usr_fmt_printf: Memory allocation failed\n");
+			free(fmt_elem.value.s);
+			abort();
 		}
-		free(elements);
-		abort();
+
+		for (int i = 0; i < arg_count; i++) {
+			err = qd_stack_pop(ctx->st, &elements[i]);
+			if (err != QD_STACK_OK) {
+				fprintf(stderr, "Fatal error in usr_fmt_printf: Not enough arguments on stack\n");
+				for (int j = 0; j < i; j++) {
+					if (elements[j].type == QD_STACK_TYPE_STR) free(elements[j].value.s);
+				}
+				free(elements);
+				free(fmt_elem.value.s);
+				abort();
+			}
+		}
 	}
 
 	// Arguments are in reverse order: elements[arg_count-1] is first arg, elements[0] is last arg
@@ -106,7 +86,12 @@ qd_exec_result usr_fmt_printf(qd_context* ctx) {
 				if (elements[arg_idx].type != QD_STACK_TYPE_STR) {
 					fprintf(stderr, "Fatal error in usr_fmt_printf: Expected string for %%s, got type %d\n",
 						elements[arg_idx].type);
-					free(elements);
+					if (elements) {
+						for (int i = 0; i < arg_count; i++) {
+							if (elements[i].type == QD_STACK_TYPE_STR) free(elements[i].value.s);
+						}
+						free(elements);
+					}
 					free(fmt_elem.value.s);
 					abort();
 				}
@@ -123,7 +108,12 @@ qd_exec_result usr_fmt_printf(qd_context* ctx) {
 				if (elements[arg_idx].type != QD_STACK_TYPE_INT) {
 					fprintf(stderr, "Fatal error in usr_fmt_printf: Expected int for %%d, got type %d\n",
 						elements[arg_idx].type);
-					free(elements);
+					if (elements) {
+						for (int i = 0; i < arg_count; i++) {
+							if (elements[i].type == QD_STACK_TYPE_STR) free(elements[i].value.s);
+						}
+						free(elements);
+					}
 					free(fmt_elem.value.s);
 					abort();
 				}
@@ -140,7 +130,12 @@ qd_exec_result usr_fmt_printf(qd_context* ctx) {
 				if (elements[arg_idx].type != QD_STACK_TYPE_FLOAT) {
 					fprintf(stderr, "Fatal error in usr_fmt_printf: Expected float for %%f, got type %d\n",
 						elements[arg_idx].type);
-					free(elements);
+					if (elements) {
+						for (int i = 0; i < arg_count; i++) {
+							if (elements[i].type == QD_STACK_TYPE_STR) free(elements[i].value.s);
+						}
+						free(elements);
+					}
 					free(fmt_elem.value.s);
 					abort();
 				}
@@ -158,12 +153,15 @@ qd_exec_result usr_fmt_printf(qd_context* ctx) {
 	}
 
 	// Clean up all strings (including format and arguments)
-	for (size_t i = 0; i < stack_size; i++) {
-		if (elements[i].type == QD_STACK_TYPE_STR) {
-			free(elements[i].value.s);
+	if (elements) {
+		for (int i = 0; i < arg_count; i++) {
+			if (elements[i].type == QD_STACK_TYPE_STR) {
+				free(elements[i].value.s);
+			}
 		}
+		free(elements);
 	}
-	free(elements);
+	free(fmt_elem.value.s);
 
 	return (qd_exec_result){0};
 }

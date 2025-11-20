@@ -35,7 +35,7 @@ fn swap_values(a:i64 b:i64 -- b:i64 a:i64) {
 fn square_and_double(x:i64 -- x2:i64 x_times_2:i64) {
 	// Returns x*x and x*2
 	dup
-	dup * swap
+	dup mul swap
 	2 *
 }
 

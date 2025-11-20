@@ -5,5 +5,5 @@ import "libstdfmtqd_static.a" as "fmt" {
 }
 
 fn main() {
-    "Hello, %s!\n" "World" fmt::printf
+    "World" "Hello, %s!\n" fmt::printf
 }

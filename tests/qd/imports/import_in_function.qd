@@ -5,7 +5,7 @@ import "libstdfmtqd_static.a" as "fmt" {
 }
 
 fn greet(name:str -- ) {
-    "Hello from function, %s!\n" swap fmt::printf
+    "Hello from function, %s!\n" fmt::printf
 }
 
 fn main() {
