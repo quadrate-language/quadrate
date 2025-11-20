@@ -159,6 +159,7 @@ namespace Qd {
 
 		// Inline stack operations (performance optimization)
 		void generateInlinePushInt(llvm::Value* ctx, int64_t value);
+		void generateInlinePushIntValue(llvm::Value* ctx, llvm::Value* value);
 		void generateInlineIntAdd(llvm::Value* ctx);
 		void generateInlineIntSub(llvm::Value* ctx);
 		void generateInlineIntMul(llvm::Value* ctx);
@@ -438,6 +439,48 @@ namespace Qd {
 		builder->CreateStore(builder->getInt1(false), taintedPtr);
 
 		// Increment size: st->size++
+		llvm::Value* newSize = builder->CreateAdd(size, builder->getInt64(1), "new_size");
+		builder->CreateStore(newSize, sizePtr);
+	}
+
+	void LlvmGenerator::Impl::generateInlinePushIntValue(llvm::Value* ctx, llvm::Value* value) {
+		// Inline implementation of qd_push_i for runtime integer values
+		// Same as generateInlinePushInt but takes llvm::Value* instead of int64_t
+
+		llvm::Type* contextTy = llvm::StructType::get(*context, {llvm::PointerType::get(*context, 0)}, false);
+		llvm::Value* stPtr = builder->CreateStructGEP(contextTy, ctx, 0, "st_ptr");
+		llvm::Value* st = builder->CreateLoad(llvm::PointerType::get(*context, 0), stPtr, "st");
+
+		llvm::Type* stackTy = llvm::StructType::get(*context,
+				{
+						llvm::PointerType::get(*context, 0), // data
+						builder->getInt64Ty(),               // capacity
+						builder->getInt64Ty()                // size
+				},
+				false);
+
+		llvm::Value* sizePtr = builder->CreateStructGEP(stackTy, st, 2, "size_ptr");
+		llvm::Value* size = builder->CreateLoad(builder->getInt64Ty(), sizePtr, "size");
+
+		llvm::Value* dataPtr = builder->CreateStructGEP(stackTy, st, 0, "data_ptr");
+		llvm::Value* data = builder->CreateLoad(llvm::PointerType::get(*context, 0), dataPtr, "data");
+
+		llvm::Value* elemPtr = builder->CreateGEP(stackElementTy, data, size, "elem_ptr");
+
+		// Store runtime value
+		llvm::Value* valuePtr = builder->CreateStructGEP(stackElementTy, elemPtr, 0, "value_ptr");
+		llvm::Value* valueiPtr = builder->CreateBitCast(valuePtr, llvm::PointerType::get(*context, 0));
+		builder->CreateStore(value, valueiPtr);
+
+		// Set type to integer
+		llvm::Value* typePtr = builder->CreateStructGEP(stackElementTy, elemPtr, 1, "type_ptr");
+		builder->CreateStore(builder->getInt32(0), typePtr);
+
+		// Set is_error_tainted to false
+		llvm::Value* taintedPtr = builder->CreateStructGEP(stackElementTy, elemPtr, 2, "tainted_ptr");
+		builder->CreateStore(builder->getInt1(false), taintedPtr);
+
+		// Increment size
 		llvm::Value* newSize = builder->CreateAdd(size, builder->getInt64(1), "new_size");
 		builder->CreateStore(newSize, sizePtr);
 	}
@@ -1782,10 +1825,10 @@ namespace Qd {
 			switchInst->addCase(builder->getInt32(2), ptrBlock);   // QD_STACK_TYPE_PTR = 2
 			switchInst->addCase(builder->getInt32(3), strBlock);   // QD_STACK_TYPE_STR = 3
 
-			// INT block: load i64 and push
+			// INT block: load i64 and push inline
 			builder->SetInsertPoint(intBlock);
 			llvm::Value* intVal = builder->CreateLoad(builder->getInt64Ty(), valuePtr, name + "_i");
-			builder->CreateCall(pushIntFn, {ctx, intVal});
+			generateInlinePushIntValue(ctx, intVal);
 			builder->CreateBr(endBlock);
 
 			// FLOAT block: load double and push
@@ -1813,8 +1856,8 @@ namespace Qd {
 
 		// Check if it's the loop iterator variable ($)
 		if (name == "$" && forIterVar) {
-			// Push loop iterator as integer
-			builder->CreateCall(pushIntFn, {ctx, forIterVar});
+			// Push loop iterator as integer (inline for performance)
+			generateInlinePushIntValue(ctx, forIterVar);
 			return;
 		}
 
