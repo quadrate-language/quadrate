@@ -17,6 +17,7 @@
 #include <qc/ast_node_program.h>
 #include <qc/ast_node_scoped.h>
 #include <qc/error_reporter.h>
+#include <qc/semantic_validator.h>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -304,7 +305,6 @@ private:
 		// Parse using Ast class
 		Qd::Ast ast;
 		Qd::IAstNode* root = ast.generate(text.c_str(), false, nullptr);
-		(void)root; // Suppress unused warning
 
 		json_t* notification = json_object();
 		json_object_set_new(notification, "jsonrpc", json_string("2.0"));
@@ -315,7 +315,7 @@ private:
 
 		json_t* diagnostics = json_array();
 
-		// If there are errors, show detailed diagnostics
+		// First, show parse errors from AST
 		if (ast.hasErrors()) {
 			const auto& errors = ast.getErrors();
 			for (const auto& error : errors) {
@@ -342,6 +342,45 @@ private:
 				json_object_set_new(diag, "message", json_string(error.message.c_str()));
 
 				json_array_append_new(diagnostics, diag);
+			}
+		}
+
+		// If parsing succeeded, run semantic validation to catch unresolved symbols, etc.
+		if (root && !ast.hasErrors()) {
+			Qd::SemanticValidator validator;
+			validator.setStoreErrors(true);
+
+			// Get filename from URI for validator
+			std::string filePath = uri.substr(7); // Remove "file://"
+			validator.validate(root, filePath.c_str(), false, false);
+
+			if (validator.errorCount() > 0) {
+				const auto& errors = validator.getErrors();
+				for (const auto& error : errors) {
+					json_t* diag = json_object();
+
+					// LSP uses 0-based line and column numbers
+					size_t lspLine = (error.line > 0) ? error.line - 1 : 0;
+					size_t lspColumn = (error.column > 0) ? error.column - 1 : 0;
+
+					json_t* range = json_object();
+					json_t* start = json_object();
+					json_object_set_new(start, "line", json_integer(static_cast<json_int_t>(lspLine)));
+					json_object_set_new(start, "character", json_integer(static_cast<json_int_t>(lspColumn)));
+					json_t* end = json_object();
+					// End at the same position plus a reasonable offset for visibility
+					json_object_set_new(end, "line", json_integer(static_cast<json_int_t>(lspLine)));
+					json_object_set_new(
+							end, "character", json_integer(static_cast<json_int_t>(lspColumn + ERROR_SPAN_LENGTH)));
+					json_object_set_new(range, "start", start);
+					json_object_set_new(range, "end", end);
+
+					json_object_set_new(diag, "range", range);
+					json_object_set_new(diag, "severity", json_integer(1)); // Error
+					json_object_set_new(diag, "message", json_string(error.message.c_str()));
+
+					json_array_append_new(diagnostics, diag);
+				}
 			}
 		}
 
