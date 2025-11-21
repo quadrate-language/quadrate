@@ -71,6 +71,16 @@ namespace Qd {
 			return mModuleConstantValues;
 		}
 
+		// Enable error storage for LSP (instead of printing to stderr)
+		void setStoreErrors(bool store) {
+			mStoreErrors = store;
+		}
+
+		// Get stored errors (only available when setStoreErrors(true) was called)
+		const std::vector<ErrorInfo>& getErrors() const {
+			return mStoredErrors;
+		}
+
 	private:
 		// Pass 1: Collect all function definitions
 		void collectDefinitions(IAstNode* node);
@@ -191,6 +201,10 @@ namespace Qd {
 
 		// Whether this is validating a module file (vs main entry point)
 		bool mIsModuleFile;
+
+		// Error storage for LSP
+		bool mStoreErrors;
+		std::vector<ErrorInfo> mStoredErrors;
 	};
 
 } // namespace Qd

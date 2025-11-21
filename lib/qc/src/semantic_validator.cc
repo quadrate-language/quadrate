@@ -152,7 +152,7 @@ namespace Qd {
 		return StackValueType::INT;
 	}
 	SemanticValidator::SemanticValidator()
-		: mFilename(nullptr), mErrorCount(0), mWarningCount(0), mWerror(false), mIsModuleFile(false) {
+		: mFilename(nullptr), mErrorCount(0), mWarningCount(0), mWerror(false), mIsModuleFile(false), mStoreErrors(false) {
 	}
 
 	bool SemanticValidator::isBuiltInInstruction(const char* name) const {
@@ -172,31 +172,51 @@ namespace Qd {
 		if (!shouldReport) {
 			return;
 		}
-		// GCC/Clang style: quadc: filename: error: message
-		std::cerr << Colors::bold() << "quadc: " << Colors::reset();
-		if (mFilename) {
-			std::cerr << Colors::bold() << mFilename << ":" << Colors::reset() << " ";
-		}
-		std::cerr << Colors::bold() << Colors::red() << "error:" << Colors::reset() << " ";
-		std::cerr << Colors::bold() << message << Colors::reset() << std::endl;
+
 		mErrorCount++;
+
+		if (mStoreErrors) {
+			ErrorInfo err;
+			err.line = 0;
+			err.column = 0;
+			err.message = message;
+			mStoredErrors.push_back(err);
+		} else {
+			// GCC/Clang style: quadc: filename: error: message
+			std::cerr << Colors::bold() << "quadc: " << Colors::reset();
+			if (mFilename) {
+				std::cerr << Colors::bold() << mFilename << ":" << Colors::reset() << " ";
+			}
+			std::cerr << Colors::bold() << Colors::red() << "error:" << Colors::reset() << " ";
+			std::cerr << Colors::bold() << message << Colors::reset() << std::endl;
+		}
 	}
 
 	void SemanticValidator::reportErrorConditional(const IAstNode* node, const char* message, bool shouldReport) {
 		if (!shouldReport) {
 			return;
 		}
-		// GCC/Clang style: quadc: filename:line:column: error: message
-		std::cerr << Colors::bold() << "quadc: " << Colors::reset();
-		if (mFilename && node) {
-			std::cerr << Colors::bold() << mFilename << ":" << node->line() << ":" << node->column() << ":"
-					  << Colors::reset() << " ";
-		} else if (mFilename) {
-			std::cerr << Colors::bold() << mFilename << ":" << Colors::reset() << " ";
-		}
-		std::cerr << Colors::bold() << Colors::red() << "error:" << Colors::reset() << " ";
-		std::cerr << Colors::bold() << message << Colors::reset() << std::endl;
+
 		mErrorCount++;
+
+		if (mStoreErrors) {
+			ErrorInfo err;
+			err.line = node ? node->line() : 0;
+			err.column = node ? node->column() : 0;
+			err.message = message;
+			mStoredErrors.push_back(err);
+		} else {
+			// GCC/Clang style: quadc: filename:line:column: error: message
+			std::cerr << Colors::bold() << "quadc: " << Colors::reset();
+			if (mFilename && node) {
+				std::cerr << Colors::bold() << mFilename << ":" << node->line() << ":" << node->column() << ":"
+						  << Colors::reset() << " ";
+			} else if (mFilename) {
+				std::cerr << Colors::bold() << mFilename << ":" << Colors::reset() << " ";
+			}
+			std::cerr << Colors::bold() << Colors::red() << "error:" << Colors::reset() << " ";
+			std::cerr << Colors::bold() << message << Colors::reset() << std::endl;
+		}
 	}
 
 	void SemanticValidator::reportWarning(const IAstNode* node, const char* message) {

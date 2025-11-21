@@ -69,6 +69,7 @@ namespace Qd {
 		bool debugInfoEnabled = false;
 		std::string sourceFileName;
 		llvm::DIType* contextDebugType = nullptr;
+		llvm::DIType* stackElementDebugType = nullptr; // qd_stack_element_t structure type
 
 		// Optimization level (0-3)
 		int optimizationLevel = 0;
@@ -95,6 +96,9 @@ namespace Qd {
 		llvm::Function* popCallFn = nullptr;
 		llvm::Function* checkStackFn = nullptr;
 		llvm::Function* strdupFn = nullptr;
+		llvm::Function* addFn = nullptr;
+		llvm::Function* subFn = nullptr;
+		llvm::Function* mulFn = nullptr;
 
 		// Loop context for break/continue
 		struct LoopContext {
@@ -203,7 +207,7 @@ namespace Qd {
 				{
 						builder->getInt64Ty(), // union value (we'll access as i64)
 						builder->getInt32Ty(), // type
-						builder->getInt1Ty()   // is_error_tainted
+						builder->getInt8Ty()   // is_error_tainted (bool is 1 byte, not 1 bit)
 				},
 				"qd_stack_element_t");
 
@@ -251,6 +255,12 @@ namespace Qd {
 		// qd_nl(qd_context* ctx) -> qd_exec_result
 		auto nlFnTy = llvm::FunctionType::get(execResultTy, {contextPtrTy}, false);
 		nlFn = llvm::Function::Create(nlFnTy, llvm::Function::ExternalLinkage, "qd_nl", *module);
+
+		// qd_add/sub/mul(qd_context* ctx) -> qd_exec_result
+		auto arithFnTy = llvm::FunctionType::get(execResultTy, {contextPtrTy}, false);
+		addFn = llvm::Function::Create(arithFnTy, llvm::Function::ExternalLinkage, "qd_add", *module);
+		subFn = llvm::Function::Create(arithFnTy, llvm::Function::ExternalLinkage, "qd_sub", *module);
+		mulFn = llvm::Function::Create(arithFnTy, llvm::Function::ExternalLinkage, "qd_mul", *module);
 
 		// qd_push_call(qd_context* ctx, const char* func_name) -> void
 		auto pushCallFnTy = llvm::FunctionType::get(
@@ -339,11 +349,140 @@ namespace Qd {
 			// Add main module to debug files map
 			moduleDebugFiles["main"] = debugFile;
 
-			// Just use a basic pointer type and let GDB handle type lookup from debug symbols.
-			// The complete qd_context definition exists in the statically linked libqdrt.
-			// Using a generic pointer allows GDB's symbol resolution to work properly.
+			// Create debug type info for runtime structures so GDB can inspect them
+			// This is needed for JIT-compiled code where GDB can't access libqdrt's debug symbols
+
+			// Basic types
+			auto int64Type = debugBuilder->createBasicType("int64_t", 64, llvm::dwarf::DW_ATE_signed);
+			auto doubleType = debugBuilder->createBasicType("double", 64, llvm::dwarf::DW_ATE_float);
+			auto boolType = debugBuilder->createBasicType("bool", 8, llvm::dwarf::DW_ATE_boolean);
 			auto charType = debugBuilder->createBasicType("char", 8, llvm::dwarf::DW_ATE_signed_char);
-			contextDebugType = debugBuilder->createPointerType(charType, 64);
+			auto sizeType = debugBuilder->createBasicType("size_t", 64, llvm::dwarf::DW_ATE_unsigned);
+			auto charPtrType = debugBuilder->createPointerType(charType, 64);
+			auto voidPtrType = debugBuilder->createPointerType(nullptr, 64);
+
+			// qd_stack_type enum (just use int32 for simplicity)
+			auto stackTypeEnum = debugBuilder->createBasicType("int", 32, llvm::dwarf::DW_ATE_signed);
+
+			// qd_stack_value union (inside qd_stack_element_t)
+			llvm::SmallVector<llvm::Metadata*, 4> unionFields;
+			unionFields.push_back(debugBuilder->createMemberType(
+				compileUnit, "i", debugFile, 54,
+				64, 64, 0, llvm::DINode::FlagZero, int64Type
+			));
+			unionFields.push_back(debugBuilder->createMemberType(
+				compileUnit, "f", debugFile, 55,
+				64, 64, 0, llvm::DINode::FlagZero, doubleType
+			));
+			unionFields.push_back(debugBuilder->createMemberType(
+				compileUnit, "p", debugFile, 56,
+				64, 64, 0, llvm::DINode::FlagZero, voidPtrType
+			));
+			unionFields.push_back(debugBuilder->createMemberType(
+				compileUnit, "s", debugFile, 57,
+				64, 64, 0, llvm::DINode::FlagZero, charPtrType
+			));
+			auto valueUnionType = debugBuilder->createUnionType(
+				compileUnit, "qd_stack_value", debugFile, 53,
+				64, 64, llvm::DINode::FlagZero,
+				debugBuilder->getOrCreateArray(unionFields)
+			);
+
+			// qd_stack_element_t structure
+			llvm::SmallVector<llvm::Metadata*, 3> elementFields;
+			elementFields.push_back(debugBuilder->createMemberType(
+				compileUnit, "value", debugFile, 58,
+				64, 64, 0, llvm::DINode::FlagZero, valueUnionType
+			));
+			elementFields.push_back(debugBuilder->createMemberType(
+				compileUnit, "type", debugFile, 60,
+				32, 32, 64, llvm::DINode::FlagZero, stackTypeEnum
+			));
+			elementFields.push_back(debugBuilder->createMemberType(
+				compileUnit, "is_error_tainted", debugFile, 61,
+				8, 8, 96, llvm::DINode::FlagZero, boolType
+			));
+			auto elementType = debugBuilder->createStructType(
+				compileUnit, "qd_stack_element_t", debugFile, 52,
+				128, 64, llvm::DINode::FlagZero, nullptr,
+				debugBuilder->getOrCreateArray(elementFields)
+			);
+			stackElementDebugType = elementType; // Store for later use
+			auto elementPtrType = debugBuilder->createPointerType(elementType, 64);
+
+			// qd_stack structure
+			llvm::SmallVector<llvm::Metadata*, 3> stackFields;
+			stackFields.push_back(debugBuilder->createMemberType(
+				compileUnit, "data", debugFile, 71,
+				64, 64, 0, llvm::DINode::FlagZero, elementPtrType
+			));
+			stackFields.push_back(debugBuilder->createMemberType(
+				compileUnit, "capacity", debugFile, 72,
+				64, 64, 64, llvm::DINode::FlagZero, sizeType
+			));
+			stackFields.push_back(debugBuilder->createMemberType(
+				compileUnit, "size", debugFile, 73,
+				64, 64, 128, llvm::DINode::FlagZero, sizeType
+			));
+			auto stackStructType = debugBuilder->createStructType(
+				compileUnit, "qd_stack", debugFile, 70,
+				192, 64, llvm::DINode::FlagZero, nullptr,
+				debugBuilder->getOrCreateArray(stackFields)
+			);
+			auto stackPtrType = debugBuilder->createPointerType(stackStructType, 64);
+
+			// qd_context structure
+			llvm::SmallVector<llvm::Metadata*, 8> contextFields;
+			contextFields.push_back(debugBuilder->createMemberType(
+				compileUnit, "st", debugFile, 45,
+				64, 64, 0, llvm::DINode::FlagZero, stackPtrType
+			));
+			contextFields.push_back(debugBuilder->createMemberType(
+				compileUnit, "error_code", debugFile, 46,
+				64, 64, 64, llvm::DINode::FlagZero, int64Type
+			));
+			contextFields.push_back(debugBuilder->createMemberType(
+				compileUnit, "error_msg", debugFile, 47,
+				64, 64, 128, llvm::DINode::FlagZero, charPtrType
+			));
+			contextFields.push_back(debugBuilder->createMemberType(
+				compileUnit, "argc", debugFile, 48,
+				32, 32, 192, llvm::DINode::FlagZero,
+				debugBuilder->createBasicType("int", 32, llvm::dwarf::DW_ATE_signed)
+			));
+			auto charPtrPtrType = debugBuilder->createPointerType(charPtrType, 64);
+			contextFields.push_back(debugBuilder->createMemberType(
+				compileUnit, "argv", debugFile, 49,
+				64, 64, 256, llvm::DINode::FlagZero, charPtrPtrType
+			));
+			contextFields.push_back(debugBuilder->createMemberType(
+				compileUnit, "program_name", debugFile, 50,
+				64, 64, 320, llvm::DINode::FlagZero, charPtrType
+			));
+			// call_stack is const char* [256] at offset 48 bytes (384 bits)
+			auto callStackArrayType = debugBuilder->createArrayType(
+				16384,  // 256 * 64 bits
+				64,     // alignment
+				charPtrType,
+				debugBuilder->getOrCreateArray({
+					debugBuilder->getOrCreateSubrange(0, 256)
+				})
+			);
+			contextFields.push_back(debugBuilder->createMemberType(
+				compileUnit, "call_stack", debugFile, 53,
+				16384, 64, 384, llvm::DINode::FlagZero, callStackArrayType
+			));
+			contextFields.push_back(debugBuilder->createMemberType(
+				compileUnit, "call_stack_depth", debugFile, 54,
+				64, 64, 16768, llvm::DINode::FlagZero, sizeType
+			));
+
+			auto contextStructType = debugBuilder->createStructType(
+				compileUnit, "qd_context", debugFile, 44,
+				16832, 64, llvm::DINode::FlagZero, nullptr,
+				debugBuilder->getOrCreateArray(contextFields)
+			);
+			contextDebugType = debugBuilder->createPointerType(contextStructType, 64);
 		}
 	}
 
@@ -662,12 +801,7 @@ namespace Qd {
 		// Slow path: call qd_add() runtime function
 		builder->SetInsertPoint(slowPath);
 		{
-			// Get or declare qd_add function
-			llvm::Function* addFn = module->getFunction("qd_add");
-			if (!addFn) {
-				auto fnTy = llvm::FunctionType::get(execResultTy, {contextPtrTy}, false);
-				addFn = llvm::Function::Create(fnTy, llvm::Function::ExternalLinkage, "qd_add", *module);
-			}
+			// addFn is now a member variable, initialized in setupRuntimeDeclarations
 			builder->CreateCall(addFn, {ctx});
 			builder->CreateBr(endBlock);
 		}
@@ -739,11 +873,7 @@ namespace Qd {
 
 		builder->SetInsertPoint(slowPath);
 		{
-			llvm::Function* subFn = module->getFunction("qd_sub");
-			if (!subFn) {
-				auto fnTy = llvm::FunctionType::get(execResultTy, {contextPtrTy}, false);
-				subFn = llvm::Function::Create(fnTy, llvm::Function::ExternalLinkage, "qd_sub", *module);
-			}
+			// subFn is now a member variable, initialized in setupRuntimeDeclarations
 			builder->CreateCall(subFn, {ctx});
 			builder->CreateBr(endBlock);
 		}
@@ -815,11 +945,7 @@ namespace Qd {
 
 		builder->SetInsertPoint(slowPath);
 		{
-			llvm::Function* mulFn = module->getFunction("qd_mul");
-			if (!mulFn) {
-				auto fnTy = llvm::FunctionType::get(execResultTy, {contextPtrTy}, false);
-				mulFn = llvm::Function::Create(fnTy, llvm::Function::ExternalLinkage, "qd_mul", *module);
-			}
+			// mulFn is now a member variable, initialized in setupRuntimeDeclarations
 			builder->CreateCall(mulFn, {ctx});
 			builder->CreateBr(endBlock);
 		}
@@ -1571,7 +1697,13 @@ namespace Qd {
 		switch (type) {
 		case AstNodeLiteral::LiteralType::INTEGER: {
 			int64_t val = std::stoll(value);
-			generateInlinePushInt(ctx, val);
+			// Use function calls when debug info is enabled for better debuggability
+			// Use inline code for release builds for better performance
+			if (debugInfoEnabled) {
+				builder->CreateCall(pushIntFn, {ctx, builder->getInt64(static_cast<uint64_t>(val))});
+			} else {
+				generateInlinePushInt(ctx, val);
+			}
 			break;
 		}
 		case AstNodeLiteral::LiteralType::FLOAT: {
@@ -1661,8 +1793,11 @@ namespace Qd {
 		} else if (name == "nl") {
 			builder->CreateCall(nlFn, {ctx});
 		} else if (name == "+") {
-			// Use pure integer ops in integer-only functions (no type checking)
-			if (currentFunctionIsIntegerOnly) {
+			// When debug info is enabled, use simple function calls for better debuggability
+			if (debugInfoEnabled) {
+				builder->CreateCall(addFn, {ctx});
+			} else if (currentFunctionIsIntegerOnly) {
+				// Use pure integer ops in integer-only functions (no type checking)
 				generateInlineIntAdd(ctx);
 			} else {
 				// Use type-aware inline add (fast path for integers, runtime call for floats)
@@ -1670,8 +1805,11 @@ namespace Qd {
 			}
 			return;
 		} else if (name == "-") {
-			// Use pure integer ops in integer-only functions
-			if (currentFunctionIsIntegerOnly) {
+			// When debug info is enabled, use simple function calls for better debuggability
+			if (debugInfoEnabled) {
+				builder->CreateCall(subFn, {ctx});
+			} else if (currentFunctionIsIntegerOnly) {
+				// Use pure integer ops in integer-only functions
 				generateInlineIntSub(ctx);
 			} else {
 				// Use type-aware inline subtract
@@ -1679,8 +1817,11 @@ namespace Qd {
 			}
 			return;
 		} else if (name == "*") {
-			// Use pure integer ops in integer-only functions
-			if (currentFunctionIsIntegerOnly) {
+			// When debug info is enabled, use simple function calls for better debuggability
+			if (debugInfoEnabled) {
+				builder->CreateCall(mulFn, {ctx});
+			} else if (currentFunctionIsIntegerOnly) {
+				// Use pure integer ops in integer-only functions
 				generateInlineIntMul(ctx);
 			} else {
 				// Use type-aware inline multiply
@@ -2328,11 +2469,7 @@ namespace Qd {
 			localVariables[name] = localAlloca;
 
 			// Add debug info for the local variable
-			if (debugInfoEnabled && debugBuilder && !debugScopeStack.empty()) {
-				// Create a pointer type to qd_stack_element_t
-				auto stackElemPtrType = debugBuilder->createPointerType(
-						debugBuilder->createBasicType("qd_stack_element_t", 128, llvm::dwarf::DW_ATE_unsigned), 64);
-
+			if (debugInfoEnabled && debugBuilder && !debugScopeStack.empty() && stackElementDebugType) {
 				// Get the file from the current scope (subprogram)
 				llvm::DIFile* localFile = debugFile; // Default
 				if (auto* subprog = llvm::dyn_cast<llvm::DISubprogram>(debugScopeStack.back())) {
@@ -2340,11 +2477,13 @@ namespace Qd {
 				}
 
 				// Create local variable debug info
+				// Note: localAlloca is an alloca of qd_stack_element_t (structure on stack),
+				// so the debug type should be the structure type, not a pointer.
 				auto localVar = debugBuilder->createAutoVariable(debugScopeStack.back(), // Scope (current function)
 						name,															 // Variable name
 						localFile,														 // File
 						static_cast<unsigned>(local->line()),							 // Line number
-						stackElemPtrType,												 // Type
+						stackElementDebugType,											 // Type (the struct)
 						true															 // Always preserve
 				);
 
@@ -3010,8 +3149,8 @@ namespace Qd {
 
 			// Add debug info for ctx local variable in main
 			if (debugInfoEnabled && debugBuilder && !debugScopeStack.empty() && contextDebugType) {
-				// Create pointer to qd_context struct
-				auto ctxPtrType = debugBuilder->createPointerType(contextDebugType, 64);
+				// contextDebugType is already qd_context* (pointer), so use it directly
+				auto ctxPtrType = contextDebugType;
 
 				// Create local variable for ctx
 				auto localVar = debugBuilder->createAutoVariable(debugScopeStack.back(), // Scope (main function)
@@ -3096,32 +3235,39 @@ namespace Qd {
 			builder->SetInsertPoint(entryBB);
 
 			// Get context parameter
-			auto ctx = fn->getArg(0);
+			llvm::Value* ctx = fn->getArg(0);
 			ctx->setName("ctx");
 
-			// Add debug info for ctx parameter
-			if (debugInfoEnabled && debugBuilder && !debugScopeStack.empty() && contextDebugType) {
-				// Create pointer to qd_context struct
-				auto ctxPtrType = debugBuilder->createPointerType(contextDebugType, 64);
+			// Create alloca for ctx parameter for debug info
+			// Store the parameter value to it so debugger can always find it
+			llvm::AllocaInst* ctxAlloca = builder->CreateAlloca(ctx->getType(), nullptr, "ctx.addr");
+			builder->CreateStore(ctx, ctxAlloca);
 
-				// Create parameter variable for ctx
-				auto paramVar =
-						debugBuilder->createParameterVariable(debugScopeStack.back(), // Scope (current function)
-								"ctx",												  // Name
-								1,													  // Argument number
-								funcDebugFile,										  // File
-								static_cast<unsigned>(funcNode->line()),			  // Line
-								ctxPtrType,											  // Type
-								true												  // Always preserve
+			// Add debug info for ctx parameter (treat as local variable, not parameter)
+			if (debugInfoEnabled && debugBuilder && !debugScopeStack.empty() && contextDebugType) {
+				// contextDebugType is already qd_context* (pointer), so use it directly
+				auto ctxPtrType = contextDebugType;
+
+				// Create local variable for ctx (not a parameter variable)
+				// This prevents LLVM from tracking the parameter value flow
+				auto localVar =
+						debugBuilder->createAutoVariable(debugScopeStack.back(),		  // Scope (current function)
+								"ctx",													  // Name
+								funcDebugFile,												  // File
+								static_cast<unsigned>(funcNode->line()),				  // Line
+								ctxPtrType,													  // Type
+								true														  // Always preserve
 						);
 
-				// Insert declare to make it visible in debugger
-				debugBuilder->insertDeclare(ctx,		  // Storage
-						paramVar,						  // Variable
-						debugBuilder->createExpression(), // Expression
+				// Insert declare on the alloca so debugger can always find it
+				// Use DW_OP_deref since the alloca is a pointer to where the value is stored
+				// No deref needed - ctxAlloca stores the pointer value directly
+				debugBuilder->insertDeclare(ctxAlloca,			  // Storage (the alloca)
+						localVar,								  // Variable
+						debugBuilder->createExpression(),		  // Empty expression (no deref)
 						llvm::DILocation::get(
 								*context, static_cast<unsigned>(funcNode->line()), 0, debugScopeStack.back()),
-						builder->GetInsertBlock());
+						builder->GetInsertPoint());
 			}
 
 			// Push function name onto call stack for debugging
