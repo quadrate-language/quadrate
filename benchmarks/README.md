@@ -28,7 +28,7 @@ All benchmarks test the same algorithms:
 | **Go** | **82** | **1.1x** | Excellent native performance |
 | **Node.js** | **383** | **5.0x** | V8 JIT optimization |
 | **Python** | **2,706** | **35.6x** | CPython interpreter |
-| **Quadrate (Round 7)** | **3,458** | **27.4x** | Type specialization + LLVM -O2 |
+| **Quadrate (Round 7)** | **3,458** | **45.5x** | Type specialization + LLVM -O2 |
 
 ### Recursive Fibonacci (n=35)
 
@@ -59,8 +59,8 @@ All benchmarks test the same algorithms:
 - PyPy with JIT would be significantly faster
 
 ### Quadrate (LLVM + Type Specialization + -O2)
-- **27-85x slower** than native C
-- **Similar to Python** on arithmetic, **2x faster on recursion**
+- **45-85x slower** than native C
+- **1.3x slower than Python** on arithmetic, **2.1x slower on recursion**
 - **Total optimization gains: 19.9% arithmetic, 33.5% recursion** (from 7 rounds)
 - Stack-based execution model fundamentally limits performance vs register-based languages
 
@@ -132,7 +132,7 @@ See `OPTIMIZATION_RESULTS.md` for complete details on all 10 optimization rounds
 We've reached the practical optimization limit with current architecture:
 - Stack-based model has fundamental overhead vs registers
 - Further gains require major architectural changes (weeks of work)
-- Current performance: **~30-85x slower than C** (acceptable for scripting use cases)
+- Current performance: **~45-85x slower than C** (acceptable for scripting use cases)
 
 See `OPTIMIZATION_RESULTS.md` for detailed analysis of all 10 optimization rounds.
 
