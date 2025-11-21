@@ -35,6 +35,7 @@
 #include <qc/ast_node_literal.h>
 #include <qc/ast_node_local.h>
 #include <qc/ast_node_loop.h>
+#include <qc/ast_node_parameter.h>
 #include <qc/ast_node_return.h>
 #include <qc/ast_node_scoped.h>
 #include <qc/ast_node_switch.h>
@@ -122,6 +123,7 @@ namespace Qd {
 		// Function context for return
 		llvm::BasicBlock* currentFunctionReturnBlock = nullptr;
 		bool currentFunctionIsFallible = false;
+		bool currentFunctionIsIntegerOnly = false;  // For type specialization
 
 		// Defer statements collected during function generation
 		std::vector<AstNodeDefer*> currentDeferStatements;
@@ -1703,16 +1705,31 @@ namespace Qd {
 		} else if (name == "nl") {
 			builder->CreateCall(nlFn, {ctx});
 		} else if (name == "+") {
-			// Use type-aware inline add (fast path for integers, runtime call for floats)
-			generateTypeAwareAdd(ctx);
+			// Use pure integer ops in integer-only functions (no type checking)
+			if (currentFunctionIsIntegerOnly) {
+				generateInlineIntAdd(ctx);
+			} else {
+				// Use type-aware inline add (fast path for integers, runtime call for floats)
+				generateTypeAwareAdd(ctx);
+			}
 			return;
 		} else if (name == "-") {
-			// Use type-aware inline subtract
-			generateTypeAwareSub(ctx);
+			// Use pure integer ops in integer-only functions
+			if (currentFunctionIsIntegerOnly) {
+				generateInlineIntSub(ctx);
+			} else {
+				// Use type-aware inline subtract
+				generateTypeAwareSub(ctx);
+			}
 			return;
 		} else if (name == "*") {
-			// Use type-aware inline multiply
-			generateTypeAwareMul(ctx);
+			// Use pure integer ops in integer-only functions
+			if (currentFunctionIsIntegerOnly) {
+				generateInlineIntMul(ctx);
+			} else {
+				// Use type-aware inline multiply
+				generateTypeAwareMul(ctx);
+			}
 			return;
 		} else if (name == "<") {
 			// Use type-aware inline less than
@@ -3181,6 +3198,29 @@ namespace Qd {
 			currentFunctionReturnBlock = returnBB;
 			currentFunctionIsFallible = funcNode->throws();
 
+			// Detect if function only uses integers (for type specialization)
+			currentFunctionIsIntegerOnly = true;  // Assume true, set false if we find non-integer
+			for (const auto* param : funcNode->inputParameters()) {
+				if (const auto* paramNode = dynamic_cast<const AstNodeParameter*>(param)) {
+					const std::string& typeStr = paramNode->typeString();
+					if (typeStr != "i64" && typeStr != "int" && typeStr != "int64") {
+						currentFunctionIsIntegerOnly = false;
+						break;
+					}
+				}
+			}
+			if (currentFunctionIsIntegerOnly) {
+				for (const auto* param : funcNode->outputParameters()) {
+					if (const auto* paramNode = dynamic_cast<const AstNodeParameter*>(param)) {
+						const std::string& typeStr = paramNode->typeString();
+						if (typeStr != "i64" && typeStr != "int" && typeStr != "int64") {
+							currentFunctionIsIntegerOnly = false;
+							break;
+						}
+					}
+				}
+			}
+
 			// Clear defer statements from any previous function
 			currentDeferStatements.clear();
 
@@ -3193,6 +3233,7 @@ namespace Qd {
 			// Clear return target
 			currentFunctionReturnBlock = nullptr;
 			currentFunctionIsFallible = false;
+			currentFunctionIsIntegerOnly = false;
 
 			// If the block doesn't end with a terminator, branch to return block
 			llvm::BasicBlock* funcBodyBlock = builder->GetInsertBlock();
