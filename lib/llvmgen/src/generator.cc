@@ -3147,6 +3147,10 @@ namespace Qd {
 			auto stackSize = builder->getInt64(DEFAULT_STACK_SIZE);
 			auto ctx = builder->CreateCall(createContextFn, {stackSize}, "ctx");
 
+			// Create alloca for ctx so debugger can reliably access it
+			llvm::AllocaInst* ctxAlloca = builder->CreateAlloca(ctx->getType(), nullptr, "ctx.addr");
+			builder->CreateStore(ctx, ctxAlloca);
+
 			// Add debug info for ctx local variable in main
 			if (debugInfoEnabled && debugBuilder && !debugScopeStack.empty() && contextDebugType) {
 				// contextDebugType is already qd_context* (pointer), so use it directly
@@ -3161,8 +3165,8 @@ namespace Qd {
 						true															 // Always preserve
 				);
 
-				// Insert declare to make it visible in debugger
-				debugBuilder->insertDeclare(ctx,		  // Storage
+				// Insert declare to make it visible in debugger (use alloca, not SSA value)
+				debugBuilder->insertDeclare(ctxAlloca,		  // Storage (alloca, not SSA)
 						localVar,						  // Variable
 						debugBuilder->createExpression(), // Expression
 						llvm::DILocation::get(
