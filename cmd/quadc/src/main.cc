@@ -709,7 +709,7 @@ int main(int argc, char** argv) {
 			}
 
 			ParsedModule parsedMod;
-			parsedMod.name = moduleName;
+			parsedMod.name = moduleFilePath; // Store full file path for debug info
 			parsedMod.package = packageName;
 			parsedMod.sourceDirectory = moduleFileSourceDir;
 			parsedMod.packageDirectory = packageDir;
@@ -795,7 +795,7 @@ int main(int argc, char** argv) {
 		// but we need to generate them depth-first (deep dependencies first, then their dependents)
 		for (auto it = parsedModules.rbegin(); it != parsedModules.rend(); ++it) {
 			if (it->package != "main") {
-				generator.addModuleAST(it->package, it->root);
+				generator.addModuleAST(it->package, it->root, it->name);
 			}
 		}
 

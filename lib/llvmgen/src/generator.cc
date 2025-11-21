@@ -114,6 +114,12 @@ namespace Qd {
 		// Module ASTs to include (preserves insertion order for dependency resolution)
 		std::vector<std::pair<std::string, IAstNode*>> moduleASTs;
 
+		// Module source files for debug info (module name -> source file path)
+		std::map<std::string, std::string> moduleSourceFiles;
+
+		// Per-module debug files (module name -> DIFile)
+		std::map<std::string, llvm::DIFile*> moduleDebugFiles;
+
 		// Track imported libraries for linking
 		std::set<std::string> importedLibraries;
 
@@ -313,81 +319,31 @@ namespace Qd {
 			// Initialize scope stack with compile unit
 			debugScopeStack.push_back(compileUnit);
 
-			// Create complete qd_context struct definition for debugging
-			// This allows GDB to inspect ctx members like ctx->st->size
+			// Create DIFile objects for all modules
+			for (const auto& pair : moduleSourceFiles) {
+				const std::string& moduleName = pair.first;
+				const std::string& moduleSourcePath = pair.second;
 
-			// First create basic debug types
-			auto int64Type = debugBuilder->createBasicType("int64_t", 64, llvm::dwarf::DW_ATE_signed);
-			auto charPtrType = debugBuilder->createPointerType(
-					debugBuilder->createBasicType("char", 8, llvm::dwarf::DW_ATE_signed_char), 64);
-			auto intType = debugBuilder->createBasicType("int", 32, llvm::dwarf::DW_ATE_signed);
-			auto sizeType = debugBuilder->createBasicType("size_t", 64, llvm::dwarf::DW_ATE_unsigned);
+				std::filesystem::path moduleSrcPath(moduleSourcePath);
+				std::filesystem::path moduleAbsPath = std::filesystem::absolute(moduleSrcPath);
+				std::string moduleDirectory = moduleAbsPath.parent_path().string();
+				std::string moduleFilename = moduleAbsPath.filename().string();
+				if (moduleDirectory.empty()) {
+					moduleDirectory = ".";
+				}
 
-			// Create qd_stack_element_t union (simplified - just show as 64-bit int)
-			auto stackElemType = debugBuilder->createStructType(compileUnit, "qd_stack_element_t", debugFile, 0, 128,
-					64, llvm::DINode::FlagZero, nullptr, debugBuilder->getOrCreateArray({}));
+				llvm::DIFile* moduleDIFile = debugBuilder->createFile(moduleFilename, moduleDirectory);
+				moduleDebugFiles[moduleName] = moduleDIFile;
+			}
 
-			// Create qd_stack struct with data, capacity, size
-			llvm::SmallVector<llvm::Metadata*, 3> stackFields;
-			auto stackElemPtrType = debugBuilder->createPointerType(stackElemType, 64);
-			stackFields.push_back(debugBuilder->createMemberType(
-					compileUnit, "data", debugFile, 0, 64, 64, 0, llvm::DINode::FlagZero, stackElemPtrType));
-			stackFields.push_back(debugBuilder->createMemberType(
-					compileUnit, "capacity", debugFile, 0, 64, 64, 64, llvm::DINode::FlagZero, sizeType));
-			stackFields.push_back(debugBuilder->createMemberType(
-					compileUnit, "size", debugFile, 0, 64, 64, 128, llvm::DINode::FlagZero, sizeType));
+			// Add main module to debug files map
+			moduleDebugFiles["main"] = debugFile;
 
-			auto stackType = debugBuilder->createStructType(compileUnit, "qd_stack", debugFile, 0, 192, 64,
-					llvm::DINode::FlagZero, nullptr, debugBuilder->getOrCreateArray(stackFields));
-
-			auto stackPtrType = debugBuilder->createPointerType(stackType, 64);
-
-			// Create qd_context struct
-			llvm::SmallVector<llvm::Metadata*, 8> contextFields;
-
-			// qd_stack* st
-			contextFields.push_back(debugBuilder->createMemberType(
-					compileUnit, "st", debugFile, 0, 64, 64, 0, llvm::DINode::FlagZero, stackPtrType));
-
-			// int64_t error_code
-			contextFields.push_back(debugBuilder->createMemberType(
-					compileUnit, "error_code", debugFile, 0, 64, 64, 64, llvm::DINode::FlagZero, int64Type));
-
-			// char* error_msg
-			contextFields.push_back(debugBuilder->createMemberType(
-					compileUnit, "error_msg", debugFile, 0, 64, 64, 128, llvm::DINode::FlagZero, charPtrType));
-
-			// int argc
-			contextFields.push_back(debugBuilder->createMemberType(
-					compileUnit, "argc", debugFile, 0, 32, 32, 192, llvm::DINode::FlagZero, intType));
-
-			// char** argv
-			auto charPtrPtrType = debugBuilder->createPointerType(charPtrType, 64);
-			contextFields.push_back(debugBuilder->createMemberType(
-					compileUnit, "argv", debugFile, 0, 64, 64, 256, llvm::DINode::FlagZero, charPtrPtrType));
-
-			// char* program_name
-			contextFields.push_back(debugBuilder->createMemberType(
-					compileUnit, "program_name", debugFile, 0, 64, 64, 320, llvm::DINode::FlagZero, charPtrType));
-
-			// const char* call_stack[256] - array at offset 48 bytes = 384 bits
-			auto callStackArrayType =
-					debugBuilder->createArrayType(16384, // Size in bits: 256 elements * 64 bits = 16384 bits
-							64,							 // Alignment in bits
-							charPtrType,				 // Element type
-							debugBuilder->getOrCreateArray({
-									debugBuilder->getOrCreateSubrange(0, 255) // 256 elements (0-255)
-							}));
-			contextFields.push_back(debugBuilder->createMemberType(compileUnit, "call_stack", debugFile, 0, 16384, 64,
-					384, llvm::DINode::FlagZero, callStackArrayType));
-
-			// size_t call_stack_depth - at offset 2096 bytes = 16768 bits
-			contextFields.push_back(debugBuilder->createMemberType(
-					compileUnit, "call_stack_depth", debugFile, 0, 64, 64, 16768, llvm::DINode::FlagZero, sizeType));
-
-			contextDebugType = debugBuilder->createStructType(compileUnit, "qd_context", debugFile, 0, 16832, 64,
-					llvm::DINode::FlagZero, nullptr, // Total: 2104 bytes = 16832 bits
-					debugBuilder->getOrCreateArray(contextFields));
+			// Just use a basic pointer type and let GDB handle type lookup from debug symbols.
+			// The complete qd_context definition exists in the statically linked libqdrt.
+			// Using a generic pointer allows GDB's symbol resolution to work properly.
+			auto charType = debugBuilder->createBasicType("char", 8, llvm::dwarf::DW_ATE_signed_char);
+			contextDebugType = debugBuilder->createPointerType(charType, 64);
 		}
 	}
 
@@ -2377,10 +2333,16 @@ namespace Qd {
 				auto stackElemPtrType = debugBuilder->createPointerType(
 						debugBuilder->createBasicType("qd_stack_element_t", 128, llvm::dwarf::DW_ATE_unsigned), 64);
 
+				// Get the file from the current scope (subprogram)
+				llvm::DIFile* localFile = debugFile; // Default
+				if (auto* subprog = llvm::dyn_cast<llvm::DISubprogram>(debugScopeStack.back())) {
+					localFile = subprog->getFile();
+				}
+
 				// Create local variable debug info
 				auto localVar = debugBuilder->createAutoVariable(debugScopeStack.back(), // Scope (current function)
 						name,															 // Variable name
-						debugFile,														 // File
+						localFile,														 // File
 						static_cast<unsigned>(local->line()),							 // Line number
 						stackElemPtrType,												 // Type
 						true															 // Always preserve
@@ -3002,6 +2964,15 @@ namespace Qd {
 		// Clear local variables for this function
 		localVariables.clear();
 
+		// Get the correct DIFile for this module
+		llvm::DIFile* funcDebugFile = debugFile; // Default to main file
+		if (debugInfoEnabled && debugBuilder) {
+			auto it = moduleDebugFiles.find(namePrefix);
+			if (it != moduleDebugFiles.end()) {
+				funcDebugFile = it->second;
+			}
+		}
+
 		llvm::Function* fn = nullptr;
 
 		if (isMain) {
@@ -3016,7 +2987,7 @@ namespace Qd {
 				auto subprogram = debugBuilder->createFunction(compileUnit, // Scope
 						funcNode->name(),									// Name
 						"main",												// Linkage name
-						debugFile,											// File
+						funcDebugFile,										// File
 						static_cast<unsigned>(funcNode->line()),			// Line number
 						funcType,											// Type
 						static_cast<unsigned>(funcNode->line()),			// Scope line
@@ -3045,7 +3016,7 @@ namespace Qd {
 				// Create local variable for ctx
 				auto localVar = debugBuilder->createAutoVariable(debugScopeStack.back(), // Scope (main function)
 						"ctx",															 // Name
-						debugFile,														 // File
+						funcDebugFile,													 // File
 						static_cast<unsigned>(funcNode->line()),						 // Line
 						ctxPtrType,														 // Type
 						true															 // Always preserve
@@ -3099,7 +3070,7 @@ namespace Qd {
 				auto subprogram = debugBuilder->createFunction(compileUnit, // Scope
 						funcNode->name(),									// Name
 						fnName.c_str(),										// Linkage name
-						debugFile,											// File
+						funcDebugFile,										// File
 						static_cast<unsigned>(funcNode->line()),			// Line number
 						funcType,											// Type
 						static_cast<unsigned>(funcNode->line()),			// Scope line
@@ -3138,7 +3109,7 @@ namespace Qd {
 						debugBuilder->createParameterVariable(debugScopeStack.back(), // Scope (current function)
 								"ctx",												  // Name
 								1,													  // Argument number
-								debugFile,											  // File
+								funcDebugFile,										  // File
 								static_cast<unsigned>(funcNode->line()),			  // Line
 								ctxPtrType,											  // Type
 								true												  // Always preserve
@@ -3551,11 +3522,15 @@ namespace Qd {
 		return impl->generateProgram(root);
 	}
 
-	void LlvmGenerator::addModuleAST(const std::string& moduleName, IAstNode* moduleRoot) {
+	void LlvmGenerator::addModuleAST(
+			const std::string& moduleName, IAstNode* moduleRoot, const std::string& sourceFileName) {
 		if (!impl) {
 			impl = std::make_unique<Impl>("quadrate_module");
 		}
 		impl->moduleASTs.push_back({moduleName, moduleRoot});
+		if (!sourceFileName.empty()) {
+			impl->moduleSourceFiles[moduleName] = sourceFileName;
+		}
 	}
 
 	std::string LlvmGenerator::getIRString() const {

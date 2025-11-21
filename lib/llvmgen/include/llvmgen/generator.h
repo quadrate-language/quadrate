@@ -90,10 +90,12 @@ namespace Qd {
 		 *
 		 * @param moduleName Name of the module
 		 * @param moduleRoot Root node of the module's AST
+		 * @param sourceFileName Source file path for debug info (optional)
 		 *
 		 * @note Must be called after generate() but before write operations
 		 */
-		void addModuleAST(const std::string& moduleName, IAstNode* moduleRoot);
+		void addModuleAST(const std::string& moduleName, IAstNode* moduleRoot,
+				const std::string& sourceFileName = "");
 
 		/**
 		 * @brief Write LLVM IR to a text file
