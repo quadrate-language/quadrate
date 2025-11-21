@@ -4,14 +4,18 @@
   "description": "Language support for Quadrate programming language",
   "version": "0.1.0",
   "publisher": "quadrate",
+  "icon": "icon.png",
   "engines": {
     "vscode": "^1.75.0"
   },
   "categories": [
-    "Programming Languages"
+    "Programming Languages",
+    "Debuggers"
   ],
   "activationEvents": [
-    "onLanguage:quadrate"
+    "onLanguage:quadrate",
+    "onDebugResolve:cppdbg",
+    "onDebugInitialConfigurations"
   ],
   "main": "./out/extension.js",
   "contributes": {
@@ -33,6 +37,83 @@
         "language": "quadrate",
         "scopeName": "source.quadrate",
         "path": "./syntaxes/quadrate.tmLanguage.json"
+      }
+    ],
+    "breakpoints": [
+      {
+        "language": "quadrate"
+      }
+    ],
+    "debuggers": [
+      {
+        "type": "quadrate",
+        "label": "Quadrate Debug",
+        "languages": ["quadrate"],
+        "program": "/usr/bin/gdb",
+        "runtime": "gdb",
+        "configurationSnippets": [
+          {
+            "label": "Quadrate: Build and Debug",
+            "description": "Build and debug a Quadrate program",
+            "body": {
+              "name": "Build & Debug Quadrate",
+              "type": "quadrate",
+              "request": "launch",
+              "program": "^\"\\${workspaceFolder}/\\${fileBasenameNoExtension}_debug\"",
+              "args": [],
+              "stopAtEntry": false,
+              "cwd": "^\"\\${workspaceFolder}\"",
+              "environment": [],
+              "externalConsole": false,
+              "MIMode": "gdb",
+              "miDebuggerPath": "/usr/bin/gdb",
+              "preLaunchTask": "quadrate-build-debug",
+              "setupCommands": [
+                {
+                  "description": "Enable pretty-printing for gdb",
+                  "text": "-enable-pretty-printing",
+                  "ignoreFailures": true
+                }
+              ]
+            }
+          },
+          {
+            "label": "Quadrate: Debug Compiled Program",
+            "description": "Debug a pre-compiled Quadrate program",
+            "body": {
+              "name": "Debug Quadrate Program",
+              "type": "quadrate",
+              "request": "launch",
+              "program": "^\"\\${workspaceFolder}/\\${fileBasenameNoExtension}_debug\"",
+              "args": [],
+              "stopAtEntry": false,
+              "cwd": "^\"\\${workspaceFolder}\"",
+              "environment": [],
+              "externalConsole": false,
+              "MIMode": "gdb",
+              "miDebuggerPath": "/usr/bin/gdb",
+              "setupCommands": [
+                {
+                  "description": "Enable pretty-printing for gdb",
+                  "text": "-enable-pretty-printing",
+                  "ignoreFailures": true
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ],
+    "taskDefinitions": [
+      {
+        "type": "quadrate",
+        "required": ["task"],
+        "properties": {
+          "task": {
+            "type": "string",
+            "description": "The Quadrate task to execute"
+          }
+        }
       }
     ],
     "configuration": {
