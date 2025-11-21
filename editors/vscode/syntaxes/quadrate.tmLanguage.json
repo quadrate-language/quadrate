@@ -74,7 +74,7 @@
     },
     "types": {
       "name": "storage.type.quadrate",
-      "match": "\\b(int|float|string|bool|ptr|any)\\b"
+      "match": "\\b(i64|f64|str|ptr|any)\\b"
     }
   }
 }
