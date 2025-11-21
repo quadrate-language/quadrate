@@ -1,14 +1,18 @@
 #include <cstring>
+#include <filesystem>
 #include <fstream>
+#include <functional>
 #include <iostream>
 #include <jansson.h>
 #include <map>
 #include <qc/ast.h>
 #include <qc/ast_node.h>
 #include <qc/ast_node_function.h>
+#include <qc/ast_node_constant.h>
 #include <qc/ast_node_identifier.h>
 #include <qc/ast_node_import.h>
 #include <qc/ast_node_instruction.h>
+#include <qc/ast_node_local.h>
 #include <qc/ast_node_parameter.h>
 #include <qc/ast_node_program.h>
 #include <qc/ast_node_scoped.h>
@@ -618,6 +622,129 @@ private:
 							break;
 						}
 					}
+
+					// Check if it's a scoped identifier (module::symbol)
+					if (json_is_null(result) && word.find("::") != std::string::npos) {
+						size_t colonPos = word.find("::");
+						std::string moduleName = word.substr(0, colonPos);
+						std::string symbolName = word.substr(colonPos + 2);
+
+						// Get source directory from URI
+						std::string filePath = uri.substr(7); // Remove "file://"
+						std::string sourceDir = std::filesystem::path(filePath).parent_path().string();
+
+						// Resolve module path
+						std::string modulePath = resolveModulePath(moduleName, sourceDir);
+
+						if (!modulePath.empty()) {
+							// Read and parse the module file
+							std::ifstream file(modulePath);
+							if (file.good()) {
+								std::stringstream buffer;
+								buffer << file.rdbuf();
+								std::string moduleText = buffer.str();
+
+								Qd::Ast ast;
+								Qd::IAstNode* root = ast.generate(moduleText.c_str(), false, nullptr);
+
+								if (root && !ast.hasErrors() && root->type() == Qd::IAstNode::Type::PROGRAM) {
+									// Search for the symbol
+									for (size_t i = 0; i < root->childCount(); i++) {
+										Qd::IAstNode* child = root->child(i);
+
+										if (child && child->type() == Qd::IAstNode::Type::FUNCTION_DECLARATION) {
+											Qd::AstNodeFunctionDeclaration* funcNode = static_cast<Qd::AstNodeFunctionDeclaration*>(child);
+											if (funcNode->name() == symbolName) {
+												// Build function documentation
+												std::ostringstream docStream;
+												docStream << "**Function (from " << moduleName << "):** `fn " << funcNode->name() << "(";
+
+												// Input parameters
+												const auto& inputs = funcNode->inputParameters();
+												for (size_t j = 0; j < inputs.size(); j++) {
+													if (j > 0) docStream << " ";
+													Qd::AstNodeParameter* param = static_cast<Qd::AstNodeParameter*>(inputs[j]);
+													docStream << param->name() << ":" << param->typeString();
+												}
+
+												docStream << " -- ";
+
+												// Output parameters
+												const auto& outputs = funcNode->outputParameters();
+												for (size_t j = 0; j < outputs.size(); j++) {
+													if (j > 0) docStream << " ";
+													Qd::AstNodeParameter* param = static_cast<Qd::AstNodeParameter*>(outputs[j]);
+													docStream << param->name() << ":" << param->typeString();
+												}
+
+												docStream << ")`";
+
+												result = json_object();
+												json_t* contents = json_object();
+												json_object_set_new(contents, "kind", json_string("markdown"));
+												json_object_set_new(contents, "value", json_string(docStream.str().c_str()));
+												json_object_set_new(result, "contents", contents);
+												break;
+											}
+										} else if (child && child->type() == Qd::IAstNode::Type::CONSTANT_DECLARATION) {
+											Qd::AstNodeConstant* constNode = static_cast<Qd::AstNodeConstant*>(child);
+											if (constNode->name() == symbolName) {
+												// Build constant documentation
+												std::ostringstream docStream;
+												docStream << "**Constant (from " << moduleName << "):** `" << constNode->name() << " = " << constNode->value() << "`";
+
+												result = json_object();
+												json_t* contents = json_object();
+												json_object_set_new(contents, "kind", json_string("markdown"));
+												json_object_set_new(contents, "value", json_string(docStream.str().c_str()));
+												json_object_set_new(result, "contents", contents);
+												break;
+											}
+										} else if (child && child->type() == Qd::IAstNode::Type::IMPORT_STATEMENT) {
+											// Check for imported functions (like stdlib)
+											Qd::AstNodeImport* importNode = static_cast<Qd::AstNodeImport*>(child);
+											const auto& importedFuncs = importNode->functions();
+											for (const auto* importedFunc : importedFuncs) {
+												if (importedFunc->name == symbolName) {
+													// Build imported function documentation
+													std::ostringstream docStream;
+													docStream << "**Function (from " << moduleName << "):** `fn " << importedFunc->name << "(";
+
+													// Input parameters
+													for (size_t j = 0; j < importedFunc->inputParameters.size(); j++) {
+														if (j > 0) docStream << " ";
+														const auto* param = importedFunc->inputParameters[j];
+														docStream << param->name() << ":" << param->typeString();
+													}
+
+													docStream << " -- ";
+
+													// Output parameters
+													for (size_t j = 0; j < importedFunc->outputParameters.size(); j++) {
+														if (j > 0) docStream << " ";
+														const auto* param = importedFunc->outputParameters[j];
+														docStream << param->name() << ":" << param->typeString();
+													}
+
+													docStream << ")`";
+
+													result = json_object();
+													json_t* contents = json_object();
+													json_object_set_new(contents, "kind", json_string("markdown"));
+													json_object_set_new(contents, "value", json_string(docStream.str().c_str()));
+													json_object_set_new(result, "contents", contents);
+													break;
+												}
+											}
+											if (!json_is_null(result)) {
+												break;
+											}
+										}
+									}
+								}
+							}
+						}
+					}
 				}
 			}
 		}
@@ -813,6 +940,267 @@ private:
 		}
 	}
 
+	// Find a local variable declaration by searching up the AST tree from a given node
+	Qd::AstNodeLocal* findLocalDeclaration(Qd::IAstNode* startNode, const std::string& varName, size_t requestLine) {
+		if (!startNode) {
+			return nullptr;
+		}
+
+		// Walk up to find the containing function
+		Qd::IAstNode* current = startNode;
+		Qd::IAstNode* functionNode = nullptr;
+
+		while (current) {
+			if (current->type() == Qd::IAstNode::Type::FUNCTION_DECLARATION) {
+				functionNode = current;
+				break;
+			}
+			current = current->parent();
+		}
+
+		if (!functionNode) {
+			return nullptr;
+		}
+
+		// Recursively search for local declarations in the function
+		// We need to find declarations that appear before the request line
+		std::vector<Qd::AstNodeLocal*> candidates;
+		std::function<void(Qd::IAstNode*)> searchLocals = [&](Qd::IAstNode* node) {
+			if (!node) {
+				return;
+			}
+
+			if (node->type() == Qd::IAstNode::Type::LOCAL) {
+				Qd::AstNodeLocal* localNode = static_cast<Qd::AstNodeLocal*>(node);
+				if (localNode->name() == varName) {
+					// Only consider declarations that appear before the request line
+					size_t declLine = (localNode->line() > 0) ? localNode->line() - 1 : 0;
+					if (declLine <= requestLine) {
+						candidates.push_back(localNode);
+					}
+				}
+			}
+
+			// Recursively search children
+			for (size_t i = 0; i < node->childCount(); i++) {
+				searchLocals(node->child(i));
+			}
+		};
+
+		searchLocals(functionNode);
+
+		// Return the last declaration before the request line (closest scope)
+		if (!candidates.empty()) {
+			return candidates.back();
+		}
+
+		return nullptr;
+	}
+
+	// Get packages directory path (where quadpm installs packages)
+	std::string getPackagesDir() {
+		// Check QUADRATE_PATH environment variable first
+		const char* quadratePath = getenv("QUADRATE_PATH");
+		if (quadratePath) {
+			return std::string(quadratePath);
+		}
+
+		// Check if XDG_DATA_HOME is set
+		const char* xdgDataHome = getenv("XDG_DATA_HOME");
+		if (xdgDataHome) {
+			return std::string(xdgDataHome) + "/quadrate/packages";
+		}
+
+		// Default to ~/quadrate/packages
+		const char* home = getenv("HOME");
+		if (home) {
+			return std::string(home) + "/quadrate/packages";
+		}
+
+		return "";
+	}
+
+	// Find a package in the packages directory
+	std::string findLatestPackageVersion(const std::string& moduleName) {
+		std::string packagesDir = getPackagesDir();
+		if (packagesDir.empty() || !std::filesystem::exists(packagesDir)) {
+			return "";
+		}
+
+		std::string latestPath;
+		try {
+			for (const auto& entry : std::filesystem::directory_iterator(packagesDir)) {
+				if (!entry.is_directory()) {
+					continue;
+				}
+
+				std::string dirName = entry.path().filename().string();
+				std::string prefix = moduleName + "@";
+				if (dirName.size() > prefix.size() && dirName.substr(0, prefix.size()) == prefix) {
+					latestPath = entry.path().string();
+				}
+			}
+		} catch (...) {
+			return "";
+		}
+
+		return latestPath;
+	}
+
+	// Resolve module name to file path using the same logic as quadc
+	std::string resolveModulePath(const std::string& moduleName, const std::string& sourceDir) {
+		// Try 1: Local path (relative to source file)
+		std::string localPath = sourceDir + "/" + moduleName + "/module.qd";
+		if (std::filesystem::exists(localPath)) {
+			return localPath;
+		}
+
+		// Try 2: Third-party packages directory (installed via quadpm)
+		std::string packagePath = findLatestPackageVersion(moduleName);
+		if (!packagePath.empty()) {
+			std::string moduleFile = packagePath + "/module.qd";
+			if (std::filesystem::exists(moduleFile)) {
+				return moduleFile;
+			}
+		}
+
+		// Try 3: QUADRATE_ROOT environment variable
+		const char* quadrateRoot = getenv("QUADRATE_ROOT");
+		if (quadrateRoot) {
+			std::string rootPath = std::string(quadrateRoot) + "/" + moduleName + "/module.qd";
+			if (std::filesystem::exists(rootPath)) {
+				return rootPath;
+			}
+		}
+
+		// Try 4: Installed standard library (/usr/share/quadrate/)
+		std::string installedPath = "/usr/share/quadrate/" + moduleName + "/module.qd";
+		if (std::filesystem::exists(installedPath)) {
+			return installedPath;
+		}
+
+		// Try 5: Standard library directories relative to current directory (for development)
+		std::string stdLibPath = "lib/std" + moduleName + "qd/qd/" + moduleName + "/module.qd";
+		if (std::filesystem::exists(stdLibPath)) {
+			return stdLibPath;
+		}
+
+		// Try 6: $HOME/quadrate directory
+		const char* home = getenv("HOME");
+		if (home) {
+			std::string homePath = std::string(home) + "/quadrate/" + moduleName + "/module.qd";
+			if (std::filesystem::exists(homePath)) {
+				return homePath;
+			}
+		}
+
+		return "";
+	}
+
+	// Find a function or constant definition in an external module file
+	// Returns a JSON location object if found, or json_null() if not found
+	json_t* findDefinitionInModule(const std::string& modulePath, const std::string& symbolName, bool isFunction) {
+		// Read the module file
+		std::ifstream file(modulePath);
+		if (!file.good()) {
+			return json_null();
+		}
+
+		std::stringstream buffer;
+		buffer << file.rdbuf();
+		std::string moduleText = buffer.str();
+
+		// Parse the module file
+		Qd::Ast ast;
+		Qd::IAstNode* root = ast.generate(moduleText.c_str(), false, nullptr);
+
+		if (!root || ast.hasErrors() || root->type() != Qd::IAstNode::Type::PROGRAM) {
+			return json_null();
+		}
+
+		// Search for the definition
+		for (size_t i = 0; i < root->childCount(); i++) {
+			Qd::IAstNode* child = root->child(i);
+
+			if (isFunction && child && child->type() == Qd::IAstNode::Type::FUNCTION_DECLARATION) {
+				Qd::AstNodeFunctionDeclaration* funcNode = static_cast<Qd::AstNodeFunctionDeclaration*>(child);
+				if (funcNode->name() == symbolName) {
+					// Found the function definition
+					json_t* location = json_object();
+					std::string moduleUri = "file://" + modulePath;
+					json_object_set_new(location, "uri", json_string(moduleUri.c_str()));
+
+					json_t* range = json_object();
+					json_t* start = json_object();
+					size_t lspLine = (funcNode->line() > 0) ? funcNode->line() - 1 : 0;
+					json_object_set_new(start, "line", json_integer(static_cast<json_int_t>(lspLine)));
+					json_object_set_new(start, "character", json_integer(0));
+					json_object_set_new(range, "start", start);
+
+					json_t* end = json_object();
+					json_object_set_new(end, "line", json_integer(static_cast<json_int_t>(lspLine)));
+					json_object_set_new(end, "character", json_integer(static_cast<json_int_t>(funcNode->name().length())));
+					json_object_set_new(range, "end", end);
+
+					json_object_set_new(location, "range", range);
+					return location;
+				}
+			} else if (!isFunction && child && child->type() == Qd::IAstNode::Type::CONSTANT_DECLARATION) {
+				Qd::AstNodeConstant* constNode = static_cast<Qd::AstNodeConstant*>(child);
+				if (constNode->name() == symbolName) {
+					// Found the constant definition
+					json_t* location = json_object();
+					std::string moduleUri = "file://" + modulePath;
+					json_object_set_new(location, "uri", json_string(moduleUri.c_str()));
+
+					json_t* range = json_object();
+					json_t* start = json_object();
+					size_t lspLine = (constNode->line() > 0) ? constNode->line() - 1 : 0;
+					json_object_set_new(start, "line", json_integer(static_cast<json_int_t>(lspLine)));
+					json_object_set_new(start, "character", json_integer(0));
+					json_object_set_new(range, "start", start);
+
+					json_t* end = json_object();
+					json_object_set_new(end, "line", json_integer(static_cast<json_int_t>(lspLine)));
+					json_object_set_new(end, "character", json_integer(static_cast<json_int_t>(constNode->name().length())));
+					json_object_set_new(range, "end", end);
+
+					json_object_set_new(location, "range", range);
+					return location;
+				}
+			} else if (isFunction && child && child->type() == Qd::IAstNode::Type::IMPORT_STATEMENT) {
+				// Check for imported functions (like those in stdlib modules)
+				Qd::AstNodeImport* importNode = static_cast<Qd::AstNodeImport*>(child);
+				const auto& importedFuncs = importNode->functions();
+				for (const auto* importedFunc : importedFuncs) {
+					if (importedFunc->name == symbolName) {
+						// Found the imported function declaration
+						json_t* location = json_object();
+						std::string moduleUri = "file://" + modulePath;
+						json_object_set_new(location, "uri", json_string(moduleUri.c_str()));
+
+						json_t* range = json_object();
+						json_t* start = json_object();
+						size_t lspLine = (importedFunc->line > 0) ? importedFunc->line - 1 : 0;
+						json_object_set_new(start, "line", json_integer(static_cast<json_int_t>(lspLine)));
+						json_object_set_new(start, "character", json_integer(0));
+						json_object_set_new(range, "start", start);
+
+						json_t* end = json_object();
+						json_object_set_new(end, "line", json_integer(static_cast<json_int_t>(lspLine)));
+						json_object_set_new(end, "character", json_integer(static_cast<json_int_t>(importedFunc->name.length())));
+						json_object_set_new(range, "end", end);
+
+						json_object_set_new(location, "range", range);
+						return location;
+					}
+				}
+			}
+		}
+
+		return json_null();
+	}
+
 	void handleDefinition(const std::string& id, const std::string& uri, size_t line, size_t character) {
 		json_t* response = json_object();
 		json_object_set_new(response, "jsonrpc", json_string("2.0"));
@@ -910,6 +1298,73 @@ private:
 							}
 							if (!json_is_null(result)) {
 								break;
+							}
+						}
+					}
+
+					// If no function or import found, try searching for local variable declarations
+					if (json_is_null(result)) {
+						// Find the identifier node at the cursor position
+						std::vector<Qd::IAstNode*> identifiers;
+						findIdentifiersInNode(root, word, identifiers);
+
+						// Find the identifier at the requested line
+						Qd::IAstNode* targetIdentifier = nullptr;
+						for (auto* node : identifiers) {
+							size_t nodeLine = (node->line() > 0) ? node->line() - 1 : 0;
+							if (nodeLine == line && node->type() == Qd::IAstNode::Type::IDENTIFIER) {
+								targetIdentifier = node;
+								break;
+							}
+						}
+
+						if (targetIdentifier) {
+							// Search for the local variable declaration
+							Qd::AstNodeLocal* localDecl = findLocalDeclaration(targetIdentifier, word, line);
+
+							if (localDecl) {
+								// Found the local variable declaration
+								json_t* location = json_object();
+								json_object_set_new(location, "uri", json_string(uri.c_str()));
+
+								json_t* range = json_object();
+								json_t* start = json_object();
+								size_t lspLine = (localDecl->line() > 0) ? localDecl->line() - 1 : 0;
+								json_object_set_new(start, "line", json_integer(static_cast<json_int_t>(lspLine)));
+								json_object_set_new(start, "character", json_integer(0));
+								json_object_set_new(range, "start", start);
+
+								json_t* end = json_object();
+								json_object_set_new(end, "line", json_integer(static_cast<json_int_t>(lspLine)));
+								json_object_set_new(end, "character",
+										json_integer(static_cast<json_int_t>(localDecl->name().length())));
+								json_object_set_new(range, "end", end);
+
+								json_object_set_new(location, "range", range);
+								result = location;
+							}
+						}
+					}
+
+					// If still not found, try scoped identifiers (module::symbol)
+					if (json_is_null(result) && word.find("::") != std::string::npos) {
+						// Extract module name and symbol name
+						size_t colonPos = word.find("::");
+						std::string moduleName = word.substr(0, colonPos);
+						std::string symbolName = word.substr(colonPos + 2);
+
+						// Get source directory from URI
+						std::string filePath = uri.substr(7); // Remove "file://"
+						std::string sourceDir = std::filesystem::path(filePath).parent_path().string();
+
+						// Resolve module path
+						std::string modulePath = resolveModulePath(moduleName, sourceDir);
+
+						if (!modulePath.empty()) {
+							// Try to find the symbol as a function first, then as a constant
+							result = findDefinitionInModule(modulePath, symbolName, true);
+							if (json_is_null(result)) {
+								result = findDefinitionInModule(modulePath, symbolName, false);
 							}
 						}
 					}

@@ -33,7 +33,7 @@
         },
         {
           "name": "keyword.other.quadrate",
-          "match": "\\b(fn|use|const|let|struct|enum)\\b"
+          "match": "\\b(fn|use|const|let|struct|enum|pub|import|as)\\b"
         }
       ]
     },
