@@ -7,7 +7,7 @@
 
 **A modern stack-based language that compiles to native code.**
 
-Quadrate combines the elegance of Forth's stack-oriented programming with contemporary features like static typing, modules, and LLVM-powered native compilation. Whether you need a standalone systems language or a high-performance embedded scripting engine, Quadrate delivers native speed with minimal overhead.
+Quadrate combines the elegance of Forth's stack-oriented programming with contemporary features like static typing, modules, and LLVM-powered native compilation. Whether you need a standalone systems language or an embedded scripting engine, Quadrate compiles to native machine code.
 
 **Documentation**: https://quad.r8.rs
 
@@ -15,8 +15,8 @@ Quadrate combines the elegance of Forth's stack-oriented programming with contem
 
 ## Why Quadrate?
 
-**🚀 Native Performance**
-Compiles directly to native machine code via LLVM. No VM overhead, no garbage collection pauses—just fast, predictable execution.
+**🚀 Native Compilation**
+Compiles directly to native machine code via LLVM. No VM overhead, no garbage collection pauses—predictable execution with LLVM optimizations.
 
 **⚡ Dual-Mode Operation**
 - **Standalone**: Compile `.qd` files to executables like C/C++
@@ -195,7 +195,7 @@ fn main( -- ) {
 
 ## Embedding in C/C++
 
-Quadrate's JIT engine lets you embed high-performance scripting in your applications. Scripts compile to native code at runtime via LLVM—no interpreter overhead.
+Quadrate's JIT engine lets you embed scripting in your applications. Scripts compile to native code at runtime via LLVM—no interpreter overhead.
 
 ### Basic Embedding
 
@@ -504,22 +504,19 @@ fn main( -- ) {
 
 Quadrate compiles to native code with LLVM optimizations:
 
-- **Zero overhead abstractions**: Stack operations compile to register moves
+- **Native compilation**: Compiles to machine code via LLVM backend
 - **Static dispatch**: No virtual calls, no dynamic lookup
-- **Aggressive inlining**: Small functions inline completely
-- **LLVM backend**: Benefits from decades of optimization research
+- **Inline optimizations**: Hot path operations are inlined
 - **No GC pauses**: Manual memory management where you need it
 - **Predictable performance**: No JIT warm-up, consistent timing
 
-Benchmark example (calculating primes):
-```
-Quadrate:     ?.??s
-C (gcc -O3):  ?.??s
-Python:       ?.??s
-JavaScript:   ?.??s
-```
+**Performance characteristics**:
+- Stack-based execution model has overhead compared to register-based languages
+- Integer-heavy workloads show good performance with type specialization
+- Typically slower than C/C++ but faster than interpreted languages
+- See `benchmarks/` directory for detailed performance analysis
 
-*(Results vary by workload. Stack-heavy code performs exceptionally well.)*
+*(Performance varies by workload. Profile your specific use case.)*
 
 ---
 
