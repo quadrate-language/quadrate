@@ -1122,6 +1122,8 @@ if (node->type() == IAstNode::Type::STRUCT_DECLARATION) {
 					typeStack.push_back(StackValueType::FLOAT);
 				} else if (typeStr == "str") {
 					typeStack.push_back(StackValueType::STRING);
+				} else if (typeStr == "ptr") {
+					typeStack.push_back(StackValueType::PTR);
 				} else {
 					// Untyped or unknown - treat as ANY
 					typeStack.push_back(StackValueType::ANY);
@@ -1859,6 +1861,8 @@ if (node->type() == IAstNode::Type::STRUCT_DECLARATION) {
 					typeStack.push_back(StackValueType::FLOAT);
 				} else if (typeStr == "str") {
 					typeStack.push_back(StackValueType::STRING);
+				} else if (typeStr == "ptr") {
+					typeStack.push_back(StackValueType::PTR);
 				} else {
 					// Untyped or unknown - treat as ANY
 					typeStack.push_back(StackValueType::ANY);

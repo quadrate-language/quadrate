@@ -64,17 +64,6 @@ qd_exec_result usr_mem_alloc(qd_context* ctx) {
 	return qd_push_p(ctx, ptr);
 }
 
-/* Free memory */
-qd_exec_result usr_mem_free(qd_context* ctx) {
-	void* ptr;
-	if (pop_ptr(ctx, &ptr) != QD_STACK_OK) {
-		return (qd_exec_result){-1};
-	}
-
-	free(ptr);
-	return (qd_exec_result){0};
-}
-
 /* Reallocate memory */
 qd_exec_result usr_mem_realloc(qd_context* ctx) {
 	int64_t new_bytes;

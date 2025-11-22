@@ -10,7 +10,6 @@ extern "C" {
 // Memory allocation functions
 // Named with usr_ prefix for import mechanism
 qd_exec_result usr_mem_alloc(qd_context* ctx);
-qd_exec_result usr_mem_free(qd_context* ctx);
 qd_exec_result usr_mem_realloc(qd_context* ctx);
 
 // Byte operations

@@ -16,11 +16,6 @@ import "libstdmemqd_static.a" as "mem" {
 	// Returns null (0) on failure
 	fn alloc(bytes:i64 -- address:ptr)
 
-	// Free memory
-	// Passing null is safe (no-op)
-	// Double-free is undefined behavior
-	fn free(address:ptr -- )
-
 	// Reallocate memory
 	// Returns null on failure (original preserved)
 	// Passing null as address is equivalent to alloc
@@ -66,6 +61,13 @@ import "libstdmemqd_static.a" as "mem" {
 }
 
 // Helper functions implemented in Quadrate
+
+// Free memory - wrapper around builtin free instruction
+// Passing null is safe (no-op)
+// Double-free is undefined behavior
+pub fn free( address:ptr -- ) {
+	free  // Calls builtin free instruction
+}
 
 fn is_null( address:ptr -- is_null:i64 ) {
 	// Check if pointer is null
