@@ -42,14 +42,17 @@
 #include <qc/ast_node_switch.h>
 #include <qc/ast_node_use.h>
 
-#include <cstdlib>
+#include <algorithm>
+#include <charconv>
 #include <filesystem>
 #include <iostream>
 #include <map>
 #include <memory>
 #include <set>
 #include <string>
+#include <system_error>
 #include <vector>
+
 
 namespace Qd {
 
@@ -143,6 +146,15 @@ namespace Qd {
 
 		// Counter for unique variable names
 		int varCounter = 0;
+
+		// Compilation status
+		bool compilationFailed = false;
+
+		bool safeParseInt64(const std::string& str, int64_t& out) {
+			if (str.empty()) return false;
+			auto [ptr, ec] = std::from_chars(str.data(), str.data() + str.size(), out);
+			return ec == std::errc();
+		}
 
 		// Local variables (per function scope): name -> alloca instruction
 		std::map<std::string, llvm::AllocaInst*> localVariables;
@@ -1737,7 +1749,11 @@ namespace Qd {
 
 		switch (type) {
 		case AstNodeLiteral::LiteralType::INTEGER: {
-			int64_t val = std::stoll(value);
+			int64_t val = 0;
+			if (!safeParseInt64(value, val)) {
+				std::cerr << "quadc: error: Invalid integer literal '" << value << "' (out of range or invalid format)" << std::endl;
+				compilationFailed = true;
+			}
 			// Use function calls when debug info is enabled for better debuggability
 			// Use inline code for release builds for better performance
 			if (debugInfoEnabled) {
@@ -2110,7 +2126,11 @@ namespace Qd {
 				builder->CreateCall(pushFloatFn, {ctx, floatConst});
 			} else {
 				// Integer constant
-				int64_t intValue = std::stoll(value);
+				int64_t intValue = 0;
+				if (!safeParseInt64(value, intValue)) {
+					std::cerr << "quadc: error: Invalid integer constant '" << value << "' (out of range or invalid format)" << std::endl;
+					compilationFailed = true;
+				}
 				llvm::Value* intConst = builder->getInt64(static_cast<uint64_t>(intValue));
 				builder->CreateCall(pushIntFn, {ctx, intConst});
 			}
@@ -2448,7 +2468,13 @@ namespace Qd {
 					// Compare switch value with case value (integer)
 					auto valuePtr = builder->CreateStructGEP(switchElemTy, switchElem, 0, "value_ptr");
 					auto switchVal = builder->CreateLoad(builder->getInt64Ty(), valuePtr, "switch_val");
-					auto caseVal = builder->getInt64(static_cast<uint64_t>(std::stoll(lit->value())));
+					
+					int64_t parsedVal = 0;
+					if (!safeParseInt64(lit->value(), parsedVal)) {
+						std::cerr << "quadc: error: Invalid integer case label '" << lit->value() << "' (out of range or invalid format)" << std::endl;
+						compilationFailed = true;
+					}
+					auto caseVal = builder->getInt64(static_cast<uint64_t>(parsedVal));
 					matches = builder->CreateICmpEQ(switchVal, caseVal, "case_match");
 				} else if (lit->literalType() == AstNodeLiteral::LiteralType::FLOAT) {
 					// Compare float values
@@ -3782,7 +3808,7 @@ namespace Qd {
 			return false;
 		}
 
-		return true;
+		return !compilationFailed;
 	}
 
 	// LlvmGenerator implementation
