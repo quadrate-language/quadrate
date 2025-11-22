@@ -1304,6 +1304,271 @@ private:
 		return json_null();
 	}
 
+	// Helper: Find struct type of a local variable by analyzing the function body
+	std::string findStructTypeOfVariable(Qd::IAstNode* root, const std::string& varName, size_t requestLine) {
+		// Find the function containing the requested line
+		Qd::AstNodeFunctionDeclaration* functionNode = nullptr;
+		std::function<void(Qd::IAstNode*)> searchFunction = [&](Qd::IAstNode* node) {
+			if (!node) {
+				return;
+			}
+
+			if (node->type() == Qd::IAstNode::Type::FUNCTION_DECLARATION) {
+				Qd::AstNodeFunctionDeclaration* funcNode = static_cast<Qd::AstNodeFunctionDeclaration*>(node);
+				// Check if the requested line is within this function
+				size_t funcStartLine = (funcNode->line() > 0) ? funcNode->line() - 1 : 0;
+				// Simple heuristic: if the function starts before or at the request line, it might contain it
+				if (funcStartLine <= requestLine) {
+					functionNode = funcNode;
+				}
+			}
+
+			for (size_t i = 0; i < node->childCount(); i++) {
+				searchFunction(node->child(i));
+			}
+		};
+
+		searchFunction(root);
+
+		if (!functionNode) {
+			return "";
+		}
+
+		// Find the local declaration and look for a preceding struct constructor
+		// Pattern: ... StructName -> varName  OR  ... module::StructName -> varName
+		std::string structType;
+		std::function<void(Qd::IAstNode*)> searchConstructor = [&](Qd::IAstNode* node) {
+			if (!node || !structType.empty()) {
+				return;
+			}
+
+			// If this is a block, iterate through children sequentially
+			if (node->type() == Qd::IAstNode::Type::BLOCK) {
+				for (size_t i = 0; i < node->childCount(); i++) {
+					Qd::IAstNode* child = node->child(i);
+					if (!child) {
+						continue;
+					}
+
+					// Look for LOCAL node with matching name
+					if (child->type() == Qd::IAstNode::Type::LOCAL) {
+						Qd::AstNodeLocal* localNode = static_cast<Qd::AstNodeLocal*>(child);
+						if (localNode->name() == varName) {
+							// Found the declaration - now look backwards for struct constructor
+							// Check previous sibling
+							if (i > 0) {
+								Qd::IAstNode* prevSibling = node->child(i - 1);
+								if (prevSibling) {
+									// Check if it's a scoped identifier (module::Struct)
+									if (prevSibling->type() == Qd::IAstNode::Type::SCOPED_IDENTIFIER) {
+										Qd::AstNodeScopedIdentifier* scopedNode = static_cast<Qd::AstNodeScopedIdentifier*>(prevSibling);
+										structType = scopedNode->scope() + "::" + scopedNode->name();
+										return;
+									}
+									// Check if it's a plain identifier (Struct)
+									else if (prevSibling->type() == Qd::IAstNode::Type::IDENTIFIER) {
+										Qd::AstNodeIdentifier* identNode = static_cast<Qd::AstNodeIdentifier*>(prevSibling);
+										structType = identNode->name();
+										return;
+									}
+								}
+							}
+							return;
+						}
+					}
+				}
+			}
+
+			// Recursively search children
+			for (size_t i = 0; i < node->childCount(); i++) {
+				searchConstructor(node->child(i));
+			}
+		};
+
+		searchConstructor(functionNode);
+		return structType;
+	}
+
+	// Helper function to handle Go to Definition for field access expressions (v@x)
+	json_t* handleFieldAccessDefinition(Qd::IAstNode* root, const std::string& uri, size_t line,
+	                                      bool cursorOnVariable) {
+		// Find the field access node at the target line
+		Qd::AstNodeFieldAccess* fieldAccessNode = nullptr;
+		std::function<void(Qd::IAstNode*)> searchFieldAccess = [&](Qd::IAstNode* node) {
+			if (!node) {
+				return;
+			}
+
+			if (node->type() == Qd::IAstNode::Type::FIELD_ACCESS) {
+				Qd::AstNodeFieldAccess* faNode = static_cast<Qd::AstNodeFieldAccess*>(node);
+				// Check if this field access is on the target line
+				size_t nodeLine = (faNode->line() > 0) ? faNode->line() - 1 : 0;
+				if (nodeLine == line) {
+					fieldAccessNode = faNode;
+					return;
+				}
+			}
+
+			// Recursively search children
+			for (size_t i = 0; i < node->childCount(); i++) {
+				searchFieldAccess(node->child(i));
+				if (fieldAccessNode) {
+					return;
+				}
+			}
+		};
+
+		searchFieldAccess(root);
+
+		if (!fieldAccessNode) {
+			return json_null();
+		}
+
+		if (cursorOnVariable) {
+			// User clicked on the variable name - find the local variable declaration
+			std::string varName = fieldAccessNode->varName();
+			Qd::AstNodeLocal* localNode = findLocalDeclaration(fieldAccessNode, varName, line);
+
+			if (localNode) {
+				// Found the local variable declaration
+				json_t* location = json_object();
+				json_object_set_new(location, "uri", json_string(uri.c_str()));
+
+				json_t* range = json_object();
+				json_t* start = json_object();
+				size_t lspLine = (localNode->line() > 0) ? localNode->line() - 1 : 0;
+				json_object_set_new(start, "line", json_integer(static_cast<json_int_t>(lspLine)));
+				json_object_set_new(start, "character", json_integer(0));
+				json_object_set_new(range, "start", start);
+
+				json_t* end = json_object();
+				json_object_set_new(end, "line", json_integer(static_cast<json_int_t>(lspLine)));
+				json_object_set_new(end, "character", json_integer(static_cast<json_int_t>(localNode->name().length())));
+				json_object_set_new(range, "end", end);
+
+				json_object_set_new(location, "range", range);
+				return location;
+			}
+		} else {
+			// User clicked on the field name - find the struct field definition
+			std::string varName = fieldAccessNode->varName();
+			std::string fieldName = fieldAccessNode->fieldName();
+
+			// Find the struct type of this variable
+			std::string structType = findStructTypeOfVariable(root, varName, line);
+			if (structType.empty()) {
+				return json_null();
+			}
+
+			// Now find the struct declaration
+			// First check if it's a scoped struct (module::StructName)
+			size_t colonPos = structType.find("::");
+			if (colonPos != std::string::npos) {
+				// This is a module struct
+				std::string moduleName = structType.substr(0, colonPos);
+				std::string structName = structType.substr(colonPos + 2);
+
+				// Get source directory from the current document URI
+				std::string sourceDir;
+				if (uri.substr(0, 7) == "file://") {
+					std::string filePath = uri.substr(7);
+					size_t lastSlash = filePath.find_last_of('/');
+					if (lastSlash != std::string::npos) {
+						sourceDir = filePath.substr(0, lastSlash);
+					}
+				}
+
+				// Resolve module path
+				std::string modulePath = resolveModulePath(moduleName, sourceDir);
+				if (!modulePath.empty()) {
+					// Parse the module file
+					std::ifstream moduleFile(modulePath);
+					if (moduleFile.good()) {
+						std::stringstream buffer;
+						buffer << moduleFile.rdbuf();
+						std::string moduleContent = buffer.str();
+
+						Qd::Ast moduleAst;
+						Qd::IAstNode* moduleRoot = moduleAst.generate(moduleContent.c_str(), false, nullptr);
+
+						if (moduleRoot && !moduleAst.hasErrors()) {
+							// Find the struct in the module
+							for (size_t i = 0; i < moduleRoot->childCount(); i++) {
+								Qd::IAstNode* child = moduleRoot->child(i);
+								if (child && child->type() == Qd::IAstNode::Type::STRUCT_DECLARATION) {
+									Qd::AstNodeStructDeclaration* structNode = static_cast<Qd::AstNodeStructDeclaration*>(child);
+									if (structNode->name() == structName) {
+										// Found the struct - now find the field
+										const auto& fields = structNode->fields();
+										for (const auto* field : fields) {
+											if (field->name() == fieldName) {
+												// Found the field!
+												json_t* location = json_object();
+												std::string moduleUri = "file://" + modulePath;
+												json_object_set_new(location, "uri", json_string(moduleUri.c_str()));
+
+												json_t* range = json_object();
+												json_t* start_json = json_object();
+												size_t lspLine = (field->line() > 0) ? field->line() - 1 : 0;
+												json_object_set_new(start_json, "line", json_integer(static_cast<json_int_t>(lspLine)));
+												json_object_set_new(start_json, "character", json_integer(0));
+												json_object_set_new(range, "start", start_json);
+
+												json_t* end = json_object();
+												json_object_set_new(end, "line", json_integer(static_cast<json_int_t>(lspLine)));
+												json_object_set_new(end, "character", json_integer(static_cast<json_int_t>(field->name().length())));
+												json_object_set_new(range, "end", end);
+
+												json_object_set_new(location, "range", range);
+												return location;
+											}
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+			} else {
+				// This is a local struct in the same file
+				for (size_t i = 0; i < root->childCount(); i++) {
+					Qd::IAstNode* child = root->child(i);
+					if (child && child->type() == Qd::IAstNode::Type::STRUCT_DECLARATION) {
+						Qd::AstNodeStructDeclaration* structNode = static_cast<Qd::AstNodeStructDeclaration*>(child);
+						if (structNode->name() == structType) {
+							// Found the struct - now find the field
+							const auto& fields = structNode->fields();
+							for (const auto* field : fields) {
+								if (field->name() == fieldName) {
+									// Found the field!
+									json_t* location = json_object();
+									json_object_set_new(location, "uri", json_string(uri.c_str()));
+
+									json_t* range = json_object();
+									json_t* start_json = json_object();
+									size_t lspLine = (field->line() > 0) ? field->line() - 1 : 0;
+									json_object_set_new(start_json, "line", json_integer(static_cast<json_int_t>(lspLine)));
+									json_object_set_new(start_json, "character", json_integer(0));
+									json_object_set_new(range, "start", start_json);
+
+									json_t* end = json_object();
+									json_object_set_new(end, "line", json_integer(static_cast<json_int_t>(lspLine)));
+									json_object_set_new(end, "character", json_integer(static_cast<json_int_t>(field->name().length())));
+									json_object_set_new(range, "end", end);
+
+									json_object_set_new(location, "range", range);
+									return location;
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+
+		return json_null();
+	}
+
 	void handleDefinition(const std::string& id, const std::string& uri, size_t line, size_t character) {
 		json_t* response = json_object();
 		json_object_set_new(response, "jsonrpc", json_string("2.0"));
@@ -1338,6 +1603,55 @@ private:
 				Qd::IAstNode* root = ast.generate(documentText.c_str(), false, nullptr);
 
 				if (root && !ast.hasErrors() && root->type() == Qd::IAstNode::Type::PROGRAM) {
+					// Check if we're in a field access expression (v@x)
+					// Find the character at the cursor position to see if @ is nearby
+					std::vector<std::string> lines;
+					std::istringstream stream(documentText);
+					std::string currentLine;
+					while (std::getline(stream, currentLine)) {
+						lines.push_back(currentLine);
+					}
+
+					if (line < lines.size()) {
+						const std::string& targetLine = lines[line];
+						// Look for @ before or after the cursor
+						bool inFieldAccess = false;
+						bool cursorOnVariable = false;
+
+						// Search for @ near the cursor
+						for (size_t i = 0; i < targetLine.length(); i++) {
+							if (targetLine[i] == '@') {
+								// Check if cursor is near this @
+								if (i >= character) {
+									// @ is at or after cursor - cursor might be on variable
+									if (i - character <= word.length()) {
+										inFieldAccess = true;
+										cursorOnVariable = true;
+										break;
+									}
+								} else {
+									// @ is before cursor - cursor might be on field name
+									if (character - i <= word.length() + 1) {
+										inFieldAccess = true;
+										cursorOnVariable = false;
+										break;
+									}
+								}
+							}
+						}
+
+						if (inFieldAccess) {
+							// Find the field access node at this location
+							result = handleFieldAccessDefinition(root, uri, line, cursorOnVariable);
+							if (!json_is_null(result)) {
+								json_object_set_new(response, "result", result);
+								sendMessage(response);
+								json_decref(response);
+								return;
+							}
+						}
+					}
+
 					// Search for function or struct declaration matching the word
 					for (size_t i = 0; i < root->childCount(); i++) {
 						Qd::IAstNode* child = root->child(i);
