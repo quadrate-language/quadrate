@@ -10,11 +10,13 @@
 #include <qc/ast_node_import.h>
 #include <qc/ast_node_instruction.h>
 #include <qc/ast_node_literal.h>
+#include <qc/ast_node_local.h>
 #include <qc/ast_node_loop.h>
 #include <qc/ast_node_parameter.h>
 #include <qc/ast_node_program.h>
 #include <qc/ast_node_return.h>
 #include <qc/ast_node_scoped.h>
+#include <qc/ast_node_struct.h>
 #include <qc/ast_node_switch.h>
 #include <qc/ast_node_use.h>
 #include <qc/formatter.h>
@@ -80,6 +82,21 @@ namespace Qd {
 			break;
 		case IAstNode::Type::CONSTANT_DECLARATION:
 			formatConstant(node);
+			break;
+		case IAstNode::Type::STRUCT_DECLARATION:
+			formatStructDeclaration(node);
+			break;
+		case IAstNode::Type::STRUCT_CONSTRUCTION:
+			formatStructConstruction(node);
+			break;
+		case IAstNode::Type::FIELD_ACCESS:
+			formatFieldAccess(node);
+			break;
+		case IAstNode::Type::LOCAL:
+			formatLocal(node);
+			break;
+		case IAstNode::Type::FUNCTION_POINTER_REFERENCE:
+			formatFunctionPointerReference(node);
 			break;
 		case IAstNode::Type::INSTRUCTION:
 			formatInstruction(node);
@@ -152,6 +169,13 @@ namespace Qd {
 				// Constants: add blank line only if next is not a constant
 				else if (current->type() == IAstNode::Type::CONSTANT_DECLARATION) {
 					if (next->type() != IAstNode::Type::CONSTANT_DECLARATION &&
+							next->type() != IAstNode::Type::COMMENT) {
+						addBlankLine = true;
+					}
+				}
+				// Structs: add blank line only if next is not a struct
+				else if (current->type() == IAstNode::Type::STRUCT_DECLARATION) {
+					if (next->type() != IAstNode::Type::STRUCT_DECLARATION &&
 							next->type() != IAstNode::Type::COMMENT) {
 						addBlankLine = true;
 					}
@@ -1221,6 +1245,59 @@ namespace Qd {
 
 	void Formatter::newLine() {
 		mOutput += '\n';
+	}
+
+	void Formatter::formatStructDeclaration(const IAstNode* node) {
+		const AstNodeStructDeclaration* structDecl = static_cast<const AstNodeStructDeclaration*>(node);
+
+		writeIndent();
+		if (structDecl->isPublic()) {
+			write("pub ");
+		}
+		write("struct ");
+		write(structDecl->name());
+		write(" {");
+		newLine();
+
+		// Format fields
+		indent();
+		for (const auto* field : structDecl->fields()) {
+			const AstNodeStructField* structField = static_cast<const AstNodeStructField*>(field);
+			writeIndent();
+			write(structField->name());
+			write(":");
+			write(structField->typeName());
+			newLine();
+		}
+		dedent();
+
+		writeIndent();
+		write("}");
+		newLine();
+	}
+
+	void Formatter::formatStructConstruction(const IAstNode* node) {
+		const AstNodeStructConstruction* structConstr = static_cast<const AstNodeStructConstruction*>(node);
+		write(structConstr->structName());
+	}
+
+	void Formatter::formatFieldAccess(const IAstNode* node) {
+		const AstNodeFieldAccess* fieldAccess = static_cast<const AstNodeFieldAccess*>(node);
+		write(fieldAccess->varName());
+		write(" @");
+		write(fieldAccess->fieldName());
+	}
+
+	void Formatter::formatLocal(const IAstNode* node) {
+		const AstNodeLocal* local = static_cast<const AstNodeLocal*>(node);
+		write(" -> ");
+		write(local->name());
+	}
+
+	void Formatter::formatFunctionPointerReference(const IAstNode* node) {
+		const AstNodeFunctionPointerReference* funcPtrRef = static_cast<const AstNodeFunctionPointerReference*>(node);
+		write("&");
+		write(funcPtrRef->functionName());
 	}
 
 }

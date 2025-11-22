@@ -17,6 +17,7 @@ module.exports = grammar({
 
     _statement: $ => choice(
       $.function_definition,
+      $.struct_definition,
       $.constant_definition,
       $.use_statement,
       $.import_statement,
@@ -31,6 +32,23 @@ module.exports = grammar({
       field('name', $.identifier),
       field('signature', optional($.stack_signature)),
       field('body', $.block),
+    ),
+
+    // Struct definition: struct Name { x:f64 y:f64 }
+    // or: pub struct Name { x:f64 y:f64 }
+    struct_definition: $ => seq(
+      optional('pub'),
+      'struct',
+      field('name', $.identifier),
+      '{',
+      repeat($.struct_field),
+      '}',
+    ),
+
+    struct_field: $ => seq(
+      field('name', $.identifier),
+      ':',
+      field('type', $.type),
     ),
 
     // Stack signature: ( x:float y:float -- z:float ) or just ()
@@ -100,6 +118,7 @@ module.exports = grammar({
       $.builtin_operation,
       $.operator_symbol,
       $.namespaced_identifier,
+      $.field_access,
       $.identifier,
       $.local_declaration,
       $.if_expression,
@@ -179,6 +198,13 @@ module.exports = grammar({
       '!p', '!i', '!f',
     ),
 
+    // Field access: varname @fieldname
+    field_access: $ => seq(
+      field('variable', $.identifier),
+      '@',
+      field('field', $.identifier),
+    ),
+
     // Operator symbols (single-char and multi-char operators)
     operator_symbol: $ => prec(1, choice(
       '.', '+', '-', '*', '/', '%',
@@ -211,6 +237,8 @@ module.exports = grammar({
       'detach', 'spawn', 'wait',
       // Error handling
       'error',
+      // Memory management
+      'free',
     )),
 
     // Literals

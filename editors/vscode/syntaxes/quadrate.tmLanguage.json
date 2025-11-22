@@ -70,7 +70,7 @@
     },
     "builtins": {
       "name": "support.function.builtin.quadrate",
-      "match": "\\b(add|sub|mul|div|mod|neg|abs|ceil|floor|sqrt|pow|sin|cos|tan|log|exp|min|max|eq|ne|lt|le|gt|ge|and|or|not|xor|dup|drop|swap|over|rot|nip|tuck|print|println|error)\\b"
+      "match": "\\b(add|sub|mul|div|mod|neg|abs|ceil|floor|sqrt|pow|sin|cos|tan|log|exp|min|max|eq|ne|lt|le|gt|ge|and|or|not|xor|dup|drop|swap|over|rot|nip|tuck|print|println|error|free)\\b"
     },
     "types": {
       "name": "storage.type.quadrate",

@@ -16,6 +16,7 @@
 #include <qc/ast_node_parameter.h>
 #include <qc/ast_node_program.h>
 #include <qc/ast_node_scoped.h>
+#include <qc/ast_node_struct.h>
 #include <qc/error_reporter.h>
 #include <qc/semantic_validator.h>
 #include <sstream>
@@ -32,6 +33,13 @@ struct FunctionInfo {
 	std::vector<std::string> outputParams; // "name:type" format
 	std::string signature;				   // Full signature string
 	std::string snippet;				   // LSP snippet with placeholders
+};
+
+// Structure to hold struct information for completions
+struct StructInfo {
+	std::string name;
+	std::vector<std::pair<std::string, std::string>> fields; // field name -> type
+	std::string signature; // Full struct declaration
 };
 
 // LSP Server using jansson for JSON handling
@@ -407,7 +415,7 @@ private:
 		static const char* instructions[] = {"add", "sub", "mul", "div", "dup", "swap", "drop", "over", "rot", "print",
 				"prints", "eq", "neq", "lt", "gt", "lte", "gte", "and", "or", "not", "inc", "dec", "abs", "sqrt", "sq",
 				"sin", "cos", "tan", "asin", "acos", "atan", "ln", "log10", "pow", "min", "max", "ceil", "floor",
-				"round", "if", "for", "loop", "switch", "case", "default", "break", "continue", "defer"};
+				"round", "if", "for", "loop", "switch", "case", "default", "break", "continue", "defer", "free", "struct", "pub"};
 
 		json_t* response = json_object();
 		json_object_set_new(response, "jsonrpc", json_string("2.0"));
@@ -493,6 +501,29 @@ private:
 			}
 		}
 
+		// Add struct completions
+		std::vector<StructInfo> structs = extractStructs(documentText);
+		for (const auto& structInfo : structs) {
+			json_t* item = json_object();
+			json_object_set_new(item, "label", json_string(structInfo.name.c_str()));
+			json_object_set_new(item, "kind", json_integer(22)); // Struct kind
+
+			// Build documentation showing struct fields
+			std::ostringstream docStream;
+			docStream << "**Struct:** `" << structInfo.name << "`\n\n";
+			docStream << "**Fields:**\n";
+			for (const auto& field : structInfo.fields) {
+				docStream << "- `" << field.first << ": " << field.second << "`\n";
+			}
+
+			json_t* documentation = json_object();
+			json_object_set_new(documentation, "kind", json_string("markdown"));
+			json_object_set_new(documentation, "value", json_string(docStream.str().c_str()));
+			json_object_set_new(item, "documentation", documentation);
+
+			json_array_append_new(items, item);
+		}
+
 		json_object_set_new(result, "items", items);
 		json_object_set_new(response, "result", result);
 
@@ -537,6 +568,16 @@ private:
 				{"if", "Conditional execution.\n\n**Syntax:** `condition if { ... } else { ... }`"},
 				{"for", "Loop construct.\n\n**Syntax:** `start end for { ... }`"},
 				{"loop", "Infinite loop.\n\n**Syntax:** `loop { ... }`"},
+				{"free", "Free allocated memory.\n\n**Stack effect:** `ptr --`\n\nFrees memory allocated for structs or "
+						 "strings. Automatically frees nested string fields in structs."},
+				{"struct",
+						"Declare a struct type.\n\n**Syntax:** `struct Name { field1:type1 field2:type2 }`\n\nDefines a "
+						"composite data type with named fields."},
+				{"pub",
+						"Public visibility modifier.\n\n**Syntax:** `pub struct Name { ... }` or `pub fn name(...) { ... "
+						"}`\n\nMakes structs or functions visible to other modules."},
+				{"defer", "Defer execution until scope exit.\n\n**Syntax:** `defer { ... }`\n\nExecutes code block when "
+						  "function returns, useful for cleanup."},
 		};
 
 		auto it = docs.find(word);
@@ -1737,6 +1778,50 @@ private:
 		}
 
 		return functions;
+	}
+
+	std::vector<StructInfo> extractStructs(const std::string& text) {
+		std::vector<StructInfo> structs;
+
+		// Parse the document
+		Qd::Ast ast;
+		Qd::IAstNode* root = ast.generate(text.c_str(), false, nullptr);
+
+		if (!root || ast.hasErrors()) {
+			return structs; // Return empty on parse errors
+		}
+
+		// Root should be AstProgram
+		if (root->type() != Qd::IAstNode::Type::PROGRAM) {
+			return structs;
+		}
+
+		// Iterate through program children looking for struct declarations
+		for (size_t i = 0; i < root->childCount(); i++) {
+			Qd::IAstNode* child = root->child(i);
+
+			if (child && child->type() == Qd::IAstNode::Type::STRUCT_DECLARATION) {
+				Qd::AstNodeStructDeclaration* structNode = static_cast<Qd::AstNodeStructDeclaration*>(child);
+
+				StructInfo info;
+				info.name = structNode->name();
+
+				// Build signature
+				std::ostringstream sig;
+				sig << "struct " << info.name << " { ";
+				for (const auto* field : structNode->fields()) {
+					const Qd::AstNodeStructField* structField = static_cast<const Qd::AstNodeStructField*>(field);
+					info.fields.push_back({structField->name(), structField->typeName()});
+					sig << structField->name() << ":" << structField->typeName() << " ";
+				}
+				sig << "}";
+				info.signature = sig.str();
+
+				structs.push_back(info);
+			}
+		}
+
+		return structs;
 	}
 
 	std::map<std::string, std::string> documents_;
