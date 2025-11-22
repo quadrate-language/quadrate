@@ -201,6 +201,10 @@ namespace Qd {
 		// Loaded module files: tracks which specific files have been loaded (to prevent duplicate loads)
 		std::unordered_set<std::string> mLoadedModuleFiles;
 
+		// Module dependency chain: tracks the current chain of module imports being processed
+		// Used to detect circular dependencies (e.g., A -> B -> C -> A)
+		std::vector<std::string> mModuleDependencyChain;
+
 		// Module functions: maps module name -> set of function names in that module
 		// Maps module name -> (function name -> isPublic flag)
 		std::unordered_map<std::string, std::unordered_map<std::string, bool>> mModuleFunctions;

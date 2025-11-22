@@ -56,7 +56,7 @@ TEST(ValidArithmetic) {
 // Test function signature: simple producer
 TEST(FunctionSignatureSimpleProducer) {
 	const char* src = R"(
-		fn get_value() {
+		fn get_value( -- val:i64) {
 			42
 		}
 		fn main() {
@@ -70,7 +70,7 @@ TEST(FunctionSignatureSimpleProducer) {
 // Test function signature: multiple outputs
 TEST(FunctionSignatureMultipleOutputs) {
 	const char* src = R"(
-		fn get_pair() {
+		fn get_pair( -- a:i64 b:i64) {
 			10 20
 		}
 		fn main() {
@@ -84,13 +84,13 @@ TEST(FunctionSignatureMultipleOutputs) {
 // Test chained function calls
 TEST(ChainedFunctionCalls) {
 	const char* src = R"(
-		fn c() {
+		fn c( -- x:i64 y:i64) {
 			3 7
 		}
-		fn b() {
+		fn b( -- z:i64) {
 			c add
 		}
-		fn a() {
+		fn a( -- w:i64) {
 			b 2 mul
 		}
 		fn main() {
@@ -104,19 +104,19 @@ TEST(ChainedFunctionCalls) {
 // Test deep nesting (5 levels)
 TEST(DeepNesting) {
 	const char* src = R"(
-		fn level1() {
+		fn level1( -- a:i64) {
 			1
 		}
-		fn level2() {
+		fn level2( -- b:i64) {
 			level1 2 add
 		}
-		fn level3() {
+		fn level3( -- c:i64) {
 			level2 3 add
 		}
-		fn level4() {
+		fn level4( -- d:i64) {
 			level3 4 add
 		}
-		fn level5() {
+		fn level5( -- e:i64) {
 			level4 5 add
 		}
 		fn main() {
@@ -144,13 +144,13 @@ TEST(FunctionZeroOutputs) {
 // Test varying outputs
 TEST(VaryingOutputs) {
 	const char* src = R"(
-		fn one() {
+		fn one( -- a:i64) {
 			1
 		}
-		fn two() {
+		fn two( -- b:i64 c:i64) {
 			2 3
 		}
-		fn three() {
+		fn three( -- d:i64 e:i64 f:i64) {
 			4 5 6
 		}
 		fn main() {
@@ -166,10 +166,10 @@ TEST(VaryingOutputs) {
 // Test float type propagation
 TEST(FloatTypePropagation) {
 	const char* src = R"(
-		fn make_float() {
+		fn make_float( -- f:f64) {
 			3.14
 		}
-		fn double_it() {
+		fn double_it( -- r:f64) {
 			make_float 2 mul
 		}
 		fn main() {

@@ -1,0 +1,11 @@
+// Test: module importing itself should be detected
+use "circular_self.qd"
+
+pub fn func( -- ) {
+    42
+    drop
+}
+
+fn main( -- ) {
+    func
+}

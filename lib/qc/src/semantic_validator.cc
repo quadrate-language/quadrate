@@ -504,11 +504,40 @@ if (node->type() == IAstNode::Type::STRUCT_DECLARATION) {
 
 	void SemanticValidator::loadModuleDefinitions(
 			const std::string& moduleName, const std::string& currentPackage, bool reportErrors) {
+		// Check for circular dependency
+		for (size_t i = 0; i < mModuleDependencyChain.size(); i++) {
+			if (mModuleDependencyChain[i] == moduleName) {
+				// Found circular dependency - build error message showing the cycle
+				std::string errorMsg = "Circular module dependency detected: ";
+				for (size_t j = i; j < mModuleDependencyChain.size(); j++) {
+					errorMsg += mModuleDependencyChain[j];
+					errorMsg += " -> ";
+				}
+				errorMsg += moduleName;
+				reportError(errorMsg.c_str());
+				return;
+			}
+		}
+
 		// Check if we've already loaded this specific file (prevent duplicate loads)
 		if (mLoadedModuleFiles.count(moduleName)) {
 			return;
 		}
 		mLoadedModuleFiles.insert(moduleName);
+
+		// Add to dependency chain
+		mModuleDependencyChain.push_back(moduleName);
+
+		// RAII-style cleanup: ensure we pop from dependency chain when function exits
+		struct ChainGuard {
+			std::vector<std::string>& chain;
+			ChainGuard(std::vector<std::string>& c) : chain(c) {}
+			~ChainGuard() {
+				if (!chain.empty()) {
+					chain.pop_back();
+				}
+			}
+		} guard(mModuleDependencyChain);
 
 		// Check if this is a direct file import (ends with .qd)
 		bool isDirectFile = moduleName.size() >= 3 && moduleName.substr(moduleName.size() - 3) == ".qd";
@@ -1900,8 +1929,13 @@ if (node->type() == IAstNode::Type::STRUCT_DECLARATION) {
 			}
 
 			case IAstNode::Type::IF_STATEMENT: {
-				// For now, skip control flow type checking
-				// (more complex - would need to merge type states from branches)
+				// Check that stack has a condition value
+				if (typeStack.empty()) {
+					reportError(child, "Type error in 'if': Stack underflow (requires 1 condition value)");
+					break;
+				}
+				// Don't pop the condition - we're skipping full control flow analysis
+				// which would be complex (need to merge type states from branches)
 				break;
 			}
 

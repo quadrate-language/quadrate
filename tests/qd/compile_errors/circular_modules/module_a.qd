@@ -1,0 +1,7 @@
+// Module A - imports B
+use "module_b.qd"
+
+pub fn func_a( -- ) {
+    42
+    drop
+}
