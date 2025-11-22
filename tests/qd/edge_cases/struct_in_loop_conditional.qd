@@ -1,0 +1,17 @@
+struct Counter {
+  value:i64
+}
+
+fn main( -- ) {
+  0 10 1 for {
+    $ Counter -> c
+    defer { c free }
+
+    c @value 5 lt
+    if {
+      c @value . nl
+    } else {
+      "Greater than 5" prints nl
+    }
+  }
+}

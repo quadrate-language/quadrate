@@ -1,0 +1,7 @@
+// Test: Empty struct (should compile)
+struct Empty {
+}
+
+fn main( -- ) {
+  "Empty struct test passed" prints nl
+}

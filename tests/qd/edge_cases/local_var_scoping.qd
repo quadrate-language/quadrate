@@ -1,0 +1,14 @@
+fn test1( -- ) {
+  42 -> x
+  x . nl
+}
+
+fn test2( -- ) {
+  100 -> x
+  x . nl
+}
+
+fn main( -- ) {
+  test1
+  test2
+}

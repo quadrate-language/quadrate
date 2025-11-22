@@ -346,12 +346,56 @@ namespace Qd {
 		// If this is a function declaration, add it to the symbol table
 		if (node->type() == IAstNode::Type::FUNCTION_DECLARATION) {
 			AstNodeFunctionDeclaration* func = static_cast<AstNodeFunctionDeclaration*>(node);
+
+			// Check for duplicate function name
+			if (mDefinedFunctions.find(func->name()) != mDefinedFunctions.end()) {
+				std::string errorMsg = "Duplicate function definition: '" + func->name() + "'";
+				reportError(func, errorMsg.c_str());
+				return;
+			}
+
+			// Check for conflict with struct name
+			if (mDefinedStructs.find(func->name()) != mDefinedStructs.end()) {
+				std::string errorMsg = "Function '" + func->name() + "' conflicts with struct name";
+				reportError(func, errorMsg.c_str());
+				return;
+			}
+
+			// Check for conflict with constant name
+			if (mDefinedConstants.find(func->name()) != mDefinedConstants.end()) {
+				std::string errorMsg = "Function '" + func->name() + "' conflicts with constant name";
+				reportError(func, errorMsg.c_str());
+				return;
+			}
+
 			mDefinedFunctions.insert(func->name());
 		}
 
 		// If this is a constant declaration, add it to the symbol table
 		if (node->type() == IAstNode::Type::CONSTANT_DECLARATION) {
 			AstNodeConstant* constant = static_cast<AstNodeConstant*>(node);
+
+			// Check for duplicate constant name
+			if (mDefinedConstants.find(constant->name()) != mDefinedConstants.end()) {
+				std::string errorMsg = "Duplicate constant definition: '" + constant->name() + "'";
+				reportError(constant, errorMsg.c_str());
+				return;
+			}
+
+			// Check for conflict with struct name
+			if (mDefinedStructs.find(constant->name()) != mDefinedStructs.end()) {
+				std::string errorMsg = "Constant '" + constant->name() + "' conflicts with struct name";
+				reportError(constant, errorMsg.c_str());
+				return;
+			}
+
+			// Check for conflict with function name
+			if (mDefinedFunctions.find(constant->name()) != mDefinedFunctions.end()) {
+				std::string errorMsg = "Constant '" + constant->name() + "' conflicts with function name";
+				reportError(constant, errorMsg.c_str());
+				return;
+			}
+
 			mDefinedConstants.insert(constant->name());
 		mConstantValues[constant->name()] = constant->value();
 		}
@@ -359,14 +403,46 @@ namespace Qd {
 	// If this is a struct declaration, add it to the symbol table and collect field types
 if (node->type() == IAstNode::Type::STRUCT_DECLARATION) {
 		AstNodeStructDeclaration* structDecl = static_cast<AstNodeStructDeclaration*>(node);
+
+		// Check for duplicate struct name
+		if (mDefinedStructs.find(structDecl->name()) != mDefinedStructs.end()) {
+			std::string errorMsg = "Duplicate struct definition: '" + structDecl->name() + "'";
+			reportError(structDecl, errorMsg.c_str());
+			return;
+		}
+
+		// Check for conflict with function name
+		if (mDefinedFunctions.find(structDecl->name()) != mDefinedFunctions.end()) {
+			std::string errorMsg = "Struct '" + structDecl->name() + "' conflicts with function name";
+			reportError(structDecl, errorMsg.c_str());
+			return;
+		}
+
+		// Check for conflict with constant name
+		if (mDefinedConstants.find(structDecl->name()) != mDefinedConstants.end()) {
+			std::string errorMsg = "Struct '" + structDecl->name() + "' conflicts with constant name";
+			reportError(structDecl, errorMsg.c_str());
+			return;
+		}
+
 		mDefinedStructs.insert(structDecl->name());
 
 		// Collect field types
 		std::unordered_map<std::string, StackValueType> fieldTypes;
+		std::unordered_set<std::string> seenFieldNames;
 		for (size_t i = 0; i < structDecl->childCount(); i++) {
 			IAstNode* child = structDecl->child(i);
 			if (child && child->type() == IAstNode::Type::STRUCT_FIELD) {
 				AstNodeStructField* field = static_cast<AstNodeStructField*>(child);
+
+				// Check for duplicate field name
+				if (seenFieldNames.find(field->name()) != seenFieldNames.end()) {
+					std::string errorMsg = "Duplicate field name '" + field->name() + "' in struct '" + structDecl->name() + "'";
+					reportError(field, errorMsg.c_str());
+					return;
+				}
+				seenFieldNames.insert(field->name());
+
 				StackValueType fieldType = StackValueType::UNKNOWN;
 				if (field->typeName() == "f64") {
 					fieldType = StackValueType::FLOAT;
@@ -2134,19 +2210,42 @@ if (node->type() == IAstNode::Type::STRUCT_DECLARATION) {
 					}
 				}
 			} else {
-				// Unknown struct type - search all structs (old behavior for backward compatibility)
-				for (const auto& structEntry : mStructFieldTypes) {
-					const auto& fields = structEntry.second;
-					auto it = fields.find(fieldName);
-					if (it != fields.end()) {
-						fieldType = it->second;
-						fieldFound = true;
-						break;
+				// Variable is not a known struct type
+				// Check if variable is definitely a scalar type (not a struct)
+				auto localIt = localVariables.find(varName);
+				if (localIt != localVariables.end() &&
+				    (localIt->second == StackValueType::INT || localIt->second == StackValueType::FLOAT || localIt->second == StackValueType::STRING)) {
+					// Variable is definitely a scalar type - this is an error
+					std::string errorMsg = "Type error in field access '";
+					errorMsg += varName;
+					errorMsg += " @";
+					errorMsg += fieldName;
+					errorMsg += "': Variable '";
+					errorMsg += varName;
+					errorMsg += "' is not a struct type";
+					reportError(fieldAccess, errorMsg.c_str());
+					fieldType = StackValueType::ANY; // Continue with ANY to avoid cascading errors
+				} else {
+					// Variable is either a pointer or unknown - search all structs (for parameters/pointers)
+					for (const auto& structEntry : mStructFieldTypes) {
+						const auto& fields = structEntry.second;
+						auto it = fields.find(fieldName);
+						if (it != fields.end()) {
+							fieldType = it->second;
+							fieldFound = true;
+							break;
+						}
 					}
-				}
 
-				if (!fieldFound) {
-					fieldType = StackValueType::ANY; // Fallback for unknown types
+					if (!fieldFound) {
+						std::string errorMsg = "Type error in field access '";
+						errorMsg += varName;
+						errorMsg += " @";
+						errorMsg += fieldName;
+						errorMsg += "': Unknown variable or field";
+						reportError(fieldAccess, errorMsg.c_str());
+						fieldType = StackValueType::ANY;
+					}
 				}
 			}
 

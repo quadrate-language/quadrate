@@ -1,0 +1,9 @@
+const MyValue = 42
+
+fn MyValue( -- ) {
+  "I am a function" prints nl
+}
+
+fn main( -- ) {
+  MyValue prints nl
+}

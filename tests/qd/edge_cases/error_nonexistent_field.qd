@@ -1,0 +1,10 @@
+struct Point {
+  x:f64
+  y:f64
+}
+
+fn main( -- ) {
+  1.0 2.0 Point -> p
+  defer { p free }
+  p @z . nl
+}

@@ -1,0 +1,15 @@
+struct AllTypes {
+  i_val:i64
+  f_val:f64
+  s_val:str
+  p_val:ptr
+}
+
+fn main( -- ) {
+  42 3.14 "hello" 0 AllTypes -> all
+  defer { all free }
+
+  all @i_val . nl
+  all @f_val . nl
+  all @s_val prints nl
+}

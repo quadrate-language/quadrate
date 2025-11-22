@@ -1,0 +1,12 @@
+fn countdown( n:i64 -- ) {
+  -> num
+  num 0 gt
+  if {
+    num . nl
+    num 1 sub countdown
+  }
+}
+
+fn main( -- ) {
+  10 countdown
+}

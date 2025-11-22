@@ -1,0 +1,8 @@
+fn bad_function( a:f64 b:f64 -- result:f64 ) {
+  add add
+  // This uses 3 values but signature only provides 2!
+}
+
+fn main( -- ) {
+  1.0 2.0 3.0 bad_function . nl
+}

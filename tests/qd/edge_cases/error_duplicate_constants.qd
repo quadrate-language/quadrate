@@ -1,0 +1,6 @@
+const PI = 3.14
+const PI = 3.14159
+
+fn main( -- ) {
+  PI . nl
+}
