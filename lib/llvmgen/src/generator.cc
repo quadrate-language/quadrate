@@ -4131,7 +4131,8 @@ namespace Qd {
 		}
 
 		// Add standard system libraries
-		libraryFlags += " -lm -lpthread";
+		// Note: C11 threads don't need -lpthread, but we need -lstdc++ for C++ filesystem code
+		libraryFlags += " -lm -lstdc++";
 
 		// Build -L flags for additional library search paths (third-party packages)
 		std::string librarySearchFlags;

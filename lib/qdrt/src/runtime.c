@@ -1,3 +1,4 @@
+// Need POSIX for strdup() - not part of C standard
 #define _POSIX_C_SOURCE 200809L
 
 #include <qdrt/runtime.h>
@@ -6,7 +7,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
-#include <pthread.h>
+#include <threads.h>
 
 static void dump_stack(qd_context* ctx);
 
@@ -2647,8 +2648,8 @@ typedef struct {
 	void* func_ptr;
 } qd_thread_info_t;
 
-// Wrapper function for pthread that calls the Quadrate function
-static void* qd_thread_wrapper(void* arg) {
+// Wrapper function for C11 threads that calls the Quadrate function
+static int qd_thread_wrapper(void* arg) {
 	qd_thread_info_t* info = (qd_thread_info_t*)arg;
 
 	// Call the function
@@ -2664,7 +2665,7 @@ static void* qd_thread_wrapper(void* arg) {
 	qd_free_context(info->ctx);
 	free(info);
 
-	return NULL;
+	return 0;
 }
 
 // spawn - create a new thread ( fn:ptr -- thread_id:i )
@@ -2706,17 +2707,17 @@ qd_exec_result qd_spawn(qd_context* ctx) {
 	info->func_ptr = val.value.p;
 
 	// Create thread
-	pthread_t* thread = malloc(sizeof(pthread_t));
+	thrd_t* thread = malloc(sizeof(thrd_t));
 	if (!thread) {
-		fprintf(stderr, "Fatal error in spawn: Failed to allocate pthread_t\n");
+		fprintf(stderr, "Fatal error in spawn: Failed to allocate thrd_t\n");
 		qd_free_context(thread_ctx);
 		free(info);
 		abort();
 	}
 
-	int result = pthread_create(thread, NULL, qd_thread_wrapper, info);
-	if (result != 0) {
-		fprintf(stderr, "Fatal error in spawn: pthread_create failed with error %d\n", result);
+	int result = thrd_create(thread, qd_thread_wrapper, info);
+	if (result != thrd_success) {
+		fprintf(stderr, "Fatal error in spawn: thrd_create failed with error %d\n", result);
 		qd_free_context(thread_ctx);
 		free(info);
 		free(thread);
@@ -2753,13 +2754,13 @@ qd_exec_result qd_detach(qd_context* ctx) {
 		abort();
 	}
 
-	// Get pthread_t pointer
-	pthread_t* thread = (pthread_t*)(uintptr_t)val.value.i;
+	// Get thrd_t pointer
+	thrd_t* thread = (thrd_t*)(uintptr_t)val.value.i;
 
 	// Detach thread
-	int result = pthread_detach(*thread);
-	if (result != 0) {
-		fprintf(stderr, "Fatal error in detach: pthread_detach failed with error %d\n", result);
+	int result = thrd_detach(*thread);
+	if (result != thrd_success) {
+		fprintf(stderr, "Fatal error in detach: thrd_detach failed with error %d\n", result);
 		abort();
 	}
 
@@ -2790,13 +2791,13 @@ qd_exec_result qd_wait(qd_context* ctx) {
 		abort();
 	}
 
-	// Get pthread_t pointer
-	pthread_t* thread = (pthread_t*)(uintptr_t)val.value.i;
+	// Get thrd_t pointer
+	thrd_t* thread = (thrd_t*)(uintptr_t)val.value.i;
 
 	// Join thread
-	int result = pthread_join(*thread, NULL);
-	if (result != 0) {
-		fprintf(stderr, "Fatal error in wait: pthread_join failed with error %d\n", result);
+	int result = thrd_join(*thread, NULL);
+	if (result != thrd_success) {
+		fprintf(stderr, "Fatal error in wait: thrd_join failed with error %d\n", result);
 		abort();
 	}
 

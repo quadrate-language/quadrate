@@ -1,5 +1,3 @@
-#define _POSIX_C_SOURCE 200809L
-
 #include <stdosqd/os.h>
 #include <qdrt/runtime.h>
 #include <qdrt/stack.h>
@@ -7,9 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
-#include <sys/stat.h>
-#include <unistd.h>
-#include <dirent.h>
+#include "os_fs.h"
 
 qd_exec_result usr_os_exit(qd_context* ctx) {
 	// Check stack has at least 1 element
@@ -144,8 +140,8 @@ qd_exec_result usr_os_exists(qd_context* ctx) {
 		abort();
 	}
 
-	// Check if file exists using access()
-	int exists = (access(elem.value.s, F_OK) == 0) ? 1 : 0;
+	// Check if file exists using C++17 filesystem wrapper
+	int exists = os_fs_exists(elem.value.s);
 	free(elem.value.s);
 
 	err = qd_stack_push_int(ctx->st, (int64_t)exists);
@@ -180,9 +176,9 @@ qd_exec_result usr_os_delete(qd_context* ctx) {
 		abort();
 	}
 
-	// Delete the file
-	int result = unlink(elem.value.s);
-	int error_code = (result == -1) ? errno : 0;
+	// Delete the file (remove is C standard, works on all platforms)
+	int result = remove(elem.value.s);
+	int error_code = (result != 0) ? errno : 0;
 	free(elem.value.s);
 
 	// Push errno (0 = success, or errno value on error)
@@ -353,9 +349,8 @@ qd_exec_result usr_os_mkdir(qd_context* ctx) {
 		abort();
 	}
 
-	// Create directory with permissions 0755
-	int result = mkdir(elem.value.s, 0755);
-	int error_code = (result == -1) ? errno : 0;
+	// Create directory using C++17 filesystem wrapper (cross-platform)
+	int error_code = os_fs_mkdir(elem.value.s);
 	free(elem.value.s);
 
 	// Push errno (0 = success, or errno value on error)
@@ -392,10 +387,12 @@ qd_exec_result usr_os_list(qd_context* ctx) {
 		abort();
 	}
 
-	// Open directory
-	DIR* dir = opendir(elem.value.s);
-	if (!dir) {
-		int error_code = errno;
+	// List directory using C++17 filesystem wrapper (cross-platform)
+	size_t count = 0;
+	char** entries = os_fs_list_dir(elem.value.s, &count);
+
+	if (!entries) {
+		// Failed to list directory
 		free(elem.value.s);
 		// Push empty array and count 0 on error
 		err = qd_stack_push_ptr(ctx->st, NULL);
@@ -410,57 +407,12 @@ qd_exec_result usr_os_list(qd_context* ctx) {
 			qd_print_stack_trace(ctx);
 			abort();
 		}
-		// Push errno value
-		qd_stack_push_int(ctx->st, (int64_t)error_code);
-		// Return error since opendir failed
+		// Push error code (1 for generic error)
+		qd_stack_push_int(ctx->st, 1);
+		// Return error since listing failed
 		return (qd_exec_result){1};
 	}
 
-	// Count entries first
-	size_t count = 0;
-	struct dirent* entry;
-	while ((entry = readdir(dir)) != NULL) {
-		// Skip . and ..
-		if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0) {
-			continue;
-		}
-		count++;
-	}
-
-	// Allocate array for strings
-	char** entries = malloc(count * sizeof(char*));
-	if (!entries) {
-		closedir(dir);
-		free(elem.value.s);
-		fprintf(stderr, "Fatal error in os::list: Failed to allocate entries array\n");
-		qd_print_stack_trace(ctx);
-		abort();
-	}
-
-	// Rewind and read entries
-	rewinddir(dir);
-	size_t i = 0;
-	while ((entry = readdir(dir)) != NULL && i < count) {
-		if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0) {
-			continue;
-		}
-		entries[i] = strdup(entry->d_name);
-		if (!entries[i]) {
-			// Cleanup on error
-			for (size_t j = 0; j < i; j++) {
-				free(entries[j]);
-			}
-			free(entries);
-			closedir(dir);
-			free(elem.value.s);
-			fprintf(stderr, "Fatal error in os::list: Failed to allocate entry string\n");
-			qd_print_stack_trace(ctx);
-			abort();
-		}
-		i++;
-	}
-
-	closedir(dir);
 	free(elem.value.s);
 
 	// Push entries pointer and count

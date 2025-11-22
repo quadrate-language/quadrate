@@ -1,11 +1,10 @@
-#define _POSIX_C_SOURCE 199309L
-
 #include <stdtimeqd/time.h>
 #include <qdrt/stack.h>
 #include <qdrt/runtime.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
+#include <threads.h>
 
 // unix - get current Unix timestamp in seconds ( -- timestamp:i64 )
 qd_exec_result usr_time_unix(qd_context* ctx) {
@@ -24,7 +23,7 @@ qd_exec_result usr_time_unix(qd_context* ctx) {
 // now - get current time in nanoseconds since epoch ( -- nanoseconds:i64 )
 qd_exec_result usr_time_now(qd_context* ctx) {
 	struct timespec ts;
-	clock_gettime(CLOCK_REALTIME, &ts);
+	timespec_get(&ts, TIME_UTC);  // C11 standard
 
 	int64_t nanoseconds = (int64_t)ts.tv_sec * 1000000000LL + (int64_t)ts.tv_nsec;
 
@@ -61,7 +60,7 @@ qd_exec_result usr_time_sleep(qd_context* ctx) {
 	ts.tv_sec = val.value.i / 1000000000;
 	ts.tv_nsec = val.value.i % 1000000000;
 
-	nanosleep(&ts, NULL);
+	thrd_sleep(&ts, NULL);  // C11 standard
 
 	return (qd_exec_result){0};
 }
