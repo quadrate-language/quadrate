@@ -1,0 +1,72 @@
+#ifndef JANSSON_PRIVATE_CONFIG_H
+#define JANSSON_PRIVATE_CONFIG_H
+
+/* Include standard integer types first */
+#ifdef HAVE_STDINT_H
+#include <stdint.h>
+#endif
+
+#mesondefine HAVE_ENDIAN_H
+#mesondefine HAVE_FCNTL_H
+#mesondefine HAVE_SCHED_H
+#mesondefine HAVE_UNISTD_H
+#mesondefine HAVE_SYS_PARAM_H
+#mesondefine HAVE_SYS_STAT_H
+#mesondefine HAVE_SYS_TIME_H
+#mesondefine HAVE_SYS_TYPES_H
+#mesondefine HAVE_STDINT_H
+
+#mesondefine HAVE_CLOSE
+#mesondefine HAVE_GETPID
+#mesondefine HAVE_GETTIMEOFDAY
+#mesondefine HAVE_OPEN
+#mesondefine HAVE_READ
+#mesondefine HAVE_SCHED_YIELD
+
+#mesondefine HAVE_SYNC_BUILTINS
+#mesondefine HAVE_ATOMIC_BUILTINS
+
+#mesondefine HAVE_LOCALE_H
+#mesondefine HAVE_SETLOCALE
+
+#mesondefine WORDS_BIGENDIAN
+
+#mesondefine HAVE_INT32_T
+#ifndef HAVE_INT32_T
+#  define int32_t @JSON_INT32@
+#endif
+
+#mesondefine HAVE_UINT32_T
+#ifndef HAVE_UINT32_T
+#  define uint32_t @JSON_UINT32@
+#endif
+
+#mesondefine HAVE_UINT16_T
+#ifndef HAVE_UINT16_T
+#  define uint16_t @JSON_UINT16@
+#endif
+
+#mesondefine HAVE_UINT8_T
+#ifndef HAVE_UINT8_T
+#  define uint8_t @JSON_UINT8@
+#endif
+
+#mesondefine HAVE_SSIZE_T
+
+#ifndef HAVE_SSIZE_T
+#  define ssize_t @JSON_SSIZE@
+#endif
+
+#mesondefine USE_URANDOM
+#mesondefine USE_WINDOWS_CRYPTOAPI
+
+#mesondefine USE_DTOA
+#ifdef USE_DTOA
+#  define DTOA_ENABLED 1
+#else
+#  define DTOA_ENABLED 0
+#endif
+
+#define INITIAL_HASHTABLE_ORDER @JANSSON_INITIAL_HASHTABLE_ORDER@
+
+#endif /* JANSSON_PRIVATE_CONFIG_H */

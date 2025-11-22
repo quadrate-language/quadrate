@@ -3,7 +3,8 @@ quadlsp_sources = files(
 )
 
 # Find jansson library for JSON handling
-jansson_dep = dependency('jansson', required: true)
+# Requires jansson 2.14+ (matches subproject version in jansson.wrap)
+jansson_dep = dependency('jansson', version: '>=2.14', required: true, fallback: ['jansson', 'jansson_dep'])
 
 quadlsp_exe = executable('quadlsp',
 	quadlsp_sources,

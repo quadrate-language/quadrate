@@ -6,6 +6,7 @@ project('quadrate', ['c', 'cpp'],
 				'warning_level=3',
 				'werror=true',
 				'b_pie=true',
+				'wrap_mode=default',
 		])
 
 # Common compiler arguments (warning_level=3 already adds -Wall -Wextra -Wpedantic)

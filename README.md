@@ -43,7 +43,12 @@ cd quadrate
 make release && sudo make install
 ```
 
-**Dependencies**: Meson, LLVM, libu8t (UTF-8 tokenizer)
+**Build Requirements**:
+- Meson build system
+- C11 and C++20 compiler (GCC or Clang)
+- LLVM ≥14.0 (for JIT/embedding features only)
+
+All other dependencies are automatically downloaded and built as subprojects.
 
 ### Hello World
 

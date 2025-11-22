@@ -1,0 +1,8 @@
+[wrap-git]
+url = https://github.com/akheron/jansson.git
+revision = v2.14.1
+depth = 1
+patch_directory = jansson
+
+[provide]
+jansson = jansson_dep
