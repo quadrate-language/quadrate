@@ -927,6 +927,9 @@ if (node->type() == IAstNode::Type::STRUCT_DECLARATION) {
 		mModuleStructs[moduleName] = moduleStructs;
 	}
 
+	// Also collect struct field types so field access validation works
+	collectModuleStructFieldTypes(moduleAstRoot);
+
 		// Analyze function signatures for module functions
 		// We use a simplified analysis since we don't need iterative convergence for modules
 		analyzeModuleFunctionSignatures(moduleAstRoot, moduleName);
@@ -990,6 +993,47 @@ if (node->type() == IAstNode::Type::STRUCT_DECLARATION) {
 		// Recursively process children
 		for (size_t i = 0; i < node->childCount(); i++) {
 			collectModuleStructs(node->child(i), structs);
+		}
+	}
+
+	void SemanticValidator::collectModuleStructFieldTypes(IAstNode* node) {
+		if (!node) {
+			return;
+		}
+
+		// If this is a struct declaration, collect its field types
+		if (node->type() == IAstNode::Type::STRUCT_DECLARATION) {
+			AstNodeStructDeclaration* structDecl = static_cast<AstNodeStructDeclaration*>(node);
+			std::unordered_map<std::string, StackValueType> fieldTypes;
+			std::unordered_set<std::string> seenFieldNames;
+
+			for (const auto* field : structDecl->fields()) {
+				// Check for duplicate field names
+				if (seenFieldNames.count(field->name())) {
+					std::string errorMsg = "Duplicate field name '" + field->name() + "' in struct '" + structDecl->name() + "'";
+					reportError(field, errorMsg.c_str());
+					return;
+				}
+				seenFieldNames.insert(field->name());
+
+				StackValueType fieldType = StackValueType::UNKNOWN;
+				if (field->typeName() == "f64") {
+					fieldType = StackValueType::FLOAT;
+				} else if (field->typeName() == "i64") {
+					fieldType = StackValueType::INT;
+				} else if (field->typeName() == "str") {
+					fieldType = StackValueType::STRING;
+				} else if (field->typeName() == "ptr" || field->typeName().find('*') != std::string::npos) {
+					fieldType = StackValueType::PTR;
+				}
+				fieldTypes[field->name()] = fieldType;
+			}
+			mStructFieldTypes[structDecl->name()] = fieldTypes;
+		}
+
+		// Recursively process children
+		for (size_t i = 0; i < node->childCount(); i++) {
+			collectModuleStructFieldTypes(node->child(i));
 		}
 	}
 
@@ -1945,6 +1989,25 @@ if (node->type() == IAstNode::Type::STRUCT_DECLARATION) {
 						}
 					}
 				}
+
+				// Check that the next node is a LOCAL (-> var)
+				if (i + 1 < node->childCount()) {
+					IAstNode* nextNode = node->child(i + 1);
+					if (!nextNode || nextNode->type() != IAstNode::Type::LOCAL) {
+						std::string errorMsg = "Struct '";
+						errorMsg += name;
+						errorMsg += "' must be immediately stored in a local variable using '-> varName'. ";
+						errorMsg += "Struct pointers cannot be used directly from the stack.";
+						reportError(child, errorMsg.c_str());
+					}
+				} else {
+					std::string errorMsg = "Struct '";
+					errorMsg += name;
+					errorMsg += "' must be immediately stored in a local variable using '-> varName'. ";
+					errorMsg += "Struct pointers cannot be used directly from the stack.";
+					reportError(child, errorMsg.c_str());
+				}
+
 				// Push pointer type for the constructed struct, along with its struct type
 				typeStack.push_back(StackValueType::PTR);
 				structTypeStack.push_back(name); // Track which struct type this is
@@ -1967,6 +2030,25 @@ if (node->type() == IAstNode::Type::STRUCT_DECLARATION) {
 							}
 						}
 					}
+
+					// Check that the next node is a LOCAL (-> var)
+					if (i + 1 < node->childCount()) {
+						IAstNode* nextNode = node->child(i + 1);
+						if (!nextNode || nextNode->type() != IAstNode::Type::LOCAL) {
+							std::string errorMsg = "Struct '";
+							errorMsg += name;
+							errorMsg += "' must be immediately stored in a local variable using '-> varName'. ";
+							errorMsg += "Struct pointers cannot be used directly from the stack.";
+							reportError(child, errorMsg.c_str());
+						}
+					} else {
+						std::string errorMsg = "Struct '";
+						errorMsg += name;
+						errorMsg += "' must be immediately stored in a local variable using '-> varName'. ";
+						errorMsg += "Struct pointers cannot be used directly from the stack.";
+						reportError(child, errorMsg.c_str());
+					}
+
 					typeStack.push_back(StackValueType::PTR);
 					structTypeStack.push_back(name); // Track which struct type this is
 					break;
@@ -2330,6 +2412,25 @@ if (node->type() == IAstNode::Type::STRUCT_DECLARATION) {
 								}
 							}
 						}
+
+						// Check that the next node is a LOCAL (-> var)
+						if (i + 1 < node->childCount()) {
+							IAstNode* nextNode = node->child(i + 1);
+							if (!nextNode || nextNode->type() != IAstNode::Type::LOCAL) {
+								std::string errorMsg = "Struct '";
+								errorMsg += qualifiedName;
+								errorMsg += "' must be immediately stored in a local variable using '-> varName'. ";
+								errorMsg += "Struct pointers cannot be used directly from the stack.";
+								reportError(child, errorMsg.c_str());
+							}
+						} else {
+							std::string errorMsg = "Struct '";
+							errorMsg += qualifiedName;
+							errorMsg += "' must be immediately stored in a local variable using '-> varName'. ";
+							errorMsg += "Struct pointers cannot be used directly from the stack.";
+							reportError(child, errorMsg.c_str());
+						}
+
 						// Push pointer type for the constructed struct, with qualified name as type
 						typeStack.push_back(StackValueType::PTR);
 						structTypeStack.push_back(functionName); // Track the struct type (bare name)

@@ -99,6 +99,7 @@ namespace Qd {
 		void collectModuleConstants(IAstNode* node, std::unordered_map<std::string, bool>& constants);
 		void collectModuleConstantValues(IAstNode* node, const std::string& moduleName);
 	void collectModuleStructs(IAstNode* node, std::unordered_map<std::string, bool>& structs);
+	void collectModuleStructFieldTypes(IAstNode* node);
 
 		// Helper: Analyze function signatures in a module
 		void analyzeModuleFunctionSignatures(IAstNode* node, const std::string& moduleName);

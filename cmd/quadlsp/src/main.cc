@@ -1179,7 +1179,7 @@ private:
 
 	// Find a function or constant definition in an external module file
 	// Returns a JSON location object if found, or json_null() if not found
-	json_t* findDefinitionInModule(const std::string& modulePath, const std::string& symbolName, bool isFunction) {
+	json_t* findDefinitionInModule(const std::string& modulePath, const std::string& symbolName, const std::string& symbolType) {
 		// Read the module file
 		std::ifstream file(modulePath);
 		if (!file.good()) {
@@ -1202,7 +1202,7 @@ private:
 		for (size_t i = 0; i < root->childCount(); i++) {
 			Qd::IAstNode* child = root->child(i);
 
-			if (isFunction && child && child->type() == Qd::IAstNode::Type::FUNCTION_DECLARATION) {
+			if (symbolType == "function" && child && child->type() == Qd::IAstNode::Type::FUNCTION_DECLARATION) {
 				Qd::AstNodeFunctionDeclaration* funcNode = static_cast<Qd::AstNodeFunctionDeclaration*>(child);
 				if (funcNode->name() == symbolName) {
 					// Found the function definition
@@ -1225,7 +1225,7 @@ private:
 					json_object_set_new(location, "range", range);
 					return location;
 				}
-			} else if (!isFunction && child && child->type() == Qd::IAstNode::Type::CONSTANT_DECLARATION) {
+			} else if (symbolType == "constant" && child && child->type() == Qd::IAstNode::Type::CONSTANT_DECLARATION) {
 				Qd::AstNodeConstant* constNode = static_cast<Qd::AstNodeConstant*>(child);
 				if (constNode->name() == symbolName) {
 					// Found the constant definition
@@ -1248,7 +1248,30 @@ private:
 					json_object_set_new(location, "range", range);
 					return location;
 				}
-			} else if (isFunction && child && child->type() == Qd::IAstNode::Type::IMPORT_STATEMENT) {
+			} else if (symbolType == "struct" && child && child->type() == Qd::IAstNode::Type::STRUCT_DECLARATION) {
+				Qd::AstNodeStructDeclaration* structNode = static_cast<Qd::AstNodeStructDeclaration*>(child);
+				if (structNode->name() == symbolName) {
+					// Found the struct definition
+					json_t* location = json_object();
+					std::string moduleUri = "file://" + modulePath;
+					json_object_set_new(location, "uri", json_string(moduleUri.c_str()));
+
+					json_t* range = json_object();
+					json_t* start = json_object();
+					size_t lspLine = (structNode->line() > 0) ? structNode->line() - 1 : 0;
+					json_object_set_new(start, "line", json_integer(static_cast<json_int_t>(lspLine)));
+					json_object_set_new(start, "character", json_integer(0));
+					json_object_set_new(range, "start", start);
+
+					json_t* end = json_object();
+					json_object_set_new(end, "line", json_integer(static_cast<json_int_t>(lspLine)));
+					json_object_set_new(end, "character", json_integer(static_cast<json_int_t>(structNode->name().length())));
+					json_object_set_new(range, "end", end);
+
+					json_object_set_new(location, "range", range);
+					return location;
+				}
+			} else if (symbolType == "function" && child && child->type() == Qd::IAstNode::Type::IMPORT_STATEMENT) {
 				// Check for imported functions (like those in stdlib modules)
 				Qd::AstNodeImport* importNode = static_cast<Qd::AstNodeImport*>(child);
 				const auto& importedFuncs = importNode->functions();
@@ -1315,7 +1338,7 @@ private:
 				Qd::IAstNode* root = ast.generate(documentText.c_str(), false, nullptr);
 
 				if (root && !ast.hasErrors() && root->type() == Qd::IAstNode::Type::PROGRAM) {
-					// Search for function declaration matching the word
+					// Search for function or struct declaration matching the word
 					for (size_t i = 0; i < root->childCount(); i++) {
 						Qd::IAstNode* child = root->child(i);
 
@@ -1339,6 +1362,32 @@ private:
 								json_object_set_new(end, "line", json_integer(static_cast<json_int_t>(lspLine)));
 								json_object_set_new(end, "character",
 										json_integer(static_cast<json_int_t>(funcNode->name().length())));
+								json_object_set_new(range, "end", end);
+
+								json_object_set_new(location, "range", range);
+								result = location;
+								break;
+							}
+						} else if (child && child->type() == Qd::IAstNode::Type::STRUCT_DECLARATION) {
+							Qd::AstNodeStructDeclaration* structNode =
+									static_cast<Qd::AstNodeStructDeclaration*>(child);
+
+							if (structNode->name() == word) {
+								// Found the struct definition
+								json_t* location = json_object();
+								json_object_set_new(location, "uri", json_string(uri.c_str()));
+
+								json_t* range = json_object();
+								json_t* start = json_object();
+								size_t lspLine = (structNode->line() > 0) ? structNode->line() - 1 : 0;
+								json_object_set_new(start, "line", json_integer(static_cast<json_int_t>(lspLine)));
+								json_object_set_new(start, "character", json_integer(0));
+								json_object_set_new(range, "start", start);
+
+								json_t* end = json_object();
+								json_object_set_new(end, "line", json_integer(static_cast<json_int_t>(lspLine)));
+								json_object_set_new(end, "character",
+										json_integer(static_cast<json_int_t>(structNode->name().length())));
 								json_object_set_new(range, "end", end);
 
 								json_object_set_new(location, "range", range);
@@ -1441,10 +1490,13 @@ private:
 						std::string modulePath = resolveModulePath(moduleName, sourceDir);
 
 						if (!modulePath.empty()) {
-							// Try to find the symbol as a function first, then as a constant
-							result = findDefinitionInModule(modulePath, symbolName, true);
+							// Try to find the symbol as a function first, then as a constant, then as a struct
+							result = findDefinitionInModule(modulePath, symbolName, "function");
 							if (json_is_null(result)) {
-								result = findDefinitionInModule(modulePath, symbolName, false);
+								result = findDefinitionInModule(modulePath, symbolName, "constant");
+							}
+							if (json_is_null(result)) {
+								result = findDefinitionInModule(modulePath, symbolName, "struct");
 							}
 						}
 					}
