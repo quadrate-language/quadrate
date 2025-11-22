@@ -8,8 +8,8 @@ cd "$(dirname "$0")"
 
 # Generate parser if src/parser.c doesn't exist
 if [ ! -f src/parser.c ]; then
-    echo "Generating tree-sitter parser..."
-    tree-sitter generate --no-bindings
+    echo "Generating tree-sitter parser with ABI 15..."
+    tree-sitter generate --abi 15
 fi
 
 # Run tests
