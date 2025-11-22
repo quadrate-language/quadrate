@@ -147,6 +147,15 @@ namespace Qd {
 		// Local variables (per function scope): name -> alloca instruction
 		std::map<std::string, llvm::AllocaInst*> localVariables;
 
+		// Track struct types for local variables: variable name -> struct type name
+		std::map<std::string, std::string> localVariableStructTypes;
+
+		// Track the last identifier that pushed a value (for smart free)
+		std::string lastIdentifierPushed;
+
+		// Track the last struct type that was constructed (for local binding)
+		std::string lastStructConstructed;
+
 		// Struct definitions: struct name -> field information
 		struct FieldInfo {
 			std::string name;
@@ -1900,6 +1909,79 @@ namespace Qd {
 			// Use type-aware inline modulo
 			generateTypeAwareMod(ctx);
 			return;
+		} else if (name == "free") {
+			// Smart struct-aware free: if freeing a struct with string fields, free strings first
+			if (!lastIdentifierPushed.empty()) {
+				auto structTypeIt = localVariableStructTypes.find(lastIdentifierPushed);
+				if (structTypeIt != localVariableStructTypes.end()) {
+					const std::string& structTypeName = structTypeIt->second;
+					auto structDefIt = structDefinitions.find(structTypeName);
+					if (structDefIt != structDefinitions.end()) {
+						const StructLayout& layout = structDefIt->second;
+
+						// Check if struct has string fields
+						bool hasStringFields = false;
+						for (const auto& field : layout.fields) {
+							if (field.typeName == "str") {
+								hasStringFields = true;
+								break;
+							}
+						}
+
+						if (hasStringFields) {
+							// Generate cleanup code: load struct pointer, free string fields, then free struct
+							// Get the struct pointer from the local variable
+							auto localIt = localVariables.find(lastIdentifierPushed);
+							if (localIt != localVariables.end()) {
+								llvm::AllocaInst* localAlloca = localIt->second;
+
+								// Load struct pointer from local variable
+								llvm::Value* valuePtr =
+										builder->CreateStructGEP(stackElementTy, localAlloca, 0, "struct_value_ptr");
+								llvm::Value* structPtr = builder->CreateLoad(llvm::PointerType::getUnqual(*context),
+										valuePtr, "struct_ptr");
+
+								// Free each string field
+								for (const auto& field : layout.fields) {
+									if (field.typeName == "str") {
+										// Calculate field offset and load string pointer
+										auto fieldOffset = builder->getInt64(field.offset);
+										auto fieldBytePtr = builder->CreateGEP(
+												builder->getInt8Ty(), structPtr, fieldOffset, "field_byte_ptr");
+										llvm::Value* stringPtr = builder->CreateLoad(
+												llvm::PointerType::getUnqual(*context), fieldBytePtr, "string_ptr");
+
+										// Call C free() on the string
+										builder->CreateCall(freeFn, {stringPtr});
+									}
+								}
+
+								// Now call qd_free which will pop the pointer and free the struct itself
+								llvm::Function* qdFreeFn = module->getFunction("qd_free");
+								if (!qdFreeFn) {
+									auto fnTy = llvm::FunctionType::get(execResultTy, {contextPtrTy}, false);
+									qdFreeFn = llvm::Function::Create(
+											fnTy, llvm::Function::ExternalLinkage, "qd_free", *module);
+								}
+								builder->CreateCall(qdFreeFn, {ctx});
+								lastIdentifierPushed.clear();
+								return;
+							}
+						}
+					}
+				}
+			}
+
+			// Fall through to regular qd_free if not a struct or no string fields
+			lastIdentifierPushed.clear();
+			llvm::Function* qdFreeFn = module->getFunction("qd_free");
+			if (!qdFreeFn) {
+				auto fnTy = llvm::FunctionType::get(execResultTy, {contextPtrTy}, false);
+				qdFreeFn =
+						llvm::Function::Create(fnTy, llvm::Function::ExternalLinkage, "qd_free", *module);
+			}
+			builder->CreateCall(qdFreeFn, {ctx});
+			return;
 		} else {
 			// Map instruction name to runtime function name
 			std::string fnName;
@@ -1997,6 +2079,9 @@ namespace Qd {
 
 			// Continue after type switch
 			builder->SetInsertPoint(endBlock);
+
+			// Track that this identifier was just pushed (for smart free)
+			lastIdentifierPushed = name;
 			return;
 		}
 
@@ -2556,6 +2641,12 @@ namespace Qd {
 
 		// Call qd_stack_pop to pop the value from the runtime stack
 		builder->CreateCall(stackPopFn, {stackPtr, localAlloca});
+
+		// If we just constructed a struct, record its type for this local variable
+		if (!lastStructConstructed.empty()) {
+			localVariableStructTypes[name] = lastStructConstructed;
+			lastStructConstructed.clear();
+		}
 
 		// TODO: Check result for errors (0 = success, non-zero = error)
 		// For now, we assume success
@@ -3145,6 +3236,7 @@ namespace Qd {
 			AstNodeFunctionDeclaration* funcNode, bool isMain, const std::string& namePrefix) {
 		// Clear local variables for this function
 		localVariables.clear();
+		localVariableStructTypes.clear();
 
 		// Get the correct DIFile for this module
 		llvm::DIFile* funcDebugFile = debugFile; // Default to main file
@@ -4141,6 +4233,9 @@ namespace Qd {
 
 		// Push struct pointer onto stack
 		builder->CreateCall(pushPtrFn, {ctx, structPtr});
+
+		// Track that we just constructed this struct type
+		lastStructConstructed = structName;
 	}
 
 	// Generate field access: load pointer from local, calculate offset, load value, push to stack
