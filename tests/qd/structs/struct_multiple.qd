@@ -1,0 +1,29 @@
+struct Vec2 {
+  x:f64
+  y:f64
+}
+
+struct Vec3 {
+  x:f64
+  y:f64
+  z:f64
+}
+
+fn test_multiple( -- ) {
+  // Test Vec2
+  1.0 2.0 Vec2 -> v2
+  defer { v2 free }
+  v2 @x . nl
+  v2 @y . nl
+
+  // Test Vec3
+  10.0 20.0 30.0 Vec3 -> v3
+  defer { v3 free }
+  v3 @x . nl
+  v3 @y . nl
+  v3 @z . nl
+}
+
+fn main( -- ) {
+  test_multiple
+}

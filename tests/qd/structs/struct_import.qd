@@ -1,0 +1,15 @@
+use "shapes.qd"
+
+fn test_import( -- ) {
+  // Create Rectangle from imported file
+  5.0 10.0 Rectangle -> r
+  defer { r free }
+
+  // Access and print fields
+  r @width . nl
+  r @height . nl
+}
+
+fn main( -- ) {
+  test_import
+}

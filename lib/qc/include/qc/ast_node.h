@@ -35,7 +35,11 @@ namespace Qd {
 			LABEL,
 			FUNCTION_POINTER_REFERENCE,
 			COMMENT,
-			LOCAL
+			LOCAL,
+			STRUCT_DECLARATION,
+			STRUCT_FIELD,
+			STRUCT_CONSTRUCTION,
+			FIELD_ACCESS
 		};
 		virtual ~IAstNode() = default;
 

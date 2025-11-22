@@ -1,0 +1,31 @@
+struct Inner {
+  value:f64
+}
+
+struct Outer {
+  inner:*Inner
+  scale:f64
+}
+
+fn test_pointer_fields( -- ) {
+  // Create inner struct
+  42.0 Inner -> i
+  defer { i free }
+
+  // Create outer struct with pointer to inner
+  i 2.0 Outer -> o
+  defer { o free }
+
+  // Access the scale from outer
+  o @scale . nl
+
+  // Access the inner pointer from outer
+  o @inner -> inner_ptr
+
+  // Access value from inner via pointer
+  inner_ptr @value . nl
+}
+
+fn main( -- ) {
+  test_pointer_fields
+}

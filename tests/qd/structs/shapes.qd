@@ -1,0 +1,4 @@
+pub struct Rectangle {
+  width:f64
+  height:f64
+}

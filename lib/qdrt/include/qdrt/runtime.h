@@ -255,6 +255,14 @@ qd_exec_result qd_drop(qd_context* ctx);
 qd_exec_result qd_drop2(qd_context* ctx);
 
 /**
+ * @brief Free memory pointed to by pointer on stack ( ptr -- )
+ *
+ * @param ctx Execution context
+ * @return Execution result (0 on success)
+ */
+qd_exec_result qd_free(qd_context* ctx);
+
+/**
  * @brief Rotate three elements ( a b c -- b c a )
  *
  * @param ctx Execution context

@@ -16,3 +16,4 @@ subprojects/*/
 subprojects/.wraplock
 GEMINI.md
 benchmarks/arithmetic_qd_typeaware
+benchmarks/arithmetic_v8_specialized

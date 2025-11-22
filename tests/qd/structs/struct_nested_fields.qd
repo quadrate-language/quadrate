@@ -1,0 +1,26 @@
+// Test multiple field accesses on same struct
+struct Rectangle {
+  width:f64
+  height:f64
+}
+
+fn area( r:ptr -- a:f64 ) {
+  -> rect
+  rect @width rect @height mul
+}
+
+fn perimeter( r:ptr -- p:f64 ) {
+  -> rect
+  rect @width rect @height add 2.0 mul
+}
+
+fn test_rectangle( -- ) {
+  5.0 3.0 Rectangle -> r
+  defer { r free }
+  r area . nl
+  r perimeter . nl
+}
+
+fn main( -- ) {
+  test_rectangle
+}

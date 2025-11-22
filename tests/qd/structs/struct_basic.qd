@@ -1,0 +1,18 @@
+struct Vec2 {
+  x:f64
+  y:f64
+}
+
+fn test_vec2( -- ) {
+  // Test struct construction and field access
+  1.5 2.5 Vec2 -> v
+  defer { v free }
+
+  // Access and print fields
+  v @x . nl
+  v @y . nl
+}
+
+fn main( -- ) {
+  test_vec2
+}

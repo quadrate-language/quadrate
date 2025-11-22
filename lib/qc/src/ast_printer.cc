@@ -11,6 +11,7 @@
 #include <qc/ast_node_parameter.h>
 #include <qc/ast_node_program.h>
 #include <qc/ast_node_scoped.h>
+#include <qc/ast_node_struct.h>
 #include <qc/ast_node_switch.h>
 #include <qc/ast_node_use.h>
 #include <qc/ast_printer.h>
@@ -68,6 +69,14 @@ namespace Qd {
 			return "Label";
 		case IAstNode::Type::LOCAL:
 			return "Local";
+		case IAstNode::Type::STRUCT_DECLARATION:
+			return "StructDeclaration";
+		case IAstNode::Type::STRUCT_FIELD:
+			return "StructField";
+		case IAstNode::Type::STRUCT_CONSTRUCTION:
+			return "StructConstruction";
+		case IAstNode::Type::FIELD_ACCESS:
+			return "FieldAccess";
 		default:
 			return "Unknown";
 		}
@@ -195,6 +204,37 @@ namespace Qd {
 			printf(",");
 			printf("\"name\":\"");
 			escapeJsonString(label->name().c_str());
+			printf("\"");
+		} else if (node->type() == IAstNode::Type::STRUCT_DECLARATION) {
+			const AstNodeStructDeclaration* structDecl = static_cast<const AstNodeStructDeclaration*>(node);
+			printf(",");
+			printf("\"name\":\"");
+			escapeJsonString(structDecl->name().c_str());
+			printf("\",");
+			printf("\"isPublic\":%s", structDecl->isPublic() ? "true" : "false");
+		} else if (node->type() == IAstNode::Type::STRUCT_FIELD) {
+			const AstNodeStructField* field = static_cast<const AstNodeStructField*>(node);
+			printf(",");
+			printf("\"name\":\"");
+			escapeJsonString(field->name().c_str());
+			printf("\",");
+			printf("\"fieldType\":\"");
+			escapeJsonString(field->typeName().c_str());
+			printf("\"");
+		} else if (node->type() == IAstNode::Type::STRUCT_CONSTRUCTION) {
+			const AstNodeStructConstruction* construct = static_cast<const AstNodeStructConstruction*>(node);
+			printf(",");
+			printf("\"structName\":\"");
+			escapeJsonString(construct->structName().c_str());
+			printf("\"");
+		} else if (node->type() == IAstNode::Type::FIELD_ACCESS) {
+			const AstNodeFieldAccess* fieldAccess = static_cast<const AstNodeFieldAccess*>(node);
+			printf(",");
+			printf("\"varName\":\"");
+			escapeJsonString(fieldAccess->varName().c_str());
+			printf("\",");
+			printf("\"fieldName\":\"");
+			escapeJsonString(fieldAccess->fieldName().c_str());
 			printf("\"");
 		}
 

@@ -15,7 +15,7 @@ namespace Qd {
 			// Logical operations
 			"eq", "gt", "gte", "lt", "lte", "neq", "within",
 			// Stack operations
-			"call", "clear", "depth", "drop", "drop2", "dup", "dup2", "dupd", "nip", "nipd", "over", "over2", "overd",
+			"call", "clear", "depth", "drop", "drop2", "dup", "dup2", "dupd", "free", "nip", "nipd", "over", "over2", "overd",
 			"pick", "roll", "rot", "swap", "swap2", "swapd", "tuck",
 			// Type casting
 			"castf", "casti", "casts",
@@ -41,7 +41,7 @@ namespace Qd {
 			// Logical/bitwise operations
 			"and", "lshift", "not", "or", "rshift", "xor",
 			// Stack operations
-			"call", "clear", "depth", "drop", "drop2", "dup", "dup2", "dupd", "nip", "nipd", "over", "over2", "overd",
+			"call", "clear", "depth", "drop", "drop2", "dup", "dup2", "dupd", "free", "nip", "nipd", "over", "over2", "overd",
 			"pick", "roll", "rot", "swap", "swap2", "swapd", "tuck",
 			// Type casting
 			"castf", "casti", "casts",

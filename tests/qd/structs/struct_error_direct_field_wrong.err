@@ -1,0 +1,1 @@
+Type error in field access 'p @z': Struct 'Point' has no field named 'z'

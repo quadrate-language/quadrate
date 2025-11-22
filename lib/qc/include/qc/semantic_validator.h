@@ -26,6 +26,8 @@ namespace Qd {
 	struct FunctionSignature {
 		std::vector<StackValueType> consumes; // Types popped from stack (bottom to top)
 		std::vector<StackValueType> produces; // Types pushed to stack (bottom to top)
+		// For each PTR parameter: map of parameter name -> map of (field name -> expected field type)
+		std::unordered_map<std::string, std::unordered_map<std::string, StackValueType>> parameterFieldAccess;
 		bool throws = false;				  // Whether the function can throw errors
 	};
 
@@ -96,6 +98,7 @@ namespace Qd {
 		void collectModuleFunctions(IAstNode* node, std::unordered_map<std::string, bool>& functions);
 		void collectModuleConstants(IAstNode* node, std::unordered_map<std::string, bool>& constants);
 		void collectModuleConstantValues(IAstNode* node, const std::string& moduleName);
+	void collectModuleStructs(IAstNode* node, std::unordered_map<std::string, bool>& structs);
 
 		// Helper: Analyze function signatures in a module
 		void analyzeModuleFunctionSignatures(IAstNode* node, const std::string& moduleName);
@@ -107,6 +110,10 @@ namespace Qd {
 
 		// Pass 3a: Analyze function signatures (what each function consumes/produces)
 		void analyzeFunctionSignatures(IAstNode* node);
+
+		// Helper: Collect field accesses on parameters within a function body
+		void collectParameterFieldAccesses(IAstNode* node, const std::vector<std::string>& paramNames,
+				std::unordered_map<std::string, std::unordered_map<std::string, StackValueType>>& fieldAccesses);
 
 		// Pass 3b: Type check the AST
 		void typeCheckFunction(IAstNode* node);
@@ -159,6 +166,16 @@ namespace Qd {
 		// Symbol table: all defined constants
 		std::unordered_set<std::string> mDefinedConstants;
 
+	// Symbol table: all defined structs
+	std::unordered_set<std::string> mDefinedStructs;
+
+	// Struct field types: maps struct name -> (field name -> type)
+	std::unordered_map<std::string, std::unordered_map<std::string, StackValueType>> mStructFieldTypes;
+
+	// Track which struct type each local variable holds (for PTR types)
+	// Maps variable name -> struct type name (empty string if not a struct pointer)
+	std::unordered_map<std::string, std::string> mLocalVariableStructTypes;
+
 	// Constant values: maps constant name -> value string
 	std::unordered_map<std::string, std::string> mConstantValues;
 
@@ -183,6 +200,9 @@ namespace Qd {
 
 		// Module constant values: maps "module::name" -> value string
 		std::unordered_map<std::string, std::string> mModuleConstantValues;
+
+	// Module structs: maps module name -> (struct name -> isPublic flag)
+	std::unordered_map<std::string, std::unordered_map<std::string, bool>> mModuleStructs;
 
 		// Module directories: maps module name -> directory path where module was found
 		std::unordered_map<std::string, std::string> mModuleDirectories;

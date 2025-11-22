@@ -25,6 +25,7 @@
 #include <qc/ast_node_program.h>
 #include <qc/ast_node_return.h>
 #include <qc/ast_node_scoped.h>
+#include <qc/ast_node_struct.h>
 #include <qc/ast_node_switch.h>
 #include <qc/ast_node_use.h>
 #include <qc/colors.h>
@@ -171,10 +172,10 @@ namespace Qd {
 			if (token == U8T_IDENTIFIER) {
 				size_t n;
 				const char* text = u8t_scanner_token_text(scanner, &n);
-				if (strcmp(text, "fn") == 0 || strcmp(text, "const") == 0 || strcmp(text, "use") == 0 ||
-						strcmp(text, "import") == 0 || strcmp(text, "if") == 0 || strcmp(text, "for") == 0 ||
-						strcmp(text, "loop") == 0 || strcmp(text, "switch") == 0 || strcmp(text, "return") == 0 ||
-						strcmp(text, "ctx") == 0) {
+				if (strcmp(text, "fn") == 0 || strcmp(text, "const") == 0 || strcmp(text, "struct") == 0 ||
+						strcmp(text, "use") == 0 || strcmp(text, "import") == 0 || strcmp(text, "if") == 0 ||
+						strcmp(text, "for") == 0 || strcmp(text, "loop") == 0 || strcmp(text, "switch") == 0 ||
+						strcmp(text, "return") == 0 || strcmp(text, "ctx") == 0) {
 					return;
 				}
 			}
@@ -224,7 +225,8 @@ namespace Qd {
 	// Helper to parse a single statement/expression token
 	// Returns nullptr if token was a control keyword that was handled
 	// Returns a node if it's a literal or identifier
-	static IAstNode* parseSimpleToken(char32_t token, u8t_scanner* scanner, size_t* n, const char* src) {
+	static IAstNode* parseSimpleToken(char32_t token, u8t_scanner* scanner, ErrorReporter* /*errorReporter*/, size_t* n,
+			const char* src) {
 		if (token == U8T_INTEGER) {
 			const char* text = u8t_scanner_token_text(scanner, n);
 			IAstNode* node = new AstNodeLiteral(text, AstNodeLiteral::LiteralType::INTEGER);
@@ -247,6 +249,7 @@ namespace Qd {
 				setNodePosition(node, scanner, src);
 				return node;
 			}
+
 			AstNodeIdentifier* node = new AstNodeIdentifier(text);
 			setNodePosition(node, scanner, src);
 			// Check for '!' or '?' suffix
@@ -596,7 +599,7 @@ namespace Qd {
 			}
 		}
 
-		return parseSimpleToken(token, scanner, n, src);
+		return parseSimpleToken(token, scanner, errorReporter, n, src);
 	}
 
 	Ast::~Ast() {
@@ -699,6 +702,7 @@ namespace Qd {
 		std::vector<IAstNode*> tempNodes;
 		bool sawColon = false;
 		bool sawSlash = false;
+		bool sawAt = false;
 
 		while ((token = u8t_scanner_scan(scanner)) != U8T_EOF) {
 			// Handle comments (// and /* */)
@@ -764,6 +768,29 @@ namespace Qd {
 			sawColon = (token == ':');
 			if (sawColon) {
 				continue; // Wait for next token to see if it's another colon
+			}
+
+			// Handle @ field access operator
+			if (sawAt && token == U8T_IDENTIFIER) {
+				// We have: identifier @field
+				sawAt = false;
+				if (!tempNodes.empty() && tempNodes.back()->type() == IAstNode::Type::IDENTIFIER) {
+					AstNodeIdentifier* varIdent = static_cast<AstNodeIdentifier*>(tempNodes.back());
+					tempNodes.pop_back();
+
+					// Get the field name
+					const char* fieldName = u8t_scanner_token_text(scanner, &n);
+					AstNodeFieldAccess* fieldAccess = new AstNodeFieldAccess(varIdent->name(), fieldName);
+					setNodePosition(fieldAccess, scanner, src);
+					delete varIdent;
+					tempNodes.push_back(fieldAccess);
+				}
+				continue;
+			}
+
+			sawAt = (token == '@');
+			if (sawAt) {
+				continue; // Wait for next token to see if it's a field name
 			}
 
 			if (token == U8T_IDENTIFIER) {
@@ -1334,6 +1361,79 @@ namespace Qd {
 		return func;
 	}
 
+	static IAstNode* parseStructDeclaration(u8t_scanner* scanner, ErrorReporter* errorReporter, const char* src,
+											 bool isPublic = false) {
+		size_t n;
+		char32_t token = u8t_scanner_scan(scanner);
+		if (token != U8T_IDENTIFIER) {
+			errorReporter->reportError(scanner, "Expected struct name after 'struct'");
+			synchronize(scanner);
+			return nullptr;
+		}
+
+		const char* name = u8t_scanner_token_text(scanner, &n);
+		AstNodeStructDeclaration* structDecl = new AstNodeStructDeclaration(name, isPublic);
+		setNodePosition(structDecl, scanner, src);
+
+		token = u8t_scanner_scan(scanner);
+		if (token != '{') {
+			errorReporter->reportError(scanner, "Expected '{' after struct name");
+			synchronize(scanner);
+			delete structDecl;
+			return nullptr;
+		}
+
+		// Parse struct fields
+		while ((token = u8t_scanner_scan(scanner)) != U8T_EOF) {
+			if (token == '}') {
+				break;
+			}
+
+			if (token == U8T_IDENTIFIER) {
+				const char* fieldName = u8t_scanner_token_text(scanner, &n);
+				std::string fieldNameStr(fieldName);
+
+				// Expect ':' and then type
+				token = u8t_scanner_scan(scanner);
+				if (token != ':') {
+					errorReporter->reportError(scanner, "Expected ':' after field name");
+					continue;
+				}
+
+				token = u8t_scanner_scan(scanner);
+				if (token != U8T_IDENTIFIER && token != '*') {
+					errorReporter->reportError(scanner, "Expected type after ':'");
+					continue;
+				}
+
+				std::string fieldType;
+				if (token == '*') {
+					// Pointer type: *StructName
+					fieldType = "*";
+					token = u8t_scanner_scan(scanner);
+					if (token == U8T_IDENTIFIER) {
+						const char* typeName = u8t_scanner_token_text(scanner, &n);
+						fieldType += typeName;
+					} else {
+						errorReporter->reportError(scanner, "Expected type name after '*'");
+						continue;
+					}
+				} else {
+					// Regular type
+					const char* typeName = u8t_scanner_token_text(scanner, &n);
+					fieldType = typeName;
+				}
+
+				AstNodeStructField* field = new AstNodeStructField(fieldNameStr, fieldType);
+				setNodePosition(field, scanner, src);
+				field->setParent(structDecl);
+				structDecl->addField(field);
+			}
+		}
+
+		return structDecl;
+	}
+
 	static IAstNode* parseForStatement(u8t_scanner* scanner, ErrorReporter* errorReporter, const char* src) {
 		char32_t token = u8t_scanner_scan(scanner);
 
@@ -1633,7 +1733,7 @@ namespace Qd {
 				const char* text = u8t_scanner_token_text(&scanner, &n);
 
 				if (strcmp(text, "pub") == 0) {
-					// Check if next token is "fn" or "const"
+					// Check if next token is "fn", "const", or "struct"
 					token = u8t_scanner_scan(&scanner);
 					if (token == U8T_IDENTIFIER) {
 						const char* nextText = u8t_scanner_token_text(&scanner, &n);
@@ -1642,6 +1742,12 @@ namespace Qd {
 							if (func) {
 								func->setParent(program);
 								program->addChild(func);
+							}
+						} else if (strcmp(nextText, "struct") == 0) {
+							IAstNode* structDecl = parseStructDeclaration(&scanner, &errorReporter, src, true);
+							if (structDecl) {
+								structDecl->setParent(program);
+								program->addChild(structDecl);
 							}
 						} else if (strcmp(nextText, "const") == 0) {
 							// Parse public constant
@@ -1679,11 +1785,11 @@ namespace Qd {
 								synchronize(&scanner);
 							}
 						} else {
-							errorReporter.reportError(&scanner, "Expected 'fn' or 'const' after 'pub'");
+							errorReporter.reportError(&scanner, "Expected 'fn', 'struct', or 'const' after 'pub'");
 							synchronize(&scanner);
 						}
 					} else {
-						errorReporter.reportError(&scanner, "Expected 'fn' or 'const' after 'pub'");
+						errorReporter.reportError(&scanner, "Expected 'fn', 'struct', or 'const' after 'pub'");
 						synchronize(&scanner);
 					}
 				} else if (strcmp(text, "fn") == 0) {
@@ -1691,6 +1797,12 @@ namespace Qd {
 					if (func) {
 						func->setParent(program);
 						program->addChild(func);
+					}
+				} else if (strcmp(text, "struct") == 0) {
+					IAstNode* structDecl = parseStructDeclaration(&scanner, &errorReporter, src, false);
+					if (structDecl) {
+						structDecl->setParent(program);
+						program->addChild(structDecl);
 					}
 				} else if (strcmp(text, "use") == 0) {
 					token = u8t_scanner_scan(&scanner);

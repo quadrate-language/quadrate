@@ -38,6 +38,7 @@
 #include <qc/ast_node_parameter.h>
 #include <qc/ast_node_return.h>
 #include <qc/ast_node_scoped.h>
+#include <qc/ast_node_struct.h>
 #include <qc/ast_node_switch.h>
 #include <qc/ast_node_use.h>
 
@@ -96,6 +97,8 @@ namespace Qd {
 		llvm::Function* popCallFn = nullptr;
 		llvm::Function* checkStackFn = nullptr;
 		llvm::Function* strdupFn = nullptr;
+		llvm::Function* mallocFn = nullptr;
+		llvm::Function* freeFn = nullptr;
 		llvm::Function* addFn = nullptr;
 		llvm::Function* subFn = nullptr;
 		llvm::Function* mulFn = nullptr;
@@ -144,6 +147,21 @@ namespace Qd {
 		// Local variables (per function scope): name -> alloca instruction
 		std::map<std::string, llvm::AllocaInst*> localVariables;
 
+		// Struct definitions: struct name -> field information
+		struct FieldInfo {
+			std::string name;
+			std::string typeName; // "i64", "f64", "str", "*StructName"
+			size_t offset;		  // Byte offset from struct start
+			size_t size;		  // Size in bytes
+		};
+		struct StructLayout {
+			std::string name;
+			std::vector<FieldInfo> fields;
+			size_t totalSize;
+			bool isPublic;
+		};
+		std::map<std::string, StructLayout> structDefinitions;
+
 		Impl(const std::string& moduleName) {
 			context = std::make_unique<llvm::LLVMContext>();
 			module = std::make_unique<llvm::Module>(moduleName, *context);
@@ -168,6 +186,10 @@ namespace Qd {
 		void generateLocal(AstNodeLocal* local, llvm::Value* ctx);
 		void generateLocalCleanup();
 		void generateCastInstructions(const std::vector<CastDirection>& casts, llvm::Value* ctx);
+		void processStructDeclaration(AstNodeStructDeclaration* structDecl);
+		void generateStructConstruction(const std::string& structName, llvm::Value* ctx);
+		void generateFieldAccess(AstNodeFieldAccess* fieldAccess, llvm::Value* ctx);
+		size_t getTypeSize(const std::string& typeName);
 
 		// Inline stack operations (performance optimization)
 		void generateInlinePushInt(llvm::Value* ctx, int64_t value);
@@ -294,6 +316,16 @@ namespace Qd {
 		auto strdupFnTy = llvm::FunctionType::get(
 				llvm::PointerType::getUnqual(*context), {llvm::PointerType::getUnqual(*context)}, false);
 		strdupFn = llvm::Function::Create(strdupFnTy, llvm::Function::ExternalLinkage, "strdup", *module);
+
+		// malloc(size_t size) -> void*
+		auto mallocFnTy =
+				llvm::FunctionType::get(llvm::PointerType::getUnqual(*context), {builder->getInt64Ty()}, false);
+		mallocFn = llvm::Function::Create(mallocFnTy, llvm::Function::ExternalLinkage, "malloc", *module);
+
+		// free(void* ptr)
+		auto freeFnTy =
+				llvm::FunctionType::get(builder->getVoidTy(), {llvm::PointerType::getUnqual(*context)}, false);
+		this->freeFn = llvm::Function::Create(freeFnTy, llvm::Function::ExternalLinkage, "free", *module);
 
 		// Initialize debug info if enabled
 		if (debugInfoEnabled) {
@@ -2000,6 +2032,13 @@ namespace Qd {
 			return;
 		}
 
+		// Check if it's a struct construction
+		auto structIt = structDefinitions.find(name);
+		if (structIt != structDefinitions.end()) {
+			generateStructConstruction(name, ctx);
+			return;
+		}
+
 		// Check if it's a user-defined function call
 		auto it = userFunctions.find(name);
 		if (it != userFunctions.end()) {
@@ -2439,13 +2478,12 @@ namespace Qd {
 		builder->SetInsertPoint(freeStringBB);
 		auto valuePtr = builder->CreateStructGEP(switchElemTy, switchElem, 0, "value_ptr");
 		auto strPtr = builder->CreateLoad(llvm::PointerType::getUnqual(*context), valuePtr, "str_ptr");
-		auto freeFn = module->getFunction("free");
-		if (!freeFn) {
+		if (!this->freeFn) {
 			auto freeFnTy =
 					llvm::FunctionType::get(builder->getVoidTy(), {llvm::PointerType::getUnqual(*context)}, false);
-			freeFn = llvm::Function::Create(freeFnTy, llvm::Function::ExternalLinkage, "free", *module);
+			this->freeFn = llvm::Function::Create(freeFnTy, llvm::Function::ExternalLinkage, "free", *module);
 		}
-		builder->CreateCall(freeFn, {strPtr});
+		builder->CreateCall(this->freeFn, {strPtr});
 		builder->CreateBr(skipFreeBB);
 
 		// Skip free block
@@ -2553,13 +2591,12 @@ namespace Qd {
 
 			// Call free() on the string
 			// Create free function declaration if not exists
-			llvm::Function* freeFn = module->getFunction("free");
-			if (!freeFn) {
+			if (!this->freeFn) {
 				auto freeFnTy =
 						llvm::FunctionType::get(builder->getVoidTy(), {llvm::PointerType::getUnqual(*context)}, false);
-				freeFn = llvm::Function::Create(freeFnTy, llvm::Function::ExternalLinkage, "free", *module);
+				this->freeFn = llvm::Function::Create(freeFnTy, llvm::Function::ExternalLinkage, "free", *module);
 			}
-			builder->CreateCall(freeFn, {strPtr});
+			builder->CreateCall(this->freeFn, {strPtr});
 			builder->CreateBr(skipFreeBlock);
 
 			// Skip free block
@@ -2979,13 +3016,13 @@ namespace Qd {
 		builder->CreateCall(pushStrFn, {ctx, strValue});
 		// Free the popped string from cloned context (qd_push_s has duplicated it, so we own the original)
 		// When we popped with non-NULL element, the string wasn't freed, so we must free it manually
-		llvm::Function* freeFn = module->getFunction("free");
-		if (!freeFn) {
+		// Use member variable freeFn instead
+		if (!this->freeFn) {
 			auto freeFnTy =
 					llvm::FunctionType::get(builder->getVoidTy(), {llvm::PointerType::getUnqual(*context)}, false);
-			freeFn = llvm::Function::Create(freeFnTy, llvm::Function::ExternalLinkage, "free", *module);
+			this->freeFn = llvm::Function::Create(freeFnTy, llvm::Function::ExternalLinkage, "free", *module);
 		}
-		builder->CreateCall(freeFn, {strValue});
+		builder->CreateCall(this->freeFn, {strValue});
 		builder->CreateBr(pushDoneBB);
 
 		// Free the cloned context AFTER pushing (qd_push_s has now duplicated the string)
@@ -3091,6 +3128,12 @@ namespace Qd {
 			break;
 		case IAstNode::Type::USE_STATEMENT:
 			// Use statements are handled during program generation, not during execution
+			break;
+		case IAstNode::Type::FIELD_ACCESS:
+			generateFieldAccess(static_cast<AstNodeFieldAccess*>(node), ctx);
+			break;
+		case IAstNode::Type::STRUCT_DECLARATION:
+			// Struct declarations are processed during program generation, not during execution
 			break;
 		default:
 			// Ignore other node types for now
@@ -3511,6 +3554,29 @@ namespace Qd {
 			if (auto constNode = dynamic_cast<AstNodeConstant*>(child)) {
 				// Store constant with just the name (no scope prefix for main file)
 				moduleConstants[constNode->name()] = constNode->value();
+			}
+		}
+
+		// Process struct declarations from all modules
+		for (const auto& modulePair : moduleASTs) {
+			IAstNode* moduleRoot = modulePair.second;
+			if (!moduleRoot) {
+				continue;
+			}
+
+			for (size_t i = 0; i < moduleRoot->childCount(); i++) {
+				auto child = moduleRoot->child(i);
+				if (auto structNode = dynamic_cast<AstNodeStructDeclaration*>(child)) {
+					processStructDeclaration(structNode);
+				}
+			}
+		}
+
+		// Process struct declarations from main file
+		for (size_t i = 0; i < root->childCount(); i++) {
+			auto child = root->child(i);
+			if (auto structNode = dynamic_cast<AstNodeStructDeclaration*>(child)) {
+				processStructDeclaration(structNode);
 			}
 		}
 
@@ -3954,6 +4020,187 @@ namespace Qd {
 		std::remove(objFile.c_str());
 
 		return result == 0;
+	}
+
+	// Helper function to get size of a type
+	size_t LlvmGenerator::Impl::getTypeSize(const std::string& typeName) {
+		if (typeName == "i64" || typeName == "f64") {
+			return 8;
+		} else if (typeName == "i32" || typeName == "f32") {
+			return 4;
+		} else if (typeName == "str" || typeName.find('*') != std::string::npos) {
+			return 8; // Pointer size
+		}
+		// For custom types (structs), look up in structDefinitions
+		auto it = structDefinitions.find(typeName);
+		if (it != structDefinitions.end()) {
+			return it->second.totalSize;
+		}
+		return 8; // Default to pointer size
+	}
+
+	// Process a struct declaration and calculate field offsets
+	void LlvmGenerator::Impl::processStructDeclaration(AstNodeStructDeclaration* structDecl) {
+		StructLayout layout;
+		layout.name = structDecl->name();
+		layout.isPublic = structDecl->isPublic();
+		layout.totalSize = 0;
+
+		// Calculate field offsets
+		for (const auto* field : structDecl->fields()) {
+			FieldInfo fieldInfo;
+			fieldInfo.name = field->name();
+			fieldInfo.typeName = field->typeName();
+			fieldInfo.offset = layout.totalSize;
+			fieldInfo.size = getTypeSize(field->typeName());
+
+			// Add field to layout
+			layout.fields.push_back(fieldInfo);
+
+			// Update total size with alignment (8-byte alignment)
+			layout.totalSize += fieldInfo.size;
+			if (layout.totalSize % 8 != 0) {
+				layout.totalSize = (layout.totalSize + 7) & ~static_cast<size_t>(7); // Round up to next 8-byte boundary
+			}
+		}
+
+		// Store struct definition
+		structDefinitions[layout.name] = layout;
+	}
+
+	// Generate struct construction: pop values from stack, malloc, initialize, push pointer
+	void LlvmGenerator::Impl::generateStructConstruction(const std::string& structName, llvm::Value* ctx) {
+		auto it = structDefinitions.find(structName);
+		if (it == structDefinitions.end()) {
+			std::cerr << "Error: Unknown struct type: " << structName << std::endl;
+			return;
+		}
+
+		const StructLayout& layout = it->second;
+
+	// Define context and stack types (stackElementTy is already a member variable)
+	llvm::Type* contextTy = llvm::StructType::get(*context, {llvm::PointerType::getUnqual(*context)}, false);
+	llvm::Type* stackTy = llvm::StructType::get(*context,
+			{
+					llvm::PointerType::getUnqual(*context),  // data
+					builder->getInt64Ty(),                    // size
+					builder->getInt64Ty()                     // capacity
+			},
+			false);
+
+		// Allocate memory for struct
+		auto structSize = builder->getInt64(layout.totalSize);
+		auto structPtr = builder->CreateCall(mallocFn, {structSize}, "struct_ptr");
+
+		// Pop values from stack in reverse order and write to struct fields
+		for (auto fieldIt = layout.fields.rbegin(); fieldIt != layout.fields.rend(); ++fieldIt) {
+			const FieldInfo& field = *fieldIt;
+
+			// Calculate field pointer
+			auto fieldOffset = builder->getInt64(field.offset);
+			auto bytePtr = builder->CreateGEP(builder->getInt8Ty(), structPtr, fieldOffset, "field_byte_ptr");
+
+			// Pop value from stack
+			llvm::Value* stackPtr = builder->CreateStructGEP(contextTy, ctx, 0, "st_ptr");
+			llvm::Value* st = builder->CreateLoad(llvm::PointerType::getUnqual(*context), stackPtr, "st");
+
+			// Get stack size
+			llvm::Value* sizePtr = builder->CreateStructGEP(stackTy, st, 2, "size_ptr");
+			llvm::Value* size = builder->CreateLoad(builder->getInt64Ty(), sizePtr, "size");
+
+			// Decrement size
+			llvm::Value* newSize = builder->CreateSub(size, builder->getInt64(1), "new_size");
+			builder->CreateStore(newSize, sizePtr);
+
+			// Get element pointer
+			llvm::Value* dataPtr = builder->CreateStructGEP(stackTy, st, 0, "data_ptr");
+			llvm::Value* data = builder->CreateLoad(llvm::PointerType::getUnqual(*context), dataPtr, "data");
+			llvm::Value* elemPtr = builder->CreateGEP(stackElementTy, data, newSize, "elem_ptr");
+
+			// Load value from stack element
+			llvm::Value* valuePtr = builder->CreateStructGEP(stackElementTy, elemPtr, 0, "value_ptr");
+
+			// Store to struct field based on type
+			if (field.typeName == "f64") {
+				llvm::Value* floatValue = builder->CreateLoad(builder->getDoubleTy(), valuePtr, "float_val");
+				// Cast byte pointer to generic pointer for storing double
+				llvm::Value* fieldPtr = bytePtr;
+				builder->CreateStore(floatValue, fieldPtr);
+			} else if (field.typeName == "i64") {
+				llvm::Value* intValue = builder->CreateLoad(builder->getInt64Ty(), valuePtr, "int_val");
+				// Cast byte pointer to generic pointer for storing int64
+				llvm::Value* fieldPtr = bytePtr;
+				builder->CreateStore(intValue, fieldPtr);
+			} else if (field.typeName == "str" || field.typeName.find('*') != std::string::npos) {
+				// Pointer type
+				llvm::Value* ptrValue =
+						builder->CreateLoad(llvm::PointerType::getUnqual(*context), valuePtr, "ptr_val");
+				builder->CreateStore(ptrValue, bytePtr);
+			}
+		}
+
+		// Push struct pointer onto stack
+		builder->CreateCall(pushPtrFn, {ctx, structPtr});
+	}
+
+	// Generate field access: load pointer from local, calculate offset, load value, push to stack
+	void LlvmGenerator::Impl::generateFieldAccess(AstNodeFieldAccess* fieldAccess, llvm::Value* ctx) {
+		const std::string& varName = fieldAccess->varName();
+		const std::string& fieldName = fieldAccess->fieldName();
+
+		// Load pointer from local variable
+		auto it = localVariables.find(varName);
+		if (it == localVariables.end()) {
+			std::cerr << "Error: Undefined variable: " << varName << std::endl;
+			return;
+		}
+
+		llvm::Value* structPtrAlloca = it->second;
+		llvm::Value* structPtr = builder->CreateLoad(llvm::PointerType::getUnqual(*context), structPtrAlloca, "struct_ptr");
+
+		// Find struct type by examining local variables
+		// For now, we need to track the type of each local variable
+		// This is a limitation - we'll need to enhance the local variable storage
+		// For the MVP, let's try all struct types and find a matching field
+		const FieldInfo* matchingField = nullptr;
+
+		for (const auto& pair : structDefinitions) {
+			for (const auto& field : pair.second.fields) {
+				if (field.name == fieldName) {
+					matchingField = &field;
+					break;
+				}
+			}
+			if (matchingField)
+				break;
+		}
+
+		if (!matchingField) {
+			std::cerr << "Error: Unknown field: " << fieldName << std::endl;
+			return;
+		}
+
+		// Calculate field offset
+		auto fieldOffset = builder->getInt64(matchingField->offset);
+		auto bytePtr = builder->CreateGEP(builder->getInt8Ty(), structPtr, fieldOffset, "field_byte_ptr");
+
+		// Load value from field based on type
+		if (matchingField->typeName == "f64") {
+			// Use bytePtr directly with opaque pointers
+		llvm::Value* fieldPtr = bytePtr;
+			llvm::Value* floatValue = builder->CreateLoad(builder->getDoubleTy(), fieldPtr, "field_value");
+			builder->CreateCall(pushFloatFn, {ctx, floatValue});
+		} else if (matchingField->typeName == "i64") {
+			// Use bytePtr directly with opaque pointers
+		llvm::Value* fieldPtr = bytePtr;
+			llvm::Value* intValue = builder->CreateLoad(builder->getInt64Ty(), fieldPtr, "field_value");
+			builder->CreateCall(pushIntFn, {ctx, intValue});
+		} else if (matchingField->typeName == "str" || matchingField->typeName.find('*') != std::string::npos) {
+			llvm::Value* fieldPtr =
+					bytePtr; // Use bytePtr directly with opaque pointers
+			llvm::Value* ptrValue = builder->CreateLoad(llvm::PointerType::getUnqual(*context), fieldPtr, "field_value");
+			builder->CreateCall(pushPtrFn, {ctx, ptrValue});
+		}
 	}
 
 } // namespace Qd

@@ -1,0 +1,21 @@
+// Negative test: passing wrong struct type
+struct Person {
+  name:str
+  age:f64
+}
+
+struct Point {
+  x:f64
+  y:f64
+}
+
+fn get_age( p:ptr -- age:f64 ) {
+  -> person
+  person @age  // Expects 'age' field
+}
+
+fn main( -- ) {
+  // Pass Point to function expecting Person - missing 'age' field!
+  3.0 4.0 Point -> pt
+  pt get_age . nl
+}

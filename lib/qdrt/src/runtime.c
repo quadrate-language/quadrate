@@ -1971,6 +1971,36 @@ qd_exec_result qd_drop2(qd_context* ctx) {
 	return (qd_exec_result){0};
 }
 
+// free - deallocate memory pointed to by pointer on stack: ( ptr -- )
+qd_exec_result qd_free(qd_context* ctx) {
+	size_t stack_size = qd_stack_size(ctx->st);
+	if (stack_size < 1) {
+		fprintf(stderr, "Fatal error in free: Stack underflow (required 1 element, have %zu)\n", stack_size);
+		dump_stack(ctx);
+		qd_print_stack_trace(ctx);
+		abort();
+	}
+
+	qd_stack_element_t val;
+	qd_stack_error err = qd_stack_pop(ctx->st, &val);
+	if (err != QD_STACK_OK) {
+		return (qd_exec_result){-2};
+	}
+
+	// Verify it's a pointer type
+	if (val.type != QD_STACK_TYPE_PTR) {
+		fprintf(stderr, "Fatal error in free: Expected pointer type, got type %d\n", val.type);
+		dump_stack(ctx);
+		qd_print_stack_trace(ctx);
+		abort();
+	}
+
+	// Free the memory (ptr can be NULL, free(NULL) is safe)
+	free(val.value.p);
+
+	return (qd_exec_result){0};
+}
+
 // rot - rotate top 3 elements: ( a b c -- b c a )
 qd_exec_result qd_rot(qd_context* ctx) {
 	size_t stack_size = qd_stack_size(ctx->st);

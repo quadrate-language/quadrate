@@ -1,0 +1,19 @@
+// Negative test: str vs ptr type mismatch
+struct WithStr {
+  data:str
+}
+
+struct WithPtr {
+  data:ptr
+}
+
+fn use_str_field( obj:ptr -- ) {
+  -> x
+  x @data drop  // Expects str field
+}
+
+fn main( -- ) {
+  // Pass WithPtr to function expecting str - type mismatch!
+  0 WithPtr -> p
+  p use_str_field
+}

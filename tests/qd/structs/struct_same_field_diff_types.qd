@@ -1,0 +1,29 @@
+// Edge case: same field name in different structs with compatible types
+struct PersonWithFloat {
+  value:f64
+}
+
+struct PersonWithInt {
+  value:i64
+}
+
+fn get_value( p:ptr -- v:f64 ) {
+  -> obj
+  obj @value
+}
+
+fn test_same_field( -- ) {
+  // Float version - exact match
+  3.14 PersonWithFloat -> p1
+  defer { p1 free }
+  p1 get_value . nl
+
+  // Int version - implicit cast (with warning)
+  42 PersonWithInt -> p2
+  defer { p2 free }
+  p2 get_value . nl
+}
+
+fn main( -- ) {
+  test_same_field
+}

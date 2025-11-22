@@ -1,0 +1,19 @@
+// Test all supported field types
+struct AllTypes {
+  int_field:i64
+  float_field:f64
+  string_field:str
+  pointer_field:ptr
+}
+
+fn test_all_types( -- ) {
+  42 3.14 "hello" 0 AllTypes -> obj
+  defer { obj free }
+
+  obj @int_field . nl
+  obj @float_field . nl
+}
+
+fn main( -- ) {
+  test_all_types
+}

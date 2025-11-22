@@ -1,0 +1,15 @@
+// Negative test: accessing non-existent field
+struct Point {
+  x:f64
+  y:f64
+}
+
+fn use_point( p:ptr -- ) {
+  -> pt
+  pt @z drop  // ERROR: Point has no field 'z'
+}
+
+fn main( -- ) {
+  3.0 4.0 Point -> p
+  p use_point
+}

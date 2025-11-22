@@ -1,0 +1,25 @@
+struct Point {
+  x:f64
+  y:f64
+}
+
+fn test_nested_access( -- ) {
+  // Test multiple accesses from same struct
+  5.0 10.0 Point -> p
+  defer { p free }
+
+  // Access x twice
+  p @x . nl
+  p @x . nl
+
+  // Access y
+  p @y . nl
+
+  // Access x and y separately (adding field access results doesn't work due to type checker limitation)
+  p @x . nl
+  p @y . nl
+}
+
+fn main( -- ) {
+  test_nested_access
+}

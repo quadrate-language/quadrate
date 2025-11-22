@@ -1,0 +1,24 @@
+// Test function accessing str field
+struct Person {
+  name:str
+  age:f64
+}
+
+fn get_age( p:ptr -- age:f64 ) {
+  -> person
+  person @age
+}
+
+fn test_str_field( -- ) {
+  "Alice" 25.0 Person -> p1
+  defer { p1 free }
+  p1 get_age . nl
+
+  "Bob" 30.0 Person -> p2
+  defer { p2 free }
+  p2 get_age . nl
+}
+
+fn main( -- ) {
+  test_str_field
+}
