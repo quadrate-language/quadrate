@@ -1350,12 +1350,35 @@ if (node->type() == IAstNode::Type::STRUCT_DECLARATION) {
 				const auto& functions = moduleIt->second;
 				auto funcIt = functions.find(functionName);
 				if (funcIt == functions.end()) {
-					std::string errorMsg = "Function or constant '";
-					errorMsg += functionName;
-					errorMsg += "' not found in module '";
-					errorMsg += scopeName;
-					errorMsg += "'";
-					reportError(scoped, errorMsg.c_str());
+					// If not found as a function, check if it's a struct
+					auto moduleStructsIt = mModuleStructs.find(scopeName);
+					bool foundAsStruct = false;
+					if (moduleStructsIt != mModuleStructs.end()) {
+						const auto& structs = moduleStructsIt->second;
+						auto structIt = structs.find(functionName);
+						if (structIt != structs.end()) {
+							foundAsStruct = true;
+							// Check if the struct is public
+							bool isPublic = structIt->second;
+							if (!isPublic) {
+								std::string errorMsg = "Struct '";
+								errorMsg += functionName;
+								errorMsg += "' in module '";
+								errorMsg += scopeName;
+								errorMsg += "' is private and cannot be accessed from outside the module. Mark it as 'pub struct' to export it.";
+								reportError(scoped, errorMsg.c_str());
+							}
+						}
+					}
+
+					if (!foundAsStruct) {
+						std::string errorMsg = "Function, constant, or struct '";
+						errorMsg += functionName;
+						errorMsg += "' not found in module '";
+						errorMsg += scopeName;
+						errorMsg += "'";
+						reportError(scoped, errorMsg.c_str());
+					}
 				} else {
 					// Check if the function is public
 					bool isPublic = funcIt->second;
@@ -2256,7 +2279,7 @@ if (node->type() == IAstNode::Type::STRUCT_DECLARATION) {
 		}
 
 			case IAstNode::Type::SCOPED_IDENTIFIER: {
-				// Handle module constants or function calls
+				// Handle module constants, structs, or function calls
 				AstNodeScopedIdentifier* scoped = static_cast<AstNodeScopedIdentifier*>(child);
 				const std::string& moduleName = scoped->scope();
 				const std::string& functionName = scoped->name();
@@ -2285,6 +2308,31 @@ if (node->type() == IAstNode::Type::STRUCT_DECLARATION) {
 							typeStack.push_back(StackValueType::UNKNOWN);
 						}
 						structTypeStack.push_back("");
+						break;
+					}
+				}
+
+				// Check if this is a struct construction
+				auto moduleStructsIt = mModuleStructs.find(moduleName);
+				if (moduleStructsIt != mModuleStructs.end()) {
+					const auto& structs = moduleStructsIt->second;
+					auto structIt = structs.find(functionName);
+					if (structIt != structs.end() && structIt->second) {
+						// This is a struct construction from a module
+						// Pop field values from the stack
+						auto structFieldIt = mStructFieldTypes.find(functionName);
+						if (structFieldIt != mStructFieldTypes.end()) {
+							size_t fieldCount = structFieldIt->second.size();
+							for (size_t fi = 0; fi < fieldCount && !typeStack.empty(); fi++) {
+								typeStack.pop_back();
+								if (!structTypeStack.empty()) {
+									structTypeStack.pop_back();
+								}
+							}
+						}
+						// Push pointer type for the constructed struct, with qualified name as type
+						typeStack.push_back(StackValueType::PTR);
+						structTypeStack.push_back(functionName); // Track the struct type (bare name)
 						break;
 					}
 				}

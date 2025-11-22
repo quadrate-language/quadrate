@@ -2248,7 +2248,16 @@ namespace Qd {
 			return;
 		}
 
-		// Not a constant, must be a function
+		// Check if this is a struct construction
+		// All structs (both from main file and modules) are in structDefinitions
+		if (structDefinitions.find(name) != structDefinitions.end()) {
+			// This is a struct construction from a module
+			// Generate struct allocation and field initialization
+			generateStructConstruction(name, ctx);
+			return;
+		}
+
+		// Not a constant or struct, must be a function
 		std::string mangledName = "usr_" + scope + "_" + name;
 
 		// Check if we have this function
