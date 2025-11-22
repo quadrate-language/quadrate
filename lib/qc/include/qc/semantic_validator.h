@@ -170,8 +170,17 @@ namespace Qd {
 	// Symbol table: all defined structs
 	std::unordered_set<std::string> mDefinedStructs;
 
+	// Struct declarations: maps struct name -> AST node (for local structs)
+	std::unordered_map<std::string, class AstNodeStructDeclaration*> mStructDeclarations;
+
+	// Module struct declarations: maps struct name -> AST node (for module structs)
+	std::unordered_map<std::string, class AstNodeStructDeclaration*> mModuleStructDeclarations;
+
 	// Struct field types: maps struct name -> (field name -> type)
 	std::unordered_map<std::string, std::unordered_map<std::string, StackValueType>> mStructFieldTypes;
+
+	// Struct field order: maps struct name -> vector of field names (in declaration order)
+	std::unordered_map<std::string, std::vector<std::string>> mStructFieldOrder;
 
 	// Track which struct type each local variable holds (for PTR types)
 	// Maps variable name -> struct type name (empty string if not a struct pointer)

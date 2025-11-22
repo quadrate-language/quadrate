@@ -126,6 +126,10 @@ namespace Qd {
 				(actual == StackValueType::FLOAT && expected == StackValueType::INT)) {
 			return true;
 		}
+		// Allow int -> ptr implicit conversion (for null/0 pointers)
+		if (actual == StackValueType::INT && expected == StackValueType::PTR) {
+			return true;
+		}
 		return false;
 	}
 
@@ -426,6 +430,7 @@ if (node->type() == IAstNode::Type::STRUCT_DECLARATION) {
 		}
 
 		mDefinedStructs.insert(structDecl->name());
+		mStructDeclarations[structDecl->name()] = structDecl;
 
 		// Collect field types
 		std::unordered_map<std::string, StackValueType> fieldTypes;
@@ -1001,10 +1006,12 @@ if (node->type() == IAstNode::Type::STRUCT_DECLARATION) {
 			return;
 		}
 
-		// If this is a struct declaration, collect its field types
+		// If this is a struct declaration, collect its field types and store the declaration
 		if (node->type() == IAstNode::Type::STRUCT_DECLARATION) {
 			AstNodeStructDeclaration* structDecl = static_cast<AstNodeStructDeclaration*>(node);
+			mModuleStructDeclarations[structDecl->name()] = structDecl;
 			std::unordered_map<std::string, StackValueType> fieldTypes;
+			std::vector<std::string> fieldOrder;
 			std::unordered_set<std::string> seenFieldNames;
 
 			for (const auto* field : structDecl->fields()) {
@@ -1015,6 +1022,7 @@ if (node->type() == IAstNode::Type::STRUCT_DECLARATION) {
 					return;
 				}
 				seenFieldNames.insert(field->name());
+				fieldOrder.push_back(field->name());
 
 				StackValueType fieldType = StackValueType::UNKNOWN;
 				if (field->typeName() == "f64") {
@@ -1029,6 +1037,7 @@ if (node->type() == IAstNode::Type::STRUCT_DECLARATION) {
 				fieldTypes[field->name()] = fieldType;
 			}
 			mStructFieldTypes[structDecl->name()] = fieldTypes;
+			mStructFieldOrder[structDecl->name()] = fieldOrder;
 		}
 
 		// Recursively process children
@@ -1978,10 +1987,78 @@ if (node->type() == IAstNode::Type::STRUCT_DECLARATION) {
 			// Check if it's a struct construction
 			if (mDefinedStructs.find(name) != mDefinedStructs.end()) {
 				// Struct construction: consumes field values, produces pointer
-				auto structFieldIt = mStructFieldTypes.find(name);
-				if (structFieldIt != mStructFieldTypes.end()) {
-					size_t fieldCount = structFieldIt->second.size();
-					// Pop field values from stack (type checking already done by earlier validation)
+				auto structDeclIt = mStructDeclarations.find(name);
+				if (structDeclIt != mStructDeclarations.end()) {
+					AstNodeStructDeclaration* structDecl = structDeclIt->second;
+					const auto& fields = structDecl->fields();
+					size_t fieldCount = fields.size();
+
+					// Check if we have enough values on the stack
+					if (typeStack.size() < fieldCount) {
+						std::string errorMsg = "Type error in struct construction '";
+						errorMsg += name;
+						errorMsg += "': Stack underflow (requires ";
+						errorMsg += std::to_string(fieldCount);
+						errorMsg += " values, have ";
+						errorMsg += std::to_string(typeStack.size());
+						errorMsg += ")";
+						reportError(ident, errorMsg.c_str());
+					} else {
+						// Validate each field type (fields are in declaration order)
+						// Fields are consumed bottom-to-top from the stack
+						for (size_t fi = 0; fi < fieldCount; fi++) {
+							size_t stackIdx = typeStack.size() - fieldCount + fi;
+							StackValueType actual = typeStack[stackIdx];
+							const AstNodeStructField* field = fields[fi];
+							const std::string& fieldName = field->name();
+
+							// Get expected type from mStructFieldTypes
+							auto structFieldTypesIt = mStructFieldTypes.find(name);
+							if (structFieldTypesIt == mStructFieldTypes.end()) {
+								continue;
+							}
+							auto fieldTypeIt = structFieldTypesIt->second.find(fieldName);
+							if (fieldTypeIt == structFieldTypesIt->second.end()) {
+								continue;
+							}
+							StackValueType expected = fieldTypeIt->second;
+
+							// Skip check if actual type is UNKNOWN (can't determine type)
+							if (actual == StackValueType::UNKNOWN) {
+								continue;
+							}
+
+							// Check for type mismatch
+							if (actual != expected) {
+								// Check if implicit cast is allowed (int <-> float)
+								if (isImplicitCastAllowed(actual, expected)) {
+									// Warn about implicit cast
+									std::string warnMsg = "Implicit cast in struct construction '";
+									warnMsg += name;
+									warnMsg += "': Field '";
+									warnMsg += fieldName;
+									warnMsg += "' expects ";
+									warnMsg += stackValueTypeToString(expected);
+									warnMsg += ", but got ";
+									warnMsg += stackValueTypeToString(actual);
+									reportWarning(ident, warnMsg.c_str());
+								} else {
+									// Type mismatch error
+									std::string errorMsg = "Type error in struct construction '";
+									errorMsg += name;
+									errorMsg += "': Field '";
+									errorMsg += fieldName;
+									errorMsg += "' expects ";
+									errorMsg += stackValueTypeToString(expected);
+									errorMsg += ", but got ";
+									errorMsg += stackValueTypeToString(actual);
+									reportError(ident, errorMsg.c_str());
+								}
+							}
+						}
+					}
+
+					// Pop field values from stack
 					for (size_t fi = 0; fi < fieldCount && !typeStack.empty(); fi++) {
 						typeStack.pop_back();
 						if (!structTypeStack.empty()) {
@@ -2019,10 +2096,79 @@ if (node->type() == IAstNode::Type::STRUCT_DECLARATION) {
 				const auto& structs = moduleEntry.second;
 				if (structs.find(name) != structs.end() && structs.at(name)) {
 					// Struct construction from module
-					// Try to find field count if we have type info
-					auto structFieldIt = mStructFieldTypes.find(name);
-					if (structFieldIt != mStructFieldTypes.end()) {
-						size_t fieldCount = structFieldIt->second.size();
+					// Try to find struct declaration
+					auto structDeclIt = mModuleStructDeclarations.find(name);
+					if (structDeclIt != mModuleStructDeclarations.end()) {
+						AstNodeStructDeclaration* structDecl = structDeclIt->second;
+						const auto& fields = structDecl->fields();
+						size_t fieldCount = fields.size();
+
+						// Check if we have enough values on the stack
+						if (typeStack.size() < fieldCount) {
+							std::string errorMsg = "Type error in struct construction '";
+							errorMsg += name;
+							errorMsg += "': Stack underflow (requires ";
+							errorMsg += std::to_string(fieldCount);
+							errorMsg += " values, have ";
+							errorMsg += std::to_string(typeStack.size());
+							errorMsg += ")";
+							reportError(ident, errorMsg.c_str());
+						} else {
+							// Validate each field type (fields are in declaration order)
+							// Fields are consumed bottom-to-top from the stack
+							for (size_t fi = 0; fi < fieldCount; fi++) {
+								size_t stackIdx = typeStack.size() - fieldCount + fi;
+								StackValueType actual = typeStack[stackIdx];
+								const AstNodeStructField* field = fields[fi];
+								const std::string& fieldName = field->name();
+
+								// Get expected type from mStructFieldTypes
+								auto structFieldTypesIt = mStructFieldTypes.find(name);
+								if (structFieldTypesIt == mStructFieldTypes.end()) {
+									continue;
+								}
+								auto fieldTypeIt = structFieldTypesIt->second.find(fieldName);
+								if (fieldTypeIt == structFieldTypesIt->second.end()) {
+									continue;
+								}
+								StackValueType expected = fieldTypeIt->second;
+
+								// Skip check if actual type is UNKNOWN (can't determine type)
+								if (actual == StackValueType::UNKNOWN) {
+									continue;
+								}
+
+								// Check for type mismatch
+								if (actual != expected) {
+									// Check if implicit cast is allowed (int <-> float)
+									if (isImplicitCastAllowed(actual, expected)) {
+										// Warn about implicit cast
+										std::string warnMsg = "Implicit cast in struct construction '";
+										warnMsg += name;
+										warnMsg += "': Field '";
+										warnMsg += fieldName;
+										warnMsg += "' expects ";
+										warnMsg += stackValueTypeToString(expected);
+										warnMsg += ", but got ";
+										warnMsg += stackValueTypeToString(actual);
+										reportWarning(ident, warnMsg.c_str());
+									} else {
+										// Type mismatch error
+										std::string errorMsg = "Type error in struct construction '";
+										errorMsg += name;
+										errorMsg += "': Field '";
+										errorMsg += fieldName;
+										errorMsg += "' expects ";
+										errorMsg += stackValueTypeToString(expected);
+										errorMsg += ", but got ";
+										errorMsg += stackValueTypeToString(actual);
+										reportError(ident, errorMsg.c_str());
+									}
+								}
+							}
+						}
+
+						// Pop field values from stack
 						for (size_t fi = 0; fi < fieldCount && !typeStack.empty(); fi++) {
 							typeStack.pop_back();
 							if (!structTypeStack.empty()) {
@@ -2401,10 +2547,77 @@ if (node->type() == IAstNode::Type::STRUCT_DECLARATION) {
 					auto structIt = structs.find(functionName);
 					if (structIt != structs.end() && structIt->second) {
 						// This is a struct construction from a module
-						// Pop field values from the stack
-						auto structFieldIt = mStructFieldTypes.find(functionName);
-						if (structFieldIt != mStructFieldTypes.end()) {
-							size_t fieldCount = structFieldIt->second.size();
+						// Use mStructFieldTypes and mStructFieldOrder since the AST node may be invalid
+						auto structFieldTypesIt = mStructFieldTypes.find(functionName);
+						auto structFieldOrderIt = mStructFieldOrder.find(functionName);
+
+						if (structFieldTypesIt != mStructFieldTypes.end() &&
+								structFieldOrderIt != mStructFieldOrder.end()) {
+							const auto& fieldTypes = structFieldTypesIt->second;
+							const auto& fieldOrder = structFieldOrderIt->second;
+							size_t fieldCount = fieldOrder.size();
+
+							// Check if we have enough values on the stack
+							if (typeStack.size() < fieldCount) {
+								std::string errorMsg = "Type error in struct construction '";
+								errorMsg += qualifiedName;
+								errorMsg += "': Stack underflow (requires ";
+								errorMsg += std::to_string(fieldCount);
+								errorMsg += " values, have ";
+								errorMsg += std::to_string(typeStack.size());
+								errorMsg += ")";
+								reportError(scoped, errorMsg.c_str());
+							} else {
+								// Validate each field type (fields are in declaration order)
+								// Fields are consumed bottom-to-top from the stack
+								for (size_t fi = 0; fi < fieldOrder.size(); fi++) {
+									size_t stackIdx = typeStack.size() - fieldOrder.size() + fi;
+									StackValueType actual = typeStack[stackIdx];
+									const std::string& fieldName = fieldOrder[fi];
+
+									// Get expected type from fieldTypes
+									auto fieldTypeIt = fieldTypes.find(fieldName);
+									if (fieldTypeIt == fieldTypes.end()) {
+										continue;
+									}
+									StackValueType expected = fieldTypeIt->second;
+
+									// Skip check if actual type is UNKNOWN (can't determine type)
+									if (actual == StackValueType::UNKNOWN) {
+										continue;
+									}
+
+									// Check for type mismatch
+									if (actual != expected) {
+										// Check if implicit cast is allowed (int <-> float)
+										if (isImplicitCastAllowed(actual, expected)) {
+											// Warn about implicit cast
+											std::string warnMsg = "Implicit cast in struct construction '";
+											warnMsg += qualifiedName;
+											warnMsg += "': Field '";
+											warnMsg += fieldName;
+											warnMsg += "' expects ";
+											warnMsg += stackValueTypeToString(expected);
+											warnMsg += ", but got ";
+											warnMsg += stackValueTypeToString(actual);
+											reportWarning(scoped, warnMsg.c_str());
+										} else {
+											// Type mismatch error
+											std::string errorMsg = "Type error in struct construction '";
+											errorMsg += qualifiedName;
+											errorMsg += "': Field '";
+											errorMsg += fieldName;
+											errorMsg += "' expects ";
+											errorMsg += stackValueTypeToString(expected);
+											errorMsg += ", but got ";
+											errorMsg += stackValueTypeToString(actual);
+											reportError(scoped, errorMsg.c_str());
+										}
+									}
+								}
+							}
+
+							// Pop field values from stack
 							for (size_t fi = 0; fi < fieldCount && !typeStack.empty(); fi++) {
 								typeStack.pop_back();
 								if (!structTypeStack.empty()) {
