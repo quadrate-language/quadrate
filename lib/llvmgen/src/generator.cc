@@ -3458,7 +3458,7 @@ namespace Qd {
 						debugBuilder->createExpression(),		  // Empty expression (no deref)
 						llvm::DILocation::get(
 								*context, static_cast<unsigned>(funcNode->line()), 0, debugScopeStack.back()),
-						builder->GetInsertPoint());
+						builder->GetInsertBlock());
 			}
 
 			// Push function name onto call stack for debugging
