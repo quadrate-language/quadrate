@@ -3,6 +3,7 @@
 
 stdnetqd_sources = files(
 	'src/net.c',
+	'src/platform/posix/net_socket.c',
 )
 
 stdnetqd_inc = include_directories('include')

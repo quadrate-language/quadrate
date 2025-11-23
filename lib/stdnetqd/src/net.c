@@ -4,10 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
-#include <arpa/inet.h>
-#include <sys/socket.h>
-#include <netdb.h>
+#include "platform/net_platform.h"
 
 // Stack signature: ( port:i -- socket:i )
 // Creates a server socket, binds to the port, and listens
@@ -26,37 +23,10 @@ qd_exec_result usr_net_listen(qd_context* ctx) {
 
 	int port = (int)port_elem.value.i;
 
-	// Create socket
-	int server_fd = socket(AF_INET, SOCK_STREAM, 0);
-	if (server_fd < 0) {
-		fprintf(stderr, "Fatal error in usr_net_listen: failed to create socket\n");
-		abort();
-	}
-
-	// Allow address reuse
-	int opt = 1;
-	if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0) {
-		close(server_fd);
-		fprintf(stderr, "Fatal error in usr_net_listen: failed to set socket options\n");
-		abort();
-	}
-
-	// Bind to port
-	struct sockaddr_in addr = {0};
-	addr.sin_family = AF_INET;
-	addr.sin_addr.s_addr = INADDR_ANY;
-	addr.sin_port = htons((uint16_t)port);
-
-	if (bind(server_fd, (struct sockaddr*)&addr, sizeof(addr)) < 0) {
-		close(server_fd);
-		fprintf(stderr, "Fatal error in usr_net_listen: failed to bind socket (port %d may be in use)\n", port);
-		abort();
-	}
-
-	// Listen with backlog of 128
-	if (listen(server_fd, 128) < 0) {
-		close(server_fd);
-		fprintf(stderr, "Fatal error in usr_net_listen: failed to listen on socket\n");
+	// Create server socket using platform abstraction
+	net_socket_t server_fd = net_platform_listen(port);
+	if (server_fd == NET_SOCKET_INVALID) {
+		fprintf(stderr, "Fatal error in usr_net_listen: failed to create and bind socket (port %d may be in use)\n", port);
 		abort();
 	}
 
@@ -80,11 +50,11 @@ qd_exec_result usr_net_accept(qd_context* ctx) {
 		abort();
 	}
 
-	int server_fd = (int)socket_elem.value.i;
+	net_socket_t server_fd = (net_socket_t)socket_elem.value.i;
 
-	// Accept connection
-	int client_fd = accept(server_fd, NULL, NULL);
-	if (client_fd < 0) {
+	// Accept connection using platform abstraction
+	net_socket_t client_fd = net_platform_accept(server_fd);
+	if (client_fd == NET_SOCKET_INVALID) {
 		fprintf(stderr, "Fatal error in usr_net_accept: failed to accept connection\n");
 		abort();
 	}
@@ -125,38 +95,14 @@ qd_exec_result usr_net_connect(qd_context* ctx) {
 	int port = (int)port_elem.value.i;
 	char* host = host_elem.value.s;
 
-	// Create socket
-	int sock_fd = socket(AF_INET, SOCK_STREAM, 0);
-	if (sock_fd < 0) {
-		free(host);
-		fprintf(stderr, "Fatal error in usr_net_connect: failed to create socket\n");
-		abort();
-	}
-
-	// Resolve hostname
-	struct hostent* server = gethostbyname(host);
-	if (server == NULL) {
-		close(sock_fd);
-		free(host);
-		fprintf(stderr, "Fatal error in usr_net_connect: failed to resolve hostname\n");
-		abort();
-	}
-
-	// Setup address
-	struct sockaddr_in addr = {0};
-	addr.sin_family = AF_INET;
-	memcpy(&addr.sin_addr.s_addr, server->h_addr_list[0], (size_t)server->h_length);
-	addr.sin_port = htons((uint16_t)port);
-
-	// Connect
-	if (connect(sock_fd, (struct sockaddr*)&addr, sizeof(addr)) < 0) {
-		close(sock_fd);
-		free(host);
-		fprintf(stderr, "Fatal error in usr_net_connect: failed to connect\n");
-		abort();
-	}
-
+	// Connect to remote host using platform abstraction
+	net_socket_t sock_fd = net_platform_connect(host, port);
 	free(host);
+
+	if (sock_fd == NET_SOCKET_INVALID) {
+		fprintf(stderr, "Fatal error in usr_net_connect: failed to connect to %s:%d\n", host, port);
+		abort();
+	}
 
 	// Push socket to stack
 	qd_push_i(ctx, (int64_t)sock_fd);
@@ -192,12 +138,12 @@ qd_exec_result usr_net_send(qd_context* ctx) {
 		abort();
 	}
 
-	int sock_fd = (int)socket_elem.value.i;
+	net_socket_t sock_fd = (net_socket_t)socket_elem.value.i;
 	char* data = data_elem.value.s;
 	size_t len = strlen(data);
 
-	// Send data
-	ssize_t bytes_sent = write(sock_fd, data, len);
+	// Send data using platform abstraction
+	int bytes_sent = net_platform_send(sock_fd, data, len);
 	free(data);
 
 	if (bytes_sent < 0) {
@@ -237,7 +183,7 @@ qd_exec_result usr_net_receive(qd_context* ctx) {
 		abort();
 	}
 
-	int sock_fd = (int)socket_elem.value.i;
+	net_socket_t sock_fd = (net_socket_t)socket_elem.value.i;
 	int max_bytes = (int)max_bytes_elem.value.i;
 
 	if (max_bytes <= 0 || max_bytes > 1048576) { // Max 1MB
@@ -252,8 +198,8 @@ qd_exec_result usr_net_receive(qd_context* ctx) {
 		abort();
 	}
 
-	// Read data
-	ssize_t bytes_read = read(sock_fd, buffer, (size_t)max_bytes);
+	// Read data using platform abstraction
+	int bytes_read = net_platform_receive(sock_fd, buffer, (size_t)max_bytes);
 	if (bytes_read < 0) {
 		free(buffer);
 		fprintf(stderr, "Fatal error in usr_net_receive: failed to read from socket\n");
@@ -271,7 +217,7 @@ qd_exec_result usr_net_receive(qd_context* ctx) {
 }
 
 // Stack signature: ( socket:i -- )
-// Gracefully shuts down a socket for writing (SHUT_WR)
+// Gracefully shuts down a socket for writing
 qd_exec_result usr_net_shutdown(qd_context* ctx) {
 	qd_stack_element_t socket_elem;
 	qd_stack_error err = qd_stack_pop(ctx->st, &socket_elem);
@@ -285,8 +231,8 @@ qd_exec_result usr_net_shutdown(qd_context* ctx) {
 		abort();
 	}
 
-	int sock_fd = (int)socket_elem.value.i;
-	shutdown(sock_fd, SHUT_WR);
+	net_socket_t sock_fd = (net_socket_t)socket_elem.value.i;
+	net_platform_shutdown(sock_fd);
 
 	return (qd_exec_result){0};
 }
@@ -306,9 +252,8 @@ qd_exec_result usr_net_close(qd_context* ctx) {
 		abort();
 	}
 
-	int sock_fd = (int)socket_elem.value.i;
-	close(sock_fd);
+	net_socket_t sock_fd = (net_socket_t)socket_elem.value.i;
+	net_platform_close(sock_fd);
 
 	return (qd_exec_result){0};
 }
-
