@@ -1,0 +1,34 @@
+image: freebsd
+
+packages:
+  - llvm
+  - meson
+  - ninja
+  - pkgconf
+  - node
+  - npm
+  - tree-sitter
+  - valgrind
+
+sources:
+  - git://git@git.sr.ht:~klahr/quadrate
+
+tasks:
+  - build: |
+      cd quadrate
+      make release
+  - test: |
+      cd quadrate
+      make tests
+  - test_optimized: |
+      cd quadrate
+      bash tests/run_tests.sh optimized -O2
+      bash tests/run_tests.sh optimized -O3
+  - valgrind: |
+      cd quadrate
+      make valgrind
+
+triggers:
+  - action: email
+    condition: failure
+    to: klahr@r8.rs
