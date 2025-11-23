@@ -3934,7 +3934,12 @@ namespace Qd {
 
 		auto targetTripleStr = llvm::sys::getDefaultTargetTriple();
 		llvm::Triple targetTriple(targetTripleStr);
-		impl->module->setTargetTriple(targetTriple);
+		// LLVM 20+ changed API to accept Triple objects instead of strings
+		#if LLVM_VERSION_MAJOR >= 20
+			impl->module->setTargetTriple(targetTriple);
+		#else
+			impl->module->setTargetTriple(targetTriple.getTriple());
+		#endif
 
 		std::string error;
 		auto target = llvm::TargetRegistry::lookupTarget(targetTripleStr, error);
@@ -3946,8 +3951,14 @@ namespace Qd {
 		auto cpu = "generic";
 		auto features = "";
 		llvm::TargetOptions opt;
-		std::unique_ptr<llvm::TargetMachine> targetMachine(target->createTargetMachine(
-				targetTriple, cpu, features, opt, std::optional<llvm::Reloc::Model>(llvm::Reloc::PIC_)));
+		// LLVM 20+ changed API to accept Triple objects instead of strings
+		#if LLVM_VERSION_MAJOR >= 20
+			std::unique_ptr<llvm::TargetMachine> targetMachine(target->createTargetMachine(
+					targetTriple, cpu, features, opt, std::optional<llvm::Reloc::Model>(llvm::Reloc::PIC_)));
+		#else
+			std::unique_ptr<llvm::TargetMachine> targetMachine(target->createTargetMachine(
+					targetTriple.getTriple(), cpu, features, opt, std::optional<llvm::Reloc::Model>(llvm::Reloc::PIC_)));
+		#endif
 
 		impl->module->setDataLayout(targetMachine->createDataLayout());
 
