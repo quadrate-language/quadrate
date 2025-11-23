@@ -3,13 +3,11 @@
 #include <qdrt/runtime.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <time.h>
-#include <threads.h>
+#include "platform/time_platform.h"
 
 // unix - get current Unix timestamp in seconds ( -- timestamp:i64 )
 qd_exec_result usr_time_unix(qd_context* ctx) {
-	time_t now = time(NULL);
-	int64_t timestamp = (int64_t)now;
+	int64_t timestamp = time_platform_unix();
 
 	qd_stack_error err = qd_stack_push_int(ctx->st, timestamp);
 	if (err != QD_STACK_OK) {
@@ -22,10 +20,7 @@ qd_exec_result usr_time_unix(qd_context* ctx) {
 
 // now - get current time in nanoseconds since epoch ( -- nanoseconds:i64 )
 qd_exec_result usr_time_now(qd_context* ctx) {
-	struct timespec ts;
-	timespec_get(&ts, TIME_UTC);  // C11 standard
-
-	int64_t nanoseconds = (int64_t)ts.tv_sec * 1000000000LL + (int64_t)ts.tv_nsec;
+	int64_t nanoseconds = time_platform_now_ns();
 
 	qd_stack_error err = qd_stack_push_int(ctx->st, nanoseconds);
 	if (err != QD_STACK_OK) {
@@ -56,12 +51,7 @@ qd_exec_result usr_time_sleep(qd_context* ctx) {
 		abort();
 	}
 
-	struct timespec ts;
-	ts.tv_sec = val.value.i / 1000000000;
-	ts.tv_nsec = val.value.i % 1000000000;
-
-	thrd_sleep(&ts, NULL);  // C11 standard
+	time_platform_sleep_ns(val.value.i);
 
 	return (qd_exec_result){0};
 }
-

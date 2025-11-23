@@ -3,6 +3,7 @@
 
 stdtimeqd_sources = files(
 	'src/time.c',
+	'src/platform/posix/time_posix.c',
 )
 
 stdtimeqd_inc = include_directories('include')

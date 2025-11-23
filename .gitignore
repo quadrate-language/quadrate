@@ -18,3 +18,4 @@ GEMINI.md
 benchmarks/arithmetic_qd_typeaware
 benchmarks/arithmetic_v8_specialized
 empty_if
+lib/stdnetqd/src/platform/README.md
