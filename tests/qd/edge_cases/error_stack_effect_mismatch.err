@@ -1,0 +1,1 @@
+[1mquadc: [0m[1mtests/qd/edge_cases/error_stack_effect_mismatch.qd:2:7:[0m [1m[1;31merror:[0m [1mType error in 'add': Stack underflow (requires 2 numeric values)[0m

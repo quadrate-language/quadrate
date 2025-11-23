@@ -9,8 +9,7 @@ struct Offset {
   dy:f64
 }
 
-fn add_offset( p:ptr o:ptr -- ) {
-  -> offset -> point
+fn add_offset( point:ptr offset:ptr -- ) {
   point @x offset @dx add . nl
   point @y offset @dy add . nl
 }
