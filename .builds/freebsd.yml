@@ -25,6 +25,12 @@ tasks:
         fi
       fi
       python3 --version
+      # Install tree-sitter CLI (FreeBSD package only provides library)
+      if ! command -v tree-sitter > /dev/null 2>&1; then
+        sudo npm install -g tree-sitter-cli
+        echo "Installed tree-sitter CLI via npm"
+      fi
+      tree-sitter --version || echo "tree-sitter CLI not available"
   - build: |
       cd quadrate
       make release
