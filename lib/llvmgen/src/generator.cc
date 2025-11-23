@@ -1,10 +1,15 @@
 #include <llvmgen/generator.h>
 
-// Suppress warnings from LLVM headers (especially LLVM 19 on FreeBSD)
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wimplicit-int-conversion"
-#pragma clang diagnostic ignored "-Wold-style-cast"
-#pragma clang diagnostic ignored "-Wsign-conversion"
+// Suppress all warnings from LLVM headers (third-party code)
+#if defined(__clang__)
+	#pragma clang diagnostic push
+	#pragma clang diagnostic ignored "-Weverything"
+#elif defined(__GNUC__)
+	#pragma GCC diagnostic push
+	#pragma GCC diagnostic ignored "-Wall"
+	#pragma GCC diagnostic ignored "-Wextra"
+	#pragma GCC diagnostic ignored "-Wpedantic"
+#endif
 
 #include <llvm/IR/DIBuilder.h>
 #include <llvm/IR/IRBuilder.h>
@@ -25,7 +30,11 @@
 #include <llvm/Transforms/Scalar/GVN.h>
 #include <llvm/Transforms/Utils.h>
 
-#pragma clang diagnostic pop
+#if defined(__clang__)
+	#pragma clang diagnostic pop
+#elif defined(__GNUC__)
+	#pragma GCC diagnostic pop
+#endif
 
 #include <qc/ast_node.h>
 #include <qc/ast_node_break.h>
