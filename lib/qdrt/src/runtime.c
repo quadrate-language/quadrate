@@ -7,7 +7,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
-#include <threads.h>
+#include "platform/thread_platform.h"
 
 static void dump_stack(qd_context* ctx);
 
@@ -2648,8 +2648,8 @@ typedef struct {
 	void* func_ptr;
 } qd_thread_info_t;
 
-// Wrapper function for C11 threads that calls the Quadrate function
-static int qd_thread_wrapper(void* arg) {
+// Wrapper function for platform threads that calls the Quadrate function
+static void* qd_thread_wrapper(void* arg) {
 	qd_thread_info_t* info = (qd_thread_info_t*)arg;
 
 	// Call the function
@@ -2665,7 +2665,7 @@ static int qd_thread_wrapper(void* arg) {
 	qd_free_context(info->ctx);
 	free(info);
 
-	return 0;
+	return NULL;
 }
 
 // spawn - create a new thread ( fn:ptr -- thread_id:i )
@@ -2706,25 +2706,16 @@ qd_exec_result qd_spawn(qd_context* ctx) {
 	info->ctx = thread_ctx;
 	info->func_ptr = val.value.p;
 
-	// Create thread
-	thrd_t* thread = malloc(sizeof(thrd_t));
+	// Create thread using platform abstraction
+	thread_handle_t thread = thread_platform_create(qd_thread_wrapper, info);
 	if (!thread) {
-		fprintf(stderr, "Fatal error in spawn: Failed to allocate thrd_t\n");
+		fprintf(stderr, "Fatal error in spawn: thread_platform_create failed\n");
 		qd_free_context(thread_ctx);
 		free(info);
 		abort();
 	}
 
-	int result = thrd_create(thread, qd_thread_wrapper, info);
-	if (result != thrd_success) {
-		fprintf(stderr, "Fatal error in spawn: thrd_create failed with error %d\n", result);
-		qd_free_context(thread_ctx);
-		free(info);
-		free(thread);
-		abort();
-	}
-
-	// Push thread ID (as pointer cast to int64_t)
+	// Push thread handle (as pointer cast to int64_t)
 	err = qd_stack_push_int(ctx->st, (int64_t)(uintptr_t)thread);
 	if (err != QD_STACK_OK) {
 		return (qd_exec_result){-2};
@@ -2754,18 +2745,15 @@ qd_exec_result qd_detach(qd_context* ctx) {
 		abort();
 	}
 
-	// Get thrd_t pointer
-	thrd_t* thread = (thrd_t*)(uintptr_t)val.value.i;
+	// Get thread handle
+	thread_handle_t thread = (thread_handle_t)(uintptr_t)val.value.i;
 
-	// Detach thread
-	int result = thrd_detach(*thread);
-	if (result != thrd_success) {
-		fprintf(stderr, "Fatal error in detach: thrd_detach failed with error %d\n", result);
+	// Detach thread using platform abstraction
+	int result = thread_platform_detach(thread);
+	if (result != THREAD_SUCCESS) {
+		fprintf(stderr, "Fatal error in detach: thread_platform_detach failed\n");
 		abort();
 	}
-
-	// Free the thread pointer (it's no longer needed after detach)
-	free(thread);
 
 	return (qd_exec_result){0};
 }
@@ -2791,18 +2779,15 @@ qd_exec_result qd_wait(qd_context* ctx) {
 		abort();
 	}
 
-	// Get thrd_t pointer
-	thrd_t* thread = (thrd_t*)(uintptr_t)val.value.i;
+	// Get thread handle
+	thread_handle_t thread = (thread_handle_t)(uintptr_t)val.value.i;
 
-	// Join thread
-	int result = thrd_join(*thread, NULL);
-	if (result != thrd_success) {
-		fprintf(stderr, "Fatal error in wait: thrd_join failed with error %d\n", result);
+	// Join thread using platform abstraction
+	int result = thread_platform_join(thread);
+	if (result != THREAD_SUCCESS) {
+		fprintf(stderr, "Fatal error in wait: thread_platform_join failed\n");
 		abort();
 	}
-
-	// Free the thread pointer
-	free(thread);
 
 	return (qd_exec_result){0};
 }

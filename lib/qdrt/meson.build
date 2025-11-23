@@ -2,6 +2,7 @@ qdrt_sources = files(
 		'src/runtime.c',
 		'src/stack.c',
 		'src/memory.c',
+		'src/platform/posix/thread_pthread.c',
 )
 
 qdrt_inc = include_directories('include')
@@ -10,11 +11,14 @@ qdrt_inc = include_directories('include')
 cc = meson.get_compiler('c')
 m_dep = cc.find_library('m', required: false)
 
+# Thread library dependency (pthreads on POSIX systems)
+pthread_dep = cc.find_library('pthread', required: true)
+
 # Shared library - public runtime API
 qdrt_shared = shared_library('qdrt',
 		qdrt_sources,
 		include_directories: qdrt_inc,
-		dependencies: [m_dep],
+		dependencies: [m_dep, pthread_dep],
 		install_rpath: '$ORIGIN',
 		install: false
 )
@@ -23,7 +27,7 @@ qdrt_shared = shared_library('qdrt',
 qdrt_static = static_library('qdrt_static',
 		qdrt_sources,
 		include_directories: qdrt_inc,
-		dependencies: [m_dep],
+		dependencies: [m_dep, pthread_dep],
 		install: false
 )
 
