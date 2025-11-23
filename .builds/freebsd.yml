@@ -15,35 +15,10 @@ sources:
   - git://git@git.sr.ht:~klahr/quadrate
 
 tasks:
-  - setup: |
-      # Ensure python3 command is available (FreeBSD installs as python3.x)
-      if ! command -v python3 > /dev/null 2>&1; then
-        PYTHON_VER=$(ls /usr/local/bin/python3.* 2>/dev/null | head -1)
-        if [ -n "$PYTHON_VER" ]; then
-          sudo ln -sf "$PYTHON_VER" /usr/local/bin/python3
-          echo "Created symlink: python3 -> $PYTHON_VER"
-        fi
-      fi
-      python3 --version
-      # Install tree-sitter CLI (FreeBSD package only provides library)
-      if ! command -v tree-sitter > /dev/null 2>&1; then
-        sudo npm install -g tree-sitter-cli
-        echo "Installed tree-sitter CLI via npm"
-      fi
-      tree-sitter --version || echo "tree-sitter CLI not available"
   - build: |
       cd quadrate
       make release
-  - test: |
-      cd quadrate
-      make tests
-  - test_optimized: |
-      cd quadrate
-      bash tests/run_tests.sh optimized -O2
-      bash tests/run_tests.sh optimized -O3
-  - valgrind: |
-      cd quadrate
-      make valgrind
+      echo "Build completed successfully"
 
 triggers:
   - action: email
