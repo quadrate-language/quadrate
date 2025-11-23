@@ -1,0 +1,18 @@
+// Test time::unix function
+
+use time
+use os
+
+fn main() {
+	time::unix
+	// Unix timestamp should be a large positive number (> 1700000000 for year 2023+)
+	dup 1700000000 gt
+	if {
+		"Unix timestamp is valid (>1700000000)" . nl
+		drop
+	} else {
+		"ERROR: Unix timestamp too small" . nl
+		drop
+		1 os::exit
+	}
+}

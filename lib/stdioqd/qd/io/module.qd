@@ -24,19 +24,19 @@ pub const SeekCur = 1
 pub const SeekEnd = 2
 
 import "libstdioqd_static.a" as "io" {
-	fn open(path:str mode:str -- handle:ptr)!
-	fn close(handle:ptr --)
+	pub fn open(path:str mode:str -- handle:ptr)!
+	pub fn close(handle:ptr --)
 
 	// Unified buffer-based I/O
 	// Read into a pre-allocated buffer
-	fn read(handle:ptr buffer:ptr count:i64 -- bytes_read:i64)!
+	pub fn read(handle:ptr buffer:ptr count:i64 -- bytes_read:i64)!
 
 	// Write from a buffer
-	fn write(handle:ptr buffer:ptr count:i64 -- bytes_written:i64)!
+	pub fn write(handle:ptr buffer:ptr count:i64 -- bytes_written:i64)!
 
-	fn seek(handle:ptr offset:i64 whence:i64 -- position:i64)!
-	fn tell(handle:ptr -- position:i64)!
-	fn eof(handle:ptr -- handle:ptr is_eof:i64)
+	pub fn seek(handle:ptr offset:i64 whence:i64 -- position:i64)!
+	pub fn tell(handle:ptr -- position:i64)!
+	pub fn eof(handle:ptr -- handle:ptr is_eof:i64)
 }
 
 // Text file helpers (implemented in Quadrate using mem::to_string)

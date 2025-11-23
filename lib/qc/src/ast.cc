@@ -1905,6 +1905,17 @@ namespace Qd {
 						}
 						if (token == U8T_IDENTIFIER) {
 							const char* keyword = u8t_scanner_token_text(&scanner, &n);
+							bool isPublic = false;
+							// Check for 'pub' keyword
+							if (strcmp(keyword, "pub") == 0) {
+								isPublic = true;
+								token = u8t_scanner_scan(&scanner);
+								if (token != U8T_IDENTIFIER) {
+									errorReporter.reportError(&scanner, "Expected 'fn' after 'pub'");
+									continue;
+								}
+								keyword = u8t_scanner_token_text(&scanner, &n);
+							}
 							if (strcmp(keyword, "fn") == 0) {
 								// Parse function declaration
 								token = u8t_scanner_scan(&scanner);
@@ -1915,6 +1926,7 @@ namespace Qd {
 								const char* funcName = u8t_scanner_token_text(&scanner, &n);
 								ImportedFunction* func = new ImportedFunction();
 								func->name = funcName;
+								func->isPublic = isPublic;
 
 								size_t funcLine, funcColumn;
 								size_t pos = u8t_scanner_token_start(&scanner);

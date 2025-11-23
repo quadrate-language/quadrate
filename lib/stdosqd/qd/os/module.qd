@@ -15,15 +15,15 @@ const IoError = 5             // EIO - I/O error
 const OutOfMemory = 12        // ENOMEM - Out of memory
 
 import "libstdosqd_static.a" as "os" {
-	fn exit(code:i64 --)
-	fn system(cmd:str -- exitcode:i64)
-	fn getenv(name:str -- value:str)
+	pub fn exit(code:i64 --)
+	pub fn system(cmd:str -- exitcode:i64)
+	pub fn getenv(name:str -- value:str)
 
 	// File system operations
-	fn exists(path:str -- exists:i64)
-	fn delete(path:str --)!
-	fn rename(oldpath:str newpath:str --)!
-	fn copy(srcpath:str dstpath:str --)!
-	fn mkdir(path:str --)!
-	fn list(path:str -- entries:ptr count:i64)!
+	pub fn exists(path:str -- exists:i64)
+	pub fn delete(path:str --)!
+	pub fn rename(oldpath:str newpath:str --)!
+	pub fn copy(srcpath:str dstpath:str --)!
+	pub fn mkdir(path:str --)!
+	pub fn list(path:str -- entries:ptr count:i64)!
 }

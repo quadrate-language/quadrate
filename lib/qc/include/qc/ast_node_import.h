@@ -13,6 +13,7 @@ namespace Qd {
 		std::vector<AstNodeParameter*> inputParameters;	 // Input parameters
 		std::vector<AstNodeParameter*> outputParameters; // Output parameters
 		bool throws = false;							 // Whether the function can throw errors (marked with '!')
+		bool isPublic = false;							 // Whether the function is public (marked with 'pub')
 		size_t line;
 		size_t column;
 

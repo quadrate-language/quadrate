@@ -1,0 +1,19 @@
+// Test time::now function (returns nanoseconds since epoch)
+
+use time
+use os
+
+fn main() {
+	time::now
+	// Nanoseconds since epoch should be huge (> 1.7e18 for year 2023+)
+	// 1700000000000000000 = 1.7e18 nanoseconds
+	dup 1700000000 1000000000 * gt
+	if {
+		"Time in nanoseconds is valid" . nl
+		drop
+	} else {
+		"ERROR: Time in nanoseconds too small" . nl
+		drop
+		1 os::exit
+	}
+}

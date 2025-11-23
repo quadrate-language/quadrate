@@ -1,23 +1,23 @@
 import "libstdstrqd_static.a" as "str" {
 	// Basic string operations
-	fn len(str:str -- len:i64)
-	fn concat(str1:str str2:str -- result:str)
+	pub fn len(str:str -- len:i64)
+	pub fn concat(str1:str str2:str -- result:str)
 
 	// String searching
-	fn contains(str:str needle:str -- result:i64)
-	fn starts_with(str:str prefix:str -- result:i64)
-	fn ends_with(str:str suffix:str -- result:i64)
+	pub fn contains(str:str needle:str -- result:i64)
+	pub fn starts_with(str:str prefix:str -- result:i64)
+	pub fn ends_with(str:str suffix:str -- result:i64)
 
 	// Case conversion
-	fn upper(str:str -- result:str)
-	fn lower(str:str -- result:str)
+	pub fn upper(str:str -- result:str)
+	pub fn lower(str:str -- result:str)
 
 	// String manipulation
-	fn trim(str:str -- result:str)
-	fn substring(str:str start:i64 length:i64 -- result:str)!
-	fn replace(str:str old:str new:str -- result:str)!
+	pub fn trim(str:str -- result:str)
+	pub fn substring(str:str start:i64 length:i64 -- result:str)!
+	pub fn replace(str:str old:str new:str -- result:str)!
 
 	// String splitting and comparison
-	fn split(str:str delim:str -- parts:ptr count:i64)!
-	fn compare(str1:str str2:str -- result:i64)
+	pub fn split(str:str delim:str -- parts:ptr count:i64)!
+	pub fn compare(str1:str str2:str -- result:i64)
 }
