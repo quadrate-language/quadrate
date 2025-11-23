@@ -9,11 +9,22 @@ packages:
   - npm
   - tree-sitter
   - valgrind
+  - python3
 
 sources:
   - git://git@git.sr.ht:~klahr/quadrate
 
 tasks:
+  - setup: |
+      # Ensure python3 command is available (FreeBSD installs as python3.x)
+      if ! command -v python3 > /dev/null 2>&1; then
+        PYTHON_VER=$(ls /usr/local/bin/python3.* 2>/dev/null | head -1)
+        if [ -n "$PYTHON_VER" ]; then
+          sudo ln -sf "$PYTHON_VER" /usr/local/bin/python3
+          echo "Created symlink: python3 -> $PYTHON_VER"
+        fi
+      fi
+      python3 --version
   - build: |
       cd quadrate
       make release
