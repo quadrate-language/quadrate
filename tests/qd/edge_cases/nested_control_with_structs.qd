@@ -3,20 +3,24 @@ struct Point {
   y:f64
 }
 
+fn process_point( -- ) {
+  1.0 2.0 Point -> p
+  defer { p free }
+  0 5 1 for {
+    $ 3 lt
+    if {
+      p @x . nl
+    } else {
+      p @y . nl
+    }
+  }
+}
+
 fn main( -- ) {
   0 10 1 for {
     $ 2 mod 0 eq
     if {
-      1.0 2.0 Point -> p
-      defer { p free }
-      0 5 1 for {
-        $ 3 lt
-        if {
-          p @x . nl
-        } else {
-          p @y . nl
-        }
-      }
+      process_point
     } else {
       "Odd" prints nl
     }

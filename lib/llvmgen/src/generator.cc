@@ -3366,11 +3366,45 @@ namespace Qd {
 			auto funcNameStr = builder->CreateGlobalString(fullFuncName);
 			builder->CreateCall(pushCallFn, {ctx, funcNameStr});
 
+			// Create return basic block for defer execution
+			auto returnBB = llvm::BasicBlock::Create(*context, "return", fn);
+
+			// Clear defer statements from any previous function
+			currentDeferStatements.clear();
+
 			// Generate function body
 			auto body = funcNode->body();
 			if (body) {
 				generateNode(body, ctx, nullptr);
 			}
+
+			// Branch to return block if no terminator
+			if (!builder->GetInsertBlock()->getTerminator()) {
+				builder->CreateBr(returnBB);
+			}
+
+			// Generate return block - this is where defers execute
+			builder->SetInsertPoint(returnBB);
+
+			// Execute defer statements in REVERSE order (LIFO)
+			for (auto it = currentDeferStatements.rbegin(); it != currentDeferStatements.rend(); ++it) {
+				AstNodeDefer* deferNode = *it;
+				// Generate defer body
+				for (size_t i = 0; i < deferNode->childCount(); i++) {
+					IAstNode* child = deferNode->child(i);
+					// If the child is a block, generate its children directly
+					if (child && child->type() == IAstNode::Type::BLOCK) {
+						for (size_t j = 0; j < child->childCount(); j++) {
+							generateNode(child->child(j), ctx, nullptr);
+						}
+					} else {
+						generateNode(child, ctx, nullptr);
+					}
+				}
+			}
+
+			// Clear defer statements after use
+			currentDeferStatements.clear();
 
 			// Clean up local variables (free strings)
 			generateLocalCleanup();

@@ -377,9 +377,28 @@ namespace Qd {
 		char32_t token;
 		bool sawSlash = false;
 		bool sawColon = false;
+		bool sawAt = false;
 		std::vector<IAstNode*> tempNodes;
 
 		while ((token = u8t_scanner_scan(scanner)) != U8T_EOF) {
+			// Handle @ field access operator
+			if (sawAt && token == U8T_IDENTIFIER) {
+				// We have: identifier @field
+				sawAt = false;
+				if (!tempNodes.empty() && tempNodes.back()->type() == IAstNode::Type::IDENTIFIER) {
+					AstNodeIdentifier* varIdent = static_cast<AstNodeIdentifier*>(tempNodes.back());
+					tempNodes.pop_back();
+
+					// Get the field name
+					const char* fieldName = u8t_scanner_token_text(scanner, &n);
+					AstNodeFieldAccess* fieldAccess = new AstNodeFieldAccess(varIdent->name(), fieldName);
+					setNodePosition(fieldAccess, scanner, src);
+					delete varIdent;
+					tempNodes.push_back(fieldAccess);
+				}
+				continue;
+			}
+
 			// Handle :: scope operator
 			if (sawColon && token == ':') {
 				// We have ::
@@ -450,6 +469,11 @@ namespace Qd {
 			sawColon = (token == ':');
 			if (sawColon) {
 				continue; // Wait for next token to see if it's another colon
+			}
+
+			sawAt = (token == '@');
+			if (sawAt) {
+				continue; // Wait for next token to see if it's a field name
 			}
 
 			// Check if this token is an "else" keyword
@@ -549,6 +573,26 @@ namespace Qd {
 				IAstNode* node = new AstNodeContinue();
 				setNodePosition(node, scanner, src);
 				return node;
+			}
+
+			// defer is always allowed
+			if (strcmp(text, "defer") == 0) {
+				AstNodeDefer* deferStmt = new AstNodeDefer();
+				setNodePosition(deferStmt, scanner, src);
+				token = u8t_scanner_scan(scanner);
+
+				// Check if defer has a block
+				if (token == '{') {
+					// Parse defer block - wrap it in a block node
+					AstNodeBlock* deferBlock = new AstNodeBlock();
+					setNodePosition(deferBlock, scanner, src);
+					parseBlockBody(deferBlock, scanner, errorReporter, src);
+
+					// Add the block as a child of defer
+					deferBlock->setParent(deferStmt);
+					deferStmt->addChild(deferBlock);
+				}
+				return deferStmt;
 			}
 
 			if (allowControlFlow) {

@@ -2,16 +2,21 @@ struct Counter {
   value:i64
 }
 
+fn process_counter( val:i64 -- ) {
+  -> val
+  val Counter -> c
+  defer { c free }
+
+  c @value 5 lt
+  if {
+    c @value . nl
+  } else {
+    "Greater than 5" prints nl
+  }
+}
+
 fn main( -- ) {
   0 10 1 for {
-    $ Counter -> c
-    defer { c free }
-
-    c @value 5 lt
-    if {
-      c @value . nl
-    } else {
-      "Greater than 5" prints nl
-    }
+    $ process_counter
   }
 }
