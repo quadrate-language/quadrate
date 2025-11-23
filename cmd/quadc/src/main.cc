@@ -14,6 +14,7 @@
 #include <random>
 #include <set>
 #include <sstream>
+#include <sys/wait.h>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
