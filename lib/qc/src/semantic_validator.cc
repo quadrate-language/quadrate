@@ -1681,6 +1681,9 @@ if (node->type() == IAstNode::Type::STRUCT_DECLARATION) {
 			return;
 		}
 
+		// Dummy structTypeStack for signature analysis (not used, but required by API)
+		std::vector<std::string> structTypeStack;
+
 		// Process each child in the block
 		for (size_t i = 0; i < node->childCount(); i++) {
 			IAstNode* child = node->child(i);
@@ -1708,7 +1711,7 @@ if (node->type() == IAstNode::Type::STRUCT_DECLARATION) {
 			case IAstNode::Type::INSTRUCTION: {
 				AstNodeInstruction* instr = static_cast<AstNodeInstruction*>(child);
 				// During signature analysis, don't report errors - just simulate the stack
-				typeCheckInstructionInternal(child, instr->name().c_str(), typeStack, false);
+				typeCheckInstructionInternal(child, instr->name().c_str(), typeStack, structTypeStack, false);
 				break;
 			}
 
@@ -1920,9 +1923,7 @@ if (node->type() == IAstNode::Type::STRUCT_DECLARATION) {
 
 			case IAstNode::Type::INSTRUCTION: {
 				AstNodeInstruction* instr = static_cast<AstNodeInstruction*>(child);
-				typeCheckInstruction(child, instr->name().c_str(), typeStack);
-				// TODO: Track struct types through stack operations (dup, swap, etc.)
-				// For now, assume instructions don't preserve struct type info
+				typeCheckInstruction(child, instr->name().c_str(), typeStack, structTypeStack);
 				break;
 			}
 
@@ -2418,6 +2419,16 @@ if (node->type() == IAstNode::Type::STRUCT_DECLARATION) {
 						}
 					}
 
+					// Save consumed struct types before popping (for pass-through tracking)
+					std::vector<std::string> consumedStructTypes;
+					if (sig.consumes.size() > 0 && structTypeStack.size() >= sig.consumes.size()) {
+						// Save struct types in order (bottom to top of consumed portion)
+						size_t startIdx = structTypeStack.size() - sig.consumes.size();
+						for (size_t j = 0; j < sig.consumes.size(); j++) {
+							consumedStructTypes.push_back(structTypeStack[startIdx + j]);
+						}
+					}
+
 					// Consume the parameters from the stack
 					for (size_t j = 0; j < sig.consumes.size(); j++) {
 						typeStack.pop_back();
@@ -2426,29 +2437,72 @@ if (node->type() == IAstNode::Type::STRUCT_DECLARATION) {
 						}
 					}
 
+					// Helper lambda to determine struct type for a produced PTR value
+					auto getProducedStructType = [&](size_t produceIdx, StackValueType producedType) -> std::string {
+						if (producedType != StackValueType::PTR) {
+							return ""; // Only PTR types can have struct types
+						}
+						// Conservative heuristic: if we consumed PTR parameters and are producing PTR values,
+						// try to match them up in order (simple pass-through case)
+						size_t consumedPtrCount = 0;
+						size_t producedPtrCount = 0;
+						for (size_t i = 0; i < sig.consumes.size(); i++) {
+							if (sig.consumes[i] == StackValueType::PTR) {
+								consumedPtrCount++;
+							}
+						}
+						for (size_t i = 0; i < sig.produces.size(); i++) {
+							if (sig.produces[i] == StackValueType::PTR) {
+								if (i == produceIdx) {
+									// This is the PTR we're producing - find which PTR index it is
+									break;
+								}
+								producedPtrCount++;
+							}
+						}
+						// If we have at least as many consumed PTR params as produced PTR values,
+						// try to match them up in order
+						if (producedPtrCount < consumedPtrCount && producedPtrCount < consumedStructTypes.size()) {
+							// Find the Nth consumed PTR parameter
+							size_t ptrIdx = 0;
+							for (size_t i = 0; i < sig.consumes.size() && i < consumedStructTypes.size(); i++) {
+								if (sig.consumes[i] == StackValueType::PTR) {
+									if (ptrIdx == producedPtrCount) {
+										return consumedStructTypes[i];
+									}
+									ptrIdx++;
+								}
+							}
+						}
+						return ""; // Unknown struct type
+					};
+
 					// Apply the produces effect
 					if (ident->checkError()) {
 						// func? - immediately check error
 						// Produces: value (untainted) + error_status (INT)
-						for (const auto& type : sig.produces) {
+						for (size_t idx = 0; idx < sig.produces.size(); idx++) {
+							const auto& type = sig.produces[idx];
 							typeStack.push_back(type); // Push untainted value
-							structTypeStack.push_back(""); // TODO: Track struct types through function calls
+							structTypeStack.push_back(getProducedStructType(idx, type));
 						}
 						typeStack.push_back(StackValueType::INT); // Error status (0 or 1)
 						structTypeStack.push_back("");
 					} else if (sig.throws && !ident->abortOnError()) {
 						// func without ! or ? - pushes result + error flag
-						for (const auto& type : sig.produces) {
+						for (size_t idx = 0; idx < sig.produces.size(); idx++) {
+							const auto& type = sig.produces[idx];
 							typeStack.push_back(type);
-							structTypeStack.push_back(""); // TODO: Track struct types through function calls
+							structTypeStack.push_back(getProducedStructType(idx, type));
 						}
 						typeStack.push_back(StackValueType::INT); // Error status (0 or 1)
 						structTypeStack.push_back("");
 					} else {
 						// Normal call or func!
-						for (const auto& type : sig.produces) {
+						for (size_t idx = 0; idx < sig.produces.size(); idx++) {
+							const auto& type = sig.produces[idx];
 							typeStack.push_back(type);
-							structTypeStack.push_back(""); // TODO: Track struct types through function calls
+							structTypeStack.push_back(getProducedStructType(idx, type));
 						}
 					}
 				}
@@ -2843,13 +2897,13 @@ if (node->type() == IAstNode::Type::STRUCT_DECLARATION) {
 		}
 	}
 
-	void SemanticValidator::typeCheckInstruction(
-			IAstNode* node, const char* name, std::vector<StackValueType>& typeStack) {
-		typeCheckInstructionInternal(node, name, typeStack, true);
+	void SemanticValidator::typeCheckInstruction(IAstNode* node, const char* name,
+			std::vector<StackValueType>& typeStack, std::vector<std::string>& structTypeStack) {
+		typeCheckInstructionInternal(node, name, typeStack, structTypeStack, true);
 	}
 
-	void SemanticValidator::typeCheckInstructionInternal(
-			IAstNode* node, const char* name, std::vector<StackValueType>& typeStack, bool reportErrors) {
+	void SemanticValidator::typeCheckInstructionInternal(IAstNode* node, const char* name,
+			std::vector<StackValueType>& typeStack, std::vector<std::string>& structTypeStack, bool reportErrors) {
 		// Handle instruction aliases
 		if (strcmp(name, ".") == 0) {
 			name = "print";
@@ -3066,6 +3120,11 @@ if (node->type() == IAstNode::Type::STRUCT_DECLARATION) {
 			}
 			StackValueType top = typeStack.back();
 			typeStack.push_back(top); // Duplicate
+			// Duplicate struct type as well
+			if (!structTypeStack.empty()) {
+				std::string topStruct = structTypeStack.back();
+				structTypeStack.push_back(topStruct);
+			}
 		}
 		// Stack operations: dup2 ( a b -- a b a b )
 		else if (strcmp(name, "dup2") == 0) {
@@ -3079,6 +3138,13 @@ if (node->type() == IAstNode::Type::STRUCT_DECLARATION) {
 			// Push copies of both
 			typeStack.push_back(second);
 			typeStack.push_back(top);
+			// Duplicate struct types as well
+			if (structTypeStack.size() >= 2) {
+				std::string secondStruct = structTypeStack[structTypeStack.size() - 2];
+				std::string topStruct = structTypeStack.back();
+				structTypeStack.push_back(secondStruct);
+				structTypeStack.push_back(topStruct);
+			}
 		}
 		// Stack operations: dupd ( a b -- a a b )
 		else if (strcmp(name, "dupd") == 0) {
@@ -3092,6 +3158,13 @@ if (node->type() == IAstNode::Type::STRUCT_DECLARATION) {
 			// Push: second (duplicate of second), then top
 			typeStack.push_back(second);
 			typeStack.push_back(top);
+			// Duplicate struct types as well
+			if (structTypeStack.size() >= 2) {
+				std::string secondStruct = structTypeStack[structTypeStack.size() - 2];
+				std::string topStruct = structTypeStack.back();
+				structTypeStack.push_back(secondStruct);
+				structTypeStack.push_back(topStruct);
+			}
 		}
 		// Stack operations: swapd ( a b c -- b a c )
 		else if (strcmp(name, "swapd") == 0) {
@@ -3111,6 +3184,18 @@ if (node->type() == IAstNode::Type::STRUCT_DECLARATION) {
 			typeStack.push_back(second);
 			typeStack.push_back(third);
 			typeStack.push_back(top);
+			// Swap struct types as well
+			if (structTypeStack.size() >= 3) {
+				std::string thirdStruct = structTypeStack[structTypeStack.size() - 3];
+				std::string secondStruct = structTypeStack[structTypeStack.size() - 2];
+				std::string topStruct = structTypeStack.back();
+				structTypeStack.pop_back();
+				structTypeStack.pop_back();
+				structTypeStack.pop_back();
+				structTypeStack.push_back(secondStruct);
+				structTypeStack.push_back(thirdStruct);
+				structTypeStack.push_back(topStruct);
+			}
 		}
 		// Stack operations: overd ( a b c -- a b a c )
 		else if (strcmp(name, "overd") == 0) {
@@ -3122,6 +3207,11 @@ if (node->type() == IAstNode::Type::STRUCT_DECLARATION) {
 			StackValueType third = typeStack[typeStack.size() - 3];
 			// Push a copy of it to the top
 			typeStack.push_back(third);
+			// Copy struct type as well
+			if (structTypeStack.size() >= 3) {
+				std::string thirdStruct = structTypeStack[structTypeStack.size() - 3];
+				structTypeStack.push_back(thirdStruct);
+			}
 		}
 		// Stack operations: nipd ( a b c -- a c )
 		else if (strcmp(name, "nipd") == 0) {
@@ -3136,6 +3226,13 @@ if (node->type() == IAstNode::Type::STRUCT_DECLARATION) {
 			typeStack.pop_back();
 			// Push top back
 			typeStack.push_back(top);
+			// Remove second struct type as well
+			if (structTypeStack.size() >= 3) {
+				std::string topStruct = structTypeStack.back();
+				structTypeStack.pop_back();
+				structTypeStack.pop_back();
+				structTypeStack.push_back(topStruct);
+			}
 		}
 		// Stack operations: swap
 		else if (strcmp(name, "swap") == 0) {
@@ -3149,6 +3246,15 @@ if (node->type() == IAstNode::Type::STRUCT_DECLARATION) {
 			typeStack.pop_back();
 			typeStack.push_back(a);
 			typeStack.push_back(b);
+			// Swap struct types as well
+			if (structTypeStack.size() >= 2) {
+				std::string aStruct = structTypeStack.back();
+				structTypeStack.pop_back();
+				std::string bStruct = structTypeStack.back();
+				structTypeStack.pop_back();
+				structTypeStack.push_back(aStruct);
+				structTypeStack.push_back(bStruct);
+			}
 		}
 		// Stack operations: over ( a b -- a b a )
 		else if (strcmp(name, "over") == 0) {
@@ -3160,6 +3266,11 @@ if (node->type() == IAstNode::Type::STRUCT_DECLARATION) {
 			StackValueType second = typeStack[typeStack.size() - 2];
 			// Push a copy of it to the top
 			typeStack.push_back(second);
+			// Copy struct type as well
+			if (structTypeStack.size() >= 2) {
+				std::string secondStruct = structTypeStack[structTypeStack.size() - 2];
+				structTypeStack.push_back(secondStruct);
+			}
 		}
 		// Stack operations: nip ( a b -- b )
 		else if (strcmp(name, "nip") == 0) {
@@ -3171,16 +3282,27 @@ if (node->type() == IAstNode::Type::STRUCT_DECLARATION) {
 			typeStack.pop_back();
 			typeStack.pop_back();	  // Remove second element
 			typeStack.push_back(top); // Push top back
+			// Remove second struct type as well
+			if (structTypeStack.size() >= 2) {
+				std::string topStruct = structTypeStack.back();
+				structTypeStack.pop_back();
+				structTypeStack.pop_back();
+				structTypeStack.push_back(topStruct);
+			}
 		}
 		// Stack operations: clear (empties the entire stack)
 		else if (strcmp(name, "clear") == 0) {
 			// Clear all elements from the type stack
 			typeStack.clear();
+			// Clear struct type stack as well
+			structTypeStack.clear();
 		}
 		// Stack operations: depth (pushes the current stack depth as an integer)
 		else if (strcmp(name, "depth") == 0) {
 			// Push an int type onto the stack (depth is always an integer)
 			typeStack.push_back(StackValueType::INT);
+			// Push empty struct type (int is not a struct)
+			structTypeStack.push_back("");
 		}
 		// call - invoke function pointer from stack
 		else if (strcmp(name, "call") == 0) {
@@ -3190,6 +3312,10 @@ if (node->type() == IAstNode::Type::STRUCT_DECLARATION) {
 			}
 			// Pop the function pointer - runtime will verify it's a pointer type
 			typeStack.pop_back();
+			// Pop struct type as well
+			if (!structTypeStack.empty()) {
+				structTypeStack.pop_back();
+			}
 			// We don't know what the called function will do to the stack
 			// So we can't track types accurately after this point
 		}
@@ -3208,6 +3334,10 @@ if (node->type() == IAstNode::Type::STRUCT_DECLARATION) {
 			}
 			// Pop the pointer
 			typeStack.pop_back();
+			// Pop struct type as well
+			if (!structTypeStack.empty()) {
+				structTypeStack.pop_back();
+			}
 		}
 	}
 

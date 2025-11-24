@@ -120,14 +120,15 @@ namespace Qd {
 		void typeCheckFunction(IAstNode* node);
 		void typeCheckBlock(IAstNode* node, std::vector<StackValueType>& typeStack,
 				std::unordered_map<std::string, StackValueType>& localVariables);
-		void typeCheckInstruction(IAstNode* node, const char* name, std::vector<StackValueType>& typeStack);
+		void typeCheckInstruction(IAstNode* node, const char* name, std::vector<StackValueType>& typeStack,
+			std::vector<std::string>& structTypeStack);
 
 		// Helper: Analyze a block in isolation (for determining function signatures)
 		void analyzeBlockInIsolation(IAstNode* node, std::vector<StackValueType>& typeStack);
 
 		// Helper: Type check an instruction (with optional error suppression for signature analysis)
-		void typeCheckInstructionInternal(
-				IAstNode* node, const char* name, std::vector<StackValueType>& typeStack, bool reportErrors);
+		void typeCheckInstructionInternal(IAstNode* node, const char* name, std::vector<StackValueType>& typeStack,
+				std::vector<std::string>& structTypeStack, bool reportErrors);
 
 		// Check if a name is a built-in instruction
 		bool isBuiltInInstruction(const char* name) const;
