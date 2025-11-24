@@ -23,14 +23,16 @@ typedef atomic_size_t qd_atomic_size_t;
 #endif
 
 /**
- * @brief Reference-counted string structure
+ * @brief Reference-counted string structure with capacity
  *
- * Strings are immutable and use atomic reference counting for thread-safety.
+ * Strings use atomic reference counting for thread-safety.
  * The reference count starts at 1 when created.
+ * When refcount==1, strings can be mutated in-place if capacity allows.
  */
 typedef struct qd_string {
 	char* data;              ///< Null-terminated string data (owned)
 	size_t length;           ///< String length (cached, excluding null terminator)
+	size_t capacity;         ///< Buffer capacity (excluding null terminator)
 	qd_atomic_size_t refcount;  ///< Atomic reference count
 } qd_string_t;
 
@@ -119,6 +121,74 @@ const char* qd_string_data(const qd_string_t* str);
  * @return Length of the string (excluding null terminator)
  */
 size_t qd_string_length(const qd_string_t* str);
+
+/**
+ * @brief Smart concatenation with in-place optimization
+ *
+ * If str1 has refcount==1 and enough capacity, appends in-place.
+ * Otherwise creates a new string with extra capacity.
+ * str1 and str2 are consumed (released).
+ *
+ * @param str1 First string (will be released)
+ * @param str2 Second string (will be released)
+ * @return New concatenated string, or NULL on allocation failure
+ *
+ * @note Both input strings are released regardless of success
+ */
+qd_string_t* qd_string_concat_smart(qd_string_t* str1, qd_string_t* str2);
+
+/**
+ * @brief String builder for efficient repeated concatenations
+ *
+ * Provides O(n) concatenation by using a growable buffer instead of
+ * creating a new string on each append. Uses geometric growth (2x)
+ * to amortize allocation costs.
+ */
+typedef struct qd_string_builder {
+	char* data;              ///< Buffer for building string (owned)
+	size_t length;           ///< Current string length
+	size_t capacity;         ///< Current buffer capacity
+} qd_string_builder_t;
+
+/**
+ * @brief Create a new string builder
+ *
+ * @param initial_capacity Initial buffer capacity (0 = use default)
+ * @return Pointer to new string builder, or NULL on allocation failure
+ *
+ * @note Caller must call qd_sb_free() when done
+ */
+qd_string_builder_t* qd_sb_create(size_t initial_capacity);
+
+/**
+ * @brief Append a C string to the builder
+ *
+ * @param sb String builder (must not be NULL)
+ * @param str String to append (must not be NULL)
+ * @param len Length of string to append
+ * @return true on success, false on allocation failure
+ */
+bool qd_sb_append(qd_string_builder_t* sb, const char* str, size_t len);
+
+/**
+ * @brief Convert string builder to qd_string_t
+ *
+ * Creates a reference-counted string from the builder's contents.
+ * The builder remains valid and can continue to be used.
+ *
+ * @param sb String builder (must not be NULL)
+ * @return New qd_string_t, or NULL on allocation failure
+ *
+ * @note The returned string has refcount=1; caller must release it
+ */
+qd_string_t* qd_sb_to_string(qd_string_builder_t* sb);
+
+/**
+ * @brief Free a string builder
+ *
+ * @param sb String builder to free (can be NULL - no-op)
+ */
+void qd_sb_free(qd_string_builder_t* sb);
 
 #ifdef __cplusplus
 }
