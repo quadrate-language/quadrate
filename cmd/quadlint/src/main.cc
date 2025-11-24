@@ -22,6 +22,10 @@ struct Options {
 	bool version = false;
 	bool noUnusedFunctions = false;
 	bool noUnusedVariables = false;
+	bool noDeadCode = false;
+	bool noDeepNesting = false;
+	bool noMissingDefer = false;
+	int maxNestingDepth = 4;
 };
 
 struct LintIssue {
@@ -41,6 +45,10 @@ void printHelp() {
 	std::cout << "  -v, --version             Show version information\n";
 	std::cout << "  --no-unused-functions     Disable unused function warnings\n";
 	std::cout << "  --no-unused-variables     Disable unused variable warnings\n";
+	std::cout << "  --no-dead-code            Disable dead code warnings\n";
+	std::cout << "  --no-deep-nesting         Disable deep nesting warnings\n";
+	std::cout << "  --no-missing-defer        Disable missing defer warnings\n";
+	std::cout << "  --max-nesting <N>         Maximum nesting depth (default: 4)\n";
 	std::cout << "\n";
 	std::cout << "Examples:\n";
 	std::cout << "  quadlint file.qd          Lint a single file\n";
@@ -65,6 +73,22 @@ bool parseArgs(int argc, char* argv[], Options& opts) {
 			opts.noUnusedFunctions = true;
 		} else if (arg == "--no-unused-variables") {
 			opts.noUnusedVariables = true;
+		} else if (arg == "--no-dead-code") {
+			opts.noDeadCode = true;
+		} else if (arg == "--no-deep-nesting") {
+			opts.noDeepNesting = true;
+		} else if (arg == "--no-missing-defer") {
+			opts.noMissingDefer = true;
+		} else if (arg == "--max-nesting") {
+			if (i + 1 >= argc) {
+				std::cerr << "quadlint: --max-nesting requires an argument\n";
+				return false;
+			}
+			opts.maxNestingDepth = std::atoi(argv[++i]);
+			if (opts.maxNestingDepth < 1) {
+				std::cerr << "quadlint: --max-nesting must be at least 1\n";
+				return false;
+			}
 		} else if (arg[0] == '-') {
 			std::cerr << "quadlint: unknown option: " << arg << "\n";
 			std::cerr << "Try 'quadlint --help' for more information.\n";
@@ -153,6 +177,128 @@ void collectVariableUsages(IAstNode* node, std::unordered_set<std::string>& usag
 	}
 }
 
+// Detect dead code after return/break/continue
+void detectDeadCode(IAstNode* node, const std::string& filename, std::vector<LintIssue>& issues) {
+	if (!node) return;
+
+	// Check if this is a block with statements
+	if (node->type() == IAstNode::Type::BLOCK) {
+		bool foundTerminator = false;
+		IAstNode* terminator = nullptr;
+
+		for (size_t i = 0; i < node->childCount(); i++) {
+			IAstNode* child = node->child(i);
+			if (!child) continue;
+
+			// Check if we already found a terminator
+			if (foundTerminator) {
+				LintIssue issue;
+				issue.filename = filename;
+				issue.line = child->line();
+				issue.column = child->column();
+				issue.message = "Unreachable code after " +
+					std::string(terminator->type() == IAstNode::Type::RETURN_STATEMENT ? "return" :
+					           terminator->type() == IAstNode::Type::BREAK_STATEMENT ? "break" : "continue");
+				issue.level = "warning";
+				issues.push_back(issue);
+				break; // Only report first unreachable statement
+			}
+
+			// Check if this child is a terminator
+			if (child->type() == IAstNode::Type::RETURN_STATEMENT ||
+			    child->type() == IAstNode::Type::BREAK_STATEMENT ||
+			    child->type() == IAstNode::Type::CONTINUE_STATEMENT) {
+				foundTerminator = true;
+				terminator = child;
+			}
+		}
+	}
+
+	// Recursively check child nodes
+	for (size_t i = 0; i < node->childCount(); i++) {
+		detectDeadCode(node->child(i), filename, issues);
+	}
+}
+
+// Detect deep nesting
+void detectDeepNesting(IAstNode* node, const std::string& filename, int maxDepth,
+                       std::vector<LintIssue>& issues, int currentDepth = 0) {
+	if (!node) return;
+
+	// Check if this node increases nesting depth
+	if (node->type() == IAstNode::Type::IF_STATEMENT ||
+	    node->type() == IAstNode::Type::FOR_STATEMENT ||
+	    node->type() == IAstNode::Type::LOOP_STATEMENT ||
+	    node->type() == IAstNode::Type::SWITCH_STATEMENT) {
+		currentDepth++;
+
+		if (currentDepth > maxDepth) {
+			LintIssue issue;
+			issue.filename = filename;
+			issue.line = node->line();
+			issue.column = node->column();
+			issue.message = "Deep nesting detected (depth: " + std::to_string(currentDepth) +
+			               ", max: " + std::to_string(maxDepth) + ")";
+			issue.level = "warning";
+			issues.push_back(issue);
+		}
+	}
+
+	// Recursively check children
+	for (size_t i = 0; i < node->childCount(); i++) {
+		detectDeepNesting(node->child(i), filename, maxDepth, issues, currentDepth);
+	}
+}
+
+// Detect missing defer for struct allocations
+void detectMissingDefer(IAstNode* node, const std::string& filename, std::vector<LintIssue>& issues) {
+	if (!node) return;
+
+	// Look for struct constructor calls (integer followed by struct name)
+	// This is a simplified check - full implementation would need more context
+	if (node->type() == IAstNode::Type::FUNCTION_DECLARATION) {
+		bool hasStructAlloc = false;
+		bool hasDefer = false;
+
+		for (size_t i = 0; i < node->childCount(); i++) {
+			IAstNode* child = node->child(i);
+			if (!child) continue;
+
+			// Check for defer blocks
+			if (child->type() == IAstNode::Type::DEFER_STATEMENT) {
+				hasDefer = true;
+			}
+
+			// Check for potential struct construction (simplified)
+			// A more complete implementation would track identifiers and struct types
+			if (child->type() == IAstNode::Type::IDENTIFIER) {
+				// This is a heuristic - struct names typically start with uppercase
+				AstNodeIdentifier* ident = static_cast<AstNodeIdentifier*>(child);
+				std::string name = ident->name();
+				if (!name.empty() && isupper(static_cast<unsigned char>(name[0]))) {
+					hasStructAlloc = true;
+				}
+			}
+		}
+
+		// If we found a struct allocation but no defer, warn
+		if (hasStructAlloc && !hasDefer) {
+			LintIssue issue;
+			issue.filename = filename;
+			issue.line = node->line();
+			issue.column = node->column();
+			issue.message = "Potential struct allocation without defer - consider using defer for cleanup";
+			issue.level = "warning";
+			issues.push_back(issue);
+		}
+	}
+
+	// Recursively check children
+	for (size_t i = 0; i < node->childCount(); i++) {
+		detectMissingDefer(node->child(i), filename, issues);
+	}
+}
+
 std::vector<LintIssue> lintFile(const std::string& filename, const Options& opts) {
 	std::vector<LintIssue> issues;
 
@@ -218,6 +364,21 @@ std::vector<LintIssue> lintFile(const std::string& filename, const Options& opts
 					issues.push_back(issue);
 				}
 			}
+		}
+
+		// Check for dead code
+		if (!opts.noDeadCode) {
+			detectDeadCode(root, filename, issues);
+		}
+
+		// Check for deep nesting
+		if (!opts.noDeepNesting) {
+			detectDeepNesting(root, filename, opts.maxNestingDepth, issues);
+		}
+
+		// Check for missing defer
+		if (!opts.noMissingDefer) {
+			detectMissingDefer(root, filename, issues);
 		}
 
 	} catch (const std::exception& e) {
