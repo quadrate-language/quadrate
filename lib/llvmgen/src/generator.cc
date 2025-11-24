@@ -107,6 +107,7 @@ namespace Qd {
 		llvm::Function* pushIntFn = nullptr;
 		llvm::Function* pushFloatFn = nullptr;
 		llvm::Function* pushStrFn = nullptr;
+		llvm::Function* pushStrRefFn = nullptr;
 		llvm::Function* pushPtrFn = nullptr;
 		llvm::Function* callFn = nullptr;
 		llvm::Function* printsFn = nullptr;
@@ -119,6 +120,8 @@ namespace Qd {
 		llvm::Function* strdupFn = nullptr;
 		llvm::Function* mallocFn = nullptr;
 		llvm::Function* freeFn = nullptr;
+		llvm::Function* qdStringReleaseFn = nullptr;
+		llvm::Function* qdStringDataFn = nullptr;
 		llvm::Function* addFn = nullptr;
 		llvm::Function* subFn = nullptr;
 		llvm::Function* mulFn = nullptr;
@@ -303,6 +306,11 @@ namespace Qd {
 		auto pushStrFnTy =
 				llvm::FunctionType::get(execResultTy, {contextPtrTy, llvm::PointerType::getUnqual(*context)}, false);
 		pushStrFn = llvm::Function::Create(pushStrFnTy, llvm::Function::ExternalLinkage, "qd_push_s", *module);
+
+		// qd_push_s_ref(qd_context* ctx, qd_string_t* value) -> qd_exec_result
+		auto pushStrRefFnTy =
+				llvm::FunctionType::get(execResultTy, {contextPtrTy, llvm::PointerType::getUnqual(*context)}, false);
+		pushStrRefFn = llvm::Function::Create(pushStrRefFnTy, llvm::Function::ExternalLinkage, "qd_push_s_ref", *module);
 
 		// qd_push_p(qd_context* ctx, void* value) -> qd_exec_result
 		auto pushPtrFnTy =
@@ -1999,7 +2007,7 @@ namespace Qd {
 								llvm::Value* structPtr = builder->CreateLoad(llvm::PointerType::getUnqual(*context),
 										valuePtr, "struct_ptr");
 
-								// Free each string field
+								// Release each string field
 								for (const auto& field : layout.fields) {
 									if (field.typeName == "str") {
 										// Calculate field offset and load string pointer
@@ -2009,8 +2017,13 @@ namespace Qd {
 										llvm::Value* stringPtr = builder->CreateLoad(
 												llvm::PointerType::getUnqual(*context), fieldBytePtr, "string_ptr");
 
-										// Call C free() on the string
-										builder->CreateCall(freeFn, {stringPtr});
+										// Call qd_string_release() on the string
+										if (!this->qdStringReleaseFn) {
+											auto qdStringReleaseFnTy =
+													llvm::FunctionType::get(builder->getVoidTy(), {llvm::PointerType::getUnqual(*context)}, false);
+											this->qdStringReleaseFn = llvm::Function::Create(qdStringReleaseFnTy, llvm::Function::ExternalLinkage, "qd_string_release", *module);
+										}
+										builder->CreateCall(this->qdStringReleaseFn, {stringPtr});
 									}
 								}
 
@@ -2123,10 +2136,10 @@ namespace Qd {
 			builder->CreateCall(pushFloatFn, {ctx, floatVal});
 			builder->CreateBr(endBlock);
 
-			// STR block: load char* and push
+			// STR block: load qd_string_t* and push with retain
 			builder->SetInsertPoint(strBlock);
 			llvm::Value* strVal = builder->CreateLoad(llvm::PointerType::getUnqual(*context), valuePtr, name + "_s");
-			builder->CreateCall(pushStrFn, {ctx, strVal});
+			builder->CreateCall(pushStrRefFn, {ctx, strVal});
 			builder->CreateBr(endBlock);
 
 			// PTR block: load void* and push
@@ -2535,16 +2548,27 @@ namespace Qd {
 								strcmpTy, llvm::Function::ExternalLinkage, "strcmp", module.get());
 					}
 
-					// Get switch string value
+					// Get switch string value (qd_string_t*)
 					auto valuePtr = builder->CreateStructGEP(switchElemTy, switchElem, 0, "value_ptr");
 					auto switchStrPtr =
 							builder->CreateLoad(llvm::PointerType::getUnqual(*context), valuePtr, "switch_str");
+
+					// Call qd_string_data to get const char*
+					if (!this->qdStringDataFn) {
+						auto qdStringDataFnTy = llvm::FunctionType::get(
+								llvm::PointerType::getUnqual(*context),
+								{llvm::PointerType::getUnqual(*context)},
+								false);
+						this->qdStringDataFn = llvm::Function::Create(
+								qdStringDataFnTy, llvm::Function::ExternalLinkage, "qd_string_data", *module);
+					}
+					auto switchStrData = builder->CreateCall(this->qdStringDataFn, {switchStrPtr}, "switch_str_data");
 
 					// Create case string constant
 					auto caseStr = builder->CreateGlobalString(lit->value().substr(1, lit->value().length() - 2));
 
 					// Call strcmp
-					auto cmpResult = builder->CreateCall(strcmpFn, {switchStrPtr, caseStr}, "strcmp_result");
+					auto cmpResult = builder->CreateCall(strcmpFn, {switchStrData, caseStr}, "strcmp_result");
 					matches = builder->CreateICmpEQ(cmpResult, builder->getInt32(0), "case_match");
 				}
 			} else if (caseValue->type() == IAstNode::Type::SCOPED_IDENTIFIER) {
@@ -2636,16 +2660,16 @@ namespace Qd {
 
 		builder->CreateCondBr(isString, freeStringBB, skipFreeBB);
 
-		// Free string block
+		// Release string reference
 		builder->SetInsertPoint(freeStringBB);
 		auto valuePtr = builder->CreateStructGEP(switchElemTy, switchElem, 0, "value_ptr");
 		auto strPtr = builder->CreateLoad(llvm::PointerType::getUnqual(*context), valuePtr, "str_ptr");
-		if (!this->freeFn) {
-			auto freeFnTy =
+		if (!this->qdStringReleaseFn) {
+			auto qdStringReleaseFnTy =
 					llvm::FunctionType::get(builder->getVoidTy(), {llvm::PointerType::getUnqual(*context)}, false);
-			this->freeFn = llvm::Function::Create(freeFnTy, llvm::Function::ExternalLinkage, "free", *module);
+			this->qdStringReleaseFn = llvm::Function::Create(qdStringReleaseFnTy, llvm::Function::ExternalLinkage, "qd_string_release", *module);
 		}
-		builder->CreateCall(this->freeFn, {strPtr});
+		builder->CreateCall(this->qdStringReleaseFn, {strPtr});
 		builder->CreateBr(skipFreeBB);
 
 		// Skip free block
@@ -2757,14 +2781,14 @@ namespace Qd {
 			llvm::Value* strPtr =
 					builder->CreateLoad(llvm::PointerType::getUnqual(*context), valuePtr, varName + "_cleanup_str");
 
-			// Call free() on the string
-			// Create free function declaration if not exists
-			if (!this->freeFn) {
-				auto freeFnTy =
+			// Call qd_string_release() on the string
+			// Create qd_string_release function declaration if not exists
+			if (!this->qdStringReleaseFn) {
+				auto qdStringReleaseFnTy =
 						llvm::FunctionType::get(builder->getVoidTy(), {llvm::PointerType::getUnqual(*context)}, false);
-				this->freeFn = llvm::Function::Create(freeFnTy, llvm::Function::ExternalLinkage, "free", *module);
+				this->qdStringReleaseFn = llvm::Function::Create(qdStringReleaseFnTy, llvm::Function::ExternalLinkage, "qd_string_release", *module);
 			}
-			builder->CreateCall(this->freeFn, {strPtr});
+			builder->CreateCall(this->qdStringReleaseFn, {strPtr});
 			builder->CreateBr(skipFreeBlock);
 
 			// Skip free block
@@ -3231,17 +3255,25 @@ namespace Qd {
 
 		// Push STR
 		builder->SetInsertPoint(pushStrBB);
-		auto strValue = builder->CreateIntToPtr(resultValue, llvm::PointerType::getUnqual(*context), "str_value");
-		builder->CreateCall(pushStrFn, {ctx, strValue});
-		// Free the popped string from cloned context (qd_push_s has duplicated it, so we own the original)
-		// When we popped with non-NULL element, the string wasn't freed, so we must free it manually
-		// Use member variable freeFn instead
-		if (!this->freeFn) {
-			auto freeFnTy =
-					llvm::FunctionType::get(builder->getVoidTy(), {llvm::PointerType::getUnqual(*context)}, false);
-			this->freeFn = llvm::Function::Create(freeFnTy, llvm::Function::ExternalLinkage, "free", *module);
+		auto strPtr = builder->CreateIntToPtr(resultValue, llvm::PointerType::getUnqual(*context), "str_ptr");
+		// Call qd_string_data to get const char* from qd_string_t*
+		if (!this->qdStringDataFn) {
+			auto qdStringDataFnTy = llvm::FunctionType::get(
+					llvm::PointerType::getUnqual(*context),
+					{llvm::PointerType::getUnqual(*context)},
+					false);
+			this->qdStringDataFn = llvm::Function::Create(
+					qdStringDataFnTy, llvm::Function::ExternalLinkage, "qd_string_data", *module);
 		}
-		builder->CreateCall(this->freeFn, {strValue});
+		auto strData = builder->CreateCall(this->qdStringDataFn, {strPtr}, "str_data");
+		builder->CreateCall(pushStrFn, {ctx, strData});
+		// Release the string reference from cloned context (qd_push_s has created a new copy)
+		if (!this->qdStringReleaseFn) {
+			auto qdStringReleaseFnTy =
+					llvm::FunctionType::get(builder->getVoidTy(), {llvm::PointerType::getUnqual(*context)}, false);
+			this->qdStringReleaseFn = llvm::Function::Create(qdStringReleaseFnTy, llvm::Function::ExternalLinkage, "qd_string_release", *module);
+		}
+		builder->CreateCall(this->qdStringReleaseFn, {strPtr});
 		builder->CreateBr(pushDoneBB);
 
 		// Free the cloned context AFTER pushing (qd_push_s has now duplicated the string)

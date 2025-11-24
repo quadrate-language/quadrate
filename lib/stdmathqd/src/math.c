@@ -32,7 +32,7 @@ static void dump_stack(qd_context* ctx) {
 				fprintf(stderr, "float = %f\n", elem.value.f);
 				break;
 			case QD_STACK_TYPE_STR:
-				fprintf(stderr, "str = \"%s\"\n", elem.value.s);
+				fprintf(stderr, "str = \"%s\"\n", qd_string_data(elem.value.s));
 				break;
 			case QD_STACK_TYPE_PTR:
 				fprintf(stderr, "ptr = %p\n", elem.value.p);

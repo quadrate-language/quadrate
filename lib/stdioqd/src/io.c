@@ -35,22 +35,22 @@ qd_exec_result usr_io_open(qd_context* ctx) {
     qd_stack_element_t path_elem;
     err = qd_stack_pop(ctx->st, &path_elem);
     if (err != QD_STACK_OK) {
-        free(mode_elem.value.s);
+        qd_string_release(mode_elem.value.s);
         fprintf(stderr, "Fatal error in io::open: Failed to pop path\n");
         abort();
     }
     if (path_elem.type != QD_STACK_TYPE_STR) {
-        free(mode_elem.value.s);
+        qd_string_release(mode_elem.value.s);
         fprintf(stderr, "Fatal error in io::open: Expected string for path, got %d\n", path_elem.type);
         abort();
     }
 
     // Open file
-    FILE* fp = fopen(path_elem.value.s, mode_elem.value.s);
+    FILE* fp = fopen(qd_string_data(path_elem.value.s), qd_string_data(mode_elem.value.s));
 
     // Clean up strings
-    free(path_elem.value.s);
-    free(mode_elem.value.s);
+    qd_string_release(path_elem.value.s);
+    qd_string_release(mode_elem.value.s);
 
     // Push file handle (or NULL on error)
     qd_exec_result push_result = qd_push_p(ctx, fp);
@@ -200,29 +200,29 @@ qd_exec_result usr_io_write_string(qd_context* ctx) {
     qd_stack_element_t handle_elem;
     err = qd_stack_pop(ctx->st, &handle_elem);
     if (err != QD_STACK_OK) {
-        free(data_elem.value.s);
+        qd_string_release(data_elem.value.s);
         fprintf(stderr, "Fatal error in io::write: Failed to pop handle\n");
         abort();
     }
     if (handle_elem.type != QD_STACK_TYPE_PTR) {
-        free(data_elem.value.s);
+        qd_string_release(data_elem.value.s);
         fprintf(stderr, "Fatal error in io::write: Expected pointer for handle, got %d\n", handle_elem.type);
         abort();
     }
 
     FILE* fp = (FILE*)handle_elem.value.p;
-    const char* data = data_elem.value.s;
+    const char* data = qd_string_data(data_elem.value.s);
     size_t len = strlen(data);
 
     if (!fp) {
-        free(data_elem.value.s);
+        qd_string_release(data_elem.value.s);
         qd_push_i(ctx, 0);
         qd_push_i(ctx, 0); // Error code
         return (qd_exec_result){1};
     }
 
     size_t written = fwrite(data, 1, len, fp);
-    free(data_elem.value.s);
+    qd_string_release(data_elem.value.s);
 
     qd_push_i(ctx, (int64_t)written);
 

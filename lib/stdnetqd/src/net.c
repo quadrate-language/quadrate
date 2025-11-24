@@ -82,7 +82,7 @@ qd_exec_result usr_net_connect(qd_context* ctx) {
 	}
 
 	if (port_elem.type != QD_STACK_TYPE_INT) {
-		if (host_elem.type == QD_STACK_TYPE_STR) free(host_elem.value.s);
+		if (host_elem.type == QD_STACK_TYPE_STR) qd_string_release(host_elem.value.s);
 		fprintf(stderr, "Fatal error in usr_net_connect: port must be an integer\n");
 		abort();
 	}
@@ -93,11 +93,11 @@ qd_exec_result usr_net_connect(qd_context* ctx) {
 	}
 
 	int port = (int)port_elem.value.i;
-	char* host = host_elem.value.s;
+	const char* host = qd_string_data(host_elem.value.s);
 
 	// Connect to remote host using platform abstraction
 	net_socket_t sock_fd = net_platform_connect(host, port);
-	free(host);
+	qd_string_release(host_elem.value.s);
 
 	if (sock_fd == NET_SOCKET_INVALID) {
 		fprintf(stderr, "Fatal error in usr_net_connect: failed to connect to %s:%d\n", host, port);
@@ -122,13 +122,13 @@ qd_exec_result usr_net_send(qd_context* ctx) {
 	qd_stack_element_t socket_elem;
 	err = qd_stack_pop(ctx->st, &socket_elem);
 	if (err != QD_STACK_OK) {
-		if (data_elem.type == QD_STACK_TYPE_STR) free(data_elem.value.s);
+		if (data_elem.type == QD_STACK_TYPE_STR) qd_string_release(data_elem.value.s);
 		fprintf(stderr, "Fatal error in usr_net_send: stack underflow\n");
 		abort();
 	}
 
 	if (socket_elem.type != QD_STACK_TYPE_INT) {
-		if (data_elem.type == QD_STACK_TYPE_STR) free(data_elem.value.s);
+		if (data_elem.type == QD_STACK_TYPE_STR) qd_string_release(data_elem.value.s);
 		fprintf(stderr, "Fatal error in usr_net_send: socket must be an integer\n");
 		abort();
 	}
@@ -139,12 +139,12 @@ qd_exec_result usr_net_send(qd_context* ctx) {
 	}
 
 	net_socket_t sock_fd = (net_socket_t)socket_elem.value.i;
-	char* data = data_elem.value.s;
+	const char* data = qd_string_data(data_elem.value.s);
 	size_t len = strlen(data);
 
 	// Send data using platform abstraction
 	int bytes_sent = net_platform_send(sock_fd, data, len);
-	free(data);
+	qd_string_release(data_elem.value.s);
 
 	if (bytes_sent < 0) {
 		fprintf(stderr, "Fatal error in usr_net_send: failed to send data\n");

@@ -38,7 +38,7 @@ qd_exec_result usr_fmt_printf(qd_context* ctx) {
 		abort();
 	}
 
-	const char* format = fmt_elem.value.s;
+	const char* format = qd_string_data(fmt_elem.value.s);
 	int arg_count = count_format_specifiers(format);
 
 	// Now pop exactly arg_count arguments from stack
@@ -47,7 +47,7 @@ qd_exec_result usr_fmt_printf(qd_context* ctx) {
 		elements = malloc(sizeof(qd_stack_element_t) * (size_t)arg_count);
 		if (!elements) {
 			fprintf(stderr, "Fatal error in usr_fmt_printf: Memory allocation failed\n");
-			free(fmt_elem.value.s);
+			qd_string_release(fmt_elem.value.s);
 			abort();
 		}
 
@@ -56,10 +56,10 @@ qd_exec_result usr_fmt_printf(qd_context* ctx) {
 			if (err != QD_STACK_OK) {
 				fprintf(stderr, "Fatal error in usr_fmt_printf: Not enough arguments on stack\n");
 				for (int j = 0; j < i; j++) {
-					if (elements[j].type == QD_STACK_TYPE_STR) free(elements[j].value.s);
+					if (elements[j].type == QD_STACK_TYPE_STR) qd_string_release(elements[j].value.s);
 				}
 				free(elements);
-				free(fmt_elem.value.s);
+				qd_string_release(fmt_elem.value.s);
 				abort();
 			}
 		}
@@ -80,7 +80,7 @@ qd_exec_result usr_fmt_printf(qd_context* ctx) {
 				if (arg_idx < 0) {
 					fprintf(stderr, "Fatal error in usr_fmt_printf: Not enough arguments for format string\n");
 					free(elements);
-					free(fmt_elem.value.s);
+					qd_string_release(fmt_elem.value.s);
 					abort();
 				}
 				if (elements[arg_idx].type != QD_STACK_TYPE_STR) {
@@ -88,21 +88,21 @@ qd_exec_result usr_fmt_printf(qd_context* ctx) {
 						elements[arg_idx].type);
 					if (elements) {
 						for (int i = 0; i < arg_count; i++) {
-							if (elements[i].type == QD_STACK_TYPE_STR) free(elements[i].value.s);
+							if (elements[i].type == QD_STACK_TYPE_STR) qd_string_release(elements[i].value.s);
 						}
 						free(elements);
 					}
-					free(fmt_elem.value.s);
+					qd_string_release(fmt_elem.value.s);
 					abort();
 				}
-				printf("%s", elements[arg_idx].value.s);
+				printf("%s", qd_string_data(elements[arg_idx].value.s));
 				arg_idx--;
 			} else if (*p == 'd' || *p == 'i') {
 				// Integer argument
 				if (arg_idx < 0) {
 					fprintf(stderr, "Fatal error in usr_fmt_printf: Not enough arguments for format string\n");
 					free(elements);
-					free(fmt_elem.value.s);
+					qd_string_release(fmt_elem.value.s);
 					abort();
 				}
 				if (elements[arg_idx].type != QD_STACK_TYPE_INT) {
@@ -110,11 +110,11 @@ qd_exec_result usr_fmt_printf(qd_context* ctx) {
 						elements[arg_idx].type);
 					if (elements) {
 						for (int i = 0; i < arg_count; i++) {
-							if (elements[i].type == QD_STACK_TYPE_STR) free(elements[i].value.s);
+							if (elements[i].type == QD_STACK_TYPE_STR) qd_string_release(elements[i].value.s);
 						}
 						free(elements);
 					}
-					free(fmt_elem.value.s);
+					qd_string_release(fmt_elem.value.s);
 					abort();
 				}
 				printf("%ld", elements[arg_idx].value.i);
@@ -124,7 +124,7 @@ qd_exec_result usr_fmt_printf(qd_context* ctx) {
 				if (arg_idx < 0) {
 					fprintf(stderr, "Fatal error in usr_fmt_printf: Not enough arguments for format string\n");
 					free(elements);
-					free(fmt_elem.value.s);
+					qd_string_release(fmt_elem.value.s);
 					abort();
 				}
 				if (elements[arg_idx].type != QD_STACK_TYPE_FLOAT) {
@@ -132,11 +132,11 @@ qd_exec_result usr_fmt_printf(qd_context* ctx) {
 						elements[arg_idx].type);
 					if (elements) {
 						for (int i = 0; i < arg_count; i++) {
-							if (elements[i].type == QD_STACK_TYPE_STR) free(elements[i].value.s);
+							if (elements[i].type == QD_STACK_TYPE_STR) qd_string_release(elements[i].value.s);
 						}
 						free(elements);
 					}
-					free(fmt_elem.value.s);
+					qd_string_release(fmt_elem.value.s);
 					abort();
 				}
 				printf("%f", elements[arg_idx].value.f);
@@ -156,12 +156,12 @@ qd_exec_result usr_fmt_printf(qd_context* ctx) {
 	if (elements) {
 		for (int i = 0; i < arg_count; i++) {
 			if (elements[i].type == QD_STACK_TYPE_STR) {
-				free(elements[i].value.s);
+				qd_string_release(elements[i].value.s);
 			}
 		}
 		free(elements);
 	}
-	free(fmt_elem.value.s);
+	qd_string_release(fmt_elem.value.s);
 
 	return (qd_exec_result){0};
 }

@@ -12,6 +12,7 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <qdrt/qd_string.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -51,10 +52,10 @@ typedef enum {
  */
 typedef struct {
 	union {
-		int64_t i; ///< Integer value
-		double f;  ///< Float value
-		void* p;   ///< Pointer value
-		char* s;   ///< String value (owned by stack)
+		int64_t i;        ///< Integer value
+		double f;         ///< Float value
+		void* p;          ///< Pointer value
+		qd_string_t* s;   ///< Reference-counted string value (owned by stack)
 	} value;
 
 	qd_stack_type type;	   ///< Type of the stored value
@@ -89,22 +90,23 @@ qd_stack_error qd_stack_init(qd_stack** stack, size_t capacity);
  *
  * @param stack Stack to destroy (can be NULL)
  *
- * @note Frees all string values owned by the stack
+ * @note Releases all string references owned by the stack
  */
 void qd_stack_destroy(qd_stack* stack);
 
 /**
- * @brief Clone a stack (deep copy)
+ * @brief Clone a stack (shallow copy for strings)
  *
- * Creates a deep copy of the source stack, including all string values.
- * The cloned stack will have the same capacity and contents as the source.
+ * Creates a copy of the source stack. Numeric and pointer values are copied directly.
+ * String values use reference counting - the reference count is incremented rather
+ * than copying the string data.
  *
  * @param[out] dest Pointer to receive the cloned stack
  * @param src Source stack to clone
  * @return QD_STACK_OK on success, error code otherwise
  *
  * @note The caller is responsible for calling qd_stack_destroy() on the cloned stack
- * @note All strings in the stack are deep copied
+ * @note String references are retained (refcount incremented)
  */
 qd_stack_error qd_stack_clone(qd_stack** dest, const qd_stack* src);
 
@@ -141,10 +143,11 @@ qd_stack_error qd_stack_push_ptr(qd_stack* stack, void* value);
  * @brief Push a string onto the stack
  *
  * @param stack Target stack
- * @param value String to push (will be copied)
+ * @param value String to push (will be wrapped in reference-counted structure)
  * @return QD_STACK_OK on success, error code otherwise
  *
- * @note The string is copied; the stack takes ownership of the copy
+ * @note The string is copied into a new qd_string_t with refcount=1
+ * @note The stack takes ownership of the reference
  */
 qd_stack_error qd_stack_push_str(qd_stack* stack, const char* value);
 

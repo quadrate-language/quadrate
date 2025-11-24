@@ -2,6 +2,7 @@ qdrt_sources = files(
 		'src/runtime.c',
 		'src/stack.c',
 		'src/memory.c',
+		'src/qd_string.c',
 		'src/platform/posix/thread_pthread.c',
 )
 

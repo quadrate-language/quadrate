@@ -148,17 +148,17 @@ qd_exec_result usr_base64_decode(qd_context* ctx) {
 	}
 	if (str_elem.type != QD_STACK_TYPE_STR) {
 		fprintf(stderr, "Fatal error in base64::decode: Expected string, got %d\n", str_elem.type);
-		free(str_elem.value.s);
+		qd_string_release(str_elem.value.s);
 		abort();
 	}
 
-	char* encoded = str_elem.value.s;
+	const char* encoded = qd_string_data(str_elem.value.s);
 	size_t in_len = strlen(encoded);
 
 	// Validate length (must be multiple of 4)
 	if (in_len % 4 != 0) {
 		fprintf(stderr, "Fatal error in base64::decode: Invalid base64 length (must be multiple of 4)\n");
-		free(encoded);
+		qd_string_release(str_elem.value.s);
 		abort();
 	}
 
@@ -169,7 +169,7 @@ qd_exec_result usr_base64_decode(qd_context* ctx) {
 	uint8_t* out = malloc(max_out_len);
 	if (!out) {
 		fprintf(stderr, "Fatal error in base64::decode: Allocation failed\n");
-		free(encoded);
+		qd_string_release(str_elem.value.s);
 		abort();
 	}
 
@@ -186,7 +186,7 @@ qd_exec_result usr_base64_decode(qd_context* ctx) {
 		if (v1 < 0 || v2 < 0) {
 			fprintf(stderr, "Fatal error in base64::decode: Invalid base64 character\n");
 			free(out);
-			free(encoded);
+			qd_string_release(str_elem.value.s);
 			abort();
 		}
 
@@ -196,7 +196,7 @@ qd_exec_result usr_base64_decode(qd_context* ctx) {
 			if (i + 4 != in_len) {
 				fprintf(stderr, "Fatal error in base64::decode: Padding character not at end\n");
 				free(out);
-				free(encoded);
+				qd_string_release(str_elem.value.s);
 				abort();
 			}
 			// Only decode first byte
@@ -209,7 +209,7 @@ qd_exec_result usr_base64_decode(qd_context* ctx) {
 			if (i + 4 != in_len) {
 				fprintf(stderr, "Fatal error in base64::decode: Padding character not at end\n");
 				free(out);
-				free(encoded);
+				qd_string_release(str_elem.value.s);
 				abort();
 			}
 			// Decode first two bytes
@@ -222,7 +222,7 @@ qd_exec_result usr_base64_decode(qd_context* ctx) {
 		if (v3 < 0 || v4 < 0) {
 			fprintf(stderr, "Fatal error in base64::decode: Invalid base64 character\n");
 			free(out);
-			free(encoded);
+			qd_string_release(str_elem.value.s);
 			abort();
 		}
 
@@ -232,7 +232,7 @@ qd_exec_result usr_base64_decode(qd_context* ctx) {
 		out[out_pos++] = (uint8_t)((v3 << 6) | v4);
 	}
 
-	free(encoded);
+	qd_string_release(str_elem.value.s);
 
 	// Push data and length: data:p data_len:i
 	qd_push_p(ctx, out);

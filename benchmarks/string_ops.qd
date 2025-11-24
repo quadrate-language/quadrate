@@ -1,0 +1,29 @@
+use time
+use fmt
+use str
+
+fn benchmark_concat(limit:i64 -- result:i64) {
+    -> limit
+    "" -> s
+    0 limit 1 for {
+        s "a" str::concat -> s
+    }
+    s str::len
+}
+
+fn main( -- ) {
+    "=== Quadrate String Benchmarks ===\n" fmt::printf
+
+    // Benchmark: String Concatenation
+    // This tests the overhead of allocation/copying in the current string implementation
+    50000 -> iterations
+    
+    time::now -> start
+    iterations benchmark_concat -> result
+    time::now start - -> elapsed
+    
+    iterations "String Concat (%d iterations):\n" fmt::printf
+    elapsed 1000000 div "  Time: %d ms\n" fmt::printf
+    result "  Final Length: %d\n" fmt::printf
+}
+

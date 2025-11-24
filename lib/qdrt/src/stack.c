@@ -1,6 +1,7 @@
 #define _POSIX_C_SOURCE 200809L
 
 #include <qdrt/stack.h>
+#include <qdrt/qd_string.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -37,10 +38,10 @@ void qd_stack_destroy(qd_stack* stack) {
 		return;
 	}
 
-	/* Free all string allocations */
+	/* Release all string references */
 	for (size_t i = 0; i < stack->size; i++) {
 		if (stack->data[i].type == QD_STACK_TYPE_STR) {
-			free(stack->data[i].value.s);
+			qd_string_release(stack->data[i].value.s);
 		}
 	}
 
@@ -66,12 +67,18 @@ qd_stack_error qd_stack_clone(qd_stack** dest, const qd_stack* src) {
 		d->data[i].type = src->data[i].type;
 		d->data[i].is_error_tainted = src->data[i].is_error_tainted;
 
-		/* Deep copy strings */
+		/* Deep copy strings (for ctx isolation) */
 		if (src->data[i].type == QD_STACK_TYPE_STR) {
-			d->data[i].value.s = strdup(src->data[i].value.s);
+			const char* str_data = qd_string_data(src->data[i].value.s);
+			size_t str_len = qd_string_length(src->data[i].value.s);
+			d->data[i].value.s = qd_string_create_with_length(str_data, str_len);
 			if (d->data[i].value.s == NULL) {
-				/* Cleanup on failure */
-				d->size = i; /* Set size to cleaned-up elements */
+				/* Cleanup on allocation failure */
+				for (size_t j = 0; j < i; j++) {
+					if (d->data[j].type == QD_STACK_TYPE_STR) {
+						qd_string_release(d->data[j].value.s);
+					}
+				}
 				qd_stack_destroy(d);
 				*dest = NULL;
 				return QD_STACK_ERR_ALLOC;
@@ -139,15 +146,13 @@ qd_stack_error qd_stack_push_str(qd_stack* stack, const char* value) {
 		return QD_STACK_ERR_OVERFLOW;
 	}
 
-	/* Copy the string to own the data */
-	size_t len = strlen(value);
-	char* copy = (char*)malloc(len + 1);
-	if (copy == NULL) {
+	/* Create reference-counted string */
+	qd_string_t* qd_str = qd_string_create(value);
+	if (qd_str == NULL) {
 		return QD_STACK_ERR_ALLOC;
 	}
-	memcpy(copy, value, len + 1);
 
-	stack->data[stack->size].value.s = copy;
+	stack->data[stack->size].value.s = qd_str;
 	stack->data[stack->size].type = QD_STACK_TYPE_STR;
 	stack->data[stack->size].is_error_tainted = false;
 	stack->size++;
@@ -189,8 +194,9 @@ qd_stack_error qd_stack_pop(qd_stack* stack, qd_stack_element_t* element) {
 	if (element != NULL) {
 		*element = stack->data[stack->size];
 	} else {
+		/* Release string reference if element not saved */
 		if (stack->data[stack->size].type == QD_STACK_TYPE_STR) {
-			free(stack->data[stack->size].value.s);
+			qd_string_release(stack->data[stack->size].value.s);
 		}
 	}
 	return QD_STACK_OK;
@@ -264,7 +270,7 @@ qd_stack_error qd_stack_top_str(const qd_stack* stack, const char** value) {
 		return QD_STACK_ERR_TYPE_MISMATCH;
 	}
 
-	*value = stack->data[stack->size - 1].value.s;
+	*value = qd_string_data(stack->data[stack->size - 1].value.s);
 	return QD_STACK_OK;
 }
 

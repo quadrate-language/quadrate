@@ -47,6 +47,12 @@ if command -v python3 &> /dev/null; then
     echo ""
 fi
 
+# Run String Benchmarks
+if [ -f benchmarks/run_string_benchmark.sh ]; then
+    ./benchmarks/run_string_benchmark.sh
+    echo ""
+fi
+
 echo "=========================================="
 echo "  Benchmark Complete"
 echo "=========================================="

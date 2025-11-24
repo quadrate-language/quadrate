@@ -2,6 +2,7 @@
 #define _POSIX_C_SOURCE 200809L
 
 #include <qdrt/runtime.h>
+#include <qdrt/qd_string.h>
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -35,6 +36,29 @@ qd_exec_result qd_push_s(qd_context* ctx, const char* value) {
 	return (qd_exec_result){0};
 }
 
+qd_exec_result qd_push_s_ref(qd_context* ctx, qd_string_t* value) {
+	if (value == NULL) {
+		return (qd_exec_result){-2};
+	}
+
+	// Retain the string (increment reference count)
+	qd_string_retain(value);
+
+	// Check stack capacity
+	if (qd_stack_size(ctx->st) >= ctx->st->capacity) {
+		qd_string_release(value);  // Cleanup on overflow
+		return (qd_exec_result){-2};
+	}
+
+	// Push directly to stack
+	ctx->st->data[ctx->st->size].value.s = value;
+	ctx->st->data[ctx->st->size].type = QD_STACK_TYPE_STR;
+	ctx->st->data[ctx->st->size].is_error_tainted = false;
+	ctx->st->size++;
+
+	return (qd_exec_result){0};
+}
+
 qd_exec_result qd_push_p(qd_context* ctx, void* value) {
 	qd_stack_error err = qd_stack_push_ptr(ctx->st, value);
 	if (err != QD_STACK_OK) {
@@ -59,8 +83,8 @@ qd_exec_result qd_print(qd_context* ctx) {
 			printf("%g", val.value.f);
 			break;
 		case QD_STACK_TYPE_STR:
-			printf("%s", val.value.s);
-			free(val.value.s);  // Free the string memory after printing
+			printf("%s", qd_string_data(val.value.s));
+			qd_string_release(val.value.s);  // Release the string reference after printing
 			break;
 		default:
 			return (qd_exec_result){-3};
@@ -108,14 +132,16 @@ qd_exec_result qd_prints(qd_context* ctx) {
 			case QD_STACK_TYPE_FLOAT:
 				printf("%g", val.value.f);
 				break;
-			case QD_STACK_TYPE_STR:
+			case QD_STACK_TYPE_STR: {
+				const char* str_data = qd_string_data(val.value.s);
 				// Smart quoting: only quote if string contains whitespace
-				if (has_whitespace(val.value.s)) {
-					printf("\"%s\"", val.value.s);
+				if (has_whitespace(str_data)) {
+					printf("\"%s\"", str_data);
 				} else {
-					printf("%s", val.value.s);
+					printf("%s", str_data);
 				}
 				break;
+			}
 			default:
 				return (qd_exec_result){-3};
 		}
@@ -143,15 +169,17 @@ qd_exec_result qd_printv(qd_context* ctx) {
 		case QD_STACK_TYPE_FLOAT:
 			printf("float:%g\n", val.value.f);
 			break;
-		case QD_STACK_TYPE_STR:
+		case QD_STACK_TYPE_STR: {
+			const char* str_data = qd_string_data(val.value.s);
 			// Smart quoting: only quote if string contains whitespace
-			if (has_whitespace(val.value.s)) {
-				printf("string:\"%s\"\n", val.value.s);
+			if (has_whitespace(str_data)) {
+				printf("string:\"%s\"\n", str_data);
 			} else {
-				printf("string:%s\n", val.value.s);
+				printf("string:%s\n", str_data);
 			}
-			free(val.value.s);  // Free the string memory after printing
+			qd_string_release(val.value.s);  // Release the string reference after printing
 			break;
+		}
 		default:
 			return (qd_exec_result){-3};
 	}
@@ -182,14 +210,16 @@ qd_exec_result qd_printsv(qd_context* ctx) {
 			case QD_STACK_TYPE_FLOAT:
 				printf("float:%g", val.value.f);
 				break;
-			case QD_STACK_TYPE_STR:
+			case QD_STACK_TYPE_STR: {
+				const char* str_data = qd_string_data(val.value.s);
 				// Smart quoting: only quote if string contains whitespace
-				if (has_whitespace(val.value.s)) {
-					printf("string:\"%s\"", val.value.s);
+				if (has_whitespace(str_data)) {
+					printf("string:\"%s\"", str_data);
 				} else {
-					printf("string:%s", val.value.s);
+					printf("string:%s", str_data);
 				}
 				break;
+			}
 			case QD_STACK_TYPE_PTR:
 				printf("ptr:%p", val.value.p);
 				break;
@@ -219,7 +249,7 @@ qd_exec_result qd_peek(qd_context* ctx) {
 			printf("%f\n", val.value.f);
 			break;
 		case QD_STACK_TYPE_STR:
-			printf("%s\n", val.value.s);
+			printf("%s\n", qd_string_data(val.value.s));
 			break;
 		default:
 			return (qd_exec_result){-3};
@@ -292,11 +322,46 @@ static inline double to_double(const qd_stack_element_t* elem) {
 	return (elem->type == QD_STACK_TYPE_INT) ? (double)elem->value.i : elem->value.f;
 }
 
-// Helper function to free string values if needed
-static void free_if_string(qd_stack_element_t* elem) {
+// Helper function to release string references if needed
+static void release_if_string(qd_stack_element_t* elem) {
 	if (elem->type == QD_STACK_TYPE_STR) {
-		free(elem->value.s);
+		qd_string_release(elem->value.s);
 	}
+}
+
+// Helper function to push a stack element (retains strings)
+static qd_stack_error push_element(qd_stack* stack, const qd_stack_element_t* elem) {
+	qd_stack_error err;
+	switch (elem->type) {
+		case QD_STACK_TYPE_INT:
+			err = qd_stack_push_int(stack, elem->value.i);
+			break;
+		case QD_STACK_TYPE_FLOAT:
+			err = qd_stack_push_float(stack, elem->value.f);
+			break;
+		case QD_STACK_TYPE_STR:
+			// Retain the string reference (increment refcount) and push
+			qd_string_retain(elem->value.s);
+			if (qd_stack_size(stack) >= stack->capacity) {
+				qd_string_release(elem->value.s);  // Cleanup on overflow
+				return QD_STACK_ERR_OVERFLOW;
+			}
+			stack->data[stack->size].value.s = elem->value.s;
+			stack->data[stack->size].type = QD_STACK_TYPE_STR;
+			stack->data[stack->size].is_error_tainted = elem->is_error_tainted;
+			stack->size++;
+			return QD_STACK_OK;
+		case QD_STACK_TYPE_PTR:
+			err = qd_stack_push_ptr(stack, elem->value.p);
+			break;
+		default:
+			return QD_STACK_ERR_TYPE_MISMATCH;
+	}
+	if (err == QD_STACK_OK) {
+		// Copy error taint flag for non-string types
+		stack->data[stack->size - 1].is_error_tainted = elem->is_error_tainted;
+	}
+	return err;
 }
 
 qd_exec_result qd_div(qd_context* ctx) {
@@ -335,8 +400,8 @@ qd_exec_result qd_div(qd_context* ctx) {
 			return (qd_exec_result){-2};
 		}
 	} else {
-		free_if_string(&b);
-		free_if_string(&a);
+		release_if_string(&b);
+		release_if_string(&a);
 		return (qd_exec_result){-5};
 	}
 	return (qd_exec_result){0};
@@ -364,8 +429,8 @@ qd_exec_result qd_mul(qd_context* ctx) {
 			return (qd_exec_result){-2};
 		}
 	} else {
-		free_if_string(&b);
-		free_if_string(&a);
+		release_if_string(&b);
+		release_if_string(&a);
 		return (qd_exec_result){-5};
 	}
 	return (qd_exec_result){0};
@@ -393,8 +458,8 @@ qd_exec_result qd_add(qd_context* ctx) {
 			return (qd_exec_result){-2};
 		}
 	} else {
-		free_if_string(&b);
-		free_if_string(&a);
+		release_if_string(&b);
+		release_if_string(&a);
 		return (qd_exec_result){-5};
 	}
 	return (qd_exec_result){0};
@@ -422,8 +487,8 @@ qd_exec_result qd_sub(qd_context* ctx) {
 			return (qd_exec_result){-2};
 		}
 	} else {
-		free_if_string(&b);
-		free_if_string(&a);
+		release_if_string(&b);
+		release_if_string(&a);
 		return (qd_exec_result){-5};
 	}
 	return (qd_exec_result){0};
@@ -448,25 +513,8 @@ qd_exec_result qd_dup(qd_context* ctx) {
 		abort();
 	}
 
-	// Push a copy of the top element
-	switch (top.type) {
-		case QD_STACK_TYPE_INT:
-			err = qd_stack_push_int(ctx->st, top.value.i);
-			break;
-		case QD_STACK_TYPE_FLOAT:
-			err = qd_stack_push_float(ctx->st, top.value.f);
-			break;
-		case QD_STACK_TYPE_STR:
-			// Need to duplicate the string
-			err = qd_stack_push_str(ctx->st, top.value.s);
-			break;
-		case QD_STACK_TYPE_PTR:
-			err = qd_stack_push_ptr(ctx->st, top.value.p);
-			break;
-		default:
-			return (qd_exec_result){-3};
-	}
-
+	// Push a copy of the top element (strings are retained, not copied)
+	err = push_element(ctx->st, &top);
 	if (err != QD_STACK_OK) {
 		return (qd_exec_result){-2};
 	}
@@ -501,89 +549,44 @@ qd_exec_result qd_dupd(qd_context* ctx) {
 		abort();
 	}
 
-	// Push back: a, a, b
+	// Push back: a, a, b (strings are retained, not copied)
 	// Push first a
-	switch (a.type) {
-		case QD_STACK_TYPE_INT:
-			err = qd_stack_push_int(ctx->st, a.value.i);
-			break;
-		case QD_STACK_TYPE_FLOAT:
-			err = qd_stack_push_float(ctx->st, a.value.f);
-			break;
-		case QD_STACK_TYPE_STR:
-			err = qd_stack_push_str(ctx->st, a.value.s);
-			break;
-		case QD_STACK_TYPE_PTR:
-			err = qd_stack_push_ptr(ctx->st, a.value.p);
-			break;
-		default:
-			fprintf(stderr, "Fatal error in dupd: Unknown type for second element\n");
-			dump_stack(ctx);
-			qd_print_stack_trace(ctx);
-			abort();
-	}
+	err = push_element(ctx->st, &a);
 	if (err != QD_STACK_OK) {
 		fprintf(stderr, "Fatal error in dupd: Failed to push first copy of second element\n");
 		dump_stack(ctx);
 		qd_print_stack_trace(ctx);
+		release_if_string(&a);
+		release_if_string(&b);
 		abort();
 	}
 
 	// Push second a (duplicate)
-	switch (a.type) {
-		case QD_STACK_TYPE_INT:
-			err = qd_stack_push_int(ctx->st, a.value.i);
-			break;
-		case QD_STACK_TYPE_FLOAT:
-			err = qd_stack_push_float(ctx->st, a.value.f);
-			break;
-		case QD_STACK_TYPE_STR:
-			err = qd_stack_push_str(ctx->st, a.value.s);
-			free(a.value.s);  // Free the original since push_str makes a copy
-			break;
-		case QD_STACK_TYPE_PTR:
-			err = qd_stack_push_ptr(ctx->st, a.value.p);
-			break;
-		default:
-			fprintf(stderr, "Fatal error in dupd: Unknown type for second element\n");
-			dump_stack(ctx);
-			qd_print_stack_trace(ctx);
-			abort();
-	}
+	err = push_element(ctx->st, &a);
 	if (err != QD_STACK_OK) {
 		fprintf(stderr, "Fatal error in dupd: Failed to push second copy of second element\n");
 		dump_stack(ctx);
 		qd_print_stack_trace(ctx);
+		release_if_string(&a);
+		release_if_string(&b);
 		abort();
 	}
 
+	// Release our reference to 'a' (push_element retained it twice)
+	release_if_string(&a);
+
 	// Push b (top element)
-	switch (b.type) {
-		case QD_STACK_TYPE_INT:
-			err = qd_stack_push_int(ctx->st, b.value.i);
-			break;
-		case QD_STACK_TYPE_FLOAT:
-			err = qd_stack_push_float(ctx->st, b.value.f);
-			break;
-		case QD_STACK_TYPE_STR:
-			err = qd_stack_push_str(ctx->st, b.value.s);
-			free(b.value.s);  // Free the original since push_str makes a copy
-			break;
-		case QD_STACK_TYPE_PTR:
-			err = qd_stack_push_ptr(ctx->st, b.value.p);
-			break;
-		default:
-			fprintf(stderr, "Fatal error in dupd: Unknown type for top element\n");
-			dump_stack(ctx);
-			qd_print_stack_trace(ctx);
-			abort();
-	}
+	err = push_element(ctx->st, &b);
 	if (err != QD_STACK_OK) {
 		fprintf(stderr, "Fatal error in dupd: Failed to push top element\n");
 		dump_stack(ctx);
 		qd_print_stack_trace(ctx);
+		release_if_string(&b);
 		abort();
 	}
+
+	// Release our reference to 'b' (push_element retained it)
+	release_if_string(&b);
 
 	return (qd_exec_result){0};
 }
@@ -618,46 +621,14 @@ qd_exec_result qd_dup2(qd_context* ctx) {
 		abort();
 	}
 
-	// Push a copy of the second element
-	switch (second.type) {
-		case QD_STACK_TYPE_INT:
-			err = qd_stack_push_int(ctx->st, second.value.i);
-			break;
-		case QD_STACK_TYPE_FLOAT:
-			err = qd_stack_push_float(ctx->st, second.value.f);
-			break;
-		case QD_STACK_TYPE_STR:
-			err = qd_stack_push_str(ctx->st, second.value.s);
-			break;
-		case QD_STACK_TYPE_PTR:
-			err = qd_stack_push_ptr(ctx->st, second.value.p);
-			break;
-		default:
-			return (qd_exec_result){-3};
-	}
-
+	// Push a copy of the second element (strings are retained, not copied)
+	err = push_element(ctx->st, &second);
 	if (err != QD_STACK_OK) {
 		return (qd_exec_result){-2};
 	}
 
 	// Push a copy of the top element
-	switch (top.type) {
-		case QD_STACK_TYPE_INT:
-			err = qd_stack_push_int(ctx->st, top.value.i);
-			break;
-		case QD_STACK_TYPE_FLOAT:
-			err = qd_stack_push_float(ctx->st, top.value.f);
-			break;
-		case QD_STACK_TYPE_STR:
-			err = qd_stack_push_str(ctx->st, top.value.s);
-			break;
-		case QD_STACK_TYPE_PTR:
-			err = qd_stack_push_ptr(ctx->st, top.value.p);
-			break;
-		default:
-			return (qd_exec_result){-3};
-	}
-
+	err = push_element(ctx->st, &top);
 	if (err != QD_STACK_OK) {
 		return (qd_exec_result){-2};
 	}
@@ -699,90 +670,44 @@ qd_exec_result qd_swapd(qd_context* ctx) {
 		abort();
 	}
 
-	// Push back: b, a, c (swapped second and third)
-	// Push b
-	switch (b.type) {
-		case QD_STACK_TYPE_INT:
-			err = qd_stack_push_int(ctx->st, b.value.i);
-			break;
-		case QD_STACK_TYPE_FLOAT:
-			err = qd_stack_push_float(ctx->st, b.value.f);
-			break;
-		case QD_STACK_TYPE_STR:
-			err = qd_stack_push_str(ctx->st, b.value.s);
-			free(b.value.s);
-			break;
-		case QD_STACK_TYPE_PTR:
-			err = qd_stack_push_ptr(ctx->st, b.value.p);
-			break;
-		default:
-			fprintf(stderr, "Fatal error in swapd: Unknown type for second element\n");
-			dump_stack(ctx);
-			qd_print_stack_trace(ctx);
-			abort();
-	}
+	// Push back: b, a, c (swapped second and third, strings are retained not copied)
+	err = push_element(ctx->st, &b);
 	if (err != QD_STACK_OK) {
 		fprintf(stderr, "Fatal error in swapd: Failed to push b\n");
 		dump_stack(ctx);
 		qd_print_stack_trace(ctx);
+		release_if_string(&a);
+		release_if_string(&b);
+		release_if_string(&c);
 		abort();
 	}
 
-	// Push a
-	switch (a.type) {
-		case QD_STACK_TYPE_INT:
-			err = qd_stack_push_int(ctx->st, a.value.i);
-			break;
-		case QD_STACK_TYPE_FLOAT:
-			err = qd_stack_push_float(ctx->st, a.value.f);
-			break;
-		case QD_STACK_TYPE_STR:
-			err = qd_stack_push_str(ctx->st, a.value.s);
-			free(a.value.s);
-			break;
-		case QD_STACK_TYPE_PTR:
-			err = qd_stack_push_ptr(ctx->st, a.value.p);
-			break;
-		default:
-			fprintf(stderr, "Fatal error in swapd: Unknown type for third element\n");
-			dump_stack(ctx);
-			qd_print_stack_trace(ctx);
-			abort();
-	}
+	err = push_element(ctx->st, &a);
 	if (err != QD_STACK_OK) {
 		fprintf(stderr, "Fatal error in swapd: Failed to push a\n");
 		dump_stack(ctx);
 		qd_print_stack_trace(ctx);
+		release_if_string(&a);
+		release_if_string(&b);
+		release_if_string(&c);
 		abort();
 	}
 
-	// Push c
-	switch (c.type) {
-		case QD_STACK_TYPE_INT:
-			err = qd_stack_push_int(ctx->st, c.value.i);
-			break;
-		case QD_STACK_TYPE_FLOAT:
-			err = qd_stack_push_float(ctx->st, c.value.f);
-			break;
-		case QD_STACK_TYPE_STR:
-			err = qd_stack_push_str(ctx->st, c.value.s);
-			free(c.value.s);
-			break;
-		case QD_STACK_TYPE_PTR:
-			err = qd_stack_push_ptr(ctx->st, c.value.p);
-			break;
-		default:
-			fprintf(stderr, "Fatal error in swapd: Unknown type for top element\n");
-			dump_stack(ctx);
-			qd_print_stack_trace(ctx);
-			abort();
-	}
+	err = push_element(ctx->st, &c);
 	if (err != QD_STACK_OK) {
 		fprintf(stderr, "Fatal error in swapd: Failed to push c\n");
 		dump_stack(ctx);
 		qd_print_stack_trace(ctx);
+		release_if_string(&a);
+		release_if_string(&b);
+		release_if_string(&c);
 		abort();
 	}
+
+	// Release our original references (push_element retained them)
+	release_if_string(&a);
+	release_if_string(&b);
+	release_if_string(&c);
 
 	return (qd_exec_result){0};
 }
@@ -817,26 +742,8 @@ qd_exec_result qd_overd(qd_context* ctx) {
 		abort();
 	}
 
-	// Push a copy of the third element
-	switch (third.type) {
-		case QD_STACK_TYPE_INT:
-			err = qd_stack_push_int(ctx->st, third.value.i);
-			break;
-		case QD_STACK_TYPE_FLOAT:
-			err = qd_stack_push_float(ctx->st, third.value.f);
-			break;
-		case QD_STACK_TYPE_STR:
-			err = qd_stack_push_str(ctx->st, third.value.s);
-			break;
-		case QD_STACK_TYPE_PTR:
-			err = qd_stack_push_ptr(ctx->st, third.value.p);
-			break;
-		default:
-			fprintf(stderr, "Fatal error in overd: Unknown type for third element\n");
-			dump_stack(ctx);
-			qd_print_stack_trace(ctx);
-			abort();
-	}
+	// Push a copy of the third element (strings are retained, not copied)
+	err = push_element(ctx->st, &third);
 	if (err != QD_STACK_OK) {
 		fprintf(stderr, "Fatal error in overd: Failed to push copy of third element\n");
 		dump_stack(ctx);
@@ -844,33 +751,17 @@ qd_exec_result qd_overd(qd_context* ctx) {
 		abort();
 	}
 
-	// Push the top element back
-	switch (top.type) {
-		case QD_STACK_TYPE_INT:
-			err = qd_stack_push_int(ctx->st, top.value.i);
-			break;
-		case QD_STACK_TYPE_FLOAT:
-			err = qd_stack_push_float(ctx->st, top.value.f);
-			break;
-		case QD_STACK_TYPE_STR:
-			err = qd_stack_push_str(ctx->st, top.value.s);
-			free(top.value.s);
-			break;
-		case QD_STACK_TYPE_PTR:
-			err = qd_stack_push_ptr(ctx->st, top.value.p);
-			break;
-		default:
-			fprintf(stderr, "Fatal error in overd: Unknown type for top element\n");
-			dump_stack(ctx);
-			qd_print_stack_trace(ctx);
-			abort();
-	}
+	// Push the top element back (strings are retained, not copied)
+	err = push_element(ctx->st, &top);
 	if (err != QD_STACK_OK) {
 		fprintf(stderr, "Fatal error in overd: Failed to push top element\n");
 		dump_stack(ctx);
 		qd_print_stack_trace(ctx);
+		release_if_string(&top);
 		abort();
 	}
+	// Release our original reference (push_element retained it)
+	release_if_string(&top);
 
 	return (qd_exec_result){0};
 }
@@ -902,32 +793,13 @@ qd_exec_result qd_nipd(qd_context* ctx) {
 		abort();
 	}
 
-	// Free b's resources if it's a string
+	// Release b's string reference if it's a string
 	if (b.type == QD_STACK_TYPE_STR) {
-		free(b.value.s);
+		qd_string_release(b.value.s);
 	}
 
 	// Push c back
-	switch (c.type) {
-		case QD_STACK_TYPE_INT:
-			err = qd_stack_push_int(ctx->st, c.value.i);
-			break;
-		case QD_STACK_TYPE_FLOAT:
-			err = qd_stack_push_float(ctx->st, c.value.f);
-			break;
-		case QD_STACK_TYPE_STR:
-			err = qd_stack_push_str(ctx->st, c.value.s);
-			free(c.value.s);
-			break;
-		case QD_STACK_TYPE_PTR:
-			err = qd_stack_push_ptr(ctx->st, c.value.p);
-			break;
-		default:
-			fprintf(stderr, "Fatal error in nipd: Unknown type for top element\n");
-			dump_stack(ctx);
-			qd_print_stack_trace(ctx);
-			abort();
-	}
+	err = push_element(ctx->st, &c);
 	if (err != QD_STACK_OK) {
 		fprintf(stderr, "Fatal error in nipd: Failed to push top element\n");
 		dump_stack(ctx);
@@ -959,50 +831,24 @@ qd_exec_result qd_swap(qd_context* ctx) {
 		return (qd_exec_result){-2};
 	}
 
-	// Push them back in swapped order (b first, then a)
-	// Push b (was top, now will be second)
-	switch (b.type) {
-		case QD_STACK_TYPE_INT:
-			err = qd_stack_push_int(ctx->st, b.value.i);
-			break;
-		case QD_STACK_TYPE_FLOAT:
-			err = qd_stack_push_float(ctx->st, b.value.f);
-			break;
-		case QD_STACK_TYPE_STR:
-			err = qd_stack_push_str(ctx->st, b.value.s);
-			free(b.value.s);  // Free the original since push_str makes a copy
-			break;
-		case QD_STACK_TYPE_PTR:
-			err = qd_stack_push_ptr(ctx->st, b.value.p);
-			break;
-		default:
-			return (qd_exec_result){-3};
-	}
+	// Push them back in swapped order (b first, then a, strings are retained not copied)
+	err = push_element(ctx->st, &b);
 	if (err != QD_STACK_OK) {
+		release_if_string(&a);
+		release_if_string(&b);
 		return (qd_exec_result){-2};
 	}
 
-	// Push a (was second, now will be top)
-	switch (a.type) {
-		case QD_STACK_TYPE_INT:
-			err = qd_stack_push_int(ctx->st, a.value.i);
-			break;
-		case QD_STACK_TYPE_FLOAT:
-			err = qd_stack_push_float(ctx->st, a.value.f);
-			break;
-		case QD_STACK_TYPE_STR:
-			err = qd_stack_push_str(ctx->st, a.value.s);
-			free(a.value.s);  // Free the original since push_str makes a copy
-			break;
-		case QD_STACK_TYPE_PTR:
-			err = qd_stack_push_ptr(ctx->st, a.value.p);
-			break;
-		default:
-			return (qd_exec_result){-3};
-	}
+	err = push_element(ctx->st, &a);
 	if (err != QD_STACK_OK) {
+		release_if_string(&a);
+		release_if_string(&b);
 		return (qd_exec_result){-2};
 	}
+
+	// Release our original references (push_element retained them)
+	release_if_string(&a);
+	release_if_string(&b);
 
 	return (qd_exec_result){0};
 }
@@ -1027,24 +873,8 @@ qd_exec_result qd_over(qd_context* ctx) {
 		abort();
 	}
 
-	// Push a copy of the second element to the top
-	switch (second.type) {
-		case QD_STACK_TYPE_INT:
-			err = qd_stack_push_int(ctx->st, second.value.i);
-			break;
-		case QD_STACK_TYPE_FLOAT:
-			err = qd_stack_push_float(ctx->st, second.value.f);
-			break;
-		case QD_STACK_TYPE_STR:
-			// Need to duplicate the string
-			err = qd_stack_push_str(ctx->st, second.value.s);
-			break;
-		case QD_STACK_TYPE_PTR:
-			err = qd_stack_push_ptr(ctx->st, second.value.p);
-			break;
-		default:
-			return (qd_exec_result){-3};
-	}
+	// Push a copy of the second element to the top (strings are retained, not copied)
+	err = push_element(ctx->st, &second);
 
 	if (err != QD_STACK_OK) {
 		return (qd_exec_result){-2};
@@ -1077,32 +907,21 @@ qd_exec_result qd_nip(qd_context* ctx) {
 		return (qd_exec_result){-2};
 	}
 
-	// Free string memory if necessary
+	// Release string reference if necessary
 	if (second.type == QD_STACK_TYPE_STR) {
-		free(second.value.s);
+		qd_string_release(second.value.s);
 	}
 
 	// Push the top element back
-	switch (top.type) {
-		case QD_STACK_TYPE_INT:
-			err = qd_stack_push_int(ctx->st, top.value.i);
-			break;
-		case QD_STACK_TYPE_FLOAT:
-			err = qd_stack_push_float(ctx->st, top.value.f);
-			break;
-		case QD_STACK_TYPE_STR:
-			err = qd_stack_push_str(ctx->st, top.value.s);
-			free(top.value.s);  // Free the original since push_str makes a copy
-			break;
-		case QD_STACK_TYPE_PTR:
-			err = qd_stack_push_ptr(ctx->st, top.value.p);
-			break;
-		default:
-			return (qd_exec_result){-3};
-	}
+	err = push_element(ctx->st, &top);
 
 	if (err != QD_STACK_OK) {
 		return (qd_exec_result){-2};
+	}
+
+	// Release our reference to top (push_element retained it)
+	if (top.type == QD_STACK_TYPE_STR) {
+		qd_string_release(top.value.s);
 	}
 
 	return (qd_exec_result){0};
@@ -1267,8 +1086,8 @@ qd_exec_result qd_casti(qd_context* ctx) {
 	} else if (elem.type == QD_STACK_TYPE_FLOAT) {
 		result = (int64_t)elem.value.f;
 	} else if (elem.type == QD_STACK_TYPE_STR) {
-		result = atoll(elem.value.s);
-		free(elem.value.s);  // Free the string after conversion
+		result = atoll(qd_string_data(elem.value.s));
+		release_if_string(&elem);  // Release the string after conversion
 	} else {
 		fprintf(stderr, "Fatal error in casti: Cannot cast type to integer\n");
 		dump_stack(ctx);
@@ -1310,8 +1129,8 @@ qd_exec_result qd_castf(qd_context* ctx) {
 	} else if (elem.type == QD_STACK_TYPE_FLOAT) {
 		result = elem.value.f;
 	} else if (elem.type == QD_STACK_TYPE_STR) {
-		result = atof(elem.value.s);
-		free(elem.value.s);  // Free the string after conversion
+		result = atof(qd_string_data(elem.value.s));
+		release_if_string(&elem);  // Release the string after conversion
 	} else {
 		fprintf(stderr, "Fatal error in castf: Cannot cast type to float\n");
 		dump_stack(ctx);
@@ -1353,10 +1172,13 @@ qd_exec_result qd_casts(qd_context* ctx) {
 	} else if (elem.type == QD_STACK_TYPE_FLOAT) {
 		snprintf(buffer, sizeof(buffer), "%g", elem.value.f);
 	} else if (elem.type == QD_STACK_TYPE_STR) {
-		err = qd_stack_push_str(ctx->st, elem.value.s);
+		// Already a string - just push it back (retain it)
+		err = push_element(ctx->st, &elem);
 		if (err != QD_STACK_OK) {
 			return (qd_exec_result){-2};
 		}
+		// Release our reference from the pop
+		release_if_string(&elem);
 		return (qd_exec_result){0};
 	} else {
 		fprintf(stderr, "Fatal error in casts: Cannot cast type to string\n");
@@ -1388,9 +1210,9 @@ qd_exec_result qd_clear(qd_context* ctx) {
 			dump_stack(ctx);
 			abort();
 		}
-		// Free string memory if it was a string element
+		// Release string reference if it was a string element
 		if (elem.type == QD_STACK_TYPE_STR) {
-			free(elem.value.s);
+			qd_string_release(elem.value.s);
 		}
 	}
 
@@ -1850,7 +1672,7 @@ static void dump_stack(qd_context* ctx) {
 				fprintf(stderr, "float = %f\n", elem.value.f);
 				break;
 			case QD_STACK_TYPE_STR:
-				fprintf(stderr, "str = \"%s\"\n", elem.value.s);
+				fprintf(stderr, "str = \"%s\"\n", qd_string_data(elem.value.s));
 				break;
 			case QD_STACK_TYPE_PTR:
 				fprintf(stderr, "ptr = %p\n", elem.value.p);
@@ -1932,9 +1754,9 @@ qd_exec_result qd_drop(qd_context* ctx) {
 		return (qd_exec_result){-2};
 	}
 
-	// Free string if needed
+	// Release string reference if needed
 	if (val.type == QD_STACK_TYPE_STR) {
-		free(val.value.s);
+		qd_string_release(val.value.s);
 	}
 
 	return (qd_exec_result){0};
@@ -1957,7 +1779,7 @@ qd_exec_result qd_drop2(qd_context* ctx) {
 		return (qd_exec_result){-2};
 	}
 	if (val.type == QD_STACK_TYPE_STR) {
-		free(val.value.s);
+		qd_string_release(val.value.s);
 	}
 
 	// Drop second element
@@ -1966,7 +1788,7 @@ qd_exec_result qd_drop2(qd_context* ctx) {
 		return (qd_exec_result){-2};
 	}
 	if (val.type == QD_STACK_TYPE_STR) {
-		free(val.value.s);
+		qd_string_release(val.value.s);
 	}
 
 	return (qd_exec_result){0};
@@ -2029,69 +1851,32 @@ qd_exec_result qd_rot(qd_context* ctx) {
 
 	// Push in order: b, c, a
 	// Push b
-	switch (b.type) {
-		case QD_STACK_TYPE_INT:
-			err = qd_stack_push_int(ctx->st, b.value.i);
-			break;
-		case QD_STACK_TYPE_FLOAT:
-			err = qd_stack_push_float(ctx->st, b.value.f);
-			break;
-		case QD_STACK_TYPE_STR:
-			err = qd_stack_push_str(ctx->st, b.value.s);
-			free(b.value.s);
-			break;
-		case QD_STACK_TYPE_PTR:
-			err = qd_stack_push_ptr(ctx->st, b.value.p);
-			break;
-		default:
-			return (qd_exec_result){-3};
-	}
+	err = push_element(ctx->st, &b);
 	if (err != QD_STACK_OK) {
 		return (qd_exec_result){-2};
 	}
 
 	// Push c
-	switch (c.type) {
-		case QD_STACK_TYPE_INT:
-			err = qd_stack_push_int(ctx->st, c.value.i);
-			break;
-		case QD_STACK_TYPE_FLOAT:
-			err = qd_stack_push_float(ctx->st, c.value.f);
-			break;
-		case QD_STACK_TYPE_STR:
-			err = qd_stack_push_str(ctx->st, c.value.s);
-			free(c.value.s);
-			break;
-		case QD_STACK_TYPE_PTR:
-			err = qd_stack_push_ptr(ctx->st, c.value.p);
-			break;
-		default:
-			return (qd_exec_result){-3};
-	}
+	err = push_element(ctx->st, &c);
 	if (err != QD_STACK_OK) {
 		return (qd_exec_result){-2};
 	}
 
 	// Push a
-	switch (a.type) {
-		case QD_STACK_TYPE_INT:
-			err = qd_stack_push_int(ctx->st, a.value.i);
-			break;
-		case QD_STACK_TYPE_FLOAT:
-			err = qd_stack_push_float(ctx->st, a.value.f);
-			break;
-		case QD_STACK_TYPE_STR:
-			err = qd_stack_push_str(ctx->st, a.value.s);
-			free(a.value.s);
-			break;
-		case QD_STACK_TYPE_PTR:
-			err = qd_stack_push_ptr(ctx->st, a.value.p);
-			break;
-		default:
-			return (qd_exec_result){-3};
-	}
+	err = push_element(ctx->st, &a);
 	if (err != QD_STACK_OK) {
 		return (qd_exec_result){-2};
+	}
+
+	// Release our original references (push_element retained them)
+	if (a.type == QD_STACK_TYPE_STR) {
+		qd_string_release(a.value.s);
+	}
+	if (b.type == QD_STACK_TYPE_STR) {
+		qd_string_release(b.value.s);
+	}
+	if (c.type == QD_STACK_TYPE_STR) {
+		qd_string_release(c.value.s);
 	}
 
 	return (qd_exec_result){0};
@@ -2120,69 +1905,42 @@ qd_exec_result qd_tuck(qd_context* ctx) {
 
 	// Push in order: b, a, b
 	// Push b (first copy)
-	switch (b.type) {
-		case QD_STACK_TYPE_INT:
-			err = qd_stack_push_int(ctx->st, b.value.i);
-			break;
-		case QD_STACK_TYPE_FLOAT:
-			err = qd_stack_push_float(ctx->st, b.value.f);
-			break;
-		case QD_STACK_TYPE_STR:
-			err = qd_stack_push_str(ctx->st, b.value.s);
-			break;
-		case QD_STACK_TYPE_PTR:
-			err = qd_stack_push_ptr(ctx->st, b.value.p);
-			break;
-		default:
-			return (qd_exec_result){-3};
-	}
+	err = push_element(ctx->st, &b);
 	if (err != QD_STACK_OK) {
-		if (b.type == QD_STACK_TYPE_STR) free(b.value.s);
-		if (a.type == QD_STACK_TYPE_STR) free(a.value.s);
+		release_if_string(&b);
+		release_if_string(&a);
 		return (qd_exec_result){-2};
 	}
 
-	// Push a
-	switch (a.type) {
-		case QD_STACK_TYPE_INT:
-			err = qd_stack_push_int(ctx->st, a.value.i);
-			break;
-		case QD_STACK_TYPE_FLOAT:
-			err = qd_stack_push_float(ctx->st, a.value.f);
-			break;
-		case QD_STACK_TYPE_STR:
-			err = qd_stack_push_str(ctx->st, a.value.s);
-			free(a.value.s);
-			break;
-		case QD_STACK_TYPE_PTR:
-			err = qd_stack_push_ptr(ctx->st, a.value.p);
-			break;
-		default:
-			if (b.type == QD_STACK_TYPE_STR) free(b.value.s);
-			return (qd_exec_result){-3};
-	}
+	// Push a (strings are retained, not copied)
+	err = push_element(ctx->st, &a);
 	if (err != QD_STACK_OK) {
-		if (b.type == QD_STACK_TYPE_STR) free(b.value.s);
+		release_if_string(&a);
+		release_if_string(&b);
 		return (qd_exec_result){-2};
 	}
 
-	// Push b (second copy)
+	// Push b (second copy, strings are retained)
+	err = push_element(ctx->st, &b);
+	if (err != QD_STACK_OK) {
+		release_if_string(&a);
+		release_if_string(&b);
+		return (qd_exec_result){-2};
+	}
+
+	// Release our original references (push_element retained them twice for b)
+	release_if_string(&a);
+	release_if_string(&b);
+
+	// Dummy switch to maintain structure (will be removed)
 	switch (b.type) {
 		case QD_STACK_TYPE_INT:
-			err = qd_stack_push_int(ctx->st, b.value.i);
-			break;
 		case QD_STACK_TYPE_FLOAT:
-			err = qd_stack_push_float(ctx->st, b.value.f);
-			break;
 		case QD_STACK_TYPE_STR:
-			err = qd_stack_push_str(ctx->st, b.value.s);
-			free(b.value.s);
-			break;
 		case QD_STACK_TYPE_PTR:
-			err = qd_stack_push_ptr(ctx->st, b.value.p);
 			break;
 		default:
-			if (b.type == QD_STACK_TYPE_STR) free(b.value.s);
+			release_if_string(&b);
 			return (qd_exec_result){-3};
 	}
 	if (err != QD_STACK_OK) {
@@ -2243,22 +2001,7 @@ qd_exec_result qd_pick(qd_context* ctx) {
 	}
 
 	// Push a copy of that element
-	switch (elem.type) {
-		case QD_STACK_TYPE_INT:
-			err = qd_stack_push_int(ctx->st, elem.value.i);
-			break;
-		case QD_STACK_TYPE_FLOAT:
-			err = qd_stack_push_float(ctx->st, elem.value.f);
-			break;
-		case QD_STACK_TYPE_STR:
-			err = qd_stack_push_str(ctx->st, elem.value.s);
-			break;
-		case QD_STACK_TYPE_PTR:
-			err = qd_stack_push_ptr(ctx->st, elem.value.p);
-			break;
-		default:
-			return (qd_exec_result){-3};
-	}
+	err = push_element(ctx->st, &elem);
 
 	if (err != QD_STACK_OK) {
 		return (qd_exec_result){-2};
@@ -2329,56 +2072,33 @@ qd_exec_result qd_roll(qd_context* ctx) {
 
 	// Push back in rotated order: the bottom element (temp[0]) goes to top
 	// Order after: temp[1], temp[2], ..., temp[n-1], temp[0]
+	// (strings are retained, not copied)
 	for (int64_t i = 1; i < n; i++) {
-		switch (temp[i].type) {
-			case QD_STACK_TYPE_INT:
-				err = qd_stack_push_int(ctx->st, temp[i].value.i);
-				break;
-			case QD_STACK_TYPE_FLOAT:
-				err = qd_stack_push_float(ctx->st, temp[i].value.f);
-				break;
-			case QD_STACK_TYPE_STR:
-				err = qd_stack_push_str(ctx->st, temp[i].value.s);
-				free(temp[i].value.s);
-				break;
-			case QD_STACK_TYPE_PTR:
-				err = qd_stack_push_ptr(ctx->st, temp[i].value.p);
-				break;
-			default:
-				free(temp);
-				return (qd_exec_result){-3};
-		}
+		err = push_element(ctx->st, &temp[i]);
 		if (err != QD_STACK_OK) {
+			// Release all remaining elements
+			for (int64_t j = i; j < n; j++) {
+				release_if_string(&temp[j]);
+			}
+			release_if_string(&temp[0]);
 			free(temp);
 			return (qd_exec_result){-2};
 		}
+		// Release our reference (push_element retained it)
+		release_if_string(&temp[i]);
 	}
 
 	// Push temp[0] last (it becomes the top)
-	switch (temp[0].type) {
-		case QD_STACK_TYPE_INT:
-			err = qd_stack_push_int(ctx->st, temp[0].value.i);
-			break;
-		case QD_STACK_TYPE_FLOAT:
-			err = qd_stack_push_float(ctx->st, temp[0].value.f);
-			break;
-		case QD_STACK_TYPE_STR:
-			err = qd_stack_push_str(ctx->st, temp[0].value.s);
-			free(temp[0].value.s);
-			break;
-		case QD_STACK_TYPE_PTR:
-			err = qd_stack_push_ptr(ctx->st, temp[0].value.p);
-			break;
-		default:
-			free(temp);
-			return (qd_exec_result){-3};
-	}
-
-	free(temp);
-
+	err = push_element(ctx->st, &temp[0]);
 	if (err != QD_STACK_OK) {
+		release_if_string(&temp[0]);
+		free(temp);
 		return (qd_exec_result){-2};
 	}
+	// Release our reference (push_element retained it)
+	release_if_string(&temp[0]);
+
+	free(temp);
 
 	return (qd_exec_result){0};
 }
@@ -2401,64 +2121,65 @@ qd_exec_result qd_swap2(qd_context* ctx) {
 	}
 	err = qd_stack_pop(ctx->st, &c);
 	if (err != QD_STACK_OK) {
-		if (d.type == QD_STACK_TYPE_STR) free(d.value.s);
+		release_if_string(&d);
 		return (qd_exec_result){-2};
 	}
 	err = qd_stack_pop(ctx->st, &b);
 	if (err != QD_STACK_OK) {
-		if (d.type == QD_STACK_TYPE_STR) free(d.value.s);
-		if (c.type == QD_STACK_TYPE_STR) free(c.value.s);
+		release_if_string(&d);
+		release_if_string(&c);
 		return (qd_exec_result){-2};
 	}
 	err = qd_stack_pop(ctx->st, &a);
 	if (err != QD_STACK_OK) {
-		if (d.type == QD_STACK_TYPE_STR) free(d.value.s);
-		if (c.type == QD_STACK_TYPE_STR) free(c.value.s);
-		if (b.type == QD_STACK_TYPE_STR) free(b.value.s);
+		release_if_string(&d);
+		release_if_string(&c);
+		release_if_string(&b);
 		return (qd_exec_result){-2};
 	}
 
-	// Push in order: c, d, a, b
-	// Helper macro to reduce code duplication
-	#define PUSH_ELEM(elem, cleanup_on_error) \
-		switch (elem.type) { \
-			case QD_STACK_TYPE_INT: \
-				err = qd_stack_push_int(ctx->st, elem.value.i); \
-				break; \
-			case QD_STACK_TYPE_FLOAT: \
-				err = qd_stack_push_float(ctx->st, elem.value.f); \
-				break; \
-			case QD_STACK_TYPE_STR: \
-				err = qd_stack_push_str(ctx->st, elem.value.s); \
-				free(elem.value.s); \
-				break; \
-			case QD_STACK_TYPE_PTR: \
-				err = qd_stack_push_ptr(ctx->st, elem.value.p); \
-				break; \
-			default: \
-				cleanup_on_error \
-				return (qd_exec_result){-3}; \
-		} \
-		if (err != QD_STACK_OK) { \
-			cleanup_on_error \
-			return (qd_exec_result){-2}; \
-		}
+	// Push in order: c, d, a, b (strings are retained, not copied)
+	err = push_element(ctx->st, &c);
+	if (err != QD_STACK_OK) {
+		release_if_string(&a);
+		release_if_string(&b);
+		release_if_string(&c);
+		release_if_string(&d);
+		return (qd_exec_result){-2};
+	}
 
-	PUSH_ELEM(c, {
-		if (d.type == QD_STACK_TYPE_STR) free(d.value.s);
-		if (b.type == QD_STACK_TYPE_STR) free(b.value.s);
-		if (a.type == QD_STACK_TYPE_STR) free(a.value.s);
-	})
-	PUSH_ELEM(d, {
-		if (b.type == QD_STACK_TYPE_STR) free(b.value.s);
-		if (a.type == QD_STACK_TYPE_STR) free(a.value.s);
-	})
-	PUSH_ELEM(a, {
-		if (b.type == QD_STACK_TYPE_STR) free(b.value.s);
-	})
-	PUSH_ELEM(b, {})
+	err = push_element(ctx->st, &d);
+	if (err != QD_STACK_OK) {
+		release_if_string(&a);
+		release_if_string(&b);
+		release_if_string(&c);
+		release_if_string(&d);
+		return (qd_exec_result){-2};
+	}
 
-	#undef PUSH_ELEM
+	err = push_element(ctx->st, &a);
+	if (err != QD_STACK_OK) {
+		release_if_string(&a);
+		release_if_string(&b);
+		release_if_string(&c);
+		release_if_string(&d);
+		return (qd_exec_result){-2};
+	}
+
+	err = push_element(ctx->st, &b);
+	if (err != QD_STACK_OK) {
+		release_if_string(&a);
+		release_if_string(&b);
+		release_if_string(&c);
+		release_if_string(&d);
+		return (qd_exec_result){-2};
+	}
+
+	// Release our original references (push_element retained them)
+	release_if_string(&a);
+	release_if_string(&b);
+	release_if_string(&c);
+	release_if_string(&d);
 
 	return (qd_exec_result){0};
 }
@@ -2491,42 +2212,12 @@ qd_exec_result qd_over2(qd_context* ctx) {
 	}
 
 	// Push copies of elem_a and elem_b
-	switch (elem_a.type) {
-		case QD_STACK_TYPE_INT:
-			err = qd_stack_push_int(ctx->st, elem_a.value.i);
-			break;
-		case QD_STACK_TYPE_FLOAT:
-			err = qd_stack_push_float(ctx->st, elem_a.value.f);
-			break;
-		case QD_STACK_TYPE_STR:
-			err = qd_stack_push_str(ctx->st, elem_a.value.s);
-			break;
-		case QD_STACK_TYPE_PTR:
-			err = qd_stack_push_ptr(ctx->st, elem_a.value.p);
-			break;
-		default:
-			return (qd_exec_result){-3};
-	}
+	err = push_element(ctx->st, &elem_a);
 	if (err != QD_STACK_OK) {
 		return (qd_exec_result){-2};
 	}
 
-	switch (elem_b.type) {
-		case QD_STACK_TYPE_INT:
-			err = qd_stack_push_int(ctx->st, elem_b.value.i);
-			break;
-		case QD_STACK_TYPE_FLOAT:
-			err = qd_stack_push_float(ctx->st, elem_b.value.f);
-			break;
-		case QD_STACK_TYPE_STR:
-			err = qd_stack_push_str(ctx->st, elem_b.value.s);
-			break;
-		case QD_STACK_TYPE_PTR:
-			err = qd_stack_push_ptr(ctx->st, elem_b.value.p);
-			break;
-		default:
-			return (qd_exec_result){-3};
-	}
+	err = push_element(ctx->st, &elem_b);
 	if (err != QD_STACK_OK) {
 		return (qd_exec_result){-2};
 	}
@@ -2889,9 +2580,9 @@ qd_exec_result qd_error(qd_context* ctx) {
 		fprintf(stderr, "Fatal error in error: Expected string error message, got type %d\n", error_msg_elem.type);
 		dump_stack(ctx);
 		qd_print_stack_trace(ctx);
-		// Free the error code's string if needed
+		// Release the error code's string reference if needed
 		if (error_code_elem.type == QD_STACK_TYPE_STR) {
-			free(error_code_elem.value.s);
+			qd_string_release(error_code_elem.value.s);
 		}
 		abort();
 	}
@@ -2904,8 +2595,10 @@ qd_exec_result qd_error(qd_context* ctx) {
 		free(ctx->error_msg);
 	}
 
-	// Take ownership of the error message string
-	ctx->error_msg = error_msg_elem.value.s;
+	// Duplicate the error message string (context owns a copy)
+	ctx->error_msg = strdup(qd_string_data(error_msg_elem.value.s));
+	// Release the qd_string_t
+	release_if_string(&error_msg_elem);
 
 	return (qd_exec_result){0};
 }
@@ -3225,10 +2918,10 @@ void qd_debug_print_stack(qd_context* ctx) {
 		case QD_STACK_TYPE_STR:
 			if (elem.value.s) {
 				// Truncate long strings
-				if (strlen(elem.value.s) > 40) {
-					fprintf(stderr, "%sstring %s %s\"%.37s...\"%s\n", color_green, color_end, color_cyan, elem.value.s, color_end);
+				if (strlen(qd_string_data(elem.value.s)) > 40) {
+					fprintf(stderr, "%sstring %s %s\"%.37s...\"%s\n", color_green, color_end, color_cyan, qd_string_data(elem.value.s), color_end);
 				} else {
-					fprintf(stderr, "%sstring %s %s\"%s\"%s\n", color_green, color_end, color_cyan, elem.value.s, color_end);
+					fprintf(stderr, "%sstring %s %s\"%s\"%s\n", color_green, color_end, color_cyan, qd_string_data(elem.value.s), color_end);
 				}
 			} else {
 				fprintf(stderr, "%sstring %s %s<null>%s\n", color_green, color_end, color_cyan, color_end);

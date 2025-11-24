@@ -65,10 +65,10 @@ qd_exec_result usr_os_system(qd_context* ctx) {
 	}
 
 	// Execute the command
-	int exit_code = system(elem.value.s);
+	int exit_code = system(qd_string_data(elem.value.s));
 
 	// Free the string
-	free(elem.value.s);
+	qd_string_release(elem.value.s);
 
 	// Push the exit code back onto the stack
 	err = qd_stack_push_int(ctx->st, (int64_t)exit_code);
@@ -105,8 +105,8 @@ qd_exec_result usr_os_getenv(qd_context* ctx) {
 	}
 
 	// Get the environment variable
-	const char* value = getenv(elem.value.s);
-	free(elem.value.s);
+	const char* value = getenv(qd_string_data(elem.value.s));
+	qd_string_release(elem.value.s);
 
 	err = qd_stack_push_str(ctx->st, value ? value : "");
 	if (err != QD_STACK_OK) {
@@ -141,8 +141,8 @@ qd_exec_result usr_os_exists(qd_context* ctx) {
 	}
 
 	// Check if file exists using C++17 filesystem wrapper
-	int exists = os_fs_exists(elem.value.s);
-	free(elem.value.s);
+	int exists = os_fs_exists(qd_string_data(elem.value.s));
+	qd_string_release(elem.value.s);
 
 	err = qd_stack_push_int(ctx->st, (int64_t)exists);
 	if (err != QD_STACK_OK) {
@@ -177,9 +177,9 @@ qd_exec_result usr_os_delete(qd_context* ctx) {
 	}
 
 	// Delete the file (remove is C standard, works on all platforms)
-	int result = remove(elem.value.s);
+	int result = remove(qd_string_data(elem.value.s));
 	int error_code = (result != 0) ? errno : 0;
-	free(elem.value.s);
+	qd_string_release(elem.value.s);
 
 	// Push errno (0 = success, or errno value on error)
 	err = qd_stack_push_int(ctx->st, (int64_t)error_code);
@@ -220,24 +220,24 @@ qd_exec_result usr_os_rename(qd_context* ctx) {
 	qd_stack_element_t oldpath_elem;
 	err = qd_stack_pop(ctx->st, &oldpath_elem);
 	if (err != QD_STACK_OK) {
-		free(newpath_elem.value.s);
+		qd_string_release(newpath_elem.value.s);
 		fprintf(stderr, "Fatal error in os::rename: Failed to pop oldpath\n");
 		qd_print_stack_trace(ctx);
 		abort();
 	}
 
 	if (oldpath_elem.type != QD_STACK_TYPE_STR) {
-		free(newpath_elem.value.s);
+		qd_string_release(newpath_elem.value.s);
 		fprintf(stderr, "Fatal error in os::rename: Expected string oldpath, got type %d\n", oldpath_elem.type);
 		qd_print_stack_trace(ctx);
 		abort();
 	}
 
 	// Rename the file
-	int result = rename(oldpath_elem.value.s, newpath_elem.value.s);
+	int result = rename(qd_string_data(oldpath_elem.value.s), qd_string_data(newpath_elem.value.s));
 	int error_code = (result == -1) ? errno : 0;
-	free(oldpath_elem.value.s);
-	free(newpath_elem.value.s);
+	qd_string_release(oldpath_elem.value.s);
+	qd_string_release(newpath_elem.value.s);
 
 	// Push errno (0 = success, or errno value on error)
 	err = qd_stack_push_int(ctx->st, (int64_t)error_code);
@@ -278,24 +278,24 @@ qd_exec_result usr_os_copy(qd_context* ctx) {
 	qd_stack_element_t srcpath_elem;
 	err = qd_stack_pop(ctx->st, &srcpath_elem);
 	if (err != QD_STACK_OK) {
-		free(dstpath_elem.value.s);
+		qd_string_release(dstpath_elem.value.s);
 		fprintf(stderr, "Fatal error in os::copy: Failed to pop srcpath\n");
 		qd_print_stack_trace(ctx);
 		abort();
 	}
 
 	if (srcpath_elem.type != QD_STACK_TYPE_STR) {
-		free(dstpath_elem.value.s);
+		qd_string_release(dstpath_elem.value.s);
 		fprintf(stderr, "Fatal error in os::copy: Expected string srcpath, got type %d\n", srcpath_elem.type);
 		qd_print_stack_trace(ctx);
 		abort();
 	}
 
 	// Copy the file
-	FILE* src = fopen(srcpath_elem.value.s, "rb");
+	FILE* src = fopen(qd_string_data(srcpath_elem.value.s), "rb");
 	int result = -1;
 	if (src) {
-		FILE* dst = fopen(dstpath_elem.value.s, "wb");
+		FILE* dst = fopen(qd_string_data(dstpath_elem.value.s), "wb");
 		if (dst) {
 			char buffer[4096];
 			size_t n;
@@ -312,8 +312,8 @@ qd_exec_result usr_os_copy(qd_context* ctx) {
 	}
 
 	int error_code = (result == -1) ? errno : 0;
-	free(srcpath_elem.value.s);
-	free(dstpath_elem.value.s);
+	qd_string_release(srcpath_elem.value.s);
+	qd_string_release(dstpath_elem.value.s);
 
 	// Push errno (0 = success, or errno value on error)
 	err = qd_stack_push_int(ctx->st, (int64_t)error_code);
@@ -350,8 +350,8 @@ qd_exec_result usr_os_mkdir(qd_context* ctx) {
 	}
 
 	// Create directory using C++17 filesystem wrapper (cross-platform)
-	int error_code = os_fs_mkdir(elem.value.s);
-	free(elem.value.s);
+	int error_code = os_fs_mkdir(qd_string_data(elem.value.s));
+	qd_string_release(elem.value.s);
 
 	// Push errno (0 = success, or errno value on error)
 	err = qd_stack_push_int(ctx->st, (int64_t)error_code);
@@ -389,11 +389,11 @@ qd_exec_result usr_os_list(qd_context* ctx) {
 
 	// List directory using C++17 filesystem wrapper (cross-platform)
 	size_t count = 0;
-	char** entries = os_fs_list_dir(elem.value.s, &count);
+	char** entries = os_fs_list_dir(qd_string_data(elem.value.s), &count);
 
 	if (!entries) {
 		// Failed to list directory
-		free(elem.value.s);
+		qd_string_release(elem.value.s);
 		// Push empty array and count 0 on error
 		err = qd_stack_push_ptr(ctx->st, NULL);
 		if (err != QD_STACK_OK) {
@@ -413,7 +413,7 @@ qd_exec_result usr_os_list(qd_context* ctx) {
 		return (qd_exec_result){1};
 	}
 
-	free(elem.value.s);
+	qd_string_release(elem.value.s);
 
 	// Push entries pointer and count
 	err = qd_stack_push_ptr(ctx->st, entries);

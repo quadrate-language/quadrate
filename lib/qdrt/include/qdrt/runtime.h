@@ -57,6 +57,17 @@ qd_exec_result qd_push_f(qd_context* ctx, double value);
 qd_exec_result qd_push_s(qd_context* ctx, const char* value);
 
 /**
+ * @brief Push a reference-counted string onto the stack
+ *
+ * @param ctx Execution context
+ * @param value Reference-counted string to push (will be retained)
+ * @return Execution result (0 on success)
+ *
+ * @note The string reference count is incremented; string is shared, not copied
+ */
+qd_exec_result qd_push_s_ref(qd_context* ctx, qd_string_t* value);
+
+/**
  * @brief Push a pointer onto the stack
  *
  * @param ctx Execution context

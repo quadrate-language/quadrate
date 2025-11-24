@@ -383,17 +383,17 @@ qd_exec_result usr_mem_from_string(qd_context* ctx) {
 		return (qd_exec_result){-1};
 	}
 	if (str_elem.type != QD_STACK_TYPE_STR) {
-		free(str_elem.value.s);
+		qd_string_release(str_elem.value.s);
 		return (qd_exec_result){-1};
 	}
 
-	char* str = str_elem.value.s;
+	const char* str = qd_string_data(str_elem.value.s);
 	size_t length = strlen(str);
 
 	// Allocate buffer
 	void* buffer = malloc(length);
 	if (!buffer) {
-		free(str);
+		qd_string_release(str_elem.value.s);
 		ctx->error_code = -1;
 		ctx->error_msg = "Allocation failed in mem::from_string";
 		return (qd_exec_result){-1};
@@ -401,7 +401,7 @@ qd_exec_result usr_mem_from_string(qd_context* ctx) {
 
 	// Copy string to buffer (without null terminator)
 	memcpy(buffer, str, length);
-	free(str);
+	qd_string_release(str_elem.value.s);
 
 	// Push buffer and length
 	qd_push_p(ctx, buffer);

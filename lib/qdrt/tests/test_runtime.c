@@ -665,15 +665,15 @@ TEST(DupStringTest) {
 	qd_stack_error err = qd_stack_pop(ctx->st, &elem1);
 	ASSERT_EQ(err, QD_STACK_OK, "pop should succeed");
 	ASSERT_EQ(elem1.type, QD_STACK_TYPE_STR, "top element should be string");
-	ASSERT_STR_EQ(elem1.value.s, "hello", "top element should be 'hello'");
+	ASSERT_STR_EQ(qd_string_data(elem1.value.s), "hello", "top element should be 'hello'");
 
 	err = qd_stack_pop(ctx->st, &elem2);
 	ASSERT_EQ(err, QD_STACK_OK, "second pop should succeed");
 	ASSERT_EQ(elem2.type, QD_STACK_TYPE_STR, "second element should be string");
-	ASSERT_STR_EQ(elem2.value.s, "hello", "second element should be 'hello'");
+	ASSERT_STR_EQ(qd_string_data(elem2.value.s), "hello", "second element should be 'hello'");
 
-	free(elem1.value.s);
-	free(elem2.value.s);
+	qd_string_release(elem1.value.s);
+	qd_string_release(elem2.value.s);
 	destroy_test_context(ctx);
 }
 
@@ -776,15 +776,15 @@ TEST(SwapStringsTest) {
 	qd_stack_error err = qd_stack_pop(ctx->st, &elem1);
 	ASSERT_EQ(err, QD_STACK_OK, "pop should succeed");
 	ASSERT_EQ(elem1.type, QD_STACK_TYPE_STR, "top element should be string");
-	ASSERT_STR_EQ(elem1.value.s, "hello", "top element should be 'hello' after swap");
+	ASSERT_STR_EQ(qd_string_data(elem1.value.s), "hello", "top element should be 'hello' after swap");
 
 	err = qd_stack_pop(ctx->st, &elem2);
 	ASSERT_EQ(err, QD_STACK_OK, "second pop should succeed");
 	ASSERT_EQ(elem2.type, QD_STACK_TYPE_STR, "second element should be string");
-	ASSERT_STR_EQ(elem2.value.s, "world", "second element should be 'world' after swap");
+	ASSERT_STR_EQ(qd_string_data(elem2.value.s), "world", "second element should be 'world' after swap");
 
-	free(elem1.value.s);
-	free(elem2.value.s);
+	qd_string_release(elem1.value.s);
+	qd_string_release(elem2.value.s);
 	destroy_test_context(ctx);
 }
 
@@ -900,20 +900,20 @@ TEST(OverStringsTest) {
 	qd_stack_error err = qd_stack_pop(ctx->st, &elem);
 	ASSERT_EQ(err, QD_STACK_OK, "pop should succeed");
 	ASSERT_EQ(elem.type, QD_STACK_TYPE_STR, "top element should be string");
-	ASSERT_STR_EQ(elem.value.s, "hello", "top element should be 'hello'");
-	free(elem.value.s);
+	ASSERT_STR_EQ(qd_string_data(elem.value.s), "hello", "top element should be 'hello'");
+	qd_string_release(elem.value.s);
 
 	err = qd_stack_pop(ctx->st, &elem);
 	ASSERT_EQ(err, QD_STACK_OK, "second pop should succeed");
 	ASSERT_EQ(elem.type, QD_STACK_TYPE_STR, "second element should be string");
-	ASSERT_STR_EQ(elem.value.s, "world", "second element should be 'world'");
-	free(elem.value.s);
+	ASSERT_STR_EQ(qd_string_data(elem.value.s), "world", "second element should be 'world'");
+	qd_string_release(elem.value.s);
 
 	err = qd_stack_pop(ctx->st, &elem);
 	ASSERT_EQ(err, QD_STACK_OK, "third pop should succeed");
 	ASSERT_EQ(elem.type, QD_STACK_TYPE_STR, "third element should be string");
-	ASSERT_STR_EQ(elem.value.s, "hello", "third element should be 'hello'");
-	free(elem.value.s);
+	ASSERT_STR_EQ(qd_string_data(elem.value.s), "hello", "third element should be 'hello'");
+	qd_string_release(elem.value.s);
 
 	destroy_test_context(ctx);
 }
@@ -1014,8 +1014,8 @@ TEST(NipStringsTest) {
 	qd_stack_error err = qd_stack_pop(ctx->st, &elem);
 	ASSERT_EQ(err, QD_STACK_OK, "pop should succeed");
 	ASSERT_EQ(elem.type, QD_STACK_TYPE_STR, "element should be string");
-	ASSERT_STR_EQ(elem.value.s, "world", "element should be 'world'");
-	free(elem.value.s);
+	ASSERT_STR_EQ(qd_string_data(elem.value.s), "world", "element should be 'world'");
+	qd_string_release(elem.value.s);
 
 	destroy_test_context(ctx);
 }
@@ -1383,23 +1383,23 @@ TEST(Dup2WithStringsTest) {
 	// Verify the duplicated strings
 	qd_stack_pop(ctx->st, &elem);
 	ASSERT_EQ(elem.type, QD_STACK_TYPE_STR, "top should be string");
-	ASSERT_EQ(strcmp(elem.value.s, "world"), 0, "top should be 'world'");
-	free(elem.value.s);
+	ASSERT_EQ(strcmp(qd_string_data(elem.value.s), "world"), 0, "top should be 'world'");
+	qd_string_release(elem.value.s);
 
 	qd_stack_pop(ctx->st, &elem);
 	ASSERT_EQ(elem.type, QD_STACK_TYPE_STR, "second should be string");
-	ASSERT_EQ(strcmp(elem.value.s, "hello"), 0, "second should be 'hello'");
-	free(elem.value.s);
+	ASSERT_EQ(strcmp(qd_string_data(elem.value.s), "hello"), 0, "second should be 'hello'");
+	qd_string_release(elem.value.s);
 
 	qd_stack_pop(ctx->st, &elem);
 	ASSERT_EQ(elem.type, QD_STACK_TYPE_STR, "third should be string");
-	ASSERT_EQ(strcmp(elem.value.s, "world"), 0, "third should be 'world'");
-	free(elem.value.s);
+	ASSERT_EQ(strcmp(qd_string_data(elem.value.s), "world"), 0, "third should be 'world'");
+	qd_string_release(elem.value.s);
 
 	qd_stack_pop(ctx->st, &elem);
 	ASSERT_EQ(elem.type, QD_STACK_TYPE_STR, "fourth should be string");
-	ASSERT_EQ(strcmp(elem.value.s, "hello"), 0, "fourth should be 'hello'");
-	free(elem.value.s);
+	ASSERT_EQ(strcmp(qd_string_data(elem.value.s), "hello"), 0, "fourth should be 'hello'");
+	qd_string_release(elem.value.s);
 
 	destroy_test_context(ctx);
 }
@@ -2585,7 +2585,7 @@ TEST(RotMixedTypesTest) {
 
 	qd_stack_pop(ctx->st, &elem);
 	ASSERT_EQ(elem.type, QD_STACK_TYPE_STR, "second should be string");
-	free(elem.value.s);
+	qd_string_release(elem.value.s);
 
 	qd_stack_pop(ctx->st, &elem);
 	ASSERT_EQ(elem.type, QD_STACK_TYPE_FLOAT, "third should be float");
