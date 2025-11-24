@@ -19,6 +19,7 @@ debug:
 	@mkdir -p dist/bin dist/lib dist/include
 	@cp -f $(BUILD_DIR_DEBUG)/cmd/quadc/quadc dist/bin/
 	@cp -f $(BUILD_DIR_DEBUG)/cmd/quadfmt/quadfmt dist/bin/
+	@cp -f $(BUILD_DIR_DEBUG)/cmd/quadlint/quadlint dist/bin/
 	@cp -f $(BUILD_DIR_DEBUG)/cmd/quadlsp/quadlsp dist/bin/
 	@cp -f $(BUILD_DIR_DEBUG)/cmd/quadpm/quadpm dist/bin/
 	@cp -f $(BUILD_DIR_DEBUG)/cmd/quaduses/quaduses dist/bin/
@@ -91,6 +92,7 @@ release:
 	@mkdir -p dist/bin dist/lib dist/include
 	@cp -f $(BUILD_DIR_RELEASE)/cmd/quadc/quadc dist/bin/
 	@cp -f $(BUILD_DIR_RELEASE)/cmd/quadfmt/quadfmt dist/bin/
+	@cp -f $(BUILD_DIR_RELEASE)/cmd/quadlint/quadlint dist/bin/
 	@cp -f $(BUILD_DIR_RELEASE)/cmd/quadlsp/quadlsp dist/bin/
 	@cp -f $(BUILD_DIR_RELEASE)/cmd/quadpm/quadpm dist/bin/
 	@cp -f $(BUILD_DIR_RELEASE)/cmd/quaduses/quaduses dist/bin/
