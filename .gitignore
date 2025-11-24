@@ -4,7 +4,7 @@ dist
 .cache/clangd/index
 compile_commands.json
 .tmp*
-qd_*
+qd_*/
 *.so
 CLAUDE.md
 main
