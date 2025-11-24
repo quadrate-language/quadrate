@@ -28,6 +28,9 @@ namespace Qd {
 		std::vector<StackValueType> produces; // Types pushed to stack (bottom to top)
 		// For each PTR parameter: map of parameter name -> map of (field name -> expected field type)
 		std::unordered_map<std::string, std::unordered_map<std::string, StackValueType>> parameterFieldAccess;
+		// For each PTR parameter index, expected struct type name (if determinable)
+		// Key: parameter index (0-based), Value: struct type name (e.g., "Point", "WithStr")
+		std::unordered_map<size_t, std::string> parameterStructTypes;
 		bool throws = false;				  // Whether the function can throw errors
 	};
 
@@ -141,6 +144,12 @@ namespace Qd {
 
 		// Helper: Get string representation of type
 		const char* typeToString(StackValueType type) const;
+
+		// Helper: Find struct type that matches a set of field accesses
+		std::string findStructTypeByFields(const std::unordered_map<std::string, StackValueType>& accessedFields);
+
+		// Helper: Convert type string to StackValueType
+		StackValueType stringToStackValueType(const std::string& typeStr);
 
 		// Report an error (gcc/clang style)
 		void reportError(const char* message);

@@ -1588,6 +1588,22 @@ if (node->type() == IAstNode::Type::STRUCT_DECLARATION) {
 				collectParameterFieldAccesses(func->body(), paramNames, sig.parameterFieldAccess);
 			}
 
+			// Infer struct types from field access patterns
+			for (size_t paramIdx = 0; paramIdx < paramNames.size(); paramIdx++) {
+				const std::string& paramName = paramNames[paramIdx];
+				auto fieldAccessIt = sig.parameterFieldAccess.find(paramName);
+
+				if (fieldAccessIt != sig.parameterFieldAccess.end()) {
+					const auto& accessedFields = fieldAccessIt->second;
+
+					// Try to find a unique struct that has all accessed fields
+					std::string matchingStruct = findStructTypeByFields(accessedFields);
+					if (!matchingStruct.empty()) {
+						sig.parameterStructTypes[paramIdx] = matchingStruct;
+					}
+				}
+			}
+
 			sig.produces = typeStack;
 			sig.throws = func->throws();
 			mFunctionSignatures[func->name()] = sig;
@@ -2426,6 +2442,40 @@ if (node->type() == IAstNode::Type::STRUCT_DECLARATION) {
 						size_t startIdx = structTypeStack.size() - sig.consumes.size();
 						for (size_t j = 0; j < sig.consumes.size(); j++) {
 							consumedStructTypes.push_back(structTypeStack[startIdx + j]);
+						}
+					}
+
+					// Validate struct types match expected parameter types
+					for (size_t paramIdx = 0; paramIdx < sig.consumes.size(); paramIdx++) {
+						if (sig.consumes[paramIdx] != StackValueType::PTR) {
+							continue;
+						}
+
+						// Check if this parameter has an expected struct type
+						auto expectedTypeIt = sig.parameterStructTypes.find(paramIdx);
+						if (expectedTypeIt == sig.parameterStructTypes.end()) {
+							continue; // No specific struct type required
+						}
+
+						const std::string& expectedStruct = expectedTypeIt->second;
+
+						// Get the actual struct type being passed
+						size_t stackIdx = sig.consumes.size() - 1 - paramIdx;
+						if (stackIdx < consumedStructTypes.size()) {
+							const std::string& actualStruct = consumedStructTypes[stackIdx];
+
+							if (!actualStruct.empty() && actualStruct != expectedStruct) {
+								std::string errorMsg = "Type error in function '";
+								errorMsg += name;
+								errorMsg += "': Parameter ";
+								errorMsg += std::to_string(paramIdx + 1);
+								errorMsg += " expects struct type '";
+								errorMsg += expectedStruct;
+								errorMsg += "' but got '";
+								errorMsg += actualStruct;
+								errorMsg += "'";
+								reportError(ident, errorMsg.c_str());
+							}
 						}
 					}
 
@@ -3364,6 +3414,64 @@ if (node->type() == IAstNode::Type::STRUCT_DECLARATION) {
 		default:
 			return "unknown";
 		}
+	}
+
+	StackValueType SemanticValidator::stringToStackValueType(const std::string& typeStr) {
+		if (typeStr == "i64") {
+			return StackValueType::INT;
+		}
+		if (typeStr == "f64") {
+			return StackValueType::FLOAT;
+		}
+		if (typeStr == "str") {
+			return StackValueType::STRING;
+		}
+		if (typeStr == "ptr" || typeStr.find('*') != std::string::npos) {
+			return StackValueType::PTR;
+		}
+		return StackValueType::ANY;
+	}
+
+	std::string SemanticValidator::findStructTypeByFields(
+			const std::unordered_map<std::string, StackValueType>& accessedFields) {
+		if (accessedFields.empty()) {
+			return "";
+		}
+
+		std::string matchingStruct;
+
+		// Check all known struct definitions
+		for (const auto& structPair : mStructFieldTypes) {
+			const std::string& structName = structPair.first;
+			const auto& structFields = structPair.second;
+
+			bool allFieldsMatch = true;
+
+			// Check if this struct has all the accessed fields (by name only, since types may be ambiguous)
+			for (const auto& accessPair : accessedFields) {
+				const std::string& fieldName = accessPair.first;
+
+				// Find field in struct definition
+				auto fieldIt = structFields.find(fieldName);
+
+				if (fieldIt == structFields.end()) {
+					// Field doesn't exist in this struct
+					allFieldsMatch = false;
+					break;
+				}
+			}
+
+			if (allFieldsMatch) {
+				if (matchingStruct.empty()) {
+					matchingStruct = structName;
+				} else {
+					// Multiple structs match - ambiguous, return empty
+					return "";
+				}
+			}
+		}
+
+		return matchingStruct;
 	}
 
 } // namespace Qd
