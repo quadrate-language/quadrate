@@ -212,6 +212,13 @@ valgrind: debug
 		echo "⚠️  Valgrind not installed, skipping"; \
 	fi
 	@echo ""
+	@echo "=== Running linter tests with valgrind ==="
+	@if command -v valgrind >/dev/null 2>&1; then \
+		meson test -C $(BUILD_DIR_DEBUG) --suite linter --setup=valgrind --print-errorlogs; \
+	else \
+		echo "⚠️  Valgrind not installed, skipping"; \
+	fi
+	@echo ""
 	@echo "=== Building and testing embed examples with valgrind ==="
 	@$(MAKE) examples
 	@if command -v valgrind >/dev/null 2>&1; then \
