@@ -1951,6 +1951,10 @@ namespace Qd {
 			// Use inline swap (no string cleanup needed - just moving elements)
 			generateInlineSwap(ctx);
 			return;
+		} else if (name == "dup") {
+			// Use inline dup for performance
+			generateInlineDup(ctx);
+			return;
 		} else if (name == "!=") {
 			// Use type-aware inline not-equal
 			generateTypeAwareNeq(ctx);
@@ -1959,9 +1963,29 @@ namespace Qd {
 			// Use type-aware inline less than or equal
 			generateTypeAwareLte(ctx);
 			return;
-		} else if (name == ">=") {
+		} else if (name == ">=" || name == "gte") {
 			// Use type-aware inline greater than or equal
 			generateTypeAwareGte(ctx);
+			return;
+		} else if (name == "lt") {
+			// Use type-aware inline less than (word form)
+			generateTypeAwareLt(ctx);
+			return;
+		} else if (name == "gt") {
+			// Use type-aware inline greater than (word form)
+			generateTypeAwareGt(ctx);
+			return;
+		} else if (name == "eq") {
+			// Use type-aware inline equality (word form)
+			generateTypeAwareEq(ctx);
+			return;
+		} else if (name == "neq") {
+			// Use type-aware inline not-equal (word form)
+			generateTypeAwareNeq(ctx);
+			return;
+		} else if (name == "lte") {
+			// Use type-aware inline less than or equal (word form)
+			generateTypeAwareLte(ctx);
 			return;
 		} else if (name == "/") {
 			// Use type-aware inline division
@@ -2902,33 +2926,33 @@ namespace Qd {
 				ifStmt->elseBody() ? llvm::BasicBlock::Create(*context, "if.else", currentFn) : nullptr;
 		llvm::BasicBlock* mergeBB = llvm::BasicBlock::Create(*context, "if.merge", currentFn);
 
-		// We need to access ctx->st to pop from the stack
+		// Inline pop for condition - direct stack access for performance
 		// ctx is a pointer to a struct with first field being qd_stack* st
-		// Cast ctx to the correct pointer type and load the stack field
-		auto stackFieldPtr =
-				builder->CreateStructGEP(llvm::StructType::get(*context,
-												 {
-														 llvm::PointerType::getUnqual(*context), // qd_stack* st
-														 builder->getInt64Ty(),					 // int64_t error_code
-														 llvm::PointerType::getUnqual(*context), // char* error_msg
-														 builder->getInt32Ty(),					 // int argc
-														 llvm::PointerType::getUnqual(*context), // char** argv
-														 llvm::PointerType::getUnqual(*context)	 // char* program_name
-												 }),
-						ctx, 0, "st_ptr");
-		auto stack = builder->CreateLoad(llvm::PointerType::getUnqual(*context), stackFieldPtr, "st");
+		llvm::Type* contextTy = llvm::StructType::get(*context, {llvm::PointerType::get(*context, 0)}, false);
+		llvm::Value* stPtr = builder->CreateStructGEP(contextTy, ctx, 0, "st_ptr");
+		llvm::Value* st = builder->CreateLoad(llvm::PointerType::get(*context, 0), stPtr, "st");
 
-		// Allocate space for the popped element
-		auto elemPtr = builder->CreateAlloca(stackElementTy, nullptr, "cond_elem");
+		// Stack type: { data*, capacity, size }
+		llvm::Type* stackTy = llvm::StructType::get(*context,
+				{llvm::PointerType::get(*context, 0), builder->getInt64Ty(), builder->getInt64Ty()}, false);
 
-		// Pop the condition value from the stack
-		builder->CreateCall(stackPopFn, {stack, elemPtr});
+		llvm::Value* sizePtr = builder->CreateStructGEP(stackTy, st, 2, "size_ptr");
+		llvm::Value* size = builder->CreateLoad(builder->getInt64Ty(), sizePtr, "size");
 
-		// Access the value field: elem.value.i
-		// stackElementTy layout: { i64 value, i32 type, i1 is_error_tainted }
-		// Get the value field (index 0) as i64, then truncate to i32
-		auto valuePtr = builder->CreateStructGEP(stackElementTy, elemPtr, 0, "value_ptr");
-		auto value64 = builder->CreateLoad(builder->getInt64Ty(), valuePtr, "value64");
+		llvm::Value* dataPtr = builder->CreateStructGEP(stackTy, st, 0, "data_ptr");
+		llvm::Value* data = builder->CreateLoad(llvm::PointerType::get(*context, 0), dataPtr, "data");
+
+		// Access top element value directly: data[size-1].value
+		llvm::Value* topIdx = builder->CreateSub(size, builder->getInt64(1), "top_idx");
+		llvm::Value* topElemPtr = builder->CreateGEP(stackElementTy, data, topIdx, "top_elem");
+		llvm::Value* valuePtr = builder->CreateStructGEP(stackElementTy, topElemPtr, 0, "value_ptr");
+		llvm::Value* value64 = builder->CreateLoad(builder->getInt64Ty(), valuePtr, "value64");
+
+		// Decrement size (inline pop)
+		llvm::Value* newSize = builder->CreateSub(size, builder->getInt64(1), "new_size");
+		builder->CreateStore(newSize, sizePtr);
+
+		// Convert to condition value
 		auto condValue = builder->CreateTrunc(value64, builder->getInt32Ty(), "cond");
 
 		// Check if condition is non-zero
@@ -3620,13 +3644,46 @@ namespace Qd {
 						builder->GetInsertBlock());
 			}
 
+			// Set the return target for this function
+			currentFunctionReturnBlock = returnBB;
+			currentFunctionIsFallible = funcNode->throws();
+
+			// Detect if function only uses integers (for type specialization)
+			// Do this BEFORE generating call tracking so we can skip it for integer-only functions
+			currentFunctionIsIntegerOnly = true;  // Assume true, set false if we find non-integer
+			for (const auto* param : funcNode->inputParameters()) {
+				if (const auto* paramNode = dynamic_cast<const AstNodeParameter*>(param)) {
+					const std::string& typeStr = paramNode->typeString();
+					if (typeStr != "i64" && typeStr != "int" && typeStr != "int64" && typeStr != "i") {
+						currentFunctionIsIntegerOnly = false;
+						break;
+					}
+				}
+			}
+			if (currentFunctionIsIntegerOnly) {
+				for (const auto* param : funcNode->outputParameters()) {
+					if (const auto* paramNode = dynamic_cast<const AstNodeParameter*>(param)) {
+						const std::string& typeStr = paramNode->typeString();
+						if (typeStr != "i64" && typeStr != "int" && typeStr != "int64" && typeStr != "i") {
+							currentFunctionIsIntegerOnly = false;
+							break;
+						}
+					}
+				}
+			}
+
 			// Push function name onto call stack for debugging
+			// Skip for integer-only functions for performance (stack traces less useful for pure int math)
 			std::string fullFuncName = namePrefix + "::" + funcNode->name();
-			auto funcNameStr = builder->CreateGlobalString(fullFuncName);
-			builder->CreateCall(pushCallFn, {ctx, funcNameStr});
+			llvm::Value* funcNameStr = nullptr;
+			if (!currentFunctionIsIntegerOnly) {
+				funcNameStr = builder->CreateGlobalString(fullFuncName);
+				builder->CreateCall(pushCallFn, {ctx, funcNameStr});
+			}
 
 			// Generate type check for input parameters
-			if (!funcNode->inputParameters().empty()) {
+			// Skip for integer-only functions - semantic validator has already verified types
+			if (!funcNode->inputParameters().empty() && !currentFunctionIsIntegerOnly) {
 				// Create array of types
 				std::vector<llvm::Constant*> typeValues;
 				for (auto* paramNode : funcNode->inputParameters()) {
@@ -3661,33 +3718,6 @@ namespace Qd {
 						{ctx, builder->getInt64(funcNode->inputParameters().size()), arrayPtr, funcNameStr});
 			}
 
-			// Set the return target for this function
-			currentFunctionReturnBlock = returnBB;
-			currentFunctionIsFallible = funcNode->throws();
-
-			// Detect if function only uses integers (for type specialization)
-			currentFunctionIsIntegerOnly = true;  // Assume true, set false if we find non-integer
-			for (const auto* param : funcNode->inputParameters()) {
-				if (const auto* paramNode = dynamic_cast<const AstNodeParameter*>(param)) {
-					const std::string& typeStr = paramNode->typeString();
-					if (typeStr != "i64" && typeStr != "int" && typeStr != "int64") {
-						currentFunctionIsIntegerOnly = false;
-						break;
-					}
-				}
-			}
-			if (currentFunctionIsIntegerOnly) {
-				for (const auto* param : funcNode->outputParameters()) {
-					if (const auto* paramNode = dynamic_cast<const AstNodeParameter*>(param)) {
-						const std::string& typeStr = paramNode->typeString();
-						if (typeStr != "i64" && typeStr != "int" && typeStr != "int64") {
-							currentFunctionIsIntegerOnly = false;
-							break;
-						}
-					}
-				}
-			}
-
 			// Initialize defer scope stack for this function
 			deferScopeStack.clear();
 			pushDeferScope();
@@ -3698,9 +3728,10 @@ namespace Qd {
 				generateNode(body, ctx, nullptr);
 			}
 
-			// Clear return target
+			// Clear return target (but save integer-only flag for return block)
 			currentFunctionReturnBlock = nullptr;
 			currentFunctionIsFallible = false;
+			bool wasIntegerOnly = currentFunctionIsIntegerOnly;
 			currentFunctionIsIntegerOnly = false;
 
 			// If the block doesn't end with a terminator, branch to return block
@@ -3724,7 +3755,10 @@ namespace Qd {
 			generateLocalCleanup();
 
 			// Pop function from call stack before returning
-			builder->CreateCall(popCallFn, {ctx});
+			// Skip for integer-only functions (we didn't push in that case)
+			if (!wasIntegerOnly) {
+				builder->CreateCall(popCallFn, {ctx});
+			}
 
 			// Return success
 			auto result = llvm::ConstantStruct::get(llvm::cast<llvm::StructType>(execResultTy), {builder->getInt32(0)});

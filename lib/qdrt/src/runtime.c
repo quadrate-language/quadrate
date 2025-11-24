@@ -1766,11 +1766,33 @@ static void dump_stack(qd_context* ctx) {
 }
 
 void qd_check_stack(qd_context* ctx, size_t count, const qd_stack_type* types, const char* func_name) {
-	// Check stack has enough elements
-	size_t stack_size = qd_stack_size(ctx->st);
+	qd_stack* st = ctx->st;
+
+	// Fast path: direct struct access for common cases
+	size_t stack_size = st->size;
 	if (stack_size < count) {
 		fprintf(stderr, "Fatal error in %s: Stack underflow (required %zu elements, have %zu)\n",
 			func_name, count, stack_size);
+		dump_stack(ctx);
+		qd_print_stack_trace(ctx);
+		abort();
+	}
+
+	// Fast path: single integer parameter (very common case like fib(n:i64))
+	if (count == 1 && types[0] == QD_STACK_TYPE_INT) {
+		if (st->data[stack_size - 1].type == QD_STACK_TYPE_INT) {
+			return;  // Fast success
+		}
+		// Fall through to error reporting
+		const char* actual_type_name = "";
+		switch (st->data[stack_size - 1].type) {
+			case QD_STACK_TYPE_INT: actual_type_name = "int"; break;
+			case QD_STACK_TYPE_FLOAT: actual_type_name = "float"; break;
+			case QD_STACK_TYPE_STR: actual_type_name = "str"; break;
+			case QD_STACK_TYPE_PTR: actual_type_name = "ptr"; break;
+		}
+		fprintf(stderr, "Fatal error in %s: Type mismatch for parameter 1 (expected int, got %s)\n",
+			func_name, actual_type_name);
 		dump_stack(ctx);
 		qd_print_stack_trace(ctx);
 		abort();
@@ -1783,16 +1805,11 @@ void qd_check_stack(qd_context* ctx, size_t count, const qd_stack_type* types, c
 			continue;
 		}
 
-		qd_stack_element_t elem;
+		// Direct struct access instead of function call
 		size_t stack_index = stack_size - count + i;
-		qd_stack_error err = qd_stack_element(ctx->st, stack_index, &elem);
-		if (err != QD_STACK_OK) {
-			fprintf(stderr, "Fatal error in %s: Failed to access stack element at index %zu\n",
-				func_name, stack_index);
-			abort();
-		}
+		qd_stack_element_t* elem = &st->data[stack_index];
 
-		if (elem.type != types[i]) {
+		if (elem->type != types[i]) {
 			const char* expected_type_name = "";
 			const char* actual_type_name = "";
 
@@ -1803,7 +1820,7 @@ void qd_check_stack(qd_context* ctx, size_t count, const qd_stack_type* types, c
 				case QD_STACK_TYPE_PTR: expected_type_name = "ptr"; break;
 			}
 
-			switch (elem.type) {
+			switch (elem->type) {
 				case QD_STACK_TYPE_INT: actual_type_name = "int"; break;
 				case QD_STACK_TYPE_FLOAT: actual_type_name = "float"; break;
 				case QD_STACK_TYPE_STR: actual_type_name = "str"; break;
