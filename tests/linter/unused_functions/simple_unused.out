@@ -1,0 +1,3 @@
+[1mtests/linter/unused_functions/simple_unused.qd:7:4:[0m [1m[1;35mwarning:[0m [1mUnused function 'unused_function'[0m
+
+1 issue found

@@ -1,0 +1,3 @@
+[1mtests/linter/deep_nesting/too_deep.qd:13:24:[0m [1m[1;35mwarning:[0m [1mDeep nesting detected (depth: 5, max: 4)[0m
+
+1 issue found

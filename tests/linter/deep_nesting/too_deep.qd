@@ -1,0 +1,21 @@
+// Test: Deep nesting detection (default max: 4)
+
+fn main( -- ) {
+    1 1 eq
+    if {
+        2 2 eq
+        if {
+            3 3 eq
+            if {
+                4 4 eq
+                if {
+                    5 5 eq
+                    if {
+                        // This is too deep!
+                        6 6 add
+                    }
+                }
+            }
+        }
+    }
+}

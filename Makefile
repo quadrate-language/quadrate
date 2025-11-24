@@ -181,6 +181,9 @@ tests: debug
 	@echo "=== Running formatter tests ==="
 	bash tests/run_tests.sh formatter
 	@echo ""
+	@echo "=== Running linter tests ==="
+	meson test -C $(BUILD_DIR_DEBUG) --suite linter --print-errorlogs
+	@echo ""
 	@echo "=== Running quaduses tests ==="
 	bash tests/run_tests.sh quaduses
 	@echo ""

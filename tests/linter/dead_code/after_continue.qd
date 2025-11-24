@@ -1,0 +1,9 @@
+// Test: Dead code after continue statement
+
+fn main( -- ) {
+    loop {
+        1 2 add
+        continue
+        3 4 add
+    }
+}

@@ -1,0 +1,7 @@
+// Test: Simple unused variable detection
+
+fn main( -- ) {
+    10 20 add -> result
+    30 40 add -> unused
+    result
+}

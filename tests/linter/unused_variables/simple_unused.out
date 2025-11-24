@@ -1,0 +1,3 @@
+[1mtests/linter/unused_variables/simple_unused.qd:5:15:[0m [1m[1;35mwarning:[0m [1mUnused local variable 'unused'[0m
+
+1 issue found

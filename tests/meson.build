@@ -16,6 +16,20 @@ test('qd_tests',
 	timeout: 120
 )
 
+# Linter tests
+quadlint = find_program('quadlint', required: false, dirs: meson.project_build_root() / 'cmd/quadlint')
+if quadlint.found()
+	test('linter_tests',
+		find_program('run_linter_tests.sh'),
+		suite: 'linter',
+		workdir: meson.project_source_root(),
+		env: {
+			'QUADLINT': quadlint.full_path(),
+		},
+		timeout: 60
+	)
+endif
+
 # quadpm tests
 quadpm_exe = find_program('quadpm', required: false, dirs: meson.project_build_root() / 'cmd/quadpm')
 if quadpm_exe.found()
