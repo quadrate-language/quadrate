@@ -437,6 +437,31 @@ qd_exec_result qd_mul(qd_context* ctx) {
 }
 
 qd_exec_result qd_add(qd_context* ctx) {
+	qd_stack* st = ctx->st;
+
+	// Fast path: check stack has 2 elements and both are integers
+	if (st->size >= 2) {
+		qd_stack_element_t* top = &st->data[st->size - 1];
+		qd_stack_element_t* second = &st->data[st->size - 2];
+
+		if (top->type == QD_STACK_TYPE_INT && second->type == QD_STACK_TYPE_INT) {
+			// Fast integer addition - most common case
+			int64_t result = second->value.i + top->value.i;
+			st->size -= 2;
+			QD_STACK_PUSH_INT_FAST(st, result);
+			return (qd_exec_result){0};
+		}
+		// Fast float path
+		if (is_numeric_type(top->type) && is_numeric_type(second->type)) {
+			double a_val = (second->type == QD_STACK_TYPE_INT) ? (double)second->value.i : second->value.f;
+			double b_val = (top->type == QD_STACK_TYPE_INT) ? (double)top->value.i : top->value.f;
+			st->size -= 2;
+			QD_STACK_PUSH_FLOAT_FAST(st, a_val + b_val);
+			return (qd_exec_result){0};
+		}
+	}
+
+	// Slow path with full error checking
 	validate_binary_numeric_op(ctx, "add");
 
 	qd_stack_element_t a, b;
@@ -447,13 +472,13 @@ qd_exec_result qd_add(qd_context* ctx) {
 
 	if (a.type == QD_STACK_TYPE_INT && b.type == QD_STACK_TYPE_INT) {
 		int64_t result = a.value.i + b.value.i;
-		qd_stack_error err = qd_stack_push_int(ctx->st, result);
+		qd_stack_error err = qd_stack_push_int(st, result);
 		if (err != QD_STACK_OK) {
 			return (qd_exec_result){-2};
 		}
 	} else if (is_numeric_type(a.type) && is_numeric_type(b.type)) {
 		double result = to_double(&a) + to_double(&b);
-		qd_stack_error err = qd_stack_push_float(ctx->st, result);
+		qd_stack_error err = qd_stack_push_float(st, result);
 		if (err != QD_STACK_OK) {
 			return (qd_exec_result){-2};
 		}
@@ -466,6 +491,31 @@ qd_exec_result qd_add(qd_context* ctx) {
 }
 
 qd_exec_result qd_sub(qd_context* ctx) {
+	qd_stack* st = ctx->st;
+
+	// Fast path: check stack has 2 elements and both are integers
+	if (st->size >= 2) {
+		qd_stack_element_t* top = &st->data[st->size - 1];
+		qd_stack_element_t* second = &st->data[st->size - 2];
+
+		if (top->type == QD_STACK_TYPE_INT && second->type == QD_STACK_TYPE_INT) {
+			// Fast integer subtraction - most common case
+			int64_t result = second->value.i - top->value.i;
+			st->size -= 2;
+			QD_STACK_PUSH_INT_FAST(st, result);
+			return (qd_exec_result){0};
+		}
+		// Fast float path
+		if (is_numeric_type(top->type) && is_numeric_type(second->type)) {
+			double a_val = (second->type == QD_STACK_TYPE_INT) ? (double)second->value.i : second->value.f;
+			double b_val = (top->type == QD_STACK_TYPE_INT) ? (double)top->value.i : top->value.f;
+			st->size -= 2;
+			QD_STACK_PUSH_FLOAT_FAST(st, a_val - b_val);
+			return (qd_exec_result){0};
+		}
+	}
+
+	// Slow path with full error checking
 	validate_binary_numeric_op(ctx, "sub");
 
 	qd_stack_element_t a, b;
@@ -476,13 +526,13 @@ qd_exec_result qd_sub(qd_context* ctx) {
 
 	if (a.type == QD_STACK_TYPE_INT && b.type == QD_STACK_TYPE_INT) {
 		int64_t result = a.value.i - b.value.i;
-		qd_stack_error err = qd_stack_push_int(ctx->st, result);
+		qd_stack_error err = qd_stack_push_int(st, result);
 		if (err != QD_STACK_OK) {
 			return (qd_exec_result){-2};
 		}
 	} else if (is_numeric_type(a.type) && is_numeric_type(b.type)) {
 		double result = to_double(&a) - to_double(&b);
-		qd_stack_error err = qd_stack_push_float(ctx->st, result);
+		qd_stack_error err = qd_stack_push_float(st, result);
 		if (err != QD_STACK_OK) {
 			return (qd_exec_result){-2};
 		}
@@ -496,7 +546,35 @@ qd_exec_result qd_sub(qd_context* ctx) {
 
 qd_exec_result qd_dup(qd_context* ctx) {
 	// Duplicate the top element of the stack
-	size_t stack_size = qd_stack_size(ctx->st);
+	qd_stack* st = ctx->st;
+
+	// Fast path: direct struct access
+	if (st->size >= 1 && st->size < st->capacity) {
+		qd_stack_element_t* top = &st->data[st->size - 1];
+
+		if (top->type == QD_STACK_TYPE_INT) {
+			// Fast integer dup - most common case
+			QD_STACK_PUSH_INT_FAST(st, top->value.i);
+			return (qd_exec_result){0};
+		}
+		if (top->type == QD_STACK_TYPE_FLOAT) {
+			// Fast float dup
+			QD_STACK_PUSH_FLOAT_FAST(st, top->value.f);
+			return (qd_exec_result){0};
+		}
+		if (top->type == QD_STACK_TYPE_STR) {
+			// String dup - retain and copy
+			qd_string_retain(top->value.s);
+			st->data[st->size].value.s = top->value.s;
+			st->data[st->size].type = QD_STACK_TYPE_STR;
+			st->data[st->size].is_error_tainted = top->is_error_tainted;
+			st->size++;
+			return (qd_exec_result){0};
+		}
+	}
+
+	// Slow path with full error checking
+	size_t stack_size = st->size;
 	if (stack_size < 1) {
 		fprintf(stderr, "Fatal error in dup: Stack underflow (required 1 element, have %zu)\n", stack_size);
 		dump_stack(ctx);
@@ -505,7 +583,7 @@ qd_exec_result qd_dup(qd_context* ctx) {
 	}
 
 	qd_stack_element_t top;
-	qd_stack_error err = qd_stack_peek(ctx->st, &top);
+	qd_stack_error err = qd_stack_peek(st, &top);
 	if (err != QD_STACK_OK) {
 		fprintf(stderr, "Fatal error in dup: Failed to peek stack\n");
 		dump_stack(ctx);
@@ -514,7 +592,7 @@ qd_exec_result qd_dup(qd_context* ctx) {
 	}
 
 	// Push a copy of the top element (strings are retained, not copied)
-	err = push_element(ctx->st, &top);
+	err = push_element(st, &top);
 	if (err != QD_STACK_OK) {
 		return (qd_exec_result){-2};
 	}
@@ -812,7 +890,24 @@ qd_exec_result qd_nipd(qd_context* ctx) {
 
 qd_exec_result qd_swap(qd_context* ctx) {
 	// Swap the top two elements of the stack
-	size_t stack_size = qd_stack_size(ctx->st);
+	qd_stack* st = ctx->st;
+
+	// Fast path: direct in-place swap for numeric types
+	if (st->size >= 2) {
+		qd_stack_element_t* top = &st->data[st->size - 1];
+		qd_stack_element_t* second = &st->data[st->size - 2];
+
+		// For numeric types, just swap in place - no refcount concerns
+		if (top->type != QD_STACK_TYPE_STR && second->type != QD_STACK_TYPE_STR) {
+			qd_stack_element_t tmp = *top;
+			*top = *second;
+			*second = tmp;
+			return (qd_exec_result){0};
+		}
+	}
+
+	// Slow path with full error checking (handles strings)
+	size_t stack_size = st->size;
 	if (stack_size < 2) {
 		fprintf(stderr, "Fatal error in swap: Stack underflow (required 2 elements, have %zu)\n", stack_size);
 		dump_stack(ctx);
@@ -822,24 +917,24 @@ qd_exec_result qd_swap(qd_context* ctx) {
 
 	// Pop top two elements
 	qd_stack_element_t a, b;
-	qd_stack_error err = qd_stack_pop(ctx->st, &b);  // b is top
+	qd_stack_error err = qd_stack_pop(st, &b);  // b is top
 	if (err != QD_STACK_OK) {
 		return (qd_exec_result){-2};
 	}
-	err = qd_stack_pop(ctx->st, &a);  // a is second
+	err = qd_stack_pop(st, &a);  // a is second
 	if (err != QD_STACK_OK) {
 		return (qd_exec_result){-2};
 	}
 
 	// Push them back in swapped order (b first, then a, strings are retained not copied)
-	err = push_element(ctx->st, &b);
+	err = push_element(st, &b);
 	if (err != QD_STACK_OK) {
 		release_if_string(&a);
 		release_if_string(&b);
 		return (qd_exec_result){-2};
 	}
 
-	err = push_element(ctx->st, &a);
+	err = push_element(st, &a);
 	if (err != QD_STACK_OK) {
 		release_if_string(&a);
 		release_if_string(&b);
@@ -1524,58 +1619,44 @@ qd_exec_result qd_lte(qd_context* ctx) {
 // gte - greater than or equal (>=) comparison: ( a b -- result )
 // Pops two values, pushes 1 if a >= b, 0 otherwise
 qd_exec_result qd_gte(qd_context* ctx) {
-	// Check we have at least 2 elements
-	size_t stack_size = qd_stack_size(ctx->st);
-	if (stack_size < 2) {
-		fprintf(stderr, "Fatal error in gte: Stack underflow (required 2 elements, have %zu)\n", stack_size);
-		dump_stack(ctx);
-		qd_print_stack_trace(ctx);
-		abort();
-	}
+	qd_stack* st = ctx->st;
 
-	// Check both are numeric types
-	qd_stack_element_t check_b, check_a;
-	qd_stack_error check_err = qd_stack_element(ctx->st, stack_size - 1, &check_b);
-	if (check_err == QD_STACK_OK) {
-		check_err = qd_stack_element(ctx->st, stack_size - 2, &check_a);
-	}
-	if (check_err != QD_STACK_OK) {
-		fprintf(stderr, "Fatal error in gte: Failed to access stack elements\n");
-		dump_stack(ctx);
-		qd_print_stack_trace(ctx);
-		abort();
-	}
+	// Fast path: check stack has 2 elements and both are integers
+	if (QD_STACK_SIZE(st) >= 2) {
+		qd_stack_element_t* top = &st->data[st->size - 1];
+		qd_stack_element_t* second = &st->data[st->size - 2];
 
-	if ((check_a.type != QD_STACK_TYPE_INT && check_a.type != QD_STACK_TYPE_FLOAT) ||
-	    (check_b.type != QD_STACK_TYPE_INT && check_b.type != QD_STACK_TYPE_FLOAT)) {
+		if (top->type == QD_STACK_TYPE_INT && second->type == QD_STACK_TYPE_INT) {
+			// Fast integer comparison - most common case
+			int64_t b = top->value.i;
+			int64_t a = second->value.i;
+			st->size -= 2;
+			QD_STACK_PUSH_INT_FAST(st, (a >= b) ? 1 : 0);
+			return (qd_exec_result){0};
+		}
+
+		if ((top->type == QD_STACK_TYPE_INT || top->type == QD_STACK_TYPE_FLOAT) &&
+		    (second->type == QD_STACK_TYPE_INT || second->type == QD_STACK_TYPE_FLOAT)) {
+			// Float comparison path
+			double bf = (top->type == QD_STACK_TYPE_INT) ? (double)top->value.i : top->value.f;
+			double af = (second->type == QD_STACK_TYPE_INT) ? (double)second->value.i : second->value.f;
+			st->size -= 2;
+			QD_STACK_PUSH_INT_FAST(st, (af >= bf) ? 1 : 0);
+			return (qd_exec_result){0};
+		}
+
+		// Type error
 		fprintf(stderr, "Fatal error in gte: Type error (expected numeric types for comparison)\n");
 		dump_stack(ctx);
 		qd_print_stack_trace(ctx);
 		abort();
 	}
 
-	qd_stack_element_t b;
-	qd_stack_error err = qd_stack_pop(ctx->st, &b);
-	if (err != QD_STACK_OK) {
-		return (qd_exec_result){-2};
-	}
-	qd_stack_element_t a;
-	err = qd_stack_pop(ctx->st, &a);
-	if (err != QD_STACK_OK) {
-		return (qd_exec_result){-2};
-	}
-
-	// Convert to double for comparison
-	double af = (a.type == QD_STACK_TYPE_INT) ? (double)a.value.i : a.value.f;
-	double bf = (b.type == QD_STACK_TYPE_INT) ? (double)b.value.i : b.value.f;
-
-	int64_t result = (af >= bf) ? 1 : 0;
-	err = qd_stack_push_int(ctx->st, result);
-	if (err != QD_STACK_OK) {
-		return (qd_exec_result){-2};
-	}
-
-	return (qd_exec_result){0};
+	// Stack underflow
+	fprintf(stderr, "Fatal error in gte: Stack underflow (required 2 elements, have %zu)\n", QD_STACK_SIZE(st));
+	dump_stack(ctx);
+	qd_print_stack_trace(ctx);
+	abort();
 }
 
 // within - check if value is within range [min, max]: ( value min max -- result )

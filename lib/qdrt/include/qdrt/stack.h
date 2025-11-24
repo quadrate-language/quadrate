@@ -252,6 +252,60 @@ void qd_stack_clear_top_taint(qd_stack* stack);
  */
 const char* qd_stack_error_string(qd_stack_error error);
 
+/**
+ * @defgroup FastStackOps Fast Stack Operations
+ * @brief Inline macros for performance-critical stack operations
+ *
+ * These macros skip NULL checks and error handling for maximum performance.
+ * Only use when you're certain the stack is valid and has sufficient capacity/elements.
+ * @{
+ */
+
+/** @brief Get stack size without function call overhead */
+#define QD_STACK_SIZE(stack) ((stack)->size)
+
+/** @brief Check if stack has at least n elements */
+#define QD_STACK_HAS(stack, n) ((stack)->size >= (n))
+
+/** @brief Fast push integer - no error checking */
+#define QD_STACK_PUSH_INT_FAST(stack, val) do { \
+	(stack)->data[(stack)->size].value.i = (val); \
+	(stack)->data[(stack)->size].type = QD_STACK_TYPE_INT; \
+	(stack)->data[(stack)->size].is_error_tainted = false; \
+	(stack)->size++; \
+} while(0)
+
+/** @brief Fast push float - no error checking */
+#define QD_STACK_PUSH_FLOAT_FAST(stack, val) do { \
+	(stack)->data[(stack)->size].value.f = (val); \
+	(stack)->data[(stack)->size].type = QD_STACK_TYPE_FLOAT; \
+	(stack)->data[(stack)->size].is_error_tainted = false; \
+	(stack)->size++; \
+} while(0)
+
+/** @brief Fast pop - returns element, no error checking */
+#define QD_STACK_POP_FAST(stack) ((stack)->data[--(stack)->size])
+
+/** @brief Fast peek at top - no error checking */
+#define QD_STACK_TOP(stack) ((stack)->data[(stack)->size - 1])
+
+/** @brief Fast peek at element n from top (0 = top) - no error checking */
+#define QD_STACK_PEEK_N(stack, n) ((stack)->data[(stack)->size - 1 - (n)])
+
+/** @brief Get top element's type */
+#define QD_STACK_TOP_TYPE(stack) ((stack)->data[(stack)->size - 1].type)
+
+/** @brief Get top element's int value */
+#define QD_STACK_TOP_INT(stack) ((stack)->data[(stack)->size - 1].value.i)
+
+/** @brief Get top element's float value */
+#define QD_STACK_TOP_FLOAT(stack) ((stack)->data[(stack)->size - 1].value.f)
+
+/** @brief Fast drop n elements - no error checking, no string release */
+#define QD_STACK_DROP_N_FAST(stack, n) ((stack)->size -= (n))
+
+/** @} */ // end of FastStackOps group
+
 #ifdef __cplusplus
 }
 #endif
