@@ -158,8 +158,8 @@ namespace Qd {
 		bool currentFunctionIsFallible = false;
 		bool currentFunctionIsIntegerOnly = false;  // For type specialization
 
-		// Defer statements collected during function generation
-		std::vector<AstNodeDefer*> currentDeferStatements;
+		// Defer statements collected during function generation (scope-based)
+		std::vector<std::vector<AstNodeDefer*>> deferScopeStack;
 
 		// Counter for unique variable names
 		int varCounter = 0;
@@ -251,6 +251,11 @@ namespace Qd {
 		void generateInlineDrop(llvm::Value* ctx);
 		void generateInlineOver(llvm::Value* ctx);
 		void generateInlineRot(llvm::Value* ctx);
+
+		// Defer scope management
+		void pushDeferScope();
+		void popDeferScope();
+		void executeDeferScope(llvm::Value* ctx);
 	};
 
 	void LlvmGenerator::Impl::setupRuntimeDeclarations() {
@@ -3020,11 +3025,36 @@ namespace Qd {
 		// Push loop context for break/continue
 		loopStack.push_back({loopExitBB, loopIncBB});
 
+		// Push defer scope for this loop - defers will be generated at end of iteration
+		pushDeferScope();
+
 		if (forStmt->body()) {
 			generateNode(forStmt->body(), ctx, iterVar);
 		}
 
-		loopStack.pop_back();
+		// Generate defer execution code at end of loop body
+		// This code will execute at runtime for each iteration
+		if (!deferScopeStack.empty() && !deferScopeStack.back().empty()) {
+			auto& currentScope = deferScopeStack.back();
+			// Generate IR to execute defers in REVERSE order (LIFO)
+			for (auto it = currentScope.rbegin(); it != currentScope.rend(); ++it) {
+				AstNodeDefer* deferNode = *it;
+				// Generate defer body inline
+				for (size_t i = 0; i < deferNode->childCount(); i++) {
+					IAstNode* child = deferNode->child(i);
+					if (child && child->type() == IAstNode::Type::BLOCK) {
+						for (size_t j = 0; j < child->childCount(); j++) {
+							generateNode(child->child(j), ctx, nullptr);
+						}
+					} else {
+						generateNode(child, ctx, nullptr);
+					}
+				}
+			}
+		}
+
+		// Pop defer scope (compilation-time cleanup)
+		popDeferScope();
 
 		// Only add branch if block doesn't already have a terminator
 		llvm::BasicBlock* loopBodyBlock = builder->GetInsertBlock();
@@ -3036,6 +3066,8 @@ namespace Qd {
 				builder->CreateBr(loopIncBB);
 			}
 		}
+
+		loopStack.pop_back();
 
 		// Loop increment
 		builder->SetInsertPoint(loopIncBB);
@@ -3064,11 +3096,33 @@ namespace Qd {
 		// Push loop context for break/continue
 		loopStack.push_back({loopExitBB, loopBodyBB});
 
+		// Push defer scope for this loop iteration
+		pushDeferScope();
+
 		if (loopStmt->body()) {
 			generateNode(loopStmt->body(), ctx, nullptr);
 		}
 
-		loopStack.pop_back();
+		// Generate defer execution code at end of loop body
+		if (!deferScopeStack.empty() && !deferScopeStack.back().empty()) {
+			auto& currentScope = deferScopeStack.back();
+			for (auto it = currentScope.rbegin(); it != currentScope.rend(); ++it) {
+				AstNodeDefer* deferNode = *it;
+				for (size_t i = 0; i < deferNode->childCount(); i++) {
+					IAstNode* child = deferNode->child(i);
+					if (child && child->type() == IAstNode::Type::BLOCK) {
+						for (size_t j = 0; j < child->childCount(); j++) {
+							generateNode(child->child(j), ctx, nullptr);
+						}
+					} else {
+						generateNode(child, ctx, nullptr);
+					}
+				}
+			}
+		}
+
+		// Pop defer scope (compilation-time cleanup)
+		popDeferScope();
 
 		// Only add branch if block doesn't already have a terminator
 		llvm::BasicBlock* loopBlock = builder->GetInsertBlock();
@@ -3080,6 +3134,8 @@ namespace Qd {
 				builder->CreateBr(loopBodyBB); // Loop forever
 			}
 		}
+
+		loopStack.pop_back();
 
 		// Continue after loop (only reached via break)
 		builder->SetInsertPoint(loopExitBB);
@@ -3216,14 +3272,48 @@ namespace Qd {
 			generateSwitchStatement(static_cast<AstNodeSwitchStatement*>(node), ctx, forIterVar);
 			break;
 		case IAstNode::Type::BREAK_STATEMENT:
-			// Break from current loop
+			// Execute defer scope before breaking from current loop
 			if (!loopStack.empty()) {
+				// Generate IR to execute defers before breaking
+				if (!deferScopeStack.empty() && !deferScopeStack.back().empty()) {
+					auto& currentScope = deferScopeStack.back();
+					for (auto it = currentScope.rbegin(); it != currentScope.rend(); ++it) {
+						AstNodeDefer* deferNode = *it;
+						for (size_t i = 0; i < deferNode->childCount(); i++) {
+							IAstNode* child = deferNode->child(i);
+							if (child && child->type() == IAstNode::Type::BLOCK) {
+								for (size_t j = 0; j < child->childCount(); j++) {
+									generateNode(child->child(j), ctx, nullptr);
+								}
+							} else {
+								generateNode(child, ctx, nullptr);
+							}
+						}
+					}
+				}
 				builder->CreateBr(loopStack.back().breakTarget);
 			}
 			break;
 		case IAstNode::Type::CONTINUE_STATEMENT:
-			// Continue to next iteration
+			// Execute defer scope before continuing to next iteration
 			if (!loopStack.empty()) {
+				// Generate IR to execute defers before continuing
+				if (!deferScopeStack.empty() && !deferScopeStack.back().empty()) {
+					auto& currentScope = deferScopeStack.back();
+					for (auto it = currentScope.rbegin(); it != currentScope.rend(); ++it) {
+						AstNodeDefer* deferNode = *it;
+						for (size_t i = 0; i < deferNode->childCount(); i++) {
+							IAstNode* child = deferNode->child(i);
+							if (child && child->type() == IAstNode::Type::BLOCK) {
+								for (size_t j = 0; j < child->childCount(); j++) {
+									generateNode(child->child(j), ctx, nullptr);
+								}
+							} else {
+								generateNode(child, ctx, nullptr);
+							}
+						}
+					}
+				}
 				builder->CreateBr(loopStack.back().continueTarget);
 			}
 			break;
@@ -3234,9 +3324,12 @@ namespace Qd {
 			}
 			break;
 		case IAstNode::Type::DEFER_STATEMENT:
-			// Collect defer statement for later execution at function end
-			currentDeferStatements.push_back(static_cast<AstNodeDefer*>(node));
-			// Don't generate code now - will be generated in return block
+			// Collect defer statement for later execution at scope end
+			if (deferScopeStack.empty()) {
+				pushDeferScope();
+			}
+			deferScopeStack.back().push_back(static_cast<AstNodeDefer*>(node));
+			// Don't generate code now - will be generated at scope end
 			break;
 		case IAstNode::Type::CTX_STATEMENT:
 			generateCtxBlock(static_cast<AstNodeCtx*>(node), ctx, forIterVar);
@@ -3369,8 +3462,9 @@ namespace Qd {
 			// Create return basic block for defer execution
 			auto returnBB = llvm::BasicBlock::Create(*context, "return", fn);
 
-			// Clear defer statements from any previous function
-			currentDeferStatements.clear();
+			// Initialize defer scope stack for this function
+			deferScopeStack.clear();
+			pushDeferScope();
 
 			// Generate function body
 			auto body = funcNode->body();
@@ -3383,28 +3477,11 @@ namespace Qd {
 				builder->CreateBr(returnBB);
 			}
 
-			// Generate return block - this is where defers execute
+			// Generate return block - this is where function-level defers execute
 			builder->SetInsertPoint(returnBB);
 
-			// Execute defer statements in REVERSE order (LIFO)
-			for (auto it = currentDeferStatements.rbegin(); it != currentDeferStatements.rend(); ++it) {
-				AstNodeDefer* deferNode = *it;
-				// Generate defer body
-				for (size_t i = 0; i < deferNode->childCount(); i++) {
-					IAstNode* child = deferNode->child(i);
-					// If the child is a block, generate its children directly
-					if (child && child->type() == IAstNode::Type::BLOCK) {
-						for (size_t j = 0; j < child->childCount(); j++) {
-							generateNode(child->child(j), ctx, nullptr);
-						}
-					} else {
-						generateNode(child, ctx, nullptr);
-					}
-				}
-			}
-
-			// Clear defer statements after use
-			currentDeferStatements.clear();
+			// Execute function-level defer scope
+			executeDeferScope(ctx);
 
 			// Clean up local variables (free strings)
 			generateLocalCleanup();
@@ -3563,8 +3640,9 @@ namespace Qd {
 				}
 			}
 
-			// Clear defer statements from any previous function
-			currentDeferStatements.clear();
+			// Initialize defer scope stack for this function
+			deferScopeStack.clear();
+			pushDeferScope();
 
 			// Generate function body
 			auto body = funcNode->body();
@@ -3588,28 +3666,11 @@ namespace Qd {
 				}
 			}
 
-			// Generate return block - this is where defers execute
+			// Generate return block - this is where function-level defers execute
 			builder->SetInsertPoint(returnBB);
 
-			// Execute defer statements in REVERSE order (LIFO)
-			for (auto it = currentDeferStatements.rbegin(); it != currentDeferStatements.rend(); ++it) {
-				AstNodeDefer* deferNode = *it;
-				// Generate defer body
-				for (size_t i = 0; i < deferNode->childCount(); i++) {
-					IAstNode* child = deferNode->child(i);
-					// If the child is a block, generate its children directly
-					if (child && child->type() == IAstNode::Type::BLOCK) {
-						for (size_t j = 0; j < child->childCount(); j++) {
-							generateNode(child->child(j), ctx, nullptr);
-						}
-					} else {
-						generateNode(child, ctx, nullptr);
-					}
-				}
-			}
-
-			// Clear defer statements after use
-			currentDeferStatements.clear();
+			// Execute function-level defer scope
+			executeDeferScope(ctx);
 
 			// Clean up local variables (free strings)
 			generateLocalCleanup();
@@ -4394,6 +4455,41 @@ namespace Qd {
 			llvm::Value* ptrValue = builder->CreateLoad(llvm::PointerType::getUnqual(*context), fieldPtr, "field_value");
 			builder->CreateCall(pushPtrFn, {ctx, ptrValue});
 		}
+	}
+
+	void LlvmGenerator::Impl::pushDeferScope() {
+		deferScopeStack.push_back(std::vector<AstNodeDefer*>());
+	}
+
+	void LlvmGenerator::Impl::popDeferScope() {
+		if (!deferScopeStack.empty()) {
+			deferScopeStack.pop_back();
+		}
+	}
+
+	void LlvmGenerator::Impl::executeDeferScope(llvm::Value* ctx) {
+		if (deferScopeStack.empty())
+			return;
+
+		auto& currentScope = deferScopeStack.back();
+		// Execute defers in REVERSE order (LIFO)
+		for (auto it = currentScope.rbegin(); it != currentScope.rend(); ++it) {
+			AstNodeDefer* deferNode = *it;
+			// Generate defer body
+			for (size_t i = 0; i < deferNode->childCount(); i++) {
+				IAstNode* child = deferNode->child(i);
+				// If the child is a block, generate its children directly
+				if (child && child->type() == IAstNode::Type::BLOCK) {
+					for (size_t j = 0; j < child->childCount(); j++) {
+						generateNode(child->child(j), ctx, nullptr);
+					}
+				} else {
+					generateNode(child, ctx, nullptr);
+				}
+			}
+		}
+
+		deferScopeStack.pop_back();
 	}
 
 } // namespace Qd
