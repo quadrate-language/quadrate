@@ -1947,10 +1947,6 @@ namespace Qd {
 			// Use type-aware inline equality
 			generateTypeAwareEq(ctx);
 			return;
-		} else if (name == "dup") {
-			// Use inline dup (no type checking needed)
-			generateInlineDup(ctx);
-			return;
 		} else if (name == "swap") {
 			// Use inline swap (no string cleanup needed - just moving elements)
 			generateInlineSwap(ctx);
