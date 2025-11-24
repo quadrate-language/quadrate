@@ -1602,6 +1602,16 @@ namespace Qd {
 			llvm::Value* value2iPtrCast = builder->CreateBitCast(value2Ptr, llvm::PointerType::get(*context, 0));
 			llvm::Value* value2 = builder->CreateLoad(builder->getInt64Ty(), value2iPtrCast, "value2");
 
+			// Check for division by zero
+			llvm::Value* isZero = builder->CreateICmpEQ(value2, builder->getInt64(0), "divisor_is_zero");
+			llvm::BasicBlock* divOkBlock = llvm::BasicBlock::Create(*context, "div_ok", builder->GetInsertBlock()->getParent());
+
+			// If zero, jump to slow path (which has error handling); otherwise proceed
+			builder->CreateCondBr(isZero, slowPath, divOkBlock);
+
+			// Continue division in divOkBlock
+			builder->SetInsertPoint(divOkBlock);
+
 			llvm::Value* result = builder->CreateSDiv(value1, value2, "div_result");
 			builder->CreateStore(result, value1iPtrCast);
 
@@ -1672,6 +1682,16 @@ namespace Qd {
 			llvm::Value* value2Ptr = builder->CreateStructGEP(stackElementTy, elem2Ptr, 0, "value2_ptr");
 			llvm::Value* value2iPtrCast = builder->CreateBitCast(value2Ptr, llvm::PointerType::get(*context, 0));
 			llvm::Value* value2 = builder->CreateLoad(builder->getInt64Ty(), value2iPtrCast, "value2");
+
+			// Check for division by zero
+			llvm::Value* isZero = builder->CreateICmpEQ(value2, builder->getInt64(0), "divisor_is_zero");
+			llvm::BasicBlock* modOkBlock = llvm::BasicBlock::Create(*context, "mod_ok", builder->GetInsertBlock()->getParent());
+
+			// If zero, jump to slow path (which has error handling); otherwise proceed
+			builder->CreateCondBr(isZero, slowPath, modOkBlock);
+
+			// Continue modulo in modOkBlock
+			builder->SetInsertPoint(modOkBlock);
 
 			llvm::Value* result = builder->CreateSRem(value1, value2, "mod_result");
 			builder->CreateStore(result, value1iPtrCast);
