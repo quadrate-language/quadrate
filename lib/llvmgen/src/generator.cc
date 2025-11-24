@@ -238,6 +238,7 @@ namespace Qd {
 		void generateInlineIntAdd(llvm::Value* ctx);
 		void generateInlineIntSub(llvm::Value* ctx);
 		void generateInlineIntMul(llvm::Value* ctx);
+		void generateInlineIntMod(llvm::Value* ctx);
 		void generateTypeAwareAdd(llvm::Value* ctx);
 		void generateTypeAwareSub(llvm::Value* ctx);
 		void generateTypeAwareMul(llvm::Value* ctx);
@@ -796,6 +797,49 @@ namespace Qd {
 
 		// Perform multiplication
 		llvm::Value* result = builder->CreateMul(value1, value2, "mul_result");
+
+		builder->CreateStore(result, value1iPtrCast);
+
+		llvm::Value* newSize = builder->CreateSub(size, builder->getInt64(1), "new_size");
+		builder->CreateStore(newSize, sizePtr);
+	}
+
+	void LlvmGenerator::Impl::generateInlineIntMod(llvm::Value* ctx) {
+		// Inline implementation of integer modulo: ( a:int b:int -- result:int )
+		// Assumes both operands are integers (no type checking for performance)
+
+		llvm::Type* contextTy = llvm::StructType::get(*context, {llvm::PointerType::get(*context, 0)}, false);
+		llvm::Value* stPtr = builder->CreateStructGEP(contextTy, ctx, 0, "st_ptr");
+		llvm::Value* st = builder->CreateLoad(llvm::PointerType::get(*context, 0), stPtr, "st");
+
+		llvm::Type* stackTy = llvm::StructType::get(*context,
+				{
+						llvm::PointerType::get(*context, 0),
+						builder->getInt64Ty(),
+						builder->getInt64Ty()
+				},
+				false);
+
+		llvm::Value* sizePtr = builder->CreateStructGEP(stackTy, st, 2, "size_ptr");
+		llvm::Value* size = builder->CreateLoad(builder->getInt64Ty(), sizePtr, "size");
+
+		llvm::Value* dataPtr = builder->CreateStructGEP(stackTy, st, 0, "data_ptr");
+		llvm::Value* data = builder->CreateLoad(llvm::PointerType::get(*context, 0), dataPtr, "data");
+
+		llvm::Value* idx1 = builder->CreateSub(size, builder->getInt64(2), "idx1");
+		llvm::Value* elem1Ptr = builder->CreateGEP(stackElementTy, data, idx1, "elem1_ptr");
+		llvm::Value* value1Ptr = builder->CreateStructGEP(stackElementTy, elem1Ptr, 0, "value1_ptr");
+		llvm::Value* value1iPtrCast = builder->CreateBitCast(value1Ptr, llvm::PointerType::get(*context, 0));
+		llvm::Value* value1 = builder->CreateLoad(builder->getInt64Ty(), value1iPtrCast, "value1");
+
+		llvm::Value* idx2 = builder->CreateSub(size, builder->getInt64(1), "idx2");
+		llvm::Value* elem2Ptr = builder->CreateGEP(stackElementTy, data, idx2, "elem2_ptr");
+		llvm::Value* value2Ptr = builder->CreateStructGEP(stackElementTy, elem2Ptr, 0, "value2_ptr");
+		llvm::Value* value2iPtrCast = builder->CreateBitCast(value2Ptr, llvm::PointerType::get(*context, 0));
+		llvm::Value* value2 = builder->CreateLoad(builder->getInt64Ty(), value2iPtrCast, "value2");
+
+		// Perform modulo (signed remainder)
+		llvm::Value* result = builder->CreateSRem(value1, value2, "mod_result");
 
 		builder->CreateStore(result, value1iPtrCast);
 
@@ -1899,7 +1943,7 @@ namespace Qd {
 			builder->CreateCall(printsFn, {ctx});
 		} else if (name == "nl") {
 			builder->CreateCall(nlFn, {ctx});
-		} else if (name == "+") {
+		} else if (name == "+" || name == "add") {
 			// When debug info is enabled, use simple function calls for better debuggability
 			if (debugInfoEnabled) {
 				builder->CreateCall(addFn, {ctx});
@@ -1911,7 +1955,7 @@ namespace Qd {
 				generateTypeAwareAdd(ctx);
 			}
 			return;
-		} else if (name == "-") {
+		} else if (name == "-" || name == "sub") {
 			// When debug info is enabled, use simple function calls for better debuggability
 			if (debugInfoEnabled) {
 				builder->CreateCall(subFn, {ctx});
@@ -1923,7 +1967,7 @@ namespace Qd {
 				generateTypeAwareSub(ctx);
 			}
 			return;
-		} else if (name == "*") {
+		} else if (name == "*" || name == "mul") {
 			// When debug info is enabled, use simple function calls for better debuggability
 			if (debugInfoEnabled) {
 				builder->CreateCall(mulFn, {ctx});
@@ -1987,13 +2031,18 @@ namespace Qd {
 			// Use type-aware inline less than or equal (word form)
 			generateTypeAwareLte(ctx);
 			return;
-		} else if (name == "/") {
+		} else if (name == "/" || name == "div") {
 			// Use type-aware inline division
 			generateTypeAwareDiv(ctx);
 			return;
-		} else if (name == "%") {
-			// Use type-aware inline modulo
-			generateTypeAwareMod(ctx);
+		} else if (name == "%" || name == "mod") {
+			// For integer-only functions, use simpler inline mod
+			if (currentFunctionIsIntegerOnly) {
+				generateInlineIntMod(ctx);
+			} else {
+				// Use type-aware inline modulo
+				generateTypeAwareMod(ctx);
+			}
 			return;
 		} else if (name == "free") {
 			// Smart struct-aware free: if freeing a struct with string fields, free strings first
@@ -2118,6 +2167,10 @@ namespace Qd {
 		if (localIt != localVariables.end()) {
 			// Load from local variable and push to runtime stack
 			llvm::AllocaInst* localAlloca = localIt->second;
+
+			// Note: We can't use currentFunctionIsIntegerOnly here because even if function
+			// parameters are integers, the function body may create non-integer values
+			// like structs or pointers.
 
 			// Extract type field (field index 1 in qd_stack_element_t)
 			llvm::Value* typePtr = builder->CreateStructGEP(stackElementTy, localAlloca, 1, name + "_type_ptr");
@@ -2761,6 +2814,9 @@ namespace Qd {
 		llvm::Value* stackPtr = builder->CreateLoad(llvm::PointerType::getUnqual(*context), stackPtrPtr, "stack");
 
 		// Call qd_stack_pop to pop the value from the runtime stack
+		// Note: We can't optimize this for "integer-only" functions because even if the
+		// function parameters are integers, the function body may create/use non-integer
+		// values like structs and pointers.
 		builder->CreateCall(stackPopFn, {stackPtr, localAlloca});
 
 		// If we just constructed a struct, record its type for this local variable
@@ -3650,11 +3706,16 @@ namespace Qd {
 
 			// Detect if function only uses integers (for type specialization)
 			// Do this BEFORE generating call tracking so we can skip it for integer-only functions
+			// Only consider it integer-only if it has at least one explicit integer parameter
+			// Functions with no parameters can't be assumed integer-only (they might use strings, floats, etc.)
+			bool hasIntegerParams = false;
 			currentFunctionIsIntegerOnly = true;  // Assume true, set false if we find non-integer
 			for (const auto* param : funcNode->inputParameters()) {
 				if (const auto* paramNode = dynamic_cast<const AstNodeParameter*>(param)) {
 					const std::string& typeStr = paramNode->typeString();
-					if (typeStr != "i64" && typeStr != "int" && typeStr != "int64" && typeStr != "i") {
+					if (typeStr == "i64" || typeStr == "int" || typeStr == "int64" || typeStr == "i") {
+						hasIntegerParams = true;
+					} else {
 						currentFunctionIsIntegerOnly = false;
 						break;
 					}
@@ -3664,13 +3725,17 @@ namespace Qd {
 				for (const auto* param : funcNode->outputParameters()) {
 					if (const auto* paramNode = dynamic_cast<const AstNodeParameter*>(param)) {
 						const std::string& typeStr = paramNode->typeString();
-						if (typeStr != "i64" && typeStr != "int" && typeStr != "int64" && typeStr != "i") {
+						if (typeStr == "i64" || typeStr == "int" || typeStr == "int64" || typeStr == "i") {
+							hasIntegerParams = true;
+						} else {
 							currentFunctionIsIntegerOnly = false;
 							break;
 						}
 					}
 				}
 			}
+			// Only enable integer-only optimizations if there's at least one integer parameter
+			currentFunctionIsIntegerOnly = currentFunctionIsIntegerOnly && hasIntegerParams;
 
 			// Push function name onto call stack for debugging
 			// Skip for integer-only functions for performance (stack traces less useful for pure int math)
