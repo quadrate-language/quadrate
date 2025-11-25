@@ -574,7 +574,23 @@ private:
 		}
 
 		// Run quadlint if enabled and no parse/semantic errors
-		if (lintEnabled_ && root && !ast.hasErrors()) {
+		// Skip linting for files in standard library or installed package locations
+		bool isExternalModule = false;
+		if (uri.substr(0, 7) == "file://") {
+			std::string filePath = uri.substr(7);
+			// Check if file is in standard library or package locations
+			if (filePath.find("/usr/share/quadrate/") != std::string::npos ||
+					filePath.find("/.quadrate/packages/") != std::string::npos) {
+				isExternalModule = true;
+			}
+			// Also check QUADRATE_ROOT
+			const char* quadrateRoot = getenv("QUADRATE_ROOT");
+			if (quadrateRoot && filePath.find(quadrateRoot) == 0) {
+				isExternalModule = true;
+			}
+		}
+
+		if (lintEnabled_ && !isExternalModule && root && !ast.hasErrors()) {
 			std::vector<LintWarning> warnings = runQuadlint(text);
 
 			for (const auto& warning : warnings) {
