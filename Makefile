@@ -76,6 +76,7 @@ debug:
 	@cp -r lib/stdbitsqd/qd/bits dist/share/quadrate/
 	@cp -r lib/stdfmtqd/qd/fmt dist/share/quadrate/
 	@cp -r lib/stdioqd/qd/io dist/share/quadrate/
+	@cp -r lib/stdjsonqd/qd/json dist/share/quadrate/
 	@cp -r lib/stdmathqd/qd/math dist/share/quadrate/
 	@cp -r lib/stdmemqd/qd/mem dist/share/quadrate/
 	@cp -r lib/stdnetqd/qd/net dist/share/quadrate/
@@ -147,6 +148,7 @@ release:
 	@cp -r lib/stdbitsqd/qd/bits dist/share/quadrate/
 	@cp -r lib/stdfmtqd/qd/fmt dist/share/quadrate/
 	@cp -r lib/stdioqd/qd/io dist/share/quadrate/
+	@cp -r lib/stdjsonqd/qd/json dist/share/quadrate/
 	@cp -r lib/stdmathqd/qd/math dist/share/quadrate/
 	@cp -r lib/stdmemqd/qd/mem dist/share/quadrate/
 	@cp -r lib/stdnetqd/qd/net dist/share/quadrate/
@@ -278,6 +280,7 @@ install: release
 	install -d $(DESTDIR)$(PREFIX)/share/quadrate
 	@cp -r lib/stdbitsqd/qd/bits $(DESTDIR)$(PREFIX)/share/quadrate/
 	@cp -r lib/stdfmtqd/qd/fmt $(DESTDIR)$(PREFIX)/share/quadrate/
+	@cp -r lib/stdjsonqd/qd/json $(DESTDIR)$(PREFIX)/share/quadrate/
 	@cp -r lib/stdmathqd/qd/math $(DESTDIR)$(PREFIX)/share/quadrate/
 	@cp -r lib/stdnetqd/qd/net $(DESTDIR)$(PREFIX)/share/quadrate/
 	@cp -r lib/stdosqd/qd/os $(DESTDIR)$(PREFIX)/share/quadrate/
