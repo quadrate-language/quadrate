@@ -2,13 +2,13 @@
 
 // Suppress all warnings from LLVM headers (third-party code)
 #if defined(__clang__)
-	#pragma clang diagnostic push
-	#pragma clang diagnostic ignored "-Weverything"
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Weverything"
 #elif defined(__GNUC__)
-	#pragma GCC diagnostic push
-	#pragma GCC diagnostic ignored "-Wall"
-	#pragma GCC diagnostic ignored "-Wextra"
-	#pragma GCC diagnostic ignored "-Wpedantic"
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wall"
+#pragma GCC diagnostic ignored "-Wextra"
+#pragma GCC diagnostic ignored "-Wpedantic"
 #endif
 
 #include <llvm/IR/DIBuilder.h>
@@ -31,9 +31,9 @@
 #include <llvm/Transforms/Utils.h>
 
 #if defined(__clang__)
-	#pragma clang diagnostic pop
+#pragma clang diagnostic pop
 #elif defined(__GNUC__)
-	#pragma GCC diagnostic pop
+#pragma GCC diagnostic pop
 #endif
 
 #include <qc/ast_node.h>
@@ -70,7 +70,6 @@
 #include <string>
 #include <system_error>
 #include <vector>
-
 
 namespace Qd {
 
@@ -160,7 +159,7 @@ namespace Qd {
 		// Function context for return
 		llvm::BasicBlock* currentFunctionReturnBlock = nullptr;
 		bool currentFunctionIsFallible = false;
-		bool currentFunctionIsIntegerOnly = false;  // For type specialization
+		bool currentFunctionIsIntegerOnly = false; // For type specialization
 
 		// Defer statements collected during function generation (scope-based)
 		std::vector<std::vector<AstNodeDefer*>> deferScopeStack;
@@ -172,7 +171,9 @@ namespace Qd {
 		bool compilationFailed = false;
 
 		bool safeParseInt64(const std::string& str, int64_t& out) {
-			if (str.empty()) return false;
+			if (str.empty()) {
+				return false;
+			}
 			auto [ptr, ec] = std::from_chars(str.data(), str.data() + str.size(), out);
 			return ec == std::errc();
 		}
@@ -202,12 +203,14 @@ namespace Qd {
 			size_t offset;		  // Byte offset from struct start
 			size_t size;		  // Size in bytes
 		};
+
 		struct StructLayout {
 			std::string name;
 			std::vector<FieldInfo> fields;
 			size_t totalSize;
 			bool isPublic;
 		};
+
 		std::map<std::string, StructLayout> structDefinitions;
 
 		Impl(const std::string& moduleName) {
@@ -319,7 +322,8 @@ namespace Qd {
 		// qd_push_s_ref(qd_context* ctx, qd_string_t* value) -> qd_exec_result
 		auto pushStrRefFnTy =
 				llvm::FunctionType::get(execResultTy, {contextPtrTy, llvm::PointerType::getUnqual(*context)}, false);
-		pushStrRefFn = llvm::Function::Create(pushStrRefFnTy, llvm::Function::ExternalLinkage, "qd_push_s_ref", *module);
+		pushStrRefFn =
+				llvm::Function::Create(pushStrRefFnTy, llvm::Function::ExternalLinkage, "qd_push_s_ref", *module);
 
 		// qd_push_p(qd_context* ctx, void* value) -> qd_exec_result
 		auto pushPtrFnTy =
@@ -383,8 +387,7 @@ namespace Qd {
 		mallocFn = llvm::Function::Create(mallocFnTy, llvm::Function::ExternalLinkage, "malloc", *module);
 
 		// free(void* ptr)
-		auto freeFnTy =
-				llvm::FunctionType::get(builder->getVoidTy(), {llvm::PointerType::getUnqual(*context)}, false);
+		auto freeFnTy = llvm::FunctionType::get(builder->getVoidTy(), {llvm::PointerType::getUnqual(*context)}, false);
 		this->freeFn = llvm::Function::Create(freeFnTy, llvm::Function::ExternalLinkage, "free", *module);
 
 		// Initialize debug info if enabled
@@ -459,121 +462,67 @@ namespace Qd {
 			// qd_stack_value union (inside qd_stack_element_t)
 			llvm::SmallVector<llvm::Metadata*, 4> unionFields;
 			unionFields.push_back(debugBuilder->createMemberType(
-				compileUnit, "i", debugFile, 54,
-				64, 64, 0, llvm::DINode::FlagZero, int64Type
-			));
+					compileUnit, "i", debugFile, 54, 64, 64, 0, llvm::DINode::FlagZero, int64Type));
 			unionFields.push_back(debugBuilder->createMemberType(
-				compileUnit, "f", debugFile, 55,
-				64, 64, 0, llvm::DINode::FlagZero, doubleType
-			));
+					compileUnit, "f", debugFile, 55, 64, 64, 0, llvm::DINode::FlagZero, doubleType));
 			unionFields.push_back(debugBuilder->createMemberType(
-				compileUnit, "p", debugFile, 56,
-				64, 64, 0, llvm::DINode::FlagZero, voidPtrType
-			));
+					compileUnit, "p", debugFile, 56, 64, 64, 0, llvm::DINode::FlagZero, voidPtrType));
 			unionFields.push_back(debugBuilder->createMemberType(
-				compileUnit, "s", debugFile, 57,
-				64, 64, 0, llvm::DINode::FlagZero, charPtrType
-			));
-			auto valueUnionType = debugBuilder->createUnionType(
-				compileUnit, "qd_stack_value", debugFile, 53,
-				64, 64, llvm::DINode::FlagZero,
-				debugBuilder->getOrCreateArray(unionFields)
-			);
+					compileUnit, "s", debugFile, 57, 64, 64, 0, llvm::DINode::FlagZero, charPtrType));
+			auto valueUnionType = debugBuilder->createUnionType(compileUnit, "qd_stack_value", debugFile, 53, 64, 64,
+					llvm::DINode::FlagZero, debugBuilder->getOrCreateArray(unionFields));
 
 			// qd_stack_element_t structure
 			llvm::SmallVector<llvm::Metadata*, 3> elementFields;
 			elementFields.push_back(debugBuilder->createMemberType(
-				compileUnit, "value", debugFile, 58,
-				64, 64, 0, llvm::DINode::FlagZero, valueUnionType
-			));
+					compileUnit, "value", debugFile, 58, 64, 64, 0, llvm::DINode::FlagZero, valueUnionType));
 			elementFields.push_back(debugBuilder->createMemberType(
-				compileUnit, "type", debugFile, 60,
-				32, 32, 64, llvm::DINode::FlagZero, stackTypeEnum
-			));
+					compileUnit, "type", debugFile, 60, 32, 32, 64, llvm::DINode::FlagZero, stackTypeEnum));
 			elementFields.push_back(debugBuilder->createMemberType(
-				compileUnit, "is_error_tainted", debugFile, 61,
-				8, 8, 96, llvm::DINode::FlagZero, boolType
-			));
-			auto elementType = debugBuilder->createStructType(
-				compileUnit, "qd_stack_element_t", debugFile, 52,
-				128, 64, llvm::DINode::FlagZero, nullptr,
-				debugBuilder->getOrCreateArray(elementFields)
-			);
+					compileUnit, "is_error_tainted", debugFile, 61, 8, 8, 96, llvm::DINode::FlagZero, boolType));
+			auto elementType = debugBuilder->createStructType(compileUnit, "qd_stack_element_t", debugFile, 52, 128, 64,
+					llvm::DINode::FlagZero, nullptr, debugBuilder->getOrCreateArray(elementFields));
 			stackElementDebugType = elementType; // Store for later use
 			auto elementPtrType = debugBuilder->createPointerType(elementType, 64);
 
 			// qd_stack structure
 			llvm::SmallVector<llvm::Metadata*, 3> stackFields;
 			stackFields.push_back(debugBuilder->createMemberType(
-				compileUnit, "data", debugFile, 71,
-				64, 64, 0, llvm::DINode::FlagZero, elementPtrType
-			));
+					compileUnit, "data", debugFile, 71, 64, 64, 0, llvm::DINode::FlagZero, elementPtrType));
 			stackFields.push_back(debugBuilder->createMemberType(
-				compileUnit, "capacity", debugFile, 72,
-				64, 64, 64, llvm::DINode::FlagZero, sizeType
-			));
+					compileUnit, "capacity", debugFile, 72, 64, 64, 64, llvm::DINode::FlagZero, sizeType));
 			stackFields.push_back(debugBuilder->createMemberType(
-				compileUnit, "size", debugFile, 73,
-				64, 64, 128, llvm::DINode::FlagZero, sizeType
-			));
-			auto stackStructType = debugBuilder->createStructType(
-				compileUnit, "qd_stack", debugFile, 70,
-				192, 64, llvm::DINode::FlagZero, nullptr,
-				debugBuilder->getOrCreateArray(stackFields)
-			);
+					compileUnit, "size", debugFile, 73, 64, 64, 128, llvm::DINode::FlagZero, sizeType));
+			auto stackStructType = debugBuilder->createStructType(compileUnit, "qd_stack", debugFile, 70, 192, 64,
+					llvm::DINode::FlagZero, nullptr, debugBuilder->getOrCreateArray(stackFields));
 			auto stackPtrType = debugBuilder->createPointerType(stackStructType, 64);
 
 			// qd_context structure
 			llvm::SmallVector<llvm::Metadata*, 8> contextFields;
 			contextFields.push_back(debugBuilder->createMemberType(
-				compileUnit, "st", debugFile, 45,
-				64, 64, 0, llvm::DINode::FlagZero, stackPtrType
-			));
+					compileUnit, "st", debugFile, 45, 64, 64, 0, llvm::DINode::FlagZero, stackPtrType));
 			contextFields.push_back(debugBuilder->createMemberType(
-				compileUnit, "error_code", debugFile, 46,
-				64, 64, 64, llvm::DINode::FlagZero, int64Type
-			));
+					compileUnit, "error_code", debugFile, 46, 64, 64, 64, llvm::DINode::FlagZero, int64Type));
 			contextFields.push_back(debugBuilder->createMemberType(
-				compileUnit, "error_msg", debugFile, 47,
-				64, 64, 128, llvm::DINode::FlagZero, charPtrType
-			));
-			contextFields.push_back(debugBuilder->createMemberType(
-				compileUnit, "argc", debugFile, 48,
-				32, 32, 192, llvm::DINode::FlagZero,
-				debugBuilder->createBasicType("int", 32, llvm::dwarf::DW_ATE_signed)
-			));
+					compileUnit, "error_msg", debugFile, 47, 64, 64, 128, llvm::DINode::FlagZero, charPtrType));
+			contextFields.push_back(debugBuilder->createMemberType(compileUnit, "argc", debugFile, 48, 32, 32, 192,
+					llvm::DINode::FlagZero, debugBuilder->createBasicType("int", 32, llvm::dwarf::DW_ATE_signed)));
 			auto charPtrPtrType = debugBuilder->createPointerType(charPtrType, 64);
 			contextFields.push_back(debugBuilder->createMemberType(
-				compileUnit, "argv", debugFile, 49,
-				64, 64, 256, llvm::DINode::FlagZero, charPtrPtrType
-			));
+					compileUnit, "argv", debugFile, 49, 64, 64, 256, llvm::DINode::FlagZero, charPtrPtrType));
 			contextFields.push_back(debugBuilder->createMemberType(
-				compileUnit, "program_name", debugFile, 50,
-				64, 64, 320, llvm::DINode::FlagZero, charPtrType
-			));
+					compileUnit, "program_name", debugFile, 50, 64, 64, 320, llvm::DINode::FlagZero, charPtrType));
 			// call_stack is const char* [256] at offset 48 bytes (384 bits)
-			auto callStackArrayType = debugBuilder->createArrayType(
-				16384,  // 256 * 64 bits
-				64,     // alignment
-				charPtrType,
-				debugBuilder->getOrCreateArray({
-					debugBuilder->getOrCreateSubrange(0, 256)
-				})
-			);
+			auto callStackArrayType = debugBuilder->createArrayType(16384, // 256 * 64 bits
+					64,													   // alignment
+					charPtrType, debugBuilder->getOrCreateArray({debugBuilder->getOrCreateSubrange(0, 256)}));
+			contextFields.push_back(debugBuilder->createMemberType(compileUnit, "call_stack", debugFile, 53, 16384, 64,
+					384, llvm::DINode::FlagZero, callStackArrayType));
 			contextFields.push_back(debugBuilder->createMemberType(
-				compileUnit, "call_stack", debugFile, 53,
-				16384, 64, 384, llvm::DINode::FlagZero, callStackArrayType
-			));
-			contextFields.push_back(debugBuilder->createMemberType(
-				compileUnit, "call_stack_depth", debugFile, 54,
-				64, 64, 16768, llvm::DINode::FlagZero, sizeType
-			));
+					compileUnit, "call_stack_depth", debugFile, 54, 64, 64, 16768, llvm::DINode::FlagZero, sizeType));
 
-			auto contextStructType = debugBuilder->createStructType(
-				compileUnit, "qd_context", debugFile, 44,
-				16832, 64, llvm::DINode::FlagZero, nullptr,
-				debugBuilder->getOrCreateArray(contextFields)
-			);
+			auto contextStructType = debugBuilder->createStructType(compileUnit, "qd_context", debugFile, 44, 16832, 64,
+					llvm::DINode::FlagZero, nullptr, debugBuilder->getOrCreateArray(contextFields));
 			contextDebugType = debugBuilder->createPointerType(contextStructType, 64);
 		}
 	}
@@ -598,8 +547,8 @@ namespace Qd {
 		llvm::Type* stackTy = llvm::StructType::get(*context,
 				{
 						llvm::PointerType::get(*context, 0), // data (opaque pointer)
-						builder->getInt64Ty(),               // capacity
-						builder->getInt64Ty()                // size
+						builder->getInt64Ty(),				 // capacity
+						builder->getInt64Ty()				 // size
 				},
 				false);
 
@@ -643,8 +592,8 @@ namespace Qd {
 		llvm::Type* stackTy = llvm::StructType::get(*context,
 				{
 						llvm::PointerType::get(*context, 0), // data
-						builder->getInt64Ty(),               // capacity
-						builder->getInt64Ty()                // size
+						builder->getInt64Ty(),				 // capacity
+						builder->getInt64Ty()				 // size
 				},
 				false);
 
@@ -685,13 +634,8 @@ namespace Qd {
 		llvm::Value* st = builder->CreateLoad(llvm::PointerType::get(*context, 0), stPtr, "st");
 
 		// Get stack structure
-		llvm::Type* stackTy = llvm::StructType::get(*context,
-				{
-						llvm::PointerType::get(*context, 0),
-						builder->getInt64Ty(),
-						builder->getInt64Ty()
-				},
-				false);
+		llvm::Type* stackTy = llvm::StructType::get(
+				*context, {llvm::PointerType::get(*context, 0), builder->getInt64Ty(), builder->getInt64Ty()}, false);
 
 		// Get st->size
 		llvm::Value* sizePtr = builder->CreateStructGEP(stackTy, st, 2, "size_ptr");
@@ -734,13 +678,8 @@ namespace Qd {
 		llvm::Value* stPtr = builder->CreateStructGEP(contextTy, ctx, 0, "st_ptr");
 		llvm::Value* st = builder->CreateLoad(llvm::PointerType::get(*context, 0), stPtr, "st");
 
-		llvm::Type* stackTy = llvm::StructType::get(*context,
-				{
-						llvm::PointerType::get(*context, 0),
-						builder->getInt64Ty(),
-						builder->getInt64Ty()
-				},
-				false);
+		llvm::Type* stackTy = llvm::StructType::get(
+				*context, {llvm::PointerType::get(*context, 0), builder->getInt64Ty(), builder->getInt64Ty()}, false);
 
 		llvm::Value* sizePtr = builder->CreateStructGEP(stackTy, st, 2, "size_ptr");
 		llvm::Value* size = builder->CreateLoad(builder->getInt64Ty(), sizePtr, "size");
@@ -777,13 +716,8 @@ namespace Qd {
 		llvm::Value* stPtr = builder->CreateStructGEP(contextTy, ctx, 0, "st_ptr");
 		llvm::Value* st = builder->CreateLoad(llvm::PointerType::get(*context, 0), stPtr, "st");
 
-		llvm::Type* stackTy = llvm::StructType::get(*context,
-				{
-						llvm::PointerType::get(*context, 0),
-						builder->getInt64Ty(),
-						builder->getInt64Ty()
-				},
-				false);
+		llvm::Type* stackTy = llvm::StructType::get(
+				*context, {llvm::PointerType::get(*context, 0), builder->getInt64Ty(), builder->getInt64Ty()}, false);
 
 		llvm::Value* sizePtr = builder->CreateStructGEP(stackTy, st, 2, "size_ptr");
 		llvm::Value* size = builder->CreateLoad(builder->getInt64Ty(), sizePtr, "size");
@@ -820,13 +754,8 @@ namespace Qd {
 		llvm::Value* stPtr = builder->CreateStructGEP(contextTy, ctx, 0, "st_ptr");
 		llvm::Value* st = builder->CreateLoad(llvm::PointerType::get(*context, 0), stPtr, "st");
 
-		llvm::Type* stackTy = llvm::StructType::get(*context,
-				{
-						llvm::PointerType::get(*context, 0),
-						builder->getInt64Ty(),
-						builder->getInt64Ty()
-				},
-				false);
+		llvm::Type* stackTy = llvm::StructType::get(
+				*context, {llvm::PointerType::get(*context, 0), builder->getInt64Ty(), builder->getInt64Ty()}, false);
 
 		llvm::Value* sizePtr = builder->CreateStructGEP(stackTy, st, 2, "size_ptr");
 		llvm::Value* size = builder->CreateLoad(builder->getInt64Ty(), sizePtr, "size");
@@ -866,13 +795,8 @@ namespace Qd {
 		llvm::Value* st = builder->CreateLoad(llvm::PointerType::get(*context, 0), stPtr, "st");
 
 		// Get stack structure
-		llvm::Type* stackTy = llvm::StructType::get(*context,
-				{
-						llvm::PointerType::get(*context, 0),
-						builder->getInt64Ty(),
-						builder->getInt64Ty()
-				},
-				false);
+		llvm::Type* stackTy = llvm::StructType::get(
+				*context, {llvm::PointerType::get(*context, 0), builder->getInt64Ty(), builder->getInt64Ty()}, false);
 
 		// Get st->size
 		llvm::Value* sizePtr = builder->CreateStructGEP(stackTy, st, 2, "size_ptr");
@@ -902,9 +826,12 @@ namespace Qd {
 		llvm::Value* bothInts = builder->CreateAnd(type1IsInt, type2IsInt, "both_ints");
 
 		// Create basic blocks for fast path (inline) and slow path (runtime call)
-		llvm::BasicBlock* fastPath = llvm::BasicBlock::Create(*context, "fast_int_add", builder->GetInsertBlock()->getParent());
-		llvm::BasicBlock* slowPath = llvm::BasicBlock::Create(*context, "slow_add", builder->GetInsertBlock()->getParent());
-		llvm::BasicBlock* endBlock = llvm::BasicBlock::Create(*context, "add_end", builder->GetInsertBlock()->getParent());
+		llvm::BasicBlock* fastPath =
+				llvm::BasicBlock::Create(*context, "fast_int_add", builder->GetInsertBlock()->getParent());
+		llvm::BasicBlock* slowPath =
+				llvm::BasicBlock::Create(*context, "slow_add", builder->GetInsertBlock()->getParent());
+		llvm::BasicBlock* endBlock =
+				llvm::BasicBlock::Create(*context, "add_end", builder->GetInsertBlock()->getParent());
 
 		builder->CreateCondBr(bothInts, fastPath, slowPath);
 
@@ -951,13 +878,8 @@ namespace Qd {
 		llvm::Value* stPtr = builder->CreateStructGEP(contextTy, ctx, 0, "st_ptr");
 		llvm::Value* st = builder->CreateLoad(llvm::PointerType::get(*context, 0), stPtr, "st");
 
-		llvm::Type* stackTy = llvm::StructType::get(*context,
-				{
-						llvm::PointerType::get(*context, 0),
-						builder->getInt64Ty(),
-						builder->getInt64Ty()
-				},
-				false);
+		llvm::Type* stackTy = llvm::StructType::get(
+				*context, {llvm::PointerType::get(*context, 0), builder->getInt64Ty(), builder->getInt64Ty()}, false);
 
 		llvm::Value* sizePtr = builder->CreateStructGEP(stackTy, st, 2, "size_ptr");
 		llvm::Value* size = builder->CreateLoad(builder->getInt64Ty(), sizePtr, "size");
@@ -981,9 +903,12 @@ namespace Qd {
 		llvm::Value* type2IsInt = builder->CreateICmpEQ(type2, builder->getInt32(0), "type2_is_int");
 		llvm::Value* bothInts = builder->CreateAnd(type1IsInt, type2IsInt, "both_ints");
 
-		llvm::BasicBlock* fastPath = llvm::BasicBlock::Create(*context, "fast_int_sub", builder->GetInsertBlock()->getParent());
-		llvm::BasicBlock* slowPath = llvm::BasicBlock::Create(*context, "slow_sub", builder->GetInsertBlock()->getParent());
-		llvm::BasicBlock* endBlock = llvm::BasicBlock::Create(*context, "sub_end", builder->GetInsertBlock()->getParent());
+		llvm::BasicBlock* fastPath =
+				llvm::BasicBlock::Create(*context, "fast_int_sub", builder->GetInsertBlock()->getParent());
+		llvm::BasicBlock* slowPath =
+				llvm::BasicBlock::Create(*context, "slow_sub", builder->GetInsertBlock()->getParent());
+		llvm::BasicBlock* endBlock =
+				llvm::BasicBlock::Create(*context, "sub_end", builder->GetInsertBlock()->getParent());
 
 		builder->CreateCondBr(bothInts, fastPath, slowPath);
 
@@ -1023,13 +948,8 @@ namespace Qd {
 		llvm::Value* stPtr = builder->CreateStructGEP(contextTy, ctx, 0, "st_ptr");
 		llvm::Value* st = builder->CreateLoad(llvm::PointerType::get(*context, 0), stPtr, "st");
 
-		llvm::Type* stackTy = llvm::StructType::get(*context,
-				{
-						llvm::PointerType::get(*context, 0),
-						builder->getInt64Ty(),
-						builder->getInt64Ty()
-				},
-				false);
+		llvm::Type* stackTy = llvm::StructType::get(
+				*context, {llvm::PointerType::get(*context, 0), builder->getInt64Ty(), builder->getInt64Ty()}, false);
 
 		llvm::Value* sizePtr = builder->CreateStructGEP(stackTy, st, 2, "size_ptr");
 		llvm::Value* size = builder->CreateLoad(builder->getInt64Ty(), sizePtr, "size");
@@ -1053,9 +973,12 @@ namespace Qd {
 		llvm::Value* type2IsInt = builder->CreateICmpEQ(type2, builder->getInt32(0), "type2_is_int");
 		llvm::Value* bothInts = builder->CreateAnd(type1IsInt, type2IsInt, "both_ints");
 
-		llvm::BasicBlock* fastPath = llvm::BasicBlock::Create(*context, "fast_int_mul", builder->GetInsertBlock()->getParent());
-		llvm::BasicBlock* slowPath = llvm::BasicBlock::Create(*context, "slow_mul", builder->GetInsertBlock()->getParent());
-		llvm::BasicBlock* endBlock = llvm::BasicBlock::Create(*context, "mul_end", builder->GetInsertBlock()->getParent());
+		llvm::BasicBlock* fastPath =
+				llvm::BasicBlock::Create(*context, "fast_int_mul", builder->GetInsertBlock()->getParent());
+		llvm::BasicBlock* slowPath =
+				llvm::BasicBlock::Create(*context, "slow_mul", builder->GetInsertBlock()->getParent());
+		llvm::BasicBlock* endBlock =
+				llvm::BasicBlock::Create(*context, "mul_end", builder->GetInsertBlock()->getParent());
 
 		builder->CreateCondBr(bothInts, fastPath, slowPath);
 
@@ -1095,8 +1018,8 @@ namespace Qd {
 		llvm::Value* stPtr = builder->CreateStructGEP(contextTy, ctx, 0, "st_ptr");
 		llvm::Value* st = builder->CreateLoad(llvm::PointerType::get(*context, 0), stPtr, "st");
 
-		llvm::Type* stackTy = llvm::StructType::get(*context,
-				{llvm::PointerType::get(*context, 0), builder->getInt64Ty(), builder->getInt64Ty()}, false);
+		llvm::Type* stackTy = llvm::StructType::get(
+				*context, {llvm::PointerType::get(*context, 0), builder->getInt64Ty(), builder->getInt64Ty()}, false);
 
 		llvm::Value* sizePtr = builder->CreateStructGEP(stackTy, st, 2, "size_ptr");
 		llvm::Value* size = builder->CreateLoad(builder->getInt64Ty(), sizePtr, "size");
@@ -1120,9 +1043,12 @@ namespace Qd {
 		llvm::Value* type2IsInt = builder->CreateICmpEQ(type2, builder->getInt32(0), "type2_is_int");
 		llvm::Value* bothInts = builder->CreateAnd(type1IsInt, type2IsInt, "both_ints");
 
-		llvm::BasicBlock* fastPath = llvm::BasicBlock::Create(*context, "fast_int_lt", builder->GetInsertBlock()->getParent());
-		llvm::BasicBlock* slowPath = llvm::BasicBlock::Create(*context, "slow_lt", builder->GetInsertBlock()->getParent());
-		llvm::BasicBlock* endBlock = llvm::BasicBlock::Create(*context, "lt_end", builder->GetInsertBlock()->getParent());
+		llvm::BasicBlock* fastPath =
+				llvm::BasicBlock::Create(*context, "fast_int_lt", builder->GetInsertBlock()->getParent());
+		llvm::BasicBlock* slowPath =
+				llvm::BasicBlock::Create(*context, "slow_lt", builder->GetInsertBlock()->getParent());
+		llvm::BasicBlock* endBlock =
+				llvm::BasicBlock::Create(*context, "lt_end", builder->GetInsertBlock()->getParent());
 
 		builder->CreateCondBr(bothInts, fastPath, slowPath);
 
@@ -1170,8 +1096,8 @@ namespace Qd {
 		llvm::Value* stPtr = builder->CreateStructGEP(contextTy, ctx, 0, "st_ptr");
 		llvm::Value* st = builder->CreateLoad(llvm::PointerType::get(*context, 0), stPtr, "st");
 
-		llvm::Type* stackTy = llvm::StructType::get(*context,
-				{llvm::PointerType::get(*context, 0), builder->getInt64Ty(), builder->getInt64Ty()}, false);
+		llvm::Type* stackTy = llvm::StructType::get(
+				*context, {llvm::PointerType::get(*context, 0), builder->getInt64Ty(), builder->getInt64Ty()}, false);
 
 		llvm::Value* sizePtr = builder->CreateStructGEP(stackTy, st, 2, "size_ptr");
 		llvm::Value* size = builder->CreateLoad(builder->getInt64Ty(), sizePtr, "size");
@@ -1195,9 +1121,12 @@ namespace Qd {
 		llvm::Value* type2IsInt = builder->CreateICmpEQ(type2, builder->getInt32(0), "type2_is_int");
 		llvm::Value* bothInts = builder->CreateAnd(type1IsInt, type2IsInt, "both_ints");
 
-		llvm::BasicBlock* fastPath = llvm::BasicBlock::Create(*context, "fast_int_gt", builder->GetInsertBlock()->getParent());
-		llvm::BasicBlock* slowPath = llvm::BasicBlock::Create(*context, "slow_gt", builder->GetInsertBlock()->getParent());
-		llvm::BasicBlock* endBlock = llvm::BasicBlock::Create(*context, "gt_end", builder->GetInsertBlock()->getParent());
+		llvm::BasicBlock* fastPath =
+				llvm::BasicBlock::Create(*context, "fast_int_gt", builder->GetInsertBlock()->getParent());
+		llvm::BasicBlock* slowPath =
+				llvm::BasicBlock::Create(*context, "slow_gt", builder->GetInsertBlock()->getParent());
+		llvm::BasicBlock* endBlock =
+				llvm::BasicBlock::Create(*context, "gt_end", builder->GetInsertBlock()->getParent());
 
 		builder->CreateCondBr(bothInts, fastPath, slowPath);
 
@@ -1244,8 +1173,8 @@ namespace Qd {
 		llvm::Value* stPtr = builder->CreateStructGEP(contextTy, ctx, 0, "st_ptr");
 		llvm::Value* st = builder->CreateLoad(llvm::PointerType::get(*context, 0), stPtr, "st");
 
-		llvm::Type* stackTy = llvm::StructType::get(*context,
-				{llvm::PointerType::get(*context, 0), builder->getInt64Ty(), builder->getInt64Ty()}, false);
+		llvm::Type* stackTy = llvm::StructType::get(
+				*context, {llvm::PointerType::get(*context, 0), builder->getInt64Ty(), builder->getInt64Ty()}, false);
 
 		llvm::Value* sizePtr = builder->CreateStructGEP(stackTy, st, 2, "size_ptr");
 		llvm::Value* size = builder->CreateLoad(builder->getInt64Ty(), sizePtr, "size");
@@ -1269,9 +1198,12 @@ namespace Qd {
 		llvm::Value* type2IsInt = builder->CreateICmpEQ(type2, builder->getInt32(0), "type2_is_int");
 		llvm::Value* bothInts = builder->CreateAnd(type1IsInt, type2IsInt, "both_ints");
 
-		llvm::BasicBlock* fastPath = llvm::BasicBlock::Create(*context, "fast_int_eq", builder->GetInsertBlock()->getParent());
-		llvm::BasicBlock* slowPath = llvm::BasicBlock::Create(*context, "slow_eq", builder->GetInsertBlock()->getParent());
-		llvm::BasicBlock* endBlock = llvm::BasicBlock::Create(*context, "eq_end", builder->GetInsertBlock()->getParent());
+		llvm::BasicBlock* fastPath =
+				llvm::BasicBlock::Create(*context, "fast_int_eq", builder->GetInsertBlock()->getParent());
+		llvm::BasicBlock* slowPath =
+				llvm::BasicBlock::Create(*context, "slow_eq", builder->GetInsertBlock()->getParent());
+		llvm::BasicBlock* endBlock =
+				llvm::BasicBlock::Create(*context, "eq_end", builder->GetInsertBlock()->getParent());
 
 		builder->CreateCondBr(bothInts, fastPath, slowPath);
 
@@ -1319,8 +1251,8 @@ namespace Qd {
 		llvm::Value* stPtr = builder->CreateStructGEP(contextTy, ctx, 0, "st_ptr");
 		llvm::Value* st = builder->CreateLoad(llvm::PointerType::get(*context, 0), stPtr, "st");
 
-		llvm::Type* stackTy = llvm::StructType::get(*context,
-				{llvm::PointerType::get(*context, 0), builder->getInt64Ty(), builder->getInt64Ty()}, false);
+		llvm::Type* stackTy = llvm::StructType::get(
+				*context, {llvm::PointerType::get(*context, 0), builder->getInt64Ty(), builder->getInt64Ty()}, false);
 
 		llvm::Value* sizePtr = builder->CreateStructGEP(stackTy, st, 2, "size_ptr");
 		llvm::Value* size = builder->CreateLoad(builder->getInt64Ty(), sizePtr, "size");
@@ -1352,8 +1284,8 @@ namespace Qd {
 		llvm::Value* stPtr = builder->CreateStructGEP(contextTy, ctx, 0, "st_ptr");
 		llvm::Value* st = builder->CreateLoad(llvm::PointerType::get(*context, 0), stPtr, "st");
 
-		llvm::Type* stackTy = llvm::StructType::get(*context,
-				{llvm::PointerType::get(*context, 0), builder->getInt64Ty(), builder->getInt64Ty()}, false);
+		llvm::Type* stackTy = llvm::StructType::get(
+				*context, {llvm::PointerType::get(*context, 0), builder->getInt64Ty(), builder->getInt64Ty()}, false);
 
 		llvm::Value* sizePtr = builder->CreateStructGEP(stackTy, st, 2, "size_ptr");
 		llvm::Value* size = builder->CreateLoad(builder->getInt64Ty(), sizePtr, "size");
@@ -1384,8 +1316,8 @@ namespace Qd {
 		llvm::Value* stPtr = builder->CreateStructGEP(contextTy, ctx, 0, "st_ptr");
 		llvm::Value* st = builder->CreateLoad(llvm::PointerType::get(*context, 0), stPtr, "st");
 
-		llvm::Type* stackTy = llvm::StructType::get(*context,
-				{llvm::PointerType::get(*context, 0), builder->getInt64Ty(), builder->getInt64Ty()}, false);
+		llvm::Type* stackTy = llvm::StructType::get(
+				*context, {llvm::PointerType::get(*context, 0), builder->getInt64Ty(), builder->getInt64Ty()}, false);
 
 		llvm::Value* sizePtr = builder->CreateStructGEP(stackTy, st, 2, "size_ptr");
 		llvm::Value* size = builder->CreateLoad(builder->getInt64Ty(), sizePtr, "size");
@@ -1402,8 +1334,8 @@ namespace Qd {
 		llvm::Value* stPtr = builder->CreateStructGEP(contextTy, ctx, 0, "st_ptr");
 		llvm::Value* st = builder->CreateLoad(llvm::PointerType::get(*context, 0), stPtr, "st");
 
-		llvm::Type* stackTy = llvm::StructType::get(*context,
-				{llvm::PointerType::get(*context, 0), builder->getInt64Ty(), builder->getInt64Ty()}, false);
+		llvm::Type* stackTy = llvm::StructType::get(
+				*context, {llvm::PointerType::get(*context, 0), builder->getInt64Ty(), builder->getInt64Ty()}, false);
 
 		llvm::Value* sizePtr = builder->CreateStructGEP(stackTy, st, 2, "size_ptr");
 		llvm::Value* size = builder->CreateLoad(builder->getInt64Ty(), sizePtr, "size");
@@ -1427,9 +1359,12 @@ namespace Qd {
 		llvm::Value* type2IsInt = builder->CreateICmpEQ(type2, builder->getInt32(0), "type2_is_int");
 		llvm::Value* bothInts = builder->CreateAnd(type1IsInt, type2IsInt, "both_ints");
 
-		llvm::BasicBlock* fastPath = llvm::BasicBlock::Create(*context, "fast_int_neq", builder->GetInsertBlock()->getParent());
-		llvm::BasicBlock* slowPath = llvm::BasicBlock::Create(*context, "slow_neq", builder->GetInsertBlock()->getParent());
-		llvm::BasicBlock* endBlock = llvm::BasicBlock::Create(*context, "neq_end", builder->GetInsertBlock()->getParent());
+		llvm::BasicBlock* fastPath =
+				llvm::BasicBlock::Create(*context, "fast_int_neq", builder->GetInsertBlock()->getParent());
+		llvm::BasicBlock* slowPath =
+				llvm::BasicBlock::Create(*context, "slow_neq", builder->GetInsertBlock()->getParent());
+		llvm::BasicBlock* endBlock =
+				llvm::BasicBlock::Create(*context, "neq_end", builder->GetInsertBlock()->getParent());
 
 		builder->CreateCondBr(bothInts, fastPath, slowPath);
 
@@ -1475,8 +1410,8 @@ namespace Qd {
 		llvm::Value* stPtr = builder->CreateStructGEP(contextTy, ctx, 0, "st_ptr");
 		llvm::Value* st = builder->CreateLoad(llvm::PointerType::get(*context, 0), stPtr, "st");
 
-		llvm::Type* stackTy = llvm::StructType::get(*context,
-				{llvm::PointerType::get(*context, 0), builder->getInt64Ty(), builder->getInt64Ty()}, false);
+		llvm::Type* stackTy = llvm::StructType::get(
+				*context, {llvm::PointerType::get(*context, 0), builder->getInt64Ty(), builder->getInt64Ty()}, false);
 
 		llvm::Value* sizePtr = builder->CreateStructGEP(stackTy, st, 2, "size_ptr");
 		llvm::Value* size = builder->CreateLoad(builder->getInt64Ty(), sizePtr, "size");
@@ -1500,9 +1435,12 @@ namespace Qd {
 		llvm::Value* type2IsInt = builder->CreateICmpEQ(type2, builder->getInt32(0), "type2_is_int");
 		llvm::Value* bothInts = builder->CreateAnd(type1IsInt, type2IsInt, "both_ints");
 
-		llvm::BasicBlock* fastPath = llvm::BasicBlock::Create(*context, "fast_int_lte", builder->GetInsertBlock()->getParent());
-		llvm::BasicBlock* slowPath = llvm::BasicBlock::Create(*context, "slow_lte", builder->GetInsertBlock()->getParent());
-		llvm::BasicBlock* endBlock = llvm::BasicBlock::Create(*context, "lte_end", builder->GetInsertBlock()->getParent());
+		llvm::BasicBlock* fastPath =
+				llvm::BasicBlock::Create(*context, "fast_int_lte", builder->GetInsertBlock()->getParent());
+		llvm::BasicBlock* slowPath =
+				llvm::BasicBlock::Create(*context, "slow_lte", builder->GetInsertBlock()->getParent());
+		llvm::BasicBlock* endBlock =
+				llvm::BasicBlock::Create(*context, "lte_end", builder->GetInsertBlock()->getParent());
 
 		builder->CreateCondBr(bothInts, fastPath, slowPath);
 
@@ -1548,8 +1486,8 @@ namespace Qd {
 		llvm::Value* stPtr = builder->CreateStructGEP(contextTy, ctx, 0, "st_ptr");
 		llvm::Value* st = builder->CreateLoad(llvm::PointerType::get(*context, 0), stPtr, "st");
 
-		llvm::Type* stackTy = llvm::StructType::get(*context,
-				{llvm::PointerType::get(*context, 0), builder->getInt64Ty(), builder->getInt64Ty()}, false);
+		llvm::Type* stackTy = llvm::StructType::get(
+				*context, {llvm::PointerType::get(*context, 0), builder->getInt64Ty(), builder->getInt64Ty()}, false);
 
 		llvm::Value* sizePtr = builder->CreateStructGEP(stackTy, st, 2, "size_ptr");
 		llvm::Value* size = builder->CreateLoad(builder->getInt64Ty(), sizePtr, "size");
@@ -1573,9 +1511,12 @@ namespace Qd {
 		llvm::Value* type2IsInt = builder->CreateICmpEQ(type2, builder->getInt32(0), "type2_is_int");
 		llvm::Value* bothInts = builder->CreateAnd(type1IsInt, type2IsInt, "both_ints");
 
-		llvm::BasicBlock* fastPath = llvm::BasicBlock::Create(*context, "fast_int_gte", builder->GetInsertBlock()->getParent());
-		llvm::BasicBlock* slowPath = llvm::BasicBlock::Create(*context, "slow_gte", builder->GetInsertBlock()->getParent());
-		llvm::BasicBlock* endBlock = llvm::BasicBlock::Create(*context, "gte_end", builder->GetInsertBlock()->getParent());
+		llvm::BasicBlock* fastPath =
+				llvm::BasicBlock::Create(*context, "fast_int_gte", builder->GetInsertBlock()->getParent());
+		llvm::BasicBlock* slowPath =
+				llvm::BasicBlock::Create(*context, "slow_gte", builder->GetInsertBlock()->getParent());
+		llvm::BasicBlock* endBlock =
+				llvm::BasicBlock::Create(*context, "gte_end", builder->GetInsertBlock()->getParent());
 
 		builder->CreateCondBr(bothInts, fastPath, slowPath);
 
@@ -1621,8 +1562,8 @@ namespace Qd {
 		llvm::Value* stPtr = builder->CreateStructGEP(contextTy, ctx, 0, "st_ptr");
 		llvm::Value* st = builder->CreateLoad(llvm::PointerType::get(*context, 0), stPtr, "st");
 
-		llvm::Type* stackTy = llvm::StructType::get(*context,
-				{llvm::PointerType::get(*context, 0), builder->getInt64Ty(), builder->getInt64Ty()}, false);
+		llvm::Type* stackTy = llvm::StructType::get(
+				*context, {llvm::PointerType::get(*context, 0), builder->getInt64Ty(), builder->getInt64Ty()}, false);
 
 		llvm::Value* sizePtr = builder->CreateStructGEP(stackTy, st, 2, "size_ptr");
 		llvm::Value* size = builder->CreateLoad(builder->getInt64Ty(), sizePtr, "size");
@@ -1646,9 +1587,12 @@ namespace Qd {
 		llvm::Value* type2IsInt = builder->CreateICmpEQ(type2, builder->getInt32(0), "type2_is_int");
 		llvm::Value* bothInts = builder->CreateAnd(type1IsInt, type2IsInt, "both_ints");
 
-		llvm::BasicBlock* fastPath = llvm::BasicBlock::Create(*context, "fast_int_div", builder->GetInsertBlock()->getParent());
-		llvm::BasicBlock* slowPath = llvm::BasicBlock::Create(*context, "slow_div", builder->GetInsertBlock()->getParent());
-		llvm::BasicBlock* endBlock = llvm::BasicBlock::Create(*context, "div_end", builder->GetInsertBlock()->getParent());
+		llvm::BasicBlock* fastPath =
+				llvm::BasicBlock::Create(*context, "fast_int_div", builder->GetInsertBlock()->getParent());
+		llvm::BasicBlock* slowPath =
+				llvm::BasicBlock::Create(*context, "slow_div", builder->GetInsertBlock()->getParent());
+		llvm::BasicBlock* endBlock =
+				llvm::BasicBlock::Create(*context, "div_end", builder->GetInsertBlock()->getParent());
 
 		builder->CreateCondBr(bothInts, fastPath, slowPath);
 
@@ -1664,7 +1608,8 @@ namespace Qd {
 
 			// Check for division by zero
 			llvm::Value* isZero = builder->CreateICmpEQ(value2, builder->getInt64(0), "divisor_is_zero");
-			llvm::BasicBlock* divOkBlock = llvm::BasicBlock::Create(*context, "div_ok", builder->GetInsertBlock()->getParent());
+			llvm::BasicBlock* divOkBlock =
+					llvm::BasicBlock::Create(*context, "div_ok", builder->GetInsertBlock()->getParent());
 
 			// If zero, jump to slow path (which has error handling); otherwise proceed
 			builder->CreateCondBr(isZero, slowPath, divOkBlock);
@@ -1702,8 +1647,8 @@ namespace Qd {
 		llvm::Value* stPtr = builder->CreateStructGEP(contextTy, ctx, 0, "st_ptr");
 		llvm::Value* st = builder->CreateLoad(llvm::PointerType::get(*context, 0), stPtr, "st");
 
-		llvm::Type* stackTy = llvm::StructType::get(*context,
-				{llvm::PointerType::get(*context, 0), builder->getInt64Ty(), builder->getInt64Ty()}, false);
+		llvm::Type* stackTy = llvm::StructType::get(
+				*context, {llvm::PointerType::get(*context, 0), builder->getInt64Ty(), builder->getInt64Ty()}, false);
 
 		llvm::Value* sizePtr = builder->CreateStructGEP(stackTy, st, 2, "size_ptr");
 		llvm::Value* size = builder->CreateLoad(builder->getInt64Ty(), sizePtr, "size");
@@ -1727,9 +1672,12 @@ namespace Qd {
 		llvm::Value* type2IsInt = builder->CreateICmpEQ(type2, builder->getInt32(0), "type2_is_int");
 		llvm::Value* bothInts = builder->CreateAnd(type1IsInt, type2IsInt, "both_ints");
 
-		llvm::BasicBlock* fastPath = llvm::BasicBlock::Create(*context, "fast_int_mod", builder->GetInsertBlock()->getParent());
-		llvm::BasicBlock* slowPath = llvm::BasicBlock::Create(*context, "slow_mod", builder->GetInsertBlock()->getParent());
-		llvm::BasicBlock* endBlock = llvm::BasicBlock::Create(*context, "mod_end", builder->GetInsertBlock()->getParent());
+		llvm::BasicBlock* fastPath =
+				llvm::BasicBlock::Create(*context, "fast_int_mod", builder->GetInsertBlock()->getParent());
+		llvm::BasicBlock* slowPath =
+				llvm::BasicBlock::Create(*context, "slow_mod", builder->GetInsertBlock()->getParent());
+		llvm::BasicBlock* endBlock =
+				llvm::BasicBlock::Create(*context, "mod_end", builder->GetInsertBlock()->getParent());
 
 		builder->CreateCondBr(bothInts, fastPath, slowPath);
 
@@ -1745,7 +1693,8 @@ namespace Qd {
 
 			// Check for division by zero
 			llvm::Value* isZero = builder->CreateICmpEQ(value2, builder->getInt64(0), "divisor_is_zero");
-			llvm::BasicBlock* modOkBlock = llvm::BasicBlock::Create(*context, "mod_ok", builder->GetInsertBlock()->getParent());
+			llvm::BasicBlock* modOkBlock =
+					llvm::BasicBlock::Create(*context, "mod_ok", builder->GetInsertBlock()->getParent());
 
 			// If zero, jump to slow path (which has error handling); otherwise proceed
 			builder->CreateCondBr(isZero, slowPath, modOkBlock);
@@ -1783,8 +1732,8 @@ namespace Qd {
 		llvm::Value* stPtr = builder->CreateStructGEP(contextTy, ctx, 0, "st_ptr");
 		llvm::Value* st = builder->CreateLoad(llvm::PointerType::get(*context, 0), stPtr, "st");
 
-		llvm::Type* stackTy = llvm::StructType::get(*context,
-				{llvm::PointerType::get(*context, 0), builder->getInt64Ty(), builder->getInt64Ty()}, false);
+		llvm::Type* stackTy = llvm::StructType::get(
+				*context, {llvm::PointerType::get(*context, 0), builder->getInt64Ty(), builder->getInt64Ty()}, false);
 
 		llvm::Value* sizePtr = builder->CreateStructGEP(stackTy, st, 2, "size_ptr");
 		llvm::Value* size = builder->CreateLoad(builder->getInt64Ty(), sizePtr, "size");
@@ -1815,8 +1764,8 @@ namespace Qd {
 		llvm::Value* stPtr = builder->CreateStructGEP(contextTy, ctx, 0, "st_ptr");
 		llvm::Value* st = builder->CreateLoad(llvm::PointerType::get(*context, 0), stPtr, "st");
 
-		llvm::Type* stackTy = llvm::StructType::get(*context,
-				{llvm::PointerType::get(*context, 0), builder->getInt64Ty(), builder->getInt64Ty()}, false);
+		llvm::Type* stackTy = llvm::StructType::get(
+				*context, {llvm::PointerType::get(*context, 0), builder->getInt64Ty(), builder->getInt64Ty()}, false);
 
 		llvm::Value* sizePtr = builder->CreateStructGEP(stackTy, st, 2, "size_ptr");
 		llvm::Value* size = builder->CreateLoad(builder->getInt64Ty(), sizePtr, "size");
@@ -1853,7 +1802,8 @@ namespace Qd {
 		case AstNodeLiteral::LiteralType::INTEGER: {
 			int64_t val = 0;
 			if (!safeParseInt64(value, val)) {
-				std::cerr << "quadc: error: Invalid integer literal '" << value << "' (out of range or invalid format)" << std::endl;
+				std::cerr << "quadc: error: Invalid integer literal '" << value << "' (out of range or invalid format)"
+						  << std::endl;
 				compilationFailed = true;
 			}
 			// Use function calls when debug info is enabled for better debuggability
@@ -2081,8 +2031,8 @@ namespace Qd {
 								// Load struct pointer from local variable
 								llvm::Value* valuePtr =
 										builder->CreateStructGEP(stackElementTy, localAlloca, 0, "struct_value_ptr");
-								llvm::Value* structPtr = builder->CreateLoad(llvm::PointerType::getUnqual(*context),
-										valuePtr, "struct_ptr");
+								llvm::Value* structPtr = builder->CreateLoad(
+										llvm::PointerType::getUnqual(*context), valuePtr, "struct_ptr");
 
 								// Release each string field
 								for (const auto& field : layout.fields) {
@@ -2096,9 +2046,10 @@ namespace Qd {
 
 										// Call qd_string_release() on the string
 										if (!this->qdStringReleaseFn) {
-											auto qdStringReleaseFnTy =
-													llvm::FunctionType::get(builder->getVoidTy(), {llvm::PointerType::getUnqual(*context)}, false);
-											this->qdStringReleaseFn = llvm::Function::Create(qdStringReleaseFnTy, llvm::Function::ExternalLinkage, "qd_string_release", *module);
+											auto qdStringReleaseFnTy = llvm::FunctionType::get(builder->getVoidTy(),
+													{llvm::PointerType::getUnqual(*context)}, false);
+											this->qdStringReleaseFn = llvm::Function::Create(qdStringReleaseFnTy,
+													llvm::Function::ExternalLinkage, "qd_string_release", *module);
 										}
 										builder->CreateCall(this->qdStringReleaseFn, {stringPtr});
 									}
@@ -2125,8 +2076,7 @@ namespace Qd {
 			llvm::Function* qdFreeFn = module->getFunction("qd_free");
 			if (!qdFreeFn) {
 				auto fnTy = llvm::FunctionType::get(execResultTy, {contextPtrTy}, false);
-				qdFreeFn =
-						llvm::Function::Create(fnTy, llvm::Function::ExternalLinkage, "qd_free", *module);
+				qdFreeFn = llvm::Function::Create(fnTy, llvm::Function::ExternalLinkage, "qd_free", *module);
 			}
 			builder->CreateCall(qdFreeFn, {ctx});
 			return;
@@ -2230,8 +2180,8 @@ namespace Qd {
 			if (localArrayVariables.find(name) != localArrayVariables.end()) {
 				llvm::Function* arrayRetainFn = module->getFunction("qd_array_retain");
 				if (!arrayRetainFn) {
-					auto arrayRetainFnTy =
-							llvm::FunctionType::get(builder->getVoidTy(), {llvm::PointerType::getUnqual(*context)}, false);
+					auto arrayRetainFnTy = llvm::FunctionType::get(
+							builder->getVoidTy(), {llvm::PointerType::getUnqual(*context)}, false);
 					arrayRetainFn = llvm::Function::Create(
 							arrayRetainFnTy, llvm::Function::ExternalLinkage, "qd_array_retain", *module);
 				}
@@ -2259,7 +2209,7 @@ namespace Qd {
 		auto constIt = moduleConstants.find(name);
 		if (constIt != moduleConstants.end()) {
 			const std::string& value = constIt->second;
-			
+
 			// Determine the type of the constant and push it
 			if (!value.empty() && value.size() >= 2 && value.front() == '"' && value.back() == '"') {
 				// String literal - create global string and push
@@ -2275,7 +2225,8 @@ namespace Qd {
 				// Integer constant
 				int64_t intValue = 0;
 				if (!safeParseInt64(value, intValue)) {
-					std::cerr << "quadc: error: Invalid integer constant '" << value << "' (out of range or invalid format)" << std::endl;
+					std::cerr << "quadc: error: Invalid integer constant '" << value
+							  << "' (out of range or invalid format)" << std::endl;
 					compilationFailed = true;
 				}
 				llvm::Value* intConst = builder->getInt64(static_cast<uint64_t>(intValue));
@@ -2615,10 +2566,11 @@ namespace Qd {
 					// Compare switch value with case value (integer)
 					auto valuePtr = builder->CreateStructGEP(switchElemTy, switchElem, 0, "value_ptr");
 					auto switchVal = builder->CreateLoad(builder->getInt64Ty(), valuePtr, "switch_val");
-					
+
 					int64_t parsedVal = 0;
 					if (!safeParseInt64(lit->value(), parsedVal)) {
-						std::cerr << "quadc: error: Invalid integer case label '" << lit->value() << "' (out of range or invalid format)" << std::endl;
+						std::cerr << "quadc: error: Invalid integer case label '" << lit->value()
+								  << "' (out of range or invalid format)" << std::endl;
 						compilationFailed = true;
 					}
 					auto caseVal = builder->getInt64(static_cast<uint64_t>(parsedVal));
@@ -2647,10 +2599,8 @@ namespace Qd {
 
 					// Call qd_string_data to get const char*
 					if (!this->qdStringDataFn) {
-						auto qdStringDataFnTy = llvm::FunctionType::get(
-								llvm::PointerType::getUnqual(*context),
-								{llvm::PointerType::getUnqual(*context)},
-								false);
+						auto qdStringDataFnTy = llvm::FunctionType::get(llvm::PointerType::getUnqual(*context),
+								{llvm::PointerType::getUnqual(*context)}, false);
 						this->qdStringDataFn = llvm::Function::Create(
 								qdStringDataFnTy, llvm::Function::ExternalLinkage, "qd_string_data", *module);
 					}
@@ -2759,7 +2709,8 @@ namespace Qd {
 		if (!this->qdStringReleaseFn) {
 			auto qdStringReleaseFnTy =
 					llvm::FunctionType::get(builder->getVoidTy(), {llvm::PointerType::getUnqual(*context)}, false);
-			this->qdStringReleaseFn = llvm::Function::Create(qdStringReleaseFnTy, llvm::Function::ExternalLinkage, "qd_string_release", *module);
+			this->qdStringReleaseFn = llvm::Function::Create(
+					qdStringReleaseFnTy, llvm::Function::ExternalLinkage, "qd_string_release", *module);
 		}
 		builder->CreateCall(this->qdStringReleaseFn, {strPtr});
 		builder->CreateBr(skipFreeBB);
@@ -2890,7 +2841,8 @@ namespace Qd {
 			if (!this->qdStringReleaseFn) {
 				auto qdStringReleaseFnTy =
 						llvm::FunctionType::get(builder->getVoidTy(), {llvm::PointerType::getUnqual(*context)}, false);
-				this->qdStringReleaseFn = llvm::Function::Create(qdStringReleaseFnTy, llvm::Function::ExternalLinkage, "qd_string_release", *module);
+				this->qdStringReleaseFn = llvm::Function::Create(
+						qdStringReleaseFnTy, llvm::Function::ExternalLinkage, "qd_string_release", *module);
 			}
 			builder->CreateCall(this->qdStringReleaseFn, {strPtr});
 			builder->CreateBr(skipFreeBlock);
@@ -2907,15 +2859,16 @@ namespace Qd {
 				builder->SetInsertPoint(freePtrBlock);
 				llvm::Value* ptrValuePtr =
 						builder->CreateStructGEP(stackElementTy, localAlloca, 0, varName + "_cleanup_ptr_value_ptr");
-				llvm::Value* arrPtr =
-						builder->CreateLoad(llvm::PointerType::getUnqual(*context), ptrValuePtr, varName + "_cleanup_arr");
+				llvm::Value* arrPtr = builder->CreateLoad(
+						llvm::PointerType::getUnqual(*context), ptrValuePtr, varName + "_cleanup_arr");
 
 				// Call qd_array_release() on the array
 				llvm::Function* arrayReleaseFn = module->getFunction("qd_array_release");
 				if (!arrayReleaseFn) {
-					auto arrayReleaseFnTy =
-							llvm::FunctionType::get(builder->getVoidTy(), {llvm::PointerType::getUnqual(*context)}, false);
-					arrayReleaseFn = llvm::Function::Create(arrayReleaseFnTy, llvm::Function::ExternalLinkage, "qd_array_release", *module);
+					auto arrayReleaseFnTy = llvm::FunctionType::get(
+							builder->getVoidTy(), {llvm::PointerType::getUnqual(*context)}, false);
+					arrayReleaseFn = llvm::Function::Create(
+							arrayReleaseFnTy, llvm::Function::ExternalLinkage, "qd_array_release", *module);
 				}
 				builder->CreateCall(arrayReleaseFn, {arrPtr});
 				builder->CreateBr(skipFreeBlock);
@@ -3046,8 +2999,8 @@ namespace Qd {
 		llvm::Value* st = builder->CreateLoad(llvm::PointerType::get(*context, 0), stPtr, "st");
 
 		// Stack type: { data*, capacity, size }
-		llvm::Type* stackTy = llvm::StructType::get(*context,
-				{llvm::PointerType::get(*context, 0), builder->getInt64Ty(), builder->getInt64Ty()}, false);
+		llvm::Type* stackTy = llvm::StructType::get(
+				*context, {llvm::PointerType::get(*context, 0), builder->getInt64Ty(), builder->getInt64Ty()}, false);
 
 		llvm::Value* sizePtr = builder->CreateStructGEP(stackTy, st, 2, "size_ptr");
 		llvm::Value* size = builder->CreateLoad(builder->getInt64Ty(), sizePtr, "size");
@@ -3392,9 +3345,7 @@ namespace Qd {
 		// Call qd_string_data to get const char* from qd_string_t*
 		if (!this->qdStringDataFn) {
 			auto qdStringDataFnTy = llvm::FunctionType::get(
-					llvm::PointerType::getUnqual(*context),
-					{llvm::PointerType::getUnqual(*context)},
-					false);
+					llvm::PointerType::getUnqual(*context), {llvm::PointerType::getUnqual(*context)}, false);
 			this->qdStringDataFn = llvm::Function::Create(
 					qdStringDataFnTy, llvm::Function::ExternalLinkage, "qd_string_data", *module);
 		}
@@ -3404,7 +3355,8 @@ namespace Qd {
 		if (!this->qdStringReleaseFn) {
 			auto qdStringReleaseFnTy =
 					llvm::FunctionType::get(builder->getVoidTy(), {llvm::PointerType::getUnqual(*context)}, false);
-			this->qdStringReleaseFn = llvm::Function::Create(qdStringReleaseFnTy, llvm::Function::ExternalLinkage, "qd_string_release", *module);
+			this->qdStringReleaseFn = llvm::Function::Create(
+					qdStringReleaseFnTy, llvm::Function::ExternalLinkage, "qd_string_release", *module);
 		}
 		builder->CreateCall(this->qdStringReleaseFn, {strPtr});
 		builder->CreateBr(pushDoneBB);
@@ -3638,7 +3590,7 @@ namespace Qd {
 				);
 
 				// Insert declare to make it visible in debugger (use alloca, not SSA value)
-				debugBuilder->insertDeclare(ctxAlloca,		  // Storage (alloca, not SSA)
+				debugBuilder->insertDeclare(ctxAlloca,	  // Storage (alloca, not SSA)
 						localVar,						  // Variable
 						debugBuilder->createExpression(), // Expression
 						llvm::DILocation::get(
@@ -3744,21 +3696,20 @@ namespace Qd {
 
 				// Create local variable for ctx (not a parameter variable)
 				// This prevents LLVM from tracking the parameter value flow
-				auto localVar =
-						debugBuilder->createAutoVariable(debugScopeStack.back(),		  // Scope (current function)
-								"ctx",													  // Name
-								funcDebugFile,												  // File
-								static_cast<unsigned>(funcNode->line()),				  // Line
-								ctxPtrType,													  // Type
-								true														  // Always preserve
-						);
+				auto localVar = debugBuilder->createAutoVariable(debugScopeStack.back(), // Scope (current function)
+						"ctx",															 // Name
+						funcDebugFile,													 // File
+						static_cast<unsigned>(funcNode->line()),						 // Line
+						ctxPtrType,														 // Type
+						true															 // Always preserve
+				);
 
 				// Insert declare on the alloca so debugger can always find it
 				// Use DW_OP_deref since the alloca is a pointer to where the value is stored
 				// No deref needed - ctxAlloca stores the pointer value directly
-				debugBuilder->insertDeclare(ctxAlloca,			  // Storage (the alloca)
-						localVar,								  // Variable
-						debugBuilder->createExpression(),		  // Empty expression (no deref)
+				debugBuilder->insertDeclare(ctxAlloca,	  // Storage (the alloca)
+						localVar,						  // Variable
+						debugBuilder->createExpression(), // Empty expression (no deref)
 						llvm::DILocation::get(
 								*context, static_cast<unsigned>(funcNode->line()), 0, debugScopeStack.back()),
 						builder->GetInsertBlock());
@@ -3773,7 +3724,7 @@ namespace Qd {
 			// Only consider it integer-only if it has at least one explicit integer parameter
 			// Functions with no parameters can't be assumed integer-only (they might use strings, floats, etc.)
 			bool hasIntegerParams = false;
-			currentFunctionIsIntegerOnly = true;  // Assume true, set false if we find non-integer
+			currentFunctionIsIntegerOnly = true; // Assume true, set false if we find non-integer
 			for (const auto* param : funcNode->inputParameters()) {
 				if (const auto* paramNode = dynamic_cast<const AstNodeParameter*>(param)) {
 					const std::string& typeStr = paramNode->typeString();
@@ -4240,12 +4191,12 @@ namespace Qd {
 
 		auto targetTripleStr = llvm::sys::getDefaultTargetTriple();
 		llvm::Triple targetTriple(targetTripleStr);
-		// LLVM 20+ changed API to accept Triple objects instead of strings
-		#if LLVM_VERSION_MAJOR >= 20
-			impl->module->setTargetTriple(targetTriple);
-		#else
-			impl->module->setTargetTriple(targetTriple.getTriple());
-		#endif
+// LLVM 20+ changed API to accept Triple objects instead of strings
+#if LLVM_VERSION_MAJOR >= 20
+		impl->module->setTargetTriple(targetTriple);
+#else
+		impl->module->setTargetTriple(targetTriple.getTriple());
+#endif
 
 		std::string error;
 		auto target = llvm::TargetRegistry::lookupTarget(targetTripleStr, error);
@@ -4257,14 +4208,14 @@ namespace Qd {
 		auto cpu = "generic";
 		auto features = "";
 		llvm::TargetOptions opt;
-		// LLVM 20+ changed API to accept Triple objects instead of strings
-		#if LLVM_VERSION_MAJOR >= 20
-			std::unique_ptr<llvm::TargetMachine> targetMachine(target->createTargetMachine(
-					targetTriple, cpu, features, opt, std::optional<llvm::Reloc::Model>(llvm::Reloc::PIC_)));
-		#else
-			std::unique_ptr<llvm::TargetMachine> targetMachine(target->createTargetMachine(
-					targetTriple.getTriple(), cpu, features, opt, std::optional<llvm::Reloc::Model>(llvm::Reloc::PIC_)));
-		#endif
+// LLVM 20+ changed API to accept Triple objects instead of strings
+#if LLVM_VERSION_MAJOR >= 20
+		std::unique_ptr<llvm::TargetMachine> targetMachine(target->createTargetMachine(
+				targetTriple, cpu, features, opt, std::optional<llvm::Reloc::Model>(llvm::Reloc::PIC_)));
+#else
+		std::unique_ptr<llvm::TargetMachine> targetMachine(target->createTargetMachine(
+				targetTriple.getTriple(), cpu, features, opt, std::optional<llvm::Reloc::Model>(llvm::Reloc::PIC_)));
+#endif
 
 		impl->module->setDataLayout(targetMachine->createDataLayout());
 
@@ -4540,15 +4491,15 @@ namespace Qd {
 
 		const StructLayout& layout = it->second;
 
-	// Define context and stack types (stackElementTy is already a member variable)
-	llvm::Type* contextTy = llvm::StructType::get(*context, {llvm::PointerType::getUnqual(*context)}, false);
-	llvm::Type* stackTy = llvm::StructType::get(*context,
-			{
-					llvm::PointerType::getUnqual(*context),  // data
-					builder->getInt64Ty(),                    // size
-					builder->getInt64Ty()                     // capacity
-			},
-			false);
+		// Define context and stack types (stackElementTy is already a member variable)
+		llvm::Type* contextTy = llvm::StructType::get(*context, {llvm::PointerType::getUnqual(*context)}, false);
+		llvm::Type* stackTy = llvm::StructType::get(*context,
+				{
+						llvm::PointerType::getUnqual(*context), // data
+						builder->getInt64Ty(),					// size
+						builder->getInt64Ty()					// capacity
+				},
+				false);
 
 		// Allocate memory for struct
 		auto structSize = builder->getInt64(layout.totalSize);
@@ -4621,7 +4572,8 @@ namespace Qd {
 		}
 
 		llvm::Value* structPtrAlloca = it->second;
-		llvm::Value* structPtr = builder->CreateLoad(llvm::PointerType::getUnqual(*context), structPtrAlloca, "struct_ptr");
+		llvm::Value* structPtr =
+				builder->CreateLoad(llvm::PointerType::getUnqual(*context), structPtrAlloca, "struct_ptr");
 
 		// Find struct type by examining local variables
 		// For now, we need to track the type of each local variable
@@ -4636,8 +4588,9 @@ namespace Qd {
 					break;
 				}
 			}
-			if (matchingField)
+			if (matchingField) {
 				break;
+			}
 		}
 
 		if (!matchingField) {
@@ -4652,18 +4605,18 @@ namespace Qd {
 		// Load value from field based on type
 		if (matchingField->typeName == "f64") {
 			// Use bytePtr directly with opaque pointers
-		llvm::Value* fieldPtr = bytePtr;
+			llvm::Value* fieldPtr = bytePtr;
 			llvm::Value* floatValue = builder->CreateLoad(builder->getDoubleTy(), fieldPtr, "field_value");
 			builder->CreateCall(pushFloatFn, {ctx, floatValue});
 		} else if (matchingField->typeName == "i64") {
 			// Use bytePtr directly with opaque pointers
-		llvm::Value* fieldPtr = bytePtr;
+			llvm::Value* fieldPtr = bytePtr;
 			llvm::Value* intValue = builder->CreateLoad(builder->getInt64Ty(), fieldPtr, "field_value");
 			builder->CreateCall(pushIntFn, {ctx, intValue});
 		} else if (matchingField->typeName == "str" || matchingField->typeName.find('*') != std::string::npos) {
-			llvm::Value* fieldPtr =
-					bytePtr; // Use bytePtr directly with opaque pointers
-			llvm::Value* ptrValue = builder->CreateLoad(llvm::PointerType::getUnqual(*context), fieldPtr, "field_value");
+			llvm::Value* fieldPtr = bytePtr; // Use bytePtr directly with opaque pointers
+			llvm::Value* ptrValue =
+					builder->CreateLoad(llvm::PointerType::getUnqual(*context), fieldPtr, "field_value");
 			builder->CreateCall(pushPtrFn, {ctx, ptrValue});
 		}
 	}
@@ -4678,13 +4631,12 @@ namespace Qd {
 			llvm::Function* createArrayFn = module->getFunction("qd_array_create");
 			if (!createArrayFn) {
 				auto fnTy = llvm::FunctionType::get(
-						llvm::PointerType::getUnqual(*context),
-						{builder->getInt64Ty(), builder->getInt32Ty()},
-						false);
-				createArrayFn = llvm::Function::Create(fnTy, llvm::Function::ExternalLinkage, "qd_array_create", *module);
+						llvm::PointerType::getUnqual(*context), {builder->getInt64Ty(), builder->getInt32Ty()}, false);
+				createArrayFn =
+						llvm::Function::Create(fnTy, llvm::Function::ExternalLinkage, "qd_array_create", *module);
 			}
-			llvm::Value* arrPtr = builder->CreateCall(createArrayFn,
-					{builder->getInt64(8), builder->getInt32(0)}, "empty_arr");
+			llvm::Value* arrPtr =
+					builder->CreateCall(createArrayFn, {builder->getInt64(8), builder->getInt32(0)}, "empty_arr");
 			builder->CreateCall(pushPtrFn, {ctx, arrPtr});
 			return;
 		}
@@ -4706,36 +4658,29 @@ namespace Qd {
 		llvm::Function* createArrayFn = module->getFunction("qd_array_create");
 		if (!createArrayFn) {
 			auto fnTy = llvm::FunctionType::get(
-					llvm::PointerType::getUnqual(*context),
-					{builder->getInt64Ty(), builder->getInt32Ty()},
-					false);
+					llvm::PointerType::getUnqual(*context), {builder->getInt64Ty(), builder->getInt32Ty()}, false);
 			createArrayFn = llvm::Function::Create(fnTy, llvm::Function::ExternalLinkage, "qd_array_create", *module);
 		}
 
 		llvm::Function* pushIntArrFn = module->getFunction("qd_array_push_int");
 		if (!pushIntArrFn) {
 			auto fnTy = llvm::FunctionType::get(
-					builder->getInt32Ty(),
-					{llvm::PointerType::getUnqual(*context), builder->getInt64Ty()},
-					false);
+					builder->getInt32Ty(), {llvm::PointerType::getUnqual(*context), builder->getInt64Ty()}, false);
 			pushIntArrFn = llvm::Function::Create(fnTy, llvm::Function::ExternalLinkage, "qd_array_push_int", *module);
 		}
 
 		llvm::Function* pushFloatArrFn = module->getFunction("qd_array_push_float");
 		if (!pushFloatArrFn) {
 			auto fnTy = llvm::FunctionType::get(
-					builder->getInt32Ty(),
-					{llvm::PointerType::getUnqual(*context), builder->getDoubleTy()},
-					false);
-			pushFloatArrFn = llvm::Function::Create(fnTy, llvm::Function::ExternalLinkage, "qd_array_push_float", *module);
+					builder->getInt32Ty(), {llvm::PointerType::getUnqual(*context), builder->getDoubleTy()}, false);
+			pushFloatArrFn =
+					llvm::Function::Create(fnTy, llvm::Function::ExternalLinkage, "qd_array_push_float", *module);
 		}
 
 		llvm::Function* pushPtrArrFn = module->getFunction("qd_array_push_ptr");
 		if (!pushPtrArrFn) {
-			auto fnTy = llvm::FunctionType::get(
-					builder->getInt32Ty(),
-					{llvm::PointerType::getUnqual(*context), llvm::PointerType::getUnqual(*context)},
-					false);
+			auto fnTy = llvm::FunctionType::get(builder->getInt32Ty(),
+					{llvm::PointerType::getUnqual(*context), llvm::PointerType::getUnqual(*context)}, false);
 			pushPtrArrFn = llvm::Function::Create(fnTy, llvm::Function::ExternalLinkage, "qd_array_push_ptr", *module);
 		}
 
@@ -4751,7 +4696,8 @@ namespace Qd {
 					int64_t val = std::stoll(lit->value());
 					if (arrayType == 1) {
 						// Coerce int to float
-						builder->CreateCall(pushFloatArrFn, {arrPtr, llvm::ConstantFP::get(builder->getDoubleTy(), static_cast<double>(val))});
+						builder->CreateCall(pushFloatArrFn,
+								{arrPtr, llvm::ConstantFP::get(builder->getDoubleTy(), static_cast<double>(val))});
 					} else {
 						builder->CreateCall(pushIntArrFn, {arrPtr, builder->getInt64(static_cast<uint64_t>(val))});
 					}
@@ -4759,9 +4705,11 @@ namespace Qd {
 					double val = std::stod(lit->value());
 					if (arrayType == 0) {
 						// Coerce float to int for int array
-						builder->CreateCall(pushIntArrFn, {arrPtr, builder->getInt64(static_cast<uint64_t>(static_cast<int64_t>(val)))});
+						builder->CreateCall(pushIntArrFn,
+								{arrPtr, builder->getInt64(static_cast<uint64_t>(static_cast<int64_t>(val)))});
 					} else {
-						builder->CreateCall(pushFloatArrFn, {arrPtr, llvm::ConstantFP::get(builder->getDoubleTy(), val)});
+						builder->CreateCall(
+								pushFloatArrFn, {arrPtr, llvm::ConstantFP::get(builder->getDoubleTy(), val)});
 					}
 				} else if (lit->literalType() == AstNodeLiteral::LiteralType::STRING) {
 					// Create string constant
@@ -4773,19 +4721,17 @@ namespace Qd {
 					// Create qd_string and push
 					llvm::Function* createStrFn = module->getFunction("qd_string_create");
 					if (!createStrFn) {
-						auto fnTy = llvm::FunctionType::get(
-								llvm::PointerType::getUnqual(*context),
-								{llvm::PointerType::getUnqual(*context)},
-								false);
-						createStrFn = llvm::Function::Create(fnTy, llvm::Function::ExternalLinkage, "qd_string_create", *module);
+						auto fnTy = llvm::FunctionType::get(llvm::PointerType::getUnqual(*context),
+								{llvm::PointerType::getUnqual(*context)}, false);
+						createStrFn = llvm::Function::Create(
+								fnTy, llvm::Function::ExternalLinkage, "qd_string_create", *module);
 					}
 					// Ensure qdStringReleaseFn is available
 					if (!qdStringReleaseFn) {
 						auto qdStringReleaseFnTy = llvm::FunctionType::get(
-								builder->getVoidTy(),
-								{llvm::PointerType::getUnqual(*context)},
-								false);
-						qdStringReleaseFn = llvm::Function::Create(qdStringReleaseFnTy, llvm::Function::ExternalLinkage, "qd_string_release", *module);
+								builder->getVoidTy(), {llvm::PointerType::getUnqual(*context)}, false);
+						qdStringReleaseFn = llvm::Function::Create(
+								qdStringReleaseFnTy, llvm::Function::ExternalLinkage, "qd_string_release", *module);
 					}
 					llvm::Value* strConstant = builder->CreateGlobalString(strVal, "arr_str");
 					llvm::Value* qdStr = builder->CreateCall(createStrFn, {strConstant}, "qd_str");
@@ -4814,8 +4760,9 @@ namespace Qd {
 	}
 
 	void LlvmGenerator::Impl::executeDeferScope(llvm::Value* ctx) {
-		if (deferScopeStack.empty())
+		if (deferScopeStack.empty()) {
 			return;
+		}
 
 		auto& currentScope = deferScopeStack.back();
 		// Execute defers in REVERSE order (LIFO)

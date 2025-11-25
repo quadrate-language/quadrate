@@ -10,8 +10,8 @@
 #ifndef QD_QUADRATE_RUNTIME_STRING_H
 #define QD_QUADRATE_RUNTIME_STRING_H
 
-#include <stddef.h>
 #include <stdbool.h>
+#include <stddef.h>
 
 #ifdef __cplusplus
 #include <atomic>
@@ -30,10 +30,10 @@ typedef atomic_size_t qd_atomic_size_t;
  * When refcount==1, strings can be mutated in-place if capacity allows.
  */
 typedef struct qd_string {
-	char* data;              ///< Null-terminated string data (owned)
-	size_t length;           ///< String length (cached, excluding null terminator)
-	size_t capacity;         ///< Buffer capacity (excluding null terminator)
-	qd_atomic_size_t refcount;  ///< Atomic reference count
+	char* data;				   ///< Null-terminated string data (owned)
+	size_t length;			   ///< String length (cached, excluding null terminator)
+	size_t capacity;		   ///< Buffer capacity (excluding null terminator)
+	qd_atomic_size_t refcount; ///< Atomic reference count
 } qd_string_t;
 
 /**
@@ -145,9 +145,9 @@ qd_string_t* qd_string_concat_smart(qd_string_t* str1, qd_string_t* str2);
  * to amortize allocation costs.
  */
 typedef struct qd_string_builder {
-	char* data;              ///< Buffer for building string (owned)
-	size_t length;           ///< Current string length
-	size_t capacity;         ///< Current buffer capacity
+	char* data;		 ///< Buffer for building string (owned)
+	size_t length;	 ///< Current string length
+	size_t capacity; ///< Current buffer capacity
 } qd_string_builder_t;
 
 /**

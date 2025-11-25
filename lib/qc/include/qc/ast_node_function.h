@@ -9,8 +9,7 @@ namespace Qd {
 	class AstNodeFunctionDeclaration : public IAstNode {
 	public:
 		AstNodeFunctionDeclaration(const std::string& name, bool isPublic = false)
-			: mName(name), mParent(nullptr), mBody(nullptr), mThrows(false), mIsPublic(isPublic), mLine(0),
-			  mColumn(0) {
+			: mName(name), mParent(nullptr), mBody(nullptr), mThrows(false), mIsPublic(isPublic), mLine(0), mColumn(0) {
 		}
 
 		~AstNodeFunctionDeclaration() {

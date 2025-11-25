@@ -1,4 +1,5 @@
 quadpm_sources = files(
+	'src/git_ref.cc',
 	'src/main.cc',
 )
 

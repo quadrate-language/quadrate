@@ -1,3 +1,5 @@
+#include "function_info.h"
+#include "struct_info.h"
 #include <cstring>
 #include <filesystem>
 #include <fstream>
@@ -7,8 +9,8 @@
 #include <map>
 #include <qc/ast.h>
 #include <qc/ast_node.h>
-#include <qc/ast_node_function.h>
 #include <qc/ast_node_constant.h>
+#include <qc/ast_node_function.h>
 #include <qc/ast_node_identifier.h>
 #include <qc/ast_node_import.h>
 #include <qc/ast_node_instruction.h>
@@ -25,22 +27,6 @@
 
 // Default error span length in characters for diagnostic highlighting
 static const int ERROR_SPAN_LENGTH = 10;
-
-// Structure to hold function information for completions
-struct FunctionInfo {
-	std::string name;
-	std::vector<std::string> inputParams;  // "name:type" format
-	std::vector<std::string> outputParams; // "name:type" format
-	std::string signature;				   // Full signature string
-	std::string snippet;				   // LSP snippet with placeholders
-};
-
-// Structure to hold struct information for completions
-struct StructInfo {
-	std::string name;
-	std::vector<std::pair<std::string, std::string>> fields; // field name -> type
-	std::string signature; // Full struct declaration
-};
 
 // LSP Server using jansson for JSON handling
 class QuadrateLSP {
@@ -415,7 +401,8 @@ private:
 		static const char* instructions[] = {"add", "sub", "mul", "div", "dup", "swap", "drop", "over", "rot", "print",
 				"prints", "eq", "neq", "lt", "gt", "lte", "gte", "and", "or", "not", "inc", "dec", "abs", "sqrt", "sq",
 				"sin", "cos", "tan", "asin", "acos", "atan", "ln", "log10", "pow", "min", "max", "ceil", "floor",
-				"round", "if", "for", "loop", "switch", "case", "default", "break", "continue", "defer", "free", "struct", "pub"};
+				"round", "if", "for", "loop", "switch", "case", "default", "break", "continue", "defer", "free",
+				"struct", "pub"};
 
 		json_t* response = json_object();
 		json_object_set_new(response, "jsonrpc", json_string("2.0"));
@@ -568,16 +555,18 @@ private:
 				{"if", "Conditional execution.\n\n**Syntax:** `condition if { ... } else { ... }`"},
 				{"for", "Loop construct.\n\n**Syntax:** `start end for { ... }`"},
 				{"loop", "Infinite loop.\n\n**Syntax:** `loop { ... }`"},
-				{"free", "Free allocated memory.\n\n**Stack effect:** `ptr --`\n\nFrees memory allocated for structs or "
-						 "strings. Automatically frees nested string fields in structs."},
-				{"struct",
-						"Declare a struct type.\n\n**Syntax:** `struct Name { field1:type1 field2:type2 }`\n\nDefines a "
-						"composite data type with named fields."},
-				{"pub",
-						"Public visibility modifier.\n\n**Syntax:** `pub struct Name { ... }` or `pub fn name(...) { ... "
+				{"free",
+						"Free allocated memory.\n\n**Stack effect:** `ptr --`\n\nFrees memory allocated for structs or "
+						"strings. Automatically frees nested string fields in structs."},
+				{"struct", "Declare a struct type.\n\n**Syntax:** `struct Name { field1:type1 field2:type2 "
+						   "}`\n\nDefines a "
+						   "composite data type with named fields."},
+				{"pub", "Public visibility modifier.\n\n**Syntax:** `pub struct Name { ... }` or `pub fn name(...) { "
+						"... "
 						"}`\n\nMakes structs or functions visible to other modules."},
-				{"defer", "Defer execution until scope exit.\n\n**Syntax:** `defer { ... }`\n\nExecutes code block when "
-						  "function returns, useful for cleanup."},
+				{"defer",
+						"Defer execution until scope exit.\n\n**Syntax:** `defer { ... }`\n\nExecutes code block when "
+						"function returns, useful for cleanup."},
 		};
 
 		auto it = docs.find(word);
@@ -733,17 +722,22 @@ private:
 										Qd::IAstNode* child = root->child(i);
 
 										if (child && child->type() == Qd::IAstNode::Type::FUNCTION_DECLARATION) {
-											Qd::AstNodeFunctionDeclaration* funcNode = static_cast<Qd::AstNodeFunctionDeclaration*>(child);
+											Qd::AstNodeFunctionDeclaration* funcNode =
+													static_cast<Qd::AstNodeFunctionDeclaration*>(child);
 											if (funcNode->name() == symbolName) {
 												// Build function documentation
 												std::ostringstream docStream;
-												docStream << "**Function (from " << moduleName << "):** `fn " << funcNode->name() << "(";
+												docStream << "**Function (from " << moduleName << "):** `fn "
+														  << funcNode->name() << "(";
 
 												// Input parameters
 												const auto& inputs = funcNode->inputParameters();
 												for (size_t j = 0; j < inputs.size(); j++) {
-													if (j > 0) docStream << " ";
-													Qd::AstNodeParameter* param = static_cast<Qd::AstNodeParameter*>(inputs[j]);
+													if (j > 0) {
+														docStream << " ";
+													}
+													Qd::AstNodeParameter* param =
+															static_cast<Qd::AstNodeParameter*>(inputs[j]);
 													docStream << param->name() << ":" << param->typeString();
 												}
 
@@ -752,8 +746,11 @@ private:
 												// Output parameters
 												const auto& outputs = funcNode->outputParameters();
 												for (size_t j = 0; j < outputs.size(); j++) {
-													if (j > 0) docStream << " ";
-													Qd::AstNodeParameter* param = static_cast<Qd::AstNodeParameter*>(outputs[j]);
+													if (j > 0) {
+														docStream << " ";
+													}
+													Qd::AstNodeParameter* param =
+															static_cast<Qd::AstNodeParameter*>(outputs[j]);
 													docStream << param->name() << ":" << param->typeString();
 												}
 
@@ -762,7 +759,8 @@ private:
 												result = json_object();
 												json_t* contents = json_object();
 												json_object_set_new(contents, "kind", json_string("markdown"));
-												json_object_set_new(contents, "value", json_string(docStream.str().c_str()));
+												json_object_set_new(
+														contents, "value", json_string(docStream.str().c_str()));
 												json_object_set_new(result, "contents", contents);
 												break;
 											}
@@ -771,12 +769,14 @@ private:
 											if (constNode->name() == symbolName) {
 												// Build constant documentation
 												std::ostringstream docStream;
-												docStream << "**Constant (from " << moduleName << "):** `" << constNode->name() << " = " << constNode->value() << "`";
+												docStream << "**Constant (from " << moduleName << "):** `"
+														  << constNode->name() << " = " << constNode->value() << "`";
 
 												result = json_object();
 												json_t* contents = json_object();
 												json_object_set_new(contents, "kind", json_string("markdown"));
-												json_object_set_new(contents, "value", json_string(docStream.str().c_str()));
+												json_object_set_new(
+														contents, "value", json_string(docStream.str().c_str()));
 												json_object_set_new(result, "contents", contents);
 												break;
 											}
@@ -788,11 +788,14 @@ private:
 												if (importedFunc->name == symbolName) {
 													// Build imported function documentation
 													std::ostringstream docStream;
-													docStream << "**Function (from " << moduleName << "):** `fn " << importedFunc->name << "(";
+													docStream << "**Function (from " << moduleName << "):** `fn "
+															  << importedFunc->name << "(";
 
 													// Input parameters
 													for (size_t j = 0; j < importedFunc->inputParameters.size(); j++) {
-														if (j > 0) docStream << " ";
+														if (j > 0) {
+															docStream << " ";
+														}
 														const auto* param = importedFunc->inputParameters[j];
 														docStream << param->name() << ":" << param->typeString();
 													}
@@ -801,7 +804,9 @@ private:
 
 													// Output parameters
 													for (size_t j = 0; j < importedFunc->outputParameters.size(); j++) {
-														if (j > 0) docStream << " ";
+														if (j > 0) {
+															docStream << " ";
+														}
 														const auto* param = importedFunc->outputParameters[j];
 														docStream << param->name() << ":" << param->typeString();
 													}
@@ -811,7 +816,8 @@ private:
 													result = json_object();
 													json_t* contents = json_object();
 													json_object_set_new(contents, "kind", json_string("markdown"));
-													json_object_set_new(contents, "value", json_string(docStream.str().c_str()));
+													json_object_set_new(
+															contents, "value", json_string(docStream.str().c_str()));
 													json_object_set_new(result, "contents", contents);
 													break;
 												}
@@ -1179,7 +1185,8 @@ private:
 
 	// Find a function or constant definition in an external module file
 	// Returns a JSON location object if found, or json_null() if not found
-	json_t* findDefinitionInModule(const std::string& modulePath, const std::string& symbolName, const std::string& symbolType) {
+	json_t* findDefinitionInModule(
+			const std::string& modulePath, const std::string& symbolName, const std::string& symbolType) {
 		// Read the module file
 		std::ifstream file(modulePath);
 		if (!file.good()) {
@@ -1219,7 +1226,8 @@ private:
 
 					json_t* end = json_object();
 					json_object_set_new(end, "line", json_integer(static_cast<json_int_t>(lspLine)));
-					json_object_set_new(end, "character", json_integer(static_cast<json_int_t>(funcNode->name().length())));
+					json_object_set_new(
+							end, "character", json_integer(static_cast<json_int_t>(funcNode->name().length())));
 					json_object_set_new(range, "end", end);
 
 					json_object_set_new(location, "range", range);
@@ -1242,7 +1250,8 @@ private:
 
 					json_t* end = json_object();
 					json_object_set_new(end, "line", json_integer(static_cast<json_int_t>(lspLine)));
-					json_object_set_new(end, "character", json_integer(static_cast<json_int_t>(constNode->name().length())));
+					json_object_set_new(
+							end, "character", json_integer(static_cast<json_int_t>(constNode->name().length())));
 					json_object_set_new(range, "end", end);
 
 					json_object_set_new(location, "range", range);
@@ -1265,7 +1274,8 @@ private:
 
 					json_t* end = json_object();
 					json_object_set_new(end, "line", json_integer(static_cast<json_int_t>(lspLine)));
-					json_object_set_new(end, "character", json_integer(static_cast<json_int_t>(structNode->name().length())));
+					json_object_set_new(
+							end, "character", json_integer(static_cast<json_int_t>(structNode->name().length())));
 					json_object_set_new(range, "end", end);
 
 					json_object_set_new(location, "range", range);
@@ -1291,7 +1301,8 @@ private:
 
 						json_t* end = json_object();
 						json_object_set_new(end, "line", json_integer(static_cast<json_int_t>(lspLine)));
-						json_object_set_new(end, "character", json_integer(static_cast<json_int_t>(importedFunc->name.length())));
+						json_object_set_new(
+								end, "character", json_integer(static_cast<json_int_t>(importedFunc->name.length())));
 						json_object_set_new(range, "end", end);
 
 						json_object_set_new(location, "range", range);
@@ -1361,13 +1372,15 @@ private:
 								if (prevSibling) {
 									// Check if it's a scoped identifier (module::Struct)
 									if (prevSibling->type() == Qd::IAstNode::Type::SCOPED_IDENTIFIER) {
-										Qd::AstNodeScopedIdentifier* scopedNode = static_cast<Qd::AstNodeScopedIdentifier*>(prevSibling);
+										Qd::AstNodeScopedIdentifier* scopedNode =
+												static_cast<Qd::AstNodeScopedIdentifier*>(prevSibling);
 										structType = scopedNode->scope() + "::" + scopedNode->name();
 										return;
 									}
 									// Check if it's a plain identifier (Struct)
 									else if (prevSibling->type() == Qd::IAstNode::Type::IDENTIFIER) {
-										Qd::AstNodeIdentifier* identNode = static_cast<Qd::AstNodeIdentifier*>(prevSibling);
+										Qd::AstNodeIdentifier* identNode =
+												static_cast<Qd::AstNodeIdentifier*>(prevSibling);
 										structType = identNode->name();
 										return;
 									}
@@ -1390,8 +1403,8 @@ private:
 	}
 
 	// Helper function to handle Go to Definition for field access expressions (v@x)
-	json_t* handleFieldAccessDefinition(Qd::IAstNode* root, const std::string& uri, size_t line,
-	                                      bool cursorOnVariable) {
+	json_t* handleFieldAccessDefinition(
+			Qd::IAstNode* root, const std::string& uri, size_t line, bool cursorOnVariable) {
 		// Find the field access node at the target line
 		Qd::AstNodeFieldAccess* fieldAccessNode = nullptr;
 		std::function<void(Qd::IAstNode*)> searchFieldAccess = [&](Qd::IAstNode* node) {
@@ -1443,7 +1456,8 @@ private:
 
 				json_t* end = json_object();
 				json_object_set_new(end, "line", json_integer(static_cast<json_int_t>(lspLine)));
-				json_object_set_new(end, "character", json_integer(static_cast<json_int_t>(localNode->name().length())));
+				json_object_set_new(
+						end, "character", json_integer(static_cast<json_int_t>(localNode->name().length())));
 				json_object_set_new(range, "end", end);
 
 				json_object_set_new(location, "range", range);
@@ -1496,7 +1510,8 @@ private:
 							for (size_t i = 0; i < moduleRoot->childCount(); i++) {
 								Qd::IAstNode* child = moduleRoot->child(i);
 								if (child && child->type() == Qd::IAstNode::Type::STRUCT_DECLARATION) {
-									Qd::AstNodeStructDeclaration* structNode = static_cast<Qd::AstNodeStructDeclaration*>(child);
+									Qd::AstNodeStructDeclaration* structNode =
+											static_cast<Qd::AstNodeStructDeclaration*>(child);
 									if (structNode->name() == structName) {
 										// Found the struct - now find the field
 										const auto& fields = structNode->fields();
@@ -1510,13 +1525,16 @@ private:
 												json_t* range = json_object();
 												json_t* start_json = json_object();
 												size_t lspLine = (field->line() > 0) ? field->line() - 1 : 0;
-												json_object_set_new(start_json, "line", json_integer(static_cast<json_int_t>(lspLine)));
+												json_object_set_new(start_json, "line",
+														json_integer(static_cast<json_int_t>(lspLine)));
 												json_object_set_new(start_json, "character", json_integer(0));
 												json_object_set_new(range, "start", start_json);
 
 												json_t* end = json_object();
-												json_object_set_new(end, "line", json_integer(static_cast<json_int_t>(lspLine)));
-												json_object_set_new(end, "character", json_integer(static_cast<json_int_t>(field->name().length())));
+												json_object_set_new(
+														end, "line", json_integer(static_cast<json_int_t>(lspLine)));
+												json_object_set_new(end, "character",
+														json_integer(static_cast<json_int_t>(field->name().length())));
 												json_object_set_new(range, "end", end);
 
 												json_object_set_new(location, "range", range);
@@ -1547,13 +1565,15 @@ private:
 									json_t* range = json_object();
 									json_t* start_json = json_object();
 									size_t lspLine = (field->line() > 0) ? field->line() - 1 : 0;
-									json_object_set_new(start_json, "line", json_integer(static_cast<json_int_t>(lspLine)));
+									json_object_set_new(
+											start_json, "line", json_integer(static_cast<json_int_t>(lspLine)));
 									json_object_set_new(start_json, "character", json_integer(0));
 									json_object_set_new(range, "start", start_json);
 
 									json_t* end = json_object();
 									json_object_set_new(end, "line", json_integer(static_cast<json_int_t>(lspLine)));
-									json_object_set_new(end, "character", json_integer(static_cast<json_int_t>(field->name().length())));
+									json_object_set_new(end, "character",
+											json_integer(static_cast<json_int_t>(field->name().length())));
 									json_object_set_new(range, "end", end);
 
 									json_object_set_new(location, "range", range);

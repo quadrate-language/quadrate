@@ -9,10 +9,10 @@
 #ifndef QD_QUADRATE_RUNTIME_STACK_H
 #define QD_QUADRATE_RUNTIME_STACK_H
 
+#include <qdrt/qd_string.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
-#include <qdrt/qd_string.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -52,10 +52,10 @@ typedef enum {
  */
 typedef struct {
 	union {
-		int64_t i;        ///< Integer value
-		double f;         ///< Float value
-		void* p;          ///< Pointer value
-		qd_string_t* s;   ///< Reference-counted string value (owned by stack)
+		int64_t i;		///< Integer value
+		double f;		///< Float value
+		void* p;		///< Pointer value
+		qd_string_t* s; ///< Reference-counted string value (owned by stack)
 	} value;
 
 	qd_stack_type type;	   ///< Type of the stored value
@@ -69,9 +69,9 @@ typedef struct {
  * Direct manipulation should be done carefully to avoid corrupting the stack.
  */
 typedef struct qd_stack {
-	qd_stack_element_t* data;  ///< Array of stack elements
-	size_t capacity;            ///< Maximum stack capacity
-	size_t size;                ///< Current number of elements
+	qd_stack_element_t* data; ///< Array of stack elements
+	size_t capacity;		  ///< Maximum stack capacity
+	size_t size;			  ///< Current number of elements
 } qd_stack;
 
 /**
@@ -268,20 +268,22 @@ const char* qd_stack_error_string(qd_stack_error error);
 #define QD_STACK_HAS(stack, n) ((stack)->size >= (n))
 
 /** @brief Fast push integer - no error checking */
-#define QD_STACK_PUSH_INT_FAST(stack, val) do { \
-	(stack)->data[(stack)->size].value.i = (val); \
-	(stack)->data[(stack)->size].type = QD_STACK_TYPE_INT; \
-	(stack)->data[(stack)->size].is_error_tainted = false; \
-	(stack)->size++; \
-} while(0)
+#define QD_STACK_PUSH_INT_FAST(stack, val)                                                                             \
+	do {                                                                                                               \
+		(stack)->data[(stack)->size].value.i = (val);                                                                  \
+		(stack)->data[(stack)->size].type = QD_STACK_TYPE_INT;                                                         \
+		(stack)->data[(stack)->size].is_error_tainted = false;                                                         \
+		(stack)->size++;                                                                                               \
+	} while (0)
 
 /** @brief Fast push float - no error checking */
-#define QD_STACK_PUSH_FLOAT_FAST(stack, val) do { \
-	(stack)->data[(stack)->size].value.f = (val); \
-	(stack)->data[(stack)->size].type = QD_STACK_TYPE_FLOAT; \
-	(stack)->data[(stack)->size].is_error_tainted = false; \
-	(stack)->size++; \
-} while(0)
+#define QD_STACK_PUSH_FLOAT_FAST(stack, val)                                                                           \
+	do {                                                                                                               \
+		(stack)->data[(stack)->size].value.f = (val);                                                                  \
+		(stack)->data[(stack)->size].type = QD_STACK_TYPE_FLOAT;                                                       \
+		(stack)->data[(stack)->size].is_error_tainted = false;                                                         \
+		(stack)->size++;                                                                                               \
+	} while (0)
 
 /** @brief Fast pop - returns element, no error checking */
 #define QD_STACK_POP_FAST(stack) ((stack)->data[--(stack)->size])

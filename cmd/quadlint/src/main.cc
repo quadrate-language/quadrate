@@ -120,7 +120,9 @@ std::string readFile(const std::string& filename) {
 
 // Recursively collect all function definitions
 void collectFunctions(IAstNode* node, std::unordered_map<std::string, IAstNode*>& functions) {
-	if (!node) return;
+	if (!node) {
+		return;
+	}
 
 	if (node->type() == IAstNode::Type::FUNCTION_DECLARATION) {
 		AstNodeFunctionDeclaration* func = static_cast<AstNodeFunctionDeclaration*>(node);
@@ -134,7 +136,9 @@ void collectFunctions(IAstNode* node, std::unordered_map<std::string, IAstNode*>
 
 // Recursively collect all function calls
 void collectFunctionCalls(IAstNode* node, std::unordered_set<std::string>& calls) {
-	if (!node) return;
+	if (!node) {
+		return;
+	}
 
 	if (node->type() == IAstNode::Type::IDENTIFIER) {
 		AstNodeIdentifier* ident = static_cast<AstNodeIdentifier*>(node);
@@ -148,7 +152,9 @@ void collectFunctionCalls(IAstNode* node, std::unordered_set<std::string>& calls
 
 // Recursively collect all local variable bindings
 void collectLocalBindings(IAstNode* node, std::unordered_map<std::string, IAstNode*>& locals) {
-	if (!node) return;
+	if (!node) {
+		return;
+	}
 
 	if (node->type() == IAstNode::Type::LOCAL) {
 		AstNodeLocal* local = static_cast<AstNodeLocal*>(node);
@@ -162,7 +168,9 @@ void collectLocalBindings(IAstNode* node, std::unordered_map<std::string, IAstNo
 
 // Recursively collect all variable usages
 void collectVariableUsages(IAstNode* node, std::unordered_set<std::string>& usages) {
-	if (!node) return;
+	if (!node) {
+		return;
+	}
 
 	if (node->type() == IAstNode::Type::IDENTIFIER) {
 		AstNodeIdentifier* ident = static_cast<AstNodeIdentifier*>(node);
@@ -179,7 +187,9 @@ void collectVariableUsages(IAstNode* node, std::unordered_set<std::string>& usag
 
 // Detect dead code after return/break/continue
 void detectDeadCode(IAstNode* node, const std::string& filename, std::vector<LintIssue>& issues) {
-	if (!node) return;
+	if (!node) {
+		return;
+	}
 
 	// Check if this is a block with statements
 	if (node->type() == IAstNode::Type::BLOCK) {
@@ -188,7 +198,9 @@ void detectDeadCode(IAstNode* node, const std::string& filename, std::vector<Lin
 
 		for (size_t i = 0; i < node->childCount(); i++) {
 			IAstNode* child = node->child(i);
-			if (!child) continue;
+			if (!child) {
+				continue;
+			}
 
 			// Check if we already found a terminator
 			if (foundTerminator) {
@@ -197,17 +209,17 @@ void detectDeadCode(IAstNode* node, const std::string& filename, std::vector<Lin
 				issue.line = child->line();
 				issue.column = child->column();
 				issue.message = "Unreachable code after " +
-					std::string(terminator->type() == IAstNode::Type::RETURN_STATEMENT ? "return" :
-					           terminator->type() == IAstNode::Type::BREAK_STATEMENT ? "break" : "continue");
+								std::string(terminator->type() == IAstNode::Type::RETURN_STATEMENT	? "return"
+											: terminator->type() == IAstNode::Type::BREAK_STATEMENT ? "break"
+																									: "continue");
 				issue.level = "warning";
 				issues.push_back(issue);
 				break; // Only report first unreachable statement
 			}
 
 			// Check if this child is a terminator
-			if (child->type() == IAstNode::Type::RETURN_STATEMENT ||
-			    child->type() == IAstNode::Type::BREAK_STATEMENT ||
-			    child->type() == IAstNode::Type::CONTINUE_STATEMENT) {
+			if (child->type() == IAstNode::Type::RETURN_STATEMENT || child->type() == IAstNode::Type::BREAK_STATEMENT ||
+					child->type() == IAstNode::Type::CONTINUE_STATEMENT) {
 				foundTerminator = true;
 				terminator = child;
 			}
@@ -221,15 +233,15 @@ void detectDeadCode(IAstNode* node, const std::string& filename, std::vector<Lin
 }
 
 // Detect deep nesting
-void detectDeepNesting(IAstNode* node, const std::string& filename, int maxDepth,
-                       std::vector<LintIssue>& issues, int currentDepth = 0) {
-	if (!node) return;
+void detectDeepNesting(IAstNode* node, const std::string& filename, int maxDepth, std::vector<LintIssue>& issues,
+		int currentDepth = 0) {
+	if (!node) {
+		return;
+	}
 
 	// Check if this node increases nesting depth
-	if (node->type() == IAstNode::Type::IF_STATEMENT ||
-	    node->type() == IAstNode::Type::FOR_STATEMENT ||
-	    node->type() == IAstNode::Type::LOOP_STATEMENT ||
-	    node->type() == IAstNode::Type::SWITCH_STATEMENT) {
+	if (node->type() == IAstNode::Type::IF_STATEMENT || node->type() == IAstNode::Type::FOR_STATEMENT ||
+			node->type() == IAstNode::Type::LOOP_STATEMENT || node->type() == IAstNode::Type::SWITCH_STATEMENT) {
 		currentDepth++;
 
 		if (currentDepth > maxDepth) {
@@ -238,7 +250,7 @@ void detectDeepNesting(IAstNode* node, const std::string& filename, int maxDepth
 			issue.line = node->line();
 			issue.column = node->column();
 			issue.message = "Deep nesting detected (depth: " + std::to_string(currentDepth) +
-			               ", max: " + std::to_string(maxDepth) + ")";
+							", max: " + std::to_string(maxDepth) + ")";
 			issue.level = "warning";
 			issues.push_back(issue);
 		}
@@ -252,7 +264,9 @@ void detectDeepNesting(IAstNode* node, const std::string& filename, int maxDepth
 
 // Detect missing defer for struct allocations
 void detectMissingDefer(IAstNode* node, const std::string& filename, std::vector<LintIssue>& issues) {
-	if (!node) return;
+	if (!node) {
+		return;
+	}
 
 	// Look for struct constructor calls (integer followed by struct name)
 	// This is a simplified check - full implementation would need more context
@@ -262,7 +276,9 @@ void detectMissingDefer(IAstNode* node, const std::string& filename, std::vector
 
 		for (size_t i = 0; i < node->childCount(); i++) {
 			IAstNode* child = node->child(i);
-			if (!child) continue;
+			if (!child) {
+				continue;
+			}
 
 			// Check for defer blocks
 			if (child->type() == IAstNode::Type::DEFER_STATEMENT) {
@@ -326,7 +342,9 @@ std::vector<LintIssue> lintFile(const std::string& filename, const Options& opts
 				IAstNode* funcNode = pair.second;
 
 				// Skip main function
-				if (funcName == "main") continue;
+				if (funcName == "main") {
+					continue;
+				}
 
 				// Check if function is called
 				if (calls.find(funcName) == calls.end()) {
@@ -390,8 +408,8 @@ std::vector<LintIssue> lintFile(const std::string& filename, const Options& opts
 
 void printIssues(const std::vector<LintIssue>& issues) {
 	for (const auto& issue : issues) {
-		std::cout << Colors::bold() << issue.filename << ":" << issue.line << ":" << issue.column
-		          << ":" << Colors::reset() << " ";
+		std::cout << Colors::bold() << issue.filename << ":" << issue.line << ":" << issue.column << ":"
+				  << Colors::reset() << " ";
 
 		if (issue.level == "warning") {
 			std::cout << Colors::bold() << Colors::magenta() << "warning:" << Colors::reset();
@@ -428,8 +446,7 @@ int main(int argc, char* argv[]) {
 	}
 
 	if (totalIssues > 0) {
-		std::cerr << "\n" << totalIssues << " issue" << (totalIssues == 1 ? "" : "s")
-		          << " found\n";
+		std::cerr << "\n" << totalIssues << " issue" << (totalIssues == 1 ? "" : "s") << " found\n";
 		return 1;
 	}
 

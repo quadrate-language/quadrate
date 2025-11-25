@@ -354,8 +354,9 @@ namespace Qd {
 			}
 
 			// Determine if this is a top-level declaration
-			bool isTopLevel = (braceDepth == 0 ||
-			                   ((startsWithKeyword(trimmed, "fn") || startsWithKeyword(trimmed, "pub")) && !inFunction));
+			bool isTopLevel =
+					(braceDepth == 0 ||
+							((startsWithKeyword(trimmed, "fn") || startsWithKeyword(trimmed, "pub")) && !inFunction));
 			std::string currentType;
 
 			if (isTopLevel) {

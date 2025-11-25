@@ -1,6 +1,7 @@
 // quadpm - Quadrate Package Manager
 // Manages 3rd party Git-based modules
 
+#include "git_ref.h"
 #include <array>
 #include <cstdio>
 #include <cstdlib>
@@ -71,59 +72,6 @@ std::string execCommand(const std::string& cmd) {
 // Execute a shell command, showing output in real-time
 int execCommandLive(const std::string& cmd) {
 	return system(cmd.c_str());
-}
-
-// Extract module name from Git URL
-// Examples:
-//   https://git.sr.ht/~user/zlib -> zlib
-//   https://github.com/user/http-lib -> http-lib
-//   git@github.com:user/json.git -> json
-std::string extractModuleName(const std::string& gitUrl) {
-	// Find last '/' or ':'
-	size_t lastSlash = gitUrl.find_last_of("/:");
-	if (lastSlash == std::string::npos) {
-		return gitUrl;
-	}
-
-	std::string name = gitUrl.substr(lastSlash + 1);
-
-	// Remove .git suffix if present
-	if (name.size() > 4 && name.substr(name.size() - 4) == ".git") {
-		name = name.substr(0, name.size() - 4);
-	}
-
-	return name;
-}
-
-// Parse Git reference (tag, branch, or commit)
-// Format: url[@ref]
-// Examples:
-//   https://git.sr.ht/~user/zlib@1.2.0
-//   https://github.com/user/http@main
-//   https://github.com/user/json  (defaults to main)
-struct GitRef {
-	std::string url;
-	std::string ref;
-	std::string moduleName;
-};
-
-GitRef parseGitUrl(const std::string& input) {
-	GitRef result;
-
-	// Check if there's an @ symbol for version/ref
-	size_t atPos = input.find_last_of('@');
-
-	// Make sure @ is not part of git@github.com
-	if (atPos != std::string::npos && atPos > 0 && input[atPos - 1] != ':') {
-		result.url = input.substr(0, atPos);
-		result.ref = input.substr(atPos + 1);
-	} else {
-		result.url = input;
-		result.ref = "main"; // Default to main branch
-	}
-
-	result.moduleName = extractModuleName(result.url);
-	return result;
 }
 
 // Parse package name from quadrate.toml

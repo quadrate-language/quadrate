@@ -226,8 +226,8 @@ namespace Qd {
 	// Helper to parse a single statement/expression token
 	// Returns nullptr if token was a control keyword that was handled
 	// Returns a node if it's a literal or identifier
-	static IAstNode* parseSimpleToken(char32_t token, u8t_scanner* scanner, ErrorReporter* /*errorReporter*/, size_t* n,
-			const char* src) {
+	static IAstNode* parseSimpleToken(
+			char32_t token, u8t_scanner* scanner, ErrorReporter* /*errorReporter*/, size_t* n, const char* src) {
 		if (token == U8T_INTEGER) {
 			const char* text = u8t_scanner_token_text(scanner, n);
 			IAstNode* node = new AstNodeLiteral(text, AstNodeLiteral::LiteralType::INTEGER);
@@ -706,8 +706,8 @@ namespace Qd {
 		}
 	}
 
-	static IAstNode* parseFunctionDeclaration(u8t_scanner* scanner, ErrorReporter* errorReporter, const char* src,
-											   bool isPublic = false) {
+	static IAstNode* parseFunctionDeclaration(
+			u8t_scanner* scanner, ErrorReporter* errorReporter, const char* src, bool isPublic = false) {
 		char32_t token = u8t_scanner_scan(scanner);
 		if (token != U8T_IDENTIFIER) {
 			errorReporter->reportError(scanner, "Expected function name after 'fn'");
@@ -1477,7 +1477,8 @@ namespace Qd {
 						// Try to parse as a nested array
 						if (elemToken == '[') {
 							// Recursive array literal
-							IAstNode* nestedArr = parseBlockStatement(elemToken, scanner, errorReporter, &n, src, false);
+							IAstNode* nestedArr =
+									parseBlockStatement(elemToken, scanner, errorReporter, &n, src, false);
 							if (nestedArr) {
 								arrNode->addElement(nestedArr);
 							}
@@ -1508,8 +1509,8 @@ namespace Qd {
 		return func;
 	}
 
-	static IAstNode* parseStructDeclaration(u8t_scanner* scanner, ErrorReporter* errorReporter, const char* src,
-											 bool isPublic = false) {
+	static IAstNode* parseStructDeclaration(
+			u8t_scanner* scanner, ErrorReporter* errorReporter, const char* src, bool isPublic = false) {
 		size_t n;
 		char32_t token = u8t_scanner_scan(scanner);
 		if (token != U8T_IDENTIFIER) {
@@ -1920,7 +1921,8 @@ namespace Qd {
 										setNodePosition(value, &scanner, src);
 									}
 									if (value) {
-										AstNodeConstant* constDecl = new AstNodeConstant(constNameStr, value->value().c_str(), true);
+										AstNodeConstant* constDecl =
+												new AstNodeConstant(constNameStr, value->value().c_str(), true);
 										setNodePosition(constDecl, &scanner, src);
 										delete value; // Value is copied, no longer needed
 										constDecl->setParent(program);

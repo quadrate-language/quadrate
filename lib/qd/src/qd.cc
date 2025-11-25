@@ -1,9 +1,9 @@
 #include <qd/qd.h>
 
-#include <dlfcn.h>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <dlfcn.h>
 #include <filesystem>
 #include <llvmgen/generator.h>
 #include <qc/ast.h>
@@ -22,7 +22,7 @@ struct qd_module {
 	std::vector<std::string> scripts;
 	std::unordered_map<std::string, void (*)()> native_functions;
 	std::unordered_map<std::string, std::string> symbol_map; // function_name -> full_symbol_name
-	void* dl_handle; // dlopen handle
+	void* dl_handle;										 // dlopen handle
 	fs::path temp_dir;
 	fs::path so_path;
 	bool compiled;
@@ -349,7 +349,7 @@ void qd_execute(qd_context* ctx, const char* code) {
 					func = reinterpret_cast<qd_func_t>(native_it->second);
 				} else {
 					fprintf(stderr, "qd_execute: Function '%s' (symbol '%s') not found in module '%s': %s\n",
-					        func_name.c_str(), symbol_name.c_str(), module_name.c_str(), dlerror());
+							func_name.c_str(), symbol_name.c_str(), module_name.c_str(), dlerror());
 					continue;
 				}
 			}
@@ -357,8 +357,8 @@ void qd_execute(qd_context* ctx, const char* code) {
 			// Call the function
 			qd_exec_result result = func(ctx);
 			if (result.code != 0) {
-				fprintf(stderr, "qd_execute: Function '%s::%s' returned error code %d\n",
-				        module_name.c_str(), func_name.c_str(), result.code);
+				fprintf(stderr, "qd_execute: Function '%s::%s' returned error code %d\n", module_name.c_str(),
+						func_name.c_str(), result.code);
 			}
 		} else {
 			fprintf(stderr, "qd_execute: Unknown token '%s'\n", token.c_str());

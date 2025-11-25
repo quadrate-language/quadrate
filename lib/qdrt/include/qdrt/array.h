@@ -23,10 +23,10 @@ extern "C" {
  * @brief Array element type (matches stack element types)
  */
 typedef enum {
-	QD_ARRAY_TYPE_INT = 0,   ///< 64-bit signed integer
+	QD_ARRAY_TYPE_INT = 0,	 ///< 64-bit signed integer
 	QD_ARRAY_TYPE_FLOAT = 1, ///< Double-precision floating point
-	QD_ARRAY_TYPE_STR = 2,   ///< Reference-counted string
-	QD_ARRAY_TYPE_PTR = 3    ///< Generic pointer
+	QD_ARRAY_TYPE_STR = 2,	 ///< Reference-counted string
+	QD_ARRAY_TYPE_PTR = 3	 ///< Generic pointer
 } qd_array_type;
 
 /**
@@ -36,14 +36,15 @@ typedef enum {
  * When the reference count reaches 0, the array and its contents are freed.
  */
 typedef struct qd_array {
-	size_t refcount;        ///< Reference count
-	size_t length;          ///< Number of elements
-	size_t capacity;        ///< Allocated capacity
+	size_t refcount;		///< Reference count
+	size_t length;			///< Number of elements
+	size_t capacity;		///< Allocated capacity
 	qd_array_type elemType; ///< Type of elements in the array
+
 	union {
-		int64_t* i;         ///< Integer array data
-		double* f;          ///< Float array data
-		void** p;           ///< Pointer array data (includes strings)
+		int64_t* i; ///< Integer array data
+		double* f;	///< Float array data
+		void** p;	///< Pointer array data (includes strings)
 	} data;
 } qd_array_t;
 

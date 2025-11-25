@@ -154,15 +154,13 @@ namespace Qd {
 				}
 				// Use statements: add blank line only if next is not a use statement
 				else if (current->type() == IAstNode::Type::USE_STATEMENT) {
-					if (next->type() != IAstNode::Type::USE_STATEMENT &&
-							next->type() != IAstNode::Type::COMMENT) {
+					if (next->type() != IAstNode::Type::USE_STATEMENT && next->type() != IAstNode::Type::COMMENT) {
 						addBlankLine = true;
 					}
 				}
 				// Import statements: add blank line only if next is not an import statement
 				else if (current->type() == IAstNode::Type::IMPORT_STATEMENT) {
-					if (next->type() != IAstNode::Type::IMPORT_STATEMENT &&
-							next->type() != IAstNode::Type::COMMENT) {
+					if (next->type() != IAstNode::Type::IMPORT_STATEMENT && next->type() != IAstNode::Type::COMMENT) {
 						addBlankLine = true;
 					}
 				}
@@ -175,8 +173,7 @@ namespace Qd {
 				}
 				// Structs: add blank line only if next is not a struct
 				else if (current->type() == IAstNode::Type::STRUCT_DECLARATION) {
-					if (next->type() != IAstNode::Type::STRUCT_DECLARATION &&
-							next->type() != IAstNode::Type::COMMENT) {
+					if (next->type() != IAstNode::Type::STRUCT_DECLARATION && next->type() != IAstNode::Type::COMMENT) {
 						addBlankLine = true;
 					}
 				}

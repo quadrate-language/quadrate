@@ -1,0 +1,106 @@
+#include "options.h"
+#include <iostream>
+
+void printHelp() {
+	std::cout << "quadc - Quadrate compiler\n\n";
+	std::cout << "Compiles .qd source files to native executables via LLVM.\n\n";
+	std::cout << "Usage: quadc [options] <file>...\n\n";
+	std::cout << "Options:\n";
+	std::cout << "  -h, --help         Show this help message\n";
+	std::cout << "  -v, --version      Show version information\n";
+	std::cout << "  -o <name>          Output executable name (default: main)\n";
+	std::cout << "  -O0, -O1, -O2, -O3 Set optimization level (default: -O0)\n";
+	std::cout << "  -g                 Generate debug information for GDB/LLDB\n";
+	std::cout << "  -l <mod@ver>       Pin module to specific version (e.g., -l color@1.0.0)\n";
+	std::cout << "  --save-temps       Keep temporary files for debugging\n";
+	std::cout << "  --verbose          Show detailed compilation steps\n";
+	std::cout << "  --dump-tokens      Print lexer tokens\n";
+	std::cout << "  -r, --run          Compile and run immediately\n";
+	std::cout << "  --dump-ir          Print generated LLVM IR\n";
+	std::cout << "  --werror           Treat warnings as errors\n";
+	std::cout << "\n";
+	std::cout << "Examples:\n";
+	std::cout << "  quadc main.qd              Compile to executable 'main'\n";
+	std::cout << "  quadc -o prog main.qd      Compile to executable 'prog'\n";
+	std::cout << "  quadc -r main.qd           Compile and run immediately\n";
+}
+
+void printVersion() {
+	std::cout << QUADC_VERSION << "\n";
+}
+
+bool parseArgs(int argc, char* argv[], Options& opts) {
+	for (int i = 1; i < argc; i++) {
+		std::string arg = argv[i];
+
+		if (arg == "-h" || arg == "--help") {
+			opts.help = true;
+			return true;
+		} else if (arg == "-v" || arg == "--version") {
+			opts.version = true;
+			return true;
+		} else if (arg == "-o") {
+			if (i + 1 >= argc) {
+				std::cerr << "quadc: option '-o' requires an argument\n";
+				std::cerr << "Try 'quadc --help' for more information.\n";
+				return false;
+			}
+			opts.outputName = argv[++i];
+		} else if (arg == "--save-temps") {
+			opts.saveTemps = true;
+		} else if (arg == "--verbose") {
+			opts.verbose = true;
+		} else if (arg == "--dump-tokens") {
+			opts.dumpTokens = true;
+		} else if (arg == "-r" || arg == "--run") {
+			opts.run = true;
+		} else if (arg == "--dump-ir") {
+			opts.dumpIR = true;
+		} else if (arg == "-g") {
+			opts.debugInfo = true;
+		} else if (arg == "-l") {
+			if (i + 1 >= argc) {
+				std::cerr << "quadc: option '-l' requires an argument (module@version)\n";
+				std::cerr << "Try 'quadc --help' for more information.\n";
+				return false;
+			}
+			std::string moduleSpec = argv[++i];
+
+			// Parse module@version format
+			size_t atPos = moduleSpec.find('@');
+			if (atPos == std::string::npos || atPos == 0 || atPos == moduleSpec.size() - 1) {
+				std::cerr << "quadc: invalid format for '-l': '" << moduleSpec << "'\n";
+				std::cerr << "Expected format: module@version (e.g., color@1.0.0)\n";
+				return false;
+			}
+
+			std::string moduleName = moduleSpec.substr(0, atPos);
+			std::string version = moduleSpec.substr(atPos + 1);
+			opts.moduleVersions[moduleName] = version;
+		} else if (arg == "--werror") {
+			opts.werror = true;
+		} else if (arg == "-O0") {
+			opts.optLevel = 0;
+		} else if (arg == "-O1") {
+			opts.optLevel = 1;
+		} else if (arg == "-O2") {
+			opts.optLevel = 2;
+		} else if (arg == "-O3") {
+			opts.optLevel = 3;
+		} else if (arg[0] == '-') {
+			std::cerr << "quadc: unknown option: " << arg << "\n";
+			std::cerr << "Try 'quadc --help' for more information.\n";
+			return false;
+		} else {
+			opts.files.push_back(arg);
+		}
+	}
+
+	if (opts.files.empty() && !opts.help && !opts.version) {
+		std::cerr << "quadc: no input files\n";
+		std::cerr << "Try 'quadc --help' for more information.\n";
+		return false;
+	}
+
+	return true;
+}

@@ -25,8 +25,8 @@ int main(void) {
 
 	// Test math module
 	printf("Math module:\n");
-	qd_execute(ctx, "5 math::square . nl");        // 5 * 5 = 25
-	qd_execute(ctx, "7 math::double . nl");        // 7 * 2 = 14
+	qd_execute(ctx, "5 math::square . nl"); // 5 * 5 = 25
+	qd_execute(ctx, "7 math::double . nl"); // 7 * 2 = 14
 
 	printf("\n");
 
@@ -39,13 +39,13 @@ int main(void) {
 
 	// Test calculator module
 	printf("Calculator module:\n");
-	qd_execute(ctx, "10 20 calc::add_and_print");  // 10 + 20 = 30
+	qd_execute(ctx, "10 20 calc::add_and_print"); // 10 + 20 = 30
 
 	printf("\n");
 
 	// Mix operations from different modules
 	printf("Mixed operations:\n");
-	qd_execute(ctx, "3 math::square 2 math::double + . nl");  // (3*3) + (2*2) = 9 + 4 = 13
+	qd_execute(ctx, "3 math::square 2 math::double + . nl"); // (3*3) + (2*2) = 9 + 4 = 13
 
 	qd_free_context(ctx);
 

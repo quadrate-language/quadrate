@@ -94,8 +94,7 @@ namespace Qd {
 		 *
 		 * @note Must be called after generate() but before write operations
 		 */
-		void addModuleAST(const std::string& moduleName, IAstNode* moduleRoot,
-				const std::string& sourceFileName = "");
+		void addModuleAST(const std::string& moduleName, IAstNode* moduleRoot, const std::string& sourceFileName = "");
 
 		/**
 		 * @brief Write LLVM IR to a text file
