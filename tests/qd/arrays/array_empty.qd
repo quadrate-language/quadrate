@@ -1,0 +1,5 @@
+// Empty array
+fn main( -- ) {
+  [] -> arr
+  arr len . nl
+}

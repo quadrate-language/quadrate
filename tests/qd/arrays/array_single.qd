@@ -1,0 +1,6 @@
+// Single element array
+fn main( -- ) {
+  [42] -> arr
+  arr 0 nth . nl
+  arr len . nl
+}

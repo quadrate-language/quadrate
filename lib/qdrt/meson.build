@@ -3,6 +3,7 @@ qdrt_sources = files(
 		'src/stack.c',
 		'src/memory.c',
 		'src/qd_string.c',
+		'src/array.c',
 		'src/platform/posix/thread_pthread.c',
 )
 

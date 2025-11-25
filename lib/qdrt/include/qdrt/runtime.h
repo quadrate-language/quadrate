@@ -14,6 +14,7 @@
 #ifndef QD_QUADRATE_RUNTIME_RUNTIME_H
 #define QD_QUADRATE_RUNTIME_RUNTIME_H
 
+#include <qdrt/array.h>
 #include <qdrt/context.h>
 #include <qdrt/exec_result.h>
 

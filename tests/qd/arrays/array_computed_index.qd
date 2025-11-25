@@ -1,0 +1,7 @@
+// Computed index using arithmetic
+fn main( -- ) {
+  [100 200 300 400 500] -> arr
+  arr 1 1 add nth . nl
+  arr 2 2 mul nth . nl
+  arr 5 2 sub nth . nl
+}

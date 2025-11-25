@@ -37,6 +37,7 @@
 #endif
 
 #include <qc/ast_node.h>
+#include <qc/ast_node_array.h>
 #include <qc/ast_node_break.h>
 #include <qc/ast_node_constant.h>
 #include <qc/ast_node_continue.h>
@@ -182,11 +183,17 @@ namespace Qd {
 		// Track struct types for local variables: variable name -> struct type name
 		std::map<std::string, std::string> localVariableStructTypes;
 
+		// Track which local variables hold arrays (need ref counting)
+		std::set<std::string> localArrayVariables;
+
 		// Track the last identifier that pushed a value (for smart free)
 		std::string lastIdentifierPushed;
 
 		// Track the last struct type that was constructed (for local binding)
 		std::string lastStructConstructed;
+
+		// Track whether the last pushed value was an array literal
+		bool lastPushedWasArray = false;
 
 		// Struct definitions: struct name -> field information
 		struct FieldInfo {
@@ -230,6 +237,7 @@ namespace Qd {
 		void processStructDeclaration(AstNodeStructDeclaration* structDecl);
 		void generateStructConstruction(const std::string& structName, llvm::Value* ctx);
 		void generateFieldAccess(AstNodeFieldAccess* fieldAccess, llvm::Value* ctx);
+		void generateArrayLiteral(AstNodeArrayLiteral* arrayLiteral, llvm::Value* ctx);
 		size_t getTypeSize(const std::string& typeName);
 
 		// Inline stack operations (performance optimization)
@@ -2215,9 +2223,20 @@ namespace Qd {
 			builder->CreateCall(pushStrRefFn, {ctx, strVal});
 			builder->CreateBr(endBlock);
 
-			// PTR block: load void* and push
+			// PTR block: load void* and push (retain if it's a known array variable)
 			builder->SetInsertPoint(ptrBlock);
 			llvm::Value* ptrVal = builder->CreateLoad(llvm::PointerType::getUnqual(*context), valuePtr, name + "_p");
+			// Only retain if this is a known array variable (not raw pointers or structs)
+			if (localArrayVariables.find(name) != localArrayVariables.end()) {
+				llvm::Function* arrayRetainFn = module->getFunction("qd_array_retain");
+				if (!arrayRetainFn) {
+					auto arrayRetainFnTy =
+							llvm::FunctionType::get(builder->getVoidTy(), {llvm::PointerType::getUnqual(*context)}, false);
+					arrayRetainFn = llvm::Function::Create(
+							arrayRetainFnTy, llvm::Function::ExternalLinkage, "qd_array_retain", *module);
+				}
+				builder->CreateCall(arrayRetainFn, {ptrVal});
+			}
 			builder->CreateCall(pushPtrFn, {ctx, ptrVal});
 			builder->CreateBr(endBlock);
 
@@ -2825,18 +2844,27 @@ namespace Qd {
 			lastStructConstructed.clear();
 		}
 
+		// If the last pushed value was an array, track this variable as an array variable
+		if (lastPushedWasArray) {
+			localArrayVariables.insert(name);
+			lastPushedWasArray = false;
+		}
+
 		// TODO: Check result for errors (0 = success, non-zero = error)
 		// For now, we assume success
 	}
 
 	void LlvmGenerator::Impl::generateLocalCleanup() {
-		// Free any string locals to prevent memory leaks
+		// Free any string and array locals to prevent memory leaks
 		// Iterate through all local variables and check their type
 		for (const auto& pair : localVariables) {
 			const std::string& varName = pair.first;
 			llvm::AllocaInst* localAlloca = pair.second;
 
-			// Load the type field to check if it's a string
+			// Check if this is a known array variable (needs ref counting cleanup)
+			bool isArray = (localArrayVariables.find(varName) != localArrayVariables.end());
+
+			// Load the type field to check if it's a string or array
 			llvm::Value* typePtr =
 					builder->CreateStructGEP(stackElementTy, localAlloca, 1, varName + "_cleanup_type_ptr");
 			llvm::Value* type = builder->CreateLoad(builder->getInt32Ty(), typePtr, varName + "_cleanup_type");
@@ -2844,11 +2872,12 @@ namespace Qd {
 			// Create basic blocks for conditional free
 			llvm::Function* currentFn = builder->GetInsertBlock()->getParent();
 			llvm::BasicBlock* freeStrBlock = llvm::BasicBlock::Create(*context, varName + "_free_str", currentFn);
+			llvm::BasicBlock* checkPtrBlock = llvm::BasicBlock::Create(*context, varName + "_check_ptr", currentFn);
 			llvm::BasicBlock* skipFreeBlock = llvm::BasicBlock::Create(*context, varName + "_skip_free", currentFn);
 
 			// Check if type == QD_STACK_TYPE_STR (3)
 			llvm::Value* isString = builder->CreateICmpEQ(type, builder->getInt32(3), varName + "_is_str");
-			builder->CreateCondBr(isString, freeStrBlock, skipFreeBlock);
+			builder->CreateCondBr(isString, freeStrBlock, checkPtrBlock);
 
 			// Free string block
 			builder->SetInsertPoint(freeStrBlock);
@@ -2858,7 +2887,6 @@ namespace Qd {
 					builder->CreateLoad(llvm::PointerType::getUnqual(*context), valuePtr, varName + "_cleanup_str");
 
 			// Call qd_string_release() on the string
-			// Create qd_string_release function declaration if not exists
 			if (!this->qdStringReleaseFn) {
 				auto qdStringReleaseFnTy =
 						llvm::FunctionType::get(builder->getVoidTy(), {llvm::PointerType::getUnqual(*context)}, false);
@@ -2866,6 +2894,35 @@ namespace Qd {
 			}
 			builder->CreateCall(this->qdStringReleaseFn, {strPtr});
 			builder->CreateBr(skipFreeBlock);
+
+			// Check if type == QD_STACK_TYPE_PTR (2) and it's a known array variable
+			builder->SetInsertPoint(checkPtrBlock);
+			if (isArray) {
+				// Only create freePtrBlock if this is a known array variable
+				llvm::BasicBlock* freePtrBlock = llvm::BasicBlock::Create(*context, varName + "_free_ptr", currentFn);
+				llvm::Value* isPtr = builder->CreateICmpEQ(type, builder->getInt32(2), varName + "_is_ptr");
+				builder->CreateCondBr(isPtr, freePtrBlock, skipFreeBlock);
+
+				// Free array block
+				builder->SetInsertPoint(freePtrBlock);
+				llvm::Value* ptrValuePtr =
+						builder->CreateStructGEP(stackElementTy, localAlloca, 0, varName + "_cleanup_ptr_value_ptr");
+				llvm::Value* arrPtr =
+						builder->CreateLoad(llvm::PointerType::getUnqual(*context), ptrValuePtr, varName + "_cleanup_arr");
+
+				// Call qd_array_release() on the array
+				llvm::Function* arrayReleaseFn = module->getFunction("qd_array_release");
+				if (!arrayReleaseFn) {
+					auto arrayReleaseFnTy =
+							llvm::FunctionType::get(builder->getVoidTy(), {llvm::PointerType::getUnqual(*context)}, false);
+					arrayReleaseFn = llvm::Function::Create(arrayReleaseFnTy, llvm::Function::ExternalLinkage, "qd_array_release", *module);
+				}
+				builder->CreateCall(arrayReleaseFn, {arrPtr});
+				builder->CreateBr(skipFreeBlock);
+			} else {
+				// For non-array PTRs (structs, raw pointers), skip to end
+				builder->CreateBr(skipFreeBlock);
+			}
 
 			// Skip free block
 			builder->SetInsertPoint(skipFreeBlock);
@@ -3499,6 +3556,12 @@ namespace Qd {
 		case IAstNode::Type::STRUCT_DECLARATION:
 			// Struct declarations are processed during program generation, not during execution
 			break;
+		case IAstNode::Type::ARRAY_LITERAL:
+			generateArrayLiteral(static_cast<AstNodeArrayLiteral*>(node), ctx);
+			break;
+		case IAstNode::Type::ARRAY_INDEX:
+			// Array indexing is handled via 'nth' instruction
+			break;
 		default:
 			// Ignore other node types for now
 			break;
@@ -3510,6 +3573,7 @@ namespace Qd {
 		// Clear local variables for this function
 		localVariables.clear();
 		localVariableStructTypes.clear();
+		localArrayVariables.clear();
 
 		// Get the correct DIFile for this module
 		llvm::DIFile* funcDebugFile = debugFile; // Default to main file
@@ -4602,6 +4666,141 @@ namespace Qd {
 			llvm::Value* ptrValue = builder->CreateLoad(llvm::PointerType::getUnqual(*context), fieldPtr, "field_value");
 			builder->CreateCall(pushPtrFn, {ctx, ptrValue});
 		}
+	}
+
+	// Generate array literal: create array, push elements, push array pointer
+	void LlvmGenerator::Impl::generateArrayLiteral(AstNodeArrayLiteral* arrayLiteral, llvm::Value* ctx) {
+		const auto& elements = arrayLiteral->elements();
+		size_t numElements = elements.size();
+
+		if (numElements == 0) {
+			// Empty array - create with default type (INT)
+			llvm::Function* createArrayFn = module->getFunction("qd_array_create");
+			if (!createArrayFn) {
+				auto fnTy = llvm::FunctionType::get(
+						llvm::PointerType::getUnqual(*context),
+						{builder->getInt64Ty(), builder->getInt32Ty()},
+						false);
+				createArrayFn = llvm::Function::Create(fnTy, llvm::Function::ExternalLinkage, "qd_array_create", *module);
+			}
+			llvm::Value* arrPtr = builder->CreateCall(createArrayFn,
+					{builder->getInt64(8), builder->getInt32(0)}, "empty_arr");
+			builder->CreateCall(pushPtrFn, {ctx, arrPtr});
+			return;
+		}
+
+		// Determine array element type from first element
+		// QD_ARRAY_TYPE_INT = 0, QD_ARRAY_TYPE_FLOAT = 1, QD_ARRAY_TYPE_STR = 2, QD_ARRAY_TYPE_PTR = 3
+		int32_t arrayType = 0; // Default to INT
+		IAstNode* firstElem = elements[0];
+		if (firstElem->type() == IAstNode::Type::LITERAL) {
+			auto* lit = static_cast<AstNodeLiteral*>(firstElem);
+			if (lit->literalType() == AstNodeLiteral::LiteralType::FLOAT) {
+				arrayType = 1; // FLOAT
+			} else if (lit->literalType() == AstNodeLiteral::LiteralType::STRING) {
+				arrayType = 2; // STR
+			}
+		}
+
+		// Declare array functions if not already declared
+		llvm::Function* createArrayFn = module->getFunction("qd_array_create");
+		if (!createArrayFn) {
+			auto fnTy = llvm::FunctionType::get(
+					llvm::PointerType::getUnqual(*context),
+					{builder->getInt64Ty(), builder->getInt32Ty()},
+					false);
+			createArrayFn = llvm::Function::Create(fnTy, llvm::Function::ExternalLinkage, "qd_array_create", *module);
+		}
+
+		llvm::Function* pushIntArrFn = module->getFunction("qd_array_push_int");
+		if (!pushIntArrFn) {
+			auto fnTy = llvm::FunctionType::get(
+					builder->getInt32Ty(),
+					{llvm::PointerType::getUnqual(*context), builder->getInt64Ty()},
+					false);
+			pushIntArrFn = llvm::Function::Create(fnTy, llvm::Function::ExternalLinkage, "qd_array_push_int", *module);
+		}
+
+		llvm::Function* pushFloatArrFn = module->getFunction("qd_array_push_float");
+		if (!pushFloatArrFn) {
+			auto fnTy = llvm::FunctionType::get(
+					builder->getInt32Ty(),
+					{llvm::PointerType::getUnqual(*context), builder->getDoubleTy()},
+					false);
+			pushFloatArrFn = llvm::Function::Create(fnTy, llvm::Function::ExternalLinkage, "qd_array_push_float", *module);
+		}
+
+		llvm::Function* pushPtrArrFn = module->getFunction("qd_array_push_ptr");
+		if (!pushPtrArrFn) {
+			auto fnTy = llvm::FunctionType::get(
+					builder->getInt32Ty(),
+					{llvm::PointerType::getUnqual(*context), llvm::PointerType::getUnqual(*context)},
+					false);
+			pushPtrArrFn = llvm::Function::Create(fnTy, llvm::Function::ExternalLinkage, "qd_array_push_ptr", *module);
+		}
+
+		// Create array with initial capacity
+		llvm::Value* arrPtr = builder->CreateCall(createArrayFn,
+				{builder->getInt64(numElements), builder->getInt32(static_cast<uint32_t>(arrayType))}, "arr_ptr");
+
+		// Push elements to the array
+		for (IAstNode* elem : elements) {
+			if (elem->type() == IAstNode::Type::LITERAL) {
+				auto* lit = static_cast<AstNodeLiteral*>(elem);
+				if (lit->literalType() == AstNodeLiteral::LiteralType::INTEGER) {
+					int64_t val = std::stoll(lit->value());
+					if (arrayType == 1) {
+						// Coerce int to float
+						builder->CreateCall(pushFloatArrFn, {arrPtr, llvm::ConstantFP::get(builder->getDoubleTy(), static_cast<double>(val))});
+					} else {
+						builder->CreateCall(pushIntArrFn, {arrPtr, builder->getInt64(static_cast<uint64_t>(val))});
+					}
+				} else if (lit->literalType() == AstNodeLiteral::LiteralType::FLOAT) {
+					double val = std::stod(lit->value());
+					if (arrayType == 0) {
+						// Coerce float to int for int array
+						builder->CreateCall(pushIntArrFn, {arrPtr, builder->getInt64(static_cast<uint64_t>(static_cast<int64_t>(val)))});
+					} else {
+						builder->CreateCall(pushFloatArrFn, {arrPtr, llvm::ConstantFP::get(builder->getDoubleTy(), val)});
+					}
+				} else if (lit->literalType() == AstNodeLiteral::LiteralType::STRING) {
+					// Create string constant
+					std::string strVal = lit->value();
+					// Remove quotes if present
+					if (strVal.size() >= 2 && strVal.front() == '"' && strVal.back() == '"') {
+						strVal = strVal.substr(1, strVal.size() - 2);
+					}
+					// Create qd_string and push
+					llvm::Function* createStrFn = module->getFunction("qd_string_create");
+					if (!createStrFn) {
+						auto fnTy = llvm::FunctionType::get(
+								llvm::PointerType::getUnqual(*context),
+								{llvm::PointerType::getUnqual(*context)},
+								false);
+						createStrFn = llvm::Function::Create(fnTy, llvm::Function::ExternalLinkage, "qd_string_create", *module);
+					}
+					// Ensure qdStringReleaseFn is available
+					if (!qdStringReleaseFn) {
+						auto qdStringReleaseFnTy = llvm::FunctionType::get(
+								builder->getVoidTy(),
+								{llvm::PointerType::getUnqual(*context)},
+								false);
+						qdStringReleaseFn = llvm::Function::Create(qdStringReleaseFnTy, llvm::Function::ExternalLinkage, "qd_string_release", *module);
+					}
+					llvm::Value* strConstant = builder->CreateGlobalString(strVal, "arr_str");
+					llvm::Value* qdStr = builder->CreateCall(createStrFn, {strConstant}, "qd_str");
+					builder->CreateCall(pushPtrArrFn, {arrPtr, qdStr});
+					// Release our reference since array now owns it
+					builder->CreateCall(qdStringReleaseFn, {qdStr});
+				}
+			}
+		}
+
+		// Push array pointer onto the Quadrate stack
+		builder->CreateCall(pushPtrFn, {ctx, arrPtr});
+
+		// Mark that the last pushed value was an array
+		lastPushedWasArray = true;
 	}
 
 	void LlvmGenerator::Impl::pushDeferScope() {

@@ -6,6 +6,7 @@
 #include <iostream>
 #include <qc/ast.h>
 #include <qc/ast_node.h>
+#include <qc/ast_node_array.h>
 #include <qc/ast_node_break.h>
 #include <qc/ast_node_constant.h>
 #include <qc/ast_node_continue.h>
@@ -641,6 +642,58 @@ namespace Qd {
 				errorReporter->reportError(scanner, "Expected function name after '&'");
 				return nullptr;
 			}
+		}
+
+		// Handle array literal: [elem1 elem2 ...] (commas optional)
+		if (token == '[') {
+			size_t bracketPos = u8t_scanner_token_start(scanner);
+			AstNodeArrayLiteral* arrNode = new AstNodeArrayLiteral();
+			size_t line, column;
+			calculateLineColumn(src, bracketPos, &line, &column);
+			arrNode->setPosition(line, column);
+
+			// Parse array elements until we hit ']'
+			char32_t elemToken;
+			while ((elemToken = u8t_scanner_scan(scanner)) != U8T_EOF) {
+				if (elemToken == ']') {
+					break;
+				}
+
+				// Skip commas (optional separator)
+				if (elemToken == ',') {
+					continue;
+				}
+
+				// Skip whitespace tokens if any
+				if (elemToken == ' ' || elemToken == '\t' || elemToken == '\n' || elemToken == '\r') {
+					continue;
+				}
+
+				// Parse the element
+				IAstNode* elem = parseSimpleToken(elemToken, scanner, errorReporter, n, src);
+				if (elem) {
+					arrNode->addElement(elem);
+				} else {
+					// Try to parse as a nested array
+					if (elemToken == '[') {
+						// Recursive array literal
+						IAstNode* nestedArr = parseBlockStatement(elemToken, scanner, errorReporter, n, src, false);
+						if (nestedArr) {
+							arrNode->addElement(nestedArr);
+						}
+					} else {
+						// Unknown token in array literal
+						errorReporter->reportError(scanner, "Unexpected token in array literal");
+						break;
+					}
+				}
+			}
+
+			if (elemToken != ']') {
+				errorReporter->reportError(scanner, "Expected ']' to close array literal");
+			}
+
+			return arrNode;
 		}
 
 		return parseSimpleToken(token, scanner, errorReporter, n, src);
@@ -1391,6 +1444,56 @@ namespace Qd {
 				} else {
 					errorReporter->reportError(scanner, "Expected function name after '&'");
 				}
+			} else if (token == '[') {
+				// Handle array literal: [elem1 elem2 ...] (commas optional)
+				size_t bracketPos = u8t_scanner_token_start(scanner);
+				AstNodeArrayLiteral* arrNode = new AstNodeArrayLiteral();
+				size_t line, column;
+				calculateLineColumn(src, bracketPos, &line, &column);
+				arrNode->setPosition(line, column);
+
+				// Parse array elements until we hit ']'
+				char32_t elemToken;
+				while ((elemToken = u8t_scanner_scan(scanner)) != U8T_EOF) {
+					if (elemToken == ']') {
+						break;
+					}
+
+					// Skip commas (optional separator)
+					if (elemToken == ',') {
+						continue;
+					}
+
+					// Skip whitespace tokens if any
+					if (elemToken == ' ' || elemToken == '\t' || elemToken == '\n' || elemToken == '\r') {
+						continue;
+					}
+
+					// Parse the element
+					IAstNode* elem = parseSimpleToken(elemToken, scanner, errorReporter, &n, src);
+					if (elem) {
+						arrNode->addElement(elem);
+					} else {
+						// Try to parse as a nested array
+						if (elemToken == '[') {
+							// Recursive array literal
+							IAstNode* nestedArr = parseBlockStatement(elemToken, scanner, errorReporter, &n, src, false);
+							if (nestedArr) {
+								arrNode->addElement(nestedArr);
+							}
+						} else {
+							// Unknown token in array literal
+							errorReporter->reportError(scanner, "Unexpected token in array literal");
+							break;
+						}
+					}
+				}
+
+				if (elemToken != ']') {
+					errorReporter->reportError(scanner, "Expected ']' to close array literal");
+				}
+
+				tempNodes.push_back(arrNode);
 			}
 		}
 

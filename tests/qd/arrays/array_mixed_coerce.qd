@@ -1,0 +1,7 @@
+// Mixed types: float coerced to int when first element is int
+fn main( -- ) {
+  [1 2.7 3] -> arr
+  arr 0 nth . nl
+  arr 1 nth . nl
+  arr 2 nth . nl
+}

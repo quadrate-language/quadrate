@@ -1724,6 +1724,12 @@ if (node->type() == IAstNode::Type::STRUCT_DECLARATION) {
 				break;
 			}
 
+			case IAstNode::Type::ARRAY_LITERAL: {
+				// Array literal pushes a pointer (array reference) onto the stack
+				typeStack.push_back(StackValueType::PTR);
+				break;
+			}
+
 			case IAstNode::Type::INSTRUCTION: {
 				AstNodeInstruction* instr = static_cast<AstNodeInstruction*>(child);
 				// During signature analysis, don't report errors - just simulate the stack
@@ -1934,6 +1940,13 @@ if (node->type() == IAstNode::Type::STRUCT_DECLARATION) {
 					structTypeStack.push_back("");
 					break;
 				}
+				break;
+			}
+
+			case IAstNode::Type::ARRAY_LITERAL: {
+				// Array literal pushes a pointer (array reference) onto the stack
+				typeStack.push_back(StackValueType::PTR);
+				structTypeStack.push_back("");
 				break;
 			}
 
