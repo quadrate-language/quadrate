@@ -27,7 +27,7 @@ All benchmarks test the same algorithms:
 | **Rust** | **39** | **1.1x** | Nearly identical to C |
 | **Go** | **39** | **1.1x** | Excellent native performance |
 | **Node.js** | **217** | **6.2x** | V8 JIT optimization |
-| **Quadrate** | **211** | **6.0x** | Native compilation via LLVM |
+| **Quadrate** | **210** | **6.0x** | Native compilation via LLVM |
 | **Python** | **1,017** | **29.1x** | CPython interpreter |
 
 ### Recursive Fibonacci (n=35)
@@ -38,7 +38,7 @@ All benchmarks test the same algorithms:
 | **Rust** | **25** | **1.8x** | Excellent |
 | **Go** | **46** | **3.3x** | Good |
 | **Node.js** | **100** | **7.1x** | JIT optimization |
-| **Quadrate** | **448** | **32x** | Native compilation via LLVM |
+| **Quadrate** | **439** | **31x** | Native compilation via LLVM |
 | **Python** | **1,149** | **82x** | Interpreted overhead |
 
 ## Performance Comparison
@@ -55,7 +55,7 @@ All benchmarks test the same algorithms:
 
 ### Quadrate (LLVM)
 - **6x slower** than C on arithmetic loops - **competitive with Node.js!**
-- **32x slower** than C on recursion - function call overhead
+- **31x slower** than C on recursion - function call overhead
 - **2.6-4.8x faster than Python** across all benchmarks
 - Compiles to native code via LLVM
 

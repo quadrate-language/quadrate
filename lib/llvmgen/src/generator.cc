@@ -250,6 +250,12 @@ namespace Qd {
 		void generateInlineIntSub(llvm::Value* ctx);
 		void generateInlineIntMul(llvm::Value* ctx);
 		void generateInlineIntMod(llvm::Value* ctx);
+		void generateInlineIntLt(llvm::Value* ctx);
+		void generateInlineIntGt(llvm::Value* ctx);
+		void generateInlineIntEq(llvm::Value* ctx);
+		void generateInlineIntNeq(llvm::Value* ctx);
+		void generateInlineIntLte(llvm::Value* ctx);
+		void generateInlineIntGte(llvm::Value* ctx);
 		void generateTypeAwareAdd(llvm::Value* ctx);
 		void generateTypeAwareSub(llvm::Value* ctx);
 		void generateTypeAwareMul(llvm::Value* ctx);
@@ -777,6 +783,235 @@ namespace Qd {
 
 		// Perform modulo (signed remainder)
 		llvm::Value* result = builder->CreateSRem(value1, value2, "mod_result");
+
+		builder->CreateStore(result, value1iPtrCast);
+
+		llvm::Value* newSize = builder->CreateSub(size, builder->getInt64(1), "new_size");
+		builder->CreateStore(newSize, sizePtr);
+	}
+
+	void LlvmGenerator::Impl::generateInlineIntLt(llvm::Value* ctx) {
+		// Inline implementation of integer less than: ( a:int b:int -- result:int )
+		// Assumes both operands are integers (no type checking for performance)
+
+		llvm::Type* contextTy = llvm::StructType::get(*context, {llvm::PointerType::get(*context, 0)}, false);
+		llvm::Value* stPtr = builder->CreateStructGEP(contextTy, ctx, 0, "st_ptr");
+		llvm::Value* st = builder->CreateLoad(llvm::PointerType::get(*context, 0), stPtr, "st");
+
+		llvm::Type* stackTy = llvm::StructType::get(
+				*context, {llvm::PointerType::get(*context, 0), builder->getInt64Ty(), builder->getInt64Ty()}, false);
+
+		llvm::Value* sizePtr = builder->CreateStructGEP(stackTy, st, 2, "size_ptr");
+		llvm::Value* size = builder->CreateLoad(builder->getInt64Ty(), sizePtr, "size");
+
+		llvm::Value* dataPtr = builder->CreateStructGEP(stackTy, st, 0, "data_ptr");
+		llvm::Value* data = builder->CreateLoad(llvm::PointerType::get(*context, 0), dataPtr, "data");
+
+		llvm::Value* idx1 = builder->CreateSub(size, builder->getInt64(2), "idx1");
+		llvm::Value* elem1Ptr = builder->CreateGEP(stackElementTy, data, idx1, "elem1_ptr");
+		llvm::Value* value1Ptr = builder->CreateStructGEP(stackElementTy, elem1Ptr, 0, "value1_ptr");
+		llvm::Value* value1iPtrCast = builder->CreateBitCast(value1Ptr, llvm::PointerType::get(*context, 0));
+		llvm::Value* value1 = builder->CreateLoad(builder->getInt64Ty(), value1iPtrCast, "value1");
+
+		llvm::Value* idx2 = builder->CreateSub(size, builder->getInt64(1), "idx2");
+		llvm::Value* elem2Ptr = builder->CreateGEP(stackElementTy, data, idx2, "elem2_ptr");
+		llvm::Value* value2Ptr = builder->CreateStructGEP(stackElementTy, elem2Ptr, 0, "value2_ptr");
+		llvm::Value* value2iPtrCast = builder->CreateBitCast(value2Ptr, llvm::PointerType::get(*context, 0));
+		llvm::Value* value2 = builder->CreateLoad(builder->getInt64Ty(), value2iPtrCast, "value2");
+
+		// Perform comparison: value1 < value2
+		llvm::Value* cmpResult = builder->CreateICmpSLT(value1, value2, "lt_result");
+		llvm::Value* result = builder->CreateZExt(cmpResult, builder->getInt64Ty(), "result_i64");
+
+		builder->CreateStore(result, value1iPtrCast);
+
+		llvm::Value* newSize = builder->CreateSub(size, builder->getInt64(1), "new_size");
+		builder->CreateStore(newSize, sizePtr);
+	}
+
+	void LlvmGenerator::Impl::generateInlineIntGt(llvm::Value* ctx) {
+		// Inline implementation of integer greater than: ( a:int b:int -- result:int )
+
+		llvm::Type* contextTy = llvm::StructType::get(*context, {llvm::PointerType::get(*context, 0)}, false);
+		llvm::Value* stPtr = builder->CreateStructGEP(contextTy, ctx, 0, "st_ptr");
+		llvm::Value* st = builder->CreateLoad(llvm::PointerType::get(*context, 0), stPtr, "st");
+
+		llvm::Type* stackTy = llvm::StructType::get(
+				*context, {llvm::PointerType::get(*context, 0), builder->getInt64Ty(), builder->getInt64Ty()}, false);
+
+		llvm::Value* sizePtr = builder->CreateStructGEP(stackTy, st, 2, "size_ptr");
+		llvm::Value* size = builder->CreateLoad(builder->getInt64Ty(), sizePtr, "size");
+
+		llvm::Value* dataPtr = builder->CreateStructGEP(stackTy, st, 0, "data_ptr");
+		llvm::Value* data = builder->CreateLoad(llvm::PointerType::get(*context, 0), dataPtr, "data");
+
+		llvm::Value* idx1 = builder->CreateSub(size, builder->getInt64(2), "idx1");
+		llvm::Value* elem1Ptr = builder->CreateGEP(stackElementTy, data, idx1, "elem1_ptr");
+		llvm::Value* value1Ptr = builder->CreateStructGEP(stackElementTy, elem1Ptr, 0, "value1_ptr");
+		llvm::Value* value1iPtrCast = builder->CreateBitCast(value1Ptr, llvm::PointerType::get(*context, 0));
+		llvm::Value* value1 = builder->CreateLoad(builder->getInt64Ty(), value1iPtrCast, "value1");
+
+		llvm::Value* idx2 = builder->CreateSub(size, builder->getInt64(1), "idx2");
+		llvm::Value* elem2Ptr = builder->CreateGEP(stackElementTy, data, idx2, "elem2_ptr");
+		llvm::Value* value2Ptr = builder->CreateStructGEP(stackElementTy, elem2Ptr, 0, "value2_ptr");
+		llvm::Value* value2iPtrCast = builder->CreateBitCast(value2Ptr, llvm::PointerType::get(*context, 0));
+		llvm::Value* value2 = builder->CreateLoad(builder->getInt64Ty(), value2iPtrCast, "value2");
+
+		// Perform comparison: value1 > value2
+		llvm::Value* cmpResult = builder->CreateICmpSGT(value1, value2, "gt_result");
+		llvm::Value* result = builder->CreateZExt(cmpResult, builder->getInt64Ty(), "result_i64");
+
+		builder->CreateStore(result, value1iPtrCast);
+
+		llvm::Value* newSize = builder->CreateSub(size, builder->getInt64(1), "new_size");
+		builder->CreateStore(newSize, sizePtr);
+	}
+
+	void LlvmGenerator::Impl::generateInlineIntEq(llvm::Value* ctx) {
+		// Inline implementation of integer equality: ( a:int b:int -- result:int )
+
+		llvm::Type* contextTy = llvm::StructType::get(*context, {llvm::PointerType::get(*context, 0)}, false);
+		llvm::Value* stPtr = builder->CreateStructGEP(contextTy, ctx, 0, "st_ptr");
+		llvm::Value* st = builder->CreateLoad(llvm::PointerType::get(*context, 0), stPtr, "st");
+
+		llvm::Type* stackTy = llvm::StructType::get(
+				*context, {llvm::PointerType::get(*context, 0), builder->getInt64Ty(), builder->getInt64Ty()}, false);
+
+		llvm::Value* sizePtr = builder->CreateStructGEP(stackTy, st, 2, "size_ptr");
+		llvm::Value* size = builder->CreateLoad(builder->getInt64Ty(), sizePtr, "size");
+
+		llvm::Value* dataPtr = builder->CreateStructGEP(stackTy, st, 0, "data_ptr");
+		llvm::Value* data = builder->CreateLoad(llvm::PointerType::get(*context, 0), dataPtr, "data");
+
+		llvm::Value* idx1 = builder->CreateSub(size, builder->getInt64(2), "idx1");
+		llvm::Value* elem1Ptr = builder->CreateGEP(stackElementTy, data, idx1, "elem1_ptr");
+		llvm::Value* value1Ptr = builder->CreateStructGEP(stackElementTy, elem1Ptr, 0, "value1_ptr");
+		llvm::Value* value1iPtrCast = builder->CreateBitCast(value1Ptr, llvm::PointerType::get(*context, 0));
+		llvm::Value* value1 = builder->CreateLoad(builder->getInt64Ty(), value1iPtrCast, "value1");
+
+		llvm::Value* idx2 = builder->CreateSub(size, builder->getInt64(1), "idx2");
+		llvm::Value* elem2Ptr = builder->CreateGEP(stackElementTy, data, idx2, "elem2_ptr");
+		llvm::Value* value2Ptr = builder->CreateStructGEP(stackElementTy, elem2Ptr, 0, "value2_ptr");
+		llvm::Value* value2iPtrCast = builder->CreateBitCast(value2Ptr, llvm::PointerType::get(*context, 0));
+		llvm::Value* value2 = builder->CreateLoad(builder->getInt64Ty(), value2iPtrCast, "value2");
+
+		// Perform comparison: value1 == value2
+		llvm::Value* cmpResult = builder->CreateICmpEQ(value1, value2, "eq_result");
+		llvm::Value* result = builder->CreateZExt(cmpResult, builder->getInt64Ty(), "result_i64");
+
+		builder->CreateStore(result, value1iPtrCast);
+
+		llvm::Value* newSize = builder->CreateSub(size, builder->getInt64(1), "new_size");
+		builder->CreateStore(newSize, sizePtr);
+	}
+
+	void LlvmGenerator::Impl::generateInlineIntNeq(llvm::Value* ctx) {
+		// Inline implementation of integer not-equal: ( a:int b:int -- result:int )
+
+		llvm::Type* contextTy = llvm::StructType::get(*context, {llvm::PointerType::get(*context, 0)}, false);
+		llvm::Value* stPtr = builder->CreateStructGEP(contextTy, ctx, 0, "st_ptr");
+		llvm::Value* st = builder->CreateLoad(llvm::PointerType::get(*context, 0), stPtr, "st");
+
+		llvm::Type* stackTy = llvm::StructType::get(
+				*context, {llvm::PointerType::get(*context, 0), builder->getInt64Ty(), builder->getInt64Ty()}, false);
+
+		llvm::Value* sizePtr = builder->CreateStructGEP(stackTy, st, 2, "size_ptr");
+		llvm::Value* size = builder->CreateLoad(builder->getInt64Ty(), sizePtr, "size");
+
+		llvm::Value* dataPtr = builder->CreateStructGEP(stackTy, st, 0, "data_ptr");
+		llvm::Value* data = builder->CreateLoad(llvm::PointerType::get(*context, 0), dataPtr, "data");
+
+		llvm::Value* idx1 = builder->CreateSub(size, builder->getInt64(2), "idx1");
+		llvm::Value* elem1Ptr = builder->CreateGEP(stackElementTy, data, idx1, "elem1_ptr");
+		llvm::Value* value1Ptr = builder->CreateStructGEP(stackElementTy, elem1Ptr, 0, "value1_ptr");
+		llvm::Value* value1iPtrCast = builder->CreateBitCast(value1Ptr, llvm::PointerType::get(*context, 0));
+		llvm::Value* value1 = builder->CreateLoad(builder->getInt64Ty(), value1iPtrCast, "value1");
+
+		llvm::Value* idx2 = builder->CreateSub(size, builder->getInt64(1), "idx2");
+		llvm::Value* elem2Ptr = builder->CreateGEP(stackElementTy, data, idx2, "elem2_ptr");
+		llvm::Value* value2Ptr = builder->CreateStructGEP(stackElementTy, elem2Ptr, 0, "value2_ptr");
+		llvm::Value* value2iPtrCast = builder->CreateBitCast(value2Ptr, llvm::PointerType::get(*context, 0));
+		llvm::Value* value2 = builder->CreateLoad(builder->getInt64Ty(), value2iPtrCast, "value2");
+
+		// Perform comparison: value1 != value2
+		llvm::Value* cmpResult = builder->CreateICmpNE(value1, value2, "neq_result");
+		llvm::Value* result = builder->CreateZExt(cmpResult, builder->getInt64Ty(), "result_i64");
+
+		builder->CreateStore(result, value1iPtrCast);
+
+		llvm::Value* newSize = builder->CreateSub(size, builder->getInt64(1), "new_size");
+		builder->CreateStore(newSize, sizePtr);
+	}
+
+	void LlvmGenerator::Impl::generateInlineIntLte(llvm::Value* ctx) {
+		// Inline implementation of integer less than or equal: ( a:int b:int -- result:int )
+
+		llvm::Type* contextTy = llvm::StructType::get(*context, {llvm::PointerType::get(*context, 0)}, false);
+		llvm::Value* stPtr = builder->CreateStructGEP(contextTy, ctx, 0, "st_ptr");
+		llvm::Value* st = builder->CreateLoad(llvm::PointerType::get(*context, 0), stPtr, "st");
+
+		llvm::Type* stackTy = llvm::StructType::get(
+				*context, {llvm::PointerType::get(*context, 0), builder->getInt64Ty(), builder->getInt64Ty()}, false);
+
+		llvm::Value* sizePtr = builder->CreateStructGEP(stackTy, st, 2, "size_ptr");
+		llvm::Value* size = builder->CreateLoad(builder->getInt64Ty(), sizePtr, "size");
+
+		llvm::Value* dataPtr = builder->CreateStructGEP(stackTy, st, 0, "data_ptr");
+		llvm::Value* data = builder->CreateLoad(llvm::PointerType::get(*context, 0), dataPtr, "data");
+
+		llvm::Value* idx1 = builder->CreateSub(size, builder->getInt64(2), "idx1");
+		llvm::Value* elem1Ptr = builder->CreateGEP(stackElementTy, data, idx1, "elem1_ptr");
+		llvm::Value* value1Ptr = builder->CreateStructGEP(stackElementTy, elem1Ptr, 0, "value1_ptr");
+		llvm::Value* value1iPtrCast = builder->CreateBitCast(value1Ptr, llvm::PointerType::get(*context, 0));
+		llvm::Value* value1 = builder->CreateLoad(builder->getInt64Ty(), value1iPtrCast, "value1");
+
+		llvm::Value* idx2 = builder->CreateSub(size, builder->getInt64(1), "idx2");
+		llvm::Value* elem2Ptr = builder->CreateGEP(stackElementTy, data, idx2, "elem2_ptr");
+		llvm::Value* value2Ptr = builder->CreateStructGEP(stackElementTy, elem2Ptr, 0, "value2_ptr");
+		llvm::Value* value2iPtrCast = builder->CreateBitCast(value2Ptr, llvm::PointerType::get(*context, 0));
+		llvm::Value* value2 = builder->CreateLoad(builder->getInt64Ty(), value2iPtrCast, "value2");
+
+		// Perform comparison: value1 <= value2
+		llvm::Value* cmpResult = builder->CreateICmpSLE(value1, value2, "lte_result");
+		llvm::Value* result = builder->CreateZExt(cmpResult, builder->getInt64Ty(), "result_i64");
+
+		builder->CreateStore(result, value1iPtrCast);
+
+		llvm::Value* newSize = builder->CreateSub(size, builder->getInt64(1), "new_size");
+		builder->CreateStore(newSize, sizePtr);
+	}
+
+	void LlvmGenerator::Impl::generateInlineIntGte(llvm::Value* ctx) {
+		// Inline implementation of integer greater than or equal: ( a:int b:int -- result:int )
+
+		llvm::Type* contextTy = llvm::StructType::get(*context, {llvm::PointerType::get(*context, 0)}, false);
+		llvm::Value* stPtr = builder->CreateStructGEP(contextTy, ctx, 0, "st_ptr");
+		llvm::Value* st = builder->CreateLoad(llvm::PointerType::get(*context, 0), stPtr, "st");
+
+		llvm::Type* stackTy = llvm::StructType::get(
+				*context, {llvm::PointerType::get(*context, 0), builder->getInt64Ty(), builder->getInt64Ty()}, false);
+
+		llvm::Value* sizePtr = builder->CreateStructGEP(stackTy, st, 2, "size_ptr");
+		llvm::Value* size = builder->CreateLoad(builder->getInt64Ty(), sizePtr, "size");
+
+		llvm::Value* dataPtr = builder->CreateStructGEP(stackTy, st, 0, "data_ptr");
+		llvm::Value* data = builder->CreateLoad(llvm::PointerType::get(*context, 0), dataPtr, "data");
+
+		llvm::Value* idx1 = builder->CreateSub(size, builder->getInt64(2), "idx1");
+		llvm::Value* elem1Ptr = builder->CreateGEP(stackElementTy, data, idx1, "elem1_ptr");
+		llvm::Value* value1Ptr = builder->CreateStructGEP(stackElementTy, elem1Ptr, 0, "value1_ptr");
+		llvm::Value* value1iPtrCast = builder->CreateBitCast(value1Ptr, llvm::PointerType::get(*context, 0));
+		llvm::Value* value1 = builder->CreateLoad(builder->getInt64Ty(), value1iPtrCast, "value1");
+
+		llvm::Value* idx2 = builder->CreateSub(size, builder->getInt64(1), "idx2");
+		llvm::Value* elem2Ptr = builder->CreateGEP(stackElementTy, data, idx2, "elem2_ptr");
+		llvm::Value* value2Ptr = builder->CreateStructGEP(stackElementTy, elem2Ptr, 0, "value2_ptr");
+		llvm::Value* value2iPtrCast = builder->CreateBitCast(value2Ptr, llvm::PointerType::get(*context, 0));
+		llvm::Value* value2 = builder->CreateLoad(builder->getInt64Ty(), value2iPtrCast, "value2");
+
+		// Perform comparison: value1 >= value2
+		llvm::Value* cmpResult = builder->CreateICmpSGE(value1, value2, "gte_result");
+		llvm::Value* result = builder->CreateZExt(cmpResult, builder->getInt64Ty(), "result_i64");
 
 		builder->CreateStore(result, value1iPtrCast);
 
@@ -1938,16 +2173,28 @@ namespace Qd {
 			}
 			return;
 		} else if (name == "<") {
-			// Use type-aware inline less than
-			generateTypeAwareLt(ctx);
+			// Use integer-only path for pure integer functions
+			if (currentFunctionIsIntegerOnly) {
+				generateInlineIntLt(ctx);
+			} else {
+				generateTypeAwareLt(ctx);
+			}
 			return;
 		} else if (name == ">") {
-			// Use type-aware inline greater than
-			generateTypeAwareGt(ctx);
+			// Use integer-only path for pure integer functions
+			if (currentFunctionIsIntegerOnly) {
+				generateInlineIntGt(ctx);
+			} else {
+				generateTypeAwareGt(ctx);
+			}
 			return;
 		} else if (name == "==") {
-			// Use type-aware inline equality
-			generateTypeAwareEq(ctx);
+			// Use integer-only path for pure integer functions
+			if (currentFunctionIsIntegerOnly) {
+				generateInlineIntEq(ctx);
+			} else {
+				generateTypeAwareEq(ctx);
+			}
 			return;
 		} else if (name == "swap") {
 			// Use inline swap (no string cleanup needed - just moving elements)
@@ -1958,36 +2205,68 @@ namespace Qd {
 			generateInlineDup(ctx);
 			return;
 		} else if (name == "!=") {
-			// Use type-aware inline not-equal
-			generateTypeAwareNeq(ctx);
+			// Use integer-only path for pure integer functions
+			if (currentFunctionIsIntegerOnly) {
+				generateInlineIntNeq(ctx);
+			} else {
+				generateTypeAwareNeq(ctx);
+			}
 			return;
 		} else if (name == "<=") {
-			// Use type-aware inline less than or equal
-			generateTypeAwareLte(ctx);
+			// Use integer-only path for pure integer functions
+			if (currentFunctionIsIntegerOnly) {
+				generateInlineIntLte(ctx);
+			} else {
+				generateTypeAwareLte(ctx);
+			}
 			return;
 		} else if (name == ">=" || name == "gte") {
-			// Use type-aware inline greater than or equal
-			generateTypeAwareGte(ctx);
+			// Use integer-only path for pure integer functions
+			if (currentFunctionIsIntegerOnly) {
+				generateInlineIntGte(ctx);
+			} else {
+				generateTypeAwareGte(ctx);
+			}
 			return;
 		} else if (name == "lt") {
-			// Use type-aware inline less than (word form)
-			generateTypeAwareLt(ctx);
+			// Use integer-only path for pure integer functions
+			if (currentFunctionIsIntegerOnly) {
+				generateInlineIntLt(ctx);
+			} else {
+				generateTypeAwareLt(ctx);
+			}
 			return;
 		} else if (name == "gt") {
-			// Use type-aware inline greater than (word form)
-			generateTypeAwareGt(ctx);
+			// Use integer-only path for pure integer functions
+			if (currentFunctionIsIntegerOnly) {
+				generateInlineIntGt(ctx);
+			} else {
+				generateTypeAwareGt(ctx);
+			}
 			return;
 		} else if (name == "eq") {
-			// Use type-aware inline equality (word form)
-			generateTypeAwareEq(ctx);
+			// Use integer-only path for pure integer functions
+			if (currentFunctionIsIntegerOnly) {
+				generateInlineIntEq(ctx);
+			} else {
+				generateTypeAwareEq(ctx);
+			}
 			return;
 		} else if (name == "neq") {
-			// Use type-aware inline not-equal (word form)
-			generateTypeAwareNeq(ctx);
+			// Use integer-only path for pure integer functions
+			if (currentFunctionIsIntegerOnly) {
+				generateInlineIntNeq(ctx);
+			} else {
+				generateTypeAwareNeq(ctx);
+			}
 			return;
 		} else if (name == "lte") {
-			// Use type-aware inline less than or equal (word form)
-			generateTypeAwareLte(ctx);
+			// Use integer-only path for pure integer functions
+			if (currentFunctionIsIntegerOnly) {
+				generateInlineIntLte(ctx);
+			} else {
+				generateTypeAwareLte(ctx);
+			}
 			return;
 		} else if (name == "/" || name == "div") {
 			// Use type-aware inline division
