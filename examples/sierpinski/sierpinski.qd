@@ -1,0 +1,18 @@
+use bits
+
+fn main( -- ) {
+	0 16 1 for {
+		15 $ - -> j
+		0 j 1 + 1 for {
+			" " .
+		}
+		0 $ 1 + 1 for {
+			$ j bits::and 0 eq if {
+				"* " .
+			} else {
+				"  " .
+			}
+		}
+		nl
+	}
+}
