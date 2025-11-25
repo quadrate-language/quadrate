@@ -1,0 +1,52 @@
+// Test flag parsing module
+use flag
+
+fn main( -- ) {
+	// Test bool - flag not present
+	0 "--verbose" flag::bool . nl
+
+	// Test bool - flag present
+	"--verbose" 1 "--verbose" flag::bool . nl
+
+	// Test string - flag not present
+	0 "--name" flag::string if {
+		. nl
+	} else {
+		"default" . nl
+	}
+
+	// Test string - flag present
+	"Alice" "--name" 2 "--name" flag::string if {
+		. nl
+	} else {
+		"default" . nl
+	}
+
+	// Test int - flag not present (use default)
+	0 "--count" flag::int if {
+		. nl
+	} else {
+		10 . nl
+	}
+
+	// Test int - flag present
+	"42" "--count" 2 "--count" flag::int if {
+		. nl
+	} else {
+		10 . nl
+	}
+
+	// Test float - flag present
+	"3.14" "--pi" 2 "--pi" flag::float if {
+		. nl
+	} else {
+		0.0 . nl
+	}
+
+	// Test positional
+	"file.txt" 1 0 flag::positional if {
+		. nl
+	} else {
+		"no file" . nl
+	}
+}

@@ -1,0 +1,204 @@
+// Flag parsing library for Quadrate
+//
+// Provides functions to parse command-line flags.
+// Uses the "read" instruction to get arguments.
+//
+// Usage:
+//   read "--verbose" flag::bool if { "verbose mode" . nl }
+//   read "--name" flag::string if { "name=" . . nl } else { "default" }
+//   read "--count" flag::int if { } else { 10 }
+
+use str
+
+// Check if a flag exists in the argument list
+// Returns 1 if found, 0 if not
+pub fn bool(argc:i64 name:str -- present:i64) {
+	-> name
+	-> argc
+	0 -> found
+	"" -> arg
+
+	0 argc 1 for {
+		-> arg
+		arg name str::compare 0 == if {
+			1 -> found
+		}
+	}
+
+	found
+}
+
+// Get string value of a flag from the argument list
+// The value is the argument immediately following the flag name
+pub fn string(argc:i64 name:str -- value:str)! {
+	-> name
+	-> argc
+	0 -> found
+	"" -> arg
+	"" -> value
+	"" -> prev
+
+	0 argc 1 for {
+		-> arg
+		prev name str::compare 0 == if {
+			arg -> value
+			1 -> found
+		}
+		arg -> prev
+	}
+
+	found 0 == if {
+		"flag not found" 1 error
+	}
+	value
+}
+
+// Get integer value of a flag from the argument list
+pub fn int(argc:i64 name:str -- value:i64)! {
+	-> name
+	-> argc
+	0 -> found
+	"" -> arg
+	0 -> value
+	"" -> prev
+
+	0 argc 1 for {
+		-> arg
+		prev name str::compare 0 == if {
+			arg parse_int -> value
+			1 -> found
+		}
+		arg -> prev
+	}
+
+	found 0 == if {
+		"flag not found" 1 error
+	}
+	value
+}
+
+// Get float value of a flag from the argument list
+pub fn float(argc:i64 name:str -- value:f64)! {
+	-> name
+	-> argc
+	0 -> found
+	"" -> arg
+	0.0 -> value
+	"" -> prev
+
+	0 argc 1 for {
+		-> arg
+		prev name str::compare 0 == if {
+			arg parse_float -> value
+			1 -> found
+		}
+		arg -> prev
+	}
+
+	found 0 == if {
+		"flag not found" 1 error
+	}
+	value
+}
+
+// Get positional argument at index (0-based, skipping flags starting with -)
+pub fn positional(argc:i64 index:i64 -- value:str)! {
+	-> index
+	-> argc
+	0 -> pos_count
+	0 -> found
+	"" -> arg
+	"" -> value
+
+	0 argc 1 for {
+		-> arg
+		arg "-" str::starts_with 0 == if {
+			pos_count index == if {
+				arg -> value
+				1 -> found
+			}
+			pos_count 1 + -> pos_count
+		}
+	}
+
+	found 0 == if {
+		"positional argument not found" 1 error
+	}
+	value
+}
+
+// Helper: parse string to integer
+fn parse_int(s:str -- value:i64) {
+	-> s
+	0 -> value
+	0 -> i
+	1 -> sign
+	s str::len -> len
+
+	len 0 > if {
+		s 0 str::char_at 45 == if {
+			-1 -> sign
+			1 -> i
+		}
+	}
+
+	loop {
+		i len < if {
+			s i str::char_at -> ch
+			ch 48 >= ch 57 <= and if {
+				value 10 * ch 48 - + -> value
+				i 1 + -> i
+			} else {
+				break
+			}
+		} else {
+			break
+		}
+	}
+
+	value sign *
+}
+
+// Helper: parse string to float
+fn parse_float(s:str -- value:f64) {
+	-> s
+	0.0 -> value
+	0 -> i
+	1.0 -> sign
+	s str::len -> len
+	0 -> seen_dot
+	1.0 -> decimal_place
+
+	len 0 > if {
+		s 0 str::char_at 45 == if {
+			-1.0 -> sign
+			1 -> i
+		}
+	}
+
+	loop {
+		i len < if {
+			s i str::char_at -> ch
+			ch 46 == if {
+				1 -> seen_dot
+				i 1 + -> i
+			} else {
+				ch 48 >= ch 57 <= and if {
+					seen_dot if {
+						decimal_place 10.0 * -> decimal_place
+						value ch 48 - castf decimal_place / + -> value
+					} else {
+						value 10.0 * ch 48 - castf + -> value
+					}
+					i 1 + -> i
+				} else {
+					break
+				}
+			}
+		} else {
+			break
+		}
+	}
+
+	value sign *
+}
