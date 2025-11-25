@@ -1,0 +1,11 @@
+// Test set with integer array
+fn main( -- ) {
+	// Create array and set elements
+	3 makei -> arr
+	arr 0 100 set
+	arr 1 200 set
+	arr 2 300 set
+	arr 0 nth . nl        // Should print: 100
+	arr 1 nth . nl        // Should print: 200
+	arr 2 nth . nl        // Should print: 300
+}

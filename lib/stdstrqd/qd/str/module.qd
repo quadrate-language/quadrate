@@ -7,6 +7,8 @@ import "libstdstrqd_static.a" as "str" {
 	pub fn contains(str:str needle:str -- result:i64)
 	pub fn starts_with(str:str prefix:str -- result:i64)
 	pub fn ends_with(str:str suffix:str -- result:i64)
+	pub fn index_of(haystack:str needle:str -- index:i64)
+	pub fn index_of_from(haystack:str needle:str start:i64 -- index:i64)
 
 	// Case conversion
 	pub fn upper(str:str -- result:str)
@@ -16,6 +18,10 @@ import "libstdstrqd_static.a" as "str" {
 	pub fn trim(str:str -- result:str)
 	pub fn substring(str:str start:i64 length:i64 -- result:str)!
 	pub fn replace(str:str old:str new:str -- result:str)!
+
+	// Character operations
+	pub fn char_at(str:str index:i64 -- char_code:i64)
+	pub fn from_char(char_code:i64 -- str:str)
 
 	// String splitting and comparison
 	pub fn split(str:str delim:str -- parts:ptr count:i64)!

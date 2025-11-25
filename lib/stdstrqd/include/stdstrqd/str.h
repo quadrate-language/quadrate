@@ -130,6 +130,50 @@ qd_exec_result usr_str_replace(qd_context* ctx);
  */
 qd_exec_result usr_str_compare(qd_context* ctx);
 
+/**
+ * @brief Get character code at index
+ * @par Stack Effect: ( s:s index:i -- char_code:i )
+ * @param ctx Execution context
+ * @return Execution result
+ *
+ * Returns the ASCII/Unicode code point at the given index.
+ * Aborts if index is out of bounds.
+ */
+qd_exec_result usr_str_char_at(qd_context* ctx);
+
+/**
+ * @brief Find index of substring
+ * @par Stack Effect: ( haystack:s needle:s -- index:i )
+ * @param ctx Execution context
+ * @return Execution result
+ *
+ * Returns the index of the first occurrence of needle in haystack.
+ * Returns -1 if not found.
+ */
+qd_exec_result usr_str_index_of(qd_context* ctx);
+
+/**
+ * @brief Find index of substring starting from position
+ * @par Stack Effect: ( haystack:s needle:s start:i -- index:i )
+ * @param ctx Execution context
+ * @return Execution result
+ *
+ * Returns the index of the first occurrence of needle in haystack,
+ * starting the search from the given position.
+ * Returns -1 if not found.
+ */
+qd_exec_result usr_str_index_of_from(qd_context* ctx);
+
+/**
+ * @brief Create a single-character string from character code
+ * @par Stack Effect: ( char_code:i -- s:s )
+ * @param ctx Execution context
+ * @return Execution result
+ *
+ * Creates a string containing a single character with the given code point.
+ */
+qd_exec_result usr_str_from_char(qd_context* ctx);
+
 #ifdef __cplusplus
 }
 #endif

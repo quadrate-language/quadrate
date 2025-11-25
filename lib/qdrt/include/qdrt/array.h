@@ -197,6 +197,79 @@ qd_exec_result qd_len(qd_context* ctx);
  */
 qd_exec_result qd_nth(qd_context* ctx);
 
+/**
+ * @brief Create a new integer array
+ *
+ * Stack: ( size:i64 -- array:ptr )
+ *
+ * Creates a new array with `size` integer elements, all initialized to 0.
+ *
+ * @param ctx Execution context
+ * @return Execution result (0 on success)
+ */
+qd_exec_result qd_makei(qd_context* ctx);
+
+/**
+ * @brief Create a new float array
+ *
+ * Stack: ( size:i64 -- array:ptr )
+ *
+ * Creates a new array with `size` float elements, all initialized to 0.0.
+ *
+ * @param ctx Execution context
+ * @return Execution result (0 on success)
+ */
+qd_exec_result qd_makef(qd_context* ctx);
+
+/**
+ * @brief Create a new string array
+ *
+ * Stack: ( size:i64 -- array:ptr )
+ *
+ * Creates a new array with `size` string elements, all initialized to empty strings.
+ *
+ * @param ctx Execution context
+ * @return Execution result (0 on success)
+ */
+qd_exec_result qd_makes(qd_context* ctx);
+
+/**
+ * @brief Create a new pointer array
+ *
+ * Stack: ( size:i64 -- array:ptr )
+ *
+ * Creates a new array with `size` pointer elements, all initialized to null.
+ *
+ * @param ctx Execution context
+ * @return Execution result (0 on success)
+ */
+qd_exec_result qd_makep(qd_context* ctx);
+
+/**
+ * @brief Append element to array
+ *
+ * Stack: ( array:ptr value -- array:ptr )
+ *
+ * Appends the value to the end of the array and returns the array.
+ * The value type must match the array element type.
+ *
+ * @param ctx Execution context
+ * @return Execution result (0 on success)
+ */
+qd_exec_result qd_append(qd_context* ctx);
+
+/**
+ * @brief Set element at index in array
+ *
+ * Stack: ( array:ptr index:i64 value -- )
+ *
+ * Sets the element at the given index. The value type must match the array element type.
+ *
+ * @param ctx Execution context
+ * @return Execution result (0 on success)
+ */
+qd_exec_result qd_set(qd_context* ctx);
+
 /** @} */ // end of ArrayStackOps group
 
 #ifdef __cplusplus

@@ -1,0 +1,9 @@
+// Test append with integer array
+fn main( -- ) {
+	// Create empty array and append elements
+	0 makei 10 append 20 append 30 append -> arr
+	arr len . nl          // Should print: 3
+	arr 0 nth . nl        // Should print: 10
+	arr 1 nth . nl        // Should print: 20
+	arr 2 nth . nl        // Should print: 30
+}

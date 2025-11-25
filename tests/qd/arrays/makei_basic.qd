@@ -1,0 +1,9 @@
+// Test makei - create integer array
+fn main( -- ) {
+	// Create array with 3 elements
+	3 makei -> arr
+	arr len . nl          // Should print: 3
+	arr 0 nth . nl        // Should print: 0 (initialized to 0)
+	arr 1 nth . nl        // Should print: 0
+	arr 2 nth . nl        // Should print: 0
+}

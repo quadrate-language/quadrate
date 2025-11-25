@@ -3,7 +3,6 @@
 #include "struct_info.h"
 #include <cstdio>
 #include <cstring>
-#include <unistd.h>
 #include <filesystem>
 #include <fstream>
 #include <functional>
@@ -26,6 +25,7 @@
 #include <qc/semantic_validator.h>
 #include <sstream>
 #include <string>
+#include <unistd.h>
 #include <vector>
 
 // Default error span length in characters for diagnostic highlighting
@@ -379,7 +379,9 @@ private:
 				continue;
 			}
 			// Also handle case where [ appears at start or after stripping ESC
-			if (input[i] == '[' && (i == 0 || inEscape || (i + 1 < input.size() && (isdigit(input[i + 1]) || input[i + 1] == ';' || input[i + 1] == 'm')))) {
+			if (input[i] == '[' && (i == 0 || inEscape ||
+										   (i + 1 < input.size() && (isdigit(input[i + 1]) || input[i + 1] == ';' ||
+																			input[i + 1] == 'm')))) {
 				inEscape = true;
 				continue;
 			}
@@ -723,7 +725,7 @@ private:
 		}
 		// Check if we're completing after a module prefix (e.g., "math::")
 		else if (std::string modulePrefix = getModulePrefixAtPosition(documentText, line, character);
-				 !modulePrefix.empty()) {
+				!modulePrefix.empty()) {
 			// Module-qualified completion - only show functions from that module
 			std::string modulePath = resolveModulePath(modulePrefix, sourceDir);
 			if (!modulePath.empty()) {
@@ -2424,8 +2426,7 @@ private:
 
 						if (!modulePath.empty()) {
 							json_t* location = json_object();
-							json_object_set_new(location, "uri",
-									json_string(("file://" + modulePath).c_str()));
+							json_object_set_new(location, "uri", json_string(("file://" + modulePath).c_str()));
 
 							json_t* range = json_object();
 							json_t* start = json_object();

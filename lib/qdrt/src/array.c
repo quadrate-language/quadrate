@@ -395,3 +395,411 @@ qd_exec_result qd_nth(qd_context* ctx) {
 	qd_array_release(arr); // Release the consumed array
 	return result;
 }
+
+qd_exec_result qd_makei(qd_context* ctx) {
+	qd_exec_result result = {0};
+	if (!ctx || !ctx->st) {
+		result.code = -1;
+		return result;
+	}
+
+	qd_stack_element_t sizeElem;
+	if (qd_stack_pop(ctx->st, &sizeElem) != QD_STACK_OK) {
+		fprintf(stderr, "makei: stack underflow\n");
+		result.code = -1;
+		return result;
+	}
+
+	if (sizeElem.type != QD_STACK_TYPE_INT) {
+		fprintf(stderr, "makei: expected integer size, got %d\n", sizeElem.type);
+		result.code = -1;
+		return result;
+	}
+
+	int64_t size = sizeElem.value.i;
+	if (size < 0) {
+		fprintf(stderr, "makei: negative size %ld\n", size);
+		result.code = -1;
+		return result;
+	}
+
+	qd_array_t* arr = qd_array_create((size_t)size, QD_ARRAY_TYPE_INT);
+	if (!arr) {
+		fprintf(stderr, "makei: allocation failed\n");
+		result.code = -1;
+		return result;
+	}
+
+	// Initialize elements to 0
+	for (size_t i = 0; i < (size_t)size; i++) {
+		arr->data.i[i] = 0;
+	}
+	arr->length = (size_t)size;
+
+	qd_stack_push_ptr(ctx->st, arr);
+	return result;
+}
+
+qd_exec_result qd_makef(qd_context* ctx) {
+	qd_exec_result result = {0};
+	if (!ctx || !ctx->st) {
+		result.code = -1;
+		return result;
+	}
+
+	qd_stack_element_t sizeElem;
+	if (qd_stack_pop(ctx->st, &sizeElem) != QD_STACK_OK) {
+		fprintf(stderr, "makef: stack underflow\n");
+		result.code = -1;
+		return result;
+	}
+
+	if (sizeElem.type != QD_STACK_TYPE_INT) {
+		fprintf(stderr, "makef: expected integer size, got %d\n", sizeElem.type);
+		result.code = -1;
+		return result;
+	}
+
+	int64_t size = sizeElem.value.i;
+	if (size < 0) {
+		fprintf(stderr, "makef: negative size %ld\n", size);
+		result.code = -1;
+		return result;
+	}
+
+	qd_array_t* arr = qd_array_create((size_t)size, QD_ARRAY_TYPE_FLOAT);
+	if (!arr) {
+		fprintf(stderr, "makef: allocation failed\n");
+		result.code = -1;
+		return result;
+	}
+
+	// Initialize elements to 0.0
+	for (size_t i = 0; i < (size_t)size; i++) {
+		arr->data.f[i] = 0.0;
+	}
+	arr->length = (size_t)size;
+
+	qd_stack_push_ptr(ctx->st, arr);
+	return result;
+}
+
+qd_exec_result qd_makes(qd_context* ctx) {
+	qd_exec_result result = {0};
+	if (!ctx || !ctx->st) {
+		result.code = -1;
+		return result;
+	}
+
+	qd_stack_element_t sizeElem;
+	if (qd_stack_pop(ctx->st, &sizeElem) != QD_STACK_OK) {
+		fprintf(stderr, "makes: stack underflow\n");
+		result.code = -1;
+		return result;
+	}
+
+	if (sizeElem.type != QD_STACK_TYPE_INT) {
+		fprintf(stderr, "makes: expected integer size, got %d\n", sizeElem.type);
+		result.code = -1;
+		return result;
+	}
+
+	int64_t size = sizeElem.value.i;
+	if (size < 0) {
+		fprintf(stderr, "makes: negative size %ld\n", size);
+		result.code = -1;
+		return result;
+	}
+
+	qd_array_t* arr = qd_array_create((size_t)size, QD_ARRAY_TYPE_STR);
+	if (!arr) {
+		fprintf(stderr, "makes: allocation failed\n");
+		result.code = -1;
+		return result;
+	}
+
+	// Initialize elements to empty strings
+	for (size_t i = 0; i < (size_t)size; i++) {
+		arr->data.p[i] = qd_string_create("");
+	}
+	arr->length = (size_t)size;
+
+	qd_stack_push_ptr(ctx->st, arr);
+	return result;
+}
+
+qd_exec_result qd_makep(qd_context* ctx) {
+	qd_exec_result result = {0};
+	if (!ctx || !ctx->st) {
+		result.code = -1;
+		return result;
+	}
+
+	qd_stack_element_t sizeElem;
+	if (qd_stack_pop(ctx->st, &sizeElem) != QD_STACK_OK) {
+		fprintf(stderr, "makep: stack underflow\n");
+		result.code = -1;
+		return result;
+	}
+
+	if (sizeElem.type != QD_STACK_TYPE_INT) {
+		fprintf(stderr, "makep: expected integer size, got %d\n", sizeElem.type);
+		result.code = -1;
+		return result;
+	}
+
+	int64_t size = sizeElem.value.i;
+	if (size < 0) {
+		fprintf(stderr, "makep: negative size %ld\n", size);
+		result.code = -1;
+		return result;
+	}
+
+	qd_array_t* arr = qd_array_create((size_t)size, QD_ARRAY_TYPE_PTR);
+	if (!arr) {
+		fprintf(stderr, "makep: allocation failed\n");
+		result.code = -1;
+		return result;
+	}
+
+	// Initialize elements to null (already done by qd_array_create for PTR type)
+	arr->length = (size_t)size;
+
+	qd_stack_push_ptr(ctx->st, arr);
+	return result;
+}
+
+qd_exec_result qd_append(qd_context* ctx) {
+	qd_exec_result result = {0};
+	if (!ctx || !ctx->st) {
+		result.code = -1;
+		return result;
+	}
+
+	// Pop value first (top of stack)
+	qd_stack_element_t valueElem;
+	if (qd_stack_pop(ctx->st, &valueElem) != QD_STACK_OK) {
+		fprintf(stderr, "append: stack underflow (value)\n");
+		result.code = -1;
+		return result;
+	}
+
+	// Pop array
+	qd_stack_element_t arrElem;
+	if (qd_stack_pop(ctx->st, &arrElem) != QD_STACK_OK) {
+		fprintf(stderr, "append: stack underflow (array)\n");
+		// Clean up value if it's a string
+		if (valueElem.type == QD_STACK_TYPE_STR) {
+			qd_string_release(valueElem.value.s);
+		}
+		result.code = -1;
+		return result;
+	}
+
+	if (arrElem.type != QD_STACK_TYPE_PTR) {
+		fprintf(stderr, "append: expected array (ptr), got %d\n", arrElem.type);
+		if (valueElem.type == QD_STACK_TYPE_STR) {
+			qd_string_release(valueElem.value.s);
+		}
+		result.code = -1;
+		return result;
+	}
+
+	qd_array_t* arr = (qd_array_t*)arrElem.value.p;
+	if (!arr) {
+		fprintf(stderr, "append: null array\n");
+		if (valueElem.type == QD_STACK_TYPE_STR) {
+			qd_string_release(valueElem.value.s);
+		}
+		result.code = -1;
+		return result;
+	}
+
+	// Append based on array type
+	int appendResult = -1;
+	switch (arr->elemType) {
+	case QD_ARRAY_TYPE_INT:
+		if (valueElem.type == QD_STACK_TYPE_INT) {
+			appendResult = qd_array_push_int(arr, valueElem.value.i);
+		} else {
+			fprintf(stderr, "append: type mismatch - int array, got type %d\n", valueElem.type);
+		}
+		break;
+	case QD_ARRAY_TYPE_FLOAT:
+		if (valueElem.type == QD_STACK_TYPE_FLOAT) {
+			appendResult = qd_array_push_float(arr, valueElem.value.f);
+		} else if (valueElem.type == QD_STACK_TYPE_INT) {
+			// Allow int to float conversion
+			appendResult = qd_array_push_float(arr, (double)valueElem.value.i);
+		} else {
+			fprintf(stderr, "append: type mismatch - float array, got type %d\n", valueElem.type);
+		}
+		break;
+	case QD_ARRAY_TYPE_STR:
+		if (valueElem.type == QD_STACK_TYPE_STR) {
+			// Push the string directly (push_ptr will retain it)
+			appendResult = qd_array_push_ptr(arr, valueElem.value.s);
+			// Don't release - array now owns it
+		} else {
+			fprintf(stderr, "append: type mismatch - string array, got type %d\n", valueElem.type);
+			if (valueElem.type == QD_STACK_TYPE_STR) {
+				qd_string_release(valueElem.value.s);
+			}
+		}
+		break;
+	case QD_ARRAY_TYPE_PTR:
+		if (valueElem.type == QD_STACK_TYPE_PTR) {
+			appendResult = qd_array_push_ptr(arr, valueElem.value.p);
+		} else {
+			fprintf(stderr, "append: type mismatch - pointer array, got type %d\n", valueElem.type);
+		}
+		break;
+	default:
+		fprintf(stderr, "append: unknown array type %d\n", arr->elemType);
+		break;
+	}
+
+	if (appendResult != 0) {
+		qd_array_release(arr);
+		result.code = -1;
+		return result;
+	}
+
+	// Push array back onto stack (don't release, caller still owns it)
+	qd_stack_push_ptr(ctx->st, arr);
+	return result;
+}
+
+qd_exec_result qd_set(qd_context* ctx) {
+	qd_exec_result result = {0};
+	if (!ctx || !ctx->st) {
+		result.code = -1;
+		return result;
+	}
+
+	// Pop value first (top of stack)
+	qd_stack_element_t valueElem;
+	if (qd_stack_pop(ctx->st, &valueElem) != QD_STACK_OK) {
+		fprintf(stderr, "set: stack underflow (value)\n");
+		result.code = -1;
+		return result;
+	}
+
+	// Pop index
+	qd_stack_element_t indexElem;
+	if (qd_stack_pop(ctx->st, &indexElem) != QD_STACK_OK) {
+		fprintf(stderr, "set: stack underflow (index)\n");
+		if (valueElem.type == QD_STACK_TYPE_STR) {
+			qd_string_release(valueElem.value.s);
+		}
+		result.code = -1;
+		return result;
+	}
+
+	if (indexElem.type != QD_STACK_TYPE_INT) {
+		fprintf(stderr, "set: expected integer index, got %d\n", indexElem.type);
+		if (valueElem.type == QD_STACK_TYPE_STR) {
+			qd_string_release(valueElem.value.s);
+		}
+		result.code = -1;
+		return result;
+	}
+
+	// Pop array
+	qd_stack_element_t arrElem;
+	if (qd_stack_pop(ctx->st, &arrElem) != QD_STACK_OK) {
+		fprintf(stderr, "set: stack underflow (array)\n");
+		if (valueElem.type == QD_STACK_TYPE_STR) {
+			qd_string_release(valueElem.value.s);
+		}
+		result.code = -1;
+		return result;
+	}
+
+	if (arrElem.type != QD_STACK_TYPE_PTR) {
+		fprintf(stderr, "set: expected array (ptr), got %d\n", arrElem.type);
+		if (valueElem.type == QD_STACK_TYPE_STR) {
+			qd_string_release(valueElem.value.s);
+		}
+		result.code = -1;
+		return result;
+	}
+
+	qd_array_t* arr = (qd_array_t*)arrElem.value.p;
+	if (!arr) {
+		fprintf(stderr, "set: null array\n");
+		if (valueElem.type == QD_STACK_TYPE_STR) {
+			qd_string_release(valueElem.value.s);
+		}
+		result.code = -1;
+		return result;
+	}
+
+	int64_t index = indexElem.value.i;
+	if (index < 0 || (size_t)index >= arr->length) {
+		fprintf(stderr, "set: index %ld out of bounds (length %zu)\n", index, arr->length);
+		if (valueElem.type == QD_STACK_TYPE_STR) {
+			qd_string_release(valueElem.value.s);
+		}
+		qd_array_release(arr);
+		result.code = -1;
+		return result;
+	}
+
+	// Set based on array type
+	int setResult = -1;
+	switch (arr->elemType) {
+	case QD_ARRAY_TYPE_INT:
+		if (valueElem.type == QD_STACK_TYPE_INT) {
+			setResult = qd_array_set_int(arr, (size_t)index, valueElem.value.i);
+		} else {
+			fprintf(stderr, "set: type mismatch - int array, got type %d\n", valueElem.type);
+		}
+		break;
+	case QD_ARRAY_TYPE_FLOAT:
+		if (valueElem.type == QD_STACK_TYPE_FLOAT) {
+			setResult = qd_array_set_float(arr, (size_t)index, valueElem.value.f);
+		} else if (valueElem.type == QD_STACK_TYPE_INT) {
+			// Allow int to float conversion
+			setResult = qd_array_set_float(arr, (size_t)index, (double)valueElem.value.i);
+		} else {
+			fprintf(stderr, "set: type mismatch - float array, got type %d\n", valueElem.type);
+		}
+		break;
+	case QD_ARRAY_TYPE_STR:
+		if (valueElem.type == QD_STACK_TYPE_STR) {
+			// Release old string and set new one
+			if (arr->data.p[index]) {
+				qd_string_release((qd_string_t*)arr->data.p[index]);
+			}
+			arr->data.p[index] = valueElem.value.s;
+			// Don't release - array now owns it
+			setResult = 0;
+		} else {
+			fprintf(stderr, "set: type mismatch - string array, got type %d\n", valueElem.type);
+			if (valueElem.type == QD_STACK_TYPE_STR) {
+				qd_string_release(valueElem.value.s);
+			}
+		}
+		break;
+	case QD_ARRAY_TYPE_PTR:
+		if (valueElem.type == QD_STACK_TYPE_PTR) {
+			setResult = qd_array_set_ptr(arr, (size_t)index, valueElem.value.p);
+		} else {
+			fprintf(stderr, "set: type mismatch - pointer array, got type %d\n", valueElem.type);
+		}
+		break;
+	default:
+		fprintf(stderr, "set: unknown array type %d\n", arr->elemType);
+		break;
+	}
+
+	qd_array_release(arr);
+
+	if (setResult != 0) {
+		result.code = -1;
+		return result;
+	}
+
+	return result;
+}

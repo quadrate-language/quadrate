@@ -161,6 +161,9 @@ namespace Qd {
 		bool currentFunctionIsFallible = false;
 		bool currentFunctionIsIntegerOnly = false; // For type specialization
 
+		// Current module prefix for intra-module function calls
+		std::string currentModulePrefix = "main";
+
 		// Defer statements collected during function generation (scope-based)
 		std::vector<std::vector<AstNodeDefer*>> deferScopeStack;
 
@@ -2393,6 +2396,11 @@ namespace Qd {
 			if (name == "error" && currentFunctionIsFallible && currentFunctionReturnBlock) {
 				builder->CreateBr(currentFunctionReturnBlock);
 			}
+
+			// Mark that the last pushed value was an array for make* and append instructions
+			if (name == "makei" || name == "makef" || name == "makes" || name == "makep" || name == "append") {
+				lastPushedWasArray = true;
+			}
 		}
 	}
 
@@ -2522,7 +2530,16 @@ namespace Qd {
 		}
 
 		// Check if it's a user-defined function call
+		// First try the plain name, then try with current module prefix for intra-module calls
 		auto it = userFunctions.find(name);
+		std::string lookupName = name;
+		if (it == userFunctions.end() && currentModulePrefix != "main") {
+			std::string qualifiedName = currentModulePrefix + "::" + name;
+			it = userFunctions.find(qualifiedName);
+			if (it != userFunctions.end()) {
+				lookupName = qualifiedName;
+			}
+		}
 		if (it != userFunctions.end()) {
 			// Generate any needed type casts before the function call
 			generateCastInstructions(ident->parameterCasts(), ctx);
@@ -2530,7 +2547,7 @@ namespace Qd {
 			builder->CreateCall(it->second, {ctx});
 
 			// Check if this function is fallible
-			auto fallibleIt = fallibleFunctions.find(name);
+			auto fallibleIt = fallibleFunctions.find(lookupName);
 			if (fallibleIt != fallibleFunctions.end() && fallibleIt->second) {
 				// This is a fallible function - push error status after the call
 				// Get the error_code field from context (field index 1)
@@ -3044,6 +3061,43 @@ namespace Qd {
 		} else {
 			// Variable already exists, reuse it
 			localAlloca = it->second;
+
+			// Release old string value if the variable currently holds a string
+			// This prevents memory leaks when reassigning string variables in loops
+			llvm::Value* oldTypePtr = builder->CreateStructGEP(stackElementTy, localAlloca, 1, name + "_old_type_ptr");
+			llvm::Value* oldType = builder->CreateLoad(builder->getInt32Ty(), oldTypePtr, name + "_old_type");
+
+			// Check if old type == QD_STACK_TYPE_STR (3)
+			llvm::Value* wasString = builder->CreateICmpEQ(oldType, builder->getInt32(3), name + "_was_str");
+
+			// Create basic blocks for conditional release
+			llvm::Function* currentFn = builder->GetInsertBlock()->getParent();
+			llvm::BasicBlock* releaseStrBlock =
+					llvm::BasicBlock::Create(*context, name + "_release_old_str", currentFn);
+			llvm::BasicBlock* afterReleaseBlock =
+					llvm::BasicBlock::Create(*context, name + "_after_release", currentFn);
+
+			builder->CreateCondBr(wasString, releaseStrBlock, afterReleaseBlock);
+
+			// Release old string block
+			builder->SetInsertPoint(releaseStrBlock);
+			llvm::Value* oldValuePtr =
+					builder->CreateStructGEP(stackElementTy, localAlloca, 0, name + "_old_value_ptr");
+			llvm::Value* oldStrPtr =
+					builder->CreateLoad(llvm::PointerType::getUnqual(*context), oldValuePtr, name + "_old_str");
+
+			// Call qd_string_release() on the old string
+			if (!this->qdStringReleaseFn) {
+				auto qdStringReleaseFnTy =
+						llvm::FunctionType::get(builder->getVoidTy(), {llvm::PointerType::getUnqual(*context)}, false);
+				this->qdStringReleaseFn = llvm::Function::Create(
+						qdStringReleaseFnTy, llvm::Function::ExternalLinkage, "qd_string_release", *module);
+			}
+			builder->CreateCall(this->qdStringReleaseFn, {oldStrPtr});
+			builder->CreateBr(afterReleaseBlock);
+
+			// Continue after release
+			builder->SetInsertPoint(afterReleaseBlock);
 		}
 
 		// Get the stack pointer from context
@@ -3805,6 +3859,9 @@ namespace Qd {
 		localVariables.clear();
 		localVariableStructTypes.clear();
 		localArrayVariables.clear();
+
+		// Set current module prefix for intra-module function calls
+		currentModulePrefix = namePrefix;
 
 		// Get the correct DIFile for this module
 		llvm::DIFile* funcDebugFile = debugFile; // Default to main file

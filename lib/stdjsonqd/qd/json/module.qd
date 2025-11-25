@@ -1,0 +1,639 @@
+// JSON Query Library for Quadrate
+//
+// Provides functions to parse and query JSON strings without building an AST.
+// Values are extracted by path and returned as strings, integers, or floats.
+
+use str
+use bits
+
+// JSON type constants
+pub const Null = 0
+pub const Bool = 1
+pub const Number = 2
+pub const String = 3
+pub const Array = 4
+pub const Object = 5
+
+// Character constants
+const Quote = 34
+const Backslash = 92
+const OpenBrace = 123
+const CloseBrace = 125
+const OpenBracket = 91
+const CloseBracket = 93
+const Colon = 58
+const Comma = 44
+const Space = 32
+const Tab = 9
+const Newline = 10
+const CarriageReturn = 13
+const Minus = 45
+const Plus = 43
+const Dot = 46
+const LowerE = 101
+const UpperE = 69
+const CharT = 116
+const CharF = 102
+const CharN = 110
+const Digit0 = 48
+const Digit9 = 57
+
+// Skip whitespace and return new position
+fn skip_ws(json:str pos:i64 -- new_pos:i64) {
+	-> pos -> json
+	0 -> slen
+	0 -> ch
+	json str::len -> slen
+	loop {
+		pos slen < if {
+			json pos str::char_at -> ch
+			ch Space == ch Tab == bits::or ch Newline == bits::or ch CarriageReturn == bits::or if {
+				pos 1 + -> pos
+			} else {
+				break
+			}
+		} else {
+			break
+		}
+	}
+	pos
+}
+
+// Find end of JSON string starting at pos (pos points to opening quote)
+// Returns position after closing quote
+pub fn find_str_end(json:str pos:i64 -- end_pos:i64) {
+	-> pos -> json
+	0 -> slen
+	0 -> ch
+	json str::len -> slen
+	pos 1 + -> pos
+	loop {
+		pos slen < if {
+			json pos str::char_at -> ch
+			ch Quote == if {
+				pos 1 + -> pos
+				break
+			} else {
+				ch Backslash == if {
+					pos 2 + -> pos
+				} else {
+					pos 1 + -> pos
+				}
+			}
+		} else {
+			break
+		}
+	}
+	pos
+}
+
+// Find end of JSON number starting at pos
+fn find_num_end(json:str pos:i64 -- end_pos:i64) {
+	-> pos -> json
+	0 -> slen
+	0 -> ch
+	json str::len -> slen
+	loop {
+		pos slen < if {
+			json pos str::char_at -> ch
+			ch Digit0 >= ch Digit9 <= bits::and
+			ch Minus == bits::or
+			ch Plus == bits::or
+			ch Dot == bits::or
+			ch LowerE == bits::or
+			ch UpperE == bits::or
+			if {
+				pos 1 + -> pos
+			} else {
+				break
+			}
+		} else {
+			break
+		}
+	}
+	pos
+}
+
+// Find matching closing bracket for arrays/objects
+fn find_bracket(json:str pos:i64 -- end_pos:i64) {
+	-> pos -> json
+	0 -> slen
+	0 -> open_ch
+	0 -> close_ch
+	0 -> nesting
+	0 -> ch
+	json str::len -> slen
+	json pos str::char_at -> open_ch
+	open_ch OpenBrace == if { CloseBrace } else { CloseBracket } -> close_ch
+	1 -> nesting
+	pos 1 + -> pos
+	loop {
+		pos slen < nesting 0 > bits::and if {
+			json pos str::char_at -> ch
+			ch Quote == if {
+				json pos find_str_end -> pos
+			} else {
+				ch open_ch == if {
+					nesting 1 + -> nesting
+					pos 1 + -> pos
+				} else {
+					ch close_ch == if {
+						nesting 1 - -> nesting
+						pos 1 + -> pos
+					} else {
+						pos 1 + -> pos
+					}
+				}
+			}
+		} else {
+			break
+		}
+	}
+	pos
+}
+
+// Get the type of JSON value at position
+pub fn type_at(json:str pos:i64 -- type:i64) {
+	-> pos -> json
+	json pos skip_ws -> pos
+	json str::len -> slen
+	pos slen >= if {
+		Null
+	} else {
+		json pos str::char_at -> ch
+		ch Quote == if {
+			String
+		} else {
+			ch OpenBrace == if {
+				Object
+			} else {
+				ch OpenBracket == if {
+					Array
+				} else {
+					ch CharT == if {
+						Bool
+					} else {
+						ch CharF == if {
+							Bool
+						} else {
+							ch CharN == if {
+								Null
+							} else {
+								Number
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+}
+
+// Extract string value at position (pos should point to opening quote)
+pub fn extract_str(json:str pos:i64 -- value:str) {
+	-> pos -> json
+	// Skip to start of string content
+	pos 1 + -> start
+	// Find end position
+	json pos find_str_end -> after_end
+	after_end 1 - -> end_pos
+	// Calculate length
+	end_pos start - -> length
+	length 0 > if {
+		json start length str::substring!
+	} else {
+		""
+	}
+}
+
+// Skip a JSON value at current position
+fn skip_value(json:str pos:i64 -- new_pos:i64) {
+	-> pos -> json
+	0 -> slen
+	0 -> val_type
+	0 -> ch
+	json str::len -> slen
+	json pos type_at -> val_type
+	val_type String == if {
+		json pos find_str_end
+	} else {
+		val_type Object == val_type Array == bits::or if {
+			json pos find_bracket
+		} else {
+			loop {
+				pos slen < if {
+					json pos str::char_at -> ch
+					ch Comma == ch CloseBrace == bits::or ch CloseBracket == bits::or if {
+						break
+					} else {
+						pos 1 + -> pos
+					}
+				} else {
+					break
+				}
+			}
+			pos
+		}
+	}
+}
+
+// Find value for key in object, returns position of value or -1
+fn find_key(json:str pos:i64 key:str -- value_pos:i64) {
+	-> key -> pos -> json
+	0 -> slen
+	0 -> result
+	0 -> ch
+	"" -> current_key
+	json pos skip_ws -> pos
+	json str::len -> slen
+
+	pos slen >= if {
+		-1
+	} else {
+		json pos str::char_at OpenBrace != if {
+			-1
+		} else {
+			pos 1 + -> pos
+			-1 -> result
+			loop {
+				json pos skip_ws -> pos
+				pos slen >= if {
+					break
+				} else {
+					json pos str::char_at -> ch
+					ch CloseBrace == if {
+						break
+					} else {
+						ch Comma == if {
+							pos 1 + -> pos
+							json pos skip_ws -> pos
+							json pos str::char_at -> ch
+						}
+
+						ch Quote == if {
+							json pos extract_str -> current_key
+							json pos find_str_end -> pos
+
+							json pos skip_ws -> pos
+							pos slen < if {
+								json pos str::char_at Colon == if {
+									pos 1 + -> pos
+									json pos skip_ws -> pos
+
+									current_key key str::compare 0 == if {
+										pos -> result
+										break
+									} else {
+										json pos skip_value -> pos
+									}
+								} else {
+									break
+								}
+							} else {
+								break
+							}
+						} else {
+							break
+						}
+					}
+				}
+			}
+			result
+		}
+	}
+}
+
+// Parse integer from string
+fn parse_int(num_str:str -- value:i64) {
+	-> num_str
+	0 -> num_len
+	0 -> value
+	0 -> i
+	1 -> sign
+	0 -> ch
+	num_str str::len -> num_len
+	num_len 0 > if {
+		num_str 0 str::char_at Minus == if {
+			-1 -> sign
+			1 -> i
+		}
+	}
+	loop {
+		i num_len < if {
+			num_str i str::char_at -> ch
+			ch Digit0 >= ch Digit9 <= bits::and if {
+				value 10 * ch Digit0 - + -> value
+				i 1 + -> i
+			} else {
+				break
+			}
+		} else {
+			break
+		}
+	}
+	value sign *
+}
+
+// Get string value by key from JSON object
+pub fn get_string(json:str key:str -- value:str found:i64) {
+	-> key -> json
+	json 0 key find_key -> pos
+	pos 0 < if {
+		"" 0
+	} else {
+		json pos extract_str 1
+	}
+}
+
+// Get integer value by key from JSON object
+pub fn get_int(json:str key:str -- value:i64 found:i64) {
+	-> key -> json
+	0 -> start
+	0 -> end_pos
+	0 -> length
+	"" -> num_str
+	json 0 key find_key -> pos
+	pos 0 < if {
+		0 0
+	} else {
+		json pos skip_ws -> pos
+		pos -> start
+		json pos find_num_end -> end_pos
+		end_pos start - -> length
+		length 0 > if {
+			json start length str::substring! -> num_str
+			num_str parse_int 1
+		} else {
+			0 0
+		}
+	}
+}
+
+// Get float value by key from JSON object
+pub fn get_float(json:str key:str -- value:f64 found:i64) {
+	-> key -> json
+	0 -> start
+	0 -> end_pos
+	0 -> length
+	"" -> num_str
+	json 0 key find_key -> pos
+	pos 0 < if {
+		0.0 0
+	} else {
+		json pos skip_ws -> pos
+		pos -> start
+		json pos find_num_end -> end_pos
+		end_pos start - -> length
+		length 0 > if {
+			json start length str::substring! -> num_str
+			num_str parse_int castf 1
+		} else {
+			0.0 0
+		}
+	}
+}
+
+// Get boolean value by key from JSON object
+pub fn get_bool(json:str key:str -- value:i64 found:i64) {
+	-> key -> json
+	0 -> ch
+	json 0 key find_key -> pos
+	pos 0 < if {
+		0 0
+	} else {
+		json pos skip_ws -> pos
+		json pos str::char_at -> ch
+		ch CharT == if {
+			1 1
+		} else {
+			ch CharF == if {
+				0 1
+			} else {
+				0 0
+			}
+		}
+	}
+}
+
+// Check if key exists in object
+pub fn has_key(json:str key:str -- exists:i64) {
+	-> key -> json
+	json 0 key find_key 0 >= if { 1 } else { 0 }
+}
+
+// Get nested object as string by key
+pub fn get_object(json:str key:str -- value:str found:i64) {
+	-> key -> json
+	0 -> end_pos
+	0 -> length
+	json 0 key find_key -> pos
+	pos 0 < if {
+		"" 0
+	} else {
+		json pos skip_ws -> pos
+		json pos str::char_at OpenBrace != if {
+			"" 0
+		} else {
+			json pos find_bracket -> end_pos
+			end_pos pos - -> length
+			length 0 > if {
+				json pos length str::substring! 1
+			} else {
+				"" 0
+			}
+		}
+	}
+}
+
+// Get nested array as string by key
+pub fn get_array(json:str key:str -- value:str found:i64) {
+	-> key -> json
+	0 -> end_pos
+	0 -> length
+	json 0 key find_key -> pos
+	pos 0 < if {
+		"" 0
+	} else {
+		json pos skip_ws -> pos
+		json pos str::char_at OpenBracket != if {
+			"" 0
+		} else {
+			json pos find_bracket -> end_pos
+			end_pos pos - -> length
+			length 0 > if {
+				json pos length str::substring! 1
+			} else {
+				"" 0
+			}
+		}
+	}
+}
+
+// Find element at index in JSON array, returns position or -1
+fn find_elem(json:str pos:i64 index:i64 -- elem_pos:i64) {
+	-> index -> pos -> json
+	0 -> slen
+	0 -> current_index
+	0 -> result
+	0 -> ch
+	json pos skip_ws -> pos
+	json str::len -> slen
+
+	pos slen >= if {
+		-1
+	} else {
+		json pos str::char_at OpenBracket != if {
+			-1
+		} else {
+			pos 1 + -> pos
+			0 -> current_index
+			-1 -> result
+			loop {
+				json pos skip_ws -> pos
+				pos slen >= if {
+					break
+				} else {
+					json pos str::char_at -> ch
+					ch CloseBracket == if {
+						break
+					} else {
+						ch Comma == if {
+							pos 1 + -> pos
+							json pos skip_ws -> pos
+						}
+
+						current_index index == if {
+							pos -> result
+							break
+						} else {
+							json pos skip_value -> pos
+							current_index 1 + -> current_index
+						}
+					}
+				}
+			}
+			result
+		}
+	}
+}
+
+// Get array element as string by index
+pub fn array_get_string(json:str index:i64 -- value:str found:i64) {
+	-> index -> json
+	json 0 index find_elem -> pos
+	pos 0 < if {
+		"" 0
+	} else {
+		json pos extract_str 1
+	}
+}
+
+// Get array element as integer by index
+pub fn array_get_int(json:str index:i64 -- value:i64 found:i64) {
+	-> index -> json
+	0 -> start
+	0 -> end_pos
+	0 -> length
+	"" -> num_str
+	json 0 index find_elem -> pos
+	pos 0 < if {
+		0 0
+	} else {
+		json pos skip_ws -> pos
+		pos -> start
+		json pos find_num_end -> end_pos
+		end_pos start - -> length
+		length 0 > if {
+			json start length str::substring! -> num_str
+			num_str parse_int 1
+		} else {
+			0 0
+		}
+	}
+}
+
+// Get array element as float by index
+pub fn array_get_float(json:str index:i64 -- value:f64 found:i64) {
+	-> index -> json
+	0 -> start
+	0 -> end_pos
+	0 -> length
+	"" -> num_str
+	json 0 index find_elem -> pos
+	pos 0 < if {
+		0.0 0
+	} else {
+		json pos skip_ws -> pos
+		pos -> start
+		json pos find_num_end -> end_pos
+		end_pos start - -> length
+		length 0 > if {
+			json start length str::substring! -> num_str
+			num_str parse_int castf 1
+		} else {
+			0.0 0
+		}
+	}
+}
+
+// Get length of JSON array
+pub fn array_len(json:str -- length:i64) {
+	-> json
+	0 -> pos
+	0 -> slen
+	0 -> count
+	0 -> ch
+	json 0 skip_ws -> pos
+	json str::len -> slen
+
+	pos slen >= if {
+		0
+	} else {
+		json pos str::char_at OpenBracket != if {
+			0
+		} else {
+			pos 1 + -> pos
+			0 -> count
+			loop {
+				json pos skip_ws -> pos
+				pos slen >= if {
+					break
+				} else {
+					json pos str::char_at -> ch
+					ch CloseBracket == if {
+						break
+					} else {
+						ch Comma == if {
+							pos 1 + -> pos
+							json pos skip_ws -> pos
+							json pos str::char_at -> ch
+						}
+
+						ch CloseBracket != if {
+							count 1 + -> count
+							json pos skip_value -> pos
+						}
+					}
+				}
+			}
+			count
+		}
+	}
+}
+
+// Check if value at position is null
+pub fn is_null_at(json:str pos:i64 -- is_null:i64) {
+	-> pos -> json
+	json pos skip_ws -> pos
+	json str::len -> slen
+	pos slen >= if {
+		1
+	} else {
+		json pos str::char_at CharN == if {
+			1
+		} else {
+			0
+		}
+	}
+}
+

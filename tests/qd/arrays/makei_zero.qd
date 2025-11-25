@@ -1,0 +1,5 @@
+// Test creating empty array with makei
+fn main( -- ) {
+	0 makei -> arr
+	arr len . nl          // Should print: 0
+}

@@ -642,3 +642,183 @@ qd_exec_result usr_str_compare(qd_context* ctx) {
 	qd_push_i(ctx, result);
 	return (qd_exec_result){0};
 }
+
+// char_at - get character code at index ( str:s index:i -- char_code:i )
+qd_exec_result usr_str_char_at(qd_context* ctx) {
+	qd_stack_element_t index_elem, str_elem;
+
+	// Pop index
+	qd_stack_error err = qd_stack_pop(ctx->st, &index_elem);
+	if (err != QD_STACK_OK) {
+		fprintf(stderr, "Fatal error in str::char_at: Stack underflow\n");
+		abort();
+	}
+
+	// Pop string
+	err = qd_stack_pop(ctx->st, &str_elem);
+	if (err != QD_STACK_OK) {
+		fprintf(stderr, "Fatal error in str::char_at: Stack underflow\n");
+		abort();
+	}
+
+	if (str_elem.type != QD_STACK_TYPE_STR) {
+		fprintf(stderr, "Fatal error in str::char_at: Expected string\n");
+		abort();
+	}
+
+	if (index_elem.type != QD_STACK_TYPE_INT) {
+		fprintf(stderr, "Fatal error in str::char_at: Expected integer index\n");
+		qd_string_release(str_elem.value.s);
+		abort();
+	}
+
+	int64_t index = index_elem.value.i;
+	size_t str_len = strlen(qd_string_data(str_elem.value.s));
+
+	if (index < 0 || (size_t)index >= str_len) {
+		fprintf(stderr, "Fatal error in str::char_at: Index %ld out of bounds (length %zu)\n", index, str_len);
+		qd_string_release(str_elem.value.s);
+		abort();
+	}
+
+	int64_t char_code = (unsigned char)qd_string_data(str_elem.value.s)[index];
+
+	qd_string_release(str_elem.value.s);
+	qd_push_i(ctx, char_code);
+
+	return (qd_exec_result){0};
+}
+
+// index_of - find index of substring ( haystack:s needle:s -- index:i )
+qd_exec_result usr_str_index_of(qd_context* ctx) {
+	qd_stack_element_t needle_elem, haystack_elem;
+
+	// Pop needle
+	qd_stack_error err = qd_stack_pop(ctx->st, &needle_elem);
+	if (err != QD_STACK_OK) {
+		fprintf(stderr, "Fatal error in str::index_of: Stack underflow\n");
+		abort();
+	}
+
+	// Pop haystack
+	err = qd_stack_pop(ctx->st, &haystack_elem);
+	if (err != QD_STACK_OK) {
+		fprintf(stderr, "Fatal error in str::index_of: Stack underflow\n");
+		if (needle_elem.type == QD_STACK_TYPE_STR) qd_string_release(needle_elem.value.s);
+		abort();
+	}
+
+	if (haystack_elem.type != QD_STACK_TYPE_STR || needle_elem.type != QD_STACK_TYPE_STR) {
+		fprintf(stderr, "Fatal error in str::index_of: Expected two strings\n");
+		if (haystack_elem.type == QD_STACK_TYPE_STR) qd_string_release(haystack_elem.value.s);
+		if (needle_elem.type == QD_STACK_TYPE_STR) qd_string_release(needle_elem.value.s);
+		abort();
+	}
+
+	const char* haystack = qd_string_data(haystack_elem.value.s);
+	const char* needle = qd_string_data(needle_elem.value.s);
+	const char* pos = strstr(haystack, needle);
+
+	int64_t result = (pos != NULL) ? (int64_t)(pos - haystack) : -1;
+
+	qd_string_release(haystack_elem.value.s);
+	qd_string_release(needle_elem.value.s);
+
+	qd_push_i(ctx, result);
+	return (qd_exec_result){0};
+}
+
+// index_of_from - find index of substring starting from position ( haystack:s needle:s start:i -- index:i )
+qd_exec_result usr_str_index_of_from(qd_context* ctx) {
+	qd_stack_element_t start_elem, needle_elem, haystack_elem;
+
+	// Pop start
+	qd_stack_error err = qd_stack_pop(ctx->st, &start_elem);
+	if (err != QD_STACK_OK) {
+		fprintf(stderr, "Fatal error in str::index_of_from: Stack underflow\n");
+		abort();
+	}
+
+	// Pop needle
+	err = qd_stack_pop(ctx->st, &needle_elem);
+	if (err != QD_STACK_OK) {
+		fprintf(stderr, "Fatal error in str::index_of_from: Stack underflow\n");
+		abort();
+	}
+
+	// Pop haystack
+	err = qd_stack_pop(ctx->st, &haystack_elem);
+	if (err != QD_STACK_OK) {
+		fprintf(stderr, "Fatal error in str::index_of_from: Stack underflow\n");
+		if (needle_elem.type == QD_STACK_TYPE_STR) qd_string_release(needle_elem.value.s);
+		abort();
+	}
+
+	if (haystack_elem.type != QD_STACK_TYPE_STR || needle_elem.type != QD_STACK_TYPE_STR) {
+		fprintf(stderr, "Fatal error in str::index_of_from: Expected two strings\n");
+		if (haystack_elem.type == QD_STACK_TYPE_STR) qd_string_release(haystack_elem.value.s);
+		if (needle_elem.type == QD_STACK_TYPE_STR) qd_string_release(needle_elem.value.s);
+		abort();
+	}
+
+	if (start_elem.type != QD_STACK_TYPE_INT) {
+		fprintf(stderr, "Fatal error in str::index_of_from: Expected integer start position\n");
+		qd_string_release(haystack_elem.value.s);
+		qd_string_release(needle_elem.value.s);
+		abort();
+	}
+
+	const char* haystack = qd_string_data(haystack_elem.value.s);
+	const char* needle = qd_string_data(needle_elem.value.s);
+	int64_t start = start_elem.value.i;
+	size_t haystack_len = strlen(haystack);
+
+	int64_t result = -1;
+	if (start >= 0 && (size_t)start < haystack_len) {
+		const char* pos = strstr(haystack + start, needle);
+		if (pos != NULL) {
+			result = (int64_t)(pos - haystack);
+		}
+	}
+
+	qd_string_release(haystack_elem.value.s);
+	qd_string_release(needle_elem.value.s);
+
+	qd_push_i(ctx, result);
+	return (qd_exec_result){0};
+}
+
+// from_char - create string from character code ( char_code:i -- str:s )
+qd_exec_result usr_str_from_char(qd_context* ctx) {
+	qd_stack_element_t code_elem;
+
+	qd_stack_error err = qd_stack_pop(ctx->st, &code_elem);
+	if (err != QD_STACK_OK) {
+		fprintf(stderr, "Fatal error in str::from_char: Stack underflow\n");
+		abort();
+	}
+
+	if (code_elem.type != QD_STACK_TYPE_INT) {
+		fprintf(stderr, "Fatal error in str::from_char: Expected integer\n");
+		abort();
+	}
+
+	int64_t char_code = code_elem.value.i;
+
+	// Handle single-byte ASCII characters
+	if (char_code >= 0 && char_code <= 127) {
+		char result[2];
+		result[0] = (char)char_code;
+		result[1] = '\0';
+		qd_push_s(ctx, result);
+	} else {
+		// For non-ASCII, we could support UTF-8 encoding here
+		// For now, just handle single-byte values
+		char result[2];
+		result[0] = (char)(char_code & 0xFF);
+		result[1] = '\0';
+		qd_push_s(ctx, result);
+	}
+
+	return (qd_exec_result){0};
+}

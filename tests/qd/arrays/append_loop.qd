@@ -1,0 +1,13 @@
+// Test building array in a loop
+fn main( -- ) {
+	0 makei -> arr
+	0 5 1 for {
+		arr $ append -> arr
+	}
+	arr len . nl          // Should print: 5
+	arr 0 nth . nl        // Should print: 0
+	arr 1 nth . nl        // Should print: 1
+	arr 2 nth . nl        // Should print: 2
+	arr 3 nth . nl        // Should print: 3
+	arr 4 nth . nl        // Should print: 4
+}

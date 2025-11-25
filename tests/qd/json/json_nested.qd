@@ -1,0 +1,40 @@
+use str
+use json
+
+fn main( -- ) {
+	34 -> q
+
+	// Test get_object - nested object
+	"{" q str::from_char str::concat "user" str::concat q str::from_char str::concat ": {" str::concat
+	q str::from_char str::concat "name" str::concat q str::from_char str::concat ": " str::concat
+	q str::from_char str::concat "Alice" str::concat q str::from_char str::concat "}}" str::concat
+	-> json1
+	json1 "user" json::get_object -> found -> obj
+	obj . nl
+	found . nl
+
+	// Test get_object - missing
+	json1 "missing" json::get_object -> found -> obj
+	obj . nl
+	found . nl
+
+	// Test get_array
+	"{" q str::from_char str::concat "items" str::concat q str::from_char str::concat ": [1, 2, 3]}" str::concat
+	-> json2
+	json2 "items" json::get_array -> found -> arr
+	arr . nl
+	found . nl
+
+	// Test get_array - missing
+	json2 "missing" json::get_array -> found -> arr
+	arr . nl
+	found . nl
+
+	// Test nested inner object directly
+	"{" q str::from_char str::concat "name" str::concat q str::from_char str::concat ": " str::concat
+	q str::from_char str::concat "Alice" str::concat q str::from_char str::concat "}" str::concat
+	-> inner_json
+	inner_json "name" json::get_string -> found -> val
+	val . nl
+	found . nl
+}

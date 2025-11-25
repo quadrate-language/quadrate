@@ -1,0 +1,37 @@
+use str
+use json
+
+fn main( -- ) {
+	34 -> q
+
+	// Test get_bool - true
+	"{" q str::from_char str::concat "active" str::concat q str::from_char str::concat ": true}" str::concat
+	-> json1
+	json1 "active" json::get_bool -> found -> val
+	val . nl
+	found . nl
+
+	// Test get_bool - false
+	"{" q str::from_char str::concat "active" str::concat q str::from_char str::concat ": false}" str::concat
+	-> json2
+	json2 "active" json::get_bool -> found -> val
+	val . nl
+	found . nl
+
+	// Test get_bool - missing key
+	json1 "missing" json::get_bool -> found -> val
+	val . nl
+	found . nl
+
+	// Test get_bool - multiple booleans
+	"{" q str::from_char str::concat "a" str::concat q str::from_char str::concat ": true, " str::concat
+	q str::from_char str::concat "b" str::concat q str::from_char str::concat ": false, " str::concat
+	q str::from_char str::concat "c" str::concat q str::from_char str::concat ": true}" str::concat
+	-> json3
+	json3 "a" json::get_bool -> found -> val
+	val . nl
+	json3 "b" json::get_bool -> found -> val
+	val . nl
+	json3 "c" json::get_bool -> found -> val
+	val . nl
+}

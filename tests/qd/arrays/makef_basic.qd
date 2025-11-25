@@ -1,0 +1,8 @@
+// Test makef - create float array
+fn main( -- ) {
+	// Create array with 2 elements
+	2 makef -> arr
+	arr len . nl          // Should print: 2
+	arr 0 nth . nl        // Should print: 0
+	arr 1 nth . nl        // Should print: 0
+}

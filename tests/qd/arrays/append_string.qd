@@ -1,0 +1,9 @@
+// Test append with string array
+fn main( -- ) {
+	// Create empty array and append strings
+	0 makes "hello" append "world" append "test" append -> arr
+	arr len . nl          // Should print: 3
+	arr 0 nth . nl        // Should print: hello
+	arr 1 nth . nl        // Should print: world
+	arr 2 nth . nl        // Should print: test
+}
