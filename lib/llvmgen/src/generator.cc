@@ -3479,7 +3479,11 @@ namespace Qd {
 		llvm::PHINode* iterVar = builder->CreatePHI(builder->getInt64Ty(), 2, "i");
 		iterVar->addIncoming(startValue, preBB);
 
-		auto cond = builder->CreateICmpSLT(iterVar, endValue, "cmp");
+		// Check if step is negative to determine comparison direction
+		auto stepIsNegative = builder->CreateICmpSLT(stepValue, builder->getInt64(0), "step_neg");
+		auto condPositive = builder->CreateICmpSLT(iterVar, endValue, "cmp_pos");
+		auto condNegative = builder->CreateICmpSGT(iterVar, endValue, "cmp_neg");
+		auto cond = builder->CreateSelect(stepIsNegative, condNegative, condPositive, "cmp");
 		builder->CreateCondBr(cond, loopBodyBB, loopExitBB);
 
 		// Loop body
