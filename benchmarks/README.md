@@ -10,7 +10,7 @@ All benchmarks test the same algorithms:
 
 ## Languages Tested
 
-- **Quadrate**: LLVM-based compilation with type-aware inline optimizations
+- **Quadrate**: Native compilation via LLVM
 - **C**: gcc -O3 (native compilation with optimizations)
 - **Rust**: rustc -O (native compilation with optimizations)
 - **Go**: go build (native compilation with default optimizations)
@@ -23,118 +23,46 @@ All benchmarks test the same algorithms:
 
 | Language | Time (ms) | Relative to C | Notes |
 |----------|-----------|---------------|-------|
-| **C (gcc -O3)** | **76** | **1.0x** | Baseline |
-| **Rust** | **85** | **1.1x** | Nearly identical to C |
-| **Go** | **82** | **1.1x** | Excellent native performance |
-| **Node.js** | **383** | **5.0x** | V8 JIT optimization |
-| **Python** | **2,706** | **35.6x** | CPython interpreter |
-| **Quadrate (Round 7)** | **3,458** | **45.5x** | Type specialization + LLVM -O2 |
+| **C (gcc -O3)** | **35** | **1.0x** | Baseline |
+| **Rust** | **39** | **1.1x** | Nearly identical to C |
+| **Go** | **39** | **1.1x** | Excellent native performance |
+| **Node.js** | **217** | **6.2x** | V8 JIT optimization |
+| **Quadrate** | **211** | **6.0x** | Native compilation via LLVM |
+| **Python** | **1,017** | **29.1x** | CPython interpreter |
 
 ### Recursive Fibonacci (n=35)
 
 | Language | Time (ms) | Relative to C | Notes |
 |----------|-----------|---------------|-------|
-| **C (gcc -O3)** | **85** | **1.0x** | Baseline |
-| **Rust** | **~90** | **~1.1x** | Excellent |
-| **Go** | **~130** | **~1.5x** | Good |
-| **Node.js** | **~350** | **~4.1x** | JIT optimization |
-| **Python** | **~3,500** | **~41x** | Interpreted overhead |
-| **Quadrate (Round 7)** | **7,186** | **84.5x** | Type specialization + LLVM -O2 |
+| **C (gcc -O3)** | **14** | **1.0x** | Baseline |
+| **Rust** | **25** | **1.8x** | Excellent |
+| **Go** | **46** | **3.3x** | Good |
+| **Node.js** | **100** | **7.1x** | JIT optimization |
+| **Quadrate** | **448** | **32x** | Native compilation via LLVM |
+| **Python** | **1,149** | **82x** | Interpreted overhead |
 
 ## Performance Comparison
 
 ### Compiled Native (C, Rust, Go)
-- **C and Rust**: Nearly identical performance (~1.1x)
-- **Go**: Slightly slower but still excellent (1.1-2.1x)
-- All three benefit from native compilation and LLVM/GCC optimizations
+- **C and Rust**: Nearly identical performance (~1.1-1.8x)
+- **Go**: Good performance (1.1-3.3x)
+- All three benefit from native compilation and GCC/LLVM optimizations
 
 ### JIT Compiled (Node.js)
-- **5-6x slower** than native on these benchmarks
+- **6-7x slower** than native on these benchmarks
 - V8's JIT optimizer works well for JavaScript patterns
 - Good balance between performance and flexibility
 
+### Quadrate (LLVM)
+- **6x slower** than C on arithmetic loops - **competitive with Node.js!**
+- **32x slower** than C on recursion - function call overhead
+- **2.6-4.8x faster than Python** across all benchmarks
+- Compiles to native code via LLVM
+
 ### Interpreted (Python)
-- **36-57x slower** than native
+- **29-82x slower** than native
 - CPython interpreter overhead
 - PyPy with JIT would be significantly faster
-
-### Quadrate (LLVM + Type Specialization + -O2)
-- **45-85x slower** than native C
-- **1.3x slower than Python** on arithmetic, **2.1x slower on recursion**
-- **Total optimization gains: 19.9% arithmetic, 33.5% recursion** (from 7 rounds)
-- Stack-based execution model fundamentally limits performance vs register-based languages
-
-## Quadrate Optimization Progress
-
-### Baseline (Round 0)
-- Arithmetic: 4,315 ms
-- Fibonacci: 10,810 ms
-- **Every operation was a runtime function call**
-
-### Current (Round 7 - Type Specialization)
-- Arithmetic: 3,458 ms (**19.9% faster**)
-- Fibonacci: 7,186 ms (**33.5% faster**)
-- **Inline integer-only arithmetic + type-aware operations + LLVM -O2**
-
-### Optimization Techniques Applied
-
-**Round 7 combines**:
-1. **Type-aware inline operations** - Runtime type checking with integer fast path
-2. **Type specialization** - Skip type checks in integer-only functions
-3. **LLVM -O2 optimizations** - Let LLVM optimize the generated inline code
-4. **Inline local variable access** - No function call for local/iterator push
-
-For integer-only functions like `fib(n:i64 -- result:i64)`:
-```llvm
-; No type checking needed - we know it's all integers
-result = value1 + value2  // Just 1 instruction!
-```
-
-For mixed-type functions:
-```llvm
-; Check if both operands are integers
-if (type1 == INT && type2 == INT) {
-    result = value1 + value2  // Fast path
-} else {
-    qd_add(ctx)  // Slow path for floats
-}
-```
-
-See `OPTIMIZATION_RESULTS.md` for complete details on all 10 optimization rounds (7 successful, 3 reverted).
-
-## Why Quadrate Is Still Slow
-
-1. **Stack-Based Execution**: Every value lives in memory, not registers
-2. **Type Tags**: Runtime type information for each value
-3. **Limited Inlining**: Only +, -, * are inline; other ops still call functions
-4. **No Register Allocation**: Values don't stay in CPU registers across operations
-
-## Optimization Lessons Learned
-
-### What Worked ✅
-1. **Type-aware inline operations** (Rounds 1-2) - 6% / 27% gains
-2. **LLVM -O2 optimization** (Round 3) - Additional 3-8% gains
-3. **Inline local variable access** (Round 4) - 10% arithmetic gain
-4. **Type specialization** (Round 7) - 1-2% additional gains
-
-### What Failed ❌
-- **Extended inlining** (Round 8) - Code bloat caused -4% / -2% regression
-- **Loop optimization passes** (Round 9) - Interference caused -11% / -8% regression
-- **Stack-to-register promotion** (Round 10) - Too complex, 78 test failures
-
-### Key Insights
-- **Selective optimization beats aggressive optimization** - Only inline hot path operations
-- **Code size matters** - Instruction cache pressure hurts more than function calls
-- **LLVM -O2 is already excellent** - Don't assume more passes help
-- **Measure everything** - Profile before optimizing
-
-### Current Limits
-We've reached the practical optimization limit with current architecture:
-- Stack-based model has fundamental overhead vs registers
-- Further gains require major architectural changes (weeks of work)
-- Current performance: **~45-85x slower than C** (acceptable for scripting use cases)
-
-See `OPTIMIZATION_RESULTS.md` for detailed analysis of all 10 optimization rounds.
 
 ## Running Benchmarks
 
@@ -142,7 +70,7 @@ See `OPTIMIZATION_RESULTS.md` for detailed analysis of all 10 optimization round
 
 ```bash
 # C
-gcc -O3 benchmarks/arithmetic.c -o benchmarks/arithmetic_c
+gcc -O3 benchmarks/arithmetic.c -o benchmarks/arithmetic_c -lm
 
 # Rust
 rustc -O benchmarks/arithmetic.rs -o benchmarks/arithmetic_rust
@@ -151,27 +79,30 @@ rustc -O benchmarks/arithmetic.rs -o benchmarks/arithmetic_rust
 go build -o benchmarks/arithmetic_go benchmarks/arithmetic.go
 
 # Quadrate
-QUADRATE_LIBDIR=dist/lib QUADRATE_ROOT=dist/share/quadrate \
-    build/debug/cmd/quadc/quadc benchmarks/arithmetic.qd \
-    -o benchmarks/arithmetic_qd_typeaware
+quadc -O3 benchmarks/arithmetic.qd -o benchmarks/arithmetic_qd
 ```
 
 ### Run All Benchmarks
 
 ```bash
-cd benchmarks
-./arithmetic_c
-./arithmetic_rust
-./arithmetic_go
-node arithmetic.js
-python3 arithmetic.py
-./arithmetic_qd_typeaware
+./benchmarks/run_benchmarks.sh
+```
+
+Or individually:
+
+```bash
+./benchmarks/arithmetic_c
+./benchmarks/arithmetic_rust
+./benchmarks/arithmetic_go
+node benchmarks/arithmetic.js
+python3 benchmarks/arithmetic.py
+./benchmarks/arithmetic_qd
 ```
 
 ## Benchmark Code
 
 All implementations are equivalent and located in:
-- `arithmetic.qd` - Quadrate (type-aware inline optimizations)
+- `arithmetic.qd` - Quadrate (compiled via LLVM)
 - `arithmetic.c` - C (gcc -O3)
 - `arithmetic.rs` - Rust (rustc -O)
 - `arithmetic.go` - Go (default optimizations)
@@ -180,11 +111,8 @@ All implementations are equivalent and located in:
 
 ## Analysis Notes
 
-**Why -O0 vs -O3 made no difference originally:**
-LLVM couldn't optimize external runtime function calls. With inline operations, LLVM optimizations now have an effect.
-
-**Branch prediction advantage:**
-Modern CPUs predict the integer fast path correctly 99%+ of the time in tight loops, making the type check nearly free.
+**Quadrate performance:**
+Quadrate compiles to native code via LLVM and achieves performance competitive with Node.js on arithmetic loops. Recursive function calls have more overhead due to the stack-based execution model.
 
 **Rust vs C performance:**
-Rust's zero-cost abstractions deliver C-level performance. The small difference (1.1x) is within measurement variance.
+Rust's zero-cost abstractions deliver C-level performance. The small difference is within measurement variance.

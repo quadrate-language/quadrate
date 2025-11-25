@@ -1,6 +1,8 @@
 # Compiled binaries
-arithmetic_qd
+arithmetic_qd*
 arithmetic_c
 arithmetic_rust
 arithmetic_go
+string_ops
+string_ops_c
 *.out
