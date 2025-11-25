@@ -259,6 +259,186 @@ namespace Qd {
 		return result;
 	}
 
+	// Split inline braces onto separate lines
+	// e.g., "if { foo } else { bar }" becomes:
+	// "if {"
+	// "foo"
+	// "} else {"
+	// "bar"
+	// "}"
+	static std::string splitInlineBraces(const std::string& line) {
+		std::string trimmed = trim(line);
+
+		// Don't process comments or lines containing block comment markers
+		// (they may be inside multi-line comments)
+		if (isComment(trimmed) || trimmed.find("*/") != std::string::npos ||
+				trimmed.find("/*") != std::string::npos) {
+			return line;
+		}
+
+		// Don't process lines without braces
+		if (trimmed.find('{') == std::string::npos && trimmed.find('}') == std::string::npos) {
+			return line;
+		}
+
+		std::ostringstream result;
+		bool inString = false;
+		bool inBlockComment = false;
+		std::string current;
+
+		for (size_t i = 0; i < trimmed.length(); i++) {
+			char c = trimmed[i];
+
+			// Track block comments
+			if (!inString && i + 1 < trimmed.length()) {
+				if (c == '/' && trimmed[i + 1] == '*') {
+					inBlockComment = true;
+				} else if (c == '*' && trimmed[i + 1] == '/') {
+					current += c;
+					current += trimmed[i + 1];
+					i++;
+					inBlockComment = false;
+					continue;
+				}
+			}
+
+			// Track string literals to avoid splitting inside them
+			if (!inBlockComment && c == '"' && (i == 0 || trimmed[i - 1] != '\\')) {
+				inString = !inString;
+			}
+
+			if (inString || inBlockComment) {
+				current += c;
+				continue;
+			}
+
+			if (c == '{') {
+				current += c;
+				// Check if there's non-whitespace content after the brace
+				size_t next = i + 1;
+				while (next < trimmed.length() && std::isspace(trimmed[next])) {
+					next++;
+				}
+				if (next < trimmed.length() && trimmed[next] != '}') {
+					// There's content after {, split here
+					result << trim(current) << '\n';
+					current.clear();
+					i = next - 1; // Will be incremented by loop
+				}
+			} else if (c == '}') {
+				// Check if there's non-whitespace content before the brace
+				std::string beforeBrace = trim(current);
+				if (!beforeBrace.empty()) {
+					// There's content before }, put it on its own line
+					result << beforeBrace << '\n';
+					current.clear();
+				}
+				current += c;
+
+				// Check what comes after }
+				size_t next = i + 1;
+				while (next < trimmed.length() && std::isspace(trimmed[next])) {
+					next++;
+				}
+
+				if (next < trimmed.length()) {
+					// Check if it's "else {" pattern
+					std::string remaining = trimmed.substr(next);
+					if (remaining.length() >= 4 && remaining.substr(0, 4) == "else") {
+						// Find the opening brace after else
+						size_t elseEnd = next + 4;
+						while (elseEnd < trimmed.length() && std::isspace(trimmed[elseEnd])) {
+							elseEnd++;
+						}
+						if (elseEnd < trimmed.length() && trimmed[elseEnd] == '{') {
+							// It's "} else {" - emit as one line
+							current = "} else {";
+							i = elseEnd; // Skip to after the {
+
+							// Check if there's content after this {
+							size_t afterBrace = elseEnd + 1;
+							while (afterBrace < trimmed.length() && std::isspace(trimmed[afterBrace])) {
+								afterBrace++;
+							}
+							if (afterBrace < trimmed.length() && trimmed[afterBrace] != '}') {
+								// There's content after {, split here
+								result << current << '\n';
+								current.clear();
+								i = afterBrace - 1;
+							}
+						} else {
+							// "else" without { - just output } and continue
+							result << trim(current) << '\n';
+							current.clear();
+							i = next - 1;
+						}
+					} else {
+						// There's other content after }, split here
+						result << trim(current) << '\n';
+						current.clear();
+						i = next - 1;
+					}
+				}
+			} else {
+				current += c;
+			}
+		}
+
+		// Add any remaining content
+		std::string remaining = trim(current);
+		if (!remaining.empty()) {
+			result << remaining << '\n';
+		}
+
+		std::string output = result.str();
+		// Remove trailing newline if present
+		if (!output.empty() && output.back() == '\n') {
+			output.pop_back();
+		}
+		return output;
+	}
+
+	// Preprocess source to split inline braces and normalize
+	static std::string preprocessBraces(const std::string& source) {
+		std::istringstream input(source);
+		std::ostringstream output;
+		std::string line;
+		bool inBlockComment = false;
+
+		while (std::getline(input, line)) {
+			// Track block comment state across lines
+			std::string trimmed = trim(line);
+
+			// Check if we enter or exit a block comment
+			size_t openPos = trimmed.find("/*");
+			size_t closePos = trimmed.find("*/");
+
+			if (inBlockComment) {
+				// We're inside a block comment, don't process
+				output << line << '\n';
+				if (closePos != std::string::npos &&
+						(openPos == std::string::npos || closePos > openPos)) {
+					inBlockComment = false;
+				}
+				continue;
+			}
+
+			// Check if this line starts a block comment that doesn't end on same line
+			if (openPos != std::string::npos) {
+				if (closePos == std::string::npos || closePos < openPos) {
+					// Block comment starts but doesn't end
+					inBlockComment = true;
+					output << line << '\n';
+					continue;
+				}
+			}
+
+			std::string processed = splitInlineBraces(line);
+			output << processed << '\n';
+		}
+		return output.str();
+	}
+
 	// Preprocess source to merge standalone opening braces with previous line
 	static std::string mergeStandaloneBraces(const std::string& source) {
 		std::istringstream input(source);
@@ -428,8 +608,10 @@ namespace Qd {
 
 	// Main formatting function that works on source text
 	std::string formatSource(const std::string& source) {
-		// First, merge any standalone opening braces with their preceding line
-		std::string preprocessed = mergeStandaloneBraces(source);
+		// First, split inline braces onto separate lines
+		std::string split = preprocessBraces(source);
+		// Then merge any standalone opening braces with their preceding line
+		std::string preprocessed = mergeStandaloneBraces(split);
 
 		std::istringstream input(preprocessed);
 		std::ostringstream output;
@@ -525,8 +707,15 @@ namespace Qd {
 				}
 				output << trimmed << '\n';
 
-				if (trimmed.find('{') != std::string::npos) {
-					indentLevel++;
+				// Track all braces to handle inline blocks like: if { "x" . } else { "y" . }
+				for (char c : trimmed) {
+					if (c == '{') {
+						indentLevel++;
+					} else if (c == '}') {
+						if (indentLevel > 0) {
+							indentLevel--;
+						}
+					}
 				}
 				continue;
 			}
@@ -558,10 +747,16 @@ namespace Qd {
 			output << trimmed << '\n';
 
 			// Track brace depth for other lines (but not for comments)
+			// Count both opening and closing braces to handle inline blocks like:
+			// if { "* " . } else { "  " . }
 			if (!isComment(trimmed)) {
 				for (char c : trimmed) {
 					if (c == '{') {
 						indentLevel++;
+					} else if (c == '}') {
+						if (indentLevel > 0) {
+							indentLevel--;
+						}
 					}
 				}
 			}
