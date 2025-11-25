@@ -502,7 +502,10 @@ class ExtendedLSPTester:
             caps = response["result"].get("capabilities", {})
 
             self.assert_test("textDocumentSync" in caps, "Has textDocumentSync capability")
-            self.assert_test(caps.get("textDocumentSync") == 1, "Text sync is Full (1)")
+            # textDocumentSync can be either an integer (1 = Full) or an object with change: 1
+            text_sync = caps.get("textDocumentSync")
+            is_full_sync = text_sync == 1 or (isinstance(text_sync, dict) and text_sync.get("change") == 1)
+            self.assert_test(is_full_sync, "Text sync is Full (1)")
             self.assert_test("documentFormattingProvider" in caps, "Has formatting capability")
             self.assert_test("completionProvider" in caps, "Has completion capability")
 

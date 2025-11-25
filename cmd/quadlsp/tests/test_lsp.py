@@ -102,7 +102,10 @@ class LSPTester:
         result = response.get("result", {})
         capabilities = result.get("capabilities", {})
 
-        self.assert_equal(capabilities.get("textDocumentSync"), 1, "Initialize: Text sync capability")
+        # textDocumentSync can be either an integer (1 = Full) or an object with change: 1
+        text_sync = capabilities.get("textDocumentSync")
+        is_full_sync = text_sync == 1 or (isinstance(text_sync, dict) and text_sync.get("change") == 1)
+        self.assert_equal(is_full_sync, True, "Initialize: Text sync capability")
         self.assert_equal(capabilities.get("documentFormattingProvider"), True, "Initialize: Formatting capability")
         self.assert_contains(capabilities, "completionProvider", "Initialize: Completion capability")
 

@@ -2375,6 +2375,65 @@ private:
 		json_t* result = json_null();
 
 		if (!documentText.empty()) {
+			// First check if we're on an import statement line (use <module>)
+			// This is done before AST parsing to work even with parse errors
+			std::vector<std::string> docLines;
+			{
+				std::istringstream lineStream(documentText);
+				std::string docLine;
+				while (std::getline(lineStream, docLine)) {
+					docLines.push_back(docLine);
+				}
+			}
+			if (line < docLines.size()) {
+				const std::string& targetLine = docLines[line];
+				// Check if line starts with "use "
+				size_t usePos = targetLine.find("use ");
+				if (usePos != std::string::npos && usePos < 10) { // Allow some leading whitespace
+					// Extract module name after "use "
+					size_t moduleStart = usePos + 4;
+					while (moduleStart < targetLine.length() && isspace(targetLine[moduleStart])) {
+						moduleStart++;
+					}
+					size_t moduleEnd = moduleStart;
+					while (moduleEnd < targetLine.length() &&
+							(isalnum(targetLine[moduleEnd]) || targetLine[moduleEnd] == '_')) {
+						moduleEnd++;
+					}
+					// Only navigate if cursor is on the module name, not on "use" keyword
+					if (moduleEnd > moduleStart && character >= moduleStart && character < moduleEnd) {
+						std::string moduleName = targetLine.substr(moduleStart, moduleEnd - moduleStart);
+						std::string sourceDir = std::filesystem::path(uri.substr(7)).parent_path().string();
+						std::string modulePath = resolveModulePath(moduleName, sourceDir);
+
+						if (!modulePath.empty()) {
+							json_t* location = json_object();
+							json_object_set_new(location, "uri",
+									json_string(("file://" + modulePath).c_str()));
+
+							json_t* range = json_object();
+							json_t* start = json_object();
+							json_object_set_new(start, "line", json_integer(0));
+							json_object_set_new(start, "character", json_integer(0));
+							json_object_set_new(range, "start", start);
+
+							json_t* end = json_object();
+							json_object_set_new(end, "line", json_integer(0));
+							json_object_set_new(end, "character", json_integer(0));
+							json_object_set_new(range, "end", end);
+
+							json_object_set_new(location, "range", range);
+							result = location;
+
+							json_object_set_new(response, "result", result);
+							sendMessage(response);
+							json_decref(response);
+							return;
+						}
+					}
+				}
+			}
+
 			std::string word = getWordAtPosition(documentText, line, character);
 
 			if (!word.empty()) {
