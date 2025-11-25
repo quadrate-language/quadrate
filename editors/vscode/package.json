@@ -134,6 +134,16 @@
           ],
           "default": "off",
           "description": "Trace LSP communication"
+        },
+        "quadrate.lint.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable/disable quadlint warnings"
+        },
+        "quadrate.lint.path": {
+          "type": "string",
+          "default": "quadlint",
+          "description": "Path to the quadlint executable"
         }
       }
     }

@@ -242,6 +242,7 @@ install: release
 	install -d $(DESTDIR)$(PREFIX)/include
 	install -m 755 dist/bin/quadc $(DESTDIR)$(PREFIX)/bin/
 	install -m 755 dist/bin/quadfmt $(DESTDIR)$(PREFIX)/bin/
+	install -m 755 dist/bin/quadlint $(DESTDIR)$(PREFIX)/bin/
 	install -m 755 dist/bin/quadlsp $(DESTDIR)$(PREFIX)/bin/
 	install -m 755 dist/bin/quadpm $(DESTDIR)$(PREFIX)/bin/
 	install -m 755 dist/bin/quaduses $(DESTDIR)$(PREFIX)/bin/
@@ -286,6 +287,7 @@ install: release
 uninstall:
 	rm -f $(DESTDIR)$(PREFIX)/bin/quadc
 	rm -f $(DESTDIR)$(PREFIX)/bin/quadfmt
+	rm -f $(DESTDIR)$(PREFIX)/bin/quadlint
 	rm -f $(DESTDIR)$(PREFIX)/bin/quadlsp
 	rm -f $(DESTDIR)$(PREFIX)/bin/quadpm
 	rm -f $(DESTDIR)$(PREFIX)/bin/quaduses

@@ -1,7 +1,9 @@
 #include "constant_info.h"
 #include "function_info.h"
 #include "struct_info.h"
+#include <cstdio>
 #include <cstring>
+#include <unistd.h>
 #include <filesystem>
 #include <fstream>
 #include <functional>
@@ -113,9 +115,32 @@ private:
 		}
 
 		if (method == "initialize") {
-			handleInitialize(id);
+			json_t* params = getJsonObject(root, "params");
+			json_t* initOptions = params ? getJsonObject(params, "initializationOptions") : nullptr;
+			handleInitialize(id, initOptions);
 		} else if (method == "initialized") {
 			// Nothing to do
+		} else if (method == "workspace/didChangeConfiguration") {
+			json_t* params = getJsonObject(root, "params");
+			if (params) {
+				json_t* settings = getJsonObject(params, "settings");
+				if (settings) {
+					json_t* quadrate = getJsonObject(settings, "quadrate");
+					if (quadrate) {
+						json_t* lint = getJsonObject(quadrate, "lint");
+						if (lint) {
+							json_t* enabled = json_object_get(lint, "enabled");
+							if (enabled && json_is_boolean(enabled)) {
+								lintEnabled_ = json_boolean_value(enabled);
+							}
+							json_t* path = json_object_get(lint, "path");
+							if (path && json_is_string(path)) {
+								quadlintPath_ = json_string_value(path);
+							}
+						}
+					}
+				}
+			}
 		} else if (method == "textDocument/didOpen") {
 			json_t* params = getJsonObject(root, "params");
 			if (params) {
@@ -152,6 +177,12 @@ private:
 					std::string text = getJsonString(params, "text");
 					if (!text.empty()) {
 						handleDidOpen(uri, text);
+					} else {
+						// Fallback: use stored document content
+						auto it = documents_.find(uri);
+						if (it != documents_.end()) {
+							publishDiagnostics(uri, it->second);
+						}
 					}
 				}
 			}
@@ -264,7 +295,22 @@ private:
 		json_decref(root);
 	}
 
-	void handleInitialize(const std::string& id) {
+	void handleInitialize(const std::string& id, json_t* initOptions) {
+		// Parse initialization options for lint settings
+		if (initOptions) {
+			json_t* lint = getJsonObject(initOptions, "lint");
+			if (lint) {
+				json_t* enabled = json_object_get(lint, "enabled");
+				if (enabled && json_is_boolean(enabled)) {
+					lintEnabled_ = json_boolean_value(enabled);
+				}
+				json_t* path = json_object_get(lint, "path");
+				if (path && json_is_string(path)) {
+					quadlintPath_ = json_string_value(path);
+				}
+			}
+		}
+
 		json_t* response = json_object();
 		json_object_set_new(response, "jsonrpc", json_string("2.0"));
 		json_object_set_new(response, "id", json_integer(std::stoi(id)));
@@ -272,7 +318,14 @@ private:
 		json_t* result = json_object();
 		json_t* capabilities = json_object();
 
-		json_object_set_new(capabilities, "textDocumentSync", json_integer(1)); // Full sync
+		// Text document sync with full content on change and save
+		json_t* textDocumentSync = json_object();
+		json_object_set_new(textDocumentSync, "openClose", json_true());
+		json_object_set_new(textDocumentSync, "change", json_integer(1)); // Full sync
+		json_t* saveOptions = json_object();
+		json_object_set_new(saveOptions, "includeText", json_true());
+		json_object_set_new(textDocumentSync, "save", saveOptions);
+		json_object_set_new(capabilities, "textDocumentSync", textDocumentSync);
 		json_object_set_new(capabilities, "documentFormattingProvider", json_true());
 		json_object_set_new(capabilities, "hoverProvider", json_true());
 		json_object_set_new(capabilities, "documentSymbolProvider", json_true());
@@ -305,6 +358,136 @@ private:
 	void handleDidOpen(const std::string& uri, const std::string& text) {
 		documents_[uri] = text;
 		publishDiagnostics(uri, text);
+	}
+
+	// Structure to hold lint warnings
+	struct LintWarning {
+		size_t line;
+		size_t column;
+		std::string message;
+	};
+
+	// Strip ANSI escape codes from a string
+	static std::string stripAnsiCodes(const std::string& input) {
+		std::string result;
+		result.reserve(input.size());
+		bool inEscape = false;
+		for (size_t i = 0; i < input.size(); i++) {
+			// Check for escape sequence start (ESC [ or just [0-9 after previous escape)
+			if (input[i] == '\033' || input[i] == '\x1b') {
+				inEscape = true;
+				continue;
+			}
+			// Also handle case where [ appears at start or after stripping ESC
+			if (input[i] == '[' && (i == 0 || inEscape || (i + 1 < input.size() && (isdigit(input[i + 1]) || input[i + 1] == ';' || input[i + 1] == 'm')))) {
+				inEscape = true;
+				continue;
+			}
+			if (inEscape) {
+				if (input[i] == 'm') {
+					inEscape = false;
+				}
+				continue;
+			}
+			result += input[i];
+		}
+		return result;
+	}
+
+	// Run quadlint on source content and return warnings
+	std::vector<LintWarning> runQuadlint(const std::string& source) {
+		std::vector<LintWarning> warnings;
+
+		// Write source to temp file so quadlint sees current editor content
+		std::string tempPath = "/tmp/quadlsp_lint_" + std::to_string(getpid()) + ".qd";
+		{
+			std::ofstream tempFile(tempPath);
+			if (!tempFile.good()) {
+				return warnings;
+			}
+			tempFile << source;
+		}
+
+		// Build command
+		std::string command = quadlintPath_ + " \"" + tempPath + "\" 2>&1";
+
+		FILE* pipe = popen(command.c_str(), "r");
+		if (!pipe) {
+			return warnings;
+		}
+
+		char buffer[512];
+		std::string output;
+		while (fgets(buffer, sizeof(buffer), pipe) != nullptr) {
+			output += buffer;
+		}
+		pclose(pipe);
+
+		// Parse output - format: "filepath:line:column: warning: message"
+		std::istringstream stream(output);
+		std::string line;
+		while (std::getline(stream, line)) {
+			// Skip empty lines and summary lines
+			if (line.empty() || line.find("issues found") != std::string::npos) {
+				continue;
+			}
+
+			// Look for the warning pattern
+			// Example: /path/file.qd:4:4: warning: Unused function 'hello'
+			size_t firstColon = line.find(':');
+			if (firstColon == std::string::npos) {
+				continue;
+			}
+
+			// Skip the filepath part (find second colon for line number)
+			size_t secondColon = line.find(':', firstColon + 1);
+			if (secondColon == std::string::npos) {
+				continue;
+			}
+
+			size_t thirdColon = line.find(':', secondColon + 1);
+			if (thirdColon == std::string::npos) {
+				continue;
+			}
+
+			// Extract line number
+			std::string lineStr = line.substr(firstColon + 1, secondColon - firstColon - 1);
+			// Extract column number
+			std::string colStr = line.substr(secondColon + 1, thirdColon - secondColon - 1);
+
+			// Find "warning:" marker
+			size_t warningPos = line.find("warning:", thirdColon);
+			if (warningPos == std::string::npos) {
+				continue;
+			}
+
+			// Extract message (after "warning: ")
+			std::string message = line.substr(warningPos + 9); // 9 = strlen("warning: ")
+			// Strip ANSI escape codes
+			message = stripAnsiCodes(message);
+			// Trim leading/trailing whitespace
+			while (!message.empty() && (message.front() == ' ' || message.front() == '\t')) {
+				message.erase(0, 1);
+			}
+			while (!message.empty() && (message.back() == ' ' || message.back() == '\t' || message.back() == '\n')) {
+				message.pop_back();
+			}
+
+			try {
+				LintWarning warning;
+				warning.line = std::stoul(lineStr);
+				warning.column = std::stoul(colStr);
+				warning.message = message;
+				warnings.push_back(warning);
+			} catch (...) {
+				// Ignore parse errors
+			}
+		}
+
+		// Clean up temp file
+		std::remove(tempPath.c_str());
+
+		return warnings;
 	}
 
 	void publishDiagnostics(const std::string& uri, const std::string& text) {
@@ -387,6 +570,37 @@ private:
 
 					json_array_append_new(diagnostics, diag);
 				}
+			}
+		}
+
+		// Run quadlint if enabled and no parse/semantic errors
+		if (lintEnabled_ && root && !ast.hasErrors()) {
+			std::vector<LintWarning> warnings = runQuadlint(text);
+
+			for (const auto& warning : warnings) {
+				json_t* diag = json_object();
+
+				// LSP uses 0-based line and column numbers
+				size_t lspLine = (warning.line > 0) ? warning.line - 1 : 0;
+				size_t lspColumn = (warning.column > 0) ? warning.column - 1 : 0;
+
+				json_t* range = json_object();
+				json_t* start = json_object();
+				json_object_set_new(start, "line", json_integer(static_cast<json_int_t>(lspLine)));
+				json_object_set_new(start, "character", json_integer(static_cast<json_int_t>(lspColumn)));
+				json_t* end = json_object();
+				json_object_set_new(end, "line", json_integer(static_cast<json_int_t>(lspLine)));
+				json_object_set_new(
+						end, "character", json_integer(static_cast<json_int_t>(lspColumn + ERROR_SPAN_LENGTH)));
+				json_object_set_new(range, "start", start);
+				json_object_set_new(range, "end", end);
+
+				json_object_set_new(diag, "range", range);
+				json_object_set_new(diag, "severity", json_integer(2)); // Warning (not Error)
+				json_object_set_new(diag, "source", json_string("quadlint"));
+				json_object_set_new(diag, "message", json_string(warning.message.c_str()));
+
+				json_array_append_new(diagnostics, diag);
 			}
 		}
 
@@ -2758,6 +2972,8 @@ private:
 
 	std::map<std::string, std::string> documents_;
 	[[maybe_unused]] int messageId_;
+	bool lintEnabled_ = true;
+	std::string quadlintPath_ = "quadlint";
 };
 
 void printHelp() {

@@ -6,6 +6,7 @@
 #include <qc/ast_node_function.h>
 #include <qc/ast_node_identifier.h>
 #include <qc/ast_node_local.h>
+#include <qc/ast_node_struct.h>
 #include <qc/colors.h>
 #include <set>
 #include <sstream>
@@ -175,6 +176,12 @@ void collectVariableUsages(IAstNode* node, std::unordered_set<std::string>& usag
 	if (node->type() == IAstNode::Type::IDENTIFIER) {
 		AstNodeIdentifier* ident = static_cast<AstNodeIdentifier*>(node);
 		usages.insert(ident->name());
+	}
+
+	// Also check field access nodes (v@x uses variable v)
+	if (node->type() == IAstNode::Type::FIELD_ACCESS) {
+		AstNodeFieldAccess* fieldAccess = static_cast<AstNodeFieldAccess*>(node);
+		usages.insert(fieldAccess->varName());
 	}
 
 	// Don't traverse into LOCAL nodes themselves (the binding), only their children

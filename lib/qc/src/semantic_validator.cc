@@ -2000,6 +2000,15 @@ namespace Qd {
 				AstNodeLocal* local = static_cast<AstNodeLocal*>(child);
 				const std::string& varName = local->name();
 
+				// Check if variable name shadows a function
+				if (mDefinedFunctions.find(varName) != mDefinedFunctions.end()) {
+					std::string errorMsg = "Local variable '";
+					errorMsg += varName;
+					errorMsg += "' shadows function with same name";
+					reportError(local, errorMsg.c_str());
+					break;
+				}
+
 				// Check if stack is empty
 				if (typeStack.empty()) {
 					std::string errorMsg = "Type error in local variable '";

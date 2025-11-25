@@ -95,7 +95,14 @@ export function activate(context: ExtensionContext) {
   const clientOptions: LanguageClientOptions = {
     documentSelector: [{ scheme: 'file', language: 'quadrate' }],
     synchronize: {
-      fileEvents: workspace.createFileSystemWatcher('**/*.qd')
+      fileEvents: workspace.createFileSystemWatcher('**/*.qd'),
+      configurationSection: 'quadrate'
+    },
+    initializationOptions: {
+      lint: {
+        enabled: config.get<boolean>('lint.enabled', true),
+        path: config.get<string>('lint.path', 'quadlint')
+      }
     }
   };
 
@@ -104,6 +111,25 @@ export function activate(context: ExtensionContext) {
     'Quadrate Language Server',
     serverOptions,
     clientOptions
+  );
+
+  // Send configuration changes to the server
+  context.subscriptions.push(
+    workspace.onDidChangeConfiguration(e => {
+      if (e.affectsConfiguration('quadrate.lint')) {
+        const newConfig = workspace.getConfiguration('quadrate');
+        client.sendNotification('workspace/didChangeConfiguration', {
+          settings: {
+            quadrate: {
+              lint: {
+                enabled: newConfig.get<boolean>('lint.enabled', true),
+                path: newConfig.get<string>('lint.path', 'quadlint')
+              }
+            }
+          }
+        });
+      }
+    })
   );
 
   client.start();
