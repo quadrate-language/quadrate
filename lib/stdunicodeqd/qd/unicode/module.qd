@@ -119,3 +119,11 @@ pub const lbrace = 123
 pub const pipe = 124
 pub const rbrace = 125
 pub const tilde = 126
+
+// Character classification functions
+
+// Check if character code is a digit (0-9)
+pub fn is_digit(c:i64 -- result:i64) {
+	-> c
+	c digit0 >= c digit9 <= *
+}
