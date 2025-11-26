@@ -357,9 +357,11 @@ namespace Qd {
 		subFn = llvm::Function::Create(arithFnTy, llvm::Function::ExternalLinkage, "qd_sub", *module);
 		mulFn = llvm::Function::Create(arithFnTy, llvm::Function::ExternalLinkage, "qd_mul", *module);
 
-		// qd_push_call(qd_context* ctx, const char* func_name) -> void
-		auto pushCallFnTy = llvm::FunctionType::get(
-				builder->getVoidTy(), {contextPtrTy, llvm::PointerType::getUnqual(*context)}, false);
+		// qd_push_call(qd_context* ctx, const char* func_name, const char* file, size_t line) -> void
+		auto pushCallFnTy = llvm::FunctionType::get(builder->getVoidTy(),
+				{contextPtrTy, llvm::PointerType::getUnqual(*context), llvm::PointerType::getUnqual(*context),
+						builder->getInt64Ty()},
+				false);
 		pushCallFn = llvm::Function::Create(pushCallFnTy, llvm::Function::ExternalLinkage, "qd_push_call", *module);
 
 		// qd_pop_call(qd_context* ctx) -> void
@@ -3980,7 +3982,14 @@ namespace Qd {
 			// Push "main::main" onto call stack for debugging
 			std::string fullFuncName = namePrefix + "::" + funcNode->name();
 			auto funcNameStr = builder->CreateGlobalString(fullFuncName);
-			builder->CreateCall(pushCallFn, {ctx, funcNameStr});
+			std::string sourceFile;
+			auto srcIt = moduleSourceFiles.find(namePrefix);
+			if (srcIt != moduleSourceFiles.end()) {
+				sourceFile = srcIt->second;
+			}
+			auto sourceFileStr = builder->CreateGlobalString(sourceFile);
+			auto lineNum = builder->getInt64(funcNode->line());
+			builder->CreateCall(pushCallFn, {ctx, funcNameStr, sourceFileStr, lineNum});
 
 			// Create return basic block for defer execution
 			auto returnBB = llvm::BasicBlock::Create(*context, "return", fn);
@@ -4141,7 +4150,14 @@ namespace Qd {
 			llvm::Value* funcNameStr = nullptr;
 			if (!currentFunctionIsIntegerOnly) {
 				funcNameStr = builder->CreateGlobalString(fullFuncName);
-				builder->CreateCall(pushCallFn, {ctx, funcNameStr});
+				std::string sourceFile;
+				auto srcIt = moduleSourceFiles.find(namePrefix);
+				if (srcIt != moduleSourceFiles.end()) {
+					sourceFile = srcIt->second;
+				}
+				auto sourceFileStr = builder->CreateGlobalString(sourceFile);
+				auto lineNum = builder->getInt64(funcNode->line());
+				builder->CreateCall(pushCallFn, {ctx, funcNameStr, sourceFileStr, lineNum});
 			}
 
 			// Generate type check for input parameters
@@ -4536,6 +4552,8 @@ namespace Qd {
 		} else {
 			impl->sourceFileName = moduleName + ".qd";
 		}
+		// Add main source file to moduleSourceFiles for stack trace info
+		impl->moduleSourceFiles["main"] = impl->sourceFileName;
 		return impl->generateProgram(root);
 	}
 

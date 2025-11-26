@@ -2933,15 +2933,20 @@ qd_context* qd_clone_context(const qd_context* src) {
 	ctx->call_stack_depth = src->call_stack_depth;
 	for (size_t i = 0; i < src->call_stack_depth; i++) {
 		ctx->call_stack[i] = src->call_stack[i];
+		ctx->call_stack_files[i] = src->call_stack_files[i];
+		ctx->call_stack_lines[i] = src->call_stack_lines[i];
 	}
 
 	return ctx;
 }
 
 // Call stack management for debugging/error reporting
-void qd_push_call(qd_context* ctx, const char* func_name) {
+void qd_push_call(qd_context* ctx, const char* func_name, const char* file, size_t line) {
 	if (ctx->call_stack_depth < QD_MAX_CALL_STACK_DEPTH) {
-		ctx->call_stack[ctx->call_stack_depth++] = func_name;
+		ctx->call_stack[ctx->call_stack_depth] = func_name;
+		ctx->call_stack_files[ctx->call_stack_depth] = file;
+		ctx->call_stack_lines[ctx->call_stack_depth] = line;
+		ctx->call_stack_depth++;
 	}
 }
 
@@ -2963,7 +2968,16 @@ void qd_print_stack_trace(qd_context* ctx) {
 	}
 	fprintf(stderr, "\n%sStack trace:%s\n", color_start, color_end);
 	for (size_t i = ctx->call_stack_depth; i > 0; i--) {
-		fprintf(stderr, "  %zu: %s\n", ctx->call_stack_depth - i, ctx->call_stack[i - 1]);
+		size_t idx = i - 1;
+		size_t frame_num = ctx->call_stack_depth - i;
+		const char* func_name = ctx->call_stack[idx];
+		const char* file = ctx->call_stack_files[idx];
+		size_t line = ctx->call_stack_lines[idx];
+		if (file && file[0] != '\0') {
+			fprintf(stderr, "\t%zu: %s(%s:%zu)\n", frame_num, func_name, file, line);
+		} else {
+			fprintf(stderr, "\t%zu: %s\n", frame_num, func_name);
+		}
 	}
 }
 

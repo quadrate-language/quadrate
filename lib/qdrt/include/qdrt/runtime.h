@@ -642,16 +642,18 @@ qd_context* qd_clone_context(const qd_context* src);
  */
 
 /**
- * @brief Push a function name onto the call stack
+ * @brief Push a function call onto the call stack
  *
  * Used for tracking function calls for error reporting and debugging.
  *
  * @param ctx Execution context
  * @param func_name Function name to push (must be a string literal or static string)
+ * @param file Source file path (must be a string literal or static string)
+ * @param line Line number in the source file
  *
- * @note The function name pointer is stored directly; it must remain valid
+ * @note The string pointers are stored directly; they must remain valid
  */
-void qd_push_call(qd_context* ctx, const char* func_name);
+void qd_push_call(qd_context* ctx, const char* func_name, const char* file, size_t line);
 
 /**
  * @brief Pop a function name from the call stack
