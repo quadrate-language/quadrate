@@ -2151,7 +2151,8 @@ namespace Qd {
 						}
 					}
 
-					// Check that the next node is a LOCAL (-> var)
+					// Check that the next node is a LOCAL (-> var) or this is the last statement
+					// (allowing struct to be returned on stack)
 					if (i + 1 < node->childCount()) {
 						IAstNode* nextNode = node->child(i + 1);
 						if (!nextNode || nextNode->type() != IAstNode::Type::LOCAL) {
@@ -2161,13 +2162,8 @@ namespace Qd {
 							errorMsg += "Struct pointers cannot be used directly from the stack.";
 							reportError(child, errorMsg.c_str());
 						}
-					} else {
-						std::string errorMsg = "Struct '";
-						errorMsg += name;
-						errorMsg += "' must be immediately stored in a local variable using '-> varName'. ";
-						errorMsg += "Struct pointers cannot be used directly from the stack.";
-						reportError(child, errorMsg.c_str());
 					}
+					// If this is the last statement, allow struct on stack (for returning)
 
 					// Push pointer type for the constructed struct, along with its struct type
 					typeStack.push_back(StackValueType::PTR);
@@ -2261,7 +2257,8 @@ namespace Qd {
 							}
 						}
 
-						// Check that the next node is a LOCAL (-> var)
+						// Check that the next node is a LOCAL (-> var) or this is the last statement
+						// (allowing struct to be returned on stack)
 						if (i + 1 < node->childCount()) {
 							IAstNode* nextNode = node->child(i + 1);
 							if (!nextNode || nextNode->type() != IAstNode::Type::LOCAL) {
@@ -2271,13 +2268,8 @@ namespace Qd {
 								errorMsg += "Struct pointers cannot be used directly from the stack.";
 								reportError(child, errorMsg.c_str());
 							}
-						} else {
-							std::string errorMsg = "Struct '";
-							errorMsg += name;
-							errorMsg += "' must be immediately stored in a local variable using '-> varName'. ";
-							errorMsg += "Struct pointers cannot be used directly from the stack.";
-							reportError(child, errorMsg.c_str());
 						}
+						// If this is the last statement, allow struct on stack (for returning)
 
 						typeStack.push_back(StackValueType::PTR);
 						structTypeStack.push_back(name); // Track which struct type this is

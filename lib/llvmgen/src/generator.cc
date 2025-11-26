@@ -4975,8 +4975,15 @@ namespace Qd {
 			llvm::Value* fieldPtr = bytePtr;
 			llvm::Value* intValue = builder->CreateLoad(builder->getInt64Ty(), fieldPtr, "field_value");
 			builder->CreateCall(pushIntFn, {ctx, intValue});
-		} else if (matchingField->typeName == "str" || matchingField->typeName.find('*') != std::string::npos) {
-			llvm::Value* fieldPtr = bytePtr; // Use bytePtr directly with opaque pointers
+		} else if (matchingField->typeName == "str") {
+			// String field - push as string reference (QD_STACK_TYPE_STR)
+			llvm::Value* fieldPtr = bytePtr;
+			llvm::Value* ptrValue =
+					builder->CreateLoad(llvm::PointerType::getUnqual(*context), fieldPtr, "field_value");
+			builder->CreateCall(pushStrRefFn, {ctx, ptrValue});
+		} else if (matchingField->typeName.find('*') != std::string::npos) {
+			// Pointer type - push as pointer (QD_STACK_TYPE_PTR)
+			llvm::Value* fieldPtr = bytePtr;
 			llvm::Value* ptrValue =
 					builder->CreateLoad(llvm::PointerType::getUnqual(*context), fieldPtr, "field_value");
 			builder->CreateCall(pushPtrFn, {ctx, ptrValue});

@@ -1,130 +1,159 @@
 // Flag parsing library for Quadrate
 //
 // Provides functions to parse command-line flags.
-// Uses the "read" instruction to get arguments.
 //
 // Usage:
-//   read "--verbose" flag::bool if { "verbose mode" . nl }
-//   read "--name" flag::string if { "name=" . . nl } else { "default" }
-//   read "--count" flag::int if { } else { 10 }
+//   read flag::parse -> f
+//   defer { f free }
+//   f "--verbose" flag::bool if { "verbose mode" . nl }
+//   f "--name" flag::string! { "name=" . . nl }
+//   f "--count" flag::int! { } else { 10 }
 
 use str
 
-// Check if a flag exists in the argument list
+// Struct to hold parsed arguments
+pub struct Flag {
+	argc:i64
+	argv:str
+}
+
+// Parse arguments from read instruction into Flag struct
+// Usage: read flag::parse -> f
+pub fn parse(argc:i64 -- ) {
+	-> argc
+	"" -> argv
+	"" -> arg
+	"" -> old_argv
+	"" -> prefix
+	0 -> iter
+
+	// Pop args from stack - they come in reverse order, so prepend
+	0 argc 1 for {
+		-> arg
+		// Prepend: \narg + existing argv
+		"\n" arg str::concat -> prefix
+		argv -> old_argv
+		prefix argv str::concat -> argv
+		// Free intermediate strings (but not initial empty literal)
+		iter 0 > if { old_argv drop }
+		prefix drop
+		iter 1 + -> iter
+	}
+	// Add trailing newline
+	argc 0 > if {
+		argv -> old_argv
+		argv "\n" str::concat -> argv
+		old_argv drop
+	} else {
+		"\n" -> argv
+	}
+
+	// Create Flag struct - leaves ptr on stack for caller
+	argc argv Flag
+}
+
+// Free a Flag struct and its argv string
+// Usage: f flag::free
+pub fn destroy(f:ptr -- ) {
+	-> f
+	// Free the argv string first
+	f @argv drop
+	// Then free the struct
+	f free
+}
+
+// Check if a flag exists in the parsed arguments
 // Returns 1 if found, 0 if not
-pub fn bool(argc:i64 name:str -- present:i64) {
+pub fn bool(f:ptr name:str -- present:i64) {
 	-> name
-	-> argc
-	0 -> found
-	"" -> arg
+	-> f
 
-	0 argc 1 for {
-		-> arg
-		arg name str::compare 0 == if {
-			1 -> found
-		}
-	}
+	// Build search pattern: "\nflag\n"
+	"\n" name str::concat -> pattern
+	pattern "\n" str::concat -> pattern
 
-	found
+	// Search for exact match in argv
+	f @argv pattern str::contains
 }
 
-// Get string value of a flag from the argument list
+// Get string value of a flag from the parsed arguments
 // The value is the argument immediately following the flag name
-pub fn string(argc:i64 name:str -- value:str)! {
+pub fn string(f:ptr name:str -- value:str)! {
 	-> name
-	-> argc
-	0 -> found
-	"" -> arg
+	-> f
 	"" -> value
-	"" -> prev
+	"" -> pattern
+	"" -> argv
+	"" -> tmp
+	0 -> idx
+	0 -> start
+	0 -> end_idx
 
-	0 argc 1 for {
-		-> arg
-		prev name str::compare 0 == if {
-			arg -> value
-			1 -> found
-		}
-		arg -> prev
-	}
+	// Build search pattern: "\nflag\n"
+	"\n" name str::concat -> pattern
+	pattern "\n" str::concat -> tmp
+	tmp -> pattern
 
-	found 0 == if {
+	// Find the flag in argv
+	f @argv pattern str::index_of -> idx
+	idx 0 < if {
 		"flag not found" 1 error
 	}
+
+	// Extract value after the flag
+	// idx points to the \n before flag, skip \nflag\n to get to value
+	idx 1 + name str::len + 1 + -> start
+	f @argv -> argv
+
+	// Find end of value (next newline)
+	argv "\n" start str::index_of_from -> end_idx
+	end_idx 0 < if {
+		"value not found" 1 error
+	}
+
+	// Extract substring
+	argv start end_idx start - str::substring! -> value
 	value
 }
 
-// Get integer value of a flag from the argument list
-pub fn int(argc:i64 name:str -- value:i64)! {
+// Get integer value of a flag from the parsed arguments
+pub fn int(f:ptr name:str -- value:i64)! {
 	-> name
-	-> argc
-	0 -> found
-	"" -> arg
-	0 -> value
-	"" -> prev
+	-> f
+	"" -> s
 
-	0 argc 1 for {
-		-> arg
-		prev name str::compare 0 == if {
-			arg parse_int -> value
-			1 -> found
-		}
-		arg -> prev
-	}
-
-	found 0 == if {
+	// Get string value first, propagate error if not found
+	f name string if {
+		-> s
+		s parse_int
+	} else {
 		"flag not found" 1 error
+		0
 	}
-	value
 }
 
-// Get float value of a flag from the argument list
-pub fn float(argc:i64 name:str -- value:f64)! {
+// Get float value of a flag from the parsed arguments
+pub fn float(f:ptr name:str -- value:f64)! {
 	-> name
-	-> argc
-	0 -> found
-	"" -> arg
-	0.0 -> value
-	"" -> prev
+	-> f
 
-	0 argc 1 for {
-		-> arg
-		prev name str::compare 0 == if {
-			arg parse_float -> value
-			1 -> found
-		}
-		arg -> prev
-	}
-
-	found 0 == if {
+	// Get string value first, propagate error if not found
+	f name string if {
+		-> s
+		s parse_float
+	} else {
 		"flag not found" 1 error
+		0.0
 	}
-	value
 }
 
 // Get positional argument at index (0-based, skipping flags starting with -)
-pub fn positional(argc:i64 index:i64 -- value:str)! {
+// TODO: implement once array access is available
+pub fn positional(f:ptr index:i64 -- value:str)! {
 	-> index
-	-> argc
-	0 -> pos_count
-	0 -> found
-	"" -> arg
-	"" -> value
-
-	0 argc 1 for {
-		-> arg
-		arg "-" str::starts_with 0 == if {
-			pos_count index == if {
-				arg -> value
-				1 -> found
-			}
-			pos_count 1 + -> pos_count
-		}
-	}
-
-	found 0 == if {
-		"positional argument not found" 1 error
-	}
-	value
+	-> f
+	"positional not yet implemented" 1 error
+	""
 }
 
 // Helper: parse string to integer
