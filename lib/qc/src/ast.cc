@@ -613,10 +613,42 @@ namespace Qd {
 				setNodePosition(node, scanner, src);
 				return node;
 			}
+
+			// Check for scoped identifier (module::function or module::constant)
+			char32_t nextToken = u8t_scanner_peek(scanner);
+			if (nextToken == ':') {
+				// Save scope name before scanning invalidates the pointer
+				std::string scopeName(text);
+				u8t_scanner_scan(scanner); // Consume first ':'
+				char32_t secondColon = u8t_scanner_peek(scanner);
+				if (secondColon == ':') {
+					u8t_scanner_scan(scanner); // Consume second ':'
+					char32_t memberToken = u8t_scanner_scan(scanner);
+					if (memberToken == U8T_IDENTIFIER) {
+						const char* memberName = u8t_scanner_token_text(scanner, n);
+						AstNodeScopedIdentifier* scoped = new AstNodeScopedIdentifier(scopeName, memberName);
+						setNodePosition(scoped, scanner, src);
+						// Check for '!' or '?' suffix
+						char32_t suffixToken = u8t_scanner_peek(scanner);
+						if (suffixToken == '!') {
+							u8t_scanner_scan(scanner); // Consume the '!'
+							scoped->setAbortOnError(true);
+						} else if (suffixToken == '?') {
+							u8t_scanner_scan(scanner); // Consume the '?'
+							scoped->setCheckError(true);
+						}
+						return scoped;
+					}
+				}
+				// Not a valid scoped identifier, create regular identifier
+				// Note: We already consumed the first ':', so we can't undo that.
+				// This is an edge case that shouldn't normally happen.
+			}
+
 			AstNodeIdentifier* node = new AstNodeIdentifier(text);
 			setNodePosition(node, scanner, src);
 			// Check for '!' or '?' suffix
-			char32_t nextToken = u8t_scanner_peek(scanner);
+			nextToken = u8t_scanner_peek(scanner);
 			if (nextToken == '!') {
 				u8t_scanner_scan(scanner); // Consume the '!'
 				node->setAbortOnError(true);
@@ -1528,6 +1560,8 @@ namespace Qd {
 				// Check for scoped identifier (module::constant)
 				char32_t nextToken = u8t_scanner_peek(scanner);
 				if (nextToken == ':') {
+					// Copy the scope name before scanning more tokens (scanner buffer is reused)
+					std::string scopeName(valueText, n);
 					u8t_scanner_scan(scanner); // consume ':'
 					char32_t doubleColon = u8t_scanner_scan(scanner);
 					if (doubleColon == ':') {
@@ -1535,7 +1569,7 @@ namespace Qd {
 						char32_t nameToken = u8t_scanner_scan(scanner);
 						if (nameToken == U8T_IDENTIFIER) {
 							const char* nameText = u8t_scanner_token_text(scanner, &n);
-							caseValue = new AstNodeScopedIdentifier(valueText, nameText);
+							caseValue = new AstNodeScopedIdentifier(scopeName, nameText);
 							setNodePosition(caseValue, scanner, src);
 						}
 					}

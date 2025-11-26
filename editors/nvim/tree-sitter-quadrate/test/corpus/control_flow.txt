@@ -122,13 +122,13 @@ Switch statement
 
 fn test( -- ) {
     1 switch {
-        case 1 {
+        1 {
             100
         }
-        case 2 {
+        2 {
             200
         }
-        default {
+        _ {
             -1
         }
     }

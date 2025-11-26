@@ -153,7 +153,7 @@ module.exports = grammar({
       field('body', $.block),
     ),
 
-    // Switch expression: value switch { case N { } default { } }
+    // Switch expression: value switch { N { } _ { } }
     switch_expression: $ => seq(
       'switch',
       '{',
@@ -162,14 +162,15 @@ module.exports = grammar({
       '}',
     ),
 
+    // Case clause: value { body } (no 'case' keyword)
     case_clause: $ => seq(
-      'case',
-      field('value', $._expression),
+      field('value', choice($.number, $.namespaced_identifier, $.identifier)),
       field('body', $.block),
     ),
 
+    // Default clause: _ { body } (no 'default' keyword)
     default_clause: $ => seq(
-      'default',
+      '_',
       field('body', $.block),
     ),
 

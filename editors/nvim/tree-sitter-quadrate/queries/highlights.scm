@@ -14,12 +14,11 @@
   "else"
   "for"
   "switch"
-  "case"
-  "default"
   "defer"
   "ctx"
   "loop"
 ] @keyword.control
+
 
 ; Break and continue statements
 (break_statement) @keyword.control

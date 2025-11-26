@@ -2912,25 +2912,16 @@ namespace Qd {
 			} else if (caseValue->type() == IAstNode::Type::SCOPED_IDENTIFIER) {
 				// Handle scoped constants (module::ConstName)
 				AstNodeScopedIdentifier* scoped = static_cast<AstNodeScopedIdentifier*>(caseValue);
-				std::string constName = scoped->scope() + "_" + scoped->name();
+				std::string fullName = scoped->scope() + "::" + scoped->name();
 
-				// Get the constant global variable
-				auto constGlobal = module->getNamedGlobal(constName);
-				if (constGlobal) {
-					auto constType = constGlobal->getValueType();
+				// Look up the constant value in moduleConstants map
+				auto constIt = moduleConstants.find(fullName);
+				if (constIt != moduleConstants.end()) {
+					const std::string& value = constIt->second;
 					auto valuePtr = builder->CreateStructGEP(switchElemTy, switchElem, 0, "value_ptr");
 
-					if (constType->isIntegerTy(64)) {
-						// Integer constant
-						auto switchVal = builder->CreateLoad(builder->getInt64Ty(), valuePtr, "switch_val");
-						auto caseVal = builder->CreateLoad(builder->getInt64Ty(), constGlobal, "const_val");
-						matches = builder->CreateICmpEQ(switchVal, caseVal, "case_match");
-					} else if (constType->isDoubleTy()) {
-						// Float constant
-						auto switchVal = builder->CreateLoad(builder->getDoubleTy(), valuePtr, "switch_val_f");
-						auto caseVal = builder->CreateLoad(builder->getDoubleTy(), constGlobal, "const_val");
-						matches = builder->CreateFCmpOEQ(switchVal, caseVal, "case_match");
-					} else if (constType->isPointerTy()) {
+					// Determine the type from the value string
+					if (!value.empty() && value[0] == '"') {
 						// String constant
 						auto strcmpFn = module->getFunction("strcmp");
 						if (!strcmpFn) {
@@ -2943,10 +2934,36 @@ namespace Qd {
 
 						auto switchStrPtr =
 								builder->CreateLoad(llvm::PointerType::getUnqual(*context), valuePtr, "switch_str");
-						auto caseStrPtr =
-								builder->CreateLoad(llvm::PointerType::getUnqual(*context), constGlobal, "const_str");
-						auto cmpResult = builder->CreateCall(strcmpFn, {switchStrPtr, caseStrPtr}, "strcmp_result");
+
+						// Call qd_string_data to get const char*
+						if (!this->qdStringDataFn) {
+							auto qdStringDataFnTy = llvm::FunctionType::get(llvm::PointerType::getUnqual(*context),
+									{llvm::PointerType::getUnqual(*context)}, false);
+							this->qdStringDataFn = llvm::Function::Create(
+									qdStringDataFnTy, llvm::Function::ExternalLinkage, "qd_string_data", *module);
+						}
+						auto switchStrData = builder->CreateCall(this->qdStringDataFn, {switchStrPtr}, "switch_str_data");
+
+						// Create case string constant (strip quotes)
+						auto caseStr = builder->CreateGlobalString(value.substr(1, value.length() - 2));
+						auto cmpResult = builder->CreateCall(strcmpFn, {switchStrData, caseStr}, "strcmp_result");
 						matches = builder->CreateICmpEQ(cmpResult, builder->getInt32(0), "case_match");
+					} else if (value.find('.') != std::string::npos) {
+						// Float constant
+						auto switchVal = builder->CreateLoad(builder->getDoubleTy(), valuePtr, "switch_val_f");
+						auto caseVal = llvm::ConstantFP::get(builder->getDoubleTy(), std::stod(value));
+						matches = builder->CreateFCmpOEQ(switchVal, caseVal, "case_match");
+					} else {
+						// Integer constant
+						auto switchVal = builder->CreateLoad(builder->getInt64Ty(), valuePtr, "switch_val");
+						int64_t parsedVal = 0;
+						if (!safeParseInt64(value, parsedVal)) {
+							std::cerr << "quadc: error: Invalid integer constant value '" << value
+									  << "' for " << fullName << std::endl;
+							compilationFailed = true;
+						}
+						auto caseVal = builder->getInt64(static_cast<uint64_t>(parsedVal));
+						matches = builder->CreateICmpEQ(switchVal, caseVal, "case_match");
 					}
 				}
 			}

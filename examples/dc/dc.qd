@@ -11,6 +11,7 @@ use io
 use math
 use os
 use str
+use unicode
 
 fn print_version( -- ) {
 	"dc (Quadrate) 0.1.0" . nl
@@ -53,7 +54,7 @@ fn streq(a:str b:str -- result:i64) {
 // Check if character code is a digit (0-9)
 fn is_digit(c:i64 -- result:i64) {
 	-> c
-	c 48 >= c 57 <= *
+	c unicode::digit0 >= c unicode::digit9 <= *
 }
 
 fn process_token(tok:str -- ) {
@@ -67,7 +68,7 @@ fn process_token(tok:str -- ) {
 			tok casti
 		} else {
 			// Check if starts with minus and has more chars
-			first_char 45 == if {
+			first_char unicode::minus == if {
 				tok str::len 1 > if {
 					tok 1 str::char_at -> second_char
 					second_char is_digit if {
@@ -87,61 +88,52 @@ fn process_token(tok:str -- ) {
 
 fn process_operator(op:str -- ) {
 	-> op
-	op "+" streq if {
-		add
-	} else {
-		op "-" streq if {
+	// ASCII: + - * / % ^ v p n f c d r q
+	op 0 str::char_at switch {
+		unicode::plus {
+			add
+		}
+		unicode::minus {
 			sub
-		} else {
-			op "*" streq if {
-				mul
-			} else {
-				op "/" streq if {
-					div
-				} else {
-					op "%" streq if {
-						mod
-					} else {
-						op "^" streq if {
-							math::pow casti
-						} else {
-							op "v" streq if {
-								math::sqrt casti
-							} else {
-								op "p" streq if {
-									dup . nl
-								} else {
-									op "n" streq if {
-										print
-									} else {
-										op "f" streq if {
-											depth . " items on stack" . nl
-										} else {
-											op "c" streq if {
-												clear
-											} else {
-												op "d" streq if {
-													dup
-												} else {
-													op "r" streq if {
-														swap
-													} else {
-														op "q" streq if {
-															0 os::exit
-														} else {
-															"dc: unknown command: " . op . nl
-														}
-													}
-												}
-											}
-										}
-									}
-								}
-							}
-						}
-					}
-				}
-			}
+		}
+		unicode::asterisk {
+			mul
+		}
+		unicode::slash {
+			div
+		}
+		unicode::percent {
+			mod
+		}
+		unicode::caret {
+			math::pow casti
+		}
+		unicode::v {
+			math::sqrt casti
+		}
+		unicode::p {
+			dup . nl
+		}
+		unicode::n {
+			print
+		}
+		unicode::f {
+			depth . " items on stack" . nl
+		}
+		unicode::c {
+			clear
+		}
+		unicode::d {
+			dup
+		}
+		unicode::r {
+			swap
+		}
+		unicode::q {
+			0 os::exit
+		}
+		_ {
+			"dc: unknown command: " . op . nl
 		}
 	}
 }
