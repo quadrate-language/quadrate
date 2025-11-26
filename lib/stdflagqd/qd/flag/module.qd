@@ -9,6 +9,7 @@
 //   f "--name" flag::string! { "name=" . . nl }
 //   f "--count" flag::int! { } else { 10 }
 use str
+use unicode
 
 // Struct to hold parsed arguments
 pub struct Flag {
@@ -166,7 +167,7 @@ fn parse_int(s:str -- value:i64) {
 	s str::len -> len
 
 	len 0 > if {
-		s 0 str::char_at 45 == if {
+		s 0 str::char_at unicode::minus == if {
 			-1 -> sign
 			1 -> i
 		}
@@ -175,8 +176,8 @@ fn parse_int(s:str -- value:i64) {
 	loop {
 		i len < if {
 			s i str::char_at -> ch
-			ch 48 >= ch 57 <= * if {
-				value 10 * ch 48 - + -> value
+			ch unicode::is_digit if {
+				value 10 * ch unicode::digit0 - + -> value
 				i 1 + -> i
 			} else {
 				break
@@ -200,7 +201,7 @@ fn parse_float(s:str -- value:f64) {
 	1.0 -> decimal_place
 
 	len 0 > if {
-		s 0 str::char_at 45 == if {
+		s 0 str::char_at unicode::minus == if {
 			-1.0 -> sign
 			1 -> i
 		}
@@ -209,16 +210,16 @@ fn parse_float(s:str -- value:f64) {
 	loop {
 		i len < if {
 			s i str::char_at -> ch
-			ch 46 == if {
+			ch unicode::dot == if {
 				1 -> seen_dot
 				i 1 + -> i
 			} else {
-				ch 48 >= ch 57 <= * if {
+				ch unicode::is_digit if {
 					seen_dot if {
 						decimal_place 10.0 * -> decimal_place
-						value ch 48 - castf decimal_place / + -> value
+						value ch unicode::digit0 - castf decimal_place / + -> value
 					} else {
-						value 10.0 * ch 48 - castf + -> value
+						value 10.0 * ch unicode::digit0 - castf + -> value
 					}
 					i 1 + -> i
 				} else {
