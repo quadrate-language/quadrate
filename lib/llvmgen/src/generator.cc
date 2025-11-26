@@ -1519,6 +1519,7 @@ namespace Qd {
 
 	void LlvmGenerator::Impl::generateInlineSwap(llvm::Value* ctx) {
 		// Inline swap: swap top two stack elements
+		llvm::Function* currentFn = builder->GetInsertBlock()->getParent();
 
 		llvm::Type* contextTy = llvm::StructType::get(*context, {llvm::PointerType::get(*context, 0)}, false);
 		llvm::Value* stPtr = builder->CreateStructGEP(contextTy, ctx, 0, "st_ptr");
@@ -1530,6 +1531,31 @@ namespace Qd {
 		llvm::Value* sizePtr = builder->CreateStructGEP(stackTy, st, 2, "size_ptr");
 		llvm::Value* size = builder->CreateLoad(builder->getInt64Ty(), sizePtr, "size");
 
+		// Check for stack underflow (need at least 2 elements)
+		llvm::Value* hasEnough = builder->CreateICmpUGE(size, builder->getInt64(2), "has_enough");
+		llvm::BasicBlock* underflowBB = llvm::BasicBlock::Create(*context, "swap.underflow", currentFn);
+		llvm::BasicBlock* swapBB = llvm::BasicBlock::Create(*context, "swap.do", currentFn);
+		builder->CreateCondBr(hasEnough, swapBB, underflowBB);
+
+		// Generate underflow error
+		builder->SetInsertPoint(underflowBB);
+		auto fprintfFn = module->getOrInsertFunction(
+				"fprintf", llvm::FunctionType::get(builder->getInt32Ty(),
+								 {llvm::PointerType::getUnqual(*context), llvm::PointerType::getUnqual(*context)}, true));
+		auto stderrGlobal = module->getOrInsertGlobal("stderr", llvm::PointerType::getUnqual(*context));
+		auto stderrVal = builder->CreateLoad(llvm::PointerType::getUnqual(*context), stderrGlobal, "stderr");
+		auto errorMsg = builder->CreateGlobalString("Fatal error in swap: Stack underflow (requires 2 elements)\n");
+		builder->CreateCall(fprintfFn, {stderrVal, errorMsg});
+		auto printStackTraceFnTy =
+				llvm::FunctionType::get(builder->getVoidTy(), {llvm::PointerType::getUnqual(*context)}, false);
+		auto printStackTraceFn = module->getOrInsertFunction("qd_print_stack_trace", printStackTraceFnTy);
+		builder->CreateCall(printStackTraceFn, {ctx});
+		auto abortFn = module->getOrInsertFunction("abort", llvm::FunctionType::get(builder->getVoidTy(), false));
+		builder->CreateCall(abortFn, {});
+		builder->CreateUnreachable();
+
+		// Do the swap
+		builder->SetInsertPoint(swapBB);
 		llvm::Value* dataPtr = builder->CreateStructGEP(stackTy, st, 0, "data_ptr");
 		llvm::Value* data = builder->CreateLoad(llvm::PointerType::get(*context, 0), dataPtr, "data");
 
@@ -3339,6 +3365,8 @@ namespace Qd {
 		llvm::Function* currentFn = builder->GetInsertBlock()->getParent();
 
 		// Create basic blocks
+		llvm::BasicBlock* underflowBB = llvm::BasicBlock::Create(*context, "if.underflow", currentFn);
+		llvm::BasicBlock* popBB = llvm::BasicBlock::Create(*context, "if.pop", currentFn);
 		llvm::BasicBlock* thenBB = llvm::BasicBlock::Create(*context, "if.then", currentFn);
 		llvm::BasicBlock* elseBB =
 				ifStmt->elseBody() ? llvm::BasicBlock::Create(*context, "if.else", currentFn) : nullptr;
@@ -3356,6 +3384,34 @@ namespace Qd {
 
 		llvm::Value* sizePtr = builder->CreateStructGEP(stackTy, st, 2, "size_ptr");
 		llvm::Value* size = builder->CreateLoad(builder->getInt64Ty(), sizePtr, "size");
+
+		// Check for stack underflow before popping
+		llvm::Value* isEmpty = builder->CreateICmpEQ(size, builder->getInt64(0), "is_empty");
+		builder->CreateCondBr(isEmpty, underflowBB, popBB);
+
+		// Generate underflow error block
+		builder->SetInsertPoint(underflowBB);
+		// Call fprintf(stderr, ...) and abort
+		auto fprintfFn = module->getOrInsertFunction(
+				"fprintf", llvm::FunctionType::get(builder->getInt32Ty(),
+								 {llvm::PointerType::getUnqual(*context), llvm::PointerType::getUnqual(*context)}, true));
+		auto stderrGlobal = module->getOrInsertGlobal("stderr", llvm::PointerType::getUnqual(*context));
+		auto stderrVal = builder->CreateLoad(llvm::PointerType::getUnqual(*context), stderrGlobal, "stderr");
+		auto errorMsg = builder->CreateGlobalString("Fatal error in if: Stack underflow (requires 1 value for condition)\n");
+		builder->CreateCall(fprintfFn, {stderrVal, errorMsg});
+		// Call qd_print_stack_trace(ctx)
+		auto printStackTraceFnTy =
+				llvm::FunctionType::get(builder->getVoidTy(), {llvm::PointerType::getUnqual(*context)}, false);
+		auto printStackTraceFn =
+				module->getOrInsertFunction("qd_print_stack_trace", printStackTraceFnTy);
+		builder->CreateCall(printStackTraceFn, {ctx});
+		auto abortFn =
+				module->getOrInsertFunction("abort", llvm::FunctionType::get(builder->getVoidTy(), false));
+		builder->CreateCall(abortFn, {});
+		builder->CreateUnreachable();
+
+		// Continue with normal pop in popBB
+		builder->SetInsertPoint(popBB);
 
 		llvm::Value* dataPtr = builder->CreateStructGEP(stackTy, st, 0, "data_ptr");
 		llvm::Value* data = builder->CreateLoad(llvm::PointerType::get(*context, 0), dataPtr, "data");

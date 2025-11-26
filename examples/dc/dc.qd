@@ -65,7 +65,6 @@ fn process_token(tok:str -- ) {
 
 fn process_operator(op:str -- ) {
 	-> op
-	// ASCII: + - * / % ^ v p n f c d r q
 	op 0 str::char_at switch {
 		unicode::plus {
 			depth 2 >= if {
@@ -111,10 +110,20 @@ fn process_operator(op:str -- ) {
 			}
 		}
 		unicode::caret {
-			math::pow casti
+			depth 2 >= if {
+				// TODO: If exponent is non-integer, print:
+				// Runtime warning: non-zero scale in exponent
+				math::pow
+			} else {
+				"dc: stack empty" . nl
+			}
 		}
 		unicode::v {
-			math::sqrt casti
+			dup 0 >= if {
+				math::sqrt
+			} else {
+				"dc: square root of negative number" . nl
+			}
 		}
 		unicode::p {
 			dup . nl
@@ -129,16 +138,23 @@ fn process_operator(op:str -- ) {
 			clear
 		}
 		unicode::d {
-			dup
+			depth 1 >= if {
+				dup
+			} else {
+				"dc: stack empty" . nl
+			}
 		}
 		unicode::r {
-			swap
+			depth 2 >= if {
+				swap
+			}
 		}
 		unicode::q {
 			0 os::exit
 		}
 		_ {
-			"dc: unknown command: " . op . nl
+			// TODO: Print octal values for unrecognized operators
+			"dc: '" . op . "' unimplemented" . nl
 		}
 	}
 }
