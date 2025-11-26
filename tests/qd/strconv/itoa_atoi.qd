@@ -1,0 +1,34 @@
+// Test strconv::itoa and strconv::atoi convenience functions
+use strconv
+
+fn main( -- ) {
+	// itoa tests
+	0 strconv::itoa . nl
+	1 strconv::itoa . nl
+	42 strconv::itoa . nl
+	-1 strconv::itoa . nl
+	-42 strconv::itoa . nl
+	123456789 strconv::itoa . nl
+	-123456789 strconv::itoa . nl
+
+	// atoi tests
+	"0" strconv::atoi . nl
+	"1" strconv::atoi . nl
+	"42" strconv::atoi . nl
+	"-1" strconv::atoi . nl
+	"-42" strconv::atoi . nl
+	"123456789" strconv::atoi . nl
+	"-123456789" strconv::atoi . nl
+
+	// atoi with leading whitespace
+	"  100" strconv::atoi . nl
+	"   -200" strconv::atoi . nl
+
+	// Round-trip: itoa then atoi
+	12345 strconv::itoa strconv::atoi . nl
+	-9999 strconv::itoa strconv::atoi . nl
+
+	// Round-trip: atoi then itoa
+	"54321" strconv::atoi strconv::itoa . nl
+	"-8888" strconv::atoi strconv::itoa . nl
+}

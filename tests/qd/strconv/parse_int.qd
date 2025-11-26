@@ -1,0 +1,65 @@
+// Test strconv::parse_int with various bases
+use strconv
+
+fn main( -- ) {
+	// Binary (base 2)
+	"0" 2 strconv::parse_int . nl
+	"1" 2 strconv::parse_int . nl
+	"10" 2 strconv::parse_int . nl
+	"111" 2 strconv::parse_int . nl
+	"1000" 2 strconv::parse_int . nl
+	"11111111" 2 strconv::parse_int . nl
+
+	// Octal (base 8)
+	"0" 8 strconv::parse_int . nl
+	"7" 8 strconv::parse_int . nl
+	"10" 8 strconv::parse_int . nl
+	"100" 8 strconv::parse_int . nl
+	"147" 8 strconv::parse_int . nl
+	"777" 8 strconv::parse_int . nl
+
+	// Decimal (base 10)
+	"0" 10 strconv::parse_int . nl
+	"9" 10 strconv::parse_int . nl
+	"10" 10 strconv::parse_int . nl
+	"42" 10 strconv::parse_int . nl
+	"999" 10 strconv::parse_int . nl
+	"12345" 10 strconv::parse_int . nl
+
+	// Hexadecimal (base 16)
+	"0" 16 strconv::parse_int . nl
+	"9" 16 strconv::parse_int . nl
+	"a" 16 strconv::parse_int . nl
+	"f" 16 strconv::parse_int . nl
+	"10" 16 strconv::parse_int . nl
+	"ff" 16 strconv::parse_int . nl
+	"fff" 16 strconv::parse_int . nl
+	"FF" 16 strconv::parse_int . nl
+	"AbCdEf" 16 strconv::parse_int . nl
+
+	// Base 36 (maximum)
+	"0" 36 strconv::parse_int . nl
+	"z" 36 strconv::parse_int . nl
+	"10" 36 strconv::parse_int . nl
+	"zz" 36 strconv::parse_int . nl
+	"Z" 36 strconv::parse_int . nl
+
+	// Negative numbers
+	"-1" 2 strconv::parse_int . nl
+	"-10" 8 strconv::parse_int . nl
+	"-10" 10 strconv::parse_int . nl
+	"-ff" 16 strconv::parse_int . nl
+	"-147" 8 strconv::parse_int . nl
+
+	// With leading whitespace
+	"  42" 10 strconv::parse_int . nl
+	"   ff" 16 strconv::parse_int . nl
+
+	// With + sign
+	"+42" 10 strconv::parse_int . nl
+	"+ff" 16 strconv::parse_int . nl
+
+	// Large numbers
+	"1000000" 10 strconv::parse_int . nl
+	"ffff" 16 strconv::parse_int . nl
+}

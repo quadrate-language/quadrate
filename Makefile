@@ -56,6 +56,9 @@ debug:
 	@cp -f $(BUILD_DIR_DEBUG)/lib/stdstrqd/libstdstrqd.so dist/lib/
 	@echo "Creating full archive for libstdstrqd_static.a..."
 	@rm -f dist/lib/libstdstrqd_static.a && cd $(BUILD_DIR_DEBUG)/lib/stdstrqd && ar rcs ../../../../dist/lib/libstdstrqd_static.a $$(ar -t libstdstrqd_static.a) || (echo "ERROR: Failed to create libstdstrqd_static.a" && exit 1)
+	@cp -f $(BUILD_DIR_DEBUG)/lib/stdstrconvqd/libstdstrconvqd.so dist/lib/
+	@echo "Creating full archive for libstdstrconvqd_static.a..."
+	@rm -f dist/lib/libstdstrconvqd_static.a && cd $(BUILD_DIR_DEBUG)/lib/stdstrconvqd && ar rcs ../../../../dist/lib/libstdstrconvqd_static.a $$(ar -t libstdstrconvqd_static.a) || (echo "ERROR: Failed to create libstdstrconvqd_static.a" && exit 1)
 	@cp -f $(BUILD_DIR_DEBUG)/lib/stdtimeqd/libstdtimeqd.so dist/lib/
 	@echo "Creating full archive for libstdtimeqd_static.a..."
 	@rm -f dist/lib/libstdtimeqd_static.a && cd $(BUILD_DIR_DEBUG)/lib/stdtimeqd && ar rcs ../../../../dist/lib/libstdtimeqd_static.a $$(ar -t libstdtimeqd_static.a) || (echo "ERROR: Failed to create libstdtimeqd_static.a" && exit 1)
@@ -70,6 +73,7 @@ debug:
 	@cp -rf lib/stdnetqd/include/stdnetqd dist/include/
 	@cp -rf lib/stdosqd/include/stdosqd dist/include/
 	@cp -rf lib/stdstrqd/include/stdstrqd dist/include/
+	@cp -rf lib/stdstrconvqd/include/stdstrconvqd dist/include/
 	@cp -rf lib/stdtimeqd/include/stdtimeqd dist/include/
 	@mkdir -p dist/share/quadrate
 	@cp -r lib/stdbase64qd/qd/base64 dist/share/quadrate/
@@ -83,6 +87,7 @@ debug:
 	@cp -r lib/stdnetqd/qd/net dist/share/quadrate/
 	@cp -r lib/stdosqd/qd/os dist/share/quadrate/
 	@cp -r lib/stdstrqd/qd/str dist/share/quadrate/
+	@cp -r lib/stdstrconvqd/qd/strconv dist/share/quadrate/
 	@cp -r lib/stdtimeqd/qd/time dist/share/quadrate/
 	@cp -r lib/stdunicodeqd/qd/unicode dist/share/quadrate/
 	@echo "Verifying static archives..."
@@ -130,6 +135,9 @@ release:
 	@cp -f $(BUILD_DIR_RELEASE)/lib/stdstrqd/libstdstrqd.so dist/lib/
 	@echo "Creating full archive for libstdstrqd_static.a (release)..."
 	@rm -f dist/lib/libstdstrqd_static.a && cd $(BUILD_DIR_RELEASE)/lib/stdstrqd && ar rcs ../../../../dist/lib/libstdstrqd_static.a $$(ar -t libstdstrqd_static.a) || (echo "ERROR: Failed to create libstdstrqd_static.a" && exit 1)
+	@cp -f $(BUILD_DIR_RELEASE)/lib/stdstrconvqd/libstdstrconvqd.so dist/lib/
+	@echo "Creating full archive for libstdstrconvqd_static.a (release)..."
+	@rm -f dist/lib/libstdstrconvqd_static.a && cd $(BUILD_DIR_RELEASE)/lib/stdstrconvqd && ar rcs ../../../../dist/lib/libstdstrconvqd_static.a $$(ar -t libstdstrconvqd_static.a) || (echo "ERROR: Failed to create libstdstrconvqd_static.a" && exit 1)
 	@cp -f $(BUILD_DIR_RELEASE)/lib/stdtimeqd/libstdtimeqd.so dist/lib/
 	@echo "Creating full archive for libstdtimeqd_static.a (release)..."
 	@rm -f dist/lib/libstdtimeqd_static.a && cd $(BUILD_DIR_RELEASE)/lib/stdtimeqd && ar rcs ../../../../dist/lib/libstdtimeqd_static.a $$(ar -t libstdtimeqd_static.a) || (echo "ERROR: Failed to create libstdtimeqd_static.a" && exit 1)
@@ -144,6 +152,7 @@ release:
 	@cp -rf lib/stdnetqd/include/stdnetqd dist/include/
 	@cp -rf lib/stdosqd/include/stdosqd dist/include/
 	@cp -rf lib/stdstrqd/include/stdstrqd dist/include/
+	@cp -rf lib/stdstrconvqd/include/stdstrconvqd dist/include/
 	@cp -rf lib/stdtimeqd/include/stdtimeqd dist/include/
 	@mkdir -p dist/share/quadrate
 	@cp -r lib/stdbase64qd/qd/base64 dist/share/quadrate/
@@ -157,6 +166,7 @@ release:
 	@cp -r lib/stdnetqd/qd/net dist/share/quadrate/
 	@cp -r lib/stdosqd/qd/os dist/share/quadrate/
 	@cp -r lib/stdstrqd/qd/str dist/share/quadrate/
+	@cp -r lib/stdstrconvqd/qd/strconv dist/share/quadrate/
 	@cp -r lib/stdtimeqd/qd/time dist/share/quadrate/
 	@cp -r lib/stdunicodeqd/qd/unicode dist/share/quadrate/
 	@echo "Verifying static archives (release)..."
@@ -269,6 +279,8 @@ install: release
 	install -m 644 dist/lib/libstdosqd_static.a $(DESTDIR)$(PREFIX)/lib/
 	install -m 644 dist/lib/libstdstrqd.so $(DESTDIR)$(PREFIX)/lib/
 	install -m 644 dist/lib/libstdstrqd_static.a $(DESTDIR)$(PREFIX)/lib/
+	install -m 644 dist/lib/libstdstrconvqd.so $(DESTDIR)$(PREFIX)/lib/
+	install -m 644 dist/lib/libstdstrconvqd_static.a $(DESTDIR)$(PREFIX)/lib/
 	install -m 644 dist/lib/libstdtimeqd.so $(DESTDIR)$(PREFIX)/lib/
 	install -m 644 dist/lib/libstdtimeqd_static.a $(DESTDIR)$(PREFIX)/lib/
 	cp -r dist/include/qdrt $(DESTDIR)$(PREFIX)/include/
@@ -279,6 +291,7 @@ install: release
 	cp -r dist/include/stdnetqd $(DESTDIR)$(PREFIX)/include/
 	cp -r dist/include/stdosqd $(DESTDIR)$(PREFIX)/include/
 	cp -r dist/include/stdstrqd $(DESTDIR)$(PREFIX)/include/
+	cp -r dist/include/stdstrconvqd $(DESTDIR)$(PREFIX)/include/
 	cp -r dist/include/stdtimeqd $(DESTDIR)$(PREFIX)/include/
 	@echo "Installing Quadrate standard library modules to $(DESTDIR)$(PREFIX)/share/quadrate/"
 	install -d $(DESTDIR)$(PREFIX)/share/quadrate
@@ -293,6 +306,7 @@ install: release
 	@cp -r lib/stdnetqd/qd/net $(DESTDIR)$(PREFIX)/share/quadrate/
 	@cp -r lib/stdosqd/qd/os $(DESTDIR)$(PREFIX)/share/quadrate/
 	@cp -r lib/stdstrqd/qd/str $(DESTDIR)$(PREFIX)/share/quadrate/
+	@cp -r lib/stdstrconvqd/qd/strconv $(DESTDIR)$(PREFIX)/share/quadrate/
 	@cp -r lib/stdtimeqd/qd/time $(DESTDIR)$(PREFIX)/share/quadrate/
 	@cp -r lib/stdunicodeqd/qd/unicode $(DESTDIR)$(PREFIX)/share/quadrate/
 
@@ -320,6 +334,8 @@ uninstall:
 	rm -f $(DESTDIR)$(PREFIX)/lib/libstdosqd_static.a
 	rm -f $(DESTDIR)$(PREFIX)/lib/libstdstrqd.so
 	rm -f $(DESTDIR)$(PREFIX)/lib/libstdstrqd_static.a
+	rm -f $(DESTDIR)$(PREFIX)/lib/libstdstrconvqd.so
+	rm -f $(DESTDIR)$(PREFIX)/lib/libstdstrconvqd_static.a
 	rm -f $(DESTDIR)$(PREFIX)/lib/libstdtimeqd.so
 	rm -f $(DESTDIR)$(PREFIX)/lib/libstdtimeqd_static.a
 	rm -rf $(DESTDIR)$(PREFIX)/include/qdrt
@@ -330,6 +346,7 @@ uninstall:
 	rm -rf $(DESTDIR)$(PREFIX)/include/stdnetqd
 	rm -rf $(DESTDIR)$(PREFIX)/include/stdosqd
 	rm -rf $(DESTDIR)$(PREFIX)/include/stdstrqd
+	rm -rf $(DESTDIR)$(PREFIX)/include/stdstrconvqd
 	rm -rf $(DESTDIR)$(PREFIX)/include/stdtimeqd
 	@echo "Removing Quadrate standard library modules from $(DESTDIR)$(PREFIX)/share/quadrate/"
 	rm -rf $(DESTDIR)$(PREFIX)/share/quadrate
