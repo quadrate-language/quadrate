@@ -25,25 +25,32 @@ fn print_help( -- ) {
 	"Report bugs to: ~klahr/quadrate@lists.sr.ht" . nl
 }
 
+fn cleanup_flags(f:ptr -- ) {
+	-> f
+	f flag::destroy
+}
+
 fn main( -- ) {
-	// Check for --help
-	read "--help" flag::bool if {
+	// Parse command line arguments once
+	read flag::parse -> f
+	defer { f cleanup_flags }
+
+	// Check for help flags
+	f "--help" flag::bool if {
 		print_help
 		0 os::exit
 	}
-	// Check for -h
-	read "-h" flag::bool if {
+	f "-h" flag::bool if {
 		print_help
 		0 os::exit
 	}
 
-	// Check for --version
-	read "--version" flag::bool if {
+	// Check for version flags
+	f "--version" flag::bool if {
 		print_version
 		0 os::exit
 	}
-	// Check for -V
-	read "-V" flag::bool if {
+	f "-V" flag::bool if {
 		print_version
 		0 os::exit
 	}
