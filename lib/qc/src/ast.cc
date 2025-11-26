@@ -1519,17 +1519,7 @@ namespace Qd {
 
 					AstNodeBlock* defaultBody = new AstNodeBlock();
 					setNodePosition(defaultBody, scanner, src);
-					while ((token = u8t_scanner_scan(scanner)) != U8T_EOF) {
-						if (token == '}') {
-							break;
-						}
-
-						IAstNode* node = parseBlockStatement(token, scanner, errorReporter, &n, src, false);
-						if (node) {
-							node->setParent(defaultBody);
-							defaultBody->addChild(node);
-						}
-					}
+					parseBlockBody(defaultBody, scanner, errorReporter, src);
 
 					AstNodeCase* defaultCase = new AstNodeCase(nullptr, true);
 					setNodePosition(defaultCase, scanner, src);
@@ -1595,17 +1585,7 @@ namespace Qd {
 
 			AstNodeBlock* caseBody = new AstNodeBlock();
 			setNodePosition(caseBody, scanner, src);
-			while ((token = u8t_scanner_scan(scanner)) != U8T_EOF) {
-				if (token == '}') {
-					break;
-				}
-
-				IAstNode* node = parseBlockStatement(token, scanner, errorReporter, &n, src, false);
-				if (node) {
-					node->setParent(caseBody);
-					caseBody->addChild(node);
-				}
-			}
+			parseBlockBody(caseBody, scanner, errorReporter, src);
 
 			AstNodeCase* caseNode = new AstNodeCase(caseValue, false);
 			setNodePosition(caseNode, scanner, src);
