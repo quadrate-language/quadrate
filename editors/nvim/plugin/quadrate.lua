@@ -11,6 +11,8 @@ local quadrate_config = {
   lsp = {
     path = 'quadlsp',
   },
+  -- Library path for standard modules (defaults to QUADRATE_LIBDIR env var or /usr/share/quadrate)
+  libdir = nil,
 }
 
 -- Allow users to override configuration
@@ -63,9 +65,17 @@ local configs = require('lspconfig.configs')
 
 -- Define quadlsp configuration (only if not already defined)
 if not configs.quadlsp then
+  -- Determine QUADRATE_LIBDIR: prefer explicit config, then env var, then installed path
+  local quadrate_libdir = quadrate_config.libdir
+    or os.getenv('QUADRATE_LIBDIR')
+    or '/usr/share/quadrate'
+
   configs.quadlsp = {
     default_config = {
       cmd = {quadrate_config.lsp.path},
+      cmd_env = {
+        QUADRATE_LIBDIR = quadrate_libdir,
+      },
       filetypes = {'quadrate'},
       root_dir = function(fname)
         return lspconfig.util.find_git_ancestor(fname)

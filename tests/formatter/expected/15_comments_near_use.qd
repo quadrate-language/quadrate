@@ -10,9 +10,9 @@ fn main( -- ) {
 	5 10 add
 	/* use inline_fake */ print
 }
+
 // use trailing_comment
 /* use block_at_end {
-
 fn test( -- ) {
 if {
 */

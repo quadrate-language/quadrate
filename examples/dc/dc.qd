@@ -6,7 +6,6 @@
 // dc is a reverse-polish desk calculator which supports unlimited
 // precision arithmetic. It uses a stack-based approach where numbers
 // are pushed onto a stack and operations pop operands and push results.
-
 use flag
 use os
 
@@ -25,15 +24,12 @@ fn print_help( -- ) {
 	"Report bugs to: ~klahr/quadrate@lists.sr.ht" . nl
 }
 
-fn cleanup_flags(f:ptr -- ) {
-	-> f
-	f flag::destroy
-}
-
 fn main( -- ) {
 	// Parse command line arguments once
 	read flag::parse -> f
-	defer { f cleanup_flags }
+	defer {
+		f flag::destroy
+	}
 
 	// Check for help flags
 	f "--help" flag::bool if {

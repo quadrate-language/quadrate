@@ -74,6 +74,7 @@ debug:
 	@mkdir -p dist/share/quadrate
 	@cp -r lib/stdbase64qd/qd/base64 dist/share/quadrate/
 	@cp -r lib/stdbitsqd/qd/bits dist/share/quadrate/
+	@cp -r lib/stdflagqd/qd/flag dist/share/quadrate/
 	@cp -r lib/stdfmtqd/qd/fmt dist/share/quadrate/
 	@cp -r lib/stdioqd/qd/io dist/share/quadrate/
 	@cp -r lib/stdjsonqd/qd/json dist/share/quadrate/
@@ -146,6 +147,7 @@ release:
 	@mkdir -p dist/share/quadrate
 	@cp -r lib/stdbase64qd/qd/base64 dist/share/quadrate/
 	@cp -r lib/stdbitsqd/qd/bits dist/share/quadrate/
+	@cp -r lib/stdflagqd/qd/flag dist/share/quadrate/
 	@cp -r lib/stdfmtqd/qd/fmt dist/share/quadrate/
 	@cp -r lib/stdioqd/qd/io dist/share/quadrate/
 	@cp -r lib/stdjsonqd/qd/json dist/share/quadrate/
@@ -279,6 +281,7 @@ install: release
 	@echo "Installing Quadrate standard library modules to $(DESTDIR)$(PREFIX)/share/quadrate/"
 	install -d $(DESTDIR)$(PREFIX)/share/quadrate
 	@cp -r lib/stdbitsqd/qd/bits $(DESTDIR)$(PREFIX)/share/quadrate/
+	@cp -r lib/stdflagqd/qd/flag $(DESTDIR)$(PREFIX)/share/quadrate/
 	@cp -r lib/stdfmtqd/qd/fmt $(DESTDIR)$(PREFIX)/share/quadrate/
 	@cp -r lib/stdjsonqd/qd/json $(DESTDIR)$(PREFIX)/share/quadrate/
 	@cp -r lib/stdmathqd/qd/math $(DESTDIR)$(PREFIX)/share/quadrate/

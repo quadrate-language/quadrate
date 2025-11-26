@@ -8,7 +8,6 @@
 //   f "--verbose" flag::bool if { "verbose mode" . nl }
 //   f "--name" flag::string! { "name=" . . nl }
 //   f "--count" flag::int! { } else { 10 }
-
 use str
 
 // Struct to hold parsed arguments
@@ -35,7 +34,9 @@ pub fn parse(argc:i64 -- ) {
 		argv -> old_argv
 		prefix argv str::concat -> argv
 		// Free intermediate strings (but not initial empty literal)
-		iter 0 > if { old_argv drop }
+		iter 0 > if {
+			old_argv drop
+		}
 		prefix drop
 		iter 1 + -> iter
 	}

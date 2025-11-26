@@ -770,7 +770,28 @@ namespace Qd {
 				file.close();
 			}
 
-			// Try 4: Standard library directories relative to current directory (for development)
+			// Try 4: QUADRATE_LIBDIR environment variable (for development/dist)
+			// Standard library modules are at $QUADRATE_LIBDIR/std<module>qd/qd/<module>/module.qd
+			const char* quadrateLibDir = std::getenv("QUADRATE_LIBDIR");
+			if (quadrateLibDir) {
+				modulePath =
+						std::string(quadrateLibDir) + "/std" + moduleName + "qd/qd/" + moduleName + "/module.qd";
+				file.open(modulePath);
+				if (file.good()) {
+					// Store the module directory
+					mModuleDirectories[moduleName] =
+							std::string(quadrateLibDir) + "/std" + moduleName + "qd/qd/" + moduleName;
+					std::stringstream buffer;
+					buffer << file.rdbuf();
+					std::string source = buffer.str();
+					file.close();
+					parseModuleAndCollectFunctions(moduleName, source);
+					return;
+				}
+				file.close();
+			}
+
+			// Try 5: Standard library directories relative to current directory (for development)
 			std::string stdLibPath = "lib/std" + moduleName + "qd/qd/" + moduleName + "/module.qd";
 			file.open(stdLibPath);
 			if (file.good()) {
@@ -785,7 +806,7 @@ namespace Qd {
 			}
 			file.close();
 
-			// Try 5: Standard library relative to executable (for installed binaries)
+			// Try 6: Standard library relative to executable (for installed binaries)
 			// Get executable path and look for ../share/quadrate/<module>/module.qd
 			try {
 				std::filesystem::path exePath = std::filesystem::canonical("/proc/self/exe");
@@ -809,7 +830,7 @@ namespace Qd {
 				// Ignore errors reading executable path
 			}
 
-			// Try 6: $HOME/quadrate directory
+			// Try 7: $HOME/quadrate directory
 			const char* home = std::getenv("HOME");
 			if (home) {
 				modulePath = std::string(home) + "/quadrate/" + moduleName + "/module.qd";

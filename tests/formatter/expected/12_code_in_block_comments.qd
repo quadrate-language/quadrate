@@ -7,7 +7,6 @@ fn test_block( -- ) {
 	} */
 	5 10 add
 	/* Another fake function
-
 	fn broken( -- ) {
 	for i {
 	*/

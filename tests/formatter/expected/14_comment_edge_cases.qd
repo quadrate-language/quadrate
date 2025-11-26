@@ -17,7 +17,6 @@ fn test_defer_in_comment( -- ) {
 
 fn test_complex_structures( -- ) {
 	/*
-
 	fn outer( -- ) {
 	defer {
 	if {

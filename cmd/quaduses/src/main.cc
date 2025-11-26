@@ -285,11 +285,6 @@ std::string generateWithUseStatements(const std::string& source, const std::set<
 				output << "use " << formatUseStatement(use) << '\n';
 			}
 
-			// Add blank line after use statements if there are any
-			if (!sortedUses.empty()) {
-				output << '\n';
-			}
-
 			useStatementsWritten = true;
 			inUseSection = false;
 		}
@@ -304,15 +299,10 @@ std::string generateWithUseStatements(const std::string& source, const std::set<
 				output << "use " << formatUseStatement(use) << '\n';
 			}
 
-			// Add blank line after use statements if there are any
-			if (!sortedUses.empty()) {
-				output << '\n';
-			}
-
 			useStatementsWritten = true;
 		}
 
-		// Write the current line
+		// Write the current line (preserve all blank lines as-is)
 		output << line << '\n';
 	}
 

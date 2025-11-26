@@ -133,27 +133,6 @@ TEST(ContinueStatement) {
 
 TEST(DeferStatement) {
 	Qd::Ast ast;
-	const char* src = "fn test() { defer close }";
-	Qd::IAstNode* root = ast.generate(src, false, nullptr);
-
-	ASSERT(root != nullptr, "root != nullptr");
-	ASSERT(root->childCount() == 1, "should have 1 child");
-
-	Qd::IAstNode* func = root->child(0);
-	Qd::IAstNode* body = func->child(0);
-
-	ASSERT(body->childCount() == 1, "body should have 1 child");
-	Qd::IAstNode* deferStmt = body->child(0);
-	ASSERT(deferStmt->type() == Qd::IAstNode::Type::DEFER_STATEMENT, "should be defer");
-
-	// Defer should contain the identifier
-	ASSERT(deferStmt->childCount() == 1, "deferStmt should have 1 child");
-	Qd::IAstNode* id = deferStmt->child(0);
-	ASSERT(id->type() == Qd::IAstNode::Type::IDENTIFIER, "should be identifier");
-}
-
-TEST(DeferBlock) {
-	Qd::Ast ast;
 	const char* src = "fn test() { defer { close } }";
 	Qd::IAstNode* root = ast.generate(src, false, nullptr);
 
@@ -167,8 +146,35 @@ TEST(DeferBlock) {
 	Qd::IAstNode* deferStmt = body->child(0);
 	ASSERT(deferStmt->type() == Qd::IAstNode::Type::DEFER_STATEMENT, "should be defer");
 
-	// Defer should contain the identifier
-	ASSERT(deferStmt->childCount() == 1, "deferStmt should have 1 child");
+	// Defer should contain a block with the identifier
+	ASSERT(deferStmt->childCount() == 1, "deferStmt should have 1 child (block)");
+	Qd::IAstNode* block = deferStmt->child(0);
+	ASSERT(block->type() == Qd::IAstNode::Type::BLOCK, "should be block");
+	ASSERT(block->childCount() == 1, "block should have 1 child");
+	Qd::IAstNode* id = block->child(0);
+	ASSERT(id->type() == Qd::IAstNode::Type::IDENTIFIER, "should be identifier");
+}
+
+TEST(DeferBlock) {
+	Qd::Ast ast;
+	const char* src = "fn test() { defer { 1 2 add } }";
+	Qd::IAstNode* root = ast.generate(src, false, nullptr);
+
+	ASSERT(root != nullptr, "root != nullptr");
+	ASSERT(root->childCount() == 1, "should have 1 child");
+
+	Qd::IAstNode* func = root->child(0);
+	Qd::IAstNode* body = func->child(0);
+
+	ASSERT(body->childCount() == 1, "body should have 1 child");
+	Qd::IAstNode* deferStmt = body->child(0);
+	ASSERT(deferStmt->type() == Qd::IAstNode::Type::DEFER_STATEMENT, "should be defer");
+
+	// Defer should contain a block with 3 children (1, 2, add)
+	ASSERT(deferStmt->childCount() == 1, "deferStmt should have 1 child (block)");
+	Qd::IAstNode* block = deferStmt->child(0);
+	ASSERT(block->type() == Qd::IAstNode::Type::BLOCK, "should be block");
+	ASSERT(block->childCount() == 3, "block should have 3 children");
 }
 
 TEST(ReturnStatement) {
