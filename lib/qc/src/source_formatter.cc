@@ -486,10 +486,12 @@ namespace Qd {
 		}
 
 		std::ostringstream output;
-		std::string prevTopLevelType; // "use", "const", "fn_start", ""
+		std::string prevTopLevelType; // "use", "const", "fn_start", "comment", ""
 		int braceDepth = 0;
 		bool inFunction = false;
-		std::vector<std::string> useStatements; // Buffer for collecting consecutive use statements
+		bool inBlockComment = false; // Track multi-line block comment state
+		std::vector<std::string> useStatements;    // Buffer for collecting consecutive use statements
+		std::vector<std::string> commentBuffer;    // Buffer for comments that may precede a function
 
 		auto flushUseStatements = [&]() {
 			if (!useStatements.empty()) {
@@ -506,13 +508,35 @@ namespace Qd {
 			}
 		};
 
+		auto flushCommentBuffer = [&](bool addBlankLineBefore) {
+			if (!commentBuffer.empty()) {
+				if (addBlankLineBefore) {
+					output << '\n';
+				}
+				for (const auto& comment : commentBuffer) {
+					output << comment << '\n';
+				}
+				commentBuffer.clear();
+			}
+		};
+
 		for (size_t i = 0; i < lines.size(); i++) {
 			std::string trimmed = trim(lines[i]);
 
 			if (trimmed.empty()) {
+				// Preserve empty lines inside block comments
+				if (inBlockComment) {
+					output << '\n';
+					continue;
+				}
 				// Flush any buffered use statements before outputting empty line
 				if (!useStatements.empty()) {
 					flushUseStatements();
+				}
+				// At top-level with buffered comments, skip empty lines (they'll be
+				// normalized when we flush comments before the next declaration)
+				if (!commentBuffer.empty() && braceDepth == 0) {
+					continue;
 				}
 				// Only output empty lines when inside functions
 				if (inFunction) {
@@ -521,15 +545,35 @@ namespace Qd {
 				continue;
 			}
 
-			// Track brace depth to know when we exit a function, but skip comments
-			if (!isComment(trimmed)) {
-				for (char c : trimmed) {
-					if (c == '{') {
-						braceDepth++;
+			// Track block comment state and brace depth
+			// Skip brace counting when inside block comments
+			if (!inBlockComment) {
+				// Check if this line starts a block comment
+				size_t openPos = trimmed.find("/*");
+				size_t closePos = trimmed.find("*/");
+				if (openPos != std::string::npos) {
+					if (closePos == std::string::npos || closePos < openPos) {
+						// Block comment starts but doesn't end on this line
+						inBlockComment = true;
 					}
-					if (c == '}') {
-						braceDepth--;
+					// If both exist and close comes after open, it's a single-line block comment
+				}
+
+				// Count braces only outside of comments
+				if (!isComment(trimmed)) {
+					for (char c : trimmed) {
+						if (c == '{') {
+							braceDepth++;
+						}
+						if (c == '}') {
+							braceDepth--;
+						}
 					}
+				}
+			} else {
+				// We're inside a block comment, check if it ends
+				if (trimmed.find("*/") != std::string::npos) {
+					inBlockComment = false;
 				}
 			}
 
@@ -540,8 +584,17 @@ namespace Qd {
 			std::string currentType;
 
 			if (isTopLevel) {
+				// Handle top-level comments - buffer them to attach to following declaration
+				if (isComment(trimmed)) {
+					// Buffer comments at top level (outside functions)
+					commentBuffer.push_back(lines[i]);
+					continue;
+				}
+
 				if (startsWithKeyword(trimmed, "use")) {
 					currentType = "use";
+					// Flush comments before use statement
+					flushCommentBuffer(prevTopLevelType == "fn_start");
 					// Buffer use statements for sorting
 					useStatements.push_back(lines[i]);
 					prevTopLevelType = currentType;
@@ -550,7 +603,8 @@ namespace Qd {
 					currentType = "use"; // Treat import like use for spacing
 				} else if (startsWithKeyword(trimmed, "pub")) {
 					// Handle pub fn and pub const
-					if (trimmed.find("pub fn") != std::string::npos) {
+					if (trimmed.find("pub fn") != std::string::npos ||
+							trimmed.find("pub struct") != std::string::npos) {
 						currentType = "fn_start";
 						inFunction = true;
 					} else if (trimmed.find("pub const") != std::string::npos) {
@@ -561,6 +615,9 @@ namespace Qd {
 				} else if (startsWithKeyword(trimmed, "fn")) {
 					currentType = "fn_start";
 					inFunction = true;
+				} else if (startsWithKeyword(trimmed, "struct")) {
+					currentType = "fn_start"; // Treat struct like fn for spacing
+					inFunction = true;
 				}
 
 				// Flush any buffered use statements when we encounter non-use statement
@@ -569,6 +626,8 @@ namespace Qd {
 				}
 
 				// Add appropriate spacing before top-level declarations
+				// If we have buffered comments, the blank line goes before them
+				bool needsBlankLine = false;
 				if (!prevTopLevelType.empty()) {
 					if ((prevTopLevelType == "use" && currentType == "const") ||
 							(prevTopLevelType == "use" && currentType == "fn_start") ||
@@ -576,15 +635,16 @@ namespace Qd {
 							(prevTopLevelType == "fn_start" && currentType == "fn_start") ||
 							(prevTopLevelType == "fn_start" && currentType == "use") ||
 							(prevTopLevelType == "fn_start" && currentType == "const")) {
-						// Exactly one empty line between:
-						// - use statements and constants
-						// - use statements and first function
-						// - constants and first function
-						// - between functions
-						// - functions and subsequent use statements
-						// - functions and subsequent constants
-						output << '\n';
+						needsBlankLine = true;
 					}
+				}
+
+				// Flush comments with or without blank line
+				if (!commentBuffer.empty()) {
+					flushCommentBuffer(needsBlankLine);
+					needsBlankLine = false; // Already handled by comment flush
+				} else if (needsBlankLine) {
+					output << '\n';
 				}
 
 				if (!currentType.empty()) {
@@ -602,6 +662,8 @@ namespace Qd {
 
 		// Flush any remaining use statements
 		flushUseStatements();
+		// Flush any remaining comments
+		flushCommentBuffer(false);
 
 		return output.str();
 	}
