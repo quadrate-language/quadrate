@@ -31,6 +31,9 @@ fn print_help( -- ) {
 
 fn process_token(tok:str -- ) {
 	-> tok
+	0 -> first_char
+	0 -> second_char
+	"" -> num_str
 	// Check for numbers first
 	tok str::len 0 > if {
 		tok 0 str::char_at -> first_char
@@ -39,12 +42,15 @@ fn process_token(tok:str -- ) {
 		first_char unicode::is_digit if {
 			tok castf
 		} else {
-			// Check if starts with minus and has more chars
-			first_char unicode::minus == if {
+			// Check if starts with underscore (dc negative prefix)
+			first_char unicode::underscore == if {
 				tok str::len 1 > if {
 					tok 1 str::char_at -> second_char
 					second_char unicode::is_digit if {
-						tok castf
+						// Parse as negative: skip underscore, negate result
+						"" -> num_str
+						tok 1 tok str::len 1 - str::substring! -> num_str
+						num_str castf 0 swap sub
 					} else {
 						tok process_operator
 					}
@@ -52,7 +58,21 @@ fn process_token(tok:str -- ) {
 					tok process_operator
 				}
 			} else {
-				tok process_operator
+				// Check if starts with minus and has more chars
+				first_char unicode::minus == if {
+					tok str::len 1 > if {
+						tok 1 str::char_at -> second_char
+						second_char unicode::is_digit if {
+							tok castf
+						} else {
+							tok process_operator
+						}
+					} else {
+						tok process_operator
+					}
+				} else {
+					tok process_operator
+				}
 			}
 		}
 	}
@@ -60,6 +80,12 @@ fn process_token(tok:str -- ) {
 
 fn process_operator(op:str -- ) {
 	-> op
+	0 -> n
+	0.0 -> a
+	0.0 -> b
+	0.0 -> q
+	0.0 -> r
+	"" -> octal
 	op 0 str::char_at switch {
 		unicode::plus {
 			depth 2 >= if {
@@ -96,7 +122,9 @@ fn process_operator(op:str -- ) {
 		unicode::percent {
 			depth 2 >= if {
 				dup 0 != if {
-					mod
+					// Remainder for floats: a - floor(a/b)*b
+					-> b -> a
+					a a b div math::floor b mul sub
 				} else {
 					"dc: remainder by zero" . nl
 				}
@@ -130,7 +158,31 @@ fn process_operator(op:str -- ) {
 			print
 		}
 		unicode::f {
-			depth . " items on stack" . nl
+			// Print full stack from top to bottom
+			depth -> n
+			0 n 1 for {
+				$ pick . nl
+			}
+		}
+		unicode::z {
+			// Push stack depth
+			depth
+		}
+		unicode::tilde {
+			// Divmod: push both quotient and remainder
+			depth 2 >= if {
+				dup 0 != if {
+					-> b -> a
+					a b div math::floor -> q
+					// Remainder = a - q*b
+					a q b mul sub -> r
+					q r
+				} else {
+					"dc: remainder by zero" . nl
+				}
+			} else {
+				"dc: stack empty" . nl
+			}
 		}
 		unicode::c {
 			clear
@@ -159,6 +211,13 @@ fn process_operator(op:str -- ) {
 
 fn process_line(input:str -- ) {
 	-> input
+	0 -> comment_pos
+	"" -> trimmed
+	// Strip comments (everything from # to end of line)
+	input "#" str::index_of -> comment_pos
+	comment_pos 0 >= if {
+		input 0 comment_pos str::substring! -> input
+	}
 	input str::trim -> trimmed
 	trimmed str::len 0 > if {
 		trimmed process_token
