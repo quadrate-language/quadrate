@@ -163,10 +163,11 @@ module.exports = grammar({
     ),
 
     // Case clause: value { body } (no 'case' keyword)
-    case_clause: $ => seq(
+    // Higher precedence to resolve conflict with standalone number expressions
+    case_clause: $ => prec(1, seq(
       field('value', choice($.number, $.namespaced_identifier, $.identifier)),
       field('body', $.block),
-    ),
+    )),
 
     // Default clause: _ { body } (no 'default' keyword)
     default_clause: $ => seq(

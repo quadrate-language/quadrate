@@ -1539,9 +1539,9 @@ namespace Qd {
 
 		// Generate underflow error
 		builder->SetInsertPoint(underflowBB);
-		auto fprintfFn = module->getOrInsertFunction(
-				"fprintf", llvm::FunctionType::get(builder->getInt32Ty(),
-								 {llvm::PointerType::getUnqual(*context), llvm::PointerType::getUnqual(*context)}, true));
+		auto fprintfFn = module->getOrInsertFunction("fprintf",
+				llvm::FunctionType::get(builder->getInt32Ty(),
+						{llvm::PointerType::getUnqual(*context), llvm::PointerType::getUnqual(*context)}, true));
 		auto stderrGlobal = module->getOrInsertGlobal("stderr", llvm::PointerType::getUnqual(*context));
 		auto stderrVal = builder->CreateLoad(llvm::PointerType::getUnqual(*context), stderrGlobal, "stderr");
 		auto errorMsg = builder->CreateGlobalString("Fatal error in swap: Stack underflow (requires 2 elements)\n");
@@ -2970,7 +2970,8 @@ namespace Qd {
 							this->qdStringDataFn = llvm::Function::Create(
 									qdStringDataFnTy, llvm::Function::ExternalLinkage, "qd_string_data", *module);
 						}
-						auto switchStrData = builder->CreateCall(this->qdStringDataFn, {switchStrPtr}, "switch_str_data");
+						auto switchStrData =
+								builder->CreateCall(this->qdStringDataFn, {switchStrPtr}, "switch_str_data");
 
 						// Create case string constant (strip quotes)
 						auto caseStr = builder->CreateGlobalString(value.substr(1, value.length() - 2));
@@ -2986,8 +2987,8 @@ namespace Qd {
 						auto switchVal = builder->CreateLoad(builder->getInt64Ty(), valuePtr, "switch_val");
 						int64_t parsedVal = 0;
 						if (!safeParseInt64(value, parsedVal)) {
-							std::cerr << "quadc: error: Invalid integer constant value '" << value
-									  << "' for " << fullName << std::endl;
+							std::cerr << "quadc: error: Invalid integer constant value '" << value << "' for "
+									  << fullName << std::endl;
 							compilationFailed = true;
 						}
 						auto caseVal = builder->getInt64(static_cast<uint64_t>(parsedVal));
@@ -3392,21 +3393,20 @@ namespace Qd {
 		// Generate underflow error block
 		builder->SetInsertPoint(underflowBB);
 		// Call fprintf(stderr, ...) and abort
-		auto fprintfFn = module->getOrInsertFunction(
-				"fprintf", llvm::FunctionType::get(builder->getInt32Ty(),
-								 {llvm::PointerType::getUnqual(*context), llvm::PointerType::getUnqual(*context)}, true));
+		auto fprintfFn = module->getOrInsertFunction("fprintf",
+				llvm::FunctionType::get(builder->getInt32Ty(),
+						{llvm::PointerType::getUnqual(*context), llvm::PointerType::getUnqual(*context)}, true));
 		auto stderrGlobal = module->getOrInsertGlobal("stderr", llvm::PointerType::getUnqual(*context));
 		auto stderrVal = builder->CreateLoad(llvm::PointerType::getUnqual(*context), stderrGlobal, "stderr");
-		auto errorMsg = builder->CreateGlobalString("Fatal error in if: Stack underflow (requires 1 value for condition)\n");
+		auto errorMsg =
+				builder->CreateGlobalString("Fatal error in if: Stack underflow (requires 1 value for condition)\n");
 		builder->CreateCall(fprintfFn, {stderrVal, errorMsg});
 		// Call qd_print_stack_trace(ctx)
 		auto printStackTraceFnTy =
 				llvm::FunctionType::get(builder->getVoidTy(), {llvm::PointerType::getUnqual(*context)}, false);
-		auto printStackTraceFn =
-				module->getOrInsertFunction("qd_print_stack_trace", printStackTraceFnTy);
+		auto printStackTraceFn = module->getOrInsertFunction("qd_print_stack_trace", printStackTraceFnTy);
 		builder->CreateCall(printStackTraceFn, {ctx});
-		auto abortFn =
-				module->getOrInsertFunction("abort", llvm::FunctionType::get(builder->getVoidTy(), false));
+		auto abortFn = module->getOrInsertFunction("abort", llvm::FunctionType::get(builder->getVoidTy(), false));
 		builder->CreateCall(abortFn, {});
 		builder->CreateUnreachable();
 
@@ -3997,11 +3997,11 @@ namespace Qd {
 
 			// Define the context struct type to access fields
 			auto contextStructTy = llvm::StructType::get(*context,
-					{llvm::PointerType::getUnqual(*context),  // st
-							builder->getInt64Ty(),			  // error_code
-							llvm::PointerType::getUnqual(*context),	 // error_msg
-							builder->getInt32Ty(),			  // argc
-							llvm::PointerType::getUnqual(*context),	 // argv
+					{llvm::PointerType::getUnqual(*context),		  // st
+							builder->getInt64Ty(),					  // error_code
+							llvm::PointerType::getUnqual(*context),	  // error_msg
+							builder->getInt32Ty(),					  // argc
+							llvm::PointerType::getUnqual(*context),	  // argv
 							llvm::PointerType::getUnqual(*context)}); // program_name
 
 			// Store argc (field index 3)

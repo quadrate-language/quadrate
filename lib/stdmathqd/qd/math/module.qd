@@ -120,10 +120,16 @@ pub fn within( x:any min_val:any max_val:any -- result:i64 ) {
 	-> min_v
 	-> x_v
 
-	// Check if x >= min_val AND x <= max_val
-	x_v min_v gte
-	x_v max_v lte
-	and
+	// Check if x >= min_val AND x <= max_val using nested conditionals
+	x_v min_v gte if {
+		x_v max_v lte if {
+			1
+		} else {
+			0
+		}
+	} else {
+		0
+	}
 }
 
 pub fn lerp( a:f64 b:f64 t:f64 -- result:f64 ) {

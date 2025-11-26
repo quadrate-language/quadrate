@@ -774,8 +774,7 @@ namespace Qd {
 			// Standard library modules are at $QUADRATE_LIBDIR/std<module>qd/qd/<module>/module.qd
 			const char* quadrateLibDir = std::getenv("QUADRATE_LIBDIR");
 			if (quadrateLibDir) {
-				modulePath =
-						std::string(quadrateLibDir) + "/std" + moduleName + "qd/qd/" + moduleName + "/module.qd";
+				modulePath = std::string(quadrateLibDir) + "/std" + moduleName + "qd/qd/" + moduleName + "/module.qd";
 				file.open(modulePath);
 				if (file.good()) {
 					// Store the module directory

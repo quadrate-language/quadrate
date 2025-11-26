@@ -175,7 +175,7 @@ fn parse_int(s:str -- value:i64) {
 	loop {
 		i len < if {
 			s i str::char_at -> ch
-			ch 48 >= ch 57 <= and if {
+			ch 48 >= ch 57 <= * if {
 				value 10 * ch 48 - + -> value
 				i 1 + -> i
 			} else {
@@ -213,7 +213,7 @@ fn parse_float(s:str -- value:f64) {
 				1 -> seen_dot
 				i 1 + -> i
 			} else {
-				ch 48 >= ch 57 <= and if {
+				ch 48 >= ch 57 <= * if {
 					seen_dot if {
 						decimal_place 10.0 * -> decimal_place
 						value ch 48 - castf decimal_place / + -> value

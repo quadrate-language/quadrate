@@ -271,8 +271,7 @@ namespace Qd {
 
 		// Don't process comments or lines containing block comment markers
 		// (they may be inside multi-line comments)
-		if (isComment(trimmed) || trimmed.find("*/") != std::string::npos ||
-				trimmed.find("/*") != std::string::npos) {
+		if (isComment(trimmed) || trimmed.find("*/") != std::string::npos || trimmed.find("/*") != std::string::npos) {
 			return line;
 		}
 
@@ -416,8 +415,7 @@ namespace Qd {
 			if (inBlockComment) {
 				// We're inside a block comment, don't process
 				output << line << '\n';
-				if (closePos != std::string::npos &&
-						(openPos == std::string::npos || closePos > openPos)) {
+				if (closePos != std::string::npos && (openPos == std::string::npos || closePos > openPos)) {
 					inBlockComment = false;
 				}
 				continue;
@@ -489,9 +487,9 @@ namespace Qd {
 		std::string prevTopLevelType; // "use", "const", "fn_start", "comment", ""
 		int braceDepth = 0;
 		bool inFunction = false;
-		bool inBlockComment = false; // Track multi-line block comment state
-		std::vector<std::string> useStatements;    // Buffer for collecting consecutive use statements
-		std::vector<std::string> commentBuffer;    // Buffer for comments that may precede a function
+		bool inBlockComment = false;			// Track multi-line block comment state
+		std::vector<std::string> useStatements; // Buffer for collecting consecutive use statements
+		std::vector<std::string> commentBuffer; // Buffer for comments that may precede a function
 
 		auto flushUseStatements = [&]() {
 			if (!useStatements.empty()) {
