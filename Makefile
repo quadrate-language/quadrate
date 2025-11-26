@@ -233,7 +233,7 @@ valgrind: debug
 examples: debug
 	@mkdir -p dist/examples
 	meson setup $(BUILD_DIR_DEBUG) --buildtype=debug --reconfigure -Dbuild_examples=true $(MESON_FLAGS)
-	meson compile -C $(BUILD_DIR_DEBUG) examples/embed/embed examples/embed/embed_copy examples/embed/multi_module_test examples/embed/multi_module_test_copy examples/embed/native_functions_test examples/embed/native_functions_test_copy examples/embed/incremental_test examples/embed/incremental_test_copy examples/hello-world/hello-world examples/hello-world-c/hello-world-c examples/bmi/bmi examples/fibonacci/fibonacci examples/threading/threading examples/web-server/web-server
+	meson compile -C $(BUILD_DIR_DEBUG) examples/embed/embed examples/embed/embed_copy examples/embed/multi_module_test examples/embed/multi_module_test_copy examples/embed/native_functions_test examples/embed/native_functions_test_copy examples/embed/incremental_test examples/embed/incremental_test_copy examples/hello-world/hello-world examples/hello-world-c/hello-world-c examples/bmi/bmi examples/dc/dc examples/fibonacci/fibonacci examples/threading/threading examples/web-server/web-server
 
 format:
 	find cmd lib examples -type f \( -name '*.cc' -o -name '*.h' \) -not -name 'utf8.h' -not -path '*/utf8/*' -exec clang-format -i {} +

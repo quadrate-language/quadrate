@@ -3915,6 +3915,28 @@ namespace Qd {
 			llvm::AllocaInst* ctxAlloca = builder->CreateAlloca(ctx->getType(), nullptr, "ctx.addr");
 			builder->CreateStore(ctx, ctxAlloca);
 
+			// Store argc and argv in the context
+			// Context layout: {qd_stack*, int64_t error_code, char* error_msg, int argc, char** argv, ...}
+			auto argcArg = fn->getArg(0); // i32 argc
+			auto argvArg = fn->getArg(1); // i8** argv
+
+			// Define the context struct type to access fields
+			auto contextStructTy = llvm::StructType::get(*context,
+					{llvm::PointerType::getUnqual(*context),  // st
+							builder->getInt64Ty(),			  // error_code
+							llvm::PointerType::getUnqual(*context),	 // error_msg
+							builder->getInt32Ty(),			  // argc
+							llvm::PointerType::getUnqual(*context),	 // argv
+							llvm::PointerType::getUnqual(*context)}); // program_name
+
+			// Store argc (field index 3)
+			auto argcPtr = builder->CreateStructGEP(contextStructTy, ctx, 3, "argc.ptr");
+			builder->CreateStore(argcArg, argcPtr);
+
+			// Store argv (field index 4)
+			auto argvPtr = builder->CreateStructGEP(contextStructTy, ctx, 4, "argv.ptr");
+			builder->CreateStore(argvArg, argvPtr);
+
 			// Add debug info for ctx local variable in main
 			if (debugInfoEnabled && debugBuilder && !debugScopeStack.empty() && contextDebugType) {
 				// contextDebugType is already qd_context* (pointer), so use it directly

@@ -1,0 +1,54 @@
+// dc - desk calculator clone
+// A reverse-polish notation calculator
+//
+// Usage: dc [options]
+//
+// dc is a reverse-polish desk calculator which supports unlimited
+// precision arithmetic. It uses a stack-based approach where numbers
+// are pushed onto a stack and operations pop operands and push results.
+
+use flag
+use os
+
+fn print_version( -- ) {
+	"dc (Quadrate) 0.1.0" . nl
+}
+
+fn print_help( -- ) {
+	"Usage: dc [OPTION] [file ...]" . nl
+	nl
+	"  -e, --expression=EXPR  evaluate expression" . nl
+	"  -f, --file=FILE        evaluate contents of file" . nl
+	"  -h, --help             display this help and exit" . nl
+	"  -V, --version          output version information and exit" . nl
+	nl
+	"Report bugs to: ~klahr/quadrate@lists.sr.ht" . nl
+}
+
+fn main( -- ) {
+	// Check for --help
+	read "--help" flag::bool if {
+		print_help
+		0 os::exit
+	}
+	// Check for -h
+	read "-h" flag::bool if {
+		print_help
+		0 os::exit
+	}
+
+	// Check for --version
+	read "--version" flag::bool if {
+		print_version
+		0 os::exit
+	}
+	// Check for -V
+	read "-V" flag::bool if {
+		print_version
+		0 os::exit
+	}
+
+	// TODO: implement calculator
+	"dc: not yet implemented" . nl
+	1 os::exit
+}

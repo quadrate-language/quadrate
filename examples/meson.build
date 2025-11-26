@@ -1,4 +1,5 @@
 subdir('bmi')
+subdir('dc')
 subdir('embed')
 subdir('fibonacci')
 subdir('hello-world')
