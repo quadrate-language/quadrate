@@ -154,4 +154,17 @@ qd_exec_result usr_io_seekg(qd_context* ctx);
  */
 qd_exec_result usr_io_eof(qd_context* ctx);
 
+/**
+ * @brief Read a line from stdin
+ *
+ * Stack effect: ( -- line:s )!
+ *
+ * Reads a line from stdin, stripping the trailing newline.
+ * Returns empty string on EOF or error.
+ *
+ * @param ctx Execution context
+ * @return Execution result
+ */
+qd_exec_result usr_io_readline(qd_context* ctx);
+
 #endif // STDIOQD_IO_H

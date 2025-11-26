@@ -473,6 +473,32 @@ qd_exec_result usr_io_read(qd_context* ctx) {
     return (qd_exec_result){0};
 }
 
+// Read a line from stdin
+qd_exec_result usr_io_readline(qd_context* ctx) {
+    char* line = NULL;
+    size_t len = 0;
+    ssize_t nread = getline(&line, &len, stdin);
+
+    if (nread == -1) {
+        free(line);
+        qd_push_s(ctx, "");
+        qd_push_i(ctx, 0); // Error/EOF
+        return (qd_exec_result){1};
+    }
+
+    // Remove trailing newline if present
+    if (nread > 0 && line[nread - 1] == '\n') {
+        line[nread - 1] = '\0';
+        nread--;
+    }
+
+    qd_push_s(ctx, line);
+    qd_push_i(ctx, 1); // Success
+    free(line);
+
+    return (qd_exec_result){0};
+}
+
 // Unified buffer-based write (new primary API)
 qd_exec_result usr_io_write(qd_context* ctx) {
     size_t stack_size = qd_stack_size(ctx->st);

@@ -37,6 +37,9 @@ import "libstdioqd_static.a" as "io" {
 	pub fn seek(handle:ptr offset:i64 whence:i64 -- position:i64)!
 	pub fn tell(handle:ptr -- position:i64)!
 	pub fn eof(handle:ptr -- handle:ptr is_eof:i64)
+
+	// Read a line from stdin (strips trailing newline)
+	pub fn readline( -- line:str)!
 }
 
 // Text file helpers (implemented in Quadrate using mem::to_string)
