@@ -7,7 +7,10 @@
 // precision arithmetic. It uses a stack-based approach where numbers
 // are pushed onto a stack and operations pop operands and push results.
 use flag
+use io
+use math
 use os
+use str
 
 fn print_version( -- ) {
 	"dc (Quadrate) 0.1.0" . nl
@@ -21,17 +24,154 @@ fn print_help( -- ) {
 	"  -h, --help             display this help and exit" . nl
 	"  -V, --version          output version information and exit" . nl
 	nl
+	"Commands:" . nl
+	"  p     print top of stack" . nl
+	"  n     print top of stack without newline, pop" . nl
+	"  f     print entire stack" . nl
+	"  c     clear stack" . nl
+	"  d     duplicate top of stack" . nl
+	"  r     swap top two elements" . nl
+	"  +     add" . nl
+	"  -     subtract" . nl
+	"  *     multiply" . nl
+	"  /     divide" . nl
+	"  %     modulo" . nl
+	"  ^     power" . nl
+	"  v     square root" . nl
+	"  q     quit" . nl
+	nl
 	"Report bugs to: ~klahr/quadrate@lists.sr.ht" . nl
 }
 
+// Check if string equals another (using compare)
+fn streq(a:str b:str -- result:i64) {
+	-> b
+	-> a
+	a b str::compare 0 ==
+}
+
+// Check if character code is a digit (0-9)
+fn is_digit(c:i64 -- result:i64) {
+	-> c
+	c 48 >= c 57 <= *
+}
+
+fn process_token(tok:str -- ) {
+	-> tok
+	// Check for numbers first
+	tok str::len 0 > if {
+		tok 0 str::char_at -> first_char
+
+		// Check if it starts with digit
+		first_char is_digit if {
+			tok casti
+		} else {
+			// Check if starts with minus and has more chars
+			first_char 45 == if {
+				tok str::len 1 > if {
+					tok 1 str::char_at -> second_char
+					second_char is_digit if {
+						tok casti
+					} else {
+						tok process_operator
+					}
+				} else {
+					tok process_operator
+				}
+			} else {
+				tok process_operator
+			}
+		}
+	}
+}
+
+fn process_operator(op:str -- ) {
+	-> op
+	op "+" streq if {
+		add
+	} else {
+		op "-" streq if {
+			sub
+		} else {
+			op "*" streq if {
+				mul
+			} else {
+				op "/" streq if {
+					div
+				} else {
+					op "%" streq if {
+						mod
+					} else {
+						op "^" streq if {
+							math::pow casti
+						} else {
+							op "v" streq if {
+								math::sqrt casti
+							} else {
+								op "p" streq if {
+									dup . nl
+								} else {
+									op "n" streq if {
+										print
+									} else {
+										op "f" streq if {
+											depth . " items on stack" . nl
+										} else {
+											op "c" streq if {
+												clear
+											} else {
+												op "d" streq if {
+													dup
+												} else {
+													op "r" streq if {
+														swap
+													} else {
+														op "q" streq if {
+															0 os::exit
+														} else {
+															"dc: unknown command: " . op . nl
+														}
+													}
+												}
+											}
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+}
+
+fn process_line(input:str -- ) {
+	-> input
+	input str::trim -> trimmed
+	trimmed str::len 0 > if {
+		trimmed process_token
+	}
+}
+
+fn repl( -- ) {
+	loop {
+		io::readline! if {
+			-> input
+			input process_line
+		} else {
+			// EOF or error - exit
+			0 os::exit
+		}
+	}
+}
+
 fn main( -- ) {
-	// Parse command line arguments once
 	read flag::parse -> f
 	defer {
 		f flag::destroy
 	}
 
-	// Check for help flags
 	f "--help" flag::bool if {
 		print_help
 		0 os::exit
@@ -41,7 +181,6 @@ fn main( -- ) {
 		0 os::exit
 	}
 
-	// Check for version flags
 	f "--version" flag::bool if {
 		print_version
 		0 os::exit
@@ -51,7 +190,5 @@ fn main( -- ) {
 		0 os::exit
 	}
 
-	// TODO: implement calculator
-	"dc: not yet implemented" . nl
-	1 os::exit
+	repl
 }
