@@ -4008,8 +4008,12 @@ namespace Qd {
 		} else {
 			// User-defined function: qd_exec_result usr_<prefix>_<name>(qd_context* ctx)
 			std::string fnName = "usr_" + namePrefix + "_" + funcNode->name();
-			auto fnTy = llvm::FunctionType::get(execResultTy, {contextPtrTy}, false);
-			fn = llvm::Function::Create(fnTy, llvm::Function::ExternalLinkage, fnName, *module);
+			// Check if function was already declared in pre-pass (for forward references)
+			fn = module->getFunction(fnName);
+			if (!fn) {
+				auto fnTy = llvm::FunctionType::get(execResultTy, {contextPtrTy}, false);
+				fn = llvm::Function::Create(fnTy, llvm::Function::ExternalLinkage, fnName, *module);
+			}
 
 			// Add debug info for user function
 			if (debugInfoEnabled && debugBuilder) {
@@ -4388,6 +4392,23 @@ namespace Qd {
 			}
 		}
 
+		// Pre-pass: declare all user-defined functions from main file (for forward references)
+		// This ensures functions can call each other regardless of definition order
+		for (size_t i = 0; i < root->childCount(); i++) {
+			auto child = root->child(i);
+			if (auto funcNode = dynamic_cast<AstNodeFunctionDeclaration*>(child)) {
+				if (funcNode->name() != "main") {
+					// Create function declaration
+					std::string fnName = "usr_main_" + funcNode->name();
+					auto fnTy = llvm::FunctionType::get(execResultTy, {contextPtrTy}, false);
+					auto fn = llvm::Function::Create(fnTy, llvm::Function::ExternalLinkage, fnName, *module);
+					// Register the function for forward reference lookup
+					userFunctions[funcNode->name()] = fn;
+					fallibleFunctions[funcNode->name()] = funcNode->throws();
+				}
+			}
+		}
+
 		// First pass: generate functions from all loaded modules (in dependency order)
 		for (const auto& modulePair : moduleASTs) {
 			const std::string& moduleName = modulePair.first;
@@ -4419,7 +4440,7 @@ namespace Qd {
 			}
 		}
 
-		// Second pass: generate main function
+		// Third pass: generate main function
 		for (size_t i = 0; i < root->childCount(); i++) {
 			auto child = root->child(i);
 			if (auto funcNode = dynamic_cast<AstNodeFunctionDeclaration*>(child)) {
