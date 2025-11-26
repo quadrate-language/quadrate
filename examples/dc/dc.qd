@@ -14,7 +14,7 @@ use str
 use unicode
 
 fn print_version( -- ) {
-	"dc (Quadrate) 0.1.0" . nl
+	"dc 0.1.0 (Quadrate port)" . nl
 }
 
 fn print_help( -- ) {
@@ -25,30 +25,7 @@ fn print_help( -- ) {
 	"  -h, --help             display this help and exit" . nl
 	"  -V, --version          output version information and exit" . nl
 	nl
-	"Commands:" . nl
-	"  p     print top of stack" . nl
-	"  n     print top of stack without newline, pop" . nl
-	"  f     print entire stack" . nl
-	"  c     clear stack" . nl
-	"  d     duplicate top of stack" . nl
-	"  r     swap top two elements" . nl
-	"  +     add" . nl
-	"  -     subtract" . nl
-	"  *     multiply" . nl
-	"  /     divide" . nl
-	"  %     modulo" . nl
-	"  ^     power" . nl
-	"  v     square root" . nl
-	"  q     quit" . nl
-	nl
-	"Report bugs to: ~klahr/quadrate@lists.sr.ht" . nl
-}
-
-// Check if string equals another (using compare)
-fn streq(a:str b:str -- result:i64) {
-	-> b
-	-> a
-	a b str::compare 0 ==
+	"Email bug reports to: ~klahr/quadrate@lists.sr.ht" . nl
 }
 
 // Check if character code is a digit (0-9)
@@ -91,19 +68,47 @@ fn process_operator(op:str -- ) {
 	// ASCII: + - * / % ^ v p n f c d r q
 	op 0 str::char_at switch {
 		unicode::plus {
-			add
+			depth 2 >= if {
+				add
+			} else {
+				"dc: stack empty" . nl
+			}
 		}
 		unicode::minus {
-			sub
+			depth 2 >= if {
+				sub
+			} else {
+				"dc: stack empty" . nl
+			}
 		}
 		unicode::asterisk {
-			mul
+			depth 2 >= if {
+				mul
+			} else {
+				"dc: stack empty" . nl
+			}
 		}
 		unicode::slash {
-			div
+			depth 2 >= if {
+				dup 0 != if {
+					div
+				} else {
+					"dc: remainder by zero" . nl
+				}
+			} else {
+				"dc: stack empty" . nl
+			}
 		}
 		unicode::percent {
-			mod
+			depth 2 >= if {
+				dup 0 != if {
+					mod
+				} else {
+					"dc: remainder by zero" . nl
+				}
+			} else {
+				"dc: stack empty" . nl
+			}
 		}
 		unicode::caret {
 			math::pow casti
