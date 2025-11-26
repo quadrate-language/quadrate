@@ -9,24 +9,24 @@
 use flag
 use io
 use math
+use mem
 use os
 use str
 use strconv
 use unicode
 
 fn print_version( -- ) {
-	"dc 0.1.0 (Quadrate port)" . nl
+	"dc 0.1.0 (Quadrate)" . nl
 }
 
 fn print_help( -- ) {
 	"Usage: dc [OPTION] [file ...]" . nl
+	"  -e, --expression=EXPR    evaluate expression" . nl
+	"  -f, --file=FILE          evaluate contents of file" . nl
+	"  -h, --help               display this help and exit" . nl
+	"  -V, --version            output version information and exit" . nl
 	nl
-	"  -e, --expression=EXPR  evaluate expression" . nl
-	"  -f, --file=FILE        evaluate contents of file" . nl
-	"  -h, --help             display this help and exit" . nl
-	"  -V, --version          output version information and exit" . nl
-	nl
-	"Email bug reports to: ~klahr/quadrate@lists.sr.ht" . nl
+	"Email bug reports to:  ~klahr/quadrate@lists.sr.ht" . nl
 }
 
 fn process_token(tok:str -- ) {
@@ -113,7 +113,7 @@ fn process_operator(op:str -- ) {
 				dup 0 != if {
 					div
 				} else {
-					"dc: remainder by zero" . nl
+					"dc: divide by zero" . nl
 				}
 			} else {
 				"dc: stack empty" . nl
@@ -178,7 +178,7 @@ fn process_operator(op:str -- ) {
 					a q b mul sub -> r
 					q r
 				} else {
-					"dc: remainder by zero" . nl
+					"dc: divide by zero" . nl
 				}
 			} else {
 				"dc: stack empty" . nl
@@ -213,22 +213,96 @@ fn process_line(input:str -- ) {
 	-> input
 	0 -> comment_pos
 	"" -> trimmed
+	"" -> token
+	0 -> space_pos
 	// Strip comments (everything from # to end of line)
 	input "#" str::index_of -> comment_pos
 	comment_pos 0 >= if {
 		input 0 comment_pos str::substring! -> input
 	}
 	input str::trim -> trimmed
-	trimmed str::len 0 > if {
-		trimmed process_token
+
+	// Process space-separated tokens
+	loop {
+		trimmed str::len 0 <= if {
+			break
+		}
+		trimmed " " str::index_of -> space_pos
+		space_pos 0 < if {
+			// No more spaces - process remaining as last token
+			trimmed process_token
+			break
+		} else {
+			// Extract token before space
+			trimmed 0 space_pos str::substring! -> token
+			token str::len 0 > if {
+				token process_token
+			}
+			// Skip past space and continue
+			trimmed space_pos 1 + trimmed str::len space_pos - 1 - str::substring! -> trimmed
+		}
+	}
+}
+
+fn run_file(path:str -- ) {
+	-> path
+	0 -> bytes_read
+	"" -> content
+	"" -> line
+	0 -> newline_pos
+
+	// Allocate 64KB buffer for file content
+	65536 mem::alloc -> buf
+
+	path io::Read io::open! if {
+		-> file
+		file buf 65536 io::read! if {
+			-> bytes_read
+			file io::close
+			buf bytes_read mem::to_string -> content
+		} else {
+			drop
+			file io::close
+			"dc: could not read file: " . path . nl
+			buf mem::free
+			1 os::exit
+		}
+	} else {
+		drop
+		"dc: could not open file: " . path . nl
+		buf mem::free
+		1 os::exit
+	}
+
+	buf mem::free
+
+	// Process content line by line
+	loop {
+		content str::len 0 <= if {
+			break
+		}
+		content "\n" str::index_of -> newline_pos
+		newline_pos 0 < if {
+			// No more newlines - process remaining as last line
+			content process_line
+			break
+		} else {
+			// Extract line before newline
+			content 0 newline_pos str::substring! -> line
+			line process_line
+			// Skip past newline and continue
+			content newline_pos 1 + content str::len newline_pos - 1 - str::substring! -> content
+		}
 	}
 }
 
 fn repl( -- ) {
+	"" -> input
 	loop {
 		io::readline! if {
 			-> input
 			input process_line
+			input drop
 		} else {
 			// EOF or error - exit
 			0 os::exit
@@ -257,6 +331,32 @@ fn main( -- ) {
 	}
 	f "-V" flag::bool if {
 		print_version
+		0 os::exit
+	}
+
+	// Check for -e / --expression
+	"" -> expr
+	f "-e" flag::bool if {
+		f "-e" flag::string! -> expr
+		expr process_line
+		0 os::exit
+	}
+	f "--expression" flag::bool if {
+		f "--expression" flag::string! -> expr
+		expr process_line
+		0 os::exit
+	}
+
+	// Check for -f / --file
+	"" -> filepath
+	f "-f" flag::bool if {
+		f "-f" flag::string! -> filepath
+		filepath run_file
+		0 os::exit
+	}
+	f "--file" flag::bool if {
+		f "--file" flag::string! -> filepath
+		filepath run_file
 		0 os::exit
 	}
 
