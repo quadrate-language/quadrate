@@ -84,6 +84,7 @@ debug:
 	@cp -r lib/stdosqd/qd/os dist/share/quadrate/
 	@cp -r lib/stdstrqd/qd/str dist/share/quadrate/
 	@cp -r lib/stdtimeqd/qd/time dist/share/quadrate/
+	@cp -r lib/stdunicodeqd/qd/unicode dist/share/quadrate/
 	@echo "Verifying static archives..."
 	@file dist/lib/libqdrt_static.a dist/lib/libstdosqd_static.a | head -2
 	@echo "Debug build complete - static libraries ready"
@@ -157,6 +158,7 @@ release:
 	@cp -r lib/stdosqd/qd/os dist/share/quadrate/
 	@cp -r lib/stdstrqd/qd/str dist/share/quadrate/
 	@cp -r lib/stdtimeqd/qd/time dist/share/quadrate/
+	@cp -r lib/stdunicodeqd/qd/unicode dist/share/quadrate/
 	@echo "Verifying static archives (release)..."
 	@file dist/lib/libqdrt_static.a dist/lib/libstdosqd_static.a | head -2
 	@echo "Release build complete - static libraries ready"
@@ -280,15 +282,19 @@ install: release
 	cp -r dist/include/stdtimeqd $(DESTDIR)$(PREFIX)/include/
 	@echo "Installing Quadrate standard library modules to $(DESTDIR)$(PREFIX)/share/quadrate/"
 	install -d $(DESTDIR)$(PREFIX)/share/quadrate
+	@cp -r lib/stdbase64qd/qd/base64 $(DESTDIR)$(PREFIX)/share/quadrate/
 	@cp -r lib/stdbitsqd/qd/bits $(DESTDIR)$(PREFIX)/share/quadrate/
 	@cp -r lib/stdflagqd/qd/flag $(DESTDIR)$(PREFIX)/share/quadrate/
 	@cp -r lib/stdfmtqd/qd/fmt $(DESTDIR)$(PREFIX)/share/quadrate/
+	@cp -r lib/stdioqd/qd/io $(DESTDIR)$(PREFIX)/share/quadrate/
 	@cp -r lib/stdjsonqd/qd/json $(DESTDIR)$(PREFIX)/share/quadrate/
 	@cp -r lib/stdmathqd/qd/math $(DESTDIR)$(PREFIX)/share/quadrate/
+	@cp -r lib/stdmemqd/qd/mem $(DESTDIR)$(PREFIX)/share/quadrate/
 	@cp -r lib/stdnetqd/qd/net $(DESTDIR)$(PREFIX)/share/quadrate/
 	@cp -r lib/stdosqd/qd/os $(DESTDIR)$(PREFIX)/share/quadrate/
 	@cp -r lib/stdstrqd/qd/str $(DESTDIR)$(PREFIX)/share/quadrate/
 	@cp -r lib/stdtimeqd/qd/time $(DESTDIR)$(PREFIX)/share/quadrate/
+	@cp -r lib/stdunicodeqd/qd/unicode $(DESTDIR)$(PREFIX)/share/quadrate/
 
 uninstall:
 	rm -f $(DESTDIR)$(PREFIX)/bin/quadc
