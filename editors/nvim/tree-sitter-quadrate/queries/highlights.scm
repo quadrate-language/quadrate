@@ -24,8 +24,9 @@
 (break_statement) @keyword.control
 (continue_statement) @keyword.control
 
-; Types
-(type) @type.builtin
+; Types - match the identifier inside type nodes
+(type
+  (identifier) @type)
 
 ; Function definitions
 (function_definition

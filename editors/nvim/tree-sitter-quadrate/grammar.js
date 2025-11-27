@@ -99,7 +99,9 @@ module.exports = grammar({
     ),
 
     // Function declaration within import: fn name(inputs -- outputs)
+    // or: pub fn name(inputs -- outputs)
     import_function: $ => seq(
+      optional('pub'),
       'fn',
       field('name', $.identifier),
       field('signature', optional($.stack_signature)),

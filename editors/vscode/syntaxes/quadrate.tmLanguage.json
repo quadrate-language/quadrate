@@ -5,6 +5,7 @@
   "patterns": [
     { "include": "#comments" },
     { "include": "#keywords" },
+    { "include": "#operators" },
     { "include": "#strings" },
     { "include": "#numbers" },
     { "include": "#functions" },
@@ -29,11 +30,43 @@
       "patterns": [
         {
           "name": "keyword.control.quadrate",
-          "match": "\\b(if|else|for|while|break|continue|defer|switch|case|default|return)\\b"
+          "match": "\\b(if|else|loop|for|break|continue|defer)\\b"
         },
         {
           "name": "keyword.other.quadrate",
-          "match": "\\b(fn|use|const|let|struct|enum|pub|import|as)\\b"
+          "match": "\\b(fn|use|const|pub|struct|import|as)\\b"
+        }
+      ]
+    },
+    "operators": {
+      "patterns": [
+        {
+          "name": "keyword.operator.arrow.quadrate",
+          "match": "->"
+        },
+        {
+          "name": "punctuation.separator.namespace.quadrate",
+          "match": "::"
+        },
+        {
+          "name": "keyword.operator.signature.quadrate",
+          "match": "--"
+        },
+        {
+          "name": "keyword.operator.error.quadrate",
+          "match": "!"
+        },
+        {
+          "name": "keyword.operator.colon.quadrate",
+          "match": ":"
+        },
+        {
+          "name": "keyword.operator.deref.quadrate",
+          "match": "\\$"
+        },
+        {
+          "name": "keyword.operator.ref.quadrate",
+          "match": "&"
         }
       ]
     },
@@ -69,8 +102,44 @@
       ]
     },
     "builtins": {
-      "name": "support.function.builtin.quadrate",
-      "match": "\\b(add|sub|mul|div|mod|neg|abs|ceil|floor|sqrt|pow|sin|cos|tan|log|exp|min|max|eq|ne|lt|le|gt|ge|and|or|not|xor|dup|drop|swap|over|rot|nip|tuck|print|println|error|free)\\b"
+      "patterns": [
+        {
+          "name": "support.function.stack.quadrate",
+          "match": "\\b(dup|dup2|dupd|swap|swap2|swapd|drop|drop2|over|over2|overd|rot|nip|nipd|tuck|pick|roll|depth|clear|len|nth|free)\\b"
+        },
+        {
+          "name": "support.function.arithmetic.quadrate",
+          "match": "\\b(add|sub|mul|div|mod|neg|inc|dec)\\b"
+        },
+        {
+          "name": "support.function.math.quadrate",
+          "match": "\\b(abs|sqrt|sq|cb|cbrt|pow|inv|fac|sin|cos|tan|asin|acos|atan|ln|log10|ceil|floor|round|min|max)\\b"
+        },
+        {
+          "name": "support.function.comparison.quadrate",
+          "match": "\\b(eq|neq|lt|gt|lte|gte|within)\\b"
+        },
+        {
+          "name": "support.function.array.quadrate",
+          "match": "\\b(append|makef|makei|makep|makes|set)\\b"
+        },
+        {
+          "name": "support.function.cast.quadrate",
+          "match": "\\b(castf|casti|casts)\\b"
+        },
+        {
+          "name": "support.function.io.quadrate",
+          "match": "\\b(print|prints|printv|printsv|nl|read|call)\\b"
+        },
+        {
+          "name": "support.function.thread.quadrate",
+          "match": "\\b(spawn|wait|detach)\\b"
+        },
+        {
+          "name": "support.function.error.quadrate",
+          "match": "\\b(error)\\b"
+        }
+      ]
     },
     "types": {
       "name": "storage.type.quadrate",
