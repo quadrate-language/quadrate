@@ -2,6 +2,8 @@
 #include <qc/colors.h>
 #include <qdrt/stack.h>
 
+#include <csetjmp>
+#include <csignal>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -9,6 +11,19 @@
 #include <readline/readline.h>
 #include <string>
 #include <vector>
+
+// Signal handling for crash recovery
+static sigjmp_buf g_jmpBuf;
+static volatile sig_atomic_t g_inExecution = 0;
+
+static void signalHandler(int sig) {
+	if (g_inExecution) {
+		siglongjmp(g_jmpBuf, sig);
+	}
+	// If not in execution, let the default handler run
+	signal(sig, SIG_DFL);
+	raise(sig);
+}
 
 #define QUADRATE_VERSION "0.1.0"
 
@@ -369,12 +384,45 @@ private:
 			qd_stack_pop(ctx->st, &elem);
 		}
 
-		// Execute the main function
+		// Execute the main function with crash protection
 		std::string funcCall = moduleName + "::repl_main";
-		qd_execute(ctx, funcCall.c_str());
 
-		// Add to history on success
-		history.push_back(processedCode);
+		// Set up signal handlers for crash recovery
+		struct sigaction sa, oldAbrt, oldFpe, oldSegv;
+		sa.sa_handler = signalHandler;
+		sigemptyset(&sa.sa_mask);
+		sa.sa_flags = 0;
+
+		sigaction(SIGABRT, &sa, &oldAbrt);
+		sigaction(SIGFPE, &sa, &oldFpe);
+		sigaction(SIGSEGV, &sa, &oldSegv);
+
+		int sig = sigsetjmp(g_jmpBuf, 1);
+		if (sig == 0) {
+			// Normal execution path
+			g_inExecution = 1;
+			qd_execute(ctx, funcCall.c_str());
+			g_inExecution = 0;
+
+			// Add to history on success
+			history.push_back(processedCode);
+		} else {
+			// Returned from signal handler - execution crashed
+			g_inExecution = 0;
+			printf("%sExecution error (signal %d)%s\n", COLOR_RED, sig, COLOR_RESET);
+
+			// Clear the stack to recover to a clean state
+			while (!qd_stack_is_empty(ctx->st)) {
+				qd_stack_element_t elem;
+				qd_stack_pop(ctx->st, &elem);
+			}
+			// Don't add to history on crash
+		}
+
+		// Restore original signal handlers
+		sigaction(SIGABRT, &oldAbrt, nullptr);
+		sigaction(SIGFPE, &oldFpe, nullptr);
+		sigaction(SIGSEGV, &oldSegv, nullptr);
 	}
 };
 
