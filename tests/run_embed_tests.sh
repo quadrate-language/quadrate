@@ -75,18 +75,18 @@ run_test "embed" \
     "Hello, World!"
 
 # Test 2: Multi-module test
-run_test "multi_module_test" \
-    "$PROJECT_ROOT/dist/examples/multi_module_test" \
+run_test "multi-module-test" \
+    "$PROJECT_ROOT/dist/examples/multi-module-test" \
     "Math module:"
 
 # Test 3: Native functions test
-run_test "native_functions_test" \
-    "$PROJECT_ROOT/dist/examples/native_functions_test" \
+run_test "native-functions-test" \
+    "$PROJECT_ROOT/dist/examples/native-functions-test" \
     "Current timestamp:"
 
 # Test 4: Incremental test
-run_test "incremental_test" \
-    "$PROJECT_ROOT/dist/examples/incremental_test" \
+run_test "incremental-test" \
+    "$PROJECT_ROOT/dist/examples/incremental-test" \
     "Building all at once"
 
 echo ""
