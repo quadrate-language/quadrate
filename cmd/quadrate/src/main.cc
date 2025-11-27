@@ -6,10 +6,11 @@
 #include <csignal>
 #include <cstdio>
 #include <cstdlib>
-#include <cstring>
+#include <iostream>
 #include <readline/history.h>
 #include <readline/readline.h>
 #include <string>
+#include <unistd.h>
 #include <vector>
 
 // Signal handling for crash recovery
@@ -102,6 +103,18 @@ public:
 		printf("Goodbye!\n");
 	}
 
+	// Run in piped/non-interactive mode - read from stdin, no prompts
+	void runPiped() {
+		std::string line;
+		while (std::getline(std::cin, line)) {
+			line = trim(line);
+			if (line.empty()) {
+				continue;
+			}
+			processLine(line);
+		}
+	}
+
 private:
 	qd_context* ctx;
 	qd_module* mod;
@@ -110,7 +123,7 @@ private:
 	std::vector<std::string> history; // Accumulated expressions
 	int moduleCounter;
 	size_t lastSuccessfulExprCount; // Number of expressions successfully compiled
-	size_t expectedStackDepth;      // Expected stack depth based on successful operations
+	size_t expectedStackDepth;		// Expected stack depth based on successful operations
 
 	std::string trim(const std::string& str) {
 		size_t first = str.find_first_not_of(" \t\n\r");
@@ -318,7 +331,7 @@ private:
 			bool isWordEnd = (pos + 1 >= processedCode.length() || !isalnum(processedCode[pos + 1]));
 			// Check it's not a decimal point
 			bool isDecimalPoint = (pos > 0 && isdigit(processedCode[pos - 1])) ||
-			                      (pos + 1 < processedCode.length() && isdigit(processedCode[pos + 1]));
+								  (pos + 1 < processedCode.length() && isdigit(processedCode[pos + 1]));
 			if (isWordStart && isWordEnd && !isDecimalPoint) {
 				processedCode.insert(pos + 1, " nl");
 				pos += 4; // ". nl"
@@ -401,8 +414,8 @@ private:
 			bool isWordStart = (pos == 0 || !isWordChar(result[pos - 1]));
 			bool isWordEnd = (pos + 1 >= result.length() || !isWordChar(result[pos + 1]));
 			// Also check it's not a decimal point (preceded by digit and followed by digit)
-			bool isDecimalPoint = (pos > 0 && isdigit(result[pos - 1])) ||
-			                      (pos + 1 < result.length() && isdigit(result[pos + 1]));
+			bool isDecimalPoint =
+					(pos > 0 && isdigit(result[pos - 1])) || (pos + 1 < result.length() && isdigit(result[pos + 1]));
 			if (isWordStart && isWordEnd && !isDecimalPoint) {
 				result.replace(pos, 1, "drop");
 				pos += 4;
@@ -704,13 +717,18 @@ int main(int argc, char* argv[]) {
 		}
 	}
 
-	// Configure colored output
-	const bool noColors = std::getenv("NO_COLOR") != nullptr;
+	// Configure colored output - disable if piped or NO_COLOR is set
+	const bool isPiped = !isatty(STDIN_FILENO);
+	const bool noColors = std::getenv("NO_COLOR") != nullptr || isPiped;
 	Qd::Colors::setEnabled(!noColors);
 
 	// Run the REPL
 	ReplSession session;
-	session.run();
+	if (isPiped) {
+		session.runPiped();
+	} else {
+		session.run();
+	}
 
 	return 0;
 }
