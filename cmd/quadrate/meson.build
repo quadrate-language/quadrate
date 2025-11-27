@@ -1,6 +1,6 @@
 # quadrate - Interactive REPL for Quadrate
 
-if llvmgen_dep.found()
+if qd_static_dep.found()
 	# Find readline library
 	readline_dep = dependency('readline', required: false)
 
@@ -15,12 +15,12 @@ if llvmgen_dep.found()
 
 		quadrate_repl_exe = executable('quadrate',
 			quadrate_repl_sources,
-			dependencies: [qc_dep, llvmgen_dep, readline_dep],
+			dependencies: [qd_static_dep, qc_dep, readline_dep],
 			install: false
 		)
 	else
 		warning('readline library not found, skipping quadrate REPL')
 	endif
 else
-	warning('LLVM not found, skipping quadrate REPL')
+	warning('qd library not available, skipping quadrate REPL')
 endif

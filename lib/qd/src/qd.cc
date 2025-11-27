@@ -228,6 +228,13 @@ void qd_build(qd_module* mod) {
 	}
 }
 
+bool qd_is_compiled(qd_module* mod) {
+	if (!mod) {
+		return false;
+	}
+	return mod->compiled;
+}
+
 void qd_execute(qd_context* ctx, const char* code) {
 	if (!ctx || !code) {
 		return;

@@ -83,6 +83,14 @@ void qd_register_function(qd_module* mod, const char* name, void (*fn)(void));
 void qd_build(qd_module* mod);
 
 /**
+ * @brief Check if a module has been successfully compiled
+ *
+ * @param mod Target module
+ * @return true if the module was compiled successfully, false otherwise
+ */
+bool qd_is_compiled(qd_module* mod);
+
+/**
  * @brief Execute a Quadrate function
  *
  * Executes a function from the compiled module. The function must have been
