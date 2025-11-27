@@ -48,6 +48,7 @@ public:
 		mod = qd_get_module(ctx, "repl");
 		moduleCounter = 0;
 		lastSuccessfulExprCount = 0;
+		expectedStackDepth = 0;
 	}
 
 	~ReplSession() {
@@ -109,6 +110,7 @@ private:
 	std::vector<std::string> history; // Accumulated expressions
 	int moduleCounter;
 	size_t lastSuccessfulExprCount; // Number of expressions successfully compiled
+	size_t expectedStackDepth;      // Expected stack depth based on successful operations
 
 	std::string trim(const std::string& str) {
 		size_t first = str.find_first_not_of(" \t\n\r");
@@ -277,6 +279,7 @@ private:
 		history.clear();
 		functionDefs.clear();
 		useStatements.clear();
+		expectedStackDepth = 0;
 		printf("%sREPL reset%s\n", COLOR_DIM, COLOR_RESET);
 	}
 
@@ -302,14 +305,68 @@ private:
 	}
 
 	std::string convertPrint(const std::string& code) {
-		// Convert 'print' to 'printv' for better REPL output
+		// In REPL, automatically add newlines after print operations for better output
+		// Convert 'prints' to 'prints nl'
+		// Convert 'print' to 'print nl'
+		// Convert '.' to '. nl'
 		std::string processedCode = code;
+
+		// Handle '.' -> '. nl'
 		size_t pos = 0;
+		while ((pos = processedCode.find('.', pos)) != std::string::npos) {
+			bool isWordStart = (pos == 0 || !isalnum(processedCode[pos - 1]));
+			bool isWordEnd = (pos + 1 >= processedCode.length() || !isalnum(processedCode[pos + 1]));
+			// Check it's not a decimal point
+			bool isDecimalPoint = (pos > 0 && isdigit(processedCode[pos - 1])) ||
+			                      (pos + 1 < processedCode.length() && isdigit(processedCode[pos + 1]));
+			if (isWordStart && isWordEnd && !isDecimalPoint) {
+				processedCode.insert(pos + 1, " nl");
+				pos += 4; // ". nl"
+			} else {
+				pos += 1;
+			}
+		}
+
+		// Handle 'prints' -> 'prints nl' (before handling 'print')
+		pos = 0;
+		while ((pos = processedCode.find("prints", pos)) != std::string::npos) {
+			// Skip 'printsv'
+			if (pos + 7 < processedCode.length() && processedCode[pos + 6] == 'v') {
+				pos += 7;
+				continue;
+			}
+			bool isWordStart = (pos == 0 || !isalnum(processedCode[pos - 1]));
+			bool isWordEnd = (pos + 6 >= processedCode.length() || !isalnum(processedCode[pos + 6]));
+			if (isWordStart && isWordEnd) {
+				processedCode.insert(pos + 6, " nl");
+				pos += 9; // "prints nl"
+			} else {
+				pos += 6;
+			}
+		}
+
+		// Handle 'printv' -> 'printv nl' (before handling 'print')
+		pos = 0;
+		while ((pos = processedCode.find("printv", pos)) != std::string::npos) {
+			bool isWordStart = (pos == 0 || !isalnum(processedCode[pos - 1]));
+			bool isWordEnd = (pos + 6 >= processedCode.length() || !isalnum(processedCode[pos + 6]));
+			if (isWordStart && isWordEnd) {
+				processedCode.insert(pos + 6, " nl");
+				pos += 9; // "printv nl"
+			} else {
+				pos += 6;
+			}
+		}
+
+		// Handle 'print' -> 'print nl' (but not 'prints' or 'printv' which we already handled)
+		pos = 0;
 		while ((pos = processedCode.find("print", pos)) != std::string::npos) {
+			// Skip 'prints' (already has 'nl' appended)
 			if (pos + 6 < processedCode.length() && processedCode[pos + 5] == 's') {
 				pos += 6;
 				continue;
 			}
+			// Skip 'printv' (already has 'nl' appended)
 			if (pos + 6 < processedCode.length() && processedCode[pos + 5] == 'v') {
 				pos += 6;
 				continue;
@@ -317,13 +374,106 @@ private:
 			bool isWordStart = (pos == 0 || !isalnum(processedCode[pos - 1]));
 			bool isWordEnd = (pos + 5 >= processedCode.length() || !isalnum(processedCode[pos + 5]));
 			if (isWordStart && isWordEnd) {
-				processedCode.insert(pos + 5, "v");
-				pos += 6;
+				processedCode.insert(pos + 5, " nl");
+				pos += 8; // "print nl"
 			} else {
 				pos += 5;
 			}
 		}
 		return processedCode;
+	}
+
+	// Strip print side effects from code for storage in history.
+	// This prevents duplicate output when history is re-executed.
+	// - '.' (print and pop) -> 'drop' (just pop, same stack effect)
+	// - 'print' / 'printv' (print and pop) -> 'drop'
+	// - 'prints' / 'printsv' (print stack, no pop) -> '' (remove, no stack effect)
+	// - 'nl' (print newline) -> '' (remove, no stack effect)
+	std::string stripPrintForHistory(const std::string& code) {
+		std::string result = code;
+
+		// Helper to check word boundaries
+		auto isWordChar = [](char c) { return isalnum(c) || c == '_'; };
+
+		// Replace '.' with 'drop' (must check it's not part of a number like 3.14)
+		size_t pos = 0;
+		while ((pos = result.find('.', pos)) != std::string::npos) {
+			bool isWordStart = (pos == 0 || !isWordChar(result[pos - 1]));
+			bool isWordEnd = (pos + 1 >= result.length() || !isWordChar(result[pos + 1]));
+			// Also check it's not a decimal point (preceded by digit and followed by digit)
+			bool isDecimalPoint = (pos > 0 && isdigit(result[pos - 1])) ||
+			                      (pos + 1 < result.length() && isdigit(result[pos + 1]));
+			if (isWordStart && isWordEnd && !isDecimalPoint) {
+				result.replace(pos, 1, "drop");
+				pos += 4;
+			} else {
+				pos += 1;
+			}
+		}
+
+		// Replace 'printv' with 'drop' (before 'print' to avoid partial match)
+		pos = 0;
+		while ((pos = result.find("printv", pos)) != std::string::npos) {
+			bool isWordStart = (pos == 0 || !isWordChar(result[pos - 1]));
+			bool isWordEnd = (pos + 6 >= result.length() || !isWordChar(result[pos + 6]));
+			if (isWordStart && isWordEnd) {
+				result.replace(pos, 6, "drop");
+				pos += 4;
+			} else {
+				pos += 6;
+			}
+		}
+
+		// Replace 'print' with 'drop' (but not 'prints' or 'printsv')
+		pos = 0;
+		while ((pos = result.find("print", pos)) != std::string::npos) {
+			bool isWordStart = (pos == 0 || !isWordChar(result[pos - 1]));
+			bool isWordEnd = (pos + 5 >= result.length() || !isWordChar(result[pos + 5]));
+			if (isWordStart && isWordEnd) {
+				result.replace(pos, 5, "drop");
+				pos += 4;
+			} else {
+				pos += 5;
+			}
+		}
+
+		// Remove 'printsv' (before 'prints' to avoid partial match)
+		pos = 0;
+		while ((pos = result.find("printsv", pos)) != std::string::npos) {
+			bool isWordStart = (pos == 0 || !isWordChar(result[pos - 1]));
+			bool isWordEnd = (pos + 7 >= result.length() || !isWordChar(result[pos + 7]));
+			if (isWordStart && isWordEnd) {
+				result.erase(pos, 7);
+			} else {
+				pos += 7;
+			}
+		}
+
+		// Remove 'prints'
+		pos = 0;
+		while ((pos = result.find("prints", pos)) != std::string::npos) {
+			bool isWordStart = (pos == 0 || !isWordChar(result[pos - 1]));
+			bool isWordEnd = (pos + 6 >= result.length() || !isWordChar(result[pos + 6]));
+			if (isWordStart && isWordEnd) {
+				result.erase(pos, 6);
+			} else {
+				pos += 6;
+			}
+		}
+
+		// Remove 'nl'
+		pos = 0;
+		while ((pos = result.find("nl", pos)) != std::string::npos) {
+			bool isWordStart = (pos == 0 || !isWordChar(result[pos - 1]));
+			bool isWordEnd = (pos + 2 >= result.length() || !isWordChar(result[pos + 2]));
+			if (isWordStart && isWordEnd) {
+				result.erase(pos, 2);
+			} else {
+				pos += 2;
+			}
+		}
+
+		return result;
 	}
 
 	std::string buildSource(const std::vector<std::string>& expressions) {
@@ -439,9 +589,70 @@ private:
 			qd_execute(ctx, funcCall.c_str());
 			g_inExecution = 0;
 
-			// Add to history on success
-			history.push_back(processedCode);
-			lastSuccessfulExprCount = history.size();
+			// Check if execution actually succeeded by comparing stack depth
+			// Some operations like '.' silently fail without aborting
+			size_t actualDepth = getStackDepth();
+
+			// Add to history on success (strip print effects to avoid duplicates on re-execution)
+			std::string historyEntry = stripPrintForHistory(processedCode);
+
+			// Only add to history if we have something meaningful to add
+			std::string trimmed = historyEntry;
+			// Trim whitespace
+			size_t start = trimmed.find_first_not_of(" \t\n\r");
+			size_t end = trimmed.find_last_not_of(" \t\n\r");
+			if (start != std::string::npos) {
+				trimmed = trimmed.substr(start, end - start + 1);
+			} else {
+				trimmed = "";
+			}
+
+			// Only add to history if the entry would be safe to replay.
+			// Count how many 'drop' operations are in the history entry and ensure
+			// we'll have enough stack depth on replay.
+			size_t dropCount = 0;
+			size_t pos = 0;
+			while ((pos = trimmed.find("drop", pos)) != std::string::npos) {
+				// Check it's a word boundary
+				bool isWordStart = (pos == 0 || !isalnum(trimmed[pos - 1]));
+				bool isWordEnd = (pos + 4 >= trimmed.length() || !isalnum(trimmed[pos + 4]));
+				if (isWordStart && isWordEnd) {
+					dropCount++;
+				}
+				pos += 4;
+			}
+
+			// Only add if we have enough depth for the drops
+			// expectedStackDepth is the depth BEFORE this expression
+			// actualDepth is the depth AFTER this expression
+			// The expression is safe to add if actualDepth >= 0 (which it always is)
+			// and if we wouldn't underflow on replay
+			if (!trimmed.empty() && (dropCount == 0 || actualDepth + dropCount <= expectedStackDepth + 100)) {
+				// The condition above is a sanity check. The real check is:
+				// did the execution actually modify the stack as expected?
+				// If we're adding drops but the stack didn't shrink, something failed.
+				bool executionSucceeded = true;
+				if (dropCount > 0) {
+					// If we added drops, the actual depth should reflect that
+					// If actual depth > expected - drops, a drop failed silently
+					// Actually, we need to think about pushes too...
+					// Simpler: if actualDepth equals expectedStackDepth and we're adding drops,
+					// those drops didn't actually execute (stack underflow)
+					if (actualDepth == expectedStackDepth && dropCount > 0) {
+						// The drops didn't execute - don't add them to history
+						executionSucceeded = false;
+					}
+				}
+
+				if (executionSucceeded) {
+					history.push_back(historyEntry);
+					lastSuccessfulExprCount = history.size();
+					expectedStackDepth = actualDepth;
+				}
+			} else if (trimmed.empty()) {
+				// Empty entry, just update expected depth
+				expectedStackDepth = actualDepth;
+			}
 		} else {
 			// Returned from signal handler - execution crashed
 			g_inExecution = 0;
