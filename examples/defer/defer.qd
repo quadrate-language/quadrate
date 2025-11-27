@@ -1,0 +1,114 @@
+// Example demonstrating defer for cleanup operations
+//
+// defer schedules a block to run when the function exits,
+// regardless of how the function exits (normal return or error).
+// Multiple defers execute in LIFO order (last-in, first-out).
+
+// A simple resource struct
+struct Resource {
+	id:i64
+	value:i64
+}
+
+fn create_resource(id:i64 -- r:ptr) {
+	-> id
+	id id 100 * Resource
+}
+
+fn destroy_resource(r:ptr -- ) {
+	-> r
+	"  Destroying resource " . r @id . nl
+	r free
+}
+
+// Basic defer example
+fn basic_defer( -- ) {
+	"Basic defer:" . nl
+	"  Start of function" . nl
+
+	defer {
+		"  Deferred cleanup runs at end" . nl
+	}
+
+	"  Middle of function" . nl
+	"  End of function" . nl
+}
+
+// Multiple defers execute in reverse order (LIFO)
+fn multiple_defers( -- ) {
+	"Multiple defers (LIFO order):" . nl
+	"  Registering defers..." . nl
+
+	defer { "  Third defer (registered first)" . nl }
+	defer { "  Second defer (registered second)" . nl }
+	defer { "  First defer (registered last)" . nl }
+
+	"  Function body done" . nl
+	"  Now defers will run:" . nl
+}
+
+// Practical example: resource cleanup
+fn resource_cleanup( -- ) {
+	"Resource cleanup with defer:" . nl
+
+	// Create resources
+	1 create_resource -> r1
+	"  Created resource 1" . nl
+
+	// Register cleanup immediately after creation
+	defer { r1 destroy_resource }
+
+	2 create_resource -> r2
+	"  Created resource 2" . nl
+	defer { r2 destroy_resource }
+
+	3 create_resource -> r3
+	"  Created resource 3" . nl
+	defer { r3 destroy_resource }
+
+	// Do some work with resources
+	"  Working with resources..." . nl
+	"  Resource IDs: " . r1 @id . ", " . r2 @id . ", " . r3 @id . nl
+
+	"  Function ending, defers will clean up:" . nl
+	// Resources are automatically freed in reverse order (3, 2, 1)
+}
+
+// Defer with early return - defer runs regardless of how function exits
+fn early_return_yes( -- ) {
+	"Early return (yes):" . nl
+
+	defer {
+		"  Cleanup runs even with early return" . nl
+	}
+
+	"  Returning early!" . nl
+	return
+	"  This line is never reached" . nl
+}
+
+fn early_return_no( -- ) {
+	"Early return (no):" . nl
+
+	defer {
+		"  Cleanup runs at normal exit too" . nl
+	}
+
+	"  Normal execution path" . nl
+}
+
+fn main( -- ) {
+	basic_defer
+	nl
+
+	multiple_defers
+	nl
+
+	resource_cleanup
+	nl
+
+	early_return_yes
+	nl
+
+	early_return_no
+}

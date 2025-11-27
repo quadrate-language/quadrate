@@ -20,9 +20,10 @@
 ] @keyword.control
 
 
-; Break and continue statements
+; Break, continue, and return statements
 (break_statement) @keyword.control
 (continue_statement) @keyword.control
+(return_statement) @keyword.control
 
 ; Types - match the identifier inside type nodes
 (type

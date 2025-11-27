@@ -7,24 +7,24 @@ embed_exe = executable('embed',
 	build_by_default: false
 )
 
-multi_module_test_exe = executable('multi_module_test',
-	'multi_module_test.cc',
+multi_module_test_exe = executable('multi-module-test',
+	'multi-module-test.cc',
 	dependencies: qd_dep,
 	build_rpath: meson.project_build_root() / 'lib/qdrt' + ':' + meson.project_build_root() / 'lib/qd',
 	install_rpath: '$ORIGIN/../lib',
 	build_by_default: false
 )
 
-native_functions_test_exe = executable('native_functions_test',
-	'native_functions_test.cc',
+native_functions_test_exe = executable('native-functions-test',
+	'native-functions-test.cc',
 	dependencies: qd_dep,
 	build_rpath: meson.project_build_root() / 'lib/qdrt' + ':' + meson.project_build_root() / 'lib/qd',
 	install_rpath: '$ORIGIN/../lib',
 	build_by_default: false
 )
 
-incremental_test_exe = executable('incremental_test',
-	'incremental_test.cc',
+incremental_test_exe = executable('incremental-test',
+	'incremental-test.cc',
 	dependencies: qd_dep,
 	build_rpath: meson.project_build_root() / 'lib/qdrt' + ':' + meson.project_build_root() / 'lib/qd',
 	install_rpath: '$ORIGIN/../lib',
@@ -38,9 +38,9 @@ chrpath = find_program('chrpath', required: false)
 # Helper function to create copy target for each example
 foreach example_info : [
 	['embed', embed_exe],
-	['multi_module_test', multi_module_test_exe],
-	['native_functions_test', native_functions_test_exe],
-	['incremental_test', incremental_test_exe]
+	['multi-module-test', multi_module_test_exe],
+	['native-functions-test', native_functions_test_exe],
+	['incremental-test', incremental_test_exe]
 ]
 	example_name = example_info[0]
 	example_exe = example_info[1]

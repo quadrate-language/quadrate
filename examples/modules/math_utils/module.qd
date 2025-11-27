@@ -1,28 +1,20 @@
 // Math utilities module
 // Demonstrates how to create and use modules in Quadrate
 
-// Constants
-fn pi() {
-	3.141592653589793
-}
-
-fn tau() {
-	6.283185307179586
-}
-
-fn e() {
-	2.718281828459045
-}
+// Constants - using pub const for module-level constants
+pub const Pi = 3.141592653589793
+pub const Tau = 6.283185307179586
+pub const E = 2.718281828459045
 
 // Utility functions that push commonly used values
-fn get_hundred() {
+pub fn get_hundred( -- result:f64) {
 	100.0
 }
 
-fn get_zero() {
+pub fn get_zero( -- result:f64) {
 	0.0
 }
 
-fn get_one() {
+pub fn get_one( -- result:f64) {
 	1.0
 }

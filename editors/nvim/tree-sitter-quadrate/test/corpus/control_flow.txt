@@ -237,3 +237,33 @@ fn test( -- ) {
         body: (block
           (string)
           (builtin_operation))))))
+
+================================================================================
+Return statement
+================================================================================
+
+fn test( -- ) {
+    defer {
+        "cleanup" prints
+    }
+    "done" prints
+    return
+    "never reached" prints
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (function_definition
+    name: (identifier)
+    signature: (stack_signature)
+    body: (block
+      (defer_block
+        body: (block
+          (string)
+          (builtin_operation)))
+      (string)
+      (builtin_operation)
+      (return_statement)
+      (string)
+      (builtin_operation))))

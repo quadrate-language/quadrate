@@ -131,6 +131,7 @@ module.exports = grammar({
       $.ctx_block,
       $.break_statement,
       $.continue_statement,
+      $.return_statement,
       $.loop_variable,
       $.pointer_operation,
     ),
@@ -189,9 +190,10 @@ module.exports = grammar({
       field('body', $.block),
     ),
 
-    // Break and continue
+    // Break, continue, and return
     break_statement: $ => 'break',
     continue_statement: $ => 'continue',
+    return_statement: $ => 'return',
 
     // Loop variable: $
     loop_variable: $ => '$',
