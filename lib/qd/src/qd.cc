@@ -5,16 +5,79 @@
 #include <cstring>
 #include <dlfcn.h>
 #include <filesystem>
+#include <fstream>
+#include <functional>
 #include <llvmgen/generator.h>
+#include <memory>
 #include <qc/ast.h>
 #include <qc/ast_node.h>
+#include <qc/ast_node_use.h>
 #include <qc/semantic_validator.h>
 #include <sstream>
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 namespace fs = std::filesystem;
+
+// Helper to find module file in standard locations
+static std::string findModuleFile(const std::string& moduleName) {
+	// Try 1: QUADRATE_ROOT environment variable
+	const char* quadrateRoot = getenv("QUADRATE_ROOT");
+	if (quadrateRoot) {
+		std::string rootPath = std::string(quadrateRoot) + "/" + moduleName + "/module.qd";
+		if (fs::exists(rootPath)) {
+			return rootPath;
+		}
+	}
+
+	// Try 2: QUADRATE_LIBDIR (for development/testing)
+	const char* libDir = getenv("QUADRATE_LIBDIR");
+	if (libDir) {
+		// Standard library modules are in lib/std<name>qd/qd/<name>/module.qd relative to QUADRATE_LIBDIR
+		// But the installed structure is different - try both
+		std::string devPath = std::string(libDir) + "/../lib/std" + moduleName + "qd/qd/" + moduleName + "/module.qd";
+		if (fs::exists(devPath)) {
+			return devPath;
+		}
+		// Also try installed structure
+		std::string installPath = std::string(libDir) + "/../share/quadrate/" + moduleName + "/module.qd";
+		if (fs::exists(installPath)) {
+			return installPath;
+		}
+	}
+
+	// Try 3: Standard library relative to executable
+	try {
+		fs::path exePath = fs::canonical("/proc/self/exe");
+		fs::path exeDir = exePath.parent_path();
+		fs::path sharePath = exeDir / ".." / "share" / "quadrate" / moduleName / "module.qd";
+		if (fs::exists(sharePath)) {
+			return sharePath.string();
+		}
+	} catch (...) {
+		// Ignore errors reading executable path
+	}
+
+	// Try 4: $HOME/quadrate directory
+	const char* home = getenv("HOME");
+	if (home) {
+		std::string homePath = std::string(home) + "/quadrate/" + moduleName + "/module.qd";
+		if (fs::exists(homePath)) {
+			return homePath;
+		}
+	}
+
+	// Try 5: Local development paths (relative to build directory)
+	fs::path buildRoot = fs::path(MESON_BUILD_ROOT).parent_path().parent_path();
+	std::string devPath = (buildRoot / "lib" / ("std" + moduleName + "qd") / "qd" / moduleName / "module.qd").string();
+	if (fs::exists(devPath)) {
+		return devPath;
+	}
+
+	return "";
+}
 
 // Module implementation
 struct qd_module {
@@ -134,9 +197,72 @@ void qd_build(qd_module* mod) {
 			return;
 		}
 
+		// Collect use statements and load module ASTs
+		std::vector<std::pair<std::string, Qd::IAstNode*>> moduleASTs;
+		std::vector<std::unique_ptr<Qd::Ast>> moduleAstOwners; // Keep AST objects alive
+		std::unordered_set<std::string> processedModules;
+
+		std::function<void(Qd::IAstNode*)> collectAndLoadModules = [&](Qd::IAstNode* node) {
+			if (!node) return;
+			if (node->type() == Qd::IAstNode::Type::USE_STATEMENT) {
+				auto* useNode = static_cast<Qd::AstNodeUse*>(node);
+				std::string moduleName = useNode->module();
+
+				// Skip if already processed
+				if (processedModules.count(moduleName)) return;
+				processedModules.insert(moduleName);
+
+				// Find and load the module
+				std::string modulePath = findModuleFile(moduleName);
+				if (modulePath.empty()) {
+					// Module not found - semantic validator should have caught this
+					return;
+				}
+
+				// Read module file
+				std::ifstream moduleFile(modulePath);
+				if (!moduleFile.is_open()) return;
+
+				moduleFile.seekg(0, std::ios::end);
+				auto pos = moduleFile.tellg();
+				moduleFile.seekg(0);
+				if (pos < 0) return;
+
+				size_t size = static_cast<size_t>(pos);
+				std::string buffer(size, ' ');
+				moduleFile.read(&buffer[0], static_cast<std::streamsize>(size));
+
+				// Parse the module
+				auto moduleAst = std::make_unique<Qd::Ast>();
+				auto moduleRoot = moduleAst->generate(buffer.c_str(), false, modulePath.c_str());
+				if (moduleRoot && !moduleAst->hasErrors()) {
+					// Validate module
+					Qd::SemanticValidator modValidator;
+					size_t modErrors = modValidator.validate(moduleRoot, modulePath.c_str(), true, false);
+					if (modErrors == 0) {
+						moduleASTs.push_back({moduleName, moduleRoot});
+						moduleAstOwners.push_back(std::move(moduleAst));
+
+						// Recursively process this module's imports
+						collectAndLoadModules(moduleRoot);
+					}
+				}
+			}
+			for (size_t i = 0; i < node->childCount(); i++) {
+				collectAndLoadModules(node->child(i));
+			}
+		};
+		collectAndLoadModules(root);
+
 		// Generate LLVM IR
 		Qd::LlvmGenerator generator;
 		generator.setOptimizationLevel(2);
+
+		// Add all imported modules first (in reverse order for proper dependency ordering)
+		for (auto it = moduleASTs.rbegin(); it != moduleASTs.rend(); ++it) {
+			generator.addModuleAST(it->first, it->second);
+		}
+
 		if (!generator.generate(root, mod->name)) {
 			fprintf(stderr, "qd_build: Failed to generate LLVM IR\n");
 			return;
@@ -186,13 +312,29 @@ void qd_build(qd_module* mod) {
 		mod->symbol_map = symbol_map;
 
 		// Use clang/gcc to link the object file into a shared library
-		fs::path qdrt_lib_path = fs::path(MESON_BUILD_ROOT) / "lib" / "qdrt";
+		fs::path lib_path = fs::path(MESON_BUILD_ROOT) / "lib";
 		std::string link_cmd = "clang++ -shared ";
 		link_cmd += obj_file.string();
 		link_cmd += " -o ";
 		link_cmd += mod->so_path.string();
-		link_cmd += " -L" + qdrt_lib_path.string();
+		link_cmd += " -L" + (lib_path / "qdrt").string();
+		link_cmd += " -L" + (lib_path / "stdmathqd").string();
+		link_cmd += " -L" + (lib_path / "stdfmtqd").string();
+		link_cmd += " -L" + (lib_path / "stdioqd").string();
+		link_cmd += " -L" + (lib_path / "stdnetqd").string();
+		link_cmd += " -L" + (lib_path / "stdosqd").string();
+		link_cmd += " -L" + (lib_path / "stdstrqd").string();
+		link_cmd += " -L" + (lib_path / "stdtimeqd").string();
+		link_cmd += " -L" + (lib_path / "stdmemqd").string();
+		link_cmd += " -L" + (lib_path / "stdbitsqd").string();
+		link_cmd += " -L" + (lib_path / "stdbase64qd").string();
+		link_cmd += " -L" + (lib_path / "stdstrconvqd").string();
 		link_cmd += " -lqdrt";
+		link_cmd += " -lstdmathqd_static -lstdfmtqd_static -lstdioqd_static";
+		link_cmd += " -lstdnetqd_static -lstdosqd_static -lstdstrqd_static";
+		link_cmd += " -lstdtimeqd_static -lstdmemqd_static -lstdbitsqd_static";
+		link_cmd += " -lstdbase64qd_static -lstdstrconvqd_static";
+		link_cmd += " -lm"; // Math library for sin, cos, etc.
 		link_cmd += " -Wl,-rpath,$ORIGIN";
 		link_cmd += " 2>&1";
 

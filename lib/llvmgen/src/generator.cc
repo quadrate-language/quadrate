@@ -164,6 +164,9 @@ namespace Qd {
 		// Current module prefix for intra-module function calls
 		std::string currentModulePrefix = "main";
 
+		// The main module name (as passed to generate())
+		std::string mainModuleName = "main";
+
 		// Defer statements collected during function generation (scope-based)
 		std::vector<std::vector<AstNodeDefer*>> deferScopeStack;
 
@@ -2232,8 +2235,19 @@ namespace Qd {
 			generateInlineSwap(ctx);
 			return;
 		} else if (name == "dup") {
-			// Use inline dup for performance
-			generateInlineDup(ctx);
+			// Only use inline dup for integer-only functions
+			// Strings require reference counting which inline dup doesn't handle
+			if (currentFunctionIsIntegerOnly) {
+				generateInlineDup(ctx);
+			} else {
+				// Call runtime qd_dup which handles string reference counting
+				llvm::Function* qdDupFn = module->getFunction("qd_dup");
+				if (!qdDupFn) {
+					auto fnTy = llvm::FunctionType::get(execResultTy, {contextPtrTy}, false);
+					qdDupFn = llvm::Function::Create(fnTy, llvm::Function::ExternalLinkage, "qd_dup", *module);
+				}
+				builder->CreateCall(qdDupFn, {ctx});
+			}
 			return;
 		} else if (name == "!=") {
 			// Use integer-only path for pure integer functions
@@ -4481,20 +4495,40 @@ namespace Qd {
 			}
 		}
 
+		// Determine if we should generate a C main() entry point
+		// Check if there's a 'main' function in the root AND the module name looks like standalone
+		// (not a module name like "repl_0" which starts with "repl_")
+		bool hasMainFunction = false;
+		for (size_t i = 0; i < root->childCount(); i++) {
+			auto child = root->child(i);
+			if (auto funcNode = dynamic_cast<AstNodeFunctionDeclaration*>(child)) {
+				if (funcNode->name() == "main") {
+					hasMainFunction = true;
+					break;
+				}
+			}
+		}
+		// Only generate C main for standalone mode (main module is "main" or a file path)
+		// but NOT for REPL modules (which have names like "repl_0", "repl_1", etc.)
+		bool isReplModule = (mainModuleName.find("repl_") == 0);
+		bool generateCMain = hasMainFunction && !isReplModule;
+
 		// Pre-pass: declare all user-defined functions from main file (for forward references)
 		// This ensures functions can call each other regardless of definition order
 		for (size_t i = 0; i < root->childCount(); i++) {
 			auto child = root->child(i);
 			if (auto funcNode = dynamic_cast<AstNodeFunctionDeclaration*>(child)) {
-				if (funcNode->name() != "main") {
-					// Create function declaration
-					std::string fnName = "usr_main_" + funcNode->name();
-					auto fnTy = llvm::FunctionType::get(execResultTy, {contextPtrTy}, false);
-					auto fn = llvm::Function::Create(fnTy, llvm::Function::ExternalLinkage, fnName, *module);
-					// Register the function for forward reference lookup
-					userFunctions[funcNode->name()] = fn;
-					fallibleFunctions[funcNode->name()] = funcNode->throws();
+				// Skip main function declaration in standalone mode - it will be the C main
+				if (generateCMain && funcNode->name() == "main") {
+					continue;
 				}
+				// Create function declaration with proper module prefix
+				std::string fnName = "usr_" + mainModuleName + "_" + funcNode->name();
+				auto fnTy = llvm::FunctionType::get(execResultTy, {contextPtrTy}, false);
+				auto fn = llvm::Function::Create(fnTy, llvm::Function::ExternalLinkage, fnName, *module);
+				// Register the function for forward reference lookup
+				userFunctions[funcNode->name()] = fn;
+				fallibleFunctions[funcNode->name()] = funcNode->throws();
 			}
 		}
 
@@ -4517,25 +4551,30 @@ namespace Qd {
 			}
 		}
 
-		// Second pass: generate all user-defined functions from main file (not main)
+		// Second pass: generate all user-defined functions from main file
 		for (size_t i = 0; i < root->childCount(); i++) {
 			auto child = root->child(i);
 			if (auto funcNode = dynamic_cast<AstNodeFunctionDeclaration*>(child)) {
-				if (funcNode->name() != "main") {
-					if (!generateFunction(funcNode, false)) {
-						return false;
-					}
+				// Skip main function in standalone mode - handle separately
+				if (generateCMain && funcNode->name() == "main") {
+					continue;
+				}
+				// Generate as regular user function with module name prefix
+				if (!generateFunction(funcNode, false, mainModuleName)) {
+					return false;
 				}
 			}
 		}
 
-		// Third pass: generate main function
-		for (size_t i = 0; i < root->childCount(); i++) {
-			auto child = root->child(i);
-			if (auto funcNode = dynamic_cast<AstNodeFunctionDeclaration*>(child)) {
-				if (funcNode->name() == "main") {
-					if (!generateFunction(funcNode, true)) {
-						return false;
+		// Third pass: generate C main function (only in standalone mode)
+		if (generateCMain) {
+			for (size_t i = 0; i < root->childCount(); i++) {
+				auto child = root->child(i);
+				if (auto funcNode = dynamic_cast<AstNodeFunctionDeclaration*>(child)) {
+					if (funcNode->name() == "main") {
+						if (!generateFunction(funcNode, true)) {
+							return false;
+						}
 					}
 				}
 			}
@@ -4608,6 +4647,8 @@ namespace Qd {
 		} else {
 			impl->sourceFileName = moduleName + ".qd";
 		}
+		// Store the main module name
+		impl->mainModuleName = moduleName;
 		// Add main source file to moduleSourceFiles for stack trace info
 		impl->moduleSourceFiles["main"] = impl->sourceFileName;
 		return impl->generateProgram(root);
