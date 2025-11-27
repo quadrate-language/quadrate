@@ -1,0 +1,23 @@
+site_name: Quadrate
+theme:
+  name: material
+  logo: assets/logo.png
+  favicon: assets/favicon.ico
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.indexes
+    - search.highlight
+    - content.code.copy
+    - content.tabs.link
+extra_css:
+  - styles/extra.css
+nav:
+  - Home: index.md
+  - Documentation:
+      - Getting Started: docs/getting-started.md
+      - Hello World: docs/tutorial-hello-world.md
+      - Stack: docs/tutorial-stack.md
+      - Structs: docs/tutorial-structs.md
+      - API Reference: docs/api-reference.md
+  - About: about.md
