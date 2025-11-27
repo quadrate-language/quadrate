@@ -2542,14 +2542,14 @@ namespace Qd {
 						// try to match them up in order (simple pass-through case)
 						size_t consumedPtrCount = 0;
 						size_t producedPtrCount = 0;
-						for (size_t i = 0; i < sig.consumes.size(); i++) {
-							if (sig.consumes[i] == StackValueType::PTR) {
+						for (size_t ci = 0; ci < sig.consumes.size(); ci++) {
+							if (sig.consumes[ci] == StackValueType::PTR) {
 								consumedPtrCount++;
 							}
 						}
-						for (size_t i = 0; i < sig.produces.size(); i++) {
-							if (sig.produces[i] == StackValueType::PTR) {
-								if (i == produceIdx) {
+						for (size_t pi = 0; pi < sig.produces.size(); pi++) {
+							if (sig.produces[pi] == StackValueType::PTR) {
+								if (pi == produceIdx) {
 									// This is the PTR we're producing - find which PTR index it is
 									break;
 								}
@@ -2561,10 +2561,10 @@ namespace Qd {
 						if (producedPtrCount < consumedPtrCount && producedPtrCount < consumedStructTypes.size()) {
 							// Find the Nth consumed PTR parameter
 							size_t ptrIdx = 0;
-							for (size_t i = 0; i < sig.consumes.size() && i < consumedStructTypes.size(); i++) {
-								if (sig.consumes[i] == StackValueType::PTR) {
+							for (size_t mi = 0; mi < sig.consumes.size() && mi < consumedStructTypes.size(); mi++) {
+								if (sig.consumes[mi] == StackValueType::PTR) {
 									if (ptrIdx == producedPtrCount) {
-										return consumedStructTypes[i];
+										return consumedStructTypes[mi];
 									}
 									ptrIdx++;
 								}
