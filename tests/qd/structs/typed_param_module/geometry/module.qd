@@ -1,0 +1,24 @@
+use math
+
+pub struct Vec2 {
+    x:f64
+    y:f64
+}
+
+// Function with typed struct parameter from this module
+pub fn length(v:Vec2 -- result:f64) {
+    -> v
+    v @x dup * v @y dup * + math::sqrt
+}
+
+// Function that adds two Vec2s
+pub fn add(a:Vec2 b:Vec2 -- result:ptr) {
+    -> a -> b
+    a @x b @x + a @y b @y + Vec2
+}
+
+// Function to scale a vector
+pub fn scale(v:Vec2 factor:f64 -- result:ptr) {
+    -> v -> factor
+    v @x factor * v @y factor * Vec2
+}

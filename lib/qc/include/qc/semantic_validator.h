@@ -129,12 +129,14 @@ namespace Qd {
 		// Pass 3b: Type check the AST
 		void typeCheckFunction(IAstNode* node);
 		void typeCheckBlock(IAstNode* node, std::vector<StackValueType>& typeStack,
-				std::unordered_map<std::string, StackValueType>& localVariables);
+				std::unordered_map<std::string, StackValueType>& localVariables,
+				std::vector<std::string> initialStructTypes = {});
 		void typeCheckInstruction(IAstNode* node, const char* name, std::vector<StackValueType>& typeStack,
 				std::vector<std::string>& structTypeStack);
 
 		// Helper: Analyze a block in isolation (for determining function signatures)
-		void analyzeBlockInIsolation(IAstNode* node, std::vector<StackValueType>& typeStack);
+		void analyzeBlockInIsolation(IAstNode* node, std::vector<StackValueType>& typeStack,
+				const std::unordered_map<std::string, StackValueType>& initialLocalVars = {});
 
 		// Helper: Type check an instruction (with optional error suppression for signature analysis)
 		void typeCheckInstructionInternal(IAstNode* node, const char* name, std::vector<StackValueType>& typeStack,
@@ -157,6 +159,12 @@ namespace Qd {
 
 		// Helper: Convert type string to StackValueType
 		StackValueType stringToStackValueType(const std::string& typeStr);
+
+		// Helper: Check if a type string is valid (i64, f64, str, ptr, any, or known struct name)
+		bool isValidTypeName(const std::string& typeStr) const;
+
+		// Helper: Check if a type string is a known struct name
+		bool isStructTypeName(const std::string& typeStr) const;
 
 		// Report an error (gcc/clang style)
 		void reportError(const char* message);

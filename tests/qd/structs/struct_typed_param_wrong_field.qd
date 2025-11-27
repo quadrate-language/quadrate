@@ -1,0 +1,23 @@
+// Test error when accessing field that doesn't exist on declared struct type
+
+struct Point {
+    x:f64
+    y:f64
+}
+
+struct Rectangle {
+    width:f64
+    height:f64
+}
+
+// Function declares Point but tries to access width (Rectangle field)
+fn bad_function(p:Point -- result:f64) {
+    -> p
+    p @width  // ERROR: Point has no field 'width'
+}
+
+fn main( -- ) {
+    3.0 4.0 Point -> pt
+    pt bad_function . nl
+    pt free
+}

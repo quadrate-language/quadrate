@@ -1,0 +1,7 @@
+Components:
+  x: 3
+  y: 4
+  magnitude: 5
+  sum: 7
+  double_sum: 14
+Vector: x=3 y=4 magnitude=5 sum=7

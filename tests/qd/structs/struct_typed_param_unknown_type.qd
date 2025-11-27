@@ -1,0 +1,10 @@
+// Test error for unknown struct type in parameter
+
+fn bad_function(p:UnknownStruct -- result:f64) {
+    -> p
+    p @x
+}
+
+fn main( -- ) {
+    0 bad_function . nl
+}

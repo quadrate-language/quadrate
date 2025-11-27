@@ -133,10 +133,31 @@ namespace Qd {
 		return false;
 	}
 
+	// Check if a type string is a known struct name (local or imported)
+	bool SemanticValidator::isStructTypeName(const std::string& typeStr) const {
+		// Check local structs
+		if (mDefinedStructs.find(typeStr) != mDefinedStructs.end()) {
+			return true;
+		}
+		// Check imported module structs
+		for (const auto& moduleEntry : mModuleStructs) {
+			const auto& structs = moduleEntry.second;
+			if (structs.find(typeStr) != structs.end()) {
+				return true;
+			}
+		}
+		return false;
+	}
+
 	// Validate that a type string is a valid type name
 	// Returns true if valid, false otherwise
-	static bool isValidTypeName(const std::string& typeStr) {
-		return typeStr == "i64" || typeStr == "f64" || typeStr == "str" || typeStr == "ptr" || typeStr == "any";
+	bool SemanticValidator::isValidTypeName(const std::string& typeStr) const {
+		// Primitive types
+		if (typeStr == "i64" || typeStr == "f64" || typeStr == "str" || typeStr == "ptr" || typeStr == "any") {
+			return true;
+		}
+		// Struct types
+		return isStructTypeName(typeStr);
 	}
 
 	StackValueType SemanticValidator::getConstantType(const std::string& value) const {
@@ -1141,7 +1162,7 @@ namespace Qd {
 				// Validate type name
 				if (!isValidTypeName(typeStr)) {
 					reportError(param, ("Invalid type '" + typeStr + "' in parameter '" + param->name() +
-											   "'. Valid types are: i64, f64, str, ptr, any")
+											   "'. Valid types are: i64, f64, str, ptr, any, or a struct name")
 											   .c_str());
 				}
 
@@ -1151,7 +1172,7 @@ namespace Qd {
 					typeStack.push_back(StackValueType::FLOAT);
 				} else if (typeStr == "str") {
 					typeStack.push_back(StackValueType::STRING);
-				} else if (typeStr == "ptr") {
+				} else if (typeStr == "ptr" || isStructTypeName(typeStr)) {
 					typeStack.push_back(StackValueType::PTR);
 				} else {
 					// Untyped or unknown - treat as ANY
@@ -1180,6 +1201,10 @@ namespace Qd {
 					sig.consumes.push_back(StackValueType::STRING);
 				} else if (typeStr == "ptr") {
 					sig.consumes.push_back(StackValueType::PTR);
+				} else if (isStructTypeName(typeStr)) {
+					// Struct type - treat as PTR but track the struct type
+					sig.consumes.push_back(StackValueType::PTR);
+					sig.parameterStructTypes[i] = typeStr;
 				} else {
 					// Untyped or unknown - use ANY
 					sig.consumes.push_back(StackValueType::ANY);
@@ -1207,7 +1232,7 @@ namespace Qd {
 					// Validate type name
 					if (!isValidTypeName(typeStr)) {
 						reportError(param, ("Invalid type '" + typeStr + "' in parameter '" + param->name() +
-												   "'. Valid types are: i64, f64, str, ptr, any")
+												   "'. Valid types are: i64, f64, str, ptr, any, or a struct name")
 												   .c_str());
 					}
 
@@ -1219,6 +1244,10 @@ namespace Qd {
 						sig.consumes.push_back(StackValueType::STRING);
 					} else if (typeStr == "ptr") {
 						sig.consumes.push_back(StackValueType::PTR);
+					} else if (isStructTypeName(typeStr)) {
+						// Struct type - treat as PTR but track the struct type
+						sig.consumes.push_back(StackValueType::PTR);
+						sig.parameterStructTypes[i] = typeStr;
 					} else {
 						// Untyped or unknown - treat as ANY
 						sig.consumes.push_back(StackValueType::ANY);
@@ -1233,7 +1262,7 @@ namespace Qd {
 					// Validate type name
 					if (!isValidTypeName(typeStr)) {
 						reportError(param, ("Invalid type '" + typeStr + "' in parameter '" + param->name() +
-												   "'. Valid types are: i64, f64, str, ptr, any")
+												   "'. Valid types are: i64, f64, str, ptr, any, or a struct name")
 												   .c_str());
 					}
 
@@ -1243,7 +1272,7 @@ namespace Qd {
 						sig.produces.push_back(StackValueType::FLOAT);
 					} else if (typeStr == "str") {
 						sig.produces.push_back(StackValueType::STRING);
-					} else if (typeStr == "ptr") {
+					} else if (typeStr == "ptr" || isStructTypeName(typeStr)) {
 						sig.produces.push_back(StackValueType::PTR);
 					} else {
 						// Untyped or unknown - treat as ANY
@@ -1519,6 +1548,23 @@ namespace Qd {
 			childrenInsideForLoop = true;
 		}
 
+		// When entering a function declaration, add parameters to local variables
+		// so they can be used directly by name without -> binding
+		if (node->type() == IAstNode::Type::FUNCTION_DECLARATION) {
+			AstNodeFunctionDeclaration* func = static_cast<AstNodeFunctionDeclaration*>(node);
+			// Create a new scope for the function body with parameters pre-registered
+			std::unordered_set<std::string> funcLocalVariables = localVariables;
+			for (auto* paramNode : func->inputParameters()) {
+				AstNodeParameter* param = static_cast<AstNodeParameter*>(paramNode);
+				funcLocalVariables.insert(param->name());
+			}
+			// Process function body with parameters visible
+			for (size_t i = 0; i < node->childCount(); i++) {
+				validateReferencesInternal(node->child(i), childrenInsideForLoop, funcLocalVariables);
+			}
+			return;
+		}
+
 		// Recursively process children
 		for (size_t i = 0; i < node->childCount(); i++) {
 			validateReferencesInternal(node->child(i), childrenInsideForLoop, localVariables);
@@ -1542,7 +1588,9 @@ namespace Qd {
 				paramNames.push_back(param->name());
 			}
 
-			// Initialize type stack with input parameters (they're on the stack when function starts)
+			// Initialize type stack and parameter map with input parameters
+			// Parameters are on the stack when function starts, and can be accessed by name
+			std::unordered_map<std::string, StackValueType> paramTypes;
 			for (auto* paramNode : func->inputParameters()) {
 				AstNodeParameter* param = static_cast<AstNodeParameter*>(paramNode);
 				std::string typeStr = param->typeString();
@@ -1550,41 +1598,45 @@ namespace Qd {
 				// Validate type name
 				if (!isValidTypeName(typeStr)) {
 					reportError(param, ("Invalid type '" + typeStr + "' in parameter '" + param->name() +
-											   "'. Valid types are: i64, f64, str, ptr, any")
+											   "'. Valid types are: i64, f64, str, ptr, any, or a struct name")
 											   .c_str());
 				}
 
+				StackValueType paramType;
 				if (typeStr == "i64") {
-					typeStack.push_back(StackValueType::INT);
+					paramType = StackValueType::INT;
 				} else if (typeStr == "f64") {
-					typeStack.push_back(StackValueType::FLOAT);
+					paramType = StackValueType::FLOAT;
 				} else if (typeStr == "str") {
-					typeStack.push_back(StackValueType::STRING);
-				} else if (typeStr == "ptr") {
-					typeStack.push_back(StackValueType::PTR);
+					paramType = StackValueType::STRING;
+				} else if (typeStr == "ptr" || isStructTypeName(typeStr)) {
+					paramType = StackValueType::PTR;
 				} else {
 					// Untyped or unknown - use ANY
-					typeStack.push_back(StackValueType::ANY);
+					paramType = StackValueType::ANY;
 				}
+
+				typeStack.push_back(paramType);
+				paramTypes[param->name()] = paramType;
 			}
 
 			// Analyze the function body in isolation (without resolving function calls)
 			if (func->body()) {
-				analyzeBlockInIsolation(func->body(), typeStack);
+				analyzeBlockInIsolation(func->body(), typeStack, paramTypes);
 			}
 
 			// Store the signature with input parameters as consumes
 			FunctionSignature sig;
 
 			// Build consumes list from input parameters
-			for (auto* paramNode : func->inputParameters()) {
-				AstNodeParameter* param = static_cast<AstNodeParameter*>(paramNode);
+			for (size_t paramIdx = 0; paramIdx < func->inputParameters().size(); paramIdx++) {
+				AstNodeParameter* param = static_cast<AstNodeParameter*>(func->inputParameters()[paramIdx]);
 				std::string typeStr = param->typeString();
 
 				// Validate type name
 				if (!isValidTypeName(typeStr)) {
 					reportError(param, ("Invalid type '" + typeStr + "' in parameter '" + param->name() +
-											   "'. Valid types are: i64, f64, str, ptr, any")
+											   "'. Valid types are: i64, f64, str, ptr, any, or a struct name")
 											   .c_str());
 				}
 
@@ -1596,6 +1648,10 @@ namespace Qd {
 					sig.consumes.push_back(StackValueType::STRING);
 				} else if (typeStr == "ptr") {
 					sig.consumes.push_back(StackValueType::PTR);
+				} else if (isStructTypeName(typeStr)) {
+					// Struct type - treat as PTR but track the struct type
+					sig.consumes.push_back(StackValueType::PTR);
+					sig.parameterStructTypes[paramIdx] = typeStr;
 				} else {
 					// Untyped or unknown - use ANY
 					sig.consumes.push_back(StackValueType::ANY);
@@ -1610,7 +1666,7 @@ namespace Qd {
 				// Validate type name
 				if (!isValidTypeName(typeStr)) {
 					reportError(param, ("Invalid type '" + typeStr + "' in parameter '" + param->name() +
-											   "'. Valid types are: i64, f64, str, ptr, any")
+											   "'. Valid types are: i64, f64, str, ptr, any, or a struct name")
 											   .c_str());
 				}
 			}
@@ -1725,13 +1781,18 @@ namespace Qd {
 		collectRecursive(node);
 	}
 
-	void SemanticValidator::analyzeBlockInIsolation(IAstNode* node, std::vector<StackValueType>& typeStack) {
+	void SemanticValidator::analyzeBlockInIsolation(IAstNode* node, std::vector<StackValueType>& typeStack,
+			const std::unordered_map<std::string, StackValueType>& initialLocalVars) {
 		if (!node) {
 			return;
 		}
 
 		// Dummy structTypeStack for signature analysis (not used, but required by API)
 		std::vector<std::string> structTypeStack;
+
+		// Track local variable types for accurate signature analysis
+		// Start with any initial local variables (e.g., function parameters)
+		std::unordered_map<std::string, StackValueType> localVarTypes = initialLocalVars;
 
 		// Process each child in the block
 		for (size_t i = 0; i < node->childCount(); i++) {
@@ -1780,10 +1841,24 @@ namespace Qd {
 				// Apply function signature if known (for iterative analysis)
 				AstNodeIdentifier* ident = static_cast<AstNodeIdentifier*>(child);
 				const std::string& name = ident->name();
+
+				// First check if it's a local variable reference
+				auto localIt = localVarTypes.find(name);
+				if (localIt != localVarTypes.end()) {
+					// Push the local variable's type
+					typeStack.push_back(localIt->second);
+					break;
+				}
+
 				auto sigIt = mFunctionSignatures.find(name);
 				if (sigIt != mFunctionSignatures.end()) {
-					// Apply the known signature
+					// Apply the known signature: pop consumes, push produces
 					const FunctionSignature& sig = sigIt->second;
+					// Pop consumed types
+					for (size_t j = 0; j < sig.consumes.size() && !typeStack.empty(); j++) {
+						typeStack.pop_back();
+					}
+					// Push produced types
 					for (const auto& type : sig.produces) {
 						typeStack.push_back(type);
 					}
@@ -1866,8 +1941,13 @@ namespace Qd {
 
 				auto sigIt = mFunctionSignatures.find(qualifiedName);
 				if (sigIt != mFunctionSignatures.end()) {
-					// Apply the known signature
+					// Apply the known signature: pop consumes, push produces
 					const FunctionSignature& sig = sigIt->second;
+					// Pop consumed types
+					for (size_t j = 0; j < sig.consumes.size() && !typeStack.empty(); j++) {
+						typeStack.pop_back();
+					}
+					// Push produced types
 					for (const auto& type : sig.produces) {
 						typeStack.push_back(type);
 					}
@@ -1880,6 +1960,18 @@ namespace Qd {
 				// Function pointer references push a pointer type onto the stack
 				typeStack.push_back(StackValueType::PTR);
 				break;
+
+			case IAstNode::Type::LOCAL: {
+				// Local variable binding: pop value from stack and store type
+				AstNodeLocal* local = static_cast<AstNodeLocal*>(child);
+				const std::string& varName = local->name();
+				if (!typeStack.empty()) {
+					StackValueType varType = typeStack.back();
+					typeStack.pop_back();
+					localVarTypes[varName] = varType;
+				}
+				break;
+			}
 
 			default:
 				// Other node types don't affect the type stack during signature analysis
@@ -1897,10 +1989,15 @@ namespace Qd {
 		if (node->type() == IAstNode::Type::FUNCTION_DECLARATION) {
 			AstNodeFunctionDeclaration* func = static_cast<AstNodeFunctionDeclaration*>(node);
 			std::vector<StackValueType> typeStack;
+			std::vector<std::string> structTypeStack;
 			std::unordered_map<std::string, StackValueType> localVariables;
+
+			// Clear local variable struct types for this function
+			mLocalVariableStructTypes.clear();
 
 			// Initialize type stack with input parameters
 			// Input parameters are on the stack when the function starts
+			// Also register them as local variables for direct access by name
 			for (size_t i = 0; i < func->inputParameters().size(); i++) {
 				AstNodeParameter* param = static_cast<AstNodeParameter*>(func->inputParameters()[i]);
 				const std::string& typeStr = param->typeString();
@@ -1908,27 +2005,40 @@ namespace Qd {
 				// Validate type name
 				if (!isValidTypeName(typeStr)) {
 					reportError(param, ("Invalid type '" + typeStr + "' in parameter '" + param->name() +
-											   "'. Valid types are: i64, f64, str, ptr, any")
+											   "'. Valid types are: i64, f64, str, ptr, any, or a struct name")
 											   .c_str());
 				}
 
+				StackValueType paramType;
+				std::string structType = "";
+
 				if (typeStr == "i64") {
-					typeStack.push_back(StackValueType::INT);
+					paramType = StackValueType::INT;
 				} else if (typeStr == "f64") {
-					typeStack.push_back(StackValueType::FLOAT);
+					paramType = StackValueType::FLOAT;
 				} else if (typeStr == "str") {
-					typeStack.push_back(StackValueType::STRING);
+					paramType = StackValueType::STRING;
 				} else if (typeStr == "ptr") {
-					typeStack.push_back(StackValueType::PTR);
+					paramType = StackValueType::PTR;
+				} else if (isStructTypeName(typeStr)) {
+					// Struct type - treat as PTR but track the struct type
+					paramType = StackValueType::PTR;
+					structType = typeStr;
+					mLocalVariableStructTypes[param->name()] = typeStr;
 				} else {
 					// Untyped or unknown - treat as ANY
-					typeStack.push_back(StackValueType::ANY);
+					paramType = StackValueType::ANY;
 				}
+
+				typeStack.push_back(paramType);
+				structTypeStack.push_back(structType);
+				// Register parameter as local variable for direct access
+				localVariables[param->name()] = paramType;
 			}
 
 			// Type check the function body
 			if (func->body()) {
-				typeCheckBlock(func->body(), typeStack, localVariables);
+				typeCheckBlock(func->body(), typeStack, localVariables, structTypeStack);
 			}
 		}
 
@@ -1939,14 +2049,15 @@ namespace Qd {
 	}
 
 	void SemanticValidator::typeCheckBlock(IAstNode* node, std::vector<StackValueType>& typeStack,
-			std::unordered_map<std::string, StackValueType>& localVariables) {
+			std::unordered_map<std::string, StackValueType>& localVariables,
+			std::vector<std::string> initialStructTypes) {
 		if (!node) {
 			return;
 		}
 
 		// Track which struct type each PTR on the stack represents (parallel to typeStack)
 		// Empty string means "not a struct pointer" or "unknown struct type"
-		std::vector<std::string> structTypeStack;
+		std::vector<std::string> structTypeStack = std::move(initialStructTypes);
 
 		// Process each child in the block
 		for (size_t i = 0; i < node->childCount(); i++) {
@@ -2506,9 +2617,9 @@ namespace Qd {
 						const std::string& expectedStruct = expectedTypeIt->second;
 
 						// Get the actual struct type being passed
-						size_t stackIdx = sig.consumes.size() - 1 - paramIdx;
-						if (stackIdx < consumedStructTypes.size()) {
-							const std::string& actualStruct = consumedStructTypes[stackIdx];
+						// Parameters are in declaration order, which matches stack order (bottom to top)
+						if (paramIdx < consumedStructTypes.size()) {
+							const std::string& actualStruct = consumedStructTypes[paramIdx];
 
 							if (!actualStruct.empty() && actualStruct != expectedStruct) {
 								std::string errorMsg = "Type error in function '";
