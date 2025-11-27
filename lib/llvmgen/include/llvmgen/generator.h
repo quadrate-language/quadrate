@@ -193,6 +193,17 @@ namespace Qd {
 		 */
 		void addLibrarySearchPath(const std::string& path);
 
+		/**
+		 * @brief Set the stack size
+		 *
+		 * Sets the capacity of the runtime stack.
+		 *
+		 * @param size Stack capacity (default: 1024)
+		 *
+		 * @note Must be called before generate()
+		 */
+		void setStackSize(size_t size);
+
 	private:
 		/**
 		 * @brief Private implementation (Pimpl idiom)

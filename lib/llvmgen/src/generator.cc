@@ -95,6 +95,9 @@ namespace Qd {
 		// Optimization level (0-3)
 		int optimizationLevel = 0;
 
+		// Stack size
+		size_t stackSize = DEFAULT_STACK_SIZE;
+
 		// Runtime types
 		llvm::Type* contextPtrTy = nullptr;
 		llvm::Type* execResultTy = nullptr;
@@ -545,10 +548,11 @@ namespace Qd {
 		// Inline implementation of qd_push_i to eliminate function call overhead
 		// This directly manipulates the stack structure:
 		// 1. Get ctx->st (qd_stack* at offset 0 in qd_context)
-		// 2. Get st->size, st->data
-		// 3. Calculate &data[size]
-		// 4. Store value, type, is_error_tainted
-		// 5. Increment size
+		// 2. Get st->size, st->capacity, st->data
+		// 3. Check for overflow (size >= capacity)
+		// 4. Calculate &data[size]
+		// 5. Store value, type, is_error_tainted
+		// 6. Increment size
 
 		// Define qd_context structure: { qd_stack* st, ... }
 		llvm::Type* contextTy = llvm::StructType::get(*context, {llvm::PointerType::get(*context, 0)}, false);
@@ -569,6 +573,36 @@ namespace Qd {
 		// Get st->size (field 2)
 		llvm::Value* sizePtr = builder->CreateStructGEP(stackTy, st, 2, "size_ptr");
 		llvm::Value* size = builder->CreateLoad(builder->getInt64Ty(), sizePtr, "size");
+
+		// Get st->capacity (field 1) and check for overflow
+		llvm::Value* capacityPtr = builder->CreateStructGEP(stackTy, st, 1, "capacity_ptr");
+		llvm::Value* capacity = builder->CreateLoad(builder->getInt64Ty(), capacityPtr, "capacity");
+		llvm::Value* hasSpace = builder->CreateICmpULT(size, capacity, "has_space");
+
+		llvm::Function* currentFn = builder->GetInsertBlock()->getParent();
+		llvm::BasicBlock* overflowBB = llvm::BasicBlock::Create(*context, "push.overflow", currentFn);
+		llvm::BasicBlock* pushBB = llvm::BasicBlock::Create(*context, "push.do", currentFn);
+		builder->CreateCondBr(hasSpace, pushBB, overflowBB);
+
+		// Generate overflow error
+		builder->SetInsertPoint(overflowBB);
+		auto fprintfFn = module->getOrInsertFunction("fprintf",
+				llvm::FunctionType::get(builder->getInt32Ty(),
+						{llvm::PointerType::getUnqual(*context), llvm::PointerType::getUnqual(*context)}, true));
+		auto stderrGlobal = module->getOrInsertGlobal("stderr", llvm::PointerType::getUnqual(*context));
+		auto stderrVal = builder->CreateLoad(llvm::PointerType::getUnqual(*context), stderrGlobal, "stderr");
+		auto errorMsg = builder->CreateGlobalString("Fatal error: Stack overflow (use -s to increase stack size)\n");
+		builder->CreateCall(fprintfFn, {stderrVal, errorMsg});
+		auto printStackTraceFnTy =
+				llvm::FunctionType::get(builder->getVoidTy(), {llvm::PointerType::getUnqual(*context)}, false);
+		auto printStackTraceFn = module->getOrInsertFunction("qd_print_stack_trace", printStackTraceFnTy);
+		builder->CreateCall(printStackTraceFn, {ctx});
+		auto abortFn = module->getOrInsertFunction("abort", llvm::FunctionType::get(builder->getVoidTy(), false));
+		builder->CreateCall(abortFn, {});
+		builder->CreateUnreachable();
+
+		// Do the push
+		builder->SetInsertPoint(pushBB);
 
 		// Get st->data (field 0)
 		llvm::Value* dataPtr = builder->CreateStructGEP(stackTy, st, 0, "data_ptr");
@@ -613,6 +647,36 @@ namespace Qd {
 
 		llvm::Value* sizePtr = builder->CreateStructGEP(stackTy, st, 2, "size_ptr");
 		llvm::Value* size = builder->CreateLoad(builder->getInt64Ty(), sizePtr, "size");
+
+		// Check for overflow
+		llvm::Value* capacityPtr = builder->CreateStructGEP(stackTy, st, 1, "capacity_ptr");
+		llvm::Value* capacity = builder->CreateLoad(builder->getInt64Ty(), capacityPtr, "capacity");
+		llvm::Value* hasSpace = builder->CreateICmpULT(size, capacity, "has_space");
+
+		llvm::Function* currentFn = builder->GetInsertBlock()->getParent();
+		llvm::BasicBlock* overflowBB = llvm::BasicBlock::Create(*context, "pushv.overflow", currentFn);
+		llvm::BasicBlock* pushBB = llvm::BasicBlock::Create(*context, "pushv.do", currentFn);
+		builder->CreateCondBr(hasSpace, pushBB, overflowBB);
+
+		// Generate overflow error
+		builder->SetInsertPoint(overflowBB);
+		auto fprintfFn = module->getOrInsertFunction("fprintf",
+				llvm::FunctionType::get(builder->getInt32Ty(),
+						{llvm::PointerType::getUnqual(*context), llvm::PointerType::getUnqual(*context)}, true));
+		auto stderrGlobal = module->getOrInsertGlobal("stderr", llvm::PointerType::getUnqual(*context));
+		auto stderrVal = builder->CreateLoad(llvm::PointerType::getUnqual(*context), stderrGlobal, "stderr");
+		auto errorMsg = builder->CreateGlobalString("Fatal error: Stack overflow (use -s to increase stack size)\n");
+		builder->CreateCall(fprintfFn, {stderrVal, errorMsg});
+		auto printStackTraceFnTy =
+				llvm::FunctionType::get(builder->getVoidTy(), {llvm::PointerType::getUnqual(*context)}, false);
+		auto printStackTraceFn = module->getOrInsertFunction("qd_print_stack_trace", printStackTraceFnTy);
+		builder->CreateCall(printStackTraceFn, {ctx});
+		auto abortFn = module->getOrInsertFunction("abort", llvm::FunctionType::get(builder->getVoidTy(), false));
+		builder->CreateCall(abortFn, {});
+		builder->CreateUnreachable();
+
+		// Do the push
+		builder->SetInsertPoint(pushBB);
 
 		llvm::Value* dataPtr = builder->CreateStructGEP(stackTy, st, 0, "data_ptr");
 		llvm::Value* data = builder->CreateLoad(llvm::PointerType::get(*context, 0), dataPtr, "data");
@@ -3997,8 +4061,8 @@ namespace Qd {
 			builder->SetInsertPoint(entryBB);
 
 			// Create Quadrate context
-			auto stackSize = builder->getInt64(DEFAULT_STACK_SIZE);
-			auto ctx = builder->CreateCall(createContextFn, {stackSize}, "ctx");
+			auto stackSizeVal = builder->getInt64(stackSize);
+			auto ctx = builder->CreateCall(createContextFn, {stackSizeVal}, "ctx");
 
 			// Create alloca for ctx so debugger can reliably access it
 			llvm::AllocaInst* ctxAlloca = builder->CreateAlloca(ctx->getType(), nullptr, "ctx.addr");
@@ -4632,6 +4696,14 @@ namespace Qd {
 			impl = std::make_unique<Impl>("temp");
 		}
 		impl->librarySearchPaths.push_back(path);
+	}
+
+	void LlvmGenerator::setStackSize(size_t size) {
+		if (!impl) {
+			// Create implementation with a temporary module name - will be recreated in generate()
+			impl = std::make_unique<Impl>("temp");
+		}
+		impl->stackSize = size;
 	}
 
 	bool LlvmGenerator::generate(IAstNode* root, const std::string& moduleName) {

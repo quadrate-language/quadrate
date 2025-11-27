@@ -70,8 +70,58 @@ int main(int argc, char** argv) {
 		std::cout << "Temporary files saved in: " << outputDir << std::endl;
 	}
 
-	if (!opts.files.empty()) {
+	if (!opts.files.empty() || opts.readStdin) {
 		std::vector<ParsedModule> parsedModules;
+
+		// Read from stdin if requested
+		if (opts.readStdin) {
+			std::string buffer;
+			std::string line;
+			while (std::getline(std::cin, line)) {
+				buffer += line + "\n";
+			}
+
+			// Parse the source
+			auto ast = std::make_unique<Qd::Ast>();
+			auto root = ast->generate(buffer.c_str(), opts.dumpTokens, "<stdin>");
+			if (!root || ast->hasErrors()) {
+				std::cerr << "quadc: parsing failed for <stdin> with " << ast->errorCount() << " errors" << std::endl;
+				return 1;
+			}
+
+			// Semantic validation - catch errors before LLVM generation
+			Qd::SemanticValidator validator;
+			size_t errorCount = validator.validate(root, "<stdin>", false, opts.werror);
+			if (errorCount > 0) {
+				// Validation failed - do not proceed
+				return 1;
+			}
+
+			ParsedModule module;
+			module.name = "<stdin>";
+			module.package = "main";
+			module.sourceDirectory = ".";
+			module.root = root;
+			module.ast = std::move(ast);
+
+			// Collect imported modules
+			std::function<void(Qd::IAstNode*)> collectImports = [&](Qd::IAstNode* node) {
+				if (!node) {
+					return;
+				}
+				// Check for USE statement nodes (type == USE_STATEMENT)
+				if (node->type() == Qd::IAstNode::Type::USE_STATEMENT) {
+					auto* useNode = static_cast<Qd::AstNodeUse*>(node);
+					module.importedModules.push_back(useNode->module());
+				}
+				for (size_t i = 0; i < node->childCount(); i++) {
+					collectImports(node->child(i));
+				}
+			};
+			collectImports(root);
+
+			parsedModules.push_back(std::move(module));
+		}
 
 		// Parse all main source files
 		for (const auto& file : opts.files) {
@@ -340,6 +390,9 @@ int main(int argc, char** argv) {
 
 		// Set optimization level
 		generator.setOptimizationLevel(opts.optLevel);
+
+		// Set stack size
+		generator.setStackSize(opts.stackSize);
 
 		// Add library search paths for third-party packages
 		// Track which packages we've already added to avoid duplicates

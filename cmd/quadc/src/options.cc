@@ -1,15 +1,19 @@
 #include "options.h"
 #include <iostream>
+#include <unistd.h>
 
 void printHelp() {
 	std::cout << "quadc - Quadrate compiler\n\n";
 	std::cout << "Compiles .qd source files to native executables via LLVM.\n\n";
-	std::cout << "Usage: quadc [options] <file>...\n\n";
+	std::cout << "Usage: quadc [options] <file>...\n";
+	std::cout << "       quadc [options] -        # Read from stdin\n";
+	std::cout << "       echo 'code' | quadc -r   # Pipe code to compile and run\n\n";
 	std::cout << "Options:\n";
 	std::cout << "  -h, --help         Show this help message\n";
 	std::cout << "  -v, --version      Show version information\n";
 	std::cout << "  -o <name>          Output executable name (default: main)\n";
 	std::cout << "  -O0, -O1, -O2, -O3 Set optimization level (default: -O0)\n";
+	std::cout << "  -s <size>          Set stack size (default: 1024)\n";
 	std::cout << "  -g                 Generate debug information for GDB/LLDB\n";
 	std::cout << "  -l <mod@ver>       Pin module to specific version (e.g., -l color@1.0.0)\n";
 	std::cout << "  --save-temps       Keep temporary files for debugging\n";
@@ -20,9 +24,10 @@ void printHelp() {
 	std::cout << "  --werror           Treat warnings as errors\n";
 	std::cout << "\n";
 	std::cout << "Examples:\n";
-	std::cout << "  quadc main.qd              Compile to executable 'main'\n";
-	std::cout << "  quadc -o prog main.qd      Compile to executable 'prog'\n";
-	std::cout << "  quadc -r main.qd           Compile and run immediately\n";
+	std::cout << "  quadc main.qd                        Compile to executable 'main'\n";
+	std::cout << "  quadc -o prog main.qd                Compile to executable 'prog'\n";
+	std::cout << "  quadc -r main.qd                     Compile and run immediately\n";
+	std::cout << "  echo 'fn main(--) { 42 . }' | quadc -r   Compile and run from stdin\n";
 }
 
 void printVersion() {
@@ -87,6 +92,25 @@ bool parseArgs(int argc, char* argv[], Options& opts) {
 			opts.optLevel = 2;
 		} else if (arg == "-O3") {
 			opts.optLevel = 3;
+		} else if (arg == "-s") {
+			if (i + 1 >= argc) {
+				std::cerr << "quadc: option '-s' requires an argument\n";
+				std::cerr << "Try 'quadc --help' for more information.\n";
+				return false;
+			}
+			try {
+				opts.stackSize = std::stoull(argv[++i]);
+				if (opts.stackSize == 0) {
+					std::cerr << "quadc: stack size must be greater than 0\n";
+					return false;
+				}
+			} catch (const std::exception&) {
+				std::cerr << "quadc: invalid stack size: " << argv[i] << "\n";
+				return false;
+			}
+		} else if (arg == "-") {
+			// Read from stdin
+			opts.readStdin = true;
 		} else if (arg[0] == '-') {
 			std::cerr << "quadc: unknown option: " << arg << "\n";
 			std::cerr << "Try 'quadc --help' for more information.\n";
@@ -96,10 +120,15 @@ bool parseArgs(int argc, char* argv[], Options& opts) {
 		}
 	}
 
-	if (opts.files.empty() && !opts.help && !opts.version) {
-		std::cerr << "quadc: no input files\n";
-		std::cerr << "Try 'quadc --help' for more information.\n";
-		return false;
+	// If no files and stdin is piped, read from stdin
+	if (opts.files.empty() && !opts.help && !opts.version && !opts.readStdin) {
+		if (!isatty(STDIN_FILENO)) {
+			opts.readStdin = true;
+		} else {
+			std::cerr << "quadc: no input files\n";
+			std::cerr << "Try 'quadc --help' for more information.\n";
+			return false;
+		}
 	}
 
 	return true;

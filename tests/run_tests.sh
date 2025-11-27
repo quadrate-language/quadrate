@@ -46,7 +46,7 @@ run_qd_test() {
 
     echo "NAME:$test_name" > "$result_file"
 
-    # Check if this is a negative test
+    # Check if this is a compile-time error test
     if [ -f "${test_file%.qd}.err" ]; then
         # Negative test - should fail to compile
         local expected_error_file="${test_file%.qd}.err"
@@ -74,6 +74,46 @@ run_qd_test() {
         else
             echo "FAIL:error message mismatch" >> "$result_file"
             echo -e "\033[0;31mFAIL\033[0m  $test_name (error message mismatch)"
+        fi
+        return
+    fi
+
+    # Check if this is a runtime error test
+    if [ -f "${test_file%.qd}.runtime_err" ]; then
+        # Runtime error test - should compile but fail at runtime
+        local expected_error_file="${test_file%.qd}.runtime_err"
+        local actual_error_file="$TEMP_DIR/${test_id}.runtime_err"
+        local binary="$TEMP_DIR/${test_id}"
+
+        # Compile should succeed
+        if ! "$compiler" $opt_flags "$test_file" -o "$binary" 2>/dev/null; then
+            echo "FAIL:compilation failed (should have succeeded)" >> "$result_file"
+            echo -e "\033[0;31mFAIL\033[0m  $test_name (compilation failed)"
+            return
+        fi
+
+        # Run should fail
+        if "$binary" >"$actual_error_file" 2>&1; then
+            echo "FAIL:runtime succeeded (should have failed)" >> "$result_file"
+            echo -e "\033[0;31mFAIL\033[0m  $test_name (runtime succeeded)"
+            return
+        fi
+
+        # Check if all error patterns are present
+        local all_patterns_found=true
+        while IFS= read -r pattern; do
+            if ! grep -qF "$pattern" "$actual_error_file"; then
+                all_patterns_found=false
+                break
+            fi
+        done < "$expected_error_file"
+
+        if $all_patterns_found; then
+            echo "PASS" >> "$result_file"
+            echo -e "\033[0;32mPASS\033[0m  $test_name"
+        else
+            echo "FAIL:runtime error message mismatch" >> "$result_file"
+            echo -e "\033[0;31mFAIL\033[0m  $test_name (runtime error message mismatch)"
         fi
         return
     fi

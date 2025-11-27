@@ -11,6 +11,7 @@ struct Options {
 	std::vector<std::string> files;
 	std::string outputName = "main";
 	int optLevel = 0; // 0-3 for -O0 through -O3
+	size_t stackSize = 1024; // Stack capacity
 	bool help = false;
 	bool version = false;
 	bool saveTemps = false;
@@ -20,6 +21,7 @@ struct Options {
 	bool dumpIR = false;
 	bool debugInfo = false;
 	bool werror = false;
+	bool readStdin = false; // Read source from stdin
 	std::unordered_map<std::string, std::string> moduleVersions; // module name -> version
 };
 
