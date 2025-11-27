@@ -4,7 +4,6 @@
 // Values are extracted by path and returned as strings, integers, or floats.
 
 use str
-use bits
 
 // JSON type constants
 pub const Null = 0
@@ -47,7 +46,7 @@ fn skip_ws(json:str pos:i64 -- new_pos:i64) {
 	loop {
 		pos slen < if {
 			json pos str::char_at -> ch
-			ch Space == ch Tab == bits::or ch Newline == bits::or ch CarriageReturn == bits::or if {
+			ch Space == ch Tab == + ch Newline == + ch CarriageReturn == + 0 > if {
 				pos 1 + -> pos
 			} else {
 				break
@@ -96,13 +95,13 @@ fn find_num_end(json:str pos:i64 -- end_pos:i64) {
 	loop {
 		pos slen < if {
 			json pos str::char_at -> ch
-			ch Digit0 >= ch Digit9 <= bits::and
-			ch Minus == bits::or
-			ch Plus == bits::or
-			ch Dot == bits::or
-			ch LowerE == bits::or
-			ch UpperE == bits::or
-			if {
+			ch Digit0 >= ch Digit9 <= *
+			ch Minus == +
+			ch Plus == +
+			ch Dot == +
+			ch LowerE == +
+			ch UpperE == +
+			0 > if {
 				pos 1 + -> pos
 			} else {
 				break
@@ -128,7 +127,7 @@ fn find_bracket(json:str pos:i64 -- end_pos:i64) {
 	1 -> nesting
 	pos 1 + -> pos
 	loop {
-		pos slen < nesting 0 > bits::and if {
+		pos slen < nesting 0 > * if {
 			json pos str::char_at -> ch
 			ch Quote == if {
 				json pos find_str_end -> pos
@@ -217,13 +216,13 @@ fn skip_value(json:str pos:i64 -- new_pos:i64) {
 	val_type String == if {
 		json pos find_str_end
 	} else {
-		val_type Object == val_type Array == bits::or if {
+		val_type Object == val_type Array == + 0 > if {
 			json pos find_bracket
 		} else {
 			loop {
 				pos slen < if {
 					json pos str::char_at -> ch
-					ch Comma == ch CloseBrace == bits::or ch CloseBracket == bits::or if {
+					ch Comma == ch CloseBrace == + ch CloseBracket == + 0 > if {
 						break
 					} else {
 						pos 1 + -> pos
@@ -321,7 +320,7 @@ fn parse_int(num_str:str -- value:i64) {
 	loop {
 		i num_len < if {
 			num_str i str::char_at -> ch
-			ch Digit0 >= ch Digit9 <= bits::and if {
+			ch Digit0 >= ch Digit9 <= * if {
 				value 10 * ch Digit0 - + -> value
 				i 1 + -> i
 			} else {
