@@ -1,5 +1,5 @@
-#include <qd/qd.h>
 #include <qc/colors.h>
+#include <qd/qd.h>
 #include <qdrt/stack.h>
 
 #include <csetjmp>
@@ -47,6 +47,7 @@ public:
 		ctx = qd_create_context(1024);
 		mod = qd_get_module(ctx, "repl");
 		moduleCounter = 0;
+		lastSuccessfulExprCount = 0;
 	}
 
 	~ReplSession() {
@@ -107,6 +108,7 @@ private:
 	std::vector<std::string> useStatements;
 	std::vector<std::string> history; // Accumulated expressions
 	int moduleCounter;
+	size_t lastSuccessfulExprCount; // Number of expressions successfully compiled
 
 	std::string trim(const std::string& str) {
 		size_t first = str.find_first_not_of(" \t\n\r");
@@ -157,35 +159,35 @@ private:
 			qd_stack_element(ctx->st, i, &elem);
 
 			switch (elem.type) {
-				case QD_STACK_TYPE_INT:
-					prompt += COLOR_BLUE;
-					prompt += std::to_string(elem.value.i);
-					prompt += COLOR_RESET;
-					break;
-				case QD_STACK_TYPE_FLOAT:
-					prompt += COLOR_YELLOW;
-					prompt += std::to_string(elem.value.f);
-					prompt += COLOR_RESET;
-					break;
-				case QD_STACK_TYPE_STR:
-					prompt += COLOR_GREEN;
-					prompt += "\"";
-					if (elem.value.s && elem.value.s->data) {
-						prompt += elem.value.s->data;
-					}
-					prompt += "\"";
-					prompt += COLOR_RESET;
-					break;
-				case QD_STACK_TYPE_PTR:
-					prompt += COLOR_MAGENTA;
-					prompt += "ptr";
-					prompt += COLOR_RESET;
-					break;
-				default:
-					prompt += COLOR_RED;
-					prompt += "?";
-					prompt += COLOR_RESET;
-					break;
+			case QD_STACK_TYPE_INT:
+				prompt += COLOR_BLUE;
+				prompt += std::to_string(elem.value.i);
+				prompt += COLOR_RESET;
+				break;
+			case QD_STACK_TYPE_FLOAT:
+				prompt += COLOR_YELLOW;
+				prompt += std::to_string(elem.value.f);
+				prompt += COLOR_RESET;
+				break;
+			case QD_STACK_TYPE_STR:
+				prompt += COLOR_GREEN;
+				prompt += "\"";
+				if (elem.value.s && elem.value.s->data) {
+					prompt += elem.value.s->data;
+				}
+				prompt += "\"";
+				prompt += COLOR_RESET;
+				break;
+			case QD_STACK_TYPE_PTR:
+				prompt += COLOR_MAGENTA;
+				prompt += "ptr";
+				prompt += COLOR_RESET;
+				break;
+			default:
+				prompt += COLOR_RED;
+				prompt += "?";
+				prompt += COLOR_RESET;
+				break;
 			}
 		}
 
@@ -198,26 +200,24 @@ private:
 
 	void printWelcome() {
 		printf("%sQuadrate %s REPL%s\n", COLOR_BOLD, QUADRATE_VERSION, COLOR_RESET);
-		printf("Type %shelp%s for available commands, %sexit%s to quit\n",
-			   COLOR_GREEN, COLOR_RESET, COLOR_GREEN, COLOR_RESET);
-		printf("%sTip: Use 'print' to display integer/float values, 'prints' for strings%s\n",
-			   COLOR_DIM, COLOR_RESET);
+		printf("Type %shelp%s for available commands, %sexit%s to quit\n", COLOR_GREEN, COLOR_RESET, COLOR_GREEN,
+				COLOR_RESET);
+		printf("%sTip: Use 'print' to display integer/float values, 'prints' for strings%s\n", COLOR_DIM, COLOR_RESET);
 		printf("\n");
 	}
 
 	void printHelp() {
 		printf("\n");
 		printf("%sREPL Commands:%s\n", COLOR_BOLD, COLOR_RESET);
-		printf("  %shelp%s, %s:help%s     Show this help message\n",
-			   COLOR_GREEN, COLOR_RESET, COLOR_GREEN, COLOR_RESET);
-		printf("  %sexit%s, %squit%s, %s:q%s  Exit the REPL\n",
-			   COLOR_GREEN, COLOR_RESET, COLOR_GREEN, COLOR_RESET, COLOR_GREEN, COLOR_RESET);
-		printf("  %sstack%s, %s:stack%s   Show current stack state\n",
-			   COLOR_GREEN, COLOR_RESET, COLOR_GREEN, COLOR_RESET);
-		printf("  %sclear%s, %s:clear%s   Clear the stack\n",
-			   COLOR_GREEN, COLOR_RESET, COLOR_GREEN, COLOR_RESET);
-		printf("  %sreset%s, %s:reset%s   Reset REPL (clear everything)\n",
-			   COLOR_GREEN, COLOR_RESET, COLOR_GREEN, COLOR_RESET);
+		printf("  %shelp%s, %s:help%s     Show this help message\n", COLOR_GREEN, COLOR_RESET, COLOR_GREEN,
+				COLOR_RESET);
+		printf("  %sexit%s, %squit%s, %s:q%s  Exit the REPL\n", COLOR_GREEN, COLOR_RESET, COLOR_GREEN, COLOR_RESET,
+				COLOR_GREEN, COLOR_RESET);
+		printf("  %sstack%s, %s:stack%s   Show current stack state\n", COLOR_GREEN, COLOR_RESET, COLOR_GREEN,
+				COLOR_RESET);
+		printf("  %sclear%s, %s:clear%s   Clear the stack\n", COLOR_GREEN, COLOR_RESET, COLOR_GREEN, COLOR_RESET);
+		printf("  %sreset%s, %s:reset%s   Reset REPL (clear everything)\n", COLOR_GREEN, COLOR_RESET, COLOR_GREEN,
+				COLOR_RESET);
 		printf("\n");
 		printf("%sKey Bindings:%s\n", COLOR_BOLD, COLOR_RESET);
 		printf("  %sUp/Down Arrow%s  Navigate command history\n", COLOR_GREEN, COLOR_RESET);
@@ -254,21 +254,21 @@ private:
 			printf("  [%zu] ", i);
 
 			switch (elem.type) {
-				case QD_STACK_TYPE_INT:
-					printf("%lld\n", static_cast<long long>(elem.value.i));
-					break;
-				case QD_STACK_TYPE_FLOAT:
-					printf("%f\n", elem.value.f);
-					break;
-				case QD_STACK_TYPE_STR:
-					printf("\"%s\"\n", (elem.value.s && elem.value.s->data) ? elem.value.s->data : "");
-					break;
-				case QD_STACK_TYPE_PTR:
-					printf("ptr:%p\n", elem.value.p);
-					break;
-				default:
-					printf("?\n");
-					break;
+			case QD_STACK_TYPE_INT:
+				printf("%lld\n", static_cast<long long>(elem.value.i));
+				break;
+			case QD_STACK_TYPE_FLOAT:
+				printf("%f\n", elem.value.f);
+				break;
+			case QD_STACK_TYPE_STR:
+				printf("\"%s\"\n", (elem.value.s && elem.value.s->data) ? elem.value.s->data : "");
+				break;
+			case QD_STACK_TYPE_PTR:
+				printf("ptr:%p\n", elem.value.p);
+				break;
+			default:
+				printf("?\n");
+				break;
 			}
 		}
 	}
@@ -355,6 +355,34 @@ private:
 		return source;
 	}
 
+	// Calculate the line number where the Nth expression starts in the generated source
+	// (accounting for package declaration added by qd_build)
+	size_t getExpressionLineNumber(size_t exprIndex) {
+		// Line 1: package repl_N (added by qd_build)
+		// Line 2: (empty line after package)
+		size_t line = 2;
+
+		// Use statements
+		line += useStatements.size();
+		if (!useStatements.empty()) {
+			line += 1; // Empty line after use statements
+		}
+
+		// Function definitions
+		line += functionDefs.size();
+		if (!functionDefs.empty()) {
+			line += 1; // Empty line after function definitions
+		}
+
+		// Line for "pub fn repl_main( -- ) {"
+		line += 1;
+
+		// Expressions are on subsequent lines (1-indexed, exprIndex is 0-indexed)
+		line += exprIndex + 1;
+
+		return line;
+	}
+
 	void compileAndExecute(const std::string& code) {
 		// Convert print to printv for the new code
 		std::string processedCode = convertPrint(code);
@@ -371,6 +399,13 @@ private:
 		// Get a fresh module for this execution
 		qd_module* execMod = qd_get_module(ctx, moduleName.c_str());
 		qd_add_script(execMod, source.c_str());
+
+		// Suppress warnings for previously compiled code
+		// The new expression starts at line getExpressionLineNumber(lastSuccessfulExprCount)
+		if (lastSuccessfulExprCount > 0) {
+			qd_set_warning_min_line(execMod, getExpressionLineNumber(lastSuccessfulExprCount));
+		}
+
 		qd_build(execMod);
 
 		// Only proceed if compilation succeeded
@@ -406,6 +441,7 @@ private:
 
 			// Add to history on success
 			history.push_back(processedCode);
+			lastSuccessfulExprCount = history.size();
 		} else {
 			// Returned from signal handler - execution crashed
 			g_inExecution = 0;

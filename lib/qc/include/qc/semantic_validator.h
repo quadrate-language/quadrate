@@ -86,6 +86,13 @@ namespace Qd {
 			return mStoredErrors;
 		}
 
+		// Set minimum line number for warnings (warnings on earlier lines are suppressed)
+		// This is useful for REPL-style incremental compilation where previous code
+		// has already been validated and we don't want to re-show warnings for it
+		void setWarningMinLine(size_t line) {
+			mWarningMinLine = line;
+		}
+
 	private:
 		// Pass 1: Collect all function definitions
 		void collectDefinitions(IAstNode* node);
@@ -249,6 +256,10 @@ namespace Qd {
 		// Error storage for LSP
 		bool mStoreErrors;
 		std::vector<ErrorInfo> mStoredErrors;
+
+		// Minimum line for warnings (warnings on earlier lines are suppressed)
+		// Default is 0 (no suppression)
+		size_t mWarningMinLine;
 	};
 
 } // namespace Qd

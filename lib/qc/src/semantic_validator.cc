@@ -160,7 +160,7 @@ namespace Qd {
 
 	SemanticValidator::SemanticValidator()
 		: mFilename(nullptr), mErrorCount(0), mWarningCount(0), mWerror(false), mIsModuleFile(false),
-		  mStoreErrors(false) {
+		  mStoreErrors(false), mWarningMinLine(0) {
 	}
 
 	bool SemanticValidator::isBuiltInInstruction(const char* name) const {
@@ -231,6 +231,11 @@ namespace Qd {
 		// If werror is enabled, treat warnings as errors
 		if (mWerror) {
 			reportError(node, message);
+			return;
+		}
+
+		// Suppress warnings for lines before the minimum line (for REPL incremental compilation)
+		if (mWarningMinLine > 0 && node && static_cast<size_t>(node->line()) < mWarningMinLine) {
 			return;
 		}
 

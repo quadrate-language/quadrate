@@ -89,8 +89,9 @@ struct qd_module {
 	fs::path temp_dir;
 	fs::path so_path;
 	bool compiled;
+	size_t warning_min_line; // Minimum line for warnings (0 = no suppression)
 
-	qd_module(const std::string& n) : name(n), dl_handle(nullptr), compiled(false) {
+	qd_module(const std::string& n) : name(n), dl_handle(nullptr), compiled(false), warning_min_line(0) {
 	}
 
 	~qd_module() {
@@ -143,6 +144,13 @@ void qd_register_function(qd_module* mod, const char* name, void (*fn)()) {
 	mod->native_functions[name] = fn;
 }
 
+void qd_set_warning_min_line(qd_module* mod, size_t line) {
+	if (!mod) {
+		return;
+	}
+	mod->warning_min_line = line;
+}
+
 void qd_build(qd_module* mod) {
 	if (!mod) {
 		return;
@@ -191,6 +199,9 @@ void qd_build(qd_module* mod) {
 
 		// Validate semantics (pass true for isModuleFile since this is dynamically loaded code)
 		Qd::SemanticValidator validator;
+		if (mod->warning_min_line > 0) {
+			validator.setWarningMinLine(mod->warning_min_line);
+		}
 		size_t error_count = validator.validate(root, source_file.string().c_str(), true, false);
 		if (error_count > 0) {
 			fprintf(stderr, "qd_build: Semantic validation failed with %zu error(s)\n", error_count);
@@ -203,13 +214,17 @@ void qd_build(qd_module* mod) {
 		std::unordered_set<std::string> processedModules;
 
 		std::function<void(Qd::IAstNode*)> collectAndLoadModules = [&](Qd::IAstNode* node) {
-			if (!node) return;
+			if (!node) {
+				return;
+			}
 			if (node->type() == Qd::IAstNode::Type::USE_STATEMENT) {
 				auto* useNode = static_cast<Qd::AstNodeUse*>(node);
 				std::string moduleName = useNode->module();
 
 				// Skip if already processed
-				if (processedModules.count(moduleName)) return;
+				if (processedModules.count(moduleName)) {
+					return;
+				}
 				processedModules.insert(moduleName);
 
 				// Find and load the module
@@ -221,12 +236,16 @@ void qd_build(qd_module* mod) {
 
 				// Read module file
 				std::ifstream moduleFile(modulePath);
-				if (!moduleFile.is_open()) return;
+				if (!moduleFile.is_open()) {
+					return;
+				}
 
 				moduleFile.seekg(0, std::ios::end);
 				auto pos = moduleFile.tellg();
 				moduleFile.seekg(0);
-				if (pos < 0) return;
+				if (pos < 0) {
+					return;
+				}
 
 				size_t size = static_cast<size_t>(pos);
 				std::string buffer(size, ' ');

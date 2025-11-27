@@ -91,6 +91,18 @@ void qd_build(qd_module* mod);
 bool qd_is_compiled(qd_module* mod);
 
 /**
+ * @brief Set minimum line for warnings during compilation
+ *
+ * Warnings for lines before the minimum line are suppressed during compilation.
+ * This is useful for REPL-style incremental compilation where previous code
+ * has already been validated and we don't want to re-show warnings for it.
+ *
+ * @param mod Target module
+ * @param line Minimum line number (1-based, 0 means no suppression)
+ */
+void qd_set_warning_min_line(qd_module* mod, size_t line);
+
+/**
  * @brief Execute a Quadrate function
  *
  * Executes a function from the compiled module. The function must have been
