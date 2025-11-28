@@ -125,6 +125,9 @@ namespace Qd {
 		llvm::Function* freeFn = nullptr;
 		llvm::Function* qdStringReleaseFn = nullptr;
 		llvm::Function* qdStringDataFn = nullptr;
+		llvm::Function* qdStructAllocFn = nullptr;
+		llvm::Function* qdStructReleaseFn = nullptr;
+		llvm::Function* qdStructRetainFn = nullptr;
 		llvm::Function* addFn = nullptr;
 		llvm::Function* subFn = nullptr;
 		llvm::Function* mulFn = nullptr;
@@ -221,6 +224,7 @@ namespace Qd {
 		};
 
 		std::map<std::string, StructLayout> structDefinitions;
+		std::map<std::string, llvm::Function*> structDestructors; // Generated destructor for each struct type
 
 		Impl(const std::string& moduleName) {
 			context = std::make_unique<llvm::LLVMContext>();
@@ -247,10 +251,12 @@ namespace Qd {
 		void generateLocalCleanup();
 		void generateCastInstructions(const std::vector<CastDirection>& casts, llvm::Value* ctx);
 		void processStructDeclaration(AstNodeStructDeclaration* structDecl);
+		void generateStructDestructors(); // Generate destructor functions for all struct types
 		void generateStructConstruction(const std::string& structName, llvm::Value* ctx);
 		void generateFieldAccess(AstNodeFieldAccess* fieldAccess, llvm::Value* ctx);
 		void generateArrayLiteral(AstNodeArrayLiteral* arrayLiteral, llvm::Value* ctx);
 		size_t getTypeSize(const std::string& typeName);
+		void generateStructCleanup(llvm::Value* structPtr, const std::string& structTypeName);
 
 		// Inline stack operations (performance optimization)
 		void generateInlinePushInt(llvm::Value* ctx, int64_t value);
@@ -406,6 +412,25 @@ namespace Qd {
 		// free(void* ptr)
 		auto freeFnTy = llvm::FunctionType::get(builder->getVoidTy(), {llvm::PointerType::getUnqual(*context)}, false);
 		this->freeFn = llvm::Function::Create(freeFnTy, llvm::Function::ExternalLinkage, "free", *module);
+
+		// qd_struct_alloc(size_t size, destructor_fn destructor) -> void*
+		// Destructor is void (*)(void*) - use opaque pointer
+		auto qdStructAllocFnTy = llvm::FunctionType::get(llvm::PointerType::getUnqual(*context),
+				{builder->getInt64Ty(), llvm::PointerType::getUnqual(*context)}, false);
+		this->qdStructAllocFn =
+				llvm::Function::Create(qdStructAllocFnTy, llvm::Function::ExternalLinkage, "qd_struct_alloc", *module);
+
+		// qd_struct_release(void* ptr)
+		auto qdStructReleaseFnTy =
+				llvm::FunctionType::get(builder->getVoidTy(), {llvm::PointerType::getUnqual(*context)}, false);
+		this->qdStructReleaseFn = llvm::Function::Create(
+				qdStructReleaseFnTy, llvm::Function::ExternalLinkage, "qd_struct_release", *module);
+
+		// qd_struct_retain(void* ptr) -> void*
+		auto qdStructRetainFnTy = llvm::FunctionType::get(
+				llvm::PointerType::getUnqual(*context), {llvm::PointerType::getUnqual(*context)}, false);
+		this->qdStructRetainFn =
+				llvm::Function::Create(qdStructRetainFnTy, llvm::Function::ExternalLinkage, "qd_struct_retain", *module);
 
 		// Initialize debug info if enabled
 		if (debugInfoEnabled) {
@@ -2391,76 +2416,10 @@ namespace Qd {
 			}
 			return;
 		} else if (name == "free") {
-			// Smart struct-aware free: if freeing a struct with string fields, free strings first
-			if (!lastIdentifierPushed.empty()) {
-				auto structTypeIt = localVariableStructTypes.find(lastIdentifierPushed);
-				if (structTypeIt != localVariableStructTypes.end()) {
-					const std::string& structTypeName = structTypeIt->second;
-					auto structDefIt = structDefinitions.find(structTypeName);
-					if (structDefIt != structDefinitions.end()) {
-						const StructLayout& layout = structDefIt->second;
-
-						// Check if struct has string fields
-						bool hasStringFields = false;
-						for (const auto& field : layout.fields) {
-							if (field.typeName == "str") {
-								hasStringFields = true;
-								break;
-							}
-						}
-
-						if (hasStringFields) {
-							// Generate cleanup code: load struct pointer, free string fields, then free struct
-							// Get the struct pointer from the local variable
-							auto localIt = localVariables.find(lastIdentifierPushed);
-							if (localIt != localVariables.end()) {
-								llvm::AllocaInst* localAlloca = localIt->second;
-
-								// Load struct pointer from local variable
-								llvm::Value* valuePtr =
-										builder->CreateStructGEP(stackElementTy, localAlloca, 0, "struct_value_ptr");
-								llvm::Value* structPtr = builder->CreateLoad(
-										llvm::PointerType::getUnqual(*context), valuePtr, "struct_ptr");
-
-								// Release each string field
-								for (const auto& field : layout.fields) {
-									if (field.typeName == "str") {
-										// Calculate field offset and load string pointer
-										auto fieldOffset = builder->getInt64(field.offset);
-										auto fieldBytePtr = builder->CreateGEP(
-												builder->getInt8Ty(), structPtr, fieldOffset, "field_byte_ptr");
-										llvm::Value* stringPtr = builder->CreateLoad(
-												llvm::PointerType::getUnqual(*context), fieldBytePtr, "string_ptr");
-
-										// Call qd_string_release() on the string
-										if (!this->qdStringReleaseFn) {
-											auto qdStringReleaseFnTy = llvm::FunctionType::get(builder->getVoidTy(),
-													{llvm::PointerType::getUnqual(*context)}, false);
-											this->qdStringReleaseFn = llvm::Function::Create(qdStringReleaseFnTy,
-													llvm::Function::ExternalLinkage, "qd_string_release", *module);
-										}
-										builder->CreateCall(this->qdStringReleaseFn, {stringPtr});
-									}
-								}
-
-								// Now call qd_free which will pop the pointer and free the struct itself
-								llvm::Function* qdFreeFn = module->getFunction("qd_free");
-								if (!qdFreeFn) {
-									auto fnTy = llvm::FunctionType::get(execResultTy, {contextPtrTy}, false);
-									qdFreeFn = llvm::Function::Create(
-											fnTy, llvm::Function::ExternalLinkage, "qd_free", *module);
-								}
-								builder->CreateCall(qdFreeFn, {ctx});
-								lastIdentifierPushed.clear();
-								return;
-							}
-						}
-					}
-				}
-			}
-
-			// Fall through to regular qd_free if not a struct or no string fields
+			// Use qd_free for raw memory (mem::alloc, mem::from_string, etc.)
+			// Structs are released automatically via local cleanup code
 			lastIdentifierPushed.clear();
+
 			llvm::Function* qdFreeFn = module->getFunction("qd_free");
 			if (!qdFreeFn) {
 				auto fnTy = llvm::FunctionType::get(execResultTy, {contextPtrTy}, false);
@@ -2566,11 +2525,12 @@ namespace Qd {
 			builder->CreateCall(pushStrRefFn, {ctx, strVal});
 			builder->CreateBr(endBlock);
 
-			// PTR block: load void* and push (retain if it's a known array variable)
+			// PTR block: load void* and push (retain for arrays and potential structs)
 			builder->SetInsertPoint(ptrBlock);
 			llvm::Value* ptrVal = builder->CreateLoad(llvm::PointerType::getUnqual(*context), valuePtr, name + "_p");
-			// Only retain if this is a known array variable (not raw pointers or structs)
+			// Retain based on variable type
 			if (localArrayVariables.find(name) != localArrayVariables.end()) {
+				// Retain array variables
 				llvm::Function* arrayRetainFn = module->getFunction("qd_array_retain");
 				if (!arrayRetainFn) {
 					auto arrayRetainFnTy = llvm::FunctionType::get(
@@ -2579,6 +2539,10 @@ namespace Qd {
 							arrayRetainFnTy, llvm::Function::ExternalLinkage, "qd_array_retain", *module);
 				}
 				builder->CreateCall(arrayRetainFn, {ptrVal});
+			} else {
+				// Try to retain as struct - qd_struct_retain uses registry lookup
+				// to safely ignore non-structs (file handles, raw memory, etc.)
+				builder->CreateCall(qdStructRetainFn, {ptrVal});
 			}
 			builder->CreateCall(pushPtrFn, {ctx, ptrVal});
 			builder->CreateBr(endBlock);
@@ -3251,6 +3215,11 @@ namespace Qd {
 			localVariableStructTypes[name] = lastStructConstructed;
 			lastStructConstructed.clear();
 		}
+		// NOTE: We do NOT retain when storing to a local.
+		// Refcount management is handled by retaining when PUSHING a local to pass to a function,
+		// and releasing when the function's local goes out of scope.
+		// This correctly handles both owned structs (created locally) and borrowed structs
+		// (received from function calls).
 
 		// If the last pushed value was an array, track this variable as an array variable
 		if (lastPushedWasArray) {
@@ -3330,7 +3299,22 @@ namespace Qd {
 				builder->CreateCall(arrayReleaseFn, {arrPtr});
 				builder->CreateBr(skipFreeBlock);
 			} else {
-				// For non-array PTRs (structs, raw pointers), skip to end
+				// For all other pointer locals, try to release as struct
+				// qd_struct_release uses a registry lookup to safely ignore non-structs
+				llvm::BasicBlock* freeStructBlock =
+						llvm::BasicBlock::Create(*context, varName + "_free_struct", currentFn);
+				llvm::Value* isPtr = builder->CreateICmpEQ(type, builder->getInt32(2), varName + "_is_ptr");
+				builder->CreateCondBr(isPtr, freeStructBlock, skipFreeBlock);
+
+				// Release struct block
+				builder->SetInsertPoint(freeStructBlock);
+				llvm::Value* ptrValuePtr = builder->CreateStructGEP(
+						stackElementTy, localAlloca, 0, varName + "_cleanup_struct_value_ptr");
+				llvm::Value* structPtr = builder->CreateLoad(
+						llvm::PointerType::getUnqual(*context), ptrValuePtr, varName + "_cleanup_struct");
+
+				// Call qd_struct_release() on the struct (safe for any pointer)
+				builder->CreateCall(qdStructReleaseFn, {structPtr});
 				builder->CreateBr(skipFreeBlock);
 			}
 
@@ -4016,6 +4000,7 @@ namespace Qd {
 		localVariables.clear();
 		localVariableStructTypes.clear();
 		localArrayVariables.clear();
+		lastStructConstructed.clear();
 
 		// Set current module prefix for intra-module function calls
 		currentModulePrefix = namePrefix;
@@ -4335,6 +4320,23 @@ namespace Qd {
 			deferScopeStack.clear();
 			pushDeferScope();
 
+			// Pre-register struct-typed parameters so they get released at cleanup
+			// Parameters with struct type annotations will be stored via `-> name` in the body
+			for (const auto* paramNode : funcNode->inputParameters()) {
+				if (const auto* param = dynamic_cast<const AstNodeParameter*>(paramNode)) {
+					const std::string& typeStr = param->typeString();
+					// Check if this is a struct type (not a primitive type)
+					if (!typeStr.empty() && typeStr != "i" && typeStr != "i64" && typeStr != "int" &&
+							typeStr != "int64" && typeStr != "f" && typeStr != "f64" && typeStr != "float" &&
+							typeStr != "s" && typeStr != "str" && typeStr != "string" && typeStr != "p" &&
+							typeStr != "ptr" && typeStr != "pointer") {
+						// This is a struct type - mark the parameter name as a struct local
+						// so it gets released at function cleanup
+						localVariableStructTypes[param->name()] = typeStr;
+					}
+				}
+			}
+
 			// Generate function body
 			auto body = funcNode->body();
 			if (body) {
@@ -4513,6 +4515,9 @@ namespace Qd {
 				processStructDeclaration(structNode);
 			}
 		}
+
+		// Generate destructor functions for all struct types (after all structs are known)
+		generateStructDestructors();
 
 		// Process import statements from main file
 		for (size_t i = 0; i < root->childCount(); i++) {
@@ -5030,11 +5035,9 @@ namespace Qd {
 			return 4;
 		} else if (typeName == "str" || typeName.find('*') != std::string::npos) {
 			return 8; // Pointer size
-		}
-		// For custom types (structs), look up in structDefinitions
-		auto it = structDefinitions.find(typeName);
-		if (it != structDefinitions.end()) {
-			return it->second.totalSize;
+		} else if (!typeName.empty() && std::isupper(typeName[0])) {
+			// Struct-typed field - stored as pointer, not inline
+			return 8; // Pointer size
 		}
 		return 8; // Default to pointer size
 	}
@@ -5068,6 +5071,136 @@ namespace Qd {
 		structDefinitions[layout.name] = layout;
 	}
 
+	// Generate cleanup code for a struct - frees nested struct fields and string fields
+	void LlvmGenerator::Impl::generateStructCleanup(llvm::Value* structPtr, const std::string& structTypeName) {
+		auto structDefIt = structDefinitions.find(structTypeName);
+		if (structDefIt == structDefinitions.end()) {
+			return;
+		}
+
+		const StructLayout& layout = structDefIt->second;
+
+		// First, recursively cleanup nested struct fields
+		for (const auto& field : layout.fields) {
+			// Check if field is a struct type (PascalCase = uppercase first letter)
+			if (!field.typeName.empty() && std::isupper(field.typeName[0])) {
+				// Load the nested struct pointer from this field
+				auto fieldOffset = builder->getInt64(field.offset);
+				auto fieldBytePtr = builder->CreateGEP(builder->getInt8Ty(), structPtr, fieldOffset, "nested_field_ptr");
+				llvm::Value* nestedStructPtr = builder->CreateLoad(
+						llvm::PointerType::getUnqual(*context), fieldBytePtr, "nested_struct_ptr");
+
+				// Recursively cleanup the nested struct
+				generateStructCleanup(nestedStructPtr, field.typeName);
+
+				// Free the nested struct memory
+				builder->CreateCall(this->freeFn, {nestedStructPtr});
+			}
+		}
+
+		// Then, release string fields
+		for (const auto& field : layout.fields) {
+			if (field.typeName == "str") {
+				// Calculate field offset and load string pointer
+				auto fieldOffset = builder->getInt64(field.offset);
+				auto fieldBytePtr = builder->CreateGEP(builder->getInt8Ty(), structPtr, fieldOffset, "str_field_ptr");
+				llvm::Value* stringPtr =
+						builder->CreateLoad(llvm::PointerType::getUnqual(*context), fieldBytePtr, "string_ptr");
+
+				// Call qd_string_release() on the string
+				if (!this->qdStringReleaseFn) {
+					auto qdStringReleaseFnTy =
+							llvm::FunctionType::get(builder->getVoidTy(), {llvm::PointerType::getUnqual(*context)}, false);
+					this->qdStringReleaseFn = llvm::Function::Create(
+							qdStringReleaseFnTy, llvm::Function::ExternalLinkage, "qd_string_release", *module);
+				}
+				builder->CreateCall(this->qdStringReleaseFn, {stringPtr});
+			}
+		}
+	}
+
+	// Generate destructor functions for all struct types
+	void LlvmGenerator::Impl::generateStructDestructors() {
+		// Destructor function type: void (*)(void*)
+		auto destructorFnTy =
+				llvm::FunctionType::get(builder->getVoidTy(), {llvm::PointerType::getUnqual(*context)}, false);
+
+		// Ensure qd_string_release is declared (needed for string field cleanup)
+		if (!qdStringReleaseFn) {
+			auto qdStringReleaseFnTy =
+					llvm::FunctionType::get(builder->getVoidTy(), {llvm::PointerType::getUnqual(*context)}, false);
+			qdStringReleaseFn = llvm::Function::Create(
+					qdStringReleaseFnTy, llvm::Function::ExternalLinkage, "qd_string_release", *module);
+		}
+
+		for (const auto& [structName, layout] : structDefinitions) {
+			// Check if this struct has any fields that need cleanup
+			bool needsDestructor = false;
+			for (const auto& field : layout.fields) {
+				if (field.typeName == "str" ||
+					(!field.typeName.empty() && std::isupper(field.typeName[0]))) {
+					needsDestructor = true;
+					break;
+				}
+			}
+
+			if (!needsDestructor) {
+				// No destructor needed - will pass nullptr to qd_struct_alloc
+				structDestructors[structName] = nullptr;
+				continue;
+			}
+
+			// Generate destructor function
+			std::string dtorName = "__qd_dtor_" + structName;
+			auto dtorFn = llvm::Function::Create(destructorFnTy, llvm::Function::InternalLinkage, dtorName, *module);
+
+			// Save current insertion point
+			auto savedBlock = builder->GetInsertBlock();
+			auto savedPoint = builder->GetInsertPoint();
+
+			// Create entry block for destructor
+			auto entryBlock = llvm::BasicBlock::Create(*context, "entry", dtorFn);
+			builder->SetInsertPoint(entryBlock);
+
+			// Get struct pointer argument
+			llvm::Value* structPtr = dtorFn->getArg(0);
+
+			// Release nested struct fields first (call qd_struct_release)
+			for (const auto& field : layout.fields) {
+				if (!field.typeName.empty() && std::isupper(field.typeName[0])) {
+					// Nested struct field
+					auto fieldOffset = builder->getInt64(field.offset);
+					auto fieldBytePtr =
+							builder->CreateGEP(builder->getInt8Ty(), structPtr, fieldOffset, "nested_field_ptr");
+					llvm::Value* nestedStructPtr = builder->CreateLoad(
+							llvm::PointerType::getUnqual(*context), fieldBytePtr, "nested_struct_ptr");
+					builder->CreateCall(qdStructReleaseFn, {nestedStructPtr});
+				}
+			}
+
+			// Release string fields
+			for (const auto& field : layout.fields) {
+				if (field.typeName == "str") {
+					auto fieldOffset = builder->getInt64(field.offset);
+					auto fieldBytePtr =
+							builder->CreateGEP(builder->getInt8Ty(), structPtr, fieldOffset, "str_field_ptr");
+					llvm::Value* stringPtr =
+							builder->CreateLoad(llvm::PointerType::getUnqual(*context), fieldBytePtr, "string_ptr");
+					builder->CreateCall(qdStringReleaseFn, {stringPtr});
+				}
+			}
+
+			builder->CreateRetVoid();
+
+			// Restore insertion point
+			if (savedBlock) {
+				builder->SetInsertPoint(savedBlock, savedPoint);
+			}
+
+			structDestructors[structName] = dtorFn;
+		}
+	}
+
 	// Generate struct construction: pop values from stack, malloc, initialize, push pointer
 	void LlvmGenerator::Impl::generateStructConstruction(const std::string& structName, llvm::Value* ctx) {
 		auto it = structDefinitions.find(structName);
@@ -5088,9 +5221,17 @@ namespace Qd {
 				},
 				false);
 
-		// Allocate memory for struct
+		// Allocate memory for struct using qd_struct_alloc with destructor
 		auto structSize = builder->getInt64(layout.totalSize);
-		auto structPtr = builder->CreateCall(mallocFn, {structSize}, "struct_ptr");
+		llvm::Value* destructorPtr;
+		auto dtorIt = structDestructors.find(structName);
+		if (dtorIt != structDestructors.end() && dtorIt->second != nullptr) {
+			destructorPtr = dtorIt->second;
+		} else {
+			// No destructor needed - pass nullptr (opaque pointer)
+			destructorPtr = llvm::ConstantPointerNull::get(llvm::PointerType::getUnqual(*context));
+		}
+		auto structPtr = builder->CreateCall(qdStructAllocFn, {structSize, destructorPtr}, "struct_ptr");
 
 		// Pop values from stack in reverse order and write to struct fields
 		for (auto fieldIt = layout.fields.rbegin(); fieldIt != layout.fields.rend(); ++fieldIt) {
@@ -5131,10 +5272,14 @@ namespace Qd {
 				// Cast byte pointer to generic pointer for storing int64
 				llvm::Value* fieldPtr = bytePtr;
 				builder->CreateStore(intValue, fieldPtr);
-			} else if (field.typeName == "str" || field.typeName.find('*') != std::string::npos) {
-				// Pointer type
+			} else if (field.typeName == "str" || field.typeName.find('*') != std::string::npos ||
+					   (!field.typeName.empty() && std::isupper(field.typeName[0]))) {
+				// Pointer type (including struct-typed fields)
 				llvm::Value* ptrValue =
 						builder->CreateLoad(llvm::PointerType::getUnqual(*context), valuePtr, "ptr_val");
+				// NOTE: We do NOT retain nested struct fields here.
+				// Retain happens when pushing a local to the stack (in generateIdentifier).
+				// The containing struct's destructor will release nested structs.
 				builder->CreateStore(ptrValue, bytePtr);
 			}
 		}
@@ -5151,16 +5296,35 @@ namespace Qd {
 		const std::string& varName = fieldAccess->varName();
 		const std::string& fieldName = fieldAccess->fieldName();
 
-		// Load pointer from local variable
-		auto it = localVariables.find(varName);
-		if (it == localVariables.end()) {
-			std::cerr << "Error: Undefined variable: " << varName << std::endl;
-			return;
-		}
+		llvm::Value* structPtr = nullptr;
 
-		llvm::Value* structPtrAlloca = it->second;
-		llvm::Value* structPtr =
-				builder->CreateLoad(llvm::PointerType::getUnqual(*context), structPtrAlloca, "struct_ptr");
+		if (varName.empty()) {
+			// Stack-based field access (chained, e.g., @origin@x)
+			// Pop struct pointer from stack
+			llvm::Type* contextStructTy =
+					llvm::StructType::get(*context, {llvm::PointerType::getUnqual(*context)}, false);
+			llvm::Value* stackPtrPtr = builder->CreateStructGEP(contextStructTy, ctx, 0, "stack_ptr");
+			llvm::Value* stackPtr =
+					builder->CreateLoad(llvm::PointerType::getUnqual(*context), stackPtrPtr, "stack");
+
+			// Allocate temp for popped element
+			llvm::Value* tempElem = builder->CreateAlloca(stackElementTy, nullptr, "temp_elem");
+			builder->CreateCall(stackPopFn, {stackPtr, tempElem});
+
+			// Load the pointer value from the element
+			llvm::Value* valuePtr = builder->CreateStructGEP(stackElementTy, tempElem, 0, "value_ptr");
+			structPtr = builder->CreateLoad(llvm::PointerType::getUnqual(*context), valuePtr, "struct_ptr");
+		} else {
+			// Normal field access from local variable
+			auto it = localVariables.find(varName);
+			if (it == localVariables.end()) {
+				std::cerr << "Error: Undefined variable: " << varName << std::endl;
+				return;
+			}
+
+			llvm::Value* structPtrAlloca = it->second;
+			structPtr = builder->CreateLoad(llvm::PointerType::getUnqual(*context), structPtrAlloca, "struct_ptr");
+		}
 
 		// Find struct type by examining local variables
 		// For now, we need to track the type of each local variable
@@ -5208,6 +5372,12 @@ namespace Qd {
 			builder->CreateCall(pushStrRefFn, {ctx, ptrValue});
 		} else if (matchingField->typeName.find('*') != std::string::npos) {
 			// Pointer type - push as pointer (QD_STACK_TYPE_PTR)
+			llvm::Value* fieldPtr = bytePtr;
+			llvm::Value* ptrValue =
+					builder->CreateLoad(llvm::PointerType::getUnqual(*context), fieldPtr, "field_value");
+			builder->CreateCall(pushPtrFn, {ctx, ptrValue});
+		} else if (!matchingField->typeName.empty() && std::isupper(matchingField->typeName[0])) {
+			// Struct-typed field - stored as pointer, push as PTR
 			llvm::Value* fieldPtr = bytePtr;
 			llvm::Value* ptrValue =
 					builder->CreateLoad(llvm::PointerType::getUnqual(*context), fieldPtr, "field_value");

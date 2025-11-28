@@ -204,6 +204,10 @@ namespace Qd {
 		// Struct field types: maps struct name -> (field name -> type)
 		std::unordered_map<std::string, std::unordered_map<std::string, StackValueType>> mStructFieldTypes;
 
+		// Struct field struct types: maps struct name -> (field name -> struct type name)
+		// Only populated for fields that are struct-typed (i.e., where the type is another struct)
+		std::unordered_map<std::string, std::unordered_map<std::string, std::string>> mStructFieldStructTypes;
+
 		// Struct field order: maps struct name -> vector of field names (in declaration order)
 		std::unordered_map<std::string, std::vector<std::string>> mStructFieldOrder;
 

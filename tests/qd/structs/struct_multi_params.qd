@@ -16,9 +16,7 @@ fn add_offset( point:ptr offset:ptr -- ) {
 
 fn test_multi_params( -- ) {
   3.0 4.0 Point -> p
-  defer { p free }
   1.0 2.0 Offset -> o
-  defer { o free }
   p o add_offset
 }
 

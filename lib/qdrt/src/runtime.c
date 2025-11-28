@@ -3,6 +3,7 @@
 
 #include <qdrt/runtime.h>
 #include <qdrt/qd_string.h>
+#include <qdrt/qd_struct.h>
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -1916,8 +1917,45 @@ qd_exec_result qd_free(qd_context* ctx) {
 		abort();
 	}
 
-	// Free the memory (ptr can be NULL, free(NULL) is safe)
-	free(val.value.p);
+	// Check if this is a struct pointer (uses registry lookup)
+	if (qd_struct_is_valid(val.value.p)) {
+		// Struct pointers are offset from the malloc'd base, use release
+		qd_struct_release(val.value.p);
+	} else {
+		// Raw memory - free directly (ptr can be NULL, free(NULL) is safe)
+		free(val.value.p);
+	}
+
+	return (qd_exec_result){0};
+}
+
+// free_struct - release reference-counted struct from stack: ( ptr -- )
+// Uses qd_struct_release which decrements refcount and frees when it reaches 0
+qd_exec_result qd_free_struct(qd_context* ctx) {
+	size_t stack_size = qd_stack_size(ctx->st);
+	if (stack_size < 1) {
+		fprintf(stderr, "Fatal error in free: Stack underflow (required 1 element, have %zu)\n", stack_size);
+		dump_stack(ctx);
+		qd_print_stack_trace(ctx);
+		abort();
+	}
+
+	qd_stack_element_t val;
+	qd_stack_error err = qd_stack_pop(ctx->st, &val);
+	if (err != QD_STACK_OK) {
+		return (qd_exec_result){-2};
+	}
+
+	// Verify it's a pointer type
+	if (val.type != QD_STACK_TYPE_PTR) {
+		fprintf(stderr, "Fatal error in free: Expected pointer type, got type %d\n", val.type);
+		dump_stack(ctx);
+		qd_print_stack_trace(ctx);
+		abort();
+	}
+
+	// Release the struct (decrements refcount, frees when 0)
+	qd_struct_release(val.value.p);
 
 	return (qd_exec_result){0};
 }

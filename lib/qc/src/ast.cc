@@ -384,17 +384,24 @@ namespace Qd {
 		while ((token = u8t_scanner_scan(scanner)) != U8T_EOF) {
 			// Handle @ field access operator
 			if (sawAt && token == U8T_IDENTIFIER) {
-				// We have: identifier @field
 				sawAt = false;
+				// Get the field name
+				const char* fieldName = u8t_scanner_token_text(scanner, &n);
+
 				if (!tempNodes.empty() && tempNodes.back()->type() == IAstNode::Type::IDENTIFIER) {
+					// We have: identifier @field
 					AstNodeIdentifier* varIdent = static_cast<AstNodeIdentifier*>(tempNodes.back());
 					tempNodes.pop_back();
 
-					// Get the field name
-					const char* fieldName = u8t_scanner_token_text(scanner, &n);
 					AstNodeFieldAccess* fieldAccess = new AstNodeFieldAccess(varIdent->name(), fieldName);
 					setNodePosition(fieldAccess, scanner, src);
 					delete varIdent;
+					tempNodes.push_back(fieldAccess);
+				} else if (!tempNodes.empty() && tempNodes.back()->type() == IAstNode::Type::FIELD_ACCESS) {
+					// Chained field access: previous @field followed by @field2
+					// Use empty varName to indicate stack-based access
+					AstNodeFieldAccess* fieldAccess = new AstNodeFieldAccess("", fieldName);
+					setNodePosition(fieldAccess, scanner, src);
 					tempNodes.push_back(fieldAccess);
 				}
 				continue;
@@ -901,17 +908,24 @@ namespace Qd {
 
 			// Handle @ field access operator
 			if (sawAt && token == U8T_IDENTIFIER) {
-				// We have: identifier @field
 				sawAt = false;
+				// Get the field name
+				const char* fieldName = u8t_scanner_token_text(scanner, &n);
+
 				if (!tempNodes.empty() && tempNodes.back()->type() == IAstNode::Type::IDENTIFIER) {
+					// We have: identifier @field
 					AstNodeIdentifier* varIdent = static_cast<AstNodeIdentifier*>(tempNodes.back());
 					tempNodes.pop_back();
 
-					// Get the field name
-					const char* fieldName = u8t_scanner_token_text(scanner, &n);
 					AstNodeFieldAccess* fieldAccess = new AstNodeFieldAccess(varIdent->name(), fieldName);
 					setNodePosition(fieldAccess, scanner, src);
 					delete varIdent;
+					tempNodes.push_back(fieldAccess);
+				} else if (!tempNodes.empty() && tempNodes.back()->type() == IAstNode::Type::FIELD_ACCESS) {
+					// Chained field access: previous @field followed by @field2
+					// Use empty varName to indicate stack-based access
+					AstNodeFieldAccess* fieldAccess = new AstNodeFieldAccess("", fieldName);
+					setNodePosition(fieldAccess, scanner, src);
 					tempNodes.push_back(fieldAccess);
 				}
 				continue;

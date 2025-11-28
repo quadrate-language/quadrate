@@ -17,6 +17,7 @@
 #include <qdrt/array.h>
 #include <qdrt/context.h>
 #include <qdrt/exec_result.h>
+#include <qdrt/qd_struct.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -273,6 +274,17 @@ qd_exec_result qd_drop2(qd_context* ctx);
  * @return Execution result (0 on success)
  */
 qd_exec_result qd_free(qd_context* ctx);
+
+/**
+ * @brief Release a reference-counted struct from the stack ( ptr -- )
+ *
+ * Pops a struct pointer and calls qd_struct_release() on it.
+ * The struct will be freed when its refcount reaches 0.
+ *
+ * @param ctx Execution context
+ * @return Execution result (0 on success)
+ */
+qd_exec_result qd_free_struct(qd_context* ctx);
 
 /**
  * @brief Rotate three elements ( a b c -- b c a )

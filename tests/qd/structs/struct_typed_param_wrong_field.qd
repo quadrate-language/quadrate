@@ -19,5 +19,4 @@ fn bad_function(p:Point -- result:f64) {
 fn main( -- ) {
     3.0 4.0 Point -> pt
     pt bad_function . nl
-    pt free
 }

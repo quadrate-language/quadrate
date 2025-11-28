@@ -8,7 +8,6 @@ struct AllTypes {
 
 fn test_all_types( -- ) {
   42 3.14 "hello" 0 AllTypes -> obj
-  defer { obj free }
 
   obj @int_field . nl
   obj @float_field . nl

@@ -57,10 +57,5 @@ fn main( -- ) {
     pt1 pt2 0.75 weighted_midpoint -> w1
     "75% towards pt1: (" . w1 @x . ", " . w1 @y . ")" . nl
 
-    origin free
-    pt1 free
-    pt2 free
-    sum free
-    mid free
-    w1 free
+    // Structs are automatically released at end of scope
 }

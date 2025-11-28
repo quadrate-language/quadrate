@@ -5,7 +5,7 @@ struct Point {
 
 fn process_point( -- ) {
   1.0 2.0 Point -> p
-  defer { p free }
+  // Struct is auto-released at end of function
   0 5 1 for {
     $ 3 lt
     if {

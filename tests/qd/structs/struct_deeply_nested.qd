@@ -1,0 +1,36 @@
+// Test deeply nested structs
+
+struct Point {
+  x:f64
+  y:f64
+}
+
+struct Size {
+  width:f64
+  height:f64
+}
+
+struct Rect {
+  origin:Point
+  size:Size
+}
+
+struct Window {
+  title:str
+  bounds:Rect
+}
+
+fn main( -- ) {
+  // Build the nested structure
+  // Ownership transfers at each level - only need to free the outermost struct
+  10.0 20.0 Point -> pt
+  100.0 50.0 Size -> sz
+  pt sz Rect -> r
+  "Hello" r Window -> win
+
+  // Access deeply nested fields using chained access
+  win @bounds @origin @x . nl
+  win @bounds @origin @y . nl
+  win @bounds @size @width . nl
+  win @bounds @size @height . nl
+}

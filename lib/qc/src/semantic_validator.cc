@@ -477,14 +477,19 @@ namespace Qd {
 					seenFieldNames.insert(field->name());
 
 					StackValueType fieldType = StackValueType::UNKNOWN;
-					if (field->typeName() == "f64") {
+					const std::string& typeName = field->typeName();
+					if (typeName == "f64") {
 						fieldType = StackValueType::FLOAT;
-					} else if (field->typeName() == "i64") {
+					} else if (typeName == "i64") {
 						fieldType = StackValueType::INT;
-					} else if (field->typeName() == "str") {
+					} else if (typeName == "str") {
 						fieldType = StackValueType::STRING;
-					} else if (field->typeName() == "ptr" || field->typeName().find('*') != std::string::npos) {
+					} else if (typeName == "ptr" || typeName.find('*') != std::string::npos) {
 						fieldType = StackValueType::PTR;
+					} else if (!typeName.empty() && std::isupper(typeName[0])) {
+						// Struct type - treat as PTR and record the struct type name
+						fieldType = StackValueType::PTR;
+						mStructFieldStructTypes[structDecl->name()][field->name()] = typeName;
 					}
 					fieldTypes[field->name()] = fieldType;
 				}
@@ -1104,14 +1109,19 @@ namespace Qd {
 				fieldOrder.push_back(field->name());
 
 				StackValueType fieldType = StackValueType::UNKNOWN;
-				if (field->typeName() == "f64") {
+				const std::string& typeName = field->typeName();
+				if (typeName == "f64") {
 					fieldType = StackValueType::FLOAT;
-				} else if (field->typeName() == "i64") {
+				} else if (typeName == "i64") {
 					fieldType = StackValueType::INT;
-				} else if (field->typeName() == "str") {
+				} else if (typeName == "str") {
 					fieldType = StackValueType::STRING;
-				} else if (field->typeName() == "ptr" || field->typeName().find('*') != std::string::npos) {
+				} else if (typeName == "ptr" || typeName.find('*') != std::string::npos) {
 					fieldType = StackValueType::PTR;
+				} else if (!typeName.empty() && std::isupper(typeName[0])) {
+					// Struct type - treat as PTR and record the struct type name
+					fieldType = StackValueType::PTR;
+					mStructFieldStructTypes[structDecl->name()][field->name()] = typeName;
 				}
 				fieldTypes[field->name()] = fieldType;
 			}
@@ -2229,6 +2239,8 @@ namespace Qd {
 							for (size_t fi = 0; fi < fieldCount; fi++) {
 								size_t stackIdx = typeStack.size() - fieldCount + fi;
 								StackValueType actual = typeStack[stackIdx];
+								std::string actualStructType =
+										(stackIdx < structTypeStack.size()) ? structTypeStack[stackIdx] : "";
 								const AstNodeStructField* field = fields[fi];
 								const std::string& fieldName = field->name();
 
@@ -2242,6 +2254,16 @@ namespace Qd {
 									continue;
 								}
 								StackValueType expected = fieldTypeIt->second;
+
+								// Check if this field expects a specific struct type
+								std::string expectedStructType;
+								auto structFieldStructTypesIt = mStructFieldStructTypes.find(name);
+								if (structFieldStructTypesIt != mStructFieldStructTypes.end()) {
+									auto fieldStructTypeIt = structFieldStructTypesIt->second.find(fieldName);
+									if (fieldStructTypeIt != structFieldStructTypesIt->second.end()) {
+										expectedStructType = fieldStructTypeIt->second;
+									}
+								}
 
 								// Skip check if actual type is UNKNOWN (can't determine type)
 								if (actual == StackValueType::UNKNOWN) {
@@ -2269,11 +2291,24 @@ namespace Qd {
 										errorMsg += "': Field '";
 										errorMsg += fieldName;
 										errorMsg += "' expects ";
-										errorMsg += stackValueTypeToString(expected);
+										errorMsg += expectedStructType.empty() ? stackValueTypeToString(expected)
+																			   : expectedStructType;
 										errorMsg += ", but got ";
-										errorMsg += stackValueTypeToString(actual);
+										errorMsg += actualStructType.empty() ? stackValueTypeToString(actual)
+																			 : actualStructType;
 										reportError(ident, errorMsg.c_str());
 									}
+								} else if (!expectedStructType.empty() && actualStructType != expectedStructType) {
+									// Types match (both PTR) but struct types don't match
+									std::string errorMsg = "Type error in struct construction '";
+									errorMsg += name;
+									errorMsg += "': Field '";
+									errorMsg += fieldName;
+									errorMsg += "' expects ";
+									errorMsg += expectedStructType;
+									errorMsg += ", but got ";
+									errorMsg += actualStructType.empty() ? "ptr" : actualStructType;
+									reportError(ident, errorMsg.c_str());
 								}
 							}
 						}

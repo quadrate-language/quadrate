@@ -22,5 +22,4 @@ fn main( -- ) {
     3.0 4.0 Point -> pt
     pt print_point
     "Magnitude: " . pt magnitude . nl
-    pt free
 }

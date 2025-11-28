@@ -1,0 +1,27 @@
+// Test struct with nested struct field (custom datatype)
+
+struct Point {
+  x:f64
+  y:f64
+}
+
+struct Rectangle {
+  origin:Point
+  width:f64
+  height:f64
+}
+
+fn main( -- ) {
+  // Create a Point
+  1.0 2.0 Point -> p
+  // Note: p's ownership transfers to rect, so we don't free p separately
+
+  // Create a rectangle with Point as origin field
+  p 10.0 5.0 Rectangle -> rect
+
+  // Access nested struct fields using chained access
+  rect @origin @x . nl
+  rect @origin @y . nl
+  rect @width . nl
+  rect @height . nl
+}

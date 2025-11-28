@@ -1,0 +1,24 @@
+// Test reference counting for structs
+// Structs with nested struct fields are automatically freed via destructors
+
+struct Inner {
+  x:i64
+  y:i64
+}
+
+struct Outer {
+  inner:Inner
+  z:i64
+}
+
+fn main( -- ) {
+  // Create nested structs
+  10 20 Inner -> i
+  i 30 Outer -> o
+
+  // Access values
+  o @inner @x . nl
+  o @inner @y . nl
+  o @z . nl
+  // Auto-released at function end - destructor frees nested inner struct
+}

@@ -1,0 +1,32 @@
+// Test chained field access (rect @origin @x or rect @origin@x)
+
+struct Point {
+  x:f64
+  y:f64
+}
+
+struct Rectangle {
+  origin:Point
+  width:f64
+  height:f64
+}
+
+fn main( -- ) {
+  // Create structs
+  3.0 4.0 Point -> p
+  // p's ownership transfers to rect
+
+  p 100.0 50.0 Rectangle -> rect
+
+  // Chained field access with spaces
+  rect @origin @x . nl
+  rect @origin @y . nl
+
+  // Compact syntax without spaces
+  rect @origin@x . nl
+  rect @origin@y . nl
+
+  // Regular field access
+  rect @width . nl
+  rect @height . nl
+}

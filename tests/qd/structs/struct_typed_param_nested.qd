@@ -56,6 +56,4 @@ fn main( -- ) {
     "  double_sum: " . v double_sum . nl
 
     v describe_vec
-
-    v free
 }

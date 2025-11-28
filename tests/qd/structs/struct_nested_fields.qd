@@ -16,7 +16,6 @@ fn perimeter( r:ptr -- p:f64 ) {
 
 fn test_rectangle( -- ) {
   5.0 3.0 Rectangle -> r
-  defer { r free }
   r area . nl
   r perimeter . nl
 }

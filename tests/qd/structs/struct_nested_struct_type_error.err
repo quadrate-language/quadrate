@@ -1,0 +1,1 @@
+Type error in struct construction 'Rectangle': Field 'origin' expects Point, but got Color

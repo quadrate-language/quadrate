@@ -5,13 +5,14 @@ struct Point {
 
 fn main( -- ) {
   1.0 2.0 Point -> p1
-  defer { p1 free "Freed p1" prints nl }
+  defer { "Defer p1" prints nl }
 
   3.0 4.0 Point -> p2
-  defer { p2 free "Freed p2" prints nl }
+  defer { "Defer p2" prints nl }
 
   5.0 6.0 Point -> p3
-  defer { p3 free "Freed p3" prints nl }
+  defer { "Defer p3" prints nl }
 
   "Main work" prints nl
+  // Structs are automatically released at end of scope
 }

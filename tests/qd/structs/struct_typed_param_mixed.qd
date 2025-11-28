@@ -60,10 +60,4 @@ fn main( -- ) {
     // Test offset
     pt 10.0 20.0 offset_point -> offset
     "Offset: (" . offset @x . ", " . offset @y . ")" . nl
-
-    pt free
-    scaled free
-    cfg free
-    cfg_disabled free
-    offset free
 }

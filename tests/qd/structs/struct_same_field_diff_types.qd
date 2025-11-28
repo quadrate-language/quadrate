@@ -15,12 +15,10 @@ fn get_value( p:ptr -- v:f64 ) {
 fn test_same_field( -- ) {
   // Float version - exact match
   3.14 PersonWithFloat -> p1
-  defer { p1 free }
   p1 get_value . nl
 
   // Int version - implicit cast (with warning)
   42 PersonWithInt -> p2
-  defer { p2 free }
   p2 get_value . nl
 }
 

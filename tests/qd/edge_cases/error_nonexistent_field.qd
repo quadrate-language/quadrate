@@ -5,6 +5,5 @@ struct Point {
 
 fn main( -- ) {
   1.0 2.0 Point -> p
-  defer { p free }
   p @z . nl
 }

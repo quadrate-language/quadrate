@@ -6,11 +6,11 @@ struct Vec2 {
 fn test_vec2( -- ) {
   // Test struct construction and field access
   1.5 2.5 Vec2 -> v
-  defer { v free }
 
   // Access and print fields
   v @x . nl
   v @y . nl
+  // Struct auto-released at function end
 }
 
 fn main( -- ) {

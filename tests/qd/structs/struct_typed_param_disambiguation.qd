@@ -36,7 +36,4 @@ fn main( -- ) {
 
     "Circle x: " . circ get_circle_x . nl
     "Rect x: " . rect get_rect_x . nl
-
-    circ free
-    rect free
 }

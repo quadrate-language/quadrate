@@ -17,9 +17,4 @@ fn main( -- ) {
     // Scale a vector
     v1 2.0 geometry::scale -> v4
     "Scaled (3,4) by 2: (" . v4 @x . ", " . v4 @y . ")" . nl
-
-    v1 free
-    v2 free
-    v3 free
-    v4 free
 }

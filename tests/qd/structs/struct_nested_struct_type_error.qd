@@ -1,0 +1,26 @@
+// Test type error when passing wrong struct type to a struct field
+
+struct Point {
+  x:f64
+  y:f64
+}
+
+struct Color {
+  r:i64
+  g:i64
+  b:i64
+}
+
+struct Rectangle {
+  origin:Point
+  width:f64
+  height:f64
+}
+
+fn main( -- ) {
+  // Create a Color (wrong type)
+  255 128 64 Color -> c
+
+  // Try to use Color where Point is expected - should error
+  c 10.0 5.0 Rectangle -> rect
+}

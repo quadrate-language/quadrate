@@ -5,7 +5,6 @@ struct Counter {
 fn process_counter( val:i64 -- ) {
   -> val
   val Counter -> c
-  defer { c free }
 
   c @value 5 lt
   if {
