@@ -1,1 +1,1 @@
-Type error in function call 'get_age': Parameter of type 'Point' is missing required field 'age'
+Type error in function call 'get_age': Parameter 1 expects struct 'Person', but got 'Point'

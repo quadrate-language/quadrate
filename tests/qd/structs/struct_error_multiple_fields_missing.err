@@ -1,1 +1,1 @@
-Type error in function call 'distance_from_origin': Parameter of type 'Color' is missing required field
+Type error in function call 'distance_from_origin': Parameter 1 expects struct 'Point', but got 'Color'

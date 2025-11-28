@@ -1,4 +1,0 @@
-[1mquadc: [0m[1mtests/qd/structs/struct_multi_params.qd:20:7:[0m [1m[1;31merror:[0m [1mType error in function call 'add_offset': Parameter of type 'Point' is missing required field 'dy' (function accesses 'offset @dy')[0m
-[1mquadc: [0m[1mtests/qd/structs/struct_multi_params.qd:20:7:[0m [1m[1;31merror:[0m [1mType error in function call 'add_offset': Parameter of type 'Point' is missing required field 'dx' (function accesses 'offset @dx')[0m
-[1mquadc: [0m[1mtests/qd/structs/struct_multi_params.qd:20:7:[0m [1m[1;31merror:[0m [1mType error in function call 'add_offset': Parameter of type 'Offset' is missing required field 'y' (function accesses 'point @y')[0m
-[1mquadc: [0m[1mtests/qd/structs/struct_multi_params.qd:20:7:[0m [1m[1;31merror:[0m [1mType error in function call 'add_offset': Parameter of type 'Offset' is missing required field 'x' (function accesses 'point @x')[0m

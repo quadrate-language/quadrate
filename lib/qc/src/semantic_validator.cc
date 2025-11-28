@@ -1857,6 +1857,13 @@ namespace Qd {
 				if (localIt != localVarTypes.end()) {
 					// Push the local variable's type
 					typeStack.push_back(localIt->second);
+					// Push the struct type if this is a struct variable
+					auto structTypeIt = mLocalVariableStructTypes.find(name);
+					if (structTypeIt != mLocalVariableStructTypes.end()) {
+						structTypeStack.push_back(structTypeIt->second);
+					} else {
+						structTypeStack.push_back("");
+					}
 					break;
 				}
 
@@ -1881,12 +1888,16 @@ namespace Qd {
 					auto structFieldIt = mStructFieldTypes.find(name);
 					if (structFieldIt != mStructFieldTypes.end()) {
 						size_t fieldCount = structFieldIt->second.size();
-						// Pop field values
+						// Pop field values from both stacks
 						for (size_t fi = 0; fi < fieldCount && !typeStack.empty(); fi++) {
 							typeStack.pop_back();
+							if (!structTypeStack.empty()) {
+								structTypeStack.pop_back();
+							}
 						}
 					}
 					typeStack.push_back(StackValueType::PTR);
+					structTypeStack.push_back(name); // Track the struct type
 					break;
 				}
 
@@ -1899,9 +1910,13 @@ namespace Qd {
 							size_t fieldCount = structFieldIt->second.size();
 							for (size_t fi = 0; fi < fieldCount && !typeStack.empty(); fi++) {
 								typeStack.pop_back();
+								if (!structTypeStack.empty()) {
+									structTypeStack.pop_back();
+								}
 							}
 						}
 						typeStack.push_back(StackValueType::PTR);
+						structTypeStack.push_back(name); // Track the struct type
 						break;
 					}
 				}
@@ -2530,23 +2545,75 @@ namespace Qd {
 
 					// Validate struct field requirements for PTR parameters
 					if (!sig.parameterFieldAccess.empty()) {
-						// Validate each PTR parameter that has field requirements
+						// Build a mapping from struct type name to required fields
+						// by matching parameterStructTypes to parameterFieldAccess
+						std::unordered_map<std::string, const std::unordered_map<std::string, StackValueType>*>
+								structTypeToRequiredFields;
 						for (const auto& paramField : sig.parameterFieldAccess) {
-							const std::string& paramName = paramField.first;
-							const std::unordered_map<std::string, StackValueType>& requiredFields = paramField.second;
-
-							// Validate all PTR parameters on the stack
-							for (size_t j = 0; j < sig.consumes.size(); j++) {
-								if (sig.consumes[j] == StackValueType::PTR) {
-									size_t stackIdx = typeStack.size() - sig.consumes.size() + j;
-									std::string structType = "";
-									if (stackIdx < structTypeStack.size()) {
-										structType = structTypeStack[stackIdx];
+							// Find the struct type for this parameter by scanning parameterStructTypes
+							for (const auto& pst : sig.parameterStructTypes) {
+								// We need to match by name somehow - check if the parameter name matches
+								// Since we don't have direct name->index, we'll use struct type matching
+								const std::string& expectedStructType = pst.second;
+								// If this struct type hasn't been assigned required fields yet, assign them
+								if (structTypeToRequiredFields.find(expectedStructType) ==
+										structTypeToRequiredFields.end()) {
+									// Check if this param's field accesses match this struct type's fields
+									auto structFieldIt = mStructFieldTypes.find(expectedStructType);
+									if (structFieldIt != mStructFieldTypes.end()) {
+										const auto& availableFields = structFieldIt->second;
+										bool allFieldsMatch = true;
+										for (const auto& reqField : paramField.second) {
+											if (availableFields.find(reqField.first) == availableFields.end()) {
+												allFieldsMatch = false;
+												break;
+											}
+										}
+										if (allFieldsMatch && !paramField.second.empty()) {
+											structTypeToRequiredFields[expectedStructType] = &paramField.second;
+										}
 									}
+								}
+							}
+						}
 
-									// Validate this struct has all required fields with correct types
-									if (!structType.empty()) {
-										auto structFieldIt = mStructFieldTypes.find(structType);
+						// Validate each PTR parameter on the stack
+						for (size_t j = 0; j < sig.consumes.size(); j++) {
+							if (sig.consumes[j] == StackValueType::PTR) {
+								size_t stackIdx = typeStack.size() - sig.consumes.size() + j;
+								std::string actualStructType = "";
+								if (stackIdx < structTypeStack.size()) {
+									actualStructType = structTypeStack[stackIdx];
+								}
+
+								// Get expected struct type for this parameter index
+								std::string expectedStructType = "";
+								auto pstIt = sig.parameterStructTypes.find(j);
+								if (pstIt != sig.parameterStructTypes.end()) {
+									expectedStructType = pstIt->second;
+								}
+
+								// Validate struct type matches expectation
+								if (!expectedStructType.empty() && !actualStructType.empty() &&
+										actualStructType != expectedStructType) {
+									std::string errorMsg = "Type error in function call '";
+									errorMsg += name;
+									errorMsg += "': Parameter ";
+									errorMsg += std::to_string(j + 1);
+									errorMsg += " expects struct '";
+									errorMsg += expectedStructType;
+									errorMsg += "', but got '";
+									errorMsg += actualStructType;
+									errorMsg += "'";
+									reportError(ident, errorMsg.c_str());
+								}
+
+								// Validate field requirements for this specific struct type
+								if (!actualStructType.empty()) {
+									auto reqFieldsIt = structTypeToRequiredFields.find(actualStructType);
+									if (reqFieldsIt != structTypeToRequiredFields.end()) {
+										const auto& requiredFields = *reqFieldsIt->second;
+										auto structFieldIt = mStructFieldTypes.find(actualStructType);
 										if (structFieldIt != mStructFieldTypes.end()) {
 											const auto& availableFields = structFieldIt->second;
 
@@ -2554,44 +2621,32 @@ namespace Qd {
 												const std::string& requiredField = requiredFieldEntry.first;
 												StackValueType expectedType = requiredFieldEntry.second;
 
-												// Check if field exists
 												auto fieldIt = availableFields.find(requiredField);
 												if (fieldIt == availableFields.end()) {
 													std::string errorMsg = "Type error in function call '";
 													errorMsg += name;
-													errorMsg += "': Parameter of type '";
-													errorMsg += structType;
+													errorMsg += "': Struct '";
+													errorMsg += actualStructType;
 													errorMsg += "' is missing required field '";
 													errorMsg += requiredField;
-													errorMsg += "' (function accesses '";
-													errorMsg += paramName;
-													errorMsg += " @";
-													errorMsg += requiredField;
-													errorMsg += "')";
+													errorMsg += "'";
 													reportError(ident, errorMsg.c_str());
 												} else {
-													// Field exists - check if type matches
 													StackValueType actualType = fieldIt->second;
 													if (actualType != expectedType &&
 															expectedType != StackValueType::UNKNOWN &&
 															actualType != StackValueType::UNKNOWN) {
-														// Check if implicit cast is allowed
 														if (!isImplicitCastAllowed(actualType, expectedType)) {
 															std::string errorMsg = "Type error in function call '";
 															errorMsg += name;
 															errorMsg += "': Field '";
 															errorMsg += requiredField;
 															errorMsg += "' in struct '";
-															errorMsg += structType;
+															errorMsg += actualStructType;
 															errorMsg += "' has type ";
 															errorMsg += stackValueTypeToString(actualType);
 															errorMsg += ", but function expects ";
 															errorMsg += stackValueTypeToString(expectedType);
-															errorMsg += " (function accesses '";
-															errorMsg += paramName;
-															errorMsg += " @";
-															errorMsg += requiredField;
-															errorMsg += "')";
 															reportError(ident, errorMsg.c_str());
 														}
 													}
@@ -2735,6 +2790,67 @@ namespace Qd {
 				AstNodeFieldAccess* fieldAccess = static_cast<AstNodeFieldAccess*>(child);
 				const std::string& varName = fieldAccess->varName();
 				const std::string& fieldName = fieldAccess->fieldName();
+
+				// Check if varName is a struct type name (inline struct field access)
+				// e.g., "100 200 IntPair @x" - IntPair is a struct type, not a variable
+				// We distinguish inline construction from accessing an existing struct by checking:
+				// - If structTypeStack.back() == varName, the struct is already constructed (no pop)
+				// - Otherwise, the field values are on the stack waiting for construction (pop them)
+				auto inlineStructIt = mStructFieldTypes.find(varName);
+				if (inlineStructIt != mStructFieldTypes.end()) {
+					const auto& fields = inlineStructIt->second;
+					bool isExistingStruct =
+							!structTypeStack.empty() && structTypeStack.back() == varName;
+
+					if (!isExistingStruct) {
+						// This is inline struct field access - pop struct field values from stacks
+						size_t fieldCount = fields.size();
+						for (size_t fi = 0; fi < fieldCount && !typeStack.empty(); fi++) {
+							typeStack.pop_back();
+							if (!structTypeStack.empty()) {
+								structTypeStack.pop_back();
+							}
+						}
+					} else {
+						// Accessing an existing struct - pop just the struct pointer
+						typeStack.pop_back();
+						structTypeStack.pop_back();
+					}
+
+					// Find the field type
+					auto fieldIt = fields.find(fieldName);
+					if (fieldIt != fields.end()) {
+						StackValueType fieldType = fieldIt->second;
+						typeStack.push_back(fieldType);
+
+						// Check if field is a struct type
+						auto fieldStructIt = mStructFieldStructTypes.find(varName);
+						if (fieldStructIt != mStructFieldStructTypes.end()) {
+							auto structNameIt = fieldStructIt->second.find(fieldName);
+							if (structNameIt != fieldStructIt->second.end()) {
+								structTypeStack.push_back(structNameIt->second);
+							} else {
+								structTypeStack.push_back("");
+							}
+						} else {
+							structTypeStack.push_back("");
+						}
+					} else {
+						std::string errorMsg = "Type error in field access '";
+						errorMsg += varName;
+						errorMsg += " @";
+						errorMsg += fieldName;
+						errorMsg += "': Struct '";
+						errorMsg += varName;
+						errorMsg += "' has no field named '";
+						errorMsg += fieldName;
+						errorMsg += "'";
+						reportError(fieldAccess, errorMsg.c_str());
+						typeStack.push_back(StackValueType::ANY);
+						structTypeStack.push_back("");
+					}
+					break;
+				}
 
 				// Look up which struct type this variable holds
 				std::string structType = "";
@@ -3311,6 +3427,9 @@ namespace Qd {
 				return;
 			}
 			typeStack.pop_back(); // Pop the value
+			if (!structTypeStack.empty()) {
+				structTypeStack.pop_back();
+			}
 		}
 		// Non-destructive print: prints, printsv
 		else if (strcmp(name, "prints") == 0 || strcmp(name, "printsv") == 0) {

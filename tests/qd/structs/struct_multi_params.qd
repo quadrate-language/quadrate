@@ -10,6 +10,7 @@ struct Offset {
 }
 
 fn add_offset( point:ptr offset:ptr -- ) {
+  -> offset -> point
   point @x offset @dx add . nl
   point @y offset @dy add . nl
 }

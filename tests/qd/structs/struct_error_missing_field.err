@@ -1,1 +1,1 @@
-Type error in function call 'use_point': Parameter of type 'Point' is missing required field 'z'
+Type error in field access 'pt @z': Unknown variable or field
