@@ -3119,6 +3119,11 @@ namespace Qd {
 			llvm::IRBuilder<> tmpBuilder(&currentFn->getEntryBlock(), currentFn->getEntryBlock().begin());
 			localAlloca = tmpBuilder.CreateAlloca(stackElementTy, nullptr, name);
 
+			// Initialize type field to 0xFFFFFFFF (uninitialized marker) to avoid cleanup issues
+			// when variable is declared in a conditional branch that isn't taken
+			llvm::Value* typePtr = tmpBuilder.CreateStructGEP(stackElementTy, localAlloca, 1, name + "_init_type");
+			tmpBuilder.CreateStore(tmpBuilder.getInt32(static_cast<uint32_t>(-1)), typePtr);
+
 			// Store in local variables map
 			localVariables[name] = localAlloca;
 
@@ -3152,44 +3157,72 @@ namespace Qd {
 		} else {
 			// Variable already exists, reuse it
 			localAlloca = it->second;
-
-			// Release old string value if the variable currently holds a string
-			// This prevents memory leaks when reassigning string variables in loops
-			llvm::Value* oldTypePtr = builder->CreateStructGEP(stackElementTy, localAlloca, 1, name + "_old_type_ptr");
-			llvm::Value* oldType = builder->CreateLoad(builder->getInt32Ty(), oldTypePtr, name + "_old_type");
-
-			// Check if old type == QD_STACK_TYPE_STR (3)
-			llvm::Value* wasString = builder->CreateICmpEQ(oldType, builder->getInt32(3), name + "_was_str");
-
-			// Create basic blocks for conditional release
-			llvm::Function* currentFn = builder->GetInsertBlock()->getParent();
-			llvm::BasicBlock* releaseStrBlock =
-					llvm::BasicBlock::Create(*context, name + "_release_old_str", currentFn);
-			llvm::BasicBlock* afterReleaseBlock =
-					llvm::BasicBlock::Create(*context, name + "_after_release", currentFn);
-
-			builder->CreateCondBr(wasString, releaseStrBlock, afterReleaseBlock);
-
-			// Release old string block
-			builder->SetInsertPoint(releaseStrBlock);
-			llvm::Value* oldValuePtr =
-					builder->CreateStructGEP(stackElementTy, localAlloca, 0, name + "_old_value_ptr");
-			llvm::Value* oldStrPtr =
-					builder->CreateLoad(llvm::PointerType::getUnqual(*context), oldValuePtr, name + "_old_str");
-
-			// Call qd_string_release() on the old string
-			if (!this->qdStringReleaseFn) {
-				auto qdStringReleaseFnTy =
-						llvm::FunctionType::get(builder->getVoidTy(), {llvm::PointerType::getUnqual(*context)}, false);
-				this->qdStringReleaseFn = llvm::Function::Create(
-						qdStringReleaseFnTy, llvm::Function::ExternalLinkage, "qd_string_release", *module);
-			}
-			builder->CreateCall(this->qdStringReleaseFn, {oldStrPtr});
-			builder->CreateBr(afterReleaseBlock);
-
-			// Continue after release
-			builder->SetInsertPoint(afterReleaseBlock);
 		}
+
+		// ALWAYS check and release old value before storing new one
+		// This handles both explicit reassignment and loop iterations
+		// The type == -1 check handles the first assignment (no old value to release)
+		llvm::Value* oldTypePtr = builder->CreateStructGEP(stackElementTy, localAlloca, 1, name + "_old_type_ptr");
+		llvm::Value* oldType = builder->CreateLoad(builder->getInt32Ty(), oldTypePtr, name + "_old_type");
+
+		// Create basic blocks for conditional release
+		llvm::Function* currentFn = builder->GetInsertBlock()->getParent();
+		llvm::BasicBlock* checkStrBlock =
+				llvm::BasicBlock::Create(*context, name + "_check_old_str", currentFn);
+		llvm::BasicBlock* releaseStrBlock =
+				llvm::BasicBlock::Create(*context, name + "_release_old_str", currentFn);
+		llvm::BasicBlock* checkPtrBlock =
+				llvm::BasicBlock::Create(*context, name + "_check_old_ptr", currentFn);
+		llvm::BasicBlock* releasePtrBlock =
+				llvm::BasicBlock::Create(*context, name + "_release_old_ptr", currentFn);
+		llvm::BasicBlock* afterReleaseBlock =
+				llvm::BasicBlock::Create(*context, name + "_after_release", currentFn);
+
+		// First check if type == -1 (uninitialized) - skip release if first assignment
+		llvm::Value* isUninitialized =
+				builder->CreateICmpEQ(oldType, builder->getInt32(static_cast<uint32_t>(-1)), name + "_was_uninit");
+		builder->CreateCondBr(isUninitialized, afterReleaseBlock, checkStrBlock);
+
+		// Check if old type == QD_STACK_TYPE_STR (3)
+		builder->SetInsertPoint(checkStrBlock);
+		llvm::Value* wasString = builder->CreateICmpEQ(oldType, builder->getInt32(3), name + "_was_str");
+		builder->CreateCondBr(wasString, releaseStrBlock, checkPtrBlock);
+
+		// Release old string block
+		builder->SetInsertPoint(releaseStrBlock);
+		llvm::Value* oldValuePtrStr =
+				builder->CreateStructGEP(stackElementTy, localAlloca, 0, name + "_old_value_ptr_str");
+		llvm::Value* oldStrPtr =
+				builder->CreateLoad(llvm::PointerType::getUnqual(*context), oldValuePtrStr, name + "_old_str");
+
+		// Call qd_string_release() on the old string
+		if (!this->qdStringReleaseFn) {
+			auto qdStringReleaseFnTy =
+					llvm::FunctionType::get(builder->getVoidTy(), {llvm::PointerType::getUnqual(*context)}, false);
+			this->qdStringReleaseFn = llvm::Function::Create(
+					qdStringReleaseFnTy, llvm::Function::ExternalLinkage, "qd_string_release", *module);
+		}
+		builder->CreateCall(this->qdStringReleaseFn, {oldStrPtr});
+		builder->CreateBr(afterReleaseBlock);
+
+		// Check if old value was a pointer (potential struct)
+		builder->SetInsertPoint(checkPtrBlock);
+		llvm::Value* wasPtr = builder->CreateICmpEQ(oldType, builder->getInt32(2), name + "_was_ptr");
+		builder->CreateCondBr(wasPtr, releasePtrBlock, afterReleaseBlock);
+
+		// Release old struct pointer block
+		builder->SetInsertPoint(releasePtrBlock);
+		llvm::Value* oldValuePtrPtr =
+				builder->CreateStructGEP(stackElementTy, localAlloca, 0, name + "_old_value_ptr_ptr");
+		llvm::Value* oldPtrVal =
+				builder->CreateLoad(llvm::PointerType::getUnqual(*context), oldValuePtrPtr, name + "_old_ptr");
+
+		// Call qd_struct_release() - it safely ignores non-structs via registry check
+		builder->CreateCall(qdStructReleaseFn, {oldPtrVal});
+		builder->CreateBr(afterReleaseBlock);
+
+		// Continue after release
+		builder->SetInsertPoint(afterReleaseBlock);
 
 		// Get the stack pointer from context
 		// Context layout: {qd_stack* st, int64_t error_code, char* error_msg, int argc, char** argv, char*
@@ -3251,9 +3284,19 @@ namespace Qd {
 
 			// Create basic blocks for conditional free
 			llvm::Function* currentFn = builder->GetInsertBlock()->getParent();
+			llvm::BasicBlock* checkInitBlock =
+					llvm::BasicBlock::Create(*context, varName + "_check_init", currentFn);
 			llvm::BasicBlock* freeStrBlock = llvm::BasicBlock::Create(*context, varName + "_free_str", currentFn);
 			llvm::BasicBlock* checkPtrBlock = llvm::BasicBlock::Create(*context, varName + "_check_ptr", currentFn);
 			llvm::BasicBlock* skipFreeBlock = llvm::BasicBlock::Create(*context, varName + "_skip_free", currentFn);
+
+			// First check if type == 0xFFFFFFFF (uninitialized) - skip cleanup if never assigned
+			llvm::Value* isUninitialized =
+					builder->CreateICmpEQ(type, builder->getInt32(static_cast<uint32_t>(-1)), varName + "_is_uninit");
+			builder->CreateCondBr(isUninitialized, skipFreeBlock, checkInitBlock);
+
+			// Variable was initialized, check its type
+			builder->SetInsertPoint(checkInitBlock);
 
 			// Check if type == QD_STACK_TYPE_STR (3)
 			llvm::Value* isString = builder->CreateICmpEQ(type, builder->getInt32(3), varName + "_is_str");
