@@ -143,6 +143,7 @@ namespace Qd {
 		// User-defined functions
 		std::map<std::string, llvm::Function*> userFunctions;
 		std::map<std::string, bool> fallibleFunctions; // Track which functions can throw errors
+		std::map<std::string, std::string> functionReturnStructType; // Track struct type returned by functions
 
 		// Module constants (scope::name -> value)
 		std::map<std::string, std::string> moduleConstants;
@@ -210,6 +211,9 @@ namespace Qd {
 
 		// Track whether the last pushed value was an array literal
 		bool lastPushedWasArray = false;
+
+		// Track if current function returns a pointer (structs must be heap-allocated)
+		bool currentFunctionReturnsPtr = false;
 
 		// Struct definitions: struct name -> field information
 		struct FieldInfo {
@@ -295,6 +299,9 @@ namespace Qd {
 		void pushDeferScope();
 		void popDeferScope();
 		void executeDeferScope(llvm::Value* ctx);
+
+		// Helper to find struct construction in function body
+		std::string findLastStructConstruction(IAstNode* node);
 	};
 
 	void LlvmGenerator::Impl::setupRuntimeDeclarations() {
@@ -2543,8 +2550,7 @@ namespace Qd {
 				}
 				builder->CreateCall(arrayRetainFn, {ptrVal});
 			} else {
-				// Try to retain as struct - qd_struct_retain uses registry lookup
-				// to safely ignore non-structs (file handles, raw memory, etc.)
+				// Retain struct pointer - safe for any pointer (registry check inside)
 				builder->CreateCall(qdStructRetainFn, {ptrVal});
 			}
 			builder->CreateCall(pushPtrFn, {ctx, ptrVal});
@@ -3165,7 +3171,7 @@ namespace Qd {
 		llvm::Value* oldTypePtr = builder->CreateStructGEP(stackElementTy, localAlloca, 1, name + "_old_type_ptr");
 		llvm::Value* oldType = builder->CreateLoad(builder->getInt32Ty(), oldTypePtr, name + "_old_type");
 
-		// Create basic blocks for conditional release
+		// Create basic blocks for conditional release (strings only - structs are stack-allocated)
 		llvm::Function* currentFn = builder->GetInsertBlock()->getParent();
 		llvm::BasicBlock* checkStrBlock =
 				llvm::BasicBlock::Create(*context, name + "_check_old_str", currentFn);
@@ -3173,8 +3179,6 @@ namespace Qd {
 				llvm::BasicBlock::Create(*context, name + "_release_old_str", currentFn);
 		llvm::BasicBlock* checkPtrBlock =
 				llvm::BasicBlock::Create(*context, name + "_check_old_ptr", currentFn);
-		llvm::BasicBlock* releasePtrBlock =
-				llvm::BasicBlock::Create(*context, name + "_release_old_ptr", currentFn);
 		llvm::BasicBlock* afterReleaseBlock =
 				llvm::BasicBlock::Create(*context, name + "_after_release", currentFn);
 
@@ -3205,8 +3209,10 @@ namespace Qd {
 		builder->CreateCall(this->qdStringReleaseFn, {oldStrPtr});
 		builder->CreateBr(afterReleaseBlock);
 
-		// Check if old value was a pointer (potential struct)
+		// Check if old value was a pointer - release old struct if it was a struct pointer
 		builder->SetInsertPoint(checkPtrBlock);
+		llvm::BasicBlock* releasePtrBlock =
+				llvm::BasicBlock::Create(*context, name + "_release_old_ptr", currentFn);
 		llvm::Value* wasPtr = builder->CreateICmpEQ(oldType, builder->getInt32(2), name + "_was_ptr");
 		builder->CreateCondBr(wasPtr, releasePtrBlock, afterReleaseBlock);
 
@@ -3216,8 +3222,7 @@ namespace Qd {
 				builder->CreateStructGEP(stackElementTy, localAlloca, 0, name + "_old_value_ptr_ptr");
 		llvm::Value* oldPtrVal =
 				builder->CreateLoad(llvm::PointerType::getUnqual(*context), oldValuePtrPtr, name + "_old_ptr");
-
-		// Call qd_struct_release() - it safely ignores non-structs via registry check
+		// Call qd_struct_release - safe for any pointer (uses registry check)
 		builder->CreateCall(qdStructReleaseFn, {oldPtrVal});
 		builder->CreateBr(afterReleaseBlock);
 
@@ -3345,22 +3350,18 @@ namespace Qd {
 				builder->CreateCall(arrayReleaseFn, {arrPtr});
 				builder->CreateBr(skipFreeBlock);
 			} else {
-				// For all other pointer locals, try to release as struct
-				// qd_struct_release uses a registry lookup to safely ignore non-structs
-				llvm::BasicBlock* freeStructBlock =
-						llvm::BasicBlock::Create(*context, varName + "_free_struct", currentFn);
+				// Non-array pointer - could be a struct pointer
+				// Call qd_struct_release (safe for any pointer - uses registry check)
+				llvm::BasicBlock* freePtrBlock = llvm::BasicBlock::Create(*context, varName + "_free_ptr", currentFn);
 				llvm::Value* isPtr = builder->CreateICmpEQ(type, builder->getInt32(2), varName + "_is_ptr");
-				builder->CreateCondBr(isPtr, freeStructBlock, skipFreeBlock);
+				builder->CreateCondBr(isPtr, freePtrBlock, skipFreeBlock);
 
-				// Release struct block
-				builder->SetInsertPoint(freeStructBlock);
-				llvm::Value* ptrValuePtr = builder->CreateStructGEP(
-						stackElementTy, localAlloca, 0, varName + "_cleanup_struct_value_ptr");
-				llvm::Value* structPtr = builder->CreateLoad(
-						llvm::PointerType::getUnqual(*context), ptrValuePtr, varName + "_cleanup_struct");
-
-				// Call qd_struct_release() on the struct (safe for any pointer)
-				builder->CreateCall(qdStructReleaseFn, {structPtr});
+				builder->SetInsertPoint(freePtrBlock);
+				llvm::Value* ptrValuePtr =
+						builder->CreateStructGEP(stackElementTy, localAlloca, 0, varName + "_cleanup_ptr_value_ptr");
+				llvm::Value* ptrVal = builder->CreateLoad(
+						llvm::PointerType::getUnqual(*context), ptrValuePtr, varName + "_cleanup_ptr");
+				builder->CreateCall(qdStructReleaseFn, {ptrVal});
 				builder->CreateBr(skipFreeBlock);
 			}
 
@@ -4049,6 +4050,13 @@ namespace Qd {
 		lastStructConstructed.clear();
 		lastFieldAccessResultType.clear();
 
+		// Check if function returns a pointer (structs must be heap-allocated in such functions)
+		// Note: Quadrate allows implicit returns (values left on stack), so we check both:
+		// Always use heap allocation for structs to ensure proper cleanup via destructors.
+		// Stack allocation was tried but causes memory leaks because stack-allocated structs
+		// aren't registered and qd_struct_release can't clean up their string fields.
+		currentFunctionReturnsPtr = true;
+
 		// Set current module prefix for intra-module function calls
 		currentModulePrefix = namePrefix;
 
@@ -4645,6 +4653,26 @@ namespace Qd {
 				// Register the function for forward reference lookup
 				userFunctions[funcNode->name()] = fn;
 				fallibleFunctions[funcNode->name()] = funcNode->throws();
+				// Track return struct type if output parameter is a struct
+				const auto& outputs = funcNode->outputParameters();
+				bool foundExplicitStructType = false;
+				for (auto* outParam : outputs) {
+					if (auto* param = dynamic_cast<AstNodeParameter*>(outParam)) {
+						const std::string& typeStr = param->typeString();
+						if (!typeStr.empty() && std::isupper(typeStr[0])) {
+							functionReturnStructType[funcNode->name()] = typeStr;
+							foundExplicitStructType = true;
+							break; // Use first struct-typed output
+						}
+					}
+				}
+				// If return type is ptr but body constructs a struct, infer the type
+				if (!foundExplicitStructType && funcNode->body()) {
+					std::string inferredType = findLastStructConstruction(funcNode->body());
+					if (!inferredType.empty()) {
+						functionReturnStructType[funcNode->name()] = inferredType;
+					}
+				}
 			}
 		}
 
@@ -5268,17 +5296,28 @@ namespace Qd {
 				},
 				false);
 
-		// Allocate memory for struct using qd_struct_alloc with destructor
-		auto structSize = builder->getInt64(layout.totalSize);
-		llvm::Value* destructorPtr;
-		auto dtorIt = structDestructors.find(structName);
-		if (dtorIt != structDestructors.end() && dtorIt->second != nullptr) {
-			destructorPtr = dtorIt->second;
+		// Allocate struct - use stack if function doesn't return pointer, heap otherwise
+		llvm::Value* structPtr = nullptr;
+
+		if (!currentFunctionReturnsPtr) {
+			// Stack allocation - struct lives only within this function
+			llvm::Function* currentFn = builder->GetInsertBlock()->getParent();
+			llvm::IRBuilder<> entryBuilder(&currentFn->getEntryBlock(), currentFn->getEntryBlock().begin());
+			auto structAlloca = entryBuilder.CreateAlloca(
+					llvm::ArrayType::get(builder->getInt8Ty(), layout.totalSize), nullptr, structName + "_stack");
+			structPtr = builder->CreateBitCast(structAlloca, llvm::PointerType::getUnqual(*context), "struct_ptr");
 		} else {
-			// No destructor needed - pass nullptr (opaque pointer)
-			destructorPtr = llvm::ConstantPointerNull::get(llvm::PointerType::getUnqual(*context));
+			// Heap allocation - struct may be returned, needs refcounting
+			llvm::Value* destructorPtr = nullptr;
+			auto destructorIt = structDestructors.find(structName);
+			if (destructorIt != structDestructors.end() && destructorIt->second != nullptr) {
+				destructorPtr = destructorIt->second;
+			} else {
+				destructorPtr = llvm::ConstantPointerNull::get(llvm::PointerType::getUnqual(*context));
+			}
+			structPtr = builder->CreateCall(
+					qdStructAllocFn, {builder->getInt64(layout.totalSize), destructorPtr}, "struct_ptr");
 		}
-		auto structPtr = builder->CreateCall(qdStructAllocFn, {structSize, destructorPtr}, "struct_ptr");
 
 		// Pop values from stack in reverse order and write to struct fields
 		for (auto fieldIt = layout.fields.rbegin(); fieldIt != layout.fields.rend(); ++fieldIt) {
@@ -5347,9 +5386,15 @@ namespace Qd {
 		std::string structTypeName;
 
 		if (varName.empty()) {
-			// Stack-based field access (chained, e.g., @origin@x)
-			// Use the result type from the previous field access
-			structTypeName = lastFieldAccessResultType;
+			// Stack-based field access - could be:
+			// 1. Chained field access (p @origin @x) - use lastFieldAccessResultType
+			// 2. Direct access after struct construction (Point @x) - use lastStructConstructed
+			if (!lastFieldAccessResultType.empty()) {
+				structTypeName = lastFieldAccessResultType;
+			} else if (!lastStructConstructed.empty()) {
+				structTypeName = lastStructConstructed;
+				lastStructConstructed.clear(); // Consume it
+			}
 
 			// Pop struct pointer from stack
 			llvm::Type* contextStructTy =
@@ -5366,21 +5411,80 @@ namespace Qd {
 			llvm::Value* valuePtr = builder->CreateStructGEP(stackElementTy, tempElem, 0, "value_ptr");
 			structPtr = builder->CreateLoad(llvm::PointerType::getUnqual(*context), valuePtr, "struct_ptr");
 		} else {
-			// Normal field access from local variable
-			auto it = localVariables.find(varName);
-			if (it == localVariables.end()) {
-				std::cerr << "Error: Undefined variable: " << varName << std::endl;
-				return;
-			}
+			// Check if varName is actually a struct type (e.g., Point @x after 1 2 Point @x)
+			// The parser created AstNodeFieldAccess("Point", "x") but Point is a struct, not a variable
+			auto structDefIt = structDefinitions.find(varName);
+			if (structDefIt != structDefinitions.end()) {
+				// varName is a struct type - generate struct construction first, then stack-based access
+				generateStructConstruction(varName, ctx);
+				structTypeName = varName;
 
-			// Look up the struct type from local variable tracking
-			auto typeIt = localVariableStructTypes.find(varName);
-			if (typeIt != localVariableStructTypes.end()) {
-				structTypeName = typeIt->second;
-			}
+				// Pop the just-constructed struct pointer from stack
+				llvm::Type* contextStructTy =
+						llvm::StructType::get(*context, {llvm::PointerType::getUnqual(*context)}, false);
+				llvm::Value* stackPtrPtr = builder->CreateStructGEP(contextStructTy, ctx, 0, "stack_ptr");
+				llvm::Value* stackPtr =
+						builder->CreateLoad(llvm::PointerType::getUnqual(*context), stackPtrPtr, "stack");
 
-			llvm::Value* structPtrAlloca = it->second;
-			structPtr = builder->CreateLoad(llvm::PointerType::getUnqual(*context), structPtrAlloca, "struct_ptr");
+				llvm::Value* tempElem = builder->CreateAlloca(stackElementTy, nullptr, "temp_elem");
+				builder->CreateCall(stackPopFn, {stackPtr, tempElem});
+
+				llvm::Value* valuePtr = builder->CreateStructGEP(stackElementTy, tempElem, 0, "value_ptr");
+				structPtr = builder->CreateLoad(llvm::PointerType::getUnqual(*context), valuePtr, "struct_ptr");
+			} else {
+				// Check if varName is a function - call it first, then do stack-based field access
+				auto funcIt = userFunctions.find(varName);
+				std::string funcLookupName = varName;
+				if (funcIt == userFunctions.end() && currentModulePrefix != "main") {
+					// Try with current module prefix
+					std::string qualifiedName = currentModulePrefix + "::" + varName;
+					funcIt = userFunctions.find(qualifiedName);
+					if (funcIt != userFunctions.end()) {
+						funcLookupName = qualifiedName;
+					}
+				}
+
+				if (funcIt != userFunctions.end()) {
+					// varName is a function - call it first
+					builder->CreateCall(funcIt->second, {ctx});
+
+					// Pop the result (struct pointer) from stack
+					llvm::Type* contextStructTy =
+							llvm::StructType::get(*context, {llvm::PointerType::getUnqual(*context)}, false);
+					llvm::Value* stackPtrPtr = builder->CreateStructGEP(contextStructTy, ctx, 0, "stack_ptr");
+					llvm::Value* stackPtr =
+							builder->CreateLoad(llvm::PointerType::getUnqual(*context), stackPtrPtr, "stack");
+
+					llvm::Value* tempElem = builder->CreateAlloca(stackElementTy, nullptr, "temp_elem");
+					builder->CreateCall(stackPopFn, {stackPtr, tempElem});
+
+					llvm::Value* valuePtr = builder->CreateStructGEP(stackElementTy, tempElem, 0, "value_ptr");
+					structPtr = builder->CreateLoad(llvm::PointerType::getUnqual(*context), valuePtr, "struct_ptr");
+
+					// Look up the return struct type from function signature
+					auto returnTypeIt = functionReturnStructType.find(funcLookupName);
+					if (returnTypeIt != functionReturnStructType.end()) {
+						structTypeName = returnTypeIt->second;
+					}
+				} else {
+					// Normal field access from local variable
+					auto it = localVariables.find(varName);
+					if (it == localVariables.end()) {
+						std::cerr << "Error: Undefined variable: " << varName << std::endl;
+						return;
+					}
+
+					// Look up the struct type from local variable tracking
+					auto typeIt = localVariableStructTypes.find(varName);
+					if (typeIt != localVariableStructTypes.end()) {
+						structTypeName = typeIt->second;
+					}
+
+					llvm::Value* structPtrAlloca = it->second;
+					structPtr =
+							builder->CreateLoad(llvm::PointerType::getUnqual(*context), structPtrAlloca, "struct_ptr");
+				}
+			}
 		}
 
 		// Find the field in the specific struct type if known
@@ -5619,6 +5723,31 @@ namespace Qd {
 		}
 
 		deferScopeStack.pop_back();
+	}
+
+	std::string LlvmGenerator::Impl::findLastStructConstruction(IAstNode* node) {
+		if (!node) {
+			return "";
+		}
+
+		std::string result;
+
+		// Check if this node is a struct construction (identifier that's a struct name)
+		if (auto* ident = dynamic_cast<AstNodeIdentifier*>(node)) {
+			if (structDefinitions.find(ident->name()) != structDefinitions.end()) {
+				result = ident->name();
+			}
+		}
+
+		// Recursively search children
+		for (size_t i = 0; i < node->childCount(); i++) {
+			std::string childResult = findLastStructConstruction(node->child(i));
+			if (!childResult.empty()) {
+				result = childResult; // Keep the last one found
+			}
+		}
+
+		return result;
 	}
 
 } // namespace Qd

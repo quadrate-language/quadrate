@@ -403,6 +403,12 @@ namespace Qd {
 					AstNodeFieldAccess* fieldAccess = new AstNodeFieldAccess("", fieldName);
 					setNodePosition(fieldAccess, scanner, src);
 					tempNodes.push_back(fieldAccess);
+				} else {
+					// Stack-based field access: @field after struct construction, function call, etc.
+					// Use empty varName to indicate stack-based access (pops struct from stack)
+					AstNodeFieldAccess* fieldAccess = new AstNodeFieldAccess("", fieldName);
+					setNodePosition(fieldAccess, scanner, src);
+					tempNodes.push_back(fieldAccess);
 				}
 				continue;
 			}

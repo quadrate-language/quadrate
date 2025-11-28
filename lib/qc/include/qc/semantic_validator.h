@@ -130,7 +130,7 @@ namespace Qd {
 		void typeCheckFunction(IAstNode* node);
 		void typeCheckBlock(IAstNode* node, std::vector<StackValueType>& typeStack,
 				std::unordered_map<std::string, StackValueType>& localVariables,
-				std::vector<std::string> initialStructTypes = {});
+				std::vector<std::string>& structTypeStack);
 		void typeCheckInstruction(IAstNode* node, const char* name, std::vector<StackValueType>& typeStack,
 				std::vector<std::string>& structTypeStack);
 

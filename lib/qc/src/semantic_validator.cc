@@ -2060,14 +2060,10 @@ namespace Qd {
 
 	void SemanticValidator::typeCheckBlock(IAstNode* node, std::vector<StackValueType>& typeStack,
 			std::unordered_map<std::string, StackValueType>& localVariables,
-			std::vector<std::string> initialStructTypes) {
+			std::vector<std::string>& structTypeStack) {
 		if (!node) {
 			return;
 		}
-
-		// Track which struct type each PTR on the stack represents (parallel to typeStack)
-		// Empty string means "not a struct pointer" or "unknown struct type"
-		std::vector<std::string> structTypeStack = std::move(initialStructTypes);
 
 		// Process each child in the block
 		for (size_t i = 0; i < node->childCount(); i++) {
@@ -2111,7 +2107,7 @@ namespace Qd {
 
 			case IAstNode::Type::BLOCK: {
 				// Recursively check nested blocks
-				typeCheckBlock(child, typeStack, localVariables);
+				typeCheckBlock(child, typeStack, localVariables, structTypeStack);
 				break;
 			}
 
@@ -2322,19 +2318,12 @@ namespace Qd {
 						}
 					}
 
-					// Check that the next node is a LOCAL (-> var) or this is the last statement
-					// (allowing struct to be returned on stack)
-					if (i + 1 < node->childCount()) {
-						IAstNode* nextNode = node->child(i + 1);
-						if (!nextNode || nextNode->type() != IAstNode::Type::LOCAL) {
-							std::string errorMsg = "Struct '";
-							errorMsg += name;
-							errorMsg += "' must be immediately stored in a local variable using '-> varName'. ";
-							errorMsg += "Struct pointers cannot be used directly from the stack.";
-							reportError(child, errorMsg.c_str());
-						}
-					}
-					// If this is the last statement, allow struct on stack (for returning)
+					// Struct pointers can now be used:
+					// - Stored to variable with -> var
+					// - Accessed with @field
+					// - As arguments to other struct constructors
+					// - Returned on stack
+					// The code generator handles all these cases correctly.
 
 					// Push pointer type for the constructed struct, along with its struct type
 					typeStack.push_back(StackValueType::PTR);
@@ -2428,19 +2417,7 @@ namespace Qd {
 							}
 						}
 
-						// Check that the next node is a LOCAL (-> var) or this is the last statement
-						// (allowing struct to be returned on stack)
-						if (i + 1 < node->childCount()) {
-							IAstNode* nextNode = node->child(i + 1);
-							if (!nextNode || nextNode->type() != IAstNode::Type::LOCAL) {
-								std::string errorMsg = "Struct '";
-								errorMsg += name;
-								errorMsg += "' must be immediately stored in a local variable using '-> varName'. ";
-								errorMsg += "Struct pointers cannot be used directly from the stack.";
-								reportError(child, errorMsg.c_str());
-							}
-						}
-						// If this is the last statement, allow struct on stack (for returning)
+						// Struct pointers can now be used flexibly - codegen handles all cases
 
 						typeStack.push_back(StackValueType::PTR);
 						structTypeStack.push_back(name); // Track which struct type this is
@@ -2961,23 +2938,7 @@ namespace Qd {
 							}
 						}
 
-						// Check that the next node is a LOCAL (-> var)
-						if (i + 1 < node->childCount()) {
-							IAstNode* nextNode = node->child(i + 1);
-							if (!nextNode || nextNode->type() != IAstNode::Type::LOCAL) {
-								std::string errorMsg = "Struct '";
-								errorMsg += qualifiedName;
-								errorMsg += "' must be immediately stored in a local variable using '-> varName'. ";
-								errorMsg += "Struct pointers cannot be used directly from the stack.";
-								reportError(child, errorMsg.c_str());
-							}
-						} else {
-							std::string errorMsg = "Struct '";
-							errorMsg += qualifiedName;
-							errorMsg += "' must be immediately stored in a local variable using '-> varName'. ";
-							errorMsg += "Struct pointers cannot be used directly from the stack.";
-							reportError(child, errorMsg.c_str());
-						}
+						// Struct pointers can now be used flexibly - codegen handles all cases
 
 						// Push pointer type for the constructed struct, with qualified name as type
 						typeStack.push_back(StackValueType::PTR);
