@@ -205,6 +205,9 @@ namespace Qd {
 		// Track the last struct type that was constructed (for local binding)
 		std::string lastStructConstructed;
 
+		// Track the result type of the last field access (for chained field access)
+		std::string lastFieldAccessResultType;
+
 		// Track whether the last pushed value was an array literal
 		bool lastPushedWasArray = false;
 
@@ -4001,6 +4004,7 @@ namespace Qd {
 		localVariableStructTypes.clear();
 		localArrayVariables.clear();
 		lastStructConstructed.clear();
+		lastFieldAccessResultType.clear();
 
 		// Set current module prefix for intra-module function calls
 		currentModulePrefix = namePrefix;
@@ -5297,9 +5301,13 @@ namespace Qd {
 		const std::string& fieldName = fieldAccess->fieldName();
 
 		llvm::Value* structPtr = nullptr;
+		std::string structTypeName;
 
 		if (varName.empty()) {
 			// Stack-based field access (chained, e.g., @origin@x)
+			// Use the result type from the previous field access
+			structTypeName = lastFieldAccessResultType;
+
 			// Pop struct pointer from stack
 			llvm::Type* contextStructTy =
 					llvm::StructType::get(*context, {llvm::PointerType::getUnqual(*context)}, false);
@@ -5322,25 +5330,44 @@ namespace Qd {
 				return;
 			}
 
+			// Look up the struct type from local variable tracking
+			auto typeIt = localVariableStructTypes.find(varName);
+			if (typeIt != localVariableStructTypes.end()) {
+				structTypeName = typeIt->second;
+			}
+
 			llvm::Value* structPtrAlloca = it->second;
 			structPtr = builder->CreateLoad(llvm::PointerType::getUnqual(*context), structPtrAlloca, "struct_ptr");
 		}
 
-		// Find struct type by examining local variables
-		// For now, we need to track the type of each local variable
-		// This is a limitation - we'll need to enhance the local variable storage
-		// For the MVP, let's try all struct types and find a matching field
+		// Find the field in the specific struct type if known
 		const FieldInfo* matchingField = nullptr;
 
-		for (const auto& pair : structDefinitions) {
-			for (const auto& field : pair.second.fields) {
-				if (field.name == fieldName) {
-					matchingField = &field;
-					break;
+		if (!structTypeName.empty()) {
+			// Look up field in the specific struct type
+			auto structIt = structDefinitions.find(structTypeName);
+			if (structIt != structDefinitions.end()) {
+				for (const auto& field : structIt->second.fields) {
+					if (field.name == fieldName) {
+						matchingField = &field;
+						break;
+					}
 				}
 			}
-			if (matchingField) {
-				break;
+		}
+
+		// Fallback: search all struct types if we don't know the type
+		if (!matchingField) {
+			for (const auto& pair : structDefinitions) {
+				for (const auto& field : pair.second.fields) {
+					if (field.name == fieldName) {
+						matchingField = &field;
+						break;
+					}
+				}
+				if (matchingField) {
+					break;
+				}
 			}
 		}
 
@@ -5353,35 +5380,37 @@ namespace Qd {
 		auto fieldOffset = builder->getInt64(matchingField->offset);
 		auto bytePtr = builder->CreateGEP(builder->getInt8Ty(), structPtr, fieldOffset, "field_byte_ptr");
 
-		// Load value from field based on type
+		// Load value from field based on type and update lastFieldAccessResultType for chaining
 		if (matchingField->typeName == "f64") {
-			// Use bytePtr directly with opaque pointers
 			llvm::Value* fieldPtr = bytePtr;
 			llvm::Value* floatValue = builder->CreateLoad(builder->getDoubleTy(), fieldPtr, "field_value");
 			builder->CreateCall(pushFloatFn, {ctx, floatValue});
+			lastFieldAccessResultType.clear();  // Not a struct type
 		} else if (matchingField->typeName == "i64") {
-			// Use bytePtr directly with opaque pointers
 			llvm::Value* fieldPtr = bytePtr;
 			llvm::Value* intValue = builder->CreateLoad(builder->getInt64Ty(), fieldPtr, "field_value");
 			builder->CreateCall(pushIntFn, {ctx, intValue});
+			lastFieldAccessResultType.clear();  // Not a struct type
 		} else if (matchingField->typeName == "str") {
-			// String field - push as string reference (QD_STACK_TYPE_STR)
 			llvm::Value* fieldPtr = bytePtr;
 			llvm::Value* ptrValue =
 					builder->CreateLoad(llvm::PointerType::getUnqual(*context), fieldPtr, "field_value");
 			builder->CreateCall(pushStrRefFn, {ctx, ptrValue});
+			lastFieldAccessResultType.clear();  // Not a struct type
 		} else if (matchingField->typeName.find('*') != std::string::npos) {
-			// Pointer type - push as pointer (QD_STACK_TYPE_PTR)
 			llvm::Value* fieldPtr = bytePtr;
 			llvm::Value* ptrValue =
 					builder->CreateLoad(llvm::PointerType::getUnqual(*context), fieldPtr, "field_value");
 			builder->CreateCall(pushPtrFn, {ctx, ptrValue});
+			lastFieldAccessResultType.clear();  // Raw pointer, not a known struct type
 		} else if (!matchingField->typeName.empty() && std::isupper(matchingField->typeName[0])) {
 			// Struct-typed field - stored as pointer, push as PTR
 			llvm::Value* fieldPtr = bytePtr;
 			llvm::Value* ptrValue =
 					builder->CreateLoad(llvm::PointerType::getUnqual(*context), fieldPtr, "field_value");
 			builder->CreateCall(pushPtrFn, {ctx, ptrValue});
+			// Track the struct type for chained field access
+			lastFieldAccessResultType = matchingField->typeName;
 		}
 	}
 
