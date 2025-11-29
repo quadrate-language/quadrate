@@ -1,6 +1,7 @@
 subdir('bmi')
 subdir('dc')
 subdir('defer')
+subdir('donut')
 subdir('embed')
 subdir('errors')
 subdir('fibonacci')

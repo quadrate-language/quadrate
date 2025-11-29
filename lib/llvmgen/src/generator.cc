@@ -2881,7 +2881,12 @@ namespace Qd {
 														 llvm::PointerType::getUnqual(*context)}), // char* program_name
 						ctx, 0, "st_ptr");
 		auto stack = builder->CreateLoad(llvm::PointerType::getUnqual(*context), stackFieldPtr, "st");
-		auto switchElem = builder->CreateAlloca(switchElemTy, nullptr, "switch_elem");
+
+		// Create alloca in entry block to avoid stack growth in loops
+		llvm::BasicBlock& entryBlock = currentFn->getEntryBlock();
+		llvm::IRBuilder<> entryBuilder(&entryBlock, entryBlock.getFirstInsertionPt());
+		auto switchElem = entryBuilder.CreateAlloca(switchElemTy, nullptr, "switch_elem");
+
 		builder->CreateCall(stackPopFunc, {stack, switchElem});
 
 		// Create merge block (after all cases)
@@ -3604,9 +3609,12 @@ namespace Qd {
 						ctx, 0, "st_ptr");
 		auto stack = builder->CreateLoad(llvm::PointerType::getUnqual(*context), stackFieldPtr, "st");
 
-		auto stepElemPtr = builder->CreateAlloca(stackElementTy, nullptr, "step_elem");
-		auto endElemPtr = builder->CreateAlloca(stackElementTy, nullptr, "end_elem");
-		auto startElemPtr = builder->CreateAlloca(stackElementTy, nullptr, "start_elem");
+		// Create allocas in entry block to avoid stack growth in nested loops
+		llvm::BasicBlock& entryBlock = currentFn->getEntryBlock();
+		llvm::IRBuilder<> entryBuilder(&entryBlock, entryBlock.getFirstInsertionPt());
+		auto stepElemPtr = entryBuilder.CreateAlloca(stackElementTy, nullptr, "step_elem");
+		auto endElemPtr = entryBuilder.CreateAlloca(stackElementTy, nullptr, "end_elem");
+		auto startElemPtr = entryBuilder.CreateAlloca(stackElementTy, nullptr, "start_elem");
 
 		builder->CreateCall(stackPopFn, {stack, stepElemPtr});
 		builder->CreateCall(stackPopFn, {stack, endElemPtr});

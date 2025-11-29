@@ -1,0 +1,115 @@
+// Classic ASCII spinning donut in Quadrate
+// Port of donut.c by Andy Sloane (https://www.a1k0n.net/2011/07/20/donut-math.html)
+//
+// Renders a rotating 3D torus using ASCII characters for shading.
+// Uses z-buffering for proper depth rendering and luminance-based
+// character selection for lighting effects.
+//
+// Run: quadc donut.qd -r
+// Press Ctrl+C to stop
+
+use bits
+use math
+
+fn main( -- ) {
+	0.5 -> A  // X-axis rotation angle
+	0.3 -> B  // Z-axis rotation angle
+
+	// Pre-create character strings for luminance levels
+	// Characters from darkest to brightest: .,-~:;=!*#$@
+	"." -> c0  "," -> c1  "-" -> c2  "~" -> c3
+	":" -> c4  ";" -> c5  "=" -> c6  "!" -> c7
+	"*" -> c8  "#" -> c9  "$" -> c10  "@" -> c11
+	" " -> space_char
+
+	// Screen dimensions: 80x22 = 1760 pixels
+	1760 makef -> zbuf    // Z-buffer for depth testing
+	1760 makei -> output  // Output buffer (character indices)
+
+	"\x1b[2J" .     // Clear screen
+	"\x1b[?25l" .   // Hide cursor
+
+	loop {
+		// Reset buffers each frame
+		0 1760 1 for {
+			zbuf $ 0.0 set
+			output $ 12 set  // 12 = space character index
+		}
+
+		// Precompute rotation values
+		A math::sin -> e  A math::cos -> g
+		B math::sin -> n  B math::cos -> m
+
+		// Render torus: j = theta (tube), i = phi (ring)
+		0.0 -> j
+		0 90 1 for {
+			j math::sin -> f  j math::cos -> d
+
+			0.0 -> i
+			0 314 1 for {
+				i math::sin -> c  i math::cos -> l
+
+				// h = R2 + R1*cos(theta) where R1=1, R2=2
+				d 2.0 add -> h
+
+				// Perspective: D = 1/z
+				c h mul e mul f g mul add 5.0 add -> zinv
+				1.0 zinv div -> D
+
+				// Intermediate rotation term
+				c h mul g mul f e mul sub -> t
+
+				// Project to screen coordinates
+				l h mul m mul t n mul sub D mul 30.0 mul 40.0 add casti -> x
+				l h mul n mul t m mul add D mul 15.0 mul 12.0 add casti -> y
+				x y 80 mul add -> o
+
+				// Calculate luminance (surface normal dot light direction)
+				f e mul c d mul g mul sub m mul
+				c d mul e mul sub
+				f g mul sub
+				l d mul n mul sub
+				8.0 mul -> N
+
+				// Bounds check and z-buffer test
+				y 0 gt y 22 lt bits::and x 0 gt bits::and x 80 lt bits::and if {
+					zbuf o nth -> curz
+					D curz gt if {
+						zbuf o D set
+
+						// Clamp luminance to character index 0-11
+						N casti -> ni
+						ni 0 lt if { 0 -> ni }
+						ni 11 gt if { 11 -> ni }
+						output o ni set
+					}
+				}
+
+				i 0.02 add -> i
+			}
+			j 0.07 add -> j
+		}
+
+		// Draw frame
+		"\x1b[H" .  // Move cursor to home position
+		0 1761 1 for {
+			$ -> k
+			k 80 mod 0 neq if {
+				output k nth switch {
+					0 { c0 . }  1 { c1 . }  2 { c2 . }  3 { c3 . }
+					4 { c4 . }  5 { c5 . }  6 { c6 . }  7 { c7 . }
+					8 { c8 . }  9 { c9 . }  10 { c10 . }  11 { c11 . }
+					_ { space_char . }
+				}
+			} else {
+				nl
+			}
+		}
+
+		// Rotate for next frame
+		A 0.04 add -> A
+		B 0.02 add -> B
+	}
+
+	"\x1b[?25h" .  // Show cursor
+}
