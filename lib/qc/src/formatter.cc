@@ -131,20 +131,13 @@ namespace Qd {
 	void Formatter::formatProgram(const IAstNode* node) {
 		const AstProgram* program = static_cast<const AstProgram*>(node);
 
-		std::cerr << "DEBUG: formatProgram childCount = " << program->childCount() << std::endl;
-
 		for (size_t i = 0; i < program->childCount(); i++) {
-			std::cerr << "DEBUG: formatting child " << i << std::endl;
 			formatNode(program->child(i));
 
 			// Add blank line between top-level declarations
 			if (i < program->childCount() - 1) {
 				const IAstNode* current = program->child(i);
 				const IAstNode* next = program->child(i + 1);
-
-				// DEBUG
-				std::cerr << "DEBUG: current type = " << static_cast<int>(current->type())
-						  << ", next type = " << static_cast<int>(next->type()) << std::endl;
 
 				bool addBlankLine = false;
 

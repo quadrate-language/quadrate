@@ -543,6 +543,10 @@ namespace Qd {
 				continue;
 			}
 
+			// Save brace depth BEFORE processing this line's braces
+			// This is needed to correctly identify top-level declarations that open a brace
+			int braceDepthBeforeLine = braceDepth;
+
 			// Track block comment state and brace depth
 			// Skip brace counting when inside block comments
 			if (!inBlockComment) {
@@ -576,14 +580,16 @@ namespace Qd {
 			}
 
 			// Determine if this is a top-level declaration
+			// Use braceDepthBeforeLine so that lines like "import ... {" are still recognized as top-level
 			bool isTopLevel =
-					(braceDepth == 0 ||
+					(braceDepthBeforeLine == 0 ||
 							((startsWithKeyword(trimmed, "fn") || startsWithKeyword(trimmed, "pub")) && !inFunction));
 			std::string currentType;
 
 			if (isTopLevel) {
 				// Handle top-level comments - buffer them to attach to following declaration
-				if (isComment(trimmed)) {
+				// Only buffer when truly at file-level (not inside import blocks)
+				if (isComment(trimmed) && braceDepthBeforeLine == 0) {
 					// Buffer comments at top level (outside functions)
 					commentBuffer.push_back(lines[i]);
 					continue;
@@ -599,6 +605,8 @@ namespace Qd {
 					continue; // Don't output yet, wait to sort
 				} else if (startsWithKeyword(trimmed, "import")) {
 					currentType = "use"; // Treat import like use for spacing
+					// Flush comments before import statement
+					flushCommentBuffer(prevTopLevelType == "fn_start");
 				} else if (startsWithKeyword(trimmed, "pub")) {
 					// Handle pub fn and pub const
 					if (trimmed.find("pub fn") != std::string::npos ||
@@ -625,8 +633,9 @@ namespace Qd {
 
 				// Add appropriate spacing before top-level declarations
 				// If we have buffered comments, the blank line goes before them
+				// Only apply spacing rules when truly at file level (not inside import blocks)
 				bool needsBlankLine = false;
-				if (!prevTopLevelType.empty()) {
+				if (!prevTopLevelType.empty() && braceDepthBeforeLine == 0) {
 					if ((prevTopLevelType == "use" && currentType == "const") ||
 							(prevTopLevelType == "use" && currentType == "fn_start") ||
 							(prevTopLevelType == "const" && currentType == "fn_start") ||
