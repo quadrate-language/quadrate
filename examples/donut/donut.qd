@@ -1,10 +1,6 @@
 // Classic ASCII spinning donut in Quadrate
 // Port of donut.c by Andy Sloane (https://www.a1k0n.net/2011/07/20/donut-math.html)
 //
-// Renders a rotating 3D torus using ASCII characters for shading.
-// Uses z-buffering for proper depth rendering and luminance-based
-// character selection for lighting effects.
-//
 // Run: quadc donut.qd -r
 // Press Ctrl+C to stop
 
@@ -12,35 +8,19 @@ use bits
 use math
 
 fn main( -- ) {
-	0.5 -> A  // X-axis rotation angle
-	0.3 -> B  // Z-axis rotation angle
+	0.5 -> A
+	0.3 -> B
+	1760 makef -> z
+	1760 makei -> o
 
-	// Pre-create character strings for luminance levels
-	// Characters from darkest to brightest: .,-~:;=!*#$@
-	"." -> c0  "," -> c1  "-" -> c2  "~" -> c3
-	":" -> c4  ";" -> c5  "=" -> c6  "!" -> c7
-	"*" -> c8  "#" -> c9  "$" -> c10  "@" -> c11
-	" " -> space_char
-
-	// Screen dimensions: 80x22 = 1760 pixels
-	1760 makef -> zbuf    // Z-buffer for depth testing
-	1760 makei -> output  // Output buffer (character indices)
-
-	"\x1b[2J" .     // Clear screen
-	"\x1b[?25l" .   // Hide cursor
+	"\x1b[2J" . "\x1b[?25l" .
 
 	loop {
-		// Reset buffers each frame
-		0 1760 1 for {
-			zbuf $ 0.0 set
-			output $ 12 set  // 12 = space character index
-		}
+		0 1760 1 for { z $ 0.0 set o $ 12 set }
 
-		// Precompute rotation values
 		A math::sin -> e  A math::cos -> g
 		B math::sin -> n  B math::cos -> m
 
-		// Render torus: j = theta (tube), i = phi (ring)
 		0.0 -> j
 		0 90 1 for {
 			j math::sin -> f  j math::cos -> d
@@ -48,40 +28,22 @@ fn main( -- ) {
 			0.0 -> i
 			0 314 1 for {
 				i math::sin -> c  i math::cos -> l
-
-				// h = R2 + R1*cos(theta) where R1=1, R2=2
 				d 2.0 + -> h
-
-				// Perspective: D = 1/z
-				c h * e * f g * + 5.0 + -> zinv
-				1.0 zinv / -> D
-
-				// Intermediate rotation term
+				c h * e * f g * + 5.0 + -> W
+				1.0 W / -> D
 				c h * g * f e * - -> t
-
-				// Project to screen coordinates
 				l h * m * t n * - D * 30.0 * 40.0 + casti -> x
 				l h * n * t m * + D * 15.0 * 12.0 + casti -> y
-				x y 80 * + -> o
+				x y 80 * + -> q
+				f e * c d * g * - m * c d * e * - f g * - l d * n * - 8.0 * -> N
 
-				// Calculate luminance (surface normal dot light direction)
-				f e * c d * g * - m *
-				c d * e * -
-				f g * -
-				l d * n * -
-				8.0 * -> N
-
-				// Bounds check and z-buffer test
 				y 0 > y 22 < bits::and x 0 > bits::and x 80 < bits::and if {
-					zbuf o nth -> curz
-					D curz > if {
-						zbuf o D set
-
-						// Clamp luminance to character index 0-11
-						N casti -> ni
-						ni 0 < if { 0 -> ni }
-						ni 11 > if { 11 -> ni }
-						output o ni set
+					D z q nth > if {
+						z q D set
+						N casti -> k
+						k 0 < if { 0 -> k }
+						k 11 > if { 11 -> k }
+						o q k set
 					}
 				}
 
@@ -90,26 +52,21 @@ fn main( -- ) {
 			j 0.07 + -> j
 		}
 
-		// Draw frame
-		"\x1b[H" .  // Move cursor to home position
+		"\x1b[H" .
 		0 1761 1 for {
-			$ -> k
-			k 80 mod 0 != if {
-				output k nth switch {
-					0 { c0 . }  1 { c1 . }  2 { c2 . }  3 { c3 . }
-					4 { c4 . }  5 { c5 . }  6 { c6 . }  7 { c7 . }
-					8 { c8 . }  9 { c9 . }  10 { c10 . }  11 { c11 . }
-					_ { space_char . }
+			$ 80 mod 0 != if {
+				o $ nth switch {
+					0 { "." . } 1 { "," . } 2 { "-" . } 3 { "~" . }
+					4 { ":" . } 5 { ";" . } 6 { "=" . } 7 { "!" . }
+					8 { "*" . } 9 { "#" . } 10 { "$" . } 11 { "@" . }
+					_ { " " . }
 				}
-			} else {
-				nl
-			}
+			} else { nl }
 		}
 
-		// Rotate for next frame
 		A 0.04 + -> A
 		B 0.02 + -> B
 	}
 
-	"\x1b[?25h" .  // Show cursor
+	"\x1b[?25h" .
 }
