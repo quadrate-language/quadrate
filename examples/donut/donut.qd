@@ -50,51 +50,51 @@ fn main( -- ) {
 				i math::sin -> c  i math::cos -> l
 
 				// h = R2 + R1*cos(theta) where R1=1, R2=2
-				d 2.0 add -> h
+				d 2.0 + -> h
 
 				// Perspective: D = 1/z
-				c h mul e mul f g mul add 5.0 add -> zinv
-				1.0 zinv div -> D
+				c h * e * f g * + 5.0 + -> zinv
+				1.0 zinv / -> D
 
 				// Intermediate rotation term
-				c h mul g mul f e mul sub -> t
+				c h * g * f e * - -> t
 
 				// Project to screen coordinates
-				l h mul m mul t n mul sub D mul 30.0 mul 40.0 add casti -> x
-				l h mul n mul t m mul add D mul 15.0 mul 12.0 add casti -> y
-				x y 80 mul add -> o
+				l h * m * t n * - D * 30.0 * 40.0 + casti -> x
+				l h * n * t m * + D * 15.0 * 12.0 + casti -> y
+				x y 80 * + -> o
 
 				// Calculate luminance (surface normal dot light direction)
-				f e mul c d mul g mul sub m mul
-				c d mul e mul sub
-				f g mul sub
-				l d mul n mul sub
-				8.0 mul -> N
+				f e * c d * g * - m *
+				c d * e * -
+				f g * -
+				l d * n * -
+				8.0 * -> N
 
 				// Bounds check and z-buffer test
-				y 0 gt y 22 lt bits::and x 0 gt bits::and x 80 lt bits::and if {
+				y 0 > y 22 < bits::and x 0 > bits::and x 80 < bits::and if {
 					zbuf o nth -> curz
-					D curz gt if {
+					D curz > if {
 						zbuf o D set
 
 						// Clamp luminance to character index 0-11
 						N casti -> ni
-						ni 0 lt if { 0 -> ni }
-						ni 11 gt if { 11 -> ni }
+						ni 0 < if { 0 -> ni }
+						ni 11 > if { 11 -> ni }
 						output o ni set
 					}
 				}
 
-				i 0.02 add -> i
+				i 0.02 + -> i
 			}
-			j 0.07 add -> j
+			j 0.07 + -> j
 		}
 
 		// Draw frame
 		"\x1b[H" .  // Move cursor to home position
 		0 1761 1 for {
 			$ -> k
-			k 80 mod 0 neq if {
+			k 80 mod 0 != if {
 				output k nth switch {
 					0 { c0 . }  1 { c1 . }  2 { c2 . }  3 { c3 . }
 					4 { c4 . }  5 { c5 . }  6 { c6 . }  7 { c7 . }
@@ -107,8 +107,8 @@ fn main( -- ) {
 		}
 
 		// Rotate for next frame
-		A 0.04 add -> A
-		B 0.02 add -> B
+		A 0.04 + -> A
+		B 0.02 + -> B
 	}
 
 	"\x1b[?25h" .  // Show cursor
