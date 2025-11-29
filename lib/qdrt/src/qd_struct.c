@@ -5,6 +5,7 @@
 
 #include "qdrt/qd_struct.h"
 #include <stdlib.h>
+#include <stdint.h>
 #include <stdatomic.h>
 #include <pthread.h>
 #include <stdbool.h>
