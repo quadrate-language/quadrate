@@ -151,12 +151,12 @@ pub fn inv( x:f64 -- result:f64 ) {
 /// @return result i64 n!
 /// @example 5 math::fac .  // 120
 pub fn fac( n:i64 -- result:i64 ) {
-	-> n
-	1 -> result
-	1 n 1 add 1 for {
-		result $ mul -> result
+	-> n_v
+	1 -> res
+	1 n_v 1 + 1 for {
+		res $ * -> res
 	}
-	result
+	res
 }
 
 /// Minimum of two values.
@@ -204,8 +204,8 @@ pub fn clamp( x:f64 min_val:f64 max_val:f64 -- result:f64 ) {
 	-> max_v
 	-> min_v
 	-> x_v
-	x_v max_v over over lt if { drop } else { nip } -> temp
-	min_v temp over over gt if { drop } else { nip }
+	x_v max_v < if { x_v } else { max_v } -> temp
+	temp min_v > if { temp } else { min_v }
 }
 
 /// Check if value is within range (inclusive).
@@ -236,7 +236,10 @@ pub fn within( x:any min_val:any max_val:any -- result:i64 ) {
 /// @return result f64 a + (b - a) * t
 /// @example 0.0 10.0 0.5 math::lerp .  // 5.0
 pub fn lerp( a:f64 b:f64 t:f64 -- result:f64 ) {
-	rot rot over sub rot mul add
+	-> t_v
+	-> b_v
+	-> a_v
+	b_v a_v - t_v * a_v +
 }
 
 /// Convert degrees to radians.
