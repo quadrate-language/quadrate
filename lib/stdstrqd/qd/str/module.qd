@@ -1,29 +1,117 @@
+/// String manipulation functions.
+
 import "libstdstrqd_static.a" as "str" {
-	// Basic string operations
+	/// Get string length in bytes.
+	/// @param str str Input string
+	/// @return len i64 Length in bytes
+	/// @example "hello" str::len .  // 5
 	pub fn len(str:str -- len:i64)
+
+	/// Concatenate two strings.
+	/// @param str1 str First string
+	/// @param str2 str Second string
+	/// @return result str Combined string
+	/// @example "hello" " world" str::concat .  // "hello world"
 	pub fn concat(str1:str str2:str -- result:str)
 
-	// String searching
+	/// Check if string contains substring.
+	/// @param str str String to search in
+	/// @param needle str Substring to find
+	/// @return result i64 1 if found, 0 otherwise
+	/// @example "hello" "ell" str::contains .  // 1
 	pub fn contains(str:str needle:str -- result:i64)
+
+	/// Check if string starts with prefix.
+	/// @param str str String to check
+	/// @param prefix str Prefix to match
+	/// @return result i64 1 if matches, 0 otherwise
+	/// @example "hello" "hel" str::starts_with .  // 1
 	pub fn starts_with(str:str prefix:str -- result:i64)
+
+	/// Check if string ends with suffix.
+	/// @param str str String to check
+	/// @param suffix str Suffix to match
+	/// @return result i64 1 if matches, 0 otherwise
+	/// @example "hello" "lo" str::ends_with .  // 1
 	pub fn ends_with(str:str suffix:str -- result:i64)
+
+	/// Find first occurrence of substring.
+	/// @param haystack str String to search in
+	/// @param needle str Substring to find
+	/// @return index i64 Index of first match, -1 if not found
+	/// @example "hello" "ll" str::index_of .  // 2
 	pub fn index_of(haystack:str needle:str -- index:i64)
+
+	/// Find substring starting from position.
+	/// @param haystack str String to search in
+	/// @param needle str Substring to find
+	/// @param start i64 Starting position
+	/// @return index i64 Index of match, -1 if not found
+	/// @example "hello hello" "hello" 1 str::index_of_from .  // 6
 	pub fn index_of_from(haystack:str needle:str start:i64 -- index:i64)
 
-	// Case conversion
+	/// Convert string to uppercase.
+	/// @param str str Input string
+	/// @return result str Uppercase string
+	/// @example "hello" str::upper .  // "HELLO"
 	pub fn upper(str:str -- result:str)
+
+	/// Convert string to lowercase.
+	/// @param str str Input string
+	/// @return result str Lowercase string
+	/// @example "HELLO" str::lower .  // "hello"
 	pub fn lower(str:str -- result:str)
 
-	// String manipulation
+	/// Remove leading and trailing whitespace.
+	/// @param str str Input string
+	/// @return result str Trimmed string
+	/// @example "  hello  " str::trim .  // "hello"
 	pub fn trim(str:str -- result:str)
+
+	/// Extract substring.
+	/// @param str str Source string
+	/// @param start i64 Starting index
+	/// @param length i64 Number of characters
+	/// @return result str Extracted substring
+	/// @error Out of bounds
+	/// @example "hello" 1 3 str::substring! .  // "ell"
 	pub fn substring(str:str start:i64 length:i64 -- result:str)!
+
+	/// Replace all occurrences of substring.
+	/// @param str str Source string
+	/// @param old str Substring to replace
+	/// @param new str Replacement string
+	/// @return result str String with replacements
+	/// @error Memory allocation failed
+	/// @example "hello" "l" "L" str::replace! .  // "heLLo"
 	pub fn replace(str:str old:str new:str -- result:str)!
 
-	// Character operations
+	/// Get character code at index.
+	/// @param str str Input string
+	/// @param index i64 Character position
+	/// @return char_code i64 ASCII/UTF-8 byte value
+	/// @example "hello" 0 str::char_at .  // 104 ('h')
 	pub fn char_at(str:str index:i64 -- char_code:i64)
+
+	/// Create string from character code.
+	/// @param char_code i64 ASCII/UTF-8 byte value
+	/// @return str str Single character string
+	/// @example 65 str::from_char .  // "A"
 	pub fn from_char(char_code:i64 -- str:str)
 
-	// String splitting and comparison
+	/// Split string by delimiter.
+	/// @param str str String to split
+	/// @param delim str Delimiter string
+	/// @return parts ptr Array of string parts
+	/// @return count i64 Number of parts
+	/// @error Memory allocation failed
+	/// @example "a,b,c" "," str::split!  // parts=["a","b","c"], count=3
 	pub fn split(str:str delim:str -- parts:ptr count:i64)!
+
+	/// Compare two strings lexicographically.
+	/// @param str1 str First string
+	/// @param str2 str Second string
+	/// @return result i64 <0 if str1<str2, 0 if equal, >0 if str1>str2
+	/// @example "abc" "abd" str::compare .  // -1
 	pub fn compare(str1:str str2:str -- result:i64)
 }

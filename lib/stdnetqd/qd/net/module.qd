@@ -1,9 +1,47 @@
+/// TCP network operations.
+
 import "libstdnetqd_static.a" as "net" {
+	/// Start listening for connections on a port.
+	/// @param port i64 Port number to listen on
+	/// @return socket i64 Server socket descriptor
+	/// @example 8080 net::listen -> server
 	pub fn listen(port:i64 -- socket:i64)
+
+	/// Accept an incoming connection.
+	/// @param server_socket i64 Server socket from listen
+	/// @return client_socket i64 Connected client socket
+	/// @example server net::accept -> client
 	pub fn accept(server_socket:i64 -- client_socket:i64)
+
+	/// Connect to a remote host.
+	/// @param host str Hostname or IP address
+	/// @param port i64 Port number
+	/// @return socket i64 Connected socket descriptor
+	/// @example "localhost" 8080 net::connect -> sock
 	pub fn connect(host:str port:i64 -- socket:i64)
+
+	/// Send data over socket.
+	/// @param socket i64 Socket descriptor
+	/// @param data str Data to send
+	/// @return bytes_sent i64 Number of bytes sent
+	/// @example sock "Hello" net::send -> n
 	pub fn send(socket:i64 data:str -- bytes_sent:i64)
+
+	/// Receive data from socket.
+	/// @param socket i64 Socket descriptor
+	/// @param max_bytes i64 Maximum bytes to receive
+	/// @return data str Received data
+	/// @return bytes_read i64 Actual bytes received
+	/// @example sock 1024 net::receive -> data -> n
 	pub fn receive(socket:i64 max_bytes:i64 -- data:str bytes_read:i64)
+
+	/// Shutdown socket for reading/writing.
+	/// @param socket i64 Socket descriptor
+	/// @example sock net::shutdown
 	pub fn shutdown(socket:i64 --)
+
+	/// Close socket and release resources.
+	/// @param socket i64 Socket descriptor
+	/// @example sock net::close
 	pub fn close(socket:i64 --)
 }

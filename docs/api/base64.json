@@ -1,0 +1,68 @@
+{
+  "name": "base64",
+  "description": "Base64 encoding and decoding.",
+  "constants": [],
+  "structs": [],
+  "functions": [
+    {
+      "name": "encode",
+      "signature": "( data:ptr len:i64 -- encoded:str )",
+      "failable": false,
+      "description": "Encode binary data to base64 string.",
+      "params": [
+        {
+          "name": "data",
+          "type": "ptr",
+          "description": "Buffer to encode"
+        },
+        {
+          "name": "len",
+          "type": "i64",
+          "description": "Length of data"
+        }
+      ],
+      "returns": [
+        {
+          "name": "encoded",
+          "type": "str",
+          "description": "Base64-encoded string"
+        }
+      ],
+      "errors": [],
+      "examples": [
+        "buf 5 base64::encode -> b64"
+      ]
+    },
+    {
+      "name": "decode",
+      "signature": "( encoded:str -- data:ptr data_len:i64 )",
+      "failable": true,
+      "description": "Decode base64 string to binary data.",
+      "params": [
+        {
+          "name": "encoded",
+          "type": "str",
+          "description": "Base64-encoded string"
+        }
+      ],
+      "returns": [
+        {
+          "name": "data",
+          "type": "ptr",
+          "description": "Decoded buffer (caller must free)"
+        },
+        {
+          "name": "data_len",
+          "type": "i64",
+          "description": "Length of decoded data"
+        }
+      ],
+      "errors": [
+        "Invalid base64 encoding"
+      ],
+      "examples": [
+        "\"SGVsbG8=\" base64::decode! -> buf -> len"
+      ]
+    }
+  ]
+}

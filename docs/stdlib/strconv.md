@@ -1,0 +1,93 @@
+# strconv
+
+String to number conversions.
+
+## Functions
+
+### format_int
+
+Format integer in given base.
+
+**Signature:** `( value:i64 base:i64 -- str:str )`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `value` | `i64` | Integer value |
+| `base` | `i64` | Numeric base (2-36) |
+
+| Return | Type | Description |
+|--------|------|-------------|
+| `str` | `str` | Formatted string |
+
+**Example:**
+
+```qd
+255 16 strconv::format_int .  // "ff"
+```
+
+---
+
+### parse_int
+
+Parse integer from string in given base.
+
+**Signature:** `( str:str base:i64 -- value:i64 )`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `str` | `str` | String to parse |
+| `base` | `i64` | Numeric base (2-36) |
+
+| Return | Type | Description |
+|--------|------|-------------|
+| `value` | `i64` | Parsed integer |
+
+**Example:**
+
+```qd
+"ff" 16 strconv::parse_int .  // 255
+```
+
+---
+
+### itoa
+
+Convert integer to decimal string.
+
+**Signature:** `( value:i64 -- str:str )`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `value` | `i64` | Integer value |
+
+| Return | Type | Description |
+|--------|------|-------------|
+| `str` | `str` | Decimal string |
+
+**Example:**
+
+```qd
+42 strconv::itoa .  // "42"
+```
+
+---
+
+### atoi
+
+Parse decimal string to integer.
+
+**Signature:** `( str:str -- value:i64 )`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `str` | `str` | Decimal string |
+
+| Return | Type | Description |
+|--------|------|-------------|
+| `value` | `i64` | Parsed integer |
+
+**Example:**
+
+```qd
+"42" strconv::atoi .  // 42
+```

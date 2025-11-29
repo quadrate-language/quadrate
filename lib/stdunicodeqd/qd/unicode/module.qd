@@ -1,128 +1,309 @@
-// Unicode character constants for Quadrate
-//
-// Provides named constants for common Unicode code points.
-//
-// Usage:
-//   use unicode
-//   unicode::A . nl          // prints 65
-//   char unicode::newline == // check if char is newline
+/// Unicode character constants and classification.
 
-// Control characters (0-31)
+/// Control: Null character.
 pub const nul = 0
+
+/// Control: Tab character.
 pub const tab = 9
+
+/// Control: Newline (line feed).
 pub const newline = 10
+
+/// Control: Carriage return.
 pub const cr = 13
+
+/// Control: Escape character.
 pub const esc = 27
 
-// Printable ASCII (32-126)
+/// Punctuation: Space.
 pub const space = 32
+
+/// Punctuation: Exclamation mark (!).
 pub const exclaim = 33
+
+/// Punctuation: Double quote (").
 pub const dquote = 34
+
+/// Punctuation: Hash (#).
 pub const hash = 35
+
+/// Punctuation: Dollar sign ($).
 pub const dollar = 36
+
+/// Punctuation: Percent (%).
 pub const percent = 37
+
+/// Punctuation: Ampersand (&).
 pub const ampersand = 38
+
+/// Punctuation: Single quote (').
 pub const squote = 39
+
+/// Punctuation: Left parenthesis.
 pub const lparen = 40
+
+/// Punctuation: Right parenthesis.
 pub const rparen = 41
+
+/// Punctuation: Asterisk (*).
 pub const asterisk = 42
+
+/// Punctuation: Plus sign (+).
 pub const plus = 43
+
+/// Punctuation: Comma (,).
 pub const comma = 44
+
+/// Punctuation: Minus/hyphen (-).
 pub const minus = 45
+
+/// Punctuation: Period/dot (.).
 pub const dot = 46
+
+/// Punctuation: Forward slash (/).
 pub const slash = 47
 
-// Digits (48-57)
+/// Digit: 0.
 pub const digit0 = 48
+
+/// Digit: 1.
 pub const digit1 = 49
+
+/// Digit: 2.
 pub const digit2 = 50
+
+/// Digit: 3.
 pub const digit3 = 51
+
+/// Digit: 4.
 pub const digit4 = 52
+
+/// Digit: 5.
 pub const digit5 = 53
+
+/// Digit: 6.
 pub const digit6 = 54
+
+/// Digit: 7.
 pub const digit7 = 55
+
+/// Digit: 8.
 pub const digit8 = 56
+
+/// Digit: 9.
 pub const digit9 = 57
 
+/// Punctuation: Colon (:).
 pub const colon = 58
+
+/// Punctuation: Semicolon (;).
 pub const semicolon = 59
+
+/// Punctuation: Less than (<).
 pub const lt = 60
+
+/// Punctuation: Equals (=).
 pub const equals = 61
+
+/// Punctuation: Greater than (>).
 pub const gt = 62
+
+/// Punctuation: Question mark (?).
 pub const question = 63
+
+/// Punctuation: At sign (@).
 pub const at = 64
 
-// Uppercase letters (65-90)
+/// Letter: Uppercase A.
 pub const A = 65
+
+/// Letter: Uppercase B.
 pub const B = 66
+
+/// Letter: Uppercase C.
 pub const C = 67
+
+/// Letter: Uppercase D.
 pub const D = 68
+
+/// Letter: Uppercase E.
 pub const E = 69
+
+/// Letter: Uppercase F.
 pub const F = 70
+
+/// Letter: Uppercase G.
 pub const G = 71
+
+/// Letter: Uppercase H.
 pub const H = 72
+
+/// Letter: Uppercase I.
 pub const I = 73
+
+/// Letter: Uppercase J.
 pub const J = 74
+
+/// Letter: Uppercase K.
 pub const K = 75
+
+/// Letter: Uppercase L.
 pub const L = 76
+
+/// Letter: Uppercase M.
 pub const M = 77
+
+/// Letter: Uppercase N.
 pub const N = 78
+
+/// Letter: Uppercase O.
 pub const O = 79
+
+/// Letter: Uppercase P.
 pub const P = 80
+
+/// Letter: Uppercase Q.
 pub const Q = 81
+
+/// Letter: Uppercase R.
 pub const R = 82
+
+/// Letter: Uppercase S.
 pub const S = 83
+
+/// Letter: Uppercase T.
 pub const T = 84
+
+/// Letter: Uppercase U.
 pub const U = 85
+
+/// Letter: Uppercase V.
 pub const V = 86
+
+/// Letter: Uppercase W.
 pub const W = 87
+
+/// Letter: Uppercase X.
 pub const X = 88
+
+/// Letter: Uppercase Y.
 pub const Y = 89
+
+/// Letter: Uppercase Z.
 pub const Z = 90
 
+/// Punctuation: Left bracket ([).
 pub const lbracket = 91
+
+/// Punctuation: Backslash (\).
 pub const backslash = 92
+
+/// Punctuation: Right bracket (]).
 pub const rbracket = 93
+
+/// Punctuation: Caret (^).
 pub const caret = 94
+
+/// Punctuation: Underscore (_).
 pub const underscore = 95
+
+/// Punctuation: Backtick (`).
 pub const backtick = 96
 
-// Lowercase letters (97-122)
+/// Letter: Lowercase a.
 pub const a = 97
+
+/// Letter: Lowercase b.
 pub const b = 98
+
+/// Letter: Lowercase c.
 pub const c = 99
+
+/// Letter: Lowercase d.
 pub const d = 100
+
+/// Letter: Lowercase e.
 pub const e = 101
+
+/// Letter: Lowercase f.
 pub const f = 102
+
+/// Letter: Lowercase g.
 pub const g = 103
+
+/// Letter: Lowercase h.
 pub const h = 104
+
+/// Letter: Lowercase i.
 pub const i = 105
+
+/// Letter: Lowercase j.
 pub const j = 106
+
+/// Letter: Lowercase k.
 pub const k = 107
+
+/// Letter: Lowercase l.
 pub const l = 108
+
+/// Letter: Lowercase m.
 pub const m = 109
+
+/// Letter: Lowercase n.
 pub const n = 110
+
+/// Letter: Lowercase o.
 pub const o = 111
+
+/// Letter: Lowercase p.
 pub const p = 112
+
+/// Letter: Lowercase q.
 pub const q = 113
+
+/// Letter: Lowercase r.
 pub const r = 114
+
+/// Letter: Lowercase s.
 pub const s = 115
+
+/// Letter: Lowercase t.
 pub const t = 116
+
+/// Letter: Lowercase u.
 pub const u = 117
+
+/// Letter: Lowercase v.
 pub const v = 118
+
+/// Letter: Lowercase w.
 pub const w = 119
+
+/// Letter: Lowercase x.
 pub const x = 120
+
+/// Letter: Lowercase y.
 pub const y = 121
+
+/// Letter: Lowercase z.
 pub const z = 122
 
+/// Punctuation: Left brace ({).
 pub const lbrace = 123
+
+/// Punctuation: Pipe (|).
 pub const pipe = 124
+
+/// Punctuation: Right brace (}).
 pub const rbrace = 125
+
+/// Punctuation: Tilde (~).
 pub const tilde = 126
 
-// Character classification functions
-
-// Check if character code is a digit (0-9)
+/// Check if character is a digit (0-9).
+/// @param c i64 Character code
+/// @return result i64 1 if digit, 0 otherwise
+/// @example 48 unicode::is_digit .  // 1
 pub fn is_digit(c:i64 -- result:i64) {
 	-> c
 	c digit0 >= c digit9 <= *

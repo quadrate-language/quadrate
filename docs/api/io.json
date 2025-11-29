@@ -1,0 +1,317 @@
+{
+  "name": "io",
+  "description": "File and stream I/O operations.",
+  "constants": [
+    {
+      "name": "Read",
+      "value": "\"r\"",
+      "description": "Open mode: read only."
+    },
+    {
+      "name": "ReadBinary",
+      "value": "\"rb\"",
+      "description": "Open mode: read binary."
+    },
+    {
+      "name": "Write",
+      "value": "\"w\"",
+      "description": "Open mode: write (truncate)."
+    },
+    {
+      "name": "WriteBinary",
+      "value": "\"wb\"",
+      "description": "Open mode: write binary."
+    },
+    {
+      "name": "Append",
+      "value": "\"a\"",
+      "description": "Open mode: append."
+    },
+    {
+      "name": "AppendBinary",
+      "value": "\"ab\"",
+      "description": "Open mode: append binary."
+    },
+    {
+      "name": "ReadWrite",
+      "value": "\"r+\"",
+      "description": "Open mode: read and write."
+    },
+    {
+      "name": "ReadWriteBinary",
+      "value": "\"rb+\"",
+      "description": "Open mode: read and write binary."
+    },
+    {
+      "name": "WriteRead",
+      "value": "\"w+\"",
+      "description": "Open mode: write and read (truncate)."
+    },
+    {
+      "name": "WriteReadBinary",
+      "value": "\"wb+\"",
+      "description": "Open mode: write and read binary."
+    },
+    {
+      "name": "AppendRead",
+      "value": "\"a+\"",
+      "description": "Open mode: append and read."
+    },
+    {
+      "name": "AppendReadBinary",
+      "value": "\"ab+\"",
+      "description": "Open mode: append and read binary."
+    },
+    {
+      "name": "SeekSet",
+      "value": "0",
+      "description": "Seek from beginning of file."
+    },
+    {
+      "name": "SeekCur",
+      "value": "1",
+      "description": "Seek from current position."
+    },
+    {
+      "name": "SeekEnd",
+      "value": "2",
+      "description": "Seek from end of file."
+    }
+  ],
+  "structs": [],
+  "functions": [
+    {
+      "name": "open",
+      "signature": "( path:str mode:str -- handle:ptr )",
+      "failable": true,
+      "description": "Open a file.",
+      "params": [
+        {
+          "name": "path",
+          "type": "str",
+          "description": "File path"
+        },
+        {
+          "name": "mode",
+          "type": "str",
+          "description": "Open mode (use io::Read, io::Write, etc.)"
+        }
+      ],
+      "returns": [
+        {
+          "name": "handle",
+          "type": "ptr",
+          "description": "File handle"
+        }
+      ],
+      "errors": [
+        "File not found",
+        "Permission denied"
+      ],
+      "examples": [
+        "\"data.txt\" io::Read io::open! -> f"
+      ]
+    },
+    {
+      "name": "close",
+      "signature": "( handle:ptr -- )",
+      "failable": false,
+      "description": "Close a file.",
+      "params": [
+        {
+          "name": "handle",
+          "type": "ptr",
+          "description": "File handle to close"
+        }
+      ],
+      "returns": [],
+      "errors": [],
+      "examples": [
+        "f io::close"
+      ]
+    },
+    {
+      "name": "read",
+      "signature": "( handle:ptr buffer:ptr count:i64 -- bytes_read:i64 )",
+      "failable": true,
+      "description": "Read bytes into buffer.",
+      "params": [
+        {
+          "name": "handle",
+          "type": "ptr",
+          "description": "File handle"
+        },
+        {
+          "name": "buffer",
+          "type": "ptr",
+          "description": "Pre-allocated buffer"
+        },
+        {
+          "name": "count",
+          "type": "i64",
+          "description": "Maximum bytes to read"
+        }
+      ],
+      "returns": [
+        {
+          "name": "bytes_read",
+          "type": "i64",
+          "description": "Actual bytes read"
+        }
+      ],
+      "errors": [
+        "Read failed"
+      ],
+      "examples": [
+        "f buf 1024 io::read! -> n"
+      ]
+    },
+    {
+      "name": "write",
+      "signature": "( handle:ptr buffer:ptr count:i64 -- bytes_written:i64 )",
+      "failable": true,
+      "description": "Write bytes from buffer.",
+      "params": [
+        {
+          "name": "handle",
+          "type": "ptr",
+          "description": "File handle"
+        },
+        {
+          "name": "buffer",
+          "type": "ptr",
+          "description": "Buffer containing data"
+        },
+        {
+          "name": "count",
+          "type": "i64",
+          "description": "Number of bytes to write"
+        }
+      ],
+      "returns": [
+        {
+          "name": "bytes_written",
+          "type": "i64",
+          "description": "Actual bytes written"
+        }
+      ],
+      "errors": [
+        "Write failed"
+      ],
+      "examples": [
+        "f buf len io::write! drop"
+      ]
+    },
+    {
+      "name": "seek",
+      "signature": "( handle:ptr offset:i64 whence:i64 -- position:i64 )",
+      "failable": true,
+      "description": "Seek to position in file.",
+      "params": [
+        {
+          "name": "handle",
+          "type": "ptr",
+          "description": "File handle"
+        },
+        {
+          "name": "offset",
+          "type": "i64",
+          "description": "Offset in bytes"
+        },
+        {
+          "name": "whence",
+          "type": "i64",
+          "description": "Reference point (SeekSet, SeekCur, SeekEnd)"
+        }
+      ],
+      "returns": [
+        {
+          "name": "position",
+          "type": "i64",
+          "description": "New position"
+        }
+      ],
+      "errors": [
+        "Seek failed"
+      ],
+      "examples": [
+        "f 0 io::SeekSet io::seek! drop"
+      ]
+    },
+    {
+      "name": "tell",
+      "signature": "( handle:ptr -- position:i64 )",
+      "failable": true,
+      "description": "Get current position in file.",
+      "params": [
+        {
+          "name": "handle",
+          "type": "ptr",
+          "description": "File handle"
+        }
+      ],
+      "returns": [
+        {
+          "name": "position",
+          "type": "i64",
+          "description": "Current position"
+        }
+      ],
+      "errors": [
+        "Tell failed"
+      ],
+      "examples": [
+        "f io::tell! -> pos"
+      ]
+    },
+    {
+      "name": "eof",
+      "signature": "( handle:ptr -- handle:ptr is_eof:i64 )",
+      "failable": false,
+      "description": "Check if at end of file.",
+      "params": [
+        {
+          "name": "handle",
+          "type": "ptr",
+          "description": "File handle"
+        }
+      ],
+      "returns": [
+        {
+          "name": "handle",
+          "type": "ptr",
+          "description": "File handle (unchanged)"
+        },
+        {
+          "name": "is_eof",
+          "type": "i64",
+          "description": "1 if at EOF, 0 otherwise"
+        }
+      ],
+      "errors": [],
+      "examples": [
+        "f io::eof -> f -> at_end"
+      ]
+    },
+    {
+      "name": "readline",
+      "signature": "( -- line:str )",
+      "failable": true,
+      "description": "Read a line from stdin.",
+      "params": [],
+      "returns": [
+        {
+          "name": "line",
+          "type": "str",
+          "description": "Line without trailing newline"
+        }
+      ],
+      "errors": [
+        "Read failed"
+      ],
+      "examples": [
+        "io::readline! -> input"
+      ]
+    }
+  ]
+}

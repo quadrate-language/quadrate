@@ -1,0 +1,93 @@
+{
+  "name": "time",
+  "description": "Time operations and duration constants.",
+  "constants": [
+    {
+      "name": "Nanosecond",
+      "value": "1",
+      "description": "Duration: 1 nanosecond."
+    },
+    {
+      "name": "Microsecond",
+      "value": "1000",
+      "description": "Duration: 1 microsecond (1000 nanoseconds)."
+    },
+    {
+      "name": "Millisecond",
+      "value": "1000000",
+      "description": "Duration: 1 millisecond (1,000,000 nanoseconds)."
+    },
+    {
+      "name": "Second",
+      "value": "1000000000",
+      "description": "Duration: 1 second (1,000,000,000 nanoseconds)."
+    },
+    {
+      "name": "Minute",
+      "value": "60000000000",
+      "description": "Duration: 1 minute (60 seconds)."
+    },
+    {
+      "name": "Hour",
+      "value": "3600000000000",
+      "description": "Duration: 1 hour (60 minutes)."
+    }
+  ],
+  "structs": [],
+  "functions": [
+    {
+      "name": "unix",
+      "signature": "( -- timestamp:i64 )",
+      "failable": false,
+      "description": "Get Unix timestamp in seconds.",
+      "params": [],
+      "returns": [
+        {
+          "name": "timestamp",
+          "type": "i64",
+          "description": "Seconds since 1970-01-01 00:00:00 UTC"
+        }
+      ],
+      "errors": [],
+      "examples": [
+        "time::unix .  // 1700000000"
+      ]
+    },
+    {
+      "name": "now",
+      "signature": "( -- nanoseconds:i64 )",
+      "failable": false,
+      "description": "Get current time in nanoseconds.",
+      "params": [],
+      "returns": [
+        {
+          "name": "nanoseconds",
+          "type": "i64",
+          "description": "Monotonic nanosecond timestamp"
+        }
+      ],
+      "errors": [],
+      "examples": [
+        "time::now -> start"
+      ]
+    },
+    {
+      "name": "sleep",
+      "signature": "( duration:i64 -- )",
+      "failable": false,
+      "description": "Sleep for duration in nanoseconds.",
+      "params": [
+        {
+          "name": "duration",
+          "type": "i64",
+          "description": "Duration to sleep (use time constants)"
+        }
+      ],
+      "returns": [],
+      "errors": [],
+      "examples": [
+        "time::Second time::sleep"
+      ]
+    }
+  ]
+}

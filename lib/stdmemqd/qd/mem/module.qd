@@ -1,76 +1,124 @@
-// Memory Management Module
-//
-// Provides low-level memory allocation and manipulation functions.
-//
-// SAFETY WARNING:
-// These are unsafe, low-level operations with no bounds checking.
-// Improper use can cause segmentation faults and memory corruption.
-//
-// Memory is represented using two stack types:
-// - PTR (p) - Pointers to memory regions
-// - INT (i) - Byte values (0-255) and sizes
+/// Low-level memory allocation and manipulation.
+///
+/// SAFETY: These are unsafe operations with no bounds checking.
+/// Improper use can cause segmentation faults and memory corruption.
 
-// Import native memory functions from libstdmemqd
 import "libstdmemqd_static.a" as "mem" {
-	// Memory allocation
-	// Returns null (0) on failure
+	/// Allocate memory.
+	/// @param bytes i64 Number of bytes to allocate
+	/// @return address ptr Allocated memory, or null (0) on failure
+	/// @example 1024 mem::alloc -> buf
 	pub fn alloc(bytes:i64 -- address:ptr)
 
-	// Reallocate memory
-	// Returns null on failure (original preserved)
-	// Passing null as address is equivalent to alloc
+	/// Reallocate memory to new size.
+	/// @param address ptr Existing allocation (or null for new alloc)
+	/// @param new_bytes i64 New size in bytes
+	/// @return new_address ptr Reallocated memory, or null on failure
+	/// @example buf 2048 mem::realloc -> buf
 	pub fn realloc(address:ptr new_bytes:i64 -- new_address:ptr)
 
-	// Byte operations (8-bit)
-	// offset is in bytes
+	/// Set a byte at offset.
+	/// @param address ptr Base address
+	/// @param offset i64 Byte offset from base
+	/// @param value i64 Byte value (0-255)
+	/// @example buf 0 65 mem::set_byte
 	pub fn set_byte(address:ptr offset:i64 value:i64 -- )
+
+	/// Get a byte at offset.
+	/// @param address ptr Base address
+	/// @param offset i64 Byte offset from base
+	/// @return value i64 Byte value (0-255)
+	/// @example buf 0 mem::get_byte -> b
 	pub fn get_byte(address:ptr offset:i64 -- value:i64)
 
-	// Word operations (64-bit integer)
-	// offset is in bytes (not aligned to 8-byte boundaries)
+	/// Set a 64-bit integer at offset.
+	/// @param address ptr Base address
+	/// @param offset i64 Byte offset from base
+	/// @param value i64 Integer value
+	/// @example buf 0 42 mem::set
 	pub fn set(address:ptr offset:i64 value:i64 -- )
+
+	/// Get a 64-bit integer at offset.
+	/// @param address ptr Base address
+	/// @param offset i64 Byte offset from base
+	/// @return value i64 Integer value
+	/// @example buf 0 mem::get -> n
 	pub fn get(address:ptr offset:i64 -- value:i64)
 
-	// Float operations (64-bit double)
-	// offset is in bytes
+	/// Set a 64-bit float at offset.
+	/// @param address ptr Base address
+	/// @param offset i64 Byte offset from base
+	/// @param value f64 Float value
+	/// @example buf 0 3.14 mem::set_float
 	pub fn set_float(address:ptr offset:i64 value:f64 -- )
+
+	/// Get a 64-bit float at offset.
+	/// @param address ptr Base address
+	/// @param offset i64 Byte offset from base
+	/// @return value f64 Float value
+	/// @example buf 0 mem::get_float -> x
 	pub fn get_float(address:ptr offset:i64 -- value:f64)
 
-	// Pointer operations (64-bit pointer)
-	// offset is in bytes
+	/// Set a pointer at offset.
+	/// @param address ptr Base address
+	/// @param offset i64 Byte offset from base
+	/// @param value ptr Pointer value
+	/// @example buf 0 other_buf mem::set_ptr
 	pub fn set_ptr(address:ptr offset:i64 value:ptr -- )
+
+	/// Get a pointer at offset.
+	/// @param address ptr Base address
+	/// @param offset i64 Byte offset from base
+	/// @return value ptr Pointer value
+	/// @example buf 0 mem::get_ptr -> p
 	pub fn get_ptr(address:ptr offset:i64 -- value:ptr)
 
-	// Bulk operations
-	// copy: memcpy(dst, src, bytes)
+	/// Copy bytes between memory regions.
+	/// @param src ptr Source address
+	/// @param dst ptr Destination address
+	/// @param bytes i64 Number of bytes to copy
+	/// @example src dst 100 mem::copy
 	pub fn copy(src:ptr dst:ptr bytes:i64 -- )
 
-	// zero: memset(address, 0, bytes)
+	/// Zero out memory region.
+	/// @param address ptr Base address
+	/// @param bytes i64 Number of bytes to zero
+	/// @example buf 1024 mem::zero
 	pub fn zero(address:ptr bytes:i64 -- )
 
-	// fill: memset(address, value & 0xFF, bytes)
+	/// Fill memory region with byte value.
+	/// @param address ptr Base address
+	/// @param bytes i64 Number of bytes to fill
+	/// @param value i64 Fill value (0-255)
+	/// @example buf 1024 0xFF mem::fill
 	pub fn fill(address:ptr bytes:i64 value:i64 -- )
 
-	// Buffer to string conversion
-	// Creates a null-terminated string from buffer
+	/// Convert buffer to string.
+	/// @param buffer ptr Source buffer
+	/// @param length i64 Number of bytes
+	/// @return text str Null-terminated string
+	/// @example buf len mem::to_string -> s
 	pub fn to_string(buffer:ptr length:i64 -- text:str)
 
-	// String to buffer conversion
-	// Creates a buffer from string (returns buffer and length)
+	/// Convert string to buffer.
+	/// @param text str Source string
+	/// @return buffer ptr Allocated buffer
+	/// @return length i64 String length
+	/// @example "hello" mem::from_string -> buf -> len
 	pub fn from_string(text:str -- buffer:ptr length:i64)
 }
 
-// Helper functions implemented in Quadrate
-
-// Free memory - wrapper around builtin free instruction
-// Passing null is safe (no-op)
-// Double-free is undefined behavior
+/// Free allocated memory.
+/// @param address ptr Memory to free (null is safe)
+/// @example buf mem::free
 pub fn free( address:ptr -- ) {
-	free  // Calls builtin free instruction
+	free
 }
 
+/// Check if pointer is null.
+/// @param address ptr Pointer to check
+/// @return is_null i64 1 if null, 0 otherwise
+/// @example buf mem::is_null .  // 0
 pub fn is_null( address:ptr -- is_null:i64 ) {
-	// Check if pointer is null
-	// Returns 1 if null, 0 otherwise
 	0 eq
 }

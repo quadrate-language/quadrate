@@ -1,13 +1,36 @@
-// Time duration constants (in nanoseconds)
+/// Time operations and duration constants.
+
+/// Duration: 1 nanosecond.
 pub const Nanosecond = 1
+
+/// Duration: 1 microsecond (1000 nanoseconds).
 pub const Microsecond = 1000
+
+/// Duration: 1 millisecond (1,000,000 nanoseconds).
 pub const Millisecond = 1000000
+
+/// Duration: 1 second (1,000,000,000 nanoseconds).
 pub const Second = 1000000000
+
+/// Duration: 1 minute (60 seconds).
 pub const Minute = 60000000000
+
+/// Duration: 1 hour (60 minutes).
 pub const Hour = 3600000000000
 
 import "libstdtimeqd_static.a" as "time" {
-    pub fn unix( -- timestamp:i64 )
-    pub fn now( -- nanoseconds:i64 )
-    pub fn sleep(duration:i64 -- )
+	/// Get Unix timestamp in seconds.
+	/// @return timestamp i64 Seconds since 1970-01-01 00:00:00 UTC
+	/// @example time::unix .  // 1700000000
+	pub fn unix( -- timestamp:i64 )
+
+	/// Get current time in nanoseconds.
+	/// @return nanoseconds i64 Monotonic nanosecond timestamp
+	/// @example time::now -> start
+	pub fn now( -- nanoseconds:i64 )
+
+	/// Sleep for duration in nanoseconds.
+	/// @param duration i64 Duration to sleep (use time constants)
+	/// @example time::Second time::sleep
+	pub fn sleep(duration:i64 -- )
 }

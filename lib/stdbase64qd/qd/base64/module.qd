@@ -1,16 +1,18 @@
-// Base64 Encoding/Decoding Module
-//
-// Encodes binary data as ASCII text using A-Z, a-z, 0-9, +, /
-// Decodes base64-encoded strings back to binary data
+/// Base64 encoding and decoding.
 
 import "libstdbase64qd_static.a" as "base64" {
-	// Encode binary data to base64 string
-	// Example: 5-byte buffer containing "Hello" -> "SGVsbG8="
+	/// Encode binary data to base64 string.
+	/// @param data ptr Buffer to encode
+	/// @param len i64 Length of data
+	/// @return encoded str Base64-encoded string
+	/// @example buf 5 base64::encode -> b64
 	pub fn encode(data:ptr len:i64 -- encoded:str)
 
-	// Decode base64 string to binary data
-	// Returns: data pointer and length on success, aborts with error on failure
-	// Caller must free the returned data pointer using mem::f64ree
-	// Example: "SGVsbG8=" -> buffer with "Hello", length=5
+	/// Decode base64 string to binary data.
+	/// @param encoded str Base64-encoded string
+	/// @return data ptr Decoded buffer (caller must free)
+	/// @return data_len i64 Length of decoded data
+	/// @error Invalid base64 encoding
+	/// @example "SGVsbG8=" base64::decode! -> buf -> len
 	pub fn decode(encoded:str -- data:ptr data_len:i64)!
 }

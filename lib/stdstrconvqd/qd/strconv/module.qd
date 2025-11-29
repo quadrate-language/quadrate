@@ -1,9 +1,29 @@
+/// String to number conversions.
+
 import "libstdstrconvqd_static.a" as "strconv" {
-	// Integer formatting/parsing with explicit base
+	/// Format integer in given base.
+	/// @param value i64 Integer value
+	/// @param base i64 Numeric base (2-36)
+	/// @return str str Formatted string
+	/// @example 255 16 strconv::format_int .  // "ff"
 	pub fn format_int(value:i64 base:i64 -- str:str)
+
+	/// Parse integer from string in given base.
+	/// @param str str String to parse
+	/// @param base i64 Numeric base (2-36)
+	/// @return value i64 Parsed integer
+	/// @example "ff" 16 strconv::parse_int .  // 255
 	pub fn parse_int(str:str base:i64 -- value:i64)
 
-	// Convenience functions for base 10
+	/// Convert integer to decimal string.
+	/// @param value i64 Integer value
+	/// @return str str Decimal string
+	/// @example 42 strconv::itoa .  // "42"
 	pub fn itoa(value:i64 -- str:str)
+
+	/// Parse decimal string to integer.
+	/// @param str str Decimal string
+	/// @return value i64 Parsed integer
+	/// @example "42" strconv::atoi .  // 42
 	pub fn atoi(str:str -- value:i64)
 }

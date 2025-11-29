@@ -1,0 +1,26 @@
+{
+  "name": "fmt",
+  "description": "Formatted output functions.",
+  "constants": [],
+  "structs": [],
+  "functions": [
+    {
+      "name": "printf",
+      "signature": "( format:str -- )",
+      "failable": false,
+      "description": "Print formatted output to stdout.",
+      "params": [
+        {
+          "name": "format",
+          "type": "str",
+          "description": "Format string with % specifiers"
+        }
+      ],
+      "returns": [],
+      "errors": [],
+      "examples": [
+        "\"Hello %s\\n\" \"world\" fmt::printf  // Hello world"
+      ]
+    }
+  ]
+}
