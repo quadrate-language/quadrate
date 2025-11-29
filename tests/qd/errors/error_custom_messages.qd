@@ -2,10 +2,11 @@
 fn divide(a:i64 b:i64 -- result:i64)! {
 	dup 0 eq if {
 		drop drop
-		0  // Dummy result value
+		0  // Return dummy value before error
 		"Division by zero" 100 error
+	} else {
+		/
 	}
-	/
 }
 
 fn main() {

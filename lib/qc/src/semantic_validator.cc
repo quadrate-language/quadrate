@@ -10,9 +10,11 @@
 #include <qc/ast_node.h>
 #include <qc/ast_node_constant.h>
 #include <qc/ast_node_ctx.h>
+#include <qc/ast_node_defer.h>
 #include <qc/ast_node_function.h>
 #include <qc/ast_node_function_pointer.h>
 #include <qc/ast_node_identifier.h>
+#include <qc/ast_node_if.h>
 #include <qc/ast_node_import.h>
 #include <qc/ast_node_instruction.h>
 #include <qc/ast_node_literal.h>
@@ -526,6 +528,46 @@ namespace Qd {
 			for (const auto* func : import->functions()) {
 				std::string qualifiedName = import->namespaceName() + "::" + func->name;
 				mImportedLibraryFunctions.insert(qualifiedName);
+
+				// Also register function signature for type checking
+				FunctionSignature sig;
+
+				// Process input parameters
+				for (const auto* param : func->inputParameters) {
+					std::string typeStr = param->typeString();
+					if (typeStr == "i32" || typeStr == "i64" || typeStr == "u8" || typeStr == "u16" ||
+						typeStr == "u32" || typeStr == "u64") {
+						sig.consumes.push_back(StackValueType::INT);
+					} else if (typeStr == "f32" || typeStr == "f64" || typeStr == "float") {
+						sig.consumes.push_back(StackValueType::FLOAT);
+					} else if (typeStr == "str") {
+						sig.consumes.push_back(StackValueType::STRING);
+					} else if (typeStr == "ptr" || typeStr == "bool" || isStructTypeName(typeStr)) {
+						sig.consumes.push_back(StackValueType::PTR);
+					} else {
+						sig.consumes.push_back(StackValueType::ANY);
+					}
+				}
+
+				// Process output parameters
+				for (const auto* param : func->outputParameters) {
+					std::string typeStr = param->typeString();
+					if (typeStr == "i32" || typeStr == "i64" || typeStr == "u8" || typeStr == "u16" ||
+						typeStr == "u32" || typeStr == "u64") {
+						sig.produces.push_back(StackValueType::INT);
+					} else if (typeStr == "f32" || typeStr == "f64" || typeStr == "float") {
+						sig.produces.push_back(StackValueType::FLOAT);
+					} else if (typeStr == "str") {
+						sig.produces.push_back(StackValueType::STRING);
+					} else if (typeStr == "ptr" || typeStr == "bool" || isStructTypeName(typeStr)) {
+						sig.produces.push_back(StackValueType::PTR);
+					} else {
+						sig.produces.push_back(StackValueType::ANY);
+					}
+				}
+
+				sig.throws = func->throws;
+				mFunctionSignatures[qualifiedName] = sig;
 			}
 		}
 
@@ -2132,14 +2174,64 @@ namespace Qd {
 					reportError(child, "Type error in 'if': Stack underflow (requires 1 condition value)");
 					break;
 				}
-				// Don't pop the condition - we're skipping full control flow analysis
-				// which would be complex (need to merge type states from branches)
+				// Pop the condition value
+				typeStack.pop_back();
+				if (!structTypeStack.empty()) {
+					structTypeStack.pop_back();
+				}
+				// Skip type checking if/else bodies - failable function patterns and
+				// runtime stack manipulation make static tracking unreliable
+				break;
+			}
+
+			case IAstNode::Type::DEFER_STATEMENT: {
+				// Defer blocks must have zero net stack effect
+				size_t stackSizeBefore = typeStack.size();
+
+				// Type check the defer body
+				for (size_t j = 0; j < child->childCount(); j++) {
+					IAstNode* deferChild = child->child(j);
+					if (deferChild && deferChild->type() == IAstNode::Type::BLOCK) {
+						typeCheckBlock(deferChild, typeStack, localVariables, structTypeStack);
+					}
+				}
+
+				int deferEffect = static_cast<int>(typeStack.size()) - static_cast<int>(stackSizeBefore);
+				if (deferEffect != 0) {
+					std::string errorMsg = "Stack effect error in 'defer': block must have zero net stack effect, but changes stack by ";
+					errorMsg += std::to_string(deferEffect);
+					reportError(child, errorMsg.c_str());
+				}
+
+				// Restore stack to before defer (defer shouldn't affect the surrounding stack)
+				while (typeStack.size() > stackSizeBefore) {
+					typeStack.pop_back();
+					if (!structTypeStack.empty()) {
+						structTypeStack.pop_back();
+					}
+				}
+				break;
+			}
+
+			case IAstNode::Type::SWITCH_STATEMENT: {
+				// Check that stack has a value to switch on
+				if (typeStack.empty()) {
+					reportError(child, "Type error in 'switch': Stack underflow (requires 1 value to match)");
+					break;
+				}
+				// Pop the switch value
+				typeStack.pop_back();
+				if (!structTypeStack.empty()) {
+					structTypeStack.pop_back();
+				}
+				// Skip type checking switch case bodies - they may operate on runtime stack
+				// values that can't be tracked statically (e.g., in interpreters)
 				break;
 			}
 
 			case IAstNode::Type::FOR_STATEMENT:
 			case IAstNode::Type::LOOP_STATEMENT: {
-				// For now, skip loop type checking
+				// For now, skip loop type checking (break/continue complicate analysis)
 				break;
 			}
 
@@ -2149,6 +2241,7 @@ namespace Qd {
 				// The runtime enforces the single-value constraint anyway
 				// Just push a generic type to the parent stack
 				typeStack.push_back(StackValueType::INT);
+				structTypeStack.push_back("");
 				break;
 			}
 
@@ -3237,10 +3330,19 @@ namespace Qd {
 			name = "sub";
 		}
 
-		// error instruction: sets error flag (for use in 'throws' functions)
-		// Stack: [...] -> [...] (unchanged)
+		// error instruction: ( msg code -- ) sets error flag
 		if (strcmp(name, "error") == 0) {
-			// No stack changes, just sets ctx->has_error = true at runtime
+			if (typeStack.size() < 2) {
+				reportErrorConditional(node, "Type error in 'error': Stack underflow (requires msg and code)", reportErrors);
+				return;
+			}
+			// Pop msg and code
+			typeStack.pop_back();
+			typeStack.pop_back();
+			if (structTypeStack.size() >= 2) {
+				structTypeStack.pop_back();
+				structTypeStack.pop_back();
+			}
 			return;
 		}
 
@@ -3416,6 +3518,86 @@ namespace Qd {
 			StackValueType result = (a == StackValueType::FLOAT || b == StackValueType::FLOAT) ? StackValueType::FLOAT
 																							   : StackValueType::INT;
 			typeStack.push_back(result);
+		}
+		// Comparison operations: eq, neq, lt, gt, lte, gte (consume 2, produce int/bool)
+		else if (strcmp(name, "eq") == 0 || strcmp(name, "neq") == 0 || strcmp(name, "lt") == 0 ||
+				 strcmp(name, "gt") == 0 || strcmp(name, "lte") == 0 || strcmp(name, "gte") == 0) {
+			if (typeStack.size() < 2) {
+				std::string errorMsg = "Type error in '";
+				errorMsg += name;
+				errorMsg += "': Stack underflow (requires 2 values)";
+				reportErrorConditional(node, errorMsg.c_str(), reportErrors);
+				return;
+			}
+			// Pop both operands
+			typeStack.pop_back();
+			typeStack.pop_back();
+			if (structTypeStack.size() >= 2) {
+				structTypeStack.pop_back();
+				structTypeStack.pop_back();
+			}
+			// Push result (always int/bool)
+			typeStack.push_back(StackValueType::INT);
+			structTypeStack.push_back("");
+		}
+		// Logical operations: and, or (consume 2 bools, produce int/bool)
+		else if (strcmp(name, "and") == 0 || strcmp(name, "or") == 0) {
+			if (typeStack.size() < 2) {
+				std::string errorMsg = "Type error in '";
+				errorMsg += name;
+				errorMsg += "': Stack underflow (requires 2 values)";
+				reportErrorConditional(node, errorMsg.c_str(), reportErrors);
+				return;
+			}
+			// Pop both operands
+			typeStack.pop_back();
+			typeStack.pop_back();
+			if (structTypeStack.size() >= 2) {
+				structTypeStack.pop_back();
+				structTypeStack.pop_back();
+			}
+			// Push result (always int/bool)
+			typeStack.push_back(StackValueType::INT);
+			structTypeStack.push_back("");
+		}
+		// Logical negation: not (consume 1, produce int/bool)
+		else if (strcmp(name, "not") == 0) {
+			if (typeStack.empty()) {
+				reportErrorConditional(node, "Type error in 'not': Stack underflow (requires 1 value)", reportErrors);
+				return;
+			}
+			// Pop operand, push result (type stays int)
+			typeStack.pop_back();
+			if (!structTypeStack.empty()) {
+				structTypeStack.pop_back();
+			}
+			typeStack.push_back(StackValueType::INT);
+			structTypeStack.push_back("");
+		}
+		// Negation: neg (preserve numeric type)
+		else if (strcmp(name, "neg") == 0) {
+			if (typeStack.empty()) {
+				reportErrorConditional(node, "Type error in 'neg': Stack underflow (requires 1 numeric value)", reportErrors);
+				return;
+			}
+			// Type stays the same
+		}
+		// Modulo: mod (consume 2 ints, produce int)
+		else if (strcmp(name, "mod") == 0) {
+			if (typeStack.size() < 2) {
+				reportErrorConditional(node, "Type error in 'mod': Stack underflow (requires 2 integer values)", reportErrors);
+				return;
+			}
+			// Pop both operands
+			typeStack.pop_back();
+			typeStack.pop_back();
+			if (structTypeStack.size() >= 2) {
+				structTypeStack.pop_back();
+				structTypeStack.pop_back();
+			}
+			// Push result (always int)
+			typeStack.push_back(StackValueType::INT);
+			structTypeStack.push_back("");
 		}
 		// Print operations: print, printv
 		else if (strcmp(name, "print") == 0 || strcmp(name, "printv") == 0) {
@@ -3611,6 +3793,82 @@ namespace Qd {
 				structTypeStack.pop_back();
 				structTypeStack.pop_back();
 				structTypeStack.push_back(topStruct);
+			}
+		}
+		// Stack operations: drop ( a -- )
+		else if (strcmp(name, "drop") == 0) {
+			if (typeStack.empty()) {
+				reportErrorConditional(node, "Type error in 'drop': Stack underflow (requires 1 value)", reportErrors);
+				return;
+			}
+			typeStack.pop_back();
+			if (!structTypeStack.empty()) {
+				structTypeStack.pop_back();
+			}
+		}
+		// Stack operations: drop2 ( a b -- )
+		else if (strcmp(name, "drop2") == 0) {
+			if (typeStack.size() < 2) {
+				reportErrorConditional(node, "Type error in 'drop2': Stack underflow (requires 2 values)", reportErrors);
+				return;
+			}
+			typeStack.pop_back();
+			typeStack.pop_back();
+			if (structTypeStack.size() >= 2) {
+				structTypeStack.pop_back();
+				structTypeStack.pop_back();
+			}
+		}
+		// Stack operations: rot ( a b c -- b c a )
+		else if (strcmp(name, "rot") == 0) {
+			if (typeStack.size() < 3) {
+				reportErrorConditional(node, "Type error in 'rot': Stack underflow (requires 3 values)", reportErrors);
+				return;
+			}
+			StackValueType c = typeStack.back();
+			typeStack.pop_back();
+			StackValueType b = typeStack.back();
+			typeStack.pop_back();
+			StackValueType a = typeStack.back();
+			typeStack.pop_back();
+			typeStack.push_back(b);
+			typeStack.push_back(c);
+			typeStack.push_back(a);
+			// Handle struct type stack
+			if (structTypeStack.size() >= 3) {
+				std::string cStruct = structTypeStack.back();
+				structTypeStack.pop_back();
+				std::string bStruct = structTypeStack.back();
+				structTypeStack.pop_back();
+				std::string aStruct = structTypeStack.back();
+				structTypeStack.pop_back();
+				structTypeStack.push_back(bStruct);
+				structTypeStack.push_back(cStruct);
+				structTypeStack.push_back(aStruct);
+			}
+		}
+		// Stack operations: tuck ( a b -- b a b )
+		else if (strcmp(name, "tuck") == 0) {
+			if (typeStack.size() < 2) {
+				reportErrorConditional(node, "Type error in 'tuck': Stack underflow (requires 2 values)", reportErrors);
+				return;
+			}
+			StackValueType b = typeStack.back();
+			typeStack.pop_back();
+			StackValueType a = typeStack.back();
+			typeStack.pop_back();
+			typeStack.push_back(b);
+			typeStack.push_back(a);
+			typeStack.push_back(b);
+			// Handle struct type stack
+			if (structTypeStack.size() >= 2) {
+				std::string bStruct = structTypeStack.back();
+				structTypeStack.pop_back();
+				std::string aStruct = structTypeStack.back();
+				structTypeStack.pop_back();
+				structTypeStack.push_back(bStruct);
+				structTypeStack.push_back(aStruct);
+				structTypeStack.push_back(bStruct);
 			}
 		}
 		// Stack operations: clear (empties the entire stack)

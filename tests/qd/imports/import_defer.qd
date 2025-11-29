@@ -4,18 +4,14 @@ import "libstdfmtqd_static.a" as "fmt" {
     fn printf(format:str -- )
 }
 
-fn print_defer() {
-    "Defer executed\n" fmt::printf
-}
-
-fn test_defer() {
+fn test_defer( -- ) {
     defer {
-        print_defer
+        "Defer executed\n" fmt::printf
     }
     "Before defer\n" fmt::printf
 }
 
-fn main() {
+fn main( -- ) {
     "Start\n" fmt::printf
     test_defer
     "End\n" fmt::printf

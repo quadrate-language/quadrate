@@ -66,9 +66,31 @@ type Param struct {
 	Description string `json:"description"`
 }
 
+// Instruction represents a builtin instruction
+type Instruction struct {
+	Name        string `json:"name"`
+	Signature   string `json:"signature"`
+	Description string `json:"description"`
+	Alias       string `json:"alias,omitempty"`
+}
+
+// Category represents a category of builtin instructions
+type Category struct {
+	Name         string        `json:"name"`
+	Instructions []Instruction `json:"instructions"`
+}
+
+// Builtins represents all builtin instructions
+type Builtins struct {
+	Name        string     `json:"name"`
+	Description string     `json:"description"`
+	Categories  []Category `json:"categories"`
+}
+
 // DocStore holds all loaded module documentation
 type DocStore struct {
-	modules map[string]*Module
+	modules  map[string]*Module
+	builtins *Builtins
 }
 
 // NewDocStore creates a new documentation store
@@ -96,6 +118,15 @@ func (ds *DocStore) LoadFromDir(dir string) error {
 			continue
 		}
 
+		// Handle builtins.json separately
+		if entry.Name() == "builtins.json" {
+			var builtins Builtins
+			if err := json.Unmarshal(data, &builtins); err == nil {
+				ds.builtins = &builtins
+			}
+			continue
+		}
+
 		var mod Module
 		if err := json.Unmarshal(data, &mod); err != nil {
 			continue
@@ -104,6 +135,26 @@ func (ds *DocStore) LoadFromDir(dir string) error {
 		ds.modules[mod.Name] = &mod
 	}
 
+	return nil
+}
+
+// GetBuiltins returns the builtins documentation
+func (ds *DocStore) GetBuiltins() *Builtins {
+	return ds.builtins
+}
+
+// GetBuiltin returns a specific builtin instruction by name
+func (ds *DocStore) GetBuiltin(name string) *Instruction {
+	if ds.builtins == nil {
+		return nil
+	}
+	for _, cat := range ds.builtins.Categories {
+		for _, instr := range cat.Instructions {
+			if instr.Name == name || instr.Alias == name {
+				return &instr
+			}
+		}
+	}
 	return nil
 }
 
@@ -126,6 +177,26 @@ func (ds *DocStore) SearchFunctions(query string) []SearchResult {
 	query = strings.ToLower(query)
 	var results []SearchResult
 
+	// Search builtins
+	if ds.builtins != nil {
+		for _, cat := range ds.builtins.Categories {
+			for _, instr := range cat.Instructions {
+				if strings.Contains(strings.ToLower(instr.Name), query) ||
+					strings.Contains(strings.ToLower(instr.Description), query) ||
+					strings.Contains(strings.ToLower(instr.Alias), query) {
+					results = append(results, SearchResult{
+						Module:      "builtin",
+						Name:        instr.Name,
+						Kind:        "instruction",
+						Signature:   instr.Signature,
+						Description: instr.Description,
+					})
+				}
+			}
+		}
+	}
+
+	// Search modules
 	for modName, mod := range ds.modules {
 		for _, fn := range mod.Functions {
 			if strings.Contains(strings.ToLower(fn.Name), query) ||
@@ -329,6 +400,22 @@ func (s *StdioServer) processRequest(req *MCPRequest) MCPResponse {
 					Required: []string{"query"},
 				},
 			},
+			{
+				Name:        "quadrate_get_builtins",
+				Description: "Get all Quadrate builtin instructions organized by category",
+				InputSchema: InputSchema{Type: "object"},
+			},
+			{
+				Name:        "quadrate_get_builtin",
+				Description: "Get documentation for a specific Quadrate builtin instruction",
+				InputSchema: InputSchema{
+					Type: "object",
+					Properties: map[string]Property{
+						"name": {Type: "string", Description: "Instruction name (e.g., 'dup', 'swap', 'add', '+')"},
+					},
+					Required: []string{"name"},
+				},
+			},
 		}
 		return MCPResponse{
 			JSONRPC: "2.0",
@@ -418,6 +505,26 @@ func (s *StdioServer) handleToolCall(req *MCPRequest) MCPResponse {
 		}
 		json.Unmarshal(params.Arguments, &args)
 		result = s.docs.SearchFunctions(args.Query)
+
+	case "quadrate_get_builtins":
+		builtins := s.docs.GetBuiltins()
+		if builtins == nil {
+			errMsg = "Builtins documentation not available"
+		} else {
+			result = builtins
+		}
+
+	case "quadrate_get_builtin":
+		var args struct {
+			Name string `json:"name"`
+		}
+		json.Unmarshal(params.Arguments, &args)
+		instr := s.docs.GetBuiltin(args.Name)
+		if instr == nil {
+			errMsg = fmt.Sprintf("Builtin instruction '%s' not found", args.Name)
+		} else {
+			result = instr
+		}
 
 	default:
 		return MCPResponse{

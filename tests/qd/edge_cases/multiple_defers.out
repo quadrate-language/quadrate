@@ -1,8 +1,4 @@
-"Main work"
-
-"Main work" "Defer p3"
-
-"Main work" "Defer p3" "Defer p2"
-
-"Main work" "Defer p3" "Defer p2" "Defer p1"
-
+Main work
+Defer p3
+Defer p2
+Defer p1
