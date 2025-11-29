@@ -66,6 +66,28 @@ namespace Qd {
 		return byteOffset;
 	}
 
+	// Helper function to count UTF-8 characters (codepoints) in a byte range
+	static size_t countUtf8Chars(const char* start, const char* end) {
+		size_t count = 0;
+		const char* p = start;
+		while (p < end && *p != '\0') {
+			unsigned char c = static_cast<unsigned char>(*p);
+			if ((c & 0x80) == 0) {
+				p += 1;
+			} else if ((c & 0xE0) == 0xC0) {
+				p += 2;
+			} else if ((c & 0xF0) == 0xE0) {
+				p += 3;
+			} else if ((c & 0xF8) == 0xF0) {
+				p += 4;
+			} else {
+				p += 1;
+			}
+			count++;
+		}
+		return count;
+	}
+
 	// Helper to calculate line and column from byte position
 	static void calculateLineColumn(const char* src, size_t pos, size_t* line, size_t* column) {
 		*line = 1;
@@ -82,9 +104,11 @@ namespace Qd {
 
 	// Helper to set position on a node from scanner
 	static void setNodePosition(IAstNode* node, u8t_scanner* scanner, const char* src) {
-		size_t pos = u8t_scanner_token_start(scanner);
+		size_t charPos = u8t_scanner_token_start(scanner);
+		// Convert character position to byte position for calculateLineColumn
+		size_t bytePos = charIndexToByteOffset(src, charPos);
 		size_t line, column;
-		calculateLineColumn(src, pos, &line, &column);
+		calculateLineColumn(src, bytePos, &line, &column);
 		node->setPosition(line, column);
 	}
 
@@ -104,7 +128,15 @@ namespace Qd {
 			return nullptr;
 		}
 
-		// Get character position and convert to byte offset
+		// Capture comment start position BEFORE advancing scanner
+		// The comment starts at the first slash, which is at token_start - 1
+		// (since we've already scanned the second / or *)
+		size_t commentStartCharPos = u8t_scanner_token_start(scanner) - 1;
+		size_t commentStartBytePos = charIndexToByteOffset(src, commentStartCharPos);
+		size_t commentLine, commentColumn;
+		calculateLineColumn(src, commentStartBytePos, &commentLine, &commentColumn);
+
+		// Get character position and convert to byte offset for content start
 		size_t charPos = u8t_scanner_token_start(scanner);
 		size_t tokenLen = u8t_scanner_token_len(scanner);
 		size_t bytePos = charIndexToByteOffset(src, charPos + tokenLen);
@@ -131,26 +163,32 @@ namespace Qd {
 
 		std::string commentText(commentStart, static_cast<size_t>(commentEnd - commentStart));
 
-		// Advance scanner past the comment
+		// Advance scanner past the comment by directly updating the internal pointer
+		// This avoids the scanner interpreting special characters (like ") inside comments
+		// NOTE: The scanner's _token_start tracks character positions (codepoints), not bytes
+		// So we must count UTF-8 characters when advancing the position
 		if (commentType == AstNodeComment::CommentType::LINE) {
-			while (u8t_scanner_peek(scanner) != 0 && u8t_scanner_peek(scanner) != '\n' &&
-					u8t_scanner_peek(scanner) != '\r') {
-				u8t_scanner_scan(scanner);
-			}
+			size_t skipChars = countUtf8Chars(commentStart, commentEnd);
+			scanner->_str = commentEnd;
+			scanner->_token_start += skipChars;
+			// Set _token_len to 1 to simulate having scanned the last character
+			// This matches the behavior of the original loop-based approach
+			scanner->_token_len = 1;
 		} else {
-			bool foundStar = false;
-			while (u8t_scanner_peek(scanner) != 0) {
-				char32_t c = u8t_scanner_scan(scanner);
-				if (foundStar && c == '/') {
-					break;
-				}
-				foundStar = (c == '*');
+			// For block comments, advance past the closing */
+			const char* blockEnd = commentEnd;
+			if (*blockEnd == '*' && *(blockEnd + 1) == '/') {
+				blockEnd += 2;
 			}
+			size_t skipChars = countUtf8Chars(commentStart, blockEnd);
+			scanner->_str = blockEnd;
+			scanner->_token_start += skipChars;
+			scanner->_token_len = 1;
 		}
 
-		// Create and return comment node
+		// Create and return comment node with pre-captured position
 		AstNodeComment* comment = new AstNodeComment(commentText, commentType);
-		setNodePosition(comment, scanner, src);
+		comment->setPosition(commentLine, commentColumn);
 		return comment;
 	}
 
@@ -191,9 +229,11 @@ namespace Qd {
 			// Check if the next character in source is '>' (forming '->')
 			size_t tokenStart = u8t_scanner_token_start(scanner);
 			size_t tokenLen = u8t_scanner_token_len(scanner);
-			size_t tokenEnd = tokenStart + tokenLen;
+			size_t tokenEndChar = tokenStart + tokenLen;
+			// Convert character index to byte offset for indexing into src
+			size_t tokenEndByte = charIndexToByteOffset(src, tokenEndChar);
 			// If character immediately after '-' is '>', this is NOT subtraction
-			if (tokenEnd < strlen(src) && src[tokenEnd] == '>') {
+			if (tokenEndByte < strlen(src) && src[tokenEndByte] == '>') {
 				return nullptr; // Not an operator alias, will be handled as local declaration
 			}
 		}
@@ -275,8 +315,10 @@ namespace Qd {
 		if (token == '-') {
 			size_t tokenStart = u8t_scanner_token_start(scanner);
 			size_t tokenLen = u8t_scanner_token_len(scanner);
-			size_t tokenEnd = tokenStart + tokenLen;
-			if (tokenEnd < strlen(src) && src[tokenEnd] == '>') {
+			size_t tokenEndChar = tokenStart + tokenLen;
+			// Convert character index to byte offset for indexing into src
+			size_t tokenEndByte = charIndexToByteOffset(src, tokenEndChar);
+			if (tokenEndByte < strlen(src) && src[tokenEndByte] == '>') {
 				// This is '-> variableName'
 				u8t_scanner_scan(scanner);						// Consume '>'
 				char32_t nextToken = u8t_scanner_scan(scanner); // Get variable name
@@ -284,7 +326,9 @@ namespace Qd {
 					const char* varName = u8t_scanner_token_text(scanner, n);
 					IAstNode* node = new AstNodeLocal(std::string(varName));
 					size_t line, column;
-					calculateLineColumn(src, tokenStart, &line, &column);
+					// Note: calculateLineColumn expects byte position
+					size_t tokenStartByte = charIndexToByteOffset(src, tokenStart);
+					calculateLineColumn(src, tokenStartByte, &line, &column);
 					node->setPosition(line, column);
 					return node;
 				}
@@ -553,18 +597,20 @@ namespace Qd {
 			// We need to look at the actual source position, not the next token
 			size_t tokenStart = u8t_scanner_token_start(scanner);
 			size_t tokenLen = u8t_scanner_token_len(scanner);
-			size_t tokenEnd = tokenStart + tokenLen;
+			size_t tokenEndChar = tokenStart + tokenLen;
+			// Convert character index to byte offset for indexing into src
+			size_t tokenEndByte = charIndexToByteOffset(src, tokenEndChar);
 			// Check if character immediately after '-' is '>'
-			if (tokenEnd < strlen(src) && src[tokenEnd] == '>') {
+			if (tokenEndByte < strlen(src) && src[tokenEndByte] == '>') {
 				// This is a local declaration: -> variableName
-				size_t arrowPos = tokenStart;
+				size_t arrowPosByte = charIndexToByteOffset(src, tokenStart);
 				u8t_scanner_scan(scanner);		   // Consume '>'
 				token = u8t_scanner_scan(scanner); // Get next token (should be identifier)
 				if (token == U8T_IDENTIFIER) {
 					const char* varName = u8t_scanner_token_text(scanner, n);
 					IAstNode* node = new AstNodeLocal(std::string(varName));
 					size_t line, column;
-					calculateLineColumn(src, arrowPos, &line, &column);
+					calculateLineColumn(src, arrowPosByte, &line, &column);
 					node->setPosition(line, column);
 					return node;
 				} else {
@@ -1193,8 +1239,10 @@ namespace Qd {
 				// Check if this is '-> variableName' (local variable)
 				size_t tokenStart = u8t_scanner_token_start(scanner);
 				size_t tokenLen = u8t_scanner_token_len(scanner);
-				size_t tokenEnd = tokenStart + tokenLen;
-				if (tokenEnd < strlen(src) && src[tokenEnd] == '>') {
+				size_t tokenEndChar = tokenStart + tokenLen;
+				// Convert character index to byte offset for indexing into src
+				size_t tokenEndByte = charIndexToByteOffset(src, tokenEndChar);
+				if (tokenEndByte < strlen(src) && src[tokenEndByte] == '>') {
 					// This is '-> variableName'
 					u8t_scanner_scan(scanner);						// Consume '>'
 					char32_t nextToken = u8t_scanner_scan(scanner); // Get variable name
@@ -1202,7 +1250,9 @@ namespace Qd {
 						const char* varName = u8t_scanner_token_text(scanner, &n);
 						IAstNode* node = new AstNodeLocal(std::string(varName));
 						size_t line, column;
-						calculateLineColumn(src, tokenStart, &line, &column);
+						// Note: calculateLineColumn expects byte position
+						size_t tokenStartByte = charIndexToByteOffset(src, tokenStart);
+						calculateLineColumn(src, tokenStartByte, &line, &column);
 						node->setPosition(line, column);
 						tempNodes.push_back(node);
 					} else {
