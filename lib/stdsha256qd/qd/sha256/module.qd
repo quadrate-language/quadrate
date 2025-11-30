@@ -1,0 +1,385 @@
+/// SHA-256 cryptographic hash function.
+/// Produces a 256-bit (32-byte) hash value.
+/// Conforms to FIPS 180-4.
+
+use mem
+use bits
+use str
+use bytes
+
+// Initial hash values (first 32 bits of fractional parts of square roots of first 8 primes)
+const H0_INIT = 1779033703   // 0x6a09e667
+const H1_INIT = 3144134277   // 0xbb67ae85
+const H2_INIT = 1013904242   // 0x3c6ef372
+const H3_INIT = 2773480762   // 0xa54ff53a
+const H4_INIT = 1359893119   // 0x510e527f
+const H5_INIT = 2600822924   // 0x9b05688c
+const H6_INIT = 528734635    // 0x1f83d9ab
+const H7_INIT = 1541459225   // 0x5be0cd19
+
+// 64 round constants (first 32 bits of fractional parts of cube roots of first 64 primes)
+fn get_k(i:i64 -- k:i64) {
+	-> i
+	i 0 == if { 1116352408 } else {    // 0x428a2f98
+	i 1 == if { 1899447441 } else {    // 0x71374491
+	i 2 == if { 3049323471 } else {    // 0xb5c0fbcf
+	i 3 == if { 3921009573 } else {    // 0xe9b5dba5
+	i 4 == if { 961987163 } else {     // 0x3956c25b
+	i 5 == if { 1508970993 } else {    // 0x59f111f1
+	i 6 == if { 2453635748 } else {    // 0x923f82a4
+	i 7 == if { 2870763221 } else {    // 0xab1c5ed5
+	i 8 == if { 3624381080 } else {    // 0xd807aa98
+	i 9 == if { 310598401 } else {     // 0x12835b01
+	i 10 == if { 607225278 } else {    // 0x243185be
+	i 11 == if { 1426881987 } else {   // 0x550c7dc3
+	i 12 == if { 1925078388 } else {   // 0x72be5d74
+	i 13 == if { 2162078206 } else {   // 0x80deb1fe
+	i 14 == if { 2614888103 } else {   // 0x9bdc06a7
+	i 15 == if { 3248222580 } else {   // 0xc19bf174
+	i 16 == if { 3835390401 } else {   // 0xe49b69c1
+	i 17 == if { 4022224774 } else {   // 0xefbe4786
+	i 18 == if { 264347078 } else {    // 0x0fc19dc6
+	i 19 == if { 604807628 } else {    // 0x240ca1cc
+	i 20 == if { 770255983 } else {    // 0x2de92c6f
+	i 21 == if { 1249150122 } else {   // 0x4a7484aa
+	i 22 == if { 1555081692 } else {   // 0x5cb0a9dc
+	i 23 == if { 1996064986 } else {   // 0x76f988da
+	i 24 == if { 2554220882 } else {   // 0x983e5152
+	i 25 == if { 2821834349 } else {   // 0xa831c66d
+	i 26 == if { 2952996808 } else {   // 0xb00327c8
+	i 27 == if { 3210313671 } else {   // 0xbf597fc7
+	i 28 == if { 3336571891 } else {   // 0xc6e00bf3
+	i 29 == if { 3584528711 } else {   // 0xd5a79147
+	i 30 == if { 113926993 } else {    // 0x06ca6351
+	i 31 == if { 338241895 } else {    // 0x14292967
+	i 32 == if { 666307205 } else {    // 0x27b70a85
+	i 33 == if { 773529912 } else {    // 0x2e1b2138
+	i 34 == if { 1294757372 } else {   // 0x4d2c6dfc
+	i 35 == if { 1396182291 } else {   // 0x53380d13
+	i 36 == if { 1695183700 } else {   // 0x650a7354
+	i 37 == if { 1986661051 } else {   // 0x766a0abb
+	i 38 == if { 2177026350 } else {   // 0x81c2c92e
+	i 39 == if { 2456956037 } else {   // 0x92722c85
+	i 40 == if { 2730485921 } else {   // 0xa2bfe8a1
+	i 41 == if { 2820302411 } else {   // 0xa81a664b
+	i 42 == if { 3259730800 } else {   // 0xc24b8b70
+	i 43 == if { 3345764771 } else {   // 0xc76c51a3
+	i 44 == if { 3516065817 } else {   // 0xd192e819
+	i 45 == if { 3600352804 } else {   // 0xd6990624
+	i 46 == if { 4094571909 } else {   // 0xf40e3585
+	i 47 == if { 275423344 } else {    // 0x106aa070
+	i 48 == if { 430227734 } else {    // 0x19a4c116
+	i 49 == if { 506948616 } else {    // 0x1e376c08
+	i 50 == if { 659060556 } else {    // 0x2748774c
+	i 51 == if { 883997877 } else {    // 0x34b0bcb5
+	i 52 == if { 958139571 } else {    // 0x391c0cb3
+	i 53 == if { 1322822218 } else {   // 0x4ed8aa4a
+	i 54 == if { 1537002063 } else {   // 0x5b9cca4f
+	i 55 == if { 1747873779 } else {   // 0x682e6ff3
+	i 56 == if { 1955562222 } else {   // 0x748f82ee
+	i 57 == if { 2024104815 } else {   // 0x78a5636f
+	i 58 == if { 2227730452 } else {   // 0x84c87814
+	i 59 == if { 2361852424 } else {   // 0x8cc70208
+	i 60 == if { 2428436474 } else {   // 0x90befffa
+	i 61 == if { 2756734187 } else {   // 0xa4506ceb
+	i 62 == if { 3204031479 } else {   // 0xbef9a3f7
+	3329325298                          // 0xc67178f2
+	}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}
+}
+
+// Right rotate 32-bit value
+fn rotr32(x:i64 n:i64 -- result:i64) {
+	-> n
+	-> x
+	x 32 bits::mask -> x
+	x n bits::rshift x 32 n - bits::lshift bits::or 32 bits::mask
+}
+
+// SHA-256 functions
+fn ch(x:i64 y:i64 z:i64 -- result:i64) {
+	-> z -> y -> x
+	x y bits::and x bits::not z bits::and bits::xor 32 bits::mask
+}
+
+fn maj(x:i64 y:i64 z:i64 -- result:i64) {
+	-> z -> y -> x
+	x y bits::and x z bits::and bits::xor y z bits::and bits::xor 32 bits::mask
+}
+
+fn sigma0(x:i64 -- result:i64) {
+	-> x
+	x 2 rotr32 x 13 rotr32 bits::xor x 22 rotr32 bits::xor
+}
+
+fn sigma1(x:i64 -- result:i64) {
+	-> x
+	x 6 rotr32 x 11 rotr32 bits::xor x 25 rotr32 bits::xor
+}
+
+fn gamma0(x:i64 -- result:i64) {
+	-> x
+	x 7 rotr32 x 18 rotr32 bits::xor x 3 bits::rshift bits::xor 32 bits::mask
+}
+
+fn gamma1(x:i64 -- result:i64) {
+	-> x
+	x 17 rotr32 x 19 rotr32 bits::xor x 10 bits::rshift bits::xor 32 bits::mask
+}
+
+// Add two 32-bit values with wraparound
+fn add32(a:i64 b:i64 -- result:i64) {
+	-> b -> a
+	a b + 32 bits::mask
+}
+
+// Process a single 512-bit block
+fn process_block(msg:ptr block_offset:i64 h:ptr -- ) {
+	-> h
+	-> block_offset
+	-> msg
+
+	// Message schedule array W (64 * 8 bytes)
+	512 mem::alloc -> w
+
+	// Copy first 16 words from block (big-endian)
+	0 -> i
+	loop {
+		i 16 >= if { break }
+		msg block_offset i 4 * + bytes::read_u32_be -> word
+		w i 8 * word mem::set
+		i 1 + -> i
+	}
+
+	// Extend to 64 words
+	16 -> i
+	loop {
+		i 64 >= if { break }
+		w i 2 - 8 * mem::get gamma1 -> s1
+		w i 7 - 8 * mem::get -> w7
+		w i 15 - 8 * mem::get gamma0 -> s0
+		w i 16 - 8 * mem::get -> w16
+		s1 w7 add32 s0 add32 w16 add32 -> wi
+		w i 8 * wi mem::set
+		i 1 + -> i
+	}
+
+	// Initialize working variables
+	h 0 mem::get -> a
+	h 8 mem::get -> b
+	h 16 mem::get -> c
+	h 24 mem::get -> d
+	h 32 mem::get -> e
+	h 40 mem::get -> f
+	h 48 mem::get -> g
+	h 56 mem::get -> hh
+
+	// 64 rounds
+	0 -> i
+	loop {
+		i 64 >= if { break }
+
+		e sigma1 e f g ch add32 hh add32 i get_k add32 w i 8 * mem::get add32 -> t1
+		a sigma0 a b c maj add32 -> t2
+
+		hh -> hh2
+		g -> hh
+		f -> g
+		e -> f
+		d t1 add32 -> e
+		c -> d
+		b -> c
+		a -> b
+		t1 t2 add32 -> a
+
+		i 1 + -> i
+	}
+
+	// Add to hash values
+	h 0 h 0 mem::get a add32 mem::set
+	h 8 h 8 mem::get b add32 mem::set
+	h 16 h 16 mem::get c add32 mem::set
+	h 24 h 24 mem::get d add32 mem::set
+	h 32 h 32 mem::get e add32 mem::set
+	h 40 h 40 mem::get f add32 mem::set
+	h 48 h 48 mem::get g add32 mem::set
+	h 56 h 56 mem::get hh add32 mem::set
+
+	w mem::free
+}
+
+/// Calculate SHA-256 hash of a string.
+/// @param s str Input string
+/// @return hash str 64-character hex string (lowercase)
+/// @example "hello" sha256::hash -> h
+pub fn hash(s:str -- result:str) {
+	-> s
+	s str::len -> slen
+
+	// Initialize hash values
+	64 mem::alloc -> h
+	h 0 H0_INIT mem::set
+	h 8 H1_INIT mem::set
+	h 16 H2_INIT mem::set
+	h 24 H3_INIT mem::set
+	h 32 H4_INIT mem::set
+	h 40 H5_INIT mem::set
+	h 48 H6_INIT mem::set
+	h 56 H7_INIT mem::set
+
+	// Calculate padded message length
+	// Need: original + 1 byte (0x80) + padding + 8 bytes (length)
+	// Total must be multiple of 64 bytes (512 bits)
+	slen 1 + 8 + -> minlen
+	minlen 64 + 1 - 64 / 64 * -> padded_len
+
+	// Allocate padded message
+	padded_len mem::alloc -> msg
+
+	// Copy original message
+	0 -> i
+	loop {
+		i slen >= if { break }
+		msg i s i str::char_at mem::set_byte
+		i 1 + -> i
+	}
+
+	// Append 0x80
+	msg slen 128 mem::set_byte
+
+	// Pad with zeros (already zero from alloc, but be explicit)
+	slen 1 + -> i
+	loop {
+		i padded_len 8 - >= if { break }
+		msg i 0 mem::set_byte
+		i 1 + -> i
+	}
+
+	// Append length in bits as 64-bit big-endian
+	slen 8 * -> bitlen
+	msg padded_len 8 - 0 bytes::write_u32_be
+	msg padded_len 4 - bitlen bytes::write_u32_be
+
+	// Process each 64-byte block
+	0 -> block_offset
+	loop {
+		block_offset padded_len >= if { break }
+		msg block_offset h process_block
+		block_offset 64 + -> block_offset
+	}
+
+	msg mem::free
+
+	// Convert hash to hex string
+	64 mem::alloc -> out
+	0 -> i
+	loop {
+		i 8 >= if { break }
+		h i 8 * mem::get -> word
+		// Write 8 hex chars for this word (big-endian)
+		0 -> j
+		loop {
+			j 8 >= if { break }
+			word 28 j 4 * - bits::rshift 15 bits::and -> nibble
+			nibble 10 < if {
+				48 nibble +
+			} else {
+				87 nibble +
+			} -> char
+			out i 8 * j + char mem::set_byte
+			j 1 + -> j
+		}
+		i 1 + -> i
+	}
+
+	h mem::free
+	out 64 mem::to_string -> result
+	out mem::free
+	result
+}
+
+/// Calculate SHA-256 hash and return as raw 32-byte buffer.
+/// Caller must free the returned buffer.
+/// @param s str Input string
+/// @return buf ptr 32-byte hash buffer
+/// @example "hello" sha256::hash_raw -> buf
+pub fn hash_raw(s:str -- buf:ptr) {
+	-> s
+	s str::len -> slen
+
+	// Initialize hash values
+	64 mem::alloc -> h
+	h 0 H0_INIT mem::set
+	h 8 H1_INIT mem::set
+	h 16 H2_INIT mem::set
+	h 24 H3_INIT mem::set
+	h 32 H4_INIT mem::set
+	h 40 H5_INIT mem::set
+	h 48 H6_INIT mem::set
+	h 56 H7_INIT mem::set
+
+	// Calculate padded message length
+	slen 1 + 8 + -> minlen
+	minlen 64 + 1 - 64 / 64 * -> padded_len
+
+	// Allocate padded message
+	padded_len mem::alloc -> msg
+
+	// Copy original message
+	0 -> i
+	loop {
+		i slen >= if { break }
+		msg i s i str::char_at mem::set_byte
+		i 1 + -> i
+	}
+
+	// Append 0x80
+	msg slen 128 mem::set_byte
+
+	// Pad with zeros
+	slen 1 + -> i
+	loop {
+		i padded_len 8 - >= if { break }
+		msg i 0 mem::set_byte
+		i 1 + -> i
+	}
+
+	// Append length in bits as 64-bit big-endian
+	slen 8 * -> bitlen
+	msg padded_len 8 - 0 bytes::write_u32_be
+	msg padded_len 4 - bitlen bytes::write_u32_be
+
+	// Process each 64-byte block
+	0 -> block_offset
+	loop {
+		block_offset padded_len >= if { break }
+		msg block_offset h process_block
+		block_offset 64 + -> block_offset
+	}
+
+	msg mem::free
+
+	// Convert to 32-byte buffer (big-endian)
+	32 mem::alloc -> buf
+	0 -> i
+	loop {
+		i 8 >= if { break }
+		h i 8 * mem::get -> word
+		buf i 4 * word bytes::write_u32_be
+		i 1 + -> i
+	}
+
+	h mem::free
+	buf
+}
+
+/// Verify a string against an expected SHA-256 hash.
+/// @param s str Input string
+/// @param expected str Expected hash (64-character hex string)
+/// @return ok i64 1 if matches, 0 otherwise
+/// @example "hello" "2cf24dba..." sha256::verify -> ok
+pub fn verify(s:str expected:str -- ok:i64) {
+	-> expected
+	-> s
+	s hash -> actual
+	actual expected str::compare 0 == if { 1 } else { 0 }
+}

@@ -1,0 +1,51 @@
+{
+  "name": "sha256",
+  "description": "SHA-256 cryptographic hash function. Produces a 256-bit (32-byte) hash value. Conforms to FIPS 180-4.",
+  "constants": [],
+  "structs": [],
+  "functions": [
+    {
+      "name": "hash",
+      "signature": "( s:str -- result:str )",
+      "failable": false,
+      "description": "Calculate SHA-256 hash of a string. Returns a 64-character lowercase hexadecimal string.",
+      "params": [
+        {"name": "s", "type": "str", "description": "Input string to hash"}
+      ],
+      "returns": [
+        {"name": "result", "type": "str", "description": "64-character hex string (lowercase)"}
+      ],
+      "errors": [],
+      "examples": ["\"hello\" sha256::hash -> h  // \"2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824\""]
+    },
+    {
+      "name": "hash_raw",
+      "signature": "( s:str -- buf:ptr )",
+      "failable": false,
+      "description": "Calculate SHA-256 hash and return as raw 32-byte buffer. Caller must free the returned buffer with mem::free.",
+      "params": [
+        {"name": "s", "type": "str", "description": "Input string to hash"}
+      ],
+      "returns": [
+        {"name": "buf", "type": "ptr", "description": "32-byte hash buffer (must be freed by caller)"}
+      ],
+      "errors": [],
+      "examples": ["\"hello\" sha256::hash_raw -> buf  // 32-byte buffer"]
+    },
+    {
+      "name": "verify",
+      "signature": "( s:str expected:str -- ok:i64 )",
+      "failable": false,
+      "description": "Verify a string against an expected SHA-256 hash. The expected hash should be a 64-character hex string (case-insensitive comparison).",
+      "params": [
+        {"name": "s", "type": "str", "description": "Input string to verify"},
+        {"name": "expected", "type": "str", "description": "Expected hash (64-character hex string)"}
+      ],
+      "returns": [
+        {"name": "ok", "type": "i64", "description": "1 if hash matches, 0 otherwise"}
+      ],
+      "errors": [],
+      "examples": ["\"hello\" \"2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824\" sha256::verify -> ok  // 1"]
+    }
+  ]
+}

@@ -1,0 +1,22 @@
+// SHA-256 hash_raw test
+use sha256
+use mem
+
+fn main() {
+    // Test hash_raw returns correct 32 bytes
+    "hello" sha256::hash_raw -> buf
+
+    // Print first 4 bytes in decimal to verify
+    buf 0 mem::get_byte . nl
+    buf 1 mem::get_byte . nl
+    buf 2 mem::get_byte . nl
+    buf 3 mem::get_byte . nl
+
+    // Expected for "hello": 2cf24dba...
+    // 0x2c = 44, 0xf2 = 242, 0x4d = 77, 0xba = 186
+
+    buf mem::free
+
+    // Compare with hash function (just to verify they match conceptually)
+    "hello" sha256::hash . nl
+}
