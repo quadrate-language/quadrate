@@ -129,8 +129,7 @@ fn gamma1(x:i64 -- result:i64) {
 
 // Add two 32-bit values with wraparound
 fn add32(a:i64 b:i64 -- result:i64) {
-	-> b -> a
-	a b + 32 bits::mask
+	+ 32 bits::mask
 }
 
 // Process a single 512-bit block
