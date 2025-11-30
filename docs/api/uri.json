@@ -1,0 +1,107 @@
+{
+  "name": "uri",
+  "description": "URI encoding, decoding, and parsing. Handles percent-encoding and URI component extraction.",
+  "constants": [],
+  "structs": [
+    {
+      "name": "Uri",
+      "description": "Parsed URI components",
+      "fields": [
+        {"name": "scheme", "type": "str", "description": "URI scheme (e.g., 'https')"},
+        {"name": "host", "type": "str", "description": "Host name"},
+        {"name": "port", "type": "i64", "description": "Port number (0 if not specified)"},
+        {"name": "path", "type": "str", "description": "URI path"},
+        {"name": "query", "type": "str", "description": "Query string (without leading '?')"},
+        {"name": "fragment", "type": "str", "description": "Fragment (without leading '#')"}
+      ]
+    }
+  ],
+  "functions": [
+    {
+      "name": "encode",
+      "signature": "( s:str -- encoded:str )",
+      "failable": false,
+      "description": "Percent-encode a string for use in URIs. Safe characters (A-Z, a-z, 0-9, -, _, ., ~) pass through unchanged.",
+      "params": [
+        {"name": "s", "type": "str", "description": "String to encode"}
+      ],
+      "returns": [
+        {"name": "encoded", "type": "str", "description": "Percent-encoded string"}
+      ],
+      "errors": [],
+      "examples": ["\"hello world\" uri::encode -> encoded  // \"hello%20world\""]
+    },
+    {
+      "name": "decode",
+      "signature": "( s:str -- decoded:str )",
+      "failable": false,
+      "description": "Decode a percent-encoded string. Also converts '+' to space.",
+      "params": [
+        {"name": "s", "type": "str", "description": "Percent-encoded string"}
+      ],
+      "returns": [
+        {"name": "decoded", "type": "str", "description": "Decoded string"}
+      ],
+      "errors": [],
+      "examples": ["\"hello%20world\" uri::decode -> decoded  // \"hello world\""]
+    },
+    {
+      "name": "parse",
+      "signature": "( s:str -- u:Uri )",
+      "failable": false,
+      "description": "Parse a URI string into components (scheme, host, port, path, query, fragment).",
+      "params": [
+        {"name": "s", "type": "str", "description": "URI string to parse"}
+      ],
+      "returns": [
+        {"name": "u", "type": "Uri", "description": "Parsed URI struct"}
+      ],
+      "errors": [],
+      "examples": ["\"https://example.com:8080/path?q=1#top\" uri::parse -> u"]
+    },
+    {
+      "name": "query_get",
+      "signature": "( query:str key:str -- value:str )",
+      "failable": false,
+      "description": "Get a query parameter value by key. Returns empty string if not found. Values are automatically decoded.",
+      "params": [
+        {"name": "query", "type": "str", "description": "Query string (without leading '?')"},
+        {"name": "key", "type": "str", "description": "Parameter name to find"}
+      ],
+      "returns": [
+        {"name": "value", "type": "str", "description": "Parameter value (empty if not found)"}
+      ],
+      "errors": [],
+      "examples": ["\"foo=bar&x=1\" \"foo\" uri::query_get -> val  // \"bar\""]
+    },
+    {
+      "name": "query_has",
+      "signature": "( query:str key:str -- exists:i64 )",
+      "failable": false,
+      "description": "Check if a query parameter exists.",
+      "params": [
+        {"name": "query", "type": "str", "description": "Query string (without leading '?')"},
+        {"name": "key", "type": "str", "description": "Parameter name to find"}
+      ],
+      "returns": [
+        {"name": "exists", "type": "i64", "description": "1 if exists, 0 otherwise"}
+      ],
+      "errors": [],
+      "examples": ["\"foo=bar&x=1\" \"foo\" uri::query_has -> exists  // 1"]
+    },
+    {
+      "name": "build",
+      "signature": "( u:Uri -- s:str )",
+      "failable": false,
+      "description": "Build a URI string from components.",
+      "params": [
+        {"name": "u", "type": "Uri", "description": "URI struct"}
+      ],
+      "returns": [
+        {"name": "s", "type": "str", "description": "URI string"}
+      ],
+      "errors": [],
+      "examples": ["u uri::build -> url"]
+    }
+  ]
+}

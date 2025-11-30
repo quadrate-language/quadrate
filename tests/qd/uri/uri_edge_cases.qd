@@ -1,0 +1,26 @@
+// Test URI edge cases: IPv6, userinfo, port validation
+use uri
+
+fn main( -- ) {
+	// IPv6 addresses
+	"http://[::1]:8080/path" uri::parse -> u1
+	u1 @host . nl
+	u1 @port . nl
+
+	// Userinfo
+	"http://user:pass@example.com/path" uri::parse -> u2
+	u2 @host . nl
+
+	// Port validation (over 65535 becomes 0)
+	"http://host:99999/path" uri::parse -> u3
+	u3 @port . nl
+
+	// Valid max port
+	"http://host:65535/path" uri::parse -> u4
+	u4 @port . nl
+
+	// Combined: userinfo + IPv6 + port
+	"http://admin@[::1]:3000/api" uri::parse -> u5
+	u5 @host . nl
+	u5 @port . nl
+}

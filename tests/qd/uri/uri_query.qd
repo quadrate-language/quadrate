@@ -1,0 +1,18 @@
+// Test URI query parameter functions
+use uri
+
+fn main( -- ) {
+	// query_get
+	"foo=bar&x=1&name=test" "foo" uri::query_get . nl
+	"foo=bar&x=1&name=test" "x" uri::query_get . nl
+	"foo=bar&x=1&name=test" "name" uri::query_get . nl
+	"foo=bar&x=1" "missing" uri::query_get . nl
+
+	// query_has
+	"foo=bar&x=1" "foo" uri::query_has . nl
+	"foo=bar&x=1" "x" uri::query_has . nl
+	"foo=bar&x=1" "missing" uri::query_has . nl
+
+	// Encoded values
+	"name=hello%20world" "name" uri::query_get . nl
+}

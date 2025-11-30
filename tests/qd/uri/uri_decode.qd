@@ -1,0 +1,19 @@
+// Test URI decoding
+use uri
+
+fn main( -- ) {
+	// Basic decoding
+	"hello%20world" uri::decode . nl
+	"foo%3Dbar" uri::decode . nl
+	"a%26b" uri::decode . nl
+
+	// Plus sign becomes space
+	"hello+world" uri::decode . nl
+
+	// Mixed case hex
+	"hello%2Fworld" uri::decode . nl
+	"hello%2fworld" uri::decode . nl
+
+	// Empty string
+	"" uri::decode . nl
+}

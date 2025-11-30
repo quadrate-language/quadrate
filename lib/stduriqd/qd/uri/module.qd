@@ -1,0 +1,463 @@
+/// URI encoding, decoding, and parsing.
+/// Handles percent-encoding and URI component extraction.
+
+use mem
+use str
+use bits
+use unicode
+
+/// Parsed URI components.
+pub struct Uri {
+	scheme: str
+	host: str
+	port: i64
+	path: str
+	query: str
+	fragment: str
+}
+
+// Hex digit lookup table
+fn make_hex_table( -- tbl:ptr) {
+	16 mem::alloc -> tbl
+	tbl 0 unicode::digit0 mem::set_byte
+	tbl 1 unicode::digit1 mem::set_byte
+	tbl 2 unicode::digit2 mem::set_byte
+	tbl 3 unicode::digit3 mem::set_byte
+	tbl 4 unicode::digit4 mem::set_byte
+	tbl 5 unicode::digit5 mem::set_byte
+	tbl 6 unicode::digit6 mem::set_byte
+	tbl 7 unicode::digit7 mem::set_byte
+	tbl 8 unicode::digit8 mem::set_byte
+	tbl 9 unicode::digit9 mem::set_byte
+	tbl 10 unicode::A mem::set_byte
+	tbl 11 unicode::B mem::set_byte
+	tbl 12 unicode::C mem::set_byte
+	tbl 13 unicode::D mem::set_byte
+	tbl 14 unicode::E mem::set_byte
+	tbl 15 unicode::F mem::set_byte
+	tbl
+}
+
+// Hex digit to value (returns -1 for invalid)
+fn hex_value(c:i64 -- v:i64) {
+	-> c
+	// '0'-'9' -> 0-9
+	c unicode::digit0 >= c unicode::digit9 <= bits::and if {
+		c unicode::digit0 -
+	} else {
+		// 'A'-'F' -> 10-15
+		c unicode::A >= c unicode::F <= bits::and if {
+			c unicode::A - 10 +
+		} else {
+			// 'a'-'f' -> 10-15
+			c unicode::a >= c unicode::f <= bits::and if {
+				c unicode::a - 10 +
+			} else {
+				-1
+			}
+		}
+	}
+}
+
+// Check if character is unreserved (doesn't need encoding)
+fn is_unreserved(c:i64 -- result:i64) {
+	-> c
+	// A-Z
+	c unicode::A >= c unicode::Z <= bits::and if { 1 } else {
+		// a-z
+		c unicode::a >= c unicode::z <= bits::and if { 1 } else {
+			// 0-9
+			c unicode::digit0 >= c unicode::digit9 <= bits::and if { 1 } else {
+				// - _ . ~
+				c unicode::minus == c unicode::underscore == bits::or c unicode::dot == bits::or c unicode::tilde == bits::or if { 1 } else { 0 }
+			}
+		}
+	}
+}
+
+/// Percent-encode a string for use in URIs.
+/// @param s str String to encode
+/// @return encoded str Percent-encoded string
+/// @example "hello world" uri::encode -> encoded
+pub fn encode(s:str -- encoded:str) {
+	-> s
+	s str::len -> slen
+
+	slen 0 == if {
+		""
+	} else {
+		// Worst case: every char becomes %XX (3x size)
+		slen 3 * mem::alloc -> out
+		make_hex_table -> hex_tbl
+
+		0 -> i
+		0 -> o
+
+		loop {
+			i slen >= if { break }
+			s i str::char_at -> c
+
+			c is_unreserved if {
+				// Safe char, pass through
+				out o c mem::set_byte
+				o 1 + -> o
+			} else {
+				// Encode as %XX
+				out o unicode::percent mem::set_byte
+				o 1 + -> o
+				hex_tbl c 4 bits::rshift 15 bits::and mem::get_byte -> high
+				hex_tbl c 15 bits::and mem::get_byte -> low
+				out o high mem::set_byte
+				o 1 + -> o
+				out o low mem::set_byte
+				o 1 + -> o
+			}
+
+			i 1 + -> i
+		}
+
+		hex_tbl mem::free
+		out o mem::to_string -> result
+		out mem::free
+		result
+	}
+}
+
+/// Decode a percent-encoded string.
+/// @param s str Percent-encoded string
+/// @return decoded str Decoded string
+/// @example "hello%20world" uri::decode -> decoded
+pub fn decode(s:str -- decoded:str) {
+	-> s
+	s str::len -> slen
+
+	slen 0 == if {
+		""
+	} else {
+		slen mem::alloc -> out
+		0 -> i
+		0 -> o
+
+		loop {
+			i slen >= if { break }
+			s i str::char_at -> c
+
+			c unicode::percent == i 2 + slen < bits::and if {
+				// Found '%', decode hex
+				s i 1 + str::char_at hex_value -> high
+				s i 2 + str::char_at hex_value -> low
+
+				high -1 != low -1 != bits::and if {
+					high 4 bits::lshift low bits::or -> byte
+					out o byte mem::set_byte
+					o 1 + -> o
+					i 3 + -> i
+				} else {
+					// Invalid hex, keep as-is
+					out o c mem::set_byte
+					o 1 + -> o
+					i 1 + -> i
+				}
+			} else {
+				c unicode::plus == if {
+					// '+' becomes space (query string convention)
+					out o unicode::space mem::set_byte
+				} else {
+					out o c mem::set_byte
+				}
+				o 1 + -> o
+				i 1 + -> i
+			}
+		}
+
+		out o mem::to_string -> result
+		out mem::free
+		result
+	}
+}
+
+// Find character in string starting at position, returns -1 if not found
+fn find_char(s:str start:i64 c:i64 -- pos:i64) {
+	-> c
+	-> start
+	-> s
+	s str::len -> slen
+	start -> i
+	-1 -> pos
+	loop {
+		i slen >= if { break }
+		s i str::char_at c == if {
+			i -> pos
+			break
+		}
+		i 1 + -> i
+	}
+	pos
+}
+
+/// Parse a URI string into components.
+/// @param s str URI string to parse
+/// @return u Uri Parsed URI struct
+/// @example "https://example.com:8080/path?q=1#top" uri::parse -> u
+pub fn parse(s:str -- u:ptr) {
+	-> s
+	s str::len -> slen
+
+	"" -> scheme
+	"" -> host
+	0 -> port
+	"" -> path
+	"" -> query
+	"" -> fragment
+
+	0 -> pos
+
+	// Find scheme (ends with "://")
+	s pos unicode::colon find_char -> colon_pos
+	colon_pos -1 != if {
+		colon_pos 2 + slen < if {
+			s colon_pos 1 + str::char_at unicode::slash == if {
+				s colon_pos 2 + str::char_at unicode::slash == if {
+					s 0 colon_pos str::substring! -> scheme
+					colon_pos 3 + -> pos
+				}
+			}
+		}
+	}
+
+	// Find fragment (starts with '#')
+	s pos unicode::hash find_char -> hash_pos
+	hash_pos -1 != if {
+		s hash_pos 1 + slen hash_pos 1 + - str::substring! -> fragment
+		hash_pos -> slen  // Limit further parsing
+	}
+
+	// Find query (starts with '?')
+	s pos unicode::question find_char -> q_pos
+	q_pos -1 != q_pos slen < bits::and if {
+		s q_pos 1 + slen q_pos 1 + - str::substring! -> query
+		q_pos -> slen  // Limit further parsing
+	}
+
+	// Find end of host (first '/' after scheme)
+	s pos unicode::slash find_char -> slash_pos
+	slash_pos -1 == slash_pos slen >= bits::or if {
+		slen -> slash_pos
+	}
+
+	// Extract host[:port] with userinfo and IPv6 support
+	slash_pos pos > if {
+		s pos slash_pos pos - str::substring! -> hostport
+
+		// Skip userinfo (user:pass@) if present
+		hostport 0 unicode::at find_char -> at_pos
+		at_pos -1 != if {
+			hostport at_pos 1 + hostport str::len at_pos 1 + - str::substring! -> hostport
+		}
+
+		hostport str::len -> hplen
+
+		// Check for IPv6 address in brackets [...]
+		hplen 0 > if {
+			hostport 0 str::char_at unicode::lbracket == if {
+				hostport 0 unicode::rbracket find_char -> bracket_end
+				bracket_end -1 != if {
+					// IPv6 address
+					hostport 1 bracket_end 1 - str::substring! -> host
+					// Check for port after ]
+					bracket_end 1 + hplen < if {
+						hostport bracket_end 1 + str::char_at unicode::colon == if {
+							// Parse port
+							0 -> port
+							bracket_end 2 + -> pi
+							loop {
+								pi hplen >= if { break }
+								hostport pi str::char_at -> digit
+								digit unicode::digit0 >= digit unicode::digit9 <= bits::and if {
+									port 10 * digit unicode::digit0 - + -> port
+								}
+								pi 1 + -> pi
+							}
+							// Validate port range
+							port 65535 > if { 0 -> port }
+						}
+					}
+				} else {
+					// Malformed IPv6, treat as host
+					hostport -> host
+				}
+			} else {
+				// Regular host:port
+				hostport 0 unicode::colon find_char -> port_colon
+				port_colon -1 != if {
+					hostport 0 port_colon str::substring! -> host
+					// Parse port number
+					0 -> port
+					port_colon 1 + -> pi
+					loop {
+						pi hplen >= if { break }
+						hostport pi str::char_at -> digit
+						digit unicode::digit0 >= digit unicode::digit9 <= bits::and if {
+							port 10 * digit unicode::digit0 - + -> port
+						}
+						pi 1 + -> pi
+					}
+					// Validate port range
+					port 65535 > if { 0 -> port }
+				} else {
+					hostport -> host
+				}
+			}
+		}
+	}
+
+	// Extract path
+	slash_pos slen < if {
+		s slash_pos slen slash_pos - str::substring! -> path
+	} else {
+		"/" -> path
+	}
+
+	scheme host port path query fragment Uri
+}
+
+/// Get a query parameter value by key.
+/// @param query str Query string (without leading '?')
+/// @param key str Parameter name to find
+/// @return value str Parameter value (empty if not found)
+/// @example "foo=bar&x=1" "foo" uri::query_get -> val
+pub fn query_get(query:str key:str -- value:str) {
+	-> key
+	-> query
+	query str::len -> qlen
+	key str::len -> klen
+
+	"" -> value
+	0 -> i
+	0 -> found
+
+	loop {
+		i qlen >= found 1 == bits::or if { break }
+
+		// Find next '&' or end
+		query i unicode::ampersand find_char -> amp_pos
+		amp_pos -1 == if { qlen -> amp_pos }
+
+		// Extract key=value pair
+		query i amp_pos i - str::substring! -> pair
+
+		// Find '='
+		pair 0 unicode::equals find_char -> eq_pos
+		eq_pos -1 != if {
+			pair 0 eq_pos str::substring! -> pkey
+			pkey key str::compare 0 == if {
+				pair eq_pos 1 + pair str::len eq_pos 1 + - str::substring! -> value
+				value decode -> value
+				1 -> found
+			}
+		}
+
+		amp_pos 1 + -> i
+	}
+
+	value
+}
+
+/// Check if a query parameter exists.
+/// @param query str Query string (without leading '?')
+/// @param key str Parameter name to find
+/// @return exists i64 1 if exists, 0 otherwise
+/// @example "foo=bar&x=1" "foo" uri::query_has -> exists
+pub fn query_has(query:str key:str -- exists:i64) {
+	-> key
+	-> query
+	query str::len -> qlen
+	key str::len -> klen
+
+	0 -> exists
+	0 -> i
+
+	loop {
+		i qlen >= exists 1 == bits::or if { break }
+
+		// Find next '&' or end
+		query i unicode::ampersand find_char -> amp_pos
+		amp_pos -1 == if { qlen -> amp_pos }
+
+		// Extract key=value pair
+		query i amp_pos i - str::substring! -> pair
+
+		// Find '='
+		pair 0 unicode::equals find_char -> eq_pos
+		eq_pos -1 != if {
+			pair 0 eq_pos str::substring! -> pkey
+			pkey key str::compare 0 == if {
+				1 -> exists
+			}
+		}
+
+		amp_pos 1 + -> i
+	}
+
+	exists
+}
+
+/// Build a URI string from components.
+/// @param u Uri URI struct
+/// @return s str URI string
+/// @example u uri::build -> url
+pub fn build(u:ptr -- s:str) {
+	-> u
+	u @scheme -> scheme
+	u @host -> host
+	u @port -> port
+	u @path -> path
+	u @query -> query
+	u @fragment -> fragment
+
+	"" -> result
+
+	// scheme://
+	scheme str::len 0 > if {
+		result scheme str::concat -> result
+		result "://" str::concat -> result
+	}
+
+	// host
+	result host str::concat -> result
+
+	// :port
+	port 0 > if {
+		result ":" str::concat -> result
+		// Convert port to string (simple approach)
+		"" -> port_str
+		port -> p
+		loop {
+			p 0 == if { break }
+			p 10 mod unicode::digit0 + -> digit
+			1 mem::alloc -> dbuf
+			dbuf 0 digit mem::set_byte
+			dbuf 1 mem::to_string port_str str::concat -> port_str
+			dbuf mem::free
+			p 10 / -> p
+		}
+		result port_str str::concat -> result
+	}
+
+	// path
+	result path str::concat -> result
+
+	// ?query
+	query str::len 0 > if {
+		result "?" str::concat -> result
+		result query str::concat -> result
+	}
+
+	// #fragment
+	fragment str::len 0 > if {
+		result "#" str::concat -> result
+		result fragment str::concat -> result
+	}
+
+	result
+}

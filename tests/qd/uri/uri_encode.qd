@@ -1,0 +1,16 @@
+// Test URI encoding
+use uri
+
+fn main( -- ) {
+	// Basic encoding
+	"hello world" uri::encode . nl
+	"foo=bar" uri::encode . nl
+	"a&b" uri::encode . nl
+
+	// Safe characters pass through
+	"hello-world_test.txt~" uri::encode . nl
+	"ABCxyz012" uri::encode . nl
+
+	// Empty string
+	"" uri::encode . nl
+}

@@ -87,6 +87,7 @@ debug:
 	@cp -r lib/stdstrconvqd/qd/strconv dist/share/quadrate/
 	@cp -r lib/stdtimeqd/qd/time dist/share/quadrate/
 	@cp -r lib/stdunicodeqd/qd/unicode dist/share/quadrate/
+	@cp -r lib/stduriqd/qd/uri dist/share/quadrate/
 	@echo "Verifying static archives..."
 	@file dist/lib/libqdrt_static.a dist/lib/libstdosqd_static.a | head -2
 	@echo "Debug build complete - static libraries ready"
@@ -163,6 +164,7 @@ release:
 	@cp -r lib/stdstrconvqd/qd/strconv dist/share/quadrate/
 	@cp -r lib/stdtimeqd/qd/time dist/share/quadrate/
 	@cp -r lib/stdunicodeqd/qd/unicode dist/share/quadrate/
+	@cp -r lib/stduriqd/qd/uri dist/share/quadrate/
 	@echo "Verifying static archives (release)..."
 	@file dist/lib/libqdrt_static.a dist/lib/libstdosqd_static.a | head -2
 	@echo "Release build complete - static libraries ready"
@@ -304,6 +306,7 @@ install: release
 	@cp -r lib/stdstrconvqd/qd/strconv $(DESTDIR)$(PREFIX)/share/quadrate/
 	@cp -r lib/stdtimeqd/qd/time $(DESTDIR)$(PREFIX)/share/quadrate/
 	@cp -r lib/stdunicodeqd/qd/unicode $(DESTDIR)$(PREFIX)/share/quadrate/
+	@cp -r lib/stduriqd/qd/uri $(DESTDIR)$(PREFIX)/share/quadrate/
 
 uninstall:
 	rm -f $(DESTDIR)$(PREFIX)/bin/quadc

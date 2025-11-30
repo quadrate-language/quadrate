@@ -1,0 +1,20 @@
+// Test URI build function
+use uri
+
+fn main( -- ) {
+	// Build full URI
+	"https" "example.com" 8080 "/path" "q=1" "top" uri::Uri -> u1
+	u1 uri::build . nl
+
+	// Build without port
+	"http" "test.org" 0 "/page" "" "" uri::Uri -> u2
+	u2 uri::build . nl
+
+	// Build with query only
+	"https" "api.com" 0 "/" "key=val" "" uri::Uri -> u3
+	u3 uri::build . nl
+
+	// Build with fragment only
+	"http" "docs.io" 0 "/readme" "" "section1" uri::Uri -> u4
+	u4 uri::build . nl
+}
