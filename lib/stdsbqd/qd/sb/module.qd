@@ -1,0 +1,190 @@
+/// StringBuilder - Efficient string building.
+/// Avoids O(n²) cost of repeated str::concat.
+
+use mem
+use str
+
+/// StringBuilder struct holds buffer, length, and capacity.
+pub struct StringBuilder {
+	buf: ptr
+	len: i64
+	cap: i64
+}
+
+/// Create a new StringBuilder with default capacity.
+/// @return sb ptr New empty builder
+/// @example sb::new -> builder
+pub fn new( -- sb:ptr) {
+	64 -> cap
+	cap mem::alloc -> buf
+	buf 0 cap StringBuilder
+}
+
+/// Create a StringBuilder with specific initial capacity.
+/// @param capacity i64 Initial buffer size
+/// @return sb ptr New empty builder
+/// @example 1024 sb::with_capacity -> builder
+pub fn with_capacity(capacity:i64 -- sb:ptr) {
+	-> capacity
+	capacity 16 < if { 16 -> capacity }
+	capacity mem::alloc -> buf
+	buf 0 capacity StringBuilder
+}
+
+/// Append a string to the builder.
+/// @param sb ptr Builder to append to
+/// @param s str String to append
+/// @return sb ptr Updated builder
+/// @example builder "hello" sb::append -> builder
+pub fn append(sb:ptr s:str -- sb:ptr) {
+	-> s
+	-> sb
+
+	sb @buf -> buf
+	sb @len -> curlen
+	sb @cap -> cap
+
+	s str::len -> slen
+
+	// Check if we need to grow
+	curlen slen + -> newlen
+	newlen cap > if {
+		// Double capacity until it fits
+		loop {
+			cap 2 * -> cap
+			newlen cap <= if { break }
+		}
+		buf cap mem::realloc -> buf
+	}
+
+	// Copy string bytes one by one
+	0 -> i
+	loop {
+		i slen >= if { break }
+		s i str::char_at -> byte
+		buf curlen i + byte mem::set_byte
+		i 1 + -> i
+	}
+
+	// Return updated builder
+	buf newlen cap StringBuilder
+}
+
+/// Append a single character (by code point).
+/// @param sb ptr Builder to append to
+/// @param c i64 Character code to append
+/// @return sb ptr Updated builder
+/// @example builder 65 sb::append_char -> builder
+pub fn append_char(sb:ptr c:i64 -- sb:ptr) {
+	-> c
+	-> sb
+
+	sb @buf -> buf
+	sb @len -> curlen
+	sb @cap -> cap
+
+	// Check if we need to grow
+	curlen 1 + cap > if {
+		cap 2 * -> cap
+		buf cap mem::realloc -> buf
+	}
+
+	// Set the byte
+	buf curlen c mem::set_byte
+
+	// Return updated builder
+	buf curlen 1 + cap StringBuilder
+}
+
+/// Append an integer as string.
+/// @param sb ptr Builder to append to
+/// @param n i64 Integer to append
+/// @return sb ptr Updated builder
+/// @example builder 42 sb::append_int -> builder
+pub fn append_int(sb:ptr n:i64 -- sb:ptr) {
+	-> n
+	-> sb
+
+	// Handle negative
+	n 0 < if {
+		sb 45 append_char -> sb  // '-'
+		0 n - -> n
+	}
+
+	// Handle zero
+	n 0 == if {
+		sb 48 append_char  // '0'
+	} else {
+		// Count digits
+		0 -> count
+		n -> temp
+		loop {
+			temp 0 == if { break }
+			count 1 + -> count
+			temp 10 / -> temp
+		}
+
+		// Get current position
+		sb @buf -> buf
+		sb @len -> curlen
+		sb @cap -> cap
+
+		// Ensure capacity
+		curlen count + cap > if {
+			loop {
+				cap 2 * -> cap
+				curlen count + cap <= if { break }
+			}
+			buf cap mem::realloc -> buf
+		}
+
+		// Write digits backwards from end position
+		curlen count + 1 - -> pos
+		loop {
+			n 0 == if { break }
+			n 10 mod 48 + -> digit
+			buf pos digit mem::set_byte
+			pos 1 - -> pos
+			n 10 / -> n
+		}
+
+		buf curlen count + cap StringBuilder
+	}
+}
+
+/// Get current length of builder content.
+/// @param sb ptr Builder to check
+/// @return sblen i64 Current content length
+/// @example builder sb::length -> sblen
+pub fn length(sb:ptr -- sblen:i64) {
+	-> sb
+	sb @len
+}
+
+/// Build the final string (does not consume builder).
+/// @param sb ptr Builder to convert
+/// @return s str Built string
+/// @example builder sb::build -> result
+pub fn build(sb:ptr -- s:str) {
+	-> sb
+	sb @buf sb @len mem::to_string
+}
+
+/// Free the builder's resources.
+/// @param sb ptr Builder to free
+/// @example builder sb::free
+pub fn free(sb:ptr -- ) {
+	-> sb
+	sb @buf mem::free
+}
+
+/// Build string and free builder in one call.
+/// @param sb ptr Builder to finish
+/// @return s str Built string
+/// @example builder sb::finish -> result
+pub fn finish(sb:ptr -- s:str) {
+	-> sb
+	sb @buf sb @len mem::to_string -> result
+	sb @buf mem::free
+	result
+}

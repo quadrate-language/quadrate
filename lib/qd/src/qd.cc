@@ -346,13 +346,12 @@ void qd_build(qd_module* mod) {
 		link_cmd += " -L" + (lib_path / "stdtimeqd").string();
 		link_cmd += " -L" + (lib_path / "stdmemqd").string();
 		link_cmd += " -L" + (lib_path / "stdbitsqd").string();
-		link_cmd += " -L" + (lib_path / "stdbase64qd").string();
 		link_cmd += " -L" + (lib_path / "stdstrconvqd").string();
 		link_cmd += " -lqdrt";
 		link_cmd += " -lstdmathqd_static -lstdfmtqd_static -lstdioqd_static";
 		link_cmd += " -lstdnetqd_static -lstdosqd_static -lstdstrqd_static";
 		link_cmd += " -lstdtimeqd_static -lstdmemqd_static -lstdbitsqd_static";
-		link_cmd += " -lstdbase64qd_static -lstdstrconvqd_static";
+		link_cmd += " -lstdstrconvqd_static";
 		link_cmd += " -lm"; // Math library for sin, cos, etc.
 		link_cmd += " -Wl,-rpath,$ORIGIN";
 		link_cmd += " 2>&1";

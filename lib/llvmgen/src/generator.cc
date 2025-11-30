@@ -278,6 +278,12 @@ namespace Qd {
 		void generateInlineIntNeq(llvm::Value* ctx);
 		void generateInlineIntLte(llvm::Value* ctx);
 		void generateInlineIntGte(llvm::Value* ctx);
+		void generateInlineBitAnd(llvm::Value* ctx);
+		void generateInlineBitOr(llvm::Value* ctx);
+		void generateInlineBitXor(llvm::Value* ctx);
+		void generateInlineBitNot(llvm::Value* ctx);
+		void generateInlineBitLshift(llvm::Value* ctx);
+		void generateInlineBitRshift(llvm::Value* ctx);
 		void generateTypeAwareAdd(llvm::Value* ctx);
 		void generateTypeAwareSub(llvm::Value* ctx);
 		void generateTypeAwareMul(llvm::Value* ctx);
@@ -1120,6 +1126,207 @@ namespace Qd {
 		llvm::Value* cmpResult = builder->CreateICmpSGE(value1, value2, "gte_result");
 		llvm::Value* result = builder->CreateZExt(cmpResult, builder->getInt64Ty(), "result_i64");
 
+		builder->CreateStore(result, value1iPtrCast);
+
+		llvm::Value* newSize = builder->CreateSub(size, builder->getInt64(1), "new_size");
+		builder->CreateStore(newSize, sizePtr);
+	}
+
+	void LlvmGenerator::Impl::generateInlineBitAnd(llvm::Value* ctx) {
+		// Inline implementation of bitwise AND: ( a:int b:int -- result:int )
+		llvm::Type* contextTy = llvm::StructType::get(*context, {llvm::PointerType::get(*context, 0)}, false);
+		llvm::Value* stPtr = builder->CreateStructGEP(contextTy, ctx, 0, "st_ptr");
+		llvm::Value* st = builder->CreateLoad(llvm::PointerType::get(*context, 0), stPtr, "st");
+
+		llvm::Type* stackTy = llvm::StructType::get(
+				*context, {llvm::PointerType::get(*context, 0), builder->getInt64Ty(), builder->getInt64Ty()}, false);
+
+		llvm::Value* sizePtr = builder->CreateStructGEP(stackTy, st, 2, "size_ptr");
+		llvm::Value* size = builder->CreateLoad(builder->getInt64Ty(), sizePtr, "size");
+
+		llvm::Value* dataPtr = builder->CreateStructGEP(stackTy, st, 0, "data_ptr");
+		llvm::Value* data = builder->CreateLoad(llvm::PointerType::get(*context, 0), dataPtr, "data");
+
+		llvm::Value* idx1 = builder->CreateSub(size, builder->getInt64(2), "idx1");
+		llvm::Value* elem1Ptr = builder->CreateGEP(stackElementTy, data, idx1, "elem1_ptr");
+		llvm::Value* value1Ptr = builder->CreateStructGEP(stackElementTy, elem1Ptr, 0, "value1_ptr");
+		llvm::Value* value1iPtrCast = builder->CreateBitCast(value1Ptr, llvm::PointerType::get(*context, 0));
+		llvm::Value* value1 = builder->CreateLoad(builder->getInt64Ty(), value1iPtrCast, "value1");
+
+		llvm::Value* idx2 = builder->CreateSub(size, builder->getInt64(1), "idx2");
+		llvm::Value* elem2Ptr = builder->CreateGEP(stackElementTy, data, idx2, "elem2_ptr");
+		llvm::Value* value2Ptr = builder->CreateStructGEP(stackElementTy, elem2Ptr, 0, "value2_ptr");
+		llvm::Value* value2iPtrCast = builder->CreateBitCast(value2Ptr, llvm::PointerType::get(*context, 0));
+		llvm::Value* value2 = builder->CreateLoad(builder->getInt64Ty(), value2iPtrCast, "value2");
+
+		llvm::Value* result = builder->CreateAnd(value1, value2, "and_result");
+		builder->CreateStore(result, value1iPtrCast);
+
+		llvm::Value* newSize = builder->CreateSub(size, builder->getInt64(1), "new_size");
+		builder->CreateStore(newSize, sizePtr);
+	}
+
+	void LlvmGenerator::Impl::generateInlineBitOr(llvm::Value* ctx) {
+		// Inline implementation of bitwise OR: ( a:int b:int -- result:int )
+		llvm::Type* contextTy = llvm::StructType::get(*context, {llvm::PointerType::get(*context, 0)}, false);
+		llvm::Value* stPtr = builder->CreateStructGEP(contextTy, ctx, 0, "st_ptr");
+		llvm::Value* st = builder->CreateLoad(llvm::PointerType::get(*context, 0), stPtr, "st");
+
+		llvm::Type* stackTy = llvm::StructType::get(
+				*context, {llvm::PointerType::get(*context, 0), builder->getInt64Ty(), builder->getInt64Ty()}, false);
+
+		llvm::Value* sizePtr = builder->CreateStructGEP(stackTy, st, 2, "size_ptr");
+		llvm::Value* size = builder->CreateLoad(builder->getInt64Ty(), sizePtr, "size");
+
+		llvm::Value* dataPtr = builder->CreateStructGEP(stackTy, st, 0, "data_ptr");
+		llvm::Value* data = builder->CreateLoad(llvm::PointerType::get(*context, 0), dataPtr, "data");
+
+		llvm::Value* idx1 = builder->CreateSub(size, builder->getInt64(2), "idx1");
+		llvm::Value* elem1Ptr = builder->CreateGEP(stackElementTy, data, idx1, "elem1_ptr");
+		llvm::Value* value1Ptr = builder->CreateStructGEP(stackElementTy, elem1Ptr, 0, "value1_ptr");
+		llvm::Value* value1iPtrCast = builder->CreateBitCast(value1Ptr, llvm::PointerType::get(*context, 0));
+		llvm::Value* value1 = builder->CreateLoad(builder->getInt64Ty(), value1iPtrCast, "value1");
+
+		llvm::Value* idx2 = builder->CreateSub(size, builder->getInt64(1), "idx2");
+		llvm::Value* elem2Ptr = builder->CreateGEP(stackElementTy, data, idx2, "elem2_ptr");
+		llvm::Value* value2Ptr = builder->CreateStructGEP(stackElementTy, elem2Ptr, 0, "value2_ptr");
+		llvm::Value* value2iPtrCast = builder->CreateBitCast(value2Ptr, llvm::PointerType::get(*context, 0));
+		llvm::Value* value2 = builder->CreateLoad(builder->getInt64Ty(), value2iPtrCast, "value2");
+
+		llvm::Value* result = builder->CreateOr(value1, value2, "or_result");
+		builder->CreateStore(result, value1iPtrCast);
+
+		llvm::Value* newSize = builder->CreateSub(size, builder->getInt64(1), "new_size");
+		builder->CreateStore(newSize, sizePtr);
+	}
+
+	void LlvmGenerator::Impl::generateInlineBitXor(llvm::Value* ctx) {
+		// Inline implementation of bitwise XOR: ( a:int b:int -- result:int )
+		llvm::Type* contextTy = llvm::StructType::get(*context, {llvm::PointerType::get(*context, 0)}, false);
+		llvm::Value* stPtr = builder->CreateStructGEP(contextTy, ctx, 0, "st_ptr");
+		llvm::Value* st = builder->CreateLoad(llvm::PointerType::get(*context, 0), stPtr, "st");
+
+		llvm::Type* stackTy = llvm::StructType::get(
+				*context, {llvm::PointerType::get(*context, 0), builder->getInt64Ty(), builder->getInt64Ty()}, false);
+
+		llvm::Value* sizePtr = builder->CreateStructGEP(stackTy, st, 2, "size_ptr");
+		llvm::Value* size = builder->CreateLoad(builder->getInt64Ty(), sizePtr, "size");
+
+		llvm::Value* dataPtr = builder->CreateStructGEP(stackTy, st, 0, "data_ptr");
+		llvm::Value* data = builder->CreateLoad(llvm::PointerType::get(*context, 0), dataPtr, "data");
+
+		llvm::Value* idx1 = builder->CreateSub(size, builder->getInt64(2), "idx1");
+		llvm::Value* elem1Ptr = builder->CreateGEP(stackElementTy, data, idx1, "elem1_ptr");
+		llvm::Value* value1Ptr = builder->CreateStructGEP(stackElementTy, elem1Ptr, 0, "value1_ptr");
+		llvm::Value* value1iPtrCast = builder->CreateBitCast(value1Ptr, llvm::PointerType::get(*context, 0));
+		llvm::Value* value1 = builder->CreateLoad(builder->getInt64Ty(), value1iPtrCast, "value1");
+
+		llvm::Value* idx2 = builder->CreateSub(size, builder->getInt64(1), "idx2");
+		llvm::Value* elem2Ptr = builder->CreateGEP(stackElementTy, data, idx2, "elem2_ptr");
+		llvm::Value* value2Ptr = builder->CreateStructGEP(stackElementTy, elem2Ptr, 0, "value2_ptr");
+		llvm::Value* value2iPtrCast = builder->CreateBitCast(value2Ptr, llvm::PointerType::get(*context, 0));
+		llvm::Value* value2 = builder->CreateLoad(builder->getInt64Ty(), value2iPtrCast, "value2");
+
+		llvm::Value* result = builder->CreateXor(value1, value2, "xor_result");
+		builder->CreateStore(result, value1iPtrCast);
+
+		llvm::Value* newSize = builder->CreateSub(size, builder->getInt64(1), "new_size");
+		builder->CreateStore(newSize, sizePtr);
+	}
+
+	void LlvmGenerator::Impl::generateInlineBitNot(llvm::Value* ctx) {
+		// Inline implementation of bitwise NOT: ( a:int -- result:int )
+		llvm::Type* contextTy = llvm::StructType::get(*context, {llvm::PointerType::get(*context, 0)}, false);
+		llvm::Value* stPtr = builder->CreateStructGEP(contextTy, ctx, 0, "st_ptr");
+		llvm::Value* st = builder->CreateLoad(llvm::PointerType::get(*context, 0), stPtr, "st");
+
+		llvm::Type* stackTy = llvm::StructType::get(
+				*context, {llvm::PointerType::get(*context, 0), builder->getInt64Ty(), builder->getInt64Ty()}, false);
+
+		llvm::Value* sizePtr = builder->CreateStructGEP(stackTy, st, 2, "size_ptr");
+		llvm::Value* size = builder->CreateLoad(builder->getInt64Ty(), sizePtr, "size");
+
+		llvm::Value* dataPtr = builder->CreateStructGEP(stackTy, st, 0, "data_ptr");
+		llvm::Value* data = builder->CreateLoad(llvm::PointerType::get(*context, 0), dataPtr, "data");
+
+		llvm::Value* idx = builder->CreateSub(size, builder->getInt64(1), "idx");
+		llvm::Value* elemPtr = builder->CreateGEP(stackElementTy, data, idx, "elem_ptr");
+		llvm::Value* valuePtr = builder->CreateStructGEP(stackElementTy, elemPtr, 0, "value_ptr");
+		llvm::Value* valuePtrCast = builder->CreateBitCast(valuePtr, llvm::PointerType::get(*context, 0));
+		llvm::Value* value = builder->CreateLoad(builder->getInt64Ty(), valuePtrCast, "value");
+
+		llvm::Value* result = builder->CreateNot(value, "not_result");
+		builder->CreateStore(result, valuePtrCast);
+		// Stack size unchanged for unary operation
+	}
+
+	void LlvmGenerator::Impl::generateInlineBitLshift(llvm::Value* ctx) {
+		// Inline implementation of left shift: ( value:int shift:int -- result:int )
+		llvm::Type* contextTy = llvm::StructType::get(*context, {llvm::PointerType::get(*context, 0)}, false);
+		llvm::Value* stPtr = builder->CreateStructGEP(contextTy, ctx, 0, "st_ptr");
+		llvm::Value* st = builder->CreateLoad(llvm::PointerType::get(*context, 0), stPtr, "st");
+
+		llvm::Type* stackTy = llvm::StructType::get(
+				*context, {llvm::PointerType::get(*context, 0), builder->getInt64Ty(), builder->getInt64Ty()}, false);
+
+		llvm::Value* sizePtr = builder->CreateStructGEP(stackTy, st, 2, "size_ptr");
+		llvm::Value* size = builder->CreateLoad(builder->getInt64Ty(), sizePtr, "size");
+
+		llvm::Value* dataPtr = builder->CreateStructGEP(stackTy, st, 0, "data_ptr");
+		llvm::Value* data = builder->CreateLoad(llvm::PointerType::get(*context, 0), dataPtr, "data");
+
+		// Load value (first operand at size-2)
+		llvm::Value* idx1 = builder->CreateSub(size, builder->getInt64(2), "idx1");
+		llvm::Value* elem1Ptr = builder->CreateGEP(stackElementTy, data, idx1, "elem1_ptr");
+		llvm::Value* value1Ptr = builder->CreateStructGEP(stackElementTy, elem1Ptr, 0, "value1_ptr");
+		llvm::Value* value1iPtrCast = builder->CreateBitCast(value1Ptr, llvm::PointerType::get(*context, 0));
+		llvm::Value* value = builder->CreateLoad(builder->getInt64Ty(), value1iPtrCast, "value");
+
+		// Load shift amount (second operand at size-1)
+		llvm::Value* idx2 = builder->CreateSub(size, builder->getInt64(1), "idx2");
+		llvm::Value* elem2Ptr = builder->CreateGEP(stackElementTy, data, idx2, "elem2_ptr");
+		llvm::Value* value2Ptr = builder->CreateStructGEP(stackElementTy, elem2Ptr, 0, "value2_ptr");
+		llvm::Value* value2iPtrCast = builder->CreateBitCast(value2Ptr, llvm::PointerType::get(*context, 0));
+		llvm::Value* shift = builder->CreateLoad(builder->getInt64Ty(), value2iPtrCast, "shift");
+
+		llvm::Value* result = builder->CreateShl(value, shift, "lshift_result");
+		builder->CreateStore(result, value1iPtrCast);
+
+		llvm::Value* newSize = builder->CreateSub(size, builder->getInt64(1), "new_size");
+		builder->CreateStore(newSize, sizePtr);
+	}
+
+	void LlvmGenerator::Impl::generateInlineBitRshift(llvm::Value* ctx) {
+		// Inline implementation of logical right shift: ( value:int shift:int -- result:int )
+		llvm::Type* contextTy = llvm::StructType::get(*context, {llvm::PointerType::get(*context, 0)}, false);
+		llvm::Value* stPtr = builder->CreateStructGEP(contextTy, ctx, 0, "st_ptr");
+		llvm::Value* st = builder->CreateLoad(llvm::PointerType::get(*context, 0), stPtr, "st");
+
+		llvm::Type* stackTy = llvm::StructType::get(
+				*context, {llvm::PointerType::get(*context, 0), builder->getInt64Ty(), builder->getInt64Ty()}, false);
+
+		llvm::Value* sizePtr = builder->CreateStructGEP(stackTy, st, 2, "size_ptr");
+		llvm::Value* size = builder->CreateLoad(builder->getInt64Ty(), sizePtr, "size");
+
+		llvm::Value* dataPtr = builder->CreateStructGEP(stackTy, st, 0, "data_ptr");
+		llvm::Value* data = builder->CreateLoad(llvm::PointerType::get(*context, 0), dataPtr, "data");
+
+		// Load value (first operand at size-2)
+		llvm::Value* idx1 = builder->CreateSub(size, builder->getInt64(2), "idx1");
+		llvm::Value* elem1Ptr = builder->CreateGEP(stackElementTy, data, idx1, "elem1_ptr");
+		llvm::Value* value1Ptr = builder->CreateStructGEP(stackElementTy, elem1Ptr, 0, "value1_ptr");
+		llvm::Value* value1iPtrCast = builder->CreateBitCast(value1Ptr, llvm::PointerType::get(*context, 0));
+		llvm::Value* value = builder->CreateLoad(builder->getInt64Ty(), value1iPtrCast, "value");
+
+		// Load shift amount (second operand at size-1)
+		llvm::Value* idx2 = builder->CreateSub(size, builder->getInt64(1), "idx2");
+		llvm::Value* elem2Ptr = builder->CreateGEP(stackElementTy, data, idx2, "elem2_ptr");
+		llvm::Value* value2Ptr = builder->CreateStructGEP(stackElementTy, elem2Ptr, 0, "value2_ptr");
+		llvm::Value* value2iPtrCast = builder->CreateBitCast(value2Ptr, llvm::PointerType::get(*context, 0));
+		llvm::Value* shift = builder->CreateLoad(builder->getInt64Ty(), value2iPtrCast, "shift");
+
+		// Use logical shift right (LShr) for unsigned behavior
+		llvm::Value* result = builder->CreateLShr(value, shift, "rshift_result");
 		builder->CreateStore(result, value1iPtrCast);
 
 		llvm::Value* newSize = builder->CreateSub(size, builder->getInt64(1), "new_size");
@@ -2623,7 +2830,22 @@ namespace Qd {
 			// Generate any needed type casts before the function call
 			generateCastInstructions(ident->parameterCasts(), ctx);
 
-			builder->CreateCall(it->second, {ctx});
+			// Check for inlinable bits:: functions
+			if (lookupName == "bits::and") {
+				generateInlineBitAnd(ctx);
+			} else if (lookupName == "bits::or") {
+				generateInlineBitOr(ctx);
+			} else if (lookupName == "bits::xor") {
+				generateInlineBitXor(ctx);
+			} else if (lookupName == "bits::not") {
+				generateInlineBitNot(ctx);
+			} else if (lookupName == "bits::lshift") {
+				generateInlineBitLshift(ctx);
+			} else if (lookupName == "bits::rshift") {
+				generateInlineBitRshift(ctx);
+			} else {
+				builder->CreateCall(it->second, {ctx});
+			}
 
 			// Check if this function is fallible
 			auto fallibleIt = fallibleFunctions.find(lookupName);
@@ -5366,9 +5588,9 @@ namespace Qd {
 				// Cast byte pointer to generic pointer for storing int64
 				llvm::Value* fieldPtr = bytePtr;
 				builder->CreateStore(intValue, fieldPtr);
-			} else if (field.typeName == "str" || field.typeName.find('*') != std::string::npos ||
+			} else if (field.typeName == "ptr" || field.typeName == "str" || field.typeName.find('*') != std::string::npos ||
 					   (!field.typeName.empty() && std::isupper(field.typeName[0]))) {
-				// Pointer type (including struct-typed fields)
+				// Pointer type (including ptr, str, raw pointers, and struct-typed fields)
 				llvm::Value* ptrValue =
 						builder->CreateLoad(llvm::PointerType::getUnqual(*context), valuePtr, "ptr_val");
 				// NOTE: We do NOT retain nested struct fields here.
@@ -5552,7 +5774,8 @@ namespace Qd {
 					builder->CreateLoad(llvm::PointerType::getUnqual(*context), fieldPtr, "field_value");
 			builder->CreateCall(pushStrRefFn, {ctx, ptrValue});
 			lastFieldAccessResultType.clear();  // Not a struct type
-		} else if (matchingField->typeName.find('*') != std::string::npos) {
+		} else if (matchingField->typeName == "ptr" || matchingField->typeName.find('*') != std::string::npos) {
+			// Handle ptr type and raw pointer types
 			llvm::Value* fieldPtr = bytePtr;
 			llvm::Value* ptrValue =
 					builder->CreateLoad(llvm::PointerType::getUnqual(*context), fieldPtr, "field_value");

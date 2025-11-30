@@ -1,24 +1,19 @@
 {
   "name": "base64",
-  "description": "Base64 encoding and decoding.",
+  "description": "Base64 encoding and decoding. Optimized with lookup tables and direct buffer writes.",
   "constants": [],
   "structs": [],
   "functions": [
     {
       "name": "encode",
-      "signature": "( data:ptr len:i64 -- encoded:str )",
+      "signature": "( input:str -- encoded:str )",
       "failable": false,
-      "description": "Encode binary data to base64 string.",
+      "description": "Encode a string to base64.",
       "params": [
         {
-          "name": "data",
-          "type": "ptr",
-          "description": "Buffer to encode"
-        },
-        {
-          "name": "len",
-          "type": "i64",
-          "description": "Length of data"
+          "name": "input",
+          "type": "str",
+          "description": "String to encode"
         }
       ],
       "returns": [
@@ -30,14 +25,14 @@
       ],
       "errors": [],
       "examples": [
-        "buf 5 base64::encode -> b64"
+        "\"Hello\" base64::encode -> b64"
       ]
     },
     {
       "name": "decode",
-      "signature": "( encoded:str -- data:ptr data_len:i64 )",
-      "failable": true,
-      "description": "Decode base64 string to binary data.",
+      "signature": "( encoded:str -- decoded:str )",
+      "failable": false,
+      "description": "Decode a base64 string.",
       "params": [
         {
           "name": "encoded",
@@ -47,21 +42,14 @@
       ],
       "returns": [
         {
-          "name": "data",
-          "type": "ptr",
-          "description": "Decoded buffer (caller must free)"
-        },
-        {
-          "name": "data_len",
-          "type": "i64",
-          "description": "Length of decoded data"
+          "name": "decoded",
+          "type": "str",
+          "description": "Decoded string"
         }
       ],
-      "errors": [
-        "Invalid base64 encoding"
-      ],
+      "errors": [],
       "examples": [
-        "\"SGVsbG8=\" base64::decode! -> buf -> len"
+        "\"SGVsbG8=\" base64::decode -> text"
       ]
     }
   ]

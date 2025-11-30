@@ -1,0 +1,24 @@
+// Test StringBuilder in a loop
+use sb
+
+fn main( -- ) {
+	// Build a string in a loop
+	sb::new -> builder
+	0 5 1 for {
+		builder "x" sb::append -> builder
+	}
+	builder sb::finish -> result
+	result . nl
+
+	// Build comma-separated list
+	sb::new -> builder
+	0 3 1 for {
+		$ 0 > if {
+			builder ", " sb::append -> builder
+		}
+		builder "item" sb::append -> builder
+		builder $ sb::append_int -> builder
+	}
+	builder sb::finish -> result
+	result . nl
+}
