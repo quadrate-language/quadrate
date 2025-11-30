@@ -1,0 +1,27 @@
+// Test hex byte functions
+use hex
+
+fn main( -- ) {
+	// encode_byte
+	0 hex::encode_byte . nl
+	1 hex::encode_byte . nl
+	15 hex::encode_byte . nl
+	16 hex::encode_byte . nl
+	65 hex::encode_byte . nl
+	255 hex::encode_byte . nl
+
+	// decode_byte
+	"00" hex::decode_byte . nl
+	"01" hex::decode_byte . nl
+	"0F" hex::decode_byte . nl
+	"10" hex::decode_byte . nl
+	"41" hex::decode_byte . nl
+	"FF" hex::decode_byte . nl
+	"ff" hex::decode_byte . nl
+
+	// Invalid decode_byte
+	"G0" hex::decode_byte . nl
+	"0" hex::decode_byte . nl
+	"000" hex::decode_byte . nl
+	"" hex::decode_byte . nl
+}

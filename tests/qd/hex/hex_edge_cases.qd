@@ -1,0 +1,19 @@
+// Test hex edge cases
+use hex
+
+fn main( -- ) {
+	// Large value for encode_byte (should be clamped to 255)
+	256 hex::encode_byte . nl
+	1000 hex::encode_byte . nl
+
+	// Decode with invalid characters (pairs are skipped)
+	"48GG65" hex::decode . nl
+	"ZZZZ" hex::decode . nl
+
+	// Very long hex string
+	"414141414141414141414141414141414141414141" hex::decode . nl
+
+	// Empty roundtrip
+	"" hex::encode . nl
+	"" hex::decode . nl
+}

@@ -1,0 +1,22 @@
+// Test hex encode functions
+use hex
+
+fn main( -- ) {
+	// Basic encoding (uppercase)
+	"Hello" hex::encode . nl
+	"A" hex::encode . nl
+	"" hex::encode . nl
+
+	// Lowercase encoding
+	"Hello" hex::encode_lower . nl
+	"ABC" hex::encode_lower . nl
+
+	// Special characters
+	" " hex::encode . nl
+
+	// Numbers
+	"0123456789" hex::encode . nl
+
+	// Mixed case letters
+	"AaBbCc" hex::encode . nl
+}

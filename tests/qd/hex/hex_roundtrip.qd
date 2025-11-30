@@ -1,0 +1,16 @@
+// Test hex roundtrip encoding/decoding
+use hex
+
+fn main( -- ) {
+	// Encode
+	"Hello" hex::encode . nl
+
+	// Decode the encoded value
+	"48656C6C6F" hex::decode . nl
+
+	// Encode lowercase
+	"Test" hex::encode_lower . nl
+
+	// Decode lowercase
+	"54657374" hex::decode . nl
+}
