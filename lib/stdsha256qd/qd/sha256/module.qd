@@ -18,73 +18,74 @@ const H6_INIT = 528734635    // 0x1f83d9ab
 const H7_INIT = 1541459225   // 0x5be0cd19
 
 // 64 round constants (first 32 bits of fractional parts of cube roots of first 64 primes)
-fn get_k(i:i64 -- k:i64) {
-	-> i
-	i 0 == if { 1116352408 } else {    // 0x428a2f98
-	i 1 == if { 1899447441 } else {    // 0x71374491
-	i 2 == if { 3049323471 } else {    // 0xb5c0fbcf
-	i 3 == if { 3921009573 } else {    // 0xe9b5dba5
-	i 4 == if { 961987163 } else {     // 0x3956c25b
-	i 5 == if { 1508970993 } else {    // 0x59f111f1
-	i 6 == if { 2453635748 } else {    // 0x923f82a4
-	i 7 == if { 2870763221 } else {    // 0xab1c5ed5
-	i 8 == if { 3624381080 } else {    // 0xd807aa98
-	i 9 == if { 310598401 } else {     // 0x12835b01
-	i 10 == if { 607225278 } else {    // 0x243185be
-	i 11 == if { 1426881987 } else {   // 0x550c7dc3
-	i 12 == if { 1925078388 } else {   // 0x72be5d74
-	i 13 == if { 2162078206 } else {   // 0x80deb1fe
-	i 14 == if { 2614888103 } else {   // 0x9bdc06a7
-	i 15 == if { 3248222580 } else {   // 0xc19bf174
-	i 16 == if { 3835390401 } else {   // 0xe49b69c1
-	i 17 == if { 4022224774 } else {   // 0xefbe4786
-	i 18 == if { 264347078 } else {    // 0x0fc19dc6
-	i 19 == if { 604807628 } else {    // 0x240ca1cc
-	i 20 == if { 770255983 } else {    // 0x2de92c6f
-	i 21 == if { 1249150122 } else {   // 0x4a7484aa
-	i 22 == if { 1555081692 } else {   // 0x5cb0a9dc
-	i 23 == if { 1996064986 } else {   // 0x76f988da
-	i 24 == if { 2554220882 } else {   // 0x983e5152
-	i 25 == if { 2821834349 } else {   // 0xa831c66d
-	i 26 == if { 2952996808 } else {   // 0xb00327c8
-	i 27 == if { 3210313671 } else {   // 0xbf597fc7
-	i 28 == if { 3336571891 } else {   // 0xc6e00bf3
-	i 29 == if { 3584528711 } else {   // 0xd5a79147
-	i 30 == if { 113926993 } else {    // 0x06ca6351
-	i 31 == if { 338241895 } else {    // 0x14292967
-	i 32 == if { 666307205 } else {    // 0x27b70a85
-	i 33 == if { 773529912 } else {    // 0x2e1b2138
-	i 34 == if { 1294757372 } else {   // 0x4d2c6dfc
-	i 35 == if { 1396182291 } else {   // 0x53380d13
-	i 36 == if { 1695183700 } else {   // 0x650a7354
-	i 37 == if { 1986661051 } else {   // 0x766a0abb
-	i 38 == if { 2177026350 } else {   // 0x81c2c92e
-	i 39 == if { 2456956037 } else {   // 0x92722c85
-	i 40 == if { 2730485921 } else {   // 0xa2bfe8a1
-	i 41 == if { 2820302411 } else {   // 0xa81a664b
-	i 42 == if { 3259730800 } else {   // 0xc24b8b70
-	i 43 == if { 3345764771 } else {   // 0xc76c51a3
-	i 44 == if { 3516065817 } else {   // 0xd192e819
-	i 45 == if { 3600352804 } else {   // 0xd6990624
-	i 46 == if { 4094571909 } else {   // 0xf40e3585
-	i 47 == if { 275423344 } else {    // 0x106aa070
-	i 48 == if { 430227734 } else {    // 0x19a4c116
-	i 49 == if { 506948616 } else {    // 0x1e376c08
-	i 50 == if { 659060556 } else {    // 0x2748774c
-	i 51 == if { 883997877 } else {    // 0x34b0bcb5
-	i 52 == if { 958139571 } else {    // 0x391c0cb3
-	i 53 == if { 1322822218 } else {   // 0x4ed8aa4a
-	i 54 == if { 1537002063 } else {   // 0x5b9cca4f
-	i 55 == if { 1747873779 } else {   // 0x682e6ff3
-	i 56 == if { 1955562222 } else {   // 0x748f82ee
-	i 57 == if { 2024104815 } else {   // 0x78a5636f
-	i 58 == if { 2227730452 } else {   // 0x84c87814
-	i 59 == if { 2361852424 } else {   // 0x8cc70208
-	i 60 == if { 2428436474 } else {   // 0x90befffa
-	i 61 == if { 2756734187 } else {   // 0xa4506ceb
-	i 62 == if { 3204031479 } else {   // 0xbef9a3f7
-	3329325298                          // 0xc67178f2
-	}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}
+// Use a lookup table for better readability and performance
+fn make_k_table( -- tbl:ptr) {
+	512 mem::alloc -> tbl
+	tbl 0   1116352408 mem::set   // 0x428a2f98
+	tbl 8   1899447441 mem::set   // 0x71374491
+	tbl 16  3049323471 mem::set   // 0xb5c0fbcf
+	tbl 24  3921009573 mem::set   // 0xe9b5dba5
+	tbl 32  961987163 mem::set    // 0x3956c25b
+	tbl 40  1508970993 mem::set   // 0x59f111f1
+	tbl 48  2453635748 mem::set   // 0x923f82a4
+	tbl 56  2870763221 mem::set   // 0xab1c5ed5
+	tbl 64  3624381080 mem::set   // 0xd807aa98
+	tbl 72  310598401 mem::set    // 0x12835b01
+	tbl 80  607225278 mem::set    // 0x243185be
+	tbl 88  1426881987 mem::set   // 0x550c7dc3
+	tbl 96  1925078388 mem::set   // 0x72be5d74
+	tbl 104 2162078206 mem::set   // 0x80deb1fe
+	tbl 112 2614888103 mem::set   // 0x9bdc06a7
+	tbl 120 3248222580 mem::set   // 0xc19bf174
+	tbl 128 3835390401 mem::set   // 0xe49b69c1
+	tbl 136 4022224774 mem::set   // 0xefbe4786
+	tbl 144 264347078 mem::set    // 0x0fc19dc6
+	tbl 152 604807628 mem::set    // 0x240ca1cc
+	tbl 160 770255983 mem::set    // 0x2de92c6f
+	tbl 168 1249150122 mem::set   // 0x4a7484aa
+	tbl 176 1555081692 mem::set   // 0x5cb0a9dc
+	tbl 184 1996064986 mem::set   // 0x76f988da
+	tbl 192 2554220882 mem::set   // 0x983e5152
+	tbl 200 2821834349 mem::set   // 0xa831c66d
+	tbl 208 2952996808 mem::set   // 0xb00327c8
+	tbl 216 3210313671 mem::set   // 0xbf597fc7
+	tbl 224 3336571891 mem::set   // 0xc6e00bf3
+	tbl 232 3584528711 mem::set   // 0xd5a79147
+	tbl 240 113926993 mem::set    // 0x06ca6351
+	tbl 248 338241895 mem::set    // 0x14292967
+	tbl 256 666307205 mem::set    // 0x27b70a85
+	tbl 264 773529912 mem::set    // 0x2e1b2138
+	tbl 272 1294757372 mem::set   // 0x4d2c6dfc
+	tbl 280 1396182291 mem::set   // 0x53380d13
+	tbl 288 1695183700 mem::set   // 0x650a7354
+	tbl 296 1986661051 mem::set   // 0x766a0abb
+	tbl 304 2177026350 mem::set   // 0x81c2c92e
+	tbl 312 2456956037 mem::set   // 0x92722c85
+	tbl 320 2730485921 mem::set   // 0xa2bfe8a1
+	tbl 328 2820302411 mem::set   // 0xa81a664b
+	tbl 336 3259730800 mem::set   // 0xc24b8b70
+	tbl 344 3345764771 mem::set   // 0xc76c51a3
+	tbl 352 3516065817 mem::set   // 0xd192e819
+	tbl 360 3600352804 mem::set   // 0xd6990624
+	tbl 368 4094571909 mem::set   // 0xf40e3585
+	tbl 376 275423344 mem::set    // 0x106aa070
+	tbl 384 430227734 mem::set    // 0x19a4c116
+	tbl 392 506948616 mem::set    // 0x1e376c08
+	tbl 400 659060556 mem::set    // 0x2748774c
+	tbl 408 883997877 mem::set    // 0x34b0bcb5
+	tbl 416 958139571 mem::set    // 0x391c0cb3
+	tbl 424 1322822218 mem::set   // 0x4ed8aa4a
+	tbl 432 1537002063 mem::set   // 0x5b9cca4f
+	tbl 440 1747873779 mem::set   // 0x682e6ff3
+	tbl 448 1955562222 mem::set   // 0x748f82ee
+	tbl 456 2024104815 mem::set   // 0x78a5636f
+	tbl 464 2227730452 mem::set   // 0x84c87814
+	tbl 472 2361852424 mem::set   // 0x8cc70208
+	tbl 480 2428436474 mem::set   // 0x90befffa
+	tbl 488 2756734187 mem::set   // 0xa4506ceb
+	tbl 496 3204031479 mem::set   // 0xbef9a3f7
+	tbl 504 3329325298 mem::set   // 0xc67178f2
+	tbl
 }
 
 // Right rotate 32-bit value
@@ -138,6 +139,9 @@ fn process_block(msg:ptr block_offset:i64 h:ptr -- ) {
 	-> block_offset
 	-> msg
 
+	// Round constants table
+	make_k_table -> k
+
 	// Message schedule array W (64 * 8 bytes)
 	512 mem::alloc -> w
 
@@ -178,7 +182,7 @@ fn process_block(msg:ptr block_offset:i64 h:ptr -- ) {
 	loop {
 		i 64 >= if { break }
 
-		e sigma1 e f g ch add32 hh add32 i get_k add32 w i 8 * mem::get add32 -> t1
+		e sigma1 e f g ch add32 hh add32 k i 8 * mem::get add32 w i 8 * mem::get add32 -> t1
 		a sigma0 a b c maj add32 -> t2
 
 		hh -> hh2
@@ -205,6 +209,7 @@ fn process_block(msg:ptr block_offset:i64 h:ptr -- ) {
 	h 56 h 56 mem::get hh add32 mem::set
 
 	w mem::free
+	k mem::free
 }
 
 /// Calculate SHA-256 hash of a string.
