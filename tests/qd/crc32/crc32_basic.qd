@@ -1,0 +1,21 @@
+// Test CRC32 basic functionality
+use crc32
+
+fn main( -- ) {
+	// Standard test vector: "123456789" = 0xCBF43926
+	"123456789" crc32::checksum . nl
+
+	// Empty string
+	"" crc32::checksum . nl
+
+	// Single character
+	"a" crc32::checksum . nl
+
+	// Known values
+	"Hello" crc32::checksum . nl
+	"hello" crc32::checksum . nl
+
+	// Hex output
+	"123456789" crc32::checksum_hex . nl
+	"Hello" crc32::checksum_hex . nl
+}

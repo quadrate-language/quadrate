@@ -1,0 +1,27 @@
+// Test bytes swap functions
+use bytes
+
+fn main( -- ) {
+	// swap16: 0x1234 (4660) -> 0x3412 (13330)
+	4660 bytes::swap16 . nl
+
+	// swap16 edge cases
+	0 bytes::swap16 . nl
+	65535 bytes::swap16 . nl
+	255 bytes::swap16 . nl
+
+	// swap32: 0x12345678 (305419896) -> 0x78563412 (2018915346)
+	305419896 bytes::swap32 . nl
+
+	// swap32 edge cases
+	0 bytes::swap32 . nl
+	4294967295 bytes::swap32 . nl
+	256 bytes::swap32 . nl
+
+	// swap64: 0x0102030405060708 -> 0x0807060504030201
+	72623859790382856 bytes::swap64 . nl
+
+	// swap64 edge cases
+	0 bytes::swap64 . nl
+	255 bytes::swap64 . nl
+}

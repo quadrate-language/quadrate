@@ -1,0 +1,181 @@
+/// CRC32 checksum calculation.
+/// Implements the standard CRC-32 algorithm (ISO 3309, used in Ethernet, ZIP, PNG).
+/// Polynomial: 0xEDB88320 (reflected form of 0x04C11DB7)
+
+use mem
+use bits
+use str
+use hex
+
+// CRC32 polynomial (reflected)
+const POLY = 3988292384  // 0xEDB88320
+
+// Generate one entry of the CRC32 lookup table
+fn make_table_entry(index:i64 -- entry:i64) {
+	-> index
+	index -> crc
+	0 -> j
+	loop {
+		j 8 >= if { break }
+		crc 1 bits::and 1 == if {
+			crc 1 bits::rshift POLY bits::xor -> crc
+		} else {
+			crc 1 bits::rshift -> crc
+		}
+		j 1 + -> j
+	}
+	crc
+}
+
+// Create the 256-entry CRC32 lookup table
+fn make_table( -- tbl:ptr) {
+	// 256 entries * 8 bytes per i64
+	2048 mem::alloc -> tbl
+	0 -> i
+	loop {
+		i 256 >= if { break }
+		i make_table_entry -> entry
+		// Store as 8-byte value
+		tbl i 8 * entry mem::set
+		i 1 + -> i
+	}
+	tbl
+}
+
+// Get entry from table
+fn table_get(tbl:ptr index:i64 -- entry:i64) {
+	-> index
+	-> tbl
+	tbl index 8 * mem::get
+}
+
+/// Calculate CRC32 checksum of a string.
+/// @param s str Input string
+/// @return crc i64 CRC32 checksum as unsigned 32-bit value
+/// @example "Hello" crc32::checksum -> crc
+pub fn checksum(s:str -- crc:i64) {
+	-> s
+	s str::len -> slen
+
+	make_table -> tbl
+
+	// Start with all 1s
+	4294967295 -> crc  // 0xFFFFFFFF
+
+	0 -> i
+	loop {
+		i slen >= if { break }
+		s i str::char_at -> byte
+		// crc = table[(crc ^ byte) & 0xFF] ^ (crc >> 8)
+		crc byte bits::xor 255 bits::and -> index
+		tbl index table_get crc 8 bits::rshift bits::xor -> crc
+		i 1 + -> i
+	}
+
+	tbl mem::free
+
+	// Final XOR with all 1s
+	crc 4294967295 bits::xor 32 bits::mask
+}
+
+/// Calculate CRC32 of a byte buffer.
+/// @param buf ptr Buffer to checksum
+/// @param len i64 Length of buffer in bytes
+/// @return crc i64 CRC32 checksum
+/// @example buf buflen crc32::checksum_buf -> crc
+pub fn checksum_buf(buf:ptr len:i64 -- crc:i64) {
+	-> len
+	-> buf
+
+	make_table -> tbl
+
+	4294967295 -> crc  // 0xFFFFFFFF
+
+	0 -> i
+	loop {
+		i len >= if { break }
+		buf i mem::get_byte -> byte
+		crc byte bits::xor 255 bits::and -> index
+		tbl index table_get crc 8 bits::rshift bits::xor -> crc
+		i 1 + -> i
+	}
+
+	tbl mem::free
+
+	crc 4294967295 bits::xor 32 bits::mask
+}
+
+/// Calculate CRC32 and return as 8-character hex string.
+/// @param s str Input string
+/// @return hex str CRC32 as hex string (lowercase)
+/// @example "Hello" crc32::hex -> h  // "f7d18982"
+pub fn checksum_hex(s:str -- h:str) {
+	-> s
+	s checksum -> crc
+
+	// Convert to 8-char hex string
+	8 mem::alloc -> buf
+	0 -> i
+	loop {
+		i 8 >= if { break }
+		// Extract nibble (high nibble first)
+		crc 28 i 4 * - bits::rshift 15 bits::and -> nibble
+		nibble 10 < if {
+			48 nibble +  // '0' + nibble
+		} else {
+			87 nibble +  // 'a' - 10 + nibble
+		} -> char
+		buf i char mem::set_byte
+		i 1 + -> i
+	}
+
+	buf 8 mem::to_string -> result
+	buf mem::free
+	result
+}
+
+/// Update a running CRC with more data.
+/// Use for streaming/incremental CRC calculation.
+/// @param crc i64 Current CRC state (use 4294967295 to start)
+/// @param s str Data to add
+/// @return new_crc i64 Updated CRC state
+/// @example 4294967295 "Hello" crc32::update " World" crc32::update crc32::finalize -> crc
+pub fn update(crc:i64 s:str -- new_crc:i64) {
+	-> s
+	-> crc
+	s str::len -> slen
+
+	make_table -> tbl
+
+	0 -> i
+	loop {
+		i slen >= if { break }
+		s i str::char_at -> byte
+		crc byte bits::xor 255 bits::and -> index
+		tbl index table_get crc 8 bits::rshift bits::xor -> crc
+		i 1 + -> i
+	}
+
+	tbl mem::free
+	crc
+}
+
+/// Finalize a running CRC to get the final checksum.
+/// @param crc i64 Current CRC state from update()
+/// @return final i64 Final CRC32 checksum
+/// @example crc_state crc32::finalize -> crc
+pub fn finalize(crc:i64 -- final:i64) {
+	-> crc
+	crc 4294967295 bits::xor 32 bits::mask
+}
+
+/// Verify data against an expected CRC32.
+/// @param s str Data to verify
+/// @param expected i64 Expected CRC32 value
+/// @return ok i64 1 if matches, 0 otherwise
+/// @example "Hello" 4157704578 crc32::verify -> ok
+pub fn verify(s:str expected:i64 -- ok:i64) {
+	-> expected
+	-> s
+	s checksum expected == if { 1 } else { 0 }
+}

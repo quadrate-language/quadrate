@@ -1,0 +1,295 @@
+/// Byte array operations and endianness conversion.
+/// Provides functions for reading and writing multi-byte integers
+/// in big-endian and little-endian byte order.
+
+use mem
+use bits
+
+/// Read a 16-bit unsigned integer from memory in big-endian order.
+/// @param buf ptr Buffer to read from
+/// @param offset i64 Byte offset in buffer
+/// @return value i64 16-bit value
+/// @example buf 0 bytes::read_u16_be -> val
+pub fn read_u16_be(buf:ptr offset:i64 -- value:i64) {
+	-> offset
+	-> buf
+	buf offset mem::get_byte 8 bits::lshift
+	buf offset 1 + mem::get_byte bits::or
+}
+
+/// Read a 16-bit unsigned integer from memory in little-endian order.
+/// @param buf ptr Buffer to read from
+/// @param offset i64 Byte offset in buffer
+/// @return value i64 16-bit value
+/// @example buf 0 bytes::read_u16_le -> val
+pub fn read_u16_le(buf:ptr offset:i64 -- value:i64) {
+	-> offset
+	-> buf
+	buf offset 1 + mem::get_byte 8 bits::lshift
+	buf offset mem::get_byte bits::or
+}
+
+/// Read a 32-bit unsigned integer from memory in big-endian order.
+/// @param buf ptr Buffer to read from
+/// @param offset i64 Byte offset in buffer
+/// @return value i64 32-bit value
+/// @example buf 0 bytes::read_u32_be -> val
+pub fn read_u32_be(buf:ptr offset:i64 -- value:i64) {
+	-> offset
+	-> buf
+	buf offset mem::get_byte 24 bits::lshift
+	buf offset 1 + mem::get_byte 16 bits::lshift bits::or
+	buf offset 2 + mem::get_byte 8 bits::lshift bits::or
+	buf offset 3 + mem::get_byte bits::or
+}
+
+/// Read a 32-bit unsigned integer from memory in little-endian order.
+/// @param buf ptr Buffer to read from
+/// @param offset i64 Byte offset in buffer
+/// @return value i64 32-bit value
+/// @example buf 0 bytes::read_u32_le -> val
+pub fn read_u32_le(buf:ptr offset:i64 -- value:i64) {
+	-> offset
+	-> buf
+	buf offset 3 + mem::get_byte 24 bits::lshift
+	buf offset 2 + mem::get_byte 16 bits::lshift bits::or
+	buf offset 1 + mem::get_byte 8 bits::lshift bits::or
+	buf offset mem::get_byte bits::or
+}
+
+/// Read a 64-bit unsigned integer from memory in big-endian order.
+/// @param buf ptr Buffer to read from
+/// @param offset i64 Byte offset in buffer
+/// @return value i64 64-bit value
+/// @example buf 0 bytes::read_u64_be -> val
+pub fn read_u64_be(buf:ptr offset:i64 -- value:i64) {
+	-> offset
+	-> buf
+	buf offset mem::get_byte 56 bits::lshift
+	buf offset 1 + mem::get_byte 48 bits::lshift bits::or
+	buf offset 2 + mem::get_byte 40 bits::lshift bits::or
+	buf offset 3 + mem::get_byte 32 bits::lshift bits::or
+	buf offset 4 + mem::get_byte 24 bits::lshift bits::or
+	buf offset 5 + mem::get_byte 16 bits::lshift bits::or
+	buf offset 6 + mem::get_byte 8 bits::lshift bits::or
+	buf offset 7 + mem::get_byte bits::or
+}
+
+/// Read a 64-bit unsigned integer from memory in little-endian order.
+/// @param buf ptr Buffer to read from
+/// @param offset i64 Byte offset in buffer
+/// @return value i64 64-bit value
+/// @example buf 0 bytes::read_u64_le -> val
+pub fn read_u64_le(buf:ptr offset:i64 -- value:i64) {
+	-> offset
+	-> buf
+	buf offset 7 + mem::get_byte 56 bits::lshift
+	buf offset 6 + mem::get_byte 48 bits::lshift bits::or
+	buf offset 5 + mem::get_byte 40 bits::lshift bits::or
+	buf offset 4 + mem::get_byte 32 bits::lshift bits::or
+	buf offset 3 + mem::get_byte 24 bits::lshift bits::or
+	buf offset 2 + mem::get_byte 16 bits::lshift bits::or
+	buf offset 1 + mem::get_byte 8 bits::lshift bits::or
+	buf offset mem::get_byte bits::or
+}
+
+/// Write a 16-bit unsigned integer to memory in big-endian order.
+/// @param buf ptr Buffer to write to
+/// @param offset i64 Byte offset in buffer
+/// @param value i64 16-bit value to write
+/// @example buf 0 0x1234 bytes::write_u16_be
+pub fn write_u16_be(buf:ptr offset:i64 value:i64 -- ) {
+	-> value
+	-> offset
+	-> buf
+	buf offset value 8 bits::rshift 255 bits::and mem::set_byte
+	buf offset 1 + value 255 bits::and mem::set_byte
+}
+
+/// Write a 16-bit unsigned integer to memory in little-endian order.
+/// @param buf ptr Buffer to write to
+/// @param offset i64 Byte offset in buffer
+/// @param value i64 16-bit value to write
+/// @example buf 0 0x1234 bytes::write_u16_le
+pub fn write_u16_le(buf:ptr offset:i64 value:i64 -- ) {
+	-> value
+	-> offset
+	-> buf
+	buf offset value 255 bits::and mem::set_byte
+	buf offset 1 + value 8 bits::rshift 255 bits::and mem::set_byte
+}
+
+/// Write a 32-bit unsigned integer to memory in big-endian order.
+/// @param buf ptr Buffer to write to
+/// @param offset i64 Byte offset in buffer
+/// @param value i64 32-bit value to write
+/// @example buf 0 0x12345678 bytes::write_u32_be
+pub fn write_u32_be(buf:ptr offset:i64 value:i64 -- ) {
+	-> value
+	-> offset
+	-> buf
+	buf offset value 24 bits::rshift 255 bits::and mem::set_byte
+	buf offset 1 + value 16 bits::rshift 255 bits::and mem::set_byte
+	buf offset 2 + value 8 bits::rshift 255 bits::and mem::set_byte
+	buf offset 3 + value 255 bits::and mem::set_byte
+}
+
+/// Write a 32-bit unsigned integer to memory in little-endian order.
+/// @param buf ptr Buffer to write to
+/// @param offset i64 Byte offset in buffer
+/// @param value i64 32-bit value to write
+/// @example buf 0 0x12345678 bytes::write_u32_le
+pub fn write_u32_le(buf:ptr offset:i64 value:i64 -- ) {
+	-> value
+	-> offset
+	-> buf
+	buf offset value 255 bits::and mem::set_byte
+	buf offset 1 + value 8 bits::rshift 255 bits::and mem::set_byte
+	buf offset 2 + value 16 bits::rshift 255 bits::and mem::set_byte
+	buf offset 3 + value 24 bits::rshift 255 bits::and mem::set_byte
+}
+
+/// Write a 64-bit unsigned integer to memory in big-endian order.
+/// @param buf ptr Buffer to write to
+/// @param offset i64 Byte offset in buffer
+/// @param value i64 64-bit value to write
+/// @example buf 0 0x123456789ABCDEF0 bytes::write_u64_be
+pub fn write_u64_be(buf:ptr offset:i64 value:i64 -- ) {
+	-> value
+	-> offset
+	-> buf
+	buf offset value 56 bits::rshift 255 bits::and mem::set_byte
+	buf offset 1 + value 48 bits::rshift 255 bits::and mem::set_byte
+	buf offset 2 + value 40 bits::rshift 255 bits::and mem::set_byte
+	buf offset 3 + value 32 bits::rshift 255 bits::and mem::set_byte
+	buf offset 4 + value 24 bits::rshift 255 bits::and mem::set_byte
+	buf offset 5 + value 16 bits::rshift 255 bits::and mem::set_byte
+	buf offset 6 + value 8 bits::rshift 255 bits::and mem::set_byte
+	buf offset 7 + value 255 bits::and mem::set_byte
+}
+
+/// Write a 64-bit unsigned integer to memory in little-endian order.
+/// @param buf ptr Buffer to write to
+/// @param offset i64 Byte offset in buffer
+/// @param value i64 64-bit value to write
+/// @example buf 0 0x123456789ABCDEF0 bytes::write_u64_le
+pub fn write_u64_le(buf:ptr offset:i64 value:i64 -- ) {
+	-> value
+	-> offset
+	-> buf
+	buf offset value 255 bits::and mem::set_byte
+	buf offset 1 + value 8 bits::rshift 255 bits::and mem::set_byte
+	buf offset 2 + value 16 bits::rshift 255 bits::and mem::set_byte
+	buf offset 3 + value 24 bits::rshift 255 bits::and mem::set_byte
+	buf offset 4 + value 32 bits::rshift 255 bits::and mem::set_byte
+	buf offset 5 + value 40 bits::rshift 255 bits::and mem::set_byte
+	buf offset 6 + value 48 bits::rshift 255 bits::and mem::set_byte
+	buf offset 7 + value 56 bits::rshift 255 bits::and mem::set_byte
+}
+
+/// Swap byte order of a 16-bit value.
+/// @param value i64 16-bit value
+/// @return result i64 Byte-swapped value
+/// @example 0x1234 bytes::swap16 -> result  // 0x3412
+pub fn swap16(value:i64 -- result:i64) {
+	-> value
+	value 8 bits::rshift 255 bits::and
+	value 255 bits::and 8 bits::lshift bits::or
+}
+
+/// Swap byte order of a 32-bit value.
+/// @param value i64 32-bit value
+/// @return result i64 Byte-swapped value
+/// @example 0x12345678 bytes::swap32 -> result  // 0x78563412
+pub fn swap32(value:i64 -- result:i64) {
+	-> value
+	value 24 bits::rshift 255 bits::and
+	value 16 bits::rshift 255 bits::and 8 bits::lshift bits::or
+	value 8 bits::rshift 255 bits::and 16 bits::lshift bits::or
+	value 255 bits::and 24 bits::lshift bits::or
+}
+
+/// Swap byte order of a 64-bit value.
+/// @param value i64 64-bit value
+/// @return result i64 Byte-swapped value
+/// @example 0x0102030405060708 bytes::swap64 -> result  // 0x0807060504030201
+pub fn swap64(value:i64 -- result:i64) {
+	-> value
+	value 56 bits::rshift 255 bits::and
+	value 48 bits::rshift 255 bits::and 8 bits::lshift bits::or
+	value 40 bits::rshift 255 bits::and 16 bits::lshift bits::or
+	value 32 bits::rshift 255 bits::and 24 bits::lshift bits::or
+	value 24 bits::rshift 255 bits::and 32 bits::lshift bits::or
+	value 16 bits::rshift 255 bits::and 40 bits::lshift bits::or
+	value 8 bits::rshift 255 bits::and 48 bits::lshift bits::or
+	value 255 bits::and 56 bits::lshift bits::or
+}
+
+/// Copy bytes from one buffer to another.
+/// @param dst ptr Destination buffer
+/// @param dst_off i64 Destination offset
+/// @param src ptr Source buffer
+/// @param src_off i64 Source offset
+/// @param count i64 Number of bytes to copy
+/// @example dst 0 src 0 10 bytes::copy
+pub fn copy(dst:ptr dst_off:i64 src:ptr src_off:i64 count:i64 -- ) {
+	-> count
+	-> src_off
+	-> src
+	-> dst_off
+	-> dst
+	0 -> i
+	loop {
+		i count >= if { break }
+		src src_off i + mem::get_byte -> byte
+		dst dst_off i + byte mem::set_byte
+		i 1 + -> i
+	}
+}
+
+/// Fill a buffer with a byte value.
+/// @param buf ptr Buffer to fill
+/// @param offset i64 Starting offset
+/// @param count i64 Number of bytes to fill
+/// @param value i64 Byte value to fill with
+/// @example buf 0 10 0 bytes::fill
+pub fn fill(buf:ptr offset:i64 count:i64 value:i64 -- ) {
+	-> value
+	-> count
+	-> offset
+	-> buf
+	0 -> i
+	loop {
+		i count >= if { break }
+		buf offset i + value mem::set_byte
+		i 1 + -> i
+	}
+}
+
+/// Compare two byte buffers.
+/// @param a ptr First buffer
+/// @param a_off i64 First buffer offset
+/// @param b ptr Second buffer
+/// @param b_off i64 Second buffer offset
+/// @param count i64 Number of bytes to compare
+/// @return result i64 0 if equal, negative if a<b, positive if a>b
+/// @example buf1 0 buf2 0 10 bytes::compare -> result
+pub fn compare(a:ptr a_off:i64 b:ptr b_off:i64 count:i64 -- result:i64) {
+	-> count
+	-> b_off
+	-> b
+	-> a_off
+	-> a
+	0 -> result
+	0 -> i
+	loop {
+		i count >= result 0 != bits::or if { break }
+		a a_off i + mem::get_byte -> ab
+		b b_off i + mem::get_byte -> bb
+		ab bb != if {
+			ab bb - -> result
+		}
+		i 1 + -> i
+	}
+	result
+}

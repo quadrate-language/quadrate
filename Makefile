@@ -89,6 +89,8 @@ debug:
 	@cp -r lib/stdunicodeqd/qd/unicode dist/share/quadrate/
 	@cp -r lib/stduriqd/qd/uri dist/share/quadrate/
 	@cp -r lib/stdhexqd/qd/hex dist/share/quadrate/
+	@cp -r lib/stdbytesqd/qd/bytes dist/share/quadrate/
+	@cp -r lib/stdcrc32qd/qd/crc32 dist/share/quadrate/
 	@echo "Verifying static archives..."
 	@file dist/lib/libqdrt_static.a dist/lib/libstdosqd_static.a | head -2
 	@echo "Debug build complete - static libraries ready"
@@ -167,6 +169,8 @@ release:
 	@cp -r lib/stdunicodeqd/qd/unicode dist/share/quadrate/
 	@cp -r lib/stduriqd/qd/uri dist/share/quadrate/
 	@cp -r lib/stdhexqd/qd/hex dist/share/quadrate/
+	@cp -r lib/stdbytesqd/qd/bytes dist/share/quadrate/
+	@cp -r lib/stdcrc32qd/qd/crc32 dist/share/quadrate/
 	@echo "Verifying static archives (release)..."
 	@file dist/lib/libqdrt_static.a dist/lib/libstdosqd_static.a | head -2
 	@echo "Release build complete - static libraries ready"
@@ -310,6 +314,8 @@ install: release
 	@cp -r lib/stdunicodeqd/qd/unicode $(DESTDIR)$(PREFIX)/share/quadrate/
 	@cp -r lib/stduriqd/qd/uri $(DESTDIR)$(PREFIX)/share/quadrate/
 	@cp -r lib/stdhexqd/qd/hex $(DESTDIR)$(PREFIX)/share/quadrate/
+	@cp -r lib/stdbytesqd/qd/bytes $(DESTDIR)$(PREFIX)/share/quadrate/
+	@cp -r lib/stdcrc32qd/qd/crc32 $(DESTDIR)$(PREFIX)/share/quadrate/
 
 uninstall:
 	rm -f $(DESTDIR)$(PREFIX)/bin/quadc
