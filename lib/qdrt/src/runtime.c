@@ -2418,6 +2418,174 @@ qd_exec_result qd_mod(qd_context* ctx) {
 	return (qd_exec_result){0};
 }
 
+// and - bitwise AND: ( a b -- a&b )
+qd_exec_result qd_and(qd_context* ctx) {
+	qd_stack* st = ctx->st;
+	if (st->size < 2) {
+		fprintf(stderr, "Fatal error in and: Stack underflow (required 2 elements, have %zu)\n", st->size);
+		dump_stack(ctx);
+		qd_print_stack_trace(ctx);
+		abort();
+	}
+
+	qd_stack_element_t* top = &st->data[st->size - 1];
+	qd_stack_element_t* second = &st->data[st->size - 2];
+
+	if (top->type != QD_STACK_TYPE_INT || second->type != QD_STACK_TYPE_INT) {
+		fprintf(stderr, "Fatal error in and: Type error (expected int for bitwise operation)\n");
+		dump_stack(ctx);
+		qd_print_stack_trace(ctx);
+		abort();
+	}
+
+	int64_t result = second->value.i & top->value.i;
+	st->size -= 2;
+	QD_STACK_PUSH_INT_FAST(st, result);
+	return (qd_exec_result){0};
+}
+
+// or - bitwise OR: ( a b -- a|b )
+qd_exec_result qd_or(qd_context* ctx) {
+	qd_stack* st = ctx->st;
+	if (st->size < 2) {
+		fprintf(stderr, "Fatal error in or: Stack underflow (required 2 elements, have %zu)\n", st->size);
+		dump_stack(ctx);
+		qd_print_stack_trace(ctx);
+		abort();
+	}
+
+	qd_stack_element_t* top = &st->data[st->size - 1];
+	qd_stack_element_t* second = &st->data[st->size - 2];
+
+	if (top->type != QD_STACK_TYPE_INT || second->type != QD_STACK_TYPE_INT) {
+		fprintf(stderr, "Fatal error in or: Type error (expected int for bitwise operation)\n");
+		dump_stack(ctx);
+		qd_print_stack_trace(ctx);
+		abort();
+	}
+
+	int64_t result = second->value.i | top->value.i;
+	st->size -= 2;
+	QD_STACK_PUSH_INT_FAST(st, result);
+	return (qd_exec_result){0};
+}
+
+// xor - bitwise XOR: ( a b -- a^b )
+qd_exec_result qd_xor(qd_context* ctx) {
+	qd_stack* st = ctx->st;
+	if (st->size < 2) {
+		fprintf(stderr, "Fatal error in xor: Stack underflow (required 2 elements, have %zu)\n", st->size);
+		dump_stack(ctx);
+		qd_print_stack_trace(ctx);
+		abort();
+	}
+
+	qd_stack_element_t* top = &st->data[st->size - 1];
+	qd_stack_element_t* second = &st->data[st->size - 2];
+
+	if (top->type != QD_STACK_TYPE_INT || second->type != QD_STACK_TYPE_INT) {
+		fprintf(stderr, "Fatal error in xor: Type error (expected int for bitwise operation)\n");
+		dump_stack(ctx);
+		qd_print_stack_trace(ctx);
+		abort();
+	}
+
+	int64_t result = second->value.i ^ top->value.i;
+	st->size -= 2;
+	QD_STACK_PUSH_INT_FAST(st, result);
+	return (qd_exec_result){0};
+}
+
+// not - bitwise NOT: ( a -- ~a )
+qd_exec_result qd_not(qd_context* ctx) {
+	qd_stack* st = ctx->st;
+	if (st->size < 1) {
+		fprintf(stderr, "Fatal error in not: Stack underflow (required 1 element, have %zu)\n", st->size);
+		dump_stack(ctx);
+		qd_print_stack_trace(ctx);
+		abort();
+	}
+
+	qd_stack_element_t* top = &st->data[st->size - 1];
+
+	if (top->type != QD_STACK_TYPE_INT) {
+		fprintf(stderr, "Fatal error in not: Type error (expected int for bitwise operation)\n");
+		dump_stack(ctx);
+		qd_print_stack_trace(ctx);
+		abort();
+	}
+
+	top->value.i = ~top->value.i;
+	return (qd_exec_result){0};
+}
+
+// shl - shift left: ( a n -- a<<n )
+qd_exec_result qd_shl(qd_context* ctx) {
+	qd_stack* st = ctx->st;
+	if (st->size < 2) {
+		fprintf(stderr, "Fatal error in shl: Stack underflow (required 2 elements, have %zu)\n", st->size);
+		dump_stack(ctx);
+		qd_print_stack_trace(ctx);
+		abort();
+	}
+
+	qd_stack_element_t* top = &st->data[st->size - 1];
+	qd_stack_element_t* second = &st->data[st->size - 2];
+
+	if (top->type != QD_STACK_TYPE_INT || second->type != QD_STACK_TYPE_INT) {
+		fprintf(stderr, "Fatal error in shl: Type error (expected int for shift operation)\n");
+		dump_stack(ctx);
+		qd_print_stack_trace(ctx);
+		abort();
+	}
+
+	if (top->value.i < 0 || top->value.i >= 64) {
+		fprintf(stderr, "Fatal error in shl: Shift count out of range (must be 0-63, got %ld)\n", top->value.i);
+		dump_stack(ctx);
+		qd_print_stack_trace(ctx);
+		abort();
+	}
+
+	int64_t result = second->value.i << top->value.i;
+	st->size -= 2;
+	QD_STACK_PUSH_INT_FAST(st, result);
+	return (qd_exec_result){0};
+}
+
+// shr - shift right (logical): ( a n -- a>>n )
+qd_exec_result qd_shr(qd_context* ctx) {
+	qd_stack* st = ctx->st;
+	if (st->size < 2) {
+		fprintf(stderr, "Fatal error in shr: Stack underflow (required 2 elements, have %zu)\n", st->size);
+		dump_stack(ctx);
+		qd_print_stack_trace(ctx);
+		abort();
+	}
+
+	qd_stack_element_t* top = &st->data[st->size - 1];
+	qd_stack_element_t* second = &st->data[st->size - 2];
+
+	if (top->type != QD_STACK_TYPE_INT || second->type != QD_STACK_TYPE_INT) {
+		fprintf(stderr, "Fatal error in shr: Type error (expected int for shift operation)\n");
+		dump_stack(ctx);
+		qd_print_stack_trace(ctx);
+		abort();
+	}
+
+	if (top->value.i < 0 || top->value.i >= 64) {
+		fprintf(stderr, "Fatal error in shr: Shift count out of range (must be 0-63, got %ld)\n", top->value.i);
+		dump_stack(ctx);
+		qd_print_stack_trace(ctx);
+		abort();
+	}
+
+	// Logical shift right (unsigned)
+	int64_t result = (int64_t)((uint64_t)second->value.i >> top->value.i);
+	st->size -= 2;
+	QD_STACK_PUSH_INT_FAST(st, result);
+	return (qd_exec_result){0};
+}
+
 // neg - negate top element: ( a -- -a )
 qd_exec_result qd_neg(qd_context* ctx) {
 	size_t stack_size = qd_stack_size(ctx->st);

@@ -1,7 +1,6 @@
 /// Base64 encoding and decoding.
 /// Optimized with lookup tables and direct buffer writes.
 
-use bits
 use mem
 use str
 use unicode
@@ -73,18 +72,18 @@ pub fn encode(input:str -- encoded:str) {
 		i 2 + inlen < if { buf i 2 + mem::get_byte } else { 0 } -> b3
 
 		// Char 1: top 6 bits of b1
-		b1 2 bits::rshift 63 bits::and -> idx
+		b1 2 shr 63 and -> idx
 		out o enc_tbl idx mem::get_byte mem::set_byte
 		o 1 + -> o
 
 		// Char 2: bottom 2 bits of b1 + top 4 bits of b2
-		b1 3 bits::and 4 bits::lshift b2 4 bits::rshift bits::or -> idx
+		b1 3 and 4 shl b2 4 shr or -> idx
 		out o enc_tbl idx mem::get_byte mem::set_byte
 		o 1 + -> o
 
 		// Char 3: bottom 4 bits of b2 + top 2 bits of b3 (or padding)
 		i 1 + inlen < if {
-			b2 15 bits::and 2 bits::lshift b3 6 bits::rshift bits::or -> idx
+			b2 15 and 2 shl b3 6 shr or -> idx
 			out o enc_tbl idx mem::get_byte mem::set_byte
 		} else {
 			out o unicode::equals mem::set_byte
@@ -93,7 +92,7 @@ pub fn encode(input:str -- encoded:str) {
 
 		// Char 4: bottom 6 bits of b3 (or padding)
 		i 2 + inlen < if {
-			b3 63 bits::and -> idx
+			b3 63 and -> idx
 			out o enc_tbl idx mem::get_byte mem::set_byte
 		} else {
 			out o unicode::equals mem::set_byte
@@ -147,26 +146,26 @@ pub fn decode(encoded:str -- decoded:str) {
 			dec_tbl inbuf i 3 + mem::get_byte mem::get_byte -> v4
 
 			// Skip invalid (255 = -1 as unsigned byte)
-			v1 255 == v2 255 == bits::or if {
+			v1 255 == v2 255 == or if {
 				i 4 + -> i
 				continue
 			}
 
 			// Decode byte 1
-			v1 2 bits::lshift v2 4 bits::rshift bits::or 255 bits::and -> b1
+			v1 2 shl v2 4 shr or 255 and -> b1
 			buf o b1 mem::set_byte
 			o 1 + -> o
 
 			// Decode byte 2 (if not padding, 254 = '=')
-			v3 254 != v3 255 != bits::and if {
-				v2 15 bits::and 4 bits::lshift v3 2 bits::rshift bits::or 255 bits::and -> b2
+			v3 254 != v3 255 != and if {
+				v2 15 and 4 shl v3 2 shr or 255 and -> b2
 				buf o b2 mem::set_byte
 				o 1 + -> o
 			}
 
 			// Decode byte 3 (if not padding)
-			v4 254 != v4 255 != bits::and if {
-				v3 3 bits::and 6 bits::lshift v4 bits::or 255 bits::and -> b3
+			v4 254 != v4 255 != and if {
+				v3 3 and 6 shl v4 or 255 and -> b3
 				buf o b3 mem::set_byte
 				o 1 + -> o
 			}

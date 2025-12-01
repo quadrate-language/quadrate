@@ -6,7 +6,6 @@
 // dc is a reverse-polish desk calculator which supports unlimited
 // precision arithmetic. It uses a stack-based approach where numbers
 // are pushed onto a stack and operations pop operands and push results.
-use bits
 use flag
 use io
 use math
@@ -40,7 +39,7 @@ fn is_number(tok:str -- result:i64) {
 		first unicode::is_digit if {
 			1 -> result
 		} else {
-			first unicode::underscore == first unicode::minus == bits::or if {
+			first unicode::underscore == first unicode::minus == or if {
 				tok str::len 1 > if {
 					tok 1 str::char_at -> second
 					second unicode::is_digit -> result

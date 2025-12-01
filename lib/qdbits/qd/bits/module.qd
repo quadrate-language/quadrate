@@ -1,47 +1,7 @@
 /// Bitwise operations for integer manipulation.
-
-import "libqdbits.a" as "bits" {
-	/// Bitwise AND.
-	/// @param a i64 First operand
-	/// @param b i64 Second operand
-	/// @return result i64 a AND b
-	/// @example 0b1100 0b1010 bits::and .  // 8
-	pub fn and(a:i64 b:i64 -- result:i64)
-
-	/// Bitwise OR.
-	/// @param a i64 First operand
-	/// @param b i64 Second operand
-	/// @return result i64 a OR b
-	/// @example 0b1100 0b1010 bits::or .  // 14
-	pub fn or(a:i64 b:i64 -- result:i64)
-
-	/// Bitwise XOR.
-	/// @param a i64 First operand
-	/// @param b i64 Second operand
-	/// @return result i64 a XOR b
-	/// @example 0b1100 0b1010 bits::xor .  // 6
-	pub fn xor(a:i64 b:i64 -- result:i64)
-
-	/// Bitwise NOT (complement).
-	/// @param a i64 Value to complement
-	/// @return result i64 All bits flipped
-	/// @example 0 bits::not .  // -1
-	pub fn not(a:i64 -- result:i64)
-
-	/// Left shift.
-	/// @param value i64 Value to shift
-	/// @param shift i64 Number of positions
-	/// @return result i64 value << shift
-	/// @example 1 4 bits::lshift .  // 16
-	pub fn lshift(value:i64 shift:i64 -- result:i64)
-
-	/// Right shift.
-	/// @param value i64 Value to shift
-	/// @param shift i64 Number of positions
-	/// @return result i64 value >> shift
-	/// @example 16 2 bits::rshift .  // 4
-	pub fn rshift(value:i64 shift:i64 -- result:i64)
-}
+///
+/// Core operations (and, or, xor, not, shl, shr) are builtins.
+/// This module provides higher-level bit manipulation functions.
 
 /// Keep only the bottom N bits.
 /// @param value i64 Input value
@@ -49,7 +9,7 @@ import "libqdbits.a" as "bits" {
 /// @return result i64 Masked value
 /// @example 0xFF 4 bits::mask .  // 15
 pub fn mask( value:i64 num_bits:i64 -- result:i64 ) {
-	1 swap bits::lshift 1 sub bits::and
+	1 swap shl 1 sub and
 }
 
 /// Extract a bit field from a value.
@@ -59,7 +19,7 @@ pub fn mask( value:i64 num_bits:i64 -- result:i64 ) {
 /// @return result i64 Extracted bits, right-aligned
 /// @example 0b11010110 2 3 bits::extract .  // 5
 pub fn extract( value:i64 start_bit:i64 num_bits:i64 -- result:i64 ) {
-	swap bits::rshift swap mask
+	swap shr swap mask
 }
 
 /// Set a bit field in a value.
@@ -71,10 +31,10 @@ pub fn extract( value:i64 start_bit:i64 num_bits:i64 -- result:i64 ) {
 /// @example 0 0b101 2 3 bits::set_bits .  // 20 (0b10100)
 pub fn set_bits( target:i64 value:i64 start_bit:i64 num_bits:i64 -- result:i64 ) {
 	-> nb -> sb -> val -> tgt
-	1 nb bits::lshift 1 sub -> bit_mask
-	bit_mask sb bits::lshift -> positioned_mask
-	positioned_mask bits::not tgt bits::and -> cleared
-	val nb mask sb bits::lshift cleared bits::or
+	1 nb shl 1 sub -> bit_mask
+	bit_mask sb shl -> positioned_mask
+	positioned_mask not tgt and -> cleared
+	val nb mask sb shl cleared or
 }
 
 /// Rotate bits left within a width.
@@ -85,9 +45,9 @@ pub fn set_bits( target:i64 value:i64 start_bit:i64 num_bits:i64 -- result:i64 )
 /// @example 0b0011 1 4 bits::rotate_left .  // 6 (0b0110)
 pub fn rotate_left( value:i64 bits:i64 width:i64 -- result:i64 ) {
 	-> w -> b -> v
-	v w b sub bits::rshift -> high
-	v b bits::lshift w mask -> low
-	high low bits::or
+	v w b sub shr -> high
+	v b shl w mask -> low
+	high low or
 }
 
 /// Rotate bits right within a width.
@@ -98,9 +58,9 @@ pub fn rotate_left( value:i64 bits:i64 width:i64 -- result:i64 ) {
 /// @example 0b0110 1 4 bits::rotate_right .  // 3 (0b0011)
 pub fn rotate_right( value:i64 bits:i64 width:i64 -- result:i64 ) {
 	-> w -> b -> v
-	v b mask w b sub bits::lshift -> low
-	v b bits::rshift w mask -> high
-	high low bits::or
+	v b mask w b sub shl -> low
+	v b shr w mask -> high
+	high low or
 }
 
 /// Count set bits (population count).
@@ -110,7 +70,7 @@ pub fn rotate_right( value:i64 bits:i64 width:i64 -- result:i64 ) {
 pub fn popcount( value:i64 -- count:i64 ) {
 	0 swap
 	64 0 1 for {
-		dup 1 bits::and rot add swap 1 bits::rshift
+		dup 1 and rot add swap 1 shr
 	}
 	drop
 }
@@ -124,8 +84,8 @@ pub fn reverse_bits( value:i64 width:i64 -- result:i64 ) {
 	-> w -> v
 	0 -> result
 	w 0 1 for {
-		result 1 bits::lshift v 1 bits::and bits::or -> result
-		v 1 bits::rshift -> v
+		result 1 shl v 1 and or -> result
+		v 1 shr -> v
 	}
 	result
 }
@@ -136,7 +96,7 @@ pub fn reverse_bits( value:i64 width:i64 -- result:i64 ) {
 /// @return flag i64 1 if set, 0 if not
 /// @example 0b1010 1 bits::has_bit .  // 1
 pub fn has_bit( value:i64 bit_pos:i64 -- flag:i64 ) {
-	bits::rshift 1 bits::and
+	shr 1 and
 }
 
 /// Set a bit to 1.
@@ -145,7 +105,7 @@ pub fn has_bit( value:i64 bit_pos:i64 -- flag:i64 ) {
 /// @return result i64 Value with bit set
 /// @example 0b1000 1 bits::set_bit .  // 10 (0b1010)
 pub fn set_bit( value:i64 bit_pos:i64 -- result:i64 ) {
-	1 over bits::lshift bits::or
+	1 over shl or
 }
 
 /// Clear a bit to 0.
@@ -154,7 +114,7 @@ pub fn set_bit( value:i64 bit_pos:i64 -- result:i64 ) {
 /// @return result i64 Value with bit cleared
 /// @example 0b1010 1 bits::clear_bit .  // 8 (0b1000)
 pub fn clear_bit( value:i64 bit_pos:i64 -- result:i64 ) {
-	1 swap bits::lshift bits::not bits::and
+	1 swap shl not and
 }
 
 /// Toggle a bit.
@@ -163,5 +123,5 @@ pub fn clear_bit( value:i64 bit_pos:i64 -- result:i64 ) {
 /// @return result i64 Value with bit toggled
 /// @example 0b1010 0 bits::toggle_bit .  // 11 (0b1011)
 pub fn toggle_bit( value:i64 bit_pos:i64 -- result:i64 ) {
-	1 swap bits::lshift bits::xor
+	1 swap shl xor
 }

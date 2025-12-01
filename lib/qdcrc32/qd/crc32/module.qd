@@ -17,10 +17,10 @@ fn make_table_entry(index:i64 -- entry:i64) {
 	0 -> j
 	loop {
 		j 8 >= if { break }
-		crc 1 bits::and 1 == if {
-			crc 1 bits::rshift POLY bits::xor -> crc
+		crc 1 and 1 == if {
+			crc 1 shr POLY xor -> crc
 		} else {
-			crc 1 bits::rshift -> crc
+			crc 1 shr -> crc
 		}
 		j 1 + -> j
 	}
@@ -67,15 +67,15 @@ pub fn checksum(s:str -- crc:i64) {
 		i slen >= if { break }
 		s i str::char_at -> byte
 		// crc = table[(crc ^ byte) & 0xFF] ^ (crc >> 8)
-		crc byte bits::xor 255 bits::and -> index
-		tbl index table_get crc 8 bits::rshift bits::xor -> crc
+		crc byte xor 255 and -> index
+		tbl index table_get crc 8 shr xor -> crc
 		i 1 + -> i
 	}
 
 	tbl mem::free
 
 	// Final XOR with all 1s
-	crc 4294967295 bits::xor 32 bits::mask
+	crc 4294967295 xor 32 bits::mask
 }
 
 /// Calculate CRC32 of a byte buffer.
@@ -95,14 +95,14 @@ pub fn checksum_buf(buf:ptr len:i64 -- crc:i64) {
 	loop {
 		i len >= if { break }
 		buf i mem::get_byte -> byte
-		crc byte bits::xor 255 bits::and -> index
-		tbl index table_get crc 8 bits::rshift bits::xor -> crc
+		crc byte xor 255 and -> index
+		tbl index table_get crc 8 shr xor -> crc
 		i 1 + -> i
 	}
 
 	tbl mem::free
 
-	crc 4294967295 bits::xor 32 bits::mask
+	crc 4294967295 xor 32 bits::mask
 }
 
 /// Calculate CRC32 and return as 8-character hex string.
@@ -119,7 +119,7 @@ pub fn checksum_hex(s:str -- h:str) {
 	loop {
 		i 8 >= if { break }
 		// Extract nibble (high nibble first)
-		crc 28 i 4 * - bits::rshift 15 bits::and -> nibble
+		crc 28 i 4 * - shr 15 and -> nibble
 		nibble 10 < if {
 			48 nibble +  // '0' + nibble
 		} else {
@@ -151,8 +151,8 @@ pub fn update(crc:i64 s:str -- new_crc:i64) {
 	loop {
 		i slen >= if { break }
 		s i str::char_at -> byte
-		crc byte bits::xor 255 bits::and -> index
-		tbl index table_get crc 8 bits::rshift bits::xor -> crc
+		crc byte xor 255 and -> index
+		tbl index table_get crc 8 shr xor -> crc
 		i 1 + -> i
 	}
 
@@ -166,7 +166,7 @@ pub fn update(crc:i64 s:str -- new_crc:i64) {
 /// @example crc_state crc32::finalize -> crc
 pub fn finalize(crc:i64 -- final:i64) {
 	-> crc
-	crc 4294967295 bits::xor 32 bits::mask
+	crc 4294967295 xor 32 bits::mask
 }
 
 /// Verify data against an expected CRC32.

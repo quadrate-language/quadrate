@@ -3,7 +3,6 @@
 
 use mem
 use str
-use bits
 use unicode
 
 /// Parsed URI components.
@@ -42,15 +41,15 @@ fn make_hex_table( -- tbl:ptr) {
 fn hex_value(c:i64 -- v:i64) {
 	-> c
 	// '0'-'9' -> 0-9
-	c unicode::digit0 >= c unicode::digit9 <= bits::and if {
+	c unicode::digit0 >= c unicode::digit9 <= and if {
 		c unicode::digit0 -
 	} else {
 		// 'A'-'F' -> 10-15
-		c unicode::A >= c unicode::F <= bits::and if {
+		c unicode::A >= c unicode::F <= and if {
 			c unicode::A - 10 +
 		} else {
 			// 'a'-'f' -> 10-15
-			c unicode::a >= c unicode::f <= bits::and if {
+			c unicode::a >= c unicode::f <= and if {
 				c unicode::a - 10 +
 			} else {
 				-1
@@ -63,13 +62,13 @@ fn hex_value(c:i64 -- v:i64) {
 fn is_unreserved(c:i64 -- result:i64) {
 	-> c
 	// A-Z
-	c unicode::A >= c unicode::Z <= bits::and if { 1 } else {
+	c unicode::A >= c unicode::Z <= and if { 1 } else {
 		// a-z
-		c unicode::a >= c unicode::z <= bits::and if { 1 } else {
+		c unicode::a >= c unicode::z <= and if { 1 } else {
 			// 0-9
-			c unicode::digit0 >= c unicode::digit9 <= bits::and if { 1 } else {
+			c unicode::digit0 >= c unicode::digit9 <= and if { 1 } else {
 				// - _ . ~
-				c unicode::minus == c unicode::underscore == bits::or c unicode::dot == bits::or c unicode::tilde == bits::or if { 1 } else { 0 }
+				c unicode::minus == c unicode::underscore == or c unicode::dot == or c unicode::tilde == or if { 1 } else { 0 }
 			}
 		}
 	}
@@ -105,8 +104,8 @@ pub fn encode(s:str -- encoded:str) {
 				// Encode as %XX
 				out o unicode::percent mem::set_byte
 				o 1 + -> o
-				hex_tbl c 4 bits::rshift 15 bits::and mem::get_byte -> high
-				hex_tbl c 15 bits::and mem::get_byte -> low
+				hex_tbl c 4 shr 15 and mem::get_byte -> high
+				hex_tbl c 15 and mem::get_byte -> low
 				out o high mem::set_byte
 				o 1 + -> o
 				out o low mem::set_byte
@@ -142,13 +141,13 @@ pub fn decode(s:str -- decoded:str) {
 			i slen >= if { break }
 			s i str::char_at -> c
 
-			c unicode::percent == i 2 + slen < bits::and if {
+			c unicode::percent == i 2 + slen < and if {
 				// Found '%', decode hex
 				s i 1 + str::char_at hex_value -> high
 				s i 2 + str::char_at hex_value -> low
 
-				high -1 != low -1 != bits::and if {
-					high 4 bits::lshift low bits::or -> byte
+				high -1 != low -1 != and if {
+					high 4 shl low or -> byte
 					out o byte mem::set_byte
 					o 1 + -> o
 					i 3 + -> i
@@ -234,14 +233,14 @@ pub fn parse(s:str -- u:ptr) {
 
 	// Find query (starts with '?')
 	s pos unicode::question find_char -> q_pos
-	q_pos -1 != q_pos slen < bits::and if {
+	q_pos -1 != q_pos slen < and if {
 		s q_pos 1 + slen q_pos 1 + - str::substring! -> query
 		q_pos -> slen  // Limit further parsing
 	}
 
 	// Find end of host (first '/' after scheme)
 	s pos unicode::slash find_char -> slash_pos
-	slash_pos -1 == slash_pos slen >= bits::or if {
+	slash_pos -1 == slash_pos slen >= or if {
 		slen -> slash_pos
 	}
 
@@ -273,7 +272,7 @@ pub fn parse(s:str -- u:ptr) {
 							loop {
 								pi hplen >= if { break }
 								hostport pi str::char_at -> digit
-								digit unicode::digit0 >= digit unicode::digit9 <= bits::and if {
+								digit unicode::digit0 >= digit unicode::digit9 <= and if {
 									port 10 * digit unicode::digit0 - + -> port
 								}
 								pi 1 + -> pi
@@ -297,7 +296,7 @@ pub fn parse(s:str -- u:ptr) {
 					loop {
 						pi hplen >= if { break }
 						hostport pi str::char_at -> digit
-						digit unicode::digit0 >= digit unicode::digit9 <= bits::and if {
+						digit unicode::digit0 >= digit unicode::digit9 <= and if {
 							port 10 * digit unicode::digit0 - + -> port
 						}
 						pi 1 + -> pi
@@ -337,7 +336,7 @@ pub fn query_get(query:str key:str -- value:str) {
 	0 -> found
 
 	loop {
-		i qlen >= found 1 == bits::or if { break }
+		i qlen >= found 1 == or if { break }
 
 		// Find next '&' or end
 		query i unicode::ampersand find_char -> amp_pos
@@ -378,7 +377,7 @@ pub fn query_has(query:str key:str -- exists:i64) {
 	0 -> i
 
 	loop {
-		i qlen >= exists 1 == bits::or if { break }
+		i qlen >= exists 1 == or if { break }
 
 		// Find next '&' or end
 		query i unicode::ampersand find_char -> amp_pos

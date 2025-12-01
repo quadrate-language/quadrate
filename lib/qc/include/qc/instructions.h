@@ -12,6 +12,8 @@ namespace Qd {
 			"%", "*", "+", "-", ".", "/",
 			// Arithmetic instructions
 			"add", "dec", "div", "inc", "mod", "mul", "neg", "sub",
+			// Bitwise operations
+			"and", "not", "or", "shl", "shr", "xor",
 			// Logical operations
 			"eq", "gt", "gte", "lt", "lte", "neq", "within",
 			// Stack operations
@@ -37,6 +39,8 @@ namespace Qd {
 			// All built-in instructions
 			"!=", "%", "*", "+", "-", ".", "/", "<", "<=", "==", ">", ">=", "add", "dec", "div", "eq", "gt", "gte",
 			"inc", "lt", "lte", "mod", "mul", "neg", "neq", "sub", "within",
+			// Bitwise operations
+			"and", "not", "or", "shl", "shr", "xor",
 			// Math library functions (imported by stdlib modules)
 			"abs", "acos", "asin", "atan", "cb", "cbrt", "ceil", "cos", "fac", "floor", "inv", "ln", "log10", "max",
 			"min", "pow", "round", "sin", "sq", "sqrt", "tan",

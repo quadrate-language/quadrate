@@ -4,7 +4,6 @@
 // Run: quadc donut.qd -r
 // Press Ctrl+C to stop
 
-use bits
 use math
 
 fn main( -- ) {
@@ -49,7 +48,7 @@ fn main( -- ) {
 				f e * c d * g * - m * c d * e * - f g * - l d * n * - 8.0 * -> N
 
 				// Z-buffer test and update
-				y 0 > y 22 < bits::and x 0 > bits::and x 80 < bits::and if {
+				y 0 > y 22 < and x 0 > and x 80 < and if {
 					D z q nth > if {
 						z q D set
 						N casti -> k

@@ -131,6 +131,12 @@ namespace Qd {
 		llvm::Function* addFn = nullptr;
 		llvm::Function* subFn = nullptr;
 		llvm::Function* mulFn = nullptr;
+		llvm::Function* andFn = nullptr;
+		llvm::Function* orFn = nullptr;
+		llvm::Function* xorFn = nullptr;
+		llvm::Function* notFn = nullptr;
+		llvm::Function* shlFn = nullptr;
+		llvm::Function* shrFn = nullptr;
 
 		// Loop context for break/continue
 		struct LoopContext {
@@ -384,6 +390,14 @@ namespace Qd {
 		addFn = llvm::Function::Create(arithFnTy, llvm::Function::ExternalLinkage, "qd_add", *module);
 		subFn = llvm::Function::Create(arithFnTy, llvm::Function::ExternalLinkage, "qd_sub", *module);
 		mulFn = llvm::Function::Create(arithFnTy, llvm::Function::ExternalLinkage, "qd_mul", *module);
+
+		// qd_and/or/xor/not/shl/shr(qd_context* ctx) -> qd_exec_result (bitwise operations)
+		andFn = llvm::Function::Create(arithFnTy, llvm::Function::ExternalLinkage, "qd_and", *module);
+		orFn = llvm::Function::Create(arithFnTy, llvm::Function::ExternalLinkage, "qd_or", *module);
+		xorFn = llvm::Function::Create(arithFnTy, llvm::Function::ExternalLinkage, "qd_xor", *module);
+		notFn = llvm::Function::Create(arithFnTy, llvm::Function::ExternalLinkage, "qd_not", *module);
+		shlFn = llvm::Function::Create(arithFnTy, llvm::Function::ExternalLinkage, "qd_shl", *module);
+		shrFn = llvm::Function::Create(arithFnTy, llvm::Function::ExternalLinkage, "qd_shr", *module);
 
 		// qd_push_call(qd_context* ctx, const char* func_name, const char* file, size_t line) -> void
 		auto pushCallFnTy = llvm::FunctionType::get(builder->getVoidTy(),
@@ -2630,6 +2644,49 @@ namespace Qd {
 			} else {
 				// Use type-aware inline modulo
 				generateTypeAwareMod(ctx);
+			}
+			return;
+		} else if (name == "and") {
+			// Use inline bitwise AND for integer-only functions, runtime call otherwise
+			if (currentFunctionIsIntegerOnly) {
+				generateInlineBitAnd(ctx);
+			} else {
+				builder->CreateCall(andFn, {ctx});
+			}
+			return;
+		} else if (name == "or") {
+			if (currentFunctionIsIntegerOnly) {
+				generateInlineBitOr(ctx);
+			} else {
+				builder->CreateCall(orFn, {ctx});
+			}
+			return;
+		} else if (name == "xor") {
+			if (currentFunctionIsIntegerOnly) {
+				generateInlineBitXor(ctx);
+			} else {
+				builder->CreateCall(xorFn, {ctx});
+			}
+			return;
+		} else if (name == "not") {
+			if (currentFunctionIsIntegerOnly) {
+				generateInlineBitNot(ctx);
+			} else {
+				builder->CreateCall(notFn, {ctx});
+			}
+			return;
+		} else if (name == "shl") {
+			if (currentFunctionIsIntegerOnly) {
+				generateInlineBitLshift(ctx);
+			} else {
+				builder->CreateCall(shlFn, {ctx});
+			}
+			return;
+		} else if (name == "shr") {
+			if (currentFunctionIsIntegerOnly) {
+				generateInlineBitRshift(ctx);
+			} else {
+				builder->CreateCall(shrFn, {ctx});
 			}
 			return;
 		} else if (name == "free") {

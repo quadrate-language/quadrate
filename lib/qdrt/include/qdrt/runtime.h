@@ -409,6 +409,62 @@ qd_exec_result qd_dec(qd_context* ctx);
 /** @} */ // end of Arithmetic group
 
 /**
+ * @defgroup Bitwise Bitwise Operations
+ * @brief Functions for bitwise operations on integers
+ * @{
+ */
+
+/**
+ * @brief Bitwise AND ( a b -- a&b )
+ *
+ * @param ctx Execution context
+ * @return Execution result (0 on success)
+ */
+qd_exec_result qd_and(qd_context* ctx);
+
+/**
+ * @brief Bitwise OR ( a b -- a|b )
+ *
+ * @param ctx Execution context
+ * @return Execution result (0 on success)
+ */
+qd_exec_result qd_or(qd_context* ctx);
+
+/**
+ * @brief Bitwise XOR ( a b -- a^b )
+ *
+ * @param ctx Execution context
+ * @return Execution result (0 on success)
+ */
+qd_exec_result qd_xor(qd_context* ctx);
+
+/**
+ * @brief Bitwise NOT ( a -- ~a )
+ *
+ * @param ctx Execution context
+ * @return Execution result (0 on success)
+ */
+qd_exec_result qd_not(qd_context* ctx);
+
+/**
+ * @brief Shift left ( a n -- a<<n )
+ *
+ * @param ctx Execution context
+ * @return Execution result (0 on success)
+ */
+qd_exec_result qd_shl(qd_context* ctx);
+
+/**
+ * @brief Shift right logical ( a n -- a>>n )
+ *
+ * @param ctx Execution context
+ * @return Execution result (0 on success)
+ */
+qd_exec_result qd_shr(qd_context* ctx);
+
+/** @} */ // end of Bitwise group
+
+/**
  * @defgroup Comparison Comparison Operations
  * @brief Functions for comparison operations
  * @{

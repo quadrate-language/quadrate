@@ -3,7 +3,6 @@
 // Where inputs and outputs have name:type annotations
 
 use math
-use bits
 
 // Basic arithmetic with stack notation
 fn add_numbers(a:i64 b:i64 -- result:i64) {
@@ -52,8 +51,8 @@ fn triple_max(a:i64 b:i64 c:i64 -- max:i64) {
 
 // Logical operations
 fn bitwise_and_or(a:i64 b:i64 c:i64 -- result:i64) {
-	bits::and
-	bits::or
+	and
+	or
 }
 
 // Functions demonstrating drop

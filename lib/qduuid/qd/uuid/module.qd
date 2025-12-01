@@ -2,7 +2,6 @@
 /// Format: xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx
 
 use rand
-use bits
 use mem
 use str
 
@@ -22,12 +21,12 @@ pub fn v4( -- uuid:str) {
 
 	// Set version (4) in byte 6: xxxx4xxx
 	bytes 6 mem::get_byte -> b6
-	b6 15 bits::and 64 bits::or -> b6  // Clear high nibble, set to 4
+	b6 15 and 64 or -> b6  // Clear high nibble, set to 4
 	bytes 6 b6 mem::set_byte
 
 	// Set variant (RFC 4122) in byte 8: 10xxxxxx
 	bytes 8 mem::get_byte -> b8
-	b8 63 bits::and 128 bits::or -> b8  // Clear top 2 bits, set to 10
+	b8 63 and 128 or -> b8  // Clear top 2 bits, set to 10
 	bytes 8 b8 mem::set_byte
 
 	// Convert to hex string with dashes
@@ -58,8 +57,8 @@ pub fn v4( -- uuid:str) {
 	0 4 1 for {
 		$ -> i
 		bytes i mem::get_byte -> b
-		hex b 4 bits::rshift 15 bits::and mem::get_byte -> hi
-		hex b 15 bits::and mem::get_byte -> lo
+		hex b 4 shr 15 and mem::get_byte -> hi
+		hex b 15 and mem::get_byte -> lo
 		out o hi mem::set_byte
 		o 1 + -> o
 		out o lo mem::set_byte
@@ -74,8 +73,8 @@ pub fn v4( -- uuid:str) {
 	4 6 1 for {
 		$ -> i
 		bytes i mem::get_byte -> b
-		hex b 4 bits::rshift 15 bits::and mem::get_byte -> hi
-		hex b 15 bits::and mem::get_byte -> lo
+		hex b 4 shr 15 and mem::get_byte -> hi
+		hex b 15 and mem::get_byte -> lo
 		out o hi mem::set_byte
 		o 1 + -> o
 		out o lo mem::set_byte
@@ -90,8 +89,8 @@ pub fn v4( -- uuid:str) {
 	6 8 1 for {
 		$ -> i
 		bytes i mem::get_byte -> b
-		hex b 4 bits::rshift 15 bits::and mem::get_byte -> hi
-		hex b 15 bits::and mem::get_byte -> lo
+		hex b 4 shr 15 and mem::get_byte -> hi
+		hex b 15 and mem::get_byte -> lo
 		out o hi mem::set_byte
 		o 1 + -> o
 		out o lo mem::set_byte
@@ -106,8 +105,8 @@ pub fn v4( -- uuid:str) {
 	8 10 1 for {
 		$ -> i
 		bytes i mem::get_byte -> b
-		hex b 4 bits::rshift 15 bits::and mem::get_byte -> hi
-		hex b 15 bits::and mem::get_byte -> lo
+		hex b 4 shr 15 and mem::get_byte -> hi
+		hex b 15 and mem::get_byte -> lo
 		out o hi mem::set_byte
 		o 1 + -> o
 		out o lo mem::set_byte
@@ -122,8 +121,8 @@ pub fn v4( -- uuid:str) {
 	10 16 1 for {
 		$ -> i
 		bytes i mem::get_byte -> b
-		hex b 4 bits::rshift 15 bits::and mem::get_byte -> hi
-		hex b 15 bits::and mem::get_byte -> lo
+		hex b 4 shr 15 and mem::get_byte -> hi
+		hex b 15 and mem::get_byte -> lo
 		out o hi mem::set_byte
 		o 1 + -> o
 		out o lo mem::set_byte
@@ -158,12 +157,12 @@ pub fn v4_seeded(seed:i64 -- uuid:str) {
 
 	// Set version (4) in byte 6
 	bytes 6 mem::get_byte -> b6
-	b6 15 bits::and 64 bits::or -> b6
+	b6 15 and 64 or -> b6
 	bytes 6 b6 mem::set_byte
 
 	// Set variant in byte 8
 	bytes 8 mem::get_byte -> b8
-	b8 63 bits::and 128 bits::or -> b8
+	b8 63 and 128 or -> b8
 	bytes 8 b8 mem::set_byte
 
 	// Convert to hex string
@@ -191,8 +190,8 @@ pub fn v4_seeded(seed:i64 -- uuid:str) {
 	0 4 1 for {
 		$ -> i
 		bytes i mem::get_byte -> b
-		hex b 4 bits::rshift 15 bits::and mem::get_byte -> hi
-		hex b 15 bits::and mem::get_byte -> lo
+		hex b 4 shr 15 and mem::get_byte -> hi
+		hex b 15 and mem::get_byte -> lo
 		out o hi mem::set_byte
 		o 1 + -> o
 		out o lo mem::set_byte
@@ -204,8 +203,8 @@ pub fn v4_seeded(seed:i64 -- uuid:str) {
 	4 6 1 for {
 		$ -> i
 		bytes i mem::get_byte -> b
-		hex b 4 bits::rshift 15 bits::and mem::get_byte -> hi
-		hex b 15 bits::and mem::get_byte -> lo
+		hex b 4 shr 15 and mem::get_byte -> hi
+		hex b 15 and mem::get_byte -> lo
 		out o hi mem::set_byte
 		o 1 + -> o
 		out o lo mem::set_byte
@@ -217,8 +216,8 @@ pub fn v4_seeded(seed:i64 -- uuid:str) {
 	6 8 1 for {
 		$ -> i
 		bytes i mem::get_byte -> b
-		hex b 4 bits::rshift 15 bits::and mem::get_byte -> hi
-		hex b 15 bits::and mem::get_byte -> lo
+		hex b 4 shr 15 and mem::get_byte -> hi
+		hex b 15 and mem::get_byte -> lo
 		out o hi mem::set_byte
 		o 1 + -> o
 		out o lo mem::set_byte
@@ -230,8 +229,8 @@ pub fn v4_seeded(seed:i64 -- uuid:str) {
 	8 10 1 for {
 		$ -> i
 		bytes i mem::get_byte -> b
-		hex b 4 bits::rshift 15 bits::and mem::get_byte -> hi
-		hex b 15 bits::and mem::get_byte -> lo
+		hex b 4 shr 15 and mem::get_byte -> hi
+		hex b 15 and mem::get_byte -> lo
 		out o hi mem::set_byte
 		o 1 + -> o
 		out o lo mem::set_byte
@@ -243,8 +242,8 @@ pub fn v4_seeded(seed:i64 -- uuid:str) {
 	10 16 1 for {
 		$ -> i
 		bytes i mem::get_byte -> b
-		hex b 4 bits::rshift 15 bits::and mem::get_byte -> hi
-		hex b 15 bits::and mem::get_byte -> lo
+		hex b 4 shr 15 and mem::get_byte -> hi
+		hex b 15 and mem::get_byte -> lo
 		out o hi mem::set_byte
 		o 1 + -> o
 		out o lo mem::set_byte

@@ -3,7 +3,6 @@
 
 use mem
 use str
-use bits
 use unicode
 
 /// Encode a string to uppercase hexadecimal.
@@ -27,7 +26,7 @@ pub fn encode(s:str -- hex:str) {
 			s i str::char_at -> byte
 
 			// High nibble
-			byte 4 bits::rshift 15 bits::and -> high
+			byte 4 shr 15 and -> high
 			high 10 < if {
 				unicode::digit0 high +
 			} else {
@@ -37,7 +36,7 @@ pub fn encode(s:str -- hex:str) {
 			o 1 + -> o
 
 			// Low nibble
-			byte 15 bits::and -> low
+			byte 15 and -> low
 			low 10 < if {
 				unicode::digit0 low +
 			} else {
@@ -76,7 +75,7 @@ pub fn encode_lower(s:str -- hex:str) {
 			s i str::char_at -> byte
 
 			// High nibble
-			byte 4 bits::rshift 15 bits::and -> high
+			byte 4 shr 15 and -> high
 			high 10 < if {
 				unicode::digit0 high +
 			} else {
@@ -86,7 +85,7 @@ pub fn encode_lower(s:str -- hex:str) {
 			o 1 + -> o
 
 			// Low nibble
-			byte 15 bits::and -> low
+			byte 15 and -> low
 			low 10 < if {
 				unicode::digit0 low +
 			} else {
@@ -108,15 +107,15 @@ pub fn encode_lower(s:str -- hex:str) {
 fn hex_char_value(c:i64 -- v:i64) {
 	-> c
 	// '0'-'9'
-	c unicode::digit0 >= c unicode::digit9 <= bits::and if {
+	c unicode::digit0 >= c unicode::digit9 <= and if {
 		c unicode::digit0 -
 	} else {
 		// 'A'-'F'
-		c unicode::A >= c unicode::F <= bits::and if {
+		c unicode::A >= c unicode::F <= and if {
 			c unicode::A - 10 +
 		} else {
 			// 'a'-'f'
-			c unicode::a >= c unicode::f <= bits::and if {
+			c unicode::a >= c unicode::f <= and if {
 				c unicode::a - 10 +
 			} else {
 				-1
@@ -149,8 +148,8 @@ pub fn decode(hex:str -- s:str) {
 			hex i str::char_at hex_char_value -> high
 			hex i 1 + str::char_at hex_char_value -> low
 
-			high -1 != low -1 != bits::and if {
-				high 4 bits::lshift low bits::or -> byte
+			high -1 != low -1 != and if {
+				high 4 shl low or -> byte
 				out o byte mem::set_byte
 				o 1 + -> o
 			}
@@ -170,12 +169,12 @@ pub fn decode(hex:str -- s:str) {
 /// @example 65 hex::encode_byte -> "41"
 pub fn encode_byte(b:i64 -- hex:str) {
 	-> b
-	b 255 bits::and -> b  // Clamp to byte range
+	b 255 and -> b  // Clamp to byte range
 
 	2 mem::alloc -> out
 
 	// High nibble
-	b 4 bits::rshift 15 bits::and -> high
+	b 4 shr 15 and -> high
 	high 10 < if {
 		unicode::digit0 high +
 	} else {
@@ -184,7 +183,7 @@ pub fn encode_byte(b:i64 -- hex:str) {
 	out 0 hchar mem::set_byte
 
 	// Low nibble
-	b 15 bits::and -> low
+	b 15 and -> low
 	low 10 < if {
 		unicode::digit0 low +
 	} else {
@@ -210,10 +209,10 @@ pub fn decode_byte(hex:str -- b:i64) {
 		hex 0 str::char_at hex_char_value -> high
 		hex 1 str::char_at hex_char_value -> low
 
-		high -1 == low -1 == bits::or if {
+		high -1 == low -1 == or if {
 			-1
 		} else {
-			high 4 bits::lshift low bits::or
+			high 4 shl low or
 		}
 	}
 }
@@ -240,7 +239,7 @@ pub fn is_valid(hex:str -- valid:i64) {
 			0 -> i
 
 			loop {
-				i hlen >= valid 0 == bits::or if { break }
+				i hlen >= valid 0 == or if { break }
 				hex i str::char_at hex_char_value -1 == if {
 					0 -> valid
 				}

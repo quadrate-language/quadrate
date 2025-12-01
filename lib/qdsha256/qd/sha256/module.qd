@@ -93,38 +93,38 @@ fn rotr32(x:i64 n:i64 -- result:i64) {
 	-> n
 	-> x
 	x 32 bits::mask -> x
-	x n bits::rshift x 32 n - bits::lshift bits::or 32 bits::mask
+	x n shr x 32 n - shl or 32 bits::mask
 }
 
 // SHA-256 functions
 fn ch(x:i64 y:i64 z:i64 -- result:i64) {
 	-> z -> y -> x
-	x y bits::and x bits::not z bits::and bits::xor 32 bits::mask
+	x y and x not z and xor 32 bits::mask
 }
 
 fn maj(x:i64 y:i64 z:i64 -- result:i64) {
 	-> z -> y -> x
-	x y bits::and x z bits::and bits::xor y z bits::and bits::xor 32 bits::mask
+	x y and x z and xor y z and xor 32 bits::mask
 }
 
 fn sigma0(x:i64 -- result:i64) {
 	-> x
-	x 2 rotr32 x 13 rotr32 bits::xor x 22 rotr32 bits::xor
+	x 2 rotr32 x 13 rotr32 xor x 22 rotr32 xor
 }
 
 fn sigma1(x:i64 -- result:i64) {
 	-> x
-	x 6 rotr32 x 11 rotr32 bits::xor x 25 rotr32 bits::xor
+	x 6 rotr32 x 11 rotr32 xor x 25 rotr32 xor
 }
 
 fn gamma0(x:i64 -- result:i64) {
 	-> x
-	x 7 rotr32 x 18 rotr32 bits::xor x 3 bits::rshift bits::xor 32 bits::mask
+	x 7 rotr32 x 18 rotr32 xor x 3 shr xor 32 bits::mask
 }
 
 fn gamma1(x:i64 -- result:i64) {
 	-> x
-	x 17 rotr32 x 19 rotr32 bits::xor x 10 bits::rshift bits::xor 32 bits::mask
+	x 17 rotr32 x 19 rotr32 xor x 10 shr xor 32 bits::mask
 }
 
 // Add two 32-bit values with wraparound
@@ -283,7 +283,7 @@ pub fn hash(s:str -- result:str) {
 		0 -> j
 		loop {
 			j 8 >= if { break }
-			word 28 j 4 * - bits::rshift 15 bits::and -> nibble
+			word 28 j 4 * - shr 15 and -> nibble
 			nibble 10 < if {
 				48 nibble +
 			} else {

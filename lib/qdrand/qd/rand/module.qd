@@ -1,7 +1,6 @@
 /// Random number generation using xorshift64* algorithm.
 /// Fast, high-quality PRNG suitable for most applications.
 
-use bits
 use time
 
 /// RNG state struct.
@@ -39,9 +38,9 @@ pub fn next(rng:ptr -- rng:ptr n:i64) {
 	rng @state -> x
 
 	// xorshift64*
-	x x 12 bits::lshift bits::xor -> x
-	x x 25 bits::rshift bits::xor -> x
-	x x 27 bits::lshift bits::xor -> x
+	x x 12 shl xor -> x
+	x x 25 shr xor -> x
+	x x 27 shl xor -> x
 
 	// Return random number first (will be popped into n), then new state (will be popped into rng)
 	x 2685821657736338717 * -> result

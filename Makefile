@@ -27,7 +27,7 @@ debug:
 	@echo "Creating static libraries..."
 	@rm -f dist/lib/libqdrt.a && cd $(BUILD_DIR_DEBUG)/lib/qdrt && ar rcs ../../../../dist/lib/libqdrt.a $$(ar -t libqdrt_static.a) && echo "  libqdrt.a"
 	@rm -f dist/lib/libqd.a && cd $(BUILD_DIR_DEBUG)/lib/qd && ar rcs ../../../../dist/lib/libqd.a $$(ar -t libqd_static.a) && echo "  libqd.a"
-	@rm -f dist/lib/libqdbits.a && cd $(BUILD_DIR_DEBUG)/lib/qdbits && ar rcs ../../../../dist/lib/libqdbits.a $$(ar -t libqdbits.a) && echo "  libqdbits.a"
+	# qdbits is pure Quadrate (no C library)
 	@rm -f dist/lib/libqdfmt.a && cd $(BUILD_DIR_DEBUG)/lib/qdfmt && ar rcs ../../../../dist/lib/libqdfmt.a $$(ar -t libqdfmt.a) && echo "  libqdfmt.a"
 	@rm -f dist/lib/libqdio.a && cd $(BUILD_DIR_DEBUG)/lib/qdio && ar rcs ../../../../dist/lib/libqdio.a $$(ar -t libqdio.a) && echo "  libqdio.a"
 	@rm -f dist/lib/libqdmath.a && cd $(BUILD_DIR_DEBUG)/lib/qdmath && ar rcs ../../../../dist/lib/libqdmath.a $$(ar -t libqdmath.a) && echo "  libqdmath.a"
@@ -39,7 +39,7 @@ debug:
 	@rm -f dist/lib/libqdtime.a && cd $(BUILD_DIR_DEBUG)/lib/qdtime && ar rcs ../../../../dist/lib/libqdtime.a $$(ar -t libqdtime.a) && echo "  libqdtime.a"
 	@cp -rf lib/qdrt/include/qdrt dist/include/
 	@cp -rf lib/qd/include/qd dist/include/
-	@cp -rf lib/qdbits/include/qdbits dist/include/
+	# qdbits has no C headers (pure Quadrate module)
 	@cp -rf lib/qdfmt/include/qdfmt dist/include/
 	@cp -rf lib/qdio/include/qdio dist/include/
 	@cp -rf lib/qdmath/include/qdmath dist/include/
@@ -91,7 +91,7 @@ release:
 	@echo "Creating static libraries (release)..."
 	@rm -f dist/lib/libqdrt.a && cd $(BUILD_DIR_RELEASE)/lib/qdrt && ar rcs ../../../../dist/lib/libqdrt.a $$(ar -t libqdrt_static.a) && echo "  libqdrt.a"
 	@rm -f dist/lib/libqd.a && cd $(BUILD_DIR_RELEASE)/lib/qd && ar rcs ../../../../dist/lib/libqd.a $$(ar -t libqd_static.a) && echo "  libqd.a"
-	@rm -f dist/lib/libqdbits.a && cd $(BUILD_DIR_RELEASE)/lib/qdbits && ar rcs ../../../../dist/lib/libqdbits.a $$(ar -t libqdbits.a) && echo "  libqdbits.a"
+	# qdbits is pure Quadrate (no C library)
 	@rm -f dist/lib/libqdfmt.a && cd $(BUILD_DIR_RELEASE)/lib/qdfmt && ar rcs ../../../../dist/lib/libqdfmt.a $$(ar -t libqdfmt.a) && echo "  libqdfmt.a"
 	@rm -f dist/lib/libqdio.a && cd $(BUILD_DIR_RELEASE)/lib/qdio && ar rcs ../../../../dist/lib/libqdio.a $$(ar -t libqdio.a) && echo "  libqdio.a"
 	@rm -f dist/lib/libqdmath.a && cd $(BUILD_DIR_RELEASE)/lib/qdmath && ar rcs ../../../../dist/lib/libqdmath.a $$(ar -t libqdmath.a) && echo "  libqdmath.a"
@@ -103,7 +103,7 @@ release:
 	@rm -f dist/lib/libqdtime.a && cd $(BUILD_DIR_RELEASE)/lib/qdtime && ar rcs ../../../../dist/lib/libqdtime.a $$(ar -t libqdtime.a) && echo "  libqdtime.a"
 	@cp -rf lib/qdrt/include/qdrt dist/include/
 	@cp -rf lib/qd/include/qd dist/include/
-	@cp -rf lib/qdbits/include/qdbits dist/include/
+	# qdbits has no C headers (pure Quadrate module)
 	@cp -rf lib/qdfmt/include/qdfmt dist/include/
 	@cp -rf lib/qdio/include/qdio dist/include/
 	@cp -rf lib/qdmath/include/qdmath dist/include/
@@ -233,7 +233,6 @@ install: release
 	install -m 755 dist/bin/quadrate $(DESTDIR)$(PREFIX)/bin/
 	install -m 644 dist/lib/libqdrt.a $(DESTDIR)$(PREFIX)/lib/
 	install -m 644 dist/lib/libqd.a $(DESTDIR)$(PREFIX)/lib/
-	install -m 644 dist/lib/libqdbits.a $(DESTDIR)$(PREFIX)/lib/
 	install -m 644 dist/lib/libqdfmt.a $(DESTDIR)$(PREFIX)/lib/
 	install -m 644 dist/lib/libqdio.a $(DESTDIR)$(PREFIX)/lib/
 	install -m 644 dist/lib/libqdmath.a $(DESTDIR)$(PREFIX)/lib/
@@ -245,7 +244,6 @@ install: release
 	install -m 644 dist/lib/libqdtime.a $(DESTDIR)$(PREFIX)/lib/
 	cp -r dist/include/qdrt $(DESTDIR)$(PREFIX)/include/
 	cp -r dist/include/qd $(DESTDIR)$(PREFIX)/include/
-	cp -r dist/include/qdbits $(DESTDIR)$(PREFIX)/include/
 	cp -r dist/include/qdfmt $(DESTDIR)$(PREFIX)/include/
 	cp -r dist/include/qdio $(DESTDIR)$(PREFIX)/include/
 	cp -r dist/include/qdmath $(DESTDIR)$(PREFIX)/include/
@@ -293,7 +291,6 @@ uninstall:
 	rm -f $(DESTDIR)$(PREFIX)/bin/quadrate
 	rm -f $(DESTDIR)$(PREFIX)/lib/libqdrt.a
 	rm -f $(DESTDIR)$(PREFIX)/lib/libqd.a
-	rm -f $(DESTDIR)$(PREFIX)/lib/libqdbits.a
 	rm -f $(DESTDIR)$(PREFIX)/lib/libqdfmt.a
 	rm -f $(DESTDIR)$(PREFIX)/lib/libqdio.a
 	rm -f $(DESTDIR)$(PREFIX)/lib/libqdmath.a
@@ -305,7 +302,6 @@ uninstall:
 	rm -f $(DESTDIR)$(PREFIX)/lib/libqdtime.a
 	rm -rf $(DESTDIR)$(PREFIX)/include/qdrt
 	rm -rf $(DESTDIR)$(PREFIX)/include/qd
-	rm -rf $(DESTDIR)$(PREFIX)/include/qdbits
 	rm -rf $(DESTDIR)$(PREFIX)/include/qdfmt
 	rm -rf $(DESTDIR)$(PREFIX)/include/qdio
 	rm -rf $(DESTDIR)$(PREFIX)/include/qdmath
