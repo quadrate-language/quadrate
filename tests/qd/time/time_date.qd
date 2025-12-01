@@ -1,0 +1,20 @@
+use time
+
+fn main() {
+	// Test known date: 2024-01-15 12:30:00 UTC = 1705321800
+	1705321800 -> ts
+
+	// Extract components
+	ts time::year . nl
+	ts time::month . nl
+	ts time::day . nl
+	ts time::hour . nl
+	ts time::minute . nl
+	ts time::second . nl
+
+	// Weekday (Monday = 1)
+	ts time::weekday . nl
+
+	// Year day
+	ts time::year_day . nl
+}

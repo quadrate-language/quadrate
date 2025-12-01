@@ -1,0 +1,57 @@
+use time
+
+fn main() {
+	// ===== EPOCH BOUNDARY =====
+	// Unix epoch: 1970-01-01 00:00:00 UTC = 0
+	0 time::year . nl
+	0 time::month . nl
+	0 time::day . nl
+	0 time::hour . nl
+	0 time::minute . nl
+	0 time::second . nl
+	0 time::weekday . nl
+
+	// ===== LEAP YEAR FEB 29 =====
+	// 2024-02-29 12:00:00 UTC = 1709208000
+	1709208000 -> leap_day
+	leap_day time::year . nl
+	leap_day time::month . nl
+	leap_day time::day . nl
+
+	// ===== YEAR BOUNDARY =====
+	// 2023-12-31 23:59:59 UTC = 1704067199
+	1704067199 -> year_end
+	year_end time::year . nl
+	year_end time::month . nl
+	year_end time::day . nl
+	year_end time::hour . nl
+	year_end time::minute . nl
+	year_end time::second . nl
+
+	// 2024-01-01 00:00:00 UTC = 1704067200
+	1704067200 -> new_year
+	new_year time::year . nl
+	new_year time::month . nl
+	new_year time::day . nl
+
+	// ===== MONTH BOUNDARIES =====
+	// Jan 31 -> Feb 1
+	// 2024-01-31 23:59:59 = 1706745599
+	1706745599 time::day . nl
+	// 2024-02-01 00:00:00 = 1706745600
+	1706745600 time::month . nl
+	1706745600 time::day . nl
+
+	// ===== WEEKDAY TEST =====
+	// Known: 2024-01-01 was Monday (1)
+	1704067200 time::weekday . nl
+	// 2024-01-07 was Sunday (0)
+	1704067200 6 86400 * + time::weekday . nl
+
+	// ===== YEAR DAY =====
+	// Jan 1 = day 1
+	1704067200 time::year_day . nl
+	// Dec 31, 2024 (leap year) = day 366
+	// 2024-12-31 00:00:00 = 1735603200
+	1735603200 time::year_day . nl
+}

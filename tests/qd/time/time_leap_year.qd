@@ -1,0 +1,16 @@
+use time
+
+fn main() {
+	// Leap year tests
+	2024 time::is_leap_year . nl
+	2023 time::is_leap_year . nl
+	2000 time::is_leap_year . nl
+	1900 time::is_leap_year . nl
+	2100 time::is_leap_year . nl
+
+	// Days in month
+	2024 2 time::days_in_month . nl
+	2023 2 time::days_in_month . nl
+	2024 1 time::days_in_month . nl
+	2024 4 time::days_in_month . nl
+}
