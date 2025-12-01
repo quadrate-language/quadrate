@@ -1,0 +1,30 @@
+use regex
+
+fn main() {
+    // Multiple ranges in one class
+    "[a-zA-Z]" "m" regex::test . nl
+    "[a-zA-Z]" "M" regex::test . nl
+    "[a-zA-Z]" "5" regex::test . nl
+
+    // Hyphen at start (literal)
+    "[-a]" "-" regex::test . nl
+    "[-a]" "a" regex::test . nl
+    "[-a]" "b" regex::test . nl
+
+    // Hyphen at end (literal)
+    "[a-]" "-" regex::test . nl
+    "[a-]" "a" regex::test . nl
+
+    // Multiple ranges combined
+    "[a-z0-9]" "x" regex::test . nl
+    "[a-z0-9]" "5" regex::test . nl
+    "[a-z0-9]" "X" regex::test . nl
+
+    // Negated with range
+    "[^0-9]" "a" regex::test . nl
+    "[^0-9]" "5" regex::test . nl
+
+    // Single char class
+    "[x]" "x" regex::test . nl
+    "[x]" "y" regex::test . nl
+}

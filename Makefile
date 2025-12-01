@@ -92,6 +92,7 @@ debug:
 	@cp -r lib/stdbytesqd/qd/bytes dist/share/quadrate/
 	@cp -r lib/stdcrc32qd/qd/crc32 dist/share/quadrate/
 	@cp -r lib/stdsha256qd/qd/sha256 dist/share/quadrate/
+	@cp -r lib/stdregexqd/qd/regex dist/share/quadrate/
 	@echo "Verifying static archives..."
 	@file dist/lib/libqdrt_static.a dist/lib/libstdosqd_static.a | head -2
 	@echo "Debug build complete - static libraries ready"

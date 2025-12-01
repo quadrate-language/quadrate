@@ -1,0 +1,29 @@
+use regex
+
+fn main() {
+    // Multiple quantifiers
+    "a+b+c+" "abc" regex::test . nl
+    "a+b+c+" "aaabbbccc" regex::test . nl
+    "a*b*c*" "" regex::test . nl
+    "a*b*c*" "abc" regex::test . nl
+
+    // Quantifier on char class
+    "[a-z]+[0-9]+" "abc123" regex::test . nl
+    "[a-z]+[0-9]+" "123abc" regex::test . nl
+
+    // Multiple alternations
+    "a|b|c" "a" regex::test . nl
+    "a|b|c" "b" regex::test . nl
+    "a|b|c" "c" regex::test . nl
+    "a|b|c" "d" regex::test . nl
+
+    // Dot with quantifiers
+    ".*" "" regex::test . nl
+    ".*" "anything" regex::test . nl
+    ".+" "x" regex::test . nl
+    ".+" "" regex::test . nl
+
+    // Mixed patterns
+    "[a-z]+@[a-z]+\\.[a-z]+" "user@example.com" regex::test . nl
+    "[0-9]+\\.[0-9]+" "3.14" regex::test . nl
+}

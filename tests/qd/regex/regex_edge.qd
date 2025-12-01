@@ -1,0 +1,33 @@
+use regex
+
+fn main() {
+    // Empty pattern matches empty string
+    "" "" regex::test . nl
+
+    // Empty pattern doesn't match non-empty
+    "" "x" regex::test . nl
+
+    // Single character patterns
+    "a" "a" regex::test . nl
+    "a" "b" regex::test . nl
+    "a" "" regex::test . nl
+
+    // Long patterns
+    "abcdefghij" "abcdefghij" regex::test . nl
+    "abcdefghij" "abcdefghix" regex::test . nl
+
+    // Repeated same char
+    "aaa" "aaa" regex::test . nl
+    "aaa" "aa" regex::test . nl
+    "aaa" "aaaa" regex::test . nl
+
+    // Star edge cases
+    "a*" "" regex::test . nl
+    "a*" "a" regex::test . nl
+    "a*" "aaaa" regex::test . nl
+
+    // Question edge cases
+    "a?" "" regex::test . nl
+    "a?" "a" regex::test . nl
+    "a?" "aa" regex::test . nl
+}

@@ -1,0 +1,22 @@
+use regex
+
+fn main() {
+    // Escaped special characters
+    "a\\.b" "a.b" regex::test . nl
+    "a\\.b" "axb" regex::test . nl
+
+    // Escaped backslash
+    "a\\\\b" "a\\b" regex::test . nl
+
+    // Newline escape
+    "a\\nb" "a\nb" regex::test . nl
+
+    // Tab escape
+    "a\\tb" "a\tb" regex::test . nl
+
+    // Literal special chars via escape
+    "\\+" "+" regex::test . nl
+    "\\*" "*" regex::test . nl
+    "\\?" "?" regex::test . nl
+    "\\|" "|" regex::test . nl
+}

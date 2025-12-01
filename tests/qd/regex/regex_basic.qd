@@ -1,0 +1,31 @@
+use regex
+
+fn main() {
+    // Literal match
+    "hello" "hello" regex::test . nl
+    "hello" "world" regex::test . nl
+
+    // Any character (.)
+    "h.llo" "hello" regex::test . nl
+    "h.llo" "hxllo" regex::test . nl
+
+    // Star (zero or more)
+    "ab*c" "ac" regex::test . nl
+    "ab*c" "abc" regex::test . nl
+    "ab*c" "abbbbc" regex::test . nl
+
+    // Plus (one or more)
+    "ab+c" "ac" regex::test . nl
+    "ab+c" "abc" regex::test . nl
+    "ab+c" "abbbc" regex::test . nl
+
+    // Question (zero or one)
+    "ab?c" "ac" regex::test . nl
+    "ab?c" "abc" regex::test . nl
+    "ab?c" "abbc" regex::test . nl
+
+    // Alternation
+    "cat|dog" "cat" regex::test . nl
+    "cat|dog" "dog" regex::test . nl
+    "cat|dog" "bird" regex::test . nl
+}
