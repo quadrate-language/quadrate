@@ -1,5 +1,5 @@
-// Test: using $ (loop variable) outside loop
+// Test: using 'it' (loop variable) outside loop
 
 fn main() {
-	10 $ add . nl
+	10 it add . nl
 }

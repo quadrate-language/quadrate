@@ -202,8 +202,8 @@ module.exports = grammar({
     continue_statement: $ => 'continue',
     return_statement: $ => 'return',
 
-    // Loop variable: $
-    loop_variable: $ => '$',
+    // Loop variable: it
+    loop_variable: $ => 'it',
 
     // Pointer operations: @p, @i, @f, !p, !i, !f
     pointer_operation: $ => choice(

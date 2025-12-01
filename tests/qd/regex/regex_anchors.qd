@@ -1,7 +1,7 @@
 use regex
 
 fn main() {
-    // Note: Full-match semantics means anchors (^ and $) are implicit
+    // Note: Full-match semantics means anchors (^ and it) are implicit
     // Patterns match the entire string by default
     // These tests verify full-match behavior
 

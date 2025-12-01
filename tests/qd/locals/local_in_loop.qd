@@ -2,7 +2,7 @@
 fn main( -- ) {
     0 -> sum
     0 10 1 for {
-        sum $ add -> sum
+        sum it add -> sum
     }
     sum . nl
 }

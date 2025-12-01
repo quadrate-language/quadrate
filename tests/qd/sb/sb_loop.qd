@@ -13,11 +13,11 @@ fn main( -- ) {
 	// Build comma-separated list
 	sb::new -> builder
 	0 3 1 for {
-		$ 0 > if {
+		it 0 > if {
 			builder ", " sb::append -> builder
 		}
 		builder "item" sb::append -> builder
-		builder $ sb::append_int -> builder
+		builder it sb::append_int -> builder
 	}
 	builder sb::finish -> result
 	result . nl

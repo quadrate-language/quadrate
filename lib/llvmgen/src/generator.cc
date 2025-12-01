@@ -2828,8 +2828,8 @@ namespace Qd {
 			return;
 		}
 
-		// Check if it's the loop iterator variable ($)
-		if (name == "$" && forIterVar) {
+		// Check if it's the loop iterator variable (it)
+		if (name == "it" && forIterVar) {
 			// Push loop iterator as integer (inline for performance)
 			generateInlinePushIntValue(ctx, forIterVar);
 			return;

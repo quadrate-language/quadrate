@@ -27,7 +27,7 @@ pub const dquote = 34
 /// Punctuation: Hash (#).
 pub const hash = 35
 
-/// Punctuation: Dollar sign ($).
+/// Punctuation: Dollar sign (it).
 pub const dollar = 36
 
 /// Punctuation: Percent (%).

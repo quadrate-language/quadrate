@@ -66,8 +66,8 @@ Loop variable
 ================================================================================
 
 fn test( -- ) {
-    0 10 1 for i {
-        $
+    0 10 1 for {
+        it
     }
 }
 
@@ -82,6 +82,5 @@ fn test( -- ) {
       (number)
       (number)
       (for_loop
-        variable: (identifier)
         body: (block
           (loop_variable))))))

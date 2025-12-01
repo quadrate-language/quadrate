@@ -148,7 +148,7 @@ fn process_operator(op:str -- ) {
 			// Print full stack from top to bottom
 			depth -> n
 			0 n 1 for {
-				$ pick . nl
+				it pick . nl
 			}
 		}
 		unicode::z {

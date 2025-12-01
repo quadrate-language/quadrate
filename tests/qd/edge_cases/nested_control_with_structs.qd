@@ -7,7 +7,7 @@ fn process_point( -- ) {
   1.0 2.0 new Point -> p
   // Struct is auto-released at end of function
   0 5 1 for {
-    $ 3 lt
+    it 3 lt
     if {
       p @x . nl
     } else {
@@ -18,7 +18,7 @@ fn process_point( -- ) {
 
 fn main( -- ) {
   0 10 1 for {
-    $ 2 mod 0 eq
+    it 2 mod 0 eq
     if {
       process_point
     } else {

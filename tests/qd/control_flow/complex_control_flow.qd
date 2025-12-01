@@ -22,9 +22,9 @@ fn main( -- ) {
 		}
 	}
 	// For loop with conditionals
-	// Should print nl 1000 when $ == 2
+	// Should print nl 1000 when it == 2
 	0 5 1 for {
-		$
+		it
 		2 eq if {
 			1000 . nl
 		}
@@ -32,18 +32,18 @@ fn main( -- ) {
 	// For loop with break
 	// Should print nl: 0 1 2 3 4
 	0 10 1 for {
-		$
-		$
+		it
+		it
 		5 eq if {
 			break
 		}
 	 . nl
 	}
 	// Nested for loops with conditionals
-	// Should print nl 99 three times (when inner loop $ == 1)
+	// Should print nl 99 three times (when inner loop it == 1)
 	0 3 1 for {
 		0 2 1 for {
-			$
+			it
 			1 eq if {
 				99 . nl
 			}

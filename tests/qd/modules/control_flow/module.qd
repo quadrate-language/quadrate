@@ -18,7 +18,7 @@ pub fn sum_to_n( n:f64 -- result:f64 ) {
 	swap
 	1.0 swap 1.0
 	for {
-		$ add
+		it add
 	}
 }
 

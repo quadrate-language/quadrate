@@ -16,7 +16,7 @@ fn main( -- ) {
 
 	loop {
 		// Reset buffers
-		0 1760 1 for { z $ 0.0 set  o $ 12 set }
+		0 1760 1 for { z it 0.0 set  o it 12 set }
 
 		// Precompute rotation matrix components
 		A math::sin -> e  A math::cos -> g
@@ -66,11 +66,11 @@ fn main( -- ) {
 		// Render frame
 		"\x1b[H" .  // Cursor home
 		0 1761 1 for {
-			$ 80 mod 0 != if {
-				o $ nth switch {
+			it 80 mod 0 != if {
+				o it nth switch {
 					0 { "." . } 1 { "," . } 2 { "-" . } 3 { "~" . }
 					4 { ":" . } 5 { ";" . } 6 { "=" . } 7 { "!" . }
-					8 { "*" . } 9 { "#" . } 10 { "$" . } 11 { "@" . }
+					8 { "*" . } 9 { "#" . } 10 { "it" . } 11 { "@" . }
 					_ { " " . }
 				}
 			} else { nl }

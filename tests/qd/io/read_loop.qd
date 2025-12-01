@@ -10,6 +10,6 @@ fn main() {
 	// Iterate argc times using for loop
 	// Just print the iteration number
 	0 swap 1 for {
-		"iter" . $ . nl
+		"iter" . it . nl
 	}
 }

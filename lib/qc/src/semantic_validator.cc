@@ -1413,10 +1413,10 @@ namespace Qd {
 			AstNodeIdentifier* ident = static_cast<AstNodeIdentifier*>(node);
 			const char* name = ident->name().c_str();
 
-			// Check if it's $ (for loop iterator variable)
-			if (strcmp(name, "$") == 0) {
+			// Check if it's 'it' (for loop iterator variable)
+			if (strcmp(name, "it") == 0) {
 				if (!insideForLoop) {
-					reportError(ident, "Iterator variable '$' can only be used inside a for loop");
+					reportError(ident, "Iterator variable 'it' can only be used inside a for loop");
 				}
 				return;
 			}

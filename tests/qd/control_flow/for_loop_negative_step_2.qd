@@ -1,6 +1,6 @@
 fn main( -- ) {
 	// For loop counting down with step of -2
 	10 0 -2 for {
-		$	 . nl
+		it	 . nl
 	}
 }

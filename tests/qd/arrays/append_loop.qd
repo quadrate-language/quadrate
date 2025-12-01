@@ -2,7 +2,7 @@
 fn main( -- ) {
 	0 makei -> arr
 	0 5 1 for {
-		arr $ append -> arr
+		arr it append -> arr
 	}
 	arr len . nl          // Should print: 5
 	arr 0 nth . nl        // Should print: 0

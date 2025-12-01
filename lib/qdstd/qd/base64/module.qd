@@ -9,11 +9,11 @@ use unicode
 fn make_enc_table( -- tbl:ptr) {
 	64 mem::alloc -> tbl
 	// A-Z (0-25)
-	0 26 1 for { tbl $ unicode::A $ + mem::set_byte }
+	0 26 1 for { tbl it unicode::A it + mem::set_byte }
 	// a-z (26-51)
-	26 52 1 for { tbl $ unicode::a $ 26 - + mem::set_byte }
+	26 52 1 for { tbl it unicode::a it 26 - + mem::set_byte }
 	// 0-9 (52-61)
-	52 62 1 for { tbl $ unicode::digit0 $ 52 - + mem::set_byte }
+	52 62 1 for { tbl it unicode::digit0 it 52 - + mem::set_byte }
 	// + (62)
 	tbl 62 unicode::plus mem::set_byte
 	// / (63)
@@ -27,11 +27,11 @@ fn make_dec_table( -- tbl:ptr) {
 	// Initialize all to -1 (invalid)
 	tbl 128 255 mem::fill
 	// A-Z -> 0-25
-	0 26 1 for { tbl unicode::A $ + $ mem::set_byte }
+	0 26 1 for { tbl unicode::A it + it mem::set_byte }
 	// a-z -> 26-51
-	0 26 1 for { tbl unicode::a $ + 26 $ + mem::set_byte }
+	0 26 1 for { tbl unicode::a it + 26 it + mem::set_byte }
 	// 0-9 -> 52-61
-	0 10 1 for { tbl unicode::digit0 $ + 52 $ + mem::set_byte }
+	0 10 1 for { tbl unicode::digit0 it + 52 it + mem::set_byte }
 	// + -> 62
 	tbl unicode::plus 62 mem::set_byte
 	// / -> 63

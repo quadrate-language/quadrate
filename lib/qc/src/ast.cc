@@ -384,11 +384,6 @@ namespace Qd {
 			}
 			// '!' by itself is not a standalone operator - it must be used as a suffix
 			return nullptr;
-		} else if (token == '$') {
-			// Handle '$' as for loop iterator variable
-			IAstNode* node = new AstNodeIdentifier("$");
-			setNodePosition(node, scanner, src);
-			return node;
 		} else if (token == '&') {
 			// Handle '&' as function pointer reference
 			size_t ampPos = u8t_scanner_token_start(scanner);
@@ -1384,11 +1379,6 @@ namespace Qd {
 					setNodePosition(instr, scanner, src);
 					tempNodes.push_back(instr);
 				}
-			} else if (token == '$') {
-				// Handle '$' as for loop iterator variable
-				AstNodeIdentifier* ident = new AstNodeIdentifier("$");
-				setNodePosition(ident, scanner, src);
-				tempNodes.push_back(ident);
 			} else if (token == '&') {
 				// Handle '&' for function pointer references
 				size_t ampPos = u8t_scanner_token_start(scanner);

@@ -154,7 +154,7 @@ pub fn fac( n:i64 -- result:i64 ) {
 	-> n_v
 	1 -> res
 	1 n_v 1 + 1 for {
-		res $ * -> res
+		res it * -> res
 	}
 	res
 }

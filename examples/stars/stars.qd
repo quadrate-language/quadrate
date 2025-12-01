@@ -1,8 +1,8 @@
 fn main( -- ) {
 	1 21 1 for {
-		$ -> row
+		it -> row
 		1 41 1 for {
-			$ row mod 0 eq if {
+			it row mod 0 eq if {
 				"*" .
 			} else {
 				" " .

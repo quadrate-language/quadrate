@@ -16,6 +16,6 @@ fn process_counter( val:i64 -- ) {
 
 fn main( -- ) {
   0 10 1 for {
-    $ process_counter
+    it process_counter
   }
 }
