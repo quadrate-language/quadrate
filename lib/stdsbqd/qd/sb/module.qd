@@ -3,6 +3,7 @@
 
 use mem
 use str
+use unicode
 
 /// StringBuilder struct holds buffer, length, and capacity.
 pub struct StringBuilder {
@@ -107,13 +108,13 @@ pub fn append_int(sb:ptr n:i64 -- sb:ptr) {
 
 	// Handle negative
 	n 0 < if {
-		sb 45 append_char -> sb  // '-'
+		sb unicode::minus append_char -> sb
 		0 n - -> n
 	}
 
 	// Handle zero
 	n 0 == if {
-		sb 48 append_char  // '0'
+		sb unicode::digit0 append_char
 	} else {
 		// Count digits
 		0 -> count
@@ -142,7 +143,7 @@ pub fn append_int(sb:ptr n:i64 -- sb:ptr) {
 		curlen count + 1 - -> pos
 		loop {
 			n 0 == if { break }
-			n 10 mod 48 + -> digit
+			n 10 mod unicode::digit0 + -> digit
 			buf pos digit mem::set_byte
 			pos 1 - -> pos
 			n 10 / -> n

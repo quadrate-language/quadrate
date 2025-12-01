@@ -4,20 +4,21 @@
 use bits
 use mem
 use str
+use unicode
 
 // Build base64 encoding lookup table (64 bytes)
 fn make_enc_table( -- tbl:ptr) {
 	64 mem::alloc -> tbl
 	// A-Z (0-25)
-	0 26 1 for { tbl $ 65 $ + mem::set_byte }
+	0 26 1 for { tbl $ unicode::A $ + mem::set_byte }
 	// a-z (26-51)
-	26 52 1 for { tbl $ 97 $ 26 - + mem::set_byte }
+	26 52 1 for { tbl $ unicode::a $ 26 - + mem::set_byte }
 	// 0-9 (52-61)
-	52 62 1 for { tbl $ 48 $ 52 - + mem::set_byte }
+	52 62 1 for { tbl $ unicode::digit0 $ 52 - + mem::set_byte }
 	// + (62)
-	tbl 62 43 mem::set_byte
+	tbl 62 unicode::plus mem::set_byte
 	// / (63)
-	tbl 63 47 mem::set_byte
+	tbl 63 unicode::slash mem::set_byte
 	tbl
 }
 
@@ -27,17 +28,17 @@ fn make_dec_table( -- tbl:ptr) {
 	// Initialize all to -1 (invalid)
 	tbl 128 255 mem::fill
 	// A-Z -> 0-25
-	0 26 1 for { tbl 65 $ + $ mem::set_byte }
+	0 26 1 for { tbl unicode::A $ + $ mem::set_byte }
 	// a-z -> 26-51
-	0 26 1 for { tbl 97 $ + 26 $ + mem::set_byte }
+	0 26 1 for { tbl unicode::a $ + 26 $ + mem::set_byte }
 	// 0-9 -> 52-61
-	0 10 1 for { tbl 48 $ + 52 $ + mem::set_byte }
+	0 10 1 for { tbl unicode::digit0 $ + 52 $ + mem::set_byte }
 	// + -> 62
-	tbl 43 62 mem::set_byte
+	tbl unicode::plus 62 mem::set_byte
 	// / -> 63
-	tbl 47 63 mem::set_byte
+	tbl unicode::slash 63 mem::set_byte
 	// = -> 254 (padding marker, will check separately)
-	tbl 61 254 mem::set_byte
+	tbl unicode::equals 254 mem::set_byte
 	tbl
 }
 
@@ -86,7 +87,7 @@ pub fn encode(input:str -- encoded:str) {
 			b2 15 bits::and 2 bits::lshift b3 6 bits::rshift bits::or -> idx
 			out o enc_tbl idx mem::get_byte mem::set_byte
 		} else {
-			out o 61 mem::set_byte
+			out o unicode::equals mem::set_byte
 		}
 		o 1 + -> o
 
@@ -95,7 +96,7 @@ pub fn encode(input:str -- encoded:str) {
 			b3 63 bits::and -> idx
 			out o enc_tbl idx mem::get_byte mem::set_byte
 		} else {
-			out o 61 mem::set_byte
+			out o unicode::equals mem::set_byte
 		}
 		o 1 + -> o
 
