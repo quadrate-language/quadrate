@@ -1,0 +1,23 @@
+use sort
+use mem
+
+fn main() {
+	// Create sorted array [1, 2, 3, 4, 5]
+	5 8 * mem::alloc -> arr
+	arr 0 1 mem::set
+	arr 8 2 mem::set
+	arr 16 3 mem::set
+	arr 24 4 mem::set
+	arr 32 5 mem::set
+
+	// Search for existing values
+	arr 5 1 sort::search . nl
+	arr 5 3 sort::search . nl
+	arr 5 5 sort::search . nl
+
+	// Search for non-existing values
+	arr 5 0 sort::search . nl
+	arr 5 6 sort::search . nl
+
+	arr mem::free
+}

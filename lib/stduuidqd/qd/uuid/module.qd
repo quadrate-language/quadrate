@@ -1,0 +1,279 @@
+/// UUID generation (version 4 random UUIDs).
+/// Format: xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx
+
+use rand
+use bits
+use mem
+use str
+
+/// Generate a new random UUIDv4 string.
+/// @return uuid str UUID string (36 chars)
+/// @example uuid::v4 -> id
+pub fn v4( -- uuid:str) {
+	rand::new -> rng
+
+	// Generate 16 random bytes
+	16 mem::alloc -> bytes
+	0 16 1 for {
+		$ -> i
+		rng 256 rand::int -> rng -> b
+		bytes i b mem::set_byte
+	}
+
+	// Set version (4) in byte 6: xxxx4xxx
+	bytes 6 mem::get_byte -> b6
+	b6 15 bits::and 64 bits::or -> b6  // Clear high nibble, set to 4
+	bytes 6 b6 mem::set_byte
+
+	// Set variant (RFC 4122) in byte 8: 10xxxxxx
+	bytes 8 mem::get_byte -> b8
+	b8 63 bits::and 128 bits::or -> b8  // Clear top 2 bits, set to 10
+	bytes 8 b8 mem::set_byte
+
+	// Convert to hex string with dashes
+	// Format: 8-4-4-4-12 (total 32 hex + 4 dashes = 36 chars)
+	36 mem::alloc -> out
+	0 -> o
+
+	// Hex lookup
+	16 mem::alloc -> hex
+	hex 0 48 mem::set_byte   // '0'
+	hex 1 49 mem::set_byte   // '1'
+	hex 2 50 mem::set_byte   // '2'
+	hex 3 51 mem::set_byte   // '3'
+	hex 4 52 mem::set_byte   // '4'
+	hex 5 53 mem::set_byte   // '5'
+	hex 6 54 mem::set_byte   // '6'
+	hex 7 55 mem::set_byte   // '7'
+	hex 8 56 mem::set_byte   // '8'
+	hex 9 57 mem::set_byte   // '9'
+	hex 10 97 mem::set_byte  // 'a'
+	hex 11 98 mem::set_byte  // 'b'
+	hex 12 99 mem::set_byte  // 'c'
+	hex 13 100 mem::set_byte // 'd'
+	hex 14 101 mem::set_byte // 'e'
+	hex 15 102 mem::set_byte // 'f'
+
+	// Bytes 0-3 (8 hex chars)
+	0 4 1 for {
+		$ -> i
+		bytes i mem::get_byte -> b
+		hex b 4 bits::rshift 15 bits::and mem::get_byte -> hi
+		hex b 15 bits::and mem::get_byte -> lo
+		out o hi mem::set_byte
+		o 1 + -> o
+		out o lo mem::set_byte
+		o 1 + -> o
+	}
+
+	// Dash
+	out o 45 mem::set_byte  // '-'
+	o 1 + -> o
+
+	// Bytes 4-5 (4 hex chars)
+	4 6 1 for {
+		$ -> i
+		bytes i mem::get_byte -> b
+		hex b 4 bits::rshift 15 bits::and mem::get_byte -> hi
+		hex b 15 bits::and mem::get_byte -> lo
+		out o hi mem::set_byte
+		o 1 + -> o
+		out o lo mem::set_byte
+		o 1 + -> o
+	}
+
+	// Dash
+	out o 45 mem::set_byte
+	o 1 + -> o
+
+	// Bytes 6-7 (4 hex chars)
+	6 8 1 for {
+		$ -> i
+		bytes i mem::get_byte -> b
+		hex b 4 bits::rshift 15 bits::and mem::get_byte -> hi
+		hex b 15 bits::and mem::get_byte -> lo
+		out o hi mem::set_byte
+		o 1 + -> o
+		out o lo mem::set_byte
+		o 1 + -> o
+	}
+
+	// Dash
+	out o 45 mem::set_byte
+	o 1 + -> o
+
+	// Bytes 8-9 (4 hex chars)
+	8 10 1 for {
+		$ -> i
+		bytes i mem::get_byte -> b
+		hex b 4 bits::rshift 15 bits::and mem::get_byte -> hi
+		hex b 15 bits::and mem::get_byte -> lo
+		out o hi mem::set_byte
+		o 1 + -> o
+		out o lo mem::set_byte
+		o 1 + -> o
+	}
+
+	// Dash
+	out o 45 mem::set_byte
+	o 1 + -> o
+
+	// Bytes 10-15 (12 hex chars)
+	10 16 1 for {
+		$ -> i
+		bytes i mem::get_byte -> b
+		hex b 4 bits::rshift 15 bits::and mem::get_byte -> hi
+		hex b 15 bits::and mem::get_byte -> lo
+		out o hi mem::set_byte
+		o 1 + -> o
+		out o lo mem::set_byte
+		o 1 + -> o
+	}
+
+	out 36 mem::to_string -> result
+
+	// Cleanup
+	bytes mem::free
+	hex mem::free
+	out mem::free
+
+	result
+}
+
+/// Generate UUID with specific seed (for reproducibility).
+/// @param seed i64 Seed value
+/// @return uuid str UUID string (36 chars)
+/// @example 12345 uuid::v4_seeded -> id
+pub fn v4_seeded(seed:i64 -- uuid:str) {
+	-> seed
+	seed rand::with_seed -> rng
+
+	// Generate 16 random bytes
+	16 mem::alloc -> bytes
+	0 16 1 for {
+		$ -> i
+		rng 256 rand::int -> rng -> b
+		bytes i b mem::set_byte
+	}
+
+	// Set version (4) in byte 6
+	bytes 6 mem::get_byte -> b6
+	b6 15 bits::and 64 bits::or -> b6
+	bytes 6 b6 mem::set_byte
+
+	// Set variant in byte 8
+	bytes 8 mem::get_byte -> b8
+	b8 63 bits::and 128 bits::or -> b8
+	bytes 8 b8 mem::set_byte
+
+	// Convert to hex string
+	36 mem::alloc -> out
+	0 -> o
+
+	16 mem::alloc -> hex
+	hex 0 48 mem::set_byte
+	hex 1 49 mem::set_byte
+	hex 2 50 mem::set_byte
+	hex 3 51 mem::set_byte
+	hex 4 52 mem::set_byte
+	hex 5 53 mem::set_byte
+	hex 6 54 mem::set_byte
+	hex 7 55 mem::set_byte
+	hex 8 56 mem::set_byte
+	hex 9 57 mem::set_byte
+	hex 10 97 mem::set_byte
+	hex 11 98 mem::set_byte
+	hex 12 99 mem::set_byte
+	hex 13 100 mem::set_byte
+	hex 14 101 mem::set_byte
+	hex 15 102 mem::set_byte
+
+	0 4 1 for {
+		$ -> i
+		bytes i mem::get_byte -> b
+		hex b 4 bits::rshift 15 bits::and mem::get_byte -> hi
+		hex b 15 bits::and mem::get_byte -> lo
+		out o hi mem::set_byte
+		o 1 + -> o
+		out o lo mem::set_byte
+		o 1 + -> o
+	}
+	out o 45 mem::set_byte
+	o 1 + -> o
+
+	4 6 1 for {
+		$ -> i
+		bytes i mem::get_byte -> b
+		hex b 4 bits::rshift 15 bits::and mem::get_byte -> hi
+		hex b 15 bits::and mem::get_byte -> lo
+		out o hi mem::set_byte
+		o 1 + -> o
+		out o lo mem::set_byte
+		o 1 + -> o
+	}
+	out o 45 mem::set_byte
+	o 1 + -> o
+
+	6 8 1 for {
+		$ -> i
+		bytes i mem::get_byte -> b
+		hex b 4 bits::rshift 15 bits::and mem::get_byte -> hi
+		hex b 15 bits::and mem::get_byte -> lo
+		out o hi mem::set_byte
+		o 1 + -> o
+		out o lo mem::set_byte
+		o 1 + -> o
+	}
+	out o 45 mem::set_byte
+	o 1 + -> o
+
+	8 10 1 for {
+		$ -> i
+		bytes i mem::get_byte -> b
+		hex b 4 bits::rshift 15 bits::and mem::get_byte -> hi
+		hex b 15 bits::and mem::get_byte -> lo
+		out o hi mem::set_byte
+		o 1 + -> o
+		out o lo mem::set_byte
+		o 1 + -> o
+	}
+	out o 45 mem::set_byte
+	o 1 + -> o
+
+	10 16 1 for {
+		$ -> i
+		bytes i mem::get_byte -> b
+		hex b 4 bits::rshift 15 bits::and mem::get_byte -> hi
+		hex b 15 bits::and mem::get_byte -> lo
+		out o hi mem::set_byte
+		o 1 + -> o
+		out o lo mem::set_byte
+		o 1 + -> o
+	}
+
+	out 36 mem::to_string -> result
+	bytes mem::free
+	hex mem::free
+	out mem::free
+	result
+}
+
+/// Check if a string is a valid UUID format.
+/// @param s str String to check
+/// @return valid i64 1 if valid format, 0 otherwise
+/// @example "550e8400-e29b-41d4-a716-446655440000" uuid::is_valid -> result
+pub fn is_valid(s:str -- valid:i64) {
+	-> s
+	s str::len 36 != if {
+		0
+	} else {
+		1 -> result
+		// Check dashes at positions 8, 13, 18, 23
+		s 8 str::char_at 45 != if { 0 -> result }
+		s 13 str::char_at 45 != if { 0 -> result }
+		s 18 str::char_at 45 != if { 0 -> result }
+		s 23 str::char_at 45 != if { 0 -> result }
+		result
+	}
+}
+

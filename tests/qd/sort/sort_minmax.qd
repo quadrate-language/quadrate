@@ -1,0 +1,17 @@
+use sort
+use mem
+
+fn main() {
+	// Create array [3, 1, 4, 1, 5]
+	5 8 * mem::alloc -> arr
+	arr 0 3 mem::set
+	arr 8 1 mem::set
+	arr 16 4 mem::set
+	arr 24 1 mem::set
+	arr 32 5 mem::set
+
+	arr 5 sort::min . nl
+	arr 5 sort::max . nl
+
+	arr mem::free
+}

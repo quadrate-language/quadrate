@@ -1,0 +1,97 @@
+/// Random number generation using xorshift64* algorithm.
+/// Fast, high-quality PRNG suitable for most applications.
+
+use bits
+use time
+
+/// RNG state struct.
+pub struct Rng {
+	state: i64
+}
+
+/// Create a new RNG seeded from current time.
+/// @return rng ptr New random number generator
+/// @example rand::new -> rng
+pub fn new( -- rng:ptr) {
+	time::now -> seed
+	// Ensure non-zero seed
+	seed 0 == if { 1 -> seed }
+	seed Rng
+}
+
+/// Create a new RNG with specific seed.
+/// @param seed i64 Initial seed value (must be non-zero)
+/// @return rng ptr New random number generator
+/// @example 12345 rand::with_seed -> rng
+pub fn with_seed(seed:i64 -- rng:ptr) {
+	-> seed
+	seed 0 == if { 1 } else { seed } -> s
+	s Rng
+}
+
+/// Generate next random i64.
+/// @param rng ptr RNG state
+/// @return rng ptr Updated RNG state
+/// @return n i64 Random 64-bit integer
+/// @example rng rand::next -> rng n
+pub fn next(rng:ptr -- rng:ptr n:i64) {
+	-> rng
+	rng @state -> x
+
+	// xorshift64*
+	x x 12 bits::lshift bits::xor -> x
+	x x 25 bits::rshift bits::xor -> x
+	x x 27 bits::lshift bits::xor -> x
+
+	// Return random number first (will be popped into n), then new state (will be popped into rng)
+	x 2685821657736338717 * -> result
+	x Rng -> newrng
+	result
+	newrng
+}
+
+/// Generate random i64 in range [0, max).
+/// @param rng ptr RNG state
+/// @param max i64 Upper bound (exclusive)
+/// @return rng ptr Updated RNG state
+/// @return n i64 Random integer in [0, max)
+/// @example rng 100 rand::int -> rng n
+pub fn int(rng:ptr max:i64 -- rng:ptr n:i64) {
+	-> max
+	-> rng
+	rng next -> newrng -> raw
+	// Make positive and mod
+	raw 0 < if { 0 raw - } else { raw } -> pos
+	pos max mod -> result
+	result
+	newrng
+}
+
+/// Generate random i64 in range [min, max).
+/// @param rng ptr RNG state
+/// @param min i64 Lower bound (inclusive)
+/// @param max i64 Upper bound (exclusive)
+/// @return rng ptr Updated RNG state
+/// @return n i64 Random integer in [min, max)
+/// @example rng 10 20 rand::range -> rng n
+pub fn range(rng:ptr min:i64 max:i64 -- rng:ptr n:i64) {
+	-> max
+	-> min
+	-> rng
+	max min - -> diff
+	rng diff int -> newrng -> n
+	n min + -> result
+	result
+	newrng
+}
+
+/// Generate random boolean.
+/// @param rng ptr RNG state
+/// @return rng ptr Updated RNG state
+/// @return b i64 Random boolean (0 or 1)
+/// @example rng rand::bool -> rng b
+pub fn bool(rng:ptr -- rng:ptr b:i64) {
+	-> rng
+	rng 2 int
+}
+

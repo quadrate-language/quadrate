@@ -1,0 +1,22 @@
+use rand
+use bits
+
+fn main() {
+	// Test bool function produces only 0 or 1
+	555 rand::with_seed -> rng
+	1 -> all_valid
+	0 -> saw_zero
+	0 -> saw_one
+
+	0 50 1 for {
+		rng rand::bool -> rng -> b
+		b 0 == if { 1 -> saw_zero }
+		b 1 == if { 1 -> saw_one }
+		b 0 != b 1 != bits::and if {
+			0 -> all_valid
+		}
+	}
+
+	all_valid if { "PASS: All bool values are 0 or 1" } else { "FAIL: Invalid bool value" } . nl
+	saw_zero saw_one bits::and if { "PASS: Both 0 and 1 seen" } else { "FAIL: Distribution issue" } . nl
+}

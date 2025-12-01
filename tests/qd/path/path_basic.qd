@@ -1,0 +1,15 @@
+use path
+
+fn main() {
+	// Test basename
+	"/home/user/file.txt" path::basename . nl
+	"/file.txt" path::basename . nl
+	"file.txt" path::basename . nl
+	"/" path::basename . nl
+
+	// Test dirname
+	"/home/user/file.txt" path::dirname . nl
+	"/file.txt" path::dirname . nl
+	"file.txt" path::dirname . nl
+	"/" path::dirname . nl
+}

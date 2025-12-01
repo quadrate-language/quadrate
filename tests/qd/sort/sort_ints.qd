@@ -1,0 +1,34 @@
+use sort
+use mem
+
+fn main() {
+	// Create array [5, 2, 8, 1, 9]
+	5 8 * mem::alloc -> arr
+	arr 0 5 mem::set
+	arr 8 2 mem::set
+	arr 16 8 mem::set
+	arr 24 1 mem::set
+	arr 32 9 mem::set
+
+	// Sort ascending
+	arr 5 sort::ints
+
+	// Print sorted
+	0 5 1 for {
+		$ -> i
+		arr i 8 * mem::get . " " .
+	}
+	nl
+
+	// Sort descending
+	arr 5 sort::ints_desc
+
+	// Print sorted descending
+	0 5 1 for {
+		$ -> i
+		arr i 8 * mem::get . " " .
+	}
+	nl
+
+	arr mem::free
+}

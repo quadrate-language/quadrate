@@ -1,0 +1,17 @@
+use path
+
+fn main() {
+	// Test ext
+	"file.txt" path::ext . nl
+	"file.tar.gz" path::ext . nl
+	"file" path::ext . nl
+	".hidden" path::ext . nl
+	"/path/to/file.txt" path::ext . nl
+
+	// Test stem
+	"file.txt" path::stem . nl
+	"file.tar.gz" path::stem . nl
+	"file" path::stem . nl
+	".hidden" path::stem . nl
+	"/path/to/file.txt" path::stem . nl
+}

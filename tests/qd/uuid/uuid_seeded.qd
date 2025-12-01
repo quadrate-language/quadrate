@@ -1,0 +1,21 @@
+use uuid
+use str
+
+fn main() {
+	// Test seeded UUID for reproducibility
+	12345 uuid::v4_seeded -> id1
+	id1 . nl
+
+	// Same seed should produce same UUID
+	12345 uuid::v4_seeded -> id2
+	id2 . nl
+
+	// Different seed produces different UUID
+	99999 uuid::v4_seeded -> id3
+	id3 . nl
+
+	// Check lengths are all 36
+	id1 str::len . nl
+	id2 str::len . nl
+	id3 str::len . nl
+}

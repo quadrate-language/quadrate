@@ -1,0 +1,36 @@
+use path
+
+fn main() {
+	// Root path
+	"/" path::dirname . nl
+	"/" path::basename . nl
+
+	// Empty string
+	"" path::dirname . nl
+	"" path::basename . nl
+
+	// No directory
+	"file.txt" path::dirname . nl
+	"file.txt" path::basename . nl
+
+	// Trailing slash
+	"/home/user/" path::dirname . nl
+	"/home/user/" path::basename . nl
+
+	// Multiple extensions
+	"archive.tar.gz" path::ext . nl
+	"archive.tar.gz" path::stem . nl
+
+	// Hidden file
+	".gitignore" path::ext . nl
+	".gitignore" path::stem . nl
+
+	// No extension
+	"Makefile" path::ext . nl
+	"Makefile" path::stem . nl
+
+	// is_absolute
+	"/absolute" path::is_absolute . nl
+	"relative" path::is_absolute . nl
+	"./relative" path::is_absolute . nl
+}

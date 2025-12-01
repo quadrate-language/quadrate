@@ -1,0 +1,14 @@
+use uuid
+
+fn main() {
+	// Valid UUIDs
+	"550e8400-e29b-41d4-a716-446655440000" uuid::is_valid . nl
+	"00000000-0000-4000-8000-000000000000" uuid::is_valid . nl
+
+	// Invalid formats
+	"" uuid::is_valid . nl
+	"not-a-uuid" uuid::is_valid . nl
+	"550e8400-e29b-41d4-a716" uuid::is_valid . nl
+	"550e8400e29b41d4a716446655440000" uuid::is_valid . nl
+	"550e8400-e29b-41d4-a716-44665544000X" uuid::is_valid . nl
+}
