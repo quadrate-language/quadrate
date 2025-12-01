@@ -4706,9 +4706,11 @@ namespace Qd {
 							mangledName = "qd_stdqd_" + func->name;
 						} else {
 							// For other libraries, use plain C function name
-							if (library.rfind("libstd", 0) == 0 &&
-									(library.find("qd_static.a") != std::string::npos ||
-											library.find("qd.so") != std::string::npos)) {
+							// Check for standard library imports (libqd*.a or legacy libstd*qd*.a)
+							if ((library.rfind("libqd", 0) == 0 && library.find(".a") != std::string::npos) ||
+									(library.rfind("libstd", 0) == 0 &&
+											(library.find("qd_static.a") != std::string::npos ||
+													library.find("qd.so") != std::string::npos))) {
 								mangledName = "usr_" + namespaceName + "_" + func->name;
 							} else {
 								mangledName = func->name;
@@ -4820,8 +4822,11 @@ namespace Qd {
 						mangledName = "qd_stdqd_" + func->name;
 					} else {
 						// For other libraries, use plain C function name
-						if (library.rfind("libstd", 0) == 0 && (library.find("qd_static.a") != std::string::npos ||
-																	   library.find("qd.so") != std::string::npos)) {
+						// Check for standard library imports (libqd*.a or legacy libstd*qd*.a)
+						if ((library.rfind("libqd", 0) == 0 && library.find(".a") != std::string::npos) ||
+								(library.rfind("libstd", 0) == 0 &&
+										(library.find("qd_static.a") != std::string::npos ||
+												library.find("qd.so") != std::string::npos))) {
 							mangledName = "usr_" + namespaceName + "_" + func->name;
 						} else {
 							mangledName = func->name;
@@ -5235,13 +5240,17 @@ namespace Qd {
 		// Build library flags - link static libraries directly
 		// Check for nested structure (build directory) first, then flat structure (dist)
 		std::string qdrtStaticPath;
+		// Try new naming convention first (libqdrt.a), then legacy (libqdrt_static.a)
 		std::string nestedPath = libDir + "/qdrt/libqdrt_static.a";
-		std::string flatPath = libDir + "/libqdrt_static.a";
+		std::string flatPath = libDir + "/libqdrt.a";
+		std::string flatPathLegacy = libDir + "/libqdrt_static.a";
 
-		if (std::filesystem::exists(nestedPath)) {
-			qdrtStaticPath = nestedPath;
-		} else if (std::filesystem::exists(flatPath)) {
+		if (std::filesystem::exists(flatPath)) {
 			qdrtStaticPath = flatPath;
+		} else if (std::filesystem::exists(nestedPath)) {
+			qdrtStaticPath = nestedPath;
+		} else if (std::filesystem::exists(flatPathLegacy)) {
+			qdrtStaticPath = flatPathLegacy;
 		} else {
 			// Fallback to flat path (will error later if doesn't exist)
 			qdrtStaticPath = flatPath;
@@ -5270,7 +5279,7 @@ namespace Qd {
 					std::string flatLib = libDir + "/" + library;
 
 					// Extract library name for nested search
-					// Examples: "libstdmathqd_static.a" -> "stdmathqd", "libqdrt_static.a" -> "qdrt"
+					// Examples: "libqdmath.a" -> "qdmath", "libqdrt_static.a" -> "qdrt"
 					std::string libBaseName = library;
 					if (libBaseName.rfind("lib", 0) == 0) {
 						libBaseName = libBaseName.substr(3); // Remove "lib" prefix

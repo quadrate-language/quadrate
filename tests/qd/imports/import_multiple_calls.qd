@@ -1,6 +1,6 @@
 // Import test - multiple function calls
 
-import "libstdfmtqd_static.a" as "fmt" {
+import "libqdfmt.a" as "fmt" {
     fn printf(format:str -- )
 }
 

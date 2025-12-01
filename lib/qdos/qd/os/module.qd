@@ -1,0 +1,101 @@
+/// Operating system interface.
+
+/// Error: No error.
+pub const Success = 0
+
+/// Error: Permission denied (EACCES).
+pub const PermissionDenied = 13
+
+/// Error: File already exists (EEXIST).
+pub const FileExists = 17
+
+/// Error: Path component is not a directory (ENOTDIR).
+pub const NotADirectory = 20
+
+/// Error: Is a directory when file expected (EISDIR).
+pub const IsADirectory = 21
+
+/// Error: Invalid argument (EINVAL).
+pub const InvalidArgument = 22
+
+/// Error: No such file or directory (ENOENT).
+pub const FileNotFound = 2
+
+/// Error: No space left on device (ENOSPC).
+pub const NoSpaceLeft = 28
+
+/// Error: Read-only file system (EROFS).
+pub const ReadOnlyFileSystem = 30
+
+/// Error: File name too long (ENAMETOOLONG).
+pub const NameTooLong = 36
+
+/// Error: I/O error (EIO).
+pub const IoError = 5
+
+/// Error: Out of memory (ENOMEM).
+pub const OutOfMemory = 12
+
+import "libqdos.a" as "os" {
+	/// Exit the program with status code.
+	/// @param code i64 Exit status (0 = success)
+	/// @example 0 os::exit
+	pub fn exit(code:i64 --)
+
+	/// Execute a shell command.
+	/// @param cmd str Command to execute
+	/// @return exitcode i64 Command exit status
+	/// @example "ls -la" os::system -> code
+	pub fn system(cmd:str -- exitcode:i64)
+
+	/// Get environment variable value.
+	/// @param name str Variable name
+	/// @return value str Variable value (empty if not set)
+	/// @example "HOME" os::getenv -> home
+	pub fn getenv(name:str -- value:str)
+
+	/// Check if path exists.
+	/// @param path str File or directory path
+	/// @return exists i64 1 if exists, 0 otherwise
+	/// @example "/tmp" os::exists .  // 1
+	pub fn exists(path:str -- exists:i64)
+
+	/// Delete a file or empty directory.
+	/// @param path str Path to delete
+	/// @error File not found
+	/// @error Permission denied
+	/// @example "/tmp/test.txt" os::delete!
+	pub fn delete(path:str --)!
+
+	/// Rename or move a file.
+	/// @param oldpath str Current path
+	/// @param newpath str New path
+	/// @error File not found
+	/// @error Permission denied
+	/// @example "old.txt" "new.txt" os::rename!
+	pub fn rename(oldpath:str newpath:str --)!
+
+	/// Copy a file.
+	/// @param srcpath str Source path
+	/// @param dstpath str Destination path
+	/// @error File not found
+	/// @error Permission denied
+	/// @example "src.txt" "dst.txt" os::copy!
+	pub fn copy(srcpath:str dstpath:str --)!
+
+	/// Create a directory.
+	/// @param path str Directory path
+	/// @error File exists
+	/// @error Permission denied
+	/// @example "/tmp/newdir" os::mkdir!
+	pub fn mkdir(path:str --)!
+
+	/// List directory contents.
+	/// @param path str Directory path
+	/// @return entries ptr Array of entry names
+	/// @return count i64 Number of entries
+	/// @error File not found
+	/// @error Not a directory
+	/// @example "/tmp" os::list! -> entries -> count
+	pub fn list(path:str -- entries:ptr count:i64)!
+}

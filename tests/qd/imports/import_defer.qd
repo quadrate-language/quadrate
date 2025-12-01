@@ -1,6 +1,6 @@
 // Import test - using imports with defer blocks
 
-import "libstdfmtqd_static.a" as "fmt" {
+import "libqdfmt.a" as "fmt" {
     fn printf(format:str -- )
 }
 

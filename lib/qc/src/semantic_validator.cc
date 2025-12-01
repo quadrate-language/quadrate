@@ -864,11 +864,11 @@ namespace Qd {
 			}
 
 			// Try 5: Standard library directories relative to current directory (for development)
-			std::string stdLibPath = "lib/std" + moduleName + "qd/qd/" + moduleName + "/module.qd";
+			std::string stdLibPath = "lib/qd" + moduleName + "/qd/" + moduleName + "/module.qd";
 			file.open(stdLibPath);
 			if (file.good()) {
 				// Store the module directory
-				mModuleDirectories[moduleName] = "lib/std" + moduleName + "qd/qd/" + moduleName;
+				mModuleDirectories[moduleName] = "lib/qd" + moduleName + "/qd/" + moduleName;
 				std::stringstream buffer;
 				buffer << file.rdbuf();
 				std::string source = buffer.str();

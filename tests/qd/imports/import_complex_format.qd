@@ -1,6 +1,6 @@
 // Import test - complex format strings
 
-import "libstdfmtqd_static.a" as "fmt" {
+import "libqdfmt.a" as "fmt" {
     fn printf(format:str -- )
 }
 

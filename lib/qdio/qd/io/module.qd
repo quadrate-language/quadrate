@@ -1,0 +1,109 @@
+/// File and stream I/O operations.
+
+/// Open mode: read only.
+pub const Read = "r"
+
+/// Open mode: read binary.
+pub const ReadBinary = "rb"
+
+/// Open mode: write (truncate).
+pub const Write = "w"
+
+/// Open mode: write binary.
+pub const WriteBinary = "wb"
+
+/// Open mode: append.
+pub const Append = "a"
+
+/// Open mode: append binary.
+pub const AppendBinary = "ab"
+
+/// Open mode: read and write.
+pub const ReadWrite = "r+"
+
+/// Open mode: read and write binary.
+pub const ReadWriteBinary = "rb+"
+
+/// Open mode: write and read (truncate).
+pub const WriteRead = "w+"
+
+/// Open mode: write and read binary.
+pub const WriteReadBinary = "wb+"
+
+/// Open mode: append and read.
+pub const AppendRead = "a+"
+
+/// Open mode: append and read binary.
+pub const AppendReadBinary = "ab+"
+
+/// Seek from beginning of file.
+pub const SeekSet = 0
+
+/// Seek from current position.
+pub const SeekCur = 1
+
+/// Seek from end of file.
+pub const SeekEnd = 2
+
+import "libqdio.a" as "io" {
+	/// Open a file.
+	/// @param path str File path
+	/// @param mode str Open mode (use io::Read, io::Write, etc.)
+	/// @return handle ptr File handle
+	/// @error File not found
+	/// @error Permission denied
+	/// @example "data.txt" io::Read io::open! -> f
+	pub fn open(path:str mode:str -- handle:ptr)!
+
+	/// Close a file.
+	/// @param handle ptr File handle to close
+	/// @example f io::close
+	pub fn close(handle:ptr --)
+
+	/// Read bytes into buffer.
+	/// @param handle ptr File handle
+	/// @param buffer ptr Pre-allocated buffer
+	/// @param count i64 Maximum bytes to read
+	/// @return bytes_read i64 Actual bytes read
+	/// @error Read failed
+	/// @example f buf 1024 io::read! -> n
+	pub fn read(handle:ptr buffer:ptr count:i64 -- bytes_read:i64)!
+
+	/// Write bytes from buffer.
+	/// @param handle ptr File handle
+	/// @param buffer ptr Buffer containing data
+	/// @param count i64 Number of bytes to write
+	/// @return bytes_written i64 Actual bytes written
+	/// @error Write failed
+	/// @example f buf len io::write! drop
+	pub fn write(handle:ptr buffer:ptr count:i64 -- bytes_written:i64)!
+
+	/// Seek to position in file.
+	/// @param handle ptr File handle
+	/// @param offset i64 Offset in bytes
+	/// @param whence i64 Reference point (SeekSet, SeekCur, SeekEnd)
+	/// @return position i64 New position
+	/// @error Seek failed
+	/// @example f 0 io::SeekSet io::seek! drop
+	pub fn seek(handle:ptr offset:i64 whence:i64 -- position:i64)!
+
+	/// Get current position in file.
+	/// @param handle ptr File handle
+	/// @return position i64 Current position
+	/// @error Tell failed
+	/// @example f io::tell! -> pos
+	pub fn tell(handle:ptr -- position:i64)!
+
+	/// Check if at end of file.
+	/// @param handle ptr File handle
+	/// @return handle ptr File handle (unchanged)
+	/// @return is_eof i64 1 if at EOF, 0 otherwise
+	/// @example f io::eof -> f -> at_end
+	pub fn eof(handle:ptr -- handle:ptr is_eof:i64)
+
+	/// Read a line from stdin.
+	/// @return line str Line without trailing newline
+	/// @error Read failed
+	/// @example io::readline! -> input
+	pub fn readline( -- line:str)!
+}

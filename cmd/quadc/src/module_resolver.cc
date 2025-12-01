@@ -195,7 +195,7 @@ std::string findModuleFile(const std::string& moduleName, const std::string& sou
 		}
 
 		// Try 4: Standard library directories relative to current directory (for development)
-		std::string stdLibPath = "lib/std" + moduleName + "qd/qd/" + moduleName + "/module.qd";
+		std::string stdLibPath = "lib/qd" + moduleName + "/qd/" + moduleName + "/module.qd";
 		if (std::filesystem::exists(stdLibPath)) {
 			return stdLibPath;
 		}

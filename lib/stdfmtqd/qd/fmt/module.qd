@@ -1,8 +1,0 @@
-/// Formatted output functions.
-
-import "libstdfmtqd_static.a" as "fmt" {
-	/// Print formatted output to stdout.
-	/// @param format str Format string with % specifiers
-	/// @example "Hello %s\n" "world" fmt::printf  // Hello world
-	pub fn printf(format:str -- )
-}

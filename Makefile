@@ -24,77 +24,57 @@ debug:
 	@cp -f $(BUILD_DIR_DEBUG)/cmd/quadpm/quadpm dist/bin/
 	@cp -f $(BUILD_DIR_DEBUG)/cmd/quaduses/quaduses dist/bin/
 	@cp -f $(BUILD_DIR_DEBUG)/cmd/quadrate/quadrate dist/bin/
-	@cp -f $(BUILD_DIR_DEBUG)/lib/qdrt/libqdrt.so dist/lib/
-	@echo "Creating full archive for libqdrt_static.a..."
-	@rm -f dist/lib/libqdrt_static.a && cd $(BUILD_DIR_DEBUG)/lib/qdrt && ar rcs ../../../../dist/lib/libqdrt_static.a $$(ar -t libqdrt_static.a) && echo "Archive created successfully"
-	@cp -f $(BUILD_DIR_DEBUG)/lib/qd/libqd.so dist/lib/
-	@rm -f dist/lib/libqd_static.a && cd $(BUILD_DIR_DEBUG)/lib/qd && ar rcs ../../../../dist/lib/libqd_static.a $$(ar -t libqd_static.a)
-	@cp -f $(BUILD_DIR_DEBUG)/lib/stdbitsqd/libstdbitsqd.so dist/lib/
-	@echo "Creating full archive for libstdbitsqd_static.a..."
-	@rm -f dist/lib/libstdbitsqd_static.a && cd $(BUILD_DIR_DEBUG)/lib/stdbitsqd && ar rcs ../../../../dist/lib/libstdbitsqd_static.a $$(ar -t libstdbitsqd_static.a) || (echo "ERROR: Failed to create libstdbitsqd_static.a" && exit 1)
-	@cp -f $(BUILD_DIR_DEBUG)/lib/stdfmtqd/libstdfmtqd.so dist/lib/
-	@echo "Creating full archive for libstdfmtqd_static.a..."
-	@rm -f dist/lib/libstdfmtqd_static.a && cd $(BUILD_DIR_DEBUG)/lib/stdfmtqd && ar rcs ../../../../dist/lib/libstdfmtqd_static.a $$(ar -t libstdfmtqd_static.a) || (echo "ERROR: Failed to create libstdfmtqd_static.a" && exit 1)
-	@cp -f $(BUILD_DIR_DEBUG)/lib/stdioqd/libstdioqd.so dist/lib/
-	@echo "Creating full archive for libstdioqd_static.a..."
-	@rm -f dist/lib/libstdioqd_static.a && cd $(BUILD_DIR_DEBUG)/lib/stdioqd && ar rcs ../../../../dist/lib/libstdioqd_static.a $$(ar -t libstdioqd_static.a) || (echo "ERROR: Failed to create libstdioqd_static.a" && exit 1)
-	@cp -f $(BUILD_DIR_DEBUG)/lib/stdmathqd/libstdmathqd.so dist/lib/
-	@echo "Creating full archive for libstdmathqd_static.a..."
-	@rm -f dist/lib/libstdmathqd_static.a && cd $(BUILD_DIR_DEBUG)/lib/stdmathqd && ar rcs ../../../../dist/lib/libstdmathqd_static.a $$(ar -t libstdmathqd_static.a) || (echo "ERROR: Failed to create libstdmathqd_static.a" && exit 1)
-	@cp -f $(BUILD_DIR_DEBUG)/lib/stdmemqd/libstdmemqd.so dist/lib/
-	@echo "Creating full archive for libstdmemqd_static.a..."
-	@rm -f dist/lib/libstdmemqd_static.a && cd $(BUILD_DIR_DEBUG)/lib/stdmemqd && ar rcs ../../../../dist/lib/libstdmemqd_static.a $$(ar -t libstdmemqd_static.a) || (echo "ERROR: Failed to create libstdmemqd_static.a" && exit 1)
-	@cp -f $(BUILD_DIR_DEBUG)/lib/stdnetqd/libstdnetqd.so dist/lib/
-	@echo "Creating full archive for libstdnetqd_static.a..."
-	@rm -f dist/lib/libstdnetqd_static.a && cd $(BUILD_DIR_DEBUG)/lib/stdnetqd && ar rcs ../../../../dist/lib/libstdnetqd_static.a $$(ar -t libstdnetqd_static.a) || (echo "ERROR: Failed to create libstdnetqd_static.a" && exit 1)
-	@cp -f $(BUILD_DIR_DEBUG)/lib/stdosqd/libstdosqd.so dist/lib/
-	@echo "Creating full archive for libstdosqd_static.a..."
-	@rm -f dist/lib/libstdosqd_static.a && cd $(BUILD_DIR_DEBUG)/lib/stdosqd && ar rcs ../../../../dist/lib/libstdosqd_static.a $$(ar -t libstdosqd_static.a) || (echo "ERROR: Failed to create libstdosqd_static.a" && exit 1)
-	@cp -f $(BUILD_DIR_DEBUG)/lib/stdstrqd/libstdstrqd.so dist/lib/
-	@echo "Creating full archive for libstdstrqd_static.a..."
-	@rm -f dist/lib/libstdstrqd_static.a && cd $(BUILD_DIR_DEBUG)/lib/stdstrqd && ar rcs ../../../../dist/lib/libstdstrqd_static.a $$(ar -t libstdstrqd_static.a) || (echo "ERROR: Failed to create libstdstrqd_static.a" && exit 1)
-	@cp -f $(BUILD_DIR_DEBUG)/lib/stdstrconvqd/libstdstrconvqd.so dist/lib/
-	@echo "Creating full archive for libstdstrconvqd_static.a..."
-	@rm -f dist/lib/libstdstrconvqd_static.a && cd $(BUILD_DIR_DEBUG)/lib/stdstrconvqd && ar rcs ../../../../dist/lib/libstdstrconvqd_static.a $$(ar -t libstdstrconvqd_static.a) || (echo "ERROR: Failed to create libstdstrconvqd_static.a" && exit 1)
-	@cp -f $(BUILD_DIR_DEBUG)/lib/stdtimeqd/libstdtimeqd.so dist/lib/
-	@echo "Creating full archive for libstdtimeqd_static.a..."
-	@rm -f dist/lib/libstdtimeqd_static.a && cd $(BUILD_DIR_DEBUG)/lib/stdtimeqd && ar rcs ../../../../dist/lib/libstdtimeqd_static.a $$(ar -t libstdtimeqd_static.a) || (echo "ERROR: Failed to create libstdtimeqd_static.a" && exit 1)
+	@echo "Creating static libraries..."
+	@rm -f dist/lib/libqdrt.a && cd $(BUILD_DIR_DEBUG)/lib/qdrt && ar rcs ../../../../dist/lib/libqdrt.a $$(ar -t libqdrt_static.a) && echo "  libqdrt.a"
+	@rm -f dist/lib/libqd.a && cd $(BUILD_DIR_DEBUG)/lib/qd && ar rcs ../../../../dist/lib/libqd.a $$(ar -t libqd_static.a) && echo "  libqd.a"
+	@rm -f dist/lib/libqdbits.a && cd $(BUILD_DIR_DEBUG)/lib/qdbits && ar rcs ../../../../dist/lib/libqdbits.a $$(ar -t libqdbits.a) && echo "  libqdbits.a"
+	@rm -f dist/lib/libqdfmt.a && cd $(BUILD_DIR_DEBUG)/lib/qdfmt && ar rcs ../../../../dist/lib/libqdfmt.a $$(ar -t libqdfmt.a) && echo "  libqdfmt.a"
+	@rm -f dist/lib/libqdio.a && cd $(BUILD_DIR_DEBUG)/lib/qdio && ar rcs ../../../../dist/lib/libqdio.a $$(ar -t libqdio.a) && echo "  libqdio.a"
+	@rm -f dist/lib/libqdmath.a && cd $(BUILD_DIR_DEBUG)/lib/qdmath && ar rcs ../../../../dist/lib/libqdmath.a $$(ar -t libqdmath.a) && echo "  libqdmath.a"
+	@rm -f dist/lib/libqdmem.a && cd $(BUILD_DIR_DEBUG)/lib/qdmem && ar rcs ../../../../dist/lib/libqdmem.a $$(ar -t libqdmem.a) && echo "  libqdmem.a"
+	@rm -f dist/lib/libqdnet.a && cd $(BUILD_DIR_DEBUG)/lib/qdnet && ar rcs ../../../../dist/lib/libqdnet.a $$(ar -t libqdnet.a) && echo "  libqdnet.a"
+	@rm -f dist/lib/libqdos.a && cd $(BUILD_DIR_DEBUG)/lib/qdos && ar rcs ../../../../dist/lib/libqdos.a $$(ar -t libqdos.a) && echo "  libqdos.a"
+	@rm -f dist/lib/libqdstr.a && cd $(BUILD_DIR_DEBUG)/lib/qdstr && ar rcs ../../../../dist/lib/libqdstr.a $$(ar -t libqdstr.a) && echo "  libqdstr.a"
+	@rm -f dist/lib/libqdstrconv.a && cd $(BUILD_DIR_DEBUG)/lib/qdstrconv && ar rcs ../../../../dist/lib/libqdstrconv.a $$(ar -t libqdstrconv.a) && echo "  libqdstrconv.a"
+	@rm -f dist/lib/libqdtime.a && cd $(BUILD_DIR_DEBUG)/lib/qdtime && ar rcs ../../../../dist/lib/libqdtime.a $$(ar -t libqdtime.a) && echo "  libqdtime.a"
 	@cp -rf lib/qdrt/include/qdrt dist/include/
 	@cp -rf lib/qd/include/qd dist/include/
-	@cp -rf lib/stdbitsqd/include/stdbitsqd dist/include/
-	@cp -rf lib/stdfmtqd/include/stdfmtqd dist/include/
-	@cp -rf lib/stdioqd/include/stdioqd dist/include/
-	@cp -rf lib/stdmathqd/include/stdmathqd dist/include/
-	@cp -rf lib/stdmemqd/include/stdmemqd dist/include/
-	@cp -rf lib/stdnetqd/include/stdnetqd dist/include/
-	@cp -rf lib/stdosqd/include/stdosqd dist/include/
-	@cp -rf lib/stdstrqd/include/stdstrqd dist/include/
-	@cp -rf lib/stdstrconvqd/include/stdstrconvqd dist/include/
-	@cp -rf lib/stdtimeqd/include/stdtimeqd dist/include/
+	@cp -rf lib/qdbits/include/qdbits dist/include/
+	@cp -rf lib/qdfmt/include/qdfmt dist/include/
+	@cp -rf lib/qdio/include/qdio dist/include/
+	@cp -rf lib/qdmath/include/qdmath dist/include/
+	@cp -rf lib/qdmem/include/qdmem dist/include/
+	@cp -rf lib/qdnet/include/qdnet dist/include/
+	@cp -rf lib/qdos/include/qdos dist/include/
+	@cp -rf lib/qdstr/include/qdstr dist/include/
+	@cp -rf lib/qdstrconv/include/qdstrconv dist/include/
+	@cp -rf lib/qdtime/include/qdtime dist/include/
 	@mkdir -p dist/share/quadrate
-	@cp -r lib/stdqd/qd/base64 dist/share/quadrate/
-	@cp -r lib/stdbitsqd/qd/bits dist/share/quadrate/
-	@cp -r lib/stdflagqd/qd/flag dist/share/quadrate/
-	@cp -r lib/stdfmtqd/qd/fmt dist/share/quadrate/
-	@cp -r lib/stdioqd/qd/io dist/share/quadrate/
-	@cp -r lib/stdjsonqd/qd/json dist/share/quadrate/
-	@cp -r lib/stdmathqd/qd/math dist/share/quadrate/
-	@cp -r lib/stdmemqd/qd/mem dist/share/quadrate/
-	@cp -r lib/stdnetqd/qd/net dist/share/quadrate/
-	@cp -r lib/stdosqd/qd/os dist/share/quadrate/
-	@cp -r lib/stdsbqd/qd/sb dist/share/quadrate/
-	@cp -r lib/stdstrqd/qd/str dist/share/quadrate/
-	@cp -r lib/stdstrconvqd/qd/strconv dist/share/quadrate/
-	@cp -r lib/stdtimeqd/qd/time dist/share/quadrate/
-	@cp -r lib/stdunicodeqd/qd/unicode dist/share/quadrate/
-	@cp -r lib/stduriqd/qd/uri dist/share/quadrate/
-	@cp -r lib/stdhexqd/qd/hex dist/share/quadrate/
-	@cp -r lib/stdbytesqd/qd/bytes dist/share/quadrate/
-	@cp -r lib/stdcrc32qd/qd/crc32 dist/share/quadrate/
-	@cp -r lib/stdsha256qd/qd/sha256 dist/share/quadrate/
-	@cp -r lib/stdregexqd/qd/regex dist/share/quadrate/
-	@echo "Verifying static archives..."
-	@file dist/lib/libqdrt_static.a dist/lib/libstdosqd_static.a | head -2
+	@cp -r lib/qdstd/qd/base64 dist/share/quadrate/
+	@cp -r lib/qdbits/qd/bits dist/share/quadrate/
+	@cp -r lib/qdflag/qd/flag dist/share/quadrate/
+	@cp -r lib/qdfmt/qd/fmt dist/share/quadrate/
+	@cp -r lib/qdio/qd/io dist/share/quadrate/
+	@cp -r lib/qdjson/qd/json dist/share/quadrate/
+	@cp -r lib/qdmath/qd/math dist/share/quadrate/
+	@cp -r lib/qdmem/qd/mem dist/share/quadrate/
+	@cp -r lib/qdnet/qd/net dist/share/quadrate/
+	@cp -r lib/qdos/qd/os dist/share/quadrate/
+	@cp -r lib/qdsb/qd/sb dist/share/quadrate/
+	@cp -r lib/qdstr/qd/str dist/share/quadrate/
+	@cp -r lib/qdstrconv/qd/strconv dist/share/quadrate/
+	@cp -r lib/qdtime/qd/time dist/share/quadrate/
+	@cp -r lib/qdunicode/qd/unicode dist/share/quadrate/
+	@cp -r lib/qduri/qd/uri dist/share/quadrate/
+	@cp -r lib/qdhex/qd/hex dist/share/quadrate/
+	@cp -r lib/qdbytes/qd/bytes dist/share/quadrate/
+	@cp -r lib/qdcrc32/qd/crc32 dist/share/quadrate/
+	@cp -r lib/qdsha256/qd/sha256 dist/share/quadrate/
+	@cp -r lib/qdregex/qd/regex dist/share/quadrate/
+	@cp -r lib/qdpath/qd/path dist/share/quadrate/
+	@cp -r lib/qdsort/qd/sort dist/share/quadrate/
+	@cp -r lib/qdrand/qd/rand dist/share/quadrate/
+	@cp -r lib/qduuid/qd/uuid dist/share/quadrate/
 	@echo "Debug build complete - static libraries ready"
 
 release:
@@ -108,74 +88,57 @@ release:
 	@cp -f $(BUILD_DIR_RELEASE)/cmd/quadpm/quadpm dist/bin/
 	@cp -f $(BUILD_DIR_RELEASE)/cmd/quaduses/quaduses dist/bin/
 	@cp -f $(BUILD_DIR_RELEASE)/cmd/quadrate/quadrate dist/bin/
-	@cp -f $(BUILD_DIR_RELEASE)/lib/qdrt/libqdrt.so dist/lib/
-	@echo "Creating full archive for libqdrt_static.a (release)..."
-	@rm -f dist/lib/libqdrt_static.a && cd $(BUILD_DIR_RELEASE)/lib/qdrt && ar rcs ../../../../dist/lib/libqdrt_static.a $$(ar -t libqdrt_static.a) && echo "Archive created successfully"
-	@cp -f $(BUILD_DIR_RELEASE)/lib/qd/libqd.so dist/lib/
-	@echo "Creating full archive for libqd_static.a (release)..."
-	@rm -f dist/lib/libqd_static.a && cd $(BUILD_DIR_RELEASE)/lib/qd && ar rcs ../../../../dist/lib/libqd_static.a $$(ar -t libqd_static.a) || (echo "ERROR: Failed to create libqd_static.a" && exit 1)
-	@cp -f $(BUILD_DIR_RELEASE)/lib/stdbitsqd/libstdbitsqd.so dist/lib/
-	@echo "Creating full archive for libstdbitsqd_static.a (release)..."
-	@rm -f dist/lib/libstdbitsqd_static.a && cd $(BUILD_DIR_RELEASE)/lib/stdbitsqd && ar rcs ../../../../dist/lib/libstdbitsqd_static.a $$(ar -t libstdbitsqd_static.a) || (echo "ERROR: Failed to create libstdbitsqd_static.a" && exit 1)
-	@cp -f $(BUILD_DIR_RELEASE)/lib/stdfmtqd/libstdfmtqd.so dist/lib/
-	@echo "Creating full archive for libstdfmtqd_static.a (release)..."
-	@rm -f dist/lib/libstdfmtqd_static.a && cd $(BUILD_DIR_RELEASE)/lib/stdfmtqd && ar rcs ../../../../dist/lib/libstdfmtqd_static.a $$(ar -t libstdfmtqd_static.a) || (echo "ERROR: Failed to create libstdfmtqd_static.a" && exit 1)
-	@cp -f $(BUILD_DIR_RELEASE)/lib/stdmathqd/libstdmathqd.so dist/lib/
-	@echo "Creating full archive for libstdmathqd_static.a (release)..."
-	@rm -f dist/lib/libstdmathqd_static.a && cd $(BUILD_DIR_RELEASE)/lib/stdmathqd && ar rcs ../../../../dist/lib/libstdmathqd_static.a $$(ar -t libstdmathqd_static.a) || (echo "ERROR: Failed to create libstdmathqd_static.a" && exit 1)
-	@cp -f $(BUILD_DIR_RELEASE)/lib/stdmemqd/libstdmemqd.so dist/lib/
-	@echo "Creating full archive for libstdmemqd_static.a (release)..."
-	@rm -f dist/lib/libstdmemqd_static.a && cd $(BUILD_DIR_RELEASE)/lib/stdmemqd && ar rcs ../../../../dist/lib/libstdmemqd_static.a $$(ar -t libstdmemqd_static.a) || (echo "ERROR: Failed to create libstdmemqd_static.a" && exit 1)
-	@cp -f $(BUILD_DIR_RELEASE)/lib/stdnetqd/libstdnetqd.so dist/lib/
-	@echo "Creating full archive for libstdnetqd_static.a (release)..."
-	@rm -f dist/lib/libstdnetqd_static.a && cd $(BUILD_DIR_RELEASE)/lib/stdnetqd && ar rcs ../../../../dist/lib/libstdnetqd_static.a $$(ar -t libstdnetqd_static.a) || (echo "ERROR: Failed to create libstdnetqd_static.a" && exit 1)
-	@cp -f $(BUILD_DIR_RELEASE)/lib/stdosqd/libstdosqd.so dist/lib/
-	@echo "Creating full archive for libstdosqd_static.a (release)..."
-	@rm -f dist/lib/libstdosqd_static.a && cd $(BUILD_DIR_RELEASE)/lib/stdosqd && ar rcs ../../../../dist/lib/libstdosqd_static.a $$(ar -t libstdosqd_static.a) || (echo "ERROR: Failed to create libstdosqd_static.a" && exit 1)
-	@cp -f $(BUILD_DIR_RELEASE)/lib/stdstrqd/libstdstrqd.so dist/lib/
-	@echo "Creating full archive for libstdstrqd_static.a (release)..."
-	@rm -f dist/lib/libstdstrqd_static.a && cd $(BUILD_DIR_RELEASE)/lib/stdstrqd && ar rcs ../../../../dist/lib/libstdstrqd_static.a $$(ar -t libstdstrqd_static.a) || (echo "ERROR: Failed to create libstdstrqd_static.a" && exit 1)
-	@cp -f $(BUILD_DIR_RELEASE)/lib/stdstrconvqd/libstdstrconvqd.so dist/lib/
-	@echo "Creating full archive for libstdstrconvqd_static.a (release)..."
-	@rm -f dist/lib/libstdstrconvqd_static.a && cd $(BUILD_DIR_RELEASE)/lib/stdstrconvqd && ar rcs ../../../../dist/lib/libstdstrconvqd_static.a $$(ar -t libstdstrconvqd_static.a) || (echo "ERROR: Failed to create libstdstrconvqd_static.a" && exit 1)
-	@cp -f $(BUILD_DIR_RELEASE)/lib/stdtimeqd/libstdtimeqd.so dist/lib/
-	@echo "Creating full archive for libstdtimeqd_static.a (release)..."
-	@rm -f dist/lib/libstdtimeqd_static.a && cd $(BUILD_DIR_RELEASE)/lib/stdtimeqd && ar rcs ../../../../dist/lib/libstdtimeqd_static.a $$(ar -t libstdtimeqd_static.a) || (echo "ERROR: Failed to create libstdtimeqd_static.a" && exit 1)
+	@echo "Creating static libraries (release)..."
+	@rm -f dist/lib/libqdrt.a && cd $(BUILD_DIR_RELEASE)/lib/qdrt && ar rcs ../../../../dist/lib/libqdrt.a $$(ar -t libqdrt_static.a) && echo "  libqdrt.a"
+	@rm -f dist/lib/libqd.a && cd $(BUILD_DIR_RELEASE)/lib/qd && ar rcs ../../../../dist/lib/libqd.a $$(ar -t libqd_static.a) && echo "  libqd.a"
+	@rm -f dist/lib/libqdbits.a && cd $(BUILD_DIR_RELEASE)/lib/qdbits && ar rcs ../../../../dist/lib/libqdbits.a $$(ar -t libqdbits.a) && echo "  libqdbits.a"
+	@rm -f dist/lib/libqdfmt.a && cd $(BUILD_DIR_RELEASE)/lib/qdfmt && ar rcs ../../../../dist/lib/libqdfmt.a $$(ar -t libqdfmt.a) && echo "  libqdfmt.a"
+	@rm -f dist/lib/libqdio.a && cd $(BUILD_DIR_RELEASE)/lib/qdio && ar rcs ../../../../dist/lib/libqdio.a $$(ar -t libqdio.a) && echo "  libqdio.a"
+	@rm -f dist/lib/libqdmath.a && cd $(BUILD_DIR_RELEASE)/lib/qdmath && ar rcs ../../../../dist/lib/libqdmath.a $$(ar -t libqdmath.a) && echo "  libqdmath.a"
+	@rm -f dist/lib/libqdmem.a && cd $(BUILD_DIR_RELEASE)/lib/qdmem && ar rcs ../../../../dist/lib/libqdmem.a $$(ar -t libqdmem.a) && echo "  libqdmem.a"
+	@rm -f dist/lib/libqdnet.a && cd $(BUILD_DIR_RELEASE)/lib/qdnet && ar rcs ../../../../dist/lib/libqdnet.a $$(ar -t libqdnet.a) && echo "  libqdnet.a"
+	@rm -f dist/lib/libqdos.a && cd $(BUILD_DIR_RELEASE)/lib/qdos && ar rcs ../../../../dist/lib/libqdos.a $$(ar -t libqdos.a) && echo "  libqdos.a"
+	@rm -f dist/lib/libqdstr.a && cd $(BUILD_DIR_RELEASE)/lib/qdstr && ar rcs ../../../../dist/lib/libqdstr.a $$(ar -t libqdstr.a) && echo "  libqdstr.a"
+	@rm -f dist/lib/libqdstrconv.a && cd $(BUILD_DIR_RELEASE)/lib/qdstrconv && ar rcs ../../../../dist/lib/libqdstrconv.a $$(ar -t libqdstrconv.a) && echo "  libqdstrconv.a"
+	@rm -f dist/lib/libqdtime.a && cd $(BUILD_DIR_RELEASE)/lib/qdtime && ar rcs ../../../../dist/lib/libqdtime.a $$(ar -t libqdtime.a) && echo "  libqdtime.a"
 	@cp -rf lib/qdrt/include/qdrt dist/include/
 	@cp -rf lib/qd/include/qd dist/include/
-	@cp -rf lib/stdbitsqd/include/stdbitsqd dist/include/
-	@cp -rf lib/stdfmtqd/include/stdfmtqd dist/include/
-	@cp -rf lib/stdioqd/include/stdioqd dist/include/
-	@cp -rf lib/stdmathqd/include/stdmathqd dist/include/
-	@cp -rf lib/stdmemqd/include/stdmemqd dist/include/
-	@cp -rf lib/stdnetqd/include/stdnetqd dist/include/
-	@cp -rf lib/stdosqd/include/stdosqd dist/include/
-	@cp -rf lib/stdstrqd/include/stdstrqd dist/include/
-	@cp -rf lib/stdstrconvqd/include/stdstrconvqd dist/include/
-	@cp -rf lib/stdtimeqd/include/stdtimeqd dist/include/
+	@cp -rf lib/qdbits/include/qdbits dist/include/
+	@cp -rf lib/qdfmt/include/qdfmt dist/include/
+	@cp -rf lib/qdio/include/qdio dist/include/
+	@cp -rf lib/qdmath/include/qdmath dist/include/
+	@cp -rf lib/qdmem/include/qdmem dist/include/
+	@cp -rf lib/qdnet/include/qdnet dist/include/
+	@cp -rf lib/qdos/include/qdos dist/include/
+	@cp -rf lib/qdstr/include/qdstr dist/include/
+	@cp -rf lib/qdstrconv/include/qdstrconv dist/include/
+	@cp -rf lib/qdtime/include/qdtime dist/include/
 	@mkdir -p dist/share/quadrate
-	@cp -r lib/stdqd/qd/base64 dist/share/quadrate/
-	@cp -r lib/stdbitsqd/qd/bits dist/share/quadrate/
-	@cp -r lib/stdflagqd/qd/flag dist/share/quadrate/
-	@cp -r lib/stdfmtqd/qd/fmt dist/share/quadrate/
-	@cp -r lib/stdioqd/qd/io dist/share/quadrate/
-	@cp -r lib/stdjsonqd/qd/json dist/share/quadrate/
-	@cp -r lib/stdmathqd/qd/math dist/share/quadrate/
-	@cp -r lib/stdmemqd/qd/mem dist/share/quadrate/
-	@cp -r lib/stdnetqd/qd/net dist/share/quadrate/
-	@cp -r lib/stdosqd/qd/os dist/share/quadrate/
-	@cp -r lib/stdsbqd/qd/sb dist/share/quadrate/
-	@cp -r lib/stdstrqd/qd/str dist/share/quadrate/
-	@cp -r lib/stdstrconvqd/qd/strconv dist/share/quadrate/
-	@cp -r lib/stdtimeqd/qd/time dist/share/quadrate/
-	@cp -r lib/stdunicodeqd/qd/unicode dist/share/quadrate/
-	@cp -r lib/stduriqd/qd/uri dist/share/quadrate/
-	@cp -r lib/stdhexqd/qd/hex dist/share/quadrate/
-	@cp -r lib/stdbytesqd/qd/bytes dist/share/quadrate/
-	@cp -r lib/stdcrc32qd/qd/crc32 dist/share/quadrate/
-	@cp -r lib/stdsha256qd/qd/sha256 dist/share/quadrate/
-	@echo "Verifying static archives (release)..."
-	@file dist/lib/libqdrt_static.a dist/lib/libstdosqd_static.a | head -2
+	@cp -r lib/qdstd/qd/base64 dist/share/quadrate/
+	@cp -r lib/qdbits/qd/bits dist/share/quadrate/
+	@cp -r lib/qdflag/qd/flag dist/share/quadrate/
+	@cp -r lib/qdfmt/qd/fmt dist/share/quadrate/
+	@cp -r lib/qdio/qd/io dist/share/quadrate/
+	@cp -r lib/qdjson/qd/json dist/share/quadrate/
+	@cp -r lib/qdmath/qd/math dist/share/quadrate/
+	@cp -r lib/qdmem/qd/mem dist/share/quadrate/
+	@cp -r lib/qdnet/qd/net dist/share/quadrate/
+	@cp -r lib/qdos/qd/os dist/share/quadrate/
+	@cp -r lib/qdsb/qd/sb dist/share/quadrate/
+	@cp -r lib/qdstr/qd/str dist/share/quadrate/
+	@cp -r lib/qdstrconv/qd/strconv dist/share/quadrate/
+	@cp -r lib/qdtime/qd/time dist/share/quadrate/
+	@cp -r lib/qdunicode/qd/unicode dist/share/quadrate/
+	@cp -r lib/qduri/qd/uri dist/share/quadrate/
+	@cp -r lib/qdhex/qd/hex dist/share/quadrate/
+	@cp -r lib/qdbytes/qd/bytes dist/share/quadrate/
+	@cp -r lib/qdcrc32/qd/crc32 dist/share/quadrate/
+	@cp -r lib/qdsha256/qd/sha256 dist/share/quadrate/
+	@cp -r lib/qdregex/qd/regex dist/share/quadrate/
+	@cp -r lib/qdpath/qd/path dist/share/quadrate/
+	@cp -r lib/qdsort/qd/sort dist/share/quadrate/
+	@cp -r lib/qdrand/qd/rand dist/share/quadrate/
+	@cp -r lib/qduuid/qd/uuid dist/share/quadrate/
 	@echo "Release build complete - static libraries ready"
 
 tests: debug
@@ -268,58 +231,57 @@ install: release
 	install -m 755 dist/bin/quadpm $(DESTDIR)$(PREFIX)/bin/
 	install -m 755 dist/bin/quaduses $(DESTDIR)$(PREFIX)/bin/
 	install -m 755 dist/bin/quadrate $(DESTDIR)$(PREFIX)/bin/
-	install -m 644 dist/lib/libqdrt.so $(DESTDIR)$(PREFIX)/lib/
-	install -m 644 dist/lib/libqdrt_static.a $(DESTDIR)$(PREFIX)/lib/
-	install -m 644 dist/lib/libqd.so $(DESTDIR)$(PREFIX)/lib/
-	install -m 644 dist/lib/libqd_static.a $(DESTDIR)$(PREFIX)/lib/
-	install -m 644 dist/lib/libstdbitsqd.so $(DESTDIR)$(PREFIX)/lib/
-	install -m 644 dist/lib/libstdbitsqd_static.a $(DESTDIR)$(PREFIX)/lib/
-	install -m 644 dist/lib/libstdfmtqd.so $(DESTDIR)$(PREFIX)/lib/
-	install -m 644 dist/lib/libstdfmtqd_static.a $(DESTDIR)$(PREFIX)/lib/
-	install -m 644 dist/lib/libstdmathqd.so $(DESTDIR)$(PREFIX)/lib/
-	install -m 644 dist/lib/libstdmathqd_static.a $(DESTDIR)$(PREFIX)/lib/
-	install -m 644 dist/lib/libstdnetqd.so $(DESTDIR)$(PREFIX)/lib/
-	install -m 644 dist/lib/libstdnetqd_static.a $(DESTDIR)$(PREFIX)/lib/
-	install -m 644 dist/lib/libstdosqd.so $(DESTDIR)$(PREFIX)/lib/
-	install -m 644 dist/lib/libstdosqd_static.a $(DESTDIR)$(PREFIX)/lib/
-	install -m 644 dist/lib/libstdstrqd.so $(DESTDIR)$(PREFIX)/lib/
-	install -m 644 dist/lib/libstdstrqd_static.a $(DESTDIR)$(PREFIX)/lib/
-	install -m 644 dist/lib/libstdstrconvqd.so $(DESTDIR)$(PREFIX)/lib/
-	install -m 644 dist/lib/libstdstrconvqd_static.a $(DESTDIR)$(PREFIX)/lib/
-	install -m 644 dist/lib/libstdtimeqd.so $(DESTDIR)$(PREFIX)/lib/
-	install -m 644 dist/lib/libstdtimeqd_static.a $(DESTDIR)$(PREFIX)/lib/
+	install -m 644 dist/lib/libqdrt.a $(DESTDIR)$(PREFIX)/lib/
+	install -m 644 dist/lib/libqd.a $(DESTDIR)$(PREFIX)/lib/
+	install -m 644 dist/lib/libqdbits.a $(DESTDIR)$(PREFIX)/lib/
+	install -m 644 dist/lib/libqdfmt.a $(DESTDIR)$(PREFIX)/lib/
+	install -m 644 dist/lib/libqdio.a $(DESTDIR)$(PREFIX)/lib/
+	install -m 644 dist/lib/libqdmath.a $(DESTDIR)$(PREFIX)/lib/
+	install -m 644 dist/lib/libqdmem.a $(DESTDIR)$(PREFIX)/lib/
+	install -m 644 dist/lib/libqdnet.a $(DESTDIR)$(PREFIX)/lib/
+	install -m 644 dist/lib/libqdos.a $(DESTDIR)$(PREFIX)/lib/
+	install -m 644 dist/lib/libqdstr.a $(DESTDIR)$(PREFIX)/lib/
+	install -m 644 dist/lib/libqdstrconv.a $(DESTDIR)$(PREFIX)/lib/
+	install -m 644 dist/lib/libqdtime.a $(DESTDIR)$(PREFIX)/lib/
 	cp -r dist/include/qdrt $(DESTDIR)$(PREFIX)/include/
 	cp -r dist/include/qd $(DESTDIR)$(PREFIX)/include/
-	cp -r dist/include/stdbitsqd $(DESTDIR)$(PREFIX)/include/
-	cp -r dist/include/stdfmtqd $(DESTDIR)$(PREFIX)/include/
-	cp -r dist/include/stdmathqd $(DESTDIR)$(PREFIX)/include/
-	cp -r dist/include/stdnetqd $(DESTDIR)$(PREFIX)/include/
-	cp -r dist/include/stdosqd $(DESTDIR)$(PREFIX)/include/
-	cp -r dist/include/stdstrqd $(DESTDIR)$(PREFIX)/include/
-	cp -r dist/include/stdstrconvqd $(DESTDIR)$(PREFIX)/include/
-	cp -r dist/include/stdtimeqd $(DESTDIR)$(PREFIX)/include/
+	cp -r dist/include/qdbits $(DESTDIR)$(PREFIX)/include/
+	cp -r dist/include/qdfmt $(DESTDIR)$(PREFIX)/include/
+	cp -r dist/include/qdio $(DESTDIR)$(PREFIX)/include/
+	cp -r dist/include/qdmath $(DESTDIR)$(PREFIX)/include/
+	cp -r dist/include/qdmem $(DESTDIR)$(PREFIX)/include/
+	cp -r dist/include/qdnet $(DESTDIR)$(PREFIX)/include/
+	cp -r dist/include/qdos $(DESTDIR)$(PREFIX)/include/
+	cp -r dist/include/qdstr $(DESTDIR)$(PREFIX)/include/
+	cp -r dist/include/qdstrconv $(DESTDIR)$(PREFIX)/include/
+	cp -r dist/include/qdtime $(DESTDIR)$(PREFIX)/include/
 	@echo "Installing Quadrate standard library modules to $(DESTDIR)$(PREFIX)/share/quadrate/"
 	install -d $(DESTDIR)$(PREFIX)/share/quadrate
-	@cp -r lib/stdqd/qd/base64 $(DESTDIR)$(PREFIX)/share/quadrate/
-	@cp -r lib/stdbitsqd/qd/bits $(DESTDIR)$(PREFIX)/share/quadrate/
-	@cp -r lib/stdflagqd/qd/flag $(DESTDIR)$(PREFIX)/share/quadrate/
-	@cp -r lib/stdfmtqd/qd/fmt $(DESTDIR)$(PREFIX)/share/quadrate/
-	@cp -r lib/stdioqd/qd/io $(DESTDIR)$(PREFIX)/share/quadrate/
-	@cp -r lib/stdjsonqd/qd/json $(DESTDIR)$(PREFIX)/share/quadrate/
-	@cp -r lib/stdmathqd/qd/math $(DESTDIR)$(PREFIX)/share/quadrate/
-	@cp -r lib/stdmemqd/qd/mem $(DESTDIR)$(PREFIX)/share/quadrate/
-	@cp -r lib/stdnetqd/qd/net $(DESTDIR)$(PREFIX)/share/quadrate/
-	@cp -r lib/stdosqd/qd/os $(DESTDIR)$(PREFIX)/share/quadrate/
-	@cp -r lib/stdsbqd/qd/sb $(DESTDIR)$(PREFIX)/share/quadrate/
-	@cp -r lib/stdstrqd/qd/str $(DESTDIR)$(PREFIX)/share/quadrate/
-	@cp -r lib/stdstrconvqd/qd/strconv $(DESTDIR)$(PREFIX)/share/quadrate/
-	@cp -r lib/stdtimeqd/qd/time $(DESTDIR)$(PREFIX)/share/quadrate/
-	@cp -r lib/stdunicodeqd/qd/unicode $(DESTDIR)$(PREFIX)/share/quadrate/
-	@cp -r lib/stduriqd/qd/uri $(DESTDIR)$(PREFIX)/share/quadrate/
-	@cp -r lib/stdhexqd/qd/hex $(DESTDIR)$(PREFIX)/share/quadrate/
-	@cp -r lib/stdbytesqd/qd/bytes $(DESTDIR)$(PREFIX)/share/quadrate/
-	@cp -r lib/stdcrc32qd/qd/crc32 $(DESTDIR)$(PREFIX)/share/quadrate/
-	@cp -r lib/stdsha256qd/qd/sha256 $(DESTDIR)$(PREFIX)/share/quadrate/
+	@cp -r lib/qdstd/qd/base64 $(DESTDIR)$(PREFIX)/share/quadrate/
+	@cp -r lib/qdbits/qd/bits $(DESTDIR)$(PREFIX)/share/quadrate/
+	@cp -r lib/qdflag/qd/flag $(DESTDIR)$(PREFIX)/share/quadrate/
+	@cp -r lib/qdfmt/qd/fmt $(DESTDIR)$(PREFIX)/share/quadrate/
+	@cp -r lib/qdio/qd/io $(DESTDIR)$(PREFIX)/share/quadrate/
+	@cp -r lib/qdjson/qd/json $(DESTDIR)$(PREFIX)/share/quadrate/
+	@cp -r lib/qdmath/qd/math $(DESTDIR)$(PREFIX)/share/quadrate/
+	@cp -r lib/qdmem/qd/mem $(DESTDIR)$(PREFIX)/share/quadrate/
+	@cp -r lib/qdnet/qd/net $(DESTDIR)$(PREFIX)/share/quadrate/
+	@cp -r lib/qdos/qd/os $(DESTDIR)$(PREFIX)/share/quadrate/
+	@cp -r lib/qdsb/qd/sb $(DESTDIR)$(PREFIX)/share/quadrate/
+	@cp -r lib/qdstr/qd/str $(DESTDIR)$(PREFIX)/share/quadrate/
+	@cp -r lib/qdstrconv/qd/strconv $(DESTDIR)$(PREFIX)/share/quadrate/
+	@cp -r lib/qdtime/qd/time $(DESTDIR)$(PREFIX)/share/quadrate/
+	@cp -r lib/qdunicode/qd/unicode $(DESTDIR)$(PREFIX)/share/quadrate/
+	@cp -r lib/qduri/qd/uri $(DESTDIR)$(PREFIX)/share/quadrate/
+	@cp -r lib/qdhex/qd/hex $(DESTDIR)$(PREFIX)/share/quadrate/
+	@cp -r lib/qdbytes/qd/bytes $(DESTDIR)$(PREFIX)/share/quadrate/
+	@cp -r lib/qdcrc32/qd/crc32 $(DESTDIR)$(PREFIX)/share/quadrate/
+	@cp -r lib/qdsha256/qd/sha256 $(DESTDIR)$(PREFIX)/share/quadrate/
+	@cp -r lib/qdregex/qd/regex $(DESTDIR)$(PREFIX)/share/quadrate/
+	@cp -r lib/qdpath/qd/path $(DESTDIR)$(PREFIX)/share/quadrate/
+	@cp -r lib/qdsort/qd/sort $(DESTDIR)$(PREFIX)/share/quadrate/
+	@cp -r lib/qdrand/qd/rand $(DESTDIR)$(PREFIX)/share/quadrate/
+	@cp -r lib/qduuid/qd/uuid $(DESTDIR)$(PREFIX)/share/quadrate/
 
 uninstall:
 	rm -f $(DESTDIR)$(PREFIX)/bin/quadc
@@ -329,36 +291,30 @@ uninstall:
 	rm -f $(DESTDIR)$(PREFIX)/bin/quadpm
 	rm -f $(DESTDIR)$(PREFIX)/bin/quaduses
 	rm -f $(DESTDIR)$(PREFIX)/bin/quadrate
-	rm -f $(DESTDIR)$(PREFIX)/lib/libqdrt.so
-	rm -f $(DESTDIR)$(PREFIX)/lib/libqdrt_static.a
-	rm -f $(DESTDIR)$(PREFIX)/lib/libqd.so
-	rm -f $(DESTDIR)$(PREFIX)/lib/libqd_static.a
-	rm -f $(DESTDIR)$(PREFIX)/lib/libstdbitsqd.so
-	rm -f $(DESTDIR)$(PREFIX)/lib/libstdbitsqd_static.a
-	rm -f $(DESTDIR)$(PREFIX)/lib/libstdfmtqd.so
-	rm -f $(DESTDIR)$(PREFIX)/lib/libstdfmtqd_static.a
-	rm -f $(DESTDIR)$(PREFIX)/lib/libstdmathqd.so
-	rm -f $(DESTDIR)$(PREFIX)/lib/libstdmathqd_static.a
-	rm -f $(DESTDIR)$(PREFIX)/lib/libstdnetqd.so
-	rm -f $(DESTDIR)$(PREFIX)/lib/libstdnetqd_static.a
-	rm -f $(DESTDIR)$(PREFIX)/lib/libstdosqd.so
-	rm -f $(DESTDIR)$(PREFIX)/lib/libstdosqd_static.a
-	rm -f $(DESTDIR)$(PREFIX)/lib/libstdstrqd.so
-	rm -f $(DESTDIR)$(PREFIX)/lib/libstdstrqd_static.a
-	rm -f $(DESTDIR)$(PREFIX)/lib/libstdstrconvqd.so
-	rm -f $(DESTDIR)$(PREFIX)/lib/libstdstrconvqd_static.a
-	rm -f $(DESTDIR)$(PREFIX)/lib/libstdtimeqd.so
-	rm -f $(DESTDIR)$(PREFIX)/lib/libstdtimeqd_static.a
+	rm -f $(DESTDIR)$(PREFIX)/lib/libqdrt.a
+	rm -f $(DESTDIR)$(PREFIX)/lib/libqd.a
+	rm -f $(DESTDIR)$(PREFIX)/lib/libqdbits.a
+	rm -f $(DESTDIR)$(PREFIX)/lib/libqdfmt.a
+	rm -f $(DESTDIR)$(PREFIX)/lib/libqdio.a
+	rm -f $(DESTDIR)$(PREFIX)/lib/libqdmath.a
+	rm -f $(DESTDIR)$(PREFIX)/lib/libqdmem.a
+	rm -f $(DESTDIR)$(PREFIX)/lib/libqdnet.a
+	rm -f $(DESTDIR)$(PREFIX)/lib/libqdos.a
+	rm -f $(DESTDIR)$(PREFIX)/lib/libqdstr.a
+	rm -f $(DESTDIR)$(PREFIX)/lib/libqdstrconv.a
+	rm -f $(DESTDIR)$(PREFIX)/lib/libqdtime.a
 	rm -rf $(DESTDIR)$(PREFIX)/include/qdrt
 	rm -rf $(DESTDIR)$(PREFIX)/include/qd
-	rm -rf $(DESTDIR)$(PREFIX)/include/stdbitsqd
-	rm -rf $(DESTDIR)$(PREFIX)/include/stdfmtqd
-	rm -rf $(DESTDIR)$(PREFIX)/include/stdmathqd
-	rm -rf $(DESTDIR)$(PREFIX)/include/stdnetqd
-	rm -rf $(DESTDIR)$(PREFIX)/include/stdosqd
-	rm -rf $(DESTDIR)$(PREFIX)/include/stdstrqd
-	rm -rf $(DESTDIR)$(PREFIX)/include/stdstrconvqd
-	rm -rf $(DESTDIR)$(PREFIX)/include/stdtimeqd
+	rm -rf $(DESTDIR)$(PREFIX)/include/qdbits
+	rm -rf $(DESTDIR)$(PREFIX)/include/qdfmt
+	rm -rf $(DESTDIR)$(PREFIX)/include/qdio
+	rm -rf $(DESTDIR)$(PREFIX)/include/qdmath
+	rm -rf $(DESTDIR)$(PREFIX)/include/qdmem
+	rm -rf $(DESTDIR)$(PREFIX)/include/qdnet
+	rm -rf $(DESTDIR)$(PREFIX)/include/qdos
+	rm -rf $(DESTDIR)$(PREFIX)/include/qdstr
+	rm -rf $(DESTDIR)$(PREFIX)/include/qdstrconv
+	rm -rf $(DESTDIR)$(PREFIX)/include/qdtime
 	@echo "Removing Quadrate standard library modules from $(DESTDIR)$(PREFIX)/share/quadrate/"
 	rm -rf $(DESTDIR)$(PREFIX)/share/quadrate
 

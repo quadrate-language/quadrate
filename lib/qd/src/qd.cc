@@ -35,9 +35,9 @@ static std::string findModuleFile(const std::string& moduleName) {
 	// Try 2: QUADRATE_LIBDIR (for development/testing)
 	const char* libDir = getenv("QUADRATE_LIBDIR");
 	if (libDir) {
-		// Standard library modules are in lib/std<name>qd/qd/<name>/module.qd relative to QUADRATE_LIBDIR
+		// Standard library modules are in lib/qd<name>/qd/<name>/module.qd relative to QUADRATE_LIBDIR
 		// But the installed structure is different - try both
-		std::string devPath = std::string(libDir) + "/../lib/std" + moduleName + "qd/qd/" + moduleName + "/module.qd";
+		std::string devPath = std::string(libDir) + "/../lib/qd" + moduleName + "/qd/" + moduleName + "/module.qd";
 		if (fs::exists(devPath)) {
 			return devPath;
 		}
@@ -337,21 +337,21 @@ void qd_build(qd_module* mod) {
 		link_cmd += " -o ";
 		link_cmd += mod->so_path.string();
 		link_cmd += " -L" + (lib_path / "qdrt").string();
-		link_cmd += " -L" + (lib_path / "stdmathqd").string();
-		link_cmd += " -L" + (lib_path / "stdfmtqd").string();
-		link_cmd += " -L" + (lib_path / "stdioqd").string();
-		link_cmd += " -L" + (lib_path / "stdnetqd").string();
-		link_cmd += " -L" + (lib_path / "stdosqd").string();
-		link_cmd += " -L" + (lib_path / "stdstrqd").string();
-		link_cmd += " -L" + (lib_path / "stdtimeqd").string();
-		link_cmd += " -L" + (lib_path / "stdmemqd").string();
-		link_cmd += " -L" + (lib_path / "stdbitsqd").string();
-		link_cmd += " -L" + (lib_path / "stdstrconvqd").string();
+		link_cmd += " -L" + (lib_path / "qdmath").string();
+		link_cmd += " -L" + (lib_path / "qdfmt").string();
+		link_cmd += " -L" + (lib_path / "qdio").string();
+		link_cmd += " -L" + (lib_path / "qdnet").string();
+		link_cmd += " -L" + (lib_path / "qdos").string();
+		link_cmd += " -L" + (lib_path / "qdstr").string();
+		link_cmd += " -L" + (lib_path / "qdtime").string();
+		link_cmd += " -L" + (lib_path / "qdmem").string();
+		link_cmd += " -L" + (lib_path / "qdbits").string();
+		link_cmd += " -L" + (lib_path / "qdstrconv").string();
 		link_cmd += " -lqdrt";
-		link_cmd += " -lstdmathqd_static -lstdfmtqd_static -lstdioqd_static";
-		link_cmd += " -lstdnetqd_static -lstdosqd_static -lstdstrqd_static";
-		link_cmd += " -lstdtimeqd_static -lstdmemqd_static -lstdbitsqd_static";
-		link_cmd += " -lstdstrconvqd_static";
+		link_cmd += " -lqdmath -lqdfmt -lqdio";
+		link_cmd += " -lqdnet -lqdos -lqdstr";
+		link_cmd += " -lqdtime -lqdmem -lqdbits";
+		link_cmd += " -lqdstrconv";
 		link_cmd += " -lm"; // Math library for sin, cos, etc.
 		link_cmd += " -Wl,-rpath,$ORIGIN";
 		link_cmd += " 2>&1";

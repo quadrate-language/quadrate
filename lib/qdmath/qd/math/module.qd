@@ -1,0 +1,259 @@
+/// Mathematical functions and constants.
+
+/// Mathematical constant Pi (π ≈ 3.14159).
+pub const Pi = 3.141592653589793
+
+/// Euler's number (e ≈ 2.71828).
+pub const E = 2.718281828459045
+
+/// Tau = 2π (full circle in radians).
+pub const Tau = 6.283185307179586
+
+import "libqdmath.a" as "math" {
+	/// Sine of angle in radians.
+	/// @param x f64 Angle in radians
+	/// @return result f64 Sine value [-1, 1]
+	/// @example 0.0 math::sin .  // 0.0
+	pub fn sin(x:f64 -- result:f64)
+
+	/// Cosine of angle in radians.
+	/// @param x f64 Angle in radians
+	/// @return result f64 Cosine value [-1, 1]
+	/// @example 0.0 math::cos .  // 1.0
+	pub fn cos(x:f64 -- result:f64)
+
+	/// Tangent of angle in radians.
+	/// @param x f64 Angle in radians
+	/// @return result f64 Tangent value
+	/// @example 0.0 math::tan .  // 0.0
+	pub fn tan(x:f64 -- result:f64)
+
+	/// Arc sine (inverse sine).
+	/// @param x f64 Value in range [-1, 1]
+	/// @return result f64 Angle in radians [-π/2, π/2]
+	/// @example 0.0 math::asin .  // 0.0
+	pub fn asin(x:f64 -- result:f64)
+
+	/// Arc cosine (inverse cosine).
+	/// @param x f64 Value in range [-1, 1]
+	/// @return result f64 Angle in radians [0, π]
+	/// @example 1.0 math::acos .  // 0.0
+	pub fn acos(x:f64 -- result:f64)
+
+	/// Arc tangent (inverse tangent).
+	/// @param x f64 Any value
+	/// @return result f64 Angle in radians [-π/2, π/2]
+	/// @example 0.0 math::atan .  // 0.0
+	pub fn atan(x:f64 -- result:f64)
+
+	/// Square root.
+	/// @param x f64 Non-negative value
+	/// @return result f64 Square root of x
+	/// @example 4.0 math::sqrt .  // 2.0
+	pub fn sqrt(x:f64 -- result:f64)
+
+	/// Cube root.
+	/// @param x f64 Any value
+	/// @return result f64 Cube root of x
+	/// @example 8.0 math::cbrt .  // 2.0
+	pub fn cbrt(x:f64 -- result:f64)
+
+	/// Power function.
+	/// @param base f64 Base value
+	/// @param exp f64 Exponent
+	/// @return result f64 base raised to exp
+	/// @example 2.0 3.0 math::pow .  // 8.0
+	pub fn pow(base:f64 exp:f64 -- result:f64)
+
+	/// Natural logarithm (base e).
+	/// @param x f64 Positive value
+	/// @return result f64 Natural log of x
+	/// @example 2.718281828 math::ln .  // ~1.0
+	pub fn ln(x:f64 -- result:f64)
+
+	/// Base-10 logarithm.
+	/// @param x f64 Positive value
+	/// @return result f64 Log base 10 of x
+	/// @example 100.0 math::log10 .  // 2.0
+	pub fn log10(x:f64 -- result:f64)
+
+	/// Ceiling (round up).
+	/// @param x f64 Any value
+	/// @return result f64 Smallest integer >= x
+	/// @example 2.3 math::ceil .  // 3.0
+	pub fn ceil(x:f64 -- result:f64)
+
+	/// Floor (round down).
+	/// @param x f64 Any value
+	/// @return result f64 Largest integer <= x
+	/// @example 2.7 math::floor .  // 2.0
+	pub fn floor(x:f64 -- result:f64)
+
+	/// Round to nearest integer.
+	/// @param x f64 Any value
+	/// @return result f64 Nearest integer to x
+	/// @example 2.5 math::round .  // 3.0
+	pub fn round(x:f64 -- result:f64)
+}
+
+/// Increment integer by 1.
+/// @param x i64 Value to increment
+/// @return result i64 x + 1
+/// @example 5 math::inc .  // 6
+pub fn inc( x:i64 -- result:i64 ) {
+	1 add
+}
+
+/// Decrement integer by 1.
+/// @param x i64 Value to decrement
+/// @return result i64 x - 1
+/// @example 5 math::dec .  // 4
+pub fn dec( x:i64 -- result:i64 ) {
+	1 sub
+}
+
+/// Square a number.
+/// @param x f64 Value to square
+/// @return result f64 x * x
+/// @example 3.0 math::sq .  // 9.0
+pub fn sq( x:f64 -- result:f64 ) {
+	dup mul
+}
+
+/// Cube a number.
+/// @param x f64 Value to cube
+/// @return result f64 x * x * x
+/// @example 2.0 math::cb .  // 8.0
+pub fn cb( x:f64 -- result:f64 ) {
+	dup dup mul mul
+}
+
+/// Absolute value.
+/// @param x f64 Any value
+/// @return result f64 |x|
+/// @example -5.0 math::abs .  // 5.0
+pub fn abs( x:f64 -- result:f64 ) {
+	dup 0.0 lt if {
+		neg
+	}
+}
+
+/// Reciprocal (1/x).
+/// @param x f64 Non-zero value
+/// @return result f64 1/x
+/// @example 4.0 math::inv .  // 0.25
+pub fn inv( x:f64 -- result:f64 ) {
+	1.0 swap div
+}
+
+/// Factorial (n!).
+/// @param n i64 Non-negative integer
+/// @return result i64 n!
+/// @example 5 math::fac .  // 120
+pub fn fac( n:i64 -- result:i64 ) {
+	-> n_v
+	1 -> res
+	1 n_v 1 + 1 for {
+		res $ * -> res
+	}
+	res
+}
+
+/// Minimum of two values.
+/// @param a any First value
+/// @param b any Second value
+/// @return result any Smaller of a and b
+/// @example 3 7 math::min .  // 3
+pub fn min( a:any b:any -- result:any ) {
+	over over lt if {
+		drop
+	} else {
+		nip
+	}
+}
+
+/// Maximum of two values.
+/// @param a any First value
+/// @param b any Second value
+/// @return result any Larger of a and b
+/// @example 3 7 math::max .  // 7
+pub fn max( a:any b:any -- result:any ) {
+	over over gt if {
+		drop
+	} else {
+		nip
+	}
+}
+
+/// Logarithm with arbitrary base.
+/// @param x f64 Positive value
+/// @param base f64 Logarithm base
+/// @return result f64 log_base(x)
+/// @example 8.0 2.0 math::log .  // 3.0
+pub fn log( x:f64 base:f64 -- result:f64 ) {
+	swap ln swap ln div
+}
+
+/// Clamp value to range.
+/// @param x f64 Value to clamp
+/// @param min_val f64 Minimum bound
+/// @param max_val f64 Maximum bound
+/// @return result f64 x clamped to [min_val, max_val]
+/// @example 15.0 0.0 10.0 math::clamp .  // 10.0
+pub fn clamp( x:f64 min_val:f64 max_val:f64 -- result:f64 ) {
+	-> max_v
+	-> min_v
+	-> x_v
+	x_v max_v < if { x_v } else { max_v } -> temp
+	temp min_v > if { temp } else { min_v }
+}
+
+/// Check if value is within range (inclusive).
+/// @param x any Value to check
+/// @param min_val any Minimum bound
+/// @param max_val any Maximum bound
+/// @return result i64 1 if in range, 0 otherwise
+/// @example 5 0 10 math::within .  // 1
+pub fn within( x:any min_val:any max_val:any -- result:i64 ) {
+	-> max_v
+	-> min_v
+	-> x_v
+	x_v min_v gte if {
+		x_v max_v lte if {
+			1
+		} else {
+			0
+		}
+	} else {
+		0
+	}
+}
+
+/// Linear interpolation between two values.
+/// @param a f64 Start value
+/// @param b f64 End value
+/// @param t f64 Interpolation factor [0, 1]
+/// @return result f64 a + (b - a) * t
+/// @example 0.0 10.0 0.5 math::lerp .  // 5.0
+pub fn lerp( a:f64 b:f64 t:f64 -- result:f64 ) {
+	-> t_v
+	-> b_v
+	-> a_v
+	b_v a_v - t_v * a_v +
+}
+
+/// Convert degrees to radians.
+/// @param degrees f64 Angle in degrees
+/// @return radians f64 Angle in radians
+/// @example 180.0 math::deg_to_rad .  // ~3.14159
+pub fn deg_to_rad( degrees:f64 -- radians:f64 ) {
+	3.141592653589793 180 div mul
+}
+
+/// Convert radians to degrees.
+/// @param radians f64 Angle in radians
+/// @return degrees f64 Angle in degrees
+/// @example 3.141592653589793 math::rad_to_deg .  // 180.0
+pub fn rad_to_deg( radians:f64 -- degrees:f64 ) {
+	180 mul 3.141592653589793 div
+}

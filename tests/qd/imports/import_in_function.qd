@@ -1,6 +1,6 @@
 // Import test - using imported function from helper function
 
-import "libstdfmtqd_static.a" as "fmt" {
+import "libqdfmt.a" as "fmt" {
     fn printf(format:str -- )
 }
 

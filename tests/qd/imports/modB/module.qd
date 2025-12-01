@@ -1,6 +1,6 @@
 // Module B - also imports libstdqd as "io" (same namespace!)
 
-import "libstdfmtqd_static.a" as "fmt" {
+import "libqdfmt.a" as "fmt" {
     fn printf(format:str -- )
 }
 
