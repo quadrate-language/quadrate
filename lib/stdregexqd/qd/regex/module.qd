@@ -5,6 +5,7 @@
 use mem
 use str
 use bits
+use unicode
 
 // NFA state types
 const STATE_CHAR = 0    // Match specific character
@@ -182,10 +183,12 @@ fn parser_next(ps:ptr -- c:i64) {
 fn parse_escape(ps:ptr -- c:i64) {
 	-> ps
 	ps parser_next -> c
-	c 110 == if { 10 -> c }   // \n
-	c 116 == if { 9 -> c }    // \t
-	c 114 == if { 13 -> c }   // \r
-	c 48 == if { 0 -> c }     // \0
+	c switch {
+		unicode::n { unicode::newline -> c }
+		unicode::t { unicode::tab -> c }
+		unicode::r { unicode::cr -> c }
+		unicode::digit0 { unicode::nul -> c }
+	}
 	c
 }
 
@@ -196,7 +199,7 @@ fn parse_cclass(ps:ptr -- start:i64) {
 
 	// Check for negation
 	0 -> negated
-	ps parser_peek 94 == if {
+	ps parser_peek unicode::caret == if {
 		ps parser_next drop
 		1 -> negated
 	}
@@ -206,24 +209,24 @@ fn parse_cclass(ps:ptr -- start:i64) {
 	// Parse characters until ]
 	loop {
 		ps parser_peek -> c
-		c -1 == c 93 == bits::or if { break }
+		c -1 == c unicode::rbracket == bits::or if { break }
 
 		ps parser_next drop
 
-		c 92 == if {
+		c unicode::backslash == if {
 			ps parse_escape -> c
 		}
 
 		// Check for range
-		ps parser_peek 45 == if {
+		ps parser_peek unicode::minus == if {
 			ps parser_next drop
 			ps parser_peek -> end_c
-			end_c 93 == end_c -1 == bits::or if {
+			end_c unicode::rbracket == end_c -1 == bits::or if {
 				cc c cclass_set
-				cc 45 cclass_set
+				cc unicode::minus cclass_set
 			} else {
 				ps parser_next drop
-				end_c 92 == if {
+				end_c unicode::backslash == if {
 					ps parse_escape -> end_c
 				}
 				c -> i
@@ -238,7 +241,7 @@ fn parse_cclass(ps:ptr -- start:i64) {
 		}
 	}
 
-	ps parser_peek 93 == if { ps parser_next drop }
+	ps parser_peek unicode::rbracket == if { ps parser_next drop }
 
 	negated if { STATE_NCCLASS } else { STATE_CCLASS } -> stype
 	re stype add_state -> start
@@ -253,66 +256,73 @@ fn parse_atom(ps:ptr -- start:i64 end:i64) {
 	ps PS_RE mem::get_ptr -> re
 	ps parser_peek -> c
 
-	c 40 == if {  // (
-		ps parser_next drop  // consume '('
-		// Parse content - simplified, just parse sequence of atoms
-		-1 -> gstart
-		-1 -> gend
-		loop {
-			ps parser_peek -> nc
-			nc -1 == nc 41 == bits::or if { break }
-			// Parse single atom
-			nc -1 != nc 124 != bits::and nc 41 != bits::and nc 42 != bits::and nc 43 != bits::and nc 63 != bits::and if {
-				ps parser_next drop
-				re STATE_CHAR add_state -> nstate
-				re nstate ST_CHAR nc state_set
-				gstart -1 == if {
-					nstate -> gstart
-					nstate -> gend
-				} else {
-					re gend ST_OUT1 nstate state_set
-					nstate -> gend
-				}
-			} else { break }
+	c switch {
+		unicode::lparen {  // (
+			ps parser_next drop
+			// Parse content - simplified, just parse sequence of atoms
+			-1 -> gstart
+			-1 -> gend
+			loop {
+				ps parser_peek -> nc
+				nc -1 == nc unicode::rparen == bits::or if { break }
+				// Parse single atom - skip meta chars
+				nc -1 != nc unicode::pipe != bits::and nc unicode::rparen != bits::and
+				nc unicode::asterisk != bits::and nc unicode::plus != bits::and nc unicode::question != bits::and if {
+					ps parser_next drop
+					re STATE_CHAR add_state -> nstate
+					re nstate ST_CHAR nc state_set
+					gstart -1 == if {
+						nstate -> gstart
+						nstate -> gend
+					} else {
+						re gend ST_OUT1 nstate state_set
+						nstate -> gend
+					}
+				} else { break }
+			}
+			ps parser_peek unicode::rparen == if { ps parser_next drop }
+			gstart -1 == if { -1 -1 } else { gend gstart }
 		}
-		ps parser_peek 41 == if { ps parser_next drop }  // consume ')'
-		gstart -1 == if { -1 -1 } else { gend gstart }
-	} else {
-	c 91 == if {  // [
-		ps parser_next drop
-		ps parse_cclass -> start
-		start start
-	} else {
-	c 46 == if {  // .
-		ps parser_next drop
-		re STATE_ANY add_state -> start
-		start start
-	} else {
-	c 94 == if {  // ^
-		ps parser_next drop
-		re STATE_BOL add_state -> start
-		start start
-	} else {
-	c 36 == if {  // $
-		ps parser_next drop
-		re STATE_EOL add_state -> start
-		start start
-	} else {
-	c 92 == if {  // backslash
-		ps parser_next drop
-		ps parse_escape -> c
-		re STATE_CHAR add_state -> start
-		re start ST_CHAR c state_set
-		start start
-	} else {
-	c -1 != c 124 != bits::and c 41 != bits::and c 42 != bits::and c 43 != bits::and c 63 != bits::and if {
-		ps parser_next drop
-		re STATE_CHAR add_state -> start
-		re start ST_CHAR c state_set
-		start start
-	} else {
-		-1 -1
-	}}}}}}}
+		unicode::lbracket {  // [
+			ps parser_next drop
+			ps parse_cclass -> start
+			start start
+		}
+		unicode::dot {  // .
+			ps parser_next drop
+			re STATE_ANY add_state -> start
+			start start
+		}
+		unicode::caret {  // ^
+			ps parser_next drop
+			re STATE_BOL add_state -> start
+			start start
+		}
+		unicode::dollar {  // $
+			ps parser_next drop
+			re STATE_EOL add_state -> start
+			start start
+		}
+		unicode::backslash {  // \
+			ps parser_next drop
+			ps parse_escape -> c
+			re STATE_CHAR add_state -> start
+			re start ST_CHAR c state_set
+			start start
+		}
+		_ {
+			// Regular character (not a metachar)
+			c -1 != c unicode::pipe != bits::and c unicode::rparen != bits::and
+			c unicode::asterisk != bits::and c unicode::plus != bits::and c unicode::question != bits::and if {
+				ps parser_next drop
+				re STATE_CHAR add_state -> start
+				re start ST_CHAR c state_set
+				start start
+			} else {
+				-1 -1
+			}
+		}
+	}
 }
 
 // Helper: connect state to next, using OUT2 for SPLIT states
@@ -334,44 +344,34 @@ fn parse_repeat(ps:ptr -- start:i64 end:i64) {
 	astart -1 == if {
 		-1 -1
 	} else {
-		ps parser_peek -> c
-
-		c 42 == if {  // *
-			ps parser_next drop
-			re STATE_SPLIT add_state -> split
-			re split ST_OUT1 astart state_set
-			// OUT2 will be patched by concat to point to next
-			re aend ST_OUT1 split state_set
-			split split  // end=split means patch OUT2
-		} else {
-		c 43 == if {  // +
-			ps parser_next drop
-			// For a+: match atom first, then split to loop or continue
-			// Structure: atom -> split, split.OUT1 -> atom (loop), split.OUT2 -> next
-			re STATE_SPLIT add_state -> split
-			re aend ST_OUT1 split state_set  // atom.OUT1 -> split
-			re split ST_OUT1 astart state_set  // split.OUT1 -> atom (loop)
-			// split.OUT2 will be patched by connect_state to point to next
-			// Return order: push end first, then start (start pops first)
-			split astart  // start at atom, end=split
-		} else {
-		c 63 == if {  // ?
-			ps parser_next drop
-			// For a?: match atom zero or one time
-			// Structure: split -> (atom or skip), both paths go to next
-			re STATE_SPLIT add_state -> split
-			re split ST_OUT1 astart state_set    // split.OUT1 -> atom (match path)
-			// Need both aend and split.OUT2 to go to next
-			// Create a join state for this
-			re STATE_SPLIT add_state -> join
-			re aend ST_OUT1 join state_set       // atom.OUT1 -> join
-			re split ST_OUT2 join state_set      // split.OUT2 -> join (skip)
-			// Return order: push end first, then start (start pops first)
-			join split  // start=split, end=join
-		} else {
-			// Return order: push end first, then start (start pops first)
-			aend astart
-		}}}
+		ps parser_peek switch {
+			unicode::asterisk {  // *
+				ps parser_next drop
+				re STATE_SPLIT add_state -> split
+				re split ST_OUT1 astart state_set
+				re aend ST_OUT1 split state_set
+				split split
+			}
+			unicode::plus {  // +
+				ps parser_next drop
+				re STATE_SPLIT add_state -> split
+				re aend ST_OUT1 split state_set
+				re split ST_OUT1 astart state_set
+				split astart
+			}
+			unicode::question {  // ?
+				ps parser_next drop
+				re STATE_SPLIT add_state -> split
+				re split ST_OUT1 astart state_set
+				re STATE_SPLIT add_state -> join
+				re aend ST_OUT1 join state_set
+				re split ST_OUT2 join state_set
+				join split
+			}
+			_ {
+				aend astart
+			}
+		}
 	}
 }
 
@@ -405,7 +405,7 @@ fn parse_alt(ps:ptr -- start:i64 end:i64) {
 		-1 -1
 	} else {
 		loop {
-			ps parser_peek 124 != if { break }
+			ps parser_peek unicode::pipe != if { break }
 			ps parser_next drop
 			ps parse_concat -> astart -> aend
 			astart -1 == if { break }
@@ -495,27 +495,27 @@ fn addstate(re:ptr states:ptr visited:ptr idx:i64 listid:i64 -- ) {
 fn state_matches(re:ptr idx:i64 c:i64 -- result:i64) {
 	-> c -> idx -> re
 	re idx ST_TYPE state_get -> stype
-
 	stype STATE_CHAR == if {
 		re idx ST_CHAR state_get c ==
 	} else {
-	stype STATE_ANY == if {
-		c -1 !=
-	} else {
-	stype STATE_CCLASS == if {
-		c -1 != if {
-			re idx ST_CCLASS state_get -> ccidx
-			re ccidx get_cclass c cclass_test
-		} else { 0 }
-	} else {
-	stype STATE_NCCLASS == if {
-		c -1 != if {
-			re idx ST_CCLASS state_get -> ccidx
-			re ccidx get_cclass c cclass_test 0 ==
-		} else { 0 }
-	} else {
-		0
-	}}}}
+		stype STATE_ANY == if {
+			c -1 !=
+		} else {
+			stype STATE_CCLASS == if {
+				c -1 != if {
+					re idx ST_CCLASS state_get -> ccidx
+					re ccidx get_cclass c cclass_test
+				} else { 0 }
+			} else {
+				stype STATE_NCCLASS == if {
+					c -1 != if {
+						re idx ST_CCLASS state_get -> ccidx
+						re ccidx get_cclass c cclass_test 0 ==
+					} else { 0 }
+				} else { 0 }
+			}
+		}
+	}
 }
 
 /// Test if a string matches a compiled regex (full match).
