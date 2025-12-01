@@ -173,18 +173,50 @@ fn main( -- ) {
 
 Quadrate includes batteries for common tasks:
 
+### Core Modules
+
 | Module | Purpose | Key Functions |
 |--------|---------|---------------|
 | **fmt** | Formatted I/O | `printf`, `sprintf`, `scanf` |
 | **io** | File operations | `open`, `read`, `write`, `close` |
-| **net** | TCP networking | `listen`, `accept`, `connect`, `send`, `recv` |
-| **str** | String manipulation | `concat`, `split`, `substr`, `replace` |
-| **math** | Mathematics | `sin`, `cos`, `sqrt`, `pow`, `log` |
-| **time** | Time & sleep | `unix`, `now`, `sleep`, `Second`, `Millisecond` |
+| **mem** | Memory management | `alloc`, `free`, `copy`, `set`, `get` |
+| **str** | String manipulation | `concat`, `split`, `substr`, `replace`, `len` |
+| **math** | Mathematics | `sin`, `cos`, `sqrt`, `pow`, `log`, `sq` |
+| **bits** | Bit manipulation | `and`, `or`, `xor`, `lshift`, `rshift` |
+
+### System & Networking
+
+| Module | Purpose | Key Functions |
+|--------|---------|---------------|
 | **os** | System interface | `env`, `exec`, `getpid`, `getcwd` |
-| **mem** | Memory ops | `alloc`, `free`, `copy`, `compare` |
-| **bits** | Bit manipulation | `and`, `or`, `xor`, `shl`, `shr` |
-| **base64** | Encoding | `encode`, `decode` |
+| **net** | TCP networking | `listen`, `accept`, `connect`, `send`, `recv` |
+| **time** | Time & sleep | `now`, `sleep`, `Second`, `Millisecond` |
+
+### Data & Encoding
+
+| Module | Purpose | Key Functions |
+|--------|---------|---------------|
+| **json** | JSON parsing | `parse`, `get`, `get_str`, `get_int`, `get_array` |
+| **base64** | Base64 encoding | `encode`, `decode` |
+| **hex** | Hex encoding | `encode`, `decode` |
+| **sha256** | SHA-256 hashing | `hash`, `hash_str` |
+| **crc32** | CRC32 checksums | `hash`, `hash_str` |
+| **uri** | URI parsing/building | `parse`, `build`, `encode`, `decode` |
+| **regex** | Regular expressions | `match`, `find`, `replace`, `split` |
+
+### Utility Modules
+
+| Module | Purpose | Key Functions |
+|--------|---------|---------------|
+| **rand** | Random numbers | `new`, `int`, `range`, `bool`, `with_seed` |
+| **uuid** | UUID generation | `v4`, `v4_seeded`, `is_valid` |
+| **path** | File path manipulation | `dirname`, `basename`, `ext`, `join`, `is_absolute` |
+| **sort** | Array sorting | `ints`, `ints_desc`, `min`, `max`, `search`, `reverse` |
+| **sb** | String builder | `new`, `append`, `append_char`, `build`, `clear` |
+| **bytes** | Byte arrays | `new`, `get`, `set`, `len`, `to_str` |
+| **strconv** | String conversion | `itoa`, `atoi`, `ftoa`, `atof` |
+| **unicode** | Unicode support | `is_letter`, `is_digit`, `to_upper`, `to_lower` |
+| **flag** | CLI argument parsing | `string`, `int`, `bool`, `parse` |
 
 Example with formatted output:
 ```rust
@@ -193,6 +225,36 @@ use time
 
 fn main( -- ) {
     time::now "Current time: %d\n" fmt::printf
+}
+```
+
+### Example: UUID and Random Numbers
+
+```rust
+use uuid
+use rand
+
+fn main( -- ) {
+    // Generate random UUID
+    uuid::v4 . nl
+
+    // Random number generation
+    rand::new -> rng
+    rng 1 100 rand::range -> rng -> n
+    "Random 1-100: " . n . nl
+}
+```
+
+### Example: Path Manipulation
+
+```rust
+use path
+
+fn main( -- ) {
+    "/home/user/docs/report.pdf" -> p
+    p path::dirname . nl   // /home/user/docs
+    p path::basename . nl  // report.pdf
+    p path::ext . nl       // .pdf
 }
 ```
 
