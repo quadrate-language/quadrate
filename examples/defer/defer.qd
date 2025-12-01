@@ -12,7 +12,7 @@ struct Resource {
 
 fn create_resource(id:i64 -- r:ptr) {
 	-> id
-	id id 100 * Resource
+	id id 100 * new Resource
 }
 
 fn destroy_resource(r:ptr -- ) {
@@ -68,7 +68,7 @@ fn resource_cleanup( -- ) {
 
 	// Do some work with resources
 	"  Working with resources..." . nl
-	"  Resource IDs: " . r1 @id . ", " . r2 @id . ", " . r3 @id . nl
+	"  new Resource IDs: " . r1 @id . ", " . r2 @id . ", " . r3 @id . nl
 
 	"  Function ending, defers will clean up:" . nl
 	// Resources are automatically freed in reverse order (3, 2, 1)

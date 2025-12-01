@@ -16,7 +16,7 @@ fn scale_point(p:Point factor:f64 -- result:ptr) {
     -> factor -> p
     p @x factor *
     p @y factor *
-    Point
+    new Point
 }
 
 // Mix typed struct with untyped ptr (legacy compatibility)
@@ -41,20 +41,20 @@ fn offset_point(p:Point dx:f64 dy:f64 -- result:ptr) {
     -> dy -> dx -> p
     p @x dx +
     p @y dy +
-    Point
+    new Point
 }
 
 fn main( -- ) {
     // Test scale_point
-    3.0 4.0 Point -> pt
+    3.0 4.0 new Point -> pt
     pt 2.0 scale_point -> scaled
     "Scaled (3,4) by 2: (" . scaled @x . ", " . scaled @y . ")" . nl
 
     // Test apply_scale
-    2.0 1 Config -> cfg
+    2.0 1 new Config -> cfg
     "Apply scale enabled: " . pt cfg apply_scale . nl
 
-    0.0 0 Config -> cfg_disabled
+    0.0 0 new Config -> cfg_disabled
     "Apply scale disabled: " . pt cfg_disabled apply_scale . nl
 
     // Test offset

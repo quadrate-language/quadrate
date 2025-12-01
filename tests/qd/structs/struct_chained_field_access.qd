@@ -13,10 +13,10 @@ struct Rectangle {
 
 fn main( -- ) {
   // Create structs
-  3.0 4.0 Point -> p
+  3.0 4.0 new Point -> p
   // p's ownership transfers to rect
 
-  p 100.0 50.0 Rectangle -> rect
+  p 100.0 50.0 new Rectangle -> rect
 
   // Chained field access with spaces
   rect @origin @x . nl

@@ -10,10 +10,10 @@ fn get_age( p:ptr -- age:f64 ) {
 }
 
 fn test_str_field( -- ) {
-  "Alice" 25.0 Person -> p1
+  "Alice" 25.0 new Person -> p1
   p1 get_age . nl
 
-  "Bob" 30.0 Person -> p2
+  "Bob" 30.0 new Person -> p2
   p2 get_age . nl
 }
 

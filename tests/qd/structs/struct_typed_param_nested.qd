@@ -46,7 +46,7 @@ fn describe_vec(v:Vec2 -- ) {
 }
 
 fn main( -- ) {
-    3.0 4.0 Vec2 -> v
+    3.0 4.0 new Vec2 -> v
 
     "Components:" . nl
     "  x: " . v get_x . nl

@@ -5,7 +5,7 @@ struct Vec2 {
 
 fn test_vec2( -- ) {
   // Test struct construction and field access
-  1.5 2.5 Vec2 -> v
+  1.5 2.5 new Vec2 -> v
 
   // Access and print fields
   v @x . nl

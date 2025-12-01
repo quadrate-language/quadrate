@@ -20,7 +20,7 @@ fn weighted_midpoint(p1:Point p2:Point weight:f64 -- result:ptr) {
     -> weight -> p2 -> p1
     p1 @x weight * p2 @x 1.0 weight - * +
     p1 @y weight * p2 @y 1.0 weight - * +
-    Point
+    new Point
 }
 
 // Function to add two points
@@ -28,14 +28,14 @@ fn add_points(a:Point b:Point -- result:ptr) {
     -> b -> a
     a @x b @x +
     a @y b @y +
-    Point
+    new Point
 }
 
 fn main( -- ) {
     // Create test structs
-    0.0 0.0 Point -> origin
-    3.0 4.0 Point -> pt1
-    6.0 8.0 Point -> pt2
+    0.0 0.0 new Point -> origin
+    3.0 4.0 new Point -> pt1
+    6.0 8.0 new Point -> pt2
 
     // Test distance between two points
     pt1 pt2 distance -> d

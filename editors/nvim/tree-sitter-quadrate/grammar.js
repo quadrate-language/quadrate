@@ -119,6 +119,7 @@ module.exports = grammar({
       $.string,
       $.builtin_operation,
       $.operator_symbol,
+      $.struct_construction,
       $.namespaced_identifier,
       $.field_access,
       $.identifier,
@@ -134,6 +135,12 @@ module.exports = grammar({
       $.return_statement,
       $.loop_variable,
       $.pointer_operation,
+    ),
+
+    // Struct construction: new StructName or new namespace::StructName
+    struct_construction: $ => seq(
+      'new',
+      field('type', choice($.namespaced_identifier, $.identifier)),
     ),
 
     // If expression: if { ... } else { ... }

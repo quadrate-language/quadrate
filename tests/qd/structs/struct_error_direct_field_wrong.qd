@@ -5,6 +5,6 @@ struct Point {
 }
 
 fn main( -- ) {
-  3.0 4.0 Point -> p
-  p @z . nl  // ERROR: Point has no field 'z'
+  3.0 4.0 new Point -> p
+  p @z . nl  // ERROR: new Point has no field 'z'
 }

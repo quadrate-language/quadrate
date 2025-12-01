@@ -18,9 +18,9 @@ struct Rectangle {
 }
 
 fn main( -- ) {
-  // Create a Color (wrong type)
-  255 128 64 Color -> c
+  // Create a new Color (wrong type)
+  255 128 64 new Color -> c
 
-  // Try to use Color where Point is expected - should error
-  c 10.0 5.0 Rectangle -> rect
+  // Try to use new Color where new Point is expected - should error
+  c 10.0 5.0 new Rectangle -> rect
 }

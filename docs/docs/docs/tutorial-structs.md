@@ -9,7 +9,7 @@ struct Vec2 {
 }
 
 fn main( -- ) {
-    4.0 8.0 Vec2 -> v
+    4.0 8.0 new Vec2 -> v
     v@x v@y "Vec2 coordinates: (%f, %f)" fmt::printf
 }
 ```

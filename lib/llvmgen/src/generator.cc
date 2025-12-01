@@ -4316,6 +4316,12 @@ namespace Qd {
 		case IAstNode::Type::STRUCT_DECLARATION:
 			// Struct declarations are processed during program generation, not during execution
 			break;
+		case IAstNode::Type::STRUCT_CONSTRUCTION: {
+			// Struct construction with 'new' keyword: 'new StructName'
+			AstNodeStructConstruction* construct = static_cast<AstNodeStructConstruction*>(node);
+			generateStructConstruction(construct->structName(), ctx);
+			break;
+		}
 		case IAstNode::Type::ARRAY_LITERAL:
 			generateArrayLiteral(static_cast<AstNodeArrayLiteral*>(node), ctx);
 			break;
@@ -6034,6 +6040,11 @@ namespace Qd {
 			if (structDefinitions.find(ident->name()) != structDefinitions.end()) {
 				result = ident->name();
 			}
+		}
+
+		// Check if this node is an explicit struct construction ('new StructName')
+		if (auto* construct = dynamic_cast<AstNodeStructConstruction*>(node)) {
+			result = construct->structName();
 		}
 
 		// Recursively search children

@@ -14,11 +14,11 @@ fn get_value( p:ptr -- v:f64 ) {
 
 fn test_same_field( -- ) {
   // Float version - exact match
-  3.14 PersonWithFloat -> p1
+  3.14 new PersonWithFloat -> p1
   p1 get_value . nl
 
   // Int version - implicit cast (with warning)
-  42 PersonWithInt -> p2
+  42 new PersonWithInt -> p2
   p2 get_value . nl
 }
 

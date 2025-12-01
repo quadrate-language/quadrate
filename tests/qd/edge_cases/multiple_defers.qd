@@ -4,13 +4,13 @@ struct Point {
 }
 
 fn main( -- ) {
-  1.0 2.0 Point -> p1
+  1.0 2.0 new Point -> p1
   defer { "Defer p1" . nl }
 
-  3.0 4.0 Point -> p2
+  3.0 4.0 new Point -> p2
   defer { "Defer p2" . nl }
 
-  5.0 6.0 Point -> p3
+  5.0 6.0 new Point -> p3
   defer { "Defer p3" . nl }
 
   "Main work" . nl

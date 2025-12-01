@@ -6,6 +6,7 @@
   "use"
   "import"
   "as"
+  "new"
 ] @keyword
 
 ; Control flow keywords
@@ -28,6 +29,14 @@
 ; Types - match the identifier inside type nodes
 (type
   (identifier) @type)
+
+; Struct construction type
+(struct_construction
+  type: (identifier) @type)
+(struct_construction
+  type: (namespaced_identifier
+    namespace: (identifier) @module
+    name: (identifier) @type))
 
 ; Function definitions
 (function_definition

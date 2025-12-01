@@ -16,8 +16,8 @@ fn add_offset( point:ptr offset:ptr -- ) {
 }
 
 fn test_multi_params( -- ) {
-  3.0 4.0 Point -> p
-  1.0 2.0 Offset -> o
+  3.0 4.0 new Point -> p
+  1.0 2.0 new Offset -> o
   p o add_offset
 }
 

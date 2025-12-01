@@ -2,7 +2,7 @@ use "shapes.qd"
 
 fn test_import( -- ) {
   // Create Rectangle from imported file
-  5.0 10.0 Rectangle -> r
+  5.0 10.0 new Rectangle -> r
 
   // Access and print fields
   r @width . nl

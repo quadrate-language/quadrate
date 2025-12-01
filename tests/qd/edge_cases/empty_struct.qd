@@ -1,4 +1,4 @@
-// Test: Empty struct (should compile)
+// Test: new Empty struct (should compile)
 struct Empty {
 }
 

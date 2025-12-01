@@ -214,7 +214,7 @@ namespace Qd {
 				if (strcmp(text, "fn") == 0 || strcmp(text, "const") == 0 || strcmp(text, "struct") == 0 ||
 						strcmp(text, "use") == 0 || strcmp(text, "import") == 0 || strcmp(text, "if") == 0 ||
 						strcmp(text, "for") == 0 || strcmp(text, "loop") == 0 || strcmp(text, "switch") == 0 ||
-						strcmp(text, "return") == 0 || strcmp(text, "ctx") == 0) {
+						strcmp(text, "return") == 0 || strcmp(text, "ctx") == 0 || strcmp(text, "new") == 0) {
 					return;
 				}
 			}
@@ -664,6 +664,41 @@ namespace Qd {
 					return parseLoopStatement(scanner, errorReporter, src);
 				} else if (strcmp(text, "switch") == 0) {
 					return parseSwitchStatement(scanner, errorReporter, src);
+				}
+			}
+
+			// Handle 'new' keyword for struct construction
+			if (strcmp(text, "new") == 0) {
+				size_t newPos = u8t_scanner_token_start(scanner);
+				char32_t nextToken = u8t_scanner_scan(scanner);
+				if (nextToken == U8T_IDENTIFIER) {
+					const char* structName = u8t_scanner_token_text(scanner, n);
+					std::string fullStructName(structName);
+
+					// Check for scoped struct: new module::StructName
+					char32_t peekToken = u8t_scanner_peek(scanner);
+					if (peekToken == ':') {
+						u8t_scanner_scan(scanner); // Consume first ':'
+						char32_t secondColon = u8t_scanner_peek(scanner);
+						if (secondColon == ':') {
+							u8t_scanner_scan(scanner); // Consume second ':'
+							char32_t memberToken = u8t_scanner_scan(scanner);
+							if (memberToken == U8T_IDENTIFIER) {
+								const char* memberName = u8t_scanner_token_text(scanner, n);
+								fullStructName = fullStructName + "::" + memberName;
+							}
+						}
+					}
+
+					IAstNode* node = new AstNodeStructConstruction(fullStructName);
+					size_t line, column;
+					size_t newPosByte = charIndexToByteOffset(src, newPos);
+					calculateLineColumn(src, newPosByte, &line, &column);
+					node->setPosition(line, column);
+					return node;
+				} else {
+					errorReporter->reportError(scanner, "Expected struct name after 'new'");
+					return nullptr;
 				}
 			}
 
@@ -1193,6 +1228,45 @@ namespace Qd {
 
 						ctxStmt->setParent(body);
 						body->addChild(ctxStmt);
+					}
+				} else if (strcmp(text, "new") == 0) {
+					// Struct construction with 'new' keyword
+					for (auto* node : tempNodes) {
+						node->setParent(body);
+						body->addChild(node);
+					}
+					tempNodes.clear();
+
+					size_t newPos = u8t_scanner_token_start(scanner);
+					char32_t nextToken = u8t_scanner_scan(scanner);
+					if (nextToken == U8T_IDENTIFIER) {
+						const char* structName = u8t_scanner_token_text(scanner, &n);
+						std::string fullStructName(structName);
+
+						// Check for scoped struct: new module::StructName
+						char32_t peekToken = u8t_scanner_peek(scanner);
+						if (peekToken == ':') {
+							u8t_scanner_scan(scanner); // Consume first ':'
+							char32_t secondColon = u8t_scanner_peek(scanner);
+							if (secondColon == ':') {
+								u8t_scanner_scan(scanner); // Consume second ':'
+								char32_t memberToken = u8t_scanner_scan(scanner);
+								if (memberToken == U8T_IDENTIFIER) {
+									const char* memberName = u8t_scanner_token_text(scanner, &n);
+									fullStructName = fullStructName + "::" + memberName;
+								}
+							}
+						}
+
+						AstNodeStructConstruction* structConstruct = new AstNodeStructConstruction(fullStructName);
+						size_t line, column;
+						size_t newPosByte = charIndexToByteOffset(src, newPos);
+						calculateLineColumn(src, newPosByte, &line, &column);
+						structConstruct->setPosition(line, column);
+						structConstruct->setParent(body);
+						body->addChild(structConstruct);
+					} else {
+						errorReporter->reportError(scanner, "Expected struct name after 'new'");
 					}
 				} else {
 					if (isBuiltInInstruction(text)) {

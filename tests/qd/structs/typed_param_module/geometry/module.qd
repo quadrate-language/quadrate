@@ -14,11 +14,11 @@ pub fn length(v:Vec2 -- result:f64) {
 // Function that adds two Vec2s
 pub fn add(a:Vec2 b:Vec2 -- result:ptr) {
     -> a -> b
-    a @x b @x + a @y b @y + Vec2
+    a @x b @x + a @y b @y + new Vec2
 }
 
 // Function to scale a vector
 pub fn scale(v:Vec2 factor:f64 -- result:ptr) {
     -> v -> factor
-    v @x factor * v @y factor * Vec2
+    v @x factor * v @y factor * new Vec2
 }

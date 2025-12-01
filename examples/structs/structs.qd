@@ -7,7 +7,7 @@ const MaxPoints = 100
 const OriginX = 0.0
 const OriginY = 0.0
 
-// Define a Point struct with x and y coordinates
+// Define a new Point struct with x and y coordinates
 struct Point {
 	x:f64
 	y:f64
@@ -15,12 +15,12 @@ struct Point {
 
 // Create a new point at origin
 fn new_origin( -- p:ptr) {
-	OriginX OriginY Point
+	OriginX OriginY new Point
 }
 
 // Create a point at given coordinates
 fn new_point(x:f64 y:f64 -- p:ptr) {
-	Point
+	new Point
 }
 
 // Calculate distance from origin using Pythagorean theorem

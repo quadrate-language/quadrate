@@ -24,15 +24,15 @@ fn get_rect_x(r:Rectangle -- result:f64) {
     r @x
 }
 
-// This should error because Circle has no 'width' field
+// This should error because new Circle has no 'width' field
 fn get_circle_width(c:Circle -- result:f64) {
     -> c
     c @width
 }
 
 fn main( -- ) {
-    0.0 0.0 5.0 Circle -> circ
-    10.0 20.0 100.0 50.0 Rectangle -> rect
+    0.0 0.0 5.0 new Circle -> circ
+    10.0 20.0 100.0 50.0 new Rectangle -> rect
 
     "Circle x: " . circ get_circle_x . nl
     "Rect x: " . rect get_rect_x . nl

@@ -13,10 +13,10 @@ struct Outer {
 
 fn main( -- ) {
   // Create inner struct with string field
-  42 "hello" Inner -> i
+  42 "hello" new Inner -> i
 
   // Create outer struct containing inner
-  i 100 Outer -> o
+  i 100 new Outer -> o
   // i's ownership transfers to o
 
   // Access nested fields

@@ -5,7 +5,7 @@ struct Point {
 
 fn test_nested_access( -- ) {
   // Test multiple accesses from same struct
-  5.0 10.0 Point -> p
+  5.0 10.0 new Point -> p
 
   // Access x twice
   p @x . nl

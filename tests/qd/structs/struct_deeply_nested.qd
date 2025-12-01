@@ -23,10 +23,10 @@ struct Window {
 fn main( -- ) {
   // Build the nested structure
   // Ownership transfers at each level - only need to free the outermost struct
-  10.0 20.0 Point -> pt
-  100.0 50.0 Size -> sz
-  pt sz Rect -> r
-  "Hello" r Window -> win
+  10.0 20.0 new Point -> pt
+  100.0 50.0 new Size -> sz
+  pt sz new Rect -> r
+  "Hello" r new Window -> win
 
   // Access deeply nested fields using chained access
   win @bounds @origin @x . nl

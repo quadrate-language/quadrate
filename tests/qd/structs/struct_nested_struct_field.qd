@@ -12,12 +12,12 @@ struct Rectangle {
 }
 
 fn main( -- ) {
-  // Create a Point
-  1.0 2.0 Point -> p
+  // Create a new Point
+  1.0 2.0 new Point -> p
   // Note: p's ownership transfers to rect, so we don't free p separately
 
-  // Create a rectangle with Point as origin field
-  p 10.0 5.0 Rectangle -> rect
+  // Create a rectangle with new Point as origin field
+  p 10.0 5.0 new Rectangle -> rect
 
   // Access nested struct fields using chained access
   rect @origin @x . nl

@@ -18,7 +18,7 @@ pub struct StringBuilder {
 pub fn new( -- sb:ptr) {
 	64 -> cap
 	cap mem::alloc -> buf
-	buf 0 cap StringBuilder
+	buf 0 cap new StringBuilder
 }
 
 /// Create a StringBuilder with specific initial capacity.
@@ -29,7 +29,7 @@ pub fn with_capacity(capacity:i64 -- sb:ptr) {
 	-> capacity
 	capacity 16 < if { 16 -> capacity }
 	capacity mem::alloc -> buf
-	buf 0 capacity StringBuilder
+	buf 0 capacity new StringBuilder
 }
 
 /// Append a string to the builder.
@@ -68,7 +68,7 @@ pub fn append(sb:ptr s:str -- sb:ptr) {
 	}
 
 	// Return updated builder
-	buf newlen cap StringBuilder
+	buf newlen cap new StringBuilder
 }
 
 /// Append a single character (by code point).
@@ -94,7 +94,7 @@ pub fn append_char(sb:ptr c:i64 -- sb:ptr) {
 	buf curlen c mem::set_byte
 
 	// Return updated builder
-	buf curlen 1 + cap StringBuilder
+	buf curlen 1 + cap new StringBuilder
 }
 
 /// Append an integer as string.
@@ -149,7 +149,7 @@ pub fn append_int(sb:ptr n:i64 -- sb:ptr) {
 			n 10 / -> n
 		}
 
-		buf curlen count + cap StringBuilder
+		buf curlen count + cap new StringBuilder
 	}
 }
 

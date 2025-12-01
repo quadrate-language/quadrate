@@ -4,7 +4,7 @@ struct Vec2 {
 }
 
 fn test_operations( -- ) {
-  5.0 10.0 Vec2 -> v
+  5.0 10.0 new Vec2 -> v
 
   // Field values can now be used in operations!
   v @x v @y add . nl

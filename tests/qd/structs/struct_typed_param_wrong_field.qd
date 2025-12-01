@@ -10,13 +10,13 @@ struct Rectangle {
     height:f64
 }
 
-// Function declares Point but tries to access width (Rectangle field)
+// Function declares new Point but tries to access width (Rectangle field)
 fn bad_function(p:Point -- result:f64) {
     -> p
-    p @width  // ERROR: Point has no field 'width'
+    p @width  // ERROR: new Point has no field 'width'
 }
 
 fn main( -- ) {
-    3.0 4.0 Point -> pt
+    3.0 4.0 new Point -> pt
     pt bad_function . nl
 }

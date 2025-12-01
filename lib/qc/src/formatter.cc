@@ -1268,6 +1268,7 @@ namespace Qd {
 
 	void Formatter::formatStructConstruction(const IAstNode* node) {
 		const AstNodeStructConstruction* structConstr = static_cast<const AstNodeStructConstruction*>(node);
+		write("new ");
 		write(structConstr->structName());
 	}
 

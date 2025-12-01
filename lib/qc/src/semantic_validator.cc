@@ -1482,6 +1482,31 @@ namespace Qd {
 			}
 		}
 
+		// Check if this is a struct construction (new StructName)
+		if (node->type() == IAstNode::Type::STRUCT_CONSTRUCTION) {
+			AstNodeStructConstruction* construct = static_cast<AstNodeStructConstruction*>(node);
+			const std::string& structName = construct->structName();
+
+			// Check if struct is defined locally
+			if (mDefinedStructs.find(structName) != mDefinedStructs.end()) {
+				return; // Valid struct construction
+			}
+
+			// Check if struct is from an imported module
+			for (const auto& moduleEntry : mModuleStructs) {
+				const auto& structs = moduleEntry.second;
+				if (structs.find(structName) != structs.end() && structs.at(structName)) {
+					return; // Valid struct from imported module (must be public)
+				}
+			}
+
+			// Not found - report error
+			std::string errorMsg = "Undefined struct '";
+			errorMsg += structName;
+			errorMsg += "'";
+			reportError(construct, errorMsg.c_str());
+		}
+
 		// Check if this is a scoped identifier (module function call like math::sqrt or std::printf)
 		if (node->type() == IAstNode::Type::SCOPED_IDENTIFIER) {
 			AstNodeScopedIdentifier* scoped = static_cast<AstNodeScopedIdentifier*>(node);
@@ -2028,6 +2053,26 @@ namespace Qd {
 				typeStack.push_back(StackValueType::PTR);
 				break;
 
+			case IAstNode::Type::STRUCT_CONSTRUCTION: {
+				// Struct construction: 'new StructName' pops field values and pushes PTR
+				AstNodeStructConstruction* construct = static_cast<AstNodeStructConstruction*>(child);
+				const std::string& structName = construct->structName();
+				auto structFieldIt = mStructFieldTypes.find(structName);
+				if (structFieldIt != mStructFieldTypes.end()) {
+					size_t fieldCount = structFieldIt->second.size();
+					// Pop field values from both stacks
+					for (size_t fi = 0; fi < fieldCount && !typeStack.empty(); fi++) {
+						typeStack.pop_back();
+						if (!structTypeStack.empty()) {
+							structTypeStack.pop_back();
+						}
+					}
+				}
+				typeStack.push_back(StackValueType::PTR);
+				structTypeStack.push_back(structName);
+				break;
+			}
+
 			case IAstNode::Type::LOCAL: {
 				// Local variable binding: pop value from stack and store type
 				AstNodeLocal* local = static_cast<AstNodeLocal*>(child);
@@ -2281,6 +2326,131 @@ namespace Qd {
 				} else if (!structTypeStack.empty()) {
 					structTypeStack.pop_back();
 				}
+				break;
+			}
+
+			case IAstNode::Type::STRUCT_CONSTRUCTION: {
+				// Handle explicit struct construction with 'new' keyword
+				AstNodeStructConstruction* construct = static_cast<AstNodeStructConstruction*>(child);
+				const std::string& name = construct->structName();
+
+				// Struct construction: consumes field values, produces pointer
+				AstNodeStructDeclaration* structDecl = nullptr;
+
+				// Check local structs first
+				auto structDeclIt = mStructDeclarations.find(name);
+				if (structDeclIt != mStructDeclarations.end()) {
+					structDecl = structDeclIt->second;
+				} else {
+					// Check module structs
+					auto moduleDeclIt = mModuleStructDeclarations.find(name);
+					if (moduleDeclIt != mModuleStructDeclarations.end()) {
+						structDecl = moduleDeclIt->second;
+					}
+				}
+
+				if (structDecl) {
+					const auto& fields = structDecl->fields();
+					size_t fieldCount = fields.size();
+
+					// Check if we have enough values on the stack
+					if (typeStack.size() < fieldCount) {
+						std::string errorMsg = "Type error in struct construction '";
+						errorMsg += name;
+						errorMsg += "': Stack underflow (requires ";
+						errorMsg += std::to_string(fieldCount);
+						errorMsg += " values, have ";
+						errorMsg += std::to_string(typeStack.size());
+						errorMsg += ")";
+						reportError(construct, errorMsg.c_str());
+					} else {
+						// Validate each field type (fields are in declaration order)
+						for (size_t fi = 0; fi < fieldCount; fi++) {
+							size_t stackIdx = typeStack.size() - fieldCount + fi;
+							StackValueType actual = typeStack[stackIdx];
+							std::string actualStructType =
+									(stackIdx < structTypeStack.size()) ? structTypeStack[stackIdx] : "";
+							const AstNodeStructField* field = fields[fi];
+							const std::string& fieldName = field->name();
+
+							// Get expected type from mStructFieldTypes
+							auto structFieldTypesIt = mStructFieldTypes.find(name);
+							if (structFieldTypesIt == mStructFieldTypes.end()) {
+								continue;
+							}
+							auto fieldTypeIt = structFieldTypesIt->second.find(fieldName);
+							if (fieldTypeIt == structFieldTypesIt->second.end()) {
+								continue;
+							}
+							StackValueType expected = fieldTypeIt->second;
+
+							// Check if this field expects a specific struct type
+							std::string expectedStructType;
+							auto structFieldStructTypesIt = mStructFieldStructTypes.find(name);
+							if (structFieldStructTypesIt != mStructFieldStructTypes.end()) {
+								auto fieldStructTypeIt = structFieldStructTypesIt->second.find(fieldName);
+								if (fieldStructTypeIt != structFieldStructTypesIt->second.end()) {
+									expectedStructType = fieldStructTypeIt->second;
+								}
+							}
+
+							// Skip check if actual type is UNKNOWN
+							if (actual == StackValueType::UNKNOWN) {
+								continue;
+							}
+
+							// Check for type mismatch
+							if (actual != expected) {
+								if (isImplicitCastAllowed(actual, expected)) {
+									std::string warnMsg = "Implicit cast in struct construction '";
+									warnMsg += name;
+									warnMsg += "': Field '";
+									warnMsg += fieldName;
+									warnMsg += "' expects ";
+									warnMsg += stackValueTypeToString(expected);
+									warnMsg += ", but got ";
+									warnMsg += stackValueTypeToString(actual);
+									reportWarning(construct, warnMsg.c_str());
+								} else {
+									std::string errorMsg = "Type error in struct construction '";
+									errorMsg += name;
+									errorMsg += "': Field '";
+									errorMsg += fieldName;
+									errorMsg += "' expects ";
+									errorMsg += expectedStructType.empty() ? stackValueTypeToString(expected)
+																		   : expectedStructType;
+									errorMsg += ", but got ";
+									errorMsg += actualStructType.empty() ? stackValueTypeToString(actual)
+																		 : actualStructType;
+									reportError(construct, errorMsg.c_str());
+								}
+							} else if (!expectedStructType.empty() && actualStructType != expectedStructType) {
+								// Types match (both PTR) but struct types don't match
+								std::string errorMsg = "Type error in struct construction '";
+								errorMsg += name;
+								errorMsg += "': Field '";
+								errorMsg += fieldName;
+								errorMsg += "' expects ";
+								errorMsg += expectedStructType;
+								errorMsg += ", but got ";
+								errorMsg += actualStructType.empty() ? "ptr" : actualStructType;
+								reportError(construct, errorMsg.c_str());
+							}
+						}
+
+						// Pop field values from stack
+						for (size_t fi = 0; fi < fieldCount && !typeStack.empty(); fi++) {
+							typeStack.pop_back();
+							if (!structTypeStack.empty()) {
+								structTypeStack.pop_back();
+							}
+						}
+					}
+				}
+
+				// Push pointer type for the constructed struct, along with its struct type
+				typeStack.push_back(StackValueType::PTR);
+				structTypeStack.push_back(name); // Track which struct type this is
 				break;
 			}
 

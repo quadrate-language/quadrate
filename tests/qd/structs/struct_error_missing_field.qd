@@ -6,10 +6,10 @@ struct Point {
 
 fn use_point( p:ptr -- ) {
   -> pt
-  pt @z drop  // ERROR: Point has no field 'z'
+  pt @z drop  // ERROR: new Point has no field 'z'
 }
 
 fn main( -- ) {
-  3.0 4.0 Point -> p
+  3.0 4.0 new Point -> p
   p use_point
 }

@@ -15,7 +15,7 @@ fn perimeter( r:ptr -- p:f64 ) {
 }
 
 fn test_rectangle( -- ) {
-  5.0 3.0 Rectangle -> r
+  5.0 3.0 new Rectangle -> r
   r area . nl
   r perimeter . nl
 }

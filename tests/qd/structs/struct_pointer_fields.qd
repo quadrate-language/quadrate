@@ -9,10 +9,10 @@ struct Outer {
 
 fn test_pointer_fields( -- ) {
   // Create inner struct
-  42.0 Inner -> i
+  42.0 new Inner -> i
 
   // Create outer struct with pointer to inner
-  i 2.0 Outer -> o
+  i 2.0 new Outer -> o
 
   // Access the scale from outer
   o @scale . nl
