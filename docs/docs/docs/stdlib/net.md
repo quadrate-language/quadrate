@@ -4,28 +4,6 @@ TCP network operations.
 
 ## Functions
 
-### listen
-
-Start listening for connections on a port.
-
-**Signature:** `( port:i64 -- socket:i64 )`
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `port` | `i64` | Port number to listen on |
-
-| Return | Type | Description |
-|--------|------|-------------|
-| `socket` | `i64` | Server socket descriptor |
-
-**Example:**
-
-```qd
-8080 net::listen -> server
-```
-
----
-
 ### accept
 
 Accept an incoming connection.
@@ -44,6 +22,24 @@ Accept an incoming connection.
 
 ```qd
 server net::accept -> client
+```
+
+---
+
+### close
+
+Close socket and release resources.
+
+**Signature:** `( socket:i64 -- )`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `socket` | `i64` | Socket descriptor |
+
+**Example:**
+
+```qd
+sock net::close
 ```
 
 ---
@@ -71,25 +67,24 @@ Connect to a remote host.
 
 ---
 
-### send
+### listen
 
-Send data over socket.
+Start listening for connections on a port.
 
-**Signature:** `( socket:i64 data:str -- bytes_sent:i64 )`
+**Signature:** `( port:i64 -- socket:i64 )`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `socket` | `i64` | Socket descriptor |
-| `data` | `str` | Data to send |
+| `port` | `i64` | Port number to listen on |
 
 | Return | Type | Description |
 |--------|------|-------------|
-| `bytes_sent` | `i64` | Number of bytes sent |
+| `socket` | `i64` | Server socket descriptor |
 
 **Example:**
 
 ```qd
-sock "Hello" net::send -> n
+8080 net::listen -> server
 ```
 
 ---
@@ -118,6 +113,29 @@ sock 1024 net::receive -> data -> n
 
 ---
 
+### send
+
+Send data over socket.
+
+**Signature:** `( socket:i64 data:str -- bytes_sent:i64 )`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `socket` | `i64` | Socket descriptor |
+| `data` | `str` | Data to send |
+
+| Return | Type | Description |
+|--------|------|-------------|
+| `bytes_sent` | `i64` | Number of bytes sent |
+
+**Example:**
+
+```qd
+sock "Hello" net::send -> n
+```
+
+---
+
 ### shutdown
 
 Shutdown socket for reading/writing.
@@ -132,22 +150,4 @@ Shutdown socket for reading/writing.
 
 ```qd
 sock net::shutdown
-```
-
----
-
-### close
-
-Close socket and release resources.
-
-**Signature:** `( socket:i64 -- )`
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `socket` | `i64` | Socket descriptor |
-
-**Example:**
-
-```qd
-sock net::close
 ```

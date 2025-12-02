@@ -5,30 +5,6 @@
   "structs": [],
   "functions": [
     {
-      "name": "listen",
-      "signature": "( port:i64 -- socket:i64 )",
-      "failable": false,
-      "description": "Start listening for connections on a port.",
-      "params": [
-        {
-          "name": "port",
-          "type": "i64",
-          "description": "Port number to listen on"
-        }
-      ],
-      "returns": [
-        {
-          "name": "socket",
-          "type": "i64",
-          "description": "Server socket descriptor"
-        }
-      ],
-      "errors": [],
-      "examples": [
-        "8080 net::listen -> server"
-      ]
-    },
-    {
       "name": "accept",
       "signature": "( server_socket:i64 -- client_socket:i64 )",
       "failable": false,
@@ -50,6 +26,24 @@
       "errors": [],
       "examples": [
         "server net::accept -> client"
+      ]
+    },
+    {
+      "name": "close",
+      "signature": "( socket:i64 -- )",
+      "failable": false,
+      "description": "Close socket and release resources.",
+      "params": [
+        {
+          "name": "socket",
+          "type": "i64",
+          "description": "Socket descriptor"
+        }
+      ],
+      "returns": [],
+      "errors": [],
+      "examples": [
+        "sock net::close"
       ]
     },
     {
@@ -82,32 +76,27 @@
       ]
     },
     {
-      "name": "send",
-      "signature": "( socket:i64 data:str -- bytes_sent:i64 )",
+      "name": "listen",
+      "signature": "( port:i64 -- socket:i64 )",
       "failable": false,
-      "description": "Send data over socket.",
+      "description": "Start listening for connections on a port.",
       "params": [
         {
-          "name": "socket",
+          "name": "port",
           "type": "i64",
-          "description": "Socket descriptor"
-        },
-        {
-          "name": "data",
-          "type": "str",
-          "description": "Data to send"
+          "description": "Port number to listen on"
         }
       ],
       "returns": [
         {
-          "name": "bytes_sent",
+          "name": "socket",
           "type": "i64",
-          "description": "Number of bytes sent"
+          "description": "Server socket descriptor"
         }
       ],
       "errors": [],
       "examples": [
-        "sock \"Hello\" net::send -> n"
+        "8080 net::listen -> server"
       ]
     },
     {
@@ -145,6 +134,35 @@
       ]
     },
     {
+      "name": "send",
+      "signature": "( socket:i64 data:str -- bytes_sent:i64 )",
+      "failable": false,
+      "description": "Send data over socket.",
+      "params": [
+        {
+          "name": "socket",
+          "type": "i64",
+          "description": "Socket descriptor"
+        },
+        {
+          "name": "data",
+          "type": "str",
+          "description": "Data to send"
+        }
+      ],
+      "returns": [
+        {
+          "name": "bytes_sent",
+          "type": "i64",
+          "description": "Number of bytes sent"
+        }
+      ],
+      "errors": [],
+      "examples": [
+        "sock \"Hello\" net::send -> n"
+      ]
+    },
+    {
       "name": "shutdown",
       "signature": "( socket:i64 -- )",
       "failable": false,
@@ -160,24 +178,6 @@
       "errors": [],
       "examples": [
         "sock net::shutdown"
-      ]
-    },
-    {
-      "name": "close",
-      "signature": "( socket:i64 -- )",
-      "failable": false,
-      "description": "Close socket and release resources.",
-      "params": [
-        {
-          "name": "socket",
-          "type": "i64",
-          "description": "Socket descriptor"
-        }
-      ],
-      "returns": [],
-      "errors": [],
-      "examples": [
-        "sock net::close"
       ]
     }
   ]

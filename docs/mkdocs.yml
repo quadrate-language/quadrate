@@ -1,15 +1,8 @@
 site_name: Quadrate
 theme:
-  name: material
+  name: readthedocs
   logo: assets/logo.png
   favicon: assets/favicon.ico
-  features:
-    - navigation.tabs
-    - navigation.sections
-    - navigation.indexes
-    - search.highlight
-    - content.code.copy
-    - content.tabs.link
 extra_css:
   - styles/extra.css
 nav:
@@ -19,5 +12,20 @@ nav:
       - Hello World: docs/tutorial-hello-world.md
       - Stack: docs/tutorial-stack.md
       - Structs: docs/tutorial-structs.md
-      - API Reference: docs/api-reference.md
+      - Standard Library:
+          - Overview: docs/stdlib/index.md
+          - base64: docs/stdlib/base64.md
+          - bits: docs/stdlib/bits.md
+          - flag: docs/stdlib/flag.md
+          - fmt: docs/stdlib/fmt.md
+          - io: docs/stdlib/io.md
+          - json: docs/stdlib/json.md
+          - math: docs/stdlib/math.md
+          - mem: docs/stdlib/mem.md
+          - net: docs/stdlib/net.md
+          - os: docs/stdlib/os.md
+          - str: docs/stdlib/str.md
+          - strconv: docs/stdlib/strconv.md
+          - time: docs/stdlib/time.md
+          - unicode: docs/stdlib/unicode.md
   - About: about.md

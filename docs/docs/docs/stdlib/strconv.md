@@ -4,6 +4,28 @@ String to number conversions.
 
 ## Functions
 
+### atoi
+
+Parse decimal string to integer.
+
+**Signature:** `( str:str -- value:i64 )`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `str` | `str` | Decimal string |
+
+| Return | Type | Description |
+|--------|------|-------------|
+| `value` | `i64` | Parsed integer |
+
+**Example:**
+
+```qd
+"42" strconv::atoi .  // 42
+```
+
+---
+
 ### format_int
 
 Format integer in given base.
@@ -23,29 +45,6 @@ Format integer in given base.
 
 ```qd
 255 16 strconv::format_int .  // "ff"
-```
-
----
-
-### parse_int
-
-Parse integer from string in given base.
-
-**Signature:** `( str:str base:i64 -- value:i64 )`
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `str` | `str` | String to parse |
-| `base` | `i64` | Numeric base (2-36) |
-
-| Return | Type | Description |
-|--------|------|-------------|
-| `value` | `i64` | Parsed integer |
-
-**Example:**
-
-```qd
-"ff" 16 strconv::parse_int .  // 255
 ```
 
 ---
@@ -72,15 +71,16 @@ Convert integer to decimal string.
 
 ---
 
-### atoi
+### parse_int
 
-Parse decimal string to integer.
+Parse integer from string in given base.
 
-**Signature:** `( str:str -- value:i64 )`
+**Signature:** `( str:str base:i64 -- value:i64 )`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `str` | `str` | Decimal string |
+| `str` | `str` | String to parse |
+| `base` | `i64` | Numeric base (2-36) |
 
 | Return | Type | Description |
 |--------|------|-------------|
@@ -89,5 +89,5 @@ Parse decimal string to integer.
 **Example:**
 
 ```qd
-"42" strconv::atoi .  // 42
+"ff" 16 strconv::parse_int .  // 255
 ```

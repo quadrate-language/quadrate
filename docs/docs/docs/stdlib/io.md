@@ -6,23 +6,64 @@ File and stream I/O operations.
 
 | Name | Value | Description |
 |------|-------|-------------|
-| `Read` | `"r"` | Open mode: read only. |
-| `ReadBinary` | `"rb"` | Open mode: read binary. |
-| `Write` | `"w"` | Open mode: write (truncate). |
-| `WriteBinary` | `"wb"` | Open mode: write binary. |
 | `Append` | `"a"` | Open mode: append. |
 | `AppendBinary` | `"ab"` | Open mode: append binary. |
-| `ReadWrite` | `"r+"` | Open mode: read and write. |
-| `ReadWriteBinary` | `"rb+"` | Open mode: read and write binary. |
-| `WriteRead` | `"w+"` | Open mode: write and read (truncate). |
-| `WriteReadBinary` | `"wb+"` | Open mode: write and read binary. |
 | `AppendRead` | `"a+"` | Open mode: append and read. |
 | `AppendReadBinary` | `"ab+"` | Open mode: append and read binary. |
-| `SeekSet` | `0` | Seek from beginning of file. |
+| `Read` | `"r"` | Open mode: read only. |
+| `ReadBinary` | `"rb"` | Open mode: read binary. |
+| `ReadWrite` | `"r+"` | Open mode: read and write. |
+| `ReadWriteBinary` | `"rb+"` | Open mode: read and write binary. |
 | `SeekCur` | `1` | Seek from current position. |
 | `SeekEnd` | `2` | Seek from end of file. |
+| `SeekSet` | `0` | Seek from beginning of file. |
+| `Write` | `"w"` | Open mode: write (truncate). |
+| `WriteBinary` | `"wb"` | Open mode: write binary. |
+| `WriteRead` | `"w+"` | Open mode: write and read (truncate). |
+| `WriteReadBinary` | `"wb+"` | Open mode: write and read binary. |
 
 ## Functions
+
+### close
+
+Close a file.
+
+**Signature:** `( handle:ptr -- )`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `handle` | `ptr` | File handle to close |
+
+**Example:**
+
+```qd
+f io::close
+```
+
+---
+
+### eof
+
+Check if at end of file.
+
+**Signature:** `( handle:ptr -- handle:ptr is_eof:i64 )`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `handle` | `ptr` | File handle |
+
+| Return | Type | Description |
+|--------|------|-------------|
+| `handle` | `ptr` | File handle (unchanged) |
+| `is_eof` | `i64` | 1 if at EOF, 0 otherwise |
+
+**Example:**
+
+```qd
+f io::eof -> f -> at_end
+```
+
+---
 
 ### open
 
@@ -48,24 +89,6 @@ Open a file.
 
 ```qd
 "data.txt" io::Read io::open! -> f
-```
-
----
-
-### close
-
-Close a file.
-
-**Signature:** `( handle:ptr -- )`
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `handle` | `ptr` | File handle to close |
-
-**Example:**
-
-```qd
-f io::close
 ```
 
 ---
@@ -98,30 +121,24 @@ f buf 1024 io::read! -> n
 
 ---
 
-### write
+### readline
 
-Write bytes from buffer.
+Read a line from stdin.
 
-**Signature:** `( handle:ptr buffer:ptr count:i64 -- bytes_written:i64 )!`
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `handle` | `ptr` | File handle |
-| `buffer` | `ptr` | Buffer containing data |
-| `count` | `i64` | Number of bytes to write |
+**Signature:** `( -- line:str )!`
 
 | Return | Type | Description |
 |--------|------|-------------|
-| `bytes_written` | `i64` | Actual bytes written |
+| `line` | `str` | Line without trailing newline |
 
 **Errors:**
 
-- Write failed
+- Read failed
 
 **Example:**
 
 ```qd
-f buf len io::write! drop
+io::readline! -> input
 ```
 
 ---
@@ -180,45 +197,28 @@ f io::tell! -> pos
 
 ---
 
-### eof
+### write
 
-Check if at end of file.
+Write bytes from buffer.
 
-**Signature:** `( handle:ptr -- handle:ptr is_eof:i64 )`
+**Signature:** `( handle:ptr buffer:ptr count:i64 -- bytes_written:i64 )!`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
 | `handle` | `ptr` | File handle |
+| `buffer` | `ptr` | Buffer containing data |
+| `count` | `i64` | Number of bytes to write |
 
 | Return | Type | Description |
 |--------|------|-------------|
-| `handle` | `ptr` | File handle (unchanged) |
-| `is_eof` | `i64` | 1 if at EOF, 0 otherwise |
-
-**Example:**
-
-```qd
-f io::eof -> f -> at_end
-```
-
----
-
-### readline
-
-Read a line from stdin.
-
-**Signature:** `( -- line:str )!`
-
-| Return | Type | Description |
-|--------|------|-------------|
-| `line` | `str` | Line without trailing newline |
+| `bytes_written` | `i64` | Actual bytes written |
 
 **Errors:**
 
-- Read failed
+- Write failed
 
 **Example:**
 
 ```qd
-io::readline! -> input
+f buf len io::write! drop
 ```

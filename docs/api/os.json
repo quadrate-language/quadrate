@@ -3,34 +3,9 @@
   "description": "Operating system interface.",
   "constants": [
     {
-      "name": "Success",
-      "value": "0",
-      "description": "Error: No error."
-    },
-    {
-      "name": "PermissionDenied",
-      "value": "13",
-      "description": "Error: Permission denied (EACCES)."
-    },
-    {
       "name": "FileExists",
       "value": "17",
       "description": "Error: File already exists (EEXIST)."
-    },
-    {
-      "name": "NotADirectory",
-      "value": "20",
-      "description": "Error: Path component is not a directory (ENOTDIR)."
-    },
-    {
-      "name": "IsADirectory",
-      "value": "21",
-      "description": "Error: Is a directory when file expected (EISDIR)."
-    },
-    {
-      "name": "InvalidArgument",
-      "value": "22",
-      "description": "Error: Invalid argument (EINVAL)."
     },
     {
       "name": "FileNotFound",
@@ -38,19 +13,9 @@
       "description": "Error: No such file or directory (ENOENT)."
     },
     {
-      "name": "NoSpaceLeft",
-      "value": "28",
-      "description": "Error: No space left on device (ENOSPC)."
-    },
-    {
-      "name": "ReadOnlyFileSystem",
-      "value": "30",
-      "description": "Error: Read-only file system (EROFS)."
-    },
-    {
-      "name": "NameTooLong",
-      "value": "36",
-      "description": "Error: File name too long (ENAMETOOLONG)."
+      "name": "InvalidArgument",
+      "value": "22",
+      "description": "Error: Invalid argument (EINVAL)."
     },
     {
       "name": "IoError",
@@ -58,150 +23,48 @@
       "description": "Error: I/O error (EIO)."
     },
     {
+      "name": "IsADirectory",
+      "value": "21",
+      "description": "Error: Is a directory when file expected (EISDIR)."
+    },
+    {
+      "name": "NameTooLong",
+      "value": "36",
+      "description": "Error: File name too long (ENAMETOOLONG)."
+    },
+    {
+      "name": "NoSpaceLeft",
+      "value": "28",
+      "description": "Error: No space left on device (ENOSPC)."
+    },
+    {
+      "name": "NotADirectory",
+      "value": "20",
+      "description": "Error: Path component is not a directory (ENOTDIR)."
+    },
+    {
       "name": "OutOfMemory",
       "value": "12",
       "description": "Error: Out of memory (ENOMEM)."
+    },
+    {
+      "name": "PermissionDenied",
+      "value": "13",
+      "description": "Error: Permission denied (EACCES)."
+    },
+    {
+      "name": "ReadOnlyFileSystem",
+      "value": "30",
+      "description": "Error: Read-only file system (EROFS)."
+    },
+    {
+      "name": "Success",
+      "value": "0",
+      "description": "Error: No error."
     }
   ],
   "structs": [],
   "functions": [
-    {
-      "name": "exit",
-      "signature": "( code:i64 -- )",
-      "failable": false,
-      "description": "Exit the program with status code.",
-      "params": [
-        {
-          "name": "code",
-          "type": "i64",
-          "description": "Exit status (0 = success)"
-        }
-      ],
-      "returns": [],
-      "errors": [],
-      "examples": [
-        "0 os::exit"
-      ]
-    },
-    {
-      "name": "system",
-      "signature": "( cmd:str -- exitcode:i64 )",
-      "failable": false,
-      "description": "Execute a shell command.",
-      "params": [
-        {
-          "name": "cmd",
-          "type": "str",
-          "description": "Command to execute"
-        }
-      ],
-      "returns": [
-        {
-          "name": "exitcode",
-          "type": "i64",
-          "description": "Command exit status"
-        }
-      ],
-      "errors": [],
-      "examples": [
-        "\"ls -la\" os::system -> code"
-      ]
-    },
-    {
-      "name": "getenv",
-      "signature": "( name:str -- value:str )",
-      "failable": false,
-      "description": "Get environment variable value.",
-      "params": [
-        {
-          "name": "name",
-          "type": "str",
-          "description": "Variable name"
-        }
-      ],
-      "returns": [
-        {
-          "name": "value",
-          "type": "str",
-          "description": "Variable value (empty if not set)"
-        }
-      ],
-      "errors": [],
-      "examples": [
-        "\"HOME\" os::getenv -> home"
-      ]
-    },
-    {
-      "name": "exists",
-      "signature": "( path:str -- exists:i64 )",
-      "failable": false,
-      "description": "Check if path exists.",
-      "params": [
-        {
-          "name": "path",
-          "type": "str",
-          "description": "File or directory path"
-        }
-      ],
-      "returns": [
-        {
-          "name": "exists",
-          "type": "i64",
-          "description": "1 if exists, 0 otherwise"
-        }
-      ],
-      "errors": [],
-      "examples": [
-        "\"/tmp\" os::exists .  // 1"
-      ]
-    },
-    {
-      "name": "delete",
-      "signature": "( path:str -- )",
-      "failable": true,
-      "description": "Delete a file or empty directory.",
-      "params": [
-        {
-          "name": "path",
-          "type": "str",
-          "description": "Path to delete"
-        }
-      ],
-      "returns": [],
-      "errors": [
-        "File not found",
-        "Permission denied"
-      ],
-      "examples": [
-        "\"/tmp/test.txt\" os::delete!"
-      ]
-    },
-    {
-      "name": "rename",
-      "signature": "( oldpath:str newpath:str -- )",
-      "failable": true,
-      "description": "Rename or move a file.",
-      "params": [
-        {
-          "name": "oldpath",
-          "type": "str",
-          "description": "Current path"
-        },
-        {
-          "name": "newpath",
-          "type": "str",
-          "description": "New path"
-        }
-      ],
-      "returns": [],
-      "errors": [
-        "File not found",
-        "Permission denied"
-      ],
-      "examples": [
-        "\"old.txt\" \"new.txt\" os::rename!"
-      ]
-    },
     {
       "name": "copy",
       "signature": "( srcpath:str dstpath:str -- )",
@@ -229,24 +92,90 @@
       ]
     },
     {
-      "name": "mkdir",
+      "name": "delete",
       "signature": "( path:str -- )",
       "failable": true,
-      "description": "Create a directory.",
+      "description": "Delete a file or empty directory.",
       "params": [
         {
           "name": "path",
           "type": "str",
-          "description": "Directory path"
+          "description": "Path to delete"
         }
       ],
       "returns": [],
       "errors": [
-        "File exists",
+        "File not found",
         "Permission denied"
       ],
       "examples": [
-        "\"/tmp/newdir\" os::mkdir!"
+        "\"/tmp/test.txt\" os::delete!"
+      ]
+    },
+    {
+      "name": "exists",
+      "signature": "( path:str -- exists:i64 )",
+      "failable": false,
+      "description": "Check if path exists.",
+      "params": [
+        {
+          "name": "path",
+          "type": "str",
+          "description": "File or directory path"
+        }
+      ],
+      "returns": [
+        {
+          "name": "exists",
+          "type": "i64",
+          "description": "1 if exists, 0 otherwise"
+        }
+      ],
+      "errors": [],
+      "examples": [
+        "\"/tmp\" os::exists .  // 1"
+      ]
+    },
+    {
+      "name": "exit",
+      "signature": "( code:i64 -- )",
+      "failable": false,
+      "description": "Exit the program with status code.",
+      "params": [
+        {
+          "name": "code",
+          "type": "i64",
+          "description": "Exit status (0 = success)"
+        }
+      ],
+      "returns": [],
+      "errors": [],
+      "examples": [
+        "0 os::exit"
+      ]
+    },
+    {
+      "name": "getenv",
+      "signature": "( name:str -- value:str )",
+      "failable": false,
+      "description": "Get environment variable value.",
+      "params": [
+        {
+          "name": "name",
+          "type": "str",
+          "description": "Variable name"
+        }
+      ],
+      "returns": [
+        {
+          "name": "value",
+          "type": "str",
+          "description": "Variable value (empty if not set)"
+        }
+      ],
+      "errors": [],
+      "examples": [
+        "\"HOME\" os::getenv -> home"
       ]
     },
     {
@@ -279,6 +208,77 @@
       ],
       "examples": [
         "\"/tmp\" os::list! -> entries -> count"
+      ]
+    },
+    {
+      "name": "mkdir",
+      "signature": "( path:str -- )",
+      "failable": true,
+      "description": "Create a directory.",
+      "params": [
+        {
+          "name": "path",
+          "type": "str",
+          "description": "Directory path"
+        }
+      ],
+      "returns": [],
+      "errors": [
+        "File exists",
+        "Permission denied"
+      ],
+      "examples": [
+        "\"/tmp/newdir\" os::mkdir!"
+      ]
+    },
+    {
+      "name": "rename",
+      "signature": "( oldpath:str newpath:str -- )",
+      "failable": true,
+      "description": "Rename or move a file.",
+      "params": [
+        {
+          "name": "oldpath",
+          "type": "str",
+          "description": "Current path"
+        },
+        {
+          "name": "newpath",
+          "type": "str",
+          "description": "New path"
+        }
+      ],
+      "returns": [],
+      "errors": [
+        "File not found",
+        "Permission denied"
+      ],
+      "examples": [
+        "\"old.txt\" \"new.txt\" os::rename!"
+      ]
+    },
+    {
+      "name": "system",
+      "signature": "( cmd:str -- exitcode:i64 )",
+      "failable": false,
+      "description": "Execute a shell command.",
+      "params": [
+        {
+          "name": "cmd",
+          "type": "str",
+          "description": "Command to execute"
+        }
+      ],
+      "returns": [
+        {
+          "name": "exitcode",
+          "type": "i64",
+          "description": "Command exit status"
+        }
+      ],
+      "errors": [],
+      "examples": [
+        "\"ls -la\" os::system -> code"
       ]
     }
   ]

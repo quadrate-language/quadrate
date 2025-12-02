@@ -10,48 +10,6 @@
   ],
   "functions": [
     {
-      "name": "parse",
-      "signature": "( argc:i64 -- )",
-      "failable": false,
-      "description": "Parse arguments from read instruction.",
-      "params": [
-        {
-          "name": "argc",
-          "type": "i64",
-          "description": "Argument count from read"
-        }
-      ],
-      "returns": [
-        {
-          "name": "Flag",
-          "type": "struct",
-          "description": "on stack"
-        }
-      ],
-      "errors": [],
-      "examples": [
-        "read flag::parse -> f"
-      ]
-    },
-    {
-      "name": "destroy",
-      "signature": "( f:ptr -- )",
-      "failable": false,
-      "description": "Free a Flag struct and its argv string.",
-      "params": [
-        {
-          "name": "f",
-          "type": "ptr",
-          "description": "Flag struct to free"
-        }
-      ],
-      "returns": [],
-      "errors": [],
-      "examples": [
-        "f flag::destroy"
-      ]
-    },
-    {
       "name": "bool",
       "signature": "( f:ptr name:str -- present:i64 )",
       "failable": false,
@@ -81,65 +39,21 @@
       ]
     },
     {
-      "name": "string",
-      "signature": "( f:ptr name:str -- value:str )",
-      "failable": true,
-      "description": "Get string value of a flag.",
+      "name": "destroy",
+      "signature": "( f:ptr -- )",
+      "failable": false,
+      "description": "Free a Flag struct and its argv string.",
       "params": [
         {
           "name": "f",
           "type": "ptr",
-          "description": "Flag struct"
-        },
-        {
-          "name": "name",
-          "type": "str",
-          "description": "Flag name"
+          "description": "Flag struct to free"
         }
       ],
-      "returns": [
-        {
-          "name": "value",
-          "type": "str",
-          "description": "Flag value"
-        }
-      ],
-      "errors": [
-        "Flag not found"
-      ],
+      "returns": [],
+      "errors": [],
       "examples": [
-        "f \"--name\" flag::string! -> name"
-      ]
-    },
-    {
-      "name": "int",
-      "signature": "( f:ptr name:str -- value:i64 )",
-      "failable": true,
-      "description": "Get integer value of a flag.",
-      "params": [
-        {
-          "name": "f",
-          "type": "ptr",
-          "description": "Flag struct"
-        },
-        {
-          "name": "name",
-          "type": "str",
-          "description": "Flag name"
-        }
-      ],
-      "returns": [
-        {
-          "name": "value",
-          "type": "i64",
-          "description": "Flag value as integer"
-        }
-      ],
-      "errors": [
-        "Flag not found"
-      ],
-      "examples": [
-        "f \"--count\" flag::int! -> count"
+        "f flag::destroy"
       ]
     },
     {
@@ -174,6 +88,61 @@
       ]
     },
     {
+      "name": "int",
+      "signature": "( f:ptr name:str -- value:i64 )",
+      "failable": true,
+      "description": "Get integer value of a flag.",
+      "params": [
+        {
+          "name": "f",
+          "type": "ptr",
+          "description": "Flag struct"
+        },
+        {
+          "name": "name",
+          "type": "str",
+          "description": "Flag name"
+        }
+      ],
+      "returns": [
+        {
+          "name": "value",
+          "type": "i64",
+          "description": "Flag value as integer"
+        }
+      ],
+      "errors": [
+        "Flag not found"
+      ],
+      "examples": [
+        "f \"--count\" flag::int! -> count"
+      ]
+    },
+    {
+      "name": "parse",
+      "signature": "( argc:i64 -- )",
+      "failable": false,
+      "description": "Parse arguments from read instruction.",
+      "params": [
+        {
+          "name": "argc",
+          "type": "i64",
+          "description": "Argument count from read"
+        }
+      ],
+      "returns": [
+        {
+          "name": "Flag",
+          "type": "struct",
+          "description": "on stack"
+        }
+      ],
+      "errors": [],
+      "examples": [
+        "read flag::parse -> f"
+      ]
+    },
+    {
       "name": "positional",
       "signature": "( f:ptr index:i64 -- value:str )",
       "failable": true,
@@ -201,6 +170,37 @@
         "Not implemented"
       ],
       "examples": []
+    },
+    {
+      "name": "string",
+      "signature": "( f:ptr name:str -- value:str )",
+      "failable": true,
+      "description": "Get string value of a flag.",
+      "params": [
+        {
+          "name": "f",
+          "type": "ptr",
+          "description": "Flag struct"
+        },
+        {
+          "name": "name",
+          "type": "str",
+          "description": "Flag name"
+        }
+      ],
+      "returns": [
+        {
+          "name": "value",
+          "type": "str",
+          "description": "Flag value"
+        }
+      ],
+      "errors": [
+        "Flag not found"
+      ],
+      "examples": [
+        "f \"--name\" flag::string! -> name"
+      ]
     }
   ]
 }

@@ -29,263 +29,6 @@
       ]
     },
     {
-      "name": "realloc",
-      "signature": "( address:ptr new_bytes:i64 -- new_address:ptr )",
-      "failable": false,
-      "description": "Reallocate memory to new size.",
-      "params": [
-        {
-          "name": "address",
-          "type": "ptr",
-          "description": "Existing allocation (or null for new alloc)"
-        },
-        {
-          "name": "new_bytes",
-          "type": "i64",
-          "description": "New size in bytes"
-        }
-      ],
-      "returns": [
-        {
-          "name": "new_address",
-          "type": "ptr",
-          "description": "Reallocated memory, or null on failure"
-        }
-      ],
-      "errors": [],
-      "examples": [
-        "buf 2048 mem::realloc -> buf"
-      ]
-    },
-    {
-      "name": "set_byte",
-      "signature": "( address:ptr offset:i64 value:i64 -- )",
-      "failable": false,
-      "description": "Set a byte at offset.",
-      "params": [
-        {
-          "name": "address",
-          "type": "ptr",
-          "description": "Base address"
-        },
-        {
-          "name": "offset",
-          "type": "i64",
-          "description": "Byte offset from base"
-        },
-        {
-          "name": "value",
-          "type": "i64",
-          "description": "Byte value (0-255)"
-        }
-      ],
-      "returns": [],
-      "errors": [],
-      "examples": [
-        "buf 0 65 mem::set_byte"
-      ]
-    },
-    {
-      "name": "get_byte",
-      "signature": "( address:ptr offset:i64 -- value:i64 )",
-      "failable": false,
-      "description": "Get a byte at offset.",
-      "params": [
-        {
-          "name": "address",
-          "type": "ptr",
-          "description": "Base address"
-        },
-        {
-          "name": "offset",
-          "type": "i64",
-          "description": "Byte offset from base"
-        }
-      ],
-      "returns": [
-        {
-          "name": "value",
-          "type": "i64",
-          "description": "Byte value (0-255)"
-        }
-      ],
-      "errors": [],
-      "examples": [
-        "buf 0 mem::get_byte -> b"
-      ]
-    },
-    {
-      "name": "set",
-      "signature": "( address:ptr offset:i64 value:i64 -- )",
-      "failable": false,
-      "description": "Set a 64-bit integer at offset.",
-      "params": [
-        {
-          "name": "address",
-          "type": "ptr",
-          "description": "Base address"
-        },
-        {
-          "name": "offset",
-          "type": "i64",
-          "description": "Byte offset from base"
-        },
-        {
-          "name": "value",
-          "type": "i64",
-          "description": "Integer value"
-        }
-      ],
-      "returns": [],
-      "errors": [],
-      "examples": [
-        "buf 0 42 mem::set"
-      ]
-    },
-    {
-      "name": "get",
-      "signature": "( address:ptr offset:i64 -- value:i64 )",
-      "failable": false,
-      "description": "Get a 64-bit integer at offset.",
-      "params": [
-        {
-          "name": "address",
-          "type": "ptr",
-          "description": "Base address"
-        },
-        {
-          "name": "offset",
-          "type": "i64",
-          "description": "Byte offset from base"
-        }
-      ],
-      "returns": [
-        {
-          "name": "value",
-          "type": "i64",
-          "description": "Integer value"
-        }
-      ],
-      "errors": [],
-      "examples": [
-        "buf 0 mem::get -> n"
-      ]
-    },
-    {
-      "name": "set_float",
-      "signature": "( address:ptr offset:i64 value:f64 -- )",
-      "failable": false,
-      "description": "Set a 64-bit float at offset.",
-      "params": [
-        {
-          "name": "address",
-          "type": "ptr",
-          "description": "Base address"
-        },
-        {
-          "name": "offset",
-          "type": "i64",
-          "description": "Byte offset from base"
-        },
-        {
-          "name": "value",
-          "type": "f64",
-          "description": "Float value"
-        }
-      ],
-      "returns": [],
-      "errors": [],
-      "examples": [
-        "buf 0 3.14 mem::set_float"
-      ]
-    },
-    {
-      "name": "get_float",
-      "signature": "( address:ptr offset:i64 -- value:f64 )",
-      "failable": false,
-      "description": "Get a 64-bit float at offset.",
-      "params": [
-        {
-          "name": "address",
-          "type": "ptr",
-          "description": "Base address"
-        },
-        {
-          "name": "offset",
-          "type": "i64",
-          "description": "Byte offset from base"
-        }
-      ],
-      "returns": [
-        {
-          "name": "value",
-          "type": "f64",
-          "description": "Float value"
-        }
-      ],
-      "errors": [],
-      "examples": [
-        "buf 0 mem::get_float -> x"
-      ]
-    },
-    {
-      "name": "set_ptr",
-      "signature": "( address:ptr offset:i64 value:ptr -- )",
-      "failable": false,
-      "description": "Set a pointer at offset.",
-      "params": [
-        {
-          "name": "address",
-          "type": "ptr",
-          "description": "Base address"
-        },
-        {
-          "name": "offset",
-          "type": "i64",
-          "description": "Byte offset from base"
-        },
-        {
-          "name": "value",
-          "type": "ptr",
-          "description": "Pointer value"
-        }
-      ],
-      "returns": [],
-      "errors": [],
-      "examples": [
-        "buf 0 other_buf mem::set_ptr"
-      ]
-    },
-    {
-      "name": "get_ptr",
-      "signature": "( address:ptr offset:i64 -- value:ptr )",
-      "failable": false,
-      "description": "Get a pointer at offset.",
-      "params": [
-        {
-          "name": "address",
-          "type": "ptr",
-          "description": "Base address"
-        },
-        {
-          "name": "offset",
-          "type": "i64",
-          "description": "Byte offset from base"
-        }
-      ],
-      "returns": [
-        {
-          "name": "value",
-          "type": "ptr",
-          "description": "Pointer value"
-        }
-      ],
-      "errors": [],
-      "examples": [
-        "buf 0 mem::get_ptr -> p"
-      ]
-    },
-    {
       "name": "copy",
       "signature": "( src:ptr dst:ptr bytes:i64 -- )",
       "failable": false,
@@ -311,29 +54,6 @@
       "errors": [],
       "examples": [
         "src dst 100 mem::copy"
-      ]
-    },
-    {
-      "name": "zero",
-      "signature": "( address:ptr bytes:i64 -- )",
-      "failable": false,
-      "description": "Zero out memory region.",
-      "params": [
-        {
-          "name": "address",
-          "type": "ptr",
-          "description": "Base address"
-        },
-        {
-          "name": "bytes",
-          "type": "i64",
-          "description": "Number of bytes to zero"
-        }
-      ],
-      "returns": [],
-      "errors": [],
-      "examples": [
-        "buf 1024 mem::zero"
       ]
     },
     {
@@ -365,32 +85,21 @@
       ]
     },
     {
-      "name": "to_string",
-      "signature": "( buffer:ptr length:i64 -- text:str )",
+      "name": "free",
+      "signature": "( address:ptr -- )",
       "failable": false,
-      "description": "Convert buffer to string.",
+      "description": "Free allocated memory.",
       "params": [
         {
-          "name": "buffer",
+          "name": "address",
           "type": "ptr",
-          "description": "Source buffer"
-        },
-        {
-          "name": "length",
-          "type": "i64",
-          "description": "Number of bytes"
+          "description": "Memory to free (null is safe)"
         }
       ],
-      "returns": [
-        {
-          "name": "text",
-          "type": "str",
-          "description": "Null-terminated string"
-        }
-      ],
+      "returns": [],
       "errors": [],
       "examples": [
-        "buf len mem::to_string -> s"
+        "buf mem::free"
       ]
     },
     {
@@ -423,21 +132,119 @@
       ]
     },
     {
-      "name": "free",
-      "signature": "( address:ptr -- )",
+      "name": "get",
+      "signature": "( address:ptr offset:i64 -- value:i64 )",
       "failable": false,
-      "description": "Free allocated memory.",
+      "description": "Get a 64-bit integer at offset.",
       "params": [
         {
           "name": "address",
           "type": "ptr",
-          "description": "Memory to free (null is safe)"
+          "description": "Base address"
+        },
+        {
+          "name": "offset",
+          "type": "i64",
+          "description": "Byte offset from base"
         }
       ],
-      "returns": [],
+      "returns": [
+        {
+          "name": "value",
+          "type": "i64",
+          "description": "Integer value"
+        }
+      ],
       "errors": [],
       "examples": [
-        "buf mem::free"
+        "buf 0 mem::get -> n"
+      ]
+    },
+    {
+      "name": "get_byte",
+      "signature": "( address:ptr offset:i64 -- value:i64 )",
+      "failable": false,
+      "description": "Get a byte at offset.",
+      "params": [
+        {
+          "name": "address",
+          "type": "ptr",
+          "description": "Base address"
+        },
+        {
+          "name": "offset",
+          "type": "i64",
+          "description": "Byte offset from base"
+        }
+      ],
+      "returns": [
+        {
+          "name": "value",
+          "type": "i64",
+          "description": "Byte value (0-255)"
+        }
+      ],
+      "errors": [],
+      "examples": [
+        "buf 0 mem::get_byte -> b"
+      ]
+    },
+    {
+      "name": "get_float",
+      "signature": "( address:ptr offset:i64 -- value:f64 )",
+      "failable": false,
+      "description": "Get a 64-bit float at offset.",
+      "params": [
+        {
+          "name": "address",
+          "type": "ptr",
+          "description": "Base address"
+        },
+        {
+          "name": "offset",
+          "type": "i64",
+          "description": "Byte offset from base"
+        }
+      ],
+      "returns": [
+        {
+          "name": "value",
+          "type": "f64",
+          "description": "Float value"
+        }
+      ],
+      "errors": [],
+      "examples": [
+        "buf 0 mem::get_float -> x"
+      ]
+    },
+    {
+      "name": "get_ptr",
+      "signature": "( address:ptr offset:i64 -- value:ptr )",
+      "failable": false,
+      "description": "Get a pointer at offset.",
+      "params": [
+        {
+          "name": "address",
+          "type": "ptr",
+          "description": "Base address"
+        },
+        {
+          "name": "offset",
+          "type": "i64",
+          "description": "Byte offset from base"
+        }
+      ],
+      "returns": [
+        {
+          "name": "value",
+          "type": "ptr",
+          "description": "Pointer value"
+        }
+      ],
+      "errors": [],
+      "examples": [
+        "buf 0 mem::get_ptr -> p"
       ]
     },
     {
@@ -462,6 +269,199 @@
       "errors": [],
       "examples": [
         "buf mem::is_null .  // 0"
+      ]
+    },
+    {
+      "name": "realloc",
+      "signature": "( address:ptr new_bytes:i64 -- new_address:ptr )",
+      "failable": false,
+      "description": "Reallocate memory to new size.",
+      "params": [
+        {
+          "name": "address",
+          "type": "ptr",
+          "description": "Existing allocation (or null for new alloc)"
+        },
+        {
+          "name": "new_bytes",
+          "type": "i64",
+          "description": "New size in bytes"
+        }
+      ],
+      "returns": [
+        {
+          "name": "new_address",
+          "type": "ptr",
+          "description": "Reallocated memory, or null on failure"
+        }
+      ],
+      "errors": [],
+      "examples": [
+        "buf 2048 mem::realloc -> buf"
+      ]
+    },
+    {
+      "name": "set",
+      "signature": "( address:ptr offset:i64 value:i64 -- )",
+      "failable": false,
+      "description": "Set a 64-bit integer at offset.",
+      "params": [
+        {
+          "name": "address",
+          "type": "ptr",
+          "description": "Base address"
+        },
+        {
+          "name": "offset",
+          "type": "i64",
+          "description": "Byte offset from base"
+        },
+        {
+          "name": "value",
+          "type": "i64",
+          "description": "Integer value"
+        }
+      ],
+      "returns": [],
+      "errors": [],
+      "examples": [
+        "buf 0 42 mem::set"
+      ]
+    },
+    {
+      "name": "set_byte",
+      "signature": "( address:ptr offset:i64 value:i64 -- )",
+      "failable": false,
+      "description": "Set a byte at offset.",
+      "params": [
+        {
+          "name": "address",
+          "type": "ptr",
+          "description": "Base address"
+        },
+        {
+          "name": "offset",
+          "type": "i64",
+          "description": "Byte offset from base"
+        },
+        {
+          "name": "value",
+          "type": "i64",
+          "description": "Byte value (0-255)"
+        }
+      ],
+      "returns": [],
+      "errors": [],
+      "examples": [
+        "buf 0 65 mem::set_byte"
+      ]
+    },
+    {
+      "name": "set_float",
+      "signature": "( address:ptr offset:i64 value:f64 -- )",
+      "failable": false,
+      "description": "Set a 64-bit float at offset.",
+      "params": [
+        {
+          "name": "address",
+          "type": "ptr",
+          "description": "Base address"
+        },
+        {
+          "name": "offset",
+          "type": "i64",
+          "description": "Byte offset from base"
+        },
+        {
+          "name": "value",
+          "type": "f64",
+          "description": "Float value"
+        }
+      ],
+      "returns": [],
+      "errors": [],
+      "examples": [
+        "buf 0 3.14 mem::set_float"
+      ]
+    },
+    {
+      "name": "set_ptr",
+      "signature": "( address:ptr offset:i64 value:ptr -- )",
+      "failable": false,
+      "description": "Set a pointer at offset.",
+      "params": [
+        {
+          "name": "address",
+          "type": "ptr",
+          "description": "Base address"
+        },
+        {
+          "name": "offset",
+          "type": "i64",
+          "description": "Byte offset from base"
+        },
+        {
+          "name": "value",
+          "type": "ptr",
+          "description": "Pointer value"
+        }
+      ],
+      "returns": [],
+      "errors": [],
+      "examples": [
+        "buf 0 other_buf mem::set_ptr"
+      ]
+    },
+    {
+      "name": "to_string",
+      "signature": "( buffer:ptr length:i64 -- text:str )",
+      "failable": false,
+      "description": "Convert buffer to string.",
+      "params": [
+        {
+          "name": "buffer",
+          "type": "ptr",
+          "description": "Source buffer"
+        },
+        {
+          "name": "length",
+          "type": "i64",
+          "description": "Number of bytes"
+        }
+      ],
+      "returns": [
+        {
+          "name": "text",
+          "type": "str",
+          "description": "Null-terminated string"
+        }
+      ],
+      "errors": [],
+      "examples": [
+        "buf len mem::to_string -> s"
+      ]
+    },
+    {
+      "name": "zero",
+      "signature": "( address:ptr bytes:i64 -- )",
+      "failable": false,
+      "description": "Zero out memory region.",
+      "params": [
+        {
+          "name": "address",
+          "type": "ptr",
+          "description": "Base address"
+        },
+        {
+          "name": "bytes",
+          "type": "i64",
+          "description": "Number of bytes to zero"
+        }
+      ],
+      "returns": [],
+      "errors": [],
+      "examples": [
+        "buf 1024 mem::zero"
       ]
     }
   ]

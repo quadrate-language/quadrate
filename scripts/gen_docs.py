@@ -250,10 +250,10 @@ def generate_markdown(module: Module) -> str:
             lines.append(desc)
         lines.append("")
 
-    # Separate items by kind
-    constants = [i for i in module.items if i.kind == "const"]
-    structs = [i for i in module.items if i.kind == "struct"]
-    functions = [i for i in module.items if i.kind == "fn"]
+    # Separate items by kind and sort alphabetically
+    constants = sorted([i for i in module.items if i.kind == "const"], key=lambda x: x.name)
+    structs = sorted([i for i in module.items if i.kind == "struct"], key=lambda x: x.name)
+    functions = sorted([i for i in module.items if i.kind == "fn"], key=lambda x: x.name)
 
     # Constants table
     if constants:
@@ -354,7 +354,7 @@ def generate_json(module: Module) -> str:
         "functions": []
     }
 
-    for item in module.items:
+    for item in sorted(module.items, key=lambda x: x.name):
         if item.kind == "const":
             data["constants"].append({
                 "name": item.name,
@@ -406,7 +406,7 @@ def main():
     project_root = script_dir.parent
 
     # Output directories
-    docs_dir = project_root / "docs" / "stdlib"
+    docs_dir = project_root / "docs" / "docs" / "docs" / "stdlib"
     json_dir = project_root / "docs" / "api"
 
     # Create output directories
@@ -427,7 +427,7 @@ def main():
         # Generate all stdlib docs
         print(f"Generating documentation to {docs_dir}")
 
-        for name, path in STDLIB_MODULES.items():
+        for name, path in sorted(STDLIB_MODULES.items()):
             filepath = project_root / path
             if not filepath.exists():
                 print(f"  SKIP {name}: {path} not found")
@@ -456,7 +456,7 @@ def main():
             f.write("Quadrate standard library modules.\n\n")
             f.write("| Module | Description |\n")
             f.write("|--------|-------------|\n")
-            for name, path in STDLIB_MODULES.items():
+            for name, path in sorted(STDLIB_MODULES.items()):
                 filepath = project_root / path
                 if filepath.exists():
                     module = parse_module(str(filepath))
@@ -464,6 +464,28 @@ def main():
                     if len(" ".join(module.description)) > 60:
                         desc += "..."
                     f.write(f"| [{name}]({name}.md) | {desc} |\n")
+
+        # Update mkdocs.yml nav with stdlib modules
+        mkdocs_path = project_root / "docs" / "mkdocs.yml"
+        if mkdocs_path.exists():
+            with open(mkdocs_path, "r") as f:
+                mkdocs_content = f.read()
+
+            # Build the new Standard Library nav section
+            stdlib_nav = "      - Standard Library:\n"
+            stdlib_nav += "          - Overview: docs/stdlib/index.md\n"
+            for name in sorted(STDLIB_MODULES.keys()):
+                stdlib_nav += f"          - {name}: docs/stdlib/{name}.md\n"
+
+            # Replace the Standard Library line (handles both single line and section)
+            # Match either "- Standard Library: ..." or "- Standard Library:\n          - ..."
+            pattern = r"      - Standard Library:.*?(?=\n      - |\n  - |\Z)"
+            new_content = re.sub(pattern, stdlib_nav.rstrip(), mkdocs_content, flags=re.DOTALL)
+
+            if new_content != mkdocs_content:
+                with open(mkdocs_path, "w") as f:
+                    f.write(new_content)
+                print(f"Updated mkdocs.yml nav")
 
         print(f"\nGenerated {len(STDLIB_MODULES)} module docs + index")
         print(f"Markdown: {docs_dir}")

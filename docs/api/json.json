@@ -3,9 +3,9 @@
   "description": "JSON parsing and querying without AST construction.",
   "constants": [
     {
-      "name": "Null",
-      "value": "0",
-      "description": "Type: Null value."
+      "name": "Array",
+      "value": "4",
+      "description": "Type: Array value."
     },
     {
       "name": "Bool",
@@ -13,194 +13,43 @@
       "description": "Type: Boolean value."
     },
     {
+      "name": "Null",
+      "value": "0",
+      "description": "Type: Null value."
+    },
+    {
       "name": "Number",
       "value": "2",
       "description": "Type: Number value."
     },
     {
-      "name": "String",
-      "value": "3",
-      "description": "Type: String value."
-    },
-    {
-      "name": "Array",
-      "value": "4",
-      "description": "Type: Array value."
-    },
-    {
       "name": "Object",
       "value": "5",
       "description": "Type: Object value."
+    },
+    {
+      "name": "String",
+      "value": "3",
+      "description": "Type: String value."
     }
   ],
   "structs": [],
   "functions": [
     {
-      "name": "find_str_end",
-      "signature": "( json:str pos:i64 -- end_pos:i64 )",
+      "name": "array_get_float",
+      "signature": "( json:str index:i64 -- value:f64 found:i64 )",
       "failable": false,
-      "description": "Find end of JSON string (pos at opening quote).",
+      "description": "Get array element as float by index.",
       "params": [
         {
           "name": "json",
           "type": "str",
-          "description": "JSON string"
+          "description": "JSON array string"
         },
         {
-          "name": "pos",
+          "name": "index",
           "type": "i64",
-          "description": "Position of opening quote"
-        }
-      ],
-      "returns": [
-        {
-          "name": "end_pos",
-          "type": "i64",
-          "description": "Position after closing quote"
-        }
-      ],
-      "errors": [],
-      "examples": []
-    },
-    {
-      "name": "type_at",
-      "signature": "( json:str pos:i64 -- type:i64 )",
-      "failable": false,
-      "description": "Get JSON value type at position.",
-      "params": [
-        {
-          "name": "json",
-          "type": "str",
-          "description": "JSON string"
-        },
-        {
-          "name": "pos",
-          "type": "i64",
-          "description": "Position to check"
-        }
-      ],
-      "returns": [
-        {
-          "name": "type",
-          "type": "i64",
-          "description": "Type constant (Null, Bool, Number, String, Array, Object)"
-        }
-      ],
-      "errors": [],
-      "examples": [
-        "\"{\\\"a\\\":1}\" 5 json::type_at .  // 2 (Number)"
-      ]
-    },
-    {
-      "name": "extract_str",
-      "signature": "( json:str pos:i64 -- value:str )",
-      "failable": false,
-      "description": "Extract string value at position.",
-      "params": [
-        {
-          "name": "json",
-          "type": "str",
-          "description": "JSON string"
-        },
-        {
-          "name": "pos",
-          "type": "i64",
-          "description": "Position of opening quote"
-        }
-      ],
-      "returns": [
-        {
-          "name": "value",
-          "type": "str",
-          "description": "Extracted string"
-        }
-      ],
-      "errors": [],
-      "examples": []
-    },
-    {
-      "name": "get_string",
-      "signature": "( json:str key:str -- value:str found:i64 )",
-      "failable": false,
-      "description": "Get string value by key from object.",
-      "params": [
-        {
-          "name": "json",
-          "type": "str",
-          "description": "JSON object string"
-        },
-        {
-          "name": "key",
-          "type": "str",
-          "description": "Key to look up"
-        }
-      ],
-      "returns": [
-        {
-          "name": "value",
-          "type": "str",
-          "description": "String value"
-        },
-        {
-          "name": "found",
-          "type": "i64",
-          "description": "1 if found, 0 otherwise"
-        }
-      ],
-      "errors": [],
-      "examples": [
-        "\"{\\\"name\\\":\\\"Bob\\\"}\" \"name\" json::get_string  // \"Bob\" 1"
-      ]
-    },
-    {
-      "name": "get_int",
-      "signature": "( json:str key:str -- value:i64 found:i64 )",
-      "failable": false,
-      "description": "Get integer value by key from object.",
-      "params": [
-        {
-          "name": "json",
-          "type": "str",
-          "description": "JSON object string"
-        },
-        {
-          "name": "key",
-          "type": "str",
-          "description": "Key to look up"
-        }
-      ],
-      "returns": [
-        {
-          "name": "value",
-          "type": "i64",
-          "description": "Integer value"
-        },
-        {
-          "name": "found",
-          "type": "i64",
-          "description": "1 if found, 0 otherwise"
-        }
-      ],
-      "errors": [],
-      "examples": [
-        "\"{\\\"age\\\":42}\" \"age\" json::get_int  // 42 1"
-      ]
-    },
-    {
-      "name": "get_float",
-      "signature": "( json:str key:str -- value:f64 found:i64 )",
-      "failable": false,
-      "description": "Get float value by key from object.",
-      "params": [
-        {
-          "name": "json",
-          "type": "str",
-          "description": "JSON object string"
-        },
-        {
-          "name": "key",
-          "type": "str",
-          "description": "Key to look up"
+          "description": "Element index (0-based)"
         }
       ],
       "returns": [
@@ -217,172 +66,7 @@
       ],
       "errors": [],
       "examples": [
-        "\"{\\\"pi\\\":3.14}\" \"pi\" json::get_float  // 3.14 1"
-      ]
-    },
-    {
-      "name": "get_bool",
-      "signature": "( json:str key:str -- value:i64 found:i64 )",
-      "failable": false,
-      "description": "Get boolean value by key from object.",
-      "params": [
-        {
-          "name": "json",
-          "type": "str",
-          "description": "JSON object string"
-        },
-        {
-          "name": "key",
-          "type": "str",
-          "description": "Key to look up"
-        }
-      ],
-      "returns": [
-        {
-          "name": "value",
-          "type": "i64",
-          "description": "1 for true, 0 for false"
-        },
-        {
-          "name": "found",
-          "type": "i64",
-          "description": "1 if found, 0 otherwise"
-        }
-      ],
-      "errors": [],
-      "examples": [
-        "\"{\\\"ok\\\":true}\" \"ok\" json::get_bool  // 1 1"
-      ]
-    },
-    {
-      "name": "has_key",
-      "signature": "( json:str key:str -- exists:i64 )",
-      "failable": false,
-      "description": "Check if key exists in object.",
-      "params": [
-        {
-          "name": "json",
-          "type": "str",
-          "description": "JSON object string"
-        },
-        {
-          "name": "key",
-          "type": "str",
-          "description": "Key to check"
-        }
-      ],
-      "returns": [
-        {
-          "name": "exists",
-          "type": "i64",
-          "description": "1 if exists, 0 otherwise"
-        }
-      ],
-      "errors": [],
-      "examples": [
-        "\"{\\\"a\\\":1}\" \"a\" json::has_key .  // 1"
-      ]
-    },
-    {
-      "name": "get_object",
-      "signature": "( json:str key:str -- value:str found:i64 )",
-      "failable": false,
-      "description": "Get nested object as string by key.",
-      "params": [
-        {
-          "name": "json",
-          "type": "str",
-          "description": "JSON object string"
-        },
-        {
-          "name": "key",
-          "type": "str",
-          "description": "Key to look up"
-        }
-      ],
-      "returns": [
-        {
-          "name": "value",
-          "type": "str",
-          "description": "Nested object as string"
-        },
-        {
-          "name": "found",
-          "type": "i64",
-          "description": "1 if found, 0 otherwise"
-        }
-      ],
-      "errors": [],
-      "examples": [
-        "\"{\\\"obj\\\":{\\\"x\\\":1}}\" \"obj\" json::get_object  // \"{\\\"x\\\":1}\" 1"
-      ]
-    },
-    {
-      "name": "get_array",
-      "signature": "( json:str key:str -- value:str found:i64 )",
-      "failable": false,
-      "description": "Get nested array as string by key.",
-      "params": [
-        {
-          "name": "json",
-          "type": "str",
-          "description": "JSON object string"
-        },
-        {
-          "name": "key",
-          "type": "str",
-          "description": "Key to look up"
-        }
-      ],
-      "returns": [
-        {
-          "name": "value",
-          "type": "str",
-          "description": "Array as string"
-        },
-        {
-          "name": "found",
-          "type": "i64",
-          "description": "1 if found, 0 otherwise"
-        }
-      ],
-      "errors": [],
-      "examples": [
-        "\"{\\\"arr\\\":[1,2]}\" \"arr\" json::get_array  // \"[1,2]\" 1"
-      ]
-    },
-    {
-      "name": "array_get_string",
-      "signature": "( json:str index:i64 -- value:str found:i64 )",
-      "failable": false,
-      "description": "Get array element as string by index.",
-      "params": [
-        {
-          "name": "json",
-          "type": "str",
-          "description": "JSON array string"
-        },
-        {
-          "name": "index",
-          "type": "i64",
-          "description": "Element index (0-based)"
-        }
-      ],
-      "returns": [
-        {
-          "name": "value",
-          "type": "str",
-          "description": "String value"
-        },
-        {
-          "name": "found",
-          "type": "i64",
-          "description": "1 if found, 0 otherwise"
-        }
-      ],
-      "errors": [],
-      "examples": [
-        "\"[\\\"a\\\",\\\"b\\\"]\" 1 json::array_get_string  // \"b\" 1"
+        "\"[1.5,2.5]\" 0 json::array_get_float  // 1.5 1"
       ]
     },
     {
@@ -420,10 +104,10 @@
       ]
     },
     {
-      "name": "array_get_float",
-      "signature": "( json:str index:i64 -- value:f64 found:i64 )",
+      "name": "array_get_string",
+      "signature": "( json:str index:i64 -- value:str found:i64 )",
       "failable": false,
-      "description": "Get array element as float by index.",
+      "description": "Get array element as string by index.",
       "params": [
         {
           "name": "json",
@@ -439,8 +123,8 @@
       "returns": [
         {
           "name": "value",
-          "type": "f64",
-          "description": "Float value"
+          "type": "str",
+          "description": "String value"
         },
         {
           "name": "found",
@@ -450,7 +134,7 @@
       ],
       "errors": [],
       "examples": [
-        "\"[1.5,2.5]\" 0 json::array_get_float  // 1.5 1"
+        "\"[\\\"a\\\",\\\"b\\\"]\" 1 json::array_get_string  // \"b\" 1"
       ]
     },
     {
@@ -475,6 +159,293 @@
       "errors": [],
       "examples": [
         "\"[1,2,3]\" json::array_len .  // 3"
+      ]
+    },
+    {
+      "name": "extract_str",
+      "signature": "( json:str pos:i64 -- value:str )",
+      "failable": false,
+      "description": "Extract string value at position.",
+      "params": [
+        {
+          "name": "json",
+          "type": "str",
+          "description": "JSON string"
+        },
+        {
+          "name": "pos",
+          "type": "i64",
+          "description": "Position of opening quote"
+        }
+      ],
+      "returns": [
+        {
+          "name": "value",
+          "type": "str",
+          "description": "Extracted string"
+        }
+      ],
+      "errors": [],
+      "examples": []
+    },
+    {
+      "name": "find_str_end",
+      "signature": "( json:str pos:i64 -- end_pos:i64 )",
+      "failable": false,
+      "description": "Find end of JSON string (pos at opening quote).",
+      "params": [
+        {
+          "name": "json",
+          "type": "str",
+          "description": "JSON string"
+        },
+        {
+          "name": "pos",
+          "type": "i64",
+          "description": "Position of opening quote"
+        }
+      ],
+      "returns": [
+        {
+          "name": "end_pos",
+          "type": "i64",
+          "description": "Position after closing quote"
+        }
+      ],
+      "errors": [],
+      "examples": []
+    },
+    {
+      "name": "get_array",
+      "signature": "( json:str key:str -- value:str found:i64 )",
+      "failable": false,
+      "description": "Get nested array as string by key.",
+      "params": [
+        {
+          "name": "json",
+          "type": "str",
+          "description": "JSON object string"
+        },
+        {
+          "name": "key",
+          "type": "str",
+          "description": "Key to look up"
+        }
+      ],
+      "returns": [
+        {
+          "name": "value",
+          "type": "str",
+          "description": "Array as string"
+        },
+        {
+          "name": "found",
+          "type": "i64",
+          "description": "1 if found, 0 otherwise"
+        }
+      ],
+      "errors": [],
+      "examples": [
+        "\"{\\\"arr\\\":[1,2]}\" \"arr\" json::get_array  // \"[1,2]\" 1"
+      ]
+    },
+    {
+      "name": "get_bool",
+      "signature": "( json:str key:str -- value:i64 found:i64 )",
+      "failable": false,
+      "description": "Get boolean value by key from object.",
+      "params": [
+        {
+          "name": "json",
+          "type": "str",
+          "description": "JSON object string"
+        },
+        {
+          "name": "key",
+          "type": "str",
+          "description": "Key to look up"
+        }
+      ],
+      "returns": [
+        {
+          "name": "value",
+          "type": "i64",
+          "description": "1 for true, 0 for false"
+        },
+        {
+          "name": "found",
+          "type": "i64",
+          "description": "1 if found, 0 otherwise"
+        }
+      ],
+      "errors": [],
+      "examples": [
+        "\"{\\\"ok\\\":true}\" \"ok\" json::get_bool  // 1 1"
+      ]
+    },
+    {
+      "name": "get_float",
+      "signature": "( json:str key:str -- value:f64 found:i64 )",
+      "failable": false,
+      "description": "Get float value by key from object.",
+      "params": [
+        {
+          "name": "json",
+          "type": "str",
+          "description": "JSON object string"
+        },
+        {
+          "name": "key",
+          "type": "str",
+          "description": "Key to look up"
+        }
+      ],
+      "returns": [
+        {
+          "name": "value",
+          "type": "f64",
+          "description": "Float value"
+        },
+        {
+          "name": "found",
+          "type": "i64",
+          "description": "1 if found, 0 otherwise"
+        }
+      ],
+      "errors": [],
+      "examples": [
+        "\"{\\\"pi\\\":3.14}\" \"pi\" json::get_float  // 3.14 1"
+      ]
+    },
+    {
+      "name": "get_int",
+      "signature": "( json:str key:str -- value:i64 found:i64 )",
+      "failable": false,
+      "description": "Get integer value by key from object.",
+      "params": [
+        {
+          "name": "json",
+          "type": "str",
+          "description": "JSON object string"
+        },
+        {
+          "name": "key",
+          "type": "str",
+          "description": "Key to look up"
+        }
+      ],
+      "returns": [
+        {
+          "name": "value",
+          "type": "i64",
+          "description": "Integer value"
+        },
+        {
+          "name": "found",
+          "type": "i64",
+          "description": "1 if found, 0 otherwise"
+        }
+      ],
+      "errors": [],
+      "examples": [
+        "\"{\\\"age\\\":42}\" \"age\" json::get_int  // 42 1"
+      ]
+    },
+    {
+      "name": "get_object",
+      "signature": "( json:str key:str -- value:str found:i64 )",
+      "failable": false,
+      "description": "Get nested object as string by key.",
+      "params": [
+        {
+          "name": "json",
+          "type": "str",
+          "description": "JSON object string"
+        },
+        {
+          "name": "key",
+          "type": "str",
+          "description": "Key to look up"
+        }
+      ],
+      "returns": [
+        {
+          "name": "value",
+          "type": "str",
+          "description": "Nested object as string"
+        },
+        {
+          "name": "found",
+          "type": "i64",
+          "description": "1 if found, 0 otherwise"
+        }
+      ],
+      "errors": [],
+      "examples": [
+        "\"{\\\"obj\\\":{\\\"x\\\":1}}\" \"obj\" json::get_object  // \"{\\\"x\\\":1}\" 1"
+      ]
+    },
+    {
+      "name": "get_string",
+      "signature": "( json:str key:str -- value:str found:i64 )",
+      "failable": false,
+      "description": "Get string value by key from object.",
+      "params": [
+        {
+          "name": "json",
+          "type": "str",
+          "description": "JSON object string"
+        },
+        {
+          "name": "key",
+          "type": "str",
+          "description": "Key to look up"
+        }
+      ],
+      "returns": [
+        {
+          "name": "value",
+          "type": "str",
+          "description": "String value"
+        },
+        {
+          "name": "found",
+          "type": "i64",
+          "description": "1 if found, 0 otherwise"
+        }
+      ],
+      "errors": [],
+      "examples": [
+        "\"{\\\"name\\\":\\\"Bob\\\"}\" \"name\" json::get_string  // \"Bob\" 1"
+      ]
+    },
+    {
+      "name": "has_key",
+      "signature": "( json:str key:str -- exists:i64 )",
+      "failable": false,
+      "description": "Check if key exists in object.",
+      "params": [
+        {
+          "name": "json",
+          "type": "str",
+          "description": "JSON object string"
+        },
+        {
+          "name": "key",
+          "type": "str",
+          "description": "Key to check"
+        }
+      ],
+      "returns": [
+        {
+          "name": "exists",
+          "type": "i64",
+          "description": "1 if exists, 0 otherwise"
+        }
+      ],
+      "errors": [],
+      "examples": [
+        "\"{\\\"a\\\":1}\" \"a\" json::has_key .  // 1"
       ]
     },
     {
@@ -504,6 +475,35 @@
       "errors": [],
       "examples": [
         "\"null\" 0 json::is_null_at .  // 1"
+      ]
+    },
+    {
+      "name": "type_at",
+      "signature": "( json:str pos:i64 -- type:i64 )",
+      "failable": false,
+      "description": "Get JSON value type at position.",
+      "params": [
+        {
+          "name": "json",
+          "type": "str",
+          "description": "JSON string"
+        },
+        {
+          "name": "pos",
+          "type": "i64",
+          "description": "Position to check"
+        }
+      ],
+      "returns": [
+        {
+          "name": "type",
+          "type": "i64",
+          "description": "Type constant (Null, Bool, Number, String, Array, Object)"
+        }
+      ],
+      "errors": [],
+      "examples": [
+        "\"{\\\"a\\\":1}\" 5 json::type_at .  // 2 (Number)"
       ]
     }
   ]

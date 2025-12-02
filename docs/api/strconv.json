@@ -5,6 +5,30 @@
   "structs": [],
   "functions": [
     {
+      "name": "atoi",
+      "signature": "( str:str -- value:i64 )",
+      "failable": false,
+      "description": "Parse decimal string to integer.",
+      "params": [
+        {
+          "name": "str",
+          "type": "str",
+          "description": "Decimal string"
+        }
+      ],
+      "returns": [
+        {
+          "name": "value",
+          "type": "i64",
+          "description": "Parsed integer"
+        }
+      ],
+      "errors": [],
+      "examples": [
+        "\"42\" strconv::atoi .  // 42"
+      ]
+    },
+    {
       "name": "format_int",
       "signature": "( value:i64 base:i64 -- str:str )",
       "failable": false,
@@ -34,6 +58,30 @@
       ]
     },
     {
+      "name": "itoa",
+      "signature": "( value:i64 -- str:str )",
+      "failable": false,
+      "description": "Convert integer to decimal string.",
+      "params": [
+        {
+          "name": "value",
+          "type": "i64",
+          "description": "Integer value"
+        }
+      ],
+      "returns": [
+        {
+          "name": "str",
+          "type": "str",
+          "description": "Decimal string"
+        }
+      ],
+      "errors": [],
+      "examples": [
+        "42 strconv::itoa .  // \"42\""
+      ]
+    },
+    {
       "name": "parse_int",
       "signature": "( str:str base:i64 -- value:i64 )",
       "failable": false,
@@ -60,54 +108,6 @@
       "errors": [],
       "examples": [
         "\"ff\" 16 strconv::parse_int .  // 255"
-      ]
-    },
-    {
-      "name": "itoa",
-      "signature": "( value:i64 -- str:str )",
-      "failable": false,
-      "description": "Convert integer to decimal string.",
-      "params": [
-        {
-          "name": "value",
-          "type": "i64",
-          "description": "Integer value"
-        }
-      ],
-      "returns": [
-        {
-          "name": "str",
-          "type": "str",
-          "description": "Decimal string"
-        }
-      ],
-      "errors": [],
-      "examples": [
-        "42 strconv::itoa .  // \"42\""
-      ]
-    },
-    {
-      "name": "atoi",
-      "signature": "( str:str -- value:i64 )",
-      "failable": false,
-      "description": "Parse decimal string to integer.",
-      "params": [
-        {
-          "name": "str",
-          "type": "str",
-          "description": "Decimal string"
-        }
-      ],
-      "returns": [
-        {
-          "name": "value",
-          "type": "i64",
-          "description": "Parsed integer"
-        }
-      ],
-      "errors": [],
-      "examples": [
-        "\"42\" strconv::atoi .  // 42"
       ]
     }
   ]

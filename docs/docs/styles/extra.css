@@ -1,5 +1,8 @@
-:root {
-  --md-primary-fg-color: #1a1b2c;       /* primary color */
-  --md-primary-fg-color--light: #ff8a50;
-  --md-primary-fg-color--dark: #c41c00;
+/* ReadTheDocs theme overrides */
+.wy-side-nav-search {
+  background-color: #1a1b2c;
+}
+
+.wy-nav-top {
+  background-color: #1a1b2c;
 }

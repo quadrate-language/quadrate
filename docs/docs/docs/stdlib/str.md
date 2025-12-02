@@ -4,24 +4,48 @@ String manipulation functions.
 
 ## Functions
 
-### len
+### char_at
 
-Get string length in bytes.
+Get character code at index.
 
-**Signature:** `( str:str -- len:i64 )`
+**Signature:** `( str:str index:i64 -- char_code:i64 )`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
 | `str` | `str` | Input string |
+| `index` | `i64` | Character position |
 
 | Return | Type | Description |
 |--------|------|-------------|
-| `len` | `i64` | Length in bytes |
+| `char_code` | `i64` | ASCII/UTF-8 byte value |
 
 **Example:**
 
 ```qd
-"hello" str::len .  // 5
+"hello" 0 str::char_at .  // 104 ('h')
+```
+
+---
+
+### compare
+
+Compare two strings lexicographically.
+
+**Signature:** `( str1:str str2:str -- result:i64 )`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `str1` | `str` | First string |
+| `str2` | `str` | Second string |
+
+| Return | Type | Description |
+|--------|------|-------------|
+| `result` | `i64` | <0 if str1<str2, 0 if equal, >0 if str1>str2 |
+
+**Example:**
+
+```qd
+"abc" "abd" str::compare .  // -1
 ```
 
 ---
@@ -72,29 +96,6 @@ Check if string contains substring.
 
 ---
 
-### starts_with
-
-Check if string starts with prefix.
-
-**Signature:** `( str:str prefix:str -- result:i64 )`
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `str` | `str` | String to check |
-| `prefix` | `str` | Prefix to match |
-
-| Return | Type | Description |
-|--------|------|-------------|
-| `result` | `i64` | 1 if matches, 0 otherwise |
-
-**Example:**
-
-```qd
-"hello" "hel" str::starts_with .  // 1
-```
-
----
-
 ### ends_with
 
 Check if string ends with suffix.
@@ -114,6 +115,28 @@ Check if string ends with suffix.
 
 ```qd
 "hello" "lo" str::ends_with .  // 1
+```
+
+---
+
+### from_char
+
+Create string from character code.
+
+**Signature:** `( char_code:i64 -- str:str )`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `char_code` | `i64` | ASCII/UTF-8 byte value |
+
+| Return | Type | Description |
+|--------|------|-------------|
+| `str` | `str` | Single character string |
+
+**Example:**
+
+```qd
+65 str::from_char .  // "A"
 ```
 
 ---
@@ -165,11 +188,11 @@ Find substring starting from position.
 
 ---
 
-### upper
+### len
 
-Convert string to uppercase.
+Get string length in bytes.
 
-**Signature:** `( str:str -- result:str )`
+**Signature:** `( str:str -- len:i64 )`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -177,12 +200,12 @@ Convert string to uppercase.
 
 | Return | Type | Description |
 |--------|------|-------------|
-| `result` | `str` | Uppercase string |
+| `len` | `i64` | Length in bytes |
 
 **Example:**
 
 ```qd
-"hello" str::upper .  // "HELLO"
+"hello" str::len .  // 5
 ```
 
 ---
@@ -205,56 +228,6 @@ Convert string to lowercase.
 
 ```qd
 "HELLO" str::lower .  // "hello"
-```
-
----
-
-### trim
-
-Remove leading and trailing whitespace.
-
-**Signature:** `( str:str -- result:str )`
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `str` | `str` | Input string |
-
-| Return | Type | Description |
-|--------|------|-------------|
-| `result` | `str` | Trimmed string |
-
-**Example:**
-
-```qd
-"  hello  " str::trim .  // "hello"
-```
-
----
-
-### substring
-
-Extract substring.
-
-**Signature:** `( str:str start:i64 length:i64 -- result:str )!`
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `str` | `str` | Source string |
-| `start` | `i64` | Starting index |
-| `length` | `i64` | Number of characters |
-
-| Return | Type | Description |
-|--------|------|-------------|
-| `result` | `str` | Extracted substring |
-
-**Errors:**
-
-- Out of bounds
-
-**Example:**
-
-```qd
-"hello" 1 3 str::substring! .  // "ell"
 ```
 
 ---
@@ -287,51 +260,6 @@ Replace all occurrences of substring.
 
 ---
 
-### char_at
-
-Get character code at index.
-
-**Signature:** `( str:str index:i64 -- char_code:i64 )`
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `str` | `str` | Input string |
-| `index` | `i64` | Character position |
-
-| Return | Type | Description |
-|--------|------|-------------|
-| `char_code` | `i64` | ASCII/UTF-8 byte value |
-
-**Example:**
-
-```qd
-"hello" 0 str::char_at .  // 104 ('h')
-```
-
----
-
-### from_char
-
-Create string from character code.
-
-**Signature:** `( char_code:i64 -- str:str )`
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `char_code` | `i64` | ASCII/UTF-8 byte value |
-
-| Return | Type | Description |
-|--------|------|-------------|
-| `str` | `str` | Single character string |
-
-**Example:**
-
-```qd
-65 str::from_char .  // "A"
-```
-
----
-
 ### split
 
 Split string by delimiter.
@@ -360,23 +288,95 @@ Split string by delimiter.
 
 ---
 
-### compare
+### starts_with
 
-Compare two strings lexicographically.
+Check if string starts with prefix.
 
-**Signature:** `( str1:str str2:str -- result:i64 )`
+**Signature:** `( str:str prefix:str -- result:i64 )`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `str1` | `str` | First string |
-| `str2` | `str` | Second string |
+| `str` | `str` | String to check |
+| `prefix` | `str` | Prefix to match |
 
 | Return | Type | Description |
 |--------|------|-------------|
-| `result` | `i64` | <0 if str1<str2, 0 if equal, >0 if str1>str2 |
+| `result` | `i64` | 1 if matches, 0 otherwise |
 
 **Example:**
 
 ```qd
-"abc" "abd" str::compare .  // -1
+"hello" "hel" str::starts_with .  // 1
+```
+
+---
+
+### substring
+
+Extract substring.
+
+**Signature:** `( str:str start:i64 length:i64 -- result:str )!`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `str` | `str` | Source string |
+| `start` | `i64` | Starting index |
+| `length` | `i64` | Number of characters |
+
+| Return | Type | Description |
+|--------|------|-------------|
+| `result` | `str` | Extracted substring |
+
+**Errors:**
+
+- Out of bounds
+
+**Example:**
+
+```qd
+"hello" 1 3 str::substring! .  // "ell"
+```
+
+---
+
+### trim
+
+Remove leading and trailing whitespace.
+
+**Signature:** `( str:str -- result:str )`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `str` | `str` | Input string |
+
+| Return | Type | Description |
+|--------|------|-------------|
+| `result` | `str` | Trimmed string |
+
+**Example:**
+
+```qd
+"  hello  " str::trim .  // "hello"
+```
+
+---
+
+### upper
+
+Convert string to uppercase.
+
+**Signature:** `( str:str -- result:str )`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `str` | `str` | Input string |
+
+| Return | Type | Description |
+|--------|------|-------------|
+| `result` | `str` | Uppercase string |
+
+**Example:**
+
+```qd
+"hello" str::upper .  // "HELLO"
 ```

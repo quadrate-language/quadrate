@@ -34,150 +34,10 @@
       ]
     },
     {
-      "name": "or",
-      "signature": "( a:i64 b:i64 -- result:i64 )",
+      "name": "clear_bit",
+      "signature": "( value:i64 bit_pos:i64 -- result:i64 )",
       "failable": false,
-      "description": "Bitwise OR.",
-      "params": [
-        {
-          "name": "a",
-          "type": "i64",
-          "description": "First operand"
-        },
-        {
-          "name": "b",
-          "type": "i64",
-          "description": "Second operand"
-        }
-      ],
-      "returns": [
-        {
-          "name": "result",
-          "type": "i64",
-          "description": "a OR b"
-        }
-      ],
-      "errors": [],
-      "examples": [
-        "0b1100 0b1010 bits::or .  // 14"
-      ]
-    },
-    {
-      "name": "xor",
-      "signature": "( a:i64 b:i64 -- result:i64 )",
-      "failable": false,
-      "description": "Bitwise XOR.",
-      "params": [
-        {
-          "name": "a",
-          "type": "i64",
-          "description": "First operand"
-        },
-        {
-          "name": "b",
-          "type": "i64",
-          "description": "Second operand"
-        }
-      ],
-      "returns": [
-        {
-          "name": "result",
-          "type": "i64",
-          "description": "a XOR b"
-        }
-      ],
-      "errors": [],
-      "examples": [
-        "0b1100 0b1010 bits::xor .  // 6"
-      ]
-    },
-    {
-      "name": "not",
-      "signature": "( a:i64 -- result:i64 )",
-      "failable": false,
-      "description": "Bitwise NOT (complement).",
-      "params": [
-        {
-          "name": "a",
-          "type": "i64",
-          "description": "Value to complement"
-        }
-      ],
-      "returns": [
-        {
-          "name": "result",
-          "type": "i64",
-          "description": "All bits flipped"
-        }
-      ],
-      "errors": [],
-      "examples": [
-        "0 bits::not .  // -1"
-      ]
-    },
-    {
-      "name": "lshift",
-      "signature": "( value:i64 shift:i64 -- result:i64 )",
-      "failable": false,
-      "description": "Left shift.",
-      "params": [
-        {
-          "name": "value",
-          "type": "i64",
-          "description": "Value to shift"
-        },
-        {
-          "name": "shift",
-          "type": "i64",
-          "description": "Number of positions"
-        }
-      ],
-      "returns": [
-        {
-          "name": "result",
-          "type": "i64",
-          "description": "value << shift"
-        }
-      ],
-      "errors": [],
-      "examples": [
-        "1 4 bits::lshift .  // 16"
-      ]
-    },
-    {
-      "name": "rshift",
-      "signature": "( value:i64 shift:i64 -- result:i64 )",
-      "failable": false,
-      "description": "Right shift.",
-      "params": [
-        {
-          "name": "value",
-          "type": "i64",
-          "description": "Value to shift"
-        },
-        {
-          "name": "shift",
-          "type": "i64",
-          "description": "Number of positions"
-        }
-      ],
-      "returns": [
-        {
-          "name": "result",
-          "type": "i64",
-          "description": "value >> shift"
-        }
-      ],
-      "errors": [],
-      "examples": [
-        "16 2 bits::rshift .  // 4"
-      ]
-    },
-    {
-      "name": "mask",
-      "signature": "( value:i64 num_bits:i64 -- result:i64 )",
-      "failable": false,
-      "description": "Keep only the bottom N bits.",
+      "description": "Clear a bit to 0.",
       "params": [
         {
           "name": "value",
@@ -185,21 +45,21 @@
           "description": "Input value"
         },
         {
-          "name": "num_bits",
+          "name": "bit_pos",
           "type": "i64",
-          "description": "Number of bits to keep from LSB"
+          "description": "Bit position to clear"
         }
       ],
       "returns": [
         {
           "name": "result",
           "type": "i64",
-          "description": "Masked value"
+          "description": "Value with bit cleared"
         }
       ],
       "errors": [],
       "examples": [
-        "0xFF 4 bits::mask .  // 15"
+        "0b1010 1 bits::clear_bit .  // 8 (0b1000)"
       ]
     },
     {
@@ -237,42 +97,196 @@
       ]
     },
     {
-      "name": "set_bits",
-      "signature": "( target:i64 value:i64 start_bit:i64 num_bits:i64 -- result:i64 )",
+      "name": "has_bit",
+      "signature": "( value:i64 bit_pos:i64 -- flag:i64 )",
       "failable": false,
-      "description": "Set a bit field in a value.",
+      "description": "Check if a bit is set.",
       "params": [
-        {
-          "name": "target",
-          "type": "i64",
-          "description": "Target value to modify"
-        },
         {
           "name": "value",
           "type": "i64",
-          "description": "Value to insert"
+          "description": "Value to check"
         },
         {
-          "name": "start_bit",
+          "name": "bit_pos",
           "type": "i64",
-          "description": "Start position (0 = LSB)"
+          "description": "Bit position (0 = LSB)"
+        }
+      ],
+      "returns": [
+        {
+          "name": "flag",
+          "type": "i64",
+          "description": "1 if set, 0 if not"
+        }
+      ],
+      "errors": [],
+      "examples": [
+        "0b1010 1 bits::has_bit .  // 1"
+      ]
+    },
+    {
+      "name": "lshift",
+      "signature": "( value:i64 shift:i64 -- result:i64 )",
+      "failable": false,
+      "description": "Left shift.",
+      "params": [
+        {
+          "name": "value",
+          "type": "i64",
+          "description": "Value to shift"
         },
         {
-          "name": "num_bits",
+          "name": "shift",
           "type": "i64",
-          "description": "Number of bits to set"
+          "description": "Number of positions"
         }
       ],
       "returns": [
         {
           "name": "result",
           "type": "i64",
-          "description": "Modified target"
+          "description": "value << shift"
         }
       ],
       "errors": [],
       "examples": [
-        "0 0b101 2 3 bits::set_bits .  // 20 (0b10100)"
+        "1 4 bits::lshift .  // 16"
+      ]
+    },
+    {
+      "name": "mask",
+      "signature": "( value:i64 num_bits:i64 -- result:i64 )",
+      "failable": false,
+      "description": "Keep only the bottom N bits.",
+      "params": [
+        {
+          "name": "value",
+          "type": "i64",
+          "description": "Input value"
+        },
+        {
+          "name": "num_bits",
+          "type": "i64",
+          "description": "Number of bits to keep from LSB"
+        }
+      ],
+      "returns": [
+        {
+          "name": "result",
+          "type": "i64",
+          "description": "Masked value"
+        }
+      ],
+      "errors": [],
+      "examples": [
+        "0xFF 4 bits::mask .  // 15"
+      ]
+    },
+    {
+      "name": "not",
+      "signature": "( a:i64 -- result:i64 )",
+      "failable": false,
+      "description": "Bitwise NOT (complement).",
+      "params": [
+        {
+          "name": "a",
+          "type": "i64",
+          "description": "Value to complement"
+        }
+      ],
+      "returns": [
+        {
+          "name": "result",
+          "type": "i64",
+          "description": "All bits flipped"
+        }
+      ],
+      "errors": [],
+      "examples": [
+        "0 bits::not .  // -1"
+      ]
+    },
+    {
+      "name": "or",
+      "signature": "( a:i64 b:i64 -- result:i64 )",
+      "failable": false,
+      "description": "Bitwise OR.",
+      "params": [
+        {
+          "name": "a",
+          "type": "i64",
+          "description": "First operand"
+        },
+        {
+          "name": "b",
+          "type": "i64",
+          "description": "Second operand"
+        }
+      ],
+      "returns": [
+        {
+          "name": "result",
+          "type": "i64",
+          "description": "a OR b"
+        }
+      ],
+      "errors": [],
+      "examples": [
+        "0b1100 0b1010 bits::or .  // 14"
+      ]
+    },
+    {
+      "name": "popcount",
+      "signature": "( value:i64 -- count:i64 )",
+      "failable": false,
+      "description": "Count set bits (population count).",
+      "params": [
+        {
+          "name": "value",
+          "type": "i64",
+          "description": "Value to count"
+        }
+      ],
+      "returns": [
+        {
+          "name": "count",
+          "type": "i64",
+          "description": "Number of 1 bits"
+        }
+      ],
+      "errors": [],
+      "examples": [
+        "0b1010110 bits::popcount .  // 4"
+      ]
+    },
+    {
+      "name": "reverse_bits",
+      "signature": "( value:i64 width:i64 -- result:i64 )",
+      "failable": false,
+      "description": "Reverse the bottom N bits.",
+      "params": [
+        {
+          "name": "value",
+          "type": "i64",
+          "description": "Value to reverse"
+        },
+        {
+          "name": "width",
+          "type": "i64",
+          "description": "Number of bits to reverse"
+        }
+      ],
+      "returns": [
+        {
+          "name": "result",
+          "type": "i64",
+          "description": "Reversed value"
+        }
+      ],
+      "errors": [],
+      "examples": [
+        "0b1011 4 bits::reverse_bits .  // 13 (0b1101)"
       ]
     },
     {
@@ -344,85 +358,32 @@
       ]
     },
     {
-      "name": "popcount",
-      "signature": "( value:i64 -- count:i64 )",
+      "name": "rshift",
+      "signature": "( value:i64 shift:i64 -- result:i64 )",
       "failable": false,
-      "description": "Count set bits (population count).",
+      "description": "Right shift.",
       "params": [
         {
           "name": "value",
           "type": "i64",
-          "description": "Value to count"
-        }
-      ],
-      "returns": [
-        {
-          "name": "count",
-          "type": "i64",
-          "description": "Number of 1 bits"
-        }
-      ],
-      "errors": [],
-      "examples": [
-        "0b1010110 bits::popcount .  // 4"
-      ]
-    },
-    {
-      "name": "reverse_bits",
-      "signature": "( value:i64 width:i64 -- result:i64 )",
-      "failable": false,
-      "description": "Reverse the bottom N bits.",
-      "params": [
-        {
-          "name": "value",
-          "type": "i64",
-          "description": "Value to reverse"
+          "description": "Value to shift"
         },
         {
-          "name": "width",
+          "name": "shift",
           "type": "i64",
-          "description": "Number of bits to reverse"
+          "description": "Number of positions"
         }
       ],
       "returns": [
         {
           "name": "result",
           "type": "i64",
-          "description": "Reversed value"
+          "description": "value >> shift"
         }
       ],
       "errors": [],
       "examples": [
-        "0b1011 4 bits::reverse_bits .  // 13 (0b1101)"
-      ]
-    },
-    {
-      "name": "has_bit",
-      "signature": "( value:i64 bit_pos:i64 -- flag:i64 )",
-      "failable": false,
-      "description": "Check if a bit is set.",
-      "params": [
-        {
-          "name": "value",
-          "type": "i64",
-          "description": "Value to check"
-        },
-        {
-          "name": "bit_pos",
-          "type": "i64",
-          "description": "Bit position (0 = LSB)"
-        }
-      ],
-      "returns": [
-        {
-          "name": "flag",
-          "type": "i64",
-          "description": "1 if set, 0 if not"
-        }
-      ],
-      "errors": [],
-      "examples": [
-        "0b1010 1 bits::has_bit .  // 1"
+        "16 2 bits::rshift .  // 4"
       ]
     },
     {
@@ -455,32 +416,42 @@
       ]
     },
     {
-      "name": "clear_bit",
-      "signature": "( value:i64 bit_pos:i64 -- result:i64 )",
+      "name": "set_bits",
+      "signature": "( target:i64 value:i64 start_bit:i64 num_bits:i64 -- result:i64 )",
       "failable": false,
-      "description": "Clear a bit to 0.",
+      "description": "Set a bit field in a value.",
       "params": [
+        {
+          "name": "target",
+          "type": "i64",
+          "description": "Target value to modify"
+        },
         {
           "name": "value",
           "type": "i64",
-          "description": "Input value"
+          "description": "Value to insert"
         },
         {
-          "name": "bit_pos",
+          "name": "start_bit",
           "type": "i64",
-          "description": "Bit position to clear"
+          "description": "Start position (0 = LSB)"
+        },
+        {
+          "name": "num_bits",
+          "type": "i64",
+          "description": "Number of bits to set"
         }
       ],
       "returns": [
         {
           "name": "result",
           "type": "i64",
-          "description": "Value with bit cleared"
+          "description": "Modified target"
         }
       ],
       "errors": [],
       "examples": [
-        "0b1010 1 bits::clear_bit .  // 8 (0b1000)"
+        "0 0b101 2 3 bits::set_bits .  // 20 (0b10100)"
       ]
     },
     {
@@ -510,6 +481,35 @@
       "errors": [],
       "examples": [
         "0b1010 0 bits::toggle_bit .  // 11 (0b1011)"
+      ]
+    },
+    {
+      "name": "xor",
+      "signature": "( a:i64 b:i64 -- result:i64 )",
+      "failable": false,
+      "description": "Bitwise XOR.",
+      "params": [
+        {
+          "name": "a",
+          "type": "i64",
+          "description": "First operand"
+        },
+        {
+          "name": "b",
+          "type": "i64",
+          "description": "Second operand"
+        }
+      ],
+      "returns": [
+        {
+          "name": "result",
+          "type": "i64",
+          "description": "a XOR b"
+        }
+      ],
+      "errors": [],
+      "examples": [
+        "0b1100 0b1010 bits::xor .  // 6"
       ]
     }
   ]

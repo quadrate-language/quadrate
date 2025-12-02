@@ -3,196 +3,6 @@
   "description": "Unicode character constants and classification.",
   "constants": [
     {
-      "name": "nul",
-      "value": "0",
-      "description": "Control: Null character."
-    },
-    {
-      "name": "tab",
-      "value": "9",
-      "description": "Control: Tab character."
-    },
-    {
-      "name": "newline",
-      "value": "10",
-      "description": "Control: Newline (line feed)."
-    },
-    {
-      "name": "cr",
-      "value": "13",
-      "description": "Control: Carriage return."
-    },
-    {
-      "name": "esc",
-      "value": "27",
-      "description": "Control: Escape character."
-    },
-    {
-      "name": "space",
-      "value": "32",
-      "description": "Punctuation: Space."
-    },
-    {
-      "name": "exclaim",
-      "value": "33",
-      "description": "Punctuation: Exclamation mark (!)."
-    },
-    {
-      "name": "dquote",
-      "value": "34",
-      "description": "Punctuation: Double quote (\")."
-    },
-    {
-      "name": "hash",
-      "value": "35",
-      "description": "Punctuation: Hash (#)."
-    },
-    {
-      "name": "dollar",
-      "value": "36",
-      "description": "Punctuation: Dollar sign ($)."
-    },
-    {
-      "name": "percent",
-      "value": "37",
-      "description": "Punctuation: Percent (%)."
-    },
-    {
-      "name": "ampersand",
-      "value": "38",
-      "description": "Punctuation: Ampersand (&)."
-    },
-    {
-      "name": "squote",
-      "value": "39",
-      "description": "Punctuation: Single quote (')."
-    },
-    {
-      "name": "lparen",
-      "value": "40",
-      "description": "Punctuation: Left parenthesis."
-    },
-    {
-      "name": "rparen",
-      "value": "41",
-      "description": "Punctuation: Right parenthesis."
-    },
-    {
-      "name": "asterisk",
-      "value": "42",
-      "description": "Punctuation: Asterisk (*)."
-    },
-    {
-      "name": "plus",
-      "value": "43",
-      "description": "Punctuation: Plus sign (+)."
-    },
-    {
-      "name": "comma",
-      "value": "44",
-      "description": "Punctuation: Comma (,)."
-    },
-    {
-      "name": "minus",
-      "value": "45",
-      "description": "Punctuation: Minus/hyphen (-)."
-    },
-    {
-      "name": "dot",
-      "value": "46",
-      "description": "Punctuation: Period/dot (.)."
-    },
-    {
-      "name": "slash",
-      "value": "47",
-      "description": "Punctuation: Forward slash (/)."
-    },
-    {
-      "name": "digit0",
-      "value": "48",
-      "description": "Digit: 0."
-    },
-    {
-      "name": "digit1",
-      "value": "49",
-      "description": "Digit: 1."
-    },
-    {
-      "name": "digit2",
-      "value": "50",
-      "description": "Digit: 2."
-    },
-    {
-      "name": "digit3",
-      "value": "51",
-      "description": "Digit: 3."
-    },
-    {
-      "name": "digit4",
-      "value": "52",
-      "description": "Digit: 4."
-    },
-    {
-      "name": "digit5",
-      "value": "53",
-      "description": "Digit: 5."
-    },
-    {
-      "name": "digit6",
-      "value": "54",
-      "description": "Digit: 6."
-    },
-    {
-      "name": "digit7",
-      "value": "55",
-      "description": "Digit: 7."
-    },
-    {
-      "name": "digit8",
-      "value": "56",
-      "description": "Digit: 8."
-    },
-    {
-      "name": "digit9",
-      "value": "57",
-      "description": "Digit: 9."
-    },
-    {
-      "name": "colon",
-      "value": "58",
-      "description": "Punctuation: Colon (:)."
-    },
-    {
-      "name": "semicolon",
-      "value": "59",
-      "description": "Punctuation: Semicolon (;)."
-    },
-    {
-      "name": "lt",
-      "value": "60",
-      "description": "Punctuation: Less than (<)."
-    },
-    {
-      "name": "equals",
-      "value": "61",
-      "description": "Punctuation: Equals (=)."
-    },
-    {
-      "name": "gt",
-      "value": "62",
-      "description": "Punctuation: Greater than (>)."
-    },
-    {
-      "name": "question",
-      "value": "63",
-      "description": "Punctuation: Question mark (?)."
-    },
-    {
-      "name": "at",
-      "value": "64",
-      "description": "Punctuation: At sign (@)."
-    },
-    {
       "name": "A",
       "value": "65",
       "description": "Letter: Uppercase A."
@@ -323,39 +133,24 @@
       "description": "Letter: Uppercase Z."
     },
     {
-      "name": "lbracket",
-      "value": "91",
-      "description": "Punctuation: Left bracket ([)."
-    },
-    {
-      "name": "backslash",
-      "value": "92",
-      "description": "Punctuation: Backslash (\\)."
-    },
-    {
-      "name": "rbracket",
-      "value": "93",
-      "description": "Punctuation: Right bracket (])."
-    },
-    {
-      "name": "caret",
-      "value": "94",
-      "description": "Punctuation: Caret (^)."
-    },
-    {
-      "name": "underscore",
-      "value": "95",
-      "description": "Punctuation: Underscore (_)."
-    },
-    {
-      "name": "backtick",
-      "value": "96",
-      "description": "Punctuation: Backtick (`)."
-    },
-    {
       "name": "a",
       "value": "97",
       "description": "Letter: Lowercase a."
+    },
+    {
+      "name": "ampersand",
+      "value": "38",
+      "description": "Punctuation: Ampersand (&)."
+    },
+    {
+      "name": "asterisk",
+      "value": "42",
+      "description": "Punctuation: Asterisk (*)."
+    },
+    {
+      "name": "at",
+      "value": "64",
+      "description": "Punctuation: At sign (@)."
     },
     {
       "name": "b",
@@ -363,9 +158,39 @@
       "description": "Letter: Lowercase b."
     },
     {
+      "name": "backslash",
+      "value": "92",
+      "description": "Punctuation: Backslash (\\)."
+    },
+    {
+      "name": "backtick",
+      "value": "96",
+      "description": "Punctuation: Backtick (`)."
+    },
+    {
       "name": "c",
       "value": "99",
       "description": "Letter: Lowercase c."
+    },
+    {
+      "name": "caret",
+      "value": "94",
+      "description": "Punctuation: Caret (^)."
+    },
+    {
+      "name": "colon",
+      "value": "58",
+      "description": "Punctuation: Colon (:)."
+    },
+    {
+      "name": "comma",
+      "value": "44",
+      "description": "Punctuation: Comma (,)."
+    },
+    {
+      "name": "cr",
+      "value": "13",
+      "description": "Control: Carriage return."
     },
     {
       "name": "d",
@@ -373,9 +198,89 @@
       "description": "Letter: Lowercase d."
     },
     {
+      "name": "digit0",
+      "value": "48",
+      "description": "Digit: 0."
+    },
+    {
+      "name": "digit1",
+      "value": "49",
+      "description": "Digit: 1."
+    },
+    {
+      "name": "digit2",
+      "value": "50",
+      "description": "Digit: 2."
+    },
+    {
+      "name": "digit3",
+      "value": "51",
+      "description": "Digit: 3."
+    },
+    {
+      "name": "digit4",
+      "value": "52",
+      "description": "Digit: 4."
+    },
+    {
+      "name": "digit5",
+      "value": "53",
+      "description": "Digit: 5."
+    },
+    {
+      "name": "digit6",
+      "value": "54",
+      "description": "Digit: 6."
+    },
+    {
+      "name": "digit7",
+      "value": "55",
+      "description": "Digit: 7."
+    },
+    {
+      "name": "digit8",
+      "value": "56",
+      "description": "Digit: 8."
+    },
+    {
+      "name": "digit9",
+      "value": "57",
+      "description": "Digit: 9."
+    },
+    {
+      "name": "dollar",
+      "value": "36",
+      "description": "Punctuation: Dollar sign ($)."
+    },
+    {
+      "name": "dot",
+      "value": "46",
+      "description": "Punctuation: Period/dot (.)."
+    },
+    {
+      "name": "dquote",
+      "value": "34",
+      "description": "Punctuation: Double quote (\")."
+    },
+    {
       "name": "e",
       "value": "101",
       "description": "Letter: Lowercase e."
+    },
+    {
+      "name": "equals",
+      "value": "61",
+      "description": "Punctuation: Equals (=)."
+    },
+    {
+      "name": "esc",
+      "value": "27",
+      "description": "Control: Escape character."
+    },
+    {
+      "name": "exclaim",
+      "value": "33",
+      "description": "Punctuation: Exclamation mark (!)."
     },
     {
       "name": "f",
@@ -388,9 +293,19 @@
       "description": "Letter: Lowercase g."
     },
     {
+      "name": "gt",
+      "value": "62",
+      "description": "Punctuation: Greater than (>)."
+    },
+    {
       "name": "h",
       "value": "104",
       "description": "Letter: Lowercase h."
+    },
+    {
+      "name": "hash",
+      "value": "35",
+      "description": "Punctuation: Hash (#)."
     },
     {
       "name": "i",
@@ -413,14 +328,49 @@
       "description": "Letter: Lowercase l."
     },
     {
+      "name": "lbrace",
+      "value": "123",
+      "description": "Punctuation: Left brace ({)."
+    },
+    {
+      "name": "lbracket",
+      "value": "91",
+      "description": "Punctuation: Left bracket ([)."
+    },
+    {
+      "name": "lparen",
+      "value": "40",
+      "description": "Punctuation: Left parenthesis."
+    },
+    {
+      "name": "lt",
+      "value": "60",
+      "description": "Punctuation: Less than (<)."
+    },
+    {
       "name": "m",
       "value": "109",
       "description": "Letter: Lowercase m."
     },
     {
+      "name": "minus",
+      "value": "45",
+      "description": "Punctuation: Minus/hyphen (-)."
+    },
+    {
       "name": "n",
       "value": "110",
       "description": "Letter: Lowercase n."
+    },
+    {
+      "name": "newline",
+      "value": "10",
+      "description": "Control: Newline (line feed)."
+    },
+    {
+      "name": "nul",
+      "value": "0",
+      "description": "Control: Null character."
     },
     {
       "name": "o",
@@ -433,9 +383,29 @@
       "description": "Letter: Lowercase p."
     },
     {
+      "name": "percent",
+      "value": "37",
+      "description": "Punctuation: Percent (%)."
+    },
+    {
+      "name": "pipe",
+      "value": "124",
+      "description": "Punctuation: Pipe (|)."
+    },
+    {
+      "name": "plus",
+      "value": "43",
+      "description": "Punctuation: Plus sign (+)."
+    },
+    {
       "name": "q",
       "value": "113",
       "description": "Letter: Lowercase q."
+    },
+    {
+      "name": "question",
+      "value": "63",
+      "description": "Punctuation: Question mark (?)."
     },
     {
       "name": "r",
@@ -443,9 +413,44 @@
       "description": "Letter: Lowercase r."
     },
     {
+      "name": "rbrace",
+      "value": "125",
+      "description": "Punctuation: Right brace (})."
+    },
+    {
+      "name": "rbracket",
+      "value": "93",
+      "description": "Punctuation: Right bracket (])."
+    },
+    {
+      "name": "rparen",
+      "value": "41",
+      "description": "Punctuation: Right parenthesis."
+    },
+    {
       "name": "s",
       "value": "115",
       "description": "Letter: Lowercase s."
+    },
+    {
+      "name": "semicolon",
+      "value": "59",
+      "description": "Punctuation: Semicolon (;)."
+    },
+    {
+      "name": "slash",
+      "value": "47",
+      "description": "Punctuation: Forward slash (/)."
+    },
+    {
+      "name": "space",
+      "value": "32",
+      "description": "Punctuation: Space."
+    },
+    {
+      "name": "squote",
+      "value": "39",
+      "description": "Punctuation: Single quote (')."
     },
     {
       "name": "t",
@@ -453,9 +458,24 @@
       "description": "Letter: Lowercase t."
     },
     {
+      "name": "tab",
+      "value": "9",
+      "description": "Control: Tab character."
+    },
+    {
+      "name": "tilde",
+      "value": "126",
+      "description": "Punctuation: Tilde (~)."
+    },
+    {
       "name": "u",
       "value": "117",
       "description": "Letter: Lowercase u."
+    },
+    {
+      "name": "underscore",
+      "value": "95",
+      "description": "Punctuation: Underscore (_)."
     },
     {
       "name": "v",
@@ -481,26 +501,6 @@
       "name": "z",
       "value": "122",
       "description": "Letter: Lowercase z."
-    },
-    {
-      "name": "lbrace",
-      "value": "123",
-      "description": "Punctuation: Left brace ({)."
-    },
-    {
-      "name": "pipe",
-      "value": "124",
-      "description": "Punctuation: Pipe (|)."
-    },
-    {
-      "name": "rbrace",
-      "value": "125",
-      "description": "Punctuation: Right brace (})."
-    },
-    {
-      "name": "tilde",
-      "value": "126",
-      "description": "Punctuation: Tilde (~)."
     }
   ],
   "structs": [],

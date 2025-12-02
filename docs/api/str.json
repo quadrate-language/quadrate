@@ -5,27 +5,61 @@
   "structs": [],
   "functions": [
     {
-      "name": "len",
-      "signature": "( str:str -- len:i64 )",
+      "name": "char_at",
+      "signature": "( str:str index:i64 -- char_code:i64 )",
       "failable": false,
-      "description": "Get string length in bytes.",
+      "description": "Get character code at index.",
       "params": [
         {
           "name": "str",
           "type": "str",
           "description": "Input string"
+        },
+        {
+          "name": "index",
+          "type": "i64",
+          "description": "Character position"
         }
       ],
       "returns": [
         {
-          "name": "len",
+          "name": "char_code",
           "type": "i64",
-          "description": "Length in bytes"
+          "description": "ASCII/UTF-8 byte value"
         }
       ],
       "errors": [],
       "examples": [
-        "\"hello\" str::len .  // 5"
+        "\"hello\" 0 str::char_at .  // 104 ('h')"
+      ]
+    },
+    {
+      "name": "compare",
+      "signature": "( str1:str str2:str -- result:i64 )",
+      "failable": false,
+      "description": "Compare two strings lexicographically.",
+      "params": [
+        {
+          "name": "str1",
+          "type": "str",
+          "description": "First string"
+        },
+        {
+          "name": "str2",
+          "type": "str",
+          "description": "Second string"
+        }
+      ],
+      "returns": [
+        {
+          "name": "result",
+          "type": "i64",
+          "description": "<0 if str1<str2, 0 if equal, >0 if str1>str2"
+        }
+      ],
+      "errors": [],
+      "examples": [
+        "\"abc\" \"abd\" str::compare .  // -1"
       ]
     },
     {
@@ -87,35 +121,6 @@
       ]
     },
     {
-      "name": "starts_with",
-      "signature": "( str:str prefix:str -- result:i64 )",
-      "failable": false,
-      "description": "Check if string starts with prefix.",
-      "params": [
-        {
-          "name": "str",
-          "type": "str",
-          "description": "String to check"
-        },
-        {
-          "name": "prefix",
-          "type": "str",
-          "description": "Prefix to match"
-        }
-      ],
-      "returns": [
-        {
-          "name": "result",
-          "type": "i64",
-          "description": "1 if matches, 0 otherwise"
-        }
-      ],
-      "errors": [],
-      "examples": [
-        "\"hello\" \"hel\" str::starts_with .  // 1"
-      ]
-    },
-    {
       "name": "ends_with",
       "signature": "( str:str suffix:str -- result:i64 )",
       "failable": false,
@@ -142,6 +147,30 @@
       "errors": [],
       "examples": [
         "\"hello\" \"lo\" str::ends_with .  // 1"
+      ]
+    },
+    {
+      "name": "from_char",
+      "signature": "( char_code:i64 -- str:str )",
+      "failable": false,
+      "description": "Create string from character code.",
+      "params": [
+        {
+          "name": "char_code",
+          "type": "i64",
+          "description": "ASCII/UTF-8 byte value"
+        }
+      ],
+      "returns": [
+        {
+          "name": "str",
+          "type": "str",
+          "description": "Single character string"
+        }
+      ],
+      "errors": [],
+      "examples": [
+        "65 str::from_char .  // \"A\""
       ]
     },
     {
@@ -208,10 +237,10 @@
       ]
     },
     {
-      "name": "upper",
-      "signature": "( str:str -- result:str )",
+      "name": "len",
+      "signature": "( str:str -- len:i64 )",
       "failable": false,
-      "description": "Convert string to uppercase.",
+      "description": "Get string length in bytes.",
       "params": [
         {
           "name": "str",
@@ -221,14 +250,14 @@
       ],
       "returns": [
         {
-          "name": "result",
-          "type": "str",
-          "description": "Uppercase string"
+          "name": "len",
+          "type": "i64",
+          "description": "Length in bytes"
         }
       ],
       "errors": [],
       "examples": [
-        "\"hello\" str::upper .  // \"HELLO\""
+        "\"hello\" str::len .  // 5"
       ]
     },
     {
@@ -253,66 +282,6 @@
       "errors": [],
       "examples": [
         "\"HELLO\" str::lower .  // \"hello\""
-      ]
-    },
-    {
-      "name": "trim",
-      "signature": "( str:str -- result:str )",
-      "failable": false,
-      "description": "Remove leading and trailing whitespace.",
-      "params": [
-        {
-          "name": "str",
-          "type": "str",
-          "description": "Input string"
-        }
-      ],
-      "returns": [
-        {
-          "name": "result",
-          "type": "str",
-          "description": "Trimmed string"
-        }
-      ],
-      "errors": [],
-      "examples": [
-        "\"  hello  \" str::trim .  // \"hello\""
-      ]
-    },
-    {
-      "name": "substring",
-      "signature": "( str:str start:i64 length:i64 -- result:str )",
-      "failable": true,
-      "description": "Extract substring.",
-      "params": [
-        {
-          "name": "str",
-          "type": "str",
-          "description": "Source string"
-        },
-        {
-          "name": "start",
-          "type": "i64",
-          "description": "Starting index"
-        },
-        {
-          "name": "length",
-          "type": "i64",
-          "description": "Number of characters"
-        }
-      ],
-      "returns": [
-        {
-          "name": "result",
-          "type": "str",
-          "description": "Extracted substring"
-        }
-      ],
-      "errors": [
-        "Out of bounds"
-      ],
-      "examples": [
-        "\"hello\" 1 3 str::substring! .  // \"ell\""
       ]
     },
     {
@@ -352,59 +321,6 @@
       ]
     },
     {
-      "name": "char_at",
-      "signature": "( str:str index:i64 -- char_code:i64 )",
-      "failable": false,
-      "description": "Get character code at index.",
-      "params": [
-        {
-          "name": "str",
-          "type": "str",
-          "description": "Input string"
-        },
-        {
-          "name": "index",
-          "type": "i64",
-          "description": "Character position"
-        }
-      ],
-      "returns": [
-        {
-          "name": "char_code",
-          "type": "i64",
-          "description": "ASCII/UTF-8 byte value"
-        }
-      ],
-      "errors": [],
-      "examples": [
-        "\"hello\" 0 str::char_at .  // 104 ('h')"
-      ]
-    },
-    {
-      "name": "from_char",
-      "signature": "( char_code:i64 -- str:str )",
-      "failable": false,
-      "description": "Create string from character code.",
-      "params": [
-        {
-          "name": "char_code",
-          "type": "i64",
-          "description": "ASCII/UTF-8 byte value"
-        }
-      ],
-      "returns": [
-        {
-          "name": "str",
-          "type": "str",
-          "description": "Single character string"
-        }
-      ],
-      "errors": [],
-      "examples": [
-        "65 str::from_char .  // \"A\""
-      ]
-    },
-    {
       "name": "split",
       "signature": "( str:str delim:str -- parts:ptr count:i64 )",
       "failable": true,
@@ -441,32 +357,116 @@
       ]
     },
     {
-      "name": "compare",
-      "signature": "( str1:str str2:str -- result:i64 )",
+      "name": "starts_with",
+      "signature": "( str:str prefix:str -- result:i64 )",
       "failable": false,
-      "description": "Compare two strings lexicographically.",
+      "description": "Check if string starts with prefix.",
       "params": [
         {
-          "name": "str1",
+          "name": "str",
           "type": "str",
-          "description": "First string"
+          "description": "String to check"
         },
         {
-          "name": "str2",
+          "name": "prefix",
           "type": "str",
-          "description": "Second string"
+          "description": "Prefix to match"
         }
       ],
       "returns": [
         {
           "name": "result",
           "type": "i64",
-          "description": "<0 if str1<str2, 0 if equal, >0 if str1>str2"
+          "description": "1 if matches, 0 otherwise"
         }
       ],
       "errors": [],
       "examples": [
-        "\"abc\" \"abd\" str::compare .  // -1"
+        "\"hello\" \"hel\" str::starts_with .  // 1"
+      ]
+    },
+    {
+      "name": "substring",
+      "signature": "( str:str start:i64 length:i64 -- result:str )",
+      "failable": true,
+      "description": "Extract substring.",
+      "params": [
+        {
+          "name": "str",
+          "type": "str",
+          "description": "Source string"
+        },
+        {
+          "name": "start",
+          "type": "i64",
+          "description": "Starting index"
+        },
+        {
+          "name": "length",
+          "type": "i64",
+          "description": "Number of characters"
+        }
+      ],
+      "returns": [
+        {
+          "name": "result",
+          "type": "str",
+          "description": "Extracted substring"
+        }
+      ],
+      "errors": [
+        "Out of bounds"
+      ],
+      "examples": [
+        "\"hello\" 1 3 str::substring! .  // \"ell\""
+      ]
+    },
+    {
+      "name": "trim",
+      "signature": "( str:str -- result:str )",
+      "failable": false,
+      "description": "Remove leading and trailing whitespace.",
+      "params": [
+        {
+          "name": "str",
+          "type": "str",
+          "description": "Input string"
+        }
+      ],
+      "returns": [
+        {
+          "name": "result",
+          "type": "str",
+          "description": "Trimmed string"
+        }
+      ],
+      "errors": [],
+      "examples": [
+        "\"  hello  \" str::trim .  // \"hello\""
+      ]
+    },
+    {
+      "name": "upper",
+      "signature": "( str:str -- result:str )",
+      "failable": false,
+      "description": "Convert string to uppercase.",
+      "params": [
+        {
+          "name": "str",
+          "type": "str",
+          "description": "Input string"
+        }
+      ],
+      "returns": [
+        {
+          "name": "result",
+          "type": "str",
+          "description": "Uppercase string"
+        }
+      ],
+      "errors": [],
+      "examples": [
+        "\"hello\" str::upper .  // \"HELLO\""
       ]
     }
   ]

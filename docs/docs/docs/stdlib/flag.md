@@ -10,46 +10,6 @@ Parsed command-line arguments.
 
 ## Functions
 
-### parse
-
-Parse arguments from read instruction.
-
-**Signature:** `( argc:i64 -- )`
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `argc` | `i64` | Argument count from read |
-
-| Return | Type | Description |
-|--------|------|-------------|
-| `Flag` | `struct` | on stack |
-
-**Example:**
-
-```qd
-read flag::parse -> f
-```
-
----
-
-### destroy
-
-Free a Flag struct and its argv string.
-
-**Signature:** `( f:ptr -- )`
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `f` | `ptr` | Flag struct to free |
-
-**Example:**
-
-```qd
-f flag::destroy
-```
-
----
-
 ### bool
 
 Check if a boolean flag exists.
@@ -73,56 +33,20 @@ f "--verbose" flag::bool if { "verbose" . nl }
 
 ---
 
-### string
+### destroy
 
-Get string value of a flag.
+Free a Flag struct and its argv string.
 
-**Signature:** `( f:ptr name:str -- value:str )!`
+**Signature:** `( f:ptr -- )`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `f` | `ptr` | Flag struct |
-| `name` | `str` | Flag name |
-
-| Return | Type | Description |
-|--------|------|-------------|
-| `value` | `str` | Flag value |
-
-**Errors:**
-
-- Flag not found
+| `f` | `ptr` | Flag struct to free |
 
 **Example:**
 
 ```qd
-f "--name" flag::string! -> name
-```
-
----
-
-### int
-
-Get integer value of a flag.
-
-**Signature:** `( f:ptr name:str -- value:i64 )!`
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `f` | `ptr` | Flag struct |
-| `name` | `str` | Flag name |
-
-| Return | Type | Description |
-|--------|------|-------------|
-| `value` | `i64` | Flag value as integer |
-
-**Errors:**
-
-- Flag not found
-
-**Example:**
-
-```qd
-f "--count" flag::int! -> count
+f flag::destroy
 ```
 
 ---
@@ -154,6 +78,55 @@ f "--rate" flag::float! -> rate
 
 ---
 
+### int
+
+Get integer value of a flag.
+
+**Signature:** `( f:ptr name:str -- value:i64 )!`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `f` | `ptr` | Flag struct |
+| `name` | `str` | Flag name |
+
+| Return | Type | Description |
+|--------|------|-------------|
+| `value` | `i64` | Flag value as integer |
+
+**Errors:**
+
+- Flag not found
+
+**Example:**
+
+```qd
+f "--count" flag::int! -> count
+```
+
+---
+
+### parse
+
+Parse arguments from read instruction.
+
+**Signature:** `( argc:i64 -- )`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `argc` | `i64` | Argument count from read |
+
+| Return | Type | Description |
+|--------|------|-------------|
+| `Flag` | `struct` | on stack |
+
+**Example:**
+
+```qd
+read flag::parse -> f
+```
+
+---
+
 ### positional
 
 Get positional argument at index.
@@ -172,3 +145,30 @@ Get positional argument at index.
 **Errors:**
 
 - Not implemented
+
+---
+
+### string
+
+Get string value of a flag.
+
+**Signature:** `( f:ptr name:str -- value:str )!`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `f` | `ptr` | Flag struct |
+| `name` | `str` | Flag name |
+
+| Return | Type | Description |
+|--------|------|-------------|
+| `value` | `str` | Flag value |
+
+**Errors:**
+
+- Flag not found
+
+**Example:**
+
+```qd
+f "--name" flag::string! -> name
+```

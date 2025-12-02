@@ -3,9 +3,9 @@
   "description": "Time operations and duration constants.",
   "constants": [
     {
-      "name": "Nanosecond",
-      "value": "1",
-      "description": "Duration: 1 nanosecond."
+      "name": "Hour",
+      "value": "3600000000000",
+      "description": "Duration: 1 hour (60 minutes)."
     },
     {
       "name": "Microsecond",
@@ -18,41 +18,23 @@
       "description": "Duration: 1 millisecond (1,000,000 nanoseconds)."
     },
     {
-      "name": "Second",
-      "value": "1000000000",
-      "description": "Duration: 1 second (1,000,000,000 nanoseconds)."
-    },
-    {
       "name": "Minute",
       "value": "60000000000",
       "description": "Duration: 1 minute (60 seconds)."
     },
     {
-      "name": "Hour",
-      "value": "3600000000000",
-      "description": "Duration: 1 hour (60 minutes)."
+      "name": "Nanosecond",
+      "value": "1",
+      "description": "Duration: 1 nanosecond."
+    },
+    {
+      "name": "Second",
+      "value": "1000000000",
+      "description": "Duration: 1 second (1,000,000,000 nanoseconds)."
     }
   ],
   "structs": [],
   "functions": [
-    {
-      "name": "unix",
-      "signature": "( -- timestamp:i64 )",
-      "failable": false,
-      "description": "Get Unix timestamp in seconds.",
-      "params": [],
-      "returns": [
-        {
-          "name": "timestamp",
-          "type": "i64",
-          "description": "Seconds since 1970-01-01 00:00:00 UTC"
-        }
-      ],
-      "errors": [],
-      "examples": [
-        "time::unix .  // 1700000000"
-      ]
-    },
     {
       "name": "now",
       "signature": "( -- nanoseconds:i64 )",
@@ -87,6 +69,24 @@
       "errors": [],
       "examples": [
         "time::Second time::sleep"
+      ]
+    },
+    {
+      "name": "unix",
+      "signature": "( -- timestamp:i64 )",
+      "failable": false,
+      "description": "Get Unix timestamp in seconds.",
+      "params": [],
+      "returns": [
+        {
+          "name": "timestamp",
+          "type": "i64",
+          "description": "Seconds since 1970-01-01 00:00:00 UTC"
+        }
+      ],
+      "errors": [],
+      "examples": [
+        "time::unix .  // 1700000000"
       ]
     }
   ]
