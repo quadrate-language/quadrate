@@ -1360,7 +1360,10 @@ namespace Qd {
 		// Check if this is a local variable declaration
 		if (node->type() == IAstNode::Type::LOCAL) {
 			AstNodeLocal* local = static_cast<AstNodeLocal*>(node);
-			localVariables.insert(local->name());
+			// Insert all names (supports multiple assignment: -> a b c)
+			for (const std::string& name : local->names()) {
+				localVariables.insert(name);
+			}
 			return;
 		}
 
@@ -1842,10 +1845,13 @@ namespace Qd {
 			// Note: This is a simplified tracking - proper tracking would require data flow analysis
 			if (n->type() == IAstNode::Type::LOCAL) {
 				AstNodeLocal* local = static_cast<AstNodeLocal*>(n);
-				// Assume this local is bound from a parameter (simplified heuristic)
+				// Assume locals are bound from parameters (simplified heuristic)
 				// In reality, we'd need to track the stack to know which value is being bound
+				// For multiple assignment (-> a b c), associate all with first param
 				if (!paramNames.empty()) {
-					localToParam[local->name()] = paramNames[0]; // Associate with first param
+					for (const std::string& name : local->names()) {
+						localToParam[name] = paramNames[0];
+					}
 				}
 			}
 
@@ -2074,13 +2080,15 @@ namespace Qd {
 			}
 
 			case IAstNode::Type::LOCAL: {
-				// Local variable binding: pop value from stack and store type
+				// Local variable binding: pop value(s) from stack and store type(s)
+				// Supports multiple assignment: -> a b c
 				AstNodeLocal* local = static_cast<AstNodeLocal*>(child);
-				const std::string& varName = local->name();
-				if (!typeStack.empty()) {
-					StackValueType varType = typeStack.back();
-					typeStack.pop_back();
-					localVarTypes[varName] = varType;
+				for (const std::string& varName : local->names()) {
+					if (!typeStack.empty()) {
+						StackValueType varType = typeStack.back();
+						typeStack.pop_back();
+						localVarTypes[varName] = varType;
+					}
 				}
 				break;
 			}
@@ -2292,39 +2300,43 @@ namespace Qd {
 
 			case IAstNode::Type::LOCAL: {
 				// Handle local variable declaration: pop value from stack and store
+				// Supports multiple assignment: -> a b c pops 3 values
 				AstNodeLocal* local = static_cast<AstNodeLocal*>(child);
-				const std::string& varName = local->name();
+				const std::vector<std::string>& varNames = local->names();
 
-				// Check if variable name shadows a function
-				if (mDefinedFunctions.find(varName) != mDefinedFunctions.end()) {
-					std::string errorMsg = "Local variable '";
-					errorMsg += varName;
-					errorMsg += "' shadows function with same name";
-					reportError(local, errorMsg.c_str());
-					break;
-				}
+				// Process each variable name (in order: first name gets top of stack)
+				for (const std::string& varName : varNames) {
+					// Check if variable name shadows a function
+					if (mDefinedFunctions.find(varName) != mDefinedFunctions.end()) {
+						std::string errorMsg = "Local variable '";
+						errorMsg += varName;
+						errorMsg += "' shadows function with same name";
+						reportError(local, errorMsg.c_str());
+						continue;
+					}
 
-				// Check if stack is empty
-				if (typeStack.empty()) {
-					std::string errorMsg = "Type error in local variable '";
-					errorMsg += varName;
-					errorMsg += "': Stack underflow (no value to store)";
-					reportError(local, errorMsg.c_str());
-					break;
-				}
+					// Check if stack is empty
+					if (typeStack.empty()) {
+						std::string errorMsg = "Type error in local variable '";
+						errorMsg += varName;
+						errorMsg += "': Stack underflow (no value to store)";
+						reportError(local, errorMsg.c_str());
+						continue;
+					}
 
-				// Pop the value type from the stack and store it as the variable's type
-				StackValueType varType = typeStack.back();
-				typeStack.pop_back();
-				localVariables[varName] = varType;
+					// Pop the value type from the stack and store it as the variable's type
+					StackValueType varType = typeStack.back();
+					typeStack.pop_back();
+					localVariables[varName] = varType;
 
-				// If it's a PTR type, also store which struct type it is (if any)
-				if (varType == StackValueType::PTR && !structTypeStack.empty()) {
-					std::string structType = structTypeStack.back();
-					structTypeStack.pop_back();
-					mLocalVariableStructTypes[varName] = structType;
-				} else if (!structTypeStack.empty()) {
-					structTypeStack.pop_back();
+					// If it's a PTR type, also store which struct type it is (if any)
+					if (varType == StackValueType::PTR && !structTypeStack.empty()) {
+						std::string structType = structTypeStack.back();
+						structTypeStack.pop_back();
+						mLocalVariableStructTypes[varName] = structType;
+					} else if (!structTypeStack.empty()) {
+						structTypeStack.pop_back();
+					}
 				}
 				break;
 			}

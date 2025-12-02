@@ -1836,11 +1836,16 @@ private:
 
 			if (node->type() == Qd::IAstNode::Type::LOCAL) {
 				Qd::AstNodeLocal* localNode = static_cast<Qd::AstNodeLocal*>(node);
-				if (localNode->name() == varName) {
-					// Only consider declarations that appear before the request line
-					size_t declLine = (localNode->line() > 0) ? localNode->line() - 1 : 0;
-					if (declLine <= requestLine) {
-						candidates.push_back(localNode);
+				// Check all names (supports multiple assignment: -> a b c)
+				const auto& names = localNode->names();
+				for (const auto& name : names) {
+					if (name == varName) {
+						// Only consider declarations that appear before the request line
+						size_t declLine = (localNode->line() > 0) ? localNode->line() - 1 : 0;
+						if (declLine <= requestLine) {
+							candidates.push_back(localNode);
+						}
+						break; // Found match, no need to check more names
 					}
 				}
 			}
@@ -2142,7 +2147,16 @@ private:
 					// Look for LOCAL node with matching name
 					if (child->type() == Qd::IAstNode::Type::LOCAL) {
 						Qd::AstNodeLocal* localNode = static_cast<Qd::AstNodeLocal*>(child);
-						if (localNode->name() == varName) {
+						// Check all names (supports multiple assignment: -> a b c)
+						const auto& localNames = localNode->names();
+						bool hasMatch = false;
+						for (const auto& name : localNames) {
+							if (name == varName) {
+								hasMatch = true;
+								break;
+							}
+						}
+						if (hasMatch) {
 							// Found the declaration - now look backwards for struct constructor
 							// Check previous sibling
 							if (i > 0) {

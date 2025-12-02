@@ -281,6 +281,8 @@ module.exports = grammar({
     ),
 
     // Local variable declaration: -> variable_name
+    // Note: The compiler supports multiple assignment (-> a b c), but tree-sitter
+    // only highlights the first identifier since it can't distinguish newlines.
     local_declaration: $ => seq(
       '->',
       field('name', $.identifier),

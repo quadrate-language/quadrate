@@ -1,0 +1,23 @@
+// Test multiple assignment syntax: -> a b c
+fn main( -- ) {
+	// Basic multiple assignment - stack top goes to first var
+	1 2 3 -> a b c
+	"a=" . a . nl
+	"b=" . b . nl
+	"c=" . c . nl
+
+	// Two variable assignment
+	10 20 -> x y
+	"x=" . x . nl
+	"y=" . y . nl
+
+	// Single assignment still works
+	100 -> single
+	"single=" . single . nl
+
+	// Mix with expressions
+	1 1 add 2 2 mul 3 3 mul -> sum prod1 prod2
+	"sum=" . sum . nl
+	"prod1=" . prod1 . nl
+	"prod2=" . prod2 . nl
+}

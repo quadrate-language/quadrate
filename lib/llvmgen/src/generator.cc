@@ -261,6 +261,7 @@ namespace Qd {
 		void generateScopedIdentifier(AstNodeScopedIdentifier* scopedIdent, llvm::Value* ctx);
 		void generateSwitchStatement(AstNodeSwitchStatement* switchStmt, llvm::Value* ctx, llvm::Value* forIterVar);
 		void generateLocal(AstNodeLocal* local, llvm::Value* ctx);
+		void generateLocalOne(const std::string& name, size_t lineNum, llvm::Value* ctx);
 		void generateLocalCleanup();
 		void generateCastInstructions(const std::vector<CastDirection>& casts, llvm::Value* ctx);
 		void processStructDeclaration(AstNodeStructDeclaration* structDecl);
@@ -3397,7 +3398,14 @@ namespace Qd {
 	}
 
 	void LlvmGenerator::Impl::generateLocal(AstNodeLocal* local, llvm::Value* ctx) {
-		const std::string& name = local->name();
+		// Handle multiple assignment: -> a b c pops 3 values into a, b, c respectively
+		const std::vector<std::string>& names = local->names();
+		for (const std::string& name : names) {
+			generateLocalOne(name, local->line(), ctx);
+		}
+	}
+
+	void LlvmGenerator::Impl::generateLocalOne(const std::string& name, size_t lineNum, llvm::Value* ctx) {
 
 		// Check if this variable already exists (reuse the alloca if so)
 		llvm::AllocaInst* localAlloca;
@@ -3431,7 +3439,7 @@ namespace Qd {
 				auto localVar = debugBuilder->createAutoVariable(debugScopeStack.back(), // Scope (current function)
 						name,															 // Variable name
 						localFile,														 // File
-						static_cast<unsigned>(local->line()),							 // Line number
+						static_cast<unsigned>(lineNum),									 // Line number
 						stackElementDebugType,											 // Type (the struct)
 						true															 // Always preserve
 				);
@@ -3441,7 +3449,7 @@ namespace Qd {
 						localVar,						  // Variable
 						debugBuilder->createExpression(), // Expression
 						llvm::DILocation::get(
-								*context, static_cast<unsigned>(local->line()), 0, debugScopeStack.back()),
+								*context, static_cast<unsigned>(lineNum), 0, debugScopeStack.back()),
 						builder->GetInsertBlock());
 			}
 		} else {
