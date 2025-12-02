@@ -19,17 +19,17 @@ fn main( -- ) {
 		0 1760 1 for { z it 0.0 set  o it 12 set }
 
 		// Precompute rotation matrix components
-		A math::sin -> e  A math::cos -> g
-		B math::sin -> n  B math::cos -> m
+		A math::sin A math::cos -> g e
+		B math::sin B math::cos -> m n
 
 		// Render torus: j=theta (tube), i=phi (ring)
 		0.0 -> j
 		0 90 1 for {
-			j math::sin -> f  j math::cos -> d
+			j math::sin j math::cos -> d f
 
 			0.0 -> i
 			0 314 1 for {
-				i math::sin -> c  i math::cos -> l
+				i math::sin i math::cos -> l c
 				d 2.0 + -> h  // h = R2 + R1*cos(theta)
 
 				// Perspective projection
@@ -70,7 +70,7 @@ fn main( -- ) {
 				o it nth switch {
 					0 { "." . } 1 { "," . } 2 { "-" . } 3 { "~" . }
 					4 { ":" . } 5 { ";" . } 6 { "=" . } 7 { "!" . }
-					8 { "*" . } 9 { "#" . } 10 { "it" . } 11 { "@" . }
+					8 { "*" . } 9 { "#" . } 10 { "$" . } 11 { "@" . }
 					_ { " " . }
 				}
 			} else { nl }
