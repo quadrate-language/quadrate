@@ -10,7 +10,8 @@
     { "include": "#numbers" },
     { "include": "#functions" },
     { "include": "#builtins" },
-    { "include": "#types" }
+    { "include": "#types" },
+    { "include": "#variables" }
   ],
   "repository": {
     "comments": {
@@ -30,11 +31,11 @@
       "patterns": [
         {
           "name": "keyword.control.quadrate",
-          "match": "\\b(if|else|loop|for|break|continue|defer)\\b"
+          "match": "\\b(if|else|loop|for|break|continue|defer|return)\\b"
         },
         {
           "name": "keyword.other.quadrate",
-          "match": "\\b(fn|use|const|pub|struct|import|as)\\b"
+          "match": "\\b(fn|use|const|pub|struct|import|as|new|ctx|switch)\\b"
         }
       ]
     },
@@ -61,8 +62,8 @@
           "match": ":"
         },
         {
-          "name": "keyword.operator.deref.quadrate",
-          "match": "\\$"
+          "name": "keyword.operator.field-access.quadrate",
+          "match": "@"
         },
         {
           "name": "keyword.operator.ref.quadrate",
@@ -142,8 +143,36 @@
       ]
     },
     "types": {
-      "name": "storage.type.quadrate",
-      "match": "\\b(i64|f64|str|ptr|any)\\b"
+      "patterns": [
+        {
+          "name": "storage.type.primitive.quadrate",
+          "match": "\\b(i64|f64|str|ptr|any)\\b"
+        },
+        {
+          "name": "entity.name.type.struct.quadrate",
+          "match": "(?<=struct\\s+)\\b[A-Z][a-zA-Z0-9_]*\\b"
+        },
+        {
+          "name": "entity.name.type.quadrate",
+          "match": "(?<=new\\s+)\\b[A-Z][a-zA-Z0-9_]*\\b"
+        },
+        {
+          "name": "entity.name.type.quadrate",
+          "match": "(?<=new\\s+[a-zA-Z_][a-zA-Z0-9_]*::)\\b[A-Z][a-zA-Z0-9_]*\\b"
+        },
+        {
+          "name": "entity.name.type.quadrate",
+          "match": "(?<=:)\\b[A-Z][a-zA-Z0-9_]*\\b"
+        }
+      ]
+    },
+    "variables": {
+      "patterns": [
+        {
+          "name": "variable.language.quadrate",
+          "match": "\\bit\\b"
+        }
+      ]
     }
   }
 }

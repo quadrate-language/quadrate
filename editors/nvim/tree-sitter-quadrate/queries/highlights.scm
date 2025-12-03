@@ -2,6 +2,7 @@
 [
   "pub"
   "fn"
+  "struct"
   "const"
   "use"
   "import"
@@ -26,7 +27,11 @@
 (continue_statement) @keyword.control
 (return_statement) @keyword.control
 
-; Types - match the identifier inside type nodes
+; Primitive types (more specific, must come first)
+((type (identifier) @type.builtin)
+  (#any-of? @type.builtin "i64" "f64" "ptr" "str"))
+
+; User-defined types
 (type
   (identifier) @type)
 
@@ -45,6 +50,27 @@
 ; Constant definitions
 (constant_definition
   name: (identifier) @constant)
+
+; Struct definitions
+(struct_definition
+  name: (identifier) @type)
+
+; Struct field types - primitives
+((struct_field
+  type: (type (identifier) @type.builtin))
+  (#any-of? @type.builtin "i64" "f64" "ptr" "str"))
+
+; Struct field types - user-defined
+(struct_field
+  type: (type (identifier) @type))
+
+; Struct fields
+(struct_field
+  name: (identifier) @variable.member)
+
+; Field access
+(field_access
+  field: (identifier) @variable.member)
 
 ; Use statements (module imports)
 (use_statement
