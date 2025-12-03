@@ -2,30 +2,10 @@
 
 Bitwise operations for integer manipulation.
 
+Core operations (and, or, xor, not, shl, shr) are builtins.
+This module provides higher-level bit manipulation functions.
+
 ## Functions
-
-### and
-
-Bitwise AND.
-
-**Signature:** `( a:i64 b:i64 -- result:i64 )`
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `a` | `i64` | First operand |
-| `b` | `i64` | Second operand |
-
-| Return | Type | Description |
-|--------|------|-------------|
-| `result` | `i64` | a AND b |
-
-**Example:**
-
-```qd
-0b1100 0b1010 bits::and .  // 8
-```
-
----
 
 ### clear_bit
 
@@ -97,29 +77,6 @@ Check if a bit is set.
 
 ---
 
-### lshift
-
-Left shift.
-
-**Signature:** `( value:i64 shift:i64 -- result:i64 )`
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `value` | `i64` | Value to shift |
-| `shift` | `i64` | Number of positions |
-
-| Return | Type | Description |
-|--------|------|-------------|
-| `result` | `i64` | value << shift |
-
-**Example:**
-
-```qd
-1 4 bits::lshift .  // 16
-```
-
----
-
 ### mask
 
 Keep only the bottom N bits.
@@ -139,51 +96,6 @@ Keep only the bottom N bits.
 
 ```qd
 0xFF 4 bits::mask .  // 15
-```
-
----
-
-### not
-
-Bitwise NOT (complement).
-
-**Signature:** `( a:i64 -- result:i64 )`
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `a` | `i64` | Value to complement |
-
-| Return | Type | Description |
-|--------|------|-------------|
-| `result` | `i64` | All bits flipped |
-
-**Example:**
-
-```qd
-0 bits::not .  // -1
-```
-
----
-
-### or
-
-Bitwise OR.
-
-**Signature:** `( a:i64 b:i64 -- result:i64 )`
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `a` | `i64` | First operand |
-| `b` | `i64` | Second operand |
-
-| Return | Type | Description |
-|--------|------|-------------|
-| `result` | `i64` | a OR b |
-
-**Example:**
-
-```qd
-0b1100 0b1010 bits::or .  // 14
 ```
 
 ---
@@ -281,29 +193,6 @@ Rotate bits right within a width.
 
 ---
 
-### rshift
-
-Right shift.
-
-**Signature:** `( value:i64 shift:i64 -- result:i64 )`
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `value` | `i64` | Value to shift |
-| `shift` | `i64` | Number of positions |
-
-| Return | Type | Description |
-|--------|------|-------------|
-| `result` | `i64` | value >> shift |
-
-**Example:**
-
-```qd
-16 2 bits::rshift .  // 4
-```
-
----
-
 ### set_bit
 
 Set a bit to 1.
@@ -371,27 +260,4 @@ Toggle a bit.
 
 ```qd
 0b1010 0 bits::toggle_bit .  // 11 (0b1011)
-```
-
----
-
-### xor
-
-Bitwise XOR.
-
-**Signature:** `( a:i64 b:i64 -- result:i64 )`
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `a` | `i64` | First operand |
-| `b` | `i64` | Second operand |
-
-| Return | Type | Description |
-|--------|------|-------------|
-| `result` | `i64` | a XOR b |
-
-**Example:**
-
-```qd
-0b1100 0b1010 bits::xor .  // 6
 ```

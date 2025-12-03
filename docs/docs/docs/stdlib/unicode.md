@@ -55,7 +55,7 @@ Unicode character constants and classification.
 | `digit7` | `55` | Digit: 7. |
 | `digit8` | `56` | Digit: 8. |
 | `digit9` | `57` | Digit: 9. |
-| `dollar` | `36` | Punctuation: Dollar sign ($). |
+| `dollar` | `36` | Punctuation: Dollar sign (it). |
 | `dot` | `46` | Punctuation: Period/dot (.). |
 | `dquote` | `34` | Punctuation: Double quote ("). |
 | `e` | `101` | Letter: Lowercase e. |

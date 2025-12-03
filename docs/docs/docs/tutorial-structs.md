@@ -4,8 +4,8 @@
 use fmt
 
 struct Vec2 {
-    x: f64,
-    y: f64,
+    x: f64
+    y: f64
 }
 
 fn main( -- ) {

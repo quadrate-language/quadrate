@@ -1,38 +1,9 @@
 {
   "name": "bits",
-  "description": "Bitwise operations for integer manipulation.",
+  "description": "Bitwise operations for integer manipulation.  Core operations (and, or, xor, not, shl, shr) are builtins. This module provides higher-level bit manipulation functions.",
   "constants": [],
   "structs": [],
   "functions": [
-    {
-      "name": "and",
-      "signature": "( a:i64 b:i64 -- result:i64 )",
-      "failable": false,
-      "description": "Bitwise AND.",
-      "params": [
-        {
-          "name": "a",
-          "type": "i64",
-          "description": "First operand"
-        },
-        {
-          "name": "b",
-          "type": "i64",
-          "description": "Second operand"
-        }
-      ],
-      "returns": [
-        {
-          "name": "result",
-          "type": "i64",
-          "description": "a AND b"
-        }
-      ],
-      "errors": [],
-      "examples": [
-        "0b1100 0b1010 bits::and .  // 8"
-      ]
-    },
     {
       "name": "clear_bit",
       "signature": "( value:i64 bit_pos:i64 -- result:i64 )",
@@ -126,35 +97,6 @@
       ]
     },
     {
-      "name": "lshift",
-      "signature": "( value:i64 shift:i64 -- result:i64 )",
-      "failable": false,
-      "description": "Left shift.",
-      "params": [
-        {
-          "name": "value",
-          "type": "i64",
-          "description": "Value to shift"
-        },
-        {
-          "name": "shift",
-          "type": "i64",
-          "description": "Number of positions"
-        }
-      ],
-      "returns": [
-        {
-          "name": "result",
-          "type": "i64",
-          "description": "value << shift"
-        }
-      ],
-      "errors": [],
-      "examples": [
-        "1 4 bits::lshift .  // 16"
-      ]
-    },
-    {
       "name": "mask",
       "signature": "( value:i64 num_bits:i64 -- result:i64 )",
       "failable": false,
@@ -181,59 +123,6 @@
       "errors": [],
       "examples": [
         "0xFF 4 bits::mask .  // 15"
-      ]
-    },
-    {
-      "name": "not",
-      "signature": "( a:i64 -- result:i64 )",
-      "failable": false,
-      "description": "Bitwise NOT (complement).",
-      "params": [
-        {
-          "name": "a",
-          "type": "i64",
-          "description": "Value to complement"
-        }
-      ],
-      "returns": [
-        {
-          "name": "result",
-          "type": "i64",
-          "description": "All bits flipped"
-        }
-      ],
-      "errors": [],
-      "examples": [
-        "0 bits::not .  // -1"
-      ]
-    },
-    {
-      "name": "or",
-      "signature": "( a:i64 b:i64 -- result:i64 )",
-      "failable": false,
-      "description": "Bitwise OR.",
-      "params": [
-        {
-          "name": "a",
-          "type": "i64",
-          "description": "First operand"
-        },
-        {
-          "name": "b",
-          "type": "i64",
-          "description": "Second operand"
-        }
-      ],
-      "returns": [
-        {
-          "name": "result",
-          "type": "i64",
-          "description": "a OR b"
-        }
-      ],
-      "errors": [],
-      "examples": [
-        "0b1100 0b1010 bits::or .  // 14"
       ]
     },
     {
@@ -358,35 +247,6 @@
       ]
     },
     {
-      "name": "rshift",
-      "signature": "( value:i64 shift:i64 -- result:i64 )",
-      "failable": false,
-      "description": "Right shift.",
-      "params": [
-        {
-          "name": "value",
-          "type": "i64",
-          "description": "Value to shift"
-        },
-        {
-          "name": "shift",
-          "type": "i64",
-          "description": "Number of positions"
-        }
-      ],
-      "returns": [
-        {
-          "name": "result",
-          "type": "i64",
-          "description": "value >> shift"
-        }
-      ],
-      "errors": [],
-      "examples": [
-        "16 2 bits::rshift .  // 4"
-      ]
-    },
-    {
       "name": "set_bit",
       "signature": "( value:i64 bit_pos:i64 -- result:i64 )",
       "failable": false,
@@ -481,35 +341,6 @@
       "errors": [],
       "examples": [
         "0b1010 0 bits::toggle_bit .  // 11 (0b1011)"
-      ]
-    },
-    {
-      "name": "xor",
-      "signature": "( a:i64 b:i64 -- result:i64 )",
-      "failable": false,
-      "description": "Bitwise XOR.",
-      "params": [
-        {
-          "name": "a",
-          "type": "i64",
-          "description": "First operand"
-        },
-        {
-          "name": "b",
-          "type": "i64",
-          "description": "Second operand"
-        }
-      ],
-      "returns": [
-        {
-          "name": "result",
-          "type": "i64",
-          "description": "a XOR b"
-        }
-      ],
-      "errors": [],
-      "examples": [
-        "0b1100 0b1010 bits::xor .  // 6"
       ]
     }
   ]

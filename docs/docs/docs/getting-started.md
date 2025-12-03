@@ -22,8 +22,9 @@ make release && sudo make install
 |------|-------------|
 | `quadc` | Quadrate compiler |
 | `quadfmt` | Quadrate code formatter |
-| `quadlsp` | Quadrate language server |
-| `quaduses` | Quadrate code module manager |
 | `quadlint` | Quadrate linter |
+| `quadlsp` | Quadrate language server |
+| `quadmcp` | Quadrate model context protocol |
 | `quadpm` | Quadrate package manager |
+| `quaduses` | Quadrate code module manager |
 
