@@ -50,7 +50,7 @@ debug:
 	@cp -rf lib/qdstrconv/include/qdstrconv dist/include/
 	@cp -rf lib/qdtime/include/qdtime dist/include/
 	@mkdir -p dist/share/quadrate
-	@cp -r lib/qdstd/qd/base64 dist/share/quadrate/
+	@cp -r lib/qdbase64/qd/base64 dist/share/quadrate/
 	@cp -r lib/qdbits/qd/bits dist/share/quadrate/
 	@cp -r lib/qdflag/qd/flag dist/share/quadrate/
 	@cp -r lib/qdfmt/qd/fmt dist/share/quadrate/
@@ -114,7 +114,7 @@ release:
 	@cp -rf lib/qdstrconv/include/qdstrconv dist/include/
 	@cp -rf lib/qdtime/include/qdtime dist/include/
 	@mkdir -p dist/share/quadrate
-	@cp -r lib/qdstd/qd/base64 dist/share/quadrate/
+	@cp -r lib/qdbase64/qd/base64 dist/share/quadrate/
 	@cp -r lib/qdbits/qd/bits dist/share/quadrate/
 	@cp -r lib/qdflag/qd/flag dist/share/quadrate/
 	@cp -r lib/qdfmt/qd/fmt dist/share/quadrate/
@@ -258,7 +258,7 @@ install: release
 	cp -r dist/include/qdtime $(DESTDIR)$(PREFIX)/include/
 	@echo "Installing Quadrate standard library modules to $(DESTDIR)$(PREFIX)/share/quadrate/"
 	install -d $(DESTDIR)$(PREFIX)/share/quadrate
-	@cp -r lib/qdstd/qd/base64 $(DESTDIR)$(PREFIX)/share/quadrate/
+	@cp -r lib/qdbase64/qd/base64 $(DESTDIR)$(PREFIX)/share/quadrate/
 	@cp -r lib/qdbits/qd/bits $(DESTDIR)$(PREFIX)/share/quadrate/
 	@cp -r lib/qdflag/qd/flag $(DESTDIR)$(PREFIX)/share/quadrate/
 	@cp -r lib/qdfmt/qd/fmt $(DESTDIR)$(PREFIX)/share/quadrate/
