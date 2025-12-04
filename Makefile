@@ -17,6 +17,7 @@ debug:
 	meson setup $(BUILD_DIR_DEBUG) --buildtype=debug $(MESON_FLAGS)
 	meson compile -C $(BUILD_DIR_DEBUG)
 	@mkdir -p dist/bin dist/lib dist/include
+	@cp -f $(BUILD_DIR_DEBUG)/cmd/quad/quad dist/bin/
 	@cp -f $(BUILD_DIR_DEBUG)/cmd/quadc/quadc dist/bin/
 	@cp -f $(BUILD_DIR_DEBUG)/cmd/quadfmt/quadfmt dist/bin/
 	@cp -f $(BUILD_DIR_DEBUG)/cmd/quadlint/quadlint dist/bin/
@@ -81,6 +82,7 @@ release:
 	meson setup $(BUILD_DIR_RELEASE) --buildtype=release $(MESON_FLAGS)
 	meson compile -C $(BUILD_DIR_RELEASE)
 	@mkdir -p dist/bin dist/lib dist/include
+	@cp -f $(BUILD_DIR_RELEASE)/cmd/quad/quad dist/bin/
 	@cp -f $(BUILD_DIR_RELEASE)/cmd/quadc/quadc dist/bin/
 	@cp -f $(BUILD_DIR_RELEASE)/cmd/quadfmt/quadfmt dist/bin/
 	@cp -f $(BUILD_DIR_RELEASE)/cmd/quadlint/quadlint dist/bin/
@@ -227,6 +229,7 @@ install: release
 	install -d $(DESTDIR)$(PREFIX)/bin
 	install -d $(DESTDIR)$(PREFIX)/lib
 	install -d $(DESTDIR)$(PREFIX)/include
+	install -m 755 dist/bin/quad $(DESTDIR)$(PREFIX)/bin/
 	install -m 755 dist/bin/quadc $(DESTDIR)$(PREFIX)/bin/
 	install -m 755 dist/bin/quadfmt $(DESTDIR)$(PREFIX)/bin/
 	install -m 755 dist/bin/quadlint $(DESTDIR)$(PREFIX)/bin/
@@ -285,6 +288,7 @@ install: release
 	@cp -r lib/qduuid/qd/uuid $(DESTDIR)$(PREFIX)/share/quadrate/
 
 uninstall:
+	rm -f $(DESTDIR)$(PREFIX)/bin/quad
 	rm -f $(DESTDIR)$(PREFIX)/bin/quadc
 	rm -f $(DESTDIR)$(PREFIX)/bin/quadfmt
 	rm -f $(DESTDIR)$(PREFIX)/bin/quadlint

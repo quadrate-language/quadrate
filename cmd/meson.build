@@ -1,3 +1,4 @@
+subdir('quad')
 subdir('quadc')
 subdir('quadfmt')
 subdir('quadlint')
