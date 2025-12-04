@@ -1,0 +1,332 @@
+use io
+use sha256
+use mem
+use str
+use bytes
+use flag
+
+const VERSION = "1.0.0"
+
+fn print_help( -- ) {
+	"Usage: sha256sum [OPTION]... [FILE]..." . nl
+	"Print or check SHA256 (256-bit) checksums." . nl
+	nl
+	"With no FILE, or when FILE is -, read standard input." . nl
+	"  -b, --binary          read in binary mode" . nl
+	"  -c, --check           read checksums from the FILEs and check them" . nl
+	"      --tag             create a BSD-style checksum" . nl
+	"  -t, --text            read in text mode (default)" . nl
+	"  -z, --zero            end each output line with NUL, not newline" . nl
+	nl
+	"The following options are useful only when verifying checksums:" . nl
+	"      --ignore-missing  don't fail or report status for missing files" . nl
+	"      --quiet           don't print OK for each successfully verified file" . nl
+	"      --status          don't output anything, status code shows success" . nl
+	"      --strict          exit non-zero for improperly formatted checksum lines" . nl
+	"  -w, --warn            warn about improperly formatted checksum lines" . nl
+	nl
+	"      --help            display this help and exit" . nl
+	"      --version         output version information and exit" . nl
+	nl
+	"The sums are computed as described in FIPS-180-2." . nl
+	"When checking, the input should be a former output of this program." . nl
+}
+
+fn print_version( -- ) {
+	"sha256sum (quadrate) " . VERSION . nl
+}
+
+fn read_file(path:str -- content:ptr length:i64)! {
+	-> path
+	path io::ReadBinary io::open if {
+		-> f
+
+		4096 -> chunk_size
+		chunk_size mem::alloc -> chunk_buf
+
+		0 -> total_len
+		0 mem::alloc -> result_buf
+
+		loop {
+			f chunk_buf chunk_size io::read if {
+				-> bytes_read
+				bytes_read 0 == if { break }
+
+				result_buf total_len bytes_read + mem::realloc -> result_buf
+				result_buf total_len chunk_buf 0 bytes_read bytes::copy
+				total_len bytes_read + -> total_len
+
+			} else {
+				drop
+				chunk_buf mem::free
+				result_buf mem::free
+				f io::close
+				"Read error" 1 error
+			}
+		}
+
+		chunk_buf mem::free
+		f io::close
+
+		result_buf total_len
+
+	} else {
+		drop
+		"No such file or directory" 1 error
+	}
+}
+
+fn hash_file(path:str binary_mode:i64 tag_mode:i64 zero_mode:i64 -- ) {
+	-> zero_mode
+	-> tag_mode
+	-> binary_mode
+	-> path
+
+	path read_file if {
+		-> length
+		-> buf
+
+		buf length sha256::hash_bytes -> hash_str
+
+		tag_mode if {
+			"SHA256 (" . path . ") = " . hash_str .
+		} else {
+			hash_str .
+			binary_mode if { " *" } else { "  " } .
+			path .
+		}
+
+		zero_mode if { 0 str::from_char . } else { nl }
+
+		buf mem::free
+
+	} else {
+		"sha256sum: " . path . ": No such file or directory" . nl
+	}
+}
+
+fn parse_checksum_line(line:str -- hash:str filename:str valid:i64) {
+	-> line
+	"" -> hash
+	"" -> filename
+	0 -> valid
+
+	line str::len -> line_len
+
+	// Need at least 64 chars for hash + 2 for separator + 1 for filename
+	line_len 67 >= if {
+		// Extract hash (first 64 chars) - use manual extraction
+		0 -> i
+		"" -> hash_tmp
+		loop {
+			i 64 >= if { break }
+			line i str::char_at str::from_char -> ch
+			hash_tmp ch str::concat -> hash_tmp
+			i 1 + -> i
+		}
+		hash_tmp -> hash
+
+		// Check separator (space + space or space + asterisk)
+		line 64 str::char_at 32 == line 64 str::char_at 42 == or if {
+			// Extract filename (after position 66)
+			66 -> start
+			"" -> fname_tmp
+			loop {
+				start line_len >= if { break }
+				line start str::char_at str::from_char -> ch
+				fname_tmp ch str::concat -> fname_tmp
+				start 1 + -> start
+			}
+			fname_tmp -> filename
+			1 -> valid
+		}
+	}
+
+	hash filename valid
+}
+
+fn extract_line(content:str start:i64 end_pos:i64 -- line:str) {
+	-> end_pos
+	-> start
+	-> content
+	"" -> line
+	loop {
+		start end_pos >= if { break }
+		content start str::char_at str::from_char -> ch
+		line ch str::concat -> line
+		start 1 + -> start
+	}
+	line
+}
+
+fn check_file(path:str quiet:i64 status_mode:i64 warn_mode:i64 ignore_missing:i64 strict:i64 -- failures:i64) {
+	-> strict
+	-> ignore_missing
+	-> warn_mode
+	-> status_mode
+	-> quiet
+	-> path
+	0 -> failures
+
+	path read_file if {
+		-> length
+		-> buf
+
+		buf length mem::to_string -> content
+
+		// Split by newlines and process each line
+		0 -> pos
+		0 -> line_num
+
+		loop {
+			pos length >= if { break }
+
+			// Find end of line
+			pos -> line_start
+			loop {
+				pos length >= if { break }
+				buf pos mem::get_byte 10 == if { break }
+				pos 1 + -> pos
+			}
+
+			pos line_start - -> line_len
+			line_len 0 > if {
+				content line_start pos extract_line -> line
+				line_num 1 + -> line_num
+
+				line parse_checksum_line -> valid -> expected_file -> expected_hash
+
+				valid if {
+					expected_file read_file if {
+						-> file_len
+						-> file_buf
+
+						file_buf file_len sha256::hash_bytes -> actual_hash
+						file_buf mem::free
+
+						actual_hash expected_hash str::compare 0 == if {
+							status_mode 0 == quiet 0 == and if {
+								expected_file . ": OK" . nl
+							}
+						} else {
+							status_mode 0 == if {
+								expected_file . ": FAILED" . nl
+							}
+							failures 1 + -> failures
+						}
+					} else {
+						ignore_missing 0 == if {
+							status_mode 0 == if {
+								"sha256sum: " . expected_file . ": No such file or directory" . nl
+							}
+							failures 1 + -> failures
+						}
+					}
+				} else {
+					warn_mode status_mode 0 == and if {
+						"sha256sum: " . path . ":" . line_num . ": improperly formatted SHA256 checksum line" . nl
+					}
+					strict if {
+						failures 1 + -> failures
+					}
+				}
+			}
+
+			pos 1 + -> pos
+		}
+
+		buf mem::free
+		content drop
+
+	} else {
+		status_mode 0 == if {
+			"sha256sum: " . path . ": No such file or directory" . nl
+		}
+		1 -> failures
+	}
+
+	failures
+}
+
+fn is_flag(arg:str -- result:i64) {
+	-> arg
+	arg str::len 0 > if {
+		arg 0 str::char_at 45 ==
+	} else {
+		0
+	}
+}
+
+fn is_not_flag(arg:str -- result:i64) {
+	-> arg
+	arg is_flag 0 ==
+}
+
+fn main( -- ) {
+	read flag::parse -> f
+
+	// Check for help/version first
+	f "--help" flag::bool f "-h" flag::bool or if {
+		print_help
+		f flag::destroy
+	} else {
+		f "--version" flag::bool if {
+			print_version
+			f flag::destroy
+		} else {
+			// Parse mode flags
+			f "-b" flag::bool f "--binary" flag::bool or -> binary_mode
+			f "-t" flag::bool f "--text" flag::bool or if { 0 -> binary_mode }
+			f "--tag" flag::bool -> tag_mode
+			f "-z" flag::bool f "--zero" flag::bool or -> zero_mode
+
+			// Parse check mode flags
+			f "-c" flag::bool f "--check" flag::bool or -> check_mode
+			f "--quiet" flag::bool f "-q" flag::bool or -> quiet
+			f "--status" flag::bool -> status_mode
+			f "-w" flag::bool f "--warn" flag::bool or -> warn_mode
+			f "--ignore-missing" flag::bool -> ignore_missing
+			f "--strict" flag::bool -> strict
+
+			f flag::destroy
+
+			// Re-read args to get filenames
+			read -> argc
+			0 -> file_count
+			0 -> total_failures
+
+			argc 0 > if {
+				argc -> remaining
+
+				loop {
+					remaining 0 <= if { break }
+					-> arg
+					remaining 1 - -> remaining
+
+					arg is_not_flag if {
+						check_mode if {
+							arg quiet status_mode warn_mode ignore_missing strict check_file -> failures
+							total_failures failures + -> total_failures
+						} else {
+							arg binary_mode tag_mode zero_mode hash_file
+						}
+						file_count 1 + -> file_count
+					}
+				}
+			}
+
+			// If no files specified, show usage hint
+			file_count 0 == if {
+				check_mode 0 == if {
+					"sha256sum: missing file operand" . nl
+					"Try 'sha256sum --help' for more information." . nl
+				}
+			}
+
+			// Report check summary if needed
+			check_mode total_failures 0 > and status_mode 0 == and if {
+				"sha256sum: WARNING: " . total_failures . " computed checksum did NOT match" . nl
+			}
+		}
+	}
+}

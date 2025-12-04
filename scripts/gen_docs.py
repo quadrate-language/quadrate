@@ -7,7 +7,7 @@ and generates structured markdown documentation.
 
 Usage:
     python scripts/gen_docs.py                    # Generate all stdlib docs
-    python scripts/gen_docs.py lib/stdmathqd/qd/math/module.qd  # Single file
+    python scripts/gen_docs.py lib/qdmathqd/qd/math/module.qd  # Single file
 """
 
 import sys
@@ -383,20 +383,20 @@ def generate_json(module: Module) -> str:
 
 # Standard library modules and their paths
 STDLIB_MODULES = {
-    "bits": "lib/stdbitsqd/qd/bits/module.qd",
-    "math": "lib/stdmathqd/qd/math/module.qd",
-    "str": "lib/stdstrqd/qd/str/module.qd",
-    "io": "lib/stdioqd/qd/io/module.qd",
-    "fmt": "lib/stdfmtqd/qd/fmt/module.qd",
-    "mem": "lib/stdmemqd/qd/mem/module.qd",
-    "os": "lib/stdosqd/qd/os/module.qd",
-    "net": "lib/stdnetqd/qd/net/module.qd",
-    "time": "lib/stdtimeqd/qd/time/module.qd",
-    "json": "lib/stdjsonqd/qd/json/module.qd",
-    "base64": "lib/stdbase64qd/qd/base64/module.qd",
-    "strconv": "lib/stdstrconvqd/qd/strconv/module.qd",
-    "unicode": "lib/stdunicodeqd/qd/unicode/module.qd",
-    "flag": "lib/stdflagqd/qd/flag/module.qd",
+    "bits": "lib/qdbits/qd/bits/module.qd",
+    "math": "lib/qdmath/qd/math/module.qd",
+    "str": "lib/qdstr/qd/str/module.qd",
+    "io": "lib/qdio/qd/io/module.qd",
+    "fmt": "lib/qdfmt/qd/fmt/module.qd",
+    "mem": "lib/qdmem/qd/mem/module.qd",
+    "os": "lib/qdos/qd/os/module.qd",
+    "net": "lib/qdnet/qd/net/module.qd",
+    "time": "lib/qdtime/qd/time/module.qd",
+    "json": "lib/qdjson/qd/json/module.qd",
+    "base64": "lib/qdbase64/qd/base64/module.qd",
+    "strconv": "lib/qdstrconv/qd/strconv/module.qd",
+    "unicode": "lib/qdunicode/qd/unicode/module.qd",
+    "flag": "lib/qdflag/qd/flag/module.qd",
 }
 
 

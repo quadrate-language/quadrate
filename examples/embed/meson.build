@@ -46,10 +46,11 @@ foreach example_info : [
 	example_exe = example_info[1]
 
 	if patchelf.found()
-		# Use patchelf to fix RPATH
+		# Use patchelf to fix RPATH (--force-rpath ensures RPATH is set, not RUNPATH)
+		# RPATH is searched before system libraries, RUNPATH is searched after
 		custom_target(example_name + '_copy',
 			output: example_name + '_copy.stamp',
-			command: ['sh', '-c', 'mkdir -p ' + meson.project_source_root() / 'dist/examples' + ' && cp -f $0 ' + meson.project_source_root() / 'dist/examples' / example_name + ' && ' + patchelf.full_path() + ' --set-rpath \'$$ORIGIN/../lib\' ' + meson.project_source_root() / 'dist/examples' / example_name + ' && touch $1', example_exe.full_path(), '@OUTPUT@'],
+			command: ['sh', '-c', 'mkdir -p ' + meson.project_source_root() / 'dist/examples' + ' && cp -f $0 ' + meson.project_source_root() / 'dist/examples' / example_name + ' && ' + patchelf.full_path() + ' --force-rpath --set-rpath \'$ORIGIN/../lib\' ' + meson.project_source_root() / 'dist/examples' / example_name + ' && touch $1', example_exe.full_path(), '@OUTPUT@'],
 			depends: example_exe,
 			build_by_default: false,
 			build_always_stale: true

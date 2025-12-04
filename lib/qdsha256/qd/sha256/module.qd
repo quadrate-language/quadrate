@@ -7,88 +7,85 @@ use bits
 use str
 use bytes
 
-// Initial hash values (first 32 bits of fractional parts of square roots of first 8 primes)
-const H0_INIT = 1779033703   // 0x6a09e667
-const H1_INIT = 3144134277   // 0xbb67ae85
-const H2_INIT = 1013904242   // 0x3c6ef372
-const H3_INIT = 2773480762   // 0xa54ff53a
-const H4_INIT = 1359893119   // 0x510e527f
-const H5_INIT = 2600822924   // 0x9b05688c
-const H6_INIT = 528734635    // 0x1f83d9ab
-const H7_INIT = 1541459225   // 0x5be0cd19
+// Initial hash values
+const H0_INIT = 1779033703
+const H1_INIT = 3144134277
+const H2_INIT = 1013904242
+const H3_INIT = 2773480762
+const H4_INIT = 1359893119
+const H5_INIT = 2600822924
+const H6_INIT = 528734635
+const H7_INIT = 1541459225
 
-// 64 round constants (first 32 bits of fractional parts of cube roots of first 64 primes)
-// Use a lookup table for better readability and performance
 fn make_k_table( -- tbl:ptr) {
 	512 mem::alloc -> tbl
-	tbl 0   1116352408 mem::set   // 0x428a2f98
-	tbl 8   1899447441 mem::set   // 0x71374491
-	tbl 16  3049323471 mem::set   // 0xb5c0fbcf
-	tbl 24  3921009573 mem::set   // 0xe9b5dba5
-	tbl 32  961987163 mem::set    // 0x3956c25b
-	tbl 40  1508970993 mem::set   // 0x59f111f1
-	tbl 48  2453635748 mem::set   // 0x923f82a4
-	tbl 56  2870763221 mem::set   // 0xab1c5ed5
-	tbl 64  3624381080 mem::set   // 0xd807aa98
-	tbl 72  310598401 mem::set    // 0x12835b01
-	tbl 80  607225278 mem::set    // 0x243185be
-	tbl 88  1426881987 mem::set   // 0x550c7dc3
-	tbl 96  1925078388 mem::set   // 0x72be5d74
-	tbl 104 2162078206 mem::set   // 0x80deb1fe
-	tbl 112 2614888103 mem::set   // 0x9bdc06a7
-	tbl 120 3248222580 mem::set   // 0xc19bf174
-	tbl 128 3835390401 mem::set   // 0xe49b69c1
-	tbl 136 4022224774 mem::set   // 0xefbe4786
-	tbl 144 264347078 mem::set    // 0x0fc19dc6
-	tbl 152 604807628 mem::set    // 0x240ca1cc
-	tbl 160 770255983 mem::set    // 0x2de92c6f
-	tbl 168 1249150122 mem::set   // 0x4a7484aa
-	tbl 176 1555081692 mem::set   // 0x5cb0a9dc
-	tbl 184 1996064986 mem::set   // 0x76f988da
-	tbl 192 2554220882 mem::set   // 0x983e5152
-	tbl 200 2821834349 mem::set   // 0xa831c66d
-	tbl 208 2952996808 mem::set   // 0xb00327c8
-	tbl 216 3210313671 mem::set   // 0xbf597fc7
-	tbl 224 3336571891 mem::set   // 0xc6e00bf3
-	tbl 232 3584528711 mem::set   // 0xd5a79147
-	tbl 240 113926993 mem::set    // 0x06ca6351
-	tbl 248 338241895 mem::set    // 0x14292967
-	tbl 256 666307205 mem::set    // 0x27b70a85
-	tbl 264 773529912 mem::set    // 0x2e1b2138
-	tbl 272 1294757372 mem::set   // 0x4d2c6dfc
-	tbl 280 1396182291 mem::set   // 0x53380d13
-	tbl 288 1695183700 mem::set   // 0x650a7354
-	tbl 296 1986661051 mem::set   // 0x766a0abb
-	tbl 304 2177026350 mem::set   // 0x81c2c92e
-	tbl 312 2456956037 mem::set   // 0x92722c85
-	tbl 320 2730485921 mem::set   // 0xa2bfe8a1
-	tbl 328 2820302411 mem::set   // 0xa81a664b
-	tbl 336 3259730800 mem::set   // 0xc24b8b70
-	tbl 344 3345764771 mem::set   // 0xc76c51a3
-	tbl 352 3516065817 mem::set   // 0xd192e819
-	tbl 360 3600352804 mem::set   // 0xd6990624
-	tbl 368 4094571909 mem::set   // 0xf40e3585
-	tbl 376 275423344 mem::set    // 0x106aa070
-	tbl 384 430227734 mem::set    // 0x19a4c116
-	tbl 392 506948616 mem::set    // 0x1e376c08
-	tbl 400 659060556 mem::set    // 0x2748774c
-	tbl 408 883997877 mem::set    // 0x34b0bcb5
-	tbl 416 958139571 mem::set    // 0x391c0cb3
-	tbl 424 1322822218 mem::set   // 0x4ed8aa4a
-	tbl 432 1537002063 mem::set   // 0x5b9cca4f
-	tbl 440 1747873779 mem::set   // 0x682e6ff3
-	tbl 448 1955562222 mem::set   // 0x748f82ee
-	tbl 456 2024104815 mem::set   // 0x78a5636f
-	tbl 464 2227730452 mem::set   // 0x84c87814
-	tbl 472 2361852424 mem::set   // 0x8cc70208
-	tbl 480 2428436474 mem::set   // 0x90befffa
-	tbl 488 2756734187 mem::set   // 0xa4506ceb
-	tbl 496 3204031479 mem::set   // 0xbef9a3f7
-	tbl 504 3329325298 mem::set   // 0xc67178f2
+	tbl 0   1116352408 mem::set
+	tbl 8   1899447441 mem::set
+	tbl 16  3049323471 mem::set
+	tbl 24  3921009573 mem::set
+	tbl 32  961987163 mem::set
+	tbl 40  1508970993 mem::set
+	tbl 48  2453635748 mem::set
+	tbl 56  2870763221 mem::set
+	tbl 64  3624381080 mem::set
+	tbl 72  310598401 mem::set
+	tbl 80  607225278 mem::set
+	tbl 88  1426881987 mem::set
+	tbl 96  1925078388 mem::set
+	tbl 104 2162078206 mem::set
+	tbl 112 2614888103 mem::set
+	tbl 120 3248222580 mem::set
+	tbl 128 3835390401 mem::set
+	tbl 136 4022224774 mem::set
+	tbl 144 264347078 mem::set
+	tbl 152 604807628 mem::set
+	tbl 160 770255983 mem::set
+	tbl 168 1249150122 mem::set
+	tbl 176 1555081692 mem::set
+	tbl 184 1996064986 mem::set
+	tbl 192 2554220882 mem::set
+	tbl 200 2821834349 mem::set
+	tbl 208 2952996808 mem::set
+	tbl 216 3210313671 mem::set
+	tbl 224 3336571891 mem::set
+	tbl 232 3584528711 mem::set
+	tbl 240 113926993 mem::set
+	tbl 248 338241895 mem::set
+	tbl 256 666307205 mem::set
+	tbl 264 773529912 mem::set
+	tbl 272 1294757372 mem::set
+	tbl 280 1396182291 mem::set
+	tbl 288 1695183700 mem::set
+	tbl 296 1986661051 mem::set
+	tbl 304 2177026350 mem::set
+	tbl 312 2456956037 mem::set
+	tbl 320 2730485921 mem::set
+	tbl 328 2820302411 mem::set
+	tbl 336 3259730800 mem::set
+	tbl 344 3345764771 mem::set
+	tbl 352 3516065817 mem::set
+	tbl 360 3600352804 mem::set
+	tbl 368 4094571909 mem::set
+	tbl 376 275423344 mem::set
+	tbl 384 430227734 mem::set
+	tbl 392 506948616 mem::set
+	tbl 400 659060556 mem::set
+	tbl 408 883997877 mem::set
+	tbl 416 958139571 mem::set
+	tbl 424 1322822218 mem::set
+	tbl 432 1537002063 mem::set
+	tbl 440 1747873779 mem::set
+	tbl 448 1955562222 mem::set
+	tbl 456 2024104815 mem::set
+	tbl 464 2227730452 mem::set
+	tbl 472 2361852424 mem::set
+	tbl 480 2428436474 mem::set
+	tbl 488 2756734187 mem::set
+	tbl 496 3204031479 mem::set
+	tbl 504 3329325298 mem::set
 	tbl
 }
 
-// Right rotate 32-bit value
 fn rotr32(x:i64 n:i64 -- result:i64) {
 	-> n
 	-> x
@@ -96,7 +93,6 @@ fn rotr32(x:i64 n:i64 -- result:i64) {
 	x n shr x 32 n - shl or 32 bits::mask
 }
 
-// SHA-256 functions
 fn ch(x:i64 y:i64 z:i64 -- result:i64) {
 	-> z -> y -> x
 	x y and x not z and xor 32 bits::mask
@@ -127,24 +123,17 @@ fn gamma1(x:i64 -- result:i64) {
 	x 17 rotr32 x 19 rotr32 xor x 10 shr xor 32 bits::mask
 }
 
-// Add two 32-bit values with wraparound
 fn add32(a:i64 b:i64 -- result:i64) {
 	+ 32 bits::mask
 }
 
-// Process a single 512-bit block
 fn process_block(msg:ptr block_offset:i64 h:ptr -- ) {
 	-> h
 	-> block_offset
 	-> msg
-
-	// Round constants table
 	make_k_table -> k
-
-	// Message schedule array W (64 * 8 bytes)
 	512 mem::alloc -> w
 
-	// Copy first 16 words from block (big-endian)
 	0 -> i
 	loop {
 		i 16 >= if { break }
@@ -153,7 +142,6 @@ fn process_block(msg:ptr block_offset:i64 h:ptr -- ) {
 		i 1 + -> i
 	}
 
-	// Extend to 64 words
 	16 -> i
 	loop {
 		i 64 >= if { break }
@@ -166,7 +154,6 @@ fn process_block(msg:ptr block_offset:i64 h:ptr -- ) {
 		i 1 + -> i
 	}
 
-	// Initialize working variables
 	h 0 mem::get -> a
 	h 8 mem::get -> b
 	h 16 mem::get -> c
@@ -176,14 +163,11 @@ fn process_block(msg:ptr block_offset:i64 h:ptr -- ) {
 	h 48 mem::get -> g
 	h 56 mem::get -> hh
 
-	// 64 rounds
 	0 -> i
 	loop {
 		i 64 >= if { break }
-
 		e sigma1 e f g ch add32 hh add32 k i 8 * mem::get add32 w i 8 * mem::get add32 -> t1
 		a sigma0 a b c maj add32 -> t2
-
 		hh -> hh2
 		g -> hh
 		f -> g
@@ -193,33 +177,35 @@ fn process_block(msg:ptr block_offset:i64 h:ptr -- ) {
 		b -> c
 		a -> b
 		t1 t2 add32 -> a
-
 		i 1 + -> i
 	}
 
-	// Add to hash values
-	h 0 h 0 mem::get a add32 mem::set
-	h 8 h 8 mem::get b add32 mem::set
-	h 16 h 16 mem::get c add32 mem::set
-	h 24 h 24 mem::get d add32 mem::set
-	h 32 h 32 mem::get e add32 mem::set
-	h 40 h 40 mem::get f add32 mem::set
-	h 48 h 48 mem::get g add32 mem::set
-	h 56 h 56 mem::get hh add32 mem::set
+	h 0 mem::get a add32 -> new_h0
+	h 8 mem::get b add32 -> new_h1
+	h 16 mem::get c add32 -> new_h2
+	h 24 mem::get d add32 -> new_h3
+	h 32 mem::get e add32 -> new_h4
+	h 40 mem::get f add32 -> new_h5
+	h 48 mem::get g add32 -> new_h6
+	h 56 mem::get hh add32 -> new_h7
+	h 0 new_h0 mem::set
+	h 8 new_h1 mem::set
+	h 16 new_h2 mem::set
+	h 24 new_h3 mem::set
+	h 32 new_h4 mem::set
+	h 40 new_h5 mem::set
+	h 48 new_h6 mem::set
+	h 56 new_h7 mem::set
 
 	w mem::free
 	k mem::free
 }
 
-/// Calculate SHA-256 hash of a string.
-/// @param s str Input string
-/// @return hash str 64-character hex string (lowercase)
-/// @example "hello" sha256::hash -> h
-pub fn hash(s:str -- result:str) {
-	-> s
-	s str::len -> slen
+// Internal function to calculate hash state
+fn calculate_hash_state(dptr:ptr dlen:i64 -- h:ptr) {
+	-> dlen
+	-> dptr
 
-	// Initialize hash values
 	64 mem::alloc -> h
 	h 0 H0_INIT mem::set
 	h 8 H1_INIT mem::set
@@ -230,40 +216,27 @@ pub fn hash(s:str -- result:str) {
 	h 48 H6_INIT mem::set
 	h 56 H7_INIT mem::set
 
-	// Calculate padded message length
-	// Need: original + 1 byte (0x80) + padding + 8 bytes (length)
-	// Total must be multiple of 64 bytes (512 bits)
-	slen 1 + 8 + -> minlen
+	dlen 1 + 8 + -> minlen
 	minlen 64 + 1 - 64 / 64 * -> padded_len
 
-	// Allocate padded message
 	padded_len mem::alloc -> msg
 
-	// Copy original message
-	0 -> i
-	loop {
-		i slen >= if { break }
-		msg i s i str::char_at mem::set_byte
-		i 1 + -> i
-	}
+	// Copy message using bytes::copy (safe for binary)
+	msg 0 dptr 0 dlen bytes::copy
 
-	// Append 0x80
-	msg slen 128 mem::set_byte
+	msg dlen 128 mem::set_byte
 
-	// Pad with zeros (already zero from alloc, but be explicit)
-	slen 1 + -> i
+	dlen 1 + -> i
 	loop {
 		i padded_len 8 - >= if { break }
 		msg i 0 mem::set_byte
 		i 1 + -> i
 	}
 
-	// Append length in bits as 64-bit big-endian
-	slen 8 * -> bitlen
+	dlen 8 * -> bitlen
 	msg padded_len 8 - 0 bytes::write_u32_be
 	msg padded_len 4 - bitlen bytes::write_u32_be
 
-	// Process each 64-byte block
 	0 -> block_offset
 	loop {
 		block_offset padded_len >= if { break }
@@ -272,23 +245,28 @@ pub fn hash(s:str -- result:str) {
 	}
 
 	msg mem::free
+	h
+}
 
-	// Convert hash to hex string
+/// Calculate SHA-256 hash of raw bytes.
+/// @param buf ptr Input buffer
+/// @param length i64 Length of buffer in bytes
+/// @return hash str 64-character hex string (lowercase)
+pub fn hash_bytes(buf:ptr length:i64 -- result:str) {
+	-> length
+	-> buf
+	buf length calculate_hash_state -> h
+
 	64 mem::alloc -> out
 	0 -> i
 	loop {
 		i 8 >= if { break }
 		h i 8 * mem::get -> word
-		// Write 8 hex chars for this word (big-endian)
 		0 -> j
 		loop {
 			j 8 >= if { break }
 			word 28 j 4 * - shr 15 and -> nibble
-			nibble 10 < if {
-				48 nibble +
-			} else {
-				87 nibble +
-			} -> char
+			nibble 10 < if { 48 nibble + } else { 87 nibble + } -> char
 			out i 8 * j + char mem::set_byte
 			j 1 + -> j
 		}
@@ -301,68 +279,22 @@ pub fn hash(s:str -- result:str) {
 	result
 }
 
+/// Calculate SHA-256 hash of a string.
+pub fn hash(s:str -- result:str) {
+	-> s
+	s mem::from_string -> length -> buf
+	buf length hash_bytes -> result
+	buf mem::free
+	result
+}
+
 /// Calculate SHA-256 hash and return as raw 32-byte buffer.
-/// Caller must free the returned buffer.
-/// @param s str Input string
-/// @return buf ptr 32-byte hash buffer
-/// @example "hello" sha256::hash_raw -> buf
 pub fn hash_raw(s:str -- buf:ptr) {
 	-> s
-	s str::len -> slen
+	s mem::from_string -> length -> data
+	data length calculate_hash_state -> h
+	data mem::free
 
-	// Initialize hash values
-	64 mem::alloc -> h
-	h 0 H0_INIT mem::set
-	h 8 H1_INIT mem::set
-	h 16 H2_INIT mem::set
-	h 24 H3_INIT mem::set
-	h 32 H4_INIT mem::set
-	h 40 H5_INIT mem::set
-	h 48 H6_INIT mem::set
-	h 56 H7_INIT mem::set
-
-	// Calculate padded message length
-	slen 1 + 8 + -> minlen
-	minlen 64 + 1 - 64 / 64 * -> padded_len
-
-	// Allocate padded message
-	padded_len mem::alloc -> msg
-
-	// Copy original message
-	0 -> i
-	loop {
-		i slen >= if { break }
-		msg i s i str::char_at mem::set_byte
-		i 1 + -> i
-	}
-
-	// Append 0x80
-	msg slen 128 mem::set_byte
-
-	// Pad with zeros
-	slen 1 + -> i
-	loop {
-		i padded_len 8 - >= if { break }
-		msg i 0 mem::set_byte
-		i 1 + -> i
-	}
-
-	// Append length in bits as 64-bit big-endian
-	slen 8 * -> bitlen
-	msg padded_len 8 - 0 bytes::write_u32_be
-	msg padded_len 4 - bitlen bytes::write_u32_be
-
-	// Process each 64-byte block
-	0 -> block_offset
-	loop {
-		block_offset padded_len >= if { break }
-		msg block_offset h process_block
-		block_offset 64 + -> block_offset
-	}
-
-	msg mem::free
-
-	// Convert to 32-byte buffer (big-endian)
 	32 mem::alloc -> buf
 	0 -> i
 	loop {
@@ -371,16 +303,11 @@ pub fn hash_raw(s:str -- buf:ptr) {
 		buf i 4 * word bytes::write_u32_be
 		i 1 + -> i
 	}
-
 	h mem::free
 	buf
 }
 
 /// Verify a string against an expected SHA-256 hash.
-/// @param s str Input string
-/// @param expected str Expected hash (64-character hex string)
-/// @return ok i64 1 if matches, 0 otherwise
-/// @example "hello" "2cf24dba..." sha256::verify -> ok
 pub fn verify(s:str expected:str -- ok:i64) {
 	-> expected
 	-> s

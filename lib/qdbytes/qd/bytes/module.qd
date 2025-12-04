@@ -101,8 +101,10 @@ pub fn write_u16_be(buf:ptr offset:i64 value:i64 -- ) {
 	-> value
 	-> offset
 	-> buf
-	buf offset value 8 shr 255 and mem::set_byte
-	buf offset 1 + value 255 and mem::set_byte
+	value 8 shr 255 and -> b0
+	value 255 and -> b1
+	buf offset b0 mem::set_byte
+	buf offset 1 + b1 mem::set_byte
 }
 
 /// Write a 16-bit unsigned integer to memory in little-endian order.
@@ -114,8 +116,10 @@ pub fn write_u16_le(buf:ptr offset:i64 value:i64 -- ) {
 	-> value
 	-> offset
 	-> buf
-	buf offset value 255 and mem::set_byte
-	buf offset 1 + value 8 shr 255 and mem::set_byte
+	value 255 and -> b0
+	value 8 shr 255 and -> b1
+	buf offset b0 mem::set_byte
+	buf offset 1 + b1 mem::set_byte
 }
 
 /// Write a 32-bit unsigned integer to memory in big-endian order.
@@ -127,10 +131,14 @@ pub fn write_u32_be(buf:ptr offset:i64 value:i64 -- ) {
 	-> value
 	-> offset
 	-> buf
-	buf offset value 24 shr 255 and mem::set_byte
-	buf offset 1 + value 16 shr 255 and mem::set_byte
-	buf offset 2 + value 8 shr 255 and mem::set_byte
-	buf offset 3 + value 255 and mem::set_byte
+	value 24 shr 255 and -> b0
+	value 16 shr 255 and -> b1
+	value 8 shr 255 and -> b2
+	value 255 and -> b3
+	buf offset b0 mem::set_byte
+	buf offset 1 + b1 mem::set_byte
+	buf offset 2 + b2 mem::set_byte
+	buf offset 3 + b3 mem::set_byte
 }
 
 /// Write a 32-bit unsigned integer to memory in little-endian order.
@@ -142,10 +150,14 @@ pub fn write_u32_le(buf:ptr offset:i64 value:i64 -- ) {
 	-> value
 	-> offset
 	-> buf
-	buf offset value 255 and mem::set_byte
-	buf offset 1 + value 8 shr 255 and mem::set_byte
-	buf offset 2 + value 16 shr 255 and mem::set_byte
-	buf offset 3 + value 24 shr 255 and mem::set_byte
+	value 255 and -> b0
+	value 8 shr 255 and -> b1
+	value 16 shr 255 and -> b2
+	value 24 shr 255 and -> b3
+	buf offset b0 mem::set_byte
+	buf offset 1 + b1 mem::set_byte
+	buf offset 2 + b2 mem::set_byte
+	buf offset 3 + b3 mem::set_byte
 }
 
 /// Write a 64-bit unsigned integer to memory in big-endian order.
@@ -157,14 +169,22 @@ pub fn write_u64_be(buf:ptr offset:i64 value:i64 -- ) {
 	-> value
 	-> offset
 	-> buf
-	buf offset value 56 shr 255 and mem::set_byte
-	buf offset 1 + value 48 shr 255 and mem::set_byte
-	buf offset 2 + value 40 shr 255 and mem::set_byte
-	buf offset 3 + value 32 shr 255 and mem::set_byte
-	buf offset 4 + value 24 shr 255 and mem::set_byte
-	buf offset 5 + value 16 shr 255 and mem::set_byte
-	buf offset 6 + value 8 shr 255 and mem::set_byte
-	buf offset 7 + value 255 and mem::set_byte
+	value 56 shr 255 and -> b0
+	value 48 shr 255 and -> b1
+	value 40 shr 255 and -> b2
+	value 32 shr 255 and -> b3
+	value 24 shr 255 and -> b4
+	value 16 shr 255 and -> b5
+	value 8 shr 255 and -> b6
+	value 255 and -> b7
+	buf offset b0 mem::set_byte
+	buf offset 1 + b1 mem::set_byte
+	buf offset 2 + b2 mem::set_byte
+	buf offset 3 + b3 mem::set_byte
+	buf offset 4 + b4 mem::set_byte
+	buf offset 5 + b5 mem::set_byte
+	buf offset 6 + b6 mem::set_byte
+	buf offset 7 + b7 mem::set_byte
 }
 
 /// Write a 64-bit unsigned integer to memory in little-endian order.
@@ -176,14 +196,22 @@ pub fn write_u64_le(buf:ptr offset:i64 value:i64 -- ) {
 	-> value
 	-> offset
 	-> buf
-	buf offset value 255 and mem::set_byte
-	buf offset 1 + value 8 shr 255 and mem::set_byte
-	buf offset 2 + value 16 shr 255 and mem::set_byte
-	buf offset 3 + value 24 shr 255 and mem::set_byte
-	buf offset 4 + value 32 shr 255 and mem::set_byte
-	buf offset 5 + value 40 shr 255 and mem::set_byte
-	buf offset 6 + value 48 shr 255 and mem::set_byte
-	buf offset 7 + value 56 shr 255 and mem::set_byte
+	value 255 and -> b0
+	value 8 shr 255 and -> b1
+	value 16 shr 255 and -> b2
+	value 24 shr 255 and -> b3
+	value 32 shr 255 and -> b4
+	value 40 shr 255 and -> b5
+	value 48 shr 255 and -> b6
+	value 56 shr 255 and -> b7
+	buf offset b0 mem::set_byte
+	buf offset 1 + b1 mem::set_byte
+	buf offset 2 + b2 mem::set_byte
+	buf offset 3 + b3 mem::set_byte
+	buf offset 4 + b4 mem::set_byte
+	buf offset 5 + b5 mem::set_byte
+	buf offset 6 + b6 mem::set_byte
+	buf offset 7 + b7 mem::set_byte
 }
 
 /// Swap byte order of a 16-bit value.
