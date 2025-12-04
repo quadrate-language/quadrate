@@ -326,62 +326,16 @@ namespace Qd {
 			// Convert character index to byte offset for indexing into src
 			size_t tokenEndByte = charIndexToByteOffset(src, tokenEndChar);
 			if (tokenEndByte < strlen(src) && src[tokenEndByte] == '>') {
-				// This is '-> variableName' or '-> var1 var2 var3' (multiple assignment)
+				// This is '-> variableName' (single variable binding)
 				u8t_scanner_scan(scanner); // Consume '>'
 
-				// Collect all following identifiers on the SAME LINE
-				std::vector<std::string> varNames;
-
-				// First identifier is required
+				// Single identifier is required
 				char32_t nextToken = u8t_scanner_scan(scanner);
 				if (nextToken == U8T_IDENTIFIER) {
 					const char* varName = u8t_scanner_token_text(scanner, n);
+					std::vector<std::string> varNames;
 					varNames.push_back(std::string(varName));
 
-					// Check for additional identifiers on the same line
-					// We examine the raw source from just after the token to find
-					// if there are more identifiers on the same line
-					while (true) {
-						// Get the end of the last token (byte offset)
-						size_t lastTokenEndChar =
-							u8t_scanner_token_start(scanner) + u8t_scanner_token_len(scanner);
-						size_t lastTokenEndByte = charIndexToByteOffset(src, lastTokenEndChar);
-
-						// Look at the raw source from just after the token
-						const char* pos = src + lastTokenEndByte;
-
-						// Skip spaces and tabs, but stop at newlines
-						while (*pos == ' ' || *pos == '\t') {
-							pos++;
-						}
-
-						// If we hit a newline, end of file, or non-identifier start, stop
-						if (*pos == '\n' || *pos == '\0' || *pos == ';' || *pos == '}' ||
-							*pos == '{' || *pos == '(' || *pos == ')') {
-							break;
-						}
-
-						// If next character could start an identifier, scan it
-						if ((*pos >= 'a' && *pos <= 'z') || (*pos >= 'A' && *pos <= 'Z') ||
-							*pos == '_') {
-							nextToken = u8t_scanner_scan(scanner);
-							if (nextToken == U8T_IDENTIFIER) {
-								varName = u8t_scanner_token_text(scanner, n);
-								varNames.push_back(std::string(varName));
-								continue;
-							} else {
-								// Scanned something else - this is a problem
-								// For now, just break (token will be lost)
-								break;
-							}
-						} else {
-							// Not an identifier start, stop collecting
-							break;
-						}
-					}
-				}
-
-				if (!varNames.empty()) {
 					IAstNode* node = new AstNodeLocal(varNames);
 					size_t line, column;
 					size_t tokenStartByte = charIndexToByteOffset(src, tokenStart);
@@ -641,7 +595,7 @@ namespace Qd {
 	// allowControlFlow: if false, only allows break/continue but not if/for/switch
 	static IAstNode* parseBlockStatement(char32_t token, u8t_scanner* scanner, ErrorReporter* errorReporter, size_t* n,
 			const char* src, bool allowControlFlow) {
-		// Handle local variable declaration: -> variableName or -> var1 var2 var3
+		// Handle local variable declaration: -> variableName (single variable only)
 		// Check this early before other token processing
 		if (token == '-') {
 			// Check if the next character in source is '>' (forming '->')
@@ -653,57 +607,17 @@ namespace Qd {
 			size_t tokenEndByte = charIndexToByteOffset(src, tokenEndChar);
 			// Check if character immediately after '-' is '>'
 			if (tokenEndByte < strlen(src) && src[tokenEndByte] == '>') {
-				// This is a local declaration: -> varName or -> var1 var2 var3 (multiple)
+				// This is a local declaration: -> varName (single variable binding)
 				size_t arrowPosByte = charIndexToByteOffset(src, tokenStart);
 				u8t_scanner_scan(scanner); // Consume '>'
 
-				// Collect all following identifiers ON THE SAME LINE
-				std::vector<std::string> varNames;
-				while (true) {
-					// Get the end position of the last scanned token (or the '>' if first iteration)
-					size_t lastTokenEndChar =
-						u8t_scanner_token_start(scanner) + u8t_scanner_token_len(scanner);
-					size_t lastTokenEndByte = charIndexToByteOffset(src, lastTokenEndChar);
+				// Single identifier is required
+				char32_t nextToken = u8t_scanner_scan(scanner);
+				if (nextToken == U8T_IDENTIFIER) {
+					const char* varName = u8t_scanner_token_text(scanner, n);
+					std::vector<std::string> varNames;
+					varNames.push_back(std::string(varName));
 
-					// Look at raw source after the last token
-					const char* pos = src + lastTokenEndByte;
-
-					// Skip spaces and tabs, but check for newlines
-					while (*pos == ' ' || *pos == '\t') {
-						pos++;
-					}
-
-					// If we hit a newline or end of input, stop collecting
-					if (*pos == '\n' || *pos == '\0' || *pos == ';' || *pos == '}' ||
-						*pos == '{' || *pos == '(' || *pos == ')') {
-						break;
-					}
-
-					// Only continue if next character could start an identifier
-					if (!((*pos >= 'a' && *pos <= 'z') || (*pos >= 'A' && *pos <= 'Z') ||
-						  *pos == '_')) {
-						break;
-					}
-
-					// Save scanner state before scanning
-					const char* savedStr = scanner->_str;
-					size_t savedTokenStart = scanner->_token_start;
-
-					char32_t nextToken = u8t_scanner_scan(scanner);
-					if (nextToken == U8T_IDENTIFIER) {
-						const char* varName = u8t_scanner_token_text(scanner, n);
-						varNames.push_back(std::string(varName));
-						// Continue to try to get more identifiers
-					} else {
-						// Not an identifier - restore scanner state
-						scanner->_str = savedStr;
-						scanner->_token_start = savedTokenStart;
-						// Done collecting identifiers
-						break;
-					}
-				}
-
-				if (!varNames.empty()) {
 					IAstNode* node = new AstNodeLocal(varNames);
 					size_t line, column;
 					calculateLineColumn(src, arrowPosByte, &line, &column);
@@ -1406,69 +1320,23 @@ namespace Qd {
 			if (opNode != nullptr) {
 				tempNodes.push_back(opNode);
 			} else if (token == '-') {
-				// Check if this is '-> variableName' or '-> var1 var2 var3' (local variable)
+				// Check if this is '-> variableName' (local variable, single binding only)
 				size_t tokenStart = u8t_scanner_token_start(scanner);
 				size_t tokenLen = u8t_scanner_token_len(scanner);
 				size_t tokenEndChar = tokenStart + tokenLen;
 				// Convert character index to byte offset for indexing into src
 				size_t tokenEndByte = charIndexToByteOffset(src, tokenEndChar);
 				if (tokenEndByte < strlen(src) && src[tokenEndByte] == '>') {
-					// This is '-> varName' or '-> var1 var2 var3' (multiple assignment)
+					// This is '-> varName' (single variable binding)
 					u8t_scanner_scan(scanner); // Consume '>'
 
-					// Collect all following identifiers on the SAME LINE
-					std::vector<std::string> varNames;
-
-					// First identifier is required
+					// Single identifier is required
 					char32_t nextToken = u8t_scanner_scan(scanner);
 					if (nextToken == U8T_IDENTIFIER) {
 						const char* varName = u8t_scanner_token_text(scanner, &n);
+						std::vector<std::string> varNames;
 						varNames.push_back(std::string(varName));
 
-						// Check for additional identifiers on the same line
-						// We examine the raw source from just after the token to find
-						// if there are more identifiers on the same line
-						while (true) {
-							// Get the end of the last token (byte offset)
-							size_t lastTokenEndChar =
-								u8t_scanner_token_start(scanner) + u8t_scanner_token_len(scanner);
-							size_t lastTokenEndByte = charIndexToByteOffset(src, lastTokenEndChar);
-
-							// Look at the raw source from just after the token
-							const char* pos = src + lastTokenEndByte;
-
-							// Skip spaces and tabs, but stop at newlines
-							while (*pos == ' ' || *pos == '\t') {
-								pos++;
-							}
-
-							// If we hit a newline, end of file, or non-identifier start, stop
-							if (*pos == '\n' || *pos == '\0' || *pos == ';' || *pos == '}' ||
-								*pos == '{' || *pos == '(' || *pos == ')') {
-								break;
-							}
-
-							// If next character could start an identifier, scan it
-							if ((*pos >= 'a' && *pos <= 'z') || (*pos >= 'A' && *pos <= 'Z') ||
-								*pos == '_') {
-								nextToken = u8t_scanner_scan(scanner);
-								if (nextToken == U8T_IDENTIFIER) {
-									varName = u8t_scanner_token_text(scanner, &n);
-									varNames.push_back(std::string(varName));
-									continue;
-								} else {
-									// Scanned something else - this is a problem
-									// For now, just break (token will be lost)
-									break;
-								}
-							} else {
-								// Not an identifier start, stop collecting
-								break;
-							}
-						}
-					}
-
-					if (!varNames.empty()) {
 						IAstNode* node = new AstNodeLocal(varNames);
 						size_t line, column;
 						// Note: calculateLineColumn expects byte position
