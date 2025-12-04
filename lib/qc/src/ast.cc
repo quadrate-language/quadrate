@@ -1,6 +1,7 @@
 #include "ast_node_block.h"
 #include "ast_node_comment.h"
 #include "ast_node_label.h"
+#include <cstdint>
 #include <cstring>
 #include <fstream>
 #include <iostream>
@@ -114,8 +115,16 @@ namespace Qd {
 
 	// Helper to parse a comment (// or /* */)
 	// Returns the comment node, or nullptr if not a comment
-	static AstNodeComment* parseComment(u8t_scanner* scanner, const char* src, bool sawSlash, char32_t token) {
-		if (!sawSlash) {
+	// firstSlashPos: character position of the first slash (SIZE_MAX if no slash was seen)
+	static AstNodeComment* parseComment(u8t_scanner* scanner, const char* src, size_t firstSlashPos, char32_t token) {
+		if (firstSlashPos == SIZE_MAX) {
+			return nullptr;
+		}
+
+		// Check that the current token is adjacent to the first slash (no whitespace between them)
+		size_t currentTokenPos = u8t_scanner_token_start(scanner);
+		if (currentTokenPos != firstSlashPos + 1) {
+			// There's whitespace between the slashes - not a comment
 			return nullptr;
 		}
 
@@ -128,10 +137,8 @@ namespace Qd {
 			return nullptr;
 		}
 
-		// Capture comment start position BEFORE advancing scanner
-		// The comment starts at the first slash, which is at token_start - 1
-		// (since we've already scanned the second / or *)
-		size_t commentStartCharPos = u8t_scanner_token_start(scanner) - 1;
+		// Capture comment start position
+		size_t commentStartCharPos = firstSlashPos;
 		size_t commentStartBytePos = charIndexToByteOffset(src, commentStartCharPos);
 		size_t commentLine, commentColumn;
 		calculateLineColumn(src, commentStartBytePos, &commentLine, &commentColumn);
@@ -464,7 +471,7 @@ namespace Qd {
 			AstNodeBlock* block, u8t_scanner* scanner, ErrorReporter* errorReporter, const char* src) {
 		size_t n;
 		char32_t token;
-		bool sawSlash = false;
+		size_t slashPos = SIZE_MAX; // Position of first slash for comment detection
 		bool sawColon = false;
 		bool sawAt = false;
 		std::vector<IAstNode*> tempNodes;
@@ -535,9 +542,9 @@ namespace Qd {
 			}
 
 			// Handle comments (// and /* */)
-			AstNodeComment* comment = parseComment(scanner, src, sawSlash, token);
+			AstNodeComment* comment = parseComment(scanner, src, slashPos, token);
 			if (comment != nullptr) {
-				sawSlash = false;
+				slashPos = SIZE_MAX;
 				// Flush tempNodes before adding comment
 				for (auto* node : tempNodes) {
 					node->setParent(block);
@@ -551,20 +558,20 @@ namespace Qd {
 			}
 
 			// If we saw a slash but it wasn't a comment, it's a division operator
-			if (sawSlash) {
-				sawSlash = false;
-				// Add division instruction to tempNodes
+			if (slashPos != SIZE_MAX) {
+				// Add division instruction to tempNodes (for the first slash)
 				AstNodeInstruction* divInstr = new AstNodeInstruction("/");
 				setNodePosition(divInstr, scanner, src);
 				tempNodes.push_back(divInstr);
+				slashPos = SIZE_MAX;
 			}
 
 			if (token == '}') {
 				break;
 			}
 
-			sawSlash = (token == '/');
-			if (sawSlash) {
+			if (token == '/') {
+				slashPos = u8t_scanner_token_start(scanner);
 				continue; // Wait for next token to see if it's a comment
 			}
 
@@ -1013,33 +1020,33 @@ namespace Qd {
 
 		std::vector<IAstNode*> tempNodes;
 		bool sawColon = false;
-		bool sawSlash = false;
+		size_t slashPos = SIZE_MAX; // Position of first slash for comment detection
 		bool sawAt = false;
 
 		while ((token = u8t_scanner_scan(scanner)) != U8T_EOF) {
 			// Handle comments (// and /* */)
-			AstNodeComment* comment = parseComment(scanner, src, sawSlash, token);
+			AstNodeComment* comment = parseComment(scanner, src, slashPos, token);
 			if (comment != nullptr) {
-				sawSlash = false;
+				slashPos = SIZE_MAX;
 				tempNodes.push_back(comment);
 				continue;
 			}
 
 			// If we saw a slash but it wasn't a comment, it's a division operator
-			if (sawSlash) {
-				sawSlash = false;
-				// Add division instruction to tempNodes
+			if (slashPos != SIZE_MAX) {
+				// Add division instruction to tempNodes (for the first slash)
 				AstNodeInstruction* divInstr = new AstNodeInstruction("/");
 				setNodePosition(divInstr, scanner, src);
 				tempNodes.push_back(divInstr);
+				slashPos = SIZE_MAX;
 			}
 
 			if (token == '}') {
 				break;
 			}
 
-			sawSlash = (token == '/');
-			if (sawSlash) {
+			if (token == '/') {
+				slashPos = u8t_scanner_token_start(scanner);
 				continue; // Wait for next token to see if it's a comment
 			}
 
@@ -1265,14 +1272,14 @@ namespace Qd {
 						// Parse ctx block inline
 						// ctx blocks can contain control flow statements
 						std::vector<IAstNode*> ctxTempNodes;
-						bool ctxSawSlash = false;
+						size_t ctxSlashPos = SIZE_MAX; // Position of first slash for comment detection
 						bool ctxSawColon = false;
 
 						while ((token = u8t_scanner_scan(scanner)) != U8T_EOF) {
 							// Handle comments
-							AstNodeComment* ctxComment = parseComment(scanner, src, ctxSawSlash, token);
+							AstNodeComment* ctxComment = parseComment(scanner, src, ctxSlashPos, token);
 							if (ctxComment != nullptr) {
-								ctxSawSlash = false;
+								ctxSlashPos = SIZE_MAX;
 								for (auto* node : ctxTempNodes) {
 									node->setParent(ctxStmt);
 									ctxStmt->addChild(node);
@@ -1283,19 +1290,19 @@ namespace Qd {
 								continue;
 							}
 
-							if (ctxSawSlash) {
-								ctxSawSlash = false;
+							if (ctxSlashPos != SIZE_MAX) {
 								AstNodeInstruction* divInstr = new AstNodeInstruction("/");
 								setNodePosition(divInstr, scanner, src);
 								ctxTempNodes.push_back(divInstr);
+								ctxSlashPos = SIZE_MAX;
 							}
 
 							if (token == '}') {
 								break;
 							}
 
-							ctxSawSlash = (token == '/');
-							if (ctxSawSlash) {
+							if (token == '/') {
+								ctxSlashPos = u8t_scanner_token_start(scanner);
 								continue;
 							}
 
@@ -1929,26 +1936,26 @@ namespace Qd {
 		mRoot = program;
 
 		char32_t token;
-		bool sawSlash = false;
+		size_t slashPos = SIZE_MAX; // Position of first slash for comment detection
 		while ((token = u8t_scanner_scan(&scanner)) != U8T_EOF) {
 			size_t n;
 
 			// Handle comments (// and /* */)
-			AstNodeComment* comment = parseComment(&scanner, src, sawSlash, token);
+			AstNodeComment* comment = parseComment(&scanner, src, slashPos, token);
 			if (comment != nullptr) {
-				sawSlash = false;
+				slashPos = SIZE_MAX;
 				comment->setParent(program);
 				program->addChild(comment);
 				continue;
 			}
 
 			// If we saw a slash but it wasn't a comment, reset the flag
-			if (sawSlash) {
-				sawSlash = false;
+			if (slashPos != SIZE_MAX) {
+				slashPos = SIZE_MAX;
 			}
 
-			sawSlash = (token == '/');
-			if (sawSlash) {
+			if (token == '/') {
+				slashPos = u8t_scanner_token_start(&scanner);
 				continue; // Wait for next token to see if it's a comment
 			}
 

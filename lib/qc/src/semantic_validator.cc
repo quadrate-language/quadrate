@@ -1628,17 +1628,12 @@ namespace Qd {
 			childrenInsideForLoop = true;
 		}
 
-		// When entering a function declaration, add parameters to local variables
-		// so they can be used directly by name without -> binding
+		// When entering a function declaration, create a new scope for the function body
+		// Parameters must be explicitly bound with -> before use
 		if (node->type() == IAstNode::Type::FUNCTION_DECLARATION) {
-			AstNodeFunctionDeclaration* func = static_cast<AstNodeFunctionDeclaration*>(node);
-			// Create a new scope for the function body with parameters pre-registered
+			// Create a new scope for the function body (parameters NOT pre-registered)
 			std::unordered_set<std::string> funcLocalVariables = localVariables;
-			for (auto* paramNode : func->inputParameters()) {
-				AstNodeParameter* param = static_cast<AstNodeParameter*>(paramNode);
-				funcLocalVariables.insert(param->name());
-			}
-			// Process function body with parameters visible
+			// Process function body
 			for (size_t i = 0; i < node->childCount(); i++) {
 				validateReferencesInternal(node->child(i), childrenInsideForLoop, funcLocalVariables);
 			}
@@ -1661,27 +1656,23 @@ namespace Qd {
 			AstNodeFunctionDeclaration* func = static_cast<AstNodeFunctionDeclaration*>(node);
 			std::vector<StackValueType> typeStack;
 
-			// Collect parameter names
+			// Collect parameter names and initialize type stack with input parameter types
+			// The input parameters ARE on the runtime stack when the function starts,
+			// but parameter names must be explicitly bound with -> before use
 			std::vector<std::string> paramNames;
 			for (auto* paramNode : func->inputParameters()) {
 				AstNodeParameter* param = static_cast<AstNodeParameter*>(paramNode);
 				paramNames.push_back(param->name());
-			}
-
-			// Initialize type stack and parameter map with input parameters
-			// Parameters are on the stack when function starts, and can be accessed by name
-			std::unordered_map<std::string, StackValueType> paramTypes;
-			for (auto* paramNode : func->inputParameters()) {
-				AstNodeParameter* param = static_cast<AstNodeParameter*>(paramNode);
-				std::string typeStr = param->typeString();
 
 				// Validate type name
+				std::string typeStr = param->typeString();
 				if (!isValidTypeName(typeStr)) {
 					reportError(param, ("Invalid type '" + typeStr + "' in parameter '" + param->name() +
 											   "'. Valid types are: i64, f64, str, ptr, any, or a struct name")
 											   .c_str());
 				}
 
+				// Add parameter type to the type stack (values are on runtime stack)
 				StackValueType paramType;
 				if (typeStr == "i64") {
 					paramType = StackValueType::INT;
@@ -1692,17 +1683,17 @@ namespace Qd {
 				} else if (typeStr == "ptr" || isStructTypeName(typeStr)) {
 					paramType = StackValueType::PTR;
 				} else {
-					// Untyped or unknown - use ANY
 					paramType = StackValueType::ANY;
 				}
-
 				typeStack.push_back(paramType);
-				paramTypes[param->name()] = paramType;
 			}
 
 			// Analyze the function body in isolation (without resolving function calls)
+			// Note: Parameters must be explicitly bound with -> before use, so we pass
+			// an empty local variable map (parameter names are NOT pre-registered)
+			std::unordered_map<std::string, StackValueType> emptyLocalVars;
 			if (func->body()) {
-				analyzeBlockInIsolation(func->body(), typeStack, paramTypes);
+				analyzeBlockInIsolation(func->body(), typeStack, emptyLocalVars);
 			}
 
 			// Store the signature with input parameters as consumes
@@ -2117,7 +2108,8 @@ namespace Qd {
 
 			// Initialize type stack with input parameters
 			// Input parameters are on the stack when the function starts
-			// Also register them as local variables for direct access by name
+			// Note: Parameters are NOT registered as local variables - they must be
+			// explicitly bound with -> before use
 			for (size_t i = 0; i < func->inputParameters().size(); i++) {
 				AstNodeParameter* param = static_cast<AstNodeParameter*>(func->inputParameters()[i]);
 				const std::string& typeStr = param->typeString();
@@ -2144,7 +2136,6 @@ namespace Qd {
 					// Struct type - treat as PTR but track the struct type
 					paramType = StackValueType::PTR;
 					structType = typeStr;
-					mLocalVariableStructTypes[param->name()] = typeStr;
 				} else {
 					// Untyped or unknown - treat as ANY
 					paramType = StackValueType::ANY;
@@ -2152,8 +2143,6 @@ namespace Qd {
 
 				typeStack.push_back(paramType);
 				structTypeStack.push_back(structType);
-				// Register parameter as local variable for direct access
-				localVariables[param->name()] = paramType;
 			}
 
 			// Type check the function body
