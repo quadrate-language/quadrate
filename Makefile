@@ -23,7 +23,7 @@ debug:
 	@cp -f $(BUILD_DIR_DEBUG)/cmd/quadlsp/quadlsp dist/bin/
 	@cp -f $(BUILD_DIR_DEBUG)/cmd/quadpm/quadpm dist/bin/
 	@cp -f $(BUILD_DIR_DEBUG)/cmd/quaduses/quaduses dist/bin/
-	@cp -f $(BUILD_DIR_DEBUG)/cmd/quadrate/quadrate dist/bin/
+	@cp -f $(BUILD_DIR_DEBUG)/cmd/quadrepl/quadrepl dist/bin/
 	@echo "Creating static libraries..."
 	@rm -f dist/lib/libqdrt.a && cd $(BUILD_DIR_DEBUG)/lib/qdrt && ar rcs ../../../../dist/lib/libqdrt.a $$(ar -t libqdrt_static.a) && echo "  libqdrt.a"
 	@rm -f dist/lib/libqd.a && cd $(BUILD_DIR_DEBUG)/lib/qd && ar rcs ../../../../dist/lib/libqd.a $$(ar -t libqd_static.a) && echo "  libqd.a"
@@ -87,7 +87,7 @@ release:
 	@cp -f $(BUILD_DIR_RELEASE)/cmd/quadlsp/quadlsp dist/bin/
 	@cp -f $(BUILD_DIR_RELEASE)/cmd/quadpm/quadpm dist/bin/
 	@cp -f $(BUILD_DIR_RELEASE)/cmd/quaduses/quaduses dist/bin/
-	@cp -f $(BUILD_DIR_RELEASE)/cmd/quadrate/quadrate dist/bin/
+	@cp -f $(BUILD_DIR_RELEASE)/cmd/quadrepl/quadrepl dist/bin/
 	@echo "Creating static libraries (release)..."
 	@rm -f dist/lib/libqdrt.a && cd $(BUILD_DIR_RELEASE)/lib/qdrt && ar rcs ../../../../dist/lib/libqdrt.a $$(ar -t libqdrt_static.a) && echo "  libqdrt.a"
 	@rm -f dist/lib/libqd.a && cd $(BUILD_DIR_RELEASE)/lib/qd && ar rcs ../../../../dist/lib/libqd.a $$(ar -t libqd_static.a) && echo "  libqd.a"
@@ -233,7 +233,7 @@ install: release
 	install -m 755 dist/bin/quadlsp $(DESTDIR)$(PREFIX)/bin/
 	install -m 755 dist/bin/quadpm $(DESTDIR)$(PREFIX)/bin/
 	install -m 755 dist/bin/quaduses $(DESTDIR)$(PREFIX)/bin/
-	install -m 755 dist/bin/quadrate $(DESTDIR)$(PREFIX)/bin/
+	install -m 755 dist/bin/quadrepl $(DESTDIR)$(PREFIX)/bin/
 	install -m 644 dist/lib/libqdrt.a $(DESTDIR)$(PREFIX)/lib/
 	install -m 644 dist/lib/libqd.a $(DESTDIR)$(PREFIX)/lib/
 	install -m 644 dist/lib/libqdfmt.a $(DESTDIR)$(PREFIX)/lib/
@@ -291,7 +291,7 @@ uninstall:
 	rm -f $(DESTDIR)$(PREFIX)/bin/quadlsp
 	rm -f $(DESTDIR)$(PREFIX)/bin/quadpm
 	rm -f $(DESTDIR)$(PREFIX)/bin/quaduses
-	rm -f $(DESTDIR)$(PREFIX)/bin/quadrate
+	rm -f $(DESTDIR)$(PREFIX)/bin/quadrepl
 	rm -f $(DESTDIR)$(PREFIX)/lib/libqdrt.a
 	rm -f $(DESTDIR)$(PREFIX)/lib/libqd.a
 	rm -f $(DESTDIR)$(PREFIX)/lib/libqdfmt.a

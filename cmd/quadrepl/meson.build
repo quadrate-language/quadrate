@@ -1,4 +1,4 @@
-# quadrate - Interactive REPL for Quadrate
+# quadrepl - Interactive REPL for Quadrate
 
 if qd_static_dep.found()
 	# Find readline library
@@ -9,18 +9,18 @@ if qd_static_dep.found()
 	endif
 
 	if readline_dep.found()
-		quadrate_repl_sources = files(
+		quadrepl_sources = files(
 			'src/main.cc',
 		)
 
-		quadrate_repl_exe = executable('quadrate',
-			quadrate_repl_sources,
+		quadrepl_exe = executable('quadrepl',
+			quadrepl_sources,
 			dependencies: [qd_static_dep, qc_dep, readline_dep],
 			install: false
 		)
 	else
-		warning('readline library not found, skipping quadrate REPL')
+		warning('readline library not found, skipping quadrepl')
 	endif
 else
-	warning('qd library not available, skipping quadrate REPL')
+	warning('qd library not available, skipping quadrepl')
 endif

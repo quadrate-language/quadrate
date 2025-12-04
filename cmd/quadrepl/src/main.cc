@@ -214,7 +214,7 @@ private:
 	}
 
 	void printWelcome() {
-		printf("%sQuadrate %s REPL%s\n", COLOR_BOLD, QUADRATE_VERSION, COLOR_RESET);
+		printf("%sQuadrate REPL %s%s\n", COLOR_BOLD, QUADRATE_VERSION, COLOR_RESET);
 		printf("Type %shelp%s for available commands, %sexit%s to quit\n", COLOR_GREEN, COLOR_RESET, COLOR_GREEN,
 				COLOR_RESET);
 		printf("%sTip: Use 'print' to display integer/float values, 'prints' for strings%s\n", COLOR_DIM, COLOR_RESET);
@@ -691,9 +691,9 @@ void printVersion() {
 }
 
 void printHelp() {
-	printf("quadrate - Quadrate REPL\n\n");
+	printf("quadrepl - Quadrate REPL\n\n");
 	printf("Interactive Read-Eval-Print Loop for Quadrate.\n\n");
-	printf("Usage: quadrate [options]\n\n");
+	printf("Usage: quadrepl [options]\n\n");
 	printf("Options:\n");
 	printf("  -h, --help       Show this help message\n");
 	printf("  -v, --version    Show version information\n");
@@ -711,8 +711,8 @@ int main(int argc, char* argv[]) {
 			printVersion();
 			return 0;
 		} else {
-			fprintf(stderr, "quadrate: unknown option: %s\n", arg.c_str());
-			fprintf(stderr, "Try 'quadrate --help' for more information.\n");
+			fprintf(stderr, "quadrepl: unknown option: %s\n", arg.c_str());
+			fprintf(stderr, "Try 'quadrepl --help' for more information.\n");
 			return 1;
 		}
 	}
