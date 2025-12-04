@@ -22,6 +22,7 @@ struct Options {
 	bool debugInfo = false;
 	bool werror = false;
 	bool readStdin = false; // Read source from stdin
+	bool testMode = false;  // Compile and run tests
 	std::unordered_map<std::string, std::string> moduleVersions; // module name -> version
 };
 

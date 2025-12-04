@@ -128,6 +128,7 @@ namespace Qd {
 
 		// Pass 3b: Type check the AST
 		void typeCheckFunction(IAstNode* node);
+		void typeCheckTest(IAstNode* node);
 		void typeCheckBlock(IAstNode* node, std::vector<StackValueType>& typeStack,
 				std::unordered_map<std::string, StackValueType>& localVariables,
 				std::vector<std::string>& structTypeStack);
@@ -194,6 +195,9 @@ namespace Qd {
 
 		// Symbol table: all defined structs
 		std::unordered_set<std::string> mDefinedStructs;
+
+		// Symbol table: all defined tests
+		std::unordered_set<std::string> mDefinedTests;
 
 		// Struct declarations: maps struct name -> AST node (for local structs)
 		std::unordered_map<std::string, class AstNodeStructDeclaration*> mStructDeclarations;

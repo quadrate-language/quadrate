@@ -17,6 +17,7 @@ module.exports = grammar({
 
     _statement: $ => choice(
       $.function_definition,
+      $.test_definition,
       $.struct_definition,
       $.constant_definition,
       $.use_statement,
@@ -33,6 +34,15 @@ module.exports = grammar({
       field('signature', optional($.stack_signature)),
       field('body', $.block),
     ),
+
+    // Test definition: test "name" { ... }
+    test_definition: $ => seq(
+      field('keyword', alias('test', $.test_keyword)),
+      field('name', $.string),
+      field('body', $.block),
+    ),
+
+    test_keyword: $ => 'test',
 
     // Struct definition: struct Name { x:f64 y:f64 }
     // or: pub struct Name { x:f64 y:f64 }

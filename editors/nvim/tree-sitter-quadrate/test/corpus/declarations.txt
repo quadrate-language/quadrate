@@ -68,3 +68,50 @@ pub const Pi = 3.14159
   (constant_definition
     name: (identifier)
     value: (number)))
+
+================================================================================
+Test definition
+================================================================================
+
+test "simple test" {
+    1 1 eq
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (test_definition
+    keyword: (test_keyword)
+    name: (string)
+    body: (block
+      (number)
+      (number)
+      (builtin_operation))))
+
+================================================================================
+Multiple test definitions
+================================================================================
+
+test "first test" {
+    5 drop
+}
+
+test "second test" {
+    "hello" drop
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (test_definition
+    keyword: (test_keyword)
+    name: (string)
+    body: (block
+      (number)
+      (builtin_operation)))
+  (test_definition
+    keyword: (test_keyword)
+    name: (string)
+    body: (block
+      (string)
+      (builtin_operation))))

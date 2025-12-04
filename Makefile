@@ -38,6 +38,7 @@ debug:
 	@rm -f dist/lib/libqdstr.a && cd $(BUILD_DIR_DEBUG)/lib/qdstr && ar rcs ../../../../dist/lib/libqdstr.a $$(ar -t libqdstr.a) && echo "  libqdstr.a"
 	@rm -f dist/lib/libqdstrconv.a && cd $(BUILD_DIR_DEBUG)/lib/qdstrconv && ar rcs ../../../../dist/lib/libqdstrconv.a $$(ar -t libqdstrconv.a) && echo "  libqdstrconv.a"
 	@rm -f dist/lib/libqdtime.a && cd $(BUILD_DIR_DEBUG)/lib/qdtime && ar rcs ../../../../dist/lib/libqdtime.a $$(ar -t libqdtime.a) && echo "  libqdtime.a"
+	@rm -f dist/lib/libqdtesting.a && cd $(BUILD_DIR_DEBUG)/lib/qdtesting && ar rcs ../../../../dist/lib/libqdtesting.a $$(ar -t libqdtesting.a) && echo "  libqdtesting.a"
 	@cp -rf lib/qdrt/include/qdrt dist/include/
 	@cp -rf lib/qd/include/qd dist/include/
 	# qdbits has no C headers (pure Quadrate module)
@@ -50,6 +51,7 @@ debug:
 	@cp -rf lib/qdstr/include/qdstr dist/include/
 	@cp -rf lib/qdstrconv/include/qdstrconv dist/include/
 	@cp -rf lib/qdtime/include/qdtime dist/include/
+	@cp -rf lib/qdtesting/include/qdtesting dist/include/
 	@mkdir -p dist/share/quadrate
 	@cp -r lib/qdbase64/qd/base64 dist/share/quadrate/
 	@cp -r lib/qdbits/qd/bits dist/share/quadrate/
@@ -76,6 +78,7 @@ debug:
 	@cp -r lib/qdsort/qd/sort dist/share/quadrate/
 	@cp -r lib/qdrand/qd/rand dist/share/quadrate/
 	@cp -r lib/qduuid/qd/uuid dist/share/quadrate/
+	@cp -r lib/qdtesting/qd/testing dist/share/quadrate/
 	@echo "Debug build complete - static libraries ready"
 
 release:
@@ -103,6 +106,7 @@ release:
 	@rm -f dist/lib/libqdstr.a && cd $(BUILD_DIR_RELEASE)/lib/qdstr && ar rcs ../../../../dist/lib/libqdstr.a $$(ar -t libqdstr.a) && echo "  libqdstr.a"
 	@rm -f dist/lib/libqdstrconv.a && cd $(BUILD_DIR_RELEASE)/lib/qdstrconv && ar rcs ../../../../dist/lib/libqdstrconv.a $$(ar -t libqdstrconv.a) && echo "  libqdstrconv.a"
 	@rm -f dist/lib/libqdtime.a && cd $(BUILD_DIR_RELEASE)/lib/qdtime && ar rcs ../../../../dist/lib/libqdtime.a $$(ar -t libqdtime.a) && echo "  libqdtime.a"
+	@rm -f dist/lib/libqdtesting.a && cd $(BUILD_DIR_RELEASE)/lib/qdtesting && ar rcs ../../../../dist/lib/libqdtesting.a $$(ar -t libqdtesting.a) && echo "  libqdtesting.a"
 	@cp -rf lib/qdrt/include/qdrt dist/include/
 	@cp -rf lib/qd/include/qd dist/include/
 	# qdbits has no C headers (pure Quadrate module)
@@ -115,6 +119,7 @@ release:
 	@cp -rf lib/qdstr/include/qdstr dist/include/
 	@cp -rf lib/qdstrconv/include/qdstrconv dist/include/
 	@cp -rf lib/qdtime/include/qdtime dist/include/
+	@cp -rf lib/qdtesting/include/qdtesting dist/include/
 	@mkdir -p dist/share/quadrate
 	@cp -r lib/qdbase64/qd/base64 dist/share/quadrate/
 	@cp -r lib/qdbits/qd/bits dist/share/quadrate/
@@ -141,6 +146,7 @@ release:
 	@cp -r lib/qdsort/qd/sort dist/share/quadrate/
 	@cp -r lib/qdrand/qd/rand dist/share/quadrate/
 	@cp -r lib/qduuid/qd/uuid dist/share/quadrate/
+	@cp -r lib/qdtesting/qd/testing dist/share/quadrate/
 	@echo "Release build complete - static libraries ready"
 
 tests: debug
@@ -248,6 +254,7 @@ install: release
 	install -m 644 dist/lib/libqdstr.a $(DESTDIR)$(PREFIX)/lib/
 	install -m 644 dist/lib/libqdstrconv.a $(DESTDIR)$(PREFIX)/lib/
 	install -m 644 dist/lib/libqdtime.a $(DESTDIR)$(PREFIX)/lib/
+	install -m 644 dist/lib/libqdtesting.a $(DESTDIR)$(PREFIX)/lib/
 	cp -r dist/include/qdrt $(DESTDIR)$(PREFIX)/include/
 	cp -r dist/include/qd $(DESTDIR)$(PREFIX)/include/
 	cp -r dist/include/qdfmt $(DESTDIR)$(PREFIX)/include/
@@ -259,6 +266,7 @@ install: release
 	cp -r dist/include/qdstr $(DESTDIR)$(PREFIX)/include/
 	cp -r dist/include/qdstrconv $(DESTDIR)$(PREFIX)/include/
 	cp -r dist/include/qdtime $(DESTDIR)$(PREFIX)/include/
+	cp -r dist/include/qdtesting $(DESTDIR)$(PREFIX)/include/
 	@echo "Installing Quadrate standard library modules to $(DESTDIR)$(PREFIX)/share/quadrate/"
 	install -d $(DESTDIR)$(PREFIX)/share/quadrate
 	@cp -r lib/qdbase64/qd/base64 $(DESTDIR)$(PREFIX)/share/quadrate/
@@ -286,6 +294,7 @@ install: release
 	@cp -r lib/qdsort/qd/sort $(DESTDIR)$(PREFIX)/share/quadrate/
 	@cp -r lib/qdrand/qd/rand $(DESTDIR)$(PREFIX)/share/quadrate/
 	@cp -r lib/qduuid/qd/uuid $(DESTDIR)$(PREFIX)/share/quadrate/
+	@cp -r lib/qdtesting/qd/testing $(DESTDIR)$(PREFIX)/share/quadrate/
 
 uninstall:
 	rm -f $(DESTDIR)$(PREFIX)/bin/quad

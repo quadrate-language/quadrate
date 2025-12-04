@@ -23,6 +23,7 @@
 #include <qc/ast_node_scoped.h>
 #include <qc/ast_node_struct.h>
 #include <qc/ast_node_switch.h>
+#include <qc/ast_node_test.h>
 #include <qc/ast_node_use.h>
 #include <qc/colors.h>
 #include <qc/instructions.h>
@@ -497,6 +498,20 @@ namespace Qd {
 				}
 			}
 			mStructFieldTypes[structDecl->name()] = fieldTypes;
+		}
+
+		// If this is a test declaration, add it to the symbol table
+		if (node->type() == IAstNode::Type::TEST_DECLARATION) {
+			AstNodeTest* test = static_cast<AstNodeTest*>(node);
+
+			// Check for duplicate test name
+			if (mDefinedTests.find(test->name()) != mDefinedTests.end()) {
+				std::string errorMsg = "Duplicate test definition: '" + test->name() + "'";
+				reportError(test, errorMsg.c_str());
+				return;
+			}
+
+			mDefinedTests.insert(test->name());
 		}
 
 		// If this is a use statement, add the module to imported modules and load its definitions
@@ -2151,10 +2166,34 @@ namespace Qd {
 			}
 		}
 
+		// Type check test declarations
+		if (node->type() == IAstNode::Type::TEST_DECLARATION) {
+			AstNodeTest* test = static_cast<AstNodeTest*>(node);
+			std::vector<StackValueType> typeStack;
+			std::vector<std::string> structTypeStack;
+			std::unordered_map<std::string, StackValueType> localVariables;
+
+			// Clear local variable struct types for this test
+			mLocalVariableStructTypes.clear();
+
+			// Tests have no parameters - start with empty stack
+
+			// Type check the test body
+			if (test->body()) {
+				typeCheckBlock(test->body(), typeStack, localVariables, structTypeStack);
+			}
+		}
+
 		// Recursively process children
 		for (size_t i = 0; i < node->childCount(); i++) {
 			typeCheckFunction(node->child(i));
 		}
+	}
+
+	void SemanticValidator::typeCheckTest(IAstNode* node) {
+		// Tests are handled in typeCheckFunction along with functions
+		// This method exists for potential future specialized test validation
+		typeCheckFunction(node);
 	}
 
 	void SemanticValidator::typeCheckBlock(IAstNode* node, std::vector<StackValueType>& typeStack,

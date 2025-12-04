@@ -29,6 +29,7 @@
 #include <qc/ast_node_scoped.h>
 #include <qc/ast_node_struct.h>
 #include <qc/ast_node_switch.h>
+#include <qc/ast_node_test.h>
 #include <qc/ast_node_use.h>
 #include <qc/colors.h>
 #include <qc/error_reporter.h>
@@ -1478,6 +1479,44 @@ namespace Qd {
 		return func;
 	}
 
+	static IAstNode* parseTestDeclaration(u8t_scanner* scanner, ErrorReporter* errorReporter, const char* src) {
+		char32_t token = u8t_scanner_scan(scanner);
+		if (token != U8T_STRING) {
+			errorReporter->reportError(scanner, "Expected test name (string) after 'test'");
+			synchronize(scanner);
+			return nullptr;
+		}
+
+		size_t n;
+		const char* nameStr = u8t_scanner_token_text(scanner, &n);
+		// Strip quotes from string literal
+		std::string testName(nameStr);
+		if (testName.length() >= 2 && testName.front() == '"' && testName.back() == '"') {
+			testName = testName.substr(1, testName.length() - 2);
+		}
+
+		AstNodeTest* test = new AstNodeTest(testName);
+		setNodePosition(test, scanner, src);
+
+		token = u8t_scanner_scan(scanner);
+		if (token != '{') {
+			errorReporter->reportError(scanner, "Expected '{' after test name");
+			synchronize(scanner);
+			delete test;
+			return nullptr;
+		}
+
+		AstNodeBlock* body = new AstNodeBlock();
+		setNodePosition(body, scanner, src);
+
+		parseBlockBody(body, scanner, errorReporter, src);
+
+		body->setParent(test);
+		test->setBody(body);
+
+		return test;
+	}
+
 	static IAstNode* parseStructDeclaration(
 			u8t_scanner* scanner, ErrorReporter* errorReporter, const char* src, bool isPublic = false) {
 		size_t n;
@@ -2149,6 +2188,12 @@ namespace Qd {
 						}
 					} else {
 						errorReporter.reportError(&scanner, "Expected constant name after 'const'");
+					}
+				} else if (strcmp(text, "test") == 0) {
+					IAstNode* testDecl = parseTestDeclaration(&scanner, &errorReporter, src);
+					if (testDecl) {
+						testDecl->setParent(program);
+						program->addChild(testDecl);
 					}
 				}
 				break;

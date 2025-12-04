@@ -1,0 +1,15 @@
+Running 12 tests...
+  ✓ testing_pass.qd::integer equality
+  ✓ testing_pass.qd::integer inequality
+  ✓ testing_pass.qd::float equality
+  ✓ testing_pass.qd::float inequality
+  ✓ testing_pass.qd::string equality
+  ✓ testing_pass.qd::string inequality
+  ✓ testing_pass.qd::assert_true with integers
+  ✓ testing_pass.qd::assert_false with integers
+  ✓ testing_pass.qd::assert_true with strings
+  ✓ testing_pass.qd::assert_false with strings
+  ✓ testing_pass.qd::assert_true with floats
+  ✓ testing_pass.qd::assert_false with floats
+
+12 passed, 0 failed

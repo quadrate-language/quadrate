@@ -211,6 +211,41 @@ namespace Qd {
 		return result;
 	}
 
+	// Format a test block line: test "name" {
+	static std::string formatTestBlock(const std::string& line) {
+		std::string trimmed = trim(line);
+
+		// Must start with "test "
+		if (!startsWithKeyword(trimmed, "test")) {
+			return line;
+		}
+
+		// Find the test name in quotes
+		size_t quoteStart = trimmed.find('"');
+		if (quoteStart == std::string::npos) {
+			return line;
+		}
+
+		size_t quoteEnd = trimmed.find('"', quoteStart + 1);
+		if (quoteEnd == std::string::npos) {
+			return line;
+		}
+
+		std::string testName = trimmed.substr(quoteStart, quoteEnd - quoteStart + 1);
+
+		// Check for opening brace
+		size_t bracePos = trimmed.find('{', quoteEnd);
+		bool hasBrace = (bracePos != std::string::npos);
+
+		// Format: test "name" {
+		std::string result = "test " + testName;
+		if (hasBrace) {
+			result += " {";
+		}
+
+		return result;
+	}
+
 	// Normalize }else to } else and add spacing
 	static std::string normalizeElse(const std::string& line) {
 		std::string result = line;
@@ -624,6 +659,9 @@ namespace Qd {
 				} else if (startsWithKeyword(trimmed, "struct")) {
 					currentType = "fn_start"; // Treat struct like fn for spacing
 					inFunction = true;
+				} else if (startsWithKeyword(trimmed, "test")) {
+					currentType = "fn_start"; // Treat test like fn for spacing
+					inFunction = true;
 				}
 
 				// Flush any buffered use statements when we encounter non-use statement
@@ -753,6 +791,21 @@ namespace Qd {
 			// Format function signatures
 			if (startsWithKeyword(trimmed, "fn") || startsWithKeyword(trimmed, "pub")) {
 				std::string formatted = formatFunctionSignature(line);
+				// Write with current indent
+				for (int i = 0; i < indentLevel; i++) {
+					output << '\t';
+				}
+				output << formatted << '\n';
+
+				if (formatted.find('{') != std::string::npos) {
+					indentLevel++;
+				}
+				continue;
+			}
+
+			// Format test blocks
+			if (startsWithKeyword(trimmed, "test")) {
+				std::string formatted = formatTestBlock(line);
 				// Write with current indent
 				for (int i = 0; i < indentLevel; i++) {
 					output << '\t';

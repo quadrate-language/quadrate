@@ -21,6 +21,7 @@
 #include <qc/ast_node_program.h>
 #include <qc/ast_node_scoped.h>
 #include <qc/ast_node_struct.h>
+#include <qc/ast_node_test.h>
 #include <qc/error_reporter.h>
 #include <qc/semantic_validator.h>
 #include <sstream>
@@ -1761,6 +1762,35 @@ private:
 
 							json_array_append_new(symbols, symbol);
 						}
+					} else if (child && child->type() == Qd::IAstNode::Type::TEST_DECLARATION) {
+						Qd::AstNodeTest* testNode = static_cast<Qd::AstNodeTest*>(child);
+
+						json_t* symbol = json_object();
+						json_object_set_new(symbol, "name", json_string(testNode->name().c_str()));
+						json_object_set_new(symbol, "kind", json_integer(12)); // Function kind
+
+						// Build detail string
+						std::string detail = "test \"" + testNode->name() + "\"";
+						json_object_set_new(symbol, "detail", json_string(detail.c_str()));
+
+						// Add range (line is 1-based in AST, LSP uses 0-based)
+						json_t* range = json_object();
+						json_t* start = json_object();
+						size_t lspLine = (testNode->line() > 0) ? testNode->line() - 1 : 0;
+						json_object_set_new(start, "line", json_integer(static_cast<json_int_t>(lspLine)));
+						json_object_set_new(start, "character", json_integer(0));
+						json_object_set_new(range, "start", start);
+
+						json_t* end = json_object();
+						json_object_set_new(end, "line", json_integer(static_cast<json_int_t>(lspLine)));
+						json_object_set_new(
+								end, "character", json_integer(static_cast<json_int_t>(testNode->name().length())));
+						json_object_set_new(range, "end", end);
+
+						json_object_set_new(symbol, "range", range);
+						json_object_set_new(symbol, "selectionRange", json_deep_copy(range));
+
+						json_array_append_new(symbols, symbol);
 					}
 				}
 			}

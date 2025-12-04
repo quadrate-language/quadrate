@@ -1,0 +1,20 @@
+use fibonacci.qd
+use testing
+
+test "fib base cases" {
+	0 fibonacci::fib 0 testing::assert_eq
+	1 fibonacci::fib 1 testing::assert_eq
+}
+
+test "fib small values" {
+	2 fibonacci::fib 1 testing::assert_eq
+	3 fibonacci::fib 2 testing::assert_eq
+	4 fibonacci::fib 3 testing::assert_eq
+	5 fibonacci::fib 5 testing::assert_eq
+}
+
+test "fib larger values" {
+	10 fibonacci::fib 55 testing::assert_eq
+	15 fibonacci::fib 610 testing::assert_eq
+	20 fibonacci::fib 6765 testing::assert_eq
+}

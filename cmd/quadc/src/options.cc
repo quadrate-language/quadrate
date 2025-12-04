@@ -20,6 +20,7 @@ void printHelp() {
 	std::cout << "  --verbose          Show detailed compilation steps\n";
 	std::cout << "  --dump-tokens      Print lexer tokens\n";
 	std::cout << "  -r, --run          Compile and run immediately\n";
+	std::cout << "  --test             Compile and run tests\n";
 	std::cout << "  --dump-ir          Print generated LLVM IR\n";
 	std::cout << "  --werror           Treat warnings as errors\n";
 	std::cout << "\n";
@@ -61,6 +62,9 @@ bool parseArgs(int argc, char* argv[], Options& opts) {
 			opts.run = true;
 		} else if (arg == "--dump-ir") {
 			opts.dumpIR = true;
+		} else if (arg == "--test") {
+			opts.testMode = true;
+			opts.run = true; // Tests should be run automatically
 		} else if (arg == "-g") {
 			opts.debugInfo = true;
 		} else if (arg == "-l") {

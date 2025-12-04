@@ -394,6 +394,11 @@ int main(int argc, char** argv) {
 		// Set stack size
 		generator.setStackSize(opts.stackSize);
 
+		// Enable test mode if requested
+		if (opts.testMode) {
+			generator.setTestMode(true);
+		}
+
 		// Add library search paths for third-party packages
 		// Track which packages we've already added to avoid duplicates
 		std::set<std::string> addedPackagePaths;
@@ -434,23 +439,41 @@ int main(int argc, char** argv) {
 			return 1;
 		}
 
-		// Check if main function exists in main module
-		bool hasMainFunction = false;
-		for (size_t i = 0; i < mainRoot->childCount(); i++) {
-			Qd::IAstNode* child = mainRoot->child(i);
-			if (child && child->type() == Qd::IAstNode::Type::FUNCTION_DECLARATION) {
-				auto* funcDecl = static_cast<Qd::AstNodeFunctionDeclaration*>(child);
-				if (funcDecl->name() == "main") {
-					hasMainFunction = true;
+		// Check if main function exists in main module (unless in test mode)
+		if (!opts.testMode) {
+			bool hasMainFunction = false;
+			for (size_t i = 0; i < mainRoot->childCount(); i++) {
+				Qd::IAstNode* child = mainRoot->child(i);
+				if (child && child->type() == Qd::IAstNode::Type::FUNCTION_DECLARATION) {
+					auto* funcDecl = static_cast<Qd::AstNodeFunctionDeclaration*>(child);
+					if (funcDecl->name() == "main") {
+						hasMainFunction = true;
+						break;
+					}
+				}
+			}
+
+			if (!hasMainFunction) {
+				std::cerr << "quadc: error: no 'main' function found in main module" << std::endl;
+				std::cerr << "quadc: note: a Quadrate program must have a 'main' function as the entry point" << std::endl;
+				return 1;
+			}
+		} else {
+			// In test mode, check if there are any tests
+			bool hasTests = false;
+			for (size_t i = 0; i < mainRoot->childCount(); i++) {
+				Qd::IAstNode* child = mainRoot->child(i);
+				if (child && child->type() == Qd::IAstNode::Type::TEST_DECLARATION) {
+					hasTests = true;
 					break;
 				}
 			}
-		}
 
-		if (!hasMainFunction) {
-			std::cerr << "quadc: error: no 'main' function found in main module" << std::endl;
-			std::cerr << "quadc: note: a Quadrate program must have a 'main' function as the entry point" << std::endl;
-			return 1;
+			if (!hasTests) {
+				std::cerr << "quadc: error: no test blocks found in --test mode" << std::endl;
+				std::cerr << "quadc: note: use 'test \"name\" { ... }' to define tests" << std::endl;
+				return 1;
+			}
 		}
 
 		// Pass the actual source file path for debug info

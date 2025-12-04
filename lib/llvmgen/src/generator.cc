@@ -58,6 +58,7 @@
 #include <qc/ast_node_scoped.h>
 #include <qc/ast_node_struct.h>
 #include <qc/ast_node_switch.h>
+#include <qc/ast_node_test.h>
 #include <qc/ast_node_use.h>
 
 #include <algorithm>
@@ -249,6 +250,13 @@ namespace Qd {
 		bool generateProgram(IAstNode* root);
 		bool generateFunction(
 				AstNodeFunctionDeclaration* funcNode, bool isMain, const std::string& namePrefix = "main");
+		bool generateTest(AstNodeTest* testNode, const std::string& namePrefix = "main");
+		bool generateTestRunner(const std::vector<std::pair<std::string, std::string>>& testNamesWithDisplay);
+
+		// Test mode flag and collected test names (function name, display name)
+		bool testMode = false;
+		std::vector<std::pair<std::string, std::string>> collectedTestNames;
+		llvm::Value* testErrorAlloca = nullptr; // For tracking errors in test bodies
 		void generateNode(IAstNode* node, llvm::Value* ctx, llvm::Value* forIterVar = nullptr);
 		void generateInstruction(AstNodeInstruction* inst, llvm::Value* ctx);
 		void generateLiteral(AstNodeLiteral* lit, llvm::Value* ctx);
@@ -3045,7 +3053,16 @@ namespace Qd {
 		generateCastInstructions(scopedIdent->parameterCasts(), ctx);
 
 		// Call the scoped function
-		builder->CreateCall(fn, {ctx});
+		auto callResult = builder->CreateCall(fn, {ctx}, "call_result");
+
+		// If in test mode, track any errors from the function call
+		if (testErrorAlloca) {
+			auto errorCode = builder->CreateExtractValue(callResult, {0}, "err_code");
+			auto hasError = builder->CreateICmpNE(errorCode, builder->getInt32(0), "has_err");
+			auto currentError = builder->CreateLoad(builder->getInt32Ty(), testErrorAlloca, "cur_err");
+			auto newError = builder->CreateSelect(hasError, errorCode, currentError, "new_err");
+			builder->CreateStore(newError, testErrorAlloca);
+		}
 
 		// Check if this is a fallible function (same logic as for regular identifiers)
 		auto fallibleIt = fallibleFunctions.find(fullName);
@@ -4312,6 +4329,9 @@ namespace Qd {
 		case IAstNode::Type::FUNCTION_DECLARATION:
 			// Skip - functions are handled at the top level
 			break;
+		case IAstNode::Type::TEST_DECLARATION:
+			// Skip - tests are handled at the top level
+			break;
 		case IAstNode::Type::SCOPED_IDENTIFIER:
 			generateScopedIdentifier(static_cast<AstNodeScopedIdentifier*>(node), ctx);
 			break;
@@ -4744,6 +4764,222 @@ namespace Qd {
 		return true;
 	}
 
+	bool LlvmGenerator::Impl::generateTest(AstNodeTest* testNode, const std::string& namePrefix) {
+		// Clear local variables for this test
+		localVariables.clear();
+		localVariableStructTypes.clear();
+		localArrayVariables.clear();
+		lastStructConstructed.clear();
+		lastFieldAccessResultType.clear();
+
+		currentFunctionReturnsPtr = true;
+		currentModulePrefix = namePrefix;
+
+		// Generate test function name: test_<sanitized_name>
+		std::string sanitizedName = testNode->name();
+		for (char& c : sanitizedName) {
+			if (!std::isalnum(c)) {
+				c = '_';
+			}
+		}
+		std::string funcName = "test_" + namePrefix + "_" + sanitizedName;
+
+		// Create function type: qd_exec_result function(qd_context*)
+		auto fnTy = llvm::FunctionType::get(execResultTy, {contextPtrTy}, false);
+		auto fn = llvm::Function::Create(fnTy, llvm::Function::InternalLinkage, funcName, *module);
+
+		// Track the test function
+		userFunctions[funcName] = fn;
+
+		// Create entry block
+		auto entryBB = llvm::BasicBlock::Create(*context, "entry", fn);
+		builder->SetInsertPoint(entryBB);
+
+		// Get context parameter
+		auto ctx = fn->arg_begin();
+		ctx->setName("ctx");
+
+		// Create error tracking alloca for this test
+		testErrorAlloca = builder->CreateAlloca(builder->getInt32Ty(), nullptr, "test_error");
+		builder->CreateStore(builder->getInt32(0), testErrorAlloca);
+
+		// Initialize defer scope for this test
+		deferScopeStack.clear();
+		deferScopeStack.push_back({});
+
+		// Create return block
+		auto returnBB = llvm::BasicBlock::Create(*context, "return", fn);
+		currentFunctionReturnBlock = returnBB;
+
+		// Push test function onto call stack
+		std::string testDisplayName = namePrefix + "::test(" + testNode->name() + ")";
+		auto funcNameStr = builder->CreateGlobalString(testDisplayName);
+		std::string sourceFile;
+		auto srcIt = moduleSourceFiles.find(namePrefix);
+		if (srcIt != moduleSourceFiles.end()) {
+			sourceFile = srcIt->second;
+		}
+		auto sourceFileStr = builder->CreateGlobalString(sourceFile);
+		auto lineNum = builder->getInt64(testNode->line());
+		builder->CreateCall(pushCallFn, {ctx, funcNameStr, sourceFileStr, lineNum});
+
+		// Generate test body
+		auto body = testNode->body();
+		if (body) {
+			generateNode(body, ctx, nullptr);
+		}
+
+		// Branch to return block if no terminator
+		llvm::BasicBlock* testBodyBlock = builder->GetInsertBlock();
+		if (testBodyBlock) {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wnull-dereference"
+			if (!testBodyBlock->getTerminator()) {
+#pragma GCC diagnostic pop
+				builder->CreateBr(returnBB);
+			}
+		}
+
+		// Generate return block
+		builder->SetInsertPoint(returnBB);
+
+		// Execute defer scope
+		executeDeferScope(ctx);
+
+		// Clean up local variables
+		generateLocalCleanup();
+
+		// Pop from call stack
+		builder->CreateCall(popCallFn, {ctx});
+
+		// Return the accumulated error status
+		auto finalError = builder->CreateLoad(builder->getInt32Ty(), testErrorAlloca, "final_error");
+		auto result = builder->CreateInsertValue(llvm::UndefValue::get(execResultTy), finalError, {0}, "test_result");
+		builder->CreateRet(result);
+
+		currentFunctionReturnBlock = nullptr;
+		testErrorAlloca = nullptr; // Clear test context
+
+		return true;
+	}
+
+	bool LlvmGenerator::Impl::generateTestRunner(
+			const std::vector<std::pair<std::string, std::string>>& testNamesWithDisplay) {
+		// Create main function: i32 @main(i32 %argc, i8** %argv)
+		auto mainFnTy = llvm::FunctionType::get(
+				builder->getInt32Ty(), {builder->getInt32Ty(), llvm::PointerType::getUnqual(*context)}, false);
+		auto mainFn = llvm::Function::Create(mainFnTy, llvm::Function::ExternalLinkage, "main", *module);
+
+		auto entryBB = llvm::BasicBlock::Create(*context, "entry", mainFn);
+		builder->SetInsertPoint(entryBB);
+
+		// Check NO_COLOR environment variable
+		auto getenvFnTy = llvm::FunctionType::get(llvm::PointerType::getUnqual(*context),
+				{llvm::PointerType::getUnqual(*context)}, false);
+		auto getenvFn = module->getOrInsertFunction("getenv", getenvFnTy);
+		auto noColorStr = builder->CreateGlobalString("NO_COLOR", "no_color_env");
+		auto noColorVal = builder->CreateCall(getenvFn, {noColorStr}, "no_color");
+		auto noColorNull = builder->CreateICmpEQ(noColorVal,
+				llvm::ConstantPointerNull::get(llvm::PointerType::getUnqual(*context)), "no_color_null");
+		// useColor = (getenv("NO_COLOR") == NULL)
+		auto useColor = noColorNull;
+
+		// Create Quadrate context
+		auto stackSizeVal = builder->getInt64(stackSize);
+		auto ctx = builder->CreateCall(createContextFn, {stackSizeVal}, "ctx");
+
+		// Create printf function for direct output
+		auto printfFnTy = llvm::FunctionType::get(builder->getInt32Ty(), {llvm::PointerType::getUnqual(*context)}, true);
+		auto printfFn = module->getOrInsertFunction("printf", printfFnTy);
+
+		// Counters for passed/failed tests
+		auto passedCountAlloca = builder->CreateAlloca(builder->getInt32Ty(), nullptr, "passed_count");
+		auto failedCountAlloca = builder->CreateAlloca(builder->getInt32Ty(), nullptr, "failed_count");
+		builder->CreateStore(builder->getInt32(0), passedCountAlloca);
+		builder->CreateStore(builder->getInt32(0), failedCountAlloca);
+
+		// Print header using printf directly
+		auto headerStr = builder->CreateGlobalString(
+				"Running " + std::to_string(testNamesWithDisplay.size()) + " tests...\n", "test_header");
+		builder->CreateCall(printfFn, {headerStr});
+
+		// Run each test
+		for (const auto& [funcName, displayName] : testNamesWithDisplay) {
+			// Get the test function
+			auto testFn = userFunctions[funcName];
+			if (!testFn) {
+				continue;
+			}
+
+			// Call the test function
+			auto result = builder->CreateCall(testFn, {ctx}, "test_result");
+
+			// Extract the error code (first field of qd_exec_result)
+			auto errorCode = builder->CreateExtractValue(result, {0}, "error_code");
+
+			// Check if test passed
+			auto isSuccess = builder->CreateICmpEQ(errorCode, builder->getInt32(0), "is_success");
+
+			auto successBB = llvm::BasicBlock::Create(*context, "test_success", mainFn);
+			auto failBB = llvm::BasicBlock::Create(*context, "test_fail", mainFn);
+			auto contBB = llvm::BasicBlock::Create(*context, "test_continue", mainFn);
+
+			builder->CreateCondBr(isSuccess, successBB, failBB);
+
+			// Success block
+			builder->SetInsertPoint(successBB);
+			auto passedCount = builder->CreateLoad(builder->getInt32Ty(), passedCountAlloca, "passed");
+			auto newPassed = builder->CreateAdd(passedCount, builder->getInt32(1), "new_passed");
+			builder->CreateStore(newPassed, passedCountAlloca);
+
+			// Select colored or plain pass message
+			auto passStrColor = builder->CreateGlobalString(
+					"  \x1b[32m\xe2\x9c\x93\x1b[0m " + displayName + "\n", "pass_color");
+			auto passStrPlain = builder->CreateGlobalString("  \xe2\x9c\x93 " + displayName + "\n", "pass_plain");
+			auto passStr = builder->CreateSelect(useColor, passStrColor, passStrPlain, "pass_msg");
+			builder->CreateCall(printfFn, {passStr});
+			builder->CreateBr(contBB);
+
+			// Fail block
+			builder->SetInsertPoint(failBB);
+			auto failedCount = builder->CreateLoad(builder->getInt32Ty(), failedCountAlloca, "failed");
+			auto newFailed = builder->CreateAdd(failedCount, builder->getInt32(1), "new_failed");
+			builder->CreateStore(newFailed, failedCountAlloca);
+
+			// Select colored or plain fail message
+			auto failStrColor = builder->CreateGlobalString(
+					"  \x1b[31m\xe2\x9c\x97\x1b[0m " + displayName + "\n", "fail_color");
+			auto failStrPlain = builder->CreateGlobalString("  \xe2\x9c\x97 " + displayName + "\n", "fail_plain");
+			auto failStr = builder->CreateSelect(useColor, failStrColor, failStrPlain, "fail_msg");
+			builder->CreateCall(printfFn, {failStr});
+			builder->CreateBr(contBB);
+
+			// Continue to next test
+			builder->SetInsertPoint(contBB);
+		}
+
+		// Print summary using printf with colors
+		auto finalPassed = builder->CreateLoad(builder->getInt32Ty(), passedCountAlloca, "final_passed");
+		auto finalFailed = builder->CreateLoad(builder->getInt32Ty(), failedCountAlloca, "final_failed");
+
+		// Select colored or plain summary
+		auto summaryFmtColor = builder->CreateGlobalString(
+				"\n\x1b[32m%d passed\x1b[0m, \x1b[31m%d failed\x1b[0m\n", "summary_color");
+		auto summaryFmtPlain = builder->CreateGlobalString("\n%d passed, %d failed\n", "summary_plain");
+		auto summaryFmt = builder->CreateSelect(useColor, summaryFmtColor, summaryFmtPlain, "summary_fmt");
+		builder->CreateCall(printfFn, {summaryFmt, finalPassed, finalFailed});
+
+		// Free context
+		builder->CreateCall(freeContextFn, {ctx});
+
+		// Return 0 if all passed, 1 if any failed
+		auto hasFailures = builder->CreateICmpNE(finalFailed, builder->getInt32(0), "has_failures");
+		auto exitCode = builder->CreateSelect(hasFailures, builder->getInt32(1), builder->getInt32(0), "exit_code");
+		builder->CreateRet(exitCode);
+
+		return true;
+	}
+
 	bool LlvmGenerator::Impl::generateProgram(IAstNode* root) {
 		if (!root) {
 			std::cerr << "Error: Root node is null" << std::endl;
@@ -5006,7 +5242,7 @@ namespace Qd {
 			auto child = root->child(i);
 			if (auto funcNode = dynamic_cast<AstNodeFunctionDeclaration*>(child)) {
 				// Skip main function in standalone mode - handle separately
-				if (generateCMain && funcNode->name() == "main") {
+				if (generateCMain && funcNode->name() == "main" && !testMode) {
 					continue;
 				}
 				// Generate as regular user function with module name prefix
@@ -5016,8 +5252,76 @@ namespace Qd {
 			}
 		}
 
-		// Third pass: generate C main function (only in standalone mode)
-		if (generateCMain) {
+		// Third pass: generate test functions (in test mode)
+		if (testMode) {
+			collectedTestNames.clear();
+
+			// Generate test functions from imported modules (not the main module)
+			for (const auto& modulePair : moduleASTs) {
+				const std::string& moduleName = modulePair.first;
+				IAstNode* moduleRoot = modulePair.second;
+				if (!moduleRoot) {
+					continue;
+				}
+				// Skip the main module - it's handled separately below
+				if (moduleName == mainModuleName) {
+					continue;
+				}
+
+				for (size_t i = 0; i < moduleRoot->childCount(); i++) {
+					auto child = moduleRoot->child(i);
+					if (auto testNode = dynamic_cast<AstNodeTest*>(child)) {
+						if (!generateTest(testNode, moduleName)) {
+							return false;
+						}
+						// Sanitize test name for function lookup
+						std::string sanitizedName = testNode->name();
+						for (char& c : sanitizedName) {
+							if (!std::isalnum(c)) {
+								c = '_';
+							}
+						}
+						std::string funcName = "test_" + moduleName + "_" + sanitizedName;
+						// Display name: module::test_name
+						std::string displayName = moduleName + "::" + testNode->name();
+						collectedTestNames.push_back({funcName, displayName});
+					}
+				}
+			}
+
+			// Generate test functions from main file
+			for (size_t i = 0; i < root->childCount(); i++) {
+				auto child = root->child(i);
+				if (auto testNode = dynamic_cast<AstNodeTest*>(child)) {
+					if (!generateTest(testNode, mainModuleName)) {
+						return false;
+					}
+					std::string sanitizedName = testNode->name();
+					for (char& c : sanitizedName) {
+						if (!std::isalnum(c)) {
+							c = '_';
+						}
+					}
+					std::string funcName = "test_" + mainModuleName + "_" + sanitizedName;
+					// For main module, extract just the filename for display
+					std::string shortName = mainModuleName;
+					auto lastSlash = shortName.rfind('/');
+					if (lastSlash != std::string::npos) {
+						shortName = shortName.substr(lastSlash + 1);
+					}
+					std::string displayName = shortName + "::" + testNode->name();
+					collectedTestNames.push_back({funcName, displayName});
+				}
+			}
+
+			// Generate test runner
+			if (!generateTestRunner(collectedTestNames)) {
+				return false;
+			}
+		}
+
+		// Fourth pass: generate C main function (only in standalone mode, not in test mode)
+		if (generateCMain && !testMode) {
 			for (size_t i = 0; i < root->childCount(); i++) {
 				auto child = root->child(i);
 				if (auto funcNode = dynamic_cast<AstNodeFunctionDeclaration*>(child)) {
@@ -5090,6 +5394,14 @@ namespace Qd {
 			impl = std::make_unique<Impl>("temp");
 		}
 		impl->stackSize = size;
+	}
+
+	void LlvmGenerator::setTestMode(bool enabled) {
+		if (!impl) {
+			// Create implementation with a temporary module name - will be recreated in generate()
+			impl = std::make_unique<Impl>("temp");
+		}
+		impl->testMode = enabled;
 	}
 
 	bool LlvmGenerator::generate(IAstNode* root, const std::string& moduleName) {

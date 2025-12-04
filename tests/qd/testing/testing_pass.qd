@@ -1,0 +1,62 @@
+use testing
+
+test "integer equality" {
+	5 5 testing::assert_eq
+	0 0 testing::assert_eq
+	-1 -1 testing::assert_eq
+}
+
+test "integer inequality" {
+	5 10 testing::assert_ne
+	0 1 testing::assert_ne
+	-1 1 testing::assert_ne
+}
+
+test "float equality" {
+	3.14 3.14 testing::assert_eq
+	0.0 0.0 testing::assert_eq
+}
+
+test "float inequality" {
+	3.14 2.71 testing::assert_ne
+	1.0 2.0 testing::assert_ne
+}
+
+test "string equality" {
+	"hello" "hello" testing::assert_eq
+	"" "" testing::assert_eq
+}
+
+test "string inequality" {
+	"hello" "world" testing::assert_ne
+	"foo" "bar" testing::assert_ne
+}
+
+test "assert_true with integers" {
+	1 testing::assert_true
+	42 testing::assert_true
+	-1 testing::assert_true
+}
+
+test "assert_false with integers" {
+	0 testing::assert_false
+}
+
+test "assert_true with strings" {
+	"hello" testing::assert_true
+	"x" testing::assert_true
+}
+
+test "assert_false with strings" {
+	"" testing::assert_false
+}
+
+test "assert_true with floats" {
+	1.0 testing::assert_true
+	0.1 testing::assert_true
+	-1.0 testing::assert_true
+}
+
+test "assert_false with floats" {
+	0.0 testing::assert_false
+}

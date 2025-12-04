@@ -483,6 +483,86 @@ Inside GDB:
 
 ---
 
+## Testing
+
+Quadrate includes a built-in test framework for writing and running unit tests.
+
+### Writing Tests
+
+Use the `test` keyword to define test blocks, and assertion functions from the `testing` module:
+
+```rust
+use testing
+
+test "basic arithmetic" {
+    2 3 + 5 testing::assert_eq
+    10 5 - 5 testing::assert_eq
+}
+
+test "string comparison" {
+    "hello" "hello" testing::assert_eq
+    "foo" "bar" testing::assert_ne
+}
+
+test "boolean checks" {
+    1 testing::assert_true
+    0 testing::assert_false
+    "non-empty" testing::assert_true
+    "" testing::assert_false
+}
+```
+
+### Available Assertions
+
+| Function | Description |
+|----------|-------------|
+| `testing::assert_eq` | Assert two values are equal (works with any type) |
+| `testing::assert_ne` | Assert two values are not equal |
+| `testing::assert_true` | Assert value is truthy (non-zero, non-empty) |
+| `testing::assert_false` | Assert value is falsy (zero, empty, null) |
+| `testing::fail` | Unconditionally fail with a message |
+
+All assertions are polymorphic—they work with integers, floats, strings, and pointers.
+
+### Running Tests
+
+```bash
+# Compile and run tests
+quadc --test myfile.qd
+
+# Compile tests to a binary
+quadc --test -o test_binary myfile.qd
+./test_binary
+```
+
+### Example Output
+
+```
+Running 3 tests...
+  ✓ basic_arithmetic
+  ✓ string_comparison
+  ✗ intentional_failure
+
+2 passed, 1 failed
+```
+
+Tests return exit code 0 if all pass, 1 if any fail—making them suitable for CI pipelines.
+
+### Test with Failure Messages
+
+When an assertion fails, it prints detailed information:
+
+```
+Assertion failed: assert_eq
+  expected: 5 (i64)
+       got: 10 (i64)
+
+Stack trace:
+    0: myfile.qd::test(basic arithmetic)
+```
+
+---
+
 ## Real-World Examples
 
 ### HTTP Server (with net module)

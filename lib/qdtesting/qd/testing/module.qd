@@ -1,0 +1,50 @@
+/// Testing utilities for unit tests.
+///
+/// Provides assertion functions for writing test cases.
+/// Tests are defined using the `test` keyword and assertions
+/// check that conditions are met.
+///
+/// @example
+/// use testing
+///
+/// test "addition works" {
+///     2 3 + 5 testing::assert_eq
+/// }
+
+import "libqdtesting.a" as "testing" {
+	/// Assert that two values are equal.
+	/// Works with any type (i64, f64, str, ptr).
+	/// @param a any First value
+	/// @param b any Second value (expected)
+	/// @example 5 5 testing::assert_eq  // passes
+	/// @example "hello" "hello" testing::assert_eq  // passes
+	pub fn assert_eq(a:any b:any -- )
+
+	/// Assert that two values are not equal.
+	/// Works with any type (i64, f64, str, ptr).
+	/// @param a any First value
+	/// @param b any Second value
+	/// @example 5 6 testing::assert_ne  // passes
+	pub fn assert_ne(a:any b:any -- )
+
+	/// Assert that a value is truthy.
+	/// Truthy means: non-zero for integers, non-zero for floats,
+	/// non-empty for strings, non-null for pointers.
+	/// @param v any Value to check
+	/// @example 1 testing::assert_true  // passes
+	/// @example "hello" testing::assert_true  // passes
+	pub fn assert_true(v:any -- )
+
+	/// Assert that a value is falsy.
+	/// Falsy means: zero for integers, zero for floats,
+	/// empty for strings, null for pointers.
+	/// @param v any Value to check
+	/// @example 0 testing::assert_false  // passes
+	/// @example "" testing::assert_false  // passes
+	pub fn assert_false(v:any -- )
+
+	/// Unconditionally fail a test with a message.
+	/// @param msg str Failure message
+	/// @example "Not implemented" testing::fail
+	pub fn fail(msg:str -- )
+}

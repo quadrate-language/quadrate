@@ -1,0 +1,39 @@
+#ifndef QDTESTING_H
+#define QDTESTING_H
+
+#include <qdrt/runtime.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+/// Assert that two values on the stack are equal (any type)
+/// @param ctx Quadrate context
+/// @return Execution result (0 for success, non-zero for failure)
+qd_exec_result usr_testing_assert_eq(qd_context* ctx);
+
+/// Assert that two values on the stack are not equal (any type)
+/// @param ctx Quadrate context
+/// @return Execution result (0 for success, non-zero for failure)
+qd_exec_result usr_testing_assert_ne(qd_context* ctx);
+
+/// Assert that a value on the stack is truthy (non-zero for int, non-empty for str)
+/// @param ctx Quadrate context
+/// @return Execution result (0 for success, non-zero for failure)
+qd_exec_result usr_testing_assert_true(qd_context* ctx);
+
+/// Assert that a value on the stack is falsy (zero for int, empty for str)
+/// @param ctx Quadrate context
+/// @return Execution result (0 for success, non-zero for failure)
+qd_exec_result usr_testing_assert_false(qd_context* ctx);
+
+/// Unconditionally fail a test with a message
+/// @param ctx Quadrate context
+/// @return Execution result (always non-zero)
+qd_exec_result usr_testing_fail(qd_context* ctx);
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif // QDTESTING_H

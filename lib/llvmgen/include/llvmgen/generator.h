@@ -204,6 +204,19 @@ namespace Qd {
 		 */
 		void setStackSize(size_t size);
 
+		/**
+		 * @brief Enable test mode
+		 *
+		 * When enabled, compiles test blocks and generates a test runner main
+		 * instead of the normal main function. Tests are run sequentially
+		 * and results are reported.
+		 *
+		 * @param enabled True to enable test mode, false for normal compilation
+		 *
+		 * @note Must be called before generate()
+		 */
+		void setTestMode(bool enabled);
+
 	private:
 		/**
 		 * @brief Private implementation (Pimpl idiom)

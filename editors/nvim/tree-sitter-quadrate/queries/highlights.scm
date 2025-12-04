@@ -47,6 +47,11 @@
 (function_definition
   name: (identifier) @function)
 
+; Test definitions
+(test_definition
+  keyword: (test_keyword) @keyword
+  name: (string) @function)
+
 ; Constant definitions
 (constant_definition
   name: (identifier) @constant)

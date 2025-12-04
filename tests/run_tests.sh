@@ -130,32 +130,59 @@ run_qd_test() {
     local actual_output_file="$TEMP_DIR/${test_id}.out"
     local compile_log="$TEMP_DIR/${test_id}.compile"
 
-    # Compile
-    if ! "$compiler" $opt_flags "$test_file" -o "$binary" 2>"$compile_log" >/dev/null; then
-        echo "FAIL:compilation failed" >> "$result_file"
-        echo -e "\033[0;31mFAIL\033[0m  $test_name (compilation failed)"
-        return
+    # Check if this is a test-mode file (has 'test "' but no 'fn main')
+    local test_flag=""
+    local is_test_mode="no"
+    if grep -q 'test "' "$test_file" && ! grep -q 'fn main' "$test_file"; then
+        test_flag="--test"
+        is_test_mode="yes"
     fi
 
-    # Run (with or without valgrind)
-    if [ "$use_valgrind" = "yes" ]; then
-        local valgrind_log="$TEMP_DIR/${test_id}.valgrind"
-        # Enhanced valgrind options:
-        # --leak-check=full: Full leak detection
-        # --show-leak-kinds=all: Show all leak types
-        # --track-origins=yes: Track uninitialized values
-        # --track-fds=yes: Detect file descriptor leaks
-        # --error-exitcode=1: Exit with error code on issues
-        if ! valgrind --leak-check=full --show-leak-kinds=all --track-origins=yes --track-fds=yes --error-exitcode=1 --log-file="$valgrind_log" "$binary" >"$actual_output_file" 2>&1; then
-            echo "FAIL:valgrind errors" >> "$result_file"
-            echo -e "\033[0;31mFAIL\033[0m  $test_name (valgrind errors)"
+    # Compile (--test mode also runs the tests automatically)
+    if [ "$is_test_mode" = "yes" ]; then
+        # Test mode: compiler runs the tests, capture output
+        # Use NO_COLOR to get clean output for comparison
+        if ! NO_COLOR=1 "$compiler" $opt_flags $test_flag "$test_file" -o "$binary" >"$actual_output_file" 2>"$compile_log"; then
+            # Check if it's a compilation error or test failure
+            if [ -s "$compile_log" ] && grep -q "error:" "$compile_log"; then
+                echo "FAIL:compilation failed" >> "$result_file"
+                echo -e "\033[0;31mFAIL\033[0m  $test_name (compilation failed)"
+            else
+                # Test failure - output is captured, continue to compare
+                :
+            fi
+        fi
+        # Skip to output comparison for test mode
+    else
+        # Normal mode: compile, then run
+        if ! "$compiler" $opt_flags "$test_file" -o "$binary" 2>"$compile_log" >/dev/null; then
+            echo "FAIL:compilation failed" >> "$result_file"
+            echo -e "\033[0;31mFAIL\033[0m  $test_name (compilation failed)"
             return
         fi
-    else
-        if ! "$binary" >"$actual_output_file" 2>&1; then
-            echo "FAIL:runtime error" >> "$result_file"
-            echo -e "\033[0;31mFAIL\033[0m  $test_name (runtime error)"
-            return
+    fi
+
+    # Run (with or without valgrind) - skip if test mode (already run)
+    if [ "$is_test_mode" = "no" ]; then
+        if [ "$use_valgrind" = "yes" ]; then
+            local valgrind_log="$TEMP_DIR/${test_id}.valgrind"
+            # Enhanced valgrind options:
+            # --leak-check=full: Full leak detection
+            # --show-leak-kinds=all: Show all leak types
+            # --track-origins=yes: Track uninitialized values
+            # --track-fds=yes: Detect file descriptor leaks
+            # --error-exitcode=1: Exit with error code on issues
+            if ! valgrind --leak-check=full --show-leak-kinds=all --track-origins=yes --track-fds=yes --error-exitcode=1 --log-file="$valgrind_log" "$binary" >"$actual_output_file" 2>&1; then
+                echo "FAIL:valgrind errors" >> "$result_file"
+                echo -e "\033[0;31mFAIL\033[0m  $test_name (valgrind errors)"
+                return
+            fi
+        else
+            if ! "$binary" >"$actual_output_file" 2>&1; then
+                echo "FAIL:runtime error" >> "$result_file"
+                echo -e "\033[0;31mFAIL\033[0m  $test_name (runtime error)"
+                return
+            fi
         fi
     fi
 

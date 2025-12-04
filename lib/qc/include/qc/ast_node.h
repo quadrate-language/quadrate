@@ -41,7 +41,8 @@ namespace Qd {
 			STRUCT_CONSTRUCTION,
 			FIELD_ACCESS,
 			ARRAY_LITERAL,
-			ARRAY_INDEX
+			ARRAY_INDEX,
+			TEST_DECLARATION
 		};
 		virtual ~IAstNode() = default;
 
