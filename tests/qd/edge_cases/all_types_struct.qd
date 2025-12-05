@@ -6,7 +6,7 @@ struct AllTypes {
 }
 
 fn main( -- ) {
-  42 3.14 "hello" 0 new AllTypes -> all
+  AllTypes { i_val: 42 f_val: 3.14 s_val: "hello" p_val: 0 } -> all
 
   all @i_val . nl
   all @f_val . nl

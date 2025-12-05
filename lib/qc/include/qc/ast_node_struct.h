@@ -143,10 +143,21 @@ namespace Qd {
 	};
 
 	/**
+	 * @brief Represents a field initializer in struct construction
+	 *
+	 * Example: x: 1.0 2.0 +
+	 * The field name and an expression (block of AST nodes) that produces the value
+	 */
+	struct StructFieldInit {
+		std::string fieldName;
+		std::vector<IAstNode*> valueNodes; // Expression nodes that produce the field value
+	};
+
+	/**
 	 * @brief AST node representing struct construction
 	 *
-	 * Example: 1.0 2.0 Vec2
-	 * Stack-based construction: values are on the stack, struct name consumes them
+	 * Example: Point { x: 1.0 y: 2.0 }
+	 * Named field construction with explicit field initializers
 	 */
 	class AstNodeStructConstruction : public IAstNode {
 	public:
@@ -154,15 +165,34 @@ namespace Qd {
 			: mStructName(structName), mParent(nullptr), mLine(0), mColumn(0) {
 		}
 
+		~AstNodeStructConstruction() {
+			for (auto& init : mFieldInits) {
+				for (auto* node : init.valueNodes) {
+					delete node;
+				}
+			}
+		}
+
 		IAstNode::Type type() const override {
 			return Type::STRUCT_CONSTRUCTION;
 		}
 
 		size_t childCount() const override {
-			return 0;
+			size_t count = 0;
+			for (const auto& init : mFieldInits) {
+				count += init.valueNodes.size();
+			}
+			return count;
 		}
 
-		IAstNode* child(size_t) const override {
+		IAstNode* child(size_t index) const override {
+			size_t current = 0;
+			for (const auto& init : mFieldInits) {
+				if (index < current + init.valueNodes.size()) {
+					return init.valueNodes[index - current];
+				}
+				current += init.valueNodes.size();
+			}
 			return nullptr;
 		}
 
@@ -191,8 +221,23 @@ namespace Qd {
 			return mStructName;
 		}
 
+		void addFieldInit(const std::string& fieldName, std::vector<IAstNode*> valueNodes) {
+			StructFieldInit init;
+			init.fieldName = fieldName;
+			init.valueNodes = std::move(valueNodes);
+			for (auto* node : init.valueNodes) {
+				node->setParent(this);
+			}
+			mFieldInits.push_back(std::move(init));
+		}
+
+		const std::vector<StructFieldInit>& fieldInits() const {
+			return mFieldInits;
+		}
+
 	private:
 		std::string mStructName;
+		std::vector<StructFieldInit> mFieldInits;
 		IAstNode* mParent;
 		size_t mLine;
 		size_t mColumn;

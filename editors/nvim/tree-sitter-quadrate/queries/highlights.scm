@@ -7,7 +7,6 @@
   "use"
   "import"
   "as"
-  "new"
 ] @keyword
 
 ; Control flow keywords
@@ -76,6 +75,10 @@
 ; Field access
 (field_access
   field: (identifier) @variable.member)
+
+; Field initializers in struct construction
+(field_init
+  name: (identifier) @variable.member)
 
 ; Use statements (module imports)
 (use_statement

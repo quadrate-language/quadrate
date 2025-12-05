@@ -70,7 +70,7 @@ Struct construction and field access
 ================================================================================
 
 fn test_vec2( -- ) {
-  1.5 2.5 new Vec2 -> v
+  Vec2 { x: 1.5 y: 2.5 } -> v
   v @x print
   v @y print
   v free
@@ -83,10 +83,14 @@ fn test_vec2( -- ) {
     name: (identifier)
     signature: (stack_signature)
     body: (block
-      (number)
-      (number)
       (struct_construction
-        type: (identifier))
+        type: (identifier)
+        (field_init
+          name: (identifier)
+          value: (number))
+        (field_init
+          name: (identifier)
+          value: (number)))
       (local_declaration
         name: (identifier))
       (field_access
@@ -143,7 +147,7 @@ Struct with defer and free
 ================================================================================
 
 fn cleanup_test( -- ) {
-  1.0 2.0 new Vec2 -> v
+  Vec2 { x: 1.0 y: 2.0 } -> v
   defer {
     v free
   }
@@ -157,10 +161,14 @@ fn cleanup_test( -- ) {
     name: (identifier)
     signature: (stack_signature)
     body: (block
-      (number)
-      (number)
       (struct_construction
-        type: (identifier))
+        type: (identifier)
+        (field_init
+          name: (identifier)
+          value: (number))
+        (field_init
+          name: (identifier)
+          value: (number)))
       (local_declaration
         name: (identifier))
       (defer_block
@@ -177,7 +185,7 @@ Struct construction with namespace
 ================================================================================
 
 fn use_namespaced_struct( -- ) {
-  1.0 2.0 new geometry::Vec2 -> v
+  geometry::Vec2 { x: 1.0 y: 2.0 } -> v
   v @x print
 }
 
@@ -188,12 +196,16 @@ fn use_namespaced_struct( -- ) {
     name: (identifier)
     signature: (stack_signature)
     body: (block
-      (number)
-      (number)
       (struct_construction
         type: (namespaced_identifier
           namespace: (identifier)
-          name: (identifier)))
+          name: (identifier))
+        (field_init
+          name: (identifier)
+          value: (number))
+        (field_init
+          name: (identifier)
+          value: (number)))
       (local_declaration
         name: (identifier))
       (field_access

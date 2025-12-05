@@ -147,10 +147,34 @@ module.exports = grammar({
       $.pointer_operation,
     ),
 
-    // Struct construction: new StructName or new namespace::StructName
-    struct_construction: $ => seq(
-      'new',
+    // Struct construction: StructName { field1: value1 field2: value2 ... }
+    // or: namespace::StructName { field1: value1 ... }
+    struct_construction: $ => prec(2, seq(
       field('type', choice($.namespaced_identifier, $.identifier)),
+      '{',
+      repeat($.field_init),
+      '}',
+    )),
+
+    // Field initialization: fieldname: value
+    // Each field has exactly one expression value for simplicity
+    // Complex expressions like "1.0 2.0 +" should still parse, just not as separate values
+    field_init: $ => seq(
+      field('name', $.identifier),
+      ':',
+      field('value', $._field_value),
+    ),
+
+    // Values allowed in field initializers
+    _field_value: $ => choice(
+      $.number,
+      $.string,
+      $.builtin_operation,
+      $.operator_symbol,
+      $.struct_construction,
+      $.namespaced_identifier,
+      $.identifier,
+      $.loop_variable,
     ),
 
     // If expression: if { ... } else { ... }

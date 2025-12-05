@@ -6,6 +6,7 @@
 #include <fstream>
 #include <functional>
 #include <iostream>
+#include <unordered_set>
 #include <qc/ast.h>
 #include <qc/ast_node.h>
 #include <qc/ast_node_constant.h>
@@ -1500,22 +1501,37 @@ namespace Qd {
 			}
 		}
 
-		// Check if this is a struct construction (new StructName)
+		// Check if this is a struct construction (StructName { field: value ... })
 		if (node->type() == IAstNode::Type::STRUCT_CONSTRUCTION) {
 			AstNodeStructConstruction* construct = static_cast<AstNodeStructConstruction*>(node);
 			const std::string& structName = construct->structName();
 
+			bool validStruct = false;
+
 			// Check if struct is defined locally
 			if (mDefinedStructs.find(structName) != mDefinedStructs.end()) {
-				return; // Valid struct construction
+				validStruct = true;
 			}
 
 			// Check if struct is from an imported module
-			for (const auto& moduleEntry : mModuleStructs) {
-				const auto& structs = moduleEntry.second;
-				if (structs.find(structName) != structs.end() && structs.at(structName)) {
-					return; // Valid struct from imported module (must be public)
+			if (!validStruct) {
+				for (const auto& moduleEntry : mModuleStructs) {
+					const auto& structs = moduleEntry.second;
+					if (structs.find(structName) != structs.end() && structs.at(structName)) {
+						validStruct = true;
+						break;
+					}
 				}
+			}
+
+			if (validStruct) {
+				// Validate field initializer expressions
+				for (const auto& fieldInit : construct->fieldInits()) {
+					for (IAstNode* valueNode : fieldInit.valueNodes) {
+						validateReferencesInternal(valueNode, insideForLoop, localVariables);
+					}
+				}
+				return;
 			}
 
 			// Not found - report error
@@ -2066,20 +2082,10 @@ namespace Qd {
 				break;
 
 			case IAstNode::Type::STRUCT_CONSTRUCTION: {
-				// Struct construction: 'new StructName' pops field values and pushes PTR
+				// Struct construction with named fields: StructName { field: expr ... }
+				// Field expressions are self-contained, so struct construction just pushes PTR
 				AstNodeStructConstruction* construct = static_cast<AstNodeStructConstruction*>(child);
 				const std::string& structName = construct->structName();
-				auto structFieldIt = mStructFieldTypes.find(structName);
-				if (structFieldIt != mStructFieldTypes.end()) {
-					size_t fieldCount = structFieldIt->second.size();
-					// Pop field values from both stacks
-					for (size_t fi = 0; fi < fieldCount && !typeStack.empty(); fi++) {
-						typeStack.pop_back();
-						if (!structTypeStack.empty()) {
-							structTypeStack.pop_back();
-						}
-					}
-				}
 				typeStack.push_back(StackValueType::PTR);
 				structTypeStack.push_back(structName);
 				break;
@@ -2370,19 +2376,17 @@ namespace Qd {
 			}
 
 			case IAstNode::Type::STRUCT_CONSTRUCTION: {
-				// Handle explicit struct construction with 'new' keyword
+				// Handle struct construction with named fields: StructName { field: expr ... }
 				AstNodeStructConstruction* construct = static_cast<AstNodeStructConstruction*>(child);
 				const std::string& name = construct->structName();
+				const auto& fieldInits = construct->fieldInits();
 
-				// Struct construction: consumes field values, produces pointer
+				// Get struct declaration
 				AstNodeStructDeclaration* structDecl = nullptr;
-
-				// Check local structs first
 				auto structDeclIt = mStructDeclarations.find(name);
 				if (structDeclIt != mStructDeclarations.end()) {
 					structDecl = structDeclIt->second;
 				} else {
-					// Check module structs
 					auto moduleDeclIt = mModuleStructDeclarations.find(name);
 					if (moduleDeclIt != mModuleStructDeclarations.end()) {
 						structDecl = moduleDeclIt->second;
@@ -2390,107 +2394,190 @@ namespace Qd {
 				}
 
 				if (structDecl) {
-					const auto& fields = structDecl->fields();
-					size_t fieldCount = fields.size();
+					const auto& declaredFields = structDecl->fields();
+					std::unordered_set<std::string> providedFields;
 
-					// Check if we have enough values on the stack
-					if (typeStack.size() < fieldCount) {
-						std::string errorMsg = "Type error in struct construction '";
-						errorMsg += name;
-						errorMsg += "': Stack underflow (requires ";
-						errorMsg += std::to_string(fieldCount);
-						errorMsg += " values, have ";
-						errorMsg += std::to_string(typeStack.size());
-						errorMsg += ")";
-						reportError(construct, errorMsg.c_str());
-					} else {
-						// Validate each field type (fields are in declaration order)
-						for (size_t fi = 0; fi < fieldCount; fi++) {
-							size_t stackIdx = typeStack.size() - fieldCount + fi;
-							StackValueType actual = typeStack[stackIdx];
-							std::string actualStructType =
-									(stackIdx < structTypeStack.size()) ? structTypeStack[stackIdx] : "";
-							const AstNodeStructField* field = fields[fi];
-							const std::string& fieldName = field->name();
+					// Process each field initializer
+					for (const auto& fieldInit : fieldInits) {
+						const std::string& fieldName = fieldInit.fieldName;
+						providedFields.insert(fieldName);
 
-							// Get expected type from mStructFieldTypes
-							auto structFieldTypesIt = mStructFieldTypes.find(name);
-							if (structFieldTypesIt == mStructFieldTypes.end()) {
-								continue;
-							}
+						// Check if field exists in struct using mStructFieldTypes
+						// (don't use structDecl->fields() as it may have been freed for imported modules)
+						bool fieldExists = false;
+						StackValueType expectedType = StackValueType::UNKNOWN;
+						std::string expectedStructType;
+
+						auto structFieldTypesIt = mStructFieldTypes.find(name);
+						if (structFieldTypesIt != mStructFieldTypes.end()) {
 							auto fieldTypeIt = structFieldTypesIt->second.find(fieldName);
-							if (fieldTypeIt == structFieldTypesIt->second.end()) {
-								continue;
+							if (fieldTypeIt != structFieldTypesIt->second.end()) {
+								fieldExists = true;
+								expectedType = fieldTypeIt->second;
 							}
-							StackValueType expected = fieldTypeIt->second;
+						}
 
-							// Check if this field expects a specific struct type
-							std::string expectedStructType;
-							auto structFieldStructTypesIt = mStructFieldStructTypes.find(name);
-							if (structFieldStructTypesIt != mStructFieldStructTypes.end()) {
-								auto fieldStructTypeIt = structFieldStructTypesIt->second.find(fieldName);
-								if (fieldStructTypeIt != structFieldStructTypesIt->second.end()) {
-									expectedStructType = fieldStructTypeIt->second;
+						// Also check mStructFieldStructTypes for PTR field types
+						auto structFieldStructTypesIt = mStructFieldStructTypes.find(name);
+						if (structFieldStructTypesIt != mStructFieldStructTypes.end()) {
+							auto fieldStructTypeIt = structFieldStructTypesIt->second.find(fieldName);
+							if (fieldStructTypeIt != structFieldStructTypesIt->second.end()) {
+								expectedStructType = fieldStructTypeIt->second;
+							}
+						}
+
+						if (!fieldExists) {
+							std::string errorMsg = "Unknown field '";
+							errorMsg += fieldName;
+							errorMsg += "' in struct '";
+							errorMsg += name;
+							errorMsg += "'";
+							reportError(construct, errorMsg.c_str());
+							continue;
+						}
+
+						// Process the field's expression nodes to determine the type it produces
+						// We create a temporary type stack to track what the expression produces
+						std::vector<StackValueType> exprTypeStack;
+						std::vector<std::string> exprStructTypeStack;
+
+						for (IAstNode* exprNode : fieldInit.valueNodes) {
+							// Recursively type-check the expression node
+							// For simplicity, we simulate basic type inference here
+							switch (exprNode->type()) {
+							case IAstNode::Type::LITERAL: {
+								AstNodeLiteral* lit = static_cast<AstNodeLiteral*>(exprNode);
+								switch (lit->literalType()) {
+								case AstNodeLiteral::LiteralType::INTEGER:
+									exprTypeStack.push_back(StackValueType::INT);
+									exprStructTypeStack.push_back("");
+									break;
+								case AstNodeLiteral::LiteralType::FLOAT:
+									exprTypeStack.push_back(StackValueType::FLOAT);
+									exprStructTypeStack.push_back("");
+									break;
+								case AstNodeLiteral::LiteralType::STRING:
+									exprTypeStack.push_back(StackValueType::STRING);
+									exprStructTypeStack.push_back("");
+									break;
 								}
+								break;
 							}
-
-							// Skip check if actual type is UNKNOWN
-							if (actual == StackValueType::UNKNOWN) {
-								continue;
-							}
-
-							// Check for type mismatch
-							if (actual != expected) {
-								if (isImplicitCastAllowed(actual, expected)) {
-									std::string warnMsg = "Implicit cast in struct construction '";
-									warnMsg += name;
-									warnMsg += "': Field '";
-									warnMsg += fieldName;
-									warnMsg += "' expects ";
-									warnMsg += stackValueTypeToString(expected);
-									warnMsg += ", but got ";
-									warnMsg += stackValueTypeToString(actual);
-									reportWarning(construct, warnMsg.c_str());
+							case IAstNode::Type::IDENTIFIER: {
+								AstNodeIdentifier* ident = static_cast<AstNodeIdentifier*>(exprNode);
+								auto localIt = localVariables.find(ident->name());
+								if (localIt != localVariables.end()) {
+									exprTypeStack.push_back(localIt->second);
+									if (localIt->second == StackValueType::PTR) {
+										auto structTypeIt = mLocalVariableStructTypes.find(ident->name());
+										if (structTypeIt != mLocalVariableStructTypes.end()) {
+											exprStructTypeStack.push_back(structTypeIt->second);
+										} else {
+											exprStructTypeStack.push_back("");
+										}
+									} else {
+										exprStructTypeStack.push_back("");
+									}
 								} else {
+									exprTypeStack.push_back(StackValueType::UNKNOWN);
+									exprStructTypeStack.push_back("");
+								}
+								break;
+							}
+							case IAstNode::Type::STRUCT_CONSTRUCTION: {
+								// Nested struct construction
+								AstNodeStructConstruction* nested =
+										static_cast<AstNodeStructConstruction*>(exprNode);
+								exprTypeStack.push_back(StackValueType::PTR);
+								exprStructTypeStack.push_back(nested->structName());
+								break;
+							}
+							case IAstNode::Type::INSTRUCTION: {
+								// Instructions modify the stack - simplified handling
+								AstNodeInstruction* instr = static_cast<AstNodeInstruction*>(exprNode);
+								const std::string& instrName = instr->name();
+								// Handle common arithmetic operations
+								if (instrName == "+" || instrName == "-" || instrName == "*" ||
+										instrName == "/" || instrName == "add" || instrName == "sub" ||
+										instrName == "mul" || instrName == "div") {
+									if (exprTypeStack.size() >= 2) {
+										exprTypeStack.pop_back();
+										exprStructTypeStack.pop_back();
+									}
+								}
+								break;
+							}
+							default:
+								// For other node types, assume they push one value
+								exprTypeStack.push_back(StackValueType::UNKNOWN);
+								exprStructTypeStack.push_back("");
+								break;
+							}
+						}
+
+						// After processing expression, check the resulting type
+						if (!exprTypeStack.empty()) {
+							StackValueType actualType = exprTypeStack.back();
+							std::string actualStructType =
+									exprStructTypeStack.empty() ? "" : exprStructTypeStack.back();
+
+							if (actualType != StackValueType::UNKNOWN && expectedType != StackValueType::UNKNOWN) {
+								if (actualType != expectedType) {
+									if (isImplicitCastAllowed(actualType, expectedType)) {
+										std::string warnMsg = "Implicit cast in struct construction '";
+										warnMsg += name;
+										warnMsg += "': Field '";
+										warnMsg += fieldName;
+										warnMsg += "' expects ";
+										warnMsg += stackValueTypeToString(expectedType);
+										warnMsg += ", but got ";
+										warnMsg += stackValueTypeToString(actualType);
+										reportWarning(construct, warnMsg.c_str());
+									} else {
+										std::string errorMsg = "Type error in struct construction '";
+										errorMsg += name;
+										errorMsg += "': Field '";
+										errorMsg += fieldName;
+										errorMsg += "' expects ";
+										errorMsg += expectedStructType.empty()
+														? stackValueTypeToString(expectedType)
+														: expectedStructType;
+										errorMsg += ", but got ";
+										errorMsg += actualStructType.empty() ? stackValueTypeToString(actualType)
+																			 : actualStructType;
+										reportError(construct, errorMsg.c_str());
+									}
+								} else if (!expectedStructType.empty() && actualStructType != expectedStructType) {
 									std::string errorMsg = "Type error in struct construction '";
 									errorMsg += name;
 									errorMsg += "': Field '";
 									errorMsg += fieldName;
 									errorMsg += "' expects ";
-									errorMsg += expectedStructType.empty() ? stackValueTypeToString(expected)
-																		   : expectedStructType;
+									errorMsg += expectedStructType;
 									errorMsg += ", but got ";
-									errorMsg += actualStructType.empty() ? stackValueTypeToString(actual)
-																		 : actualStructType;
+									errorMsg += actualStructType.empty() ? "ptr" : actualStructType;
 									reportError(construct, errorMsg.c_str());
 								}
-							} else if (!expectedStructType.empty() && actualStructType != expectedStructType) {
-								// Types match (both PTR) but struct types don't match
-								std::string errorMsg = "Type error in struct construction '";
-								errorMsg += name;
-								errorMsg += "': Field '";
-								errorMsg += fieldName;
-								errorMsg += "' expects ";
-								errorMsg += expectedStructType;
-								errorMsg += ", but got ";
-								errorMsg += actualStructType.empty() ? "ptr" : actualStructType;
-								reportError(construct, errorMsg.c_str());
 							}
 						}
+					}
 
-						// Pop field values from stack
-						for (size_t fi = 0; fi < fieldCount && !typeStack.empty(); fi++) {
-							typeStack.pop_back();
-							if (!structTypeStack.empty()) {
-								structTypeStack.pop_back();
-							}
+					// Check for missing fields
+					for (const auto* field : declaredFields) {
+						if (providedFields.find(field->name()) == providedFields.end()) {
+							std::string errorMsg = "Missing field '";
+							errorMsg += field->name();
+							errorMsg += "' in struct construction '";
+							errorMsg += name;
+							errorMsg += "'";
+							reportError(construct, errorMsg.c_str());
 						}
 					}
 				}
 
-				// Push pointer type for the constructed struct, along with its struct type
+				// Push pointer type for the constructed struct
 				typeStack.push_back(StackValueType::PTR);
-				structTypeStack.push_back(name); // Track which struct type this is
+				structTypeStack.push_back(name);
 				break;
 			}
 

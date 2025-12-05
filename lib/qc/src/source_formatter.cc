@@ -246,6 +246,168 @@ namespace Qd {
 		return result;
 	}
 
+	// Check if a string looks like a struct name (starts with uppercase letter)
+	static bool isStructName(const std::string& name) {
+		if (name.empty()) {
+			return false;
+		}
+		return std::isupper(static_cast<unsigned char>(name[0]));
+	}
+
+	// Format struct construction with fields on separate lines
+	// Input: "StructName { field1: expr1 field2: expr2 }" or "StructName { field1: expr1 field2: expr2 } -> var"
+	// Output: multiline formatted version
+	static std::string formatStructConstruction(const std::string& line, size_t baseIndent) {
+		std::string trimmed = trim(line);
+
+		// Find potential struct name (uppercase identifier followed by {)
+		size_t bracePos = trimmed.find('{');
+		if (bracePos == std::string::npos || bracePos == 0) {
+			return "";
+		}
+
+		// Extract what comes before the brace
+		std::string beforeBrace = trim(trimmed.substr(0, bracePos));
+		if (beforeBrace.empty() || !isStructName(beforeBrace)) {
+			return "";
+		}
+
+		// Check if this looks like an identifier (alphanumeric/underscore only)
+		for (char c : beforeBrace) {
+			if (!std::isalnum(static_cast<unsigned char>(c)) && c != '_') {
+				return "";
+			}
+		}
+
+		std::string structName = beforeBrace;
+
+		// Find matching closing brace
+		int depth = 0;
+		size_t closePos = std::string::npos;
+		bool inString = false;
+		for (size_t i = bracePos; i < trimmed.length(); i++) {
+			char c = trimmed[i];
+			if (c == '"' && (i == 0 || trimmed[i - 1] != '\\')) {
+				inString = !inString;
+			}
+			if (!inString) {
+				if (c == '{') {
+					depth++;
+				} else if (c == '}') {
+					depth--;
+					if (depth == 0) {
+						closePos = i;
+						break;
+					}
+				}
+			}
+		}
+
+		if (closePos == std::string::npos) {
+			return "";
+		}
+
+		// Extract content between braces
+		std::string content = trimmed.substr(bracePos + 1, closePos - bracePos - 1);
+		std::string afterBrace = trim(trimmed.substr(closePos + 1));
+
+		// Parse fields: "field1: expr1 field2: expr2"
+		// Fields are separated by the pattern "identifier:"
+		std::vector<std::pair<std::string, std::string>> fields;
+		std::string currentField;
+		std::string currentValue;
+		bool parsingField = true;
+		bool inStr = false;
+		int braceDepth = 0;
+
+		content = trim(content);
+		if (content.empty()) {
+			return ""; // Empty struct construction, don't reformat
+		}
+
+		size_t i = 0;
+		while (i < content.length()) {
+			char c = content[i];
+
+			// Track string state
+			if (c == '"' && (i == 0 || content[i - 1] != '\\')) {
+				inStr = !inStr;
+			}
+
+			// Track brace depth (for nested structs)
+			if (!inStr) {
+				if (c == '{') {
+					braceDepth++;
+				} else if (c == '}') {
+					braceDepth--;
+				}
+			}
+
+			if (parsingField) {
+				if (c == ':' && !inStr && braceDepth == 0) {
+					currentField = trim(currentField);
+					parsingField = false;
+					i++;
+					continue;
+				}
+				currentField += c;
+			} else {
+				// Check if we've hit a new field (lowercase identifier followed by colon)
+				if (!inStr && braceDepth == 0 && std::isspace(static_cast<unsigned char>(c))) {
+					// Look ahead to see if next non-space is a field name
+					size_t j = i + 1;
+					while (j < content.length() && std::isspace(static_cast<unsigned char>(content[j]))) {
+						j++;
+					}
+					// Check if it's an identifier followed by :
+					size_t identStart = j;
+					while (j < content.length() &&
+							(std::isalnum(static_cast<unsigned char>(content[j])) || content[j] == '_')) {
+						j++;
+					}
+					if (j > identStart && j < content.length() && content[j] == ':') {
+						// Found next field, save current
+						fields.push_back({currentField, trim(currentValue)});
+						currentField.clear();
+						currentValue.clear();
+						parsingField = true;
+						i = identStart;
+						continue;
+					}
+				}
+				currentValue += c;
+			}
+			i++;
+		}
+
+		// Save last field
+		if (!currentField.empty()) {
+			fields.push_back({currentField, trim(currentValue)});
+		}
+
+		// If only one field, don't reformat
+		if (fields.size() <= 1) {
+			return "";
+		}
+
+		// Build formatted output
+		std::ostringstream result;
+		std::string indent(baseIndent, '\t');
+		std::string fieldIndent(baseIndent + 1, '\t');
+
+		result << indent << structName << " {\n";
+		for (const auto& field : fields) {
+			result << fieldIndent << field.first << ": " << field.second << "\n";
+		}
+		result << indent << "}";
+
+		if (!afterBrace.empty()) {
+			result << " " << afterBrace;
+		}
+
+		return result.str();
+	}
+
 	// Normalize }else to } else and add spacing
 	static std::string normalizeElse(const std::string& line) {
 		std::string result = line;
@@ -294,6 +456,31 @@ namespace Qd {
 		return result;
 	}
 
+	// Check if a line is a struct construction (StructName { ... })
+	static bool isStructConstruction(const std::string& line) {
+		std::string trimmed = trim(line);
+		size_t bracePos = trimmed.find('{');
+		if (bracePos == std::string::npos || bracePos == 0) {
+			return false;
+		}
+
+		std::string beforeBrace = trim(trimmed.substr(0, bracePos));
+		if (beforeBrace.empty() || !isStructName(beforeBrace)) {
+			return false;
+		}
+
+		// Check it's a simple identifier
+		for (char c : beforeBrace) {
+			if (!std::isalnum(static_cast<unsigned char>(c)) && c != '_') {
+				return false;
+			}
+		}
+
+		// Check it has field: pattern inside
+		size_t colonPos = trimmed.find(':', bracePos);
+		return colonPos != std::string::npos;
+	}
+
 	// Split inline braces onto separate lines
 	// e.g., "if { foo } else { bar }" becomes:
 	// "if {"
@@ -312,6 +499,11 @@ namespace Qd {
 
 		// Don't process lines without braces
 		if (trimmed.find('{') == std::string::npos && trimmed.find('}') == std::string::npos) {
+			return line;
+		}
+
+		// Don't split struct constructions - they'll be formatted later
+		if (isStructConstruction(trimmed)) {
 			return line;
 		}
 
@@ -469,6 +661,80 @@ namespace Qd {
 			std::string processed = splitInlineBraces(line);
 			output << processed << '\n';
 		}
+		return output.str();
+	}
+
+	// Merge multi-line struct constructions back into single lines for reformatting
+	// Detects: StructName {\n  field: value ...\n } and merges them
+	static std::string mergeStructConstructions(const std::string& source) {
+		std::istringstream input(source);
+		std::vector<std::string> lines;
+		std::string line;
+
+		while (std::getline(input, line)) {
+			lines.push_back(line);
+		}
+
+		std::ostringstream output;
+		size_t i = 0;
+		while (i < lines.size()) {
+			std::string trimmed = trim(lines[i]);
+
+			// Check if this line is "StructName {" (ends with { and starts with uppercase)
+			if (!trimmed.empty() && trimmed.back() == '{') {
+				std::string beforeBrace = trim(trimmed.substr(0, trimmed.length() - 1));
+				if (!beforeBrace.empty() && isStructName(beforeBrace)) {
+					// Check if it's a simple identifier
+					bool isIdent = true;
+					for (char c : beforeBrace) {
+						if (!std::isalnum(static_cast<unsigned char>(c)) && c != '_') {
+							isIdent = false;
+							break;
+						}
+					}
+
+					if (isIdent) {
+						// Look ahead for field lines and closing brace
+						std::string merged = beforeBrace + " {";
+						size_t j = i + 1;
+						bool foundClose = false;
+
+						while (j < lines.size()) {
+							std::string nextTrimmed = trim(lines[j]);
+							if (nextTrimmed == "}") {
+								merged += " }";
+								foundClose = true;
+								j++;
+								break;
+							} else if (nextTrimmed.find("} ->") == 0 || nextTrimmed.find("}->") == 0) {
+								// Closing brace with arrow assignment
+								merged += " " + nextTrimmed;
+								foundClose = true;
+								j++;
+								break;
+							} else if (nextTrimmed.find(':') != std::string::npos && !isComment(nextTrimmed)) {
+								// Looks like a field line
+								merged += " " + nextTrimmed;
+								j++;
+							} else {
+								// Not a field line, stop merging
+								break;
+							}
+						}
+
+						if (foundClose) {
+							output << merged << '\n';
+							i = j;
+							continue;
+						}
+					}
+				}
+			}
+
+			output << lines[i] << '\n';
+			i++;
+		}
+
 		return output.str();
 	}
 
@@ -715,8 +981,10 @@ namespace Qd {
 
 	// Main formatting function that works on source text
 	std::string formatSource(const std::string& source) {
-		// First, split inline braces onto separate lines
-		std::string split = preprocessBraces(source);
+		// First, merge multi-line struct constructions back to single lines
+		std::string mergedStructs = mergeStructConstructions(source);
+		// Then split inline braces onto separate lines (but not struct constructions)
+		std::string split = preprocessBraces(mergedStructs);
 		// Then merge any standalone opening braces with their preceding line
 		std::string preprocessed = mergeStandaloneBraces(split);
 
@@ -859,6 +1127,14 @@ namespace Qd {
 				if (trimmed.find('{') != std::string::npos) {
 					indentLevel++;
 				}
+				continue;
+			}
+
+			// Check for struct construction (StructName { field: value ... })
+			std::string structFormatted = formatStructConstruction(trimmed, static_cast<size_t>(indentLevel));
+			if (!structFormatted.empty()) {
+				output << structFormatted << '\n';
+				// Don't track braces here - the struct is self-contained on multiple lines
 				continue;
 			}
 

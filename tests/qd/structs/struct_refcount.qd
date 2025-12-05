@@ -12,9 +12,8 @@ struct Outer {
 }
 
 fn main( -- ) {
-  // Create nested structs
-  10 20 new Inner -> i
-  i 30 new Outer -> o
+  // Create nested struct
+  Outer { inner: Inner { x: 10 y: 20 } z: 30 } -> o
 
   // Access values
   o @inner @x . nl

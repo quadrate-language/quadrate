@@ -40,7 +40,7 @@ pub fn parse(argc:i64 -- ) {
 		"\n" -> argv
 	}
 
-	argc argv new Flag
+	Flag { argc: argc argv: argv }
 }
 
 /// Free a Flag struct and its argv string.

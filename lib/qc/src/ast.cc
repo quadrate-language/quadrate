@@ -204,6 +204,31 @@ namespace Qd {
 	static IAstNode* parseLoopStatement(u8t_scanner* scanner, ErrorReporter* errorReporter, const char* src);
 	static IAstNode* parseIfStatement(u8t_scanner* scanner, ErrorReporter* errorReporter, const char* src);
 	static IAstNode* parseSwitchStatement(u8t_scanner* scanner, ErrorReporter* errorReporter, const char* src);
+	static AstNodeStructConstruction* parseStructConstruction(const std::string& structName, u8t_scanner* scanner,
+			ErrorReporter* errorReporter, const char* src, size_t startPos);
+
+	// Helper to peek the next non-whitespace character from source
+	// Returns the character or 0 if end of string
+	static char32_t peekNextNonWhitespace(u8t_scanner* scanner, const char* src) {
+		// Get current position after last token
+		size_t tokenStart = u8t_scanner_token_start(scanner);
+		size_t tokenLen = u8t_scanner_token_len(scanner);
+		size_t pos = tokenStart + tokenLen;
+
+		// Convert character index to byte offset
+		size_t bytePos = charIndexToByteOffset(src, pos);
+
+		// Skip whitespace
+		while (src[bytePos] != '\0') {
+			char c = src[bytePos];
+			if (c == ' ' || c == '\t' || c == '\n' || c == '\r') {
+				bytePos++;
+			} else {
+				return static_cast<char32_t>(static_cast<unsigned char>(c));
+			}
+		}
+		return 0;
+	}
 
 	// Helper to synchronize parser after an error
 	// Skips tokens until a synchronization point is found
@@ -222,7 +247,7 @@ namespace Qd {
 				if (strcmp(text, "fn") == 0 || strcmp(text, "const") == 0 || strcmp(text, "struct") == 0 ||
 						strcmp(text, "use") == 0 || strcmp(text, "import") == 0 || strcmp(text, "if") == 0 ||
 						strcmp(text, "for") == 0 || strcmp(text, "loop") == 0 || strcmp(text, "switch") == 0 ||
-						strcmp(text, "return") == 0 || strcmp(text, "ctx") == 0 || strcmp(text, "new") == 0) {
+						strcmp(text, "return") == 0 || strcmp(text, "ctx") == 0) {
 					return;
 				}
 			}
@@ -678,48 +703,17 @@ namespace Qd {
 				}
 			}
 
-			// Handle 'new' keyword for struct construction
-			if (strcmp(text, "new") == 0) {
-				size_t newPos = u8t_scanner_token_start(scanner);
-				char32_t nextToken = u8t_scanner_scan(scanner);
-				if (nextToken == U8T_IDENTIFIER) {
-					const char* structName = u8t_scanner_token_text(scanner, n);
-					std::string fullStructName(structName);
-
-					// Check for scoped struct: new module::StructName
-					char32_t peekToken = u8t_scanner_peek(scanner);
-					if (peekToken == ':') {
-						u8t_scanner_scan(scanner); // Consume first ':'
-						char32_t secondColon = u8t_scanner_peek(scanner);
-						if (secondColon == ':') {
-							u8t_scanner_scan(scanner); // Consume second ':'
-							char32_t memberToken = u8t_scanner_scan(scanner);
-							if (memberToken == U8T_IDENTIFIER) {
-								const char* memberName = u8t_scanner_token_text(scanner, n);
-								fullStructName = fullStructName + "::" + memberName;
-							}
-						}
-					}
-
-					IAstNode* node = new AstNodeStructConstruction(fullStructName);
-					size_t line, column;
-					size_t newPosByte = charIndexToByteOffset(src, newPos);
-					calculateLineColumn(src, newPosByte, &line, &column);
-					node->setPosition(line, column);
-					return node;
-				} else {
-					errorReporter->reportError(scanner, "Expected struct name after 'new'");
-					return nullptr;
-				}
-			}
-
 			if (isBuiltInInstruction(text)) {
 				IAstNode* node = new AstNodeInstruction(text);
 				setNodePosition(node, scanner, src);
 				return node;
 			}
 
-			// Check for scoped identifier (module::function or module::constant)
+			// Save identifier position for potential struct construction
+			size_t identPos = u8t_scanner_token_start(scanner);
+			std::string identName(text);
+
+			// Check for scoped identifier (module::function, module::constant, or module::StructName)
 			char32_t nextToken = u8t_scanner_peek(scanner);
 			if (nextToken == ':') {
 				// Save scope name before scanning invalidates the pointer
@@ -731,6 +725,15 @@ namespace Qd {
 					char32_t memberToken = u8t_scanner_scan(scanner);
 					if (memberToken == U8T_IDENTIFIER) {
 						const char* memberName = u8t_scanner_token_text(scanner, n);
+						std::string fullName = scopeName + "::" + memberName;
+
+						// Check if this is struct construction: module::StructName { ... }
+						char32_t afterMember = peekNextNonWhitespace(scanner, src);
+						if (afterMember == '{') {
+							u8t_scanner_scan(scanner); // Consume '{'
+							return parseStructConstruction(fullName, scanner, errorReporter, src, identPos);
+						}
+
 						AstNodeScopedIdentifier* scoped = new AstNodeScopedIdentifier(scopeName, memberName);
 						setNodePosition(scoped, scanner, src);
 						// Check for '!' or '?' suffix
@@ -748,6 +751,13 @@ namespace Qd {
 				// Not a valid scoped identifier, create regular identifier
 				// Note: We already consumed the first ':', so we can't undo that.
 				// This is an edge case that shouldn't normally happen.
+			}
+
+			// Check if this is struct construction: StructName { ... }
+			nextToken = peekNextNonWhitespace(scanner, src);
+			if (nextToken == '{') {
+				u8t_scanner_scan(scanner); // Consume '{'
+				return parseStructConstruction(identName, scanner, errorReporter, src, identPos);
 			}
 
 			AstNodeIdentifier* node = new AstNodeIdentifier(text);
@@ -1240,23 +1250,21 @@ namespace Qd {
 						ctxStmt->setParent(body);
 						body->addChild(ctxStmt);
 					}
-				} else if (strcmp(text, "new") == 0) {
-					// Struct construction with 'new' keyword
-					for (auto* node : tempNodes) {
-						node->setParent(body);
-						body->addChild(node);
-					}
-					tempNodes.clear();
+				} else {
+					if (isBuiltInInstruction(text)) {
+						IAstNode* id = new AstNodeInstruction(text);
+						setNodePosition(id, scanner, src);
+						tempNodes.push_back(id);
+					} else {
+						// Save identifier position for potential struct construction
+						size_t identPos = u8t_scanner_token_start(scanner);
+						std::string identName(text);
 
-					size_t newPos = u8t_scanner_token_start(scanner);
-					char32_t nextToken = u8t_scanner_scan(scanner);
-					if (nextToken == U8T_IDENTIFIER) {
-						const char* structName = u8t_scanner_token_text(scanner, &n);
-						std::string fullStructName(structName);
-
-						// Check for scoped struct: new module::StructName
-						char32_t peekToken = u8t_scanner_peek(scanner);
-						if (peekToken == ':') {
+						// Check for scoped identifier or struct construction
+						char32_t nextToken = u8t_scanner_peek(scanner);
+						if (nextToken == ':') {
+							// Save scope name
+							std::string scopeName(text);
 							u8t_scanner_scan(scanner); // Consume first ':'
 							char32_t secondColon = u8t_scanner_peek(scanner);
 							if (secondColon == ':') {
@@ -1264,31 +1272,69 @@ namespace Qd {
 								char32_t memberToken = u8t_scanner_scan(scanner);
 								if (memberToken == U8T_IDENTIFIER) {
 									const char* memberName = u8t_scanner_token_text(scanner, &n);
-									fullStructName = fullStructName + "::" + memberName;
+									std::string fullName = scopeName + "::" + memberName;
+
+									// Check for struct construction: module::StructName { ... }
+									char32_t afterMember = peekNextNonWhitespace(scanner, src);
+									if (afterMember == '{') {
+										u8t_scanner_scan(scanner); // Consume '{'
+										// Flush tempNodes before struct construction
+										for (auto* node : tempNodes) {
+											node->setParent(body);
+											body->addChild(node);
+										}
+										tempNodes.clear();
+
+										AstNodeStructConstruction* structConstruct =
+												parseStructConstruction(fullName, scanner, errorReporter, src, identPos);
+										if (structConstruct) {
+											structConstruct->setParent(body);
+											body->addChild(structConstruct);
+										}
+										continue;
+									}
+
+									AstNodeScopedIdentifier* scoped = new AstNodeScopedIdentifier(scopeName, memberName);
+									setNodePosition(scoped, scanner, src);
+									// Check for '!' or '?' suffix
+									char32_t suffixToken = u8t_scanner_peek(scanner);
+									if (suffixToken == '!') {
+										u8t_scanner_scan(scanner);
+										scoped->setAbortOnError(true);
+									} else if (suffixToken == '?') {
+										u8t_scanner_scan(scanner);
+										scoped->setCheckError(true);
+									}
+									tempNodes.push_back(scoped);
+									continue;
 								}
 							}
 						}
 
-						AstNodeStructConstruction* structConstruct = new AstNodeStructConstruction(fullStructName);
-						size_t line, column;
-						size_t newPosByte = charIndexToByteOffset(src, newPos);
-						calculateLineColumn(src, newPosByte, &line, &column);
-						structConstruct->setPosition(line, column);
-						structConstruct->setParent(body);
-						body->addChild(structConstruct);
-					} else {
-						errorReporter->reportError(scanner, "Expected struct name after 'new'");
-					}
-				} else {
-					if (isBuiltInInstruction(text)) {
-						IAstNode* id = new AstNodeInstruction(text);
-						setNodePosition(id, scanner, src);
-						tempNodes.push_back(id);
-					} else {
+						// Check for struct construction: StructName { ... }
+						nextToken = peekNextNonWhitespace(scanner, src);
+						if (nextToken == '{') {
+							u8t_scanner_scan(scanner); // Consume '{'
+							// Flush tempNodes before struct construction
+							for (auto* node : tempNodes) {
+								node->setParent(body);
+								body->addChild(node);
+							}
+							tempNodes.clear();
+
+							AstNodeStructConstruction* structConstruct =
+									parseStructConstruction(identName, scanner, errorReporter, src, identPos);
+							if (structConstruct) {
+								structConstruct->setParent(body);
+								body->addChild(structConstruct);
+							}
+							continue;
+						}
+
 						AstNodeIdentifier* id = new AstNodeIdentifier(text);
 						setNodePosition(id, scanner, src);
 						// Check for '!' or '?' suffix
-						char32_t nextToken = u8t_scanner_peek(scanner);
+						nextToken = u8t_scanner_peek(scanner);
 						if (nextToken == '!') {
 							u8t_scanner_scan(scanner); // Consume the '!'
 							id->setAbortOnError(true);
@@ -1588,6 +1634,222 @@ namespace Qd {
 		}
 
 		return structDecl;
+	}
+
+	// Parse struct construction body: StructName { field1: expr1 field2: expr2 ... }
+	// Called after the opening '{' has been consumed
+	static AstNodeStructConstruction* parseStructConstruction(const std::string& structName, u8t_scanner* scanner,
+			ErrorReporter* errorReporter, const char* src, size_t startPos) {
+		AstNodeStructConstruction* structConstruct = new AstNodeStructConstruction(structName);
+		size_t line, column;
+		size_t startPosByte = charIndexToByteOffset(src, startPos);
+		calculateLineColumn(src, startPosByte, &line, &column);
+		structConstruct->setPosition(line, column);
+
+		std::string currentFieldName;
+		std::vector<IAstNode*> currentFieldNodes;
+		size_t slashPos = SIZE_MAX;
+		bool sawAt = false;
+
+		char32_t token;
+		while ((token = u8t_scanner_scan(scanner)) != U8T_EOF) {
+			// Handle @ field access operator
+			if (sawAt && token == U8T_IDENTIFIER) {
+				sawAt = false;
+				size_t n;
+				const char* fieldName = u8t_scanner_token_text(scanner, &n);
+
+				if (!currentFieldNodes.empty() && currentFieldNodes.back()->type() == IAstNode::Type::IDENTIFIER) {
+					// We have: identifier @field
+					AstNodeIdentifier* varIdent = static_cast<AstNodeIdentifier*>(currentFieldNodes.back());
+					currentFieldNodes.pop_back();
+
+					AstNodeFieldAccess* fieldAccess = new AstNodeFieldAccess(varIdent->name(), fieldName);
+					setNodePosition(fieldAccess, scanner, src);
+					delete varIdent;
+					currentFieldNodes.push_back(fieldAccess);
+				} else if (!currentFieldNodes.empty() &&
+						currentFieldNodes.back()->type() == IAstNode::Type::FIELD_ACCESS) {
+					// Chained field access
+					AstNodeFieldAccess* fieldAccess = new AstNodeFieldAccess("", fieldName);
+					setNodePosition(fieldAccess, scanner, src);
+					currentFieldNodes.push_back(fieldAccess);
+				} else {
+					// Stack-based field access
+					AstNodeFieldAccess* fieldAccess = new AstNodeFieldAccess("", fieldName);
+					setNodePosition(fieldAccess, scanner, src);
+					currentFieldNodes.push_back(fieldAccess);
+				}
+				continue;
+			}
+
+			if (token == '@') {
+				sawAt = true;
+				continue;
+			}
+			// Handle comments
+			AstNodeComment* comment = parseComment(scanner, src, slashPos, token);
+			if (comment != nullptr) {
+				slashPos = SIZE_MAX;
+				delete comment; // Discard comments inside struct construction
+				continue;
+			}
+
+			if (slashPos != SIZE_MAX) {
+				// Previous '/' was not a comment start, treat as division
+				AstNodeInstruction* divInstr = new AstNodeInstruction("/");
+				setNodePosition(divInstr, scanner, src);
+				currentFieldNodes.push_back(divInstr);
+				slashPos = SIZE_MAX;
+			}
+
+			if (token == '}') {
+				// End of struct construction
+				// Save any pending field
+				if (!currentFieldName.empty()) {
+					structConstruct->addFieldInit(currentFieldName, std::move(currentFieldNodes));
+					currentFieldNodes.clear();
+				}
+				break;
+			}
+
+			if (token == '/') {
+				slashPos = u8t_scanner_token_start(scanner);
+				continue;
+			}
+
+			if (token == U8T_IDENTIFIER) {
+				size_t n;
+				const char* text = u8t_scanner_token_text(scanner, &n);
+
+				// Check if this identifier is followed by ':' (field name)
+				char32_t nextToken = u8t_scanner_peek(scanner);
+				if (nextToken == ':') {
+					// Save the field name BEFORE scanning (scan invalidates text pointer)
+					std::string fieldName(text);
+
+					// Save previous field if any
+					if (!currentFieldName.empty()) {
+						structConstruct->addFieldInit(currentFieldName, std::move(currentFieldNodes));
+						currentFieldNodes.clear();
+					}
+
+					u8t_scanner_scan(scanner); // Consume the ':'
+					currentFieldName = fieldName;
+					continue;
+				}
+
+				// Not a field name, parse as expression element
+				// Check if it's a struct construction (nested)
+				char32_t nextNonWs = peekNextNonWhitespace(scanner, src);
+				if (nextNonWs == '{') {
+					size_t nestedPos = u8t_scanner_token_start(scanner);
+					std::string nestedName(text);
+					u8t_scanner_scan(scanner); // Consume '{'
+					AstNodeStructConstruction* nested =
+							parseStructConstruction(nestedName, scanner, errorReporter, src, nestedPos);
+					if (nested) {
+						currentFieldNodes.push_back(nested);
+					}
+					continue;
+				}
+
+				// Check for scoped identifier (module::something)
+				if (nextToken == ':') {
+					// Already handled above for field names
+				}
+
+				// Regular identifier or scoped identifier
+				std::string identName(text);
+				nextToken = u8t_scanner_peek(scanner);
+				if (nextToken == ':') {
+					std::string scopeName(text);
+					u8t_scanner_scan(scanner); // Consume first ':'
+					char32_t secondColon = u8t_scanner_peek(scanner);
+					if (secondColon == ':') {
+						u8t_scanner_scan(scanner); // Consume second ':'
+						char32_t memberToken = u8t_scanner_scan(scanner);
+						if (memberToken == U8T_IDENTIFIER) {
+							const char* memberName = u8t_scanner_token_text(scanner, &n);
+							std::string fullName = scopeName + "::" + memberName;
+
+							// Check for nested struct: module::StructName { ... }
+							char32_t afterMember = peekNextNonWhitespace(scanner, src);
+							if (afterMember == '{') {
+								size_t nestedPos = u8t_scanner_token_start(scanner);
+								u8t_scanner_scan(scanner); // Consume '{'
+								AstNodeStructConstruction* nested =
+										parseStructConstruction(fullName, scanner, errorReporter, src, nestedPos);
+								if (nested) {
+									currentFieldNodes.push_back(nested);
+								}
+								continue;
+							}
+
+							AstNodeScopedIdentifier* scoped = new AstNodeScopedIdentifier(scopeName, memberName);
+							setNodePosition(scoped, scanner, src);
+							// Check for '!' or '?' suffix
+							char32_t suffixToken = u8t_scanner_peek(scanner);
+							if (suffixToken == '!') {
+								u8t_scanner_scan(scanner);
+								scoped->setAbortOnError(true);
+							} else if (suffixToken == '?') {
+								u8t_scanner_scan(scanner);
+								scoped->setCheckError(true);
+							}
+							currentFieldNodes.push_back(scoped);
+							continue;
+						}
+					}
+				}
+
+				// Check if it's a built-in instruction
+				if (isBuiltInInstruction(text)) {
+					IAstNode* instr = new AstNodeInstruction(text);
+					setNodePosition(instr, scanner, src);
+					currentFieldNodes.push_back(instr);
+				} else {
+					AstNodeIdentifier* ident = new AstNodeIdentifier(text);
+					setNodePosition(ident, scanner, src);
+					// Check for '!' or '?' suffix
+					nextToken = u8t_scanner_peek(scanner);
+					if (nextToken == '!') {
+						u8t_scanner_scan(scanner);
+						ident->setAbortOnError(true);
+					} else if (nextToken == '?') {
+						u8t_scanner_scan(scanner);
+						ident->setCheckError(true);
+					}
+					currentFieldNodes.push_back(ident);
+				}
+			} else if (token == U8T_INTEGER) {
+				size_t n;
+				const char* text = u8t_scanner_token_text(scanner, &n);
+				AstNodeLiteral* lit = new AstNodeLiteral(text, AstNodeLiteral::LiteralType::INTEGER);
+				setNodePosition(lit, scanner, src);
+				currentFieldNodes.push_back(lit);
+			} else if (token == U8T_FLOAT) {
+				size_t n;
+				const char* text = u8t_scanner_token_text(scanner, &n);
+				AstNodeLiteral* lit = new AstNodeLiteral(text, AstNodeLiteral::LiteralType::FLOAT);
+				setNodePosition(lit, scanner, src);
+				currentFieldNodes.push_back(lit);
+			} else if (token == U8T_STRING) {
+				size_t n;
+				const char* text = u8t_scanner_token_text(scanner, &n);
+				AstNodeLiteral* lit = new AstNodeLiteral(text, AstNodeLiteral::LiteralType::STRING);
+				setNodePosition(lit, scanner, src);
+				currentFieldNodes.push_back(lit);
+			} else {
+				// Handle operators
+				IAstNode* opNode = tryParseOperatorAlias(token, scanner, src);
+				if (opNode != nullptr) {
+					currentFieldNodes.push_back(opNode);
+				}
+			}
+		}
+
+		return structConstruct;
 	}
 
 	static IAstNode* parseForStatement(u8t_scanner* scanner, ErrorReporter* errorReporter, const char* src) {

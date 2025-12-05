@@ -1,5 +1,4 @@
 // Example demonstrating structs and constants in Quadrate
-
 use math
 
 // Constants for configuration
@@ -13,14 +12,21 @@ struct Point {
 	y:f64
 }
 
-// Create a new point at origin
+// Create a point at origin
 fn new_origin( -- p:ptr) {
-	OriginX OriginY new Point
+	Point {
+		x: OriginX
+		y: OriginY
+	}
 }
 
 // Create a point at given coordinates
 fn new_point(x:f64 y:f64 -- p:ptr) {
-	new Point
+	-> y -> x
+	Point {
+		x: x
+		y: y
+	}
 }
 
 // Calculate distance from origin using Pythagorean theorem
@@ -56,7 +62,7 @@ fn main( -- ) {
 	nl
 
 	// Create points using struct constructor
-	// Syntax: value1 value2 StructName -> variable
+	// Syntax: StructName { field: value ... } -> variable
 	"Creating points:" . nl
 	new_origin -> p1
 	3.0 4.0 new_point -> p2

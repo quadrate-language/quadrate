@@ -12,12 +12,8 @@ struct Outer {
 }
 
 fn main( -- ) {
-  // Create inner struct with string field
-  42 "hello" new Inner -> i
-
-  // Create outer struct containing inner
-  i 100 new Outer -> o
-  // i's ownership transfers to o
+  // Create outer struct with nested inner containing string
+  Outer { inner: Inner { value: 42 name: "hello" } data: 100 } -> o
 
   // Access nested fields
   o @inner @value . nl

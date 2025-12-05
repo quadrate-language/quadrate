@@ -19,7 +19,7 @@ fn print_point(p:Point -- ) {
 }
 
 fn main( -- ) {
-    3.0 4.0 new Point -> pt
+    Point { x: 3.0 y: 4.0 } -> pt
     pt print_point
     "Magnitude: " . pt magnitude . nl
 }

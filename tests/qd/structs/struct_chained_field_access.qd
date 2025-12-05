@@ -12,11 +12,8 @@ struct Rectangle {
 }
 
 fn main( -- ) {
-  // Create structs
-  3.0 4.0 new Point -> p
-  // p's ownership transfers to rect
-
-  p 100.0 50.0 new Rectangle -> rect
+  // Create rectangle with nested Point
+  Rectangle { origin: Point { x: 3.0 y: 4.0 } width: 100.0 height: 50.0 } -> rect
 
   // Chained field access with spaces
   rect @origin @x . nl

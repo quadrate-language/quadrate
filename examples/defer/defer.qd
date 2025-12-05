@@ -12,7 +12,7 @@ struct Resource {
 
 fn create_resource(id:i64 -- r:ptr) {
 	-> id
-	id id 100 * new Resource
+	Resource { id: id value: id 100 * }
 }
 
 fn destroy_resource(r:ptr -- ) {

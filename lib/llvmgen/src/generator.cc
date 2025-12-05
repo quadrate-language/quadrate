@@ -4345,9 +4345,44 @@ namespace Qd {
 			// Struct declarations are processed during program generation, not during execution
 			break;
 		case IAstNode::Type::STRUCT_CONSTRUCTION: {
-			// Struct construction with 'new' keyword: 'new StructName'
+			// Struct construction with named fields: StructName { field1: expr1 field2: expr2 }
 			AstNodeStructConstruction* construct = static_cast<AstNodeStructConstruction*>(node);
-			generateStructConstruction(construct->structName(), ctx);
+			const std::string& structName = construct->structName();
+			const auto& fieldInits = construct->fieldInits();
+
+			// Get struct layout to know field order
+			auto layoutIt = structDefinitions.find(structName);
+			if (layoutIt == structDefinitions.end()) {
+				std::cerr << "Error: Unknown struct type in construction: " << structName << std::endl;
+				break;
+			}
+
+			const StructLayout& layout = layoutIt->second;
+
+			// Build a map from field name to initializer
+			std::unordered_map<std::string, const StructFieldInit*> initMap;
+			for (const auto& init : fieldInits) {
+				initMap[init.fieldName] = &init;
+			}
+
+			// Generate code for field initializers in struct definition order
+			// (generateStructConstruction pops them in reverse order)
+			for (const auto& field : layout.fields) {
+				auto initIt = initMap.find(field.name);
+				if (initIt != initMap.end()) {
+					// Generate code for the field initializer expression
+					for (IAstNode* valueNode : initIt->second->valueNodes) {
+						generateNode(valueNode, ctx);
+					}
+				} else {
+					// Missing field - should have been caught by semantic validator
+					std::cerr << "Error: Missing field initializer for '" << field.name << "' in struct " << structName
+							  << std::endl;
+				}
+			}
+
+			// Now construct the struct (pops values from stack)
+			generateStructConstruction(structName, ctx);
 			break;
 		}
 		case IAstNode::Type::ARRAY_LITERAL:

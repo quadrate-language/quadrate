@@ -21,12 +21,14 @@ struct Window {
 }
 
 fn main( -- ) {
-  // Build the nested structure
-  // Ownership transfers at each level - only need to free the outermost struct
-  10.0 20.0 new Point -> pt
-  100.0 50.0 new Size -> sz
-  pt sz new Rect -> r
-  "Hello" r new Window -> win
+  // Build the nested structure using named field syntax
+  Window {
+    title: "Hello"
+    bounds: Rect {
+      origin: Point { x: 10.0 y: 20.0 }
+      size: Size { width: 100.0 height: 50.0 }
+    }
+  } -> win
 
   // Access deeply nested fields using chained access
   win @bounds @origin @x . nl

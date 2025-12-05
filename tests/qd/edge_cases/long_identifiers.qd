@@ -8,6 +8,6 @@ struct VeryLongStructNameThatTestsLimitsForStructIdentifiers {
 
 fn main( -- ) {
   this_is_a_very_long_function_name_that_tests_identifier_length_limits
-  42.0 new VeryLongStructNameThatTestsLimitsForStructIdentifiers -> s
+  VeryLongStructNameThatTestsLimitsForStructIdentifiers { very_long_field_name_that_also_tests_length: 42.0 } -> s
   s @very_long_field_name_that_also_tests_length . nl
 }

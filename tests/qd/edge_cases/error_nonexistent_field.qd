@@ -4,6 +4,6 @@ struct Point {
 }
 
 fn main( -- ) {
-  1.0 2.0 new Point -> p
+  Point { x: 1.0 y: 2.0 } -> p
   p @z . nl
 }

@@ -15,7 +15,7 @@ pub fn new( -- rng:ptr) {
 	time::now -> seed
 	// Ensure non-zero seed
 	seed 0 == if { 1 -> seed }
-	seed new Rng
+	Rng { state: seed }
 }
 
 /// Create a new RNG with specific seed.
@@ -25,7 +25,7 @@ pub fn new( -- rng:ptr) {
 pub fn with_seed(seed:i64 -- rng:ptr) {
 	-> seed
 	seed 0 == if { 1 } else { seed } -> s
-	s new Rng
+	Rng { state: s }
 }
 
 /// Generate next random i64.
@@ -44,7 +44,7 @@ pub fn next(rng:ptr -- rng:ptr n:i64) {
 
 	// Return random number first (will be popped into n), then new state (will be popped into rng)
 	x 2685821657736338717 * -> result
-	x new Rng -> newrng
+	Rng { state: x } -> newrng
 	result
 	newrng
 }

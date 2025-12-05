@@ -15,9 +15,9 @@ struct Vec2 {
 }
 
 fn main( -- ) {
-  1.0 2.0 new Point2D -> p2
-  3.0 4.0 5.0 new Point3D -> p3
-  6.0 7.0 new Vec2 -> v
+  Point2D { x: 1.0 y: 2.0 } -> p2
+  Point3D { x: 3.0 y: 4.0 z: 5.0 } -> p3
+  Vec2 { x: 6.0 y: 7.0 } -> v
 
   p2 @x . nl
   p3 @z . nl

@@ -317,7 +317,7 @@ pub fn parse(s:str -- u:ptr) {
 		"/" -> path
 	}
 
-	scheme host port path query fragment new Uri
+	Uri { scheme: scheme host: host port: port path: path query: query fragment: fragment }
 }
 
 /// Get a query parameter value by key.
