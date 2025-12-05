@@ -1,8 +1,8 @@
 // Top level comment
+// Comment between uses
 use math
 use str
 
-// Comment between uses
 // Function comment
 fn main( -- ) {
 	// Using math and str
