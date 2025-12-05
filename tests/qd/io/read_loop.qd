@@ -9,7 +9,7 @@ fn main() {
 
 	// Iterate argc times using for loop
 	// Just print the iteration number
-	0 swap 1 for {
+	0 swap 1 for it {
 		"iter" . it . nl
 	}
 }

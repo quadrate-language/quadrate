@@ -12,7 +12,7 @@ pub fn v4( -- uuid:str) {
 
 	// Generate 16 random bytes
 	16 mem::alloc -> bytes
-	0 16 1 for {
+	0 16 1 for it {
 		it -> i
 		rng 256 rand::int -> rng -> b
 		bytes i b mem::set_byte
@@ -53,7 +53,7 @@ pub fn v4( -- uuid:str) {
 	hex 15 102 mem::set_byte // 'f'
 
 	// Bytes 0-3 (8 hex chars)
-	0 4 1 for {
+	0 4 1 for it {
 		it -> i
 		bytes i mem::get_byte -> b
 		hex b 4 shr 15 and mem::get_byte -> hi
@@ -69,7 +69,7 @@ pub fn v4( -- uuid:str) {
 	o 1 + -> o
 
 	// Bytes 4-5 (4 hex chars)
-	4 6 1 for {
+	4 6 1 for it {
 		it -> i
 		bytes i mem::get_byte -> b
 		hex b 4 shr 15 and mem::get_byte -> hi
@@ -85,7 +85,7 @@ pub fn v4( -- uuid:str) {
 	o 1 + -> o
 
 	// Bytes 6-7 (4 hex chars)
-	6 8 1 for {
+	6 8 1 for it {
 		it -> i
 		bytes i mem::get_byte -> b
 		hex b 4 shr 15 and mem::get_byte -> hi
@@ -101,7 +101,7 @@ pub fn v4( -- uuid:str) {
 	o 1 + -> o
 
 	// Bytes 8-9 (4 hex chars)
-	8 10 1 for {
+	8 10 1 for it {
 		it -> i
 		bytes i mem::get_byte -> b
 		hex b 4 shr 15 and mem::get_byte -> hi
@@ -117,7 +117,7 @@ pub fn v4( -- uuid:str) {
 	o 1 + -> o
 
 	// Bytes 10-15 (12 hex chars)
-	10 16 1 for {
+	10 16 1 for it {
 		it -> i
 		bytes i mem::get_byte -> b
 		hex b 4 shr 15 and mem::get_byte -> hi
@@ -148,7 +148,7 @@ pub fn v4_seeded(seed:i64 -- uuid:str) {
 
 	// Generate 16 random bytes
 	16 mem::alloc -> bytes
-	0 16 1 for {
+	0 16 1 for it {
 		it -> i
 		rng 256 rand::int -> rng -> b
 		bytes i b mem::set_byte
@@ -186,7 +186,7 @@ pub fn v4_seeded(seed:i64 -- uuid:str) {
 	hex 14 101 mem::set_byte
 	hex 15 102 mem::set_byte
 
-	0 4 1 for {
+	0 4 1 for it {
 		it -> i
 		bytes i mem::get_byte -> b
 		hex b 4 shr 15 and mem::get_byte -> hi
@@ -199,7 +199,7 @@ pub fn v4_seeded(seed:i64 -- uuid:str) {
 	out o 45 mem::set_byte
 	o 1 + -> o
 
-	4 6 1 for {
+	4 6 1 for it {
 		it -> i
 		bytes i mem::get_byte -> b
 		hex b 4 shr 15 and mem::get_byte -> hi
@@ -212,7 +212,7 @@ pub fn v4_seeded(seed:i64 -- uuid:str) {
 	out o 45 mem::set_byte
 	o 1 + -> o
 
-	6 8 1 for {
+	6 8 1 for it {
 		it -> i
 		bytes i mem::get_byte -> b
 		hex b 4 shr 15 and mem::get_byte -> hi
@@ -225,7 +225,7 @@ pub fn v4_seeded(seed:i64 -- uuid:str) {
 	out o 45 mem::set_byte
 	o 1 + -> o
 
-	8 10 1 for {
+	8 10 1 for it {
 		it -> i
 		bytes i mem::get_byte -> b
 		hex b 4 shr 15 and mem::get_byte -> hi
@@ -238,7 +238,7 @@ pub fn v4_seeded(seed:i64 -- uuid:str) {
 	out o 45 mem::set_byte
 	o 1 + -> o
 
-	10 16 1 for {
+	10 16 1 for it {
 		it -> i
 		bytes i mem::get_byte -> b
 		hex b 4 shr 15 and mem::get_byte -> hi

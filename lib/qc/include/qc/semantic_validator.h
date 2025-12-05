@@ -115,9 +115,9 @@ namespace Qd {
 		void analyzeModuleFunctionSignatures(IAstNode* node, const std::string& moduleName);
 
 		// Pass 2: Validate all function calls and references
-		void validateReferences(IAstNode* node, bool insideForLoop = false);
-		void validateReferencesInternal(
-				IAstNode* node, bool insideForLoop, std::unordered_set<std::string>& localVariables);
+		void validateReferences(IAstNode* node);
+		void validateReferencesInternal(IAstNode* node, std::unordered_set<std::string>& localVariables,
+				std::unordered_set<std::string>& iteratorNames);
 
 		// Pass 3a: Analyze function signatures (what each function consumes/produces)
 		void analyzeFunctionSignatures(IAstNode* node);

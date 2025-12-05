@@ -10,7 +10,7 @@ fn find_last_slash(s:str -- idx:i64) {
 	-> s
 	s str::len -> slen
 	-1 -> result
-	0 slen 1 for {
+	0 slen 1 for it {
 		it -> i
 		s i str::char_at 47 == if {
 			i -> result
@@ -24,7 +24,7 @@ fn find_last_dot(s:str -- idx:i64) {
 	-> s
 	s str::len -> slen
 	-1 -> result
-	0 slen 1 for {
+	0 slen 1 for it {
 		it -> i
 		s i str::char_at 46 == if {
 			i -> result

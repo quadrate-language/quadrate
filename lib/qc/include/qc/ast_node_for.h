@@ -7,7 +7,7 @@
 namespace Qd {
 	class AstNodeForStatement : public IAstNode {
 	public:
-		AstNodeForStatement() : mParent(nullptr), mBody(nullptr), mLine(0), mColumn(0) {
+		AstNodeForStatement() : mParent(nullptr), mBody(nullptr), mLine(0), mColumn(0), mIteratorName("it") {
 		}
 
 		~AstNodeForStatement() {
@@ -60,11 +60,20 @@ namespace Qd {
 			return mBody;
 		}
 
+		void setIteratorName(const std::string& name) {
+			mIteratorName = name;
+		}
+
+		const std::string& iteratorName() const {
+			return mIteratorName;
+		}
+
 	private:
 		IAstNode* mParent;
 		IAstNode* mBody;
 		size_t mLine;
 		size_t mColumn;
+		std::string mIteratorName;
 	};
 }
 

@@ -4,7 +4,7 @@ use sb
 fn main( -- ) {
 	// Build a string in a loop
 	sb::new -> builder
-	0 5 1 for {
+	0 5 1 for it {
 		builder "x" sb::append -> builder
 	}
 	builder sb::finish -> result
@@ -12,7 +12,7 @@ fn main( -- ) {
 
 	// Build comma-separated list
 	sb::new -> builder
-	0 3 1 for {
+	0 3 1 for it {
 		it 0 > if {
 			builder ", " sb::append -> builder
 		}

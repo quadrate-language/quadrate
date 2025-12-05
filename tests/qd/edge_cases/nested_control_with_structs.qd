@@ -9,7 +9,7 @@ fn process_point( -- ) {
 		y: 2.0
 	} -> p
 	// Struct is auto-released at end of function
-	0 5 1 for {
+	0 5 1 for it {
 		it 3 lt
 		if {
 			p @x . nl
@@ -20,7 +20,7 @@ fn process_point( -- ) {
 }
 
 fn main( -- ) {
-	0 10 1 for {
+	0 10 1 for it {
 		it 2 mod 0 eq
 		if {
 			process_point

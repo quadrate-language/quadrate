@@ -184,10 +184,10 @@ module.exports = grammar({
       optional(seq('else', field('else', $.block))),
     ),
 
-    // For loop: start end step for { ... }
+    // For loop: start end step for name { ... }
     for_loop: $ => seq(
       'for',
-      field('variable', optional($.identifier)),
+      field('variable', $.identifier),
       field('body', $.block),
     ),
 

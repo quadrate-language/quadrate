@@ -9,7 +9,7 @@ pub fn fib(n:i64 -- result:i64) {
 }
 
 fn main( -- ) {
-	0 20 1 for {
+	0 20 1 for it {
 		it dup fib print nl
 	}
 }

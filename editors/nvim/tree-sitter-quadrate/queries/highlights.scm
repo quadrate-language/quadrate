@@ -164,6 +164,10 @@
 ; Special variables
 (loop_variable) @variable.builtin
 
+; For loop iterator variable
+(for_loop
+  variable: (identifier) @variable.parameter)
+
 ; Local variable declarations
 (local_declaration
   name: (identifier) @variable)

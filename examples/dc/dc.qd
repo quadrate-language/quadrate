@@ -149,7 +149,7 @@ fn process_operator(op:str -- ) {
 		unicode::f {
 			// Print full stack from top to bottom
 			depth -> n
-			0 n 1 for {
+			0 n 1 for it {
 				it pick . nl
 			}
 		}

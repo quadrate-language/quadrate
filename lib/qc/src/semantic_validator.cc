@@ -12,6 +12,7 @@
 #include <qc/ast_node_constant.h>
 #include <qc/ast_node_ctx.h>
 #include <qc/ast_node_defer.h>
+#include <qc/ast_node_for.h>
 #include <qc/ast_node_function.h>
 #include <qc/ast_node_function_pointer.h>
 #include <qc/ast_node_identifier.h>
@@ -1362,13 +1363,15 @@ namespace Qd {
 		}
 	}
 
-	void SemanticValidator::validateReferences(IAstNode* node, bool insideForLoop) {
+	void SemanticValidator::validateReferences(IAstNode* node) {
 		std::unordered_set<std::string> localVariables;
-		validateReferencesInternal(node, insideForLoop, localVariables);
+		std::unordered_set<std::string> iteratorNames;
+		validateReferencesInternal(node, localVariables, iteratorNames);
 	}
 
 	void SemanticValidator::validateReferencesInternal(
-			IAstNode* node, bool insideForLoop, std::unordered_set<std::string>& localVariables) {
+			IAstNode* node, std::unordered_set<std::string>& localVariables,
+			std::unordered_set<std::string>& iteratorNames) {
 		if (!node) {
 			return;
 		}
@@ -1385,7 +1388,7 @@ namespace Qd {
 
 		// Check if this is a break statement
 		if (node->type() == IAstNode::Type::BREAK_STATEMENT) {
-			if (!insideForLoop) {
+			if (iteratorNames.empty()) {
 				reportError(node, "break statement not within loop or switch");
 			}
 			return;
@@ -1393,7 +1396,7 @@ namespace Qd {
 
 		// Check if this is a continue statement
 		if (node->type() == IAstNode::Type::CONTINUE_STATEMENT) {
-			if (!insideForLoop) {
+			if (iteratorNames.empty()) {
 				reportError(node, "continue statement not within a loop");
 			}
 			return;
@@ -1432,11 +1435,9 @@ namespace Qd {
 			AstNodeIdentifier* ident = static_cast<AstNodeIdentifier*>(node);
 			const char* name = ident->name().c_str();
 
-			// Check if it's 'it' (for loop iterator variable)
-			if (strcmp(name, "it") == 0) {
-				if (!insideForLoop) {
-					reportError(ident, "Iterator variable 'it' can only be used inside a for loop");
-				}
+			// Check if it's a for loop iterator variable
+			if (iteratorNames.count(name) > 0) {
+				// Valid iterator reference
 				return;
 			}
 
@@ -1528,7 +1529,7 @@ namespace Qd {
 				// Validate field initializer expressions
 				for (const auto& fieldInit : construct->fieldInits()) {
 					for (IAstNode* valueNode : fieldInit.valueNodes) {
-						validateReferencesInternal(valueNode, insideForLoop, localVariables);
+						validateReferencesInternal(valueNode, localVariables, iteratorNames);
 					}
 				}
 				return;
@@ -1652,11 +1653,25 @@ namespace Qd {
 			// but we don't report an error here as it was likely already reported
 		}
 
-		// Track when we enter a for loop, infinite loop, or switch statement
-		bool childrenInsideForLoop = insideForLoop;
-		if (node->type() == IAstNode::Type::FOR_STATEMENT || node->type() == IAstNode::Type::LOOP_STATEMENT ||
-				node->type() == IAstNode::Type::SWITCH_STATEMENT) {
-			childrenInsideForLoop = true;
+		// When entering a for loop, add its iterator name to the set
+		if (node->type() == IAstNode::Type::FOR_STATEMENT) {
+			AstNodeForStatement* forStmt = static_cast<AstNodeForStatement*>(node);
+			std::unordered_set<std::string> childIterators = iteratorNames;
+			childIterators.insert(forStmt->iteratorName());
+			for (size_t i = 0; i < node->childCount(); i++) {
+				validateReferencesInternal(node->child(i), localVariables, childIterators);
+			}
+			return;
+		}
+
+		// When entering a loop or switch statement, use a placeholder iterator name for break/continue tracking
+		if (node->type() == IAstNode::Type::LOOP_STATEMENT || node->type() == IAstNode::Type::SWITCH_STATEMENT) {
+			std::unordered_set<std::string> childIterators = iteratorNames;
+			childIterators.insert("__loop__"); // Placeholder to indicate we're inside a loop/switch
+			for (size_t i = 0; i < node->childCount(); i++) {
+				validateReferencesInternal(node->child(i), localVariables, childIterators);
+			}
+			return;
 		}
 
 		// When entering a function declaration, create a new scope for the function body
@@ -1664,16 +1679,17 @@ namespace Qd {
 		if (node->type() == IAstNode::Type::FUNCTION_DECLARATION) {
 			// Create a new scope for the function body (parameters NOT pre-registered)
 			std::unordered_set<std::string> funcLocalVariables = localVariables;
+			std::unordered_set<std::string> funcIterators; // Empty - no iterators in function scope by default
 			// Process function body
 			for (size_t i = 0; i < node->childCount(); i++) {
-				validateReferencesInternal(node->child(i), childrenInsideForLoop, funcLocalVariables);
+				validateReferencesInternal(node->child(i), funcLocalVariables, funcIterators);
 			}
 			return;
 		}
 
 		// Recursively process children
 		for (size_t i = 0; i < node->childCount(); i++) {
-			validateReferencesInternal(node->child(i), childrenInsideForLoop, localVariables);
+			validateReferencesInternal(node->child(i), localVariables, iteratorNames);
 		}
 	}
 

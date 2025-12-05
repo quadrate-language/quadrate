@@ -15,7 +15,7 @@ fn main( -- ) {
 
 	loop {
 		// Reset buffers
-		0 1760 1 for {
+		0 1760 1 for it {
 			z it 0.0 set  o it 12 set
 		}
 
@@ -25,11 +25,11 @@ fn main( -- ) {
 
 		// Render torus: j=theta (tube), i=phi (ring)
 		0.0 -> j
-		0 90 1 for {
+		0 90 1 for it {
 			j math::sin j math::cos -> d -> f
 
 			0.0 -> i
-			0 314 1 for {
+			0 314 1 for it {
 				i math::sin i math::cos -> l -> c
 				d 2.0 + -> h  // h = R2 + R1*cos(theta)
 
@@ -70,7 +70,7 @@ fn main( -- ) {
 
 		// Render frame
 		"\x1b[H" .  // Cursor home
-		0 1761 1 for {
+		0 1761 1 for it {
 			it 80 mod 0 != if {
 				o it nth switch {
 					0 {

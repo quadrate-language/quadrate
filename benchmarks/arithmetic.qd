@@ -4,7 +4,7 @@ use time
 // Benchmark: tight arithmetic loop
 fn benchmark_arithmetic(iterations:i64 -- result:i64) {
 	0 -> sum
-	0 swap 1 for {
+	0 swap 1 for it {
 		sum $ add $ mul 3 add 7 mod -> sum
 	}
 	sum

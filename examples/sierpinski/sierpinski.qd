@@ -1,10 +1,10 @@
 fn main( -- ) {
-	0 16 1 for {
+	0 16 1 for it {
 		15 it - -> j
-		0 j 1 + 1 for {
+		0 j 1 + 1 for it {
 			" " .
 		}
-		0 it 1 + 1 for {
+		0 it 1 + 1 for it {
 			it j and 0 eq if {
 				"* " .
 			} else {

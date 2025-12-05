@@ -9,7 +9,7 @@ fn main( -- ) {
 		"negative" str::lower print nl
 	}
 
-	10 for {
+	10 for it {
 		i bits::inc print nl
 	}
 }

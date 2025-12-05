@@ -1855,10 +1855,22 @@ namespace Qd {
 	static IAstNode* parseForStatement(u8t_scanner* scanner, ErrorReporter* errorReporter, const char* src) {
 		char32_t token = u8t_scanner_scan(scanner);
 
+		// Parse iterator name (required)
+		std::string iteratorName = "it"; // Default for error recovery
+		if (token == U8T_IDENTIFIER) {
+			size_t n;
+			const char* text = u8t_scanner_token_text(scanner, &n);
+			iteratorName = std::string(text, n);
+			token = u8t_scanner_scan(scanner);
+		} else {
+			errorReporter->reportError(scanner, "Expected iterator name after 'for' (e.g., 'for i {')");
+		}
+
 		if (token != '{') {
-			errorReporter->reportError(scanner, "Expected '{' after 'for'");
+			errorReporter->reportError(scanner, "Expected '{' after iterator name in 'for' loop");
 			// Recovery: create empty for statement and synchronize
 			AstNodeForStatement* forStmt = new AstNodeForStatement();
+			forStmt->setIteratorName(iteratorName);
 			setNodePosition(forStmt, scanner, src);
 			AstNodeBlock* body = new AstNodeBlock();
 			setNodePosition(body, scanner, src);
@@ -1869,6 +1881,7 @@ namespace Qd {
 		}
 
 		AstNodeForStatement* forStmt = new AstNodeForStatement();
+		forStmt->setIteratorName(iteratorName);
 		setNodePosition(forStmt, scanner, src);
 		AstNodeBlock* body = new AstNodeBlock();
 		setNodePosition(body, scanner, src);

@@ -20,7 +20,7 @@ pub fn parse(argc:i64 -- ) {
 	"" -> prefix
 	0 -> iter
 
-	0 argc 1 for {
+	0 argc 1 for it {
 		-> arg
 		"\n" arg str::concat -> prefix
 		argv -> old_argv

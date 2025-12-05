@@ -257,17 +257,21 @@ namespace Qd {
 		bool testMode = false;
 		std::vector<std::pair<std::string, std::string>> collectedTestNames;
 		llvm::Value* testErrorAlloca = nullptr; // For tracking errors in test bodies
-		void generateNode(IAstNode* node, llvm::Value* ctx, llvm::Value* forIterVar = nullptr);
+
+		// Map of iterator names to their LLVM values (for nested for loops)
+		std::unordered_map<std::string, llvm::Value*> iteratorVars;
+
+		void generateNode(IAstNode* node, llvm::Value* ctx);
 		void generateInstruction(AstNodeInstruction* inst, llvm::Value* ctx);
 		void generateLiteral(AstNodeLiteral* lit, llvm::Value* ctx);
-		void generateIf(AstNodeIfStatement* ifStmt, llvm::Value* ctx, llvm::Value* forIterVar);
+		void generateIf(AstNodeIfStatement* ifStmt, llvm::Value* ctx);
 		void generateFor(AstNodeForStatement* forStmt, llvm::Value* ctx);
 		void generateLoop(AstNodeLoopStatement* loopStmt, llvm::Value* ctx);
-		void generateCtxBlock(AstNodeCtx* ctxNode, llvm::Value* ctx, llvm::Value* forIterVar);
-		void generateIdentifier(AstNodeIdentifier* ident, llvm::Value* ctx, llvm::Value* forIterVar);
+		void generateCtxBlock(AstNodeCtx* ctxNode, llvm::Value* ctx);
+		void generateIdentifier(AstNodeIdentifier* ident, llvm::Value* ctx);
 		void generateFunctionPointer(AstNodeFunctionPointerReference* funcPtr, llvm::Value* ctx);
 		void generateScopedIdentifier(AstNodeScopedIdentifier* scopedIdent, llvm::Value* ctx);
-		void generateSwitchStatement(AstNodeSwitchStatement* switchStmt, llvm::Value* ctx, llvm::Value* forIterVar);
+		void generateSwitchStatement(AstNodeSwitchStatement* switchStmt, llvm::Value* ctx);
 		void generateLocal(AstNodeLocal* local, llvm::Value* ctx);
 		void generateLocalOne(const std::string& name, size_t lineNum, llvm::Value* ctx);
 		void generateLocalCleanup();
@@ -2752,7 +2756,7 @@ namespace Qd {
 		}
 	}
 
-	void LlvmGenerator::Impl::generateIdentifier(AstNodeIdentifier* ident, llvm::Value* ctx, llvm::Value* forIterVar) {
+	void LlvmGenerator::Impl::generateIdentifier(AstNodeIdentifier* ident, llvm::Value* ctx) {
 		const std::string& name = ident->name();
 
 		// Check if it's a local variable
@@ -2837,10 +2841,11 @@ namespace Qd {
 			return;
 		}
 
-		// Check if it's the loop iterator variable (it)
-		if (name == "it" && forIterVar) {
+		// Check if it's a loop iterator variable
+		auto iterIt = iteratorVars.find(name);
+		if (iterIt != iteratorVars.end()) {
 			// Push loop iterator as integer (inline for performance)
-			generateInlinePushIntValue(ctx, forIterVar);
+			generateInlinePushIntValue(ctx, iterIt->second);
 			return;
 		}
 
@@ -3156,7 +3161,7 @@ namespace Qd {
 	}
 
 	void LlvmGenerator::Impl::generateSwitchStatement(
-			AstNodeSwitchStatement* switchStmt, llvm::Value* ctx, llvm::Value* forIterVar) {
+			AstNodeSwitchStatement* switchStmt, llvm::Value* ctx) {
 		// Get current function
 		llvm::Function* currentFn = builder->GetInsertBlock()->getParent();
 
@@ -3356,7 +3361,7 @@ namespace Qd {
 				// Generate case body
 				builder->SetInsertPoint(caseBB);
 				if (caseNode->body()) {
-					generateNode(caseNode->body(), ctx, forIterVar);
+					generateNode(caseNode->body(), ctx);
 				}
 				// Branch to merge (automatic break)
 				llvm::BasicBlock* caseBlock = builder->GetInsertBlock();
@@ -3374,7 +3379,7 @@ namespace Qd {
 			builder->SetInsertPoint(defaultBB);
 			for (auto* caseNode : cases) {
 				if (caseNode->isDefault() && caseNode->body()) {
-					generateNode(caseNode->body(), ctx, forIterVar);
+					generateNode(caseNode->body(), ctx);
 					break;
 				}
 			}
@@ -3779,7 +3784,7 @@ namespace Qd {
 		}
 	}
 
-	void LlvmGenerator::Impl::generateIf(AstNodeIfStatement* ifStmt, llvm::Value* ctx, llvm::Value* forIterVar) {
+	void LlvmGenerator::Impl::generateIf(AstNodeIfStatement* ifStmt, llvm::Value* ctx) {
 		// Get current function
 		llvm::Function* currentFn = builder->GetInsertBlock()->getParent();
 
@@ -3860,7 +3865,7 @@ namespace Qd {
 		// Generate then block
 		builder->SetInsertPoint(thenBB);
 		if (ifStmt->thenBody()) {
-			generateNode(ifStmt->thenBody(), ctx, forIterVar);
+			generateNode(ifStmt->thenBody(), ctx);
 		}
 		// Only add branch if block doesn't already have a terminator
 		llvm::BasicBlock* thenBlock = builder->GetInsertBlock();
@@ -3877,7 +3882,7 @@ namespace Qd {
 		if (elseBB) {
 			builder->SetInsertPoint(elseBB);
 			if (ifStmt->elseBody()) {
-				generateNode(ifStmt->elseBody(), ctx, forIterVar);
+				generateNode(ifStmt->elseBody(), ctx);
 			}
 			// Only add branch if block doesn't already have a terminator
 			llvm::BasicBlock* elseBlock = builder->GetInsertBlock();
@@ -3991,8 +3996,24 @@ namespace Qd {
 		// Push defer scope for this loop - defers will be generated at end of iteration
 		pushDeferScope();
 
+		// Register the iterator variable with its name
+		const std::string& iterName = forStmt->iteratorName();
+		llvm::Value* prevIterVar = nullptr;
+		auto prevIt = iteratorVars.find(iterName);
+		if (prevIt != iteratorVars.end()) {
+			prevIterVar = prevIt->second; // Save previous value for restoration
+		}
+		iteratorVars[iterName] = iterVar;
+
 		if (forStmt->body()) {
-			generateNode(forStmt->body(), ctx, iterVar);
+			generateNode(forStmt->body(), ctx);
+		}
+
+		// Restore previous iterator value (for nested loops with same name)
+		if (prevIterVar) {
+			iteratorVars[iterName] = prevIterVar;
+		} else {
+			iteratorVars.erase(iterName);
 		}
 
 		// Generate defer execution code at end of loop body
@@ -4007,10 +4028,10 @@ namespace Qd {
 					IAstNode* child = deferNode->child(i);
 					if (child && child->type() == IAstNode::Type::BLOCK) {
 						for (size_t j = 0; j < child->childCount(); j++) {
-							generateNode(child->child(j), ctx, nullptr);
+							generateNode(child->child(j), ctx);
 						}
 					} else {
-						generateNode(child, ctx, nullptr);
+						generateNode(child, ctx);
 					}
 				}
 			}
@@ -4063,7 +4084,7 @@ namespace Qd {
 		pushDeferScope();
 
 		if (loopStmt->body()) {
-			generateNode(loopStmt->body(), ctx, nullptr);
+			generateNode(loopStmt->body(), ctx);
 		}
 
 		// Generate defer execution code at end of loop body
@@ -4075,10 +4096,10 @@ namespace Qd {
 					IAstNode* child = deferNode->child(i);
 					if (child && child->type() == IAstNode::Type::BLOCK) {
 						for (size_t j = 0; j < child->childCount(); j++) {
-							generateNode(child->child(j), ctx, nullptr);
+							generateNode(child->child(j), ctx);
 						}
 					} else {
-						generateNode(child, ctx, nullptr);
+						generateNode(child, ctx);
 					}
 				}
 			}
@@ -4104,13 +4125,13 @@ namespace Qd {
 		builder->SetInsertPoint(loopExitBB);
 	}
 
-	void LlvmGenerator::Impl::generateCtxBlock(AstNodeCtx* ctxNode, llvm::Value* ctx, llvm::Value* forIterVar) {
+	void LlvmGenerator::Impl::generateCtxBlock(AstNodeCtx* ctxNode, llvm::Value* ctx) {
 		// Clone the parent context
 		auto clonedCtx = builder->CreateCall(cloneContextFn, {ctx}, "cloned_ctx");
 
 		// Execute the block with the cloned context
 		for (size_t i = 0; i < ctxNode->childCount(); i++) {
-			generateNode(ctxNode->child(i), clonedCtx, forIterVar);
+			generateNode(ctxNode->child(i), clonedCtx);
 		}
 
 		// Get the stack from cloned context
@@ -4202,7 +4223,7 @@ namespace Qd {
 		builder->SetInsertPoint(pushDoneBB);
 	}
 
-	void LlvmGenerator::Impl::generateNode(IAstNode* node, llvm::Value* ctx, llvm::Value* forIterVar) {
+	void LlvmGenerator::Impl::generateNode(IAstNode* node, llvm::Value* ctx) {
 		if (!node) {
 			return;
 		}
@@ -4230,7 +4251,7 @@ namespace Qd {
 			generateLocal(static_cast<AstNodeLocal*>(node), ctx);
 			break;
 		case IAstNode::Type::IF_STATEMENT:
-			generateIf(static_cast<AstNodeIfStatement*>(node), ctx, forIterVar);
+			generateIf(static_cast<AstNodeIfStatement*>(node), ctx);
 			break;
 		case IAstNode::Type::FOR_STATEMENT:
 			generateFor(static_cast<AstNodeForStatement*>(node), ctx);
@@ -4239,7 +4260,7 @@ namespace Qd {
 			generateLoop(static_cast<AstNodeLoopStatement*>(node), ctx);
 			break;
 		case IAstNode::Type::SWITCH_STATEMENT:
-			generateSwitchStatement(static_cast<AstNodeSwitchStatement*>(node), ctx, forIterVar);
+			generateSwitchStatement(static_cast<AstNodeSwitchStatement*>(node), ctx);
 			break;
 		case IAstNode::Type::BREAK_STATEMENT:
 			// Execute defer scope before breaking from current loop
@@ -4253,10 +4274,10 @@ namespace Qd {
 							IAstNode* child = deferNode->child(i);
 							if (child && child->type() == IAstNode::Type::BLOCK) {
 								for (size_t j = 0; j < child->childCount(); j++) {
-									generateNode(child->child(j), ctx, nullptr);
+									generateNode(child->child(j), ctx);
 								}
 							} else {
-								generateNode(child, ctx, nullptr);
+								generateNode(child, ctx);
 							}
 						}
 					}
@@ -4276,10 +4297,10 @@ namespace Qd {
 							IAstNode* child = deferNode->child(i);
 							if (child && child->type() == IAstNode::Type::BLOCK) {
 								for (size_t j = 0; j < child->childCount(); j++) {
-									generateNode(child->child(j), ctx, nullptr);
+									generateNode(child->child(j), ctx);
 								}
 							} else {
-								generateNode(child, ctx, nullptr);
+								generateNode(child, ctx);
 							}
 						}
 					}
@@ -4302,10 +4323,10 @@ namespace Qd {
 			// Don't generate code now - will be generated at scope end
 			break;
 		case IAstNode::Type::CTX_STATEMENT:
-			generateCtxBlock(static_cast<AstNodeCtx*>(node), ctx, forIterVar);
+			generateCtxBlock(static_cast<AstNodeCtx*>(node), ctx);
 			break;
 		case IAstNode::Type::IDENTIFIER:
-			generateIdentifier(static_cast<AstNodeIdentifier*>(node), ctx, forIterVar);
+			generateIdentifier(static_cast<AstNodeIdentifier*>(node), ctx);
 			break;
 		case IAstNode::Type::FUNCTION_POINTER_REFERENCE:
 			generateFunctionPointer(static_cast<AstNodeFunctionPointerReference*>(node), ctx);
@@ -4313,7 +4334,7 @@ namespace Qd {
 		case IAstNode::Type::BLOCK:
 			// For blocks, just recursively generate all children
 			for (size_t i = 0; i < node->childCount(); i++) {
-				generateNode(node->child(i), ctx, forIterVar);
+				generateNode(node->child(i), ctx);
 				// Stop if we've added a terminator (return, break, continue)
 				llvm::BasicBlock* currentBlock = builder->GetInsertBlock();
 				if (currentBlock) {
@@ -4531,7 +4552,7 @@ namespace Qd {
 			// Generate function body
 			auto body = funcNode->body();
 			if (body) {
-				generateNode(body, ctx, nullptr);
+				generateNode(body, ctx);
 			}
 
 			// Branch to return block if no terminator
@@ -4751,7 +4772,7 @@ namespace Qd {
 			// Generate function body
 			auto body = funcNode->body();
 			if (body) {
-				generateNode(body, ctx, nullptr);
+				generateNode(body, ctx);
 			}
 
 			// Clear return target (but save integer-only flag for return block)
@@ -4861,7 +4882,7 @@ namespace Qd {
 		// Generate test body
 		auto body = testNode->body();
 		if (body) {
-			generateNode(body, ctx, nullptr);
+			generateNode(body, ctx);
 		}
 
 		// Branch to return block if no terminator
@@ -6372,10 +6393,10 @@ namespace Qd {
 				// If the child is a block, generate its children directly
 				if (child && child->type() == IAstNode::Type::BLOCK) {
 					for (size_t j = 0; j < child->childCount(); j++) {
-						generateNode(child->child(j), ctx, nullptr);
+						generateNode(child->child(j), ctx);
 					}
 				} else {
-					generateNode(child, ctx, nullptr);
+					generateNode(child, ctx);
 				}
 			}
 		}

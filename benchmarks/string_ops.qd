@@ -5,7 +5,7 @@ use time
 fn benchmark_concat(limit:i64 -- result:i64) {
 	-> limit
 	"" -> s
-	0 limit 1 for {
+	0 limit 1 for it {
 		s "a" str::concat -> s
 	}
 	s str::len

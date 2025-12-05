@@ -14,7 +14,7 @@ fn main() {
 	arr 5 sort::ints
 
 	// Print sorted
-	0 5 1 for {
+	0 5 1 for it {
 		it -> i
 		arr i 8 * mem::get . " " .
 	}
@@ -24,7 +24,7 @@ fn main() {
 	arr 5 sort::ints_desc
 
 	// Print sorted descending
-	0 5 1 for {
+	0 5 1 for it {
 		it -> i
 		arr i 8 * mem::get . " " .
 	}

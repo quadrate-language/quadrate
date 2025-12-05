@@ -1,7 +1,7 @@
 fn main( -- ) {
 	// Nested for loops
-	0 3 1 for {
-		it	 . nl 0 2 1 for {
+	0 3 1 for it {
+		it	 . nl 0 2 1 for it {
 			it		 . nl
 		}
 	}

@@ -7,7 +7,7 @@ fn main() {
 	0 -> saw_zero
 	0 -> saw_one
 
-	0 50 1 for {
+	0 50 1 for it {
 		rng rand::bool -> rng -> b
 		b 0 == if {
 			1 -> saw_zero

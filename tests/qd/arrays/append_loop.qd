@@ -1,7 +1,7 @@
 // Test building array in a loop
 fn main( -- ) {
 	0 makei -> arr
-	0 5 1 for {
+	0 5 1 for it {
 		arr it append -> arr
 	}
 	arr len . nl          // Should print: 5

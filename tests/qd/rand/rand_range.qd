@@ -6,7 +6,7 @@ fn main() {
 	1 -> all_valid
 
 	// Generate values in range [10, 20)
-	0 10 1 for {
+	0 10 1 for it {
 		rng 10 20 rand::range -> rng -> n
 		n 10 < if {
 			0 -> all_valid
@@ -26,7 +26,7 @@ fn main() {
 	// Test negative range
 	888 rand::with_seed -> rng2
 	1 -> neg_valid
-	0 10 1 for {
+	0 10 1 for it {
 		rng2 -50 -40 rand::range -> rng2 -> m
 		m -50 < if {
 			0 -> neg_valid

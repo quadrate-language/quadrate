@@ -68,7 +68,7 @@ pub fn rotate_right(value:i64 bits:i64 width:i64 -- result:i64) {
 /// @example 0b1010110 bits::popcount .  // 4
 pub fn popcount(value:i64 -- count:i64) {
 	0 swap
-	64 0 1 for {
+	64 0 1 for it {
 		dup 1 and rot add swap 1 shr
 	}
 	drop
@@ -82,7 +82,7 @@ pub fn popcount(value:i64 -- count:i64) {
 pub fn reverse_bits(value:i64 width:i64 -- result:i64) {
 	-> w -> v
 	0 -> result
-	w 0 1 for {
+	w 0 1 for it {
 		result 1 shl v 1 and or -> result
 		v 1 shr -> v
 	}

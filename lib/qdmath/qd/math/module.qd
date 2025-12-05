@@ -149,7 +149,7 @@ pub fn inv(x:f64 -- result:f64) {
 pub fn fac(n:i64 -- result:i64) {
 	-> n_v
 	1 -> res
-	1 n_v 1 + 1 for {
+	1 n_v 1 + 1 for it {
 		res it * -> res
 	}
 	res

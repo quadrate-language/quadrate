@@ -10,7 +10,7 @@ pub fn ints(arr:ptr count:i64 -- ) {
 	-> count
 	-> arr
 	// Insertion sort
-	1 count 1 for {
+	1 count 1 for it {
 		it -> i
 		arr i 8 * mem::get -> key
 		i 1 - -> j
@@ -38,7 +38,7 @@ pub fn ints_desc(arr:ptr count:i64 -- ) {
 	-> count
 	-> arr
 	// Insertion sort descending
-	1 count 1 for {
+	1 count 1 for it {
 		it -> i
 		arr i 8 * mem::get -> key
 		i 1 - -> j
@@ -67,7 +67,7 @@ pub fn min(arr:ptr count:i64 -- minval:i64) {
 	-> count
 	-> arr
 	arr 0 mem::get -> result
-	1 count 1 for {
+	1 count 1 for it {
 		it -> i
 		arr i 8 * mem::get -> val
 		val result < if {
@@ -86,7 +86,7 @@ pub fn max(arr:ptr count:i64 -- maxval:i64) {
 	-> count
 	-> arr
 	arr 0 mem::get -> result
-	1 count 1 for {
+	1 count 1 for it {
 		it -> i
 		arr i 8 * mem::get -> val
 		val result > if {
@@ -108,7 +108,7 @@ pub fn is_sorted(arr:ptr count:i64 -- sorted:i64) {
 	count 2 < if {
 		result
 	} else {
-		1 count 1 for {
+		1 count 1 for it {
 			it -> i
 			arr i 1 - 8 * mem::get -> prev
 			arr i 8 * mem::get -> curr
