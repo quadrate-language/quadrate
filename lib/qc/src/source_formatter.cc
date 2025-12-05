@@ -344,7 +344,7 @@ namespace Qd {
 			}
 
 			if (parsingField) {
-				if (c == ':' && !inStr && braceDepth == 0) {
+				if (c == '=' && !inStr && braceDepth == 0) {
 					currentField = trim(currentField);
 					parsingField = false;
 					i++;
@@ -352,27 +352,34 @@ namespace Qd {
 				}
 				currentField += c;
 			} else {
-				// Check if we've hit a new field (lowercase identifier followed by colon)
+				// Check if we've hit a new field (identifier starting with letter, followed by =)
 				if (!inStr && braceDepth == 0 && std::isspace(static_cast<unsigned char>(c))) {
 					// Look ahead to see if next non-space is a field name
 					size_t j = i + 1;
 					while (j < content.length() && std::isspace(static_cast<unsigned char>(content[j]))) {
 						j++;
 					}
-					// Check if it's an identifier followed by :
-					size_t identStart = j;
-					while (j < content.length() &&
-							(std::isalnum(static_cast<unsigned char>(content[j])) || content[j] == '_')) {
-						j++;
-					}
-					if (j > identStart && j < content.length() && content[j] == ':') {
-						// Found next field, save current
-						fields.push_back({currentField, trim(currentValue)});
-						currentField.clear();
-						currentValue.clear();
-						parsingField = true;
-						i = identStart;
-						continue;
+					// Field names must start with a letter (not a digit)
+					if (j < content.length() && std::isalpha(static_cast<unsigned char>(content[j]))) {
+						// Check if it's an identifier followed by =
+						size_t identStart = j;
+						while (j < content.length() &&
+								(std::isalnum(static_cast<unsigned char>(content[j])) || content[j] == '_')) {
+							j++;
+						}
+						// Skip whitespace between identifier and =
+						while (j < content.length() && std::isspace(static_cast<unsigned char>(content[j]))) {
+							j++;
+						}
+						if (j > identStart && j < content.length() && content[j] == '=') {
+							// Found next field, save current
+							fields.push_back({currentField, trim(currentValue)});
+							currentField.clear();
+							currentValue.clear();
+							parsingField = true;
+							i = identStart;
+							continue;
+						}
 					}
 				}
 				currentValue += c;
@@ -397,7 +404,7 @@ namespace Qd {
 
 		result << indent << structName << " {\n";
 		for (const auto& field : fields) {
-			result << fieldIndent << field.first << ": " << field.second << "\n";
+			result << fieldIndent << field.first << " = " << field.second << "\n";
 		}
 		result << indent << "}";
 
@@ -476,9 +483,9 @@ namespace Qd {
 			}
 		}
 
-		// Check it has field: pattern inside
-		size_t colonPos = trimmed.find(':', bracePos);
-		return colonPos != std::string::npos;
+		// Check it has field = value pattern inside
+		size_t equalsPos = trimmed.find('=', bracePos);
+		return equalsPos != std::string::npos;
 	}
 
 	// Split inline braces onto separate lines
@@ -712,7 +719,7 @@ namespace Qd {
 								foundClose = true;
 								j++;
 								break;
-							} else if (nextTrimmed.find(':') != std::string::npos && !isComment(nextTrimmed)) {
+							} else if (nextTrimmed.find('=') != std::string::npos && !isComment(nextTrimmed)) {
 								// Looks like a field line
 								merged += " " + nextTrimmed;
 								j++;

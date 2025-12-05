@@ -280,6 +280,7 @@ namespace Qd {
 		void generateStructDestructors(); // Generate destructor functions for all struct types
 		void generateStructConstruction(const std::string& structName, llvm::Value* ctx);
 		void generateFieldAccess(AstNodeFieldAccess* fieldAccess, llvm::Value* ctx);
+		void generateFieldSet(AstNodeFieldSet* fieldSet, llvm::Value* ctx);
 		void generateArrayLiteral(AstNodeArrayLiteral* arrayLiteral, llvm::Value* ctx);
 		size_t getTypeSize(const std::string& typeName);
 		void generateStructCleanup(llvm::Value* structPtr, const std::string& structTypeName);
@@ -4360,6 +4361,9 @@ namespace Qd {
 		case IAstNode::Type::FIELD_ACCESS:
 			generateFieldAccess(static_cast<AstNodeFieldAccess*>(node), ctx);
 			break;
+		case IAstNode::Type::FIELD_SET:
+			generateFieldSet(static_cast<AstNodeFieldSet*>(node), ctx);
+			break;
 		case IAstNode::Type::STRUCT_DECLARATION:
 			// Struct declarations are processed during program generation, not during execution
 			break;
@@ -6026,14 +6030,15 @@ namespace Qd {
 			// Store to struct field based on type
 			if (field.typeName == "f64") {
 				llvm::Value* floatValue = builder->CreateLoad(builder->getDoubleTy(), valuePtr, "float_val");
-				// Cast byte pointer to generic pointer for storing double
-				llvm::Value* fieldPtr = bytePtr;
-				builder->CreateStore(floatValue, fieldPtr);
+				builder->CreateStore(floatValue, bytePtr);
 			} else if (field.typeName == "i64") {
 				llvm::Value* intValue = builder->CreateLoad(builder->getInt64Ty(), valuePtr, "int_val");
-				// Cast byte pointer to generic pointer for storing int64
-				llvm::Value* fieldPtr = bytePtr;
-				builder->CreateStore(intValue, fieldPtr);
+				builder->CreateStore(intValue, bytePtr);
+			} else if (field.typeName == "i32") {
+				// Load as i64 from stack (stack elements are always 64-bit), truncate to i32
+				llvm::Value* intValue = builder->CreateLoad(builder->getInt64Ty(), valuePtr, "int_val");
+				llvm::Value* truncValue = builder->CreateTrunc(intValue, builder->getInt32Ty(), "int32_val");
+				builder->CreateStore(truncValue, bytePtr);
 			} else if (field.typeName == "ptr" || field.typeName == "str" || field.typeName.find('*') != std::string::npos ||
 					   (!field.typeName.empty() && std::isupper(field.typeName[0]))) {
 				// Pointer type (including ptr, str, raw pointers, and struct-typed fields)
@@ -6205,13 +6210,17 @@ namespace Qd {
 
 		// Load value from field based on type and update lastFieldAccessResultType for chaining
 		if (matchingField->typeName == "f64") {
-			llvm::Value* fieldPtr = bytePtr;
-			llvm::Value* floatValue = builder->CreateLoad(builder->getDoubleTy(), fieldPtr, "field_value");
+			llvm::Value* floatValue = builder->CreateLoad(builder->getDoubleTy(), bytePtr, "field_value");
 			builder->CreateCall(pushFloatFn, {ctx, floatValue});
 			lastFieldAccessResultType.clear();  // Not a struct type
 		} else if (matchingField->typeName == "i64") {
-			llvm::Value* fieldPtr = bytePtr;
-			llvm::Value* intValue = builder->CreateLoad(builder->getInt64Ty(), fieldPtr, "field_value");
+			llvm::Value* intValue = builder->CreateLoad(builder->getInt64Ty(), bytePtr, "field_value");
+			builder->CreateCall(pushIntFn, {ctx, intValue});
+			lastFieldAccessResultType.clear();  // Not a struct type
+		} else if (matchingField->typeName == "i32") {
+			// Load i32, sign-extend to i64 for the stack
+			llvm::Value* int32Value = builder->CreateLoad(builder->getInt32Ty(), bytePtr, "field_value_i32");
+			llvm::Value* intValue = builder->CreateSExt(int32Value, builder->getInt64Ty(), "field_value");
 			builder->CreateCall(pushIntFn, {ctx, intValue});
 			lastFieldAccessResultType.clear();  // Not a struct type
 		} else if (matchingField->typeName == "str") {
@@ -6235,6 +6244,121 @@ namespace Qd {
 			builder->CreateCall(pushPtrFn, {ctx, ptrValue});
 			// Track the struct type for chained field access
 			lastFieldAccessResultType = matchingField->typeName;
+		}
+	}
+
+	// Generate field set: pop value from stack, get struct pointer from local, write to field
+	void LlvmGenerator::Impl::generateFieldSet(AstNodeFieldSet* fieldSet, llvm::Value* ctx) {
+		const std::string& varName = fieldSet->varName();
+		const std::string& fieldName = fieldSet->fieldName();
+
+		// Get struct pointer from local variable
+		auto it = localVariables.find(varName);
+		if (it == localVariables.end()) {
+			std::cerr << "Error: Undefined variable in field set: " << varName << std::endl;
+			return;
+		}
+
+		// Look up the struct type from local variable tracking
+		std::string structTypeName;
+		auto typeIt = localVariableStructTypes.find(varName);
+		if (typeIt != localVariableStructTypes.end()) {
+			structTypeName = typeIt->second;
+		}
+
+		llvm::Value* structPtrAlloca = it->second;
+		llvm::Value* structPtr =
+				builder->CreateLoad(llvm::PointerType::getUnqual(*context), structPtrAlloca, "struct_ptr");
+
+		// Find the field in the specific struct type if known
+		const FieldInfo* matchingField = nullptr;
+
+		if (!structTypeName.empty()) {
+			// Look up field in the specific struct type
+			auto structIt = structDefinitions.find(structTypeName);
+			if (structIt != structDefinitions.end()) {
+				for (const auto& field : structIt->second.fields) {
+					if (field.name == fieldName) {
+						matchingField = &field;
+						break;
+					}
+				}
+			}
+		}
+
+		// Fallback: search all struct types if we don't know the type
+		if (!matchingField) {
+			for (const auto& pair : structDefinitions) {
+				for (const auto& field : pair.second.fields) {
+					if (field.name == fieldName) {
+						matchingField = &field;
+						break;
+					}
+				}
+				if (matchingField) {
+					break;
+				}
+			}
+		}
+
+		if (!matchingField) {
+			std::cerr << "Error: Unknown field in field set: " << fieldName << std::endl;
+			return;
+		}
+
+		// Calculate field offset
+		auto fieldOffset = builder->getInt64(matchingField->offset);
+		auto bytePtr = builder->CreateGEP(builder->getInt8Ty(), structPtr, fieldOffset, "field_byte_ptr");
+
+		// Define stack types
+		llvm::Type* contextTy = llvm::StructType::get(*context, {llvm::PointerType::getUnqual(*context)}, false);
+		llvm::Type* stackTy = llvm::StructType::get(*context,
+				{
+						llvm::PointerType::getUnqual(*context), // data
+						builder->getInt64Ty(),					// size
+						builder->getInt64Ty()					// capacity
+				},
+				false);
+
+		// Pop value from stack
+		llvm::Value* stackPtr = builder->CreateStructGEP(contextTy, ctx, 0, "st_ptr");
+		llvm::Value* st = builder->CreateLoad(llvm::PointerType::getUnqual(*context), stackPtr, "st");
+
+		// Get stack size
+		llvm::Value* sizePtr = builder->CreateStructGEP(stackTy, st, 2, "size_ptr");
+		llvm::Value* size = builder->CreateLoad(builder->getInt64Ty(), sizePtr, "size");
+
+		// Decrement size
+		llvm::Value* newSize = builder->CreateSub(size, builder->getInt64(1), "new_size");
+		builder->CreateStore(newSize, sizePtr);
+
+		// Get element pointer
+		llvm::Value* dataPtr = builder->CreateStructGEP(stackTy, st, 0, "data_ptr");
+		llvm::Value* data = builder->CreateLoad(llvm::PointerType::getUnqual(*context), dataPtr, "data");
+		llvm::Value* elemPtr = builder->CreateGEP(stackElementTy, data, newSize, "elem_ptr");
+
+		// Load value from stack element
+		llvm::Value* valuePtr = builder->CreateStructGEP(stackElementTy, elemPtr, 0, "value_ptr");
+
+		// Store to struct field based on type
+		if (matchingField->typeName == "f64") {
+			llvm::Value* floatValue = builder->CreateLoad(builder->getDoubleTy(), valuePtr, "float_val");
+			builder->CreateStore(floatValue, bytePtr);
+		} else if (matchingField->typeName == "i64") {
+			llvm::Value* intValue = builder->CreateLoad(builder->getInt64Ty(), valuePtr, "int_val");
+			builder->CreateStore(intValue, bytePtr);
+		} else if (matchingField->typeName == "i32") {
+			// Load as i64 from stack (stack elements are always 64-bit), truncate to i32
+			llvm::Value* intValue = builder->CreateLoad(builder->getInt64Ty(), valuePtr, "int_val");
+			llvm::Value* truncValue = builder->CreateTrunc(intValue, builder->getInt32Ty(), "int32_val");
+			builder->CreateStore(truncValue, bytePtr);
+		} else if (matchingField->typeName == "ptr" || matchingField->typeName == "str" ||
+				   matchingField->typeName.find('*') != std::string::npos ||
+				   (!matchingField->typeName.empty() && std::isupper(matchingField->typeName[0]))) {
+			// Pointer type (including ptr, str, raw pointers, and struct-typed fields)
+			llvm::Value* ptrValue =
+					builder->CreateLoad(llvm::PointerType::getUnqual(*context), valuePtr, "ptr_val");
+			builder->CreateStore(ptrValue, bytePtr);
 		}
 	}
 

@@ -2045,12 +2045,13 @@ namespace Qd {
 
 			case IAstNode::Type::FIELD_ACCESS: {
 				// Field access pushes a value onto the stack
-				// Try to find the field type by searching all known structs
+				// Detailed validation is done in the main type checking pass (case at line ~3266)
+				// Here we just handle the stack effect for signature analysis
 				AstNodeFieldAccess* fieldAccess = static_cast<AstNodeFieldAccess*>(child);
 				const std::string& fieldName = fieldAccess->fieldName();
 
 				StackValueType fieldType = StackValueType::UNKNOWN;
-				// Search in local structs
+				// Search in all known structs to determine the field type
 				for (const auto& structEntry : mStructFieldTypes) {
 					const auto& fields = structEntry.second;
 					auto it = fields.find(fieldName);
@@ -2066,6 +2067,15 @@ namespace Qd {
 				}
 
 				typeStack.push_back(fieldType);
+				break;
+			}
+			case IAstNode::Type::FIELD_SET: {
+				// Field set pops a value from the stack and stores it in the field
+				// Validation is done in the main type checking pass (case at line ~3415)
+				// Here we just handle the stack effect for signature analysis
+				if (!typeStack.empty()) {
+					typeStack.pop_back();
+				}
 				break;
 			}
 			case IAstNode::Type::SCOPED_IDENTIFIER: {
@@ -3337,6 +3347,83 @@ namespace Qd {
 				// Push the field type onto the stack
 				typeStack.push_back(fieldType);
 				structTypeStack.push_back(""); // Field values are not struct pointers
+				break;
+			}
+
+			case IAstNode::Type::FIELD_SET: {
+				// Field set: value variable.fieldName - pops value from stack and stores in field
+				AstNodeFieldSet* fieldSet = static_cast<AstNodeFieldSet*>(child);
+				const std::string& varName = fieldSet->varName();
+				const std::string& fieldName = fieldSet->fieldName();
+
+				// Look up which struct type this variable holds
+				std::string structType = "";
+				auto structTypeIt = mLocalVariableStructTypes.find(varName);
+				if (structTypeIt != mLocalVariableStructTypes.end()) {
+					structType = structTypeIt->second;
+				}
+
+				// Validate the field exists on this struct type
+				bool fieldFound = false;
+
+				if (!structType.empty()) {
+					// We know which struct type this is - validate against it
+					auto structFieldIt = mStructFieldTypes.find(structType);
+					if (structFieldIt != mStructFieldTypes.end()) {
+						const auto& fields = structFieldIt->second;
+						auto fieldIt = fields.find(fieldName);
+						if (fieldIt != fields.end()) {
+							fieldFound = true;
+						} else {
+							// Field doesn't exist on this struct type!
+							std::string errorMsg = "Field '";
+							errorMsg += fieldName;
+							errorMsg += "' does not exist in struct '";
+							errorMsg += structType;
+							errorMsg += "'";
+							reportError(fieldSet, errorMsg.c_str());
+						}
+					}
+				} else {
+					// Variable is not a known struct type
+					auto localIt = localVariables.find(varName);
+					if (localIt != localVariables.end() &&
+							(localIt->second == StackValueType::INT || localIt->second == StackValueType::FLOAT ||
+									localIt->second == StackValueType::STRING)) {
+						// Variable is definitely a scalar type - this is an error
+						std::string errorMsg = "Variable '";
+						errorMsg += varName;
+						errorMsg += "' is not a struct type";
+						reportError(fieldSet, errorMsg.c_str());
+					} else {
+						// Variable is either a pointer or unknown - search all structs
+						for (const auto& structEntry : mStructFieldTypes) {
+							const auto& fields = structEntry.second;
+							auto it = fields.find(fieldName);
+							if (it != fields.end()) {
+								fieldFound = true;
+								break;
+							}
+						}
+
+						if (!fieldFound) {
+							std::string errorMsg = "Unknown variable '";
+							errorMsg += varName;
+							errorMsg += "' or field '";
+							errorMsg += fieldName;
+							errorMsg += "'";
+							reportError(fieldSet, errorMsg.c_str());
+						}
+					}
+				}
+
+				// Pop the value being assigned from the stack
+				if (!typeStack.empty()) {
+					typeStack.pop_back();
+					if (!structTypeStack.empty()) {
+						structTypeStack.pop_back();
+					}
+				}
 				break;
 			}
 

@@ -276,7 +276,6 @@ namespace Qd {
 			char32_t token;
 			const char* instruction;
 		} OPERATOR_ALIASES[] = {
-				{'.', "."}, // print
 				{'/', "/"}, // div
 				{'*', "*"}, // mul
 				{'+', "+"}, // add
@@ -454,6 +453,8 @@ namespace Qd {
 		size_t slashPos = SIZE_MAX; // Position of first slash for comment detection
 		bool sawColon = false;
 		bool sawAt = false;
+		bool sawDot = false;
+		std::string dotVarName; // Variable name before the dot for field set
 		std::vector<IAstNode*> tempNodes;
 
 		while ((token = u8t_scanner_scan(scanner)) != U8T_EOF) {
@@ -485,6 +486,20 @@ namespace Qd {
 					setNodePosition(fieldAccess, scanner, src);
 					tempNodes.push_back(fieldAccess);
 				}
+				continue;
+			}
+
+			// Handle . field set operator
+			if (sawDot && token == U8T_IDENTIFIER) {
+				sawDot = false;
+				// Get the field name
+				const char* fieldName = u8t_scanner_token_text(scanner, &n);
+
+				// Create field set node with the stored variable name
+				AstNodeFieldSet* fieldSet = new AstNodeFieldSet(dotVarName, fieldName);
+				setNodePosition(fieldSet, scanner, src);
+				tempNodes.push_back(fieldSet);
+				dotVarName.clear();
 				continue;
 			}
 
@@ -563,6 +578,22 @@ namespace Qd {
 			sawAt = (token == '@');
 			if (sawAt) {
 				continue; // Wait for next token to see if it's a field name
+			}
+
+			// Handle . field set operator: value variable.field
+			if (token == '.') {
+				// The variable must be the previous identifier in tempNodes
+				if (!tempNodes.empty() && tempNodes.back()->type() == IAstNode::Type::IDENTIFIER) {
+					AstNodeIdentifier* varIdent = static_cast<AstNodeIdentifier*>(tempNodes.back());
+					tempNodes.pop_back();
+					dotVarName = varIdent->name();
+					delete varIdent;
+					sawDot = true;
+					continue; // Wait for next token to get the field name
+				} else {
+					errorReporter->reportError(scanner, "Expected variable name before '.' in field set");
+					continue;
+				}
 			}
 
 			// Check if this token is an "else" keyword
@@ -947,6 +978,8 @@ namespace Qd {
 		bool sawColon = false;
 		size_t slashPos = SIZE_MAX; // Position of first slash for comment detection
 		bool sawAt = false;
+		bool sawDot = false;
+		std::string dotVarName; // Variable name before the dot for field set
 
 		while ((token = u8t_scanner_scan(scanner)) != U8T_EOF) {
 			// Handle comments (// and /* */)
@@ -1035,6 +1068,12 @@ namespace Qd {
 					AstNodeFieldAccess* fieldAccess = new AstNodeFieldAccess("", fieldName);
 					setNodePosition(fieldAccess, scanner, src);
 					tempNodes.push_back(fieldAccess);
+				} else {
+					// Stack-based field access: @field after struct construction, function call, etc.
+					// Use empty varName to indicate stack-based access (pops struct from stack)
+					AstNodeFieldAccess* fieldAccess = new AstNodeFieldAccess("", fieldName);
+					setNodePosition(fieldAccess, scanner, src);
+					tempNodes.push_back(fieldAccess);
 				}
 				continue;
 			}
@@ -1042,6 +1081,36 @@ namespace Qd {
 			sawAt = (token == '@');
 			if (sawAt) {
 				continue; // Wait for next token to see if it's a field name
+			}
+
+			// Handle . field set operator
+			if (sawDot && token == U8T_IDENTIFIER) {
+				sawDot = false;
+				// Get the field name
+				const char* fieldName = u8t_scanner_token_text(scanner, &n);
+
+				// Create field set node with the stored variable name
+				AstNodeFieldSet* fieldSet = new AstNodeFieldSet(dotVarName, fieldName);
+				setNodePosition(fieldSet, scanner, src);
+				tempNodes.push_back(fieldSet);
+				dotVarName.clear();
+				continue;
+			}
+
+			// Handle . field set operator: value variable.field
+			if (token == '.') {
+				// The variable must be the previous identifier in tempNodes
+				if (!tempNodes.empty() && tempNodes.back()->type() == IAstNode::Type::IDENTIFIER) {
+					AstNodeIdentifier* varIdent = static_cast<AstNodeIdentifier*>(tempNodes.back());
+					tempNodes.pop_back();
+					dotVarName = varIdent->name();
+					delete varIdent;
+					sawDot = true;
+					continue; // Wait for next token to get the field name
+				} else {
+					errorReporter->reportError(scanner, "Expected variable name before '.' in field set");
+					continue;
+				}
 			}
 
 			if (token == U8T_IDENTIFIER) {
@@ -1278,18 +1347,11 @@ namespace Qd {
 									char32_t afterMember = peekNextNonWhitespace(scanner, src);
 									if (afterMember == '{') {
 										u8t_scanner_scan(scanner); // Consume '{'
-										// Flush tempNodes before struct construction
-										for (auto* node : tempNodes) {
-											node->setParent(body);
-											body->addChild(node);
-										}
-										tempNodes.clear();
-
 										AstNodeStructConstruction* structConstruct =
 												parseStructConstruction(fullName, scanner, errorReporter, src, identPos);
 										if (structConstruct) {
-											structConstruct->setParent(body);
-											body->addChild(structConstruct);
+											// Push to tempNodes so @field can access it
+											tempNodes.push_back(structConstruct);
 										}
 										continue;
 									}
@@ -1315,18 +1377,11 @@ namespace Qd {
 						nextToken = peekNextNonWhitespace(scanner, src);
 						if (nextToken == '{') {
 							u8t_scanner_scan(scanner); // Consume '{'
-							// Flush tempNodes before struct construction
-							for (auto* node : tempNodes) {
-								node->setParent(body);
-								body->addChild(node);
-							}
-							tempNodes.clear();
-
 							AstNodeStructConstruction* structConstruct =
 									parseStructConstruction(identName, scanner, errorReporter, src, identPos);
 							if (structConstruct) {
-								structConstruct->setParent(body);
-								body->addChild(structConstruct);
+								// Push to tempNodes so @field can access it
+								tempNodes.push_back(structConstruct);
 							}
 							continue;
 						}
