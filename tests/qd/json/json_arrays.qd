@@ -1,5 +1,5 @@
-use str
 use json
+use str
 
 fn main( -- ) {
 	// Test array_len

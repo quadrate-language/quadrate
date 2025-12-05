@@ -1,13 +1,12 @@
 // Module B - also imports libstdqd as "io" (same namespace!)
-
 import "libqdfmt.a" as "fmt" {
-    fn printf(format:str -- )
+	fn printf(format:str -- )
 }
 
 pub fn print_b() {
-    "From module B\n" fmt::printf
+	"From module B\n" fmt::printf
 }
 
 pub fn main() {
-    print_b
+	print_b
 }

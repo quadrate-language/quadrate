@@ -1,5 +1,4 @@
 /// String manipulation functions.
-
 import "libqdstr.a" as "str" {
 	/// Get string length in bytes.
 	/// @param str str Input string

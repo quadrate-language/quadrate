@@ -1,19 +1,18 @@
 // Import test - complex format strings
-
 import "libqdfmt.a" as "fmt" {
-    fn printf(format:str -- )
+	fn printf(format:str -- )
 }
 
 fn main() {
-    // Multiple arguments
-    "Alice" 25 1.75 "Name: %s, Age: %d, Height: %f\n" fmt::printf
+	// Multiple arguments
+	"Alice" 25 1.75 "Name: %s, Age: %d, Height: %f\n" fmt::printf
 
-    // Integer and float
-    42 3.14159 "Int: %d, Float: %f\n" fmt::printf
+	// Integer and float
+	42 3.14159 "Int: %d, Float: %f\n" fmt::printf
 
-    // Percent literal
-    "100%% complete\n" fmt::printf
+	// Percent literal
+	"100%% complete\n" fmt::printf
 
-    // Multiple strings
-    "Hello" "World" "%s %s!\n" fmt::printf
+	// Multiple strings
+	"Hello" "World" "%s %s!\n" fmt::printf
 }

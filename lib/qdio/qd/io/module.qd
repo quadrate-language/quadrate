@@ -1,50 +1,34 @@
 /// File and stream I/O operations.
-
 /// Open mode: read only.
 pub const Read = "r"
-
 /// Open mode: read binary.
 pub const ReadBinary = "rb"
-
 /// Open mode: write (truncate).
 pub const Write = "w"
-
 /// Open mode: write binary.
 pub const WriteBinary = "wb"
-
 /// Open mode: append.
 pub const Append = "a"
-
 /// Open mode: append binary.
 pub const AppendBinary = "ab"
-
 /// Open mode: read and write.
 pub const ReadWrite = "r+"
-
 /// Open mode: read and write binary.
 pub const ReadWriteBinary = "rb+"
-
 /// Open mode: write and read (truncate).
 pub const WriteRead = "w+"
-
 /// Open mode: write and read binary.
 pub const WriteReadBinary = "wb+"
-
 /// Open mode: append and read.
 pub const AppendRead = "a+"
-
 /// Open mode: append and read binary.
 pub const AppendReadBinary = "ab+"
-
 /// Seek from beginning of file.
 pub const SeekSet = 0
-
 /// Seek from current position.
 pub const SeekCur = 1
-
 /// Seek from end of file.
 pub const SeekEnd = 2
-
 import "libqdio.a" as "io" {
 	/// Open a file.
 	/// @param path str File path
@@ -58,7 +42,7 @@ import "libqdio.a" as "io" {
 	/// Close a file.
 	/// @param handle ptr File handle to close
 	/// @example f io::close
-	pub fn close(handle:ptr --)
+	pub fn close(handle:ptr -- )
 
 	/// Read bytes into buffer.
 	/// @param handle ptr File handle

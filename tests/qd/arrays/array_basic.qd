@@ -1,8 +1,8 @@
 // Basic array creation and indexing
 fn main( -- ) {
-  [1 2 3] -> arr
-  arr 0 nth . nl
-  arr 1 nth . nl
-  arr 2 nth . nl
-  arr len . nl
+	[1 2 3] -> arr
+	arr 0 nth . nl
+	arr 1 nth . nl
+	arr 2 nth . nl
+	arr len . nl
 }

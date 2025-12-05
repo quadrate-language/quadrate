@@ -1,5 +1,4 @@
 // Test: switch statement with break in cases
-
 fn main() {
 	// Test that break exits the switch (200 should not print)
 	5 switch {

@@ -1,14 +1,17 @@
 use "shapes.qd"
 
 fn test_import( -- ) {
-  // Create Rectangle from imported file
-  Rectangle { width: 5.0 height: 10.0 } -> r
+	// Create Rectangle from imported file
+	Rectangle {
+		width: 5.0
+		height: 10.0
+	} -> r
 
-  // Access and print fields
-  r @width . nl
-  r @height . nl
+	// Access and print fields
+	r @width . nl
+	r @height . nl
 }
 
 fn main( -- ) {
-  test_import
+	test_import
 }

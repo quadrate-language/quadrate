@@ -1,6 +1,5 @@
 /// Hexadecimal encoding and decoding.
 /// Converts between binary data and hexadecimal string representation.
-
 use mem
 use str
 use unicode
@@ -22,7 +21,9 @@ pub fn encode(s:str -- hex:str) {
 		0 -> o
 
 		loop {
-			i slen >= if { break }
+			i slen >= if {
+				break
+			}
 			s i str::char_at -> byte
 
 			// High nibble
@@ -31,7 +32,8 @@ pub fn encode(s:str -- hex:str) {
 				unicode::digit0 high +
 			} else {
 				unicode::A high 10 - +
-			} -> hchar
+			}
+			-> hchar
 			out o hchar mem::set_byte
 			o 1 + -> o
 
@@ -41,7 +43,8 @@ pub fn encode(s:str -- hex:str) {
 				unicode::digit0 low +
 			} else {
 				unicode::A low 10 - +
-			} -> lchar
+			}
+			-> lchar
 			out o lchar mem::set_byte
 			o 1 + -> o
 
@@ -71,7 +74,9 @@ pub fn encode_lower(s:str -- hex:str) {
 		0 -> o
 
 		loop {
-			i slen >= if { break }
+			i slen >= if {
+				break
+			}
 			s i str::char_at -> byte
 
 			// High nibble
@@ -80,7 +85,8 @@ pub fn encode_lower(s:str -- hex:str) {
 				unicode::digit0 high +
 			} else {
 				unicode::a high 10 - +
-			} -> hchar
+			}
+			-> hchar
 			out o hchar mem::set_byte
 			o 1 + -> o
 
@@ -90,7 +96,8 @@ pub fn encode_lower(s:str -- hex:str) {
 				unicode::digit0 low +
 			} else {
 				unicode::a low 10 - +
-			} -> lchar
+			}
+			-> lchar
 			out o lchar mem::set_byte
 			o 1 + -> o
 
@@ -143,7 +150,9 @@ pub fn decode(hex:str -- s:str) {
 		0 -> o
 
 		loop {
-			i 1 + hlen >= if { break }
+			i 1 + hlen >= if {
+				break
+			}
 
 			hex i str::char_at hex_char_value -> high
 			hex i 1 + str::char_at hex_char_value -> low
@@ -179,7 +188,8 @@ pub fn encode_byte(b:i64 -- hex:str) {
 		unicode::digit0 high +
 	} else {
 		unicode::A high 10 - +
-	} -> hchar
+	}
+	-> hchar
 	out 0 hchar mem::set_byte
 
 	// Low nibble
@@ -188,7 +198,8 @@ pub fn encode_byte(b:i64 -- hex:str) {
 		unicode::digit0 low +
 	} else {
 		unicode::A low 10 - +
-	} -> lchar
+	}
+	-> lchar
 	out 1 lchar mem::set_byte
 
 	out 2 mem::to_string -> result
@@ -239,7 +250,9 @@ pub fn is_valid(hex:str -- valid:i64) {
 			0 -> i
 
 			loop {
-				i hlen >= valid 0 == or if { break }
+				i hlen >= valid 0 == or if {
+					break
+				}
 				hex i str::char_at hex_char_value -1 == if {
 					0 -> valid
 				}

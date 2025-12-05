@@ -1,18 +1,21 @@
 struct Vec2 {
-  x:f64
-  y:f64
+	x:f64
+	y:f64
 }
 
 fn test_vec2( -- ) {
-  // Test struct construction and field access
-  Vec2 { x: 1.5 y: 2.5 } -> v
+	// Test struct construction and field access
+	Vec2 {
+		x: 1.5
+		y: 2.5
+	} -> v
 
-  // Access and print fields
-  v @x . nl
-  v @y . nl
-  // Struct auto-released at function end
+	// Access and print fields
+	v @x . nl
+	v @y . nl
+	// Struct auto-released at function end
 }
 
 fn main( -- ) {
-  test_vec2
+	test_vec2
 }

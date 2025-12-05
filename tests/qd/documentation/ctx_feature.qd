@@ -2,7 +2,6 @@
 // ctx blocks execute code in an isolated context
 // Syntax: ctx { ... }
 // Stack effect: ( S -- S r ) where r is the single returned value
-
 fn demo_basic_isolation( -- ) {
 	// Basic isolation - parent stack preserved
 	clear

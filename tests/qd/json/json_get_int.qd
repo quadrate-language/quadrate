@@ -1,5 +1,5 @@
-use str
 use json
+use str
 
 fn main( -- ) {
 	34 -> q
@@ -32,8 +32,8 @@ fn main( -- ) {
 
 	// Test get_int - multiple values
 	"{" q str::from_char str::concat "x" str::concat q str::from_char str::concat ": 10, " str::concat
-	q str::from_char str::concat "y" str::concat q str::from_char str::concat ": 20, " str::concat
-	q str::from_char str::concat "z" str::concat q str::from_char str::concat ": 30}" str::concat
+		q str::from_char str::concat "y" str::concat q str::from_char str::concat ": 20, " str::concat
+		q str::from_char str::concat "z" str::concat q str::from_char str::concat ": 30}" str::concat
 	-> json4
 	json4 "x" json::get_int -> found -> val
 	val . nl

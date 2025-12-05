@@ -1,6 +1,5 @@
 /// File path manipulation functions.
 /// POSIX-style paths with forward slash separator.
-
 use str
 
 /// Path separator constant.
@@ -176,4 +175,3 @@ pub fn normalize(path:str -- norm:str) {
 	}
 	result
 }
-

@@ -1,6 +1,6 @@
-use zoo
 use apple
 use math
+use zoo
 
 fn main( -- ) {
 	5.5 math::sqrt print nl

@@ -1,6 +1,5 @@
 /// Random number generation using xorshift64* algorithm.
 /// Fast, high-quality PRNG suitable for most applications.
-
 use time
 
 /// RNG state struct.
@@ -14,7 +13,9 @@ pub struct Rng {
 pub fn new( -- rng:ptr) {
 	time::now -> seed
 	// Ensure non-zero seed
-	seed 0 == if { 1 -> seed }
+	seed 0 == if {
+		1 -> seed
+	}
 	Rng { state: seed }
 }
 
@@ -24,7 +25,12 @@ pub fn new( -- rng:ptr) {
 /// @example 12345 rand::with_seed -> rng
 pub fn with_seed(seed:i64 -- rng:ptr) {
 	-> seed
-	seed 0 == if { 1 } else { seed } -> s
+	seed 0 == if {
+		1
+	} else {
+		seed
+	}
+	-> s
 	Rng { state: s }
 }
 
@@ -60,7 +66,12 @@ pub fn int(rng:ptr max:i64 -- rng:ptr n:i64) {
 	-> rng
 	rng next -> newrng -> raw
 	// Make positive and mod
-	raw 0 < if { 0 raw - } else { raw } -> pos
+	raw 0 < if {
+		0 raw -
+	} else {
+		raw
+	}
+	-> pos
 	pos max mod -> result
 	result
 	newrng
@@ -93,4 +104,3 @@ pub fn bool(rng:ptr -- rng:ptr b:i64) {
 	-> rng
 	rng 2 int
 }
-

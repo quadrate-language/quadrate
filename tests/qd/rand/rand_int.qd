@@ -1,5 +1,5 @@
-use rand
 use bits
+use rand
 
 fn main() {
 	// Test int function produces values in range [0, max)
@@ -10,20 +10,38 @@ fn main() {
 	0 10 1 for {
 		rng 100 rand::int -> rng -> n
 		// Check if n is OUT of range [0, 100)
-		n 0 < if { 0 -> all_valid }
-		n 100 >= if { 0 -> all_valid }
+		n 0 < if {
+			0 -> all_valid
+		}
+		n 100 >= if {
+			0 -> all_valid
+		}
 	}
 
-	all_valid if { "PASS: All values in range [0, 100)" } else { "FAIL: Value out of range" } . nl
+	all_valid if {
+		"PASS: All values in range [0, 100)"
+	} else {
+		"FAIL: Value out of range"
+	}
+	. nl
 
 	// Test small range
 	123 rand::with_seed -> rng2
 	1 -> small_valid
 	0 20 1 for {
 		rng2 3 rand::int -> rng2 -> m
-		m 0 < if { 0 -> small_valid }
-		m 3 >= if { 0 -> small_valid }
+		m 0 < if {
+			0 -> small_valid
+		}
+		m 3 >= if {
+			0 -> small_valid
+		}
 	}
 
-	small_valid if { "PASS: All values in range [0, 3)" } else { "FAIL: Value out of small range" } . nl
+	small_valid if {
+		"PASS: All values in range [0, 3)"
+	} else {
+		"FAIL: Value out of small range"
+	}
+	. nl
 }

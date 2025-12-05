@@ -2,6 +2,6 @@
 use "module_a.qd"
 
 pub fn func_b( -- ) {
-    100
-    drop
+	100
+	drop
 }

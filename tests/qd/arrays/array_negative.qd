@@ -1,9 +1,9 @@
 // Negative values in array
 fn main( -- ) {
-  [-10 -20 0 10 20] -> arr
-  arr 0 nth . nl
-  arr 1 nth . nl
-  arr 2 nth . nl
-  arr 3 nth . nl
-  arr 4 nth . nl
+	[-10 -20 0 10 20] -> arr
+	arr 0 nth . nl
+	arr 1 nth . nl
+	arr 2 nth . nl
+	arr 3 nth . nl
+	arr 4 nth . nl
 }

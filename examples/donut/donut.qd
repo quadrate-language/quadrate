@@ -3,7 +3,6 @@
 //
 // Run: quadc donut.qd -r
 // Press Ctrl+C to stop
-
 use math
 
 fn main( -- ) {
@@ -16,7 +15,9 @@ fn main( -- ) {
 
 	loop {
 		// Reset buffers
-		0 1760 1 for { z it 0.0 set  o it 12 set }
+		0 1760 1 for {
+			z it 0.0 set  o it 12 set
+		}
 
 		// Precompute rotation matrix components
 		A math::sin A math::cos -> g -> e
@@ -52,8 +53,12 @@ fn main( -- ) {
 					D z q nth > if {
 						z q D set
 						N casti -> k
-						k 0 < if { 0 -> k }
-						k 11 > if { 11 -> k }
+						k 0 < if {
+							0 -> k
+						}
+						k 11 > if {
+							11 -> k
+						}
 						o q k set
 					}
 				}
@@ -68,12 +73,49 @@ fn main( -- ) {
 		0 1761 1 for {
 			it 80 mod 0 != if {
 				o it nth switch {
-					0 { "." . } 1 { "," . } 2 { "-" . } 3 { "~" . }
-					4 { ":" . } 5 { ";" . } 6 { "=" . } 7 { "!" . }
-					8 { "*" . } 9 { "#" . } 10 { "$" . } 11 { "@" . }
-					_ { " " . }
+					0 {
+						"." .
+					}
+					1 {
+						"," .
+					}
+					2 {
+						"-" .
+					}
+					3 {
+						"~" .
+					}
+					4 {
+						":" .
+					}
+					5 {
+						";" .
+					}
+					6 {
+						"=" .
+					}
+					7 {
+						"!" .
+					}
+					8 {
+						"*" .
+					}
+					9 {
+						"#" .
+					}
+					10 {
+						"$" .
+					}
+					11 {
+						"@" .
+					}
+					_ {
+						" " .
+					}
 				}
-			} else { nl }
+			} else {
+				nl
+			}
 		}
 
 		A 0.04 + -> A

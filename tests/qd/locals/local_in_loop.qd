@@ -1,8 +1,8 @@
 // Test local variable with for loop
 fn main( -- ) {
-    0 -> sum
-    0 10 1 for {
-        sum it add -> sum
-    }
-    sum . nl
+	0 -> sum
+	0 10 1 for {
+		sum it add -> sum
+	}
+	sum . nl
 }

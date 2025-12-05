@@ -10,7 +10,6 @@
 /// test "addition works" {
 ///     2 3 + 5 testing::assert_eq
 /// }
-
 import "libqdtesting.a" as "testing" {
 	/// Assert that two values are equal.
 	/// Works with any type (i64, f64, str, ptr).

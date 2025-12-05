@@ -1,18 +1,23 @@
 // Test all supported field types
 struct AllTypes {
-  int_field:i64
-  float_field:f64
-  string_field:str
-  pointer_field:ptr
+	int_field:i64
+	float_field:f64
+	string_field:str
+	pointer_field:ptr
 }
 
 fn test_all_types( -- ) {
-  AllTypes { int_field: 42 float_field: 3.14 string_field: "hello" pointer_field: 0 } -> obj
+	AllTypes {
+		int_field: 42
+		float_field: 3.14
+		string_field: "hello"
+		pointer_field: 0
+	} -> obj
 
-  obj @int_field . nl
-  obj @float_field . nl
+	obj @int_field . nl
+	obj @float_field . nl
 }
 
 fn main( -- ) {
-  test_all_types
+	test_all_types
 }

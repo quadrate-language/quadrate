@@ -1,5 +1,4 @@
 /// Formatted output functions.
-
 import "libqdfmt.a" as "fmt" {
 	/// Print formatted output to stdout.
 	/// @param format str Format string with % specifiers

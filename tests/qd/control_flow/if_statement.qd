@@ -13,7 +13,7 @@ fn main( -- ) {
 	}
 	// Test 4: If with stack operations
 	3 dup if {
-	 . nl
+		. nl
 	}
 	// Test 5: Sequential if statements
 	1 if {

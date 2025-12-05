@@ -1,11 +1,11 @@
 fn foo( -- ) {
-  "First foo" prints nl
+	"First foo" prints nl
 }
 
 fn foo( -- ) {
-  "Second foo" prints nl
+	"Second foo" prints nl
 }
 
 fn main( -- ) {
-  foo
+	foo
 }

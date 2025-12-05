@@ -1,11 +1,10 @@
 /// SHA-256 cryptographic hash function.
 /// Produces a 256-bit (32-byte) hash value.
 /// Conforms to FIPS 180-4.
-
-use mem
 use bits
-use str
 use bytes
+use mem
+use str
 
 // Initial hash values
 const H0_INIT = 1779033703
@@ -136,7 +135,9 @@ fn process_block(msg:ptr block_offset:i64 h:ptr -- ) {
 
 	0 -> i
 	loop {
-		i 16 >= if { break }
+		i 16 >= if {
+			break
+		}
 		msg block_offset i 4 * + bytes::read_u32_be -> word
 		w i 8 * word mem::set
 		i 1 + -> i
@@ -144,7 +145,9 @@ fn process_block(msg:ptr block_offset:i64 h:ptr -- ) {
 
 	16 -> i
 	loop {
-		i 64 >= if { break }
+		i 64 >= if {
+			break
+		}
 		w i 2 - 8 * mem::get gamma1 -> s1
 		w i 7 - 8 * mem::get -> w7
 		w i 15 - 8 * mem::get gamma0 -> s0
@@ -165,7 +168,9 @@ fn process_block(msg:ptr block_offset:i64 h:ptr -- ) {
 
 	0 -> i
 	loop {
-		i 64 >= if { break }
+		i 64 >= if {
+			break
+		}
 		e sigma1 e f g ch add32 hh add32 k i 8 * mem::get add32 w i 8 * mem::get add32 -> t1
 		a sigma0 a b c maj add32 -> t2
 		hh -> hh2
@@ -228,7 +233,9 @@ fn calculate_hash_state(dptr:ptr dlen:i64 -- h:ptr) {
 
 	dlen 1 + -> i
 	loop {
-		i padded_len 8 - >= if { break }
+		i padded_len 8 - >= if {
+			break
+		}
 		msg i 0 mem::set_byte
 		i 1 + -> i
 	}
@@ -239,7 +246,9 @@ fn calculate_hash_state(dptr:ptr dlen:i64 -- h:ptr) {
 
 	0 -> block_offset
 	loop {
-		block_offset padded_len >= if { break }
+		block_offset padded_len >= if {
+			break
+		}
 		msg block_offset h process_block
 		block_offset 64 + -> block_offset
 	}
@@ -260,13 +269,22 @@ pub fn hash_bytes(buf:ptr length:i64 -- result:str) {
 	64 mem::alloc -> out
 	0 -> i
 	loop {
-		i 8 >= if { break }
+		i 8 >= if {
+			break
+		}
 		h i 8 * mem::get -> word
 		0 -> j
 		loop {
-			j 8 >= if { break }
+			j 8 >= if {
+				break
+			}
 			word 28 j 4 * - shr 15 and -> nibble
-			nibble 10 < if { 48 nibble + } else { 87 nibble + } -> char
+			nibble 10 < if {
+				48 nibble +
+			} else {
+				87 nibble +
+			}
+			-> char
 			out i 8 * j + char mem::set_byte
 			j 1 + -> j
 		}
@@ -298,7 +316,9 @@ pub fn hash_raw(s:str -- buf:ptr) {
 	32 mem::alloc -> buf
 	0 -> i
 	loop {
-		i 8 >= if { break }
+		i 8 >= if {
+			break
+		}
 		h i 8 * mem::get -> word
 		buf i 4 * word bytes::write_u32_be
 		i 1 + -> i
@@ -312,5 +332,9 @@ pub fn verify(s:str expected:str -- ok:i64) {
 	-> expected
 	-> s
 	s hash -> actual
-	actual expected str::compare 0 == if { 1 } else { 0 }
+	actual expected str::compare 0 == if {
+		1
+	} else {
+		0
+	}
 }

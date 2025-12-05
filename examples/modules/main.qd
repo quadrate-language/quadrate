@@ -1,6 +1,5 @@
 // Example demonstrating the module system in Quadrate
 // This program imports the math_utils module
-
 use math_utils
 
 fn main( -- ) {

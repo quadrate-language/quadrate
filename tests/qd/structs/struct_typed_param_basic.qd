@@ -2,24 +2,27 @@
 use math
 
 struct Point {
-    x:f64
-    y:f64
+	x:f64
+	y:f64
 }
 
 // Function with typed struct parameter
 fn magnitude(p:Point -- result:f64) {
-    -> p
-    p @x dup * p @y dup * + math::sqrt
+	-> p
+	p @x dup * p @y dup * + math::sqrt
 }
 
 // Function with typed struct parameter that modifies nothing
 fn print_point(p:Point -- ) {
-    -> p
-    "Point(" . p @x . ", " . p @y . ")" . nl
+	-> p
+	"Point(" . p @x . ", " . p @y . ")" . nl
 }
 
 fn main( -- ) {
-    Point { x: 3.0 y: 4.0 } -> pt
-    pt print_point
-    "Magnitude: " . pt magnitude . nl
+	Point {
+		x: 3.0
+		y: 4.0
+	} -> pt
+	pt print_point
+	"Magnitude: " . pt magnitude . nl
 }

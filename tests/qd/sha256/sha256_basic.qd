@@ -2,21 +2,21 @@
 use sha256
 
 fn main() {
-    // Test 1: empty string
-    "" sha256::hash . nl
+	// Test 1: empty string
+	"" sha256::hash . nl
 
-    // Test 2: "abc" - NIST test vector
-    "abc" sha256::hash . nl
+	// Test 2: "abc" - NIST test vector
+	"abc" sha256::hash . nl
 
-    // Test 3: "hello"
-    "hello" sha256::hash . nl
+	// Test 3: "hello"
+	"hello" sha256::hash . nl
 
-    // Test 4: "hello world"
-    "hello world" sha256::hash . nl
+	// Test 4: "hello world"
+	"hello world" sha256::hash . nl
 
-    // Test 5: Single character
-    "a" sha256::hash . nl
+	// Test 5: Single character
+	"a" sha256::hash . nl
 
-    // Test 6: Numbers
-    "123456789" sha256::hash . nl
+	// Test 6: Numbers
+	"123456789" sha256::hash . nl
 }

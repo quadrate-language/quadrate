@@ -4,7 +4,7 @@ fn main( -- ) {
 	// Test multiple strings on stack
 	"First" "Second" "Third" . nl
 	// Should print nl "Third" and leave First and Second on stack
- . nl . nl
+	. nl . nl
 	// Should print nl "Second" then "First"
 	// Test empty strings
 	"" . nl "Not empty" . nl "" . nl

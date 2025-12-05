@@ -1,18 +1,17 @@
 // Module that uses imports internally
-
 import "libqdfmt.a" as "fmt" {
-    fn printf(format:str -- )
+	fn printf(format:str -- )
 }
 
 pub fn print_number(num:i64 -- ) {
-    "Number: %d\n" fmt::printf
+	"Number: %d\n" fmt::printf
 }
 
 pub fn print_message(msg:str -- ) {
-    "Message: %s\n" fmt::printf
+	"Message: %s\n" fmt::printf
 }
 
 pub fn main() {
-    123 print_number
-    "Testing printer module" print_message
+	123 print_number
+	"Testing printer module" print_message
 }

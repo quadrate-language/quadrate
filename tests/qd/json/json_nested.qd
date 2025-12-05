@@ -1,13 +1,13 @@
-use str
 use json
+use str
 
 fn main( -- ) {
 	34 -> q
 
 	// Test get_object - nested object
 	"{" q str::from_char str::concat "user" str::concat q str::from_char str::concat ": {" str::concat
-	q str::from_char str::concat "name" str::concat q str::from_char str::concat ": " str::concat
-	q str::from_char str::concat "Alice" str::concat q str::from_char str::concat "}}" str::concat
+			q str::from_char str::concat "name" str::concat q str::from_char str::concat ": " str::concat
+			q str::from_char str::concat "Alice" str::concat q str::from_char str::concat "}}" str::concat
 	-> json1
 	json1 "user" json::get_object -> found -> obj
 	obj . nl
@@ -32,7 +32,7 @@ fn main( -- ) {
 
 	// Test nested inner object directly
 	"{" q str::from_char str::concat "name" str::concat q str::from_char str::concat ": " str::concat
-	q str::from_char str::concat "Alice" str::concat q str::from_char str::concat "}" str::concat
+		q str::from_char str::concat "Alice" str::concat q str::from_char str::concat "}" str::concat
 	-> inner_json
 	inner_json "name" json::get_string -> found -> val
 	val . nl

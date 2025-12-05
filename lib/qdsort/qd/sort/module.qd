@@ -1,13 +1,12 @@
 /// Sorting algorithms for arrays.
 /// Arrays are pointers to contiguous i64 values.
-
 use mem
 
 /// Sort an array of i64 in ascending order (insertion sort).
 /// @param arr ptr Array of i64 values
 /// @param count i64 Number of elements
 /// @example arr count sort::ints
-pub fn ints(arr:ptr count:i64 --) {
+pub fn ints(arr:ptr count:i64 -- ) {
 	-> count
 	-> arr
 	// Insertion sort
@@ -16,9 +15,13 @@ pub fn ints(arr:ptr count:i64 --) {
 		arr i 8 * mem::get -> key
 		i 1 - -> j
 		loop {
-			j 0 < if { break }
+			j 0 < if {
+				break
+			}
 			arr j 8 * mem::get -> jval
-			jval key <= if { break }
+			jval key <= if {
+				break
+			}
 			// Move element right
 			arr j 1 + 8 * jval mem::set
 			j 1 - -> j
@@ -31,7 +34,7 @@ pub fn ints(arr:ptr count:i64 --) {
 /// @param arr ptr Array of i64 values
 /// @param count i64 Number of elements
 /// @example arr count sort::ints_desc
-pub fn ints_desc(arr:ptr count:i64 --) {
+pub fn ints_desc(arr:ptr count:i64 -- ) {
 	-> count
 	-> arr
 	// Insertion sort descending
@@ -40,9 +43,13 @@ pub fn ints_desc(arr:ptr count:i64 --) {
 		arr i 8 * mem::get -> key
 		i 1 - -> j
 		loop {
-			j 0 < if { break }
+			j 0 < if {
+				break
+			}
 			arr j 8 * mem::get -> jval
-			jval key >= if { break }
+			jval key >= if {
+				break
+			}
 			// Move element right
 			arr j 1 + 8 * jval mem::set
 			j 1 - -> j
@@ -118,13 +125,15 @@ pub fn is_sorted(arr:ptr count:i64 -- sorted:i64) {
 /// @param arr ptr Array of i64 values
 /// @param count i64 Number of elements
 /// @example arr count sort::reverse
-pub fn reverse(arr:ptr count:i64 --) {
+pub fn reverse(arr:ptr count:i64 -- ) {
 	-> count
 	-> arr
 	0 -> left
 	count 1 - -> right
 	loop {
-		left right >= if { break }
+		left right >= if {
+			break
+		}
 		// Swap elements
 		arr left 8 * mem::get -> lval
 		arr right 8 * mem::get -> rval
@@ -149,7 +158,9 @@ pub fn search(arr:ptr count:i64 needle:i64 -- idx:i64) {
 	count -> right
 	-1 -> result
 	loop {
-		left right >= if { break }
+		left right >= if {
+			break
+		}
 		left right + 2 / -> mid
 		arr mid 8 * mem::get -> midval
 		midval needle == if {
@@ -164,4 +175,3 @@ pub fn search(arr:ptr count:i64 needle:i64 -- idx:i64) {
 	}
 	result
 }
-

@@ -1,5 +1,5 @@
-use sort
 use mem
+use sort
 
 fn main() {
 	// Create array [3, 1, 4, 1, 5]

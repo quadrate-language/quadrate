@@ -1,5 +1,4 @@
 /// String to number conversions.
-
 import "libqdstrconv.a" as "strconv" {
 	/// Format integer in given base.
 	/// @param value i64 Integer value

@@ -1,6 +1,6 @@
 // Test multiple file imports
-use helper.qd
 use "utils/math.qd"
+use helper.qd
 
 fn main( -- ) {
 	helper::get_value

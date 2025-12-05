@@ -1,14 +1,13 @@
 // Import test - using imported function from helper function
-
 import "libqdfmt.a" as "fmt" {
-    fn printf(format:str -- )
+	fn printf(format:str -- )
 }
 
 fn greet(name:str -- ) {
-    "Hello from function, %s!\n" fmt::printf
+	"Hello from function, %s!\n" fmt::printf
 }
 
 fn main() {
-    "Alice" greet
-    "Bob" greet
+	"Alice" greet
+	"Bob" greet
 }

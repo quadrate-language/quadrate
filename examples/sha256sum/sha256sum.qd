@@ -1,9 +1,9 @@
-use io
-use sha256
-use mem
-use str
 use bytes
 use flag
+use io
+use mem
+use sha256
+use str
 
 const VERSION = "1.0.0"
 
@@ -50,7 +50,9 @@ fn read_file(path:str -- content:ptr length:i64)! {
 		loop {
 			f chunk_buf chunk_size io::read if {
 				-> bytes_read
-				bytes_read 0 == if { break }
+				bytes_read 0 == if {
+					break
+				}
 
 				result_buf total_len bytes_read + mem::realloc -> result_buf
 				result_buf total_len chunk_buf 0 bytes_read bytes::copy
@@ -92,11 +94,20 @@ fn hash_file(path:str binary_mode:i64 tag_mode:i64 zero_mode:i64 -- ) {
 			"SHA256 (" . path . ") = " . hash_str .
 		} else {
 			hash_str .
-			binary_mode if { " *" } else { "  " } .
+			binary_mode if {
+				" *"
+			} else {
+				"  "
+			}
+			.
 			path .
 		}
 
-		zero_mode if { 0 str::from_char . } else { nl }
+		zero_mode if {
+			0 str::from_char .
+		} else {
+			nl
+		}
 
 		buf mem::free
 
@@ -119,7 +130,9 @@ fn parse_checksum_line(line:str -- hash:str filename:str valid:i64) {
 		0 -> i
 		"" -> hash_tmp
 		loop {
-			i 64 >= if { break }
+			i 64 >= if {
+				break
+			}
 			line i str::char_at str::from_char -> ch
 			hash_tmp ch str::concat -> hash_tmp
 			i 1 + -> i
@@ -132,7 +145,9 @@ fn parse_checksum_line(line:str -- hash:str filename:str valid:i64) {
 			66 -> start
 			"" -> fname_tmp
 			loop {
-				start line_len >= if { break }
+				start line_len >= if {
+					break
+				}
 				line start str::char_at str::from_char -> ch
 				fname_tmp ch str::concat -> fname_tmp
 				start 1 + -> start
@@ -151,7 +166,9 @@ fn extract_line(content:str start:i64 end_pos:i64 -- line:str) {
 	-> content
 	"" -> line
 	loop {
-		start end_pos >= if { break }
+		start end_pos >= if {
+			break
+		}
 		content start str::char_at str::from_char -> ch
 		line ch str::concat -> line
 		start 1 + -> start
@@ -179,13 +196,19 @@ fn check_file(path:str quiet:i64 status_mode:i64 warn_mode:i64 ignore_missing:i6
 		0 -> line_num
 
 		loop {
-			pos length >= if { break }
+			pos length >= if {
+				break
+			}
 
 			// Find end of line
 			pos -> line_start
 			loop {
-				pos length >= if { break }
-				buf pos mem::get_byte 10 == if { break }
+				pos length >= if {
+					break
+				}
+				buf pos mem::get_byte 10 == if {
+					break
+				}
 				pos 1 + -> pos
 			}
 
@@ -276,7 +299,9 @@ fn main( -- ) {
 		} else {
 			// Parse mode flags
 			f "-b" flag::bool f "--binary" flag::bool or -> binary_mode
-			f "-t" flag::bool f "--text" flag::bool or if { 0 -> binary_mode }
+			f "-t" flag::bool f "--text" flag::bool or if {
+				0 -> binary_mode
+			}
 			f "--tag" flag::bool -> tag_mode
 			f "-z" flag::bool f "--zero" flag::bool or -> zero_mode
 
@@ -299,7 +324,9 @@ fn main( -- ) {
 				argc -> remaining
 
 				loop {
-					remaining 0 <= if { break }
+					remaining 0 <= if {
+						break
+					}
 					-> arg
 					remaining 1 - -> remaining
 

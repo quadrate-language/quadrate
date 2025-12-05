@@ -1,5 +1,4 @@
 // Test: logical short-circuit evaluation
-
 fn main() {
 	// Test AND short-circuit: false AND <anything> = false
 	0 1 and . nl

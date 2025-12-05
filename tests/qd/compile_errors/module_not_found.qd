@@ -1,5 +1,4 @@
 // Test: using module that doesn't exist
-
 use nonexistent_module
 
 fn main() {

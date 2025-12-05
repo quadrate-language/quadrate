@@ -1,7 +1,6 @@
 // Test time::unix function
-
-use time
 use os
+use time
 
 fn main() {
 	time::unix

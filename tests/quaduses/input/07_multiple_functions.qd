@@ -1,5 +1,5 @@
-use unused1
 use math
+use unused1
 
 fn helper1(x:f64loat -- result:f64loat) {
 	x math::sqrt

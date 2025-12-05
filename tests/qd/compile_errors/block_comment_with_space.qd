@@ -1,6 +1,5 @@
 // Test: / * with space should not be parsed as block comment start
 // The `/ *` below should be div then mul operators, causing stack underflow
-
 fn main( -- ) {
 	1.0 / *
 }

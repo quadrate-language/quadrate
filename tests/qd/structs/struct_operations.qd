@@ -1,26 +1,29 @@
 struct Vec2 {
-  x:f64
-  y:f64
+	x:f64
+	y:f64
 }
 
 fn test_operations( -- ) {
-  Vec2 { x: 5.0 y: 10.0 } -> v
+	Vec2 {
+		x: 5.0
+		y: 10.0
+	} -> v
 
-  // Field values can now be used in operations!
-  v @x v @y add . nl
+	// Field values can now be used in operations!
+	v @x v @y add . nl
 
-  // Multiple operations
-  v @x 2.0 mul v @y add . nl
+	// Multiple operations
+	v @x 2.0 mul v @y add . nl
 
-  // Comparison
-  v @x v @y gt
-  if {
-    "x > y" print nl
-  } else {
-    "x <= y" print nl
-  }
+	// Comparison
+	v @x v @y gt
+	if {
+		"x > y" print nl
+	} else {
+		"x <= y" print nl
+	}
 }
 
 fn main( -- ) {
-  test_operations
+	test_operations
 }

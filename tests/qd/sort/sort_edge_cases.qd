@@ -1,5 +1,5 @@
-use sort
 use mem
+use sort
 
 fn main() {
 	// Single element array

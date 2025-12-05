@@ -1,6 +1,5 @@
 // Test: switch statement with duplicate case values
 // TODO: This should be an error but currently compiles (takes first match)
-
 fn main() {
 	1 switch {
 		1 {

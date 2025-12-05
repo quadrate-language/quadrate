@@ -8,20 +8,38 @@ fn main() {
 	// Generate values in range [10, 20)
 	0 10 1 for {
 		rng 10 20 rand::range -> rng -> n
-		n 10 < if { 0 -> all_valid }
-		n 20 >= if { 0 -> all_valid }
+		n 10 < if {
+			0 -> all_valid
+		}
+		n 20 >= if {
+			0 -> all_valid
+		}
 	}
 
-	all_valid if { "PASS: All values in range [10, 20)" } else { "FAIL: Value out of range" } . nl
+	all_valid if {
+		"PASS: All values in range [10, 20)"
+	} else {
+		"FAIL: Value out of range"
+	}
+	. nl
 
 	// Test negative range
 	888 rand::with_seed -> rng2
 	1 -> neg_valid
 	0 10 1 for {
 		rng2 -50 -40 rand::range -> rng2 -> m
-		m -50 < if { 0 -> neg_valid }
-		m -40 >= if { 0 -> neg_valid }
+		m -50 < if {
+			0 -> neg_valid
+		}
+		m -40 >= if {
+			0 -> neg_valid
+		}
 	}
 
-	neg_valid if { "PASS: All values in range [-50, -40)" } else { "FAIL: Value out of negative range" } . nl
+	neg_valid if {
+		"PASS: All values in range [-50, -40)"
+	} else {
+		"FAIL: Value out of negative range"
+	}
+	. nl
 }

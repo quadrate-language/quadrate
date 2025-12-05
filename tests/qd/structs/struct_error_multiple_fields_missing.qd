@@ -1,23 +1,27 @@
 // Negative test: struct missing multiple required fields
 struct Point {
-  x:f64
-  y:f64
+	x:f64
+	y:f64
 }
 
 struct Color {
-  r:f64
-  g:f64
-  b:f64
+	r:f64
+	g:f64
+	b:f64
 }
 
-fn distance_from_origin( p:ptr -- d:f64 ) {
-  -> point
-  point @x point @x mul
-  point @y point @y mul
-  add sqrt
+fn distance_from_origin(p:ptr -- d:f64) {
+	-> point
+	point @x point @x mul
+	point @y point @y mul
+	add sqrt
 }
 
 fn main( -- ) {
-  Color { r: 1.0 g: 0.5 b: 0.0 } -> c
-  c distance_from_origin . nl  // ERROR: Color missing x and y fields
+	Color {
+		r: 1.0
+		g: 0.5
+		b: 0.0
+	} -> c
+	c distance_from_origin . nl  // ERROR: Color missing x and y fields
 }

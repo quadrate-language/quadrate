@@ -1,8 +1,7 @@
 /// UUID generation (version 4 random UUIDs).
 /// Format: xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx
-
-use rand
 use mem
+use rand
 use str
 
 /// Generate a new random UUIDv4 string.
@@ -268,11 +267,18 @@ pub fn is_valid(s:str -- valid:i64) {
 	} else {
 		1 -> result
 		// Check dashes at positions 8, 13, 18, 23
-		s 8 str::char_at 45 != if { 0 -> result }
-		s 13 str::char_at 45 != if { 0 -> result }
-		s 18 str::char_at 45 != if { 0 -> result }
-		s 23 str::char_at 45 != if { 0 -> result }
+		s 8 str::char_at 45 != if {
+			0 -> result
+		}
+		s 13 str::char_at 45 != if {
+			0 -> result
+		}
+		s 18 str::char_at 45 != if {
+			0 -> result
+		}
+		s 23 str::char_at 45 != if {
+			0 -> result
+		}
 		result
 	}
 }
-

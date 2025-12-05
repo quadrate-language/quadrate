@@ -13,6 +13,6 @@ fn main( -- ) {
 	print nl
 	-3.0 split_module::negate
 	print nl
- split_module::get_hundred
+	split_module::get_hundred
 	print nl
 }

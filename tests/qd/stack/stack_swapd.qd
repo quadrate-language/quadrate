@@ -1,5 +1,4 @@
 // Test swapd (swap second and third): ( a b c -- b a c )
-
 fn main( -- ) {
 	// Test with integers
 	10 20 30 swapd

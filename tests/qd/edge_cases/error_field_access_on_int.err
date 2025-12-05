@@ -1,1 +1,1 @@
-[1mquadc: [0m[1mtests/qd/edge_cases/error_field_access_on_int.qd:3:6:[0m [1m[1;31merror:[0m [1mType error in field access 'x @foo': Variable 'x' is not a struct type[0m
+[1mquadc: [0m[1mtests/qd/edge_cases/error_field_access_on_int.qd:3:5:[0m [1m[1;31merror:[0m [1mType error in field access 'x @foo': Variable 'x' is not a struct type[0m

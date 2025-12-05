@@ -1,7 +1,6 @@
 /// Byte array operations and endianness conversion.
 /// Provides functions for reading and writing multi-byte integers
 /// in big-endian and little-endian byte order.
-
 use mem
 
 /// Read a 16-bit unsigned integer from memory in big-endian order.
@@ -267,7 +266,9 @@ pub fn copy(dst:ptr dst_off:i64 src:ptr src_off:i64 count:i64 -- ) {
 	-> dst
 	0 -> i
 	loop {
-		i count >= if { break }
+		i count >= if {
+			break
+		}
 		src src_off i + mem::get_byte -> byte
 		dst dst_off i + byte mem::set_byte
 		i 1 + -> i
@@ -287,7 +288,9 @@ pub fn fill(buf:ptr offset:i64 count:i64 value:i64 -- ) {
 	-> buf
 	0 -> i
 	loop {
-		i count >= if { break }
+		i count >= if {
+			break
+		}
 		buf offset i + value mem::set_byte
 		i 1 + -> i
 	}
@@ -310,7 +313,9 @@ pub fn compare(a:ptr a_off:i64 b:ptr b_off:i64 count:i64 -- result:i64) {
 	0 -> result
 	0 -> i
 	loop {
-		i count >= result 0 != or if { break }
+		i count >= result 0 != or if {
+			break
+		}
 		a a_off i + mem::get_byte -> ab
 		b b_off i + mem::get_byte -> bb
 		ab bb != if {

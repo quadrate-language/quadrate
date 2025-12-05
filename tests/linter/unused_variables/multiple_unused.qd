@@ -1,9 +1,8 @@
 // Test: Multiple unused variables
-
 fn main( -- ) {
-    10 -> unused_one
-    20 -> used
-    30 -> unused_two
-    40 -> unused_three
-    used
+	10 -> unused_one
+	20 -> used
+	30 -> unused_two
+	40 -> unused_three
+	used
 }

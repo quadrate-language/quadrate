@@ -1,6 +1,5 @@
 /// Base64 encoding and decoding.
 /// Optimized with lookup tables and direct buffer writes.
-
 use mem
 use str
 use unicode
@@ -9,11 +8,17 @@ use unicode
 fn make_enc_table( -- tbl:ptr) {
 	64 mem::alloc -> tbl
 	// A-Z (0-25)
-	0 26 1 for { tbl it unicode::A it + mem::set_byte }
+	0 26 1 for {
+		tbl it unicode::A it + mem::set_byte
+	}
 	// a-z (26-51)
-	26 52 1 for { tbl it unicode::a it 26 - + mem::set_byte }
+	26 52 1 for {
+		tbl it unicode::a it 26 - + mem::set_byte
+	}
 	// 0-9 (52-61)
-	52 62 1 for { tbl it unicode::digit0 it 52 - + mem::set_byte }
+	52 62 1 for {
+		tbl it unicode::digit0 it 52 - + mem::set_byte
+	}
 	// + (62)
 	tbl 62 unicode::plus mem::set_byte
 	// / (63)
@@ -27,11 +32,17 @@ fn make_dec_table( -- tbl:ptr) {
 	// Initialize all to -1 (invalid)
 	tbl 128 255 mem::fill
 	// A-Z -> 0-25
-	0 26 1 for { tbl unicode::A it + it mem::set_byte }
+	0 26 1 for {
+		tbl unicode::A it + it mem::set_byte
+	}
 	// a-z -> 26-51
-	0 26 1 for { tbl unicode::a it + 26 it + mem::set_byte }
+	0 26 1 for {
+		tbl unicode::a it + 26 it + mem::set_byte
+	}
 	// 0-9 -> 52-61
-	0 10 1 for { tbl unicode::digit0 it + 52 it + mem::set_byte }
+	0 10 1 for {
+		tbl unicode::digit0 it + 52 it + mem::set_byte
+	}
 	// + -> 62
 	tbl unicode::plus 62 mem::set_byte
 	// / -> 63
@@ -64,12 +75,24 @@ pub fn encode(input:str -- encoded:str) {
 	0 -> idx
 
 	loop {
-		i inlen >= if { break }
+		i inlen >= if {
+			break
+		}
 
 		// Get up to 3 bytes
 		buf i mem::get_byte -> b1
-		i 1 + inlen < if { buf i 1 + mem::get_byte } else { 0 } -> b2
-		i 2 + inlen < if { buf i 2 + mem::get_byte } else { 0 } -> b3
+		i 1 + inlen < if {
+			buf i 1 + mem::get_byte
+		} else {
+			0
+		}
+		-> b2
+		i 2 + inlen < if {
+			buf i 2 + mem::get_byte
+		} else {
+			0
+		}
+		-> b3
 
 		// Char 1: top 6 bits of b1
 		b1 2 shr 63 and -> idx
@@ -137,7 +160,9 @@ pub fn decode(encoded:str -- decoded:str) {
 		0 -> b3
 
 		loop {
-			i enclen >= if { break }
+			i enclen >= if {
+				break
+			}
 
 			// Get 4 base64 values via lookup (direct buffer access)
 			dec_tbl inbuf i mem::get_byte mem::get_byte -> v1

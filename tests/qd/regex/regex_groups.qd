@@ -1,16 +1,16 @@
 use regex
 
 fn main() {
-    // Basic grouping
-    "(a)" "a" regex::test . nl
-    "(ab)" "ab" regex::test . nl
-    "(abc)" "abc" regex::test . nl
+	// Basic grouping
+	"(a)" "a" regex::test . nl
+	"(ab)" "ab" regex::test . nl
+	"(abc)" "abc" regex::test . nl
 
-    // Group with quantifiers
-    "(ab)+" "ab" regex::test . nl
-    "(ab)+" "abab" regex::test . nl
-    "(ab)+" "a" regex::test . nl
+	// Group with quantifiers
+	"(ab)+" "ab" regex::test . nl
+	"(ab)+" "abab" regex::test . nl
+	"(ab)+" "a" regex::test . nl
 
-    // Group in pattern
-    "x(ab)y" "xaby" regex::test . nl
+	// Group in pattern
+	"x(ab)y" "xaby" regex::test . nl
 }

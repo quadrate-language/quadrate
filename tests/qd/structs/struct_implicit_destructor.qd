@@ -1,23 +1,25 @@
 // Test implicit destructors for nested structs and strings
 // When freeing a struct, nested struct fields and string fields are automatically freed
-
 struct Inner {
-  value:i64
-  name:str
+	value:i64
+	name:str
 }
 
 struct Outer {
-  inner:Inner
-  data:i64
+	inner:Inner
+	data:i64
 }
 
 fn main( -- ) {
-  // Create outer struct with nested inner containing string
-  Outer { inner: Inner { value: 42 name: "hello" } data: 100 } -> o
+	// Create outer struct with nested inner containing string
+	Outer {
+		inner: Inner { value: 42 name: "hello" }
+		data: 100
+	} -> o
 
-  // Access nested fields
-  o @inner @value . nl
-  o @inner @name . nl
-  o @data . nl
-  // Auto-released - implicit destructor frees inner and string
+	// Access nested fields
+	o @inner @value . nl
+	o @inner @name . nl
+	o @data . nl
+	// Auto-released - implicit destructor frees inner and string
 }

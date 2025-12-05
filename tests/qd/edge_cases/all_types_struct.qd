@@ -1,15 +1,20 @@
 struct AllTypes {
-  i_val:i64
-  f_val:f64
-  s_val:str
-  p_val:ptr
+	i_val:i64
+	f_val:f64
+	s_val:str
+	p_val:ptr
 }
 
 fn main( -- ) {
-  AllTypes { i_val: 42 f_val: 3.14 s_val: "hello" p_val: 0 } -> all
+	AllTypes {
+		i_val: 42
+		f_val: 3.14
+		s_val: "hello"
+		p_val: 0
+	} -> all
 
-  all @i_val . nl
-  all @f_val . nl
-  all @s_val prints nl
-  // Struct is automatically released at end of scope
+	all @i_val . nl
+	all @f_val . nl
+	all @s_val prints nl
+	// Struct is automatically released at end of scope
 }

@@ -8,11 +8,21 @@ fn main() {
 	rng1 rand::next -> rng1 -> n1
 	rng2 rand::next -> rng2 -> n2
 
-	n1 n2 == if { "PASS: Same seed produces same value" } else { "FAIL: Seeds differ" } . nl
+	n1 n2 == if {
+		"PASS: Same seed produces same value"
+	} else {
+		"FAIL: Seeds differ"
+	}
+	. nl
 
 	// Test different seeds produce different values
 	99999 rand::with_seed -> rng3
 	rng3 rand::next -> rng3 -> n3
 
-	n1 n3 != if { "PASS: Different seeds produce different values" } else { "FAIL: Seeds same" } . nl
+	n1 n3 != if {
+		"PASS: Different seeds produce different values"
+	} else {
+		"FAIL: Seeds same"
+	}
+	. nl
 }

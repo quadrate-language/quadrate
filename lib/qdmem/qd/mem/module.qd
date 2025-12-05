@@ -2,7 +2,6 @@
 ///
 /// SAFETY: These are unsafe operations with no bounds checking.
 /// Improper use can cause segmentation faults and memory corruption.
-
 import "libqdmem.a" as "mem" {
 	/// Allocate memory.
 	/// @param bytes i64 Number of bytes to allocate
@@ -111,7 +110,7 @@ import "libqdmem.a" as "mem" {
 /// Free allocated memory.
 /// @param address ptr Memory to free (null is safe)
 /// @example buf mem::free
-pub fn free( address:ptr -- ) {
+pub fn free(address:ptr -- ) {
 	free
 }
 
@@ -119,6 +118,6 @@ pub fn free( address:ptr -- ) {
 /// @param address ptr Pointer to check
 /// @return is_null i64 1 if null, 0 otherwise
 /// @example buf mem::is_null .  // 0
-pub fn is_null( address:ptr -- is_null:i64 ) {
+pub fn is_null(address:ptr -- is_null:i64) {
 	0 eq
 }

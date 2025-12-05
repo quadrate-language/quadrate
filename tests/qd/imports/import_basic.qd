@@ -1,9 +1,8 @@
 // Basic import test - single function call
-
 import "libqdfmt.a" as "fmt" {
-    fn printf(format:str -- )
+	fn printf(format:str -- )
 }
 
 fn main() {
-    "World" "Hello, %s!\n" fmt::printf
+	"World" "Hello, %s!\n" fmt::printf
 }

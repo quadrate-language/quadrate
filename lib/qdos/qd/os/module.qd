@@ -1,46 +1,33 @@
 /// Operating system interface.
-
 /// Error: No error.
 pub const Success = 0
-
 /// Error: Permission denied (EACCES).
 pub const PermissionDenied = 13
-
 /// Error: File already exists (EEXIST).
 pub const FileExists = 17
-
 /// Error: Path component is not a directory (ENOTDIR).
 pub const NotADirectory = 20
-
 /// Error: Is a directory when file expected (EISDIR).
 pub const IsADirectory = 21
-
 /// Error: Invalid argument (EINVAL).
 pub const InvalidArgument = 22
-
 /// Error: No such file or directory (ENOENT).
 pub const FileNotFound = 2
-
 /// Error: No space left on device (ENOSPC).
 pub const NoSpaceLeft = 28
-
 /// Error: Read-only file system (EROFS).
 pub const ReadOnlyFileSystem = 30
-
 /// Error: File name too long (ENAMETOOLONG).
 pub const NameTooLong = 36
-
 /// Error: I/O error (EIO).
 pub const IoError = 5
-
 /// Error: Out of memory (ENOMEM).
 pub const OutOfMemory = 12
-
 import "libqdos.a" as "os" {
 	/// Exit the program with status code.
 	/// @param code i64 Exit status (0 = success)
 	/// @example 0 os::exit
-	pub fn exit(code:i64 --)
+	pub fn exit(code:i64 -- )
 
 	/// Execute a shell command.
 	/// @param cmd str Command to execute
@@ -65,7 +52,7 @@ import "libqdos.a" as "os" {
 	/// @error File not found
 	/// @error Permission denied
 	/// @example "/tmp/test.txt" os::delete!
-	pub fn delete(path:str --)!
+	pub fn delete(path:str -- )!
 
 	/// Rename or move a file.
 	/// @param oldpath str Current path
@@ -73,7 +60,7 @@ import "libqdos.a" as "os" {
 	/// @error File not found
 	/// @error Permission denied
 	/// @example "old.txt" "new.txt" os::rename!
-	pub fn rename(oldpath:str newpath:str --)!
+	pub fn rename(oldpath:str newpath:str -- )!
 
 	/// Copy a file.
 	/// @param srcpath str Source path
@@ -81,14 +68,14 @@ import "libqdos.a" as "os" {
 	/// @error File not found
 	/// @error Permission denied
 	/// @example "src.txt" "dst.txt" os::copy!
-	pub fn copy(srcpath:str dstpath:str --)!
+	pub fn copy(srcpath:str dstpath:str -- )!
 
 	/// Create a directory.
 	/// @param path str Directory path
 	/// @error File exists
 	/// @error Permission denied
 	/// @example "/tmp/newdir" os::mkdir!
-	pub fn mkdir(path:str --)!
+	pub fn mkdir(path:str -- )!
 
 	/// List directory contents.
 	/// @param path str Directory path

@@ -1,12 +1,11 @@
 // Import test - multiple function calls
-
 import "libqdfmt.a" as "fmt" {
-    fn printf(format:str -- )
+	fn printf(format:str -- )
 }
 
 fn main() {
-    "Alice" "Hello, %s!\n" fmt::printf
-    "Bob" "Goodbye, %s!\n" fmt::printf
-    42 "The answer is %d\n" fmt::printf
-    3.14 "Pi is approximately %f\n" fmt::printf
+	"Alice" "Hello, %s!\n" fmt::printf
+	"Bob" "Goodbye, %s!\n" fmt::printf
+	42 "The answer is %d\n" fmt::printf
+	3.14 "Pi is approximately %f\n" fmt::printf
 }

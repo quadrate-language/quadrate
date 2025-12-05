@@ -1,5 +1,4 @@
 // Test time::sleep with duration constants
-
 use time
 
 fn main() {

@@ -1,5 +1,4 @@
 // Test dupd (duplicate second element): ( a b -- a a b )
-
 fn main( -- ) {
 	// Test with integers
 	10 20 dupd

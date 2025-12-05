@@ -1,26 +1,32 @@
 // Test function with multiple struct parameters
 struct Point {
-  x:f64
-  y:f64
+	x:f64
+	y:f64
 }
 
 struct Offset {
-  dx:f64
-  dy:f64
+	dx:f64
+	dy:f64
 }
 
-fn add_offset( point:ptr offset:ptr -- ) {
-  -> offset -> point
-  point @x offset @dx add . nl
-  point @y offset @dy add . nl
+fn add_offset(point:ptr offset:ptr -- ) {
+	-> offset -> point
+	point @x offset @dx add . nl
+	point @y offset @dy add . nl
 }
 
 fn test_multi_params( -- ) {
-  Point { x: 3.0 y: 4.0 } -> p
-  Offset { dx: 1.0 dy: 2.0 } -> o
-  p o add_offset
+	Point {
+		x: 3.0
+		y: 4.0
+	} -> p
+	Offset {
+		dx: 1.0
+		dy: 2.0
+	} -> o
+	p o add_offset
 }
 
 fn main( -- ) {
-  test_multi_params
+	test_multi_params
 }

@@ -37,7 +37,7 @@ fn main( -- ) {
 		5 eq if {
 			break
 		}
-	 . nl
+		. nl
 	}
 	// Nested for loops with conditionals
 	// Should print nl 99 three times (when inner loop it == 1)

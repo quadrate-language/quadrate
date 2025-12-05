@@ -1,5 +1,5 @@
-use uuid
 use str
+use uuid
 
 fn main() {
 	// Test seeded UUID for reproducibility

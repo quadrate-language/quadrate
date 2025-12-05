@@ -1,11 +1,10 @@
 /// CRC32 checksum calculation.
 /// Implements the standard CRC-32 algorithm (ISO 3309, used in Ethernet, ZIP, PNG).
 /// Polynomial: 0xEDB88320 (reflected form of 0x04C11DB7)
-
-use mem
 use bits
-use str
 use hex
+use mem
+use str
 
 // CRC32 polynomial (reflected)
 const POLY = 3988292384  // 0xEDB88320
@@ -16,7 +15,9 @@ fn make_table_entry(index:i64 -- entry:i64) {
 	index -> crc
 	0 -> j
 	loop {
-		j 8 >= if { break }
+		j 8 >= if {
+			break
+		}
 		crc 1 and 1 == if {
 			crc 1 shr POLY xor -> crc
 		} else {
@@ -33,7 +34,9 @@ fn make_table( -- tbl:ptr) {
 	2048 mem::alloc -> tbl
 	0 -> i
 	loop {
-		i 256 >= if { break }
+		i 256 >= if {
+			break
+		}
 		i make_table_entry -> entry
 		// Store as 8-byte value
 		tbl i 8 * entry mem::set
@@ -64,7 +67,9 @@ pub fn checksum(s:str -- crc:i64) {
 
 	0 -> i
 	loop {
-		i slen >= if { break }
+		i slen >= if {
+			break
+		}
 		s i str::char_at -> byte
 		// crc = table[(crc ^ byte) & 0xFF] ^ (crc >> 8)
 		crc byte xor 255 and -> index
@@ -93,7 +98,9 @@ pub fn checksum_buf(buf:ptr len:i64 -- crc:i64) {
 
 	0 -> i
 	loop {
-		i len >= if { break }
+		i len >= if {
+			break
+		}
 		buf i mem::get_byte -> byte
 		crc byte xor 255 and -> index
 		tbl index table_get crc 8 shr xor -> crc
@@ -117,14 +124,17 @@ pub fn checksum_hex(s:str -- h:str) {
 	8 mem::alloc -> buf
 	0 -> i
 	loop {
-		i 8 >= if { break }
+		i 8 >= if {
+			break
+		}
 		// Extract nibble (high nibble first)
 		crc 28 i 4 * - shr 15 and -> nibble
 		nibble 10 < if {
 			48 nibble +  // '0' + nibble
 		} else {
 			87 nibble +  // 'a' - 10 + nibble
-		} -> char
+		}
+		-> char
 		buf i char mem::set_byte
 		i 1 + -> i
 	}
@@ -149,7 +159,9 @@ pub fn update(crc:i64 s:str -- new_crc:i64) {
 
 	0 -> i
 	loop {
-		i slen >= if { break }
+		i slen >= if {
+			break
+		}
 		s i str::char_at -> byte
 		crc byte xor 255 and -> index
 		tbl index table_get crc 8 shr xor -> crc
@@ -177,5 +189,9 @@ pub fn finalize(crc:i64 -- final:i64) {
 pub fn verify(s:str expected:i64 -- ok:i64) {
 	-> expected
 	-> s
-	s checksum expected == if { 1 } else { 0 }
+	s checksum expected == if {
+		1
+	} else {
+		0
+	}
 }

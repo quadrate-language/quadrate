@@ -2,6 +2,6 @@
 use "module_a.qd"
 
 fn main( -- ) {
-    10
-    drop
+	10
+	drop
 }

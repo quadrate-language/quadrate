@@ -1,10 +1,13 @@
 // Negative test: direct field access with wrong field name
 struct Point {
-  x:f64
-  y:f64
+	x:f64
+	y:f64
 }
 
 fn main( -- ) {
-  Point { x: 3.0 y: 4.0 } -> p
-  p @z . nl  // ERROR: Point has no field 'z'
+	Point {
+		x: 3.0
+		y: 4.0
+	} -> p
+	p @z . nl  // ERROR: Point has no field 'z'
 }

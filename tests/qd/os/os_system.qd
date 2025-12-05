@@ -1,5 +1,4 @@
 // Test os::system function
-
 use os
 
 fn main( -- ) {

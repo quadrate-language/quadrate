@@ -1,9 +1,8 @@
 // Test: Dead code after break statement
-
 fn main( -- ) {
-    loop {
-        1 2 add
-        break
-        3 4 add
-    }
+	loop {
+		1 2 add
+		break
+		3 4 add
+	}
 }

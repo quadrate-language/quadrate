@@ -1,25 +1,35 @@
 struct Point2D {
-  x:f64
-  y:f64
+	x:f64
+	y:f64
 }
 
 struct Point3D {
-  x:f64
-  y:f64
-  z:f64
+	x:f64
+	y:f64
+	z:f64
 }
 
 struct Vec2 {
-  x:f64
-  y:f64
+	x:f64
+	y:f64
 }
 
 fn main( -- ) {
-  Point2D { x: 1.0 y: 2.0 } -> p2
-  Point3D { x: 3.0 y: 4.0 z: 5.0 } -> p3
-  Vec2 { x: 6.0 y: 7.0 } -> v
+	Point2D {
+		x: 1.0
+		y: 2.0
+	} -> p2
+	Point3D {
+		x: 3.0
+		y: 4.0
+		z: 5.0
+	} -> p3
+	Vec2 {
+		x: 6.0
+		y: 7.0
+	} -> v
 
-  p2 @x . nl
-  p3 @z . nl
-  v @y . nl
+	p2 @x . nl
+	p3 @z . nl
+	v @y . nl
 }

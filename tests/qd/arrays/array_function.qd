@@ -1,11 +1,11 @@
 // Arrays returned from functions
-fn make_array( -- arr:ptr ) {
-  [1 2 3 4 5]
+fn make_array( -- arr:ptr) {
+	[1 2 3 4 5]
 }
 
 fn main( -- ) {
-  make_array -> arr
-  arr len . nl
-  arr 0 nth . nl
-  arr 4 nth . nl
+	make_array -> arr
+	arr len . nl
+	arr 0 nth . nl
+	arr 4 nth . nl
 }

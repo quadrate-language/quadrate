@@ -1,7 +1,7 @@
 // Iterate over array elements
 fn main( -- ) {
-  [5 10 15 20] -> arr
-  0 4 1 for {
-    arr it nth . nl
-  }
+	[5 10 15 20] -> arr
+	0 4 1 for {
+		arr it nth . nl
+	}
 }

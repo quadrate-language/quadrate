@@ -1,8 +1,8 @@
 // String array
 fn main( -- ) {
-  ["hello" "world" "test"] -> arr
-  arr 0 nth . nl
-  arr 1 nth . nl
-  arr 2 nth . nl
-  arr len . nl
+	["hello" "world" "test"] -> arr
+	arr 0 nth . nl
+	arr 1 nth . nl
+	arr 2 nth . nl
+	arr len . nl
 }

@@ -1,21 +1,21 @@
 // Negative test: str vs ptr type mismatch
 struct WithStr {
-  data:str
-  name:str
+	data:str
+	name:str
 }
 
 struct WithPtr {
-  data:ptr
+	data:ptr
 }
 
-fn use_str_field( obj:ptr -- ) {
-  -> x
-  x @data drop  // Expects str field
-  x @name drop  // Expects name field (unique to WithStr)
+fn use_str_field(obj:ptr -- ) {
+	-> x
+	x @data drop  // Expects str field
+	x @name drop  // Expects name field (unique to WithStr)
 }
 
 fn main( -- ) {
-  // Pass WithPtr to function expecting WithStr - type mismatch!
-  WithPtr { data: 0 } -> p
-  p use_str_field
+	// Pass WithPtr to function expecting WithStr - type mismatch!
+	WithPtr { data: 0 } -> p
+	p use_str_field
 }

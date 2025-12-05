@@ -1,27 +1,27 @@
 // Edge case: same field name in different structs with compatible types
 struct PersonWithFloat {
-  value:f64
+	value:f64
 }
 
 struct PersonWithInt {
-  value:i64
+	value:i64
 }
 
-fn get_value( p:ptr -- v:f64 ) {
-  -> obj
-  obj @value
+fn get_value(p:ptr -- v:f64) {
+	-> obj
+	obj @value
 }
 
 fn test_same_field( -- ) {
-  // Float version - exact match
-  PersonWithFloat { value: 3.14 } -> p1
-  p1 get_value . nl
+	// Float version - exact match
+	PersonWithFloat { value: 3.14 } -> p1
+	p1 get_value . nl
 
-  // Int version - implicit cast (with warning)
-  PersonWithInt { value: 42 } -> p2
-  p2 get_value . nl
+	// Int version - implicit cast (with warning)
+	PersonWithInt { value: 42 } -> p2
+	p2 get_value . nl
 }
 
 fn main( -- ) {
-  test_same_field
+	test_same_field
 }

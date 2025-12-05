@@ -1,6 +1,5 @@
 // Math utilities module
 // Demonstrates how to create and use modules in Quadrate
-
 // Constants - using pub const for module-level constants
 pub const Pi = 3.141592653589793
 pub const Tau = 6.283185307179586

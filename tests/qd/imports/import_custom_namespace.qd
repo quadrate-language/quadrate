@@ -1,9 +1,8 @@
 // Import test - custom namespace name
-
 import "libqdfmt.a" as "fmt" {
-    fn printf(format:str -- )
+	fn printf(format:str -- )
 }
 
 fn main() {
-    "custom" "Namespace: %s\n" fmt::printf
+	"custom" "Namespace: %s\n" fmt::printf
 }

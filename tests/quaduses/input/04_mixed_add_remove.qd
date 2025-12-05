@@ -1,7 +1,7 @@
-use zoo
 use math
-use unused1
 use net
+use unused1
+use zoo
 
 fn helper( -- ) {
 	5.5 math::sqrt print nl

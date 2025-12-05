@@ -1,8 +1,8 @@
 // Top level comment
-use unused
-use math
 // Comment between uses
+use math
 use net
+use unused
 
 // Function comment
 fn main( -- ) {

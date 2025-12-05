@@ -1,14 +1,14 @@
 // Arrays in control flow
 fn main( -- ) {
-  // Array in if block
-  1 if {
-    [10 20 30] 1 nth . nl
-  }
+	// Array in if block
+	1 if {
+		[10 20 30] 1 nth . nl
+	}
 
-  // Array in else block
-  0 if {
-    [100 200] 0 nth . nl
-  } else {
-    [300 400] 0 nth . nl
-  }
+	// Array in else block
+	0 if {
+		[100 200] 0 nth . nl
+	} else {
+		[300 400] 0 nth . nl
+	}
 }

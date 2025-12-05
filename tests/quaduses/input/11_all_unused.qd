@@ -1,7 +1,7 @@
-use math
-use str
 use bits
+use math
 use net
+use str
 
 fn main( -- ) {
 	42 print nl

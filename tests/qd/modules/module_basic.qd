@@ -14,7 +14,7 @@ fn main( -- ) {
 	// Test constant functions
 	simple_math::ten
 	print nl
- simple_math::twenty
+	simple_math::twenty
 	print nl
 	// Test chaining module functions
 	2.0 simple_math::double

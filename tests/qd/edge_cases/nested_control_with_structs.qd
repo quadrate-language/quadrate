@@ -1,28 +1,31 @@
 struct Point {
-  x:f64
-  y:f64
+	x:f64
+	y:f64
 }
 
 fn process_point( -- ) {
-  Point { x: 1.0 y: 2.0 } -> p
-  // Struct is auto-released at end of function
-  0 5 1 for {
-    it 3 lt
-    if {
-      p @x . nl
-    } else {
-      p @y . nl
-    }
-  }
+	Point {
+		x: 1.0
+		y: 2.0
+	} -> p
+	// Struct is auto-released at end of function
+	0 5 1 for {
+		it 3 lt
+		if {
+			p @x . nl
+		} else {
+			p @y . nl
+		}
+	}
 }
 
 fn main( -- ) {
-  0 10 1 for {
-    it 2 mod 0 eq
-    if {
-      process_point
-    } else {
-      "Odd" prints nl
-    }
-  }
+	0 10 1 for {
+		it 2 mod 0 eq
+		if {
+			process_point
+		} else {
+			"Odd" prints nl
+		}
+	}
 }

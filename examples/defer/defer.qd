@@ -3,7 +3,6 @@
 // defer schedules a block to run when the function exits,
 // regardless of how the function exits (normal return or error).
 // Multiple defers execute in LIFO order (last-in, first-out).
-
 // A simple resource struct
 struct Resource {
 	id:i64
@@ -12,7 +11,10 @@ struct Resource {
 
 fn create_resource(id:i64 -- r:ptr) {
 	-> id
-	Resource { id: id value: id 100 * }
+	Resource {
+		id: id
+		value: id 100 *
+	}
 }
 
 fn destroy_resource(r:ptr -- ) {
@@ -39,9 +41,15 @@ fn multiple_defers( -- ) {
 	"Multiple defers (LIFO order):" . nl
 	"  Registering defers..." . nl
 
-	defer { "  Third defer (registered first)" . nl }
-	defer { "  Second defer (registered second)" . nl }
-	defer { "  First defer (registered last)" . nl }
+	defer {
+		"  Third defer (registered first)" . nl
+	}
+	defer {
+		"  Second defer (registered second)" . nl
+	}
+	defer {
+		"  First defer (registered last)" . nl
+	}
 
 	"  Function body done" . nl
 	"  Now defers will run:" . nl
@@ -56,15 +64,21 @@ fn resource_cleanup( -- ) {
 	"  Created resource 1" . nl
 
 	// Register cleanup immediately after creation
-	defer { r1 destroy_resource }
+	defer {
+		r1 destroy_resource
+	}
 
 	2 create_resource -> r2
 	"  Created resource 2" . nl
-	defer { r2 destroy_resource }
+	defer {
+		r2 destroy_resource
+	}
 
 	3 create_resource -> r3
 	"  Created resource 3" . nl
-	defer { r3 destroy_resource }
+	defer {
+		r3 destroy_resource
+	}
 
 	// Do some work with resources
 	"  Working with resources..." . nl

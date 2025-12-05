@@ -1,6 +1,5 @@
 /// StringBuilder - Efficient string building.
 /// Avoids O(n²) cost of repeated str::concat.
-
 use mem
 use str
 use unicode
@@ -18,7 +17,11 @@ pub struct StringBuilder {
 pub fn new( -- sb:ptr) {
 	64 -> cap
 	cap mem::alloc -> buf
-	StringBuilder { buf: buf len: 0 cap: cap }
+	StringBuilder {
+		buf: buf
+		len: 0
+		cap: cap
+	}
 }
 
 /// Create a StringBuilder with specific initial capacity.
@@ -27,9 +30,15 @@ pub fn new( -- sb:ptr) {
 /// @example 1024 sb::with_capacity -> builder
 pub fn with_capacity(capacity:i64 -- sb:ptr) {
 	-> capacity
-	capacity 16 < if { 16 -> capacity }
+	capacity 16 < if {
+		16 -> capacity
+	}
 	capacity mem::alloc -> buf
-	StringBuilder { buf: buf len: 0 cap: capacity }
+	StringBuilder {
+		buf: buf
+		len: 0
+		cap: capacity
+	}
 }
 
 /// Append a string to the builder.
@@ -53,7 +62,9 @@ pub fn append(sb:ptr s:str -- sb:ptr) {
 		// Double capacity until it fits
 		loop {
 			cap 2 * -> cap
-			newlen cap <= if { break }
+			newlen cap <= if {
+				break
+			}
 		}
 		buf cap mem::realloc -> buf
 	}
@@ -61,14 +72,20 @@ pub fn append(sb:ptr s:str -- sb:ptr) {
 	// Copy string bytes one by one
 	0 -> i
 	loop {
-		i slen >= if { break }
+		i slen >= if {
+			break
+		}
 		s i str::char_at -> byte
 		buf curlen i + byte mem::set_byte
 		i 1 + -> i
 	}
 
 	// Return updated builder
-	StringBuilder { buf: buf len: newlen cap: cap }
+	StringBuilder {
+		buf: buf
+		len: newlen
+		cap: cap
+	}
 }
 
 /// Append a single character (by code point).
@@ -94,7 +111,11 @@ pub fn append_char(sb:ptr c:i64 -- sb:ptr) {
 	buf curlen c mem::set_byte
 
 	// Return updated builder
-	StringBuilder { buf: buf len: curlen 1 + cap: cap }
+	StringBuilder {
+		buf: buf
+		len: curlen 1 +
+		cap: cap
+	}
 }
 
 /// Append an integer as string.
@@ -120,7 +141,9 @@ pub fn append_int(sb:ptr n:i64 -- sb:ptr) {
 		0 -> count
 		n -> temp
 		loop {
-			temp 0 == if { break }
+			temp 0 == if {
+				break
+			}
 			count 1 + -> count
 			temp 10 / -> temp
 		}
@@ -134,7 +157,9 @@ pub fn append_int(sb:ptr n:i64 -- sb:ptr) {
 		curlen count + cap > if {
 			loop {
 				cap 2 * -> cap
-				curlen count + cap <= if { break }
+				curlen count + cap <= if {
+					break
+				}
 			}
 			buf cap mem::realloc -> buf
 		}
@@ -142,14 +167,20 @@ pub fn append_int(sb:ptr n:i64 -- sb:ptr) {
 		// Write digits backwards from end position
 		curlen count + 1 - -> pos
 		loop {
-			n 0 == if { break }
+			n 0 == if {
+				break
+			}
 			n 10 mod unicode::digit0 + -> digit
 			buf pos digit mem::set_byte
 			pos 1 - -> pos
 			n 10 / -> n
 		}
 
-		StringBuilder { buf: buf len: curlen count + cap: cap }
+		StringBuilder {
+			buf: buf
+			len: curlen count +
+			cap: cap
+		}
 	}
 }
 

@@ -1,30 +1,21 @@
 /// Time operations and duration constants.
 /// Inspired by Go's time package for date handling.
-
 /// Duration: 1 nanosecond.
 pub const Nanosecond = 1
-
 /// Duration: 1 microsecond (1000 nanoseconds).
 pub const Microsecond = 1000
-
 /// Duration: 1 millisecond (1,000,000 nanoseconds).
 pub const Millisecond = 1000000
-
 /// Duration: 1 second (1,000,000,000 nanoseconds).
 pub const Second = 1000000000
-
 /// Duration: 1 minute (60 seconds).
 pub const Minute = 60000000000
-
 /// Duration: 1 hour (60 minutes).
 pub const Hour = 3600000000000
-
 /// Duration: 1 day (24 hours).
 pub const Day = 86400000000000
-
 /// Duration: 1 week (7 days).
 pub const Week = 604800000000000
-
 /// Weekday constants (like Go: Sunday=0)
 pub const Sunday = 0
 pub const Monday = 1
@@ -33,7 +24,6 @@ pub const Wednesday = 3
 pub const Thursday = 4
 pub const Friday = 5
 pub const Saturday = 6
-
 /// Month constants (1-indexed like Go)
 pub const January = 1
 pub const February = 2
@@ -47,17 +37,16 @@ pub const September = 9
 pub const October = 10
 pub const November = 11
 pub const December = 12
-
 import "libqdtime.a" as "time" {
 	/// Get Unix timestamp in seconds.
 	/// @return timestamp i64 Seconds since 1970-01-01 00:00:00 UTC
 	/// @example time::unix .  // 1700000000
-	pub fn unix( -- timestamp:i64 )
+	pub fn unix( -- timestamp:i64)
 
 	/// Get current time in nanoseconds.
 	/// @return nanoseconds i64 Monotonic nanosecond timestamp
 	/// @example time::now -> start
-	pub fn now( -- nanoseconds:i64 )
+	pub fn now( -- nanoseconds:i64)
 
 	/// Sleep for duration in nanoseconds.
 	/// @param duration i64 Duration to sleep (use time constants)
@@ -68,7 +57,6 @@ import "libqdtime.a" as "time" {
 // ============================================================
 // Date Functions (Go-inspired)
 // ============================================================
-
 /// Check if year is a leap year.
 /// @param yr i64 Year to check
 /// @return is_leap i64 1 if leap year, 0 otherwise
@@ -81,7 +69,11 @@ pub fn is_leap_year(yr:i64 -- is_leap:i64) {
 		yr 100 % 0 == if {
 			0
 		} else {
-			yr 4 % 0 == if { 1 } else { 0 }
+			yr 4 % 0 == if {
+				1
+			} else {
+				0
+			}
 		}
 	}
 }
@@ -94,20 +86,66 @@ pub fn is_leap_year(yr:i64 -- is_leap:i64) {
 pub fn days_in_month(yr:i64 mon:i64 -- days:i64) {
 	-> mon
 	-> yr
-	mon 1 == if { 31 }
-	else { mon 2 == if {
-		yr is_leap_year if { 29 } else { 28 }
+	mon 1 == if {
+		31
 	}
-	else { mon 3 == if { 31 }
-	else { mon 4 == if { 30 }
-	else { mon 5 == if { 31 }
-	else { mon 6 == if { 30 }
-	else { mon 7 == if { 31 }
-	else { mon 8 == if { 31 }
-	else { mon 9 == if { 30 }
-	else { mon 10 == if { 31 }
-	else { mon 11 == if { 30 }
-	else { 31 }}}}}}}}}}}
+	else {
+		mon 2 == if {
+			yr is_leap_year if {
+				29
+			} else {
+				28
+			}
+		}
+		else {
+			mon 3 == if {
+				31
+			}
+			else {
+				mon 4 == if {
+					30
+				}
+				else {
+					mon 5 == if {
+						31
+					}
+					else {
+						mon 6 == if {
+							30
+						}
+						else {
+							mon 7 == if {
+								31
+							}
+							else {
+								mon 8 == if {
+									31
+								}
+								else {
+									mon 9 == if {
+										30
+									}
+									else {
+										mon 10 == if {
+											31
+										}
+										else {
+											mon 11 == if {
+												30
+											}
+											else {
+												31
+											}
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
 }
 
 /// Extract year from Unix timestamp.
@@ -120,9 +158,16 @@ pub fn year(ts:i64 -- yr:i64) {
 	ts 0 >= if {
 		// Forward from 1970
 		loop {
-			yr is_leap_year if { 366 } else { 365 } -> days_in_yr
+			yr is_leap_year if {
+				366
+			} else {
+				365
+			}
+			-> days_in_yr
 			days_in_yr 86400 * -> secs_in_yr
-			ts secs_in_yr < if { break }
+			ts secs_in_yr < if {
+				break
+			}
 			ts secs_in_yr - -> ts
 			yr 1 + -> yr
 		}
@@ -130,10 +175,17 @@ pub fn year(ts:i64 -- yr:i64) {
 		// Backward from 1970
 		loop {
 			yr 1 - -> yr
-			yr is_leap_year if { 366 } else { 365 } -> days_in_yr
+			yr is_leap_year if {
+				366
+			} else {
+				365
+			}
+			-> days_in_yr
 			days_in_yr 86400 * -> secs_in_yr
 			ts secs_in_yr + -> ts
-			ts 0 >= if { break }
+			ts 0 >= if {
+				break
+			}
 		}
 	}
 	yr
@@ -151,26 +203,46 @@ pub fn month(ts:i64 -- mon:i64) {
 	0 -> secs
 	ts 0 >= if {
 		loop {
-			y yr >= if { break }
-			y is_leap_year if { 366 } else { 365 } 86400 * secs + -> secs
+			y yr >= if {
+				break
+			}
+			y is_leap_year if {
+				366
+			} else {
+				365
+			}
+			86400 * secs + -> secs
 			y 1 + -> y
 		}
 	} else {
 		yr -> y
 		loop {
-			y 1970 >= if { break }
+			y 1970 >= if {
+				break
+			}
 			y 1 - -> y
-			y is_leap_year if { 366 } else { 365 } 86400 * secs - -> secs
+			y is_leap_year if {
+				366
+			} else {
+				365
+			}
+			86400 * secs - -> secs
 		}
 	}
 	ts secs - -> remaining
-	remaining 0 < if { remaining 86400 + -> remaining }
+	remaining 0 < if {
+		remaining 86400 + -> remaining
+	}
 
 	1 -> mon
 	loop {
-		mon 12 > if { break }
+		mon 12 > if {
+			break
+		}
 		yr mon days_in_month 86400 * -> days_secs
-		remaining days_secs < if { break }
+		remaining days_secs < if {
+			break
+		}
 		remaining days_secs - -> remaining
 		mon 1 + -> mon
 	}
@@ -191,25 +263,43 @@ pub fn day(ts:i64 -- d:i64) {
 	0 -> secs
 	ts 0 >= if {
 		loop {
-			y yr >= if { break }
-			y is_leap_year if { 366 } else { 365 } 86400 * secs + -> secs
+			y yr >= if {
+				break
+			}
+			y is_leap_year if {
+				366
+			} else {
+				365
+			}
+			86400 * secs + -> secs
 			y 1 + -> y
 		}
 	} else {
 		yr -> y
 		loop {
-			y 1970 >= if { break }
+			y 1970 >= if {
+				break
+			}
 			y 1 - -> y
-			y is_leap_year if { 366 } else { 365 } 86400 * secs - -> secs
+			y is_leap_year if {
+				366
+			} else {
+				365
+			}
+			86400 * secs - -> secs
 		}
 	}
 	ts secs - -> remaining
-	remaining 0 < if { remaining 86400 + -> remaining }
+	remaining 0 < if {
+		remaining 86400 + -> remaining
+	}
 
 	// Subtract months
 	1 -> m
 	loop {
-		m mon >= if { break }
+		m mon >= if {
+			break
+		}
 		yr m days_in_month 86400 * remaining swap - -> remaining
 		m 1 + -> m
 	}
@@ -286,7 +376,9 @@ pub fn year_day(ts:i64 -- yd:i64) {
 	0 -> total
 	1 -> m
 	loop {
-		m mon >= if { break }
+		m mon >= if {
+			break
+		}
 		yr m days_in_month total + -> total
 		m 1 + -> m
 	}
@@ -311,15 +403,29 @@ pub fn date(yr:i64 mon:i64 d:i64 h:i64 m:i64 s:i64 -- ts:i64) {
 	yr 1970 >= if {
 		1970 -> y
 		loop {
-			y yr >= if { break }
-			y is_leap_year if { 366 } else { 365 } 86400 * total + -> total
+			y yr >= if {
+				break
+			}
+			y is_leap_year if {
+				366
+			} else {
+				365
+			}
+			86400 * total + -> total
 			y 1 + -> y
 		}
 	} else {
 		yr -> y
 		loop {
-			y 1970 >= if { break }
-			y is_leap_year if { 366 } else { 365 } 86400 * total - -> total
+			y 1970 >= if {
+				break
+			}
+			y is_leap_year if {
+				366
+			} else {
+				365
+			}
+			86400 * total - -> total
 			y 1 + -> y
 		}
 	}
@@ -327,7 +433,9 @@ pub fn date(yr:i64 mon:i64 d:i64 h:i64 m:i64 s:i64 -- ts:i64) {
 	// Add months
 	1 -> mo
 	loop {
-		mo mon >= if { break }
+		mo mon >= if {
+			break
+		}
 		yr mo days_in_month 86400 * total + -> total
 		mo 1 + -> mo
 	}
@@ -368,7 +476,11 @@ pub fn add_hours(ts:i64 hours:i64 -- new_ts:i64) {
 /// @example ts1 ts2 time::before .
 pub fn before(ts1:i64 ts2:i64 -- before:i64) {
 	-> ts2 -> ts1
-	ts1 ts2 < if { 1 } else { 0 }
+	ts1 ts2 < if {
+		1
+	} else {
+		0
+	}
 }
 
 /// Check if timestamp is after another.
@@ -378,7 +490,11 @@ pub fn before(ts1:i64 ts2:i64 -- before:i64) {
 /// @example ts1 ts2 time::after .
 pub fn after(ts1:i64 ts2:i64 -- after:i64) {
 	-> ts2 -> ts1
-	ts1 ts2 > if { 1 } else { 0 }
+	ts1 ts2 > if {
+		1
+	} else {
+		0
+	}
 }
 
 /// Get difference between two timestamps in seconds.

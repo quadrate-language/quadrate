@@ -19,11 +19,11 @@ fn main( -- ) {
 	// Test constants (from constants.qd)
 	multi_file::pi
 	print nl
- multi_file::e
+	multi_file::e
 	print nl
- multi_file::tau
+	multi_file::tau
 	print nl
- multi_file::phi
+	multi_file::phi
 	print nl
 	// Test function that uses multiple files
 	5.0 multi_file::calculate

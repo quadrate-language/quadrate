@@ -1,5 +1,4 @@
 /// TCP network operations.
-
 import "libqdnet.a" as "net" {
 	/// Start listening for connections on a port.
 	/// @param port i64 Port number to listen on
@@ -38,10 +37,10 @@ import "libqdnet.a" as "net" {
 	/// Shutdown socket for reading/writing.
 	/// @param socket i64 Socket descriptor
 	/// @example sock net::shutdown
-	pub fn shutdown(socket:i64 --)
+	pub fn shutdown(socket:i64 -- )
 
 	/// Close socket and release resources.
 	/// @param socket i64 Socket descriptor
 	/// @example sock net::close
-	pub fn close(socket:i64 --)
+	pub fn close(socket:i64 -- )
 }

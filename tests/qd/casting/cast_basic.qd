@@ -1,5 +1,4 @@
 // Test basic type casting operations
-
 fn main() {
 	// Test casti - cast float to int (truncates)
 	3.14 casti . nl

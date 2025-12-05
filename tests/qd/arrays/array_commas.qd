@@ -1,7 +1,7 @@
 // Array with commas (optional)
 fn main( -- ) {
-  [100, 200, 300] -> arr
-  arr 0 nth . nl
-  arr 1 nth . nl
-  arr 2 nth . nl
+	[100, 200, 300] -> arr
+	arr 0 nth . nl
+	arr 1 nth . nl
+	arr 2 nth . nl
 }

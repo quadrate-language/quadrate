@@ -1,5 +1,4 @@
 // Test: using 'it' (loop variable) outside loop
-
 fn main() {
 	10 it add . nl
 }

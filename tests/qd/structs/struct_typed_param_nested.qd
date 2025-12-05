@@ -2,58 +2,61 @@
 use math
 
 struct Vec2 {
-    x:f64
-    y:f64
+	x:f64
+	y:f64
 }
 
 // Helper to get magnitude
 fn magnitude(v:Vec2 -- result:f64) {
-    -> v
-    v @x dup * v @y dup * + math::sqrt
+	-> v
+	v @x dup * v @y dup * + math::sqrt
 }
 
 // Helper to get x component
 fn get_x(v:Vec2 -- result:f64) {
-    -> v
-    v @x
+	-> v
+	v @x
 }
 
 // Helper to get y component
 fn get_y(v:Vec2 -- result:f64) {
-    -> v
-    v @y
+	-> v
+	v @y
 }
 
 // Function that calls other typed functions
 fn sum_components(v:Vec2 -- result:f64) {
-    -> v
-    v get_x v get_y +
+	-> v
+	v get_x v get_y +
 }
 
 // Chain of nested calls
 fn double_sum(v:Vec2 -- result:f64) {
-    -> v
-    v sum_components 2.0 *
+	-> v
+	v sum_components 2.0 *
 }
 
 // Call different functions on same parameter
 fn describe_vec(v:Vec2 -- ) {
-    -> v
-    "Vector: x=" . v get_x .
-    " y=" . v get_y .
-    " magnitude=" . v magnitude .
-    " sum=" . v sum_components . nl
+	-> v
+	"Vector: x=" . v get_x .
+	" y=" . v get_y .
+	" magnitude=" . v magnitude .
+	" sum=" . v sum_components . nl
 }
 
 fn main( -- ) {
-    Vec2 { x: 3.0 y: 4.0 } -> v
+	Vec2 {
+		x: 3.0
+		y: 4.0
+	} -> v
 
-    "Components:" . nl
-    "  x: " . v get_x . nl
-    "  y: " . v get_y . nl
-    "  magnitude: " . v magnitude . nl
-    "  sum: " . v sum_components . nl
-    "  double_sum: " . v double_sum . nl
+	"Components:" . nl
+	"  x: " . v get_x . nl
+	"  y: " . v get_y . nl
+	"  magnitude: " . v magnitude . nl
+	"  sum: " . v sum_components . nl
+	"  double_sum: " . v double_sum . nl
 
-    v describe_vec
+	v describe_vec
 }

@@ -1,23 +1,17 @@
 /// JSON parsing and querying without AST construction.
-
 use str
 use unicode
 
 /// Type: Null value.
 pub const Null = 0
-
 /// Type: Boolean value.
 pub const Bool = 1
-
 /// Type: Number value.
 pub const Number = 2
-
 /// Type: String value.
 pub const String = 3
-
 /// Type: Array value.
 pub const Array = 4
-
 /// Type: Object value.
 pub const Object = 5
 
@@ -106,7 +100,12 @@ fn find_bracket(json:str pos:i64 -- end_pos:i64) {
 	0 -> ch
 	json str::len -> slen
 	json pos str::char_at -> open_ch
-	open_ch unicode::lbrace == if { unicode::rbrace } else { unicode::rbracket } -> close_ch
+	open_ch unicode::lbrace == if {
+		unicode::rbrace
+	} else {
+		unicode::rbracket
+	}
+	-> close_ch
 	1 -> nesting
 	pos 1 + -> pos
 	loop {
@@ -425,7 +424,11 @@ pub fn get_bool(json:str key:str -- value:i64 found:i64) {
 /// @example "{\"a\":1}" "a" json::has_key .  // 1
 pub fn has_key(json:str key:str -- exists:i64) {
 	-> key -> json
-	json 0 key find_key 0 >= if { 1 } else { 0 }
+	json 0 key find_key 0 >= if {
+		1
+	} else {
+		0
+	}
 }
 
 /// Get nested object as string by key.

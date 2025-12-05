@@ -1,13 +1,12 @@
 // Test: Simple unused function detection
-
 fn used_function( -- ) {
-    1 2 add
+	1 2 add
 }
 
 fn unused_function( -- ) {
-    3 4 add
+	3 4 add
 }
 
 fn main( -- ) {
-    used_function
+	used_function
 }
