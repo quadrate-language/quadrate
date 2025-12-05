@@ -2,6 +2,6 @@
 fn main( -- ) {
 	[5 10 15 20] -> arr
 	0 4 1 for it {
-		arr it nth . nl
+		arr it nth print nl
 	}
 }

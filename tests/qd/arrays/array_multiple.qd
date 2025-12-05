@@ -4,11 +4,11 @@ fn main( -- ) {
 	[10 20 30] -> b
 	[100 200 300] -> c
 
-	a 0 nth . nl
-	b 1 nth . nl
-	c 2 nth . nl
+	a 0 nth print nl
+	b 1 nth print nl
+	c 2 nth print nl
 
-	a len . nl
-	b len . nl
-	c len . nl
+	a len print nl
+	b len print nl
+	c len print nl
 }

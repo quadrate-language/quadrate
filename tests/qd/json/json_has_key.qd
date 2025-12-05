@@ -8,20 +8,20 @@ fn main( -- ) {
 	"{" q str::from_char str::concat "name" str::concat q str::from_char str::concat ": " str::concat
 		q str::from_char str::concat "test" str::concat q str::from_char str::concat "}" str::concat
 	-> json1
-	json1 "name" json::has_key . nl
+	json1 "name" json::has_key print nl
 
 	// Test has_key - missing
-	json1 "missing" json::has_key . nl
+	json1 "missing" json::has_key print nl
 
 	// Test has_key - multiple keys
 	"{" q str::from_char str::concat "a" str::concat q str::from_char str::concat ": 1, " str::concat
 		q str::from_char str::concat "b" str::concat q str::from_char str::concat ": 2}" str::concat
 	-> json2
-	json2 "a" json::has_key . nl
-	json2 "b" json::has_key . nl
-	json2 "c" json::has_key . nl
+	json2 "a" json::has_key print nl
+	json2 "b" json::has_key print nl
+	json2 "c" json::has_key print nl
 
 	// Test has_key - empty object
 	"{}" -> json3
-	json3 "anything" json::has_key . nl
+	json3 "anything" json::has_key print nl
 }

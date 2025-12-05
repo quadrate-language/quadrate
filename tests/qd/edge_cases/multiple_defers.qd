@@ -5,29 +5,29 @@ struct Point {
 
 fn main( -- ) {
 	Point {
-		x: 1.0
-		y: 2.0
+		x = 1.0
+		y = 2.0
 	} -> p1
 	defer {
-		"Defer p1" . nl
+		"Defer p1" print nl
 	}
 
 	Point {
-		x: 3.0
-		y: 4.0
+		x = 3.0
+		y = 4.0
 	} -> p2
 	defer {
-		"Defer p2" . nl
+		"Defer p2" print nl
 	}
 
 	Point {
-		x: 5.0
-		y: 6.0
+		x = 5.0
+		y = 6.0
 	} -> p3
 	defer {
-		"Defer p3" . nl
+		"Defer p3" print nl
 	}
 
-	"Main work" . nl
+	"Main work" print nl
 	// Defers execute in reverse order at end of scope
 }

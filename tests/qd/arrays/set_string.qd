@@ -5,7 +5,7 @@ fn main( -- ) {
 	arr 0 "first" set
 	arr 1 "second" set
 	arr 2 "third" set
-	arr 0 nth . nl        // Should print: first
-	arr 1 nth . nl        // Should print: second
-	arr 2 nth . nl        // Should print: third
+	arr 0 nth print nl        // Should print: first
+	arr 1 nth print nl        // Should print: second
+	arr 2 nth print nl        // Should print: third
 }

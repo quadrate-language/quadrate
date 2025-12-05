@@ -31,17 +31,17 @@ fn get_circle_width(c:Circle -- result:f64) {
 
 fn main( -- ) {
 	Circle {
-		x: 0.0
-		y: 0.0
-		radius: 5.0
+		x = 0.0
+		y = 0.0
+		radius = 5.0
 	} -> circ
 	Rectangle {
-		x: 10.0
-		y: 20.0
-		width: 100.0
-		height: 50.0
+		x = 10.0
+		y = 20.0
+		width = 100.0
+		height = 50.0
 	} -> rect
 
-	"Circle x: " . circ get_circle_x . nl
-	"Rect x: " . rect get_rect_x . nl
+	"Circle x: " print circ get_circle_x print nl
+	"Rect x: " print rect get_rect_x print nl
 }

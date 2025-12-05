@@ -21,63 +21,63 @@ fn compute(a:i64 -- result:i64)! {
 }
 
 fn main() {
-	"Input: 30" . nl
+	"Input: 30" print nl
 	30 parse_number if {
 		validate_range if {
 			compute if {
-				"Result: " . . nl
+				"Result: " print print nl
 			} else {
-				drop "Compute failed" . nl
+				drop "Compute failed" print nl
 			}
 		} else {
-			drop "Range validation failed" . nl
+			drop "Range validation failed" print nl
 		}
 	} else {
-		drop "Parse failed" . nl
+		drop "Parse failed" print nl
 	}
 
-	"Input: -5" . nl
+	"Input: -5" print nl
 	-5 parse_number if {
 		validate_range if {
 			compute if {
-				"Result: " . . nl
+				"Result: " print print nl
 			} else {
-				drop "Compute failed" . nl
+				drop "Compute failed" print nl
 			}
 		} else {
-			drop "Range validation failed" . nl
+			drop "Range validation failed" print nl
 		}
 	} else {
-		drop "Parse failed" . nl
+		drop "Parse failed" print nl
 	}
 
-	"Input: 150" . nl
+	"Input: 150" print nl
 	150 parse_number if {
 		validate_range if {
 			compute if {
-				"Result: " . . nl
+				"Result: " print print nl
 			} else {
-				drop "Compute failed" . nl
+				drop "Compute failed" print nl
 			}
 		} else {
-			drop "Range validation failed" . nl
+			drop "Range validation failed" print nl
 		}
 	} else {
-		drop "Parse failed" . nl
+		drop "Parse failed" print nl
 	}
 
-	"Input: 60" . nl
+	"Input: 60" print nl
 	60 parse_number if {
 		validate_range if {
 			compute if {
-				"Result: " . . nl
+				"Result: " print print nl
 			} else {
-				drop "Compute failed" . nl
+				drop "Compute failed" print nl
 			}
 		} else {
-			drop "Range validation failed" . nl
+			drop "Range validation failed" print nl
 		}
 	} else {
-		drop "Parse failed" . nl
+		drop "Parse failed" print nl
 	}
 }

@@ -1,11 +1,11 @@
 fn test1( -- ) {
 	42 -> x
-	x . nl
+	x print nl
 }
 
 fn test2( -- ) {
 	100 -> x
-	x . nl
+	x print nl
 }
 
 fn main( -- ) {

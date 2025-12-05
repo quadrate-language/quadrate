@@ -2,14 +2,14 @@ use path
 
 fn main() {
 	// Test join
-	"/home" "user" path::join . nl
-	"/home/" "user" path::join . nl
-	"" "user" path::join . nl
-	"/home" "/absolute" path::join . nl
+	"/home" "user" path::join print nl
+	"/home/" "user" path::join print nl
+	"" "user" path::join print nl
+	"/home" "/absolute" path::join print nl
 
 	// Test is_absolute
-	"/home" path::is_absolute . nl
-	"home" path::is_absolute . nl
-	"/" path::is_absolute . nl
-	"" path::is_absolute . nl
+	"/home" path::is_absolute print nl
+	"home" path::is_absolute print nl
+	"/" path::is_absolute print nl
+	"" path::is_absolute print nl
 }

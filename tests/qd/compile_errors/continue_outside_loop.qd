@@ -2,5 +2,5 @@
 fn main() {
 	10 20 add
 	continue
-	. nl
+	print nl
 }

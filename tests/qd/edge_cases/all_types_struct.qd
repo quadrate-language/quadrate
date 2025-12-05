@@ -7,14 +7,14 @@ struct AllTypes {
 
 fn main( -- ) {
 	AllTypes {
-		i_val: 42
-		f_val: 3.14
-		s_val: "hello"
-		p_val: 0
+		i_val = 42
+		f_val = 3.14
+		s_val = "hello"
+		p_val = 0
 	} -> all
 
-	all @i_val . nl
-	all @f_val . nl
+	all @i_val print nl
+	all @f_val print nl
 	all @s_val prints nl
 	// Struct is automatically released at end of scope
 }

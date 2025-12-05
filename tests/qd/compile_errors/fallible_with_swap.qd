@@ -13,8 +13,8 @@ fn main() {
 	10 2 safe_divide
 	swap  // Not an 'if' - should fail
 	if {
-		. nl
+		print nl
 	} else {
-		drop "Error" . nl
+		drop "Error" print nl
 	}
 }

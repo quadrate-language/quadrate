@@ -13,13 +13,13 @@ struct Outer {
 fn main( -- ) {
 	// Create outer struct with nested inner containing string
 	Outer {
-		inner: Inner { value: 42 name: "hello" }
-		data: 100
+		inner = Inner { value = 42 name = "hello" }
+		data = 100
 	} -> o
 
 	// Access nested fields
-	o @inner @value . nl
-	o @inner @name . nl
-	o @data . nl
+	o @inner @value print nl
+	o @inner @name print nl
+	o @data print nl
 	// Auto-released - implicit destructor frees inner and string
 }

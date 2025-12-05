@@ -76,6 +76,10 @@
 (field_access
   field: (identifier) @variable.member)
 
+; Field set
+(field_set
+  field: (identifier) @variable.member)
+
 ; Field initializers in struct construction
 (field_init
   name: (identifier) @variable.member)

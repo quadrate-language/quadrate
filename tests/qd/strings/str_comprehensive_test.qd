@@ -3,22 +3,22 @@ use str
 
 fn main( -- ) {
 	// Test 1: str::len
-	"Hello" str::len . nl
+	"Hello" str::len print nl
 
 	// Test 2: str::concat
 	"Hello" " World" str::concat prints nl
 
 	// Test 3: str::contains
-	"Hello World" "World" str::contains . nl
-	"Hello World" "Foo" str::contains . nl
+	"Hello World" "World" str::contains print nl
+	"Hello World" "Foo" str::contains print nl
 
 	// Test 4: str::starts_with
-	"Hello World" "Hello" str::starts_with . nl
-	"Hello World" "World" str::starts_with . nl
+	"Hello World" "Hello" str::starts_with print nl
+	"Hello World" "World" str::starts_with print nl
 
 	// Test 5: str::ends_with
-	"Hello World" "World" str::ends_with . nl
-	"Hello World" "Hello" str::ends_with . nl
+	"Hello World" "World" str::ends_with print nl
+	"Hello World" "Hello" str::ends_with print nl
 
 	// Test 6: str::upper
 	"hello world" str::upper prints nl
@@ -39,16 +39,16 @@ fn main( -- ) {
 	"abc abc abc" "abc" "xyz" str::replace! prints nl
 
 	// Test 11: str::compare
-	"aaa" "bbb" str::compare . nl
-	"bbb" "aaa" str::compare . nl
-	"aaa" "aaa" str::compare . nl
+	"aaa" "bbb" str::compare print nl
+	"bbb" "aaa" str::compare print nl
+	"aaa" "aaa" str::compare print nl
 
 	// Test 12: Empty string tests
-	"" str::len . nl
-	"" "" str::concat str::len . nl
-	"test" "" str::contains . nl
+	"" str::len print nl
+	"" "" str::concat str::len print nl
+	"test" "" str::contains print nl
 
 	// Test 13: Single character tests
-	"a" str::len . nl
+	"a" str::len print nl
 	"a" "b" str::concat prints nl
 }

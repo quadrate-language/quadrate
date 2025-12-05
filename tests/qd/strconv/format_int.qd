@@ -3,52 +3,52 @@ use strconv
 
 fn main( -- ) {
 	// Binary (base 2)
-	0 2 strconv::format_int . nl
-	1 2 strconv::format_int . nl
-	2 2 strconv::format_int . nl
-	7 2 strconv::format_int . nl
-	8 2 strconv::format_int . nl
-	255 2 strconv::format_int . nl
+	0 2 strconv::format_int print nl
+	1 2 strconv::format_int print nl
+	2 2 strconv::format_int print nl
+	7 2 strconv::format_int print nl
+	8 2 strconv::format_int print nl
+	255 2 strconv::format_int print nl
 
 	// Octal (base 8)
-	0 8 strconv::format_int . nl
-	7 8 strconv::format_int . nl
-	8 8 strconv::format_int . nl
-	64 8 strconv::format_int . nl
-	103 8 strconv::format_int . nl
-	511 8 strconv::format_int . nl
+	0 8 strconv::format_int print nl
+	7 8 strconv::format_int print nl
+	8 8 strconv::format_int print nl
+	64 8 strconv::format_int print nl
+	103 8 strconv::format_int print nl
+	511 8 strconv::format_int print nl
 
 	// Decimal (base 10)
-	0 10 strconv::format_int . nl
-	9 10 strconv::format_int . nl
-	10 10 strconv::format_int . nl
-	42 10 strconv::format_int . nl
-	999 10 strconv::format_int . nl
-	12345 10 strconv::format_int . nl
+	0 10 strconv::format_int print nl
+	9 10 strconv::format_int print nl
+	10 10 strconv::format_int print nl
+	42 10 strconv::format_int print nl
+	999 10 strconv::format_int print nl
+	12345 10 strconv::format_int print nl
 
 	// Hexadecimal (base 16)
-	0 16 strconv::format_int . nl
-	9 16 strconv::format_int . nl
-	10 16 strconv::format_int . nl
-	15 16 strconv::format_int . nl
-	16 16 strconv::format_int . nl
-	255 16 strconv::format_int . nl
-	4095 16 strconv::format_int . nl
+	0 16 strconv::format_int print nl
+	9 16 strconv::format_int print nl
+	10 16 strconv::format_int print nl
+	15 16 strconv::format_int print nl
+	16 16 strconv::format_int print nl
+	255 16 strconv::format_int print nl
+	4095 16 strconv::format_int print nl
 
 	// Base 36 (maximum)
-	0 36 strconv::format_int . nl
-	35 36 strconv::format_int . nl
-	36 36 strconv::format_int . nl
-	1295 36 strconv::format_int . nl
+	0 36 strconv::format_int print nl
+	35 36 strconv::format_int print nl
+	36 36 strconv::format_int print nl
+	1295 36 strconv::format_int print nl
 
 	// Negative numbers
-	-1 2 strconv::format_int . nl
-	-8 8 strconv::format_int . nl
-	-10 10 strconv::format_int . nl
-	-255 16 strconv::format_int . nl
-	-103 8 strconv::format_int . nl
+	-1 2 strconv::format_int print nl
+	-8 8 strconv::format_int print nl
+	-10 10 strconv::format_int print nl
+	-255 16 strconv::format_int print nl
+	-103 8 strconv::format_int print nl
 
 	// Large numbers
-	1000000 10 strconv::format_int . nl
-	65535 16 strconv::format_int . nl
+	1000000 10 strconv::format_int print nl
+	65535 16 strconv::format_int print nl
 }

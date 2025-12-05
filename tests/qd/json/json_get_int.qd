@@ -8,27 +8,27 @@ fn main( -- ) {
 	"{" q str::from_char str::concat "age" str::concat q str::from_char str::concat ": 42}" str::concat
 	-> json1
 	json1 "age" json::get_int -> found -> val
-	val . nl
-	found . nl
+	val print nl
+	found print nl
 
 	// Test get_int - zero
 	"{" q str::from_char str::concat "zero" str::concat q str::from_char str::concat ": 0}" str::concat
 	-> json2
 	json2 "zero" json::get_int -> found -> val
-	val . nl
-	found . nl
+	val print nl
+	found print nl
 
 	// Test get_int - negative
 	"{" q str::from_char str::concat "neg" str::concat q str::from_char str::concat ": -123}" str::concat
 	-> json3
 	json3 "neg" json::get_int -> found -> val
-	val . nl
-	found . nl
+	val print nl
+	found print nl
 
 	// Test get_int - missing key
 	json1 "missing" json::get_int -> found -> val
-	val . nl
-	found . nl
+	val print nl
+	found print nl
 
 	// Test get_int - multiple values
 	"{" q str::from_char str::concat "x" str::concat q str::from_char str::concat ": 10, " str::concat
@@ -36,9 +36,9 @@ fn main( -- ) {
 		q str::from_char str::concat "z" str::concat q str::from_char str::concat ": 30}" str::concat
 	-> json4
 	json4 "x" json::get_int -> found -> val
-	val . nl
+	val print nl
 	json4 "y" json::get_int -> found -> val
-	val . nl
+	val print nl
 	json4 "z" json::get_int -> found -> val
-	val . nl
+	val print nl
 }

@@ -1,4 +1,4 @@
 // Test: using undefined constant
 fn main() {
-	UNDEFINED_CONST . nl
+	UNDEFINED_CONST print nl
 }

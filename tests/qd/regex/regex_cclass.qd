@@ -2,20 +2,20 @@ use regex
 
 fn main() {
 	// Character class basics
-	"[abc]" "a" regex::test . nl
-	"[abc]" "b" regex::test . nl
-	"[abc]" "d" regex::test . nl
+	"[abc]" "a" regex::test print nl
+	"[abc]" "b" regex::test print nl
+	"[abc]" "d" regex::test print nl
 
 	// Character range
-	"[a-z]" "m" regex::test . nl
-	"[a-z]" "5" regex::test . nl
+	"[a-z]" "m" regex::test print nl
+	"[a-z]" "5" regex::test print nl
 
 	// Negated class
-	"[^abc]" "x" regex::test . nl
-	"[^abc]" "a" regex::test . nl
+	"[^abc]" "x" regex::test print nl
+	"[^abc]" "a" regex::test print nl
 
 	// Combined
-	"[a-z]+" "hello" regex::test . nl
-	"[0-9]+" "12345" regex::test . nl
-	"[a-z0-9]+" "abc123" regex::test . nl
+	"[a-z]+" "hello" regex::test print nl
+	"[0-9]+" "12345" regex::test print nl
+	"[a-z0-9]+" "abc123" regex::test print nl
 }

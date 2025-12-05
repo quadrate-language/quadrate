@@ -2,39 +2,39 @@ fn main() {
 	// Test integer switch
 	42 switch {
 		42 {
-			"Matched 42" . nl
+			"Matched 42" print nl
 		}
 		100 {
-			"Matched 100" . nl
+			"Matched 100" print nl
 		}
 		_ {
-			"No match" . nl
+			"No match" print nl
 		}
 	}
 
 	// Test with different value
 	100 switch {
 		42 {
-			"Matched 42" . nl
+			"Matched 42" print nl
 		}
 		100 {
-			"Matched 100" . nl
+			"Matched 100" print nl
 		}
 		_ {
-			"No match" . nl
+			"No match" print nl
 		}
 	}
 
 	// Test default case
 	999 switch {
 		42 {
-			"Matched 42" . nl
+			"Matched 42" print nl
 		}
 		100 {
-			"Matched 100" . nl
+			"Matched 100" print nl
 		}
 		_ {
-			"Matched default" . nl
+			"Matched default" print nl
 		}
 	}
 }

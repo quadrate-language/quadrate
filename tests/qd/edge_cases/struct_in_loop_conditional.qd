@@ -4,11 +4,11 @@ struct Counter {
 
 fn process_counter(val:i64 -- ) {
 	-> val
-	Counter { value: val } -> c
+	Counter { value = val } -> c
 
 	c @value 5 lt
 	if {
-		c @value . nl
+		c @value print nl
 	} else {
 		"Greater than 5" prints nl
 	}

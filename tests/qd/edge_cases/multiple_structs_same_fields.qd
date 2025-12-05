@@ -16,20 +16,20 @@ struct Vec2 {
 
 fn main( -- ) {
 	Point2D {
-		x: 1.0
-		y: 2.0
+		x = 1.0
+		y = 2.0
 	} -> p2
 	Point3D {
-		x: 3.0
-		y: 4.0
-		z: 5.0
+		x = 3.0
+		y = 4.0
+		z = 5.0
 	} -> p3
 	Vec2 {
-		x: 6.0
-		y: 7.0
+		x = 6.0
+		y = 7.0
 	} -> v
 
-	p2 @x . nl
-	p3 @z . nl
-	v @y . nl
+	p2 @x print nl
+	p3 @z print nl
+	v @y print nl
 }

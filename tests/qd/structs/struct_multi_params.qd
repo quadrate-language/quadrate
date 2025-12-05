@@ -11,18 +11,18 @@ struct Offset {
 
 fn add_offset(point:ptr offset:ptr -- ) {
 	-> offset -> point
-	point @x offset @dx add . nl
-	point @y offset @dy add . nl
+	point @x offset @dx add print nl
+	point @y offset @dy add print nl
 }
 
 fn test_multi_params( -- ) {
 	Point {
-		x: 3.0
-		y: 4.0
+		x = 3.0
+		y = 4.0
 	} -> p
 	Offset {
-		dx: 1.0
-		dy: 2.0
+		dx = 1.0
+		dy = 2.0
 	} -> o
 	p o add_offset
 }

@@ -8,14 +8,14 @@ struct AllTypes {
 
 fn test_all_types( -- ) {
 	AllTypes {
-		int_field: 42
-		float_field: 3.14
-		string_field: "hello"
-		pointer_field: 0
+		int_field = 42
+		float_field = 3.14
+		string_field = "hello"
+		pointer_field = 0
 	} -> obj
 
-	obj @int_field . nl
-	obj @float_field . nl
+	obj @int_field print nl
+	obj @float_field print nl
 }
 
 fn main( -- ) {

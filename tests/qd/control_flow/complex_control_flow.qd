@@ -2,23 +2,23 @@ fn main( -- ) {
 	// Test if/else with comparisons
 	// 10 < 20, so should print nl 100
 	10 20 lt if {
-		100 . nl
+		100 print nl
 	} else {
-		200 . nl
+		200 print nl
 	}
 	// 10 >= 5, so should print nl 400
 	10 5 lt if {
-		300 . nl
+		300 print nl
 	} else {
-		400 . nl
+		400 print nl
 	}
 	// Nested if/else
 	// 5 > 3, so should print nl 500
 	1 if {
 		5 3 gt if {
-			500 . nl
+			500 print nl
 		} else {
-			600 . nl
+			600 print nl
 		}
 	}
 	// For loop with conditionals
@@ -26,18 +26,18 @@ fn main( -- ) {
 	0 5 1 for it {
 		it
 		2 eq if {
-			1000 . nl
+			1000 print nl
 		}
 	}
 	// For loop with break
-	// Should print nl: 0 1 2 3 4
+	// Should print nl = 0 1 2 3 4
 	0 10 1 for it {
 		it
 		it
 		5 eq if {
 			break
 		}
-		. nl
+		print nl
 	}
 	// Nested for loops with conditionals
 	// Should print nl 99 three times (when inner loop it == 1)
@@ -45,7 +45,7 @@ fn main( -- ) {
 		0 2 1 for it {
 			it
 			1 eq if {
-				99 . nl
+				99 print nl
 			}
 		}
 	}

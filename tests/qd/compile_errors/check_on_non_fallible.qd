@@ -6,8 +6,8 @@ fn normal_add(a:i64 b:i64 -- c:i64) {
 fn main() {
 	10 20 normal_add?
 	if {
-		. nl
+		print nl
 	} else {
-		drop "Error" . nl
+		drop "Error" print nl
 	}
 }

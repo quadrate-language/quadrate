@@ -8,8 +8,8 @@ fn safe_operation(a:i64 -- result:i64)! {
 
 fn main() {
 	5 safe_operation if {
-		"Success: result is " . . nl
+		"Success: result is " print print nl
 	} else {
-		drop "Error occurred" . nl
+		drop "Error occurred" print nl
 	}
 }

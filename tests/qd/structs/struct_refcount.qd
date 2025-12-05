@@ -13,13 +13,13 @@ struct Outer {
 fn main( -- ) {
 	// Create nested struct
 	Outer {
-		inner: Inner { x: 10 y: 20 }
-		z: 30
+		inner = Inner { x = 10 y = 20 }
+		z = 30
 	} -> o
 
 	// Access values
-	o @inner @x . nl
-	o @inner @y . nl
-	o @z . nl
+	o @inner @x print nl
+	o @inner @y print nl
+	o @z print nl
 	// Auto-released at function end - destructor frees nested inner struct
 }

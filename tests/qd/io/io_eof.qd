@@ -31,7 +31,7 @@ fn main( -- ) {
 			-> bytes_read
 			file io::close
 			read_buf bytes_read mem::to_string
-			.                 // Print string (destructive - frees it)
+			print             // Print string (destructive - frees it)
 			nl                // Print newline
 		} else {
 			drop file io::close

@@ -2,38 +2,38 @@ use math
 
 fn main( -- ) {
 	// Test constants
-	math::Pi . nl
-	math::E . nl
-	math::Tau . nl
+	math::Pi print nl
+	math::E print nl
+	math::Tau print nl
 
 	// Test basic trig
-	0.0 math::sin . nl
-	0.0 math::cos . nl
+	0.0 math::sin print nl
+	0.0 math::cos print nl
 
 	// Test sqrt and sq
-	16.0 math::sqrt . nl
-	5.0 math::sq . nl
+	16.0 math::sqrt print nl
+	5.0 math::sq print nl
 
 	// Test abs
-	-42.0 math::abs . nl
+	-42.0 math::abs print nl
 
 	// Test min/max
-	5.0 10.0 math::min . nl
-	5.0 10.0 math::max . nl
+	5.0 10.0 math::min print nl
+	5.0 10.0 math::max print nl
 
 	// Test rounding
-	3.7 math::ceil . nl
-	3.7 math::floor . nl
-	3.5 math::round . nl
+	3.7 math::ceil print nl
+	3.7 math::floor print nl
+	3.5 math::round print nl
 
 	// Test deg_to_rad (module function)
-	180.0 math::deg_to_rad math::Pi sub math::abs 0.001 lt . nl
+	180.0 math::deg_to_rad math::Pi sub math::abs 0.001 lt print nl
 
 	// Test clamp (module function)
-	15.0 0.0 10.0 math::clamp . nl
-	-5.0 0.0 10.0 math::clamp . nl
-	5.0 0.0 10.0 math::clamp . nl
+	15.0 0.0 10.0 math::clamp print nl
+	-5.0 0.0 10.0 math::clamp print nl
+	5.0 0.0 10.0 math::clamp print nl
 
 	// Test lerp (module function)
-	0.0 10.0 0.5 math::lerp . nl
+	0.0 10.0 0.5 math::lerp print nl
 }

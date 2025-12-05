@@ -341,12 +341,12 @@ pub fn parse(s:str -- u:ptr) {
 	}
 
 	Uri {
-		scheme: scheme
-		host: host
-		port: port
-		path: path
-		query: query
-		fragment: fragment
+		scheme = scheme
+		host = host
+		port = port
+		path = path
+		query = query
+		fragment = fragment
 	}
 }
 

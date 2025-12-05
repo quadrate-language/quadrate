@@ -16,17 +16,17 @@ use strconv
 use unicode
 
 fn print_version( -- ) {
-	"dc 0.1.0 (Quadrate)" . nl
+	"dc 0.1.0 (Quadrate)" print nl
 }
 
 fn print_help( -- ) {
-	"Usage: dc [OPTION] [file ...]" . nl
-	"  -e, --expression=EXPR    evaluate expression" . nl
-	"  -f, --file=FILE          evaluate contents of file" . nl
-	"  -h, --help               display this help and exit" . nl
-	"  -V, --version            output version information and exit" . nl
+	"Usage: dc [OPTION] [file ...]" print nl
+	"  -e, --expression=EXPR    evaluate expression" print nl
+	"  -f, --file=FILE          evaluate contents of file" print nl
+	"  -h, --help               display this help and exit" print nl
+	"  -V, --version            output version information and exit" print nl
 	nl
-	"Email bug reports to:  ~klahr/quadrate@lists.sr.ht" . nl
+	"Email bug reports to:  ~klahr/quadrate@lists.sr.ht" print nl
 }
 
 fn is_number(tok:str -- result:i64) {
@@ -80,21 +80,21 @@ fn process_operator(op:str -- ) {
 			depth 2 >= if {
 				add
 			} else {
-				"dc: stack empty" . nl
+				"dc: stack empty" print nl
 			}
 		}
 		unicode::minus {
 			depth 2 >= if {
 				sub
 			} else {
-				"dc: stack empty" . nl
+				"dc: stack empty" print nl
 			}
 		}
 		unicode::asterisk {
 			depth 2 >= if {
 				mul
 			} else {
-				"dc: stack empty" . nl
+				"dc: stack empty" print nl
 			}
 		}
 		unicode::slash {
@@ -102,10 +102,10 @@ fn process_operator(op:str -- ) {
 				dup 0 != if {
 					div
 				} else {
-					"dc: divide by zero" . nl
+					"dc: divide by zero" print nl
 				}
 			} else {
-				"dc: stack empty" . nl
+				"dc: stack empty" print nl
 			}
 		}
 		unicode::percent {
@@ -115,33 +115,33 @@ fn process_operator(op:str -- ) {
 					-> b -> a
 					a a b div math::floor b mul sub
 				} else {
-					"dc: remainder by zero" . nl
+					"dc: remainder by zero" print nl
 				}
 			} else {
-				"dc: stack empty" . nl
+				"dc: stack empty" print nl
 			}
 		}
 		unicode::caret {
 			depth 2 >= if {
 				// Check if exponent is non-integer, floor it if so
 				dup dup math::floor != if {
-					"Runtime warning: non-zero scale in exponent" . nl
+					"Runtime warning: non-zero scale in exponent" print nl
 					math::floor
 				}
 				math::pow
 			} else {
-				"dc: stack empty" . nl
+				"dc: stack empty" print nl
 			}
 		}
 		unicode::v {
 			dup 0 >= if {
 				math::sqrt
 			} else {
-				"dc: square root of negative number" . nl
+				"dc: square root of negative number" print nl
 			}
 		}
 		unicode::p {
-			dup . nl
+			dup print nl
 		}
 		unicode::n {
 			print
@@ -150,7 +150,7 @@ fn process_operator(op:str -- ) {
 			// Print full stack from top to bottom
 			depth -> n
 			0 n 1 for it {
-				it pick . nl
+				it pick print nl
 			}
 		}
 		unicode::z {
@@ -167,10 +167,10 @@ fn process_operator(op:str -- ) {
 					a q b mul sub -> r
 					q r
 				} else {
-					"dc: divide by zero" . nl
+					"dc: divide by zero" print nl
 				}
 			} else {
-				"dc: stack empty" . nl
+				"dc: stack empty" print nl
 			}
 		}
 		unicode::c {
@@ -180,7 +180,7 @@ fn process_operator(op:str -- ) {
 			depth 1 >= if {
 				dup
 			} else {
-				"dc: stack empty" . nl
+				"dc: stack empty" print nl
 			}
 		}
 		unicode::r {
@@ -193,7 +193,7 @@ fn process_operator(op:str -- ) {
 		}
 		_ {
 			op 0 str::char_at 8 strconv::format_int -> octal
-			"dc: '" . op . "' (0" . octal . ") unimplemented" . nl
+			"dc: '" print op print "' (0" print octal print ") unimplemented" print nl
 		}
 	}
 }
@@ -252,13 +252,13 @@ fn run_file(path:str -- ) {
 		} else {
 			drop
 			file io::close
-			"dc: could not read file: " . path . nl
+			"dc: could not read file: " print path print nl
 			buf mem::free
 			1 os::exit
 		}
 	} else {
 		drop
-		"dc: could not open file: " . path . nl
+		"dc: could not open file: " print path print nl
 		buf mem::free
 		1 os::exit
 	}

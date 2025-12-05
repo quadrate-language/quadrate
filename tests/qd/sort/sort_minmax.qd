@@ -10,8 +10,8 @@ fn main() {
 	arr 24 1 mem::set
 	arr 32 5 mem::set
 
-	arr 5 sort::min . nl
-	arr 5 sort::max . nl
+	arr 5 sort::min print nl
+	arr 5 sort::max print nl
 
 	arr mem::free
 }

@@ -18,9 +18,9 @@ pub fn new( -- sb:ptr) {
 	64 -> cap
 	cap mem::alloc -> buf
 	StringBuilder {
-		buf: buf
-		len: 0
-		cap: cap
+		buf = buf
+		len = 0
+		cap = cap
 	}
 }
 
@@ -35,9 +35,9 @@ pub fn with_capacity(capacity:i64 -- sb:ptr) {
 	}
 	capacity mem::alloc -> buf
 	StringBuilder {
-		buf: buf
-		len: 0
-		cap: capacity
+		buf = buf
+		len = 0
+		cap = capacity
 	}
 }
 
@@ -82,9 +82,9 @@ pub fn append(sb:ptr s:str -- sb:ptr) {
 
 	// Return updated builder
 	StringBuilder {
-		buf: buf
-		len: newlen
-		cap: cap
+		buf = buf
+		len = newlen
+		cap = cap
 	}
 }
 
@@ -112,9 +112,9 @@ pub fn append_char(sb:ptr c:i64 -- sb:ptr) {
 
 	// Return updated builder
 	StringBuilder {
-		buf: buf
-		len: curlen 1 +
-		cap: cap
+		buf = buf
+		len = curlen 1 +
+		cap = cap
 	}
 }
 
@@ -177,9 +177,9 @@ pub fn append_int(sb:ptr n:i64 -- sb:ptr) {
 		}
 
 		StringBuilder {
-			buf: buf
-			len: curlen count +
-			cap: cap
+			buf = buf
+			len = curlen count +
+			cap = cap
 		}
 	}
 }

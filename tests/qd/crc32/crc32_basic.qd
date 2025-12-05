@@ -3,19 +3,19 @@ use crc32
 
 fn main( -- ) {
 	// Standard test vector: "123456789" = 0xCBF43926
-	"123456789" crc32::checksum . nl
+	"123456789" crc32::checksum print nl
 
 	// Empty string
-	"" crc32::checksum . nl
+	"" crc32::checksum print nl
 
 	// Single character
-	"a" crc32::checksum . nl
+	"a" crc32::checksum print nl
 
 	// Known values
-	"Hello" crc32::checksum . nl
-	"hello" crc32::checksum . nl
+	"Hello" crc32::checksum print nl
+	"hello" crc32::checksum print nl
 
 	// Hex output
-	"123456789" crc32::checksum_hex . nl
-	"Hello" crc32::checksum_hex . nl
+	"123456789" crc32::checksum_hex print nl
+	"Hello" crc32::checksum_hex print nl
 }

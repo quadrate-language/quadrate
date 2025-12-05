@@ -16,19 +16,19 @@ fn main( -- ) {
 	// Attempt division by zero
 	1 0 division if {
 		// Success - print result
-		"1 / 0 = " . . nl
+		"1 / 0 = " print print nl
 	} else {
 		// Error - drop error value and print message
 		drop
-		"Error: Division by zero!" . nl
+		"Error: Division by zero!" print nl
 	}
 
 	// Successful division
 	10 2 division if {
-		"10 / 2 = " . . nl
+		"10 / 2 = " print print nl
 	} else {
 		drop
-		"Unexpected error" . nl
+		"Unexpected error" print nl
 	}
 
 	// Call with '!' to propagate/crash on error

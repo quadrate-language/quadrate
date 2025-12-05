@@ -23,7 +23,7 @@ fn main() {
 	} else {
 		"FAIL: Value out of range"
 	}
-	. nl
+	print nl
 
 	// Test small range
 	123 rand::with_seed -> rng2
@@ -43,5 +43,5 @@ fn main() {
 	} else {
 		"FAIL: Value out of small range"
 	}
-	. nl
+	print nl
 }

@@ -15,8 +15,8 @@ struct Point {
 // Create a point at origin
 fn new_origin( -- p:ptr) {
 	Point {
-		x: OriginX
-		y: OriginY
+		x = OriginX
+		y = OriginY
 	}
 }
 
@@ -24,8 +24,8 @@ fn new_origin( -- p:ptr) {
 fn new_point(x:f64 y:f64 -- p:ptr) {
 	-> y -> x
 	Point {
-		x: x
-		y: y
+		x = x
+		y = y
 	}
 }
 
@@ -50,41 +50,41 @@ fn distance(p1:ptr p2:ptr -- dist:f64) {
 // Print a point as (x, y)
 fn print_point(p:ptr -- ) {
 	-> p
-	"(" . p @x print ", " . p @y print ")" .
+	"(" print p @x print ", " print p @y print ")" print
 }
 
 fn main( -- ) {
-	"=== Structs and Constants Example ===" . nl
+	"=== Structs and Constants Example ===" print nl
 	nl
 
 	// Show constants
-	"Max points allowed: " . MaxPoints . nl
+	"Max points allowed: " print MaxPoints print nl
 	nl
 
 	// Create points using struct constructor
-	// Syntax: StructName { field: value ... } -> variable
-	"Creating points:" . nl
+	// Syntax = StructName { field = value ... } -> variable
+	"Creating points:" print nl
 	new_origin -> p1
 	3.0 4.0 new_point -> p2
 	6.0 8.0 new_point -> p3
 
-	"  p1 (origin) = " . p1 print_point nl
-	"  p2 = " . p2 print_point nl
-	"  p3 = " . p3 print_point nl
+	"  p1 (origin) = " print p1 print_point nl
+	"  p2 = " print p2 print_point nl
+	"  p3 = " print p3 print_point nl
 	nl
 
 	// Access struct fields with @fieldname syntax
-	"Field access:" . nl
-	"  p2.x = " . p2 @x print nl
-	"  p2.y = " . p2 @y print nl
+	"Field access:" print nl
+	"  p2.x = " print p2 @x print nl
+	"  p2.y = " print p2 @y print nl
 	nl
 
 	// Calculate distances
-	"Distances:" . nl
-	"  p1 to origin: " . p1 distance_from_origin print nl
-	"  p2 to origin: " . p2 distance_from_origin print " (3-4-5 triangle)" . nl
-	"  p1 to p2: " . p1 p2 distance print nl
-	"  p2 to p3: " . p2 p3 distance print nl
+	"Distances:" print nl
+	"  p1 to origin: " print p1 distance_from_origin print nl
+	"  p2 to origin: " print p2 distance_from_origin print " (3-4-5 triangle)" print nl
+	"  p1 to p2: " print p1 p2 distance print nl
+	"  p2 to p3: " print p2 p3 distance print nl
 	nl
 
 	// Clean up - free allocated structs
@@ -92,5 +92,5 @@ fn main( -- ) {
 	p2 free
 	p3 free
 
-	"Done!" . nl
+	"Done!" print nl
 }

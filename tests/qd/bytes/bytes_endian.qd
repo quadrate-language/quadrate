@@ -7,27 +7,27 @@ fn main( -- ) {
 
 	// Test 16-bit big-endian (0x1234 = 4660)
 	buf 0 4660 bytes::write_u16_be
-	buf 0 bytes::read_u16_be . nl
+	buf 0 bytes::read_u16_be print nl
 
 	// Test 16-bit little-endian
 	buf 0 4660 bytes::write_u16_le
-	buf 0 bytes::read_u16_le . nl
+	buf 0 bytes::read_u16_le print nl
 
 	// Test 32-bit big-endian (0x12345678 = 305419896)
 	buf 0 305419896 bytes::write_u32_be
-	buf 0 bytes::read_u32_be . nl
+	buf 0 bytes::read_u32_be print nl
 
 	// Test 32-bit little-endian
 	buf 0 305419896 bytes::write_u32_le
-	buf 0 bytes::read_u32_le . nl
+	buf 0 bytes::read_u32_le print nl
 
 	// Test 64-bit big-endian (0x0102030405060708 = 72623859790382856)
 	buf 0 72623859790382856 bytes::write_u64_be
-	buf 0 bytes::read_u64_be . nl
+	buf 0 bytes::read_u64_be print nl
 
 	// Test 64-bit little-endian
 	buf 0 72623859790382856 bytes::write_u64_le
-	buf 0 bytes::read_u64_le . nl
+	buf 0 bytes::read_u64_le print nl
 
 	buf mem::free
 }

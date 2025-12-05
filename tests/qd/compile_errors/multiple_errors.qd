@@ -13,11 +13,11 @@ fn main() {
 
 	// Error 2: fallible without if
 	10 5 safe_div
-	. nl
+	print nl
 
 	// Error 3: ! on non-fallible
 	10 normal_func!
-	. nl
+	print nl
 
 	// Error 4: stack underflow
 	mul

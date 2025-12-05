@@ -2717,9 +2717,7 @@ namespace Qd {
 		} else {
 			// Map instruction name to runtime function name
 			std::string fnName;
-			if (name == ".") {
-				fnName = "qd_print";
-			} else if (name == "/") {
+			if (name == "/") {
 				fnName = "qd_div";
 			} else if (name == "%") {
 				fnName = "qd_mod";

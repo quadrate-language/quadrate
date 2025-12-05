@@ -2,39 +2,39 @@ fn main() {
 	// Test string switch
 	"hello" switch {
 		"hello" {
-			"Matched hello" . nl
+			"Matched hello" print nl
 		}
 		"world" {
-			"Matched world" . nl
+			"Matched world" print nl
 		}
 		_ {
-			"No match" . nl
+			"No match" print nl
 		}
 	}
 
 	// Test with different value
 	"world" switch {
 		"hello" {
-			"Matched hello" . nl
+			"Matched hello" print nl
 		}
 		"world" {
-			"Matched world" . nl
+			"Matched world" print nl
 		}
 		_ {
-			"No match" . nl
+			"No match" print nl
 		}
 	}
 
 	// Test default case
 	"other" switch {
 		"hello" {
-			"Matched hello" . nl
+			"Matched hello" print nl
 		}
 		"world" {
-			"Matched world" . nl
+			"Matched world" print nl
 		}
 		_ {
-			"Matched default" . nl
+			"Matched default" print nl
 		}
 	}
 }

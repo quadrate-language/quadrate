@@ -132,6 +132,7 @@ module.exports = grammar({
       $.struct_construction,
       $.namespaced_identifier,
       $.field_access,
+      $.field_set,
       $.identifier,
       $.local_declaration,
       $.if_expression,
@@ -147,8 +148,8 @@ module.exports = grammar({
       $.pointer_operation,
     ),
 
-    // Struct construction: StructName { field1: value1 field2: value2 ... }
-    // or: namespace::StructName { field1: value1 ... }
+    // Struct construction: StructName { field1 = value1 field2 = value2 ... }
+    // or: namespace::StructName { field1 = value1 ... }
     struct_construction: $ => prec(2, seq(
       field('type', choice($.namespaced_identifier, $.identifier)),
       '{',
@@ -156,12 +157,12 @@ module.exports = grammar({
       '}',
     )),
 
-    // Field initialization: fieldname: value
+    // Field initialization: fieldname = value
     // Each field has exactly one expression value for simplicity
     // Complex expressions like "1.0 2.0 +" should still parse, just not as separate values
     field_init: $ => seq(
       field('name', $.identifier),
-      ':',
+      '=',
       field('value', $._field_value),
     ),
 
@@ -245,16 +246,21 @@ module.exports = grammar({
       '!p', '!i', '!f',
     ),
 
-    // Field access: varname @fieldname
+    // Field access: @fieldname (gets field value from struct on stack)
     field_access: $ => seq(
-      field('variable', $.identifier),
       '@',
+      field('field', $.identifier),
+    ),
+
+    // Field set: .fieldname (sets field value in struct on stack)
+    field_set: $ => seq(
+      '.',
       field('field', $.identifier),
     ),
 
     // Operator symbols (single-char and multi-char operators)
     operator_symbol: $ => prec(1, choice(
-      '.', '+', '-', '*', '/', '%',
+      '+', '-', '*', '/', '%',
       '==', '!=', '<', '>', '<=', '>=',
       '!',
     )),

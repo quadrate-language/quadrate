@@ -12,5 +12,5 @@ fn safe_divide(a:i64 b:i64 -- result:i64)! {
 fn main() {
 	10 2 safe_divide
 	// Missing 'if' here - should fail
-	. nl
+	print nl
 }

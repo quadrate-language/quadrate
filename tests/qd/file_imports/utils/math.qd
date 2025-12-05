@@ -1,8 +1,8 @@
 // Helper file in subdirectory
 pub fn get_hundred( -- ) {
-	100 . nl
+	100 print nl
 }
 
 pub fn get_fifty( -- ) {
-	50 . nl
+	50 print nl
 }

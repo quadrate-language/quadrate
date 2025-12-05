@@ -4,17 +4,17 @@ use uri
 fn main( -- ) {
 	// Full URI
 	"https://example.com:8080/path?q=1#top" uri::parse -> u
-	u @scheme . nl
-	u @host . nl
-	u @port . nl
-	u @path . nl
-	u @query . nl
-	u @fragment . nl
+	u @scheme print nl
+	u @host print nl
+	u @port print nl
+	u @path print nl
+	u @query print nl
+	u @fragment print nl
 
 	// Simple URI without port
 	"http://test.org/page" uri::parse -> u2
-	u2 @scheme . nl
-	u2 @host . nl
-	u2 @port . nl
-	u2 @path . nl
+	u2 @scheme print nl
+	u2 @host print nl
+	u2 @port print nl
+	u2 @path print nl
 }

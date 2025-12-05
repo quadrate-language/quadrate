@@ -11,13 +11,13 @@ fn main() {
 	arr 32 5 mem::set
 
 	// Search for existing values
-	arr 5 1 sort::search . nl
-	arr 5 3 sort::search . nl
-	arr 5 5 sort::search . nl
+	arr 5 1 sort::search print nl
+	arr 5 3 sort::search print nl
+	arr 5 5 sort::search print nl
 
 	// Search for non-existing values
-	arr 5 0 sort::search . nl
-	arr 5 6 sort::search . nl
+	arr 5 0 sort::search print nl
+	arr 5 6 sort::search print nl
 
 	arr mem::free
 }

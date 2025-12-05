@@ -1,8 +1,8 @@
 // Simple helper file for testing file imports
 pub fn get_value( -- ) {
-	42 . nl
+	42 print nl
 }
 
 pub fn get_ten( -- ) {
-	10 . nl
+	10 print nl
 }

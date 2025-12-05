@@ -2,7 +2,7 @@ fn countdown(n:i64 -- ) {
 	-> num
 	num 0 gt
 	if {
-		num . nl
+		num print nl
 		num 1 sub countdown
 	}
 }

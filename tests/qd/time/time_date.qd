@@ -5,16 +5,16 @@ fn main() {
 	1705321800 -> ts
 
 	// Extract components
-	ts time::year . nl
-	ts time::month . nl
-	ts time::day . nl
-	ts time::hour . nl
-	ts time::minute . nl
-	ts time::second . nl
+	ts time::year print nl
+	ts time::month print nl
+	ts time::day print nl
+	ts time::hour print nl
+	ts time::minute print nl
+	ts time::second print nl
 
 	// Weekday (Monday = 1)
-	ts time::weekday . nl
+	ts time::weekday print nl
 
 	// Year day
-	ts time::year_day . nl
+	ts time::year_day print nl
 }

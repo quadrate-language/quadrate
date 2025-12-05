@@ -7,7 +7,7 @@ fn test_ctx_simple_if_true( -- ) {
 			100
 		}
 	}
-	. nl
+	print nl
 }
 
 fn test_ctx_simple_if_false( -- ) {
@@ -23,8 +23,8 @@ fn test_ctx_simple_if_false( -- ) {
 		// Add a fallback value
 		999
 	}
-	. nl
-	. nl
+	print nl
+	print nl
 }
 
 fn main( -- ) {

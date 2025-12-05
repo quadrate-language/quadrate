@@ -6,14 +6,14 @@ fn main( -- ) {
 	// Test 1: Create and build empty
 	sb::new -> builder
 	builder sb::build -> result
-	result str::len . nl
+	result str::len print nl
 	builder sb::free
 
 	// Test 2: Append single string
 	sb::new -> builder
 	builder "Hello" sb::append -> builder
 	builder sb::build -> result
-	result . nl
+	result print nl
 	builder sb::free
 
 	// Test 3: Append multiple strings (using finish which frees)
@@ -22,5 +22,5 @@ fn main( -- ) {
 	builder ", " sb::append -> builder
 	builder "World!" sb::append -> builder
 	builder sb::finish -> result
-	result . nl
+	result print nl
 }

@@ -5,8 +5,8 @@ struct Point {
 
 fn main( -- ) {
 	Point {
-		x: 1.0
-		y: 2.0
+		x = 1.0
+		y = 2.0
 	} -> p
-	p @z . nl
+	p @z print nl
 }

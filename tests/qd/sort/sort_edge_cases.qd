@@ -6,7 +6,7 @@ fn main() {
 	1 8 * mem::alloc -> arr1
 	arr1 0 42 mem::set
 	arr1 1 sort::ints
-	arr1 0 mem::get . nl
+	arr1 0 mem::get print nl
 	arr1 mem::free
 
 	// Already sorted
@@ -14,7 +14,7 @@ fn main() {
 	arr2 0 1 mem::set
 	arr2 8 2 mem::set
 	arr2 16 3 mem::set
-	arr2 3 sort::is_sorted . nl
+	arr2 3 sort::is_sorted print nl
 	arr2 mem::free
 
 	// Reverse sorted
@@ -22,9 +22,9 @@ fn main() {
 	arr3 0 3 mem::set
 	arr3 8 2 mem::set
 	arr3 16 1 mem::set
-	arr3 3 sort::is_sorted . nl
+	arr3 3 sort::is_sorted print nl
 	arr3 3 sort::ints
-	arr3 3 sort::is_sorted . nl
+	arr3 3 sort::is_sorted print nl
 	arr3 mem::free
 
 	// All duplicates
@@ -34,8 +34,8 @@ fn main() {
 	arr4 16 5 mem::set
 	arr4 24 5 mem::set
 	arr4 4 sort::ints
-	arr4 4 sort::is_sorted . nl
-	arr4 0 mem::get . nl
+	arr4 4 sort::is_sorted print nl
+	arr4 0 mem::get print nl
 	arr4 mem::free
 
 	// Reverse test
@@ -44,9 +44,9 @@ fn main() {
 	arr5 8 2 mem::set
 	arr5 16 3 mem::set
 	arr5 3 sort::reverse
-	arr5 0 mem::get . nl
-	arr5 8 mem::get . nl
-	arr5 16 mem::get . nl
+	arr5 0 mem::get print nl
+	arr5 8 mem::get print nl
+	arr5 16 mem::get print nl
 	arr5 mem::free
 
 	// Negative numbers
@@ -54,7 +54,7 @@ fn main() {
 	arr6 0 -5 mem::set
 	arr6 8 0 mem::set
 	arr6 16 5 mem::set
-	arr6 3 sort::min . nl
-	arr6 3 sort::max . nl
+	arr6 3 sort::min print nl
+	arr6 3 sort::max print nl
 	arr6 mem::free
 }

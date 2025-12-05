@@ -5,16 +5,16 @@ fn main() {
 	// Patterns match the entire string by default
 	// These tests verify full-match behavior
 
-	"hello" "hello" regex::test . nl
-	"hello" "hello world" regex::test . nl
-	"hello" "say hello" regex::test . nl
+	"hello" "hello" regex::test print nl
+	"hello" "hello world" regex::test print nl
+	"hello" "say hello" regex::test print nl
 
 	// Prefix match (would need partial match mode)
-	"hello.*" "hello world" regex::test . nl
+	"hello.*" "hello world" regex::test print nl
 
 	// Suffix match (would need partial match mode)
-	".*world" "hello world" regex::test . nl
+	".*world" "hello world" regex::test print nl
 
 	// Full pattern
-	"hello world" "hello world" regex::test . nl
+	"hello world" "hello world" regex::test print nl
 }

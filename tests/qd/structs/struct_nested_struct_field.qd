@@ -13,14 +13,14 @@ struct Rectangle {
 fn main( -- ) {
 	// Create a rectangle with nested Point as origin field
 	Rectangle {
-		origin: Point { x: 1.0 y: 2.0 }
-		width: 10.0
-		height: 5.0
+		origin = Point { x = 1.0 y = 2.0 }
+		width = 10.0
+		height = 5.0
 	} -> rect
 
 	// Access nested struct fields using chained access
-	rect @origin @x . nl
-	rect @origin @y . nl
-	rect @width . nl
-	rect @height . nl
+	rect @origin @x print nl
+	rect @origin @y print nl
+	rect @width print nl
+	rect @height print nl
 }

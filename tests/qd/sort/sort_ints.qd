@@ -16,7 +16,7 @@ fn main() {
 	// Print sorted
 	0 5 1 for it {
 		it -> i
-		arr i 8 * mem::get . " " .
+		arr i 8 * mem::get print " " print
 	}
 	nl
 
@@ -26,7 +26,7 @@ fn main() {
 	// Print sorted descending
 	0 5 1 for it {
 		it -> i
-		arr i 8 * mem::get . " " .
+		arr i 8 * mem::get print " " print
 	}
 	nl
 

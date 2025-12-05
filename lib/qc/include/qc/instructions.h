@@ -9,7 +9,7 @@ namespace Qd {
 			// Comparison operators (also available as symbols)
 			"!=", "<", "<=", "==", ">", ">=",
 			// Arithmetic operators (also available as symbols)
-			"%", "*", "+", "-", ".", "/",
+			"%", "*", "+", "-", "/",
 			// Arithmetic instructions
 			"add", "dec", "div", "inc", "mod", "mul", "neg", "sub",
 			// Bitwise operations
@@ -37,7 +37,7 @@ namespace Qd {
 	// This prevents false "undefined function" errors when validating standard library modules
 	static const char* VALIDATOR_INSTRUCTIONS[] = {
 			// All built-in instructions
-			"!=", "%", "*", "+", "-", ".", "/", "<", "<=", "==", ">", ">=", "add", "dec", "div", "eq", "gt", "gte",
+			"!=", "%", "*", "+", "-", "/", "<", "<=", "==", ">", ">=", "add", "dec", "div", "eq", "gt", "gte",
 			"inc", "lt", "lte", "mod", "mul", "neg", "neq", "sub", "within",
 			// Bitwise operations
 			"and", "not", "or", "shl", "shr", "xor",

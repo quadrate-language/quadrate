@@ -3,20 +3,20 @@ use hex
 
 fn main( -- ) {
 	// Basic decoding (uppercase)
-	"48656C6C6F" hex::decode . nl
-	"41" hex::decode . nl
-	"" hex::decode . nl
+	"48656C6C6F" hex::decode print nl
+	"41" hex::decode print nl
+	"" hex::decode print nl
 
 	// Lowercase decoding
-	"48656c6c6f" hex::decode . nl
-	"414243" hex::decode . nl
+	"48656c6c6f" hex::decode print nl
+	"414243" hex::decode print nl
 
 	// Mixed case
-	"48656C6c6F" hex::decode . nl
+	"48656C6c6F" hex::decode print nl
 
 	// Space character
-	"20" hex::decode . nl
+	"20" hex::decode print nl
 
 	// Numbers
-	"30313233343536373839" hex::decode . nl
+	"30313233343536373839" hex::decode print nl
 }

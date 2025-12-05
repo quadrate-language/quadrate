@@ -9,21 +9,21 @@ fn main( -- ) {
 		q str::from_char str::concat "Alice" str::concat q str::from_char str::concat "}" str::concat
 	-> json1
 	json1 "name" json::get_string -> found -> val
-	val . nl
-	found . nl
+	val print nl
+	found print nl
 
 	// Test get_string - missing key
 	json1 "missing" json::get_string -> found -> val
-	val . nl
-	found . nl
+	val print nl
+	found print nl
 
 	// Test get_string - empty string value
 	"{" q str::from_char str::concat "empty" str::concat q str::from_char str::concat ": " str::concat
 		q str::from_char str::concat q str::from_char str::concat "}" str::concat
 	-> json2
 	json2 "empty" json::get_string -> found -> val
-	val . nl
-	found . nl
+	val print nl
+	found print nl
 
 	// Test get_string - multiple keys
 	"{" q str::from_char str::concat "a" str::concat q str::from_char str::concat ": " str::concat
@@ -32,9 +32,9 @@ fn main( -- ) {
 		q str::from_char str::concat "second" str::concat q str::from_char str::concat "}" str::concat
 	-> json3
 	json3 "a" json::get_string -> found -> val
-	val . nl
-	found . nl
+	val print nl
+	found print nl
 	json3 "b" json::get_string -> found -> val
-	val . nl
-	found . nl
+	val print nl
+	found print nl
 }

@@ -21,7 +21,7 @@ fn main() {
 	} else {
 		"FAIL: Value out of range"
 	}
-	. nl
+	print nl
 
 	// Test negative range
 	888 rand::with_seed -> rng2
@@ -41,5 +41,5 @@ fn main() {
 	} else {
 		"FAIL: Value out of negative range"
 	}
-	. nl
+	print nl
 }

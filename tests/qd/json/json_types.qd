@@ -5,37 +5,37 @@ fn main( -- ) {
 	34 -> q
 
 	// Test type_at - object
-	"{}" 0 json::type_at . nl
+	"{}" 0 json::type_at print nl
 
 	// Test type_at - array
-	"[]" 0 json::type_at . nl
+	"[]" 0 json::type_at print nl
 
 	// Test type_at - string
 	q str::from_char "test" str::concat q str::from_char str::concat -> str_val
-	str_val 0 json::type_at . nl
+	str_val 0 json::type_at print nl
 
 	// Test type_at - number
-	"123" 0 json::type_at . nl
+	"123" 0 json::type_at print nl
 
 	// Test type_at - true
-	"true" 0 json::type_at . nl
+	"true" 0 json::type_at print nl
 
 	// Test type_at - false
-	"false" 0 json::type_at . nl
+	"false" 0 json::type_at print nl
 
 	// Test type_at - null
-	"null" 0 json::type_at . nl
+	"null" 0 json::type_at print nl
 
 	// Test is_null_at
-	"null" 0 json::is_null_at . nl
-	"123" 0 json::is_null_at . nl
-	"true" 0 json::is_null_at . nl
+	"null" 0 json::is_null_at print nl
+	"123" 0 json::is_null_at print nl
+	"true" 0 json::is_null_at print nl
 
 	// Type constants
-	json::Null . nl
-	json::Bool . nl
-	json::Number . nl
-	json::String . nl
-	json::Array . nl
-	json::Object . nl
+	json::Null print nl
+	json::Bool print nl
+	json::Number print nl
+	json::String print nl
+	json::Array print nl
+	json::Object print nl
 }

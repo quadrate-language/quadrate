@@ -13,20 +13,20 @@ struct Rectangle {
 fn main( -- ) {
 	// Create rectangle with nested Point
 	Rectangle {
-		origin: Point { x: 3.0 y: 4.0 }
-		width: 100.0
-		height: 50.0
+		origin = Point { x = 3.0 y = 4.0 }
+		width = 100.0
+		height = 50.0
 	} -> rect
 
 	// Chained field access with spaces
-	rect @origin @x . nl
-	rect @origin @y . nl
+	rect @origin @x print nl
+	rect @origin @y print nl
 
 	// Compact syntax without spaces
-	rect @origin@x . nl
-	rect @origin@y . nl
+	rect @origin@x print nl
+	rect @origin@y print nl
 
 	// Regular field access
-	rect @width . nl
-	rect @height . nl
+	rect @width print nl
+	rect @height print nl
 }

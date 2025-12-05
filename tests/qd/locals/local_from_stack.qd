@@ -6,5 +6,5 @@ fn helper(x:i64 y:i64 -- z:i64) {
 }
 
 fn main( -- ) {
-	10 20 helper . nl
+	10 20 helper print nl
 }

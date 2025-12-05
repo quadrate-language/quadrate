@@ -2,17 +2,17 @@ use test_constants
 
 fn main() {
 	// Test integer constant
-	test_constants::MaxValue . nl
+	test_constants::MaxValue print nl
 
 	// Test float constant
-	test_constants::Pi . nl
+	test_constants::Pi print nl
 
 	// Test string constant
-	test_constants::AppName . nl
+	test_constants::AppName print nl
 
 	// Test constant in arithmetic
-	test_constants::MaxValue 10 add . nl
+	test_constants::MaxValue 10 add print nl
 
 	// Test multiple constant uses
-	test_constants::Pi test_constants::Pi mul . nl
+	test_constants::Pi test_constants::Pi mul print nl
 }

@@ -3,35 +3,35 @@ fn main() {
 	// Test that break exits the switch (200 should not print)
 	5 switch {
 		5 {
-			100 . nl
+			100 print nl
 			break
-			200 . nl
+			200 print nl
 		}
 		_ {
-			999 . nl
+			999 print nl
 		}
 	}
 
 	// Test break in default case (400 should not print)
 	10 switch {
 		1 {
-			10 . nl
+			10 print nl
 		}
 		_ {
-			300 . nl
+			300 print nl
 			break
-			400 . nl
+			400 print nl
 		}
 	}
 
 	// Test switch without break (both 500 and 600 should print)
 	7 switch {
 		7 {
-			500 . nl
-			600 . nl
+			500 print nl
+			600 print nl
 		}
 		_ {
-			999 . nl
+			999 print nl
 		}
 	}
 }

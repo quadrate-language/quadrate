@@ -5,38 +5,38 @@ fn main() {
 
 	// Test 1: 2024-06-15 10:30:45
 	2024 6 15 10 30 45 time::date -> ts1
-	ts1 time::year . nl
-	ts1 time::month . nl
-	ts1 time::day . nl
-	ts1 time::hour . nl
-	ts1 time::minute . nl
-	ts1 time::second . nl
+	ts1 time::year print nl
+	ts1 time::month print nl
+	ts1 time::day print nl
+	ts1 time::hour print nl
+	ts1 time::minute print nl
+	ts1 time::second print nl
 
 	// Test 2: Leap year Feb 29
 	2024 2 29 0 0 0 time::date -> ts2
-	ts2 time::year . nl
-	ts2 time::month . nl
-	ts2 time::day . nl
+	ts2 time::year print nl
+	ts2 time::month print nl
+	ts2 time::day print nl
 
 	// Test 3: End of year
 	2023 12 31 23 59 59 time::date -> ts3
-	ts3 time::year . nl
-	ts3 time::month . nl
-	ts3 time::day . nl
-	ts3 time::hour . nl
-	ts3 time::minute . nl
-	ts3 time::second . nl
+	ts3 time::year print nl
+	ts3 time::month print nl
+	ts3 time::day print nl
+	ts3 time::hour print nl
+	ts3 time::minute print nl
+	ts3 time::second print nl
 
 	// Test 4: Start of year
 	2024 1 1 0 0 0 time::date -> ts4
-	ts4 time::year . nl
-	ts4 time::month . nl
-	ts4 time::day . nl
+	ts4 time::year print nl
+	ts4 time::month print nl
+	ts4 time::day print nl
 
 	// Test 5: Mid-year date
 	2000 7 4 12 0 0 time::date -> ts5
-	ts5 time::year . nl
-	ts5 time::month . nl
-	ts5 time::day . nl
-	ts5 time::hour . nl
+	ts5 time::year print nl
+	ts5 time::month print nl
+	ts5 time::day print nl
+	ts5 time::hour print nl
 }

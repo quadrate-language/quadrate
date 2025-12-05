@@ -2,30 +2,30 @@
 use sha256
 
 fn main() {
-	// Edge case 1: 55 bytes (exactly fills padding before length)
-	"1234567890123456789012345678901234567890123456789012345" sha256::hash . nl
+	// Edge case 1 = 55 bytes (exactly fills padding before length)
+	"1234567890123456789012345678901234567890123456789012345" sha256::hash print nl
 
-	// Edge case 2: 56 bytes (forces second block for padding)
-	"12345678901234567890123456789012345678901234567890123456" sha256::hash . nl
+	// Edge case 2 = 56 bytes (forces second block for padding)
+	"12345678901234567890123456789012345678901234567890123456" sha256::hash print nl
 
-	// Edge case 3: 64 bytes (exactly one block before padding)
-	"1234567890123456789012345678901234567890123456789012345678901234" sha256::hash . nl
+	// Edge case 3 = 64 bytes (exactly one block before padding)
+	"1234567890123456789012345678901234567890123456789012345678901234" sha256::hash print nl
 
-	// Edge case 4: 128 bytes (two full blocks before padding)
-	"12345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678" sha256::hash . nl
+	// Edge case 4 = 128 bytes (two full blocks before padding)
+	"12345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678" sha256::hash print nl
 
 	// Edge case 5: Verify function - correct hash
-	"hello" "2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824" sha256::verify . nl
+	"hello" "2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824" sha256::verify print nl
 
 	// Edge case 6: Verify function - wrong hash
-	"hello" "0000000000000000000000000000000000000000000000000000000000000000" sha256::verify . nl
+	"hello" "0000000000000000000000000000000000000000000000000000000000000000" sha256::verify print nl
 
 	// Edge case 7: Special characters
-	"!@#$%^&*()" sha256::hash . nl
+	"!@#$%^&*()" sha256::hash print nl
 
 	// Edge case 8: Newline character
-	"\n" sha256::hash . nl
+	"\n" sha256::hash print nl
 
 	// Edge case 9: Spaces
-	"   " sha256::hash . nl
+	"   " sha256::hash print nl
 }

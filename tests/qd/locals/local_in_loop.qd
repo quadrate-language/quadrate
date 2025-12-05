@@ -4,5 +4,5 @@ fn main( -- ) {
 	0 10 1 for it {
 		sum it add -> sum
 	}
-	sum . nl
+	sum print nl
 }

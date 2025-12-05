@@ -6,7 +6,7 @@ fn main( -- ) {
 	sb::new -> builder
 	builder 65 sb::append_char -> builder  // 'A'
 	builder sb::finish -> result
-	result . nl
+	result print nl
 
 	// Test multiple chars
 	sb::new -> builder
@@ -16,7 +16,7 @@ fn main( -- ) {
 	builder 108 sb::append_char -> builder // l
 	builder 111 sb::append_char -> builder // o
 	builder sb::finish -> result
-	result . nl
+	result print nl
 
 	// Test mixed with strings
 	sb::new -> builder
@@ -24,5 +24,5 @@ fn main( -- ) {
 	builder 88 sb::append_char -> builder  // X
 	builder "]" sb::append -> builder
 	builder sb::finish -> result
-	result . nl
+	result print nl
 }

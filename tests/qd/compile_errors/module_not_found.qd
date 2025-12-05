@@ -2,5 +2,5 @@
 use nonexistent_module
 
 fn main() {
-	10 . nl
+	10 print nl
 }

@@ -1,21 +1,21 @@
 fn main( -- ) {
 	// Test printing strings with print (.)
-	"Basic print test" . nl
+	"Basic print test" print nl
 	// Test multiple strings on stack
-	"First" "Second" "Third" . nl
+	"First" "Second" "Third" print nl
 	// Should print nl "Third" and leave First and Second on stack
-	. nl . nl
+	print nl print nl
 	// Should print nl "Second" then "First"
 	// Test empty strings
-	"" . nl "Not empty" . nl "" . nl
+	"" print nl "Not empty" print nl "" print nl
 	// Test strings with numbers
-	"Number: 42" . nl "Pi: 3.14159" . nl
+	"Number: 42" print nl "Pi: 3.14159" print nl
 	// Test strings with various whitespace
-	"Tab	here" . nl "Multiple   spaces" . nl "Leading whitespace" . nl "Trailing whitespace " . nl
+	"Tab	here" print nl "Multiple   spaces" print nl "Leading whitespace" print nl "Trailing whitespace " print nl
 	// Test very long string
-	"This is a very long string that tests whether the string handling can deal with longer text content without any issues whatsoever." . nl
+	"This is a very long string that tests whether the string handling can deal with longer text content without any issues whatsoever." print nl
 	// Test strings with repeated characters
-	"aaaaaaaaaa" . nl "1111111111" . nl "          " . nl
+	"aaaaaaaaaa" print nl "1111111111" print nl "          " print nl
 	// Test single character strings (ASCII and Unicode)
-	"a" . nl "Z" . nl "0" . nl "!" . nl "ä" . nl "世" . nl "🎉" . nl
+	"a" print nl "Z" print nl "0" print nl "!" print nl "ä" print nl "世" print nl "🎉" print nl
 }

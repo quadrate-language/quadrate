@@ -1722,9 +1722,10 @@ namespace Qd {
 				size_t n;
 				const char* text = u8t_scanner_token_text(scanner, &n);
 
-				// Check if this identifier is followed by ':' (field name)
-				char32_t nextToken = u8t_scanner_peek(scanner);
-				if (nextToken == ':') {
+				// Check if this identifier is followed by '=' (field name in struct construction)
+				// Use peekNextNonWhitespace to allow spaces around '='
+				char32_t nextToken = peekNextNonWhitespace(scanner, src);
+				if (nextToken == '=') {
 					// Save the field name BEFORE scanning (scan invalidates text pointer)
 					std::string fieldName(text);
 
@@ -1734,7 +1735,7 @@ namespace Qd {
 						currentFieldNodes.clear();
 					}
 
-					u8t_scanner_scan(scanner); // Consume the ':'
+					u8t_scanner_scan(scanner); // Consume the '='
 					currentFieldName = fieldName;
 					continue;
 				}

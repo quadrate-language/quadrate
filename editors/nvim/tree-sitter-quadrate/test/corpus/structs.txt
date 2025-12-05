@@ -70,7 +70,7 @@ Struct construction and field access
 ================================================================================
 
 fn test_vec2( -- ) {
-  Vec2 { x: 1.5 y: 2.5 } -> v
+  Vec2 { x = 1.5 y = 2.5 } -> v
   v @x print
   v @y print
   v free
@@ -93,12 +93,12 @@ fn test_vec2( -- ) {
           value: (number)))
       (local_declaration
         name: (identifier))
+      (identifier)
       (field_access
-        variable: (identifier)
         field: (identifier))
       (builtin_operation)
+      (identifier)
       (field_access
-        variable: (identifier)
         field: (identifier))
       (builtin_operation)
       (identifier)
@@ -147,7 +147,7 @@ Struct with defer and free
 ================================================================================
 
 fn cleanup_test( -- ) {
-  Vec2 { x: 1.0 y: 2.0 } -> v
+  Vec2 { x = 1.0 y = 2.0 } -> v
   defer {
     v free
   }
@@ -175,8 +175,8 @@ fn cleanup_test( -- ) {
         body: (block
           (identifier)
           (builtin_operation)))
+      (identifier)
       (field_access
-        variable: (identifier)
         field: (identifier))
       (builtin_operation))))
 
@@ -185,7 +185,7 @@ Struct construction with namespace
 ================================================================================
 
 fn use_namespaced_struct( -- ) {
-  geometry::Vec2 { x: 1.0 y: 2.0 } -> v
+  geometry::Vec2 { x = 1.0 y = 2.0 } -> v
   v @x print
 }
 
@@ -208,7 +208,7 @@ fn use_namespaced_struct( -- ) {
           value: (number)))
       (local_declaration
         name: (identifier))
+      (identifier)
       (field_access
-        variable: (identifier)
         field: (identifier))
       (builtin_operation))))

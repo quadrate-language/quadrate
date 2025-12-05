@@ -41,25 +41,25 @@ pub const minus = 45
 pub const dot = 46
 /// Punctuation: Forward slash (/).
 pub const slash = 47
-/// Digit: 0.
+/// Digit = 0.
 pub const digit0 = 48
-/// Digit: 1.
+/// Digit = 1.
 pub const digit1 = 49
-/// Digit: 2.
+/// Digit = 2.
 pub const digit2 = 50
-/// Digit: 3.
+/// Digit = 3.
 pub const digit3 = 51
-/// Digit: 4.
+/// Digit = 4.
 pub const digit4 = 52
-/// Digit: 5.
+/// Digit = 5.
 pub const digit5 = 53
-/// Digit: 6.
+/// Digit = 6.
 pub const digit6 = 54
-/// Digit: 7.
+/// Digit = 7.
 pub const digit7 = 55
-/// Digit: 8.
+/// Digit = 8.
 pub const digit8 = 56
-/// Digit: 9.
+/// Digit = 9.
 pub const digit9 = 57
 /// Punctuation: Colon (:).
 pub const colon = 58

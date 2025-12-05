@@ -3,22 +3,22 @@ use uri
 
 fn main( -- ) {
 	// Incomplete percent at end
-	"test%" uri::decode . nl
-	"test%2" uri::decode . nl
+	"test%" uri::decode print nl
+	"test%2" uri::decode print nl
 
 	// Invalid hex digits
-	"test%GG" uri::decode . nl
-	"test%ZZ" uri::decode . nl
+	"test%GG" uri::decode print nl
+	"test%ZZ" uri::decode print nl
 
 	// Consecutive percents
-	"%%20" uri::decode . nl
+	"%%20" uri::decode print nl
 
 	// Mixed valid/invalid
-	"%41%ZZ%42" uri::decode . nl
+	"%41%ZZ%42" uri::decode print nl
 
 	// Just percent
-	"%" uri::decode . nl
+	"%" uri::decode print nl
 
 	// Multiple valid
-	"%48%65%6C%6C%6F" uri::decode . nl
+	"%48%65%6C%6C%6F" uri::decode print nl
 }

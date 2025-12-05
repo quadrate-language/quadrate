@@ -6,24 +6,24 @@ fn main( -- ) {
 	sb::new -> builder
 	builder 42 sb::append_int -> builder
 	builder sb::finish -> result
-	result . nl
+	result print nl
 
 	// Test zero
 	sb::new -> builder
 	builder 0 sb::append_int -> builder
 	builder sb::finish -> result
-	result . nl
+	result print nl
 
 	// Test negative
 	sb::new -> builder
 	builder -123 sb::append_int -> builder
 	builder sb::finish -> result
-	result . nl
+	result print nl
 
 	// Test mixed string and int
 	sb::new -> builder
 	builder "Count: " sb::append -> builder
 	builder 100 sb::append_int -> builder
 	builder sb::finish -> result
-	result . nl
+	result print nl
 }

@@ -15,8 +15,8 @@ pub fn length(v:Vec2 -- result:f64) {
 pub fn add(a:Vec2 b:Vec2 -- result:ptr) {
 	-> a -> b
 	Vec2 {
-		x: a @x b @x +
-		y: a @y b @y +
+		x = a @x b @x +
+		y = a @y b @y +
 	}
 }
 
@@ -24,7 +24,7 @@ pub fn add(a:Vec2 b:Vec2 -- result:ptr) {
 pub fn scale(v:Vec2 factor:f64 -- result:ptr) {
 	-> v -> factor
 	Vec2 {
-		x: v @x factor *
-		y: v @y factor *
+		x = v @x factor *
+		y = v @y factor *
 	}
 }

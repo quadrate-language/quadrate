@@ -5,7 +5,7 @@ fn make_array( -- arr:ptr) {
 
 fn main( -- ) {
 	make_array -> arr
-	arr len . nl
-	arr 0 nth . nl
-	arr 4 nth . nl
+	arr len print nl
+	arr 0 nth print nl
+	arr 4 nth print nl
 }

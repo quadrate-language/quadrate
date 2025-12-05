@@ -19,9 +19,9 @@ fn distance_from_origin(p:ptr -- d:f64) {
 
 fn main( -- ) {
 	Color {
-		r: 1.0
-		g: 0.5
-		b: 0.0
+		r = 1.0
+		g = 0.5
+		b = 0.0
 	} -> c
-	c distance_from_origin . nl  // ERROR: Color missing x and y fields
+	c distance_from_origin print nl  // ERROR: Color missing x and y fields
 }

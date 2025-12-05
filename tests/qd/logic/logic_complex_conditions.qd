@@ -1,26 +1,26 @@
 // Test: complex logical conditions
 fn main() {
 	// Test: (true AND true) OR false = true
-	1 1 and 0 or . nl
+	1 1 and 0 or print nl
 
 	// Test: (false OR true) AND true = true
-	0 1 or 1 and . nl
+	0 1 or 1 and print nl
 
 	// Test: NOT (true AND false) = true
-	1 0 and not . nl
+	1 0 and not print nl
 
 	// Test: (true OR false) AND (false OR true) = true
-	1 0 or 0 1 or and . nl
+	1 0 or 0 1 or and print nl
 
 	// Test: NOT (false OR false) = true
-	0 0 or not . nl
+	0 0 or not print nl
 
 	// Test: (10 > 5) AND (3 < 7) = true
-	10 5 gt 3 7 lt and . nl
+	10 5 gt 3 7 lt and print nl
 
 	// Test: (10 == 10) OR (5 > 10) = true
-	10 10 eq 5 10 gt or . nl
+	10 10 eq 5 10 gt or print nl
 
 	// Test: (5 < 3) AND (10 == 10) = false
-	5 3 lt 10 10 eq and . nl
+	5 3 lt 10 10 eq and print nl
 }

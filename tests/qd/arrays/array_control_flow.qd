@@ -2,13 +2,13 @@
 fn main( -- ) {
 	// Array in if block
 	1 if {
-		[10 20 30] 1 nth . nl
+		[10 20 30] 1 nth print nl
 	}
 
 	// Array in else block
 	0 if {
-		[100 200] 0 nth . nl
+		[100 200] 0 nth print nl
 	} else {
-		[300 400] 0 nth . nl
+		[300 400] 0 nth print nl
 	}
 }

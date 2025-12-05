@@ -1,5 +1,5 @@
 // Test local variable with string values
 fn main( -- ) {
 	"Hello" -> msg
-	msg . nl
+	msg print nl
 }

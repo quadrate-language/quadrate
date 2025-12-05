@@ -6,26 +6,26 @@ fn might_fail(a:i64 -- result:i64)! {
 
 fn main() {
 	5 might_fail if {
-		"Check 1: Success with " . . nl
+		"Check 1: Success with " print print nl
 	} else {
-		drop "Check 1: Failed" . nl
+		drop "Check 1: Failed" print nl
 	}
 
 	15 might_fail if {
-		"Check 2: Success with " . . nl
+		"Check 2: Success with " print print nl
 	} else {
-		drop "Check 2: Failed" . nl
+		drop "Check 2: Failed" print nl
 	}
 
 	8 might_fail if {
-		"Check 3: Success with " . . nl
+		"Check 3: Success with " print print nl
 	} else {
-		drop "Check 3: Failed" . nl
+		drop "Check 3: Failed" print nl
 	}
 
 	20 might_fail if {
-		"Check 4: Success with " . . nl
+		"Check 4: Success with " print print nl
 	} else {
-		drop "Check 4: Failed" . nl
+		drop "Check 4: Failed" print nl
 	}
 }

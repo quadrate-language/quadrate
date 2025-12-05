@@ -3,17 +3,17 @@ use hex
 
 fn main( -- ) {
 	// Large value for encode_byte (should be clamped to 255)
-	256 hex::encode_byte . nl
-	1000 hex::encode_byte . nl
+	256 hex::encode_byte print nl
+	1000 hex::encode_byte print nl
 
 	// Decode with invalid characters (pairs are skipped)
-	"48GG65" hex::decode . nl
-	"ZZZZ" hex::decode . nl
+	"48GG65" hex::decode print nl
+	"ZZZZ" hex::decode print nl
 
 	// Very long hex string
-	"414141414141414141414141414141414141414141" hex::decode . nl
+	"414141414141414141414141414141414141414141" hex::decode print nl
 
 	// Empty roundtrip
-	"" hex::encode . nl
-	"" hex::decode . nl
+	"" hex::encode print nl
+	"" hex::decode print nl
 }

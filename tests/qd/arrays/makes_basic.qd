@@ -2,7 +2,7 @@
 fn main( -- ) {
 	// Create array with 2 elements (initialized to empty strings)
 	2 makes -> arr
-	arr len . nl          // Should print: 2
-	arr 0 nth . nl        // Should print empty line
-	arr 1 nth . nl        // Should print empty line
+	arr len print nl          // Should print = 2
+	arr 0 nth print nl        // Should print empty line
+	arr 1 nth print nl        // Should print empty line
 }

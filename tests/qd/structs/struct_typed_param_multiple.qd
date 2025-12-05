@@ -19,8 +19,8 @@ fn distance(p1:Point p2:Point -- result:f64) {
 fn weighted_midpoint(p1:Point p2:Point weight:f64 -- result:ptr) {
 	-> weight -> p2 -> p1
 	Point {
-		x: p1 @x weight * p2 @x 1.0 weight - * +
-		y: p1 @y weight * p2 @y 1.0 weight - * +
+		x = p1 @x weight * p2 @x 1.0 weight - * +
+		y = p1 @y weight * p2 @y 1.0 weight - * +
 	}
 }
 
@@ -28,45 +28,45 @@ fn weighted_midpoint(p1:Point p2:Point weight:f64 -- result:ptr) {
 fn add_points(a:Point b:Point -- result:ptr) {
 	-> b -> a
 	Point {
-		x: a @x b @x +
-		y: a @y b @y +
+		x = a @x b @x +
+		y = a @y b @y +
 	}
 }
 
 fn main( -- ) {
 	// Create test structs
 	Point {
-		x: 0.0
-		y: 0.0
+		x = 0.0
+		y = 0.0
 	} -> origin
 	Point {
-		x: 3.0
-		y: 4.0
+		x = 3.0
+		y = 4.0
 	} -> pt1
 	Point {
-		x: 6.0
-		y: 8.0
+		x = 6.0
+		y = 8.0
 	} -> pt2
 
 	// Test distance between two points
 	pt1 pt2 distance -> d
-	"Distance from (3,4) to (6,8): " . d . nl
+	"Distance from (3,4) to (6,8): " print d print nl
 
 	// Test distance from origin
 	origin pt1 distance -> d2
-	"Distance from origin to (3,4): " . d2 . nl
+	"Distance from origin to (3,4): " print d2 print nl
 
 	// Test add_points
 	pt1 pt2 add_points -> sum
-	"Sum of (3,4) + (6,8): (" . sum @x . ", " . sum @y . ")" . nl
+	"Sum of (3,4) + (6,8): (" print sum @x print ", " print sum @y print ")" print nl
 
 	// Test weighted midpoint (0.5 = regular midpoint)
 	pt1 pt2 0.5 weighted_midpoint -> mid
-	"Midpoint: (" . mid @x . ", " . mid @y . ")" . nl
+	"Midpoint: (" print mid @x print ", " print mid @y print ")" print nl
 
 	// Test weighted more towards pt1
 	pt1 pt2 0.75 weighted_midpoint -> w1
-	"75% towards pt1: (" . w1 @x . ", " . w1 @y . ")" . nl
+	"75% towards pt1: (" print w1 @x print ", " print w1 @y print ")" print nl
 
 	// Structs are automatically released at end of scope
 }

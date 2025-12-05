@@ -1,5 +1,5 @@
 // Empty array
 fn main( -- ) {
 	[] -> arr
-	arr len . nl
+	arr len print nl
 }

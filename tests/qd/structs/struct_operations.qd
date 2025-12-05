@@ -5,15 +5,15 @@ struct Vec2 {
 
 fn test_operations( -- ) {
 	Vec2 {
-		x: 5.0
-		y: 10.0
+		x = 5.0
+		y = 10.0
 	} -> v
 
 	// Field values can now be used in operations!
-	v @x v @y add . nl
+	v @x v @y add print nl
 
 	// Multiple operations
-	v @x 2.0 mul v @y add . nl
+	v @x 2.0 mul v @y add print nl
 
 	// Comparison
 	v @x v @y gt

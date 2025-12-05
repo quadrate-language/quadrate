@@ -39,24 +39,24 @@ fn double_sum(v:Vec2 -- result:f64) {
 // Call different functions on same parameter
 fn describe_vec(v:Vec2 -- ) {
 	-> v
-	"Vector: x=" . v get_x .
-	" y=" . v get_y .
-	" magnitude=" . v magnitude .
-	" sum=" . v sum_components . nl
+	"Vector: x=" print v get_x print
+	" y=" print v get_y print
+	" magnitude=" print v magnitude print
+	" sum=" print v sum_components print nl
 }
 
 fn main( -- ) {
 	Vec2 {
-		x: 3.0
-		y: 4.0
+		x = 3.0
+		y = 4.0
 	} -> v
 
-	"Components:" . nl
-	"  x: " . v get_x . nl
-	"  y: " . v get_y . nl
-	"  magnitude: " . v magnitude . nl
-	"  sum: " . v sum_components . nl
-	"  double_sum: " . v double_sum . nl
+	"Components:" print nl
+	"  x: " print v get_x print nl
+	"  y: " print v get_y print nl
+	"  magnitude: " print v magnitude print nl
+	"  sum: " print v sum_components print nl
+	"  double_sum: " print v double_sum print nl
 
 	v describe_vec
 }

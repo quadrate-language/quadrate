@@ -7,43 +7,43 @@ fn main() {
 	// Except divisible by 400 = leap
 
 	// Standard leap years (div by 4)
-	2020 time::is_leap_year . nl
-	2024 time::is_leap_year . nl
-	2028 time::is_leap_year . nl
+	2020 time::is_leap_year print nl
+	2024 time::is_leap_year print nl
+	2028 time::is_leap_year print nl
 
 	// Non-leap years
-	2019 time::is_leap_year . nl
-	2021 time::is_leap_year . nl
-	2023 time::is_leap_year . nl
+	2019 time::is_leap_year print nl
+	2021 time::is_leap_year print nl
+	2023 time::is_leap_year print nl
 
 	// Century years (div by 100, not by 400)
-	1900 time::is_leap_year . nl
-	2100 time::is_leap_year . nl
-	2200 time::is_leap_year . nl
+	1900 time::is_leap_year print nl
+	2100 time::is_leap_year print nl
+	2200 time::is_leap_year print nl
 
 	// Century years div by 400
-	1600 time::is_leap_year . nl
-	2000 time::is_leap_year . nl
-	2400 time::is_leap_year . nl
+	1600 time::is_leap_year print nl
+	2000 time::is_leap_year print nl
+	2400 time::is_leap_year print nl
 
 	// ===== FEBRUARY DAYS =====
 	// Leap years have 29 days
-	2024 2 time::days_in_month . nl
-	2000 2 time::days_in_month . nl
+	2024 2 time::days_in_month print nl
+	2000 2 time::days_in_month print nl
 	// Non-leap years have 28 days
-	2023 2 time::days_in_month . nl
-	1900 2 time::days_in_month . nl
+	2023 2 time::days_in_month print nl
+	1900 2 time::days_in_month print nl
 
 	// ===== ALL MONTHS =====
-	2024 1 time::days_in_month . nl
-	2024 3 time::days_in_month . nl
-	2024 4 time::days_in_month . nl
-	2024 5 time::days_in_month . nl
-	2024 6 time::days_in_month . nl
-	2024 7 time::days_in_month . nl
-	2024 8 time::days_in_month . nl
-	2024 9 time::days_in_month . nl
-	2024 10 time::days_in_month . nl
-	2024 11 time::days_in_month . nl
-	2024 12 time::days_in_month . nl
+	2024 1 time::days_in_month print nl
+	2024 3 time::days_in_month print nl
+	2024 4 time::days_in_month print nl
+	2024 5 time::days_in_month print nl
+	2024 6 time::days_in_month print nl
+	2024 7 time::days_in_month print nl
+	2024 8 time::days_in_month print nl
+	2024 9 time::days_in_month print nl
+	2024 10 time::days_in_month print nl
+	2024 11 time::days_in_month print nl
+	2024 12 time::days_in_month print nl
 }

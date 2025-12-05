@@ -11,10 +11,10 @@ fn test_ctx_stack_ops( -- ) {
 		add   // [10]
 	}
 	// Stack: [1, 2, 3, 10]
-	. nl  // 10
-	. nl  // 3
-	. nl  // 2
-	. nl  // 1
+	print nl  // 10
+	print nl  // 3
+	print nl  // 2
+	print nl  // 1
 }
 
 fn test_ctx_arithmetic( -- ) {
@@ -27,8 +27,8 @@ fn test_ctx_arithmetic( -- ) {
 		3 div // [9]
 	}
 	// Stack: [5, 9]
-	. nl  // 9
-	. nl  // 5
+	print nl  // 9
+	print nl  // 5
 }
 
 fn test_ctx_comparison( -- ) {
@@ -42,9 +42,9 @@ fn test_ctx_comparison( -- ) {
 		}
 	}
 	// Stack: [100, 50, 777]
-	. nl  // 777
-	. nl  // 50
-	. nl  // 100
+	print nl  // 777
+	print nl  // 50
+	print nl  // 100
 }
 
 fn main( -- ) {

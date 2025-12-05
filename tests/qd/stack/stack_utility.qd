@@ -1,11 +1,11 @@
 fn main( -- ) {
 	// Test depth - get stack size
 	clear
-	1 2 3 depth . nl
-	// Should print nl: 3
+	1 2 3 depth print nl
+	// Should print nl = 3
 	clear
 	// Test clear - empty the stack
 	100 200 300 clear
-	depth . nl
-	// Should print nl: 0
+	depth print nl
+	// Should print nl = 0
 }

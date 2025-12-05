@@ -14,8 +14,8 @@ struct Config {
 fn scale_point(p:Point factor:f64 -- result:ptr) {
 	-> factor -> p
 	Point {
-		x: p @x factor *
-		y: p @y factor *
+		x = p @x factor *
+		y = p @y factor *
 	}
 }
 
@@ -23,7 +23,7 @@ fn scale_point(p:Point factor:f64 -- result:ptr) {
 fn copy_to(src:Point dest:ptr -- ) {
 	-> dest -> src
 	// Just demonstrate both work - src is typed, dest is generic ptr
-	"Copying from typed Point" . nl
+	"Copying from typed Point" print nl
 }
 
 // Mix multiple types - simpler version
@@ -40,34 +40,34 @@ fn apply_scale(p:Point c:Config -- result:f64) {
 fn offset_point(p:Point dx:f64 dy:f64 -- result:ptr) {
 	-> dy -> dx -> p
 	Point {
-		x: p @x dx +
-		y: p @y dy +
+		x = p @x dx +
+		y = p @y dy +
 	}
 }
 
 fn main( -- ) {
 	// Test scale_point
 	Point {
-		x: 3.0
-		y: 4.0
+		x = 3.0
+		y = 4.0
 	} -> pt
 	pt 2.0 scale_point -> scaled
-	"Scaled (3,4) by 2: (" . scaled @x . ", " . scaled @y . ")" . nl
+	"Scaled (3,4) by 2: (" print scaled @x print ", " print scaled @y print ")" print nl
 
 	// Test apply_scale
 	Config {
-		scale: 2.0
-		enabled: 1
+		scale = 2.0
+		enabled = 1
 	} -> cfg
-	"Apply scale enabled: " . pt cfg apply_scale . nl
+	"Apply scale enabled: " print pt cfg apply_scale print nl
 
 	Config {
-		scale: 0.0
-		enabled: 0
+		scale = 0.0
+		enabled = 0
 	} -> cfg_disabled
-	"Apply scale disabled: " . pt cfg_disabled apply_scale . nl
+	"Apply scale disabled: " print pt cfg_disabled apply_scale print nl
 
 	// Test offset
 	pt 10.0 20.0 offset_point -> offset
-	"Offset: (" . offset @x . ", " . offset @y . ")" . nl
+	"Offset: (" print offset @x print ", " print offset @y print ")" print nl
 }

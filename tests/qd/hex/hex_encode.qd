@@ -3,20 +3,20 @@ use hex
 
 fn main( -- ) {
 	// Basic encoding (uppercase)
-	"Hello" hex::encode . nl
-	"A" hex::encode . nl
-	"" hex::encode . nl
+	"Hello" hex::encode print nl
+	"A" hex::encode print nl
+	"" hex::encode print nl
 
 	// Lowercase encoding
-	"Hello" hex::encode_lower . nl
-	"ABC" hex::encode_lower . nl
+	"Hello" hex::encode_lower print nl
+	"ABC" hex::encode_lower print nl
 
 	// Special characters
-	" " hex::encode . nl
+	" " hex::encode print nl
 
 	// Numbers
-	"0123456789" hex::encode . nl
+	"0123456789" hex::encode print nl
 
 	// Mixed case letters
-	"AaBbCc" hex::encode . nl
+	"AaBbCc" hex::encode print nl
 }

@@ -5,8 +5,8 @@ fn bmi(weight:f64 height:f64 -- bmi:f64) {
 fn main( -- ) {
 	70.0 1.75 bmi
 	25.0 > if {
-		"Overweight" . nl
+		"Overweight" print nl
 	} else {
-		"Normal weight" . nl
+		"Normal weight" print nl
 	}
 }

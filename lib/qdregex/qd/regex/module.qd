@@ -1,5 +1,5 @@
 /// Regular expression matching using Thompson NFA.
-/// Supports: . * + ? | () [] [^] [a-z] ^ it and escapes.
+/// Supports = . * + ? | () [] [^] [a-z] ^ it and escapes.
 /// Note: Nested groups and alternation inside groups not yet supported.
 use mem
 use str

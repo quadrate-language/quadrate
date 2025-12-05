@@ -12,56 +12,56 @@ struct Resource {
 fn create_resource(id:i64 -- r:ptr) {
 	-> id
 	Resource {
-		id: id
-		value: id 100 *
+		id = id
+		value = id 100 *
 	}
 }
 
 fn destroy_resource(r:ptr -- ) {
 	-> r
-	"  Destroying resource " . r @id . nl
+	"  Destroying resource " print r @id print nl
 	r free
 }
 
 // Basic defer example
 fn basic_defer( -- ) {
-	"Basic defer:" . nl
-	"  Start of function" . nl
+	"Basic defer:" print nl
+	"  Start of function" print nl
 
 	defer {
-		"  Deferred cleanup runs at end" . nl
+		"  Deferred cleanup runs at end" print nl
 	}
 
-	"  Middle of function" . nl
-	"  End of function" . nl
+	"  Middle of function" print nl
+	"  End of function" print nl
 }
 
 // Multiple defers execute in reverse order (LIFO)
 fn multiple_defers( -- ) {
-	"Multiple defers (LIFO order):" . nl
-	"  Registering defers..." . nl
+	"Multiple defers (LIFO order):" print nl
+	"  Registering defers..." print nl
 
 	defer {
-		"  Third defer (registered first)" . nl
+		"  Third defer (registered first)" print nl
 	}
 	defer {
-		"  Second defer (registered second)" . nl
+		"  Second defer (registered second)" print nl
 	}
 	defer {
-		"  First defer (registered last)" . nl
+		"  First defer (registered last)" print nl
 	}
 
-	"  Function body done" . nl
-	"  Now defers will run:" . nl
+	"  Function body done" print nl
+	"  Now defers will run:" print nl
 }
 
 // Practical example: resource cleanup
 fn resource_cleanup( -- ) {
-	"Resource cleanup with defer:" . nl
+	"Resource cleanup with defer:" print nl
 
 	// Create resources
 	1 create_resource -> r1
-	"  Created resource 1" . nl
+	"  Created resource 1" print nl
 
 	// Register cleanup immediately after creation
 	defer {
@@ -69,46 +69,46 @@ fn resource_cleanup( -- ) {
 	}
 
 	2 create_resource -> r2
-	"  Created resource 2" . nl
+	"  Created resource 2" print nl
 	defer {
 		r2 destroy_resource
 	}
 
 	3 create_resource -> r3
-	"  Created resource 3" . nl
+	"  Created resource 3" print nl
 	defer {
 		r3 destroy_resource
 	}
 
 	// Do some work with resources
-	"  Working with resources..." . nl
-	"  new Resource IDs: " . r1 @id . ", " . r2 @id . ", " . r3 @id . nl
+	"  Working with resources..." print nl
+	"  new Resource IDs: " print r1 @id print ", " print r2 @id print ", " print r3 @id print nl
 
-	"  Function ending, defers will clean up:" . nl
+	"  Function ending, defers will clean up:" print nl
 	// Resources are automatically freed in reverse order (3, 2, 1)
 }
 
 // Defer with early return - defer runs regardless of how function exits
 fn early_return_yes( -- ) {
-	"Early return (yes):" . nl
+	"Early return (yes):" print nl
 
 	defer {
-		"  Cleanup runs even with early return" . nl
+		"  Cleanup runs even with early return" print nl
 	}
 
-	"  Returning early!" . nl
+	"  Returning early!" print nl
 	return
-	"  This line is never reached" . nl
+	"  This line is never reached" print nl
 }
 
 fn early_return_no( -- ) {
-	"Early return (no):" . nl
+	"Early return (no):" print nl
 
 	defer {
-		"  Cleanup runs at normal exit too" . nl
+		"  Cleanup runs at normal exit too" print nl
 	}
 
-	"  Normal execution path" . nl
+	"  Normal execution path" print nl
 }
 
 fn main( -- ) {

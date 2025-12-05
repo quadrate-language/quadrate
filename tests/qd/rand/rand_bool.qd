@@ -25,11 +25,11 @@ fn main() {
 	} else {
 		"FAIL: Invalid bool value"
 	}
-	. nl
+	print nl
 	saw_zero saw_one and if {
 		"PASS: Both 0 and 1 seen"
 	} else {
 		"FAIL: Distribution issue"
 	}
-	. nl
+	print nl
 }

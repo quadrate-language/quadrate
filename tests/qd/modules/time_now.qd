@@ -8,10 +8,10 @@ fn main() {
 	// 1700000000000000000 = 1.7e18 nanoseconds
 	dup 1700000000 1000000000 * gt
 	if {
-		"Time in nanoseconds is valid" . nl
+		"Time in nanoseconds is valid" print nl
 		drop
 	} else {
-		"ERROR: Time in nanoseconds too small" . nl
+		"ERROR: Time in nanoseconds too small" print nl
 		drop
 		1 os::exit
 	}

@@ -2,28 +2,28 @@ use regex
 
 fn main() {
 	// Email-like pattern
-	"[a-zA-Z0-9_]+@[a-zA-Z0-9]+\\.[a-zA-Z]+" "user@example.com" regex::test . nl
-	"[a-zA-Z0-9_]+@[a-zA-Z0-9]+\\.[a-zA-Z]+" "invalid" regex::test . nl
+	"[a-zA-Z0-9_]+@[a-zA-Z0-9]+\\.[a-zA-Z]+" "user@example.com" regex::test print nl
+	"[a-zA-Z0-9_]+@[a-zA-Z0-9]+\\.[a-zA-Z]+" "invalid" regex::test print nl
 
 	// Simple URL pattern
-	"http://[a-z]+\\.[a-z]+" "http://example.com" regex::test . nl
-	"http://[a-z]+\\.[a-z]+" "ftp://example.com" regex::test . nl
+	"http://[a-z]+\\.[a-z]+" "http://example.com" regex::test print nl
+	"http://[a-z]+\\.[a-z]+" "ftp://example.com" regex::test print nl
 
 	// Phone-like pattern (simple)
-	"[0-9][0-9][0-9]-[0-9][0-9][0-9]-[0-9][0-9][0-9][0-9]" "123-456-7890" regex::test . nl
-	"[0-9][0-9][0-9]-[0-9][0-9][0-9]-[0-9][0-9][0-9][0-9]" "12-456-7890" regex::test . nl
+	"[0-9][0-9][0-9]-[0-9][0-9][0-9]-[0-9][0-9][0-9][0-9]" "123-456-7890" regex::test print nl
+	"[0-9][0-9][0-9]-[0-9][0-9][0-9]-[0-9][0-9][0-9][0-9]" "12-456-7890" regex::test print nl
 
 	// IP-like pattern (simple, not validating range)
-	"[0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+" "192.168.1.1" regex::test . nl
-	"[0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+" "192.168.1" regex::test . nl
+	"[0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+" "192.168.1.1" regex::test print nl
+	"[0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+" "192.168.1" regex::test print nl
 
 	// Identifier pattern
-	"[a-zA-Z_][a-zA-Z0-9_]*" "myVar123" regex::test . nl
-	"[a-zA-Z_][a-zA-Z0-9_]*" "123abc" regex::test . nl
-	"[a-zA-Z_][a-zA-Z0-9_]*" "_private" regex::test . nl
+	"[a-zA-Z_][a-zA-Z0-9_]*" "myVar123" regex::test print nl
+	"[a-zA-Z_][a-zA-Z0-9_]*" "123abc" regex::test print nl
+	"[a-zA-Z_][a-zA-Z0-9_]*" "_private" regex::test print nl
 
 	// Hexadecimal pattern
-	"0x[0-9a-fA-F]+" "0xFF" regex::test . nl
-	"0x[0-9a-fA-F]+" "0x1a2b3c" regex::test . nl
-	"0x[0-9a-fA-F]+" "xFF" regex::test . nl
+	"0x[0-9a-fA-F]+" "0xFF" regex::test print nl
+	"0x[0-9a-fA-F]+" "0x1a2b3c" regex::test print nl
+	"0x[0-9a-fA-F]+" "xFF" regex::test print nl
 }

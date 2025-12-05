@@ -3,14 +3,14 @@ use time
 fn alpha( -- ) {
 	0 100 1 for it {
 		10 time::Millisecond * time::sleep
-		"alpha" . nl
+		"alpha" print nl
 	}
 }
 
 fn bravo( -- ) {
 	0 100 1 for it {
 		50 time::Millisecond * time::sleep
-		"bravo" . nl
+		"bravo" print nl
 	}
 }
 

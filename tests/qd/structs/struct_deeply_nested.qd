@@ -21,13 +21,13 @@ struct Window {
 
 fn main( -- ) {
 	// Build the nested structure using named field syntax
-	Window { title: "Hello" bounds: Rect { origin: Point { x: 10.0 y: 20.0 } size: Size { width: 100.0 height: 50.0 } }
+	Window { title = "Hello" bounds = Rect { origin = Point { x = 10.0 y = 20.0 } size = Size { width = 100.0 height = 50.0 } }
 	}
 	-> win
 
 	// Access deeply nested fields using chained access
-	win @bounds @origin @x . nl
-	win @bounds @origin @y . nl
-	win @bounds @size @width . nl
-	win @bounds @size @height . nl
+	win @bounds @origin @x print nl
+	win @bounds @origin @y print nl
+	win @bounds @size @width print nl
+	win @bounds @size @height print nl
 }

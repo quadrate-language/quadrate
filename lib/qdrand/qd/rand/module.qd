@@ -16,7 +16,7 @@ pub fn new( -- rng:ptr) {
 	seed 0 == if {
 		1 -> seed
 	}
-	Rng { state: seed }
+	Rng { state = seed }
 }
 
 /// Create a new RNG with specific seed.
@@ -31,7 +31,7 @@ pub fn with_seed(seed:i64 -- rng:ptr) {
 		seed
 	}
 	-> s
-	Rng { state: s }
+	Rng { state = s }
 }
 
 /// Generate next random i64.
@@ -50,7 +50,7 @@ pub fn next(rng:ptr -- rng:ptr n:i64) {
 
 	// Return random number first (will be popped into n), then new state (will be popped into rng)
 	x 2685821657736338717 * -> result
-	Rng { state: x } -> newrng
+	Rng { state = x } -> newrng
 	result
 	newrng
 }

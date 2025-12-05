@@ -1,26 +1,26 @@
 // Test: logical short-circuit evaluation
 fn main() {
 	// Test AND short-circuit: false AND <anything> = false
-	0 1 and . nl
+	0 1 and print nl
 
 	// Test: true AND true = true
-	1 1 and . nl
+	1 1 and print nl
 
 	// Test: true AND false = false
-	1 0 and . nl
+	1 0 and print nl
 
 	// Test: false AND true = false
-	0 1 and . nl
+	0 1 and print nl
 
 	// Test OR short-circuit: true OR <anything> = true
-	1 0 or . nl
+	1 0 or print nl
 
 	// Test: false OR true = true
-	0 1 or . nl
+	0 1 or print nl
 
 	// Test: false OR false = false
-	0 0 or . nl
+	0 0 or print nl
 
 	// Test: true OR true = true
-	1 1 or . nl
+	1 1 or print nl
 }

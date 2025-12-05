@@ -5,11 +5,11 @@ fn main() {
 	// Program name (arg0) is excluded
 	// Use for loop to demonstrate iteration
 
-	dup "argc=" . . nl
+	dup "argc=" print print nl
 
 	// Iterate argc times using for loop
 	// Just print the iteration number
 	0 swap 1 for it {
-		"iter" . it . nl
+		"iter" print it print nl
 	}
 }

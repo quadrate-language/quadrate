@@ -11,7 +11,7 @@ fn main( -- ) {
 	1760 makef -> z  // Z-buffer (80x22 screen)
 	1760 makei -> o  // Output buffer (char indices)
 
-	"\x1b[2J" . "\x1b[?25l" .  // Clear screen, hide cursor
+	"\x1b[2J" print "\x1b[?25l" print  // Clear screen, hide cursor
 
 	loop {
 		// Reset buffers
@@ -69,48 +69,48 @@ fn main( -- ) {
 		}
 
 		// Render frame
-		"\x1b[H" .  // Cursor home
+		"\x1b[H" print  // Cursor home
 		0 1761 1 for it {
 			it 80 mod 0 != if {
 				o it nth switch {
 					0 {
-						"." .
+						"." print
 					}
 					1 {
-						"," .
+						"," print
 					}
 					2 {
-						"-" .
+						"-" print
 					}
 					3 {
-						"~" .
+						"~" print
 					}
 					4 {
-						":" .
+						":" print
 					}
 					5 {
-						";" .
+						";" print
 					}
 					6 {
-						"=" .
+						"=" print
 					}
 					7 {
-						"!" .
+						"!" print
 					}
 					8 {
-						"*" .
+						"*" print
 					}
 					9 {
-						"#" .
+						"#" print
 					}
 					10 {
-						"$" .
+						"$" print
 					}
 					11 {
-						"@" .
+						"@" print
 					}
 					_ {
-						" " .
+						" " print
 					}
 				}
 			} else {
@@ -122,5 +122,5 @@ fn main( -- ) {
 		B 0.02 + -> B
 	}
 
-	"\x1b[?25h" .  // Show cursor
+	"\x1b[?25h" print  // Show cursor
 }

@@ -2,73 +2,73 @@ use math
 
 fn main( -- ) {
 	// Test sq (square)
-	5.0 math::sq . nl
-	// Should print nl: 25
-	-3.0 math::sq . nl
-	// Should print nl: 9
+	5.0 math::sq print nl
+	// Should print nl = 25
+	-3.0 math::sq print nl
+	// Should print nl = 9
 	// Test sqrt (square root)
-	16.0 math::sqrt . nl
-	// Should print nl: 4
-	25.0 math::sqrt . nl
-	// Should print nl: 5
+	16.0 math::sqrt print nl
+	// Should print nl = 4
+	25.0 math::sqrt print nl
+	// Should print nl = 5
 	// Test cb (cube)
-	3.0 math::cb . nl
-	// Should print nl: 27
-	-2.0 math::cb . nl
-	// Should print nl: -8
+	3.0 math::cb print nl
+	// Should print nl = 27
+	-2.0 math::cb print nl
+	// Should print nl = -8
 	// Test cbrt (cube root)
-	27.0 math::cbrt . nl
-	// Should print nl: 3
-	8.0 math::cbrt . nl
-	// Should print nl: 2
+	27.0 math::cbrt print nl
+	// Should print nl = 3
+	8.0 math::cbrt print nl
+	// Should print nl = 2
 	// Test abs (absolute value)
-	-42.0 math::abs . nl
-	// Should print nl: 42
-	42.0 math::abs . nl
-	// Should print nl: 42
+	-42.0 math::abs print nl
+	// Should print nl = 42
+	42.0 math::abs print nl
+	// Should print nl = 42
 	// Test inv (inverse/reciprocal)
 	// 1/2 = 0.5
-	2.0 math::inv . nl
-	// Should print nl: 0.5
-	4.0 math::inv . nl
-	// Should print nl: 0.25
+	2.0 math::inv print nl
+	// Should print nl = 0.5
+	4.0 math::inv print nl
+	// Should print nl = 0.25
 	// Test inc/dec
-	5 inc . nl
-	// Should print nl: 6
-	5 dec . nl
-	// Should print nl: 4
+	5 inc print nl
+	// Should print nl = 6
+	5 dec print nl
+	// Should print nl = 4
 	// Test fac (factorial)
-	5 math::fac . nl
-	// Should print nl: 120
-	0 math::fac . nl
-	// Should print nl: 1
-	1 math::fac . nl
-	// Should print nl: 1
+	5 math::fac print nl
+	// Should print nl = 120
+	0 math::fac print nl
+	// Should print nl = 1
+	1 math::fac print nl
+	// Should print nl = 1
 	// Test ceil/floor
-	3.2 math::ceil . nl
-	// Should print nl: 4
-	3.8 math::floor . nl
-	// Should print nl: 3
-	-2.3 math::ceil . nl
-	// Should print nl: -2
-	-2.7 math::floor . nl
-	// Should print nl: -3
+	3.2 math::ceil print nl
+	// Should print nl = 4
+	3.8 math::floor print nl
+	// Should print nl = 3
+	-2.3 math::ceil print nl
+	// Should print nl = -2
+	-2.7 math::floor print nl
+	// Should print nl = -3
 	// Test pow (exponentiation)
-	2.0 10.0 math::pow . nl
-	// Should print nl: 1024 (2^10)
-	3.0 3.0 math::pow . nl
-	// Should print nl: 27 (3^3)
-	5.0 2.0 math::pow . nl
-	// Should print nl: 25 (5^2)
-	2.0 0.0 math::pow . nl
-	// Should print nl: 1 (2^0)
+	2.0 10.0 math::pow print nl
+	// Should print nl = 1024 (2^10)
+	3.0 3.0 math::pow print nl
+	// Should print nl = 27 (3^3)
+	5.0 2.0 math::pow print nl
+	// Should print nl = 25 (5^2)
+	2.0 0.0 math::pow print nl
+	// Should print nl = 1 (2^0)
 	// Test round (round to nearest integer)
-	2.5 math::round . nl
-	// Should print nl: 3
-	2.4 math::round . nl
-	// Should print nl: 2
-	-2.5 math::round . nl
-	// Should print nl: -2
-	3.7 math::round . nl
-	// Should print nl: 4
+	2.5 math::round print nl
+	// Should print nl = 3
+	2.4 math::round print nl
+	// Should print nl = 2
+	-2.5 math::round print nl
+	// Should print nl = -2
+	3.7 math::round print nl
+	// Should print nl = 4
 }

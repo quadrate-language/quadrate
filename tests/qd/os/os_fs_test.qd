@@ -9,10 +9,10 @@ fn main( -- ) {
 	}
 
 	// Test 1: Check if /tmp exists (should return 1)
-	"/tmp" os::exists . nl
+	"/tmp" os::exists print nl
 
 	// Test 2: Check if non-existent file exists (should return 0)
-	"/tmp/definitely_does_not_exist_12345.txt" os::exists . nl
+	"/tmp/definitely_does_not_exist_12345.txt" os::exists print nl
 
 	// Test 3: Create a test directory (errno=0 on success)
 	"/tmp/quadrate_fs_test" os::mkdir if {
@@ -20,7 +20,7 @@ fn main( -- ) {
 	}
 
 	// Test 4: Check if created directory exists (should return 1)
-	"/tmp/quadrate_fs_test" os::exists . nl
+	"/tmp/quadrate_fs_test" os::exists print nl
 
 	// Test 5: Try to create the same directory again (should fail with EEXIST)
 	"/tmp/quadrate_fs_test" os::mkdir if {
@@ -28,7 +28,7 @@ fn main( -- ) {
 	}
 
 	// Test 6: Check the directory still exists
-	"/tmp/quadrate_fs_test" os::exists . nl
+	"/tmp/quadrate_fs_test" os::exists print nl
 
 	// Cleanup: Try to delete the directory (will fail since unlink doesn't work on dirs)
 	"/tmp/quadrate_fs_test" os::delete if {

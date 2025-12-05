@@ -2,19 +2,19 @@ use math
 
 fn main( -- ) {
 	// Test ln (natural logarithm)
-	1 math::ln . nl
+	1 math::ln print nl
 	// ln(1) = 0
-	2.718281828 math::ln . nl
+	2.718281828 math::ln print nl
 	// ln(e) ≈ 1
-	10 math::ln . nl
+	10 math::ln print nl
 	// ln(10) ≈ 2.302585
 	// Test log10 (base 10 logarithm)
-	1 math::log10 . nl
+	1 math::log10 print nl
 	// log10(1) = 0
-	10 math::log10 . nl
+	10 math::log10 print nl
 	// log10(10) = 1
-	100 math::log10 . nl
+	100 math::log10 print nl
 	// log10(100) = 2
-	1000 math::log10 . nl
+	1000 math::log10 print nl
 	// log10(1000) = 3
 }

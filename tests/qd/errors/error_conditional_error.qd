@@ -9,24 +9,24 @@ fn process(a:i64 b:i64 -- result:i64)! {
 }
 
 fn main() {
-	"5 + 3 = " .
+	"5 + 3 = " print
 	5 3 process if {
-		. nl
+		print nl
 	} else {
-		drop "Error" . nl
+		drop "Error" print nl
 	}
 
-	"10 + 0 = " .
+	"10 + 0 = " print
 	10 0 process if {
-		. nl
+		print nl
 	} else {
-		drop "Error (b was zero)" . nl
+		drop "Error (b was zero)" print nl
 	}
 
-	"7 + 2 = " .
+	"7 + 2 = " print
 	7 2 process if {
-		. nl
+		print nl
 	} else {
-		drop "Error" . nl
+		drop "Error" print nl
 	}
 }

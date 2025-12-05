@@ -10,17 +10,17 @@ fn divide(a:i64 b:i64 -- result:i64)! {
 }
 
 fn main() {
-	"Test 1: 10 / 2" . nl
+	"Test 1: 10 / 2" print nl
 	10 2 divide if {
-		"Result: " . . nl
+		"Result: " print print nl
 	} else {
-		drop "Error" . nl
+		drop "Error" print nl
 	}
 
-	"Test 2: 10 / 0" . nl
+	"Test 2: 10 / 0" print nl
 	10 0 divide if {
-		"Result: " . . nl
+		"Result: " print print nl
 	} else {
-		drop "Error (expected)" . nl
+		drop "Error (expected)" print nl
 	}
 }

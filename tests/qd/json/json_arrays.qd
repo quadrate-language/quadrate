@@ -3,31 +3,31 @@ use str
 
 fn main( -- ) {
 	// Test array_len
-	"[1, 2, 3]" json::array_len . nl
-	"[]" json::array_len . nl
-	"[1]" json::array_len . nl
-	"[1, 2, 3, 4, 5]" json::array_len . nl
+	"[1, 2, 3]" json::array_len print nl
+	"[]" json::array_len print nl
+	"[1]" json::array_len print nl
+	"[1, 2, 3, 4, 5]" json::array_len print nl
 
 	// Test array_get_int
 	"[10, 20, 30]" 0 json::array_get_int -> found -> val
-	val . nl
-	found . nl
+	val print nl
+	found print nl
 	"[10, 20, 30]" 1 json::array_get_int -> found -> val
-	val . nl
-	found . nl
+	val print nl
+	found print nl
 	"[10, 20, 30]" 2 json::array_get_int -> found -> val
-	val . nl
-	found . nl
+	val print nl
+	found print nl
 
 	// Test array_get_int - out of bounds
 	"[10, 20, 30]" 5 json::array_get_int -> found -> val
-	val . nl
-	found . nl
+	val print nl
+	found print nl
 
 	// Test array_get_int - negative numbers
 	"[-5, 0, 5]" 0 json::array_get_int -> found -> val
-	val . nl
-	found . nl
+	val print nl
+	found print nl
 
 	// Test array_get_string
 	34 -> q
@@ -36,12 +36,12 @@ fn main( -- ) {
 	q str::from_char str::concat "c" str::concat q str::from_char str::concat "]" str::concat
 	-> arr
 	arr 0 json::array_get_string -> found -> val
-	val . nl
-	found . nl
+	val print nl
+	found print nl
 	arr 1 json::array_get_string -> found -> val
-	val . nl
-	found . nl
+	val print nl
+	found print nl
 	arr 2 json::array_get_string -> found -> val
-	val . nl
-	found . nl
+	val print nl
+	found print nl
 }

@@ -17,8 +17,8 @@ fn bad_function(p:Point -- result:f64) {
 
 fn main( -- ) {
 	Point {
-		x: 3.0
-		y: 4.0
+		x = 3.0
+		y = 4.0
 	} -> pt
-	pt bad_function . nl
+	pt bad_function print nl
 }

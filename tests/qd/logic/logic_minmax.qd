@@ -2,33 +2,33 @@ use math
 
 fn main( -- ) {
 	// Test min - minimum of two values
-	10 20 math::min . nl
-	// Should print nl: 10
-	5 3 math::min . nl
-	// Should print nl: 3
-	3.5 2.7 math::min . nl
-	// Should print nl: 2.7
+	10 20 math::min print nl
+	// Should print nl = 10
+	5 3 math::min print nl
+	// Should print nl = 3
+	3.5 2.7 math::min print nl
+	// Should print nl = 2.7
 	// Test max - maximum of two values
-	10 20 math::max . nl
-	// Should print nl: 20
-	5 3 math::max . nl
-	// Should print nl: 5
-	3.5 2.7 math::max . nl
-	// Should print nl: 3.5
+	10 20 math::max print nl
+	// Should print nl = 20
+	5 3 math::max print nl
+	// Should print nl = 5
+	3.5 2.7 math::max print nl
+	// Should print nl = 3.5
 	// Test neg - negate
-	42 neg . nl
-	// Should print nl: -42
-	-10 neg . nl
-	// Should print nl: 10
-	3.14 neg . nl
-	// Should print nl: -3.14
+	42 neg print nl
+	// Should print nl = -42
+	-10 neg print nl
+	// Should print nl = 10
+	3.14 neg print nl
+	// Should print nl = -3.14
 	// Test mod - modulo operation
-	17 5 mod . nl
-	// Should print nl: 2
-	10 3 mod . nl
-	// Should print nl: 1
+	17 5 mod print nl
+	// Should print nl = 2
+	10 3 mod print nl
+	// Should print nl = 1
 	// Test combining operations
 	100 50 math::min
-	25 math::max . nl
+	25 math::max print nl
 	// min(100, 50) = 50, max(50, 25) = 50
 }

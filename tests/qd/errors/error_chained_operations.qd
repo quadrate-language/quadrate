@@ -12,25 +12,25 @@ fn double_value(a:i64 -- result:i64)! {
 }
 
 fn main() {
-	"Test 1: 5 validated and doubled = " .
+	"Test 1: 5 validated and doubled = " print
 	5 validate_positive if {
 		double_value if {
-			. nl
+			print nl
 		} else {
-			drop "Double failed" . nl
+			drop "Double failed" print nl
 		}
 	} else {
-		drop "Validation failed" . nl
+		drop "Validation failed" print nl
 	}
 
-	"Test 2: -3 validated and doubled = " .
+	"Test 2: -3 validated and doubled = " print
 	-3 validate_positive if {
 		double_value if {
-			. nl
+			print nl
 		} else {
-			drop "Double failed" . nl
+			drop "Double failed" print nl
 		}
 	} else {
-		drop "Validation failed" . nl
+		drop "Validation failed" print nl
 	}
 }

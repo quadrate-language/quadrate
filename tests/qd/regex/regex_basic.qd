@@ -2,30 +2,30 @@ use regex
 
 fn main() {
 	// Literal match
-	"hello" "hello" regex::test . nl
-	"hello" "world" regex::test . nl
+	"hello" "hello" regex::test print nl
+	"hello" "world" regex::test print nl
 
 	// Any character (.)
-	"h.llo" "hello" regex::test . nl
-	"h.llo" "hxllo" regex::test . nl
+	"h.llo" "hello" regex::test print nl
+	"h.llo" "hxllo" regex::test print nl
 
 	// Star (zero or more)
-	"ab*c" "ac" regex::test . nl
-	"ab*c" "abc" regex::test . nl
-	"ab*c" "abbbbc" regex::test . nl
+	"ab*c" "ac" regex::test print nl
+	"ab*c" "abc" regex::test print nl
+	"ab*c" "abbbbc" regex::test print nl
 
 	// Plus (one or more)
-	"ab+c" "ac" regex::test . nl
-	"ab+c" "abc" regex::test . nl
-	"ab+c" "abbbc" regex::test . nl
+	"ab+c" "ac" regex::test print nl
+	"ab+c" "abc" regex::test print nl
+	"ab+c" "abbbc" regex::test print nl
 
 	// Question (zero or one)
-	"ab?c" "ac" regex::test . nl
-	"ab?c" "abc" regex::test . nl
-	"ab?c" "abbc" regex::test . nl
+	"ab?c" "ac" regex::test print nl
+	"ab?c" "abc" regex::test print nl
+	"ab?c" "abbc" regex::test print nl
 
 	// Alternation
-	"cat|dog" "cat" regex::test . nl
-	"cat|dog" "dog" regex::test . nl
-	"cat|dog" "bird" regex::test . nl
+	"cat|dog" "cat" regex::test print nl
+	"cat|dog" "dog" regex::test print nl
+	"cat|dog" "bird" regex::test print nl
 }

@@ -3,20 +3,20 @@ use crc32
 
 fn main( -- ) {
 	// Verify function
-	"123456789" 3421780262 crc32::verify . nl
-	"123456789" 0 crc32::verify . nl
+	"123456789" 3421780262 crc32::verify print nl
+	"123456789" 0 crc32::verify print nl
 
 	// Streaming/incremental CRC
 	4294967295 "Hello" crc32::update -> state
 	state " World" crc32::update -> state
-	state crc32::finalize . nl
+	state crc32::finalize print nl
 
 	// Compare with direct calculation
-	"Hello World" crc32::checksum . nl
+	"Hello World" crc32::checksum print nl
 
 	// Long string
-	"The quick brown fox jumps over the lazy dog" crc32::checksum . nl
+	"The quick brown fox jumps over the lazy dog" crc32::checksum print nl
 
 	// Special characters
-	" " crc32::checksum . nl
+	" " crc32::checksum print nl
 }

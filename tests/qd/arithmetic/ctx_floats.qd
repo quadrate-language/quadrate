@@ -6,8 +6,8 @@ fn test_ctx_float_basic( -- ) {
 		2.0 mul
 	}
 	// Stack: [3.14, 6.28]
-	. nl
-	. nl
+	print nl
+	print nl
 }
 
 fn test_ctx_float_arithmetic( -- ) {
@@ -18,9 +18,9 @@ fn test_ctx_float_arithmetic( -- ) {
 		div
 	}
 	// Stack: [10.5, 2.5, 4.2]
-	. nl
-	. nl
-	. nl
+	print nl
+	print nl
+	print nl
 }
 
 fn test_ctx_float_complex( -- ) {
@@ -30,7 +30,7 @@ fn test_ctx_float_complex( -- ) {
 		3.0 mul      // 12.0
 		2.0 sub      // 10.0
 	}
-	. nl
+	print nl
 }
 
 fn main( -- ) {

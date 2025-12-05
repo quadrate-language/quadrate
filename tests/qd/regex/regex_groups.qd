@@ -2,15 +2,15 @@ use regex
 
 fn main() {
 	// Basic grouping
-	"(a)" "a" regex::test . nl
-	"(ab)" "ab" regex::test . nl
-	"(abc)" "abc" regex::test . nl
+	"(a)" "a" regex::test print nl
+	"(ab)" "ab" regex::test print nl
+	"(abc)" "abc" regex::test print nl
 
 	// Group with quantifiers
-	"(ab)+" "ab" regex::test . nl
-	"(ab)+" "abab" regex::test . nl
-	"(ab)+" "a" regex::test . nl
+	"(ab)+" "ab" regex::test print nl
+	"(ab)+" "abab" regex::test print nl
+	"(ab)+" "a" regex::test print nl
 
 	// Group in pattern
-	"x(ab)y" "xaby" regex::test . nl
+	"x(ab)y" "xaby" regex::test print nl
 }

@@ -13,30 +13,30 @@ fn divide_and_double(a:i64 b:i64 -- quotient:i64 doubled:i64)! {
 }
 
 fn main() {
-	"5 add_and_sub 3:" . nl
+	"5 add_and_sub 3:" print nl
 	5 3 add_and_sub if {
-		"  Difference: " . . nl
-		"  Sum: " . . nl
+		"  Difference: " print print nl
+		"  Sum: " print print nl
 	} else {
 		drop drop
-		"  Error" . nl
+		"  Error" print nl
 	}
 
-	"20 divide_and_double 4:" . nl
+	"20 divide_and_double 4:" print nl
 	20 4 divide_and_double if {
-		"  Doubled: " . . nl
-		"  Quotient: " . . nl
+		"  Doubled: " print print nl
+		"  Quotient: " print print nl
 	} else {
 		drop drop
-		"  Error" . nl
+		"  Error" print nl
 	}
 
-	"10 divide_and_double 0:" . nl
+	"10 divide_and_double 0:" print nl
 	10 0 divide_and_double if {
-		"  Doubled: " . . nl
-		"  Quotient: " . . nl
+		"  Doubled: " print print nl
+		"  Quotient: " print print nl
 	} else {
 		drop drop
-		"  Error (expected)" . nl
+		"  Error (expected)" print nl
 	}
 }

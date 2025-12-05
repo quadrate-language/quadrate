@@ -4,17 +4,17 @@ fn always_error(a:i64 -- result:i64)! {
 }
 
 fn main() {
-	"Test 1: " .
+	"Test 1: " print
 	42 always_error if {
-		. nl
+		print nl
 	} else {
-		drop "Failed (expected)" . nl
+		drop "Failed (expected)" print nl
 	}
 
-	"Test 2: " .
+	"Test 2: " print
 	10 always_error if {
-		. nl
+		print nl
 	} else {
-		drop "Failed (expected)" . nl
+		drop "Failed (expected)" print nl
 	}
 }

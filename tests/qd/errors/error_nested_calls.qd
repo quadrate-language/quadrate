@@ -16,24 +16,24 @@ fn process(a:i64 -- result:i64)! {
 }
 
 fn main() {
-	"Processing 5: " .
+	"Processing 5: " print
 	5 process if {
-		. nl
+		print nl
 	} else {
-		drop "Failed" . nl
+		drop "Failed" print nl
 	}
 
-	"Processing -3: " .
+	"Processing -3: " print
 	-3 process if {
-		. nl
+		print nl
 	} else {
-		drop "Failed" . nl
+		drop "Failed" print nl
 	}
 
-	"Processing 10: " .
+	"Processing 10: " print
 	10 process if {
-		. nl
+		print nl
 	} else {
-		drop "Failed" . nl
+		drop "Failed" print nl
 	}
 }

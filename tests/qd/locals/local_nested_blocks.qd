@@ -3,7 +3,7 @@ fn main( -- ) {
 	10 -> outer
 	outer 5 gt if {
 		20 -> inner
-		outer inner add . nl
+		outer inner add print nl
 	}
-	outer . nl
+	outer print nl
 }

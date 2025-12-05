@@ -15,14 +15,14 @@ fn magnitude(p:Point -- result:f64) {
 // Function with typed struct parameter that modifies nothing
 fn print_point(p:Point -- ) {
 	-> p
-	"Point(" . p @x . ", " . p @y . ")" . nl
+	"Point(" print p @x print ", " print p @y print ")" print nl
 }
 
 fn main( -- ) {
 	Point {
-		x: 3.0
-		y: 4.0
+		x = 3.0
+		y = 4.0
 	} -> pt
 	pt print_point
-	"Magnitude: " . pt magnitude . nl
+	"Magnitude: " print pt magnitude print nl
 }

@@ -4,65 +4,65 @@ use flag
 fn main( -- ) {
 	// Test bool - flag not present
 	"" 0 flag::parse -> f1
-	f1 "--verbose" flag::bool . nl
+	f1 "--verbose" flag::bool print nl
 	f1 flag::destroy
 
 	// Test bool - flag present
 	"--verbose" 1 flag::parse -> f2
-	f2 "--verbose" flag::bool . nl
+	f2 "--verbose" flag::bool print nl
 	f2 flag::destroy
 
 	// Test string - flag not present
 	"" 0 flag::parse -> f3
 	f3 "--name" flag::string if {
-		. nl
+		print nl
 	} else {
-		"default" . nl
+		"default" print nl
 	}
 	f3 flag::destroy
 
 	// Test string - flag present
 	"--name" "Alice" 2 flag::parse -> f4
 	f4 "--name" flag::string if {
-		. nl
+		print nl
 	} else {
-		"default" . nl
+		"default" print nl
 	}
 	f4 flag::destroy
 
 	// Test int - flag not present (use default)
 	"" 0 flag::parse -> f5
 	f5 "--count" flag::int if {
-		. nl
+		print nl
 	} else {
-		10 . nl
+		10 print nl
 	}
 	f5 flag::destroy
 
 	// Test int - flag present
 	"--count" "42" 2 flag::parse -> f6
 	f6 "--count" flag::int if {
-		. nl
+		print nl
 	} else {
-		10 . nl
+		10 print nl
 	}
 	f6 flag::destroy
 
 	// Test float - flag present
 	"--pi" "3.14" 2 flag::parse -> f7
 	f7 "--pi" flag::float if {
-		. nl
+		print nl
 	} else {
-		0.0 . nl
+		0.0 print nl
 	}
 	f7 flag::destroy
 
 	// Test positional (not implemented yet)
 	"file.txt" 1 flag::parse -> f8
 	f8 0 flag::positional if {
-		. nl
+		print nl
 	} else {
-		"no file" . nl
+		"no file" print nl
 	}
 	f8 flag::destroy
 }

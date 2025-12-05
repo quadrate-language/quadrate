@@ -3,17 +3,17 @@ use uri
 
 fn main( -- ) {
 	// Basic decoding
-	"hello%20world" uri::decode . nl
-	"foo%3Dbar" uri::decode . nl
-	"a%26b" uri::decode . nl
+	"hello%20world" uri::decode print nl
+	"foo%3Dbar" uri::decode print nl
+	"a%26b" uri::decode print nl
 
 	// Plus sign becomes space
-	"hello+world" uri::decode . nl
+	"hello+world" uri::decode print nl
 
 	// Mixed case hex
-	"hello%2Fworld" uri::decode . nl
-	"hello%2fworld" uri::decode . nl
+	"hello%2Fworld" uri::decode print nl
+	"hello%2fworld" uri::decode print nl
 
 	// Empty string
-	"" uri::decode . nl
+	"" uri::decode print nl
 }

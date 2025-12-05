@@ -3,14 +3,14 @@ use uri
 
 fn main( -- ) {
 	// Basic encoding
-	"hello world" uri::encode . nl
-	"foo=bar" uri::encode . nl
-	"a&b" uri::encode . nl
+	"hello world" uri::encode print nl
+	"foo=bar" uri::encode print nl
+	"a&b" uri::encode print nl
 
 	// Safe characters pass through
-	"hello-world_test.txt~" uri::encode . nl
-	"ABCxyz012" uri::encode . nl
+	"hello-world_test.txt~" uri::encode print nl
+	"ABCxyz012" uri::encode print nl
 
 	// Empty string
-	"" uri::encode . nl
+	"" uri::encode print nl
 }

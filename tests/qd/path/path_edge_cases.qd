@@ -2,35 +2,35 @@ use path
 
 fn main() {
 	// Root path
-	"/" path::dirname . nl
-	"/" path::basename . nl
+	"/" path::dirname print nl
+	"/" path::basename print nl
 
 	// Empty string
-	"" path::dirname . nl
-	"" path::basename . nl
+	"" path::dirname print nl
+	"" path::basename print nl
 
 	// No directory
-	"file.txt" path::dirname . nl
-	"file.txt" path::basename . nl
+	"file.txt" path::dirname print nl
+	"file.txt" path::basename print nl
 
 	// Trailing slash
-	"/home/user/" path::dirname . nl
-	"/home/user/" path::basename . nl
+	"/home/user/" path::dirname print nl
+	"/home/user/" path::basename print nl
 
 	// Multiple extensions
-	"archive.tar.gz" path::ext . nl
-	"archive.tar.gz" path::stem . nl
+	"archive.tar.gz" path::ext print nl
+	"archive.tar.gz" path::stem print nl
 
 	// Hidden file
-	".gitignore" path::ext . nl
-	".gitignore" path::stem . nl
+	".gitignore" path::ext print nl
+	".gitignore" path::stem print nl
 
 	// No extension
-	"Makefile" path::ext . nl
-	"Makefile" path::stem . nl
+	"Makefile" path::ext print nl
+	"Makefile" path::stem print nl
 
 	// is_absolute
-	"/absolute" path::is_absolute . nl
-	"relative" path::is_absolute . nl
-	"./relative" path::is_absolute . nl
+	"/absolute" path::is_absolute print nl
+	"relative" path::is_absolute print nl
+	"./relative" path::is_absolute print nl
 }

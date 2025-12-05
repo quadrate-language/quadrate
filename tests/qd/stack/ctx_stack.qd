@@ -6,8 +6,8 @@ fn test_ctx_dup( -- ) {
 		5 dup mul
 	}
 	// Stack: [10, 25]
-	. nl
-	. nl
+	print nl
+	print nl
 }
 
 fn test_ctx_swap( -- ) {
@@ -17,9 +17,9 @@ fn test_ctx_swap( -- ) {
 		3 4 swap sub
 	}
 	// Stack: [1, 2, 1]
-	. nl
-	. nl
-	. nl
+	print nl
+	print nl
+	print nl
 }
 
 fn test_ctx_over( -- ) {
@@ -28,7 +28,7 @@ fn test_ctx_over( -- ) {
 		10 20 over add
 	}
 	// Stack: [30]
-	. nl
+	print nl
 }
 
 fn test_ctx_rot( -- ) {
@@ -37,7 +37,7 @@ fn test_ctx_rot( -- ) {
 		1 2 3 rot add add
 	}
 	// Stack: [6]
-	. nl
+	print nl
 }
 
 fn main( -- ) {

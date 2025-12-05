@@ -2,5 +2,5 @@
 fn main( -- ) {
 	10 -> x
 	20 -> y
-	x y swap add . nl
+	x y swap add print nl
 }

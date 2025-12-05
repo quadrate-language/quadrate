@@ -1,35 +1,35 @@
 fn main( -- ) {
 	// Test basic ASCII string
-	"Hello, World!" . nl
+	"Hello, World!" print nl
 	// Test UTF-8 strings with various scripts
 	// Latin Extended (Swedish, German, French)
-	"Hej världen! Björn åker skidor." . nl "Grüße aus Deutschland! Übung macht den Meister." . nl "Bonjour le monde! Ça va très bien, merci!" . nl
+	"Hej världen! Björn åker skidor." print nl "Grüße aus Deutschland! Übung macht den Meister." print nl "Bonjour le monde! Ça va très bien, merci!" print nl
 	// Cyrillic (Russian)
-	"Привет мир! Добро пожаловать!" . nl
+	"Привет мир! Добро пожаловать!" print nl
 	// Greek
-	"Γεια σου κόσμε! Καλώς ήρθατε!" . nl
+	"Γεια σου κόσμε! Καλώς ήρθατε!" print nl
 	// Arabic (right-to-left)
-	"مرحبا بالعالم! أهلا وسهلا!" . nl
+	"مرحبا بالعالم! أهلا وسهلا!" print nl
 	// Hebrew (right-to-left)
-	"שלום עולם! ברוך הבא!" . nl
+	"שלום עולם! ברוך הבא!" print nl
 	// CJK - Chinese (Simplified and Traditional)
-	"你好世界！欢迎！" . nl "你好世界！歡迎！" . nl
+	"你好世界！欢迎！" print nl "你好世界！歡迎！" print nl
 	// CJK - Japanese (Hiragana, Katakana, Kanji)
-	"こんにちは世界！ようこそ！" . nl "コンニチハ世界！ヨウコソ！" . nl
+	"こんにちは世界！ようこそ！" print nl "コンニチハ世界！ヨウコソ！" print nl
 	// CJK - Korean (Hangul)
-	"안녕하세요 세계! 환영합니다!" . nl
+	"안녕하세요 세계! 환영합니다!" print nl
 	// Emoji and symbols
-	"Hello 👋 World 🌍!" . nl "Math: π ≈ 3.14159 ∫∑∏√∞" . nl "Arrows: ← → ↑ ↓ ⇐ ⇒ ⇑ ⇓" . nl "Currency: $ € £ ¥ ₹ ₽ ₿" . nl
+	"Hello 👋 World 🌍!" print nl "Math: π ≈ 3.14159 ∫∑∏√∞" print nl "Arrows: ← → ↑ ↓ ⇐ ⇒ ⇑ ⇓" print nl "Currency: $ € £ ¥ ₹ ₽ ₿" print nl
 	// Thai
-	"สวัสดีชาวโลก! ยินดีต้อนรับ!" . nl
+	"สวัสดีชาวโลก! ยินดีต้อนรับ!" print nl
 	// Devanagari (Hindi)
-	"नमस्ते दुनिया! स्वागत है!" . nl
+	"नमस्ते दुनिया! स्वागत है!" print nl
 	// Mixed scripts in one string
-	"Multi: Hello مرحبا Привет 你好 👋" . nl
+	"Multi: Hello مرحبا Привет 你好 👋" print nl
 	// Test empty string
-	"" . nl
+	"" print nl
 	// Test string with only spaces
-	"   " . nl
+	"   " print nl
 	// Test single character strings
-	"A" . nl "€" . nl "世" . nl "🌟" . nl
+	"A" print nl "€" print nl "世" print nl "🌟" print nl
 }

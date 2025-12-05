@@ -2,14 +2,14 @@ use path
 
 fn main() {
 	// Test basename
-	"/home/user/file.txt" path::basename . nl
-	"/file.txt" path::basename . nl
-	"file.txt" path::basename . nl
-	"/" path::basename . nl
+	"/home/user/file.txt" path::basename print nl
+	"/file.txt" path::basename print nl
+	"file.txt" path::basename print nl
+	"/" path::basename print nl
 
 	// Test dirname
-	"/home/user/file.txt" path::dirname . nl
-	"/file.txt" path::dirname . nl
-	"file.txt" path::dirname . nl
-	"/" path::dirname . nl
+	"/home/user/file.txt" path::dirname print nl
+	"/file.txt" path::dirname print nl
+	"file.txt" path::dirname print nl
+	"/" path::dirname print nl
 }

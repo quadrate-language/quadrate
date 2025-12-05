@@ -19,15 +19,15 @@ struct Rectangle {
 fn main( -- ) {
 	// Create a Color (wrong type)
 	Color {
-		r: 255
-		g: 128
-		b: 64
+		r = 255
+		g = 128
+		b = 64
 	} -> c
 
 	// Try to use Color where Point is expected - should error
 	Rectangle {
-		origin: c
-		width: 10.0
-		height: 5.0
+		origin = c
+		width = 10.0
+		height = 5.0
 	} -> rect
 }

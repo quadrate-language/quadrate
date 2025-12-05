@@ -10,6 +10,6 @@ fn main( -- ) {
 	clear
 	// Test roll - rotate n elements
 	10 20 30 40 3 roll
-	// Rotate top 3: 20 30 40 -> 30 40 20
+	// Rotate top 3 = 20 30 40 -> 30 40 20
 	prints
 }

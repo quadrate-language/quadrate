@@ -7,10 +7,10 @@ fn main() {
 	// Unix timestamp should be a large positive number (> 1700000000 for year 2023+)
 	dup 1700000000 gt
 	if {
-		"Unix timestamp is valid (>1700000000)" . nl
+		"Unix timestamp is valid (>1700000000)" print nl
 		drop
 	} else {
-		"ERROR: Unix timestamp too small" . nl
+		"ERROR: Unix timestamp too small" print nl
 		drop
 		1 os::exit
 	}

@@ -8,32 +8,32 @@ use str
 const VERSION = "1.0.0"
 
 fn print_help( -- ) {
-	"Usage: sha256sum [OPTION]... [FILE]..." . nl
-	"Print or check SHA256 (256-bit) checksums." . nl
+	"Usage: sha256sum [OPTION]... [FILE]..." print nl
+	"Print or check SHA256 (256-bit) checksums." print nl
 	nl
-	"With no FILE, or when FILE is -, read standard input." . nl
-	"  -b, --binary          read in binary mode" . nl
-	"  -c, --check           read checksums from the FILEs and check them" . nl
-	"      --tag             create a BSD-style checksum" . nl
-	"  -t, --text            read in text mode (default)" . nl
-	"  -z, --zero            end each output line with NUL, not newline" . nl
+	"With no FILE, or when FILE is -, read standard input." print nl
+	"  -b, --binary          read in binary mode" print nl
+	"  -c, --check           read checksums from the FILEs and check them" print nl
+	"      --tag             create a BSD-style checksum" print nl
+	"  -t, --text            read in text mode (default)" print nl
+	"  -z, --zero            end each output line with NUL, not newline" print nl
 	nl
-	"The following options are useful only when verifying checksums:" . nl
-	"      --ignore-missing  don't fail or report status for missing files" . nl
-	"      --quiet           don't print OK for each successfully verified file" . nl
-	"      --status          don't output anything, status code shows success" . nl
-	"      --strict          exit non-zero for improperly formatted checksum lines" . nl
-	"  -w, --warn            warn about improperly formatted checksum lines" . nl
+	"The following options are useful only when verifying checksums:" print nl
+	"      --ignore-missing  don't fail or report status for missing files" print nl
+	"      --quiet           don't print OK for each successfully verified file" print nl
+	"      --status          don't output anything, status code shows success" print nl
+	"      --strict          exit non-zero for improperly formatted checksum lines" print nl
+	"  -w, --warn            warn about improperly formatted checksum lines" print nl
 	nl
-	"      --help            display this help and exit" . nl
-	"      --version         output version information and exit" . nl
+	"      --help            display this help and exit" print nl
+	"      --version         output version information and exit" print nl
 	nl
-	"The sums are computed as described in FIPS-180-2." . nl
-	"When checking, the input should be a former output of this program." . nl
+	"The sums are computed as described in FIPS-180-2." print nl
+	"When checking, the input should be a former output of this program." print nl
 }
 
 fn print_version( -- ) {
-	"sha256sum (quadrate) " . VERSION . nl
+	"sha256sum (quadrate) " print VERSION print nl
 }
 
 fn read_file(path:str -- content:ptr length:i64)! {
@@ -91,20 +91,20 @@ fn hash_file(path:str binary_mode:i64 tag_mode:i64 zero_mode:i64 -- ) {
 		buf length sha256::hash_bytes -> hash_str
 
 		tag_mode if {
-			"SHA256 (" . path . ") = " . hash_str .
+			"SHA256 (" print path print ") = " print hash_str print
 		} else {
-			hash_str .
+			hash_str print
 			binary_mode if {
 				" *"
 			} else {
 				"  "
 			}
-			.
-			path .
+			print
+			path print
 		}
 
 		zero_mode if {
-			0 str::from_char .
+			0 str::from_char print
 		} else {
 			nl
 		}
@@ -112,7 +112,7 @@ fn hash_file(path:str binary_mode:i64 tag_mode:i64 zero_mode:i64 -- ) {
 		buf mem::free
 
 	} else {
-		"sha256sum: " . path . ": No such file or directory" . nl
+		"sha256sum: " print path print ": No such file or directory" print nl
 	}
 }
 
@@ -229,25 +229,25 @@ fn check_file(path:str quiet:i64 status_mode:i64 warn_mode:i64 ignore_missing:i6
 
 						actual_hash expected_hash str::compare 0 == if {
 							status_mode 0 == quiet 0 == and if {
-								expected_file . ": OK" . nl
+								expected_file print ": OK" print nl
 							}
 						} else {
 							status_mode 0 == if {
-								expected_file . ": FAILED" . nl
+								expected_file print ": FAILED" print nl
 							}
 							failures 1 + -> failures
 						}
 					} else {
 						ignore_missing 0 == if {
 							status_mode 0 == if {
-								"sha256sum: " . expected_file . ": No such file or directory" . nl
+								"sha256sum: " print expected_file print ": No such file or directory" print nl
 							}
 							failures 1 + -> failures
 						}
 					}
 				} else {
 					warn_mode status_mode 0 == and if {
-						"sha256sum: " . path . ":" . line_num . ": improperly formatted SHA256 checksum line" . nl
+						"sha256sum: " print path print ":" print line_num print ": improperly formatted SHA256 checksum line" print nl
 					}
 					strict if {
 						failures 1 + -> failures
@@ -263,7 +263,7 @@ fn check_file(path:str quiet:i64 status_mode:i64 warn_mode:i64 ignore_missing:i6
 
 	} else {
 		status_mode 0 == if {
-			"sha256sum: " . path . ": No such file or directory" . nl
+			"sha256sum: " print path print ": No such file or directory" print nl
 		}
 		1 -> failures
 	}
@@ -345,14 +345,14 @@ fn main( -- ) {
 			// If no files specified, show usage hint
 			file_count 0 == if {
 				check_mode 0 == if {
-					"sha256sum: missing file operand" . nl
-					"Try 'sha256sum --help' for more information." . nl
+					"sha256sum: missing file operand" print nl
+					"Try 'sha256sum --help' for more information." print nl
 				}
 			}
 
 			// Report check summary if needed
 			check_mode total_failures 0 > and status_mode 0 == and if {
-				"sha256sum: WARNING: " . total_failures . " computed checksum did NOT match" . nl
+				"sha256sum: WARNING: " print total_failures print " computed checksum did NOT match" print nl
 			}
 		}
 	}

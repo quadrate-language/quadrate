@@ -8,7 +8,7 @@ fn main( -- ) {
 		builder "x" sb::append -> builder
 	}
 	builder sb::finish -> result
-	result . nl
+	result print nl
 
 	// Build comma-separated list
 	sb::new -> builder
@@ -20,5 +20,5 @@ fn main( -- ) {
 		builder it sb::append_int -> builder
 	}
 	builder sb::finish -> result
-	result . nl
+	result print nl
 }

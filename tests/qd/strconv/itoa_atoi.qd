@@ -3,32 +3,32 @@ use strconv
 
 fn main( -- ) {
 	// itoa tests
-	0 strconv::itoa . nl
-	1 strconv::itoa . nl
-	42 strconv::itoa . nl
-	-1 strconv::itoa . nl
-	-42 strconv::itoa . nl
-	123456789 strconv::itoa . nl
-	-123456789 strconv::itoa . nl
+	0 strconv::itoa print nl
+	1 strconv::itoa print nl
+	42 strconv::itoa print nl
+	-1 strconv::itoa print nl
+	-42 strconv::itoa print nl
+	123456789 strconv::itoa print nl
+	-123456789 strconv::itoa print nl
 
 	// atoi tests
-	"0" strconv::atoi . nl
-	"1" strconv::atoi . nl
-	"42" strconv::atoi . nl
-	"-1" strconv::atoi . nl
-	"-42" strconv::atoi . nl
-	"123456789" strconv::atoi . nl
-	"-123456789" strconv::atoi . nl
+	"0" strconv::atoi print nl
+	"1" strconv::atoi print nl
+	"42" strconv::atoi print nl
+	"-1" strconv::atoi print nl
+	"-42" strconv::atoi print nl
+	"123456789" strconv::atoi print nl
+	"-123456789" strconv::atoi print nl
 
 	// atoi with leading whitespace
-	"  100" strconv::atoi . nl
-	"   -200" strconv::atoi . nl
+	"  100" strconv::atoi print nl
+	"   -200" strconv::atoi print nl
 
 	// Round-trip: itoa then atoi
-	12345 strconv::itoa strconv::atoi . nl
-	-9999 strconv::itoa strconv::atoi . nl
+	12345 strconv::itoa strconv::atoi print nl
+	-9999 strconv::itoa strconv::atoi print nl
 
 	// Round-trip: atoi then itoa
-	"54321" strconv::atoi strconv::itoa . nl
-	"-8888" strconv::atoi strconv::itoa . nl
+	"54321" strconv::atoi strconv::itoa print nl
+	"-8888" strconv::atoi strconv::itoa print nl
 }
