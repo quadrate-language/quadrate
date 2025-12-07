@@ -20,6 +20,7 @@ static volatile sig_atomic_t g_inExecution = 0;
 
 // Readline hook for auto-indentation
 static std::string g_pendingIndent;
+
 static int insertIndentHook() {
 	if (!g_pendingIndent.empty()) {
 		rl_insert_text(g_pendingIndent.c_str());
@@ -71,8 +72,8 @@ public:
 	void run() {
 		printWelcome();
 
-		std::string accumulated;  // Accumulated multiline input
-		int braceDepth = 0;       // Track unbalanced braces
+		std::string accumulated; // Accumulated multiline input
+		int braceDepth = 0;		 // Track unbalanced braces
 
 		while (true) {
 			std::string prompt;
@@ -159,7 +160,6 @@ public:
 
 			processLine(completeInput);
 		}
-
 	}
 
 	// Count unbalanced braces in input (returns > 0 if more { than })
@@ -287,7 +287,9 @@ public:
 			while (pos < len && (line[pos] == ' ' || line[pos] == '\t')) {
 				pos++;
 			}
-			if (pos >= len) break;
+			if (pos >= len) {
+				break;
+			}
 
 			// Check for quoted string
 			if (line[pos] == '"') {
@@ -297,19 +299,33 @@ public:
 					if (line[pos] == '\\' && pos + 1 < len) {
 						pos++;
 						switch (line[pos]) {
-						case 'n': str += '\n'; break;
-						case 't': str += '\t'; break;
-						case 'r': str += '\r'; break;
-						case '\\': str += '\\'; break;
-						case '"': str += '"'; break;
-						default: str += line[pos]; break;
+						case 'n':
+							str += '\n';
+							break;
+						case 't':
+							str += '\t';
+							break;
+						case 'r':
+							str += '\r';
+							break;
+						case '\\':
+							str += '\\';
+							break;
+						case '"':
+							str += '"';
+							break;
+						default:
+							str += line[pos];
+							break;
 						}
 					} else {
 						str += line[pos];
 					}
 					pos++;
 				}
-				if (pos < len) pos++; // skip closing quote
+				if (pos < len) {
+					pos++; // skip closing quote
+				}
 				qd_push_s(ctx, str.c_str());
 			} else {
 				// Read until whitespace
@@ -320,12 +336,13 @@ public:
 				std::string token = line.substr(start, pos - start);
 
 				// Try to parse as number
-				if (token.empty()) continue;
+				if (token.empty()) {
+					continue;
+				}
 
 				// Check for float (contains '.' or 'e'/'E')
-				bool isFloat = token.find('.') != std::string::npos ||
-				               token.find('e') != std::string::npos ||
-				               token.find('E') != std::string::npos;
+				bool isFloat = token.find('.') != std::string::npos || token.find('e') != std::string::npos ||
+							   token.find('E') != std::string::npos;
 
 				if (isFloat) {
 					try {

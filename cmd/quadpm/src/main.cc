@@ -195,7 +195,8 @@ std::string gitClone(const GitRef& gitRef) {
 		}
 
 		fs::rename(targetDir, finalDir);
-		std::cout << COLOR_GREEN << "  ✓ Installed as '" << manifestModuleName << "' to " << COLOR_RESET << finalDir << "\n";
+		std::cout << COLOR_GREEN << "  ✓ Installed as '" << manifestModuleName << "' to " << COLOR_RESET << finalDir
+				  << "\n";
 	} else {
 		std::cout << COLOR_GREEN << "  ✓ Installed to " << COLOR_RESET << finalDir << "\n";
 	}

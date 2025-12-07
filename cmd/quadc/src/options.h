@@ -11,7 +11,7 @@ struct Options {
 	std::vector<std::string> files;
 	std::vector<std::string> runArgs; // Arguments to pass to the program when using -r
 	std::string outputName = "main";
-	int optLevel = 0; // 0-3 for -O0 through -O3
+	int optLevel = 0;		 // 0-3 for -O0 through -O3
 	size_t stackSize = 1024; // Stack capacity
 	bool help = false;
 	bool version = false;
@@ -22,8 +22,8 @@ struct Options {
 	bool dumpIR = false;
 	bool debugInfo = false;
 	bool werror = false;
-	bool readStdin = false; // Read source from stdin
-	bool testMode = false;  // Compile and run tests
+	bool readStdin = false;										 // Read source from stdin
+	bool testMode = false;										 // Compile and run tests
 	std::unordered_map<std::string, std::string> moduleVersions; // module name -> version
 };
 

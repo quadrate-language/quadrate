@@ -1457,17 +1457,16 @@ namespace Qd {
 					}
 					continue; // Skip fallthrough after ctx parsing
 				} else {
-						// Handle boolean literals: true = 1, false = 0
-						if (strcmp(text, "true") == 0) {
-							IAstNode* node = new AstNodeLiteral("1", AstNodeLiteral::LiteralType::INTEGER);
-							setNodePosition(node, scanner, src);
-							tempNodes.push_back(node);
-						} else if (strcmp(text, "false") == 0) {
-							IAstNode* node = new AstNodeLiteral("0", AstNodeLiteral::LiteralType::INTEGER);
-							setNodePosition(node, scanner, src);
-							tempNodes.push_back(node);
-						} else
-					if (isBuiltInInstruction(text)) {
+					// Handle boolean literals: true = 1, false = 0
+					if (strcmp(text, "true") == 0) {
+						IAstNode* node = new AstNodeLiteral("1", AstNodeLiteral::LiteralType::INTEGER);
+						setNodePosition(node, scanner, src);
+						tempNodes.push_back(node);
+					} else if (strcmp(text, "false") == 0) {
+						IAstNode* node = new AstNodeLiteral("0", AstNodeLiteral::LiteralType::INTEGER);
+						setNodePosition(node, scanner, src);
+						tempNodes.push_back(node);
+					} else if (isBuiltInInstruction(text)) {
 						std::string instrName(text);
 						// Check for generic type parameter: instruction<Type>
 						// Use peekNextChar (no whitespace skip) to distinguish make<T> from len <
@@ -1516,8 +1515,8 @@ namespace Qd {
 									char32_t afterMember = peekNextNonWhitespace(scanner, src);
 									if (afterMember == '{') {
 										u8t_scanner_scan(scanner); // Consume '{'
-										AstNodeStructConstruction* structConstruct =
-												parseStructConstruction(fullName, scanner, errorReporter, src, identPos);
+										AstNodeStructConstruction* structConstruct = parseStructConstruction(
+												fullName, scanner, errorReporter, src, identPos);
 										if (structConstruct) {
 											// Push to tempNodes so @field can access it
 											tempNodes.push_back(structConstruct);
@@ -1525,7 +1524,8 @@ namespace Qd {
 										continue;
 									}
 
-									AstNodeScopedIdentifier* scoped = new AstNodeScopedIdentifier(scopeName, memberName);
+									AstNodeScopedIdentifier* scoped =
+											new AstNodeScopedIdentifier(scopeName, memberName);
 									setNodePosition(scoped, scanner, src);
 									// Check for '!' or '?' suffix
 									char32_t suffixToken = u8t_scanner_peek(scanner);
@@ -1741,11 +1741,10 @@ namespace Qd {
 				if (token != ' ' && token != '\t' && token != '\n' && token != '\r') {
 					// Check if token is in the set of valid single-char tokens we expect
 					// Valid chars: { } ( ) [ ] : ; , . @ - + * / < > = ! & | ^
-					bool isValidChar = (token == '{' || token == '(' || token == ')' ||
-							token == ']' || token == ';' || token == ',' || token == '|' ||
-							token == '^');
-					if (!isValidChar && token < 256 && token != U8T_IDENTIFIER &&
-							token != U8T_INTEGER && token != U8T_FLOAT && token != U8T_STRING) {
+					bool isValidChar = (token == '{' || token == '(' || token == ')' || token == ']' || token == ';' ||
+										token == ',' || token == '|' || token == '^');
+					if (!isValidChar && token < 256 && token != U8T_IDENTIFIER && token != U8T_INTEGER &&
+							token != U8T_FLOAT && token != U8T_STRING) {
 						std::string msg = "Unexpected character '";
 						msg += static_cast<char>(token);
 						msg += "'";
@@ -1940,7 +1939,7 @@ namespace Qd {
 					delete varIdent;
 					currentFieldNodes.push_back(fieldAccess);
 				} else if (!currentFieldNodes.empty() &&
-						currentFieldNodes.back()->type() == IAstNode::Type::FIELD_ACCESS) {
+						   currentFieldNodes.back()->type() == IAstNode::Type::FIELD_ACCESS) {
 					// Chained field access
 					AstNodeFieldAccess* fieldAccess = new AstNodeFieldAccess("", fieldName);
 					setNodePosition(fieldAccess, scanner, src);

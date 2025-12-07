@@ -37,8 +37,8 @@ namespace Qd {
 	// This prevents false "undefined function" errors when validating standard library modules
 	static const char* VALIDATOR_INSTRUCTIONS[] = {
 			// All built-in instructions
-			"!=", "%", "*", "+", "-", "/", "<", "<=", "==", ">", ">=", "add", "dec", "div", "eq", "gt", "gte",
-			"inc", "lt", "lte", "mod", "mul", "neg", "neq", "sub", "within",
+			"!=", "%", "*", "+", "-", "/", "<", "<=", "==", ">", ">=", "add", "dec", "div", "eq", "gt", "gte", "inc",
+			"lt", "lte", "mod", "mul", "neg", "neq", "sub", "within",
 			// Bitwise operations
 			"and", "not", "or", "shl", "shr", "xor",
 			// Math library functions (imported by stdlib modules)

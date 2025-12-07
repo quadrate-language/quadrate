@@ -24,7 +24,7 @@ typedef atomic_size_t qd_struct_atomic_size_t;
 /**
  * @brief Magic number to identify valid struct headers
  */
-#define QD_STRUCT_MAGIC 0x5144535452554354ULL  // "QDSTRUCT" in hex
+#define QD_STRUCT_MAGIC 0x5144535452554354ULL // "QDSTRUCT" in hex
 
 /**
  * @brief Destructor function type for structs
@@ -43,8 +43,8 @@ typedef void (*qd_struct_destructor_fn)(void* struct_ptr);
  * data immediately after this header.
  */
 typedef struct qd_struct_header {
-	size_t magic;                       ///< Magic number for validation
-	qd_struct_atomic_size_t refcount;   ///< Atomic reference count
+	size_t magic;						///< Magic number for validation
+	qd_struct_atomic_size_t refcount;	///< Atomic reference count
 	qd_struct_destructor_fn destructor; ///< Destructor function (can be NULL)
 } qd_struct_header_t;
 

@@ -21,14 +21,14 @@ struct Command {
 };
 
 static const Command commands[] = {
-    {"build", "quadc", "Compile Quadrate source files"},
-    {"run", "quadc", "Build and run a Quadrate program"},
-    {"test", "quadc", "Run tests"},
-    {"fmt", "quadfmt", "Format Quadrate source files"},
-    {"lint", "quadlint", "Check code for common issues"},
-    {"repl", "quadrepl", "Start interactive REPL"},
-    {"uses", "quaduses", "Analyze module dependencies"},
-    {"lsp", "quadlsp", "Start language server"},
+		{"build", "quadc", "Compile Quadrate source files"},
+		{"run", "quadc", "Build and run a Quadrate program"},
+		{"test", "quadc", "Run tests"},
+		{"fmt", "quadfmt", "Format Quadrate source files"},
+		{"lint", "quadlint", "Check code for common issues"},
+		{"repl", "quadrepl", "Start interactive REPL"},
+		{"uses", "quaduses", "Analyze module dependencies"},
+		{"lsp", "quadlsp", "Start language server"},
 };
 
 static const size_t NUM_COMMANDS = sizeof(commands) / sizeof(commands[0]);
@@ -50,12 +50,17 @@ void printHelp() {
 	std::cout << "\n";
 	std::cout << Colors::bold() << "Examples:" << Colors::reset() << "\n";
 	std::cout << "  " << Colors::cyan() << "quad build main.qd" << Colors::reset() << "           Compile main.qd\n";
-	std::cout << "  " << Colors::cyan() << "quad run main.qd" << Colors::reset() << "             Build and run main.qd\n";
-	std::cout << "  " << Colors::cyan() << "quad run greet.qd -- Alice" << Colors::reset() << "   Run with argument 'Alice'\n";
-	std::cout << "  " << Colors::cyan() << "quad fmt" << Colors::reset() << "                     Format all .qd files in-place\n";
-	std::cout << "  " << Colors::cyan() << "quad test" << Colors::reset() << "                    Run tests in current directory\n";
+	std::cout << "  " << Colors::cyan() << "quad run main.qd" << Colors::reset()
+			  << "             Build and run main.qd\n";
+	std::cout << "  " << Colors::cyan() << "quad run greet.qd -- Alice" << Colors::reset()
+			  << "   Run with argument 'Alice'\n";
+	std::cout << "  " << Colors::cyan() << "quad fmt" << Colors::reset()
+			  << "                     Format all .qd files in-place\n";
+	std::cout << "  " << Colors::cyan() << "quad test" << Colors::reset()
+			  << "                    Run tests in current directory\n";
 	std::cout << "\n";
-	std::cout << "Run '" << Colors::cyan() << "quad help <command>" << Colors::reset() << "' for more information on a command.\n";
+	std::cout << "Run '" << Colors::cyan() << "quad help <command>" << Colors::reset()
+			  << "' for more information on a command.\n";
 }
 
 void printVersion() {
@@ -179,9 +184,8 @@ int handleBuild(const std::vector<std::string>& args) {
 			return 1;
 		}
 		// Look for main.qd first
-		auto it = std::find_if(files.begin(), files.end(), [](const std::string& f) {
-			return fs::path(f).filename() == "main.qd";
-		});
+		auto it = std::find_if(
+				files.begin(), files.end(), [](const std::string& f) { return fs::path(f).filename() == "main.qd"; });
 		if (it != files.end()) {
 			toolArgs.push_back(*it);
 		} else {
@@ -208,9 +212,8 @@ int handleRun(const std::vector<std::string>& args) {
 			std::cerr << "quad: no .qd files found in current directory\n";
 			return 1;
 		}
-		auto it = std::find_if(files.begin(), files.end(), [](const std::string& f) {
-			return fs::path(f).filename() == "main.qd";
-		});
+		auto it = std::find_if(
+				files.begin(), files.end(), [](const std::string& f) { return fs::path(f).filename() == "main.qd"; });
 		if (it != files.end()) {
 			toolArgs.push_back(*it);
 		} else {

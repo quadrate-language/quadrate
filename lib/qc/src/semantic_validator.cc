@@ -6,7 +6,6 @@
 #include <fstream>
 #include <functional>
 #include <iostream>
-#include <unordered_set>
 #include <qc/ast.h>
 #include <qc/ast_node.h>
 #include <qc/ast_node_constant.h>
@@ -31,6 +30,7 @@
 #include <qc/instructions.h>
 #include <qc/semantic_validator.h>
 #include <sstream>
+#include <unordered_set>
 
 namespace Qd {
 
@@ -553,7 +553,7 @@ namespace Qd {
 				for (const auto* param : func->inputParameters) {
 					std::string typeStr = param->typeString();
 					if (typeStr == "i32" || typeStr == "i64" || typeStr == "u8" || typeStr == "u16" ||
-						typeStr == "u32" || typeStr == "u64") {
+							typeStr == "u32" || typeStr == "u64") {
 						sig.consumes.push_back(StackValueType::INT);
 					} else if (typeStr == "f32" || typeStr == "f64" || typeStr == "float") {
 						sig.consumes.push_back(StackValueType::FLOAT);
@@ -570,7 +570,7 @@ namespace Qd {
 				for (const auto* param : func->outputParameters) {
 					std::string typeStr = param->typeString();
 					if (typeStr == "i32" || typeStr == "i64" || typeStr == "u8" || typeStr == "u16" ||
-						typeStr == "u32" || typeStr == "u64") {
+							typeStr == "u32" || typeStr == "u64") {
 						sig.produces.push_back(StackValueType::INT);
 					} else if (typeStr == "f32" || typeStr == "f64" || typeStr == "float") {
 						sig.produces.push_back(StackValueType::FLOAT);
@@ -1393,8 +1393,7 @@ namespace Qd {
 		validateReferencesInternal(node, localVariables, iteratorNames);
 	}
 
-	void SemanticValidator::validateReferencesInternal(
-			IAstNode* node, std::unordered_set<std::string>& localVariables,
+	void SemanticValidator::validateReferencesInternal(IAstNode* node, std::unordered_set<std::string>& localVariables,
 			std::unordered_set<std::string>& iteratorNames) {
 		if (!node) {
 			return;
@@ -2413,7 +2412,8 @@ namespace Qd {
 
 				int deferEffect = static_cast<int>(typeStack.size()) - static_cast<int>(stackSizeBefore);
 				if (deferEffect != 0) {
-					std::string errorMsg = "Stack effect error in 'defer': block must have zero net stack effect, but changes stack by ";
+					std::string errorMsg = "Stack effect error in 'defer': block must have zero net stack effect, but "
+										   "changes stack by ";
 					errorMsg += std::to_string(deferEffect);
 					reportError(child, errorMsg.c_str());
 				}
@@ -2652,8 +2652,7 @@ namespace Qd {
 							}
 							case IAstNode::Type::STRUCT_CONSTRUCTION: {
 								// Nested struct construction
-								AstNodeStructConstruction* nested =
-										static_cast<AstNodeStructConstruction*>(exprNode);
+								AstNodeStructConstruction* nested = static_cast<AstNodeStructConstruction*>(exprNode);
 								exprTypeStack.push_back(StackValueType::PTR);
 								exprStructTypeStack.push_back(nested->structName());
 								break;
@@ -2663,9 +2662,9 @@ namespace Qd {
 								AstNodeInstruction* instr = static_cast<AstNodeInstruction*>(exprNode);
 								const std::string& instrName = instr->name();
 								// Handle common arithmetic operations
-								if (instrName == "+" || instrName == "-" || instrName == "*" ||
-										instrName == "/" || instrName == "add" || instrName == "sub" ||
-										instrName == "mul" || instrName == "div") {
+								if (instrName == "+" || instrName == "-" || instrName == "*" || instrName == "/" ||
+										instrName == "add" || instrName == "sub" || instrName == "mul" ||
+										instrName == "div") {
 									if (exprTypeStack.size() >= 2) {
 										exprTypeStack.pop_back();
 										exprStructTypeStack.pop_back();
@@ -2705,9 +2704,8 @@ namespace Qd {
 										errorMsg += "': Field '";
 										errorMsg += fieldName;
 										errorMsg += "' expects ";
-										errorMsg += expectedStructType.empty()
-														? stackValueTypeToString(expectedType)
-														: expectedStructType;
+										errorMsg += expectedStructType.empty() ? stackValueTypeToString(expectedType)
+																			   : expectedStructType;
 										errorMsg += ", but got ";
 										errorMsg += actualStructType.empty() ? stackValueTypeToString(actualType)
 																			 : actualStructType;
@@ -3358,8 +3356,7 @@ namespace Qd {
 				auto inlineStructIt = mStructFieldTypes.find(varName);
 				if (inlineStructIt != mStructFieldTypes.end()) {
 					const auto& fields = inlineStructIt->second;
-					bool isExistingStruct =
-							!structTypeStack.empty() && structTypeStack.back() == varName;
+					bool isExistingStruct = !structTypeStack.empty() && structTypeStack.back() == varName;
 
 					if (!isExistingStruct) {
 						// This is inline struct field access - pop struct field values from stacks
@@ -3888,7 +3885,8 @@ namespace Qd {
 		// error instruction: ( msg code -- ) sets error flag
 		if (strcmp(name, "error") == 0) {
 			if (typeStack.size() < 2) {
-				reportErrorConditional(node, "Type error in 'error': Stack underflow (requires msg and code)", reportErrors);
+				reportErrorConditional(
+						node, "Type error in 'error': Stack underflow (requires msg and code)", reportErrors);
 				return;
 			}
 			// Pop msg and code
@@ -4134,7 +4132,8 @@ namespace Qd {
 		// Negation: neg (preserve numeric type)
 		else if (strcmp(name, "neg") == 0) {
 			if (typeStack.empty()) {
-				reportErrorConditional(node, "Type error in 'neg': Stack underflow (requires 1 numeric value)", reportErrors);
+				reportErrorConditional(
+						node, "Type error in 'neg': Stack underflow (requires 1 numeric value)", reportErrors);
 				return;
 			}
 			// Type stays the same
@@ -4184,7 +4183,8 @@ namespace Qd {
 		// Modulo: mod (consume 2 ints, produce int)
 		else if (strcmp(name, "mod") == 0) {
 			if (typeStack.size() < 2) {
-				reportErrorConditional(node, "Type error in 'mod': Stack underflow (requires 2 integer values)", reportErrors);
+				reportErrorConditional(
+						node, "Type error in 'mod': Stack underflow (requires 2 integer values)", reportErrors);
 				return;
 			}
 			// Pop both operands
@@ -4408,7 +4408,8 @@ namespace Qd {
 		// Stack operations: drop2 ( a b -- )
 		else if (strcmp(name, "drop2") == 0) {
 			if (typeStack.size() < 2) {
-				reportErrorConditional(node, "Type error in 'drop2': Stack underflow (requires 2 values)", reportErrors);
+				reportErrorConditional(
+						node, "Type error in 'drop2': Stack underflow (requires 2 values)", reportErrors);
 				return;
 			}
 			typeStack.pop_back();
@@ -4503,7 +4504,8 @@ namespace Qd {
 		// make<T> syntax creates typed array, always returns pointer
 		else if (strcmp(name, "make") == 0) {
 			if (typeStack.empty()) {
-				reportErrorConditional(node, "Type error in 'make': Stack underflow (requires 1 integer for size)", reportErrors);
+				reportErrorConditional(
+						node, "Type error in 'make': Stack underflow (requires 1 integer for size)", reportErrors);
 				return;
 			}
 			// Pop size argument
@@ -4538,7 +4540,8 @@ namespace Qd {
 		// Returns element at index without consuming the array
 		else if (strcmp(name, "nth") == 0) {
 			if (typeStack.size() < 2) {
-				reportErrorConditional(node, "Type error in 'nth': Stack underflow (requires array and index)", reportErrors);
+				reportErrorConditional(
+						node, "Type error in 'nth': Stack underflow (requires array and index)", reportErrors);
 				return;
 			}
 			// Pop index
@@ -4566,7 +4569,8 @@ namespace Qd {
 		// Sets element at index
 		else if (strcmp(name, "set") == 0) {
 			if (typeStack.size() < 3) {
-				reportErrorConditional(node, "Type error in 'set': Stack underflow (requires array, index, and value)", reportErrors);
+				reportErrorConditional(
+						node, "Type error in 'set': Stack underflow (requires array, index, and value)", reportErrors);
 				return;
 			}
 			// Pop value, index, array
@@ -4583,7 +4587,8 @@ namespace Qd {
 		// Appends value to array and returns new array
 		else if (strcmp(name, "append") == 0) {
 			if (typeStack.size() < 2) {
-				reportErrorConditional(node, "Type error in 'append': Stack underflow (requires array and value)", reportErrors);
+				reportErrorConditional(
+						node, "Type error in 'append': Stack underflow (requires array and value)", reportErrors);
 				return;
 			}
 			// Pop value

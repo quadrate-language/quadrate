@@ -11,7 +11,8 @@ namespace Qd {
 	 */
 	class AstNodeInstruction : public IAstNode {
 	public:
-		AstNodeInstruction(const std::string& name) : mName(name), mTypeParam(), mParent(nullptr), mLine(0), mColumn(0) {
+		AstNodeInstruction(const std::string& name)
+			: mName(name), mTypeParam(), mParent(nullptr), mLine(0), mColumn(0) {
 		}
 
 		AstNodeInstruction(const std::string& name, const std::string& typeParam)

@@ -476,7 +476,8 @@ int main(int argc, char** argv) {
 
 			if (!hasMainFunction) {
 				std::cerr << "quadc: error: no 'main' function found in main module" << std::endl;
-				std::cerr << "quadc: note: a Quadrate program must have a 'main' function as the entry point" << std::endl;
+				std::cerr << "quadc: note: a Quadrate program must have a 'main' function as the entry point"
+						  << std::endl;
 				return 1;
 			}
 		} else {
@@ -540,11 +541,9 @@ int main(int argc, char** argv) {
 			std::string cmd = outputPath;
 			for (const auto& arg : opts.runArgs) {
 				// Quote arguments that contain spaces or special characters
-				bool needsQuote = arg.find(' ') != std::string::npos ||
-				                  arg.find('\t') != std::string::npos ||
-				                  arg.find('"') != std::string::npos ||
-				                  arg.find('\\') != std::string::npos ||
-				                  arg.find('$') != std::string::npos;
+				bool needsQuote = arg.find(' ') != std::string::npos || arg.find('\t') != std::string::npos ||
+								  arg.find('"') != std::string::npos || arg.find('\\') != std::string::npos ||
+								  arg.find('$') != std::string::npos;
 				if (needsQuote) {
 					cmd += " \"";
 					for (char c : arg) {

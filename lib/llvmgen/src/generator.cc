@@ -149,7 +149,7 @@ namespace Qd {
 
 		// User-defined functions
 		std::map<std::string, llvm::Function*> userFunctions;
-		std::map<std::string, bool> fallibleFunctions; // Track which functions can throw errors
+		std::map<std::string, bool> fallibleFunctions;				 // Track which functions can throw errors
 		std::map<std::string, std::string> functionReturnStructType; // Track struct type returned by functions
 
 		// Module constants (scope::name -> value)
@@ -484,8 +484,8 @@ namespace Qd {
 		// qd_struct_retain(void* ptr) -> void*
 		auto qdStructRetainFnTy = llvm::FunctionType::get(
 				llvm::PointerType::getUnqual(*context), {llvm::PointerType::getUnqual(*context)}, false);
-		this->qdStructRetainFn =
-				llvm::Function::Create(qdStructRetainFnTy, llvm::Function::ExternalLinkage, "qd_struct_retain", *module);
+		this->qdStructRetainFn = llvm::Function::Create(
+				qdStructRetainFnTy, llvm::Function::ExternalLinkage, "qd_struct_retain", *module);
 
 		// Initialize debug info if enabled
 		if (debugInfoEnabled) {
@@ -2515,8 +2515,8 @@ namespace Qd {
 		if (name == "make" && inst->hasTypeParam()) {
 			const std::string& typeParam = inst->typeParam();
 			std::string fnName;
-			if (typeParam == "i64" || typeParam == "i32" || typeParam == "i16" || typeParam == "i8" || typeParam == "u64" ||
-					typeParam == "u32" || typeParam == "u16" || typeParam == "u8") {
+			if (typeParam == "i64" || typeParam == "i32" || typeParam == "i16" || typeParam == "i8" ||
+					typeParam == "u64" || typeParam == "u32" || typeParam == "u16" || typeParam == "u8") {
 				fnName = "qd_makei";
 			} else if (typeParam == "f64" || typeParam == "f32") {
 				fnName = "qd_makef";
@@ -3196,8 +3196,7 @@ namespace Qd {
 		}
 	}
 
-	void LlvmGenerator::Impl::generateSwitchStatement(
-			AstNodeSwitchStatement* switchStmt, llvm::Value* ctx) {
+	void LlvmGenerator::Impl::generateSwitchStatement(AstNodeSwitchStatement* switchStmt, llvm::Value* ctx) {
 		// Get current function
 		llvm::Function* currentFn = builder->GetInsertBlock()->getParent();
 
@@ -3464,7 +3463,6 @@ namespace Qd {
 	}
 
 	void LlvmGenerator::Impl::generateLocalOne(const std::string& name, size_t lineNum, llvm::Value* ctx) {
-
 		// Check if this variable already exists (reuse the alloca if so)
 		llvm::AllocaInst* localAlloca;
 		auto it = localVariables.find(name);
@@ -3506,8 +3504,7 @@ namespace Qd {
 				debugBuilder->insertDeclare(localAlloca,  // Storage (the alloca)
 						localVar,						  // Variable
 						debugBuilder->createExpression(), // Expression
-						llvm::DILocation::get(
-								*context, static_cast<unsigned>(lineNum), 0, debugScopeStack.back()),
+						llvm::DILocation::get(*context, static_cast<unsigned>(lineNum), 0, debugScopeStack.back()),
 						builder->GetInsertBlock());
 			}
 		} else {
@@ -3523,14 +3520,10 @@ namespace Qd {
 
 		// Create basic blocks for conditional release (strings only - structs are stack-allocated)
 		llvm::Function* currentFn = builder->GetInsertBlock()->getParent();
-		llvm::BasicBlock* checkStrBlock =
-				llvm::BasicBlock::Create(*context, name + "_check_old_str", currentFn);
-		llvm::BasicBlock* releaseStrBlock =
-				llvm::BasicBlock::Create(*context, name + "_release_old_str", currentFn);
-		llvm::BasicBlock* checkPtrBlock =
-				llvm::BasicBlock::Create(*context, name + "_check_old_ptr", currentFn);
-		llvm::BasicBlock* afterReleaseBlock =
-				llvm::BasicBlock::Create(*context, name + "_after_release", currentFn);
+		llvm::BasicBlock* checkStrBlock = llvm::BasicBlock::Create(*context, name + "_check_old_str", currentFn);
+		llvm::BasicBlock* releaseStrBlock = llvm::BasicBlock::Create(*context, name + "_release_old_str", currentFn);
+		llvm::BasicBlock* checkPtrBlock = llvm::BasicBlock::Create(*context, name + "_check_old_ptr", currentFn);
+		llvm::BasicBlock* afterReleaseBlock = llvm::BasicBlock::Create(*context, name + "_after_release", currentFn);
 
 		// First check if type == -1 (uninitialized) - skip release if first assignment
 		llvm::Value* isUninitialized =
@@ -3561,8 +3554,7 @@ namespace Qd {
 
 		// Check if old value was a pointer - release old struct if it was a struct pointer
 		builder->SetInsertPoint(checkPtrBlock);
-		llvm::BasicBlock* releasePtrBlock =
-				llvm::BasicBlock::Create(*context, name + "_release_old_ptr", currentFn);
+		llvm::BasicBlock* releasePtrBlock = llvm::BasicBlock::Create(*context, name + "_release_old_ptr", currentFn);
 		llvm::Value* wasPtr = builder->CreateICmpEQ(oldType, builder->getInt32(2), name + "_was_ptr");
 		builder->CreateCondBr(wasPtr, releasePtrBlock, afterReleaseBlock);
 
@@ -3639,8 +3631,7 @@ namespace Qd {
 
 			// Create basic blocks for conditional free
 			llvm::Function* currentFn = builder->GetInsertBlock()->getParent();
-			llvm::BasicBlock* checkInitBlock =
-					llvm::BasicBlock::Create(*context, varName + "_check_init", currentFn);
+			llvm::BasicBlock* checkInitBlock = llvm::BasicBlock::Create(*context, varName + "_check_init", currentFn);
 			llvm::BasicBlock* freeStrBlock = llvm::BasicBlock::Create(*context, varName + "_free_str", currentFn);
 			llvm::BasicBlock* checkPtrBlock = llvm::BasicBlock::Create(*context, varName + "_check_ptr", currentFn);
 			llvm::BasicBlock* skipFreeBlock = llvm::BasicBlock::Create(*context, varName + "_skip_free", currentFn);
@@ -4969,13 +4960,13 @@ namespace Qd {
 		builder->SetInsertPoint(entryBB);
 
 		// Check NO_COLOR environment variable
-		auto getenvFnTy = llvm::FunctionType::get(llvm::PointerType::getUnqual(*context),
-				{llvm::PointerType::getUnqual(*context)}, false);
+		auto getenvFnTy = llvm::FunctionType::get(
+				llvm::PointerType::getUnqual(*context), {llvm::PointerType::getUnqual(*context)}, false);
 		auto getenvFn = module->getOrInsertFunction("getenv", getenvFnTy);
 		auto noColorStr = builder->CreateGlobalString("NO_COLOR", "no_color_env");
 		auto noColorVal = builder->CreateCall(getenvFn, {noColorStr}, "no_color");
-		auto noColorNull = builder->CreateICmpEQ(noColorVal,
-				llvm::ConstantPointerNull::get(llvm::PointerType::getUnqual(*context)), "no_color_null");
+		auto noColorNull = builder->CreateICmpEQ(
+				noColorVal, llvm::ConstantPointerNull::get(llvm::PointerType::getUnqual(*context)), "no_color_null");
 		// useColor = (getenv("NO_COLOR") == NULL)
 		auto useColor = noColorNull;
 
@@ -4984,7 +4975,8 @@ namespace Qd {
 		auto ctx = builder->CreateCall(createContextFn, {stackSizeVal}, "ctx");
 
 		// Create printf function for direct output
-		auto printfFnTy = llvm::FunctionType::get(builder->getInt32Ty(), {llvm::PointerType::getUnqual(*context)}, true);
+		auto printfFnTy =
+				llvm::FunctionType::get(builder->getInt32Ty(), {llvm::PointerType::getUnqual(*context)}, true);
 		auto printfFn = module->getOrInsertFunction("printf", printfFnTy);
 
 		// Counters for passed/failed tests
@@ -5028,8 +5020,8 @@ namespace Qd {
 			builder->CreateStore(newPassed, passedCountAlloca);
 
 			// Select colored or plain pass message
-			auto passStrColor = builder->CreateGlobalString(
-					"  \x1b[32m\xe2\x9c\x93\x1b[0m " + displayName + "\n", "pass_color");
+			auto passStrColor =
+					builder->CreateGlobalString("  \x1b[32m\xe2\x9c\x93\x1b[0m " + displayName + "\n", "pass_color");
 			auto passStrPlain = builder->CreateGlobalString("  \xe2\x9c\x93 " + displayName + "\n", "pass_plain");
 			auto passStr = builder->CreateSelect(useColor, passStrColor, passStrPlain, "pass_msg");
 			builder->CreateCall(printfFn, {passStr});
@@ -5042,8 +5034,8 @@ namespace Qd {
 			builder->CreateStore(newFailed, failedCountAlloca);
 
 			// Select colored or plain fail message
-			auto failStrColor = builder->CreateGlobalString(
-					"  \x1b[31m\xe2\x9c\x97\x1b[0m " + displayName + "\n", "fail_color");
+			auto failStrColor =
+					builder->CreateGlobalString("  \x1b[31m\xe2\x9c\x97\x1b[0m " + displayName + "\n", "fail_color");
 			auto failStrPlain = builder->CreateGlobalString("  \xe2\x9c\x97 " + displayName + "\n", "fail_plain");
 			auto failStr = builder->CreateSelect(useColor, failStrColor, failStrPlain, "fail_msg");
 			builder->CreateCall(printfFn, {failStr});
@@ -5058,8 +5050,8 @@ namespace Qd {
 		auto finalFailed = builder->CreateLoad(builder->getInt32Ty(), failedCountAlloca, "final_failed");
 
 		// Select colored or plain summary
-		auto summaryFmtColor = builder->CreateGlobalString(
-				"\n\x1b[32m%d passed\x1b[0m, \x1b[31m%d failed\x1b[0m\n", "summary_color");
+		auto summaryFmtColor =
+				builder->CreateGlobalString("\n\x1b[32m%d passed\x1b[0m, \x1b[31m%d failed\x1b[0m\n", "summary_color");
 		auto summaryFmtPlain = builder->CreateGlobalString("\n%d passed, %d failed\n", "summary_plain");
 		auto summaryFmt = builder->CreateSelect(useColor, summaryFmtColor, summaryFmtPlain, "summary_fmt");
 		builder->CreateCall(printfFn, {summaryFmt, finalPassed, finalFailed});
@@ -5883,9 +5875,10 @@ namespace Qd {
 			if (!field.typeName.empty() && std::isupper(field.typeName[0]) && isKnownStruct(field.typeName)) {
 				// Load the nested struct pointer from this field
 				auto fieldOffset = builder->getInt64(field.offset);
-				auto fieldBytePtr = builder->CreateGEP(builder->getInt8Ty(), structPtr, fieldOffset, "nested_field_ptr");
-				llvm::Value* nestedStructPtr = builder->CreateLoad(
-						llvm::PointerType::getUnqual(*context), fieldBytePtr, "nested_struct_ptr");
+				auto fieldBytePtr =
+						builder->CreateGEP(builder->getInt8Ty(), structPtr, fieldOffset, "nested_field_ptr");
+				llvm::Value* nestedStructPtr =
+						builder->CreateLoad(llvm::PointerType::getUnqual(*context), fieldBytePtr, "nested_struct_ptr");
 
 				// Recursively cleanup the nested struct
 				generateStructCleanup(nestedStructPtr, field.typeName);
@@ -5906,8 +5899,8 @@ namespace Qd {
 
 				// Call qd_string_release() on the string
 				if (!this->qdStringReleaseFn) {
-					auto qdStringReleaseFnTy =
-							llvm::FunctionType::get(builder->getVoidTy(), {llvm::PointerType::getUnqual(*context)}, false);
+					auto qdStringReleaseFnTy = llvm::FunctionType::get(
+							builder->getVoidTy(), {llvm::PointerType::getUnqual(*context)}, false);
 					this->qdStringReleaseFn = llvm::Function::Create(
 							qdStringReleaseFnTy, llvm::Function::ExternalLinkage, "qd_string_release", *module);
 				}
@@ -5935,7 +5928,7 @@ namespace Qd {
 			bool needsDestructor = false;
 			for (const auto& field : layout.fields) {
 				if (field.typeName == "str" ||
-					(!field.typeName.empty() && std::isupper(field.typeName[0]) && isKnownStruct(field.typeName))) {
+						(!field.typeName.empty() && std::isupper(field.typeName[0]) && isKnownStruct(field.typeName))) {
 					needsDestructor = true;
 					break;
 				}
@@ -6081,7 +6074,8 @@ namespace Qd {
 				llvm::Value* intValue = builder->CreateLoad(builder->getInt64Ty(), valuePtr, "int_val");
 				llvm::Value* truncValue = builder->CreateTrunc(intValue, builder->getInt32Ty(), "int32_val");
 				builder->CreateStore(truncValue, bytePtr);
-			} else if (field.typeName == "ptr" || field.typeName == "str" || field.typeName.find('*') != std::string::npos ||
+			} else if (field.typeName == "ptr" || field.typeName == "str" ||
+					   field.typeName.find('*') != std::string::npos ||
 					   (!field.typeName.empty() && std::isupper(field.typeName[0]) && isKnownStruct(field.typeName))) {
 				// Pointer type (including ptr, str, raw pointers, and struct-typed fields)
 				llvm::Value* ptrValue =
@@ -6127,8 +6121,7 @@ namespace Qd {
 			llvm::Type* contextStructTy =
 					llvm::StructType::get(*context, {llvm::PointerType::getUnqual(*context)}, false);
 			llvm::Value* stackPtrPtr = builder->CreateStructGEP(contextStructTy, ctx, 0, "stack_ptr");
-			llvm::Value* stackPtr =
-					builder->CreateLoad(llvm::PointerType::getUnqual(*context), stackPtrPtr, "stack");
+			llvm::Value* stackPtr = builder->CreateLoad(llvm::PointerType::getUnqual(*context), stackPtrPtr, "stack");
 
 			// Allocate temp for popped element
 			llvm::Value* tempElem = builder->CreateAlloca(stackElementTy, nullptr, "temp_elem");
@@ -6258,30 +6251,30 @@ namespace Qd {
 		if (matchingField->typeName == "f64") {
 			llvm::Value* floatValue = builder->CreateLoad(builder->getDoubleTy(), bytePtr, "field_value");
 			builder->CreateCall(pushFloatFn, {ctx, floatValue});
-			lastFieldAccessResultType.clear();  // Not a struct type
+			lastFieldAccessResultType.clear(); // Not a struct type
 		} else if (matchingField->typeName == "i64") {
 			llvm::Value* intValue = builder->CreateLoad(builder->getInt64Ty(), bytePtr, "field_value");
 			builder->CreateCall(pushIntFn, {ctx, intValue});
-			lastFieldAccessResultType.clear();  // Not a struct type
+			lastFieldAccessResultType.clear(); // Not a struct type
 		} else if (matchingField->typeName == "i32") {
 			// Load i32, sign-extend to i64 for the stack
 			llvm::Value* int32Value = builder->CreateLoad(builder->getInt32Ty(), bytePtr, "field_value_i32");
 			llvm::Value* intValue = builder->CreateSExt(int32Value, builder->getInt64Ty(), "field_value");
 			builder->CreateCall(pushIntFn, {ctx, intValue});
-			lastFieldAccessResultType.clear();  // Not a struct type
+			lastFieldAccessResultType.clear(); // Not a struct type
 		} else if (matchingField->typeName == "str") {
 			llvm::Value* fieldPtr = bytePtr;
 			llvm::Value* ptrValue =
 					builder->CreateLoad(llvm::PointerType::getUnqual(*context), fieldPtr, "field_value");
 			builder->CreateCall(pushStrRefFn, {ctx, ptrValue});
-			lastFieldAccessResultType.clear();  // Not a struct type
+			lastFieldAccessResultType.clear(); // Not a struct type
 		} else if (matchingField->typeName == "ptr" || matchingField->typeName.find('*') != std::string::npos) {
 			// Handle ptr type and raw pointer types
 			llvm::Value* fieldPtr = bytePtr;
 			llvm::Value* ptrValue =
 					builder->CreateLoad(llvm::PointerType::getUnqual(*context), fieldPtr, "field_value");
 			builder->CreateCall(pushPtrFn, {ctx, ptrValue});
-			lastFieldAccessResultType.clear();  // Raw pointer, not a known struct type
+			lastFieldAccessResultType.clear(); // Raw pointer, not a known struct type
 		} else if (!matchingField->typeName.empty() && std::isupper(matchingField->typeName[0]) &&
 				   isKnownStruct(matchingField->typeName)) {
 			// Struct-typed field - stored as pointer, push as PTR
@@ -6408,10 +6401,9 @@ namespace Qd {
 		} else if (matchingField->typeName == "ptr" || matchingField->typeName == "str" ||
 				   matchingField->typeName.find('*') != std::string::npos ||
 				   (!matchingField->typeName.empty() && std::isupper(matchingField->typeName[0]) &&
-					isKnownStruct(matchingField->typeName))) {
+						   isKnownStruct(matchingField->typeName))) {
 			// Pointer type (including ptr, str, raw pointers, and struct-typed fields)
-			llvm::Value* ptrValue =
-					builder->CreateLoad(llvm::PointerType::getUnqual(*context), valuePtr, "ptr_val");
+			llvm::Value* ptrValue = builder->CreateLoad(llvm::PointerType::getUnqual(*context), valuePtr, "ptr_val");
 			builder->CreateStore(ptrValue, bytePtr);
 		} else {
 			// Type parameter or unknown type - treat as i64 value

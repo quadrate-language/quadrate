@@ -89,8 +89,7 @@ static std::string findLibraryDir() {
 
 	// Try 2: Build directory (MESON_BUILD_ROOT/lib)
 	fs::path buildLibPath = fs::path(MESON_BUILD_ROOT) / "lib";
-	if (fs::exists(buildLibPath / "qdrt" / "libqdrt_static.a") ||
-		fs::exists(buildLibPath / "qdrt" / "libqdrt.a")) {
+	if (fs::exists(buildLibPath / "qdrt" / "libqdrt_static.a") || fs::exists(buildLibPath / "qdrt" / "libqdrt.a")) {
 		return buildLibPath.string();
 	}
 
@@ -388,7 +387,8 @@ void qd_build(qd_module* mod) {
 		link_cmd += mod->so_path.string();
 
 		// Link with static libraries (whole-archive to include all symbols)
-		std::vector<std::string> libs = {"qdrt", "qdmath", "qdfmt", "qdio", "qdnet", "qdos", "qdstr", "qdtime", "qdmem", "qdstrconv"};
+		std::vector<std::string> libs = {
+				"qdrt", "qdmath", "qdfmt", "qdio", "qdnet", "qdos", "qdstr", "qdtime", "qdmem", "qdstrconv"};
 		for (const auto& lib : libs) {
 			std::string libPath = findStaticLib(lib_dir, lib);
 			if (!libPath.empty()) {

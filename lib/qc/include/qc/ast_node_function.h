@@ -12,8 +12,10 @@ namespace Qd {
 			: mName(name), mParent(nullptr), mBody(nullptr), mThrows(false), mIsPublic(isPublic), mLine(0), mColumn(0) {
 		}
 
-		AstNodeFunctionDeclaration(const std::string& name, const std::vector<std::string>& typeParams, bool isPublic = false)
-			: mName(name), mTypeParams(typeParams), mParent(nullptr), mBody(nullptr), mThrows(false), mIsPublic(isPublic), mLine(0), mColumn(0) {
+		AstNodeFunctionDeclaration(
+				const std::string& name, const std::vector<std::string>& typeParams, bool isPublic = false)
+			: mName(name), mTypeParams(typeParams), mParent(nullptr), mBody(nullptr), mThrows(false),
+			  mIsPublic(isPublic), mLine(0), mColumn(0) {
 		}
 
 		~AstNodeFunctionDeclaration() {
