@@ -110,15 +110,8 @@ nl
 
 ---
 
-## Advanced I/O
+## File I/O
 
-For more advanced I/O operations (files, streams, etc.), use the `io` module from the standard library:
-
-```qd
-use io
-
-"Hello, World!" io::println
-"message" io::print
-```
+For file operations (open, read, write, etc.), use the `io` module from the standard library.
 
 See the [io module](../stdlib/io.md) documentation for details.

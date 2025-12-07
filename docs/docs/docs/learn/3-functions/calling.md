@@ -21,12 +21,20 @@ No parentheses needed! Just push the arguments, then write the function name.
 Functions naturally chain together:
 
 ```qd
-fn double(x:i64 -- result:i64) { 2 * }
-fn square(x:i64 -- result:i64) { dup * }
-fn inc(x:i64 -- result:i64) { 1 + }
+fn double(x:i64 -- result:i64) {
+	2 *
+}
+
+fn square(x:i64 -- result:i64) {
+	dup *
+}
+
+fn add_one(x:i64 -- result:i64) {
+	1 +
+}
 
 fn main( -- ) {
-	3 double square inc print nl
+	3 double square add_one print nl
 	// 3 -> 6 -> 36 -> 37
 }
 ```
@@ -77,7 +85,9 @@ fn main( -- ) {
 You can immediately use outputs:
 
 ```qd
-fn square(x:i64 -- result:i64) { dup * }
+fn square(x:i64 -- result:i64) {
+	dup *
+}
 
 fn main( -- ) {
 	// Use result in expression
@@ -87,20 +97,22 @@ fn main( -- ) {
 	5 square dup print nl print nl  // 25, 25
 
 	// Store result
-	7 square -> sq
-	sq print nl  // 49
+	7 square -> sqd
+	sqd print nl  // 49
 }
 ```
 
-## Calling Built-in Functions
+## Calling Library Functions
 
-Built-in operations work the same way:
+Library functions work the same way:
 
 ```qd
+use math
+
 fn main( -- ) {
-	3.14159 sin print nl  // sine
-	2.0 sqrt print nl     // square root
-	-5 abs print nl       // absolute value
+	3.14159 math::sin print nl  // sine
+	2.0 math::sqrt print nl     // square root
+	-5 abs print nl             // absolute value
 }
 ```
 
@@ -172,9 +184,9 @@ fn main( -- ) {
 }
 ```
 
-## Function Call Stack
+## Nested Calls
 
-Each function call creates a new stack frame:
+Functions can call other functions:
 
 ```qd
 fn inner(x:i64 -- result:i64) {

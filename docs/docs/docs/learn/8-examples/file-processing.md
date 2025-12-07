@@ -42,11 +42,11 @@ fn read_entire_file(path:str -- content:str)! {
 fn main( -- ) {
 	"test.txt" read_entire_file if {
 		-> content
-		"File contents:" io::println
-		content io::println
+		"File contents:" print nl
+		content print nl
 	} else {
 		drop
-		"Could not read file" io::println
+		"Could not read file" print nl
 	}
 }
 ```
@@ -79,10 +79,10 @@ fn write_file(path:str content:str -- )! {
 
 fn main( -- ) {
 	"output.txt" "Hello, World!\n" write_file if {
-		"File written successfully" io::println
+		"File written successfully" print nl
 	} else {
 		drop
-		"Failed to write file" io::println
+		"Failed to write file" print nl
 	}
 }
 ```
@@ -111,13 +111,13 @@ fn process_lines(path:str -- ) {
 		}
 	} else {
 		drop
-		"Could not read file" io::println
+		"Could not read file" print nl
 	}
 }
 
 fn process_line(num:i64 line:str -- ) {
 	-> line -> num
-	num print ": " print line io::println
+	num print ": " print line print nl
 }
 
 fn main( -- ) {
@@ -171,12 +171,12 @@ fn count_words(path:str -- words:i64 lines:i64 chars:i64)! {
 fn main( -- ) {
 	"document.txt" count_words if {
 		-> chars -> lines -> words
-		"Words: " io::print words io::println
-		"Lines: " io::print lines io::println
-		"Chars: " io::print chars io::println
+		"Words: " print words print nl
+		"Lines: " print lines print nl
+		"Chars: " print chars print nl
 	} else {
 		drop
-		"Could not count" io::println
+		"Could not count" print nl
 	}
 }
 ```
@@ -225,7 +225,7 @@ fn copy_file(src:str dst:str -- )! {
 				}
 			}
 
-			"Copied " io::print total_copied io::print " bytes" io::println
+			"Copied " print total_copied print " bytes" print nl
 		} else {
 			drop
 			"create failed" 1 error
@@ -238,10 +238,10 @@ fn copy_file(src:str dst:str -- )! {
 
 fn main( -- ) {
 	"input.txt" "output.txt" copy_file if {
-		"Copy successful" io::println
+		"Copy successful" print nl
 	} else {
 		drop
-		"Copy failed" io::println
+		"Copy failed" print nl
 	}
 }
 ```
@@ -299,11 +299,11 @@ fn process_csv(path:str -- ) {
 				} else {
 					line parse_csv_line if {
 						-> record
-						record @name io::print
-						" is " io::print
-						record @age io::print
-						" years old from " io::print
-						record @city io::println
+						record @name print
+						" is " print
+						record @age print
+						" years old from " print
+						record @city print nl
 					} else {
 						drop
 					}

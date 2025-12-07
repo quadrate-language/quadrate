@@ -7,10 +7,10 @@ Modules organize code into reusable units. They help structure larger programs.
 Use `use` to import a module:
 
 ```qd
-use io
+use fmt
 
 fn main( -- ) {
-	"Hello" io::println
+	"John Doe" "Hello %s" fmt::printf nl
 }
 ```
 
@@ -35,14 +35,14 @@ fn main( -- ) {
 Import several modules at once:
 
 ```qd
-use io
+use fmt
 use math
-use str
 use os
 
 fn main( -- ) {
 	// Use functions from any imported module
-	2.0 math::sqrt io::println
+	2.0 math::sqrt "%f" fmt::printf
+	0 os::exit
 }
 ```
 
@@ -52,26 +52,36 @@ Quadrate includes many built-in modules:
 
 | Module | Purpose |
 |--------|---------|
+| `base64` | Base64 encoding/decoding |
+| `bits` | Bit manipulation |
+| `bytes` | Byte buffer operations |
+| `crc32` | CRC32 checksums |
+| `flag` | Command-line flag parsing |
+| `fmt` | Formatted output |
+| `hex` | Hexadecimal encoding/decoding |
 | `io` | Input/output operations |
+| `json` | JSON parsing |
 | `math` | Mathematical functions |
-| `str` | String manipulation |
-| `os` | Operating system interaction |
-| `time` | Date and time |
 | `mem` | Memory management |
 | `net` | Networking |
-| `bits` | Bit manipulation |
-| `base64` | Base64 encoding |
-| `hex` | Hexadecimal encoding |
+| `os` | Operating system interaction |
 | `path` | File path operations |
 | `rand` | Random numbers |
-| `json` | JSON parsing |
 | `regex` | Regular expressions |
+| `sb` | String builder |
+| `sha256` | SHA-256 hashing |
+| `sort` | Sorting functions |
+| `str` | String manipulation |
+| `strconv` | String conversion |
+| `testing` | Testing framework |
+| `time` | Date and time |
+| `unicode` | Unicode utilities |
+| `uri` | URI parsing and building |
 | `uuid` | UUID generation |
 
 ## Example: Using Multiple Modules
 
 ```qd
-use io
 use math
 use time
 
@@ -83,27 +93,32 @@ fn main( -- ) {
 	2.0 math::sqrt -> root
 
 	// Print results
-	"Square root of 2: " io::print
-	root io::println
+	"Square root of 2: " print root print nl
 
-	"Current timestamp: " io::print
-	t io::println
+	"Current timestamp: " print t print nl
 }
 ```
 
 ## Creating Your Own Modules
 
-A module is simply a `.qd` file. Create `mymath.qd`:
+A module is a folder containing a `module.qd` file. Functions marked with `pub` are accessible from outside.
+
+Create a folder `mymath/` with a `module.qd` inside:
 
 ```qd
-// mymath.qd
+// mymath/module.qd
 
-fn square(x:i64 -- result:i64) {
+pub fn square(x:i64 -- result:i64) {
 	dup *
 }
 
-fn cube(x:i64 -- result:i64) {
+pub fn cube(x:i64 -- result:i64) {
 	dup dup * *
+}
+
+// Private helper (no pub keyword)
+fn helper(x:i64 -- y:i64) {
+	1 +
 }
 ```
 
@@ -118,48 +133,69 @@ fn main( -- ) {
 }
 ```
 
+## Including Single Files
+
+You can also include a single `.qd` file directly:
+
+```qd
+// utils.qd
+pub fn double(x:i64 -- result:i64) {
+	2 *
+}
+```
+
+```qd
+use utils.qd
+
+fn main( -- ) {
+	5 utils::double print nl  // 10
+}
+```
+
+Note the `.qd` extension in the `use` statement.
+
+## Public vs Private
+
+Use `pub` to mark functions that can be called from outside the module:
+
+```qd
+// mymodule/module.qd
+
+pub fn public_function(x:i64 -- result:i64) {
+	_helper 2 *
+}
+
+// No pub - only callable within this module
+fn _helper(x:i64 -- y:i64) {
+	1 +
+}
+```
+
 ## Module Structure
 
 A typical module contains:
 
 1. **Imports** at the top
 2. **Constants** and **structs**
-3. **Public functions**
-4. **Helper functions**
+3. **Public functions** (marked with `pub`)
+4. **Private helper functions**
 
 ```qd
-// geometry.qd
-
+// geometry/module.qd
 use math
 
-const PI 3.14159265358979
+pub const Phi = 1.61803398874989484820 
 
-struct Circle {
+pub struct Circle {
 	radius:f64
 }
 
-fn circle_area(r:f64 -- area:f64) {
-	dup * PI *
+pub fn circle_area(r:f64 -- area:f64) {
+	sq Math::Pi *
 }
 
-fn circle_circumference(r:f64 -- c:f64) {
-	2.0 * PI *
-}
-```
-
-## Public vs Private
-
-All functions in a module are accessible. Use naming conventions to indicate privacy:
-
-```qd
-// Convention: underscore prefix for "private" helpers
-fn _helper(x:i64 -- y:i64) {
-	// Internal use only
-	1 +
-}
-
-fn public_function(x:i64 -- result:i64) {
-	_helper 2 *
+pub fn circle_circumference(r:f64 -- c:f64) {
+	2.0 * math::Pi *
 }
 ```
 

@@ -9,20 +9,20 @@ use io
 use str
 
 fn main( -- ) {
-	"Simple Calculator" io::println
-	"Enter: number number operator" io::println
-	"Operators: + - * /" io::println
-	"Type 'quit' to exit" io::println
-	io::println
+	"Simple Calculator" print nl
+	"Enter: number number operator" print nl
+	"Operators: + - * /" print nl
+	"Type 'quit' to exit" print nl
+	nl
 
 	loop {
-		"> " io::print
+		"> " print
 
 		io::readline if {
 			-> line
 
 			line "quit" str::eq if {
-				"Goodbye!" io::println
+				"Goodbye!" print nl
 				break
 			}
 
@@ -42,7 +42,7 @@ fn process_line(line:str -- ) {
 		-> parts
 
 		parts @len 3 != if {
-			"Error: Need 'num num op'" io::println
+			"Error: Need 'num num op'" print nl
 		} else {
 			parts 0 @[] parse_number if {
 				-> a
@@ -52,24 +52,24 @@ fn process_line(line:str -- ) {
 
 					a b op calculate if {
 						-> result
-						"Result: " io::print
-						result io::println
+						"Result: " print
+						result print nl
 					} else {
 						drop
-						"Error: Unknown operator" io::println
+						"Error: Unknown operator" print nl
 					}
 				} else {
 					drop
-					"Error: Invalid second number" io::println
+					"Error: Invalid second number" print nl
 				}
 			} else {
 				drop
-				"Error: Invalid first number" io::println
+				"Error: Invalid first number" print nl
 			}
 		}
 	} else {
 		drop
-		"Error: Could not parse input" io::println
+		"Error: Could not parse input" print nl
 	}
 }
 
@@ -193,10 +193,10 @@ fn history_add(h:ptr result:i64 -- ) {
 
 fn history_show(h:ptr -- ) {
 	-> h
-	"History:" io::println
+	"History:" print nl
 	0 h @count for i {
 		i print ": " print
-		h @entries i @[] io::println
+		h @entries i @[] print nl
 	}
 }
 ```
