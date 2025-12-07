@@ -451,7 +451,7 @@ namespace Qd {
 	static std::string normalizeKeywordBraces(const std::string& line) {
 		std::string result = line;
 		const std::vector<std::string> keywords = {
-				"if", "else", "for", "loop", "defer", "switch", "case", "default", "fn"};
+				"if", "else", "for", "while", "loop", "defer", "switch", "case", "default", "fn"};
 
 		for (const auto& keyword : keywords) {
 			std::string pattern = keyword + "{";
@@ -1126,9 +1126,10 @@ namespace Qd {
 
 			// Handle control flow keywords - keep on same line, fix indentation
 			if (startsWithKeyword(trimmed, "if") || startsWithKeyword(trimmed, "for") ||
-					startsWithKeyword(trimmed, "loop") || startsWithKeyword(trimmed, "else") ||
-					startsWithKeyword(trimmed, "switch") || startsWithKeyword(trimmed, "case") ||
-					startsWithKeyword(trimmed, "default") || startsWithKeyword(trimmed, "defer")) {
+					startsWithKeyword(trimmed, "while") || startsWithKeyword(trimmed, "loop") ||
+					startsWithKeyword(trimmed, "else") || startsWithKeyword(trimmed, "switch") ||
+					startsWithKeyword(trimmed, "case") || startsWithKeyword(trimmed, "default") ||
+					startsWithKeyword(trimmed, "defer")) {
 				// Write with current indent
 				for (int i = 0; i < indentLevel; i++) {
 					output << '\t';

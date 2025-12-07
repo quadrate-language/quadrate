@@ -60,16 +60,16 @@ fn mul(a:i64 b:i64 -- r:i64) { * }
 fn div_op(a:i64 b:i64 -- r:i64) { / }
 
 fn main( -- ) {
-	4 ptr[] -> ops
-	&add ops 0 ![]
-	&sub ops 1 ![]
-	&mul ops 2 ![]
-	&div_op ops 3 ![]
+	4 make<ptr> -> ops
+	ops 0 &add set
+	ops 1 &sub set
+	ops 2 &mul set
+	ops 3 &div_op set
 
-	10 5 ops 0 @[] call print nl  // 15 (add)
-	10 5 ops 1 @[] call print nl  // 5 (sub)
-	10 5 ops 2 @[] call print nl  // 50 (mul)
-	10 5 ops 3 @[] call print nl  // 2 (div)
+	10 5 ops 0 nth call print nl  // 15 (add)
+	10 5 ops 1 nth call print nl  // 5 (sub)
+	10 5 ops 2 nth call print nl  // 50 (mul)
+	10 5 ops 3 nth call print nl  // 2 (div)
 }
 ```
 
@@ -80,8 +80,8 @@ Use function pointers for callbacks:
 ```qd
 fn for_each(arr:ptr callback:ptr -- ) {
 	-> callback -> arr
-	arr iter for item {
-		item callback call
+	0 arr len 1 for i {
+		arr i nth callback call
 	}
 }
 
@@ -103,9 +103,9 @@ fn main( -- ) {
 ```qd
 fn map(arr:ptr f:ptr -- result:ptr) {
 	-> f -> arr
-	arr @len i64[] -> result
-	0 arr @len for i {
-		arr i @[] f call result i ![]
+	arr len make<i64> -> result
+	0 arr len 1 for i {
+		result i arr i nth f call set
 	}
 	result
 }
@@ -114,8 +114,8 @@ fn double(x:i64 -- r:i64) { 2 * }
 
 fn main( -- ) {
 	[1 2 3 4 5] &double map -> doubled
-	doubled iter for x {
-		x print " " print
+	0 doubled len 1 for i {
+		doubled i nth print " " print
 	}
 	nl  // 2 4 6 8 10
 }
@@ -129,18 +129,18 @@ fn filter(arr:ptr pred:ptr -- result:ptr) {
 
 	// Count matches
 	0 -> count
-	arr iter for x {
-		x pred call if {
+	0 arr len 1 for i {
+		arr i nth pred call if {
 			count 1 + -> count
 		}
 	}
 
 	// Create result
-	count i64[] -> result
+	count make<i64> -> result
 	0 -> j
-	arr iter for x {
-		x pred call if {
-			x result j ![]
+	0 arr len 1 for i {
+		arr i nth pred call if {
+			result j arr i nth set
 			j 1 + -> j
 		}
 	}
@@ -154,8 +154,8 @@ fn is_even(x:i64 -- result:i64) {
 
 fn main( -- ) {
 	[1 2 3 4 5 6 7 8 9 10] &is_even filter -> evens
-	evens iter for x {
-		x print " " print
+	0 evens len 1 for i {
+		evens i nth print " " print
 	}
 	nl  // 2 4 6 8 10
 }
@@ -166,8 +166,8 @@ fn main( -- ) {
 ```qd
 fn reduce(arr:ptr initial:i64 f:ptr -- result:i64) {
 	-> f -> result -> arr
-	arr iter for x {
-		result x f call -> result
+	0 arr len 1 for i {
+		result arr i nth f call -> result
 	}
 	result
 }
@@ -214,14 +214,14 @@ Dispatch based on a selector:
 fn handle_cmd(cmd:i64 -- ) {
 	-> cmd
 
-	4 ptr[] -> handlers
-	&cmd_help handlers 0 ![]
-	&cmd_list handlers 1 ![]
-	&cmd_add handlers 2 ![]
-	&cmd_quit handlers 3 ![]
+	4 make<ptr> -> handlers
+	handlers 0 &cmd_help set
+	handlers 1 &cmd_list set
+	handlers 2 &cmd_add set
+	handlers 3 &cmd_quit set
 
 	cmd 0 >= cmd 4 < and if {
-		handlers cmd @[] call
+		handlers cmd nth call
 	} else {
 		"Unknown command" print nl
 	}

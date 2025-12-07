@@ -60,6 +60,7 @@
 #include <qc/ast_node_switch.h>
 #include <qc/ast_node_test.h>
 #include <qc/ast_node_use.h>
+#include <qc/ast_node_while.h>
 
 #include <algorithm>
 #include <charconv>
@@ -129,6 +130,8 @@ namespace Qd {
 		llvm::Function* qdStructAllocFn = nullptr;
 		llvm::Function* qdStructReleaseFn = nullptr;
 		llvm::Function* qdStructRetainFn = nullptr;
+		llvm::Function* qdPtrReleaseFn = nullptr;
+		llvm::Function* qdPtrRetainFn = nullptr;
 		llvm::Function* addFn = nullptr;
 		llvm::Function* subFn = nullptr;
 		llvm::Function* mulFn = nullptr;
@@ -276,6 +279,7 @@ namespace Qd {
 		void generateLiteral(AstNodeLiteral* lit, llvm::Value* ctx);
 		void generateIf(AstNodeIfStatement* ifStmt, llvm::Value* ctx);
 		void generateFor(AstNodeForStatement* forStmt, llvm::Value* ctx);
+		void generateWhile(AstNodeWhileStatement* whileStmt, llvm::Value* ctx);
 		void generateLoop(AstNodeLoopStatement* loopStmt, llvm::Value* ctx);
 		void generateCtxBlock(AstNodeCtx* ctxNode, llvm::Value* ctx);
 		void generateIdentifier(AstNodeIdentifier* ident, llvm::Value* ctx);
@@ -486,6 +490,18 @@ namespace Qd {
 				llvm::PointerType::getUnqual(*context), {llvm::PointerType::getUnqual(*context)}, false);
 		this->qdStructRetainFn = llvm::Function::Create(
 				qdStructRetainFnTy, llvm::Function::ExternalLinkage, "qd_struct_retain", *module);
+
+		// qd_ptr_release(void* ptr) - generic release for arrays and structs
+		auto qdPtrReleaseFnTy =
+				llvm::FunctionType::get(builder->getVoidTy(), {llvm::PointerType::getUnqual(*context)}, false);
+		this->qdPtrReleaseFn =
+				llvm::Function::Create(qdPtrReleaseFnTy, llvm::Function::ExternalLinkage, "qd_ptr_release", *module);
+
+		// qd_ptr_retain(void* ptr) -> void* - generic retain for arrays and structs
+		auto qdPtrRetainFnTy = llvm::FunctionType::get(
+				llvm::PointerType::getUnqual(*context), {llvm::PointerType::getUnqual(*context)}, false);
+		this->qdPtrRetainFn =
+				llvm::Function::Create(qdPtrRetainFnTy, llvm::Function::ExternalLinkage, "qd_ptr_retain", *module);
 
 		// Initialize debug info if enabled
 		if (debugInfoEnabled) {
@@ -2863,8 +2879,8 @@ namespace Qd {
 				}
 				builder->CreateCall(arrayRetainFn, {ptrVal});
 			} else {
-				// Retain struct pointer - safe for any pointer (registry check inside)
-				builder->CreateCall(qdStructRetainFn, {ptrVal});
+				// Retain pointer - could be array or struct (generic function checks both)
+				builder->CreateCall(qdPtrRetainFn, {ptrVal});
 			}
 			builder->CreateCall(pushPtrFn, {ctx, ptrVal});
 			builder->CreateBr(endBlock);
@@ -3564,8 +3580,8 @@ namespace Qd {
 				builder->CreateStructGEP(stackElementTy, localAlloca, 0, name + "_old_value_ptr_ptr");
 		llvm::Value* oldPtrVal =
 				builder->CreateLoad(llvm::PointerType::getUnqual(*context), oldValuePtrPtr, name + "_old_ptr");
-		// Call qd_struct_release - safe for any pointer (uses registry check)
-		builder->CreateCall(qdStructReleaseFn, {oldPtrVal});
+		// Call qd_ptr_release - works for both arrays and structs
+		builder->CreateCall(qdPtrReleaseFn, {oldPtrVal});
 		builder->CreateBr(afterReleaseBlock);
 
 		// Continue after release
@@ -3692,7 +3708,7 @@ namespace Qd {
 				builder->CreateBr(skipFreeBlock);
 			} else {
 				// Non-array pointer - could be a struct pointer
-				// Call qd_struct_release (safe for any pointer - uses registry check)
+				// Call qd_ptr_release - works for both arrays and structs
 				llvm::BasicBlock* freePtrBlock = llvm::BasicBlock::Create(*context, varName + "_free_ptr", currentFn);
 				llvm::Value* isPtr = builder->CreateICmpEQ(type, builder->getInt32(2), varName + "_is_ptr");
 				builder->CreateCondBr(isPtr, freePtrBlock, skipFreeBlock);
@@ -3702,7 +3718,7 @@ namespace Qd {
 						builder->CreateStructGEP(stackElementTy, localAlloca, 0, varName + "_cleanup_ptr_value_ptr");
 				llvm::Value* ptrVal = builder->CreateLoad(
 						llvm::PointerType::getUnqual(*context), ptrValuePtr, varName + "_cleanup_ptr");
-				builder->CreateCall(qdStructReleaseFn, {ptrVal});
+				builder->CreateCall(qdPtrReleaseFn, {ptrVal});
 				builder->CreateBr(skipFreeBlock);
 			}
 
@@ -4090,6 +4106,137 @@ namespace Qd {
 		builder->SetInsertPoint(loopExitBB);
 	}
 
+	void LlvmGenerator::Impl::generateWhile(AstNodeWhileStatement* whileStmt, llvm::Value* ctx) {
+		// Get current function
+		llvm::Function* currentFn = builder->GetInsertBlock()->getParent();
+
+		// Create basic blocks
+		llvm::BasicBlock* whileCondBB = llvm::BasicBlock::Create(*context, "while.cond", currentFn);
+		llvm::BasicBlock* underflowBB = llvm::BasicBlock::Create(*context, "while.underflow", currentFn);
+		llvm::BasicBlock* popBB = llvm::BasicBlock::Create(*context, "while.pop", currentFn);
+		llvm::BasicBlock* whileBodyBB = llvm::BasicBlock::Create(*context, "while.body", currentFn);
+		llvm::BasicBlock* whileExitBB = llvm::BasicBlock::Create(*context, "while.exit", currentFn);
+
+		// Jump to condition check
+		builder->CreateBr(whileCondBB);
+
+		// Condition block - pop value and check
+		builder->SetInsertPoint(whileCondBB);
+
+		// Inline pop for condition - direct stack access for performance
+		// ctx is a pointer to a struct with first field being qd_stack* st
+		llvm::Type* contextTy = llvm::StructType::get(*context, {llvm::PointerType::get(*context, 0)}, false);
+		llvm::Value* stPtr = builder->CreateStructGEP(contextTy, ctx, 0, "st_ptr");
+		llvm::Value* st = builder->CreateLoad(llvm::PointerType::get(*context, 0), stPtr, "st");
+
+		// Stack type: { data*, capacity, size }
+		llvm::Type* stackTy = llvm::StructType::get(
+				*context, {llvm::PointerType::get(*context, 0), builder->getInt64Ty(), builder->getInt64Ty()}, false);
+
+		llvm::Value* sizePtr = builder->CreateStructGEP(stackTy, st, 2, "size_ptr");
+		llvm::Value* size = builder->CreateLoad(builder->getInt64Ty(), sizePtr, "size");
+
+		// Check for stack underflow before popping
+		llvm::Value* isEmpty = builder->CreateICmpEQ(size, builder->getInt64(0), "is_empty");
+		builder->CreateCondBr(isEmpty, underflowBB, popBB);
+
+		// Generate underflow error block
+		builder->SetInsertPoint(underflowBB);
+		// Call fprintf(stderr, ...) and abort
+		auto fprintfFn = module->getOrInsertFunction("fprintf",
+				llvm::FunctionType::get(builder->getInt32Ty(),
+						{llvm::PointerType::getUnqual(*context), llvm::PointerType::getUnqual(*context)}, true));
+		auto stderrGlobal = module->getOrInsertGlobal("stderr", llvm::PointerType::getUnqual(*context));
+		auto stderrVal = builder->CreateLoad(llvm::PointerType::getUnqual(*context), stderrGlobal, "stderr");
+		auto errorMsg = builder->CreateGlobalString(
+				"Fatal error in while: Stack underflow (requires 1 value for condition)\n");
+		builder->CreateCall(fprintfFn, {stderrVal, errorMsg});
+		// Call qd_print_stack_trace(ctx)
+		auto printStackTraceFnTy =
+				llvm::FunctionType::get(builder->getVoidTy(), {llvm::PointerType::getUnqual(*context)}, false);
+		auto printStackTraceFn = module->getOrInsertFunction("qd_print_stack_trace", printStackTraceFnTy);
+		builder->CreateCall(printStackTraceFn, {ctx});
+		auto abortFn = module->getOrInsertFunction("abort", llvm::FunctionType::get(builder->getVoidTy(), false));
+		builder->CreateCall(abortFn, {});
+		builder->CreateUnreachable();
+
+		// Continue with normal pop in popBB
+		builder->SetInsertPoint(popBB);
+
+		llvm::Value* dataPtr = builder->CreateStructGEP(stackTy, st, 0, "data_ptr");
+		llvm::Value* data = builder->CreateLoad(llvm::PointerType::get(*context, 0), dataPtr, "data");
+
+		// Access top element value directly: data[size-1].value
+		llvm::Value* topIdx = builder->CreateSub(size, builder->getInt64(1), "top_idx");
+		llvm::Value* topElemPtr = builder->CreateGEP(stackElementTy, data, topIdx, "top_elem");
+		llvm::Value* valuePtr = builder->CreateStructGEP(stackElementTy, topElemPtr, 0, "value_ptr");
+		llvm::Value* value64 = builder->CreateLoad(builder->getInt64Ty(), valuePtr, "value64");
+
+		// Decrement size (inline pop)
+		llvm::Value* newSize = builder->CreateSub(size, builder->getInt64(1), "new_size");
+		builder->CreateStore(newSize, sizePtr);
+
+		// Convert to condition value
+		auto condValue = builder->CreateTrunc(value64, builder->getInt32Ty(), "cond");
+
+		// Check if condition is non-zero
+		auto isTrue = builder->CreateICmpNE(condValue, builder->getInt32(0), "is_true");
+
+		// Branch based on condition
+		builder->CreateCondBr(isTrue, whileBodyBB, whileExitBB);
+
+		// While body
+		builder->SetInsertPoint(whileBodyBB);
+
+		// Push loop context for break/continue
+		// break jumps to whileExitBB, continue jumps back to whileCondBB
+		loopStack.push_back({whileExitBB, whileCondBB});
+
+		// Push defer scope for this loop iteration
+		pushDeferScope();
+
+		if (whileStmt->body()) {
+			generateNode(whileStmt->body(), ctx);
+		}
+
+		// Generate defer execution code at end of loop body
+		if (!deferScopeStack.empty() && !deferScopeStack.back().empty()) {
+			auto& currentScope = deferScopeStack.back();
+			for (auto it = currentScope.rbegin(); it != currentScope.rend(); ++it) {
+				AstNodeDefer* deferNode = *it;
+				for (size_t i = 0; i < deferNode->childCount(); i++) {
+					IAstNode* child = deferNode->child(i);
+					if (child && child->type() == IAstNode::Type::BLOCK) {
+						for (size_t j = 0; j < child->childCount(); j++) {
+							generateNode(child->child(j), ctx);
+						}
+					} else {
+						generateNode(child, ctx);
+					}
+				}
+			}
+		}
+
+		// Pop defer scope (compilation-time cleanup)
+		popDeferScope();
+
+		// Only add branch if block doesn't already have a terminator
+		llvm::BasicBlock* whileBlock = builder->GetInsertBlock();
+		if (whileBlock) {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wnull-dereference"
+			if (!whileBlock->getTerminator()) {
+#pragma GCC diagnostic pop
+				builder->CreateBr(whileCondBB); // Loop back to condition
+			}
+		}
+
+		loopStack.pop_back();
+
+		// Continue after loop (reached when condition is false or via break)
+		builder->SetInsertPoint(whileExitBB);
+	}
+
 	void LlvmGenerator::Impl::generateLoop(AstNodeLoopStatement* loopStmt, llvm::Value* ctx) {
 		// Get current function
 		llvm::Function* currentFn = builder->GetInsertBlock()->getParent();
@@ -4282,6 +4429,9 @@ namespace Qd {
 			break;
 		case IAstNode::Type::FOR_STATEMENT:
 			generateFor(static_cast<AstNodeForStatement*>(node), ctx);
+			break;
+		case IAstNode::Type::WHILE_STATEMENT:
+			generateWhile(static_cast<AstNodeWhileStatement*>(node), ctx);
 			break;
 		case IAstNode::Type::LOOP_STATEMENT:
 			generateLoop(static_cast<AstNodeLoopStatement*>(node), ctx);
@@ -6200,9 +6350,12 @@ namespace Qd {
 						structTypeName = typeIt->second;
 					}
 
+					// Local variables are stored as qd_stack_element_t, need to extract the value field
 					llvm::Value* structPtrAlloca = it->second;
+					llvm::Value* valuePtr =
+							builder->CreateStructGEP(stackElementTy, structPtrAlloca, 0, varName + "_value_ptr");
 					structPtr =
-							builder->CreateLoad(llvm::PointerType::getUnqual(*context), structPtrAlloca, "struct_ptr");
+							builder->CreateLoad(llvm::PointerType::getUnqual(*context), valuePtr, "struct_ptr");
 				}
 			}
 		}
@@ -6273,6 +6426,8 @@ namespace Qd {
 			llvm::Value* fieldPtr = bytePtr;
 			llvm::Value* ptrValue =
 					builder->CreateLoad(llvm::PointerType::getUnqual(*context), fieldPtr, "field_value");
+			// Retain the pointer before pushing (it could be an array/struct that will be released after use)
+			builder->CreateCall(qdPtrRetainFn, {ptrValue});
 			builder->CreateCall(pushPtrFn, {ctx, ptrValue});
 			lastFieldAccessResultType.clear(); // Raw pointer, not a known struct type
 		} else if (!matchingField->typeName.empty() && std::isupper(matchingField->typeName[0]) &&
@@ -6281,6 +6436,8 @@ namespace Qd {
 			llvm::Value* fieldPtr = bytePtr;
 			llvm::Value* ptrValue =
 					builder->CreateLoad(llvm::PointerType::getUnqual(*context), fieldPtr, "field_value");
+			// Retain the struct pointer before pushing
+			builder->CreateCall(qdPtrRetainFn, {ptrValue});
 			builder->CreateCall(pushPtrFn, {ctx, ptrValue});
 			// Track the struct type for chained field access
 			lastFieldAccessResultType = matchingField->typeName;
@@ -6312,9 +6469,12 @@ namespace Qd {
 			structTypeName = typeIt->second;
 		}
 
+				// Local variables are stored as qd_stack_element_t, need to extract the value field
 		llvm::Value* structPtrAlloca = it->second;
+		llvm::Value* structValuePtr =
+				builder->CreateStructGEP(stackElementTy, structPtrAlloca, 0, varName + "_value_ptr");
 		llvm::Value* structPtr =
-				builder->CreateLoad(llvm::PointerType::getUnqual(*context), structPtrAlloca, "struct_ptr");
+				builder->CreateLoad(llvm::PointerType::getUnqual(*context), structValuePtr, "struct_ptr");
 
 		// Find the field in the specific struct type if known
 		const FieldInfo* matchingField = nullptr;

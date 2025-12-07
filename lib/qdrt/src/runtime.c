@@ -1361,8 +1361,12 @@ qd_exec_result qd_eq(qd_context* ctx) {
 		abort();
 	}
 
-	if ((check_a.type != QD_STACK_TYPE_INT && check_a.type != QD_STACK_TYPE_FLOAT) ||
-	    (check_b.type != QD_STACK_TYPE_INT && check_b.type != QD_STACK_TYPE_FLOAT)) {
+	// Allow ptr compared with int (for null checks: ptr 0 == or ptr 0 !=)
+	int is_ptr_null_check = (check_a.type == QD_STACK_TYPE_PTR && check_b.type == QD_STACK_TYPE_INT) ||
+	                        (check_a.type == QD_STACK_TYPE_INT && check_b.type == QD_STACK_TYPE_PTR);
+
+	if (!is_ptr_null_check && ((check_a.type != QD_STACK_TYPE_INT && check_a.type != QD_STACK_TYPE_FLOAT) ||
+	    (check_b.type != QD_STACK_TYPE_INT && check_b.type != QD_STACK_TYPE_FLOAT))) {
 		fprintf(stderr, "Fatal error in eq: Type error (expected numeric types for comparison)\n");
 		dump_stack(ctx);
 		qd_print_stack_trace(ctx);
@@ -1380,11 +1384,18 @@ qd_exec_result qd_eq(qd_context* ctx) {
 		return (qd_exec_result){-2};
 	}
 
-	// Convert to double for comparison
-	double af = (a.type == QD_STACK_TYPE_INT) ? (double)a.value.i : a.value.f;
-	double bf = (b.type == QD_STACK_TYPE_INT) ? (double)b.value.i : b.value.f;
-
-	int64_t result = (af == bf) ? 1 : 0;
+	int64_t result;
+	if (is_ptr_null_check) {
+		// Compare pointer to integer (null check)
+		void* ptr_val = (a.type == QD_STACK_TYPE_PTR) ? a.value.p : b.value.p;
+		int64_t int_val = (a.type == QD_STACK_TYPE_INT) ? a.value.i : b.value.i;
+		result = ((int64_t)(uintptr_t)ptr_val == int_val) ? 1 : 0;
+	} else {
+		// Convert to double for comparison
+		double af = (a.type == QD_STACK_TYPE_INT) ? (double)a.value.i : a.value.f;
+		double bf = (b.type == QD_STACK_TYPE_INT) ? (double)b.value.i : b.value.f;
+		result = (af == bf) ? 1 : 0;
+	}
 	err = qd_stack_push_int(ctx->st, result);
 	if (err != QD_STACK_OK) {
 		return (qd_exec_result){-2};
@@ -1418,8 +1429,12 @@ qd_exec_result qd_neq(qd_context* ctx) {
 		abort();
 	}
 
-	if ((check_a.type != QD_STACK_TYPE_INT && check_a.type != QD_STACK_TYPE_FLOAT) ||
-	    (check_b.type != QD_STACK_TYPE_INT && check_b.type != QD_STACK_TYPE_FLOAT)) {
+	// Allow ptr compared with int (for null checks: ptr 0 == or ptr 0 !=)
+	int is_ptr_null_check = (check_a.type == QD_STACK_TYPE_PTR && check_b.type == QD_STACK_TYPE_INT) ||
+	                        (check_a.type == QD_STACK_TYPE_INT && check_b.type == QD_STACK_TYPE_PTR);
+
+	if (!is_ptr_null_check && ((check_a.type != QD_STACK_TYPE_INT && check_a.type != QD_STACK_TYPE_FLOAT) ||
+	    (check_b.type != QD_STACK_TYPE_INT && check_b.type != QD_STACK_TYPE_FLOAT))) {
 		fprintf(stderr, "Fatal error in neq: Type error (expected numeric types for comparison)\n");
 		dump_stack(ctx);
 		qd_print_stack_trace(ctx);
@@ -1437,11 +1452,18 @@ qd_exec_result qd_neq(qd_context* ctx) {
 		return (qd_exec_result){-2};
 	}
 
-	// Convert to double for comparison
-	double af = (a.type == QD_STACK_TYPE_INT) ? (double)a.value.i : a.value.f;
-	double bf = (b.type == QD_STACK_TYPE_INT) ? (double)b.value.i : b.value.f;
-
-	int64_t result = (af != bf) ? 1 : 0;
+	int64_t result;
+	if (is_ptr_null_check) {
+		// Compare pointer to integer (null check)
+		void* ptr_val = (a.type == QD_STACK_TYPE_PTR) ? a.value.p : b.value.p;
+		int64_t int_val = (a.type == QD_STACK_TYPE_INT) ? a.value.i : b.value.i;
+		result = ((int64_t)(uintptr_t)ptr_val != int_val) ? 1 : 0;
+	} else {
+		// Convert to double for comparison
+		double af = (a.type == QD_STACK_TYPE_INT) ? (double)a.value.i : a.value.f;
+		double bf = (b.type == QD_STACK_TYPE_INT) ? (double)b.value.i : b.value.f;
+		result = (af != bf) ? 1 : 0;
+	}
 	err = qd_stack_push_int(ctx->st, result);
 	if (err != QD_STACK_OK) {
 		return (qd_exec_result){-2};

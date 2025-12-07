@@ -646,7 +646,7 @@ private:
 		static const char* instructions[] = {"add", "sub", "mul", "div", "dup", "swap", "drop", "over", "rot", "print",
 				"prints", "eq", "neq", "lt", "gt", "lte", "gte", "and", "or", "not", "inc", "dec", "abs", "sqrt", "sq",
 				"sin", "cos", "tan", "asin", "acos", "atan", "ln", "log10", "pow", "min", "max", "ceil", "floor",
-				"round", "if", "for", "loop", "switch", "case", "default", "break", "continue", "defer", "free",
+				"round", "if", "for", "while", "loop", "switch", "case", "default", "break", "continue", "defer", "free",
 				"struct", "pub"};
 
 		json_t* response = json_object();
@@ -947,7 +947,10 @@ private:
 				{"cos", "Cosine function.\n\n**Stack effect:** `a -- result`"},
 				{"tan", "Tangent function.\n\n**Stack effect:** `a -- result`"},
 				{"if", "Conditional execution.\n\n**Syntax:** `condition if { ... } else { ... }`"},
-				{"for", "Loop construct.\n\n**Syntax:** `start end for { ... }`"},
+				{"for", "Loop construct.\n\n**Syntax:** `start end step for name { ... }`"},
+				{"while",
+						"Conditional loop.\n\n**Syntax:** `condition while { ... next-condition }`\n\nPops and checks "
+						"condition each iteration. Continues while truthy."},
 				{"loop", "Infinite loop.\n\n**Syntax:** `loop { ... }`"},
 				{"free",
 						"Free allocated memory.\n\n**Stack effect:** `ptr --`\n\nFrees memory allocated for structs or "

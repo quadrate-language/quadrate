@@ -102,9 +102,9 @@ fn process_lines(path:str -- ) {
 			-> lines
 			0 -> line_num
 
-			lines iter for line {
+			0 lines len 1 for i {
 				line_num 1 + -> line_num
-				line_num line process_line
+				line_num lines i nth process_line
 			}
 		} else {
 			drop
@@ -142,14 +142,14 @@ fn count_words(path:str -- words:i64 lines:i64 chars:i64)! {
 		// Count lines
 		content "\n" str::split if {
 			-> line_arr
-			line_arr @len -> lines
+			line_arr len -> lines
 
 			// Count words
 			0 -> words
-			line_arr iter for line {
-				line " " str::split if {
+			0 line_arr len 1 for i {
+				line_arr i nth " " str::split if {
 					-> word_arr
-					words word_arr @len + -> words
+					words word_arr len + -> words
 				} else {
 					drop
 				}
@@ -263,15 +263,15 @@ fn parse_csv_line(line:str -- record:ptr)! {
 
 	line "," str::split if {
 		-> fields
-		fields @len 3 != if {
+		fields len 3 != if {
 			0
 			"invalid field count" 1 error
 		}
 
-		fields 0 @[] -> name
-		fields 1 @[] str::to_i64 if {
+		fields 0 nth -> name
+		fields 1 nth str::to_i64 if {
 			-> age
-			fields 2 @[] -> city
+			fields 2 nth -> city
 
 			Record { name = name age = age city = city }
 		} else {
@@ -293,11 +293,11 @@ fn process_csv(path:str -- ) {
 			-> lines
 			1 -> first  // Skip header
 
-			lines iter for line {
+			0 lines len 1 for i {
 				first if {
 					0 -> first
 				} else {
-					line parse_csv_line if {
+					lines i nth parse_csv_line if {
 						-> record
 						record @name print
 						" is " print

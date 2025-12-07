@@ -68,7 +68,7 @@ fn task(id:i64 -- ) {
 }
 
 fn main( -- ) {
-	3 makep -> threads
+	3 make<ptr> -> threads
 
 	0 3 for i {
 		// Note: Capturing loop variable requires care

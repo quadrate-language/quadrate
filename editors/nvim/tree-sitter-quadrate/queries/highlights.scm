@@ -14,6 +14,7 @@
   "if"
   "else"
   "for"
+  "while"
   "switch"
   "defer"
   "ctx"

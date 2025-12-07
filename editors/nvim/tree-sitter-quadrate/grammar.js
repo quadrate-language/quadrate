@@ -156,6 +156,7 @@ module.exports = grammar({
       $.local_declaration,
       $.if_expression,
       $.for_loop,
+      $.while_loop,
       $.loop_statement,
       $.switch_expression,
       $.defer_block,
@@ -208,6 +209,12 @@ module.exports = grammar({
     for_loop: $ => seq(
       'for',
       field('variable', $.identifier),
+      field('body', $.block),
+    ),
+
+    // While loop: condition while { ... next-condition }
+    while_loop: $ => seq(
+      'while',
       field('body', $.block),
     ),
 

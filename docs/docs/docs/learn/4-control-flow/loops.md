@@ -2,30 +2,13 @@
 
 Quadrate provides several ways to repeat operations.
 
-## while Loops
-
-Repeat while a condition is true:
-
-```qd
-fn main( -- ) {
-	0 -> i
-	i 5 < while {
-		i print nl
-		i 1 + -> i
-	}
-	// Output: 0 1 2 3 4
-}
-```
-
-The condition is checked before each iteration.
-
 ## for Loops
 
 Iterate over a range:
 
 ```qd
 fn main( -- ) {
-	0 5 for i {
+	0 5 1 for i {
 		i print nl
 	}
 	// Output: 0 1 2 3 4
@@ -62,14 +45,14 @@ fn main( -- ) {
 
 ## Iterating Over Arrays
 
-Use `iter` for array iteration:
+Use index-based iteration:
 
 ```qd
 fn main( -- ) {
 	[1 2 3 4 5] -> arr
 
-	arr iter for item {
-		item print " " print
+	0 arr len 1 for i {
+		arr i nth print " " print
 	}
 	nl
 	// Output: 1 2 3 4 5
@@ -85,7 +68,7 @@ fn main( -- ) {
 	0 -> count
 	loop {
 		count print nl
-		count 1 + -> count
+		count inc -> count
 		count 5 >= if {
 			break
 		}
@@ -100,7 +83,7 @@ Exit immediately:
 
 ```qd
 fn main( -- ) {
-	0 10 for i {
+	0 10 1 for i {
 		i 5 == if {
 			break
 		}
@@ -116,7 +99,7 @@ Skip to next iteration:
 
 ```qd
 fn main( -- ) {
-	0 10 for i {
+	0 10 1 for i {
 		i 2 % 0 == if {
 			continue
 		}
@@ -132,8 +115,8 @@ Loops can be nested:
 
 ```qd
 fn main( -- ) {
-	1 4 for i {
-		1 4 for j {
+	1 4 1 for i {
+		1 4 1 for j {
 			i print " * " print j print " = " print
 			i j * print nl
 		}
@@ -149,7 +132,7 @@ Build up a result:
 fn sum_to_n(n:i64 -- sum:i64) {
 	-> n
 	0 -> sum
-	1 n 1 + for i {
+	1 n 1 + 1 for i {
 		sum i + -> sum
 	}
 	sum
@@ -169,8 +152,8 @@ fn contains(arr:ptr value:i64 -- found:i64) {
 	-> value -> arr
 	0 -> found
 
-	arr iter for item {
-		item value == if {
+	0 arr len 1 for i {
+		arr i nth value == if {
 			1 -> found
 			break
 		}
@@ -192,8 +175,8 @@ fn main( -- ) {
 fn sum_array(arr:ptr -- total:i64) {
 	-> arr
 	0 -> total
-	arr iter for item {
-		total item + -> total
+	0 arr len 1 for i {
+		total arr i nth + -> total
 	}
 	total
 }
@@ -205,25 +188,12 @@ fn sum_array(arr:ptr -- total:i64) {
 fn count_positive(arr:ptr -- count:i64) {
 	-> arr
 	0 -> count
-	arr iter for item {
-		item 0 > if {
+	0 arr len 1 for i {
+		arr i nth 0 > if {
 			count 1 + -> count
 		}
 	}
 	count
-}
-```
-
-### Transform Array
-
-```qd
-fn double_all(arr:ptr -- result:ptr) {
-	-> arr
-	arr @len i64[] -> result
-	0 arr @len for i {
-		arr i @[] 2 * result i ![]
-	}
-	result
 }
 ```
 

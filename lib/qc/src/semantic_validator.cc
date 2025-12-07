@@ -26,6 +26,7 @@
 #include <qc/ast_node_switch.h>
 #include <qc/ast_node_test.h>
 #include <qc/ast_node_use.h>
+#include <qc/ast_node_while.h>
 #include <qc/colors.h>
 #include <qc/instructions.h>
 #include <qc/semantic_validator.h>
@@ -136,6 +137,16 @@ namespace Qd {
 			return true;
 		}
 		return false;
+	}
+
+	// Check if implicit cast should generate a warning
+	// INT -> PTR is typically used for null pointer initialization (0 -> ptr), so don't warn
+	static bool shouldWarnImplicitCast(StackValueType actual, StackValueType expected) {
+		// Don't warn for int -> ptr (null pointer idiom)
+		if (actual == StackValueType::INT && expected == StackValueType::PTR) {
+			return false;
+		}
+		return true;
 	}
 
 	// Check if a type string is a known struct name (local or imported)
@@ -1689,9 +1700,10 @@ namespace Qd {
 			return;
 		}
 
-		// When entering a loop or switch statement, use a placeholder iterator name for break/continue tracking
+		// When entering a while, loop or switch statement, use a placeholder iterator name for break/continue tracking
 		// Also create a new scope so variables defined inside don't leak out
-		if (node->type() == IAstNode::Type::LOOP_STATEMENT || node->type() == IAstNode::Type::SWITCH_STATEMENT) {
+		if (node->type() == IAstNode::Type::WHILE_STATEMENT || node->type() == IAstNode::Type::LOOP_STATEMENT ||
+				node->type() == IAstNode::Type::SWITCH_STATEMENT) {
 			std::unordered_set<std::string> childIterators = iteratorNames;
 			childIterators.insert("__loop__"); // Placeholder to indicate we're inside a loop/switch
 			std::unordered_set<std::string> loopLocals = localVariables; // New scope for the loop body
@@ -2514,6 +2526,7 @@ namespace Qd {
 			}
 
 			case IAstNode::Type::FOR_STATEMENT:
+			case IAstNode::Type::WHILE_STATEMENT:
 			case IAstNode::Type::LOOP_STATEMENT: {
 				// For now, skip loop type checking (break/continue complicate analysis)
 				break;
@@ -2719,15 +2732,18 @@ namespace Qd {
 							if (actualType != StackValueType::UNKNOWN && expectedType != StackValueType::UNKNOWN) {
 								if (actualType != expectedType) {
 									if (isImplicitCastAllowed(actualType, expectedType)) {
-										std::string warnMsg = "Implicit cast in struct construction '";
-										warnMsg += name;
-										warnMsg += "': Field '";
-										warnMsg += fieldName;
-										warnMsg += "' expects ";
-										warnMsg += stackValueTypeToString(expectedType);
-										warnMsg += ", but got ";
-										warnMsg += stackValueTypeToString(actualType);
-										reportWarning(construct, warnMsg.c_str());
+										// Only warn for casts that should be warned about
+										if (shouldWarnImplicitCast(actualType, expectedType)) {
+											std::string warnMsg = "Implicit cast in struct construction '";
+											warnMsg += name;
+											warnMsg += "': Field '";
+											warnMsg += fieldName;
+											warnMsg += "' expects ";
+											warnMsg += stackValueTypeToString(expectedType);
+											warnMsg += ", but got ";
+											warnMsg += stackValueTypeToString(actualType);
+											reportWarning(construct, warnMsg.c_str());
+										}
 									} else {
 										std::string errorMsg = "Type error in struct construction '";
 										errorMsg += name;
@@ -2872,16 +2888,18 @@ namespace Qd {
 								if (actual != expected) {
 									// Check if implicit cast is allowed (int <-> float)
 									if (isImplicitCastAllowed(actual, expected)) {
-										// Warn about implicit cast
-										std::string warnMsg = "Implicit cast in struct construction '";
-										warnMsg += name;
-										warnMsg += "': Field '";
-										warnMsg += fieldName;
-										warnMsg += "' expects ";
-										warnMsg += stackValueTypeToString(expected);
-										warnMsg += ", but got ";
-										warnMsg += stackValueTypeToString(actual);
-										reportWarning(ident, warnMsg.c_str());
+										// Only warn for casts that should be warned about
+										if (shouldWarnImplicitCast(actual, expected)) {
+											std::string warnMsg = "Implicit cast in struct construction '";
+											warnMsg += name;
+											warnMsg += "': Field '";
+											warnMsg += fieldName;
+											warnMsg += "' expects ";
+											warnMsg += stackValueTypeToString(expected);
+											warnMsg += ", but got ";
+											warnMsg += stackValueTypeToString(actual);
+											reportWarning(ident, warnMsg.c_str());
+										}
 									} else {
 										// Type mismatch error
 										std::string errorMsg = "Type error in struct construction '";
@@ -2984,16 +3002,18 @@ namespace Qd {
 									if (actual != expected) {
 										// Check if implicit cast is allowed (int <-> float)
 										if (isImplicitCastAllowed(actual, expected)) {
-											// Warn about implicit cast
-											std::string warnMsg = "Implicit cast in struct construction '";
-											warnMsg += name;
-											warnMsg += "': Field '";
-											warnMsg += fieldName;
-											warnMsg += "' expects ";
-											warnMsg += stackValueTypeToString(expected);
-											warnMsg += ", but got ";
-											warnMsg += stackValueTypeToString(actual);
-											reportWarning(ident, warnMsg.c_str());
+											// Only warn for casts that should be warned about
+											if (shouldWarnImplicitCast(actual, expected)) {
+												std::string warnMsg = "Implicit cast in struct construction '";
+												warnMsg += name;
+												warnMsg += "': Field '";
+												warnMsg += fieldName;
+												warnMsg += "' expects ";
+												warnMsg += stackValueTypeToString(expected);
+												warnMsg += ", but got ";
+												warnMsg += stackValueTypeToString(actual);
+												reportWarning(ident, warnMsg.c_str());
+											}
 										} else {
 											// Type mismatch error
 											std::string errorMsg = "Type error in struct construction '";
@@ -3682,16 +3702,18 @@ namespace Qd {
 									if (actual != expected) {
 										// Check if implicit cast is allowed (int <-> float)
 										if (isImplicitCastAllowed(actual, expected)) {
-											// Warn about implicit cast
-											std::string warnMsg = "Implicit cast in struct construction '";
-											warnMsg += qualifiedName;
-											warnMsg += "': Field '";
-											warnMsg += fieldName;
-											warnMsg += "' expects ";
-											warnMsg += stackValueTypeToString(expected);
-											warnMsg += ", but got ";
-											warnMsg += stackValueTypeToString(actual);
-											reportWarning(scoped, warnMsg.c_str());
+											// Only warn for casts that should be warned about
+											if (shouldWarnImplicitCast(actual, expected)) {
+												std::string warnMsg = "Implicit cast in struct construction '";
+												warnMsg += qualifiedName;
+												warnMsg += "': Field '";
+												warnMsg += fieldName;
+												warnMsg += "' expects ";
+												warnMsg += stackValueTypeToString(expected);
+												warnMsg += ", but got ";
+												warnMsg += stackValueTypeToString(actual);
+												reportWarning(scoped, warnMsg.c_str());
+											}
 										} else {
 											// Type mismatch error
 											std::string errorMsg = "Type error in struct construction '";
@@ -4530,12 +4552,15 @@ namespace Qd {
 			// We don't know what the called function will do to the stack
 			// So we can't track types accurately after this point
 		}
-		// Array creation: make ( size -- arr )
-		// make<T> syntax creates typed array, always returns pointer
-		else if (strcmp(name, "make") == 0) {
+		// Array creation: make, makei, makef, makes, makep ( size -- arr )
+		// All create typed arrays, always return pointer
+		else if (strcmp(name, "make") == 0 || strcmp(name, "makei") == 0 || strcmp(name, "makef") == 0 ||
+				 strcmp(name, "makes") == 0 || strcmp(name, "makep") == 0) {
 			if (typeStack.empty()) {
-				reportErrorConditional(
-						node, "Type error in 'make': Stack underflow (requires 1 integer for size)", reportErrors);
+				std::string errorMsg = "Type error in '";
+				errorMsg += name;
+				errorMsg += "': Stack underflow (requires 1 integer for size)";
+				reportErrorConditional(node, errorMsg.c_str(), reportErrors);
 				return;
 			}
 			// Pop size argument
@@ -4547,8 +4572,8 @@ namespace Qd {
 			typeStack.push_back(StackValueType::PTR);
 			structTypeStack.push_back("");
 		}
-		// Array length: len ( arr -- arr len )
-		// Returns the length of an array without consuming it
+		// Array length: len ( arr -- len )
+		// Returns the length of an array, consuming the array reference
 		else if (strcmp(name, "len") == 0) {
 			if (typeStack.empty()) {
 				reportErrorConditional(node, "Type error in 'len': Stack underflow (requires 1 array)", reportErrors);
@@ -4562,12 +4587,16 @@ namespace Qd {
 				reportErrorConditional(node, errorMsg.c_str(), reportErrors);
 				return;
 			}
-			// Push int (length) - array stays on stack
+			// Pop array, push int (length)
+			typeStack.pop_back();
+			if (!structTypeStack.empty()) {
+				structTypeStack.pop_back();
+			}
 			typeStack.push_back(StackValueType::INT);
 			structTypeStack.push_back("");
 		}
-		// Array access: nth ( arr idx -- arr elem )
-		// Returns element at index without consuming the array
+		// Array access: nth ( arr idx -- elem )
+		// Returns element at index, consuming the array reference
 		else if (strcmp(name, "nth") == 0) {
 			if (typeStack.size() < 2) {
 				reportErrorConditional(

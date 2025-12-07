@@ -9,7 +9,7 @@ Arrays store multiple values of the same type.
 ```qd
 fn main( -- ) {
 	[1 2 3 4 5] -> arr
-	arr @len print nl  // 5
+	arr len print nl  // 5
 }
 ```
 
@@ -17,53 +17,53 @@ fn main( -- ) {
 
 ```qd
 fn main( -- ) {
-	10 i64[] -> arr    // Array of 10 integers
-	5 f64[] -> floats  // Array of 5 floats
-	3 str[] -> strings // Array of 3 strings
+	10 make<i64> -> arr     // Array of 10 integers
+	5 make<f64> -> floats   // Array of 5 floats
+	3 make<str> -> strings  // Array of 3 strings
 }
 ```
 
 ## Accessing Elements
 
-Use `@[]` to read elements (0-indexed):
+Use `nth` to read elements (0-indexed):
 
 ```qd
 fn main( -- ) {
 	[10 20 30 40 50] -> arr
 
-	arr 0 @[] print nl  // 10 (first)
-	arr 2 @[] print nl  // 30 (third)
-	arr 4 @[] print nl  // 50 (last)
+	arr 0 nth print nl  // 10 (first)
+	arr 2 nth print nl  // 30 (third)
+	arr 4 nth print nl  // 50 (last)
 }
 ```
 
 ## Setting Elements
 
-Use `![]` to write elements:
+Use `set` to write elements:
 
 ```qd
 fn main( -- ) {
-	5 i64[] -> arr
+	5 make<i64> -> arr
 
-	100 arr 0 ![]  // Set first element to 100
-	200 arr 1 ![]  // Set second element to 200
+	arr 0 100 set  // Set first element to 100
+	arr 1 200 set  // Set second element to 200
 
-	arr 0 @[] print nl  // 100
-	arr 1 @[] print nl  // 200
+	arr 0 nth print nl  // 100
+	arr 1 nth print nl  // 200
 }
 ```
 
 ## Array Length
 
-Use `@len` to get the length:
+Use `len` to get the length:
 
 ```qd
 fn main( -- ) {
 	[1 2 3 4 5] -> arr
-	arr @len print nl  // 5
+	arr len print nl  // 5
 
-	10 i64[] -> arr2
-	arr2 @len print nl  // 10
+	10 make<i64> -> arr2
+	arr2 len print nl  // 10
 }
 ```
 
@@ -75,20 +75,8 @@ fn main( -- ) {
 fn main( -- ) {
 	[10 20 30 40 50] -> arr
 
-	0 arr @len for i {
-		arr i @[] print nl
-	}
-}
-```
-
-### With iter
-
-```qd
-fn main( -- ) {
-	[10 20 30 40 50] -> arr
-
-	arr iter for item {
-		item print nl
+	0 arr len 1 for i {
+		arr i nth print nl
 	}
 }
 ```
@@ -101,8 +89,8 @@ fn main( -- ) {
 fn sum(arr:ptr -- total:i64) {
 	-> arr
 	0 -> total
-	arr iter for item {
-		total item + -> total
+	0 arr len 1 for i {
+		total arr i nth + -> total
 	}
 	total
 }
@@ -117,10 +105,10 @@ fn main( -- ) {
 ```qd
 fn max(arr:ptr -- result:i64) {
 	-> arr
-	arr 0 @[] -> result
-	arr iter for item {
-		item result > if {
-			item -> result
+	arr 0 nth -> result
+	0 arr len 1 for i {
+		arr i nth result > if {
+			arr i nth -> result
 		}
 	}
 	result
@@ -137,8 +125,8 @@ fn main( -- ) {
 fn count_if(arr:ptr value:i64 -- count:i64) {
 	-> value -> arr
 	0 -> count
-	arr iter for item {
-		item value == if {
+	0 arr len 1 for i {
+		arr i nth value == if {
 			count 1 + -> count
 		}
 	}
@@ -150,32 +138,14 @@ fn main( -- ) {
 }
 ```
 
-## Multi-dimensional Arrays
-
-Create nested arrays:
-
-```qd
-fn main( -- ) {
-	// 3x3 matrix
-	3 ptr[] -> matrix
-
-	[1 2 3] matrix 0 ![]
-	[4 5 6] matrix 1 ![]
-	[7 8 9] matrix 2 ![]
-
-	// Access element at row 1, column 2
-	matrix 1 @[] 2 @[] print nl  // 6
-}
-```
-
 ## Array of Floats
 
 ```qd
 fn main( -- ) {
 	[1.0 2.5 3.7 4.2] -> arr
 
-	arr iter for x {
-		x print nl
+	0 arr len 1 for i {
+		arr i nth print nl
 	}
 }
 ```
@@ -186,8 +156,8 @@ fn main( -- ) {
 fn main( -- ) {
 	["apple" "banana" "cherry"] -> fruits
 
-	fruits iter for fruit {
-		fruit print nl
+	0 fruits len 1 for i {
+		fruits i nth print nl
 	}
 }
 ```
@@ -199,9 +169,9 @@ Arrays are references. To copy:
 ```qd
 fn copy_array(src:ptr -- dst:ptr) {
 	-> src
-	src @len i64[] -> dst
-	0 src @len for i {
-		src i @[] dst i ![]
+	src len make<i64> -> dst
+	0 src len 1 for i {
+		dst i src i nth set
 	}
 	dst
 }
@@ -211,9 +181,9 @@ fn main( -- ) {
 	original copy_array -> copied
 
 	// Modify copy doesn't affect original
-	99 copied 0 ![]
-	original 0 @[] print nl  // Still 1
-	copied 0 @[] print nl    // 99
+	copied 0 99 set
+	original 0 nth print nl  // Still 1
+	copied 0 nth print nl    // 99
 }
 ```
 
@@ -224,15 +194,17 @@ fn main( -- ) {
 ```qd
 fn fill(arr:ptr value:i64 -- ) {
 	-> value -> arr
-	0 arr @len for i {
-		value arr i ![]
+	0 arr len 1 for i {
+		arr i value set
 	}
 }
 
 fn main( -- ) {
-	5 i64[] -> arr
+	5 make<i64> -> arr
 	arr 42 fill
-	arr iter for x { x print " " print }
+	0 arr len 1 for i {
+		arr i nth print " " print
+	}
 	nl  // 42 42 42 42 42
 }
 ```
@@ -243,14 +215,24 @@ fn main( -- ) {
 fn reverse(arr:ptr -- ) {
 	-> arr
 	0 -> i
-	arr @len 1 - -> j
+	arr len 1 - -> j
 	i j < while {
-		arr i @[] -> temp
-		arr j @[] arr i ![]
-		temp arr j ![]
+		arr i nth -> temp
+		arr i arr j nth set
+		arr j temp set
 		i 1 + -> i
 		j 1 - -> j
+		i j <
 	}
+}
+
+fn main( -- ) {
+	[1 2 3 4 5] -> arr
+	arr reverse
+	0 arr len 1 for i {
+		arr i nth print " " print
+	}
+	nl
 }
 ```
 
@@ -261,19 +243,30 @@ fn filter_positive(arr:ptr -- result:ptr) {
 	-> arr
 	// First count positives
 	0 -> count
-	arr iter for x {
-		x 0 > if { count 1 + -> count }
+	0 arr len 1 for i {
+		arr i nth 0 > if {
+			count inc -> count
+		}
 	}
 	// Create result array
-	count i64[] -> result
+	count make<i64> -> result
 	0 -> j
-	arr iter for x {
-		x 0 > if {
-			x result j ![]
-			j 1 + -> j
+	0 arr len 1 for i {
+		arr i nth 0 > if {
+			result j arr i nth set
+			j inc -> j
 		}
 	}
 	result
+}
+
+fn main( -- ) {
+	[1 2 -3 -4 5] -> arr
+	arr filter_positive -> result
+	0 result len 1 for i {
+		result i nth print " " print
+	}
+	print nl
 }
 ```
 

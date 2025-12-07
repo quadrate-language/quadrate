@@ -24,6 +24,7 @@
 #include <qc/ast_node_local.h>
 #include <qc/ast_node_loop.h>
 #include <qc/ast_node_parameter.h>
+#include <qc/ast_node_while.h>
 #include <qc/ast_node_program.h>
 #include <qc/ast_node_return.h>
 #include <qc/ast_node_scoped.h>
@@ -212,6 +213,7 @@ namespace Qd {
 	}
 
 	static IAstNode* parseForStatement(u8t_scanner* scanner, ErrorReporter* errorReporter, const char* src);
+	static IAstNode* parseWhileStatement(u8t_scanner* scanner, ErrorReporter* errorReporter, const char* src);
 	static IAstNode* parseLoopStatement(u8t_scanner* scanner, ErrorReporter* errorReporter, const char* src);
 	static IAstNode* parseIfStatement(u8t_scanner* scanner, ErrorReporter* errorReporter, const char* src);
 	static IAstNode* parseSwitchStatement(u8t_scanner* scanner, ErrorReporter* errorReporter, const char* src);
@@ -274,8 +276,8 @@ namespace Qd {
 				const char* text = u8t_scanner_token_text(scanner, &n);
 				if (strcmp(text, "fn") == 0 || strcmp(text, "const") == 0 || strcmp(text, "struct") == 0 ||
 						strcmp(text, "use") == 0 || strcmp(text, "import") == 0 || strcmp(text, "if") == 0 ||
-						strcmp(text, "for") == 0 || strcmp(text, "loop") == 0 || strcmp(text, "switch") == 0 ||
-						strcmp(text, "return") == 0 || strcmp(text, "ctx") == 0) {
+						strcmp(text, "for") == 0 || strcmp(text, "while") == 0 || strcmp(text, "loop") == 0 ||
+						strcmp(text, "switch") == 0 || strcmp(text, "return") == 0 || strcmp(text, "ctx") == 0) {
 					return;
 				}
 			}
@@ -806,6 +808,8 @@ namespace Qd {
 					return parseIfStatement(scanner, errorReporter, src);
 				} else if (strcmp(text, "for") == 0) {
 					return parseForStatement(scanner, errorReporter, src);
+				} else if (strcmp(text, "while") == 0) {
+					return parseWhileStatement(scanner, errorReporter, src);
 				} else if (strcmp(text, "loop") == 0) {
 					return parseLoopStatement(scanner, errorReporter, src);
 				} else if (strcmp(text, "switch") == 0) {
@@ -1263,6 +1267,18 @@ namespace Qd {
 
 						forStmt->setParent(body);
 						body->addChild(forStmt);
+					}
+				} else if (strcmp(text, "while") == 0) {
+					IAstNode* whileStmt = parseWhileStatement(scanner, errorReporter, src);
+					if (whileStmt) {
+						for (auto* node : tempNodes) {
+							node->setParent(body);
+							body->addChild(node);
+						}
+						tempNodes.clear();
+
+						whileStmt->setParent(body);
+						body->addChild(whileStmt);
 					}
 				} else if (strcmp(text, "loop") == 0) {
 					IAstNode* loopStmt = parseLoopStatement(scanner, errorReporter, src);
@@ -2163,6 +2179,35 @@ namespace Qd {
 		forStmt->setBody(body);
 
 		return forStmt;
+	}
+
+	static IAstNode* parseWhileStatement(u8t_scanner* scanner, ErrorReporter* errorReporter, const char* src) {
+		char32_t token = u8t_scanner_scan(scanner);
+
+		if (token != '{') {
+			errorReporter->reportError(scanner, "Expected '{' after 'while'");
+			// Recovery: create empty while statement and synchronize
+			AstNodeWhileStatement* whileStmt = new AstNodeWhileStatement();
+			setNodePosition(whileStmt, scanner, src);
+			AstNodeBlock* body = new AstNodeBlock();
+			setNodePosition(body, scanner, src);
+			body->setParent(whileStmt);
+			whileStmt->setBody(body);
+			synchronize(scanner);
+			return whileStmt;
+		}
+
+		AstNodeWhileStatement* whileStmt = new AstNodeWhileStatement();
+		setNodePosition(whileStmt, scanner, src);
+		AstNodeBlock* body = new AstNodeBlock();
+		setNodePosition(body, scanner, src);
+
+		parseBlockBody(body, scanner, errorReporter, src);
+
+		body->setParent(whileStmt);
+		whileStmt->setBody(body);
+
+		return whileStmt;
 	}
 
 	static IAstNode* parseLoopStatement(u8t_scanner* scanner, ErrorReporter* errorReporter, const char* src) {

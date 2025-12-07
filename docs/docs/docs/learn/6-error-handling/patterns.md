@@ -306,13 +306,13 @@ fn process_batch(items:ptr -- processed:i64 failed:i64) {
 	0 -> processed
 	0 -> failed
 
-	items iter for item {
-		item process_item if {
+	0 items len 1 for i {
+		items i nth process_item if {
 			drop
 			processed 1 + -> processed
 		} else {
 			drop
-			"Failed: " print item print nl
+			"Failed: " print items i nth print nl
 			failed 1 + -> failed
 		}
 	}

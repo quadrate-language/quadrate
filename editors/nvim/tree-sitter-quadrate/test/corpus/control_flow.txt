@@ -79,6 +79,46 @@ fn test( -- ) {
           (builtin_operation))))))
 
 ================================================================================
+While loop
+================================================================================
+
+fn test( -- ) {
+    0 -> i
+    i 5 < while {
+        i print nl
+        i 1 + -> i
+        i 5 <
+    }
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (function_definition
+    name: (identifier)
+    signature: (stack_signature)
+    body: (block
+      (number)
+      (local_declaration
+        name: (identifier))
+      (identifier)
+      (number)
+      (operator_symbol)
+      (while_loop
+        body: (block
+          (identifier)
+          (builtin_operation)
+          (builtin_operation)
+          (identifier)
+          (number)
+          (operator_symbol)
+          (local_declaration
+            name: (identifier))
+          (identifier)
+          (number)
+          (operator_symbol))))))
+
+================================================================================
 Infinite loop statement
 ================================================================================
 

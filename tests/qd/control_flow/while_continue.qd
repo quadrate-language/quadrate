@@ -1,0 +1,12 @@
+fn main( -- ) {
+	0 -> i
+	i 10 < while {
+		i 1 + -> i
+		i 2 % 0 == if {
+			i 10 <
+			continue
+		}
+		i print nl
+		i 10 <
+	}
+}

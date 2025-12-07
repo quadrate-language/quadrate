@@ -41,14 +41,14 @@ fn process_line(line:str -- ) {
 	line " " str::split if {
 		-> parts
 
-		parts @len 3 != if {
+		parts len 3 != if {
 			"Error: Need 'num num op'" print nl
 		} else {
-			parts 0 @[] parse_number if {
+			parts 0 nth parse_number if {
 				-> a
-				parts 1 @[] parse_number if {
+				parts 1 nth parse_number if {
 					-> b
-					parts 2 @[] -> op
+					parts 2 nth -> op
 
 					a b op calculate if {
 						-> result
@@ -187,16 +187,16 @@ struct History {
 
 fn history_add(h:ptr result:i64 -- ) {
 	-> result -> h
-	result h @entries h @count ![]
+	h @entries h @count result set
 	h @count 1 + h !count
 }
 
 fn history_show(h:ptr -- ) {
 	-> h
 	"History:" print nl
-	0 h @count for i {
+	0 h @count 1 for i {
 		i print ": " print
-		h @entries i @[] print nl
+		h @entries i nth print nl
 	}
 }
 ```

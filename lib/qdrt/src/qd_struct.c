@@ -179,3 +179,37 @@ size_t qd_struct_refcount(const void* struct_ptr) {
 	const qd_struct_header_t* header = (const qd_struct_header_t*)header_ptr;
 	return atomic_load(&header->refcount);
 }
+
+// ============================================================================
+// Generic pointer retain/release (works for both arrays and structs)
+// ============================================================================
+
+void* qd_ptr_retain(void* ptr) {
+	if (ptr == NULL) {
+		return NULL;
+	}
+
+	// Check if it's an array first (faster check via magic number)
+	if (qd_array_is_valid(ptr)) {
+		qd_array_retain((qd_array_t*)ptr);
+		return ptr;
+	}
+
+	// Otherwise try struct retain (checks registry)
+	return qd_struct_retain(ptr);
+}
+
+void qd_ptr_release(void* ptr) {
+	if (ptr == NULL) {
+		return;
+	}
+
+	// Check if it's an array first (faster check via magic number)
+	if (qd_array_is_valid(ptr)) {
+		qd_array_release((qd_array_t*)ptr);
+		return;
+	}
+
+	// Otherwise try struct release (checks registry)
+	qd_struct_release(ptr);
+}

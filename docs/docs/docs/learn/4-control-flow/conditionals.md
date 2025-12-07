@@ -1,6 +1,6 @@
 # Conditionals
 
-Control the flow of your program with `if`, `else`, and `unless`.
+Control the flow of your program with `if` and `else`.
 
 ## The if Statement
 
@@ -77,22 +77,6 @@ fn main( -- ) {
 
 Both branches must leave the same number of values on the stack.
 
-## unless
-
-The opposite of `if` - executes when condition is false:
-
-```qd
-fn main( -- ) {
-	0 -> debug
-
-	debug unless {
-		"Debug mode is off" print nl
-	}
-}
-```
-
-`unless` is equivalent to `not if`.
-
 ## Combining Conditions
 
 Use logical operators:
@@ -132,9 +116,15 @@ fn main( -- ) {
 
 ```qd
 fn main( -- ) {
-	5 5 == if { "equal" print nl }
-	5 3 != if { "not equal" print nl }
-	3 5 < if { "less than" print nl }
+	5 5 == if { 
+		"equal" print nl
+	}
+	5 3 != if {
+		"not equal" print nl
+	}
+	3 5 < if {
+		"less than" print nl
+	}
 }
 ```
 
@@ -146,10 +136,10 @@ fn main( -- ) {
 fn process(x:i64 -- result:i64) {
 	-> x
 	x 0 < if {
-		0  // Early return for invalid input
-	} else {
-		x dup *  // Normal processing
+		0
+		return // Early return for invalid input
 	}
+	x dup *    // Normal processing
 }
 ```
 
@@ -179,32 +169,6 @@ fn main( -- ) {
 	-5 is_valid_age print nl   // 0 (false)
 	200 is_valid_age print nl  // 0 (false)
 }
-```
-
-## Stack Balance
-
-Both branches of an `if-else` must have the same stack effect:
-
-```qd
-// CORRECT: Both branches push one value
-fn max(a:i64 b:i64 -- result:i64) {
-	-> b -> a
-	a b > if {
-		a
-	} else {
-		b
-	}
-}
-
-// INCORRECT: Stack imbalance (would not compile)
-// fn bad(x:i64 -- ???) {
-//     -> x
-//     x 0 > if {
-//         x      // pushes 1 value
-//     } else {
-//         x x    // pushes 2 values - ERROR!
-//     }
-// }
 ```
 
 ## What's Next?

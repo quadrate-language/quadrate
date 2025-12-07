@@ -27,7 +27,10 @@ struct Point {
 }
 
 fn main( -- ) {
-	Point { x = 10.0 y = 20.0 } -> p
+	Point {
+		x = 10.0
+		y = 20.0
+	} -> p
 	p @x print nl  // 10.0
 	p @y print nl  // 20.0
 }
@@ -49,14 +52,17 @@ fn area(rect:ptr -- a:f64) {
 }
 
 fn main( -- ) {
-	Rectangle { width = 5.0 height = 3.0 } -> rect
+	Rectangle {
+		width = 5.0
+		height = 3.0
+	} -> rect
 	rect area print nl  // 15.0
 }
 ```
 
 ## Writing Fields
 
-Use `!fieldname` to write:
+Use `.fieldname` to write:
 
 ```qd
 struct Counter {
@@ -64,14 +70,16 @@ struct Counter {
 }
 
 fn main( -- ) {
-	Counter { value = 0 } -> c
+	Counter {
+		value = 0
+	} -> c
 
 	c @value print nl  // 0
 
-	10 c !value
+	10 c .value
 	c @value print nl  // 10
 
-	c @value 1 + c !value
+	c @value inc c .value
 	c @value print nl  // 11
 }
 ```
@@ -92,10 +100,19 @@ struct Line {
 }
 
 fn main( -- ) {
-	Point { x = 0.0 y = 0.0 } -> p1
-	Point { x = 10.0 y = 10.0 } -> p2
+	Point {
+		x = 0.0
+		y = 0.0
+	} -> p1
+	Point {
+		x = 10.0
+		y = 10.0
+	} -> p2
 
-	Line { start = p1 end = p2 } -> line
+	Line {
+		start = p1
+		end = p2
+	} -> line
 
 	line @start @x print nl  // 0.0
 	line @end @x print nl    // 10.0
@@ -105,18 +122,38 @@ fn main( -- ) {
 ## Structs with Arrays
 
 ```qd
+struct Point {
+	x:f64
+	y:f64
+}
+
 struct Polygon {
 	points:ptr
 	count:i64
 }
 
 fn main( -- ) {
-	3 ptr[] -> pts
-	Point { x = 0.0 y = 0.0 } pts 0 ![]
-	Point { x = 1.0 y = 0.0 } pts 1 ![]
-	Point { x = 0.5 y = 1.0 } pts 2 ![]
+	3 make<ptr> -> pts
+	Point {
+		x = 0.0
+		y = 0.0
+	} -> p0
+	Point {
+		x = 1.0
+		y = 0.0
+	} -> p1
+	Point {
+		x = 0.5
+		y = 1.0
+	} -> p2
+	pts 0 p0 set
+	pts 1 p1 set
+	pts 2 p2 set
 
-	Polygon { points = pts count = 3 } -> triangle
+	Polygon {
+		points = pts
+		count = 3
+	} -> triangle
 
 	triangle @count print nl  // 3
 }
@@ -141,13 +178,19 @@ fn point_distance(p1:ptr p2:ptr -- d:f64) {
 
 fn point_move(p:ptr dx:f64 dy:f64 -- ) {
 	-> dy -> dx -> p
-	p @x dx + p !x
-	p @y dy + p !y
+	p @x dx + p .x
+	p @y dy + p .y
 }
 
 fn main( -- ) {
-	Point { x = 0.0 y = 0.0 } -> a
-	Point { x = 3.0 y = 4.0 } -> b
+	Point {
+		x = 0.0
+		y = 0.0
+	} -> a
+	Point {
+		x = 3.0
+		y = 4.0
+	} -> b
 
 	a b point_distance print nl  // 5.0
 
@@ -168,12 +211,16 @@ struct Config {
 }
 
 fn config_new( -- cfg:ptr) {
-	Config { debug = 0 verbose = 0 max_retries = 3 }
+	Config {
+		debug = 0
+		verbose = 0
+		max_retries = 3
+	}
 }
 
 fn config_set_debug(cfg:ptr value:i64 -- cfg:ptr) {
 	-> value -> cfg
-	value cfg !debug
+	value cfg .debug
 	cfg
 }
 
@@ -193,7 +240,10 @@ struct Node {
 
 fn node_new(value:i64 -- node:ptr) {
 	-> value
-	Node { value = value next = 0 }
+	Node {
+		value = value
+		next = 0
+	}
 }
 
 fn main( -- ) {
@@ -201,8 +251,8 @@ fn main( -- ) {
 	20 node_new -> second
 	30 node_new -> third
 
-	second first !next
-	third second !next
+	second first .next
+	third second .next
 
 	// Traverse
 	first -> current
@@ -225,20 +275,24 @@ struct Stack {
 
 fn stack_new(capacity:i64 -- s:ptr) {
 	-> capacity
-	capacity i64[] -> data
-	Stack { data = data top = 0 capacity = capacity }
+	capacity make<i64> -> data
+	Stack {
+		data = data
+		top = 0
+		capacity = capacity
+	}
 }
 
 fn stack_push(s:ptr value:i64 -- ) {
 	-> value -> s
-	value s @data s @top ![]
-	s @top 1 + s !top
+	s @data s @top value set
+	s @top 1 + s .top
 }
 
 fn stack_pop(s:ptr -- value:i64) {
 	-> s
-	s @top 1 - s !top
-	s @data s @top @[]
+	s @top 1 - s .top
+	s @data s @top nth
 }
 
 fn main( -- ) {
@@ -269,9 +323,18 @@ fn points_equal(a:ptr b:ptr -- equal:i64) {
 }
 
 fn main( -- ) {
-	Point { x = 1.0 y = 2.0 } -> p1
-	Point { x = 1.0 y = 2.0 } -> p2
-	Point { x = 3.0 y = 4.0 } -> p3
+	Point {
+		x = 1.0
+		y = 2.0
+	} -> p1
+	Point {
+		x = 1.0
+		y = 2.0
+	} -> p2
+	Point {
+		x = 3.0
+		y = 4.0
+	} -> p3
 
 	p1 p2 points_equal print nl  // 1 (true)
 	p1 p3 points_equal print nl  // 0 (false)

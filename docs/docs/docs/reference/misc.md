@@ -57,8 +57,8 @@ Push arguments, then the pointer, then `call`:
 ```qd
 fn for_each(arr:ptr callback:ptr -- ) {
 	-> callback -> arr
-	arr iter for item {
-		item callback call
+	0 arr len 1 for i {
+		arr i nth callback call
 	}
 }
 
@@ -81,7 +81,7 @@ fn op_sub(a:i64 b:i64 -- r:i64) { - }
 fn op_mul(a:i64 b:i64 -- r:i64) { * }
 
 fn main( -- ) {
-	3 makep -> ops
+	3 make<ptr> -> ops
 	&op_add ops 0 set
 	&op_sub ops 1 set
 	&op_mul ops 2 set
@@ -97,7 +97,7 @@ fn main( -- ) {
 ```qd
 fn map(arr:ptr f:ptr -- result:ptr) {
 	-> f -> arr
-	arr len makei -> result
+	arr len make<i64> -> result
 	0 arr len for i {
 		arr i nth f call result i set
 	}

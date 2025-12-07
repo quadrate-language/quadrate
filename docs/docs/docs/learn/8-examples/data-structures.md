@@ -230,8 +230,8 @@ fn hash(key:str -- h:i64) {
 	-> key
 	0 -> h
 	// Simple hash
-	key iter for c {
-		h 31 * c + -> h
+	0 key str::len 1 for i {
+		h 31 * key i str::char_at + -> h
 	}
 	h abs MAP_SIZE %
 }

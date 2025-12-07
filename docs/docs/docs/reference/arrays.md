@@ -131,18 +131,6 @@ arr free
 
 ---
 
-## Alternative Syntax
-
-Arrays can also be accessed using `@[]` and `![]`:
-
-```qd
-// Read element
-arr 0 @[] // Same as: arr 0 nth
-
-// Write element
-42 arr 0 ![] // Same as: arr 0 42 set
-```
-
 ## Array Literals
 
 Create arrays with literal syntax:

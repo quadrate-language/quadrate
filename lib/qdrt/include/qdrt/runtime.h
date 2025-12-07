@@ -909,6 +909,36 @@ qd_exec_result qd_mem_fill(qd_context* ctx);
 
 /** @} */ // end of Memory group
 
+/**
+ * @defgroup PtrManagement Generic Pointer Management
+ * @brief Functions for managing reference-counted pointers (arrays and structs)
+ * @{
+ */
+
+/**
+ * @brief Retain a generic pointer (array or struct)
+ *
+ * Increments the reference count of the pointer. Safe to call on any pointer -
+ * will check if it's an array or struct and call the appropriate retain function.
+ *
+ * @param ptr Pointer to retain (can be array, struct, or other)
+ * @return The same pointer
+ */
+void* qd_ptr_retain(void* ptr);
+
+/**
+ * @brief Release a generic pointer (array or struct)
+ *
+ * Decrements the reference count of the pointer. If the count reaches 0,
+ * the memory is freed. Safe to call on any pointer - will check if it's
+ * an array or struct and call the appropriate release function.
+ *
+ * @param ptr Pointer to release (can be array, struct, or other)
+ */
+void qd_ptr_release(void* ptr);
+
+/** @} */ // end of PtrManagement group
+
 #ifdef __cplusplus
 }
 #endif
