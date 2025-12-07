@@ -1,5 +1,6 @@
 #include <algorithm>
 #include <cstring>
+#include <filesystem>
 #include <fstream>
 #include <functional>
 #include <iostream>
@@ -15,10 +16,12 @@
 #include <u8t/scanner.h>
 #include <vector>
 
+namespace fs = std::filesystem;
+
 using namespace Qd;
 
 struct Options {
-	std::string file;
+	std::vector<std::string> paths;
 	bool inPlace = false;
 	bool help = false;
 	bool version = false;
@@ -27,7 +30,7 @@ struct Options {
 void printHelp() {
 	std::cout << "quaduses - Manage use statements automatically\n\n";
 	std::cout << "Analyzes code and adds/removes use statements as needed.\n\n";
-	std::cout << "Usage: quaduses [options] <file>\n\n";
+	std::cout << "Usage: quaduses [options] <file|directory>...\n\n";
 	std::cout << "Options:\n";
 	std::cout << "  -h, --help       Show this help message\n";
 	std::cout << "  -v, --version    Show version information\n";
@@ -36,6 +39,7 @@ void printHelp() {
 	std::cout << "Examples:\n";
 	std::cout << "  quaduses file.qd             Show updated file with use statements\n";
 	std::cout << "  quaduses -w file.qd          Update use statements in-place\n";
+	std::cout << "  quaduses -w src/             Update all .qd files in directory recursively\n";
 }
 
 void printVersion() {
@@ -59,17 +63,35 @@ bool parseArgs(int argc, char* argv[], Options& opts) {
 			std::cerr << "Try 'quaduses --help' for more information.\n";
 			return false;
 		} else {
-			opts.file = arg;
+			opts.paths.push_back(arg);
 		}
 	}
 
-	if (opts.file.empty() && !opts.help && !opts.version) {
-		std::cerr << "quaduses: no input file\n";
+	if (opts.paths.empty() && !opts.help && !opts.version) {
+		std::cerr << "quaduses: no input files\n";
 		std::cerr << "Try 'quaduses --help' for more information.\n";
 		return false;
 	}
 
 	return true;
+}
+
+// Collect all .qd files from a path (file or directory)
+std::vector<std::string> collectFiles(const std::string& path) {
+	std::vector<std::string> files;
+
+	if (fs::is_directory(path)) {
+		for (const auto& entry : fs::recursive_directory_iterator(path)) {
+			if (entry.is_regular_file() && entry.path().extension() == ".qd") {
+				files.push_back(entry.path().string());
+			}
+		}
+		std::sort(files.begin(), files.end());
+	} else {
+		files.push_back(path);
+	}
+
+	return files;
 }
 
 std::string readFile(const std::string& filename) {
@@ -409,5 +431,19 @@ int main(int argc, char* argv[]) {
 		return 0;
 	}
 
-	return processFile(opts.file, opts) ? 0 : 1;
+	// Collect all files from paths
+	std::vector<std::string> allFiles;
+	for (const auto& path : opts.paths) {
+		auto files = collectFiles(path);
+		allFiles.insert(allFiles.end(), files.begin(), files.end());
+	}
+
+	bool allSuccess = true;
+	for (const auto& file : allFiles) {
+		if (!processFile(file, opts)) {
+			allSuccess = false;
+		}
+	}
+
+	return allSuccess ? 0 : 1;
 }

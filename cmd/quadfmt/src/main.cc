@@ -1,5 +1,7 @@
+#include <algorithm>
 #include <cstdint>
 #include <cstring>
+#include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <qc/ast.h>
@@ -10,10 +12,12 @@
 #include <u8t/scanner.h>
 #include <vector>
 
+namespace fs = std::filesystem;
+
 using namespace Qd;
 
 struct Options {
-	std::vector<std::string> files;
+	std::vector<std::string> paths;
 	bool check = false;
 	bool help = false;
 	bool version = false;
@@ -23,7 +27,7 @@ struct Options {
 void printHelp() {
 	std::cout << "quadfmt - Quadrate code formatter\n\n";
 	std::cout << "Formats Quadrate source files with consistent style.\n\n";
-	std::cout << "Usage: quadfmt [options] <file>...\n\n";
+	std::cout << "Usage: quadfmt [options] <file|directory>...\n\n";
 	std::cout << "Options:\n";
 	std::cout << "  -h, --help       Show this help message\n";
 	std::cout << "  -v, --version    Show version information\n";
@@ -33,6 +37,7 @@ void printHelp() {
 	std::cout << "Examples:\n";
 	std::cout << "  quadfmt file.qd              Format to stdout\n";
 	std::cout << "  quadfmt -w file.qd           Format in-place\n";
+	std::cout << "  quadfmt -w src/              Format all .qd files in directory recursively\n";
 	std::cout << "  quadfmt -c *.qd              Check if files need formatting\n";
 }
 
@@ -59,17 +64,35 @@ bool parseArgs(int argc, char* argv[], Options& opts) {
 			std::cerr << "Try 'quadfmt --help' for more information.\n";
 			return false;
 		} else {
-			opts.files.push_back(arg);
+			opts.paths.push_back(arg);
 		}
 	}
 
-	if (opts.files.empty() && !opts.help && !opts.version) {
+	if (opts.paths.empty() && !opts.help && !opts.version) {
 		std::cerr << "quadfmt: no input files\n";
 		std::cerr << "Try 'quadfmt --help' for more information.\n";
 		return false;
 	}
 
 	return true;
+}
+
+// Collect all .qd files from a path (file or directory)
+std::vector<std::string> collectFiles(const std::string& path) {
+	std::vector<std::string> files;
+
+	if (fs::is_directory(path)) {
+		for (const auto& entry : fs::recursive_directory_iterator(path)) {
+			if (entry.is_regular_file() && entry.path().extension() == ".qd") {
+				files.push_back(entry.path().string());
+			}
+		}
+		std::sort(files.begin(), files.end());
+	} else {
+		files.push_back(path);
+	}
+
+	return files;
 }
 
 std::string readFile(const std::string& filename) {
@@ -241,8 +264,15 @@ int main(int argc, char* argv[]) {
 		return 0;
 	}
 
+	// Collect all files from paths
+	std::vector<std::string> allFiles;
+	for (const auto& path : opts.paths) {
+		auto files = collectFiles(path);
+		allFiles.insert(allFiles.end(), files.begin(), files.end());
+	}
+
 	bool allSuccess = true;
-	for (const auto& file : opts.files) {
+	for (const auto& file : allFiles) {
 		if (!formatFile(file, opts)) {
 			allSuccess = false;
 		}
