@@ -1,0 +1,11 @@
+// Test: greet a person by name
+fn main( -- ) {
+	read -> argc
+
+	argc 0 == if {
+		"Usage: greet <name>" print nl
+	} else {
+		-> name
+		"Hello, " print name print "!" print nl
+	}
+}

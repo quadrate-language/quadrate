@@ -47,10 +47,11 @@ void printHelp() {
 	std::cout << "  version   Show version information\n";
 	std::cout << "\n";
 	std::cout << "Examples:\n";
-	std::cout << "  quad build main.qd        Compile main.qd\n";
-	std::cout << "  quad run main.qd          Build and run main.qd\n";
-	std::cout << "  quad fmt -w *.qd          Format all .qd files in-place\n";
-	std::cout << "  quad test                 Run tests in current directory\n";
+	std::cout << "  quad build main.qd           Compile main.qd\n";
+	std::cout << "  quad run main.qd             Build and run main.qd\n";
+	std::cout << "  quad run greet.qd -- Alice   Run with argument 'Alice'\n";
+	std::cout << "  quad fmt -w *.qd             Format all .qd files in-place\n";
+	std::cout << "  quad test                    Run tests in current directory\n";
 	std::cout << "\n";
 	std::cout << "Run 'quad help <command>' for more information on a command.\n";
 }

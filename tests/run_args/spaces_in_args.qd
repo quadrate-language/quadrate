@@ -1,0 +1,11 @@
+// Test: handle arguments with spaces
+fn main( -- ) {
+	read -> argc
+
+	argc 0 > if {
+		-> arg
+		"Got: [" print arg print "]" print nl
+	} else {
+		"No arguments" print nl
+	}
+}

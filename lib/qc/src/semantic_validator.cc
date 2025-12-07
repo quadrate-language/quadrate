@@ -2388,9 +2388,13 @@ namespace Qd {
 						}
 					}
 				} else if (thenBody) {
-					// Only then branch - still need to analyze it for type checking
+					// Only then branch - analyze with a copy since branch might not execute
 					// (common pattern: fallible_func if { -> var ... })
-					typeCheckBlock(thenBody, typeStack, localVariables, structTypeStack);
+					std::vector<StackValueType> thenStack = typeStack;
+					std::unordered_map<std::string, StackValueType> thenVars = localVariables;
+					std::vector<std::string> thenStructStack = structTypeStack;
+					typeCheckBlock(thenBody, thenStack, thenVars, thenStructStack);
+					// Don't apply stack effects - the branch might not run
 				}
 				break;
 			}
@@ -3050,8 +3054,8 @@ namespace Qd {
 							continue;
 						}
 
-						// Skip check if actual type is UNKNOWN (can't determine type)
-						if (actual == StackValueType::UNKNOWN) {
+						// Skip check if actual type is UNKNOWN or ANY (can't determine type at compile time)
+						if (actual == StackValueType::UNKNOWN || actual == StackValueType::ANY) {
 							continue;
 						}
 
@@ -3750,8 +3754,8 @@ namespace Qd {
 							continue;
 						}
 
-						// Skip check if actual type is UNKNOWN (can't determine type)
-						if (actual == StackValueType::UNKNOWN) {
+						// Skip check if actual type is UNKNOWN or ANY (can't determine type at compile time)
+						if (actual == StackValueType::UNKNOWN || actual == StackValueType::ANY) {
 							continue;
 						}
 
@@ -3867,6 +3871,18 @@ namespace Qd {
 			name = "add";
 		} else if (strcmp(name, "-") == 0) {
 			name = "sub";
+		} else if (strcmp(name, "==") == 0) {
+			name = "eq";
+		} else if (strcmp(name, "!=") == 0) {
+			name = "neq";
+		} else if (strcmp(name, "<") == 0) {
+			name = "lt";
+		} else if (strcmp(name, ">") == 0) {
+			name = "gt";
+		} else if (strcmp(name, "<=") == 0) {
+			name = "lte";
+		} else if (strcmp(name, ">=") == 0) {
+			name = "gte";
 		}
 
 		// error instruction: ( msg code -- ) sets error flag
@@ -3889,15 +3905,17 @@ namespace Qd {
 		// Stack: [...] -> [...] arg0 arg1 ... argN argc
 		// Since we don't know argc at compile-time, we push multiple values
 		// to allow reasonable operations after read (assumes up to 16 arguments)
+		// At runtime, arguments are parsed as int, float, or string based on content.
+		// At compile-time, we use STRING type for arguments since that's the most common case.
 		static const int READ_INSTRUCTION_MAX_ARGS = 16; // Maximum expected command-line arguments
-		static const int READ_INSTRUCTION_STACK_DEPTH = READ_INSTRUCTION_MAX_ARGS + 1; // +1 for argc itself
 		if (strcmp(name, "read") == 0) {
 			typeStack.clear();
-			// Push 16 values (enough for most use cases) + argc
-			// This is a workaround for not knowing argc at compile time
-			for (int i = 0; i < READ_INSTRUCTION_STACK_DEPTH; i++) {
-				typeStack.push_back(StackValueType::INT);
+			// Push 16 STRING-typed arguments (actual types determined at runtime)
+			for (int i = 0; i < READ_INSTRUCTION_MAX_ARGS; i++) {
+				typeStack.push_back(StackValueType::STRING);
 			}
+			// Push argc as integer (on top of stack)
+			typeStack.push_back(StackValueType::INT);
 			return;
 		}
 

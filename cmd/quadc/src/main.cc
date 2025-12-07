@@ -536,8 +536,30 @@ int main(int argc, char** argv) {
 			if (opts.verbose) {
 				std::cout << "\n=== Running " << outputPath << " ===" << std::endl;
 			}
+			// Build command with arguments
+			std::string cmd = outputPath;
+			for (const auto& arg : opts.runArgs) {
+				// Quote arguments that contain spaces or special characters
+				bool needsQuote = arg.find(' ') != std::string::npos ||
+				                  arg.find('\t') != std::string::npos ||
+				                  arg.find('"') != std::string::npos ||
+				                  arg.find('\\') != std::string::npos ||
+				                  arg.find('$') != std::string::npos;
+				if (needsQuote) {
+					cmd += " \"";
+					for (char c : arg) {
+						if (c == '"' || c == '\\' || c == '$') {
+							cmd += '\\';
+						}
+						cmd += c;
+					}
+					cmd += "\"";
+				} else {
+					cmd += " " + arg;
+				}
+			}
 			// Execute using system() and get exit code
-			int status = system(outputPath.c_str());
+			int status = system(cmd.c_str());
 			if (status == -1) {
 				std::cerr << "quadc: failed to execute program" << std::endl;
 				return 1;

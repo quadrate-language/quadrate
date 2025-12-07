@@ -6,8 +6,9 @@ void printHelp() {
 	std::cout << "quadc - Quadrate compiler\n\n";
 	std::cout << "Compiles .qd source files to native executables via LLVM.\n\n";
 	std::cout << "Usage: quadc [options] <file>...\n";
-	std::cout << "       quadc [options] -        # Read from stdin\n";
-	std::cout << "       echo 'code' | quadc -r   # Pipe code to compile and run\n\n";
+	std::cout << "       quadc [options] <file> -- [args]   # Pass args to program with -r\n";
+	std::cout << "       quadc [options] -                  # Read from stdin\n";
+	std::cout << "       echo 'code' | quadc -r             # Pipe code to compile and run\n\n";
 	std::cout << "Options:\n";
 	std::cout << "  -h, --help         Show this help message\n";
 	std::cout << "  -v, --version      Show version information\n";
@@ -23,11 +24,13 @@ void printHelp() {
 	std::cout << "  --test             Compile and run tests\n";
 	std::cout << "  --dump-ir          Print generated LLVM IR\n";
 	std::cout << "  --werror           Treat warnings as errors\n";
+	std::cout << "  --                 Separator for program arguments (used with -r)\n";
 	std::cout << "\n";
 	std::cout << "Examples:\n";
 	std::cout << "  quadc main.qd                        Compile to executable 'main'\n";
 	std::cout << "  quadc -o prog main.qd                Compile to executable 'prog'\n";
 	std::cout << "  quadc -r main.qd                     Compile and run immediately\n";
+	std::cout << "  quadc -r greet.qd -- Alice           Compile and run with argument 'Alice'\n";
 	std::cout << "  echo 'fn main(--) { 42 . }' | quadc -r   Compile and run from stdin\n";
 }
 
@@ -38,6 +41,15 @@ void printVersion() {
 bool parseArgs(int argc, char* argv[], Options& opts) {
 	for (int i = 1; i < argc; i++) {
 		std::string arg = argv[i];
+
+		// "--" separates compiler args from program args (for -r/--run)
+		if (arg == "--") {
+			// Everything after "--" goes to runArgs
+			for (int j = i + 1; j < argc; j++) {
+				opts.runArgs.push_back(argv[j]);
+			}
+			break;
+		}
 
 		if (arg == "-h" || arg == "--help") {
 			opts.help = true;
