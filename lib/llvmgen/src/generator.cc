@@ -194,8 +194,18 @@ namespace Qd {
 			if (str.empty()) {
 				return false;
 			}
+			// Handle hex (0x/0X) and binary (0b/0B) prefixes
+			if (str.size() > 2 && str[0] == '0') {
+				if (str[1] == 'x' || str[1] == 'X') {
+					auto [ptr, ec] = std::from_chars(str.data() + 2, str.data() + str.size(), out, 16);
+					return ec == std::errc() && ptr == str.data() + str.size();
+				} else if (str[1] == 'b' || str[1] == 'B') {
+					auto [ptr, ec] = std::from_chars(str.data() + 2, str.data() + str.size(), out, 2);
+					return ec == std::errc() && ptr == str.data() + str.size();
+				}
+			}
 			auto [ptr, ec] = std::from_chars(str.data(), str.data() + str.size(), out);
-			return ec == std::errc();
+			return ec == std::errc() && ptr == str.data() + str.size();
 		}
 
 		// Local variables (per function scope): name -> alloca instruction
@@ -6482,7 +6492,8 @@ namespace Qd {
 			if (elem->type() == IAstNode::Type::LITERAL) {
 				auto* lit = static_cast<AstNodeLiteral*>(elem);
 				if (lit->literalType() == AstNodeLiteral::LiteralType::INTEGER) {
-					int64_t val = std::stoll(lit->value());
+					int64_t val = 0;
+					safeParseInt64(lit->value(), val);
 					if (arrayType == 1) {
 						// Coerce int to float
 						builder->CreateCall(pushFloatArrFn,

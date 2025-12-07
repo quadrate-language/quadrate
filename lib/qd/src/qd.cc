@@ -459,9 +459,20 @@ void qd_execute(qd_context* ctx, const char* code) {
 		// Check if it's a number (integer or float)
 		char* endptr;
 
-		// Try parsing as integer
-		long long int_val = strtoll(token.c_str(), &endptr, 10);
-		if (*endptr == '\0') {
+		// Try parsing as integer (with hex 0x and binary 0b support)
+		int base = 10;
+		const char* numStart = token.c_str();
+		if (token.size() > 2 && token[0] == '0') {
+			if (token[1] == 'x' || token[1] == 'X') {
+				base = 16;
+				numStart += 2;
+			} else if (token[1] == 'b' || token[1] == 'B') {
+				base = 2;
+				numStart += 2;
+			}
+		}
+		long long int_val = strtoll(numStart, &endptr, base);
+		if (*endptr == '\0' && numStart != endptr) {
 			// It's an integer
 			qd_push_i(ctx, int_val);
 			continue;

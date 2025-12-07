@@ -1,6 +1,6 @@
 [wrap-git]
 url = https://git.sr.ht/~klahr/libu8t
-revision = 1.1.2
+revision = 1.2.0
 patch_directory = u8t
 
 [provide]

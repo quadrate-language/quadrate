@@ -54,7 +54,7 @@ static void signalHandler(int sig) {
 
 class ReplSession {
 public:
-	ReplSession(bool printOnExit) : printOnExit(printOnExit) {
+	ReplSession(bool shouldPrintOnExit) : printOnExit(shouldPrintOnExit) {
 		ctx = qd_create_context(1024);
 		mod = qd_get_module(ctx, "repl");
 		moduleCounter = 0;
