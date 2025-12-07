@@ -367,7 +367,47 @@ int handleUses(const std::vector<std::string>& args) {
 		toolArgs.push_back(arg);
 	}
 
-	return execTool(toolPath, toolArgs);
+	// If no files specified, process all .qd files in current directory
+	bool hasFiles = false;
+	for (const auto& arg : args) {
+		if (!arg.empty() && arg[0] != '-') {
+			hasFiles = true;
+			break;
+		}
+	}
+	if (!hasFiles) {
+		auto files = findQdFiles();
+		if (files.empty()) {
+			std::cerr << "quad: no .qd files found in current directory\n";
+			return 1;
+		}
+		for (const auto& f : files) {
+			toolArgs.push_back(f);
+		}
+	}
+
+	// quaduses processes one file at a time, so we need to call it for each file
+	int result = 0;
+	std::vector<std::string> fileArgs;
+	std::vector<std::string> optionArgs;
+	for (const auto& arg : toolArgs) {
+		if (!arg.empty() && arg[0] == '-') {
+			optionArgs.push_back(arg);
+		} else {
+			fileArgs.push_back(arg);
+		}
+	}
+
+	for (const auto& file : fileArgs) {
+		std::vector<std::string> singleFileArgs = optionArgs;
+		singleFileArgs.push_back(file);
+		int r = execTool(toolPath, singleFileArgs);
+		if (r != 0) {
+			result = r;
+		}
+	}
+
+	return result;
 }
 
 int handleLsp(const std::vector<std::string>& args) {
