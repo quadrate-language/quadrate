@@ -15,7 +15,7 @@ fn main( -- ) {
 Run it:
 
 ```bash
-quadc -r hello.qd
+quad run hello.qd
 ```
 
 Output:

@@ -60,7 +60,10 @@ struct Point {
 }
 
 fn main( -- ) {
-	Point { x = 1.0 y = 2.0 } -> p  // p is a ptr
+	Point {
+		x = 1.0
+		y = 2.0
+	} -> p  // p is a ptr
 	p @x print nl
 }
 ```

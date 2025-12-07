@@ -56,7 +56,7 @@ This installs:
 ### Verifying Installation
 
 ```bash
-quadc --version
+quad version
 ```
 
 ## Your First Program
@@ -72,7 +72,7 @@ fn main( -- ) {
 Compile and run it:
 
 ```bash
-quadc -r hello.qd
+quad run hello.qd
 ```
 
 Output:
@@ -87,57 +87,32 @@ Hello, World!
 - `print` pops the string and prints it
 - `nl` prints a newline
 
-## The Toolchain
+## Using quad
 
-Quadrate comes with a complete set of tools:
-
-| Tool | Description |
-|------|-------------|
-| `quadc` | Compiler - compiles `.qd` files to native binaries |
-| `quadfmt` | Formatter - formats code to standard style |
-| `quadlint` | Linter - static analysis for common issues |
-| `quadlsp` | Language server - IDE integration |
-| `quadrepl` | REPL - interactive shell for experimentation |
-| `quadpm` | Package manager - dependency management |
-| `quaduses` | Analyzer - shows function usage across modules |
-
-### Compiler Options
+The `quad` command is your main interface to Quadrate. It provides a unified way to build, run, test, and format your code:
 
 ```bash
-# Compile to binary
-quadc hello.qd -o hello
-
-# Compile and run immediately
-quadc -r hello.qd
-
-# Show verbose output
-quadc --verbose hello.qd
-
-# Dump LLVM IR (for debugging)
-quadc --dump-ir hello.qd
+quad run hello.qd      # Compile and run
+quad build hello.qd    # Compile to binary
+quad fmt hello.qd      # Format code
+quad lint hello.qd     # Check for issues
+quad test              # Run tests
+quad repl              # Start interactive shell
 ```
 
-### Using the Formatter
+For most tasks, `quad` is all you need. It automatically finds your source files and handles the details.
 
-```bash
-# Check formatting (dry run)
-quadfmt hello.qd
-
-# Format in place
-quadfmt -w hello.qd
-```
-
-### Using the Linter
-
-```bash
-quadlint hello.qd
-```
+See [Toolchain](toolchain.md) for documentation on all available tools including the compiler (`quadc`), formatter (`quadfmt`), linter (`quadlint`), and more.
 
 ## Editor Support
 
 ### Neovim
 
 Tree-sitter grammar and LSP support are available. See the `editors/nvim/` directory for installation instructions.
+
+### Code - OSS / Visual Studio Code
+
+Syntax highlighting and LSP support are available. See the `editors/vscode/` directory for installation instructions.
 
 ## Next Steps
 
