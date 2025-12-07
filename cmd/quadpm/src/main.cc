@@ -324,6 +324,7 @@ void printUsage() {
 	std::cout << "  -v, --version    Show version information\n\n";
 	std::cout << "Commands:\n";
 	std::cout << "  get <url>[@ref]  Fetch and install a package from Git\n";
+	std::cout << "  update [name]    Update installed package(s) (git pull)\n";
 	std::cout << "  list             List installed packages\n\n";
 	std::cout << "Examples:\n";
 	std::cout << "  quadpm get https://git.sr.ht/~user/zlib\n";
@@ -381,6 +382,87 @@ void listPackages() {
 	}
 }
 
+// Update a single package by running git pull
+bool updatePackage(const std::string& packageDir) {
+	std::string name = fs::path(packageDir).filename().string();
+
+	// Parse module@version format for display
+	std::string displayName = name;
+	size_t atPos = name.find('@');
+	if (atPos != std::string::npos) {
+		displayName = name.substr(0, atPos) + " @ " + name.substr(atPos + 1);
+	}
+
+	std::cout << COLOR_CYAN << "Updating " << COLOR_BOLD << displayName << COLOR_RESET << "...\n";
+
+	// Run git pull in the package directory
+	std::string pullCmd = "cd " + packageDir + " && git pull 2>&1";
+	int result = execCommandLive(pullCmd);
+
+	if (result != 0) {
+		std::cerr << COLOR_RED << "  ✗ Failed to update " << displayName << COLOR_RESET << "\n";
+		return false;
+	}
+
+	std::cout << COLOR_GREEN << "  ✓ Updated " << displayName << COLOR_RESET << "\n";
+	return true;
+}
+
+// Update installed packages
+int updatePackages(const std::string& packageName) {
+	std::string packagesDir = getPackagesDir();
+
+	if (!fs::exists(packagesDir)) {
+		std::cerr << COLOR_RED << "Error: No packages installed" << COLOR_RESET << "\n";
+		return 1;
+	}
+
+	bool found = false;
+	int failures = 0;
+
+	for (const auto& entry : fs::directory_iterator(packagesDir)) {
+		if (!entry.is_directory()) {
+			continue;
+		}
+
+		std::string name = entry.path().filename().string();
+
+		// If a specific package name was given, only update that one
+		if (!packageName.empty()) {
+			// Match either full name (module@version) or just module name
+			size_t atPos = name.find('@');
+			std::string moduleName = (atPos != std::string::npos) ? name.substr(0, atPos) : name;
+
+			if (name != packageName && moduleName != packageName) {
+				continue;
+			}
+		}
+
+		// Check if it's a git repository
+		std::string gitDir = entry.path().string() + "/.git";
+		if (!fs::exists(gitDir)) {
+			std::cout << COLOR_YELLOW << "Skipping " << name << " (not a git repository)" << COLOR_RESET << "\n";
+			continue;
+		}
+
+		found = true;
+		if (!updatePackage(entry.path().string())) {
+			failures++;
+		}
+	}
+
+	if (!found) {
+		if (packageName.empty()) {
+			std::cerr << COLOR_RED << "Error: No packages found to update" << COLOR_RESET << "\n";
+		} else {
+			std::cerr << COLOR_RED << "Error: Package '" << packageName << "' not found" << COLOR_RESET << "\n";
+		}
+		return 1;
+	}
+
+	return failures > 0 ? 1 : 0;
+}
+
 int main(int argc, char** argv) {
 	if (argc < 2) {
 		printUsage();
@@ -426,6 +508,11 @@ int main(int argc, char** argv) {
 	if (command == "list" || command == "ls") {
 		listPackages();
 		return 0;
+	}
+
+	if (command == "update") {
+		std::string packageName = (argc >= 3) ? argv[2] : "";
+		return updatePackages(packageName);
 	}
 
 	std::cerr << COLOR_RED << "Error: Unknown command '" << command << "'" << COLOR_RESET << "\n";
