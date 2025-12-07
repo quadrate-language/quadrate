@@ -6,5 +6,6 @@ quad_sources = files(
 
 quad_exe = executable('quad',
 	quad_sources,
+	dependencies: [qc_dep],
 	install: false
 )

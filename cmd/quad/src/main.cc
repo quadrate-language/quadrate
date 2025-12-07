@@ -3,12 +3,14 @@
 #include <cstring>
 #include <filesystem>
 #include <iostream>
+#include <qc/colors.h>
 #include <string>
 #include <sys/wait.h>
 #include <unistd.h>
 #include <vector>
 
 namespace fs = std::filesystem;
+using Qd::Colors;
 
 static const char* VERSION = "0.1.0";
 
@@ -32,28 +34,28 @@ static const Command commands[] = {
 static const size_t NUM_COMMANDS = sizeof(commands) / sizeof(commands[0]);
 
 void printHelp() {
-	std::cout << "quad - Quadrate language toolchain\n\n";
-	std::cout << "Usage: quad <command> [options] [arguments]\n\n";
-	std::cout << "Commands:\n";
-	std::cout << "  build     Compile Quadrate source files\n";
-	std::cout << "  run       Build and run a Quadrate program\n";
-	std::cout << "  test      Run tests\n";
-	std::cout << "  fmt       Format Quadrate source files\n";
-	std::cout << "  lint      Check code for common issues\n";
-	std::cout << "  repl      Start interactive REPL\n";
-	std::cout << "  uses      Analyze module dependencies\n";
-	std::cout << "  lsp       Start language server\n";
-	std::cout << "  help      Show help for a command\n";
-	std::cout << "  version   Show version information\n";
+	std::cout << Colors::bold() << "quad" << Colors::reset() << " - Quadrate language toolchain\n\n";
+	std::cout << Colors::bold() << "Usage:" << Colors::reset() << " quad <command> [options] [arguments]\n\n";
+	std::cout << Colors::bold() << "Commands:" << Colors::reset() << "\n";
+	std::cout << "  " << Colors::green() << "build" << Colors::reset() << "     Compile Quadrate source files\n";
+	std::cout << "  " << Colors::green() << "run" << Colors::reset() << "       Build and run a Quadrate program\n";
+	std::cout << "  " << Colors::green() << "test" << Colors::reset() << "      Run tests\n";
+	std::cout << "  " << Colors::green() << "fmt" << Colors::reset() << "       Format Quadrate source files\n";
+	std::cout << "  " << Colors::green() << "lint" << Colors::reset() << "      Check code for common issues\n";
+	std::cout << "  " << Colors::green() << "repl" << Colors::reset() << "      Start interactive REPL\n";
+	std::cout << "  " << Colors::green() << "uses" << Colors::reset() << "      Analyze module dependencies\n";
+	std::cout << "  " << Colors::green() << "lsp" << Colors::reset() << "       Start language server\n";
+	std::cout << "  " << Colors::green() << "help" << Colors::reset() << "      Show help for a command\n";
+	std::cout << "  " << Colors::green() << "version" << Colors::reset() << "   Show version information\n";
 	std::cout << "\n";
-	std::cout << "Examples:\n";
-	std::cout << "  quad build main.qd           Compile main.qd\n";
-	std::cout << "  quad run main.qd             Build and run main.qd\n";
-	std::cout << "  quad run greet.qd -- Alice   Run with argument 'Alice'\n";
-	std::cout << "  quad fmt                     Format all .qd files in-place\n";
-	std::cout << "  quad test                    Run tests in current directory\n";
+	std::cout << Colors::bold() << "Examples:" << Colors::reset() << "\n";
+	std::cout << "  " << Colors::cyan() << "quad build main.qd" << Colors::reset() << "           Compile main.qd\n";
+	std::cout << "  " << Colors::cyan() << "quad run main.qd" << Colors::reset() << "             Build and run main.qd\n";
+	std::cout << "  " << Colors::cyan() << "quad run greet.qd -- Alice" << Colors::reset() << "   Run with argument 'Alice'\n";
+	std::cout << "  " << Colors::cyan() << "quad fmt" << Colors::reset() << "                     Format all .qd files in-place\n";
+	std::cout << "  " << Colors::cyan() << "quad test" << Colors::reset() << "                    Run tests in current directory\n";
 	std::cout << "\n";
-	std::cout << "Run 'quad help <command>' for more information on a command.\n";
+	std::cout << "Run '" << Colors::cyan() << "quad help <command>" << Colors::reset() << "' for more information on a command.\n";
 }
 
 void printVersion() {
@@ -345,7 +347,27 @@ int handleUses(const std::vector<std::string>& args) {
 		std::cerr << "quad: quaduses not found\n";
 		return 1;
 	}
-	return execTool(toolPath, args);
+
+	std::vector<std::string> toolArgs;
+
+	// Add -w flag by default to update in place (unless user passes --check or -n)
+	bool hasCheckFlag = false;
+	for (const auto& arg : args) {
+		if (arg == "--check" || arg == "-n") {
+			hasCheckFlag = true;
+			break;
+		}
+	}
+	if (!hasCheckFlag) {
+		toolArgs.push_back("-w");
+	}
+
+	// Add user-provided args
+	for (const auto& arg : args) {
+		toolArgs.push_back(arg);
+	}
+
+	return execTool(toolPath, toolArgs);
 }
 
 int handleLsp(const std::vector<std::string>& args) {
@@ -381,6 +403,10 @@ int handleHelp(const std::vector<std::string>& args) {
 }
 
 int main(int argc, char* argv[]) {
+	// Configure colored output - honor NO_COLOR environment variable
+	const bool noColors = std::getenv("NO_COLOR") != nullptr;
+	Colors::setEnabled(!noColors);
+
 	if (argc < 2) {
 		printHelp();
 		return 0;
