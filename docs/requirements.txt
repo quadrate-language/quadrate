@@ -1,0 +1,7 @@
+# MkDocs documentation requirements
+mkdocs>=1.5.0
+pygments>=2.15.0
+
+# Install the Quadrate syntax highlighter
+# Run: pip install -e pygments-quadrate
+-e pygments-quadrate

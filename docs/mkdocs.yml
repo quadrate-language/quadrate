@@ -4,8 +4,15 @@ theme:
   name: readthedocs
   logo: assets/logo.png
   favicon: assets/favicon.ico
+  hljs_languages:
+    - yaml
 extra_css:
   - styles/extra.css
+
+markdown_extensions:
+  - codehilite:
+      guess_lang: false
+  - fenced_code
 nav:
   - Home: index.md
   - Getting Started: docs/getting-started.md
