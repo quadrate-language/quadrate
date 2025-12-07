@@ -68,11 +68,16 @@ namespace Qd {
 	 * @brief AST node representing a struct declaration
 	 *
 	 * Example: pub struct Vec2 { x:f64 y:f64 }
+	 * Generic: struct Pair<T, U> { first:T second:U }
 	 */
 	class AstNodeStructDeclaration : public IAstNode {
 	public:
 		AstNodeStructDeclaration(const std::string& name, bool isPublic = false)
 			: mName(name), mIsPublic(isPublic), mParent(nullptr), mLine(0), mColumn(0) {
+		}
+
+		AstNodeStructDeclaration(const std::string& name, const std::vector<std::string>& typeParams, bool isPublic = false)
+			: mName(name), mTypeParams(typeParams), mIsPublic(isPublic), mParent(nullptr), mLine(0), mColumn(0) {
 		}
 
 		~AstNodeStructDeclaration() {
@@ -133,8 +138,21 @@ namespace Qd {
 			return mFields;
 		}
 
+		const std::vector<std::string>& typeParams() const {
+			return mTypeParams;
+		}
+
+		bool isGeneric() const {
+			return !mTypeParams.empty();
+		}
+
+		void addTypeParam(const std::string& typeParam) {
+			mTypeParams.push_back(typeParam);
+		}
+
 	private:
 		std::string mName;
+		std::vector<std::string> mTypeParams;
 		bool mIsPublic;
 		std::vector<AstNodeStructField*> mFields;
 		IAstNode* mParent;

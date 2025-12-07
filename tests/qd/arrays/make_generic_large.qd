@@ -1,0 +1,15 @@
+// Test make<T> with larger array size
+fn main( -- ) {
+	100 make<i64> -> arr
+	arr len print nl          // Should print = 100
+
+	// Set some values
+	arr 0 1 set
+	arr 50 500 set
+	arr 99 999 set
+
+	// Verify
+	arr 0 nth print nl        // Should print = 1
+	arr 50 nth print nl       // Should print = 500
+	arr 99 nth print nl       // Should print = 999
+}

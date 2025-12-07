@@ -1,0 +1,11 @@
+// Test make<T> with zero size - empty array
+fn main( -- ) {
+	0 make<i64> -> arr
+	arr len print nl          // Should print = 0
+
+	// Append to empty array
+	arr 42 append -> arr
+	arr len print nl          // Should print = 1
+	arr 0 nth print nl        // Should print = 42
+	arr free
+}

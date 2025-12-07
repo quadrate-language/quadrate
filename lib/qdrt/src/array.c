@@ -5,10 +5,83 @@
 
 #include <qdrt/array.h>
 #include <qdrt/qd_string.h>
+#include <qdrt/qd_struct.h>
 #include <qdrt/stack.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <pthread.h>
+
+// ============================================================================
+// Global registry of valid array pointers
+// This allows safe retain/release on any pointer by checking registry membership
+// ============================================================================
+
+#define ARRAY_REGISTRY_SIZE 1024
+
+typedef struct array_registry_entry {
+	void* ptr;
+	struct array_registry_entry* next;
+} array_registry_entry_t;
+
+static array_registry_entry_t* array_registry[ARRAY_REGISTRY_SIZE];
+static pthread_mutex_t array_registry_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+static size_t array_ptr_hash(const void* ptr) {
+	return ((size_t)ptr >> 3) % ARRAY_REGISTRY_SIZE;
+}
+
+static void array_registry_add(void* ptr) {
+	pthread_mutex_lock(&array_registry_mutex);
+	size_t idx = array_ptr_hash(ptr);
+	array_registry_entry_t* entry = (array_registry_entry_t*)malloc(sizeof(array_registry_entry_t));
+	if (entry) {
+		entry->ptr = ptr;
+		entry->next = array_registry[idx];
+		array_registry[idx] = entry;
+	}
+	pthread_mutex_unlock(&array_registry_mutex);
+}
+
+static int array_registry_contains(const void* ptr) {
+	pthread_mutex_lock(&array_registry_mutex);
+	size_t idx = array_ptr_hash(ptr);
+	array_registry_entry_t* entry = array_registry[idx];
+	while (entry) {
+		if (entry->ptr == ptr) {
+			pthread_mutex_unlock(&array_registry_mutex);
+			return 1;
+		}
+		entry = entry->next;
+	}
+	pthread_mutex_unlock(&array_registry_mutex);
+	return 0;
+}
+
+static void array_registry_remove(void* ptr) {
+	pthread_mutex_lock(&array_registry_mutex);
+	size_t idx = array_ptr_hash(ptr);
+	array_registry_entry_t** pp = &array_registry[idx];
+	while (*pp) {
+		if ((*pp)->ptr == ptr) {
+			array_registry_entry_t* to_free = *pp;
+			*pp = (*pp)->next;
+			free(to_free);
+			pthread_mutex_unlock(&array_registry_mutex);
+			return;
+		}
+		pp = &(*pp)->next;
+	}
+	pthread_mutex_unlock(&array_registry_mutex);
+}
+
+int qd_array_is_valid(const void* ptr) {
+	if (!ptr) {
+		return 0;
+	}
+	// Use registry to safely check if this is a valid array
+	return array_registry_contains(ptr);
+}
 
 qd_array_t* qd_array_create(size_t capacity, qd_array_type elemType) {
 	if (capacity == 0) {
@@ -20,6 +93,7 @@ qd_array_t* qd_array_create(size_t capacity, qd_array_type elemType) {
 		return NULL;
 	}
 
+	arr->magic = QD_ARRAY_MAGIC;
 	arr->refcount = 1;
 	arr->length = 0;
 	arr->capacity = capacity;
@@ -59,6 +133,9 @@ qd_array_t* qd_array_create(size_t capacity, qd_array_type elemType) {
 		return NULL;
 	}
 
+	// Register this array pointer
+	array_registry_add(arr);
+
 	return arr;
 }
 
@@ -78,6 +155,9 @@ void qd_array_release(qd_array_t* arr) {
 		return;
 	}
 
+	// Unregister from registry before freeing
+	array_registry_remove(arr);
+
 	// Free contents
 	switch (arr->elemType) {
 	case QD_ARRAY_TYPE_INT:
@@ -96,10 +176,18 @@ void qd_array_release(qd_array_t* arr) {
 		free(arr->data.p);
 		break;
 	case QD_ARRAY_TYPE_PTR:
+		// Release all struct references (safe for non-struct pointers via registry check)
+		for (size_t i = 0; i < arr->length; i++) {
+			if (arr->data.p[i]) {
+				qd_struct_release(arr->data.p[i]);
+			}
+		}
 		free(arr->data.p);
 		break;
 	}
 
+	// Clear magic to prevent double-free detection
+	arr->magic = 0;
 	free(arr);
 }
 

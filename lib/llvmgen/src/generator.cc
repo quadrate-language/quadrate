@@ -282,6 +282,7 @@ namespace Qd {
 		void generateFieldAccess(AstNodeFieldAccess* fieldAccess, llvm::Value* ctx);
 		void generateFieldSet(AstNodeFieldSet* fieldSet, llvm::Value* ctx);
 		void generateArrayLiteral(AstNodeArrayLiteral* arrayLiteral, llvm::Value* ctx);
+		bool isKnownStruct(const std::string& typeName);
 		size_t getTypeSize(const std::string& typeName);
 		void generateStructCleanup(llvm::Value* structPtr, const std::string& structTypeName);
 
@@ -2499,6 +2500,32 @@ namespace Qd {
 
 	void LlvmGenerator::Impl::generateInstruction(AstNodeInstruction* inst, llvm::Value* ctx) {
 		const std::string& name = inst->name();
+
+		// Handle generic make<T> instruction
+		if (name == "make" && inst->hasTypeParam()) {
+			const std::string& typeParam = inst->typeParam();
+			std::string fnName;
+			if (typeParam == "i64" || typeParam == "i32" || typeParam == "i16" || typeParam == "i8" || typeParam == "u64" ||
+					typeParam == "u32" || typeParam == "u16" || typeParam == "u8") {
+				fnName = "qd_makei";
+			} else if (typeParam == "f64" || typeParam == "f32") {
+				fnName = "qd_makef";
+			} else if (typeParam == "str" || typeParam == "string") {
+				fnName = "qd_makes";
+			} else {
+				// Assume it's a struct type - use makep for pointer
+				fnName = "qd_makep";
+			}
+
+			llvm::Function* makeFn = module->getFunction(fnName);
+			if (!makeFn) {
+				auto fnTy = llvm::FunctionType::get(execResultTy, {contextPtrTy}, false);
+				makeFn = llvm::Function::Create(fnTy, llvm::Function::ExternalLinkage, fnName, *module);
+			}
+			builder->CreateCall(makeFn, {ctx});
+			lastPushedWasArray = true;
+			return;
+		}
 
 		if (name == "prints") {
 			builder->CreateCall(printsFn, {ctx});
@@ -5782,6 +5809,11 @@ namespace Qd {
 		return result == 0;
 	}
 
+	// Helper function to check if a type name is a known struct
+	bool LlvmGenerator::Impl::isKnownStruct(const std::string& typeName) {
+		return structDefinitions.find(typeName) != structDefinitions.end();
+	}
+
 	// Helper function to get size of a type
 	size_t LlvmGenerator::Impl::getTypeSize(const std::string& typeName) {
 		if (typeName == "i64" || typeName == "f64") {
@@ -5790,11 +5822,11 @@ namespace Qd {
 			return 4;
 		} else if (typeName == "str" || typeName.find('*') != std::string::npos) {
 			return 8; // Pointer size
-		} else if (!typeName.empty() && std::isupper(typeName[0])) {
+		} else if (!typeName.empty() && std::isupper(typeName[0]) && isKnownStruct(typeName)) {
 			// Struct-typed field - stored as pointer, not inline
 			return 8; // Pointer size
 		}
-		return 8; // Default to pointer size
+		return 8; // Default to pointer size (also handles type parameters like T, U)
 	}
 
 	// Process a struct declaration and calculate field offsets
@@ -5837,8 +5869,8 @@ namespace Qd {
 
 		// First, recursively cleanup nested struct fields
 		for (const auto& field : layout.fields) {
-			// Check if field is a struct type (PascalCase = uppercase first letter)
-			if (!field.typeName.empty() && std::isupper(field.typeName[0])) {
+			// Check if field is a known struct type (not a type parameter like T)
+			if (!field.typeName.empty() && std::isupper(field.typeName[0]) && isKnownStruct(field.typeName)) {
 				// Load the nested struct pointer from this field
 				auto fieldOffset = builder->getInt64(field.offset);
 				auto fieldBytePtr = builder->CreateGEP(builder->getInt8Ty(), structPtr, fieldOffset, "nested_field_ptr");
@@ -5893,7 +5925,7 @@ namespace Qd {
 			bool needsDestructor = false;
 			for (const auto& field : layout.fields) {
 				if (field.typeName == "str" ||
-					(!field.typeName.empty() && std::isupper(field.typeName[0]))) {
+					(!field.typeName.empty() && std::isupper(field.typeName[0]) && isKnownStruct(field.typeName))) {
 					needsDestructor = true;
 					break;
 				}
@@ -5922,7 +5954,7 @@ namespace Qd {
 
 			// Release nested struct fields first (call qd_struct_release)
 			for (const auto& field : layout.fields) {
-				if (!field.typeName.empty() && std::isupper(field.typeName[0])) {
+				if (!field.typeName.empty() && std::isupper(field.typeName[0]) && isKnownStruct(field.typeName)) {
 					// Nested struct field
 					auto fieldOffset = builder->getInt64(field.offset);
 					auto fieldBytePtr =
@@ -6040,7 +6072,7 @@ namespace Qd {
 				llvm::Value* truncValue = builder->CreateTrunc(intValue, builder->getInt32Ty(), "int32_val");
 				builder->CreateStore(truncValue, bytePtr);
 			} else if (field.typeName == "ptr" || field.typeName == "str" || field.typeName.find('*') != std::string::npos ||
-					   (!field.typeName.empty() && std::isupper(field.typeName[0]))) {
+					   (!field.typeName.empty() && std::isupper(field.typeName[0]) && isKnownStruct(field.typeName))) {
 				// Pointer type (including ptr, str, raw pointers, and struct-typed fields)
 				llvm::Value* ptrValue =
 						builder->CreateLoad(llvm::PointerType::getUnqual(*context), valuePtr, "ptr_val");
@@ -6048,6 +6080,10 @@ namespace Qd {
 				// Retain happens when pushing a local to the stack (in generateIdentifier).
 				// The containing struct's destructor will release nested structs.
 				builder->CreateStore(ptrValue, bytePtr);
+			} else {
+				// Unknown type (including type parameters like T) - treat as i64
+				llvm::Value* intValue = builder->CreateLoad(builder->getInt64Ty(), valuePtr, "generic_val");
+				builder->CreateStore(intValue, bytePtr);
 			}
 		}
 
@@ -6236,7 +6272,8 @@ namespace Qd {
 					builder->CreateLoad(llvm::PointerType::getUnqual(*context), fieldPtr, "field_value");
 			builder->CreateCall(pushPtrFn, {ctx, ptrValue});
 			lastFieldAccessResultType.clear();  // Raw pointer, not a known struct type
-		} else if (!matchingField->typeName.empty() && std::isupper(matchingField->typeName[0])) {
+		} else if (!matchingField->typeName.empty() && std::isupper(matchingField->typeName[0]) &&
+				   isKnownStruct(matchingField->typeName)) {
 			// Struct-typed field - stored as pointer, push as PTR
 			llvm::Value* fieldPtr = bytePtr;
 			llvm::Value* ptrValue =
@@ -6244,6 +6281,12 @@ namespace Qd {
 			builder->CreateCall(pushPtrFn, {ctx, ptrValue});
 			// Track the struct type for chained field access
 			lastFieldAccessResultType = matchingField->typeName;
+		} else {
+			// Type parameter or unknown type - treat as i64 value
+			llvm::Value* fieldPtr = bytePtr;
+			llvm::Value* intValue = builder->CreateLoad(builder->getInt64Ty(), fieldPtr, "field_value");
+			builder->CreateCall(pushIntFn, {ctx, intValue});
+			lastFieldAccessResultType.clear();
 		}
 	}
 
@@ -6354,11 +6397,16 @@ namespace Qd {
 			builder->CreateStore(truncValue, bytePtr);
 		} else if (matchingField->typeName == "ptr" || matchingField->typeName == "str" ||
 				   matchingField->typeName.find('*') != std::string::npos ||
-				   (!matchingField->typeName.empty() && std::isupper(matchingField->typeName[0]))) {
+				   (!matchingField->typeName.empty() && std::isupper(matchingField->typeName[0]) &&
+					isKnownStruct(matchingField->typeName))) {
 			// Pointer type (including ptr, str, raw pointers, and struct-typed fields)
 			llvm::Value* ptrValue =
 					builder->CreateLoad(llvm::PointerType::getUnqual(*context), valuePtr, "ptr_val");
 			builder->CreateStore(ptrValue, bytePtr);
+		} else {
+			// Type parameter or unknown type - treat as i64 value
+			llvm::Value* intValue = builder->CreateLoad(builder->getInt64Ty(), valuePtr, "generic_val");
+			builder->CreateStore(intValue, bytePtr);
 		}
 	}
 

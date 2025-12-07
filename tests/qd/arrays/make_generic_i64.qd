@@ -1,0 +1,11 @@
+// Test make<i64> - create integer array with generic syntax
+fn main( -- ) {
+	3 make<i64> -> arr
+	arr 0 100 set
+	arr 1 200 set
+	arr 2 300 set
+	arr len print nl          // Should print = 3
+	arr 0 nth print nl        // Should print = 100
+	arr 1 nth print nl        // Should print = 200
+	arr 2 nth print nl        // Should print = 300
+}

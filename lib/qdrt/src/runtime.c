@@ -2,6 +2,7 @@
 #define _POSIX_C_SOURCE 200809L
 
 #include <qdrt/runtime.h>
+#include <qdrt/array.h>
 #include <qdrt/qd_string.h>
 #include <qdrt/qd_struct.h>
 #include <stdio.h>
@@ -1921,6 +1922,9 @@ qd_exec_result qd_free(qd_context* ctx) {
 	if (qd_struct_is_valid(val.value.p)) {
 		// Struct pointers are offset from the malloc'd base, use release
 		qd_struct_release(val.value.p);
+	} else if (qd_array_is_valid(val.value.p)) {
+		// Array pointer - use array release
+		qd_array_release((qd_array_t*)val.value.p);
 	} else {
 		// Raw memory - free directly (ptr can be NULL, free(NULL) is safe)
 		free(val.value.p);

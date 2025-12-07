@@ -11,7 +11,11 @@ namespace Qd {
 	 */
 	class AstNodeInstruction : public IAstNode {
 	public:
-		AstNodeInstruction(const std::string& name) : mName(name), mParent(nullptr), mLine(0), mColumn(0) {
+		AstNodeInstruction(const std::string& name) : mName(name), mTypeParam(), mParent(nullptr), mLine(0), mColumn(0) {
+		}
+
+		AstNodeInstruction(const std::string& name, const std::string& typeParam)
+			: mName(name), mTypeParam(typeParam), mParent(nullptr), mLine(0), mColumn(0) {
 		}
 
 		IAstNode::Type type() const override {
@@ -51,8 +55,17 @@ namespace Qd {
 			return mName;
 		}
 
+		const std::string& typeParam() const {
+			return mTypeParam;
+		}
+
+		bool hasTypeParam() const {
+			return !mTypeParam.empty();
+		}
+
 	private:
 		std::string mName;
+		std::string mTypeParam;
 		IAstNode* mParent;
 		size_t mLine;
 		size_t mColumn;

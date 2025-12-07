@@ -1,0 +1,20 @@
+// Test multiple make<T> calls in same function
+fn main( -- ) {
+	// Multiple different types
+	3 make<i64> -> ints
+	3 make<f64> -> floats
+	3 make<str> -> strs
+
+	ints 0 42 set
+	floats 0 3.14 set
+	strs 0 "test" set
+
+	ints 0 nth print nl       // Should print = 42
+	floats 0 nth print nl     // Should print = 3.14
+	strs 0 nth print nl       // Should print = test
+
+	// Verify lengths
+	ints len print nl         // Should print = 3
+	floats len print nl       // Should print = 3
+	strs len print nl         // Should print = 3
+}

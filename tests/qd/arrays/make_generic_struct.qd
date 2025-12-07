@@ -1,0 +1,29 @@
+// Test make<StructName> - create pointer array with generic syntax
+struct Point {
+	x:f64
+	y:f64
+}
+
+fn main( -- ) {
+	3 make<Point> -> points
+
+	// Create points
+	Point { x = 1.0 y = 2.0 } -> p1
+	Point { x = 3.0 y = 4.0 } -> p2
+	Point { x = 5.0 y = 6.0 } -> p3
+
+	// Store in array
+	points 0 p1 set
+	points 1 p2 set
+	points 2 p3 set
+
+	// Verify length
+	points len print nl       // Should print = 3
+
+	// Verify values
+	points 0 nth @x print nl  // Should print = 1
+	points 1 nth @y print nl  // Should print = 4
+	points 2 nth @x print nl  // Should print = 5
+
+	points free
+}

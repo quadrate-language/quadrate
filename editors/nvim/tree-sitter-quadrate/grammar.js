@@ -2,6 +2,11 @@
  * Tree-sitter grammar for Quadrate programming language
  */
 
+// Helper for comma-separated lists with at least one element
+function commaSep1(rule) {
+  return seq(rule, repeat(seq(',', rule)));
+}
+
 module.exports = grammar({
   name: 'quadrate',
 
@@ -27,13 +32,24 @@ module.exports = grammar({
 
     // Function definition: fn name( x:float y:float -- z:float ) { ... }
     // or: pub fn name( x:float y:float -- z:float ) { ... }
+    // or: fn name<T>( x:T -- y:T ) { ... } (generic)
     function_definition: $ => seq(
       optional('pub'),
       'fn',
       field('name', $.identifier),
+      field('type_parameters', optional($.type_parameters)),
       field('signature', optional($.stack_signature)),
       field('body', $.block),
     ),
+
+    // Type parameters: <T> or <T, U> or <A, B, C>
+    type_parameters: $ => seq(
+      '<',
+      field('params', commaSep1($.type_parameter)),
+      '>',
+    ),
+
+    type_parameter: $ => $.identifier,
 
     // Test definition: test "name" { ... }
     test_definition: $ => seq(
@@ -46,10 +62,12 @@ module.exports = grammar({
 
     // Struct definition: struct Name { x:f64 y:f64 }
     // or: pub struct Name { x:f64 y:f64 }
+    // or: struct Name<T> { value:T } (generic)
     struct_definition: $ => seq(
       optional('pub'),
       'struct',
       field('name', $.identifier),
+      field('type_parameters', optional($.type_parameters)),
       '{',
       repeat($.struct_field),
       '}',
@@ -127,6 +145,7 @@ module.exports = grammar({
     _expression: $ => choice(
       $.number,
       $.string,
+      $.generic_instruction,
       $.builtin_operation,
       $.operator_symbol,
       $.struct_construction,
@@ -263,6 +282,14 @@ module.exports = grammar({
       '+', '-', '*', '/', '%',
       '==', '!=', '<', '>', '<=', '>=',
       '!',
+    )),
+
+    // Generic instruction: make<T>, makei<T>, etc.
+    generic_instruction: $ => prec(2, seq(
+      field('name', choice('make', 'makei', 'makef', 'makes')),
+      '<',
+      field('type_arg', $.identifier),
+      '>',
     )),
 
     // Built-in operations

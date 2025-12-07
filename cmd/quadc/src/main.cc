@@ -85,6 +85,14 @@ int main(int argc, char** argv) {
 			auto ast = std::make_unique<Qd::Ast>();
 			auto root = ast->generate(buffer.c_str(), opts.dumpTokens, "<stdin>");
 			if (!root || ast->hasErrors()) {
+				// Print stored parsing errors
+				for (const auto& error : ast->getErrors()) {
+					std::cerr << Qd::Colors::bold() << "quadc: " << Qd::Colors::reset();
+					std::cerr << Qd::Colors::bold() << "<stdin>:" << error.line << ":" << error.column << ":"
+							  << Qd::Colors::reset() << " ";
+					std::cerr << Qd::Colors::bold() << Qd::Colors::red() << "error:" << Qd::Colors::reset() << " ";
+					std::cerr << Qd::Colors::bold() << error.message << Qd::Colors::reset() << std::endl;
+				}
 				std::cerr << "quadc: parsing failed for <stdin> with " << ast->errorCount() << " errors" << std::endl;
 				return 1;
 			}
@@ -145,6 +153,14 @@ int main(int argc, char** argv) {
 			auto ast = std::make_unique<Qd::Ast>();
 			auto root = ast->generate(buffer.c_str(), opts.dumpTokens, file.c_str());
 			if (!root || ast->hasErrors()) {
+				// Print stored parsing errors
+				for (const auto& error : ast->getErrors()) {
+					std::cerr << Qd::Colors::bold() << "quadc: " << Qd::Colors::reset();
+					std::cerr << Qd::Colors::bold() << file << ":" << error.line << ":" << error.column << ":"
+							  << Qd::Colors::reset() << " ";
+					std::cerr << Qd::Colors::bold() << Qd::Colors::red() << "error:" << Qd::Colors::reset() << " ";
+					std::cerr << Qd::Colors::bold() << error.message << Qd::Colors::reset() << std::endl;
+				}
 				std::cerr << "quadc: parsing failed for " << file << " with " << ast->errorCount() << " errors"
 						  << std::endl;
 				return 1;
@@ -280,6 +296,11 @@ int main(int argc, char** argv) {
 			auto root = ast->generate(buffer.c_str(), false, moduleFilePath.c_str());
 			if (!root || ast->hasErrors()) {
 				std::cerr << "quadc: failed to parse module: " << moduleName << std::endl;
+				// Print stored parse errors
+				for (const auto& error : ast->getErrors()) {
+					std::cerr << moduleFilePath << ":" << error.line << ":" << error.column
+							  << ": error: " << error.message << std::endl;
+				}
 				return 1;
 			}
 

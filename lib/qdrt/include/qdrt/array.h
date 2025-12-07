@@ -30,12 +30,18 @@ typedef enum {
 } qd_array_type;
 
 /**
+ * @brief Magic number for array validation
+ */
+#define QD_ARRAY_MAGIC 0x51444152UL // "QDAR" in hex
+
+/**
  * @brief Reference-counted dynamic array structure
  *
  * Arrays are heap-allocated and reference-counted.
  * When the reference count reaches 0, the array and its contents are freed.
  */
 typedef struct qd_array {
+	size_t magic;			///< Magic number for validation (QD_ARRAY_MAGIC)
 	size_t refcount;		///< Reference count
 	size_t length;			///< Number of elements
 	size_t capacity;		///< Allocated capacity
@@ -47,6 +53,14 @@ typedef struct qd_array {
 		void** p;	///< Pointer array data (includes strings)
 	} data;
 } qd_array_t;
+
+/**
+ * @brief Check if a pointer is a valid array
+ *
+ * @param ptr Pointer to check
+ * @return 1 if valid array, 0 otherwise
+ */
+int qd_array_is_valid(const void* ptr);
 
 /**
  * @brief Create a new array with the specified capacity and element type

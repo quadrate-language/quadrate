@@ -1,0 +1,12 @@
+// Test make<str> - create string array
+fn main( -- ) {
+	3 make<str> -> arr
+	arr 0 "hello" set
+	arr 1 "world" set
+	arr 2 "!" set
+
+	arr len print nl          // Should print = 3
+	arr 0 nth print nl        // Should print = hello
+	arr 1 nth print nl        // Should print = world
+	arr 2 nth print nl        // Should print = !
+}

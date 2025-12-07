@@ -59,6 +59,13 @@
 (struct_definition
   name: (identifier) @type)
 
+; Type parameters in generic definitions
+(type_parameters
+  (type_parameter) @type.parameter)
+
+; Generic instructions (make<T>)
+(generic_instruction) @function.builtin
+
 ; Struct field types - primitives
 ((struct_field
   type: (type (identifier) @type.builtin))

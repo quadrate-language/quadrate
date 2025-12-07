@@ -1280,7 +1280,31 @@ namespace Qd {
 				}
 			}
 
-			sig.produces = typeStack;
+			// Build produces list: prefer declared output parameters, fall back to body analysis
+			// Using declared outputs is more reliable for functions with complex control flow
+			if (!func->outputParameters().empty()) {
+				for (size_t i = 0; i < func->outputParameters().size(); i++) {
+					AstNodeParameter* param = static_cast<AstNodeParameter*>(func->outputParameters()[i]);
+					const std::string& typeStr = param->typeString();
+
+					if (typeStr == "i64") {
+						sig.produces.push_back(StackValueType::INT);
+					} else if (typeStr == "f64") {
+						sig.produces.push_back(StackValueType::FLOAT);
+					} else if (typeStr == "str") {
+						sig.produces.push_back(StackValueType::STRING);
+					} else if (typeStr == "ptr") {
+						sig.produces.push_back(StackValueType::PTR);
+					} else if (isStructTypeName(typeStr)) {
+						sig.produces.push_back(StackValueType::PTR);
+					} else {
+						sig.produces.push_back(StackValueType::ANY);
+					}
+				}
+			} else {
+				// No declared outputs - use body analysis result
+				sig.produces = typeStack;
+			}
 			sig.throws = func->throws();
 			std::string qualifiedName = moduleName + "::" + func->name();
 			mFunctionSignatures[qualifiedName] = sig;
@@ -1810,7 +1834,31 @@ namespace Qd {
 				}
 			}
 
-			sig.produces = typeStack;
+			// Build produces list: prefer declared output parameters, fall back to body analysis
+			// Using declared outputs is more reliable for functions with complex control flow
+			if (!func->outputParameters().empty()) {
+				for (auto* paramNode : func->outputParameters()) {
+					AstNodeParameter* param = static_cast<AstNodeParameter*>(paramNode);
+					std::string typeStr = param->typeString();
+
+					if (typeStr == "i64") {
+						sig.produces.push_back(StackValueType::INT);
+					} else if (typeStr == "f64") {
+						sig.produces.push_back(StackValueType::FLOAT);
+					} else if (typeStr == "str") {
+						sig.produces.push_back(StackValueType::STRING);
+					} else if (typeStr == "ptr") {
+						sig.produces.push_back(StackValueType::PTR);
+					} else if (isStructTypeName(typeStr)) {
+						sig.produces.push_back(StackValueType::PTR);
+					} else {
+						sig.produces.push_back(StackValueType::ANY);
+					}
+				}
+			} else {
+				// No declared outputs - use body analysis result
+				sig.produces = typeStack;
+			}
 			sig.throws = func->throws();
 			mFunctionSignatures[func->name()] = sig;
 		}
@@ -2271,7 +2319,26 @@ namespace Qd {
 
 			case IAstNode::Type::INSTRUCTION: {
 				AstNodeInstruction* instr = static_cast<AstNodeInstruction*>(child);
-				typeCheckInstruction(child, instr->name().c_str(), typeStack, structTypeStack);
+				const std::string& instrName = instr->name();
+
+				// Check if instruction name shadows a local variable - if so, treat as variable reference
+				auto localIt = localVariables.find(instrName);
+				if (localIt != localVariables.end()) {
+					// Push the local variable's type onto the stack (variable shadowing)
+					typeStack.push_back(localIt->second);
+					if (localIt->second == StackValueType::PTR) {
+						auto structTypeIt = mLocalVariableStructTypes.find(instrName);
+						if (structTypeIt != mLocalVariableStructTypes.end()) {
+							structTypeStack.push_back(structTypeIt->second);
+						} else {
+							structTypeStack.push_back("");
+						}
+					} else {
+						structTypeStack.push_back("");
+					}
+				} else {
+					typeCheckInstruction(child, instrName.c_str(), typeStack, structTypeStack);
+				}
 				break;
 			}
 
@@ -2292,8 +2359,39 @@ namespace Qd {
 				if (!structTypeStack.empty()) {
 					structTypeStack.pop_back();
 				}
-				// Skip type checking if/else bodies - failable function patterns and
-				// runtime stack manipulation make static tracking unreliable
+
+				// Analyze branches to track stack effects
+				AstNodeIfStatement* ifStmt = static_cast<AstNodeIfStatement*>(child);
+				IAstNode* thenBody = ifStmt->thenBody();
+				IAstNode* elseBody = ifStmt->elseBody();
+
+				if (thenBody && elseBody) {
+					// Analyze then branch
+					std::vector<StackValueType> thenStack = typeStack;
+					std::unordered_map<std::string, StackValueType> thenVars = localVariables;
+					std::vector<std::string> thenStructStack = structTypeStack;
+					typeCheckBlock(thenBody, thenStack, thenVars, thenStructStack);
+
+					// Analyze else branch
+					std::vector<StackValueType> elseStack = typeStack;
+					std::unordered_map<std::string, StackValueType> elseVars = localVariables;
+					std::vector<std::string> elseStructStack = structTypeStack;
+					typeCheckBlock(elseBody, elseStack, elseVars, elseStructStack);
+
+					int thenEffect = static_cast<int>(thenStack.size()) - static_cast<int>(typeStack.size());
+					int elseEffect = static_cast<int>(elseStack.size()) - static_cast<int>(typeStack.size());
+
+					// If both branches have the same positive effect, apply it
+					if (thenEffect == elseEffect && thenEffect > 0) {
+						for (size_t k = typeStack.size(); k < thenStack.size(); k++) {
+							typeStack.push_back(thenStack[k]);
+						}
+					}
+				} else if (thenBody) {
+					// Only then branch - still need to analyze it for type checking
+					// (common pattern: fallible_func if { -> var ... })
+					typeCheckBlock(thenBody, typeStack, localVariables, structTypeStack);
+				}
 				break;
 			}
 
@@ -2337,8 +2435,47 @@ namespace Qd {
 				if (!structTypeStack.empty()) {
 					structTypeStack.pop_back();
 				}
-				// Skip type checking switch case bodies - they may operate on runtime stack
-				// values that can't be tracked statically (e.g., in interpreters)
+
+				// Analyze all case branches to track stack effects
+				AstNodeSwitchStatement* switchStmt = static_cast<AstNodeSwitchStatement*>(child);
+				const auto& cases = switchStmt->cases();
+				bool hasDefault = false;
+				bool allSameEffect = true;
+				int commonEffect = 0;
+				bool firstCase = true;
+				std::vector<StackValueType> firstCaseStack;
+
+				for (const auto* caseNode : cases) {
+					if (caseNode->isDefault()) {
+						hasDefault = true;
+					}
+					IAstNode* caseBody = caseNode->body();
+					if (caseBody) {
+						// Analyze case body with a copy of current stack
+						std::vector<StackValueType> caseStack = typeStack;
+						std::unordered_map<std::string, StackValueType> caseVars = localVariables;
+						std::vector<std::string> caseStructStack = structTypeStack;
+						typeCheckBlock(caseBody, caseStack, caseVars, caseStructStack);
+
+						int caseEffect = static_cast<int>(caseStack.size()) - static_cast<int>(typeStack.size());
+
+						if (firstCase) {
+							commonEffect = caseEffect;
+							firstCaseStack = caseStack;
+							firstCase = false;
+						} else if (caseEffect != commonEffect) {
+							allSameEffect = false;
+						}
+					}
+				}
+
+				// If there's a default case and all cases have the same positive effect,
+				// apply that effect to the type stack
+				if (hasDefault && allSameEffect && commonEffect > 0 && !firstCase) {
+					for (size_t k = typeStack.size(); k < firstCaseStack.size(); k++) {
+						typeStack.push_back(firstCaseStack[k]);
+					}
+				}
 				break;
 			}
 
@@ -2420,7 +2557,6 @@ namespace Qd {
 				}
 
 				if (structDecl) {
-					const auto& declaredFields = structDecl->fields();
 					std::unordered_set<std::string> providedFields;
 
 					// Process each field initializer
@@ -2588,15 +2724,18 @@ namespace Qd {
 						}
 					}
 
-					// Check for missing fields
-					for (const auto* field : declaredFields) {
-						if (providedFields.find(field->name()) == providedFields.end()) {
-							std::string errorMsg = "Missing field '";
-							errorMsg += field->name();
-							errorMsg += "' in struct construction '";
-							errorMsg += name;
-							errorMsg += "'";
-							reportError(construct, errorMsg.c_str());
+					// Check for missing fields using mStructFieldTypes (safe for imported modules)
+					auto structFieldTypesIt = mStructFieldTypes.find(name);
+					if (structFieldTypesIt != mStructFieldTypes.end()) {
+						for (const auto& fieldEntry : structFieldTypesIt->second) {
+							if (providedFields.find(fieldEntry.first) == providedFields.end()) {
+								std::string errorMsg = "Missing field '";
+								errorMsg += fieldEntry.first;
+								errorMsg += "' in struct construction '";
+								errorMsg += name;
+								errorMsg += "'";
+								reportError(construct, errorMsg.c_str());
+							}
 						}
 					}
 				}
@@ -3982,6 +4121,48 @@ namespace Qd {
 			}
 			// Type stays the same
 		}
+		// Type casting: castf (convert to float)
+		else if (strcmp(name, "castf") == 0) {
+			if (typeStack.empty()) {
+				reportErrorConditional(node, "Type error in 'castf': Stack underflow (requires 1 value)", reportErrors);
+				return;
+			}
+			// Pop any type, push float
+			typeStack.pop_back();
+			if (!structTypeStack.empty()) {
+				structTypeStack.pop_back();
+			}
+			typeStack.push_back(StackValueType::FLOAT);
+			structTypeStack.push_back("");
+		}
+		// Type casting: casti (convert to int)
+		else if (strcmp(name, "casti") == 0) {
+			if (typeStack.empty()) {
+				reportErrorConditional(node, "Type error in 'casti': Stack underflow (requires 1 value)", reportErrors);
+				return;
+			}
+			// Pop any type, push int
+			typeStack.pop_back();
+			if (!structTypeStack.empty()) {
+				structTypeStack.pop_back();
+			}
+			typeStack.push_back(StackValueType::INT);
+			structTypeStack.push_back("");
+		}
+		// Type casting: casts (convert to string)
+		else if (strcmp(name, "casts") == 0) {
+			if (typeStack.empty()) {
+				reportErrorConditional(node, "Type error in 'casts': Stack underflow (requires 1 value)", reportErrors);
+				return;
+			}
+			// Pop any type, push string
+			typeStack.pop_back();
+			if (!structTypeStack.empty()) {
+				structTypeStack.pop_back();
+			}
+			typeStack.push_back(StackValueType::STRING);
+			structTypeStack.push_back("");
+		}
 		// Modulo: mod (consume 2 ints, produce int)
 		else if (strcmp(name, "mod") == 0) {
 			if (typeStack.size() < 2) {
@@ -4299,6 +4480,108 @@ namespace Qd {
 			}
 			// We don't know what the called function will do to the stack
 			// So we can't track types accurately after this point
+		}
+		// Array creation: make ( size -- arr )
+		// make<T> syntax creates typed array, always returns pointer
+		else if (strcmp(name, "make") == 0) {
+			if (typeStack.empty()) {
+				reportErrorConditional(node, "Type error in 'make': Stack underflow (requires 1 integer for size)", reportErrors);
+				return;
+			}
+			// Pop size argument
+			typeStack.pop_back();
+			if (!structTypeStack.empty()) {
+				structTypeStack.pop_back();
+			}
+			// Push pointer (array) - regardless of element type, result is always a pointer
+			typeStack.push_back(StackValueType::PTR);
+			structTypeStack.push_back("");
+		}
+		// Array length: len ( arr -- arr len )
+		// Returns the length of an array without consuming it
+		else if (strcmp(name, "len") == 0) {
+			if (typeStack.empty()) {
+				reportErrorConditional(node, "Type error in 'len': Stack underflow (requires 1 array)", reportErrors);
+				return;
+			}
+			// Verify top is a pointer (array)
+			StackValueType top = typeStack.back();
+			if (top != StackValueType::PTR) {
+				std::string errorMsg = "Type error in 'len': Expected array (ptr), got ";
+				errorMsg += typeToString(top);
+				reportErrorConditional(node, errorMsg.c_str(), reportErrors);
+				return;
+			}
+			// Push int (length) - array stays on stack
+			typeStack.push_back(StackValueType::INT);
+			structTypeStack.push_back("");
+		}
+		// Array access: nth ( arr idx -- arr elem )
+		// Returns element at index without consuming the array
+		else if (strcmp(name, "nth") == 0) {
+			if (typeStack.size() < 2) {
+				reportErrorConditional(node, "Type error in 'nth': Stack underflow (requires array and index)", reportErrors);
+				return;
+			}
+			// Pop index
+			typeStack.pop_back();
+			if (!structTypeStack.empty()) {
+				structTypeStack.pop_back();
+			}
+			// Verify array is a pointer
+			StackValueType arr = typeStack.back();
+			if (arr != StackValueType::PTR) {
+				std::string errorMsg = "Type error in 'nth': Expected array (ptr), got ";
+				errorMsg += typeToString(arr);
+				reportErrorConditional(node, errorMsg.c_str(), reportErrors);
+				return;
+			}
+			// Pop array, push element (ANY since we don't track element types)
+			typeStack.pop_back();
+			if (!structTypeStack.empty()) {
+				structTypeStack.pop_back();
+			}
+			typeStack.push_back(StackValueType::ANY);
+			structTypeStack.push_back("");
+		}
+		// Array set: set ( arr idx val -- )
+		// Sets element at index
+		else if (strcmp(name, "set") == 0) {
+			if (typeStack.size() < 3) {
+				reportErrorConditional(node, "Type error in 'set': Stack underflow (requires array, index, and value)", reportErrors);
+				return;
+			}
+			// Pop value, index, array
+			typeStack.pop_back(); // value
+			typeStack.pop_back(); // index
+			typeStack.pop_back(); // array
+			if (structTypeStack.size() >= 3) {
+				structTypeStack.pop_back();
+				structTypeStack.pop_back();
+				structTypeStack.pop_back();
+			}
+		}
+		// Array append: append ( arr val -- arr' )
+		// Appends value to array and returns new array
+		else if (strcmp(name, "append") == 0) {
+			if (typeStack.size() < 2) {
+				reportErrorConditional(node, "Type error in 'append': Stack underflow (requires array and value)", reportErrors);
+				return;
+			}
+			// Pop value
+			typeStack.pop_back();
+			if (!structTypeStack.empty()) {
+				structTypeStack.pop_back();
+			}
+			// Verify array is a pointer
+			StackValueType arr = typeStack.back();
+			if (arr != StackValueType::PTR) {
+				std::string errorMsg = "Type error in 'append': Expected array (ptr), got ";
+				errorMsg += typeToString(arr);
+				reportErrorConditional(node, errorMsg.c_str(), reportErrors);
+				return;
+			}
+			// Array stays on stack (as modified array), already PTR type
 		}
 		// free - deallocate memory pointed to by a pointer
 		else if (strcmp(name, "free") == 0) {

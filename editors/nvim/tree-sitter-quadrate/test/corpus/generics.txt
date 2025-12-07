@@ -1,0 +1,191 @@
+================================================================================
+Generic function with single type parameter
+================================================================================
+
+fn identity<T>( x:T -- y:T ) {
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (function_definition
+    name: (identifier)
+    type_parameters: (type_parameters
+      params: (type_parameter
+        (identifier)))
+    signature: (stack_signature
+      (parameter_list
+        (parameter
+          name: (identifier)
+          type: (type
+            (identifier))))
+      (parameter_list
+        (parameter
+          name: (identifier)
+          type: (type
+            (identifier)))))
+    body: (block)))
+
+================================================================================
+Generic function with multiple type parameters
+================================================================================
+
+fn swap<A, B>( a:A b:B -- b:B a:A ) {
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (function_definition
+    name: (identifier)
+    type_parameters: (type_parameters
+      params: (type_parameter
+        (identifier))
+      params: (type_parameter
+        (identifier)))
+    signature: (stack_signature
+      (parameter_list
+        (parameter
+          name: (identifier)
+          type: (type
+            (identifier)))
+        (parameter
+          name: (identifier)
+          type: (type
+            (identifier))))
+      (parameter_list
+        (parameter
+          name: (identifier)
+          type: (type
+            (identifier)))
+        (parameter
+          name: (identifier)
+          type: (type
+            (identifier)))))
+    body: (block)))
+
+================================================================================
+Generic struct with single type parameter
+================================================================================
+
+struct Box<T> {
+	value: T
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (struct_definition
+    name: (identifier)
+    type_parameters: (type_parameters
+      params: (type_parameter
+        (identifier)))
+    (struct_field
+      name: (identifier)
+      type: (type
+        (identifier)))))
+
+================================================================================
+Generic struct with multiple type parameters
+================================================================================
+
+struct Pair<A, B> {
+	first: A
+	second: B
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (struct_definition
+    name: (identifier)
+    type_parameters: (type_parameters
+      params: (type_parameter
+        (identifier))
+      params: (type_parameter
+        (identifier)))
+    (struct_field
+      name: (identifier)
+      type: (type
+        (identifier)))
+    (struct_field
+      name: (identifier)
+      type: (type
+        (identifier)))))
+
+================================================================================
+Generic instruction make<T>
+================================================================================
+
+fn main( -- ) {
+	10 make<i64> -> arr
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (function_definition
+    name: (identifier)
+    signature: (stack_signature)
+    body: (block
+      (number)
+      (generic_instruction
+        type_arg: (identifier))
+      (local_declaration
+        name: (identifier)))))
+
+================================================================================
+Public generic function
+================================================================================
+
+pub fn process<T>( x:T -- y:T ) {
+	dup
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (function_definition
+    name: (identifier)
+    type_parameters: (type_parameters
+      params: (type_parameter
+        (identifier)))
+    signature: (stack_signature
+      (parameter_list
+        (parameter
+          name: (identifier)
+          type: (type
+            (identifier))))
+      (parameter_list
+        (parameter
+          name: (identifier)
+          type: (type
+            (identifier)))))
+    body: (block
+      (builtin_operation))))
+
+================================================================================
+Public generic struct
+================================================================================
+
+pub struct Container<T> {
+	data: T
+	count: i64
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (struct_definition
+    name: (identifier)
+    type_parameters: (type_parameters
+      params: (type_parameter
+        (identifier)))
+    (struct_field
+      name: (identifier)
+      type: (type
+        (identifier)))
+    (struct_field
+      name: (identifier)
+      type: (type
+        (identifier)))))

@@ -15,6 +15,106 @@ use str
 use strconv
 use unicode
 
+// Calculator stack - using an explicit array
+pub struct Stack {
+	data: ptr
+	size: i64
+	capacity: i64
+}
+
+fn stack_new( -- s:ptr) {
+	1024 -> cap
+	cap 8 * mem::alloc -> data
+	Stack { data = data, size = 0, capacity = cap }
+}
+
+fn stack_free(s:ptr -- ) {
+	-> s
+	s @data mem::free
+}
+
+fn stack_push(s:ptr val:f64 -- ) {
+	-> val
+	-> s
+	s @size -> sz
+	s @capacity -> cap
+	sz cap >= if {
+		// Stack overflow - just ignore for now
+		"dc: stack overflow" print nl
+	} else {
+		s @data sz 8 * val mem::set_float
+		sz 1 + s.size
+	}
+}
+
+fn stack_pop(s:ptr -- val:f64) {
+	-> s
+	s @size -> sz
+	sz 0 <= if {
+		"dc: stack empty" print nl
+		0.0
+	} else {
+		sz 1 - -> sz
+		sz s.size
+		s @data sz 8 * mem::get_float
+	}
+}
+
+fn stack_peek(s:ptr -- val:f64) {
+	-> s
+	s @size -> sz
+	sz 0 <= if {
+		0.0
+	} else {
+		s @data sz 1 - 8 * mem::get_float
+	}
+}
+
+fn stack_depth(s:ptr -- n:i64) {
+	-> s
+	s @size
+}
+
+fn stack_clear(s:ptr -- ) {
+	-> s
+	0 s.size
+}
+
+fn stack_dup(s:ptr -- ) {
+	-> s
+	s @size -> sz
+	sz 0 <= if {
+		"dc: stack empty" print nl
+	} else {
+		s @data sz 1 - 8 * mem::get_float -> val
+		s val stack_push
+	}
+}
+
+fn stack_swap(s:ptr -- ) {
+	-> s
+	s @size -> sz
+	sz 2 < if {
+		"dc: stack empty" print nl
+	} else {
+		s @data sz 1 - 8 * mem::get_float -> a
+		s @data sz 2 - 8 * mem::get_float -> b
+		s @data sz 1 - 8 * b mem::set_float
+		s @data sz 2 - 8 * a mem::set_float
+	}
+}
+
+fn stack_pick(s:ptr n:i64 -- val:f64) {
+	-> n
+	-> s
+	s @size -> sz
+	n sz >= n 0 < or if {
+		0.0
+	} else {
+		s @data sz 1 - n - 8 * mem::get_float
+	}
+}
+
 fn print_version( -- ) {
 	"dc 0.1.0 (Quadrate)" print nl
 }
@@ -50,25 +150,29 @@ fn is_number(tok:str -- result:i64) {
 	result
 }
 
-fn process_token(tok:str -- ) {
+fn process_token(s:ptr tok:str -- ) {
 	-> tok
+	-> s
 	0 -> first
 	tok is_number if {
 		tok 0 str::char_at -> first
 		first unicode::underscore == if {
-			tok 1 tok str::len 1 - str::substring! castf 0 swap sub
+			tok 1 tok str::len 1 - str::substring! castf -> val
+			s 0.0 val sub stack_push
 		} else {
-			tok castf
+			tok castf -> val
+			s val stack_push
 		}
 	} else {
 		tok str::len 0 > if {
-			tok process_operator
+			s tok process_operator
 		}
 	}
 }
 
-fn process_operator(op:str -- ) {
+fn process_operator(s:ptr op:str -- ) {
 	-> op
+	-> s
 	0 -> n
 	0.0 -> a
 	0.0 -> b
@@ -77,30 +181,38 @@ fn process_operator(op:str -- ) {
 	"" -> octal
 	op 0 str::char_at switch {
 		unicode::plus {
-			depth 2 >= if {
-				add
+			s stack_depth 2 >= if {
+				s stack_pop -> b
+				s stack_pop -> a
+				s a b add stack_push
 			} else {
 				"dc: stack empty" print nl
 			}
 		}
 		unicode::minus {
-			depth 2 >= if {
-				sub
+			s stack_depth 2 >= if {
+				s stack_pop -> b
+				s stack_pop -> a
+				s a b sub stack_push
 			} else {
 				"dc: stack empty" print nl
 			}
 		}
 		unicode::asterisk {
-			depth 2 >= if {
-				mul
+			s stack_depth 2 >= if {
+				s stack_pop -> b
+				s stack_pop -> a
+				s a b mul stack_push
 			} else {
 				"dc: stack empty" print nl
 			}
 		}
 		unicode::slash {
-			depth 2 >= if {
-				dup 0 != if {
-					div
+			s stack_depth 2 >= if {
+				s stack_peek 0.0 != if {
+					s stack_pop -> b
+					s stack_pop -> a
+					s a b div stack_push
 				} else {
 					"dc: divide by zero" print nl
 				}
@@ -109,11 +221,13 @@ fn process_operator(op:str -- ) {
 			}
 		}
 		unicode::percent {
-			depth 2 >= if {
-				dup 0 != if {
+			s stack_depth 2 >= if {
+				s stack_peek 0.0 != if {
+					s stack_pop -> b
+					s stack_pop -> a
 					// Remainder for floats: a - floor(a/b)*b
-					-> b -> a
-					a a b div math::floor b mul sub
+					a a b div math::floor b mul sub -> r
+					s r stack_push
 				} else {
 					"dc: remainder by zero" print nl
 				}
@@ -122,50 +236,70 @@ fn process_operator(op:str -- ) {
 			}
 		}
 		unicode::caret {
-			depth 2 >= if {
+			s stack_depth 2 >= if {
+				s stack_pop -> b
+				s stack_pop -> a
 				// Check if exponent is non-integer, floor it if so
-				dup dup math::floor != if {
+				b b math::floor != if {
 					"Runtime warning: non-zero scale in exponent" print nl
-					math::floor
+					b math::floor -> b
 				}
-				math::pow
+				a b math::pow -> r
+				s r stack_push
 			} else {
 				"dc: stack empty" print nl
 			}
 		}
 		unicode::v {
-			dup 0 >= if {
-				math::sqrt
+			s stack_depth 1 >= if {
+				s stack_peek 0.0 >= if {
+					s stack_pop -> a
+					a math::sqrt -> r
+					s r stack_push
+				} else {
+					"dc: square root of negative number" print nl
+				}
 			} else {
-				"dc: square root of negative number" print nl
+				"dc: stack empty" print nl
 			}
 		}
 		unicode::p {
-			dup print nl
+			s stack_depth 1 >= if {
+				s stack_peek print nl
+			} else {
+				"dc: stack empty" print nl
+			}
 		}
 		unicode::n {
-			print
+			s stack_depth 1 >= if {
+				s stack_pop print
+			} else {
+				"dc: stack empty" print nl
+			}
 		}
 		unicode::f {
 			// Print full stack from top to bottom
-			depth -> n
+			s stack_depth -> n
 			0 n 1 for it {
-				it pick print nl
+				s it stack_pick print nl
 			}
 		}
 		unicode::z {
 			// Push stack depth
-			depth
+			s stack_depth castf -> a
+			s a stack_push
 		}
 		unicode::tilde {
 			// Divmod: push both quotient and remainder
-			depth 2 >= if {
-				dup 0 != if {
-					-> b -> a
+			s stack_depth 2 >= if {
+				s stack_peek 0.0 != if {
+					s stack_pop -> b
+					s stack_pop -> a
 					a b div math::floor -> q
 					// Remainder = a - q*b
 					a q b mul sub -> r
-					q r
+					s q stack_push
+					s r stack_push
 				} else {
 					"dc: divide by zero" print nl
 				}
@@ -174,18 +308,18 @@ fn process_operator(op:str -- ) {
 			}
 		}
 		unicode::c {
-			clear
+			s stack_clear
 		}
 		unicode::d {
-			depth 1 >= if {
-				dup
+			s stack_depth 1 >= if {
+				s stack_dup
 			} else {
 				"dc: stack empty" print nl
 			}
 		}
 		unicode::r {
-			depth 2 >= if {
-				swap
+			s stack_depth 2 >= if {
+				s stack_swap
 			}
 		}
 		unicode::q {
@@ -198,8 +332,9 @@ fn process_operator(op:str -- ) {
 	}
 }
 
-fn process_line(input:str -- ) {
+fn process_line(s:ptr input:str -- ) {
 	-> input
+	-> s
 	0 -> comment_pos
 	"" -> trimmed
 	"" -> token
@@ -219,13 +354,13 @@ fn process_line(input:str -- ) {
 		trimmed " " str::index_of -> space_pos
 		space_pos 0 < if {
 			// No more spaces - process remaining as last token
-			trimmed process_token
+			s trimmed process_token
 			break
 		} else {
 			// Extract token before space
 			trimmed 0 space_pos str::substring! -> token
 			token str::len 0 > if {
-				token process_token
+				s token process_token
 			}
 			// Skip past space and continue
 			trimmed space_pos 1 + trimmed str::len space_pos - 1 - str::substring! -> trimmed
@@ -233,8 +368,9 @@ fn process_line(input:str -- ) {
 	}
 }
 
-fn run_file(path:str -- ) {
+fn run_file(s:ptr path:str -- ) {
 	-> path
+	-> s
 	0 -> bytes_read
 	"" -> content
 	"" -> line
@@ -243,9 +379,9 @@ fn run_file(path:str -- ) {
 	// Allocate 64KB buffer for file content
 	65536 mem::alloc -> buf
 
-	path io::Read io::open! if {
+	path io::Read io::open if {
 		-> file
-		file buf 65536 io::read! if {
+		file buf 65536 io::read if {
 			-> bytes_read
 			file io::close
 			buf bytes_read mem::to_string -> content
@@ -273,24 +409,25 @@ fn run_file(path:str -- ) {
 		content "\n" str::index_of -> newline_pos
 		newline_pos 0 < if {
 			// No more newlines - process remaining as last line
-			content process_line
+			s content process_line
 			break
 		} else {
 			// Extract line before newline
 			content 0 newline_pos str::substring! -> line
-			line process_line
+			s line process_line
 			// Skip past newline and continue
 			content newline_pos 1 + content str::len newline_pos - 1 - str::substring! -> content
 		}
 	}
 }
 
-fn repl( -- ) {
+fn repl(s:ptr -- ) {
+	-> s
 	"" -> input
 	loop {
 		io::readline! if {
 			-> input
-			input process_line
+			s input process_line
 			input drop
 		} else {
 			// EOF or error - exit
@@ -300,6 +437,11 @@ fn repl( -- ) {
 }
 
 fn main( -- ) {
+	stack_new -> s
+	defer {
+		s stack_free
+	}
+
 	read flag::parse -> f
 	defer {
 		f flag::destroy
@@ -327,12 +469,12 @@ fn main( -- ) {
 	"" -> expr
 	f "-e" flag::bool if {
 		f "-e" flag::string! -> expr
-		expr process_line
+		s expr process_line
 		0 os::exit
 	}
 	f "--expression" flag::bool if {
 		f "--expression" flag::string! -> expr
-		expr process_line
+		s expr process_line
 		0 os::exit
 	}
 
@@ -340,14 +482,14 @@ fn main( -- ) {
 	"" -> filepath
 	f "-f" flag::bool if {
 		f "-f" flag::string! -> filepath
-		filepath run_file
+		s filepath run_file
 		0 os::exit
 	}
 	f "--file" flag::bool if {
 		f "--file" flag::string! -> filepath
-		filepath run_file
+		s filepath run_file
 		0 os::exit
 	}
 
-	repl
+	s repl
 }

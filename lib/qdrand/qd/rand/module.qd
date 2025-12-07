@@ -48,11 +48,11 @@ pub fn next(rng:ptr -- rng:ptr n:i64) {
 	x x 25 shr xor -> x
 	x x 27 shl xor -> x
 
-	// Return random number first (will be popped into n), then new state (will be popped into rng)
+	// Return new state (rng) first, then random number (n) on top
 	x 2685821657736338717 * -> result
 	Rng { state = x } -> newrng
-	result
 	newrng
+	result
 }
 
 /// Generate random i64 in range [0, max).
@@ -64,7 +64,7 @@ pub fn next(rng:ptr -- rng:ptr n:i64) {
 pub fn int(rng:ptr max:i64 -- rng:ptr n:i64) {
 	-> max
 	-> rng
-	rng next -> newrng -> raw
+	rng next -> raw -> newrng
 	// Make positive and mod
 	raw 0 < if {
 		0 raw -
@@ -73,8 +73,8 @@ pub fn int(rng:ptr max:i64 -- rng:ptr n:i64) {
 	}
 	-> pos
 	pos max mod -> result
-	result
 	newrng
+	result
 }
 
 /// Generate random i64 in range [min, max).
@@ -89,10 +89,10 @@ pub fn range(rng:ptr min:i64 max:i64 -- rng:ptr n:i64) {
 	-> min
 	-> rng
 	max min - -> diff
-	rng diff int -> newrng -> n
+	rng diff int -> n -> newrng
 	n min + -> result
-	result
 	newrng
+	result
 }
 
 /// Generate random boolean.

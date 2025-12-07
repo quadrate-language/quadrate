@@ -276,6 +276,10 @@ namespace Qd {
 		// Minimum line for warnings (warnings on earlier lines are suppressed)
 		// Default is 0 (no suppression)
 		size_t mWarningMinLine;
+
+		// Current function's type parameters (for generic functions)
+		// Set when entering a generic function, cleared when leaving
+		std::vector<std::string> mCurrentTypeParams;
 	};
 
 } // namespace Qd

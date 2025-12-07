@@ -404,7 +404,14 @@ namespace Qd {
 
 		result << indent << structName << " {\n";
 		for (const auto& field : fields) {
-			result << fieldIndent << field.first << " = " << field.second << "\n";
+			// Check if the value is a nested struct that needs formatting
+			std::string nestedFormatted = formatStructConstruction(field.second, baseIndent + 1);
+			if (!nestedFormatted.empty()) {
+				// Nested struct was formatted - output field name and nested struct
+				result << fieldIndent << field.first << " = " << trim(nestedFormatted) << "\n";
+			} else {
+				result << fieldIndent << field.first << " = " << field.second << "\n";
+			}
 		}
 		result << indent << "}";
 
@@ -671,8 +678,28 @@ namespace Qd {
 		return output.str();
 	}
 
+	// Count unmatched opening braces in a string (accounting for strings)
+	static int countUnmatchedBraces(const std::string& s) {
+		int depth = 0;
+		bool inString = false;
+		for (size_t i = 0; i < s.length(); i++) {
+			char c = s[i];
+			if (c == '"' && (i == 0 || s[i - 1] != '\\')) {
+				inString = !inString;
+			}
+			if (!inString) {
+				if (c == '{') {
+					depth++;
+				} else if (c == '}') {
+					depth--;
+				}
+			}
+		}
+		return depth;
+	}
+
 	// Merge multi-line struct constructions back into single lines for reformatting
-	// Detects: StructName {\n  field: value ...\n } and merges them
+	// Detects: StructName { field = value ...\n } and merges them
 	static std::string mergeStructConstructions(const std::string& source) {
 		std::istringstream input(source);
 		std::vector<std::string> lines;
@@ -687,9 +714,11 @@ namespace Qd {
 		while (i < lines.size()) {
 			std::string trimmed = trim(lines[i]);
 
-			// Check if this line is "StructName {" (ends with { and starts with uppercase)
-			if (!trimmed.empty() && trimmed.back() == '{') {
-				std::string beforeBrace = trim(trimmed.substr(0, trimmed.length() - 1));
+			// Check if this line starts a struct construction with unclosed brace
+			// Look for "StructName { field = value" pattern with unclosed braces
+			size_t bracePos = trimmed.find('{');
+			if (bracePos != std::string::npos && bracePos > 0) {
+				std::string beforeBrace = trim(trimmed.substr(0, bracePos));
 				if (!beforeBrace.empty() && isStructName(beforeBrace)) {
 					// Check if it's a simple identifier
 					bool isIdent = true;
@@ -700,9 +729,11 @@ namespace Qd {
 						}
 					}
 
-					if (isIdent) {
+					// Check if this line has unclosed braces (struct continues on next line)
+					int unclosed = countUnmatchedBraces(trimmed);
+					if (isIdent && unclosed > 0) {
 						// Look ahead for field lines and closing brace
-						std::string merged = beforeBrace + " {";
+						std::string merged = trimmed;
 						size_t j = i + 1;
 						bool foundClose = false;
 

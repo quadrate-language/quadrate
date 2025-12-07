@@ -1,0 +1,11 @@
+// Test make<f64> - create float array with generic syntax
+fn main( -- ) {
+	3 make<f64> -> arr
+	arr 0 3.14 set
+	arr 1 2.71 set
+	arr 2 1.41 set
+	arr len print nl          // Should print = 3
+	arr 0 nth print nl        // Should print = 3.14
+	arr 1 nth print nl        // Should print = 2.71
+	arr 2 nth print nl        // Should print = 1.41
+}

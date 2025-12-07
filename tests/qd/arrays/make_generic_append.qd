@@ -1,0 +1,21 @@
+// Test make<T> with append operations
+fn main( -- ) {
+	// Start with empty array and append
+	0 make<i64> -> arr
+	arr 1 append -> arr
+	arr 2 append -> arr
+	arr 3 append -> arr
+	arr len print nl          // Should print = 3
+	arr 0 nth print nl        // Should print = 1
+	arr 2 nth print nl        // Should print = 3
+	arr free
+
+	// Start with sized array and append
+	2 make<f64> -> floats
+	floats 0 1.0 set
+	floats 1 2.0 set
+	floats 3.0 append -> floats
+	floats len print nl       // Should print = 3
+	floats 2 nth print nl     // Should print = 3
+	floats free
+}

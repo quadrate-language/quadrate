@@ -1,0 +1,20 @@
+// Test make<T> inside loop - create multiple arrays
+fn main( -- ) {
+	0 -> total
+	0 3 1 for i {
+		5 make<i64> -> arr
+		arr len total + -> total
+		arr free
+	}
+	total print nl            // Should print = 15 (5 * 3)
+
+	// Fill array in loop
+	10 make<i64> -> nums
+	0 10 1 for i {
+		nums i i 2 * set      // Set each element to i * 2
+	}
+	nums 0 nth print nl       // Should print = 0
+	nums 5 nth print nl       // Should print = 10
+	nums 9 nth print nl       // Should print = 18
+	nums free
+}

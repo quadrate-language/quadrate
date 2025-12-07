@@ -20,7 +20,7 @@ namespace Qd {
 			"call", "clear", "depth", "drop", "drop2", "dup", "dup2", "dupd", "free", "len", "nip", "nipd", "nth",
 			"over", "over2", "overd", "pick", "roll", "rot", "swap", "swap2", "swapd", "tuck",
 			// Array operations
-			"append", "makef", "makei", "makep", "makes", "set",
+			"append", "make", "makef", "makei", "makep", "makes", "set",
 			// Type casting
 			"castf", "casti", "casts",
 			// I/O
@@ -48,7 +48,7 @@ namespace Qd {
 			"call", "clear", "depth", "drop", "drop2", "dup", "dup2", "dupd", "free", "len", "nip", "nipd", "nth",
 			"over", "over2", "overd", "pick", "roll", "rot", "swap", "swap2", "swapd", "tuck",
 			// Array operations
-			"append", "makef", "makei", "makep", "makes", "set",
+			"append", "make", "makef", "makei", "makep", "makes", "set",
 			// Type casting
 			"castf", "casti", "casts",
 			// I/O

@@ -8,7 +8,7 @@ fn main() {
 
 	// Generate 10 values and check they're all in range
 	0 10 1 for it {
-		rng 100 rand::int -> rng -> n
+		rng 100 rand::int -> n -> rng
 		// Check if n is OUT of range [0, 100)
 		n 0 < if {
 			0 -> all_valid
@@ -29,7 +29,7 @@ fn main() {
 	123 rand::with_seed -> rng2
 	1 -> small_valid
 	0 20 1 for it {
-		rng2 3 rand::int -> rng2 -> m
+		rng2 3 rand::int -> m -> rng2
 		m 0 < if {
 			0 -> small_valid
 		}

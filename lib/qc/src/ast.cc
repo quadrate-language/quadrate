@@ -159,13 +159,24 @@ namespace Qd {
 				commentEnd++;
 			}
 		} else {
-			// Read until */
-			// Check both current and next character to avoid buffer overflow
-			while (*commentEnd != '\0' && *(commentEnd + 1) != '\0') {
-				if (*commentEnd == '*' && *(commentEnd + 1) == '/') {
-					break;
+			// Read until */ - support nested block comments
+			// Track nesting depth: /* starts a nested comment, */ ends one
+			int nestingDepth = 1;
+			while (*commentEnd != '\0' && *(commentEnd + 1) != '\0' && nestingDepth > 0) {
+				if (*commentEnd == '/' && *(commentEnd + 1) == '*') {
+					// Nested comment start
+					nestingDepth++;
+					commentEnd += 2;
+				} else if (*commentEnd == '*' && *(commentEnd + 1) == '/') {
+					// Comment end
+					nestingDepth--;
+					if (nestingDepth == 0) {
+						break; // Found the matching close
+					}
+					commentEnd += 2;
+				} else {
+					commentEnd++;
 				}
-				commentEnd++;
 			}
 		}
 
@@ -206,6 +217,23 @@ namespace Qd {
 	static IAstNode* parseSwitchStatement(u8t_scanner* scanner, ErrorReporter* errorReporter, const char* src);
 	static AstNodeStructConstruction* parseStructConstruction(const std::string& structName, u8t_scanner* scanner,
 			ErrorReporter* errorReporter, const char* src, size_t startPos);
+
+	// Helper to peek the immediate next character from source (no whitespace skip)
+	// Returns the character or 0 if end of string
+	static char32_t peekNextChar(u8t_scanner* scanner, const char* src) {
+		// Get current position after last token
+		size_t tokenStart = u8t_scanner_token_start(scanner);
+		size_t tokenLen = u8t_scanner_token_len(scanner);
+		size_t pos = tokenStart + tokenLen;
+
+		// Convert character index to byte offset
+		size_t bytePos = charIndexToByteOffset(src, pos);
+
+		if (src[bytePos] != '\0') {
+			return static_cast<char32_t>(static_cast<unsigned char>(src[bytePos]));
+		}
+		return 0;
+	}
 
 	// Helper to peek the next non-whitespace character from source
 	// Returns the character or 0 if end of string
@@ -299,7 +327,7 @@ namespace Qd {
 	// Returns nullptr if token was a control keyword that was handled
 	// Returns a node if it's a literal or identifier
 	static IAstNode* parseSimpleToken(
-			char32_t token, u8t_scanner* scanner, ErrorReporter* /*errorReporter*/, size_t* n, const char* src) {
+			char32_t token, u8t_scanner* scanner, ErrorReporter* errorReporter, size_t* n, const char* src) {
 		if (token == U8T_INTEGER) {
 			const char* text = u8t_scanner_token_text(scanner, n);
 			IAstNode* node = new AstNodeLiteral(text, AstNodeLiteral::LiteralType::INTEGER);
@@ -317,8 +345,41 @@ namespace Qd {
 			return node;
 		} else if (token == U8T_IDENTIFIER) {
 			const char* text = u8t_scanner_token_text(scanner, n);
+			// Handle boolean literals: true = 1, false = 0
+			if (strcmp(text, "true") == 0) {
+				IAstNode* node = new AstNodeLiteral("1", AstNodeLiteral::LiteralType::INTEGER);
+				setNodePosition(node, scanner, src);
+				return node;
+			} else if (strcmp(text, "false") == 0) {
+				IAstNode* node = new AstNodeLiteral("0", AstNodeLiteral::LiteralType::INTEGER);
+				setNodePosition(node, scanner, src);
+				return node;
+			}
 			if (isBuiltInInstruction(text)) {
-				IAstNode* node = new AstNodeInstruction(text);
+				std::string instrName(text);
+				// Check for generic type parameter: instruction<Type>
+				// Use peekNextChar (no whitespace skip) to distinguish make<T> from len <
+				char32_t nextCh = peekNextChar(scanner, src);
+				if (nextCh == '<') {
+					u8t_scanner_scan(scanner); // Consume '<'
+					char32_t typeToken = u8t_scanner_scan(scanner);
+					if (typeToken == U8T_IDENTIFIER) {
+						std::string typeParam = u8t_scanner_token_text(scanner, n);
+						char32_t closeAngle = u8t_scanner_scan(scanner);
+						if (closeAngle == '>') {
+							IAstNode* node = new AstNodeInstruction(instrName, typeParam);
+							setNodePosition(node, scanner, src);
+							return node;
+						} else {
+							errorReporter->reportError(scanner, "Expected '>' after type parameter");
+							return nullptr;
+						}
+					} else {
+						errorReporter->reportError(scanner, "Expected type name after '<'");
+						return nullptr;
+					}
+				}
+				IAstNode* node = new AstNodeInstruction(instrName);
 				setNodePosition(node, scanner, src);
 				return node;
 			}
@@ -562,6 +623,13 @@ namespace Qd {
 			}
 
 			if (token == '}') {
+				// Check for incomplete operators before exiting
+				if (sawDot) {
+					errorReporter->reportError(scanner, "Expected field name after '.'");
+				}
+				if (sawAt) {
+					errorReporter->reportError(scanner, "Expected field name after '@'");
+				}
 				break;
 			}
 
@@ -691,6 +759,17 @@ namespace Qd {
 		if (token == U8T_IDENTIFIER) {
 			const char* text = u8t_scanner_token_text(scanner, n);
 
+			// Handle boolean literals: true = 1, false = 0
+			if (strcmp(text, "true") == 0) {
+				IAstNode* node = new AstNodeLiteral("1", AstNodeLiteral::LiteralType::INTEGER);
+				setNodePosition(node, scanner, src);
+				return node;
+			} else if (strcmp(text, "false") == 0) {
+				IAstNode* node = new AstNodeLiteral("0", AstNodeLiteral::LiteralType::INTEGER);
+				setNodePosition(node, scanner, src);
+				return node;
+			}
+
 			// break and continue are always allowed
 			if (strcmp(text, "break") == 0) {
 				IAstNode* node = new AstNodeBreak();
@@ -735,7 +814,30 @@ namespace Qd {
 			}
 
 			if (isBuiltInInstruction(text)) {
-				IAstNode* node = new AstNodeInstruction(text);
+				std::string instrName(text);
+				// Check for generic type parameter: instruction<Type>
+				// Use peekNextChar (no whitespace skip) to distinguish make<T> from len <
+				char32_t nextCh = peekNextChar(scanner, src);
+				if (nextCh == '<') {
+					u8t_scanner_scan(scanner); // Consume '<'
+					char32_t typeToken = u8t_scanner_scan(scanner);
+					if (typeToken == U8T_IDENTIFIER) {
+						std::string typeParam = u8t_scanner_token_text(scanner, n);
+						char32_t closeAngle = u8t_scanner_scan(scanner);
+						if (closeAngle == '>') {
+							IAstNode* node = new AstNodeInstruction(instrName, typeParam);
+							setNodePosition(node, scanner, src);
+							return node;
+						} else {
+							errorReporter->reportError(scanner, "Expected '>' after type parameter");
+							return nullptr;
+						}
+					} else {
+						errorReporter->reportError(scanner, "Expected type name after '<'");
+						return nullptr;
+					}
+				}
+				IAstNode* node = new AstNodeInstruction(instrName);
 				setNodePosition(node, scanner, src);
 				return node;
 			}
@@ -898,6 +1000,31 @@ namespace Qd {
 		AstNodeFunctionDeclaration* func = new AstNodeFunctionDeclaration(name, isPublic);
 		setNodePosition(func, scanner, src);
 
+		// Check for generic type parameters: fn name<T, U>(...)
+		char32_t peek = peekNextNonWhitespace(scanner, src);
+		if (peek == '<') {
+			u8t_scanner_scan(scanner); // Consume '<'
+			while (true) {
+				token = u8t_scanner_scan(scanner);
+				if (token == '>') {
+					break;
+				}
+				if (token == U8T_IDENTIFIER) {
+					const char* typeParam = u8t_scanner_token_text(scanner, &n);
+					func->addTypeParam(std::string(typeParam));
+
+					// Check for comma or closing >
+					peek = peekNextNonWhitespace(scanner, src);
+					if (peek == ',') {
+						u8t_scanner_scan(scanner); // Consume ','
+					}
+				} else if (token != ',') {
+					errorReporter->reportError(scanner, "Expected type parameter or '>' in generic function");
+					break;
+				}
+			}
+		}
+
 		token = u8t_scanner_scan(scanner);
 		if (token != '(') {
 			errorReporter->reportError(scanner, "Expected '(' after function name");
@@ -922,8 +1049,8 @@ namespace Qd {
 				std::string paramNameStr(paramName);
 
 				// Check if there's a type annotation
-				char32_t peek = u8t_scanner_peek(scanner);
-				if (peek == ':') {
+				char32_t paramPeek = u8t_scanner_peek(scanner);
+				if (paramPeek == ':') {
 					// Consume the ':'
 					u8t_scanner_scan(scanner);
 					// Get the type
@@ -980,6 +1107,7 @@ namespace Qd {
 		bool sawAt = false;
 		bool sawDot = false;
 		std::string dotVarName; // Variable name before the dot for field set
+		bool foundClosingBrace = false;
 
 		while ((token = u8t_scanner_scan(scanner)) != U8T_EOF) {
 			// Handle comments (// and /* */)
@@ -1000,6 +1128,14 @@ namespace Qd {
 			}
 
 			if (token == '}') {
+				// Check for incomplete operators before exiting
+				if (sawDot) {
+					errorReporter->reportError(scanner, "Expected field name after '.'");
+				}
+				if (sawAt) {
+					errorReporter->reportError(scanner, "Expected field name after '@'");
+				}
+				foundClosingBrace = true;
 				break;
 			}
 
@@ -1319,11 +1455,44 @@ namespace Qd {
 						ctxStmt->setParent(body);
 						body->addChild(ctxStmt);
 					}
+					continue; // Skip fallthrough after ctx parsing
 				} else {
+						// Handle boolean literals: true = 1, false = 0
+						if (strcmp(text, "true") == 0) {
+							IAstNode* node = new AstNodeLiteral("1", AstNodeLiteral::LiteralType::INTEGER);
+							setNodePosition(node, scanner, src);
+							tempNodes.push_back(node);
+						} else if (strcmp(text, "false") == 0) {
+							IAstNode* node = new AstNodeLiteral("0", AstNodeLiteral::LiteralType::INTEGER);
+							setNodePosition(node, scanner, src);
+							tempNodes.push_back(node);
+						} else
 					if (isBuiltInInstruction(text)) {
-						IAstNode* id = new AstNodeInstruction(text);
-						setNodePosition(id, scanner, src);
-						tempNodes.push_back(id);
+						std::string instrName(text);
+						// Check for generic type parameter: instruction<Type>
+						// Use peekNextChar (no whitespace skip) to distinguish make<T> from len <
+						char32_t nextCh = peekNextChar(scanner, src);
+						if (nextCh == '<') {
+							u8t_scanner_scan(scanner); // Consume '<'
+							char32_t typeToken = u8t_scanner_scan(scanner);
+							if (typeToken == U8T_IDENTIFIER) {
+								std::string typeParam = u8t_scanner_token_text(scanner, &n);
+								char32_t closeAngle = u8t_scanner_scan(scanner);
+								if (closeAngle == '>') {
+									IAstNode* id = new AstNodeInstruction(instrName, typeParam);
+									setNodePosition(id, scanner, src);
+									tempNodes.push_back(id);
+								} else {
+									errorReporter->reportError(scanner, "Expected '>' after type parameter");
+								}
+							} else {
+								errorReporter->reportError(scanner, "Expected type name after '<'");
+							}
+						} else {
+							IAstNode* id = new AstNodeInstruction(instrName);
+							setNodePosition(id, scanner, src);
+							tempNodes.push_back(id);
+						}
 					} else {
 						// Save identifier position for potential struct construction
 						size_t identPos = u8t_scanner_token_start(scanner);
@@ -1566,7 +1735,29 @@ namespace Qd {
 				}
 
 				tempNodes.push_back(arrNode);
+			} else {
+				// Check if this is an unrecognized token
+				// Skip whitespace which may come through as character tokens
+				if (token != ' ' && token != '\t' && token != '\n' && token != '\r') {
+					// Check if token is in the set of valid single-char tokens we expect
+					// Valid chars: { } ( ) [ ] : ; , . @ - + * / < > = ! & | ^
+					bool isValidChar = (token == '{' || token == '(' || token == ')' ||
+							token == ']' || token == ';' || token == ',' || token == '|' ||
+							token == '^');
+					if (!isValidChar && token < 256 && token != U8T_IDENTIFIER &&
+							token != U8T_INTEGER && token != U8T_FLOAT && token != U8T_STRING) {
+						std::string msg = "Unexpected character '";
+						msg += static_cast<char>(token);
+						msg += "'";
+						errorReporter->reportError(scanner, msg.c_str());
+					}
+				}
 			}
+		}
+
+		// Check if we hit EOF without finding closing brace
+		if (!foundClosingBrace) {
+			errorReporter->reportError(scanner, "Expected '}' to close function body (reached end of file)");
 		}
 
 		for (auto* node : tempNodes) {
@@ -1631,6 +1822,31 @@ namespace Qd {
 		const char* name = u8t_scanner_token_text(scanner, &n);
 		AstNodeStructDeclaration* structDecl = new AstNodeStructDeclaration(name, isPublic);
 		setNodePosition(structDecl, scanner, src);
+
+		// Check for generic type parameters: struct Name<T, U> { ... }
+		char32_t peek = peekNextNonWhitespace(scanner, src);
+		if (peek == '<') {
+			u8t_scanner_scan(scanner); // Consume '<'
+			while (true) {
+				token = u8t_scanner_scan(scanner);
+				if (token == '>') {
+					break;
+				}
+				if (token == U8T_IDENTIFIER) {
+					const char* typeParam = u8t_scanner_token_text(scanner, &n);
+					structDecl->addTypeParam(std::string(typeParam));
+
+					// Check for comma or closing >
+					peek = peekNextNonWhitespace(scanner, src);
+					if (peek == ',') {
+						u8t_scanner_scan(scanner); // Consume ','
+					}
+				} else if (token != ',') {
+					errorReporter->reportError(scanner, "Expected type parameter or '>' in generic struct");
+					break;
+				}
+			}
+		}
 
 		token = u8t_scanner_scan(scanner);
 		if (token != '{') {

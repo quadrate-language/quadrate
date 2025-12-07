@@ -1,0 +1,6 @@
+fn main( -- ) {
+    true print nl
+    false print nl
+    true if { "yes" } else { "no" } print nl
+    false if { "yes" } else { "no" } print nl
+}

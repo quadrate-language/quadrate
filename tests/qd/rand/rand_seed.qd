@@ -5,8 +5,8 @@ fn main() {
 	12345 rand::with_seed -> rng1
 	12345 rand::with_seed -> rng2
 
-	rng1 rand::next -> rng1 -> n1
-	rng2 rand::next -> rng2 -> n2
+	rng1 rand::next -> n1 -> rng1
+	rng2 rand::next -> n2 -> rng2
 
 	n1 n2 == if {
 		"PASS: Same seed produces same value"
@@ -17,7 +17,7 @@ fn main() {
 
 	// Test different seeds produce different values
 	99999 rand::with_seed -> rng3
-	rng3 rand::next -> rng3 -> n3
+	rng3 rand::next -> n3 -> rng3
 
 	n1 n3 != if {
 		"PASS: Different seeds produce different values"

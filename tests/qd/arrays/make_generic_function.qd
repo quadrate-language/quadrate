@@ -1,0 +1,20 @@
+// Test make<T> arrays - basic operations in function context
+fn create_and_fill( -- ) {
+	// Create array locally
+	5 make<i64> -> arr
+
+	// Fill with loop
+	0 5 1 for i {
+		arr i i 10 * set      // Fill with 0, 10, 20, ...
+	}
+
+	// Verify values
+	arr 0 nth print nl        // Should print = 0
+	arr 1 nth print nl        // Should print = 10
+	arr 4 nth print nl        // Should print = 40
+	arr len print nl          // Should print = 5
+}
+
+fn main( -- ) {
+	create_and_fill
+}

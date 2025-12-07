@@ -12,6 +12,10 @@ namespace Qd {
 			: mName(name), mParent(nullptr), mBody(nullptr), mThrows(false), mIsPublic(isPublic), mLine(0), mColumn(0) {
 		}
 
+		AstNodeFunctionDeclaration(const std::string& name, const std::vector<std::string>& typeParams, bool isPublic = false)
+			: mName(name), mTypeParams(typeParams), mParent(nullptr), mBody(nullptr), mThrows(false), mIsPublic(isPublic), mLine(0), mColumn(0) {
+		}
+
 		~AstNodeFunctionDeclaration() {
 			if (mBody) {
 				delete mBody;
@@ -121,8 +125,21 @@ namespace Qd {
 			return mIsPublic;
 		}
 
+		const std::vector<std::string>& typeParams() const {
+			return mTypeParams;
+		}
+
+		bool isGeneric() const {
+			return !mTypeParams.empty();
+		}
+
+		void addTypeParam(const std::string& typeParam) {
+			mTypeParams.push_back(typeParam);
+		}
+
 	private:
 		std::string mName;
+		std::vector<std::string> mTypeParams;
 		IAstNode* mParent;
 		IAstNode* mBody;
 		std::vector<IAstNode*> mInputParameters;

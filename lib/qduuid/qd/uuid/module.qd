@@ -14,7 +14,7 @@ pub fn v4( -- uuid:str) {
 	16 mem::alloc -> bytes
 	0 16 1 for it {
 		it -> i
-		rng 256 rand::int -> rng -> b
+		rng 256 rand::int -> b -> rng
 		bytes i b mem::set_byte
 	}
 
@@ -150,7 +150,7 @@ pub fn v4_seeded(seed:i64 -- uuid:str) {
 	16 mem::alloc -> bytes
 	0 16 1 for it {
 		it -> i
-		rng 256 rand::int -> rng -> b
+		rng 256 rand::int -> b -> rng
 		bytes i b mem::set_byte
 	}
 
