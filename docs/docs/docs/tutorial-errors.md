@@ -22,7 +22,7 @@ Use the `error` instruction to signal an error:
 fn division(a:i64 b:i64 -- result:i64)! {
 	dup 0 == if {
 		drop drop
-		0  // Return value (required even on error)
+		0  // Output value (required even on error)
 		"division by zero" -1 error
 	}
 	div

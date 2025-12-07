@@ -25,7 +25,6 @@ fn main( -- ) {
 	print   // Pop & print Stack: [1, 2]     Output: 3
 	print   // Pop & print Stack: [1]        Output: 2
 	print   // Pop & print Stack: []         Output: 1
-	nl
 }
 ```
 

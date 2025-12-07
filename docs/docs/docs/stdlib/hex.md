@@ -32,7 +32,7 @@ Invalid characters are skipped.
 ### decode_byte
 
 Decode a 2-character hex string to a byte value.
-Returns -1 if the input is invalid.
+Outputs -1 if the input is invalid.
 
 **Signature:** `( hex:str -- b:i64 )`
 
@@ -55,7 +55,7 @@ Returns -1 if the input is invalid.
 ### decoded_len
 
 Get the length of data that would result from decoding a hex string.
-Returns -1 if the hex string has invalid length (odd).
+Outputs -1 if the hex string has invalid length (odd).
 
 **Signature:** `( hex:str -- len:i64 )`
 

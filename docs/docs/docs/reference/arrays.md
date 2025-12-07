@@ -77,7 +77,7 @@ Creates a typed array (use with `make<Type>` syntax).
 
 ### len
 
-Returns the number of elements in an array.
+Outputs the number of elements in an array.
 
 **Signature:** `( arr -- len )`
 
@@ -87,7 +87,7 @@ arr len // number of elements
 
 ### nth
 
-Returns the element at the given index.
+Outputs the element at the given index.
 
 **Signature:** `( arr index -- value )`
 

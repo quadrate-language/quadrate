@@ -53,11 +53,11 @@ fn push_two( -- a:i64 b:i64) {
 
 | Signature | Meaning |
 |-----------|---------|
-| `(a:i64 -- b:i64)` | Takes 1, returns 1 |
-| `(a:i64 b:i64 -- c:i64)` | Takes 2, returns 1 |
-| `(x:i64 -- )` | Takes 1, returns nothing |
-| `( -- x:i64)` | Takes nothing, returns 1 |
-| `( -- )` | Takes nothing, returns nothing |
+| `(a:i64 -- b:i64)` | 1 input, 1 output |
+| `(a:i64 b:i64 -- c:i64)` | 2 inputs, 1 output |
+| `(x:i64 -- )` | 1 input, no outputs |
+| `( -- x:i64)` | No inputs, 1 output |
+| `( -- )` | No inputs, no outputs |
 
 ## Parameter Names
 
@@ -75,9 +75,9 @@ fn distance(x1:f64 y1:f64 x2:f64 y2:f64 -- d:f64) {
 }
 ```
 
-## Multiple Return Values
+## Multiple Outputs
 
-Functions can return multiple values:
+Functions can have multiple outputs:
 
 ```qd
 fn divmod(a:i64 b:i64 -- quotient:i64 remainder:i64) {
@@ -120,7 +120,7 @@ fn main( -- ) {
 }
 ```
 
-`main` takes no inputs and returns nothing.
+`main` takes no inputs and has no outputs.
 
 ## Function Names
 
@@ -162,7 +162,7 @@ Use `///` for documentation:
 ```qd
 /// Calculates the factorial of n
 /// @param n The number to calculate factorial of
-/// @return The factorial result
+/// @output The factorial result
 fn factorial(n:i64 -- result:i64) {
 	-> n
 	n 1 <= if {

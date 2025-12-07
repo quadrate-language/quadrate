@@ -103,8 +103,8 @@ fn greet(name:str -- ) {
 
 The signature `(a:i64 b:i64 -- sum:i64)` means:
 
-- Takes two integers (`a` and `b`)
-- Returns one integer (`sum`)
+- Two inputs: integers `a` and `b`
+- One output: integer `sum`
 
 ## What's Next?
 

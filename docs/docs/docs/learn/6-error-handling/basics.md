@@ -22,7 +22,7 @@ Use the `error` instruction to signal an error:
 fn divide(a:i64 b:i64 -- result:i64)! {
 	dup 0 == if {
 		drop drop
-		0  // Return value (required even on error)
+		0  // Output value (required even on error)
 		"division by zero" -1 error
 	}
 	/
@@ -126,7 +126,7 @@ fn main( -- ) {
 
 When an error occurs, the stack contains:
 
-1. The return value(s) declared in the signature
+1. The output value(s) declared in the signature
 2. An error value (which you should `drop`)
 
 ```qd
@@ -142,7 +142,7 @@ fn main( -- ) {
 		b print nl
 	} else {
 		drop  // The error value
-		// The two return values (0, 0) are also on stack
+		// The two output values (0, 0) are also on stack
 		drop drop
 	}
 }

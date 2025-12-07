@@ -102,16 +102,29 @@ fn bar( -- ) {
 }
 ```
 
-## Variables in Blocks
+## Block Scope
 
-Variables defined in blocks are visible in the whole function:
+Variables defined inside blocks (`if`, `for`, `loop`, `switch`) are only visible within that block:
 
 ```qd
 fn main( -- ) {
 	true if {
 		42 -> x
+		x print nl  // Works: x is in scope
 	}
-	x print nl  // Works: x is visible here
+	// x is NOT available here - it's out of scope
+}
+```
+
+If you need a variable after the block, define it before:
+
+```qd
+fn main( -- ) {
+	0 -> result
+	true if {
+		42 -> result
+	}
+	result print nl  // Works: result was defined outside the block
 }
 ```
 

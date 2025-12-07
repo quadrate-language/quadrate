@@ -20,7 +20,7 @@ Operations that compare values and return boolean results (0 or 1).
 
 ### == (eq)
 
-Returns 1 if a equals b, 0 otherwise.
+Outputs 1 if a equals b, 0 otherwise.
 
 **Signature:** `( a b -- bool )`
 
@@ -31,7 +31,7 @@ Returns 1 if a equals b, 0 otherwise.
 
 ### != (neq)
 
-Returns 1 if a does not equal b, 0 otherwise.
+Outputs 1 if a does not equal b, 0 otherwise.
 
 **Signature:** `( a b -- bool )`
 
@@ -46,7 +46,7 @@ Returns 1 if a does not equal b, 0 otherwise.
 
 ### < (lt)
 
-Returns 1 if a is less than b, 0 otherwise.
+Outputs 1 if a is less than b, 0 otherwise.
 
 **Signature:** `( a b -- bool )`
 
@@ -57,7 +57,7 @@ Returns 1 if a is less than b, 0 otherwise.
 
 ### <= (lte)
 
-Returns 1 if a is less than or equal to b, 0 otherwise.
+Outputs 1 if a is less than or equal to b, 0 otherwise.
 
 **Signature:** `( a b -- bool )`
 
@@ -69,7 +69,7 @@ Returns 1 if a is less than or equal to b, 0 otherwise.
 
 ### > (gt)
 
-Returns 1 if a is greater than b, 0 otherwise.
+Outputs 1 if a is greater than b, 0 otherwise.
 
 **Signature:** `( a b -- bool )`
 
@@ -80,7 +80,7 @@ Returns 1 if a is greater than b, 0 otherwise.
 
 ### >= (gte)
 
-Returns 1 if a is greater than or equal to b, 0 otherwise.
+Outputs 1 if a is greater than or equal to b, 0 otherwise.
 
 **Signature:** `( a b -- bool )`
 
@@ -96,7 +96,7 @@ Returns 1 if a is greater than or equal to b, 0 otherwise.
 
 ### within
 
-Returns 1 if val is in [low, high), 0 otherwise.
+Outputs 1 if val is in [low, high), 0 otherwise.
 
 **Signature:** `( val low high -- bool )`
 

@@ -50,9 +50,9 @@ fn main( -- ) {
 Stack before call: `[1, 2, 3]`
 Stack after call: `[6]`
 
-## Multiple Returns
+## Multiple Outputs
 
-Capture multiple return values:
+Capture multiple outputs:
 
 ```qd
 fn minmax(a:i64 b:i64 -- min:i64 max:i64) {
@@ -72,9 +72,9 @@ fn main( -- ) {
 }
 ```
 
-## Using Return Values
+## Using Outputs
 
-You can immediately use return values:
+You can immediately use outputs:
 
 ```qd
 fn square(x:i64 -- result:i64) { dup * }

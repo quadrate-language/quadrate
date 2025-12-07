@@ -57,7 +57,7 @@ fn main( -- ) {
 
 ## Conditional Expressions
 
-`if` can return values:
+`if` can leave values on the stack:
 
 ```qd
 fn abs(x:i64 -- result:i64) {

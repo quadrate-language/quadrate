@@ -1677,22 +1677,26 @@ namespace Qd {
 		}
 
 		// When entering a for loop, add its iterator name to the set
+		// Also create a new scope so variables defined inside don't leak out
 		if (node->type() == IAstNode::Type::FOR_STATEMENT) {
 			AstNodeForStatement* forStmt = static_cast<AstNodeForStatement*>(node);
 			std::unordered_set<std::string> childIterators = iteratorNames;
 			childIterators.insert(forStmt->iteratorName());
+			std::unordered_set<std::string> forLocals = localVariables; // New scope for the for body
 			for (size_t i = 0; i < node->childCount(); i++) {
-				validateReferencesInternal(node->child(i), localVariables, childIterators);
+				validateReferencesInternal(node->child(i), forLocals, childIterators);
 			}
 			return;
 		}
 
 		// When entering a loop or switch statement, use a placeholder iterator name for break/continue tracking
+		// Also create a new scope so variables defined inside don't leak out
 		if (node->type() == IAstNode::Type::LOOP_STATEMENT || node->type() == IAstNode::Type::SWITCH_STATEMENT) {
 			std::unordered_set<std::string> childIterators = iteratorNames;
 			childIterators.insert("__loop__"); // Placeholder to indicate we're inside a loop/switch
+			std::unordered_set<std::string> loopLocals = localVariables; // New scope for the loop body
 			for (size_t i = 0; i < node->childCount(); i++) {
-				validateReferencesInternal(node->child(i), localVariables, childIterators);
+				validateReferencesInternal(node->child(i), loopLocals, childIterators);
 			}
 			return;
 		}
@@ -1706,6 +1710,32 @@ namespace Qd {
 			// Process function body
 			for (size_t i = 0; i < node->childCount(); i++) {
 				validateReferencesInternal(node->child(i), funcLocalVariables, funcIterators);
+			}
+			return;
+		}
+
+		// Block-scoped constructs: variables defined inside don't leak out
+		// This includes if/else bodies, while bodies, blocks, etc.
+		if (node->type() == IAstNode::Type::IF_STATEMENT) {
+			AstNodeIfStatement* ifStmt = static_cast<AstNodeIfStatement*>(node);
+			// Process then body with its own scope
+			if (ifStmt->thenBody()) {
+				std::unordered_set<std::string> thenLocals = localVariables;
+				validateReferencesInternal(ifStmt->thenBody(), thenLocals, iteratorNames);
+			}
+			// Process else body with its own scope
+			if (ifStmt->elseBody()) {
+				std::unordered_set<std::string> elseLocals = localVariables;
+				validateReferencesInternal(ifStmt->elseBody(), elseLocals, iteratorNames);
+			}
+			return;
+		}
+
+		if (node->type() == IAstNode::Type::BLOCK) {
+			// Create a new scope for the block body
+			std::unordered_set<std::string> blockLocals = localVariables;
+			for (size_t i = 0; i < node->childCount(); i++) {
+				validateReferencesInternal(node->child(i), blockLocals, iteratorNames);
 			}
 			return;
 		}

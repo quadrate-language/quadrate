@@ -679,23 +679,23 @@ Subtracts 1 from a number.
 
 | Instruction | Signature | Description |
 |-------------|-----------|-------------|
-| [`==`](#eqeq) | `( a b -- bool )` | Returns 1 if a equals b, 0 otherwise. |
-| [`eq`](#eq) | `( a b -- bool )` | Returns 1 if a equals b, 0 otherwise. |
-| [`!=`](#bangeq) | `( a b -- bool )` | Returns 1 if a does not equal b, 0 otherwise. |
-| [`neq`](#neq) | `( a b -- bool )` | Returns 1 if a does not equal b, 0 otherwise. |
-| [`<`](#lt) | `( a b -- bool )` | Returns 1 if a is less than b, 0 otherwise. |
-| [`lt`](#lt) | `( a b -- bool )` | Returns 1 if a is less than b, 0 otherwise. |
-| [`<=`](#lteq) | `( a b -- bool )` | Returns 1 if a is less than or equal to b, 0 otherwise. |
-| [`lte`](#lte) | `( a b -- bool )` | Returns 1 if a is less than or equal to b, 0 otherwise. |
-| [`>`](#gt) | `( a b -- bool )` | Returns 1 if a is greater than b, 0 otherwise. |
-| [`gt`](#gt) | `( a b -- bool )` | Returns 1 if a is greater than b, 0 otherwise. |
-| [`>=`](#gteq) | `( a b -- bool )` | Returns 1 if a is greater than or equal to b, 0 otherwise. |
-| [`gte`](#gte) | `( a b -- bool )` | Returns 1 if a is greater than or equal to b, 0 otherwise. |
-| [`within`](#within) | `( val low high -- bool )` | Returns 1 if val is in [low, high), 0 otherwise. |
+| [`==`](#eqeq) | `( a b -- bool )` | Outputs 1 if a equals b, 0 otherwise. |
+| [`eq`](#eq) | `( a b -- bool )` | Outputs 1 if a equals b, 0 otherwise. |
+| [`!=`](#bangeq) | `( a b -- bool )` | Outputs 1 if a does not equal b, 0 otherwise. |
+| [`neq`](#neq) | `( a b -- bool )` | Outputs 1 if a does not equal b, 0 otherwise. |
+| [`<`](#lt) | `( a b -- bool )` | Outputs 1 if a is less than b, 0 otherwise. |
+| [`lt`](#lt) | `( a b -- bool )` | Outputs 1 if a is less than b, 0 otherwise. |
+| [`<=`](#lteq) | `( a b -- bool )` | Outputs 1 if a is less than or equal to b, 0 otherwise. |
+| [`lte`](#lte) | `( a b -- bool )` | Outputs 1 if a is less than or equal to b, 0 otherwise. |
+| [`>`](#gt) | `( a b -- bool )` | Outputs 1 if a is greater than b, 0 otherwise. |
+| [`gt`](#gt) | `( a b -- bool )` | Outputs 1 if a is greater than b, 0 otherwise. |
+| [`>=`](#gteq) | `( a b -- bool )` | Outputs 1 if a is greater than or equal to b, 0 otherwise. |
+| [`gte`](#gte) | `( a b -- bool )` | Outputs 1 if a is greater than or equal to b, 0 otherwise. |
+| [`within`](#within) | `( val low high -- bool )` | Outputs 1 if val is in [low, high), 0 otherwise. |
 
 #### ==
 
-Returns 1 if a equals b, 0 otherwise.
+Outputs 1 if a equals b, 0 otherwise.
 
 **Signature:** `( a b -- bool )`
 
@@ -709,7 +709,7 @@ Returns 1 if a equals b, 0 otherwise.
 
 #### eq
 
-Returns 1 if a equals b, 0 otherwise.
+Outputs 1 if a equals b, 0 otherwise.
 
 **Signature:** `( a b -- bool )`
 
@@ -717,7 +717,7 @@ Returns 1 if a equals b, 0 otherwise.
 
 #### !=
 
-Returns 1 if a does not equal b, 0 otherwise.
+Outputs 1 if a does not equal b, 0 otherwise.
 
 **Signature:** `( a b -- bool )`
 
@@ -731,7 +731,7 @@ Returns 1 if a does not equal b, 0 otherwise.
 
 #### neq
 
-Returns 1 if a does not equal b, 0 otherwise.
+Outputs 1 if a does not equal b, 0 otherwise.
 
 **Signature:** `( a b -- bool )`
 
@@ -739,7 +739,7 @@ Returns 1 if a does not equal b, 0 otherwise.
 
 #### <
 
-Returns 1 if a is less than b, 0 otherwise.
+Outputs 1 if a is less than b, 0 otherwise.
 
 **Signature:** `( a b -- bool )`
 
@@ -753,7 +753,7 @@ Returns 1 if a is less than b, 0 otherwise.
 
 #### lt
 
-Returns 1 if a is less than b, 0 otherwise.
+Outputs 1 if a is less than b, 0 otherwise.
 
 **Signature:** `( a b -- bool )`
 
@@ -761,7 +761,7 @@ Returns 1 if a is less than b, 0 otherwise.
 
 #### <=
 
-Returns 1 if a is less than or equal to b, 0 otherwise.
+Outputs 1 if a is less than or equal to b, 0 otherwise.
 
 **Signature:** `( a b -- bool )`
 
@@ -775,7 +775,7 @@ Returns 1 if a is less than or equal to b, 0 otherwise.
 
 #### lte
 
-Returns 1 if a is less than or equal to b, 0 otherwise.
+Outputs 1 if a is less than or equal to b, 0 otherwise.
 
 **Signature:** `( a b -- bool )`
 
@@ -783,7 +783,7 @@ Returns 1 if a is less than or equal to b, 0 otherwise.
 
 #### >
 
-Returns 1 if a is greater than b, 0 otherwise.
+Outputs 1 if a is greater than b, 0 otherwise.
 
 **Signature:** `( a b -- bool )`
 
@@ -797,7 +797,7 @@ Returns 1 if a is greater than b, 0 otherwise.
 
 #### gt
 
-Returns 1 if a is greater than b, 0 otherwise.
+Outputs 1 if a is greater than b, 0 otherwise.
 
 **Signature:** `( a b -- bool )`
 
@@ -805,7 +805,7 @@ Returns 1 if a is greater than b, 0 otherwise.
 
 #### >=
 
-Returns 1 if a is greater than or equal to b, 0 otherwise.
+Outputs 1 if a is greater than or equal to b, 0 otherwise.
 
 **Signature:** `( a b -- bool )`
 
@@ -819,7 +819,7 @@ Returns 1 if a is greater than or equal to b, 0 otherwise.
 
 #### gte
 
-Returns 1 if a is greater than or equal to b, 0 otherwise.
+Outputs 1 if a is greater than or equal to b, 0 otherwise.
 
 **Signature:** `( a b -- bool )`
 
@@ -827,7 +827,7 @@ Returns 1 if a is greater than or equal to b, 0 otherwise.
 
 #### within
 
-Returns 1 if val is in [low, high), 0 otherwise.
+Outputs 1 if val is in [low, high), 0 otherwise.
 
 **Signature:** `( val low high -- bool )`
 
@@ -943,8 +943,8 @@ Shifts a right by n bits (arithmetic shift).
 | [`makes`](#makes) | `( size -- arr )` | Creates an array of size strings, initialized to empty. |
 | [`makep`](#makep) | `( size -- arr )` | Creates an array of size pointers, initialized to null. |
 | [`make`](#make) | `( size -- arr )` | Creates a typed array (use with make<Type> syntax). |
-| [`len`](#len) | `( arr -- len )` | Returns the number of elements in an array. |
-| [`nth`](#nth) | `( arr index -- value )` | Returns the element at the given index. |
+| [`len`](#len) | `( arr -- len )` | Outputs the number of elements in an array. |
+| [`nth`](#nth) | `( arr index -- value )` | Outputs the element at the given index. |
 | [`set`](#set) | `( arr index value -- )` | Sets the element at the given index. |
 | [`append`](#append) | `( arr value -- arr )` | Appends a value to the array, returning the modified array. |
 | [`free`](#free) | `( arr -- )` | Frees the memory used by an array or struct. |
@@ -1021,7 +1021,7 @@ Creates a typed array (use with make<Type> syntax).
 
 #### len
 
-Returns the number of elements in an array.
+Outputs the number of elements in an array.
 
 **Signature:** `( arr -- len )`
 
@@ -1035,7 +1035,7 @@ arr len // number of elements
 
 #### nth
 
-Returns the element at the given index.
+Outputs the element at the given index.
 
 **Signature:** `( arr index -- value )`
 
