@@ -17,6 +17,15 @@
 static sigjmp_buf g_jmpBuf;
 static volatile sig_atomic_t g_inExecution = 0;
 
+// Readline hook for auto-indentation
+static std::string g_pendingIndent;
+static int insertIndentHook() {
+	if (!g_pendingIndent.empty()) {
+		rl_insert_text(g_pendingIndent.c_str());
+	}
+	return 0;
+}
+
 static void signalHandler(int sig) {
 	if (g_inExecution) {
 		siglongjmp(g_jmpBuf, sig);
@@ -66,14 +75,29 @@ public:
 
 		while (true) {
 			std::string prompt;
+			std::string indent;
 			if (braceDepth > 0) {
-				// Continuation prompt
+				// Continuation prompt with indentation indicator
 				prompt = std::string(COLOR_DIM) + "...> " + COLOR_RESET;
+				// Build indentation string (one tab per brace level)
+				for (int i = 0; i < braceDepth; i++) {
+					indent += "\t";
+				}
 			} else {
 				prompt = buildPrompt();
 			}
 
+			// Set up pre-input hook to insert indentation
+			if (!indent.empty()) {
+				g_pendingIndent = indent;
+				rl_startup_hook = insertIndentHook;
+			}
+
 			char* input = readline(prompt.c_str());
+
+			// Clear the hook
+			rl_startup_hook = nullptr;
+			g_pendingIndent.clear();
 
 			if (!input) {
 				// EOF (Ctrl+D)
