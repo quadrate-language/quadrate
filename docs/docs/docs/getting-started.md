@@ -12,24 +12,26 @@ Quadrate requires the following build tools:
 
 ### Installing Dependencies
 
+> **Note:** Arch Linux is currently the only tested and supported platform. Other platforms may work but are untested.
+
 #### Arch Linux
 ```bash
-sudo pacman -S meson clang ninja llvm
+sudo pacman -S meson clang ninja llvm readline
 ```
 
 #### Ubuntu/Debian
 ```bash
-sudo apt install meson ninja-build clang llvm-dev
+sudo apt install meson ninja-build clang llvm-dev libreadline-dev
 ```
 
 #### Fedora
 ```bash
-sudo dnf install meson ninja-build clang llvm-devel
+sudo dnf install meson ninja-build clang llvm-devel readline-devel
 ```
 
-#### macOS (with Homebrew)
+#### FreeBSD
 ```bash
-brew install meson ninja llvm
+pkg install meson ninja llvm readline
 ```
 
 ## Installation

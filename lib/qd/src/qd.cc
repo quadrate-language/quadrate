@@ -79,6 +79,54 @@ static std::string findModuleFile(const std::string& moduleName) {
 	return "";
 }
 
+// Helper to find the library directory (either build or installed location)
+static std::string findLibraryDir() {
+	// Try 1: QUADRATE_LIBDIR environment variable (for development/testing)
+	const char* libDir = getenv("QUADRATE_LIBDIR");
+	if (libDir && fs::exists(libDir)) {
+		return libDir;
+	}
+
+	// Try 2: Build directory (MESON_BUILD_ROOT/lib)
+	fs::path buildLibPath = fs::path(MESON_BUILD_ROOT) / "lib";
+	if (fs::exists(buildLibPath / "qdrt" / "libqdrt_static.a") ||
+		fs::exists(buildLibPath / "qdrt" / "libqdrt.a")) {
+		return buildLibPath.string();
+	}
+
+	// Try 3: System installed location (/usr/lib)
+	if (fs::exists("/usr/lib/libqdrt.a")) {
+		return "/usr/lib";
+	}
+
+	// Try 4: /usr/local/lib
+	if (fs::exists("/usr/local/lib/libqdrt.a")) {
+		return "/usr/local/lib";
+	}
+
+	// Fallback to build directory
+	return buildLibPath.string();
+}
+
+// Helper to find a static library file
+static std::string findStaticLib(const std::string& libDir, const std::string& libName) {
+	// In build directory: lib/<name>/lib<name>_static.a or lib/<name>/lib<name>.a
+	fs::path nestedStatic = fs::path(libDir) / libName / ("lib" + libName + "_static.a");
+	if (fs::exists(nestedStatic)) {
+		return nestedStatic.string();
+	}
+	fs::path nestedLib = fs::path(libDir) / libName / ("lib" + libName + ".a");
+	if (fs::exists(nestedLib)) {
+		return nestedLib.string();
+	}
+	// In installed location: lib<name>.a
+	fs::path flatLib = fs::path(libDir) / ("lib" + libName + ".a");
+	if (fs::exists(flatLib)) {
+		return flatLib.string();
+	}
+	return "";
+}
+
 // Module implementation
 struct qd_module {
 	std::string name;
@@ -330,29 +378,25 @@ void qd_build(qd_module* mod) {
 		// Store symbol map in module for later lookup
 		mod->symbol_map = symbol_map;
 
-		// Use clang/gcc to link the object file into a shared library
-		fs::path lib_path = fs::path(MESON_BUILD_ROOT) / "lib";
-		std::string link_cmd = "clang++ -shared ";
+		// Find the library directory (build or installed location)
+		std::string lib_dir = findLibraryDir();
+
+		// Use clang/gcc to link the object file into a shared library with static libs
+		std::string link_cmd = "clang++ -shared -fPIC ";
 		link_cmd += obj_file.string();
 		link_cmd += " -o ";
 		link_cmd += mod->so_path.string();
-		link_cmd += " -L" + (lib_path / "qdrt").string();
-		link_cmd += " -L" + (lib_path / "qdmath").string();
-		link_cmd += " -L" + (lib_path / "qdfmt").string();
-		link_cmd += " -L" + (lib_path / "qdio").string();
-		link_cmd += " -L" + (lib_path / "qdnet").string();
-		link_cmd += " -L" + (lib_path / "qdos").string();
-		link_cmd += " -L" + (lib_path / "qdstr").string();
-		link_cmd += " -L" + (lib_path / "qdtime").string();
-		link_cmd += " -L" + (lib_path / "qdmem").string();
-		link_cmd += " -L" + (lib_path / "qdstrconv").string();
-		link_cmd += " -lqdrt";
-		link_cmd += " -lqdmath -lqdfmt -lqdio";
-		link_cmd += " -lqdnet -lqdos -lqdstr";
-		link_cmd += " -lqdtime -lqdmem";
-		link_cmd += " -lqdstrconv";
+
+		// Link with static libraries (whole-archive to include all symbols)
+		std::vector<std::string> libs = {"qdrt", "qdmath", "qdfmt", "qdio", "qdnet", "qdos", "qdstr", "qdtime", "qdmem", "qdstrconv"};
+		for (const auto& lib : libs) {
+			std::string libPath = findStaticLib(lib_dir, lib);
+			if (!libPath.empty()) {
+				link_cmd += " -Wl,--whole-archive " + libPath + " -Wl,--no-whole-archive";
+			}
+		}
+
 		link_cmd += " -lm"; // Math library for sin, cos, etc.
-		link_cmd += " -Wl,-rpath,$ORIGIN";
 		link_cmd += " 2>&1";
 
 		FILE* link_output = popen(link_cmd.c_str(), "r");
