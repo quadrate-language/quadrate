@@ -56,6 +56,10 @@
 (constant_definition
   name: (identifier) @constant)
 
+; Compile-time env() function
+(env_call
+  "env" @function.builtin)
+
 ; Struct definitions
 (struct_definition
   name: (identifier) @type)

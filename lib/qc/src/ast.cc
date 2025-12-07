@@ -2,6 +2,7 @@
 #include "ast_node_comment.h"
 #include "ast_node_label.h"
 #include <cstdint>
+#include <cstdlib>
 #include <cstring>
 #include <fstream>
 #include <iostream>
@@ -219,6 +220,96 @@ namespace Qd {
 	static IAstNode* parseSwitchStatement(u8t_scanner* scanner, ErrorReporter* errorReporter, const char* src);
 	static AstNodeStructConstruction* parseStructConstruction(const std::string& structName, u8t_scanner* scanner,
 			ErrorReporter* errorReporter, const char* src, size_t startPos);
+
+	// Helper to parse constant value after '=' (handles literals and env() function)
+	// Returns the resolved string value, or empty string on error
+	static std::string parseConstantValue(u8t_scanner* scanner, ErrorReporter* errorReporter) {
+		size_t n;
+		char32_t token = u8t_scanner_scan(scanner);
+
+		// Check for env() function call
+		if (token == U8T_IDENTIFIER) {
+			const char* text = u8t_scanner_token_text(scanner, &n);
+			if (strcmp(text, "env") == 0) {
+				// Expect opening paren
+				token = u8t_scanner_scan(scanner);
+				if (token != '(') {
+					errorReporter->reportError(scanner, "Expected '(' after 'env'");
+					return "";
+				}
+
+				// Expect environment variable name as string
+				token = u8t_scanner_scan(scanner);
+				if (token != U8T_STRING) {
+					errorReporter->reportError(scanner, "Expected string argument for environment variable name");
+					return "";
+				}
+				const char* envNameText = u8t_scanner_token_text(scanner, &n);
+				// Remove quotes from string
+				std::string envName(envNameText);
+				if (envName.length() >= 2 && envName.front() == '"' && envName.back() == '"') {
+					envName = envName.substr(1, envName.length() - 2);
+				}
+
+				// Check for comma (optional default value) or closing paren
+				token = u8t_scanner_scan(scanner);
+				std::string defaultValue = "";
+				bool hasDefault = false;
+
+				if (token == ',') {
+					// Parse default value
+					token = u8t_scanner_scan(scanner);
+					if (token != U8T_STRING) {
+						errorReporter->reportError(scanner, "Expected string for default value in env()");
+						return "";
+					}
+					const char* defaultText = u8t_scanner_token_text(scanner, &n);
+					defaultValue = std::string(defaultText);
+					// Remove quotes from string
+					if (defaultValue.length() >= 2 && defaultValue.front() == '"' && defaultValue.back() == '"') {
+						defaultValue = defaultValue.substr(1, defaultValue.length() - 2);
+					}
+					hasDefault = true;
+					token = u8t_scanner_scan(scanner);
+				}
+
+				if (token != ')') {
+					errorReporter->reportError(scanner, "Expected ')' after env() arguments");
+					return "";
+				}
+
+				// Look up environment variable
+				const char* envValue = std::getenv(envName.c_str());
+				if (envValue != nullptr) {
+					// Wrap result in quotes so LLVM generator knows it's a string
+					return "\"" + std::string(envValue) + "\"";
+				} else if (hasDefault) {
+					// Wrap default in quotes so LLVM generator knows it's a string
+					return "\"" + defaultValue + "\"";
+				} else {
+					std::string errorMsg = "Environment variable '" + envName + "' is not set and no default provided";
+					errorReporter->reportError(scanner, errorMsg.c_str());
+					return "";
+				}
+			} else {
+				errorReporter->reportError(scanner, "Expected literal value or env() after '=' in constant declaration");
+				return "";
+			}
+		}
+
+		// Handle literal values
+		if (token == U8T_INTEGER || token == U8T_FLOAT) {
+			const char* valueText = u8t_scanner_token_text(scanner, &n);
+			return std::string(valueText);
+		} else if (token == U8T_STRING) {
+			// Keep quotes so LLVM generator knows it's a string
+			const char* valueText = u8t_scanner_token_text(scanner, &n);
+			return std::string(valueText);
+		}
+
+		errorReporter->reportError(scanner, "Expected literal value or env() after '=' in constant declaration");
+		return "";
+	}
 
 	// Helper to peek the immediate next character from source (no whitespace skip)
 	// Returns the character or 0 if end of string
@@ -2486,29 +2577,16 @@ namespace Qd {
 								std::string constNameStr(constName);
 								token = u8t_scanner_scan(&scanner);
 								if (token == '=') {
-									token = u8t_scanner_scan(&scanner);
-									AstNodeLiteral* value = nullptr;
-									if (token == U8T_INTEGER) {
-										const char* valueText = u8t_scanner_token_text(&scanner, &n);
-										value = new AstNodeLiteral(valueText, AstNodeLiteral::LiteralType::INTEGER);
-										setNodePosition(value, &scanner, src);
-									} else if (token == U8T_FLOAT) {
-										const char* valueText = u8t_scanner_token_text(&scanner, &n);
-										value = new AstNodeLiteral(valueText, AstNodeLiteral::LiteralType::FLOAT);
-										setNodePosition(value, &scanner, src);
-									} else if (token == U8T_STRING) {
-										const char* valueText = u8t_scanner_token_text(&scanner, &n);
-										value = new AstNodeLiteral(valueText, AstNodeLiteral::LiteralType::STRING);
-										setNodePosition(value, &scanner, src);
-									}
-									if (value) {
+									std::string value = parseConstantValue(&scanner, &errorReporter);
+									if (!value.empty()) {
 										AstNodeConstant* constDecl =
-												new AstNodeConstant(constNameStr, value->value().c_str(), true);
+												new AstNodeConstant(constNameStr, value.c_str(), true);
 										setNodePosition(constDecl, &scanner, src);
-										delete value; // Value is copied, no longer needed
 										constDecl->setParent(program);
 										program->addChild(constDecl);
 									}
+								} else {
+									errorReporter.reportError(&scanner, "Expected '=' after constant name");
 								}
 							} else {
 								errorReporter.reportError(&scanner, "Expected constant name after 'pub const'");
@@ -2754,27 +2832,10 @@ namespace Qd {
 						std::string constNameStr(constName);
 						token = u8t_scanner_scan(&scanner);
 						if (token == '=') {
-							token = u8t_scanner_scan(&scanner);
-							AstNodeLiteral* value = nullptr;
-							if (token == U8T_INTEGER) {
-								const char* valueText = u8t_scanner_token_text(&scanner, &n);
-								value = new AstNodeLiteral(valueText, AstNodeLiteral::LiteralType::INTEGER);
-								setNodePosition(value, &scanner, src);
-							} else if (token == U8T_FLOAT) {
-								const char* valueText = u8t_scanner_token_text(&scanner, &n);
-								value = new AstNodeLiteral(valueText, AstNodeLiteral::LiteralType::FLOAT);
-								setNodePosition(value, &scanner, src);
-							} else if (token == U8T_STRING) {
-								const char* valueText = u8t_scanner_token_text(&scanner, &n);
-								value = new AstNodeLiteral(valueText, AstNodeLiteral::LiteralType::STRING);
-								setNodePosition(value, &scanner, src);
-							} else {
-								errorReporter.reportError(&scanner, "Expected literal value after '=' in constant declaration");
-							}
-							if (value) {
-								AstNodeConstant* constDecl = new AstNodeConstant(constNameStr, value->value().c_str());
+							std::string value = parseConstantValue(&scanner, &errorReporter);
+							if (!value.empty()) {
+								AstNodeConstant* constDecl = new AstNodeConstant(constNameStr, value.c_str());
 								setNodePosition(constDecl, &scanner, src);
-								delete value; // Value is copied, no longer needed
 								constDecl->setParent(program);
 								program->addChild(constDecl);
 							}

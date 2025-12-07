@@ -101,12 +101,22 @@ module.exports = grammar({
     type: $ => seq($.identifier),
 
     // Constant: const name = value or pub const name = value
+    // or: const name = env("VAR", "default")
     constant_definition: $ => seq(
       optional('pub'),
       'const',
       field('name', $.identifier),
       '=',
-      field('value', $._expression),
+      field('value', choice($.env_call, $._expression)),
+    ),
+
+    // Compile-time env() function: env("VAR") or env("VAR", "default")
+    env_call: $ => seq(
+      'env',
+      '(',
+      field('var_name', $.string),
+      optional(seq(',', field('default', $.string))),
+      ')',
     ),
 
     // Use statement: use module
