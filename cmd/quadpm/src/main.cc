@@ -309,6 +309,105 @@ std::string gitClone(const GitRef& gitRef) {
 	return actualPackageName;
 }
 
+// Compile C sources in a package directory
+// Returns true on success, false on failure
+bool compileCsources(const std::string& packageDir, const std::string& moduleName) {
+	std::string srcDir = packageDir + "/src";
+	if (!fs::exists(srcDir) || !fs::is_directory(srcDir)) {
+		return true; // No src dir is not an error
+	}
+
+	// Collect all .c files
+	std::vector<std::string> cFiles;
+	for (const auto& entry : fs::directory_iterator(srcDir)) {
+		if (entry.is_regular_file() && entry.path().extension() == ".c") {
+			cFiles.push_back(entry.path().string());
+		}
+	}
+
+	if (cFiles.empty()) {
+		return true; // No C files is not an error
+	}
+
+	std::cout << "  → Compiling C sources...\n";
+
+	// Create lib directory
+	std::string libDir = packageDir + "/lib";
+	fs::create_directories(libDir);
+
+	// Library names
+	std::string libName = "lib" + moduleName;
+	std::string sharedLib = libDir + "/" + libName + ".so";
+	std::string staticLib = libDir + "/" + libName + "_static.a";
+
+	// Prefer clang, fallback to gcc
+	std::string compiler = "gcc";
+	if (system("which clang > /dev/null 2>&1") == 0) {
+		compiler = "clang";
+	}
+
+	// Compile to object files
+	std::vector<std::string> objFiles;
+	bool compileFailed = false;
+
+	for (const auto& cFile : cFiles) {
+		std::string objFile = libDir + "/" + fs::path(cFile).stem().string() + ".o";
+		objFiles.push_back(objFile);
+
+		// Compile with -fPIC for shared library compatibility
+		std::string includeFlags = "-I/usr/include";
+		if (fs::exists("dist/include/qdrt")) {
+			includeFlags += " -Idist/include";
+		}
+
+		std::string compileCmd =
+				compiler + " -c -fPIC -O2 -Wall " + includeFlags + " " + cFile + " -o " + objFile + " 2>&1";
+
+		int compileResult = execCommandLive(compileCmd);
+		if (compileResult != 0) {
+			std::cerr << COLOR_RED << "  ✗ Failed to compile " << COLOR_RESET << cFile << "\n";
+			compileFailed = true;
+			break;
+		}
+	}
+
+	if (compileFailed || objFiles.empty()) {
+		return false;
+	}
+
+	// Create shared library
+	std::string objList;
+	for (const auto& obj : objFiles) {
+		objList += obj + " ";
+	}
+
+	std::string linkSharedCmd = compiler + " -shared " + objList + "-o " + sharedLib + " 2>&1";
+	int linkResult = execCommandLive(linkSharedCmd);
+
+	if (linkResult == 0) {
+		std::cout << COLOR_GREEN << "  ✓ Built " << COLOR_RESET << libName << ".so\n";
+	} else {
+		std::cerr << COLOR_YELLOW << "  ⚠ Failed to build shared library" << COLOR_RESET << "\n";
+	}
+
+	// Create static library
+	std::string arCmd = "ar rcs " + staticLib + " " + objList + "2>&1";
+	int arResult = execCommandLive(arCmd);
+
+	if (arResult == 0) {
+		std::cout << COLOR_GREEN << "  ✓ Built " << COLOR_RESET << libName << "_static.a\n";
+	} else {
+		std::cerr << COLOR_YELLOW << "  ⚠ Failed to build static library" << COLOR_RESET << "\n";
+	}
+
+	// Clean up object files
+	for (const auto& obj : objFiles) {
+		fs::remove(obj);
+	}
+
+	return true;
+}
+
 // Print version information
 void printVersion() {
 	std::cout << "quadpm 0.1.0\n";
@@ -388,9 +487,11 @@ bool updatePackage(const std::string& packageDir) {
 
 	// Parse module@version format for display
 	std::string displayName = name;
+	std::string moduleName = name;
 	size_t atPos = name.find('@');
 	if (atPos != std::string::npos) {
-		displayName = name.substr(0, atPos) + " @ " + name.substr(atPos + 1);
+		moduleName = name.substr(0, atPos);
+		displayName = moduleName + " @ " + name.substr(atPos + 1);
 	}
 
 	std::cout << COLOR_CYAN << "Updating " << COLOR_BOLD << displayName << COLOR_RESET << "...\n";
@@ -405,6 +506,10 @@ bool updatePackage(const std::string& packageDir) {
 	}
 
 	std::cout << COLOR_GREEN << "  ✓ Updated " << displayName << COLOR_RESET << "\n";
+
+	// Rebuild C sources if present
+	compileCsources(packageDir, moduleName);
+
 	return true;
 }
 
