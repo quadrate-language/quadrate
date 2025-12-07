@@ -1,7 +1,5 @@
 # unicode
 
-Unicode character constants and classification.
-
 ## Constants
 
 | Name | Value | Description |
@@ -45,16 +43,16 @@ Unicode character constants and classification.
 | `comma` | `44` | Punctuation: Comma (,). |
 | `cr` | `13` | Control: Carriage return. |
 | `d` | `100` | Letter: Lowercase d. |
-| `digit0` | `48` | Digit: 0. |
-| `digit1` | `49` | Digit: 1. |
-| `digit2` | `50` | Digit: 2. |
-| `digit3` | `51` | Digit: 3. |
-| `digit4` | `52` | Digit: 4. |
-| `digit5` | `53` | Digit: 5. |
-| `digit6` | `54` | Digit: 6. |
-| `digit7` | `55` | Digit: 7. |
-| `digit8` | `56` | Digit: 8. |
-| `digit9` | `57` | Digit: 9. |
+| `digit0` | `48` | Digit = 0. |
+| `digit1` | `49` | Digit = 1. |
+| `digit2` | `50` | Digit = 2. |
+| `digit3` | `51` | Digit = 3. |
+| `digit4` | `52` | Digit = 4. |
+| `digit5` | `53` | Digit = 5. |
+| `digit6` | `54` | Digit = 6. |
+| `digit7` | `55` | Digit = 7. |
+| `digit8` | `56` | Digit = 8. |
+| `digit9` | `57` | Digit = 9. |
 | `dollar` | `36` | Punctuation: Dollar sign (it). |
 | `dot` | `46` | Punctuation: Period/dot (.). |
 | `dquote` | `34` | Punctuation: Double quote ("). |
@@ -79,7 +77,7 @@ Unicode character constants and classification.
 | `minus` | `45` | Punctuation: Minus/hyphen (-). |
 | `n` | `110` | Letter: Lowercase n. |
 | `newline` | `10` | Control: Newline (line feed). |
-| `nul` | `0` | Control: Null character. |
+| `nul` | `0` | Unicode character constants and classification. Control: Null character. |
 | `o` | `111` | Letter: Lowercase o. |
 | `p` | `112` | Letter: Lowercase p. |
 | `percent` | `37` | Punctuation: Percent (%). |

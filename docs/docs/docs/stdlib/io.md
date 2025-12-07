@@ -1,7 +1,5 @@
 # io
 
-File and stream I/O operations.
-
 ## Constants
 
 | Name | Value | Description |
@@ -10,7 +8,7 @@ File and stream I/O operations.
 | `AppendBinary` | `"ab"` | Open mode: append binary. |
 | `AppendRead` | `"a+"` | Open mode: append and read. |
 | `AppendReadBinary` | `"ab+"` | Open mode: append and read binary. |
-| `Read` | `"r"` | Open mode: read only. |
+| `Read` | `"r"` | File and stream I/O operations. Open mode: read only. |
 | `ReadBinary` | `"rb"` | Open mode: read binary. |
 | `ReadWrite` | `"r+"` | Open mode: read and write. |
 | `ReadWriteBinary` | `"rb+"` | Open mode: read and write binary. |
@@ -60,7 +58,7 @@ Check if at end of file.
 **Example:**
 
 ```qd
-f io::eof -> f -> at_end
+f io::eof -> f  // at_end
 ```
 
 ---
@@ -88,7 +86,7 @@ Open a file.
 **Example:**
 
 ```qd
-"data.txt" io::Read io::open! -> f
+"data.txt" io::Read io::open!  // f
 ```
 
 ---
@@ -116,7 +114,7 @@ Read bytes into buffer.
 **Example:**
 
 ```qd
-f buf 1024 io::read! -> n
+f buf 1024 io::read!  // n
 ```
 
 ---
@@ -138,7 +136,7 @@ Read a line from stdin.
 **Example:**
 
 ```qd
-io::readline! -> input
+io::readline!  // input
 ```
 
 ---
@@ -192,7 +190,7 @@ Get current position in file.
 **Example:**
 
 ```qd
-f io::tell! -> pos
+f io::tell!  // pos
 ```
 
 ---

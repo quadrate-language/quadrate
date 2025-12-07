@@ -5,114 +5,48 @@
   "structs": [],
   "functions": [
     {
-      "name": "read_u16_be",
-      "signature": "( buf:ptr offset:i64 -- value:i64 )",
+      "name": "compare",
+      "signature": "( a:ptr a_off:i64 b:ptr b_off:i64 count:i64 -- result:i64 )",
       "failable": false,
-      "description": "Read a 16-bit unsigned integer from memory in big-endian order.",
+      "description": "Compare two byte buffers.",
       "params": [
-        {"name": "buf", "type": "ptr", "description": "Buffer to read from"},
-        {"name": "offset", "type": "i64", "description": "Byte offset in buffer"}
+        {
+          "name": "a",
+          "type": "ptr",
+          "description": "First buffer"
+        },
+        {
+          "name": "a_off",
+          "type": "i64",
+          "description": "First buffer offset"
+        },
+        {
+          "name": "b",
+          "type": "ptr",
+          "description": "Second buffer"
+        },
+        {
+          "name": "b_off",
+          "type": "i64",
+          "description": "Second buffer offset"
+        },
+        {
+          "name": "count",
+          "type": "i64",
+          "description": "Number of bytes to compare"
+        }
       ],
-      "returns": [{"name": "value", "type": "i64", "description": "16-bit value"}],
-      "errors": [],
-      "examples": ["buf 0 bytes::read_u16_be -> val"]
-    },
-    {
-      "name": "read_u16_le",
-      "signature": "( buf:ptr offset:i64 -- value:i64 )",
-      "failable": false,
-      "description": "Read a 16-bit unsigned integer from memory in little-endian order.",
-      "params": [
-        {"name": "buf", "type": "ptr", "description": "Buffer to read from"},
-        {"name": "offset", "type": "i64", "description": "Byte offset in buffer"}
+      "returns": [
+        {
+          "name": "result",
+          "type": "i64",
+          "description": "0 if equal, negative if a<b, positive if a>b"
+        }
       ],
-      "returns": [{"name": "value", "type": "i64", "description": "16-bit value"}],
       "errors": [],
-      "examples": ["buf 0 bytes::read_u16_le -> val"]
-    },
-    {
-      "name": "read_u32_be",
-      "signature": "( buf:ptr offset:i64 -- value:i64 )",
-      "failable": false,
-      "description": "Read a 32-bit unsigned integer from memory in big-endian order.",
-      "params": [
-        {"name": "buf", "type": "ptr", "description": "Buffer to read from"},
-        {"name": "offset", "type": "i64", "description": "Byte offset in buffer"}
-      ],
-      "returns": [{"name": "value", "type": "i64", "description": "32-bit value"}],
-      "errors": [],
-      "examples": ["buf 0 bytes::read_u32_be -> val"]
-    },
-    {
-      "name": "read_u32_le",
-      "signature": "( buf:ptr offset:i64 -- value:i64 )",
-      "failable": false,
-      "description": "Read a 32-bit unsigned integer from memory in little-endian order.",
-      "params": [
-        {"name": "buf", "type": "ptr", "description": "Buffer to read from"},
-        {"name": "offset", "type": "i64", "description": "Byte offset in buffer"}
-      ],
-      "returns": [{"name": "value", "type": "i64", "description": "32-bit value"}],
-      "errors": [],
-      "examples": ["buf 0 bytes::read_u32_le -> val"]
-    },
-    {
-      "name": "write_u16_be",
-      "signature": "( buf:ptr offset:i64 value:i64 -- )",
-      "failable": false,
-      "description": "Write a 16-bit unsigned integer to memory in big-endian order.",
-      "params": [
-        {"name": "buf", "type": "ptr", "description": "Buffer to write to"},
-        {"name": "offset", "type": "i64", "description": "Byte offset in buffer"},
-        {"name": "value", "type": "i64", "description": "16-bit value to write"}
-      ],
-      "returns": [],
-      "errors": [],
-      "examples": ["buf 0 4660 bytes::write_u16_be"]
-    },
-    {
-      "name": "write_u32_be",
-      "signature": "( buf:ptr offset:i64 value:i64 -- )",
-      "failable": false,
-      "description": "Write a 32-bit unsigned integer to memory in big-endian order.",
-      "params": [
-        {"name": "buf", "type": "ptr", "description": "Buffer to write to"},
-        {"name": "offset", "type": "i64", "description": "Byte offset in buffer"},
-        {"name": "value", "type": "i64", "description": "32-bit value to write"}
-      ],
-      "returns": [],
-      "errors": [],
-      "examples": ["buf 0 305419896 bytes::write_u32_be"]
-    },
-    {
-      "name": "swap16",
-      "signature": "( value:i64 -- result:i64 )",
-      "failable": false,
-      "description": "Swap byte order of a 16-bit value.",
-      "params": [{"name": "value", "type": "i64", "description": "16-bit value"}],
-      "returns": [{"name": "result", "type": "i64", "description": "Byte-swapped value"}],
-      "errors": [],
-      "examples": ["4660 bytes::swap16 -> result  // 13330"]
-    },
-    {
-      "name": "swap32",
-      "signature": "( value:i64 -- result:i64 )",
-      "failable": false,
-      "description": "Swap byte order of a 32-bit value.",
-      "params": [{"name": "value", "type": "i64", "description": "32-bit value"}],
-      "returns": [{"name": "result", "type": "i64", "description": "Byte-swapped value"}],
-      "errors": [],
-      "examples": ["305419896 bytes::swap32 -> result  // 2018915346"]
-    },
-    {
-      "name": "swap64",
-      "signature": "( value:i64 -- result:i64 )",
-      "failable": false,
-      "description": "Swap byte order of a 64-bit value.",
-      "params": [{"name": "value", "type": "i64", "description": "64-bit value"}],
-      "returns": [{"name": "result", "type": "i64", "description": "Byte-swapped value"}],
-      "errors": [],
-      "examples": ["72623859790382856 bytes::swap64 -> result"]
+      "examples": [
+        "buf1 0 buf2 0 10 bytes::compare -> result"
+      ]
     },
     {
       "name": "copy",
@@ -120,15 +54,37 @@
       "failable": false,
       "description": "Copy bytes from one buffer to another.",
       "params": [
-        {"name": "dst", "type": "ptr", "description": "Destination buffer"},
-        {"name": "dst_off", "type": "i64", "description": "Destination offset"},
-        {"name": "src", "type": "ptr", "description": "Source buffer"},
-        {"name": "src_off", "type": "i64", "description": "Source offset"},
-        {"name": "count", "type": "i64", "description": "Number of bytes to copy"}
+        {
+          "name": "dst",
+          "type": "ptr",
+          "description": "Destination buffer"
+        },
+        {
+          "name": "dst_off",
+          "type": "i64",
+          "description": "Destination offset"
+        },
+        {
+          "name": "src",
+          "type": "ptr",
+          "description": "Source buffer"
+        },
+        {
+          "name": "src_off",
+          "type": "i64",
+          "description": "Source offset"
+        },
+        {
+          "name": "count",
+          "type": "i64",
+          "description": "Number of bytes to copy"
+        }
       ],
       "returns": [],
       "errors": [],
-      "examples": ["dst 0 src 0 10 bytes::copy"]
+      "examples": [
+        "dst 0 src 0 10 bytes::copy"
+      ]
     },
     {
       "name": "fill",
@@ -136,30 +92,446 @@
       "failable": false,
       "description": "Fill a buffer with a byte value.",
       "params": [
-        {"name": "buf", "type": "ptr", "description": "Buffer to fill"},
-        {"name": "offset", "type": "i64", "description": "Starting offset"},
-        {"name": "count", "type": "i64", "description": "Number of bytes to fill"},
-        {"name": "value", "type": "i64", "description": "Byte value to fill with"}
+        {
+          "name": "buf",
+          "type": "ptr",
+          "description": "Buffer to fill"
+        },
+        {
+          "name": "offset",
+          "type": "i64",
+          "description": "Starting offset"
+        },
+        {
+          "name": "count",
+          "type": "i64",
+          "description": "Number of bytes to fill"
+        },
+        {
+          "name": "value",
+          "type": "i64",
+          "description": "Byte value to fill with"
+        }
       ],
       "returns": [],
       "errors": [],
-      "examples": ["buf 0 10 0 bytes::fill"]
+      "examples": [
+        "buf 0 10 0 bytes::fill"
+      ]
     },
     {
-      "name": "compare",
-      "signature": "( a:ptr a_off:i64 b:ptr b_off:i64 count:i64 -- result:i64 )",
+      "name": "read_u16_be",
+      "signature": "( buf:ptr offset:i64 -- value:i64 )",
       "failable": false,
-      "description": "Compare two byte buffers. Returns 0 if equal, negative if a<b, positive if a>b.",
+      "description": "Read a 16-bit unsigned integer from memory in big-endian order.",
       "params": [
-        {"name": "a", "type": "ptr", "description": "First buffer"},
-        {"name": "a_off", "type": "i64", "description": "First buffer offset"},
-        {"name": "b", "type": "ptr", "description": "Second buffer"},
-        {"name": "b_off", "type": "i64", "description": "Second buffer offset"},
-        {"name": "count", "type": "i64", "description": "Number of bytes to compare"}
+        {
+          "name": "buf",
+          "type": "ptr",
+          "description": "Buffer to read from"
+        },
+        {
+          "name": "offset",
+          "type": "i64",
+          "description": "Byte offset in buffer"
+        }
       ],
-      "returns": [{"name": "result", "type": "i64", "description": "Comparison result"}],
+      "returns": [
+        {
+          "name": "value",
+          "type": "i64",
+          "description": "16-bit value"
+        }
+      ],
       "errors": [],
-      "examples": ["buf1 0 buf2 0 10 bytes::compare -> result"]
+      "examples": [
+        "buf 0 bytes::read_u16_be -> val"
+      ]
+    },
+    {
+      "name": "read_u16_le",
+      "signature": "( buf:ptr offset:i64 -- value:i64 )",
+      "failable": false,
+      "description": "Read a 16-bit unsigned integer from memory in little-endian order.",
+      "params": [
+        {
+          "name": "buf",
+          "type": "ptr",
+          "description": "Buffer to read from"
+        },
+        {
+          "name": "offset",
+          "type": "i64",
+          "description": "Byte offset in buffer"
+        }
+      ],
+      "returns": [
+        {
+          "name": "value",
+          "type": "i64",
+          "description": "16-bit value"
+        }
+      ],
+      "errors": [],
+      "examples": [
+        "buf 0 bytes::read_u16_le -> val"
+      ]
+    },
+    {
+      "name": "read_u32_be",
+      "signature": "( buf:ptr offset:i64 -- value:i64 )",
+      "failable": false,
+      "description": "Read a 32-bit unsigned integer from memory in big-endian order.",
+      "params": [
+        {
+          "name": "buf",
+          "type": "ptr",
+          "description": "Buffer to read from"
+        },
+        {
+          "name": "offset",
+          "type": "i64",
+          "description": "Byte offset in buffer"
+        }
+      ],
+      "returns": [
+        {
+          "name": "value",
+          "type": "i64",
+          "description": "32-bit value"
+        }
+      ],
+      "errors": [],
+      "examples": [
+        "buf 0 bytes::read_u32_be -> val"
+      ]
+    },
+    {
+      "name": "read_u32_le",
+      "signature": "( buf:ptr offset:i64 -- value:i64 )",
+      "failable": false,
+      "description": "Read a 32-bit unsigned integer from memory in little-endian order.",
+      "params": [
+        {
+          "name": "buf",
+          "type": "ptr",
+          "description": "Buffer to read from"
+        },
+        {
+          "name": "offset",
+          "type": "i64",
+          "description": "Byte offset in buffer"
+        }
+      ],
+      "returns": [
+        {
+          "name": "value",
+          "type": "i64",
+          "description": "32-bit value"
+        }
+      ],
+      "errors": [],
+      "examples": [
+        "buf 0 bytes::read_u32_le -> val"
+      ]
+    },
+    {
+      "name": "read_u64_be",
+      "signature": "( buf:ptr offset:i64 -- value:i64 )",
+      "failable": false,
+      "description": "Read a 64-bit unsigned integer from memory in big-endian order.",
+      "params": [
+        {
+          "name": "buf",
+          "type": "ptr",
+          "description": "Buffer to read from"
+        },
+        {
+          "name": "offset",
+          "type": "i64",
+          "description": "Byte offset in buffer"
+        }
+      ],
+      "returns": [
+        {
+          "name": "value",
+          "type": "i64",
+          "description": "64-bit value"
+        }
+      ],
+      "errors": [],
+      "examples": [
+        "buf 0 bytes::read_u64_be -> val"
+      ]
+    },
+    {
+      "name": "read_u64_le",
+      "signature": "( buf:ptr offset:i64 -- value:i64 )",
+      "failable": false,
+      "description": "Read a 64-bit unsigned integer from memory in little-endian order.",
+      "params": [
+        {
+          "name": "buf",
+          "type": "ptr",
+          "description": "Buffer to read from"
+        },
+        {
+          "name": "offset",
+          "type": "i64",
+          "description": "Byte offset in buffer"
+        }
+      ],
+      "returns": [
+        {
+          "name": "value",
+          "type": "i64",
+          "description": "64-bit value"
+        }
+      ],
+      "errors": [],
+      "examples": [
+        "buf 0 bytes::read_u64_le -> val"
+      ]
+    },
+    {
+      "name": "swap16",
+      "signature": "( value:i64 -- result:i64 )",
+      "failable": false,
+      "description": "Swap byte order of a 16-bit value.",
+      "params": [
+        {
+          "name": "value",
+          "type": "i64",
+          "description": "16-bit value"
+        }
+      ],
+      "returns": [
+        {
+          "name": "result",
+          "type": "i64",
+          "description": "Byte-swapped value"
+        }
+      ],
+      "errors": [],
+      "examples": [
+        "0x1234 bytes::swap16 -> result  // 0x3412"
+      ]
+    },
+    {
+      "name": "swap32",
+      "signature": "( value:i64 -- result:i64 )",
+      "failable": false,
+      "description": "Swap byte order of a 32-bit value.",
+      "params": [
+        {
+          "name": "value",
+          "type": "i64",
+          "description": "32-bit value"
+        }
+      ],
+      "returns": [
+        {
+          "name": "result",
+          "type": "i64",
+          "description": "Byte-swapped value"
+        }
+      ],
+      "errors": [],
+      "examples": [
+        "0x12345678 bytes::swap32 -> result  // 0x78563412"
+      ]
+    },
+    {
+      "name": "swap64",
+      "signature": "( value:i64 -- result:i64 )",
+      "failable": false,
+      "description": "Swap byte order of a 64-bit value.",
+      "params": [
+        {
+          "name": "value",
+          "type": "i64",
+          "description": "64-bit value"
+        }
+      ],
+      "returns": [
+        {
+          "name": "result",
+          "type": "i64",
+          "description": "Byte-swapped value"
+        }
+      ],
+      "errors": [],
+      "examples": [
+        "0x0102030405060708 bytes::swap64 -> result  // 0x0807060504030201"
+      ]
+    },
+    {
+      "name": "write_u16_be",
+      "signature": "( buf:ptr offset:i64 value:i64 -- )",
+      "failable": false,
+      "description": "Write a 16-bit unsigned integer to memory in big-endian order.",
+      "params": [
+        {
+          "name": "buf",
+          "type": "ptr",
+          "description": "Buffer to write to"
+        },
+        {
+          "name": "offset",
+          "type": "i64",
+          "description": "Byte offset in buffer"
+        },
+        {
+          "name": "value",
+          "type": "i64",
+          "description": "16-bit value to write"
+        }
+      ],
+      "returns": [],
+      "errors": [],
+      "examples": [
+        "buf 0 0x1234 bytes::write_u16_be"
+      ]
+    },
+    {
+      "name": "write_u16_le",
+      "signature": "( buf:ptr offset:i64 value:i64 -- )",
+      "failable": false,
+      "description": "Write a 16-bit unsigned integer to memory in little-endian order.",
+      "params": [
+        {
+          "name": "buf",
+          "type": "ptr",
+          "description": "Buffer to write to"
+        },
+        {
+          "name": "offset",
+          "type": "i64",
+          "description": "Byte offset in buffer"
+        },
+        {
+          "name": "value",
+          "type": "i64",
+          "description": "16-bit value to write"
+        }
+      ],
+      "returns": [],
+      "errors": [],
+      "examples": [
+        "buf 0 0x1234 bytes::write_u16_le"
+      ]
+    },
+    {
+      "name": "write_u32_be",
+      "signature": "( buf:ptr offset:i64 value:i64 -- )",
+      "failable": false,
+      "description": "Write a 32-bit unsigned integer to memory in big-endian order.",
+      "params": [
+        {
+          "name": "buf",
+          "type": "ptr",
+          "description": "Buffer to write to"
+        },
+        {
+          "name": "offset",
+          "type": "i64",
+          "description": "Byte offset in buffer"
+        },
+        {
+          "name": "value",
+          "type": "i64",
+          "description": "32-bit value to write"
+        }
+      ],
+      "returns": [],
+      "errors": [],
+      "examples": [
+        "buf 0 0x12345678 bytes::write_u32_be"
+      ]
+    },
+    {
+      "name": "write_u32_le",
+      "signature": "( buf:ptr offset:i64 value:i64 -- )",
+      "failable": false,
+      "description": "Write a 32-bit unsigned integer to memory in little-endian order.",
+      "params": [
+        {
+          "name": "buf",
+          "type": "ptr",
+          "description": "Buffer to write to"
+        },
+        {
+          "name": "offset",
+          "type": "i64",
+          "description": "Byte offset in buffer"
+        },
+        {
+          "name": "value",
+          "type": "i64",
+          "description": "32-bit value to write"
+        }
+      ],
+      "returns": [],
+      "errors": [],
+      "examples": [
+        "buf 0 0x12345678 bytes::write_u32_le"
+      ]
+    },
+    {
+      "name": "write_u64_be",
+      "signature": "( buf:ptr offset:i64 value:i64 -- )",
+      "failable": false,
+      "description": "Write a 64-bit unsigned integer to memory in big-endian order.",
+      "params": [
+        {
+          "name": "buf",
+          "type": "ptr",
+          "description": "Buffer to write to"
+        },
+        {
+          "name": "offset",
+          "type": "i64",
+          "description": "Byte offset in buffer"
+        },
+        {
+          "name": "value",
+          "type": "i64",
+          "description": "64-bit value to write"
+        }
+      ],
+      "returns": [],
+      "errors": [],
+      "examples": [
+        "buf 0 0x123456789ABCDEF0 bytes::write_u64_be"
+      ]
+    },
+    {
+      "name": "write_u64_le",
+      "signature": "( buf:ptr offset:i64 value:i64 -- )",
+      "failable": false,
+      "description": "Write a 64-bit unsigned integer to memory in little-endian order.",
+      "params": [
+        {
+          "name": "buf",
+          "type": "ptr",
+          "description": "Buffer to write to"
+        },
+        {
+          "name": "offset",
+          "type": "i64",
+          "description": "Byte offset in buffer"
+        },
+        {
+          "name": "value",
+          "type": "i64",
+          "description": "64-bit value to write"
+        }
+      ],
+      "returns": [],
+      "errors": [],
+      "examples": [
+        "buf 0 0x123456789ABCDEF0 bytes::write_u64_le"
+      ]
     }
   ]
 }

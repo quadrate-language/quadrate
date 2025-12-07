@@ -5,30 +5,6 @@
   "structs": [],
   "functions": [
     {
-      "name": "encode",
-      "signature": "( input:str -- encoded:str )",
-      "failable": false,
-      "description": "Encode a string to base64.",
-      "params": [
-        {
-          "name": "input",
-          "type": "str",
-          "description": "String to encode"
-        }
-      ],
-      "returns": [
-        {
-          "name": "encoded",
-          "type": "str",
-          "description": "Base64-encoded string"
-        }
-      ],
-      "errors": [],
-      "examples": [
-        "\"Hello\" base64::encode -> b64"
-      ]
-    },
-    {
       "name": "decode",
       "signature": "( encoded:str -- decoded:str )",
       "failable": false,
@@ -54,19 +30,14 @@
     },
     {
       "name": "encode",
-      "signature": "( data:ptr len:i64 -- encoded:str )",
+      "signature": "( input:str -- encoded:str )",
       "failable": false,
-      "description": "Encode binary data to base64 string.",
+      "description": "Encode a string to base64.",
       "params": [
         {
-          "name": "data",
-          "type": "ptr",
-          "description": "Buffer to encode"
-        },
-        {
-          "name": "len",
-          "type": "i64",
-          "description": "Length of data"
+          "name": "input",
+          "type": "str",
+          "description": "String to encode"
         }
       ],
       "returns": [
@@ -78,7 +49,7 @@
       ],
       "errors": [],
       "examples": [
-        "buf 5 base64::encode -> b64"
+        "\"Hello\" base64::encode -> b64"
       ]
     }
   ]

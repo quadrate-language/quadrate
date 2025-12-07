@@ -1,6 +1,6 @@
 {
   "name": "io",
-  "description": "File and stream I/O operations.",
+  "description": "",
   "constants": [
     {
       "name": "Append",
@@ -25,7 +25,7 @@
     {
       "name": "Read",
       "value": "\"r\"",
-      "description": "Open mode: read only."
+      "description": "File and stream I/O operations. Open mode: read only."
     },
     {
       "name": "ReadBinary",

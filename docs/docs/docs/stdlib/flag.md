@@ -28,7 +28,7 @@ Check if a boolean flag exists.
 **Example:**
 
 ```qd
-f "--verbose" flag::bool if { "verbose" . nl }
+f "--verbose" flag::bool if { "verbose" print nl }
 ```
 
 ---
@@ -73,7 +73,7 @@ Get float value of a flag.
 **Example:**
 
 ```qd
-f "--rate" flag::float! -> rate
+f "--rate" flag::float!  // rate
 ```
 
 ---
@@ -100,7 +100,7 @@ Get integer value of a flag.
 **Example:**
 
 ```qd
-f "--count" flag::int! -> count
+f "--count" flag::int!  // count
 ```
 
 ---
@@ -122,7 +122,7 @@ Parse arguments from read instruction.
 **Example:**
 
 ```qd
-read flag::parse -> f
+read flag::parse  // f
 ```
 
 ---
@@ -170,5 +170,5 @@ Get string value of a flag.
 **Example:**
 
 ```qd
-f "--name" flag::string! -> name
+f "--name" flag::string!  // name
 ```

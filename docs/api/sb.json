@@ -1,66 +1,19 @@
 {
   "name": "sb",
-  "description": "StringBuilder for efficient string building. Avoids O(n^2) cost of repeated str::concat by using a growable buffer.",
+  "description": "StringBuilder - Efficient string building. Avoids O(n\u00b2) cost of repeated str::concat.",
   "constants": [],
   "structs": [
     {
       "name": "StringBuilder",
-      "description": "Growable buffer for building strings efficiently.",
-      "fields": [
-        {"name": "buf", "type": "ptr", "description": "Internal buffer"},
-        {"name": "len", "type": "i64", "description": "Current content length"},
-        {"name": "cap", "type": "i64", "description": "Buffer capacity"}
-      ]
+      "description": "StringBuilder struct holds buffer, length, and capacity."
     }
   ],
   "functions": [
     {
-      "name": "new",
-      "signature": "( -- sb:ptr )",
-      "failable": false,
-      "description": "Create a new StringBuilder with default capacity (64 bytes).",
-      "params": [],
-      "returns": [
-        {
-          "name": "sb",
-          "type": "ptr",
-          "description": "New empty builder"
-        }
-      ],
-      "errors": [],
-      "examples": [
-        "sb::new -> builder"
-      ]
-    },
-    {
-      "name": "with_capacity",
-      "signature": "( capacity:i64 -- sb:ptr )",
-      "failable": false,
-      "description": "Create a StringBuilder with specific initial capacity.",
-      "params": [
-        {
-          "name": "capacity",
-          "type": "i64",
-          "description": "Initial buffer size (minimum 16)"
-        }
-      ],
-      "returns": [
-        {
-          "name": "sb",
-          "type": "ptr",
-          "description": "New empty builder"
-        }
-      ],
-      "errors": [],
-      "examples": [
-        "1024 sb::with_capacity -> builder"
-      ]
-    },
-    {
       "name": "append",
       "signature": "( sb:ptr s:str -- sb:ptr )",
       "failable": false,
-      "description": "Append a string to the builder. Grows buffer if needed.",
+      "description": "Append a string to the builder.",
       "params": [
         {
           "name": "sb",
@@ -111,7 +64,7 @@
       ],
       "errors": [],
       "examples": [
-        "builder 65 sb::append_char -> builder  // append 'A'"
+        "builder 65 sb::append_char -> builder"
       ]
     },
     {
@@ -144,34 +97,10 @@
       ]
     },
     {
-      "name": "length",
-      "signature": "( sb:ptr -- len:i64 )",
-      "failable": false,
-      "description": "Get current length of builder content.",
-      "params": [
-        {
-          "name": "sb",
-          "type": "ptr",
-          "description": "Builder to check"
-        }
-      ],
-      "returns": [
-        {
-          "name": "len",
-          "type": "i64",
-          "description": "Current content length"
-        }
-      ],
-      "errors": [],
-      "examples": [
-        "builder sb::length -> len"
-      ]
-    },
-    {
       "name": "build",
       "signature": "( sb:ptr -- s:str )",
       "failable": false,
-      "description": "Build the final string. Does not consume the builder (can continue appending).",
+      "description": "Build the final string (does not consume builder).",
       "params": [
         {
           "name": "sb",
@@ -192,28 +121,10 @@
       ]
     },
     {
-      "name": "free",
-      "signature": "( sb:ptr -- )",
-      "failable": false,
-      "description": "Free the builder's resources. Call when done with the builder.",
-      "params": [
-        {
-          "name": "sb",
-          "type": "ptr",
-          "description": "Builder to free"
-        }
-      ],
-      "returns": [],
-      "errors": [],
-      "examples": [
-        "builder sb::free"
-      ]
-    },
-    {
       "name": "finish",
       "signature": "( sb:ptr -- s:str )",
       "failable": false,
-      "description": "Build string and free builder in one call. Use when done building.",
+      "description": "Build string and free builder in one call.",
       "params": [
         {
           "name": "sb",
@@ -231,6 +142,90 @@
       "errors": [],
       "examples": [
         "builder sb::finish -> result"
+      ]
+    },
+    {
+      "name": "free",
+      "signature": "( sb:ptr -- )",
+      "failable": false,
+      "description": "Free the builder's resources.",
+      "params": [
+        {
+          "name": "sb",
+          "type": "ptr",
+          "description": "Builder to free"
+        }
+      ],
+      "returns": [],
+      "errors": [],
+      "examples": [
+        "builder sb::free"
+      ]
+    },
+    {
+      "name": "length",
+      "signature": "( sb:ptr -- sblen:i64 )",
+      "failable": false,
+      "description": "Get current length of builder content.",
+      "params": [
+        {
+          "name": "sb",
+          "type": "ptr",
+          "description": "Builder to check"
+        }
+      ],
+      "returns": [
+        {
+          "name": "sblen",
+          "type": "i64",
+          "description": "Current content length"
+        }
+      ],
+      "errors": [],
+      "examples": [
+        "builder sb::length -> sblen"
+      ]
+    },
+    {
+      "name": "new",
+      "signature": "( -- sb:ptr )",
+      "failable": false,
+      "description": "Create a new StringBuilder with default capacity.",
+      "params": [],
+      "returns": [
+        {
+          "name": "sb",
+          "type": "ptr",
+          "description": "New empty builder"
+        }
+      ],
+      "errors": [],
+      "examples": [
+        "sb::new -> builder"
+      ]
+    },
+    {
+      "name": "with_capacity",
+      "signature": "( capacity:i64 -- sb:ptr )",
+      "failable": false,
+      "description": "Create a StringBuilder with specific initial capacity.",
+      "params": [
+        {
+          "name": "capacity",
+          "type": "i64",
+          "description": "Initial buffer size"
+        }
+      ],
+      "returns": [
+        {
+          "name": "sb",
+          "type": "ptr",
+          "description": "New empty builder"
+        }
+      ],
+      "errors": [],
+      "examples": [
+        "1024 sb::with_capacity -> builder"
       ]
     }
   ]

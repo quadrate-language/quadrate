@@ -24,7 +24,7 @@ Allocate memory.
 **Example:**
 
 ```qd
-1024 mem::alloc -> buf
+1024 mem::alloc  // buf
 ```
 
 ---
@@ -105,7 +105,7 @@ Convert string to buffer.
 **Example:**
 
 ```qd
-"hello" mem::from_string -> buf -> len
+"hello" mem::from_string -> buf  // len
 ```
 
 ---
@@ -128,7 +128,7 @@ Get a 64-bit integer at offset.
 **Example:**
 
 ```qd
-buf 0 mem::get -> n
+buf 0 mem::get  // n
 ```
 
 ---
@@ -151,7 +151,7 @@ Get a byte at offset.
 **Example:**
 
 ```qd
-buf 0 mem::get_byte -> b
+buf 0 mem::get_byte  // b
 ```
 
 ---
@@ -174,7 +174,7 @@ Get a 64-bit float at offset.
 **Example:**
 
 ```qd
-buf 0 mem::get_float -> x
+buf 0 mem::get_float  // x
 ```
 
 ---
@@ -197,7 +197,7 @@ Get a pointer at offset.
 **Example:**
 
 ```qd
-buf 0 mem::get_ptr -> p
+buf 0 mem::get_ptr  // p
 ```
 
 ---
@@ -242,7 +242,7 @@ Reallocate memory to new size.
 **Example:**
 
 ```qd
-buf 2048 mem::realloc -> buf
+buf 2048 mem::realloc  // buf
 ```
 
 ---
@@ -345,7 +345,7 @@ Convert buffer to string.
 **Example:**
 
 ```qd
-buf len mem::to_string -> s
+buf len mem::to_string  // s
 ```
 
 ---

@@ -35,7 +35,7 @@
       ],
       "errors": [],
       "examples": [
-        "f \"--verbose\" flag::bool if { \"verbose\" . nl }"
+        "f \"--verbose\" flag::bool if { \"verbose\" print nl }"
       ]
     },
     {

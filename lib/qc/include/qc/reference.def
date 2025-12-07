@@ -1,0 +1,481 @@
+// Quadrate Language Reference
+// This file defines all keywords and built-in instructions with documentation.
+// Used to generate the language reference documentation.
+//
+// Format:
+//   KEYWORD(name, "description")
+//   BUILTIN(name, "signature", "description")
+
+// ============================================================================
+// KEYWORDS
+// ============================================================================
+
+/// Function declaration keyword.
+/// @example fn add(a:i64 b:i64 -- sum:i64) { + }
+KEYWORD(fn, "Declares a function with a stack signature.")
+
+/// Public visibility modifier.
+/// @example pub fn greet( -- ) { "Hello" print nl }
+KEYWORD(pub, "Makes a function, constant, or struct visible to other modules.")
+
+/// Constant declaration keyword.
+/// @example const PI = 3.14159
+KEYWORD(const, "Declares a compile-time constant value.")
+
+/// Struct declaration keyword.
+/// @example struct Point { x:f64 y:f64 }
+KEYWORD(struct, "Declares a structured data type with named fields.")
+
+/// Module import keyword.
+/// @example use str
+KEYWORD(use, "Imports a module, making its functions available with module::function syntax.")
+
+/// Conditional execution keyword.
+/// @example 5 3 > if { "yes" print }
+KEYWORD(if, "Executes a block if the top of stack is true (non-zero).")
+
+/// Alternative branch keyword.
+/// @example x 0 > if { "positive" } else { "non-positive" }
+KEYWORD(else, "Provides an alternative block when the if condition is false.")
+
+/// Counted loop keyword.
+/// @example 0 10 1 for i { i print nl }
+KEYWORD(for, "Iterates from start to end with a step, binding the iterator variable.")
+
+/// Infinite loop keyword.
+/// @example loop { "forever" print nl }
+KEYWORD(loop, "Repeats a block indefinitely until break is called.")
+
+/// Loop exit keyword.
+/// @example loop { x 10 > if { break } }
+KEYWORD(break, "Exits the innermost loop immediately.")
+
+/// Loop continuation keyword.
+/// @example 0 10 1 for i { i 5 == if { continue } i print nl }
+KEYWORD(continue, "Skips to the next iteration of the innermost loop.")
+
+/// Function exit keyword.
+/// @example fn early( -- ) { true if { return } "not reached" print }
+KEYWORD(return, "Exits the current function immediately.")
+
+/// Deferred execution keyword.
+/// @example defer { file io::close }
+KEYWORD(defer, "Schedules a block to run when the function exits, in LIFO order.")
+
+/// Multi-way branch keyword.
+/// @example x switch { 1 => { "one" } 2 => { "two" } default => { "other" } }
+KEYWORD(switch, "Branches based on matching the top of stack against case values.")
+
+/// Switch case arrow.
+/// @example 1 => { "one" print }
+KEYWORD(=>, "Separates a case value from its block in a switch statement.")
+
+/// Default switch case.
+/// @example default => { "no match" print }
+KEYWORD(default, "Provides a fallback block when no switch case matches.")
+
+/// Isolated stack context.
+/// @example 1 2 3 ctx { + + } // Stack: [1, 2, 3, 6]
+KEYWORD(ctx, "Creates an isolated stack context; results are appended to parent stack.")
+
+/// Local variable binding.
+/// @example 42 -> x
+KEYWORD(->, "Pops a value from the stack and binds it to a local variable.")
+
+/// Boolean true literal.
+/// @example true if { "yes" print }
+KEYWORD(true, "Pushes 1 onto the stack.")
+
+/// Boolean false literal.
+/// @example false if { } else { "no" print }
+KEYWORD(false, "Pushes 0 onto the stack.")
+
+// ============================================================================
+// STACK OPERATIONS
+// ============================================================================
+
+/// Duplicate top of stack.
+/// @signature ( a -- a a )
+/// @example 5 dup + // 10
+BUILTIN(dup, "( a -- a a )", "Duplicates the top value on the stack.")
+
+/// Duplicate top two values.
+/// @signature ( a b -- a b a b )
+/// @example 1 2 dup2 // Stack: [1, 2, 1, 2]
+BUILTIN(dup2, "( a b -- a b a b )", "Duplicates the top two values.")
+
+/// Duplicate second value under top.
+/// @signature ( a b -- a a b )
+BUILTIN(dupd, "( a b -- a a b )", "Duplicates the second value, keeping top on top.")
+
+/// Remove top of stack.
+/// @signature ( a -- )
+/// @example 1 2 3 drop // Stack: [1, 2]
+BUILTIN(drop, "( a -- )", "Removes the top value from the stack.")
+
+/// Remove top two values.
+/// @signature ( a b -- )
+BUILTIN(drop2, "( a b -- )", "Removes the top two values from the stack.")
+
+/// Swap top two values.
+/// @signature ( a b -- b a )
+/// @example 1 2 swap // Stack: [2, 1]
+BUILTIN(swap, "( a b -- b a )", "Exchanges the top two values.")
+
+/// Swap pairs.
+/// @signature ( a b c d -- c d a b )
+BUILTIN(swap2, "( a b c d -- c d a b )", "Exchanges the top two pairs of values.")
+
+/// Swap under top.
+/// @signature ( a b c -- b a c )
+BUILTIN(swapd, "( a b c -- b a c )", "Swaps the second and third values, keeping top on top.")
+
+/// Copy second value to top.
+/// @signature ( a b -- a b a )
+/// @example 1 2 over // Stack: [1, 2, 1]
+BUILTIN(over, "( a b -- a b a )", "Copies the second value to the top.")
+
+/// Copy second pair to top.
+/// @signature ( a b c d -- a b c d a b )
+BUILTIN(over2, "( a b c d -- a b c d a b )", "Copies the second pair to the top.")
+
+/// Copy second value under top.
+/// @signature ( a b c -- a b a c )
+BUILTIN(overd, "( a b c -- a b a c )", "Copies the second value, keeping top on top.")
+
+/// Rotate top three values.
+/// @signature ( a b c -- b c a )
+/// @example 1 2 3 rot // Stack: [2, 3, 1]
+BUILTIN(rot, "( a b c -- b c a )", "Rotates the top three values, moving third to top.")
+
+/// Remove second value.
+/// @signature ( a b -- b )
+/// @example 1 2 nip // Stack: [2]
+BUILTIN(nip, "( a b -- b )", "Removes the second value, keeping top.")
+
+/// Remove second value under top.
+/// @signature ( a b c -- a c )
+BUILTIN(nipd, "( a b c -- a c )", "Removes the second value, keeping top and third.")
+
+/// Copy top under second.
+/// @signature ( a b -- b a b )
+BUILTIN(tuck, "( a b -- b a b )", "Copies the top value under the second.")
+
+/// Copy nth value to top.
+/// @signature ( ... n -- ... val )
+/// @example 1 2 3 4 2 pick // Copies index 2 (value 2) to top
+BUILTIN(pick, "( ... n -- ... val )", "Copies the nth value (0-indexed from top) to the top.")
+
+/// Move nth value to top.
+/// @signature ( ... n -- ... )
+/// @example 1 2 3 4 2 roll // Moves index 2 (value 2) to top, shifting others
+BUILTIN(roll, "( ... n -- ... )", "Moves the nth value to the top, shifting others down.")
+
+/// Clear the stack.
+/// @signature ( ... -- )
+BUILTIN(clear, "( ... -- )", "Removes all values from the stack.")
+
+/// Get stack depth.
+/// @signature ( ... -- ... n )
+/// @example 1 2 3 depth // Stack: [1, 2, 3, 3]
+BUILTIN(depth, "( ... -- ... n )", "Pushes the number of values on the stack.")
+
+// ============================================================================
+// ARITHMETIC OPERATIONS
+// ============================================================================
+
+/// Addition.
+/// @signature ( a b -- sum )
+/// @example 3 4 + // 7
+BUILTIN(+, "( a b -- sum )", "Adds two numbers.")
+
+/// Addition (word form).
+/// @signature ( a b -- sum )
+BUILTIN(add, "( a b -- sum )", "Adds two numbers.")
+
+/// Subtraction.
+/// @signature ( a b -- diff )
+/// @example 10 3 - // 7
+BUILTIN(-, "( a b -- diff )", "Subtracts b from a.")
+
+/// Subtraction (word form).
+/// @signature ( a b -- diff )
+BUILTIN(sub, "( a b -- diff )", "Subtracts b from a.")
+
+/// Multiplication.
+/// @signature ( a b -- product )
+/// @example 6 7 * // 42
+BUILTIN(*, "( a b -- product )", "Multiplies two numbers.")
+
+/// Multiplication (word form).
+/// @signature ( a b -- product )
+BUILTIN(mul, "( a b -- product )", "Multiplies two numbers.")
+
+/// Division.
+/// @signature ( a b -- quotient )
+/// @example 20 4 / // 5
+BUILTIN(/, "( a b -- quotient )", "Divides a by b.")
+
+/// Division (word form).
+/// @signature ( a b -- quotient )
+BUILTIN(div, "( a b -- quotient )", "Divides a by b.")
+
+/// Modulo.
+/// @signature ( a b -- remainder )
+/// @example 17 5 % // 2
+BUILTIN(%, "( a b -- remainder )", "Computes a modulo b.")
+
+/// Modulo (word form).
+/// @signature ( a b -- remainder )
+BUILTIN(mod, "( a b -- remainder )", "Computes a modulo b.")
+
+/// Negation.
+/// @signature ( a -- -a )
+/// @example 5 neg // -5
+BUILTIN(neg, "( a -- -a )", "Negates a number.")
+
+/// Increment.
+/// @signature ( a -- a+1 )
+/// @example 5 inc // 6
+BUILTIN(inc, "( a -- a+1 )", "Adds 1 to a number.")
+
+/// Decrement.
+/// @signature ( a -- a-1 )
+/// @example 5 dec // 4
+BUILTIN(dec, "( a -- a-1 )", "Subtracts 1 from a number.")
+
+// ============================================================================
+// COMPARISON OPERATIONS
+// ============================================================================
+
+/// Equal.
+/// @signature ( a b -- bool )
+/// @example 5 5 == // 1
+BUILTIN(==, "( a b -- bool )", "Returns 1 if a equals b, 0 otherwise.")
+
+/// Equal (word form).
+/// @signature ( a b -- bool )
+BUILTIN(eq, "( a b -- bool )", "Returns 1 if a equals b, 0 otherwise.")
+
+/// Not equal.
+/// @signature ( a b -- bool )
+/// @example 5 3 != // 1
+BUILTIN(!=, "( a b -- bool )", "Returns 1 if a does not equal b, 0 otherwise.")
+
+/// Not equal (word form).
+/// @signature ( a b -- bool )
+BUILTIN(neq, "( a b -- bool )", "Returns 1 if a does not equal b, 0 otherwise.")
+
+/// Less than.
+/// @signature ( a b -- bool )
+/// @example 3 5 < // 1
+BUILTIN(<, "( a b -- bool )", "Returns 1 if a is less than b, 0 otherwise.")
+
+/// Less than (word form).
+/// @signature ( a b -- bool )
+BUILTIN(lt, "( a b -- bool )", "Returns 1 if a is less than b, 0 otherwise.")
+
+/// Less than or equal.
+/// @signature ( a b -- bool )
+/// @example 5 5 <= // 1
+BUILTIN(<=, "( a b -- bool )", "Returns 1 if a is less than or equal to b, 0 otherwise.")
+
+/// Less than or equal (word form).
+/// @signature ( a b -- bool )
+BUILTIN(lte, "( a b -- bool )", "Returns 1 if a is less than or equal to b, 0 otherwise.")
+
+/// Greater than.
+/// @signature ( a b -- bool )
+/// @example 5 3 > // 1
+BUILTIN(>, "( a b -- bool )", "Returns 1 if a is greater than b, 0 otherwise.")
+
+/// Greater than (word form).
+/// @signature ( a b -- bool )
+BUILTIN(gt, "( a b -- bool )", "Returns 1 if a is greater than b, 0 otherwise.")
+
+/// Greater than or equal.
+/// @signature ( a b -- bool )
+/// @example 5 5 >= // 1
+BUILTIN(>=, "( a b -- bool )", "Returns 1 if a is greater than or equal to b, 0 otherwise.")
+
+/// Greater than or equal (word form).
+/// @signature ( a b -- bool )
+BUILTIN(gte, "( a b -- bool )", "Returns 1 if a is greater than or equal to b, 0 otherwise.")
+
+/// Range check.
+/// @signature ( val low high -- bool )
+/// @example 5 0 10 within // 1
+BUILTIN(within, "( val low high -- bool )", "Returns 1 if val is in [low, high), 0 otherwise.")
+
+// ============================================================================
+// BITWISE OPERATIONS
+// ============================================================================
+
+/// Bitwise AND.
+/// @signature ( a b -- result )
+/// @example 0b1100 0b1010 and // 0b1000
+BUILTIN(and, "( a b -- result )", "Computes bitwise AND of two integers.")
+
+/// Bitwise OR.
+/// @signature ( a b -- result )
+/// @example 0b1100 0b1010 or // 0b1110
+BUILTIN(or, "( a b -- result )", "Computes bitwise OR of two integers.")
+
+/// Bitwise XOR.
+/// @signature ( a b -- result )
+/// @example 0b1100 0b1010 xor // 0b0110
+BUILTIN(xor, "( a b -- result )", "Computes bitwise XOR of two integers.")
+
+/// Bitwise NOT.
+/// @signature ( a -- result )
+/// @example 0 not // -1 (all bits set)
+BUILTIN(not, "( a -- result )", "Computes bitwise NOT (ones' complement).")
+
+/// Shift left.
+/// @signature ( a n -- result )
+/// @example 1 4 shl // 16
+BUILTIN(shl, "( a n -- result )", "Shifts a left by n bits.")
+
+/// Shift right.
+/// @signature ( a n -- result )
+/// @example 16 2 shr // 4
+BUILTIN(shr, "( a n -- result )", "Shifts a right by n bits (arithmetic shift).")
+
+// ============================================================================
+// ARRAY OPERATIONS
+// ============================================================================
+
+/// Create integer array.
+/// @signature ( size -- arr )
+/// @example 10 makei -> arr
+BUILTIN(makei, "( size -- arr )", "Creates an array of size integers, initialized to 0.")
+
+/// Create float array.
+/// @signature ( size -- arr )
+/// @example 10 makef -> arr
+BUILTIN(makef, "( size -- arr )", "Creates an array of size floats, initialized to 0.0.")
+
+/// Create string array.
+/// @signature ( size -- arr )
+/// @example 10 makes -> arr
+BUILTIN(makes, "( size -- arr )", "Creates an array of size strings, initialized to empty.")
+
+/// Create pointer array.
+/// @signature ( size -- arr )
+/// @example 10 makep -> arr
+BUILTIN(makep, "( size -- arr )", "Creates an array of size pointers, initialized to null.")
+
+/// Create typed array.
+/// @signature ( size -- arr )
+/// @example 10 make<Point> -> points
+BUILTIN(make, "( size -- arr )", "Creates a typed array (use with make<Type> syntax).")
+
+/// Get array length.
+/// @signature ( arr -- len )
+/// @example arr len // number of elements
+BUILTIN(len, "( arr -- len )", "Returns the number of elements in an array.")
+
+/// Get array element.
+/// @signature ( arr index -- value )
+/// @example arr 0 nth // first element
+BUILTIN(nth, "( arr index -- value )", "Returns the element at the given index.")
+
+/// Set array element.
+/// @signature ( arr index value -- )
+/// @example arr 0 42 set
+BUILTIN(set, "( arr index value -- )", "Sets the element at the given index.")
+
+/// Append to array.
+/// @signature ( arr value -- arr )
+/// @example arr 42 append -> arr
+BUILTIN(append, "( arr value -- arr )", "Appends a value to the array, returning the modified array.")
+
+/// Free array memory.
+/// @signature ( arr -- )
+/// @example arr free
+BUILTIN(free, "( arr -- )", "Frees the memory used by an array or struct.")
+
+// ============================================================================
+// TYPE CASTING
+// ============================================================================
+
+/// Cast to integer.
+/// @signature ( val -- i64 )
+/// @example 3.14 casti // 3
+BUILTIN(casti, "( val -- i64 )", "Converts a value to an integer.")
+
+/// Cast to float.
+/// @signature ( val -- f64 )
+/// @example 42 castf // 42.0
+BUILTIN(castf, "( val -- f64 )", "Converts a value to a float.")
+
+/// Cast to string.
+/// @signature ( val -- str )
+/// @example 42 casts // "42"
+BUILTIN(casts, "( val -- str )", "Converts a value to a string.")
+
+// ============================================================================
+// INPUT/OUTPUT
+// ============================================================================
+
+/// Print value.
+/// @signature ( val -- )
+/// @example 42 print
+BUILTIN(print, "( val -- )", "Prints a value to stdout without a newline.")
+
+/// Print value with type info.
+/// @signature ( val -- )
+BUILTIN(printv, "( val -- )", "Prints a value with type information for debugging.")
+
+/// Print entire stack.
+/// @signature ( -- )
+/// @example 1 2 3 prints  // prints entire stack
+BUILTIN(prints, "( -- )", "Prints the entire stack contents without clearing it.")
+
+/// Print entire stack with type info.
+/// @signature ( -- )
+BUILTIN(printsv, "( -- )", "Prints the entire stack with type information for debugging.")
+
+/// Print newline.
+/// @signature ( -- )
+/// @example nl
+BUILTIN(nl, "( -- )", "Prints a newline character to stdout.")
+
+/// Read input.
+/// @signature ( -- ... n )
+/// @example read -> argc // reads command line args
+BUILTIN(read, "( -- ... n )", "Reads command line arguments onto the stack, pushing count last.")
+
+// ============================================================================
+// ERROR HANDLING
+// ============================================================================
+
+/// Signal an error.
+/// @signature ( msg code -- )
+/// @example "invalid input" 1 error
+BUILTIN(error, "( msg code -- )", "Signals an error with a message and code. Used in fallible functions.")
+
+// ============================================================================
+// THREADING
+// ============================================================================
+
+/// Spawn a thread.
+/// @signature ( fn -- thread )
+BUILTIN(spawn, "( fn -- thread )", "Spawns a new thread to execute a function.")
+
+/// Wait for thread.
+/// @signature ( thread -- )
+BUILTIN(wait, "( thread -- )", "Waits for a thread to complete.")
+
+/// Detach a thread.
+/// @signature ( thread -- )
+BUILTIN(detach, "( thread -- )", "Detaches a thread, allowing it to run independently.")
+
+// ============================================================================
+// MISCELLANEOUS
+// ============================================================================
+
+/// Call function pointer.
+/// @signature ( fn -- ... )
+/// @example &foo call  // calls the function foo
+BUILTIN(call, "( fn -- ... )", "Calls a function pointer obtained with &funcname syntax.")

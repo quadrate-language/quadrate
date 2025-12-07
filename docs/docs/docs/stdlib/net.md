@@ -21,7 +21,7 @@ Accept an incoming connection.
 **Example:**
 
 ```qd
-server net::accept -> client
+server net::accept  // client
 ```
 
 ---
@@ -62,7 +62,7 @@ Connect to a remote host.
 **Example:**
 
 ```qd
-"localhost" 8080 net::connect -> sock
+"localhost" 8080 net::connect  // sock
 ```
 
 ---
@@ -84,7 +84,7 @@ Start listening for connections on a port.
 **Example:**
 
 ```qd
-8080 net::listen -> server
+8080 net::listen  // server
 ```
 
 ---
@@ -108,7 +108,7 @@ Receive data from socket.
 **Example:**
 
 ```qd
-sock 1024 net::receive -> data -> n
+sock 1024 net::receive -> data  // n
 ```
 
 ---
@@ -131,7 +131,7 @@ Send data over socket.
 **Example:**
 
 ```qd
-sock "Hello" net::send -> n
+sock "Hello" net::send  // n
 ```
 
 ---

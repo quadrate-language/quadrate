@@ -1,39 +1,36 @@
 # time
 
-Time operations and duration constants.
-Inspired by Go's time package for date handling.
-
 ## Constants
 
 | Name | Value | Description |
 |------|-------|-------------|
 | `April` | `4` |  |
 | `August` | `8` |  |
-| `Day` | `86400000000000` | Duration: 1 day (24 hours). |
+| `Day` | `86400000000000` | Duration = 1 day (24 hours). |
 | `December` | `12` |  |
 | `February` | `2` |  |
 | `Friday` | `5` |  |
-| `Hour` | `3600000000000` | Duration: 1 hour (60 minutes). |
+| `Hour` | `3600000000000` | Duration = 1 hour (60 minutes). |
 | `January` | `1` | Month constants (1-indexed like Go) |
 | `July` | `7` |  |
 | `June` | `6` |  |
 | `March` | `3` |  |
 | `May` | `5` |  |
-| `Microsecond` | `1000` | Duration: 1 microsecond (1000 nanoseconds). |
-| `Millisecond` | `1000000` | Duration: 1 millisecond (1,000,000 nanoseconds). |
-| `Minute` | `60000000000` | Duration: 1 minute (60 seconds). |
+| `Microsecond` | `1000` | Duration = 1 microsecond (1000 nanoseconds). |
+| `Millisecond` | `1000000` | Duration = 1 millisecond (1,000,000 nanoseconds). |
+| `Minute` | `60000000000` | Duration = 1 minute (60 seconds). |
 | `Monday` | `1` |  |
-| `Nanosecond` | `1` | Duration: 1 nanosecond. |
+| `Nanosecond` | `1` | Time operations and duration constants. Inspired by Go's time package for date handling. Duration = 1 nanosecond. |
 | `November` | `11` |  |
 | `October` | `10` |  |
 | `Saturday` | `6` |  |
-| `Second` | `1000000000` | Duration: 1 second (1,000,000,000 nanoseconds). |
+| `Second` | `1000000000` | Duration = 1 second (1,000,000,000 nanoseconds). |
 | `September` | `9` |  |
 | `Sunday` | `0` | Weekday constants (like Go: Sunday=0) |
 | `Thursday` | `4` |  |
 | `Tuesday` | `2` |  |
 | `Wednesday` | `3` |  |
-| `Week` | `604800000000000` | Duration: 1 week (7 days). |
+| `Week` | `604800000000000` | Duration = 1 week (7 days). |
 
 ## Functions
 
@@ -302,7 +299,7 @@ Get current time in nanoseconds.
 **Example:**
 
 ```qd
-time::now -> start
+time::now  // start
 ```
 
 ---

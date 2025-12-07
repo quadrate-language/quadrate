@@ -1,6 +1,6 @@
 {
   "name": "math",
-  "description": "Mathematical functions and constants.",
+  "description": "",
   "constants": [
     {
       "name": "E",
@@ -10,7 +10,7 @@
     {
       "name": "Pi",
       "value": "3.141592653589793",
-      "description": "Mathematical constant Pi (\u03c0 \u2248 3.14159)."
+      "description": "Mathematical functions and constants. Mathematical constant Pi (\u03c0 \u2248 3.14159)."
     },
     {
       "name": "Tau",

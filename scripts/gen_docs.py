@@ -5,8 +5,10 @@ Generate mkdocs markdown from documented Quadrate module files.
 Parses /// doc comments with @param, @return, @example, @error tags
 and generates structured markdown documentation.
 
+Also generates the language reference from lib/qc/include/qc/reference.def.
+
 Usage:
-    python scripts/gen_docs.py                    # Generate all stdlib docs
+    python scripts/gen_docs.py                    # Generate all docs
     python scripts/gen_docs.py lib/qdmathqd/qd/math/module.qd  # Single file
 """
 
@@ -328,7 +330,14 @@ def generate_markdown(module: Module) -> str:
                 lines.append("")
                 lines.append("```qd")
                 for ex in fn.examples:
-                    lines.append(ex)
+                    # Transform "code -> output" format to clearer format
+                    if " -> " in ex:
+                        parts = ex.rsplit(" -> ", 1)
+                        code = parts[0]
+                        output = parts[1]
+                        lines.append(f"{code}  // {output}")
+                    else:
+                        lines.append(ex)
                 lines.append("```")
                 lines.append("")
 
@@ -383,21 +392,215 @@ def generate_json(module: Module) -> str:
 
 # Standard library modules and their paths
 STDLIB_MODULES = {
-    "bits": "lib/qdbits/qd/bits/module.qd",
-    "math": "lib/qdmath/qd/math/module.qd",
-    "str": "lib/qdstr/qd/str/module.qd",
-    "io": "lib/qdio/qd/io/module.qd",
-    "fmt": "lib/qdfmt/qd/fmt/module.qd",
-    "mem": "lib/qdmem/qd/mem/module.qd",
-    "os": "lib/qdos/qd/os/module.qd",
-    "net": "lib/qdnet/qd/net/module.qd",
-    "time": "lib/qdtime/qd/time/module.qd",
-    "json": "lib/qdjson/qd/json/module.qd",
     "base64": "lib/qdbase64/qd/base64/module.qd",
-    "strconv": "lib/qdstrconv/qd/strconv/module.qd",
-    "unicode": "lib/qdunicode/qd/unicode/module.qd",
+    "bits": "lib/qdbits/qd/bits/module.qd",
+    "bytes": "lib/qdbytes/qd/bytes/module.qd",
+    "crc32": "lib/qdcrc32/qd/crc32/module.qd",
     "flag": "lib/qdflag/qd/flag/module.qd",
+    "fmt": "lib/qdfmt/qd/fmt/module.qd",
+    "hex": "lib/qdhex/qd/hex/module.qd",
+    "io": "lib/qdio/qd/io/module.qd",
+    "json": "lib/qdjson/qd/json/module.qd",
+    "math": "lib/qdmath/qd/math/module.qd",
+    "mem": "lib/qdmem/qd/mem/module.qd",
+    "net": "lib/qdnet/qd/net/module.qd",
+    "os": "lib/qdos/qd/os/module.qd",
+    "path": "lib/qdpath/qd/path/module.qd",
+    "rand": "lib/qdrand/qd/rand/module.qd",
+    "regex": "lib/qdregex/qd/regex/module.qd",
+    "sb": "lib/qdsb/qd/sb/module.qd",
+    "sha256": "lib/qdsha256/qd/sha256/module.qd",
+    "sort": "lib/qdsort/qd/sort/module.qd",
+    "str": "lib/qdstr/qd/str/module.qd",
+    "strconv": "lib/qdstrconv/qd/strconv/module.qd",
+    "testing": "lib/qdtesting/qd/testing/module.qd",
+    "time": "lib/qdtime/qd/time/module.qd",
+    "unicode": "lib/qdunicode/qd/unicode/module.qd",
+    "uri": "lib/qduri/qd/uri/module.qd",
+    "uuid": "lib/qduuid/qd/uuid/module.qd",
 }
+
+
+@dataclass
+class RefItem:
+    """A reference item (keyword or builtin)."""
+    name: str
+    kind: str  # "keyword" or "builtin"
+    description: str = ""
+    signature: str = ""
+    examples: list[str] = field(default_factory=list)
+    category: str = ""
+
+
+def parse_reference_def(filepath: str) -> list[RefItem]:
+    """Parse the reference.def file and extract keywords and builtins."""
+    items = []
+    current_category = ""
+    doc_buffer = []
+
+    with open(filepath, "r") as f:
+        lines = f.readlines()
+
+    i = 0
+    while i < len(lines):
+        line = lines[i].rstrip()
+
+        # Track category from section comments
+        if line.startswith("// ===") and i + 1 < len(lines):
+            next_line = lines[i + 1].strip()
+            if next_line.startswith("// ") and not next_line.startswith("// ==="):
+                current_category = next_line[3:].strip()
+            i += 1
+            continue
+
+        # Collect doc comments
+        if line.startswith("///"):
+            doc_text = line[3:].strip()
+            doc_buffer.append(doc_text)
+            i += 1
+            continue
+
+        # Parse KEYWORD(name, "description")
+        match = re.match(r'KEYWORD\((\S+),\s*"(.*)"\)', line)
+        if match:
+            name = match.group(1)
+            desc = match.group(2)
+
+            # Extract examples from doc buffer
+            examples = []
+            for doc in doc_buffer:
+                if doc.startswith("@example "):
+                    examples.append(doc[9:])
+
+            items.append(RefItem(
+                name=name,
+                kind="keyword",
+                description=desc,
+                examples=examples,
+                category=current_category
+            ))
+            doc_buffer = []
+            i += 1
+            continue
+
+        # Parse BUILTIN(name, "signature", "description")
+        match = re.match(r'BUILTIN\(([^,]+),\s*"([^"]*)",\s*"(.*)"\)', line)
+        if match:
+            name = match.group(1)
+            sig = match.group(2)
+            desc = match.group(3)
+
+            # Extract examples from doc buffer
+            examples = []
+            for doc in doc_buffer:
+                if doc.startswith("@example "):
+                    examples.append(doc[9:])
+
+            items.append(RefItem(
+                name=name,
+                kind="builtin",
+                description=desc,
+                signature=sig,
+                examples=examples,
+                category=current_category
+            ))
+            doc_buffer = []
+            i += 1
+            continue
+
+        # Clear buffer on non-matching lines
+        if not line.startswith("//"):
+            doc_buffer = []
+
+        i += 1
+
+    return items
+
+
+def generate_reference_markdown(items: list[RefItem]) -> str:
+    """Generate markdown for the language reference."""
+    lines = []
+
+    lines.append("# Language Reference")
+    lines.append("")
+    lines.append("This page documents all Quadrate keywords and built-in instructions.")
+    lines.append("")
+
+    # Keywords section
+    keywords = [i for i in items if i.kind == "keyword"]
+    if keywords:
+        lines.append("## Keywords")
+        lines.append("")
+        lines.append("| Keyword | Description |")
+        lines.append("|---------|-------------|")
+        for kw in keywords:
+            lines.append(f"| [`{kw.name}`](#{kw.name.replace('->', 'arrow').replace('=>', 'case-arrow')}) | {kw.description} |")
+        lines.append("")
+
+        for kw in keywords:
+            anchor = kw.name.replace("->", "arrow").replace("=>", "case-arrow")
+            lines.append(f"### {kw.name}")
+            lines.append("")
+            lines.append(kw.description)
+            lines.append("")
+            if kw.examples:
+                lines.append("**Example:**")
+                lines.append("")
+                lines.append("```qd")
+                for ex in kw.examples:
+                    lines.append(ex)
+                lines.append("```")
+                lines.append("")
+            lines.append("---")
+            lines.append("")
+
+    # Builtins by category
+    builtins = [i for i in items if i.kind == "builtin"]
+    categories = {}
+    for b in builtins:
+        cat = b.category or "Other"
+        if cat not in categories:
+            categories[cat] = []
+        categories[cat].append(b)
+
+    lines.append("## Built-in Instructions")
+    lines.append("")
+
+    for cat in categories:
+        lines.append(f"### {cat}")
+        lines.append("")
+        lines.append("| Instruction | Signature | Description |")
+        lines.append("|-------------|-----------|-------------|")
+        for b in categories[cat]:
+            sig = f"`{b.signature}`" if b.signature else "-"
+            lines.append(f"| [`{b.name}`](#{b.name.replace('+', 'plus').replace('-', 'minus').replace('*', 'star').replace('/', 'slash').replace('%', 'percent').replace('!', 'bang').replace('<', 'lt').replace('>', 'gt').replace('=', 'eq')}) | {sig} | {b.description} |")
+        lines.append("")
+
+        for b in categories[cat]:
+            anchor = b.name.replace("+", "plus").replace("-", "minus").replace("*", "star").replace("/", "slash").replace("%", "percent").replace("!", "bang").replace("<", "lt").replace(">", "gt").replace("=", "eq")
+            lines.append(f"#### {b.name}")
+            lines.append("")
+            lines.append(b.description)
+            lines.append("")
+            if b.signature:
+                lines.append(f"**Signature:** `{b.signature}`")
+                lines.append("")
+            if b.examples:
+                lines.append("**Example:**")
+                lines.append("")
+                lines.append("```qd")
+                for ex in b.examples:
+                    lines.append(ex)
+                lines.append("```")
+                lines.append("")
+            lines.append("---")
+            lines.append("")
+
+    # Remove trailing separator
+    if lines and lines[-2] == "---":
+        lines = lines[:-2]
+
+    return "\n".join(lines)
 
 
 def main():
@@ -449,11 +652,43 @@ def main():
             const_count = len([i for i in module.items if i.kind == "const"])
             print(f"  {name}: {fn_count} functions, {const_count} constants")
 
-        # Generate index
+        # Generate index - preserve custom header content
         index_path = docs_dir / "index.md"
+        custom_header = """# Standard Library
+
+The Quadrate standard library provides modules for common programming tasks.
+
+## Using Modules
+
+Import a module with `use`:
+
+```qd
+use str
+use math
+
+fn main( -- ) {
+	"hello" str::upper prints nl  // HELLO
+	16.0 math::sqrt print nl  // 4
+}
+```
+
+## Fallible Functions
+
+Functions marked with `!` can fail and require error handling:
+
+```qd
+use str
+
+fn main( -- ) {
+	"hello" 0 3 str::substring! prints nl  // "hel"
+}
+```
+
+## Available Modules
+
+"""
         with open(index_path, "w") as f:
-            f.write("# Standard Library\n\n")
-            f.write("Quadrate standard library modules.\n\n")
+            f.write(custom_header)
             f.write("| Module | Description |\n")
             f.write("|--------|-------------|\n")
             for name, path in sorted(STDLIB_MODULES.items()):
@@ -490,6 +725,25 @@ def main():
         print(f"\nGenerated {len(STDLIB_MODULES)} module docs + index")
         print(f"Markdown: {docs_dir}")
         print(f"JSON API: {json_dir}")
+
+        # Generate language reference from reference.def
+        ref_def_path = project_root / "lib" / "qc" / "include" / "qc" / "reference.def"
+        if ref_def_path.exists():
+            print(f"\nGenerating language reference...")
+            ref_items = parse_reference_def(str(ref_def_path))
+            ref_markdown = generate_reference_markdown(ref_items)
+
+            ref_docs_dir = project_root / "docs" / "docs" / "docs"
+            ref_path = ref_docs_dir / "reference.md"
+            with open(ref_path, "w") as f:
+                f.write(ref_markdown)
+
+            keywords = len([i for i in ref_items if i.kind == "keyword"])
+            builtins = len([i for i in ref_items if i.kind == "builtin"])
+            print(f"  {keywords} keywords, {builtins} built-in instructions")
+            print(f"  Written to: {ref_path}")
+        else:
+            print(f"\nWarning: {ref_def_path} not found, skipping reference generation")
 
 
 if __name__ == "__main__":

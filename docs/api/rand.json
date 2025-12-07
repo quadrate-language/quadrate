@@ -1,0 +1,186 @@
+{
+  "name": "rand",
+  "description": "Random number generation using xorshift64* algorithm. Fast, high-quality PRNG suitable for most applications.",
+  "constants": [],
+  "structs": [
+    {
+      "name": "Rng",
+      "description": "RNG state struct."
+    }
+  ],
+  "functions": [
+    {
+      "name": "bool",
+      "signature": "( rng:ptr -- rng:ptr b:i64 )",
+      "failable": false,
+      "description": "Generate random boolean.",
+      "params": [
+        {
+          "name": "rng",
+          "type": "ptr",
+          "description": "RNG state"
+        }
+      ],
+      "returns": [
+        {
+          "name": "rng",
+          "type": "ptr",
+          "description": "Updated RNG state"
+        },
+        {
+          "name": "b",
+          "type": "i64",
+          "description": "Random boolean (0 or 1)"
+        }
+      ],
+      "errors": [],
+      "examples": [
+        "rng rand::bool -> rng b"
+      ]
+    },
+    {
+      "name": "int",
+      "signature": "( rng:ptr max:i64 -- rng:ptr n:i64 )",
+      "failable": false,
+      "description": "Generate random i64 in range [0, max).",
+      "params": [
+        {
+          "name": "rng",
+          "type": "ptr",
+          "description": "RNG state"
+        },
+        {
+          "name": "max",
+          "type": "i64",
+          "description": "Upper bound (exclusive)"
+        }
+      ],
+      "returns": [
+        {
+          "name": "rng",
+          "type": "ptr",
+          "description": "Updated RNG state"
+        },
+        {
+          "name": "n",
+          "type": "i64",
+          "description": "Random integer in [0, max)"
+        }
+      ],
+      "errors": [],
+      "examples": [
+        "rng 100 rand::int -> rng n"
+      ]
+    },
+    {
+      "name": "new",
+      "signature": "( -- rng:ptr )",
+      "failable": false,
+      "description": "Create a new RNG seeded from current time.",
+      "params": [],
+      "returns": [
+        {
+          "name": "rng",
+          "type": "ptr",
+          "description": "New random number generator"
+        }
+      ],
+      "errors": [],
+      "examples": [
+        "rand::new -> rng"
+      ]
+    },
+    {
+      "name": "next",
+      "signature": "( rng:ptr -- rng:ptr n:i64 )",
+      "failable": false,
+      "description": "Generate next random i64.",
+      "params": [
+        {
+          "name": "rng",
+          "type": "ptr",
+          "description": "RNG state"
+        }
+      ],
+      "returns": [
+        {
+          "name": "rng",
+          "type": "ptr",
+          "description": "Updated RNG state"
+        },
+        {
+          "name": "n",
+          "type": "i64",
+          "description": "Random 64-bit integer"
+        }
+      ],
+      "errors": [],
+      "examples": [
+        "rng rand::next -> rng n"
+      ]
+    },
+    {
+      "name": "range",
+      "signature": "( rng:ptr min:i64 max:i64 -- rng:ptr n:i64 )",
+      "failable": false,
+      "description": "Generate random i64 in range [min, max).",
+      "params": [
+        {
+          "name": "rng",
+          "type": "ptr",
+          "description": "RNG state"
+        },
+        {
+          "name": "min",
+          "type": "i64",
+          "description": "Lower bound (inclusive)"
+        },
+        {
+          "name": "max",
+          "type": "i64",
+          "description": "Upper bound (exclusive)"
+        }
+      ],
+      "returns": [
+        {
+          "name": "rng",
+          "type": "ptr",
+          "description": "Updated RNG state"
+        },
+        {
+          "name": "n",
+          "type": "i64",
+          "description": "Random integer in [min, max)"
+        }
+      ],
+      "errors": [],
+      "examples": [
+        "rng 10 20 rand::range -> rng n"
+      ]
+    },
+    {
+      "name": "with_seed",
+      "signature": "( seed:i64 -- rng:ptr )",
+      "failable": false,
+      "description": "Create a new RNG with specific seed.",
+      "params": [
+        {
+          "name": "seed",
+          "type": "i64",
+          "description": "Initial seed value (must be non-zero)"
+        }
+      ],
+      "returns": [
+        {
+          "name": "rng",
+          "type": "ptr",
+          "description": "New random number generator"
+        }
+      ],
+      "errors": [],
+      "examples": [
+        "12345 rand::with_seed -> rng"
+      ]
+    }
+  ]
+}

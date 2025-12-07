@@ -1,6 +1,6 @@
 {
   "name": "time",
-  "description": "Time operations and duration constants. Inspired by Go's time package for date handling.",
+  "description": "",
   "constants": [
     {
       "name": "April",
@@ -15,7 +15,7 @@
     {
       "name": "Day",
       "value": "86400000000000",
-      "description": "Duration: 1 day (24 hours)."
+      "description": "Duration = 1 day (24 hours)."
     },
     {
       "name": "December",
@@ -35,7 +35,7 @@
     {
       "name": "Hour",
       "value": "3600000000000",
-      "description": "Duration: 1 hour (60 minutes)."
+      "description": "Duration = 1 hour (60 minutes)."
     },
     {
       "name": "January",
@@ -65,17 +65,17 @@
     {
       "name": "Microsecond",
       "value": "1000",
-      "description": "Duration: 1 microsecond (1000 nanoseconds)."
+      "description": "Duration = 1 microsecond (1000 nanoseconds)."
     },
     {
       "name": "Millisecond",
       "value": "1000000",
-      "description": "Duration: 1 millisecond (1,000,000 nanoseconds)."
+      "description": "Duration = 1 millisecond (1,000,000 nanoseconds)."
     },
     {
       "name": "Minute",
       "value": "60000000000",
-      "description": "Duration: 1 minute (60 seconds)."
+      "description": "Duration = 1 minute (60 seconds)."
     },
     {
       "name": "Monday",
@@ -85,7 +85,7 @@
     {
       "name": "Nanosecond",
       "value": "1",
-      "description": "Duration: 1 nanosecond."
+      "description": "Time operations and duration constants. Inspired by Go's time package for date handling. Duration = 1 nanosecond."
     },
     {
       "name": "November",
@@ -105,7 +105,7 @@
     {
       "name": "Second",
       "value": "1000000000",
-      "description": "Duration: 1 second (1,000,000,000 nanoseconds)."
+      "description": "Duration = 1 second (1,000,000,000 nanoseconds)."
     },
     {
       "name": "September",
@@ -135,7 +135,7 @@
     {
       "name": "Week",
       "value": "604800000000000",
-      "description": "Duration: 1 week (7 days)."
+      "description": "Duration = 1 week (7 days)."
     }
   ],
   "structs": [],

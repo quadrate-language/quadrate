@@ -1,6 +1,6 @@
 {
   "name": "os",
-  "description": "Operating system interface.",
+  "description": "",
   "constants": [
     {
       "name": "FileExists",
@@ -60,7 +60,7 @@
     {
       "name": "Success",
       "value": "0",
-      "description": "Error: No error."
+      "description": "Operating system interface. Error: No error."
     }
   ],
   "structs": [],

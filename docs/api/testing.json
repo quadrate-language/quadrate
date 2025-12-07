@@ -1,0 +1,111 @@
+{
+  "name": "testing",
+  "description": "Testing utilities for unit tests.  Provides assertion functions for writing test cases. Tests are defined using the `test` keyword and assertions check that conditions are met.  @example use testing  test \"addition works\" { 2 3 + 5 testing::assert_eq }",
+  "constants": [],
+  "structs": [],
+  "functions": [
+    {
+      "name": "assert_eq",
+      "signature": "( a:any b:any -- )",
+      "failable": false,
+      "description": "Assert that two values are equal. Works with any type (i64, f64, str, ptr).",
+      "params": [
+        {
+          "name": "a",
+          "type": "any",
+          "description": "First value"
+        },
+        {
+          "name": "b",
+          "type": "any",
+          "description": "Second value (expected)"
+        }
+      ],
+      "returns": [],
+      "errors": [],
+      "examples": [
+        "5 5 testing::assert_eq  // passes",
+        "\"hello\" \"hello\" testing::assert_eq  // passes"
+      ]
+    },
+    {
+      "name": "assert_false",
+      "signature": "( v:any -- )",
+      "failable": false,
+      "description": "Assert that a value is falsy. Falsy means: zero for integers, zero for floats, empty for strings, null for pointers.",
+      "params": [
+        {
+          "name": "v",
+          "type": "any",
+          "description": "Value to check"
+        }
+      ],
+      "returns": [],
+      "errors": [],
+      "examples": [
+        "0 testing::assert_false  // passes",
+        "\"\" testing::assert_false  // passes"
+      ]
+    },
+    {
+      "name": "assert_ne",
+      "signature": "( a:any b:any -- )",
+      "failable": false,
+      "description": "Assert that two values are not equal. Works with any type (i64, f64, str, ptr).",
+      "params": [
+        {
+          "name": "a",
+          "type": "any",
+          "description": "First value"
+        },
+        {
+          "name": "b",
+          "type": "any",
+          "description": "Second value"
+        }
+      ],
+      "returns": [],
+      "errors": [],
+      "examples": [
+        "5 6 testing::assert_ne  // passes"
+      ]
+    },
+    {
+      "name": "assert_true",
+      "signature": "( v:any -- )",
+      "failable": false,
+      "description": "Assert that a value is truthy. Truthy means: non-zero for integers, non-zero for floats, non-empty for strings, non-null for pointers.",
+      "params": [
+        {
+          "name": "v",
+          "type": "any",
+          "description": "Value to check"
+        }
+      ],
+      "returns": [],
+      "errors": [],
+      "examples": [
+        "1 testing::assert_true  // passes",
+        "\"hello\" testing::assert_true  // passes"
+      ]
+    },
+    {
+      "name": "fail",
+      "signature": "( msg:str -- )",
+      "failable": false,
+      "description": "Unconditionally fail a test with a message.",
+      "params": [
+        {
+          "name": "msg",
+          "type": "str",
+          "description": "Failure message"
+        }
+      ],
+      "returns": [],
+      "errors": [],
+      "examples": [
+        "\"Not implemented\" testing::fail"
+      ]
+    }
+  ]
+}

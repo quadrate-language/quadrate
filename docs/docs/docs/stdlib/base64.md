@@ -1,14 +1,15 @@
 # base64
 
 Base64 encoding and decoding.
+Optimized with lookup tables and direct buffer writes.
 
 ## Functions
 
 ### decode
 
-Decode base64 string to binary data.
+Decode a base64 string.
 
-**Signature:** `( encoded:str -- data:ptr data_len:i64 )!`
+**Signature:** `( encoded:str -- decoded:str )`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -16,31 +17,25 @@ Decode base64 string to binary data.
 
 | Return | Type | Description |
 |--------|------|-------------|
-| `data` | `ptr` | Decoded buffer (caller must free) |
-| `data_len` | `i64` | Length of decoded data |
-
-**Errors:**
-
-- Invalid base64 encoding
+| `decoded` | `str` | Decoded string |
 
 **Example:**
 
 ```qd
-"SGVsbG8=" base64::decode! -> buf -> len
+"SGVsbG8=" base64::decode  // text
 ```
 
 ---
 
 ### encode
 
-Encode binary data to base64 string.
+Encode a string to base64.
 
-**Signature:** `( data:ptr len:i64 -- encoded:str )`
+**Signature:** `( input:str -- encoded:str )`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `data` | `ptr` | Buffer to encode |
-| `len` | `i64` | Length of data |
+| `input` | `str` | String to encode |
 
 | Return | Type | Description |
 |--------|------|-------------|
@@ -49,5 +44,5 @@ Encode binary data to base64 string.
 **Example:**
 
 ```qd
-buf 5 base64::encode -> b64
+"Hello" base64::encode  // b64
 ```

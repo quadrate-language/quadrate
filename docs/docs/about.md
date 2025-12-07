@@ -1,49 +1,29 @@
-# Cum medio quoque
+# About Quadrate
 
-Lorem markdownum cuius agri partior. Certum utque laniatque gelidis dixere et
-fovet genitus fudit auguris voce! Cum murum coloni vulnere de **tuque**
-digitoque petit Deoida. Et hominesque, videtur `denial_memory_keystroke` intexto
-ponit. **Ferunt** ab Telephus equos ceu, ergo sua iussa et verba.
+Quadrate is a stack-based programming language designed for clarity and performance.
 
-    var sdramControlIct = wwwUnitSamba(58) - 1;
-    superscalarWpaDocking += rt_upload(hdmiBanner, dslam(hard_sms_ssid(
-            integrated, page_client_clob), isoPop, textDongleKernel));
-    rw(zero_adf_mail);
+## Design Goals
 
-Quam enim aure haerebat tamen inprovisoque plena ponere si quoque urnis
-Thessalidum. Suos cingebant alumnus corpus venata [exitium](#cum-medio-quoque);
-ripa massa, Cyllenide obruta ore poenamque. Requirit in dicere eodem caput,
-luctatur intercepta et sociare? Tum nec; sua credere cretum. Illa dubita
-Actoriden prima, virgine attonitus illi.
+- **Explicit data flow** - Stack effects make it clear what functions consume and produce
+- **Compile-time safety** - Type checking and stack effect validation catch errors early
+- **Native performance** - LLVM backend generates optimized machine code
+- **Practical error handling** - Fallible functions require explicit error handling
+- **Simple memory model** - Reference-counted heap allocation with automatic cleanup
 
-- Fovi meque notent dabat
-- Factum obsuntque tamen
-- Sontibus et Iovemque finibus venturaque
-- Ignes roganti
+## Why Stack-Based?
 
-Non somno cerno nullasque narravit comaeque dant iubeoque contigit transitus
-Amorum, quod. Famam subito, fertilitas ruunt fassusque oscula lumina, altos,
-[circumstetit](#cum-medio-quoque) tethys saliunt carmina partes inplevit,
-[qui](#cum-medio-quoque). Suum illa nec, genetrix profecisse et sequerere, unda
-senior felici amore serior limen supplex. Incubuit hoc Tenos, plumis istis capit
-flagrat Achivam: arma celebrantur aquilam anno ceu. *Exacta stimulatus* delectat
-laevaque ille frontis flammis: dolorque *longius femina*.
+Stack-based languages have a long history, from Forth to PostScript to Factor. Quadrate brings this paradigm to modern systems programming:
 
-    pdf_bridge_ibm.meta_traceroute_paste(facebook_sd_click / 4, osi / 40, mcp +
-            -3);
-    if (meme_denial) {
-        resourcesDhcp(mask_pda_cut, resolution_acl);
-        metadata_rfid_flat = enterprise_bit;
-        thread_adc_pcb.tftp(
-                tween_pitch_status.windowsSnowPlagiarism.publicJoystick(
-                multicasting, menu, 3), font, gigabit_domain_backlink);
-    }
-    tftProtocol(vdu_firmware, plain_component - hoverMemoryBlockchain +
-            middleware, marketingFlash(hdmi_internic, keyboard - 5));
-    var eDvdToolbar = atm_truncate_framework + client_address_exabyte;
-    machinePageGamma = search_sequence(heat_cd_autoresponder / box_dot, 1,
-            ups_osd);
+1. **No hidden state** - Function signatures declare exactly what they consume and produce
+2. **Composability** - Functions naturally chain together
+3. **Low overhead** - Simple execution model with minimal runtime
 
-Iamque genus praecordiaque quoque, se et omnisque vota pabula. Illa nocituraque,
-nocte *solis* chelydri turritaque digna. Ad ducem, ad mihi mediaque non Thracum
-dedere mediis credit `serpPodcast`.
+## Source Code
+
+Quadrate is open source and hosted on SourceHut:
+
+- Repository: [git.sr.ht/~klahr/quadrate](https://git.sr.ht/~klahr/quadrate)
+
+## License
+
+Quadrate is released under the GPL-3.0 License

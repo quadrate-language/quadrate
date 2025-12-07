@@ -1,6 +1,6 @@
 {
   "name": "unicode",
-  "description": "Unicode character constants and classification.",
+  "description": "",
   "constants": [
     {
       "name": "A",
@@ -200,52 +200,52 @@
     {
       "name": "digit0",
       "value": "48",
-      "description": "Digit: 0."
+      "description": "Digit = 0."
     },
     {
       "name": "digit1",
       "value": "49",
-      "description": "Digit: 1."
+      "description": "Digit = 1."
     },
     {
       "name": "digit2",
       "value": "50",
-      "description": "Digit: 2."
+      "description": "Digit = 2."
     },
     {
       "name": "digit3",
       "value": "51",
-      "description": "Digit: 3."
+      "description": "Digit = 3."
     },
     {
       "name": "digit4",
       "value": "52",
-      "description": "Digit: 4."
+      "description": "Digit = 4."
     },
     {
       "name": "digit5",
       "value": "53",
-      "description": "Digit: 5."
+      "description": "Digit = 5."
     },
     {
       "name": "digit6",
       "value": "54",
-      "description": "Digit: 6."
+      "description": "Digit = 6."
     },
     {
       "name": "digit7",
       "value": "55",
-      "description": "Digit: 7."
+      "description": "Digit = 7."
     },
     {
       "name": "digit8",
       "value": "56",
-      "description": "Digit: 8."
+      "description": "Digit = 8."
     },
     {
       "name": "digit9",
       "value": "57",
-      "description": "Digit: 9."
+      "description": "Digit = 9."
     },
     {
       "name": "dollar",
@@ -370,7 +370,7 @@
     {
       "name": "nul",
       "value": "0",
-      "description": "Control: Null character."
+      "description": "Unicode character constants and classification. Control: Null character."
     },
     {
       "name": "o",

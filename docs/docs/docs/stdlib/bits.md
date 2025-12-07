@@ -1,10 +1,5 @@
 # bits
 
-Bitwise operations for integer manipulation.
-
-Core operations (and, or, xor, not, shl, shr) are builtins.
-This module provides higher-level bit manipulation functions.
-
 ## Functions
 
 ### clear_bit
@@ -79,6 +74,9 @@ Check if a bit is set.
 
 ### mask
 
+Bitwise operations for integer manipulation.
+Core operations (and, or, xor, not, shl, shr) are builtins.
+This module provides higher-level bit manipulation functions.
 Keep only the bottom N bits.
 
 **Signature:** `( value:i64 num_bits:i64 -- result:i64 )`

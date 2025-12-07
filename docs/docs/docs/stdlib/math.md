@@ -1,13 +1,11 @@
 # math
 
-Mathematical functions and constants.
-
 ## Constants
 
 | Name | Value | Description |
 |------|-------|-------------|
 | `E` | `2.718281828459045` | Euler's number (e ≈ 2.71828). |
-| `Pi` | `3.141592653589793` | Mathematical constant Pi (π ≈ 3.14159). |
+| `Pi` | `3.141592653589793` | Mathematical functions and constants. Mathematical constant Pi (π ≈ 3.14159). |
 | `Tau` | `6.283185307179586` | Tau = 2π (full circle in radians). |
 
 ## Functions

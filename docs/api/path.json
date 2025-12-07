@@ -1,0 +1,187 @@
+{
+  "name": "path",
+  "description": "File path manipulation functions. POSIX-style paths with forward slash separator.",
+  "constants": [
+    {
+      "name": "SEP",
+      "value": "\"/\"",
+      "description": "Path separator constant."
+    }
+  ],
+  "structs": [],
+  "functions": [
+    {
+      "name": "basename",
+      "signature": "( path:str -- name:str )",
+      "failable": false,
+      "description": "Get the filename part of a path.",
+      "params": [
+        {
+          "name": "path",
+          "type": "str",
+          "description": "File path"
+        }
+      ],
+      "returns": [
+        {
+          "name": "name",
+          "type": "str",
+          "description": "Filename component"
+        }
+      ],
+      "errors": [],
+      "examples": [
+        "\"/home/user/file.txt\" path::basename -> \"file.txt\""
+      ]
+    },
+    {
+      "name": "dirname",
+      "signature": "( path:str -- dir:str )",
+      "failable": false,
+      "description": "Get the directory part of a path.",
+      "params": [
+        {
+          "name": "path",
+          "type": "str",
+          "description": "File path"
+        }
+      ],
+      "returns": [
+        {
+          "name": "dir",
+          "type": "str",
+          "description": "Directory component"
+        }
+      ],
+      "errors": [],
+      "examples": [
+        "\"/home/user/file.txt\" path::dirname -> \"/home/user\""
+      ]
+    },
+    {
+      "name": "ext",
+      "signature": "( path:str -- ext:str )",
+      "failable": false,
+      "description": "Get the file extension (including dot).",
+      "params": [
+        {
+          "name": "path",
+          "type": "str",
+          "description": "File path"
+        }
+      ],
+      "returns": [
+        {
+          "name": "ext",
+          "type": "str",
+          "description": "Extension including dot, empty if none"
+        }
+      ],
+      "errors": [],
+      "examples": [
+        "\"file.txt\" path::ext -> \".txt\""
+      ]
+    },
+    {
+      "name": "is_absolute",
+      "signature": "( path:str -- result:i64 )",
+      "failable": false,
+      "description": "Check if path is absolute.",
+      "params": [
+        {
+          "name": "path",
+          "type": "str",
+          "description": "File path"
+        }
+      ],
+      "returns": [
+        {
+          "name": "result",
+          "type": "i64",
+          "description": "1 if absolute, 0 otherwise"
+        }
+      ],
+      "errors": [],
+      "examples": [
+        "\"/home/user\" path::is_absolute -> 1"
+      ]
+    },
+    {
+      "name": "join",
+      "signature": "( p1:str p2:str -- joined:str )",
+      "failable": false,
+      "description": "Join two path components.",
+      "params": [
+        {
+          "name": "p1",
+          "type": "str",
+          "description": "First path"
+        },
+        {
+          "name": "p2",
+          "type": "str",
+          "description": "Second path"
+        }
+      ],
+      "returns": [
+        {
+          "name": "joined",
+          "type": "str",
+          "description": "Joined path"
+        }
+      ],
+      "errors": [],
+      "examples": [
+        "\"/home\" \"user\" path::join -> \"/home/user\""
+      ]
+    },
+    {
+      "name": "normalize",
+      "signature": "( path:str -- norm:str )",
+      "failable": false,
+      "description": "Normalize a path (remove redundant separators).",
+      "params": [
+        {
+          "name": "path",
+          "type": "str",
+          "description": "File path"
+        }
+      ],
+      "returns": [
+        {
+          "name": "norm",
+          "type": "str",
+          "description": "Normalized path"
+        }
+      ],
+      "errors": [],
+      "examples": [
+        "\"/home//user/\" path::normalize -> \"/home/user\""
+      ]
+    },
+    {
+      "name": "stem",
+      "signature": "( path:str -- stem:str )",
+      "failable": false,
+      "description": "Get filename without extension.",
+      "params": [
+        {
+          "name": "path",
+          "type": "str",
+          "description": "File path"
+        }
+      ],
+      "returns": [
+        {
+          "name": "stem",
+          "type": "str",
+          "description": "Filename without extension"
+        }
+      ],
+      "errors": [],
+      "examples": [
+        "\"file.txt\" path::stem -> \"file\""
+      ]
+    }
+  ]
+}

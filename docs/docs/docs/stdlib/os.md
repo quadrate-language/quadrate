@@ -1,7 +1,5 @@
 # os
 
-Operating system interface.
-
 ## Constants
 
 | Name | Value | Description |
@@ -17,7 +15,7 @@ Operating system interface.
 | `OutOfMemory` | `12` | Error: Out of memory (ENOMEM). |
 | `PermissionDenied` | `13` | Error: Permission denied (EACCES). |
 | `ReadOnlyFileSystem` | `30` | Error: Read-only file system (EROFS). |
-| `Success` | `0` | Error: No error. |
+| `Success` | `0` | Operating system interface. Error: No error. |
 
 ## Functions
 
@@ -125,7 +123,7 @@ Get environment variable value.
 **Example:**
 
 ```qd
-"HOME" os::getenv -> home
+"HOME" os::getenv  // home
 ```
 
 ---
@@ -153,7 +151,7 @@ List directory contents.
 **Example:**
 
 ```qd
-"/tmp" os::list! -> entries -> count
+"/tmp" os::list! -> entries  // count
 ```
 
 ---
@@ -222,5 +220,5 @@ Execute a shell command.
 **Example:**
 
 ```qd
-"ls -la" os::system -> code
+"ls -la" os::system  // code
 ```

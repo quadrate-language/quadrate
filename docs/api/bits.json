@@ -1,6 +1,6 @@
 {
   "name": "bits",
-  "description": "Bitwise operations for integer manipulation.  Core operations (and, or, xor, not, shl, shr) are builtins. This module provides higher-level bit manipulation functions.",
+  "description": "",
   "constants": [],
   "structs": [],
   "functions": [
@@ -100,7 +100,7 @@
       "name": "mask",
       "signature": "( value:i64 num_bits:i64 -- result:i64 )",
       "failable": false,
-      "description": "Keep only the bottom N bits.",
+      "description": "Bitwise operations for integer manipulation. Core operations (and, or, xor, not, shl, shr) are builtins. This module provides higher-level bit manipulation functions. Keep only the bottom N bits.",
       "params": [
         {
           "name": "value",

@@ -1,4 +1,5 @@
 site_name: Quadrate
+site_description: A stack-based programming language that compiles to native code via LLVM
 theme:
   name: readthedocs
   logo: assets/logo.png
@@ -7,25 +8,39 @@ extra_css:
   - styles/extra.css
 nav:
   - Home: index.md
-  - Documentation:
-      - Getting Started: docs/getting-started.md
+  - Getting Started: docs/getting-started.md
+  - Tutorials:
       - Hello World: docs/tutorial-hello-world.md
-      - Stack: docs/tutorial-stack.md
-      - Structs: docs/tutorial-structs.md
-      - Standard Library:
-          - Overview: docs/stdlib/index.md
-          - base64: docs/stdlib/base64.md
-          - bits: docs/stdlib/bits.md
-          - flag: docs/stdlib/flag.md
-          - fmt: docs/stdlib/fmt.md
-          - io: docs/stdlib/io.md
-          - json: docs/stdlib/json.md
-          - math: docs/stdlib/math.md
-          - mem: docs/stdlib/mem.md
-          - net: docs/stdlib/net.md
-          - os: docs/stdlib/os.md
-          - str: docs/stdlib/str.md
-          - strconv: docs/stdlib/strconv.md
-          - time: docs/stdlib/time.md
-          - unicode: docs/stdlib/unicode.md
+      - Understanding the Stack: docs/tutorial-stack.md
+      - Working with Structs: docs/tutorial-structs.md
+      - Error Handling: docs/tutorial-errors.md
+  - Reference: docs/reference.md
+  - Standard Library:
+      - Overview: docs/stdlib/index.md
+      - base64: docs/stdlib/base64.md
+      - bits: docs/stdlib/bits.md
+      - bytes: docs/stdlib/bytes.md
+      - crc32: docs/stdlib/crc32.md
+      - flag: docs/stdlib/flag.md
+      - fmt: docs/stdlib/fmt.md
+      - hex: docs/stdlib/hex.md
+      - io: docs/stdlib/io.md
+      - json: docs/stdlib/json.md
+      - math: docs/stdlib/math.md
+      - mem: docs/stdlib/mem.md
+      - net: docs/stdlib/net.md
+      - os: docs/stdlib/os.md
+      - path: docs/stdlib/path.md
+      - rand: docs/stdlib/rand.md
+      - regex: docs/stdlib/regex.md
+      - sb: docs/stdlib/sb.md
+      - sha256: docs/stdlib/sha256.md
+      - sort: docs/stdlib/sort.md
+      - str: docs/stdlib/str.md
+      - strconv: docs/stdlib/strconv.md
+      - testing: docs/stdlib/testing.md
+      - time: docs/stdlib/time.md
+      - unicode: docs/stdlib/unicode.md
+      - uri: docs/stdlib/uri.md
+      - uuid: docs/stdlib/uuid.md
   - About: about.md

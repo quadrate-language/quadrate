@@ -1,0 +1,165 @@
+# path
+
+File path manipulation functions.
+POSIX-style paths with forward slash separator.
+
+## Constants
+
+| Name | Value | Description |
+|------|-------|-------------|
+| `SEP` | `"/"` | Path separator constant. |
+
+## Functions
+
+### basename
+
+Get the filename part of a path.
+
+**Signature:** `( path:str -- name:str )`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `path` | `str` | File path |
+
+| Return | Type | Description |
+|--------|------|-------------|
+| `name` | `str` | Filename component |
+
+**Example:**
+
+```qd
+"/home/user/file.txt" path::basename  // "file.txt"
+```
+
+---
+
+### dirname
+
+Get the directory part of a path.
+
+**Signature:** `( path:str -- dir:str )`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `path` | `str` | File path |
+
+| Return | Type | Description |
+|--------|------|-------------|
+| `dir` | `str` | Directory component |
+
+**Example:**
+
+```qd
+"/home/user/file.txt" path::dirname  // "/home/user"
+```
+
+---
+
+### ext
+
+Get the file extension (including dot).
+
+**Signature:** `( path:str -- ext:str )`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `path` | `str` | File path |
+
+| Return | Type | Description |
+|--------|------|-------------|
+| `ext` | `str` | Extension including dot, empty if none |
+
+**Example:**
+
+```qd
+"file.txt" path::ext  // ".txt"
+```
+
+---
+
+### is_absolute
+
+Check if path is absolute.
+
+**Signature:** `( path:str -- result:i64 )`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `path` | `str` | File path |
+
+| Return | Type | Description |
+|--------|------|-------------|
+| `result` | `i64` | 1 if absolute, 0 otherwise |
+
+**Example:**
+
+```qd
+"/home/user" path::is_absolute  // 1
+```
+
+---
+
+### join
+
+Join two path components.
+
+**Signature:** `( p1:str p2:str -- joined:str )`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `p1` | `str` | First path |
+| `p2` | `str` | Second path |
+
+| Return | Type | Description |
+|--------|------|-------------|
+| `joined` | `str` | Joined path |
+
+**Example:**
+
+```qd
+"/home" "user" path::join  // "/home/user"
+```
+
+---
+
+### normalize
+
+Normalize a path (remove redundant separators).
+
+**Signature:** `( path:str -- norm:str )`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `path` | `str` | File path |
+
+| Return | Type | Description |
+|--------|------|-------------|
+| `norm` | `str` | Normalized path |
+
+**Example:**
+
+```qd
+"/home//user/" path::normalize  // "/home/user"
+```
+
+---
+
+### stem
+
+Get filename without extension.
+
+**Signature:** `( path:str -- stem:str )`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `path` | `str` | File path |
+
+| Return | Type | Description |
+|--------|------|-------------|
+| `stem` | `str` | Filename without extension |
+
+**Example:**
+
+```qd
+"file.txt" path::stem  // "file"
+```

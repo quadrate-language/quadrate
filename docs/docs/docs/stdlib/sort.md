@@ -1,0 +1,154 @@
+# sort
+
+Sorting algorithms for arrays.
+Arrays are pointers to contiguous i64 values.
+
+## Functions
+
+### ints
+
+Sort an array of i64 in ascending order (insertion sort).
+
+**Signature:** `( arr:ptr count:i64 -- )`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `arr` | `ptr` | Array of i64 values |
+| `count` | `i64` | Number of elements |
+
+**Example:**
+
+```qd
+arr count sort::ints
+```
+
+---
+
+### ints_desc
+
+Sort an array of i64 in descending order.
+
+**Signature:** `( arr:ptr count:i64 -- )`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `arr` | `ptr` | Array of i64 values |
+| `count` | `i64` | Number of elements |
+
+**Example:**
+
+```qd
+arr count sort::ints_desc
+```
+
+---
+
+### is_sorted
+
+Check if array is sorted in ascending order.
+
+**Signature:** `( arr:ptr count:i64 -- sorted:i64 )`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `arr` | `ptr` | Array of i64 values |
+| `count` | `i64` | Number of elements |
+
+| Return | Type | Description |
+|--------|------|-------------|
+| `sorted` | `i64` | 1 if sorted, 0 otherwise |
+
+**Example:**
+
+```qd
+arr count sort::is_sorted  // result
+```
+
+---
+
+### max
+
+Find maximum value in array.
+
+**Signature:** `( arr:ptr count:i64 -- maxval:i64 )`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `arr` | `ptr` | Array of i64 values |
+| `count` | `i64` | Number of elements (must be > 0) |
+
+| Return | Type | Description |
+|--------|------|-------------|
+| `maxval` | `i64` | Maximum value |
+
+**Example:**
+
+```qd
+arr count sort::max  // val
+```
+
+---
+
+### min
+
+Find minimum value in array.
+
+**Signature:** `( arr:ptr count:i64 -- minval:i64 )`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `arr` | `ptr` | Array of i64 values |
+| `count` | `i64` | Number of elements (must be > 0) |
+
+| Return | Type | Description |
+|--------|------|-------------|
+| `minval` | `i64` | Minimum value |
+
+**Example:**
+
+```qd
+arr count sort::min  // val
+```
+
+---
+
+### reverse
+
+Reverse an array in place.
+
+**Signature:** `( arr:ptr count:i64 -- )`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `arr` | `ptr` | Array of i64 values |
+| `count` | `i64` | Number of elements |
+
+**Example:**
+
+```qd
+arr count sort::reverse
+```
+
+---
+
+### search
+
+Binary search for value in sorted array.
+
+**Signature:** `( arr:ptr count:i64 needle:i64 -- idx:i64 )`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `arr` | `ptr` | Sorted array of i64 values |
+| `count` | `i64` | Number of elements |
+| `needle` | `i64` | Value to find |
+
+| Return | Type | Description |
+|--------|------|-------------|
+| `idx` | `i64` | Index if found, -1 otherwise |
+
+**Example:**
+
+```qd
+arr count 42 sort::search  // idx
+```
