@@ -61,8 +61,18 @@ public:
 	void run() {
 		printWelcome();
 
+		std::string accumulated;  // Accumulated multiline input
+		int braceDepth = 0;       // Track unbalanced braces
+
 		while (true) {
-			std::string prompt = buildPrompt();
+			std::string prompt;
+			if (braceDepth > 0) {
+				// Continuation prompt
+				prompt = std::string(COLOR_DIM) + "...> " + COLOR_RESET;
+			} else {
+				prompt = buildPrompt();
+			}
+
 			char* input = readline(prompt.c_str());
 
 			if (!input) {
@@ -74,38 +84,133 @@ public:
 				break;
 			}
 
-			std::string line = trim(input);
+			std::string line = input;
 			free(input);
 
-			if (line.empty()) {
+			// If in multiline mode, accumulate the line
+			if (braceDepth > 0) {
+				accumulated += "\n" + line;
+			} else {
+				accumulated = line;
+			}
+
+			// Update brace depth
+			braceDepth = countUnbalancedBraces(accumulated);
+
+			// If braces are still unbalanced, continue reading
+			if (braceDepth > 0) {
 				continue;
 			}
 
-			add_history(line.c_str());
+			// Braces are balanced (or no braces) - process the complete input
+			std::string completeInput = trim(accumulated);
+			accumulated.clear();
+
+			if (completeInput.empty()) {
+				continue;
+			}
+
+			add_history(completeInput.c_str());
 
 			// Handle special commands
-			if (line == "exit" || line == "quit" || line == ":q") {
+			if (completeInput == "exit" || completeInput == "quit" || completeInput == ":q") {
 				if (printOnExit) {
 					printStackToStdout();
 				}
 				break;
-			} else if (line == "help" || line == ":help" || line == ":h") {
+			} else if (completeInput == "help" || completeInput == ":help" || completeInput == ":h") {
 				printHelp();
 				continue;
-			} else if (line == "clear" || line == ":clear") {
+			} else if (completeInput == "clear" || completeInput == ":clear") {
 				clearStack();
 				continue;
-			} else if (line == "stack" || line == ":stack") {
+			} else if (completeInput == "stack" || completeInput == ":stack") {
 				showStack();
 				continue;
-			} else if (line == "reset" || line == ":reset") {
+			} else if (completeInput == "reset" || completeInput == ":reset") {
 				reset();
 				continue;
 			}
 
-			processLine(line);
+			processLine(completeInput);
 		}
 
+	}
+
+	// Count unbalanced braces in input (returns > 0 if more { than })
+	int countUnbalancedBraces(const std::string& input) {
+		int depth = 0;
+		bool inString = false;
+		bool inLineComment = false;
+		bool inBlockComment = false;
+
+		for (size_t i = 0; i < input.length(); i++) {
+			char c = input[i];
+			char next = (i + 1 < input.length()) ? input[i + 1] : '\0';
+
+			// Handle newlines (reset line comment)
+			if (c == '\n') {
+				inLineComment = false;
+				continue;
+			}
+
+			// Skip if in line comment
+			if (inLineComment) {
+				continue;
+			}
+
+			// Check for block comment end
+			if (inBlockComment) {
+				if (c == '*' && next == '/') {
+					inBlockComment = false;
+					i++; // skip '/'
+				}
+				continue;
+			}
+
+			// Check for comment start
+			if (c == '/' && next == '/') {
+				inLineComment = true;
+				i++; // skip second '/'
+				continue;
+			}
+			if (c == '/' && next == '*') {
+				inBlockComment = true;
+				i++; // skip '*'
+				continue;
+			}
+
+			// Handle strings
+			if (c == '"' && !inString) {
+				inString = true;
+				continue;
+			}
+			if (c == '"' && inString) {
+				// Check for escape
+				size_t backslashes = 0;
+				for (size_t j = i; j > 0 && input[j - 1] == '\\'; j--) {
+					backslashes++;
+				}
+				if (backslashes % 2 == 0) {
+					inString = false;
+				}
+				continue;
+			}
+
+			// Skip string contents
+			if (inString) {
+				continue;
+			}
+
+			// Count braces
+			if (c == '{') {
+				depth++;
+			} else if (c == '}') {
+				depth--;
+			}
+		}
+
+		return depth > 0 ? depth : 0;
 	}
 
 	// Read values from stdin and push onto stack, then run interactive REPL
