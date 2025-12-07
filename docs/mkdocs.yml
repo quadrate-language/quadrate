@@ -9,38 +9,86 @@ extra_css:
 nav:
   - Home: index.md
   - Getting Started: docs/getting-started.md
-  - Tutorials:
-      - Hello World: docs/tutorial-hello-world.md
-      - Understanding the Stack: docs/tutorial-stack.md
-      - Working with Structs: docs/tutorial-structs.md
-      - Error Handling: docs/tutorial-errors.md
-  - Reference: docs/reference.md
+  - Learn:
+      - 1. Basics:
+          - Hello World: docs/learn/1-basics/hello-world.md
+          - Values and Types: docs/learn/1-basics/values-types.md
+          - Operators: docs/learn/1-basics/operators.md
+      - 2. The Stack:
+          - How it Works: docs/learn/2-stack/how-it-works.md
+          - Stack Manipulation: docs/learn/2-stack/manipulation.md
+          - Local Variables: docs/learn/2-stack/local-variables.md
+      - 3. Functions:
+          - Defining Functions: docs/learn/3-functions/defining.md
+          - Calling Functions: docs/learn/3-functions/calling.md
+          - Modules: docs/learn/3-functions/modules.md
+      - 4. Control Flow:
+          - Conditionals: docs/learn/4-control-flow/conditionals.md
+          - Loops: docs/learn/4-control-flow/loops.md
+          - Switch: docs/learn/4-control-flow/switch.md
+      - 5. Data Structures:
+          - Arrays: docs/learn/5-data-structures/arrays.md
+          - Structs: docs/learn/5-data-structures/structs.md
+          - Constants: docs/learn/5-data-structures/constants.md
+      - 6. Error Handling:
+          - Basics: docs/learn/6-error-handling/basics.md
+          - Patterns: docs/learn/6-error-handling/patterns.md
+      - 7. Advanced Topics:
+          - Defer: docs/learn/7-advanced/defer.md
+          - Context: docs/learn/7-advanced/context.md
+          - Function Pointers: docs/learn/7-advanced/function-pointers.md
+          - Memory Management: docs/learn/7-advanced/memory.md
+      - 8. Examples:
+          - Calculator: docs/learn/8-examples/calculator.md
+          - File Processing: docs/learn/8-examples/file-processing.md
+          - Data Structures: docs/learn/8-examples/data-structures.md
+  - Reference:
+      - Overview: docs/reference/index.md
+      - Keywords: docs/reference/keywords.md
+      - Stack Operations: docs/reference/stack.md
+      - Arithmetic: docs/reference/arithmetic.md
+      - Comparison: docs/reference/comparison.md
+      - Bitwise: docs/reference/bitwise.md
+      - Arrays: docs/reference/arrays.md
+      - Type Casting: docs/reference/types.md
+      - Input/Output: docs/reference/io.md
+      - Error Handling: docs/reference/errors.md
+      - Threading: docs/reference/threading.md
+      - Miscellaneous: docs/reference/misc.md
   - Standard Library:
       - Overview: docs/stdlib/index.md
-      - base64: docs/stdlib/base64.md
-      - bits: docs/stdlib/bits.md
-      - bytes: docs/stdlib/bytes.md
-      - crc32: docs/stdlib/crc32.md
-      - flag: docs/stdlib/flag.md
-      - fmt: docs/stdlib/fmt.md
-      - hex: docs/stdlib/hex.md
-      - io: docs/stdlib/io.md
-      - json: docs/stdlib/json.md
-      - math: docs/stdlib/math.md
-      - mem: docs/stdlib/mem.md
-      - net: docs/stdlib/net.md
-      - os: docs/stdlib/os.md
-      - path: docs/stdlib/path.md
-      - rand: docs/stdlib/rand.md
-      - regex: docs/stdlib/regex.md
-      - sb: docs/stdlib/sb.md
-      - sha256: docs/stdlib/sha256.md
-      - sort: docs/stdlib/sort.md
-      - str: docs/stdlib/str.md
-      - strconv: docs/stdlib/strconv.md
-      - testing: docs/stdlib/testing.md
-      - time: docs/stdlib/time.md
-      - unicode: docs/stdlib/unicode.md
-      - uri: docs/stdlib/uri.md
-      - uuid: docs/stdlib/uuid.md
+      - Text & Strings:
+          - str: docs/stdlib/str.md
+          - strconv: docs/stdlib/strconv.md
+          - fmt: docs/stdlib/fmt.md
+          - sb: docs/stdlib/sb.md
+          - regex: docs/stdlib/regex.md
+          - unicode: docs/stdlib/unicode.md
+      - Data & Encoding:
+          - json: docs/stdlib/json.md
+          - base64: docs/stdlib/base64.md
+          - hex: docs/stdlib/hex.md
+          - bytes: docs/stdlib/bytes.md
+      - Math & Numbers:
+          - math: docs/stdlib/math.md
+          - bits: docs/stdlib/bits.md
+          - rand: docs/stdlib/rand.md
+      - I/O & System:
+          - io: docs/stdlib/io.md
+          - os: docs/stdlib/os.md
+          - path: docs/stdlib/path.md
+          - net: docs/stdlib/net.md
+      - Time & IDs:
+          - time: docs/stdlib/time.md
+          - uuid: docs/stdlib/uuid.md
+      - Utilities:
+          - mem: docs/stdlib/mem.md
+          - sort: docs/stdlib/sort.md
+          - flag: docs/stdlib/flag.md
+          - testing: docs/stdlib/testing.md
+      - Hashing:
+          - sha256: docs/stdlib/sha256.md
+          - crc32: docs/stdlib/crc32.md
+      - Web:
+          - uri: docs/stdlib/uri.md
   - About: about.md
