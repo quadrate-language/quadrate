@@ -6077,8 +6077,13 @@ namespace Qd {
 			// Check if this struct has any fields that need cleanup
 			bool needsDestructor = false;
 			for (const auto& field : layout.fields) {
+				// Check for struct type (Inner) or pointer to struct (*Inner)
+				std::string baseTypeName = field.typeName;
+				if (!baseTypeName.empty() && baseTypeName[0] == '*') {
+					baseTypeName = baseTypeName.substr(1);
+				}
 				if (field.typeName == "str" ||
-						(!field.typeName.empty() && std::isupper(field.typeName[0]) && isKnownStruct(field.typeName))) {
+						(!baseTypeName.empty() && std::isupper(baseTypeName[0]) && isKnownStruct(baseTypeName))) {
 					needsDestructor = true;
 					break;
 				}
@@ -6107,7 +6112,12 @@ namespace Qd {
 
 			// Release nested struct fields first (call qd_struct_release)
 			for (const auto& field : layout.fields) {
-				if (!field.typeName.empty() && std::isupper(field.typeName[0]) && isKnownStruct(field.typeName)) {
+				// Check for struct type (Inner) or pointer to struct (*Inner)
+				std::string baseTypeName = field.typeName;
+				if (!baseTypeName.empty() && baseTypeName[0] == '*') {
+					baseTypeName = baseTypeName.substr(1);
+				}
+				if (!baseTypeName.empty() && std::isupper(baseTypeName[0]) && isKnownStruct(baseTypeName)) {
 					// Nested struct field
 					auto fieldOffset = builder->getInt64(field.offset);
 					auto fieldBytePtr =
@@ -6255,6 +6265,7 @@ namespace Qd {
 
 		llvm::Value* structPtr = nullptr;
 		std::string structTypeName;
+		bool needsReleaseAfterAccess = false; // Track if we need to release the struct after field access
 
 		if (varName.empty()) {
 			// Stack-based field access - could be:
@@ -6280,6 +6291,9 @@ namespace Qd {
 			// Load the pointer value from the element
 			llvm::Value* valuePtr = builder->CreateStructGEP(stackElementTy, tempElem, 0, "value_ptr");
 			structPtr = builder->CreateLoad(llvm::PointerType::getUnqual(*context), valuePtr, "struct_ptr");
+
+			// The struct pointer was retained when pushed to stack, needs release after access
+			needsReleaseAfterAccess = true;
 		} else {
 			// Check if varName is actually a struct type (e.g., Point @x after 1 2 Point @x)
 			// The parser created AstNodeFieldAccess("Point", "x") but Point is a struct, not a variable
@@ -6447,6 +6461,11 @@ namespace Qd {
 			llvm::Value* intValue = builder->CreateLoad(builder->getInt64Ty(), fieldPtr, "field_value");
 			builder->CreateCall(pushIntFn, {ctx, intValue});
 			lastFieldAccessResultType.clear();
+		}
+
+		// Release the struct pointer if it was popped from stack (was retained when pushed)
+		if (needsReleaseAfterAccess) {
+			builder->CreateCall(qdPtrReleaseFn, {structPtr});
 		}
 	}
 

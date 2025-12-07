@@ -80,6 +80,84 @@ namespace Qd {
 		return "use " + moduleName;
 	}
 
+	// Normalize whitespace in const statements (e.g., "const  PI=3.14" -> "const PI = 3.14")
+	static std::string normalizeConstStatement(const std::string& line) {
+		std::string trimmed = trim(line);
+
+		// Check for optional "pub" keyword
+		bool isPublic = startsWithKeyword(trimmed, "pub");
+		std::string workingLine = trimmed;
+		if (isPublic) {
+			size_t pubEnd = trimmed.find("pub");
+			if (pubEnd != std::string::npos) {
+				workingLine = trim(trimmed.substr(pubEnd + 3));
+			}
+		}
+
+		// Check if it's a const statement
+		if (!startsWithKeyword(workingLine, "const")) {
+			return trimmed;
+		}
+
+		// Find "const" keyword
+		size_t constPos = workingLine.find("const");
+		if (constPos == std::string::npos) {
+			return trimmed;
+		}
+
+		// Skip "const" and any whitespace after it
+		size_t pos = constPos + 5;
+		while (pos < workingLine.length() && std::isspace(static_cast<unsigned char>(workingLine[pos]))) {
+			pos++;
+		}
+
+		if (pos >= workingLine.length()) {
+			return isPublic ? "pub const" : "const";
+		}
+
+		// Extract constant name (identifier before =)
+		size_t nameStart = pos;
+		while (pos < workingLine.length() && (std::isalnum(static_cast<unsigned char>(workingLine[pos])) ||
+											  workingLine[pos] == '_')) {
+			pos++;
+		}
+
+		if (pos == nameStart) {
+			return trimmed; // No valid name found
+		}
+
+		std::string constName = workingLine.substr(nameStart, pos - nameStart);
+
+		// Skip whitespace before =
+		while (pos < workingLine.length() && std::isspace(static_cast<unsigned char>(workingLine[pos]))) {
+			pos++;
+		}
+
+		// Expect =
+		if (pos >= workingLine.length() || workingLine[pos] != '=') {
+			return trimmed; // No = found, return as-is
+		}
+		pos++; // Skip =
+
+		// Skip whitespace after =
+		while (pos < workingLine.length() && std::isspace(static_cast<unsigned char>(workingLine[pos]))) {
+			pos++;
+		}
+
+		// Extract value (rest of line)
+		std::string value = trim(workingLine.substr(pos));
+
+		// Build formatted result
+		std::string result;
+		if (isPublic) {
+			result = "pub const " + constName + " = " + value;
+		} else {
+			result = "const " + constName + " = " + value;
+		}
+
+		return result;
+	}
+
 	// Format a function signature line
 	static std::string formatFunctionSignature(const std::string& line) {
 		std::string trimmed = trim(line);
@@ -1094,8 +1172,11 @@ namespace Qd {
 				}
 			}
 
-			// Format function signatures
-			if (startsWithKeyword(trimmed, "fn") || startsWithKeyword(trimmed, "pub")) {
+			// Format function signatures (fn, pub fn, pub struct)
+			if (startsWithKeyword(trimmed, "fn") ||
+					(startsWithKeyword(trimmed, "pub") &&
+					 (trimmed.find("pub fn") != std::string::npos ||
+					  trimmed.find("pub struct") != std::string::npos))) {
 				std::string formatted = formatFunctionSignature(line);
 				// Write with current indent
 				for (int i = 0; i < indentLevel; i++) {
@@ -1159,6 +1240,10 @@ namespace Qd {
 				// Normalize use statements to have single space
 				if (startsWithKeyword(trimmed, "use")) {
 					output << normalizeUseStatement(trimmed) << '\n';
+				} else if (startsWithKeyword(trimmed, "const") ||
+						   trimmed.find("pub const") != std::string::npos) {
+					// Normalize const statements (including pub const)
+					output << normalizeConstStatement(trimmed) << '\n';
 				} else {
 					output << trimmed << '\n';
 				}

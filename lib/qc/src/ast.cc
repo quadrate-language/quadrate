@@ -2768,6 +2768,8 @@ namespace Qd {
 								const char* valueText = u8t_scanner_token_text(&scanner, &n);
 								value = new AstNodeLiteral(valueText, AstNodeLiteral::LiteralType::STRING);
 								setNodePosition(value, &scanner, src);
+							} else {
+								errorReporter.reportError(&scanner, "Expected literal value after '=' in constant declaration");
 							}
 							if (value) {
 								AstNodeConstant* constDecl = new AstNodeConstant(constNameStr, value->value().c_str());
@@ -2776,6 +2778,8 @@ namespace Qd {
 								constDecl->setParent(program);
 								program->addChild(constDecl);
 							}
+						} else {
+							errorReporter.reportError(&scanner, "Expected '=' after constant name");
 						}
 					} else {
 						errorReporter.reportError(&scanner, "Expected constant name after 'const'");
