@@ -44,7 +44,7 @@ static void signalHandler(int sig) {
 
 class ReplSession {
 public:
-	ReplSession() {
+	ReplSession(bool printOnExit) : printOnExit(printOnExit) {
 		ctx = qd_create_context(1024);
 		mod = qd_get_module(ctx, "repl");
 		moduleCounter = 0;
@@ -68,6 +68,9 @@ public:
 			if (!input) {
 				// EOF (Ctrl+D)
 				printf("\n");
+				if (printOnExit) {
+					printStackToStdout();
+				}
 				break;
 			}
 
@@ -82,6 +85,9 @@ public:
 
 			// Handle special commands
 			if (line == "exit" || line == "quit" || line == ":q") {
+				if (printOnExit) {
+					printStackToStdout();
+				}
 				break;
 			} else if (line == "help" || line == ":help" || line == ":h") {
 				printHelp();
@@ -100,18 +106,147 @@ public:
 			processLine(line);
 		}
 
-		printf("Goodbye!\n");
 	}
 
-	// Run in piped/non-interactive mode - read from stdin, no prompts
-	void runPiped() {
+	// Read values from stdin and push onto stack, then run interactive REPL
+	void runWithPipedInput() {
+		// Read all piped input
+		std::string allInput;
 		std::string line;
 		while (std::getline(std::cin, line)) {
 			line = trim(line);
 			if (line.empty()) {
 				continue;
 			}
-			processLine(line);
+			if (!allInput.empty()) {
+				allInput += " ";
+			}
+			allInput += line;
+		}
+
+		// Process piped input as Quadrate code
+		if (!allInput.empty()) {
+			processLine(allInput);
+		}
+
+		// Reopen stdin from terminal for interactive input
+		if (!freopen("/dev/tty", "r", stdin)) {
+			// Can't reopen terminal - print stack and exit
+			if (printOnExit) {
+				printStackToStdout();
+			}
+			return;
+		}
+
+		// Re-enable colors for interactive mode (unless NO_COLOR is set)
+		if (!std::getenv("NO_COLOR")) {
+			Qd::Colors::setEnabled(true);
+		}
+
+		// Now run the interactive REPL with the pre-populated stack
+		run();
+	}
+
+	// Parse a line of space-separated values and push them onto the stack
+	void pushValuesFromLine(const std::string& line) {
+		size_t pos = 0;
+		size_t len = line.length();
+
+		while (pos < len) {
+			// Skip whitespace
+			while (pos < len && (line[pos] == ' ' || line[pos] == '\t')) {
+				pos++;
+			}
+			if (pos >= len) break;
+
+			// Check for quoted string
+			if (line[pos] == '"') {
+				pos++; // skip opening quote
+				std::string str;
+				while (pos < len && line[pos] != '"') {
+					if (line[pos] == '\\' && pos + 1 < len) {
+						pos++;
+						switch (line[pos]) {
+						case 'n': str += '\n'; break;
+						case 't': str += '\t'; break;
+						case 'r': str += '\r'; break;
+						case '\\': str += '\\'; break;
+						case '"': str += '"'; break;
+						default: str += line[pos]; break;
+						}
+					} else {
+						str += line[pos];
+					}
+					pos++;
+				}
+				if (pos < len) pos++; // skip closing quote
+				qd_push_s(ctx, str.c_str());
+			} else {
+				// Read until whitespace
+				size_t start = pos;
+				while (pos < len && line[pos] != ' ' && line[pos] != '\t') {
+					pos++;
+				}
+				std::string token = line.substr(start, pos - start);
+
+				// Try to parse as number
+				if (token.empty()) continue;
+
+				// Check for float (contains '.' or 'e'/'E')
+				bool isFloat = token.find('.') != std::string::npos ||
+				               token.find('e') != std::string::npos ||
+				               token.find('E') != std::string::npos;
+
+				if (isFloat) {
+					try {
+						double val = std::stod(token);
+						qd_push_f(ctx, val);
+					} catch (...) {
+						// Not a valid float, push as string
+						qd_push_s(ctx, token.c_str());
+					}
+				} else {
+					try {
+						long long val = std::stoll(token);
+						qd_push_i(ctx, val);
+					} catch (...) {
+						// Not a valid int, push as string
+						qd_push_s(ctx, token.c_str());
+					}
+				}
+			}
+		}
+	}
+
+	// Print stack values to stdout (space-separated, compatible with 'read' instruction)
+	void printStackToStdout() {
+		size_t depth = getStackDepth();
+		for (size_t i = 0; i < depth; i++) {
+			if (i > 0) {
+				printf(" ");
+			}
+			qd_stack_element_t elem;
+			qd_stack_element(ctx->st, i, &elem);
+
+			switch (elem.type) {
+			case QD_STACK_TYPE_INT:
+				printf("%lld", static_cast<long long>(elem.value.i));
+				break;
+			case QD_STACK_TYPE_FLOAT:
+				printf("%g", elem.value.f);
+				break;
+			case QD_STACK_TYPE_STR:
+				printf("%s", (elem.value.s && elem.value.s->data) ? elem.value.s->data : "");
+				break;
+			case QD_STACK_TYPE_PTR:
+				printf("%p", elem.value.p);
+				break;
+			default:
+				break;
+			}
+		}
+		if (depth > 0) {
+			printf("\n");
 		}
 	}
 
@@ -124,6 +259,7 @@ private:
 	int moduleCounter;
 	size_t lastSuccessfulExprCount; // Number of expressions successfully compiled
 	size_t expectedStackDepth;		// Expected stack depth based on successful operations
+	bool printOnExit;				// Whether to print stack on exit (-p flag)
 
 	std::string trim(const std::string& str) {
 		size_t first = str.find_first_not_of(" \t\n\r");
@@ -697,10 +833,17 @@ void printHelp() {
 	printf("Options:\n");
 	printf("  -h, --help       Show this help message\n");
 	printf("  -v, --version    Show version information\n");
+	printf("  -p, --print      Print stack to stdout on exit\n");
+	printf("\n");
+	printf("Piping:\n");
+	printf("  echo \"1 2 3\" | quadrepl      Start with values on stack\n");
+	printf("  echo \"1 2 add\" | quadrepl -p  Compute and print result\n");
 	printf("\n");
 }
 
 int main(int argc, char* argv[]) {
+	bool printOnExit = false;
+
 	for (int i = 1; i < argc; i++) {
 		std::string arg = argv[i];
 
@@ -710,6 +853,8 @@ int main(int argc, char* argv[]) {
 		} else if (arg == "-v" || arg == "--version") {
 			printVersion();
 			return 0;
+		} else if (arg == "-p" || arg == "--print") {
+			printOnExit = true;
 		} else {
 			fprintf(stderr, "quadrepl: unknown option: %s\n", arg.c_str());
 			fprintf(stderr, "Try 'quadrepl --help' for more information.\n");
@@ -723,9 +868,9 @@ int main(int argc, char* argv[]) {
 	Qd::Colors::setEnabled(!noColors);
 
 	// Run the REPL
-	ReplSession session;
+	ReplSession session(printOnExit);
 	if (isPiped) {
-		session.runPiped();
+		session.runWithPipedInput();
 	} else {
 		session.run();
 	}
