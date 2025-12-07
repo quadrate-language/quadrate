@@ -1,3 +1,4 @@
+#include <qc/ast.h>
 #include <qc/colors.h>
 #include <qd/qd.h>
 #include <qdrt/stack.h>
@@ -566,20 +567,62 @@ private:
 
 		// Check if this is a use statement
 		if (trimmedLine.rfind("use ", 0) == 0) {
-			useStatements.push_back(line);
-			printf("%sModule imported%s\n", COLOR_DIM, COLOR_RESET);
+			// Validate use statement by trying to parse it
+			if (validateDefinition(line)) {
+				useStatements.push_back(line);
+				printf("%sModule imported%s\n", COLOR_DIM, COLOR_RESET);
+			}
 			return;
 		}
 
 		// Check if this is a function definition
 		if (trimmedLine.rfind("fn ", 0) == 0) {
-			functionDefs.push_back(line);
-			printf("%sFunction defined%s\n", COLOR_DIM, COLOR_RESET);
+			// Validate function definition by trying to parse it
+			if (validateDefinition(line)) {
+				functionDefs.push_back(line);
+				printf("%sFunction defined%s\n", COLOR_DIM, COLOR_RESET);
+			}
 			return;
 		}
 
 		// Regular expression - compile and execute
 		compileAndExecute(line);
+	}
+
+	// Validate a function or use statement by trying to compile it
+	bool validateDefinition(const std::string& definition) {
+		// Build a minimal source with the definition
+		std::string testSource;
+
+		// Add existing use statements
+		for (const auto& use : useStatements) {
+			testSource += use + "\n";
+		}
+
+		// Add existing function definitions
+		for (const auto& func : functionDefs) {
+			testSource += func + "\n";
+		}
+
+		// Add the new definition
+		testSource += definition + "\n";
+
+		// Add a minimal main function if we don't have one
+		testSource += "fn __repl_validate_main__( -- ) { }\n";
+
+		// Try to parse
+		Qd::Ast ast;
+		Qd::IAstNode* root = ast.generate(testSource.c_str(), false, "repl");
+
+		if (!root || ast.hasErrors()) {
+			// Print errors
+			for (const auto& error : ast.getErrors()) {
+				printf("%s%s%s\n", COLOR_RED, error.message.c_str(), COLOR_RESET);
+			}
+			return false;
+		}
+
+		return true;
 	}
 
 	std::string convertPrint(const std::string& code) {
