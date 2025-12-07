@@ -1,4 +1,4 @@
-// quadpm - Quadrate Package Manager
+// quadpm - Quadrate Module Manager
 // Manages 3rd party Git-based modules
 
 #include "git_ref.h"
@@ -33,8 +33,8 @@ std::string getHomeDir() {
 	return std::string(home);
 }
 
-// Get packages directory path
-std::string getPackagesDir() {
+// Get modules directory path
+std::string getModulesDir() {
 	// Check QUADRATE_PATH environment variable first
 	const char* quadratePath = getenv("QUADRATE_PATH");
 	if (quadratePath) {
@@ -44,11 +44,11 @@ std::string getPackagesDir() {
 	// Check if XDG_DATA_HOME is set
 	const char* xdgDataHome = getenv("XDG_DATA_HOME");
 	if (xdgDataHome) {
-		return std::string(xdgDataHome) + "/quadrate/packages";
+		return std::string(xdgDataHome) + "/quadrate/modules";
 	}
 
-	// Default to ~/quadrate/packages
-	return getHomeDir() + "/quadrate/packages";
+	// Default to ~/quadrate/modules
+	return getHomeDir() + "/quadrate/modules";
 }
 
 // Execute a shell command and capture output
@@ -74,9 +74,9 @@ int execCommandLive(const std::string& cmd) {
 	return system(cmd.c_str());
 }
 
-// Parse package name from quadrate.toml
+// Parse module name from quadrate.toml
 // Returns empty string if file doesn't exist or name not found
-std::string parsePackageName(const std::string& manifestPath) {
+std::string parseModuleName(const std::string& manifestPath) {
 	std::ifstream file(manifestPath);
 	if (!file.is_open()) {
 		return "";
@@ -90,8 +90,8 @@ std::string parsePackageName(const std::string& manifestPath) {
 		line.erase(0, line.find_first_not_of(" \t\r\n"));
 		line.erase(line.find_last_not_of(" \t\r\n") + 1);
 
-		// Check for [package] section
-		if (line == "[package]") {
+		// Check for [module] section (also accept [package] for backwards compatibility)
+		if (line == "[module]" || line == "[package]") {
 			inPackageSection = true;
 			continue;
 		}
@@ -107,7 +107,7 @@ std::string parsePackageName(const std::string& manifestPath) {
 			continue;
 		}
 
-		// Look for name = "value" in package section
+		// Look for name = "value" in module section
 		if (inPackageSection) {
 			size_t eqPos = line.find('=');
 			if (eqPos != std::string::npos) {
@@ -139,20 +139,20 @@ std::string getInstalledDirName(const std::string& moduleName, const std::string
 	return moduleName + "@" + ref;
 }
 
-// Clone a Git repository to the packages directory
-// Returns the actual package name (from manifest if present, otherwise from git ref)
+// Clone a Git repository to the modules directory
+// Returns the actual module name (from manifest if present, otherwise from git ref)
 // Returns empty string on failure
 std::string gitClone(const GitRef& gitRef) {
-	std::string packagesDir = getPackagesDir();
+	std::string modulesDir = getModulesDir();
 
-	// Create packages directory if it doesn't exist
-	fs::create_directories(packagesDir);
+	// Create modules directory if it doesn't exist
+	fs::create_directories(modulesDir);
 
-	std::string targetDir = packagesDir + "/" + getInstalledDirName(gitRef.moduleName, gitRef.ref);
+	std::string targetDir = modulesDir + "/" + getInstalledDirName(gitRef.moduleName, gitRef.ref);
 
 	// Check if already exists
 	if (fs::exists(targetDir)) {
-		std::cout << COLOR_YELLOW << "Package already exists: " << COLOR_RESET << targetDir << "\n";
+		std::cout << COLOR_YELLOW << "Module already exists: " << COLOR_RESET << targetDir << "\n";
 		std::cout << COLOR_CYAN << "Use 'quadpm update' to update it" << COLOR_RESET << "\n";
 		return gitRef.moduleName;
 	}
@@ -175,27 +175,27 @@ std::string gitClone(const GitRef& gitRef) {
 		return "";
 	}
 
-	// Check for quadrate.toml and use package name if specified
+	// Check for quadrate.toml and use module name if specified
 	std::string manifestPath = targetDir + "/quadrate.toml";
-	std::string packageName = parsePackageName(manifestPath);
+	std::string manifestModuleName = parseModuleName(manifestPath);
 	std::string finalDir = targetDir;
-	std::string actualPackageName = gitRef.moduleName;
+	std::string actualModuleName = gitRef.moduleName;
 
-	if (!packageName.empty() && packageName != gitRef.moduleName) {
-		// Package specifies a different name, rename the directory
-		finalDir = packagesDir + "/" + getInstalledDirName(packageName, gitRef.ref);
-		actualPackageName = packageName;
+	if (!manifestModuleName.empty() && manifestModuleName != gitRef.moduleName) {
+		// Module specifies a different name, rename the directory
+		finalDir = modulesDir + "/" + getInstalledDirName(manifestModuleName, gitRef.ref);
+		actualModuleName = manifestModuleName;
 
 		// Check if target with new name already exists
 		if (fs::exists(finalDir)) {
-			std::cerr << COLOR_RED << "Error: Package '" << packageName << "' already exists at: " << COLOR_RESET
+			std::cerr << COLOR_RED << "Error: Module '" << manifestModuleName << "' already exists at: " << COLOR_RESET
 					  << finalDir << "\n";
 			fs::remove_all(targetDir);
 			return "";
 		}
 
 		fs::rename(targetDir, finalDir);
-		std::cout << COLOR_GREEN << "  ✓ Installed as '" << packageName << "' to " << COLOR_RESET << finalDir << "\n";
+		std::cout << COLOR_GREEN << "  ✓ Installed as '" << manifestModuleName << "' to " << COLOR_RESET << finalDir << "\n";
 	} else {
 		std::cout << COLOR_GREEN << "  ✓ Installed to " << COLOR_RESET << finalDir << "\n";
 	}
@@ -206,7 +206,7 @@ std::string gitClone(const GitRef& gitRef) {
 		std::cout << COLOR_GREEN << "  ✓ Found module.qd" << COLOR_RESET << "\n";
 	} else {
 		std::cout << COLOR_YELLOW << "  ⚠ Warning: module.qd not found at root" << COLOR_RESET << "\n";
-		std::cout << "    Package may need to be structured with module.qd at root\n";
+		std::cout << "    Module may need to be structured with module.qd at root\n";
 	}
 
 	// Check for C source files and compile if found
@@ -306,13 +306,13 @@ std::string gitClone(const GitRef& gitRef) {
 		}
 	}
 
-	return actualPackageName;
+	return actualModuleName;
 }
 
-// Compile C sources in a package directory
+// Compile C sources in a module directory
 // Returns true on success, false on failure
-bool compileCsources(const std::string& packageDir, const std::string& moduleName) {
-	std::string srcDir = packageDir + "/src";
+bool compileCsources(const std::string& moduleDir, const std::string& moduleName) {
+	std::string srcDir = moduleDir + "/src";
 	if (!fs::exists(srcDir) || !fs::is_directory(srcDir)) {
 		return true; // No src dir is not an error
 	}
@@ -332,7 +332,7 @@ bool compileCsources(const std::string& packageDir, const std::string& moduleNam
 	std::cout << "  → Compiling C sources...\n";
 
 	// Create lib directory
-	std::string libDir = packageDir + "/lib";
+	std::string libDir = moduleDir + "/lib";
 	fs::create_directories(libDir);
 
 	// Library names
@@ -415,42 +415,42 @@ void printVersion() {
 
 // Print usage information
 void printUsage() {
-	std::cout << "quadpm - Quadrate package manager\n\n";
+	std::cout << "quadpm - Quadrate module manager\n\n";
 	std::cout << "Manages 3rd party modules from Git repositories.\n\n";
 	std::cout << "Usage: quadpm [options] <command> [arguments]\n\n";
 	std::cout << "Options:\n";
 	std::cout << "  -h, --help       Show this help message\n";
 	std::cout << "  -v, --version    Show version information\n\n";
 	std::cout << "Commands:\n";
-	std::cout << "  get <url>[@ref]  Fetch and install a package from Git\n";
-	std::cout << "  update [name]    Update installed package(s) (git pull)\n";
-	std::cout << "  list             List installed packages\n\n";
+	std::cout << "  get <url>[@ref]  Fetch and install a module from Git\n";
+	std::cout << "  update [name]    Update installed module(s) (git pull)\n";
+	std::cout << "  list             List installed modules\n\n";
 	std::cout << "Examples:\n";
 	std::cout << "  quadpm get https://git.sr.ht/~user/zlib\n";
 	std::cout << "  quadpm get https://git.sr.ht/~user/zlib@1.2.0\n";
 	std::cout << "  quadpm get https://github.com/user/http@main\n";
 	std::cout << "  quadpm list\n\n";
 	std::cout << "Environment:\n";
-	std::cout << "  QUADRATE_PATH      Package installation directory\n";
-	std::cout << "  XDG_DATA_HOME      If set, uses $XDG_DATA_HOME/quadrate/packages\n";
-	std::cout << "  Default: ~/quadrate/packages\n";
+	std::cout << "  QUADRATE_PATH      Module installation directory\n";
+	std::cout << "  XDG_DATA_HOME      If set, uses $XDG_DATA_HOME/quadrate/modules\n";
+	std::cout << "  Default: ~/quadrate/modules\n";
 }
 
-// List installed packages
-void listPackages() {
-	std::string packagesDir = getPackagesDir();
+// List installed modules
+void listModules() {
+	std::string modulesDir = getModulesDir();
 
-	if (!fs::exists(packagesDir)) {
-		std::cout << "No packages installed yet.\n";
-		std::cout << "Packages will be installed to: " << packagesDir << "\n";
+	if (!fs::exists(modulesDir)) {
+		std::cout << "No modules installed yet.\n";
+		std::cout << "Modules will be installed to: " << modulesDir << "\n";
 		return;
 	}
 
-	std::cout << COLOR_BOLD << "Installed packages:" << COLOR_RESET << "\n";
-	std::cout << "Location: " << packagesDir << "\n\n";
+	std::cout << COLOR_BOLD << "Installed modules:" << COLOR_RESET << "\n";
+	std::cout << "Location: " << modulesDir << "\n\n";
 
 	bool found = false;
-	for (const auto& entry : fs::directory_iterator(packagesDir)) {
+	for (const auto& entry : fs::directory_iterator(modulesDir)) {
 		if (entry.is_directory()) {
 			found = true;
 			std::string name = entry.path().filename().string();
@@ -477,13 +477,13 @@ void listPackages() {
 	}
 
 	if (!found) {
-		std::cout << "No packages installed.\n";
+		std::cout << "No modules installed.\n";
 	}
 }
 
-// Update a single package by running git pull
-bool updatePackage(const std::string& packageDir) {
-	std::string name = fs::path(packageDir).filename().string();
+// Update a single module by running git pull
+bool updateModule(const std::string& moduleDir) {
+	std::string name = fs::path(moduleDir).filename().string();
 
 	// Parse module@version format for display
 	std::string displayName = name;
@@ -496,8 +496,8 @@ bool updatePackage(const std::string& packageDir) {
 
 	std::cout << COLOR_CYAN << "Updating " << COLOR_BOLD << displayName << COLOR_RESET << "...\n";
 
-	// Run git pull in the package directory
-	std::string pullCmd = "cd " + packageDir + " && git pull 2>&1";
+	// Run git pull in the module directory
+	std::string pullCmd = "cd " + moduleDir + " && git pull 2>&1";
 	int result = execCommandLive(pullCmd);
 
 	if (result != 0) {
@@ -508,37 +508,37 @@ bool updatePackage(const std::string& packageDir) {
 	std::cout << COLOR_GREEN << "  ✓ Updated " << displayName << COLOR_RESET << "\n";
 
 	// Rebuild C sources if present
-	compileCsources(packageDir, moduleName);
+	compileCsources(moduleDir, moduleName);
 
 	return true;
 }
 
-// Update installed packages
-int updatePackages(const std::string& packageName) {
-	std::string packagesDir = getPackagesDir();
+// Update installed modules
+int updateModules(const std::string& targetModuleName) {
+	std::string modulesDir = getModulesDir();
 
-	if (!fs::exists(packagesDir)) {
-		std::cerr << COLOR_RED << "Error: No packages installed" << COLOR_RESET << "\n";
+	if (!fs::exists(modulesDir)) {
+		std::cerr << COLOR_RED << "Error: No modules installed" << COLOR_RESET << "\n";
 		return 1;
 	}
 
 	bool found = false;
 	int failures = 0;
 
-	for (const auto& entry : fs::directory_iterator(packagesDir)) {
+	for (const auto& entry : fs::directory_iterator(modulesDir)) {
 		if (!entry.is_directory()) {
 			continue;
 		}
 
 		std::string name = entry.path().filename().string();
 
-		// If a specific package name was given, only update that one
-		if (!packageName.empty()) {
+		// If a specific module name was given, only update that one
+		if (!targetModuleName.empty()) {
 			// Match either full name (module@version) or just module name
 			size_t atPos = name.find('@');
 			std::string moduleName = (atPos != std::string::npos) ? name.substr(0, atPos) : name;
 
-			if (name != packageName && moduleName != packageName) {
+			if (name != targetModuleName && moduleName != targetModuleName) {
 				continue;
 			}
 		}
@@ -551,16 +551,16 @@ int updatePackages(const std::string& packageName) {
 		}
 
 		found = true;
-		if (!updatePackage(entry.path().string())) {
+		if (!updateModule(entry.path().string())) {
 			failures++;
 		}
 	}
 
 	if (!found) {
-		if (packageName.empty()) {
-			std::cerr << COLOR_RED << "Error: No packages found to update" << COLOR_RESET << "\n";
+		if (targetModuleName.empty()) {
+			std::cerr << COLOR_RED << "Error: No modules found to update" << COLOR_RESET << "\n";
 		} else {
-			std::cerr << COLOR_RED << "Error: Package '" << packageName << "' not found" << COLOR_RESET << "\n";
+			std::cerr << COLOR_RED << "Error: Module '" << targetModuleName << "' not found" << COLOR_RESET << "\n";
 		}
 		return 1;
 	}
@@ -611,13 +611,13 @@ int main(int argc, char** argv) {
 	}
 
 	if (command == "list" || command == "ls") {
-		listPackages();
+		listModules();
 		return 0;
 	}
 
 	if (command == "update") {
-		std::string packageName = (argc >= 3) ? argv[2] : "";
-		return updatePackages(packageName);
+		std::string targetModuleName = (argc >= 3) ? argv[2] : "";
+		return updateModules(targetModuleName);
 	}
 
 	std::cerr << COLOR_RED << "Error: Unknown command '" << command << "'" << COLOR_RESET << "\n";

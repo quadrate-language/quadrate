@@ -63,7 +63,7 @@ echo ""
 # Test 1: Help output
 echo "Test 1: Help output"
 if output=$("$QUADPM" --help 2>&1); then
-    if echo "$output" | grep -q "quadpm - Quadrate package manager"; then
+    if echo "$output" | grep -q "quadpm - Quadrate module manager"; then
         pass "Help message displays correctly"
     else
         fail "Help message missing expected content" "$output"
@@ -130,7 +130,7 @@ fi
 echo ""
 echo "Test 6: list with empty cache"
 if output=$(QUADRATE_PATH="$TEST_CACHE_DIR" "$QUADPM" list 2>&1); then
-    if echo "$output" | grep -q "No packages installed"; then
+    if echo "$output" | grep -q "No modules installed"; then
         pass "Lists empty cache correctly"
     else
         fail "Unexpected output for empty cache" "$output"
@@ -211,7 +211,7 @@ fi
 echo ""
 echo "Test 10: Duplicate installation (should skip)"
 if output=$(QUADRATE_PATH="$TEST_CACHE_DIR/cache" "$QUADPM" get "$TEST_REPO@v1.0.0" 2>&1); then
-    if echo "$output" | grep -q "Package already exists"; then
+    if echo "$output" | grep -q "Module already exists"; then
         pass "Detects duplicate installation"
     else
         fail "Should detect existing package" "$output"
@@ -316,7 +316,7 @@ echo ""
 echo "Test 14: XDG_DATA_HOME support"
 XDG_DIR="$TEST_CACHE_DIR/xdg-test"
 if output=$(XDG_DATA_HOME="$XDG_DIR" "$QUADPM" list 2>&1); then
-    if echo "$output" | grep -q "$XDG_DIR/quadrate/packages"; then
+    if echo "$output" | grep -q "$XDG_DIR/quadrate/modules"; then
         pass "Respects XDG_DATA_HOME"
     else
         fail "XDG_DATA_HOME not used" "$output"
