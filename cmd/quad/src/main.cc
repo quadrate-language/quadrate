@@ -50,7 +50,7 @@ void printHelp() {
 	std::cout << "  quad build main.qd           Compile main.qd\n";
 	std::cout << "  quad run main.qd             Build and run main.qd\n";
 	std::cout << "  quad run greet.qd -- Alice   Run with argument 'Alice'\n";
-	std::cout << "  quad fmt -w *.qd             Format all .qd files in-place\n";
+	std::cout << "  quad fmt                     Format all .qd files in-place\n";
 	std::cout << "  quad test                    Run tests in current directory\n";
 	std::cout << "\n";
 	std::cout << "Run 'quad help <command>' for more information on a command.\n";
@@ -268,16 +268,42 @@ int handleFmt(const std::vector<std::string>& args) {
 		return 1;
 	}
 
-	std::vector<std::string> toolArgs = args;
+	std::vector<std::string> toolArgs;
+
+	// Add -w flag by default to format in place (unless user passes --check or -n)
+	bool hasCheckFlag = false;
+	for (const auto& arg : args) {
+		if (arg == "--check" || arg == "-n") {
+			hasCheckFlag = true;
+			break;
+		}
+	}
+	if (!hasCheckFlag) {
+		toolArgs.push_back("-w");
+	}
+
+	// Add user-provided args
+	for (const auto& arg : args) {
+		toolArgs.push_back(arg);
+	}
 
 	// If no files specified, format all .qd files in current directory
-	if (toolArgs.empty()) {
+	bool hasFiles = false;
+	for (const auto& arg : args) {
+		if (!arg.empty() && arg[0] != '-') {
+			hasFiles = true;
+			break;
+		}
+	}
+	if (!hasFiles) {
 		auto files = findQdFiles();
 		if (files.empty()) {
 			std::cerr << "quad: no .qd files found in current directory\n";
 			return 1;
 		}
-		toolArgs = files;
+		for (const auto& f : files) {
+			toolArgs.push_back(f);
+		}
 	}
 
 	return execTool(toolPath, toolArgs);
