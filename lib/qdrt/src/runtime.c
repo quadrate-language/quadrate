@@ -182,6 +182,9 @@ qd_exec_result qd_printv(qd_context* ctx) {
 			qd_string_release(val.value.s);  // Release the string reference after printing
 			break;
 		}
+		case QD_STACK_TYPE_PTR:
+			printf("ptr:%p\n", val.value.p);
+			break;
 		default:
 			return (qd_exec_result){-3};
 	}
