@@ -40,7 +40,7 @@
     {
       "name": "January",
       "value": "1",
-      "description": "Month constants (1-indexed like Go)"
+      "description": "Month constants (1-indexed)"
     },
     {
       "name": "July",
@@ -85,7 +85,7 @@
     {
       "name": "Nanosecond",
       "value": "1",
-      "description": "Time operations and duration constants. Inspired by Go's time package for date handling. Duration = 1 nanosecond."
+      "description": "Time operations and duration constants. Duration = 1 nanosecond."
     },
     {
       "name": "November",
@@ -115,7 +115,7 @@
     {
       "name": "Sunday",
       "value": "0",
-      "description": "Weekday constants (like Go: Sunday=0)"
+      "description": "Weekday constants (Sunday=0)"
     },
     {
       "name": "Thursday",
@@ -141,20 +141,20 @@
   "structs": [],
   "functions": [
     {
-      "name": "add_days",
-      "signature": "( ts:i64 days:i64 -- new_ts:i64 )",
+      "name": "add",
+      "signature": "( ts:i64 duration:i64 -- new_ts:i64 )",
       "failable": false,
-      "description": "Add days to a Unix timestamp.",
+      "description": "Add duration to a timestamp.",
       "params": [
         {
           "name": "ts",
           "type": "i64",
-          "description": "Unix timestamp"
+          "description": "Timestamp (use time::now for nanoseconds)"
         },
         {
-          "name": "days",
+          "name": "duration",
           "type": "i64",
-          "description": "Days to add (can be negative)"
+          "description": "Duration to add (use time constants)"
         }
       ],
       "returns": [
@@ -166,36 +166,7 @@
       ],
       "errors": [],
       "examples": [
-        "time::unix 7 time::add_days ."
-      ]
-    },
-    {
-      "name": "add_hours",
-      "signature": "( ts:i64 hours:i64 -- new_ts:i64 )",
-      "failable": false,
-      "description": "Add hours to a Unix timestamp.",
-      "params": [
-        {
-          "name": "ts",
-          "type": "i64",
-          "description": "Unix timestamp"
-        },
-        {
-          "name": "hours",
-          "type": "i64",
-          "description": "Hours to add (can be negative)"
-        }
-      ],
-      "returns": [
-        {
-          "name": "new_ts",
-          "type": "i64",
-          "description": "New timestamp"
-        }
-      ],
-      "errors": [],
-      "examples": [
-        "time::unix 24 time::add_hours ."
+        "time::now time::Day 4 * time::add ."
       ]
     },
     {
@@ -458,13 +429,13 @@
       "name": "now",
       "signature": "( -- nanoseconds:i64 )",
       "failable": false,
-      "description": "Get current time in nanoseconds.",
+      "description": "Get current time in nanoseconds since epoch.",
       "params": [],
       "returns": [
         {
           "name": "nanoseconds",
           "type": "i64",
-          "description": "Monotonic nanosecond timestamp"
+          "description": "Nanoseconds since 1970-01-01 00:00:00 UTC"
         }
       ],
       "errors": [],

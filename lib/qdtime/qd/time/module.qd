@@ -1,5 +1,4 @@
 /// Time operations and duration constants.
-/// Inspired by Go's time package for date handling.
 /// Duration = 1 nanosecond.
 pub const Nanosecond = 1
 /// Duration = 1 microsecond (1000 nanoseconds).
@@ -16,7 +15,7 @@ pub const Hour = 3600000000000
 pub const Day = 86400000000000
 /// Duration = 1 week (7 days).
 pub const Week = 604800000000000
-/// Weekday constants (like Go: Sunday=0)
+/// Weekday constants (Sunday=0)
 pub const Sunday = 0
 pub const Monday = 1
 pub const Tuesday = 2
@@ -24,7 +23,7 @@ pub const Wednesday = 3
 pub const Thursday = 4
 pub const Friday = 5
 pub const Saturday = 6
-/// Month constants (1-indexed like Go)
+/// Month constants (1-indexed)
 pub const January = 1
 pub const February = 2
 pub const March = 3
@@ -43,8 +42,8 @@ import "libqdtime.a" as "time" {
 	/// @example time::unix .  // 1700000000
 	pub fn unix( -- timestamp:i64)
 
-	/// Get current time in nanoseconds.
-	/// @return nanoseconds i64 Monotonic nanosecond timestamp
+	/// Get current time in nanoseconds since epoch.
+	/// @return nanoseconds i64 Nanoseconds since 1970-01-01 00:00:00 UTC
 	/// @example time::now -> start
 	pub fn now( -- nanoseconds:i64)
 
@@ -55,7 +54,7 @@ import "libqdtime.a" as "time" {
 }
 
 // ============================================================
-// Date Functions (Go-inspired)
+// Date Functions
 // ============================================================
 /// Check if year is a leap year.
 /// @param yr i64 Year to check
@@ -449,24 +448,14 @@ pub fn date(yr:i64 mon:i64 d:i64 h:i64 m:i64 s:i64 -- ts:i64) {
 	total
 }
 
-/// Add days to a Unix timestamp.
-/// @param ts i64 Unix timestamp
-/// @param days i64 Days to add (can be negative)
+/// Add duration to a timestamp.
+/// @param ts i64 Timestamp (use time::now for nanoseconds)
+/// @param duration i64 Duration to add (use time constants)
 /// @return new_ts i64 New timestamp
-/// @example time::unix 7 time::add_days .
-pub fn add_days(ts:i64 days:i64 -- new_ts:i64) {
-	-> days -> ts
-	ts days 86400 * +
-}
-
-/// Add hours to a Unix timestamp.
-/// @param ts i64 Unix timestamp
-/// @param hours i64 Hours to add (can be negative)
-/// @return new_ts i64 New timestamp
-/// @example time::unix 24 time::add_hours .
-pub fn add_hours(ts:i64 hours:i64 -- new_ts:i64) {
-	-> hours -> ts
-	ts hours 3600 * +
+/// @example time::now time::Day 4 * time::add .
+pub fn add(ts:i64 duration:i64 -- new_ts:i64) {
+	-> duration -> ts
+	ts duration +
 }
 
 /// Check if timestamp is before another.

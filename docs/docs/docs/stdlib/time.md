@@ -11,7 +11,7 @@
 | `February` | `2` |  |
 | `Friday` | `5` |  |
 | `Hour` | `3600000000000` | Duration = 1 hour (60 minutes). |
-| `January` | `1` | Month constants (1-indexed like Go) |
+| `January` | `1` | Month constants (1-indexed) |
 | `July` | `7` |  |
 | `June` | `6` |  |
 | `March` | `3` |  |
@@ -20,13 +20,13 @@
 | `Millisecond` | `1000000` | Duration = 1 millisecond (1,000,000 nanoseconds). |
 | `Minute` | `60000000000` | Duration = 1 minute (60 seconds). |
 | `Monday` | `1` |  |
-| `Nanosecond` | `1` | Time operations and duration constants. Inspired by Go's time package for date handling. Duration = 1 nanosecond. |
+| `Nanosecond` | `1` | Time operations and duration constants. Duration = 1 nanosecond. |
 | `November` | `11` |  |
 | `October` | `10` |  |
 | `Saturday` | `6` |  |
 | `Second` | `1000000000` | Duration = 1 second (1,000,000,000 nanoseconds). |
 | `September` | `9` |  |
-| `Sunday` | `0` | Weekday constants (like Go: Sunday=0) |
+| `Sunday` | `0` | Weekday constants (Sunday=0) |
 | `Thursday` | `4` |  |
 | `Tuesday` | `2` |  |
 | `Wednesday` | `3` |  |
@@ -34,16 +34,16 @@
 
 ## Functions
 
-### add_days
+### add
 
-Add days to a Unix timestamp.
+Add duration to a timestamp.
 
-**Signature:** `( ts:i64 days:i64 -- new_ts:i64 )`
+**Signature:** `( ts:i64 duration:i64 -- new_ts:i64 )`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `ts` | `i64` | Unix timestamp |
-| `days` | `i64` | Days to add (can be negative) |
+| `ts` | `i64` | Timestamp (use time::now for nanoseconds) |
+| `duration` | `i64` | Duration to add (use time constants) |
 
 | Output | Type | Description |
 |--------|------|-------------|
@@ -52,30 +52,7 @@ Add days to a Unix timestamp.
 **Example:**
 
 ```qd
-time::unix 7 time::add_days .
-```
-
----
-
-### add_hours
-
-Add hours to a Unix timestamp.
-
-**Signature:** `( ts:i64 hours:i64 -- new_ts:i64 )`
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `ts` | `i64` | Unix timestamp |
-| `hours` | `i64` | Hours to add (can be negative) |
-
-| Output | Type | Description |
-|--------|------|-------------|
-| `new_ts` | `i64` | New timestamp |
-
-**Example:**
-
-```qd
-time::unix 24 time::add_hours .
+time::now time::Day 4 * time::add .
 ```
 
 ---
@@ -288,18 +265,18 @@ time::unix time::month .
 
 ### now
 
-Get current time in nanoseconds.
+Get current time in nanoseconds since epoch.
 
 **Signature:** `( -- nanoseconds:i64 )`
 
 | Output | Type | Description |
 |--------|------|-------------|
-| `nanoseconds` | `i64` | Monotonic nanosecond timestamp |
+| `nanoseconds` | `i64` | Nanoseconds since 1970-01-01 00:00:00 UTC |
 
 **Example:**
 
 ```qd
-time::now  // start
+time::now -> start
 ```
 
 ---
