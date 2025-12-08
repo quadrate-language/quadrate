@@ -28,7 +28,7 @@ if ! python -c "from quadrate_lexer import QuadrateLexer" 2>/dev/null; then
 fi
 
 echo "Starting MkDocs server..."
-echo "Open http://127.0.0.1:8000 in your browser"
+echo "Open http://0.0.0.0:8000 in your browser"
 echo ""
 
-mkdocs serve
+mkdocs serve -a 0.0.0.0:8000
