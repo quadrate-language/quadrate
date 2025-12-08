@@ -1,14 +1,14 @@
 fn parse_number(a:i64 -- result:i64)! {
 	dup 0 < if {
 		0
-		"Error occurred" 1 error
+		"Error occurred" 1 panic
 	}
 }
 
 fn validate_range(a:i64 -- result:i64)! {
 	dup 100 > if {
 		0
-		"Error occurred" 1 error
+		"Error occurred" 1 panic
 	}
 }
 
@@ -27,13 +27,13 @@ fn main() {
 			compute if {
 				"Result: " print print nl
 			} else {
-				drop "Compute failed" print nl
+				"Compute failed" print nl
 			}
 		} else {
-			drop "Range validation failed" print nl
+			"Range validation failed" print nl
 		}
 	} else {
-		drop "Parse failed" print nl
+		"Parse failed" print nl
 	}
 
 	"Input: -5" print nl
@@ -42,13 +42,13 @@ fn main() {
 			compute if {
 				"Result: " print print nl
 			} else {
-				drop "Compute failed" print nl
+				"Compute failed" print nl
 			}
 		} else {
-			drop "Range validation failed" print nl
+			"Range validation failed" print nl
 		}
 	} else {
-		drop "Parse failed" print nl
+		"Parse failed" print nl
 	}
 
 	"Input: 150" print nl
@@ -57,13 +57,13 @@ fn main() {
 			compute if {
 				"Result: " print print nl
 			} else {
-				drop "Compute failed" print nl
+				"Compute failed" print nl
 			}
 		} else {
-			drop "Range validation failed" print nl
+			"Range validation failed" print nl
 		}
 	} else {
-		drop "Parse failed" print nl
+		"Parse failed" print nl
 	}
 
 	"Input: 60" print nl
@@ -72,12 +72,12 @@ fn main() {
 			compute if {
 				"Result: " print print nl
 			} else {
-				drop "Compute failed" print nl
+				"Compute failed" print nl
 			}
 		} else {
-			drop "Range validation failed" print nl
+			"Range validation failed" print nl
 		}
 	} else {
-		drop "Parse failed" print nl
+		"Parse failed" print nl
 	}
 }

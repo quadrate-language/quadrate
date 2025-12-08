@@ -3,7 +3,7 @@ fn divide(a:i64 b:i64 -- result:i64)! {
 	dup 0 eq if {
 		drop drop
 		0  // Return dummy value before error
-		"Division by zero" 100 error
+		"Division by zero" 100 panic
 	} else {
 		/
 	}
@@ -14,13 +14,13 @@ fn main() {
 	10 2 divide if {
 		"Result: " print print nl
 	} else {
-		drop "Error" print nl
+		"Error" print nl
 	}
 
 	"Test 2: 10 / 0" print nl
 	10 0 divide if {
 		"Result: " print print nl
 	} else {
-		drop "Error (expected)" print nl
+		"Error (expected)" print nl
 	}
 }

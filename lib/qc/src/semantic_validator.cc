@@ -197,7 +197,7 @@ namespace Qd {
 
 	SemanticValidator::SemanticValidator()
 		: mFilename(nullptr), mErrorCount(0), mWarningCount(0), mWerror(false), mIsModuleFile(false),
-		  mStoreErrors(false), mWarningMinLine(0) {
+		  mStoreErrors(false), mWarningMinLine(0), mCurrentFunctionFallible(false) {
 	}
 
 	bool SemanticValidator::isBuiltInInstruction(const char* name) const {
@@ -2281,10 +2281,16 @@ namespace Qd {
 				structTypeStack.push_back(structType);
 			}
 
+			// Track whether current function is fallible (for panic validation)
+			mCurrentFunctionFallible = func->throws();
+
 			// Type check the function body
 			if (func->body()) {
 				typeCheckBlock(func->body(), typeStack, localVariables, structTypeStack);
 			}
+
+			// Reset fallible flag
+			mCurrentFunctionFallible = false;
 		}
 
 		// Type check test declarations
@@ -3934,11 +3940,17 @@ namespace Qd {
 			name = "gte";
 		}
 
-		// error instruction: ( msg code -- ) sets error flag
-		if (strcmp(name, "error") == 0) {
+		// panic instruction: ( msg code -- ) sets error flag
+		// Can only be called inside fallible functions (marked with !)
+		if (strcmp(name, "panic") == 0) {
+			if (!mCurrentFunctionFallible) {
+				reportErrorConditional(
+						node, "'panic' can only be used inside fallible functions (marked with !)", reportErrors);
+				return;
+			}
 			if (typeStack.size() < 2) {
 				reportErrorConditional(
-						node, "Type error in 'error': Stack underflow (requires msg and code)", reportErrors);
+						node, "Type error in 'panic': Stack underflow (requires msg and code)", reportErrors);
 				return;
 			}
 			// Pop msg and code

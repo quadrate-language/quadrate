@@ -280,6 +280,10 @@ namespace Qd {
 		// Current function's type parameters (for generic functions)
 		// Set when entering a generic function, cleared when leaving
 		std::vector<std::string> mCurrentTypeParams;
+
+		// Whether the current function being validated is fallible (can throw)
+		// Used to restrict 'panic' to only be called in fallible functions
+		bool mCurrentFunctionFallible;
 	};
 
 } // namespace Qd

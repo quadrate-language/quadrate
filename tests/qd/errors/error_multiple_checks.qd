@@ -1,6 +1,6 @@
 fn might_fail(a:i64 -- result:i64)! {
 	dup 10 > if {
-		"Error occurred" 1 error
+		"Error occurred" 1 panic
 	}
 }
 
@@ -8,24 +8,24 @@ fn main() {
 	5 might_fail if {
 		"Check 1: Success with " print print nl
 	} else {
-		drop "Check 1: Failed" print nl
+		"Check 1: Failed" print nl
 	}
 
 	15 might_fail if {
 		"Check 2: Success with " print print nl
 	} else {
-		drop "Check 2: Failed" print nl
+		"Check 2: Failed" print nl
 	}
 
 	8 might_fail if {
 		"Check 3: Success with " print print nl
 	} else {
-		drop "Check 3: Failed" print nl
+		"Check 3: Failed" print nl
 	}
 
 	20 might_fail if {
 		"Check 4: Success with " print print nl
 	} else {
-		drop "Check 4: Failed" print nl
+		"Check 4: Failed" print nl
 	}
 }

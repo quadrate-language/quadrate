@@ -2878,23 +2878,23 @@ qd_exec_result qd_err(qd_context* ctx) {
 	return (qd_exec_result){0};
 }
 
-qd_exec_result qd_error(qd_context* ctx) {
+qd_exec_result qd_panic(qd_context* ctx) {
 	// Pop error code and message from stack and set error state
-	// Stack before: [error_msg:str, error_code:int]
+	// Stack notation: ( msg code -- ) means msg is pushed first, code is on top
 	// Stack after: []
 	qd_stack_element_t error_msg_elem, error_code_elem;
 
-	// Pop error code (integer)
+	// Pop error code (integer) - it's on top
 	qd_stack_error err = qd_stack_pop(ctx->st, &error_code_elem);
 	if (err != QD_STACK_OK) {
-		fprintf(stderr, "Fatal error in error: Stack underflow when popping error code\n");
+		fprintf(stderr, "Fatal error in panic: Stack underflow when popping error code\n");
 		dump_stack(ctx);
 		qd_print_stack_trace(ctx);
 		abort();
 	}
 
 	if (error_code_elem.type != QD_STACK_TYPE_INT) {
-		fprintf(stderr, "Fatal error in error: Expected integer error code, got type %d\n", error_code_elem.type);
+		fprintf(stderr, "Fatal error in panic: Expected integer error code, got type %d\n", error_code_elem.type);
 		dump_stack(ctx);
 		qd_print_stack_trace(ctx);
 		abort();
@@ -2903,14 +2903,14 @@ qd_exec_result qd_error(qd_context* ctx) {
 	// Pop error message (string)
 	err = qd_stack_pop(ctx->st, &error_msg_elem);
 	if (err != QD_STACK_OK) {
-		fprintf(stderr, "Fatal error in error: Stack underflow when popping error message\n");
+		fprintf(stderr, "Fatal error in panic: Stack underflow when popping error message\n");
 		dump_stack(ctx);
 		qd_print_stack_trace(ctx);
 		abort();
 	}
 
 	if (error_msg_elem.type != QD_STACK_TYPE_STR) {
-		fprintf(stderr, "Fatal error in error: Expected string error message, got type %d\n", error_msg_elem.type);
+		fprintf(stderr, "Fatal error in panic: Expected string error message, got type %d\n", error_msg_elem.type);
 		dump_stack(ctx);
 		qd_print_stack_trace(ctx);
 		// Release the error code's string reference if needed

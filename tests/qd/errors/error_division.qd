@@ -4,7 +4,7 @@ fn safe_divide(a:i64 b:i64 -- result:i64)! {
 	} else {
 		drop drop
 		0
-		"Error occurred" 1 error
+		"Error occurred" 1 panic
 	}
 }
 
@@ -13,20 +13,20 @@ fn main() {
 	10 2 safe_divide if {
 		print nl
 	} else {
-		drop "ERROR" print nl
+		"ERROR" print nl
 	}
 
 	"Test 2: 10 / 0 = " print
 	10 0 safe_divide if {
 		print nl
 	} else {
-		drop "ERROR" print nl
+		"ERROR" print nl
 	}
 
 	"Test 3: 100 / 5 = " print
 	100 5 safe_divide if {
 		print nl
 	} else {
-		drop "ERROR" print nl
+		"ERROR" print nl
 	}
 }

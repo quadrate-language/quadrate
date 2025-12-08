@@ -3,7 +3,7 @@ fn validate_positive(a:i64 -- result:i64)! {
 		dup
 	} else {
 		0
-		"Error occurred" 1 error
+		"Error occurred" 1 panic
 	}
 }
 
@@ -17,10 +17,10 @@ fn main() {
 		double_value if {
 			print nl
 		} else {
-			drop "Double failed" print nl
+			"Double failed" print nl
 		}
 	} else {
-		drop "Validation failed" print nl
+		"Validation failed" print nl
 	}
 
 	"Test 2: -3 validated and doubled = " print
@@ -28,9 +28,9 @@ fn main() {
 		double_value if {
 			print nl
 		} else {
-			drop "Double failed" print nl
+			"Double failed" print nl
 		}
 	} else {
-		drop "Validation failed" print nl
+		"Validation failed" print nl
 	}
 }

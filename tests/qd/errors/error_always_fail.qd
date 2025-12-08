@@ -1,6 +1,6 @@
 fn always_error(a:i64 -- result:i64)! {
 	0
-	"Error occurred" 1 error
+	"Error occurred" 1 panic
 }
 
 fn main() {
@@ -8,13 +8,13 @@ fn main() {
 	42 always_error if {
 		print nl
 	} else {
-		drop "Failed (expected)" print nl
+		"Failed (expected)" print nl
 	}
 
 	"Test 2: " print
 	10 always_error if {
 		print nl
 	} else {
-		drop "Failed (expected)" print nl
+		"Failed (expected)" print nl
 	}
 }

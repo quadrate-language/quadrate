@@ -28,13 +28,13 @@ namespace Qd {
 			// Threading
 			"detach", "spawn", "wait",
 			// Error handling
-			"error"};
+			"panic"};
 
 	static const size_t BUILTIN_INSTRUCTION_COUNT = sizeof(BUILTIN_INSTRUCTIONS) / sizeof(BUILTIN_INSTRUCTIONS[0]);
 
 	// Extended instruction list for semantic validation
 	// Includes built-in instructions PLUS commonly imported library functions
-	// This prevents false "undefined function" errors when validating standard library modules
+	// This prevents false "undefined function" panics when validating standard library modules
 	static const char* VALIDATOR_INSTRUCTIONS[] = {
 			// All built-in instructions
 			"!=", "%", "*", "+", "-", "/", "<", "<=", "==", ">", ">=", "add", "dec", "div", "eq", "gt", "gte", "inc",
@@ -56,7 +56,7 @@ namespace Qd {
 			// Threading
 			"detach", "spawn", "wait",
 			// Error handling
-			"error"};
+			"panic"};
 
 	static const size_t VALIDATOR_INSTRUCTION_COUNT =
 			sizeof(VALIDATOR_INSTRUCTIONS) / sizeof(VALIDATOR_INSTRUCTIONS[0]);

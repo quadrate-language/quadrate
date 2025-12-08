@@ -615,12 +615,12 @@ qd_exec_result qd_call(qd_context* ctx);
 qd_exec_result qd_err(qd_context* ctx);
 
 /**
- * @brief Trigger an error
+ * @brief Trigger a panic (error in fallible function)
  *
  * @param ctx Execution context
  * @return Execution result (non-zero indicating error)
  */
-qd_exec_result qd_error(qd_context* ctx);
+qd_exec_result qd_panic(qd_context* ctx);
 
 /**
  * @brief Push an error code onto the stack

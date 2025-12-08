@@ -63,7 +63,7 @@ fn read_file(path:str -- content:ptr length:i64)! {
 				chunk_buf mem::free
 				result_buf mem::free
 				f io::close
-				"Read error" 1 error
+				"Read error" 1 panic
 			}
 		}
 
@@ -74,7 +74,7 @@ fn read_file(path:str -- content:ptr length:i64)! {
 
 	} else {
 		drop
-		"No such file or directory" 1 error
+		"No such file or directory" 1 panic
 	}
 }
 

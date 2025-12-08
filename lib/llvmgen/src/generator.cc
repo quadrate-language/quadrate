@@ -2795,9 +2795,9 @@ namespace Qd {
 
 			builder->CreateCall(runtimeFn, {ctx});
 
-			// Special handling for 'error' instruction in fallible functions
-			// After calling qd_error, we need to return immediately to prevent further execution
-			if (name == "error" && currentFunctionIsFallible && currentFunctionReturnBlock) {
+			// Special handling for 'panic' instruction in fallible functions
+			// After calling qd_panic, we need to return immediately to prevent further execution
+			if (name == "panic" && currentFunctionIsFallible && currentFunctionReturnBlock) {
 				builder->CreateBr(currentFunctionReturnBlock);
 			}
 

@@ -2,7 +2,7 @@ fn safe_operation(a:i64 -- result:i64)! {
 	dup 0 > if {
 		dup mul
 	} else {
-		"Error occurred" 1 error
+		"Error occurred" 1 panic
 	}
 }
 
@@ -10,6 +10,6 @@ fn main() {
 	0 safe_operation if {
 		"Success: result is " print print nl
 	} else {
-		drop "Error occurred" print nl
+		"Error occurred" print nl
 	}
 }
