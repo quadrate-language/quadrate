@@ -57,11 +57,13 @@ fn main( -- ) {
 
 ```qd
 fn main( -- ) {
-	5 neg print nl   // -5 (negate)
-	5 inc print nl   // 6 (increment)
-	5 dec print nl   // 4 (decrement)
+	5 neg print nl  // -5 (negate)
+	5 ++ print nl   // 6 (increment)
+	5 -- print nl   // 4 (decrement)
 }
 ```
+
+You can also use `inc` and `dec` as word forms for `++` and `--`.
 
 ## Comparison
 

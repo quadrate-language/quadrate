@@ -12,8 +12,8 @@ Mathematical operations on numbers.
 | `/` / `div` | `( a b -- quotient )` | Division |
 | `%` / `mod` | `( a b -- remainder )` | Modulo |
 | `neg` | `( a -- -a )` | Negation |
-| `inc` | `( a -- a+1 )` | Increment |
-| `dec` | `( a -- a-1 )` | Decrement |
+| `++` / `inc` | `( a -- a+1 )` | Increment |
+| `--` / `dec` | `( a -- a-1 )` | Decrement |
 
 ---
 
@@ -83,24 +83,26 @@ Negates a number.
 5 neg // -5
 ```
 
-### inc
+### ++ (inc)
 
 Adds 1 to a number.
 
 **Signature:** `( a -- a+1 )`
 
 ```qd
-5 inc // 6
+5 ++ // 6
+5 inc // 6 (same as ++)
 ```
 
-### dec
+### -- (dec)
 
 Subtracts 1 from a number.
 
 **Signature:** `( a -- a-1 )`
 
 ```qd
-5 dec // 4
+5 -- // 4
+5 dec // 4 (same as --)
 ```
 
 ---
@@ -116,8 +118,12 @@ Both symbol and word forms are available:
 | `*` | `mul` |
 | `/` | `div` |
 | `%` | `mod` |
+| `++` | `inc` |
+| `--` | `dec` |
 
 ```qd
 3 4 add // Same as 3 4 +
 10 3 sub // Same as 10 3 -
+5 inc   // Same as 5 ++
+5 dec   // Same as 5 --
 ```
