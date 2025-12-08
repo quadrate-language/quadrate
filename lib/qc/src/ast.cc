@@ -25,7 +25,6 @@
 #include <qc/ast_node_local.h>
 #include <qc/ast_node_loop.h>
 #include <qc/ast_node_parameter.h>
-#include <qc/ast_node_while.h>
 #include <qc/ast_node_program.h>
 #include <qc/ast_node_return.h>
 #include <qc/ast_node_scoped.h>
@@ -33,6 +32,7 @@
 #include <qc/ast_node_switch.h>
 #include <qc/ast_node_test.h>
 #include <qc/ast_node_use.h>
+#include <qc/ast_node_while.h>
 #include <qc/colors.h>
 #include <qc/error_reporter.h>
 #include <qc/instructions.h>
@@ -292,7 +292,8 @@ namespace Qd {
 					return "";
 				}
 			} else {
-				errorReporter->reportError(scanner, "Expected literal value or env() after '=' in constant declaration");
+				errorReporter->reportError(
+						scanner, "Expected literal value or env() after '=' in constant declaration");
 				return "";
 			}
 		}
@@ -1523,8 +1524,7 @@ namespace Qd {
 
 								if (!ctxTempNodes.empty() &&
 										ctxTempNodes.back()->type() == IAstNode::Type::IDENTIFIER) {
-									AstNodeIdentifier* varIdent =
-											static_cast<AstNodeIdentifier*>(ctxTempNodes.back());
+									AstNodeIdentifier* varIdent = static_cast<AstNodeIdentifier*>(ctxTempNodes.back());
 									ctxTempNodes.pop_back();
 									AstNodeFieldAccess* fieldAccess =
 											new AstNodeFieldAccess(varIdent->name(), fieldName);
@@ -1605,8 +1605,7 @@ namespace Qd {
 							if (token == '.') {
 								if (!ctxTempNodes.empty() &&
 										ctxTempNodes.back()->type() == IAstNode::Type::IDENTIFIER) {
-									AstNodeIdentifier* varIdent =
-											static_cast<AstNodeIdentifier*>(ctxTempNodes.back());
+									AstNodeIdentifier* varIdent = static_cast<AstNodeIdentifier*>(ctxTempNodes.back());
 									ctxTempNodes.pop_back();
 									ctxDotVarName = varIdent->name();
 									delete varIdent;
@@ -1632,11 +1631,10 @@ namespace Qd {
 
 									// else must follow an if statement
 									IAstNode* lastChild = (ctxStmt->childCount() > 0)
-															  ? ctxStmt->child(ctxStmt->childCount() - 1)
-															  : nullptr;
+																  ? ctxStmt->child(ctxStmt->childCount() - 1)
+																  : nullptr;
 									if (lastChild && lastChild->type() == IAstNode::Type::IF_STATEMENT) {
-										AstNodeIfStatement* ifStmt =
-												static_cast<AstNodeIfStatement*>(lastChild);
+										AstNodeIfStatement* ifStmt = static_cast<AstNodeIfStatement*>(lastChild);
 
 										// Parse else block - must have {
 										token = u8t_scanner_scan(scanner);

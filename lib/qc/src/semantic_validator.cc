@@ -83,8 +83,7 @@ namespace Qd {
 
 	// Helper function to check if a name is a reserved keyword
 	static bool isReservedKeyword(const std::string& name) {
-		static const std::unordered_set<std::string> KEYWORDS = {
-				// Control flow
+		static const std::unordered_set<std::string> KEYWORDS = {// Control flow
 				"if", "else", "for", "while", "loop", "switch", "case", "break", "continue", "return",
 				// Declarations
 				"fn", "struct", "const", "pub", "test", "use", "import",
@@ -412,7 +411,8 @@ namespace Qd {
 
 			// Check for reserved keyword
 			if (isReservedKeyword(func->name())) {
-				std::string errorMsg = "'" + func->name() + "' is a reserved keyword and cannot be used as a function name";
+				std::string errorMsg =
+						"'" + func->name() + "' is a reserved keyword and cannot be used as a function name";
 				reportError(func, errorMsg.c_str());
 				return;
 			}
@@ -542,9 +542,10 @@ namespace Qd {
 
 					// Check for reserved keyword
 					if (isReservedKeyword(field->name())) {
-						std::string errorMsg = "'" + field->name() +
-											   "' is a reserved keyword and cannot be used as a field name in struct '" +
-											   structDecl->name() + "'";
+						std::string errorMsg =
+								"'" + field->name() +
+								"' is a reserved keyword and cannot be used as a field name in struct '" +
+								structDecl->name() + "'";
 						reportError(field, errorMsg.c_str());
 						return;
 					}
@@ -585,8 +586,7 @@ namespace Qd {
 
 			// Check for reserved keyword
 			if (isReservedKeyword(test->name())) {
-				std::string errorMsg =
-						"'" + test->name() + "' is a reserved keyword and cannot be used as a test name";
+				std::string errorMsg = "'" + test->name() + "' is a reserved keyword and cannot be used as a test name";
 				reportError(test, errorMsg.c_str());
 				return;
 			}

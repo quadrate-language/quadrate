@@ -3158,15 +3158,15 @@ namespace Qd {
 		// This ensures each call starts with a clean state
 		auto preFallibleIt = fallibleFunctions.find(fullName);
 		if (preFallibleIt != fallibleFunctions.end() && preFallibleIt->second) {
-			auto contextStructTy = llvm::StructType::get(
-					*context, {
-									  llvm::PointerType::getUnqual(*context), // qd_stack* st
-									  builder->getInt64Ty(),				  // int64_t error_code
-									  llvm::PointerType::getUnqual(*context), // char* error_msg
-									  builder->getInt32Ty(),				  // int argc
-									  llvm::PointerType::getUnqual(*context), // char** argv
-									  llvm::PointerType::getUnqual(*context)  // char* program_name
-							  });
+			auto contextStructTy =
+					llvm::StructType::get(*context, {
+															llvm::PointerType::getUnqual(*context), // qd_stack* st
+															builder->getInt64Ty(), // int64_t error_code
+															llvm::PointerType::getUnqual(*context), // char* error_msg
+															builder->getInt32Ty(),					// int argc
+															llvm::PointerType::getUnqual(*context), // char** argv
+															llvm::PointerType::getUnqual(*context) // char* program_name
+													});
 			auto errorCodePtr = builder->CreateStructGEP(contextStructTy, ctx, 1, "pre_call_error_code_ptr");
 			builder->CreateStore(builder->getInt64(0), errorCodePtr);
 		}
@@ -4188,8 +4188,8 @@ namespace Qd {
 						{llvm::PointerType::getUnqual(*context), llvm::PointerType::getUnqual(*context)}, true));
 		auto stderrGlobal = module->getOrInsertGlobal("stderr", llvm::PointerType::getUnqual(*context));
 		auto stderrVal = builder->CreateLoad(llvm::PointerType::getUnqual(*context), stderrGlobal, "stderr");
-		auto errorMsg = builder->CreateGlobalString(
-				"Fatal error in while: Stack underflow (requires 1 value for condition)\n");
+		auto errorMsg =
+				builder->CreateGlobalString("Fatal error in while: Stack underflow (requires 1 value for condition)\n");
 		builder->CreateCall(fprintfFn, {stderrVal, errorMsg});
 		// Call qd_print_stack_trace(ctx)
 		auto printStackTraceFnTy =
@@ -6420,8 +6420,7 @@ namespace Qd {
 					llvm::Value* structPtrAlloca = it->second;
 					llvm::Value* valuePtr =
 							builder->CreateStructGEP(stackElementTy, structPtrAlloca, 0, varName + "_value_ptr");
-					structPtr =
-							builder->CreateLoad(llvm::PointerType::getUnqual(*context), valuePtr, "struct_ptr");
+					structPtr = builder->CreateLoad(llvm::PointerType::getUnqual(*context), valuePtr, "struct_ptr");
 				}
 			}
 		}
@@ -6540,7 +6539,7 @@ namespace Qd {
 			structTypeName = typeIt->second;
 		}
 
-				// Local variables are stored as qd_stack_element_t, need to extract the value field
+		// Local variables are stored as qd_stack_element_t, need to extract the value field
 		llvm::Value* structPtrAlloca = it->second;
 		llvm::Value* structValuePtr =
 				builder->CreateStructGEP(stackElementTy, structPtrAlloca, 0, varName + "_value_ptr");

@@ -1,4 +1,14 @@
 /// Command-line flag parsing.
+
+/// Error: No error (success).
+pub const ErrNone = 0
+/// Error: Flag not found.
+pub const ErrNotFound = 1
+/// Error: Value not found (flag exists but has no value).
+pub const ErrNoValue = 2
+/// Error: Invalid value format.
+pub const ErrInvalidValue = 3
+
 use str
 use unicode
 
@@ -92,7 +102,7 @@ pub fn string(f:ptr name:str -- value:str)! {
 
 	f @argv pattern str::index_of -> idx
 	idx 0 < if {
-		"flag not found" 1 panic
+		"flag not found" ErrNotFound panic
 	}
 
 	idx 1 + name str::len + 1 + -> start
@@ -100,7 +110,7 @@ pub fn string(f:ptr name:str -- value:str)! {
 
 	argv "\n" start str::index_of_from -> end_idx
 	end_idx 0 < if {
-		"value not found" 1 panic
+		"value not found" ErrNoValue panic
 	}
 
 	argv start end_idx start - str::substring! -> value
@@ -122,7 +132,7 @@ pub fn int(f:ptr name:str -- value:i64)! {
 		-> s
 		s parse_int
 	} else {
-		"flag not found" 1 panic
+		"flag not found" ErrNotFound panic
 		0
 	}
 }
@@ -141,7 +151,7 @@ pub fn float(f:ptr name:str -- value:f64)! {
 		-> s
 		s parse_float
 	} else {
-		"flag not found" 1 panic
+		"flag not found" ErrNotFound panic
 		0.0
 	}
 }
@@ -154,7 +164,7 @@ pub fn float(f:ptr name:str -- value:f64)! {
 pub fn positional(f:ptr index:i64 -- value:str)! {
 	-> index
 	-> f
-	"positional not yet implemented" 1 panic
+	"positional not yet implemented" ErrNotFound panic
 	""
 }
 

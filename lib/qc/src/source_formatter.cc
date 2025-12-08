@@ -117,8 +117,8 @@ namespace Qd {
 
 		// Extract constant name (identifier before =)
 		size_t nameStart = pos;
-		while (pos < workingLine.length() && (std::isalnum(static_cast<unsigned char>(workingLine[pos])) ||
-											  workingLine[pos] == '_')) {
+		while (pos < workingLine.length() &&
+				(std::isalnum(static_cast<unsigned char>(workingLine[pos])) || workingLine[pos] == '_')) {
 			pos++;
 		}
 
@@ -1174,9 +1174,8 @@ namespace Qd {
 
 			// Format function signatures (fn, pub fn, pub struct)
 			if (startsWithKeyword(trimmed, "fn") ||
-					(startsWithKeyword(trimmed, "pub") &&
-					 (trimmed.find("pub fn") != std::string::npos ||
-					  trimmed.find("pub struct") != std::string::npos))) {
+					(startsWithKeyword(trimmed, "pub") && (trimmed.find("pub fn") != std::string::npos ||
+																  trimmed.find("pub struct") != std::string::npos))) {
 				std::string formatted = formatFunctionSignature(line);
 				// Write with current indent
 				for (int i = 0; i < indentLevel; i++) {
@@ -1240,8 +1239,7 @@ namespace Qd {
 				// Normalize use statements to have single space
 				if (startsWithKeyword(trimmed, "use")) {
 					output << normalizeUseStatement(trimmed) << '\n';
-				} else if (startsWithKeyword(trimmed, "const") ||
-						   trimmed.find("pub const") != std::string::npos) {
+				} else if (startsWithKeyword(trimmed, "const") || trimmed.find("pub const") != std::string::npos) {
 					// Normalize const statements (including pub const)
 					output << normalizeConstStatement(trimmed) << '\n';
 				} else {

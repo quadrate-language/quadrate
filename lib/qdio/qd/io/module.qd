@@ -1,4 +1,24 @@
 /// File and stream I/O operations.
+
+/// Error: No error (success).
+pub const ErrNone = 0
+/// Error: File not found.
+pub const ErrNotFound = 1
+/// Error: Permission denied.
+pub const ErrPermission = 2
+/// Error: Invalid file handle.
+pub const ErrInvalidHandle = 3
+/// Error: Read operation failed.
+pub const ErrRead = 4
+/// Error: Write operation failed.
+pub const ErrWrite = 5
+/// Error: Seek operation failed.
+pub const ErrSeek = 6
+/// Error: End of file reached.
+pub const ErrEof = 7
+/// Error: Invalid argument.
+pub const ErrInvalidArg = 8
+
 /// Open mode: read only.
 pub const Read = "r"
 /// Open mode: read binary.

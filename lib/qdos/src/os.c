@@ -36,7 +36,7 @@ qd_exec_result usr_os_exit(qd_context* ctx) {
 	exit((int)elem.value.i);
 
 	// This line is never reached, but needed for compiler
-	return (qd_exec_result){0};
+	return (qd_exec_result){OS_ERR_NONE};
 }
 
 qd_exec_result usr_os_system(qd_context* ctx) {
@@ -78,7 +78,7 @@ qd_exec_result usr_os_system(qd_context* ctx) {
 		abort();
 	}
 
-	return (qd_exec_result){0};
+	return (qd_exec_result){OS_ERR_NONE};
 }
 
 qd_exec_result usr_os_getenv(qd_context* ctx) {
@@ -115,7 +115,7 @@ qd_exec_result usr_os_getenv(qd_context* ctx) {
 		abort();
 	}
 
-	return (qd_exec_result){0};
+	return (qd_exec_result){OS_ERR_NONE};
 }
 
 qd_exec_result usr_os_exists(qd_context* ctx) {
@@ -151,7 +151,7 @@ qd_exec_result usr_os_exists(qd_context* ctx) {
 		abort();
 	}
 
-	return (qd_exec_result){0};
+	return (qd_exec_result){OS_ERR_NONE};
 }
 
 qd_exec_result usr_os_delete(qd_context* ctx) {
@@ -189,8 +189,8 @@ qd_exec_result usr_os_delete(qd_context* ctx) {
 		abort();
 	}
 
-	// Return error if operation failed
-	return (qd_exec_result){error_code != 0 ? 1 : 0};
+	// Return error code (errno value, 0 for success)
+	return (qd_exec_result){error_code};
 }
 
 qd_exec_result usr_os_rename(qd_context* ctx) {
@@ -247,8 +247,8 @@ qd_exec_result usr_os_rename(qd_context* ctx) {
 		abort();
 	}
 
-	// Return error if operation failed
-	return (qd_exec_result){error_code != 0 ? 1 : 0};
+	// Return error code (errno value, 0 for success)
+	return (qd_exec_result){error_code};
 }
 
 qd_exec_result usr_os_copy(qd_context* ctx) {
@@ -323,8 +323,8 @@ qd_exec_result usr_os_copy(qd_context* ctx) {
 		abort();
 	}
 
-	// Return error if operation failed
-	return (qd_exec_result){error_code != 0 ? 1 : 0};
+	// Return error code (errno value, 0 for success)
+	return (qd_exec_result){error_code};
 }
 
 qd_exec_result usr_os_mkdir(qd_context* ctx) {
@@ -361,8 +361,8 @@ qd_exec_result usr_os_mkdir(qd_context* ctx) {
 		abort();
 	}
 
-	// Return error if operation failed
-	return (qd_exec_result){error_code != 0 ? 1 : 0};
+	// Return error code (errno value, 0 for success)
+	return (qd_exec_result){error_code};
 }
 
 qd_exec_result usr_os_list(qd_context* ctx) {
@@ -407,10 +407,10 @@ qd_exec_result usr_os_list(qd_context* ctx) {
 			qd_print_stack_trace(ctx);
 			abort();
 		}
-		// Push error code (1 for generic error)
-		qd_stack_push_int(ctx->st, 1);
+		// Push error code (not found / not a directory)
+		qd_stack_push_int(ctx->st, OS_ERR_NOT_FOUND);
 		// Return error since listing failed
-		return (qd_exec_result){1};
+		return (qd_exec_result){OS_ERR_NOT_FOUND};
 	}
 
 	qd_string_release(elem.value.s);
@@ -436,6 +436,6 @@ qd_exec_result usr_os_list(qd_context* ctx) {
 	}
 
 	// Push errno (0 for success)
-	qd_stack_push_int(ctx->st, 0);
-	return (qd_exec_result){0};
+	qd_stack_push_int(ctx->st, OS_ERR_NONE);
+	return (qd_exec_result){OS_ERR_NONE};
 }

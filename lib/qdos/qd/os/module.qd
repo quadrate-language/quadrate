@@ -1,28 +1,29 @@
 /// Operating system interface.
-/// Error: No error.
-pub const Success = 0
-/// Error: Permission denied (EACCES).
-pub const PermissionDenied = 13
-/// Error: File already exists (EEXIST).
-pub const FileExists = 17
-/// Error: Path component is not a directory (ENOTDIR).
-pub const NotADirectory = 20
-/// Error: Is a directory when file expected (EISDIR).
-pub const IsADirectory = 21
-/// Error: Invalid argument (EINVAL).
-pub const InvalidArgument = 22
+
+/// Error: No error (success).
+pub const ErrNone = 0
 /// Error: No such file or directory (ENOENT).
-pub const FileNotFound = 2
-/// Error: No space left on device (ENOSPC).
-pub const NoSpaceLeft = 28
-/// Error: Read-only file system (EROFS).
-pub const ReadOnlyFileSystem = 30
-/// Error: File name too long (ENAMETOOLONG).
-pub const NameTooLong = 36
+pub const ErrNotFound = 2
 /// Error: I/O error (EIO).
-pub const IoError = 5
+pub const ErrIo = 5
 /// Error: Out of memory (ENOMEM).
-pub const OutOfMemory = 12
+pub const ErrOutOfMemory = 12
+/// Error: Permission denied (EACCES).
+pub const ErrPermission = 13
+/// Error: File already exists (EEXIST).
+pub const ErrExists = 17
+/// Error: Path component is not a directory (ENOTDIR).
+pub const ErrNotDirectory = 20
+/// Error: Is a directory when file expected (EISDIR).
+pub const ErrIsDirectory = 21
+/// Error: Invalid argument (EINVAL).
+pub const ErrInvalidArg = 22
+/// Error: No space left on device (ENOSPC).
+pub const ErrNoSpace = 28
+/// Error: Read-only file system (EROFS).
+pub const ErrReadOnly = 30
+/// Error: File name too long (ENAMETOOLONG).
+pub const ErrNameTooLong = 36
 import "libqdos.a" as "os" {
 	/// Exit the program with status code.
 	/// @param code i64 Exit status (0 = success)

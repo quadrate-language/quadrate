@@ -13,6 +13,21 @@
 #include <qdrt/exec_result.h>
 
 /**
+ * @brief Error codes for io module
+ *
+ * These match the constants defined in io/module.qd
+ */
+#define IO_ERR_NONE 0			/**< No error (success) */
+#define IO_ERR_NOT_FOUND 1		/**< File not found */
+#define IO_ERR_PERMISSION 2		/**< Permission denied */
+#define IO_ERR_INVALID_HANDLE 3 /**< Invalid file handle */
+#define IO_ERR_READ 4			/**< Read operation failed */
+#define IO_ERR_WRITE 5			/**< Write operation failed */
+#define IO_ERR_SEEK 6			/**< Seek operation failed */
+#define IO_ERR_EOF 7			/**< End of file reached */
+#define IO_ERR_INVALID_ARG 8	/**< Invalid argument */
+
+/**
  * @brief Open a file for reading, writing, or both
  *
  * Stack effect: ( path:s mode:s -- handle:p )

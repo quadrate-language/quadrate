@@ -11,6 +11,16 @@
 #include <qdrt/context.h>
 #include <qdrt/exec_result.h>
 
+/**
+ * @brief Error codes for str module
+ *
+ * These match the constants defined in str/module.qd
+ */
+#define STR_ERR_NONE 0			/**< No error (success) */
+#define STR_ERR_OUT_OF_BOUNDS 1 /**< Index out of bounds */
+#define STR_ERR_ALLOC 2			/**< Memory allocation failed */
+#define STR_ERR_INVALID_ARG 3	/**< Invalid argument */
+
 #ifdef __cplusplus
 extern "C" {
 #endif
