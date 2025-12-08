@@ -10,8 +10,8 @@ Operations for bit manipulation.
 | `or` | `( a b -- result )` | Bitwise OR |
 | `xor` | `( a b -- result )` | Bitwise XOR |
 | `not` | `( a -- result )` | Bitwise NOT |
-| `shl` | `( a n -- result )` | Shift left |
-| `shr` | `( a n -- result )` | Shift right |
+| `<<` / `shl` | `( a n -- result )` | Shift left |
+| `>>` / `shr` | `( a n -- result )` | Shift right |
 
 ---
 
@@ -61,24 +61,26 @@ Computes bitwise NOT (ones' complement).
 
 ## Shift Operations
 
-### shl
+### << (shl)
 
 Shifts a left by n bits.
 
 **Signature:** `( a n -- result )`
 
 ```qd
-1 4 shl // 16
+1 4 <<  // 16
+1 4 shl // 16 (same as <<)
 ```
 
-### shr
+### >> (shr)
 
 Shifts a right by n bits (arithmetic shift).
 
 **Signature:** `( a n -- result )`
 
 ```qd
-16 2 shr // 4
+16 2 >>  // 4
+16 2 shr // 4 (same as >>)
 ```
 
 ---

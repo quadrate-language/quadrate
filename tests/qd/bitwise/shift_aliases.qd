@@ -1,0 +1,23 @@
+// Test << and >> as aliases for shl and shr
+fn main( -- ) {
+	// Basic shift left with <<
+	1 4 << print nl  // 16 (1 << 4)
+
+	// Basic shift right with >>
+	16 2 >> print nl  // 4 (16 >> 2)
+
+	// Chain operations
+	1 8 << 4 >> print nl  // 16 ((1 << 8) >> 4 = 256 >> 4)
+
+	// Compare with word forms
+	1 4 shl print nl  // 16 (same as <<)
+	16 2 shr print nl  // 4 (same as >>)
+
+	// Larger values
+	255 8 << print nl  // 65280
+	65280 8 >> print nl  // 255
+
+	// Zero shifts
+	42 0 << print nl  // 42
+	42 0 >> print nl  // 42
+}

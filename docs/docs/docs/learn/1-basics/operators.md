@@ -126,10 +126,12 @@ fn main( -- ) {
 	0b1100 0b1010 and print nl  // 8 (0b1000)
 	0b1100 0b1010 or print nl   // 14 (0b1110)
 	0b1100 0b1010 xor print nl  // 6 (0b0110)
-	1 4 shl print nl            // 16 (shift left)
-	16 2 shr print nl           // 4 (shift right)
+	1 4 << print nl             // 16 (shift left)
+	16 2 >> print nl            // 4 (shift right)
 }
 ```
+
+You can also use `shl` and `shr` as word forms for `<<` and `>>`.
 
 ## Combining Operations
 

@@ -4021,6 +4021,10 @@ namespace Qd {
 			name = "inc";
 		} else if (strcmp(name, "--") == 0) {
 			name = "dec";
+		} else if (strcmp(name, "<<") == 0) {
+			name = "shl";
+		} else if (strcmp(name, ">>") == 0) {
+			name = "shr";
 		}
 
 		// panic instruction: ( msg code -- ) sets error flag

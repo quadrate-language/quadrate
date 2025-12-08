@@ -2813,6 +2813,10 @@ namespace Qd {
 				fnName = "qd_inc";
 			} else if (name == "--") {
 				fnName = "qd_dec";
+			} else if (name == "<<") {
+				fnName = "qd_shl";
+			} else if (name == ">>") {
+				fnName = "qd_shr";
 			} else {
 				fnName = "qd_" + name;
 			}

@@ -412,6 +412,28 @@ namespace Qd {
 			}
 		}
 
+		// Special handling for '<' to check for '<<' (shift left)
+		if (token == '<') {
+			char32_t nextToken = u8t_scanner_peek(scanner);
+			if (nextToken == '<') {
+				u8t_scanner_scan(scanner); // Consume second '<'
+				IAstNode* node = new AstNodeInstruction("<<");
+				setNodePosition(node, scanner, src);
+				return node;
+			}
+		}
+
+		// Special handling for '>' to check for '>>' (shift right)
+		if (token == '>') {
+			char32_t nextToken = u8t_scanner_peek(scanner);
+			if (nextToken == '>') {
+				u8t_scanner_scan(scanner); // Consume second '>'
+				IAstNode* node = new AstNodeInstruction(">>");
+				setNodePosition(node, scanner, src);
+				return node;
+			}
+		}
+
 		// Map of operator tokens to their instruction names
 		static const struct {
 			char32_t token;

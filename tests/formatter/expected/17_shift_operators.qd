@@ -1,0 +1,13 @@
+// Test << and >> operator formatting
+fn main( -- ) {
+	1 4 << print nl
+	16 2 >> print nl
+	1 4 << print nl
+	16 2 >> print nl
+	1 4 << print nl
+	16 2 >> print nl
+	1 4 << print nl
+	16 2 >> print nl
+	// Don't touch << in comments
+	/* Block comment with >> */
+}
