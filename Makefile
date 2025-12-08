@@ -79,6 +79,8 @@ debug:
 	@cp -r lib/qdrand/qd/rand dist/share/quadrate/
 	@cp -r lib/qduuid/qd/uuid dist/share/quadrate/
 	@cp -r lib/qdtesting/qd/testing dist/share/quadrate/
+	@mkdir -p dist/share/bash-completion/completions
+	@cp -f completions/quad.bash dist/share/bash-completion/completions/quad
 	@echo "Debug build complete - static libraries ready"
 
 release:
@@ -147,6 +149,8 @@ release:
 	@cp -r lib/qdrand/qd/rand dist/share/quadrate/
 	@cp -r lib/qduuid/qd/uuid dist/share/quadrate/
 	@cp -r lib/qdtesting/qd/testing dist/share/quadrate/
+	@mkdir -p dist/share/bash-completion/completions
+	@cp -f completions/quad.bash dist/share/bash-completion/completions/quad
 	@echo "Release build complete - static libraries ready"
 
 tests: debug
@@ -295,6 +299,16 @@ install: release
 	@cp -r lib/qdrand/qd/rand $(DESTDIR)$(PREFIX)/share/quadrate/
 	@cp -r lib/qduuid/qd/uuid $(DESTDIR)$(PREFIX)/share/quadrate/
 	@cp -r lib/qdtesting/qd/testing $(DESTDIR)$(PREFIX)/share/quadrate/
+	@echo "Installing bash completions to $(DESTDIR)$(PREFIX)/share/bash-completion/completions/"
+	install -d $(DESTDIR)$(PREFIX)/share/bash-completion/completions
+	install -m 644 completions/quad.bash $(DESTDIR)$(PREFIX)/share/bash-completion/completions/quad
+	@ln -sf quad $(DESTDIR)$(PREFIX)/share/bash-completion/completions/quadc
+	@ln -sf quad $(DESTDIR)$(PREFIX)/share/bash-completion/completions/quadfmt
+	@ln -sf quad $(DESTDIR)$(PREFIX)/share/bash-completion/completions/quadlint
+	@ln -sf quad $(DESTDIR)$(PREFIX)/share/bash-completion/completions/quadlsp
+	@ln -sf quad $(DESTDIR)$(PREFIX)/share/bash-completion/completions/quadpm
+	@ln -sf quad $(DESTDIR)$(PREFIX)/share/bash-completion/completions/quadrepl
+	@ln -sf quad $(DESTDIR)$(PREFIX)/share/bash-completion/completions/quaduses
 
 uninstall:
 	rm -f $(DESTDIR)$(PREFIX)/bin/quad
@@ -329,6 +343,15 @@ uninstall:
 	rm -rf $(DESTDIR)$(PREFIX)/include/qdtime
 	@echo "Removing Quadrate standard library modules from $(DESTDIR)$(PREFIX)/share/quadrate/"
 	rm -rf $(DESTDIR)$(PREFIX)/share/quadrate
+	@echo "Removing bash completions from $(DESTDIR)$(PREFIX)/share/bash-completion/completions/"
+	rm -f $(DESTDIR)$(PREFIX)/share/bash-completion/completions/quad
+	rm -f $(DESTDIR)$(PREFIX)/share/bash-completion/completions/quadc
+	rm -f $(DESTDIR)$(PREFIX)/share/bash-completion/completions/quadfmt
+	rm -f $(DESTDIR)$(PREFIX)/share/bash-completion/completions/quadlint
+	rm -f $(DESTDIR)$(PREFIX)/share/bash-completion/completions/quadlsp
+	rm -f $(DESTDIR)$(PREFIX)/share/bash-completion/completions/quadpm
+	rm -f $(DESTDIR)$(PREFIX)/share/bash-completion/completions/quadrepl
+	rm -f $(DESTDIR)$(PREFIX)/share/bash-completion/completions/quaduses
 
 docs:
 	@echo "=========================================="
