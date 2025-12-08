@@ -39,7 +39,7 @@ fn make_table( -- tbl:ptr) {
 		}
 		i make_table_entry -> entry
 		// Store as 8-byte value
-		entry tbl i 8 * mem::set
+		entry tbl i 8 * mem::set_i64
 		i 1 + -> i
 	}
 	tbl
@@ -49,7 +49,7 @@ fn make_table( -- tbl:ptr) {
 fn table_get(tbl:ptr index:i64 -- entry:i64) {
 	-> index
 	-> tbl
-	tbl index 8 * mem::get
+	tbl index 8 * mem::get_i64
 }
 
 /// Calculate CRC32 checksum of a string.

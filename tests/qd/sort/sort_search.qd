@@ -4,11 +4,11 @@ use sort
 fn main() {
 	// Create sorted array [1, 2, 3, 4, 5]
 	5 8 * mem::alloc -> arr
-	1 arr 0 mem::set
-	2 arr 8 mem::set
-	3 arr 16 mem::set
-	4 arr 24 mem::set
-	5 arr 32 mem::set
+	1 arr 0 mem::set_i64
+	2 arr 8 mem::set_i64
+	3 arr 16 mem::set_i64
+	4 arr 24 mem::set_i64
+	5 arr 32 mem::set_i64
 
 	// Search for existing values
 	arr 5 1 sort::search print nl

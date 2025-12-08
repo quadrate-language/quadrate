@@ -72,8 +72,8 @@ use mem
 fn main( -- ) {
 	8 mem::alloc -> buf
 
-	42 buf 0 mem::set
-	buf 0 mem::get print nl  // 42
+	42 buf 0 mem::set_i64
+	buf 0 mem::get_i64 print nl  // 42
 
 	buf mem::free
 }
@@ -99,7 +99,7 @@ fn main( -- ) {
 	}
 
 	// Copy to destination
-	src dst 10 mem::copy
+	dst src 10 mem::copy
 
 	// Verify
 	dst 5 mem::get_byte print nl  // 5
@@ -259,12 +259,12 @@ fn main( -- ) {
 	"pool used: " print pool @used print nl  // 300
 
 	// Write to allocated regions
-	42 pool @memory off1 mem::set
-	99 pool @memory off2 mem::set
+	42 pool @memory off1 mem::set_i64
+	99 pool @memory off2 mem::set_i64
 
 	// Read back
-	pool @memory off1 mem::get print nl  // 42
-	pool @memory off2 mem::get print nl  // 99
+	pool @memory off1 mem::get_i64 print nl  // 42
+	pool @memory off2 mem::get_i64 print nl  // 99
 
 	// Reset pool for reuse
 	pool pool_reset

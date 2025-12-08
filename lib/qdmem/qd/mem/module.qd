@@ -34,29 +34,29 @@ import "libqdmem.a" as "mem" {
 	/// @param value i64 Integer value
 	/// @param address ptr Base address
 	/// @param offset i64 Byte offset from base
-	/// @example 42 buf 0 mem::set
-	pub fn set(value:i64 address:ptr offset:i64 -- )
+	/// @example 42 buf 0 mem::set_i64
+	pub fn set_i64(value:i64 address:ptr offset:i64 -- )
 
 	/// Get a 64-bit integer at offset.
 	/// @param address ptr Base address
 	/// @param offset i64 Byte offset from base
 	/// @return value i64 Integer value
-	/// @example buf 0 mem::get -> n
-	pub fn get(address:ptr offset:i64 -- value:i64)
+	/// @example buf 0 mem::get_i64 -> n
+	pub fn get_i64(address:ptr offset:i64 -- value:i64)
 
 	/// Set a 64-bit float at offset.
 	/// @param value f64 Float value
 	/// @param address ptr Base address
 	/// @param offset i64 Byte offset from base
-	/// @example 3.14 buf 0 mem::set_float
-	pub fn set_float(value:f64 address:ptr offset:i64 -- )
+	/// @example 3.14 buf 0 mem::set_f64
+	pub fn set_f64(value:f64 address:ptr offset:i64 -- )
 
 	/// Get a 64-bit float at offset.
 	/// @param address ptr Base address
 	/// @param offset i64 Byte offset from base
 	/// @return value f64 Float value
-	/// @example buf 0 mem::get_float -> x
-	pub fn get_float(address:ptr offset:i64 -- value:f64)
+	/// @example buf 0 mem::get_f64 -> x
+	pub fn get_f64(address:ptr offset:i64 -- value:f64)
 
 	/// Set a pointer at offset.
 	/// @param value ptr Pointer value
@@ -73,11 +73,11 @@ import "libqdmem.a" as "mem" {
 	pub fn get_ptr(address:ptr offset:i64 -- value:ptr)
 
 	/// Copy bytes between memory regions.
-	/// @param src ptr Source address
 	/// @param dst ptr Destination address
+	/// @param src ptr Source address
 	/// @param bytes i64 Number of bytes to copy
-	/// @example src dst 100 mem::copy
-	pub fn copy(src:ptr dst:ptr bytes:i64 -- )
+	/// @example dst src 100 mem::copy
+	pub fn copy(dst:ptr src:ptr bytes:i64 -- )
 
 	/// Zero out memory region.
 	/// @param address ptr Base address
@@ -103,7 +103,7 @@ import "libqdmem.a" as "mem" {
 	/// @param text str Source string
 	/// @return buffer ptr Allocated buffer
 	/// @return length i64 String length
-	/// @example "hello" mem::from_string -> buf -> len
+	/// @example "hello" mem::from_string -> len -> buf
 	pub fn from_string(text:str -- buffer:ptr length:i64)
 }
 

@@ -12,21 +12,21 @@ pub fn ints(arr:ptr count:i64 -- ) {
 	// Insertion sort
 	1 count 1 for it {
 		it -> i
-		arr i 8 * mem::get -> key
+		arr i 8 * mem::get_i64 -> key
 		i 1 - -> j
 		loop {
 			j 0 < if {
 				break
 			}
-			arr j 8 * mem::get -> jval
+			arr j 8 * mem::get_i64 -> jval
 			jval key <= if {
 				break
 			}
 			// Move element right
-			jval arr j 1 + 8 * mem::set
+			jval arr j 1 + 8 * mem::set_i64
 			j 1 - -> j
 		}
-		key arr j 1 + 8 * mem::set
+		key arr j 1 + 8 * mem::set_i64
 	}
 }
 
@@ -40,21 +40,21 @@ pub fn ints_desc(arr:ptr count:i64 -- ) {
 	// Insertion sort descending
 	1 count 1 for it {
 		it -> i
-		arr i 8 * mem::get -> key
+		arr i 8 * mem::get_i64 -> key
 		i 1 - -> j
 		loop {
 			j 0 < if {
 				break
 			}
-			arr j 8 * mem::get -> jval
+			arr j 8 * mem::get_i64 -> jval
 			jval key >= if {
 				break
 			}
 			// Move element right
-			jval arr j 1 + 8 * mem::set
+			jval arr j 1 + 8 * mem::set_i64
 			j 1 - -> j
 		}
-		key arr j 1 + 8 * mem::set
+		key arr j 1 + 8 * mem::set_i64
 	}
 }
 
@@ -66,10 +66,10 @@ pub fn ints_desc(arr:ptr count:i64 -- ) {
 pub fn min(arr:ptr count:i64 -- minval:i64) {
 	-> count
 	-> arr
-	arr 0 mem::get -> result
+	arr 0 mem::get_i64 -> result
 	1 count 1 for it {
 		it -> i
-		arr i 8 * mem::get -> val
+		arr i 8 * mem::get_i64 -> val
 		val result < if {
 			val -> result
 		}
@@ -85,10 +85,10 @@ pub fn min(arr:ptr count:i64 -- minval:i64) {
 pub fn max(arr:ptr count:i64 -- maxval:i64) {
 	-> count
 	-> arr
-	arr 0 mem::get -> result
+	arr 0 mem::get_i64 -> result
 	1 count 1 for it {
 		it -> i
-		arr i 8 * mem::get -> val
+		arr i 8 * mem::get_i64 -> val
 		val result > if {
 			val -> result
 		}
@@ -110,8 +110,8 @@ pub fn is_sorted(arr:ptr count:i64 -- sorted:i64) {
 	} else {
 		1 count 1 for it {
 			it -> i
-			arr i 1 - 8 * mem::get -> prev
-			arr i 8 * mem::get -> curr
+			arr i 1 - 8 * mem::get_i64 -> prev
+			arr i 8 * mem::get_i64 -> curr
 			prev curr > if {
 				0 -> result
 				break
@@ -135,10 +135,10 @@ pub fn reverse(arr:ptr count:i64 -- ) {
 			break
 		}
 		// Swap elements
-		arr left 8 * mem::get -> lval
-		arr right 8 * mem::get -> rval
-		rval arr left 8 * mem::set
-		lval arr right 8 * mem::set
+		arr left 8 * mem::get_i64 -> lval
+		arr right 8 * mem::get_i64 -> rval
+		rval arr left 8 * mem::set_i64
+		lval arr right 8 * mem::set_i64
 		left 1 + -> left
 		right 1 - -> right
 	}
@@ -162,7 +162,7 @@ pub fn search(arr:ptr count:i64 needle:i64 -- idx:i64) {
 			break
 		}
 		left right + 2 / -> mid
-		arr mid 8 * mem::get -> midval
+		arr mid 8 * mem::get_i64 -> midval
 		midval needle == if {
 			mid -> result
 			break

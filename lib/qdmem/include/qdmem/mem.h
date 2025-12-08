@@ -16,13 +16,13 @@ qd_exec_result usr_mem_realloc(qd_context* ctx);
 qd_exec_result usr_mem_set_byte(qd_context* ctx);
 qd_exec_result usr_mem_get_byte(qd_context* ctx);
 
-// Word operations (64-bit)
-qd_exec_result usr_mem_set(qd_context* ctx);
-qd_exec_result usr_mem_get(qd_context* ctx);
+// Integer operations (64-bit)
+qd_exec_result usr_mem_set_i64(qd_context* ctx);
+qd_exec_result usr_mem_get_i64(qd_context* ctx);
 
-// Float operations
-qd_exec_result usr_mem_set_float(qd_context* ctx);
-qd_exec_result usr_mem_get_float(qd_context* ctx);
+// Float operations (64-bit)
+qd_exec_result usr_mem_set_f64(qd_context* ctx);
+qd_exec_result usr_mem_get_f64(qd_context* ctx);
 
 // Pointer operations
 qd_exec_result usr_mem_set_ptr(qd_context* ctx);

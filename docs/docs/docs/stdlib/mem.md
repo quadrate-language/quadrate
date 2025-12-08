@@ -33,18 +33,18 @@ Allocate memory.
 
 Copy bytes between memory regions.
 
-**Signature:** `( src:ptr dst:ptr bytes:i64 -- )`
+**Signature:** `( dst:ptr src:ptr bytes:i64 -- )`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `src` | `ptr` | Source address |
 | `dst` | `ptr` | Destination address |
+| `src` | `ptr` | Source address |
 | `bytes` | `i64` | Number of bytes to copy |
 
 **Example:**
 
 ```qd
-src dst 100 mem::copy
+dst src 100 mem::copy
 ```
 
 ---
@@ -110,7 +110,7 @@ Convert string to buffer.
 
 ---
 
-### get
+### get_i64
 
 Get a 64-bit integer at offset.
 
@@ -128,7 +128,7 @@ Get a 64-bit integer at offset.
 **Example:**
 
 ```qd
-buf 0 mem::get  // n
+buf 0 mem::get_i64 -> n
 ```
 
 ---
@@ -156,7 +156,7 @@ buf 0 mem::get_byte  // b
 
 ---
 
-### get_float
+### get_f64
 
 Get a 64-bit float at offset.
 
@@ -174,7 +174,7 @@ Get a 64-bit float at offset.
 **Example:**
 
 ```qd
-buf 0 mem::get_float  // x
+buf 0 mem::get_f64 -> x
 ```
 
 ---
@@ -247,7 +247,7 @@ buf 2048 mem::realloc  // buf
 
 ---
 
-### set
+### set_i64
 
 Set a 64-bit integer at offset.
 
@@ -262,7 +262,7 @@ Set a 64-bit integer at offset.
 **Example:**
 
 ```qd
-42 buf 0 mem::set
+42 buf 0 mem::set_i64
 ```
 
 ---
@@ -287,7 +287,7 @@ Set a byte at offset.
 
 ---
 
-### set_float
+### set_f64
 
 Set a 64-bit float at offset.
 
@@ -302,7 +302,7 @@ Set a 64-bit float at offset.
 **Example:**
 
 ```qd
-3.14 buf 0 mem::set_float
+3.14 buf 0 mem::set_f64
 ```
 
 ---

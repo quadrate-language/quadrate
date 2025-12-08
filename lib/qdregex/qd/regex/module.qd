@@ -38,29 +38,29 @@ fn regex_new( -- re:ptr) {
 	MAX_STATES STATE_SIZE * mem::alloc -> states
 	MAX_CCLASS 8 * mem::alloc -> cclasses
 	states re RE_STATES mem::set_ptr
-	0 re RE_NSTATES mem::set
-	0 re RE_START mem::set
+	0 re RE_NSTATES mem::set_i64
+	0 re RE_START mem::set_i64
 	cclasses re RE_CCLASSES mem::set_ptr
-	0 re RE_NCCLASS mem::set
+	0 re RE_NCCLASS mem::set_i64
 	re
 }
 
 // Get state field
 fn state_get(re:ptr idx:i64 field:i64 -- val:i64) {
 	-> field -> idx -> re
-	re RE_STATES mem::get_ptr idx STATE_SIZE * field + mem::get
+	re RE_STATES mem::get_ptr idx STATE_SIZE * field + mem::get_i64
 }
 
 // Set state field
 fn state_set(re:ptr idx:i64 field:i64 val:i64 -- ) {
 	-> val -> field -> idx -> re
-	val re RE_STATES mem::get_ptr idx STATE_SIZE * field + mem::set
+	val re RE_STATES mem::get_ptr idx STATE_SIZE * field + mem::set_i64
 }
 
 // Add a state to the regex, returns state index
 fn add_state(re:ptr stype:i64 -- idx:i64) {
 	-> stype -> re
-	re RE_NSTATES mem::get -> n
+	re RE_NSTATES mem::get_i64 -> n
 	n MAX_STATES >= if {
 		-1  // overflow
 	} else {
@@ -69,7 +69,7 @@ fn add_state(re:ptr stype:i64 -- idx:i64) {
 		re n ST_OUT1 -1 state_set
 		re n ST_OUT2 -1 state_set
 		re n ST_CCLASS -1 state_set
-		n 1 + re RE_NSTATES mem::set
+		n 1 + re RE_NSTATES mem::set_i64
 		n
 	}
 }
@@ -84,13 +84,13 @@ fn cclass_new( -- cc:ptr) {
 // Add cclass to regex, returns cclass index
 fn add_cclass(re:ptr cc:ptr -- idx:i64) {
 	-> cc -> re
-	re RE_NCCLASS mem::get -> n
+	re RE_NCCLASS mem::get_i64 -> n
 	n MAX_CCLASS >= if {
 		cc mem::free
 		-1
 	} else {
 		cc re RE_CCLASSES mem::get_ptr n 8 * mem::set_ptr
-		n 1 + re RE_NCCLASS mem::set
+		n 1 + re RE_NCCLASS mem::set_i64
 		n
 	}
 }
@@ -139,8 +139,8 @@ fn parser_new(pattern:str re:ptr -- ps:ptr) {
 	PSTATE_SIZE mem::alloc -> ps
 	pattern mem::from_string -> plen -> pbuf
 	pbuf ps PS_PAT mem::set_ptr
-	0 ps PS_POS mem::set
-	plen ps PS_LEN mem::set
+	0 ps PS_POS mem::set_i64
+	plen ps PS_LEN mem::set_i64
 	re ps PS_RE mem::set_ptr
 	ps
 }
@@ -155,8 +155,8 @@ fn parser_free(ps:ptr -- ) {
 // Parser: peek current char (or -1 if at end)
 fn parser_peek(ps:ptr -- c:i64) {
 	-> ps
-	ps PS_POS mem::get -> pos
-	ps PS_LEN mem::get -> plen
+	ps PS_POS mem::get_i64 -> pos
+	ps PS_LEN mem::get_i64 -> plen
 	pos plen >= if {
 		-1
 	} else {
@@ -169,7 +169,7 @@ fn parser_next(ps:ptr -- c:i64) {
 	-> ps
 	ps parser_peek -> c
 	c -1 != if {
-		ps PS_POS mem::get 1 + ps PS_POS mem::set
+		ps PS_POS mem::get_i64 1 + ps PS_POS mem::set_i64
 	}
 	c
 }
@@ -480,7 +480,7 @@ pub fn compile(pattern:str -- re:ptr) {
 		re end match_state connect_state
 	}
 	start -1 != if {
-		start re RE_START mem::set
+		start re RE_START mem::set_i64
 	}
 
 	ps parser_free
@@ -491,7 +491,7 @@ pub fn compile(pattern:str -- re:ptr) {
 pub fn release(re:ptr -- ) {
 	-> re
 	// Free character classes
-	re RE_NCCLASS mem::get -> n
+	re RE_NCCLASS mem::get_i64 -> n
 	0 -> i
 	loop {
 		i n >= if {
@@ -512,15 +512,15 @@ fn addstate(re:ptr states:ptr visited:ptr idx:i64 listid:i64 -- ) {
 	idx -1 == if {
 	} else {
 		// Check if already visited for this listid
-		visited idx 8 * mem::get -> mark
+		visited idx 8 * mem::get_i64 -> mark
 		mark listid == if {
 		} else {
-			listid visited idx 8 * mem::set
+			listid visited idx 8 * mem::set_i64
 
 			// Add to states array
-			states 0 mem::get -> n
-			idx states n 1 + 8 * mem::set
-			n 1 + states 0 mem::set
+			states 0 mem::get_i64 -> n
+			idx states n 1 + 8 * mem::set_i64
+			n 1 + states 0 mem::set_i64
 
 			// Follow epsilon transitions
 			re idx ST_TYPE state_get -> stype
@@ -575,7 +575,7 @@ pub fn matches(re:ptr s:str -- result:i64) {
 	-> s -> re
 
 	s str::len -> slen
-	re RE_NSTATES mem::get -> nstates
+	re RE_NSTATES mem::get_i64 -> nstates
 
 	// Allocate state sets and visited array
 	nstates 1 + 8 * mem::alloc -> clist
@@ -587,8 +587,8 @@ pub fn matches(re:ptr s:str -- result:i64) {
 	1 -> listid
 
 	// Start with initial state
-	0 clist 0 mem::set
-	re clist visited re RE_START mem::get listid addstate
+	0 clist 0 mem::set_i64
+	re clist visited re RE_START mem::get_i64 listid addstate
 
 	// Process each character
 	0 -> pos
@@ -601,14 +601,14 @@ pub fn matches(re:ptr s:str -- result:i64) {
 		listid 1 + -> listid
 
 		// Build next state set
-		0 nlist 0 mem::set
-		clist 0 mem::get -> n
+		0 nlist 0 mem::set_i64
+		clist 0 mem::get_i64 -> n
 		0 -> i
 		loop {
 			i n >= if {
 				break
 			}
-			clist i 1 + 8 * mem::get -> sidx
+			clist i 1 + 8 * mem::get_i64 -> sidx
 			re sidx c state_matches if {
 				re sidx ST_OUT1 state_get -> out
 				re nlist visited out listid addstate
@@ -626,13 +626,13 @@ pub fn matches(re:ptr s:str -- result:i64) {
 
 	// Check for match state
 	0 -> result
-	clist 0 mem::get -> n
+	clist 0 mem::get_i64 -> n
 	0 -> i
 	loop {
 		i n >= result or if {
 			break
 		}
-		clist i 1 + 8 * mem::get -> sidx
+		clist i 1 + 8 * mem::get_i64 -> sidx
 		re sidx ST_TYPE state_get STATE_MATCH == if {
 			1 -> result
 		}

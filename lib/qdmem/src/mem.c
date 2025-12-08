@@ -127,7 +127,7 @@ qd_exec_result usr_mem_get_byte(qd_context* ctx) {
 }
 
 /* Set 64-bit integer at address */
-qd_exec_result usr_mem_set(qd_context* ctx) {
+qd_exec_result usr_mem_set_i64(qd_context* ctx) {
 	int64_t value, offset;
 	void* address;
 
@@ -139,7 +139,7 @@ qd_exec_result usr_mem_set(qd_context* ctx) {
 
 	if (address == NULL) {
 		ctx->error_code = -1;
-		ctx->error_msg = "Null pointer in mem::set";
+		ctx->error_msg = "Null pointer in mem::set_i64";
 		return (qd_exec_result){-1};
 	}
 
@@ -148,7 +148,7 @@ qd_exec_result usr_mem_set(qd_context* ctx) {
 }
 
 /* Get 64-bit integer from address */
-qd_exec_result usr_mem_get(qd_context* ctx) {
+qd_exec_result usr_mem_get_i64(qd_context* ctx) {
 	int64_t offset;
 	void* address;
 
@@ -159,7 +159,7 @@ qd_exec_result usr_mem_get(qd_context* ctx) {
 
 	if (address == NULL) {
 		ctx->error_code = -1;
-		ctx->error_msg = "Null pointer in mem::get";
+		ctx->error_msg = "Null pointer in mem::get_i64";
 		return (qd_exec_result){-1};
 	}
 
@@ -168,8 +168,8 @@ qd_exec_result usr_mem_get(qd_context* ctx) {
 	return qd_push_i(ctx, value);
 }
 
-/* Set float at address */
-qd_exec_result usr_mem_set_float(qd_context* ctx) {
+/* Set 64-bit float at address */
+qd_exec_result usr_mem_set_f64(qd_context* ctx) {
 	double value;
 	int64_t offset;
 	void* address;
@@ -182,7 +182,7 @@ qd_exec_result usr_mem_set_float(qd_context* ctx) {
 
 	if (address == NULL) {
 		ctx->error_code = -1;
-		ctx->error_msg = "Null pointer in mem::set_float";
+		ctx->error_msg = "Null pointer in mem::set_f64";
 		return (qd_exec_result){-1};
 	}
 
@@ -190,8 +190,8 @@ qd_exec_result usr_mem_set_float(qd_context* ctx) {
 	return (qd_exec_result){0};
 }
 
-/* Get float from address */
-qd_exec_result usr_mem_get_float(qd_context* ctx) {
+/* Get 64-bit float from address */
+qd_exec_result usr_mem_get_f64(qd_context* ctx) {
 	int64_t offset;
 	void* address;
 
@@ -202,7 +202,7 @@ qd_exec_result usr_mem_get_float(qd_context* ctx) {
 
 	if (address == NULL) {
 		ctx->error_code = -1;
-		ctx->error_msg = "Null pointer in mem::get_float";
+		ctx->error_msg = "Null pointer in mem::get_f64";
 		return (qd_exec_result){-1};
 	}
 
@@ -253,14 +253,14 @@ qd_exec_result usr_mem_get_ptr(qd_context* ctx) {
 	return qd_push_p(ctx, value);
 }
 
-/* Copy memory */
+/* Copy memory: dst src bytes -> memcpy(dst, src, bytes) */
 qd_exec_result usr_mem_copy(qd_context* ctx) {
 	int64_t bytes;
 	void *dst, *src;
 
 	if (pop_int(ctx, &bytes) != QD_STACK_OK ||
-			pop_ptr(ctx, &dst) != QD_STACK_OK ||
-			pop_ptr(ctx, &src) != QD_STACK_OK) {
+			pop_ptr(ctx, &src) != QD_STACK_OK ||
+			pop_ptr(ctx, &dst) != QD_STACK_OK) {
 		return (qd_exec_result){-1};
 	}
 

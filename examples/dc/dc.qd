@@ -42,7 +42,7 @@ fn stack_push(s:ptr val:f64 -- ) {
 		// Stack overflow - just ignore for now
 		"dc: stack overflow" print nl
 	} else {
-		val s @data sz 8 * mem::set_float
+		val s @data sz 8 * mem::set_f64
 		sz 1 + s.size
 	}
 }
@@ -56,7 +56,7 @@ fn stack_pop(s:ptr -- val:f64) {
 	} else {
 		sz 1 - -> sz
 		sz s.size
-		s @data sz 8 * mem::get_float
+		s @data sz 8 * mem::get_f64
 	}
 }
 
@@ -66,7 +66,7 @@ fn stack_peek(s:ptr -- val:f64) {
 	sz 0 <= if {
 		0.0
 	} else {
-		s @data sz 1 - 8 * mem::get_float
+		s @data sz 1 - 8 * mem::get_f64
 	}
 }
 
@@ -86,7 +86,7 @@ fn stack_dup(s:ptr -- ) {
 	sz 0 <= if {
 		"dc: stack empty" print nl
 	} else {
-		s @data sz 1 - 8 * mem::get_float -> val
+		s @data sz 1 - 8 * mem::get_f64 -> val
 		s val stack_push
 	}
 }
@@ -97,10 +97,10 @@ fn stack_swap(s:ptr -- ) {
 	sz 2 < if {
 		"dc: stack empty" print nl
 	} else {
-		s @data sz 1 - 8 * mem::get_float -> a
-		s @data sz 2 - 8 * mem::get_float -> b
-		b s @data sz 1 - 8 * mem::set_float
-		a s @data sz 2 - 8 * mem::set_float
+		s @data sz 1 - 8 * mem::get_f64 -> a
+		s @data sz 2 - 8 * mem::get_f64 -> b
+		b s @data sz 1 - 8 * mem::set_f64
+		a s @data sz 2 - 8 * mem::set_f64
 	}
 }
 
@@ -111,7 +111,7 @@ fn stack_pick(s:ptr n:i64 -- val:f64) {
 	n sz >= n 0 < or if {
 		0.0
 	} else {
-		s @data sz 1 - n - 8 * mem::get_float
+		s @data sz 1 - n - 8 * mem::get_f64
 	}
 }
 
