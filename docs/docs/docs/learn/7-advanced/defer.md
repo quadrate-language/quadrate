@@ -31,15 +31,18 @@ use io
 
 fn process_file(path:str -- )! {
 	-> path
-	path io::ReadOnly io::open if {
+	path io::Read io::open if {
 		-> file
-		defer { file io::close }  // Always runs
+		defer {
+			// Always runs
+			file io::close
+		}
 
 		// Even if this fails, file gets closed
 		file do_something!
 	} else {
 		drop
-		"open failed" 1 error
+		"open failed" 1 panic
 	}
 }
 ```
@@ -50,9 +53,15 @@ Multiple defers execute in reverse order (last in, first out):
 
 ```qd
 fn main( -- ) {
-	defer { "first" print nl }
-	defer { "second" print nl }
-	defer { "third" print nl }
+	defer {
+		"first" print nl
+	}
+	defer {
+		"second" print nl
+	}
+	defer {
+		"third" print nl
+	}
 }
 // Output:
 // third
@@ -69,7 +78,9 @@ use mem
 
 fn with_buffer( -- ) {
 	1024 mem::alloc -> buf
-	defer { buf mem::free }
+	defer {
+		buf mem::free
+	}
 
 	// Use buffer...
 	// It will be freed when function exits
@@ -85,16 +96,22 @@ use mem
 fn copy_file(src:str dst:str -- )! {
 	-> dst -> src
 
-	src io::ReadOnly io::open if {
+	src io::Read io::open if {
 		-> src_file
-		defer { src_file io::close }
+		defer {
+			src_file io::close
+		}
 
-		dst io::WriteOnly io::create if {
+		dst io::Write io::create if {
 			-> dst_file
-			defer { dst_file io::close }
+			defer {
+				dst_file io::close
+			}
 
 			4096 mem::alloc -> buf
-			defer { buf mem::free }
+			defer {
+				buf mem::free
+			}
 
 			// Copy data...
 		} else {
@@ -118,7 +135,9 @@ Defers capture the current value of variables:
 fn main( -- ) {
 	0 -> x
 
-	defer { "x = " print x print nl }
+	defer {
+		"x = " print x print nl
+	}
 
 	42 -> x  // Changes x
 
@@ -128,17 +147,6 @@ fn main( -- ) {
 ```
 
 ## Common Patterns
-
-### Lock and Unlock
-
-```qd
-fn with_lock( -- ) {
-	acquire_lock
-	defer { release_lock }
-
-	// Critical section...
-}
-```
 
 ### Transaction
 
@@ -191,7 +199,9 @@ Unlike try/finally in other languages, defer is simpler:
 // Quadrate:
 fn example( -- ) {
 	"file.txt" open_file -> file
-	defer { file close_file }
+	defer {
+		fileclose_file
+	}
 	// ... use file
 }
 ```
@@ -202,7 +212,9 @@ Defers only apply to their own function:
 
 ```qd
 fn outer( -- ) {
-	defer { "outer cleanup" print nl }
+	defer {
+		"outer cleanup" print nl
+	}
 
 	inner  // inner's defers run during inner
 
@@ -210,7 +222,9 @@ fn outer( -- ) {
 }
 
 fn inner( -- ) {
-	defer { "inner cleanup" print nl }
+	defer {
+		"inner cleanup" print nl
+	}
 	"inner work" print nl
 }
 

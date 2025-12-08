@@ -71,17 +71,17 @@ fn try_all( -- success_count:i64) {
 
 	10 2 divide if {
 		drop  // Discard result
-		count 1 + -> count
+		count inc -> count
 	}
 
 	10 5 divide if {
 		drop
-		count 1 + -> count
+		count inc -> count
 	}
 
 	10 0 divide if {
 		drop
-		count 1 + -> count
+		count inc -> count
 	}
 
 	count
@@ -139,8 +139,9 @@ fn read_file(path:str -- content:str)! {
 	path io::ReadOnly io::open if {
 		-> file
 		defer {
+			// Always runs
 			file io::close
-		}  // Always runs
+		}
 
 		4096 -> size
 		size mem::alloc -> buf
