@@ -407,20 +407,12 @@ BUILTIN(free, "( arr -- )", "Frees the memory used by an array or struct.")
 // TYPE CASTING
 // ============================================================================
 
-/// Cast to integer.
-/// @signature ( val -- i64 )
-/// @example 3.14 casti // 3
-BUILTIN(casti, "( val -- i64 )", "Converts a value to an integer.")
-
-/// Cast to float.
-/// @signature ( val -- f64 )
-/// @example 42 castf // 42.0
-BUILTIN(castf, "( val -- f64 )", "Converts a value to a float.")
-
-/// Cast to string.
-/// @signature ( val -- str )
-/// @example 42 casts // "42"
-BUILTIN(casts, "( val -- str )", "Converts a value to a string.")
+/// Cast to type.
+/// @signature ( val -- T )
+/// @example 3.14 cast<i64> // 3
+/// @example 42 cast<f64> // 42.0
+/// @example 42 cast<str> // "42"
+BUILTIN(cast, "( val -- T )", "Converts a value to the specified type (use with cast<T> syntax).")
 
 // ============================================================================
 // INPUT/OUTPUT
@@ -468,10 +460,10 @@ BUILTIN(error, "( msg code -- )", "Signals an error with a message and code. Use
 /// @example err print nl  // prints error code from last fallible call
 BUILTIN(err, "( -- code )", "Pushes the error code from the last fallible function call.")
 
-/// Panic with error message.
-/// @signature ( msg -- )
-/// @example "fatal error" panic
-BUILTIN(panic, "( msg -- )", "Terminates the program with an error message.")
+/// Panic with error message and code.
+/// @signature ( msg code -- )
+/// @example "invalid input" 1 panic
+BUILTIN(panic, "( msg code -- )", "Signals an error and returns from the fallible function.")
 
 // ============================================================================
 // THREADING

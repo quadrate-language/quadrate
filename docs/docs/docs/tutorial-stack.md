@@ -180,13 +180,13 @@ Quadrate has these basic types:
 
 ### Type Casting
 
-Convert between types with casting operators:
+Convert between types with the `cast<T>` operator:
 
 ```qd
 fn main( -- ) {
-    42 i64_to_f64 print nl    // Integer to float: 42.0
-    3.7 f64_to_i64 print nl   // Float to integer: 3
-    65 i64_to_str print nl    // Integer to string: "65"
+    42 cast<f64> print nl     // Integer to float: 42.0
+    3.7 cast<i64> print nl    // Float to integer: 3 (truncates)
+    65 cast<str> print nl     // Integer to string: "65"
 }
 ```
 

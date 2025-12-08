@@ -39,7 +39,7 @@ syn keyword quadrateComparison eq neq lt gt lte gte within
 syn keyword quadrateArray append makef makei makep makes set
 
 " Type casting
-syn keyword quadrateCast castf casti casts
+syn keyword quadrateCast cast
 
 " I/O operations
 syn keyword quadrateIO print prints printv printsv nl read call

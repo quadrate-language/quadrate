@@ -1,32 +1,32 @@
 // Test basic type casting operations
-fn main() {
-	// Test casti - cast float to int (truncates)
-	3.14 casti print nl
+fn main( -- ) {
+	// Test cast<i64> - cast float to int (truncates)
+	3.14 cast<i64> print nl
 
-	// Test casti - cast string to int
-	"42" casti print nl
+	// Test cast<i64> - cast string to int
+	"42" cast<i64> print nl
 
-	// Test casti - negative float
-	-5.9 casti print nl
+	// Test cast<i64> - negative float
+	-5.9 cast<i64> print nl
 
-	// Test castf - cast int to float
-	10 castf print nl
+	// Test cast<f64> - cast int to float
+	10 cast<f64> print nl
 
-	// Test castf - cast string to float
-	"2.5" castf print nl
+	// Test cast<f64> - cast string to float
+	"2.5" cast<f64> print nl
 
-	// Test castf - negative int
-	-7 castf print nl
+	// Test cast<f64> - negative int
+	-7 cast<f64> print nl
 
-	// Test casts - cast int to string
-	100 casts print nl
+	// Test cast<str> - cast int to string
+	100 cast<str> print nl
 
-	// Test casts - cast float to string
-	3.14159 casts print nl
+	// Test cast<str> - cast float to string
+	3.14159 cast<str> print nl
 
-	// Test casts - negative int
-	-50 casts print nl
+	// Test cast<str> - negative int
+	-50 cast<str> print nl
 
 	// Test chaining: int -> float -> string
-	42 castf casts print nl
+	42 cast<f64> cast<str> print nl
 }

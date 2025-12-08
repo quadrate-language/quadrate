@@ -1119,49 +1119,24 @@ arr free
 
 | Instruction | Signature | Description |
 |-------------|-----------|-------------|
-| [`casti`](#casti) | `( val -- i64 )` | Converts a value to an integer. |
-| [`castf`](#castf) | `( val -- f64 )` | Converts a value to a float. |
-| [`casts`](#casts) | `( val -- str )` | Converts a value to a string. |
+| [`cast<T>`](#cast) | `( val -- T )` | Converts a value to the specified type. |
 
-#### casti
+#### cast
 
-Converts a value to an integer.
+Converts a value to the specified type using the `cast<T>` syntax.
 
-**Signature:** `( val -- i64 )`
+**Signature:** `( val -- T )`
 
-**Example:**
+**Examples:**
 
 ```qd
-3.14 casti // 3
+3.14 cast<i64>  // 3 (truncates float to integer)
+42 cast<f64>    // 42.0 (converts integer to float)
+42 cast<str>    // "42" (converts to string)
+"3.14" cast<f64> // 3.14 (parses string to float)
 ```
 
----
-
-#### castf
-
-Converts a value to a float.
-
-**Signature:** `( val -- f64 )`
-
-**Example:**
-
-```qd
-42 castf // 42.0
-```
-
----
-
-#### casts
-
-Converts a value to a string.
-
-**Signature:** `( val -- str )`
-
-**Example:**
-
-```qd
-42 casts // "42"
-```
+Supported types: `i64`, `f64`, `str`, `ptr`
 
 ---
 
@@ -1254,7 +1229,7 @@ read -> argc // reads command line args
 |-------------|-----------|-------------|
 | [`error`](#error) | `( msg code -- )` | Signals an error with a message and code. Used in fallible functions. |
 | [`err`](#err) | `( -- code )` | Pushes the error code from the last fallible function call. |
-| [`panic`](#panic) | `( msg -- )` | Terminates the program with an error message. |
+| [`panic`](#panic) | `( msg code -- )` | Signals an error and returns from the fallible function. |
 
 #### error
 
@@ -1286,14 +1261,14 @@ err print nl  // prints error code from last fallible call
 
 #### panic
 
-Terminates the program with an error message.
+Signals an error and returns from the fallible function. Can only be used inside fallible functions (marked with `!`).
 
-**Signature:** `( msg -- )`
+**Signature:** `( msg code -- )`
 
 **Example:**
 
 ```qd
-"fatal error" panic
+"invalid input" 1 panic
 ```
 
 ---

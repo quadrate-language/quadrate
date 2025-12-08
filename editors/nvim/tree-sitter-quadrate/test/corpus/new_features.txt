@@ -3,9 +3,8 @@ Type casting operations
 ================================================================================
 
 fn test( -- ) {
-    42 casti
-    3.14 castf
-    100 casts
+    42 cast<f64>
+    3.14 cast<i64>
 }
 
 --------------------------------------------------------------------------------
@@ -16,11 +15,11 @@ fn test( -- ) {
     signature: (stack_signature)
     body: (block
       (number)
-      (builtin_operation)
+      (generic_instruction
+        type_arg: (identifier))
       (number)
-      (builtin_operation)
-      (number)
-      (builtin_operation))))
+      (generic_instruction
+        type_arg: (identifier)))))
 
 ================================================================================
 New stack operations

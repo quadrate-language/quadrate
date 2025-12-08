@@ -123,7 +123,7 @@ fn process_lines(path:str -- ) {
 			-> count -> lines
 
 			0 count 1 for i {
-				i 1 + lines i 8 * mem::get_ptr casts process_line
+				i 1 + lines i 8 * mem::get_ptr cast<str> process_line
 			}
 		}
 	} else {
@@ -176,7 +176,7 @@ fn count_words(path:str -- words:i64 lines:i64 chars:i64)! {
 
 	0 -> words
 	0 line_count 1 for i {
-		line_parts i 8 * mem::get_ptr casts -> line
+		line_parts i 8 * mem::get_ptr cast<str> -> line
 		line str::len 0 > if {
 			line " " str::split! -> word_count drop
 			words word_count + -> words

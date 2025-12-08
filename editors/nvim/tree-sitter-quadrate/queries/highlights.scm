@@ -151,7 +151,7 @@
 
 ; Built-in type casting operations
 [
-  "casti" "castf" "casts"
+  "cast"
 ] @function.builtin
 
 ; Built-in I/O operations

@@ -57,7 +57,7 @@ class QuadrateLexer(RegexLexer):
 
     # Built-in type casting
     builtins_cast = (
-        'casti', 'castf', 'casts',
+        'cast',
     )
 
     # Built-in I/O

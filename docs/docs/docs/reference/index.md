@@ -10,7 +10,7 @@ This section documents all Quadrate keywords and built-in instructions.
 - [Comparison](comparison.md) - `==`, `!=`, `<`, `>`, `<=`, `>=`
 - [Bitwise](bitwise.md) - `and`, `or`, `xor`, `not`, `shl`, `shr`
 - [Arrays](arrays.md) - Array creation and manipulation
-- [Type Casting](types.md) - `casti`, `castf`, `casts`
+- [Type Casting](types.md) - `cast<T>`
 - [Input/Output](io.md) - `print`, `nl`, `read`
 - [Error Handling](errors.md) - `panic`
 - [Threading](threading.md) - `spawn`, `wait`, `detach`
@@ -54,6 +54,6 @@ Call with `if-else` to handle errors:
 10 2 divide if {
 	// success
 } else {
-	drop  // error
+	drop2  // error
 }
 ```

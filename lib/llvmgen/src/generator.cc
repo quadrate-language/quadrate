@@ -2554,6 +2554,33 @@ namespace Qd {
 			return;
 		}
 
+		// Handle generic cast<T> instruction
+		if (name == "cast" && inst->hasTypeParam()) {
+			const std::string& typeParam = inst->typeParam();
+			std::string fnName;
+			if (typeParam == "i64" || typeParam == "i32" || typeParam == "i16" || typeParam == "i8" ||
+					typeParam == "u64" || typeParam == "u32" || typeParam == "u16" || typeParam == "u8") {
+				fnName = "qd_casti";
+			} else if (typeParam == "f64" || typeParam == "f32") {
+				fnName = "qd_castf";
+			} else if (typeParam == "str" || typeParam == "string") {
+				fnName = "qd_casts";
+			} else if (typeParam == "ptr") {
+				fnName = "qd_castp";
+			} else {
+				// Unknown type - default to casts for string representation
+				fnName = "qd_casts";
+			}
+
+			llvm::Function* castFn = module->getFunction(fnName);
+			if (!castFn) {
+				auto fnTy = llvm::FunctionType::get(execResultTy, {contextPtrTy}, false);
+				castFn = llvm::Function::Create(fnTy, llvm::Function::ExternalLinkage, fnName, *module);
+			}
+			builder->CreateCall(castFn, {ctx});
+			return;
+		}
+
 		if (name == "prints") {
 			builder->CreateCall(printsFn, {ctx});
 		} else if (name == "nl") {

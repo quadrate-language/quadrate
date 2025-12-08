@@ -22,7 +22,7 @@ namespace Qd {
 			// Array operations
 			"append", "make", "makef", "makei", "makep", "makes", "set",
 			// Type casting
-			"castf", "casti", "casts",
+			"cast",
 			// I/O
 			"nl", "print", "prints", "printsv", "printv", "read",
 			// Threading
@@ -50,7 +50,7 @@ namespace Qd {
 			// Array operations
 			"append", "make", "makef", "makei", "makep", "makes", "set",
 			// Type casting
-			"castf", "casti", "casts",
+			"cast",
 			// I/O
 			"nl", "print", "prints", "printsv", "printv", "read",
 			// Threading

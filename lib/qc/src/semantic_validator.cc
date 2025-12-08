@@ -4291,46 +4291,36 @@ namespace Qd {
 			}
 			// Type stays the same
 		}
-		// Type casting: castf (convert to float)
-		else if (strcmp(name, "castf") == 0) {
+		// Type casting: cast<T> (convert to type T)
+		else if (strcmp(name, "cast") == 0) {
 			if (typeStack.empty()) {
-				reportErrorConditional(node, "Type error in 'castf': Stack underflow (requires 1 value)", reportErrors);
+				reportErrorConditional(node, "Type error in 'cast': Stack underflow (requires 1 value)", reportErrors);
 				return;
 			}
-			// Pop any type, push float
+			// Pop any type
 			typeStack.pop_back();
 			if (!structTypeStack.empty()) {
 				structTypeStack.pop_back();
 			}
-			typeStack.push_back(StackValueType::FLOAT);
-			structTypeStack.push_back("");
-		}
-		// Type casting: casti (convert to int)
-		else if (strcmp(name, "casti") == 0) {
-			if (typeStack.empty()) {
-				reportErrorConditional(node, "Type error in 'casti': Stack underflow (requires 1 value)", reportErrors);
-				return;
+			// Determine result type from type parameter
+			StackValueType resultType = StackValueType::STRING; // default
+			if (node->type() == IAstNode::Type::INSTRUCTION) {
+				AstNodeInstruction* instr = static_cast<AstNodeInstruction*>(node);
+				if (instr->hasTypeParam()) {
+					const std::string& typeParam = instr->typeParam();
+					if (typeParam == "i64" || typeParam == "i32" || typeParam == "i16" || typeParam == "i8" ||
+							typeParam == "u64" || typeParam == "u32" || typeParam == "u16" || typeParam == "u8") {
+						resultType = StackValueType::INT;
+					} else if (typeParam == "f64" || typeParam == "f32") {
+						resultType = StackValueType::FLOAT;
+					} else if (typeParam == "str" || typeParam == "string") {
+						resultType = StackValueType::STRING;
+					} else if (typeParam == "ptr") {
+						resultType = StackValueType::PTR;
+					}
+				}
 			}
-			// Pop any type, push int
-			typeStack.pop_back();
-			if (!structTypeStack.empty()) {
-				structTypeStack.pop_back();
-			}
-			typeStack.push_back(StackValueType::INT);
-			structTypeStack.push_back("");
-		}
-		// Type casting: casts (convert to string)
-		else if (strcmp(name, "casts") == 0) {
-			if (typeStack.empty()) {
-				reportErrorConditional(node, "Type error in 'casts': Stack underflow (requires 1 value)", reportErrors);
-				return;
-			}
-			// Pop any type, push string
-			typeStack.pop_back();
-			if (!structTypeStack.empty()) {
-				structTypeStack.pop_back();
-			}
-			typeStack.push_back(StackValueType::STRING);
+			typeStack.push_back(resultType);
 			structTypeStack.push_back("");
 		}
 		// Modulo: mod (consume 2 ints, produce int)

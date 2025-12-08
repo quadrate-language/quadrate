@@ -41,8 +41,8 @@ fn main( -- ) {
 				c h * g * f e * - -> t
 
 				// Project to screen (80x22)
-				l h * m * t n * - D * 30.0 * 40.0 + casti -> x
-				l h * n * t m * + D * 15.0 * 12.0 + casti -> y
+				l h * m * t n * - D * 30.0 * 40.0 + cast<i64> -> x
+				l h * n * t m * + D * 15.0 * 12.0 + cast<i64> -> y
 				x y 80 * + -> q
 
 				// Luminance from surface normal
@@ -52,7 +52,7 @@ fn main( -- ) {
 				y 0 > y 22 < and x 0 > and x 80 < and if {
 					D z q nth > if {
 						z q D set
-						N casti -> k
+						N cast<i64> -> k
 						k 0 < if {
 							0 -> k
 						}

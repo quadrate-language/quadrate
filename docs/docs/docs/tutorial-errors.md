@@ -179,12 +179,12 @@ fn read_file(path:str -- content:str)! {
 		} else {
 			drop
 			""
-			1 "read failed" panic
+			"read failed" 1 panic
 		}
 	} else {
 		drop
 		""
-		1 "open failed" panic
+		"open failed" 1 panic
 	}
 }
 ```
@@ -217,12 +217,12 @@ fn process(value:i64 -- result:i64)! {
 			half
 		} else {
 			0
-			1 "value too small" panic
+			"value too small" 1 panic
 		}
 	} else {
 		drop
 		0
-		1 "division failed" panic
+		"division failed" 1 panic
 	}
 }
 ```
@@ -267,7 +267,7 @@ fn main( -- ) {
 Key concepts:
 
 1. **Mark fallible functions** with `!` after the signature
-2. **Signal panics** with `code "message" panic`
+2. **Signal panics** with `"message" code panic`
 3. **Handle errors** with `if { success } else { error }`
 4. **Skip error checks** by calling with `function!`
 5. **Use `defer`** for cleanup that runs regardless of errors

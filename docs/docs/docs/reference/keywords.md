@@ -36,7 +36,9 @@ Language keywords for declarations, control flow, and more.
 Declares a function with a stack signature.
 
 ```qd
-fn add(a:i64 b:i64 -- sum:i64) { + }
+fn add(a:i64 b:i64 -- sum:i64) {
+	+
+}
 ```
 
 ### pub
@@ -44,7 +46,9 @@ fn add(a:i64 b:i64 -- sum:i64) { + }
 Makes a function, constant, or struct visible to other modules.
 
 ```qd
-pub fn greet( -- ) { "Hello" print nl }
+pub fn greet( -- ) {
+	"Hello" print nl
+}
 ```
 
 ### const
@@ -52,7 +56,7 @@ pub fn greet( -- ) { "Hello" print nl }
 Declares a compile-time constant value.
 
 ```qd
-const PI 3.14159
+const Pi = 3.14159
 ```
 
 ### struct
@@ -60,7 +64,10 @@ const PI 3.14159
 Declares a structured data type with named fields.
 
 ```qd
-struct Point { x:f64 y:f64 }
+struct Point {
+	x:f64
+	y:f64
+}
 ```
 
 ### use
@@ -80,7 +87,9 @@ use str
 Executes a block if the top of stack is true (non-zero).
 
 ```qd
-5 3 > if { "yes" print }
+5 3 > if {
+	"yes" print
+}
 ```
 
 ### else
@@ -88,7 +97,11 @@ Executes a block if the top of stack is true (non-zero).
 Provides an alternative block when the if condition is false.
 
 ```qd
-x 0 > if { "positive" } else { "non-positive" }
+x 0 > if {
+	"positive"
+} else {
+	"non-positive"
+}
 ```
 
 ### for
@@ -96,7 +109,9 @@ x 0 > if { "positive" } else { "non-positive" }
 Iterates from start to end with a step, binding the iterator variable.
 
 ```qd
-0 10 1 for i { i print nl }
+0 10 1 for i {
+	i print nl
+}
 ```
 
 ### loop
@@ -104,7 +119,10 @@ Iterates from start to end with a step, binding the iterator variable.
 Repeats a block indefinitely until break is called.
 
 ```qd
-loop { "forever" print nl }
+loop {
+	"forever"
+	print nl
+}
 ```
 
 ### break
@@ -112,7 +130,11 @@ loop { "forever" print nl }
 Exits the innermost loop immediately.
 
 ```qd
-loop { x 10 > if { break } }
+loop {
+	x 10 > if {
+		break
+	}
+}
 ```
 
 ### continue
@@ -120,7 +142,12 @@ loop { x 10 > if { break } }
 Skips to the next iteration of the innermost loop.
 
 ```qd
-0 10 1 for i { i 5 == if { continue } i print nl }
+0 10 1 for i {
+	i 5 == if {
+		continue
+	}
+	i print nl
+}
 ```
 
 ### return
@@ -128,7 +155,12 @@ Skips to the next iteration of the innermost loop.
 Exits the current function immediately.
 
 ```qd
-fn early( -- ) { true if { return } "not reached" print }
+fn early( -- ) {
+	true if {
+		return
+	}
+	"not reached" print
+}
 ```
 
 ### switch
@@ -136,23 +168,27 @@ fn early( -- ) { true if { return } "not reached" print }
 Branches based on matching the top of stack against case values.
 
 ```qd
-x switch { 1 => { "one" } 2 => { "two" } default => { "other" } }
+x switch {
+	1 {
+		"one"
+	}
+	2 {
+		"two"
+	}
+	_ {
+		"other"
+	}
+}
 ```
 
-### =>
-
-Separates a case value from its block in a switch statement.
-
-```qd
-1 => { "one" print }
-```
-
-### default
+### _
 
 Provides a fallback block when no switch case matches.
 
 ```qd
-default => { "no match" print }
+_ {
+	"no match" print
+}
 ```
 
 ---
@@ -164,15 +200,19 @@ default => { "no match" print }
 Schedules a block to run when the function exits, in LIFO order.
 
 ```qd
-defer { file io::close }
+defer {
+	file io::close
+}
 ```
 
 ### ctx
 
-Accesses a context variable.
+Creates a new isolated stack context with a copy of the parent stack, not allowing access to parent stack values.
 
 ```qd
-"username" ctx -> name
+ctx {
+	// child context
+}
 ```
 
 ### ->
@@ -188,7 +228,9 @@ Pops a value from the stack and binds it to a local variable.
 Pushes 1 onto the stack.
 
 ```qd
-true if { "yes" print }
+true if {
+	"yes" print
+}
 ```
 
 ### false
@@ -196,5 +238,8 @@ true if { "yes" print }
 Pushes 0 onto the stack.
 
 ```qd
-false if { } else { "no" print }
+false if {
+} else {
+	"no" print
+}
 ```

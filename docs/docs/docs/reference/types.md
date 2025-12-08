@@ -6,45 +6,29 @@ Operations for converting between types.
 
 | Instruction | Signature | Description |
 |-------------|-----------|-------------|
-| `casti` | `( val -- i64 )` | Convert to integer |
-| `castf` | `( val -- f64 )` | Convert to float |
-| `casts` | `( val -- str )` | Convert to string |
+| `cast<T>` | `( val -- T )` | Convert to specified type |
 
 ---
 
 ## Conversions
 
-### casti
+### cast
 
-Converts a value to an integer.
+Converts a value to the specified type using the `cast<T>` syntax.
 
-**Signature:** `( val -- i64 )`
+**Signature:** `( val -- T )`
 
-```qd
-3.14 casti // 3
-```
-
-Truncates floating-point values toward zero.
-
-### castf
-
-Converts a value to a float.
-
-**Signature:** `( val -- f64 )`
+**Examples:**
 
 ```qd
-42 castf // 42.0
+3.14 cast<i64>   // 3 (truncates toward zero)
+42 cast<f64>     // 42.0
+42 cast<str>     // "42"
+"3.14" cast<f64> // 3.14 (parses string)
+"42" cast<i64>   // 42 (parses string)
 ```
 
-### casts
-
-Converts a value to a string.
-
-**Signature:** `( val -- str )`
-
-```qd
-42 casts // "42"
-```
+**Supported types:** `i64`, `f64`, `str`, `ptr`
 
 ---
 
@@ -83,5 +67,5 @@ Quadrate does not perform implicit type conversions. Use explicit casts:
 5 3.0 + // Error!
 
 // CORRECT: Explicit cast
-5 castf 3.0 + // 8.0
+5 cast<f64> 3.0 + // 8.0
 ```

@@ -6,7 +6,8 @@ Built-in operations for error handling.
 
 | Instruction | Signature | Description |
 |-------------|-----------|-------------|
-| `panic` | `( code msg -- )` | Signal a panic (error) |
+| `panic` | `( msg code -- )` | Signal a panic (error) |
+| `err` | `( -- msg code )` | Get error code from last fallible call |
 
 ---
 
@@ -14,12 +15,12 @@ Built-in operations for error handling.
 
 ### panic
 
-Signals a panic with a code and message. Used in fallible functions.
+Signals a panic with a message and code. Used in fallible functions.
 
-**Signature:** `( code msg -- )`
+**Signature:** `( msg code -- )`
 
 ```qd
-1 "invalid input" panic
+"invalid input" 1 panic
 ```
 
 ---
@@ -31,9 +32,8 @@ Functions that can fail are marked with `!` after the signature:
 ```qd
 fn divide(a:i64 b:i64 -- result:i64)! {
 	dup 0 == if {
-		drop drop
-		0  // Output value (required)
-		-1 "division by zero" panic
+		drop2
+		"division by zero" -1 panic
 	}
 	/
 }
@@ -48,8 +48,6 @@ Use `if-else` to handle errors from fallible functions:
 	// Success: result on stack
 	print nl
 } else {
-	// Error: error value on stack
-	drop
 	"Division failed" print nl
 }
 ```
@@ -66,8 +64,8 @@ fn compute(x:i64 -- result:i64)! {
 	x 2 divide if {
 		// Success
 	} else {
-		drop 0
-		1 "compute failed" panic
+		drop
+		"compute failed" 1 panic
 	}
 }
 ```
@@ -101,7 +99,7 @@ const ErrInvalidInput = 1
 const ErrNotFound = 2
 const ErrTimeout = 3
 
-ErrNotFound "file not found" panic
+"file not found" ErrNotFound panic
 ```
 
 ---
@@ -118,17 +116,19 @@ fn process(path:str -- result:i64)! {
 	-> path
 	path open_file if {
 		-> file
-		defer { file close_file }
+		defer {
+			file close_file
+		}
 
 		file read_data if {
 			// Process...
 		} else {
-			drop 0
-			1 "read failed" panic
+			drop
+			"read failed" 1 panic
 		}
 	} else {
-		drop 0
-		2 "open failed" panic
+		drop
+		"open failed" 2 panic
 	}
 }
 ```

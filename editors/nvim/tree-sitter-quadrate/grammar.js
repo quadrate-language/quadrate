@@ -301,9 +301,9 @@ module.exports = grammar({
       '!',
     )),
 
-    // Generic instruction: make<T>, makei<T>, etc.
+    // Generic instruction: make<T>, cast<T>, etc.
     generic_instruction: $ => prec(2, seq(
-      field('name', choice('make', 'makei', 'makef', 'makes')),
+      field('name', choice('make', 'makei', 'makef', 'makes', 'cast')),
       '<',
       field('type_arg', $.identifier),
       '>',
@@ -327,7 +327,7 @@ module.exports = grammar({
       // Bitwise
       'lshift', 'rshift',
       // Type casting
-      'casti', 'castf', 'casts',
+      'cast',
       // I/O
       'print', 'prints', 'printv', 'printsv', 'call', 'nl', 'read',
       // Threading

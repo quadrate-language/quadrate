@@ -6,11 +6,7 @@ Operations for creating and manipulating arrays.
 
 | Instruction | Signature | Description |
 |-------------|-----------|-------------|
-| `makei` | `( size -- arr )` | Create integer array |
-| `makef` | `( size -- arr )` | Create float array |
-| `makes` | `( size -- arr )` | Create string array |
-| `makep` | `( size -- arr )` | Create pointer array |
-| `make` | `( size -- arr )` | Create typed array |
+| `make<T>` | `( size -- arr )` | Create array with elements of type T |
 | `len` | `( arr -- len )` | Get length |
 | `nth` | `( arr index -- value )` | Get element |
 | `set` | `( arr index value -- )` | Set element |
@@ -21,54 +17,14 @@ Operations for creating and manipulating arrays.
 
 ## Creating Arrays
 
-### makei
+### make<T>
 
-Creates an array of size integers, initialized to 0.
-
-**Signature:** `( size -- arr )`
-
-```qd
-10 makei -> arr
-```
-
-### makef
-
-Creates an array of size floats, initialized to 0.0.
+Creates an array of size pointers.
 
 **Signature:** `( size -- arr )`
 
 ```qd
-10 makef -> arr
-```
-
-### makes
-
-Creates an array of size strings, initialized to empty.
-
-**Signature:** `( size -- arr )`
-
-```qd
-10 makes -> arr
-```
-
-### makep
-
-Creates an array of size pointers, initialized to null.
-
-**Signature:** `( size -- arr )`
-
-```qd
-10 makep -> arr
-```
-
-### make
-
-Creates a typed array (use with `make<Type>` syntax).
-
-**Signature:** `( size -- arr )`
-
-```qd
-10 make<Point> -> points
+10 make<i64> -> arr
 ```
 
 ---

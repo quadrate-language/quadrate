@@ -215,9 +215,9 @@ fn parse_float(s:str -- value:f64) {
 				ch unicode::is_digit if {
 					seen_dot if {
 						decimal_place 10.0 * -> decimal_place
-						value ch unicode::digit0 - castf decimal_place / + -> value
+						value ch unicode::digit0 - cast<f64> decimal_place / + -> value
 					} else {
-						value 10.0 * ch unicode::digit0 - castf + -> value
+						value 10.0 * ch unicode::digit0 - cast<f64> + -> value
 					}
 					i 1 + -> i
 				} else {

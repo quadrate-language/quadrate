@@ -54,9 +54,7 @@
     {
       "name": "Type Casting",
       "instructions": [
-        {"name": "casti", "signature": "( a -- i64 )", "description": "Cast to integer"},
-        {"name": "castf", "signature": "( a -- f64 )", "description": "Cast to float"},
-        {"name": "casts", "signature": "( a -- str )", "description": "Cast to string"}
+        {"name": "cast<T>", "signature": "( a -- T )", "description": "Cast to specified type (i64, f64, str, ptr)"}
       ]
     },
     {

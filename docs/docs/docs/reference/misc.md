@@ -44,8 +44,8 @@ Use `&` to get a pointer to a function:
 Push arguments, then the pointer, then `call`:
 
 ```qd
-// For: fn add(a:i64 b:i64 -- sum:i64)
-3 4 &add call print nl  // 7
+// For: fn addition(a:i64 b:i64 -- sum:i64)
+3 4 &addition call print nl  // 7
 ```
 
 ---
@@ -76,15 +76,25 @@ fn main( -- ) {
 ### Function Tables
 
 ```qd
-fn op_add(a:i64 b:i64 -- r:i64) { + }
-fn op_sub(a:i64 b:i64 -- r:i64) { - }
-fn op_mul(a:i64 b:i64 -- r:i64) { * }
+use mem
+
+fn op_add(a:i64 b:i64 -- r:i64) {
+	+
+}
+
+fn op_sub(a:i64 b:i64 -- r:i64) {
+	-
+}
+
+fn op_mul(a:i64 b:i64 -- r:i64) {
+	*
+}
 
 fn main( -- ) {
 	3 make<ptr> -> ops
-	&op_add ops 0 set
-	&op_sub ops 1 set
-	&op_mul ops 2 set
+	&op_add ops 0 mem::set_ptr
+	&op_sub ops 1 mem::set_ptr
+	&op_mul ops 2 mem::set_ptr
 
 	10 5 ops 0 nth call print nl  // 15
 	10 5 ops 1 nth call print nl  // 5

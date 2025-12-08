@@ -157,10 +157,10 @@ fn process_token(s:ptr tok:str -- ) {
 	tok is_number if {
 		tok 0 str::char_at -> first
 		first unicode::underscore == if {
-			tok 1 tok str::len 1 - str::substring! castf -> val
+			tok 1 tok str::len 1 - str::substring! cast<f64> -> val
 			s 0.0 val sub stack_push
 		} else {
-			tok castf -> val
+			tok cast<f64> -> val
 			s val stack_push
 		}
 	} else {
@@ -286,7 +286,7 @@ fn process_operator(s:ptr op:str -- ) {
 		}
 		unicode::z {
 			// Push stack depth
-			s stack_depth castf -> a
+			s stack_depth cast<f64> -> a
 			s a stack_push
 		}
 		unicode::tilde {

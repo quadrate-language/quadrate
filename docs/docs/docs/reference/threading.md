@@ -70,13 +70,12 @@ fn task(id:i64 -- ) {
 fn main( -- ) {
 	3 make<ptr> -> threads
 
-	0 3 for i {
-		// Note: Capturing loop variable requires care
+	0 3 1 for i {
 		&task spawn threads i set
 	}
 
 	// Wait for all
-	0 3 for i {
+	0 3 1 for i {
 		threads i nth wait
 	}
 
@@ -113,13 +112,4 @@ fn main( -- ) {
 1. **Join threads** - Use `wait` to ensure completion
 2. **Handle errors** - Threads can fail independently
 3. **Limit concurrency** - Too many threads hurts performance
-4. **Avoid shared mutable state** - Use message passing when possible
-
----
-
-## See Also
-
-For more advanced concurrency primitives, see the standard library modules:
-
-- `sync` - Mutexes, semaphores
-- `chan` - Channels for message passing
+4. **Avoid shared mutable state** - Pass data to threads at creation
