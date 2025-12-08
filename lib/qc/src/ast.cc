@@ -1511,8 +1511,50 @@ namespace Qd {
 						std::vector<IAstNode*> ctxTempNodes;
 						size_t ctxSlashPos = SIZE_MAX; // Position of first slash for comment detection
 						bool ctxSawColon = false;
+						bool ctxSawAt = false;
+						bool ctxSawDot = false;
+						std::string ctxDotVarName;
 
 						while ((token = u8t_scanner_scan(scanner)) != U8T_EOF) {
+							// Handle @ field access operator
+							if (ctxSawAt && token == U8T_IDENTIFIER) {
+								ctxSawAt = false;
+								const char* fieldName = u8t_scanner_token_text(scanner, &n);
+
+								if (!ctxTempNodes.empty() &&
+										ctxTempNodes.back()->type() == IAstNode::Type::IDENTIFIER) {
+									AstNodeIdentifier* varIdent =
+											static_cast<AstNodeIdentifier*>(ctxTempNodes.back());
+									ctxTempNodes.pop_back();
+									AstNodeFieldAccess* fieldAccess =
+											new AstNodeFieldAccess(varIdent->name(), fieldName);
+									setNodePosition(fieldAccess, scanner, src);
+									delete varIdent;
+									ctxTempNodes.push_back(fieldAccess);
+								} else if (!ctxTempNodes.empty() &&
+										   ctxTempNodes.back()->type() == IAstNode::Type::FIELD_ACCESS) {
+									AstNodeFieldAccess* fieldAccess = new AstNodeFieldAccess("", fieldName);
+									setNodePosition(fieldAccess, scanner, src);
+									ctxTempNodes.push_back(fieldAccess);
+								} else {
+									AstNodeFieldAccess* fieldAccess = new AstNodeFieldAccess("", fieldName);
+									setNodePosition(fieldAccess, scanner, src);
+									ctxTempNodes.push_back(fieldAccess);
+								}
+								continue;
+							}
+
+							// Handle . field set operator
+							if (ctxSawDot && token == U8T_IDENTIFIER) {
+								ctxSawDot = false;
+								const char* fieldName = u8t_scanner_token_text(scanner, &n);
+								AstNodeFieldSet* fieldSet = new AstNodeFieldSet(ctxDotVarName, fieldName);
+								setNodePosition(fieldSet, scanner, src);
+								ctxTempNodes.push_back(fieldSet);
+								ctxDotVarName.clear();
+								continue;
+							}
+
 							// Handle comments
 							AstNodeComment* ctxComment = parseComment(scanner, src, ctxSlashPos, token);
 							if (ctxComment != nullptr) {
@@ -1535,6 +1577,12 @@ namespace Qd {
 							}
 
 							if (token == '}') {
+								if (ctxSawDot) {
+									errorReporter->reportError(scanner, "Expected field name after '.'");
+								}
+								if (ctxSawAt) {
+									errorReporter->reportError(scanner, "Expected field name after '@'");
+								}
 								break;
 							}
 
@@ -1546,6 +1594,70 @@ namespace Qd {
 							ctxSawColon = (token == ':');
 							if (ctxSawColon) {
 								continue;
+							}
+
+							ctxSawAt = (token == '@');
+							if (ctxSawAt) {
+								continue;
+							}
+
+							// Handle . field set operator
+							if (token == '.') {
+								if (!ctxTempNodes.empty() &&
+										ctxTempNodes.back()->type() == IAstNode::Type::IDENTIFIER) {
+									AstNodeIdentifier* varIdent =
+											static_cast<AstNodeIdentifier*>(ctxTempNodes.back());
+									ctxTempNodes.pop_back();
+									ctxDotVarName = varIdent->name();
+									delete varIdent;
+									ctxSawDot = true;
+									continue;
+								} else {
+									errorReporter->reportError(
+											scanner, "Expected variable name before '.' in field set");
+									continue;
+								}
+							}
+
+							// Check if this token is an "else" keyword
+							if (token == U8T_IDENTIFIER) {
+								const char* tokenText = u8t_scanner_token_text(scanner, &n);
+								if (strcmp(tokenText, "else") == 0) {
+									// Flush ctxTempNodes before handling else
+									for (auto* node : ctxTempNodes) {
+										node->setParent(ctxStmt);
+										ctxStmt->addChild(node);
+									}
+									ctxTempNodes.clear();
+
+									// else must follow an if statement
+									IAstNode* lastChild = (ctxStmt->childCount() > 0)
+															  ? ctxStmt->child(ctxStmt->childCount() - 1)
+															  : nullptr;
+									if (lastChild && lastChild->type() == IAstNode::Type::IF_STATEMENT) {
+										AstNodeIfStatement* ifStmt =
+												static_cast<AstNodeIfStatement*>(lastChild);
+
+										// Parse else block - must have {
+										token = u8t_scanner_scan(scanner);
+										if (token != '{') {
+											errorReporter->reportError(scanner, "Expected '{' after 'else'");
+										} else {
+											AstNodeBlock* elseBody = new AstNodeBlock();
+											setNodePosition(elseBody, scanner, src);
+
+											// Recursively parse the else body
+											parseBlockBody(elseBody, scanner, errorReporter, src);
+
+											elseBody->setParent(ifStmt);
+											ifStmt->setElseBody(elseBody);
+										}
+										continue; // Skip adding else as a regular statement
+									} else {
+										errorReporter->reportError(scanner, "'else' without preceding 'if'");
+										continue;
+									}
+								}
 							}
 
 							IAstNode* node = parseBlockStatement(token, scanner, errorReporter, &n, src, true);
@@ -2218,6 +2330,20 @@ namespace Qd {
 				AstNodeLiteral* lit = new AstNodeLiteral(text, AstNodeLiteral::LiteralType::STRING);
 				setNodePosition(lit, scanner, src);
 				currentFieldNodes.push_back(lit);
+			} else if (token == '&') {
+				// Handle '&' as function pointer reference
+				size_t ampPos = u8t_scanner_token_start(scanner);
+				char32_t nextToken = u8t_scanner_scan(scanner);
+				if (nextToken == U8T_IDENTIFIER) {
+					size_t n;
+					const char* functionName = u8t_scanner_token_text(scanner, &n);
+					AstNodeFunctionPointerReference* node = new AstNodeFunctionPointerReference(functionName);
+					size_t ampPosByte = charIndexToByteOffset(src, ampPos);
+					calculateLineColumn(src, ampPosByte, &line, &column);
+					node->setPosition(line, column);
+					currentFieldNodes.push_back(node);
+				}
+				// If not followed by identifier, silently ignore (error will be caught by semantic validator)
 			} else {
 				// Handle operators
 				IAstNode* opNode = tryParseOperatorAlias(token, scanner, src);

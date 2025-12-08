@@ -42,28 +42,39 @@ fn apply(x:i64 f:ptr -- result:i64) {
 
 fn double(x:i64 -- result:i64) { 2 * }
 fn square(x:i64 -- result:i64) { dup * }
-fn inc(x:i64 -- result:i64) { 1 + }
+fn increment(x:i64 -- result:i64) { 1 + }
 
 fn main( -- ) {
 	5 &double apply print nl  // 10
 	5 &square apply print nl  // 25
-	5 &inc apply print nl     // 6
+	5 &increment apply print nl     // 6
 }
 ```
 
 ## Storing in Arrays
 
 ```qd
-fn add(a:i64 b:i64 -- r:i64) { + }
-fn sub(a:i64 b:i64 -- r:i64) { - }
-fn mul(a:i64 b:i64 -- r:i64) { * }
-fn div_op(a:i64 b:i64 -- r:i64) { / }
+fn addition(a:i64 b:i64 -- r:i64) {
+	+
+}
+
+fn subtraction(a:i64 b:i64 -- r:i64) {
+	-
+}
+
+fn multiplication(a:i64 b:i64 -- r:i64) {
+	*
+}
+
+fn div_op(a:i64 b:i64 -- r:i64) {
+	/
+}
 
 fn main( -- ) {
 	4 make<ptr> -> ops
-	ops 0 &add set
-	ops 1 &sub set
-	ops 2 &mul set
+	ops 0 &addition set
+	ops 1 &subtraction set
+	ops 2 &multiplication set
 	ops 3 &div_op set
 
 	10 5 ops 0 nth call print nl  // 15 (add)
@@ -172,10 +183,12 @@ fn reduce(arr:ptr initial:i64 f:ptr -- result:i64) {
 	result
 }
 
-fn add(a:i64 b:i64 -- r:i64) { + }
+fn addition(a:i64 b:i64 -- r:i64) {
+	+
+}
 
 fn main( -- ) {
-	[1 2 3 4 5] 0 &add reduce print nl  // 15
+	[1 2 3 4 5] 0 &addition reduce print nl  // 15
 }
 ```
 
@@ -184,7 +197,7 @@ fn main( -- ) {
 ```qd
 struct Handler {
 	name:str
-	fn:ptr
+	func:ptr
 }
 
 fn greet(name:str -- ) {
@@ -198,11 +211,17 @@ fn farewell(name:str -- ) {
 }
 
 fn main( -- ) {
-	Handler { name = "greeter" fn = &greet } -> h1
-	Handler { name = "fareweller" fn = &farewell } -> h2
+	Handler {
+		name = "greeter"
+		func = &greet
+	} -> h1
+	Handler {
+		name = "fareweller"
+		func = &farewell
+	} -> h2
 
-	"Alice" h1 @fn call
-	"Bob" h2 @fn call
+	"Alice" h1 @func call
+	"Bob" h2 @func call
 }
 ```
 
@@ -227,10 +246,21 @@ fn handle_cmd(cmd:i64 -- ) {
 	}
 }
 
-fn cmd_help( -- ) { "Help message" print nl }
-fn cmd_list( -- ) { "Listing items" print nl }
-fn cmd_add( -- ) { "Adding item" print nl }
-fn cmd_quit( -- ) { "Quitting" print nl }
+fn cmd_help( -- ) {
+	"Help message" print nl
+}
+
+fn cmd_list( -- ) {
+	"Listing items" print nl
+}
+
+fn cmd_add( -- ) {
+	"Adding item" print nl
+}
+
+fn cmd_quit( -- ) {
+	"Quitting" print nl
+}
 ```
 
 ## What's Next?

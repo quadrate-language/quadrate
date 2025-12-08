@@ -4,6 +4,7 @@
 #include <iostream>
 #include <qc/ast.h>
 #include <qc/ast_node_function.h>
+#include <qc/ast_node_function_pointer.h>
 #include <qc/ast_node_identifier.h>
 #include <qc/ast_node_local.h>
 #include <qc/ast_node_struct.h>
@@ -144,6 +145,12 @@ void collectFunctionCalls(IAstNode* node, std::unordered_set<std::string>& calls
 	if (node->type() == IAstNode::Type::IDENTIFIER) {
 		AstNodeIdentifier* ident = static_cast<AstNodeIdentifier*>(node);
 		calls.insert(ident->name());
+	}
+
+	// Also track function pointer references (&func)
+	if (node->type() == IAstNode::Type::FUNCTION_POINTER_REFERENCE) {
+		AstNodeFunctionPointerReference* funcPtr = static_cast<AstNodeFunctionPointerReference*>(node);
+		calls.insert(funcPtr->functionName());
 	}
 
 	for (size_t i = 0; i < node->childCount(); i++) {
