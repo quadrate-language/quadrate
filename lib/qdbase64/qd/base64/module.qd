@@ -9,20 +9,20 @@ fn make_enc_table( -- tbl:ptr) {
 	64 mem::alloc -> tbl
 	// A-Z (0-25)
 	0 26 1 for it {
-		tbl it unicode::A it + mem::set_byte
+		unicode::A it + tbl it mem::set_byte
 	}
 	// a-z (26-51)
 	26 52 1 for it {
-		tbl it unicode::a it 26 - + mem::set_byte
+		unicode::a it 26 - + tbl it mem::set_byte
 	}
 	// 0-9 (52-61)
 	52 62 1 for it {
-		tbl it unicode::digit0 it 52 - + mem::set_byte
+		unicode::digit0 it 52 - + tbl it mem::set_byte
 	}
 	// + (62)
-	tbl 62 unicode::plus mem::set_byte
+	unicode::plus tbl 62 mem::set_byte
 	// / (63)
-	tbl 63 unicode::slash mem::set_byte
+	unicode::slash tbl 63 mem::set_byte
 	tbl
 }
 
@@ -30,25 +30,25 @@ fn make_enc_table( -- tbl:ptr) {
 fn make_dec_table( -- tbl:ptr) {
 	128 mem::alloc -> tbl
 	// Initialize all to -1 (invalid)
-	tbl 128 255 mem::fill
+	255 tbl 128 mem::fill
 	// A-Z -> 0-25
 	0 26 1 for it {
-		tbl unicode::A it + it mem::set_byte
+		it tbl unicode::A it + mem::set_byte
 	}
 	// a-z -> 26-51
 	0 26 1 for it {
-		tbl unicode::a it + 26 it + mem::set_byte
+		26 it + tbl unicode::a it + mem::set_byte
 	}
 	// 0-9 -> 52-61
 	0 10 1 for it {
-		tbl unicode::digit0 it + 52 it + mem::set_byte
+		52 it + tbl unicode::digit0 it + mem::set_byte
 	}
 	// + -> 62
-	tbl unicode::plus 62 mem::set_byte
+	62 tbl unicode::plus mem::set_byte
 	// / -> 63
-	tbl unicode::slash 63 mem::set_byte
+	63 tbl unicode::slash mem::set_byte
 	// = -> 254 (padding marker, will check separately)
-	tbl unicode::equals 254 mem::set_byte
+	254 tbl unicode::equals mem::set_byte
 	tbl
 }
 
@@ -96,29 +96,29 @@ pub fn encode(input:str -- encoded:str) {
 
 		// Char 1: top 6 bits of b1
 		b1 2 shr 63 and -> idx
-		out o enc_tbl idx mem::get_byte mem::set_byte
+		enc_tbl idx mem::get_byte out o mem::set_byte
 		o 1 + -> o
 
 		// Char 2: bottom 2 bits of b1 + top 4 bits of b2
 		b1 3 and 4 shl b2 4 shr or -> idx
-		out o enc_tbl idx mem::get_byte mem::set_byte
+		enc_tbl idx mem::get_byte out o mem::set_byte
 		o 1 + -> o
 
 		// Char 3: bottom 4 bits of b2 + top 2 bits of b3 (or padding)
 		i 1 + inlen < if {
 			b2 15 and 2 shl b3 6 shr or -> idx
-			out o enc_tbl idx mem::get_byte mem::set_byte
+			enc_tbl idx mem::get_byte out o mem::set_byte
 		} else {
-			out o unicode::equals mem::set_byte
+			unicode::equals out o mem::set_byte
 		}
 		o 1 + -> o
 
 		// Char 4: bottom 6 bits of b3 (or padding)
 		i 2 + inlen < if {
 			b3 63 and -> idx
-			out o enc_tbl idx mem::get_byte mem::set_byte
+			enc_tbl idx mem::get_byte out o mem::set_byte
 		} else {
-			out o unicode::equals mem::set_byte
+			unicode::equals out o mem::set_byte
 		}
 		o 1 + -> o
 
@@ -178,20 +178,20 @@ pub fn decode(encoded:str -- decoded:str) {
 
 			// Decode byte 1
 			v1 2 shl v2 4 shr or 255 and -> b1
-			buf o b1 mem::set_byte
+			b1 buf o mem::set_byte
 			o 1 + -> o
 
 			// Decode byte 2 (if not padding, 254 = '=')
 			v3 254 != v3 255 != and if {
 				v2 15 and 4 shl v3 2 shr or 255 and -> b2
-				buf o b2 mem::set_byte
+				b2 buf o mem::set_byte
 				o 1 + -> o
 			}
 
 			// Decode byte 3 (if not padding)
 			v4 254 != v4 255 != and if {
 				v3 3 and 6 shl v4 or 255 and -> b3
-				buf o b3 mem::set_byte
+				b3 buf o mem::set_byte
 				o 1 + -> o
 			}
 

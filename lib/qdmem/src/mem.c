@@ -90,9 +90,9 @@ qd_exec_result usr_mem_set_byte(qd_context* ctx) {
 	int64_t value, offset;
 	void* address;
 
-	if (pop_int(ctx, &value) != QD_STACK_OK ||
-			pop_int(ctx, &offset) != QD_STACK_OK ||
-			pop_ptr(ctx, &address) != QD_STACK_OK) {
+	if (pop_int(ctx, &offset) != QD_STACK_OK ||
+			pop_ptr(ctx, &address) != QD_STACK_OK ||
+			pop_int(ctx, &value) != QD_STACK_OK) {
 		return (qd_exec_result){-1};
 	}
 
@@ -131,9 +131,9 @@ qd_exec_result usr_mem_set(qd_context* ctx) {
 	int64_t value, offset;
 	void* address;
 
-	if (pop_int(ctx, &value) != QD_STACK_OK ||
-			pop_int(ctx, &offset) != QD_STACK_OK ||
-			pop_ptr(ctx, &address) != QD_STACK_OK) {
+	if (pop_int(ctx, &offset) != QD_STACK_OK ||
+			pop_ptr(ctx, &address) != QD_STACK_OK ||
+			pop_int(ctx, &value) != QD_STACK_OK) {
 		return (qd_exec_result){-1};
 	}
 
@@ -174,9 +174,9 @@ qd_exec_result usr_mem_set_float(qd_context* ctx) {
 	int64_t offset;
 	void* address;
 
-	if (pop_float(ctx, &value) != QD_STACK_OK ||
-			pop_int(ctx, &offset) != QD_STACK_OK ||
-			pop_ptr(ctx, &address) != QD_STACK_OK) {
+	if (pop_int(ctx, &offset) != QD_STACK_OK ||
+			pop_ptr(ctx, &address) != QD_STACK_OK ||
+			pop_float(ctx, &value) != QD_STACK_OK) {
 		return (qd_exec_result){-1};
 	}
 
@@ -216,9 +216,9 @@ qd_exec_result usr_mem_set_ptr(qd_context* ctx) {
 	void *value, *address;
 	int64_t offset;
 
-	if (pop_ptr(ctx, &value) != QD_STACK_OK ||
-			pop_int(ctx, &offset) != QD_STACK_OK ||
-			pop_ptr(ctx, &address) != QD_STACK_OK) {
+	if (pop_int(ctx, &offset) != QD_STACK_OK ||
+			pop_ptr(ctx, &address) != QD_STACK_OK ||
+			pop_ptr(ctx, &value) != QD_STACK_OK) {
 		return (qd_exec_result){-1};
 	}
 
@@ -311,9 +311,9 @@ qd_exec_result usr_mem_fill(qd_context* ctx) {
 	int64_t value, bytes;
 	void* address;
 
-	if (pop_int(ctx, &value) != QD_STACK_OK ||
-			pop_int(ctx, &bytes) != QD_STACK_OK ||
-			pop_ptr(ctx, &address) != QD_STACK_OK) {
+	if (pop_int(ctx, &bytes) != QD_STACK_OK ||
+			pop_ptr(ctx, &address) != QD_STACK_OK ||
+			pop_int(ctx, &value) != QD_STACK_OK) {
 		return (qd_exec_result){-1};
 	}
 

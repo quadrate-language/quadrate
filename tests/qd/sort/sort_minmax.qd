@@ -4,11 +4,11 @@ use sort
 fn main() {
 	// Create array [3, 1, 4, 1, 5]
 	5 8 * mem::alloc -> arr
-	arr 0 3 mem::set
-	arr 8 1 mem::set
-	arr 16 4 mem::set
-	arr 24 1 mem::set
-	arr 32 5 mem::set
+	3 arr 0 mem::set
+	1 arr 8 mem::set
+	4 arr 16 mem::set
+	1 arr 24 mem::set
+	5 arr 32 mem::set
 
 	arr 5 sort::min print nl
 	arr 5 sort::max print nl

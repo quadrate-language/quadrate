@@ -76,7 +76,7 @@ pub fn append(sb:ptr s:str -- sb:ptr) {
 			break
 		}
 		s i str::char_at -> byte
-		buf curlen i + byte mem::set_byte
+		byte buf curlen i + mem::set_byte
 		i 1 + -> i
 	}
 
@@ -108,7 +108,7 @@ pub fn append_char(sb:ptr c:i64 -- sb:ptr) {
 	}
 
 	// Set the byte
-	buf curlen c mem::set_byte
+	c buf curlen mem::set_byte
 
 	// Return updated builder
 	StringBuilder {
@@ -171,7 +171,7 @@ pub fn append_int(sb:ptr n:i64 -- sb:ptr) {
 				break
 			}
 			n 10 mod unicode::digit0 + -> digit
-			buf pos digit mem::set_byte
+			digit buf pos mem::set_byte
 			pos 1 - -> pos
 			n 10 / -> n
 		}

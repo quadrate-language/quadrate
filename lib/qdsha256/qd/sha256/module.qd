@@ -18,70 +18,70 @@ const H7_INIT = 1541459225
 
 fn make_k_table( -- tbl:ptr) {
 	512 mem::alloc -> tbl
-	tbl 0   1116352408 mem::set
-	tbl 8   1899447441 mem::set
-	tbl 16  3049323471 mem::set
-	tbl 24  3921009573 mem::set
-	tbl 32  961987163 mem::set
-	tbl 40  1508970993 mem::set
-	tbl 48  2453635748 mem::set
-	tbl 56  2870763221 mem::set
-	tbl 64  3624381080 mem::set
-	tbl 72  310598401 mem::set
-	tbl 80  607225278 mem::set
-	tbl 88  1426881987 mem::set
-	tbl 96  1925078388 mem::set
-	tbl 104 2162078206 mem::set
-	tbl 112 2614888103 mem::set
-	tbl 120 3248222580 mem::set
-	tbl 128 3835390401 mem::set
-	tbl 136 4022224774 mem::set
-	tbl 144 264347078 mem::set
-	tbl 152 604807628 mem::set
-	tbl 160 770255983 mem::set
-	tbl 168 1249150122 mem::set
-	tbl 176 1555081692 mem::set
-	tbl 184 1996064986 mem::set
-	tbl 192 2554220882 mem::set
-	tbl 200 2821834349 mem::set
-	tbl 208 2952996808 mem::set
-	tbl 216 3210313671 mem::set
-	tbl 224 3336571891 mem::set
-	tbl 232 3584528711 mem::set
-	tbl 240 113926993 mem::set
-	tbl 248 338241895 mem::set
-	tbl 256 666307205 mem::set
-	tbl 264 773529912 mem::set
-	tbl 272 1294757372 mem::set
-	tbl 280 1396182291 mem::set
-	tbl 288 1695183700 mem::set
-	tbl 296 1986661051 mem::set
-	tbl 304 2177026350 mem::set
-	tbl 312 2456956037 mem::set
-	tbl 320 2730485921 mem::set
-	tbl 328 2820302411 mem::set
-	tbl 336 3259730800 mem::set
-	tbl 344 3345764771 mem::set
-	tbl 352 3516065817 mem::set
-	tbl 360 3600352804 mem::set
-	tbl 368 4094571909 mem::set
-	tbl 376 275423344 mem::set
-	tbl 384 430227734 mem::set
-	tbl 392 506948616 mem::set
-	tbl 400 659060556 mem::set
-	tbl 408 883997877 mem::set
-	tbl 416 958139571 mem::set
-	tbl 424 1322822218 mem::set
-	tbl 432 1537002063 mem::set
-	tbl 440 1747873779 mem::set
-	tbl 448 1955562222 mem::set
-	tbl 456 2024104815 mem::set
-	tbl 464 2227730452 mem::set
-	tbl 472 2361852424 mem::set
-	tbl 480 2428436474 mem::set
-	tbl 488 2756734187 mem::set
-	tbl 496 3204031479 mem::set
-	tbl 504 3329325298 mem::set
+	1116352408 tbl 0   mem::set
+	1899447441 tbl 8   mem::set
+	3049323471 tbl 16  mem::set
+	3921009573 tbl 24  mem::set
+	961987163 tbl 32  mem::set
+	1508970993 tbl 40  mem::set
+	2453635748 tbl 48  mem::set
+	2870763221 tbl 56  mem::set
+	3624381080 tbl 64  mem::set
+	310598401 tbl 72  mem::set
+	607225278 tbl 80  mem::set
+	1426881987 tbl 88  mem::set
+	1925078388 tbl 96  mem::set
+	2162078206 tbl 104 mem::set
+	2614888103 tbl 112 mem::set
+	3248222580 tbl 120 mem::set
+	3835390401 tbl 128 mem::set
+	4022224774 tbl 136 mem::set
+	264347078 tbl 144 mem::set
+	604807628 tbl 152 mem::set
+	770255983 tbl 160 mem::set
+	1249150122 tbl 168 mem::set
+	1555081692 tbl 176 mem::set
+	1996064986 tbl 184 mem::set
+	2554220882 tbl 192 mem::set
+	2821834349 tbl 200 mem::set
+	2952996808 tbl 208 mem::set
+	3210313671 tbl 216 mem::set
+	3336571891 tbl 224 mem::set
+	3584528711 tbl 232 mem::set
+	113926993 tbl 240 mem::set
+	338241895 tbl 248 mem::set
+	666307205 tbl 256 mem::set
+	773529912 tbl 264 mem::set
+	1294757372 tbl 272 mem::set
+	1396182291 tbl 280 mem::set
+	1695183700 tbl 288 mem::set
+	1986661051 tbl 296 mem::set
+	2177026350 tbl 304 mem::set
+	2456956037 tbl 312 mem::set
+	2730485921 tbl 320 mem::set
+	2820302411 tbl 328 mem::set
+	3259730800 tbl 336 mem::set
+	3345764771 tbl 344 mem::set
+	3516065817 tbl 352 mem::set
+	3600352804 tbl 360 mem::set
+	4094571909 tbl 368 mem::set
+	275423344 tbl 376 mem::set
+	430227734 tbl 384 mem::set
+	506948616 tbl 392 mem::set
+	659060556 tbl 400 mem::set
+	883997877 tbl 408 mem::set
+	958139571 tbl 416 mem::set
+	1322822218 tbl 424 mem::set
+	1537002063 tbl 432 mem::set
+	1747873779 tbl 440 mem::set
+	1955562222 tbl 448 mem::set
+	2024104815 tbl 456 mem::set
+	2227730452 tbl 464 mem::set
+	2361852424 tbl 472 mem::set
+	2428436474 tbl 480 mem::set
+	2756734187 tbl 488 mem::set
+	3204031479 tbl 496 mem::set
+	3329325298 tbl 504 mem::set
 	tbl
 }
 
@@ -139,7 +139,7 @@ fn process_block(msg:ptr block_offset:i64 h:ptr -- ) {
 			break
 		}
 		msg block_offset i 4 * + bytes::read_u32_be -> word
-		w i 8 * word mem::set
+		word w i 8 * mem::set
 		i 1 + -> i
 	}
 
@@ -153,7 +153,7 @@ fn process_block(msg:ptr block_offset:i64 h:ptr -- ) {
 		w i 15 - 8 * mem::get gamma0 -> s0
 		w i 16 - 8 * mem::get -> w16
 		s1 w7 add32 s0 add32 w16 add32 -> wi
-		w i 8 * wi mem::set
+		wi w i 8 * mem::set
 		i 1 + -> i
 	}
 
@@ -193,14 +193,14 @@ fn process_block(msg:ptr block_offset:i64 h:ptr -- ) {
 	h 40 mem::get f add32 -> new_h5
 	h 48 mem::get g add32 -> new_h6
 	h 56 mem::get hh add32 -> new_h7
-	h 0 new_h0 mem::set
-	h 8 new_h1 mem::set
-	h 16 new_h2 mem::set
-	h 24 new_h3 mem::set
-	h 32 new_h4 mem::set
-	h 40 new_h5 mem::set
-	h 48 new_h6 mem::set
-	h 56 new_h7 mem::set
+	new_h0 h 0 mem::set
+	new_h1 h 8 mem::set
+	new_h2 h 16 mem::set
+	new_h3 h 24 mem::set
+	new_h4 h 32 mem::set
+	new_h5 h 40 mem::set
+	new_h6 h 48 mem::set
+	new_h7 h 56 mem::set
 
 	w mem::free
 	k mem::free
@@ -212,14 +212,14 @@ fn calculate_hash_state(dptr:ptr dlen:i64 -- h:ptr) {
 	-> dptr
 
 	64 mem::alloc -> h
-	h 0 H0_INIT mem::set
-	h 8 H1_INIT mem::set
-	h 16 H2_INIT mem::set
-	h 24 H3_INIT mem::set
-	h 32 H4_INIT mem::set
-	h 40 H5_INIT mem::set
-	h 48 H6_INIT mem::set
-	h 56 H7_INIT mem::set
+	H0_INIT h 0 mem::set
+	H1_INIT h 8 mem::set
+	H2_INIT h 16 mem::set
+	H3_INIT h 24 mem::set
+	H4_INIT h 32 mem::set
+	H5_INIT h 40 mem::set
+	H6_INIT h 48 mem::set
+	H7_INIT h 56 mem::set
 
 	dlen 1 + 8 + -> minlen
 	minlen 64 + 1 - 64 / 64 * -> padded_len
@@ -229,14 +229,14 @@ fn calculate_hash_state(dptr:ptr dlen:i64 -- h:ptr) {
 	// Copy message using bytes::copy (safe for binary)
 	msg 0 dptr 0 dlen bytes::copy
 
-	msg dlen 128 mem::set_byte
+	128 msg dlen mem::set_byte
 
 	dlen 1 + -> i
 	loop {
 		i padded_len 8 - >= if {
 			break
 		}
-		msg i 0 mem::set_byte
+		0 msg i mem::set_byte
 		i 1 + -> i
 	}
 
@@ -285,7 +285,7 @@ pub fn hash_bytes(buf:ptr length:i64 -- result:str) {
 				87 nibble +
 			}
 			-> char
-			out i 8 * j + char mem::set_byte
+			char out i 8 * j + mem::set_byte
 			j 1 + -> j
 		}
 		i 1 + -> i

@@ -93,7 +93,8 @@ int main(int argc, char** argv) {
 					std::cerr << Qd::Colors::bold() << Qd::Colors::red() << "error:" << Qd::Colors::reset() << " ";
 					std::cerr << Qd::Colors::bold() << error.message << Qd::Colors::reset() << std::endl;
 				}
-				std::cerr << "quadc: parsing failed for <stdin> with " << ast->errorCount() << " errors" << std::endl;
+				std::cerr << Qd::Colors::bold() << "quadc: " << Qd::Colors::reset()
+					  << "parsing failed for <stdin> with " << ast->errorCount() << " errors" << std::endl;
 				return 1;
 			}
 
@@ -135,14 +136,18 @@ int main(int argc, char** argv) {
 		for (const auto& file : opts.files) {
 			std::ifstream qdFile(file);
 			if (!qdFile.is_open()) {
-				std::cerr << "quadc: " << file << ": No such file or directory" << std::endl;
+				std::cerr << Qd::Colors::bold() << "quadc: " << Qd::Colors::reset()
+					  << Qd::Colors::bold() << Qd::Colors::red() << "error: " << Qd::Colors::reset()
+					  << file << ": No such file or directory" << std::endl;
 				continue;
 			}
 			qdFile.seekg(0, std::ios::end);
 			auto pos = qdFile.tellg();
 			qdFile.seekg(0);
 			if (pos < 0) {
-				std::cerr << "quadc: error reading " << file << std::endl;
+				std::cerr << Qd::Colors::bold() << "quadc: " << Qd::Colors::reset()
+					  << Qd::Colors::bold() << Qd::Colors::red() << "error: " << Qd::Colors::reset()
+					  << "reading " << file << std::endl;
 				continue;
 			}
 			size_t size = static_cast<size_t>(pos);
@@ -161,7 +166,8 @@ int main(int argc, char** argv) {
 					std::cerr << Qd::Colors::bold() << Qd::Colors::red() << "error:" << Qd::Colors::reset() << " ";
 					std::cerr << Qd::Colors::bold() << error.message << Qd::Colors::reset() << std::endl;
 				}
-				std::cerr << "quadc: parsing failed for " << file << " with " << ast->errorCount() << " errors"
+				std::cerr << Qd::Colors::bold() << "quadc: " << Qd::Colors::reset()
+						  << "parsing failed for " << file << " with " << ast->errorCount() << " errors"
 						  << std::endl;
 				return 1;
 			}
@@ -295,11 +301,15 @@ int main(int argc, char** argv) {
 			auto ast = std::make_unique<Qd::Ast>();
 			auto root = ast->generate(buffer.c_str(), false, moduleFilePath.c_str());
 			if (!root || ast->hasErrors()) {
-				std::cerr << "quadc: failed to parse module: " << moduleName << std::endl;
+				std::cerr << Qd::Colors::bold() << "quadc: " << Qd::Colors::reset()
+						  << Qd::Colors::bold() << Qd::Colors::red() << "error: " << Qd::Colors::reset()
+						  << "failed to parse module: " << moduleName << std::endl;
 				// Print stored parse errors
 				for (const auto& error : ast->getErrors()) {
-					std::cerr << moduleFilePath << ":" << error.line << ":" << error.column
-							  << ": error: " << error.message << std::endl;
+					std::cerr << Qd::Colors::bold() << moduleFilePath << ":" << error.line << ":" << error.column
+							  << ": " << Qd::Colors::reset()
+							  << Qd::Colors::bold() << Qd::Colors::red() << "error: " << Qd::Colors::reset()
+							  << error.message << std::endl;
 				}
 				return 1;
 			}
@@ -456,7 +466,9 @@ int main(int argc, char** argv) {
 		}
 
 		if (!mainRoot) {
-			std::cerr << "quadc: no main module found" << std::endl;
+			std::cerr << Qd::Colors::bold() << "quadc: " << Qd::Colors::reset()
+					  << Qd::Colors::bold() << Qd::Colors::red() << "error: " << Qd::Colors::reset()
+					  << "no main module found" << std::endl;
 			return 1;
 		}
 
@@ -475,8 +487,12 @@ int main(int argc, char** argv) {
 			}
 
 			if (!hasMainFunction) {
-				std::cerr << "quadc: error: no 'main' function found in main module" << std::endl;
-				std::cerr << "quadc: note: a Quadrate program must have a 'main' function as the entry point"
+				std::cerr << Qd::Colors::bold() << "quadc: " << Qd::Colors::reset()
+						  << Qd::Colors::bold() << Qd::Colors::red() << "error: " << Qd::Colors::reset()
+						  << "no 'main' function found in main module" << std::endl;
+				std::cerr << Qd::Colors::bold() << "quadc: " << Qd::Colors::reset()
+						  << Qd::Colors::bold() << Qd::Colors::cyan() << "note: " << Qd::Colors::reset()
+						  << "a Quadrate program must have a 'main' function as the entry point"
 						  << std::endl;
 				return 1;
 			}
@@ -492,15 +508,21 @@ int main(int argc, char** argv) {
 			}
 
 			if (!hasTests) {
-				std::cerr << "quadc: error: no test blocks found in --test mode" << std::endl;
-				std::cerr << "quadc: note: use 'test \"name\" { ... }' to define tests" << std::endl;
+				std::cerr << Qd::Colors::bold() << "quadc: " << Qd::Colors::reset()
+						  << Qd::Colors::bold() << Qd::Colors::red() << "error: " << Qd::Colors::reset()
+						  << "no test blocks found in --test mode" << std::endl;
+				std::cerr << Qd::Colors::bold() << "quadc: " << Qd::Colors::reset()
+						  << Qd::Colors::bold() << Qd::Colors::cyan() << "note: " << Qd::Colors::reset()
+						  << "use 'test \"name\" { ... }' to define tests" << std::endl;
 				return 1;
 			}
 		}
 
 		// Pass the actual source file path for debug info
 		if (!generator.generate(mainRoot, mainSourceFile)) {
-			std::cerr << "quadc: LLVM generation failed" << std::endl;
+			std::cerr << Qd::Colors::bold() << "quadc: " << Qd::Colors::reset()
+					  << Qd::Colors::bold() << Qd::Colors::red() << "error: " << Qd::Colors::reset()
+					  << "LLVM generation failed" << std::endl;
 			return 1;
 		}
 
@@ -514,7 +536,9 @@ int main(int argc, char** argv) {
 		if (opts.saveTemps) {
 			std::string irFile = (std::filesystem::path(outputDir) / (opts.outputName + ".ll")).string();
 			if (!generator.writeIR(irFile)) {
-				std::cerr << "quadc: failed to write IR file" << std::endl;
+				std::cerr << Qd::Colors::bold() << "quadc: " << Qd::Colors::reset()
+						  << Qd::Colors::bold() << Qd::Colors::red() << "error: " << Qd::Colors::reset()
+						  << "failed to write IR file" << std::endl;
 				return 1;
 			}
 			if (opts.verbose) {
@@ -524,7 +548,9 @@ int main(int argc, char** argv) {
 
 		// Write executable
 		if (!generator.writeExecutable(outputPath)) {
-			std::cerr << "quadc: failed to create executable" << std::endl;
+			std::cerr << Qd::Colors::bold() << "quadc: " << Qd::Colors::reset()
+					  << Qd::Colors::bold() << Qd::Colors::red() << "error: " << Qd::Colors::reset()
+					  << "failed to create executable" << std::endl;
 			return 1;
 		}
 
@@ -560,7 +586,9 @@ int main(int argc, char** argv) {
 			// Execute using system() and get exit code
 			int status = system(cmd.c_str());
 			if (status == -1) {
-				std::cerr << "quadc: failed to execute program" << std::endl;
+				std::cerr << Qd::Colors::bold() << "quadc: " << Qd::Colors::reset()
+						  << Qd::Colors::bold() << Qd::Colors::red() << "error: " << Qd::Colors::reset()
+						  << "failed to execute program" << std::endl;
 				return 1;
 			}
 			// Check if process exited normally or was killed by signal
@@ -572,7 +600,9 @@ int main(int argc, char** argv) {
 				exitCode = -1;
 			}
 			if (exitCode != 0) {
-				std::cerr << "quadc: program exited with code " << exitCode << std::endl;
+				std::cerr << Qd::Colors::bold() << "quadc: " << Qd::Colors::reset()
+						  << Qd::Colors::bold() << Qd::Colors::red() << "error: " << Qd::Colors::reset()
+						  << "program exited with code " << exitCode << std::endl;
 			}
 			return exitCode;
 		}

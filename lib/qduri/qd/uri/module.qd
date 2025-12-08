@@ -17,22 +17,22 @@ pub struct Uri {
 // Hex digit lookup table
 fn make_hex_table( -- tbl:ptr) {
 	16 mem::alloc -> tbl
-	tbl 0 unicode::digit0 mem::set_byte
-	tbl 1 unicode::digit1 mem::set_byte
-	tbl 2 unicode::digit2 mem::set_byte
-	tbl 3 unicode::digit3 mem::set_byte
-	tbl 4 unicode::digit4 mem::set_byte
-	tbl 5 unicode::digit5 mem::set_byte
-	tbl 6 unicode::digit6 mem::set_byte
-	tbl 7 unicode::digit7 mem::set_byte
-	tbl 8 unicode::digit8 mem::set_byte
-	tbl 9 unicode::digit9 mem::set_byte
-	tbl 10 unicode::A mem::set_byte
-	tbl 11 unicode::B mem::set_byte
-	tbl 12 unicode::C mem::set_byte
-	tbl 13 unicode::D mem::set_byte
-	tbl 14 unicode::E mem::set_byte
-	tbl 15 unicode::F mem::set_byte
+	unicode::digit0 tbl 0 mem::set_byte
+	unicode::digit1 tbl 1 mem::set_byte
+	unicode::digit2 tbl 2 mem::set_byte
+	unicode::digit3 tbl 3 mem::set_byte
+	unicode::digit4 tbl 4 mem::set_byte
+	unicode::digit5 tbl 5 mem::set_byte
+	unicode::digit6 tbl 6 mem::set_byte
+	unicode::digit7 tbl 7 mem::set_byte
+	unicode::digit8 tbl 8 mem::set_byte
+	unicode::digit9 tbl 9 mem::set_byte
+	unicode::A tbl 10 mem::set_byte
+	unicode::B tbl 11 mem::set_byte
+	unicode::C tbl 12 mem::set_byte
+	unicode::D tbl 13 mem::set_byte
+	unicode::E tbl 14 mem::set_byte
+	unicode::F tbl 15 mem::set_byte
 	tbl
 }
 
@@ -109,17 +109,17 @@ pub fn encode(s:str -- encoded:str) {
 
 			c is_unreserved if {
 				// Safe char, pass through
-				out o c mem::set_byte
+				c out o mem::set_byte
 				o 1 + -> o
 			} else {
 				// Encode as %XX
-				out o unicode::percent mem::set_byte
+				unicode::percent out o mem::set_byte
 				o 1 + -> o
 				hex_tbl c 4 shr 15 and mem::get_byte -> high
 				hex_tbl c 15 and mem::get_byte -> low
-				out o high mem::set_byte
+				high out o mem::set_byte
 				o 1 + -> o
-				out o low mem::set_byte
+				low out o mem::set_byte
 				o 1 + -> o
 			}
 
@@ -161,21 +161,21 @@ pub fn decode(s:str -- decoded:str) {
 
 				high -1 != low -1 != and if {
 					high 4 shl low or -> byte
-					out o byte mem::set_byte
+					byte out o mem::set_byte
 					o 1 + -> o
 					i 3 + -> i
 				} else {
 					// Invalid hex, keep as-is
-					out o c mem::set_byte
+					c out o mem::set_byte
 					o 1 + -> o
 					i 1 + -> i
 				}
 			} else {
 				c unicode::plus == if {
 					// '+' becomes space (query string convention)
-					out o unicode::space mem::set_byte
+					unicode::space out o mem::set_byte
 				} else {
-					out o c mem::set_byte
+					c out o mem::set_byte
 				}
 				o 1 + -> o
 				i 1 + -> i
@@ -475,7 +475,7 @@ pub fn build(u:ptr -- s:str) {
 			}
 			p 10 mod unicode::digit0 + -> digit
 			1 mem::alloc -> dbuf
-			dbuf 0 digit mem::set_byte
+			digit dbuf 0 mem::set_byte
 			dbuf 1 mem::to_string port_str str::concat -> port_str
 			dbuf mem::free
 			p 10 / -> p

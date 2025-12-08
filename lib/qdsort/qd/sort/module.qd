@@ -23,10 +23,10 @@ pub fn ints(arr:ptr count:i64 -- ) {
 				break
 			}
 			// Move element right
-			arr j 1 + 8 * jval mem::set
+			jval arr j 1 + 8 * mem::set
 			j 1 - -> j
 		}
-		arr j 1 + 8 * key mem::set
+		key arr j 1 + 8 * mem::set
 	}
 }
 
@@ -51,10 +51,10 @@ pub fn ints_desc(arr:ptr count:i64 -- ) {
 				break
 			}
 			// Move element right
-			arr j 1 + 8 * jval mem::set
+			jval arr j 1 + 8 * mem::set
 			j 1 - -> j
 		}
-		arr j 1 + 8 * key mem::set
+		key arr j 1 + 8 * mem::set
 	}
 }
 
@@ -137,8 +137,8 @@ pub fn reverse(arr:ptr count:i64 -- ) {
 		// Swap elements
 		arr left 8 * mem::get -> lval
 		arr right 8 * mem::get -> rval
-		arr left 8 * rval mem::set
-		arr right 8 * lval mem::set
+		rval arr left 8 * mem::set
+		lval arr right 8 * mem::set
 		left 1 + -> left
 		right 1 - -> right
 	}

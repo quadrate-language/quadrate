@@ -17,11 +17,11 @@ import "libqdmem.a" as "mem" {
 	pub fn realloc(address:ptr new_bytes:i64 -- new_address:ptr)
 
 	/// Set a byte at offset.
+	/// @param value i64 Byte value (0-255)
 	/// @param address ptr Base address
 	/// @param offset i64 Byte offset from base
-	/// @param value i64 Byte value (0-255)
-	/// @example buf 0 65 mem::set_byte
-	pub fn set_byte(address:ptr offset:i64 value:i64 -- )
+	/// @example 65 buf 0 mem::set_byte
+	pub fn set_byte(value:i64 address:ptr offset:i64 -- )
 
 	/// Get a byte at offset.
 	/// @param address ptr Base address
@@ -31,11 +31,11 @@ import "libqdmem.a" as "mem" {
 	pub fn get_byte(address:ptr offset:i64 -- value:i64)
 
 	/// Set a 64-bit integer at offset.
+	/// @param value i64 Integer value
 	/// @param address ptr Base address
 	/// @param offset i64 Byte offset from base
-	/// @param value i64 Integer value
-	/// @example buf 0 42 mem::set
-	pub fn set(address:ptr offset:i64 value:i64 -- )
+	/// @example 42 buf 0 mem::set
+	pub fn set(value:i64 address:ptr offset:i64 -- )
 
 	/// Get a 64-bit integer at offset.
 	/// @param address ptr Base address
@@ -45,11 +45,11 @@ import "libqdmem.a" as "mem" {
 	pub fn get(address:ptr offset:i64 -- value:i64)
 
 	/// Set a 64-bit float at offset.
+	/// @param value f64 Float value
 	/// @param address ptr Base address
 	/// @param offset i64 Byte offset from base
-	/// @param value f64 Float value
-	/// @example buf 0 3.14 mem::set_float
-	pub fn set_float(address:ptr offset:i64 value:f64 -- )
+	/// @example 3.14 buf 0 mem::set_float
+	pub fn set_float(value:f64 address:ptr offset:i64 -- )
 
 	/// Get a 64-bit float at offset.
 	/// @param address ptr Base address
@@ -59,11 +59,11 @@ import "libqdmem.a" as "mem" {
 	pub fn get_float(address:ptr offset:i64 -- value:f64)
 
 	/// Set a pointer at offset.
+	/// @param value ptr Pointer value
 	/// @param address ptr Base address
 	/// @param offset i64 Byte offset from base
-	/// @param value ptr Pointer value
-	/// @example buf 0 other_buf mem::set_ptr
-	pub fn set_ptr(address:ptr offset:i64 value:ptr -- )
+	/// @example other_buf buf 0 mem::set_ptr
+	pub fn set_ptr(value:ptr address:ptr offset:i64 -- )
 
 	/// Get a pointer at offset.
 	/// @param address ptr Base address
@@ -86,11 +86,11 @@ import "libqdmem.a" as "mem" {
 	pub fn zero(address:ptr bytes:i64 -- )
 
 	/// Fill memory region with byte value.
+	/// @param value i64 Fill value (0-255)
 	/// @param address ptr Base address
 	/// @param bytes i64 Number of bytes to fill
-	/// @param value i64 Fill value (0-255)
-	/// @example buf 1024 0xFF mem::fill
-	pub fn fill(address:ptr bytes:i64 value:i64 -- )
+	/// @example 0xFF buf 1024 mem::fill
+	pub fn fill(value:i64 address:ptr bytes:i64 -- )
 
 	/// Convert buffer to string.
 	/// @param buffer ptr Source buffer

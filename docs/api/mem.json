@@ -58,10 +58,15 @@
     },
     {
       "name": "fill",
-      "signature": "( address:ptr bytes:i64 value:i64 -- )",
+      "signature": "( value:i64 address:ptr bytes:i64 -- )",
       "failable": false,
       "description": "Fill memory region with byte value.",
       "params": [
+        {
+          "name": "value",
+          "type": "i64",
+          "description": "Fill value (0-255)"
+        },
         {
           "name": "address",
           "type": "ptr",
@@ -71,17 +76,12 @@
           "name": "bytes",
           "type": "i64",
           "description": "Number of bytes to fill"
-        },
-        {
-          "name": "value",
-          "type": "i64",
-          "description": "Fill value (0-255)"
         }
       ],
       "returns": [],
       "errors": [],
       "examples": [
-        "buf 1024 0xFF mem::fill"
+        "0xFF buf 1024 mem::fill"
       ]
     },
     {
@@ -302,11 +302,16 @@
     },
     {
       "name": "set",
-      "signature": "( address:ptr offset:i64 value:i64 -- )",
+      "signature": "( value:i64 address:ptr offset:i64 -- )",
       "failable": false,
       "description": "Set a 64-bit integer at offset.",
       "params": [
         {
+          "name": "value",
+          "type": "i64",
+          "description": "Integer value"
+        },
+        {
           "name": "address",
           "type": "ptr",
           "description": "Base address"
@@ -315,26 +320,26 @@
           "name": "offset",
           "type": "i64",
           "description": "Byte offset from base"
-        },
-        {
-          "name": "value",
-          "type": "i64",
-          "description": "Integer value"
         }
       ],
       "returns": [],
       "errors": [],
       "examples": [
-        "buf 0 42 mem::set"
+        "42 buf 0 mem::set"
       ]
     },
     {
       "name": "set_byte",
-      "signature": "( address:ptr offset:i64 value:i64 -- )",
+      "signature": "( value:i64 address:ptr offset:i64 -- )",
       "failable": false,
       "description": "Set a byte at offset.",
       "params": [
         {
+          "name": "value",
+          "type": "i64",
+          "description": "Byte value (0-255)"
+        },
+        {
           "name": "address",
           "type": "ptr",
           "description": "Base address"
@@ -343,26 +348,26 @@
           "name": "offset",
           "type": "i64",
           "description": "Byte offset from base"
-        },
-        {
-          "name": "value",
-          "type": "i64",
-          "description": "Byte value (0-255)"
         }
       ],
       "returns": [],
       "errors": [],
       "examples": [
-        "buf 0 65 mem::set_byte"
+        "65 buf 0 mem::set_byte"
       ]
     },
     {
       "name": "set_float",
-      "signature": "( address:ptr offset:i64 value:f64 -- )",
+      "signature": "( value:f64 address:ptr offset:i64 -- )",
       "failable": false,
       "description": "Set a 64-bit float at offset.",
       "params": [
         {
+          "name": "value",
+          "type": "f64",
+          "description": "Float value"
+        },
+        {
           "name": "address",
           "type": "ptr",
           "description": "Base address"
@@ -371,25 +376,25 @@
           "name": "offset",
           "type": "i64",
           "description": "Byte offset from base"
-        },
-        {
-          "name": "value",
-          "type": "f64",
-          "description": "Float value"
         }
       ],
       "returns": [],
       "errors": [],
       "examples": [
-        "buf 0 3.14 mem::set_float"
+        "3.14 buf 0 mem::set_float"
       ]
     },
     {
       "name": "set_ptr",
-      "signature": "( address:ptr offset:i64 value:ptr -- )",
+      "signature": "( value:ptr address:ptr offset:i64 -- )",
       "failable": false,
       "description": "Set a pointer at offset.",
       "params": [
+        {
+          "name": "value",
+          "type": "ptr",
+          "description": "Pointer value"
+        },
         {
           "name": "address",
           "type": "ptr",
@@ -399,17 +404,12 @@
           "name": "offset",
           "type": "i64",
           "description": "Byte offset from base"
-        },
-        {
-          "name": "value",
-          "type": "ptr",
-          "description": "Pointer value"
         }
       ],
       "returns": [],
       "errors": [],
       "examples": [
-        "buf 0 other_buf mem::set_ptr"
+        "other_buf buf 0 mem::set_ptr"
       ]
     },
     {

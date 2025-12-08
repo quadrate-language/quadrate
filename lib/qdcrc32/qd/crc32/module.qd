@@ -39,7 +39,7 @@ fn make_table( -- tbl:ptr) {
 		}
 		i make_table_entry -> entry
 		// Store as 8-byte value
-		tbl i 8 * entry mem::set
+		entry tbl i 8 * mem::set
 		i 1 + -> i
 	}
 	tbl
@@ -135,7 +135,7 @@ pub fn checksum_hex(s:str -- h:str) {
 			87 nibble +  // 'a' - 10 + nibble
 		}
 		-> char
-		buf i char mem::set_byte
+		char buf i mem::set_byte
 		i 1 + -> i
 	}
 

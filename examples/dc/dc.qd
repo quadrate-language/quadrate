@@ -42,7 +42,7 @@ fn stack_push(s:ptr val:f64 -- ) {
 		// Stack overflow - just ignore for now
 		"dc: stack overflow" print nl
 	} else {
-		s @data sz 8 * val mem::set_float
+		val s @data sz 8 * mem::set_float
 		sz 1 + s.size
 	}
 }
@@ -99,8 +99,8 @@ fn stack_swap(s:ptr -- ) {
 	} else {
 		s @data sz 1 - 8 * mem::get_float -> a
 		s @data sz 2 - 8 * mem::get_float -> b
-		s @data sz 1 - 8 * b mem::set_float
-		s @data sz 2 - 8 * a mem::set_float
+		b s @data sz 1 - 8 * mem::set_float
+		a s @data sz 2 - 8 * mem::set_float
 	}
 }
 

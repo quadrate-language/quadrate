@@ -35,7 +35,9 @@ use mem
 
 fn process( -- ) {
 	4096 mem::alloc -> buf
-	defer { buf mem::free }
+	defer {
+		buf mem::free
+	}
 
 	// Use buffer...
 	// Memory freed automatically when function exits
@@ -52,11 +54,11 @@ use mem
 fn main( -- ) {
 	10 mem::alloc -> buf
 
-	65 buf 0 mem::write_byte  // Write 'A' at offset 0
-	66 buf 1 mem::write_byte  // Write 'B' at offset 1
+	65 buf 0 mem::set_byte  // Write 'A' at offset 0
+	66 buf 1 mem::set_byte  // Write 'B' at offset 1
 
-	buf 0 mem::read_byte print nl  // 65
-	buf 1 mem::read_byte print nl  // 66
+	buf 0 mem::get_byte print nl  // 65
+	buf 1 mem::get_byte print nl  // 66
 
 	buf mem::free
 }
@@ -70,8 +72,8 @@ use mem
 fn main( -- ) {
 	8 mem::alloc -> buf
 
-	42 buf mem::write_i64
-	buf mem::read_i64 print nl  // 42
+	42 buf 0 mem::set
+	buf 0 mem::get print nl  // 42
 
 	buf mem::free
 }

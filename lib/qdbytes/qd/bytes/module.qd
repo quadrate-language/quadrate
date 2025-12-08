@@ -102,8 +102,8 @@ pub fn write_u16_be(buf:ptr offset:i64 value:i64 -- ) {
 	-> buf
 	value 8 shr 255 and -> b0
 	value 255 and -> b1
-	buf offset b0 mem::set_byte
-	buf offset 1 + b1 mem::set_byte
+	b0 buf offset mem::set_byte
+	b1 buf offset 1 + mem::set_byte
 }
 
 /// Write a 16-bit unsigned integer to memory in little-endian order.
@@ -117,8 +117,8 @@ pub fn write_u16_le(buf:ptr offset:i64 value:i64 -- ) {
 	-> buf
 	value 255 and -> b0
 	value 8 shr 255 and -> b1
-	buf offset b0 mem::set_byte
-	buf offset 1 + b1 mem::set_byte
+	b0 buf offset mem::set_byte
+	b1 buf offset 1 + mem::set_byte
 }
 
 /// Write a 32-bit unsigned integer to memory in big-endian order.
@@ -134,10 +134,10 @@ pub fn write_u32_be(buf:ptr offset:i64 value:i64 -- ) {
 	value 16 shr 255 and -> b1
 	value 8 shr 255 and -> b2
 	value 255 and -> b3
-	buf offset b0 mem::set_byte
-	buf offset 1 + b1 mem::set_byte
-	buf offset 2 + b2 mem::set_byte
-	buf offset 3 + b3 mem::set_byte
+	b0 buf offset mem::set_byte
+	b1 buf offset 1 + mem::set_byte
+	b2 buf offset 2 + mem::set_byte
+	b3 buf offset 3 + mem::set_byte
 }
 
 /// Write a 32-bit unsigned integer to memory in little-endian order.
@@ -153,10 +153,10 @@ pub fn write_u32_le(buf:ptr offset:i64 value:i64 -- ) {
 	value 8 shr 255 and -> b1
 	value 16 shr 255 and -> b2
 	value 24 shr 255 and -> b3
-	buf offset b0 mem::set_byte
-	buf offset 1 + b1 mem::set_byte
-	buf offset 2 + b2 mem::set_byte
-	buf offset 3 + b3 mem::set_byte
+	b0 buf offset mem::set_byte
+	b1 buf offset 1 + mem::set_byte
+	b2 buf offset 2 + mem::set_byte
+	b3 buf offset 3 + mem::set_byte
 }
 
 /// Write a 64-bit unsigned integer to memory in big-endian order.
@@ -176,14 +176,14 @@ pub fn write_u64_be(buf:ptr offset:i64 value:i64 -- ) {
 	value 16 shr 255 and -> b5
 	value 8 shr 255 and -> b6
 	value 255 and -> b7
-	buf offset b0 mem::set_byte
-	buf offset 1 + b1 mem::set_byte
-	buf offset 2 + b2 mem::set_byte
-	buf offset 3 + b3 mem::set_byte
-	buf offset 4 + b4 mem::set_byte
-	buf offset 5 + b5 mem::set_byte
-	buf offset 6 + b6 mem::set_byte
-	buf offset 7 + b7 mem::set_byte
+	b0 buf offset mem::set_byte
+	b1 buf offset 1 + mem::set_byte
+	b2 buf offset 2 + mem::set_byte
+	b3 buf offset 3 + mem::set_byte
+	b4 buf offset 4 + mem::set_byte
+	b5 buf offset 5 + mem::set_byte
+	b6 buf offset 6 + mem::set_byte
+	b7 buf offset 7 + mem::set_byte
 }
 
 /// Write a 64-bit unsigned integer to memory in little-endian order.
@@ -203,14 +203,14 @@ pub fn write_u64_le(buf:ptr offset:i64 value:i64 -- ) {
 	value 40 shr 255 and -> b5
 	value 48 shr 255 and -> b6
 	value 56 shr 255 and -> b7
-	buf offset b0 mem::set_byte
-	buf offset 1 + b1 mem::set_byte
-	buf offset 2 + b2 mem::set_byte
-	buf offset 3 + b3 mem::set_byte
-	buf offset 4 + b4 mem::set_byte
-	buf offset 5 + b5 mem::set_byte
-	buf offset 6 + b6 mem::set_byte
-	buf offset 7 + b7 mem::set_byte
+	b0 buf offset mem::set_byte
+	b1 buf offset 1 + mem::set_byte
+	b2 buf offset 2 + mem::set_byte
+	b3 buf offset 3 + mem::set_byte
+	b4 buf offset 4 + mem::set_byte
+	b5 buf offset 5 + mem::set_byte
+	b6 buf offset 6 + mem::set_byte
+	b7 buf offset 7 + mem::set_byte
 }
 
 /// Swap byte order of a 16-bit value.
@@ -270,7 +270,7 @@ pub fn copy(dst:ptr dst_off:i64 src:ptr src_off:i64 count:i64 -- ) {
 			break
 		}
 		src src_off i + mem::get_byte -> byte
-		dst dst_off i + byte mem::set_byte
+		byte dst dst_off i + mem::set_byte
 		i 1 + -> i
 	}
 }
@@ -291,7 +291,7 @@ pub fn fill(buf:ptr offset:i64 count:i64 value:i64 -- ) {
 		i count >= if {
 			break
 		}
-		buf offset i + value mem::set_byte
+		value buf offset i + mem::set_byte
 		i 1 + -> i
 	}
 }

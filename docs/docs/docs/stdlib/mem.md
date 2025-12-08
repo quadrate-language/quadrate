@@ -53,18 +53,18 @@ src dst 100 mem::copy
 
 Fill memory region with byte value.
 
-**Signature:** `( address:ptr bytes:i64 value:i64 -- )`
+**Signature:** `( value:i64 address:ptr bytes:i64 -- )`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
+| `value` | `i64` | Fill value (0-255) |
 | `address` | `ptr` | Base address |
 | `bytes` | `i64` | Number of bytes to fill |
-| `value` | `i64` | Fill value (0-255) |
 
 **Example:**
 
 ```qd
-buf 1024 0xFF mem::fill
+0xFF buf 1024 mem::fill
 ```
 
 ---
@@ -251,18 +251,18 @@ buf 2048 mem::realloc  // buf
 
 Set a 64-bit integer at offset.
 
-**Signature:** `( address:ptr offset:i64 value:i64 -- )`
+**Signature:** `( value:i64 address:ptr offset:i64 -- )`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
+| `value` | `i64` | Integer value |
 | `address` | `ptr` | Base address |
 | `offset` | `i64` | Byte offset from base |
-| `value` | `i64` | Integer value |
 
 **Example:**
 
 ```qd
-buf 0 42 mem::set
+42 buf 0 mem::set
 ```
 
 ---
@@ -271,18 +271,18 @@ buf 0 42 mem::set
 
 Set a byte at offset.
 
-**Signature:** `( address:ptr offset:i64 value:i64 -- )`
+**Signature:** `( value:i64 address:ptr offset:i64 -- )`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
+| `value` | `i64` | Byte value (0-255) |
 | `address` | `ptr` | Base address |
 | `offset` | `i64` | Byte offset from base |
-| `value` | `i64` | Byte value (0-255) |
 
 **Example:**
 
 ```qd
-buf 0 65 mem::set_byte
+65 buf 0 mem::set_byte
 ```
 
 ---
@@ -291,18 +291,18 @@ buf 0 65 mem::set_byte
 
 Set a 64-bit float at offset.
 
-**Signature:** `( address:ptr offset:i64 value:f64 -- )`
+**Signature:** `( value:f64 address:ptr offset:i64 -- )`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
+| `value` | `f64` | Float value |
 | `address` | `ptr` | Base address |
 | `offset` | `i64` | Byte offset from base |
-| `value` | `f64` | Float value |
 
 **Example:**
 
 ```qd
-buf 0 3.14 mem::set_float
+3.14 buf 0 mem::set_float
 ```
 
 ---
@@ -311,18 +311,18 @@ buf 0 3.14 mem::set_float
 
 Set a pointer at offset.
 
-**Signature:** `( address:ptr offset:i64 value:ptr -- )`
+**Signature:** `( value:ptr address:ptr offset:i64 -- )`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
+| `value` | `ptr` | Pointer value |
 | `address` | `ptr` | Base address |
 | `offset` | `i64` | Byte offset from base |
-| `value` | `ptr` | Pointer value |
 
 **Example:**
 
 ```qd
-buf 0 other_buf mem::set_ptr
+other_buf buf 0 mem::set_ptr
 ```
 
 ---

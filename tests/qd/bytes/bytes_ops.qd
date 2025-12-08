@@ -20,11 +20,11 @@ fn main( -- ) {
 	buf1 0 buf2 0 4 bytes::compare print nl
 
 	// Modify buf1[0] to 'B' (66) - now buf1 > buf2
-	buf1 0 66 mem::set_byte
+	66 buf1 0 mem::set_byte
 	buf1 0 buf2 0 4 bytes::compare print nl
 
 	// Modify buf2[0] to 'C' (67) - now buf1 < buf2
-	buf2 0 67 mem::set_byte
+	67 buf2 0 mem::set_byte
 	buf1 0 buf2 0 4 bytes::compare print nl
 
 	// Zero length compare
