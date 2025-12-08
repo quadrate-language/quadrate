@@ -148,69 +148,42 @@ use io
 use mem
 use str
 
-fn read_entire_file(path:str -- content:str ok:i64) {
+fn read_entire_file(path:str -- content:str)! {
 	-> path
 
-	path io::Read io::open if {
-		-> file
-		defer { file io::close }
+	path io::Read io::open! -> file
+	defer { file io::close }
 
-		file 0 io::SeekEnd io::seek if {
-			-> size
-			file 0 io::SeekSet io::seek if {
-				drop
+	file 0 io::SeekEnd io::seek! -> size
+	file 0 io::SeekSet io::seek! drop
 
-				size mem::alloc -> buf
-				defer { buf mem::free }
+	size mem::alloc -> buf
+	defer { buf mem::free }
 
-				file buf size io::read if {
-					-> bytes_read
-					buf bytes_read mem::to_string 1
-				} else {
-					"" 0
-				}
-			} else {
-				"" 0
-			}
-		} else {
-			"" 0
-		}
-	} else {
-		"" 0
-	}
+	file buf size io::read! -> bytes_read
+	buf bytes_read mem::to_string
 }
 
-fn count_words(path:str -- words:i64 lines:i64 chars:i64 ok:i64) {
+fn count_words(path:str -- words:i64 lines:i64 chars:i64)! {
 	-> path
 
-	path read_entire_file if {
-		-> content
+	path read_entire_file! -> content
 
-		content str::len -> chars
+	content str::len -> chars
 
-		// Count lines
-		content "\n" str::split if {
-			-> line_count -> line_parts
+	content "\n" str::split! -> line_count -> line_parts
+	line_count 1 - -> lines
 
-			line_count -> lines
-
-			// Count words
-			0 -> words
-			0 line_count 1 for i {
-				line_parts i 8 * mem::get_i64 casts " " str::split if {
-					-> word_count drop
-					words word_count + -> words
-				}
-			}
-
-			words lines chars 1
-		} else {
-			0 0 0 0
+	0 -> words
+	0 line_count 1 for i {
+		line_parts i 8 * mem::get_ptr casts -> line
+		line str::len 0 > if {
+			line " " str::split! -> word_count drop
+			words word_count + -> words
 		}
-	} else {
-		drop
-		0 0 0 0
 	}
+
+	words lines chars
 }
 
 fn main( -- ) {
@@ -220,7 +193,6 @@ fn main( -- ) {
 		"Lines: " print lines print nl
 		"Chars: " print chars print nl
 	} else {
-		drop drop drop
 		"Could not count" print nl
 	}
 }
@@ -232,165 +204,50 @@ fn main( -- ) {
 use io
 use mem
 
-const BUFFER_SIZE = 4096
+const BufferSize = 4096
 
-fn copy_file(src:str dst:str -- ok:i64) {
+fn copy_file(src:str dst:str -- total:i64)! {
 	-> dst -> src
 
-	src io::ReadBinary io::open if {
-		-> src_file
-		defer { src_file io::close }
-
-		dst io::WriteBinary io::open if {
-			-> dst_file
-			defer { dst_file io::close }
-
-			BUFFER_SIZE mem::alloc -> buf
-			defer { buf mem::free }
-
-			0 -> total_copied
-			1 -> copying
-
-			copying while {
-				src_file buf BUFFER_SIZE io::read if {
-					-> bytes_read
-					bytes_read 0 == if {
-						0 -> copying
-					} else {
-						dst_file buf bytes_read io::write if {
-							drop
-							total_copied bytes_read + -> total_copied
-						} else {
-							0 -> copying
-						}
-					}
-				} else {
-					0 -> copying
-				}
-			}
-
-			"Copied " print total_copied print " bytes" print nl
-			1
-		} else {
-			0
-		}
-	} else {
-		0
+	src io::ReadBinary io::open! -> src_file
+	defer {
+		src_file io::close
 	}
+
+	dst io::WriteBinary io::open! -> dst_file
+	defer {
+		dst_file io::close
+	}
+
+	BufferSize mem::alloc -> buf
+	defer {
+		buf mem::free
+	}
+
+	0 -> total_copied
+	1 -> copying
+
+	copying while {
+		src_file buf BufferSize io::read! -> bytes_read
+		bytes_read 0 == if {
+			0 -> copying
+		} else {
+			dst_file buf bytes_read io::write! drop
+			total_copied bytes_read + -> total_copied
+		}
+		copying
+	}
+
+	total_copied
 }
 
 fn main( -- ) {
 	"input.txt" "output.txt" copy_file if {
-		"Copy successful" print nl
+		-> total
+		"Copied " print total print " bytes" print nl
 	} else {
 		"Copy failed" print nl
 	}
-}
-```
-
-## CSV Processing
-
-```qd
-use io
-use mem
-use str
-use strconv
-
-fn read_entire_file(path:str -- content:str ok:i64) {
-	-> path
-
-	path io::Read io::open if {
-		-> file
-		defer { file io::close }
-
-		file 0 io::SeekEnd io::seek if {
-			-> size
-			file 0 io::SeekSet io::seek if {
-				drop
-
-				size mem::alloc -> buf
-				defer { buf mem::free }
-
-				file buf size io::read if {
-					-> bytes_read
-					buf bytes_read mem::to_string 1
-				} else {
-					"" 0
-				}
-			} else {
-				"" 0
-			}
-		} else {
-			"" 0
-		}
-	} else {
-		"" 0
-	}
-}
-
-struct Record {
-	name:str
-	age:i64
-	city:str
-}
-
-fn get_str(arr:ptr idx:i64 -- s:str) {
-	-> idx -> arr
-	arr idx 8 * mem::get_i64 casts
-}
-
-fn parse_csv_line(line:str -- record:ptr ok:i64) {
-	-> line
-
-	line "," str::split if {
-		-> count -> fields
-		count 3 != if {
-			0 0
-		} else {
-			fields 0 get_str -> name
-			fields 1 get_str strconv::atoi -> age
-			fields 2 get_str -> city
-
-			Record { name = name age = age city = city } 1
-		}
-	} else {
-		0 0
-	}
-}
-
-fn process_csv(path:str -- ) {
-	-> path
-
-	path read_entire_file if {
-		-> content
-		content "\n" str::split if {
-			-> line_count -> lines
-			1 -> first  // Skip header
-
-			0 line_count 1 for i {
-				first if {
-					0 -> first
-				} else {
-					lines i get_str parse_csv_line if {
-						-> record
-						record @name print
-						" is " print
-						record @age print
-						" years old from " print
-						record @city print nl
-					} else {
-						drop
-					}
-				}
-			}
-		}
-	} else {
-		drop
-	}
-}
-
-fn main( -- ) {
-	"data.csv" process_csv
 }
 ```
 
