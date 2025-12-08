@@ -88,18 +88,18 @@ Shifts a right by n bits (arithmetic shift).
 ### Setting Bits
 
 ```qd
-const FLAG_READ 1
-const FLAG_WRITE 2
-const FLAG_EXEC 4
+const FlagRead = 1
+const FlagWrite = 2
+const FlagExec = 4
 
 // Set flags
-FLAG_READ FLAG_WRITE or -> permissions
+FlagRead FlagWrite or -> permissions
 ```
 
 ### Checking Bits
 
 ```qd
-permissions FLAG_READ and 0 != if {
+permissions FlagRead and 0 != if {
 	"Has read permission" print nl
 }
 ```
@@ -107,11 +107,11 @@ permissions FLAG_READ and 0 != if {
 ### Clearing Bits
 
 ```qd
-permissions FLAG_WRITE not and -> permissions
+permissions FlagWrite not and -> permissions
 ```
 
 ### Toggling Bits
 
 ```qd
-permissions FLAG_EXEC xor -> permissions
+permissions FlagExec xor -> permissions
 ```
