@@ -1,0 +1,49 @@
+// Test edge cases in comment handling
+fn main( -- ) {
+	// Empty comment follows:
+	//
+	1 print nl
+
+	// Comment with only spaces:
+	//
+	2 print nl
+
+	// Comment ending with operator: +
+	3 print nl
+
+	// Comment ending with ++
+	4 print nl
+
+	// Comment ending with --
+	5 print nl
+
+	// Lots of operators: ++++++------
+	6 print nl
+
+	// Alternating: +-+-+-+-
+	7 print nl
+
+	/* Empty block: */
+	8 print nl
+
+	/**/
+	9 print nl
+
+	/* Block with asterisks: *** */
+	10 print nl
+
+	/* Block with slashes: /// */
+	11 print nl
+
+	// URL in comment: https://example.com/path?foo=bar
+	12 print nl
+
+	// Path in comment: /usr/bin/++compiler--
+	13 print nl
+
+	// Arrow after comment indicator: // ->
+	14 print nl
+
+	// Multiple slashes: ////
+	15 print nl
+}

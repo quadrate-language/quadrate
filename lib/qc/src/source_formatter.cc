@@ -500,6 +500,106 @@ namespace Qd {
 		return result.str();
 	}
 
+	// Normalize spacing around operators like ++ and --
+	// Ensures single space before and after, unless at end of line
+	static std::string normalizeOperatorSpacing(const std::string& line) {
+		std::string result;
+		bool inString = false;
+		bool inLineComment = false;
+		bool inBlockComment = false;
+
+		for (size_t i = 0; i < line.length(); i++) {
+			char c = line[i];
+
+			// Track string literals
+			if (!inLineComment && !inBlockComment && c == '"' && (i == 0 || line[i - 1] != '\\')) {
+				inString = !inString;
+				result += c;
+				continue;
+			}
+
+			// Track comments
+			if (!inString && !inLineComment && !inBlockComment && i + 1 < line.length()) {
+				if (c == '/' && line[i + 1] == '/') {
+					inLineComment = true;
+				} else if (c == '/' && line[i + 1] == '*') {
+					inBlockComment = true;
+				}
+			}
+			if (inBlockComment && i > 0 && line[i - 1] == '*' && c == '/') {
+				inBlockComment = false;
+				result += c;
+				continue;
+			}
+
+			// Don't modify content inside strings or comments
+			if (inString || inLineComment || inBlockComment) {
+				result += c;
+				continue;
+			}
+
+			// Check for ++ operator
+			if (c == '+' && i + 1 < line.length() && line[i + 1] == '+') {
+				// Remove trailing whitespace from result, then add single space
+				while (!result.empty() && (result.back() == ' ' || result.back() == '\t')) {
+					result.pop_back();
+				}
+				if (!result.empty()) {
+					result += ' ';
+				}
+				result += "++";
+				i++; // Skip second +
+
+				// Check if there's more non-whitespace content after
+				size_t next = i + 1;
+				while (next < line.length() && std::isspace(static_cast<unsigned char>(line[next]))) {
+					next++;
+				}
+				// Add space after if there's more content (that's not a closing brace/paren or end of line)
+				if (next < line.length() && line[next] != ')' && line[next] != '}') {
+					result += ' ';
+					// Skip any existing whitespace
+					while (i + 1 < line.length() && std::isspace(static_cast<unsigned char>(line[i + 1]))) {
+						i++;
+					}
+				}
+				continue;
+			}
+
+			// Check for -- operator
+			if (c == '-' && i + 1 < line.length() && line[i + 1] == '-') {
+				// Remove trailing whitespace from result, then add single space
+				while (!result.empty() && (result.back() == ' ' || result.back() == '\t')) {
+					result.pop_back();
+				}
+				if (!result.empty()) {
+					result += ' ';
+				}
+				result += "--";
+				i++; // Skip second -
+
+				// Check if there's more non-whitespace content after
+				size_t next = i + 1;
+				while (next < line.length() && std::isspace(static_cast<unsigned char>(line[next]))) {
+					next++;
+				}
+				// Add space after if there's more content (that's not a closing brace/paren or end of line)
+				if (next < line.length() && line[next] != ')' && line[next] != '}') {
+					result += ' ';
+					// Skip any existing whitespace
+					while (i + 1 < line.length() && std::isspace(static_cast<unsigned char>(line[i + 1]))) {
+						i++;
+					}
+				}
+				continue;
+			}
+
+			result += c;
+		}
+
+		return result;
+	}
+
 	// Normalize }else to } else and add spacing
 	static std::string normalizeElse(const std::string& line) {
 		std::string result = line;
@@ -1260,11 +1360,11 @@ namespace Qd {
 				continue;
 			}
 
-			// Everything else - just fix indentation, keep content as-is
+			// Everything else - just fix indentation and normalize operator spacing
 			for (int i = 0; i < indentLevel; i++) {
 				output << '\t';
 			}
-			output << trimmed << '\n';
+			output << normalizeOperatorSpacing(trimmed) << '\n';
 
 			// Track brace depth for other lines (but not for comments)
 			// Count both opening and closing braces to handle inline blocks like:

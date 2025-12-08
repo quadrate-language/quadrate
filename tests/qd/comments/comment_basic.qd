@@ -1,0 +1,33 @@
+// Test basic comment handling
+fn main( -- ) {
+	// Single line comment
+	1 print nl
+
+	// Comment with operators: + - * / % ++ --
+	2 print nl
+
+	// Comment with special chars: < > <= >= == != && || !
+	3 print nl
+
+	// Comment with numbers: 123 456.789 0xFF
+	4 print nl
+
+	// Comment with strings: "hello" 'world'
+	5 print nl
+
+	/* Block comment */
+	6 print nl
+
+	/* Multi-line
+	   block
+	   comment */
+	7 print nl
+
+	/* Block with operators: ++ -- + - * / */
+	8 print nl
+
+	// Nested /* block */ in line comment
+	9 print nl
+
+	10 /* inline block comment */ print nl
+}

@@ -2809,6 +2809,10 @@ namespace Qd {
 				fnName = "qd_lte";
 			} else if (name == "!=") {
 				fnName = "qd_neq";
+			} else if (name == "++") {
+				fnName = "qd_inc";
+			} else if (name == "--") {
+				fnName = "qd_dec";
 			} else {
 				fnName = "qd_" + name;
 			}

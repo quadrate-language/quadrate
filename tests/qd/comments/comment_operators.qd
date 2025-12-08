@@ -1,0 +1,31 @@
+// Test that ++ and -- in comments don't affect parsing
+fn main( -- ) {
+	// i++ style comments shouldn't break anything
+	5 print nl
+
+	// Use ++ for increment
+	6 ++ print nl
+
+	// The -- operator decrements
+	8 -- print nl
+
+	// Mixed: value++ or value-- style docs
+	10 print nl
+
+	/* Block comment with ++
+	   and -- operators
+	   should be ignored */
+	11 print nl
+
+	// End of line ++ shouldn't matter
+	12 print nl
+
+	// Testing that x-- in comment is fine
+	13 print nl
+
+	// Real ++ usage after comment about ++
+	14 ++ print nl  // This should be 15
+
+	// Real -- usage after comment about --
+	20 -- print nl  // This should be 19
+}

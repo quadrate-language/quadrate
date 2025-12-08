@@ -256,7 +256,7 @@ namespace Qd {
 
 	static bool isOperator(const std::string& name) {
 		// Symbolic operators that should stay inline
-		static const char* operators[] = {"!", "!=", "*", "+", "-", ".", "/", "<", "<=", "==", ">", ">="};
+		static const char* operators[] = {"!", "!=", "*", "+", "++", "-", "--", ".", "/", "<", "<=", "==", ">", ">="};
 		static const size_t count = sizeof(operators) / sizeof(operators[0]);
 
 		for (size_t i = 0; i < count; i++) {

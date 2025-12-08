@@ -1,0 +1,13 @@
+// Test ++ and -- operator formatting
+fn main( -- ) {
+	5 ++ print nl
+	10 -- print nl
+	5 ++ print nl
+	10 -- print nl
+	5 ++ print nl
+	10 -- print nl
+	5 ++ print nl
+	10 -- print nl
+	// Don't touch ++ in comments
+	/* Block comment with -- */
+}

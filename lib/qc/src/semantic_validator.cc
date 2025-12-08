@@ -4017,6 +4017,10 @@ namespace Qd {
 			name = "lte";
 		} else if (strcmp(name, ">=") == 0) {
 			name = "gte";
+		} else if (strcmp(name, "++") == 0) {
+			name = "inc";
+		} else if (strcmp(name, "--") == 0) {
+			name = "dec";
 		}
 
 		// panic instruction: ( msg code -- ) sets error flag

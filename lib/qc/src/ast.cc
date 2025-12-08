@@ -379,9 +379,9 @@ namespace Qd {
 	// Helper to check if a token is an operator alias and create the corresponding instruction node
 	// Returns the instruction node if it's an operator, nullptr otherwise
 	static IAstNode* tryParseOperatorAlias(char32_t token, u8t_scanner* scanner, const char* src) {
-		// Special handling for '-' to check for '->' (local variable declaration)
+		// Special handling for '-' to check for '->' (local variable declaration) or '--' (decrement)
 		if (token == '-') {
-			// Check if the next character in source is '>' (forming '->')
+			// Check if the next character in source is '>' (forming '->') or '-' (forming '--')
 			size_t tokenStart = u8t_scanner_token_start(scanner);
 			size_t tokenLen = u8t_scanner_token_len(scanner);
 			size_t tokenEndChar = tokenStart + tokenLen;
@@ -390,6 +390,25 @@ namespace Qd {
 			// If character immediately after '-' is '>', this is NOT subtraction
 			if (tokenEndByte < strlen(src) && src[tokenEndByte] == '>') {
 				return nullptr; // Not an operator alias, will be handled as local declaration
+			}
+			// Check for '--' (decrement)
+			char32_t nextToken = u8t_scanner_peek(scanner);
+			if (nextToken == '-') {
+				u8t_scanner_scan(scanner); // Consume second '-'
+				IAstNode* node = new AstNodeInstruction("--");
+				setNodePosition(node, scanner, src);
+				return node;
+			}
+		}
+
+		// Special handling for '+' to check for '++' (increment)
+		if (token == '+') {
+			char32_t nextToken = u8t_scanner_peek(scanner);
+			if (nextToken == '+') {
+				u8t_scanner_scan(scanner); // Consume second '+'
+				IAstNode* node = new AstNodeInstruction("++");
+				setNodePosition(node, scanner, src);
+				return node;
 			}
 		}
 

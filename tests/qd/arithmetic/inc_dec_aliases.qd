@@ -1,0 +1,40 @@
+// Test increment (++) and decrement (--) aliases
+fn main( -- ) {
+	// Basic ++ (increment) tests
+	5 ++ print nl          // 6
+	0 ++ print nl          // 1
+	-1 ++ print nl         // 0
+	99 ++ print nl         // 100
+
+	// Basic -- (decrement) tests
+	10 -- print nl         // 9
+	1 -- print nl          // 0
+	0 -- print nl          // -1
+	-99 -- print nl        // -100
+
+	// ++ is equivalent to inc
+	42 inc print nl        // 43
+	42 ++ print nl         // 43
+
+	// -- is equivalent to dec
+	42 dec print nl        // 41
+	42 -- print nl         // 41
+
+	// Chained operations
+	5 ++ ++ print nl       // 7
+	10 -- -- print nl      // 8
+	5 ++ -- print nl       // 5
+	5 -- ++ print nl       // 5
+
+	// With floats
+	3.5 ++ print nl        // 4.5
+	3.5 -- print nl        // 2.5
+
+	// In expressions
+	10 ++ 2 mul print nl   // 22
+	10 -- 2 mul print nl   // 18
+
+	// Edge cases - large numbers
+	999999 ++ print nl     // 1000000
+	1000000 -- print nl    // 999999
+}
