@@ -2,6 +2,8 @@
 
 A programming language where data flows through your code like water through pipes.
 
+> **Quadrate is under active development. Language syntax and standard library interfaces may change in future releases.**
+
 ```qd
 fn main( -- ) {
 	"Hello, World!" print nl
