@@ -21,18 +21,17 @@ Use the `panic` instruction to signal an error:
 ```qd
 fn divide(a:i64 b:i64 -- result:i64)! {
 	dup 0 == if {
-		drop drop
-		0  // Output value (required even on error)
-		-1 "division by zero" panic
+		drop2
+		"division by zero" -1 panic
 	}
 	/
 }
 ```
 
-The `panic` instruction takes:
+The `panic` instruction takes (in push order):
 
-1. An error code (integer)
-2. An error message (string)
+1. An error message (string)
+2. An error code (integer)
 
 ## Handling Errors
 
@@ -64,9 +63,8 @@ After calling a fallible function:
 ```qd
 fn divide(a:i64 b:i64 -- result:i64)! {
 	dup 0 == if {
-		drop drop
-		0
-		-1 "division by zero" panic
+		drop2
+		"division by zero" -1 panic
 	}
 	/
 }
@@ -115,8 +113,7 @@ When a fallible function fails (via `panic`), the `else` branch does NOT have th
 
 ```qd
 fn get_two( -- a:i64 b:i64)! {
-	0 0
-	1 "failed" panic
+	"failed" 1 panic
 }
 
 fn main( -- ) {
@@ -159,13 +156,68 @@ fn main( -- ) {
 }
 ```
 
+## Retrieving Error Information
+
+Use the `err` instruction to retrieve the error message and code:
+
+```qd
+fn divide(a:i64 b:i64 -- result:i64)! {
+	dup 0 == if {
+		drop2
+		"division by zero" 42 panic
+	}
+	/
+}
+
+fn main( -- ) {
+	10 0 divide if {
+		print nl
+	} else {
+		err -> code -> msg
+		"Error: " print msg print " (code " print code print ")" print nl
+	}
+}
+```
+
+Output:
+```
+Error: division by zero (code 42)
+```
+
+The `err` instruction pushes `( -- msg code )`:
+- `msg`: The error message string
+- `code`: The error code integer (on top)
+
+This is useful with `switch` to handle different error codes:
+
+```qd
+fn main( -- ) {
+	some_operation if {
+		// Success
+	} else {
+		err switch {
+			1 {
+				drop "File not found" print nl
+			}
+			2 {
+				drop "Permission denied" print nl
+			}
+			_ {
+				"Unknown error: " print print nl
+			}
+		}
+	}
+}
+```
+
 ## Key Rules
 
 1. Mark fallible functions with `!` after the signature
-2. Use `code "message" panic` to signal panics
+2. Use `"message" code panic` to signal panics
 3. Handle errors with `if { success } else { error }`
-4. The compiler enforces error handling
-5. The `if` branch has the function outputs; the `else` branch does not
+4. Use `err` in the else branch to retrieve error details
+5. The compiler enforces error handling
+6. The `if` branch has the function outputs; the `else` branch does not
 
 ## What's Next?
 

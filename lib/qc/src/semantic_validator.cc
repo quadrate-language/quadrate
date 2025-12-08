@@ -3963,6 +3963,16 @@ namespace Qd {
 			return;
 		}
 
+		// err instruction: ( -- msg code ) retrieves error info from last failed fallible call
+		if (strcmp(name, "err") == 0) {
+			// Push msg (string) and code (int)
+			typeStack.push_back(StackValueType::STRING);
+			structTypeStack.push_back("");
+			typeStack.push_back(StackValueType::INT);
+			structTypeStack.push_back("");
+			return;
+		}
+
 		// read instruction: reads command-line arguments
 		// Stack: [...] -> [...] arg0 arg1 ... argN argc
 		// Since we don't know argc at compile-time, we push multiple values

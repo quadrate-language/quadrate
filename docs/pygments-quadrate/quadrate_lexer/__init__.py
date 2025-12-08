@@ -36,7 +36,7 @@ class QuadrateLexer(RegexLexer):
     # Built-in arithmetic
     builtins_arith = (
         'add', 'sub', 'mul', 'div', 'mod',
-        'neg', 'inc', 'dec', 'abs',
+        'neg', 'inc', 'dec',
     )
 
     # Built-in comparison
@@ -52,7 +52,7 @@ class QuadrateLexer(RegexLexer):
     # Built-in array operations
     builtins_array = (
         'makei', 'makef', 'makes', 'makep', 'make',
-        'len', 'nth', 'set', 'append', 'free',
+        'len', 'nth', 'set', 'append',
     )
 
     # Built-in type casting
@@ -67,13 +67,14 @@ class QuadrateLexer(RegexLexer):
 
     # Built-in misc
     builtins_misc = (
-        'panic', 'spawn', 'wait', 'detach', 'call',
+        'err', 'panic', 'spawn', 'wait', 'detach', 'call', 'free',
     )
 
-    # Math functions (often used)
+    # Math functions (from math library)
     builtins_math = (
-        'sqrt', 'sin', 'cos', 'tan', 'asin', 'acos', 'atan', 'atan2',
-        'exp', 'log', 'log10', 'pow', 'floor', 'ceil', 'round',
+        'abs', 'acos', 'asin', 'atan', 'atan2', 'cb', 'cbrt', 'ceil', 'cos',
+        'exp', 'fac', 'floor', 'inv', 'ln', 'log', 'log10', 'max', 'min',
+        'pow', 'round', 'sin', 'sq', 'sqrt', 'tan',
     )
 
     # Types

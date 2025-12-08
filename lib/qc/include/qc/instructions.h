@@ -28,7 +28,7 @@ namespace Qd {
 			// Threading
 			"detach", "spawn", "wait",
 			// Error handling
-			"panic"};
+			"err", "panic"};
 
 	static const size_t BUILTIN_INSTRUCTION_COUNT = sizeof(BUILTIN_INSTRUCTIONS) / sizeof(BUILTIN_INSTRUCTIONS[0]);
 
@@ -56,7 +56,7 @@ namespace Qd {
 			// Threading
 			"detach", "spawn", "wait",
 			// Error handling
-			"panic"};
+			"err", "panic"};
 
 	static const size_t VALIDATOR_INSTRUCTION_COUNT =
 			sizeof(VALIDATOR_INSTRUCTIONS) / sizeof(VALIDATOR_INSTRUCTIONS[0]);

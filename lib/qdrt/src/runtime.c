@@ -2817,30 +2817,10 @@ qd_exec_result qd_wait(qd_context* ctx) {
 }
 
 qd_exec_result qd_err(qd_context* ctx) {
-	// Check if top of stack is error-tainted and push error code, message, and status
-	// Stack before: [value (tainted)]
-	// Stack after: [value (untainted), error_msg:str, error_code:int, has_error:int]
-	size_t stack_size = qd_stack_size(ctx->st);
-	if (stack_size < 1) {
-		fprintf(stderr, "Fatal error in err: Stack underflow (required 1 element, have %zu)\n", stack_size);
-		dump_stack(ctx);
-		qd_print_stack_trace(ctx);
-		abort();
-	}
-
-	// Check that top of stack is tainted
-	if (!qd_stack_is_top_tainted(ctx->st)) {
-		fprintf(stderr, "Fatal error in err: Top of stack is not error-tainted\n");
-		dump_stack(ctx);
-		qd_print_stack_trace(ctx);
-		abort();
-	}
-
-	// Remove the taint from the top element
-	qd_stack_clear_top_taint(ctx->st);
-
+	// Retrieve error information from the last failed fallible function call
+	// Stack effect: ( -- msg code )
 	// Push error message (empty string if no error)
-	const char* msg = (ctx->error_code != 0 && ctx->error_msg) ? ctx->error_msg : "";
+	const char* msg = ctx->error_msg ? ctx->error_msg : "";
 	qd_stack_error err = qd_stack_push_str(ctx->st, msg);
 	if (err != QD_STACK_OK) {
 		fprintf(stderr, "Fatal error in err: Failed to push error message\n");
@@ -2858,17 +2838,7 @@ qd_exec_result qd_err(qd_context* ctx) {
 		abort();
 	}
 
-	// Push has_error flag (0 = no error, non-zero = error)
-	int64_t has_error = (ctx->error_code != 0) ? 1 : 0;
-	err = qd_stack_push_int(ctx->st, has_error);
-	if (err != QD_STACK_OK) {
-		fprintf(stderr, "Fatal error in err: Failed to push has_error flag\n");
-		dump_stack(ctx);
-		qd_print_stack_trace(ctx);
-		abort();
-	}
-
-	// Clear error state after checking it
+	// Clear error state after reading
 	ctx->error_code = 0;
 	if (ctx->error_msg) {
 		free(ctx->error_msg);

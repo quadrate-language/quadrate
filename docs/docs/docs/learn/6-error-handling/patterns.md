@@ -9,8 +9,8 @@ Return a default value when an error occurs:
 ```qd
 fn divide(a:i64 b:i64 -- result:i64)! {
 	dup 0 == if {
-		drop2 0
-		-1 "division by zero" panic
+		drop2
+		"division by zero" -1 panic
 	}
 	/
 }
@@ -60,8 +60,8 @@ Continue despite errors, collect successes:
 ```qd
 fn divide(a:i64 b:i64 -- result:i64)! {
 	dup 0 == if {
-		drop2 0
-		-1 "division by zero" panic
+		drop2
+		"division by zero" -1 panic
 	}
 	/
 }
@@ -99,16 +99,14 @@ Propagate errors through multiple operations:
 ```qd
 fn step1(x:i64 -- y:i64)! {
 	x 0 < if {
-		0
-		1 "negative input" panic
+		"negative input" 1 panic
 	}
 	x 2 *
 }
 
 fn step2(x:i64 -- y:i64)! {
 	x 100 > if {
-		0
-		2 "overflow" panic
+		"overflow" 2 panic
 	}
 	x 10 +
 }
@@ -119,12 +117,10 @@ fn pipeline(x:i64 -- result:i64)! {
 		step2 if {
 			// Both succeeded
 		} else {
-			0
-			2 "step2 failed" panic
+			"step2 failed" 2 panic
 		}
 	} else {
-		0
-		1 "step1 failed" panic
+		"step1 failed" 1 panic
 	}
 }
 ```
@@ -149,19 +145,18 @@ fn read_file(path:str -- content:str)! {
 		4096 -> size
 		size mem::alloc -> buf
 		defer {
+			// Always runs
 			buf mem::free
-		}  // Always runs
+		}
 
 		file buf size io::read if {
 			-> bytes_read
 			buf bytes_read mem::to_string
 		} else {
-			""
-			1 "read failed" panic
+			"read failed" 1 panic
 		}
 	} else {
-		""
-		1 "open failed" panic
+		"open failed" 1 panic
 	}
 }
 ```
@@ -187,8 +182,7 @@ fn file_open(path:str -- f:ptr)! {
 			path = path
 		}
 	} else {
-		0
-		1 "open failed" panic
+		"open failed" 1 panic
 	}
 }
 
@@ -217,10 +211,10 @@ Validate before processing:
 fn validate_input(x:i64 -- )! {
 	-> x
 	x 0 < if {
-		1 "negative not allowed" panic
+		"negative not allowed" 1 panic
 	}
 	x 1000 > if {
-		2 "too large" panic
+		"too large" 2 panic
 	}
 }
 
@@ -229,8 +223,7 @@ fn process(x:i64 -- result:i64)! {
 	x validate_input if {
 		x dup *  // Safe to process
 	} else {
-		0
-		1 "validation failed" panic
+		"validation failed" 1 panic
 	}
 }
 ```
@@ -261,8 +254,7 @@ fn retry(max_attempts:i64 -- result:i64)! {
 	success if {
 		last_result
 	} else {
-		0
-		1 "all attempts failed" panic
+		"all attempts failed" 1 panic
 	}
 }
 ```
@@ -279,12 +271,10 @@ fn parse_config(path:str -- cfg:ptr)! {
 		content parse_json if {
 			// Success
 		} else {
-			0
-			2 "invalid JSON in config" panic
+			"invalid JSON in config" 2 panic
 		}
 	} else {
-		0
-		1 "failed to read config file" panic
+		"failed to read config file" 1 panic
 	}
 }
 ```

@@ -2953,6 +2953,23 @@ namespace Qd {
 			// Generate any needed type casts before the function call
 			generateCastInstructions(ident->parameterCasts(), ctx);
 
+			// For fallible functions, clear error_code before the call
+			// This ensures each call starts with a clean state
+			auto preFallibleIt = fallibleFunctions.find(lookupName);
+			if (preFallibleIt != fallibleFunctions.end() && preFallibleIt->second) {
+				auto contextStructTy = llvm::StructType::get(
+						*context, {
+										  llvm::PointerType::getUnqual(*context), // qd_stack* st
+										  builder->getInt64Ty(),				  // int64_t error_code
+										  llvm::PointerType::getUnqual(*context), // char* error_msg
+										  builder->getInt32Ty(),				  // int argc
+										  llvm::PointerType::getUnqual(*context), // char** argv
+										  llvm::PointerType::getUnqual(*context)  // char* program_name
+								  });
+				auto errorCodePtr = builder->CreateStructGEP(contextStructTy, ctx, 1, "pre_call_error_code_ptr");
+				builder->CreateStore(builder->getInt64(0), errorCodePtr);
+			}
+
 			// Check for inlinable bits:: functions
 			if (lookupName == "bits::and") {
 				generateInlineBitAnd(ctx);
@@ -3025,8 +3042,8 @@ namespace Qd {
 					auto successStatus = builder->CreateSelect(
 							hasError, builder->getInt64(0), builder->getInt64(1), "success_status");
 
-					// Clear the error flag
-					builder->CreateStore(builder->getInt64(0), errorCodePtr);
+					// Don't clear error_code here - leave it so 'err' instruction can retrieve it
+					// The error state will be overwritten by the next fallible call anyway
 
 					// Push the success status onto the stack
 					builder->CreateCall(pushIntFn, {ctx, successStatus});
@@ -3108,6 +3125,23 @@ namespace Qd {
 
 		// Generate any needed type casts before the function call
 		generateCastInstructions(scopedIdent->parameterCasts(), ctx);
+
+		// For fallible functions, clear error_code before the call
+		// This ensures each call starts with a clean state
+		auto preFallibleIt = fallibleFunctions.find(fullName);
+		if (preFallibleIt != fallibleFunctions.end() && preFallibleIt->second) {
+			auto contextStructTy = llvm::StructType::get(
+					*context, {
+									  llvm::PointerType::getUnqual(*context), // qd_stack* st
+									  builder->getInt64Ty(),				  // int64_t error_code
+									  llvm::PointerType::getUnqual(*context), // char* error_msg
+									  builder->getInt32Ty(),				  // int argc
+									  llvm::PointerType::getUnqual(*context), // char** argv
+									  llvm::PointerType::getUnqual(*context)  // char* program_name
+							  });
+			auto errorCodePtr = builder->CreateStructGEP(contextStructTy, ctx, 1, "pre_call_error_code_ptr");
+			builder->CreateStore(builder->getInt64(0), errorCodePtr);
+		}
 
 		// Call the scoped function
 		auto callResult = builder->CreateCall(fn, {ctx}, "call_result");
@@ -3202,8 +3236,8 @@ namespace Qd {
 					auto successStatus = builder->CreateSelect(
 							hasError, builder->getInt64(0), builder->getInt64(1), "success_status");
 
-					// Clear the error flag
-					builder->CreateStore(builder->getInt64(0), errorCodePtr);
+					// Don't clear error_code here - leave it so 'err' instruction can retrieve it
+					// The error state will be overwritten by the next fallible call anyway
 
 					// Push the success status onto the stack
 					builder->CreateCall(pushIntFn, {ctx, successStatus});
