@@ -11,10 +11,12 @@ This page documents all Quadrate keywords and built-in instructions.
 | [`const`](#const) | Declares a compile-time constant value. |
 | [`struct`](#struct) | Declares a structured data type with named fields. |
 | [`use`](#use) | Imports a module, making its functions available with module::function syntax. |
+| [`import`](#import) | Imports a C library, declaring its functions with Quadrate signatures. |
 | [`if`](#if) | Executes a block if the top of stack is true (non-zero). |
 | [`else`](#else) | Provides an alternative block when the if condition is false. |
 | [`for`](#for) | Iterates from start to end with a step, binding the iterator variable. |
 | [`loop`](#loop) | Repeats a block indefinitely until break is called. |
+| [`while`](#while) | Repeats a block while the condition on the stack is true. |
 | [`break`](#break) | Exits the innermost loop immediately. |
 | [`continue`](#continue) | Skips to the next iteration of the innermost loop. |
 | [`return`](#return) | Exits the current function immediately. |
@@ -87,6 +89,18 @@ use str
 
 ---
 
+### import
+
+Imports a C library, declaring its functions with Quadrate signatures.
+
+**Example:**
+
+```qd
+import "libmath.a" as "math" { pub fn sin(x:f64 -- y:f64) }
+```
+
+---
+
 ### if
 
 Executes a block if the top of stack is true (non-zero).
@@ -131,6 +145,18 @@ Repeats a block indefinitely until break is called.
 
 ```qd
 loop { "forever" print nl }
+```
+
+---
+
+### while
+
+Repeats a block while the condition on the stack is true.
+
+**Example:**
+
+```qd
+1 -> x  x 10 < while { x print nl  x 1 + -> x  x 10 < }
 ```
 
 ---
@@ -679,23 +705,23 @@ Subtracts 1 from a number.
 
 | Instruction | Signature | Description |
 |-------------|-----------|-------------|
-| [`==`](#eqeq) | `( a b -- bool )` | Outputs 1 if a equals b, 0 otherwise. |
-| [`eq`](#eq) | `( a b -- bool )` | Outputs 1 if a equals b, 0 otherwise. |
-| [`!=`](#bangeq) | `( a b -- bool )` | Outputs 1 if a does not equal b, 0 otherwise. |
-| [`neq`](#neq) | `( a b -- bool )` | Outputs 1 if a does not equal b, 0 otherwise. |
-| [`<`](#lt) | `( a b -- bool )` | Outputs 1 if a is less than b, 0 otherwise. |
-| [`lt`](#lt) | `( a b -- bool )` | Outputs 1 if a is less than b, 0 otherwise. |
-| [`<=`](#lteq) | `( a b -- bool )` | Outputs 1 if a is less than or equal to b, 0 otherwise. |
-| [`lte`](#lte) | `( a b -- bool )` | Outputs 1 if a is less than or equal to b, 0 otherwise. |
-| [`>`](#gt) | `( a b -- bool )` | Outputs 1 if a is greater than b, 0 otherwise. |
-| [`gt`](#gt) | `( a b -- bool )` | Outputs 1 if a is greater than b, 0 otherwise. |
-| [`>=`](#gteq) | `( a b -- bool )` | Outputs 1 if a is greater than or equal to b, 0 otherwise. |
-| [`gte`](#gte) | `( a b -- bool )` | Outputs 1 if a is greater than or equal to b, 0 otherwise. |
-| [`within`](#within) | `( val low high -- bool )` | Outputs 1 if val is in [low, high), 0 otherwise. |
+| [`==`](#eqeq) | `( a b -- bool )` | Returns 1 if a equals b, 0 otherwise. |
+| [`eq`](#eq) | `( a b -- bool )` | Returns 1 if a equals b, 0 otherwise. |
+| [`!=`](#bangeq) | `( a b -- bool )` | Returns 1 if a does not equal b, 0 otherwise. |
+| [`neq`](#neq) | `( a b -- bool )` | Returns 1 if a does not equal b, 0 otherwise. |
+| [`<`](#lt) | `( a b -- bool )` | Returns 1 if a is less than b, 0 otherwise. |
+| [`lt`](#lt) | `( a b -- bool )` | Returns 1 if a is less than b, 0 otherwise. |
+| [`<=`](#lteq) | `( a b -- bool )` | Returns 1 if a is less than or equal to b, 0 otherwise. |
+| [`lte`](#lte) | `( a b -- bool )` | Returns 1 if a is less than or equal to b, 0 otherwise. |
+| [`>`](#gt) | `( a b -- bool )` | Returns 1 if a is greater than b, 0 otherwise. |
+| [`gt`](#gt) | `( a b -- bool )` | Returns 1 if a is greater than b, 0 otherwise. |
+| [`>=`](#gteq) | `( a b -- bool )` | Returns 1 if a is greater than or equal to b, 0 otherwise. |
+| [`gte`](#gte) | `( a b -- bool )` | Returns 1 if a is greater than or equal to b, 0 otherwise. |
+| [`within`](#within) | `( val low high -- bool )` | Returns 1 if val is in [low, high), 0 otherwise. |
 
 #### ==
 
-Outputs 1 if a equals b, 0 otherwise.
+Returns 1 if a equals b, 0 otherwise.
 
 **Signature:** `( a b -- bool )`
 
@@ -709,7 +735,7 @@ Outputs 1 if a equals b, 0 otherwise.
 
 #### eq
 
-Outputs 1 if a equals b, 0 otherwise.
+Returns 1 if a equals b, 0 otherwise.
 
 **Signature:** `( a b -- bool )`
 
@@ -717,7 +743,7 @@ Outputs 1 if a equals b, 0 otherwise.
 
 #### !=
 
-Outputs 1 if a does not equal b, 0 otherwise.
+Returns 1 if a does not equal b, 0 otherwise.
 
 **Signature:** `( a b -- bool )`
 
@@ -731,7 +757,7 @@ Outputs 1 if a does not equal b, 0 otherwise.
 
 #### neq
 
-Outputs 1 if a does not equal b, 0 otherwise.
+Returns 1 if a does not equal b, 0 otherwise.
 
 **Signature:** `( a b -- bool )`
 
@@ -739,7 +765,7 @@ Outputs 1 if a does not equal b, 0 otherwise.
 
 #### <
 
-Outputs 1 if a is less than b, 0 otherwise.
+Returns 1 if a is less than b, 0 otherwise.
 
 **Signature:** `( a b -- bool )`
 
@@ -753,7 +779,7 @@ Outputs 1 if a is less than b, 0 otherwise.
 
 #### lt
 
-Outputs 1 if a is less than b, 0 otherwise.
+Returns 1 if a is less than b, 0 otherwise.
 
 **Signature:** `( a b -- bool )`
 
@@ -761,7 +787,7 @@ Outputs 1 if a is less than b, 0 otherwise.
 
 #### <=
 
-Outputs 1 if a is less than or equal to b, 0 otherwise.
+Returns 1 if a is less than or equal to b, 0 otherwise.
 
 **Signature:** `( a b -- bool )`
 
@@ -775,7 +801,7 @@ Outputs 1 if a is less than or equal to b, 0 otherwise.
 
 #### lte
 
-Outputs 1 if a is less than or equal to b, 0 otherwise.
+Returns 1 if a is less than or equal to b, 0 otherwise.
 
 **Signature:** `( a b -- bool )`
 
@@ -783,7 +809,7 @@ Outputs 1 if a is less than or equal to b, 0 otherwise.
 
 #### >
 
-Outputs 1 if a is greater than b, 0 otherwise.
+Returns 1 if a is greater than b, 0 otherwise.
 
 **Signature:** `( a b -- bool )`
 
@@ -797,7 +823,7 @@ Outputs 1 if a is greater than b, 0 otherwise.
 
 #### gt
 
-Outputs 1 if a is greater than b, 0 otherwise.
+Returns 1 if a is greater than b, 0 otherwise.
 
 **Signature:** `( a b -- bool )`
 
@@ -805,7 +831,7 @@ Outputs 1 if a is greater than b, 0 otherwise.
 
 #### >=
 
-Outputs 1 if a is greater than or equal to b, 0 otherwise.
+Returns 1 if a is greater than or equal to b, 0 otherwise.
 
 **Signature:** `( a b -- bool )`
 
@@ -819,7 +845,7 @@ Outputs 1 if a is greater than or equal to b, 0 otherwise.
 
 #### gte
 
-Outputs 1 if a is greater than or equal to b, 0 otherwise.
+Returns 1 if a is greater than or equal to b, 0 otherwise.
 
 **Signature:** `( a b -- bool )`
 
@@ -827,7 +853,7 @@ Outputs 1 if a is greater than or equal to b, 0 otherwise.
 
 #### within
 
-Outputs 1 if val is in [low, high), 0 otherwise.
+Returns 1 if val is in [low, high), 0 otherwise.
 
 **Signature:** `( val low high -- bool )`
 
@@ -943,8 +969,8 @@ Shifts a right by n bits (arithmetic shift).
 | [`makes`](#makes) | `( size -- arr )` | Creates an array of size strings, initialized to empty. |
 | [`makep`](#makep) | `( size -- arr )` | Creates an array of size pointers, initialized to null. |
 | [`make`](#make) | `( size -- arr )` | Creates a typed array (use with make<Type> syntax). |
-| [`len`](#len) | `( arr -- len )` | Outputs the number of elements in an array. |
-| [`nth`](#nth) | `( arr index -- value )` | Outputs the element at the given index. |
+| [`len`](#len) | `( arr -- len )` | Returns the number of elements in an array. |
+| [`nth`](#nth) | `( arr index -- value )` | Returns the element at the given index. |
 | [`set`](#set) | `( arr index value -- )` | Sets the element at the given index. |
 | [`append`](#append) | `( arr value -- arr )` | Appends a value to the array, returning the modified array. |
 | [`free`](#free) | `( arr -- )` | Frees the memory used by an array or struct. |
@@ -1021,7 +1047,7 @@ Creates a typed array (use with make<Type> syntax).
 
 #### len
 
-Outputs the number of elements in an array.
+Returns the number of elements in an array.
 
 **Signature:** `( arr -- len )`
 
@@ -1035,7 +1061,7 @@ arr len // number of elements
 
 #### nth
 
-Outputs the element at the given index.
+Returns the element at the given index.
 
 **Signature:** `( arr index -- value )`
 
@@ -1226,18 +1252,48 @@ read -> argc // reads command line args
 
 | Instruction | Signature | Description |
 |-------------|-----------|-------------|
-| [`panic`](#panic) | `( code msg -- )` | Signals a panic with a code and message. Used in fallible functions. |
+| [`error`](#error) | `( msg code -- )` | Signals an error with a message and code. Used in fallible functions. |
+| [`err`](#err) | `( -- code )` | Pushes the error code from the last fallible function call. |
+| [`panic`](#panic) | `( msg -- )` | Terminates the program with an error message. |
 
-#### panic
+#### error
 
-Signals a panic with a code and message. Used in fallible functions.
+Signals an error with a message and code. Used in fallible functions.
 
-**Signature:** `( code msg -- )`
+**Signature:** `( msg code -- )`
 
 **Example:**
 
 ```qd
-1 "invalid input" panic
+"invalid input" 1 error
+```
+
+---
+
+#### err
+
+Pushes the error code from the last fallible function call.
+
+**Signature:** `( -- code )`
+
+**Example:**
+
+```qd
+err print nl  // prints error code from last fallible call
+```
+
+---
+
+#### panic
+
+Terminates the program with an error message.
+
+**Signature:** `( msg -- )`
+
+**Example:**
+
+```qd
+"fatal error" panic
 ```
 
 ---

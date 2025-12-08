@@ -15,7 +15,7 @@ Check if a string is a valid UUID format.
 |-----------|------|-------------|
 | `s` | `str` | String to check |
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `valid` | `i64` | 1 if valid format, 0 otherwise |
 
@@ -33,7 +33,7 @@ Generate a new random UUIDv4 string.
 
 **Signature:** `( -- uuid:str )`
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `uuid` | `str` | UUID string (36 chars) |
 
@@ -55,7 +55,7 @@ Generate UUID with specific seed (for reproducibility).
 |-----------|------|-------------|
 | `seed` | `i64` | Seed value |
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `uuid` | `str` | UUID string (36 chars) |
 

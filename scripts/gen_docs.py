@@ -308,9 +308,9 @@ def generate_markdown(module: Module) -> str:
                     lines.append(f"| `{name}` | `{typ}` | {desc} |")
                 lines.append("")
 
-            # Returns table
+            # Outputs table
             if fn.returns:
-                lines.append("| Return | Type | Description |")
+                lines.append("| Output | Type | Description |")
                 lines.append("|--------|------|-------------|")
                 for name, typ, desc in fn.returns:
                     lines.append(f"| `{name}` | `{typ}` | {desc} |")

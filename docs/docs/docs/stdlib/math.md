@@ -20,7 +20,7 @@ Absolute value.
 |-----------|------|-------------|
 | `x` | `f64` | Any value |
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `result` | `f64` | |x| |
 
@@ -42,7 +42,7 @@ Arc cosine (inverse cosine).
 |-----------|------|-------------|
 | `x` | `f64` | Value in range [-1, 1] |
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `result` | `f64` | Angle in radians [0, π] |
 
@@ -64,7 +64,7 @@ Arc sine (inverse sine).
 |-----------|------|-------------|
 | `x` | `f64` | Value in range [-1, 1] |
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `result` | `f64` | Angle in radians [-π/2, π/2] |
 
@@ -86,7 +86,7 @@ Arc tangent (inverse tangent).
 |-----------|------|-------------|
 | `x` | `f64` | Any value |
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `result` | `f64` | Angle in radians [-π/2, π/2] |
 
@@ -108,7 +108,7 @@ Cube a number.
 |-----------|------|-------------|
 | `x` | `f64` | Value to cube |
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `result` | `f64` | x * x * x |
 
@@ -130,7 +130,7 @@ Cube root.
 |-----------|------|-------------|
 | `x` | `f64` | Any value |
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `result` | `f64` | Cube root of x |
 
@@ -152,7 +152,7 @@ Ceiling (round up).
 |-----------|------|-------------|
 | `x` | `f64` | Any value |
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `result` | `f64` | Smallest integer >= x |
 
@@ -176,7 +176,7 @@ Clamp value to range.
 | `min_val` | `f64` | Minimum bound |
 | `max_val` | `f64` | Maximum bound |
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `result` | `f64` | x clamped to [min_val, max_val] |
 
@@ -198,7 +198,7 @@ Cosine of angle in radians.
 |-----------|------|-------------|
 | `x` | `f64` | Angle in radians |
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `result` | `f64` | Cosine value [-1, 1] |
 
@@ -220,7 +220,7 @@ Decrement integer by 1.
 |-----------|------|-------------|
 | `x` | `i64` | Value to decrement |
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `result` | `i64` | x - 1 |
 
@@ -242,7 +242,7 @@ Convert degrees to radians.
 |-----------|------|-------------|
 | `degrees` | `f64` | Angle in degrees |
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `radians` | `f64` | Angle in radians |
 
@@ -264,7 +264,7 @@ Factorial (n!).
 |-----------|------|-------------|
 | `n` | `i64` | Non-negative integer |
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `result` | `i64` | n! |
 
@@ -286,7 +286,7 @@ Floor (round down).
 |-----------|------|-------------|
 | `x` | `f64` | Any value |
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `result` | `f64` | Largest integer <= x |
 
@@ -308,7 +308,7 @@ Increment integer by 1.
 |-----------|------|-------------|
 | `x` | `i64` | Value to increment |
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `result` | `i64` | x + 1 |
 
@@ -330,7 +330,7 @@ Reciprocal (1/x).
 |-----------|------|-------------|
 | `x` | `f64` | Non-zero value |
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `result` | `f64` | 1/x |
 
@@ -354,7 +354,7 @@ Linear interpolation between two values.
 | `b` | `f64` | End value |
 | `t` | `f64` | Interpolation factor [0, 1] |
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `result` | `f64` | a + (b - a) * t |
 
@@ -376,7 +376,7 @@ Natural logarithm (base e).
 |-----------|------|-------------|
 | `x` | `f64` | Positive value |
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `result` | `f64` | Natural log of x |
 
@@ -399,7 +399,7 @@ Logarithm with arbitrary base.
 | `x` | `f64` | Positive value |
 | `base` | `f64` | Logarithm base |
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `result` | `f64` | log_base(x) |
 
@@ -421,7 +421,7 @@ Base-10 logarithm.
 |-----------|------|-------------|
 | `x` | `f64` | Positive value |
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `result` | `f64` | Log base 10 of x |
 
@@ -444,7 +444,7 @@ Maximum of two values.
 | `a` | `any` | First value |
 | `b` | `any` | Second value |
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `result` | `any` | Larger of a and b |
 
@@ -467,7 +467,7 @@ Minimum of two values.
 | `a` | `any` | First value |
 | `b` | `any` | Second value |
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `result` | `any` | Smaller of a and b |
 
@@ -490,7 +490,7 @@ Power function.
 | `base` | `f64` | Base value |
 | `exp` | `f64` | Exponent |
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `result` | `f64` | base raised to exp |
 
@@ -512,7 +512,7 @@ Convert radians to degrees.
 |-----------|------|-------------|
 | `radians` | `f64` | Angle in radians |
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `degrees` | `f64` | Angle in degrees |
 
@@ -534,7 +534,7 @@ Round to nearest integer.
 |-----------|------|-------------|
 | `x` | `f64` | Any value |
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `result` | `f64` | Nearest integer to x |
 
@@ -556,7 +556,7 @@ Sine of angle in radians.
 |-----------|------|-------------|
 | `x` | `f64` | Angle in radians |
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `result` | `f64` | Sine value [-1, 1] |
 
@@ -578,7 +578,7 @@ Square a number.
 |-----------|------|-------------|
 | `x` | `f64` | Value to square |
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `result` | `f64` | x * x |
 
@@ -600,7 +600,7 @@ Square root.
 |-----------|------|-------------|
 | `x` | `f64` | Non-negative value |
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `result` | `f64` | Square root of x |
 
@@ -622,7 +622,7 @@ Tangent of angle in radians.
 |-----------|------|-------------|
 | `x` | `f64` | Angle in radians |
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `result` | `f64` | Tangent value |
 
@@ -646,7 +646,7 @@ Check if value is within range (inclusive).
 | `min_val` | `any` | Minimum bound |
 | `max_val` | `any` | Maximum bound |
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `result` | `i64` | 1 if in range, 0 otherwise |
 

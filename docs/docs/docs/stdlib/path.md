@@ -21,7 +21,7 @@ Get the filename part of a path.
 |-----------|------|-------------|
 | `path` | `str` | File path |
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `name` | `str` | Filename component |
 
@@ -43,7 +43,7 @@ Get the directory part of a path.
 |-----------|------|-------------|
 | `path` | `str` | File path |
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `dir` | `str` | Directory component |
 
@@ -65,7 +65,7 @@ Get the file extension (including dot).
 |-----------|------|-------------|
 | `path` | `str` | File path |
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `ext` | `str` | Extension including dot, empty if none |
 
@@ -87,7 +87,7 @@ Check if path is absolute.
 |-----------|------|-------------|
 | `path` | `str` | File path |
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `result` | `i64` | 1 if absolute, 0 otherwise |
 
@@ -110,7 +110,7 @@ Join two path components.
 | `p1` | `str` | First path |
 | `p2` | `str` | Second path |
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `joined` | `str` | Joined path |
 
@@ -132,7 +132,7 @@ Normalize a path (remove redundant separators).
 |-----------|------|-------------|
 | `path` | `str` | File path |
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `norm` | `str` | Normalized path |
 
@@ -154,7 +154,7 @@ Get filename without extension.
 |-----------|------|-------------|
 | `path` | `str` | File path |
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `stem` | `str` | Filename without extension |
 

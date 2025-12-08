@@ -30,6 +30,10 @@ KEYWORD(struct, "Declares a structured data type with named fields.")
 /// @example use str
 KEYWORD(use, "Imports a module, making its functions available with module::function syntax.")
 
+/// C library import keyword.
+/// @example import "libmath.a" as "math" { pub fn sin(x:f64 -- y:f64) }
+KEYWORD(import, "Imports a C library, declaring its functions with Quadrate signatures.")
+
 /// Conditional execution keyword.
 /// @example 5 3 > if { "yes" print }
 KEYWORD(if, "Executes a block if the top of stack is true (non-zero).")
@@ -45,6 +49,10 @@ KEYWORD(for, "Iterates from start to end with a step, binding the iterator varia
 /// Infinite loop keyword.
 /// @example loop { "forever" print nl }
 KEYWORD(loop, "Repeats a block indefinitely until break is called.")
+
+/// Conditional loop keyword.
+/// @example 1 -> x  x 10 < while { x print nl  x 1 + -> x  x 10 < }
+KEYWORD(while, "Repeats a block while the condition on the stack is true.")
 
 /// Loop exit keyword.
 /// @example loop { x 10 > if { break } }
@@ -454,6 +462,16 @@ BUILTIN(read, "( -- ... n )", "Reads command line arguments onto the stack, push
 /// @signature ( msg code -- )
 /// @example "invalid input" 1 error
 BUILTIN(error, "( msg code -- )", "Signals an error with a message and code. Used in fallible functions.")
+
+/// Get last error code.
+/// @signature ( -- code )
+/// @example err print nl  // prints error code from last fallible call
+BUILTIN(err, "( -- code )", "Pushes the error code from the last fallible function call.")
+
+/// Panic with error message.
+/// @signature ( msg -- )
+/// @example "fatal error" panic
+BUILTIN(panic, "( msg -- )", "Terminates the program with an error message.")
 
 // ============================================================================
 // THREADING

@@ -13,7 +13,7 @@ Clear a bit to 0.
 | `value` | `i64` | Input value |
 | `bit_pos` | `i64` | Bit position to clear |
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `result` | `i64` | Value with bit cleared |
 
@@ -37,7 +37,7 @@ Extract a bit field from a value.
 | `start_bit` | `i64` | Start position (0 = LSB) |
 | `num_bits` | `i64` | Number of bits to extract |
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `result` | `i64` | Extracted bits, right-aligned |
 
@@ -60,7 +60,7 @@ Check if a bit is set.
 | `value` | `i64` | Value to check |
 | `bit_pos` | `i64` | Bit position (0 = LSB) |
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `flag` | `i64` | 1 if set, 0 if not |
 
@@ -86,7 +86,7 @@ Keep only the bottom N bits.
 | `value` | `i64` | Input value |
 | `num_bits` | `i64` | Number of bits to keep from LSB |
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `result` | `i64` | Masked value |
 
@@ -108,7 +108,7 @@ Count set bits (population count).
 |-----------|------|-------------|
 | `value` | `i64` | Value to count |
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `count` | `i64` | Number of 1 bits |
 
@@ -131,7 +131,7 @@ Reverse the bottom N bits.
 | `value` | `i64` | Value to reverse |
 | `width` | `i64` | Number of bits to reverse |
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `result` | `i64` | Reversed value |
 
@@ -155,7 +155,7 @@ Rotate bits left within a width.
 | `bits` | `i64` | Positions to rotate |
 | `width` | `i64` | Bit width to rotate within |
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `result` | `i64` | Rotated value |
 
@@ -179,7 +179,7 @@ Rotate bits right within a width.
 | `bits` | `i64` | Positions to rotate |
 | `width` | `i64` | Bit width to rotate within |
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `result` | `i64` | Rotated value |
 
@@ -202,7 +202,7 @@ Set a bit to 1.
 | `value` | `i64` | Input value |
 | `bit_pos` | `i64` | Bit position to set |
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `result` | `i64` | Value with bit set |
 
@@ -227,7 +227,7 @@ Set a bit field in a value.
 | `start_bit` | `i64` | Start position (0 = LSB) |
 | `num_bits` | `i64` | Number of bits to set |
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `result` | `i64` | Modified target |
 
@@ -250,7 +250,7 @@ Toggle a bit.
 | `value` | `i64` | Input value |
 | `bit_pos` | `i64` | Bit position to toggle |
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `result` | `i64` | Value with bit toggled |
 

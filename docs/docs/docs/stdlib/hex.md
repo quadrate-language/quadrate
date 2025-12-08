@@ -17,7 +17,7 @@ Invalid characters are skipped.
 |-----------|------|-------------|
 | `hex` | `str` | Hexadecimal string |
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `s` | `str` | Decoded string |
 
@@ -32,7 +32,7 @@ Invalid characters are skipped.
 ### decode_byte
 
 Decode a 2-character hex string to a byte value.
-Outputs -1 if the input is invalid.
+Returns -1 if the input is invalid.
 
 **Signature:** `( hex:str -- b:i64 )`
 
@@ -40,7 +40,7 @@ Outputs -1 if the input is invalid.
 |-----------|------|-------------|
 | `hex` | `str` | Two-character hex string |
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `b` | `i64` | Byte value (0-255) or -1 if invalid |
 
@@ -55,7 +55,7 @@ Outputs -1 if the input is invalid.
 ### decoded_len
 
 Get the length of data that would result from decoding a hex string.
-Outputs -1 if the hex string has invalid length (odd).
+Returns -1 if the hex string has invalid length (odd).
 
 **Signature:** `( hex:str -- len:i64 )`
 
@@ -63,7 +63,7 @@ Outputs -1 if the hex string has invalid length (odd).
 |-----------|------|-------------|
 | `hex` | `str` | Hexadecimal string |
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `len` | `i64` | Decoded length in bytes, or -1 if invalid |
 
@@ -86,7 +86,7 @@ Each byte becomes two hex characters (00-FF).
 |-----------|------|-------------|
 | `s` | `str` | String to encode |
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `hex` | `str` | Hexadecimal string (uppercase) |
 
@@ -108,7 +108,7 @@ Encode a single byte (0-255) to a 2-character hex string.
 |-----------|------|-------------|
 | `b` | `i64` | Byte value (0-255) |
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `hex` | `str` | Two-character hex string (uppercase) |
 
@@ -131,7 +131,7 @@ Each byte becomes two hex characters (00-ff).
 |-----------|------|-------------|
 | `s` | `str` | String to encode |
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `hex` | `str` | Hexadecimal string (lowercase) |
 
@@ -153,7 +153,7 @@ Get the length of hex string that would result from encoding data.
 |-----------|------|-------------|
 | `s` | `str` | String to encode |
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `len` | `i64` | Encoded length in characters |
 
@@ -176,7 +176,7 @@ Valid characters are 0-9, A-F, a-f.
 |-----------|------|-------------|
 | `hex` | `str` | String to check |
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `valid` | `i64` | 1 if valid hex, 0 otherwise |
 

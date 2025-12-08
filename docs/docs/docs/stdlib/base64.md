@@ -15,7 +15,7 @@ Decode a base64 string.
 |-----------|------|-------------|
 | `encoded` | `str` | Base64-encoded string |
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `decoded` | `str` | Decoded string |
 
@@ -37,7 +37,7 @@ Encode a string to base64.
 |-----------|------|-------------|
 | `input` | `str` | String to encode |
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `encoded` | `str` | Base64-encoded string |
 

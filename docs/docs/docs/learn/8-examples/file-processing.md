@@ -260,4 +260,4 @@ fn main( -- ) {
 
 ## What's Next?
 
-See [Data Structures](data-structures.md) for more complex examples.
+See [Language Reference](../../reference.md)

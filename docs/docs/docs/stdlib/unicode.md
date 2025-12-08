@@ -117,7 +117,7 @@ Check if character is a digit (0-9).
 |-----------|------|-------------|
 | `c` | `i64` | Character code |
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `result` | `i64` | 1 if digit, 0 otherwise |
 

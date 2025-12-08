@@ -21,7 +21,7 @@ Generate random boolean.
 |-----------|------|-------------|
 | `rng` | `ptr` | RNG state |
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `rng` | `ptr` | Updated RNG state |
 | `b` | `i64` | Random boolean (0 or 1) |
@@ -45,7 +45,7 @@ Generate random i64 in range [0, max).
 | `rng` | `ptr` | RNG state |
 | `max` | `i64` | Upper bound (exclusive) |
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `rng` | `ptr` | Updated RNG state |
 | `n` | `i64` | Random integer in [0, max) |
@@ -64,7 +64,7 @@ Create a new RNG seeded from current time.
 
 **Signature:** `( -- rng:ptr )`
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `rng` | `ptr` | New random number generator |
 
@@ -86,7 +86,7 @@ Generate next random i64.
 |-----------|------|-------------|
 | `rng` | `ptr` | RNG state |
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `rng` | `ptr` | Updated RNG state |
 | `n` | `i64` | Random 64-bit integer |
@@ -111,7 +111,7 @@ Generate random i64 in range [min, max).
 | `min` | `i64` | Lower bound (inclusive) |
 | `max` | `i64` | Upper bound (exclusive) |
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `rng` | `ptr` | Updated RNG state |
 | `n` | `i64` | Random integer in [min, max) |
@@ -134,7 +134,7 @@ Create a new RNG with specific seed.
 |-----------|------|-------------|
 | `seed` | `i64` | Initial seed value (must be non-zero) |
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `rng` | `ptr` | New random number generator |
 

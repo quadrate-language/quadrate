@@ -30,19 +30,19 @@
     },
     {
       "name": "copy",
-      "signature": "( src:ptr dst:ptr bytes:i64 -- )",
+      "signature": "( dst:ptr src:ptr bytes:i64 -- )",
       "failable": false,
       "description": "Copy bytes between memory regions.",
       "params": [
         {
-          "name": "src",
-          "type": "ptr",
-          "description": "Source address"
-        },
-        {
           "name": "dst",
           "type": "ptr",
           "description": "Destination address"
+        },
+        {
+          "name": "src",
+          "type": "ptr",
+          "description": "Source address"
         },
         {
           "name": "bytes",
@@ -53,7 +53,7 @@
       "returns": [],
       "errors": [],
       "examples": [
-        "src dst 100 mem::copy"
+        "dst src 100 mem::copy"
       ]
     },
     {
@@ -128,36 +128,7 @@
       ],
       "errors": [],
       "examples": [
-        "\"hello\" mem::from_string -> buf -> len"
-      ]
-    },
-    {
-      "name": "get",
-      "signature": "( address:ptr offset:i64 -- value:i64 )",
-      "failable": false,
-      "description": "Get a 64-bit integer at offset.",
-      "params": [
-        {
-          "name": "address",
-          "type": "ptr",
-          "description": "Base address"
-        },
-        {
-          "name": "offset",
-          "type": "i64",
-          "description": "Byte offset from base"
-        }
-      ],
-      "returns": [
-        {
-          "name": "value",
-          "type": "i64",
-          "description": "Integer value"
-        }
-      ],
-      "errors": [],
-      "examples": [
-        "buf 0 mem::get -> n"
+        "\"hello\" mem::from_string -> len -> buf"
       ]
     },
     {
@@ -190,7 +161,7 @@
       ]
     },
     {
-      "name": "get_float",
+      "name": "get_f64",
       "signature": "( address:ptr offset:i64 -- value:f64 )",
       "failable": false,
       "description": "Get a 64-bit float at offset.",
@@ -215,7 +186,36 @@
       ],
       "errors": [],
       "examples": [
-        "buf 0 mem::get_float -> x"
+        "buf 0 mem::get_f64 -> x"
+      ]
+    },
+    {
+      "name": "get_i64",
+      "signature": "( address:ptr offset:i64 -- value:i64 )",
+      "failable": false,
+      "description": "Get a 64-bit integer at offset.",
+      "params": [
+        {
+          "name": "address",
+          "type": "ptr",
+          "description": "Base address"
+        },
+        {
+          "name": "offset",
+          "type": "i64",
+          "description": "Byte offset from base"
+        }
+      ],
+      "returns": [
+        {
+          "name": "value",
+          "type": "i64",
+          "description": "Integer value"
+        }
+      ],
+      "errors": [],
+      "examples": [
+        "buf 0 mem::get_i64 -> n"
       ]
     },
     {
@@ -301,34 +301,6 @@
       ]
     },
     {
-      "name": "set",
-      "signature": "( value:i64 address:ptr offset:i64 -- )",
-      "failable": false,
-      "description": "Set a 64-bit integer at offset.",
-      "params": [
-        {
-          "name": "value",
-          "type": "i64",
-          "description": "Integer value"
-        },
-        {
-          "name": "address",
-          "type": "ptr",
-          "description": "Base address"
-        },
-        {
-          "name": "offset",
-          "type": "i64",
-          "description": "Byte offset from base"
-        }
-      ],
-      "returns": [],
-      "errors": [],
-      "examples": [
-        "42 buf 0 mem::set"
-      ]
-    },
-    {
       "name": "set_byte",
       "signature": "( value:i64 address:ptr offset:i64 -- )",
       "failable": false,
@@ -357,7 +329,7 @@
       ]
     },
     {
-      "name": "set_float",
+      "name": "set_f64",
       "signature": "( value:f64 address:ptr offset:i64 -- )",
       "failable": false,
       "description": "Set a 64-bit float at offset.",
@@ -381,7 +353,35 @@
       "returns": [],
       "errors": [],
       "examples": [
-        "3.14 buf 0 mem::set_float"
+        "3.14 buf 0 mem::set_f64"
+      ]
+    },
+    {
+      "name": "set_i64",
+      "signature": "( value:i64 address:ptr offset:i64 -- )",
+      "failable": false,
+      "description": "Set a 64-bit integer at offset.",
+      "params": [
+        {
+          "name": "value",
+          "type": "i64",
+          "description": "Integer value"
+        },
+        {
+          "name": "address",
+          "type": "ptr",
+          "description": "Base address"
+        },
+        {
+          "name": "offset",
+          "type": "i64",
+          "description": "Byte offset from base"
+        }
+      ],
+      "returns": [],
+      "errors": [],
+      "examples": [
+        "42 buf 0 mem::set_i64"
       ]
     },
     {

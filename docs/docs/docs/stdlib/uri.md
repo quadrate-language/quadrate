@@ -21,7 +21,7 @@ Build a URI string from components.
 |-----------|------|-------------|
 | `u` | `Uri` | URI struct |
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `s` | `str` | URI string |
 
@@ -43,7 +43,7 @@ Decode a percent-encoded string.
 |-----------|------|-------------|
 | `s` | `str` | Percent-encoded string |
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `decoded` | `str` | Decoded string |
 
@@ -65,7 +65,7 @@ Percent-encode a string for use in URIs.
 |-----------|------|-------------|
 | `s` | `str` | String to encode |
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `encoded` | `str` | Percent-encoded string |
 
@@ -87,7 +87,7 @@ Parse a URI string into components.
 |-----------|------|-------------|
 | `s` | `str` | URI string to parse |
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `u` | `Uri` | Parsed URI struct |
 
@@ -110,7 +110,7 @@ Get a query parameter value by key.
 | `query` | `str` | Query string (without leading '?') |
 | `key` | `str` | Parameter name to find |
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `value` | `str` | Parameter value (empty if not found) |
 
@@ -133,7 +133,7 @@ Check if a query parameter exists.
 | `query` | `str` | Query string (without leading '?') |
 | `key` | `str` | Parameter name to find |
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `exists` | `i64` | 1 if exists, 0 otherwise |
 

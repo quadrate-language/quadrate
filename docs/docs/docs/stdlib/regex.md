@@ -16,9 +16,32 @@ Compile a regex pattern.
 |-----------|------|-------------|
 | `pattern` | `str` | Regular expression pattern |
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `re` | `ptr` | Compiled regex (null on error) |
+
+---
+
+### is_match
+
+Compile and test if pattern matches string.
+
+**Signature:** `( pattern:str s:str -- result:i64 )`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `pattern` | `str` | Regex pattern |
+| `s` | `str` | String to match |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `result` | `i64` | 1 if matches, 0 otherwise |
+
+**Example:**
+
+```qd
+"hello.*" "hello world" regex::is_match  // result
+```
 
 ---
 
@@ -33,7 +56,7 @@ Test if a string matches a compiled regex (full match).
 | `re` | `ptr` | Compiled regex |
 | `s` | `str` | String to match |
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `matches` | `i64` | 1 if matches, 0 otherwise |
 
@@ -44,20 +67,3 @@ Test if a string matches a compiled regex (full match).
 Free a compiled regex.
 
 **Signature:** `( re:ptr -- )`
-
----
-
-### test
-
-Compile and test if pattern matches string.
-
-**Signature:** `( pattern:str s:str -- result:i64 )`
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `pattern` | `str` | Regex pattern |
-| `s` | `str` | String to match |
-
-| Return | Type | Description |
-|--------|------|-------------|
-| `matches` | `i64` | 1 if matches, 0 otherwise |

@@ -21,7 +21,7 @@ Check if a boolean flag exists.
 | `f` | `ptr` | Flag struct |
 | `name` | `str` | Flag name (e.g., "--verbose") |
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `present` | `i64` | 1 if found, 0 otherwise |
 
@@ -62,7 +62,7 @@ Get float value of a flag.
 | `f` | `ptr` | Flag struct |
 | `name` | `str` | Flag name |
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `value` | `f64` | Flag value as float |
 
@@ -89,7 +89,7 @@ Get integer value of a flag.
 | `f` | `ptr` | Flag struct |
 | `name` | `str` | Flag name |
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `value` | `i64` | Flag value as integer |
 
@@ -115,7 +115,7 @@ Parse arguments from read instruction.
 |-----------|------|-------------|
 | `argc` | `i64` | Argument count from read |
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `Flag` | `struct` | on stack |
 
@@ -138,7 +138,7 @@ Get positional argument at index.
 | `f` | `ptr` | Flag struct |
 | `index` | `i64` | Position (0-based) |
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `value` | `str` | Positional argument |
 
@@ -159,7 +159,7 @@ Get string value of a flag.
 | `f` | `ptr` | Flag struct |
 | `name` | `str` | Flag name |
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `value` | `str` | Flag value |
 

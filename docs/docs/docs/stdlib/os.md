@@ -76,7 +76,7 @@ Check if path exists.
 |-----------|------|-------------|
 | `path` | `str` | File or directory path |
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `exists` | `i64` | 1 if exists, 0 otherwise |
 
@@ -116,7 +116,7 @@ Get environment variable value.
 |-----------|------|-------------|
 | `name` | `str` | Variable name |
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `value` | `str` | Variable value (empty if not set) |
 
@@ -138,7 +138,7 @@ List directory contents.
 |-----------|------|-------------|
 | `path` | `str` | Directory path |
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `entries` | `ptr` | Array of entry names |
 | `count` | `i64` | Number of entries |
@@ -213,7 +213,7 @@ Execute a shell command.
 |-----------|------|-------------|
 | `cmd` | `str` | Command to execute |
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `exitcode` | `i64` | Command exit status |
 

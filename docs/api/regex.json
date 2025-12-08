@@ -27,6 +27,35 @@
       "examples": []
     },
     {
+      "name": "is_match",
+      "signature": "( pattern:str s:str -- result:i64 )",
+      "failable": false,
+      "description": "Compile and test if pattern matches string.",
+      "params": [
+        {
+          "name": "pattern",
+          "type": "str",
+          "description": "Regex pattern"
+        },
+        {
+          "name": "s",
+          "type": "str",
+          "description": "String to match"
+        }
+      ],
+      "returns": [
+        {
+          "name": "result",
+          "type": "i64",
+          "description": "1 if matches, 0 otherwise"
+        }
+      ],
+      "errors": [],
+      "examples": [
+        "\"hello.*\" \"hello world\" regex::is_match -> result"
+      ]
+    },
+    {
       "name": "matches",
       "signature": "( re:ptr s:str -- result:i64 )",
       "failable": false,
@@ -60,33 +89,6 @@
       "description": "Free a compiled regex.",
       "params": [],
       "returns": [],
-      "errors": [],
-      "examples": []
-    },
-    {
-      "name": "test",
-      "signature": "( pattern:str s:str -- result:i64 )",
-      "failable": false,
-      "description": "Compile and test if pattern matches string.",
-      "params": [
-        {
-          "name": "pattern",
-          "type": "str",
-          "description": "Regex pattern"
-        },
-        {
-          "name": "s",
-          "type": "str",
-          "description": "String to match"
-        }
-      ],
-      "returns": [
-        {
-          "name": "matches",
-          "type": "i64",
-          "description": "1 if matches, 0 otherwise"
-        }
-      ],
       "errors": [],
       "examples": []
     }

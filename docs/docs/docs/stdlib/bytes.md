@@ -20,7 +20,7 @@ Compare two byte buffers.
 | `b_off` | `i64` | Second buffer offset |
 | `count` | `i64` | Number of bytes to compare |
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `result` | `i64` | 0 if equal, negative if a<b, positive if a>b |
 
@@ -86,7 +86,7 @@ Read a 16-bit unsigned integer from memory in big-endian order.
 | `buf` | `ptr` | Buffer to read from |
 | `offset` | `i64` | Byte offset in buffer |
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `value` | `i64` | 16-bit value |
 
@@ -109,7 +109,7 @@ Read a 16-bit unsigned integer from memory in little-endian order.
 | `buf` | `ptr` | Buffer to read from |
 | `offset` | `i64` | Byte offset in buffer |
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `value` | `i64` | 16-bit value |
 
@@ -132,7 +132,7 @@ Read a 32-bit unsigned integer from memory in big-endian order.
 | `buf` | `ptr` | Buffer to read from |
 | `offset` | `i64` | Byte offset in buffer |
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `value` | `i64` | 32-bit value |
 
@@ -155,7 +155,7 @@ Read a 32-bit unsigned integer from memory in little-endian order.
 | `buf` | `ptr` | Buffer to read from |
 | `offset` | `i64` | Byte offset in buffer |
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `value` | `i64` | 32-bit value |
 
@@ -178,7 +178,7 @@ Read a 64-bit unsigned integer from memory in big-endian order.
 | `buf` | `ptr` | Buffer to read from |
 | `offset` | `i64` | Byte offset in buffer |
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `value` | `i64` | 64-bit value |
 
@@ -201,7 +201,7 @@ Read a 64-bit unsigned integer from memory in little-endian order.
 | `buf` | `ptr` | Buffer to read from |
 | `offset` | `i64` | Byte offset in buffer |
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `value` | `i64` | 64-bit value |
 
@@ -223,7 +223,7 @@ Swap byte order of a 16-bit value.
 |-----------|------|-------------|
 | `value` | `i64` | 16-bit value |
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `result` | `i64` | Byte-swapped value |
 
@@ -245,7 +245,7 @@ Swap byte order of a 32-bit value.
 |-----------|------|-------------|
 | `value` | `i64` | 32-bit value |
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `result` | `i64` | Byte-swapped value |
 
@@ -267,7 +267,7 @@ Swap byte order of a 64-bit value.
 |-----------|------|-------------|
 | `value` | `i64` | 64-bit value |
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `result` | `i64` | Byte-swapped value |
 

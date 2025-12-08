@@ -50,7 +50,7 @@ Check if at end of file.
 |-----------|------|-------------|
 | `handle` | `ptr` | File handle |
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `handle` | `ptr` | File handle (unchanged) |
 | `is_eof` | `i64` | 1 if at EOF, 0 otherwise |
@@ -74,7 +74,7 @@ Open a file.
 | `path` | `str` | File path |
 | `mode` | `str` | Open mode (use io::Read, io::Write, etc.) |
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `handle` | `ptr` | File handle |
 
@@ -103,7 +103,7 @@ Read bytes into buffer.
 | `buffer` | `ptr` | Pre-allocated buffer |
 | `count` | `i64` | Maximum bytes to read |
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `bytes_read` | `i64` | Actual bytes read |
 
@@ -125,7 +125,7 @@ Read a line from stdin.
 
 **Signature:** `( -- line:str )!`
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `line` | `str` | Line without trailing newline |
 
@@ -153,7 +153,7 @@ Seek to position in file.
 | `offset` | `i64` | Offset in bytes |
 | `whence` | `i64` | Reference point (SeekSet, SeekCur, SeekEnd) |
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `position` | `i64` | New position |
 
@@ -179,7 +179,7 @@ Get current position in file.
 |-----------|------|-------------|
 | `handle` | `ptr` | File handle |
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `position` | `i64` | Current position |
 
@@ -207,7 +207,7 @@ Write bytes from buffer.
 | `buffer` | `ptr` | Buffer containing data |
 | `count` | `i64` | Number of bytes to write |
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `bytes_written` | `i64` | Actual bytes written |
 

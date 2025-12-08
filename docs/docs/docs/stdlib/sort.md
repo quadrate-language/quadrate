@@ -54,7 +54,7 @@ Check if array is sorted in ascending order.
 | `arr` | `ptr` | Array of i64 values |
 | `count` | `i64` | Number of elements |
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `sorted` | `i64` | 1 if sorted, 0 otherwise |
 
@@ -77,7 +77,7 @@ Find maximum value in array.
 | `arr` | `ptr` | Array of i64 values |
 | `count` | `i64` | Number of elements (must be > 0) |
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `maxval` | `i64` | Maximum value |
 
@@ -100,7 +100,7 @@ Find minimum value in array.
 | `arr` | `ptr` | Array of i64 values |
 | `count` | `i64` | Number of elements (must be > 0) |
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `minval` | `i64` | Minimum value |
 
@@ -143,7 +143,7 @@ Binary search for value in sorted array.
 | `count` | `i64` | Number of elements |
 | `needle` | `i64` | Value to find |
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `idx` | `i64` | Index if found, -1 otherwise |
 

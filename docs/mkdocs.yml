@@ -47,7 +47,6 @@ nav:
           - Memory Management: docs/learn/7-advanced/memory.md
       - 8. Examples:
           - File Processing: docs/learn/8-examples/file-processing.md
-          - Data Structures: docs/learn/8-examples/data-structures.md
   - Reference:
       - Overview: docs/reference/index.md
       - Keywords: docs/reference/keywords.md

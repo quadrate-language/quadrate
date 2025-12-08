@@ -14,7 +14,7 @@ Parse decimal string to integer.
 |-----------|------|-------------|
 | `str` | `str` | Decimal string |
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `value` | `i64` | Parsed integer |
 
@@ -37,7 +37,7 @@ Format integer in given base.
 | `value` | `i64` | Integer value |
 | `base` | `i64` | Numeric base (2-36) |
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `str` | `str` | Formatted string |
 
@@ -59,7 +59,7 @@ Convert integer to decimal string.
 |-----------|------|-------------|
 | `value` | `i64` | Integer value |
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `str` | `str` | Decimal string |
 
@@ -82,7 +82,7 @@ Parse integer from string in given base.
 | `str` | `str` | String to parse |
 | `base` | `i64` | Numeric base (2-36) |
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `value` | `i64` | Parsed integer |
 

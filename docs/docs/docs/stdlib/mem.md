@@ -17,7 +17,7 @@ Allocate memory.
 |-----------|------|-------------|
 | `bytes` | `i64` | Number of bytes to allocate |
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `address` | `ptr` | Allocated memory, or null (0) on failure |
 
@@ -97,7 +97,7 @@ Convert string to buffer.
 |-----------|------|-------------|
 | `text` | `str` | Source string |
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `buffer` | `ptr` | Allocated buffer |
 | `length` | `i64` | String length |
@@ -105,30 +105,7 @@ Convert string to buffer.
 **Example:**
 
 ```qd
-"hello" mem::from_string -> buf  // len
-```
-
----
-
-### get_i64
-
-Get a 64-bit integer at offset.
-
-**Signature:** `( address:ptr offset:i64 -- value:i64 )`
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `address` | `ptr` | Base address |
-| `offset` | `i64` | Byte offset from base |
-
-| Return | Type | Description |
-|--------|------|-------------|
-| `value` | `i64` | Integer value |
-
-**Example:**
-
-```qd
-buf 0 mem::get_i64 -> n
+"hello" mem::from_string -> len  // buf
 ```
 
 ---
@@ -144,7 +121,7 @@ Get a byte at offset.
 | `address` | `ptr` | Base address |
 | `offset` | `i64` | Byte offset from base |
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `value` | `i64` | Byte value (0-255) |
 
@@ -167,14 +144,37 @@ Get a 64-bit float at offset.
 | `address` | `ptr` | Base address |
 | `offset` | `i64` | Byte offset from base |
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `value` | `f64` | Float value |
 
 **Example:**
 
 ```qd
-buf 0 mem::get_f64 -> x
+buf 0 mem::get_f64  // x
+```
+
+---
+
+### get_i64
+
+Get a 64-bit integer at offset.
+
+**Signature:** `( address:ptr offset:i64 -- value:i64 )`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `address` | `ptr` | Base address |
+| `offset` | `i64` | Byte offset from base |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `value` | `i64` | Integer value |
+
+**Example:**
+
+```qd
+buf 0 mem::get_i64  // n
 ```
 
 ---
@@ -190,7 +190,7 @@ Get a pointer at offset.
 | `address` | `ptr` | Base address |
 | `offset` | `i64` | Byte offset from base |
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `value` | `ptr` | Pointer value |
 
@@ -212,7 +212,7 @@ Check if pointer is null.
 |-----------|------|-------------|
 | `address` | `ptr` | Pointer to check |
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `is_null` | `i64` | 1 if null, 0 otherwise |
 
@@ -235,7 +235,7 @@ Reallocate memory to new size.
 | `address` | `ptr` | Existing allocation (or null for new alloc) |
 | `new_bytes` | `i64` | New size in bytes |
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `new_address` | `ptr` | Reallocated memory, or null on failure |
 
@@ -243,26 +243,6 @@ Reallocate memory to new size.
 
 ```qd
 buf 2048 mem::realloc  // buf
-```
-
----
-
-### set_i64
-
-Set a 64-bit integer at offset.
-
-**Signature:** `( value:i64 address:ptr offset:i64 -- )`
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `value` | `i64` | Integer value |
-| `address` | `ptr` | Base address |
-| `offset` | `i64` | Byte offset from base |
-
-**Example:**
-
-```qd
-42 buf 0 mem::set_i64
 ```
 
 ---
@@ -307,6 +287,26 @@ Set a 64-bit float at offset.
 
 ---
 
+### set_i64
+
+Set a 64-bit integer at offset.
+
+**Signature:** `( value:i64 address:ptr offset:i64 -- )`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `value` | `i64` | Integer value |
+| `address` | `ptr` | Base address |
+| `offset` | `i64` | Byte offset from base |
+
+**Example:**
+
+```qd
+42 buf 0 mem::set_i64
+```
+
+---
+
 ### set_ptr
 
 Set a pointer at offset.
@@ -338,7 +338,7 @@ Convert buffer to string.
 | `buffer` | `ptr` | Source buffer |
 | `length` | `i64` | Number of bytes |
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `text` | `str` | Null-terminated string |
 

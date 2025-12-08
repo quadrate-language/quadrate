@@ -302,4 +302,4 @@ fn safe_example( -- ) {
 
 ## What's Next?
 
-Continue to [Practical Examples](../8-examples/calculator.md) to see these concepts in real programs.
+Continue to [File Processing Examples](../8-examples/file-processing.md) to see these concepts in real programs.

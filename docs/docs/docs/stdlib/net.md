@@ -14,7 +14,7 @@ Accept an incoming connection.
 |-----------|------|-------------|
 | `server_socket` | `i64` | Server socket from listen |
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `client_socket` | `i64` | Connected client socket |
 
@@ -55,7 +55,7 @@ Connect to a remote host.
 | `host` | `str` | Hostname or IP address |
 | `port` | `i64` | Port number |
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `socket` | `i64` | Connected socket descriptor |
 
@@ -77,7 +77,7 @@ Start listening for connections on a port.
 |-----------|------|-------------|
 | `port` | `i64` | Port number to listen on |
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `socket` | `i64` | Server socket descriptor |
 
@@ -100,7 +100,7 @@ Receive data from socket.
 | `socket` | `i64` | Socket descriptor |
 | `max_bytes` | `i64` | Maximum bytes to receive |
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `data` | `str` | Received data |
 | `bytes_read` | `i64` | Actual bytes received |
@@ -124,7 +124,7 @@ Send data over socket.
 | `socket` | `i64` | Socket descriptor |
 | `data` | `str` | Data to send |
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `bytes_sent` | `i64` | Number of bytes sent |
 

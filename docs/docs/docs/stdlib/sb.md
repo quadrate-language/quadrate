@@ -22,7 +22,7 @@ Append a string to the builder.
 | `sb` | `ptr` | Builder to append to |
 | `s` | `str` | String to append |
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `sb` | `ptr` | Updated builder |
 
@@ -45,7 +45,7 @@ Append a single character (by code point).
 | `sb` | `ptr` | Builder to append to |
 | `c` | `i64` | Character code to append |
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `sb` | `ptr` | Updated builder |
 
@@ -68,7 +68,7 @@ Append an integer as string.
 | `sb` | `ptr` | Builder to append to |
 | `n` | `i64` | Integer to append |
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `sb` | `ptr` | Updated builder |
 
@@ -90,7 +90,7 @@ Build the final string (does not consume builder).
 |-----------|------|-------------|
 | `sb` | `ptr` | Builder to convert |
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `s` | `str` | Built string |
 
@@ -112,7 +112,7 @@ Build string and free builder in one call.
 |-----------|------|-------------|
 | `sb` | `ptr` | Builder to finish |
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `s` | `str` | Built string |
 
@@ -152,7 +152,7 @@ Get current length of builder content.
 |-----------|------|-------------|
 | `sb` | `ptr` | Builder to check |
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `sblen` | `i64` | Current content length |
 
@@ -170,7 +170,7 @@ Create a new StringBuilder with default capacity.
 
 **Signature:** `( -- sb:ptr )`
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `sb` | `ptr` | New empty builder |
 
@@ -192,7 +192,7 @@ Create a StringBuilder with specific initial capacity.
 |-----------|------|-------------|
 | `capacity` | `i64` | Initial buffer size |
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `sb` | `ptr` | New empty builder |
 

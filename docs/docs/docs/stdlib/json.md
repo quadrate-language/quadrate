@@ -26,7 +26,7 @@ Get array element as float by index.
 | `json` | `str` | JSON array string |
 | `index` | `i64` | Element index (0-based) |
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `value` | `f64` | Float value |
 | `found` | `i64` | 1 if found, 0 otherwise |
@@ -50,7 +50,7 @@ Get array element as integer by index.
 | `json` | `str` | JSON array string |
 | `index` | `i64` | Element index (0-based) |
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `value` | `i64` | Integer value |
 | `found` | `i64` | 1 if found, 0 otherwise |
@@ -74,7 +74,7 @@ Get array element as string by index.
 | `json` | `str` | JSON array string |
 | `index` | `i64` | Element index (0-based) |
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `value` | `str` | String value |
 | `found` | `i64` | 1 if found, 0 otherwise |
@@ -97,7 +97,7 @@ Get length of JSON array.
 |-----------|------|-------------|
 | `json` | `str` | JSON array string |
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `length` | `i64` | Number of elements |
 
@@ -120,7 +120,7 @@ Extract string value at position.
 | `json` | `str` | JSON string |
 | `pos` | `i64` | Position of opening quote |
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `value` | `str` | Extracted string |
 
@@ -137,7 +137,7 @@ Find end of JSON string (pos at opening quote).
 | `json` | `str` | JSON string |
 | `pos` | `i64` | Position of opening quote |
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `end_pos` | `i64` | Position after closing quote |
 
@@ -154,7 +154,7 @@ Get nested array as string by key.
 | `json` | `str` | JSON object string |
 | `key` | `str` | Key to look up |
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `value` | `str` | Array as string |
 | `found` | `i64` | 1 if found, 0 otherwise |
@@ -178,7 +178,7 @@ Get boolean value by key from object.
 | `json` | `str` | JSON object string |
 | `key` | `str` | Key to look up |
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `value` | `i64` | 1 for true, 0 for false |
 | `found` | `i64` | 1 if found, 0 otherwise |
@@ -202,7 +202,7 @@ Get float value by key from object.
 | `json` | `str` | JSON object string |
 | `key` | `str` | Key to look up |
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `value` | `f64` | Float value |
 | `found` | `i64` | 1 if found, 0 otherwise |
@@ -226,7 +226,7 @@ Get integer value by key from object.
 | `json` | `str` | JSON object string |
 | `key` | `str` | Key to look up |
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `value` | `i64` | Integer value |
 | `found` | `i64` | 1 if found, 0 otherwise |
@@ -250,7 +250,7 @@ Get nested object as string by key.
 | `json` | `str` | JSON object string |
 | `key` | `str` | Key to look up |
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `value` | `str` | Nested object as string |
 | `found` | `i64` | 1 if found, 0 otherwise |
@@ -274,7 +274,7 @@ Get string value by key from object.
 | `json` | `str` | JSON object string |
 | `key` | `str` | Key to look up |
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `value` | `str` | String value |
 | `found` | `i64` | 1 if found, 0 otherwise |
@@ -298,7 +298,7 @@ Check if key exists in object.
 | `json` | `str` | JSON object string |
 | `key` | `str` | Key to check |
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `exists` | `i64` | 1 if exists, 0 otherwise |
 
@@ -321,7 +321,7 @@ Check if value at position is null.
 | `json` | `str` | JSON string |
 | `pos` | `i64` | Position to check |
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `is_null` | `i64` | 1 if null, 0 otherwise |
 
@@ -344,7 +344,7 @@ Get JSON value type at position.
 | `json` | `str` | JSON string |
 | `pos` | `i64` | Position to check |
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `type` | `i64` | Type constant (Null, Bool, Number, String, Array, Object) |
 

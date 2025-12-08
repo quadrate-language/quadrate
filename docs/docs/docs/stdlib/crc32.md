@@ -16,7 +16,7 @@ Calculate CRC32 checksum of a string.
 |-----------|------|-------------|
 | `s` | `str` | Input string |
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `crc` | `i64` | CRC32 checksum as unsigned 32-bit value |
 
@@ -39,7 +39,7 @@ Calculate CRC32 of a byte buffer.
 | `buf` | `ptr` | Buffer to checksum |
 | `len` | `i64` | Length of buffer in bytes |
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `crc` | `i64` | CRC32 checksum |
 
@@ -61,7 +61,7 @@ Calculate CRC32 and return as 8-character hex string.
 |-----------|------|-------------|
 | `s` | `str` | Input string |
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `hex` | `str` | CRC32 as hex string (lowercase) |
 
@@ -83,7 +83,7 @@ Finalize a running CRC to get the final checksum.
 |-----------|------|-------------|
 | `crc` | `i64` | Current CRC state from update() |
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `final` | `i64` | Final CRC32 checksum |
 
@@ -107,7 +107,7 @@ Use for streaming/incremental CRC calculation.
 | `crc` | `i64` | Current CRC state (use 4294967295 to start) |
 | `s` | `str` | Data to add |
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `new_crc` | `i64` | Updated CRC state |
 
@@ -130,7 +130,7 @@ Verify data against an expected CRC32.
 | `s` | `str` | Data to verify |
 | `expected` | `i64` | Expected CRC32 value |
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `ok` | `i64` | 1 if matches, 0 otherwise |
 

@@ -45,7 +45,7 @@ Add days to a Unix timestamp.
 | `ts` | `i64` | Unix timestamp |
 | `days` | `i64` | Days to add (can be negative) |
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `new_ts` | `i64` | New timestamp |
 
@@ -68,7 +68,7 @@ Add hours to a Unix timestamp.
 | `ts` | `i64` | Unix timestamp |
 | `hours` | `i64` | Hours to add (can be negative) |
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `new_ts` | `i64` | New timestamp |
 
@@ -91,7 +91,7 @@ Check if timestamp is after another.
 | `ts1` | `i64` | First timestamp |
 | `ts2` | `i64` | Second timestamp |
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `after` | `i64` | 1 if ts1 > ts2, 0 otherwise |
 
@@ -114,7 +114,7 @@ Check if timestamp is before another.
 | `ts1` | `i64` | First timestamp |
 | `ts2` | `i64` | Second timestamp |
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `before` | `i64` | 1 if ts1 < ts2, 0 otherwise |
 
@@ -141,7 +141,7 @@ Create Unix timestamp from date components.
 | `m` | `i64` | Minute (0-59) |
 | `s` | `i64` | Second (0-59) |
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `ts` | `i64` | Unix timestamp in seconds |
 
@@ -163,7 +163,7 @@ Extract day of month from Unix timestamp (1-31).
 |-----------|------|-------------|
 | `ts` | `i64` | Unix timestamp in seconds |
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `d` | `i64` | Day of month |
 
@@ -186,7 +186,7 @@ Get number of days in a month.
 | `yr` | `i64` | Year (needed for February) |
 | `mon` | `i64` | Month (1-12) |
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `days` | `i64` | Number of days in the month |
 
@@ -208,7 +208,7 @@ Extract hour from Unix timestamp (0-23).
 |-----------|------|-------------|
 | `ts` | `i64` | Unix timestamp in seconds |
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `h` | `i64` | Hour |
 
@@ -230,7 +230,7 @@ Check if year is a leap year.
 |-----------|------|-------------|
 | `yr` | `i64` | Year to check |
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `is_leap` | `i64` | 1 if leap year, 0 otherwise |
 
@@ -252,7 +252,7 @@ Extract minute from Unix timestamp (0-59).
 |-----------|------|-------------|
 | `ts` | `i64` | Unix timestamp in seconds |
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `m` | `i64` | Minute |
 
@@ -274,7 +274,7 @@ Extract month from Unix timestamp (1-12).
 |-----------|------|-------------|
 | `ts` | `i64` | Unix timestamp in seconds |
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `mon` | `i64` | Month (1=January, 12=December) |
 
@@ -292,7 +292,7 @@ Get current time in nanoseconds.
 
 **Signature:** `( -- nanoseconds:i64 )`
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `nanoseconds` | `i64` | Monotonic nanosecond timestamp |
 
@@ -314,7 +314,7 @@ Extract second from Unix timestamp (0-59).
 |-----------|------|-------------|
 | `ts` | `i64` | Unix timestamp in seconds |
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `s` | `i64` | Second |
 
@@ -355,7 +355,7 @@ Get difference between two timestamps in seconds.
 | `ts1` | `i64` | First timestamp |
 | `ts2` | `i64` | Second timestamp |
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `diff` | `i64` | ts1 - ts2 in seconds |
 
@@ -373,7 +373,7 @@ Get Unix timestamp in seconds.
 
 **Signature:** `( -- timestamp:i64 )`
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `timestamp` | `i64` | Seconds since 1970-01-01 00:00:00 UTC |
 
@@ -395,7 +395,7 @@ Get day of week from Unix timestamp (0=Sunday, 6=Saturday).
 |-----------|------|-------------|
 | `ts` | `i64` | Unix timestamp in seconds |
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `wd` | `i64` | Weekday (0=Sunday) |
 
@@ -417,7 +417,7 @@ Extract year from Unix timestamp.
 |-----------|------|-------------|
 | `ts` | `i64` | Unix timestamp in seconds |
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `yr` | `i64` | Year (e.g., 2024) |
 
@@ -439,7 +439,7 @@ Get day of year from Unix timestamp (1-366).
 |-----------|------|-------------|
 | `ts` | `i64` | Unix timestamp in seconds |
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `yd` | `i64` | Day of year |
 

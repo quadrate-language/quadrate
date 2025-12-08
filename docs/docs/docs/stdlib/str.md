@@ -15,7 +15,7 @@ Get character code at index.
 | `str` | `str` | Input string |
 | `index` | `i64` | Character position |
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `char_code` | `i64` | ASCII/UTF-8 byte value |
 
@@ -38,7 +38,7 @@ Compare two strings lexicographically.
 | `str1` | `str` | First string |
 | `str2` | `str` | Second string |
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `result` | `i64` | <0 if str1<str2, 0 if equal, >0 if str1>str2 |
 
@@ -61,7 +61,7 @@ Concatenate two strings.
 | `str1` | `str` | First string |
 | `str2` | `str` | Second string |
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `result` | `str` | Combined string |
 
@@ -84,7 +84,7 @@ Check if string contains substring.
 | `str` | `str` | String to search in |
 | `needle` | `str` | Substring to find |
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `result` | `i64` | 1 if found, 0 otherwise |
 
@@ -107,7 +107,7 @@ Check if string ends with suffix.
 | `str` | `str` | String to check |
 | `suffix` | `str` | Suffix to match |
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `result` | `i64` | 1 if matches, 0 otherwise |
 
@@ -129,7 +129,7 @@ Create string from character code.
 |-----------|------|-------------|
 | `char_code` | `i64` | ASCII/UTF-8 byte value |
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `str` | `str` | Single character string |
 
@@ -152,7 +152,7 @@ Find first occurrence of substring.
 | `haystack` | `str` | String to search in |
 | `needle` | `str` | Substring to find |
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `index` | `i64` | Index of first match, -1 if not found |
 
@@ -176,7 +176,7 @@ Find substring starting from position.
 | `needle` | `str` | Substring to find |
 | `start` | `i64` | Starting position |
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `index` | `i64` | Index of match, -1 if not found |
 
@@ -198,7 +198,7 @@ Get string length in bytes.
 |-----------|------|-------------|
 | `str` | `str` | Input string |
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `len` | `i64` | Length in bytes |
 
@@ -220,7 +220,7 @@ Convert string to lowercase.
 |-----------|------|-------------|
 | `str` | `str` | Input string |
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `result` | `str` | Lowercase string |
 
@@ -244,7 +244,7 @@ Replace all occurrences of substring.
 | `old` | `str` | Substring to replace |
 | `new` | `str` | Replacement string |
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `result` | `str` | String with replacements |
 
@@ -271,7 +271,7 @@ Split string by delimiter.
 | `str` | `str` | String to split |
 | `delim` | `str` | Delimiter string |
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `parts` | `ptr` | Array of string parts |
 | `count` | `i64` | Number of parts |
@@ -299,7 +299,7 @@ Check if string starts with prefix.
 | `str` | `str` | String to check |
 | `prefix` | `str` | Prefix to match |
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `result` | `i64` | 1 if matches, 0 otherwise |
 
@@ -323,7 +323,7 @@ Extract substring.
 | `start` | `i64` | Starting index |
 | `length` | `i64` | Number of characters |
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `result` | `str` | Extracted substring |
 
@@ -349,7 +349,7 @@ Remove leading and trailing whitespace.
 |-----------|------|-------------|
 | `str` | `str` | Input string |
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `result` | `str` | Trimmed string |
 
@@ -371,7 +371,7 @@ Convert string to uppercase.
 |-----------|------|-------------|
 | `str` | `str` | Input string |
 
-| Return | Type | Description |
+| Output | Type | Description |
 |--------|------|-------------|
 | `result` | `str` | Uppercase string |
 
