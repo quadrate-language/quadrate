@@ -14,25 +14,25 @@ fn divide(a:i64 b:i64 -- result:i64)! {
 
 The `!` tells the compiler this function can return an error.
 
-## Signaling Errors
+## Signaling Panics
 
-Use the `error` instruction to signal an error:
+Use the `panic` instruction to signal an error:
 
 ```qd
 fn divide(a:i64 b:i64 -- result:i64)! {
 	dup 0 == if {
 		drop drop
 		0  // Output value (required even on error)
-		"division by zero" -1 error
+		-1 "division by zero" panic
 	}
 	/
 }
 ```
 
-The `error` instruction takes:
+The `panic` instruction takes:
 
-1. An error message (string)
-2. An error code (integer)
+1. An error code (integer)
+2. An error message (string)
 
 ## Handling Errors
 
@@ -44,8 +44,7 @@ fn main( -- ) {
 		// Success: result is on stack
 		"Result: " print print nl
 	} else {
-		// Error: error value is on stack
-		drop
+		// Error: stack is unchanged from before the call
 		"Division failed!" print nl
 	}
 }
@@ -57,8 +56,8 @@ The compiler enforces this - you cannot ignore errors.
 
 After calling a fallible function:
 
-- **Success**: The `if` branch executes, result is on stack
-- **Error**: The `else` branch executes, error value is on stack
+- **Success (if branch)**: The function's outputs are on the stack
+- **Error (else branch)**: The function's outputs are NOT on the stack (the stack is as it was before the call)
 
 ## Complete Example
 
@@ -67,7 +66,7 @@ fn divide(a:i64 b:i64 -- result:i64)! {
 	dup 0 == if {
 		drop drop
 		0
-		"division by zero" -1 error
+		-1 "division by zero" panic
 	}
 	/
 }
@@ -77,7 +76,6 @@ fn main( -- ) {
 	1 0 divide if {
 		"1 / 0 = " print print nl
 	} else {
-		drop
 		"Error: Cannot divide by zero!" print nl
 	}
 
@@ -85,7 +83,6 @@ fn main( -- ) {
 	10 2 divide if {
 		"10 / 2 = " print print nl
 	} else {
-		drop
 		"Unexpected error" print nl
 	}
 }
@@ -97,53 +94,40 @@ Error: Cannot divide by zero!
 10 / 2 = 5
 ```
 
-## Propagating Errors
+## Skipping Error Checks
 
-Call a fallible function with `!` to propagate errors:
+Call a fallible function with `!` to skip error handling:
 
 ```qd
 fn divide_and_double(a:i64 b:i64 -- result:i64)! {
-	divide!  // Propagates error if divide fails
+	divide!  // Aborts if divide fails
 	2 *
 }
 ```
 
-If `divide` fails, `divide_and_double` will also fail with the same error.
+**Warning**: If `divide` fails, the program will panic. Only use `!` when you're certain the call won't fail.
 
-## Using abort
+## Stack Behavior
 
-Use `abort` to crash the program on error:
+When a fallible function succeeds, the `if` branch has the function's outputs on the stack.
 
-```qd
-fn main( -- ) {
-	// Crash program if divide fails
-	10 0 divide abort
-	print nl  // Never reached if divide fails
-}
-```
-
-## Error Values
-
-When an error occurs, the stack contains:
-
-1. The output value(s) declared in the signature
-2. An error value (which you should `drop`)
+When a fallible function fails (via `panic`), the `else` branch does NOT have the function's outputs - the stack is as it was before the call.
 
 ```qd
 fn get_two( -- a:i64 b:i64)! {
 	0 0
-	"failed" 1 error
+	1 "failed" panic
 }
 
 fn main( -- ) {
 	get_two if {
+		// Success: outputs are on stack
 		-> b -> a
 		a print nl
 		b print nl
 	} else {
-		drop  // The error value
-		// The two output values (0, 0) are also on stack
-		drop drop
+		// Error: outputs are NOT on stack
+		"Function failed" print nl
 	}
 }
 ```
@@ -161,17 +145,15 @@ fn main( -- ) {
 	"hello" 1 3 str::substring if {
 		print nl  // "ell"
 	} else {
-		drop
 		"substring failed" print nl
 	}
 
 	// File operations
-	"test.txt" io::ReadOnly io::open if {
+	"test.txt" io::Read io::open if {
 		-> file
 		"File opened" print nl
 		file io::close
 	} else {
-		drop
 		"Could not open file" print nl
 	}
 }
@@ -180,10 +162,10 @@ fn main( -- ) {
 ## Key Rules
 
 1. Mark fallible functions with `!` after the signature
-2. Use `"message" code error` to signal errors
+2. Use `code "message" panic` to signal panics
 3. Handle errors with `if { success } else { error }`
 4. The compiler enforces error handling
-5. Use `drop` to discard the error value in the else branch
+5. The `if` branch has the function outputs; the `else` branch does not
 
 ## What's Next?
 

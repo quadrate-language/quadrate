@@ -12,7 +12,7 @@ This section documents all Quadrate keywords and built-in instructions.
 - [Arrays](arrays.md) - Array creation and manipulation
 - [Type Casting](types.md) - `casti`, `castf`, `casts`
 - [Input/Output](io.md) - `print`, `nl`, `read`
-- [Error Handling](errors.md) - `error`
+- [Error Handling](errors.md) - `panic`
 - [Threading](threading.md) - `spawn`, `wait`, `detach`
 - [Miscellaneous](misc.md) - `call`
 

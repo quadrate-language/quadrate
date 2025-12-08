@@ -9,8 +9,8 @@ Return a default value when an error occurs:
 ```qd
 fn divide(a:i64 b:i64 -- result:i64)! {
 	dup 0 == if {
-		drop drop 0
-		"division by zero" -1 error
+		drop2 0
+		-1 "division by zero" panic
 	}
 	/
 }
@@ -20,7 +20,6 @@ fn safe_divide(a:i64 b:i64 default:i64 -- result:i64) {
 	divide if {
 		// Success - return result
 	} else {
-		drop
 		default  // Return default on error
 	}
 }
@@ -45,11 +44,9 @@ fn parse_with_fallback(primary:str fallback:str -- value:i64) {
 	primary try_parse if {
 		// Primary succeeded
 	} else {
-		drop
 		fallback try_parse if {
 			// Fallback succeeded
 		} else {
-			drop
 			0  // Both failed, use default
 		}
 	}
@@ -63,8 +60,8 @@ Continue despite errors, collect successes:
 ```qd
 fn divide(a:i64 b:i64 -- result:i64)! {
 	dup 0 == if {
-		drop drop 0
-		"division by zero" -1 error
+		drop2 0
+		-1 "division by zero" panic
 	}
 	/
 }
@@ -75,22 +72,16 @@ fn try_all( -- success_count:i64) {
 	10 2 divide if {
 		drop  // Discard result
 		count 1 + -> count
-	} else {
-		drop
 	}
 
 	10 5 divide if {
 		drop
 		count 1 + -> count
-	} else {
-		drop
 	}
 
 	10 0 divide if {
 		drop
 		count 1 + -> count
-	} else {
-		drop
 	}
 
 	count
@@ -109,7 +100,7 @@ Propagate errors through multiple operations:
 fn step1(x:i64 -- y:i64)! {
 	x 0 < if {
 		0
-		"negative input" 1 error
+		1 "negative input" panic
 	}
 	x 2 *
 }
@@ -117,7 +108,7 @@ fn step1(x:i64 -- y:i64)! {
 fn step2(x:i64 -- y:i64)! {
 	x 100 > if {
 		0
-		"overflow" 2 error
+		2 "overflow" panic
 	}
 	x 10 +
 }
@@ -128,12 +119,12 @@ fn pipeline(x:i64 -- result:i64)! {
 		step2 if {
 			// Both succeeded
 		} else {
-			drop 0
-			"step2 failed" 2 error
+			0
+			2 "step2 failed" panic
 		}
 	} else {
-		drop 0
-		"step1 failed" 1 error
+		0
+		1 "step1 failed" panic
 	}
 }
 ```
@@ -151,24 +142,26 @@ fn read_file(path:str -- content:str)! {
 
 	path io::ReadOnly io::open if {
 		-> file
-		defer { file io::close }  // Always runs
+		defer {
+			file io::close
+		}  // Always runs
 
 		4096 -> size
 		size mem::alloc -> buf
-		defer { buf mem::free }   // Always runs
+		defer {
+			buf mem::free
+		}  // Always runs
 
 		file buf size io::read if {
 			-> bytes_read
 			buf bytes_read mem::to_string
 		} else {
-			drop
 			""
-			"read failed" 1 error
+			1 "read failed" panic
 		}
 	} else {
-		drop
 		""
-		"open failed" 1 error
+		1 "open failed" panic
 	}
 }
 ```
@@ -187,13 +180,15 @@ struct File {
 
 fn file_open(path:str -- f:ptr)! {
 	-> path
-	path io::ReadOnly io::open if {
+	path io::Read io::open if {
 		-> handle
-		File { handle = handle path = path }
+		File {
+			handle = handle
+			path = path
+		}
 	} else {
-		drop
 		0
-		"open failed" 1 error
+		1 "open failed" panic
 	}
 }
 
@@ -206,10 +201,10 @@ fn with_file(path:str -- ) {
 	-> path
 	path file_open if {
 		-> f
-		defer { f file_close }
+		defer {
+			f file_close
+		}
 		// Use file...
-	} else {
-		drop
 	}
 }
 ```
@@ -222,10 +217,10 @@ Validate before processing:
 fn validate_input(x:i64 -- )! {
 	-> x
 	x 0 < if {
-		"negative not allowed" 1 error
+		1 "negative not allowed" panic
 	}
 	x 1000 > if {
-		"too large" 2 error
+		2 "too large" panic
 	}
 }
 
@@ -234,8 +229,8 @@ fn process(x:i64 -- result:i64)! {
 	x validate_input if {
 		x dup *  // Safe to process
 	} else {
-		drop 0
-		"validation failed" 1 error
+		0
+		1 "validation failed" panic
 	}
 }
 ```
@@ -259,17 +254,15 @@ fn retry(max_attempts:i64 -- result:i64)! {
 		unreliable_op if {
 			-> last_result
 			1 -> success
-		} else {
-			drop
 		}
-		attempts 1 + -> attempts
+		attempts inc -> attempts
 	}
 
 	success if {
 		last_result
 	} else {
 		0
-		"all attempts failed" 1 error
+		1 "all attempts failed" panic
 	}
 }
 ```
@@ -286,12 +279,12 @@ fn parse_config(path:str -- cfg:ptr)! {
 		content parse_json if {
 			// Success
 		} else {
-			drop 0
-			"invalid JSON in config" 2 error
+			0
+			2 "invalid JSON in config" panic
 		}
 	} else {
-		drop 0
-		"failed to read config file" 1 error
+		0
+		1 "failed to read config file" panic
 	}
 }
 ```
@@ -309,11 +302,10 @@ fn process_batch(items:ptr -- processed:i64 failed:i64) {
 	0 items len 1 for i {
 		items i nth process_item if {
 			drop
-			processed 1 + -> processed
+			processed inc -> processed
 		} else {
-			drop
 			"Failed: " print items i nth print nl
-			failed 1 + -> failed
+			failed inc -> failed
 		}
 	}
 

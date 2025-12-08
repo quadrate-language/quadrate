@@ -109,18 +109,6 @@ fn divide_and_double(a:i64 b:i64 -- result:i64)! {
 
 If `division` fails, `divide_and_double` will also fail with the same error.
 
-## Using `abort`
-
-The `abort` keyword can be used to crash immediately on any fallible call:
-
-```qd
-fn main( -- ) {
-	// Crash program if division fails
-	10 0 division abort
-	print nl  // Never reached if division fails
-}
-```
-
 ## Standard Library Errors
 
 Many standard library functions are fallible. Common examples:
@@ -191,12 +179,12 @@ fn read_file(path:str -- content:str)! {
 		} else {
 			drop
 			""
-			"read failed" 1 error
+			1 "read failed" panic
 		}
 	} else {
 		drop
 		""
-		"open failed" 1 error
+		1 "open failed" panic
 	}
 }
 ```
@@ -229,12 +217,12 @@ fn process(value:i64 -- result:i64)! {
 			half
 		} else {
 			0
-			"value too small" 1 error
+			1 "value too small" panic
 		}
 	} else {
 		drop
 		0
-		"division failed" 1 error
+		1 "division failed" panic
 	}
 }
 ```
@@ -279,9 +267,9 @@ fn main( -- ) {
 Key concepts:
 
 1. **Mark fallible functions** with `!` after the signature
-2. **Signal errors** with `"message" code error`
+2. **Signal panics** with `code "message" panic`
 3. **Handle errors** with `if { success } else { error }`
-4. **Propagate errors** by calling with `function!`
+4. **Skip error checks** by calling with `function!`
 5. **Use `defer`** for cleanup that runs regardless of errors
 6. **The compiler enforces** error handling - you can't ignore errors
 

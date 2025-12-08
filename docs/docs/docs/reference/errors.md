@@ -6,20 +6,20 @@ Built-in operations for error handling.
 
 | Instruction | Signature | Description |
 |-------------|-----------|-------------|
-| `error` | `( msg code -- )` | Signal an error |
+| `panic` | `( code msg -- )` | Signal a panic (error) |
 
 ---
 
-## Signaling Errors
+## Signaling Panics
 
-### error
+### panic
 
-Signals an error with a message and code. Used in fallible functions.
+Signals a panic with a code and message. Used in fallible functions.
 
-**Signature:** `( msg code -- )`
+**Signature:** `( code msg -- )`
 
 ```qd
-"invalid input" 1 error
+1 "invalid input" panic
 ```
 
 ---
@@ -33,7 +33,7 @@ fn divide(a:i64 b:i64 -- result:i64)! {
 	dup 0 == if {
 		drop drop
 		0  // Output value (required)
-		"division by zero" -1 error
+		-1 "division by zero" panic
 	}
 	/
 }
@@ -54,11 +54,11 @@ Use `if-else` to handle errors from fallible functions:
 }
 ```
 
-## Error Propagation
+## Calling Fallible Functions
 
-### With if-else
+### With if-else (recommended)
 
-Re-raise the error in your own fallible function:
+Handle errors explicitly:
 
 ```qd
 fn compute(x:i64 -- result:i64)! {
@@ -67,33 +67,24 @@ fn compute(x:i64 -- result:i64)! {
 		// Success
 	} else {
 		drop 0
-		"compute failed" 1 error
+		1 "compute failed" panic
 	}
 }
 ```
 
-### With !
+### With ! (skip error check)
 
-Propagate errors directly:
+Skip error handling - panics if an error occurs:
 
 ```qd
 fn compute(x:i64 -- result:i64)! {
 	-> x
-	x 2 divide!  // Propagates error if divide fails
+	x 2 divide!  // Aborts program if divide fails
 	10 +
 }
 ```
 
-### With abort
-
-Crash the program on error:
-
-```qd
-fn main( -- ) {
-	10 0 divide abort
-	// Never reached if divide fails
-}
-```
+**Warning**: Using `!` means the program will crash if the function fails. Only use when you're certain the call won't fail, or when panicking is acceptable.
 
 ---
 
@@ -106,11 +97,11 @@ By convention:
 - Positive values = Application errors
 
 ```qd
-const ERR_INVALID_INPUT 1
-const ERR_NOT_FOUND 2
-const ERR_TIMEOUT 3
+const ErrInvalidInput = 1
+const ErrNotFound = 2
+const ErrTimeout = 3
 
-"file not found" ERR_NOT_FOUND error
+ErrNotFound "file not found" panic
 ```
 
 ---
@@ -133,11 +124,11 @@ fn process(path:str -- result:i64)! {
 			// Process...
 		} else {
 			drop 0
-			"read failed" 1 error
+			1 "read failed" panic
 		}
 	} else {
 		drop 0
-		"open failed" 2 error
+		2 "open failed" panic
 	}
 }
 ```

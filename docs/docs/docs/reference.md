@@ -1226,18 +1226,18 @@ read -> argc // reads command line args
 
 | Instruction | Signature | Description |
 |-------------|-----------|-------------|
-| [`error`](#error) | `( msg code -- )` | Signals an error with a message and code. Used in fallible functions. |
+| [`panic`](#panic) | `( code msg -- )` | Signals a panic with a code and message. Used in fallible functions. |
 
-#### error
+#### panic
 
-Signals an error with a message and code. Used in fallible functions.
+Signals a panic with a code and message. Used in fallible functions.
 
-**Signature:** `( msg code -- )`
+**Signature:** `( code msg -- )`
 
 **Example:**
 
 ```qd
-"invalid input" 1 error
+1 "invalid input" panic
 ```
 
 ---

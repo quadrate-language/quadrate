@@ -26,16 +26,16 @@ fn read_entire_file(path:str -- content:str)! {
 				-> bytes_read
 				buf bytes_read mem::to_string
 			} else {
-				drop ""
-				"read failed" 1 error
+				""
+				1 "read failed" panic
 			}
 		} else {
-			drop ""
-			"size failed" 1 error
+			""
+			1 "size failed" panic
 		}
 	} else {
-		drop ""
-		"open failed" 1 error
+		""
+		1 "open failed" panic
 	}
 }
 
@@ -45,7 +45,6 @@ fn main( -- ) {
 		"File contents:" print nl
 		content print nl
 	} else {
-		drop
 		"Could not read file" print nl
 	}
 }
@@ -68,12 +67,10 @@ fn write_file(path:str content:str -- )! {
 		file content len io::write if {
 			drop  // bytes written
 		} else {
-			drop
-			"write failed" 1 error
+			1 "write failed" panic
 		}
 	} else {
-		drop
-		"create failed" 1 error
+		1 "create failed" panic
 	}
 }
 
@@ -81,7 +78,6 @@ fn main( -- ) {
 	"output.txt" "Hello, World!\n" write_file if {
 		"File written successfully" print nl
 	} else {
-		drop
 		"Failed to write file" print nl
 	}
 }
@@ -106,11 +102,8 @@ fn process_lines(path:str -- ) {
 				line_num 1 + -> line_num
 				line_num lines i nth process_line
 			}
-		} else {
-			drop
 		}
 	} else {
-		drop
 		"Could not read file" print nl
 	}
 }
@@ -150,21 +143,17 @@ fn count_words(path:str -- words:i64 lines:i64 chars:i64)! {
 				line_arr i nth " " str::split if {
 					-> word_arr
 					words word_arr len + -> words
-				} else {
-					drop
 				}
 			}
 
 			words lines chars
 		} else {
-			drop
 			0 0 0
-			"split failed" 1 error
+			1 "split failed" panic
 		}
 	} else {
-		drop
 		0 0 0
-		"read failed" 1 error
+		1 "read failed" panic
 	}
 }
 
@@ -175,7 +164,6 @@ fn main( -- ) {
 		"Lines: " print lines print nl
 		"Chars: " print chars print nl
 	} else {
-		drop
 		"Could not count" print nl
 	}
 }
@@ -216,23 +204,20 @@ fn copy_file(src:str dst:str -- )! {
 							drop
 							total_copied bytes_read + -> total_copied
 						} else {
-							drop 0 -> continue
+							0 -> continue
 						}
 					}
 				} else {
-					drop
 					0 -> continue
 				}
 			}
 
 			"Copied " print total_copied print " bytes" print nl
 		} else {
-			drop
-			"create failed" 1 error
+			1 "create failed" panic
 		}
 	} else {
-		drop
-		"open failed" 1 error
+		1 "open failed" panic
 	}
 }
 
@@ -240,7 +225,6 @@ fn main( -- ) {
 	"input.txt" "output.txt" copy_file if {
 		"Copy successful" print nl
 	} else {
-		drop
 		"Copy failed" print nl
 	}
 }
@@ -265,7 +249,7 @@ fn parse_csv_line(line:str -- record:ptr)! {
 		-> fields
 		fields len 3 != if {
 			0
-			"invalid field count" 1 error
+			1 "invalid field count" panic
 		}
 
 		fields 0 nth -> name
@@ -275,12 +259,12 @@ fn parse_csv_line(line:str -- record:ptr)! {
 
 			Record { name = name age = age city = city }
 		} else {
-			drop 0
-			"invalid age" 1 error
+			0
+			1 "invalid age" panic
 		}
 	} else {
-		drop 0
-		"split failed" 1 error
+		0
+		1 "split failed" panic
 	}
 }
 
@@ -304,16 +288,10 @@ fn process_csv(path:str -- ) {
 						record @age print
 						" years old from " print
 						record @city print nl
-					} else {
-						drop
 					}
 				}
 			}
-		} else {
-			drop
 		}
-	} else {
-		drop
 	}
 }
 

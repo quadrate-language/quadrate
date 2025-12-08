@@ -67,7 +67,7 @@ class QuadrateLexer(RegexLexer):
 
     # Built-in misc
     builtins_misc = (
-        'error', 'spawn', 'wait', 'detach', 'call', 'abort',
+        'panic', 'spawn', 'wait', 'detach', 'call',
     )
 
     # Math functions (often used)
