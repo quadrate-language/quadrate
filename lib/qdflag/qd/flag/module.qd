@@ -58,8 +58,8 @@ pub fn destroy(f:ptr -- ) {
 /// @param f ptr Flag struct
 /// @param name str Flag name (e.g., "--verbose")
 /// @return present i64 1 if found, 0 otherwise
-/// @example f "--verbose" flag::bool if { "verbose" print nl }
-pub fn bool(f:ptr name:str -- present:i64) {
+/// @example f "--verbose" flag::boolean if { "verbose" print nl }
+pub fn boolean(f:ptr name:str -- present:i64) {
 	-> name
 	-> f
 

@@ -2,29 +2,29 @@ use regex
 
 fn main() {
 	// Multiple ranges in one class
-	"[a-zA-Z]" "m" regex::test print nl
-	"[a-zA-Z]" "M" regex::test print nl
-	"[a-zA-Z]" "5" regex::test print nl
+	"[a-zA-Z]" "m" regex::is_match print nl
+	"[a-zA-Z]" "M" regex::is_match print nl
+	"[a-zA-Z]" "5" regex::is_match print nl
 
 	// Hyphen at start (literal)
-	"[-a]" "-" regex::test print nl
-	"[-a]" "a" regex::test print nl
-	"[-a]" "b" regex::test print nl
+	"[-a]" "-" regex::is_match print nl
+	"[-a]" "a" regex::is_match print nl
+	"[-a]" "b" regex::is_match print nl
 
 	// Hyphen at end (literal)
-	"[a-]" "-" regex::test print nl
-	"[a-]" "a" regex::test print nl
+	"[a-]" "-" regex::is_match print nl
+	"[a-]" "a" regex::is_match print nl
 
 	// Multiple ranges combined
-	"[a-z0-9]" "x" regex::test print nl
-	"[a-z0-9]" "5" regex::test print nl
-	"[a-z0-9]" "X" regex::test print nl
+	"[a-z0-9]" "x" regex::is_match print nl
+	"[a-z0-9]" "5" regex::is_match print nl
+	"[a-z0-9]" "X" regex::is_match print nl
 
 	// Negated with range
-	"[^0-9]" "a" regex::test print nl
-	"[^0-9]" "5" regex::test print nl
+	"[^0-9]" "a" regex::is_match print nl
+	"[^0-9]" "5" regex::is_match print nl
 
 	// Single char class
-	"[x]" "x" regex::test print nl
-	"[x]" "y" regex::test print nl
+	"[x]" "x" regex::is_match print nl
+	"[x]" "y" regex::is_match print nl
 }

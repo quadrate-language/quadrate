@@ -2,14 +2,14 @@
 use flag
 
 fn main( -- ) {
-	// Test bool - flag not present
+	// Test boolean - flag not present
 	"" 0 flag::parse -> f1
-	f1 "--verbose" flag::bool print nl
+	f1 "--verbose" flag::boolean print nl
 	f1 flag::destroy
 
-	// Test bool - flag present
+	// Test boolean - flag present
 	"--verbose" 1 flag::parse -> f2
-	f2 "--verbose" flag::bool print nl
+	f2 "--verbose" flag::boolean print nl
 	f2 flag::destroy
 
 	// Test string - flag not present

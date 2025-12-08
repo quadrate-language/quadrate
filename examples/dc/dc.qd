@@ -447,32 +447,32 @@ fn main( -- ) {
 		f flag::destroy
 	}
 
-	f "--help" flag::bool if {
+	f "--help" flag::boolean if {
 		print_help
 		0 os::exit
 	}
-	f "-h" flag::bool if {
+	f "-h" flag::boolean if {
 		print_help
 		0 os::exit
 	}
 
-	f "--version" flag::bool if {
+	f "--version" flag::boolean if {
 		print_version
 		0 os::exit
 	}
-	f "-V" flag::bool if {
+	f "-V" flag::boolean if {
 		print_version
 		0 os::exit
 	}
 
 	// Check for -e / --expression
 	"" -> expr
-	f "-e" flag::bool if {
+	f "-e" flag::boolean if {
 		f "-e" flag::string! -> expr
 		s expr process_line
 		0 os::exit
 	}
-	f "--expression" flag::bool if {
+	f "--expression" flag::boolean if {
 		f "--expression" flag::string! -> expr
 		s expr process_line
 		0 os::exit
@@ -480,12 +480,12 @@ fn main( -- ) {
 
 	// Check for -f / --file
 	"" -> filepath
-	f "-f" flag::bool if {
+	f "-f" flag::boolean if {
 		f "-f" flag::string! -> filepath
 		s filepath run_file
 		0 os::exit
 	}
-	f "--file" flag::bool if {
+	f "--file" flag::boolean if {
 		f "--file" flag::string! -> filepath
 		s filepath run_file
 		0 os::exit

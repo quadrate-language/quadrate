@@ -10,7 +10,7 @@
   ],
   "functions": [
     {
-      "name": "bool",
+      "name": "boolean",
       "signature": "( rng:ptr -- rng:ptr b:i64 )",
       "failable": false,
       "description": "Generate random boolean.",
@@ -35,7 +35,7 @@
       ],
       "errors": [],
       "examples": [
-        "rng rand::bool -> rng b"
+        "rng rand::boolean -> rng b"
       ]
     },
     {

@@ -2,32 +2,32 @@ use regex
 
 fn main() {
 	// Empty pattern matches empty string
-	"" "" regex::test print nl
+	"" "" regex::is_match print nl
 
 	// Empty pattern doesn't match non-empty
-	"" "x" regex::test print nl
+	"" "x" regex::is_match print nl
 
 	// Single character patterns
-	"a" "a" regex::test print nl
-	"a" "b" regex::test print nl
-	"a" "" regex::test print nl
+	"a" "a" regex::is_match print nl
+	"a" "b" regex::is_match print nl
+	"a" "" regex::is_match print nl
 
 	// Long patterns
-	"abcdefghij" "abcdefghij" regex::test print nl
-	"abcdefghij" "abcdefghix" regex::test print nl
+	"abcdefghij" "abcdefghij" regex::is_match print nl
+	"abcdefghij" "abcdefghix" regex::is_match print nl
 
 	// Repeated same char
-	"aaa" "aaa" regex::test print nl
-	"aaa" "aa" regex::test print nl
-	"aaa" "aaaa" regex::test print nl
+	"aaa" "aaa" regex::is_match print nl
+	"aaa" "aa" regex::is_match print nl
+	"aaa" "aaaa" regex::is_match print nl
 
 	// Star edge cases
-	"a*" "" regex::test print nl
-	"a*" "a" regex::test print nl
-	"a*" "aaaa" regex::test print nl
+	"a*" "" regex::is_match print nl
+	"a*" "a" regex::is_match print nl
+	"a*" "aaaa" regex::is_match print nl
 
 	// Question edge cases
-	"a?" "" regex::test print nl
-	"a?" "a" regex::test print nl
-	"a?" "aa" regex::test print nl
+	"a?" "" regex::is_match print nl
+	"a?" "a" regex::is_match print nl
+	"a?" "aa" regex::is_match print nl
 }

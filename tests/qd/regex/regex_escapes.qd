@@ -2,21 +2,21 @@ use regex
 
 fn main() {
 	// Escaped special characters
-	"a\\.b" "a.b" regex::test print nl
-	"a\\.b" "axb" regex::test print nl
+	"a\\.b" "a.b" regex::is_match print nl
+	"a\\.b" "axb" regex::is_match print nl
 
 	// Escaped backslash
-	"a\\\\b" "a\\b" regex::test print nl
+	"a\\\\b" "a\\b" regex::is_match print nl
 
 	// Newline escape
-	"a\\nb" "a\nb" regex::test print nl
+	"a\\nb" "a\nb" regex::is_match print nl
 
 	// Tab escape
-	"a\\tb" "a\tb" regex::test print nl
+	"a\\tb" "a\tb" regex::is_match print nl
 
 	// Literal special chars via escape
-	"\\+" "+" regex::test print nl
-	"\\*" "*" regex::test print nl
-	"\\?" "?" regex::test print nl
-	"\\|" "|" regex::test print nl
+	"\\+" "+" regex::is_match print nl
+	"\\*" "*" regex::is_match print nl
+	"\\?" "?" regex::is_match print nl
+	"\\|" "|" regex::is_match print nl
 }

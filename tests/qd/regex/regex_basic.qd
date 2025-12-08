@@ -2,30 +2,30 @@ use regex
 
 fn main() {
 	// Literal match
-	"hello" "hello" regex::test print nl
-	"hello" "world" regex::test print nl
+	"hello" "hello" regex::is_match print nl
+	"hello" "world" regex::is_match print nl
 
 	// Any character (.)
-	"h.llo" "hello" regex::test print nl
-	"h.llo" "hxllo" regex::test print nl
+	"h.llo" "hello" regex::is_match print nl
+	"h.llo" "hxllo" regex::is_match print nl
 
 	// Star (zero or more)
-	"ab*c" "ac" regex::test print nl
-	"ab*c" "abc" regex::test print nl
-	"ab*c" "abbbbc" regex::test print nl
+	"ab*c" "ac" regex::is_match print nl
+	"ab*c" "abc" regex::is_match print nl
+	"ab*c" "abbbbc" regex::is_match print nl
 
 	// Plus (one or more)
-	"ab+c" "ac" regex::test print nl
-	"ab+c" "abc" regex::test print nl
-	"ab+c" "abbbc" regex::test print nl
+	"ab+c" "ac" regex::is_match print nl
+	"ab+c" "abc" regex::is_match print nl
+	"ab+c" "abbbc" regex::is_match print nl
 
 	// Question (zero or one)
-	"ab?c" "ac" regex::test print nl
-	"ab?c" "abc" regex::test print nl
-	"ab?c" "abbc" regex::test print nl
+	"ab?c" "ac" regex::is_match print nl
+	"ab?c" "abc" regex::is_match print nl
+	"ab?c" "abbc" regex::is_match print nl
 
 	// Alternation
-	"cat|dog" "cat" regex::test print nl
-	"cat|dog" "dog" regex::test print nl
-	"cat|dog" "bird" regex::test print nl
+	"cat|dog" "cat" regex::is_match print nl
+	"cat|dog" "dog" regex::is_match print nl
+	"cat|dog" "bird" regex::is_match print nl
 }

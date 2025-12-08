@@ -81,6 +81,22 @@ namespace Qd {
 		return moduleName;
 	}
 
+	// Helper function to check if a name is a reserved keyword
+	static bool isReservedKeyword(const std::string& name) {
+		static const std::unordered_set<std::string> KEYWORDS = {
+				// Control flow
+				"if", "else", "for", "while", "loop", "switch", "case", "break", "continue", "return",
+				// Declarations
+				"fn", "struct", "const", "pub", "test", "use", "import",
+				// Special blocks
+				"ctx", "defer",
+				// Boolean literals
+				"true", "false",
+				// Type names (reserved to avoid confusion)
+				"i64", "f64", "str", "ptr", "void"};
+		return KEYWORDS.find(name) != KEYWORDS.end();
+	}
+
 	// Helper function to serialize a case value for comparison
 	static std::string serializeCaseValue(IAstNode* node) {
 		if (!node) {
@@ -394,6 +410,31 @@ namespace Qd {
 		if (node->type() == IAstNode::Type::FUNCTION_DECLARATION) {
 			AstNodeFunctionDeclaration* func = static_cast<AstNodeFunctionDeclaration*>(node);
 
+			// Check for reserved keyword
+			if (isReservedKeyword(func->name())) {
+				std::string errorMsg = "'" + func->name() + "' is a reserved keyword and cannot be used as a function name";
+				reportError(func, errorMsg.c_str());
+				return;
+			}
+
+			// Check parameter names for reserved keywords
+			for (auto* paramNode : func->inputParameters()) {
+				AstNodeParameter* param = static_cast<AstNodeParameter*>(paramNode);
+				if (isReservedKeyword(param->name())) {
+					std::string errorMsg =
+							"'" + param->name() + "' is a reserved keyword and cannot be used as a parameter name";
+					reportError(param, errorMsg.c_str());
+				}
+			}
+			for (auto* paramNode : func->outputParameters()) {
+				AstNodeParameter* param = static_cast<AstNodeParameter*>(paramNode);
+				if (isReservedKeyword(param->name())) {
+					std::string errorMsg =
+							"'" + param->name() + "' is a reserved keyword and cannot be used as a parameter name";
+					reportError(param, errorMsg.c_str());
+				}
+			}
+
 			// Check for duplicate function name
 			if (mDefinedFunctions.find(func->name()) != mDefinedFunctions.end()) {
 				std::string errorMsg = "Duplicate function definition: '" + func->name() + "'";
@@ -421,6 +462,14 @@ namespace Qd {
 		// If this is a constant declaration, add it to the symbol table
 		if (node->type() == IAstNode::Type::CONSTANT_DECLARATION) {
 			AstNodeConstant* constant = static_cast<AstNodeConstant*>(node);
+
+			// Check for reserved keyword
+			if (isReservedKeyword(constant->name())) {
+				std::string errorMsg =
+						"'" + constant->name() + "' is a reserved keyword and cannot be used as a constant name";
+				reportError(constant, errorMsg.c_str());
+				return;
+			}
 
 			// Check for duplicate constant name
 			if (mDefinedConstants.find(constant->name()) != mDefinedConstants.end()) {
@@ -450,6 +499,14 @@ namespace Qd {
 		// If this is a struct declaration, add it to the symbol table and collect field types
 		if (node->type() == IAstNode::Type::STRUCT_DECLARATION) {
 			AstNodeStructDeclaration* structDecl = static_cast<AstNodeStructDeclaration*>(node);
+
+			// Check for reserved keyword
+			if (isReservedKeyword(structDecl->name())) {
+				std::string errorMsg =
+						"'" + structDecl->name() + "' is a reserved keyword and cannot be used as a struct name";
+				reportError(structDecl, errorMsg.c_str());
+				return;
+			}
 
 			// Check for duplicate struct name
 			if (mDefinedStructs.find(structDecl->name()) != mDefinedStructs.end()) {
@@ -482,6 +539,15 @@ namespace Qd {
 				IAstNode* child = structDecl->child(i);
 				if (child && child->type() == IAstNode::Type::STRUCT_FIELD) {
 					AstNodeStructField* field = static_cast<AstNodeStructField*>(child);
+
+					// Check for reserved keyword
+					if (isReservedKeyword(field->name())) {
+						std::string errorMsg = "'" + field->name() +
+											   "' is a reserved keyword and cannot be used as a field name in struct '" +
+											   structDecl->name() + "'";
+						reportError(field, errorMsg.c_str());
+						return;
+					}
 
 					// Check for duplicate field name
 					if (seenFieldNames.find(field->name()) != seenFieldNames.end()) {
@@ -516,6 +582,14 @@ namespace Qd {
 		// If this is a test declaration, add it to the symbol table
 		if (node->type() == IAstNode::Type::TEST_DECLARATION) {
 			AstNodeTest* test = static_cast<AstNodeTest*>(node);
+
+			// Check for reserved keyword
+			if (isReservedKeyword(test->name())) {
+				std::string errorMsg =
+						"'" + test->name() + "' is a reserved keyword and cannot be used as a test name";
+				reportError(test, errorMsg.c_str());
+				return;
+			}
 
 			// Check for duplicate test name
 			if (mDefinedTests.find(test->name()) != mDefinedTests.end()) {
@@ -1415,6 +1489,11 @@ namespace Qd {
 			AstNodeLocal* local = static_cast<AstNodeLocal*>(node);
 			// Insert all names (supports multiple assignment: -> a b c)
 			for (const std::string& name : local->names()) {
+				// Check for reserved keyword
+				if (isReservedKeyword(name)) {
+					reportError(local,
+							("'" + name + "' is a reserved keyword and cannot be used as a variable name").c_str());
+				}
 				localVariables.insert(name);
 			}
 			return;

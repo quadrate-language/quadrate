@@ -10,7 +10,7 @@
   ],
   "functions": [
     {
-      "name": "bool",
+      "name": "boolean",
       "signature": "( f:ptr name:str -- present:i64 )",
       "failable": false,
       "description": "Check if a boolean flag exists.",
@@ -35,7 +35,7 @@
       ],
       "errors": [],
       "examples": [
-        "f \"--verbose\" flag::bool if { \"verbose\" print nl }"
+        "f \"--verbose\" flag::boolean if { \"verbose\" print nl }"
       ]
     },
     {

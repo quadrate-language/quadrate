@@ -649,8 +649,9 @@ pub fn matches(re:ptr s:str -- result:i64) {
 /// Compile and test if pattern matches string.
 /// @param pattern str Regex pattern
 /// @param s str String to match
-/// @return matches i64 1 if matches, 0 otherwise
-pub fn test(pattern:str s:str -- result:i64) {
+/// @return result i64 1 if matches, 0 otherwise
+/// @example "hello.*" "hello world" regex::is_match -> result
+pub fn is_match(pattern:str s:str -- result:i64) {
 	-> s -> pattern
 	pattern compile -> re
 	re s matches -> result

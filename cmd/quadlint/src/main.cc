@@ -360,6 +360,12 @@ std::vector<LintIssue> lintFile(const std::string& filename, const Options& opts
 					continue;
 				}
 
+				// Skip public functions (they may be used externally)
+				AstNodeFunctionDeclaration* func = static_cast<AstNodeFunctionDeclaration*>(funcNode);
+				if (func->isPublic()) {
+					continue;
+				}
+
 				// Check if function is called
 				if (calls.find(funcName) == calls.end()) {
 					LintIssue issue;

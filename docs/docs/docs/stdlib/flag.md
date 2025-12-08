@@ -10,7 +10,7 @@ Parsed command-line arguments.
 
 ## Functions
 
-### bool
+### boolean
 
 Check if a boolean flag exists.
 
@@ -28,7 +28,7 @@ Check if a boolean flag exists.
 **Example:**
 
 ```qd
-f "--verbose" flag::bool if { "verbose" print nl }
+f "--verbose" flag::boolean if { "verbose" print nl }
 ```
 
 ---

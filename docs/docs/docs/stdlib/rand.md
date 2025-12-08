@@ -11,7 +11,7 @@ RNG state struct.
 
 ## Functions
 
-### bool
+### boolean
 
 Generate random boolean.
 
@@ -29,7 +29,7 @@ Generate random boolean.
 **Example:**
 
 ```qd
-rng rand::bool  // rng b
+rng rand::boolean  // rng b
 ```
 
 ---

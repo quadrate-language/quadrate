@@ -99,8 +99,8 @@ pub fn range(rng:ptr min:i64 max:i64 -- rng:ptr n:i64) {
 /// @param rng ptr RNG state
 /// @return rng ptr Updated RNG state
 /// @return b i64 Random boolean (0 or 1)
-/// @example rng rand::bool -> rng b
-pub fn bool(rng:ptr -- rng:ptr b:i64) {
+/// @example rng rand::boolean -> rng b
+pub fn boolean(rng:ptr -- rng:ptr b:i64) {
 	-> rng
 	rng 2 int
 }

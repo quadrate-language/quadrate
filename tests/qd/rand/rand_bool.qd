@@ -8,7 +8,7 @@ fn main() {
 	0 -> saw_one
 
 	0 50 1 for it {
-		rng rand::bool -> b -> rng
+		rng rand::boolean -> b -> rng
 		b 0 == if {
 			1 -> saw_zero
 		}

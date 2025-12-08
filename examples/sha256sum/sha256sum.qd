@@ -289,29 +289,29 @@ fn main( -- ) {
 	read flag::parse -> f
 
 	// Check for help/version first
-	f "--help" flag::bool f "-h" flag::bool or if {
+	f "--help" flag::boolean f "-h" flag::boolean or if {
 		print_help
 		f flag::destroy
 	} else {
-		f "--version" flag::bool if {
+		f "--version" flag::boolean if {
 			print_version
 			f flag::destroy
 		} else {
 			// Parse mode flags
-			f "-b" flag::bool f "--binary" flag::bool or -> binary_mode
-			f "-t" flag::bool f "--text" flag::bool or if {
+			f "-b" flag::boolean f "--binary" flag::boolean or -> binary_mode
+			f "-t" flag::boolean f "--text" flag::boolean or if {
 				0 -> binary_mode
 			}
-			f "--tag" flag::bool -> tag_mode
-			f "-z" flag::bool f "--zero" flag::bool or -> zero_mode
+			f "--tag" flag::boolean -> tag_mode
+			f "-z" flag::boolean f "--zero" flag::boolean or -> zero_mode
 
 			// Parse check mode flags
-			f "-c" flag::bool f "--check" flag::bool or -> check_mode
-			f "--quiet" flag::bool f "-q" flag::bool or -> quiet
-			f "--status" flag::bool -> status_mode
-			f "-w" flag::bool f "--warn" flag::bool or -> warn_mode
-			f "--ignore-missing" flag::bool -> ignore_missing
-			f "--strict" flag::bool -> strict
+			f "-c" flag::boolean f "--check" flag::boolean or -> check_mode
+			f "--quiet" flag::boolean f "-q" flag::boolean or -> quiet
+			f "--status" flag::boolean -> status_mode
+			f "-w" flag::boolean f "--warn" flag::boolean or -> warn_mode
+			f "--ignore-missing" flag::boolean -> ignore_missing
+			f "--strict" flag::boolean -> strict
 
 			f flag::destroy
 
