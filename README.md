@@ -55,7 +55,7 @@ All other dependencies are automatically downloaded and built as subprojects.
 Create `hello.qd`:
 ```rust
 fn main( -- ) {
-    "Hello, World!" . nl
+    "Hello, World!" print nl
 }
 ```
 
@@ -77,7 +77,7 @@ Values live on an explicit stack. Functions manipulate the stack directly:
 ```rust
 fn main( -- ) {
     5 3 +       // Stack: [5] [3] → [8]
-    . nl        // Print 8 and newline
+    print nl        // Print 8 and newline
 }
 ```
 
@@ -100,8 +100,8 @@ fn distance(x1:f64 y1:f64 x2:f64 y2:f64 -- dist:f64) {
 }
 
 fn main( -- ) {
-    7.0 square . nl           // 49.0
-    0.0 0.0 3.0 4.0 distance . nl  // 5.0
+    7.0 square print nl           // 49.0
+    0.0 0.0 3.0 4.0 distance print nl  // 5.0
 }
 ```
 
@@ -123,20 +123,20 @@ The signature `(x:f64 y:f64 -- result:f64)` means: "Consumes two f64 values from
 fn main( -- ) {
     // Conditionals
     10 5 > if {
-        "10 is greater" . nl
+        "10 is greater" print nl
     } else {
-        "5 is greater" . nl
+        "5 is greater" print nl
     }
 
     // For loops (start end step)
     0 10 1 for {
-        $ . nl    // $ is the loop counter
+        $ print nl    // $ is the loop counter
     }
 
     // While loops
     0
     loop {
-        dup . nl
+        dup print nl
         inc
         dup 10 >= if { break }
     }
@@ -144,9 +144,9 @@ fn main( -- ) {
 
     // Pattern matching
     42 switch {
-        0  { "zero" . nl }
-        42 { "answer" . nl }
-        _  { "other" . nl }
+        0  { "zero" print nl }
+        42 { "answer" print nl }
+        _  { "other" print nl }
     }
 }
 ```
@@ -236,12 +236,12 @@ use rand
 
 fn main( -- ) {
     // Generate random UUID
-    uuid::v4 . nl
+    uuid::v4 print nl
 
     // Random number generation
     rand::new -> rng
     rng 1 100 rand::range -> rng -> n
-    "Random 1-100: " . n . nl
+    "Random 1-100: " print n print nl
 }
 ```
 
@@ -252,9 +252,9 @@ use path
 
 fn main( -- ) {
     "/home/user/docs/report.pdf" -> p
-    p path::dirname . nl   // /home/user/docs
-    p path::basename . nl  // report.pdf
-    p path::ext . nl       // .pdf
+    p path::dirname print nl   // /home/user/docs
+    p path::basename print nl  // report.pdf
+    p path::ext print nl       // .pdf
 }
 ```
 
@@ -281,7 +281,7 @@ int main() {
     qd_build(math);
 
     // Execute (pushes 5, calls double, prints 10)
-    qd_execute(ctx, "5 math::double . nl");
+    qd_execute(ctx, "5 math::double print nl");
 
     qd_free_context(ctx);
     return 0;
@@ -311,7 +311,7 @@ int main() {
         reinterpret_cast<void(*)()>(get_timestamp));
 
     // Use it from Quadrate
-    qd_add_script(utils, "fn show_time( -- ) { get_timestamp . nl }");
+    qd_add_script(utils, "fn show_time( -- ) { get_timestamp print nl }");
     qd_build(utils);
 
     qd_execute(ctx, "utils::show_time");
