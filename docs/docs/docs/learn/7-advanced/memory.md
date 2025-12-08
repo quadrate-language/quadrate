@@ -79,47 +79,6 @@ fn main( -- ) {
 }
 ```
 
-## Memory and Strings
-
-### String to Buffer
-
-```qd
-use mem
-use str
-
-fn main( -- ) {
-	"Hello" str::len -> len
-	"Hello" -> s
-
-	len 1 + mem::alloc -> buf
-	s buf len mem::copy_from_str
-	0 buf len mem::write_byte  // Null terminate
-
-	buf mem::to_string print nl  // Hello
-
-	buf mem::free
-}
-```
-
-### Buffer to String
-
-```qd
-use mem
-
-fn main( -- ) {
-	5 mem::alloc -> buf
-
-	72 buf 0 mem::write_byte   // H
-	105 buf 1 mem::write_byte  // i
-	33 buf 2 mem::write_byte   // !
-	0 buf 3 mem::write_byte    // null
-
-	buf 3 mem::to_string print nl  // Hi!
-
-	buf mem::free
-}
-```
-
 ## Memory Copy
 
 Copy memory between buffers:
@@ -130,18 +89,20 @@ use mem
 fn main( -- ) {
 	10 mem::alloc -> src
 	10 mem::alloc -> dst
-	defer { src mem::free dst mem::free }
+	defer {
+		src mem::free dst mem::free
+	}
 
 	// Fill source
-	0 10 for i {
-		i src i mem::write_byte
+	0 10 1 for i {
+		i src i mem::set_byte
 	}
 
 	// Copy to destination
 	src dst 10 mem::copy
 
 	// Verify
-	dst 5 mem::read_byte print nl  // 5
+	dst 5 mem::get_byte print nl  // 5
 }
 ```
 
@@ -154,34 +115,13 @@ use mem
 
 fn main( -- ) {
 	100 mem::alloc -> buf
-	defer { buf mem::free }
+	defer {
+		buf mem::free
+	}
 
-	buf 0 100 mem::fill  // Zero all bytes
+	0 buf 100 mem::fill  // Zero all bytes
 
-	buf 50 mem::read_byte print nl  // 0
-}
-```
-
-## Memory Compare
-
-Compare memory blocks:
-
-```qd
-use mem
-
-fn main( -- ) {
-	10 mem::alloc -> a
-	10 mem::alloc -> b
-	defer { a mem::free b mem::free }
-
-	a 65 10 mem::fill  // Fill a with 'A'
-	b 65 10 mem::fill  // Fill b with 'A'
-
-	a b 10 mem::compare print nl  // 0 (equal)
-
-	66 b 5 mem::write_byte  // Change one byte
-
-	a b 10 mem::compare print nl  // Non-zero (different)
+	buf 50 mem::get_byte print nl  // 0
 }
 ```
 
@@ -220,7 +160,11 @@ struct StringBuffer {
 fn sb_new(capacity:i64 -- sb:ptr) {
 	-> capacity
 	capacity mem::alloc -> data
-	StringBuffer { data = data len = 0 capacity = capacity }
+	StringBuffer {
+		data = data
+		len = 0
+		capacity = capacity
+	}
 }
 
 fn sb_free(sb:ptr -- ) {
@@ -232,11 +176,29 @@ fn sb_append_byte(sb:ptr byte:i64 -- ) {
 	-> byte -> sb
 	sb @len sb @capacity >= if {
 		// Need to grow
-		sb @data sb @capacity 2 * mem::realloc sb !data
-		sb @capacity 2 * sb !capacity
+		sb @data sb @capacity 2 * mem::realloc sb.data
+		sb @capacity 2 * sb.capacity
 	}
-	byte sb @data sb @len mem::write_byte
-	sb @len 1 + sb !len
+	byte sb @data sb @len mem::set_byte
+	sb @len 1 + sb.len
+}
+
+fn main( -- ) {
+	16 sb_new -> sb
+	defer {
+		sb sb_free
+	}
+
+	// Append "Hello"
+	sb 72 sb_append_byte   // H
+	sb 101 sb_append_byte  // e
+	sb 108 sb_append_byte  // l
+	sb 108 sb_append_byte  // l
+	sb 111 sb_append_byte  // o
+
+	// Print length and contents
+	"len: " print sb @len print nl
+	sb @data sb @len mem::to_string print nl  // Hello
 }
 ```
 
@@ -254,28 +216,59 @@ struct Pool {
 fn pool_new(size:i64 -- pool:ptr) {
 	-> size
 	size mem::alloc -> memory
-	Pool { memory = memory size = size used = 0 }
+	Pool {
+		memory = memory
+		size = size
+		used = 0
+	}
 }
 
-fn pool_alloc(pool:ptr bytes:i64 -- ptr:ptr) {
+fn pool_alloc(pool:ptr bytes:i64 -- offset:i64) {
 	-> bytes -> pool
 	pool @used bytes + pool @size <= if {
-		pool @memory pool @used + -> ptr
-		pool @used bytes + pool !used
-		ptr
+		pool @used -> offset
+		pool @used bytes + pool.used
+		offset
 	} else {
-		0  // Out of memory
+		-1  // Out of memory
 	}
 }
 
 fn pool_reset(pool:ptr -- ) {
 	-> pool
-	0 pool !used
+	0 pool.used
 }
 
 fn pool_free(pool:ptr -- ) {
 	-> pool
 	pool @memory mem::free
+}
+
+fn main( -- ) {
+	1024 pool_new -> pool
+	defer {
+		pool pool_free
+	}
+
+	// Allocate from pool (returns offset)
+	pool 100 pool_alloc -> off1
+	pool 200 pool_alloc -> off2
+
+	"off1: " print off1 print nl          // 0
+	"off2: " print off2 print nl          // 100
+	"pool used: " print pool @used print nl  // 300
+
+	// Write to allocated regions
+	42 pool @memory off1 mem::set
+	99 pool @memory off2 mem::set
+
+	// Read back
+	pool @memory off1 mem::get print nl  // 42
+	pool @memory off2 mem::get print nl  // 99
+
+	// Reset pool for reuse
+	pool pool_reset
+	"after reset: " print pool @used print nl  // 0
 }
 ```
 
@@ -299,8 +292,8 @@ fn safe_example( -- ) {
 	defer { buf mem::free }
 
 	// Safe: limited to allocated size
-	0 1024 for i {
-		0 buf i mem::write_byte
+	0 1024 1 for i {
+		0 buf i mem::set_byte
 	}
 }
 ```
