@@ -289,7 +289,9 @@ fn safe_example( -- ) {
 		"Allocation failed!" print nl
 		// Handle error
 	}
-	defer { buf mem::free }
+	defer {
+		buf mem::free
+	}
 
 	// Safe: limited to allocated size
 	0 1024 1 for i {

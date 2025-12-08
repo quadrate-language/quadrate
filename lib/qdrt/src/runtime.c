@@ -1280,6 +1280,26 @@ qd_exec_result qd_casts(qd_context* ctx) {
 		// Release our reference from the pop
 		release_if_string(&elem);
 		return (qd_exec_result){0};
+	} else if (elem.type == QD_STACK_TYPE_PTR) {
+		// Treat pointer as qd_string_t* - retain it and push as string
+		qd_string_t* str = (qd_string_t*)elem.value.p;
+		if (str) {
+			qd_string_retain(str);
+			qd_stack_element_t str_elem = {.type = QD_STACK_TYPE_STR, .value.s = str};
+			err = push_element(ctx->st, &str_elem);
+			if (err != QD_STACK_OK) {
+				qd_string_release(str);
+				return (qd_exec_result){-2};
+			}
+			return (qd_exec_result){0};
+		} else {
+			// NULL pointer - push empty string
+			err = qd_stack_push_str(ctx->st, "");
+			if (err != QD_STACK_OK) {
+				return (qd_exec_result){-2};
+			}
+			return (qd_exec_result){0};
+		}
 	} else {
 		fprintf(stderr, "Fatal error in casts: Cannot cast type to string\n");
 		dump_stack(ctx);

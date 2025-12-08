@@ -60,7 +60,11 @@ qd_exec_result usr_io_open(qd_context* ctx) {
     }
 
     // Push error code (1 = success, 0 = error for fallible functions)
+    // Also set ctx->error_code so the ! operator can detect failures
     if (!fp) {
+        ctx->error_code = 1;
+        if (ctx->error_msg) free(ctx->error_msg);
+        ctx->error_msg = strdup("io::open failed");
         qd_push_i(ctx, 0); // Error
         return (qd_exec_result){1};
     } else {
@@ -132,6 +136,9 @@ qd_exec_result usr_io_read_string(qd_context* ctx) {
     int64_t count = count_elem.value.i;
 
     if (!fp || count < 0) {
+        ctx->error_code = 1;
+        if (ctx->error_msg) free(ctx->error_msg);
+        ctx->error_msg = strdup("io::read_string: invalid file handle or count");
         qd_push_s(ctx, "");
         qd_push_i(ctx, 0);
         qd_push_i(ctx, 0); // Error code
@@ -159,6 +166,9 @@ qd_exec_result usr_io_read_string(qd_context* ctx) {
     buffer[bytes_read] = '\0';
 
     if (bytes_read < (size_t)count && ferror(fp)) {
+        ctx->error_code = 1;
+        if (ctx->error_msg) free(ctx->error_msg);
+        ctx->error_msg = strdup("io::read_string: read error");
         free(buffer);
         qd_push_s(ctx, "");
         qd_push_i(ctx, 0);
@@ -215,6 +225,9 @@ qd_exec_result usr_io_write_string(qd_context* ctx) {
     size_t len = strlen(data);
 
     if (!fp) {
+        ctx->error_code = 1;
+        if (ctx->error_msg) free(ctx->error_msg);
+        ctx->error_msg = strdup("io::write_string: invalid file handle");
         qd_string_release(data_elem.value.s);
         qd_push_i(ctx, 0);
         qd_push_i(ctx, 0); // Error code
@@ -227,6 +240,9 @@ qd_exec_result usr_io_write_string(qd_context* ctx) {
     qd_push_i(ctx, (int64_t)written);
 
     if (written < len) {
+        ctx->error_code = 1;
+        if (ctx->error_msg) free(ctx->error_msg);
+        ctx->error_msg = strdup("io::write_string: write error");
         qd_push_i(ctx, 0); // Error code
         return (qd_exec_result){1};
     }
@@ -284,6 +300,9 @@ qd_exec_result usr_io_seekg(qd_context* ctx) {
     int whence = (int)whence_elem.value.i;
 
     if (!fp) {
+        ctx->error_code = 1;
+        if (ctx->error_msg) free(ctx->error_msg);
+        ctx->error_msg = strdup("io::seek: invalid file handle");
         qd_push_i(ctx, -1);
         qd_push_i(ctx, 0); // Error code
         return (qd_exec_result){1};
@@ -296,12 +315,18 @@ qd_exec_result usr_io_seekg(qd_context* ctx) {
         case 1: seek_whence = SEEK_CUR; break;
         case 2: seek_whence = SEEK_END; break;
         default:
+            ctx->error_code = 1;
+            if (ctx->error_msg) free(ctx->error_msg);
+            ctx->error_msg = strdup("io::seek: invalid whence value");
             qd_push_i(ctx, -1);
             qd_push_i(ctx, 0); // Error code
             return (qd_exec_result){1};
     }
 
     if (fseek(fp, offset, seek_whence) != 0) {
+        ctx->error_code = 1;
+        if (ctx->error_msg) free(ctx->error_msg);
+        ctx->error_msg = strdup("io::seek: seek failed");
         qd_push_i(ctx, -1);
         qd_push_i(ctx, 0); // Error code
         return (qd_exec_result){1};
@@ -309,6 +334,9 @@ qd_exec_result usr_io_seekg(qd_context* ctx) {
 
     int64_t position = ftell(fp);
     if (position < 0) {
+        ctx->error_code = 1;
+        if (ctx->error_msg) free(ctx->error_msg);
+        ctx->error_msg = strdup("io::seek: ftell failed");
         qd_push_i(ctx, -1);
         qd_push_i(ctx, 0); // Error code
         return (qd_exec_result){1};
@@ -378,6 +406,9 @@ qd_exec_result usr_io_tell(qd_context* ctx) {
 
     FILE* fp = (FILE*)elem.value.p;
     if (!fp) {
+        ctx->error_code = 1;
+        if (ctx->error_msg) free(ctx->error_msg);
+        ctx->error_msg = strdup("io::tell: invalid file handle");
         qd_push_i(ctx, -1);
         qd_push_i(ctx, 0); // Error code
         return (qd_exec_result){1};
@@ -385,6 +416,9 @@ qd_exec_result usr_io_tell(qd_context* ctx) {
 
     int64_t position = ftell(fp);
     if (position < 0) {
+        ctx->error_code = 1;
+        if (ctx->error_msg) free(ctx->error_msg);
+        ctx->error_msg = strdup("io::tell: ftell failed");
         qd_push_i(ctx, -1);
         qd_push_i(ctx, 0); // Error code
         return (qd_exec_result){1};
@@ -446,6 +480,9 @@ qd_exec_result usr_io_read(qd_context* ctx) {
     int64_t count = count_elem.value.i;
 
     if (!fp || !buffer || count < 0) {
+        ctx->error_code = 1;
+        if (ctx->error_msg) free(ctx->error_msg);
+        ctx->error_msg = strdup("io::read: invalid file handle, buffer, or count");
         qd_push_i(ctx, -1);
         qd_push_i(ctx, 0); // Error code
         return (qd_exec_result){1};
@@ -461,6 +498,9 @@ qd_exec_result usr_io_read(qd_context* ctx) {
     size_t bytes_read = fread(buffer, 1, (size_t)count, fp);
 
     if (bytes_read < (size_t)count && ferror(fp)) {
+        ctx->error_code = 1;
+        if (ctx->error_msg) free(ctx->error_msg);
+        ctx->error_msg = strdup("io::read: read error");
         qd_push_i(ctx, -1);
         qd_push_i(ctx, 0); // Error code
         return (qd_exec_result){1};
@@ -480,6 +520,9 @@ qd_exec_result usr_io_readline(qd_context* ctx) {
     ssize_t nread = getline(&line, &len, stdin);
 
     if (nread == -1) {
+        ctx->error_code = 1;
+        if (ctx->error_msg) free(ctx->error_msg);
+        ctx->error_msg = strdup("io::readline: read error or EOF");
         free(line);
         qd_push_s(ctx, "");
         qd_push_i(ctx, 0); // Error/EOF
@@ -549,6 +592,9 @@ qd_exec_result usr_io_write(qd_context* ctx) {
     int64_t count = count_elem.value.i;
 
     if (!fp || !buffer || count < 0) {
+        ctx->error_code = 1;
+        if (ctx->error_msg) free(ctx->error_msg);
+        ctx->error_msg = strdup("io::write: invalid file handle, buffer, or count");
         qd_push_i(ctx, -1);
         qd_push_i(ctx, 0); // Error code
         return (qd_exec_result){1};
@@ -564,6 +610,9 @@ qd_exec_result usr_io_write(qd_context* ctx) {
     size_t bytes_written = fwrite(buffer, 1, (size_t)count, fp);
 
     if (bytes_written < (size_t)count && ferror(fp)) {
+        ctx->error_code = 1;
+        if (ctx->error_msg) free(ctx->error_msg);
+        ctx->error_msg = strdup("io::write: write error");
         qd_push_i(ctx, -1);
         qd_push_i(ctx, 0); // Error code
         return (qd_exec_result){1};

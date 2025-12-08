@@ -46,7 +46,6 @@ nav:
           - Function Pointers: docs/learn/7-advanced/function-pointers.md
           - Memory Management: docs/learn/7-advanced/memory.md
       - 8. Examples:
-          - Calculator: docs/learn/8-examples/calculator.md
           - File Processing: docs/learn/8-examples/file-processing.md
           - Data Structures: docs/learn/8-examples/data-structures.md
   - Reference:

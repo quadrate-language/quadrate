@@ -398,12 +398,13 @@ qd_exec_result usr_str_substring(qd_context* ctx) {
 	qd_string_release(str_elem.value.s);
 	qd_push_s(ctx, result);
 	free(result);
+	qd_push_i(ctx, 1);  // Success status for fallible function
 
 	return (qd_exec_result){0};
 }
 
 // split - split string by delimiter ( str:s delim:s -- parts:p count:i )
-// Returns pointer to array of strings and count
+// Returns pointer to array of qd_string* and count
 qd_exec_result usr_str_split(qd_context* ctx) {
 	qd_stack_element_t delim_elem, str_elem;
 
@@ -447,8 +448,8 @@ qd_exec_result usr_str_split(qd_context* ctx) {
 		pos += delim_len;
 	}
 
-	// Allocate array for parts
-	char** parts = malloc(count * sizeof(char*));
+	// Allocate array for qd_string pointers
+	qd_string_t** parts = malloc(count * sizeof(qd_string_t*));
 	if (!parts) {
 		fprintf(stderr, "Fatal error in str::split: Memory allocation failed\n");
 		qd_string_release(str_elem.value.s);
@@ -463,17 +464,15 @@ qd_exec_result usr_str_split(qd_context* ctx) {
 
 	while ((pos = strstr(pos, delim)) != NULL) {
 		size_t part_len = (size_t)(pos - start);
-		parts[idx] = malloc(part_len + 1);
+		parts[idx] = qd_string_create_with_length(start, part_len);
 		if (!parts[idx]) {
 			fprintf(stderr, "Fatal error in str::split: Memory allocation failed\n");
-			for (size_t i = 0; i < idx; i++) free(parts[i]);
+			for (size_t i = 0; i < idx; i++) qd_string_release(parts[i]);
 			free(parts);
 			qd_string_release(str_elem.value.s);
 			qd_string_release(delim_elem.value.s);
 			abort();
 		}
-		strncpy(parts[idx], start, part_len);
-		parts[idx][part_len] = '\0';
 		idx++;
 		pos += delim_len;
 		start = pos;
@@ -481,22 +480,22 @@ qd_exec_result usr_str_split(qd_context* ctx) {
 
 	// Last part
 	size_t part_len = strlen(start);
-	parts[idx] = malloc(part_len + 1);
+	parts[idx] = qd_string_create_with_length(start, part_len);
 	if (!parts[idx]) {
 		fprintf(stderr, "Fatal error in str::split: Memory allocation failed\n");
-		for (size_t i = 0; i < idx; i++) free(parts[i]);
+		for (size_t i = 0; i < idx; i++) qd_string_release(parts[i]);
 		free(parts);
 		qd_string_release(str_elem.value.s);
 		qd_string_release(delim_elem.value.s);
 		abort();
 	}
-	strcpy(parts[idx], start);
 
 	qd_string_release(str_elem.value.s);
 	qd_string_release(delim_elem.value.s);
 
 	qd_push_p(ctx, parts);
 	qd_push_i(ctx, (int64_t)count);
+	qd_push_i(ctx, 1);  // Success status for fallible function
 
 	return (qd_exec_result){0};
 }
@@ -549,6 +548,7 @@ qd_exec_result usr_str_replace(qd_context* ctx) {
 		qd_string_release(new_elem.value.s);
 		qd_push_s(ctx, qd_string_data(str_elem.value.s));
 		qd_string_release(str_elem.value.s);
+		qd_push_i(ctx, 1);  // Success status for fallible function
 		return (qd_exec_result){0};
 	}
 
@@ -602,6 +602,7 @@ qd_exec_result usr_str_replace(qd_context* ctx) {
 
 	qd_push_s(ctx, result);
 	free(result);
+	qd_push_i(ctx, 1);  // Success status for fallible function
 
 	return (qd_exec_result){0};
 }
