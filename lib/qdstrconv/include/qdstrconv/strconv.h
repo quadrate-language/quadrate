@@ -5,8 +5,8 @@
  * Provides conversions between strings and basic types, similar to Go's strconv package.
  */
 
-#ifndef QD_STDQD_STRCONV_H
-#define QD_STDQD_STRCONV_H
+#ifndef QD_QDSTRCONV_STRCONV_H
+#define QD_QDSTRCONV_STRCONV_H
 
 #include <qdrt/context.h>
 #include <qdrt/exec_result.h>
@@ -68,4 +68,4 @@ qd_exec_result usr_strconv_atoi(qd_context* ctx);
 }
 #endif
 
-#endif // QD_STDQD_STRCONV_H
+#endif // QD_QDSTRCONV_STRCONV_H

@@ -5,8 +5,8 @@
  * Provides code generation from Quadrate AST to LLVM IR, object files, and executables.
  */
 
-#ifndef LLVMGEN_GENERATOR_H
-#define LLVMGEN_GENERATOR_H
+#ifndef QD_LLVMGEN_GENERATOR_H
+#define QD_LLVMGEN_GENERATOR_H
 
 #include <memory>
 #include <string>

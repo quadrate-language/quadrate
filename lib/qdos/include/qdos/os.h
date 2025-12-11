@@ -5,8 +5,8 @@
  * Provides system-level operations such as process control and environment access.
  */
 
-#ifndef QD_STDQD_OS_H
-#define QD_STDQD_OS_H
+#ifndef QD_QDOS_OS_H
+#define QD_QDOS_OS_H
 
 #include <qdrt/context.h>
 #include <qdrt/exec_result.h>
@@ -200,4 +200,4 @@ qd_exec_result usr_os_list(qd_context* ctx);
 }
 #endif
 
-#endif // QD_STDQD_OS_H
+#endif // QD_QDOS_OS_H

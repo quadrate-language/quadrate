@@ -5,8 +5,8 @@
  * Provides trigonometric, logarithmic, power, and utility mathematical functions.
  */
 
-#ifndef QD_STDQD_MATH_H
-#define QD_STDQD_MATH_H
+#ifndef QD_QDMATH_MATH_H
+#define QD_QDMATH_MATH_H
 
 #include <qdrt/context.h>
 #include <qdrt/exec_result.h>
@@ -122,4 +122,4 @@ qd_exec_result usr_math_inv(qd_context* ctx);
 }
 #endif
 
-#endif // QD_STDQD_MATH_H
+#endif // QD_QDMATH_MATH_H

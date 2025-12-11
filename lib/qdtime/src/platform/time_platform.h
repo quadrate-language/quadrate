@@ -1,5 +1,5 @@
-#ifndef STDTIMEQD_TIME_PLATFORM_H
-#define STDTIMEQD_TIME_PLATFORM_H
+#ifndef QD_QDTIME_TIME_PLATFORM_H
+#define QD_QDTIME_TIME_PLATFORM_H
 
 #include <stdint.h>
 
@@ -23,4 +23,4 @@ void time_platform_sleep_ns(int64_t nanoseconds);
 }
 #endif
 
-#endif // STDTIMEQD_TIME_PLATFORM_H
+#endif // QD_QDTIME_TIME_PLATFORM_H

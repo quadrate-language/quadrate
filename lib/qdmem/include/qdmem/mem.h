@@ -1,5 +1,5 @@
-#ifndef STDMEMQD_MEM_H
-#define STDMEMQD_MEM_H
+#ifndef QD_QDMEM_MEM_H
+#define QD_QDMEM_MEM_H
 
 #include <qdrt/runtime.h>
 

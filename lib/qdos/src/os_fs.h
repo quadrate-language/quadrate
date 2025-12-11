@@ -1,8 +1,8 @@
 // Cross-platform filesystem operations using C++17 std::filesystem
 // C-compatible interface for use from os.c
 
-#ifndef STDOSQD_OS_FS_H
-#define STDOSQD_OS_FS_H
+#ifndef QD_QDOS_OS_FS_H
+#define QD_QDOS_OS_FS_H
 
 #include <stddef.h>
 
@@ -30,4 +30,4 @@ void os_fs_free_list(char** list);
 }
 #endif
 
-#endif // STDOSQD_OS_FS_H
+#endif // QD_QDOS_OS_FS_H

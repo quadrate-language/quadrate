@@ -5,8 +5,8 @@
  * Provides time-related operations including sleep functions.
  */
 
-#ifndef STDQD_TIME_H
-#define STDQD_TIME_H
+#ifndef QD_QDTIME_TIME_H
+#define QD_QDTIME_TIME_H
 
 #include <qdrt/context.h>
 #include <qdrt/exec_result.h>

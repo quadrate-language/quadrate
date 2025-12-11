@@ -8,8 +8,8 @@
  * @note For low-level runtime operations, see qdrt/runtime.h
  */
 
-#ifndef QUADRATE_QD_H
-#define QUADRATE_QD_H
+#ifndef QD_QD_QD_H
+#define QD_QD_QD_H
 
 #include <qdrt/exec_result.h>
 #include <qdrt/runtime.h>

@@ -5,8 +5,8 @@
  * Provides TCP socket functionality for network programming.
  */
 
-#ifndef STDQD_NET_H
-#define STDQD_NET_H
+#ifndef QD_QDNET_NET_H
+#define QD_QDNET_NET_H
 
 #include <qdrt/context.h>
 #include <qdrt/exec_result.h>

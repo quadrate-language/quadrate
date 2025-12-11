@@ -6,8 +6,8 @@
  * File handles are represented as pointers on the stack.
  */
 
-#ifndef STDIOQD_IO_H
-#define STDIOQD_IO_H
+#ifndef QD_QDIO_IO_H
+#define QD_QDIO_IO_H
 
 #include <qdrt/context.h>
 #include <qdrt/exec_result.h>

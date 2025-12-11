@@ -5,8 +5,8 @@
  * Provides printf-style formatted output functionality.
  */
 
-#ifndef STDQD_FMT_H
-#define STDQD_FMT_H
+#ifndef QD_QDFMT_FMT_H
+#define QD_QDFMT_FMT_H
 
 #include <qdrt/context.h>
 #include <qdrt/exec_result.h>

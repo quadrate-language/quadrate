@@ -1,5 +1,5 @@
-#ifndef QDRT_THREAD_PLATFORM_H
-#define QDRT_THREAD_PLATFORM_H
+#ifndef QD_QDRT_THREAD_PLATFORM_H
+#define QD_QDRT_THREAD_PLATFORM_H
 
 #include <stdint.h>
 
@@ -36,4 +36,4 @@ void thread_platform_sleep_ms(int milliseconds);
 }
 #endif
 
-#endif // QDRT_THREAD_PLATFORM_H
+#endif // QD_QDRT_THREAD_PLATFORM_H

@@ -1,5 +1,5 @@
-#ifndef QC_AST_NODE_LOCAL_H
-#define QC_AST_NODE_LOCAL_H
+#ifndef QD_QC_AST_NODE_LOCAL_H
+#define QD_QC_AST_NODE_LOCAL_H
 
 #include <qc/ast_node.h>
 #include <string>

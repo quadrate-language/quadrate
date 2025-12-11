@@ -1,5 +1,5 @@
-#ifndef QDTESTING_H
-#define QDTESTING_H
+#ifndef QD_QDTESTING_TESTING_H
+#define QD_QDTESTING_TESTING_H
 
 #include <qdrt/runtime.h>
 

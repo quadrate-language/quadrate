@@ -5,8 +5,8 @@
  * Provides string operations including length, concatenation, search, and case conversion.
  */
 
-#ifndef QD_STDQD_STR_H
-#define QD_STDQD_STR_H
+#ifndef QD_QDSTR_STR_H
+#define QD_QDSTR_STR_H
 
 #include <qdrt/context.h>
 #include <qdrt/exec_result.h>
@@ -188,4 +188,4 @@ qd_exec_result usr_str_from_char(qd_context* ctx);
 }
 #endif
 
-#endif // QD_STDQD_STR_H
+#endif // QD_QDSTR_STR_H

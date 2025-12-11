@@ -1,5 +1,5 @@
-#ifndef STDNETQD_NET_PLATFORM_H
-#define STDNETQD_NET_PLATFORM_H
+#ifndef QD_QDNET_NET_PLATFORM_H
+#define QD_QDNET_NET_PLATFORM_H
 
 #include <stddef.h>
 #include <stdint.h>
@@ -55,4 +55,4 @@ int net_platform_close(net_socket_t socket);
 }
 #endif
 
-#endif // STDNETQD_NET_PLATFORM_H
+#endif // QD_QDNET_NET_PLATFORM_H

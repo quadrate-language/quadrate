@@ -5,8 +5,8 @@
  * Provides bitwise logical and shift operations on integers.
  */
 
-#ifndef QD_STDQD_BITS_H
-#define QD_STDQD_BITS_H
+#ifndef QD_QDBITS_BITS_H
+#define QD_QDBITS_BITS_H
 
 #include <qdrt/context.h>
 #include <qdrt/exec_result.h>
@@ -97,4 +97,4 @@ qd_exec_result usr_bits_rshift(qd_context* ctx);
 }
 #endif
 
-#endif // QD_STDQD_BITS_H
+#endif // QD_QDBITS_BITS_H
