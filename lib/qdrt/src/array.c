@@ -24,7 +24,7 @@ int qd_array_is_valid(const void* ptr) {
 
 qd_array_t* qd_array_create(size_t capacity, qd_array_type elemType) {
 	if (capacity == 0) {
-		capacity = 8; // Default initial capacity
+		capacity = QD_ARRAY_DEFAULT_CAPACITY;
 	}
 
 	qd_array_t* arr = (qd_array_t*)malloc(sizeof(qd_array_t));
@@ -200,8 +200,8 @@ int qd_array_set_ptr(qd_array_t* arr, size_t index, void* value) {
 // Helper to grow array capacity
 static int qd_array_grow(qd_array_t* arr) {
 	size_t newCapacity = arr->capacity * 2;
-	if (newCapacity < 8) {
-		newCapacity = 8;
+	if (newCapacity < QD_ARRAY_DEFAULT_CAPACITY) {
+		newCapacity = QD_ARRAY_DEFAULT_CAPACITY;
 	}
 
 	switch (arr->elemType) {

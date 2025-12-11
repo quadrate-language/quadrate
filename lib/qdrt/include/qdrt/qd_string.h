@@ -23,6 +23,16 @@ typedef atomic_size_t qd_atomic_size_t;
 #endif
 
 /**
+ * @brief Minimum capacity for newly allocated strings
+ */
+#define QD_STRING_MIN_CAPACITY 16
+
+/**
+ * @brief Default initial capacity for string builders
+ */
+#define QD_SB_DEFAULT_CAPACITY 64
+
+/**
  * @brief Reference-counted string structure with capacity
  *
  * Strings use atomic reference counting for thread-safety.

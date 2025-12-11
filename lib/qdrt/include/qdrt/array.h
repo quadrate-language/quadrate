@@ -35,6 +35,11 @@ typedef enum {
 #define QD_ARRAY_MAGIC 0x51444152UL // "QDAR" in hex
 
 /**
+ * @brief Default initial capacity for arrays
+ */
+#define QD_ARRAY_DEFAULT_CAPACITY 8
+
+/**
  * @brief Reference-counted dynamic array structure
  *
  * Arrays are heap-allocated and reference-counted.

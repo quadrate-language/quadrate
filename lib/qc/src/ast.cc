@@ -1,6 +1,7 @@
 #include "ast_node_block.h"
 #include "ast_node_comment.h"
 #include "ast_node_label.h"
+#include "source_utils.h"
 #include <cstdint>
 #include <cstdlib>
 #include <cstring>
@@ -40,71 +41,6 @@
 #include <vector>
 
 namespace Qd {
-
-	// Helper function to convert UTF-8 character index to byte offset
-	static size_t charIndexToByteOffset(const char* src, size_t charIndex) {
-		size_t byteOffset = 0;
-		size_t currentCharIndex = 0;
-
-		while (currentCharIndex < charIndex && src[byteOffset] != '\0') {
-			unsigned char c = static_cast<unsigned char>(src[byteOffset]);
-			if ((c & 0x80) == 0) {
-				// Single-byte character (ASCII)
-				byteOffset += 1;
-			} else if ((c & 0xE0) == 0xC0) {
-				// Two-byte character
-				byteOffset += 2;
-			} else if ((c & 0xF0) == 0xE0) {
-				// Three-byte character
-				byteOffset += 3;
-			} else if ((c & 0xF8) == 0xF0) {
-				// Four-byte character
-				byteOffset += 4;
-			} else {
-				// Invalid UTF-8, skip one byte
-				byteOffset += 1;
-			}
-			currentCharIndex++;
-		}
-
-		return byteOffset;
-	}
-
-	// Helper function to count UTF-8 characters (codepoints) in a byte range
-	static size_t countUtf8Chars(const char* start, const char* end) {
-		size_t count = 0;
-		const char* p = start;
-		while (p < end && *p != '\0') {
-			unsigned char c = static_cast<unsigned char>(*p);
-			if ((c & 0x80) == 0) {
-				p += 1;
-			} else if ((c & 0xE0) == 0xC0) {
-				p += 2;
-			} else if ((c & 0xF0) == 0xE0) {
-				p += 3;
-			} else if ((c & 0xF8) == 0xF0) {
-				p += 4;
-			} else {
-				p += 1;
-			}
-			count++;
-		}
-		return count;
-	}
-
-	// Helper to calculate line and column from byte position
-	static void calculateLineColumn(const char* src, size_t pos, size_t* line, size_t* column) {
-		*line = 1;
-		*column = 1;
-		for (size_t i = 0; i < pos && src[i] != '\0'; i++) {
-			if (src[i] == '\n') {
-				(*line)++;
-				*column = 1;
-			} else {
-				(*column)++;
-			}
-		}
-	}
 
 	// Helper to set position on a node from scanner
 	static void setNodePosition(IAstNode* node, u8t_scanner* scanner, const char* src) {

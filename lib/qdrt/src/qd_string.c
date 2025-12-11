@@ -24,10 +24,10 @@ qd_string_t* qd_string_create_with_length(const char* str, size_t length) {
 		return NULL;
 	}
 
-	// Allocate with extra capacity for future growth (2x or minimum 16 bytes)
+	// Allocate with extra capacity for future growth (2x or minimum)
 	size_t capacity = length * 2;
-	if (capacity < 16) {
-		capacity = 16;
+	if (capacity < QD_STRING_MIN_CAPACITY) {
+		capacity = QD_STRING_MIN_CAPACITY;
 	}
 
 	qd_str->data = (char*)malloc(capacity + 1);
@@ -114,8 +114,8 @@ qd_string_t* qd_string_concat_smart(qd_string_t* str1, qd_string_t* str2) {
 	// Need to allocate new string
 	// Allocate with 2x capacity for future growth
 	size_t new_capacity = total_len * 2;
-	if (new_capacity < 16) {
-		new_capacity = 16;
+	if (new_capacity < QD_STRING_MIN_CAPACITY) {
+		new_capacity = QD_STRING_MIN_CAPACITY;
 	}
 
 	qd_string_t* result = (qd_string_t*)malloc(sizeof(qd_string_t));
@@ -150,7 +150,6 @@ qd_string_t* qd_string_concat_smart(qd_string_t* str1, qd_string_t* str2) {
 
 // String Builder Implementation
 
-#define QD_SB_DEFAULT_CAPACITY 64
 #define QD_SB_GROWTH_FACTOR 2
 
 qd_string_builder_t* qd_sb_create(size_t initial_capacity) {

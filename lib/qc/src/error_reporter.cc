@@ -1,22 +1,10 @@
+#include "source_utils.h"
 #include <iostream>
 #include <qc/colors.h>
 #include <qc/error_reporter.h>
 #include <string.h>
 
 namespace Qd {
-	// Helper to calculate line and column from byte position
-	static void calculateLineColumn(const char* src, size_t pos, size_t* line, size_t* column) {
-		*line = 1;
-		*column = 1;
-		for (size_t i = 0; i < pos && src[i] != '\0'; i++) {
-			if (src[i] == '\n') {
-				(*line)++;
-				*column = 1;
-			} else {
-				(*column)++;
-			}
-		}
-	}
 
 	void ErrorReporter::reportError(u8t_scanner* scanner, const char* message) {
 		size_t pos = u8t_scanner_token_start(scanner);
