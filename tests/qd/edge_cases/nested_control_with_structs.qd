@@ -25,7 +25,7 @@ fn main( -- ) {
 		if {
 			process_point
 		} else {
-			"Odd" prints nl
+			"Odd" print nl
 		}
 	}
 }

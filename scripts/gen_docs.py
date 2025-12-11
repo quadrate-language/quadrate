@@ -667,7 +667,7 @@ use str
 use math
 
 fn main( -- ) {
-	"hello" str::upper prints nl  // HELLO
+	"hello" str::upper print nl  // HELLO
 	16.0 math::sqrt print nl  // 4
 }
 ```
@@ -680,7 +680,7 @@ Functions marked with `!` can fail and require error handling:
 use str
 
 fn main( -- ) {
-	"hello" 0 3 str::substring! prints nl  // "hel"
+	"hello" 0 3 str::substring! print nl  // "hel"
 }
 ```
 

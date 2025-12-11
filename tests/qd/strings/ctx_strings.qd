@@ -4,7 +4,7 @@ fn test_ctx_string_return( -- ) {
 	ctx {
 		"hello"
 	}
-	prints nl
+	print nl
 	clear
 }
 
@@ -16,8 +16,8 @@ fn test_ctx_string_isolation( -- ) {
 		"child"
 	}
 	// Stack: ["parent", "child"]
-	prints nl
-	prints nl
+	print nl
+	print nl
 	clear
 }
 
@@ -28,8 +28,8 @@ fn test_ctx_string_preserve( -- ) {
 		"new"
 	}
 	// Stack: ["original", "new"]
-	prints nl
-	prints nl
+	print nl
+	print nl
 	clear
 }
 

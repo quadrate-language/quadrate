@@ -10,7 +10,7 @@ fn process_counter(val:i64 -- ) {
 	if {
 		c @value print nl
 	} else {
-		"Greater than 5" prints nl
+		"Greater than 5" print nl
 	}
 }
 

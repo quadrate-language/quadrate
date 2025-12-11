@@ -84,8 +84,8 @@ fn main( -- ) {
 		"modified"
 	}
 	// Stack: ["original", "modified"]
-	prints nl  // modified
-	prints nl  // original
+	prints n  // modified
+	prints n  // original
 }
 ```
 

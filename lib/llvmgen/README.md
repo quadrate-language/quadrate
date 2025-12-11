@@ -51,9 +51,9 @@ build/debug/cmd/quadc/quadc input.qd output
 
 ```quadrate
 fn main( -- ) {
-    "Hello from LLVM!" prints nl
-    42 prints nl
-    3.14 prints nl
+    "Hello from LLVM!" print nl
+    42 print nl
+    3.14 print nl
 }
 ```
 
@@ -99,7 +99,7 @@ The LLVM backend links with the same `libqdrt` runtime as the C backend:
 
 ### LLVM IR Example
 
-For `42 prints nl`:
+For `42 print nl`:
 
 ```llvm
 %ctx = call ptr @qd_create_context(i64 1024)

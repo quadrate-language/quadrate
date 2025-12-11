@@ -262,7 +262,7 @@ Ctx block
 
 fn test( -- ) {
     ctx {
-        "test" prints
+        "test" print
     }
 }
 
