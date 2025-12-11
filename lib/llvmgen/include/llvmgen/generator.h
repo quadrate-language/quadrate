@@ -224,7 +224,7 @@ namespace Qd {
 		 * Hides LLVM implementation details from the public interface.
 		 */
 		class Impl;
-		std::unique_ptr<Impl> impl; ///< Pointer to implementation
+		std::unique_ptr<Impl> mImpl; ///< Pointer to implementation
 	};
 
 } // namespace Qd

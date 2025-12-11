@@ -5649,23 +5649,23 @@ namespace Qd {
 
 	// LlvmGenerator implementation
 
-	LlvmGenerator::LlvmGenerator() : impl(nullptr) {
+	LlvmGenerator::LlvmGenerator() : mImpl(nullptr) {
 	}
 
 	LlvmGenerator::~LlvmGenerator() = default;
 
 	void LlvmGenerator::setDebugInfo(bool enabled) {
-		if (!impl) {
+		if (!mImpl) {
 			// Create implementation with a temporary module name - will be recreated in generate()
-			impl = std::make_unique<Impl>("temp");
+			mImpl = std::make_unique<Impl>("temp");
 		}
-		impl->debugInfoEnabled = enabled;
+		mImpl->debugInfoEnabled = enabled;
 	}
 
 	void LlvmGenerator::setOptimizationLevel(int level) {
-		if (!impl) {
+		if (!mImpl) {
 			// Create implementation with a temporary module name - will be recreated in generate()
-			impl = std::make_unique<Impl>("temp");
+			mImpl = std::make_unique<Impl>("temp");
 		}
 		// Clamp level to 0-3
 		if (level < 0) {
@@ -5674,77 +5674,77 @@ namespace Qd {
 		if (level > 3) {
 			level = 3;
 		}
-		impl->optimizationLevel = level;
+		mImpl->optimizationLevel = level;
 	}
 
 	void LlvmGenerator::addLibrarySearchPath(const std::string& path) {
-		if (!impl) {
+		if (!mImpl) {
 			// Create implementation with a temporary module name - will be recreated in generate()
-			impl = std::make_unique<Impl>("temp");
+			mImpl = std::make_unique<Impl>("temp");
 		}
-		impl->librarySearchPaths.push_back(path);
+		mImpl->librarySearchPaths.push_back(path);
 	}
 
 	void LlvmGenerator::setStackSize(size_t size) {
-		if (!impl) {
+		if (!mImpl) {
 			// Create implementation with a temporary module name - will be recreated in generate()
-			impl = std::make_unique<Impl>("temp");
+			mImpl = std::make_unique<Impl>("temp");
 		}
-		impl->stackSize = size;
+		mImpl->stackSize = size;
 	}
 
 	void LlvmGenerator::setTestMode(bool enabled) {
-		if (!impl) {
+		if (!mImpl) {
 			// Create implementation with a temporary module name - will be recreated in generate()
-			impl = std::make_unique<Impl>("temp");
+			mImpl = std::make_unique<Impl>("temp");
 		}
-		impl->testMode = enabled;
+		mImpl->testMode = enabled;
 	}
 
 	bool LlvmGenerator::generate(IAstNode* root, const std::string& moduleName) {
-		if (!impl) {
-			impl = std::make_unique<Impl>(moduleName);
+		if (!mImpl) {
+			mImpl = std::make_unique<Impl>(moduleName);
 		}
 		// Store source filename for debug info
 		// If moduleName looks like a file path (contains / or ends with .qd), use it directly
 		// Otherwise append .qd extension
 		if (moduleName.find('/') != std::string::npos || moduleName.find('\\') != std::string::npos ||
 				(moduleName.size() > 3 && moduleName.substr(moduleName.size() - 3) == ".qd")) {
-			impl->sourceFileName = moduleName;
+			mImpl->sourceFileName = moduleName;
 		} else {
-			impl->sourceFileName = moduleName + ".qd";
+			mImpl->sourceFileName = moduleName + ".qd";
 		}
 		// Store the main module name
-		impl->mainModuleName = moduleName;
+		mImpl->mainModuleName = moduleName;
 		// Add main source file to moduleSourceFiles for stack trace info
-		impl->moduleSourceFiles["main"] = impl->sourceFileName;
-		return impl->generateProgram(root);
+		mImpl->moduleSourceFiles["main"] = mImpl->sourceFileName;
+		return mImpl->generateProgram(root);
 	}
 
 	void LlvmGenerator::addModuleAST(
 			const std::string& moduleName, IAstNode* moduleRoot, const std::string& sourceFileName) {
-		if (!impl) {
-			impl = std::make_unique<Impl>("quadrate_module");
+		if (!mImpl) {
+			mImpl = std::make_unique<Impl>("quadrate_module");
 		}
-		impl->moduleASTs.push_back({moduleName, moduleRoot});
+		mImpl->moduleASTs.push_back({moduleName, moduleRoot});
 		if (!sourceFileName.empty()) {
-			impl->moduleSourceFiles[moduleName] = sourceFileName;
+			mImpl->moduleSourceFiles[moduleName] = sourceFileName;
 		}
 	}
 
 	std::string LlvmGenerator::getIRString() const {
-		if (!impl || !impl->module) {
+		if (!mImpl || !mImpl->module) {
 			return "";
 		}
 
 		std::string str;
 		llvm::raw_string_ostream os(str);
-		impl->module->print(os, nullptr);
+		mImpl->module->print(os, nullptr);
 		return str;
 	}
 
 	bool LlvmGenerator::writeIR(const std::string& filename) {
-		if (!impl || !impl->module) {
+		if (!mImpl || !mImpl->module) {
 			return false;
 		}
 
@@ -5755,12 +5755,12 @@ namespace Qd {
 			return false;
 		}
 
-		impl->module->print(os, nullptr);
+		mImpl->module->print(os, nullptr);
 		return true;
 	}
 
 	bool LlvmGenerator::writeObject(const std::string& filename) {
-		if (!impl || !impl->module) {
+		if (!mImpl || !mImpl->module) {
 			return false;
 		}
 
@@ -5775,9 +5775,9 @@ namespace Qd {
 		llvm::Triple targetTriple(targetTripleStr);
 // LLVM 20+ changed API to accept Triple objects instead of strings
 #if LLVM_VERSION_MAJOR >= 20
-		impl->module->setTargetTriple(targetTriple);
+		mImpl->module->setTargetTriple(targetTriple);
 #else
-		impl->module->setTargetTriple(targetTriple.getTriple());
+		mImpl->module->setTargetTriple(targetTriple.getTriple());
 #endif
 
 		std::string error;
@@ -5799,16 +5799,16 @@ namespace Qd {
 				targetTriple.getTriple(), cpu, features, opt, std::optional<llvm::Reloc::Model>(llvm::Reloc::PIC_)));
 #endif
 
-		impl->module->setDataLayout(targetMachine->createDataLayout());
+		mImpl->module->setDataLayout(targetMachine->createDataLayout());
 
 		// Run optimization passes if optimization level > 0
-		if (impl->optimizationLevel > 0) {
+		if (mImpl->optimizationLevel > 0) {
 			// Use legacy PassManager for optimization passes
-			llvm::legacy::FunctionPassManager fpm(impl->module.get());
+			llvm::legacy::FunctionPassManager fpm(mImpl->module.get());
 			llvm::legacy::PassManager mpm;
 
 			// Add function-level optimization passes based on level
-			if (impl->optimizationLevel >= 1) {
+			if (mImpl->optimizationLevel >= 1) {
 				// Basic optimizations
 				fpm.add(llvm::createPromoteMemoryToRegisterPass()); // mem2reg
 				fpm.add(llvm::createInstructionCombiningPass());	// instcombine
@@ -5816,14 +5816,14 @@ namespace Qd {
 				fpm.add(llvm::createCFGSimplificationPass());		// simplifycfg
 			}
 
-			if (impl->optimizationLevel >= 2) {
+			if (mImpl->optimizationLevel >= 2) {
 				// More aggressive optimizations
 				fpm.add(llvm::createGVNPass());					// GVN (Global Value Numbering)
 				fpm.add(llvm::createDeadCodeEliminationPass()); // Dead Code Elimination
 				fpm.add(llvm::createSROAPass());				// Scalar Replacement of Aggregates
 			}
 
-			if (impl->optimizationLevel >= 3) {
+			if (mImpl->optimizationLevel >= 3) {
 				// Most aggressive optimizations
 				fpm.add(llvm::createLICMPass()); // Loop Invariant Code Motion
 				fpm.add(llvm::createLoopUnrollPass());
@@ -5831,7 +5831,7 @@ namespace Qd {
 
 			// Run function passes on all functions
 			fpm.doInitialization();
-			for (auto& func : *impl->module) {
+			for (auto& func : *mImpl->module) {
 				if (!func.isDeclaration()) {
 					fpm.run(func);
 				}
@@ -5839,7 +5839,7 @@ namespace Qd {
 			fpm.doFinalization();
 
 			// Run module passes
-			mpm.run(*impl->module);
+			mpm.run(*mImpl->module);
 		}
 
 		std::error_code ec;
@@ -5855,7 +5855,7 @@ namespace Qd {
 			return false;
 		}
 
-		pass.run(*impl->module);
+		pass.run(*mImpl->module);
 		dest.flush();
 
 		return true;
@@ -5939,14 +5939,14 @@ namespace Qd {
 		std::string libraryFlags = qdrtStaticPath;
 
 		// Add imported libraries
-		for (const auto& library : impl->importedLibraries) {
+		for (const auto& library : mImpl->importedLibraries) {
 			// Check if it's already a .a file (static library)
 			if (library.size() >= 2 && library.substr(library.size() - 2) == ".a") {
 				// It's a static library, link it directly
 				std::string foundLibPath;
 
 				// First, check in additional library search paths (third-party packages)
-				for (const auto& searchPath : impl->librarySearchPaths) {
+				for (const auto& searchPath : mImpl->librarySearchPaths) {
 					std::string candidatePath = searchPath + "/" + library;
 					if (std::filesystem::exists(candidatePath)) {
 						foundLibPath = candidatePath;
@@ -6007,7 +6007,7 @@ namespace Qd {
 
 		// Build -L flags for additional library search paths (third-party packages)
 		std::string librarySearchFlags;
-		for (const auto& searchPath : impl->librarySearchPaths) {
+		for (const auto& searchPath : mImpl->librarySearchPaths) {
 			librarySearchFlags += " -L" + searchPath;
 		}
 

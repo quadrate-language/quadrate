@@ -35,7 +35,7 @@ static inline void ptr_registry_init(ptr_registry_t* reg) {
 }
 
 /* Static initializer for global registries */
-#define PTR_REGISTRY_INITIALIZER { .buckets = {NULL}, .mutex = PTHREAD_MUTEX_INITIALIZER }
+#define PTR_REGISTRY_INITIALIZER {.buckets = {NULL}, .mutex = PTHREAD_MUTEX_INITIALIZER}
 
 static inline size_t ptr_registry_hash(const void* ptr) {
 	uintptr_t val = (uintptr_t)ptr;

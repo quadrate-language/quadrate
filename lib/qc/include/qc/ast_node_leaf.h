@@ -13,7 +13,7 @@ namespace Qd {
 	 *
 	 * @tparam NodeType The IAstNode::Type value for this node type
 	 */
-	template<IAstNode::Type NodeType>
+	template <IAstNode::Type NodeType>
 	class AstNodeLeaf : public IAstNode {
 	public:
 		AstNodeLeaf() : mParent(nullptr), mLine(0), mColumn(0) {
