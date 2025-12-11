@@ -79,15 +79,21 @@ make format
 
 ```
 quadrate/
-├── bin/          # Executable sources
-│   ├── quadc/    # Compiler frontend
-│   └── quadfmt/  # Code formatter
-├── lib/          # Library sources
-│   ├── qc/          # Quadrate compiler core
-│   ├── quadrate/    # C API (libquadrate.so)
-│   └── u8/          # UTF-8 utilities
-├── examples/     # Usage examples
-└── dist/         # Build outputs (generated)
+├── cmd/          # Command-line tools
+│   ├── quadc/    # Compiler
+│   ├── quadfmt/  # Formatter
+│   ├── quadlsp/  # Language server
+│   └── ...
+├── lib/          # Libraries
+│   ├── qc/       # Compiler frontend (parser, AST, semantic analysis)
+│   ├── qd/       # Embedding API (libqd)
+│   ├── qdrt/     # Runtime (libqdrt)
+│   ├── llvmgen/  # LLVM code generator
+│   └── qd*/      # Standard library modules
+├── examples/     # Example programs
+├── tests/        # Test suite
+├── editors/      # Editor integrations
+└── docs/         # Documentation source
 ```
 
 Each library follows the structure:
@@ -95,8 +101,9 @@ Each library follows the structure:
 lib/name/
 ├── meson.build
 ├── include/name/  # Public headers
-├── src/           # Implementation files
-└── tests/         # Unit tests (optional)
+├── src/           # Implementation
+├── qd/            # Quadrate source (for stdlib modules)
+└── tests/         # Unit tests
 ```
 
 ## Compiler Warnings
