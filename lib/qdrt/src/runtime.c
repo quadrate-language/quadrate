@@ -262,12 +262,6 @@ qd_exec_result qd_peek(qd_context* ctx) {
 	return (qd_exec_result){0};
 }
 
-qd_exec_result qd_err_push(qd_context* ctx, qd_stack_error value) {
-	(void)ctx;
-	(void)value;
-	return (qd_exec_result){0};
-}
-
 // Helper function to check if a stack type is numeric
 static inline bool is_numeric_type(qd_stack_type type) {
 	return type == QD_STACK_TYPE_INT || type == QD_STACK_TYPE_FLOAT;

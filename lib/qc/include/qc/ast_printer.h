@@ -7,7 +7,6 @@ namespace Qd {
 	class AstPrinter {
 	public:
 		static void print(const IAstNode* node);
-		static void printTree(const IAstNode* node, const char* prefix = "", bool isLast = true);
 	};
 }
 

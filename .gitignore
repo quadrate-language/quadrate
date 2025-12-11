@@ -18,4 +18,8 @@ GEMINI.md
 benchmarks/arithmetic_qd_typeaware
 benchmarks/arithmetic_v8_specialized
 empty_if
+
+# Command binaries (built in-place)
+cmd/quadmcp/quadmcp
+
 lib/stdnetqd/src/platform/README.md

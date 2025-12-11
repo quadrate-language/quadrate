@@ -10,77 +10,16 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <pthread.h>
+#include "ptr_registry.h"
 
-// ============================================================================
 // Global registry of valid array pointers
-// This allows safe retain/release on any pointer by checking registry membership
-// ============================================================================
-
-#define ARRAY_REGISTRY_SIZE 1024
-
-typedef struct array_registry_entry {
-	void* ptr;
-	struct array_registry_entry* next;
-} array_registry_entry_t;
-
-static array_registry_entry_t* array_registry[ARRAY_REGISTRY_SIZE];
-static pthread_mutex_t array_registry_mutex = PTHREAD_MUTEX_INITIALIZER;
-
-static size_t array_ptr_hash(const void* ptr) {
-	return ((size_t)ptr >> 3) % ARRAY_REGISTRY_SIZE;
-}
-
-static void array_registry_add(void* ptr) {
-	pthread_mutex_lock(&array_registry_mutex);
-	size_t idx = array_ptr_hash(ptr);
-	array_registry_entry_t* entry = (array_registry_entry_t*)malloc(sizeof(array_registry_entry_t));
-	if (entry) {
-		entry->ptr = ptr;
-		entry->next = array_registry[idx];
-		array_registry[idx] = entry;
-	}
-	pthread_mutex_unlock(&array_registry_mutex);
-}
-
-static int array_registry_contains(const void* ptr) {
-	pthread_mutex_lock(&array_registry_mutex);
-	size_t idx = array_ptr_hash(ptr);
-	array_registry_entry_t* entry = array_registry[idx];
-	while (entry) {
-		if (entry->ptr == ptr) {
-			pthread_mutex_unlock(&array_registry_mutex);
-			return 1;
-		}
-		entry = entry->next;
-	}
-	pthread_mutex_unlock(&array_registry_mutex);
-	return 0;
-}
-
-static void array_registry_remove(void* ptr) {
-	pthread_mutex_lock(&array_registry_mutex);
-	size_t idx = array_ptr_hash(ptr);
-	array_registry_entry_t** pp = &array_registry[idx];
-	while (*pp) {
-		if ((*pp)->ptr == ptr) {
-			array_registry_entry_t* to_free = *pp;
-			*pp = (*pp)->next;
-			free(to_free);
-			pthread_mutex_unlock(&array_registry_mutex);
-			return;
-		}
-		pp = &(*pp)->next;
-	}
-	pthread_mutex_unlock(&array_registry_mutex);
-}
+static ptr_registry_t array_registry = PTR_REGISTRY_INITIALIZER;
 
 int qd_array_is_valid(const void* ptr) {
 	if (!ptr) {
 		return 0;
 	}
-	// Use registry to safely check if this is a valid array
-	return array_registry_contains(ptr);
+	return ptr_registry_contains(&array_registry, ptr);
 }
 
 qd_array_t* qd_array_create(size_t capacity, qd_array_type elemType) {
@@ -134,7 +73,7 @@ qd_array_t* qd_array_create(size_t capacity, qd_array_type elemType) {
 	}
 
 	// Register this array pointer
-	array_registry_add(arr);
+	ptr_registry_add(&array_registry, arr);
 
 	return arr;
 }
@@ -156,7 +95,7 @@ void qd_array_release(qd_array_t* arr) {
 	}
 
 	// Unregister from registry before freeing
-	array_registry_remove(arr);
+	ptr_registry_remove(&array_registry, arr);
 
 	// Free contents
 	switch (arr->elemType) {

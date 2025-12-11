@@ -3,6 +3,16 @@
 #include <stdlib.h>
 #include <string.h>
 
+/* Macro for null pointer error handling */
+#define CHECK_NULL(ctx, ptr, op_name) \
+	do { \
+		if ((ptr) == NULL) { \
+			(ctx)->error_code = -1; \
+			(ctx)->error_msg = "Null pointer in mem::" op_name; \
+			return (qd_exec_result){-1}; \
+		} \
+	} while (0)
+
 /* Helper: Pop integer from stack */
 static qd_stack_error pop_int(qd_context* ctx, int64_t* value) {
 	qd_stack_element_t elem;
@@ -103,11 +113,7 @@ qd_exec_result qd_mem_set_byte(qd_context* ctx) {
 		return (qd_exec_result){-1};
 	}
 
-	if (address == NULL) {
-		ctx->error_code = -1;
-		ctx->error_msg = "Null pointer in mem::set_byte";
-		return (qd_exec_result){-1};
-	}
+	CHECK_NULL(ctx, address, "set_byte");
 
 	*((uint8_t*)((char*)address + offset)) = (uint8_t)(value & 0xFF);
 	return (qd_exec_result){0};
@@ -123,11 +129,7 @@ qd_exec_result qd_mem_get_byte(qd_context* ctx) {
 		return (qd_exec_result){-1};
 	}
 
-	if (address == NULL) {
-		ctx->error_code = -1;
-		ctx->error_msg = "Null pointer in mem::get_byte";
-		return (qd_exec_result){-1};
-	}
+	CHECK_NULL(ctx, address, "get_byte");
 
 	uint8_t byte = *((uint8_t*)((char*)address + offset));
 	return qd_push_i(ctx, (int64_t)byte);
@@ -144,11 +146,7 @@ qd_exec_result qd_mem_set(qd_context* ctx) {
 		return (qd_exec_result){-1};
 	}
 
-	if (address == NULL) {
-		ctx->error_code = -1;
-		ctx->error_msg = "Null pointer in mem::set";
-		return (qd_exec_result){-1};
-	}
+	CHECK_NULL(ctx, address, "set");
 
 	memcpy((char*)address + offset, &value, sizeof(int64_t));
 	return (qd_exec_result){0};
@@ -164,11 +162,7 @@ qd_exec_result qd_mem_get(qd_context* ctx) {
 		return (qd_exec_result){-1};
 	}
 
-	if (address == NULL) {
-		ctx->error_code = -1;
-		ctx->error_msg = "Null pointer in mem::get";
-		return (qd_exec_result){-1};
-	}
+	CHECK_NULL(ctx, address, "get");
 
 	int64_t value;
 	memcpy(&value, (char*)address + offset, sizeof(int64_t));
@@ -187,11 +181,7 @@ qd_exec_result qd_mem_set_float(qd_context* ctx) {
 		return (qd_exec_result){-1};
 	}
 
-	if (address == NULL) {
-		ctx->error_code = -1;
-		ctx->error_msg = "Null pointer in mem::set_float";
-		return (qd_exec_result){-1};
-	}
+	CHECK_NULL(ctx, address, "set_float");
 
 	memcpy((char*)address + offset, &value, sizeof(double));
 	return (qd_exec_result){0};
@@ -207,11 +197,7 @@ qd_exec_result qd_mem_get_float(qd_context* ctx) {
 		return (qd_exec_result){-1};
 	}
 
-	if (address == NULL) {
-		ctx->error_code = -1;
-		ctx->error_msg = "Null pointer in mem::get_float";
-		return (qd_exec_result){-1};
-	}
+	CHECK_NULL(ctx, address, "get_float");
 
 	double value;
 	memcpy(&value, (char*)address + offset, sizeof(double));
@@ -229,11 +215,7 @@ qd_exec_result qd_mem_set_ptr(qd_context* ctx) {
 		return (qd_exec_result){-1};
 	}
 
-	if (address == NULL) {
-		ctx->error_code = -1;
-		ctx->error_msg = "Null pointer in mem::set_ptr";
-		return (qd_exec_result){-1};
-	}
+	CHECK_NULL(ctx, address, "set_ptr");
 
 	memcpy((char*)address + offset, &value, sizeof(void*));
 	return (qd_exec_result){0};
@@ -249,11 +231,7 @@ qd_exec_result qd_mem_get_ptr(qd_context* ctx) {
 		return (qd_exec_result){-1};
 	}
 
-	if (address == NULL) {
-		ctx->error_code = -1;
-		ctx->error_msg = "Null pointer in mem::get_ptr";
-		return (qd_exec_result){-1};
-	}
+	CHECK_NULL(ctx, address, "get_ptr");
 
 	void* value;
 	memcpy(&value, (char*)address + offset, sizeof(void*));
@@ -271,11 +249,8 @@ qd_exec_result qd_mem_copy(qd_context* ctx) {
 		return (qd_exec_result){-1};
 	}
 
-	if (src == NULL || dst == NULL) {
-		ctx->error_code = -1;
-		ctx->error_msg = "Null pointer in mem::copy";
-		return (qd_exec_result){-1};
-	}
+	CHECK_NULL(ctx, src, "copy");
+	CHECK_NULL(ctx, dst, "copy");
 
 	if (bytes < 0) {
 		ctx->error_code = -1;
@@ -297,11 +272,7 @@ qd_exec_result qd_mem_zero(qd_context* ctx) {
 		return (qd_exec_result){-1};
 	}
 
-	if (address == NULL) {
-		ctx->error_code = -1;
-		ctx->error_msg = "Null pointer in mem::zero";
-		return (qd_exec_result){-1};
-	}
+	CHECK_NULL(ctx, address, "zero");
 
 	if (bytes < 0) {
 		ctx->error_code = -1;
@@ -324,11 +295,7 @@ qd_exec_result qd_mem_fill(qd_context* ctx) {
 		return (qd_exec_result){-1};
 	}
 
-	if (address == NULL) {
-		ctx->error_code = -1;
-		ctx->error_msg = "Null pointer in mem::fill";
-		return (qd_exec_result){-1};
-	}
+	CHECK_NULL(ctx, address, "fill");
 
 	if (bytes < 0) {
 		ctx->error_code = -1;

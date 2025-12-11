@@ -622,15 +622,6 @@ qd_exec_result qd_err(qd_context* ctx);
  */
 qd_exec_result qd_panic(qd_context* ctx);
 
-/**
- * @brief Push an error code onto the stack
- *
- * @param ctx Execution context
- * @param value Error code to push
- * @return Execution result (0 on success)
- */
-qd_exec_result qd_err_push(qd_context* ctx, qd_stack_error value);
-
 /** @} */ // end of ErrorHandling group
 
 /**

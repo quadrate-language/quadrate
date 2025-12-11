@@ -263,9 +263,4 @@ namespace Qd {
 		printJsonNode(node);
 		printf("\n");
 	}
-
-	void AstPrinter::printTree(const IAstNode* node, const char*, bool) {
-		// Deprecated - now using JSON output
-		print(node);
-	}
 }

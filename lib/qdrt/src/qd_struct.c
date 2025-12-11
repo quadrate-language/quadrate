@@ -5,81 +5,14 @@
 
 #include "qdrt/qd_struct.h"
 #include "qdrt/array.h"
+#include "ptr_registry.h"
 #include <stdlib.h>
 #include <stdint.h>
 #include <stdatomic.h>
-#include <pthread.h>
 #include <stdbool.h>
 
-// ============================================================================
 // Global registry of valid struct pointers
-// This allows safe retain/release on any pointer by checking registry membership
-// ============================================================================
-
-#define REGISTRY_SIZE 1024
-#define REGISTRY_LOAD_FACTOR 0.75
-
-typedef struct registry_entry {
-	void* ptr;
-	struct registry_entry* next;
-} registry_entry_t;
-
-static registry_entry_t* struct_registry[REGISTRY_SIZE];
-static pthread_mutex_t registry_mutex = PTHREAD_MUTEX_INITIALIZER;
-static size_t registry_count = 0;
-
-static size_t ptr_hash(const void* ptr) {
-	// Use pointer value as hash, shift to spread bits
-	uintptr_t val = (uintptr_t)ptr;
-	val = val ^ (val >> 16);
-	return val % REGISTRY_SIZE;
-}
-
-static void registry_add(void* ptr) {
-	pthread_mutex_lock(&registry_mutex);
-	size_t idx = ptr_hash(ptr);
-	registry_entry_t* entry = malloc(sizeof(registry_entry_t));
-	if (entry) {
-		entry->ptr = ptr;
-		entry->next = struct_registry[idx];
-		struct_registry[idx] = entry;
-		registry_count++;
-	}
-	pthread_mutex_unlock(&registry_mutex);
-}
-
-static void registry_remove(void* ptr) {
-	pthread_mutex_lock(&registry_mutex);
-	size_t idx = ptr_hash(ptr);
-	registry_entry_t** prev = &struct_registry[idx];
-	registry_entry_t* curr = struct_registry[idx];
-	while (curr) {
-		if (curr->ptr == ptr) {
-			*prev = curr->next;
-			free(curr);
-			registry_count--;
-			break;
-		}
-		prev = &curr->next;
-		curr = curr->next;
-	}
-	pthread_mutex_unlock(&registry_mutex);
-}
-
-static bool registry_contains(const void* ptr) {
-	pthread_mutex_lock(&registry_mutex);
-	size_t idx = ptr_hash(ptr);
-	registry_entry_t* curr = struct_registry[idx];
-	while (curr) {
-		if (curr->ptr == ptr) {
-			pthread_mutex_unlock(&registry_mutex);
-			return true;
-		}
-		curr = curr->next;
-	}
-	pthread_mutex_unlock(&registry_mutex);
-	return false;
-}
+static ptr_registry_t struct_registry = PTR_REGISTRY_INITIALIZER;
 
 // ============================================================================
 // Struct operations
@@ -99,7 +32,7 @@ int qd_struct_is_valid(const void* struct_ptr) {
 		return 0;
 	}
 	// Use registry to safely check if this is a valid struct
-	return registry_contains(struct_ptr) ? 1 : 0;
+	return ptr_registry_contains(&struct_registry, struct_ptr) ? 1 : 0;
 }
 
 void* qd_struct_alloc(size_t size, qd_struct_destructor_fn destructor) {
@@ -119,7 +52,7 @@ void* qd_struct_alloc(size_t size, qd_struct_destructor_fn destructor) {
 	void* struct_ptr = (char*)mem + sizeof(qd_struct_header_t);
 
 	// Register this struct pointer
-	registry_add(struct_ptr);
+	ptr_registry_add(&struct_registry, struct_ptr);
 
 	return struct_ptr;
 }
@@ -130,7 +63,7 @@ void* qd_struct_retain(void* struct_ptr) {
 	}
 
 	// Check registry to verify this is a valid struct (safe for any pointer)
-	if (!registry_contains(struct_ptr)) {
+	if (!ptr_registry_contains(&struct_registry, struct_ptr)) {
 		return struct_ptr;
 	}
 
@@ -145,7 +78,7 @@ void qd_struct_release(void* struct_ptr) {
 	}
 
 	// Check registry to verify this is a valid struct (safe for any pointer)
-	if (!registry_contains(struct_ptr)) {
+	if (!ptr_registry_contains(&struct_registry, struct_ptr)) {
 		return;
 	}
 
@@ -154,7 +87,7 @@ void qd_struct_release(void* struct_ptr) {
 
 	if (old_count == 1) {
 		// Last reference - remove from registry, call destructor, then free
-		registry_remove(struct_ptr);
+		ptr_registry_remove(&struct_registry, struct_ptr);
 
 		if (header->destructor != NULL) {
 			header->destructor(struct_ptr);
@@ -170,7 +103,7 @@ size_t qd_struct_refcount(const void* struct_ptr) {
 	}
 
 	// Check registry first
-	if (!registry_contains(struct_ptr)) {
+	if (!ptr_registry_contains(&struct_registry, struct_ptr)) {
 		return 0;
 	}
 
