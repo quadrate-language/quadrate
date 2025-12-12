@@ -1,0 +1,16 @@
+use os
+use fmt
+
+fn main( -- ) {
+    // Set a new variable
+    "QD_TEST_VAR" "test_value_123" os::setenv
+    "QD_TEST_VAR" os::getenv "%s\n" fmt::printf
+
+    // Overwrite it
+    "QD_TEST_VAR" "new_value" os::setenv
+    "QD_TEST_VAR" os::getenv "%s\n" fmt::printf
+
+    // Set empty value
+    "QD_TEST_VAR" "" os::setenv
+    "QD_TEST_VAR" os::getenv "empty:[%s]\n" fmt::printf
+}

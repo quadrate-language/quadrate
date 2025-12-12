@@ -42,6 +42,12 @@ import "libqdos.a" as "os" {
 	/// @example "HOME" os::getenv -> home
 	pub fn getenv(name:str -- value:str)
 
+	/// Set environment variable.
+	/// @param name str Variable name
+	/// @param value str Variable value
+	/// @example "MY_VAR" "hello" os::setenv
+	pub fn setenv(name:str value:str -- )
+
 	/// Check if path exists.
 	/// @param path str File or directory path
 	/// @return exists i64 1 if exists, 0 otherwise

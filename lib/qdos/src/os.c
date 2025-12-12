@@ -365,6 +365,58 @@ qd_exec_result usr_os_mkdir(qd_context* ctx) {
 	return (qd_exec_result){error_code};
 }
 
+qd_exec_result usr_os_setenv(qd_context* ctx) {
+	size_t stack_size = qd_stack_size(ctx->st);
+	if (stack_size < 2) {
+		fprintf(stderr, "Fatal error in os::setenv: Stack underflow (required 2 elements, have %zu)\n", stack_size);
+		qd_print_stack_trace(ctx);
+		abort();
+	}
+
+	// Pop value (top of stack)
+	qd_stack_element_t value_elem;
+	qd_stack_error err = qd_stack_pop(ctx->st, &value_elem);
+	if (err != QD_STACK_OK) {
+		fprintf(stderr, "Fatal error in os::setenv: Failed to pop value\n");
+		qd_print_stack_trace(ctx);
+		abort();
+	}
+
+	if (value_elem.type != QD_STACK_TYPE_STR) {
+		fprintf(stderr, "Fatal error in os::setenv: Expected string value, got type %d\n", value_elem.type);
+		qd_print_stack_trace(ctx);
+		abort();
+	}
+
+	// Pop name
+	qd_stack_element_t name_elem;
+	err = qd_stack_pop(ctx->st, &name_elem);
+	if (err != QD_STACK_OK) {
+		qd_string_release(value_elem.value.s);
+		fprintf(stderr, "Fatal error in os::setenv: Failed to pop name\n");
+		qd_print_stack_trace(ctx);
+		abort();
+	}
+
+	if (name_elem.type != QD_STACK_TYPE_STR) {
+		qd_string_release(value_elem.value.s);
+		fprintf(stderr, "Fatal error in os::setenv: Expected string name, got type %d\n", name_elem.type);
+		qd_print_stack_trace(ctx);
+		abort();
+	}
+
+	// Set the environment variable (1 = overwrite existing)
+	int result = setenv(qd_string_data(name_elem.value.s), qd_string_data(value_elem.value.s), 1);
+	qd_string_release(name_elem.value.s);
+	qd_string_release(value_elem.value.s);
+
+	if (result != 0) {
+		return (qd_exec_result){errno};
+	}
+
+	return (qd_exec_result){OS_ERR_NONE};
+}
+
 qd_exec_result usr_os_list(qd_context* ctx) {
 	size_t stack_size = qd_stack_size(ctx->st);
 	if (stack_size < 1) {

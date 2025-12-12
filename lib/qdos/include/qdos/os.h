@@ -88,6 +88,24 @@ qd_exec_result usr_os_system(qd_context* ctx);
 qd_exec_result usr_os_getenv(qd_context* ctx);
 
 /**
+ * @brief Set an environment variable
+ *
+ * @par Stack Effect: ( name:s value:s -- )
+ *
+ * Sets the specified environment variable to the given value.
+ * Overwrites any existing value.
+ *
+ * @param ctx Execution context
+ * @return Execution result
+ *
+ * @par Example:
+ * @code
+ * "MY_VAR" "hello" os::setenv  // Set MY_VAR to "hello"
+ * @endcode
+ */
+qd_exec_result usr_os_setenv(qd_context* ctx);
+
+/**
  * @brief Check if a file or directory exists
  *
  * @par Stack Effect: ( path:s -- exists:i )
