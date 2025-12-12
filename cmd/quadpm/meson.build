@@ -10,3 +10,6 @@ quadpm_exe = executable(
 	install: true,
 	cpp_args: ['-std=c++20'],
 )
+
+# Override find_program so tests use this build
+meson.override_find_program('quadpm', quadpm_exe)

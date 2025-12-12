@@ -5,5 +5,8 @@ quadlint_sources = files(
 quadlint = executable('quadlint',
 	quadlint_sources,
 	dependencies: qc_dep,
-	install: false
+	install: true
 )
+
+# Override find_program so tests use this build
+meson.override_find_program('quadlint', quadlint)

@@ -21,9 +21,6 @@ LIBS_WITH_HEADERS := qdrt qd qdfmt qdio qdmath qdmem qdnet qdos qdstr qdstrconv 
 # Standard library modules (pure Quadrate or mixed)
 STDLIB_MODULES := base64 bits flag fmt io json math mem net os sb str strconv time unicode uri hex bytes crc32 sha256 regex path sort rand uuid testing
 
-# Library source directories for stdlib modules
-STDLIB_SOURCES := qdbase64 qdbits qdflag qdfmt qdio qdjson qdmath qdmem qdnet qdos qdsb qdstr qdstrconv qdtime qdunicode qduri qdhex qdbytes qdcrc32 qdsha256 qdregex qdpath qdsort qdrand qduuid qdtesting
-
 .PHONY: all debug release tests valgrind examples format install uninstall clean docs
 
 all: debug
@@ -44,32 +41,7 @@ define do_build
 	done
 	@for lib in $(LIBS_WITH_HEADERS); do cp -rf lib/$$lib/include/$$lib dist/include/; done
 	@mkdir -p dist/share/quadrate
-	@cp -r lib/qdbase64/qd/base64 dist/share/quadrate/
-	@cp -r lib/qdbits/qd/bits dist/share/quadrate/
-	@cp -r lib/qdflag/qd/flag dist/share/quadrate/
-	@cp -r lib/qdfmt/qd/fmt dist/share/quadrate/
-	@cp -r lib/qdio/qd/io dist/share/quadrate/
-	@cp -r lib/qdjson/qd/json dist/share/quadrate/
-	@cp -r lib/qdmath/qd/math dist/share/quadrate/
-	@cp -r lib/qdmem/qd/mem dist/share/quadrate/
-	@cp -r lib/qdnet/qd/net dist/share/quadrate/
-	@cp -r lib/qdos/qd/os dist/share/quadrate/
-	@cp -r lib/qdsb/qd/sb dist/share/quadrate/
-	@cp -r lib/qdstr/qd/str dist/share/quadrate/
-	@cp -r lib/qdstrconv/qd/strconv dist/share/quadrate/
-	@cp -r lib/qdtime/qd/time dist/share/quadrate/
-	@cp -r lib/qdunicode/qd/unicode dist/share/quadrate/
-	@cp -r lib/qduri/qd/uri dist/share/quadrate/
-	@cp -r lib/qdhex/qd/hex dist/share/quadrate/
-	@cp -r lib/qdbytes/qd/bytes dist/share/quadrate/
-	@cp -r lib/qdcrc32/qd/crc32 dist/share/quadrate/
-	@cp -r lib/qdsha256/qd/sha256 dist/share/quadrate/
-	@cp -r lib/qdregex/qd/regex dist/share/quadrate/
-	@cp -r lib/qdpath/qd/path dist/share/quadrate/
-	@cp -r lib/qdsort/qd/sort dist/share/quadrate/
-	@cp -r lib/qdrand/qd/rand dist/share/quadrate/
-	@cp -r lib/qduuid/qd/uuid dist/share/quadrate/
-	@cp -r lib/qdtesting/qd/testing dist/share/quadrate/
+	@for mod in $(STDLIB_MODULES); do cp -r lib/qd*/qd/$$mod dist/share/quadrate/ 2>/dev/null || true; done
 	@mkdir -p dist/share/bash-completion/completions
 	@cp -f completions/quad.bash dist/share/bash-completion/completions/quad
 	@echo "$(3)"
@@ -173,32 +145,7 @@ install: release
 	@for lib in $(LIBS_WITH_HEADERS); do cp -r dist/include/$$lib $(DESTDIR)$(PREFIX)/include/; done
 	@echo "Installing Quadrate standard library modules to $(DESTDIR)$(PREFIX)/share/quadrate/"
 	install -d $(DESTDIR)$(PREFIX)/share/quadrate
-	@cp -r lib/qdbase64/qd/base64 $(DESTDIR)$(PREFIX)/share/quadrate/
-	@cp -r lib/qdbits/qd/bits $(DESTDIR)$(PREFIX)/share/quadrate/
-	@cp -r lib/qdflag/qd/flag $(DESTDIR)$(PREFIX)/share/quadrate/
-	@cp -r lib/qdfmt/qd/fmt $(DESTDIR)$(PREFIX)/share/quadrate/
-	@cp -r lib/qdio/qd/io $(DESTDIR)$(PREFIX)/share/quadrate/
-	@cp -r lib/qdjson/qd/json $(DESTDIR)$(PREFIX)/share/quadrate/
-	@cp -r lib/qdmath/qd/math $(DESTDIR)$(PREFIX)/share/quadrate/
-	@cp -r lib/qdmem/qd/mem $(DESTDIR)$(PREFIX)/share/quadrate/
-	@cp -r lib/qdnet/qd/net $(DESTDIR)$(PREFIX)/share/quadrate/
-	@cp -r lib/qdos/qd/os $(DESTDIR)$(PREFIX)/share/quadrate/
-	@cp -r lib/qdsb/qd/sb $(DESTDIR)$(PREFIX)/share/quadrate/
-	@cp -r lib/qdstr/qd/str $(DESTDIR)$(PREFIX)/share/quadrate/
-	@cp -r lib/qdstrconv/qd/strconv $(DESTDIR)$(PREFIX)/share/quadrate/
-	@cp -r lib/qdtime/qd/time $(DESTDIR)$(PREFIX)/share/quadrate/
-	@cp -r lib/qdunicode/qd/unicode $(DESTDIR)$(PREFIX)/share/quadrate/
-	@cp -r lib/qduri/qd/uri $(DESTDIR)$(PREFIX)/share/quadrate/
-	@cp -r lib/qdhex/qd/hex $(DESTDIR)$(PREFIX)/share/quadrate/
-	@cp -r lib/qdbytes/qd/bytes $(DESTDIR)$(PREFIX)/share/quadrate/
-	@cp -r lib/qdcrc32/qd/crc32 $(DESTDIR)$(PREFIX)/share/quadrate/
-	@cp -r lib/qdsha256/qd/sha256 $(DESTDIR)$(PREFIX)/share/quadrate/
-	@cp -r lib/qdregex/qd/regex $(DESTDIR)$(PREFIX)/share/quadrate/
-	@cp -r lib/qdpath/qd/path $(DESTDIR)$(PREFIX)/share/quadrate/
-	@cp -r lib/qdsort/qd/sort $(DESTDIR)$(PREFIX)/share/quadrate/
-	@cp -r lib/qdrand/qd/rand $(DESTDIR)$(PREFIX)/share/quadrate/
-	@cp -r lib/qduuid/qd/uuid $(DESTDIR)$(PREFIX)/share/quadrate/
-	@cp -r lib/qdtesting/qd/testing $(DESTDIR)$(PREFIX)/share/quadrate/
+	@for mod in $(STDLIB_MODULES); do cp -r lib/qd*/qd/$$mod $(DESTDIR)$(PREFIX)/share/quadrate/ 2>/dev/null || true; done
 	@echo "Installing bash completions to $(DESTDIR)$(PREFIX)/share/bash-completion/completions/"
 	install -d $(DESTDIR)$(PREFIX)/share/bash-completion/completions
 	install -m 644 completions/quad.bash $(DESTDIR)$(PREFIX)/share/bash-completion/completions/quad
