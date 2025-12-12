@@ -1,0 +1,15 @@
+// Test: Multiple lint issues in one file
+fn unused_func1( -- ) {
+}
+
+fn unused_func2( -- ) {
+}
+
+fn main( -- ) {
+	10 -> unused_var
+
+	loop {
+		break
+		42 print
+	}
+}

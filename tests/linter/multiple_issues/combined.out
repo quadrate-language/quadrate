@@ -1,0 +1,6 @@
+[1mtests/linter/multiple_issues/combined.qd:5:4:[0m [1m[1;35mwarning:[0m [1mUnused function 'unused_func2'[0m
+[1mtests/linter/multiple_issues/combined.qd:2:4:[0m [1m[1;35mwarning:[0m [1mUnused function 'unused_func1'[0m
+[1mtests/linter/multiple_issues/combined.qd:9:5:[0m [1m[1;35mwarning:[0m [1mUnused local variable 'unused_var'[0m
+[1mtests/linter/multiple_issues/combined.qd:13:3:[0m [1m[1;35mwarning:[0m [1mUnreachable code after break[0m
+
+4 issues found

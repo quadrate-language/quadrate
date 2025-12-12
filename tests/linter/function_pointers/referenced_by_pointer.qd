@@ -1,0 +1,8 @@
+// Test: Function referenced by pointer should NOT be flagged as unused
+fn helper( -- result:i64) {
+	42
+}
+
+fn main( -- ) {
+	&helper drop
+}

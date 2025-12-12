@@ -1,0 +1,9 @@
+// Test: Public functions should NOT be flagged as unused
+// (they may be used externally)
+pub fn exported_helper( -- result:i64) {
+	42
+}
+
+fn main( -- ) {
+	// main doesn't call exported_helper, but it's public so no warning
+}

@@ -37,6 +37,10 @@ if llvm_dep.found()
 		include_directories: llvmgen_inc,
 		dependencies: [llvm_dep, qc_dep]
 	)
+	# Tests
+	if get_option('build_tests')
+		subdir('tests')
+	endif
 else
 	warning('LLVM not found, LLVM backend will not be available')
 	llvmgen_dep = dependency('', required: false)
