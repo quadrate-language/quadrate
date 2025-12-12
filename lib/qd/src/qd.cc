@@ -3,7 +3,6 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
-#include <dlfcn.h>
 #include <filesystem>
 #include <fstream>
 #include <functional>
@@ -18,6 +17,12 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
+
+// Platform abstractions
+extern "C" {
+#include "src/platform/dynlib_platform.h"
+#include "src/platform/exe_path_platform.h"
+}
 
 namespace fs = std::filesystem;
 
@@ -49,15 +54,21 @@ static std::string findModuleFile(const std::string& moduleName) {
 	}
 
 	// Try 3: Standard library relative to executable
-	try {
-		fs::path exePath = fs::canonical("/proc/self/exe");
-		fs::path exeDir = exePath.parent_path();
-		fs::path sharePath = exeDir / ".." / "share" / "quadrate" / moduleName / "module.qd";
-		if (fs::exists(sharePath)) {
-			return sharePath.string();
+	{
+		char exePathBuf[4096];
+		int len = exe_path_platform_get(exePathBuf, sizeof(exePathBuf));
+		if (len > 0 && static_cast<size_t>(len) < sizeof(exePathBuf)) {
+			try {
+				fs::path exePath = fs::canonical(exePathBuf);
+				fs::path exeDir = exePath.parent_path();
+				fs::path sharePath = exeDir / ".." / "share" / "quadrate" / moduleName / "module.qd";
+				if (fs::exists(sharePath)) {
+					return sharePath.string();
+				}
+			} catch (...) {
+				// Ignore errors resolving path
+			}
 		}
-	} catch (...) {
-		// Ignore errors reading executable path
 	}
 
 	// Try 4: $HOME/quadrate directory
@@ -132,7 +143,7 @@ struct qd_module {
 	std::vector<std::string> scripts;
 	std::unordered_map<std::string, void (*)()> native_functions;
 	std::unordered_map<std::string, std::string> symbol_map; // function_name -> full_symbol_name
-	void* dl_handle;										 // dlopen handle
+	dynlib_handle_t dl_handle;								 // dynamic library handle
 	fs::path temp_dir;
 	fs::path so_path;
 	bool compiled;
@@ -144,7 +155,7 @@ struct qd_module {
 	~qd_module() {
 		// Clean up dynamic library
 		if (dl_handle) {
-			dlclose(dl_handle);
+			dynlib_platform_close(dl_handle);
 		}
 		// Clean up temp directory
 		if (!temp_dir.empty() && fs::exists(temp_dir)) {
@@ -210,8 +221,11 @@ void qd_build(qd_module* mod) {
 
 	try {
 		// Create temporary directory for compilation
-		char temp_template[] = "/tmp/qd_embed_XXXXXX";
-		char* temp_path = mkdtemp(temp_template);
+		fs::path temp_base = fs::temp_directory_path();
+		std::string temp_template = (temp_base / "qd_embed_XXXXXX").string();
+		std::vector<char> temp_buf(temp_template.begin(), temp_template.end());
+		temp_buf.push_back('\0');
+		char* temp_path = mkdtemp(temp_buf.data());
 		if (!temp_path) {
 			fprintf(stderr, "qd_build: Failed to create temporary directory\n");
 			return;
@@ -418,9 +432,9 @@ void qd_build(qd_module* mod) {
 		}
 
 		// Load the shared library
-		mod->dl_handle = dlopen(mod->so_path.c_str(), RTLD_NOW | RTLD_LOCAL);
+		mod->dl_handle = dynlib_platform_open(mod->so_path.c_str());
 		if (!mod->dl_handle) {
-			fprintf(stderr, "qd_build: Failed to load shared library: %s\n", dlerror());
+			fprintf(stderr, "qd_build: Failed to load shared library: %s\n", dynlib_platform_error());
 			return;
 		}
 
@@ -559,7 +573,7 @@ void qd_execute(qd_context* ctx, const char* code) {
 			// Function signature: qd_exec_result (*)(qd_context*)
 			typedef qd_exec_result (*qd_func_t)(qd_context*);
 
-			void* sym = dlsym(mod->dl_handle, symbol_name.c_str());
+			void* sym = dynlib_platform_symbol(mod->dl_handle, symbol_name.c_str());
 			qd_func_t func = reinterpret_cast<qd_func_t>(sym);
 			if (!func) {
 				// Check native functions
@@ -570,7 +584,7 @@ void qd_execute(qd_context* ctx, const char* code) {
 					func = reinterpret_cast<qd_func_t>(native_it->second);
 				} else {
 					fprintf(stderr, "qd_execute: Function '%s' (symbol '%s') not found in module '%s': %s\n",
-							func_name.c_str(), symbol_name.c_str(), module_name.c_str(), dlerror());
+							func_name.c_str(), symbol_name.c_str(), module_name.c_str(), dynlib_platform_error());
 					continue;
 				}
 			}

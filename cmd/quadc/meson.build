@@ -8,9 +8,13 @@ if llvmgen_dep.found()
 		'src/temp_dir_guard.cc',
 	)
 
+	# Include qdrt source directory for platform headers
+	qdrt_src_inc = include_directories('../../lib/qdrt')
+
 	quadc_exe = executable('quadc',
 		quadc_sources,
-		dependencies: [qc_dep, llvmgen_dep],
+		include_directories: [qdrt_src_inc],
+		dependencies: [qc_dep, llvmgen_dep, qdrt_dep],
 		install: false
 	)
 

@@ -5,9 +5,13 @@
 #include <iostream>
 #include <qc/colors.h>
 #include <string>
-#include <sys/wait.h>
-#include <unistd.h>
 #include <vector>
+
+// Platform abstractions
+extern "C" {
+#include "src/platform/exe_path_platform.h"
+#include "src/platform/process_platform.h"
+}
 
 namespace fs = std::filesystem;
 using Qd::Colors;
@@ -70,9 +74,8 @@ void printVersion() {
 // Get the directory where the quad binary is located
 fs::path getExecutableDir() {
 	char path[4096];
-	ssize_t len = readlink("/proc/self/exe", path, sizeof(path) - 1);
-	if (len != -1) {
-		path[len] = '\0';
+	int len = exe_path_platform_get(path, sizeof(path));
+	if (len > 0 && static_cast<size_t>(len) < sizeof(path)) {
 		return fs::path(path).parent_path();
 	}
 	return fs::path();
@@ -123,27 +126,12 @@ int execTool(const std::string& toolPath, const std::vector<std::string>& args) 
 	}
 	argv.push_back(nullptr);
 
-	pid_t pid = fork();
-	if (pid == -1) {
-		std::cerr << "quad: failed to fork: " << strerror(errno) << "\n";
+	int result = process_platform_exec_wait(toolPath.c_str(), argv.data());
+	if (result == -1) {
+		std::cerr << "quad: failed to execute " << toolPath << "\n";
 		return 1;
 	}
-
-	if (pid == 0) {
-		// Child process
-		execv(toolPath.c_str(), argv.data());
-		std::cerr << "quad: failed to execute " << toolPath << ": " << strerror(errno) << "\n";
-		_exit(127);
-	}
-
-	// Parent process
-	int status;
-	waitpid(pid, &status, 0);
-
-	if (WIFEXITED(status)) {
-		return WEXITSTATUS(status);
-	}
-	return 1;
+	return result;
 }
 
 const Command* findCommand(const std::string& name) {

@@ -6,6 +6,10 @@ qdrt_sources = files(
 		'src/qd_struct.c',
 		'src/array.c',
 		'src/platform/posix/thread_pthread.c',
+		'src/platform/posix/mutex_pthread.c',
+		'src/platform/posix/exe_path_linux.c',
+		'src/platform/posix/process_posix.c',
+		'src/platform/posix/dynlib_posix.c',
 )
 
 qdrt_inc = include_directories('include')
@@ -17,11 +21,14 @@ m_dep = cc.find_library('m', required: false)
 # Thread library dependency (pthreads on POSIX systems)
 pthread_dep = cc.find_library('pthread', required: true)
 
+# Dynamic library loading dependency (dl on POSIX systems)
+dl_dep = cc.find_library('dl', required: true)
+
 # Shared library - public runtime API
 qdrt_shared = shared_library('qdrt',
 		qdrt_sources,
 		include_directories: qdrt_inc,
-		dependencies: [m_dep, pthread_dep],
+		dependencies: [m_dep, pthread_dep, dl_dep],
 		install_rpath: '$ORIGIN',
 		install: false
 )
@@ -30,7 +37,7 @@ qdrt_shared = shared_library('qdrt',
 qdrt_static = static_library('qdrt_static',
 		qdrt_sources,
 		include_directories: qdrt_inc,
-		dependencies: [m_dep, pthread_dep],
+		dependencies: [m_dep, pthread_dep, dl_dep],
 		install: false
 )
 

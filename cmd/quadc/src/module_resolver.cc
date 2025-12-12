@@ -3,6 +3,11 @@
 #include <filesystem>
 #include <unordered_map>
 
+// Platform abstractions
+extern "C" {
+#include "src/platform/exe_path_platform.h"
+}
+
 // Global module version pins (set from command-line -l flags)
 static std::unordered_map<std::string, std::string> g_moduleVersionPins;
 
@@ -202,15 +207,21 @@ std::string findModuleFile(const std::string& moduleName, const std::string& sou
 
 		// Try 5: Standard library relative to executable (for installed binaries)
 		// Get executable path and look for ../share/quadrate/<module>/module.qd
-		try {
-			std::filesystem::path exePath = std::filesystem::canonical("/proc/self/exe");
-			std::filesystem::path exeDir = exePath.parent_path();
-			std::filesystem::path sharePath = exeDir / ".." / "share" / "quadrate" / moduleName / "module.qd";
-			if (std::filesystem::exists(sharePath)) {
-				return sharePath.string();
+		{
+			char exePathBuf[4096];
+			int len = exe_path_platform_get(exePathBuf, sizeof(exePathBuf));
+			if (len > 0 && static_cast<size_t>(len) < sizeof(exePathBuf)) {
+				try {
+					std::filesystem::path exePath = std::filesystem::canonical(exePathBuf);
+					std::filesystem::path exeDir = exePath.parent_path();
+					std::filesystem::path sharePath = exeDir / ".." / "share" / "quadrate" / moduleName / "module.qd";
+					if (std::filesystem::exists(sharePath)) {
+						return sharePath.string();
+					}
+				} catch (...) {
+					// Ignore errors resolving path
+				}
 			}
-		} catch (...) {
-			// Ignore errors reading executable path
 		}
 
 		// Try 6: $HOME/quadrate directory
