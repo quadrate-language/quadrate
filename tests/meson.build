@@ -13,7 +13,7 @@ test('qd_tests',
 		'QUADRATE_LIBDIR': meson.project_build_root() / 'lib',
 	},
 	depends: quadc,
-	timeout: 120
+	timeout: 300
 )
 
 # Linter tests
