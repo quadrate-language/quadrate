@@ -652,6 +652,7 @@ namespace Qd {
 				}
 
 				// Process output parameters
+				size_t producesIdx = 0;
 				for (const auto* param : func->outputParameters) {
 					std::string typeStr = param->typeString();
 					if (typeStr == "i32" || typeStr == "i64" || typeStr == "u8" || typeStr == "u16" ||
@@ -661,11 +662,15 @@ namespace Qd {
 						sig.produces.push_back(StackValueType::FLOAT);
 					} else if (typeStr == "str") {
 						sig.produces.push_back(StackValueType::STRING);
-					} else if (typeStr == "ptr" || typeStr == "bool" || isStructTypeName(typeStr)) {
+					} else if (typeStr == "ptr" || typeStr == "bool") {
 						sig.produces.push_back(StackValueType::PTR);
+					} else if (isStructTypeName(typeStr)) {
+						sig.produces.push_back(StackValueType::PTR);
+						sig.producesStructTypes[producesIdx] = typeStr;
 					} else {
 						sig.produces.push_back(StackValueType::ANY);
 					}
+					producesIdx++;
 				}
 
 				sig.throws = func->throws;
@@ -1382,6 +1387,7 @@ namespace Qd {
 						sig.produces.push_back(StackValueType::PTR);
 					} else if (isStructTypeName(typeStr)) {
 						sig.produces.push_back(StackValueType::PTR);
+						sig.producesStructTypes[i] = typeStr;
 					} else {
 						sig.produces.push_back(StackValueType::ANY);
 					}
@@ -1450,8 +1456,11 @@ namespace Qd {
 						sig.produces.push_back(StackValueType::FLOAT);
 					} else if (typeStr == "str") {
 						sig.produces.push_back(StackValueType::STRING);
-					} else if (typeStr == "ptr" || isStructTypeName(typeStr)) {
+					} else if (typeStr == "ptr") {
 						sig.produces.push_back(StackValueType::PTR);
+					} else if (isStructTypeName(typeStr)) {
+						sig.produces.push_back(StackValueType::PTR);
+						sig.producesStructTypes[i] = typeStr;
 					} else {
 						// Untyped or unknown - treat as ANY
 						sig.produces.push_back(StackValueType::ANY);
@@ -1957,6 +1966,7 @@ namespace Qd {
 			// Build produces list: prefer declared output parameters, fall back to body analysis
 			// Using declared outputs is more reliable for functions with complex control flow
 			if (!func->outputParameters().empty()) {
+				size_t producesIdx = 0;
 				for (auto* paramNode : func->outputParameters()) {
 					AstNodeParameter* param = static_cast<AstNodeParameter*>(paramNode);
 					std::string typeStr = param->typeString();
@@ -1971,9 +1981,11 @@ namespace Qd {
 						sig.produces.push_back(StackValueType::PTR);
 					} else if (isStructTypeName(typeStr)) {
 						sig.produces.push_back(StackValueType::PTR);
+						sig.producesStructTypes[producesIdx] = typeStr;
 					} else {
 						sig.produces.push_back(StackValueType::ANY);
 					}
+					producesIdx++;
 				}
 			} else {
 				// No declared outputs - use body analysis result
@@ -3408,7 +3420,12 @@ namespace Qd {
 						if (producedType != StackValueType::PTR) {
 							return ""; // Only PTR types can have struct types
 						}
-						// Conservative heuristic: if we consumed PTR parameters and are producing PTR values,
+						// First check if the signature explicitly declares the return struct type
+						auto structIt = sig.producesStructTypes.find(produceIdx);
+						if (structIt != sig.producesStructTypes.end()) {
+							return structIt->second;
+						}
+						// Fallback: Conservative heuristic: if we consumed PTR parameters and are producing PTR values,
 						// try to match them up in order (simple pass-through case)
 						size_t consumedPtrCount = 0;
 						size_t producedPtrCount = 0;
@@ -3948,25 +3965,28 @@ namespace Qd {
 					if (scoped->checkError()) {
 						// func? - immediately check error
 						// Produces: value (untainted) + error_status (INT)
-						for (const auto& type : sig.produces) {
-							typeStack.push_back(type);	   // Push untainted value
-							structTypeStack.push_back(""); // TODO: Track struct types through function calls
+						for (size_t idx = 0; idx < sig.produces.size(); idx++) {
+							typeStack.push_back(sig.produces[idx]); // Push untainted value
+							auto structIt = sig.producesStructTypes.find(idx);
+							structTypeStack.push_back(structIt != sig.producesStructTypes.end() ? structIt->second : "");
 						}
 						typeStack.push_back(StackValueType::INT); // Error status (0 or 1)
 						structTypeStack.push_back("");
 					} else if (sig.throws && !scoped->abortOnError()) {
 						// func without ! or ? - pushes result + error flag
-						for (const auto& type : sig.produces) {
-							typeStack.push_back(type);
-							structTypeStack.push_back(""); // TODO: Track struct types through function calls
+						for (size_t idx = 0; idx < sig.produces.size(); idx++) {
+							typeStack.push_back(sig.produces[idx]);
+							auto structIt = sig.producesStructTypes.find(idx);
+							structTypeStack.push_back(structIt != sig.producesStructTypes.end() ? structIt->second : "");
 						}
 						typeStack.push_back(StackValueType::INT); // Error status (0 or 1)
 						structTypeStack.push_back("");
 					} else {
 						// Normal call or func!
-						for (const auto& type : sig.produces) {
-							typeStack.push_back(type);
-							structTypeStack.push_back(""); // TODO: Track struct types through function calls
+						for (size_t idx = 0; idx < sig.produces.size(); idx++) {
+							typeStack.push_back(sig.produces[idx]);
+							auto structIt = sig.producesStructTypes.find(idx);
+							structTypeStack.push_back(structIt != sig.producesStructTypes.end() ? structIt->second : "");
 						}
 					}
 				}

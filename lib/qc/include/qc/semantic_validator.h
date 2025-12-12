@@ -31,6 +31,9 @@ namespace Qd {
 		// For each PTR parameter index, expected struct type name (if determinable)
 		// Key: parameter index (0-based), Value: struct type name (e.g., "Point", "WithStr")
 		std::unordered_map<size_t, std::string> parameterStructTypes;
+		// For each PTR return value index, the struct type name (if determinable)
+		// Key: produces index (0-based), Value: struct type name
+		std::unordered_map<size_t, std::string> producesStructTypes;
 		bool throws = false; // Whether the function can throw errors
 	};
 
