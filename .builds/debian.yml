@@ -1,8 +1,5 @@
 image: debian/testing
 
-secrets:
-  - ea8ca0d9-1859-4db5-bb99-8f12baf60b59
-
 packages:
   - clang
   - llvm-dev
@@ -12,10 +9,7 @@ packages:
   - valgrind
 
 sources:
-  - git+ssh://git@git.sr.ht/~klahr/quadrate
-
-environment:
-  GIT_SSH_COMMAND: "ssh -o StrictHostKeyChecking=no"
+  - git://git@git.sr.ht:~klahr/quadrate
 
 tasks:
   - install_tree_sitter: |
