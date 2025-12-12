@@ -1,0 +1,28 @@
+# Maintainer: Your Name <your.email@example.com>
+pkgname=quadrate
+pkgver=_PKGVER_
+pkgrel=1
+pkgdesc="Stack-based programming language that compiles to native code via LLVM"
+arch=('x86_64')
+url="https://git.sr.ht/~klahr/quadrate"
+license=('GPL-3.0-or-later')
+depends=('llvm-libs' 'jansson')
+makedepends=('meson' 'ninja' 'clang' 'llvm' 'git')
+optdepends=(
+    'readline: for quadrepl interactive shell'
+    'python: for LSP server'
+)
+options=('!debug')
+_gittag=_GITTAG_
+source=("$pkgname-$pkgver::git+https://git.sr.ht/~klahr/quadrate#tag=$_gittag")
+sha256sums=('SKIP')
+
+build() {
+    cd "$pkgname-$pkgver"
+    make release
+}
+
+package() {
+    cd "$pkgname-$pkgver"
+    make install DESTDIR="$pkgdir" PREFIX=/usr
+}
