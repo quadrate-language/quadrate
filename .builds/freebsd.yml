@@ -1,4 +1,4 @@
-image: freebsd/current
+image: freebsd/14.x
 
 packages:
   - llvm
