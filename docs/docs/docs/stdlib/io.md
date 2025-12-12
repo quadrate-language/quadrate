@@ -1,5 +1,7 @@
 # io
 
+File and stream I/O operations.
+
 ## Constants
 
 | Name | Value | Description |
@@ -8,7 +10,16 @@
 | `AppendBinary` | `"ab"` | Open mode: append binary. |
 | `AppendRead` | `"a+"` | Open mode: append and read. |
 | `AppendReadBinary` | `"ab+"` | Open mode: append and read binary. |
-| `Read` | `"r"` | File and stream I/O operations. Open mode: read only. |
+| `ErrEof` | `7` | Error: End of file reached. |
+| `ErrInvalidArg` | `8` | Error: Invalid argument. |
+| `ErrInvalidHandle` | `3` | Error: Invalid file handle. |
+| `ErrNone` | `0` | Error: No error (success). |
+| `ErrNotFound` | `1` | Error: File not found. |
+| `ErrPermission` | `2` | Error: Permission denied. |
+| `ErrRead` | `4` | Error: Read operation failed. |
+| `ErrSeek` | `6` | Error: Seek operation failed. |
+| `ErrWrite` | `5` | Error: Write operation failed. |
+| `Read` | `"r"` | Open mode: read only. |
 | `ReadBinary` | `"rb"` | Open mode: read binary. |
 | `ReadWrite` | `"r+"` | Open mode: read and write. |
 | `ReadWriteBinary` | `"rb+"` | Open mode: read and write binary. |

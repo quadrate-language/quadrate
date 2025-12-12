@@ -1,7 +1,28 @@
 {
   "name": "str",
   "description": "String manipulation functions.",
-  "constants": [],
+  "constants": [
+    {
+      "name": "ErrAlloc",
+      "value": "2",
+      "description": "Error: Memory allocation failed."
+    },
+    {
+      "name": "ErrInvalidArg",
+      "value": "3",
+      "description": "Error: Invalid argument."
+    },
+    {
+      "name": "ErrNone",
+      "value": "0",
+      "description": "Error: No error (success)."
+    },
+    {
+      "name": "ErrOutOfBounds",
+      "value": "1",
+      "description": "Error: Index out of bounds."
+    }
+  ],
   "structs": [],
   "functions": [
     {

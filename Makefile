@@ -13,13 +13,13 @@ export CXX := clang++
 CMDS := quad quadc quadfmt quadlint quadlsp quadpm quaduses
 
 # Libraries with C components (need static archive creation)
-LIBS_WITH_C := qdrt qd qdfmt qdio qdmath qdmem qdnet qdos qdstr qdstrconv qdtime qdtesting
+LIBS_WITH_C := qdrt qd qdfmt qdio qdmath qdmem qdnet qdos qdsignal qdstr qdstrconv qdtime qdtesting
 
 # Libraries with headers to install
 LIBS_WITH_HEADERS := qdrt qd qdfmt qdio qdmath qdmem qdnet qdos qdstr qdstrconv qdtime qdtesting
 
 # Standard library modules (pure Quadrate or mixed)
-STDLIB_MODULES := base64 bits flag fmt io json math mem net os sb str strconv time unicode uri hex bytes crc32 sha256 regex path sort rand uuid testing
+STDLIB_MODULES := base64 bits flag fmt io json math mem net os sb signal str strconv time unicode uri hex bytes crc32 sha256 regex path sort rand uuid testing
 
 .PHONY: all debug release tests valgrind examples format install uninstall clean docs
 
@@ -31,12 +31,24 @@ define do_build
 	meson setup $(1) --buildtype=$(2) $(MESON_FLAGS)
 	meson compile -C $(1)
 	@mkdir -p dist/bin dist/lib dist/include
-	@for cmd in $(CMDS); do cp -f $(1)/cmd/$$cmd/$$cmd dist/bin/; done
-	@if [ -f $(1)/cmd/quadrepl/quadrepl ]; then cp -f $(1)/cmd/quadrepl/quadrepl dist/bin/; else echo "Note: quadrepl not built (readline not found)"; fi
+	@cp -f $(1)/lib/qdrt/libqdrt.so dist/lib/
+	@cp -f $(1)/lib/qd/libqd.so dist/lib/
+	@for cmd in $(CMDS); do \
+		cp -f $(1)/cmd/$$cmd/$$cmd dist/bin/; \
+		if command -v patchelf >/dev/null 2>&1; then \
+			patchelf --set-rpath '$$ORIGIN/../lib' dist/bin/$$cmd 2>/dev/null || true; \
+		fi; \
+	done
+	@if [ -f $(1)/cmd/quadrepl/quadrepl ]; then \
+		cp -f $(1)/cmd/quadrepl/quadrepl dist/bin/; \
+		if command -v patchelf >/dev/null 2>&1; then \
+			patchelf --set-rpath '$$ORIGIN/../lib' dist/bin/quadrepl 2>/dev/null || true; \
+		fi; \
+	else echo "Note: quadrepl not built (readline not found)"; fi
 	@echo "Creating static libraries..."
 	@rm -f dist/lib/libqdrt.a && cd $(1)/lib/qdrt && ar rcs ../../../../dist/lib/libqdrt.a $$(ar -t libqdrt_static.a) && echo "  libqdrt.a"
 	@rm -f dist/lib/libqd.a && cd $(1)/lib/qd && ar rcs ../../../../dist/lib/libqd.a $$(ar -t libqd_static.a) && echo "  libqd.a"
-	@for lib in qdfmt qdio qdmath qdmem qdnet qdos qdstr qdstrconv qdtime qdtesting; do \
+	@for lib in qdfmt qdio qdmath qdmem qdnet qdos qdsignal qdstr qdstrconv qdtime qdtesting; do \
 		rm -f dist/lib/lib$$lib.a && cd $(1)/lib/$$lib && ar rcs ../../../../dist/lib/lib$$lib.a $$(ar -t lib$$lib.a) && echo "  lib$$lib.a" && cd ->/dev/null; \
 	done
 	@for lib in $(LIBS_WITH_HEADERS); do cp -rf lib/$$lib/include/$$lib dist/include/; done
@@ -142,6 +154,8 @@ install: release
 	@for cmd in $(CMDS); do install -m 755 dist/bin/$$cmd $(DESTDIR)$(PREFIX)/bin/; done
 	@if [ -f dist/bin/quadrepl ]; then install -m 755 dist/bin/quadrepl $(DESTDIR)$(PREFIX)/bin/; fi
 	@for lib in $(LIBS_WITH_C); do install -m 644 dist/lib/lib$$lib.a $(DESTDIR)$(PREFIX)/lib/; done
+	install -m 755 dist/lib/libqdrt.so $(DESTDIR)$(PREFIX)/lib/
+	install -m 755 dist/lib/libqd.so $(DESTDIR)$(PREFIX)/lib/
 	@for lib in $(LIBS_WITH_HEADERS); do cp -r dist/include/$$lib $(DESTDIR)$(PREFIX)/include/; done
 	@echo "Installing Quadrate standard library modules to $(DESTDIR)$(PREFIX)/share/quadrate/"
 	install -d $(DESTDIR)$(PREFIX)/share/quadrate
@@ -154,6 +168,8 @@ install: release
 uninstall:
 	@for cmd in $(CMDS) quadrepl; do rm -f $(DESTDIR)$(PREFIX)/bin/$$cmd; done
 	@for lib in $(LIBS_WITH_C); do rm -f $(DESTDIR)$(PREFIX)/lib/lib$$lib.a; done
+	rm -f $(DESTDIR)$(PREFIX)/lib/libqdrt.so
+	rm -f $(DESTDIR)$(PREFIX)/lib/libqd.so
 	@for lib in $(LIBS_WITH_HEADERS); do rm -rf $(DESTDIR)$(PREFIX)/include/$$lib; done
 	@echo "Removing Quadrate standard library modules from $(DESTDIR)$(PREFIX)/share/quadrate/"
 	rm -rf $(DESTDIR)$(PREFIX)/share/quadrate

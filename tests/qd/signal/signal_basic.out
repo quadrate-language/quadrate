@@ -1,0 +1,6 @@
+Trapped SIGINT
+OK: SIGINT not pending initially
+Ignored SIGPIPE
+Reset SIGPIPE
+Cleared SIGINT
+All basic signal tests passed!

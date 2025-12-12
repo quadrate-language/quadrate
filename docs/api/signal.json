@@ -1,0 +1,218 @@
+{
+  "name": "signal",
+  "description": "Unix signal handling with polling-based API.  Signals are caught and stored as flags. Use pending() to check if a signal was received, and clear() to reset the flag.  Example: use signal  fn main( -- ) { signal::SIGINT signal::trap \"Running. Press Ctrl+C to stop.\" . nl  1 while { signal::SIGINT signal::pending if { \"Shutting down\" . nl signal::SIGINT signal::clear break } } }",
+  "constants": [
+    {
+      "name": "SIGABRT",
+      "value": "6",
+      "description": "Abort signal."
+    },
+    {
+      "name": "SIGALRM",
+      "value": "14",
+      "description": "Alarm clock."
+    },
+    {
+      "name": "SIGCHLD",
+      "value": "17",
+      "description": "Child process stopped or terminated."
+    },
+    {
+      "name": "SIGCONT",
+      "value": "18",
+      "description": "Continue if stopped."
+    },
+    {
+      "name": "SIGFPE",
+      "value": "8",
+      "description": "Floating point exception."
+    },
+    {
+      "name": "SIGHUP",
+      "value": "1",
+      "description": "Hangup signal (terminal closed)."
+    },
+    {
+      "name": "SIGILL",
+      "value": "4",
+      "description": "Illegal instruction."
+    },
+    {
+      "name": "SIGINT",
+      "value": "2",
+      "description": "Interrupt signal (Ctrl+C)."
+    },
+    {
+      "name": "SIGKILL",
+      "value": "9",
+      "description": "Kill signal (cannot be caught)."
+    },
+    {
+      "name": "SIGPIPE",
+      "value": "13",
+      "description": "Broken pipe."
+    },
+    {
+      "name": "SIGQUIT",
+      "value": "3",
+      "description": "Quit signal (Ctrl+\\)."
+    },
+    {
+      "name": "SIGSEGV",
+      "value": "11",
+      "description": "Segmentation fault."
+    },
+    {
+      "name": "SIGSTOP",
+      "value": "19",
+      "description": "Stop signal (cannot be caught)."
+    },
+    {
+      "name": "SIGTERM",
+      "value": "15",
+      "description": "Termination signal."
+    },
+    {
+      "name": "SIGTSTP",
+      "value": "20",
+      "description": "Terminal stop (Ctrl+Z)."
+    },
+    {
+      "name": "SIGTTIN",
+      "value": "21",
+      "description": "Background read from terminal."
+    },
+    {
+      "name": "SIGTTOU",
+      "value": "22",
+      "description": "Background write to terminal."
+    },
+    {
+      "name": "SIGUSR1",
+      "value": "10",
+      "description": "User-defined signal 1."
+    },
+    {
+      "name": "SIGUSR2",
+      "value": "12",
+      "description": "User-defined signal 2."
+    }
+  ],
+  "structs": [],
+  "functions": [
+    {
+      "name": "clear",
+      "signature": "( signum:i64 -- )",
+      "failable": false,
+      "description": "Clear the pending flag for a signal.",
+      "params": [
+        {
+          "name": "signum",
+          "type": "i64",
+          "description": "Signal number"
+        }
+      ],
+      "returns": [],
+      "errors": [],
+      "examples": [
+        "signal::SIGINT signal::clear"
+      ]
+    },
+    {
+      "name": "ignore",
+      "signature": "( signum:i64 -- )",
+      "failable": false,
+      "description": "Ignore the specified signal completely.",
+      "params": [
+        {
+          "name": "signum",
+          "type": "i64",
+          "description": "Signal number"
+        }
+      ],
+      "returns": [],
+      "errors": [],
+      "examples": [
+        "signal::SIGPIPE signal::ignore"
+      ]
+    },
+    {
+      "name": "pending",
+      "signature": "( signum:i64 -- flag:i64 )",
+      "failable": false,
+      "description": "Check if a signal is pending (received but not cleared). Returns 1 if pending, 0 otherwise. Does not clear the flag.",
+      "params": [
+        {
+          "name": "signum",
+          "type": "i64",
+          "description": "Signal number"
+        }
+      ],
+      "returns": [
+        {
+          "name": "flag",
+          "type": "i64",
+          "description": "1 if pending, 0 otherwise"
+        }
+      ],
+      "errors": [],
+      "examples": [
+        "signal::SIGINT signal::pending"
+      ]
+    },
+    {
+      "name": "reset",
+      "signature": "( signum:i64 -- )",
+      "failable": false,
+      "description": "Reset signal to default behavior.",
+      "params": [
+        {
+          "name": "signum",
+          "type": "i64",
+          "description": "Signal number"
+        }
+      ],
+      "returns": [],
+      "errors": [],
+      "examples": [
+        "signal::SIGINT signal::reset"
+      ]
+    },
+    {
+      "name": "trap",
+      "signature": "( signum:i64 -- )",
+      "failable": false,
+      "description": "Install a handler to catch the specified signal. After trapping, the signal sets a pending flag instead of causing the default action (e.g., termination).",
+      "params": [
+        {
+          "name": "signum",
+          "type": "i64",
+          "description": "Signal number (use signal::SIGINT, etc.)"
+        }
+      ],
+      "returns": [],
+      "errors": [],
+      "examples": [
+        "signal::SIGINT signal::trap"
+      ]
+    },
+    {
+      "name": "wait",
+      "signature": "( -- signum:i64 )",
+      "failable": false,
+      "description": "Block until any trapped signal is received. Returns the signal number that was received.",
+      "params": [],
+      "returns": [
+        {
+          "name": "signum",
+          "type": "i64",
+          "description": "The signal that was received"
+        }
+      ],
+      "errors": [],
+      "examples": [
+        "signal::wait -> sig"
+      ]
+    }
+  ]
+}

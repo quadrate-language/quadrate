@@ -11,7 +11,7 @@ use str
 use math
 
 fn main( -- ) {
-	"hello" str::upper prints nl  // HELLO
+	"hello" str::upper print nl  // HELLO
 	16.0 math::sqrt print nl  // 4
 }
 ```
@@ -24,7 +24,7 @@ Functions marked with `!` can fail and require error handling:
 use str
 
 fn main( -- ) {
-	"hello" 0 3 str::substring! prints nl  // "hel"
+	"hello" 0 3 str::substring! print nl  // "hel"
 }
 ```
 
@@ -39,17 +39,18 @@ fn main( -- ) {
 | [flag](flag.md) | Command-line flag parsing. |
 | [fmt](fmt.md) | Formatted output functions. |
 | [hex](hex.md) | Hexadecimal encoding and decoding. Converts between binary d... |
-| [io](io.md) |  |
+| [io](io.md) | File and stream I/O operations. |
 | [json](json.md) | JSON parsing and querying without AST construction. |
 | [math](math.md) |  |
 | [mem](mem.md) | Low-level memory allocation and manipulation.  SAFETY: These... |
 | [net](net.md) | TCP network operations. |
-| [os](os.md) |  |
+| [os](os.md) | Operating system interface. |
 | [path](path.md) | File path manipulation functions. POSIX-style paths with for... |
 | [rand](rand.md) | Random number generation using xorshift64* algorithm. Fast, ... |
 | [regex](regex.md) | Regular expression matching using Thompson NFA. Supports = .... |
 | [sb](sb.md) | StringBuilder - Efficient string building. Avoids O(n²) cost... |
 | [sha256](sha256.md) | SHA-256 cryptographic hash function. Produces a 256-bit (32-... |
+| [signal](signal.md) | Unix signal handling with polling-based API.  Signals are ca... |
 | [sort](sort.md) | Sorting algorithms for arrays. Arrays are pointers to contig... |
 | [str](str.md) | String manipulation functions. |
 | [strconv](strconv.md) | String to number conversions. |

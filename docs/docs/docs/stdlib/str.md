@@ -2,6 +2,15 @@
 
 String manipulation functions.
 
+## Constants
+
+| Name | Value | Description |
+|------|-------|-------------|
+| `ErrAlloc` | `2` | Error: Memory allocation failed. |
+| `ErrInvalidArg` | `3` | Error: Invalid argument. |
+| `ErrNone` | `0` | Error: No error (success). |
+| `ErrOutOfBounds` | `1` | Error: Index out of bounds. |
+
 ## Functions
 
 ### char_at

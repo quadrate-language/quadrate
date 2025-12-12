@@ -1,66 +1,66 @@
 {
   "name": "os",
-  "description": "",
+  "description": "Operating system interface.",
   "constants": [
     {
-      "name": "FileExists",
+      "name": "ErrExists",
       "value": "17",
       "description": "Error: File already exists (EEXIST)."
     },
     {
-      "name": "FileNotFound",
-      "value": "2",
-      "description": "Error: No such file or directory (ENOENT)."
-    },
-    {
-      "name": "InvalidArgument",
+      "name": "ErrInvalidArg",
       "value": "22",
       "description": "Error: Invalid argument (EINVAL)."
     },
     {
-      "name": "IoError",
+      "name": "ErrIo",
       "value": "5",
       "description": "Error: I/O error (EIO)."
     },
     {
-      "name": "IsADirectory",
+      "name": "ErrIsDirectory",
       "value": "21",
       "description": "Error: Is a directory when file expected (EISDIR)."
     },
     {
-      "name": "NameTooLong",
+      "name": "ErrNameTooLong",
       "value": "36",
       "description": "Error: File name too long (ENAMETOOLONG)."
     },
     {
-      "name": "NoSpaceLeft",
+      "name": "ErrNoSpace",
       "value": "28",
       "description": "Error: No space left on device (ENOSPC)."
     },
     {
-      "name": "NotADirectory",
+      "name": "ErrNone",
+      "value": "0",
+      "description": "Error: No error (success)."
+    },
+    {
+      "name": "ErrNotDirectory",
       "value": "20",
       "description": "Error: Path component is not a directory (ENOTDIR)."
     },
     {
-      "name": "OutOfMemory",
+      "name": "ErrNotFound",
+      "value": "2",
+      "description": "Error: No such file or directory (ENOENT)."
+    },
+    {
+      "name": "ErrOutOfMemory",
       "value": "12",
       "description": "Error: Out of memory (ENOMEM)."
     },
     {
-      "name": "PermissionDenied",
+      "name": "ErrPermission",
       "value": "13",
       "description": "Error: Permission denied (EACCES)."
     },
     {
-      "name": "ReadOnlyFileSystem",
+      "name": "ErrReadOnly",
       "value": "30",
       "description": "Error: Read-only file system (EROFS)."
-    },
-    {
-      "name": "Success",
-      "value": "0",
-      "description": "Operating system interface. Error: No error."
     }
   ],
   "structs": [],

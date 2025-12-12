@@ -2,6 +2,15 @@
 
 Command-line flag parsing.
 
+## Constants
+
+| Name | Value | Description |
+|------|-------|-------------|
+| `ErrInvalidValue` | `3` | Error: Invalid value format. |
+| `ErrNoValue` | `2` | Error: Value not found (flag exists but has no value). |
+| `ErrNone` | `0` | Error: No error (success). |
+| `ErrNotFound` | `1` | Error: Flag not found. |
+
 ## Structs
 
 ### Flag

@@ -1,7 +1,28 @@
 {
   "name": "flag",
   "description": "Command-line flag parsing.",
-  "constants": [],
+  "constants": [
+    {
+      "name": "ErrInvalidValue",
+      "value": "3",
+      "description": "Error: Invalid value format."
+    },
+    {
+      "name": "ErrNoValue",
+      "value": "2",
+      "description": "Error: Value not found (flag exists but has no value)."
+    },
+    {
+      "name": "ErrNone",
+      "value": "0",
+      "description": "Error: No error (success)."
+    },
+    {
+      "name": "ErrNotFound",
+      "value": "1",
+      "description": "Error: Flag not found."
+    }
+  ],
   "structs": [
     {
       "name": "Flag",

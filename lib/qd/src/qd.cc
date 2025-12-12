@@ -80,11 +80,13 @@ static std::string findModuleFile(const std::string& moduleName) {
 		}
 	}
 
-	// Try 5: Local development paths (relative to build directory)
-	fs::path buildRoot = fs::path(MESON_BUILD_ROOT).parent_path().parent_path();
-	std::string devPath = (buildRoot / "lib" / ("std" + moduleName + "qd") / "qd" / moduleName / "module.qd").string();
-	if (fs::exists(devPath)) {
-		return devPath;
+	// Try 5: Local development paths (relative to build directory, debug builds only)
+	if (MESON_BUILD_ROOT[0] != '\0') {
+		fs::path buildRoot = fs::path(MESON_BUILD_ROOT).parent_path().parent_path();
+		std::string devPath = (buildRoot / "lib" / ("std" + moduleName + "qd") / "qd" / moduleName / "module.qd").string();
+		if (fs::exists(devPath)) {
+			return devPath;
+		}
 	}
 
 	return "";
@@ -98,10 +100,12 @@ static std::string findLibraryDir() {
 		return libDir;
 	}
 
-	// Try 2: Build directory (MESON_BUILD_ROOT/lib)
-	fs::path buildLibPath = fs::path(MESON_BUILD_ROOT) / "lib";
-	if (fs::exists(buildLibPath / "qdrt" / "libqdrt_static.a") || fs::exists(buildLibPath / "qdrt" / "libqdrt.a")) {
-		return buildLibPath.string();
+	// Try 2: Build directory (MESON_BUILD_ROOT/lib, debug builds only)
+	if (MESON_BUILD_ROOT[0] != '\0') {
+		fs::path buildLibPath = fs::path(MESON_BUILD_ROOT) / "lib";
+		if (fs::exists(buildLibPath / "qdrt" / "libqdrt_static.a") || fs::exists(buildLibPath / "qdrt" / "libqdrt.a")) {
+			return buildLibPath.string();
+		}
 	}
 
 	// Try 3: System installed location (/usr/lib)
@@ -114,8 +118,8 @@ static std::string findLibraryDir() {
 		return "/usr/local/lib";
 	}
 
-	// Fallback to build directory
-	return buildLibPath.string();
+	// Fallback to /usr/lib
+	return "/usr/lib";
 }
 
 // Helper to find a static library file

@@ -1119,24 +1119,21 @@ arr free
 
 | Instruction | Signature | Description |
 |-------------|-----------|-------------|
-| [`cast<T>`](#cast) | `( val -- T )` | Converts a value to the specified type. |
+| [`cast`](#cast) | `( val -- T )` | Converts a value to the specified type (use with cast<T> syntax). |
 
 #### cast
 
-Converts a value to the specified type using the `cast<T>` syntax.
+Converts a value to the specified type (use with cast<T> syntax).
 
 **Signature:** `( val -- T )`
 
-**Examples:**
+**Example:**
 
 ```qd
-3.14 cast<i64>  // 3 (truncates float to integer)
-42 cast<f64>    // 42.0 (converts integer to float)
-42 cast<str>    // "42" (converts to string)
-"3.14" cast<f64> // 3.14 (parses string to float)
+3.14 cast<i64> // 3
+42 cast<f64> // 42.0
+42 cast<str> // "42"
 ```
-
-Supported types: `i64`, `f64`, `str`, `ptr`
 
 ---
 
@@ -1261,7 +1258,7 @@ err print nl  // prints error code from last fallible call
 
 #### panic
 
-Signals an error and returns from the fallible function. Can only be used inside fallible functions (marked with `!`).
+Signals an error and returns from the fallible function.
 
 **Signature:** `( msg code -- )`
 

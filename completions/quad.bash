@@ -1,11 +1,11 @@
 # Bash completion for Quadrate toolchain
 # Generated for quad, quadc, quadfmt, quadlint, quadlsp, quadpm, quadrepl, quaduses
 
-# Helper function to find .qd files
+# Helper function to find .qd files and directories
 _quad_qd_files() {
     local cur="$1"
-    COMPREPLY+=( $(compgen -f -X '!*.qd' -- "$cur") )
-    COMPREPLY+=( $(compgen -d -- "$cur") )
+    compopt -o filenames
+    COMPREPLY=( $(compgen -f -X '!*.qd' -- "$cur") $(compgen -d -- "$cur") )
 }
 
 # Main quad command completion

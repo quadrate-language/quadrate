@@ -410,6 +410,7 @@ STDLIB_MODULES = {
     "regex": "lib/qdregex/qd/regex/module.qd",
     "sb": "lib/qdsb/qd/sb/module.qd",
     "sha256": "lib/qdsha256/qd/sha256/module.qd",
+    "signal": "lib/qdsignal/qd/signal/module.qd",
     "sort": "lib/qdsort/qd/sort/module.qd",
     "str": "lib/qdstr/qd/str/module.qd",
     "strconv": "lib/qdstrconv/qd/strconv/module.qd",

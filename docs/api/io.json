@@ -1,6 +1,6 @@
 {
   "name": "io",
-  "description": "",
+  "description": "File and stream I/O operations.",
   "constants": [
     {
       "name": "Append",
@@ -23,9 +23,54 @@
       "description": "Open mode: append and read binary."
     },
     {
+      "name": "ErrEof",
+      "value": "7",
+      "description": "Error: End of file reached."
+    },
+    {
+      "name": "ErrInvalidArg",
+      "value": "8",
+      "description": "Error: Invalid argument."
+    },
+    {
+      "name": "ErrInvalidHandle",
+      "value": "3",
+      "description": "Error: Invalid file handle."
+    },
+    {
+      "name": "ErrNone",
+      "value": "0",
+      "description": "Error: No error (success)."
+    },
+    {
+      "name": "ErrNotFound",
+      "value": "1",
+      "description": "Error: File not found."
+    },
+    {
+      "name": "ErrPermission",
+      "value": "2",
+      "description": "Error: Permission denied."
+    },
+    {
+      "name": "ErrRead",
+      "value": "4",
+      "description": "Error: Read operation failed."
+    },
+    {
+      "name": "ErrSeek",
+      "value": "6",
+      "description": "Error: Seek operation failed."
+    },
+    {
+      "name": "ErrWrite",
+      "value": "5",
+      "description": "Error: Write operation failed."
+    },
+    {
       "name": "Read",
       "value": "\"r\"",
-      "description": "File and stream I/O operations. Open mode: read only."
+      "description": "Open mode: read only."
     },
     {
       "name": "ReadBinary",

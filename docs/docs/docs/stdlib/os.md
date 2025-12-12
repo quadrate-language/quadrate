@@ -1,21 +1,23 @@
 # os
 
+Operating system interface.
+
 ## Constants
 
 | Name | Value | Description |
 |------|-------|-------------|
-| `FileExists` | `17` | Error: File already exists (EEXIST). |
-| `FileNotFound` | `2` | Error: No such file or directory (ENOENT). |
-| `InvalidArgument` | `22` | Error: Invalid argument (EINVAL). |
-| `IoError` | `5` | Error: I/O error (EIO). |
-| `IsADirectory` | `21` | Error: Is a directory when file expected (EISDIR). |
-| `NameTooLong` | `36` | Error: File name too long (ENAMETOOLONG). |
-| `NoSpaceLeft` | `28` | Error: No space left on device (ENOSPC). |
-| `NotADirectory` | `20` | Error: Path component is not a directory (ENOTDIR). |
-| `OutOfMemory` | `12` | Error: Out of memory (ENOMEM). |
-| `PermissionDenied` | `13` | Error: Permission denied (EACCES). |
-| `ReadOnlyFileSystem` | `30` | Error: Read-only file system (EROFS). |
-| `Success` | `0` | Operating system interface. Error: No error. |
+| `ErrExists` | `17` | Error: File already exists (EEXIST). |
+| `ErrInvalidArg` | `22` | Error: Invalid argument (EINVAL). |
+| `ErrIo` | `5` | Error: I/O error (EIO). |
+| `ErrIsDirectory` | `21` | Error: Is a directory when file expected (EISDIR). |
+| `ErrNameTooLong` | `36` | Error: File name too long (ENAMETOOLONG). |
+| `ErrNoSpace` | `28` | Error: No space left on device (ENOSPC). |
+| `ErrNone` | `0` | Error: No error (success). |
+| `ErrNotDirectory` | `20` | Error: Path component is not a directory (ENOTDIR). |
+| `ErrNotFound` | `2` | Error: No such file or directory (ENOENT). |
+| `ErrOutOfMemory` | `12` | Error: Out of memory (ENOMEM). |
+| `ErrPermission` | `13` | Error: Permission denied (EACCES). |
+| `ErrReadOnly` | `30` | Error: Read-only file system (EROFS). |
 
 ## Functions
 

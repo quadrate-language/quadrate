@@ -52,7 +52,7 @@ Add duration to a timestamp.
 **Example:**
 
 ```qd
-time::now time::Day 4 * time::add
+time::now time::Day 4 * time::add .
 ```
 
 ---
@@ -75,7 +75,7 @@ Check if timestamp is after another.
 **Example:**
 
 ```qd
-ts1 ts2 time::after
+ts1 ts2 time::after .
 ```
 
 ---
@@ -98,7 +98,7 @@ Check if timestamp is before another.
 **Example:**
 
 ```qd
-ts1 ts2 time::before
+ts1 ts2 time::before .
 ```
 
 ---
@@ -125,7 +125,7 @@ Create Unix timestamp from date components.
 **Example:**
 
 ```qd
-2024 1 15 12 30 0 time::date
+2024 1 15 12 30 0 time::date .
 ```
 
 ---
@@ -147,7 +147,7 @@ Extract day of month from Unix timestamp (1-31).
 **Example:**
 
 ```qd
-time::unix time::day
+time::unix time::day .
 ```
 
 ---
@@ -170,7 +170,7 @@ Get number of days in a month.
 **Example:**
 
 ```qd
-2024 2 time::days_in_month  // 29
+2024 2 time::days_in_month .  // 29
 ```
 
 ---
@@ -192,7 +192,7 @@ Extract hour from Unix timestamp (0-23).
 **Example:**
 
 ```qd
-time::unix time::hour
+time::unix time::hour .
 ```
 
 ---
@@ -214,7 +214,7 @@ Check if year is a leap year.
 **Example:**
 
 ```qd
-2024 time::is_leap_year  // 1
+2024 time::is_leap_year .  // 1
 ```
 
 ---
@@ -236,7 +236,7 @@ Extract minute from Unix timestamp (0-59).
 **Example:**
 
 ```qd
-time::unix time::minute
+time::unix time::minute .
 ```
 
 ---
@@ -258,7 +258,7 @@ Extract month from Unix timestamp (1-12).
 **Example:**
 
 ```qd
-time::unix time::month
+time::unix time::month .
 ```
 
 ---
@@ -276,7 +276,7 @@ Get current time in nanoseconds since epoch.
 **Example:**
 
 ```qd
-time::now -> start
+time::now  // start
 ```
 
 ---
@@ -298,7 +298,7 @@ Extract second from Unix timestamp (0-59).
 **Example:**
 
 ```qd
-time::unix time::second
+time::unix time::second .
 ```
 
 ---
@@ -339,7 +339,7 @@ Get difference between two timestamps in seconds.
 **Example:**
 
 ```qd
-end_time start_time time::sub
+end_time start_time time::sub .
 ```
 
 ---
@@ -357,7 +357,7 @@ Get Unix timestamp in seconds.
 **Example:**
 
 ```qd
-time::unix  // 1700000000
+time::unix .  // 1700000000
 ```
 
 ---
@@ -379,7 +379,7 @@ Get day of week from Unix timestamp (0=Sunday, 6=Saturday).
 **Example:**
 
 ```qd
-time::unix time::weekday
+time::unix time::weekday .
 ```
 
 ---
@@ -401,7 +401,7 @@ Extract year from Unix timestamp.
 **Example:**
 
 ```qd
-time::unix time::year
+time::unix time::year .
 ```
 
 ---
@@ -423,5 +423,5 @@ Get day of year from Unix timestamp (1-366).
 **Example:**
 
 ```qd
-time::unix time::year_day
+time::unix time::year_day .
 ```

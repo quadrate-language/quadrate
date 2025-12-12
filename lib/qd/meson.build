@@ -7,8 +7,12 @@ qd_inc = include_directories('include')
 # Include qdrt source directory for platform headers
 qdrt_src_inc = include_directories('../qdrt')
 
-# Define MESON_BUILD_ROOT for finding runtime library
-qd_cpp_args = ['-DMESON_BUILD_ROOT="' + meson.project_build_root() + '"']
+# Define MESON_BUILD_ROOT for finding runtime library (only in debug builds)
+if get_option('buildtype') == 'debug' or get_option('buildtype') == 'debugoptimized'
+	qd_cpp_args = ['-DMESON_BUILD_ROOT="' + meson.project_build_root() + '"']
+else
+	qd_cpp_args = ['-DMESON_BUILD_ROOT=""']
+endif
 
 # Shared library - depends on qdrt, qc, llvmgen
 qd_shared = shared_library('qd',
