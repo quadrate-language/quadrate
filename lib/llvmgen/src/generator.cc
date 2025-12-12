@@ -15,6 +15,7 @@
 #include <llvm/IR/IRBuilder.h>
 #include <llvm/IR/LLVMContext.h>
 #include <llvm/IR/LegacyPassManager.h>
+#include <llvm/IR/MDBuilder.h>
 #include <llvm/IR/Module.h>
 #include <llvm/IR/Verifier.h>
 #include <llvm/MC/TargetRegistry.h>
@@ -834,8 +835,8 @@ namespace Qd {
 		llvm::Value* value2iPtrCast = builder->CreateBitCast(value2Ptr, llvm::PointerType::get(*context, 0));
 		llvm::Value* value2 = builder->CreateLoad(builder->getInt64Ty(), value2iPtrCast, "value2");
 
-		// Perform addition
-		llvm::Value* result = builder->CreateAdd(value1, value2, "add_result");
+		// Perform addition (nsw = no signed wrap, enables better optimization)
+		llvm::Value* result = builder->CreateNSWAdd(value1, value2, "add_result");
 
 		// Store result at data[size - 2]
 		builder->CreateStore(result, value1iPtrCast);
@@ -874,8 +875,8 @@ namespace Qd {
 		llvm::Value* value2iPtrCast = builder->CreateBitCast(value2Ptr, llvm::PointerType::get(*context, 0));
 		llvm::Value* value2 = builder->CreateLoad(builder->getInt64Ty(), value2iPtrCast, "value2");
 
-		// Perform subtraction
-		llvm::Value* result = builder->CreateSub(value1, value2, "sub_result");
+		// Perform subtraction (nsw = no signed wrap, enables better optimization)
+		llvm::Value* result = builder->CreateNSWSub(value1, value2, "sub_result");
 
 		builder->CreateStore(result, value1iPtrCast);
 
@@ -912,8 +913,8 @@ namespace Qd {
 		llvm::Value* value2iPtrCast = builder->CreateBitCast(value2Ptr, llvm::PointerType::get(*context, 0));
 		llvm::Value* value2 = builder->CreateLoad(builder->getInt64Ty(), value2iPtrCast, "value2");
 
-		// Perform multiplication
-		llvm::Value* result = builder->CreateMul(value1, value2, "mul_result");
+		// Perform multiplication (nsw = no signed wrap, enables better optimization)
+		llvm::Value* result = builder->CreateNSWMul(value1, value2, "mul_result");
 
 		builder->CreateStore(result, value1iPtrCast);
 
@@ -1452,8 +1453,8 @@ namespace Qd {
 			llvm::Value* value2iPtrCast = builder->CreateBitCast(value2Ptr, llvm::PointerType::get(*context, 0));
 			llvm::Value* value2 = builder->CreateLoad(builder->getInt64Ty(), value2iPtrCast, "value2");
 
-			// Perform addition
-			llvm::Value* result = builder->CreateAdd(value1, value2, "add_result");
+			// Perform addition (nsw = no signed wrap)
+			llvm::Value* result = builder->CreateNSWAdd(value1, value2, "add_result");
 
 			// Store result at elem1 (reuse first position)
 			builder->CreateStore(result, value1iPtrCast);
@@ -1527,7 +1528,7 @@ namespace Qd {
 			llvm::Value* value2iPtrCast = builder->CreateBitCast(value2Ptr, llvm::PointerType::get(*context, 0));
 			llvm::Value* value2 = builder->CreateLoad(builder->getInt64Ty(), value2iPtrCast, "value2");
 
-			llvm::Value* result = builder->CreateSub(value1, value2, "sub_result");
+			llvm::Value* result = builder->CreateNSWSub(value1, value2, "sub_result");
 			builder->CreateStore(result, value1iPtrCast);
 
 			llvm::Value* newSize = builder->CreateSub(size, builder->getInt64(1), "new_size");
@@ -1597,7 +1598,7 @@ namespace Qd {
 			llvm::Value* value2iPtrCast = builder->CreateBitCast(value2Ptr, llvm::PointerType::get(*context, 0));
 			llvm::Value* value2 = builder->CreateLoad(builder->getInt64Ty(), value2iPtrCast, "value2");
 
-			llvm::Value* result = builder->CreateMul(value1, value2, "mul_result");
+			llvm::Value* result = builder->CreateNSWMul(value1, value2, "mul_result");
 			builder->CreateStore(result, value1iPtrCast);
 
 			llvm::Value* newSize = builder->CreateSub(size, builder->getInt64(1), "new_size");
@@ -4099,7 +4100,12 @@ namespace Qd {
 		auto condPositive = builder->CreateICmpSLT(iterVar, endValue, "cmp_pos");
 		auto condNegative = builder->CreateICmpSGT(iterVar, endValue, "cmp_neg");
 		auto cond = builder->CreateSelect(stepIsNegative, condNegative, condPositive, "cmp");
-		builder->CreateCondBr(cond, loopBodyBB, loopExitBB);
+
+		// Add branch weights: loop body is likely (1000), exit is unlikely (1)
+		llvm::MDBuilder mdBuilder(*context);
+		llvm::MDNode* branchWeights = mdBuilder.createBranchWeights(1000, 1);
+		auto* br = builder->CreateCondBr(cond, loopBodyBB, loopExitBB);
+		br->setMetadata(llvm::LLVMContext::MD_prof, branchWeights);
 
 		// Loop body
 		builder->SetInsertPoint(loopBodyBB);
@@ -4167,9 +4173,9 @@ namespace Qd {
 
 		loopStack.pop_back();
 
-		// Loop increment
+		// Loop increment (nsw enables loop optimizations like strength reduction)
 		builder->SetInsertPoint(loopIncBB);
-		auto nextIter = builder->CreateAdd(iterVar, stepValue, "next_i");
+		auto nextIter = builder->CreateNSWAdd(iterVar, stepValue, "next_i");
 		iterVar->addIncoming(nextIter, loopIncBB);
 		builder->CreateBr(loopHeaderBB);
 
@@ -4253,8 +4259,11 @@ namespace Qd {
 		// Check if condition is non-zero
 		auto isTrue = builder->CreateICmpNE(condValue, builder->getInt32(0), "is_true");
 
-		// Branch based on condition
-		builder->CreateCondBr(isTrue, whileBodyBB, whileExitBB);
+		// Branch based on condition with weights (loop body is likely)
+		llvm::MDBuilder mdBuilder(*context);
+		llvm::MDNode* branchWeights = mdBuilder.createBranchWeights(1000, 1);
+		auto* br = builder->CreateCondBr(isTrue, whileBodyBB, whileExitBB);
+		br->setMetadata(llvm::LLVMContext::MD_prof, branchWeights);
 
 		// While body
 		builder->SetInsertPoint(whileBodyBB);
@@ -5810,7 +5819,8 @@ namespace Qd {
 			return false;
 		}
 
-		auto cpu = "generic";
+		// Use host CPU for better optimization (instead of "generic")
+		auto cpu = llvm::sys::getHostCPUName();
 		auto features = "";
 		llvm::TargetOptions opt;
 // LLVM 20+ changed API to accept Triple objects instead of strings
@@ -5834,9 +5844,10 @@ namespace Qd {
 			if (mImpl->optimizationLevel >= 1) {
 				// Basic optimizations
 				fpm.add(llvm::createPromoteMemoryToRegisterPass()); // mem2reg
-				fpm.add(llvm::createInstructionCombiningPass());	// instcombine
-				fpm.add(llvm::createReassociatePass());				// reassociate
-				fpm.add(llvm::createCFGSimplificationPass());		// simplifycfg
+				fpm.add(llvm::createEarlyCSEPass());				   // Early common subexpression elimination
+				fpm.add(llvm::createInstructionCombiningPass());   // instcombine
+				fpm.add(llvm::createReassociatePass());			   // reassociate
+				fpm.add(llvm::createCFGSimplificationPass());	   // simplifycfg
 			}
 
 			if (mImpl->optimizationLevel >= 2) {

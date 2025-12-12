@@ -14,8 +14,9 @@ fi
 echo "Using compiler: $QUADC"
 
 # Set library path to dist/lib where .a files are
-export QUADRATE_LIBDIR="dist/lib" 
+export QUADRATE_LIBDIR="dist/lib"
 export QUADRATE_ROOT="dist/share/quadrate"
+export LD_LIBRARY_PATH="dist/lib:$LD_LIBRARY_PATH"
 
 # Compile
 echo "Compiling benchmarks/string_ops.qd..."

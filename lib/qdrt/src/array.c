@@ -13,6 +13,10 @@
 #include "ptr_registry.h"
 
 // Global registry of valid array pointers
+// Note: We use a pointer registry rather than magic numbers because
+// qd_ptr_retain/release can receive any pointer, including raw memory
+// from mem::alloc. Reading uninitialized memory for magic number check
+// causes valgrind errors.
 static ptr_registry_t array_registry = PTR_REGISTRY_INITIALIZER;
 
 int qd_array_is_valid(const void* ptr) {
@@ -72,7 +76,7 @@ qd_array_t* qd_array_create(size_t capacity, qd_array_type elemType) {
 		return NULL;
 	}
 
-	// Register this array pointer
+	// Register this array pointer for validation
 	ptr_registry_add(&array_registry, arr);
 
 	return arr;
@@ -93,9 +97,6 @@ void qd_array_release(qd_array_t* arr) {
 	if (arr->refcount > 0) {
 		return;
 	}
-
-	// Unregister from registry before freeing
-	ptr_registry_remove(&array_registry, arr);
 
 	// Free contents
 	switch (arr->elemType) {
@@ -124,6 +125,9 @@ void qd_array_release(qd_array_t* arr) {
 		free(arr->data.p);
 		break;
 	}
+
+	// Unregister from the array registry
+	ptr_registry_remove(&array_registry, arr);
 
 	// Clear magic to prevent double-free detection
 	arr->magic = 0;

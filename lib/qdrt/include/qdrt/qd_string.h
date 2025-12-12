@@ -23,7 +23,12 @@ typedef atomic_size_t qd_atomic_size_t;
 #endif
 
 /**
- * @brief Minimum capacity for newly allocated strings
+ * @brief Minimum capacity for small strings (0-7 bytes)
+ */
+#define QD_STRING_SMALL_CAPACITY 8
+
+/**
+ * @brief Minimum capacity for regular strings (8+ bytes)
  */
 #define QD_STRING_MIN_CAPACITY 16
 

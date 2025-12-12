@@ -24,10 +24,16 @@ qd_string_t* qd_string_create_with_length(const char* str, size_t length) {
 		return NULL;
 	}
 
-	// Allocate with extra capacity for future growth (2x or minimum)
-	size_t capacity = length * 2;
-	if (capacity < QD_STRING_MIN_CAPACITY) {
-		capacity = QD_STRING_MIN_CAPACITY;
+	// Allocate with extra capacity for future growth
+	// Use adaptive sizing: small capacity for tiny strings, 2x for larger
+	size_t capacity;
+	if (length < QD_STRING_SMALL_CAPACITY) {
+		capacity = QD_STRING_SMALL_CAPACITY;
+	} else {
+		capacity = length * 2;
+		if (capacity < QD_STRING_MIN_CAPACITY) {
+			capacity = QD_STRING_MIN_CAPACITY;
+		}
 	}
 
 	qd_str->data = (char*)malloc(capacity + 1);
@@ -112,10 +118,15 @@ qd_string_t* qd_string_concat_smart(qd_string_t* str1, qd_string_t* str2) {
 	}
 
 	// Need to allocate new string
-	// Allocate with 2x capacity for future growth
-	size_t new_capacity = total_len * 2;
-	if (new_capacity < QD_STRING_MIN_CAPACITY) {
-		new_capacity = QD_STRING_MIN_CAPACITY;
+	// Allocate with adaptive capacity for future growth
+	size_t new_capacity;
+	if (total_len < QD_STRING_SMALL_CAPACITY) {
+		new_capacity = QD_STRING_SMALL_CAPACITY;
+	} else {
+		new_capacity = total_len * 2;
+		if (new_capacity < QD_STRING_MIN_CAPACITY) {
+			new_capacity = QD_STRING_MIN_CAPACITY;
+		}
 	}
 
 	qd_string_t* result = (qd_string_t*)malloc(sizeof(qd_string_t));
