@@ -9,49 +9,40 @@ PREFIX ?= /usr
 export CC  := clang
 export CXX := clang++
 
+# Commands to copy
+CMDS := quad quadc quadfmt quadlint quadlsp quadpm quaduses
+
+# Libraries with C components (need static archive creation)
+LIBS_WITH_C := qdrt qd qdfmt qdio qdmath qdmem qdnet qdos qdstr qdstrconv qdtime qdtesting
+
+# Libraries with headers to install
+LIBS_WITH_HEADERS := qdrt qd qdfmt qdio qdmath qdmem qdnet qdos qdstr qdstrconv qdtime qdtesting
+
+# Standard library modules (pure Quadrate or mixed)
+STDLIB_MODULES := base64 bits flag fmt io json math mem net os sb str strconv time unicode uri hex bytes crc32 sha256 regex path sort rand uuid testing
+
+# Library source directories for stdlib modules
+STDLIB_SOURCES := qdbase64 qdbits qdflag qdfmt qdio qdjson qdmath qdmem qdnet qdos qdsb qdstr qdstrconv qdtime qdunicode qduri qdhex qdbytes qdcrc32 qdsha256 qdregex qdpath qdsort qdrand qduuid qdtesting
+
 .PHONY: all debug release tests valgrind examples format install uninstall clean docs
 
 all: debug
 
-debug:
-	meson setup $(BUILD_DIR_DEBUG) --buildtype=debug $(MESON_FLAGS)
-	meson compile -C $(BUILD_DIR_DEBUG)
+# Common build function - called by debug and release targets
+# Usage: $(call do_build,BUILD_DIR,BUILD_TYPE,MSG)
+define do_build
+	meson setup $(1) --buildtype=$(2) $(MESON_FLAGS)
+	meson compile -C $(1)
 	@mkdir -p dist/bin dist/lib dist/include
-	@cp -f $(BUILD_DIR_DEBUG)/cmd/quad/quad dist/bin/
-	@cp -f $(BUILD_DIR_DEBUG)/cmd/quadc/quadc dist/bin/
-	@cp -f $(BUILD_DIR_DEBUG)/cmd/quadfmt/quadfmt dist/bin/
-	@cp -f $(BUILD_DIR_DEBUG)/cmd/quadlint/quadlint dist/bin/
-	@cp -f $(BUILD_DIR_DEBUG)/cmd/quadlsp/quadlsp dist/bin/
-	@cp -f $(BUILD_DIR_DEBUG)/cmd/quadpm/quadpm dist/bin/
-	@cp -f $(BUILD_DIR_DEBUG)/cmd/quaduses/quaduses dist/bin/
-	@if [ -f $(BUILD_DIR_DEBUG)/cmd/quadrepl/quadrepl ]; then cp -f $(BUILD_DIR_DEBUG)/cmd/quadrepl/quadrepl dist/bin/; else echo "Note: quadrepl not built (readline not found)"; fi
+	@for cmd in $(CMDS); do cp -f $(1)/cmd/$$cmd/$$cmd dist/bin/; done
+	@if [ -f $(1)/cmd/quadrepl/quadrepl ]; then cp -f $(1)/cmd/quadrepl/quadrepl dist/bin/; else echo "Note: quadrepl not built (readline not found)"; fi
 	@echo "Creating static libraries..."
-	@rm -f dist/lib/libqdrt.a && cd $(BUILD_DIR_DEBUG)/lib/qdrt && ar rcs ../../../../dist/lib/libqdrt.a $$(ar -t libqdrt_static.a) && echo "  libqdrt.a"
-	@rm -f dist/lib/libqd.a && cd $(BUILD_DIR_DEBUG)/lib/qd && ar rcs ../../../../dist/lib/libqd.a $$(ar -t libqd_static.a) && echo "  libqd.a"
-	# qdbits is pure Quadrate (no C library)
-	@rm -f dist/lib/libqdfmt.a && cd $(BUILD_DIR_DEBUG)/lib/qdfmt && ar rcs ../../../../dist/lib/libqdfmt.a $$(ar -t libqdfmt.a) && echo "  libqdfmt.a"
-	@rm -f dist/lib/libqdio.a && cd $(BUILD_DIR_DEBUG)/lib/qdio && ar rcs ../../../../dist/lib/libqdio.a $$(ar -t libqdio.a) && echo "  libqdio.a"
-	@rm -f dist/lib/libqdmath.a && cd $(BUILD_DIR_DEBUG)/lib/qdmath && ar rcs ../../../../dist/lib/libqdmath.a $$(ar -t libqdmath.a) && echo "  libqdmath.a"
-	@rm -f dist/lib/libqdmem.a && cd $(BUILD_DIR_DEBUG)/lib/qdmem && ar rcs ../../../../dist/lib/libqdmem.a $$(ar -t libqdmem.a) && echo "  libqdmem.a"
-	@rm -f dist/lib/libqdnet.a && cd $(BUILD_DIR_DEBUG)/lib/qdnet && ar rcs ../../../../dist/lib/libqdnet.a $$(ar -t libqdnet.a) && echo "  libqdnet.a"
-	@rm -f dist/lib/libqdos.a && cd $(BUILD_DIR_DEBUG)/lib/qdos && ar rcs ../../../../dist/lib/libqdos.a $$(ar -t libqdos.a) && echo "  libqdos.a"
-	@rm -f dist/lib/libqdstr.a && cd $(BUILD_DIR_DEBUG)/lib/qdstr && ar rcs ../../../../dist/lib/libqdstr.a $$(ar -t libqdstr.a) && echo "  libqdstr.a"
-	@rm -f dist/lib/libqdstrconv.a && cd $(BUILD_DIR_DEBUG)/lib/qdstrconv && ar rcs ../../../../dist/lib/libqdstrconv.a $$(ar -t libqdstrconv.a) && echo "  libqdstrconv.a"
-	@rm -f dist/lib/libqdtime.a && cd $(BUILD_DIR_DEBUG)/lib/qdtime && ar rcs ../../../../dist/lib/libqdtime.a $$(ar -t libqdtime.a) && echo "  libqdtime.a"
-	@rm -f dist/lib/libqdtesting.a && cd $(BUILD_DIR_DEBUG)/lib/qdtesting && ar rcs ../../../../dist/lib/libqdtesting.a $$(ar -t libqdtesting.a) && echo "  libqdtesting.a"
-	@cp -rf lib/qdrt/include/qdrt dist/include/
-	@cp -rf lib/qd/include/qd dist/include/
-	# qdbits has no C headers (pure Quadrate module)
-	@cp -rf lib/qdfmt/include/qdfmt dist/include/
-	@cp -rf lib/qdio/include/qdio dist/include/
-	@cp -rf lib/qdmath/include/qdmath dist/include/
-	@cp -rf lib/qdmem/include/qdmem dist/include/
-	@cp -rf lib/qdnet/include/qdnet dist/include/
-	@cp -rf lib/qdos/include/qdos dist/include/
-	@cp -rf lib/qdstr/include/qdstr dist/include/
-	@cp -rf lib/qdstrconv/include/qdstrconv dist/include/
-	@cp -rf lib/qdtime/include/qdtime dist/include/
-	@cp -rf lib/qdtesting/include/qdtesting dist/include/
+	@rm -f dist/lib/libqdrt.a && cd $(1)/lib/qdrt && ar rcs ../../../../dist/lib/libqdrt.a $$(ar -t libqdrt_static.a) && echo "  libqdrt.a"
+	@rm -f dist/lib/libqd.a && cd $(1)/lib/qd && ar rcs ../../../../dist/lib/libqd.a $$(ar -t libqd_static.a) && echo "  libqd.a"
+	@for lib in qdfmt qdio qdmath qdmem qdnet qdos qdstr qdstrconv qdtime qdtesting; do \
+		rm -f dist/lib/lib$$lib.a && cd $(1)/lib/$$lib && ar rcs ../../../../dist/lib/lib$$lib.a $$(ar -t lib$$lib.a) && echo "  lib$$lib.a" && cd ->/dev/null; \
+	done
+	@for lib in $(LIBS_WITH_HEADERS); do cp -rf lib/$$lib/include/$$lib dist/include/; done
 	@mkdir -p dist/share/quadrate
 	@cp -r lib/qdbase64/qd/base64 dist/share/quadrate/
 	@cp -r lib/qdbits/qd/bits dist/share/quadrate/
@@ -81,77 +72,14 @@ debug:
 	@cp -r lib/qdtesting/qd/testing dist/share/quadrate/
 	@mkdir -p dist/share/bash-completion/completions
 	@cp -f completions/quad.bash dist/share/bash-completion/completions/quad
-	@echo "Debug build complete - static libraries ready"
+	@echo "$(3)"
+endef
+
+debug:
+	$(call do_build,$(BUILD_DIR_DEBUG),debug,Debug build complete - static libraries ready)
 
 release:
-	meson setup $(BUILD_DIR_RELEASE) --buildtype=release $(MESON_FLAGS)
-	meson compile -C $(BUILD_DIR_RELEASE)
-	@mkdir -p dist/bin dist/lib dist/include
-	@cp -f $(BUILD_DIR_RELEASE)/cmd/quad/quad dist/bin/
-	@cp -f $(BUILD_DIR_RELEASE)/cmd/quadc/quadc dist/bin/
-	@cp -f $(BUILD_DIR_RELEASE)/cmd/quadfmt/quadfmt dist/bin/
-	@cp -f $(BUILD_DIR_RELEASE)/cmd/quadlint/quadlint dist/bin/
-	@cp -f $(BUILD_DIR_RELEASE)/cmd/quadlsp/quadlsp dist/bin/
-	@cp -f $(BUILD_DIR_RELEASE)/cmd/quadpm/quadpm dist/bin/
-	@cp -f $(BUILD_DIR_RELEASE)/cmd/quaduses/quaduses dist/bin/
-	@if [ -f $(BUILD_DIR_RELEASE)/cmd/quadrepl/quadrepl ]; then cp -f $(BUILD_DIR_RELEASE)/cmd/quadrepl/quadrepl dist/bin/; else echo "Note: quadrepl not built (readline not found)"; fi
-	@echo "Creating static libraries (release)..."
-	@rm -f dist/lib/libqdrt.a && cd $(BUILD_DIR_RELEASE)/lib/qdrt && ar rcs ../../../../dist/lib/libqdrt.a $$(ar -t libqdrt_static.a) && echo "  libqdrt.a"
-	@rm -f dist/lib/libqd.a && cd $(BUILD_DIR_RELEASE)/lib/qd && ar rcs ../../../../dist/lib/libqd.a $$(ar -t libqd_static.a) && echo "  libqd.a"
-	# qdbits is pure Quadrate (no C library)
-	@rm -f dist/lib/libqdfmt.a && cd $(BUILD_DIR_RELEASE)/lib/qdfmt && ar rcs ../../../../dist/lib/libqdfmt.a $$(ar -t libqdfmt.a) && echo "  libqdfmt.a"
-	@rm -f dist/lib/libqdio.a && cd $(BUILD_DIR_RELEASE)/lib/qdio && ar rcs ../../../../dist/lib/libqdio.a $$(ar -t libqdio.a) && echo "  libqdio.a"
-	@rm -f dist/lib/libqdmath.a && cd $(BUILD_DIR_RELEASE)/lib/qdmath && ar rcs ../../../../dist/lib/libqdmath.a $$(ar -t libqdmath.a) && echo "  libqdmath.a"
-	@rm -f dist/lib/libqdmem.a && cd $(BUILD_DIR_RELEASE)/lib/qdmem && ar rcs ../../../../dist/lib/libqdmem.a $$(ar -t libqdmem.a) && echo "  libqdmem.a"
-	@rm -f dist/lib/libqdnet.a && cd $(BUILD_DIR_RELEASE)/lib/qdnet && ar rcs ../../../../dist/lib/libqdnet.a $$(ar -t libqdnet.a) && echo "  libqdnet.a"
-	@rm -f dist/lib/libqdos.a && cd $(BUILD_DIR_RELEASE)/lib/qdos && ar rcs ../../../../dist/lib/libqdos.a $$(ar -t libqdos.a) && echo "  libqdos.a"
-	@rm -f dist/lib/libqdstr.a && cd $(BUILD_DIR_RELEASE)/lib/qdstr && ar rcs ../../../../dist/lib/libqdstr.a $$(ar -t libqdstr.a) && echo "  libqdstr.a"
-	@rm -f dist/lib/libqdstrconv.a && cd $(BUILD_DIR_RELEASE)/lib/qdstrconv && ar rcs ../../../../dist/lib/libqdstrconv.a $$(ar -t libqdstrconv.a) && echo "  libqdstrconv.a"
-	@rm -f dist/lib/libqdtime.a && cd $(BUILD_DIR_RELEASE)/lib/qdtime && ar rcs ../../../../dist/lib/libqdtime.a $$(ar -t libqdtime.a) && echo "  libqdtime.a"
-	@rm -f dist/lib/libqdtesting.a && cd $(BUILD_DIR_RELEASE)/lib/qdtesting && ar rcs ../../../../dist/lib/libqdtesting.a $$(ar -t libqdtesting.a) && echo "  libqdtesting.a"
-	@cp -rf lib/qdrt/include/qdrt dist/include/
-	@cp -rf lib/qd/include/qd dist/include/
-	# qdbits has no C headers (pure Quadrate module)
-	@cp -rf lib/qdfmt/include/qdfmt dist/include/
-	@cp -rf lib/qdio/include/qdio dist/include/
-	@cp -rf lib/qdmath/include/qdmath dist/include/
-	@cp -rf lib/qdmem/include/qdmem dist/include/
-	@cp -rf lib/qdnet/include/qdnet dist/include/
-	@cp -rf lib/qdos/include/qdos dist/include/
-	@cp -rf lib/qdstr/include/qdstr dist/include/
-	@cp -rf lib/qdstrconv/include/qdstrconv dist/include/
-	@cp -rf lib/qdtime/include/qdtime dist/include/
-	@cp -rf lib/qdtesting/include/qdtesting dist/include/
-	@mkdir -p dist/share/quadrate
-	@cp -r lib/qdbase64/qd/base64 dist/share/quadrate/
-	@cp -r lib/qdbits/qd/bits dist/share/quadrate/
-	@cp -r lib/qdflag/qd/flag dist/share/quadrate/
-	@cp -r lib/qdfmt/qd/fmt dist/share/quadrate/
-	@cp -r lib/qdio/qd/io dist/share/quadrate/
-	@cp -r lib/qdjson/qd/json dist/share/quadrate/
-	@cp -r lib/qdmath/qd/math dist/share/quadrate/
-	@cp -r lib/qdmem/qd/mem dist/share/quadrate/
-	@cp -r lib/qdnet/qd/net dist/share/quadrate/
-	@cp -r lib/qdos/qd/os dist/share/quadrate/
-	@cp -r lib/qdsb/qd/sb dist/share/quadrate/
-	@cp -r lib/qdstr/qd/str dist/share/quadrate/
-	@cp -r lib/qdstrconv/qd/strconv dist/share/quadrate/
-	@cp -r lib/qdtime/qd/time dist/share/quadrate/
-	@cp -r lib/qdunicode/qd/unicode dist/share/quadrate/
-	@cp -r lib/qduri/qd/uri dist/share/quadrate/
-	@cp -r lib/qdhex/qd/hex dist/share/quadrate/
-	@cp -r lib/qdbytes/qd/bytes dist/share/quadrate/
-	@cp -r lib/qdcrc32/qd/crc32 dist/share/quadrate/
-	@cp -r lib/qdsha256/qd/sha256 dist/share/quadrate/
-	@cp -r lib/qdregex/qd/regex dist/share/quadrate/
-	@cp -r lib/qdpath/qd/path dist/share/quadrate/
-	@cp -r lib/qdsort/qd/sort dist/share/quadrate/
-	@cp -r lib/qdrand/qd/rand dist/share/quadrate/
-	@cp -r lib/qduuid/qd/uuid dist/share/quadrate/
-	@cp -r lib/qdtesting/qd/testing dist/share/quadrate/
-	@mkdir -p dist/share/bash-completion/completions
-	@cp -f completions/quad.bash dist/share/bash-completion/completions/quad
-	@echo "Release build complete - static libraries ready"
+	$(call do_build,$(BUILD_DIR_RELEASE),release,Release build complete - static libraries ready)
 
 tests: debug
 	@echo "=========================================="
@@ -239,38 +167,10 @@ install: release
 	install -d $(DESTDIR)$(PREFIX)/bin
 	install -d $(DESTDIR)$(PREFIX)/lib
 	install -d $(DESTDIR)$(PREFIX)/include
-	install -m 755 dist/bin/quad $(DESTDIR)$(PREFIX)/bin/
-	install -m 755 dist/bin/quadc $(DESTDIR)$(PREFIX)/bin/
-	install -m 755 dist/bin/quadfmt $(DESTDIR)$(PREFIX)/bin/
-	install -m 755 dist/bin/quadlint $(DESTDIR)$(PREFIX)/bin/
-	install -m 755 dist/bin/quadlsp $(DESTDIR)$(PREFIX)/bin/
-	install -m 755 dist/bin/quadpm $(DESTDIR)$(PREFIX)/bin/
-	install -m 755 dist/bin/quaduses $(DESTDIR)$(PREFIX)/bin/
+	@for cmd in $(CMDS); do install -m 755 dist/bin/$$cmd $(DESTDIR)$(PREFIX)/bin/; done
 	@if [ -f dist/bin/quadrepl ]; then install -m 755 dist/bin/quadrepl $(DESTDIR)$(PREFIX)/bin/; fi
-	install -m 644 dist/lib/libqdrt.a $(DESTDIR)$(PREFIX)/lib/
-	install -m 644 dist/lib/libqd.a $(DESTDIR)$(PREFIX)/lib/
-	install -m 644 dist/lib/libqdfmt.a $(DESTDIR)$(PREFIX)/lib/
-	install -m 644 dist/lib/libqdio.a $(DESTDIR)$(PREFIX)/lib/
-	install -m 644 dist/lib/libqdmath.a $(DESTDIR)$(PREFIX)/lib/
-	install -m 644 dist/lib/libqdmem.a $(DESTDIR)$(PREFIX)/lib/
-	install -m 644 dist/lib/libqdnet.a $(DESTDIR)$(PREFIX)/lib/
-	install -m 644 dist/lib/libqdos.a $(DESTDIR)$(PREFIX)/lib/
-	install -m 644 dist/lib/libqdstr.a $(DESTDIR)$(PREFIX)/lib/
-	install -m 644 dist/lib/libqdstrconv.a $(DESTDIR)$(PREFIX)/lib/
-	install -m 644 dist/lib/libqdtime.a $(DESTDIR)$(PREFIX)/lib/
-	install -m 644 dist/lib/libqdtesting.a $(DESTDIR)$(PREFIX)/lib/
-	cp -r dist/include/qdrt $(DESTDIR)$(PREFIX)/include/
-	cp -r dist/include/qd $(DESTDIR)$(PREFIX)/include/
-	cp -r dist/include/qdfmt $(DESTDIR)$(PREFIX)/include/
-	cp -r dist/include/qdio $(DESTDIR)$(PREFIX)/include/
-	cp -r dist/include/qdmath $(DESTDIR)$(PREFIX)/include/
-	cp -r dist/include/qdmem $(DESTDIR)$(PREFIX)/include/
-	cp -r dist/include/qdnet $(DESTDIR)$(PREFIX)/include/
-	cp -r dist/include/qdos $(DESTDIR)$(PREFIX)/include/
-	cp -r dist/include/qdstr $(DESTDIR)$(PREFIX)/include/
-	cp -r dist/include/qdstrconv $(DESTDIR)$(PREFIX)/include/
-	cp -r dist/include/qdtime $(DESTDIR)$(PREFIX)/include/
-	cp -r dist/include/qdtesting $(DESTDIR)$(PREFIX)/include/
+	@for lib in $(LIBS_WITH_C); do install -m 644 dist/lib/lib$$lib.a $(DESTDIR)$(PREFIX)/lib/; done
+	@for lib in $(LIBS_WITH_HEADERS); do cp -r dist/include/$$lib $(DESTDIR)$(PREFIX)/include/; done
 	@echo "Installing Quadrate standard library modules to $(DESTDIR)$(PREFIX)/share/quadrate/"
 	install -d $(DESTDIR)$(PREFIX)/share/quadrate
 	@cp -r lib/qdbase64/qd/base64 $(DESTDIR)$(PREFIX)/share/quadrate/
@@ -302,56 +202,16 @@ install: release
 	@echo "Installing bash completions to $(DESTDIR)$(PREFIX)/share/bash-completion/completions/"
 	install -d $(DESTDIR)$(PREFIX)/share/bash-completion/completions
 	install -m 644 completions/quad.bash $(DESTDIR)$(PREFIX)/share/bash-completion/completions/quad
-	@ln -sf quad $(DESTDIR)$(PREFIX)/share/bash-completion/completions/quadc
-	@ln -sf quad $(DESTDIR)$(PREFIX)/share/bash-completion/completions/quadfmt
-	@ln -sf quad $(DESTDIR)$(PREFIX)/share/bash-completion/completions/quadlint
-	@ln -sf quad $(DESTDIR)$(PREFIX)/share/bash-completion/completions/quadlsp
-	@ln -sf quad $(DESTDIR)$(PREFIX)/share/bash-completion/completions/quadpm
-	@ln -sf quad $(DESTDIR)$(PREFIX)/share/bash-completion/completions/quadrepl
-	@ln -sf quad $(DESTDIR)$(PREFIX)/share/bash-completion/completions/quaduses
+	@for cmd in quadc quadfmt quadlint quadlsp quadpm quadrepl quaduses; do ln -sf quad $(DESTDIR)$(PREFIX)/share/bash-completion/completions/$$cmd; done
 
 uninstall:
-	rm -f $(DESTDIR)$(PREFIX)/bin/quad
-	rm -f $(DESTDIR)$(PREFIX)/bin/quadc
-	rm -f $(DESTDIR)$(PREFIX)/bin/quadfmt
-	rm -f $(DESTDIR)$(PREFIX)/bin/quadlint
-	rm -f $(DESTDIR)$(PREFIX)/bin/quadlsp
-	rm -f $(DESTDIR)$(PREFIX)/bin/quadpm
-	rm -f $(DESTDIR)$(PREFIX)/bin/quaduses
-	-rm -f $(DESTDIR)$(PREFIX)/bin/quadrepl
-	rm -f $(DESTDIR)$(PREFIX)/lib/libqdrt.a
-	rm -f $(DESTDIR)$(PREFIX)/lib/libqd.a
-	rm -f $(DESTDIR)$(PREFIX)/lib/libqdfmt.a
-	rm -f $(DESTDIR)$(PREFIX)/lib/libqdio.a
-	rm -f $(DESTDIR)$(PREFIX)/lib/libqdmath.a
-	rm -f $(DESTDIR)$(PREFIX)/lib/libqdmem.a
-	rm -f $(DESTDIR)$(PREFIX)/lib/libqdnet.a
-	rm -f $(DESTDIR)$(PREFIX)/lib/libqdos.a
-	rm -f $(DESTDIR)$(PREFIX)/lib/libqdstr.a
-	rm -f $(DESTDIR)$(PREFIX)/lib/libqdstrconv.a
-	rm -f $(DESTDIR)$(PREFIX)/lib/libqdtime.a
-	rm -rf $(DESTDIR)$(PREFIX)/include/qdrt
-	rm -rf $(DESTDIR)$(PREFIX)/include/qd
-	rm -rf $(DESTDIR)$(PREFIX)/include/qdfmt
-	rm -rf $(DESTDIR)$(PREFIX)/include/qdio
-	rm -rf $(DESTDIR)$(PREFIX)/include/qdmath
-	rm -rf $(DESTDIR)$(PREFIX)/include/qdmem
-	rm -rf $(DESTDIR)$(PREFIX)/include/qdnet
-	rm -rf $(DESTDIR)$(PREFIX)/include/qdos
-	rm -rf $(DESTDIR)$(PREFIX)/include/qdstr
-	rm -rf $(DESTDIR)$(PREFIX)/include/qdstrconv
-	rm -rf $(DESTDIR)$(PREFIX)/include/qdtime
+	@for cmd in $(CMDS) quadrepl; do rm -f $(DESTDIR)$(PREFIX)/bin/$$cmd; done
+	@for lib in $(LIBS_WITH_C); do rm -f $(DESTDIR)$(PREFIX)/lib/lib$$lib.a; done
+	@for lib in $(LIBS_WITH_HEADERS); do rm -rf $(DESTDIR)$(PREFIX)/include/$$lib; done
 	@echo "Removing Quadrate standard library modules from $(DESTDIR)$(PREFIX)/share/quadrate/"
 	rm -rf $(DESTDIR)$(PREFIX)/share/quadrate
 	@echo "Removing bash completions from $(DESTDIR)$(PREFIX)/share/bash-completion/completions/"
-	rm -f $(DESTDIR)$(PREFIX)/share/bash-completion/completions/quad
-	rm -f $(DESTDIR)$(PREFIX)/share/bash-completion/completions/quadc
-	rm -f $(DESTDIR)$(PREFIX)/share/bash-completion/completions/quadfmt
-	rm -f $(DESTDIR)$(PREFIX)/share/bash-completion/completions/quadlint
-	rm -f $(DESTDIR)$(PREFIX)/share/bash-completion/completions/quadlsp
-	rm -f $(DESTDIR)$(PREFIX)/share/bash-completion/completions/quadpm
-	rm -f $(DESTDIR)$(PREFIX)/share/bash-completion/completions/quadrepl
-	rm -f $(DESTDIR)$(PREFIX)/share/bash-completion/completions/quaduses
+	@for cmd in quad quadc quadfmt quadlint quadlsp quadpm quadrepl quaduses; do rm -f $(DESTDIR)$(PREFIX)/share/bash-completion/completions/$$cmd; done
 
 docs:
 	@echo "=========================================="

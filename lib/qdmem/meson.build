@@ -19,3 +19,8 @@ qdmem_dep = declare_dependency(
 	link_with: qdmem_static,
 	include_directories: qdmem_inc
 )
+
+# Tests
+if get_option('build_tests')
+	subdir('tests')
+endif

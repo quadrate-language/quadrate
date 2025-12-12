@@ -67,8 +67,8 @@ qd_exec_result usr_str_concat(qd_context* ctx) {
 		abort();
 	}
 
-	strcpy(result, qd_string_data(str1.value.s));
-	strcat(result, qd_string_data(str2.value.s));
+	memcpy(result, qd_string_data(str1.value.s), len1);
+	memcpy(result + len1, qd_string_data(str2.value.s), len2 + 1);  // +1 for null terminator
 
 	qd_string_release(str1.value.s);
 	qd_string_release(str2.value.s);
@@ -316,7 +316,7 @@ qd_exec_result usr_str_trim(qd_context* ctx) {
 	}
 
 	if (trimmed_len > 0) {
-		strncpy(result, start, trimmed_len);
+		memcpy(result, start, trimmed_len);
 	}
 	result[trimmed_len] = '\0';
 
@@ -392,7 +392,7 @@ qd_exec_result usr_str_substring(qd_context* ctx) {
 		abort();
 	}
 
-	strncpy(result, qd_string_data(str_elem.value.s) + start, actual_length);
+	memcpy(result, qd_string_data(str_elem.value.s) + start, actual_length);
 	result[actual_length] = '\0';
 
 	qd_string_release(str_elem.value.s);
@@ -581,11 +581,11 @@ qd_exec_result usr_str_replace(qd_context* ctx) {
 	while ((pos = strstr(pos, old)) != NULL) {
 		// Copy up to match
 		size_t prefix_len = (size_t)(pos - src);
-		strncpy(dest, src, prefix_len);
+		memcpy(dest, src, prefix_len);
 		dest += prefix_len;
 
 		// Copy replacement
-		strcpy(dest, new);
+		memcpy(dest, new, new_len);
 		dest += new_len;
 
 		// Move past match
@@ -593,8 +593,9 @@ qd_exec_result usr_str_replace(qd_context* ctx) {
 		src = pos;
 	}
 
-	// Copy remaining
-	strcpy(dest, src);
+	// Copy remaining (including null terminator)
+	size_t remaining = strlen(src);
+	memcpy(dest, src, remaining + 1);
 
 	qd_string_release(str_elem.value.s);
 	qd_string_release(old_elem.value.s);

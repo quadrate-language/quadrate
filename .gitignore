@@ -1,12 +1,23 @@
+# Build outputs
 build
 dist
 .intermediate
+
+# IDE/Editor
 .cache/clangd/index
 compile_commands.json
+
+# Temporary files
 .tmp*
 qd_*/
+
+# Shared libraries (built artifacts)
 *.so
+
+# AI assistant context (local only)
 CLAUDE.md
+
+# Standalone binary artifacts
 main
 
 # Meson subprojects (downloaded dependencies)
@@ -14,12 +25,10 @@ subprojects/*/
 !subprojects/*.wrap
 !subprojects/packagefiles/
 subprojects/.wraplock
-GEMINI.md
+
+# Benchmark artifacts
 benchmarks/arithmetic_qd_typeaware
 benchmarks/arithmetic_v8_specialized
-empty_if
 
 # Command binaries (built in-place)
 cmd/quadmcp/quadmcp
-
-lib/stdnetqd/src/platform/README.md

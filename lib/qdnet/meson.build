@@ -21,3 +21,8 @@ qdnet_dep = declare_dependency(
 	link_with: qdnet_static,
 	include_directories: qdnet_inc
 )
+
+# Tests
+if get_option('build_tests')
+	subdir('tests')
+endif
