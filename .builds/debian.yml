@@ -6,8 +6,6 @@ secrets:
 packages:
   - clang
   - llvm-dev
-  - libllvm-20-ocaml-dev
-  - llvm-20-dev
   - meson
   - nodejs
   - npm
