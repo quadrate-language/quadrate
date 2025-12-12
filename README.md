@@ -674,11 +674,10 @@ quadrate/
 ├── cmd/          # Command-line tools (quadc, quadfmt, quadlsp, etc.)
 ├── lib/
 │   ├── qc/       # Compiler frontend (parser, semantic analysis)
-│   ├── cgen/     # C code generator (standalone compilation)
-│   ├── llvmgen/  # LLVM IR generator (JIT compilation)
+│   ├── llvmgen/  # LLVM code generator (native compilation)
 │   ├── qdrt/     # Low-level runtime (stack, builtins)
 │   ├── qd/       # High-level embedding API
-│   └── std*qd/   # Standard library modules
+│   └── qd*/      # Standard library modules (qdmath, qdstr, qdio, etc.)
 ├── tests/        # Test suites
 ├── examples/     # Example programs
 └── editors/      # Editor integrations (tree-sitter, LSP)
@@ -688,19 +687,19 @@ quadrate/
 
 ## Platform Support
 
-**Primary Platform:**
-- Linux (x86_64, aarch64) — tested in CI
+**Tested Platforms:**
+- Linux (x86_64, aarch64) — fully tested in CI
+- FreeBSD — builds in CI
 
 **Potentially Compatible:**
 - macOS (x86_64, Apple Silicon) — should work but untested
-- BSD systems (FreeBSD, OpenBSD) — should work but untested
+- Other BSD systems (OpenBSD, NetBSD) — should work but untested
 
-**Note**: Only Linux is regularly tested. Other Unix-like systems should work in theory (standard POSIX + LLVM), but have not been verified. Contributions for testing and fixes on other platforms are welcome!
+**Note**: Linux receives full test coverage in CI. FreeBSD builds are verified but tests are not currently run. Other Unix-like systems should work in theory (standard POSIX + LLVM). Contributions for testing and fixes on other platforms are welcome!
 
-**Compiler Backends:**
-- GCC (standalone compilation)
-- Clang (standalone compilation)
-- LLVM JIT (embedded scripting)
+**Compiler Requirements:**
+- C11 and C++20 compiler (GCC 10+ or Clang 10+)
+- LLVM 14+ (for code generation)
 
 ---
 

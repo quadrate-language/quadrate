@@ -3655,7 +3655,33 @@ namespace Qd {
 		// Note: We can't optimize this for "integer-only" functions because even if the
 		// function parameters are integers, the function body may create/use non-integer
 		// values like structs and pointers.
-		builder->CreateCall(stackPopFn, {stackPtr, localAlloca});
+		llvm::Value* popResult = builder->CreateCall(stackPopFn, {stackPtr, localAlloca});
+
+		// Check result for errors (0 = success, non-zero = error)
+		llvm::Value* popFailed = builder->CreateICmpNE(popResult, builder->getInt32(0), name + "_pop_failed");
+		llvm::BasicBlock* popErrorBB = llvm::BasicBlock::Create(*context, name + "_pop_error", currentFn);
+		llvm::BasicBlock* popOkBB = llvm::BasicBlock::Create(*context, name + "_pop_ok", currentFn);
+		builder->CreateCondBr(popFailed, popErrorBB, popOkBB);
+
+		// Error block: print error and abort
+		builder->SetInsertPoint(popErrorBB);
+		auto stderrGlobal = module->getOrInsertGlobal("stderr", llvm::PointerType::getUnqual(*context));
+		auto fprintfFnTy = llvm::FunctionType::get(
+				builder->getInt32Ty(), {llvm::PointerType::getUnqual(*context), llvm::PointerType::getUnqual(*context)}, true);
+		auto fprintfFn = module->getOrInsertFunction("fprintf", fprintfFnTy);
+		auto stderrVal = builder->CreateLoad(llvm::PointerType::getUnqual(*context), stderrGlobal, "stderr");
+		auto errorMsg = builder->CreateGlobalString("Fatal error: Stack underflow when assigning to local variable\n");
+		builder->CreateCall(fprintfFn, {stderrVal, errorMsg});
+		auto printStackTraceFnTy =
+				llvm::FunctionType::get(builder->getVoidTy(), {llvm::PointerType::getUnqual(*context)}, false);
+		auto printStackTraceFn = module->getOrInsertFunction("qd_print_stack_trace", printStackTraceFnTy);
+		builder->CreateCall(printStackTraceFn, {ctx});
+		auto abortFn = module->getOrInsertFunction("abort", llvm::FunctionType::get(builder->getVoidTy(), false));
+		builder->CreateCall(abortFn, {});
+		builder->CreateUnreachable();
+
+		// Continue in success block
+		builder->SetInsertPoint(popOkBB);
 
 		// If we just constructed a struct, record its type for this local variable
 		if (!lastStructConstructed.empty()) {
@@ -3673,9 +3699,6 @@ namespace Qd {
 			localArrayVariables.insert(name);
 			lastPushedWasArray = false;
 		}
-
-		// TODO: Check result for errors (0 = success, non-zero = error)
-		// For now, we assume success
 	}
 
 	void LlvmGenerator::Impl::generateLocalCleanup() {
