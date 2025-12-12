@@ -5,6 +5,7 @@ int main(void) {
 
 	qd_push_s(ctx, "Hello, World!");
 	qd_print(ctx);
+	qd_nl(ctx);
 
 	qd_free_context(ctx);
 
