@@ -379,27 +379,34 @@ std::vector<LintIssue> lintFile(const std::string& filename, const Options& opts
 			}
 		}
 
-		// Check for unused local variables
+		// Check for unused local variables (per-function scope)
 		if (!opts.noUnusedVariables) {
-			std::unordered_map<std::string, IAstNode*> locals;
-			std::unordered_set<std::string> usages;
+			// Process each function separately to respect scoping
+			for (size_t i = 0; i < root->childCount(); i++) {
+				IAstNode* child = root->child(i);
+				if (child && child->type() == IAstNode::Type::FUNCTION_DECLARATION) {
+					std::unordered_map<std::string, IAstNode*> locals;
+					std::unordered_set<std::string> usages;
 
-			collectLocalBindings(root, locals);
-			collectVariableUsages(root, usages);
+					// Collect locals and usages only within this function
+					collectLocalBindings(child, locals);
+					collectVariableUsages(child, usages);
 
-			for (const auto& pair : locals) {
-				const std::string& varName = pair.first;
-				IAstNode* varNode = pair.second;
+					for (const auto& pair : locals) {
+						const std::string& varName = pair.first;
+						IAstNode* varNode = pair.second;
 
-				// Check if variable is used
-				if (usages.find(varName) == usages.end()) {
-					LintIssue issue;
-					issue.filename = filename;
-					issue.line = varNode->line();
-					issue.column = varNode->column();
-					issue.message = "Unused local variable '" + varName + "'";
-					issue.level = "warning";
-					issues.push_back(issue);
+						// Check if variable is used within this function
+						if (usages.find(varName) == usages.end()) {
+							LintIssue issue;
+							issue.filename = filename;
+							issue.line = varNode->line();
+							issue.column = varNode->column();
+							issue.message = "Unused local variable '" + varName + "'";
+							issue.level = "warning";
+							issues.push_back(issue);
+						}
+					}
 				}
 			}
 		}
