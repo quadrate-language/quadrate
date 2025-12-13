@@ -44,6 +44,7 @@ nav:
           - Defer: docs/learn/7-advanced/defer.md
           - Context: docs/learn/7-advanced/context.md
           - Function Pointers: docs/learn/7-advanced/function-pointers.md
+          - Anonymous Functions: docs/learn/7-advanced/anonymous-functions.md
           - Memory Management: docs/learn/7-advanced/memory.md
           - FFI (C Interop): docs/learn/7-advanced/ffi.md
       - 8. Examples:
