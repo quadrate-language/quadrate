@@ -241,6 +241,13 @@ namespace Qd {
 		// Counter for generating unique anonymous function names
 		size_t anonymousFunctionCounter = 0;
 
+		// Track the last generated anonymous function name (for aliasing via -> name)
+		std::string lastGeneratedAnonFuncName;
+
+		// Function pointer aliases: variable name -> LLVM function
+		// Used when anonymous functions are stored via -> name and referenced from nested scopes
+		std::map<std::string, llvm::Function*> functionPointerAliases;
+
 		// Struct definitions: struct name -> field information
 		struct FieldInfo {
 			std::string name;
@@ -2980,6 +2987,17 @@ namespace Qd {
 			return;
 		}
 
+		// Check if it's a function pointer alias (from anonymous function stored via -> name)
+		// This pushes the function pointer to the stack for use with 'call'
+		auto fpAliasIt = functionPointerAliases.find(name);
+		if (fpAliasIt != functionPointerAliases.end()) {
+			// Get the function pointer and push it to the stack
+			llvm::Function* func = fpAliasIt->second;
+			llvm::Value* funcPtr = builder->CreateBitCast(func, llvm::PointerType::getUnqual(*context));
+			builder->CreateCall(pushPtrFn, {ctx, funcPtr});
+			return;
+		}
+
 		// Check if it's a user-defined function call
 		// First try the plain name, then try with current module prefix for intra-module calls
 		auto it = userFunctions.find(name);
@@ -3189,6 +3207,9 @@ namespace Qd {
 		// Push the function pointer onto the stack
 		auto funcPtrValue = builder->CreateBitCast(fn, llvm::PointerType::getUnqual(*context));
 		builder->CreateCall(pushPtrFn, {ctx, funcPtrValue});
+
+		// Track the function name for potential aliasing via -> name
+		lastGeneratedAnonFuncName = funcName;
 	}
 
 	void LlvmGenerator::Impl::generateScopedIdentifier(AstNodeScopedIdentifier* scopedIdent, llvm::Value* ctx) {
@@ -3779,6 +3800,16 @@ namespace Qd {
 		if (lastPushedWasArray) {
 			localArrayVariables.insert(name);
 			lastPushedWasArray = false;
+		}
+
+		// If the stored value was an anonymous function, create an alias for function pointer lookup
+		// This allows nested anonymous functions to reference outer function pointer variables
+		if (!lastGeneratedAnonFuncName.empty()) {
+			auto anonFuncIt = userFunctions.find(lastGeneratedAnonFuncName);
+			if (anonFuncIt != userFunctions.end()) {
+				functionPointerAliases[name] = anonFuncIt->second;
+			}
+			lastGeneratedAnonFuncName.clear();
 		}
 	}
 
