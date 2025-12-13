@@ -6,6 +6,7 @@
 #include <iostream>
 #include <map>
 #include <qc/ast.h>
+#include <qc/ast_node_import.h>
 #include <qc/ast_node_program.h>
 #include <qc/ast_node_scoped.h>
 #include <qc/ast_node_use.h>
@@ -127,6 +128,27 @@ void collectScopedIdentifiers(const IAstNode* node, std::set<std::string>& scope
 	// Recursively visit all children
 	for (size_t i = 0; i < node->childCount(); i++) {
 		collectScopedIdentifiers(node->child(i), scopes);
+	}
+}
+
+// Collect all namespaces defined by import statements (import "lib" as "namespace" { ... })
+void collectImportNamespaces(const IAstNode* node, std::set<std::string>& importedNamespaces) {
+	if (!node) {
+		return;
+	}
+
+	if (node->type() == IAstNode::Type::IMPORT_STATEMENT) {
+		const AstNodeImport* importNode = static_cast<const AstNodeImport*>(node);
+		importedNamespaces.insert(importNode->namespaceName());
+	}
+
+	// Check direct children of program node
+	for (size_t i = 0; i < node->childCount(); i++) {
+		const IAstNode* child = node->child(i);
+		if (child && child->type() == IAstNode::Type::IMPORT_STATEMENT) {
+			const AstNodeImport* importNode = static_cast<const AstNodeImport*>(child);
+			importedNamespaces.insert(importNode->namespaceName());
+		}
 	}
 }
 
@@ -364,6 +386,16 @@ bool processFile(const std::string& filename, const Options& opts) {
 		// Collect all scoped identifiers (namespaces used in code)
 		std::set<std::string> usedScopes;
 		collectScopedIdentifiers(root, usedScopes);
+
+		// Collect namespaces already defined by import statements
+		// These don't need use statements since the import block defines the namespace
+		std::set<std::string> importedNamespaces;
+		collectImportNamespaces(root, importedNamespaces);
+
+		// Remove namespaces that are already defined by import blocks
+		for (const auto& ns : importedNamespaces) {
+			usedScopes.erase(ns);
+		}
 
 		// Collect original use statements to preserve file paths vs module names
 		std::map<std::string, std::string> scopeToOriginalImport;
