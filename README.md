@@ -679,9 +679,13 @@ quadrate/
 │   ├── qd/       # High-level embedding API
 │   └── qd*/      # Standard library modules (qdmath, qdstr, qdio, etc.)
 ├── tests/        # Test suites
-├── examples/     # Example programs
-└── editors/      # Editor integrations (tree-sitter, LSP)
+└── examples/     # Example programs
 ```
+
+## Editor Support
+
+- **Neovim**: https://git.sr.ht/~klahr/quadrate.nvim
+- **VS Code**: https://git.sr.ht/~klahr/quadrate-vscode
 
 ---
 

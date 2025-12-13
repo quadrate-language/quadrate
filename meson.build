@@ -37,9 +37,6 @@ subdir('lib')
 subdir('cmd')
 subdir('tests')
 
-# Editor integrations (optional tests)
-subdir('editors')
-
 # Examples (optional)
 if get_option('build_examples')
 		subdir('examples')

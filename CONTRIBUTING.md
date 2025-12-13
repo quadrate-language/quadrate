@@ -92,9 +92,12 @@ quadrate/
 │   └── qd*/      # Standard library modules
 ├── examples/     # Example programs
 ├── tests/        # Test suite
-├── editors/      # Editor integrations
 └── docs/         # Documentation source
 ```
+
+Editor integrations are in separate repositories:
+- **Neovim**: https://git.sr.ht/~klahr/quadrate.nvim
+- **VS Code**: https://git.sr.ht/~klahr/quadrate-vscode
 
 Each library follows the structure:
 ```
