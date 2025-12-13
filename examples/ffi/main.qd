@@ -1,0 +1,17 @@
+// main.qd - FFI example
+//
+// This program imports a C library and calls a function from it.
+// The C function pops a string from the stack and prints a greeting.
+
+// Import the C library. The library file is "libgreet.a" and we
+// expose it under the namespace "greet".
+import "libgreet.a" as "greet" {
+    // Declare the function signature.
+    // The C function is usr_greet_hello, exposed as greet::hello
+    pub fn hello(name:str -- )
+}
+
+fn main( -- ) {
+    "World" greet::hello
+    "Quadrate" greet::hello
+}

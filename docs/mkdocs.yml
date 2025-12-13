@@ -45,6 +45,7 @@ nav:
           - Context: docs/learn/7-advanced/context.md
           - Function Pointers: docs/learn/7-advanced/function-pointers.md
           - Memory Management: docs/learn/7-advanced/memory.md
+          - FFI (C Interop): docs/learn/7-advanced/ffi.md
       - 8. Examples:
           - File Processing: docs/learn/8-examples/file-processing.md
   - Reference:

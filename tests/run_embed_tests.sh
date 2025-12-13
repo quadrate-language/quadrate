@@ -89,6 +89,11 @@ run_test "incremental-test" \
     "$PROJECT_ROOT/dist/examples/incremental-test" \
     "Building all at once"
 
+# Test 5: FFI example (Quadrate calling C)
+run_test "ffi" \
+    "$PROJECT_ROOT/dist/examples/ffi" \
+    "Hello, World!"
+
 echo ""
 echo "=== Test Results ==="
 echo "Total:  $TOTAL_TESTS"
