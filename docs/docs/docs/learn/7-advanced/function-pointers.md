@@ -265,4 +265,4 @@ fn cmd_quit( -- ) {
 
 ## What's Next?
 
-Learn about [Memory Management](memory.md) for manual memory control.
+Learn about [Anonymous Functions](anonymous-functions.md) for inline function definitions, or [Memory Management](memory.md) for manual memory control.

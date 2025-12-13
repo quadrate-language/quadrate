@@ -158,6 +158,160 @@ namespace Qd {
 		return result;
 	}
 
+	// Format an anonymous function: fn (signature) { body } -> var
+	static std::string formatAnonymousFunctionSignature(const std::string& line) {
+		std::string trimmed = trim(line);
+
+		// Must start with "fn"
+		if (trimmed.length() < 4 || trimmed.substr(0, 2) != "fn") {
+			return "";
+		}
+
+		// Skip "fn" and optional whitespace
+		size_t pos = 2;
+		while (pos < trimmed.length() && std::isspace(static_cast<unsigned char>(trimmed[pos]))) {
+			pos++;
+		}
+
+		// Must have '(' immediately (anonymous function, no name)
+		if (pos >= trimmed.length() || trimmed[pos] != '(') {
+			return "";
+		}
+
+		size_t parenPos = pos;
+
+		// Find matching closing paren
+		int depth = 0;
+		size_t closeParenPos = parenPos;
+		for (size_t i = parenPos; i < trimmed.length(); i++) {
+			if (trimmed[i] == '(') {
+				depth++;
+			}
+			if (trimmed[i] == ')') {
+				depth--;
+				if (depth == 0) {
+					closeParenPos = i;
+					break;
+				}
+			}
+		}
+
+		if (closeParenPos == parenPos) {
+			return ""; // No closing paren found
+		}
+
+		// Extract signature part (everything between parens)
+		std::string signature = trimmed.substr(parenPos + 1, closeParenPos - parenPos - 1);
+		std::string formattedSig = trim(signature);
+
+		// Find the "--" separator to determine if inputs/outputs are present
+		size_t dashPos = formattedSig.find("--");
+		bool hasInputs = false;
+		bool hasOutputs = false;
+
+		if (dashPos != std::string::npos) {
+			std::string beforeDash = formattedSig.substr(0, dashPos);
+			std::string trimmedInputs = trim(beforeDash);
+			hasInputs = (trimmedInputs.length() > 0);
+
+			std::string afterDash = formattedSig.substr(dashPos + 2);
+			std::string trimmedOutputs = trim(afterDash);
+			hasOutputs = (trimmedOutputs.length() > 0);
+
+			std::string result;
+			if (!hasInputs) {
+				result = " --";
+			} else {
+				result = trimmedInputs + " --";
+			}
+			result += " ";
+			if (hasOutputs) {
+				result += trimmedOutputs;
+			}
+			formattedSig = result;
+		}
+
+		// Look for opening brace after closing paren
+		pos = closeParenPos + 1;
+		while (pos < trimmed.length() && std::isspace(static_cast<unsigned char>(trimmed[pos]))) {
+			pos++;
+		}
+
+		if (pos >= trimmed.length() || trimmed[pos] != '{') {
+			return ""; // No opening brace - not a complete anonymous function
+		}
+
+		// Find matching closing brace
+		size_t braceStart = pos;
+		depth = 0;
+		size_t closeBracePos = braceStart;
+		bool inString = false;
+		for (size_t i = braceStart; i < trimmed.length(); i++) {
+			char c = trimmed[i];
+			if (c == '"' && (i == 0 || trimmed[i - 1] != '\\')) {
+				inString = !inString;
+			}
+			if (!inString) {
+				if (c == '{') {
+					depth++;
+				} else if (c == '}') {
+					depth--;
+					if (depth == 0) {
+						closeBracePos = i;
+						break;
+					}
+				}
+			}
+		}
+
+		if (closeBracePos == braceStart) {
+			return ""; // No closing brace found
+		}
+
+		// Extract body and normalize spacing around standalone operators
+		std::string body = trim(trimmed.substr(braceStart + 1, closeBracePos - braceStart - 1));
+		// Add space before standalone * / + - operators (stack instructions)
+		std::string normalizedBody;
+		for (size_t i = 0; i < body.length(); i++) {
+			char c = body[i];
+			if ((c == '*' || c == '/' || c == '+' || c == '-') && i > 0) {
+				// Check if preceded by non-space (needs space before)
+				if (!std::isspace(static_cast<unsigned char>(body[i - 1]))) {
+					normalizedBody += ' ';
+				}
+			}
+			normalizedBody += c;
+		}
+		body = normalizedBody;
+
+		// Check for -> assignment after closing brace
+		std::string afterBrace = trim(trimmed.substr(closeBracePos + 1));
+		std::string assignment;
+		if (afterBrace.length() >= 2 && afterBrace.substr(0, 2) == "->") {
+			// Normalize: "->var" or "-> var" becomes " -> var"
+			std::string varName = trim(afterBrace.substr(2));
+			assignment = " -> " + varName;
+		}
+
+		// Format: fn (signature) { body }[ -> var]
+		return "fn (" + formattedSig + ") { " + body + " }" + assignment;
+	}
+
+	// Check if a line is an anonymous function definition
+	static bool isAnonymousFunction(const std::string& line) {
+		std::string trimmed = trim(line);
+		if (trimmed.length() < 4 || trimmed.substr(0, 2) != "fn") {
+			return false;
+		}
+		// Skip "fn" and optional whitespace
+		size_t pos = 2;
+		while (pos < trimmed.length() && std::isspace(static_cast<unsigned char>(trimmed[pos]))) {
+			pos++;
+		}
+		// Anonymous function starts with '(' immediately after "fn" (with or without space)
+		return pos < trimmed.length() && trimmed[pos] == '(';
+	}
+
 	// Format a function signature line
 	static std::string formatFunctionSignature(const std::string& line) {
 		std::string trimmed = trim(line);
@@ -195,6 +349,11 @@ namespace Qd {
 		}
 
 		std::string name = trim(workingLine.substr(nameStart, parenPos - nameStart));
+
+		// If name is empty, this is an anonymous function - delegate to that formatter
+		if (name.empty()) {
+			return formatAnonymousFunctionSignature(trimmed);
+		}
 
 		// Find matching closing paren
 		int depth = 0;
@@ -752,6 +911,11 @@ namespace Qd {
 
 		// Don't split struct constructions - they'll be formatted later
 		if (isStructConstruction(trimmed)) {
+			return line;
+		}
+
+		// Don't split anonymous functions - they're formatted as single lines
+		if (isAnonymousFunction(trimmed)) {
 			return line;
 		}
 
@@ -1324,6 +1488,20 @@ namespace Qd {
 						output << '\t';
 					}
 					output << trimmed << '\n';
+					continue;
+				}
+			}
+
+			// Check for anonymous function first (fn (signature) { body } -> var)
+			if (isAnonymousFunction(trimmed)) {
+				std::string formatted = formatAnonymousFunctionSignature(trimmed);
+				if (!formatted.empty()) {
+					// Write with current indent
+					for (int i = 0; i < indentLevel; i++) {
+						output << '\t';
+					}
+					output << formatted << '\n';
+					// Anonymous functions are self-contained on one line, don't adjust indent
 					continue;
 				}
 			}

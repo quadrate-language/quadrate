@@ -1,0 +1,6 @@
+fn main( -- ) {
+    fn(x:i64--r:i64){2*}->double
+    fn(a:i64 b:i64--r:i64){+}->add
+    fn(--){print}->say
+    5 double call print nl
+}

@@ -1,0 +1,5 @@
+// Test: using parameter names inside anonymous function body should fail
+// (parameter names are for documentation only, use stack operations)
+fn main( -- ) {
+    fn (x:i64 -- r:i64) { x 2 * } -> bad
+}

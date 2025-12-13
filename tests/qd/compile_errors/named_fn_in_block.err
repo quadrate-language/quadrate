@@ -1,0 +1,1 @@
+Function declarations not allowed inside blocks. Did you mean 'fn (...) { }' for an anonymous function?

@@ -1,0 +1,10 @@
+// Test chained anonymous function calls (same function)
+fn main( -- ) {
+    fn (x:i64 -- r:i64) { 2 * } -> double
+
+    // Triple chained call with same function
+    2 double call double call double call print nl
+
+    // Another chain
+    5 double call double call print nl
+}

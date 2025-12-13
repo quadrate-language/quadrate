@@ -1,0 +1,176 @@
+# Anonymous Functions
+
+Anonymous functions (also called lambdas) let you define functions inline without naming them. They're useful for quick one-off operations and callbacks.
+
+## Basic Syntax
+
+Use `fn (signature) { body }` to create an anonymous function:
+
+```qd
+fn main( -- ) {
+	// Define and store an anonymous function
+	fn (x:i64 -- r:i64) { 2 * } -> double
+
+	// Call it with 'call'
+	5 double call print nl  // 10
+}
+```
+
+The signature follows the same format as regular functions: `(inputs -- outputs)`.
+
+## Inline Usage
+
+Anonymous functions can be used directly without storing them:
+
+```qd
+fn main( -- ) {
+	// Define and call immediately
+	5 fn (x:i64 -- r:i64) { 2 * } call print nl  // 10
+
+	// Multiple parameters
+	10 20 fn (a:i64 b:i64 -- r:i64) { + } call print nl  // 30
+}
+```
+
+## Side-Effect Functions
+
+Functions that don't return values use an empty output signature:
+
+```qd
+fn main( -- ) {
+	fn ( -- ) { "Hello!" print nl } -> greet
+	greet call  // Hello!
+
+	// Or inline
+	fn ( -- ) { "Goodbye!" print nl } call  // Goodbye!
+}
+```
+
+## Reusing Anonymous Functions
+
+Once stored, an anonymous function can be called multiple times:
+
+```qd
+fn main( -- ) {
+	fn (x:i64 -- r:i64) { 2 * } -> double
+
+	// Use in a loop
+	1 6 1 for i {
+		i double call print nl
+	}
+	// Output: 2 4 6 8 10
+}
+```
+
+## Control Flow Inside
+
+Anonymous functions can contain conditionals and other control flow:
+
+```qd
+fn main( -- ) {
+	fn (x:i64 -- r:i64) {
+		dup 0 > if {
+			10
+		} else {
+			0
+		}
+	} -> positive_to_ten
+
+	5 positive_to_ten call print nl   // 10
+	-3 positive_to_ten call print nl  // 0
+}
+```
+
+## Calling Named Functions
+
+Anonymous functions can call regular named functions:
+
+```qd
+fn helper(a:i64 -- r:i64) {
+	10 +
+}
+
+fn main( -- ) {
+	fn (a:i64 -- r:i64) { helper 2 * } -> process
+	5 process call print nl  // 30 (5+10=15, 15*2=30)
+}
+```
+
+## Parameter Names
+
+Parameter names in the signature are for documentation only. Inside the body, values come from the stack:
+
+```qd
+fn main( -- ) {
+	// 'x' and 'r' are just documentation
+	// The body works with stack values
+	fn (x:i64 -- r:i64) {
+		dup +  // doubles the top of stack
+	} -> double
+
+	5 double call print nl  // 10
+}
+```
+
+## Comparison with Function Pointers
+
+Anonymous functions and function pointers both use `call`:
+
+```qd
+// Named function with pointer
+fn double(x:i64 -- r:i64) { 2 * }
+
+fn main( -- ) {
+	// Function pointer to named function
+	&double -> fp1
+	5 fp1 call print nl  // 10
+
+	// Anonymous function
+	fn (x:i64 -- r:i64) { 2 * } -> fp2
+	5 fp2 call print nl  // 10
+}
+```
+
+The difference is that anonymous functions are defined inline, while function pointers reference separately defined functions.
+
+## Use Cases
+
+### Quick Transformations
+
+```qd
+fn main( -- ) {
+	// Square a number inline
+	7 fn (x:i64 -- r:i64) { dup * } call print nl  // 49
+}
+```
+
+### Deferred Actions
+
+```qd
+fn main( -- ) {
+	fn ( -- ) {
+		"Cleanup complete" print nl
+	} -> cleanup
+
+	"Doing work..." print nl
+	// ... work happens ...
+	cleanup call
+}
+```
+
+### Configurable Behavior
+
+```qd
+fn process(value:i64 transform:ptr -- result:i64) {
+	call
+}
+
+fn main( -- ) {
+	10 fn (x:i64 -- r:i64) { 2 * } process print nl  // 20
+	10 fn (x:i64 -- r:i64) { 5 + } process print nl  // 15
+}
+```
+
+## What's Next?
+
+Learn about [Memory Management](memory.md) for manual memory control.

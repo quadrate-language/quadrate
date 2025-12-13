@@ -38,6 +38,7 @@
 #endif
 
 #include <qc/ast_node.h>
+#include <qc/ast_node_anonymous_function.h>
 #include <qc/ast_node_array.h>
 #include <qc/ast_node_break.h>
 #include <qc/ast_node_constant.h>
@@ -237,6 +238,9 @@ namespace Qd {
 		// Track if current function returns a pointer (structs must be heap-allocated)
 		bool currentFunctionReturnsPtr = false;
 
+		// Counter for generating unique anonymous function names
+		size_t anonymousFunctionCounter = 0;
+
 		// Struct definitions: struct name -> field information
 		struct FieldInfo {
 			std::string name;
@@ -286,6 +290,7 @@ namespace Qd {
 		void generateCtxBlock(AstNodeCtx* ctxNode, llvm::Value* ctx);
 		void generateIdentifier(AstNodeIdentifier* ident, llvm::Value* ctx);
 		void generateFunctionPointer(AstNodeFunctionPointerReference* funcPtr, llvm::Value* ctx);
+		void generateAnonymousFunction(AstNodeAnonymousFunction* anonFunc, llvm::Value* ctx);
 		void generateScopedIdentifier(AstNodeScopedIdentifier* scopedIdent, llvm::Value* ctx);
 		void generateSwitchStatement(AstNodeSwitchStatement* switchStmt, llvm::Value* ctx);
 		void generateLocal(AstNodeLocal* local, llvm::Value* ctx);
@@ -3111,6 +3116,81 @@ namespace Qd {
 		}
 	}
 
+	void LlvmGenerator::Impl::generateAnonymousFunction(AstNodeAnonymousFunction* anonFunc, llvm::Value* ctx) {
+		// Generate a unique name for this anonymous function
+		std::string funcName = "__anon_" + std::to_string(anonymousFunctionCounter++);
+		std::string fullFuncName = "usr_" + mainModuleName + "_" + funcName;
+
+		// Save current state
+		auto savedLocalVars = localVariables;
+		auto savedLocalVarStructTypes = localVariableStructTypes;
+		auto savedLocalArrayVars = localArrayVariables;
+		auto savedLastStruct = lastStructConstructed;
+		auto savedLastFieldAccess = lastFieldAccessResultType;
+		auto savedReturnBlock = currentFunctionReturnBlock;
+		auto savedIsFallible = currentFunctionIsFallible;
+		auto savedInsertPoint = builder->GetInsertBlock();
+		auto savedInsertPointEnd = builder->GetInsertPoint();
+
+		// Clear local variables for the anonymous function
+		localVariables.clear();
+		localVariableStructTypes.clear();
+		localArrayVariables.clear();
+		lastStructConstructed.clear();
+		lastFieldAccessResultType.clear();
+
+		// Create the function: takes context, returns exec_result
+		auto fnTy = llvm::FunctionType::get(execResultTy, {contextPtrTy}, false);
+		auto fn = llvm::Function::Create(fnTy, llvm::Function::InternalLinkage, fullFuncName, *module);
+
+		// Register the function
+		userFunctions[funcName] = fn;
+
+		// Create basic blocks
+		auto entryBB = llvm::BasicBlock::Create(*context, "entry", fn);
+		auto returnBB = llvm::BasicBlock::Create(*context, "return", fn);
+
+		builder->SetInsertPoint(entryBB);
+
+		// Get context parameter
+		llvm::Value* anonCtx = fn->getArg(0);
+		anonCtx->setName("ctx");
+
+		// Set the return target for this function
+		currentFunctionReturnBlock = returnBB;
+		currentFunctionIsFallible = false; // Anonymous functions are not fallible (yet)
+
+		// Generate the body
+		if (anonFunc->body()) {
+			generateNode(anonFunc->body(), anonCtx);
+		}
+
+		// Jump to return block if we haven't already terminated
+		llvm::BasicBlock* currentBlock = builder->GetInsertBlock();
+		if (currentBlock && !currentBlock->getTerminator()) {
+			builder->CreateBr(returnBB);
+		}
+
+		// Generate return block
+		builder->SetInsertPoint(returnBB);
+		auto successResult = builder->CreateInsertValue(llvm::UndefValue::get(execResultTy), builder->getInt32(0), {0});
+		builder->CreateRet(successResult);
+
+		// Restore state
+		localVariables = savedLocalVars;
+		localVariableStructTypes = savedLocalVarStructTypes;
+		localArrayVariables = savedLocalArrayVars;
+		lastStructConstructed = savedLastStruct;
+		lastFieldAccessResultType = savedLastFieldAccess;
+		currentFunctionReturnBlock = savedReturnBlock;
+		currentFunctionIsFallible = savedIsFallible;
+		builder->SetInsertPoint(savedInsertPoint, savedInsertPointEnd);
+
+		// Push the function pointer onto the stack
+		auto funcPtrValue = builder->CreateBitCast(fn, llvm::PointerType::getUnqual(*context));
+		builder->CreateCall(pushPtrFn, {ctx, funcPtrValue});
+	}
+
 	void LlvmGenerator::Impl::generateScopedIdentifier(AstNodeScopedIdentifier* scopedIdent, llvm::Value* ctx) {
 		const std::string& scope = scopedIdent->scope();
 		const std::string& name = scopedIdent->name();
@@ -4587,6 +4667,9 @@ namespace Qd {
 			break;
 		case IAstNode::Type::FUNCTION_POINTER_REFERENCE:
 			generateFunctionPointer(static_cast<AstNodeFunctionPointerReference*>(node), ctx);
+			break;
+		case IAstNode::Type::ANONYMOUS_FUNCTION:
+			generateAnonymousFunction(static_cast<AstNodeAnonymousFunction*>(node), ctx);
 			break;
 		case IAstNode::Type::BLOCK:
 			// For blocks, just recursively generate all children

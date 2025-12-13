@@ -1,0 +1,4 @@
+// Test: anonymous function without body should fail
+fn main( -- ) {
+    fn (x:i64 -- r:i64) -> bad
+}

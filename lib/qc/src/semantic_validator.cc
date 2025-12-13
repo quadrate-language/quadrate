@@ -8,6 +8,7 @@
 #include <iostream>
 #include <qc/ast.h>
 #include <qc/ast_node.h>
+#include <qc/ast_node_anonymous_function.h>
 #include <qc/ast_node_constant.h>
 #include <qc/ast_node_ctx.h>
 #include <qc/ast_node_defer.h>
@@ -2287,6 +2288,12 @@ namespace Qd {
 				typeStack.push_back(StackValueType::PTR);
 				break;
 
+			case IAstNode::Type::ANONYMOUS_FUNCTION:
+				// Anonymous functions push a function pointer onto the stack
+				// The function body will be validated separately during code generation
+				typeStack.push_back(StackValueType::PTR);
+				break;
+
 			case IAstNode::Type::STRUCT_CONSTRUCTION: {
 				// Struct construction with named fields: StructName { field: expr ... }
 				// Field expressions are self-contained, so struct construction just pushes PTR
@@ -3997,6 +4004,11 @@ namespace Qd {
 
 			case IAstNode::Type::FUNCTION_POINTER_REFERENCE:
 				// Function pointer references push a pointer type onto the stack
+				typeStack.push_back(StackValueType::PTR);
+				break;
+
+			case IAstNode::Type::ANONYMOUS_FUNCTION:
+				// Anonymous functions push a function pointer onto the stack
 				typeStack.push_back(StackValueType::PTR);
 				break;
 

@@ -44,7 +44,8 @@ namespace Qd {
 			FIELD_SET,
 			ARRAY_LITERAL,
 			ARRAY_INDEX,
-			TEST_DECLARATION
+			TEST_DECLARATION,
+			ANONYMOUS_FUNCTION
 		};
 		virtual ~IAstNode() = default;
 

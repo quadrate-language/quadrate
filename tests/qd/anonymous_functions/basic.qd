@@ -1,0 +1,11 @@
+// Test basic anonymous function syntax
+fn main( -- ) {
+    // Create anonymous function and store in variable
+    fn (x:i64 -- r:i64) { 2 * } -> double
+
+    // Call it with a value
+    5 double call print nl
+
+    // Call it with another value
+    10 double call print nl
+}

@@ -9,6 +9,7 @@
 #include <iostream>
 #include <qc/ast.h>
 #include <qc/ast_node.h>
+#include <qc/ast_node_anonymous_function.h>
 #include <qc/ast_node_array.h>
 #include <qc/ast_node_break.h>
 #include <qc/ast_node_constant.h>
@@ -1059,6 +1060,92 @@ namespace Qd {
 		}
 	}
 
+	/**
+	 * Parse an anonymous function: fn (params -- outputs) { body }
+	 * Called when 'fn' keyword is followed by '(' (no identifier name).
+	 * The 'fn' keyword has already been consumed.
+	 */
+	static IAstNode* parseAnonymousFunction(
+			u8t_scanner* scanner, ErrorReporter* errorReporter, const char* src) {
+		// The '(' has already been peeked but not consumed
+		char32_t token = u8t_scanner_scan(scanner);
+		if (token != '(') {
+			errorReporter->reportError(scanner, "Expected '(' after 'fn' for anonymous function");
+			return nullptr;
+		}
+
+		AstNodeAnonymousFunction* func = new AstNodeAnonymousFunction();
+		setNodePosition(func, scanner, src);
+
+		size_t n;
+		bool isOutput = false;
+
+		// Parse parameters: (input:type input2:type -- output:type)
+		while ((token = u8t_scanner_scan(scanner)) != U8T_EOF) {
+			if (token == ')') {
+				break;
+			}
+
+			if (token == '-') {
+				char32_t nextToken = u8t_scanner_scan(scanner);
+				if (nextToken == '-') {
+					isOutput = true;
+				}
+			} else if (token == U8T_IDENTIFIER) {
+				const char* paramName = u8t_scanner_token_text(scanner, &n);
+				std::string paramNameStr(paramName);
+
+				// Check if there's a type annotation
+				char32_t paramPeek = u8t_scanner_peek(scanner);
+				if (paramPeek == ':') {
+					// Consume the ':'
+					u8t_scanner_scan(scanner);
+					// Get the type
+					token = u8t_scanner_scan(scanner);
+					if (token == U8T_IDENTIFIER) {
+						const char* paramType = u8t_scanner_token_text(scanner, &n);
+						AstNodeParameter* param = new AstNodeParameter(paramNameStr, paramType, isOutput);
+						setNodePosition(param, scanner, src);
+						param->setParent(func);
+						if (isOutput) {
+							func->addOutputParameter(param);
+						} else {
+							func->addInputParameter(param);
+						}
+					}
+				} else {
+					// Untyped parameter - use empty string as type
+					AstNodeParameter* param = new AstNodeParameter(paramNameStr, "", isOutput);
+					setNodePosition(param, scanner, src);
+					param->setParent(func);
+					if (isOutput) {
+						func->addOutputParameter(param);
+					} else {
+						func->addInputParameter(param);
+					}
+				}
+			}
+		}
+
+		// Expect '{'
+		token = u8t_scanner_scan(scanner);
+		if (token != '{') {
+			errorReporter->reportError(scanner, "Expected '{' after anonymous function signature");
+			delete func;
+			return nullptr;
+		}
+
+		// Parse the body
+		AstNodeBlock* body = new AstNodeBlock();
+		setNodePosition(body, scanner, src);
+		parseBlockBody(body, scanner, errorReporter, src);
+
+		body->setParent(func);
+		func->setBody(body);
+
+		return func;
+	}
+
 	static IAstNode* parseFunctionDeclaration(
 			u8t_scanner* scanner, ErrorReporter* errorReporter, const char* src, bool isPublic = false) {
 		char32_t token = u8t_scanner_scan(scanner);
@@ -1467,6 +1554,20 @@ namespace Qd {
 
 					deferStmt->setParent(body);
 					body->addChild(deferStmt);
+				} else if (strcmp(text, "fn") == 0) {
+					// Anonymous function: fn (params -- outputs) { body }
+					// Peek to see if next non-whitespace is '(' (anonymous) or identifier (error)
+					char32_t nextToken = peekNextNonWhitespace(scanner, src);
+					if (nextToken == '(') {
+						IAstNode* anonFunc = parseAnonymousFunction(scanner, errorReporter, src);
+						if (anonFunc) {
+							tempNodes.push_back(anonFunc);
+						}
+					} else {
+						errorReporter->reportError(
+								scanner, "Function declarations not allowed inside blocks. "
+										 "Did you mean 'fn (...) { }' for an anonymous function?");
+					}
 				} else if (strcmp(text, "ctx") == 0) {
 					// Parse ctx block
 					for (auto* node : tempNodes) {
