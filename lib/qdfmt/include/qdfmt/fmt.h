@@ -46,6 +46,36 @@ extern "C" {
  */
 qd_exec_result usr_fmt_printf(qd_context* ctx);
 
+/**
+ * @brief Formatted string function
+ *
+ * Formats a string using printf-style format specifiers and pushes the result onto the stack.
+ *
+ * @par Stack Effect: ( arg1 arg2 ... argN format:s -- result:s )
+ *
+ * Format string is on top, arguments are below it.
+ * The function pops all stack elements, formats the string, and pushes the result.
+ *
+ * @par Supported format specifiers:
+ * - %s - String
+ * - %d, %i - Integer
+ * - %f - Float
+ * - %% - Literal % character (no argument)
+ *
+ * @param ctx Execution context
+ * @return Execution result
+ *
+ * @par Example:
+ * @code
+ * "World" 42 "Hello %s! The answer is %d\n" fmt::sprintf
+ * // Stack: "Hello World! The answer is 42\n"
+ * @endcode
+ *
+ * @note Format string must be on top of the stack (pushed last),
+ * with arguments below it in left-to-right order (first argument deepest).
+ */
+qd_exec_result usr_fmt_sprintf(qd_context* ctx);
+
 #ifdef __cplusplus
 }
 #endif

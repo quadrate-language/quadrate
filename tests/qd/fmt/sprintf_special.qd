@@ -1,0 +1,27 @@
+use fmt
+
+fn main() {
+	// Escaped percent sign
+	"100%% complete" fmt::sprintf print nl
+
+	// Percent sign with argument
+	50 "%d%% done" fmt::sprintf print nl
+
+	// Negative integer
+	-42 "Value: %d" fmt::sprintf print nl
+
+	// Zero
+	0 "Zero: %d" fmt::sprintf print nl
+
+	// Negative float
+	-3.14 "Negative pi: %f" fmt::sprintf print nl
+
+	// Empty string argument
+	"" "Empty: [%s]" fmt::sprintf print nl
+
+	// Newlines in format
+	"world" "Hello\n%s" fmt::sprintf print nl
+
+	// Integer format with %i
+	123 "Using %%i: %i" fmt::sprintf print nl
+}

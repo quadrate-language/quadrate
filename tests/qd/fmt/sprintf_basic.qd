@@ -1,0 +1,18 @@
+use fmt
+
+fn main() {
+	// Basic string formatting
+	"world" "Hello %s!" fmt::sprintf print nl
+
+	// Basic integer formatting
+	42 "The answer is %d" fmt::sprintf print nl
+
+	// Basic float formatting
+	3.14159 "Pi is approximately %f" fmt::sprintf print nl
+
+	// No format specifiers
+	"Plain text" fmt::sprintf print nl
+
+	// Empty format string
+	"" fmt::sprintf print nl
+}

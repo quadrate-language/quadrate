@@ -1,0 +1,21 @@
+use fmt
+
+fn main() {
+	// Multiple string arguments (first pushed = first in format)
+	"hello" "world" "%s %s" fmt::sprintf print nl
+
+	// Multiple integer arguments
+	1 2 "%d + %d" fmt::sprintf print nl
+
+	// Mixed string and integer
+	"answer" 42 "The %s is %d" fmt::sprintf print nl
+
+	// Multiple mixed types
+	"test" 100 2.5 "%s: %d items at $%f each" fmt::sprintf print nl
+
+	// Three integers
+	1 2 3 "%d, %d, %d" fmt::sprintf print nl
+
+	// Three strings
+	"a" "b" "c" "%s%s%s" fmt::sprintf print nl
+}

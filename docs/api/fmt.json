@@ -19,7 +19,31 @@
       "returns": [],
       "errors": [],
       "examples": [
-        "\"Hello %s\\n\" \"world\" fmt::printf  // Hello world"
+        "\"world\" \"Hello %s\\n\" fmt::printf  // Hello world"
+      ]
+    },
+    {
+      "name": "sprintf",
+      "signature": "( format:str -- result:str )",
+      "failable": false,
+      "description": "Format a string and push the result onto the stack.",
+      "params": [
+        {
+          "name": "format",
+          "type": "str",
+          "description": "Format string with % specifiers"
+        }
+      ],
+      "returns": [
+        {
+          "name": "result",
+          "type": "str",
+          "description": "Formatted string"
+        }
+      ],
+      "errors": [],
+      "examples": [
+        "\"world\" \"Hello %s!\" fmt::sprintf  // Stack: \"Hello world!\""
       ]
     }
   ]
