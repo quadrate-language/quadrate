@@ -4,9 +4,7 @@
 // from Quadrate code. The function pops a string from the stack and
 // prints a greeting.
 
-#include <qdrt/context.h>
-#include <qdrt/exec_result.h>
-#include <qdrt/stack.h>
+#include <qdrt/ffi.h>
 #include <stdio.h>
 
 // FFI functions must follow this signature:

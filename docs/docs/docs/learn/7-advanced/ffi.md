@@ -16,9 +16,7 @@ Let's create a simple C function that Quadrate can call.
 Create `greet.c`:
 
 ```c
-#include <qdrt/context.h>
-#include <qdrt/exec_result.h>
-#include <qdrt/stack.h>
+#include <qdrt/ffi.h>
 #include <stdio.h>
 
 qd_exec_result hello(qd_context* ctx) {
@@ -60,7 +58,7 @@ fn main( -- ) {
 ### Step 4: Run
 
 ```bash
-QUADRATE_LIBDIR=. quadc main.qd -r
+quad run main.qd
 ```
 
 Output:
@@ -78,12 +76,10 @@ qd_exec_result function_name(qd_context* ctx)
 
 The function name in C must match the name declared in the Quadrate import block. The compiler generates a wrapper with the `usr_<module>_<function>` naming convention.
 
-## Required Headers
+## Required Header
 
 ```c
-#include <qdrt/context.h>      // qd_context type
-#include <qdrt/exec_result.h>  // qd_exec_result type
-#include <qdrt/stack.h>        // Stack operations
+#include <qdrt/ffi.h>  // All FFI types and functions
 ```
 
 ## Stack Operations
@@ -150,9 +146,7 @@ Here's a more complete example with multiple functions and return values.
 ### math_ext.c
 
 ```c
-#include <qdrt/context.h>
-#include <qdrt/exec_result.h>
-#include <qdrt/stack.h>
+#include <qdrt/ffi.h>
 #include <math.h>
 
 // Calculate hypotenuse: ( a:f64 b:f64 -- c:f64 )
