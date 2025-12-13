@@ -92,6 +92,29 @@ local function on_attach(client, bufnr)
   -- Enable completion
   vim.api.nvim_buf_set_option(bufnr, 'omnifunc', 'v:lua.vim.lsp.omnifunc')
 
+  -- Enable document highlight (highlight other occurrences of symbol under cursor)
+  if client.server_capabilities.documentHighlightProvider then
+    local highlight_group = vim.api.nvim_create_augroup('quadrate_lsp_highlight', { clear = false })
+    vim.api.nvim_clear_autocmds({ buffer = bufnr, group = highlight_group })
+    vim.api.nvim_create_autocmd({ 'CursorHold', 'CursorHoldI' }, {
+      group = highlight_group,
+      buffer = bufnr,
+      callback = vim.lsp.buf.document_highlight,
+    })
+    vim.api.nvim_create_autocmd({ 'CursorMoved', 'CursorMovedI' }, {
+      group = highlight_group,
+      buffer = bufnr,
+      callback = vim.lsp.buf.clear_references,
+    })
+  end
+
+  -- Enable LSP-based folding
+  if client.server_capabilities.foldingRangeProvider then
+    vim.wo.foldmethod = 'expr'
+    vim.wo.foldexpr = 'v:lua.vim.lsp.foldexpr()'
+    vim.wo.foldlevel = 99  -- Start with all folds open
+  end
+
   -- Key mappings
   local opts = { noremap = true, silent = true, buffer = bufnr }
 
@@ -101,6 +124,7 @@ local function on_attach(client, bufnr)
   vim.keymap.set('n', 'K', vim.lsp.buf.hover, opts)
   vim.keymap.set('n', 'gi', vim.lsp.buf.implementation, opts)
   vim.keymap.set('n', '<C-k>', vim.lsp.buf.signature_help, opts)
+  vim.keymap.set('i', '<C-k>', vim.lsp.buf.signature_help, opts)
   vim.keymap.set('n', '<space>wa', vim.lsp.buf.add_workspace_folder, opts)
   vim.keymap.set('n', '<space>wr', vim.lsp.buf.remove_workspace_folder, opts)
   vim.keymap.set('n', '<space>wl', function()

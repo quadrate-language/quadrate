@@ -228,6 +228,22 @@ private:
 					}
 				}
 			}
+		} else if (method == "textDocument/signatureHelp") {
+			json_t* params = getJsonObject(root, "params");
+			if (params) {
+				json_t* textDoc = getJsonObject(params, "textDocument");
+				json_t* position = getJsonObject(params, "position");
+				if (textDoc && position) {
+					std::string uri = getJsonString(textDoc, "uri");
+					json_t* lineJson = json_object_get(position, "line");
+					json_t* charJson = json_object_get(position, "character");
+					if (lineJson && charJson && json_is_integer(lineJson) && json_is_integer(charJson)) {
+						size_t line = static_cast<size_t>(json_integer_value(lineJson));
+						size_t character = static_cast<size_t>(json_integer_value(charJson));
+						handleSignatureHelp(id, uri, line, character);
+					}
+				}
+			}
 		} else if (method == "textDocument/documentSymbol") {
 			json_t* params = getJsonObject(root, "params");
 			if (params) {
@@ -267,6 +283,31 @@ private:
 						size_t character = static_cast<size_t>(json_integer_value(charJson));
 						handleReferences(id, uri, line, character);
 					}
+				}
+			}
+		} else if (method == "textDocument/documentHighlight") {
+			json_t* params = getJsonObject(root, "params");
+			if (params) {
+				json_t* textDoc = getJsonObject(params, "textDocument");
+				json_t* position = getJsonObject(params, "position");
+				if (textDoc && position) {
+					std::string uri = getJsonString(textDoc, "uri");
+					json_t* lineJson = json_object_get(position, "line");
+					json_t* charJson = json_object_get(position, "character");
+					if (lineJson && charJson && json_is_integer(lineJson) && json_is_integer(charJson)) {
+						size_t line = static_cast<size_t>(json_integer_value(lineJson));
+						size_t character = static_cast<size_t>(json_integer_value(charJson));
+						handleDocumentHighlight(id, uri, line, character);
+					}
+				}
+			}
+		} else if (method == "textDocument/foldingRange") {
+			json_t* params = getJsonObject(root, "params");
+			if (params) {
+				json_t* textDoc = getJsonObject(params, "textDocument");
+				if (textDoc) {
+					std::string uri = getJsonString(textDoc, "uri");
+					handleFoldingRange(id, uri);
 				}
 			}
 		} else if (method == "textDocument/rename") {
@@ -342,6 +383,19 @@ private:
 		json_array_append_new(triggerChars, json_string("@"));
 		json_object_set_new(completionProvider, "triggerCharacters", triggerChars);
 		json_object_set_new(capabilities, "completionProvider", completionProvider);
+
+		// Signature help for function calls
+		json_t* signatureHelpProvider = json_object();
+		json_t* sigTriggerChars = json_array();
+		json_array_append_new(sigTriggerChars, json_string(" "));
+		json_object_set_new(signatureHelpProvider, "triggerCharacters", sigTriggerChars);
+		json_object_set_new(capabilities, "signatureHelpProvider", signatureHelpProvider);
+
+		// Document highlight (highlight other occurrences of symbol under cursor)
+		json_object_set_new(capabilities, "documentHighlightProvider", json_true());
+
+		// Folding ranges (code folding for functions, blocks)
+		json_object_set_new(capabilities, "foldingRangeProvider", json_true());
 
 		json_object_set_new(result, "capabilities", capabilities);
 
@@ -728,8 +782,68 @@ private:
 		else if (std::string modulePrefix = getModulePrefixAtPosition(documentText, line, character);
 				!modulePrefix.empty()) {
 			// Module-qualified completion - only show functions from that module
+			// First, check for FFI imports (import "lib.a" as "namespace" { ... })
+			bool foundFfiImport = false;
+			if (!documentText.empty()) {
+				Qd::Ast ffiAst;
+				Qd::IAstNode* ffiRoot = ffiAst.generate(documentText.c_str(), false, nullptr);
+				// Don't check hasErrors() - we want to find imports even in incomplete code
+				if (ffiRoot && ffiRoot->type() == Qd::IAstNode::Type::PROGRAM) {
+					for (size_t i = 0; i < ffiRoot->childCount(); i++) {
+						Qd::IAstNode* child = ffiRoot->child(i);
+						if (child && child->type() == Qd::IAstNode::Type::IMPORT_STATEMENT) {
+							Qd::AstNodeImport* importNode = static_cast<Qd::AstNodeImport*>(child);
+							if (importNode->namespaceName() == modulePrefix) {
+								foundFfiImport = true;
+								// Add functions from FFI import block
+								for (const auto* func : importNode->functions()) {
+									json_t* item = json_object();
+									json_object_set_new(item, "label", json_string(func->name.c_str()));
+									json_object_set_new(item, "kind", json_integer(3)); // Function
+
+									// Use plain text insert to avoid editor adding ()
+									json_object_set_new(item, "insertTextFormat", json_integer(1)); // PlainText
+									json_object_set_new(item, "insertText", json_string(func->name.c_str()));
+
+									// Build signature
+									std::ostringstream sigStream;
+									sigStream << "fn " << func->name << "(";
+									for (size_t j = 0; j < func->inputParameters.size(); j++) {
+										if (j > 0) sigStream << " ";
+										sigStream << func->inputParameters[j]->name() << ":"
+												  << func->inputParameters[j]->typeString();
+									}
+									sigStream << " -- ";
+									for (size_t j = 0; j < func->outputParameters.size(); j++) {
+										if (j > 0) sigStream << " ";
+										sigStream << func->outputParameters[j]->name() << ":"
+												  << func->outputParameters[j]->typeString();
+									}
+									sigStream << ")";
+
+									json_object_set_new(item, "detail", json_string(sigStream.str().c_str()));
+
+									// Build documentation
+									std::ostringstream docStream;
+									docStream << "**FFI Function (from " << modulePrefix << ")**\n\n";
+									docStream << "```quadrate\n" << sigStream.str() << "\n```";
+
+									json_t* documentation = json_object();
+									json_object_set_new(documentation, "kind", json_string("markdown"));
+									json_object_set_new(documentation, "value", json_string(docStream.str().c_str()));
+									json_object_set_new(item, "documentation", documentation);
+
+									json_array_append_new(items, item);
+								}
+								break;
+							}
+						}
+					}
+				}
+			}
+
 			std::string modulePath = resolveModulePath(modulePrefix, sourceDir);
-			if (!modulePath.empty()) {
+			if (!foundFfiImport && !modulePath.empty()) {
 				// Add functions from module
 				std::vector<FunctionInfo> functions = extractModuleFunctions(modulePath);
 
@@ -1622,6 +1736,225 @@ private:
 		json_decref(response);
 	}
 
+	void handleSignatureHelp(const std::string& id, const std::string& uri, size_t line, size_t character) {
+		json_t* response = json_object();
+		json_object_set_new(response, "jsonrpc", json_string("2.0"));
+		json_object_set_new(response, "id", json_integer(std::stoi(id)));
+
+		// Get document text
+		std::string documentText;
+		auto docIter = documents_.find(uri);
+		if (docIter != documents_.end()) {
+			documentText = docIter->second;
+		} else {
+			if (uri.substr(0, 7) == "file://") {
+				std::string filePath = uri.substr(7);
+				std::ifstream file(filePath);
+				if (file.good()) {
+					std::stringstream buffer;
+					buffer << file.rdbuf();
+					documentText = buffer.str();
+				}
+			}
+		}
+
+		json_t* result = json_null();
+
+		if (!documentText.empty()) {
+			// Get the current line up to cursor position
+			std::istringstream stream(documentText);
+			std::string currentLine;
+			for (size_t i = 0; i <= line; i++) {
+				if (!std::getline(stream, currentLine)) {
+					currentLine.clear();
+					break;
+				}
+			}
+
+			if (!currentLine.empty() && character <= currentLine.length()) {
+				// Get the text before cursor on current line
+				std::string textBeforeCursor = currentLine.substr(0, character);
+
+				// Find the last word (potential function name)
+				// Look backwards for a function name
+				std::string funcName;
+				size_t pos = textBeforeCursor.length();
+
+				// Skip trailing whitespace
+				while (pos > 0 && std::isspace(static_cast<unsigned char>(textBeforeCursor[pos - 1]))) {
+					pos--;
+				}
+
+				// Extract the word before cursor
+				size_t wordEnd = pos;
+				while (pos > 0 && !std::isspace(static_cast<unsigned char>(textBeforeCursor[pos - 1]))) {
+					pos--;
+				}
+
+				if (wordEnd > pos) {
+					funcName = textBeforeCursor.substr(pos, wordEnd - pos);
+				}
+
+				if (!funcName.empty()) {
+					std::string signature;
+					std::string documentation;
+
+					// Check if it's a built-in instruction
+					std::string doc = getBuiltInDocumentation(funcName);
+					if (!doc.empty()) {
+						// Extract signature from documentation (first line usually)
+						size_t newlinePos = doc.find('\n');
+						if (newlinePos != std::string::npos) {
+							signature = doc.substr(0, newlinePos);
+							documentation = doc;
+						} else {
+							signature = doc;
+							documentation = doc;
+						}
+					} else {
+						// Check user-defined functions
+						std::vector<FunctionInfo> functions = extractFunctions(documentText);
+						for (const auto& func : functions) {
+							if (func.name == funcName) {
+								signature = func.signature;
+								std::ostringstream docStream;
+								if (!func.inputParams.empty()) {
+									docStream << "Inputs: ";
+									for (size_t i = 0; i < func.inputParams.size(); i++) {
+										if (i > 0) docStream << ", ";
+										docStream << func.inputParams[i];
+									}
+								}
+								if (!func.outputParams.empty()) {
+									if (!func.inputParams.empty()) docStream << " | ";
+									docStream << "Outputs: ";
+									for (size_t i = 0; i < func.outputParams.size(); i++) {
+										if (i > 0) docStream << ", ";
+										docStream << func.outputParams[i];
+									}
+								}
+								documentation = docStream.str();
+								break;
+							}
+						}
+
+						// Check for scoped identifier (module::function)
+						if (signature.empty() && funcName.find("::") != std::string::npos) {
+							size_t colonPos = funcName.find("::");
+							std::string moduleName = funcName.substr(0, colonPos);
+							std::string symbolName = funcName.substr(colonPos + 2);
+
+							std::string filePath = uri.substr(7);
+							std::string sourceDir = std::filesystem::path(filePath).parent_path().string();
+							std::string modulePath = resolveModulePath(moduleName, sourceDir);
+
+							if (!modulePath.empty()) {
+								std::ifstream file(modulePath);
+								if (file.good()) {
+									std::stringstream buffer;
+									buffer << file.rdbuf();
+									std::string moduleText = buffer.str();
+
+									Qd::Ast ast;
+									Qd::IAstNode* root = ast.generate(moduleText.c_str(), false, nullptr);
+
+									if (root && !ast.hasErrors() && root->type() == Qd::IAstNode::Type::PROGRAM) {
+										for (size_t i = 0; i < root->childCount(); i++) {
+											Qd::IAstNode* child = root->child(i);
+
+											if (child && child->type() == Qd::IAstNode::Type::FUNCTION_DECLARATION) {
+												Qd::AstNodeFunctionDeclaration* funcNode =
+														static_cast<Qd::AstNodeFunctionDeclaration*>(child);
+												if (funcNode->name() == symbolName) {
+													std::ostringstream sigStream;
+													sigStream << "fn " << funcNode->name() << "(";
+
+													const auto& inputs = funcNode->inputParameters();
+													for (size_t j = 0; j < inputs.size(); j++) {
+														if (j > 0) sigStream << " ";
+														Qd::AstNodeParameter* param =
+																static_cast<Qd::AstNodeParameter*>(inputs[j]);
+														sigStream << param->name() << ":" << param->typeString();
+													}
+
+													sigStream << " -- ";
+
+													const auto& outputs = funcNode->outputParameters();
+													for (size_t j = 0; j < outputs.size(); j++) {
+														if (j > 0) sigStream << " ";
+														Qd::AstNodeParameter* param =
+																static_cast<Qd::AstNodeParameter*>(outputs[j]);
+														sigStream << param->name() << ":" << param->typeString();
+													}
+
+													sigStream << ")";
+													signature = sigStream.str();
+													documentation = "From module: " + moduleName;
+													break;
+												}
+											} else if (child && child->type() == Qd::IAstNode::Type::IMPORT_STATEMENT) {
+												Qd::AstNodeImport* importNode =
+														static_cast<Qd::AstNodeImport*>(child);
+												for (const auto* importedFunc : importNode->functions()) {
+													if (importedFunc->name == symbolName) {
+														std::ostringstream sigStream;
+														sigStream << "fn " << importedFunc->name << "(";
+
+														for (size_t j = 0; j < importedFunc->inputParameters.size();
+																j++) {
+															if (j > 0) sigStream << " ";
+															const auto* param = importedFunc->inputParameters[j];
+															sigStream << param->name() << ":" << param->typeString();
+														}
+
+														sigStream << " -- ";
+
+														for (size_t j = 0; j < importedFunc->outputParameters.size();
+																j++) {
+															if (j > 0) sigStream << " ";
+															const auto* param = importedFunc->outputParameters[j];
+															sigStream << param->name() << ":" << param->typeString();
+														}
+
+														sigStream << ")";
+														signature = sigStream.str();
+														documentation = "From module: " + moduleName;
+														break;
+													}
+												}
+												if (!signature.empty()) break;
+											}
+										}
+									}
+								}
+							}
+						}
+					}
+
+					if (!signature.empty()) {
+						result = json_object();
+
+						json_t* signatures = json_array();
+						json_t* sig = json_object();
+						json_object_set_new(sig, "label", json_string(signature.c_str()));
+						if (!documentation.empty()) {
+							json_object_set_new(sig, "documentation", json_string(documentation.c_str()));
+						}
+						json_array_append_new(signatures, sig);
+
+						json_object_set_new(result, "signatures", signatures);
+						json_object_set_new(result, "activeSignature", json_integer(0));
+						json_object_set_new(result, "activeParameter", json_null());
+					}
+				}
+			}
+		}
+
+		json_object_set_new(response, "result", result);
+		sendMessage(response);
+		json_decref(response);
+	}
+
 	void handleDocumentSymbols(const std::string& id, const std::string& uri) {
 		json_t* response = json_object();
 		json_object_set_new(response, "jsonrpc", json_string("2.0"));
@@ -1815,6 +2148,17 @@ private:
 			Qd::AstNodeFunctionDeclaration* funcDecl = static_cast<Qd::AstNodeFunctionDeclaration*>(node);
 			if (funcDecl->name() == targetName) {
 				results.push_back(node);
+			}
+		}
+		// Check if this node is a local variable declaration (-> varname)
+		else if (node->type() == Qd::IAstNode::Type::LOCAL) {
+			Qd::AstNodeLocal* local = static_cast<Qd::AstNodeLocal*>(node);
+			// Check all names in the local (supports -> a b c syntax)
+			for (const std::string& name : local->names()) {
+				if (name == targetName) {
+					results.push_back(node);
+					break;
+				}
 			}
 		}
 		// Check if this node is an identifier matching our target
@@ -2726,6 +3070,228 @@ private:
 		json_decref(response);
 	}
 
+	void handleFoldingRange(const std::string& id, const std::string& uri) {
+		json_t* response = json_object();
+		json_object_set_new(response, "jsonrpc", json_string("2.0"));
+		json_object_set_new(response, "id", json_integer(std::stoi(id)));
+
+		// Get document text
+		std::string documentText;
+		auto docIter = documents_.find(uri);
+		if (docIter != documents_.end()) {
+			documentText = docIter->second;
+		} else {
+			if (uri.substr(0, 7) == "file://") {
+				std::string filePath = uri.substr(7);
+				std::ifstream file(filePath);
+				if (file.good()) {
+					std::stringstream buffer;
+					buffer << file.rdbuf();
+					documentText = buffer.str();
+				}
+			}
+		}
+
+		json_t* ranges = json_array();
+
+		if (!documentText.empty()) {
+			// Parse the document
+			Qd::Ast ast;
+			Qd::IAstNode* root = ast.generate(documentText.c_str(), false, nullptr);
+
+			if (root && !ast.hasErrors() && root->type() == Qd::IAstNode::Type::PROGRAM) {
+				// Helper lambda to recursively find folding ranges
+				std::function<void(Qd::IAstNode*)> findFoldingRanges = [&](Qd::IAstNode* node) {
+					if (!node) return;
+
+					size_t startLine = 0;
+					size_t endLine = 0;
+					std::string kind;
+
+					// Check for foldable constructs
+					if (node->type() == Qd::IAstNode::Type::FUNCTION_DECLARATION) {
+						Qd::AstNodeFunctionDeclaration* funcNode =
+								static_cast<Qd::AstNodeFunctionDeclaration*>(node);
+						startLine = funcNode->line() > 0 ? funcNode->line() - 1 : 0;
+
+						// Find the end line by looking at the last instruction
+						if (funcNode->childCount() > 0) {
+							Qd::IAstNode* lastChild = funcNode->child(funcNode->childCount() - 1);
+							if (lastChild) {
+								endLine = lastChild->line() > 0 ? lastChild->line() - 1 : startLine;
+							}
+						}
+						// If no children, just fold the declaration line
+						if (endLine <= startLine) {
+							endLine = startLine;
+						}
+						kind = "region";
+					} else if (node->type() == Qd::IAstNode::Type::IF_STATEMENT) {
+						startLine = node->line() > 0 ? node->line() - 1 : 0;
+						// Find end by traversing children
+						std::function<size_t(Qd::IAstNode*)> findMaxLine = [&](Qd::IAstNode* n) -> size_t {
+							if (!n) return 0;
+							size_t maxLine = n->line() > 0 ? n->line() - 1 : 0;
+							for (size_t i = 0; i < n->childCount(); i++) {
+								size_t childMax = findMaxLine(n->child(i));
+								if (childMax > maxLine) maxLine = childMax;
+							}
+							return maxLine;
+						};
+						endLine = findMaxLine(node);
+						kind = "region";
+					} else if (node->type() == Qd::IAstNode::Type::WHILE_STATEMENT ||
+							   node->type() == Qd::IAstNode::Type::FOR_STATEMENT ||
+							   node->type() == Qd::IAstNode::Type::LOOP_STATEMENT) {
+						startLine = node->line() > 0 ? node->line() - 1 : 0;
+						std::function<size_t(Qd::IAstNode*)> findMaxLine = [&](Qd::IAstNode* n) -> size_t {
+							if (!n) return 0;
+							size_t maxLine = n->line() > 0 ? n->line() - 1 : 0;
+							for (size_t i = 0; i < n->childCount(); i++) {
+								size_t childMax = findMaxLine(n->child(i));
+								if (childMax > maxLine) maxLine = childMax;
+							}
+							return maxLine;
+						};
+						endLine = findMaxLine(node);
+						kind = "region";
+					} else if (node->type() == Qd::IAstNode::Type::IMPORT_STATEMENT) {
+						// Import blocks can be folded
+						startLine = node->line() > 0 ? node->line() - 1 : 0;
+						// For imports, we'd need to find the closing brace
+						// For now, just don't fold single-line imports
+						kind = "imports";
+					} else if (node->type() == Qd::IAstNode::Type::STRUCT_DECLARATION) {
+						startLine = node->line() > 0 ? node->line() - 1 : 0;
+						std::function<size_t(Qd::IAstNode*)> findMaxLine = [&](Qd::IAstNode* n) -> size_t {
+							if (!n) return 0;
+							size_t maxLine = n->line() > 0 ? n->line() - 1 : 0;
+							for (size_t i = 0; i < n->childCount(); i++) {
+								size_t childMax = findMaxLine(n->child(i));
+								if (childMax > maxLine) maxLine = childMax;
+							}
+							return maxLine;
+						};
+						endLine = findMaxLine(node);
+						kind = "region";
+					}
+
+					// Add folding range if we found a valid one
+					if (!kind.empty() && endLine > startLine) {
+						json_t* range = json_object();
+						json_object_set_new(range, "startLine", json_integer(static_cast<json_int_t>(startLine)));
+						json_object_set_new(range, "endLine", json_integer(static_cast<json_int_t>(endLine)));
+						json_object_set_new(range, "kind", json_string(kind.c_str()));
+						json_array_append_new(ranges, range);
+					}
+
+					// Recurse into children
+					for (size_t i = 0; i < node->childCount(); i++) {
+						findFoldingRanges(node->child(i));
+					}
+				};
+
+				// Process all top-level nodes
+				for (size_t i = 0; i < root->childCount(); i++) {
+					findFoldingRanges(root->child(i));
+				}
+			}
+		}
+
+		json_object_set_new(response, "result", ranges);
+		sendMessage(response);
+		json_decref(response);
+	}
+
+	void handleDocumentHighlight(const std::string& id, const std::string& uri, size_t line, size_t character) {
+		json_t* response = json_object();
+		json_object_set_new(response, "jsonrpc", json_string("2.0"));
+		json_object_set_new(response, "id", json_integer(std::stoi(id)));
+
+		// Get document text
+		std::string documentText;
+		auto docIter = documents_.find(uri);
+		if (docIter != documents_.end()) {
+			documentText = docIter->second;
+		} else {
+			if (uri.substr(0, 7) == "file://") {
+				std::string filePath = uri.substr(7);
+				std::ifstream file(filePath);
+				if (file.good()) {
+					std::stringstream buffer;
+					buffer << file.rdbuf();
+					documentText = buffer.str();
+				}
+			}
+		}
+
+		json_t* highlights = json_array();
+
+		if (!documentText.empty()) {
+			std::string word = getWordAtPosition(documentText, line, character);
+
+			if (!word.empty()) {
+				// Parse the document
+				Qd::Ast ast;
+				Qd::IAstNode* root = ast.generate(documentText.c_str(), false, nullptr);
+
+				if (root && !ast.hasErrors()) {
+					// Find all references to this identifier
+					std::vector<Qd::IAstNode*> references;
+					findIdentifiersInNode(root, word, references);
+
+					for (Qd::IAstNode* ref : references) {
+						json_t* highlight = json_object();
+
+						json_t* range = json_object();
+						json_t* start = json_object();
+						size_t lspLine = (ref->line() > 0) ? ref->line() - 1 : 0;
+						size_t lspCol = (ref->column() > 0) ? ref->column() - 1 : 0;
+
+						// For function declarations, find the actual column of the function name
+						if (ref->type() == Qd::IAstNode::Type::FUNCTION_DECLARATION) {
+							std::istringstream lineStream(documentText);
+							std::string lineText;
+							for (size_t i = 0; i <= lspLine; i++) {
+								if (!std::getline(lineStream, lineText)) {
+									lineText.clear();
+									break;
+								}
+							}
+							size_t fnPos = lineText.find("fn ");
+							if (fnPos != std::string::npos) {
+								lspCol = fnPos + 3;
+							}
+						}
+
+						json_object_set_new(start, "line", json_integer(static_cast<json_int_t>(lspLine)));
+						json_object_set_new(start, "character", json_integer(static_cast<json_int_t>(lspCol)));
+						json_object_set_new(range, "start", start);
+
+						json_t* end = json_object();
+						json_object_set_new(end, "line", json_integer(static_cast<json_int_t>(lspLine)));
+						json_object_set_new(
+								end, "character", json_integer(static_cast<json_int_t>(lspCol + word.length())));
+						json_object_set_new(range, "end", end);
+
+						json_object_set_new(highlight, "range", range);
+
+						// DocumentHighlightKind: 1 = Text, 2 = Read, 3 = Write
+						// For function declarations, use Write; for references, use Read
+						int kind = (ref->type() == Qd::IAstNode::Type::FUNCTION_DECLARATION) ? 3 : 2;
+						json_object_set_new(highlight, "kind", json_integer(kind));
+
+						json_array_append_new(highlights, highlight);
+					}
+				}
+			}
+		}
+
+		json_object_set_new(response, "result", highlights);
+		sendMessage(response);
+		json_decref(response);
+	}
+
 	void handleReferences(const std::string& id, const std::string& uri, size_t line, size_t character) {
 		json_t* response = json_object();
 		json_object_set_new(response, "jsonrpc", json_string("2.0"));
@@ -2773,9 +3339,20 @@ private:
 						size_t lspLine = (ref->line() > 0) ? ref->line() - 1 : 0;
 						size_t lspCol = (ref->column() > 0) ? ref->column() - 1 : 0;
 
-						// For function declarations, column should be 0
+						// For function declarations, find the actual column of the function name
 						if (ref->type() == Qd::IAstNode::Type::FUNCTION_DECLARATION) {
-							lspCol = 0;
+							std::istringstream lineStream(documentText);
+							std::string lineText;
+							for (size_t i = 0; i <= lspLine; i++) {
+								if (!std::getline(lineStream, lineText)) {
+									lineText.clear();
+									break;
+								}
+							}
+							size_t fnPos = lineText.find("fn ");
+							if (fnPos != std::string::npos) {
+								lspCol = fnPos + 3;
+							}
 						}
 
 						json_object_set_new(start, "line", json_integer(static_cast<json_int_t>(lspLine)));
@@ -2836,9 +3413,65 @@ private:
 				Qd::IAstNode* root = ast.generate(documentText.c_str(), false, nullptr);
 
 				if (root && !ast.hasErrors()) {
+					// Find the function containing the cursor position
+					// LSP lines are 0-indexed, AST lines are 1-indexed
+					size_t astLine = line + 1;
+					Qd::IAstNode* containingFunction = nullptr;
+					bool isLocalVariable = false;
+
+					// Helper to find max line in a subtree
+					std::function<size_t(Qd::IAstNode*)> getMaxLine = [&](Qd::IAstNode* node) -> size_t {
+						if (!node) return 0;
+						size_t maxLine = node->line();
+						for (size_t i = 0; i < node->childCount(); i++) {
+							size_t childMax = getMaxLine(node->child(i));
+							if (childMax > maxLine) maxLine = childMax;
+						}
+						return maxLine;
+					};
+
+					// Find which function contains this line
+					for (size_t i = 0; i < root->childCount(); i++) {
+						Qd::IAstNode* child = root->child(i);
+						if (child && child->type() == Qd::IAstNode::Type::FUNCTION_DECLARATION) {
+							Qd::AstNodeFunctionDeclaration* func =
+									static_cast<Qd::AstNodeFunctionDeclaration*>(child);
+							// Check if cursor line is within this function
+							size_t funcEndLine = getMaxLine(child);
+							if (astLine >= func->line() && astLine <= funcEndLine) {
+								containingFunction = child;
+								break;
+							}
+						}
+					}
+
+					// Check if the word is a local variable (defined with ->) in the containing function
+					if (containingFunction) {
+						std::function<bool(Qd::IAstNode*)> hasLocalDecl = [&](Qd::IAstNode* node) -> bool {
+							if (!node) return false;
+							if (node->type() == Qd::IAstNode::Type::LOCAL) {
+								Qd::AstNodeLocal* local = static_cast<Qd::AstNodeLocal*>(node);
+								for (const std::string& name : local->names()) {
+									if (name == word) return true;
+								}
+							}
+							for (size_t i = 0; i < node->childCount(); i++) {
+								if (hasLocalDecl(node->child(i))) return true;
+							}
+							return false;
+						};
+						isLocalVariable = hasLocalDecl(containingFunction);
+					}
+
 					// Find all references to rename
 					std::vector<Qd::IAstNode*> references;
-					findIdentifiersInNode(root, word, references);
+					// If it's a local variable, only search within the containing function
+					if (isLocalVariable && containingFunction) {
+						findIdentifiersInNode(containingFunction, word, references);
+					} else {
+						// For functions and globals, search the entire file
+						findIdentifiersInNode(root, word, references);
+					}
 
 					json_t* edits = json_array();
 
@@ -2850,9 +3483,49 @@ private:
 						size_t lspLine = (ref->line() > 0) ? ref->line() - 1 : 0;
 						size_t lspCol = (ref->column() > 0) ? ref->column() - 1 : 0;
 
-						// For function declarations, column should be 0
+						// For function declarations, find the actual column of the function name
 						if (ref->type() == Qd::IAstNode::Type::FUNCTION_DECLARATION) {
-							lspCol = 0;
+							// Get the line text to find where the function name starts
+							std::istringstream lineStream(documentText);
+							std::string lineText;
+							for (size_t i = 0; i <= lspLine; i++) {
+								if (!std::getline(lineStream, lineText)) {
+									lineText.clear();
+									break;
+								}
+							}
+							// Find "fn " in the line and then the function name
+							size_t fnPos = lineText.find("fn ");
+							if (fnPos != std::string::npos) {
+								lspCol = fnPos + 3; // Skip "fn "
+							}
+						}
+						// For local variable declarations (-> varname), find the actual column
+						else if (ref->type() == Qd::IAstNode::Type::LOCAL) {
+							Qd::AstNodeLocal* local = static_cast<Qd::AstNodeLocal*>(ref);
+							std::istringstream lineStream(documentText);
+							std::string lineText;
+							for (size_t i = 0; i <= lspLine; i++) {
+								if (!std::getline(lineStream, lineText)) {
+									lineText.clear();
+									break;
+								}
+							}
+							// Find "-> " in the line followed by the variable name
+							size_t arrowPos = lineText.find("-> ");
+							if (arrowPos != std::string::npos) {
+								// For multiple assignment (-> a b c), find the specific variable
+								size_t namePos = arrowPos + 3;
+								for (const std::string& name : local->names()) {
+									size_t foundPos = lineText.find(name, namePos);
+									if (foundPos != std::string::npos && name == word) {
+										lspCol = foundPos;
+										break;
+									}
+									// Move past this name to find the next one
+									namePos = foundPos + name.length();
+								}
+							}
 						}
 
 						json_object_set_new(start, "line", json_integer(static_cast<json_int_t>(lspLine)));
