@@ -1,0 +1,154 @@
+/// Higher-Order Function combinators.
+/// Combinators are functions that combine or apply other functions in useful patterns.
+/// They enable functional programming without explicit temporary variables.
+
+/// Apply a function to a value.
+/// @param x i64 The input value
+/// @param f ptr Function pointer (i64 -- i64)
+/// @return r i64 Result of f(x)
+/// @example 5 fn (x:i64 -- r:i64) { 2 * } hof::apply print nl  // 10
+pub fn apply(x:i64 f:ptr -- r:i64) {
+	-> f
+	f call
+}
+
+/// Apply two functions to the same value.
+/// @param x i64 The input value
+/// @param f ptr First function pointer (i64 -- i64)
+/// @param g ptr Second function pointer (i64 -- i64)
+/// @return a i64 Result of f(x)
+/// @return b i64 Result of g(x)
+/// @example 5 fn (x:i64 -- r:i64) { 2 * } fn (x:i64 -- r:i64) { 3 + } hof::bi  // Stack: 10 8
+pub fn bi(x:i64 f:ptr g:ptr -- a:i64 b:i64) {
+	-> g
+	-> f
+	-> x
+	x f call -> a
+	x g call -> b
+	a b
+}
+
+/// Apply three functions to the same value.
+/// @param x i64 The input value
+/// @param f ptr First function pointer (i64 -- i64)
+/// @param g ptr Second function pointer (i64 -- i64)
+/// @param h ptr Third function pointer (i64 -- i64)
+/// @return a i64 Result of f(x)
+/// @return b i64 Result of g(x)
+/// @return c i64 Result of h(x)
+/// @example 5 fn (x:i64 -- r:i64) { 1 + } fn (x:i64 -- r:i64) { 2 * } fn (x:i64 -- r:i64) { dup * } hof::tri  // Stack: 6 10 25
+pub fn tri(x:i64 f:ptr g:ptr h:ptr -- a:i64 b:i64 c:i64) {
+	-> h
+	-> g
+	-> f
+	-> x
+	x f call -> a
+	x g call -> b
+	x h call -> c
+	a b c
+}
+
+/// Apply a function but keep the original value.
+/// @param x i64 The input value
+/// @param f ptr Function pointer (i64 -- i64)
+/// @return r i64 Result of f(x)
+/// @return x i64 Original value (preserved)
+/// @example 5 fn (x:i64 -- r:i64) { 2 * } hof::keep  // Stack: 10 5
+pub fn keep(x:i64 f:ptr -- r:i64 orig:i64) {
+	-> f
+	-> x
+	x f call
+	x
+}
+
+/// Apply a function to the second stack element, preserving the top.
+/// @param x i64 Second element (will have f applied)
+/// @param y i64 Top element (preserved)
+/// @param f ptr Function pointer (i64 -- i64)
+/// @return r i64 Result of f(x)
+/// @return y i64 Original top value (preserved)
+/// @example 10 20 fn (x:i64 -- r:i64) { 2 * } hof::dip  // Stack: 20 20
+pub fn dip(x:i64 y:i64 f:ptr -- r:i64 top:i64) {
+	-> f
+	-> y
+	f call
+	y
+}
+
+/// Apply a function to two values separately.
+/// @param x i64 First value
+/// @param y i64 Second value
+/// @param f ptr Function pointer (i64 -- i64)
+/// @return a i64 Result of f(x)
+/// @return b i64 Result of f(y)
+/// @example 3 4 fn (x:i64 -- r:i64) { dup * } hof::both  // Stack: 9 16
+pub fn both(x:i64 y:i64 f:ptr -- a:i64 b:i64) {
+	-> f
+	-> y
+	-> x
+	x f call -> a
+	y f call -> b
+	a b
+}
+
+/// Apply two functions to two values (first to first, second to second).
+/// @param x i64 First value
+/// @param y i64 Second value
+/// @param f ptr Function for first value (i64 -- i64)
+/// @param g ptr Function for second value (i64 -- i64)
+/// @return a i64 Result of f(x)
+/// @return b i64 Result of g(y)
+/// @example 3 4 fn (x:i64 -- r:i64) { 1 + } fn (x:i64 -- r:i64) { 2 * } hof::bi_star  // Stack: 4 8
+pub fn bi_star(x:i64 y:i64 f:ptr g:ptr -- a:i64 b:i64) {
+	-> g
+	-> f
+	-> y
+	-> x
+	x f call -> a
+	y g call -> b
+	a b
+}
+
+/// Apply function only if condition is true, otherwise return value unchanged.
+/// @param x i64 The input value
+/// @param cond i64 Condition (0 = false, non-zero = true)
+/// @param f ptr Function pointer (i64 -- i64)
+/// @return r i64 Result of f(x) if cond is true, otherwise x
+/// @example 5 1 fn (x:i64 -- r:i64) { 2 * } hof::when print nl  // 10
+/// @example 5 0 fn (x:i64 -- r:i64) { 2 * } hof::when print nl  // 5
+pub fn when(x:i64 cond:i64 f:ptr -- r:i64) {
+	-> f
+	-> cond
+	cond 0 != if {
+		f call
+	}
+}
+
+/// Apply function only if condition is false, otherwise return value unchanged.
+/// @param x i64 The input value
+/// @param cond i64 Condition (0 = false, non-zero = true)
+/// @param f ptr Function pointer (i64 -- i64)
+/// @return r i64 Result of f(x) if cond is false, otherwise x
+/// @example 5 0 fn (x:i64 -- r:i64) { 2 * } hof::unless print nl  // 10
+/// @example 5 1 fn (x:i64 -- r:i64) { 2 * } hof::unless print nl  // 5
+pub fn unless(x:i64 cond:i64 f:ptr -- r:i64) {
+	-> f
+	-> cond
+	cond 0 == if {
+		f call
+	}
+}
+
+/// Apply function n times to an initial value.
+/// @param x i64 Initial value
+/// @param n i64 Number of times to apply
+/// @param f ptr Function pointer (i64 -- i64)
+/// @return r i64 Result after n applications
+/// @example 2 4 fn (x:i64 -- r:i64) { dup * } hof::times print nl  // 65536 (2^16)
+pub fn times(x:i64 n:i64 f:ptr -- r:i64) {
+	-> f
+	-> n
+	0 n 1 for i {
+		f call
+	}
+}

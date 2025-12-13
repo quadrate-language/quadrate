@@ -1,0 +1,11 @@
+use hof
+
+fn main( -- ) {
+    // keep applies function but preserves original
+    5 fn (x:i64 -- r:i64) { 2 * } hof::keep
+    print " " print print nl
+
+    // Useful for "process and remember"
+    100 fn (x:i64 -- r:i64) { 10 / } hof::keep
+    print " " print print nl
+}

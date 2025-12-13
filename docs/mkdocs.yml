@@ -45,6 +45,7 @@ nav:
           - Context: docs/learn/7-advanced/context.md
           - Function Pointers: docs/learn/7-advanced/function-pointers.md
           - Anonymous Functions: docs/learn/7-advanced/anonymous-functions.md
+          - Higher-Order Functions: docs/learn/7-advanced/higher-order-functions.md
           - Memory Management: docs/learn/7-advanced/memory.md
           - FFI (C Interop): docs/learn/7-advanced/ffi.md
       - 8. Examples:
@@ -93,6 +94,8 @@ nav:
           - sort: docs/stdlib/sort.md
           - flag: docs/stdlib/flag.md
           - testing: docs/stdlib/testing.md
+      - Functional:
+          - hof: docs/stdlib/hof.md
       - Hashing:
           - sha256: docs/stdlib/sha256.md
           - crc32: docs/stdlib/crc32.md
