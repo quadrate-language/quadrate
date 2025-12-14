@@ -1,50 +1,32 @@
 {
   "name": "fmt",
   "description": "Formatted output functions.",
-  "constants": [],
-  "structs": [],
+  "constants": [
+
+  ],
+  "structs": [
+
+  ],
   "functions": [
     {
       "name": "printf",
-      "signature": "( format:str -- )",
+      "signature": "( format:str --  )",
       "failable": false,
       "description": "Print formatted output to stdout.",
-      "params": [
-        {
-          "name": "format",
-          "type": "str",
-          "description": "Format string with % specifiers"
-        }
-      ],
+      "params": [{"name": "format", "type": "str", "description": "Format string with % specifiers"}],
       "returns": [],
       "errors": [],
-      "examples": [
-        "\"world\" \"Hello %s\\n\" fmt::printf  // Hello world"
-      ]
+      "examples": ["\"world\" \"Hello %s\\n\" fmt::printf  // Hello world"]
     },
     {
       "name": "sprintf",
       "signature": "( format:str -- result:str )",
       "failable": false,
       "description": "Format a string with printf-style specifiers.",
-      "params": [
-        {
-          "name": "format",
-          "type": "str",
-          "description": "Format string with % specifiers"
-        }
-      ],
-      "returns": [
-        {
-          "name": "result",
-          "type": "str",
-          "description": "Formatted string"
-        }
-      ],
+      "params": [{"name": "format", "type": "str", "description": "Format string with % specifiers"}],
+      "returns": [{"name": "result", "type": "str", "description": "Formatted string"}],
       "errors": [],
-      "examples": [
-        "\"world\" \"Hello %s\\n\" fmt::sprintf  // \"Hello world\\n\""
-      ]
+      "examples": ["\"world\" \"Hello %s\\n\" fmt::sprintf  // \"Hello world\\n\""]
     }
   ]
 }

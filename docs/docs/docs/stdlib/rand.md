@@ -1,4 +1,4 @@
-# rand
+# `use` rand
 
 Random number generation using xorshift64* algorithm.
 Fast, high-quality PRNG suitable for most applications.
@@ -66,7 +66,7 @@ rng 100 rand::int  // rng n
 
 Create a new RNG seeded from current time.
 
-**Signature:** `( -- rng:ptr )`
+**Signature:** `(  -- rng:ptr )`
 
 | Output | Type | Description |
 |--------|------|-------------|
@@ -147,3 +147,4 @@ Create a new RNG with specific seed.
 ```qd
 12345 rand::with_seed  // rng
 ```
+

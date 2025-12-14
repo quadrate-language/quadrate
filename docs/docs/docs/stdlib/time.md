@@ -1,4 +1,4 @@
-# time
+# `use` time
 
 ## Constants
 
@@ -130,28 +130,6 @@ Create Unix timestamp from date components.
 
 ---
 
-### `fn` day
-
-Extract day of month from Unix timestamp (1-31).
-
-**Signature:** `( ts:i64 -- d:i64 )`
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `ts` | `i64` | Unix timestamp in seconds |
-
-| Output | Type | Description |
-|--------|------|-------------|
-| `d` | `i64` | Day of month |
-
-**Example:**
-
-```qd
-time::unix time::day .
-```
-
----
-
 ### `fn` days_in_month
 
 Get number of days in a month.
@@ -171,6 +149,28 @@ Get number of days in a month.
 
 ```qd
 2024 2 time::days_in_month .  // 29
+```
+
+---
+
+### `fn` day
+
+Extract day of month from Unix timestamp (1-31).
+
+**Signature:** `( ts:i64 -- d:i64 )`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `ts` | `i64` | Unix timestamp in seconds |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `d` | `i64` | Day of month |
+
+**Example:**
+
+```qd
+time::unix time::day .
 ```
 
 ---
@@ -267,7 +267,7 @@ time::unix time::month .
 
 Get current time in nanoseconds since epoch.
 
-**Signature:** `( -- nanoseconds:i64 )`
+**Signature:** `(  -- nanoseconds:i64 )`
 
 | Output | Type | Description |
 |--------|------|-------------|
@@ -307,7 +307,7 @@ time::unix time::second .
 
 Sleep for duration in nanoseconds.
 
-**Signature:** `( duration:i64 -- )`
+**Signature:** `( duration:i64 --  )`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -348,7 +348,7 @@ end_time start_time time::sub .
 
 Get Unix timestamp in seconds.
 
-**Signature:** `( -- timestamp:i64 )`
+**Signature:** `(  -- timestamp:i64 )`
 
 | Output | Type | Description |
 |--------|------|-------------|
@@ -384,6 +384,28 @@ time::unix time::weekday .
 
 ---
 
+### `fn` year_day
+
+Get day of year from Unix timestamp (1-366).
+
+**Signature:** `( ts:i64 -- yd:i64 )`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `ts` | `i64` | Unix timestamp in seconds |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `yd` | `i64` | Day of year |
+
+**Example:**
+
+```qd
+time::unix time::year_day .
+```
+
+---
+
 ### `fn` year
 
 Extract year from Unix timestamp.
@@ -404,24 +426,3 @@ Extract year from Unix timestamp.
 time::unix time::year .
 ```
 
----
-
-### `fn` year_day
-
-Get day of year from Unix timestamp (1-366).
-
-**Signature:** `( ts:i64 -- yd:i64 )`
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `ts` | `i64` | Unix timestamp in seconds |
-
-| Output | Type | Description |
-|--------|------|-------------|
-| `yd` | `i64` | Day of year |
-
-**Example:**
-
-```qd
-time::unix time::year_day .
-```

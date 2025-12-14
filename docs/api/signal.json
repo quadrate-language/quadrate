@@ -1,6 +1,6 @@
 {
   "name": "signal",
-  "description": "Unix signal handling with polling-based API.  Signals are caught and stored as flags. Use pending() to check if a signal was received, and clear() to reset the flag.  Example: use signal  fn main() { signal::SIGINT signal::trap \"Running. Press Ctrl+C to stop.\" . nl  1 while { signal::SIGINT signal::pending if { \"Shutting down\" . nl signal::SIGINT signal::clear break } } }",
+  "description": "Unix signal handling with polling-based API.  Signals are caught and stored as flags. Use pending() to check if a signal was received, and clear() to reset the flag.  Example:   use signal    fn main() {       signal::SIGINT signal::trap       \"Running. Press Ctrl+C to stop.\" . nl        1 while {           signal::SIGINT signal::pending if {               \"Shutting down\" . nl               signal::SIGINT signal::clear               break           }       }   }",
   "constants": [
     {
       "name": "SIGABRT",
@@ -98,121 +98,69 @@
       "description": "User-defined signal 2."
     }
   ],
-  "structs": [],
+  "structs": [
+
+  ],
   "functions": [
     {
       "name": "clear",
-      "signature": "( signum:i64 -- )",
+      "signature": "( signum:i64 --  )",
       "failable": false,
       "description": "Clear the pending flag for a signal.",
-      "params": [
-        {
-          "name": "signum",
-          "type": "i64",
-          "description": "Signal number"
-        }
-      ],
+      "params": [{"name": "signum", "type": "i64", "description": "Signal number"}],
       "returns": [],
       "errors": [],
-      "examples": [
-        "signal::SIGINT signal::clear"
-      ]
+      "examples": ["signal::SIGINT signal::clear"]
     },
     {
       "name": "ignore",
-      "signature": "( signum:i64 -- )",
+      "signature": "( signum:i64 --  )",
       "failable": false,
       "description": "Ignore the specified signal completely.",
-      "params": [
-        {
-          "name": "signum",
-          "type": "i64",
-          "description": "Signal number"
-        }
-      ],
+      "params": [{"name": "signum", "type": "i64", "description": "Signal number"}],
       "returns": [],
       "errors": [],
-      "examples": [
-        "signal::SIGPIPE signal::ignore"
-      ]
+      "examples": ["signal::SIGPIPE signal::ignore"]
     },
     {
       "name": "pending",
       "signature": "( signum:i64 -- flag:i64 )",
       "failable": false,
       "description": "Check if a signal is pending (received but not cleared). Returns 1 if pending, 0 otherwise. Does not clear the flag.",
-      "params": [
-        {
-          "name": "signum",
-          "type": "i64",
-          "description": "Signal number"
-        }
-      ],
-      "returns": [
-        {
-          "name": "flag",
-          "type": "i64",
-          "description": "1 if pending, 0 otherwise"
-        }
-      ],
+      "params": [{"name": "signum", "type": "i64", "description": "Signal number"}],
+      "returns": [{"name": "flag", "type": "i64", "description": "1 if pending, 0 otherwise"}],
       "errors": [],
-      "examples": [
-        "signal::SIGINT signal::pending"
-      ]
+      "examples": ["signal::SIGINT signal::pending"]
     },
     {
       "name": "reset",
-      "signature": "( signum:i64 -- )",
+      "signature": "( signum:i64 --  )",
       "failable": false,
       "description": "Reset signal to default behavior.",
-      "params": [
-        {
-          "name": "signum",
-          "type": "i64",
-          "description": "Signal number"
-        }
-      ],
+      "params": [{"name": "signum", "type": "i64", "description": "Signal number"}],
       "returns": [],
       "errors": [],
-      "examples": [
-        "signal::SIGINT signal::reset"
-      ]
+      "examples": ["signal::SIGINT signal::reset"]
     },
     {
       "name": "trap",
-      "signature": "( signum:i64 -- )",
+      "signature": "( signum:i64 --  )",
       "failable": false,
       "description": "Install a handler to catch the specified signal. After trapping, the signal sets a pending flag instead of causing the default action (e.g., termination).",
-      "params": [
-        {
-          "name": "signum",
-          "type": "i64",
-          "description": "Signal number (use signal::SIGINT, etc.)"
-        }
-      ],
+      "params": [{"name": "signum", "type": "i64", "description": "Signal number (use signal::SIGINT, etc.)"}],
       "returns": [],
       "errors": [],
-      "examples": [
-        "signal::SIGINT signal::trap"
-      ]
+      "examples": ["signal::SIGINT signal::trap"]
     },
     {
       "name": "wait",
-      "signature": "( -- signum:i64 )",
+      "signature": "(  -- signum:i64 )",
       "failable": false,
       "description": "Block until any trapped signal is received. Returns the signal number that was received.",
       "params": [],
-      "returns": [
-        {
-          "name": "signum",
-          "type": "i64",
-          "description": "The signal that was received"
-        }
-      ],
+      "returns": [{"name": "signum", "type": "i64", "description": "The signal that was received"}],
       "errors": [],
-      "examples": [
-        "signal::wait -> sig"
-      ]
+      "examples": ["signal::wait -> sig"]
     }
   ]
 }

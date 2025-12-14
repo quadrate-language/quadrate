@@ -1,4 +1,4 @@
-# str
+# `use` str
 
 String manipulation functions.
 Error codes: Ok=1 (success), specific errors start at 2
@@ -150,29 +150,6 @@ Create string from character code.
 
 ---
 
-### `fn` index_of
-
-Find first occurrence of substring.
-
-**Signature:** `( haystack:str needle:str -- index:i64 )`
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `haystack` | `str` | String to search in |
-| `needle` | `str` | Substring to find |
-
-| Output | Type | Description |
-|--------|------|-------------|
-| `index` | `i64` | Index of first match, -1 if not found |
-
-**Example:**
-
-```qd
-"hello" "ll" str::index_of .  // 2
-```
-
----
-
 ### `fn` index_of_from
 
 Find substring starting from position.
@@ -193,6 +170,29 @@ Find substring starting from position.
 
 ```qd
 "hello hello" "hello" 1 str::index_of_from .  // 6
+```
+
+---
+
+### `fn` index_of
+
+Find first occurrence of substring.
+
+**Signature:** `( haystack:str needle:str -- index:i64 )`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `haystack` | `str` | String to search in |
+| `needle` | `str` | Substring to find |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `index` | `i64` | Index of first match, -1 if not found |
+
+**Example:**
+
+```qd
+"hello" "ll" str::index_of .  // 2
 ```
 
 ---
@@ -389,3 +389,4 @@ Convert string to uppercase.
 ```qd
 "hello" str::upper .  // "HELLO"
 ```
+

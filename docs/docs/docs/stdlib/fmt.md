@@ -1,4 +1,4 @@
-# fmt
+# `use` fmt
 
 Formatted output functions.
 
@@ -8,7 +8,7 @@ Formatted output functions.
 
 Print formatted output to stdout.
 
-**Signature:** `( format:str -- )`
+**Signature:** `( format:str --  )`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -41,3 +41,4 @@ Format a string with printf-style specifiers.
 ```qd
 "world" "Hello %s\n" fmt::sprintf  // "Hello world\n"
 ```
+

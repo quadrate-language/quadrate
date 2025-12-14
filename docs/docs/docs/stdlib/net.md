@@ -1,4 +1,4 @@
-# net
+# `use` net
 
 TCP network operations.
 
@@ -30,7 +30,7 @@ server net::accept  // client
 
 Close socket and release resources.
 
-**Signature:** `( socket:i64 -- )`
+**Signature:** `( socket:i64 --  )`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -140,7 +140,7 @@ sock "Hello" net::send  // n
 
 Shutdown socket for reading/writing.
 
-**Signature:** `( socket:i64 -- )`
+**Signature:** `( socket:i64 --  )`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -151,3 +151,4 @@ Shutdown socket for reading/writing.
 ```qd
 sock net::shutdown
 ```
+

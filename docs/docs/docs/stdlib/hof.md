@@ -1,4 +1,4 @@
-# hof
+# `use` hof
 
 Higher-Order Function combinators.
 Combinators are functions that combine or apply other functions in useful patterns.
@@ -29,31 +29,6 @@ Apply a function to a value.
 
 ---
 
-### `fn` bi
-
-Apply two functions to the same value.
-
-**Signature:** `( x:i64 f:ptr g:ptr -- a:i64 b:i64 )`
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `x` | `i64` | The input value |
-| `f` | `ptr` | First function pointer (i64 -- i64) |
-| `g` | `ptr` | Second function pointer (i64 -- i64) |
-
-| Output | Type | Description |
-|--------|------|-------------|
-| `a` | `i64` | Result of f(x) |
-| `b` | `i64` | Result of g(x) |
-
-**Example:**
-
-```qd
-5 fn (x:i64 -- r:i64) { 2 * } fn (x:i64 -- r:i64) { 3 + } hof::bi  // Stack: 10 8
-```
-
----
-
 ### `fn` bi_star
 
 Apply two functions to two values (first to first, second to second).
@@ -76,6 +51,31 @@ Apply two functions to two values (first to first, second to second).
 
 ```qd
 3 4 fn (x:i64 -- r:i64) { 1 + } fn (x:i64 -- r:i64) { 2 * } hof::bi_star  // Stack: 4 8
+```
+
+---
+
+### `fn` bi
+
+Apply two functions to the same value.
+
+**Signature:** `( x:i64 f:ptr g:ptr -- a:i64 b:i64 )`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `x` | `i64` | The input value |
+| `f` | `ptr` | First function pointer (i64 -- i64) |
+| `g` | `ptr` | Second function pointer (i64 -- i64) |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `a` | `i64` | Result of f(x) |
+| `b` | `i64` | Result of g(x) |
+
+**Example:**
+
+```qd
+5 fn (x:i64 -- r:i64) { 2 * } fn (x:i64 -- r:i64) { 3 + } hof::bi  // Stack: 10 8
 ```
 
 ---
@@ -252,3 +252,4 @@ Apply function only if condition is true, otherwise return value unchanged.
 5 1 fn (x:i64 -- r:i64) { 2 * } hof::when print nl  // 10
 5 0 fn (x:i64 -- r:i64) { 2 * } hof::when print nl  // 5
 ```
+

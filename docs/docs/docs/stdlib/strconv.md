@@ -1,4 +1,4 @@
-# strconv
+# `use` strconv
 
 String to number conversions.
 
@@ -91,3 +91,4 @@ Parse integer from string in given base.
 ```qd
 "ff" 16 strconv::parse_int .  // 255
 ```
+

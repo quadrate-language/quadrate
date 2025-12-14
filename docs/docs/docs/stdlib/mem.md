@@ -1,4 +1,4 @@
-# mem
+# `use` mem
 
 Low-level memory allocation and manipulation.
 
@@ -33,7 +33,7 @@ Allocate memory.
 
 Copy bytes between memory regions.
 
-**Signature:** `( dst:ptr src:ptr bytes:i64 -- )`
+**Signature:** `( dst:ptr src:ptr bytes:i64 --  )`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -53,7 +53,7 @@ dst src 100 mem::copy
 
 Fill memory region with byte value.
 
-**Signature:** `( value:i64 address:ptr bytes:i64 -- )`
+**Signature:** `( value:i64 address:ptr bytes:i64 --  )`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -73,7 +73,7 @@ Fill memory region with byte value.
 
 Free allocated memory.
 
-**Signature:** `( address:ptr -- )`
+**Signature:** `( address:ptr --  )`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -251,7 +251,7 @@ buf 2048 mem::realloc  // buf
 
 Set a byte at offset.
 
-**Signature:** `( value:i64 address:ptr offset:i64 -- )`
+**Signature:** `( value:i64 address:ptr offset:i64 --  )`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -271,7 +271,7 @@ Set a byte at offset.
 
 Set a 64-bit float at offset.
 
-**Signature:** `( value:f64 address:ptr offset:i64 -- )`
+**Signature:** `( value:f64 address:ptr offset:i64 --  )`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -291,7 +291,7 @@ Set a 64-bit float at offset.
 
 Set a 64-bit integer at offset.
 
-**Signature:** `( value:i64 address:ptr offset:i64 -- )`
+**Signature:** `( value:i64 address:ptr offset:i64 --  )`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -311,7 +311,7 @@ Set a 64-bit integer at offset.
 
 Set a pointer at offset.
 
-**Signature:** `( value:ptr address:ptr offset:i64 -- )`
+**Signature:** `( value:ptr address:ptr offset:i64 --  )`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -354,7 +354,7 @@ buf len mem::to_string  // s
 
 Zero out memory region.
 
-**Signature:** `( address:ptr bytes:i64 -- )`
+**Signature:** `( address:ptr bytes:i64 --  )`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -366,3 +366,4 @@ Zero out memory region.
 ```qd
 buf 1024 mem::zero
 ```
+

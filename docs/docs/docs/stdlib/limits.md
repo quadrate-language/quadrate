@@ -1,4 +1,4 @@
-# limits
+# `use` limits
 
 Numeric limits and constants.
 Provides minimum and maximum values for numeric types.
@@ -21,3 +21,4 @@ Provides minimum and maximum values for numeric types.
 | `U16Max` | `65535` | Maximum value for 16-bit unsigned integer (C: uint16_t). |
 | `U32Max` | `4294967295` | Maximum value for 32-bit unsigned integer (C: uint32_t). |
 | `U8Max` | `255` | Maximum value for 8-bit unsigned integer (C: uint8_t). |
+

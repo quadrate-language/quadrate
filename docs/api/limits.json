@@ -73,6 +73,10 @@
       "description": "Maximum value for 8-bit unsigned integer (C: uint8_t)."
     }
   ],
-  "structs": [],
-  "functions": []
+  "structs": [
+
+  ],
+  "functions": [
+
+  ]
 }

@@ -1,249 +1,110 @@
 {
   "name": "sb",
-  "description": "StringBuilder - Efficient string building. Avoids O(n\u00b2) cost of repeated str::concat.",
-  "constants": [],
+  "description": "StringBuilder - Efficient string building. Avoids O(n²) cost of repeated str::concat.",
+  "constants": [
+
+  ],
   "structs": [
     {
       "name": "StringBuilder",
       "description": "Growable string buffer for efficient string building.",
       "fields": [
-        {
-          "name": "buf",
-          "type": "ptr",
-          "description": "Internal buffer"
-        },
-        {
-          "name": "len",
-          "type": "i64",
-          "description": "Current length"
-        },
-        {
-          "name": "cap",
-          "type": "i64",
-          "description": "Buffer capacity"
-        }
+        {"name": "buf", "type": "ptr", "description": "Internal buffer"},
+        {"name": "len", "type": "i64", "description": "Current length"},
+        {"name": "cap", "type": "i64", "description": "Buffer capacity"}
       ]
     }
   ],
   "functions": [
     {
-      "name": "append",
-      "signature": "( sb:ptr s:str -- sb:ptr )",
-      "failable": false,
-      "description": "Append a string to the builder.",
-      "params": [
-        {
-          "name": "sb",
-          "type": "ptr",
-          "description": "Builder to append to"
-        },
-        {
-          "name": "s",
-          "type": "str",
-          "description": "String to append"
-        }
-      ],
-      "returns": [
-        {
-          "name": "sb",
-          "type": "ptr",
-          "description": "Updated builder"
-        }
-      ],
-      "errors": [],
-      "examples": [
-        "builder \"hello\" sb::append -> builder"
-      ]
-    },
-    {
       "name": "append_char",
       "signature": "( sb:ptr c:i64 -- sb:ptr )",
       "failable": false,
       "description": "Append a single character (by code point).",
-      "params": [
-        {
-          "name": "sb",
-          "type": "ptr",
-          "description": "Builder to append to"
-        },
-        {
-          "name": "c",
-          "type": "i64",
-          "description": "Character code to append"
-        }
-      ],
-      "returns": [
-        {
-          "name": "sb",
-          "type": "ptr",
-          "description": "Updated builder"
-        }
-      ],
+      "params": [{"name": "sb", "type": "ptr", "description": "Builder to append to"}, {"name": "c", "type": "i64", "description": "Character code to append"}],
+      "returns": [{"name": "sb", "type": "ptr", "description": "Updated builder"}],
       "errors": [],
-      "examples": [
-        "builder 65 sb::append_char -> builder"
-      ]
+      "examples": ["builder 65 sb::append_char -> builder"]
     },
     {
       "name": "append_int",
       "signature": "( sb:ptr n:i64 -- sb:ptr )",
       "failable": false,
       "description": "Append an integer as string.",
-      "params": [
-        {
-          "name": "sb",
-          "type": "ptr",
-          "description": "Builder to append to"
-        },
-        {
-          "name": "n",
-          "type": "i64",
-          "description": "Integer to append"
-        }
-      ],
-      "returns": [
-        {
-          "name": "sb",
-          "type": "ptr",
-          "description": "Updated builder"
-        }
-      ],
+      "params": [{"name": "sb", "type": "ptr", "description": "Builder to append to"}, {"name": "n", "type": "i64", "description": "Integer to append"}],
+      "returns": [{"name": "sb", "type": "ptr", "description": "Updated builder"}],
       "errors": [],
-      "examples": [
-        "builder 42 sb::append_int -> builder"
-      ]
+      "examples": ["builder 42 sb::append_int -> builder"]
+    },
+    {
+      "name": "append",
+      "signature": "( sb:ptr s:str -- sb:ptr )",
+      "failable": false,
+      "description": "Append a string to the builder.",
+      "params": [{"name": "sb", "type": "ptr", "description": "Builder to append to"}, {"name": "s", "type": "str", "description": "String to append"}],
+      "returns": [{"name": "sb", "type": "ptr", "description": "Updated builder"}],
+      "errors": [],
+      "examples": ["builder \"hello\" sb::append -> builder"]
     },
     {
       "name": "build",
       "signature": "( sb:ptr -- s:str )",
       "failable": false,
       "description": "Build the final string (does not consume builder).",
-      "params": [
-        {
-          "name": "sb",
-          "type": "ptr",
-          "description": "Builder to convert"
-        }
-      ],
-      "returns": [
-        {
-          "name": "s",
-          "type": "str",
-          "description": "Built string"
-        }
-      ],
+      "params": [{"name": "sb", "type": "ptr", "description": "Builder to convert"}],
+      "returns": [{"name": "s", "type": "str", "description": "Built string"}],
       "errors": [],
-      "examples": [
-        "builder sb::build -> result"
-      ]
+      "examples": ["builder sb::build -> result"]
     },
     {
       "name": "finish",
       "signature": "( sb:ptr -- s:str )",
       "failable": false,
       "description": "Build string and free builder in one call.",
-      "params": [
-        {
-          "name": "sb",
-          "type": "ptr",
-          "description": "Builder to finish"
-        }
-      ],
-      "returns": [
-        {
-          "name": "s",
-          "type": "str",
-          "description": "Built string"
-        }
-      ],
+      "params": [{"name": "sb", "type": "ptr", "description": "Builder to finish"}],
+      "returns": [{"name": "s", "type": "str", "description": "Built string"}],
       "errors": [],
-      "examples": [
-        "builder sb::finish -> result"
-      ]
+      "examples": ["builder sb::finish -> result"]
     },
     {
       "name": "free",
-      "signature": "( sb:ptr -- )",
+      "signature": "( sb:ptr --  )",
       "failable": false,
       "description": "Free the builder's resources.",
-      "params": [
-        {
-          "name": "sb",
-          "type": "ptr",
-          "description": "Builder to free"
-        }
-      ],
+      "params": [{"name": "sb", "type": "ptr", "description": "Builder to free"}],
       "returns": [],
       "errors": [],
-      "examples": [
-        "builder sb::free"
-      ]
+      "examples": ["builder sb::free"]
     },
     {
       "name": "length",
       "signature": "( sb:ptr -- sblen:i64 )",
       "failable": false,
       "description": "Get current length of builder content.",
-      "params": [
-        {
-          "name": "sb",
-          "type": "ptr",
-          "description": "Builder to check"
-        }
-      ],
-      "returns": [
-        {
-          "name": "sblen",
-          "type": "i64",
-          "description": "Current content length"
-        }
-      ],
+      "params": [{"name": "sb", "type": "ptr", "description": "Builder to check"}],
+      "returns": [{"name": "sblen", "type": "i64", "description": "Current content length"}],
       "errors": [],
-      "examples": [
-        "builder sb::length -> sblen"
-      ]
+      "examples": ["builder sb::length -> sblen"]
     },
     {
       "name": "new",
-      "signature": "( -- sb:ptr )",
+      "signature": "(  -- sb:ptr )",
       "failable": false,
       "description": "Create a new StringBuilder with default capacity.",
       "params": [],
-      "returns": [
-        {
-          "name": "sb",
-          "type": "ptr",
-          "description": "New empty builder"
-        }
-      ],
+      "returns": [{"name": "sb", "type": "ptr", "description": "New empty builder"}],
       "errors": [],
-      "examples": [
-        "sb::new -> builder"
-      ]
+      "examples": ["sb::new -> builder"]
     },
     {
       "name": "with_capacity",
       "signature": "( capacity:i64 -- sb:ptr )",
       "failable": false,
       "description": "Create a StringBuilder with specific initial capacity.",
-      "params": [
-        {
-          "name": "capacity",
-          "type": "i64",
-          "description": "Initial buffer size"
-        }
-      ],
-      "returns": [
-        {
-          "name": "sb",
-          "type": "ptr",
-          "description": "New empty builder"
-        }
-      ],
+      "params": [{"name": "capacity", "type": "i64", "description": "Initial buffer size"}],
+      "returns": [{"name": "sb", "type": "ptr", "description": "New empty builder"}],
       "errors": [],
-      "examples": [
-        "1024 sb::with_capacity -> builder"
-      ]
+      "examples": ["1024 sb::with_capacity -> builder"]
     }
   ]
 }

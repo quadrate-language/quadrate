@@ -1,4 +1,4 @@
-# signal
+# `use` signal
 
 Unix signal handling with polling-based API.
 
@@ -6,20 +6,20 @@ Signals are caught and stored as flags. Use pending() to check
 if a signal was received, and clear() to reset the flag.
 
 Example:
-use signal
+  use signal
 
-fn main() {
-signal::SIGINT signal::trap
-"Running. Press Ctrl+C to stop." . nl
+  fn main() {
+      signal::SIGINT signal::trap
+      "Running. Press Ctrl+C to stop." . nl
 
-1 while {
-signal::SIGINT signal::pending if {
-"Shutting down" . nl
-signal::SIGINT signal::clear
-break
-}
-}
-}
+      1 while {
+          signal::SIGINT signal::pending if {
+              "Shutting down" . nl
+              signal::SIGINT signal::clear
+              break
+          }
+      }
+  }
 
 ## Constants
 
@@ -51,7 +51,7 @@ break
 
 Clear the pending flag for a signal.
 
-**Signature:** `( signum:i64 -- )`
+**Signature:** `( signum:i64 --  )`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -69,7 +69,7 @@ signal::SIGINT signal::clear
 
 Ignore the specified signal completely.
 
-**Signature:** `( signum:i64 -- )`
+**Signature:** `( signum:i64 --  )`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -85,8 +85,7 @@ signal::SIGPIPE signal::ignore
 
 ### `fn` pending
 
-Check if a signal is pending (received but not cleared).
-Returns 1 if pending, 0 otherwise. Does not clear the flag.
+Check if a signal is pending (received but not cleared). Returns 1 if pending, 0 otherwise. Does not clear the flag.
 
 **Signature:** `( signum:i64 -- flag:i64 )`
 
@@ -110,7 +109,7 @@ signal::SIGINT signal::pending
 
 Reset signal to default behavior.
 
-**Signature:** `( signum:i64 -- )`
+**Signature:** `( signum:i64 --  )`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -126,11 +125,9 @@ signal::SIGINT signal::reset
 
 ### `fn` trap
 
-Install a handler to catch the specified signal.
-After trapping, the signal sets a pending flag instead of
-causing the default action (e.g., termination).
+Install a handler to catch the specified signal. After trapping, the signal sets a pending flag instead of causing the default action (e.g., termination).
 
-**Signature:** `( signum:i64 -- )`
+**Signature:** `( signum:i64 --  )`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -146,10 +143,9 @@ signal::SIGINT signal::trap
 
 ### `fn` wait
 
-Block until any trapped signal is received.
-Returns the signal number that was received.
+Block until any trapped signal is received. Returns the signal number that was received.
 
-**Signature:** `( -- signum:i64 )`
+**Signature:** `(  -- signum:i64 )`
 
 | Output | Type | Description |
 |--------|------|-------------|
@@ -160,3 +156,4 @@ Returns the signal number that was received.
 ```qd
 signal::wait  // sig
 ```
+

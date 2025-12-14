@@ -1,4 +1,4 @@
-# uuid
+# `use` uuid
 
 UUID generation (version 4 random UUIDs).
 Format: xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx
@@ -27,24 +27,6 @@ Check if a string is a valid UUID format.
 
 ---
 
-### `fn` v4
-
-Generate a new random UUIDv4 string.
-
-**Signature:** `( -- uuid:str )`
-
-| Output | Type | Description |
-|--------|------|-------------|
-| `uuid` | `str` | UUID string (36 chars) |
-
-**Example:**
-
-```qd
-uuid::v4  // id
-```
-
----
-
 ### `fn` v4_seeded
 
 Generate UUID with specific seed (for reproducibility).
@@ -64,3 +46,22 @@ Generate UUID with specific seed (for reproducibility).
 ```qd
 12345 uuid::v4_seeded  // id
 ```
+
+---
+
+### `fn` v4
+
+Generate a new random UUIDv4 string.
+
+**Signature:** `(  -- uuid:str )`
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `uuid` | `str` | UUID string (36 chars) |
+
+**Example:**
+
+```qd
+uuid::v4  // id
+```
+

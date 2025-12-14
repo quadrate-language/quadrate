@@ -1,28 +1,20 @@
 {
   "name": "regex",
   "description": "Regular expression matching using Thompson NFA. Supports = . * + ? | () [] [^] [a-z] ^ it and escapes. Note: Nested groups and alternation inside groups not yet supported.",
-  "constants": [],
-  "structs": [],
+  "constants": [
+
+  ],
+  "structs": [
+
+  ],
   "functions": [
     {
       "name": "compile",
       "signature": "( pattern:str -- re:ptr )",
       "failable": false,
       "description": "Compile a regex pattern.",
-      "params": [
-        {
-          "name": "pattern",
-          "type": "str",
-          "description": "Regular expression pattern"
-        }
-      ],
-      "returns": [
-        {
-          "name": "re",
-          "type": "ptr",
-          "description": "Compiled regex (null on error)"
-        }
-      ],
+      "params": [{"name": "pattern", "type": "str", "description": "Regular expression pattern"}],
+      "returns": [{"name": "re", "type": "ptr", "description": "Compiled regex (null on error)"}],
       "errors": [],
       "examples": []
     },
@@ -31,60 +23,24 @@
       "signature": "( pattern:str s:str -- result:i64 )",
       "failable": false,
       "description": "Compile and test if pattern matches string.",
-      "params": [
-        {
-          "name": "pattern",
-          "type": "str",
-          "description": "Regex pattern"
-        },
-        {
-          "name": "s",
-          "type": "str",
-          "description": "String to match"
-        }
-      ],
-      "returns": [
-        {
-          "name": "result",
-          "type": "i64",
-          "description": "1 if matches, 0 otherwise"
-        }
-      ],
+      "params": [{"name": "pattern", "type": "str", "description": "Regex pattern"}, {"name": "s", "type": "str", "description": "String to match"}],
+      "returns": [{"name": "result", "type": "i64", "description": "1 if matches, 0 otherwise"}],
       "errors": [],
-      "examples": [
-        "\"hello.*\" \"hello world\" regex::is_match -> result"
-      ]
+      "examples": ["\"hello.*\" \"hello world\" regex::is_match -> result"]
     },
     {
       "name": "matches",
       "signature": "( re:ptr s:str -- result:i64 )",
       "failable": false,
       "description": "Test if a string matches a compiled regex (full match).",
-      "params": [
-        {
-          "name": "re",
-          "type": "ptr",
-          "description": "Compiled regex"
-        },
-        {
-          "name": "s",
-          "type": "str",
-          "description": "String to match"
-        }
-      ],
-      "returns": [
-        {
-          "name": "matches",
-          "type": "i64",
-          "description": "1 if matches, 0 otherwise"
-        }
-      ],
+      "params": [{"name": "re", "type": "ptr", "description": "Compiled regex"}, {"name": "s", "type": "str", "description": "String to match"}],
+      "returns": [{"name": "matches", "type": "i64", "description": "1 if matches, 0 otherwise"}],
       "errors": [],
       "examples": []
     },
     {
       "name": "release",
-      "signature": "( re:ptr -- )",
+      "signature": "( re:ptr --  )",
       "failable": false,
       "description": "Free a compiled regex.",
       "params": [],

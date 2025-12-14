@@ -63,24 +63,24 @@
       "description": "Error: Write operation failed."
     },
     {
-      "name": "Read",
-      "value": "\"r\"",
-      "description": "Open mode: read only."
-    },
-    {
       "name": "ReadBinary",
       "value": "\"rb\"",
       "description": "Open mode: read binary."
     },
     {
-      "name": "ReadWrite",
-      "value": "\"r+\"",
-      "description": "Open mode: read and write."
+      "name": "Read",
+      "value": "\"r\"",
+      "description": "Open mode: read only."
     },
     {
       "name": "ReadWriteBinary",
       "value": "\"rb+\"",
       "description": "Open mode: read and write binary."
+    },
+    {
+      "name": "ReadWrite",
+      "value": "\"r+\"",
+      "description": "Open mode: read and write."
     },
     {
       "name": "SeekCur",
@@ -98,14 +98,14 @@
       "description": "Seek from beginning of file."
     },
     {
-      "name": "Write",
-      "value": "\"w\"",
-      "description": "Open mode: write (truncate)."
-    },
-    {
       "name": "WriteBinary",
       "value": "\"wb\"",
       "description": "Open mode: write binary."
+    },
+    {
+      "name": "WriteReadBinary",
+      "value": "\"wb+\"",
+      "description": "Open mode: write and read binary."
     },
     {
       "name": "WriteRead",
@@ -113,282 +113,94 @@
       "description": "Open mode: write and read (truncate)."
     },
     {
-      "name": "WriteReadBinary",
-      "value": "\"wb+\"",
-      "description": "Open mode: write and read binary."
+      "name": "Write",
+      "value": "\"w\"",
+      "description": "Open mode: write (truncate)."
     }
   ],
-  "structs": [],
+  "structs": [
+
+  ],
   "functions": [
     {
       "name": "close",
-      "signature": "( handle:ptr -- )",
+      "signature": "( handle:ptr --  )",
       "failable": false,
       "description": "Close a file.",
-      "params": [
-        {
-          "name": "handle",
-          "type": "ptr",
-          "description": "File handle to close"
-        }
-      ],
+      "params": [{"name": "handle", "type": "ptr", "description": "File handle to close"}],
       "returns": [],
       "errors": [],
-      "examples": [
-        "f io::close"
-      ]
+      "examples": ["f io::close"]
     },
     {
       "name": "eof",
       "signature": "( handle:ptr -- handle:ptr is_eof:i64 )",
       "failable": false,
       "description": "Check if at end of file.",
-      "params": [
-        {
-          "name": "handle",
-          "type": "ptr",
-          "description": "File handle"
-        }
-      ],
-      "returns": [
-        {
-          "name": "handle",
-          "type": "ptr",
-          "description": "File handle (unchanged)"
-        },
-        {
-          "name": "is_eof",
-          "type": "i64",
-          "description": "1 if at EOF, 0 otherwise"
-        }
-      ],
+      "params": [{"name": "handle", "type": "ptr", "description": "File handle"}],
+      "returns": [{"name": "handle", "type": "ptr", "description": "File handle (unchanged)"}, {"name": "is_eof", "type": "i64", "description": "1 if at EOF, 0 otherwise"}],
       "errors": [],
-      "examples": [
-        "f io::eof -> f -> at_end"
-      ]
+      "examples": ["f io::eof -> f -> at_end"]
     },
     {
       "name": "open",
       "signature": "( path:str mode:str -- handle:ptr )",
       "failable": true,
       "description": "Open a file.",
-      "params": [
-        {
-          "name": "path",
-          "type": "str",
-          "description": "File path"
-        },
-        {
-          "name": "mode",
-          "type": "str",
-          "description": "Open mode (use io::Read, io::Write, etc.)"
-        }
-      ],
-      "returns": [
-        {
-          "name": "handle",
-          "type": "ptr",
-          "description": "File handle"
-        }
-      ],
-      "errors": [
-        {
-          "code": "ErrNotFound",
-          "description": "File not found"
-        }
-      ],
-      "examples": [
-        "\"data.txt\" io::Read io::open! -> f"
-      ]
+      "params": [{"name": "path", "type": "str", "description": "File path"}, {"name": "mode", "type": "str", "description": "Open mode (use io::Read, io::Write, etc.)"}],
+      "returns": [{"name": "handle", "type": "ptr", "description": "File handle"}],
+      "errors": [{"code": "ErrNotFound", "description": "File not found"}],
+      "examples": ["\"data.txt\" io::Read io::open! -> f"]
     },
     {
       "name": "read",
       "signature": "( handle:ptr buffer:ptr count:i64 -- bytes_read:i64 )",
       "failable": true,
       "description": "Read bytes into buffer.",
-      "params": [
-        {
-          "name": "handle",
-          "type": "ptr",
-          "description": "File handle"
-        },
-        {
-          "name": "buffer",
-          "type": "ptr",
-          "description": "Pre-allocated buffer"
-        },
-        {
-          "name": "count",
-          "type": "i64",
-          "description": "Maximum bytes to read"
-        }
-      ],
-      "returns": [
-        {
-          "name": "bytes_read",
-          "type": "i64",
-          "description": "Actual bytes read"
-        }
-      ],
-      "errors": [
-        {
-          "code": "ErrInvalidArg",
-          "description": "Invalid file handle, buffer, or count"
-        },
-        {
-          "code": "ErrRead",
-          "description": "Read operation failed"
-        }
-      ],
-      "examples": [
-        "f buf 1024 io::read! -> n"
-      ]
+      "params": [{"name": "handle", "type": "ptr", "description": "File handle"}, {"name": "buffer", "type": "ptr", "description": "Pre-allocated buffer"}, {"name": "count", "type": "i64", "description": "Maximum bytes to read"}],
+      "returns": [{"name": "bytes_read", "type": "i64", "description": "Actual bytes read"}],
+      "errors": [{"code": "ErrInvalidArg", "description": "Invalid file handle, buffer, or count"}, {"code": "ErrRead", "description": "Read operation failed"}],
+      "examples": ["f buf 1024 io::read! -> n"]
     },
     {
       "name": "readline",
-      "signature": "( -- line:str )",
+      "signature": "(  -- line:str )",
       "failable": true,
       "description": "Read a line from stdin.",
       "params": [],
-      "returns": [
-        {
-          "name": "line",
-          "type": "str",
-          "description": "Line without trailing newline"
-        }
-      ],
-      "errors": [
-        {
-          "code": "ErrEof",
-          "description": "End of file or read error"
-        }
-      ],
-      "examples": [
-        "io::readline! -> input"
-      ]
+      "returns": [{"name": "line", "type": "str", "description": "Line without trailing newline"}],
+      "errors": [{"code": "ErrEof", "description": "End of file or read error"}],
+      "examples": ["io::readline! -> input"]
     },
     {
       "name": "seek",
       "signature": "( handle:ptr offset:i64 whence:i64 -- position:i64 )",
       "failable": true,
       "description": "Seek to position in file.",
-      "params": [
-        {
-          "name": "handle",
-          "type": "ptr",
-          "description": "File handle"
-        },
-        {
-          "name": "offset",
-          "type": "i64",
-          "description": "Offset in bytes"
-        },
-        {
-          "name": "whence",
-          "type": "i64",
-          "description": "Reference point (SeekSet, SeekCur, SeekEnd)"
-        }
-      ],
-      "returns": [
-        {
-          "name": "position",
-          "type": "i64",
-          "description": "New position"
-        }
-      ],
-      "errors": [
-        {
-          "code": "ErrInvalidHandle",
-          "description": "Invalid file handle"
-        },
-        {
-          "code": "ErrInvalidArg",
-          "description": "Invalid whence value"
-        },
-        {
-          "code": "ErrSeek",
-          "description": "Seek operation failed"
-        }
-      ],
-      "examples": [
-        "f 0 io::SeekSet io::seek! drop"
-      ]
+      "params": [{"name": "handle", "type": "ptr", "description": "File handle"}, {"name": "offset", "type": "i64", "description": "Offset in bytes"}, {"name": "whence", "type": "i64", "description": "Reference point (SeekSet, SeekCur, SeekEnd)"}],
+      "returns": [{"name": "position", "type": "i64", "description": "New position"}],
+      "errors": [{"code": "ErrInvalidHandle", "description": "Invalid file handle"}, {"code": "ErrInvalidArg", "description": "Invalid whence value"}, {"code": "ErrSeek", "description": "Seek operation failed"}],
+      "examples": ["f 0 io::SeekSet io::seek! drop"]
     },
     {
       "name": "tell",
       "signature": "( handle:ptr -- position:i64 )",
       "failable": true,
       "description": "Get current position in file.",
-      "params": [
-        {
-          "name": "handle",
-          "type": "ptr",
-          "description": "File handle"
-        }
-      ],
-      "returns": [
-        {
-          "name": "position",
-          "type": "i64",
-          "description": "Current position"
-        }
-      ],
-      "errors": [
-        {
-          "code": "ErrInvalidHandle",
-          "description": "Invalid file handle"
-        },
-        {
-          "code": "ErrSeek",
-          "description": "Tell operation failed"
-        }
-      ],
-      "examples": [
-        "f io::tell! -> pos"
-      ]
+      "params": [{"name": "handle", "type": "ptr", "description": "File handle"}],
+      "returns": [{"name": "position", "type": "i64", "description": "Current position"}],
+      "errors": [{"code": "ErrInvalidHandle", "description": "Invalid file handle"}, {"code": "ErrSeek", "description": "Tell operation failed"}],
+      "examples": ["f io::tell! -> pos"]
     },
     {
       "name": "write",
       "signature": "( handle:ptr buffer:ptr count:i64 -- bytes_written:i64 )",
       "failable": true,
       "description": "Write bytes from buffer.",
-      "params": [
-        {
-          "name": "handle",
-          "type": "ptr",
-          "description": "File handle"
-        },
-        {
-          "name": "buffer",
-          "type": "ptr",
-          "description": "Buffer containing data"
-        },
-        {
-          "name": "count",
-          "type": "i64",
-          "description": "Number of bytes to write"
-        }
-      ],
-      "returns": [
-        {
-          "name": "bytes_written",
-          "type": "i64",
-          "description": "Actual bytes written"
-        }
-      ],
-      "errors": [
-        {
-          "code": "ErrInvalidArg",
-          "description": "Invalid file handle, buffer, or count"
-        },
-        {
-          "code": "ErrWrite",
-          "description": "Write operation failed"
-        }
-      ],
-      "examples": [
-        "f buf len io::write! drop"
-      ]
+      "params": [{"name": "handle", "type": "ptr", "description": "File handle"}, {"name": "buffer", "type": "ptr", "description": "Buffer containing data"}, {"name": "count", "type": "i64", "description": "Number of bytes to write"}],
+      "returns": [{"name": "bytes_written", "type": "i64", "description": "Actual bytes written"}],
+      "errors": [{"code": "ErrInvalidArg", "description": "Invalid file handle, buffer, or count"}, {"code": "ErrWrite", "description": "Write operation failed"}],
+      "examples": ["f buf len io::write! drop"]
     }
   ]
 }

@@ -1,4 +1,4 @@
-# flag
+# `use` flag
 
 Command-line flag parsing.
 Error codes: Ok=1 (success), specific errors start at 2
@@ -8,8 +8,8 @@ Error codes: Ok=1 (success), specific errors start at 2
 | Name | Value | Description |
 |------|-------|-------------|
 | `ErrInvalidValue` | `4` | Error: Invalid value format. |
-| `ErrNoValue` | `3` | Error: Value not found (flag exists but has no value). |
 | `ErrNotFound` | `2` | Error: Flag not found. |
+| `ErrNoValue` | `3` | Error: Value not found (flag exists but has no value). |
 
 ## Structs
 
@@ -51,7 +51,7 @@ f "--verbose" flag::boolean if { "verbose" print nl }
 
 Free a Flag struct and its argv string.
 
-**Signature:** `( f:ptr -- )`
+**Signature:** `( f:ptr --  )`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -123,7 +123,7 @@ f "--count" flag::int!  // count
 
 Parse arguments from read instruction.
 
-**Signature:** `( argc:i64 -- )`
+**Signature:** `( argc:i64 --  )`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -187,3 +187,4 @@ Get string value of a flag.
 ```qd
 f "--name" flag::string!  // name
 ```
+

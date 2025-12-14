@@ -1,4 +1,4 @@
-# path
+# `use` path
 
 File path manipulation functions.
 POSIX-style paths with forward slash separator.
@@ -163,3 +163,4 @@ Get filename without extension.
 ```qd
 "file.txt" path::stem  // "file"
 ```
+

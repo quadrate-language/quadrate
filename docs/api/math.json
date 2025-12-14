@@ -5,877 +5,352 @@
     {
       "name": "E",
       "value": "2.718281828459045",
-      "description": "Euler's number (e \u2248 2.71828)."
+      "description": "Euler's number (e ≈ 2.71828)."
     },
     {
       "name": "Pi",
       "value": "3.141592653589793",
-      "description": "Mathematical functions and constants. Mathematical constant Pi (\u03c0 \u2248 3.14159)."
+      "description": "Mathematical functions and constants. Mathematical constant Pi (π ≈ 3.14159)."
     },
     {
       "name": "Tau",
       "value": "6.283185307179586",
-      "description": "Tau = 2\u03c0 (full circle in radians)."
+      "description": "Tau = 2π (full circle in radians)."
     }
   ],
-  "structs": [],
+  "structs": [
+
+  ],
   "functions": [
     {
       "name": "abs",
       "signature": "( x:f64 -- result:f64 )",
       "failable": false,
       "description": "Absolute value.",
-      "params": [
-        {
-          "name": "x",
-          "type": "f64",
-          "description": "Any value"
-        }
-      ],
-      "returns": [
-        {
-          "name": "result",
-          "type": "f64",
-          "description": "|x|"
-        }
-      ],
-      "errors": [],
-      "examples": [
-        "-5.0 math::abs .  // 5.0"
-      ]
+      "params": [{"name": "x", "type": "f64", "description": "Any value"}],
+      "returns": [{"name": "result", "type": "f64", "description": ""}],
+      "errors": [{"code": "x", "description": ""}],
+      "examples": ["||-5.0 math::abs .  // 5.0"]
     },
     {
       "name": "acos",
       "signature": "( x:f64 -- result:f64 )",
       "failable": false,
       "description": "Arc cosine (inverse cosine).",
-      "params": [
-        {
-          "name": "x",
-          "type": "f64",
-          "description": "Value in range [-1, 1]"
-        }
-      ],
-      "returns": [
-        {
-          "name": "result",
-          "type": "f64",
-          "description": "Angle in radians [0, \u03c0]"
-        }
-      ],
+      "params": [{"name": "x", "type": "f64", "description": "Value in range [-1, 1]"}],
+      "returns": [{"name": "result", "type": "f64", "description": "Angle in radians [0, π]"}],
       "errors": [],
-      "examples": [
-        "1.0 math::acos .  // 0.0"
-      ]
+      "examples": ["1.0 math::acos .  // 0.0"]
     },
     {
       "name": "asin",
       "signature": "( x:f64 -- result:f64 )",
       "failable": false,
       "description": "Arc sine (inverse sine).",
-      "params": [
-        {
-          "name": "x",
-          "type": "f64",
-          "description": "Value in range [-1, 1]"
-        }
-      ],
-      "returns": [
-        {
-          "name": "result",
-          "type": "f64",
-          "description": "Angle in radians [-\u03c0/2, \u03c0/2]"
-        }
-      ],
+      "params": [{"name": "x", "type": "f64", "description": "Value in range [-1, 1]"}],
+      "returns": [{"name": "result", "type": "f64", "description": "Angle in radians [-π/2, π/2]"}],
       "errors": [],
-      "examples": [
-        "0.0 math::asin .  // 0.0"
-      ]
-    },
-    {
-      "name": "atan",
-      "signature": "( x:f64 -- result:f64 )",
-      "failable": false,
-      "description": "Arc tangent (inverse tangent).",
-      "params": [
-        {
-          "name": "x",
-          "type": "f64",
-          "description": "Any value"
-        }
-      ],
-      "returns": [
-        {
-          "name": "result",
-          "type": "f64",
-          "description": "Angle in radians [-\u03c0/2, \u03c0/2]"
-        }
-      ],
-      "errors": [],
-      "examples": [
-        "0.0 math::atan .  // 0.0"
-      ]
+      "examples": ["0.0 math::asin .  // 0.0"]
     },
     {
       "name": "atan2",
       "signature": "( y:f64 x:f64 -- result:f64 )",
       "failable": false,
       "description": "Two-argument arc tangent. Returns the angle in radians between the positive x-axis and the point (x, y). More useful than atan for computing angles because it handles all quadrants.",
-      "params": [
-        {
-          "name": "y",
-          "type": "f64",
-          "description": "Y coordinate"
-        },
-        {
-          "name": "x",
-          "type": "f64",
-          "description": "X coordinate"
-        }
-      ],
-      "returns": [
-        {
-          "name": "result",
-          "type": "f64",
-          "description": "Angle in radians [-\u03c0, \u03c0]"
-        }
-      ],
+      "params": [{"name": "y", "type": "f64", "description": "Y coordinate"}, {"name": "x", "type": "f64", "description": "X coordinate"}],
+      "returns": [{"name": "result", "type": "f64", "description": "Angle in radians [-π, π]"}],
       "errors": [],
-      "examples": [
-        "1.0 1.0 math::atan2 .  // ~0.785 (\u03c0/4)"
-      ]
+      "examples": ["1.0 1.0 math::atan2 .  // ~0.785 (π/4)"]
     },
     {
-      "name": "cb",
+      "name": "atan",
       "signature": "( x:f64 -- result:f64 )",
       "failable": false,
-      "description": "Cube a number.",
-      "params": [
-        {
-          "name": "x",
-          "type": "f64",
-          "description": "Value to cube"
-        }
-      ],
-      "returns": [
-        {
-          "name": "result",
-          "type": "f64",
-          "description": "x * x * x"
-        }
-      ],
+      "description": "Arc tangent (inverse tangent).",
+      "params": [{"name": "x", "type": "f64", "description": "Any value"}],
+      "returns": [{"name": "result", "type": "f64", "description": "Angle in radians [-π/2, π/2]"}],
       "errors": [],
-      "examples": [
-        "2.0 math::cb .  // 8.0"
-      ]
+      "examples": ["0.0 math::atan .  // 0.0"]
     },
     {
       "name": "cbrt",
       "signature": "( x:f64 -- result:f64 )",
       "failable": false,
       "description": "Cube root.",
-      "params": [
-        {
-          "name": "x",
-          "type": "f64",
-          "description": "Any value"
-        }
-      ],
-      "returns": [
-        {
-          "name": "result",
-          "type": "f64",
-          "description": "Cube root of x"
-        }
-      ],
+      "params": [{"name": "x", "type": "f64", "description": "Any value"}],
+      "returns": [{"name": "result", "type": "f64", "description": "Cube root of x"}],
       "errors": [],
-      "examples": [
-        "8.0 math::cbrt .  // 2.0"
-      ]
+      "examples": ["8.0 math::cbrt .  // 2.0"]
+    },
+    {
+      "name": "cb",
+      "signature": "( x:f64 -- result:f64 )",
+      "failable": false,
+      "description": "Cube a number.",
+      "params": [{"name": "x", "type": "f64", "description": "Value to cube"}],
+      "returns": [{"name": "result", "type": "f64", "description": "x * x * x"}],
+      "errors": [],
+      "examples": ["2.0 math::cb .  // 8.0"]
     },
     {
       "name": "ceil",
       "signature": "( x:f64 -- result:f64 )",
       "failable": false,
       "description": "Ceiling (round up).",
-      "params": [
-        {
-          "name": "x",
-          "type": "f64",
-          "description": "Any value"
-        }
-      ],
-      "returns": [
-        {
-          "name": "result",
-          "type": "f64",
-          "description": "Smallest integer >= x"
-        }
-      ],
+      "params": [{"name": "x", "type": "f64", "description": "Any value"}],
+      "returns": [{"name": "result", "type": "f64", "description": "Smallest integer >= x"}],
       "errors": [],
-      "examples": [
-        "2.3 math::ceil .  // 3.0"
-      ]
+      "examples": ["2.3 math::ceil .  // 3.0"]
     },
     {
       "name": "clamp",
       "signature": "( x:f64 min_val:f64 max_val:f64 -- result:f64 )",
       "failable": false,
       "description": "Clamp value to range.",
-      "params": [
-        {
-          "name": "x",
-          "type": "f64",
-          "description": "Value to clamp"
-        },
-        {
-          "name": "min_val",
-          "type": "f64",
-          "description": "Minimum bound"
-        },
-        {
-          "name": "max_val",
-          "type": "f64",
-          "description": "Maximum bound"
-        }
-      ],
-      "returns": [
-        {
-          "name": "result",
-          "type": "f64",
-          "description": "x clamped to [min_val, max_val]"
-        }
-      ],
+      "params": [{"name": "x", "type": "f64", "description": "Value to clamp"}, {"name": "min_val", "type": "f64", "description": "Minimum bound"}, {"name": "max_val", "type": "f64", "description": "Maximum bound"}],
+      "returns": [{"name": "result", "type": "f64", "description": "x clamped to [min_val, max_val]"}],
       "errors": [],
-      "examples": [
-        "15.0 0.0 10.0 math::clamp .  // 10.0"
-      ]
+      "examples": ["15.0 0.0 10.0 math::clamp .  // 10.0"]
     },
     {
       "name": "cos",
       "signature": "( x:f64 -- result:f64 )",
       "failable": false,
       "description": "Cosine of angle in radians.",
-      "params": [
-        {
-          "name": "x",
-          "type": "f64",
-          "description": "Angle in radians"
-        }
-      ],
-      "returns": [
-        {
-          "name": "result",
-          "type": "f64",
-          "description": "Cosine value [-1, 1]"
-        }
-      ],
+      "params": [{"name": "x", "type": "f64", "description": "Angle in radians"}],
+      "returns": [{"name": "result", "type": "f64", "description": "Cosine value [-1, 1]"}],
       "errors": [],
-      "examples": [
-        "0.0 math::cos .  // 1.0"
-      ]
+      "examples": ["0.0 math::cos .  // 1.0"]
     },
     {
       "name": "dec",
       "signature": "( x:i64 -- result:i64 )",
       "failable": false,
       "description": "Decrement integer by 1.",
-      "params": [
-        {
-          "name": "x",
-          "type": "i64",
-          "description": "Value to decrement"
-        }
-      ],
-      "returns": [
-        {
-          "name": "result",
-          "type": "i64",
-          "description": "x - 1"
-        }
-      ],
+      "params": [{"name": "x", "type": "i64", "description": "Value to decrement"}],
+      "returns": [{"name": "result", "type": "i64", "description": "x - 1"}],
       "errors": [],
-      "examples": [
-        "5 math::dec .  // 4"
-      ]
+      "examples": ["5 math::dec .  // 4"]
     },
     {
       "name": "deg_to_rad",
       "signature": "( degrees:f64 -- radians:f64 )",
       "failable": false,
       "description": "Convert degrees to radians.",
-      "params": [
-        {
-          "name": "degrees",
-          "type": "f64",
-          "description": "Angle in degrees"
-        }
-      ],
-      "returns": [
-        {
-          "name": "radians",
-          "type": "f64",
-          "description": "Angle in radians"
-        }
-      ],
+      "params": [{"name": "degrees", "type": "f64", "description": "Angle in degrees"}],
+      "returns": [{"name": "radians", "type": "f64", "description": "Angle in radians"}],
       "errors": [],
-      "examples": [
-        "180.0 math::deg_to_rad .  // ~3.14159"
-      ]
+      "examples": ["180.0 math::deg_to_rad .  // ~3.14159"]
     },
     {
       "name": "exp",
       "signature": "( x:f64 -- result:f64 )",
       "failable": false,
       "description": "Exponential function (e^x).",
-      "params": [
-        {
-          "name": "x",
-          "type": "f64",
-          "description": "Exponent value"
-        }
-      ],
-      "returns": [
-        {
-          "name": "result",
-          "type": "f64",
-          "description": "e raised to x"
-        }
-      ],
+      "params": [{"name": "x", "type": "f64", "description": "Exponent value"}],
+      "returns": [{"name": "result", "type": "f64", "description": "e raised to x"}],
       "errors": [],
-      "examples": [
-        "1.0 math::exp .  // ~2.718 (e)"
-      ]
+      "examples": ["1.0 math::exp .  // ~2.718 (e)"]
     },
     {
       "name": "fac",
       "signature": "( n:i64 -- result:i64 )",
       "failable": false,
       "description": "Factorial (n!).",
-      "params": [
-        {
-          "name": "n",
-          "type": "i64",
-          "description": "Non-negative integer"
-        }
-      ],
-      "returns": [
-        {
-          "name": "result",
-          "type": "i64",
-          "description": "n!"
-        }
-      ],
+      "params": [{"name": "n", "type": "i64", "description": "Non-negative integer"}],
+      "returns": [{"name": "result", "type": "i64", "description": "n!"}],
       "errors": [],
-      "examples": [
-        "5 math::fac .  // 120"
-      ]
+      "examples": ["5 math::fac .  // 120"]
     },
     {
       "name": "floor",
       "signature": "( x:f64 -- result:f64 )",
       "failable": false,
       "description": "Floor (round down).",
-      "params": [
-        {
-          "name": "x",
-          "type": "f64",
-          "description": "Any value"
-        }
-      ],
-      "returns": [
-        {
-          "name": "result",
-          "type": "f64",
-          "description": "Largest integer <= x"
-        }
-      ],
+      "params": [{"name": "x", "type": "f64", "description": "Any value"}],
+      "returns": [{"name": "result", "type": "f64", "description": "Largest integer <= x"}],
       "errors": [],
-      "examples": [
-        "2.7 math::floor .  // 2.0"
-      ]
+      "examples": ["2.7 math::floor .  // 2.0"]
     },
     {
       "name": "fmod",
       "signature": "( x:f64 y:f64 -- result:f64 )",
       "failable": false,
       "description": "Floating-point modulo (remainder). Returns the remainder of x/y with the same sign as x.",
-      "params": [
-        {
-          "name": "x",
-          "type": "f64",
-          "description": "Dividend"
-        },
-        {
-          "name": "y",
-          "type": "f64",
-          "description": "Divisor (non-zero)"
-        }
-      ],
-      "returns": [
-        {
-          "name": "result",
-          "type": "f64",
-          "description": "Remainder of x/y"
-        }
-      ],
+      "params": [{"name": "x", "type": "f64", "description": "Dividend"}, {"name": "y", "type": "f64", "description": "Divisor (non-zero)"}],
+      "returns": [{"name": "result", "type": "f64", "description": "Remainder of x/y"}],
       "errors": [],
-      "examples": [
-        "5.5 2.0 math::fmod .  // 1.5"
-      ]
+      "examples": ["5.5 2.0 math::fmod .  // 1.5"]
     },
     {
       "name": "hypot",
       "signature": "( x:f64 y:f64 -- result:f64 )",
       "failable": false,
-      "description": "Hypotenuse (Euclidean distance). Computes sqrt(x\u00b2 + y\u00b2) without intermediate overflow or underflow.",
-      "params": [
-        {
-          "name": "x",
-          "type": "f64",
-          "description": "First value"
-        },
-        {
-          "name": "y",
-          "type": "f64",
-          "description": "Second value"
-        }
-      ],
-      "returns": [
-        {
-          "name": "result",
-          "type": "f64",
-          "description": "sqrt(x\u00b2 + y\u00b2)"
-        }
-      ],
+      "description": "Hypotenuse (Euclidean distance). Computes sqrt(x² + y²) without intermediate overflow or underflow.",
+      "params": [{"name": "x", "type": "f64", "description": "First value"}, {"name": "y", "type": "f64", "description": "Second value"}],
+      "returns": [{"name": "result", "type": "f64", "description": "sqrt(x² + y²)"}],
       "errors": [],
-      "examples": [
-        "3.0 4.0 math::hypot .  // 5.0"
-      ]
+      "examples": ["3.0 4.0 math::hypot .  // 5.0"]
     },
     {
       "name": "inc",
       "signature": "( x:i64 -- result:i64 )",
       "failable": false,
       "description": "Increment integer by 1.",
-      "params": [
-        {
-          "name": "x",
-          "type": "i64",
-          "description": "Value to increment"
-        }
-      ],
-      "returns": [
-        {
-          "name": "result",
-          "type": "i64",
-          "description": "x + 1"
-        }
-      ],
+      "params": [{"name": "x", "type": "i64", "description": "Value to increment"}],
+      "returns": [{"name": "result", "type": "i64", "description": "x + 1"}],
       "errors": [],
-      "examples": [
-        "5 math::inc .  // 6"
-      ]
+      "examples": ["5 math::inc .  // 6"]
     },
     {
       "name": "inv",
       "signature": "( x:f64 -- result:f64 )",
       "failable": false,
       "description": "Reciprocal (1/x).",
-      "params": [
-        {
-          "name": "x",
-          "type": "f64",
-          "description": "Non-zero value"
-        }
-      ],
-      "returns": [
-        {
-          "name": "result",
-          "type": "f64",
-          "description": "1/x"
-        }
-      ],
+      "params": [{"name": "x", "type": "f64", "description": "Non-zero value"}],
+      "returns": [{"name": "result", "type": "f64", "description": "1/x"}],
       "errors": [],
-      "examples": [
-        "4.0 math::inv .  // 0.25"
-      ]
+      "examples": ["4.0 math::inv .  // 0.25"]
     },
     {
       "name": "lerp",
       "signature": "( a:f64 b:f64 t:f64 -- result:f64 )",
       "failable": false,
       "description": "Linear interpolation between two values.",
-      "params": [
-        {
-          "name": "a",
-          "type": "f64",
-          "description": "Start value"
-        },
-        {
-          "name": "b",
-          "type": "f64",
-          "description": "End value"
-        },
-        {
-          "name": "t",
-          "type": "f64",
-          "description": "Interpolation factor [0, 1]"
-        }
-      ],
-      "returns": [
-        {
-          "name": "result",
-          "type": "f64",
-          "description": "a + (b - a) * t"
-        }
-      ],
+      "params": [{"name": "a", "type": "f64", "description": "Start value"}, {"name": "b", "type": "f64", "description": "End value"}, {"name": "t", "type": "f64", "description": "Interpolation factor [0, 1]"}],
+      "returns": [{"name": "result", "type": "f64", "description": "a + (b - a) * t"}],
       "errors": [],
-      "examples": [
-        "0.0 10.0 0.5 math::lerp .  // 5.0"
-      ]
+      "examples": ["0.0 10.0 0.5 math::lerp .  // 5.0"]
     },
     {
       "name": "ln",
       "signature": "( x:f64 -- result:f64 )",
       "failable": false,
       "description": "Natural logarithm (base e).",
-      "params": [
-        {
-          "name": "x",
-          "type": "f64",
-          "description": "Positive value"
-        }
-      ],
-      "returns": [
-        {
-          "name": "result",
-          "type": "f64",
-          "description": "Natural log of x"
-        }
-      ],
+      "params": [{"name": "x", "type": "f64", "description": "Positive value"}],
+      "returns": [{"name": "result", "type": "f64", "description": "Natural log of x"}],
       "errors": [],
-      "examples": [
-        "2.718281828 math::ln .  // ~1.0"
-      ]
-    },
-    {
-      "name": "log",
-      "signature": "( x:f64 base:f64 -- result:f64 )",
-      "failable": false,
-      "description": "Logarithm with arbitrary base.",
-      "params": [
-        {
-          "name": "x",
-          "type": "f64",
-          "description": "Positive value"
-        },
-        {
-          "name": "base",
-          "type": "f64",
-          "description": "Logarithm base"
-        }
-      ],
-      "returns": [
-        {
-          "name": "result",
-          "type": "f64",
-          "description": "log_base(x)"
-        }
-      ],
-      "errors": [],
-      "examples": [
-        "8.0 2.0 math::log .  // 3.0"
-      ]
+      "examples": ["2.718281828 math::ln .  // ~1.0"]
     },
     {
       "name": "log10",
       "signature": "( x:f64 -- result:f64 )",
       "failable": false,
       "description": "Base-10 logarithm.",
-      "params": [
-        {
-          "name": "x",
-          "type": "f64",
-          "description": "Positive value"
-        }
-      ],
-      "returns": [
-        {
-          "name": "result",
-          "type": "f64",
-          "description": "Log base 10 of x"
-        }
-      ],
+      "params": [{"name": "x", "type": "f64", "description": "Positive value"}],
+      "returns": [{"name": "result", "type": "f64", "description": "Log base 10 of x"}],
       "errors": [],
-      "examples": [
-        "100.0 math::log10 .  // 2.0"
-      ]
+      "examples": ["100.0 math::log10 .  // 2.0"]
+    },
+    {
+      "name": "log",
+      "signature": "( x:f64 base:f64 -- result:f64 )",
+      "failable": false,
+      "description": "Logarithm with arbitrary base.",
+      "params": [{"name": "x", "type": "f64", "description": "Positive value"}, {"name": "base", "type": "f64", "description": "Logarithm base"}],
+      "returns": [{"name": "result", "type": "f64", "description": "log_base(x)"}],
+      "errors": [],
+      "examples": ["8.0 2.0 math::log .  // 3.0"]
     },
     {
       "name": "max",
       "signature": "( a:any b:any -- result:any )",
       "failable": false,
       "description": "Maximum of two values.",
-      "params": [
-        {
-          "name": "a",
-          "type": "any",
-          "description": "First value"
-        },
-        {
-          "name": "b",
-          "type": "any",
-          "description": "Second value"
-        }
-      ],
-      "returns": [
-        {
-          "name": "result",
-          "type": "any",
-          "description": "Larger of a and b"
-        }
-      ],
+      "params": [{"name": "a", "type": "any", "description": "First value"}, {"name": "b", "type": "any", "description": "Second value"}],
+      "returns": [{"name": "result", "type": "any", "description": "Larger of a and b"}],
       "errors": [],
-      "examples": [
-        "3 7 math::max .  // 7"
-      ]
+      "examples": ["3 7 math::max .  // 7"]
     },
     {
       "name": "min",
       "signature": "( a:any b:any -- result:any )",
       "failable": false,
       "description": "Minimum of two values.",
-      "params": [
-        {
-          "name": "a",
-          "type": "any",
-          "description": "First value"
-        },
-        {
-          "name": "b",
-          "type": "any",
-          "description": "Second value"
-        }
-      ],
-      "returns": [
-        {
-          "name": "result",
-          "type": "any",
-          "description": "Smaller of a and b"
-        }
-      ],
+      "params": [{"name": "a", "type": "any", "description": "First value"}, {"name": "b", "type": "any", "description": "Second value"}],
+      "returns": [{"name": "result", "type": "any", "description": "Smaller of a and b"}],
       "errors": [],
-      "examples": [
-        "3 7 math::min .  // 3"
-      ]
+      "examples": ["3 7 math::min .  // 3"]
     },
     {
       "name": "pow",
       "signature": "( base:f64 exp:f64 -- result:f64 )",
       "failable": false,
       "description": "Power function.",
-      "params": [
-        {
-          "name": "base",
-          "type": "f64",
-          "description": "Base value"
-        },
-        {
-          "name": "exp",
-          "type": "f64",
-          "description": "Exponent"
-        }
-      ],
-      "returns": [
-        {
-          "name": "result",
-          "type": "f64",
-          "description": "base raised to exp"
-        }
-      ],
+      "params": [{"name": "base", "type": "f64", "description": "Base value"}, {"name": "exp", "type": "f64", "description": "Exponent"}],
+      "returns": [{"name": "result", "type": "f64", "description": "base raised to exp"}],
       "errors": [],
-      "examples": [
-        "2.0 3.0 math::pow .  // 8.0"
-      ]
+      "examples": ["2.0 3.0 math::pow .  // 8.0"]
     },
     {
       "name": "rad_to_deg",
       "signature": "( radians:f64 -- degrees:f64 )",
       "failable": false,
       "description": "Convert radians to degrees.",
-      "params": [
-        {
-          "name": "radians",
-          "type": "f64",
-          "description": "Angle in radians"
-        }
-      ],
-      "returns": [
-        {
-          "name": "degrees",
-          "type": "f64",
-          "description": "Angle in degrees"
-        }
-      ],
+      "params": [{"name": "radians", "type": "f64", "description": "Angle in radians"}],
+      "returns": [{"name": "degrees", "type": "f64", "description": "Angle in degrees"}],
       "errors": [],
-      "examples": [
-        "3.141592653589793 math::rad_to_deg .  // 180.0"
-      ]
+      "examples": ["3.141592653589793 math::rad_to_deg .  // 180.0"]
     },
     {
       "name": "round",
       "signature": "( x:f64 -- result:f64 )",
       "failable": false,
       "description": "Round to nearest integer.",
-      "params": [
-        {
-          "name": "x",
-          "type": "f64",
-          "description": "Any value"
-        }
-      ],
-      "returns": [
-        {
-          "name": "result",
-          "type": "f64",
-          "description": "Nearest integer to x"
-        }
-      ],
+      "params": [{"name": "x", "type": "f64", "description": "Any value"}],
+      "returns": [{"name": "result", "type": "f64", "description": "Nearest integer to x"}],
       "errors": [],
-      "examples": [
-        "2.5 math::round .  // 3.0"
-      ]
+      "examples": ["2.5 math::round .  // 3.0"]
     },
     {
       "name": "sin",
       "signature": "( x:f64 -- result:f64 )",
       "failable": false,
       "description": "Sine of angle in radians.",
-      "params": [
-        {
-          "name": "x",
-          "type": "f64",
-          "description": "Angle in radians"
-        }
-      ],
-      "returns": [
-        {
-          "name": "result",
-          "type": "f64",
-          "description": "Sine value [-1, 1]"
-        }
-      ],
+      "params": [{"name": "x", "type": "f64", "description": "Angle in radians"}],
+      "returns": [{"name": "result", "type": "f64", "description": "Sine value [-1, 1]"}],
       "errors": [],
-      "examples": [
-        "0.0 math::sin .  // 0.0"
-      ]
-    },
-    {
-      "name": "sq",
-      "signature": "( x:f64 -- result:f64 )",
-      "failable": false,
-      "description": "Square a number.",
-      "params": [
-        {
-          "name": "x",
-          "type": "f64",
-          "description": "Value to square"
-        }
-      ],
-      "returns": [
-        {
-          "name": "result",
-          "type": "f64",
-          "description": "x * x"
-        }
-      ],
-      "errors": [],
-      "examples": [
-        "3.0 math::sq .  // 9.0"
-      ]
+      "examples": ["0.0 math::sin .  // 0.0"]
     },
     {
       "name": "sqrt",
       "signature": "( x:f64 -- result:f64 )",
       "failable": false,
       "description": "Square root.",
-      "params": [
-        {
-          "name": "x",
-          "type": "f64",
-          "description": "Non-negative value"
-        }
-      ],
-      "returns": [
-        {
-          "name": "result",
-          "type": "f64",
-          "description": "Square root of x"
-        }
-      ],
+      "params": [{"name": "x", "type": "f64", "description": "Non-negative value"}],
+      "returns": [{"name": "result", "type": "f64", "description": "Square root of x"}],
       "errors": [],
-      "examples": [
-        "4.0 math::sqrt .  // 2.0"
-      ]
+      "examples": ["4.0 math::sqrt .  // 2.0"]
+    },
+    {
+      "name": "sq",
+      "signature": "( x:f64 -- result:f64 )",
+      "failable": false,
+      "description": "Square a number.",
+      "params": [{"name": "x", "type": "f64", "description": "Value to square"}],
+      "returns": [{"name": "result", "type": "f64", "description": "x * x"}],
+      "errors": [],
+      "examples": ["3.0 math::sq .  // 9.0"]
     },
     {
       "name": "tan",
       "signature": "( x:f64 -- result:f64 )",
       "failable": false,
       "description": "Tangent of angle in radians.",
-      "params": [
-        {
-          "name": "x",
-          "type": "f64",
-          "description": "Angle in radians"
-        }
-      ],
-      "returns": [
-        {
-          "name": "result",
-          "type": "f64",
-          "description": "Tangent value"
-        }
-      ],
+      "params": [{"name": "x", "type": "f64", "description": "Angle in radians"}],
+      "returns": [{"name": "result", "type": "f64", "description": "Tangent value"}],
       "errors": [],
-      "examples": [
-        "0.0 math::tan .  // 0.0"
-      ]
+      "examples": ["0.0 math::tan .  // 0.0"]
     },
     {
       "name": "within",
       "signature": "( x:any min_val:any max_val:any -- result:i64 )",
       "failable": false,
       "description": "Check if value is within range (inclusive).",
-      "params": [
-        {
-          "name": "x",
-          "type": "any",
-          "description": "Value to check"
-        },
-        {
-          "name": "min_val",
-          "type": "any",
-          "description": "Minimum bound"
-        },
-        {
-          "name": "max_val",
-          "type": "any",
-          "description": "Maximum bound"
-        }
-      ],
-      "returns": [
-        {
-          "name": "result",
-          "type": "i64",
-          "description": "1 if in range, 0 otherwise"
-        }
-      ],
+      "params": [{"name": "x", "type": "any", "description": "Value to check"}, {"name": "min_val", "type": "any", "description": "Minimum bound"}, {"name": "max_val", "type": "any", "description": "Maximum bound"}],
+      "returns": [{"name": "result", "type": "i64", "description": "1 if in range, 0 otherwise"}],
       "errors": [],
-      "examples": [
-        "5 0 10 math::within .  // 1"
-      ]
+      "examples": ["5 0 10 math::within .  // 1"]
     }
   ]
 }

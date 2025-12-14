@@ -1,4 +1,4 @@
-# testing
+# `use` testing
 
 Testing utilities for unit tests.
 
@@ -10,17 +10,16 @@ check that conditions are met.
 use testing
 
 test "addition works" {
-2 3 + 5 testing::assert_eq
+    2 3 + 5 testing::assert_eq
 }
 
 ## Functions
 
 ### `fn` assert_eq
 
-Assert that two values are equal.
-Works with any type (i64, f64, str, ptr).
+Assert that two values are equal. Works with any type (i64, f64, str, ptr).
 
-**Signature:** `( a:any b:any -- )`
+**Signature:** `( a:any b:any --  )`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -38,11 +37,9 @@ Works with any type (i64, f64, str, ptr).
 
 ### `fn` assert_false
 
-Assert that a value is falsy.
-Falsy means: zero for integers, zero for floats,
-empty for strings, null for pointers.
+Assert that a value is falsy. Falsy means: zero for integers, zero for floats, empty for strings, null for pointers.
 
-**Signature:** `( v:any -- )`
+**Signature:** `( v:any --  )`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -59,10 +56,9 @@ empty for strings, null for pointers.
 
 ### `fn` assert_ne
 
-Assert that two values are not equal.
-Works with any type (i64, f64, str, ptr).
+Assert that two values are not equal. Works with any type (i64, f64, str, ptr).
 
-**Signature:** `( a:any b:any -- )`
+**Signature:** `( a:any b:any --  )`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -79,11 +75,9 @@ Works with any type (i64, f64, str, ptr).
 
 ### `fn` assert_true
 
-Assert that a value is truthy.
-Truthy means: non-zero for integers, non-zero for floats,
-non-empty for strings, non-null for pointers.
+Assert that a value is truthy. Truthy means: non-zero for integers, non-zero for floats, non-empty for strings, non-null for pointers.
 
-**Signature:** `( v:any -- )`
+**Signature:** `( v:any --  )`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -102,7 +96,7 @@ non-empty for strings, non-null for pointers.
 
 Unconditionally fail a test with a message.
 
-**Signature:** `( msg:str -- )`
+**Signature:** `( msg:str --  )`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -113,3 +107,4 @@ Unconditionally fail a test with a message.
 ```qd
 "Not implemented" testing::fail
 ```
+

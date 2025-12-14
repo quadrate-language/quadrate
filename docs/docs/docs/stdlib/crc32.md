@@ -1,32 +1,10 @@
-# crc32
+# `use` crc32
 
 CRC32 checksum calculation.
 Implements the standard CRC-32 algorithm (ISO 3309, used in Ethernet, ZIP, PNG).
 Polynomial: 0xEDB88320 (reflected form of 0x04C11DB7)
 
 ## Functions
-
-### `fn` checksum
-
-Calculate CRC32 checksum of a string.
-
-**Signature:** `( s:str -- crc:i64 )`
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `s` | `str` | Input string |
-
-| Output | Type | Description |
-|--------|------|-------------|
-| `crc` | `i64` | CRC32 checksum as unsigned 32-bit value |
-
-**Example:**
-
-```qd
-"Hello" crc32::checksum  // crc
-```
-
----
 
 ### `fn` checksum_buf
 
@@ -73,6 +51,28 @@ Calculate CRC32 and return as 8-character hex string.
 
 ---
 
+### `fn` checksum
+
+Calculate CRC32 checksum of a string.
+
+**Signature:** `( s:str -- crc:i64 )`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `s` | `str` | Input string |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `crc` | `i64` | CRC32 checksum as unsigned 32-bit value |
+
+**Example:**
+
+```qd
+"Hello" crc32::checksum  // crc
+```
+
+---
+
 ### `fn` finalize
 
 Finalize a running CRC to get the final checksum.
@@ -97,8 +97,7 @@ crc_state crc32::finalize  // crc
 
 ### `fn` update
 
-Update a running CRC with more data.
-Use for streaming/incremental CRC calculation.
+Update a running CRC with more data. Use for streaming/incremental CRC calculation.
 
 **Signature:** `( crc:i64 s:str -- new_crc:i64 )`
 
@@ -139,3 +138,4 @@ Verify data against an expected CRC32.
 ```qd
 "Hello" 4157704578 crc32::verify  // ok
 ```
+

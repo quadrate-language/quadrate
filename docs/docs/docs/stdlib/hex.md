@@ -1,38 +1,13 @@
-# hex
+# `use` hex
 
 Hexadecimal encoding and decoding.
 Converts between binary data and hexadecimal string representation.
 
 ## Functions
 
-### `fn` decode
-
-Decode a hexadecimal string to bytes.
-Accepts both uppercase and lowercase hex digits.
-Invalid characters are skipped.
-
-**Signature:** `( hex:str -- s:str )`
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `hex` | `str` | Hexadecimal string |
-
-| Output | Type | Description |
-|--------|------|-------------|
-| `s` | `str` | Decoded string |
-
-**Example:**
-
-```qd
-"48656C6C6F" hex::decode  // "Hello"
-```
-
----
-
 ### `fn` decode_byte
 
-Decode a 2-character hex string to a byte value.
-Returns -1 if the input is invalid.
+Decode a 2-character hex string to a byte value. Returns -1 if the input is invalid.
 
 **Signature:** `( hex:str -- b:i64 )`
 
@@ -54,8 +29,7 @@ Returns -1 if the input is invalid.
 
 ### `fn` decoded_len
 
-Get the length of data that would result from decoding a hex string.
-Returns -1 if the hex string has invalid length (odd).
+Get the length of data that would result from decoding a hex string. Returns -1 if the hex string has invalid length (odd).
 
 **Signature:** `( hex:str -- len:i64 )`
 
@@ -75,25 +49,24 @@ Returns -1 if the hex string has invalid length (odd).
 
 ---
 
-### `fn` encode
+### `fn` decode
 
-Encode a string to uppercase hexadecimal.
-Each byte becomes two hex characters (00-FF).
+Decode a hexadecimal string to bytes. Accepts both uppercase and lowercase hex digits. Invalid characters are skipped.
 
-**Signature:** `( s:str -- hex:str )`
+**Signature:** `( hex:str -- s:str )`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `s` | `str` | String to encode |
+| `hex` | `str` | Hexadecimal string |
 
 | Output | Type | Description |
 |--------|------|-------------|
-| `hex` | `str` | Hexadecimal string (uppercase) |
+| `s` | `str` | Decoded string |
 
 **Example:**
 
 ```qd
-"Hello" hex::encode  // "48656C6C6F"
+"48656C6C6F" hex::decode  // "Hello"
 ```
 
 ---
@@ -120,29 +93,6 @@ Encode a single byte (0-255) to a 2-character hex string.
 
 ---
 
-### `fn` encode_lower
-
-Encode a string to lowercase hexadecimal.
-Each byte becomes two hex characters (00-ff).
-
-**Signature:** `( s:str -- hex:str )`
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `s` | `str` | String to encode |
-
-| Output | Type | Description |
-|--------|------|-------------|
-| `hex` | `str` | Hexadecimal string (lowercase) |
-
-**Example:**
-
-```qd
-"Hello" hex::encode_lower  // "48656c6c6f"
-```
-
----
-
 ### `fn` encoded_len
 
 Get the length of hex string that would result from encoding data.
@@ -165,10 +115,53 @@ Get the length of hex string that would result from encoding data.
 
 ---
 
+### `fn` encode_lower
+
+Encode a string to lowercase hexadecimal. Each byte becomes two hex characters (00-ff).
+
+**Signature:** `( s:str -- hex:str )`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `s` | `str` | String to encode |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `hex` | `str` | Hexadecimal string (lowercase) |
+
+**Example:**
+
+```qd
+"Hello" hex::encode_lower  // "48656c6c6f"
+```
+
+---
+
+### `fn` encode
+
+Encode a string to uppercase hexadecimal. Each byte becomes two hex characters (00-FF).
+
+**Signature:** `( s:str -- hex:str )`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `s` | `str` | String to encode |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `hex` | `str` | Hexadecimal string (uppercase) |
+
+**Example:**
+
+```qd
+"Hello" hex::encode  // "48656C6C6F"
+```
+
+---
+
 ### `fn` is_valid
 
-Check if a string contains only valid hexadecimal characters.
-Valid characters are 0-9, A-F, a-f.
+Check if a string contains only valid hexadecimal characters. Valid characters are 0-9, A-F, a-f.
 
 **Signature:** `( hex:str -- valid:i64 )`
 
@@ -186,3 +179,4 @@ Valid characters are 0-9, A-F, a-f.
 "48656C6C6F" hex::is_valid  // 1
 "48ZZ" hex::is_valid  // 0
 ```
+

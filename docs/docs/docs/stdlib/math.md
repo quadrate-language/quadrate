@@ -1,4 +1,4 @@
-# math
+# `use` math
 
 ## Constants
 
@@ -22,12 +22,16 @@ Absolute value.
 
 | Output | Type | Description |
 |--------|------|-------------|
-| `result` | `f64` | |x| |
+| `result` | `f64` |  |
+
+| Error | Description |
+|-------|-------------|
+| `math::x` |  |
 
 **Example:**
 
 ```qd
--5.0 math::abs .  // 5.0
+||-5.0 math::abs .  // 5.0
 ```
 
 ---
@@ -76,6 +80,29 @@ Arc sine (inverse sine).
 
 ---
 
+### `fn` atan2
+
+Two-argument arc tangent. Returns the angle in radians between the positive x-axis and the point (x, y). More useful than atan for computing angles because it handles all quadrants.
+
+**Signature:** `( y:f64 x:f64 -- result:f64 )`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `y` | `f64` | Y coordinate |
+| `x` | `f64` | X coordinate |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `result` | `f64` | Angle in radians [-π, π] |
+
+**Example:**
+
+```qd
+1.0 1.0 math::atan2 .  // ~0.785 (π/4)
+```
+
+---
+
 ### `fn` atan
 
 Arc tangent (inverse tangent).
@@ -98,27 +125,24 @@ Arc tangent (inverse tangent).
 
 ---
 
-### `fn` atan2
+### `fn` cbrt
 
-Two-argument arc tangent.
-Returns the angle in radians between the positive x-axis and the point (x, y).
-More useful than atan for computing angles because it handles all quadrants.
+Cube root.
 
-**Signature:** `( y:f64 x:f64 -- result:f64 )`
+**Signature:** `( x:f64 -- result:f64 )`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `y` | `f64` | Y coordinate |
-| `x` | `f64` | X coordinate |
+| `x` | `f64` | Any value |
 
 | Output | Type | Description |
 |--------|------|-------------|
-| `result` | `f64` | Angle in radians [-π, π] |
+| `result` | `f64` | Cube root of x |
 
 **Example:**
 
 ```qd
-1.0 1.0 math::atan2 .  // ~0.785 (π/4)
+8.0 math::cbrt .  // 2.0
 ```
 
 ---
@@ -141,28 +165,6 @@ Cube a number.
 
 ```qd
 2.0 math::cb .  // 8.0
-```
-
----
-
-### `fn` cbrt
-
-Cube root.
-
-**Signature:** `( x:f64 -- result:f64 )`
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `x` | `f64` | Any value |
-
-| Output | Type | Description |
-|--------|------|-------------|
-| `result` | `f64` | Cube root of x |
-
-**Example:**
-
-```qd
-8.0 math::cbrt .  // 2.0
 ```
 
 ---
@@ -347,8 +349,7 @@ Floor (round down).
 
 ### `fn` fmod
 
-Floating-point modulo (remainder).
-Returns the remainder of x/y with the same sign as x.
+Floating-point modulo (remainder). Returns the remainder of x/y with the same sign as x.
 
 **Signature:** `( x:f64 y:f64 -- result:f64 )`
 
@@ -371,8 +372,7 @@ Returns the remainder of x/y with the same sign as x.
 
 ### `fn` hypot
 
-Hypotenuse (Euclidean distance).
-Computes sqrt(x² + y²) without intermediate overflow or underflow.
+Hypotenuse (Euclidean distance). Computes sqrt(x² + y²) without intermediate overflow or underflow.
 
 **Signature:** `( x:f64 y:f64 -- result:f64 )`
 
@@ -483,6 +483,28 @@ Natural logarithm (base e).
 
 ---
 
+### `fn` log10
+
+Base-10 logarithm.
+
+**Signature:** `( x:f64 -- result:f64 )`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `x` | `f64` | Positive value |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `result` | `f64` | Log base 10 of x |
+
+**Example:**
+
+```qd
+100.0 math::log10 .  // 2.0
+```
+
+---
+
 ### `fn` log
 
 Logarithm with arbitrary base.
@@ -502,28 +524,6 @@ Logarithm with arbitrary base.
 
 ```qd
 8.0 2.0 math::log .  // 3.0
-```
-
----
-
-### `fn` log10
-
-Base-10 logarithm.
-
-**Signature:** `( x:f64 -- result:f64 )`
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `x` | `f64` | Positive value |
-
-| Output | Type | Description |
-|--------|------|-------------|
-| `result` | `f64` | Log base 10 of x |
-
-**Example:**
-
-```qd
-100.0 math::log10 .  // 2.0
 ```
 
 ---
@@ -663,28 +663,6 @@ Sine of angle in radians.
 
 ---
 
-### `fn` sq
-
-Square a number.
-
-**Signature:** `( x:f64 -- result:f64 )`
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `x` | `f64` | Value to square |
-
-| Output | Type | Description |
-|--------|------|-------------|
-| `result` | `f64` | x * x |
-
-**Example:**
-
-```qd
-3.0 math::sq .  // 9.0
-```
-
----
-
 ### `fn` sqrt
 
 Square root.
@@ -703,6 +681,28 @@ Square root.
 
 ```qd
 4.0 math::sqrt .  // 2.0
+```
+
+---
+
+### `fn` sq
+
+Square a number.
+
+**Signature:** `( x:f64 -- result:f64 )`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `x` | `f64` | Value to square |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `result` | `f64` | x * x |
+
+**Example:**
+
+```qd
+3.0 math::sq .  // 9.0
 ```
 
 ---
@@ -750,3 +750,4 @@ Check if value is within range (inclusive).
 ```qd
 5 0 10 math::within .  // 1
 ```
+

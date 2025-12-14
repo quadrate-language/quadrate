@@ -1,4 +1,4 @@
-# io
+# `use` io
 
 File and stream I/O operations.
 Error codes: Ok=1 (success), specific errors start at 2
@@ -19,17 +19,17 @@ Error codes: Ok=1 (success), specific errors start at 2
 | `ErrRead` | `5` | Error: Read operation failed. |
 | `ErrSeek` | `7` | Error: Seek operation failed. |
 | `ErrWrite` | `6` | Error: Write operation failed. |
-| `Read` | `"r"` | Open mode: read only. |
 | `ReadBinary` | `"rb"` | Open mode: read binary. |
-| `ReadWrite` | `"r+"` | Open mode: read and write. |
+| `Read` | `"r"` | Open mode: read only. |
 | `ReadWriteBinary` | `"rb+"` | Open mode: read and write binary. |
+| `ReadWrite` | `"r+"` | Open mode: read and write. |
 | `SeekCur` | `1` | Seek from current position. |
 | `SeekEnd` | `2` | Seek from end of file. |
 | `SeekSet` | `0` | Seek from beginning of file. |
-| `Write` | `"w"` | Open mode: write (truncate). |
 | `WriteBinary` | `"wb"` | Open mode: write binary. |
-| `WriteRead` | `"w+"` | Open mode: write and read (truncate). |
 | `WriteReadBinary` | `"wb+"` | Open mode: write and read binary. |
+| `WriteRead` | `"w+"` | Open mode: write and read (truncate). |
+| `Write` | `"w"` | Open mode: write (truncate). |
 
 ## Functions
 
@@ -37,7 +37,7 @@ Error codes: Ok=1 (success), specific errors start at 2
 
 Close a file.
 
-**Signature:** `( handle:ptr -- )`
+**Signature:** `( handle:ptr --  )`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -134,7 +134,7 @@ f buf 1024 io::read!  // n
 
 Read a line from stdin.
 
-**Signature:** `( -- line:str )!`
+**Signature:** `(  -- line:str )!`
 
 | Output | Type | Description |
 |--------|------|-------------|
@@ -235,3 +235,4 @@ Write bytes from buffer.
 ```qd
 f buf len io::write! drop
 ```
+

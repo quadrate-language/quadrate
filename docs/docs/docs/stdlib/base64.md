@@ -1,4 +1,4 @@
-# base64
+# `use` base64
 
 Base64 encoding and decoding.
 Optimized with lookup tables and direct buffer writes.
@@ -46,3 +46,4 @@ Encode a string to base64.
 ```qd
 "Hello" base64::encode  // b64
 ```
+

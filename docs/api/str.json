@@ -18,481 +18,169 @@
       "description": "Error: Index out of bounds."
     }
   ],
-  "structs": [],
+  "structs": [
+
+  ],
   "functions": [
     {
       "name": "char_at",
       "signature": "( str:str index:i64 -- char_code:i64 )",
       "failable": false,
       "description": "Get character code at index.",
-      "params": [
-        {
-          "name": "str",
-          "type": "str",
-          "description": "Input string"
-        },
-        {
-          "name": "index",
-          "type": "i64",
-          "description": "Character position"
-        }
-      ],
-      "returns": [
-        {
-          "name": "char_code",
-          "type": "i64",
-          "description": "ASCII/UTF-8 byte value"
-        }
-      ],
+      "params": [{"name": "str", "type": "str", "description": "Input string"}, {"name": "index", "type": "i64", "description": "Character position"}],
+      "returns": [{"name": "char_code", "type": "i64", "description": "ASCII/UTF-8 byte value"}],
       "errors": [],
-      "examples": [
-        "\"hello\" 0 str::char_at .  // 104 ('h')"
-      ]
+      "examples": ["\"hello\" 0 str::char_at .  // 104 ('h')"]
     },
     {
       "name": "compare",
       "signature": "( str1:str str2:str -- result:i64 )",
       "failable": false,
       "description": "Compare two strings lexicographically.",
-      "params": [
-        {
-          "name": "str1",
-          "type": "str",
-          "description": "First string"
-        },
-        {
-          "name": "str2",
-          "type": "str",
-          "description": "Second string"
-        }
-      ],
-      "returns": [
-        {
-          "name": "result",
-          "type": "i64",
-          "description": "<0 if str1<str2, 0 if equal, >0 if str1>str2"
-        }
-      ],
+      "params": [{"name": "str1", "type": "str", "description": "First string"}, {"name": "str2", "type": "str", "description": "Second string"}],
+      "returns": [{"name": "result", "type": "i64", "description": "<0 if str1<str2, 0 if equal, >0 if str1>str2"}],
       "errors": [],
-      "examples": [
-        "\"abc\" \"abd\" str::compare .  // -1"
-      ]
+      "examples": ["\"abc\" \"abd\" str::compare .  // -1"]
     },
     {
       "name": "concat",
       "signature": "( str1:str str2:str -- result:str )",
       "failable": false,
       "description": "Concatenate two strings.",
-      "params": [
-        {
-          "name": "str1",
-          "type": "str",
-          "description": "First string"
-        },
-        {
-          "name": "str2",
-          "type": "str",
-          "description": "Second string"
-        }
-      ],
-      "returns": [
-        {
-          "name": "result",
-          "type": "str",
-          "description": "Combined string"
-        }
-      ],
+      "params": [{"name": "str1", "type": "str", "description": "First string"}, {"name": "str2", "type": "str", "description": "Second string"}],
+      "returns": [{"name": "result", "type": "str", "description": "Combined string"}],
       "errors": [],
-      "examples": [
-        "\"hello\" \" world\" str::concat .  // \"hello world\""
-      ]
+      "examples": ["\"hello\" \" world\" str::concat .  // \"hello world\""]
     },
     {
       "name": "contains",
       "signature": "( str:str needle:str -- result:i64 )",
       "failable": false,
       "description": "Check if string contains substring.",
-      "params": [
-        {
-          "name": "str",
-          "type": "str",
-          "description": "String to search in"
-        },
-        {
-          "name": "needle",
-          "type": "str",
-          "description": "Substring to find"
-        }
-      ],
-      "returns": [
-        {
-          "name": "result",
-          "type": "i64",
-          "description": "1 if found, 0 otherwise"
-        }
-      ],
+      "params": [{"name": "str", "type": "str", "description": "String to search in"}, {"name": "needle", "type": "str", "description": "Substring to find"}],
+      "returns": [{"name": "result", "type": "i64", "description": "1 if found, 0 otherwise"}],
       "errors": [],
-      "examples": [
-        "\"hello\" \"ell\" str::contains .  // 1"
-      ]
+      "examples": ["\"hello\" \"ell\" str::contains .  // 1"]
     },
     {
       "name": "ends_with",
       "signature": "( str:str suffix:str -- result:i64 )",
       "failable": false,
       "description": "Check if string ends with suffix.",
-      "params": [
-        {
-          "name": "str",
-          "type": "str",
-          "description": "String to check"
-        },
-        {
-          "name": "suffix",
-          "type": "str",
-          "description": "Suffix to match"
-        }
-      ],
-      "returns": [
-        {
-          "name": "result",
-          "type": "i64",
-          "description": "1 if matches, 0 otherwise"
-        }
-      ],
+      "params": [{"name": "str", "type": "str", "description": "String to check"}, {"name": "suffix", "type": "str", "description": "Suffix to match"}],
+      "returns": [{"name": "result", "type": "i64", "description": "1 if matches, 0 otherwise"}],
       "errors": [],
-      "examples": [
-        "\"hello\" \"lo\" str::ends_with .  // 1"
-      ]
+      "examples": ["\"hello\" \"lo\" str::ends_with .  // 1"]
     },
     {
       "name": "from_char",
       "signature": "( char_code:i64 -- str:str )",
       "failable": false,
       "description": "Create string from character code.",
-      "params": [
-        {
-          "name": "char_code",
-          "type": "i64",
-          "description": "ASCII/UTF-8 byte value"
-        }
-      ],
-      "returns": [
-        {
-          "name": "str",
-          "type": "str",
-          "description": "Single character string"
-        }
-      ],
+      "params": [{"name": "char_code", "type": "i64", "description": "ASCII/UTF-8 byte value"}],
+      "returns": [{"name": "str", "type": "str", "description": "Single character string"}],
       "errors": [],
-      "examples": [
-        "65 str::from_char .  // \"A\""
-      ]
-    },
-    {
-      "name": "index_of",
-      "signature": "( haystack:str needle:str -- index:i64 )",
-      "failable": false,
-      "description": "Find first occurrence of substring.",
-      "params": [
-        {
-          "name": "haystack",
-          "type": "str",
-          "description": "String to search in"
-        },
-        {
-          "name": "needle",
-          "type": "str",
-          "description": "Substring to find"
-        }
-      ],
-      "returns": [
-        {
-          "name": "index",
-          "type": "i64",
-          "description": "Index of first match, -1 if not found"
-        }
-      ],
-      "errors": [],
-      "examples": [
-        "\"hello\" \"ll\" str::index_of .  // 2"
-      ]
+      "examples": ["65 str::from_char .  // \"A\""]
     },
     {
       "name": "index_of_from",
       "signature": "( haystack:str needle:str start:i64 -- index:i64 )",
       "failable": false,
       "description": "Find substring starting from position.",
-      "params": [
-        {
-          "name": "haystack",
-          "type": "str",
-          "description": "String to search in"
-        },
-        {
-          "name": "needle",
-          "type": "str",
-          "description": "Substring to find"
-        },
-        {
-          "name": "start",
-          "type": "i64",
-          "description": "Starting position"
-        }
-      ],
-      "returns": [
-        {
-          "name": "index",
-          "type": "i64",
-          "description": "Index of match, -1 if not found"
-        }
-      ],
+      "params": [{"name": "haystack", "type": "str", "description": "String to search in"}, {"name": "needle", "type": "str", "description": "Substring to find"}, {"name": "start", "type": "i64", "description": "Starting position"}],
+      "returns": [{"name": "index", "type": "i64", "description": "Index of match, -1 if not found"}],
       "errors": [],
-      "examples": [
-        "\"hello hello\" \"hello\" 1 str::index_of_from .  // 6"
-      ]
+      "examples": ["\"hello hello\" \"hello\" 1 str::index_of_from .  // 6"]
+    },
+    {
+      "name": "index_of",
+      "signature": "( haystack:str needle:str -- index:i64 )",
+      "failable": false,
+      "description": "Find first occurrence of substring.",
+      "params": [{"name": "haystack", "type": "str", "description": "String to search in"}, {"name": "needle", "type": "str", "description": "Substring to find"}],
+      "returns": [{"name": "index", "type": "i64", "description": "Index of first match, -1 if not found"}],
+      "errors": [],
+      "examples": ["\"hello\" \"ll\" str::index_of .  // 2"]
     },
     {
       "name": "len",
       "signature": "( str:str -- len:i64 )",
       "failable": false,
       "description": "Get string length in bytes.",
-      "params": [
-        {
-          "name": "str",
-          "type": "str",
-          "description": "Input string"
-        }
-      ],
-      "returns": [
-        {
-          "name": "len",
-          "type": "i64",
-          "description": "Length in bytes"
-        }
-      ],
+      "params": [{"name": "str", "type": "str", "description": "Input string"}],
+      "returns": [{"name": "len", "type": "i64", "description": "Length in bytes"}],
       "errors": [],
-      "examples": [
-        "\"hello\" str::len .  // 5"
-      ]
+      "examples": ["\"hello\" str::len .  // 5"]
     },
     {
       "name": "lower",
       "signature": "( str:str -- result:str )",
       "failable": false,
       "description": "Convert string to lowercase.",
-      "params": [
-        {
-          "name": "str",
-          "type": "str",
-          "description": "Input string"
-        }
-      ],
-      "returns": [
-        {
-          "name": "result",
-          "type": "str",
-          "description": "Lowercase string"
-        }
-      ],
+      "params": [{"name": "str", "type": "str", "description": "Input string"}],
+      "returns": [{"name": "result", "type": "str", "description": "Lowercase string"}],
       "errors": [],
-      "examples": [
-        "\"HELLO\" str::lower .  // \"hello\""
-      ]
+      "examples": ["\"HELLO\" str::lower .  // \"hello\""]
     },
     {
       "name": "replace",
       "signature": "( str:str old:str new:str -- result:str )",
       "failable": true,
       "description": "Replace all occurrences of substring.",
-      "params": [
-        {
-          "name": "str",
-          "type": "str",
-          "description": "Source string"
-        },
-        {
-          "name": "old",
-          "type": "str",
-          "description": "Substring to replace"
-        },
-        {
-          "name": "new",
-          "type": "str",
-          "description": "Replacement string"
-        }
-      ],
-      "returns": [
-        {
-          "name": "result",
-          "type": "str",
-          "description": "String with replacements"
-        }
-      ],
-      "errors": [
-        {
-          "code": "ErrAlloc",
-          "description": "Memory allocation failed"
-        }
-      ],
-      "examples": [
-        "\"hello\" \"l\" \"L\" str::replace! .  // \"heLLo\""
-      ]
+      "params": [{"name": "str", "type": "str", "description": "Source string"}, {"name": "old", "type": "str", "description": "Substring to replace"}, {"name": "new", "type": "str", "description": "Replacement string"}],
+      "returns": [{"name": "result", "type": "str", "description": "String with replacements"}],
+      "errors": [{"code": "ErrAlloc", "description": "Memory allocation failed"}],
+      "examples": ["\"hello\" \"l\" \"L\" str::replace! .  // \"heLLo\""]
     },
     {
       "name": "split",
       "signature": "( str:str delim:str -- parts:ptr count:i64 )",
       "failable": true,
       "description": "Split string by delimiter.",
-      "params": [
-        {
-          "name": "str",
-          "type": "str",
-          "description": "String to split"
-        },
-        {
-          "name": "delim",
-          "type": "str",
-          "description": "Delimiter string"
-        }
-      ],
-      "returns": [
-        {
-          "name": "parts",
-          "type": "ptr",
-          "description": "Array of string parts"
-        },
-        {
-          "name": "count",
-          "type": "i64",
-          "description": "Number of parts"
-        }
-      ],
-      "errors": [
-        {
-          "code": "ErrAlloc",
-          "description": "Memory allocation failed"
-        }
-      ],
-      "examples": [
-        "\"a,b,c\" \",\" str::split!  // parts=[\"a\",\"b\",\"c\"], count=3"
-      ]
+      "params": [{"name": "str", "type": "str", "description": "String to split"}, {"name": "delim", "type": "str", "description": "Delimiter string"}],
+      "returns": [{"name": "parts", "type": "ptr", "description": "Array of string parts"}, {"name": "count", "type": "i64", "description": "Number of parts"}],
+      "errors": [{"code": "ErrAlloc", "description": "Memory allocation failed"}],
+      "examples": ["\"a,b,c\" \",\" str::split!  // parts=[\"a\",\"b\",\"c\"], count=3"]
     },
     {
       "name": "starts_with",
       "signature": "( str:str prefix:str -- result:i64 )",
       "failable": false,
       "description": "Check if string starts with prefix.",
-      "params": [
-        {
-          "name": "str",
-          "type": "str",
-          "description": "String to check"
-        },
-        {
-          "name": "prefix",
-          "type": "str",
-          "description": "Prefix to match"
-        }
-      ],
-      "returns": [
-        {
-          "name": "result",
-          "type": "i64",
-          "description": "1 if matches, 0 otherwise"
-        }
-      ],
+      "params": [{"name": "str", "type": "str", "description": "String to check"}, {"name": "prefix", "type": "str", "description": "Prefix to match"}],
+      "returns": [{"name": "result", "type": "i64", "description": "1 if matches, 0 otherwise"}],
       "errors": [],
-      "examples": [
-        "\"hello\" \"hel\" str::starts_with .  // 1"
-      ]
+      "examples": ["\"hello\" \"hel\" str::starts_with .  // 1"]
     },
     {
       "name": "substring",
       "signature": "( str:str start:i64 length:i64 -- result:str )",
       "failable": true,
       "description": "Extract substring.",
-      "params": [
-        {
-          "name": "str",
-          "type": "str",
-          "description": "Source string"
-        },
-        {
-          "name": "start",
-          "type": "i64",
-          "description": "Starting index"
-        },
-        {
-          "name": "length",
-          "type": "i64",
-          "description": "Number of characters"
-        }
-      ],
-      "returns": [
-        {
-          "name": "result",
-          "type": "str",
-          "description": "Extracted substring"
-        }
-      ],
-      "errors": [
-        {
-          "code": "ErrOutOfBounds",
-          "description": "Index out of bounds"
-        }
-      ],
-      "examples": [
-        "\"hello\" 1 3 str::substring! .  // \"ell\""
-      ]
+      "params": [{"name": "str", "type": "str", "description": "Source string"}, {"name": "start", "type": "i64", "description": "Starting index"}, {"name": "length", "type": "i64", "description": "Number of characters"}],
+      "returns": [{"name": "result", "type": "str", "description": "Extracted substring"}],
+      "errors": [{"code": "ErrOutOfBounds", "description": "Index out of bounds"}],
+      "examples": ["\"hello\" 1 3 str::substring! .  // \"ell\""]
     },
     {
       "name": "trim",
       "signature": "( str:str -- result:str )",
       "failable": false,
       "description": "Remove leading and trailing whitespace.",
-      "params": [
-        {
-          "name": "str",
-          "type": "str",
-          "description": "Input string"
-        }
-      ],
-      "returns": [
-        {
-          "name": "result",
-          "type": "str",
-          "description": "Trimmed string"
-        }
-      ],
+      "params": [{"name": "str", "type": "str", "description": "Input string"}],
+      "returns": [{"name": "result", "type": "str", "description": "Trimmed string"}],
       "errors": [],
-      "examples": [
-        "\"  hello  \" str::trim .  // \"hello\""
-      ]
+      "examples": ["\"  hello  \" str::trim .  // \"hello\""]
     },
     {
       "name": "upper",
       "signature": "( str:str -- result:str )",
       "failable": false,
       "description": "Convert string to uppercase.",
-      "params": [
-        {
-          "name": "str",
-          "type": "str",
-          "description": "Input string"
-        }
-      ],
-      "returns": [
-        {
-          "name": "result",
-          "type": "str",
-          "description": "Uppercase string"
-        }
-      ],
+      "params": [{"name": "str", "type": "str", "description": "Input string"}],
+      "returns": [{"name": "result", "type": "str", "description": "Uppercase string"}],
       "errors": [],
-      "examples": [
-        "\"hello\" str::upper .  // \"HELLO\""
-      ]
+      "examples": ["\"hello\" str::upper .  // \"HELLO\""]
     }
   ]
 }

@@ -1,4 +1,4 @@
-# json
+# `use` json
 
 JSON parsing and querying without AST construction.
 
@@ -353,3 +353,4 @@ Get JSON value type at position.
 ```qd
 "{\"a\":1}" 5 json::type_at .  // 2 (Number)
 ```
+

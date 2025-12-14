@@ -1,4 +1,4 @@
-# bytes
+# `use` bytes
 
 Byte array operations and endianness conversion.
 Provides functions for reading and writing multi-byte integers
@@ -36,7 +36,7 @@ buf1 0 buf2 0 10 bytes::compare  // result
 
 Copy bytes from one buffer to another.
 
-**Signature:** `( dst:ptr dst_off:i64 src:ptr src_off:i64 count:i64 -- )`
+**Signature:** `( dst:ptr dst_off:i64 src:ptr src_off:i64 count:i64 --  )`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -58,7 +58,7 @@ dst 0 src 0 10 bytes::copy
 
 Fill a buffer with a byte value.
 
-**Signature:** `( buf:ptr offset:i64 count:i64 value:i64 -- )`
+**Signature:** `( buf:ptr offset:i64 count:i64 value:i64 --  )`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -283,7 +283,7 @@ Swap byte order of a 64-bit value.
 
 Write a 16-bit unsigned integer to memory in big-endian order.
 
-**Signature:** `( buf:ptr offset:i64 value:i64 -- )`
+**Signature:** `( buf:ptr offset:i64 value:i64 --  )`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -303,7 +303,7 @@ buf 0 0x1234 bytes::write_u16_be
 
 Write a 16-bit unsigned integer to memory in little-endian order.
 
-**Signature:** `( buf:ptr offset:i64 value:i64 -- )`
+**Signature:** `( buf:ptr offset:i64 value:i64 --  )`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -323,7 +323,7 @@ buf 0 0x1234 bytes::write_u16_le
 
 Write a 32-bit unsigned integer to memory in big-endian order.
 
-**Signature:** `( buf:ptr offset:i64 value:i64 -- )`
+**Signature:** `( buf:ptr offset:i64 value:i64 --  )`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -343,7 +343,7 @@ buf 0 0x12345678 bytes::write_u32_be
 
 Write a 32-bit unsigned integer to memory in little-endian order.
 
-**Signature:** `( buf:ptr offset:i64 value:i64 -- )`
+**Signature:** `( buf:ptr offset:i64 value:i64 --  )`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -363,7 +363,7 @@ buf 0 0x12345678 bytes::write_u32_le
 
 Write a 64-bit unsigned integer to memory in big-endian order.
 
-**Signature:** `( buf:ptr offset:i64 value:i64 -- )`
+**Signature:** `( buf:ptr offset:i64 value:i64 --  )`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -383,7 +383,7 @@ buf 0 0x123456789ABCDEF0 bytes::write_u64_be
 
 Write a 64-bit unsigned integer to memory in little-endian order.
 
-**Signature:** `( buf:ptr offset:i64 value:i64 -- )`
+**Signature:** `( buf:ptr offset:i64 value:i64 --  )`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -396,3 +396,4 @@ Write a 64-bit unsigned integer to memory in little-endian order.
 ```qd
 buf 0 0x123456789ABCDEF0 bytes::write_u64_le
 ```
+

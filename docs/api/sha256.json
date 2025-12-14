@@ -1,43 +1,20 @@
 {
   "name": "sha256",
   "description": "SHA-256 cryptographic hash function. Produces a 256-bit (32-byte) hash value. Conforms to FIPS 180-4.",
-  "constants": [],
-  "structs": [],
+  "constants": [
+
+  ],
+  "structs": [
+
+  ],
   "functions": [
-    {
-      "name": "hash",
-      "signature": "( s:str -- result:str )",
-      "failable": false,
-      "description": "Calculate SHA-256 hash of a string.",
-      "params": [],
-      "returns": [],
-      "errors": [],
-      "examples": []
-    },
     {
       "name": "hash_bytes",
       "signature": "( buf:ptr length:i64 -- result:str )",
       "failable": false,
       "description": "Calculate SHA-256 hash of raw bytes.",
-      "params": [
-        {
-          "name": "buf",
-          "type": "ptr",
-          "description": "Input buffer"
-        },
-        {
-          "name": "length",
-          "type": "i64",
-          "description": "Length of buffer in bytes"
-        }
-      ],
-      "returns": [
-        {
-          "name": "hash",
-          "type": "str",
-          "description": "64-character hex string (lowercase)"
-        }
-      ],
+      "params": [{"name": "buf", "type": "ptr", "description": "Input buffer"}, {"name": "length", "type": "i64", "description": "Length of buffer in bytes"}],
+      "returns": [{"name": "hash", "type": "str", "description": "64-character hex string (lowercase)"}],
       "errors": [],
       "examples": []
     },
@@ -46,6 +23,16 @@
       "signature": "( s:str -- buf:ptr )",
       "failable": false,
       "description": "Calculate SHA-256 hash and return as raw 32-byte buffer.",
+      "params": [],
+      "returns": [],
+      "errors": [],
+      "examples": []
+    },
+    {
+      "name": "hash",
+      "signature": "( s:str -- result:str )",
+      "failable": false,
+      "description": "Calculate SHA-256 hash of a string.",
       "params": [],
       "returns": [],
       "errors": [],

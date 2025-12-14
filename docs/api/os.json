@@ -56,278 +56,121 @@
       "name": "ErrReadOnly",
       "value": "9",
       "description": "Error: Read-only file system."
+    },
+    {
+      "name": "ExitFailure",
+      "value": "1",
+      "description": "Exit code for failed termination."
+    },
+    {
+      "name": "ExitSuccess",
+      "value": "0",
+      "description": "Exit code for successful termination."
     }
   ],
-  "structs": [],
+  "structs": [
+
+  ],
   "functions": [
     {
       "name": "copy",
-      "signature": "( srcpath:str dstpath:str -- )",
+      "signature": "( srcpath:str dstpath:str --  )",
       "failable": true,
       "description": "Copy a file.",
-      "params": [
-        {
-          "name": "srcpath",
-          "type": "str",
-          "description": "Source path"
-        },
-        {
-          "name": "dstpath",
-          "type": "str",
-          "description": "Destination path"
-        }
-      ],
+      "params": [{"name": "srcpath", "type": "str", "description": "Source path"}, {"name": "dstpath", "type": "str", "description": "Destination path"}],
       "returns": [],
-      "errors": [
-        {
-          "code": "ErrNotFound",
-          "description": "File not found"
-        },
-        {
-          "code": "ErrPermission",
-          "description": "Permission denied"
-        }
-      ],
-      "examples": [
-        "\"src.txt\" \"dst.txt\" os::copy!"
-      ]
+      "errors": [{"code": "ErrNotFound", "description": "File not found"}, {"code": "ErrPermission", "description": "Permission denied"}],
+      "examples": ["\"src.txt\" \"dst.txt\" os::copy!"]
     },
     {
       "name": "delete",
-      "signature": "( path:str -- )",
+      "signature": "( path:str --  )",
       "failable": true,
       "description": "Delete a file or empty directory.",
-      "params": [
-        {
-          "name": "path",
-          "type": "str",
-          "description": "Path to delete"
-        }
-      ],
+      "params": [{"name": "path", "type": "str", "description": "Path to delete"}],
       "returns": [],
-      "errors": [
-        {
-          "code": "ErrNotFound",
-          "description": "File not found"
-        },
-        {
-          "code": "ErrPermission",
-          "description": "Permission denied"
-        }
-      ],
-      "examples": [
-        "\"/tmp/test.txt\" os::delete!"
-      ]
+      "errors": [{"code": "ErrNotFound", "description": "File not found"}, {"code": "ErrPermission", "description": "Permission denied"}],
+      "examples": ["\"/tmp/test.txt\" os::delete!"]
     },
     {
       "name": "exists",
       "signature": "( path:str -- exists:i64 )",
       "failable": false,
       "description": "Check if path exists.",
-      "params": [
-        {
-          "name": "path",
-          "type": "str",
-          "description": "File or directory path"
-        }
-      ],
-      "returns": [
-        {
-          "name": "exists",
-          "type": "i64",
-          "description": "1 if exists, 0 otherwise"
-        }
-      ],
+      "params": [{"name": "path", "type": "str", "description": "File or directory path"}],
+      "returns": [{"name": "exists", "type": "i64", "description": "1 if exists, 0 otherwise"}],
       "errors": [],
-      "examples": [
-        "\"/tmp\" os::exists .  // 1"
-      ]
+      "examples": ["\"/tmp\" os::exists .  // 1"]
     },
     {
       "name": "exit",
-      "signature": "( code:i64 -- )",
+      "signature": "( code:i64 --  )",
       "failable": false,
       "description": "Exit the program with status code.",
-      "params": [
-        {
-          "name": "code",
-          "type": "i64",
-          "description": "Exit status (0 = success)"
-        }
-      ],
+      "params": [{"name": "code", "type": "i64", "description": "Exit status (os::ExitSuccess or os::ExitFailure)"}],
       "returns": [],
       "errors": [],
-      "examples": [
-        "0 os::exit"
-      ]
+      "examples": ["os::ExitSuccess os::exit"]
     },
     {
       "name": "getenv",
       "signature": "( name:str -- value:str )",
       "failable": false,
       "description": "Get environment variable value.",
-      "params": [
-        {
-          "name": "name",
-          "type": "str",
-          "description": "Variable name"
-        }
-      ],
-      "returns": [
-        {
-          "name": "value",
-          "type": "str",
-          "description": "Variable value (empty if not set)"
-        }
-      ],
+      "params": [{"name": "name", "type": "str", "description": "Variable name"}],
+      "returns": [{"name": "value", "type": "str", "description": "Variable value (empty if not set)"}],
       "errors": [],
-      "examples": [
-        "\"HOME\" os::getenv -> home"
-      ]
+      "examples": ["\"HOME\" os::getenv -> home"]
     },
     {
       "name": "list",
       "signature": "( path:str -- entries:ptr count:i64 )",
       "failable": true,
       "description": "List directory contents.",
-      "params": [
-        {
-          "name": "path",
-          "type": "str",
-          "description": "Directory path"
-        }
-      ],
-      "returns": [
-        {
-          "name": "entries",
-          "type": "ptr",
-          "description": "Array of entry names"
-        },
-        {
-          "name": "count",
-          "type": "i64",
-          "description": "Number of entries"
-        }
-      ],
-      "errors": [
-        {
-          "code": "ErrNotFound",
-          "description": "File not found"
-        },
-        {
-          "code": "ErrNotDirectory",
-          "description": "Path is not a directory"
-        }
-      ],
-      "examples": [
-        "\"/tmp\" os::list! -> entries -> count"
-      ]
+      "params": [{"name": "path", "type": "str", "description": "Directory path"}],
+      "returns": [{"name": "entries", "type": "ptr", "description": "Array of entry names"}, {"name": "count", "type": "i64", "description": "Number of entries"}],
+      "errors": [{"code": "ErrNotFound", "description": "File not found"}, {"code": "ErrNotDirectory", "description": "Path is not a directory"}],
+      "examples": ["\"/tmp\" os::list! -> entries -> count"]
     },
     {
       "name": "mkdir",
-      "signature": "( path:str -- )",
+      "signature": "( path:str --  )",
       "failable": true,
       "description": "Create a directory.",
-      "params": [
-        {
-          "name": "path",
-          "type": "str",
-          "description": "Directory path"
-        }
-      ],
+      "params": [{"name": "path", "type": "str", "description": "Directory path"}],
       "returns": [],
-      "errors": [
-        {
-          "code": "ErrExists",
-          "description": "File already exists"
-        },
-        {
-          "code": "ErrPermission",
-          "description": "Permission denied"
-        }
-      ],
-      "examples": [
-        "\"/tmp/newdir\" os::mkdir!"
-      ]
+      "errors": [{"code": "ErrExists", "description": "File already exists"}, {"code": "ErrPermission", "description": "Permission denied"}],
+      "examples": ["\"/tmp/newdir\" os::mkdir!"]
     },
     {
       "name": "rename",
-      "signature": "( oldpath:str newpath:str -- )",
+      "signature": "( oldpath:str newpath:str --  )",
       "failable": true,
       "description": "Rename or move a file.",
-      "params": [
-        {
-          "name": "oldpath",
-          "type": "str",
-          "description": "Current path"
-        },
-        {
-          "name": "newpath",
-          "type": "str",
-          "description": "New path"
-        }
-      ],
+      "params": [{"name": "oldpath", "type": "str", "description": "Current path"}, {"name": "newpath", "type": "str", "description": "New path"}],
       "returns": [],
-      "errors": [
-        {
-          "code": "ErrNotFound",
-          "description": "File not found"
-        },
-        {
-          "code": "ErrPermission",
-          "description": "Permission denied"
-        }
-      ],
-      "examples": [
-        "\"old.txt\" \"new.txt\" os::rename!"
-      ]
+      "errors": [{"code": "ErrNotFound", "description": "File not found"}, {"code": "ErrPermission", "description": "Permission denied"}],
+      "examples": ["\"old.txt\" \"new.txt\" os::rename!"]
     },
     {
       "name": "setenv",
-      "signature": "( name:str value:str -- )",
+      "signature": "( name:str value:str --  )",
       "failable": false,
       "description": "Set environment variable.",
-      "params": [
-        {
-          "name": "name",
-          "type": "str",
-          "description": "Variable name"
-        },
-        {
-          "name": "value",
-          "type": "str",
-          "description": "Variable value"
-        }
-      ],
+      "params": [{"name": "name", "type": "str", "description": "Variable name"}, {"name": "value", "type": "str", "description": "Variable value"}],
       "returns": [],
       "errors": [],
-      "examples": [
-        "\"MY_VAR\" \"hello\" os::setenv"
-      ]
+      "examples": ["\"MY_VAR\" \"hello\" os::setenv"]
     },
     {
       "name": "system",
       "signature": "( cmd:str -- exitcode:i64 )",
       "failable": false,
       "description": "Execute a shell command.",
-      "params": [
-        {
-          "name": "cmd",
-          "type": "str",
-          "description": "Command to execute"
-        }
-      ],
-      "returns": [
-        {
-          "name": "exitcode",
-          "type": "i64",
-          "description": "Command exit status"
-        }
-      ],
+      "params": [{"name": "cmd", "type": "str", "description": "Command to execute"}],
+      "returns": [{"name": "exitcode", "type": "i64", "description": "Command exit status"}],
       "errors": [],
-      "examples": [
-        "\"ls -la\" os::system -> code"
-      ]
+      "examples": ["\"ls -la\" os::system -> code"]
     }
   ]
 }

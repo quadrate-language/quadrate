@@ -138,471 +138,189 @@
       "description": "Duration = 1 week (7 days)."
     }
   ],
-  "structs": [],
+  "structs": [
+
+  ],
   "functions": [
     {
       "name": "add",
       "signature": "( ts:i64 duration:i64 -- new_ts:i64 )",
       "failable": false,
       "description": "Add duration to a timestamp.",
-      "params": [
-        {
-          "name": "ts",
-          "type": "i64",
-          "description": "Timestamp (use time::now for nanoseconds)"
-        },
-        {
-          "name": "duration",
-          "type": "i64",
-          "description": "Duration to add (use time constants)"
-        }
-      ],
-      "returns": [
-        {
-          "name": "new_ts",
-          "type": "i64",
-          "description": "New timestamp"
-        }
-      ],
+      "params": [{"name": "ts", "type": "i64", "description": "Timestamp (use time::now for nanoseconds)"}, {"name": "duration", "type": "i64", "description": "Duration to add (use time constants)"}],
+      "returns": [{"name": "new_ts", "type": "i64", "description": "New timestamp"}],
       "errors": [],
-      "examples": [
-        "time::now time::Day 4 * time::add ."
-      ]
+      "examples": ["time::now time::Day 4 * time::add ."]
     },
     {
       "name": "after",
       "signature": "( ts1:i64 ts2:i64 -- after:i64 )",
       "failable": false,
       "description": "Check if timestamp is after another.",
-      "params": [
-        {
-          "name": "ts1",
-          "type": "i64",
-          "description": "First timestamp"
-        },
-        {
-          "name": "ts2",
-          "type": "i64",
-          "description": "Second timestamp"
-        }
-      ],
-      "returns": [
-        {
-          "name": "after",
-          "type": "i64",
-          "description": "1 if ts1 > ts2, 0 otherwise"
-        }
-      ],
+      "params": [{"name": "ts1", "type": "i64", "description": "First timestamp"}, {"name": "ts2", "type": "i64", "description": "Second timestamp"}],
+      "returns": [{"name": "after", "type": "i64", "description": "1 if ts1 > ts2, 0 otherwise"}],
       "errors": [],
-      "examples": [
-        "ts1 ts2 time::after ."
-      ]
+      "examples": ["ts1 ts2 time::after ."]
     },
     {
       "name": "before",
       "signature": "( ts1:i64 ts2:i64 -- before:i64 )",
       "failable": false,
       "description": "Check if timestamp is before another.",
-      "params": [
-        {
-          "name": "ts1",
-          "type": "i64",
-          "description": "First timestamp"
-        },
-        {
-          "name": "ts2",
-          "type": "i64",
-          "description": "Second timestamp"
-        }
-      ],
-      "returns": [
-        {
-          "name": "before",
-          "type": "i64",
-          "description": "1 if ts1 < ts2, 0 otherwise"
-        }
-      ],
+      "params": [{"name": "ts1", "type": "i64", "description": "First timestamp"}, {"name": "ts2", "type": "i64", "description": "Second timestamp"}],
+      "returns": [{"name": "before", "type": "i64", "description": "1 if ts1 < ts2, 0 otherwise"}],
       "errors": [],
-      "examples": [
-        "ts1 ts2 time::before ."
-      ]
+      "examples": ["ts1 ts2 time::before ."]
     },
     {
       "name": "date",
       "signature": "( yr:i64 mon:i64 d:i64 h:i64 m:i64 s:i64 -- ts:i64 )",
       "failable": false,
       "description": "Create Unix timestamp from date components.",
-      "params": [
-        {
-          "name": "yr",
-          "type": "i64",
-          "description": "Year"
-        },
-        {
-          "name": "mon",
-          "type": "i64",
-          "description": "Month (1-12)"
-        },
-        {
-          "name": "d",
-          "type": "i64",
-          "description": "Day (1-31)"
-        },
-        {
-          "name": "h",
-          "type": "i64",
-          "description": "Hour (0-23)"
-        },
-        {
-          "name": "m",
-          "type": "i64",
-          "description": "Minute (0-59)"
-        },
-        {
-          "name": "s",
-          "type": "i64",
-          "description": "Second (0-59)"
-        }
-      ],
-      "returns": [
-        {
-          "name": "ts",
-          "type": "i64",
-          "description": "Unix timestamp in seconds"
-        }
-      ],
+      "params": [{"name": "yr", "type": "i64", "description": "Year"}, {"name": "mon", "type": "i64", "description": "Month (1-12)"}, {"name": "d", "type": "i64", "description": "Day (1-31)"}, {"name": "h", "type": "i64", "description": "Hour (0-23)"}, {"name": "m", "type": "i64", "description": "Minute (0-59)"}, {"name": "s", "type": "i64", "description": "Second (0-59)"}],
+      "returns": [{"name": "ts", "type": "i64", "description": "Unix timestamp in seconds"}],
       "errors": [],
-      "examples": [
-        "2024 1 15 12 30 0 time::date ."
-      ]
-    },
-    {
-      "name": "day",
-      "signature": "( ts:i64 -- d:i64 )",
-      "failable": false,
-      "description": "Extract day of month from Unix timestamp (1-31).",
-      "params": [
-        {
-          "name": "ts",
-          "type": "i64",
-          "description": "Unix timestamp in seconds"
-        }
-      ],
-      "returns": [
-        {
-          "name": "d",
-          "type": "i64",
-          "description": "Day of month"
-        }
-      ],
-      "errors": [],
-      "examples": [
-        "time::unix time::day ."
-      ]
+      "examples": ["2024 1 15 12 30 0 time::date ."]
     },
     {
       "name": "days_in_month",
       "signature": "( yr:i64 mon:i64 -- days:i64 )",
       "failable": false,
       "description": "Get number of days in a month.",
-      "params": [
-        {
-          "name": "yr",
-          "type": "i64",
-          "description": "Year (needed for February)"
-        },
-        {
-          "name": "mon",
-          "type": "i64",
-          "description": "Month (1-12)"
-        }
-      ],
-      "returns": [
-        {
-          "name": "days",
-          "type": "i64",
-          "description": "Number of days in the month"
-        }
-      ],
+      "params": [{"name": "yr", "type": "i64", "description": "Year (needed for February)"}, {"name": "mon", "type": "i64", "description": "Month (1-12)"}],
+      "returns": [{"name": "days", "type": "i64", "description": "Number of days in the month"}],
       "errors": [],
-      "examples": [
-        "2024 2 time::days_in_month .  // 29"
-      ]
+      "examples": ["2024 2 time::days_in_month .  // 29"]
+    },
+    {
+      "name": "day",
+      "signature": "( ts:i64 -- d:i64 )",
+      "failable": false,
+      "description": "Extract day of month from Unix timestamp (1-31).",
+      "params": [{"name": "ts", "type": "i64", "description": "Unix timestamp in seconds"}],
+      "returns": [{"name": "d", "type": "i64", "description": "Day of month"}],
+      "errors": [],
+      "examples": ["time::unix time::day ."]
     },
     {
       "name": "hour",
       "signature": "( ts:i64 -- h:i64 )",
       "failable": false,
       "description": "Extract hour from Unix timestamp (0-23).",
-      "params": [
-        {
-          "name": "ts",
-          "type": "i64",
-          "description": "Unix timestamp in seconds"
-        }
-      ],
-      "returns": [
-        {
-          "name": "h",
-          "type": "i64",
-          "description": "Hour"
-        }
-      ],
+      "params": [{"name": "ts", "type": "i64", "description": "Unix timestamp in seconds"}],
+      "returns": [{"name": "h", "type": "i64", "description": "Hour"}],
       "errors": [],
-      "examples": [
-        "time::unix time::hour ."
-      ]
+      "examples": ["time::unix time::hour ."]
     },
     {
       "name": "is_leap_year",
       "signature": "( yr:i64 -- is_leap:i64 )",
       "failable": false,
       "description": "Check if year is a leap year.",
-      "params": [
-        {
-          "name": "yr",
-          "type": "i64",
-          "description": "Year to check"
-        }
-      ],
-      "returns": [
-        {
-          "name": "is_leap",
-          "type": "i64",
-          "description": "1 if leap year, 0 otherwise"
-        }
-      ],
+      "params": [{"name": "yr", "type": "i64", "description": "Year to check"}],
+      "returns": [{"name": "is_leap", "type": "i64", "description": "1 if leap year, 0 otherwise"}],
       "errors": [],
-      "examples": [
-        "2024 time::is_leap_year .  // 1"
-      ]
+      "examples": ["2024 time::is_leap_year .  // 1"]
     },
     {
       "name": "minute",
       "signature": "( ts:i64 -- m:i64 )",
       "failable": false,
       "description": "Extract minute from Unix timestamp (0-59).",
-      "params": [
-        {
-          "name": "ts",
-          "type": "i64",
-          "description": "Unix timestamp in seconds"
-        }
-      ],
-      "returns": [
-        {
-          "name": "m",
-          "type": "i64",
-          "description": "Minute"
-        }
-      ],
+      "params": [{"name": "ts", "type": "i64", "description": "Unix timestamp in seconds"}],
+      "returns": [{"name": "m", "type": "i64", "description": "Minute"}],
       "errors": [],
-      "examples": [
-        "time::unix time::minute ."
-      ]
+      "examples": ["time::unix time::minute ."]
     },
     {
       "name": "month",
       "signature": "( ts:i64 -- mon:i64 )",
       "failable": false,
       "description": "Extract month from Unix timestamp (1-12).",
-      "params": [
-        {
-          "name": "ts",
-          "type": "i64",
-          "description": "Unix timestamp in seconds"
-        }
-      ],
-      "returns": [
-        {
-          "name": "mon",
-          "type": "i64",
-          "description": "Month (1=January, 12=December)"
-        }
-      ],
+      "params": [{"name": "ts", "type": "i64", "description": "Unix timestamp in seconds"}],
+      "returns": [{"name": "mon", "type": "i64", "description": "Month (1=January, 12=December)"}],
       "errors": [],
-      "examples": [
-        "time::unix time::month ."
-      ]
+      "examples": ["time::unix time::month ."]
     },
     {
       "name": "now",
-      "signature": "( -- nanoseconds:i64 )",
+      "signature": "(  -- nanoseconds:i64 )",
       "failable": false,
       "description": "Get current time in nanoseconds since epoch.",
       "params": [],
-      "returns": [
-        {
-          "name": "nanoseconds",
-          "type": "i64",
-          "description": "Nanoseconds since 1970-01-01 00:00:00 UTC"
-        }
-      ],
+      "returns": [{"name": "nanoseconds", "type": "i64", "description": "Nanoseconds since 1970-01-01 00:00:00 UTC"}],
       "errors": [],
-      "examples": [
-        "time::now -> start"
-      ]
+      "examples": ["time::now -> start"]
     },
     {
       "name": "second",
       "signature": "( ts:i64 -- s:i64 )",
       "failable": false,
       "description": "Extract second from Unix timestamp (0-59).",
-      "params": [
-        {
-          "name": "ts",
-          "type": "i64",
-          "description": "Unix timestamp in seconds"
-        }
-      ],
-      "returns": [
-        {
-          "name": "s",
-          "type": "i64",
-          "description": "Second"
-        }
-      ],
+      "params": [{"name": "ts", "type": "i64", "description": "Unix timestamp in seconds"}],
+      "returns": [{"name": "s", "type": "i64", "description": "Second"}],
       "errors": [],
-      "examples": [
-        "time::unix time::second ."
-      ]
+      "examples": ["time::unix time::second ."]
     },
     {
       "name": "sleep",
-      "signature": "( duration:i64 -- )",
+      "signature": "( duration:i64 --  )",
       "failable": false,
       "description": "Sleep for duration in nanoseconds.",
-      "params": [
-        {
-          "name": "duration",
-          "type": "i64",
-          "description": "Duration to sleep (use time constants)"
-        }
-      ],
+      "params": [{"name": "duration", "type": "i64", "description": "Duration to sleep (use time constants)"}],
       "returns": [],
       "errors": [],
-      "examples": [
-        "time::Second time::sleep"
-      ]
+      "examples": ["time::Second time::sleep"]
     },
     {
       "name": "sub",
       "signature": "( ts1:i64 ts2:i64 -- diff:i64 )",
       "failable": false,
       "description": "Get difference between two timestamps in seconds.",
-      "params": [
-        {
-          "name": "ts1",
-          "type": "i64",
-          "description": "First timestamp"
-        },
-        {
-          "name": "ts2",
-          "type": "i64",
-          "description": "Second timestamp"
-        }
-      ],
-      "returns": [
-        {
-          "name": "diff",
-          "type": "i64",
-          "description": "ts1 - ts2 in seconds"
-        }
-      ],
+      "params": [{"name": "ts1", "type": "i64", "description": "First timestamp"}, {"name": "ts2", "type": "i64", "description": "Second timestamp"}],
+      "returns": [{"name": "diff", "type": "i64", "description": "ts1 - ts2 in seconds"}],
       "errors": [],
-      "examples": [
-        "end_time start_time time::sub ."
-      ]
+      "examples": ["end_time start_time time::sub ."]
     },
     {
       "name": "unix",
-      "signature": "( -- timestamp:i64 )",
+      "signature": "(  -- timestamp:i64 )",
       "failable": false,
       "description": "Get Unix timestamp in seconds.",
       "params": [],
-      "returns": [
-        {
-          "name": "timestamp",
-          "type": "i64",
-          "description": "Seconds since 1970-01-01 00:00:00 UTC"
-        }
-      ],
+      "returns": [{"name": "timestamp", "type": "i64", "description": "Seconds since 1970-01-01 00:00:00 UTC"}],
       "errors": [],
-      "examples": [
-        "time::unix .  // 1700000000"
-      ]
+      "examples": ["time::unix .  // 1700000000"]
     },
     {
       "name": "weekday",
       "signature": "( ts:i64 -- wd:i64 )",
       "failable": false,
       "description": "Get day of week from Unix timestamp (0=Sunday, 6=Saturday).",
-      "params": [
-        {
-          "name": "ts",
-          "type": "i64",
-          "description": "Unix timestamp in seconds"
-        }
-      ],
-      "returns": [
-        {
-          "name": "wd",
-          "type": "i64",
-          "description": "Weekday (0=Sunday)"
-        }
-      ],
+      "params": [{"name": "ts", "type": "i64", "description": "Unix timestamp in seconds"}],
+      "returns": [{"name": "wd", "type": "i64", "description": "Weekday (0=Sunday)"}],
       "errors": [],
-      "examples": [
-        "time::unix time::weekday ."
-      ]
-    },
-    {
-      "name": "year",
-      "signature": "( ts:i64 -- yr:i64 )",
-      "failable": false,
-      "description": "Extract year from Unix timestamp.",
-      "params": [
-        {
-          "name": "ts",
-          "type": "i64",
-          "description": "Unix timestamp in seconds"
-        }
-      ],
-      "returns": [
-        {
-          "name": "yr",
-          "type": "i64",
-          "description": "Year (e.g., 2024)"
-        }
-      ],
-      "errors": [],
-      "examples": [
-        "time::unix time::year ."
-      ]
+      "examples": ["time::unix time::weekday ."]
     },
     {
       "name": "year_day",
       "signature": "( ts:i64 -- yd:i64 )",
       "failable": false,
       "description": "Get day of year from Unix timestamp (1-366).",
-      "params": [
-        {
-          "name": "ts",
-          "type": "i64",
-          "description": "Unix timestamp in seconds"
-        }
-      ],
-      "returns": [
-        {
-          "name": "yd",
-          "type": "i64",
-          "description": "Day of year"
-        }
-      ],
+      "params": [{"name": "ts", "type": "i64", "description": "Unix timestamp in seconds"}],
+      "returns": [{"name": "yd", "type": "i64", "description": "Day of year"}],
       "errors": [],
-      "examples": [
-        "time::unix time::year_day ."
-      ]
+      "examples": ["time::unix time::year_day ."]
+    },
+    {
+      "name": "year",
+      "signature": "( ts:i64 -- yr:i64 )",
+      "failable": false,
+      "description": "Extract year from Unix timestamp.",
+      "params": [{"name": "ts", "type": "i64", "description": "Unix timestamp in seconds"}],
+      "returns": [{"name": "yr", "type": "i64", "description": "Year (e.g., 2024)"}],
+      "errors": [],
+      "examples": ["time::unix time::year ."]
     }
   ]
 }

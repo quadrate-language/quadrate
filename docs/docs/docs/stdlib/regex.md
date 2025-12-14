@@ -1,4 +1,4 @@
-# regex
+# `use` regex
 
 Regular expression matching using Thompson NFA.
 Supports = . * + ? | () [] [^] [a-z] ^ it and escapes.
@@ -66,4 +66,5 @@ Test if a string matches a compiled regex (full match).
 
 Free a compiled regex.
 
-**Signature:** `( re:ptr -- )`
+**Signature:** `( re:ptr --  )`
+

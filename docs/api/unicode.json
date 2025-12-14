@@ -8,131 +8,6 @@
       "description": "Letter: Uppercase A."
     },
     {
-      "name": "B",
-      "value": "66",
-      "description": "Letter: Uppercase B."
-    },
-    {
-      "name": "C",
-      "value": "67",
-      "description": "Letter: Uppercase C."
-    },
-    {
-      "name": "D",
-      "value": "68",
-      "description": "Letter: Uppercase D."
-    },
-    {
-      "name": "E",
-      "value": "69",
-      "description": "Letter: Uppercase E."
-    },
-    {
-      "name": "F",
-      "value": "70",
-      "description": "Letter: Uppercase F."
-    },
-    {
-      "name": "G",
-      "value": "71",
-      "description": "Letter: Uppercase G."
-    },
-    {
-      "name": "H",
-      "value": "72",
-      "description": "Letter: Uppercase H."
-    },
-    {
-      "name": "I",
-      "value": "73",
-      "description": "Letter: Uppercase I."
-    },
-    {
-      "name": "J",
-      "value": "74",
-      "description": "Letter: Uppercase J."
-    },
-    {
-      "name": "K",
-      "value": "75",
-      "description": "Letter: Uppercase K."
-    },
-    {
-      "name": "L",
-      "value": "76",
-      "description": "Letter: Uppercase L."
-    },
-    {
-      "name": "M",
-      "value": "77",
-      "description": "Letter: Uppercase M."
-    },
-    {
-      "name": "N",
-      "value": "78",
-      "description": "Letter: Uppercase N."
-    },
-    {
-      "name": "O",
-      "value": "79",
-      "description": "Letter: Uppercase O."
-    },
-    {
-      "name": "P",
-      "value": "80",
-      "description": "Letter: Uppercase P."
-    },
-    {
-      "name": "Q",
-      "value": "81",
-      "description": "Letter: Uppercase Q."
-    },
-    {
-      "name": "R",
-      "value": "82",
-      "description": "Letter: Uppercase R."
-    },
-    {
-      "name": "S",
-      "value": "83",
-      "description": "Letter: Uppercase S."
-    },
-    {
-      "name": "T",
-      "value": "84",
-      "description": "Letter: Uppercase T."
-    },
-    {
-      "name": "U",
-      "value": "85",
-      "description": "Letter: Uppercase U."
-    },
-    {
-      "name": "V",
-      "value": "86",
-      "description": "Letter: Uppercase V."
-    },
-    {
-      "name": "W",
-      "value": "87",
-      "description": "Letter: Uppercase W."
-    },
-    {
-      "name": "X",
-      "value": "88",
-      "description": "Letter: Uppercase X."
-    },
-    {
-      "name": "Y",
-      "value": "89",
-      "description": "Letter: Uppercase Y."
-    },
-    {
-      "name": "Z",
-      "value": "90",
-      "description": "Letter: Uppercase Z."
-    },
-    {
       "name": "a",
       "value": "97",
       "description": "Letter: Lowercase a."
@@ -153,6 +28,11 @@
       "description": "Punctuation: At sign (@)."
     },
     {
+      "name": "B",
+      "value": "66",
+      "description": "Letter: Uppercase B."
+    },
+    {
       "name": "b",
       "value": "98",
       "description": "Letter: Lowercase b."
@@ -166,6 +46,11 @@
       "name": "backtick",
       "value": "96",
       "description": "Punctuation: Backtick (`)."
+    },
+    {
+      "name": "C",
+      "value": "67",
+      "description": "Letter: Uppercase C."
     },
     {
       "name": "c",
@@ -196,6 +81,11 @@
       "name": "d",
       "value": "100",
       "description": "Letter: Lowercase d."
+    },
+    {
+      "name": "D",
+      "value": "68",
+      "description": "Letter: Uppercase D."
     },
     {
       "name": "digit0",
@@ -268,6 +158,11 @@
       "description": "Letter: Lowercase e."
     },
     {
+      "name": "E",
+      "value": "69",
+      "description": "Letter: Uppercase E."
+    },
+    {
       "name": "equals",
       "value": "61",
       "description": "Punctuation: Equals (=)."
@@ -288,9 +183,19 @@
       "description": "Letter: Lowercase f."
     },
     {
+      "name": "F",
+      "value": "70",
+      "description": "Letter: Uppercase F."
+    },
+    {
       "name": "g",
       "value": "103",
       "description": "Letter: Lowercase g."
+    },
+    {
+      "name": "G",
+      "value": "71",
+      "description": "Letter: Uppercase G."
     },
     {
       "name": "gt",
@@ -303,6 +208,11 @@
       "description": "Letter: Lowercase h."
     },
     {
+      "name": "H",
+      "value": "72",
+      "description": "Letter: Uppercase H."
+    },
+    {
       "name": "hash",
       "value": "35",
       "description": "Punctuation: Hash (#)."
@@ -313,9 +223,19 @@
       "description": "Letter: Lowercase i."
     },
     {
+      "name": "I",
+      "value": "73",
+      "description": "Letter: Uppercase I."
+    },
+    {
       "name": "j",
       "value": "106",
       "description": "Letter: Lowercase j."
+    },
+    {
+      "name": "J",
+      "value": "74",
+      "description": "Letter: Uppercase J."
     },
     {
       "name": "k",
@@ -323,9 +243,19 @@
       "description": "Letter: Lowercase k."
     },
     {
+      "name": "K",
+      "value": "75",
+      "description": "Letter: Uppercase K."
+    },
+    {
       "name": "l",
       "value": "108",
       "description": "Letter: Lowercase l."
+    },
+    {
+      "name": "L",
+      "value": "76",
+      "description": "Letter: Uppercase L."
     },
     {
       "name": "lbrace",
@@ -353,6 +283,11 @@
       "description": "Letter: Lowercase m."
     },
     {
+      "name": "M",
+      "value": "77",
+      "description": "Letter: Uppercase M."
+    },
+    {
       "name": "minus",
       "value": "45",
       "description": "Punctuation: Minus/hyphen (-)."
@@ -361,6 +296,11 @@
       "name": "n",
       "value": "110",
       "description": "Letter: Lowercase n."
+    },
+    {
+      "name": "N",
+      "value": "78",
+      "description": "Letter: Uppercase N."
     },
     {
       "name": "newline",
@@ -378,9 +318,19 @@
       "description": "Letter: Lowercase o."
     },
     {
+      "name": "O",
+      "value": "79",
+      "description": "Letter: Uppercase O."
+    },
+    {
       "name": "p",
       "value": "112",
       "description": "Letter: Lowercase p."
+    },
+    {
+      "name": "P",
+      "value": "80",
+      "description": "Letter: Uppercase P."
     },
     {
       "name": "percent",
@@ -403,6 +353,11 @@
       "description": "Letter: Lowercase q."
     },
     {
+      "name": "Q",
+      "value": "81",
+      "description": "Letter: Uppercase Q."
+    },
+    {
       "name": "question",
       "value": "63",
       "description": "Punctuation: Question mark (?)."
@@ -411,6 +366,11 @@
       "name": "r",
       "value": "114",
       "description": "Letter: Lowercase r."
+    },
+    {
+      "name": "R",
+      "value": "82",
+      "description": "Letter: Uppercase R."
     },
     {
       "name": "rbrace",
@@ -431,6 +391,11 @@
       "name": "s",
       "value": "115",
       "description": "Letter: Lowercase s."
+    },
+    {
+      "name": "S",
+      "value": "83",
+      "description": "Letter: Uppercase S."
     },
     {
       "name": "semicolon",
@@ -458,6 +423,11 @@
       "description": "Letter: Lowercase t."
     },
     {
+      "name": "T",
+      "value": "84",
+      "description": "Letter: Uppercase T."
+    },
+    {
       "name": "tab",
       "value": "9",
       "description": "Control: Tab character."
@@ -473,6 +443,11 @@
       "description": "Letter: Lowercase u."
     },
     {
+      "name": "U",
+      "value": "85",
+      "description": "Letter: Uppercase U."
+    },
+    {
       "name": "underscore",
       "value": "95",
       "description": "Punctuation: Underscore (_)."
@@ -483,9 +458,19 @@
       "description": "Letter: Lowercase v."
     },
     {
+      "name": "V",
+      "value": "86",
+      "description": "Letter: Uppercase V."
+    },
+    {
       "name": "w",
       "value": "119",
       "description": "Letter: Lowercase w."
+    },
+    {
+      "name": "W",
+      "value": "87",
+      "description": "Letter: Uppercase W."
     },
     {
       "name": "x",
@@ -493,41 +478,44 @@
       "description": "Letter: Lowercase x."
     },
     {
+      "name": "X",
+      "value": "88",
+      "description": "Letter: Uppercase X."
+    },
+    {
       "name": "y",
       "value": "121",
       "description": "Letter: Lowercase y."
     },
     {
+      "name": "Y",
+      "value": "89",
+      "description": "Letter: Uppercase Y."
+    },
+    {
       "name": "z",
       "value": "122",
       "description": "Letter: Lowercase z."
+    },
+    {
+      "name": "Z",
+      "value": "90",
+      "description": "Letter: Uppercase Z."
     }
   ],
-  "structs": [],
+  "structs": [
+
+  ],
   "functions": [
     {
       "name": "is_digit",
       "signature": "( c:i64 -- result:i64 )",
       "failable": false,
       "description": "Check if character is a digit (0-9).",
-      "params": [
-        {
-          "name": "c",
-          "type": "i64",
-          "description": "Character code"
-        }
-      ],
-      "returns": [
-        {
-          "name": "result",
-          "type": "i64",
-          "description": "1 if digit, 0 otherwise"
-        }
-      ],
+      "params": [{"name": "c", "type": "i64", "description": "Character code"}],
+      "returns": [{"name": "result", "type": "i64", "description": "1 if digit, 0 otherwise"}],
       "errors": [],
-      "examples": [
-        "48 unicode::is_digit .  // 1"
-      ]
+      "examples": ["48 unicode::is_digit .  // 1"]
     }
   ]
 }

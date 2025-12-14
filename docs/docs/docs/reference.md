@@ -295,6 +295,747 @@ false if { } else { "no" print }
 
 ## Built-in Instructions
 
+### BITWISE OPERATIONS
+
+| Instruction | Signature | Description |
+|-------------|-----------|-------------|
+| [`and`](#and) | `( a b -- result )` | Computes bitwise AND of two integers. |
+| [`or`](#or) | `( a b -- result )` | Computes bitwise OR of two integers. |
+| [`xor`](#xor) | `( a b -- result )` | Computes bitwise XOR of two integers. |
+| [`not`](#not) | `( a -- result )` | Computes bitwise NOT (ones' complement). |
+| [`shl`](#shl) | `( a n -- result )` | Shifts a left by n bits. |
+| [`shr`](#shr) | `( a n -- result )` | Shifts a right by n bits (arithmetic shift). |
+
+#### and
+
+Computes bitwise AND of two integers.
+
+**Signature:** `( a b -- result )`
+
+**Example:**
+
+```qd
+0b1100 0b1010 and // 0b1000
+```
+
+---
+
+#### or
+
+Computes bitwise OR of two integers.
+
+**Signature:** `( a b -- result )`
+
+**Example:**
+
+```qd
+0b1100 0b1010 or // 0b1110
+```
+
+---
+
+#### xor
+
+Computes bitwise XOR of two integers.
+
+**Signature:** `( a b -- result )`
+
+**Example:**
+
+```qd
+0b1100 0b1010 xor // 0b0110
+```
+
+---
+
+#### not
+
+Computes bitwise NOT (ones' complement).
+
+**Signature:** `( a -- result )`
+
+**Example:**
+
+```qd
+0 not // -1 (all bits set)
+```
+
+---
+
+#### shl
+
+Shifts a left by n bits.
+
+**Signature:** `( a n -- result )`
+
+**Example:**
+
+```qd
+1 4 shl // 16
+```
+
+---
+
+#### shr
+
+Shifts a right by n bits (arithmetic shift).
+
+**Signature:** `( a n -- result )`
+
+**Example:**
+
+```qd
+16 2 shr // 4
+```
+
+---
+
+### COMPARISON OPERATIONS
+
+| Instruction | Signature | Description |
+|-------------|-----------|-------------|
+| [`==`](#eqeq) | `( a b -- bool )` | Returns 1 if a equals b, 0 otherwise. |
+| [`eq`](#eq) | `( a b -- bool )` | Returns 1 if a equals b, 0 otherwise. |
+| [`!=`](#bangeq) | `( a b -- bool )` | Returns 1 if a does not equal b, 0 otherwise. |
+| [`neq`](#neq) | `( a b -- bool )` | Returns 1 if a does not equal b, 0 otherwise. |
+| [`<`](#lt) | `( a b -- bool )` | Returns 1 if a is less than b, 0 otherwise. |
+| [`lt`](#lt) | `( a b -- bool )` | Returns 1 if a is less than b, 0 otherwise. |
+| [`<=`](#lteq) | `( a b -- bool )` | Returns 1 if a is less than or equal to b, 0 otherwise. |
+| [`lte`](#lte) | `( a b -- bool )` | Returns 1 if a is less than or equal to b, 0 otherwise. |
+| [`>`](#gt) | `( a b -- bool )` | Returns 1 if a is greater than b, 0 otherwise. |
+| [`gt`](#gt) | `( a b -- bool )` | Returns 1 if a is greater than b, 0 otherwise. |
+| [`>=`](#gteq) | `( a b -- bool )` | Returns 1 if a is greater than or equal to b, 0 otherwise. |
+| [`gte`](#gte) | `( a b -- bool )` | Returns 1 if a is greater than or equal to b, 0 otherwise. |
+| [`within`](#within) | `( val low high -- bool )` | Returns 1 if val is in [low, high), 0 otherwise. |
+
+#### ==
+
+Returns 1 if a equals b, 0 otherwise.
+
+**Signature:** `( a b -- bool )`
+
+**Example:**
+
+```qd
+5 5 == // 1
+```
+
+---
+
+#### eq
+
+Returns 1 if a equals b, 0 otherwise.
+
+**Signature:** `( a b -- bool )`
+
+---
+
+#### !=
+
+Returns 1 if a does not equal b, 0 otherwise.
+
+**Signature:** `( a b -- bool )`
+
+**Example:**
+
+```qd
+5 3 != // 1
+```
+
+---
+
+#### neq
+
+Returns 1 if a does not equal b, 0 otherwise.
+
+**Signature:** `( a b -- bool )`
+
+---
+
+#### <
+
+Returns 1 if a is less than b, 0 otherwise.
+
+**Signature:** `( a b -- bool )`
+
+**Example:**
+
+```qd
+3 5 < // 1
+```
+
+---
+
+#### lt
+
+Returns 1 if a is less than b, 0 otherwise.
+
+**Signature:** `( a b -- bool )`
+
+---
+
+#### <=
+
+Returns 1 if a is less than or equal to b, 0 otherwise.
+
+**Signature:** `( a b -- bool )`
+
+**Example:**
+
+```qd
+5 5 <= // 1
+```
+
+---
+
+#### lte
+
+Returns 1 if a is less than or equal to b, 0 otherwise.
+
+**Signature:** `( a b -- bool )`
+
+---
+
+#### >
+
+Returns 1 if a is greater than b, 0 otherwise.
+
+**Signature:** `( a b -- bool )`
+
+**Example:**
+
+```qd
+5 3 > // 1
+```
+
+---
+
+#### gt
+
+Returns 1 if a is greater than b, 0 otherwise.
+
+**Signature:** `( a b -- bool )`
+
+---
+
+#### >=
+
+Returns 1 if a is greater than or equal to b, 0 otherwise.
+
+**Signature:** `( a b -- bool )`
+
+**Example:**
+
+```qd
+5 5 >= // 1
+```
+
+---
+
+#### gte
+
+Returns 1 if a is greater than or equal to b, 0 otherwise.
+
+**Signature:** `( a b -- bool )`
+
+---
+
+#### within
+
+Returns 1 if val is in [low, high), 0 otherwise.
+
+**Signature:** `( val low high -- bool )`
+
+**Example:**
+
+```qd
+5 0 10 within // 1
+```
+
+---
+
+### TYPE CASTING
+
+| Instruction | Signature | Description |
+|-------------|-----------|-------------|
+| [`cast`](#cast) | `( val -- T )` | Converts a value to the specified type (use with cast<T> syntax). |
+
+#### cast
+
+Converts a value to the specified type (use with cast<T> syntax).
+
+**Signature:** `( val -- T )`
+
+**Example:**
+
+```qd
+3.14 cast<i64> // 3
+42 cast<f64> // 42.0
+42 cast<str> // "42"
+```
+
+---
+
+### ARRAY OPERATIONS
+
+| Instruction | Signature | Description |
+|-------------|-----------|-------------|
+| [`makei`](#makei) | `( size -- arr )` | Creates an array of size integers, initialized to 0. |
+| [`makef`](#makef) | `( size -- arr )` | Creates an array of size floats, initialized to 0.0. |
+| [`makes`](#makes) | `( size -- arr )` | Creates an array of size strings, initialized to empty. |
+| [`makep`](#makep) | `( size -- arr )` | Creates an array of size pointers, initialized to null. |
+| [`make`](#make) | `( size -- arr )` | Creates a typed array (use with make<Type> syntax). |
+| [`len`](#len) | `( arr -- len )` | Returns the number of elements in an array. |
+| [`nth`](#nth) | `( arr index -- value )` | Returns the element at the given index. |
+| [`set`](#set) | `( arr index value -- )` | Sets the element at the given index. |
+| [`append`](#append) | `( arr value -- arr )` | Appends a value to the array, returning the modified array. |
+| [`free`](#free) | `( arr -- )` | Frees the memory used by an array or struct. |
+
+#### makei
+
+Creates an array of size integers, initialized to 0.
+
+**Signature:** `( size -- arr )`
+
+**Example:**
+
+```qd
+10 makei -> arr
+```
+
+---
+
+#### makef
+
+Creates an array of size floats, initialized to 0.0.
+
+**Signature:** `( size -- arr )`
+
+**Example:**
+
+```qd
+10 makef -> arr
+```
+
+---
+
+#### makes
+
+Creates an array of size strings, initialized to empty.
+
+**Signature:** `( size -- arr )`
+
+**Example:**
+
+```qd
+10 makes -> arr
+```
+
+---
+
+#### makep
+
+Creates an array of size pointers, initialized to null.
+
+**Signature:** `( size -- arr )`
+
+**Example:**
+
+```qd
+10 makep -> arr
+```
+
+---
+
+#### make
+
+Creates a typed array (use with make<Type> syntax).
+
+**Signature:** `( size -- arr )`
+
+**Example:**
+
+```qd
+10 make<Point> -> points
+```
+
+---
+
+#### len
+
+Returns the number of elements in an array.
+
+**Signature:** `( arr -- len )`
+
+**Example:**
+
+```qd
+arr len // number of elements
+```
+
+---
+
+#### nth
+
+Returns the element at the given index.
+
+**Signature:** `( arr index -- value )`
+
+**Example:**
+
+```qd
+arr 0 nth // first element
+```
+
+---
+
+#### set
+
+Sets the element at the given index.
+
+**Signature:** `( arr index value -- )`
+
+**Example:**
+
+```qd
+arr 0 42 set
+```
+
+---
+
+#### append
+
+Appends a value to the array, returning the modified array.
+
+**Signature:** `( arr value -- arr )`
+
+**Example:**
+
+```qd
+arr 42 append -> arr
+```
+
+---
+
+#### free
+
+Frees the memory used by an array or struct.
+
+**Signature:** `( arr -- )`
+
+**Example:**
+
+```qd
+arr free
+```
+
+---
+
+### ARITHMETIC OPERATIONS
+
+| Instruction | Signature | Description |
+|-------------|-----------|-------------|
+| [`+`](#plus) | `( a b -- sum )` | Adds two numbers. |
+| [`add`](#add) | `( a b -- sum )` | Adds two numbers. |
+| [`-`](#minus) | `( a b -- diff )` | Subtracts b from a. |
+| [`sub`](#sub) | `( a b -- diff )` | Subtracts b from a. |
+| [`*`](#star) | `( a b -- product )` | Multiplies two numbers. |
+| [`mul`](#mul) | `( a b -- product )` | Multiplies two numbers. |
+| [`/`](#slash) | `( a b -- quotient )` | Divides a by b. |
+| [`div`](#div) | `( a b -- quotient )` | Divides a by b. |
+| [`%`](#percent) | `( a b -- remainder )` | Computes a modulo b. |
+| [`mod`](#mod) | `( a b -- remainder )` | Computes a modulo b. |
+| [`neg`](#neg) | `( a -- -a )` | Negates a number. |
+| [`inc`](#inc) | `( a -- a+1 )` | Adds 1 to a number. |
+| [`dec`](#dec) | `( a -- a-1 )` | Subtracts 1 from a number. |
+
+#### +
+
+Adds two numbers.
+
+**Signature:** `( a b -- sum )`
+
+**Example:**
+
+```qd
+3 4 + // 7
+```
+
+---
+
+#### add
+
+Adds two numbers.
+
+**Signature:** `( a b -- sum )`
+
+---
+
+#### -
+
+Subtracts b from a.
+
+**Signature:** `( a b -- diff )`
+
+**Example:**
+
+```qd
+10 3 - // 7
+```
+
+---
+
+#### sub
+
+Subtracts b from a.
+
+**Signature:** `( a b -- diff )`
+
+---
+
+#### *
+
+Multiplies two numbers.
+
+**Signature:** `( a b -- product )`
+
+**Example:**
+
+```qd
+6 7 * // 42
+```
+
+---
+
+#### mul
+
+Multiplies two numbers.
+
+**Signature:** `( a b -- product )`
+
+---
+
+#### /
+
+Divides a by b.
+
+**Signature:** `( a b -- quotient )`
+
+**Example:**
+
+```qd
+20 4 / // 5
+```
+
+---
+
+#### div
+
+Divides a by b.
+
+**Signature:** `( a b -- quotient )`
+
+---
+
+#### %
+
+Computes a modulo b.
+
+**Signature:** `( a b -- remainder )`
+
+**Example:**
+
+```qd
+17 5 % // 2
+```
+
+---
+
+#### mod
+
+Computes a modulo b.
+
+**Signature:** `( a b -- remainder )`
+
+---
+
+#### neg
+
+Negates a number.
+
+**Signature:** `( a -- -a )`
+
+**Example:**
+
+```qd
+5 neg // -5
+```
+
+---
+
+#### inc
+
+Adds 1 to a number.
+
+**Signature:** `( a -- a+1 )`
+
+**Example:**
+
+```qd
+5 inc // 6
+```
+
+---
+
+#### dec
+
+Subtracts 1 from a number.
+
+**Signature:** `( a -- a-1 )`
+
+**Example:**
+
+```qd
+5 dec // 4
+```
+
+---
+
+### MISCELLANEOUS
+
+| Instruction | Signature | Description |
+|-------------|-----------|-------------|
+| [`call`](#call) | `( fn -- ... )` | Calls a function pointer obtained with &funcname syntax. |
+
+#### call
+
+Calls a function pointer obtained with &funcname syntax.
+
+**Signature:** `( fn -- ... )`
+
+**Example:**
+
+```qd
+&foo call  // calls the function foo
+```
+
+---
+
+### THREADING
+
+| Instruction | Signature | Description |
+|-------------|-----------|-------------|
+| [`spawn`](#spawn) | `( fn -- thread )` | Spawns a new thread to execute a function. |
+| [`wait`](#wait) | `( thread -- )` | Waits for a thread to complete. |
+| [`detach`](#detach) | `( thread -- )` | Detaches a thread, allowing it to run independently. |
+
+#### spawn
+
+Spawns a new thread to execute a function.
+
+**Signature:** `( fn -- thread )`
+
+---
+
+#### wait
+
+Waits for a thread to complete.
+
+**Signature:** `( thread -- )`
+
+---
+
+#### detach
+
+Detaches a thread, allowing it to run independently.
+
+**Signature:** `( thread -- )`
+
+---
+
+### INPUT/OUTPUT
+
+| Instruction | Signature | Description |
+|-------------|-----------|-------------|
+| [`print`](#print) | `( val -- )` | Prints a value to stdout without a newline. |
+| [`printv`](#printv) | `( val -- )` | Prints a value with type information for debugging. |
+| [`prints`](#prints) | `()` | Prints the entire stack contents without clearing it. |
+| [`printsv`](#printsv) | `()` | Prints the entire stack with type information for debugging. |
+| [`nl`](#nl) | `()` | Prints a newline character to stdout. |
+| [`read`](#read) | `( -- ... n )` | Reads command line arguments onto the stack, pushing count last. |
+
+#### print
+
+Prints a value to stdout without a newline.
+
+**Signature:** `( val -- )`
+
+**Example:**
+
+```qd
+42 print
+```
+
+---
+
+#### printv
+
+Prints a value with type information for debugging.
+
+**Signature:** `( val -- )`
+
+---
+
+#### prints
+
+Prints the entire stack contents without clearing it.
+
+**Signature:** `()`
+
+**Example:**
+
+```qd
+1 2 3 prints  // prints entire stack
+```
+
+---
+
+#### printsv
+
+Prints the entire stack with type information for debugging.
+
+**Signature:** `()`
+
+---
+
+#### nl
+
+Prints a newline character to stdout.
+
+**Signature:** `()`
+
+**Example:**
+
+```qd
+nl
+```
+
+---
+
+#### read
+
+Reads command line arguments onto the stack, pushing count last.
+
+**Signature:** `( -- ... n )`
+
+**Example:**
+
+```qd
+read -> argc // reads command line args
+```
+
+---
+
 ### STACK OPERATIONS
 
 | Instruction | Signature | Description |
@@ -531,695 +1272,6 @@ Pushes the number of values on the stack.
 
 ---
 
-### ARITHMETIC OPERATIONS
-
-| Instruction | Signature | Description |
-|-------------|-----------|-------------|
-| [`+`](#plus) | `( a b -- sum )` | Adds two numbers. |
-| [`add`](#add) | `( a b -- sum )` | Adds two numbers. |
-| [`-`](#minus) | `( a b -- diff )` | Subtracts b from a. |
-| [`sub`](#sub) | `( a b -- diff )` | Subtracts b from a. |
-| [`*`](#star) | `( a b -- product )` | Multiplies two numbers. |
-| [`mul`](#mul) | `( a b -- product )` | Multiplies two numbers. |
-| [`/`](#slash) | `( a b -- quotient )` | Divides a by b. |
-| [`div`](#div) | `( a b -- quotient )` | Divides a by b. |
-| [`%`](#percent) | `( a b -- remainder )` | Computes a modulo b. |
-| [`mod`](#mod) | `( a b -- remainder )` | Computes a modulo b. |
-| [`neg`](#neg) | `( a -- -a )` | Negates a number. |
-| [`inc`](#inc) | `( a -- a+1 )` | Adds 1 to a number. |
-| [`dec`](#dec) | `( a -- a-1 )` | Subtracts 1 from a number. |
-
-#### +
-
-Adds two numbers.
-
-**Signature:** `( a b -- sum )`
-
-**Example:**
-
-```qd
-3 4 + // 7
-```
-
----
-
-#### add
-
-Adds two numbers.
-
-**Signature:** `( a b -- sum )`
-
----
-
-#### -
-
-Subtracts b from a.
-
-**Signature:** `( a b -- diff )`
-
-**Example:**
-
-```qd
-10 3 - // 7
-```
-
----
-
-#### sub
-
-Subtracts b from a.
-
-**Signature:** `( a b -- diff )`
-
----
-
-#### *
-
-Multiplies two numbers.
-
-**Signature:** `( a b -- product )`
-
-**Example:**
-
-```qd
-6 7 * // 42
-```
-
----
-
-#### mul
-
-Multiplies two numbers.
-
-**Signature:** `( a b -- product )`
-
----
-
-#### /
-
-Divides a by b.
-
-**Signature:** `( a b -- quotient )`
-
-**Example:**
-
-```qd
-20 4 / // 5
-```
-
----
-
-#### div
-
-Divides a by b.
-
-**Signature:** `( a b -- quotient )`
-
----
-
-#### %
-
-Computes a modulo b.
-
-**Signature:** `( a b -- remainder )`
-
-**Example:**
-
-```qd
-17 5 % // 2
-```
-
----
-
-#### mod
-
-Computes a modulo b.
-
-**Signature:** `( a b -- remainder )`
-
----
-
-#### neg
-
-Negates a number.
-
-**Signature:** `( a -- -a )`
-
-**Example:**
-
-```qd
-5 neg // -5
-```
-
----
-
-#### inc
-
-Adds 1 to a number.
-
-**Signature:** `( a -- a+1 )`
-
-**Example:**
-
-```qd
-5 inc // 6
-```
-
----
-
-#### dec
-
-Subtracts 1 from a number.
-
-**Signature:** `( a -- a-1 )`
-
-**Example:**
-
-```qd
-5 dec // 4
-```
-
----
-
-### COMPARISON OPERATIONS
-
-| Instruction | Signature | Description |
-|-------------|-----------|-------------|
-| [`==`](#eqeq) | `( a b -- bool )` | Returns 1 if a equals b, 0 otherwise. |
-| [`eq`](#eq) | `( a b -- bool )` | Returns 1 if a equals b, 0 otherwise. |
-| [`!=`](#bangeq) | `( a b -- bool )` | Returns 1 if a does not equal b, 0 otherwise. |
-| [`neq`](#neq) | `( a b -- bool )` | Returns 1 if a does not equal b, 0 otherwise. |
-| [`<`](#lt) | `( a b -- bool )` | Returns 1 if a is less than b, 0 otherwise. |
-| [`lt`](#lt) | `( a b -- bool )` | Returns 1 if a is less than b, 0 otherwise. |
-| [`<=`](#lteq) | `( a b -- bool )` | Returns 1 if a is less than or equal to b, 0 otherwise. |
-| [`lte`](#lte) | `( a b -- bool )` | Returns 1 if a is less than or equal to b, 0 otherwise. |
-| [`>`](#gt) | `( a b -- bool )` | Returns 1 if a is greater than b, 0 otherwise. |
-| [`gt`](#gt) | `( a b -- bool )` | Returns 1 if a is greater than b, 0 otherwise. |
-| [`>=`](#gteq) | `( a b -- bool )` | Returns 1 if a is greater than or equal to b, 0 otherwise. |
-| [`gte`](#gte) | `( a b -- bool )` | Returns 1 if a is greater than or equal to b, 0 otherwise. |
-| [`within`](#within) | `( val low high -- bool )` | Returns 1 if val is in [low, high), 0 otherwise. |
-
-#### ==
-
-Returns 1 if a equals b, 0 otherwise.
-
-**Signature:** `( a b -- bool )`
-
-**Example:**
-
-```qd
-5 5 == // 1
-```
-
----
-
-#### eq
-
-Returns 1 if a equals b, 0 otherwise.
-
-**Signature:** `( a b -- bool )`
-
----
-
-#### !=
-
-Returns 1 if a does not equal b, 0 otherwise.
-
-**Signature:** `( a b -- bool )`
-
-**Example:**
-
-```qd
-5 3 != // 1
-```
-
----
-
-#### neq
-
-Returns 1 if a does not equal b, 0 otherwise.
-
-**Signature:** `( a b -- bool )`
-
----
-
-#### <
-
-Returns 1 if a is less than b, 0 otherwise.
-
-**Signature:** `( a b -- bool )`
-
-**Example:**
-
-```qd
-3 5 < // 1
-```
-
----
-
-#### lt
-
-Returns 1 if a is less than b, 0 otherwise.
-
-**Signature:** `( a b -- bool )`
-
----
-
-#### <=
-
-Returns 1 if a is less than or equal to b, 0 otherwise.
-
-**Signature:** `( a b -- bool )`
-
-**Example:**
-
-```qd
-5 5 <= // 1
-```
-
----
-
-#### lte
-
-Returns 1 if a is less than or equal to b, 0 otherwise.
-
-**Signature:** `( a b -- bool )`
-
----
-
-#### >
-
-Returns 1 if a is greater than b, 0 otherwise.
-
-**Signature:** `( a b -- bool )`
-
-**Example:**
-
-```qd
-5 3 > // 1
-```
-
----
-
-#### gt
-
-Returns 1 if a is greater than b, 0 otherwise.
-
-**Signature:** `( a b -- bool )`
-
----
-
-#### >=
-
-Returns 1 if a is greater than or equal to b, 0 otherwise.
-
-**Signature:** `( a b -- bool )`
-
-**Example:**
-
-```qd
-5 5 >= // 1
-```
-
----
-
-#### gte
-
-Returns 1 if a is greater than or equal to b, 0 otherwise.
-
-**Signature:** `( a b -- bool )`
-
----
-
-#### within
-
-Returns 1 if val is in [low, high), 0 otherwise.
-
-**Signature:** `( val low high -- bool )`
-
-**Example:**
-
-```qd
-5 0 10 within // 1
-```
-
----
-
-### BITWISE OPERATIONS
-
-| Instruction | Signature | Description |
-|-------------|-----------|-------------|
-| [`and`](#and) | `( a b -- result )` | Computes bitwise AND of two integers. |
-| [`or`](#or) | `( a b -- result )` | Computes bitwise OR of two integers. |
-| [`xor`](#xor) | `( a b -- result )` | Computes bitwise XOR of two integers. |
-| [`not`](#not) | `( a -- result )` | Computes bitwise NOT (ones' complement). |
-| [`shl`](#shl) | `( a n -- result )` | Shifts a left by n bits. |
-| [`shr`](#shr) | `( a n -- result )` | Shifts a right by n bits (arithmetic shift). |
-
-#### and
-
-Computes bitwise AND of two integers.
-
-**Signature:** `( a b -- result )`
-
-**Example:**
-
-```qd
-0b1100 0b1010 and // 0b1000
-```
-
----
-
-#### or
-
-Computes bitwise OR of two integers.
-
-**Signature:** `( a b -- result )`
-
-**Example:**
-
-```qd
-0b1100 0b1010 or // 0b1110
-```
-
----
-
-#### xor
-
-Computes bitwise XOR of two integers.
-
-**Signature:** `( a b -- result )`
-
-**Example:**
-
-```qd
-0b1100 0b1010 xor // 0b0110
-```
-
----
-
-#### not
-
-Computes bitwise NOT (ones' complement).
-
-**Signature:** `( a -- result )`
-
-**Example:**
-
-```qd
-0 not // -1 (all bits set)
-```
-
----
-
-#### shl
-
-Shifts a left by n bits.
-
-**Signature:** `( a n -- result )`
-
-**Example:**
-
-```qd
-1 4 shl // 16
-```
-
----
-
-#### shr
-
-Shifts a right by n bits (arithmetic shift).
-
-**Signature:** `( a n -- result )`
-
-**Example:**
-
-```qd
-16 2 shr // 4
-```
-
----
-
-### ARRAY OPERATIONS
-
-| Instruction | Signature | Description |
-|-------------|-----------|-------------|
-| [`makei`](#makei) | `( size -- arr )` | Creates an array of size integers, initialized to 0. |
-| [`makef`](#makef) | `( size -- arr )` | Creates an array of size floats, initialized to 0.0. |
-| [`makes`](#makes) | `( size -- arr )` | Creates an array of size strings, initialized to empty. |
-| [`makep`](#makep) | `( size -- arr )` | Creates an array of size pointers, initialized to null. |
-| [`make`](#make) | `( size -- arr )` | Creates a typed array (use with make<Type> syntax). |
-| [`len`](#len) | `( arr -- len )` | Returns the number of elements in an array. |
-| [`nth`](#nth) | `( arr index -- value )` | Returns the element at the given index. |
-| [`set`](#set) | `( arr index value -- )` | Sets the element at the given index. |
-| [`append`](#append) | `( arr value -- arr )` | Appends a value to the array, returning the modified array. |
-| [`free`](#free) | `( arr -- )` | Frees the memory used by an array or struct. |
-
-#### makei
-
-Creates an array of size integers, initialized to 0.
-
-**Signature:** `( size -- arr )`
-
-**Example:**
-
-```qd
-10 makei -> arr
-```
-
----
-
-#### makef
-
-Creates an array of size floats, initialized to 0.0.
-
-**Signature:** `( size -- arr )`
-
-**Example:**
-
-```qd
-10 makef -> arr
-```
-
----
-
-#### makes
-
-Creates an array of size strings, initialized to empty.
-
-**Signature:** `( size -- arr )`
-
-**Example:**
-
-```qd
-10 makes -> arr
-```
-
----
-
-#### makep
-
-Creates an array of size pointers, initialized to null.
-
-**Signature:** `( size -- arr )`
-
-**Example:**
-
-```qd
-10 makep -> arr
-```
-
----
-
-#### make
-
-Creates a typed array (use with make<Type> syntax).
-
-**Signature:** `( size -- arr )`
-
-**Example:**
-
-```qd
-10 make<Point> -> points
-```
-
----
-
-#### len
-
-Returns the number of elements in an array.
-
-**Signature:** `( arr -- len )`
-
-**Example:**
-
-```qd
-arr len // number of elements
-```
-
----
-
-#### nth
-
-Returns the element at the given index.
-
-**Signature:** `( arr index -- value )`
-
-**Example:**
-
-```qd
-arr 0 nth // first element
-```
-
----
-
-#### set
-
-Sets the element at the given index.
-
-**Signature:** `( arr index value -- )`
-
-**Example:**
-
-```qd
-arr 0 42 set
-```
-
----
-
-#### append
-
-Appends a value to the array, returning the modified array.
-
-**Signature:** `( arr value -- arr )`
-
-**Example:**
-
-```qd
-arr 42 append -> arr
-```
-
----
-
-#### free
-
-Frees the memory used by an array or struct.
-
-**Signature:** `( arr -- )`
-
-**Example:**
-
-```qd
-arr free
-```
-
----
-
-### TYPE CASTING
-
-| Instruction | Signature | Description |
-|-------------|-----------|-------------|
-| [`cast`](#cast) | `( val -- T )` | Converts a value to the specified type (use with cast<T> syntax). |
-
-#### cast
-
-Converts a value to the specified type (use with cast<T> syntax).
-
-**Signature:** `( val -- T )`
-
-**Example:**
-
-```qd
-3.14 cast<i64> // 3
-42 cast<f64> // 42.0
-42 cast<str> // "42"
-```
-
----
-
-### INPUT/OUTPUT
-
-| Instruction | Signature | Description |
-|-------------|-----------|-------------|
-| [`print`](#print) | `( val -- )` | Prints a value to stdout without a newline. |
-| [`printv`](#printv) | `( val -- )` | Prints a value with type information for debugging. |
-| [`prints`](#prints) | `()` | Prints the entire stack contents without clearing it. |
-| [`printsv`](#printsv) | `()` | Prints the entire stack with type information for debugging. |
-| [`nl`](#nl) | `()` | Prints a newline character to stdout. |
-| [`read`](#read) | `( -- ... n )` | Reads command line arguments onto the stack, pushing count last. |
-
-#### print
-
-Prints a value to stdout without a newline.
-
-**Signature:** `( val -- )`
-
-**Example:**
-
-```qd
-42 print
-```
-
----
-
-#### printv
-
-Prints a value with type information for debugging.
-
-**Signature:** `( val -- )`
-
----
-
-#### prints
-
-Prints the entire stack contents without clearing it.
-
-**Signature:** `()`
-
-**Example:**
-
-```qd
-1 2 3 prints  // prints entire stack
-```
-
----
-
-#### printsv
-
-Prints the entire stack with type information for debugging.
-
-**Signature:** `()`
-
----
-
-#### nl
-
-Prints a newline character to stdout.
-
-**Signature:** `()`
-
-**Example:**
-
-```qd
-nl
-```
-
----
-
-#### read
-
-Reads command line arguments onto the stack, pushing count last.
-
-**Signature:** `( -- ... n )`
-
-**Example:**
-
-```qd
-read -> argc // reads command line args
-```
-
----
-
 ### ERROR HANDLING
 
 | Instruction | Signature | Description |
@@ -1270,52 +1322,3 @@ Signals an error and returns from the fallible function.
 
 ---
 
-### THREADING
-
-| Instruction | Signature | Description |
-|-------------|-----------|-------------|
-| [`spawn`](#spawn) | `( fn -- thread )` | Spawns a new thread to execute a function. |
-| [`wait`](#wait) | `( thread -- )` | Waits for a thread to complete. |
-| [`detach`](#detach) | `( thread -- )` | Detaches a thread, allowing it to run independently. |
-
-#### spawn
-
-Spawns a new thread to execute a function.
-
-**Signature:** `( fn -- thread )`
-
----
-
-#### wait
-
-Waits for a thread to complete.
-
-**Signature:** `( thread -- )`
-
----
-
-#### detach
-
-Detaches a thread, allowing it to run independently.
-
-**Signature:** `( thread -- )`
-
----
-
-### MISCELLANEOUS
-
-| Instruction | Signature | Description |
-|-------------|-----------|-------------|
-| [`call`](#call) | `( fn -- ... )` | Calls a function pointer obtained with &funcname syntax. |
-
-#### call
-
-Calls a function pointer obtained with &funcname syntax.
-
-**Signature:** `( fn -- ... )`
-
-**Example:**
-
-```qd
-&foo call  // calls the function foo
-```

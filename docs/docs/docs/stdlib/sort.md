@@ -1,4 +1,4 @@
-# sort
+# `use` sort
 
 Sorting algorithms for arrays.
 Arrays are pointers to contiguous i64 values.
@@ -9,7 +9,7 @@ Arrays are pointers to contiguous i64 values.
 
 Sort an array of i64 in ascending order (insertion sort).
 
-**Signature:** `( arr:ptr count:i64 -- )`
+**Signature:** `( arr:ptr count:i64 --  )`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -28,7 +28,7 @@ arr count sort::ints
 
 Sort an array of i64 in descending order.
 
-**Signature:** `( arr:ptr count:i64 -- )`
+**Signature:** `( arr:ptr count:i64 --  )`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -116,7 +116,7 @@ arr count sort::min  // val
 
 Reverse an array in place.
 
-**Signature:** `( arr:ptr count:i64 -- )`
+**Signature:** `( arr:ptr count:i64 --  )`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -152,3 +152,4 @@ Binary search for value in sorted array.
 ```qd
 arr count 42 sort::search  // idx
 ```
+

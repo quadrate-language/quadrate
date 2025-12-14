@@ -1,4 +1,4 @@
-# bits
+# `use` bits
 
 ## Functions
 
@@ -74,10 +74,7 @@ Check if a bit is set.
 
 ### `fn` mask
 
-Bitwise operations for integer manipulation.
-Core operations (and, or, xor, not, shl, shr) are builtins.
-This module provides higher-level bit manipulation functions.
-Keep only the bottom N bits.
+Bitwise operations for integer manipulation.  Core operations (and, or, xor, not, shl, shr) are builtins. This module provides higher-level bit manipulation functions. Keep only the bottom N bits.
 
 **Signature:** `( value:i64 num_bits:i64 -- result:i64 )`
 
@@ -191,29 +188,6 @@ Rotate bits right within a width.
 
 ---
 
-### `fn` set_bit
-
-Set a bit to 1.
-
-**Signature:** `( value:i64 bit_pos:i64 -- result:i64 )`
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `value` | `i64` | Input value |
-| `bit_pos` | `i64` | Bit position to set |
-
-| Output | Type | Description |
-|--------|------|-------------|
-| `result` | `i64` | Value with bit set |
-
-**Example:**
-
-```qd
-0b1000 1 bits::set_bit .  // 10 (0b1010)
-```
-
----
-
 ### `fn` set_bits
 
 Set a bit field in a value.
@@ -239,6 +213,29 @@ Set a bit field in a value.
 
 ---
 
+### `fn` set_bit
+
+Set a bit to 1.
+
+**Signature:** `( value:i64 bit_pos:i64 -- result:i64 )`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `value` | `i64` | Input value |
+| `bit_pos` | `i64` | Bit position to set |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `result` | `i64` | Value with bit set |
+
+**Example:**
+
+```qd
+0b1000 1 bits::set_bit .  // 10 (0b1010)
+```
+
+---
+
 ### `fn` toggle_bit
 
 Toggle a bit.
@@ -259,3 +256,4 @@ Toggle a bit.
 ```qd
 0b1010 0 bits::toggle_bit .  // 11 (0b1011)
 ```
+

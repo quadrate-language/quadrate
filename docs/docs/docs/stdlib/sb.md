@@ -1,4 +1,4 @@
-# sb
+# `use` sb
 
 StringBuilder - Efficient string building.
 Avoids O(n²) cost of repeated str::concat.
@@ -16,29 +16,6 @@ Growable string buffer for efficient string building.
 | `cap` | `i64` | Buffer capacity |
 
 ## Functions
-
-### `fn` append
-
-Append a string to the builder.
-
-**Signature:** `( sb:ptr s:str -- sb:ptr )`
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `sb` | `ptr` | Builder to append to |
-| `s` | `str` | String to append |
-
-| Output | Type | Description |
-|--------|------|-------------|
-| `sb` | `ptr` | Updated builder |
-
-**Example:**
-
-```qd
-builder "hello" sb::append  // builder
-```
-
----
 
 ### `fn` append_char
 
@@ -82,6 +59,29 @@ Append an integer as string.
 
 ```qd
 builder 42 sb::append_int  // builder
+```
+
+---
+
+### `fn` append
+
+Append a string to the builder.
+
+**Signature:** `( sb:ptr s:str -- sb:ptr )`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `sb` | `ptr` | Builder to append to |
+| `s` | `str` | String to append |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `sb` | `ptr` | Updated builder |
+
+**Example:**
+
+```qd
+builder "hello" sb::append  // builder
 ```
 
 ---
@@ -134,7 +134,7 @@ builder sb::finish  // result
 
 Free the builder's resources.
 
-**Signature:** `( sb:ptr -- )`
+**Signature:** `( sb:ptr --  )`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -174,7 +174,7 @@ builder sb::length  // sblen
 
 Create a new StringBuilder with default capacity.
 
-**Signature:** `( -- sb:ptr )`
+**Signature:** `(  -- sb:ptr )`
 
 | Output | Type | Description |
 |--------|------|-------------|
@@ -207,3 +207,4 @@ Create a StringBuilder with specific initial capacity.
 ```qd
 1024 sb::with_capacity  // builder
 ```
+

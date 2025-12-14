@@ -1,4 +1,4 @@
-# os
+# `use` os
 
 Operating system interface.
 Error codes: Ok=1 (success), specific errors start at 2
@@ -18,6 +18,8 @@ Error codes: Ok=1 (success), specific errors start at 2
 | `ErrOutOfMemory` | `11` | Error: Out of memory. |
 | `ErrPermission` | `3` | Error: Permission denied. |
 | `ErrReadOnly` | `9` | Error: Read-only file system. |
+| `ExitFailure` | `1` | Exit code for failed termination. |
+| `ExitSuccess` | `0` | Exit code for successful termination. |
 
 ## Functions
 
@@ -25,7 +27,7 @@ Error codes: Ok=1 (success), specific errors start at 2
 
 Copy a file.
 
-**Signature:** `( srcpath:str dstpath:str -- )!`
+**Signature:** `( srcpath:str dstpath:str --  )!`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -49,7 +51,7 @@ Copy a file.
 
 Delete a file or empty directory.
 
-**Signature:** `( path:str -- )!`
+**Signature:** `( path:str --  )!`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -94,16 +96,16 @@ Check if path exists.
 
 Exit the program with status code.
 
-**Signature:** `( code:i64 -- )`
+**Signature:** `( code:i64 --  )`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `code` | `i64` | Exit status (0 = success) |
+| `code` | `i64` | Exit status (os::ExitSuccess or os::ExitFailure) |
 
 **Example:**
 
 ```qd
-0 os::exit
+os::ExitSuccess os::exit
 ```
 
 ---
@@ -162,7 +164,7 @@ List directory contents.
 
 Create a directory.
 
-**Signature:** `( path:str -- )!`
+**Signature:** `( path:str --  )!`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -185,7 +187,7 @@ Create a directory.
 
 Rename or move a file.
 
-**Signature:** `( oldpath:str newpath:str -- )!`
+**Signature:** `( oldpath:str newpath:str --  )!`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -209,7 +211,7 @@ Rename or move a file.
 
 Set environment variable.
 
-**Signature:** `( name:str value:str -- )`
+**Signature:** `( name:str value:str --  )`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -243,3 +245,4 @@ Execute a shell command.
 ```qd
 "ls -la" os::system  // code
 ```
+

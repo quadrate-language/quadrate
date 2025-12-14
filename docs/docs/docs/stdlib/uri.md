@@ -1,4 +1,4 @@
-# uri
+# `use` uri
 
 URI encoding, decoding, and parsing.
 Handles percent-encoding and URI component extraction.
@@ -151,3 +151,4 @@ Check if a query parameter exists.
 ```qd
 "foo=bar&x=1" "foo" uri::query_has  // exists
 ```
+

@@ -23,10 +23,16 @@ pub const ErrNameTooLong = 10
 pub const ErrOutOfMemory = 11
 /// Error: Invalid argument.
 pub const ErrInvalidArg = 12
+
+/// Exit code for successful termination.
+pub const ExitSuccess = 0
+/// Exit code for failed termination.
+pub const ExitFailure = 1
+
 import "libqdos.a" as "os" {
 	/// Exit the program with status code.
-	/// @param code i64 Exit status (0 = success)
-	/// @example 0 os::exit
+	/// @param code i64 Exit status (os::ExitSuccess or os::ExitFailure)
+	/// @example os::ExitSuccess os::exit
 	pub fn exit(code:i64 -- )
 
 	/// Execute a shell command.
