@@ -20,6 +20,11 @@ Error codes: `Ok` (1) for success, specific errors start at 2.
 
 Parsed command-line arguments.
 
+| Field | Type | Description |
+|-------|------|-------------|
+| `argc` | `i64` | Argument count |
+| `argv` | `str` | Arguments string |
+
 ## Functions
 
 ### boolean

@@ -9,6 +9,15 @@ Handles percent-encoding and URI component extraction.
 
 Parsed URI components.
 
+| Field | Type | Description |
+|-------|------|-------------|
+| `scheme` | `str` | URI scheme (e.g., "https") |
+| `host` | `str` | Host name |
+| `port` | `i64` | Port number (0 if not specified) |
+| `path` | `str` | Path component |
+| `query` | `str` | Query string (without leading "?") |
+| `fragment` | `str` | Fragment (without leading "#") |
+
 ## Functions
 
 ### build

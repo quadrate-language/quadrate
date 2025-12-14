@@ -7,7 +7,11 @@ Fast, high-quality PRNG suitable for most applications.
 
 ### Rng
 
-RNG state struct.
+Random number generator state.
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `state` | `i64` | Internal RNG state |
 
 ## Functions
 

@@ -7,7 +7,13 @@ Avoids O(n²) cost of repeated str::concat.
 
 ### StringBuilder
 
-StringBuilder struct holds buffer, length, and capacity.
+Growable string buffer for efficient string building.
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `buf` | `ptr` | Internal buffer |
+| `len` | `i64` | Current length |
+| `cap` | `i64` | Buffer capacity |
 
 ## Functions
 
