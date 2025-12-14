@@ -94,6 +94,8 @@ namespace Qd {
 				"ctx", "defer",
 				// Boolean literals
 				"true", "false",
+				// Result constants
+				"Ok", "Err",
 				// Type names (reserved to avoid confusion)
 				"i64", "f64", "str", "ptr", "void"};
 		return KEYWORDS.find(name) != KEYWORDS.end();

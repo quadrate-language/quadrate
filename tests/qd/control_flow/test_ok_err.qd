@@ -1,0 +1,17 @@
+// Test Ok and Err builtin constants
+fn main() {
+    // Test values
+    "Ok=" print Ok print nl
+    "Err=" print Err print nl
+
+    // Test in switch
+    1 switch {
+        Ok { "matched Ok" print nl }
+        Err { "matched Err" print nl }
+    }
+
+    0 switch {
+        Ok { "matched Ok" print nl }
+        Err { "matched Err" print nl }
+    }
+}

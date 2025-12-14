@@ -428,6 +428,16 @@ namespace Qd {
 				setNodePosition(node, scanner, src);
 				return node;
 			}
+			// Handle result constants: Ok = 1, Err = 0
+			if (strcmp(text, "Ok") == 0) {
+				IAstNode* node = new AstNodeLiteral("1", AstNodeLiteral::LiteralType::INTEGER);
+				setNodePosition(node, scanner, src);
+				return node;
+			} else if (strcmp(text, "Err") == 0) {
+				IAstNode* node = new AstNodeLiteral("0", AstNodeLiteral::LiteralType::INTEGER);
+				setNodePosition(node, scanner, src);
+				return node;
+			}
 			if (isBuiltInInstruction(text)) {
 				std::string instrName(text);
 				// Check for generic type parameter: instruction<Type>
@@ -853,6 +863,16 @@ namespace Qd {
 				setNodePosition(node, scanner, src);
 				return node;
 			} else if (strcmp(text, "false") == 0) {
+				IAstNode* node = new AstNodeLiteral("0", AstNodeLiteral::LiteralType::INTEGER);
+				setNodePosition(node, scanner, src);
+				return node;
+			}
+			// Handle result constants: Ok = 1, Err = 0
+			if (strcmp(text, "Ok") == 0) {
+				IAstNode* node = new AstNodeLiteral("1", AstNodeLiteral::LiteralType::INTEGER);
+				setNodePosition(node, scanner, src);
+				return node;
+			} else if (strcmp(text, "Err") == 0) {
 				IAstNode* node = new AstNodeLiteral("0", AstNodeLiteral::LiteralType::INTEGER);
 				setNodePosition(node, scanner, src);
 				return node;
@@ -1796,6 +1816,15 @@ namespace Qd {
 						IAstNode* node = new AstNodeLiteral("0", AstNodeLiteral::LiteralType::INTEGER);
 						setNodePosition(node, scanner, src);
 						tempNodes.push_back(node);
+					// Handle result constants: Ok = 1, Err = 0
+					} else if (strcmp(text, "Ok") == 0) {
+						IAstNode* node = new AstNodeLiteral("1", AstNodeLiteral::LiteralType::INTEGER);
+						setNodePosition(node, scanner, src);
+						tempNodes.push_back(node);
+					} else if (strcmp(text, "Err") == 0) {
+						IAstNode* node = new AstNodeLiteral("0", AstNodeLiteral::LiteralType::INTEGER);
+						setNodePosition(node, scanner, src);
+						tempNodes.push_back(node);
 					} else if (isBuiltInInstruction(text)) {
 						std::string instrName(text);
 						// Check for generic type parameter: instruction<Type>
@@ -2676,9 +2705,16 @@ namespace Qd {
 						}
 					}
 				} else {
-					caseValue = isBuiltInInstruction(valueText)
-										? static_cast<IAstNode*>(new AstNodeInstruction(valueText))
-										: static_cast<IAstNode*>(new AstNodeIdentifier(valueText));
+					// Handle boolean literals and result constants in switch cases
+					if (strcmp(valueText, "true") == 0 || strcmp(valueText, "Ok") == 0) {
+						caseValue = new AstNodeLiteral("1", AstNodeLiteral::LiteralType::INTEGER);
+					} else if (strcmp(valueText, "false") == 0 || strcmp(valueText, "Err") == 0) {
+						caseValue = new AstNodeLiteral("0", AstNodeLiteral::LiteralType::INTEGER);
+					} else {
+						caseValue = isBuiltInInstruction(valueText)
+											? static_cast<IAstNode*>(new AstNodeInstruction(valueText))
+											: static_cast<IAstNode*>(new AstNodeIdentifier(valueText));
+					}
 					setNodePosition(caseValue, scanner, src);
 				}
 			}
