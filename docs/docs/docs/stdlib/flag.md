@@ -80,12 +80,14 @@ Get float value of a flag.
 
 **Errors:**
 
-- Flag not found
+| Code | Description |
+|------|-------------|
+| `flag::ErrNotFound` | Flag not found |
 
 **Example:**
 
 ```qd
-f "--rate" flag::float!  // rate
+f "--rate" flag::float! -> rate
 ```
 
 ---
@@ -107,12 +109,14 @@ Get integer value of a flag.
 
 **Errors:**
 
-- Flag not found
+| Code | Description |
+|------|-------------|
+| `flag::ErrNotFound` | Flag not found |
 
 **Example:**
 
 ```qd
-f "--count" flag::int!  // count
+f "--count" flag::int! -> count
 ```
 
 ---
@@ -156,7 +160,9 @@ Get positional argument at index.
 
 **Errors:**
 
-- Not implemented
+| Code | Description |
+|------|-------------|
+| `flag::ErrNotFound` | Not yet implemented |
 
 ---
 
@@ -177,10 +183,13 @@ Get string value of a flag.
 
 **Errors:**
 
-- Flag not found
+| Code | Description |
+|------|-------------|
+| `flag::ErrNotFound` | Flag not found |
+| `flag::ErrNoValue` | Flag exists but has no value |
 
 **Example:**
 
 ```qd
-f "--name" flag::string!  // name
+f "--name" flag::string! -> name
 ```

@@ -104,8 +104,9 @@ Open a file.
 
 **Errors:**
 
-- `io::ErrNotFound` - File not found
-- `io::ErrPermission` - Permission denied
+| Code | Description |
+|------|-------------|
+| `io::ErrNotFound` | File not found |
 
 **Example (with !):**
 
@@ -154,12 +155,15 @@ Read bytes into buffer.
 
 **Errors:**
 
-- Read failed
+| Code | Description |
+|------|-------------|
+| `io::ErrInvalidArg` | Invalid file handle, buffer, or count |
+| `io::ErrRead` | Read operation failed |
 
 **Example:**
 
 ```qd
-f buf 1024 io::read!  // n
+f buf 1024 io::read! -> n
 ```
 
 ---
@@ -176,12 +180,14 @@ Read a line from stdin.
 
 **Errors:**
 
-- Read failed
+| Code | Description |
+|------|-------------|
+| `io::ErrEof` | End of file or read error |
 
 **Example:**
 
 ```qd
-io::readline!  // input
+io::readline! -> input
 ```
 
 ---
@@ -204,7 +210,11 @@ Seek to position in file.
 
 **Errors:**
 
-- Seek failed
+| Code | Description |
+|------|-------------|
+| `io::ErrInvalidHandle` | Invalid file handle |
+| `io::ErrInvalidArg` | Invalid whence value |
+| `io::ErrSeek` | Seek operation failed |
 
 **Example:**
 
@@ -230,12 +240,15 @@ Get current position in file.
 
 **Errors:**
 
-- Tell failed
+| Code | Description |
+|------|-------------|
+| `io::ErrInvalidHandle` | Invalid file handle |
+| `io::ErrSeek` | Tell operation failed |
 
 **Example:**
 
 ```qd
-f io::tell!  // pos
+f io::tell! -> pos
 ```
 
 ---
@@ -258,7 +271,10 @@ Write bytes from buffer.
 
 **Errors:**
 
-- Write failed
+| Code | Description |
+|------|-------------|
+| `io::ErrInvalidArg` | Invalid file handle, buffer, or count |
+| `io::ErrWrite` | Write operation failed |
 
 **Example:**
 

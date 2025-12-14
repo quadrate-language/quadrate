@@ -37,8 +37,10 @@ Copy a file.
 
 **Errors:**
 
-- File not found
-- Permission denied
+| Code | Description |
+|------|-------------|
+| `os::ErrNotFound` | File not found |
+| `os::ErrPermission` | Permission denied |
 
 **Example:**
 
@@ -77,15 +79,12 @@ Delete a file or empty directory.
 		"File deleted" print nl
 	}
 	os::ErrNotFound {
-		drop
 		"File not found" print nl
 	}
 	os::ErrPermission {
-		drop
 		"Permission denied" print nl
 	}
 	_ {
-		drop
 		"Delete failed" print nl
 	}
 }
@@ -172,8 +171,10 @@ List directory contents.
 
 **Errors:**
 
-- File not found
-- Not a directory
+| Code | Description |
+|------|-------------|
+| `os::ErrNotFound` | File not found |
+| `os::ErrNotDirectory` | Path is not a directory |
 
 **Example:**
 
@@ -195,8 +196,10 @@ Create a directory.
 
 **Errors:**
 
-- File exists
-- Permission denied
+| Code | Description |
+|------|-------------|
+| `os::ErrExists` | File already exists |
+| `os::ErrPermission` | Permission denied |
 
 **Example:**
 
@@ -219,8 +222,10 @@ Rename or move a file.
 
 **Errors:**
 
-- File not found
-- Permission denied
+| Code | Description |
+|------|-------------|
+| `os::ErrNotFound` | File not found |
+| `os::ErrPermission` | Permission denied |
 
 **Example:**
 

@@ -262,7 +262,9 @@ Replace all occurrences of substring.
 
 **Errors:**
 
-- Memory allocation failed
+| Code | Description |
+|------|-------------|
+| `str::ErrAlloc` | Memory allocation failed |
 
 **Example:**
 
@@ -290,7 +292,9 @@ Split string by delimiter.
 
 **Errors:**
 
-- Memory allocation failed
+| Code | Description |
+|------|-------------|
+| `str::ErrAlloc` | Memory allocation failed |
 
 **Example:**
 
@@ -341,7 +345,9 @@ Extract substring.
 
 **Errors:**
 
-- Out of bounds
+| Code | Description |
+|------|-------------|
+| `str::ErrOutOfBounds` | Index out of bounds |
 
 **Example:**
 
