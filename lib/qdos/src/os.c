@@ -7,6 +7,41 @@
 #include <errno.h>
 #include "os_fs.h"
 
+/**
+ * @brief Translate errno to os module error code
+ */
+static int errno_to_os_error(int err) {
+	switch (err) {
+	case 0:
+		return OS_ERR_OK;
+	case ENOENT:
+		return OS_ERR_NOT_FOUND;
+	case EACCES:
+	case EPERM:
+		return OS_ERR_PERMISSION;
+	case EEXIST:
+		return OS_ERR_EXISTS;
+	case ENOTDIR:
+		return OS_ERR_NOT_DIRECTORY;
+	case EISDIR:
+		return OS_ERR_IS_DIRECTORY;
+	case EIO:
+		return OS_ERR_IO;
+	case ENOSPC:
+		return OS_ERR_NO_SPACE;
+	case EROFS:
+		return OS_ERR_READ_ONLY;
+	case ENAMETOOLONG:
+		return OS_ERR_NAME_TOO_LONG;
+	case ENOMEM:
+		return OS_ERR_OUT_OF_MEMORY;
+	case EINVAL:
+		return OS_ERR_INVALID_ARG;
+	default:
+		return OS_ERR_IO; // Default to I/O error for unknown errors
+	}
+}
+
 qd_exec_result usr_os_exit(qd_context* ctx) {
 	// Check stack has at least 1 element
 	size_t stack_size = qd_stack_size(ctx->st);
@@ -36,7 +71,7 @@ qd_exec_result usr_os_exit(qd_context* ctx) {
 	exit((int)elem.value.i);
 
 	// This line is never reached, but needed for compiler
-	return (qd_exec_result){OS_ERR_NONE};
+	return (qd_exec_result){OS_ERR_OK};
 }
 
 qd_exec_result usr_os_system(qd_context* ctx) {
@@ -78,7 +113,7 @@ qd_exec_result usr_os_system(qd_context* ctx) {
 		abort();
 	}
 
-	return (qd_exec_result){OS_ERR_NONE};
+	return (qd_exec_result){OS_ERR_OK};
 }
 
 qd_exec_result usr_os_getenv(qd_context* ctx) {
@@ -115,7 +150,7 @@ qd_exec_result usr_os_getenv(qd_context* ctx) {
 		abort();
 	}
 
-	return (qd_exec_result){OS_ERR_NONE};
+	return (qd_exec_result){OS_ERR_OK};
 }
 
 qd_exec_result usr_os_exists(qd_context* ctx) {
@@ -151,7 +186,7 @@ qd_exec_result usr_os_exists(qd_context* ctx) {
 		abort();
 	}
 
-	return (qd_exec_result){OS_ERR_NONE};
+	return (qd_exec_result){OS_ERR_OK};
 }
 
 qd_exec_result usr_os_delete(qd_context* ctx) {
@@ -178,18 +213,18 @@ qd_exec_result usr_os_delete(qd_context* ctx) {
 
 	// Delete the file (remove is C standard, works on all platforms)
 	int result = remove(qd_string_data(elem.value.s));
-	int error_code = (result != 0) ? errno : 0;
+	int error_code = (result != 0) ? errno_to_os_error(errno) : OS_ERR_OK;
 	qd_string_release(elem.value.s);
 
-	// Push errno (0 = success, or errno value on error)
+	// Push error code (OS_ERR_OK = success, or specific error code)
 	err = qd_stack_push_int(ctx->st, (int64_t)error_code);
 	if (err != QD_STACK_OK) {
-		fprintf(stderr, "Fatal error in os::delete: Failed to push errno\n");
+		fprintf(stderr, "Fatal error in os::delete: Failed to push error code\n");
 		qd_print_stack_trace(ctx);
 		abort();
 	}
 
-	// Return error code (errno value, 0 for success)
+	// Return error code
 	return (qd_exec_result){error_code};
 }
 
@@ -235,19 +270,19 @@ qd_exec_result usr_os_rename(qd_context* ctx) {
 
 	// Rename the file
 	int result = rename(qd_string_data(oldpath_elem.value.s), qd_string_data(newpath_elem.value.s));
-	int error_code = (result == -1) ? errno : 0;
+	int error_code = (result == -1) ? errno_to_os_error(errno) : OS_ERR_OK;
 	qd_string_release(oldpath_elem.value.s);
 	qd_string_release(newpath_elem.value.s);
 
-	// Push errno (0 = success, or errno value on error)
+	// Push error code (OS_ERR_OK = success, or specific error code)
 	err = qd_stack_push_int(ctx->st, (int64_t)error_code);
 	if (err != QD_STACK_OK) {
-		fprintf(stderr, "Fatal error in os::rename: Failed to push errno\n");
+		fprintf(stderr, "Fatal error in os::rename: Failed to push error code\n");
 		qd_print_stack_trace(ctx);
 		abort();
 	}
 
-	// Return error code (errno value, 0 for success)
+	// Return error code
 	return (qd_exec_result){error_code};
 }
 
@@ -293,37 +328,40 @@ qd_exec_result usr_os_copy(qd_context* ctx) {
 
 	// Copy the file
 	FILE* src = fopen(qd_string_data(srcpath_elem.value.s), "rb");
-	int result = -1;
-	if (src) {
+	int error_code = OS_ERR_OK;
+	if (!src) {
+		error_code = errno_to_os_error(errno);
+	} else {
 		FILE* dst = fopen(qd_string_data(dstpath_elem.value.s), "wb");
-		if (dst) {
+		if (!dst) {
+			error_code = errno_to_os_error(errno);
+			fclose(src);
+		} else {
 			char buffer[4096];
 			size_t n;
-			result = 0;
 			while ((n = fread(buffer, 1, sizeof(buffer), src)) > 0) {
 				if (fwrite(buffer, 1, n, dst) != n) {
-					result = -1;
+					error_code = errno_to_os_error(errno);
 					break;
 				}
 			}
 			fclose(dst);
+			fclose(src);
 		}
-		fclose(src);
 	}
 
-	int error_code = (result == -1) ? errno : 0;
 	qd_string_release(srcpath_elem.value.s);
 	qd_string_release(dstpath_elem.value.s);
 
-	// Push errno (0 = success, or errno value on error)
+	// Push error code (OS_ERR_OK = success, or specific error code)
 	err = qd_stack_push_int(ctx->st, (int64_t)error_code);
 	if (err != QD_STACK_OK) {
-		fprintf(stderr, "Fatal error in os::copy: Failed to push errno\n");
+		fprintf(stderr, "Fatal error in os::copy: Failed to push error code\n");
 		qd_print_stack_trace(ctx);
 		abort();
 	}
 
-	// Return error code (errno value, 0 for success)
+	// Return error code
 	return (qd_exec_result){error_code};
 }
 
@@ -350,18 +388,19 @@ qd_exec_result usr_os_mkdir(qd_context* ctx) {
 	}
 
 	// Create directory using C++17 filesystem wrapper (cross-platform)
-	int error_code = os_fs_mkdir(qd_string_data(elem.value.s));
+	int fs_error = os_fs_mkdir(qd_string_data(elem.value.s));
+	int error_code = (fs_error != 0) ? errno_to_os_error(fs_error) : OS_ERR_OK;
 	qd_string_release(elem.value.s);
 
-	// Push errno (0 = success, or errno value on error)
+	// Push error code (OS_ERR_OK = success, or specific error code)
 	err = qd_stack_push_int(ctx->st, (int64_t)error_code);
 	if (err != QD_STACK_OK) {
-		fprintf(stderr, "Fatal error in os::mkdir: Failed to push errno\n");
+		fprintf(stderr, "Fatal error in os::mkdir: Failed to push error code\n");
 		qd_print_stack_trace(ctx);
 		abort();
 	}
 
-	// Return error code (errno value, 0 for success)
+	// Return error code
 	return (qd_exec_result){error_code};
 }
 
@@ -414,7 +453,7 @@ qd_exec_result usr_os_setenv(qd_context* ctx) {
 		return (qd_exec_result){errno};
 	}
 
-	return (qd_exec_result){OS_ERR_NONE};
+	return (qd_exec_result){OS_ERR_OK};
 }
 
 qd_exec_result usr_os_list(qd_context* ctx) {
@@ -487,7 +526,7 @@ qd_exec_result usr_os_list(qd_context* ctx) {
 		abort();
 	}
 
-	// Push errno (0 for success)
-	qd_stack_push_int(ctx->st, OS_ERR_NONE);
-	return (qd_exec_result){OS_ERR_NONE};
+	// Push error code (OS_ERR_OK for success)
+	qd_stack_push_int(ctx->st, OS_ERR_OK);
+	return (qd_exec_result){OS_ERR_OK};
 }

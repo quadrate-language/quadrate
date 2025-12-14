@@ -1,13 +1,12 @@
 /// Command-line flag parsing.
+/// Error codes: Ok=1 (success), specific errors start at 2
 
-/// Error: No error (success).
-pub const ErrNone = 0
 /// Error: Flag not found.
-pub const ErrNotFound = 1
+pub const ErrNotFound = 2
 /// Error: Value not found (flag exists but has no value).
-pub const ErrNoValue = 2
+pub const ErrNoValue = 3
 /// Error: Invalid value format.
-pub const ErrInvalidValue = 3
+pub const ErrInvalidValue = 4
 
 use str
 use unicode

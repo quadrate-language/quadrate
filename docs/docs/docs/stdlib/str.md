@@ -2,14 +2,17 @@
 
 String manipulation functions.
 
+Error codes: `Ok` (1) for success, specific errors start at 2.
+
 ## Constants
+
+### Error Codes
 
 | Name | Value | Description |
 |------|-------|-------------|
-| `ErrAlloc` | `2` | Error: Memory allocation failed. |
-| `ErrInvalidArg` | `3` | Error: Invalid argument. |
-| `ErrNone` | `0` | Error: No error (success). |
-| `ErrOutOfBounds` | `1` | Error: Index out of bounds. |
+| `ErrOutOfBounds` | `2` | Error: Index out of bounds. |
+| `ErrAlloc` | `3` | Error: Memory allocation failed. |
+| `ErrInvalidArg` | `4` | Error: Invalid argument. |
 
 ## Functions
 

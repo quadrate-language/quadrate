@@ -14,20 +14,21 @@
 /**
  * @brief Error codes for os module
  *
- * These match the constants defined in os/module.qd (using POSIX errno values)
+ * These match the constants defined in os/module.qd
+ * Ok=1 (success), specific errors start at 2
  */
-#define OS_ERR_NONE 0			/**< No error (success) */
-#define OS_ERR_NOT_FOUND 2		/**< No such file or directory (ENOENT) */
-#define OS_ERR_IO 5				/**< I/O error (EIO) */
-#define OS_ERR_OUT_OF_MEMORY 12 /**< Out of memory (ENOMEM) */
-#define OS_ERR_PERMISSION 13	/**< Permission denied (EACCES) */
-#define OS_ERR_EXISTS 17		/**< File already exists (EEXIST) */
-#define OS_ERR_NOT_DIRECTORY 20 /**< Not a directory (ENOTDIR) */
-#define OS_ERR_IS_DIRECTORY 21	/**< Is a directory (EISDIR) */
-#define OS_ERR_INVALID_ARG 22	/**< Invalid argument (EINVAL) */
-#define OS_ERR_NO_SPACE 28		/**< No space left on device (ENOSPC) */
-#define OS_ERR_READ_ONLY 30		/**< Read-only file system (EROFS) */
-#define OS_ERR_NAME_TOO_LONG 36 /**< File name too long (ENAMETOOLONG) */
+#define OS_ERR_OK 1				/**< Success (matches builtin Ok) */
+#define OS_ERR_NOT_FOUND 2		/**< No such file or directory */
+#define OS_ERR_PERMISSION 3		/**< Permission denied */
+#define OS_ERR_EXISTS 4			/**< File already exists */
+#define OS_ERR_NOT_DIRECTORY 5	/**< Not a directory */
+#define OS_ERR_IS_DIRECTORY 6	/**< Is a directory */
+#define OS_ERR_IO 7				/**< I/O error */
+#define OS_ERR_NO_SPACE 8		/**< No space left on device */
+#define OS_ERR_READ_ONLY 9		/**< Read-only file system */
+#define OS_ERR_NAME_TOO_LONG 10 /**< File name too long */
+#define OS_ERR_OUT_OF_MEMORY 11 /**< Out of memory */
+#define OS_ERR_INVALID_ARG 12	/**< Invalid argument */
 
 #ifdef __cplusplus
 extern "C" {

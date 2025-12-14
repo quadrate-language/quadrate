@@ -398,9 +398,9 @@ qd_exec_result usr_str_substring(qd_context* ctx) {
 	qd_string_release(str_elem.value.s);
 	qd_push_s(ctx, result);
 	free(result);
-	qd_push_i(ctx, 1);  // Success status for fallible function
+	qd_push_i(ctx, STR_ERR_OK);  // Success status for fallible function
 
-	return (qd_exec_result){0};
+	return (qd_exec_result){STR_ERR_OK};
 }
 
 // split - split string by delimiter ( str:s delim:s -- parts:p count:i )
@@ -495,9 +495,9 @@ qd_exec_result usr_str_split(qd_context* ctx) {
 
 	qd_push_p(ctx, parts);
 	qd_push_i(ctx, (int64_t)count);
-	qd_push_i(ctx, 1);  // Success status for fallible function
+	qd_push_i(ctx, STR_ERR_OK);  // Success status for fallible function
 
-	return (qd_exec_result){0};
+	return (qd_exec_result){STR_ERR_OK};
 }
 
 // replace - replace all occurrences ( str:s old:s new:s -- result:s )
@@ -548,8 +548,8 @@ qd_exec_result usr_str_replace(qd_context* ctx) {
 		qd_string_release(new_elem.value.s);
 		qd_push_s(ctx, qd_string_data(str_elem.value.s));
 		qd_string_release(str_elem.value.s);
-		qd_push_i(ctx, 1);  // Success status for fallible function
-		return (qd_exec_result){0};
+		qd_push_i(ctx, STR_ERR_OK);  // Success status for fallible function
+		return (qd_exec_result){STR_ERR_OK};
 	}
 
 	// Count occurrences
@@ -603,9 +603,9 @@ qd_exec_result usr_str_replace(qd_context* ctx) {
 
 	qd_push_s(ctx, result);
 	free(result);
-	qd_push_i(ctx, 1);  // Success status for fallible function
+	qd_push_i(ctx, STR_ERR_OK);  // Success status for fallible function
 
-	return (qd_exec_result){0};
+	return (qd_exec_result){STR_ERR_OK};
 }
 
 // compare - compare two strings ( str1:s str2:s -- result:i )

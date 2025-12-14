@@ -2,14 +2,17 @@
 
 Command-line flag parsing.
 
+Error codes: `Ok` (1) for success, specific errors start at 2.
+
 ## Constants
+
+### Error Codes
 
 | Name | Value | Description |
 |------|-------|-------------|
-| `ErrInvalidValue` | `3` | Error: Invalid value format. |
-| `ErrNoValue` | `2` | Error: Value not found (flag exists but has no value). |
-| `ErrNone` | `0` | Error: No error (success). |
-| `ErrNotFound` | `1` | Error: Flag not found. |
+| `ErrNotFound` | `2` | Error: Flag not found. |
+| `ErrNoValue` | `3` | Error: Value not found (flag exists but has no value). |
+| `ErrInvalidValue` | `4` | Error: Invalid value format. |
 
 ## Structs
 

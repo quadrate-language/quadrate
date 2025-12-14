@@ -16,16 +16,17 @@
  * @brief Error codes for io module
  *
  * These match the constants defined in io/module.qd
+ * Ok=1, Err=0 are reserved, specific errors start at 2
  */
-#define IO_ERR_NONE 0			/**< No error (success) */
-#define IO_ERR_NOT_FOUND 1		/**< File not found */
-#define IO_ERR_PERMISSION 2		/**< Permission denied */
-#define IO_ERR_INVALID_HANDLE 3 /**< Invalid file handle */
-#define IO_ERR_READ 4			/**< Read operation failed */
-#define IO_ERR_WRITE 5			/**< Write operation failed */
-#define IO_ERR_SEEK 6			/**< Seek operation failed */
-#define IO_ERR_EOF 7			/**< End of file reached */
-#define IO_ERR_INVALID_ARG 8	/**< Invalid argument */
+#define IO_ERR_OK 1				/**< Success (matches builtin Ok) */
+#define IO_ERR_NOT_FOUND 2		/**< File not found */
+#define IO_ERR_PERMISSION 3		/**< Permission denied */
+#define IO_ERR_INVALID_HANDLE 4 /**< Invalid file handle */
+#define IO_ERR_READ 5			/**< Read operation failed */
+#define IO_ERR_WRITE 6			/**< Write operation failed */
+#define IO_ERR_SEEK 7			/**< Seek operation failed */
+#define IO_ERR_EOF 8			/**< End of file reached */
+#define IO_ERR_INVALID_ARG 9	/**< Invalid argument */
 
 /**
  * @brief Open a file for reading, writing, or both

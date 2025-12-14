@@ -15,11 +15,12 @@
  * @brief Error codes for str module
  *
  * These match the constants defined in str/module.qd
+ * Ok=1 (success), specific errors start at 2
  */
-#define STR_ERR_NONE 0			/**< No error (success) */
-#define STR_ERR_OUT_OF_BOUNDS 1 /**< Index out of bounds */
-#define STR_ERR_ALLOC 2			/**< Memory allocation failed */
-#define STR_ERR_INVALID_ARG 3	/**< Invalid argument */
+#define STR_ERR_OK 1			/**< Success (matches builtin Ok) */
+#define STR_ERR_OUT_OF_BOUNDS 2 /**< Index out of bounds */
+#define STR_ERR_ALLOC 3			/**< Memory allocation failed */
+#define STR_ERR_INVALID_ARG 4	/**< Invalid argument */
 
 #ifdef __cplusplus
 extern "C" {

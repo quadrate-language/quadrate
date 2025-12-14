@@ -1,13 +1,12 @@
 /// String manipulation functions.
+/// Error codes: Ok=1 (success), specific errors start at 2
 
-/// Error: No error (success).
-pub const ErrNone = 0
 /// Error: Index out of bounds.
-pub const ErrOutOfBounds = 1
+pub const ErrOutOfBounds = 2
 /// Error: Memory allocation failed.
-pub const ErrAlloc = 2
+pub const ErrAlloc = 3
 /// Error: Invalid argument.
-pub const ErrInvalidArg = 3
+pub const ErrInvalidArg = 4
 
 import "libqdstr.a" as "str" {
 	/// Get string length in bytes.

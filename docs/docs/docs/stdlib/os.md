@@ -2,22 +2,25 @@
 
 Operating system interface.
 
+Error codes: `Ok` (1) for success, specific errors start at 2.
+
 ## Constants
+
+### Error Codes
 
 | Name | Value | Description |
 |------|-------|-------------|
-| `ErrExists` | `17` | Error: File already exists (EEXIST). |
-| `ErrInvalidArg` | `22` | Error: Invalid argument (EINVAL). |
-| `ErrIo` | `5` | Error: I/O error (EIO). |
-| `ErrIsDirectory` | `21` | Error: Is a directory when file expected (EISDIR). |
-| `ErrNameTooLong` | `36` | Error: File name too long (ENAMETOOLONG). |
-| `ErrNoSpace` | `28` | Error: No space left on device (ENOSPC). |
-| `ErrNone` | `0` | Error: No error (success). |
-| `ErrNotDirectory` | `20` | Error: Path component is not a directory (ENOTDIR). |
-| `ErrNotFound` | `2` | Error: No such file or directory (ENOENT). |
-| `ErrOutOfMemory` | `12` | Error: Out of memory (ENOMEM). |
-| `ErrPermission` | `13` | Error: Permission denied (EACCES). |
-| `ErrReadOnly` | `30` | Error: Read-only file system (EROFS). |
+| `ErrNotFound` | `2` | Error: No such file or directory. |
+| `ErrPermission` | `3` | Error: Permission denied. |
+| `ErrExists` | `4` | Error: File already exists. |
+| `ErrNotDirectory` | `5` | Error: Path is not a directory. |
+| `ErrIsDirectory` | `6` | Error: Path is a directory. |
+| `ErrIo` | `7` | Error: I/O error. |
+| `ErrNoSpace` | `8` | Error: No space left on device. |
+| `ErrReadOnly` | `9` | Error: Read-only file system. |
+| `ErrNameTooLong` | `10` | Error: File name too long. |
+| `ErrOutOfMemory` | `11` | Error: Out of memory. |
+| `ErrInvalidArg` | `12` | Error: Invalid argument. |
 
 ## Functions
 
@@ -57,13 +60,35 @@ Delete a file or empty directory.
 
 **Errors:**
 
-- File not found
-- Permission denied
+- `os::ErrNotFound` - File not found
+- `os::ErrPermission` - Permission denied
 
-**Example:**
+**Example (with !):**
 
 ```qd
 "/tmp/test.txt" os::delete!
+```
+
+**Example (with switch):**
+
+```qd
+"/tmp/test.txt" os::delete switch {
+	Ok {
+		"File deleted" print nl
+	}
+	os::ErrNotFound {
+		drop
+		"File not found" print nl
+	}
+	os::ErrPermission {
+		drop
+		"Permission denied" print nl
+	}
+	_ {
+		drop
+		"Delete failed" print nl
+	}
+}
 ```
 
 ---

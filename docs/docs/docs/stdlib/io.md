@@ -2,34 +2,47 @@
 
 File and stream I/O operations.
 
+Error codes: `Ok` (1) for success, specific errors start at 2.
+
 ## Constants
+
+### Error Codes
 
 | Name | Value | Description |
 |------|-------|-------------|
-| `Append` | `"a"` | Open mode: append. |
-| `AppendBinary` | `"ab"` | Open mode: append binary. |
-| `AppendRead` | `"a+"` | Open mode: append and read. |
-| `AppendReadBinary` | `"ab+"` | Open mode: append and read binary. |
-| `ErrEof` | `7` | Error: End of file reached. |
-| `ErrInvalidArg` | `8` | Error: Invalid argument. |
-| `ErrInvalidHandle` | `3` | Error: Invalid file handle. |
-| `ErrNone` | `0` | Error: No error (success). |
-| `ErrNotFound` | `1` | Error: File not found. |
-| `ErrPermission` | `2` | Error: Permission denied. |
-| `ErrRead` | `4` | Error: Read operation failed. |
-| `ErrSeek` | `6` | Error: Seek operation failed. |
-| `ErrWrite` | `5` | Error: Write operation failed. |
+| `ErrNotFound` | `2` | Error: File not found. |
+| `ErrPermission` | `3` | Error: Permission denied. |
+| `ErrInvalidHandle` | `4` | Error: Invalid file handle. |
+| `ErrRead` | `5` | Error: Read operation failed. |
+| `ErrWrite` | `6` | Error: Write operation failed. |
+| `ErrSeek` | `7` | Error: Seek operation failed. |
+| `ErrEof` | `8` | Error: End of file reached. |
+| `ErrInvalidArg` | `9` | Error: Invalid argument. |
+
+### Open Modes
+
+| Name | Value | Description |
+|------|-------|-------------|
 | `Read` | `"r"` | Open mode: read only. |
 | `ReadBinary` | `"rb"` | Open mode: read binary. |
-| `ReadWrite` | `"r+"` | Open mode: read and write. |
-| `ReadWriteBinary` | `"rb+"` | Open mode: read and write binary. |
-| `SeekCur` | `1` | Seek from current position. |
-| `SeekEnd` | `2` | Seek from end of file. |
-| `SeekSet` | `0` | Seek from beginning of file. |
 | `Write` | `"w"` | Open mode: write (truncate). |
 | `WriteBinary` | `"wb"` | Open mode: write binary. |
+| `Append` | `"a"` | Open mode: append. |
+| `AppendBinary` | `"ab"` | Open mode: append binary. |
+| `ReadWrite` | `"r+"` | Open mode: read and write. |
+| `ReadWriteBinary` | `"rb+"` | Open mode: read and write binary. |
 | `WriteRead` | `"w+"` | Open mode: write and read (truncate). |
 | `WriteReadBinary` | `"wb+"` | Open mode: write and read binary. |
+| `AppendRead` | `"a+"` | Open mode: append and read. |
+| `AppendReadBinary` | `"ab+"` | Open mode: append and read binary. |
+
+### Seek Constants
+
+| Name | Value | Description |
+|------|-------|-------------|
+| `SeekSet` | `0` | Seek from beginning of file. |
+| `SeekCur` | `1` | Seek from current position. |
+| `SeekEnd` | `2` | Seek from end of file. |
 
 ## Functions
 
@@ -91,13 +104,37 @@ Open a file.
 
 **Errors:**
 
-- File not found
-- Permission denied
+- `io::ErrNotFound` - File not found
+- `io::ErrPermission` - Permission denied
 
-**Example:**
+**Example (with !):**
 
 ```qd
-"data.txt" io::Read io::open!  // f
+"data.txt" io::Read io::open! -> f
+```
+
+**Example (with switch):**
+
+```qd
+"data.txt" io::Read io::open switch {
+	Ok {
+		-> file
+		// Use file...
+		file io::close
+	}
+	io::ErrNotFound {
+		drop
+		"File not found" print nl
+	}
+	io::ErrPermission {
+		drop
+		"Permission denied" print nl
+	}
+	_ {
+		drop
+		"Unknown error" print nl
+	}
+}
 ```
 
 ---
