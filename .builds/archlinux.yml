@@ -1,8 +1,5 @@
 image: archlinux
 
-secrets:
-  - ea8ca0d9-1859-4db5-bb99-8f12baf60b59
-
 packages:
   - clang
   - llvm
@@ -12,10 +9,7 @@ packages:
   - valgrind
 
 sources:
-  - git+ssh://git@git.sr.ht/~klahr/quadrate
-
-environment:
-  GIT_SSH_COMMAND: "ssh -o StrictHostKeyChecking=no"
+  - git://git@git.sr.ht:~klahr/quadrate
 
 tasks:
   - build: |
@@ -32,12 +26,6 @@ tasks:
       cd quadrate
       export DEBUGINFOD_URLS="https://debuginfod.archlinux.org"
       make valgrind
-  - mirror-to-github: |
-      cd ~/quadrate
-      ssh-keyscan github.com >> ~/.ssh/known_hosts
-      git remote add github git@github.com:quadrate-language/quadrate.git || \
-        git remote set-url github git@github.com:quadrate-language/quadrate.git
-      git push --mirror github
 
 triggers:
   - action: email
