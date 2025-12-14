@@ -1,0 +1,14 @@
+// Test: Closures capturing different types (i64, f64, str)
+fn main( -- ) {
+    42 -> i
+    3.14159 -> f
+    "hello" -> s
+
+    fn ( -- r:i64) { i } -> get_int
+    fn ( -- r:f64) { f } -> get_float
+    fn ( -- r:str) { s } -> get_str
+
+    get_int call print nl
+    get_float call print nl
+    get_str call print nl
+}

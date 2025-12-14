@@ -2,6 +2,7 @@
 #define QD_QC_SEMANTIC_VALIDATOR_H
 
 #include "ast.h"
+#include <optional>
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
@@ -122,6 +123,12 @@ namespace Qd {
 		void validateReferencesInternal(IAstNode* node, std::unordered_set<std::string>& localVariables,
 				std::unordered_set<std::string>& iteratorNames);
 
+		// Helper: Collect captured variables for closures (anonymous functions accessing outer scope)
+		void collectCapturedVariables(IAstNode* node, std::unordered_set<std::string>& localVariables,
+				std::unordered_set<std::string>& iteratorNames,
+				const std::unordered_set<std::string>& outerScopeVariables,
+				class AstNodeAnonymousFunction* anonFunc);
+
 		// Pass 3a: Analyze function signatures (what each function consumes/produces)
 		void analyzeFunctionSignatures(IAstNode* node);
 
@@ -222,6 +229,10 @@ namespace Qd {
 		// Maps variable name -> struct type name (empty string if not a struct pointer)
 		std::unordered_map<std::string, std::string> mLocalVariableStructTypes;
 
+		// Track function pointer signatures for local variables
+		// Maps variable name -> function signature (for variables that hold function pointers)
+		std::unordered_map<std::string, FunctionSignature> mLocalVariableFnSignatures;
+
 		// Constant values: maps constant name -> value string
 		std::unordered_map<std::string, std::string> mConstantValues;
 
@@ -287,6 +298,10 @@ namespace Qd {
 		// Whether the current function being validated is fallible (can throw)
 		// Used to restrict 'panic' to only be called in fallible functions
 		bool mCurrentFunctionFallible;
+
+		// Pending function signature - set when an anonymous function or function pointer
+		// with known signature is pushed onto the stack, used by 'call' instruction
+		std::optional<FunctionSignature> mPendingFnSignature;
 	};
 
 } // namespace Qd

@@ -157,6 +157,7 @@ namespace Qd {
 	static IAstNode* parseSwitchStatement(u8t_scanner* scanner, ErrorReporter* errorReporter, const char* src);
 	static AstNodeStructConstruction* parseStructConstruction(const std::string& structName, u8t_scanner* scanner,
 			ErrorReporter* errorReporter, const char* src, size_t startPos);
+	static IAstNode* parseAnonymousFunction(u8t_scanner* scanner, ErrorReporter* errorReporter, const char* src);
 
 	// Helper to parse constant value after '=' (handles literals and env() function)
 	// Returns the resolved string value, or empty string on error
@@ -771,6 +772,21 @@ namespace Qd {
 						errorReporter->reportError(scanner, "'else' without preceding 'if'");
 						continue;
 					}
+				} else if (strcmp(tokenText, "fn") == 0) {
+					// Anonymous function: fn (params -- outputs) { body }
+					char32_t nextToken = peekNextNonWhitespace(scanner, src);
+					if (nextToken == '(') {
+						IAstNode* anonFunc = parseAnonymousFunction(scanner, errorReporter, src);
+						if (anonFunc) {
+							tempNodes.push_back(anonFunc);
+						}
+						continue;
+					} else {
+						errorReporter->reportError(
+								scanner, "Function declarations not allowed inside blocks. "
+										 "Did you mean 'fn (...) { }' for an anonymous function?");
+						continue;
+					}
 				}
 			}
 
@@ -1064,18 +1080,22 @@ namespace Qd {
 	 * Parse an anonymous function: fn (params -- outputs) { body }
 	 * Called when 'fn' keyword is followed by '(' (no identifier name).
 	 * The 'fn' keyword has already been consumed.
+	 *
+	 * Captures are detected automatically during semantic analysis - any variable
+	 * referenced inside the anonymous function that is defined in an enclosing
+	 * scope will be captured implicitly.
 	 */
 	static IAstNode* parseAnonymousFunction(
 			u8t_scanner* scanner, ErrorReporter* errorReporter, const char* src) {
-		// The '(' has already been peeked but not consumed
+		AstNodeAnonymousFunction* func = new AstNodeAnonymousFunction();
+		setNodePosition(func, scanner, src);
+
 		char32_t token = u8t_scanner_scan(scanner);
 		if (token != '(') {
 			errorReporter->reportError(scanner, "Expected '(' after 'fn' for anonymous function");
+			delete func;
 			return nullptr;
 		}
-
-		AstNodeAnonymousFunction* func = new AstNodeAnonymousFunction();
-		setNodePosition(func, scanner, src);
 
 		size_t n;
 		bool isOutput = false;
@@ -1696,7 +1716,7 @@ namespace Qd {
 								}
 							}
 
-							// Check if this token is an "else" keyword
+							// Check if this token is an "else" or "fn" keyword
 							if (token == U8T_IDENTIFIER) {
 								const char* tokenText = u8t_scanner_token_text(scanner, &n);
 								if (strcmp(tokenText, "else") == 0) {
@@ -1731,6 +1751,21 @@ namespace Qd {
 										continue; // Skip adding else as a regular statement
 									} else {
 										errorReporter->reportError(scanner, "'else' without preceding 'if'");
+										continue;
+									}
+								} else if (strcmp(tokenText, "fn") == 0) {
+									// Anonymous function: fn (params -- outputs) { body }
+									char32_t nextToken = peekNextNonWhitespace(scanner, src);
+									if (nextToken == '(') {
+										IAstNode* anonFunc = parseAnonymousFunction(scanner, errorReporter, src);
+										if (anonFunc) {
+											ctxTempNodes.push_back(anonFunc);
+										}
+										continue;
+									} else {
+										errorReporter->reportError(
+												scanner, "Function declarations not allowed inside blocks. "
+														 "Did you mean 'fn (...) { }' for an anonymous function?");
 										continue;
 									}
 								}

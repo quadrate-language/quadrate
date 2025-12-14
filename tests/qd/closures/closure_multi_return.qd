@@ -1,0 +1,11 @@
+// Test: Closure returning multiple values
+fn main( -- ) {
+    10 -> x
+    20 -> y
+
+    fn ( -- a:i64 b:i64) { x y } -> get_both
+
+    get_both call -> second -> first
+    first print nl
+    second print nl
+}

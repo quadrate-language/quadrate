@@ -1,0 +1,12 @@
+// Test: Multiple closures capturing the same variable
+fn main( -- ) {
+    10 -> x
+
+    fn ( -- r:i64) { x } -> get_x
+    fn ( -- r:i64) { x x mul } -> get_x_squared
+    fn ( -- r:i64) { x 2 mul } -> get_x_doubled
+
+    get_x call print nl
+    get_x_squared call print nl
+    get_x_doubled call print nl
+}

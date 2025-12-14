@@ -7,18 +7,24 @@
 
 namespace Qd {
 	/**
-	 * AST node for anonymous functions (quotations/lambdas).
+	 * AST node for anonymous functions (quotations/lambdas) with optional closures.
 	 *
-	 * Syntax: fn (x:i64 y:i64 -- r:i64) { body }
+	 * Syntax without captures: fn (x:i64 y:i64 -- r:i64) { body }
+	 * Syntax with captures:    fn [a, b] (x:i64 y:i64 -- r:i64) { body }
 	 *
 	 * This node represents an inline function definition that produces
-	 * a function pointer when evaluated. Unlike regular function declarations,
-	 * anonymous functions appear as expressions within other code.
+	 * a function pointer (or closure) when evaluated. Unlike regular function
+	 * declarations, anonymous functions appear as expressions within other code.
+	 *
+	 * When captures are specified, the function becomes a closure that can
+	 * access variables from the enclosing scope. Captured variables are
+	 * copied by value at the point of closure creation.
 	 *
 	 * Code generation will:
 	 * 1. Generate a unique name (e.g., __anon_001)
 	 * 2. Emit the function definition
-	 * 3. Push a pointer to that function onto the stack
+	 * 3. If captures: allocate closure struct, copy captures, push closure ptr
+	 * 4. If no captures: push a plain function pointer onto the stack
 	 */
 	class AstNodeAnonymousFunction : public IAstNode {
 	public:
@@ -114,11 +120,24 @@ namespace Qd {
 			return mOutputParameters;
 		}
 
+		void addCapturedVariable(const std::string& name) {
+			mCapturedVariables.push_back(name);
+		}
+
+		const std::vector<std::string>& capturedVariables() const {
+			return mCapturedVariables;
+		}
+
+		bool hasCaptures() const {
+			return !mCapturedVariables.empty();
+		}
+
 	private:
 		IAstNode* mParent;
 		IAstNode* mBody;
 		std::vector<IAstNode*> mInputParameters;
 		std::vector<IAstNode*> mOutputParameters;
+		std::vector<std::string> mCapturedVariables; // Variables captured from enclosing scope
 		size_t mLine;
 		size_t mColumn;
 	};

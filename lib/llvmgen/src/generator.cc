@@ -3139,6 +3139,9 @@ namespace Qd {
 		std::string funcName = "__anon_" + std::to_string(anonymousFunctionCounter++);
 		std::string fullFuncName = "usr_" + mainModuleName + "_" + funcName;
 
+		const auto& captures = anonFunc->capturedVariables();
+		bool hasClosure = !captures.empty();
+
 		// Save current state
 		auto savedLocalVars = localVariables;
 		auto savedLocalVarStructTypes = localVariableStructTypes;
@@ -3157,8 +3160,15 @@ namespace Qd {
 		lastStructConstructed.clear();
 		lastFieldAccessResultType.clear();
 
-		// Create the function: takes context, returns exec_result
-		auto fnTy = llvm::FunctionType::get(execResultTy, {contextPtrTy}, false);
+		// Create the function type
+		// For closures: takes (context, env_ptr), returns exec_result
+		// For non-closures: takes (context), returns exec_result
+		llvm::FunctionType* fnTy;
+		if (hasClosure) {
+			fnTy = llvm::FunctionType::get(execResultTy, {contextPtrTy, llvm::PointerType::getUnqual(*context)}, false);
+		} else {
+			fnTy = llvm::FunctionType::get(execResultTy, {contextPtrTy}, false);
+		}
 		auto fn = llvm::Function::Create(fnTy, llvm::Function::InternalLinkage, fullFuncName, *module);
 
 		// Register the function
@@ -3173,6 +3183,35 @@ namespace Qd {
 		// Get context parameter
 		llvm::Value* anonCtx = fn->getArg(0);
 		anonCtx->setName("ctx");
+
+		// For closures, load captured variables from environment struct into local variables
+		llvm::Value* envPtr = nullptr;
+		if (hasClosure) {
+			envPtr = fn->getArg(1);
+			envPtr->setName("env");
+
+			// Environment struct layout: array of qd_stack_element_t
+			// Each captured variable is stored as a qd_stack_element_t
+			for (size_t i = 0; i < captures.size(); i++) {
+				const std::string& capName = captures[i];
+
+				// Create local alloca for this captured variable
+				llvm::Function* currentFn = builder->GetInsertBlock()->getParent();
+				llvm::IRBuilder<> tmpBuilder(&currentFn->getEntryBlock(), currentFn->getEntryBlock().begin());
+				llvm::AllocaInst* localAlloca = tmpBuilder.CreateAlloca(stackElementTy, nullptr, capName + "_cap");
+
+				// Calculate offset in environment array (using opaque pointer)
+				llvm::Value* capPtr =
+						builder->CreateGEP(stackElementTy, envPtr, builder->getInt64(i), capName + "_env_ptr");
+
+				// Copy the captured value from env to local
+				llvm::Value* capValue = builder->CreateLoad(stackElementTy, capPtr, capName + "_cap_val");
+				builder->CreateStore(capValue, localAlloca);
+
+				// Register as local variable so identifier references work
+				localVariables[capName] = localAlloca;
+			}
+		}
 
 		// Set the return target for this function
 		currentFunctionReturnBlock = returnBB;
@@ -3204,9 +3243,70 @@ namespace Qd {
 		currentFunctionIsFallible = savedIsFallible;
 		builder->SetInsertPoint(savedInsertPoint, savedInsertPointEnd);
 
-		// Push the function pointer onto the stack
-		auto funcPtrValue = builder->CreateBitCast(fn, llvm::PointerType::getUnqual(*context));
-		builder->CreateCall(pushPtrFn, {ctx, funcPtrValue});
+		if (hasClosure) {
+			// Allocate closure struct: { magic, fn_ptr, env_ptr }
+			// Magic marker to identify closures: 0xCL05UR3E (closure in leet speak)
+			// Closure struct type: { i64, i8*, i8* }
+			auto closureStructTy = llvm::StructType::get(*context,
+					{builder->getInt64Ty(), llvm::PointerType::getUnqual(*context),
+							llvm::PointerType::getUnqual(*context)});
+
+			// Allocate environment array (array of qd_stack_element_t)
+			size_t envSize = captures.size() * 24; // sizeof(qd_stack_element_t) = 24 bytes typically
+
+			// Get or create malloc function
+			llvm::Function* closureMallocFn = module->getFunction("malloc");
+			if (!closureMallocFn) {
+				auto closureMallocFnTy = llvm::FunctionType::get(
+						llvm::PointerType::getUnqual(*context), {builder->getInt64Ty()}, false);
+				closureMallocFn =
+						llvm::Function::Create(closureMallocFnTy, llvm::Function::ExternalLinkage, "malloc", *module);
+			}
+			llvm::Value* envAlloc = builder->CreateCall(closureMallocFn, {builder->getInt64(envSize)}, "env_alloc");
+
+			// Copy captured values into environment (using opaque pointers)
+			for (size_t i = 0; i < captures.size(); i++) {
+				const std::string& capName = captures[i];
+
+				// Get the captured variable's alloca from the outer scope
+				auto it = savedLocalVars.find(capName);
+				if (it != savedLocalVars.end()) {
+					llvm::AllocaInst* outerAlloca = it->second;
+
+					// Load value from outer scope
+					llvm::Value* outerValue = builder->CreateLoad(stackElementTy, outerAlloca, capName + "_outer");
+
+					// Store into environment array (using GEP with opaque pointer)
+					llvm::Value* envSlot =
+							builder->CreateGEP(stackElementTy, envAlloc, builder->getInt64(i), capName + "_slot");
+					builder->CreateStore(outerValue, envSlot);
+				}
+			}
+
+			// Allocate closure struct (magic + 2 pointers = 24 bytes)
+			llvm::Value* closureAlloc =
+					builder->CreateCall(closureMallocFn, {builder->getInt64(24)}, "closure_alloc");
+
+			// Store magic marker (0xCL05UR3E = 0xC105023E in hex)
+			llvm::Value* magicSlot = builder->CreateStructGEP(closureStructTy, closureAlloc, 0, "magic_slot");
+			builder->CreateStore(builder->getInt64(0xC105023E), magicSlot);
+
+			// Store function pointer
+			llvm::Value* fnPtrSlot = builder->CreateStructGEP(closureStructTy, closureAlloc, 1, "fn_ptr_slot");
+			llvm::Value* fnPtrCast = builder->CreateBitCast(fn, llvm::PointerType::getUnqual(*context), "fn_ptr_cast");
+			builder->CreateStore(fnPtrCast, fnPtrSlot);
+
+			// Store environment pointer
+			llvm::Value* envPtrSlot = builder->CreateStructGEP(closureStructTy, closureAlloc, 2, "env_ptr_slot");
+			builder->CreateStore(envAlloc, envPtrSlot);
+
+			// Push closure struct pointer to stack
+			builder->CreateCall(pushPtrFn, {ctx, closureAlloc});
+		} else {
+			// No captures - just push the function pointer (existing behavior)
+			auto funcPtrValue = builder->CreateBitCast(fn, llvm::PointerType::getUnqual(*context));
+			builder->CreateCall(pushPtrFn, {ctx, funcPtrValue});
+		}
 
 		// Track the function name for potential aliasing via -> name
 		lastGeneratedAnonFuncName = funcName;

@@ -81,6 +81,107 @@ fn main( -- ) {
 }
 ```
 
+## Closures (Variable Capture)
+
+Anonymous functions can capture variables from their enclosing scope, creating closures:
+
+```qd
+fn main( -- ) {
+	10 -> multiplier
+
+	// This closure captures 'multiplier' from the outer scope
+	fn (x:i64 -- r:i64) { multiplier * } -> scale
+
+	5 scale call print nl   // 50
+	7 scale call print nl   // 70
+}
+```
+
+### Capture by Value
+
+Variables are captured by value at the time the closure is created. Changes to the original variable don't affect the captured value:
+
+```qd
+fn main( -- ) {
+	10 -> x
+
+	fn ( -- r:i64) { x } -> get_x
+
+	get_x call print nl  // 10
+
+	99 -> x  // Change the original variable
+	get_x call print nl  // Still 10 (captured value)
+}
+```
+
+### Multiple Captures
+
+Closures can capture multiple variables:
+
+```qd
+fn main( -- ) {
+	10 -> a
+	20 -> b
+	30 -> c
+
+	fn ( -- r:i64) { a b add c add } -> sum_all
+
+	sum_all call print nl  // 60
+}
+```
+
+### Closures in Loops
+
+Closures created inside loops capture the current value at each iteration:
+
+```qd
+fn main( -- ) {
+	0 5 1 for i {
+		i -> val
+		fn ( -- r:i64) { val } -> c
+		c call print nl
+	}
+	// Output: 0 1 2 3 4
+}
+```
+
+### Nested Closures
+
+Closures can be nested, with inner closures capturing variables from outer closures:
+
+```qd
+fn main( -- ) {
+	10 -> x
+
+	fn ( -- r:i64) {
+		x -> y
+		fn ( -- r:i64) { y } -> inner
+		inner call
+	} -> outer
+
+	outer call print nl  // 10
+}
+```
+
+### Returning Closures
+
+Functions can return closures that capture their local variables:
+
+```qd
+fn make_adder(n:i64 -- adder:ptr) {
+	-> amount  // Store parameter in local variable
+	fn (x:i64 -- r:i64) { amount add }
+}
+
+fn main( -- ) {
+	5 make_adder -> add5
+	10 make_adder -> add10
+
+	100 add5 call print nl   // 105
+	100 add10 call print nl  // 110
+}
+```
+
 ## Calling Named Functions
 
 Anonymous functions can call regular named functions:

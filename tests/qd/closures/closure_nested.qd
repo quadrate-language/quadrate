@@ -1,0 +1,14 @@
+// Test: Nested closures (closure capturing outer closure's local)
+fn main( -- ) {
+    10 -> x
+
+    // Outer closure captures x
+    fn ( -- r:i64) {
+        x -> y
+        // Inner closure captures y from outer closure
+        fn ( -- r:i64) { y } -> inner
+        inner call
+    } -> outer
+
+    outer call print nl
+}

@@ -1035,9 +1035,19 @@ qd_exec_result qd_nip(qd_context* ctx) {
 
 // log10 - base 10 logarithm
 
-// call - invoke function pointer from stack
+// Closure magic marker (0xCL05UR3E in leet speak)
+#define QD_CLOSURE_MAGIC 0xC105023E
+
+// Closure struct layout: { int64_t magic, void* fn_ptr, void* env_ptr }
+typedef struct {
+	int64_t magic;
+	void* fn_ptr;
+	void* env_ptr;
+} qd_closure_t;
+
+// call - invoke function pointer or closure from stack
 qd_exec_result qd_call(qd_context* ctx) {
-	// Pop function pointer and call it
+	// Pop function pointer/closure and call it
 	qd_stack_element_t val;
 	qd_stack_error err = qd_stack_pop(ctx->st, &val);
 
@@ -1056,22 +1066,42 @@ qd_exec_result qd_call(qd_context* ctx) {
 		abort();
 	}
 
-	// Cast to function pointer and call it
-	// Function signature: qd_exec_result (*)(qd_context*)
-	// Use memcpy to avoid pedantic warnings about object-to-function pointer conversion
-	typedef qd_exec_result (*qd_function_ptr)(qd_context*);
-	qd_function_ptr func;
-	memcpy(&func, &val.value.p, sizeof(func));
-
-	if (func == NULL) {
-		fprintf(stderr, "Fatal error in call: NULL function pointer\n");
+	void* ptr = val.value.p;
+	if (ptr == NULL) {
+		fprintf(stderr, "Fatal error in call: NULL pointer\n");
 		dump_stack(ctx);
 		qd_print_stack_trace(ctx);
 		abort();
 	}
 
-	// Call the function
-	return func(ctx);
+	// Check if this is a closure (magic marker at start of struct)
+	qd_closure_t* closure = (qd_closure_t*)ptr;
+	if (closure->magic == QD_CLOSURE_MAGIC) {
+		// This is a closure - extract function pointer and environment
+		// Closure function signature: qd_exec_result (*)(qd_context*, void* env)
+		typedef qd_exec_result (*qd_closure_fn_ptr)(qd_context*, void*);
+		qd_closure_fn_ptr func;
+		memcpy(&func, &closure->fn_ptr, sizeof(func));
+
+		if (func == NULL) {
+			fprintf(stderr, "Fatal error in call: NULL closure function pointer\n");
+			dump_stack(ctx);
+			qd_print_stack_trace(ctx);
+			abort();
+		}
+
+		// Call the closure with environment
+		return func(ctx, closure->env_ptr);
+	} else {
+		// Regular function pointer
+		// Function signature: qd_exec_result (*)(qd_context*)
+		typedef qd_exec_result (*qd_function_ptr)(qd_context*);
+		qd_function_ptr func;
+		memcpy(&func, &ptr, sizeof(func));
+
+		// Call the function
+		return func(ctx);
+	}
 }
 
 // dec - decrement (subtract 1, preserves type)

@@ -1,0 +1,14 @@
+// Test: Captures are by value - modifying original doesn't affect captured
+fn main( -- ) {
+    10 -> x
+    fn ( -- r:i64) { x } -> get_x
+
+    // Modify x after closure creation
+    99 -> x
+
+    // Closure should still return original value (10)
+    get_x call print nl
+
+    // Verify x was actually modified
+    x print nl
+}

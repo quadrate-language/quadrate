@@ -1,0 +1,10 @@
+// Test: Closure capturing string value
+fn main( -- ) {
+    "Hello" -> greeting
+
+    fn ( -- r:str) {
+        greeting
+    } -> get_greeting
+
+    get_greeting call print nl
+}

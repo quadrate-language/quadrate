@@ -12,6 +12,8 @@
 #include <qc/ast_node_constant.h>
 #include <qc/ast_node_ctx.h>
 #include <qc/ast_node_defer.h>
+#include <qc/ast_node_field_access.h>
+#include <qc/ast_node_field_set.h>
 #include <qc/ast_node_for.h>
 #include <qc/ast_node_function.h>
 #include <qc/ast_node_function_pointer.h>
@@ -1841,9 +1843,219 @@ namespace Qd {
 			return;
 		}
 
+		// Handle anonymous functions - detect captured variables from enclosing scope
+		if (node->type() == IAstNode::Type::ANONYMOUS_FUNCTION) {
+			AstNodeAnonymousFunction* anonFunc = static_cast<AstNodeAnonymousFunction*>(node);
+
+			// Create a new empty scope for the anonymous function
+			std::unordered_set<std::string> anonLocals;
+			std::unordered_set<std::string> anonIterators;
+
+			// Collect captured variables by walking the body
+			collectCapturedVariables(anonFunc->body(), anonLocals, anonIterators, localVariables, anonFunc);
+
+			// Now validate the body with captured variables added to the local scope
+			// This ensures undefined references are properly reported
+			std::unordered_set<std::string> validatedLocals;
+			for (const auto& captured : anonFunc->capturedVariables()) {
+				validatedLocals.insert(captured);
+			}
+
+			// Note: anonLocals already contains variables defined with -> in the body
+			validatedLocals.insert(anonLocals.begin(), anonLocals.end());
+
+			// Validate the body
+			validateReferencesInternal(anonFunc->body(), validatedLocals, anonIterators);
+
+			return;
+		}
+
 		// Recursively process children
 		for (size_t i = 0; i < node->childCount(); i++) {
 			validateReferencesInternal(node->child(i), localVariables, iteratorNames);
+		}
+	}
+
+	void SemanticValidator::collectCapturedVariables(IAstNode* node, std::unordered_set<std::string>& localVariables,
+			std::unordered_set<std::string>& iteratorNames,
+			const std::unordered_set<std::string>& outerScopeVariables, AstNodeAnonymousFunction* anonFunc) {
+		if (!node) {
+			return;
+		}
+
+		// Handle local variable definition (->)
+		if (node->type() == IAstNode::Type::LOCAL) {
+			AstNodeLocal* local = static_cast<AstNodeLocal*>(node);
+			for (const auto& name : local->names()) {
+				localVariables.insert(name);
+			}
+			return;
+		}
+
+		// Handle field access - check if the struct variable needs to be captured
+		if (node->type() == IAstNode::Type::FIELD_ACCESS) {
+			AstNodeFieldAccess* fieldAccess = static_cast<AstNodeFieldAccess*>(node);
+			const std::string& varName = fieldAccess->varName();
+
+			// Skip if it's a local variable in the anonymous function
+			if (localVariables.find(varName) != localVariables.end()) {
+				return;
+			}
+
+			// Skip if it's an iterator
+			if (iteratorNames.find(varName) != iteratorNames.end()) {
+				return;
+			}
+
+			// Check if it's in the outer scope - this means it's a captured variable!
+			if (outerScopeVariables.find(varName) != outerScopeVariables.end()) {
+				// Add to captures (avoid duplicates)
+				const auto& captures = anonFunc->capturedVariables();
+				if (std::find(captures.begin(), captures.end(), varName) == captures.end()) {
+					anonFunc->addCapturedVariable(varName);
+				}
+			}
+			return;
+		}
+
+		// Handle field set - check if the struct variable needs to be captured
+		if (node->type() == IAstNode::Type::FIELD_SET) {
+			AstNodeFieldSet* fieldSet = static_cast<AstNodeFieldSet*>(node);
+			const std::string& varName = fieldSet->varName();
+
+			// Skip if it's a local variable in the anonymous function
+			if (localVariables.find(varName) != localVariables.end()) {
+				return;
+			}
+
+			// Skip if it's an iterator
+			if (iteratorNames.find(varName) != iteratorNames.end()) {
+				return;
+			}
+
+			// Check if it's in the outer scope - this means it's a captured variable!
+			if (outerScopeVariables.find(varName) != outerScopeVariables.end()) {
+				// Add to captures (avoid duplicates)
+				const auto& captures = anonFunc->capturedVariables();
+				if (std::find(captures.begin(), captures.end(), varName) == captures.end()) {
+					anonFunc->addCapturedVariable(varName);
+				}
+			}
+			return;
+		}
+
+		// Handle identifier references - this is where we detect captures
+		if (node->type() == IAstNode::Type::IDENTIFIER) {
+			AstNodeIdentifier* ident = static_cast<AstNodeIdentifier*>(node);
+			const std::string& name = ident->name();
+
+			// Skip if it's a local variable in the anonymous function
+			if (localVariables.find(name) != localVariables.end()) {
+				return;
+			}
+
+			// Skip if it's an iterator
+			if (iteratorNames.find(name) != iteratorNames.end()) {
+				return;
+			}
+
+			// Skip if it's a built-in instruction
+			if (isBuiltInInstruction(name.c_str())) {
+				return;
+			}
+
+			// Skip if it's a defined function
+			if (mDefinedFunctions.find(name) != mDefinedFunctions.end()) {
+				return;
+			}
+
+			// Skip if it's a constant
+			if (mDefinedConstants.find(name) != mDefinedConstants.end()) {
+				return;
+			}
+
+			// Skip if it's a struct constructor
+			if (mDefinedStructs.find(name) != mDefinedStructs.end()) {
+				return;
+			}
+
+			// Check if it's in the outer scope - this means it's a captured variable!
+			if (outerScopeVariables.find(name) != outerScopeVariables.end()) {
+				// Add to captures (avoid duplicates)
+				const auto& captures = anonFunc->capturedVariables();
+				if (std::find(captures.begin(), captures.end(), name) == captures.end()) {
+					anonFunc->addCapturedVariable(name);
+				}
+				return;
+			}
+
+			// Otherwise it's an undefined reference - but that's reported by validateReferencesInternal
+			return;
+		}
+
+		// Handle for loops - create new scope with iterator
+		if (node->type() == IAstNode::Type::FOR_STATEMENT) {
+			AstNodeForStatement* forStmt = static_cast<AstNodeForStatement*>(node);
+			std::unordered_set<std::string> childIterators = iteratorNames;
+			childIterators.insert(forStmt->iteratorName());
+			std::unordered_set<std::string> forLocals = localVariables;
+			for (size_t i = 0; i < node->childCount(); i++) {
+				collectCapturedVariables(node->child(i), forLocals, childIterators, outerScopeVariables, anonFunc);
+			}
+			return;
+		}
+
+		// Handle while/loop/switch - create new scope
+		if (node->type() == IAstNode::Type::WHILE_STATEMENT || node->type() == IAstNode::Type::LOOP_STATEMENT ||
+				node->type() == IAstNode::Type::SWITCH_STATEMENT) {
+			std::unordered_set<std::string> loopLocals = localVariables;
+			for (size_t i = 0; i < node->childCount(); i++) {
+				collectCapturedVariables(node->child(i), loopLocals, iteratorNames, outerScopeVariables, anonFunc);
+			}
+			return;
+		}
+
+		// Handle if statements - separate scopes for then/else
+		if (node->type() == IAstNode::Type::IF_STATEMENT) {
+			AstNodeIfStatement* ifStmt = static_cast<AstNodeIfStatement*>(node);
+			if (ifStmt->thenBody()) {
+				std::unordered_set<std::string> thenLocals = localVariables;
+				collectCapturedVariables(ifStmt->thenBody(), thenLocals, iteratorNames, outerScopeVariables, anonFunc);
+			}
+			if (ifStmt->elseBody()) {
+				std::unordered_set<std::string> elseLocals = localVariables;
+				collectCapturedVariables(ifStmt->elseBody(), elseLocals, iteratorNames, outerScopeVariables, anonFunc);
+			}
+			return;
+		}
+
+		// Handle blocks - create new scope
+		if (node->type() == IAstNode::Type::BLOCK) {
+			std::unordered_set<std::string> blockLocals = localVariables;
+			for (size_t i = 0; i < node->childCount(); i++) {
+				collectCapturedVariables(node->child(i), blockLocals, iteratorNames, outerScopeVariables, anonFunc);
+			}
+			return;
+		}
+
+		// Handle nested anonymous functions - they form their own closure scope
+		// For now, we don't support nested closures capturing from grandparent scopes
+		if (node->type() == IAstNode::Type::ANONYMOUS_FUNCTION) {
+			// Nested anonymous function - it can capture from our local scope
+			// but for now we just validate it separately
+			AstNodeAnonymousFunction* nestedAnon = static_cast<AstNodeAnonymousFunction*>(node);
+			std::unordered_set<std::string> nestedLocals;
+			std::unordered_set<std::string> nestedIterators;
+			// The nested function can capture from the current scope + outer scope
+			std::unordered_set<std::string> combinedOuter = outerScopeVariables;
+			combinedOuter.insert(localVariables.begin(), localVariables.end());
+			collectCapturedVariables(nestedAnon->body(), nestedLocals, nestedIterators, combinedOuter, nestedAnon);
+			return;
+		}
+
+		// Recursively process children
+		for (size_t i = 0; i < node->childCount(); i++) {
+			collectCapturedVariables(node->child(i), localVariables, iteratorNames, outerScopeVariables, anonFunc);
 		}
 	}
 
@@ -2682,6 +2894,12 @@ namespace Qd {
 						std::string structType = structTypeStack.back();
 						structTypeStack.pop_back();
 						mLocalVariableStructTypes[varName] = structType;
+
+						// If there's a pending function signature, store it with this variable
+						if (mPendingFnSignature.has_value()) {
+							mLocalVariableFnSignatures[varName] = mPendingFnSignature.value();
+							mPendingFnSignature.reset();
+						}
 					} else if (!structTypeStack.empty()) {
 						structTypeStack.pop_back();
 					}
@@ -2915,6 +3133,12 @@ namespace Qd {
 							structTypeStack.push_back(structTypeIt->second);
 						} else {
 							structTypeStack.push_back(""); // Unknown struct type
+						}
+
+						// If the variable has a known function signature, set it as pending
+						auto fnSigIt = mLocalVariableFnSignatures.find(name);
+						if (fnSigIt != mLocalVariableFnSignatures.end()) {
+							mPendingFnSignature = fnSigIt->second;
 						}
 					} else {
 						structTypeStack.push_back("");
@@ -4007,10 +4231,28 @@ namespace Qd {
 				typeStack.push_back(StackValueType::PTR);
 				break;
 
-			case IAstNode::Type::ANONYMOUS_FUNCTION:
+			case IAstNode::Type::ANONYMOUS_FUNCTION: {
 				// Anonymous functions push a function pointer onto the stack
+				AstNodeAnonymousFunction* anonFunc = static_cast<AstNodeAnonymousFunction*>(child);
+
+				// Extract the function signature from input/output parameters
+				FunctionSignature sig;
+				for (const auto* paramNode : anonFunc->inputParameters()) {
+					AstNodeParameter* param = static_cast<AstNodeParameter*>(const_cast<IAstNode*>(paramNode));
+					sig.consumes.push_back(stringToStackValueType(param->typeString()));
+				}
+				for (const auto* paramNode : anonFunc->outputParameters()) {
+					AstNodeParameter* param = static_cast<AstNodeParameter*>(const_cast<IAstNode*>(paramNode));
+					sig.produces.push_back(stringToStackValueType(param->typeString()));
+				}
+
+				// Store as pending signature for subsequent LOCAL or call
+				mPendingFnSignature = sig;
+
 				typeStack.push_back(StackValueType::PTR);
+				structTypeStack.push_back(""); // Not a struct pointer
 				break;
+			}
 
 			default:
 				// Other node types don't affect the type stack
@@ -4680,8 +4922,41 @@ namespace Qd {
 			if (!structTypeStack.empty()) {
 				structTypeStack.pop_back();
 			}
-			// We don't know what the called function will do to the stack
-			// So we can't track types accurately after this point
+
+			// If we have a pending function signature from a known function pointer,
+			// apply its stack effect
+			if (mPendingFnSignature.has_value()) {
+				const FunctionSignature& sig = mPendingFnSignature.value();
+
+				// Consume input parameters from stack
+				if (typeStack.size() < sig.consumes.size()) {
+					std::string errorMsg = "Type error in 'call': Stack underflow for function pointer (requires ";
+					errorMsg += std::to_string(sig.consumes.size());
+					errorMsg += " values, have ";
+					errorMsg += std::to_string(typeStack.size());
+					errorMsg += ")";
+					reportErrorConditional(node, errorMsg.c_str(), reportErrors);
+					mPendingFnSignature.reset();
+					return;
+				}
+
+				// Pop consumed types
+				for (size_t j = 0; j < sig.consumes.size(); j++) {
+					typeStack.pop_back();
+					if (!structTypeStack.empty()) {
+						structTypeStack.pop_back();
+					}
+				}
+
+				// Push produced types
+				for (const auto& type : sig.produces) {
+					typeStack.push_back(type);
+					structTypeStack.push_back(""); // Don't track struct types for now
+				}
+
+				mPendingFnSignature.reset();
+			}
+			// Otherwise, we don't know what the called function will do to the stack
 		}
 		// Array creation: make, makei, makef, makes, makep ( size -- arr )
 		// All create typed arrays, always return pointer

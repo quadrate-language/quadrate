@@ -1,0 +1,12 @@
+// Test: Closure with multiple input parameters and captures
+fn main( -- ) {
+    100 -> offset
+
+    fn (a:i64 b:i64 c:i64 -- r:i64) {
+        -> c -> b -> a
+        a b add c add offset add
+    } -> sum_with_offset
+
+    1 2 3 sum_with_offset call print nl
+    10 20 30 sum_with_offset call print nl
+}

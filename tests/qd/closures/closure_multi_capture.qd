@@ -1,0 +1,8 @@
+// Test: Closure capturing multiple variables
+fn main( -- ) {
+    10 -> a
+    20 -> b
+    30 -> c
+    fn ( -- r:i64) { a b add c add } -> sum_all
+    sum_all call print nl
+}
