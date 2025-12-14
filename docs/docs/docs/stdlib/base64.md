@@ -5,7 +5,7 @@ Optimized with lookup tables and direct buffer writes.
 
 ## Functions
 
-### decode
+### `fn` decode
 
 Decode a base64 string.
 
@@ -27,7 +27,7 @@ Decode a base64 string.
 
 ---
 
-### encode
+### `fn` encode
 
 Encode a string to base64.
 

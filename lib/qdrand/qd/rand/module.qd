@@ -2,7 +2,8 @@
 /// Fast, high-quality PRNG suitable for most applications.
 use time
 
-/// RNG state struct.
+/// Random number generator state.
+/// @field state i64 Internal RNG state
 pub struct Rng {
 	state: i64
 }

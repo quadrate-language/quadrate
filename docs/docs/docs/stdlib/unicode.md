@@ -107,7 +107,7 @@
 
 ## Functions
 
-### is_digit
+### `fn` is_digit
 
 Check if character is a digit (0-9).
 

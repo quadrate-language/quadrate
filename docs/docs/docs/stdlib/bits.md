@@ -2,7 +2,7 @@
 
 ## Functions
 
-### clear_bit
+### `fn` clear_bit
 
 Clear a bit to 0.
 
@@ -25,7 +25,7 @@ Clear a bit to 0.
 
 ---
 
-### extract
+### `fn` extract
 
 Extract a bit field from a value.
 
@@ -49,7 +49,7 @@ Extract a bit field from a value.
 
 ---
 
-### has_bit
+### `fn` has_bit
 
 Check if a bit is set.
 
@@ -72,7 +72,7 @@ Check if a bit is set.
 
 ---
 
-### mask
+### `fn` mask
 
 Bitwise operations for integer manipulation.
 Core operations (and, or, xor, not, shl, shr) are builtins.
@@ -98,7 +98,7 @@ Keep only the bottom N bits.
 
 ---
 
-### popcount
+### `fn` popcount
 
 Count set bits (population count).
 
@@ -120,7 +120,7 @@ Count set bits (population count).
 
 ---
 
-### reverse_bits
+### `fn` reverse_bits
 
 Reverse the bottom N bits.
 
@@ -143,7 +143,7 @@ Reverse the bottom N bits.
 
 ---
 
-### rotate_left
+### `fn` rotate_left
 
 Rotate bits left within a width.
 
@@ -167,7 +167,7 @@ Rotate bits left within a width.
 
 ---
 
-### rotate_right
+### `fn` rotate_right
 
 Rotate bits right within a width.
 
@@ -191,7 +191,7 @@ Rotate bits right within a width.
 
 ---
 
-### set_bit
+### `fn` set_bit
 
 Set a bit to 1.
 
@@ -214,7 +214,7 @@ Set a bit to 1.
 
 ---
 
-### set_bits
+### `fn` set_bits
 
 Set a bit field in a value.
 
@@ -239,7 +239,7 @@ Set a bit field in a value.
 
 ---
 
-### toggle_bit
+### `fn` toggle_bit
 
 Toggle a bit.
 

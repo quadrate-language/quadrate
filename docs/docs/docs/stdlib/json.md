@@ -15,7 +15,7 @@ JSON parsing and querying without AST construction.
 
 ## Functions
 
-### array_get_float
+### `fn` array_get_float
 
 Get array element as float by index.
 
@@ -39,7 +39,7 @@ Get array element as float by index.
 
 ---
 
-### array_get_int
+### `fn` array_get_int
 
 Get array element as integer by index.
 
@@ -63,7 +63,7 @@ Get array element as integer by index.
 
 ---
 
-### array_get_string
+### `fn` array_get_string
 
 Get array element as string by index.
 
@@ -87,7 +87,7 @@ Get array element as string by index.
 
 ---
 
-### array_len
+### `fn` array_len
 
 Get length of JSON array.
 
@@ -109,7 +109,7 @@ Get length of JSON array.
 
 ---
 
-### extract_str
+### `fn` extract_str
 
 Extract string value at position.
 
@@ -126,7 +126,7 @@ Extract string value at position.
 
 ---
 
-### find_str_end
+### `fn` find_str_end
 
 Find end of JSON string (pos at opening quote).
 
@@ -143,7 +143,7 @@ Find end of JSON string (pos at opening quote).
 
 ---
 
-### get_array
+### `fn` get_array
 
 Get nested array as string by key.
 
@@ -167,7 +167,7 @@ Get nested array as string by key.
 
 ---
 
-### get_bool
+### `fn` get_bool
 
 Get boolean value by key from object.
 
@@ -191,7 +191,7 @@ Get boolean value by key from object.
 
 ---
 
-### get_float
+### `fn` get_float
 
 Get float value by key from object.
 
@@ -215,7 +215,7 @@ Get float value by key from object.
 
 ---
 
-### get_int
+### `fn` get_int
 
 Get integer value by key from object.
 
@@ -239,7 +239,7 @@ Get integer value by key from object.
 
 ---
 
-### get_object
+### `fn` get_object
 
 Get nested object as string by key.
 
@@ -263,7 +263,7 @@ Get nested object as string by key.
 
 ---
 
-### get_string
+### `fn` get_string
 
 Get string value by key from object.
 
@@ -287,7 +287,7 @@ Get string value by key from object.
 
 ---
 
-### has_key
+### `fn` has_key
 
 Check if key exists in object.
 
@@ -310,7 +310,7 @@ Check if key exists in object.
 
 ---
 
-### is_null_at
+### `fn` is_null_at
 
 Check if value at position is null.
 
@@ -333,7 +333,7 @@ Check if value at position is null.
 
 ---
 
-### type_at
+### `fn` type_at
 
 Get JSON value type at position.
 

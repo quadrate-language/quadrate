@@ -1,6 +1,6 @@
 {
   "name": "io",
-  "description": "File and stream I/O operations.",
+  "description": "File and stream I/O operations. Error codes: Ok=1 (success), specific errors start at 2",
   "constants": [
     {
       "name": "Append",
@@ -24,47 +24,42 @@
     },
     {
       "name": "ErrEof",
-      "value": "7",
+      "value": "8",
       "description": "Error: End of file reached."
     },
     {
       "name": "ErrInvalidArg",
-      "value": "8",
+      "value": "9",
       "description": "Error: Invalid argument."
     },
     {
       "name": "ErrInvalidHandle",
-      "value": "3",
+      "value": "4",
       "description": "Error: Invalid file handle."
     },
     {
-      "name": "ErrNone",
-      "value": "0",
-      "description": "Error: No error (success)."
-    },
-    {
       "name": "ErrNotFound",
-      "value": "1",
+      "value": "2",
       "description": "Error: File not found."
     },
     {
       "name": "ErrPermission",
-      "value": "2",
+      "value": "3",
       "description": "Error: Permission denied."
     },
     {
       "name": "ErrRead",
-      "value": "4",
+      "value": "5",
       "description": "Error: Read operation failed."
     },
     {
       "name": "ErrSeek",
-      "value": "6",
+      "value": "7",
       "description": "Error: Seek operation failed."
     },
     {
       "name": "ErrWrite",
-      "value": "5",
+      "value": "6",
       "description": "Error: Write operation failed."
     },
     {
@@ -197,8 +192,10 @@
         }
       ],
       "errors": [
-        "File not found",
-        "Permission denied"
+        {
+          "code": "ErrNotFound",
+          "description": "File not found"
+        }
       ],
       "examples": [
         "\"data.txt\" io::Read io::open! -> f"
@@ -234,7 +231,14 @@
         }
       ],
       "errors": [
-        "Read failed"
+        {
+          "code": "ErrInvalidArg",
+          "description": "Invalid file handle, buffer, or count"
+        },
+        {
+          "code": "ErrRead",
+          "description": "Read operation failed"
+        }
       ],
       "examples": [
         "f buf 1024 io::read! -> n"
@@ -254,7 +258,10 @@
         }
       ],
       "errors": [
-        "Read failed"
+        {
+          "code": "ErrEof",
+          "description": "End of file or read error"
+        }
       ],
       "examples": [
         "io::readline! -> input"
@@ -290,7 +297,18 @@
         }
       ],
       "errors": [
-        "Seek failed"
+        {
+          "code": "ErrInvalidHandle",
+          "description": "Invalid file handle"
+        },
+        {
+          "code": "ErrInvalidArg",
+          "description": "Invalid whence value"
+        },
+        {
+          "code": "ErrSeek",
+          "description": "Seek operation failed"
+        }
       ],
       "examples": [
         "f 0 io::SeekSet io::seek! drop"
@@ -316,7 +334,14 @@
         }
       ],
       "errors": [
-        "Tell failed"
+        {
+          "code": "ErrInvalidHandle",
+          "description": "Invalid file handle"
+        },
+        {
+          "code": "ErrSeek",
+          "description": "Tell operation failed"
+        }
       ],
       "examples": [
         "f io::tell! -> pos"
@@ -352,7 +377,14 @@
         }
       ],
       "errors": [
-        "Write failed"
+        {
+          "code": "ErrInvalidArg",
+          "description": "Invalid file handle, buffer, or count"
+        },
+        {
+          "code": "ErrWrite",
+          "description": "Write operation failed"
+        }
       ],
       "examples": [
         "f buf len io::write! drop"

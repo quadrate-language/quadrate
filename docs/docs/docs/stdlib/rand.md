@@ -5,7 +5,7 @@ Fast, high-quality PRNG suitable for most applications.
 
 ## Structs
 
-### Rng
+### `struct` Rng
 
 Random number generator state.
 
@@ -15,7 +15,7 @@ Random number generator state.
 
 ## Functions
 
-### boolean
+### `fn` boolean
 
 Generate random boolean.
 
@@ -38,7 +38,7 @@ rng rand::boolean  // rng b
 
 ---
 
-### int
+### `fn` int
 
 Generate random i64 in range [0, max).
 
@@ -62,7 +62,7 @@ rng 100 rand::int  // rng n
 
 ---
 
-### new
+### `fn` new
 
 Create a new RNG seeded from current time.
 
@@ -80,7 +80,7 @@ rand::new  // rng
 
 ---
 
-### next
+### `fn` next
 
 Generate next random i64.
 
@@ -103,7 +103,7 @@ rng rand::next  // rng n
 
 ---
 
-### range
+### `fn` range
 
 Generate random i64 in range [min, max).
 
@@ -128,7 +128,7 @@ rng 10 20 rand::range  // rng n
 
 ---
 
-### with_seed
+### `fn` with_seed
 
 Create a new RNG with specific seed.
 

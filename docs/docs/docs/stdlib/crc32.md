@@ -6,7 +6,7 @@ Polynomial: 0xEDB88320 (reflected form of 0x04C11DB7)
 
 ## Functions
 
-### checksum
+### `fn` checksum
 
 Calculate CRC32 checksum of a string.
 
@@ -28,7 +28,7 @@ Calculate CRC32 checksum of a string.
 
 ---
 
-### checksum_buf
+### `fn` checksum_buf
 
 Calculate CRC32 of a byte buffer.
 
@@ -51,7 +51,7 @@ buf buflen crc32::checksum_buf  // crc
 
 ---
 
-### checksum_hex
+### `fn` checksum_hex
 
 Calculate CRC32 and return as 8-character hex string.
 
@@ -73,7 +73,7 @@ Calculate CRC32 and return as 8-character hex string.
 
 ---
 
-### finalize
+### `fn` finalize
 
 Finalize a running CRC to get the final checksum.
 
@@ -95,7 +95,7 @@ crc_state crc32::finalize  // crc
 
 ---
 
-### update
+### `fn` update
 
 Update a running CRC with more data.
 Use for streaming/incremental CRC calculation.
@@ -119,7 +119,7 @@ Use for streaming/incremental CRC calculation.
 
 ---
 
-### verify
+### `fn` verify
 
 Verify data against an expected CRC32.
 

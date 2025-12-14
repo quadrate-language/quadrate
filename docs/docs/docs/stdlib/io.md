@@ -1,52 +1,39 @@
 # io
 
 File and stream I/O operations.
-
-Error codes: `Ok` (1) for success, specific errors start at 2.
+Error codes: Ok=1 (success), specific errors start at 2
 
 ## Constants
 
-### Error Codes
-
 | Name | Value | Description |
 |------|-------|-------------|
-| `ErrNotFound` | `2` | Error: File not found. |
-| `ErrPermission` | `3` | Error: Permission denied. |
-| `ErrInvalidHandle` | `4` | Error: Invalid file handle. |
-| `ErrRead` | `5` | Error: Read operation failed. |
-| `ErrWrite` | `6` | Error: Write operation failed. |
-| `ErrSeek` | `7` | Error: Seek operation failed. |
-| `ErrEof` | `8` | Error: End of file reached. |
-| `ErrInvalidArg` | `9` | Error: Invalid argument. |
-
-### Open Modes
-
-| Name | Value | Description |
-|------|-------|-------------|
-| `Read` | `"r"` | Open mode: read only. |
-| `ReadBinary` | `"rb"` | Open mode: read binary. |
-| `Write` | `"w"` | Open mode: write (truncate). |
-| `WriteBinary` | `"wb"` | Open mode: write binary. |
 | `Append` | `"a"` | Open mode: append. |
 | `AppendBinary` | `"ab"` | Open mode: append binary. |
-| `ReadWrite` | `"r+"` | Open mode: read and write. |
-| `ReadWriteBinary` | `"rb+"` | Open mode: read and write binary. |
-| `WriteRead` | `"w+"` | Open mode: write and read (truncate). |
-| `WriteReadBinary` | `"wb+"` | Open mode: write and read binary. |
 | `AppendRead` | `"a+"` | Open mode: append and read. |
 | `AppendReadBinary` | `"ab+"` | Open mode: append and read binary. |
-
-### Seek Constants
-
-| Name | Value | Description |
-|------|-------|-------------|
-| `SeekSet` | `0` | Seek from beginning of file. |
+| `ErrEof` | `8` | Error: End of file reached. |
+| `ErrInvalidArg` | `9` | Error: Invalid argument. |
+| `ErrInvalidHandle` | `4` | Error: Invalid file handle. |
+| `ErrNotFound` | `2` | Error: File not found. |
+| `ErrPermission` | `3` | Error: Permission denied. |
+| `ErrRead` | `5` | Error: Read operation failed. |
+| `ErrSeek` | `7` | Error: Seek operation failed. |
+| `ErrWrite` | `6` | Error: Write operation failed. |
+| `Read` | `"r"` | Open mode: read only. |
+| `ReadBinary` | `"rb"` | Open mode: read binary. |
+| `ReadWrite` | `"r+"` | Open mode: read and write. |
+| `ReadWriteBinary` | `"rb+"` | Open mode: read and write binary. |
 | `SeekCur` | `1` | Seek from current position. |
 | `SeekEnd` | `2` | Seek from end of file. |
+| `SeekSet` | `0` | Seek from beginning of file. |
+| `Write` | `"w"` | Open mode: write (truncate). |
+| `WriteBinary` | `"wb"` | Open mode: write binary. |
+| `WriteRead` | `"w+"` | Open mode: write and read (truncate). |
+| `WriteReadBinary` | `"wb+"` | Open mode: write and read binary. |
 
 ## Functions
 
-### close
+### `fn` close
 
 Close a file.
 
@@ -64,7 +51,7 @@ f io::close
 
 ---
 
-### eof
+### `fn` eof
 
 Check if at end of file.
 
@@ -87,7 +74,7 @@ f io::eof -> f  // at_end
 
 ---
 
-### open
+### `fn` open
 
 Open a file.
 
@@ -102,42 +89,19 @@ Open a file.
 |--------|------|-------------|
 | `handle` | `ptr` | File handle |
 
-**Errors:**
-
-| Code | Description |
-|------|-------------|
+| Error | Description |
+|-------|-------------|
 | `io::ErrNotFound` | File not found |
 
-**Example (with !):**
+**Example:**
 
 ```qd
-"data.txt" io::Read io::open! -> f
-```
-
-**Example (with switch):**
-
-```qd
-"data.txt" io::Read io::open switch {
-	Ok {
-		-> file
-		// Use file...
-		file io::close
-	}
-	io::ErrNotFound {
-		"File not found" print nl
-	}
-	io::ErrPermission {
-		"Permission denied" print nl
-	}
-	_ {
-		"Unknown error" print nl
-	}
-}
+"data.txt" io::Read io::open!  // f
 ```
 
 ---
 
-### read
+### `fn` read
 
 Read bytes into buffer.
 
@@ -153,22 +117,20 @@ Read bytes into buffer.
 |--------|------|-------------|
 | `bytes_read` | `i64` | Actual bytes read |
 
-**Errors:**
-
-| Code | Description |
-|------|-------------|
+| Error | Description |
+|-------|-------------|
 | `io::ErrInvalidArg` | Invalid file handle, buffer, or count |
 | `io::ErrRead` | Read operation failed |
 
 **Example:**
 
 ```qd
-f buf 1024 io::read! -> n
+f buf 1024 io::read!  // n
 ```
 
 ---
 
-### readline
+### `fn` readline
 
 Read a line from stdin.
 
@@ -178,21 +140,19 @@ Read a line from stdin.
 |--------|------|-------------|
 | `line` | `str` | Line without trailing newline |
 
-**Errors:**
-
-| Code | Description |
-|------|-------------|
+| Error | Description |
+|-------|-------------|
 | `io::ErrEof` | End of file or read error |
 
 **Example:**
 
 ```qd
-io::readline! -> input
+io::readline!  // input
 ```
 
 ---
 
-### seek
+### `fn` seek
 
 Seek to position in file.
 
@@ -208,10 +168,8 @@ Seek to position in file.
 |--------|------|-------------|
 | `position` | `i64` | New position |
 
-**Errors:**
-
-| Code | Description |
-|------|-------------|
+| Error | Description |
+|-------|-------------|
 | `io::ErrInvalidHandle` | Invalid file handle |
 | `io::ErrInvalidArg` | Invalid whence value |
 | `io::ErrSeek` | Seek operation failed |
@@ -224,7 +182,7 @@ f 0 io::SeekSet io::seek! drop
 
 ---
 
-### tell
+### `fn` tell
 
 Get current position in file.
 
@@ -238,22 +196,20 @@ Get current position in file.
 |--------|------|-------------|
 | `position` | `i64` | Current position |
 
-**Errors:**
-
-| Code | Description |
-|------|-------------|
+| Error | Description |
+|-------|-------------|
 | `io::ErrInvalidHandle` | Invalid file handle |
 | `io::ErrSeek` | Tell operation failed |
 
 **Example:**
 
 ```qd
-f io::tell! -> pos
+f io::tell!  // pos
 ```
 
 ---
 
-### write
+### `fn` write
 
 Write bytes from buffer.
 
@@ -269,10 +225,8 @@ Write bytes from buffer.
 |--------|------|-------------|
 | `bytes_written` | `i64` | Actual bytes written |
 
-**Errors:**
-
-| Code | Description |
-|------|-------------|
+| Error | Description |
+|-------|-------------|
 | `io::ErrInvalidArg` | Invalid file handle, buffer, or count |
 | `io::ErrWrite` | Write operation failed |
 

@@ -34,7 +34,7 @@
 
 ## Functions
 
-### add
+### `fn` add
 
 Add duration to a timestamp.
 
@@ -57,7 +57,7 @@ time::now time::Day 4 * time::add .
 
 ---
 
-### after
+### `fn` after
 
 Check if timestamp is after another.
 
@@ -80,7 +80,7 @@ ts1 ts2 time::after .
 
 ---
 
-### before
+### `fn` before
 
 Check if timestamp is before another.
 
@@ -103,7 +103,7 @@ ts1 ts2 time::before .
 
 ---
 
-### date
+### `fn` date
 
 Create Unix timestamp from date components.
 
@@ -130,7 +130,7 @@ Create Unix timestamp from date components.
 
 ---
 
-### day
+### `fn` day
 
 Extract day of month from Unix timestamp (1-31).
 
@@ -152,7 +152,7 @@ time::unix time::day .
 
 ---
 
-### days_in_month
+### `fn` days_in_month
 
 Get number of days in a month.
 
@@ -175,7 +175,7 @@ Get number of days in a month.
 
 ---
 
-### hour
+### `fn` hour
 
 Extract hour from Unix timestamp (0-23).
 
@@ -197,7 +197,7 @@ time::unix time::hour .
 
 ---
 
-### is_leap_year
+### `fn` is_leap_year
 
 Check if year is a leap year.
 
@@ -219,7 +219,7 @@ Check if year is a leap year.
 
 ---
 
-### minute
+### `fn` minute
 
 Extract minute from Unix timestamp (0-59).
 
@@ -241,7 +241,7 @@ time::unix time::minute .
 
 ---
 
-### month
+### `fn` month
 
 Extract month from Unix timestamp (1-12).
 
@@ -263,7 +263,7 @@ time::unix time::month .
 
 ---
 
-### now
+### `fn` now
 
 Get current time in nanoseconds since epoch.
 
@@ -281,7 +281,7 @@ time::now  // start
 
 ---
 
-### second
+### `fn` second
 
 Extract second from Unix timestamp (0-59).
 
@@ -303,7 +303,7 @@ time::unix time::second .
 
 ---
 
-### sleep
+### `fn` sleep
 
 Sleep for duration in nanoseconds.
 
@@ -321,7 +321,7 @@ time::Second time::sleep
 
 ---
 
-### sub
+### `fn` sub
 
 Get difference between two timestamps in seconds.
 
@@ -344,7 +344,7 @@ end_time start_time time::sub .
 
 ---
 
-### unix
+### `fn` unix
 
 Get Unix timestamp in seconds.
 
@@ -362,7 +362,7 @@ time::unix .  // 1700000000
 
 ---
 
-### weekday
+### `fn` weekday
 
 Get day of week from Unix timestamp (0=Sunday, 6=Saturday).
 
@@ -384,7 +384,7 @@ time::unix time::weekday .
 
 ---
 
-### year
+### `fn` year
 
 Extract year from Unix timestamp.
 
@@ -406,7 +406,7 @@ time::unix time::year .
 
 ---
 
-### year_day
+### `fn` year_day
 
 Get day of year from Unix timestamp (1-366).
 

@@ -5,7 +5,14 @@
   "structs": [
     {
       "name": "Rng",
-      "description": "RNG state struct."
+      "description": "Random number generator state.",
+      "fields": [
+        {
+          "name": "state",
+          "type": "i64",
+          "description": "Internal RNG state"
+        }
+      ]
     }
   ],
   "functions": [

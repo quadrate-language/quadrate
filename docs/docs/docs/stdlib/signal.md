@@ -47,7 +47,7 @@ break
 
 ## Functions
 
-### clear
+### `fn` clear
 
 Clear the pending flag for a signal.
 
@@ -65,7 +65,7 @@ signal::SIGINT signal::clear
 
 ---
 
-### ignore
+### `fn` ignore
 
 Ignore the specified signal completely.
 
@@ -83,7 +83,7 @@ signal::SIGPIPE signal::ignore
 
 ---
 
-### pending
+### `fn` pending
 
 Check if a signal is pending (received but not cleared).
 Returns 1 if pending, 0 otherwise. Does not clear the flag.
@@ -106,7 +106,7 @@ signal::SIGINT signal::pending
 
 ---
 
-### reset
+### `fn` reset
 
 Reset signal to default behavior.
 
@@ -124,7 +124,7 @@ signal::SIGINT signal::reset
 
 ---
 
-### trap
+### `fn` trap
 
 Install a handler to catch the specified signal.
 After trapping, the signal sets a pending flag instead of
@@ -144,7 +144,7 @@ signal::SIGINT signal::trap
 
 ---
 
-### wait
+### `fn` wait
 
 Block until any trapped signal is received.
 Returns the signal number that was received.

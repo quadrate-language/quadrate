@@ -1,25 +1,20 @@
 {
   "name": "str",
-  "description": "String manipulation functions.",
+  "description": "String manipulation functions. Error codes: Ok=1 (success), specific errors start at 2",
   "constants": [
     {
       "name": "ErrAlloc",
-      "value": "2",
+      "value": "3",
       "description": "Error: Memory allocation failed."
     },
     {
       "name": "ErrInvalidArg",
-      "value": "3",
+      "value": "4",
       "description": "Error: Invalid argument."
     },
     {
-      "name": "ErrNone",
-      "value": "0",
-      "description": "Error: No error (success)."
-    },
-    {
       "name": "ErrOutOfBounds",
-      "value": "1",
+      "value": "2",
       "description": "Error: Index out of bounds."
     }
   ],
@@ -335,7 +330,10 @@
         }
       ],
       "errors": [
-        "Memory allocation failed"
+        {
+          "code": "ErrAlloc",
+          "description": "Memory allocation failed"
+        }
       ],
       "examples": [
         "\"hello\" \"l\" \"L\" str::replace! .  // \"heLLo\""
@@ -371,7 +369,10 @@
         }
       ],
       "errors": [
-        "Memory allocation failed"
+        {
+          "code": "ErrAlloc",
+          "description": "Memory allocation failed"
+        }
       ],
       "examples": [
         "\"a,b,c\" \",\" str::split!  // parts=[\"a\",\"b\",\"c\"], count=3"
@@ -436,7 +437,10 @@
         }
       ],
       "errors": [
-        "Out of bounds"
+        {
+          "code": "ErrOutOfBounds",
+          "description": "Index out of bounds"
+        }
       ],
       "examples": [
         "\"hello\" 1 3 str::substring! .  // \"ell\""

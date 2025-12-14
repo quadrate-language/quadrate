@@ -81,7 +81,7 @@ import "libqdstr.a" as "str" {
 	/// @param start i64 Starting index
 	/// @param length i64 Number of characters
 	/// @return result str Extracted substring
-	/// @error Out of bounds
+	/// @error ErrOutOfBounds Index out of bounds
 	/// @example "hello" 1 3 str::substring! .  // "ell"
 	pub fn substring(str:str start:i64 length:i64 -- result:str)!
 
@@ -90,7 +90,7 @@ import "libqdstr.a" as "str" {
 	/// @param old str Substring to replace
 	/// @param new str Replacement string
 	/// @return result str String with replacements
-	/// @error Memory allocation failed
+	/// @error ErrAlloc Memory allocation failed
 	/// @example "hello" "l" "L" str::replace! .  // "heLLo"
 	pub fn replace(str:str old:str new:str -- result:str)!
 
@@ -112,7 +112,7 @@ import "libqdstr.a" as "str" {
 	/// @param delim str Delimiter string
 	/// @return parts ptr Array of string parts
 	/// @return count i64 Number of parts
-	/// @error Memory allocation failed
+	/// @error ErrAlloc Memory allocation failed
 	/// @example "a,b,c" "," str::split!  // parts=["a","b","c"], count=3
 	pub fn split(str:str delim:str -- parts:ptr count:i64)!
 

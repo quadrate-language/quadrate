@@ -4,7 +4,7 @@ String to number conversions.
 
 ## Functions
 
-### atoi
+### `fn` atoi
 
 Parse decimal string to integer.
 
@@ -26,7 +26,7 @@ Parse decimal string to integer.
 
 ---
 
-### format_int
+### `fn` format_int
 
 Format integer in given base.
 
@@ -49,7 +49,7 @@ Format integer in given base.
 
 ---
 
-### itoa
+### `fn` itoa
 
 Convert integer to decimal string.
 
@@ -71,7 +71,7 @@ Convert integer to decimal string.
 
 ---
 
-### parse_int
+### `fn` parse_int
 
 Parse integer from string in given base.
 

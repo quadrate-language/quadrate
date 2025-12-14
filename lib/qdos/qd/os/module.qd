@@ -55,31 +55,31 @@ import "libqdos.a" as "os" {
 
 	/// Delete a file or empty directory.
 	/// @param path str Path to delete
-	/// @error File not found
-	/// @error Permission denied
+	/// @error ErrNotFound File not found
+	/// @error ErrPermission Permission denied
 	/// @example "/tmp/test.txt" os::delete!
 	pub fn delete(path:str -- )!
 
 	/// Rename or move a file.
 	/// @param oldpath str Current path
 	/// @param newpath str New path
-	/// @error File not found
-	/// @error Permission denied
+	/// @error ErrNotFound File not found
+	/// @error ErrPermission Permission denied
 	/// @example "old.txt" "new.txt" os::rename!
 	pub fn rename(oldpath:str newpath:str -- )!
 
 	/// Copy a file.
 	/// @param srcpath str Source path
 	/// @param dstpath str Destination path
-	/// @error File not found
-	/// @error Permission denied
+	/// @error ErrNotFound File not found
+	/// @error ErrPermission Permission denied
 	/// @example "src.txt" "dst.txt" os::copy!
 	pub fn copy(srcpath:str dstpath:str -- )!
 
 	/// Create a directory.
 	/// @param path str Directory path
-	/// @error File exists
-	/// @error Permission denied
+	/// @error ErrExists File already exists
+	/// @error ErrPermission Permission denied
 	/// @example "/tmp/newdir" os::mkdir!
 	pub fn mkdir(path:str -- )!
 
@@ -87,8 +87,8 @@ import "libqdos.a" as "os" {
 	/// @param path str Directory path
 	/// @return entries ptr Array of entry names
 	/// @return count i64 Number of entries
-	/// @error File not found
-	/// @error Not a directory
+	/// @error ErrNotFound File not found
+	/// @error ErrNotDirectory Path is not a directory
 	/// @example "/tmp" os::list! -> entries -> count
 	pub fn list(path:str -- entries:ptr count:i64)!
 }

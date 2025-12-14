@@ -1,30 +1,27 @@
 # os
 
 Operating system interface.
-
-Error codes: `Ok` (1) for success, specific errors start at 2.
+Error codes: Ok=1 (success), specific errors start at 2
 
 ## Constants
 
-### Error Codes
-
 | Name | Value | Description |
 |------|-------|-------------|
-| `ErrNotFound` | `2` | Error: No such file or directory. |
-| `ErrPermission` | `3` | Error: Permission denied. |
 | `ErrExists` | `4` | Error: File already exists. |
-| `ErrNotDirectory` | `5` | Error: Path is not a directory. |
-| `ErrIsDirectory` | `6` | Error: Path is a directory. |
-| `ErrIo` | `7` | Error: I/O error. |
-| `ErrNoSpace` | `8` | Error: No space left on device. |
-| `ErrReadOnly` | `9` | Error: Read-only file system. |
-| `ErrNameTooLong` | `10` | Error: File name too long. |
-| `ErrOutOfMemory` | `11` | Error: Out of memory. |
 | `ErrInvalidArg` | `12` | Error: Invalid argument. |
+| `ErrIo` | `7` | Error: I/O error. |
+| `ErrIsDirectory` | `6` | Error: Path is a directory. |
+| `ErrNameTooLong` | `10` | Error: File name too long. |
+| `ErrNoSpace` | `8` | Error: No space left on device. |
+| `ErrNotDirectory` | `5` | Error: Path is not a directory. |
+| `ErrNotFound` | `2` | Error: No such file or directory. |
+| `ErrOutOfMemory` | `11` | Error: Out of memory. |
+| `ErrPermission` | `3` | Error: Permission denied. |
+| `ErrReadOnly` | `9` | Error: Read-only file system. |
 
 ## Functions
 
-### copy
+### `fn` copy
 
 Copy a file.
 
@@ -35,10 +32,8 @@ Copy a file.
 | `srcpath` | `str` | Source path |
 | `dstpath` | `str` | Destination path |
 
-**Errors:**
-
-| Code | Description |
-|------|-------------|
+| Error | Description |
+|-------|-------------|
 | `os::ErrNotFound` | File not found |
 | `os::ErrPermission` | Permission denied |
 
@@ -50,7 +45,7 @@ Copy a file.
 
 ---
 
-### delete
+### `fn` delete
 
 Delete a file or empty directory.
 
@@ -60,39 +55,20 @@ Delete a file or empty directory.
 |-----------|------|-------------|
 | `path` | `str` | Path to delete |
 
-**Errors:**
+| Error | Description |
+|-------|-------------|
+| `os::ErrNotFound` | File not found |
+| `os::ErrPermission` | Permission denied |
 
-- `os::ErrNotFound` - File not found
-- `os::ErrPermission` - Permission denied
-
-**Example (with !):**
+**Example:**
 
 ```qd
 "/tmp/test.txt" os::delete!
 ```
 
-**Example (with switch):**
-
-```qd
-"/tmp/test.txt" os::delete switch {
-	Ok {
-		"File deleted" print nl
-	}
-	os::ErrNotFound {
-		"File not found" print nl
-	}
-	os::ErrPermission {
-		"Permission denied" print nl
-	}
-	_ {
-		"Delete failed" print nl
-	}
-}
-```
-
 ---
 
-### exists
+### `fn` exists
 
 Check if path exists.
 
@@ -114,7 +90,7 @@ Check if path exists.
 
 ---
 
-### exit
+### `fn` exit
 
 Exit the program with status code.
 
@@ -132,7 +108,7 @@ Exit the program with status code.
 
 ---
 
-### getenv
+### `fn` getenv
 
 Get environment variable value.
 
@@ -154,7 +130,7 @@ Get environment variable value.
 
 ---
 
-### list
+### `fn` list
 
 List directory contents.
 
@@ -169,10 +145,8 @@ List directory contents.
 | `entries` | `ptr` | Array of entry names |
 | `count` | `i64` | Number of entries |
 
-**Errors:**
-
-| Code | Description |
-|------|-------------|
+| Error | Description |
+|-------|-------------|
 | `os::ErrNotFound` | File not found |
 | `os::ErrNotDirectory` | Path is not a directory |
 
@@ -184,7 +158,7 @@ List directory contents.
 
 ---
 
-### mkdir
+### `fn` mkdir
 
 Create a directory.
 
@@ -194,10 +168,8 @@ Create a directory.
 |-----------|------|-------------|
 | `path` | `str` | Directory path |
 
-**Errors:**
-
-| Code | Description |
-|------|-------------|
+| Error | Description |
+|-------|-------------|
 | `os::ErrExists` | File already exists |
 | `os::ErrPermission` | Permission denied |
 
@@ -209,7 +181,7 @@ Create a directory.
 
 ---
 
-### rename
+### `fn` rename
 
 Rename or move a file.
 
@@ -220,10 +192,8 @@ Rename or move a file.
 | `oldpath` | `str` | Current path |
 | `newpath` | `str` | New path |
 
-**Errors:**
-
-| Code | Description |
-|------|-------------|
+| Error | Description |
+|-------|-------------|
 | `os::ErrNotFound` | File not found |
 | `os::ErrPermission` | Permission denied |
 
@@ -235,7 +205,7 @@ Rename or move a file.
 
 ---
 
-### setenv
+### `fn` setenv
 
 Set environment variable.
 
@@ -254,7 +224,7 @@ Set environment variable.
 
 ---
 
-### system
+### `fn` system
 
 Execute a shell command.
 

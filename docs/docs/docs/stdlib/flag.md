@@ -1,22 +1,19 @@
 # flag
 
 Command-line flag parsing.
-
-Error codes: `Ok` (1) for success, specific errors start at 2.
+Error codes: Ok=1 (success), specific errors start at 2
 
 ## Constants
 
-### Error Codes
-
 | Name | Value | Description |
 |------|-------|-------------|
-| `ErrNotFound` | `2` | Error: Flag not found. |
-| `ErrNoValue` | `3` | Error: Value not found (flag exists but has no value). |
 | `ErrInvalidValue` | `4` | Error: Invalid value format. |
+| `ErrNoValue` | `3` | Error: Value not found (flag exists but has no value). |
+| `ErrNotFound` | `2` | Error: Flag not found. |
 
 ## Structs
 
-### Flag
+### `struct` Flag
 
 Parsed command-line arguments.
 
@@ -27,7 +24,7 @@ Parsed command-line arguments.
 
 ## Functions
 
-### boolean
+### `fn` boolean
 
 Check if a boolean flag exists.
 
@@ -50,7 +47,7 @@ f "--verbose" flag::boolean if { "verbose" print nl }
 
 ---
 
-### destroy
+### `fn` destroy
 
 Free a Flag struct and its argv string.
 
@@ -68,7 +65,7 @@ f flag::destroy
 
 ---
 
-### float
+### `fn` float
 
 Get float value of a flag.
 
@@ -83,21 +80,19 @@ Get float value of a flag.
 |--------|------|-------------|
 | `value` | `f64` | Flag value as float |
 
-**Errors:**
-
-| Code | Description |
-|------|-------------|
+| Error | Description |
+|-------|-------------|
 | `flag::ErrNotFound` | Flag not found |
 
 **Example:**
 
 ```qd
-f "--rate" flag::float! -> rate
+f "--rate" flag::float!  // rate
 ```
 
 ---
 
-### int
+### `fn` int
 
 Get integer value of a flag.
 
@@ -112,21 +107,19 @@ Get integer value of a flag.
 |--------|------|-------------|
 | `value` | `i64` | Flag value as integer |
 
-**Errors:**
-
-| Code | Description |
-|------|-------------|
+| Error | Description |
+|-------|-------------|
 | `flag::ErrNotFound` | Flag not found |
 
 **Example:**
 
 ```qd
-f "--count" flag::int! -> count
+f "--count" flag::int!  // count
 ```
 
 ---
 
-### parse
+### `fn` parse
 
 Parse arguments from read instruction.
 
@@ -148,7 +141,7 @@ read flag::parse  // f
 
 ---
 
-### positional
+### `fn` positional
 
 Get positional argument at index.
 
@@ -163,15 +156,13 @@ Get positional argument at index.
 |--------|------|-------------|
 | `value` | `str` | Positional argument |
 
-**Errors:**
-
-| Code | Description |
-|------|-------------|
+| Error | Description |
+|-------|-------------|
 | `flag::ErrNotFound` | Not yet implemented |
 
 ---
 
-### string
+### `fn` string
 
 Get string value of a flag.
 
@@ -186,15 +177,13 @@ Get string value of a flag.
 |--------|------|-------------|
 | `value` | `str` | Flag value |
 
-**Errors:**
-
-| Code | Description |
-|------|-------------|
+| Error | Description |
+|-------|-------------|
 | `flag::ErrNotFound` | Flag not found |
 | `flag::ErrNoValue` | Flag exists but has no value |
 
 **Example:**
 
 ```qd
-f "--name" flag::string! -> name
+f "--name" flag::string!  // name
 ```

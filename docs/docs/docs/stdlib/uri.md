@@ -5,7 +5,7 @@ Handles percent-encoding and URI component extraction.
 
 ## Structs
 
-### Uri
+### `struct` Uri
 
 Parsed URI components.
 
@@ -20,7 +20,7 @@ Parsed URI components.
 
 ## Functions
 
-### build
+### `fn` build
 
 Build a URI string from components.
 
@@ -42,7 +42,7 @@ u uri::build  // url
 
 ---
 
-### decode
+### `fn` decode
 
 Decode a percent-encoded string.
 
@@ -64,7 +64,7 @@ Decode a percent-encoded string.
 
 ---
 
-### encode
+### `fn` encode
 
 Percent-encode a string for use in URIs.
 
@@ -86,7 +86,7 @@ Percent-encode a string for use in URIs.
 
 ---
 
-### parse
+### `fn` parse
 
 Parse a URI string into components.
 
@@ -108,7 +108,7 @@ Parse a URI string into components.
 
 ---
 
-### query_get
+### `fn` query_get
 
 Get a query parameter value by key.
 
@@ -131,7 +131,7 @@ Get a query parameter value by key.
 
 ---
 
-### query_has
+### `fn` query_has
 
 Check if a query parameter exists.
 

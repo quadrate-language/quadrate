@@ -12,6 +12,8 @@ use str
 use unicode
 
 /// Parsed command-line arguments.
+/// @field argc i64 Argument count
+/// @field argv str Arguments string
 pub struct Flag {
 	argc:i64
 	argv:str
@@ -82,7 +84,8 @@ pub fn boolean(f:ptr name:str -- present:i64) {
 /// @param f ptr Flag struct
 /// @param name str Flag name
 /// @return value str Flag value
-/// @error Flag not found
+/// @error ErrNotFound Flag not found
+/// @error ErrNoValue Flag exists but has no value
 /// @example f "--name" flag::string! -> name
 pub fn string(f:ptr name:str -- value:str)! {
 	-> name
@@ -120,7 +123,7 @@ pub fn string(f:ptr name:str -- value:str)! {
 /// @param f ptr Flag struct
 /// @param name str Flag name
 /// @return value i64 Flag value as integer
-/// @error Flag not found
+/// @error ErrNotFound Flag not found
 /// @example f "--count" flag::int! -> count
 pub fn int(f:ptr name:str -- value:i64)! {
 	-> name
@@ -140,7 +143,7 @@ pub fn int(f:ptr name:str -- value:i64)! {
 /// @param f ptr Flag struct
 /// @param name str Flag name
 /// @return value f64 Flag value as float
-/// @error Flag not found
+/// @error ErrNotFound Flag not found
 /// @example f "--rate" flag::float! -> rate
 pub fn float(f:ptr name:str -- value:f64)! {
 	-> name
@@ -159,7 +162,7 @@ pub fn float(f:ptr name:str -- value:f64)! {
 /// @param f ptr Flag struct
 /// @param index i64 Position (0-based)
 /// @return value str Positional argument
-/// @error Not implemented
+/// @error ErrNotFound Not yet implemented
 pub fn positional(f:ptr index:i64 -- value:str)! {
 	-> index
 	-> f

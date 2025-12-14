@@ -1,22 +1,19 @@
 # str
 
 String manipulation functions.
-
-Error codes: `Ok` (1) for success, specific errors start at 2.
+Error codes: Ok=1 (success), specific errors start at 2
 
 ## Constants
 
-### Error Codes
-
 | Name | Value | Description |
 |------|-------|-------------|
-| `ErrOutOfBounds` | `2` | Error: Index out of bounds. |
 | `ErrAlloc` | `3` | Error: Memory allocation failed. |
 | `ErrInvalidArg` | `4` | Error: Invalid argument. |
+| `ErrOutOfBounds` | `2` | Error: Index out of bounds. |
 
 ## Functions
 
-### char_at
+### `fn` char_at
 
 Get character code at index.
 
@@ -39,7 +36,7 @@ Get character code at index.
 
 ---
 
-### compare
+### `fn` compare
 
 Compare two strings lexicographically.
 
@@ -62,7 +59,7 @@ Compare two strings lexicographically.
 
 ---
 
-### concat
+### `fn` concat
 
 Concatenate two strings.
 
@@ -85,7 +82,7 @@ Concatenate two strings.
 
 ---
 
-### contains
+### `fn` contains
 
 Check if string contains substring.
 
@@ -108,7 +105,7 @@ Check if string contains substring.
 
 ---
 
-### ends_with
+### `fn` ends_with
 
 Check if string ends with suffix.
 
@@ -131,7 +128,7 @@ Check if string ends with suffix.
 
 ---
 
-### from_char
+### `fn` from_char
 
 Create string from character code.
 
@@ -153,7 +150,7 @@ Create string from character code.
 
 ---
 
-### index_of
+### `fn` index_of
 
 Find first occurrence of substring.
 
@@ -176,7 +173,7 @@ Find first occurrence of substring.
 
 ---
 
-### index_of_from
+### `fn` index_of_from
 
 Find substring starting from position.
 
@@ -200,7 +197,7 @@ Find substring starting from position.
 
 ---
 
-### len
+### `fn` len
 
 Get string length in bytes.
 
@@ -222,7 +219,7 @@ Get string length in bytes.
 
 ---
 
-### lower
+### `fn` lower
 
 Convert string to lowercase.
 
@@ -244,7 +241,7 @@ Convert string to lowercase.
 
 ---
 
-### replace
+### `fn` replace
 
 Replace all occurrences of substring.
 
@@ -260,10 +257,8 @@ Replace all occurrences of substring.
 |--------|------|-------------|
 | `result` | `str` | String with replacements |
 
-**Errors:**
-
-| Code | Description |
-|------|-------------|
+| Error | Description |
+|-------|-------------|
 | `str::ErrAlloc` | Memory allocation failed |
 
 **Example:**
@@ -274,7 +269,7 @@ Replace all occurrences of substring.
 
 ---
 
-### split
+### `fn` split
 
 Split string by delimiter.
 
@@ -290,10 +285,8 @@ Split string by delimiter.
 | `parts` | `ptr` | Array of string parts |
 | `count` | `i64` | Number of parts |
 
-**Errors:**
-
-| Code | Description |
-|------|-------------|
+| Error | Description |
+|-------|-------------|
 | `str::ErrAlloc` | Memory allocation failed |
 
 **Example:**
@@ -304,7 +297,7 @@ Split string by delimiter.
 
 ---
 
-### starts_with
+### `fn` starts_with
 
 Check if string starts with prefix.
 
@@ -327,7 +320,7 @@ Check if string starts with prefix.
 
 ---
 
-### substring
+### `fn` substring
 
 Extract substring.
 
@@ -343,10 +336,8 @@ Extract substring.
 |--------|------|-------------|
 | `result` | `str` | Extracted substring |
 
-**Errors:**
-
-| Code | Description |
-|------|-------------|
+| Error | Description |
+|-------|-------------|
 | `str::ErrOutOfBounds` | Index out of bounds |
 
 **Example:**
@@ -357,7 +348,7 @@ Extract substring.
 
 ---
 
-### trim
+### `fn` trim
 
 Remove leading and trailing whitespace.
 
@@ -379,7 +370,7 @@ Remove leading and trailing whitespace.
 
 ---
 
-### upper
+### `fn` upper
 
 Convert string to uppercase.
 

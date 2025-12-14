@@ -6,7 +6,7 @@ in big-endian and little-endian byte order.
 
 ## Functions
 
-### compare
+### `fn` compare
 
 Compare two byte buffers.
 
@@ -32,7 +32,7 @@ buf1 0 buf2 0 10 bytes::compare  // result
 
 ---
 
-### copy
+### `fn` copy
 
 Copy bytes from one buffer to another.
 
@@ -54,7 +54,7 @@ dst 0 src 0 10 bytes::copy
 
 ---
 
-### fill
+### `fn` fill
 
 Fill a buffer with a byte value.
 
@@ -75,7 +75,7 @@ buf 0 10 0 bytes::fill
 
 ---
 
-### read_u16_be
+### `fn` read_u16_be
 
 Read a 16-bit unsigned integer from memory in big-endian order.
 
@@ -98,7 +98,7 @@ buf 0 bytes::read_u16_be  // val
 
 ---
 
-### read_u16_le
+### `fn` read_u16_le
 
 Read a 16-bit unsigned integer from memory in little-endian order.
 
@@ -121,7 +121,7 @@ buf 0 bytes::read_u16_le  // val
 
 ---
 
-### read_u32_be
+### `fn` read_u32_be
 
 Read a 32-bit unsigned integer from memory in big-endian order.
 
@@ -144,7 +144,7 @@ buf 0 bytes::read_u32_be  // val
 
 ---
 
-### read_u32_le
+### `fn` read_u32_le
 
 Read a 32-bit unsigned integer from memory in little-endian order.
 
@@ -167,7 +167,7 @@ buf 0 bytes::read_u32_le  // val
 
 ---
 
-### read_u64_be
+### `fn` read_u64_be
 
 Read a 64-bit unsigned integer from memory in big-endian order.
 
@@ -190,7 +190,7 @@ buf 0 bytes::read_u64_be  // val
 
 ---
 
-### read_u64_le
+### `fn` read_u64_le
 
 Read a 64-bit unsigned integer from memory in little-endian order.
 
@@ -213,7 +213,7 @@ buf 0 bytes::read_u64_le  // val
 
 ---
 
-### swap16
+### `fn` swap16
 
 Swap byte order of a 16-bit value.
 
@@ -235,7 +235,7 @@ Swap byte order of a 16-bit value.
 
 ---
 
-### swap32
+### `fn` swap32
 
 Swap byte order of a 32-bit value.
 
@@ -257,7 +257,7 @@ Swap byte order of a 32-bit value.
 
 ---
 
-### swap64
+### `fn` swap64
 
 Swap byte order of a 64-bit value.
 
@@ -279,7 +279,7 @@ Swap byte order of a 64-bit value.
 
 ---
 
-### write_u16_be
+### `fn` write_u16_be
 
 Write a 16-bit unsigned integer to memory in big-endian order.
 
@@ -299,7 +299,7 @@ buf 0 0x1234 bytes::write_u16_be
 
 ---
 
-### write_u16_le
+### `fn` write_u16_le
 
 Write a 16-bit unsigned integer to memory in little-endian order.
 
@@ -319,7 +319,7 @@ buf 0 0x1234 bytes::write_u16_le
 
 ---
 
-### write_u32_be
+### `fn` write_u32_be
 
 Write a 32-bit unsigned integer to memory in big-endian order.
 
@@ -339,7 +339,7 @@ buf 0 0x12345678 bytes::write_u32_be
 
 ---
 
-### write_u32_le
+### `fn` write_u32_le
 
 Write a 32-bit unsigned integer to memory in little-endian order.
 
@@ -359,7 +359,7 @@ buf 0 0x12345678 bytes::write_u32_le
 
 ---
 
-### write_u64_be
+### `fn` write_u64_be
 
 Write a 64-bit unsigned integer to memory in big-endian order.
 
@@ -379,7 +379,7 @@ buf 0 0x123456789ABCDEF0 bytes::write_u64_be
 
 ---
 
-### write_u64_le
+### `fn` write_u64_le
 
 Write a 64-bit unsigned integer to memory in little-endian order.
 

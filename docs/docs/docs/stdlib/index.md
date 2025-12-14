@@ -36,17 +36,17 @@ fn main() {
 | [bits](bits.md) |  |
 | [bytes](bytes.md) | Byte array operations and endianness conversion. Provides fu... |
 | [crc32](crc32.md) | CRC32 checksum calculation. Implements the standard CRC-32 a... |
-| [flag](flag.md) | Command-line flag parsing. |
+| [flag](flag.md) | Command-line flag parsing. Error codes: Ok=1 (success), spec... |
 | [fmt](fmt.md) | Formatted output functions. |
 | [hex](hex.md) | Hexadecimal encoding and decoding. Converts between binary d... |
 | [hof](hof.md) | Higher-Order Function combinators. Combinators are functions... |
-| [io](io.md) | File and stream I/O operations. |
+| [io](io.md) | File and stream I/O operations. Error codes: Ok=1 (success),... |
 | [json](json.md) | JSON parsing and querying without AST construction. |
 | [limits](limits.md) | Numeric limits and constants. Provides minimum and maximum v... |
 | [math](math.md) |  |
 | [mem](mem.md) | Low-level memory allocation and manipulation.  SAFETY: These... |
 | [net](net.md) | TCP network operations. |
-| [os](os.md) | Operating system interface. |
+| [os](os.md) | Operating system interface. Error codes: Ok=1 (success), spe... |
 | [path](path.md) | File path manipulation functions. POSIX-style paths with for... |
 | [rand](rand.md) | Random number generation using xorshift64* algorithm. Fast, ... |
 | [regex](regex.md) | Regular expression matching using Thompson NFA. Supports = .... |
@@ -54,7 +54,7 @@ fn main() {
 | [sha256](sha256.md) | SHA-256 cryptographic hash function. Produces a 256-bit (32-... |
 | [signal](signal.md) | Unix signal handling with polling-based API.  Signals are ca... |
 | [sort](sort.md) | Sorting algorithms for arrays. Arrays are pointers to contig... |
-| [str](str.md) | String manipulation functions. |
+| [str](str.md) | String manipulation functions. Error codes: Ok=1 (success), ... |
 | [strconv](strconv.md) | String to number conversions. |
 | [testing](testing.md) | Testing utilities for unit tests.  Provides assertion functi... |
 | [time](time.md) |  |

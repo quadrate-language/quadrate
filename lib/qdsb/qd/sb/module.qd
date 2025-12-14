@@ -4,7 +4,10 @@ use mem
 use str
 use unicode
 
-/// StringBuilder struct holds buffer, length, and capacity.
+/// Growable string buffer for efficient string building.
+/// @field buf ptr Internal buffer
+/// @field len i64 Current length
+/// @field cap i64 Buffer capacity
 pub struct StringBuilder {
 	buf: ptr
 	len: i64

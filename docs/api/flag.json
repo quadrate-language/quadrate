@@ -1,32 +1,39 @@
 {
   "name": "flag",
-  "description": "Command-line flag parsing.",
+  "description": "Command-line flag parsing. Error codes: Ok=1 (success), specific errors start at 2",
   "constants": [
     {
       "name": "ErrInvalidValue",
-      "value": "3",
+      "value": "4",
       "description": "Error: Invalid value format."
     },
     {
       "name": "ErrNoValue",
-      "value": "2",
+      "value": "3",
       "description": "Error: Value not found (flag exists but has no value)."
     },
     {
-      "name": "ErrNone",
-      "value": "0",
-      "description": "Error: No error (success)."
-    },
-    {
       "name": "ErrNotFound",
-      "value": "1",
+      "value": "2",
       "description": "Error: Flag not found."
     }
   ],
   "structs": [
     {
       "name": "Flag",
-      "description": "Parsed command-line arguments."
+      "description": "Parsed command-line arguments.",
+      "fields": [
+        {
+          "name": "argc",
+          "type": "i64",
+          "description": "Argument count"
+        },
+        {
+          "name": "argv",
+          "type": "str",
+          "description": "Arguments string"
+        }
+      ]
     }
   ],
   "functions": [
@@ -102,7 +109,10 @@
         }
       ],
       "errors": [
-        "Flag not found"
+        {
+          "code": "ErrNotFound",
+          "description": "Flag not found"
+        }
       ],
       "examples": [
         "f \"--rate\" flag::float! -> rate"
@@ -133,7 +143,10 @@
         }
       ],
       "errors": [
-        "Flag not found"
+        {
+          "code": "ErrNotFound",
+          "description": "Flag not found"
+        }
       ],
       "examples": [
         "f \"--count\" flag::int! -> count"
@@ -188,7 +201,10 @@
         }
       ],
       "errors": [
-        "Not implemented"
+        {
+          "code": "ErrNotFound",
+          "description": "Not yet implemented"
+        }
       ],
       "examples": []
     },
@@ -217,7 +233,14 @@
         }
       ],
       "errors": [
-        "Flag not found"
+        {
+          "code": "ErrNotFound",
+          "description": "Flag not found"
+        },
+        {
+          "code": "ErrNoValue",
+          "description": "Flag exists but has no value"
+        }
       ],
       "examples": [
         "f \"--name\" flag::string! -> name"

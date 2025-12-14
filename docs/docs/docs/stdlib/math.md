@@ -10,7 +10,7 @@
 
 ## Functions
 
-### abs
+### `fn` abs
 
 Absolute value.
 
@@ -32,7 +32,7 @@ Absolute value.
 
 ---
 
-### acos
+### `fn` acos
 
 Arc cosine (inverse cosine).
 
@@ -54,7 +54,7 @@ Arc cosine (inverse cosine).
 
 ---
 
-### asin
+### `fn` asin
 
 Arc sine (inverse sine).
 
@@ -76,7 +76,7 @@ Arc sine (inverse sine).
 
 ---
 
-### atan
+### `fn` atan
 
 Arc tangent (inverse tangent).
 
@@ -98,7 +98,7 @@ Arc tangent (inverse tangent).
 
 ---
 
-### atan2
+### `fn` atan2
 
 Two-argument arc tangent.
 Returns the angle in radians between the positive x-axis and the point (x, y).
@@ -123,7 +123,7 @@ More useful than atan for computing angles because it handles all quadrants.
 
 ---
 
-### cb
+### `fn` cb
 
 Cube a number.
 
@@ -145,7 +145,7 @@ Cube a number.
 
 ---
 
-### cbrt
+### `fn` cbrt
 
 Cube root.
 
@@ -167,7 +167,7 @@ Cube root.
 
 ---
 
-### ceil
+### `fn` ceil
 
 Ceiling (round up).
 
@@ -189,7 +189,7 @@ Ceiling (round up).
 
 ---
 
-### clamp
+### `fn` clamp
 
 Clamp value to range.
 
@@ -213,7 +213,7 @@ Clamp value to range.
 
 ---
 
-### cos
+### `fn` cos
 
 Cosine of angle in radians.
 
@@ -235,7 +235,7 @@ Cosine of angle in radians.
 
 ---
 
-### dec
+### `fn` dec
 
 Decrement integer by 1.
 
@@ -257,7 +257,7 @@ Decrement integer by 1.
 
 ---
 
-### deg_to_rad
+### `fn` deg_to_rad
 
 Convert degrees to radians.
 
@@ -279,7 +279,7 @@ Convert degrees to radians.
 
 ---
 
-### exp
+### `fn` exp
 
 Exponential function (e^x).
 
@@ -301,7 +301,7 @@ Exponential function (e^x).
 
 ---
 
-### fac
+### `fn` fac
 
 Factorial (n!).
 
@@ -323,7 +323,7 @@ Factorial (n!).
 
 ---
 
-### floor
+### `fn` floor
 
 Floor (round down).
 
@@ -345,7 +345,7 @@ Floor (round down).
 
 ---
 
-### fmod
+### `fn` fmod
 
 Floating-point modulo (remainder).
 Returns the remainder of x/y with the same sign as x.
@@ -369,7 +369,7 @@ Returns the remainder of x/y with the same sign as x.
 
 ---
 
-### hypot
+### `fn` hypot
 
 Hypotenuse (Euclidean distance).
 Computes sqrt(x² + y²) without intermediate overflow or underflow.
@@ -393,7 +393,7 @@ Computes sqrt(x² + y²) without intermediate overflow or underflow.
 
 ---
 
-### inc
+### `fn` inc
 
 Increment integer by 1.
 
@@ -415,7 +415,7 @@ Increment integer by 1.
 
 ---
 
-### inv
+### `fn` inv
 
 Reciprocal (1/x).
 
@@ -437,7 +437,7 @@ Reciprocal (1/x).
 
 ---
 
-### lerp
+### `fn` lerp
 
 Linear interpolation between two values.
 
@@ -461,7 +461,7 @@ Linear interpolation between two values.
 
 ---
 
-### ln
+### `fn` ln
 
 Natural logarithm (base e).
 
@@ -483,7 +483,7 @@ Natural logarithm (base e).
 
 ---
 
-### log
+### `fn` log
 
 Logarithm with arbitrary base.
 
@@ -506,7 +506,7 @@ Logarithm with arbitrary base.
 
 ---
 
-### log10
+### `fn` log10
 
 Base-10 logarithm.
 
@@ -528,7 +528,7 @@ Base-10 logarithm.
 
 ---
 
-### max
+### `fn` max
 
 Maximum of two values.
 
@@ -551,7 +551,7 @@ Maximum of two values.
 
 ---
 
-### min
+### `fn` min
 
 Minimum of two values.
 
@@ -574,7 +574,7 @@ Minimum of two values.
 
 ---
 
-### pow
+### `fn` pow
 
 Power function.
 
@@ -597,7 +597,7 @@ Power function.
 
 ---
 
-### rad_to_deg
+### `fn` rad_to_deg
 
 Convert radians to degrees.
 
@@ -619,7 +619,7 @@ Convert radians to degrees.
 
 ---
 
-### round
+### `fn` round
 
 Round to nearest integer.
 
@@ -641,7 +641,7 @@ Round to nearest integer.
 
 ---
 
-### sin
+### `fn` sin
 
 Sine of angle in radians.
 
@@ -663,7 +663,7 @@ Sine of angle in radians.
 
 ---
 
-### sq
+### `fn` sq
 
 Square a number.
 
@@ -685,7 +685,7 @@ Square a number.
 
 ---
 
-### sqrt
+### `fn` sqrt
 
 Square root.
 
@@ -707,7 +707,7 @@ Square root.
 
 ---
 
-### tan
+### `fn` tan
 
 Tangent of angle in radians.
 
@@ -729,7 +729,7 @@ Tangent of angle in radians.
 
 ---
 
-### within
+### `fn` within
 
 Check if value is within range (inclusive).
 

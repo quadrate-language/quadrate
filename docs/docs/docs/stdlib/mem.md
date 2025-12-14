@@ -7,7 +7,7 @@ Improper use can cause segmentation faults and memory corruption.
 
 ## Functions
 
-### alloc
+### `fn` alloc
 
 Allocate memory.
 
@@ -29,7 +29,7 @@ Allocate memory.
 
 ---
 
-### copy
+### `fn` copy
 
 Copy bytes between memory regions.
 
@@ -49,7 +49,7 @@ dst src 100 mem::copy
 
 ---
 
-### fill
+### `fn` fill
 
 Fill memory region with byte value.
 
@@ -69,7 +69,7 @@ Fill memory region with byte value.
 
 ---
 
-### free
+### `fn` free
 
 Free allocated memory.
 
@@ -87,7 +87,7 @@ buf mem::free
 
 ---
 
-### from_string
+### `fn` from_string
 
 Convert string to buffer.
 
@@ -110,7 +110,7 @@ Convert string to buffer.
 
 ---
 
-### get_byte
+### `fn` get_byte
 
 Get a byte at offset.
 
@@ -133,7 +133,7 @@ buf 0 mem::get_byte  // b
 
 ---
 
-### get_f64
+### `fn` get_f64
 
 Get a 64-bit float at offset.
 
@@ -156,7 +156,7 @@ buf 0 mem::get_f64  // x
 
 ---
 
-### get_i64
+### `fn` get_i64
 
 Get a 64-bit integer at offset.
 
@@ -179,7 +179,7 @@ buf 0 mem::get_i64  // n
 
 ---
 
-### get_ptr
+### `fn` get_ptr
 
 Get a pointer at offset.
 
@@ -202,7 +202,7 @@ buf 0 mem::get_ptr  // p
 
 ---
 
-### is_null
+### `fn` is_null
 
 Check if pointer is null.
 
@@ -224,7 +224,7 @@ buf mem::is_null .  // 0
 
 ---
 
-### realloc
+### `fn` realloc
 
 Reallocate memory to new size.
 
@@ -247,7 +247,7 @@ buf 2048 mem::realloc  // buf
 
 ---
 
-### set_byte
+### `fn` set_byte
 
 Set a byte at offset.
 
@@ -267,7 +267,7 @@ Set a byte at offset.
 
 ---
 
-### set_f64
+### `fn` set_f64
 
 Set a 64-bit float at offset.
 
@@ -287,7 +287,7 @@ Set a 64-bit float at offset.
 
 ---
 
-### set_i64
+### `fn` set_i64
 
 Set a 64-bit integer at offset.
 
@@ -307,7 +307,7 @@ Set a 64-bit integer at offset.
 
 ---
 
-### set_ptr
+### `fn` set_ptr
 
 Set a pointer at offset.
 
@@ -327,7 +327,7 @@ other_buf buf 0 mem::set_ptr
 
 ---
 
-### to_string
+### `fn` to_string
 
 Convert buffer to string.
 
@@ -350,7 +350,7 @@ buf len mem::to_string  // s
 
 ---
 
-### zero
+### `fn` zero
 
 Zero out memory region.
 

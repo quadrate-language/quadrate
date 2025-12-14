@@ -5,6 +5,12 @@ use str
 use unicode
 
 /// Parsed URI components.
+/// @field scheme str URI scheme (e.g., "https")
+/// @field host str Host name
+/// @field port i64 Port number (0 if not specified)
+/// @field path str Path component
+/// @field query str Query string (without leading "?")
+/// @field fragment str Fragment (without leading "#")
 pub struct Uri {
 	scheme: str
 	host: str

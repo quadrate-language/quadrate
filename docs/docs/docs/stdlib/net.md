@@ -4,7 +4,7 @@ TCP network operations.
 
 ## Functions
 
-### accept
+### `fn` accept
 
 Accept an incoming connection.
 
@@ -26,7 +26,7 @@ server net::accept  // client
 
 ---
 
-### close
+### `fn` close
 
 Close socket and release resources.
 
@@ -44,7 +44,7 @@ sock net::close
 
 ---
 
-### connect
+### `fn` connect
 
 Connect to a remote host.
 
@@ -67,7 +67,7 @@ Connect to a remote host.
 
 ---
 
-### listen
+### `fn` listen
 
 Start listening for connections on a port.
 
@@ -89,7 +89,7 @@ Start listening for connections on a port.
 
 ---
 
-### receive
+### `fn` receive
 
 Receive data from socket.
 
@@ -113,7 +113,7 @@ sock 1024 net::receive -> data  // n
 
 ---
 
-### send
+### `fn` send
 
 Send data over socket.
 
@@ -136,7 +136,7 @@ sock "Hello" net::send  // n
 
 ---
 
-### shutdown
+### `fn` shutdown
 
 Shutdown socket for reading/writing.
 

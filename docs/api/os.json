@@ -1,66 +1,61 @@
 {
   "name": "os",
-  "description": "Operating system interface.",
+  "description": "Operating system interface. Error codes: Ok=1 (success), specific errors start at 2",
   "constants": [
     {
       "name": "ErrExists",
-      "value": "17",
-      "description": "Error: File already exists (EEXIST)."
+      "value": "4",
+      "description": "Error: File already exists."
     },
     {
       "name": "ErrInvalidArg",
-      "value": "22",
-      "description": "Error: Invalid argument (EINVAL)."
+      "value": "12",
+      "description": "Error: Invalid argument."
     },
     {
       "name": "ErrIo",
-      "value": "5",
-      "description": "Error: I/O error (EIO)."
+      "value": "7",
+      "description": "Error: I/O error."
     },
     {
       "name": "ErrIsDirectory",
-      "value": "21",
-      "description": "Error: Is a directory when file expected (EISDIR)."
+      "value": "6",
+      "description": "Error: Path is a directory."
     },
     {
       "name": "ErrNameTooLong",
-      "value": "36",
-      "description": "Error: File name too long (ENAMETOOLONG)."
+      "value": "10",
+      "description": "Error: File name too long."
     },
     {
       "name": "ErrNoSpace",
-      "value": "28",
-      "description": "Error: No space left on device (ENOSPC)."
-    },
-    {
-      "name": "ErrNone",
-      "value": "0",
-      "description": "Error: No error (success)."
+      "value": "8",
+      "description": "Error: No space left on device."
     },
     {
       "name": "ErrNotDirectory",
-      "value": "20",
-      "description": "Error: Path component is not a directory (ENOTDIR)."
+      "value": "5",
+      "description": "Error: Path is not a directory."
     },
     {
       "name": "ErrNotFound",
       "value": "2",
-      "description": "Error: No such file or directory (ENOENT)."
+      "description": "Error: No such file or directory."
     },
     {
       "name": "ErrOutOfMemory",
-      "value": "12",
-      "description": "Error: Out of memory (ENOMEM)."
+      "value": "11",
+      "description": "Error: Out of memory."
     },
     {
       "name": "ErrPermission",
-      "value": "13",
-      "description": "Error: Permission denied (EACCES)."
+      "value": "3",
+      "description": "Error: Permission denied."
     },
     {
       "name": "ErrReadOnly",
-      "value": "30",
-      "description": "Error: Read-only file system (EROFS)."
+      "value": "9",
+      "description": "Error: Read-only file system."
     }
   ],
   "structs": [],
@@ -84,8 +79,14 @@
       ],
       "returns": [],
       "errors": [
-        "File not found",
-        "Permission denied"
+        {
+          "code": "ErrNotFound",
+          "description": "File not found"
+        },
+        {
+          "code": "ErrPermission",
+          "description": "Permission denied"
+        }
       ],
       "examples": [
         "\"src.txt\" \"dst.txt\" os::copy!"
@@ -105,8 +106,14 @@
       ],
       "returns": [],
       "errors": [
-        "File not found",
-        "Permission denied"
+        {
+          "code": "ErrNotFound",
+          "description": "File not found"
+        },
+        {
+          "code": "ErrPermission",
+          "description": "Permission denied"
+        }
       ],
       "examples": [
         "\"/tmp/test.txt\" os::delete!"
@@ -203,8 +210,14 @@
         }
       ],
       "errors": [
-        "File not found",
-        "Not a directory"
+        {
+          "code": "ErrNotFound",
+          "description": "File not found"
+        },
+        {
+          "code": "ErrNotDirectory",
+          "description": "Path is not a directory"
+        }
       ],
       "examples": [
         "\"/tmp\" os::list! -> entries -> count"
@@ -224,8 +237,14 @@
       ],
       "returns": [],
       "errors": [
-        "File exists",
-        "Permission denied"
+        {
+          "code": "ErrExists",
+          "description": "File already exists"
+        },
+        {
+          "code": "ErrPermission",
+          "description": "Permission denied"
+        }
       ],
       "examples": [
         "\"/tmp/newdir\" os::mkdir!"
@@ -250,8 +269,14 @@
       ],
       "returns": [],
       "errors": [
-        "File not found",
-        "Permission denied"
+        {
+          "code": "ErrNotFound",
+          "description": "File not found"
+        },
+        {
+          "code": "ErrPermission",
+          "description": "Permission denied"
+        }
       ],
       "examples": [
         "\"old.txt\" \"new.txt\" os::rename!"

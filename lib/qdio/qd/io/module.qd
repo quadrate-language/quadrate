@@ -53,8 +53,7 @@ import "libqdio.a" as "io" {
 	/// @param path str File path
 	/// @param mode str Open mode (use io::Read, io::Write, etc.)
 	/// @return handle ptr File handle
-	/// @error File not found
-	/// @error Permission denied
+	/// @error ErrNotFound File not found
 	/// @example "data.txt" io::Read io::open! -> f
 	pub fn open(path:str mode:str -- handle:ptr)!
 
@@ -68,7 +67,8 @@ import "libqdio.a" as "io" {
 	/// @param buffer ptr Pre-allocated buffer
 	/// @param count i64 Maximum bytes to read
 	/// @return bytes_read i64 Actual bytes read
-	/// @error Read failed
+	/// @error ErrInvalidArg Invalid file handle, buffer, or count
+	/// @error ErrRead Read operation failed
 	/// @example f buf 1024 io::read! -> n
 	pub fn read(handle:ptr buffer:ptr count:i64 -- bytes_read:i64)!
 
@@ -77,7 +77,8 @@ import "libqdio.a" as "io" {
 	/// @param buffer ptr Buffer containing data
 	/// @param count i64 Number of bytes to write
 	/// @return bytes_written i64 Actual bytes written
-	/// @error Write failed
+	/// @error ErrInvalidArg Invalid file handle, buffer, or count
+	/// @error ErrWrite Write operation failed
 	/// @example f buf len io::write! drop
 	pub fn write(handle:ptr buffer:ptr count:i64 -- bytes_written:i64)!
 
@@ -86,14 +87,17 @@ import "libqdio.a" as "io" {
 	/// @param offset i64 Offset in bytes
 	/// @param whence i64 Reference point (SeekSet, SeekCur, SeekEnd)
 	/// @return position i64 New position
-	/// @error Seek failed
+	/// @error ErrInvalidHandle Invalid file handle
+	/// @error ErrInvalidArg Invalid whence value
+	/// @error ErrSeek Seek operation failed
 	/// @example f 0 io::SeekSet io::seek! drop
 	pub fn seek(handle:ptr offset:i64 whence:i64 -- position:i64)!
 
 	/// Get current position in file.
 	/// @param handle ptr File handle
 	/// @return position i64 Current position
-	/// @error Tell failed
+	/// @error ErrInvalidHandle Invalid file handle
+	/// @error ErrSeek Tell operation failed
 	/// @example f io::tell! -> pos
 	pub fn tell(handle:ptr -- position:i64)!
 
@@ -106,7 +110,7 @@ import "libqdio.a" as "io" {
 
 	/// Read a line from stdin.
 	/// @return line str Line without trailing newline
-	/// @error Read failed
+	/// @error ErrEof End of file or read error
 	/// @example io::readline! -> input
 	pub fn readline( -- line:str)!
 }

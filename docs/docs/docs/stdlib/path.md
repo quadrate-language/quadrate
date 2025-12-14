@@ -11,7 +11,7 @@ POSIX-style paths with forward slash separator.
 
 ## Functions
 
-### basename
+### `fn` basename
 
 Get the filename part of a path.
 
@@ -33,7 +33,7 @@ Get the filename part of a path.
 
 ---
 
-### dirname
+### `fn` dirname
 
 Get the directory part of a path.
 
@@ -55,7 +55,7 @@ Get the directory part of a path.
 
 ---
 
-### ext
+### `fn` ext
 
 Get the file extension (including dot).
 
@@ -77,7 +77,7 @@ Get the file extension (including dot).
 
 ---
 
-### is_absolute
+### `fn` is_absolute
 
 Check if path is absolute.
 
@@ -99,7 +99,7 @@ Check if path is absolute.
 
 ---
 
-### join
+### `fn` join
 
 Join two path components.
 
@@ -122,7 +122,7 @@ Join two path components.
 
 ---
 
-### normalize
+### `fn` normalize
 
 Normalize a path (remove redundant separators).
 
@@ -144,7 +144,7 @@ Normalize a path (remove redundant separators).
 
 ---
 
-### stem
+### `fn` stem
 
 Get filename without extension.
 

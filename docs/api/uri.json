@@ -5,7 +5,39 @@
   "structs": [
     {
       "name": "Uri",
-      "description": "Parsed URI components."
+      "description": "Parsed URI components.",
+      "fields": [
+        {
+          "name": "scheme",
+          "type": "str",
+          "description": "URI scheme (e.g., \"https\")"
+        },
+        {
+          "name": "host",
+          "type": "str",
+          "description": "Host name"
+        },
+        {
+          "name": "port",
+          "type": "i64",
+          "description": "Port number (0 if not specified)"
+        },
+        {
+          "name": "path",
+          "type": "str",
+          "description": "Path component"
+        },
+        {
+          "name": "query",
+          "type": "str",
+          "description": "Query string (without leading \"?\")"
+        },
+        {
+          "name": "fragment",
+          "type": "str",
+          "description": "Fragment (without leading \"#\")"
+        }
+      ]
     }
   ],
   "functions": [

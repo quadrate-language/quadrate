@@ -5,7 +5,7 @@ Arrays are pointers to contiguous i64 values.
 
 ## Functions
 
-### ints
+### `fn` ints
 
 Sort an array of i64 in ascending order (insertion sort).
 
@@ -24,7 +24,7 @@ arr count sort::ints
 
 ---
 
-### ints_desc
+### `fn` ints_desc
 
 Sort an array of i64 in descending order.
 
@@ -43,7 +43,7 @@ arr count sort::ints_desc
 
 ---
 
-### is_sorted
+### `fn` is_sorted
 
 Check if array is sorted in ascending order.
 
@@ -66,7 +66,7 @@ arr count sort::is_sorted  // result
 
 ---
 
-### max
+### `fn` max
 
 Find maximum value in array.
 
@@ -89,7 +89,7 @@ arr count sort::max  // val
 
 ---
 
-### min
+### `fn` min
 
 Find minimum value in array.
 
@@ -112,7 +112,7 @@ arr count sort::min  // val
 
 ---
 
-### reverse
+### `fn` reverse
 
 Reverse an array in place.
 
@@ -131,7 +131,7 @@ arr count sort::reverse
 
 ---
 
-### search
+### `fn` search
 
 Binary search for value in sorted array.
 

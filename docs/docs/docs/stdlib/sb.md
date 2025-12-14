@@ -5,7 +5,7 @@ Avoids O(n²) cost of repeated str::concat.
 
 ## Structs
 
-### StringBuilder
+### `struct` StringBuilder
 
 Growable string buffer for efficient string building.
 
@@ -17,7 +17,7 @@ Growable string buffer for efficient string building.
 
 ## Functions
 
-### append
+### `fn` append
 
 Append a string to the builder.
 
@@ -40,7 +40,7 @@ builder "hello" sb::append  // builder
 
 ---
 
-### append_char
+### `fn` append_char
 
 Append a single character (by code point).
 
@@ -63,7 +63,7 @@ builder 65 sb::append_char  // builder
 
 ---
 
-### append_int
+### `fn` append_int
 
 Append an integer as string.
 
@@ -86,7 +86,7 @@ builder 42 sb::append_int  // builder
 
 ---
 
-### build
+### `fn` build
 
 Build the final string (does not consume builder).
 
@@ -108,7 +108,7 @@ builder sb::build  // result
 
 ---
 
-### finish
+### `fn` finish
 
 Build string and free builder in one call.
 
@@ -130,7 +130,7 @@ builder sb::finish  // result
 
 ---
 
-### free
+### `fn` free
 
 Free the builder's resources.
 
@@ -148,7 +148,7 @@ builder sb::free
 
 ---
 
-### length
+### `fn` length
 
 Get current length of builder content.
 
@@ -170,7 +170,7 @@ builder sb::length  // sblen
 
 ---
 
-### new
+### `fn` new
 
 Create a new StringBuilder with default capacity.
 
@@ -188,7 +188,7 @@ sb::new  // builder
 
 ---
 
-### with_capacity
+### `fn` with_capacity
 
 Create a StringBuilder with specific initial capacity.
 

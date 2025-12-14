@@ -5,7 +5,7 @@ Converts between binary data and hexadecimal string representation.
 
 ## Functions
 
-### decode
+### `fn` decode
 
 Decode a hexadecimal string to bytes.
 Accepts both uppercase and lowercase hex digits.
@@ -29,7 +29,7 @@ Invalid characters are skipped.
 
 ---
 
-### decode_byte
+### `fn` decode_byte
 
 Decode a 2-character hex string to a byte value.
 Returns -1 if the input is invalid.
@@ -52,7 +52,7 @@ Returns -1 if the input is invalid.
 
 ---
 
-### decoded_len
+### `fn` decoded_len
 
 Get the length of data that would result from decoding a hex string.
 Returns -1 if the hex string has invalid length (odd).
@@ -75,7 +75,7 @@ Returns -1 if the hex string has invalid length (odd).
 
 ---
 
-### encode
+### `fn` encode
 
 Encode a string to uppercase hexadecimal.
 Each byte becomes two hex characters (00-FF).
@@ -98,7 +98,7 @@ Each byte becomes two hex characters (00-FF).
 
 ---
 
-### encode_byte
+### `fn` encode_byte
 
 Encode a single byte (0-255) to a 2-character hex string.
 
@@ -120,7 +120,7 @@ Encode a single byte (0-255) to a 2-character hex string.
 
 ---
 
-### encode_lower
+### `fn` encode_lower
 
 Encode a string to lowercase hexadecimal.
 Each byte becomes two hex characters (00-ff).
@@ -143,7 +143,7 @@ Each byte becomes two hex characters (00-ff).
 
 ---
 
-### encoded_len
+### `fn` encoded_len
 
 Get the length of hex string that would result from encoding data.
 
@@ -165,7 +165,7 @@ Get the length of hex string that would result from encoding data.
 
 ---
 
-### is_valid
+### `fn` is_valid
 
 Check if a string contains only valid hexadecimal characters.
 Valid characters are 0-9, A-F, a-f.

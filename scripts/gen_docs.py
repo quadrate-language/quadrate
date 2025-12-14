@@ -28,9 +28,10 @@ class DocItem:
     params: list[tuple[str, str, str]] = field(default_factory=list)  # (name, type, desc)
     returns: list[tuple[str, str, str]] = field(default_factory=list)  # (name, type, desc)
     examples: list[str] = field(default_factory=list)
-    errors: list[str] = field(default_factory=list)
+    errors: list[tuple[str, str]] = field(default_factory=list)  # (code, description) for errors
     signature: str = ""
     value: str = ""  # For constants
+    fields: list[tuple[str, str, str]] = field(default_factory=list)  # (name, type, desc) for structs
     is_public: bool = True
     is_failable: bool = False
 
@@ -44,13 +45,15 @@ class Module:
 
 
 def parse_doc_comment(lines: list[str]) -> tuple[list[str], list[tuple[str, str, str]],
-                                                   list[tuple[str, str, str]], list[str], list[str]]:
-    """Parse doc comment lines into description, params, returns, examples, errors."""
+                                                   list[tuple[str, str, str]], list[str],
+                                                   list[tuple[str, str]], list[tuple[str, str, str]]]:
+    """Parse doc comment lines into description, params, returns, examples, errors, fields."""
     description = []
     params = []
     returns = []
     examples = []
-    errors = []
+    errors = []  # (code, description) tuples
+    fields = []  # (name, type, description) tuples
 
     for line in lines:
         line = line.strip()
@@ -70,11 +73,23 @@ def parse_doc_comment(lines: list[str]) -> tuple[list[str], list[tuple[str, str,
         elif line.startswith("@example "):
             examples.append(line[9:].strip())
         elif line.startswith("@error "):
-            errors.append(line[7:].strip())
+            # @error ErrCode Description
+            err_text = line[7:].strip()
+            match = re.match(r"(Err\w+)\s+(.*)", err_text)
+            if match:
+                errors.append((match.group(1), match.group(2).strip()))
+            else:
+                # Fallback for old format without error code
+                errors.append(("", err_text))
+        elif line.startswith("@field "):
+            # @field name type Description
+            match = re.match(r"@field\s+(\w+)\s+(\w+)\s*(.*)", line)
+            if match:
+                fields.append((match.group(1), match.group(2), match.group(3).strip()))
         else:
             description.append(line)
 
-    return description, params, returns, examples, errors
+    return description, params, returns, examples, errors, fields
 
 
 def parse_signature(line: str) -> tuple[str, str, bool]:
@@ -105,6 +120,30 @@ def parse_struct(line: str) -> str:
     if match:
         return match.group(1)
     return ""
+
+
+def parse_struct_fields(lines: list[str], start_idx: int) -> list[tuple[str, str]]:
+    """Parse struct fields from lines starting after the struct declaration."""
+    fields = []
+    i = start_idx
+    brace_count = 1  # We start after the opening brace
+
+    while i < len(lines) and brace_count > 0:
+        line = lines[i].strip()
+
+        if '{' in line:
+            brace_count += line.count('{')
+        if '}' in line:
+            brace_count -= line.count('}')
+
+        # Parse field: name: type or name:type
+        match = re.match(r"(\w+)\s*:\s*(\w+)", line)
+        if match and brace_count > 0:
+            fields.append((match.group(1), match.group(2)))
+
+        i += 1
+
+    return fields
 
 
 def parse_module(filepath: str) -> Module:
@@ -169,7 +208,7 @@ def parse_module(filepath: str) -> Module:
         if "fn " in line and "(" in line:
             name, sig, is_failable = parse_signature(line)
             if name and is_public:
-                desc, params, returns, examples, errors = parse_doc_comment(doc_buffer)
+                desc, params, returns, examples, errors, _ = parse_doc_comment(doc_buffer)
                 item = DocItem(
                     name=name,
                     kind="fn",
@@ -189,7 +228,7 @@ def parse_module(filepath: str) -> Module:
         elif "const " in line and "=" in line:
             name, value = parse_const(line)
             if name and is_public:
-                desc, _, _, examples, _ = parse_doc_comment(doc_buffer)
+                desc, _, _, examples, _, _ = parse_doc_comment(doc_buffer)
                 item = DocItem(
                     name=name,
                     kind="const",
@@ -205,11 +244,21 @@ def parse_module(filepath: str) -> Module:
         elif "struct " in line:
             name = parse_struct(line)
             if name and is_public:
-                desc, _, _, _, _ = parse_doc_comment(doc_buffer)
+                desc, _, _, _, _, doc_fields = parse_doc_comment(doc_buffer)
+                # Use @field docs if available, otherwise parse from struct body
+                if doc_fields:
+                    struct_fields = doc_fields
+                else:
+                    # Fallback: parse struct body but with empty descriptions
+                    body_fields = []
+                    if '{' in line:
+                        body_fields = parse_struct_fields(lines, i + 1)
+                    struct_fields = [(fname, ftype, "") for fname, ftype in body_fields]
                 item = DocItem(
                     name=name,
                     kind="struct",
                     description=desc,
+                    fields=struct_fields,
                     is_public=is_public
                 )
                 module.items.append(item)
@@ -273,11 +322,23 @@ def generate_markdown(module: Module) -> str:
         lines.append("## Structs")
         lines.append("")
         for s in structs:
-            lines.append(f"### {s.name}")
+            lines.append(f"### `struct` {s.name}")
             lines.append("")
             if s.description:
                 for desc in s.description:
                     lines.append(desc)
+                lines.append("")
+            # Struct fields table
+            if s.fields:
+                lines.append("| Field | Type | Description |")
+                lines.append("|-------|------|-------------|")
+                for field_item in s.fields:
+                    if len(field_item) == 3:
+                        fname, ftype, fdesc = field_item
+                    else:
+                        fname, ftype = field_item
+                        fdesc = ""
+                    lines.append(f"| `{fname}` | `{ftype}` | {fdesc} |")
                 lines.append("")
 
     # Functions
@@ -286,7 +347,7 @@ def generate_markdown(module: Module) -> str:
         lines.append("")
 
         for fn in functions:
-            lines.append(f"### {fn.name}")
+            lines.append(f"### `fn` {fn.name}")
             lines.append("")
 
             # Description
@@ -316,12 +377,19 @@ def generate_markdown(module: Module) -> str:
                     lines.append(f"| `{name}` | `{typ}` | {desc} |")
                 lines.append("")
 
-            # Errors
+            # Errors table
             if fn.errors:
-                lines.append("**Errors:**")
-                lines.append("")
+                lines.append("| Error | Description |")
+                lines.append("|-------|-------------|")
                 for err in fn.errors:
-                    lines.append(f"- {err}")
+                    if isinstance(err, tuple) and len(err) == 2:
+                        code, desc = err
+                        if code:
+                            lines.append(f"| `{module.name}::{code}` | {desc} |")
+                        else:
+                            lines.append(f"| - | {desc} |")
+                    else:
+                        lines.append(f"| - | {err} |")
                 lines.append("")
 
             # Examples
@@ -371,11 +439,27 @@ def generate_json(module: Module) -> str:
                 "description": " ".join(item.description)
             })
         elif item.kind == "struct":
+            struct_fields = []
+            for field_item in item.fields:
+                if len(field_item) == 3:
+                    n, t, d = field_item
+                    struct_fields.append({"name": n, "type": t, "description": d})
+                else:
+                    n, t = field_item
+                    struct_fields.append({"name": n, "type": t, "description": ""})
             data["structs"].append({
                 "name": item.name,
-                "description": " ".join(item.description)
+                "description": " ".join(item.description),
+                "fields": struct_fields
             })
         elif item.kind == "fn":
+            fn_errors = []
+            for err in item.errors:
+                if isinstance(err, tuple) and len(err) == 2:
+                    code, desc = err
+                    fn_errors.append({"code": code, "description": desc})
+                else:
+                    fn_errors.append({"code": "", "description": str(err)})
             data["functions"].append({
                 "name": item.name,
                 "signature": item.signature,
@@ -383,7 +467,7 @@ def generate_json(module: Module) -> str:
                 "description": " ".join(item.description),
                 "params": [{"name": n, "type": t, "description": d} for n, t, d in item.params],
                 "returns": [{"name": n, "type": t, "description": d} for n, t, d in item.returns],
-                "errors": item.errors,
+                "errors": fn_errors,
                 "examples": item.examples
             })
 

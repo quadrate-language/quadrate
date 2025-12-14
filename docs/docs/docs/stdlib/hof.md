@@ -6,7 +6,7 @@ They enable functional programming without explicit temporary variables.
 
 ## Functions
 
-### apply
+### `fn` apply
 
 Apply a function to a value.
 
@@ -29,7 +29,7 @@ Apply a function to a value.
 
 ---
 
-### bi
+### `fn` bi
 
 Apply two functions to the same value.
 
@@ -54,7 +54,7 @@ Apply two functions to the same value.
 
 ---
 
-### bi_star
+### `fn` bi_star
 
 Apply two functions to two values (first to first, second to second).
 
@@ -80,7 +80,7 @@ Apply two functions to two values (first to first, second to second).
 
 ---
 
-### both
+### `fn` both
 
 Apply a function to two values separately.
 
@@ -105,7 +105,7 @@ Apply a function to two values separately.
 
 ---
 
-### dip
+### `fn` dip
 
 Apply a function to the second stack element, preserving the top.
 
@@ -130,7 +130,7 @@ Apply a function to the second stack element, preserving the top.
 
 ---
 
-### keep
+### `fn` keep
 
 Apply a function but keep the original value.
 
@@ -154,7 +154,7 @@ Apply a function but keep the original value.
 
 ---
 
-### times
+### `fn` times
 
 Apply function n times to an initial value.
 
@@ -178,7 +178,7 @@ Apply function n times to an initial value.
 
 ---
 
-### tri
+### `fn` tri
 
 Apply three functions to the same value.
 
@@ -205,7 +205,7 @@ Apply three functions to the same value.
 
 ---
 
-### unless
+### `fn` unless
 
 Apply function only if condition is false, otherwise return value unchanged.
 
@@ -230,7 +230,7 @@ Apply function only if condition is false, otherwise return value unchanged.
 
 ---
 
-### when
+### `fn` when
 
 Apply function only if condition is true, otherwise return value unchanged.
 

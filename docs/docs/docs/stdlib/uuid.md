@@ -5,7 +5,7 @@ Format: xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx
 
 ## Functions
 
-### is_valid
+### `fn` is_valid
 
 Check if a string is a valid UUID format.
 
@@ -27,7 +27,7 @@ Check if a string is a valid UUID format.
 
 ---
 
-### v4
+### `fn` v4
 
 Generate a new random UUIDv4 string.
 
@@ -45,7 +45,7 @@ uuid::v4  // id
 
 ---
 
-### v4_seeded
+### `fn` v4_seeded
 
 Generate UUID with specific seed (for reproducibility).
 

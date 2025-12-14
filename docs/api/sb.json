@@ -5,7 +5,24 @@
   "structs": [
     {
       "name": "StringBuilder",
-      "description": "StringBuilder struct holds buffer, length, and capacity."
+      "description": "Growable string buffer for efficient string building.",
+      "fields": [
+        {
+          "name": "buf",
+          "type": "ptr",
+          "description": "Internal buffer"
+        },
+        {
+          "name": "len",
+          "type": "i64",
+          "description": "Current length"
+        },
+        {
+          "name": "cap",
+          "type": "i64",
+          "description": "Buffer capacity"
+        }
+      ]
     }
   ],
   "functions": [

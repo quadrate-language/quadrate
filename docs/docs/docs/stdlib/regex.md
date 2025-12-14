@@ -6,7 +6,7 @@ Note: Nested groups and alternation inside groups not yet supported.
 
 ## Functions
 
-### compile
+### `fn` compile
 
 Compile a regex pattern.
 
@@ -22,7 +22,7 @@ Compile a regex pattern.
 
 ---
 
-### is_match
+### `fn` is_match
 
 Compile and test if pattern matches string.
 
@@ -45,7 +45,7 @@ Compile and test if pattern matches string.
 
 ---
 
-### matches
+### `fn` matches
 
 Test if a string matches a compiled regex (full match).
 
@@ -62,7 +62,7 @@ Test if a string matches a compiled regex (full match).
 
 ---
 
-### release
+### `fn` release
 
 Free a compiled regex.
 

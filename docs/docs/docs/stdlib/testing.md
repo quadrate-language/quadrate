@@ -15,7 +15,7 @@ test "addition works" {
 
 ## Functions
 
-### assert_eq
+### `fn` assert_eq
 
 Assert that two values are equal.
 Works with any type (i64, f64, str, ptr).
@@ -36,7 +36,7 @@ Works with any type (i64, f64, str, ptr).
 
 ---
 
-### assert_false
+### `fn` assert_false
 
 Assert that a value is falsy.
 Falsy means: zero for integers, zero for floats,
@@ -57,7 +57,7 @@ empty for strings, null for pointers.
 
 ---
 
-### assert_ne
+### `fn` assert_ne
 
 Assert that two values are not equal.
 Works with any type (i64, f64, str, ptr).
@@ -77,7 +77,7 @@ Works with any type (i64, f64, str, ptr).
 
 ---
 
-### assert_true
+### `fn` assert_true
 
 Assert that a value is truthy.
 Truthy means: non-zero for integers, non-zero for floats,
@@ -98,7 +98,7 @@ non-empty for strings, non-null for pointers.
 
 ---
 
-### fail
+### `fn` fail
 
 Unconditionally fail a test with a message.
 

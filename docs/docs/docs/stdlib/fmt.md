@@ -4,7 +4,7 @@ Formatted output functions.
 
 ## Functions
 
-### printf
+### `fn` printf
 
 Print formatted output to stdout.
 
@@ -22,7 +22,7 @@ Print formatted output to stdout.
 
 ---
 
-### sprintf
+### `fn` sprintf
 
 Format a string with printf-style specifiers.
 
