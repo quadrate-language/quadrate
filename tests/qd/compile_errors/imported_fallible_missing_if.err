@@ -1,1 +1,1 @@
-Fallible function 'io::open' must be immediately followed by 'if' to check for errors
+Fallible function 'io::open' must be immediately followed by 'if' or 'switch' to check for errors

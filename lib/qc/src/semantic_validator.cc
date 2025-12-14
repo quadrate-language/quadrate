@@ -3392,13 +3392,14 @@ namespace Qd {
 						reportError(ident, errorMsg.c_str());
 					}
 
-					// Check fallible functions without ! or ? must be followed by 'if'
+					// Check fallible functions without ! or ? must be followed by 'if' or 'switch'
 					if (sig.throws && !ident->abortOnError() && !ident->checkError()) {
 						IAstNode* nextNode = (i + 1 < node->childCount()) ? node->child(i + 1) : nullptr;
-						if (!nextNode || nextNode->type() != IAstNode::Type::IF_STATEMENT) {
+						if (!nextNode || (nextNode->type() != IAstNode::Type::IF_STATEMENT &&
+										  nextNode->type() != IAstNode::Type::SWITCH_STATEMENT)) {
 							std::string errorMsg = "Fallible function '" + name +
-												   "' must be immediately followed by 'if' to check for errors, or use "
-												   "'!' to abort on error";
+												   "' must be immediately followed by 'if' or 'switch' to check for "
+												   "errors, or use '!' to abort on error";
 							reportError(ident, errorMsg.c_str());
 						}
 					}
@@ -4098,13 +4099,14 @@ namespace Qd {
 						reportError(scoped, errorMsg.c_str());
 					}
 
-					// Check fallible functions without ! or ? must be followed by 'if'
+					// Check fallible functions without ! or ? must be followed by 'if' or 'switch'
 					if (sig.throws && !scoped->abortOnError() && !scoped->checkError()) {
 						IAstNode* nextNode = (i + 1 < node->childCount()) ? node->child(i + 1) : nullptr;
-						if (!nextNode || nextNode->type() != IAstNode::Type::IF_STATEMENT) {
+						if (!nextNode || (nextNode->type() != IAstNode::Type::IF_STATEMENT &&
+										  nextNode->type() != IAstNode::Type::SWITCH_STATEMENT)) {
 							std::string errorMsg = "Fallible function '" + qualifiedName +
-												   "' must be immediately followed by 'if' to check for errors, or use "
-												   "'!' to abort on error";
+												   "' must be immediately followed by 'if' or 'switch' to check for "
+												   "errors, or use '!' to abort on error";
 							reportError(scoped, errorMsg.c_str());
 						}
 					}

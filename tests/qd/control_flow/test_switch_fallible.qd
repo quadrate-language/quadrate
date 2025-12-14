@@ -1,0 +1,17 @@
+// Test switch with fallible functions (alternative to if)
+use io
+
+fn main() {
+    // Test switch with bool from fallible function
+    "/tmp/test_switch_fallible.txt" io::Write io::open switch {
+        1 {
+            -> file
+            "opened" print nl
+            file io::close
+        }
+        _ {
+            drop
+            "failed" print nl
+        }
+    }
+}

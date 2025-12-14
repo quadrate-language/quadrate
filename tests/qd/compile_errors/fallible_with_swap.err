@@ -1,1 +1,1 @@
-Fallible function 'safe_divide' must be immediately followed by 'if'
+Fallible function 'safe_divide' must be immediately followed by 'if' or 'switch' to check for errors
