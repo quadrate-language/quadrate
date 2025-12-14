@@ -26,7 +26,7 @@
       "name": "sprintf",
       "signature": "( format:str -- result:str )",
       "failable": false,
-      "description": "Format a string and push the result onto the stack.",
+      "description": "Format a string with printf-style specifiers.",
       "params": [
         {
           "name": "format",
@@ -43,7 +43,7 @@
       ],
       "errors": [],
       "examples": [
-        "\"world\" \"Hello %s!\" fmt::sprintf  // Stack: \"Hello world!\""
+        "\"world\" \"Hello %s\\n\" fmt::sprintf  // \"Hello world\\n\""
       ]
     }
   ]

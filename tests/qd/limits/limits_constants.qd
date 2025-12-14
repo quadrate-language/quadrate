@@ -1,0 +1,26 @@
+// Test limits module constants
+use limits
+
+fn main( -- ) {
+	// Test native type limits
+	limits::I64Max print nl
+	limits::I64Min print nl
+
+	// Test F64 limits (just verify they're accessible and positive/non-zero)
+	limits::F64Max 0.0 > print nl
+	limits::F64Min 0.0 > print nl
+	limits::F64Epsilon 0.0 > print nl
+
+	// Test C FFI limits
+	limits::I8Max print nl
+	limits::I8Min print nl
+	limits::I16Max print nl
+	limits::I16Min print nl
+	limits::I32Max print nl
+	limits::I32Min print nl
+
+	// Test unsigned limits
+	limits::U8Max print nl
+	limits::U16Max print nl
+	limits::U32Max print nl
+}

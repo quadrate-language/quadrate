@@ -1,0 +1,78 @@
+{
+  "name": "limits",
+  "description": "Numeric limits and constants. Provides minimum and maximum values for numeric types.",
+  "constants": [
+    {
+      "name": "F64Epsilon",
+      "value": "2.220446049250313e-16",
+      "description": "Machine epsilon for f64 (smallest x such that 1.0 + x != 1.0)."
+    },
+    {
+      "name": "F64Max",
+      "value": "1.7976931348623157e+308",
+      "description": "Largest finite f64 value."
+    },
+    {
+      "name": "F64Min",
+      "value": "2.2250738585072014e-308",
+      "description": "Smallest positive normalized f64 value."
+    },
+    {
+      "name": "I16Max",
+      "value": "32767",
+      "description": "Maximum value for 16-bit signed integer (C: int16_t)."
+    },
+    {
+      "name": "I16Min",
+      "value": "-32768",
+      "description": "Minimum value for 16-bit signed integer (C: int16_t)."
+    },
+    {
+      "name": "I32Max",
+      "value": "2147483647",
+      "description": "Maximum value for 32-bit signed integer (C: int32_t)."
+    },
+    {
+      "name": "I32Min",
+      "value": "-2147483648",
+      "description": "Minimum value for 32-bit signed integer (C: int32_t)."
+    },
+    {
+      "name": "I64Max",
+      "value": "9223372036854775807",
+      "description": "Maximum value for i64 (Quadrate's native integer type)."
+    },
+    {
+      "name": "I64Min",
+      "value": "-9223372036854775807",
+      "description": "Minimum value for i64 (Quadrate's native integer type)."
+    },
+    {
+      "name": "I8Max",
+      "value": "127",
+      "description": "Maximum value for 8-bit signed integer (C: int8_t)."
+    },
+    {
+      "name": "I8Min",
+      "value": "-128",
+      "description": "Minimum value for 8-bit signed integer (C: int8_t)."
+    },
+    {
+      "name": "U16Max",
+      "value": "65535",
+      "description": "Maximum value for 16-bit unsigned integer (C: uint16_t)."
+    },
+    {
+      "name": "U32Max",
+      "value": "4294967295",
+      "description": "Maximum value for 32-bit unsigned integer (C: uint32_t)."
+    },
+    {
+      "name": "U8Max",
+      "value": "255",
+      "description": "Maximum value for 8-bit unsigned integer (C: uint8_t)."
+    }
+  ],
+  "structs": [],
+  "functions": []
+}

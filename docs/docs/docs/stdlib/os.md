@@ -205,6 +205,25 @@ Rename or move a file.
 
 ---
 
+### setenv
+
+Set environment variable.
+
+**Signature:** `( name:str value:str -- )`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `name` | `str` | Variable name |
+| `value` | `str` | Variable value |
+
+**Example:**
+
+```qd
+"MY_VAR" "hello" os::setenv
+```
+
+---
+
 ### system
 
 Execute a shell command.

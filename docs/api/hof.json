@@ -1,0 +1,385 @@
+{
+  "name": "hof",
+  "description": "Higher-Order Function combinators. Combinators are functions that combine or apply other functions in useful patterns. They enable functional programming without explicit temporary variables.",
+  "constants": [],
+  "structs": [],
+  "functions": [
+    {
+      "name": "apply",
+      "signature": "( x:i64 f:ptr -- r:i64 )",
+      "failable": false,
+      "description": "Apply a function to a value.",
+      "params": [
+        {
+          "name": "x",
+          "type": "i64",
+          "description": "The input value"
+        },
+        {
+          "name": "f",
+          "type": "ptr",
+          "description": "Function pointer (i64 -- i64)"
+        }
+      ],
+      "returns": [
+        {
+          "name": "r",
+          "type": "i64",
+          "description": "Result of f(x)"
+        }
+      ],
+      "errors": [],
+      "examples": [
+        "5 fn (x:i64 -- r:i64) { 2 * } hof::apply print nl  // 10"
+      ]
+    },
+    {
+      "name": "bi",
+      "signature": "( x:i64 f:ptr g:ptr -- a:i64 b:i64 )",
+      "failable": false,
+      "description": "Apply two functions to the same value.",
+      "params": [
+        {
+          "name": "x",
+          "type": "i64",
+          "description": "The input value"
+        },
+        {
+          "name": "f",
+          "type": "ptr",
+          "description": "First function pointer (i64 -- i64)"
+        },
+        {
+          "name": "g",
+          "type": "ptr",
+          "description": "Second function pointer (i64 -- i64)"
+        }
+      ],
+      "returns": [
+        {
+          "name": "a",
+          "type": "i64",
+          "description": "Result of f(x)"
+        },
+        {
+          "name": "b",
+          "type": "i64",
+          "description": "Result of g(x)"
+        }
+      ],
+      "errors": [],
+      "examples": [
+        "5 fn (x:i64 -- r:i64) { 2 * } fn (x:i64 -- r:i64) { 3 + } hof::bi  // Stack: 10 8"
+      ]
+    },
+    {
+      "name": "bi_star",
+      "signature": "( x:i64 y:i64 f:ptr g:ptr -- a:i64 b:i64 )",
+      "failable": false,
+      "description": "Apply two functions to two values (first to first, second to second).",
+      "params": [
+        {
+          "name": "x",
+          "type": "i64",
+          "description": "First value"
+        },
+        {
+          "name": "y",
+          "type": "i64",
+          "description": "Second value"
+        },
+        {
+          "name": "f",
+          "type": "ptr",
+          "description": "Function for first value (i64 -- i64)"
+        },
+        {
+          "name": "g",
+          "type": "ptr",
+          "description": "Function for second value (i64 -- i64)"
+        }
+      ],
+      "returns": [
+        {
+          "name": "a",
+          "type": "i64",
+          "description": "Result of f(x)"
+        },
+        {
+          "name": "b",
+          "type": "i64",
+          "description": "Result of g(y)"
+        }
+      ],
+      "errors": [],
+      "examples": [
+        "3 4 fn (x:i64 -- r:i64) { 1 + } fn (x:i64 -- r:i64) { 2 * } hof::bi_star  // Stack: 4 8"
+      ]
+    },
+    {
+      "name": "both",
+      "signature": "( x:i64 y:i64 f:ptr -- a:i64 b:i64 )",
+      "failable": false,
+      "description": "Apply a function to two values separately.",
+      "params": [
+        {
+          "name": "x",
+          "type": "i64",
+          "description": "First value"
+        },
+        {
+          "name": "y",
+          "type": "i64",
+          "description": "Second value"
+        },
+        {
+          "name": "f",
+          "type": "ptr",
+          "description": "Function pointer (i64 -- i64)"
+        }
+      ],
+      "returns": [
+        {
+          "name": "a",
+          "type": "i64",
+          "description": "Result of f(x)"
+        },
+        {
+          "name": "b",
+          "type": "i64",
+          "description": "Result of f(y)"
+        }
+      ],
+      "errors": [],
+      "examples": [
+        "3 4 fn (x:i64 -- r:i64) { dup * } hof::both  // Stack: 9 16"
+      ]
+    },
+    {
+      "name": "dip",
+      "signature": "( x:i64 y:i64 f:ptr -- r:i64 top:i64 )",
+      "failable": false,
+      "description": "Apply a function to the second stack element, preserving the top.",
+      "params": [
+        {
+          "name": "x",
+          "type": "i64",
+          "description": "Second element (will have f applied)"
+        },
+        {
+          "name": "y",
+          "type": "i64",
+          "description": "Top element (preserved)"
+        },
+        {
+          "name": "f",
+          "type": "ptr",
+          "description": "Function pointer (i64 -- i64)"
+        }
+      ],
+      "returns": [
+        {
+          "name": "r",
+          "type": "i64",
+          "description": "Result of f(x)"
+        },
+        {
+          "name": "y",
+          "type": "i64",
+          "description": "Original top value (preserved)"
+        }
+      ],
+      "errors": [],
+      "examples": [
+        "10 20 fn (x:i64 -- r:i64) { 2 * } hof::dip  // Stack: 20 20"
+      ]
+    },
+    {
+      "name": "keep",
+      "signature": "( x:i64 f:ptr -- r:i64 orig:i64 )",
+      "failable": false,
+      "description": "Apply a function but keep the original value.",
+      "params": [
+        {
+          "name": "x",
+          "type": "i64",
+          "description": "The input value"
+        },
+        {
+          "name": "f",
+          "type": "ptr",
+          "description": "Function pointer (i64 -- i64)"
+        }
+      ],
+      "returns": [
+        {
+          "name": "r",
+          "type": "i64",
+          "description": "Result of f(x)"
+        },
+        {
+          "name": "x",
+          "type": "i64",
+          "description": "Original value (preserved)"
+        }
+      ],
+      "errors": [],
+      "examples": [
+        "5 fn (x:i64 -- r:i64) { 2 * } hof::keep  // Stack: 10 5"
+      ]
+    },
+    {
+      "name": "times",
+      "signature": "( x:i64 n:i64 f:ptr -- r:i64 )",
+      "failable": false,
+      "description": "Apply function n times to an initial value.",
+      "params": [
+        {
+          "name": "x",
+          "type": "i64",
+          "description": "Initial value"
+        },
+        {
+          "name": "n",
+          "type": "i64",
+          "description": "Number of times to apply"
+        },
+        {
+          "name": "f",
+          "type": "ptr",
+          "description": "Function pointer (i64 -- i64)"
+        }
+      ],
+      "returns": [
+        {
+          "name": "r",
+          "type": "i64",
+          "description": "Result after n applications"
+        }
+      ],
+      "errors": [],
+      "examples": [
+        "2 4 fn (x:i64 -- r:i64) { dup * } hof::times print nl  // 65536 (2^16)"
+      ]
+    },
+    {
+      "name": "tri",
+      "signature": "( x:i64 f:ptr g:ptr h:ptr -- a:i64 b:i64 c:i64 )",
+      "failable": false,
+      "description": "Apply three functions to the same value.",
+      "params": [
+        {
+          "name": "x",
+          "type": "i64",
+          "description": "The input value"
+        },
+        {
+          "name": "f",
+          "type": "ptr",
+          "description": "First function pointer (i64 -- i64)"
+        },
+        {
+          "name": "g",
+          "type": "ptr",
+          "description": "Second function pointer (i64 -- i64)"
+        },
+        {
+          "name": "h",
+          "type": "ptr",
+          "description": "Third function pointer (i64 -- i64)"
+        }
+      ],
+      "returns": [
+        {
+          "name": "a",
+          "type": "i64",
+          "description": "Result of f(x)"
+        },
+        {
+          "name": "b",
+          "type": "i64",
+          "description": "Result of g(x)"
+        },
+        {
+          "name": "c",
+          "type": "i64",
+          "description": "Result of h(x)"
+        }
+      ],
+      "errors": [],
+      "examples": [
+        "5 fn (x:i64 -- r:i64) { 1 + } fn (x:i64 -- r:i64) { 2 * } fn (x:i64 -- r:i64) { dup * } hof::tri  // Stack: 6 10 25"
+      ]
+    },
+    {
+      "name": "unless",
+      "signature": "( x:i64 cond:i64 f:ptr -- r:i64 )",
+      "failable": false,
+      "description": "Apply function only if condition is false, otherwise return value unchanged.",
+      "params": [
+        {
+          "name": "x",
+          "type": "i64",
+          "description": "The input value"
+        },
+        {
+          "name": "cond",
+          "type": "i64",
+          "description": "Condition (0 = false, non-zero = true)"
+        },
+        {
+          "name": "f",
+          "type": "ptr",
+          "description": "Function pointer (i64 -- i64)"
+        }
+      ],
+      "returns": [
+        {
+          "name": "r",
+          "type": "i64",
+          "description": "Result of f(x) if cond is false, otherwise x"
+        }
+      ],
+      "errors": [],
+      "examples": [
+        "5 0 fn (x:i64 -- r:i64) { 2 * } hof::unless print nl  // 10",
+        "5 1 fn (x:i64 -- r:i64) { 2 * } hof::unless print nl  // 5"
+      ]
+    },
+    {
+      "name": "when",
+      "signature": "( x:i64 cond:i64 f:ptr -- r:i64 )",
+      "failable": false,
+      "description": "Apply function only if condition is true, otherwise return value unchanged.",
+      "params": [
+        {
+          "name": "x",
+          "type": "i64",
+          "description": "The input value"
+        },
+        {
+          "name": "cond",
+          "type": "i64",
+          "description": "Condition (0 = false, non-zero = true)"
+        },
+        {
+          "name": "f",
+          "type": "ptr",
+          "description": "Function pointer (i64 -- i64)"
+        }
+      ],
+      "returns": [
+        {
+          "name": "r",
+          "type": "i64",
+          "description": "Result of f(x) if cond is true, otherwise x"
+        }
+      ],
+      "errors": [],
+      "examples": [
+        "5 1 fn (x:i64 -- r:i64) { 2 * } hof::when print nl  // 10",
+        "5 0 fn (x:i64 -- r:i64) { 2 * } hof::when print nl  // 5"
+      ]
+    }
+  ]
+}

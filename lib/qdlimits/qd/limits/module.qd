@@ -1,0 +1,54 @@
+/// Numeric limits and constants.
+/// Provides minimum and maximum values for numeric types.
+
+// ============================================================
+// Native Type Limits (i64, f64)
+// ============================================================
+
+/// Minimum value for i64 (Quadrate's native integer type).
+pub const I64Min = -9223372036854775807
+
+/// Maximum value for i64 (Quadrate's native integer type).
+pub const I64Max = 9223372036854775807
+
+/// Smallest positive normalized f64 value.
+pub const F64Min = 2.2250738585072014e-308
+
+/// Largest finite f64 value.
+pub const F64Max = 1.7976931348623157e+308
+
+/// Machine epsilon for f64 (smallest x such that 1.0 + x != 1.0).
+pub const F64Epsilon = 2.220446049250313e-16
+
+// ============================================================
+// C FFI / Bit Manipulation Limits
+// These are useful when interfacing with C libraries or
+// working with binary data formats.
+// ============================================================
+
+/// Maximum value for 8-bit signed integer (C: int8_t).
+pub const I8Max = 127
+
+/// Minimum value for 8-bit signed integer (C: int8_t).
+pub const I8Min = -128
+
+/// Maximum value for 16-bit signed integer (C: int16_t).
+pub const I16Max = 32767
+
+/// Minimum value for 16-bit signed integer (C: int16_t).
+pub const I16Min = -32768
+
+/// Maximum value for 32-bit signed integer (C: int32_t).
+pub const I32Max = 2147483647
+
+/// Minimum value for 32-bit signed integer (C: int32_t).
+pub const I32Min = -2147483648
+
+/// Maximum value for 8-bit unsigned integer (C: uint8_t).
+pub const U8Max = 255
+
+/// Maximum value for 16-bit unsigned integer (C: uint16_t).
+pub const U16Max = 65535
+
+/// Maximum value for 32-bit unsigned integer (C: uint32_t).
+pub const U32Max = 4294967295

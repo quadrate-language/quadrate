@@ -258,6 +258,29 @@
       ]
     },
     {
+      "name": "setenv",
+      "signature": "( name:str value:str -- )",
+      "failable": false,
+      "description": "Set environment variable.",
+      "params": [
+        {
+          "name": "name",
+          "type": "str",
+          "description": "Variable name"
+        },
+        {
+          "name": "value",
+          "type": "str",
+          "description": "Variable value"
+        }
+      ],
+      "returns": [],
+      "errors": [],
+      "examples": [
+        "\"MY_VAR\" \"hello\" os::setenv"
+      ]
+    },
+    {
       "name": "system",
       "signature": "( cmd:str -- exitcode:i64 )",
       "failable": false,

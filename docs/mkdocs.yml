@@ -79,6 +79,7 @@ nav:
           - bytes: docs/stdlib/bytes.md
       - Math & Numbers:
           - math: docs/stdlib/math.md
+          - limits: docs/stdlib/limits.md
           - bits: docs/stdlib/bits.md
           - rand: docs/stdlib/rand.md
       - I/O & System:

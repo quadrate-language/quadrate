@@ -1,0 +1,46 @@
+// Test new math functions: atan2, hypot, exp, fmod
+use math
+
+fn main( -- ) {
+	// Test atan2 - angle of point (1, 1) from origin (should be π/4 ≈ 0.785)
+	1.0 1.0 math::atan2 math::rad_to_deg math::round print nl
+
+	// Test atan2 - angle of point (0, 1) from origin (should be π/2 = 90°)
+	1.0 0.0 math::atan2 math::rad_to_deg math::round print nl
+
+	// Test atan2 - angle of point (-1, 0) from origin (should be π = 180°)
+	0.0 -1.0 math::atan2 math::rad_to_deg math::round print nl
+
+	// Test atan2 - angle of point (1, 0) from origin (should be 0°)
+	0.0 1.0 math::atan2 math::rad_to_deg math::round print nl
+
+	// Test hypot - classic 3-4-5 right triangle
+	3.0 4.0 math::hypot print nl
+
+	// Test hypot - 5-12-13 right triangle
+	5.0 12.0 math::hypot print nl
+
+	// Test hypot - unit hypotenuse (1, 1) -> sqrt(2) ≈ 1.414
+	1.0 1.0 math::hypot math::round print nl
+
+	// Test exp - e^0 = 1
+	0.0 math::exp print nl
+
+	// Test exp - e^1 ≈ 2.718
+	1.0 math::exp math::round print nl
+
+	// Test exp - e^2 ≈ 7.389
+	2.0 math::exp math::round print nl
+
+	// Test fmod - 5.5 mod 2.0 = 1.5
+	5.5 2.0 math::fmod print nl
+
+	// Test fmod - 10.0 mod 3.0 = 1.0
+	10.0 3.0 math::fmod print nl
+
+	// Test fmod - 7.5 mod 2.5 = 0.0
+	7.5 2.5 math::fmod print nl
+
+	// Test fmod with negative dividend - -5.5 mod 2.0 = -1.5
+	-5.5 2.0 math::fmod print nl
+}

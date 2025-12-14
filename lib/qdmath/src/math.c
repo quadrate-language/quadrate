@@ -719,3 +719,248 @@ qd_exec_result usr_math_round(qd_context* ctx) {
 // fac - REPLACED BY QUADRATE IMPLEMENTATION (see lib/stdmathqd/qd/math/module.qd)
 // inv - REPLACED BY QUADRATE IMPLEMENTATION (see lib/stdmathqd/qd/math/module.qd)
 
+// atan2 - two-argument arctangent
+qd_exec_result usr_math_atan2(qd_context* ctx) {
+	// Stack: ( y x -- atan2(y,x) )
+	size_t stack_size = qd_stack_size(ctx->st);
+	if (stack_size < 2) {
+		fprintf(stderr, "Fatal error in math::atan2: Stack underflow (requires 2 values)\n");
+		dump_stack(ctx);
+		qd_print_stack_trace(ctx);
+		abort();
+	}
+
+	// Pop x (top of stack)
+	qd_stack_element_t x_elem;
+	qd_stack_error err = qd_stack_pop(ctx->st, &x_elem);
+	if (err != QD_STACK_OK) {
+		fprintf(stderr, "Fatal error in math::atan2: Failed to pop x\n");
+		dump_stack(ctx);
+		qd_print_stack_trace(ctx);
+		abort();
+	}
+
+	// Pop y
+	qd_stack_element_t y_elem;
+	err = qd_stack_pop(ctx->st, &y_elem);
+	if (err != QD_STACK_OK) {
+		fprintf(stderr, "Fatal error in math::atan2: Failed to pop y\n");
+		dump_stack(ctx);
+		qd_print_stack_trace(ctx);
+		abort();
+	}
+
+	// Convert both to double
+	double x, y;
+	if (x_elem.type == QD_STACK_TYPE_INT) {
+		x = (double)x_elem.value.i;
+	} else if (x_elem.type == QD_STACK_TYPE_FLOAT) {
+		x = x_elem.value.f;
+	} else {
+		fprintf(stderr, "Fatal error in math::atan2: Invalid x type (expected int or float)\n");
+		dump_stack(ctx);
+		qd_print_stack_trace(ctx);
+		abort();
+	}
+
+	if (y_elem.type == QD_STACK_TYPE_INT) {
+		y = (double)y_elem.value.i;
+	} else if (y_elem.type == QD_STACK_TYPE_FLOAT) {
+		y = y_elem.value.f;
+	} else {
+		fprintf(stderr, "Fatal error in math::atan2: Invalid y type (expected int or float)\n");
+		dump_stack(ctx);
+		qd_print_stack_trace(ctx);
+		abort();
+	}
+
+	double result = atan2(y, x);
+
+	err = qd_stack_push_float(ctx->st, result);
+	if (err != QD_STACK_OK) {
+		return (qd_exec_result){-2};
+	}
+
+	return (qd_exec_result){0};
+}
+
+// hypot - hypotenuse (sqrt(x^2 + y^2) without overflow)
+qd_exec_result usr_math_hypot(qd_context* ctx) {
+	// Stack: ( x y -- hypot(x,y) )
+	size_t stack_size = qd_stack_size(ctx->st);
+	if (stack_size < 2) {
+		fprintf(stderr, "Fatal error in math::hypot: Stack underflow (requires 2 values)\n");
+		dump_stack(ctx);
+		qd_print_stack_trace(ctx);
+		abort();
+	}
+
+	// Pop y (top of stack)
+	qd_stack_element_t y_elem;
+	qd_stack_error err = qd_stack_pop(ctx->st, &y_elem);
+	if (err != QD_STACK_OK) {
+		fprintf(stderr, "Fatal error in math::hypot: Failed to pop y\n");
+		dump_stack(ctx);
+		qd_print_stack_trace(ctx);
+		abort();
+	}
+
+	// Pop x
+	qd_stack_element_t x_elem;
+	err = qd_stack_pop(ctx->st, &x_elem);
+	if (err != QD_STACK_OK) {
+		fprintf(stderr, "Fatal error in math::hypot: Failed to pop x\n");
+		dump_stack(ctx);
+		qd_print_stack_trace(ctx);
+		abort();
+	}
+
+	// Convert both to double
+	double x, y;
+	if (x_elem.type == QD_STACK_TYPE_INT) {
+		x = (double)x_elem.value.i;
+	} else if (x_elem.type == QD_STACK_TYPE_FLOAT) {
+		x = x_elem.value.f;
+	} else {
+		fprintf(stderr, "Fatal error in math::hypot: Invalid x type (expected int or float)\n");
+		dump_stack(ctx);
+		qd_print_stack_trace(ctx);
+		abort();
+	}
+
+	if (y_elem.type == QD_STACK_TYPE_INT) {
+		y = (double)y_elem.value.i;
+	} else if (y_elem.type == QD_STACK_TYPE_FLOAT) {
+		y = y_elem.value.f;
+	} else {
+		fprintf(stderr, "Fatal error in math::hypot: Invalid y type (expected int or float)\n");
+		dump_stack(ctx);
+		qd_print_stack_trace(ctx);
+		abort();
+	}
+
+	double result = hypot(x, y);
+
+	err = qd_stack_push_float(ctx->st, result);
+	if (err != QD_STACK_OK) {
+		return (qd_exec_result){-2};
+	}
+
+	return (qd_exec_result){0};
+}
+
+// exp - exponential function (e^x)
+qd_exec_result usr_math_exp(qd_context* ctx) {
+	// Stack: ( x -- e^x )
+	size_t stack_size = qd_stack_size(ctx->st);
+	if (stack_size < 1) {
+		fprintf(stderr, "Fatal error in math::exp: Stack underflow (requires 1 value)\n");
+		dump_stack(ctx);
+		qd_print_stack_trace(ctx);
+		abort();
+	}
+
+	qd_stack_element_t elem;
+	qd_stack_error err = qd_stack_pop(ctx->st, &elem);
+	if (err != QD_STACK_OK) {
+		fprintf(stderr, "Fatal error in math::exp: Failed to pop value\n");
+		dump_stack(ctx);
+		qd_print_stack_trace(ctx);
+		abort();
+	}
+
+	double value;
+	if (elem.type == QD_STACK_TYPE_INT) {
+		value = (double)elem.value.i;
+	} else if (elem.type == QD_STACK_TYPE_FLOAT) {
+		value = elem.value.f;
+	} else {
+		fprintf(stderr, "Fatal error in math::exp: Invalid type (expected int or float)\n");
+		dump_stack(ctx);
+		qd_print_stack_trace(ctx);
+		abort();
+	}
+
+	double result = exp(value);
+
+	err = qd_stack_push_float(ctx->st, result);
+	if (err != QD_STACK_OK) {
+		return (qd_exec_result){-2};
+	}
+
+	return (qd_exec_result){0};
+}
+
+// fmod - floating-point modulo
+qd_exec_result usr_math_fmod(qd_context* ctx) {
+	// Stack: ( x y -- x mod y )
+	size_t stack_size = qd_stack_size(ctx->st);
+	if (stack_size < 2) {
+		fprintf(stderr, "Fatal error in math::fmod: Stack underflow (requires 2 values)\n");
+		dump_stack(ctx);
+		qd_print_stack_trace(ctx);
+		abort();
+	}
+
+	// Pop y (divisor, top of stack)
+	qd_stack_element_t y_elem;
+	qd_stack_error err = qd_stack_pop(ctx->st, &y_elem);
+	if (err != QD_STACK_OK) {
+		fprintf(stderr, "Fatal error in math::fmod: Failed to pop y\n");
+		dump_stack(ctx);
+		qd_print_stack_trace(ctx);
+		abort();
+	}
+
+	// Pop x (dividend)
+	qd_stack_element_t x_elem;
+	err = qd_stack_pop(ctx->st, &x_elem);
+	if (err != QD_STACK_OK) {
+		fprintf(stderr, "Fatal error in math::fmod: Failed to pop x\n");
+		dump_stack(ctx);
+		qd_print_stack_trace(ctx);
+		abort();
+	}
+
+	// Convert both to double
+	double x, y;
+	if (x_elem.type == QD_STACK_TYPE_INT) {
+		x = (double)x_elem.value.i;
+	} else if (x_elem.type == QD_STACK_TYPE_FLOAT) {
+		x = x_elem.value.f;
+	} else {
+		fprintf(stderr, "Fatal error in math::fmod: Invalid x type (expected int or float)\n");
+		dump_stack(ctx);
+		qd_print_stack_trace(ctx);
+		abort();
+	}
+
+	if (y_elem.type == QD_STACK_TYPE_INT) {
+		y = (double)y_elem.value.i;
+	} else if (y_elem.type == QD_STACK_TYPE_FLOAT) {
+		y = y_elem.value.f;
+	} else {
+		fprintf(stderr, "Fatal error in math::fmod: Invalid y type (expected int or float)\n");
+		dump_stack(ctx);
+		qd_print_stack_trace(ctx);
+		abort();
+	}
+
+	// Check for division by zero
+	if (y == 0.0) {
+		fprintf(stderr, "Fatal error in math::fmod: Division by zero\n");
+		dump_stack(ctx);
+		qd_print_stack_trace(ctx);
+		abort();
+	}
+
+	double result = fmod(x, y);
+
+	err = qd_stack_push_float(ctx->st, result);
+	if (err != QD_STACK_OK) {
+		return (qd_exec_result){-2};
+	}
+
+	return (qd_exec_result){0};
+}
+

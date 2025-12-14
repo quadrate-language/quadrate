@@ -98,6 +98,31 @@ Arc tangent (inverse tangent).
 
 ---
 
+### atan2
+
+Two-argument arc tangent.
+Returns the angle in radians between the positive x-axis and the point (x, y).
+More useful than atan for computing angles because it handles all quadrants.
+
+**Signature:** `( y:f64 x:f64 -- result:f64 )`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `y` | `f64` | Y coordinate |
+| `x` | `f64` | X coordinate |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `result` | `f64` | Angle in radians [-π, π] |
+
+**Example:**
+
+```qd
+1.0 1.0 math::atan2 .  // ~0.785 (π/4)
+```
+
+---
+
 ### cb
 
 Cube a number.
@@ -254,6 +279,28 @@ Convert degrees to radians.
 
 ---
 
+### exp
+
+Exponential function (e^x).
+
+**Signature:** `( x:f64 -- result:f64 )`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `x` | `f64` | Exponent value |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `result` | `f64` | e raised to x |
+
+**Example:**
+
+```qd
+1.0 math::exp .  // ~2.718 (e)
+```
+
+---
+
 ### fac
 
 Factorial (n!).
@@ -294,6 +341,54 @@ Floor (round down).
 
 ```qd
 2.7 math::floor .  // 2.0
+```
+
+---
+
+### fmod
+
+Floating-point modulo (remainder).
+Returns the remainder of x/y with the same sign as x.
+
+**Signature:** `( x:f64 y:f64 -- result:f64 )`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `x` | `f64` | Dividend |
+| `y` | `f64` | Divisor (non-zero) |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `result` | `f64` | Remainder of x/y |
+
+**Example:**
+
+```qd
+5.5 2.0 math::fmod .  // 1.5
+```
+
+---
+
+### hypot
+
+Hypotenuse (Euclidean distance).
+Computes sqrt(x² + y²) without intermediate overflow or underflow.
+
+**Signature:** `( x:f64 y:f64 -- result:f64 )`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `x` | `f64` | First value |
+| `y` | `f64` | Second value |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `result` | `f64` | sqrt(x² + y²) |
+
+**Example:**
+
+```qd
+3.0 4.0 math::hypot .  // 5.0
 ```
 
 ---

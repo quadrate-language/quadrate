@@ -39,8 +39,10 @@ fn main( -- ) {
 | [flag](flag.md) | Command-line flag parsing. |
 | [fmt](fmt.md) | Formatted output functions. |
 | [hex](hex.md) | Hexadecimal encoding and decoding. Converts between binary d... |
+| [hof](hof.md) | Higher-Order Function combinators. Combinators are functions... |
 | [io](io.md) | File and stream I/O operations. |
 | [json](json.md) | JSON parsing and querying without AST construction. |
+| [limits](limits.md) | Numeric limits and constants. Provides minimum and maximum v... |
 | [math](math.md) |  |
 | [mem](mem.md) | Low-level memory allocation and manipulation.  SAFETY: These... |
 | [net](net.md) | TCP network operations. |

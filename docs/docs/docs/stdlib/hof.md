@@ -1,12 +1,8 @@
-# hof - Higher-Order Functions
+# hof
 
-The `hof` module provides combinators for functional programming with anonymous functions.
-
-## Usage
-
-```quadrate
-use hof
-```
+Higher-Order Function combinators.
+Combinators are functions that combine or apply other functions in useful patterns.
+They enable functional programming without explicit temporary variables.
 
 ## Functions
 
@@ -14,61 +10,97 @@ use hof
 
 Apply a function to a value.
 
-```quadrate
-fn apply( x:i64 f:ptr -- r:i64 )
-```
+**Signature:** `( x:i64 f:ptr -- r:i64 )`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `x` | `i64` | The input value |
+| `f` | `ptr` | Function pointer (i64 -- i64) |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `r` | `i64` | Result of f(x) |
 
 **Example:**
-```quadrate
-5 fn (x:i64 -- r:i64) { 2 * } hof::apply   // 10
+
+```qd
+5 fn (x:i64 -- r:i64) { 2 * } hof::apply print nl  // 10
 ```
 
 ---
 
 ### bi
 
-Apply two functions to the same value, returning both results.
+Apply two functions to the same value.
 
-```quadrate
-fn bi( x:i64 f:ptr g:ptr -- a:i64 b:i64 )
-```
+**Signature:** `( x:i64 f:ptr g:ptr -- a:i64 b:i64 )`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `x` | `i64` | The input value |
+| `f` | `ptr` | First function pointer (i64 -- i64) |
+| `g` | `ptr` | Second function pointer (i64 -- i64) |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `a` | `i64` | Result of f(x) |
+| `b` | `i64` | Result of g(x) |
 
 **Example:**
-```quadrate
-5 fn (x:i64 -- r:i64) { 2 * } fn (x:i64 -- r:i64) { 3 + } hof::bi
-// Stack: 10 8
+
+```qd
+5 fn (x:i64 -- r:i64) { 2 * } fn (x:i64 -- r:i64) { 3 + } hof::bi  // Stack: 10 8
 ```
 
 ---
 
-### tri
+### bi_star
 
-Apply three functions to the same value, returning all results.
+Apply two functions to two values (first to first, second to second).
 
-```quadrate
-fn tri( x:i64 f:ptr g:ptr h:ptr -- a:i64 b:i64 c:i64 )
-```
+**Signature:** `( x:i64 y:i64 f:ptr g:ptr -- a:i64 b:i64 )`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `x` | `i64` | First value |
+| `y` | `i64` | Second value |
+| `f` | `ptr` | Function for first value (i64 -- i64) |
+| `g` | `ptr` | Function for second value (i64 -- i64) |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `a` | `i64` | Result of f(x) |
+| `b` | `i64` | Result of g(y) |
 
 **Example:**
-```quadrate
-5 fn (x:i64 -- r:i64) { 1 + } fn (x:i64 -- r:i64) { 2 * } fn (x:i64 -- r:i64) { dup * } hof::tri
-// Stack: 6 10 25
+
+```qd
+3 4 fn (x:i64 -- r:i64) { 1 + } fn (x:i64 -- r:i64) { 2 * } hof::bi_star  // Stack: 4 8
 ```
 
 ---
 
-### keep
+### both
 
-Apply a function but preserve the original value.
+Apply a function to two values separately.
 
-```quadrate
-fn keep( x:i64 f:ptr -- r:i64 orig:i64 )
-```
+**Signature:** `( x:i64 y:i64 f:ptr -- a:i64 b:i64 )`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `x` | `i64` | First value |
+| `y` | `i64` | Second value |
+| `f` | `ptr` | Function pointer (i64 -- i64) |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `a` | `i64` | Result of f(x) |
+| `b` | `i64` | Result of f(y) |
 
 **Example:**
-```quadrate
-5 fn (x:i64 -- r:i64) { 2 * } hof::keep
-// Stack: 10 5
+
+```qd
+3 4 fn (x:i64 -- r:i64) { dup * } hof::both  // Stack: 9 16
 ```
 
 ---
@@ -77,97 +109,146 @@ fn keep( x:i64 f:ptr -- r:i64 orig:i64 )
 
 Apply a function to the second stack element, preserving the top.
 
-```quadrate
-fn dip( x:i64 y:i64 f:ptr -- r:i64 top:i64 )
-```
+**Signature:** `( x:i64 y:i64 f:ptr -- r:i64 top:i64 )`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `x` | `i64` | Second element (will have f applied) |
+| `y` | `i64` | Top element (preserved) |
+| `f` | `ptr` | Function pointer (i64 -- i64) |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `r` | `i64` | Result of f(x) |
+| `y` | `i64` | Original top value (preserved) |
 
 **Example:**
-```quadrate
-10 20 fn (x:i64 -- r:i64) { 2 * } hof::dip
-// Stack: 20 20  (doubled 10, kept 20 on top)
+
+```qd
+10 20 fn (x:i64 -- r:i64) { 2 * } hof::dip  // Stack: 20 20
 ```
 
 ---
 
-### both
+### keep
 
-Apply the same function to two values.
+Apply a function but keep the original value.
 
-```quadrate
-fn both( x:i64 y:i64 f:ptr -- a:i64 b:i64 )
-```
+**Signature:** `( x:i64 f:ptr -- r:i64 orig:i64 )`
 
-**Example:**
-```quadrate
-3 4 fn (x:i64 -- r:i64) { dup * } hof::both
-// Stack: 9 16
-```
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `x` | `i64` | The input value |
+| `f` | `ptr` | Function pointer (i64 -- i64) |
 
----
-
-### bi_star
-
-Apply two different functions to two values.
-
-```quadrate
-fn bi_star( x:i64 y:i64 f:ptr g:ptr -- a:i64 b:i64 )
-```
+| Output | Type | Description |
+|--------|------|-------------|
+| `r` | `i64` | Result of f(x) |
+| `x` | `i64` | Original value (preserved) |
 
 **Example:**
-```quadrate
-3 4 fn (x:i64 -- r:i64) { 1 + } fn (x:i64 -- r:i64) { 2 * } hof::bi_star
-// Stack: 4 8  (3+1=4, 4*2=8)
-```
 
----
-
-### when
-
-Apply function only if condition is true (non-zero).
-
-```quadrate
-fn when( x:i64 cond:i64 f:ptr -- r:i64 )
-```
-
-**Example:**
-```quadrate
-5 1 fn (x:i64 -- r:i64) { 2 * } hof::when   // 10 (applied)
-5 0 fn (x:i64 -- r:i64) { 2 * } hof::when   // 5  (unchanged)
-```
-
----
-
-### unless
-
-Apply function only if condition is false (zero).
-
-```quadrate
-fn unless( x:i64 cond:i64 f:ptr -- r:i64 )
-```
-
-**Example:**
-```quadrate
-5 0 fn (x:i64 -- r:i64) { 2 * } hof::unless  // 10 (applied)
-5 1 fn (x:i64 -- r:i64) { 2 * } hof::unless  // 5  (unchanged)
+```qd
+5 fn (x:i64 -- r:i64) { 2 * } hof::keep  // Stack: 10 5
 ```
 
 ---
 
 ### times
 
-Apply a function n times to an initial value.
+Apply function n times to an initial value.
 
-```quadrate
-fn times( x:i64 n:i64 f:ptr -- r:i64 )
-```
+**Signature:** `( x:i64 n:i64 f:ptr -- r:i64 )`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `x` | `i64` | Initial value |
+| `n` | `i64` | Number of times to apply |
+| `f` | `ptr` | Function pointer (i64 -- i64) |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `r` | `i64` | Result after n applications |
 
 **Example:**
-```quadrate
-1 5 fn (x:i64 -- r:i64) { 2 * } hof::times   // 32  (1*2*2*2*2*2)
-2 3 fn (x:i64 -- r:i64) { dup * } hof::times // 256 (2^2^2^2 = 256)
+
+```qd
+2 4 fn (x:i64 -- r:i64) { dup * } hof::times print nl  // 65536 (2^16)
 ```
 
-## See Also
+---
 
-- [Anonymous Functions](../learn/7-advanced/anonymous-functions.md) - Creating function values
-- [Higher-Order Functions Tutorial](../learn/7-advanced/higher-order-functions.md) - Detailed guide
+### tri
+
+Apply three functions to the same value.
+
+**Signature:** `( x:i64 f:ptr g:ptr h:ptr -- a:i64 b:i64 c:i64 )`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `x` | `i64` | The input value |
+| `f` | `ptr` | First function pointer (i64 -- i64) |
+| `g` | `ptr` | Second function pointer (i64 -- i64) |
+| `h` | `ptr` | Third function pointer (i64 -- i64) |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `a` | `i64` | Result of f(x) |
+| `b` | `i64` | Result of g(x) |
+| `c` | `i64` | Result of h(x) |
+
+**Example:**
+
+```qd
+5 fn (x:i64 -- r:i64) { 1 + } fn (x:i64 -- r:i64) { 2 * } fn (x:i64 -- r:i64) { dup * } hof::tri  // Stack: 6 10 25
+```
+
+---
+
+### unless
+
+Apply function only if condition is false, otherwise return value unchanged.
+
+**Signature:** `( x:i64 cond:i64 f:ptr -- r:i64 )`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `x` | `i64` | The input value |
+| `cond` | `i64` | Condition (0 = false, non-zero = true) |
+| `f` | `ptr` | Function pointer (i64 -- i64) |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `r` | `i64` | Result of f(x) if cond is false, otherwise x |
+
+**Example:**
+
+```qd
+5 0 fn (x:i64 -- r:i64) { 2 * } hof::unless print nl  // 10
+5 1 fn (x:i64 -- r:i64) { 2 * } hof::unless print nl  // 5
+```
+
+---
+
+### when
+
+Apply function only if condition is true, otherwise return value unchanged.
+
+**Signature:** `( x:i64 cond:i64 f:ptr -- r:i64 )`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `x` | `i64` | The input value |
+| `cond` | `i64` | Condition (0 = false, non-zero = true) |
+| `f` | `ptr` | Function pointer (i64 -- i64) |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `r` | `i64` | Result of f(x) if cond is true, otherwise x |
+
+**Example:**
+
+```qd
+5 1 fn (x:i64 -- r:i64) { 2 * } hof::when print nl  // 10
+5 0 fn (x:i64 -- r:i64) { 2 * } hof::when print nl  // 5
+```

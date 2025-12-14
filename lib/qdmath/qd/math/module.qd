@@ -42,6 +42,15 @@ import "libqdmath.a" as "math" {
 	/// @example 0.0 math::atan .  // 0.0
 	pub fn atan(x:f64 -- result:f64)
 
+	/// Two-argument arc tangent.
+	/// Returns the angle in radians between the positive x-axis and the point (x, y).
+	/// More useful than atan for computing angles because it handles all quadrants.
+	/// @param y f64 Y coordinate
+	/// @param x f64 X coordinate
+	/// @return result f64 Angle in radians [-π, π]
+	/// @example 1.0 1.0 math::atan2 .  // ~0.785 (π/4)
+	pub fn atan2(y:f64 x:f64 -- result:f64)
+
 	/// Square root.
 	/// @param x f64 Non-negative value
 	/// @return result f64 Square root of x
@@ -60,6 +69,20 @@ import "libqdmath.a" as "math" {
 	/// @return result f64 base raised to exp
 	/// @example 2.0 3.0 math::pow .  // 8.0
 	pub fn pow(base:f64 exp:f64 -- result:f64)
+
+	/// Exponential function (e^x).
+	/// @param x f64 Exponent value
+	/// @return result f64 e raised to x
+	/// @example 1.0 math::exp .  // ~2.718 (e)
+	pub fn exp(x:f64 -- result:f64)
+
+	/// Hypotenuse (Euclidean distance).
+	/// Computes sqrt(x² + y²) without intermediate overflow or underflow.
+	/// @param x f64 First value
+	/// @param y f64 Second value
+	/// @return result f64 sqrt(x² + y²)
+	/// @example 3.0 4.0 math::hypot .  // 5.0
+	pub fn hypot(x:f64 y:f64 -- result:f64)
 
 	/// Natural logarithm (base e).
 	/// @param x f64 Positive value
@@ -90,6 +113,14 @@ import "libqdmath.a" as "math" {
 	/// @return result f64 Nearest integer to x
 	/// @example 2.5 math::round .  // 3.0
 	pub fn round(x:f64 -- result:f64)
+
+	/// Floating-point modulo (remainder).
+	/// Returns the remainder of x/y with the same sign as x.
+	/// @param x f64 Dividend
+	/// @param y f64 Divisor (non-zero)
+	/// @return result f64 Remainder of x/y
+	/// @example 5.5 2.0 math::fmod .  // 1.5
+	pub fn fmod(x:f64 y:f64 -- result:f64)
 }
 
 /// Increment integer by 1.

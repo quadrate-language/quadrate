@@ -39,6 +39,9 @@ qd_exec_result usr_math_acos(qd_context* ctx);
 /** @brief Arctangent function - Stack Effect: ( x:f -- atan(x):f ) */
 qd_exec_result usr_math_atan(qd_context* ctx);
 
+/** @brief Two-argument arctangent - Stack Effect: ( y:f x:f -- atan2(y,x):f ) */
+qd_exec_result usr_math_atan2(qd_context* ctx);
+
 /** @} */ // end of Trigonometric group
 
 /**
@@ -61,6 +64,12 @@ qd_exec_result usr_math_cbrt(qd_context* ctx);
 
 /** @brief Power function - Stack Effect: ( base:f exp:f -- base^exp:f ) */
 qd_exec_result usr_math_pow(qd_context* ctx);
+
+/** @brief Exponential function (e^x) - Stack Effect: ( x:f -- e^x:f ) */
+qd_exec_result usr_math_exp(qd_context* ctx);
+
+/** @brief Hypotenuse (sqrt(x²+y²)) - Stack Effect: ( x:f y:f -- hypot:f ) */
+qd_exec_result usr_math_hypot(qd_context* ctx);
 
 /** @} */ // end of PowerRoot group
 
@@ -92,6 +101,9 @@ qd_exec_result usr_math_floor(qd_context* ctx);
 
 /** @brief Round to nearest integer - Stack Effect: ( x:f -- round(x):f ) */
 qd_exec_result usr_math_round(qd_context* ctx);
+
+/** @brief Floating-point modulo - Stack Effect: ( x:f y:f -- x mod y:f ) */
+qd_exec_result usr_math_fmod(qd_context* ctx);
 
 /** @} */ // end of Rounding group
 

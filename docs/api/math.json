@@ -117,6 +117,35 @@
       ]
     },
     {
+      "name": "atan2",
+      "signature": "( y:f64 x:f64 -- result:f64 )",
+      "failable": false,
+      "description": "Two-argument arc tangent. Returns the angle in radians between the positive x-axis and the point (x, y). More useful than atan for computing angles because it handles all quadrants.",
+      "params": [
+        {
+          "name": "y",
+          "type": "f64",
+          "description": "Y coordinate"
+        },
+        {
+          "name": "x",
+          "type": "f64",
+          "description": "X coordinate"
+        }
+      ],
+      "returns": [
+        {
+          "name": "result",
+          "type": "f64",
+          "description": "Angle in radians [-\u03c0, \u03c0]"
+        }
+      ],
+      "errors": [],
+      "examples": [
+        "1.0 1.0 math::atan2 .  // ~0.785 (\u03c0/4)"
+      ]
+    },
+    {
       "name": "cb",
       "signature": "( x:f64 -- result:f64 )",
       "failable": false,
@@ -295,6 +324,30 @@
       ]
     },
     {
+      "name": "exp",
+      "signature": "( x:f64 -- result:f64 )",
+      "failable": false,
+      "description": "Exponential function (e^x).",
+      "params": [
+        {
+          "name": "x",
+          "type": "f64",
+          "description": "Exponent value"
+        }
+      ],
+      "returns": [
+        {
+          "name": "result",
+          "type": "f64",
+          "description": "e raised to x"
+        }
+      ],
+      "errors": [],
+      "examples": [
+        "1.0 math::exp .  // ~2.718 (e)"
+      ]
+    },
+    {
       "name": "fac",
       "signature": "( n:i64 -- result:i64 )",
       "failable": false,
@@ -340,6 +393,64 @@
       "errors": [],
       "examples": [
         "2.7 math::floor .  // 2.0"
+      ]
+    },
+    {
+      "name": "fmod",
+      "signature": "( x:f64 y:f64 -- result:f64 )",
+      "failable": false,
+      "description": "Floating-point modulo (remainder). Returns the remainder of x/y with the same sign as x.",
+      "params": [
+        {
+          "name": "x",
+          "type": "f64",
+          "description": "Dividend"
+        },
+        {
+          "name": "y",
+          "type": "f64",
+          "description": "Divisor (non-zero)"
+        }
+      ],
+      "returns": [
+        {
+          "name": "result",
+          "type": "f64",
+          "description": "Remainder of x/y"
+        }
+      ],
+      "errors": [],
+      "examples": [
+        "5.5 2.0 math::fmod .  // 1.5"
+      ]
+    },
+    {
+      "name": "hypot",
+      "signature": "( x:f64 y:f64 -- result:f64 )",
+      "failable": false,
+      "description": "Hypotenuse (Euclidean distance). Computes sqrt(x\u00b2 + y\u00b2) without intermediate overflow or underflow.",
+      "params": [
+        {
+          "name": "x",
+          "type": "f64",
+          "description": "First value"
+        },
+        {
+          "name": "y",
+          "type": "f64",
+          "description": "Second value"
+        }
+      ],
+      "returns": [
+        {
+          "name": "result",
+          "type": "f64",
+          "description": "sqrt(x\u00b2 + y\u00b2)"
+        }
+      ],
+      "errors": [],
+      "examples": [
+        "3.0 4.0 math::hypot .  // 5.0"
       ]
     },
     {
