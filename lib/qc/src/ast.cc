@@ -792,9 +792,8 @@ namespace Qd {
 						}
 						continue;
 					} else {
-						errorReporter->reportError(
-								scanner, "Function declarations not allowed inside blocks. "
-										 "Did you mean 'fn (...) { }' for an anonymous function?");
+						errorReporter->reportError(scanner, "Function declarations not allowed inside blocks. "
+															"Did you mean 'fn (...) { }' for an anonymous function?");
 						continue;
 					}
 				}
@@ -1105,8 +1104,7 @@ namespace Qd {
 	 * referenced inside the anonymous function that is defined in an enclosing
 	 * scope will be captured implicitly.
 	 */
-	static IAstNode* parseAnonymousFunction(
-			u8t_scanner* scanner, ErrorReporter* errorReporter, const char* src) {
+	static IAstNode* parseAnonymousFunction(u8t_scanner* scanner, ErrorReporter* errorReporter, const char* src) {
 		AstNodeAnonymousFunction* func = new AstNodeAnonymousFunction();
 		setNodePosition(func, scanner, src);
 
@@ -1604,9 +1602,8 @@ namespace Qd {
 							tempNodes.push_back(anonFunc);
 						}
 					} else {
-						errorReporter->reportError(
-								scanner, "Function declarations not allowed inside blocks. "
-										 "Did you mean 'fn (...) { }' for an anonymous function?");
+						errorReporter->reportError(scanner, "Function declarations not allowed inside blocks. "
+															"Did you mean 'fn (...) { }' for an anonymous function?");
 					}
 				} else if (strcmp(text, "ctx") == 0) {
 					// Parse ctx block
@@ -1783,9 +1780,9 @@ namespace Qd {
 										}
 										continue;
 									} else {
-										errorReporter->reportError(
-												scanner, "Function declarations not allowed inside blocks. "
-														 "Did you mean 'fn (...) { }' for an anonymous function?");
+										errorReporter->reportError(scanner,
+												"Function declarations not allowed inside blocks. "
+												"Did you mean 'fn (...) { }' for an anonymous function?");
 										continue;
 									}
 								}
@@ -1816,7 +1813,7 @@ namespace Qd {
 						IAstNode* node = new AstNodeLiteral("0", AstNodeLiteral::LiteralType::INTEGER);
 						setNodePosition(node, scanner, src);
 						tempNodes.push_back(node);
-					// Handle result constants: Ok = 1, Err = 0
+						// Handle result constants: Ok = 1, Err = 0
 					} else if (strcmp(text, "Ok") == 0) {
 						IAstNode* node = new AstNodeLiteral("1", AstNodeLiteral::LiteralType::INTEGER);
 						setNodePosition(node, scanner, src);

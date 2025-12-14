@@ -123,15 +123,12 @@ Open a file.
 		file io::close
 	}
 	io::ErrNotFound {
-		drop
 		"File not found" print nl
 	}
 	io::ErrPermission {
-		drop
 		"Permission denied" print nl
 	}
 	_ {
-		drop
 		"Unknown error" print nl
 	}
 }

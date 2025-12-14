@@ -83,7 +83,8 @@ static std::string findModuleFile(const std::string& moduleName) {
 	// Try 5: Local development paths (relative to build directory, debug builds only)
 	if (MESON_BUILD_ROOT[0] != '\0') {
 		fs::path buildRoot = fs::path(MESON_BUILD_ROOT).parent_path().parent_path();
-		std::string devPath = (buildRoot / "lib" / ("std" + moduleName + "qd") / "qd" / moduleName / "module.qd").string();
+		std::string devPath =
+				(buildRoot / "lib" / ("std" + moduleName + "qd") / "qd" / moduleName / "module.qd").string();
 		if (fs::exists(devPath)) {
 			return devPath;
 		}

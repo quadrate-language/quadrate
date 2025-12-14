@@ -809,13 +809,17 @@ private:
 									std::ostringstream sigStream;
 									sigStream << "fn " << func->name << "(";
 									for (size_t j = 0; j < func->inputParameters.size(); j++) {
-										if (j > 0) sigStream << " ";
+										if (j > 0) {
+											sigStream << " ";
+										}
 										sigStream << func->inputParameters[j]->name() << ":"
 												  << func->inputParameters[j]->typeString();
 									}
 									sigStream << " -- ";
 									for (size_t j = 0; j < func->outputParameters.size(); j++) {
-										if (j > 0) sigStream << " ";
+										if (j > 0) {
+											sigStream << " ";
+										}
 										sigStream << func->outputParameters[j]->name() << ":"
 												  << func->outputParameters[j]->typeString();
 									}
@@ -1821,15 +1825,21 @@ private:
 								if (!func.inputParams.empty()) {
 									docStream << "Inputs: ";
 									for (size_t i = 0; i < func.inputParams.size(); i++) {
-										if (i > 0) docStream << ", ";
+										if (i > 0) {
+											docStream << ", ";
+										}
 										docStream << func.inputParams[i];
 									}
 								}
 								if (!func.outputParams.empty()) {
-									if (!func.inputParams.empty()) docStream << " | ";
+									if (!func.inputParams.empty()) {
+										docStream << " | ";
+									}
 									docStream << "Outputs: ";
 									for (size_t i = 0; i < func.outputParams.size(); i++) {
-										if (i > 0) docStream << ", ";
+										if (i > 0) {
+											docStream << ", ";
+										}
 										docStream << func.outputParams[i];
 									}
 								}
@@ -1871,7 +1881,9 @@ private:
 
 													const auto& inputs = funcNode->inputParameters();
 													for (size_t j = 0; j < inputs.size(); j++) {
-														if (j > 0) sigStream << " ";
+														if (j > 0) {
+															sigStream << " ";
+														}
 														Qd::AstNodeParameter* param =
 																static_cast<Qd::AstNodeParameter*>(inputs[j]);
 														sigStream << param->name() << ":" << param->typeString();
@@ -1881,7 +1893,9 @@ private:
 
 													const auto& outputs = funcNode->outputParameters();
 													for (size_t j = 0; j < outputs.size(); j++) {
-														if (j > 0) sigStream << " ";
+														if (j > 0) {
+															sigStream << " ";
+														}
 														Qd::AstNodeParameter* param =
 																static_cast<Qd::AstNodeParameter*>(outputs[j]);
 														sigStream << param->name() << ":" << param->typeString();
@@ -1893,8 +1907,7 @@ private:
 													break;
 												}
 											} else if (child && child->type() == Qd::IAstNode::Type::IMPORT_STATEMENT) {
-												Qd::AstNodeImport* importNode =
-														static_cast<Qd::AstNodeImport*>(child);
+												Qd::AstNodeImport* importNode = static_cast<Qd::AstNodeImport*>(child);
 												for (const auto* importedFunc : importNode->functions()) {
 													if (importedFunc->name == symbolName) {
 														std::ostringstream sigStream;
@@ -1902,7 +1915,9 @@ private:
 
 														for (size_t j = 0; j < importedFunc->inputParameters.size();
 																j++) {
-															if (j > 0) sigStream << " ";
+															if (j > 0) {
+																sigStream << " ";
+															}
 															const auto* param = importedFunc->inputParameters[j];
 															sigStream << param->name() << ":" << param->typeString();
 														}
@@ -1911,7 +1926,9 @@ private:
 
 														for (size_t j = 0; j < importedFunc->outputParameters.size();
 																j++) {
-															if (j > 0) sigStream << " ";
+															if (j > 0) {
+																sigStream << " ";
+															}
 															const auto* param = importedFunc->outputParameters[j];
 															sigStream << param->name() << ":" << param->typeString();
 														}
@@ -1922,7 +1939,9 @@ private:
 														break;
 													}
 												}
-												if (!signature.empty()) break;
+												if (!signature.empty()) {
+													break;
+												}
 											}
 										}
 									}
@@ -3102,7 +3121,9 @@ private:
 			if (root && !ast.hasErrors() && root->type() == Qd::IAstNode::Type::PROGRAM) {
 				// Helper lambda to recursively find folding ranges
 				std::function<void(Qd::IAstNode*)> findFoldingRanges = [&](Qd::IAstNode* node) {
-					if (!node) return;
+					if (!node) {
+						return;
+					}
 
 					size_t startLine = 0;
 					size_t endLine = 0;
@@ -3110,8 +3131,7 @@ private:
 
 					// Check for foldable constructs
 					if (node->type() == Qd::IAstNode::Type::FUNCTION_DECLARATION) {
-						Qd::AstNodeFunctionDeclaration* funcNode =
-								static_cast<Qd::AstNodeFunctionDeclaration*>(node);
+						Qd::AstNodeFunctionDeclaration* funcNode = static_cast<Qd::AstNodeFunctionDeclaration*>(node);
 						startLine = funcNode->line() > 0 ? funcNode->line() - 1 : 0;
 
 						// Find the end line by looking at the last instruction
@@ -3130,11 +3150,15 @@ private:
 						startLine = node->line() > 0 ? node->line() - 1 : 0;
 						// Find end by traversing children
 						std::function<size_t(Qd::IAstNode*)> findMaxLine = [&](Qd::IAstNode* n) -> size_t {
-							if (!n) return 0;
+							if (!n) {
+								return 0;
+							}
 							size_t maxLine = n->line() > 0 ? n->line() - 1 : 0;
 							for (size_t i = 0; i < n->childCount(); i++) {
 								size_t childMax = findMaxLine(n->child(i));
-								if (childMax > maxLine) maxLine = childMax;
+								if (childMax > maxLine) {
+									maxLine = childMax;
+								}
 							}
 							return maxLine;
 						};
@@ -3145,11 +3169,15 @@ private:
 							   node->type() == Qd::IAstNode::Type::LOOP_STATEMENT) {
 						startLine = node->line() > 0 ? node->line() - 1 : 0;
 						std::function<size_t(Qd::IAstNode*)> findMaxLine = [&](Qd::IAstNode* n) -> size_t {
-							if (!n) return 0;
+							if (!n) {
+								return 0;
+							}
 							size_t maxLine = n->line() > 0 ? n->line() - 1 : 0;
 							for (size_t i = 0; i < n->childCount(); i++) {
 								size_t childMax = findMaxLine(n->child(i));
-								if (childMax > maxLine) maxLine = childMax;
+								if (childMax > maxLine) {
+									maxLine = childMax;
+								}
 							}
 							return maxLine;
 						};
@@ -3164,11 +3192,15 @@ private:
 					} else if (node->type() == Qd::IAstNode::Type::STRUCT_DECLARATION) {
 						startLine = node->line() > 0 ? node->line() - 1 : 0;
 						std::function<size_t(Qd::IAstNode*)> findMaxLine = [&](Qd::IAstNode* n) -> size_t {
-							if (!n) return 0;
+							if (!n) {
+								return 0;
+							}
 							size_t maxLine = n->line() > 0 ? n->line() - 1 : 0;
 							for (size_t i = 0; i < n->childCount(); i++) {
 								size_t childMax = findMaxLine(n->child(i));
-								if (childMax > maxLine) maxLine = childMax;
+								if (childMax > maxLine) {
+									maxLine = childMax;
+								}
 							}
 							return maxLine;
 						};
@@ -3421,11 +3453,15 @@ private:
 
 					// Helper to find max line in a subtree
 					std::function<size_t(Qd::IAstNode*)> getMaxLine = [&](Qd::IAstNode* node) -> size_t {
-						if (!node) return 0;
+						if (!node) {
+							return 0;
+						}
 						size_t maxLine = node->line();
 						for (size_t i = 0; i < node->childCount(); i++) {
 							size_t childMax = getMaxLine(node->child(i));
-							if (childMax > maxLine) maxLine = childMax;
+							if (childMax > maxLine) {
+								maxLine = childMax;
+							}
 						}
 						return maxLine;
 					};
@@ -3434,8 +3470,7 @@ private:
 					for (size_t i = 0; i < root->childCount(); i++) {
 						Qd::IAstNode* child = root->child(i);
 						if (child && child->type() == Qd::IAstNode::Type::FUNCTION_DECLARATION) {
-							Qd::AstNodeFunctionDeclaration* func =
-									static_cast<Qd::AstNodeFunctionDeclaration*>(child);
+							Qd::AstNodeFunctionDeclaration* func = static_cast<Qd::AstNodeFunctionDeclaration*>(child);
 							// Check if cursor line is within this function
 							size_t funcEndLine = getMaxLine(child);
 							if (astLine >= func->line() && astLine <= funcEndLine) {
@@ -3448,15 +3483,21 @@ private:
 					// Check if the word is a local variable (defined with ->) in the containing function
 					if (containingFunction) {
 						std::function<bool(Qd::IAstNode*)> hasLocalDecl = [&](Qd::IAstNode* node) -> bool {
-							if (!node) return false;
+							if (!node) {
+								return false;
+							}
 							if (node->type() == Qd::IAstNode::Type::LOCAL) {
 								Qd::AstNodeLocal* local = static_cast<Qd::AstNodeLocal*>(node);
 								for (const std::string& name : local->names()) {
-									if (name == word) return true;
+									if (name == word) {
+										return true;
+									}
 								}
 							}
 							for (size_t i = 0; i < node->childCount(); i++) {
-								if (hasLocalDecl(node->child(i))) return true;
+								if (hasLocalDecl(node->child(i))) {
+									return true;
+								}
 							}
 							return false;
 						};

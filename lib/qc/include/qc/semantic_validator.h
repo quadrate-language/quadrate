@@ -126,8 +126,7 @@ namespace Qd {
 		// Helper: Collect captured variables for closures (anonymous functions accessing outer scope)
 		void collectCapturedVariables(IAstNode* node, std::unordered_set<std::string>& localVariables,
 				std::unordered_set<std::string>& iteratorNames,
-				const std::unordered_set<std::string>& outerScopeVariables,
-				class AstNodeAnonymousFunction* anonFunc);
+				const std::unordered_set<std::string>& outerScopeVariables, class AstNodeAnonymousFunction* anonFunc);
 
 		// Pass 3a: Analyze function signatures (what each function consumes/produces)
 		void analyzeFunctionSignatures(IAstNode* node);

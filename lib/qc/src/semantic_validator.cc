@@ -1879,8 +1879,8 @@ namespace Qd {
 	}
 
 	void SemanticValidator::collectCapturedVariables(IAstNode* node, std::unordered_set<std::string>& localVariables,
-			std::unordered_set<std::string>& iteratorNames,
-			const std::unordered_set<std::string>& outerScopeVariables, AstNodeAnonymousFunction* anonFunc) {
+			std::unordered_set<std::string>& iteratorNames, const std::unordered_set<std::string>& outerScopeVariables,
+			AstNodeAnonymousFunction* anonFunc) {
 		if (!node) {
 			return;
 		}
@@ -3398,7 +3398,7 @@ namespace Qd {
 					if (sig.throws && !ident->abortOnError() && !ident->checkError()) {
 						IAstNode* nextNode = (i + 1 < node->childCount()) ? node->child(i + 1) : nullptr;
 						if (!nextNode || (nextNode->type() != IAstNode::Type::IF_STATEMENT &&
-										  nextNode->type() != IAstNode::Type::SWITCH_STATEMENT)) {
+												 nextNode->type() != IAstNode::Type::SWITCH_STATEMENT)) {
 							std::string errorMsg = "Fallible function '" + name +
 												   "' must be immediately followed by 'if' or 'switch' to check for "
 												   "errors, or use '!' to abort on error";
@@ -4105,7 +4105,7 @@ namespace Qd {
 					if (sig.throws && !scoped->abortOnError() && !scoped->checkError()) {
 						IAstNode* nextNode = (i + 1 < node->childCount()) ? node->child(i + 1) : nullptr;
 						if (!nextNode || (nextNode->type() != IAstNode::Type::IF_STATEMENT &&
-										  nextNode->type() != IAstNode::Type::SWITCH_STATEMENT)) {
+												 nextNode->type() != IAstNode::Type::SWITCH_STATEMENT)) {
 							std::string errorMsg = "Fallible function '" + qualifiedName +
 												   "' must be immediately followed by 'if' or 'switch' to check for "
 												   "errors, or use '!' to abort on error";
@@ -4203,7 +4203,8 @@ namespace Qd {
 						for (size_t idx = 0; idx < sig.produces.size(); idx++) {
 							typeStack.push_back(sig.produces[idx]); // Push untainted value
 							auto structIt = sig.producesStructTypes.find(idx);
-							structTypeStack.push_back(structIt != sig.producesStructTypes.end() ? structIt->second : "");
+							structTypeStack.push_back(
+									structIt != sig.producesStructTypes.end() ? structIt->second : "");
 						}
 						typeStack.push_back(StackValueType::INT); // Error status (0 or 1)
 						structTypeStack.push_back("");
@@ -4212,7 +4213,8 @@ namespace Qd {
 						for (size_t idx = 0; idx < sig.produces.size(); idx++) {
 							typeStack.push_back(sig.produces[idx]);
 							auto structIt = sig.producesStructTypes.find(idx);
-							structTypeStack.push_back(structIt != sig.producesStructTypes.end() ? structIt->second : "");
+							structTypeStack.push_back(
+									structIt != sig.producesStructTypes.end() ? structIt->second : "");
 						}
 						typeStack.push_back(StackValueType::INT); // Error status (0 or 1)
 						structTypeStack.push_back("");
@@ -4221,7 +4223,8 @@ namespace Qd {
 						for (size_t idx = 0; idx < sig.produces.size(); idx++) {
 							typeStack.push_back(sig.produces[idx]);
 							auto structIt = sig.producesStructTypes.find(idx);
-							structTypeStack.push_back(structIt != sig.producesStructTypes.end() ? structIt->second : "");
+							structTypeStack.push_back(
+									structIt != sig.producesStructTypes.end() ? structIt->second : "");
 						}
 					}
 				}
