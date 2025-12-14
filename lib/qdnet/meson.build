@@ -13,6 +13,7 @@ qdnet_static = static_library('qdnet',
 	qdnet_sources,
 	include_directories: qdnet_inc,
 	dependencies: qd_static_dep,
+	c_args: ['-ffunction-sections', '-fdata-sections'],
 	install: false
 )
 

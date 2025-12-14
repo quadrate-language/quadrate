@@ -13,6 +13,7 @@ qdtime_static = static_library('qdtime',
 	qdtime_sources,
 	include_directories: qdtime_inc,
 	dependencies: qd_static_dep,
+	c_args: ['-ffunction-sections', '-fdata-sections'],
 	install: false
 )
 

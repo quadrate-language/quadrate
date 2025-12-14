@@ -12,6 +12,7 @@ qdmath_static = static_library('qdmath',
 	qdmath_sources,
 	include_directories: qdmath_inc,
 	dependencies: qd_static_dep,
+	c_args: ['-ffunction-sections', '-fdata-sections'],
 	install: false
 )
 

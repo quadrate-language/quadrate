@@ -12,6 +12,7 @@ qdfmt_static = static_library('qdfmt',
 	qdfmt_sources,
 	include_directories: qdfmt_inc,
 	dependencies: qd_static_dep,
+	c_args: ['-ffunction-sections', '-fdata-sections'],
 	install: false
 )
 

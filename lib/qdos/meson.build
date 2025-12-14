@@ -24,6 +24,7 @@ qdos_static = static_library('qdos',
 	qdos_sources,
 	include_directories: qdos_inc,
 	dependencies: [qd_static_dep, cpp_dep, fs_dep],
+	c_args: ['-ffunction-sections', '-fdata-sections'],
 	install: false
 )
 

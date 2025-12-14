@@ -12,6 +12,7 @@ qdsignal_static = static_library('qdsignal',
 	qdsignal_sources,
 	include_directories: qdsignal_inc,
 	dependencies: [qdrt_static_dep],
+	c_args: ['-ffunction-sections', '-fdata-sections'],
 	install: false
 )
 

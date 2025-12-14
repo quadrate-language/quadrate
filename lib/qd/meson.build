@@ -30,6 +30,7 @@ qd_static = static_library('qd_static',
 		include_directories: [qd_inc, qdrt_src_inc],
 		dependencies: [qdrt_static_dep, qc_dep, llvmgen_dep],
 		cpp_args: qd_cpp_args,
+	c_args: ['-ffunction-sections', '-fdata-sections'],
 		install: false
 )
 

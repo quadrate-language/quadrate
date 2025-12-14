@@ -33,11 +33,12 @@ qdrt_shared = shared_library('qdrt',
 		install: false
 )
 
-# Static library
+# Static library (with -ffunction-sections -fdata-sections for --gc-sections linking)
 qdrt_static = static_library('qdrt_static',
 		qdrt_sources,
 		include_directories: qdrt_inc,
 		dependencies: [m_dep, pthread_dep, dl_dep],
+		c_args: ['-ffunction-sections', '-fdata-sections'],
 		install: false
 )
 

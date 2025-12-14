@@ -11,6 +11,7 @@ qdmem_static = static_library('qdmem',
 	qdmem_sources,
 	include_directories: qdmem_inc,
 	dependencies: qdrt_static_dep,
+	c_args: ['-ffunction-sections', '-fdata-sections'],
 	install: false
 )
 

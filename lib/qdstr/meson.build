@@ -12,6 +12,7 @@ qdstr_static = static_library('qdstr',
 	qdstr_sources,
 	include_directories: qdstr_inc,
 	dependencies: qd_static_dep,
+	c_args: ['-ffunction-sections', '-fdata-sections'],
 	install: false
 )
 

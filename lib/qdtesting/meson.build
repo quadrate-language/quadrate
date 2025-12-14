@@ -12,6 +12,7 @@ qdtesting_static = static_library('qdtesting',
 	qdtesting_sources,
 	include_directories: qdtesting_inc,
 	dependencies: qdrt_static_dep,
+	c_args: ['-ffunction-sections', '-fdata-sections'],
 	install: false
 )
 

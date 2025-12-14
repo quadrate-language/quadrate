@@ -11,6 +11,7 @@ qdio_static = static_library('qdio',
 	qdio_sources,
 	include_directories: qdio_inc,
 	dependencies: qd_static_dep,
+	c_args: ['-ffunction-sections', '-fdata-sections'],
 	install: false
 )
 

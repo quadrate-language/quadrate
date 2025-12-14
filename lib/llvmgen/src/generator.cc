@@ -6892,7 +6892,7 @@ namespace Qd {
 			librarySearchFlags += " -L" + searchPath;
 		}
 
-		std::string linkCmd = "clang -o " + filename + " " + objFile + " " + librarySearchFlags + " " + libraryFlags;
+		std::string linkCmd = "clang -Wl,--gc-sections -o " + filename + " " + objFile + " " + librarySearchFlags + " " + libraryFlags;
 
 		int result = system(linkCmd.c_str());
 

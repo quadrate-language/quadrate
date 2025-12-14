@@ -12,6 +12,7 @@ qdbits_static = static_library('qdbits',
 	qdbits_sources,
 	include_directories: qdbits_inc,
 	dependencies: qd_static_dep,
+	c_args: ['-ffunction-sections', '-fdata-sections'],
 	install: false
 )
 
