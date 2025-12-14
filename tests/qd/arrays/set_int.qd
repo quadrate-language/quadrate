@@ -1,5 +1,5 @@
 // Test set with integer array
-fn main( -- ) {
+fn main() {
 	// Create array and set elements
 	3 makei -> arr
 	arr 0 100 set

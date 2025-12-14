@@ -10,7 +10,7 @@ struct Outer {
 	z:i64
 }
 
-fn main( -- ) {
+fn main() {
 	// Create nested struct
 	Outer {
 		inner = Inner { x = 10 y = 20 }

@@ -1,7 +1,7 @@
 // Test defer blocks in modules
 use defer_ops
 
-fn main( -- ) {
+fn main() {
 	// Test simple defer
 	5.0 defer_ops::with_cleanup
 	print nl

@@ -38,7 +38,7 @@ The `panic` instruction takes (in push order):
 When you call a fallible function, you **must** handle the error with `if`:
 
 ```qd
-fn main( -- ) {
+fn main() {
 	10 2 divide if {
 		// Success: result is on stack
 		"Result: " print print nl
@@ -69,7 +69,7 @@ fn divide(a:i64 b:i64 -- result:i64)! {
 	/
 }
 
-fn main( -- ) {
+fn main() {
 	// This will fail
 	1 0 divide if {
 		"1 / 0 = " print print nl
@@ -116,7 +116,7 @@ fn get_two( -- a:i64 b:i64)! {
 	"failed" 1 panic
 }
 
-fn main( -- ) {
+fn main() {
 	get_two if {
 		// Success: outputs are on stack
 		-> b -> a
@@ -137,7 +137,7 @@ Many standard library functions are fallible:
 use str
 use io
 
-fn main( -- ) {
+fn main() {
 	// String operations
 	"hello" 1 3 str::substring if {
 		print nl  // "ell"
@@ -169,7 +169,7 @@ fn divide(a:i64 b:i64 -- result:i64)! {
 	/
 }
 
-fn main( -- ) {
+fn main() {
 	10 0 divide if {
 		print nl
 	} else {
@@ -191,7 +191,7 @@ The `err` instruction pushes `( -- msg code )`:
 This is useful with `switch` to handle different error codes:
 
 ```qd
-fn main( -- ) {
+fn main() {
 	some_operation if {
 		// Success
 	} else {

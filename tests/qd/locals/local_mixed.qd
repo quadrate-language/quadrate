@@ -8,6 +8,6 @@ fn process(base:i64 multiplier:i64 -- result:i64) {
 	val product add
 }
 
-fn main( -- ) {
+fn main() {
 	10 3 process print nl
 }

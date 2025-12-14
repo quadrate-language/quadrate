@@ -8,9 +8,9 @@ Built-in operations for input and output.
 |-------------|-----------|-------------|
 | `print` | `( val -- )` | Print value |
 | `printv` | `( val -- )` | Print with type info |
-| `prints` | `( -- )` | Print entire stack |
-| `printsv` | `( -- )` | Print stack with types |
-| `nl` | `( -- )` | Print newline |
+| `prints` | `()` | Print entire stack |
+| `printsv` | `()` | Print stack with types |
+| `nl` | `()` | Print newline |
 | `read` | `( -- ... n )` | Read command line args |
 
 ---
@@ -42,7 +42,7 @@ Prints a value with type information for debugging.
 
 Prints the entire stack contents without clearing it.
 
-**Signature:** `( -- )`
+**Signature:** `()`
 
 ```qd
 1 2 3 prints // prints the entire stack
@@ -54,7 +54,7 @@ Useful for debugging to see current stack state.
 
 Prints the entire stack with type information for debugging.
 
-**Signature:** `( -- )`
+**Signature:** `()`
 
 Similar to `prints` but includes type info for each value.
 
@@ -62,7 +62,7 @@ Similar to `prints` but includes type info for each value.
 
 Prints a newline character to stdout.
 
-**Signature:** `( -- )`
+**Signature:** `()`
 
 ```qd
 "Hello" print nl // prints: Hello\n

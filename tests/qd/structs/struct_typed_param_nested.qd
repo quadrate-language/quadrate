@@ -45,7 +45,7 @@ fn describe_vec(v:Vec2 -- ) {
 	" sum=" print v sum_components print nl
 }
 
-fn main( -- ) {
+fn main() {
 	Vec2 {
 		x = 3.0
 		y = 4.0

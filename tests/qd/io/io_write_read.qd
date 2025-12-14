@@ -2,7 +2,7 @@
 use io
 use mem
 
-fn main( -- ) {
+fn main() {
 	// Write to a file: convert string to buffer
 	"Hello, Quadrate!\n" mem::from_string
 	-> write_len

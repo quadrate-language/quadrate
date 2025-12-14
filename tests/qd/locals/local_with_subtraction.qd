@@ -1,5 +1,5 @@
 // Test that subtraction still works alongside local variables
-fn main( -- ) {
+fn main() {
 	10 5 - print nl
 	20 -> x
 	x 3 - print nl

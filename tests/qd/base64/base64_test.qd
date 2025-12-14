@@ -2,7 +2,7 @@
 use base64
 use str
 
-fn main( -- ) {
+fn main() {
 	// Test 1: Simple string "Hello"
 	"Hello" base64::encode -> encoded1
 	encoded1 print nl

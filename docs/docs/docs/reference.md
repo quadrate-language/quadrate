@@ -48,7 +48,7 @@ Makes a function, constant, or struct visible to other modules.
 **Example:**
 
 ```qd
-pub fn greet( -- ) { "Hello" print nl }
+pub fn greet() { "Hello" print nl }
 ```
 
 ---
@@ -192,7 +192,7 @@ Exits the current function immediately.
 **Example:**
 
 ```qd
-fn early( -- ) { true if { return } "not reached" print }
+fn early() { true if { return } "not reached" print }
 ```
 
 ---
@@ -1143,9 +1143,9 @@ Converts a value to the specified type (use with cast<T> syntax).
 |-------------|-----------|-------------|
 | [`print`](#print) | `( val -- )` | Prints a value to stdout without a newline. |
 | [`printv`](#printv) | `( val -- )` | Prints a value with type information for debugging. |
-| [`prints`](#prints) | `( -- )` | Prints the entire stack contents without clearing it. |
-| [`printsv`](#printsv) | `( -- )` | Prints the entire stack with type information for debugging. |
-| [`nl`](#nl) | `( -- )` | Prints a newline character to stdout. |
+| [`prints`](#prints) | `()` | Prints the entire stack contents without clearing it. |
+| [`printsv`](#printsv) | `()` | Prints the entire stack with type information for debugging. |
+| [`nl`](#nl) | `()` | Prints a newline character to stdout. |
 | [`read`](#read) | `( -- ... n )` | Reads command line arguments onto the stack, pushing count last. |
 
 #### print
@@ -1174,7 +1174,7 @@ Prints a value with type information for debugging.
 
 Prints the entire stack contents without clearing it.
 
-**Signature:** `( -- )`
+**Signature:** `()`
 
 **Example:**
 
@@ -1188,7 +1188,7 @@ Prints the entire stack contents without clearing it.
 
 Prints the entire stack with type information for debugging.
 
-**Signature:** `( -- )`
+**Signature:** `()`
 
 ---
 
@@ -1196,7 +1196,7 @@ Prints the entire stack with type information for debugging.
 
 Prints a newline character to stdout.
 
-**Signature:** `( -- )`
+**Signature:** `()`
 
 **Example:**
 

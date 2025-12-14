@@ -1,13 +1,13 @@
 // Test: No unused functions
-fn helper_one( -- ) {
+fn helper_one() {
 	1 2 add
 }
 
-fn helper_two( -- ) {
+fn helper_two() {
 	3 4 add
 	helper_one
 }
 
-fn main( -- ) {
+fn main() {
 	helper_two
 }

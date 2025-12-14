@@ -1,5 +1,5 @@
 // Test inline anonymous function (no variable)
-fn main( -- ) {
+fn main() {
     // Direct inline call
     5 fn (x:i64 -- r:i64) { 2 * } call print nl
 

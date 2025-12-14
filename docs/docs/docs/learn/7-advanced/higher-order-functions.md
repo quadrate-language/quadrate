@@ -190,7 +190,7 @@ fn validate_age( age:i64 -- valid:i64 ) {
     age 120 <= and
 }
 
-fn main( -- ) {
+fn main() {
     25 validate_age if { "Valid" } else { "Invalid" } print nl
     -5 validate_age if { "Valid" } else { "Invalid" } print nl
     150 validate_age if { "Valid" } else { "Invalid" } print nl
@@ -209,7 +209,7 @@ fn stats( n:i64 -- doubled:i64 squared:i64 incremented:i64 ) {
     hof::tri
 }
 
-fn main( -- ) {
+fn main() {
     5 stats
     // Stack: 10 25 6
 }
@@ -220,7 +220,7 @@ fn main( -- ) {
 ```quadrate
 use hof
 
-fn main( -- ) {
+fn main() {
     // Compute 2^10 by doubling 10 times
     1 10 fn (x:i64 -- r:i64) { 2 * } hof::times
     print nl  // 1024

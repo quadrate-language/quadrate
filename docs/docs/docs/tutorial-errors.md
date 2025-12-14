@@ -38,7 +38,7 @@ The `error` instruction takes:
 When you call a fallible function, you **must** handle the error with `if`:
 
 ```qd
-fn main( -- ) {
+fn main() {
 	10 2 division if {
 		// Success: result is on stack
 		"Result: " print print nl
@@ -71,7 +71,7 @@ fn division(a:i64 b:i64 -- result:i64)! {
 	div
 }
 
-fn main( -- ) {
+fn main() {
 	// This will fail
 	1 0 division if {
 		"1 / 0 = " print print nl
@@ -118,7 +118,7 @@ Many standard library functions are fallible. Common examples:
 ```qd
 use str
 
-fn main( -- ) {
+fn main() {
 	"hello" 1 3 str::substring! prints nl  // "ell"
 
 	"hello world" "l" "L" str::replace! prints nl  // "heLLo worLd"
@@ -131,7 +131,7 @@ fn main( -- ) {
 use io
 use mem
 
-fn main( -- ) {
+fn main() {
 	"test.txt" io::ReadOnly io::open if {
 		-> file
 		defer { file io::close }
@@ -257,7 +257,7 @@ fn try_all( -- success_count:i64) {
 	count
 }
 
-fn main( -- ) {
+fn main() {
 	try_all print " operations succeeded" print nl  // 2
 }
 ```

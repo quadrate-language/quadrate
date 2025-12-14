@@ -1,5 +1,5 @@
 // Test: if on empty stack should give compile error
-fn main( -- ) {
+fn main() {
 	if {
 		42
 	}

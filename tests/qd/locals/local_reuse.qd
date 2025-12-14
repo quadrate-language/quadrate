@@ -1,5 +1,5 @@
 // Test using the same local variable multiple times
-fn main( -- ) {
+fn main() {
 	5 -> x
 	x x add print nl
 	x x x add add print nl

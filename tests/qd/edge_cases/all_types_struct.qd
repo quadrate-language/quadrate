@@ -5,7 +5,7 @@ struct AllTypes {
 	p_val:ptr
 }
 
-fn main( -- ) {
+fn main() {
 	AllTypes {
 		i_val = 42
 		f_val = 3.14

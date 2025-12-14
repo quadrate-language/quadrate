@@ -1,7 +1,7 @@
 // Test hex roundtrip encoding/decoding
 use hex
 
-fn main( -- ) {
+fn main() {
 	// Encode
 	"Hello" hex::encode print nl
 

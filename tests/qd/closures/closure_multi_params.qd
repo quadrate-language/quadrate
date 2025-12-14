@@ -1,5 +1,5 @@
 // Test: Closure with multiple input parameters and captures
-fn main( -- ) {
+fn main() {
     100 -> offset
 
     fn (a:i64 b:i64 c:i64 -- r:i64) {

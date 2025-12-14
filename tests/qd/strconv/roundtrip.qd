@@ -1,7 +1,7 @@
 // Test round-trip conversions: format then parse should return original value
 use strconv
 
-fn main( -- ) {
+fn main() {
 	// Binary round-trips
 	0 2 strconv::format_int 2 strconv::parse_int print nl
 	1 2 strconv::format_int 2 strconv::parse_int print nl

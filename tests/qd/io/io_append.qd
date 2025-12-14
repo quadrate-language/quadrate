@@ -2,7 +2,7 @@
 use io
 use mem
 
-fn main( -- ) {
+fn main() {
 	// Write initial content
 	"Line 1\n" mem::from_string
 	-> len1

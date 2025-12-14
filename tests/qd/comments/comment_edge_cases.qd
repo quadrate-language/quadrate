@@ -1,5 +1,5 @@
 // Test edge cases in comment handling
-fn main( -- ) {
+fn main() {
 	// Empty comment follows:
 	//
 	1 print nl

@@ -21,11 +21,11 @@ Spawns a new thread to execute a function.
 **Signature:** `( fn -- thread )`
 
 ```qd
-fn worker( -- ) {
+fn worker() {
 	"Working..." print nl
 }
 
-fn main( -- ) {
+fn main() {
 	&worker spawn -> t
 	t wait
 }
@@ -67,7 +67,7 @@ fn task(id:i64 -- ) {
 	"Task " print id print " running" print nl
 }
 
-fn main( -- ) {
+fn main() {
 	3 make<ptr> -> threads
 
 	0 3 1 for i {
@@ -86,11 +86,11 @@ fn main( -- ) {
 ### Fire and Forget
 
 ```qd
-fn background_task( -- ) {
+fn background_task() {
 	// Long running work...
 }
 
-fn main( -- ) {
+fn main() {
 	&background_task spawn detach
 	"Started background task" print nl
 	// Main continues without waiting

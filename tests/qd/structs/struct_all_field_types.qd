@@ -6,7 +6,7 @@ struct AllTypes {
 	pointer_field:ptr
 }
 
-fn test_all_types( -- ) {
+fn test_all_types() {
 	AllTypes {
 		int_field = 42
 		float_field = 3.14
@@ -18,6 +18,6 @@ fn test_all_types( -- ) {
 	obj @float_field print nl
 }
 
-fn main( -- ) {
+fn main() {
 	test_all_types
 }

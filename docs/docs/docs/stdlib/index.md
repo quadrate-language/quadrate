@@ -10,7 +10,7 @@ Import a module with `use`:
 use str
 use math
 
-fn main( -- ) {
+fn main() {
 	"hello" str::upper print nl  // HELLO
 	16.0 math::sqrt print nl  // 4
 }
@@ -23,7 +23,7 @@ Functions marked with `!` can fail and require error handling:
 ```qd
 use str
 
-fn main( -- ) {
+fn main() {
 	"hello" 0 3 str::substring! print nl  // "hel"
 }
 ```

@@ -7,7 +7,7 @@ Control the flow of your program with `if` and `else`.
 Execute code when a condition is true:
 
 ```qd
-fn main( -- ) {
+fn main() {
 	5 3 > if {
 		"5 is greater than 3" print nl
 	}
@@ -21,7 +21,7 @@ The `if` pops a value from the stack. If non-zero (true), it executes the block.
 Handle both cases:
 
 ```qd
-fn main( -- ) {
+fn main() {
 	10 -> x
 
 	x 5 > if {
@@ -48,7 +48,7 @@ fn classify(n:i64 -- ) {
 	}
 }
 
-fn main( -- ) {
+fn main() {
 	-5 classify  // negative
 	0 classify   // zero
 	7 classify   // positive
@@ -69,7 +69,7 @@ fn abs(x:i64 -- result:i64) {
 	}
 }
 
-fn main( -- ) {
+fn main() {
 	-5 abs print nl  // 5
 	7 abs print nl   // 7
 }
@@ -82,7 +82,7 @@ Both branches must leave the same number of values on the stack.
 Use logical operators:
 
 ```qd
-fn main( -- ) {
+fn main() {
 	18 -> age
 	1 -> has_id
 
@@ -115,7 +115,7 @@ fn main( -- ) {
 | `>=` | Greater or equal |
 
 ```qd
-fn main( -- ) {
+fn main() {
 	5 5 == if { 
 		"equal" print nl
 	}
@@ -164,7 +164,7 @@ fn is_valid_age(age:i64 -- valid:i64) {
 	age 0 >= age 150 <= and
 }
 
-fn main( -- ) {
+fn main() {
 	25 is_valid_age print nl   // 1 (true)
 	-5 is_valid_age print nl   // 0 (false)
 	200 is_valid_age print nl  // 0 (false)

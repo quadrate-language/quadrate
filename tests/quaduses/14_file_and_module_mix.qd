@@ -4,7 +4,7 @@ use fmt
 use helper.qd
 use math
 
-fn main( -- ) {
+fn main() {
 	helper::test
 	calc::test
 }

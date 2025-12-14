@@ -10,7 +10,7 @@ struct Outer {
 	data:i64
 }
 
-fn main( -- ) {
+fn main() {
 	// Create outer struct with nested inner containing string
 	Outer {
 		inner = Inner { value = 42 name = "hello" }

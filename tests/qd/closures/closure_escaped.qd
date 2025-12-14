@@ -7,7 +7,7 @@ fn make_counter( -- counter:ptr ) {
     }
 }
 
-fn main( -- ) {
+fn main() {
     make_counter -> counter
     counter call print nl  // Should print 1
     counter call print nl  // Should print 2

@@ -1,5 +1,5 @@
 // Test: echo all command-line arguments
-fn main( -- ) {
+fn main() {
 	read -> argc
 	"argc=" print argc print nl
 

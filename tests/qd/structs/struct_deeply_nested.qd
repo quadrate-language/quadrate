@@ -19,7 +19,7 @@ struct Window {
 	bounds:Rect
 }
 
-fn main( -- ) {
+fn main() {
 	// Build the nested structure using named field syntax
 	Window { title = "Hello" bounds = Rect { origin = Point { x = 10.0 y = 20.0 } size = Size { width = 100.0 height = 50.0 } }
 	}

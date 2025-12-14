@@ -4,7 +4,7 @@ struct Point {
 	y:f64
 }
 
-fn main( -- ) {
+fn main() {
 	Point {
 		x = 3.0
 		y = 4.0

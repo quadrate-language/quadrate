@@ -1,7 +1,7 @@
 // Test flag parsing module
 use flag
 
-fn main( -- ) {
+fn main() {
 	// Test boolean - flag not present
 	"" 0 flag::parse -> f1
 	f1 "--verbose" flag::boolean print nl

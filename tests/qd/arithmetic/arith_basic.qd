@@ -1,4 +1,4 @@
-fn main( -- ) {
+fn main() {
 	// Test basic arithmetic operations
 	// Addition
 	5 3 add print nl

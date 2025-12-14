@@ -15,7 +15,7 @@
 KEYWORD(fn, "Declares a function with a stack signature.")
 
 /// Public visibility modifier.
-/// @example pub fn greet( -- ) { "Hello" print nl }
+/// @example pub fn greet() { "Hello" print nl }
 KEYWORD(pub, "Makes a function, constant, or struct visible to other modules.")
 
 /// Constant declaration keyword.
@@ -63,7 +63,7 @@ KEYWORD(break, "Exits the innermost loop immediately.")
 KEYWORD(continue, "Skips to the next iteration of the innermost loop.")
 
 /// Function exit keyword.
-/// @example fn early( -- ) { true if { return } "not reached" print }
+/// @example fn early() { true if { return } "not reached" print }
 KEYWORD(return, "Exits the current function immediately.")
 
 /// Deferred execution keyword.
@@ -428,18 +428,18 @@ BUILTIN(print, "( val -- )", "Prints a value to stdout without a newline.")
 BUILTIN(printv, "( val -- )", "Prints a value with type information for debugging.")
 
 /// Print entire stack.
-/// @signature ( -- )
+/// @signature ()
 /// @example 1 2 3 prints  // prints entire stack
-BUILTIN(prints, "( -- )", "Prints the entire stack contents without clearing it.")
+BUILTIN(prints, "()", "Prints the entire stack contents without clearing it.")
 
 /// Print entire stack with type info.
-/// @signature ( -- )
-BUILTIN(printsv, "( -- )", "Prints the entire stack with type information for debugging.")
+/// @signature ()
+BUILTIN(printsv, "()", "Prints the entire stack with type information for debugging.")
 
 /// Print newline.
-/// @signature ( -- )
+/// @signature ()
 /// @example nl
-BUILTIN(nl, "( -- )", "Prints a newline character to stdout.")
+BUILTIN(nl, "()", "Prints a newline character to stdout.")
 
 /// Read input.
 /// @signature ( -- ... n )

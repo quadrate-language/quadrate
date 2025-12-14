@@ -1,7 +1,7 @@
 use signal
 use time
 
-fn main( -- ) {
+fn main() {
 	signal::SIGINT signal::trap
 	"Press Ctrl+C to exit gracefully..." print nl
 	nl

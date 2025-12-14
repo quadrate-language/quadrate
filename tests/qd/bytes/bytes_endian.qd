@@ -2,7 +2,7 @@
 use bytes
 use mem
 
-fn main( -- ) {
+fn main() {
 	8 mem::alloc -> buf
 
 	// Test 16-bit big-endian (0x1234 = 4660)

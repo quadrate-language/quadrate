@@ -1,4 +1,4 @@
-fn main( -- ) {
+fn main() {
     true print nl
     false print nl
     true if { "yes" } else { "no" } print nl

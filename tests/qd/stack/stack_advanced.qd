@@ -1,4 +1,4 @@
-fn main( -- ) {
+fn main() {
 	// Test tuck - insert copy of top below second
 	10 20 tuck
 	prints

@@ -12,8 +12,8 @@ int main(void) {
 
 	// Module 2: string operations
 	qd_module* str_mod = qd_get_module(ctx, "str");
-	qd_add_script(str_mod, "fn greet( -- ) { \"Hello from str module!\" . nl }");
-	qd_add_script(str_mod, "fn farewell( -- ) { \"Goodbye!\" . nl }");
+	qd_add_script(str_mod, "fn greet() { \"Hello from str module!\" . nl }");
+	qd_add_script(str_mod, "fn farewell() { \"Goodbye!\" . nl }");
 	qd_build(str_mod);
 
 	// Module 3: calculator

@@ -1,5 +1,5 @@
 // Single element array
-fn main( -- ) {
+fn main() {
 	[42] -> arr
 	arr 0 nth print nl
 	arr len print nl

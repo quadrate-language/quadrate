@@ -9,7 +9,7 @@ fn double(x:i64 -- result:i64) {
 	2 *
 }
 
-fn main( -- ) {
+fn main() {
 	5 double print nl  // 10
 }
 ```
@@ -33,7 +33,7 @@ fn add_one(x:i64 -- result:i64) {
 	1 +
 }
 
-fn main( -- ) {
+fn main() {
 	3 double square add_one print nl
 	// 3 -> 6 -> 36 -> 37
 }
@@ -50,7 +50,7 @@ fn add3(a:i64 b:i64 c:i64 -- sum:i64) {
 	+ +
 }
 
-fn main( -- ) {
+fn main() {
 	1 2 3 add3 print nl  // 6
 }
 ```
@@ -72,7 +72,7 @@ fn minmax(a:i64 b:i64 -- min:i64 max:i64) {
 	}
 }
 
-fn main( -- ) {
+fn main() {
 	10 3 minmax
 	// Stack: [3, 10]
 	print nl  // 10 (max)
@@ -89,7 +89,7 @@ fn square(x:i64 -- result:i64) {
 	dup *
 }
 
-fn main( -- ) {
+fn main() {
 	// Use result in expression
 	3 square 4 square + print nl  // 9 + 16 = 25
 
@@ -109,7 +109,7 @@ Library functions work the same way:
 ```qd
 use math
 
-fn main( -- ) {
+fn main() {
 	3.14159 math::sin print nl  // sine
 	2.0 math::sqrt print nl     // square root
 	-5 abs print nl             // absolute value
@@ -130,7 +130,7 @@ fn factorial(n:i64 -- result:i64) {
 	}
 }
 
-fn main( -- ) {
+fn main() {
 	5 factorial print nl  // 120
 }
 ```
@@ -158,7 +158,7 @@ fn is_odd(n:i64 -- result:i64) {
 	}
 }
 
-fn main( -- ) {
+fn main() {
 	4 is_even print nl  // 1 (true)
 	4 is_odd print nl   // 0 (false)
 }
@@ -169,7 +169,7 @@ fn main( -- ) {
 Operations execute left to right:
 
 ```qd
-fn main( -- ) {
+fn main() {
 	// This:
 	2 3 + 4 *
 
@@ -197,7 +197,7 @@ fn outer(x:i64 -- result:i64) {
 	inner 10 *
 }
 
-fn main( -- ) {
+fn main() {
 	5 outer print nl  // (5+1)*10 = 60
 }
 ```

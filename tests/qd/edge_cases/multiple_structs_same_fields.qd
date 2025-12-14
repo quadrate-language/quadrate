@@ -14,7 +14,7 @@ struct Vec2 {
 	y:f64
 }
 
-fn main( -- ) {
+fn main() {
 	Point2D {
 		x = 1.0
 		y = 2.0

@@ -1,7 +1,7 @@
 // Test URI query parameter functions
 use uri
 
-fn main( -- ) {
+fn main() {
 	// query_get
 	"foo=bar&x=1&name=test" "foo" uri::query_get print nl
 	"foo=bar&x=1&name=test" "x" uri::query_get print nl

@@ -1,7 +1,7 @@
 // Anonymous Functions (Lambdas) Example
 // Demonstrates first-class functions in Quadrate
 
-fn main( -- ) {
+fn main() {
     // Define an anonymous function and store it in a variable
     fn (x:i64 -- r:i64) { 2 * } -> double
 
@@ -25,5 +25,5 @@ fn main( -- ) {
 
     // Side-effect functions (no return value)
     "Greeting:" print nl
-    fn ( -- ) { "Hello from lambda!" print nl } call
+    fn () { "Hello from lambda!" print nl } call
 }

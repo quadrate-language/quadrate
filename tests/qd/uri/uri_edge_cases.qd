@@ -1,7 +1,7 @@
 // Test URI edge cases: IPv6, userinfo, port validation
 use uri
 
-fn main( -- ) {
+fn main() {
 	// IPv6 addresses
 	"http://[::1]:8080/path" uri::parse -> u1
 	u1 @host print nl

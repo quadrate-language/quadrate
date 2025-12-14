@@ -1,7 +1,7 @@
 // Test StringBuilder in a loop
 use sb
 
-fn main( -- ) {
+fn main() {
 	// Build a string in a loop
 	sb::new -> builder
 	0 5 1 for it {

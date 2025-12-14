@@ -1,5 +1,5 @@
 // Test: Closures capturing different types (i64, f64, str)
-fn main( -- ) {
+fn main() {
     42 -> i
     3.14159 -> f
     "hello" -> s

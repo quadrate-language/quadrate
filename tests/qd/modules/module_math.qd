@@ -1,6 +1,6 @@
 use math
 
-fn main( -- ) {
+fn main() {
 	// Test constants
 	math::Pi print nl
 	math::E print nl

@@ -1,7 +1,7 @@
 // Test StringBuilder append_int
 use sb
 
-fn main( -- ) {
+fn main() {
 	// Test positive numbers
 	sb::new -> builder
 	builder 42 sb::append_int -> builder

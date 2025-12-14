@@ -1,5 +1,5 @@
 // Test make<T> arrays - basic operations in function context
-fn create_and_fill( -- ) {
+fn create_and_fill() {
 	// Create array locally
 	5 make<i64> -> arr
 
@@ -15,6 +15,6 @@ fn create_and_fill( -- ) {
 	arr len print nl          // Should print = 5
 }
 
-fn main( -- ) {
+fn main() {
 	create_and_fill
 }

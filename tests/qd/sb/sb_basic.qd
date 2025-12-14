@@ -2,7 +2,7 @@
 use sb
 use str
 
-fn main( -- ) {
+fn main() {
 	// Test 1: Create and build empty
 	sb::new -> builder
 	builder sb::build -> result

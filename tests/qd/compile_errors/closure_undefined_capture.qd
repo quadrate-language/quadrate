@@ -1,5 +1,5 @@
 // Test: closure referencing undefined variable should fail
-fn main( -- ) {
+fn main() {
     fn ( -- r:i64) { undefined_var } -> c
     c call print nl
 }

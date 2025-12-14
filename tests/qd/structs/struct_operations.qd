@@ -3,7 +3,7 @@ struct Vec2 {
 	y:f64
 }
 
-fn test_operations( -- ) {
+fn test_operations() {
 	Vec2 {
 		x = 5.0
 		y = 10.0
@@ -24,6 +24,6 @@ fn test_operations( -- ) {
 	}
 }
 
-fn main( -- ) {
+fn main() {
 	test_operations
 }

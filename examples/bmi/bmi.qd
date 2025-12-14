@@ -2,7 +2,7 @@ fn bmi(weight:f64 height:f64 -- bmi:f64) {
 	sq /
 }
 
-fn main( -- ) {
+fn main() {
 	70.0 1.75 bmi
 	25.0 > if {
 		"Overweight" print nl

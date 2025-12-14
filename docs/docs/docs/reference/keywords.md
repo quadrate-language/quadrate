@@ -46,7 +46,7 @@ fn add(a:i64 b:i64 -- sum:i64) {
 Makes a function, constant, or struct visible to other modules.
 
 ```qd
-pub fn greet( -- ) {
+pub fn greet() {
 	"Hello" print nl
 }
 ```
@@ -155,7 +155,7 @@ Skips to the next iteration of the innermost loop.
 Exits the current function immediately.
 
 ```qd
-fn early( -- ) {
+fn early() {
 	true if {
 		return
 	}

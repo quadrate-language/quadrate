@@ -1,7 +1,7 @@
 // Test bytes swap functions
 use bytes
 
-fn main( -- ) {
+fn main() {
 	// swap16: 0x1234 (4660) -> 0x3412 (13330)
 	4660 bytes::swap16 print nl
 

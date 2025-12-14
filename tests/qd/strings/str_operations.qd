@@ -1,4 +1,4 @@
-fn main( -- ) {
+fn main() {
 	// Test printing strings with print (.)
 	"Basic print test" print nl
 	// Test multiple strings on stack

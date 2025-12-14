@@ -4,6 +4,6 @@ fn bad_function(p:UnknownStruct -- result:f64) {
 	p @x
 }
 
-fn main( -- ) {
+fn main() {
 	0 bad_function print nl
 }

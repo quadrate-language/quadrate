@@ -3,7 +3,7 @@ fn helper(a:i64 -- r:i64) {
     10 +
 }
 
-fn main( -- ) {
+fn main() {
     // Anonymous function that calls named function
     fn (a:i64 -- r:i64) { helper 2 * } -> process
 

@@ -1,6 +1,6 @@
 {
   "name": "signal",
-  "description": "Unix signal handling with polling-based API.  Signals are caught and stored as flags. Use pending() to check if a signal was received, and clear() to reset the flag.  Example: use signal  fn main( -- ) { signal::SIGINT signal::trap \"Running. Press Ctrl+C to stop.\" . nl  1 while { signal::SIGINT signal::pending if { \"Shutting down\" . nl signal::SIGINT signal::clear break } } }",
+  "description": "Unix signal handling with polling-based API.  Signals are caught and stored as flags. Use pending() to check if a signal was received, and clear() to reset the flag.  Example: use signal  fn main() { signal::SIGINT signal::trap \"Running. Press Ctrl+C to stop.\" . nl  1 while { signal::SIGINT signal::pending if { \"Shutting down\" . nl signal::SIGINT signal::clear break } } }",
   "constants": [
     {
       "name": "SIGABRT",

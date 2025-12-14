@@ -162,7 +162,7 @@ class ExtendedLSPTester:
                     "uri": "file:///tmp/test.qd",
                     "languageId": "quadrate",
                     "version": 1,
-                    "text": "fn main( -- ) { 5 10 add print }"
+                    "text": "fn main() { 5 10 add print }"
                 }
             }
         }
@@ -232,7 +232,7 @@ class ExtendedLSPTester:
                     "uri": "file:///tmp/lifecycle.qd",
                     "languageId": "quadrate",
                     "version": 1,
-                    "text": "fn test( -- ) {}"
+                    "text": "fn test() {}"
                 }
             }
         }
@@ -249,7 +249,7 @@ class ExtendedLSPTester:
                     "version": 2
                 },
                 "contentChanges": [
-                    {"text": "fn test( -- ) { 5 10 add }"}
+                    {"text": "fn test() { 5 10 add }"}
                 ]
             }
         }
@@ -342,7 +342,7 @@ class ExtendedLSPTester:
         """Test diagnostics with valid Quadrate code"""
         print("\n=== Testing Diagnostics (Valid Code) ===")
 
-        valid_code = """fn main( -- ) {
+        valid_code = """fn main() {
     5 10 add
     print
 }"""
@@ -367,7 +367,7 @@ class ExtendedLSPTester:
         """Test diagnostics with invalid Quadrate code"""
         print("\n=== Testing Diagnostics (Invalid Code) ===")
 
-        invalid_code = """fn broken( -- ) {
+        invalid_code = """fn broken() {
     this is not valid syntax at all
     random words here
 }"""
@@ -427,7 +427,7 @@ class ExtendedLSPTester:
         print("\n=== Testing Large Document ===")
 
         # Generate large document
-        large_code = "fn test( -- ) {\n" + "    5 10 add\n" * 1000 + "}\n"
+        large_code = "fn test() {\n" + "    5 10 add\n" * 1000 + "}\n"
 
         request = {
             "jsonrpc": "2.0",
@@ -517,7 +517,7 @@ class ExtendedLSPTester:
         """Test UTF-8 characters in documents"""
         print("\n=== Testing UTF-8 Support ===")
 
-        utf8_code = """fn test( -- ) {
+        utf8_code = """fn test() {
     // Комментарий по-русски
     // コメント in 日本語
     // Commentaire en français

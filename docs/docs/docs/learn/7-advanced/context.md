@@ -19,7 +19,7 @@ Stack effect: `( S -- S r )` where `S` is preserved and `r` is the optional outp
 ## Basic Usage
 
 ```qd
-fn main( -- ) {
+fn main() {
 	1 2 3
 	ctx {
 		// Child starts with copy of stack: [1, 2, 3]
@@ -48,7 +48,7 @@ Output:
 The parent stack is completely isolated from modifications inside the `ctx` block:
 
 ```qd
-fn main( -- ) {
+fn main() {
 	100 200 300
 	ctx {
 		clear      // Clears ONLY the child's stack
@@ -77,7 +77,7 @@ Output:
 Strings are deep-copied, so modifications in child don't affect parent:
 
 ```qd
-fn main( -- ) {
+fn main() {
 	"original"
 	ctx {
 		drop
@@ -104,7 +104,7 @@ struct Counter {
 	value:i64
 }
 
-fn main( -- ) {
+fn main() {
 	Counter { value = 0 } -> c
 
 	c ctx {
@@ -131,7 +131,7 @@ If you need isolation for structs, create a new instance inside the `ctx` block.
 Context blocks can be chained for multi-step computations:
 
 ```qd
-fn main( -- ) {
+fn main() {
 	ctx {
 		10 20 add  // 30
 	}
@@ -160,7 +160,7 @@ Output:
 Control flow works normally inside context blocks:
 
 ```qd
-fn main( -- ) {
+fn main() {
 	10 5
 	ctx {
 		gt

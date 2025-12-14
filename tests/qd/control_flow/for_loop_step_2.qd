@@ -1,4 +1,4 @@
-fn main( -- ) {
+fn main() {
 	// For loop with step of 2
 	0 10 2 for it {
 		it	 print nl

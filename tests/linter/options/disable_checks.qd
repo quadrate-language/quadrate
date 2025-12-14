@@ -1,9 +1,9 @@
 // Test: File with multiple issues for testing --no-* options
-fn unused_function( -- ) {
+fn unused_function() {
 	1 2 add
 }
 
-fn main( -- ) {
+fn main() {
 	10 -> unused_var
 	return
 	20 30 add

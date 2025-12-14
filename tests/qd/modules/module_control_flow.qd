@@ -1,7 +1,7 @@
 // Test control flow in modules
 use control_flow
 
-fn main( -- ) {
+fn main() {
 	// Test sign function (if/else)
 	5.0 control_flow::sign
 	print nl

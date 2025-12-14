@@ -1,5 +1,5 @@
 // Test makef - create float array
-fn main( -- ) {
+fn main() {
 	// Create array with 2 elements
 	2 makef -> arr
 	arr len print nl          // Should print = 2

@@ -1,7 +1,7 @@
 // Test URI encoding
 use uri
 
-fn main( -- ) {
+fn main() {
 	// Basic encoding
 	"hello world" uri::encode print nl
 	"foo=bar" uri::encode print nl

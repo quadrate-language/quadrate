@@ -1,5 +1,5 @@
 // Test make<T> with zero size - empty array
-fn main( -- ) {
+fn main() {
 	0 make<i64> -> arr
 	arr len print nl          // Should print = 0
 

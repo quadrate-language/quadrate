@@ -1,4 +1,4 @@
-fn main( -- ) {
+fn main() {
 	defer {
 		10.0 print
 	}

@@ -1,5 +1,5 @@
 // Test: Closure returning multiple values
-fn main( -- ) {
+fn main() {
     10 -> x
     20 -> y
 

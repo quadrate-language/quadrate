@@ -1,5 +1,5 @@
 // Test: Nested closures (closure capturing outer closure's local)
-fn main( -- ) {
+fn main() {
     10 -> x
 
     // Outer closure captures x

@@ -1,17 +1,17 @@
 // Test: Multiple unused functions
-fn unused_one( -- ) {
+fn unused_one() {
 	1 2 add
 }
 
-fn unused_two( -- ) {
+fn unused_two() {
 	3 4 add
 }
 
-fn unused_three( -- ) {
+fn unused_three() {
 	5 6 add
 }
 
-fn main( -- ) {
+fn main() {
 	// main should never be flagged as unused
 	10 20 add
 }

@@ -1,4 +1,4 @@
-fn main( -- ) {
+fn main() {
 	// For loop counting down with negative step
 	10 0 -1 for it {
 		it	 print nl

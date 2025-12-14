@@ -24,7 +24,7 @@ fn destroy_resource(r:ptr -- ) {
 }
 
 // Basic defer example
-fn basic_defer( -- ) {
+fn basic_defer() {
 	"Basic defer:" print nl
 	"  Start of function" print nl
 
@@ -37,7 +37,7 @@ fn basic_defer( -- ) {
 }
 
 // Multiple defers execute in reverse order (LIFO)
-fn multiple_defers( -- ) {
+fn multiple_defers() {
 	"Multiple defers (LIFO order):" print nl
 	"  Registering defers..." print nl
 
@@ -56,7 +56,7 @@ fn multiple_defers( -- ) {
 }
 
 // Practical example: resource cleanup
-fn resource_cleanup( -- ) {
+fn resource_cleanup() {
 	"Resource cleanup with defer:" print nl
 
 	// Create resources
@@ -89,7 +89,7 @@ fn resource_cleanup( -- ) {
 }
 
 // Defer with early return - defer runs regardless of how function exits
-fn early_return_yes( -- ) {
+fn early_return_yes() {
 	"Early return (yes):" print nl
 
 	defer {
@@ -101,7 +101,7 @@ fn early_return_yes( -- ) {
 	"  This line is never reached" print nl
 }
 
-fn early_return_no( -- ) {
+fn early_return_no() {
 	"Early return (no):" print nl
 
 	defer {
@@ -111,7 +111,7 @@ fn early_return_no( -- ) {
 	"  Normal execution path" print nl
 }
 
-fn main( -- ) {
+fn main() {
 	basic_defer
 	nl
 

@@ -1,5 +1,5 @@
 // Test: Closure with both input parameters and captures
-fn main( -- ) {
+fn main() {
     100 -> base
     fn (x:i64 -- r:i64) { -> x x base add } -> add_to_base
     5 add_to_base call print nl

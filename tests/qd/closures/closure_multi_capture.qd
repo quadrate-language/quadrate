@@ -1,5 +1,5 @@
 // Test: Closure capturing multiple variables
-fn main( -- ) {
+fn main() {
     10 -> a
     20 -> b
     30 -> c

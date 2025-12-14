@@ -1,5 +1,5 @@
 // Test basic comment handling
-fn main( -- ) {
+fn main() {
 	// Single line comment
 	1 print nl
 

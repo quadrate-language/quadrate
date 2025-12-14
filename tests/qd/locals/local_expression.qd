@@ -1,5 +1,5 @@
 // Test storing result of expression in local variable
-fn main( -- ) {
+fn main() {
 	5 3 add -> result
 	result print nl
 	10 2 mul -> doubled

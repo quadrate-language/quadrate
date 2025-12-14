@@ -1,5 +1,5 @@
 // Float array
-fn main( -- ) {
+fn main() {
 	[1.5 2.5 3.5] -> arr
 	arr 0 nth print nl
 	arr 1 nth print nl

@@ -1,6 +1,6 @@
 use hof
 
-fn main( -- ) {
+fn main() {
     // keep applies function but preserves original
     5 fn (x:i64 -- r:i64) { 2 * } hof::keep
     print " " print print nl

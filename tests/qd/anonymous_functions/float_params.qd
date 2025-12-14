@@ -1,5 +1,5 @@
 // Test anonymous functions with float parameters
-fn main( -- ) {
+fn main() {
     fn (x:f64 -- r:f64) { 2.0 * } -> double_f
 
     3.5 double_f call print nl

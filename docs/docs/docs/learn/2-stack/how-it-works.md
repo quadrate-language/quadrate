@@ -18,7 +18,7 @@ In Quadrate:
 - **Pop**: Operations remove values from the top
 
 ```qd
-fn main( -- ) {
+fn main() {
 	1       // Push 1      Stack: [1]
 	2       // Push 2      Stack: [1, 2]
 	3       // Push 3      Stack: [1, 2, 3]
@@ -88,7 +88,7 @@ Benefits of stack-based programming:
 Let's trace through a calculation:
 
 ```qd
-fn main( -- ) {
+fn main() {
 	2 3 + 4 * print nl  // (2 + 3) * 4 = 20
 }
 ```

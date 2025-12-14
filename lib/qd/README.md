@@ -20,7 +20,7 @@ Provides a simplified C API for embedding Quadrate scripts in applications. Hand
 ```c
 qd_context* ctx = qd_create_context(1024);
 qd_module* mod = qd_get_module(ctx, "main");
-qd_add_script(mod, "fn hello( -- ) { \"Hello\" print nl }");
+qd_add_script(mod, "fn hello() { \"Hello\" print nl }");
 qd_build(mod);
 qd_execute(ctx, "main::hello");
 qd_free_context(ctx);

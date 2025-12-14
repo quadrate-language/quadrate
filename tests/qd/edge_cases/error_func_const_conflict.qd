@@ -1,9 +1,9 @@
 const MyValue = 42
 
-fn MyValue( -- ) {
+fn MyValue() {
 	"I am a function" prints nl
 }
 
-fn main( -- ) {
+fn main() {
 	MyValue prints nl
 }

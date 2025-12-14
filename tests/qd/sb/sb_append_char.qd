@@ -1,7 +1,7 @@
 // Test StringBuilder append_char
 use sb
 
-fn main( -- ) {
+fn main() {
 	// Test single char
 	sb::new -> builder
 	builder 65 sb::append_char -> builder  // 'A'

@@ -1,6 +1,6 @@
 use math
 
-fn main( -- ) {
+fn main() {
 	// Test ln (natural logarithm)
 	1 math::ln print nl
 	// ln(1) = 0

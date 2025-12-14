@@ -1,7 +1,7 @@
 // Comprehensive file system operations test
 use os
 
-fn main( -- ) {
+fn main() {
 	// Cleanup: Remove test directory if it exists from previous run
 	"/tmp/quadrate_fs_test" os::exists
 	if {

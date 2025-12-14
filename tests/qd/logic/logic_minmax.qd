@@ -1,6 +1,6 @@
 use math
 
-fn main( -- ) {
+fn main() {
 	// Test min - minimum of two values
 	10 20 math::min print nl
 	// Should print nl = 10

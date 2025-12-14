@@ -1,7 +1,7 @@
 // Test CRC32 basic functionality
 use crc32
 
-fn main( -- ) {
+fn main() {
 	// Standard test vector: "123456789" = 0xCBF43926
 	"123456789" crc32::checksum print nl
 

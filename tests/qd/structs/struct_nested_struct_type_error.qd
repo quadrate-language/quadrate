@@ -16,7 +16,7 @@ struct Rectangle {
 	height:f64
 }
 
-fn main( -- ) {
+fn main() {
 	// Create a Color (wrong type)
 	Color {
 		r = 255

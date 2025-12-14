@@ -1,5 +1,5 @@
 // Test: Closure capturing string value
-fn main( -- ) {
+fn main() {
     "Hello" -> greeting
 
     fn ( -- r:str) {

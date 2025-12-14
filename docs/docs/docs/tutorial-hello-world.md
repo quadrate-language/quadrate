@@ -7,7 +7,7 @@ This tutorial walks through your first Quadrate program in detail.
 Create a file called `hello.qd`:
 
 ```qd
-fn main( -- ) {
+fn main() {
     "Hello, World!" print nl
 }
 ```
@@ -30,12 +30,12 @@ Let's break down each part:
 ### The Function Declaration
 
 ```qd
-fn main( -- ) {
+fn main() {
 ```
 
 - `fn` - keyword to declare a function
 - `main` - the function name (entry point for the program)
-- `( -- )` - the **stack signature**:
+- `()` - the **stack signature**:
   - Left of `--`: inputs (parameters consumed from stack)
   - Right of `--`: outputs (values left on stack)
   - Empty on both sides means no inputs, no outputs
@@ -69,7 +69,7 @@ Prints a newline character.
 ### Multiple Prints
 
 ```qd
-fn main( -- ) {
+fn main() {
     "Hello, " print
     "World!" print
     nl
@@ -79,7 +79,7 @@ fn main( -- ) {
 ### Using Variables
 
 ```qd
-fn main( -- ) {
+fn main() {
     "World" -> name
     "Hello, " print name print "!" print nl
 }
@@ -88,7 +88,7 @@ fn main( -- ) {
 ### Adding Numbers
 
 ```qd
-fn main( -- ) {
+fn main() {
     "2 + 3 = " print
     2 3 + print nl
 }
@@ -102,7 +102,7 @@ fn greet(name:str -- ) {
     "Hello, " print name print "!" print nl
 }
 
-fn main( -- ) {
+fn main() {
     "Alice" greet
     "Bob" greet
 }

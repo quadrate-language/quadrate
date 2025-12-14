@@ -1,4 +1,4 @@
-fn main( -- ) {
+fn main() {
 	// Test and - bitwise AND
 	12 10 and print nl
 	// Should print nl = 8 (0b1100 & 0b1010 = 0b1000)

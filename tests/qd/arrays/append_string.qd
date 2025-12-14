@@ -1,5 +1,5 @@
 // Test append with string array
-fn main( -- ) {
+fn main() {
 	// Create empty array and append strings
 	0 makes "hello" append "world" append "test" append -> arr
 	arr len print nl          // Should print = 3

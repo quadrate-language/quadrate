@@ -1,4 +1,4 @@
-fn main( -- ) {
+fn main() {
 	// Test nested loops
 	0
 	loop {

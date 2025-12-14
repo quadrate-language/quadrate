@@ -27,7 +27,7 @@ fn circle_circumference(r:f64 -- c:f64) {
 	2.0 r * Pi *
 }
 
-fn main( -- ) {
+fn main() {
 	5.0 circle_area print nl           // 78.5398...
 	5.0 circle_circumference print nl  // 31.4159...
 }
@@ -79,7 +79,7 @@ const DebugMode = 1
 const LogLevel = 2
 const MaxThreads = 8
 
-fn main( -- ) {
+fn main() {
 	DebugMode if {
 		"Debug mode enabled" print nl
 	}
@@ -162,7 +162,7 @@ fn has_write(flags:i64 -- result:i64) {
 	flags FlagWrite and 0 !=
 }
 
-fn main( -- ) {
+fn main() {
 	FlagRead FlagWrite or -> permissions
 
 	permissions has_read print nl   // 1
@@ -182,7 +182,7 @@ fn hours_per_week( -- h:i64) {
 	HoursPerDay DaysPerWeek *
 }
 
-fn main( -- ) {
+fn main() {
 	hours_per_week print nl  // 168
 }
 ```
@@ -201,7 +201,7 @@ pub const MaxUsers = 1000
 // main.qd
 use config
 
-fn main( -- ) {
+fn main() {
 	"Version: " print config::AppVersion print nl
 }
 ```

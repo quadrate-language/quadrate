@@ -22,7 +22,7 @@ Pure Quadrate library providing higher-order function combinators for functional
 ```quadrate
 use hof
 
-fn main( -- ) {
+fn main() {
     // Apply two functions to same value
     5 fn (x:i64 -- r:i64) { 2 * } fn (x:i64 -- r:i64) { 3 + } hof::bi
     // Stack: 10 8

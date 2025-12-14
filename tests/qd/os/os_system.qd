@@ -1,7 +1,7 @@
 // Test os::system function
 use os
 
-fn main( -- ) {
+fn main() {
 	// Test simple echo command
 	"echo 'Hello from os::system'" os::system
 	print nl  // Should print 0 (success)

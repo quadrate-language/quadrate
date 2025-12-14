@@ -40,7 +40,7 @@ bool irContains(const std::string& ir, const std::string& pattern) {
 // ========== Basic Generation Tests ==========
 
 TEST(EmptyMainFunction) {
-	const char* src = "fn main( -- ) { }";
+	const char* src = "fn main() { }";
 	std::string ir = generateIR(src);
 	ASSERT(!ir.empty(), "should generate IR for empty main");
 	ASSERT(irContains(ir, "define"), "should contain function definition");
@@ -48,7 +48,7 @@ TEST(EmptyMainFunction) {
 }
 
 TEST(SimplePrint) {
-	const char* src = "fn main( -- ) { 42 print }";
+	const char* src = "fn main() { 42 print }";
 	std::string ir = generateIR(src);
 	ASSERT(!ir.empty(), "should generate IR for simple print");
 	ASSERT(irContains(ir, "42"), "should contain literal 42");
@@ -57,32 +57,32 @@ TEST(SimplePrint) {
 // ========== Arithmetic Tests ==========
 
 TEST(IntegerAddition) {
-	const char* src = "fn main( -- ) { 10 20 add print }";
+	const char* src = "fn main() { 10 20 add print }";
 	std::string ir = generateIR(src);
 	ASSERT(!ir.empty(), "should generate IR for addition");
 	ASSERT(irContains(ir, "10") || irContains(ir, "20"), "should contain operands");
 }
 
 TEST(IntegerMultiplication) {
-	const char* src = "fn main( -- ) { 5 6 mul print }";
+	const char* src = "fn main() { 5 6 mul print }";
 	std::string ir = generateIR(src);
 	ASSERT(!ir.empty(), "should generate IR for multiplication");
 }
 
 TEST(IntegerSubtraction) {
-	const char* src = "fn main( -- ) { 100 30 sub print }";
+	const char* src = "fn main() { 100 30 sub print }";
 	std::string ir = generateIR(src);
 	ASSERT(!ir.empty(), "should generate IR for subtraction");
 }
 
 TEST(IntegerDivision) {
-	const char* src = "fn main( -- ) { 100 5 div print }";
+	const char* src = "fn main() { 100 5 div print }";
 	std::string ir = generateIR(src);
 	ASSERT(!ir.empty(), "should generate IR for division");
 }
 
 TEST(ChainedArithmetic) {
-	const char* src = "fn main( -- ) { 1 2 add 3 mul 4 sub print }";
+	const char* src = "fn main() { 1 2 add 3 mul 4 sub print }";
 	std::string ir = generateIR(src);
 	ASSERT(!ir.empty(), "should generate IR for chained arithmetic");
 }
@@ -90,13 +90,13 @@ TEST(ChainedArithmetic) {
 // ========== Float Tests ==========
 
 TEST(FloatLiteral) {
-	const char* src = "fn main( -- ) { 3.14 print }";
+	const char* src = "fn main() { 3.14 print }";
 	std::string ir = generateIR(src);
 	ASSERT(!ir.empty(), "should generate IR for float literal");
 }
 
 TEST(FloatArithmetic) {
-	const char* src = "fn main( -- ) { 1.5 2.5 add print }";
+	const char* src = "fn main() { 1.5 2.5 add print }";
 	std::string ir = generateIR(src);
 	ASSERT(!ir.empty(), "should generate IR for float arithmetic");
 }
@@ -104,7 +104,7 @@ TEST(FloatArithmetic) {
 // ========== String Tests ==========
 
 TEST(StringLiteral) {
-	const char* src = "fn main( -- ) { \"hello\" print }";
+	const char* src = "fn main() { \"hello\" print }";
 	std::string ir = generateIR(src);
 	ASSERT(!ir.empty(), "should generate IR for string literal");
 	ASSERT(irContains(ir, "hello"), "should contain string content");
@@ -113,31 +113,31 @@ TEST(StringLiteral) {
 // ========== Stack Operation Tests ==========
 
 TEST(StackDup) {
-	const char* src = "fn main( -- ) { 42 dup add print }";
+	const char* src = "fn main() { 42 dup add print }";
 	std::string ir = generateIR(src);
 	ASSERT(!ir.empty(), "should generate IR for dup operation");
 }
 
 TEST(StackSwap) {
-	const char* src = "fn main( -- ) { 10 20 swap sub print }";
+	const char* src = "fn main() { 10 20 swap sub print }";
 	std::string ir = generateIR(src);
 	ASSERT(!ir.empty(), "should generate IR for swap operation");
 }
 
 TEST(StackDrop) {
-	const char* src = "fn main( -- ) { 10 20 drop print }";
+	const char* src = "fn main() { 10 20 drop print }";
 	std::string ir = generateIR(src);
 	ASSERT(!ir.empty(), "should generate IR for drop operation");
 }
 
 TEST(StackOver) {
-	const char* src = "fn main( -- ) { 10 20 over add add print }";
+	const char* src = "fn main() { 10 20 over add add print }";
 	std::string ir = generateIR(src);
 	ASSERT(!ir.empty(), "should generate IR for over operation");
 }
 
 TEST(StackRot) {
-	const char* src = "fn main( -- ) { 1 2 3 rot add add print }";
+	const char* src = "fn main() { 1 2 3 rot add add print }";
 	std::string ir = generateIR(src);
 	ASSERT(!ir.empty(), "should generate IR for rot operation");
 }
@@ -146,7 +146,7 @@ TEST(StackRot) {
 
 TEST(IfStatementTrue) {
 	const char* src = R"(
-		fn main( -- ) {
+		fn main() {
 			1 if {
 				100 print
 			}
@@ -159,7 +159,7 @@ TEST(IfStatementTrue) {
 
 TEST(IfElseStatement) {
 	const char* src = R"(
-		fn main( -- ) {
+		fn main() {
 			0 if {
 				100 print
 			} else {
@@ -173,7 +173,7 @@ TEST(IfElseStatement) {
 
 TEST(ForLoop) {
 	const char* src = R"(
-		fn main( -- ) {
+		fn main() {
 			0 5 1 for i {
 				i print
 			}
@@ -185,7 +185,7 @@ TEST(ForLoop) {
 
 TEST(LoopStatement) {
 	const char* src = R"(
-		fn main( -- ) {
+		fn main() {
 			0 -> count
 			loop {
 				count 3 gte if {
@@ -207,7 +207,7 @@ TEST(SimpleFunctionCall) {
 		fn add_one( x:i64 -- y:i64 ) {
 			1 +
 		}
-		fn main( -- ) {
+		fn main() {
 			41 add_one print
 		}
 	)";
@@ -221,7 +221,7 @@ TEST(FunctionMultipleParams) {
 		fn add_three( a:i64 b:i64 c:i64 -- sum:i64 ) {
 			+ +
 		}
-		fn main( -- ) {
+		fn main() {
 			1 2 3 add_three print
 		}
 	)";
@@ -234,7 +234,7 @@ TEST(FunctionMultipleReturns) {
 		fn get_pair( -- a:i64 b:i64 ) {
 			10 20
 		}
-		fn main( -- ) {
+		fn main() {
 			get_pair add print
 		}
 	)";
@@ -252,7 +252,7 @@ TEST(RecursiveFunction) {
 				num num 1 sub factorial mul
 			}
 		}
-		fn main( -- ) {
+		fn main() {
 			5 factorial print
 		}
 	)";
@@ -265,7 +265,7 @@ TEST(RecursiveFunction) {
 
 TEST(LocalVariable) {
 	const char* src = R"(
-		fn main( -- ) {
+		fn main() {
 			42 -> x
 			x print
 		}
@@ -277,7 +277,7 @@ TEST(LocalVariable) {
 
 TEST(MultipleLocals) {
 	const char* src = R"(
-		fn main( -- ) {
+		fn main() {
 			10 -> a
 			20 -> b
 			a b add print
@@ -291,7 +291,7 @@ TEST(MultipleLocals) {
 
 TEST(IntegerComparison) {
 	const char* src = R"(
-		fn main( -- ) {
+		fn main() {
 			10 20 lt print
 			10 10 eq print
 			20 10 gt print
@@ -310,7 +310,7 @@ TEST(StructDefinition) {
 			x:i64
 			y:i64
 		}
-		fn main( -- ) {
+		fn main() {
 			Point {
 				x = 10
 				y = 20
@@ -327,7 +327,7 @@ TEST(StructDefinition) {
 
 TEST(DeferStatement) {
 	const char* src = R"(
-		fn main( -- ) {
+		fn main() {
 			defer {
 				1 print
 			}
@@ -343,7 +343,7 @@ TEST(DeferStatement) {
 TEST(ConstantDefinition) {
 	const char* src = R"(
 		const answer = 42
-		fn main( -- ) {
+		fn main() {
 			answer print
 		}
 	)";
@@ -356,7 +356,7 @@ TEST(ConstantDefinition) {
 
 TEST(BooleanOperations) {
 	const char* src = R"(
-		fn main( -- ) {
+		fn main() {
 			1 1 and print
 			1 0 or print
 			1 not print
@@ -369,7 +369,7 @@ TEST(BooleanOperations) {
 // ========== Error Handling Tests ==========
 
 TEST(InvalidCodeReturnsEmpty) {
-	const char* src = "fn main( -- ) { undefined_func }";
+	const char* src = "fn main() { undefined_func }";
 	std::string ir = generateIR(src);
 	ASSERT(ir.empty(), "invalid code should return empty IR");
 }
@@ -383,7 +383,7 @@ TEST(SyntaxErrorReturnsEmpty) {
 // ========== Optimization Level Tests ==========
 
 TEST(OptimizationLevelZero) {
-	const char* src = "fn main( -- ) { 42 print }";
+	const char* src = "fn main() { 42 print }";
 	Qd::Ast ast;
 	Qd::IAstNode* root = ast.generate(src, false, "test.qd");
 	ASSERT(root != nullptr, "should parse successfully");
@@ -396,7 +396,7 @@ TEST(OptimizationLevelZero) {
 }
 
 TEST(OptimizationLevelTwo) {
-	const char* src = "fn main( -- ) { 42 print }";
+	const char* src = "fn main() { 42 print }";
 	Qd::Ast ast;
 	Qd::IAstNode* root = ast.generate(src, false, "test.qd");
 	ASSERT(root != nullptr, "should parse successfully");

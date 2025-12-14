@@ -9,7 +9,7 @@ fn get_age(p:ptr -- age:f64) {
 	person @age
 }
 
-fn test_str_field( -- ) {
+fn test_str_field() {
 	Person {
 		name = "Alice"
 		age = 25.0
@@ -23,6 +23,6 @@ fn test_str_field( -- ) {
 	p2 get_age print nl
 }
 
-fn main( -- ) {
+fn main() {
 	test_str_field
 }

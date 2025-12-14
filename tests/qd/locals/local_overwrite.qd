@@ -1,5 +1,5 @@
 // Test overwriting a local variable
-fn main( -- ) {
+fn main() {
 	10 -> x
 	x print nl
 	20 -> x

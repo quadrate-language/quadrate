@@ -5,7 +5,7 @@
 
 use hof
 
-fn main( -- ) {
+fn main() {
     "=== Higher-Order Function Combinators ===" print nl
     nl
 

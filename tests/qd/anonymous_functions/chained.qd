@@ -1,5 +1,5 @@
 // Test chained anonymous function calls (same function)
-fn main( -- ) {
+fn main() {
     fn (x:i64 -- r:i64) { 2 * } -> double
 
     // Triple chained call with same function

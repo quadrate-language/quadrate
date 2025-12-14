@@ -2,7 +2,7 @@ use apple
 use math
 use zoo
 
-fn main( -- ) {
+fn main() {
 	5.5 math::sqrt print nl
 	"test" apple::ptrrocess print nl
 	zoo::i64nit

@@ -1,12 +1,12 @@
 // Edge cases: unmatched braces, defer, nested structures in comments
-fn test_unmatched( -- ) {
+fn test_unmatched() {
 	// { { { unmatched opening braces
 	5 10 add
 	// } } } } } extra closing braces
 	print
 }
 
-fn test_defer_in_comment( -- ) {
+fn test_defer_in_comment() {
 	/* defer {
 	10 20 add
 	} */
@@ -15,9 +15,9 @@ fn test_defer_in_comment( -- ) {
 	print
 }
 
-fn test_complex_structures( -- ) {
+fn test_complex_structures() {
 	/*
-	fn outer( -- ) {
+	fn outer() {
 	defer {
 	if {
 	for i {
@@ -38,8 +38,8 @@ fn test_complex_structures( -- ) {
 	*/
 }
 
-fn main( -- ) {
-	// fn { { { weird( -- ) {
+fn main() {
+	// fn { { { weird() {
 	test_unmatched
 	/* } } } */
 	test_defer_in_comment

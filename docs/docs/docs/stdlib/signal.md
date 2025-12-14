@@ -8,7 +8,7 @@ if a signal was received, and clear() to reset the flag.
 Example:
 use signal
 
-fn main( -- ) {
+fn main() {
 signal::SIGINT signal::trap
 "Running. Press Ctrl+C to stop." . nl
 

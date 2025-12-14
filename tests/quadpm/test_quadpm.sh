@@ -164,7 +164,7 @@ git config user.name "Test User"
 git config user.email "test@example.com"
 git config commit.gpgSign false
 git config tag.gpgSign false
-echo "fn test( -- ) { }" > module.qd
+echo "fn test() { }" > module.qd
 git add module.qd
 git commit -q -m "Initial"
 
@@ -248,7 +248,7 @@ git config user.name "Test User"
 git config user.email "test@example.com"
 git config commit.gpgSign false
 git config tag.gpgSign false
-echo "fn test( -- ) { }" > module.qd
+echo "fn test() { }" > module.qd
 cat > src/test.c << 'EOF'
 int add(int a, int b) {
     return a + b;
@@ -289,7 +289,7 @@ git config user.name "Test User"
 git config user.email "test@example.com"
 git config commit.gpgSign false
 git config tag.gpgSign false
-echo "fn test( -- ) { }" > module.qd
+echo "fn test() { }" > module.qd
 cat > src/bad.c << 'EOF'
 #include <nonexistent.h>
 this is not valid C code

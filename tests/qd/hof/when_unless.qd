@@ -1,6 +1,6 @@
 use hof
 
-fn main( -- ) {
+fn main() {
     // when applies only if condition true
     5 1 fn (x:i64 -- r:i64) { 2 * } hof::when print nl
     5 0 fn (x:i64 -- r:i64) { 2 * } hof::when print nl

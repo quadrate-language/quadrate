@@ -2,7 +2,7 @@
 use io
 use mem
 
-fn main( -- ) {
+fn main() {
 	// Create a test file with known content
 	"0123456789" mem::from_string
 	-> write_len

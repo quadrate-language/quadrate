@@ -3,14 +3,14 @@ import "libqdfmt.a" as "fmt" {
 	fn printf(format:str -- )
 }
 
-fn test_defer( -- ) {
+fn test_defer() {
 	defer {
 		"Defer executed\n" fmt::printf
 	}
 	"Before defer\n" fmt::printf
 }
 
-fn main( -- ) {
+fn main() {
 	"Start\n" fmt::printf
 	test_defer
 	"End\n" fmt::printf

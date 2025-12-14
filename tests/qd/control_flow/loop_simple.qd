@@ -1,4 +1,4 @@
-fn main( -- ) {
+fn main() {
 	// Test simple infinite loop with break
 	0
 	loop {

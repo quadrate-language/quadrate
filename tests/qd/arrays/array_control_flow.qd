@@ -1,5 +1,5 @@
 // Arrays in control flow
-fn main( -- ) {
+fn main() {
 	// Array in if block
 	1 if {
 		[10 20 30] 1 nth print nl

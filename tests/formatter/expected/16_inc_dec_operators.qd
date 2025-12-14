@@ -1,5 +1,5 @@
 // Test ++ and -- operator formatting
-fn main( -- ) {
+fn main() {
 	5 ++ print nl
 	10 -- print nl
 	5 ++ print nl

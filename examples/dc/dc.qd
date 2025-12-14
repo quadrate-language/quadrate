@@ -115,11 +115,11 @@ fn stack_pick(s:ptr n:i64 -- val:f64) {
 	}
 }
 
-fn print_version( -- ) {
+fn print_version() {
 	"dc 0.1.0 (Quadrate)" print nl
 }
 
-fn print_help( -- ) {
+fn print_help() {
 	"Usage: dc [OPTION] [file ...]" print nl
 	"  -e, --expression=EXPR    evaluate expression" print nl
 	"  -f, --file=FILE          evaluate contents of file" print nl
@@ -436,7 +436,7 @@ fn repl(s:ptr -- ) {
 	}
 }
 
-fn main( -- ) {
+fn main() {
 	stack_new -> s
 	defer {
 		s stack_free

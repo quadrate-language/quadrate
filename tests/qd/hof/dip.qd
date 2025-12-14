@@ -1,6 +1,6 @@
 use hof
 
-fn main( -- ) {
+fn main() {
     // dip applies function to second element, preserves top
     10 20 fn (x:i64 -- r:i64) { 2 * } hof::dip
     print " " print print nl

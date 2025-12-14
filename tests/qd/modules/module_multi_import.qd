@@ -2,7 +2,7 @@
 use math_helpers
 use validators
 
-fn main( -- ) {
+fn main() {
 	// Test math_helpers::abs
 	-5.5 math_helpers::abs
 	print nl

@@ -2,12 +2,12 @@ use bits
 use math
 use str
 
-fn helper( -- ) {
+fn helper() {
 	5.5 math::sqrt print nl
 	"test" str::len print nl
 }
 
-fn main( -- ) {
+fn main() {
 	helper
 	10 20 bits::bor print nl
 }

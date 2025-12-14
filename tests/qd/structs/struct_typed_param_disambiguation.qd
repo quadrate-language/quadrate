@@ -29,7 +29,7 @@ fn get_circle_width(c:Circle -- result:f64) {
 	c @width
 }
 
-fn main( -- ) {
+fn main() {
 	Circle {
 		x = 0.0
 		y = 0.0

@@ -9,7 +9,7 @@ Use `use` to import a module:
 ```qd
 use fmt
 
-fn main( -- ) {
+fn main() {
 	"John Doe" "Hello %s" fmt::printf nl
 }
 ```
@@ -24,7 +24,7 @@ Use `::` to call functions from a module:
 use math
 use str
 
-fn main( -- ) {
+fn main() {
 	3.14159 math::sin print nl
 	"hello" str::len print nl
 }
@@ -39,7 +39,7 @@ use fmt
 use math
 use os
 
-fn main( -- ) {
+fn main() {
 	// Use functions from any imported module
 	2.0 math::sqrt "%f" fmt::printf
 	0 os::exit
@@ -85,7 +85,7 @@ Quadrate includes many built-in modules:
 use math
 use time
 
-fn main( -- ) {
+fn main() {
 	// Get current time
 	time::now -> t
 
@@ -127,7 +127,7 @@ Use it from another file:
 ```qd
 use mymath
 
-fn main( -- ) {
+fn main() {
 	5 mymath::square print nl  // 25
 	3 mymath::cube print nl    // 27
 }
@@ -147,7 +147,7 @@ pub fn double(x:i64 -- result:i64) {
 ```qd
 use utils.qd
 
-fn main( -- ) {
+fn main() {
 	5 utils::double print nl  // 10
 }
 ```
@@ -215,7 +215,7 @@ Module namespaces prevent conflicts:
 use mylib
 use otherlib
 
-fn main( -- ) {
+fn main() {
 	// These are different functions
 	5 mylib::process
 	5 otherlib::process

@@ -1,16 +1,16 @@
-fn greet( -- ) {
+fn greet() {
 	"Hello from greet!" print nl
 }
 
-fn farewell( -- ) {
+fn farewell() {
 	"Goodbye from farewell!" print nl
 }
 
-fn pushNumber( -- ) {
+fn pushNumber() {
 	42 printv
 }
 
-fn main( -- ) {
+fn main() {
 	// Test 1: Push function pointer and check depth
 	&greet
 	depth

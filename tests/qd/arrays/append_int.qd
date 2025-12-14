@@ -1,5 +1,5 @@
 // Test append with integer array
-fn main( -- ) {
+fn main() {
 	// Create empty array and append elements
 	0 makei 10 append 20 append 30 append -> arr
 	arr len print nl          // Should print = 3

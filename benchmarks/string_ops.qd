@@ -11,7 +11,7 @@ fn benchmark_concat(limit:i64 -- result:i64) {
 	s str::len
 }
 
-fn main( -- ) {
+fn main() {
 	"=== Quadrate String Benchmarks ===\n" fmt::printf
 
 	// Benchmark: String Concatenation

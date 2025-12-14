@@ -1,7 +1,7 @@
 use json
 use str
 
-fn main( -- ) {
+fn main() {
 	34 -> q
 
 	// Test get_string - basic

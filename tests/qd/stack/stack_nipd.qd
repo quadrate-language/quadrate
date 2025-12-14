@@ -1,5 +1,5 @@
 // Test nipd (remove second element): ( a b c -- a c )
-fn main( -- ) {
+fn main() {
 	// Test with integers
 	10 20 30 nipd
 	// Stack = 10 30

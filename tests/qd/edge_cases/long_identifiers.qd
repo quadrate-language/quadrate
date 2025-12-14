@@ -1,4 +1,4 @@
-fn this_is_a_very_long_function_name_that_tests_identifier_length_limits( -- ) {
+fn this_is_a_very_long_function_name_that_tests_identifier_length_limits() {
 	"Long name works" prints nl
 }
 
@@ -6,7 +6,7 @@ struct VeryLongStructNameThatTestsLimitsForStructIdentifiers {
 	very_long_field_name_that_also_tests_length:f64
 }
 
-fn main( -- ) {
+fn main() {
 	this_is_a_very_long_function_name_that_tests_identifier_length_limits
 	VeryLongStructNameThatTestsLimitsForStructIdentifiers { very_long_field_name_that_also_tests_length = 42.0 } -> s
 	s @very_long_field_name_that_also_tests_length print nl

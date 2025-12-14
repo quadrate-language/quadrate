@@ -7,7 +7,7 @@ Operators work on values from the stack.
 All arithmetic operators take two values and produce one result:
 
 ```qd
-fn main( -- ) {
+fn main() {
 	3 4 + print nl   // 7
 	10 3 - print nl  // 7
 	6 7 * print nl   // 42
@@ -47,7 +47,7 @@ You can also use words instead of symbols:
 | `%` | `mod` |
 
 ```qd
-fn main( -- ) {
+fn main() {
 	3 4 add print nl  // 7
 	10 3 sub print nl // 7
 }
@@ -56,7 +56,7 @@ fn main( -- ) {
 ### Other Arithmetic
 
 ```qd
-fn main( -- ) {
+fn main() {
 	5 neg print nl  // -5 (negate)
 	5 ++ print nl   // 6 (increment)
 	5 -- print nl   // 4 (decrement)
@@ -70,7 +70,7 @@ You can also use `inc` and `dec` as word forms for `++` and `--`.
 Comparisons return `1` (true) or `0` (false):
 
 ```qd
-fn main( -- ) {
+fn main() {
 	5 3 > print nl   // 1 (5 > 3 is true)
 	5 3 < print nl   // 0 (5 < 3 is false)
 	5 5 == print nl  // 1 (5 == 5 is true)
@@ -96,7 +96,7 @@ fn main( -- ) {
 `within` checks if a value is in a range [low, high):
 
 ```qd
-fn main( -- ) {
+fn main() {
 	5 0 10 within print nl  // 1 (5 is in [0,10))
 	10 0 10 within print nl // 0 (10 is not in [0,10))
 }
@@ -107,7 +107,7 @@ fn main( -- ) {
 Logical operators work on boolean values (0 and non-zero):
 
 ```qd
-fn main( -- ) {
+fn main() {
 	true true and print nl   // 1
 	true false and print nl  // 0
 	true false or print nl   // 1
@@ -122,7 +122,7 @@ fn main( -- ) {
 For bit manipulation:
 
 ```qd
-fn main( -- ) {
+fn main() {
 	0b1100 0b1010 and print nl  // 8 (0b1000)
 	0b1100 0b1010 or print nl   // 14 (0b1110)
 	0b1100 0b1010 xor print nl  // 6 (0b0110)
@@ -138,7 +138,7 @@ You can also use `shl` and `shr` as word forms for `<<` and `>>`.
 Build complex expressions by chaining:
 
 ```qd
-fn main( -- ) {
+fn main() {
 	// (3 + 4) * 2
 	3 4 + 2 * print nl  // 14
 

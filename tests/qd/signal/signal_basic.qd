@@ -1,6 +1,6 @@
 use signal
 
-fn main( -- ) {
+fn main() {
     // Test that we can trap SIGINT
     signal::SIGINT signal::trap
     "Trapped SIGINT" print nl

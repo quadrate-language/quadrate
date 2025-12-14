@@ -14,7 +14,7 @@ fn process_counter(val:i64 -- ) {
 	}
 }
 
-fn main( -- ) {
+fn main() {
 	0 10 1 for it {
 		it process_counter
 	}

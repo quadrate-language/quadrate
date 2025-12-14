@@ -1,11 +1,11 @@
 // Test: Dead code after return statement
-fn test_return( -- ) {
+fn test_return() {
 	1 2 add
 	return
 	// This is unreachable
 	3 4 add
 }
 
-fn main( -- ) {
+fn main() {
 	test_return
 }

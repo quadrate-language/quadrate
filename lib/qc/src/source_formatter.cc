@@ -218,17 +218,22 @@ namespace Qd {
 			std::string trimmedOutputs = trim(afterDash);
 			hasOutputs = (trimmedOutputs.length() > 0);
 
-			std::string result;
-			if (!hasInputs) {
-				result = " --";
+			// If both inputs and outputs are empty, use empty signature
+			if (!hasInputs && !hasOutputs) {
+				formattedSig = "";
 			} else {
-				result = trimmedInputs + " --";
+				std::string result;
+				if (!hasInputs) {
+					result = " --";
+				} else {
+					result = trimmedInputs + " --";
+				}
+				result += " ";
+				if (hasOutputs) {
+					result += trimmedOutputs;
+				}
+				formattedSig = result;
 			}
-			result += " ";
-			if (hasOutputs) {
-				result += trimmedOutputs;
-			}
-			formattedSig = result;
 		}
 
 		// Look for opening brace after closing paren
@@ -395,28 +400,33 @@ namespace Qd {
 			std::string trimmedOutputs = trim(afterDash);
 			hasOutputs = (trimmedOutputs.length() > 0);
 
-			// Build formatted signature with proper spacing rules:
-			// - Space after '(' if no inputs
-			// - Always space before and after '--'
-			// - Space before ')' if no outputs (provided by space after '--')
-			std::string result;
-
-			// Build: [space] + inputs + space + "--"
-			if (!hasInputs) {
-				result = " --";
+			// If both inputs and outputs are empty, use empty signature
+			if (!hasInputs && !hasOutputs) {
+				formattedSig = "";
 			} else {
-				result = trimmedInputs + " --";
+				// Build formatted signature with proper spacing rules:
+				// - Space after '(' if no inputs
+				// - Always space before and after '--'
+				// - Space before ')' if no outputs (provided by space after '--')
+				std::string result;
+
+				// Build: [space] + inputs + space + "--"
+				if (!hasInputs) {
+					result = " --";
+				} else {
+					result = trimmedInputs + " --";
+				}
+
+				// Add space after '--'
+				result += " ";
+
+				// Add outputs if present (space after '--' becomes space before ')')
+				if (hasOutputs) {
+					result += trimmedOutputs;
+				}
+
+				formattedSig = result;
 			}
-
-			// Add space after '--'
-			result += " ";
-
-			// Add outputs if present (space after '--' becomes space before ')')
-			if (hasOutputs) {
-				result += trimmedOutputs;
-			}
-
-			formattedSig = result;
 		}
 
 		// Check for '!' after the closing paren (error-returning function)

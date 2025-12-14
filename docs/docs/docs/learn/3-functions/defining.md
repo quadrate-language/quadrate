@@ -23,7 +23,7 @@ fn square(x:i64 -- result:i64) {
 	dup *
 }
 
-fn main( -- ) {
+fn main() {
 	5 square print nl  // 25
 }
 ```
@@ -57,7 +57,7 @@ fn push_two( -- a:i64 b:i64) {
 | `(a:i64 b:i64 -- c:i64)` | 2 inputs, 1 output |
 | `(x:i64 -- )` | 1 input, no outputs |
 | `( -- x:i64)` | No inputs, 1 output |
-| `( -- )` | No inputs, no outputs |
+| `()` | No inputs, no outputs |
 
 ## Parameter Names
 
@@ -86,7 +86,7 @@ fn divmod(a:i64 b:i64 -- quotient:i64 remainder:i64) {
 	a b %
 }
 
-fn main( -- ) {
+fn main() {
 	17 5 divmod
 	print nl  // 2 (remainder)
 	print nl  // 3 (quotient)
@@ -96,7 +96,7 @@ fn main( -- ) {
 ## Functions Without Parameters
 
 ```qd
-fn greet( -- ) {
+fn greet() {
 	"Hello, World!" print nl
 }
 
@@ -104,7 +104,7 @@ fn get_answer( -- answer:i64) {
 	42
 }
 
-fn main( -- ) {
+fn main() {
 	greet
 	get_answer print nl  // 42
 }
@@ -115,7 +115,7 @@ fn main( -- ) {
 Every program needs a `main` function:
 
 ```qd
-fn main( -- ) {
+fn main() {
 	// Program starts here
 }
 ```
@@ -131,9 +131,9 @@ Rules for function names:
 - Case-sensitive (`foo` and `Foo` are different)
 
 ```qd
-fn calculate_total( -- ) { }
-fn _private_helper( -- ) { }
-fn processItem2( -- ) { }
+fn calculate_total() { }
+fn _private_helper() { }
+fn processItem2() { }
 ```
 
 ## Type Annotations

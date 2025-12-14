@@ -20,7 +20,7 @@ pip install -e .
 
 ````markdown
 ```qd
-fn main( -- ) {
+fn main() {
     "Hello, World!" print nl
 }
 ```
@@ -39,7 +39,7 @@ from pygments import highlight
 from pygments.formatters import HtmlFormatter
 from quadrate_lexer import QuadrateLexer
 
-code = 'fn main( -- ) { "Hello" print nl }'
+code = 'fn main() { "Hello" print nl }'
 print(highlight(code, QuadrateLexer(), HtmlFormatter()))
 ```
 

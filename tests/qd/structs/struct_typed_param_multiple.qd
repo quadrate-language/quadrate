@@ -33,7 +33,7 @@ fn add_points(a:Point b:Point -- result:ptr) {
 	}
 }
 
-fn main( -- ) {
+fn main() {
 	// Create test structs
 	Point {
 		x = 0.0

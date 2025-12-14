@@ -1,5 +1,5 @@
 // Test multiple local variables
-fn main( -- ) {
+fn main() {
 	10 -> x
 	20 -> y
 	30 -> z

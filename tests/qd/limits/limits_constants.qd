@@ -1,7 +1,7 @@
 // Test limits module constants
 use limits
 
-fn main( -- ) {
+fn main() {
 	// Test native type limits
 	limits::I64Max print nl
 	limits::I64Min print nl

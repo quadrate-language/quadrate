@@ -1,4 +1,4 @@
-fn main( -- ) {
+fn main() {
 	// Test if/else with comparisons
 	// 10 < 20, so should print nl 100
 	10 20 lt if {

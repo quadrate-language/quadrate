@@ -1,7 +1,7 @@
 // Test hex validation functions
 use hex
 
-fn main( -- ) {
+fn main() {
 	// Valid hex strings
 	"" hex::is_valid print nl
 	"00" hex::is_valid print nl

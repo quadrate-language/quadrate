@@ -1,5 +1,5 @@
 // Test: Basic closure capturing a single variable
-fn main( -- ) {
+fn main() {
     42 -> x
     fn ( -- r:i64) { x } -> get_x
     get_x call print nl

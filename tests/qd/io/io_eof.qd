@@ -2,7 +2,7 @@
 use io
 use mem
 
-fn main( -- ) {
+fn main() {
 	// Create a small file
 	"ABC" mem::from_string
 	-> write_len

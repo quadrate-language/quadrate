@@ -1,5 +1,5 @@
 // Negative values in array
-fn main( -- ) {
+fn main() {
 	[-10 -20 0 10 20] -> arr
 	arr 0 nth print nl
 	arr 1 nth print nl

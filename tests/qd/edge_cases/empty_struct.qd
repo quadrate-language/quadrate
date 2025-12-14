@@ -2,6 +2,6 @@
 struct Empty {
 }
 
-fn main( -- ) {
+fn main() {
 	"Empty struct test passed" prints nl
 }

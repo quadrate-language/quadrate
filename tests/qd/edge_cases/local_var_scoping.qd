@@ -1,14 +1,14 @@
-fn test1( -- ) {
+fn test1() {
 	42 -> x
 	x print nl
 }
 
-fn test2( -- ) {
+fn test2() {
 	100 -> x
 	x print nl
 }
 
-fn main( -- ) {
+fn main() {
 	test1
 	test2
 }

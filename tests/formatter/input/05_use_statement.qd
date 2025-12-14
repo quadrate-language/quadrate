@@ -1,7 +1,7 @@
 use math
 use std
 
-fn main( -- ) {
+fn main() {
 	math::add
 	print
 }

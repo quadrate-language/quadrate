@@ -64,7 +64,7 @@
         {"name": ".v", "signature": "( a -- )", "description": "Print top value with type info"},
         {"name": ".s", "signature": "( ... -- ... )", "description": "Print entire stack"},
         {"name": ".sv", "signature": "( ... -- ... )", "description": "Print entire stack with types"},
-        {"name": "nl", "signature": "( -- )", "description": "Print newline"},
+        {"name": "nl", "signature": "()", "description": "Print newline"},
         {"name": "read", "signature": "( -- argc arg1 arg2 ... )", "description": "Read command-line arguments"}
       ]
     },
@@ -79,11 +79,11 @@
       "instructions": [
         {"name": "if", "signature": "( bool -- )", "description": "Conditional execution: bool if { ... } else { ... }"},
         {"name": "for", "signature": "( start end step -- )", "description": "Loop: start end step for var { ... }"},
-        {"name": "loop", "signature": "( -- )", "description": "Infinite loop: loop { ... break }"},
-        {"name": "break", "signature": "( -- )", "description": "Exit current loop"},
-        {"name": "continue", "signature": "( -- )", "description": "Skip to next iteration"},
+        {"name": "loop", "signature": "()", "description": "Infinite loop: loop { ... break }"},
+        {"name": "break", "signature": "()", "description": "Exit current loop"},
+        {"name": "continue", "signature": "()", "description": "Skip to next iteration"},
         {"name": "switch", "signature": "( val -- )", "description": "Switch statement: val switch { case X { ... } default { ... } }"},
-        {"name": "defer", "signature": "( -- )", "description": "Execute block at function exit: defer { ... }"}
+        {"name": "defer", "signature": "()", "description": "Execute block at function exit: defer { ... }"}
       ]
     },
     {
@@ -97,7 +97,7 @@
       "name": "Error Handling",
       "instructions": [
         {"name": "error", "signature": "( msg code -- )", "description": "Raise an error"},
-        {"name": "!", "signature": "( -- )", "description": "Call failable function: fn! { success } else { error }"}
+        {"name": "!", "signature": "()", "description": "Call failable function: fn! { success } else { error }"}
       ]
     },
     {

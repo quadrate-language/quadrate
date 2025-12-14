@@ -2,7 +2,7 @@ use bits
 use math
 use str
 
-fn main( -- ) {
+fn main() {
 	5.5 math::sqrt if {
 		"positive" str::upper print nl
 	} else {

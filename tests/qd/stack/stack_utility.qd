@@ -1,4 +1,4 @@
-fn main( -- ) {
+fn main() {
 	// Test depth - get stack size
 	clear
 	1 2 3 depth print nl

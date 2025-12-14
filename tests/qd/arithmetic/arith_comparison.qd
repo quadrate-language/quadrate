@@ -1,4 +1,4 @@
-fn main( -- ) {
+fn main() {
 	// Test eq (equal)
 	5 5 eq print nl
 	// Should print nl = 1 (true)

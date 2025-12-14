@@ -1,7 +1,7 @@
 // Test loops inside anonymous functions
-fn main( -- ) {
+fn main() {
     // Print 3 numbers using a loop inside anonymous function
-    fn ( -- ) {
+    fn () {
         0 3 1 for i {
             i print nl
         }

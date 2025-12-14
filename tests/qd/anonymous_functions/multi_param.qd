@@ -1,5 +1,5 @@
 // Test anonymous function with multiple parameters
-fn main( -- ) {
+fn main() {
     // Anonymous function with two inputs
     fn (a:i64 b:i64 -- r:i64) { + } -> add_fn
     3 4 add_fn call print nl

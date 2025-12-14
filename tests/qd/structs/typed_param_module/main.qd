@@ -1,7 +1,7 @@
 // Test cross-module typed struct parameters
 use geometry
 
-fn main( -- ) {
+fn main() {
 	// Create a Vec2 using the module's struct
 	3.0 4.0 new geometry::Vec2 -> v1
 

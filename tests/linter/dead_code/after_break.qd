@@ -1,5 +1,5 @@
 // Test: Dead code after break statement
-fn main( -- ) {
+fn main() {
 	loop {
 		1 2 add
 		break

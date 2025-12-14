@@ -625,7 +625,7 @@ private:
 		testSource += definition + "\n";
 
 		// Add a minimal main function if we don't have one
-		testSource += "fn __repl_validate_main__( -- ) { }\n";
+		testSource += "fn __repl_validate_main__() { }\n";
 
 		// Try to parse
 		Qd::Ast ast;
@@ -834,7 +834,7 @@ private:
 		}
 
 		// Generate main function with all expressions
-		source += "pub fn repl_main( -- ) {\n";
+		source += "pub fn repl_main() {\n";
 		for (const auto& expr : expressions) {
 			source += "\t" + expr + "\n";
 		}
@@ -862,7 +862,7 @@ private:
 			line += 1; // Empty line after function definitions
 		}
 
-		// Line for "pub fn repl_main( -- ) {"
+		// Line for "pub fn repl_main() {"
 		line += 1;
 
 		// Expressions are on subsequent lines (1-indexed, exprIndex is 0-indexed)

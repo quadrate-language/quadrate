@@ -1,5 +1,5 @@
 // Test: handle arguments with spaces
-fn main( -- ) {
+fn main() {
 	read -> argc
 
 	argc 0 > if {

@@ -8,7 +8,7 @@ fn division(a:i64 b:i64 -- result:i64)! {
 	div
 }
 
-fn main( -- ) {
+fn main() {
 	// Call fallible function with error check using 'if'
 	// Success: 'if' branch is taken, result is on stack
 	// Error: 'else' branch is taken, error value is on stack

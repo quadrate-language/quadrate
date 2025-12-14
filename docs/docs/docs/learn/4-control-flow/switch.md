@@ -35,7 +35,7 @@ fn day_name(day:i64 -- name:str) {
 	}
 }
 
-fn main( -- ) {
+fn main() {
 	3 day_name print nl  // Wednesday
 }
 ```
@@ -60,7 +60,7 @@ fn describe(n:i64 -- desc:str) {
 	}
 }
 
-fn main( -- ) {
+fn main() {
 	0 describe print nl  // zero
 	1 describe print nl  // one
 	5 describe print nl  // many

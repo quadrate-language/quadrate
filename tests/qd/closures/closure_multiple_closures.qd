@@ -1,5 +1,5 @@
 // Test: Multiple closures capturing the same variable
-fn main( -- ) {
+fn main() {
     10 -> x
 
     fn ( -- r:i64) { x } -> get_x

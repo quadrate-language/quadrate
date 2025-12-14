@@ -1,4 +1,4 @@
-fn main( -- ) {
+fn main() {
 	// Test loop with continue
 	0
 	loop {

@@ -1,7 +1,7 @@
 // Test hex decode functions
 use hex
 
-fn main( -- ) {
+fn main() {
 	// Basic decoding (uppercase)
 	"48656C6C6F" hex::decode print nl
 	"41" hex::decode print nl

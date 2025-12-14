@@ -1,7 +1,7 @@
 // Test module with multiple .qd file imports
 use multi_file
 
-fn main( -- ) {
+fn main() {
 	// Test arithmetic functions (from arithmetic.qd)
 	5.0 multi_file::increment
 	print nl

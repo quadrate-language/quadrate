@@ -36,7 +36,7 @@ namespace Qd {
 	 * std::string code = "fn main(--){print(42)}";
 	 * std::string formatted = formatSource(code);
 	 * // Result:
-	 * // fn main( -- ) {
+	 * // fn main() {
 	 * //     print(42)
 	 * // }
 	 * @endcode

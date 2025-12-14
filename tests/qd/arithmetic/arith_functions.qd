@@ -1,6 +1,6 @@
 use math
 
-fn main( -- ) {
+fn main() {
 	// Test sq (square)
 	5.0 math::sq print nl
 	// Should print nl = 25

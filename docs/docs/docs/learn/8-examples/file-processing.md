@@ -41,7 +41,7 @@ fn read_entire_file(path:str -- content:str ok:i64) {
 	}
 }
 
-fn main( -- ) {
+fn main() {
 	"test.txt" read_entire_file if {
 		-> content
 		"File contents:" print nl
@@ -82,7 +82,7 @@ fn write_file(path:str content:str -- ok:i64) {
 	}
 }
 
-fn main( -- ) {
+fn main() {
 	"output.txt" "Hello, World!\n" write_file if {
 		"File written successfully" print nl
 	} else {
@@ -136,7 +136,7 @@ fn process_line(num:i64 line:str -- ) {
 	num print ": " print line print nl
 }
 
-fn main( -- ) {
+fn main() {
 	"data.txt" process_lines
 }
 ```
@@ -186,7 +186,7 @@ fn count_words(path:str -- words:i64 lines:i64 chars:i64)! {
 	words lines chars
 }
 
-fn main( -- ) {
+fn main() {
 	"document.txt" count_words if {
 		-> chars -> lines -> words
 		"Words: " print words print nl
@@ -241,7 +241,7 @@ fn copy_file(src:str dst:str -- total:i64)! {
 	total_copied
 }
 
-fn main( -- ) {
+fn main() {
 	"input.txt" "output.txt" copy_file if {
 		-> total
 		"Copied " print total print " bytes" print nl

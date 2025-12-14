@@ -1,7 +1,7 @@
 // Test new math utility functions: inc, dec, within
 use math
 
-fn main( -- ) {
+fn main() {
 	// Test inc with integers
 	5 math::inc print nl
 

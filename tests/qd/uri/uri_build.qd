@@ -1,7 +1,7 @@
 // Test URI build function
 use uri
 
-fn main( -- ) {
+fn main() {
 	// Build full URI
 	"https" "example.com" 8080 "/path" "q=1" "top" uri::Uri -> u1
 	u1 uri::build print nl

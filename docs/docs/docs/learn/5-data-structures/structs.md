@@ -26,7 +26,7 @@ struct Point {
 	y:f64
 }
 
-fn main( -- ) {
+fn main() {
 	Point {
 		x = 10.0
 		y = 20.0
@@ -51,7 +51,7 @@ fn area(rect:ptr -- a:f64) {
 	rect @width rect @height *
 }
 
-fn main( -- ) {
+fn main() {
 	Rectangle {
 		width = 5.0
 		height = 3.0
@@ -69,7 +69,7 @@ struct Counter {
 	value:i64
 }
 
-fn main( -- ) {
+fn main() {
 	Counter {
 		value = 0
 	} -> c
@@ -99,7 +99,7 @@ struct Line {
 	end:ptr
 }
 
-fn main( -- ) {
+fn main() {
 	Point {
 		x = 0.0
 		y = 0.0
@@ -132,7 +132,7 @@ struct Polygon {
 	count:i64
 }
 
-fn main( -- ) {
+fn main() {
 	3 make<ptr> -> pts
 	Point {
 		x = 0.0
@@ -182,7 +182,7 @@ fn point_move(p:ptr dx:f64 dy:f64 -- ) {
 	p @y dy + p .y
 }
 
-fn main( -- ) {
+fn main() {
 	Point {
 		x = 0.0
 		y = 0.0
@@ -224,7 +224,7 @@ fn config_set_debug(cfg:ptr value:i64 -- cfg:ptr) {
 	cfg
 }
 
-fn main( -- ) {
+fn main() {
 	config_new 1 config_set_debug -> cfg
 	cfg @debug print nl  // 1
 }
@@ -246,7 +246,7 @@ fn node_new(value:i64 -- node:ptr) {
 	}
 }
 
-fn main( -- ) {
+fn main() {
 	10 node_new -> first
 	20 node_new -> second
 	30 node_new -> third
@@ -295,7 +295,7 @@ fn stack_pop(s:ptr -- value:i64) {
 	s @data s @top nth
 }
 
-fn main( -- ) {
+fn main() {
 	10 stack_new -> s
 	s 1 stack_push
 	s 2 stack_push
@@ -322,7 +322,7 @@ fn points_equal(a:ptr b:ptr -- equal:i64) {
 	a @x b @x == a @y b @y == and
 }
 
-fn main( -- ) {
+fn main() {
 	Point {
 		x = 1.0
 		y = 2.0

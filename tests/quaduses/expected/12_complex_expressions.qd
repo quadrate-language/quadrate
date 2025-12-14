@@ -2,7 +2,7 @@ use bits
 use math
 use str
 
-fn main( -- ) {
+fn main() {
 	// Complex expressions with multiple scoped calls
 	5.5 math::sqrt 2.0 math::pow print nl
 	"hello" str::upper " world" str::lower str::concat print nl

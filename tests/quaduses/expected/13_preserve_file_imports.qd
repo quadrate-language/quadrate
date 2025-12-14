@@ -2,6 +2,6 @@
 use "utils/math.qd"
 use helper.qd
 
-fn main( -- ) {
+fn main() {
 	42 prints nl
 }

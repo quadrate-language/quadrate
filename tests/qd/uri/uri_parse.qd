@@ -1,7 +1,7 @@
 // Test URI parsing
 use uri
 
-fn main( -- ) {
+fn main() {
 	// Full URI
 	"https://example.com:8080/path?q=1#top" uri::parse -> u
 	u @scheme print nl

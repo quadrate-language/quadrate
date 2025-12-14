@@ -6,7 +6,7 @@
 /// Example:
 ///   use signal
 ///
-///   fn main( -- ) {
+///   fn main() {
 ///       signal::SIGINT signal::trap
 ///       "Running. Press Ctrl+C to stop." . nl
 ///

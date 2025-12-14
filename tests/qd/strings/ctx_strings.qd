@@ -1,5 +1,5 @@
 // Test ctx with strings
-fn test_ctx_string_return( -- ) {
+fn test_ctx_string_return() {
 	// Test: Return string from ctx
 	ctx {
 		"hello"
@@ -8,7 +8,7 @@ fn test_ctx_string_return( -- ) {
 	clear
 }
 
-fn test_ctx_string_isolation( -- ) {
+fn test_ctx_string_isolation() {
 	// Test: String isolation
 	"parent"
 	ctx {
@@ -21,7 +21,7 @@ fn test_ctx_string_isolation( -- ) {
 	clear
 }
 
-fn test_ctx_string_preserve( -- ) {
+fn test_ctx_string_preserve() {
 	// Test: Parent string preserved
 	"original"
 	ctx {
@@ -33,7 +33,7 @@ fn test_ctx_string_preserve( -- ) {
 	clear
 }
 
-fn main( -- ) {
+fn main() {
 	test_ctx_string_return
 	test_ctx_string_isolation
 	test_ctx_string_preserve

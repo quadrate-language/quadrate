@@ -7,7 +7,7 @@ Let's write your first Quadrate program.
 Create a file called `hello.qd`:
 
 ```qd
-fn main( -- ) {
+fn main() {
 	"Hello, World!" print nl
 }
 ```
@@ -29,12 +29,12 @@ Hello, World!
 ### The Function
 
 ```qd
-fn main( -- ) {
+fn main() {
 ```
 
 - `fn` declares a function
 - `main` is the entry point (every program needs one)
-- `( -- )` is the **stack signature** (more on this later)
+- `()` is the **stack signature** (more on this later)
 - `{` starts the function body
 
 ### The String
@@ -66,7 +66,7 @@ nl
 Use `//` for single-line comments:
 
 ```qd
-fn main( -- ) {
+fn main() {
 	// This is a comment
 	"Hello!" print nl  // This prints a greeting
 }
@@ -75,7 +75,7 @@ fn main( -- ) {
 Use `/* */` for multi-line comments:
 
 ```qd
-fn main( -- ) {
+fn main() {
 	/*
 	This is a
 	multi-line comment
@@ -89,7 +89,7 @@ fn main( -- ) {
 You can print multiple things:
 
 ```qd
-fn main( -- ) {
+fn main() {
 	"Hello, " print
 	"World!" print
 	nl
@@ -107,7 +107,7 @@ Hello, World!
 Numbers work the same way:
 
 ```qd
-fn main( -- ) {
+fn main() {
 	42 print nl
 	3.14 print nl
 }

@@ -1,6 +1,6 @@
 use hof
 
-fn main( -- ) {
+fn main() {
     // bi_star applies different functions to two values
     3 4 fn (x:i64 -- r:i64) { 1 + } fn (x:i64 -- r:i64) { 2 * } hof::bi_star
     print " " print print nl

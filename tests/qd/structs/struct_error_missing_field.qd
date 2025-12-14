@@ -9,7 +9,7 @@ fn use_point(p:ptr -- ) {
 	pt @z drop  // ERROR: Point has no field 'z'
 }
 
-fn main( -- ) {
+fn main() {
 	Point {
 		x = 3.0
 		y = 4.0

@@ -14,7 +14,7 @@ fn get_age(p:ptr -- age:f64) {
 	person @age  // Expects 'age' field
 }
 
-fn main( -- ) {
+fn main() {
 	// Pass Point to function expecting Person - missing 'age' field!
 	Point {
 		x = 3.0

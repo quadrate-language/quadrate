@@ -2,7 +2,7 @@
 // ctx blocks execute code in an isolated context
 // Syntax: ctx { ... }
 // Stack effect: ( S -- S r ) where r is the single returned value
-fn demo_basic_isolation( -- ) {
+fn demo_basic_isolation() {
 	// Basic isolation - parent stack preserved
 	clear
 	"Demo 1: Basic Isolation" prints nl
@@ -22,7 +22,7 @@ fn demo_basic_isolation( -- ) {
 	clear
 }
 
-fn demo_deep_copy( -- ) {
+fn demo_deep_copy() {
 	// Deep copy - child can modify without affecting parent
 	clear
 	"Demo 2: Deep Copy" prints nl
@@ -39,7 +39,7 @@ fn demo_deep_copy( -- ) {
 	clear
 }
 
-fn demo_clear_in_ctx( -- ) {
+fn demo_clear_in_ctx() {
 	// Clear inside ctx - parent unaffected
 	clear
 	"Demo 3: Clear in ctx" prints nl
@@ -57,7 +57,7 @@ fn demo_clear_in_ctx( -- ) {
 	clear
 }
 
-fn demo_chained_ctx( -- ) {
+fn demo_chained_ctx() {
 	// Chained ctx blocks
 	clear
 	"Demo 4: Chained ctx blocks" prints nl
@@ -78,7 +78,7 @@ fn demo_chained_ctx( -- ) {
 	clear
 }
 
-fn demo_with_control_flow( -- ) {
+fn demo_with_control_flow() {
 	// ctx with control flow
 	clear
 	"Demo 5: With control flow" prints nl
@@ -97,7 +97,7 @@ fn demo_with_control_flow( -- ) {
 	clear
 }
 
-fn main( -- ) {
+fn main() {
 	"=== CTX Block Feature Demo ===" prints nl
 	nl
 	demo_basic_isolation

@@ -1,5 +1,5 @@
 // Test set with string array
-fn main( -- ) {
+fn main() {
 	// Create string array and set elements
 	3 makes -> arr
 	arr 0 "first" set

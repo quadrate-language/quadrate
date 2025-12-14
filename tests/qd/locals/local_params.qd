@@ -7,6 +7,6 @@ fn calculate(a:i64 b:i64 c:i64 -- result:i64) {
 	x y mul z add
 }
 
-fn main( -- ) {
+fn main() {
 	5 3 2 calculate print nl
 }

@@ -1,5 +1,5 @@
 // Test append with float array
-fn main( -- ) {
+fn main() {
 	// Create empty array and append floats
 	0 makef 1.5 append 2.5 append 3.5 append -> arr
 	arr len print nl          // Should print = 3

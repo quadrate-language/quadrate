@@ -7,7 +7,7 @@ Arrays store multiple values of the same type.
 ### Array Literals
 
 ```qd
-fn main( -- ) {
+fn main() {
 	[1 2 3 4 5] -> arr
 	arr len print nl  // 5
 }
@@ -16,7 +16,7 @@ fn main( -- ) {
 ### Empty Arrays with Size
 
 ```qd
-fn main( -- ) {
+fn main() {
 	10 make<i64> -> arr     // Array of 10 integers
 	5 make<f64> -> floats   // Array of 5 floats
 	3 make<str> -> strings  // Array of 3 strings
@@ -28,7 +28,7 @@ fn main( -- ) {
 Use `nth` to read elements (0-indexed):
 
 ```qd
-fn main( -- ) {
+fn main() {
 	[10 20 30 40 50] -> arr
 
 	arr 0 nth print nl  // 10 (first)
@@ -42,7 +42,7 @@ fn main( -- ) {
 Use `set` to write elements:
 
 ```qd
-fn main( -- ) {
+fn main() {
 	5 make<i64> -> arr
 
 	arr 0 100 set  // Set first element to 100
@@ -58,7 +58,7 @@ fn main( -- ) {
 Use `len` to get the length:
 
 ```qd
-fn main( -- ) {
+fn main() {
 	[1 2 3 4 5] -> arr
 	arr len print nl  // 5
 
@@ -72,7 +72,7 @@ fn main( -- ) {
 ### With for Loop
 
 ```qd
-fn main( -- ) {
+fn main() {
 	[10 20 30 40 50] -> arr
 
 	0 arr len 1 for i {
@@ -95,7 +95,7 @@ fn sum(arr:ptr -- total:i64) {
 	total
 }
 
-fn main( -- ) {
+fn main() {
 	[1 2 3 4 5] sum print nl  // 15
 }
 ```
@@ -114,7 +114,7 @@ fn max(arr:ptr -- result:i64) {
 	result
 }
 
-fn main( -- ) {
+fn main() {
 	[3 1 4 1 5 9 2 6] max print nl  // 9
 }
 ```
@@ -133,7 +133,7 @@ fn count_if(arr:ptr value:i64 -- count:i64) {
 	count
 }
 
-fn main( -- ) {
+fn main() {
 	[1 2 1 3 1 4 1] 1 count_if print nl  // 4
 }
 ```
@@ -141,7 +141,7 @@ fn main( -- ) {
 ## Array of Floats
 
 ```qd
-fn main( -- ) {
+fn main() {
 	[1.0 2.5 3.7 4.2] -> arr
 
 	0 arr len 1 for i {
@@ -153,7 +153,7 @@ fn main( -- ) {
 ## Array of Strings
 
 ```qd
-fn main( -- ) {
+fn main() {
 	["apple" "banana" "cherry"] -> fruits
 
 	0 fruits len 1 for i {
@@ -176,7 +176,7 @@ fn copy_array(src:ptr -- dst:ptr) {
 	dst
 }
 
-fn main( -- ) {
+fn main() {
 	[1 2 3] -> original
 	original copy_array -> copied
 
@@ -199,7 +199,7 @@ fn fill(arr:ptr value:i64 -- ) {
 	}
 }
 
-fn main( -- ) {
+fn main() {
 	5 make<i64> -> arr
 	arr 42 fill
 	0 arr len 1 for i {
@@ -226,7 +226,7 @@ fn reverse(arr:ptr -- ) {
 	}
 }
 
-fn main( -- ) {
+fn main() {
 	[1 2 3 4 5] -> arr
 	arr reverse
 	0 arr len 1 for i {
@@ -260,7 +260,7 @@ fn filter_positive(arr:ptr -- result:ptr) {
 	result
 }
 
-fn main( -- ) {
+fn main() {
 	[1 2 -3 -4 5] -> arr
 	arr filter_positive -> result
 	0 result len 1 for i {

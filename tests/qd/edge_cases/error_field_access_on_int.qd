@@ -1,4 +1,4 @@
-fn main( -- ) {
+fn main() {
 	42 -> x
 	x @foo print nl
 }

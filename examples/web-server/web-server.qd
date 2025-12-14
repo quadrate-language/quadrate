@@ -1,6 +1,6 @@
 use net
 
-fn main( -- ) {
+fn main() {
 	"Serving on http://localhost:8080/" print nl
 
 	// Create server socket on port 8080

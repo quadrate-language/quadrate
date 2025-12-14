@@ -7,7 +7,7 @@ struct Outer {
 	scale:f64
 }
 
-fn test_pointer_fields( -- ) {
+fn test_pointer_fields() {
 	// Create inner struct
 	Inner { value = 42.0 } -> i
 
@@ -27,6 +27,6 @@ fn test_pointer_fields( -- ) {
 	inner_ptr @value print nl
 }
 
-fn main( -- ) {
+fn main() {
 	test_pointer_fields
 }

@@ -7,6 +7,6 @@ fn countdown(n:i64 -- ) {
 	}
 }
 
-fn main( -- ) {
+fn main() {
 	10 countdown
 }

@@ -1,5 +1,5 @@
 // Test ctx with if statement
-fn test_ctx_simple_if_true( -- ) {
+fn test_ctx_simple_if_true() {
 	// Test: Simple if inside ctx (true)
 	ctx {
 		1 1 eq
@@ -10,7 +10,7 @@ fn test_ctx_simple_if_true( -- ) {
 	print nl
 }
 
-fn test_ctx_simple_if_false( -- ) {
+fn test_ctx_simple_if_false() {
 	// Test: Simple if inside ctx (false - no result issue)
 	// This shows a limitation: if false means no value left
 	5
@@ -27,7 +27,7 @@ fn test_ctx_simple_if_false( -- ) {
 	print nl
 }
 
-fn main( -- ) {
+fn main() {
 	test_ctx_simple_if_true
 	test_ctx_simple_if_false
 }

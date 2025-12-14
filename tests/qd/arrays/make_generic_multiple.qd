@@ -1,5 +1,5 @@
 // Test multiple make<T> calls in same function
-fn main( -- ) {
+fn main() {
 	// Multiple different types
 	3 make<i64> -> ints
 	3 make<f64> -> floats

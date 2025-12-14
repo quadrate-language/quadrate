@@ -1,5 +1,5 @@
 // Test make<T> inside loop - create multiple arrays
-fn main( -- ) {
+fn main() {
 	0 -> total
 	0 3 1 for i {
 		5 make<i64> -> arr

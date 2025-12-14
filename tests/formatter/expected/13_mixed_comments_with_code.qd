@@ -1,6 +1,6 @@
 // Mixed single-line and block comments with code
-fn test_mixed( -- ) {
-	// fn commented_out( -- ) {
+fn test_mixed() {
+	// fn commented_out() {
 	/*     if {
 	for i {
 	*/
@@ -10,9 +10,9 @@ fn test_mixed( -- ) {
 	/* nested { block { here { */ print
 }
 
-fn test_deep_nesting( -- ) {
-	/* fn level1( -- ) {
-	fn level2( -- ) {
+fn test_deep_nesting() {
+	/* fn level1() {
+	fn level2() {
 	if {
 	for i {
 	switch {
@@ -29,7 +29,7 @@ fn test_deep_nesting( -- ) {
 	print
 }
 
-fn main( -- ) {
+fn main() {
 	test_mixed
 	test_deep_nesting
 }

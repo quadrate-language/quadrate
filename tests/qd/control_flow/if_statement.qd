@@ -1,4 +1,4 @@
-fn main( -- ) {
+fn main() {
 	// Test 1: True condition
 	1 if {
 		42 print nl

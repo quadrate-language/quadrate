@@ -9,7 +9,7 @@ struct Vec3 {
 	z:f64
 }
 
-fn test_multiple( -- ) {
+fn test_multiple() {
 	// Test Vec2
 	Vec2 {
 		x = 1.0
@@ -29,6 +29,6 @@ fn test_multiple( -- ) {
 	v3 @z print nl
 }
 
-fn main( -- ) {
+fn main() {
 	test_multiple
 }

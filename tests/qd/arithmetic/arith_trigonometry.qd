@@ -1,6 +1,6 @@
 use math
 
-fn main( -- ) {
+fn main() {
 	// Test basic trig functions with 0
 	0.0 math::sin print nl
 	// Should print nl = 0

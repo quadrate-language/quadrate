@@ -1,4 +1,4 @@
-fn main( -- ) {
+fn main() {
 	// Test basic ASCII string
 	"Hello, World!" print nl
 	// Test UTF-8 strings with various scripts

@@ -1,5 +1,5 @@
 /* Top-level block comment */
-fn main( -- ) {
+fn main() {
 	/* Multi-line
 	block comment
 	spanning lines */

@@ -1,5 +1,5 @@
 // Test: Creating and calling closures inside a loop
-fn main( -- ) {
+fn main() {
     // Each iteration creates a closure that captures its own value
     0 5 1 for i {
         i -> val

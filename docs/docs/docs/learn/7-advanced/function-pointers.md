@@ -11,7 +11,7 @@ fn double(x:i64 -- result:i64) {
 	2 *
 }
 
-fn main( -- ) {
+fn main() {
 	&double -> fn_ptr
 	// fn_ptr now holds a reference to double
 }
@@ -26,7 +26,7 @@ fn double(x:i64 -- result:i64) {
 	2 *
 }
 
-fn main( -- ) {
+fn main() {
 	&double -> fn_ptr
 	5 fn_ptr call print nl  // 10
 }
@@ -44,7 +44,7 @@ fn double(x:i64 -- result:i64) { 2 * }
 fn square(x:i64 -- result:i64) { dup * }
 fn increment(x:i64 -- result:i64) { 1 + }
 
-fn main( -- ) {
+fn main() {
 	5 &double apply print nl  // 10
 	5 &square apply print nl  // 25
 	5 &increment apply print nl     // 6
@@ -70,7 +70,7 @@ fn div_op(a:i64 b:i64 -- r:i64) {
 	/
 }
 
-fn main( -- ) {
+fn main() {
 	4 make<ptr> -> ops
 	ops 0 &addition set
 	ops 1 &subtraction set
@@ -101,7 +101,7 @@ fn print_item(x:i64 -- ) {
 	x print " " print
 }
 
-fn main( -- ) {
+fn main() {
 	[1 2 3 4 5] &print_item for_each
 	nl  // 1 2 3 4 5
 }
@@ -123,7 +123,7 @@ fn map(arr:ptr f:ptr -- result:ptr) {
 
 fn double(x:i64 -- r:i64) { 2 * }
 
-fn main( -- ) {
+fn main() {
 	[1 2 3 4 5] &double map -> doubled
 	0 doubled len 1 for i {
 		doubled i nth print " " print
@@ -163,7 +163,7 @@ fn is_even(x:i64 -- result:i64) {
 	x 2 % 0 ==
 }
 
-fn main( -- ) {
+fn main() {
 	[1 2 3 4 5 6 7 8 9 10] &is_even filter -> evens
 	0 evens len 1 for i {
 		evens i nth print " " print
@@ -187,7 +187,7 @@ fn addition(a:i64 b:i64 -- r:i64) {
 	+
 }
 
-fn main( -- ) {
+fn main() {
 	[1 2 3 4 5] 0 &addition reduce print nl  // 15
 }
 ```
@@ -210,7 +210,7 @@ fn farewell(name:str -- ) {
 	"Goodbye, " print name print nl
 }
 
-fn main( -- ) {
+fn main() {
 	Handler {
 		name = "greeter"
 		func = &greet
@@ -246,19 +246,19 @@ fn handle_cmd(cmd:i64 -- ) {
 	}
 }
 
-fn cmd_help( -- ) {
+fn cmd_help() {
 	"Help message" print nl
 }
 
-fn cmd_list( -- ) {
+fn cmd_list() {
 	"Listing items" print nl
 }
 
-fn cmd_add( -- ) {
+fn cmd_add() {
 	"Adding item" print nl
 }
 
-fn cmd_quit( -- ) {
+fn cmd_quit() {
 	"Quitting" print nl
 }
 ```

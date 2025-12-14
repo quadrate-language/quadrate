@@ -45,7 +45,7 @@ fn offset_point(p:Point dx:f64 dy:f64 -- result:ptr) {
 	}
 }
 
-fn main( -- ) {
+fn main() {
 	// Test scale_point
 	Point {
 		x = 3.0

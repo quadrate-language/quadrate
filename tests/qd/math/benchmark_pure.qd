@@ -1,7 +1,7 @@
 // Benchmark test for pure Quadrate math implementations
 use math
 
-fn main( -- ) {
+fn main() {
 	// Test sq
 	5.0 math::sq print nl
 

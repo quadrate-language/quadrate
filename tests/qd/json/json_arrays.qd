@@ -1,7 +1,7 @@
 use json
 use str
 
-fn main( -- ) {
+fn main() {
 	// Test array_len
 	"[1, 2, 3]" json::array_len print nl
 	"[]" json::array_len print nl

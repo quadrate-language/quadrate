@@ -17,7 +17,7 @@ fn distance_from_origin(p:ptr -- d:f64) {
 	add sqrt
 }
 
-fn main( -- ) {
+fn main() {
 	Color {
 		r = 1.0
 		g = 0.5

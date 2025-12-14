@@ -15,7 +15,7 @@ fn add_offset(point:ptr offset:ptr -- ) {
 	point @y offset @dy add print nl
 }
 
-fn test_multi_params( -- ) {
+fn test_multi_params() {
 	Point {
 		x = 3.0
 		y = 4.0
@@ -27,6 +27,6 @@ fn test_multi_params( -- ) {
 	p o add_offset
 }
 
-fn main( -- ) {
+fn main() {
 	test_multi_params
 }

@@ -1,4 +1,4 @@
-fn main( -- ) {
+fn main() {
 	// Test dup2 - duplicate top 2 elements
 	1 2 dup2
 	prints

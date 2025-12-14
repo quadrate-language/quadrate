@@ -5,12 +5,12 @@ fn helper1(x:f64loat -- result:f64loat) {
 	x math::sqrt
 }
 
-fn helper2( -- ) {
+fn helper2() {
 	"test" str::upper print nl
 	10 20 bits::band print nl
 }
 
-fn main( -- ) {
+fn main() {
 	5.5 helper1 print nl
 	helper2
 }

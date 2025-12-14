@@ -1,11 +1,11 @@
-fn foo( -- ) {
+fn foo() {
 	"First foo" prints nl
 }
 
-fn foo( -- ) {
+fn foo() {
 	"Second foo" prints nl
 }
 
-fn main( -- ) {
+fn main() {
 	foo
 }

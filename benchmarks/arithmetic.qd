@@ -21,7 +21,7 @@ fn fib(n:i64 -- result:i64) {
 	}
 }
 
-fn main( -- ) {
+fn main() {
 	"=== Quadrate Benchmarks ===\n" fmt::printf
 
 	// Benchmark 1: Arithmetic loop (10 million iterations)

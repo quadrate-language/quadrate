@@ -4,7 +4,7 @@ use math
 use str
 
 // Function comment
-fn main( -- ) {
+fn main() {
 	// Using math and str
 	5.5 math::sqrt print nl
 	"hello" str::upper print nl

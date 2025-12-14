@@ -7,7 +7,7 @@ When stack manipulation gets complex, use local variables.
 Pop a value and store it in a named variable:
 
 ```qd
-fn main( -- ) {
+fn main() {
 	42 -> x     // Pop 42, store in x
 	x print nl  // Push x, print it
 }
@@ -45,7 +45,7 @@ The second version is much clearer!
 You can store multiple values:
 
 ```qd
-fn main( -- ) {
+fn main() {
 	1 2 3
 	-> c -> b -> a  // a=1, b=2, c=3
 	a print nl
@@ -61,7 +61,7 @@ fn main( -- ) {
 Use variables like any other value:
 
 ```qd
-fn main( -- ) {
+fn main() {
 	5 -> x
 	10 -> y
 
@@ -76,7 +76,7 @@ fn main( -- ) {
 You can update a variable:
 
 ```qd
-fn main( -- ) {
+fn main() {
 	0 -> count
 
 	count print nl      // 0
@@ -92,12 +92,12 @@ fn main( -- ) {
 Variables are scoped to their function:
 
 ```qd
-fn foo( -- ) {
+fn foo() {
 	42 -> x
 	x print nl  // Works: x is in scope
 }
 
-fn bar( -- ) {
+fn bar() {
 	// x is NOT available here
 }
 ```
@@ -107,7 +107,7 @@ fn bar( -- ) {
 Variables defined inside blocks (`if`, `for`, `loop`, `switch`) are only visible within that block:
 
 ```qd
-fn main( -- ) {
+fn main() {
 	true if {
 		42 -> x
 		x print nl  // Works: x is in scope
@@ -119,7 +119,7 @@ fn main( -- ) {
 If you need a variable after the block, define it before:
 
 ```qd
-fn main( -- ) {
+fn main() {
 	0 -> result
 	true if {
 		42 -> result
@@ -133,7 +133,7 @@ fn main( -- ) {
 ### Swap with Variables
 
 ```qd
-fn main( -- ) {
+fn main() {
 	1 2          // [1, 2]
 	-> b -> a    // a=1, b=2
 	b a          // [2, 1]
@@ -143,7 +143,7 @@ fn main( -- ) {
 ### Using a Value Multiple Times
 
 ```qd
-fn main( -- ) {
+fn main() {
 	42 -> x
 	x print nl
 	x x * print nl

@@ -7,7 +7,7 @@ use str
 
 const VERSION = "1.0.0"
 
-fn print_help( -- ) {
+fn print_help() {
 	"Usage: sha256sum [OPTION]... [FILE]..." print nl
 	"Print or check SHA256 (256-bit) checksums." print nl
 	nl
@@ -32,7 +32,7 @@ fn print_help( -- ) {
 	"When checking, the input should be a former output of this program." print nl
 }
 
-fn print_version( -- ) {
+fn print_version() {
 	"sha256sum (quadrate) " print VERSION print nl
 }
 
@@ -285,7 +285,7 @@ fn is_not_flag(arg:str -- result:i64) {
 	arg is_flag 0 ==
 }
 
-fn main( -- ) {
+fn main() {
 	read flag::parse -> f
 
 	// Check for help/version first

@@ -5,7 +5,7 @@ A programming language where data flows through your code like water through pip
 > **Quadrate is under active development. Language syntax and standard library interfaces may change in future releases.**
 
 ```qd
-fn main( -- ) {
+fn main() {
 	"Hello, World!" print nl
 }
 ```
@@ -32,7 +32,7 @@ fn factorial(n:i64 -- result:i64) {
 	}
 }
 
-fn main( -- ) {
+fn main() {
 	5 factorial print nl  // 120
 }
 ```
@@ -81,7 +81,7 @@ Here's a slightly more involved example - reading command line arguments:
 ```qd
 use str
 
-fn main( -- ) {
+fn main() {
 	read -> argc
 
 	argc 0 == if {

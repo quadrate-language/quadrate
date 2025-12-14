@@ -1,5 +1,5 @@
 // Test make<T> with expression for size
-fn main( -- ) {
+fn main() {
 	// Size from expression
 	3 2 * make<i64> -> arr    // 6 elements
 	arr len print nl          // Should print = 6

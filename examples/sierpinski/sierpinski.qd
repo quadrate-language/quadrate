@@ -1,4 +1,4 @@
-fn main( -- ) {
+fn main() {
 	0 16 1 for it {
 		15 it - -> j
 		0 j ++ 1 for it {

@@ -4,7 +4,7 @@ struct Container {
 	data:ptr
 }
 
-fn main( -- ) {
+fn main() {
 	// Create array of Container structs
 	2 make<Container> -> containers
 

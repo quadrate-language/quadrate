@@ -10,7 +10,7 @@ struct Rectangle {
 	height:f64
 }
 
-fn main( -- ) {
+fn main() {
 	// Create rectangle with nested Point
 	Rectangle {
 		origin = Point { x = 3.0 y = 4.0 }

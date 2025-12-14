@@ -1,5 +1,5 @@
 // Test: division operators separated by space should not be parsed as comment
 // The `/ /` below should be two division operators, causing stack underflow
-fn main( -- ) {
+fn main() {
 	1.0 / /
 }

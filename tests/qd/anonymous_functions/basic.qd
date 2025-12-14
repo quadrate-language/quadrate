@@ -1,5 +1,5 @@
 // Test basic anonymous function syntax
-fn main( -- ) {
+fn main() {
     // Create anonymous function and store in variable
     fn (x:i64 -- r:i64) { 2 * } -> double
 

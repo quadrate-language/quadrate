@@ -22,7 +22,7 @@ struct LargeStruct {
 	f20:f64
 }
 
-fn main( -- ) {
+fn main() {
 	LargeStruct {
 		f1 = 1.0
 		f2 = 2.0

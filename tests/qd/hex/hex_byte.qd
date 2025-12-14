@@ -1,7 +1,7 @@
 // Test hex byte functions
 use hex
 
-fn main( -- ) {
+fn main() {
 	// encode_byte
 	0 hex::encode_byte print nl
 	1 hex::encode_byte print nl

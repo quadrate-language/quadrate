@@ -3,6 +3,6 @@ fn helper( -- result:i64) {
 	42
 }
 
-fn main( -- ) {
+fn main() {
 	&helper drop
 }

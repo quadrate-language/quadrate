@@ -1,5 +1,5 @@
 // Test makei - create integer array
-fn main( -- ) {
+fn main() {
 	// Create array with 3 elements
 	3 makei -> arr
 	arr len print nl          // Should print = 3

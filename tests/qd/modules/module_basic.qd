@@ -1,7 +1,7 @@
 // Test basic module functionality
 use simple_math
 
-fn main( -- ) {
+fn main() {
 	// Test double function
 	5.0 simple_math::double
 	print nl

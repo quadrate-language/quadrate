@@ -1,7 +1,7 @@
 // Test: circular module dependency should be detected
 use "module_a.qd"
 
-fn main( -- ) {
+fn main() {
 	10
 	drop
 }

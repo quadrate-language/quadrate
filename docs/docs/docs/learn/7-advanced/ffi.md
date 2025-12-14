@@ -50,7 +50,7 @@ import "libgreet.a" as "greet" {
     pub fn hello(name:str -- )
 }
 
-fn main( -- ) {
+fn main() {
     "World" greet::hello
 }
 ```
@@ -187,7 +187,7 @@ import "libmath_ext.a" as "mathx" {
 
 use fmt
 
-fn main( -- ) {
+fn main() {
     // Calculate hypotenuse of 3-4-5 triangle
     3.0 4.0 mathx::hypot "%f\n" fmt::printf  // 5.0
 
@@ -228,7 +228,7 @@ import "libmylib.a" as "mylib" {
     pub fn my_function(x:i64 -- result:i64)!
 }
 
-fn main( -- ) {
+fn main() {
     42 mylib::my_function! -> result
 }
 ```

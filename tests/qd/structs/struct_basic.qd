@@ -3,7 +3,7 @@ struct Vec2 {
 	y:f64
 }
 
-fn test_vec2( -- ) {
+fn test_vec2() {
 	// Test struct construction and field access
 	Vec2 {
 		x = 1.5
@@ -16,6 +16,6 @@ fn test_vec2( -- ) {
 	// Struct auto-released at function end
 }
 
-fn main( -- ) {
+fn main() {
 	test_vec2
 }

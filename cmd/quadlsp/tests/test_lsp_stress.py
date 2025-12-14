@@ -126,7 +126,7 @@ class LSPStressTester:
                     "uri": "file:///tmp/longline.qd",
                     "languageId": "quadrate",
                     "version": 1,
-                    "text": f"fn test( -- ) {{\n{long_line}\n}}"
+                    "text": f"fn test() {{\n{long_line}\n}}"
                 }
             }
         }
@@ -140,7 +140,7 @@ class LSPStressTester:
         print("\n=== Testing Deeply Nested Code ===")
 
         # Create deeply nested if statements
-        nested_code = "fn test( -- ) {\n"
+        nested_code = "fn test() {\n"
         for i in range(20):
             nested_code += "  " * i + "1 1 eq if {\n"
         nested_code += "  " * 20 + "5 10 add\n"
@@ -171,7 +171,7 @@ class LSPStressTester:
 
         code = ""
         for i in range(100):
-            code += f"fn func{i}( -- ) {{\n    5 10 add\n}}\n\n"
+            code += f"fn func{i}() {{\n    5 10 add\n}}\n\n"
 
         request = {
             "jsonrpc": "2.0",
@@ -205,7 +205,7 @@ class LSPStressTester:
                         "version": i + 1
                     },
                     "contentChanges": [
-                        {"text": f"fn test{i}( -- ) {{ {i} {i+1} add }}"}
+                        {"text": f"fn test{i}() {{ {i} {i+1} add }}"}
                     ]
                 }
             }
@@ -225,7 +225,7 @@ class LSPStressTester:
         for i in range(5000):
             lines.append(f"    {i % 100} {(i+1) % 100} add")
 
-        large_doc = "fn huge( -- ) {\n" + "\n".join(lines) + "\n}"
+        large_doc = "fn huge() {\n" + "\n".join(lines) + "\n}"
 
         request = {
             "jsonrpc": "2.0",
@@ -261,7 +261,7 @@ class LSPStressTester:
 
         success = 0
         for i, test_str in enumerate(unicode_tests):
-            code = f"fn test( -- ) {{\n    {test_str}\n    5 10 add\n}}"
+            code = f"fn test() {{\n    {test_str}\n    5 10 add\n}}"
 
             request = {
                 "jsonrpc": "2.0",
@@ -287,7 +287,7 @@ class LSPStressTester:
         print("\n=== Testing Binary-like Content ===")
 
         # Content with control characters and null bytes (escaped)
-        weird_content = "fn test( -- ) {\n    // \\x00\\x01\\x02\\xFF\n    5 10 add\n}"
+        weird_content = "fn test() {\n    // \\x00\\x01\\x02\\xFF\n    5 10 add\n}"
 
         request = {
             "jsonrpc": "2.0",
@@ -354,7 +354,7 @@ class LSPStressTester:
              "params": {"capabilities": {}, "rootUri": "file:///tmp"}},
             {"jsonrpc": "2.0", "method": "textDocument/didOpen",
              "params": {"textDocument": {"uri": "file:///tmp/mix.qd", "languageId": "quadrate",
-                                        "version": 1, "text": "fn test( -- ) {}"}}},
+                                        "version": 1, "text": "fn test() {}"}}},
             {"jsonrpc": "2.0", "id": 2, "method": "textDocument/completion",
              "params": {"textDocument": {"uri": "file:///tmp/mix.qd"},
                        "position": {"line": 0, "character": 0}}},

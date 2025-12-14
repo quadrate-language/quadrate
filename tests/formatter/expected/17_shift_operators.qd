@@ -1,5 +1,5 @@
 // Test << and >> operator formatting
-fn main( -- ) {
+fn main() {
 	1 4 << print nl
 	16 2 >> print nl
 	1 4 << print nl

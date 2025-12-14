@@ -5,7 +5,7 @@ use math
 use std
 use yet_another */
 
-fn main( -- ) {
+fn main() {
 	// use commented_module
 	5 10 add
 	/* use inline_fake */ print
@@ -13,6 +13,6 @@ fn main( -- ) {
 
 // use trailing_comment
 /* use block_at_end {
-fn test( -- ) {
+fn test() {
 if {
 */

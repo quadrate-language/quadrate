@@ -1,7 +1,7 @@
 // Comprehensive string module tests
 use str
 
-fn main( -- ) {
+fn main() {
 	// Test 1: str::len
 	"Hello" str::len print nl
 

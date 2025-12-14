@@ -1,5 +1,5 @@
 // Test make<i64> - create integer array with generic syntax
-fn main( -- ) {
+fn main() {
 	3 make<i64> -> arr
 	arr 0 100 set
 	arr 1 200 set

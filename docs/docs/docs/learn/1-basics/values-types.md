@@ -7,7 +7,7 @@ Quadrate has four basic types. Understanding them is essential.
 64-bit signed integers:
 
 ```qd
-fn main( -- ) {
+fn main() {
 	42 print nl
 	-17 print nl
 	1000000 print nl
@@ -19,7 +19,7 @@ fn main( -- ) {
 64-bit floating-point numbers:
 
 ```qd
-fn main( -- ) {
+fn main() {
 	3.14 print nl
 	-0.5 print nl
 	2.0 print nl      // Note: 2.0, not 2
@@ -33,7 +33,7 @@ fn main( -- ) {
 Text enclosed in double quotes:
 
 ```qd
-fn main( -- ) {
+fn main() {
 	"Hello" print nl
 	"Hello, World!" print nl
 	"Line 1\nLine 2" print nl  // \n is newline
@@ -59,7 +59,7 @@ struct Point {
 	y:f64
 }
 
-fn main( -- ) {
+fn main() {
 	Point {
 		x = 1.0
 		y = 2.0
@@ -78,7 +78,7 @@ Quadrate uses integers for boolean values:
 - `false` = 0
 
 ```qd
-fn main( -- ) {
+fn main() {
 	true print nl   // 1
 	false print nl  // 0
 }

@@ -4,7 +4,7 @@ struct Point {
 	y:f64
 }
 
-fn main( -- ) {
+fn main() {
 	3 make<Point> -> points
 
 	// Create points

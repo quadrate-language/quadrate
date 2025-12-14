@@ -7,7 +7,7 @@ Quadrate provides several ways to repeat operations.
 Iterate over a range:
 
 ```qd
-fn main( -- ) {
+fn main() {
 	0 5 1 for i {
 		i print nl
 	}
@@ -22,7 +22,7 @@ The range is `[start, end)` - includes start, excludes end.
 Specify a custom step:
 
 ```qd
-fn main( -- ) {
+fn main() {
 	0 10 2 for i {
 		i print nl
 	}
@@ -35,7 +35,7 @@ fn main( -- ) {
 Use negative step:
 
 ```qd
-fn main( -- ) {
+fn main() {
 	5 0 -1 for i {
 		i print nl
 	}
@@ -48,7 +48,7 @@ fn main( -- ) {
 Use index-based iteration:
 
 ```qd
-fn main( -- ) {
+fn main() {
 	[1 2 3 4 5] -> arr
 
 	0 arr len 1 for i {
@@ -64,7 +64,7 @@ fn main( -- ) {
 Use `loop` with `break`:
 
 ```qd
-fn main( -- ) {
+fn main() {
 	0 -> count
 	loop {
 		count print nl
@@ -82,7 +82,7 @@ fn main( -- ) {
 Exit immediately:
 
 ```qd
-fn main( -- ) {
+fn main() {
 	0 10 1 for i {
 		i 5 == if {
 			break
@@ -98,7 +98,7 @@ fn main( -- ) {
 Skip to next iteration:
 
 ```qd
-fn main( -- ) {
+fn main() {
 	0 10 1 for i {
 		i 2 % 0 == if {
 			continue
@@ -114,7 +114,7 @@ fn main( -- ) {
 Loops can be nested:
 
 ```qd
-fn main( -- ) {
+fn main() {
 	1 4 1 for i {
 		1 4 1 for j {
 			i print " * " print j print " = " print
@@ -138,7 +138,7 @@ fn sum_to_n(n:i64 -- sum:i64) {
 	sum
 }
 
-fn main( -- ) {
+fn main() {
 	10 sum_to_n print nl  // 55
 }
 ```
@@ -161,7 +161,7 @@ fn contains(arr:ptr value:i64 -- found:i64) {
 	found
 }
 
-fn main( -- ) {
+fn main() {
 	[1 2 3 4 5] 3 contains print nl  // 1
 	[1 2 3 4 5] 9 contains print nl  // 0
 }

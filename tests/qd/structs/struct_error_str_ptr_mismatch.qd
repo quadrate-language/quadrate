@@ -14,7 +14,7 @@ fn use_str_field(obj:ptr -- ) {
 	x @name drop  // Expects name field (unique to WithStr)
 }
 
-fn main( -- ) {
+fn main() {
 	// Pass WithPtr to function expecting WithStr - type mismatch!
 	WithPtr { data = 0 } -> p
 	p use_str_field

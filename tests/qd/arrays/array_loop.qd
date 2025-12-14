@@ -1,5 +1,5 @@
 // Iterate over array elements
-fn main( -- ) {
+fn main() {
 	[5 10 15 20] -> arr
 	0 4 1 for it {
 		arr it nth print nl

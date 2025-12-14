@@ -1,5 +1,5 @@
 // Test << and >> as aliases for shl and shr
-fn main( -- ) {
+fn main() {
 	// Basic shift left with <<
 	1 4 << print nl  // 16 (1 << 4)
 

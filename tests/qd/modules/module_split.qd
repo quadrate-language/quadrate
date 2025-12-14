@@ -2,7 +2,7 @@
 // Both files contribute to the split_module namespace
 use split_module
 
-fn main( -- ) {
+fn main() {
 	// Call functions from module.qd
 	5.0 split_module::add_ten
 	print nl

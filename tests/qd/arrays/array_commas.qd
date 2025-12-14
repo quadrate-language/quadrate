@@ -1,5 +1,5 @@
 // Array with commas (optional)
-fn main( -- ) {
+fn main() {
 	[100, 200, 300] -> arr
 	arr 0 nth print nl
 	arr 1 nth print nl

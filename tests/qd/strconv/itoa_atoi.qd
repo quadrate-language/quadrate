@@ -1,7 +1,7 @@
 // Test strconv::itoa and strconv::atoi convenience functions
 use strconv
 
-fn main( -- ) {
+fn main() {
 	// itoa tests
 	0 strconv::itoa print nl
 	1 strconv::itoa print nl

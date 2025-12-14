@@ -3,7 +3,7 @@ struct Point {
 	y:f64
 }
 
-fn test_nested_access( -- ) {
+fn test_nested_access() {
 	// Test multiple accesses from same struct
 	Point {
 		x = 5.0
@@ -22,6 +22,6 @@ fn test_nested_access( -- ) {
 	p @y print nl
 }
 
-fn main( -- ) {
+fn main() {
 	test_nested_access
 }

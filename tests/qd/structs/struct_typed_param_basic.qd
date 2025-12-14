@@ -18,7 +18,7 @@ fn print_point(p:Point -- ) {
 	"Point(" print p @x print ", " print p @y print ")" print nl
 }
 
-fn main( -- ) {
+fn main() {
 	Point {
 		x = 3.0
 		y = 4.0

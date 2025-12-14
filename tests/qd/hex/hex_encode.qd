@@ -1,7 +1,7 @@
 // Test hex encode functions
 use hex
 
-fn main( -- ) {
+fn main() {
 	// Basic encoding (uppercase)
 	"Hello" hex::encode print nl
 	"A" hex::encode print nl

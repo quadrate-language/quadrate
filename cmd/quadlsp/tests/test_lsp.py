@@ -197,7 +197,7 @@ class LSPTester:
                     "uri": "file:///tmp/invalid.qd",
                     "languageId": "quadrate",
                     "version": 1,
-                    "text": "fn invalid( -- ) {\n  this is not valid quadrate code\n}\n"
+                    "text": "fn invalid() {\n  this is not valid quadrate code\n}\n"
                 }
             }
         }

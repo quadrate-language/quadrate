@@ -86,7 +86,7 @@ fn consume_two(a:i64 b:i64 -- ) {
 	drop
 }
 
-fn main( -- ) {
+fn main() {
 	// Test basic arithmetic
 	5 3 add_numbers print nl
 	// Should print nl 8

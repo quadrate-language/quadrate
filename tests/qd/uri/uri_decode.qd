@@ -1,7 +1,7 @@
 // Test URI decoding
 use uri
 
-fn main( -- ) {
+fn main() {
 	// Basic decoding
 	"hello%20world" uri::decode print nl
 	"foo%3Dbar" uri::decode print nl

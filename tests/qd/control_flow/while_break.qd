@@ -1,4 +1,4 @@
-fn main( -- ) {
+fn main() {
 	0 -> i
 	1 while {
 		i print nl

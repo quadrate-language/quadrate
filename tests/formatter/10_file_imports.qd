@@ -3,7 +3,7 @@ use "my helper.qd"
 use "utils/math.qd"
 use helper.qd
 
-fn main( -- ) {
+fn main() {
 	helper::test
 	math::test
 }

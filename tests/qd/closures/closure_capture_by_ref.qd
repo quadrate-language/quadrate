@@ -1,5 +1,5 @@
 // Test: Captures are by reference - modifying original affects captured
-fn main( -- ) {
+fn main() {
     10 -> x
     fn ( -- r:i64) { x } -> get_x
 

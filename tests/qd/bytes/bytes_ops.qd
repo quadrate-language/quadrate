@@ -2,7 +2,7 @@
 use bytes
 use mem
 
-fn main( -- ) {
+fn main() {
 	16 mem::alloc -> buf1
 	16 mem::alloc -> buf2
 

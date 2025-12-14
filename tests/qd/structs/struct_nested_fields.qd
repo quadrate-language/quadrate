@@ -14,7 +14,7 @@ fn perimeter(r:ptr -- p:f64) {
 	rect @width rect @height add 2.0 mul
 }
 
-fn test_rectangle( -- ) {
+fn test_rectangle() {
 	Rectangle {
 		width = 5.0
 		height = 3.0
@@ -23,6 +23,6 @@ fn test_rectangle( -- ) {
 	r perimeter print nl
 }
 
-fn main( -- ) {
+fn main() {
 	test_rectangle
 }

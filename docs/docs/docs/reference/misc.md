@@ -23,7 +23,7 @@ fn double(x:i64 -- result:i64) {
 	2 *
 }
 
-fn main( -- ) {
+fn main() {
 	&double -> fn_ptr
 	5 fn_ptr call print nl  // 10
 }
@@ -67,7 +67,7 @@ fn print_item(x:i64 -- ) {
 	x print " " print
 }
 
-fn main( -- ) {
+fn main() {
 	[1 2 3 4 5] &print_item for_each
 	nl
 }
@@ -90,7 +90,7 @@ fn op_mul(a:i64 b:i64 -- r:i64) {
 	*
 }
 
-fn main( -- ) {
+fn main() {
 	3 make<ptr> -> ops
 	&op_add ops 0 mem::set_ptr
 	&op_sub ops 1 mem::set_ptr
@@ -116,7 +116,7 @@ fn map(arr:ptr f:ptr -- result:ptr) {
 
 fn square(x:i64 -- r:i64) { dup * }
 
-fn main( -- ) {
+fn main() {
 	[1 2 3 4 5] &square map -> squared
 	// squared = [1, 4, 9, 16, 25]
 }

@@ -2,7 +2,7 @@
 use "utils/math.qd"
 use helper.qd
 
-fn main( -- ) {
+fn main() {
 	helper::get_value
 	math::get_hundred
 	helper::get_ten

@@ -1,6 +1,6 @@
 use "shapes.qd"
 
-fn test_import( -- ) {
+fn test_import() {
 	// Create Rectangle from imported file
 	Rectangle {
 		width = 5.0
@@ -12,6 +12,6 @@ fn test_import( -- ) {
 	r @height print nl
 }
 
-fn main( -- ) {
+fn main() {
 	test_import
 }

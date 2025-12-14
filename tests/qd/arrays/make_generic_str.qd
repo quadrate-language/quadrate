@@ -1,5 +1,5 @@
 // Test make<str> - create string array
-fn main( -- ) {
+fn main() {
 	3 make<str> -> arr
 	arr 0 "hello" set
 	arr 1 "world" set

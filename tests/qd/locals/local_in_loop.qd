@@ -1,5 +1,5 @@
 // Test local variable with for loop
-fn main( -- ) {
+fn main() {
 	0 -> sum
 	0 10 1 for it {
 		sum it add -> sum

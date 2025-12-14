@@ -1,4 +1,4 @@
-fn main( -- ) {
+fn main() {
 	// Test dup - duplicate top element
 	5 dup print nl print nl
 	// Should print nl = 5 5

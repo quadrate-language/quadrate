@@ -1,5 +1,5 @@
 // Test: Closure with float captures and arithmetic
-fn main( -- ) {
+fn main() {
     3.14159 -> pi
 
     fn (r:f64 -- area:f64) {

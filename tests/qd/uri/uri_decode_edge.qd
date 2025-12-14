@@ -1,7 +1,7 @@
 // Test URI decode edge cases
 use uri
 
-fn main( -- ) {
+fn main() {
 	// Incomplete percent at end
 	"test%" uri::decode print nl
 	"test%2" uri::decode print nl

@@ -2,7 +2,7 @@
 // advanced_ops imports base_ops, and we import advanced_ops
 use advanced_ops
 
-fn main( -- ) {
+fn main() {
 	// Test function that uses base_ops internally
 	10.0 advanced_ops::add_five_then_double
 	print nl

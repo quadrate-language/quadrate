@@ -17,7 +17,7 @@ Use `mem::alloc` to allocate bytes:
 ```qd
 use mem
 
-fn main( -- ) {
+fn main() {
 	1024 mem::alloc -> buf  // Allocate 1024 bytes
 	// Use buffer...
 	buf mem::free  // Free when done
@@ -33,7 +33,7 @@ Ensure memory is freed with `defer`:
 ```qd
 use mem
 
-fn process( -- ) {
+fn process() {
 	4096 mem::alloc -> buf
 	defer {
 		buf mem::free
@@ -51,7 +51,7 @@ fn process( -- ) {
 ```qd
 use mem
 
-fn main( -- ) {
+fn main() {
 	10 mem::alloc -> buf
 
 	65 buf 0 mem::set_byte  // Write 'A' at offset 0
@@ -69,7 +69,7 @@ fn main( -- ) {
 ```qd
 use mem
 
-fn main( -- ) {
+fn main() {
 	8 mem::alloc -> buf
 
 	42 buf 0 mem::set_i64
@@ -86,7 +86,7 @@ Copy memory between buffers:
 ```qd
 use mem
 
-fn main( -- ) {
+fn main() {
 	10 mem::alloc -> src
 	10 mem::alloc -> dst
 	defer {
@@ -113,7 +113,7 @@ Fill memory with a value:
 ```qd
 use mem
 
-fn main( -- ) {
+fn main() {
 	100 mem::alloc -> buf
 	defer {
 		buf mem::free
@@ -132,7 +132,7 @@ Use `mem::realloc` to resize:
 ```qd
 use mem
 
-fn main( -- ) {
+fn main() {
 	10 mem::alloc -> buf
 
 	// Grow buffer
@@ -183,7 +183,7 @@ fn sb_append_byte(sb:ptr byte:i64 -- ) {
 	sb @len 1 + sb.len
 }
 
-fn main( -- ) {
+fn main() {
 	16 sb_new -> sb
 	defer {
 		sb sb_free
@@ -244,7 +244,7 @@ fn pool_free(pool:ptr -- ) {
 	pool @memory mem::free
 }
 
-fn main( -- ) {
+fn main() {
 	1024 pool_new -> pool
 	defer {
 		pool pool_free
@@ -283,7 +283,7 @@ fn main( -- ) {
 ```qd
 use mem
 
-fn safe_example( -- ) {
+fn safe_example() {
 	1024 mem::alloc -> buf
 	buf 0 == if {
 		"Allocation failed!" print nl

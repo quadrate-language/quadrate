@@ -1,6 +1,6 @@
 use hof
 
-fn main( -- ) {
+fn main() {
     // bi applies two functions to same value
     5 fn (x:i64 -- r:i64) { 2 * } fn (x:i64 -- r:i64) { 3 + } hof::bi
     print " " print print nl

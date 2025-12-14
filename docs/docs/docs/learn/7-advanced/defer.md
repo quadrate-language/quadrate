@@ -5,7 +5,7 @@ The `defer` statement schedules code to run when the function exits.
 ## Basic Usage
 
 ```qd
-fn main( -- ) {
+fn main() {
 	"start" print nl
 
 	defer {
@@ -52,7 +52,7 @@ fn process_file(path:str -- )! {
 Multiple defers execute in reverse order (last in, first out):
 
 ```qd
-fn main( -- ) {
+fn main() {
 	defer {
 		"first" print nl
 	}
@@ -76,7 +76,7 @@ Use defer to manage resources:
 ```qd
 use mem
 
-fn with_buffer( -- ) {
+fn with_buffer() {
 	1024 mem::alloc -> buf
 	defer {
 		buf mem::free
@@ -132,7 +132,7 @@ Resources are released in reverse order of acquisition.
 Defers capture the current value of variables:
 
 ```qd
-fn main( -- ) {
+fn main() {
 	0 -> x
 
 	defer {
@@ -151,7 +151,7 @@ fn main( -- ) {
 ### Transaction
 
 ```qd
-fn transaction( -- )! {
+fn transaction()! {
 	begin_transaction
 	defer {
 		is_error if {
@@ -197,7 +197,7 @@ Unlike try/finally in other languages, defer is simpler:
 // }
 
 // Quadrate:
-fn example( -- ) {
+fn example() {
 	"file.txt" open_file -> file
 	defer {
 		fileclose_file
@@ -211,7 +211,7 @@ fn example( -- ) {
 Defers only apply to their own function:
 
 ```qd
-fn outer( -- ) {
+fn outer() {
 	defer {
 		"outer cleanup" print nl
 	}
@@ -221,14 +221,14 @@ fn outer( -- ) {
 	"outer continues" print nl
 }
 
-fn inner( -- ) {
+fn inner() {
 	defer {
 		"inner cleanup" print nl
 	}
 	"inner work" print nl
 }
 
-fn main( -- ) {
+fn main() {
 	outer
 }
 // Output:

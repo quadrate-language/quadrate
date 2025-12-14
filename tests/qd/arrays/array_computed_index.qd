@@ -1,5 +1,5 @@
 // Computed index using arithmetic
-fn main( -- ) {
+fn main() {
 	[100 200 300 400 500] -> arr
 	arr 1 1 add nth print nl
 	arr 2 2 mul nth print nl

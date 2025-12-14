@@ -6,7 +6,7 @@ struct Point {
     y: i64
 }
 
-fn main( -- ) {
+fn main() {
     10 20 Point -> p
 
     // Capture struct in closure

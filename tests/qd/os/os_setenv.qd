@@ -1,7 +1,7 @@
 use os
 use fmt
 
-fn main( -- ) {
+fn main() {
     // Set a new variable
     "QD_TEST_VAR" "test_value_123" os::setenv
     "QD_TEST_VAR" os::getenv "%s\n" fmt::printf

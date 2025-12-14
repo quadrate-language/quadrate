@@ -1,5 +1,5 @@
 // Test makes - create string array
-fn main( -- ) {
+fn main() {
 	// Create array with 2 elements (initialized to empty strings)
 	2 makes -> arr
 	arr len print nl          // Should print = 2

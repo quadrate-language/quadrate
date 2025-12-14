@@ -1,4 +1,4 @@
-fn main( -- ) {
+fn main() {
 	0 10 1 for it {
 		it print nl it
 		5 > if {

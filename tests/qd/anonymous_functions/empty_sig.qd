@@ -1,7 +1,7 @@
 // Test anonymous function with empty signature
-fn main( -- ) {
+fn main() {
     // Side-effect only function
-    fn ( -- ) { "hello" print nl } -> greet
+    fn () { "hello" print nl } -> greet
     greet call
     greet call
 }

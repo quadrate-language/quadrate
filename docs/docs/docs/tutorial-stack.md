@@ -18,7 +18,7 @@ In Quadrate, all computation happens on the stack:
 When you write a literal value, it gets pushed onto the stack:
 
 ```qd
-fn main( -- ) {
+fn main() {
     42        // Push integer 42
     3.14      // Push float 3.14
     "hello"   // Push string "hello"
@@ -30,7 +30,7 @@ fn main( -- ) {
 The `print` instruction pops a value and prints it:
 
 ```qd
-fn main( -- ) {
+fn main() {
     42 print nl      // Prints: 42
     "hello" print nl // Prints: hello
 }
@@ -41,7 +41,7 @@ fn main( -- ) {
 Arithmetic operators pop two values and push the result:
 
 ```qd
-fn main( -- ) {
+fn main() {
     3 4 +     // Push 3, push 4, add them -> 7 on stack
     print nl  // Prints: 7
 
@@ -63,7 +63,7 @@ fn main( -- ) {
 Copy the top value:
 
 ```qd
-fn main( -- ) {
+fn main() {
     5 dup     // Stack: [5, 5]
     + print nl // 5 + 5 = 10
 }
@@ -74,7 +74,7 @@ fn main( -- ) {
 Remove the top value:
 
 ```qd
-fn main( -- ) {
+fn main() {
     1 2 3     // Stack: [1, 2, 3]
     drop      // Stack: [1, 2]
     drop      // Stack: [1]
@@ -87,7 +87,7 @@ fn main( -- ) {
 Exchange the two top values:
 
 ```qd
-fn main( -- ) {
+fn main() {
     1 2       // Stack: [1, 2]
     swap      // Stack: [2, 1]
     print nl  // Prints: 1
@@ -100,7 +100,7 @@ fn main( -- ) {
 Copy the second value to the top:
 
 ```qd
-fn main( -- ) {
+fn main() {
     1 2       // Stack: [1, 2]
     over      // Stack: [1, 2, 1]
     print nl  // Prints: 1
@@ -114,7 +114,7 @@ fn main( -- ) {
 Rotate the top three values:
 
 ```qd
-fn main( -- ) {
+fn main() {
     1 2 3     // Stack: [1, 2, 3]
     rot       // Stack: [2, 3, 1]
     print nl  // Prints: 1
@@ -128,7 +128,7 @@ fn main( -- ) {
 While stack manipulation is powerful, sometimes you need named values. Use `->` to pop into a local variable:
 
 ```qd
-fn main( -- ) {
+fn main() {
     42 -> x       // Pop 42 into variable x
     x print nl    // Push x, print it
 
@@ -152,7 +152,7 @@ fn dup_and_square(n:i64 -- n:i64 squared:i64) {
     dup dup *
 }
 
-fn main( -- ) {
+fn main() {
     3 4 add print nl       // Prints: 7
     5 dup_and_square
     print nl               // Prints: 25
@@ -183,7 +183,7 @@ Quadrate has these basic types:
 Convert between types with the `cast<T>` operator:
 
 ```qd
-fn main( -- ) {
+fn main() {
     42 cast<f64> print nl     // Integer to float: 42.0
     3.7 cast<i64> print nl    // Float to integer: 3 (truncates)
     65 cast<str> print nl     // Integer to string: "65"
@@ -195,7 +195,7 @@ fn main( -- ) {
 Comparisons pop two values and push 1 (true) or 0 (false):
 
 ```qd
-fn main( -- ) {
+fn main() {
     5 3 >  print nl  // 5 > 3?  Prints: 1
     5 3 <  print nl  // 5 < 3?  Prints: 0
     5 5 == print nl  // 5 == 5? Prints: 1
@@ -210,7 +210,7 @@ fn main( -- ) {
 Quadrate uses `true` (1) and `false` (0):
 
 ```qd
-fn main( -- ) {
+fn main() {
     true print nl      // Prints: 1
     false print nl     // Prints: 0
 
@@ -227,7 +227,7 @@ fn main( -- ) {
 `if` pops a condition and executes the block if true:
 
 ```qd
-fn main( -- ) {
+fn main() {
     5 3 > if {
         "Five is greater than three" print nl
     }
@@ -246,7 +246,7 @@ fn main( -- ) {
 `if` can leave a value on the stack:
 
 ```qd
-fn main( -- ) {
+fn main() {
     5 3 > if { "yes" } else { "no" } print nl  // Prints: yes
 }
 ```
@@ -256,7 +256,7 @@ fn main( -- ) {
 `for` takes start, end, step:
 
 ```qd
-fn main( -- ) {
+fn main() {
     // Count 0 to 4
     0 5 1 for i {
         i print nl
@@ -279,7 +279,7 @@ fn main( -- ) {
 Infinite loop with `break`:
 
 ```qd
-fn main( -- ) {
+fn main() {
     0 -> count
     loop {
         count print nl
@@ -296,7 +296,7 @@ fn main( -- ) {
 The `ctx` block creates an isolated computation context:
 
 ```qd
-fn main( -- ) {
+fn main() {
     10 20 30      // Stack: [10, 20, 30]
     ctx {
         // Child gets copy: [10, 20, 30]
@@ -321,7 +321,7 @@ fn factorial(n:i64 -- result:i64) {
     }
 }
 
-fn main( -- ) {
+fn main() {
     5 factorial print nl   // Prints: 120
     10 factorial print nl  // Prints: 3628800
 }
@@ -340,7 +340,7 @@ fn fib(n:i64 -- result:i64) {
     }
 }
 
-fn main( -- ) {
+fn main() {
     0 10 1 for i {
         i fib print nl
     }

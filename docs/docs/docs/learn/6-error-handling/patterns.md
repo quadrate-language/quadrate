@@ -24,7 +24,7 @@ fn safe_divide(a:i64 b:i64 default:i64 -- result:i64) {
 	}
 }
 
-fn main( -- ) {
+fn main() {
 	10 0 -1 safe_divide print nl  // -1
 	10 2 -1 safe_divide print nl  // 5
 }
@@ -87,7 +87,7 @@ fn try_all( -- success_count:i64) {
 	count
 }
 
-fn main( -- ) {
+fn main() {
 	try_all print " operations succeeded" print nl  // 2
 }
 ```

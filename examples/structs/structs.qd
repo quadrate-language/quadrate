@@ -53,7 +53,7 @@ fn print_point(p:ptr -- ) {
 	"(" print p @x print ", " print p @y print ")" print
 }
 
-fn main( -- ) {
+fn main() {
 	"=== Structs and Constants Example ===" print nl
 	nl
 

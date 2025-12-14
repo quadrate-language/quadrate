@@ -1,5 +1,5 @@
 // String array
-fn main( -- ) {
+fn main() {
 	["hello" "world" "test"] -> arr
 	arr 0 nth print nl
 	arr 1 nth print nl

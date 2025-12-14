@@ -1,4 +1,4 @@
 // Test: anonymous function without signature should fail
-fn main( -- ) {
+fn main() {
     fn { 2 * } -> bad
 }

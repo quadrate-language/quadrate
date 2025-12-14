@@ -1,7 +1,7 @@
 // Test StringBuilder with_capacity
 use sb
 
-fn main( -- ) {
+fn main() {
 	// Test with small capacity (should work and grow)
 	8 sb::with_capacity -> builder
 	builder "Hello, World! This is a longer string." sb::append -> builder

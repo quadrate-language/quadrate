@@ -4,6 +4,6 @@ pub fn exported_helper( -- result:i64) {
 	42
 }
 
-fn main( -- ) {
+fn main() {
 	// main doesn't call exported_helper, but it's public so no warning
 }

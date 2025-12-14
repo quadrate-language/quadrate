@@ -1,7 +1,7 @@
 // Test hex edge cases
 use hex
 
-fn main( -- ) {
+fn main() {
 	// Large value for encode_byte (should be clamped to 255)
 	256 hex::encode_byte print nl
 	1000 hex::encode_byte print nl

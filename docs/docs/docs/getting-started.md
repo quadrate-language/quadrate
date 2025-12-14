@@ -64,7 +64,7 @@ quad version
 Create a file called `hello.qd`:
 
 ```qd
-fn main( -- ) {
+fn main() {
     "Hello, World!" print nl
 }
 ```
@@ -82,7 +82,7 @@ Hello, World!
 
 ### What Just Happened?
 
-- `fn main( -- )` declares a function called `main` with no inputs and no outputs
+- `fn main()` declares a function called `main` with no inputs and no outputs
 - `"Hello, World!"` pushes a string onto the stack
 - `print` pops the string and prints it
 - `nl` prints a newline

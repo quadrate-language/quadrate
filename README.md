@@ -54,7 +54,7 @@ All other dependencies are automatically downloaded and built as subprojects.
 
 Create `hello.qd`:
 ```rust
-fn main( -- ) {
+fn main() {
     "Hello, World!" print nl
 }
 ```
@@ -75,7 +75,7 @@ That's it! The `-r` flag compiles and immediately runs your program.
 Values live on an explicit stack. Functions manipulate the stack directly:
 
 ```rust
-fn main( -- ) {
+fn main() {
     5 3 +       // Stack: [5] [3] → [8]
     print nl        // Print 8 and newline
 }
@@ -99,7 +99,7 @@ fn distance(x1:f64 y1:f64 x2:f64 y2:f64 -- dist:f64) {
     + math::sqrt          // Add and take square root
 }
 
-fn main( -- ) {
+fn main() {
     7.0 square print nl           // 49.0
     0.0 0.0 3.0 4.0 distance print nl  // 5.0
 }
@@ -120,7 +120,7 @@ The signature `(x:f64 y:f64 -- result:f64)` means: "Consumes two f64 values from
 ### Control Flow
 
 ```rust
-fn main( -- ) {
+fn main() {
     // Conditionals
     10 5 > if {
         "10 is greater" print nl
@@ -161,7 +161,7 @@ fn hypotenuse(a:f64 b:f64 -- c:f64) {
     math::sq swap math::sq + math::sqrt
 }
 
-fn main( -- ) {
+fn main() {
     3.0 4.0 hypotenuse
     "Hypotenuse: %f\n" fmt::printf
 }
@@ -223,7 +223,7 @@ Example with formatted output:
 use fmt
 use time
 
-fn main( -- ) {
+fn main() {
     time::now "Current time: %d\n" fmt::printf
 }
 ```
@@ -234,7 +234,7 @@ fn main( -- ) {
 use uuid
 use rand
 
-fn main( -- ) {
+fn main() {
     // Generate random UUID
     uuid::v4 print nl
 
@@ -250,7 +250,7 @@ fn main( -- ) {
 ```rust
 use path
 
-fn main( -- ) {
+fn main() {
     "/home/user/docs/report.pdf" -> p
     p path::dirname print nl   // /home/user/docs
     p path::basename print nl  // report.pdf
@@ -311,7 +311,7 @@ int main() {
         reinterpret_cast<void(*)()>(get_timestamp));
 
     // Use it from Quadrate
-    qd_add_script(utils, "fn show_time( -- ) { get_timestamp print nl }");
+    qd_add_script(utils, "fn show_time() { get_timestamp print nl }");
     qd_build(utils);
 
     qd_execute(ctx, "utils::show_time");
@@ -577,7 +577,7 @@ fn handle_client(client:i64 -- ) {
     net::close
 }
 
-fn main( -- ) {
+fn main() {
     8080 net::listen
     loop {
         dup net::accept
@@ -610,7 +610,7 @@ fn process_file(filename:str -- ) {
     file io::close
 }
 
-fn main( -- ) {
+fn main() {
     "input.txt" process_file
 }
 ```
@@ -620,15 +620,15 @@ fn main( -- ) {
 ```rust
 use time
 
-fn update( -- ) {
+fn update() {
     // Update game state
 }
 
-fn render( -- ) {
+fn render() {
     // Render frame
 }
 
-fn main( -- ) {
+fn main() {
     time::Millisecond 16 mul -> frame_time  // 60 FPS = 16.67ms
 
     loop {

@@ -1,5 +1,5 @@
 // Test multiple ctx blocks
-fn test_ctx_multiple( -- ) {
+fn test_ctx_multiple() {
 	// Test: Multiple ctx blocks at same level
 	10
 	ctx {
@@ -14,7 +14,7 @@ fn test_ctx_multiple( -- ) {
 	print nl  // 10
 }
 
-fn test_ctx_sequential( -- ) {
+fn test_ctx_sequential() {
 	// Test: Sequential ctx blocks
 	ctx {
 		1 2 add
@@ -31,7 +31,7 @@ fn test_ctx_sequential( -- ) {
 	print nl  // 3
 }
 
-fn test_ctx_chained( -- ) {
+fn test_ctx_chained() {
 	// Test: Chaining results
 	5
 	ctx {
@@ -50,7 +50,7 @@ fn test_ctx_chained( -- ) {
 	print nl  // 5
 }
 
-fn main( -- ) {
+fn main() {
 	test_ctx_multiple
 	test_ctx_sequential
 	test_ctx_chained

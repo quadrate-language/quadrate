@@ -3,6 +3,6 @@ use math
 use net
 use str
 
-fn main( -- ) {
+fn main() {
 	42 print nl
 }

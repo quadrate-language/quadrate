@@ -11,7 +11,7 @@ import "libgreet.a" as "greet" {
     pub fn hello(name:str -- )
 }
 
-fn main( -- ) {
+fn main() {
     "World" greet::hello
     "Quadrate" greet::hello
 }

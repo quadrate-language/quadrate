@@ -3,7 +3,7 @@ fn make_array( -- arr:ptr) {
 	[1 2 3 4 5]
 }
 
-fn main( -- ) {
+fn main() {
 	make_array -> arr
 	arr len print nl
 	arr 0 nth print nl
