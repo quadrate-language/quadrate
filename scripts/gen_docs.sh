@@ -170,7 +170,7 @@ parse_module() {
 
                 local sig_str
                 if [[ -n "$fn_sig" ]]; then
-                    sig_str="( $fn_sig )"
+                    sig_str="($fn_sig)"
                 else
                     sig_str="()"
                 fi

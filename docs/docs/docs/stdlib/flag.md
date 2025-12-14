@@ -28,7 +28,7 @@ Parsed command-line arguments.
 
 Check if a boolean flag exists.
 
-**Signature:** `( f:ptr name:str -- present:i64 )`
+**Signature:** `(f:ptr name:str -- present:i64)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -51,7 +51,7 @@ f "--verbose" flag::boolean if { "verbose" print nl }
 
 Free a Flag struct and its argv string.
 
-**Signature:** `( f:ptr --  )`
+**Signature:** `(f:ptr -- )`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -69,7 +69,7 @@ f flag::destroy
 
 Get float value of a flag.
 
-**Signature:** `( f:ptr name:str -- value:f64 )!`
+**Signature:** `(f:ptr name:str -- value:f64)!`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -96,7 +96,7 @@ f "--rate" flag::float!  // rate
 
 Get integer value of a flag.
 
-**Signature:** `( f:ptr name:str -- value:i64 )!`
+**Signature:** `(f:ptr name:str -- value:i64)!`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -123,7 +123,7 @@ f "--count" flag::int!  // count
 
 Parse arguments from read instruction.
 
-**Signature:** `( argc:i64 --  )`
+**Signature:** `(argc:i64 -- )`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -145,7 +145,7 @@ read flag::parse  // f
 
 Get positional argument at index.
 
-**Signature:** `( f:ptr index:i64 -- value:str )!`
+**Signature:** `(f:ptr index:i64 -- value:str)!`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -166,7 +166,7 @@ Get positional argument at index.
 
 Get string value of a flag.
 
-**Signature:** `( f:ptr name:str -- value:str )!`
+**Signature:** `(f:ptr name:str -- value:str)!`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|

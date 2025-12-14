@@ -10,7 +10,7 @@ Polynomial: 0xEDB88320 (reflected form of 0x04C11DB7)
 
 Calculate CRC32 of a byte buffer.
 
-**Signature:** `( buf:ptr len:i64 -- crc:i64 )`
+**Signature:** `(buf:ptr len:i64 -- crc:i64)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -33,7 +33,7 @@ buf buflen crc32::checksum_buf  // crc
 
 Calculate CRC32 and return as 8-character hex string.
 
-**Signature:** `( s:str -- h:str )`
+**Signature:** `(s:str -- h:str)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -55,7 +55,7 @@ Calculate CRC32 and return as 8-character hex string.
 
 Calculate CRC32 checksum of a string.
 
-**Signature:** `( s:str -- crc:i64 )`
+**Signature:** `(s:str -- crc:i64)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -77,7 +77,7 @@ Calculate CRC32 checksum of a string.
 
 Finalize a running CRC to get the final checksum.
 
-**Signature:** `( crc:i64 -- final:i64 )`
+**Signature:** `(crc:i64 -- final:i64)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -99,7 +99,7 @@ crc_state crc32::finalize  // crc
 
 Update a running CRC with more data. Use for streaming/incremental CRC calculation.
 
-**Signature:** `( crc:i64 s:str -- new_crc:i64 )`
+**Signature:** `(crc:i64 s:str -- new_crc:i64)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -122,7 +122,7 @@ Update a running CRC with more data. Use for streaming/incremental CRC calculati
 
 Verify data against an expected CRC32.
 
-**Signature:** `( s:str expected:i64 -- ok:i64 )`
+**Signature:** `(s:str expected:i64 -- ok:i64)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|

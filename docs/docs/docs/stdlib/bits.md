@@ -6,7 +6,7 @@
 
 Clear a bit to 0.
 
-**Signature:** `( value:i64 bit_pos:i64 -- result:i64 )`
+**Signature:** `(value:i64 bit_pos:i64 -- result:i64)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -29,7 +29,7 @@ Clear a bit to 0.
 
 Extract a bit field from a value.
 
-**Signature:** `( value:i64 start_bit:i64 num_bits:i64 -- result:i64 )`
+**Signature:** `(value:i64 start_bit:i64 num_bits:i64 -- result:i64)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -53,7 +53,7 @@ Extract a bit field from a value.
 
 Check if a bit is set.
 
-**Signature:** `( value:i64 bit_pos:i64 -- flag:i64 )`
+**Signature:** `(value:i64 bit_pos:i64 -- flag:i64)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -76,7 +76,7 @@ Check if a bit is set.
 
 Bitwise operations for integer manipulation.  Core operations (and, or, xor, not, shl, shr) are builtins. This module provides higher-level bit manipulation functions. Keep only the bottom N bits.
 
-**Signature:** `( value:i64 num_bits:i64 -- result:i64 )`
+**Signature:** `(value:i64 num_bits:i64 -- result:i64)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -99,7 +99,7 @@ Bitwise operations for integer manipulation.  Core operations (and, or, xor, not
 
 Count set bits (population count).
 
-**Signature:** `( value:i64 -- count:i64 )`
+**Signature:** `(value:i64 -- count:i64)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -121,7 +121,7 @@ Count set bits (population count).
 
 Reverse the bottom N bits.
 
-**Signature:** `( value:i64 width:i64 -- result:i64 )`
+**Signature:** `(value:i64 width:i64 -- result:i64)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -144,7 +144,7 @@ Reverse the bottom N bits.
 
 Rotate bits left within a width.
 
-**Signature:** `( value:i64 bits:i64 width:i64 -- result:i64 )`
+**Signature:** `(value:i64 bits:i64 width:i64 -- result:i64)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -168,7 +168,7 @@ Rotate bits left within a width.
 
 Rotate bits right within a width.
 
-**Signature:** `( value:i64 bits:i64 width:i64 -- result:i64 )`
+**Signature:** `(value:i64 bits:i64 width:i64 -- result:i64)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -192,7 +192,7 @@ Rotate bits right within a width.
 
 Set a bit field in a value.
 
-**Signature:** `( target:i64 value:i64 start_bit:i64 num_bits:i64 -- result:i64 )`
+**Signature:** `(target:i64 value:i64 start_bit:i64 num_bits:i64 -- result:i64)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -217,7 +217,7 @@ Set a bit field in a value.
 
 Set a bit to 1.
 
-**Signature:** `( value:i64 bit_pos:i64 -- result:i64 )`
+**Signature:** `(value:i64 bit_pos:i64 -- result:i64)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -240,7 +240,7 @@ Set a bit to 1.
 
 Toggle a bit.
 
-**Signature:** `( value:i64 bit_pos:i64 -- result:i64 )`
+**Signature:** `(value:i64 bit_pos:i64 -- result:i64)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|

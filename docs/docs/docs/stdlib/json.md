@@ -19,7 +19,7 @@ JSON parsing and querying without AST construction.
 
 Get array element as float by index.
 
-**Signature:** `( json:str index:i64 -- value:f64 found:i64 )`
+**Signature:** `(json:str index:i64 -- value:f64 found:i64)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -43,7 +43,7 @@ Get array element as float by index.
 
 Get array element as integer by index.
 
-**Signature:** `( json:str index:i64 -- value:i64 found:i64 )`
+**Signature:** `(json:str index:i64 -- value:i64 found:i64)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -67,7 +67,7 @@ Get array element as integer by index.
 
 Get array element as string by index.
 
-**Signature:** `( json:str index:i64 -- value:str found:i64 )`
+**Signature:** `(json:str index:i64 -- value:str found:i64)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -91,7 +91,7 @@ Get array element as string by index.
 
 Get length of JSON array.
 
-**Signature:** `( json:str -- length:i64 )`
+**Signature:** `(json:str -- length:i64)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -113,7 +113,7 @@ Get length of JSON array.
 
 Extract string value at position.
 
-**Signature:** `( json:str pos:i64 -- value:str )`
+**Signature:** `(json:str pos:i64 -- value:str)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -130,7 +130,7 @@ Extract string value at position.
 
 Find end of JSON string (pos at opening quote).
 
-**Signature:** `( json:str pos:i64 -- end_pos:i64 )`
+**Signature:** `(json:str pos:i64 -- end_pos:i64)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -147,7 +147,7 @@ Find end of JSON string (pos at opening quote).
 
 Get nested array as string by key.
 
-**Signature:** `( json:str key:str -- value:str found:i64 )`
+**Signature:** `(json:str key:str -- value:str found:i64)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -171,7 +171,7 @@ Get nested array as string by key.
 
 Get boolean value by key from object.
 
-**Signature:** `( json:str key:str -- value:i64 found:i64 )`
+**Signature:** `(json:str key:str -- value:i64 found:i64)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -195,7 +195,7 @@ Get boolean value by key from object.
 
 Get float value by key from object.
 
-**Signature:** `( json:str key:str -- value:f64 found:i64 )`
+**Signature:** `(json:str key:str -- value:f64 found:i64)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -219,7 +219,7 @@ Get float value by key from object.
 
 Get integer value by key from object.
 
-**Signature:** `( json:str key:str -- value:i64 found:i64 )`
+**Signature:** `(json:str key:str -- value:i64 found:i64)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -243,7 +243,7 @@ Get integer value by key from object.
 
 Get nested object as string by key.
 
-**Signature:** `( json:str key:str -- value:str found:i64 )`
+**Signature:** `(json:str key:str -- value:str found:i64)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -267,7 +267,7 @@ Get nested object as string by key.
 
 Get string value by key from object.
 
-**Signature:** `( json:str key:str -- value:str found:i64 )`
+**Signature:** `(json:str key:str -- value:str found:i64)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -291,7 +291,7 @@ Get string value by key from object.
 
 Check if key exists in object.
 
-**Signature:** `( json:str key:str -- exists:i64 )`
+**Signature:** `(json:str key:str -- exists:i64)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -314,7 +314,7 @@ Check if key exists in object.
 
 Check if value at position is null.
 
-**Signature:** `( json:str pos:i64 -- is_null:i64 )`
+**Signature:** `(json:str pos:i64 -- is_null:i64)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -337,7 +337,7 @@ Check if value at position is null.
 
 Get JSON value type at position.
 
-**Signature:** `( json:str pos:i64 -- type:i64 )`
+**Signature:** `(json:str pos:i64 -- type:i64)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|

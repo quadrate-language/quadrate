@@ -10,7 +10,7 @@
   "functions": [
     {
       "name": "decode_byte",
-      "signature": "( hex:str -- b:i64 )",
+      "signature": "(hex:str -- b:i64)",
       "failable": false,
       "description": "Decode a 2-character hex string to a byte value. Returns -1 if the input is invalid.",
       "params": [{"name": "hex", "type": "str", "description": "Two-character hex string"}],
@@ -20,7 +20,7 @@
     },
     {
       "name": "decoded_len",
-      "signature": "( hex:str -- len:i64 )",
+      "signature": "(hex:str -- len:i64)",
       "failable": false,
       "description": "Get the length of data that would result from decoding a hex string. Returns -1 if the hex string has invalid length (odd).",
       "params": [{"name": "hex", "type": "str", "description": "Hexadecimal string"}],
@@ -30,7 +30,7 @@
     },
     {
       "name": "decode",
-      "signature": "( hex:str -- s:str )",
+      "signature": "(hex:str -- s:str)",
       "failable": false,
       "description": "Decode a hexadecimal string to bytes. Accepts both uppercase and lowercase hex digits. Invalid characters are skipped.",
       "params": [{"name": "hex", "type": "str", "description": "Hexadecimal string"}],
@@ -40,7 +40,7 @@
     },
     {
       "name": "encode_byte",
-      "signature": "( b:i64 -- hex:str )",
+      "signature": "(b:i64 -- hex:str)",
       "failable": false,
       "description": "Encode a single byte (0-255) to a 2-character hex string.",
       "params": [{"name": "b", "type": "i64", "description": "Byte value (0-255)"}],
@@ -50,7 +50,7 @@
     },
     {
       "name": "encoded_len",
-      "signature": "( s:str -- len:i64 )",
+      "signature": "(s:str -- len:i64)",
       "failable": false,
       "description": "Get the length of hex string that would result from encoding data.",
       "params": [{"name": "s", "type": "str", "description": "String to encode"}],
@@ -60,7 +60,7 @@
     },
     {
       "name": "encode_lower",
-      "signature": "( s:str -- hex:str )",
+      "signature": "(s:str -- hex:str)",
       "failable": false,
       "description": "Encode a string to lowercase hexadecimal. Each byte becomes two hex characters (00-ff).",
       "params": [{"name": "s", "type": "str", "description": "String to encode"}],
@@ -70,7 +70,7 @@
     },
     {
       "name": "encode",
-      "signature": "( s:str -- hex:str )",
+      "signature": "(s:str -- hex:str)",
       "failable": false,
       "description": "Encode a string to uppercase hexadecimal. Each byte becomes two hex characters (00-FF).",
       "params": [{"name": "s", "type": "str", "description": "String to encode"}],
@@ -80,7 +80,7 @@
     },
     {
       "name": "is_valid",
-      "signature": "( hex:str -- valid:i64 )",
+      "signature": "(hex:str -- valid:i64)",
       "failable": false,
       "description": "Check if a string contains only valid hexadecimal characters. Valid characters are 0-9, A-F, a-f.",
       "params": [{"name": "hex", "type": "str", "description": "String to check"}],

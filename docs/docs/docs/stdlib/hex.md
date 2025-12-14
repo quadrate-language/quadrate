@@ -9,7 +9,7 @@ Converts between binary data and hexadecimal string representation.
 
 Decode a 2-character hex string to a byte value. Returns -1 if the input is invalid.
 
-**Signature:** `( hex:str -- b:i64 )`
+**Signature:** `(hex:str -- b:i64)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -31,7 +31,7 @@ Decode a 2-character hex string to a byte value. Returns -1 if the input is inva
 
 Get the length of data that would result from decoding a hex string. Returns -1 if the hex string has invalid length (odd).
 
-**Signature:** `( hex:str -- len:i64 )`
+**Signature:** `(hex:str -- len:i64)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -53,7 +53,7 @@ Get the length of data that would result from decoding a hex string. Returns -1 
 
 Decode a hexadecimal string to bytes. Accepts both uppercase and lowercase hex digits. Invalid characters are skipped.
 
-**Signature:** `( hex:str -- s:str )`
+**Signature:** `(hex:str -- s:str)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -75,7 +75,7 @@ Decode a hexadecimal string to bytes. Accepts both uppercase and lowercase hex d
 
 Encode a single byte (0-255) to a 2-character hex string.
 
-**Signature:** `( b:i64 -- hex:str )`
+**Signature:** `(b:i64 -- hex:str)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -97,7 +97,7 @@ Encode a single byte (0-255) to a 2-character hex string.
 
 Get the length of hex string that would result from encoding data.
 
-**Signature:** `( s:str -- len:i64 )`
+**Signature:** `(s:str -- len:i64)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -119,7 +119,7 @@ Get the length of hex string that would result from encoding data.
 
 Encode a string to lowercase hexadecimal. Each byte becomes two hex characters (00-ff).
 
-**Signature:** `( s:str -- hex:str )`
+**Signature:** `(s:str -- hex:str)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -141,7 +141,7 @@ Encode a string to lowercase hexadecimal. Each byte becomes two hex characters (
 
 Encode a string to uppercase hexadecimal. Each byte becomes two hex characters (00-FF).
 
-**Signature:** `( s:str -- hex:str )`
+**Signature:** `(s:str -- hex:str)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -163,7 +163,7 @@ Encode a string to uppercase hexadecimal. Each byte becomes two hex characters (
 
 Check if a string contains only valid hexadecimal characters. Valid characters are 0-9, A-F, a-f.
 
-**Signature:** `( hex:str -- valid:i64 )`
+**Signature:** `(hex:str -- valid:i64)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|

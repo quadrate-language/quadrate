@@ -10,7 +10,7 @@ They enable functional programming without explicit temporary variables.
 
 Apply a function to a value.
 
-**Signature:** `( x:i64 f:ptr -- r:i64 )`
+**Signature:** `(x:i64 f:ptr -- r:i64)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -33,7 +33,7 @@ Apply a function to a value.
 
 Apply two functions to two values (first to first, second to second).
 
-**Signature:** `( x:i64 y:i64 f:ptr g:ptr -- a:i64 b:i64 )`
+**Signature:** `(x:i64 y:i64 f:ptr g:ptr -- a:i64 b:i64)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -59,7 +59,7 @@ Apply two functions to two values (first to first, second to second).
 
 Apply two functions to the same value.
 
-**Signature:** `( x:i64 f:ptr g:ptr -- a:i64 b:i64 )`
+**Signature:** `(x:i64 f:ptr g:ptr -- a:i64 b:i64)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -84,7 +84,7 @@ Apply two functions to the same value.
 
 Apply a function to two values separately.
 
-**Signature:** `( x:i64 y:i64 f:ptr -- a:i64 b:i64 )`
+**Signature:** `(x:i64 y:i64 f:ptr -- a:i64 b:i64)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -109,7 +109,7 @@ Apply a function to two values separately.
 
 Apply a function to the second stack element, preserving the top.
 
-**Signature:** `( x:i64 y:i64 f:ptr -- r:i64 top:i64 )`
+**Signature:** `(x:i64 y:i64 f:ptr -- r:i64 top:i64)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -134,7 +134,7 @@ Apply a function to the second stack element, preserving the top.
 
 Apply a function but keep the original value.
 
-**Signature:** `( x:i64 f:ptr -- r:i64 orig:i64 )`
+**Signature:** `(x:i64 f:ptr -- r:i64 orig:i64)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -158,7 +158,7 @@ Apply a function but keep the original value.
 
 Apply function n times to an initial value.
 
-**Signature:** `( x:i64 n:i64 f:ptr -- r:i64 )`
+**Signature:** `(x:i64 n:i64 f:ptr -- r:i64)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -182,7 +182,7 @@ Apply function n times to an initial value.
 
 Apply three functions to the same value.
 
-**Signature:** `( x:i64 f:ptr g:ptr h:ptr -- a:i64 b:i64 c:i64 )`
+**Signature:** `(x:i64 f:ptr g:ptr h:ptr -- a:i64 b:i64 c:i64)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -209,7 +209,7 @@ Apply three functions to the same value.
 
 Apply function only if condition is false, otherwise return value unchanged.
 
-**Signature:** `( x:i64 cond:i64 f:ptr -- r:i64 )`
+**Signature:** `(x:i64 cond:i64 f:ptr -- r:i64)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -234,7 +234,7 @@ Apply function only if condition is false, otherwise return value unchanged.
 
 Apply function only if condition is true, otherwise return value unchanged.
 
-**Signature:** `( x:i64 cond:i64 f:ptr -- r:i64 )`
+**Signature:** `(x:i64 cond:i64 f:ptr -- r:i64)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|

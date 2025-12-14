@@ -10,7 +10,7 @@
   "functions": [
     {
       "name": "decode",
-      "signature": "( encoded:str -- decoded:str )",
+      "signature": "(encoded:str -- decoded:str)",
       "failable": false,
       "description": "Decode a base64 string.",
       "params": [{"name": "encoded", "type": "str", "description": "Base64-encoded string"}],
@@ -20,7 +20,7 @@
     },
     {
       "name": "encode",
-      "signature": "( input:str -- encoded:str )",
+      "signature": "(input:str -- encoded:str)",
       "failable": false,
       "description": "Encode a string to base64.",
       "params": [{"name": "input", "type": "str", "description": "String to encode"}],

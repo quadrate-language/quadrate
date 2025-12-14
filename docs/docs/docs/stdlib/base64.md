@@ -9,7 +9,7 @@ Optimized with lookup tables and direct buffer writes.
 
 Decode a base64 string.
 
-**Signature:** `( encoded:str -- decoded:str )`
+**Signature:** `(encoded:str -- decoded:str)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -31,7 +31,7 @@ Decode a base64 string.
 
 Encode a string to base64.
 
-**Signature:** `( input:str -- encoded:str )`
+**Signature:** `(input:str -- encoded:str)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|

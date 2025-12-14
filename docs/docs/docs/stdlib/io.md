@@ -37,7 +37,7 @@ Error codes: Ok=1 (success), specific errors start at 2
 
 Close a file.
 
-**Signature:** `( handle:ptr --  )`
+**Signature:** `(handle:ptr -- )`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -55,7 +55,7 @@ f io::close
 
 Check if at end of file.
 
-**Signature:** `( handle:ptr -- handle:ptr is_eof:i64 )`
+**Signature:** `(handle:ptr -- handle:ptr is_eof:i64)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -78,7 +78,7 @@ f io::eof -> f  // at_end
 
 Open a file.
 
-**Signature:** `( path:str mode:str -- handle:ptr )!`
+**Signature:** `(path:str mode:str -- handle:ptr)!`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -105,7 +105,7 @@ Open a file.
 
 Read bytes into buffer.
 
-**Signature:** `( handle:ptr buffer:ptr count:i64 -- bytes_read:i64 )!`
+**Signature:** `(handle:ptr buffer:ptr count:i64 -- bytes_read:i64)!`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -134,7 +134,7 @@ f buf 1024 io::read!  // n
 
 Read a line from stdin.
 
-**Signature:** `(  -- line:str )!`
+**Signature:** `( -- line:str)!`
 
 | Output | Type | Description |
 |--------|------|-------------|
@@ -156,7 +156,7 @@ io::readline!  // input
 
 Seek to position in file.
 
-**Signature:** `( handle:ptr offset:i64 whence:i64 -- position:i64 )!`
+**Signature:** `(handle:ptr offset:i64 whence:i64 -- position:i64)!`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -186,7 +186,7 @@ f 0 io::SeekSet io::seek! drop
 
 Get current position in file.
 
-**Signature:** `( handle:ptr -- position:i64 )!`
+**Signature:** `(handle:ptr -- position:i64)!`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -213,7 +213,7 @@ f io::tell!  // pos
 
 Write bytes from buffer.
 
-**Signature:** `( handle:ptr buffer:ptr count:i64 -- bytes_written:i64 )!`
+**Signature:** `(handle:ptr buffer:ptr count:i64 -- bytes_written:i64)!`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|

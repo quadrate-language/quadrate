@@ -124,7 +124,7 @@
   "functions": [
     {
       "name": "close",
-      "signature": "( handle:ptr --  )",
+      "signature": "(handle:ptr -- )",
       "failable": false,
       "description": "Close a file.",
       "params": [{"name": "handle", "type": "ptr", "description": "File handle to close"}],
@@ -134,7 +134,7 @@
     },
     {
       "name": "eof",
-      "signature": "( handle:ptr -- handle:ptr is_eof:i64 )",
+      "signature": "(handle:ptr -- handle:ptr is_eof:i64)",
       "failable": false,
       "description": "Check if at end of file.",
       "params": [{"name": "handle", "type": "ptr", "description": "File handle"}],
@@ -144,7 +144,7 @@
     },
     {
       "name": "open",
-      "signature": "( path:str mode:str -- handle:ptr )",
+      "signature": "(path:str mode:str -- handle:ptr)",
       "failable": true,
       "description": "Open a file.",
       "params": [{"name": "path", "type": "str", "description": "File path"}, {"name": "mode", "type": "str", "description": "Open mode (use io::Read, io::Write, etc.)"}],
@@ -154,7 +154,7 @@
     },
     {
       "name": "read",
-      "signature": "( handle:ptr buffer:ptr count:i64 -- bytes_read:i64 )",
+      "signature": "(handle:ptr buffer:ptr count:i64 -- bytes_read:i64)",
       "failable": true,
       "description": "Read bytes into buffer.",
       "params": [{"name": "handle", "type": "ptr", "description": "File handle"}, {"name": "buffer", "type": "ptr", "description": "Pre-allocated buffer"}, {"name": "count", "type": "i64", "description": "Maximum bytes to read"}],
@@ -164,7 +164,7 @@
     },
     {
       "name": "readline",
-      "signature": "(  -- line:str )",
+      "signature": "( -- line:str)",
       "failable": true,
       "description": "Read a line from stdin.",
       "params": [],
@@ -174,7 +174,7 @@
     },
     {
       "name": "seek",
-      "signature": "( handle:ptr offset:i64 whence:i64 -- position:i64 )",
+      "signature": "(handle:ptr offset:i64 whence:i64 -- position:i64)",
       "failable": true,
       "description": "Seek to position in file.",
       "params": [{"name": "handle", "type": "ptr", "description": "File handle"}, {"name": "offset", "type": "i64", "description": "Offset in bytes"}, {"name": "whence", "type": "i64", "description": "Reference point (SeekSet, SeekCur, SeekEnd)"}],
@@ -184,7 +184,7 @@
     },
     {
       "name": "tell",
-      "signature": "( handle:ptr -- position:i64 )",
+      "signature": "(handle:ptr -- position:i64)",
       "failable": true,
       "description": "Get current position in file.",
       "params": [{"name": "handle", "type": "ptr", "description": "File handle"}],
@@ -194,7 +194,7 @@
     },
     {
       "name": "write",
-      "signature": "( handle:ptr buffer:ptr count:i64 -- bytes_written:i64 )",
+      "signature": "(handle:ptr buffer:ptr count:i64 -- bytes_written:i64)",
       "failable": true,
       "description": "Write bytes from buffer.",
       "params": [{"name": "handle", "type": "ptr", "description": "File handle"}, {"name": "buffer", "type": "ptr", "description": "Buffer containing data"}, {"name": "count", "type": "i64", "description": "Number of bytes to write"}],

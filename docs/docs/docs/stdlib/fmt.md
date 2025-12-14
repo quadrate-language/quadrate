@@ -8,7 +8,7 @@ Formatted output functions.
 
 Print formatted output to stdout.
 
-**Signature:** `( format:str --  )`
+**Signature:** `(format:str -- )`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -26,7 +26,7 @@ Print formatted output to stdout.
 
 Format a string with printf-style specifiers.
 
-**Signature:** `( format:str -- result:str )`
+**Signature:** `(format:str -- result:str)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|

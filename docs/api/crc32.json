@@ -10,7 +10,7 @@
   "functions": [
     {
       "name": "checksum_buf",
-      "signature": "( buf:ptr len:i64 -- crc:i64 )",
+      "signature": "(buf:ptr len:i64 -- crc:i64)",
       "failable": false,
       "description": "Calculate CRC32 of a byte buffer.",
       "params": [{"name": "buf", "type": "ptr", "description": "Buffer to checksum"}, {"name": "len", "type": "i64", "description": "Length of buffer in bytes"}],
@@ -20,7 +20,7 @@
     },
     {
       "name": "checksum_hex",
-      "signature": "( s:str -- h:str )",
+      "signature": "(s:str -- h:str)",
       "failable": false,
       "description": "Calculate CRC32 and return as 8-character hex string.",
       "params": [{"name": "s", "type": "str", "description": "Input string"}],
@@ -30,7 +30,7 @@
     },
     {
       "name": "checksum",
-      "signature": "( s:str -- crc:i64 )",
+      "signature": "(s:str -- crc:i64)",
       "failable": false,
       "description": "Calculate CRC32 checksum of a string.",
       "params": [{"name": "s", "type": "str", "description": "Input string"}],
@@ -40,7 +40,7 @@
     },
     {
       "name": "finalize",
-      "signature": "( crc:i64 -- final:i64 )",
+      "signature": "(crc:i64 -- final:i64)",
       "failable": false,
       "description": "Finalize a running CRC to get the final checksum.",
       "params": [{"name": "crc", "type": "i64", "description": "Current CRC state from update()"}],
@@ -50,7 +50,7 @@
     },
     {
       "name": "update",
-      "signature": "( crc:i64 s:str -- new_crc:i64 )",
+      "signature": "(crc:i64 s:str -- new_crc:i64)",
       "failable": false,
       "description": "Update a running CRC with more data. Use for streaming/incremental CRC calculation.",
       "params": [{"name": "crc", "type": "i64", "description": "Current CRC state (use 4294967295 to start)"}, {"name": "s", "type": "str", "description": "Data to add"}],
@@ -60,7 +60,7 @@
     },
     {
       "name": "verify",
-      "signature": "( s:str expected:i64 -- ok:i64 )",
+      "signature": "(s:str expected:i64 -- ok:i64)",
       "failable": false,
       "description": "Verify data against an expected CRC32.",
       "params": [{"name": "s", "type": "str", "description": "Data to verify"}, {"name": "expected", "type": "i64", "description": "Expected CRC32 value"}],

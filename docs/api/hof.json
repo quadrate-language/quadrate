@@ -10,7 +10,7 @@
   "functions": [
     {
       "name": "apply",
-      "signature": "( x:i64 f:ptr -- r:i64 )",
+      "signature": "(x:i64 f:ptr -- r:i64)",
       "failable": false,
       "description": "Apply a function to a value.",
       "params": [{"name": "x", "type": "i64", "description": "The input value"}, {"name": "f", "type": "ptr", "description": "Function pointer (i64 -- i64)"}],
@@ -20,7 +20,7 @@
     },
     {
       "name": "bi_star",
-      "signature": "( x:i64 y:i64 f:ptr g:ptr -- a:i64 b:i64 )",
+      "signature": "(x:i64 y:i64 f:ptr g:ptr -- a:i64 b:i64)",
       "failable": false,
       "description": "Apply two functions to two values (first to first, second to second).",
       "params": [{"name": "x", "type": "i64", "description": "First value"}, {"name": "y", "type": "i64", "description": "Second value"}, {"name": "f", "type": "ptr", "description": "Function for first value (i64 -- i64)"}, {"name": "g", "type": "ptr", "description": "Function for second value (i64 -- i64)"}],
@@ -30,7 +30,7 @@
     },
     {
       "name": "bi",
-      "signature": "( x:i64 f:ptr g:ptr -- a:i64 b:i64 )",
+      "signature": "(x:i64 f:ptr g:ptr -- a:i64 b:i64)",
       "failable": false,
       "description": "Apply two functions to the same value.",
       "params": [{"name": "x", "type": "i64", "description": "The input value"}, {"name": "f", "type": "ptr", "description": "First function pointer (i64 -- i64)"}, {"name": "g", "type": "ptr", "description": "Second function pointer (i64 -- i64)"}],
@@ -40,7 +40,7 @@
     },
     {
       "name": "both",
-      "signature": "( x:i64 y:i64 f:ptr -- a:i64 b:i64 )",
+      "signature": "(x:i64 y:i64 f:ptr -- a:i64 b:i64)",
       "failable": false,
       "description": "Apply a function to two values separately.",
       "params": [{"name": "x", "type": "i64", "description": "First value"}, {"name": "y", "type": "i64", "description": "Second value"}, {"name": "f", "type": "ptr", "description": "Function pointer (i64 -- i64)"}],
@@ -50,7 +50,7 @@
     },
     {
       "name": "dip",
-      "signature": "( x:i64 y:i64 f:ptr -- r:i64 top:i64 )",
+      "signature": "(x:i64 y:i64 f:ptr -- r:i64 top:i64)",
       "failable": false,
       "description": "Apply a function to the second stack element, preserving the top.",
       "params": [{"name": "x", "type": "i64", "description": "Second element (will have f applied)"}, {"name": "y", "type": "i64", "description": "Top element (preserved)"}, {"name": "f", "type": "ptr", "description": "Function pointer (i64 -- i64)"}],
@@ -60,7 +60,7 @@
     },
     {
       "name": "keep",
-      "signature": "( x:i64 f:ptr -- r:i64 orig:i64 )",
+      "signature": "(x:i64 f:ptr -- r:i64 orig:i64)",
       "failable": false,
       "description": "Apply a function but keep the original value.",
       "params": [{"name": "x", "type": "i64", "description": "The input value"}, {"name": "f", "type": "ptr", "description": "Function pointer (i64 -- i64)"}],
@@ -70,7 +70,7 @@
     },
     {
       "name": "times",
-      "signature": "( x:i64 n:i64 f:ptr -- r:i64 )",
+      "signature": "(x:i64 n:i64 f:ptr -- r:i64)",
       "failable": false,
       "description": "Apply function n times to an initial value.",
       "params": [{"name": "x", "type": "i64", "description": "Initial value"}, {"name": "n", "type": "i64", "description": "Number of times to apply"}, {"name": "f", "type": "ptr", "description": "Function pointer (i64 -- i64)"}],
@@ -80,7 +80,7 @@
     },
     {
       "name": "tri",
-      "signature": "( x:i64 f:ptr g:ptr h:ptr -- a:i64 b:i64 c:i64 )",
+      "signature": "(x:i64 f:ptr g:ptr h:ptr -- a:i64 b:i64 c:i64)",
       "failable": false,
       "description": "Apply three functions to the same value.",
       "params": [{"name": "x", "type": "i64", "description": "The input value"}, {"name": "f", "type": "ptr", "description": "First function pointer (i64 -- i64)"}, {"name": "g", "type": "ptr", "description": "Second function pointer (i64 -- i64)"}, {"name": "h", "type": "ptr", "description": "Third function pointer (i64 -- i64)"}],
@@ -90,7 +90,7 @@
     },
     {
       "name": "unless",
-      "signature": "( x:i64 cond:i64 f:ptr -- r:i64 )",
+      "signature": "(x:i64 cond:i64 f:ptr -- r:i64)",
       "failable": false,
       "description": "Apply function only if condition is false, otherwise return value unchanged.",
       "params": [{"name": "x", "type": "i64", "description": "The input value"}, {"name": "cond", "type": "i64", "description": "Condition (0 = false, non-zero = true)"}, {"name": "f", "type": "ptr", "description": "Function pointer (i64 -- i64)"}],
@@ -100,7 +100,7 @@
     },
     {
       "name": "when",
-      "signature": "( x:i64 cond:i64 f:ptr -- r:i64 )",
+      "signature": "(x:i64 cond:i64 f:ptr -- r:i64)",
       "failable": false,
       "description": "Apply function only if condition is true, otherwise return value unchanged.",
       "params": [{"name": "x", "type": "i64", "description": "The input value"}, {"name": "cond", "type": "i64", "description": "Condition (0 = false, non-zero = true)"}, {"name": "f", "type": "ptr", "description": "Function pointer (i64 -- i64)"}],

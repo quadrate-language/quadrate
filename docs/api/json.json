@@ -39,7 +39,7 @@
   "functions": [
     {
       "name": "array_get_float",
-      "signature": "( json:str index:i64 -- value:f64 found:i64 )",
+      "signature": "(json:str index:i64 -- value:f64 found:i64)",
       "failable": false,
       "description": "Get array element as float by index.",
       "params": [{"name": "json", "type": "str", "description": "JSON array string"}, {"name": "index", "type": "i64", "description": "Element index (0-based)"}],
@@ -49,7 +49,7 @@
     },
     {
       "name": "array_get_int",
-      "signature": "( json:str index:i64 -- value:i64 found:i64 )",
+      "signature": "(json:str index:i64 -- value:i64 found:i64)",
       "failable": false,
       "description": "Get array element as integer by index.",
       "params": [{"name": "json", "type": "str", "description": "JSON array string"}, {"name": "index", "type": "i64", "description": "Element index (0-based)"}],
@@ -59,7 +59,7 @@
     },
     {
       "name": "array_get_string",
-      "signature": "( json:str index:i64 -- value:str found:i64 )",
+      "signature": "(json:str index:i64 -- value:str found:i64)",
       "failable": false,
       "description": "Get array element as string by index.",
       "params": [{"name": "json", "type": "str", "description": "JSON array string"}, {"name": "index", "type": "i64", "description": "Element index (0-based)"}],
@@ -69,7 +69,7 @@
     },
     {
       "name": "array_len",
-      "signature": "( json:str -- length:i64 )",
+      "signature": "(json:str -- length:i64)",
       "failable": false,
       "description": "Get length of JSON array.",
       "params": [{"name": "json", "type": "str", "description": "JSON array string"}],
@@ -79,7 +79,7 @@
     },
     {
       "name": "extract_str",
-      "signature": "( json:str pos:i64 -- value:str )",
+      "signature": "(json:str pos:i64 -- value:str)",
       "failable": false,
       "description": "Extract string value at position.",
       "params": [{"name": "json", "type": "str", "description": "JSON string"}, {"name": "pos", "type": "i64", "description": "Position of opening quote"}],
@@ -89,7 +89,7 @@
     },
     {
       "name": "find_str_end",
-      "signature": "( json:str pos:i64 -- end_pos:i64 )",
+      "signature": "(json:str pos:i64 -- end_pos:i64)",
       "failable": false,
       "description": "Find end of JSON string (pos at opening quote).",
       "params": [{"name": "json", "type": "str", "description": "JSON string"}, {"name": "pos", "type": "i64", "description": "Position of opening quote"}],
@@ -99,7 +99,7 @@
     },
     {
       "name": "get_array",
-      "signature": "( json:str key:str -- value:str found:i64 )",
+      "signature": "(json:str key:str -- value:str found:i64)",
       "failable": false,
       "description": "Get nested array as string by key.",
       "params": [{"name": "json", "type": "str", "description": "JSON object string"}, {"name": "key", "type": "str", "description": "Key to look up"}],
@@ -109,7 +109,7 @@
     },
     {
       "name": "get_bool",
-      "signature": "( json:str key:str -- value:i64 found:i64 )",
+      "signature": "(json:str key:str -- value:i64 found:i64)",
       "failable": false,
       "description": "Get boolean value by key from object.",
       "params": [{"name": "json", "type": "str", "description": "JSON object string"}, {"name": "key", "type": "str", "description": "Key to look up"}],
@@ -119,7 +119,7 @@
     },
     {
       "name": "get_float",
-      "signature": "( json:str key:str -- value:f64 found:i64 )",
+      "signature": "(json:str key:str -- value:f64 found:i64)",
       "failable": false,
       "description": "Get float value by key from object.",
       "params": [{"name": "json", "type": "str", "description": "JSON object string"}, {"name": "key", "type": "str", "description": "Key to look up"}],
@@ -129,7 +129,7 @@
     },
     {
       "name": "get_int",
-      "signature": "( json:str key:str -- value:i64 found:i64 )",
+      "signature": "(json:str key:str -- value:i64 found:i64)",
       "failable": false,
       "description": "Get integer value by key from object.",
       "params": [{"name": "json", "type": "str", "description": "JSON object string"}, {"name": "key", "type": "str", "description": "Key to look up"}],
@@ -139,7 +139,7 @@
     },
     {
       "name": "get_object",
-      "signature": "( json:str key:str -- value:str found:i64 )",
+      "signature": "(json:str key:str -- value:str found:i64)",
       "failable": false,
       "description": "Get nested object as string by key.",
       "params": [{"name": "json", "type": "str", "description": "JSON object string"}, {"name": "key", "type": "str", "description": "Key to look up"}],
@@ -149,7 +149,7 @@
     },
     {
       "name": "get_string",
-      "signature": "( json:str key:str -- value:str found:i64 )",
+      "signature": "(json:str key:str -- value:str found:i64)",
       "failable": false,
       "description": "Get string value by key from object.",
       "params": [{"name": "json", "type": "str", "description": "JSON object string"}, {"name": "key", "type": "str", "description": "Key to look up"}],
@@ -159,7 +159,7 @@
     },
     {
       "name": "has_key",
-      "signature": "( json:str key:str -- exists:i64 )",
+      "signature": "(json:str key:str -- exists:i64)",
       "failable": false,
       "description": "Check if key exists in object.",
       "params": [{"name": "json", "type": "str", "description": "JSON object string"}, {"name": "key", "type": "str", "description": "Key to check"}],
@@ -169,7 +169,7 @@
     },
     {
       "name": "is_null_at",
-      "signature": "( json:str pos:i64 -- is_null:i64 )",
+      "signature": "(json:str pos:i64 -- is_null:i64)",
       "failable": false,
       "description": "Check if value at position is null.",
       "params": [{"name": "json", "type": "str", "description": "JSON string"}, {"name": "pos", "type": "i64", "description": "Position to check"}],
@@ -179,7 +179,7 @@
     },
     {
       "name": "type_at",
-      "signature": "( json:str pos:i64 -- type:i64 )",
+      "signature": "(json:str pos:i64 -- type:i64)",
       "failable": false,
       "description": "Get JSON value type at position.",
       "params": [{"name": "json", "type": "str", "description": "JSON string"}, {"name": "pos", "type": "i64", "description": "Position to check"}],
