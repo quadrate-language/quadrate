@@ -36,18 +36,7 @@ Quadrate builds on these foundations while adding modern conveniences: static ty
 
 **Simple over clever.** A straightforward solution beats an elegant one.
 
-**Complete over minimal.** Ship the formatter, linter, and LSP - developers need tools.
-
-## The Name
-
-Why "Quadrate"? The name comes from the four basic types that form the foundation of the language:
-
-- `i64` - Integers
-- `f64` - Floating-point numbers
-- `str` - Strings
-- `ptr` - Pointers
-
-Four types. Four corners. Quadrate.
+**Complete over minimal.** Ship the formatter, linter and LSP.
 
 ## Source Code
 

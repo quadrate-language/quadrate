@@ -24,17 +24,20 @@ Values flow onto a stack, operations consume them and produce new values. It's s
 
 ```qd
 fn factorial(n:i64 -- result:i64) {
-	-> n
-	n 1 <= if {
+	dup 1 <= if {
+		drop
 		1
 	} else {
-		n n dec factorial *
+		dup -- factorial *
 	}
 }
 
 fn main( -- ) {
 	5 factorial print nl  // 120
 }
+```
+```bash
+quad run factorial.qd
 ```
 
 ## Why Quadrate?
@@ -82,12 +85,15 @@ fn main( -- ) {
 	read -> argc
 
 	argc 0 == if {
-		"Usage: greet <name>" print
+		"Usage: greet <name>" print nl
 	} else {
 		-> name
-		"Hello, " name str::concat "!" str::concat print
+		"Hello, " name str::concat "!" str::concat print nl
 	}
 }
+```
+```bash
+quad run greet.qd -- Millie
 ```
 
 ## Learn More
