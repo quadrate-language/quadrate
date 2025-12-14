@@ -8,16 +8,18 @@ fn main() {
 	-> write_len
 	-> write_buf
 
-	"/tmp/test_seek.txt" io::Write io::open if {
-		-> file
-		file write_buf write_len io::write if {
-			drop
-			file io::close
-		} else {
-			drop file io::close
+	"/tmp/test_seek.txt" io::Write io::open switch {
+		Ok {
+			-> file
+			file write_buf write_len io::write switch {
+				Ok {
+					drop
+					file io::close
+				}
+				_ { file io::close }
+			}
 		}
-	} else {
-		drop
+		_ { }
 	}
 
 	write_buf mem::free
@@ -25,24 +27,27 @@ fn main() {
 	// Open for reading, seek and read
 	10 mem::alloc -> read_buf
 
-	"/tmp/test_seek.txt" io::Read io::open if {
-		-> file
-		file 5 io::SeekSet io::seek if {
-			drop                    // Drop position
-			file read_buf 3 io::read if {
-				-> bytes_read       // Get bytes_read
-				file io::close
-				read_buf bytes_read mem::to_string
-				print             // Print string (destructive - frees it)
-				nl                // Print newline
-			} else {
-				drop file io::close
+	"/tmp/test_seek.txt" io::Read io::open switch {
+		Ok {
+			-> file
+			file 5 io::SeekSet io::seek switch {
+				Ok {
+					drop                    // Drop position
+					file read_buf 3 io::read switch {
+						Ok {
+							-> bytes_read       // Get bytes_read
+							file io::close
+							read_buf bytes_read mem::to_string
+							print             // Print string (destructive - frees it)
+							nl                // Print newline
+						}
+						_ { file io::close }
+					}
+				}
+				_ { file io::close }
 			}
-		} else {
-			drop file io::close
 		}
-	} else {
-		drop
+		_ { }
 	}
 
 	read_buf mem::free

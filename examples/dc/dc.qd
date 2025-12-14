@@ -379,24 +379,28 @@ fn run_file(s:ptr path:str -- ) {
 	// Allocate 64KB buffer for file content
 	65536 mem::alloc -> buf
 
-	path io::Read io::open if {
-		-> file
-		file buf 65536 io::read if {
-			-> bytes_read
-			file io::close
-			buf bytes_read mem::to_string -> content
-		} else {
-			drop
-			file io::close
-			"dc: could not read file: " print path print nl
+	path io::Read io::open switch {
+		Ok {
+			-> file
+			file buf 65536 io::read switch {
+				Ok {
+					-> bytes_read
+					file io::close
+					buf bytes_read mem::to_string -> content
+				}
+				_ {
+					file io::close
+					"dc: could not read file: " print path print nl
+					buf mem::free
+					1 os::exit
+				}
+			}
+		}
+		_ {
+			"dc: could not open file: " print path print nl
 			buf mem::free
 			1 os::exit
 		}
-	} else {
-		drop
-		"dc: could not open file: " print path print nl
-		buf mem::free
-		1 os::exit
 	}
 
 	buf mem::free

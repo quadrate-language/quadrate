@@ -8,16 +8,18 @@ fn main() {
 	-> write_len
 	-> write_buf
 
-	"/tmp/test_quadrate_io.txt" io::Write io::open if {
-		-> file
-		file write_buf write_len io::write if {
-			drop
-			file io::close
-		} else {
-			drop file io::close
+	"/tmp/test_quadrate_io.txt" io::Write io::open switch {
+		Ok {
+			-> file
+			file write_buf write_len io::write switch {
+				Ok {
+					drop
+					file io::close
+				}
+				_ { file io::close }
+			}
 		}
-	} else {
-		drop
+		_ { }
 	}
 
 	write_buf mem::free
@@ -25,18 +27,20 @@ fn main() {
 	// Read from the file: read to buffer, convert to string
 	100 mem::alloc -> read_buf
 
-	"/tmp/test_quadrate_io.txt" io::Read io::open if {
-		-> file
-		file read_buf 100 io::read if {
-			-> bytes_read
-			file io::close
-			read_buf bytes_read mem::to_string
-			prints       // Print string (non-destructive)
-		} else {
-			drop file io::close
+	"/tmp/test_quadrate_io.txt" io::Read io::open switch {
+		Ok {
+			-> file
+			file read_buf 100 io::read switch {
+				Ok {
+					-> bytes_read
+					file io::close
+					read_buf bytes_read mem::to_string
+					prints       // Print string (non-destructive)
+				}
+				_ { file io::close }
+			}
 		}
-	} else {
-		drop
+		_ { }
 	}
 
 	read_buf mem::free
