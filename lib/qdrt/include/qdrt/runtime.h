@@ -930,6 +930,41 @@ void qd_ptr_release(void* ptr);
 
 /** @} */ // end of PtrManagement group
 
+/**
+ * @defgroup ClosureRegistry Closure Registry
+ * @brief Functions for tracking closure pointers for safe cleanup
+ * @{
+ */
+
+/**
+ * @brief Register a closure pointer in the closure registry
+ *
+ * Called when a closure is created. This allows safe detection of closures
+ * without reading from potentially freed memory.
+ *
+ * @param ptr Closure pointer to register
+ */
+void qd_closure_register(void* ptr);
+
+/**
+ * @brief Check if a pointer is a registered closure
+ *
+ * @param ptr Pointer to check
+ * @return 1 if the pointer is a registered closure, 0 otherwise
+ */
+int qd_closure_is_valid(const void* ptr);
+
+/**
+ * @brief Unregister a closure pointer from the registry
+ *
+ * Called when a closure is freed.
+ *
+ * @param ptr Closure pointer to unregister
+ */
+void qd_closure_unregister(void* ptr);
+
+/** @} */ // end of ClosureRegistry group
+
 #ifdef __cplusplus
 }
 #endif

@@ -1,4 +1,4 @@
-// Test: Captures are by value - modifying original doesn't affect captured
+// Test: Captures are by reference - modifying original affects captured
 fn main( -- ) {
     10 -> x
     fn ( -- r:i64) { x } -> get_x
@@ -6,7 +6,7 @@ fn main( -- ) {
     // Modify x after closure creation
     99 -> x
 
-    // Closure should still return original value (10)
+    // Closure should return updated value (99) with by-reference semantics
     get_x call print nl
 
     // Verify x was actually modified

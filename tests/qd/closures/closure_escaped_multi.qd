@@ -1,0 +1,15 @@
+// Test: Two escaped closures sharing the same captured variable
+fn main( -- ) {
+    0 -> val
+
+    fn ( -- r:i64) { val } -> getter
+    fn ( -- ) { val 1 add -> val } -> incrementer
+
+    getter call print nl  // Should print 0
+
+    incrementer call
+    getter call print nl  // Should print 1
+
+    incrementer call
+    getter call print nl  // Should print 2
+}

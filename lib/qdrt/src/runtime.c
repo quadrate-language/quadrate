@@ -11,8 +11,31 @@
 #include <string.h>
 #include <math.h>
 #include "platform/thread_platform.h"
+#include "ptr_registry.h"
 
 static void dump_stack(qd_context* ctx);
+
+// Closure registry for safe closure detection
+static ptr_registry_t closure_registry = PTR_REGISTRY_INITIALIZER;
+
+void qd_closure_register(void* ptr) {
+	if (ptr) {
+		ptr_registry_add(&closure_registry, ptr);
+	}
+}
+
+int qd_closure_is_valid(const void* ptr) {
+	if (!ptr) {
+		return 0;
+	}
+	return ptr_registry_contains(&closure_registry, ptr);
+}
+
+void qd_closure_unregister(void* ptr) {
+	if (ptr) {
+		ptr_registry_remove(&closure_registry, ptr);
+	}
+}
 
 qd_exec_result qd_push_i(qd_context* ctx, int64_t value) {
 	qd_stack_error err = qd_stack_push_int(ctx->st, value);

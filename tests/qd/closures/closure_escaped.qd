@@ -1,0 +1,15 @@
+// Test: Escaped closures - closures that outlive their enclosing function
+fn make_counter( -- counter:ptr ) {
+    0 -> count
+    fn ( -- r:i64) {
+        count inc -> count
+        count
+    }
+}
+
+fn main( -- ) {
+    make_counter -> counter
+    counter call print nl  // Should print 1
+    counter call print nl  // Should print 2
+    counter call print nl  // Should print 3
+}
