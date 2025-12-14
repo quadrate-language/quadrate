@@ -24,7 +24,7 @@
   "functions": [
     {
       "name": "char_at",
-      "signature": "( str:str index:i64 -- char_code:i64 )",
+      "signature": "(str:str index:i64 -- char_code:i64)",
       "failable": false,
       "description": "Get character code at index.",
       "params": [{"name": "str", "type": "str", "description": "Input string"}, {"name": "index", "type": "i64", "description": "Character position"}],
@@ -34,7 +34,7 @@
     },
     {
       "name": "compare",
-      "signature": "( str1:str str2:str -- result:i64 )",
+      "signature": "(str1:str str2:str -- result:i64)",
       "failable": false,
       "description": "Compare two strings lexicographically.",
       "params": [{"name": "str1", "type": "str", "description": "First string"}, {"name": "str2", "type": "str", "description": "Second string"}],
@@ -44,7 +44,7 @@
     },
     {
       "name": "concat",
-      "signature": "( str1:str str2:str -- result:str )",
+      "signature": "(str1:str str2:str -- result:str)",
       "failable": false,
       "description": "Concatenate two strings.",
       "params": [{"name": "str1", "type": "str", "description": "First string"}, {"name": "str2", "type": "str", "description": "Second string"}],
@@ -54,7 +54,7 @@
     },
     {
       "name": "contains",
-      "signature": "( str:str needle:str -- result:i64 )",
+      "signature": "(str:str needle:str -- result:i64)",
       "failable": false,
       "description": "Check if string contains substring.",
       "params": [{"name": "str", "type": "str", "description": "String to search in"}, {"name": "needle", "type": "str", "description": "Substring to find"}],
@@ -64,7 +64,7 @@
     },
     {
       "name": "ends_with",
-      "signature": "( str:str suffix:str -- result:i64 )",
+      "signature": "(str:str suffix:str -- result:i64)",
       "failable": false,
       "description": "Check if string ends with suffix.",
       "params": [{"name": "str", "type": "str", "description": "String to check"}, {"name": "suffix", "type": "str", "description": "Suffix to match"}],
@@ -74,7 +74,7 @@
     },
     {
       "name": "from_char",
-      "signature": "( char_code:i64 -- str:str )",
+      "signature": "(char_code:i64 -- str:str)",
       "failable": false,
       "description": "Create string from character code.",
       "params": [{"name": "char_code", "type": "i64", "description": "ASCII/UTF-8 byte value"}],
@@ -84,7 +84,7 @@
     },
     {
       "name": "index_of_from",
-      "signature": "( haystack:str needle:str start:i64 -- index:i64 )",
+      "signature": "(haystack:str needle:str start:i64 -- index:i64)",
       "failable": false,
       "description": "Find substring starting from position.",
       "params": [{"name": "haystack", "type": "str", "description": "String to search in"}, {"name": "needle", "type": "str", "description": "Substring to find"}, {"name": "start", "type": "i64", "description": "Starting position"}],
@@ -94,7 +94,7 @@
     },
     {
       "name": "index_of",
-      "signature": "( haystack:str needle:str -- index:i64 )",
+      "signature": "(haystack:str needle:str -- index:i64)",
       "failable": false,
       "description": "Find first occurrence of substring.",
       "params": [{"name": "haystack", "type": "str", "description": "String to search in"}, {"name": "needle", "type": "str", "description": "Substring to find"}],
@@ -104,7 +104,7 @@
     },
     {
       "name": "len",
-      "signature": "( str:str -- len:i64 )",
+      "signature": "(str:str -- len:i64)",
       "failable": false,
       "description": "Get string length in bytes.",
       "params": [{"name": "str", "type": "str", "description": "Input string"}],
@@ -114,7 +114,7 @@
     },
     {
       "name": "lower",
-      "signature": "( str:str -- result:str )",
+      "signature": "(str:str -- result:str)",
       "failable": false,
       "description": "Convert string to lowercase.",
       "params": [{"name": "str", "type": "str", "description": "Input string"}],
@@ -124,7 +124,7 @@
     },
     {
       "name": "replace",
-      "signature": "( str:str old:str new:str -- result:str )",
+      "signature": "(str:str old:str new:str -- result:str)",
       "failable": true,
       "description": "Replace all occurrences of substring.",
       "params": [{"name": "str", "type": "str", "description": "Source string"}, {"name": "old", "type": "str", "description": "Substring to replace"}, {"name": "new", "type": "str", "description": "Replacement string"}],
@@ -134,7 +134,7 @@
     },
     {
       "name": "split",
-      "signature": "( str:str delim:str -- parts:ptr count:i64 )",
+      "signature": "(str:str delim:str -- parts:ptr count:i64)",
       "failable": true,
       "description": "Split string by delimiter.",
       "params": [{"name": "str", "type": "str", "description": "String to split"}, {"name": "delim", "type": "str", "description": "Delimiter string"}],
@@ -144,7 +144,7 @@
     },
     {
       "name": "starts_with",
-      "signature": "( str:str prefix:str -- result:i64 )",
+      "signature": "(str:str prefix:str -- result:i64)",
       "failable": false,
       "description": "Check if string starts with prefix.",
       "params": [{"name": "str", "type": "str", "description": "String to check"}, {"name": "prefix", "type": "str", "description": "Prefix to match"}],
@@ -154,7 +154,7 @@
     },
     {
       "name": "substring",
-      "signature": "( str:str start:i64 length:i64 -- result:str )",
+      "signature": "(str:str start:i64 length:i64 -- result:str)",
       "failable": true,
       "description": "Extract substring.",
       "params": [{"name": "str", "type": "str", "description": "Source string"}, {"name": "start", "type": "i64", "description": "Starting index"}, {"name": "length", "type": "i64", "description": "Number of characters"}],
@@ -164,7 +164,7 @@
     },
     {
       "name": "trim",
-      "signature": "( str:str -- result:str )",
+      "signature": "(str:str -- result:str)",
       "failable": false,
       "description": "Remove leading and trailing whitespace.",
       "params": [{"name": "str", "type": "str", "description": "Input string"}],
@@ -174,7 +174,7 @@
     },
     {
       "name": "upper",
-      "signature": "( str:str -- result:str )",
+      "signature": "(str:str -- result:str)",
       "failable": false,
       "description": "Convert string to uppercase.",
       "params": [{"name": "str", "type": "str", "description": "Input string"}],

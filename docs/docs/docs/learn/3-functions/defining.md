@@ -55,8 +55,8 @@ fn push_two( -- a:i64 b:i64) {
 |-----------|---------|
 | `(a:i64 -- b:i64)` | 1 input, 1 output |
 | `(a:i64 b:i64 -- c:i64)` | 2 inputs, 1 output |
-| `(x:i64 -- )` | 1 input, no outputs |
-| `( -- x:i64)` | No inputs, 1 output |
+| `(x:i64 --)` | 1 input, no outputs |
+| `(-- x:i64)` | No inputs, 1 output |
 | `()` | No inputs, no outputs |
 
 ## Parameter Names

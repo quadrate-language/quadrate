@@ -10,7 +10,7 @@
   "functions": [
     {
       "name": "is_valid",
-      "signature": "( s:str -- valid:i64 )",
+      "signature": "(s:str -- valid:i64)",
       "failable": false,
       "description": "Check if a string is a valid UUID format.",
       "params": [{"name": "s", "type": "str", "description": "String to check"}],
@@ -20,7 +20,7 @@
     },
     {
       "name": "v4_seeded",
-      "signature": "( seed:i64 -- uuid:str )",
+      "signature": "(seed:i64 -- uuid:str)",
       "failable": false,
       "description": "Generate UUID with specific seed (for reproducibility).",
       "params": [{"name": "seed", "type": "i64", "description": "Seed value"}],
@@ -30,7 +30,7 @@
     },
     {
       "name": "v4",
-      "signature": "(  -- uuid:str )",
+      "signature": "( -- uuid:str)",
       "failable": false,
       "description": "Generate a new random UUIDv4 string.",
       "params": [],

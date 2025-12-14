@@ -9,7 +9,7 @@ Arrays are pointers to contiguous i64 values.
 
 Sort an array of i64 in ascending order (insertion sort).
 
-**Signature:** `( arr:ptr count:i64 --  )`
+**Signature:** `(arr:ptr count:i64 -- )`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -28,7 +28,7 @@ arr count sort::ints
 
 Sort an array of i64 in descending order.
 
-**Signature:** `( arr:ptr count:i64 --  )`
+**Signature:** `(arr:ptr count:i64 -- )`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -47,7 +47,7 @@ arr count sort::ints_desc
 
 Check if array is sorted in ascending order.
 
-**Signature:** `( arr:ptr count:i64 -- sorted:i64 )`
+**Signature:** `(arr:ptr count:i64 -- sorted:i64)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -70,7 +70,7 @@ arr count sort::is_sorted  // result
 
 Find maximum value in array.
 
-**Signature:** `( arr:ptr count:i64 -- maxval:i64 )`
+**Signature:** `(arr:ptr count:i64 -- maxval:i64)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -93,7 +93,7 @@ arr count sort::max  // val
 
 Find minimum value in array.
 
-**Signature:** `( arr:ptr count:i64 -- minval:i64 )`
+**Signature:** `(arr:ptr count:i64 -- minval:i64)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -116,7 +116,7 @@ arr count sort::min  // val
 
 Reverse an array in place.
 
-**Signature:** `( arr:ptr count:i64 --  )`
+**Signature:** `(arr:ptr count:i64 -- )`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -135,7 +135,7 @@ arr count sort::reverse
 
 Binary search for value in sorted array.
 
-**Signature:** `( arr:ptr count:i64 needle:i64 -- idx:i64 )`
+**Signature:** `(arr:ptr count:i64 needle:i64 -- idx:i64)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|

@@ -15,7 +15,7 @@ POSIX-style paths with forward slash separator.
 
 Get the filename part of a path.
 
-**Signature:** `( path:str -- name:str )`
+**Signature:** `(path:str -- name:str)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -37,7 +37,7 @@ Get the filename part of a path.
 
 Get the directory part of a path.
 
-**Signature:** `( path:str -- dir:str )`
+**Signature:** `(path:str -- dir:str)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -59,7 +59,7 @@ Get the directory part of a path.
 
 Get the file extension (including dot).
 
-**Signature:** `( path:str -- ext:str )`
+**Signature:** `(path:str -- ext:str)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -81,7 +81,7 @@ Get the file extension (including dot).
 
 Check if path is absolute.
 
-**Signature:** `( path:str -- result:i64 )`
+**Signature:** `(path:str -- result:i64)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -103,7 +103,7 @@ Check if path is absolute.
 
 Join two path components.
 
-**Signature:** `( p1:str p2:str -- joined:str )`
+**Signature:** `(p1:str p2:str -- joined:str)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -126,7 +126,7 @@ Join two path components.
 
 Normalize a path (remove redundant separators).
 
-**Signature:** `( path:str -- norm:str )`
+**Signature:** `(path:str -- norm:str)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -148,7 +148,7 @@ Normalize a path (remove redundant separators).
 
 Get filename without extension.
 
-**Signature:** `( path:str -- stem:str )`
+**Signature:** `(path:str -- stem:str)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|

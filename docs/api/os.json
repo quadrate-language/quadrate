@@ -74,7 +74,7 @@
   "functions": [
     {
       "name": "copy",
-      "signature": "( srcpath:str dstpath:str --  )",
+      "signature": "(srcpath:str dstpath:str -- )",
       "failable": true,
       "description": "Copy a file.",
       "params": [{"name": "srcpath", "type": "str", "description": "Source path"}, {"name": "dstpath", "type": "str", "description": "Destination path"}],
@@ -84,7 +84,7 @@
     },
     {
       "name": "delete",
-      "signature": "( path:str --  )",
+      "signature": "(path:str -- )",
       "failable": true,
       "description": "Delete a file or empty directory.",
       "params": [{"name": "path", "type": "str", "description": "Path to delete"}],
@@ -94,7 +94,7 @@
     },
     {
       "name": "exists",
-      "signature": "( path:str -- exists:i64 )",
+      "signature": "(path:str -- exists:i64)",
       "failable": false,
       "description": "Check if path exists.",
       "params": [{"name": "path", "type": "str", "description": "File or directory path"}],
@@ -104,7 +104,7 @@
     },
     {
       "name": "exit",
-      "signature": "( code:i64 --  )",
+      "signature": "(code:i64 -- )",
       "failable": false,
       "description": "Exit the program with status code.",
       "params": [{"name": "code", "type": "i64", "description": "Exit status (os::ExitSuccess or os::ExitFailure)"}],
@@ -114,7 +114,7 @@
     },
     {
       "name": "getenv",
-      "signature": "( name:str -- value:str )",
+      "signature": "(name:str -- value:str)",
       "failable": false,
       "description": "Get environment variable value.",
       "params": [{"name": "name", "type": "str", "description": "Variable name"}],
@@ -124,7 +124,7 @@
     },
     {
       "name": "list",
-      "signature": "( path:str -- entries:ptr count:i64 )",
+      "signature": "(path:str -- entries:ptr count:i64)",
       "failable": true,
       "description": "List directory contents.",
       "params": [{"name": "path", "type": "str", "description": "Directory path"}],
@@ -134,7 +134,7 @@
     },
     {
       "name": "mkdir",
-      "signature": "( path:str --  )",
+      "signature": "(path:str -- )",
       "failable": true,
       "description": "Create a directory.",
       "params": [{"name": "path", "type": "str", "description": "Directory path"}],
@@ -144,7 +144,7 @@
     },
     {
       "name": "rename",
-      "signature": "( oldpath:str newpath:str --  )",
+      "signature": "(oldpath:str newpath:str -- )",
       "failable": true,
       "description": "Rename or move a file.",
       "params": [{"name": "oldpath", "type": "str", "description": "Current path"}, {"name": "newpath", "type": "str", "description": "New path"}],
@@ -154,7 +154,7 @@
     },
     {
       "name": "setenv",
-      "signature": "( name:str value:str --  )",
+      "signature": "(name:str value:str -- )",
       "failable": false,
       "description": "Set environment variable.",
       "params": [{"name": "name", "type": "str", "description": "Variable name"}, {"name": "value", "type": "str", "description": "Variable value"}],
@@ -164,7 +164,7 @@
     },
     {
       "name": "system",
-      "signature": "( cmd:str -- exitcode:i64 )",
+      "signature": "(cmd:str -- exitcode:i64)",
       "failable": false,
       "description": "Execute a shell command.",
       "params": [{"name": "cmd", "type": "str", "description": "Command to execute"}],

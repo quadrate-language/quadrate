@@ -10,7 +10,7 @@
   "functions": [
     {
       "name": "accept",
-      "signature": "( server_socket:i64 -- client_socket:i64 )",
+      "signature": "(server_socket:i64 -- client_socket:i64)",
       "failable": false,
       "description": "Accept an incoming connection.",
       "params": [{"name": "server_socket", "type": "i64", "description": "Server socket from listen"}],
@@ -20,7 +20,7 @@
     },
     {
       "name": "close",
-      "signature": "( socket:i64 --  )",
+      "signature": "(socket:i64 -- )",
       "failable": false,
       "description": "Close socket and release resources.",
       "params": [{"name": "socket", "type": "i64", "description": "Socket descriptor"}],
@@ -30,7 +30,7 @@
     },
     {
       "name": "connect",
-      "signature": "( host:str port:i64 -- socket:i64 )",
+      "signature": "(host:str port:i64 -- socket:i64)",
       "failable": false,
       "description": "Connect to a remote host.",
       "params": [{"name": "host", "type": "str", "description": "Hostname or IP address"}, {"name": "port", "type": "i64", "description": "Port number"}],
@@ -40,7 +40,7 @@
     },
     {
       "name": "listen",
-      "signature": "( port:i64 -- socket:i64 )",
+      "signature": "(port:i64 -- socket:i64)",
       "failable": false,
       "description": "Start listening for connections on a port.",
       "params": [{"name": "port", "type": "i64", "description": "Port number to listen on"}],
@@ -50,7 +50,7 @@
     },
     {
       "name": "receive",
-      "signature": "( socket:i64 max_bytes:i64 -- data:str bytes_read:i64 )",
+      "signature": "(socket:i64 max_bytes:i64 -- data:str bytes_read:i64)",
       "failable": false,
       "description": "Receive data from socket.",
       "params": [{"name": "socket", "type": "i64", "description": "Socket descriptor"}, {"name": "max_bytes", "type": "i64", "description": "Maximum bytes to receive"}],
@@ -60,7 +60,7 @@
     },
     {
       "name": "send",
-      "signature": "( socket:i64 data:str -- bytes_sent:i64 )",
+      "signature": "(socket:i64 data:str -- bytes_sent:i64)",
       "failable": false,
       "description": "Send data over socket.",
       "params": [{"name": "socket", "type": "i64", "description": "Socket descriptor"}, {"name": "data", "type": "str", "description": "Data to send"}],
@@ -70,7 +70,7 @@
     },
     {
       "name": "shutdown",
-      "signature": "( socket:i64 --  )",
+      "signature": "(socket:i64 -- )",
       "failable": false,
       "description": "Shutdown socket for reading/writing.",
       "params": [{"name": "socket", "type": "i64", "description": "Socket descriptor"}],

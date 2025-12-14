@@ -8,7 +8,7 @@ TCP network operations.
 
 Accept an incoming connection.
 
-**Signature:** `( server_socket:i64 -- client_socket:i64 )`
+**Signature:** `(server_socket:i64 -- client_socket:i64)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -30,7 +30,7 @@ server net::accept  // client
 
 Close socket and release resources.
 
-**Signature:** `( socket:i64 --  )`
+**Signature:** `(socket:i64 -- )`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -48,7 +48,7 @@ sock net::close
 
 Connect to a remote host.
 
-**Signature:** `( host:str port:i64 -- socket:i64 )`
+**Signature:** `(host:str port:i64 -- socket:i64)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -71,7 +71,7 @@ Connect to a remote host.
 
 Start listening for connections on a port.
 
-**Signature:** `( port:i64 -- socket:i64 )`
+**Signature:** `(port:i64 -- socket:i64)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -93,7 +93,7 @@ Start listening for connections on a port.
 
 Receive data from socket.
 
-**Signature:** `( socket:i64 max_bytes:i64 -- data:str bytes_read:i64 )`
+**Signature:** `(socket:i64 max_bytes:i64 -- data:str bytes_read:i64)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -117,7 +117,7 @@ sock 1024 net::receive -> data  // n
 
 Send data over socket.
 
-**Signature:** `( socket:i64 data:str -- bytes_sent:i64 )`
+**Signature:** `(socket:i64 data:str -- bytes_sent:i64)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -140,7 +140,7 @@ sock "Hello" net::send  // n
 
 Shutdown socket for reading/writing.
 
-**Signature:** `( socket:i64 --  )`
+**Signature:** `(socket:i64 -- )`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|

@@ -10,7 +10,7 @@
   "functions": [
     {
       "name": "ints",
-      "signature": "( arr:ptr count:i64 --  )",
+      "signature": "(arr:ptr count:i64 -- )",
       "failable": false,
       "description": "Sort an array of i64 in ascending order (insertion sort).",
       "params": [{"name": "arr", "type": "ptr", "description": "Array of i64 values"}, {"name": "count", "type": "i64", "description": "Number of elements"}],
@@ -20,7 +20,7 @@
     },
     {
       "name": "ints_desc",
-      "signature": "( arr:ptr count:i64 --  )",
+      "signature": "(arr:ptr count:i64 -- )",
       "failable": false,
       "description": "Sort an array of i64 in descending order.",
       "params": [{"name": "arr", "type": "ptr", "description": "Array of i64 values"}, {"name": "count", "type": "i64", "description": "Number of elements"}],
@@ -30,7 +30,7 @@
     },
     {
       "name": "is_sorted",
-      "signature": "( arr:ptr count:i64 -- sorted:i64 )",
+      "signature": "(arr:ptr count:i64 -- sorted:i64)",
       "failable": false,
       "description": "Check if array is sorted in ascending order.",
       "params": [{"name": "arr", "type": "ptr", "description": "Array of i64 values"}, {"name": "count", "type": "i64", "description": "Number of elements"}],
@@ -40,7 +40,7 @@
     },
     {
       "name": "max",
-      "signature": "( arr:ptr count:i64 -- maxval:i64 )",
+      "signature": "(arr:ptr count:i64 -- maxval:i64)",
       "failable": false,
       "description": "Find maximum value in array.",
       "params": [{"name": "arr", "type": "ptr", "description": "Array of i64 values"}, {"name": "count", "type": "i64", "description": "Number of elements (must be > 0)"}],
@@ -50,7 +50,7 @@
     },
     {
       "name": "min",
-      "signature": "( arr:ptr count:i64 -- minval:i64 )",
+      "signature": "(arr:ptr count:i64 -- minval:i64)",
       "failable": false,
       "description": "Find minimum value in array.",
       "params": [{"name": "arr", "type": "ptr", "description": "Array of i64 values"}, {"name": "count", "type": "i64", "description": "Number of elements (must be > 0)"}],
@@ -60,7 +60,7 @@
     },
     {
       "name": "reverse",
-      "signature": "( arr:ptr count:i64 --  )",
+      "signature": "(arr:ptr count:i64 -- )",
       "failable": false,
       "description": "Reverse an array in place.",
       "params": [{"name": "arr", "type": "ptr", "description": "Array of i64 values"}, {"name": "count", "type": "i64", "description": "Number of elements"}],
@@ -70,7 +70,7 @@
     },
     {
       "name": "search",
-      "signature": "( arr:ptr count:i64 needle:i64 -- idx:i64 )",
+      "signature": "(arr:ptr count:i64 needle:i64 -- idx:i64)",
       "failable": false,
       "description": "Binary search for value in sorted array.",
       "params": [{"name": "arr", "type": "ptr", "description": "Sorted array of i64 values"}, {"name": "count", "type": "i64", "description": "Number of elements"}, {"name": "needle", "type": "i64", "description": "Value to find"}],

@@ -139,7 +139,7 @@ fn main() {
 
 ## Function Signatures
 
-Functions declare their stack effect with `( inputs -- outputs )`:
+Functions declare their stack effect with `(inputs -- outputs)`:
 
 ```qd
 // Takes two integers, returns one integer

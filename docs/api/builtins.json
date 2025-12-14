@@ -5,107 +5,107 @@
     {
       "name": "Stack Manipulation",
       "instructions": [
-        {"name": "dup", "signature": "( a -- a a )", "description": "Duplicate top element"},
-        {"name": "dupd", "signature": "( a b -- a a b )", "description": "Duplicate second element"},
-        {"name": "dup2", "signature": "( a b -- a b a b )", "description": "Duplicate top two elements"},
-        {"name": "swap", "signature": "( a b -- b a )", "description": "Swap top two elements"},
-        {"name": "swapd", "signature": "( a b c -- b a c )", "description": "Swap second pair of elements"},
-        {"name": "swap2", "signature": "( a b c d -- c d a b )", "description": "Swap two pairs"},
-        {"name": "over", "signature": "( a b -- a b a )", "description": "Copy second element to top"},
-        {"name": "overd", "signature": "( a b c -- a b c a )", "description": "Copy second element below top"},
-        {"name": "over2", "signature": "( a b c d -- a b c d a b )", "description": "Copy second pair to top"},
-        {"name": "nip", "signature": "( a b -- b )", "description": "Remove second element"},
-        {"name": "nipd", "signature": "( a b c -- a c )", "description": "Remove second element below top"},
-        {"name": "drop", "signature": "( a -- )", "description": "Drop top element"},
-        {"name": "drop2", "signature": "( a b -- )", "description": "Drop top two elements"},
-        {"name": "rot", "signature": "( a b c -- b c a )", "description": "Rotate three elements"},
-        {"name": "tuck", "signature": "( a b -- b a b )", "description": "Copy top below second"},
-        {"name": "pick", "signature": "( ... n -- ... x )", "description": "Copy nth element to top (0 = top)"},
-        {"name": "roll", "signature": "( ... n -- ... x )", "description": "Move nth element to top"},
-        {"name": "depth", "signature": "( -- n )", "description": "Push current stack depth"},
-        {"name": "clear", "signature": "( ... -- )", "description": "Clear entire stack"}
+        {"name": "dup", "signature": "(a -- a a)", "description": "Duplicate top element"},
+        {"name": "dupd", "signature": "(a b -- a a b)", "description": "Duplicate second element"},
+        {"name": "dup2", "signature": "(a b -- a b a b)", "description": "Duplicate top two elements"},
+        {"name": "swap", "signature": "(a b -- b a)", "description": "Swap top two elements"},
+        {"name": "swapd", "signature": "(a b c -- b a c)", "description": "Swap second pair of elements"},
+        {"name": "swap2", "signature": "(a b c d -- c d a b)", "description": "Swap two pairs"},
+        {"name": "over", "signature": "(a b -- a b a)", "description": "Copy second element to top"},
+        {"name": "overd", "signature": "(a b c -- a b c a)", "description": "Copy second element below top"},
+        {"name": "over2", "signature": "(a b c d -- a b c d a b)", "description": "Copy second pair to top"},
+        {"name": "nip", "signature": "(a b -- b)", "description": "Remove second element"},
+        {"name": "nipd", "signature": "(a b c -- a c)", "description": "Remove second element below top"},
+        {"name": "drop", "signature": "(a --)", "description": "Drop top element"},
+        {"name": "drop2", "signature": "(a b --)", "description": "Drop top two elements"},
+        {"name": "rot", "signature": "(a b c -- b c a)", "description": "Rotate three elements"},
+        {"name": "tuck", "signature": "(a b -- b a b)", "description": "Copy top below second"},
+        {"name": "pick", "signature": "(... n -- ... x)", "description": "Copy nth element to top (0 = top)"},
+        {"name": "roll", "signature": "(... n -- ... x)", "description": "Move nth element to top"},
+        {"name": "depth", "signature": "(-- n)", "description": "Push current stack depth"},
+        {"name": "clear", "signature": "(... --)", "description": "Clear entire stack"}
       ]
     },
     {
       "name": "Arithmetic",
       "instructions": [
-        {"name": "add", "signature": "( a b -- a+b )", "description": "Add top two elements", "alias": "+"},
-        {"name": "sub", "signature": "( a b -- a-b )", "description": "Subtract top from second", "alias": "-"},
-        {"name": "mul", "signature": "( a b -- a*b )", "description": "Multiply top two elements", "alias": "*"},
-        {"name": "div", "signature": "( a b -- a/b )", "description": "Divide second by top", "alias": "/"},
-        {"name": "mod", "signature": "( a b -- a%b )", "description": "Modulo (remainder)", "alias": "%"},
-        {"name": "neg", "signature": "( a -- -a )", "description": "Negate top element"},
-        {"name": "inc", "signature": "( a -- a+1 )", "description": "Increment by 1"},
-        {"name": "dec", "signature": "( a -- a-1 )", "description": "Decrement by 1"}
+        {"name": "add", "signature": "(a b -- a+b)", "description": "Add top two elements", "alias": "+"},
+        {"name": "sub", "signature": "(a b -- a-b)", "description": "Subtract top from second", "alias": "-"},
+        {"name": "mul", "signature": "(a b -- a*b)", "description": "Multiply top two elements", "alias": "*"},
+        {"name": "div", "signature": "(a b -- a/b)", "description": "Divide second by top", "alias": "/"},
+        {"name": "mod", "signature": "(a b -- a%b)", "description": "Modulo (remainder)", "alias": "%"},
+        {"name": "neg", "signature": "(a -- -a)", "description": "Negate top element"},
+        {"name": "inc", "signature": "(a -- a+1)", "description": "Increment by 1"},
+        {"name": "dec", "signature": "(a -- a-1)", "description": "Decrement by 1"}
       ]
     },
     {
       "name": "Comparison",
       "instructions": [
-        {"name": "eq", "signature": "( a b -- bool )", "description": "Test equality (a == b)", "alias": "=="},
-        {"name": "neq", "signature": "( a b -- bool )", "description": "Test inequality (a != b)", "alias": "!="},
-        {"name": "lt", "signature": "( a b -- bool )", "description": "Test less than (a < b)", "alias": "<"},
-        {"name": "gt", "signature": "( a b -- bool )", "description": "Test greater than (a > b)", "alias": ">"},
-        {"name": "lte", "signature": "( a b -- bool )", "description": "Test less or equal (a <= b)", "alias": "<="},
-        {"name": "gte", "signature": "( a b -- bool )", "description": "Test greater or equal (a >= b)", "alias": ">="},
-        {"name": "within", "signature": "( val min max -- bool )", "description": "Test if val is in [min, max]"}
+        {"name": "eq", "signature": "(a b -- bool)", "description": "Test equality (a == b)", "alias": "=="},
+        {"name": "neq", "signature": "(a b -- bool)", "description": "Test inequality (a != b)", "alias": "!="},
+        {"name": "lt", "signature": "(a b -- bool)", "description": "Test less than (a < b)", "alias": "<"},
+        {"name": "gt", "signature": "(a b -- bool)", "description": "Test greater than (a > b)", "alias": ">"},
+        {"name": "lte", "signature": "(a b -- bool)", "description": "Test less or equal (a <= b)", "alias": "<="},
+        {"name": "gte", "signature": "(a b -- bool)", "description": "Test greater or equal (a >= b)", "alias": ">="},
+        {"name": "within", "signature": "(val min max -- bool)", "description": "Test if val is in [min, max]"}
       ]
     },
     {
       "name": "Type Casting",
       "instructions": [
-        {"name": "cast<T>", "signature": "( a -- T )", "description": "Cast to specified type (i64, f64, str, ptr)"}
+        {"name": "cast<T>", "signature": "(a -- T)", "description": "Cast to specified type (i64, f64, str, ptr)"}
       ]
     },
     {
       "name": "I/O",
       "instructions": [
-        {"name": ".", "signature": "( a -- )", "description": "Print top value (no newline)"},
-        {"name": ".v", "signature": "( a -- )", "description": "Print top value with type info"},
-        {"name": ".s", "signature": "( ... -- ... )", "description": "Print entire stack"},
-        {"name": ".sv", "signature": "( ... -- ... )", "description": "Print entire stack with types"},
+        {"name": ".", "signature": "(a --)", "description": "Print top value (no newline)"},
+        {"name": ".v", "signature": "(a --)", "description": "Print top value with type info"},
+        {"name": ".s", "signature": "(... -- ...)", "description": "Print entire stack"},
+        {"name": ".sv", "signature": "(... -- ...)", "description": "Print entire stack with types"},
         {"name": "nl", "signature": "()", "description": "Print newline"},
-        {"name": "read", "signature": "( -- argc arg1 arg2 ... )", "description": "Read command-line arguments"}
+        {"name": "read", "signature": "(-- argc arg1 arg2 ...)", "description": "Read command-line arguments"}
       ]
     },
     {
       "name": "Memory",
       "instructions": [
-        {"name": "free", "signature": "( ptr -- )", "description": "Free allocated memory"}
+        {"name": "free", "signature": "(ptr --)", "description": "Free allocated memory"}
       ]
     },
     {
       "name": "Control Flow",
       "instructions": [
-        {"name": "if", "signature": "( bool -- )", "description": "Conditional execution: bool if { ... } else { ... }"},
-        {"name": "for", "signature": "( start end step -- )", "description": "Loop: start end step for var { ... }"},
+        {"name": "if", "signature": "(bool --)", "description": "Conditional execution: bool if { ... } else { ... }"},
+        {"name": "for", "signature": "(start end step --)", "description": "Loop: start end step for var { ... }"},
         {"name": "loop", "signature": "()", "description": "Infinite loop: loop { ... break }"},
         {"name": "break", "signature": "()", "description": "Exit current loop"},
         {"name": "continue", "signature": "()", "description": "Skip to next iteration"},
-        {"name": "switch", "signature": "( val -- )", "description": "Switch statement: val switch { case X { ... } default { ... } }"},
+        {"name": "switch", "signature": "(val --)", "description": "Switch statement: val switch { case X { ... } default { ... } }"},
         {"name": "defer", "signature": "()", "description": "Execute block at function exit: defer { ... }"}
       ]
     },
     {
       "name": "Variables",
       "instructions": [
-        {"name": "->", "signature": "( a -- )", "description": "Store to local variable: val -> name"},
-        {"name": "@", "signature": "( ptr -- val )", "description": "Load struct field: ptr @field"}
+        {"name": "->", "signature": "(a --)", "description": "Store to local variable: val -> name"},
+        {"name": "@", "signature": "(ptr -- val)", "description": "Load struct field: ptr @field"}
       ]
     },
     {
       "name": "Error Handling",
       "instructions": [
-        {"name": "error", "signature": "( msg code -- )", "description": "Raise an error"},
+        {"name": "error", "signature": "(msg code --)", "description": "Raise an error"},
         {"name": "!", "signature": "()", "description": "Call failable function: fn! { success } else { error }"}
       ]
     },
     {
       "name": "Threading",
       "instructions": [
-        {"name": "spawn", "signature": "( fn -- thread )", "description": "Spawn new thread running function"},
-        {"name": "detach", "signature": "( thread -- )", "description": "Detach thread (no join needed)"},
-        {"name": "wait", "signature": "( thread -- )", "description": "Wait for thread to complete"}
+        {"name": "spawn", "signature": "(fn -- thread)", "description": "Spawn new thread running function"},
+        {"name": "detach", "signature": "(thread --)", "description": "Detach thread (no join needed)"},
+        {"name": "wait", "signature": "(thread --)", "description": "Wait for thread to complete"}
       ]
     }
   ]

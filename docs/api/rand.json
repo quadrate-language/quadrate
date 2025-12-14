@@ -16,7 +16,7 @@
   "functions": [
     {
       "name": "boolean",
-      "signature": "( rng:ptr -- rng:ptr b:i64 )",
+      "signature": "(rng:ptr -- rng:ptr b:i64)",
       "failable": false,
       "description": "Generate random boolean.",
       "params": [{"name": "rng", "type": "ptr", "description": "RNG state"}],
@@ -26,7 +26,7 @@
     },
     {
       "name": "int",
-      "signature": "( rng:ptr max:i64 -- rng:ptr n:i64 )",
+      "signature": "(rng:ptr max:i64 -- rng:ptr n:i64)",
       "failable": false,
       "description": "Generate random i64 in range [0, max).",
       "params": [{"name": "rng", "type": "ptr", "description": "RNG state"}, {"name": "max", "type": "i64", "description": "Upper bound (exclusive)"}],
@@ -36,7 +36,7 @@
     },
     {
       "name": "new",
-      "signature": "(  -- rng:ptr )",
+      "signature": "( -- rng:ptr)",
       "failable": false,
       "description": "Create a new RNG seeded from current time.",
       "params": [],
@@ -46,7 +46,7 @@
     },
     {
       "name": "next",
-      "signature": "( rng:ptr -- rng:ptr n:i64 )",
+      "signature": "(rng:ptr -- rng:ptr n:i64)",
       "failable": false,
       "description": "Generate next random i64.",
       "params": [{"name": "rng", "type": "ptr", "description": "RNG state"}],
@@ -56,7 +56,7 @@
     },
     {
       "name": "range",
-      "signature": "( rng:ptr min:i64 max:i64 -- rng:ptr n:i64 )",
+      "signature": "(rng:ptr min:i64 max:i64 -- rng:ptr n:i64)",
       "failable": false,
       "description": "Generate random i64 in range [min, max).",
       "params": [{"name": "rng", "type": "ptr", "description": "RNG state"}, {"name": "min", "type": "i64", "description": "Lower bound (inclusive)"}, {"name": "max", "type": "i64", "description": "Upper bound (exclusive)"}],
@@ -66,7 +66,7 @@
     },
     {
       "name": "with_seed",
-      "signature": "( seed:i64 -- rng:ptr )",
+      "signature": "(seed:i64 -- rng:ptr)",
       "failable": false,
       "description": "Create a new RNG with specific seed.",
       "params": [{"name": "seed", "type": "i64", "description": "Initial seed value (must be non-zero)"}],

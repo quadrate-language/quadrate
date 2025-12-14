@@ -59,7 +59,7 @@ Examples:
 
 ## Stack Effects in Signatures
 
-Function signatures declare stack effects with `( inputs -- outputs )`:
+Function signatures declare stack effects with `(inputs -- outputs)`:
 
 ```qd
 fn add(a:i64 b:i64 -- sum:i64) {

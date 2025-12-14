@@ -21,7 +21,7 @@ Growable string buffer for efficient string building.
 
 Append a single character (by code point).
 
-**Signature:** `( sb:ptr c:i64 -- sb:ptr )`
+**Signature:** `(sb:ptr c:i64 -- sb:ptr)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -44,7 +44,7 @@ builder 65 sb::append_char  // builder
 
 Append an integer as string.
 
-**Signature:** `( sb:ptr n:i64 -- sb:ptr )`
+**Signature:** `(sb:ptr n:i64 -- sb:ptr)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -67,7 +67,7 @@ builder 42 sb::append_int  // builder
 
 Append a string to the builder.
 
-**Signature:** `( sb:ptr s:str -- sb:ptr )`
+**Signature:** `(sb:ptr s:str -- sb:ptr)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -90,7 +90,7 @@ builder "hello" sb::append  // builder
 
 Build the final string (does not consume builder).
 
-**Signature:** `( sb:ptr -- s:str )`
+**Signature:** `(sb:ptr -- s:str)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -112,7 +112,7 @@ builder sb::build  // result
 
 Build string and free builder in one call.
 
-**Signature:** `( sb:ptr -- s:str )`
+**Signature:** `(sb:ptr -- s:str)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -134,7 +134,7 @@ builder sb::finish  // result
 
 Free the builder's resources.
 
-**Signature:** `( sb:ptr --  )`
+**Signature:** `(sb:ptr -- )`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -152,7 +152,7 @@ builder sb::free
 
 Get current length of builder content.
 
-**Signature:** `( sb:ptr -- sblen:i64 )`
+**Signature:** `(sb:ptr -- sblen:i64)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -174,7 +174,7 @@ builder sb::length  // sblen
 
 Create a new StringBuilder with default capacity.
 
-**Signature:** `(  -- sb:ptr )`
+**Signature:** `( -- sb:ptr)`
 
 | Output | Type | Description |
 |--------|------|-------------|
@@ -192,7 +192,7 @@ sb::new  // builder
 
 Create a StringBuilder with specific initial capacity.
 
-**Signature:** `( capacity:i64 -- sb:ptr )`
+**Signature:** `(capacity:i64 -- sb:ptr)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|

@@ -6,9 +6,9 @@ Built-in operations for concurrent execution.
 
 | Instruction | Signature | Description |
 |-------------|-----------|-------------|
-| `spawn` | `( fn -- thread )` | Spawn a new thread |
-| `wait` | `( thread -- )` | Wait for thread completion |
-| `detach` | `( thread -- )` | Detach a thread |
+| `spawn` | `(fn -- thread)` | Spawn a new thread |
+| `wait` | `(thread --)` | Wait for thread completion |
+| `detach` | `(thread --)` | Detach a thread |
 
 ---
 
@@ -18,7 +18,7 @@ Built-in operations for concurrent execution.
 
 Spawns a new thread to execute a function.
 
-**Signature:** `( fn -- thread )`
+**Signature:** `(fn -- thread)`
 
 ```qd
 fn worker() {
@@ -35,7 +35,7 @@ fn main() {
 
 Waits for a thread to complete.
 
-**Signature:** `( thread -- )`
+**Signature:** `(thread --)`
 
 ```qd
 &worker spawn -> t
@@ -47,7 +47,7 @@ t wait  // Block until worker finishes
 
 Detaches a thread, allowing it to run independently.
 
-**Signature:** `( thread -- )`
+**Signature:** `(thread --)`
 
 ```qd
 &worker spawn -> t

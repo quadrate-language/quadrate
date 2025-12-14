@@ -19,7 +19,7 @@ test "addition works" {
 
 Assert that two values are equal. Works with any type (i64, f64, str, ptr).
 
-**Signature:** `( a:any b:any --  )`
+**Signature:** `(a:any b:any -- )`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -39,7 +39,7 @@ Assert that two values are equal. Works with any type (i64, f64, str, ptr).
 
 Assert that a value is falsy. Falsy means: zero for integers, zero for floats, empty for strings, null for pointers.
 
-**Signature:** `( v:any --  )`
+**Signature:** `(v:any -- )`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -58,7 +58,7 @@ Assert that a value is falsy. Falsy means: zero for integers, zero for floats, e
 
 Assert that two values are not equal. Works with any type (i64, f64, str, ptr).
 
-**Signature:** `( a:any b:any --  )`
+**Signature:** `(a:any b:any -- )`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -77,7 +77,7 @@ Assert that two values are not equal. Works with any type (i64, f64, str, ptr).
 
 Assert that a value is truthy. Truthy means: non-zero for integers, non-zero for floats, non-empty for strings, non-null for pointers.
 
-**Signature:** `( v:any --  )`
+**Signature:** `(v:any -- )`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -96,7 +96,7 @@ Assert that a value is truthy. Truthy means: non-zero for integers, non-zero for
 
 Unconditionally fail a test with a message.
 
-**Signature:** `( msg:str --  )`
+**Signature:** `(msg:str -- )`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|

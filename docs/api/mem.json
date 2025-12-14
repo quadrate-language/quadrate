@@ -10,7 +10,7 @@
   "functions": [
     {
       "name": "alloc",
-      "signature": "( bytes:i64 -- address:ptr )",
+      "signature": "(bytes:i64 -- address:ptr)",
       "failable": false,
       "description": "Allocate memory.",
       "params": [{"name": "bytes", "type": "i64", "description": "Number of bytes to allocate"}],
@@ -20,7 +20,7 @@
     },
     {
       "name": "copy",
-      "signature": "( dst:ptr src:ptr bytes:i64 --  )",
+      "signature": "(dst:ptr src:ptr bytes:i64 -- )",
       "failable": false,
       "description": "Copy bytes between memory regions.",
       "params": [{"name": "dst", "type": "ptr", "description": "Destination address"}, {"name": "src", "type": "ptr", "description": "Source address"}, {"name": "bytes", "type": "i64", "description": "Number of bytes to copy"}],
@@ -30,7 +30,7 @@
     },
     {
       "name": "fill",
-      "signature": "( value:i64 address:ptr bytes:i64 --  )",
+      "signature": "(value:i64 address:ptr bytes:i64 -- )",
       "failable": false,
       "description": "Fill memory region with byte value.",
       "params": [{"name": "value", "type": "i64", "description": "Fill value (0-255)"}, {"name": "address", "type": "ptr", "description": "Base address"}, {"name": "bytes", "type": "i64", "description": "Number of bytes to fill"}],
@@ -40,7 +40,7 @@
     },
     {
       "name": "free",
-      "signature": "( address:ptr --  )",
+      "signature": "(address:ptr -- )",
       "failable": false,
       "description": "Free allocated memory.",
       "params": [{"name": "address", "type": "ptr", "description": "Memory to free (null is safe)"}],
@@ -50,7 +50,7 @@
     },
     {
       "name": "from_string",
-      "signature": "( text:str -- buffer:ptr length:i64 )",
+      "signature": "(text:str -- buffer:ptr length:i64)",
       "failable": false,
       "description": "Convert string to buffer.",
       "params": [{"name": "text", "type": "str", "description": "Source string"}],
@@ -60,7 +60,7 @@
     },
     {
       "name": "get_byte",
-      "signature": "( address:ptr offset:i64 -- value:i64 )",
+      "signature": "(address:ptr offset:i64 -- value:i64)",
       "failable": false,
       "description": "Get a byte at offset.",
       "params": [{"name": "address", "type": "ptr", "description": "Base address"}, {"name": "offset", "type": "i64", "description": "Byte offset from base"}],
@@ -70,7 +70,7 @@
     },
     {
       "name": "get_f64",
-      "signature": "( address:ptr offset:i64 -- value:f64 )",
+      "signature": "(address:ptr offset:i64 -- value:f64)",
       "failable": false,
       "description": "Get a 64-bit float at offset.",
       "params": [{"name": "address", "type": "ptr", "description": "Base address"}, {"name": "offset", "type": "i64", "description": "Byte offset from base"}],
@@ -80,7 +80,7 @@
     },
     {
       "name": "get_i64",
-      "signature": "( address:ptr offset:i64 -- value:i64 )",
+      "signature": "(address:ptr offset:i64 -- value:i64)",
       "failable": false,
       "description": "Get a 64-bit integer at offset.",
       "params": [{"name": "address", "type": "ptr", "description": "Base address"}, {"name": "offset", "type": "i64", "description": "Byte offset from base"}],
@@ -90,7 +90,7 @@
     },
     {
       "name": "get_ptr",
-      "signature": "( address:ptr offset:i64 -- value:ptr )",
+      "signature": "(address:ptr offset:i64 -- value:ptr)",
       "failable": false,
       "description": "Get a pointer at offset.",
       "params": [{"name": "address", "type": "ptr", "description": "Base address"}, {"name": "offset", "type": "i64", "description": "Byte offset from base"}],
@@ -100,7 +100,7 @@
     },
     {
       "name": "is_null",
-      "signature": "( address:ptr -- is_null:i64 )",
+      "signature": "(address:ptr -- is_null:i64)",
       "failable": false,
       "description": "Check if pointer is null.",
       "params": [{"name": "address", "type": "ptr", "description": "Pointer to check"}],
@@ -110,7 +110,7 @@
     },
     {
       "name": "realloc",
-      "signature": "( address:ptr new_bytes:i64 -- new_address:ptr )",
+      "signature": "(address:ptr new_bytes:i64 -- new_address:ptr)",
       "failable": false,
       "description": "Reallocate memory to new size.",
       "params": [{"name": "address", "type": "ptr", "description": "Existing allocation (or null for new alloc)"}, {"name": "new_bytes", "type": "i64", "description": "New size in bytes"}],
@@ -120,7 +120,7 @@
     },
     {
       "name": "set_byte",
-      "signature": "( value:i64 address:ptr offset:i64 --  )",
+      "signature": "(value:i64 address:ptr offset:i64 -- )",
       "failable": false,
       "description": "Set a byte at offset.",
       "params": [{"name": "value", "type": "i64", "description": "Byte value (0-255)"}, {"name": "address", "type": "ptr", "description": "Base address"}, {"name": "offset", "type": "i64", "description": "Byte offset from base"}],
@@ -130,7 +130,7 @@
     },
     {
       "name": "set_f64",
-      "signature": "( value:f64 address:ptr offset:i64 --  )",
+      "signature": "(value:f64 address:ptr offset:i64 -- )",
       "failable": false,
       "description": "Set a 64-bit float at offset.",
       "params": [{"name": "value", "type": "f64", "description": "Float value"}, {"name": "address", "type": "ptr", "description": "Base address"}, {"name": "offset", "type": "i64", "description": "Byte offset from base"}],
@@ -140,7 +140,7 @@
     },
     {
       "name": "set_i64",
-      "signature": "( value:i64 address:ptr offset:i64 --  )",
+      "signature": "(value:i64 address:ptr offset:i64 -- )",
       "failable": false,
       "description": "Set a 64-bit integer at offset.",
       "params": [{"name": "value", "type": "i64", "description": "Integer value"}, {"name": "address", "type": "ptr", "description": "Base address"}, {"name": "offset", "type": "i64", "description": "Byte offset from base"}],
@@ -150,7 +150,7 @@
     },
     {
       "name": "set_ptr",
-      "signature": "( value:ptr address:ptr offset:i64 --  )",
+      "signature": "(value:ptr address:ptr offset:i64 -- )",
       "failable": false,
       "description": "Set a pointer at offset.",
       "params": [{"name": "value", "type": "ptr", "description": "Pointer value"}, {"name": "address", "type": "ptr", "description": "Base address"}, {"name": "offset", "type": "i64", "description": "Byte offset from base"}],
@@ -160,7 +160,7 @@
     },
     {
       "name": "to_string",
-      "signature": "( buffer:ptr length:i64 -- text:str )",
+      "signature": "(buffer:ptr length:i64 -- text:str)",
       "failable": false,
       "description": "Convert buffer to string.",
       "params": [{"name": "buffer", "type": "ptr", "description": "Source buffer"}, {"name": "length", "type": "i64", "description": "Number of bytes"}],
@@ -170,7 +170,7 @@
     },
     {
       "name": "zero",
-      "signature": "( address:ptr bytes:i64 --  )",
+      "signature": "(address:ptr bytes:i64 -- )",
       "failable": false,
       "description": "Zero out memory region.",
       "params": [{"name": "address", "type": "ptr", "description": "Base address"}, {"name": "bytes", "type": "i64", "description": "Number of bytes to zero"}],

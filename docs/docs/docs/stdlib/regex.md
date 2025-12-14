@@ -10,7 +10,7 @@ Note: Nested groups and alternation inside groups not yet supported.
 
 Compile a regex pattern.
 
-**Signature:** `( pattern:str -- re:ptr )`
+**Signature:** `(pattern:str -- re:ptr)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -26,7 +26,7 @@ Compile a regex pattern.
 
 Compile and test if pattern matches string.
 
-**Signature:** `( pattern:str s:str -- result:i64 )`
+**Signature:** `(pattern:str s:str -- result:i64)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -49,7 +49,7 @@ Compile and test if pattern matches string.
 
 Test if a string matches a compiled regex (full match).
 
-**Signature:** `( re:ptr s:str -- result:i64 )`
+**Signature:** `(re:ptr s:str -- result:i64)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -66,5 +66,5 @@ Test if a string matches a compiled regex (full match).
 
 Free a compiled regex.
 
-**Signature:** `( re:ptr --  )`
+**Signature:** `(re:ptr -- )`
 

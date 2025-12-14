@@ -6,13 +6,13 @@ Operations that compare values and return boolean results (0 or 1).
 
 | Instruction | Signature | Description |
 |-------------|-----------|-------------|
-| `==` / `eq` | `( a b -- bool )` | Equal |
-| `!=` / `neq` | `( a b -- bool )` | Not equal |
-| `<` / `lt` | `( a b -- bool )` | Less than |
-| `<=` / `lte` | `( a b -- bool )` | Less or equal |
-| `>` / `gt` | `( a b -- bool )` | Greater than |
-| `>=` / `gte` | `( a b -- bool )` | Greater or equal |
-| `within` | `( val low high -- bool )` | Range check |
+| `==` / `eq` | `(a b -- bool)` | Equal |
+| `!=` / `neq` | `(a b -- bool)` | Not equal |
+| `<` / `lt` | `(a b -- bool)` | Less than |
+| `<=` / `lte` | `(a b -- bool)` | Less or equal |
+| `>` / `gt` | `(a b -- bool)` | Greater than |
+| `>=` / `gte` | `(a b -- bool)` | Greater or equal |
+| `within` | `(val low high -- bool)` | Range check |
 
 ---
 
@@ -22,7 +22,7 @@ Operations that compare values and return boolean results (0 or 1).
 
 Outputs 1 if a equals b, 0 otherwise.
 
-**Signature:** `( a b -- bool )`
+**Signature:** `(a b -- bool)`
 
 ```qd
 5 5 == // 1
@@ -33,7 +33,7 @@ Outputs 1 if a equals b, 0 otherwise.
 
 Outputs 1 if a does not equal b, 0 otherwise.
 
-**Signature:** `( a b -- bool )`
+**Signature:** `(a b -- bool)`
 
 ```qd
 5 3 != // 1
@@ -48,7 +48,7 @@ Outputs 1 if a does not equal b, 0 otherwise.
 
 Outputs 1 if a is less than b, 0 otherwise.
 
-**Signature:** `( a b -- bool )`
+**Signature:** `(a b -- bool)`
 
 ```qd
 3 5 < // 1
@@ -59,7 +59,7 @@ Outputs 1 if a is less than b, 0 otherwise.
 
 Outputs 1 if a is less than or equal to b, 0 otherwise.
 
-**Signature:** `( a b -- bool )`
+**Signature:** `(a b -- bool)`
 
 ```qd
 5 5 <= // 1
@@ -71,7 +71,7 @@ Outputs 1 if a is less than or equal to b, 0 otherwise.
 
 Outputs 1 if a is greater than b, 0 otherwise.
 
-**Signature:** `( a b -- bool )`
+**Signature:** `(a b -- bool)`
 
 ```qd
 5 3 > // 1
@@ -82,7 +82,7 @@ Outputs 1 if a is greater than b, 0 otherwise.
 
 Outputs 1 if a is greater than or equal to b, 0 otherwise.
 
-**Signature:** `( a b -- bool )`
+**Signature:** `(a b -- bool)`
 
 ```qd
 5 5 >= // 1
@@ -98,7 +98,7 @@ Outputs 1 if a is greater than or equal to b, 0 otherwise.
 
 Outputs 1 if val is in [low, high), 0 otherwise.
 
-**Signature:** `( val low high -- bool )`
+**Signature:** `(val low high -- bool)`
 
 ```qd
 5 0 10 within // 1 (5 is in [0,10))

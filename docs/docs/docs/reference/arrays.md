@@ -6,12 +6,12 @@ Operations for creating and manipulating arrays.
 
 | Instruction | Signature | Description |
 |-------------|-----------|-------------|
-| `make<T>` | `( size -- arr )` | Create array with elements of type T |
-| `len` | `( arr -- len )` | Get length |
-| `nth` | `( arr index -- value )` | Get element |
-| `set` | `( arr index value -- )` | Set element |
-| `append` | `( arr value -- arr )` | Append element |
-| `free` | `( arr -- )` | Free memory |
+| `make<T>` | `(size -- arr)` | Create array with elements of type T |
+| `len` | `(arr -- len)` | Get length |
+| `nth` | `(arr index -- value)` | Get element |
+| `set` | `(arr index value --)` | Set element |
+| `append` | `(arr value -- arr)` | Append element |
+| `free` | `(arr --)` | Free memory |
 
 ---
 
@@ -21,7 +21,7 @@ Operations for creating and manipulating arrays.
 
 Creates an array of size pointers.
 
-**Signature:** `( size -- arr )`
+**Signature:** `(size -- arr)`
 
 ```qd
 10 make<i64> -> arr
@@ -35,7 +35,7 @@ Creates an array of size pointers.
 
 Outputs the number of elements in an array.
 
-**Signature:** `( arr -- len )`
+**Signature:** `(arr -- len)`
 
 ```qd
 arr len // number of elements
@@ -45,7 +45,7 @@ arr len // number of elements
 
 Outputs the element at the given index.
 
-**Signature:** `( arr index -- value )`
+**Signature:** `(arr index -- value)`
 
 ```qd
 arr 0 nth // first element
@@ -55,7 +55,7 @@ arr 0 nth // first element
 
 Sets the element at the given index.
 
-**Signature:** `( arr index value -- )`
+**Signature:** `(arr index value --)`
 
 ```qd
 arr 0 42 set
@@ -69,7 +69,7 @@ arr 0 42 set
 
 Appends a value to the array, returning the modified array.
 
-**Signature:** `( arr value -- arr )`
+**Signature:** `(arr value -- arr)`
 
 ```qd
 arr 42 append -> arr
@@ -79,7 +79,7 @@ arr 42 append -> arr
 
 Frees the memory used by an array or struct.
 
-**Signature:** `( arr -- )`
+**Signature:** `(arr --)`
 
 ```qd
 arr free

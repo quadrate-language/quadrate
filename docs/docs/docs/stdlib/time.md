@@ -38,7 +38,7 @@
 
 Add duration to a timestamp.
 
-**Signature:** `( ts:i64 duration:i64 -- new_ts:i64 )`
+**Signature:** `(ts:i64 duration:i64 -- new_ts:i64)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -61,7 +61,7 @@ time::now time::Day 4 * time::add .
 
 Check if timestamp is after another.
 
-**Signature:** `( ts1:i64 ts2:i64 -- after:i64 )`
+**Signature:** `(ts1:i64 ts2:i64 -- after:i64)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -84,7 +84,7 @@ ts1 ts2 time::after .
 
 Check if timestamp is before another.
 
-**Signature:** `( ts1:i64 ts2:i64 -- before:i64 )`
+**Signature:** `(ts1:i64 ts2:i64 -- before:i64)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -107,7 +107,7 @@ ts1 ts2 time::before .
 
 Create Unix timestamp from date components.
 
-**Signature:** `( yr:i64 mon:i64 d:i64 h:i64 m:i64 s:i64 -- ts:i64 )`
+**Signature:** `(yr:i64 mon:i64 d:i64 h:i64 m:i64 s:i64 -- ts:i64)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -134,7 +134,7 @@ Create Unix timestamp from date components.
 
 Get number of days in a month.
 
-**Signature:** `( yr:i64 mon:i64 -- days:i64 )`
+**Signature:** `(yr:i64 mon:i64 -- days:i64)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -157,7 +157,7 @@ Get number of days in a month.
 
 Extract day of month from Unix timestamp (1-31).
 
-**Signature:** `( ts:i64 -- d:i64 )`
+**Signature:** `(ts:i64 -- d:i64)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -179,7 +179,7 @@ time::unix time::day .
 
 Extract hour from Unix timestamp (0-23).
 
-**Signature:** `( ts:i64 -- h:i64 )`
+**Signature:** `(ts:i64 -- h:i64)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -201,7 +201,7 @@ time::unix time::hour .
 
 Check if year is a leap year.
 
-**Signature:** `( yr:i64 -- is_leap:i64 )`
+**Signature:** `(yr:i64 -- is_leap:i64)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -223,7 +223,7 @@ Check if year is a leap year.
 
 Extract minute from Unix timestamp (0-59).
 
-**Signature:** `( ts:i64 -- m:i64 )`
+**Signature:** `(ts:i64 -- m:i64)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -245,7 +245,7 @@ time::unix time::minute .
 
 Extract month from Unix timestamp (1-12).
 
-**Signature:** `( ts:i64 -- mon:i64 )`
+**Signature:** `(ts:i64 -- mon:i64)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -267,7 +267,7 @@ time::unix time::month .
 
 Get current time in nanoseconds since epoch.
 
-**Signature:** `(  -- nanoseconds:i64 )`
+**Signature:** `( -- nanoseconds:i64)`
 
 | Output | Type | Description |
 |--------|------|-------------|
@@ -285,7 +285,7 @@ time::now  // start
 
 Extract second from Unix timestamp (0-59).
 
-**Signature:** `( ts:i64 -- s:i64 )`
+**Signature:** `(ts:i64 -- s:i64)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -307,7 +307,7 @@ time::unix time::second .
 
 Sleep for duration in nanoseconds.
 
-**Signature:** `( duration:i64 --  )`
+**Signature:** `(duration:i64 -- )`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -325,7 +325,7 @@ time::Second time::sleep
 
 Get difference between two timestamps in seconds.
 
-**Signature:** `( ts1:i64 ts2:i64 -- diff:i64 )`
+**Signature:** `(ts1:i64 ts2:i64 -- diff:i64)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -348,7 +348,7 @@ end_time start_time time::sub .
 
 Get Unix timestamp in seconds.
 
-**Signature:** `(  -- timestamp:i64 )`
+**Signature:** `( -- timestamp:i64)`
 
 | Output | Type | Description |
 |--------|------|-------------|
@@ -366,7 +366,7 @@ time::unix .  // 1700000000
 
 Get day of week from Unix timestamp (0=Sunday, 6=Saturday).
 
-**Signature:** `( ts:i64 -- wd:i64 )`
+**Signature:** `(ts:i64 -- wd:i64)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -388,7 +388,7 @@ time::unix time::weekday .
 
 Get day of year from Unix timestamp (1-366).
 
-**Signature:** `( ts:i64 -- yd:i64 )`
+**Signature:** `(ts:i64 -- yd:i64)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -410,7 +410,7 @@ time::unix time::year_day .
 
 Extract year from Unix timestamp.
 
-**Signature:** `( ts:i64 -- yr:i64 )`
+**Signature:** `(ts:i64 -- yr:i64)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|

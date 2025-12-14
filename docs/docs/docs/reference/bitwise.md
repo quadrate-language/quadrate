@@ -6,12 +6,12 @@ Operations for bit manipulation.
 
 | Instruction | Signature | Description |
 |-------------|-----------|-------------|
-| `and` | `( a b -- result )` | Bitwise AND |
-| `or` | `( a b -- result )` | Bitwise OR |
-| `xor` | `( a b -- result )` | Bitwise XOR |
-| `not` | `( a -- result )` | Bitwise NOT |
-| `<<` / `shl` | `( a n -- result )` | Shift left |
-| `>>` / `shr` | `( a n -- result )` | Shift right |
+| `and` | `(a b -- result)` | Bitwise AND |
+| `or` | `(a b -- result)` | Bitwise OR |
+| `xor` | `(a b -- result)` | Bitwise XOR |
+| `not` | `(a -- result)` | Bitwise NOT |
+| `<<` / `shl` | `(a n -- result)` | Shift left |
+| `>>` / `shr` | `(a n -- result)` | Shift right |
 
 ---
 
@@ -21,7 +21,7 @@ Operations for bit manipulation.
 
 Computes bitwise AND of two integers.
 
-**Signature:** `( a b -- result )`
+**Signature:** `(a b -- result)`
 
 ```qd
 0b1100 0b1010 and // 0b1000 (8)
@@ -31,7 +31,7 @@ Computes bitwise AND of two integers.
 
 Computes bitwise OR of two integers.
 
-**Signature:** `( a b -- result )`
+**Signature:** `(a b -- result)`
 
 ```qd
 0b1100 0b1010 or // 0b1110 (14)
@@ -41,7 +41,7 @@ Computes bitwise OR of two integers.
 
 Computes bitwise XOR of two integers.
 
-**Signature:** `( a b -- result )`
+**Signature:** `(a b -- result)`
 
 ```qd
 0b1100 0b1010 xor // 0b0110 (6)
@@ -51,7 +51,7 @@ Computes bitwise XOR of two integers.
 
 Computes bitwise NOT (ones' complement).
 
-**Signature:** `( a -- result )`
+**Signature:** `(a -- result)`
 
 ```qd
 0 not // -1 (all bits set)
@@ -65,7 +65,7 @@ Computes bitwise NOT (ones' complement).
 
 Shifts a left by n bits.
 
-**Signature:** `( a n -- result )`
+**Signature:** `(a n -- result)`
 
 ```qd
 1 4 <<  // 16
@@ -76,7 +76,7 @@ Shifts a left by n bits.
 
 Shifts a right by n bits (arithmetic shift).
 
-**Signature:** `( a n -- result )`
+**Signature:** `(a n -- result)`
 
 ```qd
 16 2 >>  // 4

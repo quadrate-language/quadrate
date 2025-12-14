@@ -6,7 +6,7 @@ Other built-in operations.
 
 | Instruction | Signature | Description |
 |-------------|-----------|-------------|
-| `call` | `( fn -- ... )` | Call a function pointer |
+| `call` | `(fn -- ...)` | Call a function pointer |
 
 ---
 
@@ -16,7 +16,7 @@ Other built-in operations.
 
 Calls a function pointer obtained with `&funcname` syntax.
 
-**Signature:** `( fn -- ... )`
+**Signature:** `(fn -- ...)`
 
 ```qd
 fn double(x:i64 -- result:i64) {

@@ -8,7 +8,7 @@ String to number conversions.
 
 Parse decimal string to integer.
 
-**Signature:** `( str:str -- value:i64 )`
+**Signature:** `(str:str -- value:i64)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -30,7 +30,7 @@ Parse decimal string to integer.
 
 Format integer in given base.
 
-**Signature:** `( value:i64 base:i64 -- str:str )`
+**Signature:** `(value:i64 base:i64 -- str:str)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -53,7 +53,7 @@ Format integer in given base.
 
 Convert integer to decimal string.
 
-**Signature:** `( value:i64 -- str:str )`
+**Signature:** `(value:i64 -- str:str)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -75,7 +75,7 @@ Convert integer to decimal string.
 
 Parse integer from string in given base.
 
-**Signature:** `( str:str base:i64 -- value:i64 )`
+**Signature:** `(str:str base:i64 -- value:i64)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|

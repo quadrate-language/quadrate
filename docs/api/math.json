@@ -24,7 +24,7 @@
   "functions": [
     {
       "name": "abs",
-      "signature": "( x:f64 -- result:f64 )",
+      "signature": "(x:f64 -- result:f64)",
       "failable": false,
       "description": "Absolute value.",
       "params": [{"name": "x", "type": "f64", "description": "Any value"}],
@@ -34,7 +34,7 @@
     },
     {
       "name": "acos",
-      "signature": "( x:f64 -- result:f64 )",
+      "signature": "(x:f64 -- result:f64)",
       "failable": false,
       "description": "Arc cosine (inverse cosine).",
       "params": [{"name": "x", "type": "f64", "description": "Value in range [-1, 1]"}],
@@ -44,7 +44,7 @@
     },
     {
       "name": "asin",
-      "signature": "( x:f64 -- result:f64 )",
+      "signature": "(x:f64 -- result:f64)",
       "failable": false,
       "description": "Arc sine (inverse sine).",
       "params": [{"name": "x", "type": "f64", "description": "Value in range [-1, 1]"}],
@@ -54,7 +54,7 @@
     },
     {
       "name": "atan2",
-      "signature": "( y:f64 x:f64 -- result:f64 )",
+      "signature": "(y:f64 x:f64 -- result:f64)",
       "failable": false,
       "description": "Two-argument arc tangent. Returns the angle in radians between the positive x-axis and the point (x, y). More useful than atan for computing angles because it handles all quadrants.",
       "params": [{"name": "y", "type": "f64", "description": "Y coordinate"}, {"name": "x", "type": "f64", "description": "X coordinate"}],
@@ -64,7 +64,7 @@
     },
     {
       "name": "atan",
-      "signature": "( x:f64 -- result:f64 )",
+      "signature": "(x:f64 -- result:f64)",
       "failable": false,
       "description": "Arc tangent (inverse tangent).",
       "params": [{"name": "x", "type": "f64", "description": "Any value"}],
@@ -74,7 +74,7 @@
     },
     {
       "name": "cbrt",
-      "signature": "( x:f64 -- result:f64 )",
+      "signature": "(x:f64 -- result:f64)",
       "failable": false,
       "description": "Cube root.",
       "params": [{"name": "x", "type": "f64", "description": "Any value"}],
@@ -84,7 +84,7 @@
     },
     {
       "name": "cb",
-      "signature": "( x:f64 -- result:f64 )",
+      "signature": "(x:f64 -- result:f64)",
       "failable": false,
       "description": "Cube a number.",
       "params": [{"name": "x", "type": "f64", "description": "Value to cube"}],
@@ -94,7 +94,7 @@
     },
     {
       "name": "ceil",
-      "signature": "( x:f64 -- result:f64 )",
+      "signature": "(x:f64 -- result:f64)",
       "failable": false,
       "description": "Ceiling (round up).",
       "params": [{"name": "x", "type": "f64", "description": "Any value"}],
@@ -104,7 +104,7 @@
     },
     {
       "name": "clamp",
-      "signature": "( x:f64 min_val:f64 max_val:f64 -- result:f64 )",
+      "signature": "(x:f64 min_val:f64 max_val:f64 -- result:f64)",
       "failable": false,
       "description": "Clamp value to range.",
       "params": [{"name": "x", "type": "f64", "description": "Value to clamp"}, {"name": "min_val", "type": "f64", "description": "Minimum bound"}, {"name": "max_val", "type": "f64", "description": "Maximum bound"}],
@@ -114,7 +114,7 @@
     },
     {
       "name": "cos",
-      "signature": "( x:f64 -- result:f64 )",
+      "signature": "(x:f64 -- result:f64)",
       "failable": false,
       "description": "Cosine of angle in radians.",
       "params": [{"name": "x", "type": "f64", "description": "Angle in radians"}],
@@ -124,7 +124,7 @@
     },
     {
       "name": "dec",
-      "signature": "( x:i64 -- result:i64 )",
+      "signature": "(x:i64 -- result:i64)",
       "failable": false,
       "description": "Decrement integer by 1.",
       "params": [{"name": "x", "type": "i64", "description": "Value to decrement"}],
@@ -134,7 +134,7 @@
     },
     {
       "name": "deg_to_rad",
-      "signature": "( degrees:f64 -- radians:f64 )",
+      "signature": "(degrees:f64 -- radians:f64)",
       "failable": false,
       "description": "Convert degrees to radians.",
       "params": [{"name": "degrees", "type": "f64", "description": "Angle in degrees"}],
@@ -144,7 +144,7 @@
     },
     {
       "name": "exp",
-      "signature": "( x:f64 -- result:f64 )",
+      "signature": "(x:f64 -- result:f64)",
       "failable": false,
       "description": "Exponential function (e^x).",
       "params": [{"name": "x", "type": "f64", "description": "Exponent value"}],
@@ -154,7 +154,7 @@
     },
     {
       "name": "fac",
-      "signature": "( n:i64 -- result:i64 )",
+      "signature": "(n:i64 -- result:i64)",
       "failable": false,
       "description": "Factorial (n!).",
       "params": [{"name": "n", "type": "i64", "description": "Non-negative integer"}],
@@ -164,7 +164,7 @@
     },
     {
       "name": "floor",
-      "signature": "( x:f64 -- result:f64 )",
+      "signature": "(x:f64 -- result:f64)",
       "failable": false,
       "description": "Floor (round down).",
       "params": [{"name": "x", "type": "f64", "description": "Any value"}],
@@ -174,7 +174,7 @@
     },
     {
       "name": "fmod",
-      "signature": "( x:f64 y:f64 -- result:f64 )",
+      "signature": "(x:f64 y:f64 -- result:f64)",
       "failable": false,
       "description": "Floating-point modulo (remainder). Returns the remainder of x/y with the same sign as x.",
       "params": [{"name": "x", "type": "f64", "description": "Dividend"}, {"name": "y", "type": "f64", "description": "Divisor (non-zero)"}],
@@ -184,7 +184,7 @@
     },
     {
       "name": "hypot",
-      "signature": "( x:f64 y:f64 -- result:f64 )",
+      "signature": "(x:f64 y:f64 -- result:f64)",
       "failable": false,
       "description": "Hypotenuse (Euclidean distance). Computes sqrt(x² + y²) without intermediate overflow or underflow.",
       "params": [{"name": "x", "type": "f64", "description": "First value"}, {"name": "y", "type": "f64", "description": "Second value"}],
@@ -194,7 +194,7 @@
     },
     {
       "name": "inc",
-      "signature": "( x:i64 -- result:i64 )",
+      "signature": "(x:i64 -- result:i64)",
       "failable": false,
       "description": "Increment integer by 1.",
       "params": [{"name": "x", "type": "i64", "description": "Value to increment"}],
@@ -204,7 +204,7 @@
     },
     {
       "name": "inv",
-      "signature": "( x:f64 -- result:f64 )",
+      "signature": "(x:f64 -- result:f64)",
       "failable": false,
       "description": "Reciprocal (1/x).",
       "params": [{"name": "x", "type": "f64", "description": "Non-zero value"}],
@@ -214,7 +214,7 @@
     },
     {
       "name": "lerp",
-      "signature": "( a:f64 b:f64 t:f64 -- result:f64 )",
+      "signature": "(a:f64 b:f64 t:f64 -- result:f64)",
       "failable": false,
       "description": "Linear interpolation between two values.",
       "params": [{"name": "a", "type": "f64", "description": "Start value"}, {"name": "b", "type": "f64", "description": "End value"}, {"name": "t", "type": "f64", "description": "Interpolation factor [0, 1]"}],
@@ -224,7 +224,7 @@
     },
     {
       "name": "ln",
-      "signature": "( x:f64 -- result:f64 )",
+      "signature": "(x:f64 -- result:f64)",
       "failable": false,
       "description": "Natural logarithm (base e).",
       "params": [{"name": "x", "type": "f64", "description": "Positive value"}],
@@ -234,7 +234,7 @@
     },
     {
       "name": "log10",
-      "signature": "( x:f64 -- result:f64 )",
+      "signature": "(x:f64 -- result:f64)",
       "failable": false,
       "description": "Base-10 logarithm.",
       "params": [{"name": "x", "type": "f64", "description": "Positive value"}],
@@ -244,7 +244,7 @@
     },
     {
       "name": "log",
-      "signature": "( x:f64 base:f64 -- result:f64 )",
+      "signature": "(x:f64 base:f64 -- result:f64)",
       "failable": false,
       "description": "Logarithm with arbitrary base.",
       "params": [{"name": "x", "type": "f64", "description": "Positive value"}, {"name": "base", "type": "f64", "description": "Logarithm base"}],
@@ -254,7 +254,7 @@
     },
     {
       "name": "max",
-      "signature": "( a:any b:any -- result:any )",
+      "signature": "(a:any b:any -- result:any)",
       "failable": false,
       "description": "Maximum of two values.",
       "params": [{"name": "a", "type": "any", "description": "First value"}, {"name": "b", "type": "any", "description": "Second value"}],
@@ -264,7 +264,7 @@
     },
     {
       "name": "min",
-      "signature": "( a:any b:any -- result:any )",
+      "signature": "(a:any b:any -- result:any)",
       "failable": false,
       "description": "Minimum of two values.",
       "params": [{"name": "a", "type": "any", "description": "First value"}, {"name": "b", "type": "any", "description": "Second value"}],
@@ -274,7 +274,7 @@
     },
     {
       "name": "pow",
-      "signature": "( base:f64 exp:f64 -- result:f64 )",
+      "signature": "(base:f64 exp:f64 -- result:f64)",
       "failable": false,
       "description": "Power function.",
       "params": [{"name": "base", "type": "f64", "description": "Base value"}, {"name": "exp", "type": "f64", "description": "Exponent"}],
@@ -284,7 +284,7 @@
     },
     {
       "name": "rad_to_deg",
-      "signature": "( radians:f64 -- degrees:f64 )",
+      "signature": "(radians:f64 -- degrees:f64)",
       "failable": false,
       "description": "Convert radians to degrees.",
       "params": [{"name": "radians", "type": "f64", "description": "Angle in radians"}],
@@ -294,7 +294,7 @@
     },
     {
       "name": "round",
-      "signature": "( x:f64 -- result:f64 )",
+      "signature": "(x:f64 -- result:f64)",
       "failable": false,
       "description": "Round to nearest integer.",
       "params": [{"name": "x", "type": "f64", "description": "Any value"}],
@@ -304,7 +304,7 @@
     },
     {
       "name": "sin",
-      "signature": "( x:f64 -- result:f64 )",
+      "signature": "(x:f64 -- result:f64)",
       "failable": false,
       "description": "Sine of angle in radians.",
       "params": [{"name": "x", "type": "f64", "description": "Angle in radians"}],
@@ -314,7 +314,7 @@
     },
     {
       "name": "sqrt",
-      "signature": "( x:f64 -- result:f64 )",
+      "signature": "(x:f64 -- result:f64)",
       "failable": false,
       "description": "Square root.",
       "params": [{"name": "x", "type": "f64", "description": "Non-negative value"}],
@@ -324,7 +324,7 @@
     },
     {
       "name": "sq",
-      "signature": "( x:f64 -- result:f64 )",
+      "signature": "(x:f64 -- result:f64)",
       "failable": false,
       "description": "Square a number.",
       "params": [{"name": "x", "type": "f64", "description": "Value to square"}],
@@ -334,7 +334,7 @@
     },
     {
       "name": "tan",
-      "signature": "( x:f64 -- result:f64 )",
+      "signature": "(x:f64 -- result:f64)",
       "failable": false,
       "description": "Tangent of angle in radians.",
       "params": [{"name": "x", "type": "f64", "description": "Angle in radians"}],
@@ -344,7 +344,7 @@
     },
     {
       "name": "within",
-      "signature": "( x:any min_val:any max_val:any -- result:i64 )",
+      "signature": "(x:any min_val:any max_val:any -- result:i64)",
       "failable": false,
       "description": "Check if value is within range (inclusive).",
       "params": [{"name": "x", "type": "any", "description": "Value to check"}, {"name": "min_val", "type": "any", "description": "Minimum bound"}, {"name": "max_val", "type": "any", "description": "Maximum bound"}],

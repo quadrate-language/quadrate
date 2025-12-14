@@ -6,7 +6,7 @@ Operations for converting between types.
 
 | Instruction | Signature | Description |
 |-------------|-----------|-------------|
-| `cast<T>` | `( val -- T )` | Convert to specified type |
+| `cast<T>` | `(val -- T)` | Convert to specified type |
 
 ---
 
@@ -16,7 +16,7 @@ Operations for converting between types.
 
 Converts a value to the specified type using the `cast<T>` syntax.
 
-**Signature:** `( val -- T )`
+**Signature:** `(val -- T)`
 
 **Examples:**
 

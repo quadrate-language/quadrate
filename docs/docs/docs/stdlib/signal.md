@@ -51,7 +51,7 @@ Example:
 
 Clear the pending flag for a signal.
 
-**Signature:** `( signum:i64 --  )`
+**Signature:** `(signum:i64 -- )`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -69,7 +69,7 @@ signal::SIGINT signal::clear
 
 Ignore the specified signal completely.
 
-**Signature:** `( signum:i64 --  )`
+**Signature:** `(signum:i64 -- )`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -87,7 +87,7 @@ signal::SIGPIPE signal::ignore
 
 Check if a signal is pending (received but not cleared). Returns 1 if pending, 0 otherwise. Does not clear the flag.
 
-**Signature:** `( signum:i64 -- flag:i64 )`
+**Signature:** `(signum:i64 -- flag:i64)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -109,7 +109,7 @@ signal::SIGINT signal::pending
 
 Reset signal to default behavior.
 
-**Signature:** `( signum:i64 --  )`
+**Signature:** `(signum:i64 -- )`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -127,7 +127,7 @@ signal::SIGINT signal::reset
 
 Install a handler to catch the specified signal. After trapping, the signal sets a pending flag instead of causing the default action (e.g., termination).
 
-**Signature:** `( signum:i64 --  )`
+**Signature:** `(signum:i64 -- )`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -145,7 +145,7 @@ signal::SIGINT signal::trap
 
 Block until any trapped signal is received. Returns the signal number that was received.
 
-**Signature:** `(  -- signum:i64 )`
+**Signature:** `( -- signum:i64)`
 
 | Output | Type | Description |
 |--------|------|-------------|

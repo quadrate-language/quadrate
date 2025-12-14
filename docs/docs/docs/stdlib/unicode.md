@@ -111,7 +111,7 @@
 
 Check if character is a digit (0-9).
 
-**Signature:** `( c:i64 -- result:i64 )`
+**Signature:** `(c:i64 -- result:i64)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|

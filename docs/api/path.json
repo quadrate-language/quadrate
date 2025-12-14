@@ -14,7 +14,7 @@
   "functions": [
     {
       "name": "basename",
-      "signature": "( path:str -- name:str )",
+      "signature": "(path:str -- name:str)",
       "failable": false,
       "description": "Get the filename part of a path.",
       "params": [{"name": "path", "type": "str", "description": "File path"}],
@@ -24,7 +24,7 @@
     },
     {
       "name": "dirname",
-      "signature": "( path:str -- dir:str )",
+      "signature": "(path:str -- dir:str)",
       "failable": false,
       "description": "Get the directory part of a path.",
       "params": [{"name": "path", "type": "str", "description": "File path"}],
@@ -34,7 +34,7 @@
     },
     {
       "name": "ext",
-      "signature": "( path:str -- ext:str )",
+      "signature": "(path:str -- ext:str)",
       "failable": false,
       "description": "Get the file extension (including dot).",
       "params": [{"name": "path", "type": "str", "description": "File path"}],
@@ -44,7 +44,7 @@
     },
     {
       "name": "is_absolute",
-      "signature": "( path:str -- result:i64 )",
+      "signature": "(path:str -- result:i64)",
       "failable": false,
       "description": "Check if path is absolute.",
       "params": [{"name": "path", "type": "str", "description": "File path"}],
@@ -54,7 +54,7 @@
     },
     {
       "name": "join",
-      "signature": "( p1:str p2:str -- joined:str )",
+      "signature": "(p1:str p2:str -- joined:str)",
       "failable": false,
       "description": "Join two path components.",
       "params": [{"name": "p1", "type": "str", "description": "First path"}, {"name": "p2", "type": "str", "description": "Second path"}],
@@ -64,7 +64,7 @@
     },
     {
       "name": "normalize",
-      "signature": "( path:str -- norm:str )",
+      "signature": "(path:str -- norm:str)",
       "failable": false,
       "description": "Normalize a path (remove redundant separators).",
       "params": [{"name": "path", "type": "str", "description": "File path"}],
@@ -74,7 +74,7 @@
     },
     {
       "name": "stem",
-      "signature": "( path:str -- stem:str )",
+      "signature": "(path:str -- stem:str)",
       "failable": false,
       "description": "Get filename without extension.",
       "params": [{"name": "path", "type": "str", "description": "File path"}],

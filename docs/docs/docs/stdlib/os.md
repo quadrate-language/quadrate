@@ -27,7 +27,7 @@ Error codes: Ok=1 (success), specific errors start at 2
 
 Copy a file.
 
-**Signature:** `( srcpath:str dstpath:str --  )!`
+**Signature:** `(srcpath:str dstpath:str -- )!`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -51,7 +51,7 @@ Copy a file.
 
 Delete a file or empty directory.
 
-**Signature:** `( path:str --  )!`
+**Signature:** `(path:str -- )!`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -74,7 +74,7 @@ Delete a file or empty directory.
 
 Check if path exists.
 
-**Signature:** `( path:str -- exists:i64 )`
+**Signature:** `(path:str -- exists:i64)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -96,7 +96,7 @@ Check if path exists.
 
 Exit the program with status code.
 
-**Signature:** `( code:i64 --  )`
+**Signature:** `(code:i64 -- )`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -114,7 +114,7 @@ os::ExitSuccess os::exit
 
 Get environment variable value.
 
-**Signature:** `( name:str -- value:str )`
+**Signature:** `(name:str -- value:str)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -136,7 +136,7 @@ Get environment variable value.
 
 List directory contents.
 
-**Signature:** `( path:str -- entries:ptr count:i64 )!`
+**Signature:** `(path:str -- entries:ptr count:i64)!`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -164,7 +164,7 @@ List directory contents.
 
 Create a directory.
 
-**Signature:** `( path:str --  )!`
+**Signature:** `(path:str -- )!`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -187,7 +187,7 @@ Create a directory.
 
 Rename or move a file.
 
-**Signature:** `( oldpath:str newpath:str --  )!`
+**Signature:** `(oldpath:str newpath:str -- )!`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -211,7 +211,7 @@ Rename or move a file.
 
 Set environment variable.
 
-**Signature:** `( name:str value:str --  )`
+**Signature:** `(name:str value:str -- )`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -230,7 +230,7 @@ Set environment variable.
 
 Execute a shell command.
 
-**Signature:** `( cmd:str -- exitcode:i64 )`
+**Signature:** `(cmd:str -- exitcode:i64)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|

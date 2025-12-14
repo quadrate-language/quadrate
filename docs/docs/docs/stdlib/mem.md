@@ -11,7 +11,7 @@ Improper use can cause segmentation faults and memory corruption.
 
 Allocate memory.
 
-**Signature:** `( bytes:i64 -- address:ptr )`
+**Signature:** `(bytes:i64 -- address:ptr)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -33,7 +33,7 @@ Allocate memory.
 
 Copy bytes between memory regions.
 
-**Signature:** `( dst:ptr src:ptr bytes:i64 --  )`
+**Signature:** `(dst:ptr src:ptr bytes:i64 -- )`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -53,7 +53,7 @@ dst src 100 mem::copy
 
 Fill memory region with byte value.
 
-**Signature:** `( value:i64 address:ptr bytes:i64 --  )`
+**Signature:** `(value:i64 address:ptr bytes:i64 -- )`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -73,7 +73,7 @@ Fill memory region with byte value.
 
 Free allocated memory.
 
-**Signature:** `( address:ptr --  )`
+**Signature:** `(address:ptr -- )`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -91,7 +91,7 @@ buf mem::free
 
 Convert string to buffer.
 
-**Signature:** `( text:str -- buffer:ptr length:i64 )`
+**Signature:** `(text:str -- buffer:ptr length:i64)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -114,7 +114,7 @@ Convert string to buffer.
 
 Get a byte at offset.
 
-**Signature:** `( address:ptr offset:i64 -- value:i64 )`
+**Signature:** `(address:ptr offset:i64 -- value:i64)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -137,7 +137,7 @@ buf 0 mem::get_byte  // b
 
 Get a 64-bit float at offset.
 
-**Signature:** `( address:ptr offset:i64 -- value:f64 )`
+**Signature:** `(address:ptr offset:i64 -- value:f64)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -160,7 +160,7 @@ buf 0 mem::get_f64  // x
 
 Get a 64-bit integer at offset.
 
-**Signature:** `( address:ptr offset:i64 -- value:i64 )`
+**Signature:** `(address:ptr offset:i64 -- value:i64)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -183,7 +183,7 @@ buf 0 mem::get_i64  // n
 
 Get a pointer at offset.
 
-**Signature:** `( address:ptr offset:i64 -- value:ptr )`
+**Signature:** `(address:ptr offset:i64 -- value:ptr)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -206,7 +206,7 @@ buf 0 mem::get_ptr  // p
 
 Check if pointer is null.
 
-**Signature:** `( address:ptr -- is_null:i64 )`
+**Signature:** `(address:ptr -- is_null:i64)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -228,7 +228,7 @@ buf mem::is_null .  // 0
 
 Reallocate memory to new size.
 
-**Signature:** `( address:ptr new_bytes:i64 -- new_address:ptr )`
+**Signature:** `(address:ptr new_bytes:i64 -- new_address:ptr)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -251,7 +251,7 @@ buf 2048 mem::realloc  // buf
 
 Set a byte at offset.
 
-**Signature:** `( value:i64 address:ptr offset:i64 --  )`
+**Signature:** `(value:i64 address:ptr offset:i64 -- )`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -271,7 +271,7 @@ Set a byte at offset.
 
 Set a 64-bit float at offset.
 
-**Signature:** `( value:f64 address:ptr offset:i64 --  )`
+**Signature:** `(value:f64 address:ptr offset:i64 -- )`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -291,7 +291,7 @@ Set a 64-bit float at offset.
 
 Set a 64-bit integer at offset.
 
-**Signature:** `( value:i64 address:ptr offset:i64 --  )`
+**Signature:** `(value:i64 address:ptr offset:i64 -- )`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -311,7 +311,7 @@ Set a 64-bit integer at offset.
 
 Set a pointer at offset.
 
-**Signature:** `( value:ptr address:ptr offset:i64 --  )`
+**Signature:** `(value:ptr address:ptr offset:i64 -- )`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -331,7 +331,7 @@ other_buf buf 0 mem::set_ptr
 
 Convert buffer to string.
 
-**Signature:** `( buffer:ptr length:i64 -- text:str )`
+**Signature:** `(buffer:ptr length:i64 -- text:str)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -354,7 +354,7 @@ buf len mem::to_string  // s
 
 Zero out memory region.
 
-**Signature:** `( address:ptr bytes:i64 --  )`
+**Signature:** `(address:ptr bytes:i64 -- )`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|

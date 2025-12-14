@@ -24,7 +24,7 @@ Parsed URI components.
 
 Build a URI string from components.
 
-**Signature:** `( u:ptr -- s:str )`
+**Signature:** `(u:ptr -- s:str)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -46,7 +46,7 @@ u uri::build  // url
 
 Decode a percent-encoded string.
 
-**Signature:** `( s:str -- decoded:str )`
+**Signature:** `(s:str -- decoded:str)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -68,7 +68,7 @@ Decode a percent-encoded string.
 
 Percent-encode a string for use in URIs.
 
-**Signature:** `( s:str -- encoded:str )`
+**Signature:** `(s:str -- encoded:str)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -90,7 +90,7 @@ Percent-encode a string for use in URIs.
 
 Parse a URI string into components.
 
-**Signature:** `( s:str -- u:ptr )`
+**Signature:** `(s:str -- u:ptr)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -112,7 +112,7 @@ Parse a URI string into components.
 
 Get a query parameter value by key.
 
-**Signature:** `( query:str key:str -- value:str )`
+**Signature:** `(query:str key:str -- value:str)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -135,7 +135,7 @@ Get a query parameter value by key.
 
 Check if a query parameter exists.
 
-**Signature:** `( query:str key:str -- exists:i64 )`
+**Signature:** `(query:str key:str -- exists:i64)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|

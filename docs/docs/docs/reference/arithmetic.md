@@ -6,14 +6,14 @@ Mathematical operations on numbers.
 
 | Instruction | Signature | Description |
 |-------------|-----------|-------------|
-| `+` / `add` | `( a b -- sum )` | Addition |
-| `-` / `sub` | `( a b -- diff )` | Subtraction |
-| `*` / `mul` | `( a b -- product )` | Multiplication |
-| `/` / `div` | `( a b -- quotient )` | Division |
-| `%` / `mod` | `( a b -- remainder )` | Modulo |
-| `neg` | `( a -- -a )` | Negation |
-| `++` / `inc` | `( a -- a+1 )` | Increment |
-| `--` / `dec` | `( a -- a-1 )` | Decrement |
+| `+` / `add` | `(a b -- sum)` | Addition |
+| `-` / `sub` | `(a b -- diff)` | Subtraction |
+| `*` / `mul` | `(a b -- product)` | Multiplication |
+| `/` / `div` | `(a b -- quotient)` | Division |
+| `%` / `mod` | `(a b -- remainder)` | Modulo |
+| `neg` | `(a -- -a)` | Negation |
+| `++` / `inc` | `(a -- a+1)` | Increment |
+| `--` / `dec` | `(a -- a-1)` | Decrement |
 
 ---
 
@@ -23,7 +23,7 @@ Mathematical operations on numbers.
 
 Adds two numbers.
 
-**Signature:** `( a b -- sum )`
+**Signature:** `(a b -- sum)`
 
 ```qd
 3 4 + // 7
@@ -33,7 +33,7 @@ Adds two numbers.
 
 Subtracts b from a.
 
-**Signature:** `( a b -- diff )`
+**Signature:** `(a b -- diff)`
 
 ```qd
 10 3 - // 7
@@ -43,7 +43,7 @@ Subtracts b from a.
 
 Multiplies two numbers.
 
-**Signature:** `( a b -- product )`
+**Signature:** `(a b -- product)`
 
 ```qd
 6 7 * // 42
@@ -53,7 +53,7 @@ Multiplies two numbers.
 
 Divides a by b.
 
-**Signature:** `( a b -- quotient )`
+**Signature:** `(a b -- quotient)`
 
 ```qd
 20 4 / // 5
@@ -63,7 +63,7 @@ Divides a by b.
 
 Computes a modulo b.
 
-**Signature:** `( a b -- remainder )`
+**Signature:** `(a b -- remainder)`
 
 ```qd
 17 5 % // 2
@@ -77,7 +77,7 @@ Computes a modulo b.
 
 Negates a number.
 
-**Signature:** `( a -- -a )`
+**Signature:** `(a -- -a)`
 
 ```qd
 5 neg // -5
@@ -87,7 +87,7 @@ Negates a number.
 
 Adds 1 to a number.
 
-**Signature:** `( a -- a+1 )`
+**Signature:** `(a -- a+1)`
 
 ```qd
 5 ++ // 6
@@ -98,7 +98,7 @@ Adds 1 to a number.
 
 Subtracts 1 from a number.
 
-**Signature:** `( a -- a-1 )`
+**Signature:** `(a -- a-1)`
 
 ```qd
 5 -- // 4

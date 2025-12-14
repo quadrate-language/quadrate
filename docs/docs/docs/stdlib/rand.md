@@ -19,7 +19,7 @@ Random number generator state.
 
 Generate random boolean.
 
-**Signature:** `( rng:ptr -- rng:ptr b:i64 )`
+**Signature:** `(rng:ptr -- rng:ptr b:i64)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -42,7 +42,7 @@ rng rand::boolean  // rng b
 
 Generate random i64 in range [0, max).
 
-**Signature:** `( rng:ptr max:i64 -- rng:ptr n:i64 )`
+**Signature:** `(rng:ptr max:i64 -- rng:ptr n:i64)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -66,7 +66,7 @@ rng 100 rand::int  // rng n
 
 Create a new RNG seeded from current time.
 
-**Signature:** `(  -- rng:ptr )`
+**Signature:** `( -- rng:ptr)`
 
 | Output | Type | Description |
 |--------|------|-------------|
@@ -84,7 +84,7 @@ rand::new  // rng
 
 Generate next random i64.
 
-**Signature:** `( rng:ptr -- rng:ptr n:i64 )`
+**Signature:** `(rng:ptr -- rng:ptr n:i64)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -107,7 +107,7 @@ rng rand::next  // rng n
 
 Generate random i64 in range [min, max).
 
-**Signature:** `( rng:ptr min:i64 max:i64 -- rng:ptr n:i64 )`
+**Signature:** `(rng:ptr min:i64 max:i64 -- rng:ptr n:i64)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -132,7 +132,7 @@ rng 10 20 rand::range  // rng n
 
 Create a new RNG with specific seed.
 
-**Signature:** `( seed:i64 -- rng:ptr )`
+**Signature:** `(seed:i64 -- rng:ptr)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|

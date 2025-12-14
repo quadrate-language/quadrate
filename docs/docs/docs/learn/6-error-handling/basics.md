@@ -184,7 +184,7 @@ Output:
 Error: division by zero (code 42)
 ```
 
-The `err` instruction pushes `( -- msg code )`:
+The `err` instruction pushes `(-- msg code)`:
 - `msg`: The error message string
 - `code`: The error code integer (on top)
 

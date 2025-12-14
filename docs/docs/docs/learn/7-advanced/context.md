@@ -12,7 +12,7 @@ ctx {
 }
 ```
 
-Stack effect: `( S -- S r )` where `S` is preserved and `r` is the optional output value (if one value is left on the child stack).
+Stack effect: `(S -- S r)` where `S` is preserved and `r` is the optional output value (if one value is left on the child stack).
 
 **Note**: Strings are deep-copied, but pointers (including struct pointers) are shallow-copied. Both parent and child will reference the same struct instances.
 
@@ -245,7 +245,7 @@ fn classify(x:i64 -- category:str) {
 3. One value can optionally be output from the block
 4. Strings are deep-copied (isolated)
 5. Pointers/structs are shallow-copied (shared)
-6. Stack effect: `( S -- S )` or `( S -- S r )` if outputting a value
+6. Stack effect: `(S -- S)` or `(S -- S r)` if outputting a value
 
 ## What's Next?
 

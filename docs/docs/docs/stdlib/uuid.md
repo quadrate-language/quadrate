@@ -9,7 +9,7 @@ Format: xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx
 
 Check if a string is a valid UUID format.
 
-**Signature:** `( s:str -- valid:i64 )`
+**Signature:** `(s:str -- valid:i64)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -31,7 +31,7 @@ Check if a string is a valid UUID format.
 
 Generate UUID with specific seed (for reproducibility).
 
-**Signature:** `( seed:i64 -- uuid:str )`
+**Signature:** `(seed:i64 -- uuid:str)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -53,7 +53,7 @@ Generate UUID with specific seed (for reproducibility).
 
 Generate a new random UUIDv4 string.
 
-**Signature:** `(  -- uuid:str )`
+**Signature:** `( -- uuid:str)`
 
 | Output | Type | Description |
 |--------|------|-------------|

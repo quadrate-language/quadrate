@@ -6,12 +6,12 @@ Built-in operations for input and output.
 
 | Instruction | Signature | Description |
 |-------------|-----------|-------------|
-| `print` | `( val -- )` | Print value |
-| `printv` | `( val -- )` | Print with type info |
+| `print` | `(val --)` | Print value |
+| `printv` | `(val --)` | Print with type info |
 | `prints` | `()` | Print entire stack |
 | `printsv` | `()` | Print stack with types |
 | `nl` | `()` | Print newline |
-| `read` | `( -- ... n )` | Read command line args |
+| `read` | `(-- ... n)` | Read command line args |
 
 ---
 
@@ -21,7 +21,7 @@ Built-in operations for input and output.
 
 Prints a value to stdout without a newline.
 
-**Signature:** `( val -- )`
+**Signature:** `(val --)`
 
 ```qd
 42 print // prints: 42
@@ -32,7 +32,7 @@ Prints a value to stdout without a newline.
 
 Prints a value with type information for debugging.
 
-**Signature:** `( val -- )`
+**Signature:** `(val --)`
 
 ```qd
 42 printv // prints something like: i64:42
@@ -76,7 +76,7 @@ Prints a newline character to stdout.
 
 Reads command line arguments onto the stack, pushing count last.
 
-**Signature:** `( -- ... n )`
+**Signature:** `(-- ... n)`
 
 ```qd
 read -> argc // argc is the number of arguments

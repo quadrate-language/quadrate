@@ -29,7 +29,7 @@ Quadrate has four basic types:
 
 ## Stack Signatures
 
-Function signatures use `( inputs -- outputs )` notation:
+Function signatures use `(inputs -- outputs)` notation:
 
 ```qd
 fn add(a:i64 b:i64 -- sum:i64) { + }

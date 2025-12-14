@@ -14,7 +14,7 @@
 
 Absolute value.
 
-**Signature:** `( x:f64 -- result:f64 )`
+**Signature:** `(x:f64 -- result:f64)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -40,7 +40,7 @@ Absolute value.
 
 Arc cosine (inverse cosine).
 
-**Signature:** `( x:f64 -- result:f64 )`
+**Signature:** `(x:f64 -- result:f64)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -62,7 +62,7 @@ Arc cosine (inverse cosine).
 
 Arc sine (inverse sine).
 
-**Signature:** `( x:f64 -- result:f64 )`
+**Signature:** `(x:f64 -- result:f64)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -84,7 +84,7 @@ Arc sine (inverse sine).
 
 Two-argument arc tangent. Returns the angle in radians between the positive x-axis and the point (x, y). More useful than atan for computing angles because it handles all quadrants.
 
-**Signature:** `( y:f64 x:f64 -- result:f64 )`
+**Signature:** `(y:f64 x:f64 -- result:f64)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -107,7 +107,7 @@ Two-argument arc tangent. Returns the angle in radians between the positive x-ax
 
 Arc tangent (inverse tangent).
 
-**Signature:** `( x:f64 -- result:f64 )`
+**Signature:** `(x:f64 -- result:f64)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -129,7 +129,7 @@ Arc tangent (inverse tangent).
 
 Cube root.
 
-**Signature:** `( x:f64 -- result:f64 )`
+**Signature:** `(x:f64 -- result:f64)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -151,7 +151,7 @@ Cube root.
 
 Cube a number.
 
-**Signature:** `( x:f64 -- result:f64 )`
+**Signature:** `(x:f64 -- result:f64)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -173,7 +173,7 @@ Cube a number.
 
 Ceiling (round up).
 
-**Signature:** `( x:f64 -- result:f64 )`
+**Signature:** `(x:f64 -- result:f64)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -195,7 +195,7 @@ Ceiling (round up).
 
 Clamp value to range.
 
-**Signature:** `( x:f64 min_val:f64 max_val:f64 -- result:f64 )`
+**Signature:** `(x:f64 min_val:f64 max_val:f64 -- result:f64)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -219,7 +219,7 @@ Clamp value to range.
 
 Cosine of angle in radians.
 
-**Signature:** `( x:f64 -- result:f64 )`
+**Signature:** `(x:f64 -- result:f64)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -241,7 +241,7 @@ Cosine of angle in radians.
 
 Decrement integer by 1.
 
-**Signature:** `( x:i64 -- result:i64 )`
+**Signature:** `(x:i64 -- result:i64)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -263,7 +263,7 @@ Decrement integer by 1.
 
 Convert degrees to radians.
 
-**Signature:** `( degrees:f64 -- radians:f64 )`
+**Signature:** `(degrees:f64 -- radians:f64)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -285,7 +285,7 @@ Convert degrees to radians.
 
 Exponential function (e^x).
 
-**Signature:** `( x:f64 -- result:f64 )`
+**Signature:** `(x:f64 -- result:f64)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -307,7 +307,7 @@ Exponential function (e^x).
 
 Factorial (n!).
 
-**Signature:** `( n:i64 -- result:i64 )`
+**Signature:** `(n:i64 -- result:i64)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -329,7 +329,7 @@ Factorial (n!).
 
 Floor (round down).
 
-**Signature:** `( x:f64 -- result:f64 )`
+**Signature:** `(x:f64 -- result:f64)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -351,7 +351,7 @@ Floor (round down).
 
 Floating-point modulo (remainder). Returns the remainder of x/y with the same sign as x.
 
-**Signature:** `( x:f64 y:f64 -- result:f64 )`
+**Signature:** `(x:f64 y:f64 -- result:f64)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -374,7 +374,7 @@ Floating-point modulo (remainder). Returns the remainder of x/y with the same si
 
 Hypotenuse (Euclidean distance). Computes sqrt(x² + y²) without intermediate overflow or underflow.
 
-**Signature:** `( x:f64 y:f64 -- result:f64 )`
+**Signature:** `(x:f64 y:f64 -- result:f64)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -397,7 +397,7 @@ Hypotenuse (Euclidean distance). Computes sqrt(x² + y²) without intermediate o
 
 Increment integer by 1.
 
-**Signature:** `( x:i64 -- result:i64 )`
+**Signature:** `(x:i64 -- result:i64)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -419,7 +419,7 @@ Increment integer by 1.
 
 Reciprocal (1/x).
 
-**Signature:** `( x:f64 -- result:f64 )`
+**Signature:** `(x:f64 -- result:f64)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -441,7 +441,7 @@ Reciprocal (1/x).
 
 Linear interpolation between two values.
 
-**Signature:** `( a:f64 b:f64 t:f64 -- result:f64 )`
+**Signature:** `(a:f64 b:f64 t:f64 -- result:f64)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -465,7 +465,7 @@ Linear interpolation between two values.
 
 Natural logarithm (base e).
 
-**Signature:** `( x:f64 -- result:f64 )`
+**Signature:** `(x:f64 -- result:f64)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -487,7 +487,7 @@ Natural logarithm (base e).
 
 Base-10 logarithm.
 
-**Signature:** `( x:f64 -- result:f64 )`
+**Signature:** `(x:f64 -- result:f64)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -509,7 +509,7 @@ Base-10 logarithm.
 
 Logarithm with arbitrary base.
 
-**Signature:** `( x:f64 base:f64 -- result:f64 )`
+**Signature:** `(x:f64 base:f64 -- result:f64)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -532,7 +532,7 @@ Logarithm with arbitrary base.
 
 Maximum of two values.
 
-**Signature:** `( a:any b:any -- result:any )`
+**Signature:** `(a:any b:any -- result:any)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -555,7 +555,7 @@ Maximum of two values.
 
 Minimum of two values.
 
-**Signature:** `( a:any b:any -- result:any )`
+**Signature:** `(a:any b:any -- result:any)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -578,7 +578,7 @@ Minimum of two values.
 
 Power function.
 
-**Signature:** `( base:f64 exp:f64 -- result:f64 )`
+**Signature:** `(base:f64 exp:f64 -- result:f64)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -601,7 +601,7 @@ Power function.
 
 Convert radians to degrees.
 
-**Signature:** `( radians:f64 -- degrees:f64 )`
+**Signature:** `(radians:f64 -- degrees:f64)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -623,7 +623,7 @@ Convert radians to degrees.
 
 Round to nearest integer.
 
-**Signature:** `( x:f64 -- result:f64 )`
+**Signature:** `(x:f64 -- result:f64)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -645,7 +645,7 @@ Round to nearest integer.
 
 Sine of angle in radians.
 
-**Signature:** `( x:f64 -- result:f64 )`
+**Signature:** `(x:f64 -- result:f64)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -667,7 +667,7 @@ Sine of angle in radians.
 
 Square root.
 
-**Signature:** `( x:f64 -- result:f64 )`
+**Signature:** `(x:f64 -- result:f64)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -689,7 +689,7 @@ Square root.
 
 Square a number.
 
-**Signature:** `( x:f64 -- result:f64 )`
+**Signature:** `(x:f64 -- result:f64)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -711,7 +711,7 @@ Square a number.
 
 Tangent of angle in radians.
 
-**Signature:** `( x:f64 -- result:f64 )`
+**Signature:** `(x:f64 -- result:f64)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -733,7 +733,7 @@ Tangent of angle in radians.
 
 Check if value is within range (inclusive).
 
-**Signature:** `( x:any min_val:any max_val:any -- result:i64 )`
+**Signature:** `(x:any min_val:any max_val:any -- result:i64)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|

@@ -509,7 +509,7 @@
   "functions": [
     {
       "name": "is_digit",
-      "signature": "( c:i64 -- result:i64 )",
+      "signature": "(c:i64 -- result:i64)",
       "failable": false,
       "description": "Check if character is a digit (0-9).",
       "params": [{"name": "c", "type": "i64", "description": "Character code"}],

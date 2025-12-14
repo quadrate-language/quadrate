@@ -10,7 +10,7 @@
   "functions": [
     {
       "name": "atoi",
-      "signature": "( str:str -- value:i64 )",
+      "signature": "(str:str -- value:i64)",
       "failable": false,
       "description": "Parse decimal string to integer.",
       "params": [{"name": "str", "type": "str", "description": "Decimal string"}],
@@ -20,7 +20,7 @@
     },
     {
       "name": "format_int",
-      "signature": "( value:i64 base:i64 -- str:str )",
+      "signature": "(value:i64 base:i64 -- str:str)",
       "failable": false,
       "description": "Format integer in given base.",
       "params": [{"name": "value", "type": "i64", "description": "Integer value"}, {"name": "base", "type": "i64", "description": "Numeric base (2-36)"}],
@@ -30,7 +30,7 @@
     },
     {
       "name": "itoa",
-      "signature": "( value:i64 -- str:str )",
+      "signature": "(value:i64 -- str:str)",
       "failable": false,
       "description": "Convert integer to decimal string.",
       "params": [{"name": "value", "type": "i64", "description": "Integer value"}],
@@ -40,7 +40,7 @@
     },
     {
       "name": "parse_int",
-      "signature": "( str:str base:i64 -- value:i64 )",
+      "signature": "(str:str base:i64 -- value:i64)",
       "failable": false,
       "description": "Parse integer from string in given base.",
       "params": [{"name": "str", "type": "str", "description": "String to parse"}, {"name": "base", "type": "i64", "description": "Numeric base (2-36)"}],

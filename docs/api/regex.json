@@ -10,7 +10,7 @@
   "functions": [
     {
       "name": "compile",
-      "signature": "( pattern:str -- re:ptr )",
+      "signature": "(pattern:str -- re:ptr)",
       "failable": false,
       "description": "Compile a regex pattern.",
       "params": [{"name": "pattern", "type": "str", "description": "Regular expression pattern"}],
@@ -20,7 +20,7 @@
     },
     {
       "name": "is_match",
-      "signature": "( pattern:str s:str -- result:i64 )",
+      "signature": "(pattern:str s:str -- result:i64)",
       "failable": false,
       "description": "Compile and test if pattern matches string.",
       "params": [{"name": "pattern", "type": "str", "description": "Regex pattern"}, {"name": "s", "type": "str", "description": "String to match"}],
@@ -30,7 +30,7 @@
     },
     {
       "name": "matches",
-      "signature": "( re:ptr s:str -- result:i64 )",
+      "signature": "(re:ptr s:str -- result:i64)",
       "failable": false,
       "description": "Test if a string matches a compiled regex (full match).",
       "params": [{"name": "re", "type": "ptr", "description": "Compiled regex"}, {"name": "s", "type": "str", "description": "String to match"}],
@@ -40,7 +40,7 @@
     },
     {
       "name": "release",
-      "signature": "( re:ptr --  )",
+      "signature": "(re:ptr -- )",
       "failable": false,
       "description": "Free a compiled regex.",
       "params": [],

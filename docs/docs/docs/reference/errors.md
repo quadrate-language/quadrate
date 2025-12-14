@@ -6,10 +6,10 @@ Built-in operations for error handling.
 
 | Instruction | Signature | Description |
 |-------------|-----------|-------------|
-| `panic` | `( msg code -- )` | Signal a panic (error) |
-| `err` | `( -- msg code )` | Get error code from last fallible call |
-| `Ok` | `( -- 1 )` | Builtin constant for success |
-| `Err` | `( -- 0 )` | Builtin constant for generic error |
+| `panic` | `(msg code --)` | Signal a panic (error) |
+| `err` | `(-- msg code)` | Get error code from last fallible call |
+| `Ok` | `(-- 1)` | Builtin constant for success |
+| `Err` | `(-- 0)` | Builtin constant for generic error |
 
 ---
 
@@ -34,7 +34,7 @@ Each module defines specific error codes starting at 2. For example:
 
 Signals a panic with a message and code. Used in fallible functions.
 
-**Signature:** `( msg code -- )`
+**Signature:** `(msg code --)`
 
 ```qd
 "invalid input" 1 panic

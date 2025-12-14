@@ -17,7 +17,7 @@ Error codes: Ok=1 (success), specific errors start at 2
 
 Get character code at index.
 
-**Signature:** `( str:str index:i64 -- char_code:i64 )`
+**Signature:** `(str:str index:i64 -- char_code:i64)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -40,7 +40,7 @@ Get character code at index.
 
 Compare two strings lexicographically.
 
-**Signature:** `( str1:str str2:str -- result:i64 )`
+**Signature:** `(str1:str str2:str -- result:i64)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -63,7 +63,7 @@ Compare two strings lexicographically.
 
 Concatenate two strings.
 
-**Signature:** `( str1:str str2:str -- result:str )`
+**Signature:** `(str1:str str2:str -- result:str)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -86,7 +86,7 @@ Concatenate two strings.
 
 Check if string contains substring.
 
-**Signature:** `( str:str needle:str -- result:i64 )`
+**Signature:** `(str:str needle:str -- result:i64)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -109,7 +109,7 @@ Check if string contains substring.
 
 Check if string ends with suffix.
 
-**Signature:** `( str:str suffix:str -- result:i64 )`
+**Signature:** `(str:str suffix:str -- result:i64)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -132,7 +132,7 @@ Check if string ends with suffix.
 
 Create string from character code.
 
-**Signature:** `( char_code:i64 -- str:str )`
+**Signature:** `(char_code:i64 -- str:str)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -154,7 +154,7 @@ Create string from character code.
 
 Find substring starting from position.
 
-**Signature:** `( haystack:str needle:str start:i64 -- index:i64 )`
+**Signature:** `(haystack:str needle:str start:i64 -- index:i64)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -178,7 +178,7 @@ Find substring starting from position.
 
 Find first occurrence of substring.
 
-**Signature:** `( haystack:str needle:str -- index:i64 )`
+**Signature:** `(haystack:str needle:str -- index:i64)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -201,7 +201,7 @@ Find first occurrence of substring.
 
 Get string length in bytes.
 
-**Signature:** `( str:str -- len:i64 )`
+**Signature:** `(str:str -- len:i64)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -223,7 +223,7 @@ Get string length in bytes.
 
 Convert string to lowercase.
 
-**Signature:** `( str:str -- result:str )`
+**Signature:** `(str:str -- result:str)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -245,7 +245,7 @@ Convert string to lowercase.
 
 Replace all occurrences of substring.
 
-**Signature:** `( str:str old:str new:str -- result:str )!`
+**Signature:** `(str:str old:str new:str -- result:str)!`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -273,7 +273,7 @@ Replace all occurrences of substring.
 
 Split string by delimiter.
 
-**Signature:** `( str:str delim:str -- parts:ptr count:i64 )!`
+**Signature:** `(str:str delim:str -- parts:ptr count:i64)!`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -301,7 +301,7 @@ Split string by delimiter.
 
 Check if string starts with prefix.
 
-**Signature:** `( str:str prefix:str -- result:i64 )`
+**Signature:** `(str:str prefix:str -- result:i64)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -324,7 +324,7 @@ Check if string starts with prefix.
 
 Extract substring.
 
-**Signature:** `( str:str start:i64 length:i64 -- result:str )!`
+**Signature:** `(str:str start:i64 length:i64 -- result:str)!`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -352,7 +352,7 @@ Extract substring.
 
 Remove leading and trailing whitespace.
 
-**Signature:** `( str:str -- result:str )`
+**Signature:** `(str:str -- result:str)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -374,7 +374,7 @@ Remove leading and trailing whitespace.
 
 Convert string to uppercase.
 
-**Signature:** `( str:str -- result:str )`
+**Signature:** `(str:str -- result:str)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|

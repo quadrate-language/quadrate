@@ -18,7 +18,7 @@
   "functions": [
     {
       "name": "append_char",
-      "signature": "( sb:ptr c:i64 -- sb:ptr )",
+      "signature": "(sb:ptr c:i64 -- sb:ptr)",
       "failable": false,
       "description": "Append a single character (by code point).",
       "params": [{"name": "sb", "type": "ptr", "description": "Builder to append to"}, {"name": "c", "type": "i64", "description": "Character code to append"}],
@@ -28,7 +28,7 @@
     },
     {
       "name": "append_int",
-      "signature": "( sb:ptr n:i64 -- sb:ptr )",
+      "signature": "(sb:ptr n:i64 -- sb:ptr)",
       "failable": false,
       "description": "Append an integer as string.",
       "params": [{"name": "sb", "type": "ptr", "description": "Builder to append to"}, {"name": "n", "type": "i64", "description": "Integer to append"}],
@@ -38,7 +38,7 @@
     },
     {
       "name": "append",
-      "signature": "( sb:ptr s:str -- sb:ptr )",
+      "signature": "(sb:ptr s:str -- sb:ptr)",
       "failable": false,
       "description": "Append a string to the builder.",
       "params": [{"name": "sb", "type": "ptr", "description": "Builder to append to"}, {"name": "s", "type": "str", "description": "String to append"}],
@@ -48,7 +48,7 @@
     },
     {
       "name": "build",
-      "signature": "( sb:ptr -- s:str )",
+      "signature": "(sb:ptr -- s:str)",
       "failable": false,
       "description": "Build the final string (does not consume builder).",
       "params": [{"name": "sb", "type": "ptr", "description": "Builder to convert"}],
@@ -58,7 +58,7 @@
     },
     {
       "name": "finish",
-      "signature": "( sb:ptr -- s:str )",
+      "signature": "(sb:ptr -- s:str)",
       "failable": false,
       "description": "Build string and free builder in one call.",
       "params": [{"name": "sb", "type": "ptr", "description": "Builder to finish"}],
@@ -68,7 +68,7 @@
     },
     {
       "name": "free",
-      "signature": "( sb:ptr --  )",
+      "signature": "(sb:ptr -- )",
       "failable": false,
       "description": "Free the builder's resources.",
       "params": [{"name": "sb", "type": "ptr", "description": "Builder to free"}],
@@ -78,7 +78,7 @@
     },
     {
       "name": "length",
-      "signature": "( sb:ptr -- sblen:i64 )",
+      "signature": "(sb:ptr -- sblen:i64)",
       "failable": false,
       "description": "Get current length of builder content.",
       "params": [{"name": "sb", "type": "ptr", "description": "Builder to check"}],
@@ -88,7 +88,7 @@
     },
     {
       "name": "new",
-      "signature": "(  -- sb:ptr )",
+      "signature": "( -- sb:ptr)",
       "failable": false,
       "description": "Create a new StringBuilder with default capacity.",
       "params": [],
@@ -98,7 +98,7 @@
     },
     {
       "name": "with_capacity",
-      "signature": "( capacity:i64 -- sb:ptr )",
+      "signature": "(capacity:i64 -- sb:ptr)",
       "failable": false,
       "description": "Create a StringBuilder with specific initial capacity.",
       "params": [{"name": "capacity", "type": "i64", "description": "Initial buffer size"}],

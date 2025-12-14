@@ -10,7 +10,7 @@
   "functions": [
     {
       "name": "hash_bytes",
-      "signature": "( buf:ptr length:i64 -- result:str )",
+      "signature": "(buf:ptr length:i64 -- result:str)",
       "failable": false,
       "description": "Calculate SHA-256 hash of raw bytes.",
       "params": [{"name": "buf", "type": "ptr", "description": "Input buffer"}, {"name": "length", "type": "i64", "description": "Length of buffer in bytes"}],
@@ -20,7 +20,7 @@
     },
     {
       "name": "hash_raw",
-      "signature": "( s:str -- buf:ptr )",
+      "signature": "(s:str -- buf:ptr)",
       "failable": false,
       "description": "Calculate SHA-256 hash and return as raw 32-byte buffer.",
       "params": [],
@@ -30,7 +30,7 @@
     },
     {
       "name": "hash",
-      "signature": "( s:str -- result:str )",
+      "signature": "(s:str -- result:str)",
       "failable": false,
       "description": "Calculate SHA-256 hash of a string.",
       "params": [],
@@ -40,7 +40,7 @@
     },
     {
       "name": "verify",
-      "signature": "( s:str expected:str -- ok:i64 )",
+      "signature": "(s:str expected:str -- ok:i64)",
       "failable": false,
       "description": "Verify a string against an expected SHA-256 hash.",
       "params": [],

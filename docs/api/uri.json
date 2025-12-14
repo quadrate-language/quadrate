@@ -21,7 +21,7 @@
   "functions": [
     {
       "name": "build",
-      "signature": "( u:ptr -- s:str )",
+      "signature": "(u:ptr -- s:str)",
       "failable": false,
       "description": "Build a URI string from components.",
       "params": [{"name": "u", "type": "Uri", "description": "URI struct"}],
@@ -31,7 +31,7 @@
     },
     {
       "name": "decode",
-      "signature": "( s:str -- decoded:str )",
+      "signature": "(s:str -- decoded:str)",
       "failable": false,
       "description": "Decode a percent-encoded string.",
       "params": [{"name": "s", "type": "str", "description": "Percent-encoded string"}],
@@ -41,7 +41,7 @@
     },
     {
       "name": "encode",
-      "signature": "( s:str -- encoded:str )",
+      "signature": "(s:str -- encoded:str)",
       "failable": false,
       "description": "Percent-encode a string for use in URIs.",
       "params": [{"name": "s", "type": "str", "description": "String to encode"}],
@@ -51,7 +51,7 @@
     },
     {
       "name": "parse",
-      "signature": "( s:str -- u:ptr )",
+      "signature": "(s:str -- u:ptr)",
       "failable": false,
       "description": "Parse a URI string into components.",
       "params": [{"name": "s", "type": "str", "description": "URI string to parse"}],
@@ -61,7 +61,7 @@
     },
     {
       "name": "query_get",
-      "signature": "( query:str key:str -- value:str )",
+      "signature": "(query:str key:str -- value:str)",
       "failable": false,
       "description": "Get a query parameter value by key.",
       "params": [{"name": "query", "type": "str", "description": "Query string (without leading '?')"}, {"name": "key", "type": "str", "description": "Parameter name to find"}],
@@ -71,7 +71,7 @@
     },
     {
       "name": "query_has",
-      "signature": "( query:str key:str -- exists:i64 )",
+      "signature": "(query:str key:str -- exists:i64)",
       "failable": false,
       "description": "Check if a query parameter exists.",
       "params": [{"name": "query", "type": "str", "description": "Query string (without leading '?')"}, {"name": "key", "type": "str", "description": "Parameter name to find"}],
