@@ -76,6 +76,102 @@ int execCommandLive(const std::string& cmd) {
 
 // Parse module name from quadrate.toml
 // Returns empty string if file doesn't exist or name not found
+// Native build configuration from quadrate.toml
+struct NativeConfig {
+	std::vector<std::string> link; // Libraries to link with (-l flags)
+};
+
+// Forward declaration
+bool compileCsources(const std::string& moduleDir, const std::string& moduleName, const NativeConfig& nativeConfig);
+
+// Parse [native] section from quadrate.toml
+NativeConfig parseNativeConfig(const std::string& manifestPath) {
+	NativeConfig config;
+	std::ifstream file(manifestPath);
+	if (!file.is_open()) {
+		return config;
+	}
+
+	std::string line;
+	bool inNativeSection = false;
+
+	while (std::getline(file, line)) {
+		// Trim whitespace
+		line.erase(0, line.find_first_not_of(" \t\r\n"));
+		line.erase(line.find_last_not_of(" \t\r\n") + 1);
+
+		// Check for [native] section
+		if (line == "[native]") {
+			inNativeSection = true;
+			continue;
+		}
+
+		// Check for other sections
+		if (!line.empty() && line[0] == '[') {
+			inNativeSection = false;
+			continue;
+		}
+
+		// Skip comments and empty lines
+		if (line.empty() || line[0] == '#') {
+			continue;
+		}
+
+		// Look for link = ["lib1", "lib2"] in native section
+		if (inNativeSection) {
+			size_t eqPos = line.find('=');
+			if (eqPos != std::string::npos) {
+				std::string key = line.substr(0, eqPos);
+				std::string value = line.substr(eqPos + 1);
+
+				// Trim key and value
+				key.erase(0, key.find_first_not_of(" \t"));
+				key.erase(key.find_last_not_of(" \t") + 1);
+				value.erase(0, value.find_first_not_of(" \t"));
+				value.erase(value.find_last_not_of(" \t") + 1);
+
+				if (key == "link") {
+					// Parse array: ["lib1", "lib2"]
+					if (value.size() >= 2 && value[0] == '[' && value[value.size() - 1] == ']') {
+						value = value.substr(1, value.size() - 2);
+						// Split by comma
+						size_t pos = 0;
+						while (pos < value.size()) {
+							// Skip whitespace
+							while (pos < value.size() && (value[pos] == ' ' || value[pos] == '\t')) {
+								pos++;
+							}
+							if (pos >= value.size()) {
+								break;
+							}
+
+							// Find quoted string
+							if (value[pos] == '"') {
+								pos++;
+								size_t endQuote = value.find('"', pos);
+								if (endQuote != std::string::npos) {
+									config.link.push_back(value.substr(pos, endQuote - pos));
+									pos = endQuote + 1;
+								}
+							}
+
+							// Skip to next comma or end
+							while (pos < value.size() && value[pos] != ',') {
+								pos++;
+							}
+							if (pos < value.size()) {
+								pos++; // Skip comma
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
+	return config;
+}
+
 std::string parseModuleName(const std::string& manifestPath) {
 	std::ifstream file(manifestPath);
 	if (!file.is_open()) {
@@ -213,98 +309,11 @@ std::string gitClone(const GitRef& gitRef) {
 	// Check for C source files and compile if found
 	std::string srcDir = finalDir + "/src";
 	if (fs::exists(srcDir) && fs::is_directory(srcDir)) {
-		std::cout << "  → Found src/ directory, compiling C sources...\n";
-
-		// Collect all .c files
-		std::vector<std::string> cFiles;
-		for (const auto& entry : fs::directory_iterator(srcDir)) {
-			if (entry.is_regular_file() && entry.path().extension() == ".c") {
-				cFiles.push_back(entry.path().string());
-			}
-		}
-
-		if (!cFiles.empty()) {
-			// Create lib directory
-			std::string libDir = finalDir + "/lib";
-			fs::create_directories(libDir);
-
-			// Library names - always use the repository name for library files
-			std::string libName = "lib" + gitRef.moduleName;
-			std::string sharedLib = libDir + "/" + libName + ".so";
-			std::string staticLib = libDir + "/" + libName + "_static.a";
-
-			// Prefer clang, fallback to gcc
-			std::string compiler = "gcc";
-			if (system("which clang > /dev/null 2>&1") == 0) {
-				compiler = "clang";
-			}
-
-			// Compile to object files
-			std::vector<std::string> objFiles;
-			bool compileFailed = false;
-
-			for (const auto& cFile : cFiles) {
-				std::string objFile = libDir + "/" + fs::path(cFile).stem().string() + ".o";
-				objFiles.push_back(objFile);
-
-				// Compile with -fPIC for shared library compatibility
-				// Try to find Quadrate headers in common locations
-				std::string includeFlags = "-I/usr/include";
-
-				// Check for local development build
-				if (fs::exists("dist/include/qdrt")) {
-					includeFlags += " -Idist/include";
-				}
-				// Check for installed headers
-				if (fs::exists("/usr/include/qdrt")) {
-					// Already in /usr/include
-				}
-
-				std::string compileCmd =
-						compiler + " -c -fPIC -O2 -Wall " + includeFlags + " " + cFile + " -o " + objFile + " 2>&1";
-
-				int compileResult = execCommandLive(compileCmd);
-				if (compileResult != 0) {
-					std::cerr << COLOR_RED << "  ✗ Failed to compile " << COLOR_RESET << cFile << "\n";
-					compileFailed = true;
-					break;
-				}
-			}
-
-			if (!compileFailed && !objFiles.empty()) {
-				// Create shared library
-				std::string objList;
-				for (const auto& obj : objFiles) {
-					objList += obj + " ";
-				}
-
-				std::string linkSharedCmd = compiler + " -shared " + objList + "-o " + sharedLib + " 2>&1";
-				int linkResult = execCommandLive(linkSharedCmd);
-
-				if (linkResult == 0) {
-					std::cout << COLOR_GREEN << "  ✓ Built " << COLOR_RESET << libName << ".so\n";
-				} else {
-					std::cerr << COLOR_YELLOW << "  ⚠ Failed to build shared library" << COLOR_RESET << "\n";
-				}
-
-				// Create static library
-				std::string arCmd = "ar rcs " + staticLib + " " + objList + "2>&1";
-				int arResult = execCommandLive(arCmd);
-
-				if (arResult == 0) {
-					std::cout << COLOR_GREEN << "  ✓ Built " << COLOR_RESET << libName << "_static.a\n";
-				} else {
-					std::cerr << COLOR_YELLOW << "  ⚠ Failed to build static library" << COLOR_RESET << "\n";
-				}
-
-				// Clean up object files
-				for (const auto& obj : objFiles) {
-					fs::remove(obj);
-				}
-			}
-		} else {
-			std::cout << COLOR_YELLOW << "  ⚠ No .c files found in src/" << COLOR_RESET << "\n";
-		}
+		std::cout << COLOR_GREEN << "  ✓ Found src/ directory" << COLOR_RESET << "\n";
+		// Parse native config for link libraries
+		std::string finalManifestPath = finalDir + "/quadrate.toml";
+		NativeConfig nativeConfig = parseNativeConfig(finalManifestPath);
+		compileCsources(finalDir, actualModuleName, nativeConfig);
 	}
 
 	return actualModuleName;
@@ -312,7 +321,7 @@ std::string gitClone(const GitRef& gitRef) {
 
 // Compile C sources in a module directory
 // Returns true on success, false on failure
-bool compileCsources(const std::string& moduleDir, const std::string& moduleName) {
+bool compileCsources(const std::string& moduleDir, const std::string& moduleName, const NativeConfig& nativeConfig) {
 	std::string srcDir = moduleDir + "/src";
 	if (!fs::exists(srcDir) || !fs::is_directory(srcDir)) {
 		return true; // No src dir is not an error
@@ -382,7 +391,13 @@ bool compileCsources(const std::string& moduleDir, const std::string& moduleName
 		objList += obj + " ";
 	}
 
-	std::string linkSharedCmd = compiler + " -shared " + objList + "-o " + sharedLib + " 2>&1";
+	// Build link flags from native config
+	std::string linkFlags;
+	for (const auto& lib : nativeConfig.link) {
+		linkFlags += "-l" + lib + " ";
+	}
+
+	std::string linkSharedCmd = compiler + " -shared " + objList + linkFlags + "-o " + sharedLib + " 2>&1";
 	int linkResult = execCommandLive(linkSharedCmd);
 
 	if (linkResult == 0) {
@@ -391,12 +406,24 @@ bool compileCsources(const std::string& moduleDir, const std::string& moduleName
 		std::cerr << COLOR_YELLOW << "  ⚠ Failed to build shared library" << COLOR_RESET << "\n";
 	}
 
-	// Create static library
+	// Create static library (note: static libs don't link with other libs directly)
 	std::string arCmd = "ar rcs " + staticLib + " " + objList + "2>&1";
 	int arResult = execCommandLive(arCmd);
 
 	if (arResult == 0) {
 		std::cout << COLOR_GREEN << "  ✓ Built " << COLOR_RESET << libName << "_static.a\n";
+		// If there are link dependencies, write them to a .deps file for the compiler to use
+		if (!nativeConfig.link.empty()) {
+			std::string depsFile = libDir + "/" + libName + "_static.deps";
+			std::ofstream deps(depsFile);
+			if (deps.is_open()) {
+				for (const auto& lib : nativeConfig.link) {
+					deps << "-l" << lib << "\n";
+				}
+				deps.close();
+				std::cout << COLOR_GREEN << "  ✓ Wrote " << COLOR_RESET << libName << "_static.deps\n";
+			}
+		}
 	} else {
 		std::cerr << COLOR_YELLOW << "  ⚠ Failed to build static library" << COLOR_RESET << "\n";
 	}
@@ -425,7 +452,8 @@ void printUsage() {
 	std::cout << "Commands:\n";
 	std::cout << "  get <url>[@ref]  Fetch and install a module from Git\n";
 	std::cout << "  update [name]    Update installed module(s) (git pull)\n";
-	std::cout << "  list             List installed modules\n\n";
+	std::cout << "  list             List installed modules\n";
+	std::cout << "  build            Build C sources in current module directory\n\n";
 	std::cout << "Examples:\n";
 	std::cout << "  quadpm get https://git.sr.ht/~user/zlib\n";
 	std::cout << "  quadpm get https://git.sr.ht/~user/zlib@1.2.0\n";
@@ -509,9 +537,62 @@ bool updateModule(const std::string& moduleDir) {
 	std::cout << COLOR_GREEN << "  ✓ Updated " << displayName << COLOR_RESET << "\n";
 
 	// Rebuild C sources if present
-	compileCsources(moduleDir, moduleName);
+	std::string manifestPath = moduleDir + "/quadrate.toml";
+	NativeConfig nativeConfig = parseNativeConfig(manifestPath);
+	compileCsources(moduleDir, moduleName, nativeConfig);
 
 	return true;
+}
+
+// Build a module in the current directory (for local development)
+int buildModule() {
+	std::string cwd = fs::current_path().string();
+
+	// Check for quadrate.toml
+	std::string manifestPath = cwd + "/quadrate.toml";
+	if (!fs::exists(manifestPath)) {
+		std::cerr << COLOR_RED << "Error: No quadrate.toml found in current directory" << COLOR_RESET << "\n";
+		std::cerr << "Run this command from a module directory containing quadrate.toml\n";
+		return 1;
+	}
+
+	// Parse module name from manifest
+	std::string moduleName = parseModuleName(manifestPath);
+	if (moduleName.empty()) {
+		std::cerr << COLOR_RED << "Error: Could not parse module name from quadrate.toml" << COLOR_RESET << "\n";
+		return 1;
+	}
+
+	std::cout << COLOR_CYAN << "Building module " << COLOR_BOLD << moduleName << COLOR_RESET << "...\n";
+
+	// Parse native config for link libraries
+	NativeConfig nativeConfig = parseNativeConfig(manifestPath);
+	if (!nativeConfig.link.empty()) {
+		std::cout << "  → Link libraries: ";
+		for (size_t i = 0; i < nativeConfig.link.size(); i++) {
+			if (i > 0) {
+				std::cout << ", ";
+			}
+			std::cout << nativeConfig.link[i];
+		}
+		std::cout << "\n";
+	}
+
+	// Check for src/ directory
+	std::string srcDir = cwd + "/src";
+	if (!fs::exists(srcDir) || !fs::is_directory(srcDir)) {
+		std::cout << COLOR_YELLOW << "No src/ directory found - nothing to build" << COLOR_RESET << "\n";
+		return 0;
+	}
+
+	// Compile C sources
+	if (!compileCsources(cwd, moduleName, nativeConfig)) {
+		std::cerr << COLOR_RED << "Build failed" << COLOR_RESET << "\n";
+		return 1;
+	}
+
+	std::cout << COLOR_GREEN << "Build complete!" << COLOR_RESET << "\n";
+	return 0;
 }
 
 // Update installed modules
@@ -619,6 +700,10 @@ int main(int argc, char** argv) {
 	if (command == "update") {
 		std::string targetModuleName = (argc >= 3) ? argv[2] : "";
 		return updateModules(targetModuleName);
+	}
+
+	if (command == "build") {
+		return buildModule();
 	}
 
 	std::cerr << COLOR_RED << "Error: Unknown command '" << command << "'" << COLOR_RESET << "\n";

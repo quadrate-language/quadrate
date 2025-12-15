@@ -67,6 +67,7 @@
 #include <algorithm>
 #include <charconv>
 #include <filesystem>
+#include <fstream>
 #include <iostream>
 #include <map>
 #include <memory>
@@ -6865,7 +6866,33 @@ namespace Qd {
 					}
 				}
 
-				libraryFlags += " " + foundLibPath;
+				// Check for .deps file with additional link dependencies
+				std::string depsFile = foundLibPath;
+				if (depsFile.size() > 2 && depsFile.substr(depsFile.size() - 2) == ".a") {
+					depsFile = depsFile.substr(0, depsFile.size() - 2) + ".deps";
+				}
+				if (std::filesystem::exists(depsFile)) {
+					std::ifstream deps(depsFile);
+					if (deps.is_open()) {
+						// Use --start-group/--end-group to resolve circular dependencies
+						// between the static library and its shared library deps
+						libraryFlags += " -Wl,--start-group " + foundLibPath;
+						std::string depLine;
+						while (std::getline(deps, depLine)) {
+							// Trim whitespace
+							depLine.erase(0, depLine.find_first_not_of(" \t\r\n"));
+							depLine.erase(depLine.find_last_not_of(" \t\r\n") + 1);
+							if (!depLine.empty()) {
+								libraryFlags += " " + depLine;
+							}
+						}
+						libraryFlags += " -Wl,--end-group";
+					} else {
+						libraryFlags += " " + foundLibPath;
+					}
+				} else {
+					libraryFlags += " " + foundLibPath;
+				}
 			} else {
 				// Handle .so libraries (dynamic linking)
 				std::string libName = library;
@@ -6886,15 +6913,12 @@ namespace Qd {
 		// Note: C11 threads don't need -lpthread, but we need -lstdc++ for C++ filesystem code
 		libraryFlags += " -lm -lstdc++";
 
-		// Build -L flags for additional library search paths (third-party packages)
-		std::string librarySearchFlags;
-		for (const auto& searchPath : mImpl->librarySearchPaths) {
-			librarySearchFlags += " -L" + searchPath;
-		}
+		// Note: We don't add -L flags for module lib directories because:
+		// 1. Static libraries are already linked by full path
+		// 2. Deps use system libraries via -l flags and shouldn't be shadowed by module libs
+		// (e.g., a module named "glut" would have libglut.so which would shadow system -lglut)
 
-		std::string linkCmd = "clang -Wl,--gc-sections -o " + filename + " " + objFile + " " + librarySearchFlags +
-							  " " + libraryFlags;
-
+		std::string linkCmd = "clang -Wl,--gc-sections -o " + filename + " " + objFile + " " + libraryFlags;
 		int result = system(linkCmd.c_str());
 
 		// Clean up object file

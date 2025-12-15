@@ -9,7 +9,8 @@
 
 struct Options {
 	std::vector<std::string> files;
-	std::vector<std::string> runArgs; // Arguments to pass to the program when using -r
+	std::vector<std::string> runArgs;	   // Arguments to pass to the program when using -r
+	std::vector<std::string> includePaths; // Additional module search paths (-I)
 	std::string outputName = "main";
 	int optLevel = 0;		 // 0-3 for -O0 through -O3
 	size_t stackSize = 1024; // Stack capacity

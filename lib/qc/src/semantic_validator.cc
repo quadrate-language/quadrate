@@ -889,7 +889,86 @@ namespace Qd {
 			}
 			file.close();
 
-			// Try 2: Third-party packages directory (installed via quadpm)
+			// Try 2: Include paths from -I flags
+			for (const auto& includePath : mIncludePaths) {
+				std::string expandedPath = expandTilde(includePath);
+
+				// Check if the include path IS the module directory (contains module.qd directly)
+				// and quadrate.toml name matches the module name we're looking for
+				std::string directModulePath = expandedPath + "/module.qd";
+				if (std::filesystem::exists(directModulePath)) {
+					// Check quadrate.toml for module name
+					std::string manifestPath = expandedPath + "/quadrate.toml";
+					if (std::filesystem::exists(manifestPath)) {
+						std::ifstream manifestFile(manifestPath);
+						if (manifestFile.is_open()) {
+							std::string line;
+							bool inPackageSection = false;
+							while (std::getline(manifestFile, line)) {
+								line.erase(0, line.find_first_not_of(" \t\r\n"));
+								line.erase(line.find_last_not_of(" \t\r\n") + 1);
+								if (line == "[module]" || line == "[package]") {
+									inPackageSection = true;
+									continue;
+								}
+								if (!line.empty() && line[0] == '[') {
+									inPackageSection = false;
+									continue;
+								}
+								if (inPackageSection) {
+									size_t eqPos = line.find('=');
+									if (eqPos != std::string::npos) {
+										std::string key = line.substr(0, eqPos);
+										std::string value = line.substr(eqPos + 1);
+										key.erase(0, key.find_first_not_of(" \t"));
+										key.erase(key.find_last_not_of(" \t") + 1);
+										value.erase(0, value.find_first_not_of(" \t"));
+										value.erase(value.find_last_not_of(" \t") + 1);
+										if (key == "name") {
+											if (value.size() >= 2 && value[0] == '"' &&
+													value[value.size() - 1] == '"') {
+												value = value.substr(1, value.size() - 2);
+											}
+											if (value == moduleName) {
+												manifestFile.close();
+												mModuleDirectories[moduleName] = expandedPath;
+												file.open(directModulePath);
+												if (file.good()) {
+													std::stringstream buffer;
+													buffer << file.rdbuf();
+													std::string source = buffer.str();
+													file.close();
+													parseModuleAndCollectFunctions(moduleName, source);
+													return;
+												}
+												file.close();
+											}
+											break;
+										}
+									}
+								}
+							}
+							manifestFile.close();
+						}
+					}
+				}
+
+				// Check for module as subdirectory of include path
+				std::string includedPath = expandedPath + "/" + moduleName + "/module.qd";
+				file.open(includedPath);
+				if (file.good()) {
+					mModuleDirectories[moduleName] = expandedPath + "/" + moduleName;
+					std::stringstream buffer;
+					buffer << file.rdbuf();
+					std::string source = buffer.str();
+					file.close();
+					parseModuleAndCollectFunctions(moduleName, source);
+					return;
+				}
+				file.close();
+			}
+
+			// Try 3: Third-party packages directory (installed via quadpm)
 			std::string packagesDir;
 			const char* quadratePath = std::getenv("QUADRATE_PATH");
 			if (quadratePath) {

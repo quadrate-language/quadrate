@@ -1,6 +1,8 @@
 #include "module_resolver.h"
 #include <cstdlib>
 #include <filesystem>
+#include <fstream>
+#include <iostream>
 #include <unordered_map>
 
 // Platform abstractions
@@ -11,8 +13,15 @@ extern "C" {
 // Global module version pins (set from command-line -l flags)
 static std::unordered_map<std::string, std::string> g_moduleVersionPins;
 
+// Global module include paths (set from command-line -I flags)
+static std::vector<std::string> g_moduleIncludePaths;
+
 void setModuleVersionPins(const std::unordered_map<std::string, std::string>& pins) {
 	g_moduleVersionPins = pins;
+}
+
+void setModuleIncludePaths(const std::vector<std::string>& paths) {
+	g_moduleIncludePaths = paths;
 }
 
 std::string expandTilde(const std::string& path) {
@@ -181,7 +190,66 @@ std::string findModuleFile(const std::string& moduleName, const std::string& sou
 			return localPath;
 		}
 
-		// Try 2: Third-party packages directory (installed via quadpm)
+		// Try 2: Include paths from -I flags
+		for (const auto& includePath : g_moduleIncludePaths) {
+			std::string expandedPath = expandTilde(includePath);
+
+			// Check if the include path IS the module directory (contains module.qd directly)
+			// This handles: -I /path/to/mymodule where mymodule/module.qd exists
+			// and quadrate.toml says name = "mymodule"
+			std::string directModulePath = expandedPath + "/module.qd";
+			if (std::filesystem::exists(directModulePath)) {
+				// Check if this directory's quadrate.toml matches the module name
+				std::string manifestPath = expandedPath + "/quadrate.toml";
+				if (std::filesystem::exists(manifestPath)) {
+					std::ifstream file(manifestPath);
+					if (file.is_open()) {
+						std::string line;
+						bool inPackageSection = false;
+						while (std::getline(file, line)) {
+							line.erase(0, line.find_first_not_of(" \t\r\n"));
+							line.erase(line.find_last_not_of(" \t\r\n") + 1);
+							if (line == "[module]" || line == "[package]") {
+								inPackageSection = true;
+								continue;
+							}
+							if (!line.empty() && line[0] == '[') {
+								inPackageSection = false;
+								continue;
+							}
+							if (inPackageSection) {
+								size_t eqPos = line.find('=');
+								if (eqPos != std::string::npos) {
+									std::string key = line.substr(0, eqPos);
+									std::string value = line.substr(eqPos + 1);
+									key.erase(0, key.find_first_not_of(" \t"));
+									key.erase(key.find_last_not_of(" \t") + 1);
+									value.erase(0, value.find_first_not_of(" \t"));
+									value.erase(value.find_last_not_of(" \t") + 1);
+									if (key == "name") {
+										if (value.size() >= 2 && value[0] == '"' && value[value.size() - 1] == '"') {
+											value = value.substr(1, value.size() - 2);
+										}
+										if (value == moduleName) {
+											return directModulePath;
+										}
+										break;
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+
+			// Check for module as subdirectory of include path
+			std::string includedPath = expandedPath + "/" + moduleName + "/module.qd";
+			if (std::filesystem::exists(includedPath)) {
+				return includedPath;
+			}
+		}
+
+		// Try 3: Third-party packages directory (installed via quadpm)
 		std::string packagePath = findLatestPackageVersion(moduleName);
 		if (!packagePath.empty()) {
 			std::string moduleFile = packagePath + "/module.qd";

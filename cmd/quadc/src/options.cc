@@ -16,6 +16,7 @@ void printHelp() {
 	std::cout << "  -O0, -O1, -O2, -O3 Set optimization level (default: -O0)\n";
 	std::cout << "  -s <size>          Set stack size (default: 1024)\n";
 	std::cout << "  -g                 Generate debug information for GDB/LLDB\n";
+	std::cout << "  -I <path>          Add module search path (can be used multiple times)\n";
 	std::cout << "  -l <mod@ver>       Pin module to specific version (e.g., -l color@1.0.0)\n";
 	std::cout << "  --save-temps       Keep temporary files for debugging\n";
 	std::cout << "  --verbose          Show detailed compilation steps\n";
@@ -79,6 +80,13 @@ bool parseArgs(int argc, char* argv[], Options& opts) {
 			opts.run = true; // Tests should be run automatically
 		} else if (arg == "-g") {
 			opts.debugInfo = true;
+		} else if (arg == "-I") {
+			if (i + 1 >= argc) {
+				std::cerr << "quadc: option '-I' requires an argument\n";
+				std::cerr << "Try 'quadc --help' for more information.\n";
+				return false;
+			}
+			opts.includePaths.push_back(argv[++i]);
 		} else if (arg == "-l") {
 			if (i + 1 >= argc) {
 				std::cerr << "quadc: option '-l' requires an argument (module@version)\n";

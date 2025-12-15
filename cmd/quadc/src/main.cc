@@ -47,6 +47,9 @@ int main(int argc, char** argv) {
 	// Set global module version pins from command-line options
 	setModuleVersionPins(opts.moduleVersions);
 
+	// Set module include paths from command-line options
+	setModuleIncludePaths(opts.includePaths);
+
 	// Configure colored output - check NO_COLOR environment variable
 	const bool noColors = std::getenv("NO_COLOR") != nullptr;
 	Qd::Colors::setEnabled(!noColors);
@@ -100,6 +103,7 @@ int main(int argc, char** argv) {
 
 			// Semantic validation - catch errors before LLVM generation
 			Qd::SemanticValidator validator;
+			validator.setIncludePaths(opts.includePaths);
 			size_t errorCount = validator.validate(root, "<stdin>", false, opts.werror);
 			if (errorCount > 0) {
 				// Validation failed - do not proceed
@@ -172,6 +176,7 @@ int main(int argc, char** argv) {
 
 			// Semantic validation - catch errors before LLVM generation
 			Qd::SemanticValidator validator;
+			validator.setIncludePaths(opts.includePaths);
 			size_t errorCount = validator.validate(root, file.c_str(), false, opts.werror);
 			if (errorCount > 0) {
 				// Validation failed - do not proceed
@@ -314,6 +319,7 @@ int main(int argc, char** argv) {
 			// Semantic validation - catch errors before LLVM generation
 			// Pass true for isModuleFile to skip reporting errors for missing nested module imports
 			Qd::SemanticValidator validator;
+			validator.setIncludePaths(opts.includePaths);
 			size_t errorCount = validator.validate(root, moduleFilePath.c_str(), true, opts.werror);
 			if (errorCount > 0) {
 				// Validation failed - do not proceed
@@ -439,6 +445,16 @@ int main(int argc, char** argv) {
 					generator.addLibrarySearchPath(libPath);
 					addedPackagePaths.insert(module.packageDirectory);
 				}
+			}
+		}
+
+		// Add library search paths from -I include paths
+		for (const auto& includePath : opts.includePaths) {
+			std::string libPath = includePath + "/lib";
+			if (std::filesystem::exists(libPath) &&
+					addedPackagePaths.find(includePath) == addedPackagePaths.end()) {
+				generator.addLibrarySearchPath(libPath);
+				addedPackagePaths.insert(includePath);
 			}
 		}
 

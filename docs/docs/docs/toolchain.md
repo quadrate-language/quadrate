@@ -90,7 +90,10 @@ Module manager for installing third-party modules from Git repositories.
 quadpm list                              # List installed modules
 quadpm get <url>[@ref]                   # Install a module from Git
 quadpm update [name]                     # Update installed module(s)
+quadpm build                             # Build C sources in current module
 ```
+
+The `build` command is useful during local module development. It compiles any C source files in `src/` and creates both shared (`.so`) and static (`.a`) libraries in `lib/`.
 
 ## quaduses
 

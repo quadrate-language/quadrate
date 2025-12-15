@@ -97,6 +97,11 @@ namespace Qd {
 			mWarningMinLine = line;
 		}
 
+		// Set additional module search paths (from -I flags)
+		void setIncludePaths(const std::vector<std::string>& paths) {
+			mIncludePaths = paths;
+		}
+
 	private:
 		// Pass 1: Collect all function definitions
 		void collectDefinitions(IAstNode* node);
@@ -301,6 +306,9 @@ namespace Qd {
 		// Pending function signature - set when an anonymous function or function pointer
 		// with known signature is pushed onto the stack, used by 'call' instruction
 		std::optional<FunctionSignature> mPendingFnSignature;
+
+		// Additional module search paths from -I flags
+		std::vector<std::string> mIncludePaths;
 	};
 
 } // namespace Qd

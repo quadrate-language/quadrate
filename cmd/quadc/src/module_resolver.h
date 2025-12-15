@@ -3,9 +3,13 @@
 
 #include <string>
 #include <unordered_map>
+#include <vector>
 
 // Set module version pins from command-line -l flags
 void setModuleVersionPins(const std::unordered_map<std::string, std::string>& pins);
+
+// Set additional module search paths from command-line -I flags
+void setModuleIncludePaths(const std::vector<std::string>& paths);
 
 // Expand tilde (~) in file paths
 std::string expandTilde(const std::string& path);
