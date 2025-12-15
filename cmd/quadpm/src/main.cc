@@ -81,6 +81,14 @@ struct NativeConfig {
 	std::vector<std::string> link; // Libraries to link with (-l flags)
 };
 
+// Dependency from [dependencies] section
+struct Dependency {
+	std::string name;       // Module name (key in TOML)
+	std::string url;        // Git URL or local path
+	std::string sha256;     // Optional integrity hash
+	bool isPath;            // true if local path, false if git URL
+};
+
 // Forward declaration
 bool compileCsources(const std::string& moduleDir, const std::string& moduleName, const NativeConfig& nativeConfig);
 
@@ -228,6 +236,128 @@ std::string parseModuleName(const std::string& manifestPath) {
 	}
 
 	return "";
+}
+
+// Parse [dependencies] section from quadrate.toml
+// Supports:
+//   name = "https://git.sr.ht/~user/repo@ref"  (git URL)
+//   name = "../local/path"                      (local path)
+//   [dependencies.name]                         (expanded form with sha256)
+//   url = "..."
+//   sha256 = "..."
+std::vector<Dependency> parseDependencies(const std::string& manifestPath) {
+	std::vector<Dependency> deps;
+	std::ifstream file(manifestPath);
+	if (!file.is_open()) {
+		return deps;
+	}
+
+	std::string line;
+	bool inDepsSection = false;
+	std::string expandedDepName;  // For [dependencies.name] form
+	Dependency currentDep;
+
+	while (std::getline(file, line)) {
+		// Trim whitespace
+		line.erase(0, line.find_first_not_of(" \t\r\n"));
+		line.erase(line.find_last_not_of(" \t\r\n") + 1);
+
+		// Check for [dependencies] section
+		if (line == "[dependencies]") {
+			// Save any pending expanded dependency
+			if (!expandedDepName.empty() && !currentDep.url.empty()) {
+				currentDep.name = expandedDepName;
+				deps.push_back(currentDep);
+			}
+			inDepsSection = true;
+			expandedDepName = "";
+			currentDep = Dependency{};
+			continue;
+		}
+
+		// Check for [dependencies.name] section (expanded form)
+		if (line.size() > 15 && line.substr(0, 14) == "[dependencies.") {
+			// Save any pending expanded dependency
+			if (!expandedDepName.empty() && !currentDep.url.empty()) {
+				currentDep.name = expandedDepName;
+				deps.push_back(currentDep);
+			}
+			// Extract name from [dependencies.name]
+			size_t endBracket = line.find(']');
+			if (endBracket != std::string::npos) {
+				expandedDepName = line.substr(14, endBracket - 14);
+				currentDep = Dependency{};
+				inDepsSection = false;  // Now in expanded dep section
+			}
+			continue;
+		}
+
+		// Check for other sections
+		if (!line.empty() && line[0] == '[') {
+			// Save any pending expanded dependency
+			if (!expandedDepName.empty() && !currentDep.url.empty()) {
+				currentDep.name = expandedDepName;
+				deps.push_back(currentDep);
+				expandedDepName = "";
+				currentDep = Dependency{};
+			}
+			inDepsSection = false;
+			continue;
+		}
+
+		// Skip comments and empty lines
+		if (line.empty() || line[0] == '#') {
+			continue;
+		}
+
+		// Parse key = value
+		size_t eqPos = line.find('=');
+		if (eqPos != std::string::npos) {
+			std::string key = line.substr(0, eqPos);
+			std::string value = line.substr(eqPos + 1);
+
+			// Trim key and value
+			key.erase(0, key.find_first_not_of(" \t"));
+			key.erase(key.find_last_not_of(" \t") + 1);
+			value.erase(0, value.find_first_not_of(" \t"));
+			value.erase(value.find_last_not_of(" \t") + 1);
+
+			// Remove quotes from value
+			if (value.size() >= 2 && value[0] == '"' && value[value.size() - 1] == '"') {
+				value = value.substr(1, value.size() - 2);
+			}
+
+			// Handle expanded dependency section
+			if (!expandedDepName.empty()) {
+				if (key == "url") {
+					currentDep.url = value;
+					// Check if it's a local path
+					currentDep.isPath = (value.size() > 0 && (value[0] == '/' || value[0] == '.' ||
+					                     (value.size() > 1 && value[0] == '~' && value[1] == '/')));
+				} else if (key == "sha256") {
+					currentDep.sha256 = value;
+				}
+			}
+			// Handle simple dependency in [dependencies] section
+			else if (inDepsSection) {
+				Dependency dep;
+				dep.name = key;
+				dep.url = value;
+				// Check if it's a local path (starts with /, ./, ../, or ~/)
+				dep.isPath = (value.size() > 0 && (value[0] == '/' || value[0] == '.' ||
+				              (value.size() > 1 && value[0] == '~' && value[1] == '/')));
+				deps.push_back(dep);
+			}
+		}
+	}
+
+	// Save any final pending expanded dependency
+	if (!expandedDepName.empty() && !currentDep.url.empty()) {
+		currentDep.name = expandedDepName;
+		deps.push_back(currentDep);
+	}
+
+	return deps;
 }
 
 // Get the installed directory name for a module@ref
@@ -450,15 +580,24 @@ void printUsage() {
 	std::cout << "  -h, --help       Show this help message\n";
 	std::cout << "  -v, --version    Show version information\n\n";
 	std::cout << "Commands:\n";
+	std::cout << "  install          Install dependencies from quadrate.toml\n";
 	std::cout << "  get <url>[@ref]  Fetch and install a module from Git\n";
 	std::cout << "  update [name]    Update installed module(s) (git pull)\n";
 	std::cout << "  list             List installed modules\n";
 	std::cout << "  build            Build C sources in current module directory\n\n";
 	std::cout << "Examples:\n";
+	std::cout << "  quadpm install\n";
 	std::cout << "  quadpm get https://git.sr.ht/~user/zlib\n";
 	std::cout << "  quadpm get https://git.sr.ht/~user/zlib@1.2.0\n";
 	std::cout << "  quadpm get https://github.com/user/http@main\n";
 	std::cout << "  quadpm list\n\n";
+	std::cout << "quadrate.toml dependencies format:\n";
+	std::cout << "  [dependencies]\n";
+	std::cout << "  glut = \"https://git.sr.ht/~user/qd-glut@v1.0.0\"\n";
+	std::cout << "  mylib = \"../local/path\"\n\n";
+	std::cout << "  [dependencies.crypto]\n";
+	std::cout << "  url = \"https://git.sr.ht/~user/qd-crypto@v2.0.0\"\n";
+	std::cout << "  sha256 = \"abc123...\"  # commit hash for integrity\n\n";
 	std::cout << "Environment:\n";
 	std::cout << "  QUADRATE_PATH      Module installation directory\n";
 	std::cout << "  XDG_DATA_HOME      If set, uses $XDG_DATA_HOME/quadrate/modules\n";
@@ -595,6 +734,152 @@ int buildModule() {
 	return 0;
 }
 
+// Compute SHA256 hash of a file or directory
+std::string computeSha256(const std::string& path) {
+	std::string cmd = "sha256sum " + path + " 2>/dev/null | cut -d' ' -f1";
+	try {
+		std::string hash = execCommand(cmd);
+		// Trim whitespace
+		hash.erase(hash.find_last_not_of(" \t\r\n") + 1);
+		return hash;
+	} catch (...) {
+		return "";
+	}
+}
+
+// Install dependencies from quadrate.toml
+int installDependencies() {
+	std::string cwd = fs::current_path().string();
+
+	// Check for quadrate.toml
+	std::string manifestPath = cwd + "/quadrate.toml";
+	if (!fs::exists(manifestPath)) {
+		std::cerr << COLOR_RED << "Error: No quadrate.toml found in current directory" << COLOR_RESET << "\n";
+		return 1;
+	}
+
+	// Parse dependencies
+	std::vector<Dependency> deps = parseDependencies(manifestPath);
+	if (deps.empty()) {
+		std::cout << "No dependencies found in quadrate.toml\n";
+		return 0;
+	}
+
+	std::cout << COLOR_CYAN << "Installing " << deps.size() << " dependenc"
+	          << (deps.size() == 1 ? "y" : "ies") << "..." << COLOR_RESET << "\n\n";
+
+	int failures = 0;
+	std::string modulesDir = getModulesDir();
+
+	for (const auto& dep : deps) {
+		std::cout << COLOR_BOLD << dep.name << COLOR_RESET << ": ";
+
+		if (dep.isPath) {
+			// Local path dependency
+			std::string resolvedPath = dep.url;
+
+			// Expand ~ to home directory
+			if (resolvedPath.size() > 0 && resolvedPath[0] == '~') {
+				resolvedPath = getHomeDir() + resolvedPath.substr(1);
+			}
+
+			// Make relative paths absolute
+			if (resolvedPath.size() > 0 && resolvedPath[0] != '/') {
+				resolvedPath = cwd + "/" + resolvedPath;
+			}
+
+			// Normalize the path
+			resolvedPath = fs::weakly_canonical(resolvedPath).string();
+
+			if (!fs::exists(resolvedPath)) {
+				std::cout << COLOR_RED << "✗ Path not found: " << resolvedPath << COLOR_RESET << "\n";
+				failures++;
+				continue;
+			}
+
+			// Verify it has a module.qd
+			if (!fs::exists(resolvedPath + "/module.qd")) {
+				std::cout << COLOR_RED << "✗ Not a module (no module.qd): " << resolvedPath << COLOR_RESET << "\n";
+				failures++;
+				continue;
+			}
+
+			std::cout << COLOR_GREEN << "✓ " << COLOR_RESET << resolvedPath << " (local)\n";
+		} else {
+			// Git URL dependency
+			GitRef gitRef = parseGitUrl(dep.url);
+
+			// Check if already installed
+			std::string installedDir = modulesDir + "/" + getInstalledDirName(gitRef.moduleName, gitRef.ref);
+			if (fs::exists(installedDir)) {
+				std::cout << COLOR_GREEN << "✓ " << COLOR_RESET << "already installed\n";
+
+				// Verify sha256 if specified
+				if (!dep.sha256.empty()) {
+					// For git repos, we check the commit hash
+					std::string gitDir = installedDir + "/.git";
+					if (fs::exists(gitDir)) {
+						std::string cmd = "git -C " + installedDir + " rev-parse HEAD 2>/dev/null";
+						try {
+							std::string commitHash = execCommand(cmd);
+							commitHash.erase(commitHash.find_last_not_of(" \t\r\n") + 1);
+							if (commitHash != dep.sha256) {
+								std::cout << "  " << COLOR_YELLOW << "⚠ SHA256 mismatch!" << COLOR_RESET << "\n";
+								std::cout << "    Expected: " << dep.sha256 << "\n";
+								std::cout << "    Got:      " << commitHash << "\n";
+							}
+						} catch (...) {
+							// Ignore errors
+						}
+					}
+				}
+				continue;
+			}
+
+			// Clone the repository
+			std::string installedName = gitClone(gitRef);
+			if (installedName.empty()) {
+				std::cout << COLOR_RED << "✗ Failed to clone" << COLOR_RESET << "\n";
+				failures++;
+				continue;
+			}
+
+			std::cout << COLOR_GREEN << "✓ " << COLOR_RESET << "installed\n";
+
+			// Verify sha256 if specified
+			if (!dep.sha256.empty()) {
+				std::string newInstalledDir = modulesDir + "/" + getInstalledDirName(installedName, gitRef.ref);
+				std::string gitDir = newInstalledDir + "/.git";
+				if (fs::exists(gitDir)) {
+					std::string cmd = "git -C " + newInstalledDir + " rev-parse HEAD 2>/dev/null";
+					try {
+						std::string commitHash = execCommand(cmd);
+						commitHash.erase(commitHash.find_last_not_of(" \t\r\n") + 1);
+						if (commitHash != dep.sha256) {
+							std::cout << "  " << COLOR_RED << "✗ SHA256 mismatch!" << COLOR_RESET << "\n";
+							std::cout << "    Expected: " << dep.sha256 << "\n";
+							std::cout << "    Got:      " << commitHash << "\n";
+							failures++;
+						}
+					} catch (...) {
+						// Ignore errors
+					}
+				}
+			}
+		}
+	}
+
+	std::cout << "\n";
+	if (failures > 0) {
+		std::cout << COLOR_RED << failures << " dependenc" << (failures == 1 ? "y" : "ies")
+		          << " failed" << COLOR_RESET << "\n";
+		return 1;
+	}
+
+	std::cout << COLOR_GREEN << "All dependencies installed!" << COLOR_RESET << "\n";
+	return 0;
+}
+
 // Update installed modules
 int updateModules(const std::string& targetModuleName) {
 	std::string modulesDir = getModulesDir();
@@ -704,6 +989,10 @@ int main(int argc, char** argv) {
 
 	if (command == "build") {
 		return buildModule();
+	}
+
+	if (command == "install" || command == "i") {
+		return installDependencies();
 	}
 
 	std::cerr << COLOR_RED << "Error: Unknown command '" << command << "'" << COLOR_RESET << "\n";
