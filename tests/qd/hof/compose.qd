@@ -1,0 +1,21 @@
+// Test: Function composition
+use hof
+
+fn main( -- ) {
+	// compose(f, g)(x) = g(f(x))
+	// double then add1: 5 -> 10 -> 11
+	fn (x:i64 -- r:i64) { -> x x 2 * } fn (x:i64 -- r:i64) { -> x x 1 + } hof::compose -> f
+	5 f call print nl
+
+	// square then double: 3 -> 9 -> 18
+	fn (x:i64 -- r:i64) { -> x x x * } fn (x:i64 -- r:i64) { -> x x 2 * } hof::compose -> g
+	3 g call print nl
+
+	// chain three: add1, double, square: 2 -> 3 -> 6 -> 36
+	fn (x:i64 -- r:i64) { -> x x 1 + }
+	fn (x:i64 -- r:i64) { -> x x 2 * }
+	hof::compose
+	fn (x:i64 -- r:i64) { -> x x x * }
+	hof::compose -> h
+	2 h call print nl
+}

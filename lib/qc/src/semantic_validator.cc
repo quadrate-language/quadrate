@@ -3641,12 +3641,29 @@ namespace Qd {
 						}
 					}
 
+					// Check if any parameter is PTR (function pointer) before consuming
+					bool consumesPtrParam = false;
+					for (const auto& paramType : sig.consumes) {
+						if (paramType == StackValueType::PTR) {
+							consumesPtrParam = true;
+							break;
+						}
+					}
+
 					// Consume the parameters from the stack
 					for (size_t j = 0; j < sig.consumes.size(); j++) {
 						typeStack.pop_back();
 						if (!structTypeStack.empty()) {
 							structTypeStack.pop_back();
 						}
+					}
+
+					// Reset pending function signature only if we consumed a PTR parameter -
+					// this ensures signatures from input function pointers don't leak to
+					// returned function pointers, but preserves signatures for functions
+					// that return closures without taking function pointer parameters
+					if (consumesPtrParam) {
+						mPendingFnSignature.reset();
 					}
 
 					// Helper lambda to determine struct type for a produced PTR value
@@ -4188,12 +4205,29 @@ namespace Qd {
 					// Store cast information in the scoped identifier node
 					scoped->setParameterCasts(paramCasts);
 
+					// Check if any parameter is PTR (function pointer) before consuming
+					bool consumesPtrParam = false;
+					for (const auto& paramType : sig.consumes) {
+						if (paramType == StackValueType::PTR) {
+							consumesPtrParam = true;
+							break;
+						}
+					}
+
 					// Consume the parameters from the stack
 					for (size_t j = 0; j < sig.consumes.size(); j++) {
 						typeStack.pop_back();
 						if (!structTypeStack.empty()) {
 							structTypeStack.pop_back();
 						}
+					}
+
+					// Reset pending function signature only if we consumed a PTR parameter -
+					// this ensures signatures from input function pointers don't leak to
+					// returned function pointers, but preserves signatures for functions
+					// that return closures without taking function pointer parameters
+					if (consumesPtrParam) {
+						mPendingFnSignature.reset();
 					}
 
 					// Apply the produces effect

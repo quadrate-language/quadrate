@@ -9,6 +9,26 @@
   ],
   "functions": [
     {
+      "name": "all",
+      "signature": "(arr:ptr count:i64 pred:ptr -- result:i64)",
+      "failable": false,
+      "description": "Check if all elements satisfy a predicate.",
+      "params": [{"name": "arr", "type": "ptr", "description": "Array pointer"}, {"name": "count", "type": "i64", "description": "Array length"}, {"name": "pred", "type": "ptr", "description": "Predicate function pointer (i64 -- bool:i64)"}],
+      "returns": [{"name": "result", "type": "i64", "description": "1 if all elements satisfy pred, 0 otherwise"}],
+      "errors": [],
+      "examples": ["arr count fn (x:i64 -- r:i64) { 0 > } hof::all  // all positive?"]
+    },
+    {
+      "name": "any",
+      "signature": "(arr:ptr count:i64 pred:ptr -- result:i64)",
+      "failable": false,
+      "description": "Check if any element satisfies a predicate.",
+      "params": [{"name": "arr", "type": "ptr", "description": "Array pointer"}, {"name": "count", "type": "i64", "description": "Array length"}, {"name": "pred", "type": "ptr", "description": "Predicate function pointer (i64 -- bool:i64)"}],
+      "returns": [{"name": "result", "type": "i64", "description": "1 if any element satisfies pred, 0 otherwise"}],
+      "errors": [],
+      "examples": ["arr count fn (x:i64 -- r:i64) { 0 > } hof::any  // any positive?"]
+    },
+    {
       "name": "apply",
       "signature": "(x:i64 f:ptr -- r:i64)",
       "failable": false,
@@ -49,6 +69,36 @@
       "examples": ["3 4 fn (x:i64 -- r:i64) { dup * } hof::both  // Stack: 9 16"]
     },
     {
+      "name": "compose",
+      "signature": "(f:ptr g:ptr -- fg:ptr)",
+      "failable": false,
+      "description": "Compose two functions: compose(f, g)(x) = g(f(x)). First f is applied, then g is applied to the result.",
+      "params": [{"name": "f", "type": "ptr", "description": "First function pointer (i64 -- i64)"}, {"name": "g", "type": "ptr", "description": "Second function pointer (i64 -- i64)"}],
+      "returns": [{"name": "fg", "type": "ptr", "description": "Composed function pointer (i64 -- i64)"}],
+      "errors": [],
+      "examples": ["fn (x:i64 -- r:i64) { 2 * } fn (x:i64 -- r:i64) { 1 + } hof::compose -> f  5 f call print nl  // 11"]
+    },
+    {
+      "name": "curry_right",
+      "signature": "(y:i64 f:ptr -- curried:ptr)",
+      "failable": false,
+      "description": "Curry right: create a new function with the second argument fixed.",
+      "params": [{"name": "y", "type": "i64", "description": "The value to bind as second argument"}, {"name": "f", "type": "ptr", "description": "Function pointer (i64 i64 -- i64)"}],
+      "returns": [{"name": "curried", "type": "ptr", "description": "New function pointer (i64 -- i64)"}],
+      "errors": [],
+      "examples": ["2 fn (x:i64 y:i64 -- r:i64) { / } hof::curry_right -> half  10 half call print nl  // 5"]
+    },
+    {
+      "name": "curry",
+      "signature": "(x:i64 f:ptr -- curried:ptr)",
+      "failable": false,
+      "description": "Curry: create a new function with the first argument fixed.",
+      "params": [{"name": "x", "type": "i64", "description": "The value to bind as first argument"}, {"name": "f", "type": "ptr", "description": "Function pointer (i64 i64 -- i64)"}],
+      "returns": [{"name": "curried", "type": "ptr", "description": "New function pointer (i64 -- i64)"}],
+      "errors": [],
+      "examples": ["5 fn (x:i64 y:i64 -- r:i64) { + } hof::curry -> add5  10 add5 call print nl  // 15"]
+    },
+    {
       "name": "dip",
       "signature": "(x:i64 y:i64 f:ptr -- r:i64 top:i64)",
       "failable": false,
@@ -59,6 +109,46 @@
       "examples": ["10 20 fn (x:i64 -- r:i64) { 2 * } hof::dip  // Stack: 20 20"]
     },
     {
+      "name": "filter",
+      "signature": "(arr:ptr count:i64 pred:ptr -- result:ptr out_count:i64)",
+      "failable": false,
+      "description": "Filter an array, keeping only elements that satisfy a predicate.",
+      "params": [{"name": "arr", "type": "ptr", "description": "Input array pointer"}, {"name": "count", "type": "i64", "description": "Array length"}, {"name": "pred", "type": "ptr", "description": "Predicate function pointer (i64 -- bool:i64)"}],
+      "returns": [{"name": "result", "type": "ptr", "description": "New array with filtered values"}, {"name": "out_count", "type": "i64", "description": "Length of filtered array"}],
+      "errors": [],
+      "examples": ["arr count fn (x:i64 -- r:i64) { 2 mod 0 == } hof::filter  // keep evens"]
+    },
+    {
+      "name": "find",
+      "signature": "(arr:ptr count:i64 pred:ptr -- elem:i64 found:i64)",
+      "failable": false,
+      "description": "Find the first element satisfying a predicate.",
+      "params": [{"name": "arr", "type": "ptr", "description": "Array pointer"}, {"name": "count", "type": "i64", "description": "Array length"}, {"name": "pred", "type": "ptr", "description": "Predicate function pointer (i64 -- bool:i64)"}],
+      "returns": [{"name": "elem", "type": "i64", "description": "The found element (or 0 if not found)"}, {"name": "found", "type": "i64", "description": "1 if found, 0 otherwise"}],
+      "errors": [],
+      "examples": ["arr count fn (x:i64 -- r:i64) { 10 > } hof::find  // first > 10"]
+    },
+    {
+      "name": "fold",
+      "signature": "(arr:ptr count:i64 init:i64 f:ptr -- result:i64)",
+      "failable": false,
+      "description": "Fold/reduce an array left-to-right with a binary function.",
+      "params": [{"name": "arr", "type": "ptr", "description": "Array pointer"}, {"name": "count", "type": "i64", "description": "Array length"}, {"name": "init", "type": "i64", "description": "Initial accumulator value"}, {"name": "f", "type": "ptr", "description": "Binary function pointer (acc:i64 elem:i64 -- acc:i64)"}],
+      "returns": [{"name": "result", "type": "i64", "description": "Final accumulated value"}],
+      "errors": [],
+      "examples": ["arr count 0 fn (acc:i64 x:i64 -- r:i64) { + } hof::fold  // sum of array"]
+    },
+    {
+      "name": "fold_right",
+      "signature": "(arr:ptr count:i64 init:i64 f:ptr -- result:i64)",
+      "failable": false,
+      "description": "Fold/reduce an array right-to-left with a binary function.",
+      "params": [{"name": "arr", "type": "ptr", "description": "Array pointer"}, {"name": "count", "type": "i64", "description": "Array length"}, {"name": "init", "type": "i64", "description": "Initial accumulator value"}, {"name": "f", "type": "ptr", "description": "Binary function pointer (elem:i64 acc:i64 -- acc:i64)"}],
+      "returns": [{"name": "result", "type": "i64", "description": "Final accumulated value"}],
+      "errors": [],
+      "examples": ["arr count 0 fn (x:i64 acc:i64 -- r:i64) { + } hof::fold_right  // sum of array"]
+    },
+    {
       "name": "keep",
       "signature": "(x:i64 f:ptr -- r:i64 orig:i64)",
       "failable": false,
@@ -67,6 +157,16 @@
       "returns": [{"name": "r", "type": "i64", "description": "Result of f(x)"}, {"name": "x", "type": "i64", "description": "Original value (preserved)"}],
       "errors": [],
       "examples": ["5 fn (x:i64 -- r:i64) { 2 * } hof::keep  // Stack: 10 5"]
+    },
+    {
+      "name": "map",
+      "signature": "(arr:ptr count:i64 f:ptr -- result:ptr out_count:i64)",
+      "failable": false,
+      "description": "Map a function over an array, returning a new array.",
+      "params": [{"name": "arr", "type": "ptr", "description": "Input array pointer"}, {"name": "count", "type": "i64", "description": "Array length"}, {"name": "f", "type": "ptr", "description": "Function pointer (i64 -- i64)"}],
+      "returns": [{"name": "result", "type": "ptr", "description": "New array with mapped values"}, {"name": "out_count", "type": "i64", "description": "Array length (unchanged)"}],
+      "errors": [],
+      "examples": ["arr count fn (x:i64 -- r:i64) { 2 * } hof::map  // double each element"]
     },
     {
       "name": "times",
