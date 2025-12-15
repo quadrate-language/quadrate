@@ -50,14 +50,26 @@ int main(int argc, char** argv) {
 	// Set module include paths from command-line options
 	setModuleIncludePaths(opts.includePaths);
 
-	// Load dependencies from quadrate.toml in current directory
-	// These are added after command-line paths, so -I takes precedence
-	std::string cwd = std::filesystem::current_path().string();
-	std::vector<std::string> manifestPaths = loadDependenciesFromManifest(cwd);
+	// Load dependencies from quadrate.toml
+	// First check source file's directory, then fall back to cwd
+	std::vector<std::string> manifestPaths;
+	if (!opts.files.empty()) {
+		std::filesystem::path sourceFile = opts.files[0];
+		std::string sourceDir = sourceFile.parent_path().string();
+		if (sourceDir.empty()) {
+			sourceDir = ".";
+		}
+		sourceDir = std::filesystem::absolute(sourceDir).string();
+		manifestPaths = loadDependenciesFromManifest(sourceDir);
+	}
+	// Fall back to current working directory if no manifest found
+	if (manifestPaths.empty()) {
+		std::string cwd = std::filesystem::current_path().string();
+		manifestPaths = loadDependenciesFromManifest(cwd);
+	}
 	for (const auto& path : manifestPaths) {
 		opts.includePaths.push_back(path);
 	}
-	// Re-set include paths with the additional manifest paths
 	if (!manifestPaths.empty()) {
 		setModuleIncludePaths(opts.includePaths);
 	}
