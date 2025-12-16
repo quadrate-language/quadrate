@@ -21,7 +21,7 @@ LIBS_WITH_HEADERS := qdrt qd qdfmt qdio qdmath qdmem qdnet qdtls qdhttp qdos qds
 # Standard library modules (pure Quadrate or mixed)
 STDLIB_MODULES := base64 bits flag fmt hof http io json limits vec2 vec3 vec4 mat4 quat math mem net tls os sb signal str strconv time unicode uri hex bytes crc32 sha256 regex path sort rand uuid testing
 
-.PHONY: all debug release tests valgrind examples format install uninstall clean docs
+.PHONY: all debug release tests tests-failed tests-clear valgrind examples format install uninstall clean docs
 
 all: debug
 
@@ -69,68 +69,19 @@ release:
 	$(call do_build,$(BUILD_DIR_RELEASE),release,Release build complete - static libraries ready)
 
 tests: debug
-	@echo "=========================================="
-	@echo "  Quadrate Test Suite"
-	@echo "=========================================="
-	@echo ""
-	@echo "=== Running C/C++ unit tests ==="
-	meson test -C $(BUILD_DIR_DEBUG) test_runtime test_ast test_semantic_validator --print-errorlogs
-	@echo ""
-	@echo "=== Running LSP tests ==="
-	meson test -C $(BUILD_DIR_DEBUG) test_lsp test_lsp_extended test_lsp_stress --print-errorlogs
-	@echo ""
-	@echo "=== Running Quadrate language tests ==="
-	QUADC=$(BUILD_DIR_DEBUG)/cmd/quadc/quadc bash tests/run_tests.sh qd
-	@echo ""
-	@echo "=== Running formatter tests ==="
-	bash tests/run_tests.sh formatter
-	@echo ""
-	@echo "=== Running linter tests ==="
-	meson test -C $(BUILD_DIR_DEBUG) --suite linter --print-errorlogs
-	@echo ""
-	@echo "=== Running quaduses tests ==="
-	bash tests/run_tests.sh quaduses
-	@echo ""
-	@echo "=== Running quadpm tests ==="
-	meson test -C $(BUILD_DIR_DEBUG) --suite quadpm --print-errorlogs
-	@echo ""
-	@echo "=== Building and testing embed examples ==="
-	@$(MAKE) examples
-	bash tests/run_embed_tests.sh
-	@echo ""
-	@echo "=========================================="
-	@echo "  Test Suite Complete"
-	@echo "=========================================="
+	@$(MAKE) examples --no-print-directory
+	@bash tests/run_all.sh $(if $(TEST),--test $(TEST),) $(if $(SUITE),--suite $(SUITE),)
+
+tests-failed: debug
+	@$(MAKE) examples --no-print-directory
+	@bash tests/run_all.sh --failed
+
+tests-clear:
+	@bash tests/run_all.sh --clear
 
 valgrind: debug
-	@echo "=== Running C/C++ unit tests with valgrind ==="
-	meson test -C $(BUILD_DIR_DEBUG) test_runtime test_ast test_semantic_validator --setup=valgrind --print-errorlogs
-	@echo ""
-	@echo "=== Running Quadrate language tests with valgrind ==="
-	QUADC=$(BUILD_DIR_DEBUG)/cmd/quadc/quadc bash tests/run_tests.sh valgrind
-	@echo ""
-	@echo "=== Running LSP tests with valgrind ==="
-	@if command -v valgrind >/dev/null 2>&1; then \
-		meson test -C $(BUILD_DIR_DEBUG) test_lsp test_lsp_extended --setup=valgrind --print-errorlogs; \
-	else \
-		echo "⚠️  Valgrind not installed, skipping"; \
-	fi
-	@echo ""
-	@echo "=== Running linter tests with valgrind ==="
-	@if command -v valgrind >/dev/null 2>&1; then \
-		meson test -C $(BUILD_DIR_DEBUG) --suite linter --setup=valgrind --print-errorlogs; \
-	else \
-		echo "⚠️  Valgrind not installed, skipping"; \
-	fi
-	@echo ""
-	@echo "=== Building and testing embed examples with valgrind ==="
-	@$(MAKE) examples
-	@if command -v valgrind >/dev/null 2>&1; then \
-		bash tests/run_embed_tests.sh valgrind; \
-	else \
-		echo "⚠️  Valgrind not installed, running without valgrind"; \
-		bash tests/run_embed_tests.sh; \
-	fi
+	@$(MAKE) examples --no-print-directory
+	@bash tests/run_all.sh --valgrind $(if $(TEST),--test $(TEST),) $(if $(SUITE),--suite $(SUITE),)
 
 examples: debug
 	@mkdir -p dist/examples
