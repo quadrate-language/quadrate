@@ -132,6 +132,24 @@ Get environment variable value.
 
 ---
 
+### `fn` getpid
+
+Get the current process ID.
+
+**Signature:** `( -- pid:i64)`
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `pid` | `i64` | Process ID |
+
+**Example:**
+
+```qd
+os::getpid print nl
+```
+
+---
+
 ### `fn` list
 
 List directory contents.
@@ -205,24 +223,7 @@ Execute a command and stream output line-by-line to a callback. The callback is 
 **Example:**
 
 ```qd
-use os
-
-fn main() {
-	// Print each line of output
-	"ls -la" fn (line:str -- ) {
-		print nl
-	}
-	os::popen! -> exitcode
-
-	// Count lines with a closure
-	0 -> count
-	"cat /etc/passwd" fn (line:str -- ) {
-		count 1 + -> count
-		drop
-	}
-	os::popen! drop
-	"Lines: " print count print nl
-}
+"ls -la" fn (line:str -- ) { print nl } os::popen!  // code
 ```
 
 ---

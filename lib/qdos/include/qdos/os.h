@@ -234,6 +234,23 @@ qd_exec_result usr_os_list(qd_context* ctx);
  */
 qd_exec_result usr_os_popen(qd_context* ctx);
 
+/**
+ * @brief Get the current process ID
+ *
+ * @par Stack Effect: ( -- pid:i )
+ *
+ * Returns the process ID of the current process.
+ *
+ * @param ctx Execution context
+ * @return Execution result
+ *
+ * @par Example:
+ * @code
+ * os::getpid print  // Print current PID
+ * @endcode
+ */
+qd_exec_result usr_os_getpid(qd_context* ctx);
+
 #ifdef __cplusplus
 }
 #endif

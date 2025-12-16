@@ -6,6 +6,7 @@
 #include <string.h>
 #include <errno.h>
 #include <sys/wait.h>
+#include <unistd.h>
 #include "os_fs.h"
 
 /**
@@ -645,4 +646,19 @@ qd_exec_result usr_os_list(qd_context* ctx) {
 	// Push error code (OS_ERR_OK for success)
 	qd_stack_push_int(ctx->st, OS_ERR_OK);
 	return (qd_exec_result){OS_ERR_OK};
+}
+
+qd_exec_result usr_os_getpid(qd_context* ctx) {
+	// Get process ID
+	pid_t pid = getpid();
+
+	// Push PID to stack
+	qd_stack_error err = qd_stack_push_int(ctx->st, (int64_t)pid);
+	if (err != QD_STACK_OK) {
+		fprintf(stderr, "Fatal error in os::getpid: Failed to push pid\n");
+		qd_print_stack_trace(ctx);
+		abort();
+	}
+
+	return (qd_exec_result){0};
 }

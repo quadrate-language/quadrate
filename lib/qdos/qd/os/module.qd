@@ -107,4 +107,9 @@ import "libqdos.a" as "os" {
 	/// @error ErrIo Failed to execute command
 	/// @example "ls -la" fn (line:str -- ) { print nl } os::popen! -> code
 	pub fn popen(cmd:str callback:ptr -- exitcode:i64)!
+
+	/// Get the current process ID.
+	/// @return pid i64 Process ID
+	/// @example os::getpid print nl
+	pub fn getpid( -- pid:i64)
 }

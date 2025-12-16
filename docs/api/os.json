@@ -123,6 +123,16 @@
       "examples": ["\"HOME\" os::getenv -> home"]
     },
     {
+      "name": "getpid",
+      "signature": "( -- pid:i64)",
+      "failable": false,
+      "description": "Get the current process ID.",
+      "params": [],
+      "returns": [{"name": "pid", "type": "i64", "description": "Process ID"}],
+      "errors": [],
+      "examples": ["os::getpid print nl"]
+    },
+    {
       "name": "list",
       "signature": "(path:str -- entries:ptr count:i64)",
       "failable": true,
