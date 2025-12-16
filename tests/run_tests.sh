@@ -385,12 +385,12 @@ case "$MODE" in
         export OPT_LEVEL
 
         if command -v parallel &> /dev/null; then
-            # Use parallel if available
-            find "$TEST_DIR_QD" -name "*.qd" -type f | sort | \
+            # Use parallel if available (exclude network tests that require external services)
+            find "$TEST_DIR_QD" -name "*.qd" -type f ! -path "*/network/*" | sort | \
                 parallel --unsafe -j$(nproc) run_qd_test {} "$COMPILER" no "$OPT_LEVEL"
         else
-            # Fallback to xargs for sequential execution
-            find "$TEST_DIR_QD" -name "*.qd" -type f | sort | \
+            # Fallback to xargs for sequential execution (exclude network tests)
+            find "$TEST_DIR_QD" -name "*.qd" -type f ! -path "*/network/*" | sort | \
                 xargs -I {} bash -c 'run_qd_test "$@"' _ {} "$COMPILER" no "$OPT_LEVEL"
         fi
 
