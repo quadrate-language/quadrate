@@ -23,6 +23,14 @@ namespace Qd {
 		TAINTED	 // For error-tainted values from throws functions
 	};
 
+	// Information about an imported C function exposed by a module
+	struct ImportedFunctionInfo {
+		std::string library;		 // e.g., "libglut.so"
+		std::string importNamespace; // e.g., "native" - the namespace used within the module
+		std::string cFunctionName;	 // The actual C function name
+		bool throws;				 // Whether the function can throw errors
+	};
+
 	// Function signature - describes stack effect of a function
 	struct FunctionSignature {
 		std::vector<StackValueType> consumes; // Types popped from stack (bottom to top)
@@ -80,6 +88,12 @@ namespace Qd {
 			return mModuleConstantValues;
 		}
 
+		// Get the module imported functions map (public imported C functions)
+		const std::unordered_map<std::string, std::unordered_map<std::string, ImportedFunctionInfo>>&
+		moduleImportedFunctions() const {
+			return mModuleImportedFunctions;
+		}
+
 		// Enable error storage for LSP (instead of printing to stderr)
 		void setStoreErrors(bool store) {
 			mStoreErrors = store;
@@ -119,6 +133,8 @@ namespace Qd {
 		void collectModuleConstantValues(IAstNode* node, const std::string& moduleName);
 		void collectModuleStructs(IAstNode* node, std::unordered_map<std::string, bool>& structs);
 		void collectModuleStructFieldTypes(IAstNode* node);
+		void collectModuleImportedFunctions(
+				IAstNode* node, const std::string& moduleName, std::unordered_map<std::string, ImportedFunctionInfo>& imports);
 
 		// Helper: Analyze function signatures in a module
 		void analyzeModuleFunctionSignatures(IAstNode* node, const std::string& moduleName);
@@ -268,6 +284,10 @@ namespace Qd {
 
 		// Module structs: maps module name -> (struct name -> isPublic flag)
 		std::unordered_map<std::string, std::unordered_map<std::string, bool>> mModuleStructs;
+
+		// Module imported functions: maps module name -> (function name -> ImportedFunctionInfo)
+		// Only contains public imported functions that are exported by the module
+		std::unordered_map<std::string, std::unordered_map<std::string, ImportedFunctionInfo>> mModuleImportedFunctions;
 
 		// Module directories: maps module name -> directory path where module was found
 		std::unordered_map<std::string, std::string> mModuleDirectories;

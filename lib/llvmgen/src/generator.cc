@@ -159,6 +159,15 @@ namespace Qd {
 		std::set<std::string> importedCFunctions;					 // Track functions from imported C libraries
 		std::map<std::string, std::string> functionReturnStructType; // Track struct type returned by functions
 
+		// Cross-module imported function info (for pub fn in import blocks)
+		struct CrossModuleImportInfo {
+			std::string library;
+			std::string cFunctionName;
+			bool throws;
+		};
+		// Maps "module::funcname" -> info for public imported C functions
+		std::map<std::string, CrossModuleImportInfo> crossModuleImportedFunctions;
+
 		// Module constants (scope::name -> value)
 		std::map<std::string, std::string> moduleConstants;
 
@@ -3534,6 +3543,12 @@ namespace Qd {
 		// Call the scoped function
 		auto callResult = builder->CreateCall(fn, {ctx}, "call_result");
 
+		// Track return struct type for local variable binding (-> name)
+		auto returnTypeIt = functionReturnStructType.find(fullName);
+		if (returnTypeIt != functionReturnStructType.end()) {
+			lastStructConstructed = returnTypeIt->second;
+		}
+
 		// If in test mode, track any errors from the function call
 		if (testErrorAlloca) {
 			auto errorCode = builder->CreateExtractValue(callResult, {0}, "err_code");
@@ -6155,6 +6170,7 @@ namespace Qd {
 
 		// Process import statements from all modules
 		for (const auto& modulePair : moduleASTs) {
+			const std::string& moduleName = modulePair.first;
 			IAstNode* moduleRoot = modulePair.second;
 			if (!moduleRoot) {
 				continue;
@@ -6190,13 +6206,12 @@ namespace Qd {
 						}
 
 						// Check if function already exists
-						if (module->getFunction(mangledName)) {
-							continue; // Already declared
+						llvm::Function* fn = module->getFunction(mangledName);
+						if (!fn) {
+							// Create function type: qd_exec_result function(qd_context*)
+							auto fnTy = llvm::FunctionType::get(execResultTy, {contextPtrTy}, false);
+							fn = llvm::Function::Create(fnTy, llvm::Function::ExternalLinkage, mangledName, *module);
 						}
-
-						// Create function type: qd_exec_result function(qd_context*)
-						auto fnTy = llvm::FunctionType::get(execResultTy, {contextPtrTy}, false);
-						auto fn = llvm::Function::Create(fnTy, llvm::Function::ExternalLinkage, mangledName, *module);
 
 						// Register fallibility for this imported function
 						std::string fullName = namespaceName + "::" + func->name;
@@ -6206,15 +6221,10 @@ namespace Qd {
 
 						// Also register this function in userFunctions with the scoped name
 						// so that namespace::function calls work
-						std::string scopedName;
-						if (library == "libstdqd.so") {
-							scopedName = "usr_" + namespaceName + "_" + func->name;
-						} else {
-							// For external C libraries, use the namespace::function format directly
-							scopedName = "usr_" + namespaceName + "_" + func->name;
-						}
+						std::string scopedName = "usr_" + namespaceName + "_" + func->name;
 						if (scopedName != mangledName && !module->getFunction(scopedName)) {
 							// Create alias with usr_ prefix that calls the actual function
+							auto fnTy = llvm::FunctionType::get(execResultTy, {contextPtrTy}, false);
 							auto aliasFn =
 									llvm::Function::Create(fnTy, llvm::Function::ExternalLinkage, scopedName, *module);
 							// Create a simple wrapper that forwards to the real function
@@ -6223,6 +6233,34 @@ namespace Qd {
 							auto ctx = aliasFn->arg_begin();
 							auto result = builder->CreateCall(fn, {ctx});
 							builder->CreateRet(result);
+						}
+
+						// If this is a public imported function, make it available for cross-module access
+						if (func->isPublic) {
+							// Register for cross-module access as module::funcname
+							std::string crossModuleName = moduleName + "::" + func->name;
+							CrossModuleImportInfo info;
+							info.library = library;
+							info.cFunctionName = mangledName;
+							info.throws = func->throws;
+							crossModuleImportedFunctions[crossModuleName] = info;
+
+							// Also register fallibility under the module name
+							fallibleFunctions[crossModuleName] = func->throws;
+							importedCFunctions.insert(crossModuleName);
+
+							// Create wrapper function accessible as usr_modulename_funcname
+							std::string moduleScoped = "usr_" + moduleName + "_" + func->name;
+							if (!module->getFunction(moduleScoped)) {
+								auto fnTy = llvm::FunctionType::get(execResultTy, {contextPtrTy}, false);
+								auto wrapperFn = llvm::Function::Create(
+										fnTy, llvm::Function::ExternalLinkage, moduleScoped, *module);
+								auto entryBB = llvm::BasicBlock::Create(*context, "entry", wrapperFn);
+								builder->SetInsertPoint(entryBB);
+								auto ctx = wrapperFn->arg_begin();
+								auto result = builder->CreateCall(fn, {ctx});
+								builder->CreateRet(result);
+							}
 						}
 					}
 				}
@@ -6406,6 +6444,28 @@ namespace Qd {
 			for (size_t i = 0; i < moduleRoot->childCount(); i++) {
 				auto child = moduleRoot->child(i);
 				if (auto funcNode = dynamic_cast<AstNodeFunctionDeclaration*>(child)) {
+					// Track return struct type for module functions (same logic as main file)
+					std::string qualifiedName = moduleName + "::" + funcNode->name();
+					const auto& outputs = funcNode->outputParameters();
+					bool foundExplicitStructType = false;
+					for (auto* outParam : outputs) {
+						if (auto* param = dynamic_cast<AstNodeParameter*>(outParam)) {
+							const std::string& typeStr = param->typeString();
+							if (!typeStr.empty() && std::isupper(typeStr[0])) {
+								functionReturnStructType[qualifiedName] = typeStr;
+								foundExplicitStructType = true;
+								break;
+							}
+						}
+					}
+					// If return type is ptr but body constructs a struct, infer the type
+					if (!foundExplicitStructType && funcNode->body()) {
+						std::string inferredType = findLastStructConstruction(funcNode->body());
+						if (!inferredType.empty()) {
+							functionReturnStructType[qualifiedName] = inferredType;
+						}
+					}
+
 					// Generate module function with module name as prefix
 					if (!generateFunction(funcNode, false, moduleName)) {
 						return false;
@@ -6883,6 +6943,20 @@ namespace Qd {
 							depLine.erase(0, depLine.find_first_not_of(" \t\r\n"));
 							depLine.erase(depLine.find_last_not_of(" \t\r\n") + 1);
 							if (!depLine.empty()) {
+								// Expand ${VAR} environment variables
+								size_t pos = 0;
+								while ((pos = depLine.find("${", pos)) != std::string::npos) {
+									size_t endPos = depLine.find("}", pos);
+									if (endPos != std::string::npos) {
+										std::string varName = depLine.substr(pos + 2, endPos - pos - 2);
+										const char* varValue = std::getenv(varName.c_str());
+										std::string replacement = varValue ? varValue : "";
+										depLine.replace(pos, endPos - pos + 1, replacement);
+										pos += replacement.length();
+									} else {
+										break;
+									}
+								}
 								libraryFlags += " " + depLine;
 							}
 						}

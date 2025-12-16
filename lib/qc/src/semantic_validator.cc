@@ -322,6 +322,7 @@ namespace Qd {
 		mImportedLibraryFunctions.clear();
 		mLoadedModuleFiles.clear();
 		mModuleFunctions.clear();
+		mModuleImportedFunctions.clear();
 
 		// Extract source directory and package name from filename
 		if (filename) {
@@ -1253,6 +1254,21 @@ namespace Qd {
 		// Also collect struct field types so field access validation works
 		collectModuleStructFieldTypes(moduleAstRoot);
 
+		// Collect public imported functions from the module
+		std::unordered_map<std::string, ImportedFunctionInfo> moduleImports;
+		collectModuleImportedFunctions(moduleAstRoot, moduleName, moduleImports);
+
+		// Store the collected imported functions
+		if (mModuleImportedFunctions.find(moduleName) != mModuleImportedFunctions.end()) {
+			// Merge: add new imported functions to existing map
+			for (const auto& imp : moduleImports) {
+				mModuleImportedFunctions[moduleName][imp.first] = imp.second;
+			}
+		} else {
+			// Create new entry
+			mModuleImportedFunctions[moduleName] = moduleImports;
+		}
+
 		// Analyze function signatures for module functions
 		// We use a simplified analysis since we don't need iterative convergence for modules
 		analyzeModuleFunctionSignatures(moduleAstRoot, moduleName);
@@ -1273,7 +1289,7 @@ namespace Qd {
 			AstNodeImport* import = static_cast<AstNodeImport*>(node);
 			const auto& importedFuncs = import->functions();
 			for (const auto* func : importedFuncs) {
-				functions[func->name] = true; // Imported C functions are always public
+				functions[func->name] = func->isPublic;
 			}
 		}
 
@@ -1365,6 +1381,36 @@ namespace Qd {
 		// Recursively process children
 		for (size_t i = 0; i < node->childCount(); i++) {
 			collectModuleStructFieldTypes(node->child(i));
+		}
+	}
+
+	void SemanticValidator::collectModuleImportedFunctions(
+			IAstNode* node, const std::string& moduleName, std::unordered_map<std::string, ImportedFunctionInfo>& imports) {
+		if (!node) {
+			return;
+		}
+
+		// If this is an import statement, collect public imported functions
+		if (node->type() == IAstNode::Type::IMPORT_STATEMENT) {
+			AstNodeImport* import = static_cast<AstNodeImport*>(node);
+			const std::string& library = import->library();
+			const std::string& importNamespace = import->namespaceName();
+
+			for (const auto* func : import->functions()) {
+				if (func->isPublic) {
+					ImportedFunctionInfo info;
+					info.library = library;
+					info.importNamespace = importNamespace;
+					info.cFunctionName = func->name;
+					info.throws = func->throws;
+					imports[func->name] = info;
+				}
+			}
+		}
+
+		// Recursively process children
+		for (size_t i = 0; i < node->childCount(); i++) {
+			collectModuleImportedFunctions(node->child(i), moduleName, imports);
 		}
 	}
 
@@ -1834,12 +1880,26 @@ namespace Qd {
 					}
 
 					if (!foundAsStruct) {
-						std::string errorMsg = "Function, constant, or struct '";
-						errorMsg += functionName;
-						errorMsg += "' not found in module '";
-						errorMsg += scopeName;
-						errorMsg += "'";
-						reportError(scoped, errorMsg.c_str());
+						// Check if it's a public imported function
+						auto moduleImportsIt = mModuleImportedFunctions.find(scopeName);
+						bool foundAsImport = false;
+						if (moduleImportsIt != mModuleImportedFunctions.end()) {
+							const auto& imports = moduleImportsIt->second;
+							auto importIt = imports.find(functionName);
+							if (importIt != imports.end()) {
+								foundAsImport = true;
+								// Public imported function found - no error
+							}
+						}
+
+						if (!foundAsImport) {
+							std::string errorMsg = "Function, constant, or struct '";
+							errorMsg += functionName;
+							errorMsg += "' not found in module '";
+							errorMsg += scopeName;
+							errorMsg += "'";
+							reportError(scoped, errorMsg.c_str());
+						}
 					}
 				} else {
 					// Check if the function is public

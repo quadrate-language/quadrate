@@ -19,7 +19,7 @@ LIBS_WITH_C := qdrt qd qdfmt qdio qdmath qdmem qdnet qdtls qdhttp qdos qdsignal 
 LIBS_WITH_HEADERS := qdrt qd qdfmt qdio qdmath qdmem qdnet qdtls qdhttp qdos qdstr qdstrconv qdtime qdtesting
 
 # Standard library modules (pure Quadrate or mixed)
-STDLIB_MODULES := base64 bits flag fmt hof http io json limits math mem net tls os sb signal str strconv time unicode uri hex bytes crc32 sha256 regex path sort rand uuid testing
+STDLIB_MODULES := base64 bits flag fmt hof http io json limits linalg math mem net tls os sb signal str strconv time unicode uri hex bytes crc32 sha256 regex path sort rand uuid testing
 
 .PHONY: all debug release tests valgrind examples format install uninstall clean docs
 
@@ -150,6 +150,7 @@ install: release
 	@for cmd in $(CMDS); do install -m 755 dist/bin/$$cmd $(DESTDIR)$(PREFIX)/bin/; done
 	@if [ -f dist/bin/quadrepl ]; then install -m 755 dist/bin/quadrepl $(DESTDIR)$(PREFIX)/bin/; fi
 	@for lib in $(LIBS_WITH_C); do install -m 644 dist/lib/lib$$lib.a $(DESTDIR)$(PREFIX)/lib/; done
+	@for deps in dist/lib/*.deps; do if [ -f "$$deps" ]; then install -m 644 "$$deps" $(DESTDIR)$(PREFIX)/lib/; fi; done
 	install -m 755 dist/lib/libqdrt.so $(DESTDIR)$(PREFIX)/lib/
 	install -m 755 dist/lib/libqd.so $(DESTDIR)$(PREFIX)/lib/
 	@for lib in $(LIBS_WITH_HEADERS); do cp -r dist/include/$$lib $(DESTDIR)$(PREFIX)/include/; done
