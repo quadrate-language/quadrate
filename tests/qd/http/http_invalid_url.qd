@@ -1,0 +1,19 @@
+// Test HTTP with invalid URL
+use http
+
+fn main( -- ) {
+	// Invalid URL (no scheme) - error code 6 = ErrInvalidUrl
+	"invalid-url" http::get switch {
+		Ok {
+			-> resp
+			"unexpected success" print nl
+			resp http::close
+		}
+		6 {
+			"invalid url error" print nl
+		}
+		_ {
+			"other error" print nl
+		}
+	}
+}

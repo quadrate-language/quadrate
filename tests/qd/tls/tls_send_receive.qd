@@ -1,0 +1,47 @@
+// Test TLS send and receive
+use net
+use tls
+
+fn main( -- ) {
+	"example.com" 443 net::connect -> sock
+
+	sock "example.com" tls::connect switch {
+		Ok {
+			-> conn
+
+			// Send HTTP request
+			conn "GET / HTTP/1.1\r\nHost: example.com\r\nConnection: close\r\n\r\n" tls::send switch {
+				Ok {
+					-> bytes_sent
+					"sent:" print bytes_sent print nl
+				}
+				_ {
+					"send error" print nl
+				}
+			}
+
+			// Receive response
+			conn 1024 tls::receive switch {
+				Ok {
+					-> bytes_read
+					-> data
+					// Just check we received some data
+					bytes_read 0 gt
+					if {
+						"received data" print nl
+					}
+				}
+				_ {
+					"receive error" print nl
+				}
+			}
+
+			conn tls::close
+		}
+		_ {
+			"connect error" print nl
+		}
+	}
+
+	sock net::close
+}

@@ -1,0 +1,26 @@
+// Test HTTP builder pattern
+use http
+
+fn main( -- ) {
+	// Create request with builder
+	"https://example.com" http::new -> req
+
+	// Set method (GET is default but set explicitly)
+	req "GET" http::method
+	req "Accept" "text/html" http::header
+
+	// Send request
+	req http::send switch {
+		Ok {
+			-> resp
+			"status:" print resp @status print nl
+			resp http::close
+		}
+		_ {
+			-> err
+			"error:" print err print nl
+		}
+	}
+
+	req http::free_request
+}

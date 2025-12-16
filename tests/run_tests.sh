@@ -269,12 +269,12 @@ case "$MODE" in
         export COMPILER
 
         if command -v parallel &> /dev/null; then
-            # Use parallel if available
-            find "$TEST_DIR_QD" -name "*.qd" -type f | sort | \
+            # Use parallel if available (exclude network tests that require external services)
+            find "$TEST_DIR_QD" -name "*.qd" -type f ! -path "*/network/*" | sort | \
                 parallel --unsafe -j$(nproc) run_qd_test {} "$COMPILER" no ""
         else
-            # Fallback to xargs for sequential execution
-            find "$TEST_DIR_QD" -name "*.qd" -type f | sort | \
+            # Fallback to xargs for sequential execution (exclude network tests)
+            find "$TEST_DIR_QD" -name "*.qd" -type f ! -path "*/network/*" | sort | \
                 xargs -I {} bash -c 'run_qd_test "$@"' _ {} "$COMPILER" no ""
         fi
 
@@ -342,7 +342,8 @@ case "$MODE" in
         export QUADC
 
         # Run tests sequentially (parallel + valgrind can be problematic)
-        find "$TEST_DIR_QD" -name "*.qd" -type f | sort | while read test_file; do
+        # Exclude network tests that require external services and are too slow under valgrind
+        find "$TEST_DIR_QD" -name "*.qd" -type f ! -path "*/network/*" | sort | while read test_file; do
             run_qd_test "$test_file" "$QUADC" yes ""
         done
 

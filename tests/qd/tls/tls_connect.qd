@@ -1,0 +1,22 @@
+// Test TLS connection to HTTPS server
+use net
+use tls
+
+fn main( -- ) {
+	// Connect to example.com:443
+	"example.com" 443 net::connect -> sock
+
+	sock "example.com" tls::connect switch {
+		Ok {
+			-> conn
+			"connected" print nl
+			conn tls::close
+		}
+		_ {
+			-> err
+			"error:" print err print nl
+		}
+	}
+
+	sock net::close
+}

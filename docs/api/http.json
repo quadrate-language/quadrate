@@ -1,0 +1,180 @@
+{
+  "name": "http",
+  "description": "HTTP client module. Provides HTTP/HTTPS client functionality with support for GET, POST, and custom requests.",
+  "constants": [
+    {"name": "ErrConnect", "value": 2, "description": "Connection failed"},
+    {"name": "ErrTls", "value": 3, "description": "TLS handshake failed"},
+    {"name": "ErrTimeout", "value": 4, "description": "Request timeout"},
+    {"name": "ErrParse", "value": 5, "description": "Response parse error"},
+    {"name": "ErrInvalidUrl", "value": 6, "description": "Invalid URL format"},
+    {"name": "ErrRedirect", "value": 7, "description": "Too many redirects"},
+    {"name": "ErrMemory", "value": 8, "description": "Memory allocation failed"},
+    {"name": "ErrSend", "value": 9, "description": "Send failed"},
+    {"name": "ErrReceive", "value": 10, "description": "Receive failed"},
+    {"name": "StatusContinue", "value": 100, "description": "Continue"},
+    {"name": "StatusSwitchingProtocols", "value": 101, "description": "Switching Protocols"},
+    {"name": "StatusProcessing", "value": 102, "description": "Processing"},
+    {"name": "StatusEarlyHints", "value": 103, "description": "Early Hints"},
+    {"name": "StatusOK", "value": 200, "description": "OK"},
+    {"name": "StatusCreated", "value": 201, "description": "Created"},
+    {"name": "StatusAccepted", "value": 202, "description": "Accepted"},
+    {"name": "StatusNonAuthoritativeInfo", "value": 203, "description": "Non-Authoritative Information"},
+    {"name": "StatusNoContent", "value": 204, "description": "No Content"},
+    {"name": "StatusResetContent", "value": 205, "description": "Reset Content"},
+    {"name": "StatusPartialContent", "value": 206, "description": "Partial Content"},
+    {"name": "StatusMultiStatus", "value": 207, "description": "Multi-Status"},
+    {"name": "StatusAlreadyReported", "value": 208, "description": "Already Reported"},
+    {"name": "StatusIMUsed", "value": 226, "description": "IM Used"},
+    {"name": "StatusMultipleChoices", "value": 300, "description": "Multiple Choices"},
+    {"name": "StatusMovedPermanently", "value": 301, "description": "Moved Permanently"},
+    {"name": "StatusFound", "value": 302, "description": "Found"},
+    {"name": "StatusSeeOther", "value": 303, "description": "See Other"},
+    {"name": "StatusNotModified", "value": 304, "description": "Not Modified"},
+    {"name": "StatusUseProxy", "value": 305, "description": "Use Proxy"},
+    {"name": "StatusTemporaryRedirect", "value": 307, "description": "Temporary Redirect"},
+    {"name": "StatusPermanentRedirect", "value": 308, "description": "Permanent Redirect"},
+    {"name": "StatusBadRequest", "value": 400, "description": "Bad Request"},
+    {"name": "StatusUnauthorized", "value": 401, "description": "Unauthorized"},
+    {"name": "StatusPaymentRequired", "value": 402, "description": "Payment Required"},
+    {"name": "StatusForbidden", "value": 403, "description": "Forbidden"},
+    {"name": "StatusNotFound", "value": 404, "description": "Not Found"},
+    {"name": "StatusMethodNotAllowed", "value": 405, "description": "Method Not Allowed"},
+    {"name": "StatusNotAcceptable", "value": 406, "description": "Not Acceptable"},
+    {"name": "StatusProxyAuthRequired", "value": 407, "description": "Proxy Authentication Required"},
+    {"name": "StatusRequestTimeout", "value": 408, "description": "Request Timeout"},
+    {"name": "StatusConflict", "value": 409, "description": "Conflict"},
+    {"name": "StatusGone", "value": 410, "description": "Gone"},
+    {"name": "StatusLengthRequired", "value": 411, "description": "Length Required"},
+    {"name": "StatusPreconditionFailed", "value": 412, "description": "Precondition Failed"},
+    {"name": "StatusPayloadTooLarge", "value": 413, "description": "Payload Too Large"},
+    {"name": "StatusURITooLong", "value": 414, "description": "URI Too Long"},
+    {"name": "StatusUnsupportedMediaType", "value": 415, "description": "Unsupported Media Type"},
+    {"name": "StatusRangeNotSatisfiable", "value": 416, "description": "Range Not Satisfiable"},
+    {"name": "StatusExpectationFailed", "value": 417, "description": "Expectation Failed"},
+    {"name": "StatusTeapot", "value": 418, "description": "I'm a teapot"},
+    {"name": "StatusMisdirectedRequest", "value": 421, "description": "Misdirected Request"},
+    {"name": "StatusUnprocessableEntity", "value": 422, "description": "Unprocessable Entity"},
+    {"name": "StatusLocked", "value": 423, "description": "Locked"},
+    {"name": "StatusFailedDependency", "value": 424, "description": "Failed Dependency"},
+    {"name": "StatusTooEarly", "value": 425, "description": "Too Early"},
+    {"name": "StatusUpgradeRequired", "value": 426, "description": "Upgrade Required"},
+    {"name": "StatusPreconditionRequired", "value": 428, "description": "Precondition Required"},
+    {"name": "StatusTooManyRequests", "value": 429, "description": "Too Many Requests"},
+    {"name": "StatusRequestHeaderFieldsTooLarge", "value": 431, "description": "Request Header Fields Too Large"},
+    {"name": "StatusUnavailableForLegalReasons", "value": 451, "description": "Unavailable For Legal Reasons"},
+    {"name": "StatusInternalServerError", "value": 500, "description": "Internal Server Error"},
+    {"name": "StatusNotImplemented", "value": 501, "description": "Not Implemented"},
+    {"name": "StatusBadGateway", "value": 502, "description": "Bad Gateway"},
+    {"name": "StatusServiceUnavailable", "value": 503, "description": "Service Unavailable"},
+    {"name": "StatusGatewayTimeout", "value": 504, "description": "Gateway Timeout"},
+    {"name": "StatusHTTPVersionNotSupported", "value": 505, "description": "HTTP Version Not Supported"},
+    {"name": "StatusVariantAlsoNegotiates", "value": 506, "description": "Variant Also Negotiates"},
+    {"name": "StatusInsufficientStorage", "value": 507, "description": "Insufficient Storage"},
+    {"name": "StatusLoopDetected", "value": 508, "description": "Loop Detected"},
+    {"name": "StatusNotExtended", "value": 510, "description": "Not Extended"},
+    {"name": "StatusNetworkAuthRequired", "value": 511, "description": "Network Authentication Required"}
+  ],
+  "structs": [
+    {
+      "name": "Response",
+      "description": "HTTP response structure",
+      "fields": [
+        {"name": "status", "type": "i64", "description": "HTTP status code (200, 404, etc.)"},
+        {"name": "headers", "type": "str", "description": "Response headers as string"},
+        {"name": "body", "type": "str", "description": "Response body content"}
+      ]
+    }
+  ],
+  "functions": [
+    {
+      "name": "new",
+      "signature": "(url:str -- req:ptr)",
+      "failable": false,
+      "description": "Create new HTTP request builder.",
+      "params": [{"name": "url", "type": "str", "description": "The request URL (http:// or https://)"}],
+      "returns": [{"name": "req", "type": "ptr", "description": "Request object"}],
+      "errors": [],
+      "examples": ["\"https://example.com\" http::new -> req"]
+    },
+    {
+      "name": "method",
+      "signature": "(req:ptr method:str -- )",
+      "failable": false,
+      "description": "Set request HTTP method.",
+      "params": [
+        {"name": "req", "type": "ptr", "description": "Request object"},
+        {"name": "method", "type": "str", "description": "HTTP method (GET, POST, PUT, DELETE, etc.)"}
+      ],
+      "returns": [],
+      "errors": [],
+      "examples": ["req \"POST\" http::method"]
+    },
+    {
+      "name": "header",
+      "signature": "(req:ptr name:str value:str -- )",
+      "failable": false,
+      "description": "Add request header.",
+      "params": [
+        {"name": "req", "type": "ptr", "description": "Request object"},
+        {"name": "name", "type": "str", "description": "Header name"},
+        {"name": "value", "type": "str", "description": "Header value"}
+      ],
+      "returns": [],
+      "errors": [],
+      "examples": ["req \"Content-Type\" \"application/json\" http::header"]
+    },
+    {
+      "name": "body",
+      "signature": "(req:ptr body:str -- )",
+      "failable": false,
+      "description": "Set request body.",
+      "params": [
+        {"name": "req", "type": "ptr", "description": "Request object"},
+        {"name": "body", "type": "str", "description": "Request body content"}
+      ],
+      "returns": [],
+      "errors": [],
+      "examples": ["req \"data\" http::body"]
+    },
+    {
+      "name": "send",
+      "signature": "(req:ptr -- resp:Response)",
+      "failable": true,
+      "description": "Execute HTTP request.",
+      "params": [{"name": "req", "type": "ptr", "description": "Request object"}],
+      "returns": [{"name": "resp", "type": "Response", "description": "Response struct with status, headers, body"}],
+      "errors": ["ErrConnect", "ErrTls", "ErrTimeout", "ErrParse", "ErrInvalidUrl", "ErrSend", "ErrReceive"],
+      "examples": ["req http::send! -> resp  resp @status print"]
+    },
+    {
+      "name": "get",
+      "signature": "(url:str -- resp:Response)",
+      "failable": true,
+      "description": "Simple GET request.",
+      "params": [{"name": "url", "type": "str", "description": "The request URL"}],
+      "returns": [{"name": "resp", "type": "Response", "description": "Response struct"}],
+      "errors": ["ErrConnect", "ErrTls", "ErrTimeout", "ErrParse", "ErrInvalidUrl"],
+      "examples": ["\"https://example.com\" http::get! -> resp"]
+    },
+    {
+      "name": "free_request",
+      "signature": "(req:ptr -- )",
+      "failable": false,
+      "description": "Free request object (call after send).",
+      "params": [{"name": "req", "type": "ptr", "description": "Request object"}],
+      "returns": [],
+      "errors": [],
+      "examples": ["req http::free_request"]
+    },
+    {
+      "name": "close",
+      "signature": "(resp:Response -- )",
+      "failable": false,
+      "description": "Close and free response.",
+      "params": [{"name": "resp", "type": "Response", "description": "Response object"}],
+      "returns": [],
+      "errors": [],
+      "examples": ["resp http::close"]
+    }
+  ]
+}

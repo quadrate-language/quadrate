@@ -1,0 +1,21 @@
+// Test HTTP GET request
+use http
+use str
+
+fn main( -- ) {
+	"https://example.com" http::get switch {
+		Ok {
+			-> resp
+			resp @status 200 eq
+			if {
+				"status ok" print nl
+			}
+			"body length:" print resp @body str::len print nl
+			resp http::close
+		}
+		_ {
+			-> err
+			"error:" print err print nl
+		}
+	}
+}

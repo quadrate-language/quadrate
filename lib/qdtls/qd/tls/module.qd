@@ -1,0 +1,73 @@
+/// TLS/SSL secure socket operations.
+/// Provides encryption layer on top of TCP sockets using OpenSSL.
+/// Error codes: Ok=1 (success), specific errors start at 2
+
+import "libqdtls.a" as "tls" {
+	/// TLS initialization failed.
+	pub const ErrInit = 2
+
+	/// TLS handshake failed (client mode).
+	pub const ErrConnect = 3
+
+	/// TLS handshake failed (server mode).
+	pub const ErrAccept = 4
+
+	/// Certificate validation or loading error.
+	pub const ErrCertificate = 5
+
+	/// TLS read operation failed.
+	pub const ErrRead = 6
+
+	/// TLS write operation failed.
+	pub const ErrWrite = 7
+
+	/// Connection closed by peer.
+	pub const ErrClosed = 8
+
+	/// Memory allocation failed.
+	pub const ErrMemory = 9
+
+	/// Invalid argument provided.
+	pub const ErrInvalidArg = 10
+
+	/// Wrap a TCP socket with TLS encryption (client mode).
+	/// Performs TLS handshake and certificate verification.
+	/// @param socket i64 TCP socket from net::connect
+	/// @param hostname str Server hostname for SNI and certificate verification
+	/// @return conn ptr TLS connection handle
+	/// @example "example.com" 443 net::connect -> sock  sock "example.com" tls::connect! -> conn
+	pub fn connect(socket:i64 hostname:str -- conn:ptr)!
+
+	/// Wrap a TCP socket with TLS encryption (server mode).
+	/// Loads certificate and key, then performs TLS handshake.
+	/// @param socket i64 TCP socket from net::accept
+	/// @param cert_path str Path to PEM certificate file
+	/// @param key_path str Path to PEM private key file
+	/// @return conn ptr TLS connection handle
+	/// @example client_sock "/path/cert.pem" "/path/key.pem" tls::accept! -> conn
+	pub fn accept(socket:i64 cert_path:str key_path:str -- conn:ptr)!
+
+	/// Send data over TLS connection.
+	/// Data is encrypted before transmission.
+	/// @param conn ptr TLS connection handle
+	/// @param data str Data to send
+	/// @return bytes_sent i64 Number of bytes sent
+	/// @example conn "GET / HTTP/1.1\r\n\r\n" tls::send! -> n
+	pub fn send(conn:ptr data:str -- bytes_sent:i64)!
+
+	/// Receive data from TLS connection.
+	/// Data is decrypted after reception.
+	/// @param conn ptr TLS connection handle
+	/// @param max_bytes i64 Maximum bytes to receive
+	/// @return data str Received and decrypted data
+	/// @return bytes_read i64 Actual bytes received
+	/// @example conn 4096 tls::receive! -> data -> n
+	pub fn receive(conn:ptr max_bytes:i64 -- data:str bytes_read:i64)!
+
+	/// Close TLS connection and free resources.
+	/// Performs TLS shutdown handshake. Does NOT close underlying socket.
+	/// Call net::close separately to close the socket.
+	/// @param conn ptr TLS connection handle
+	/// @example conn tls::close  sock net::close
+	pub fn close(conn:ptr -- )
+}
