@@ -3,14 +3,14 @@ use os
 
 fn main() {
 	// Test basic output streaming
-	"echo -e 'line1\nline2\nline3'" fn (line:str -- ) {
+	"printf 'line1\nline2\nline3\n'" fn (line:str -- ) {
 		print nl
 	} os::popen! -> exitcode
 	"exit:" print exitcode print nl
 
 	// Test with closure capturing variable
 	0 -> count
-	"echo -e 'a\nb\nc\nd'" fn (line:str -- ) {
+	"printf 'a\nb\nc\nd\n'" fn (line:str -- ) {
 		count 1 + -> count
 		drop
 	} os::popen! drop
