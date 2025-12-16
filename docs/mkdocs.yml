@@ -89,6 +89,12 @@ nav:
           - limits: docs/stdlib/limits.md
           - bits: docs/stdlib/bits.md
           - rand: docs/stdlib/rand.md
+      - Linear Algebra:
+          - vec2: docs/stdlib/vec2.md
+          - vec3: docs/stdlib/vec3.md
+          - vec4: docs/stdlib/vec4.md
+          - mat4: docs/stdlib/mat4.md
+          - quat: docs/stdlib/quat.md
       - I/O & System:
           - io: docs/stdlib/io.md
           - os: docs/stdlib/os.md
