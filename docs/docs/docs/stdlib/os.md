@@ -205,7 +205,24 @@ Execute a command and stream output line-by-line to a callback. The callback is 
 **Example:**
 
 ```qd
-"ls -la" fn (line:str -- ) { print nl } os::popen!  // code
+use os
+
+fn main() {
+	// Print each line of output
+	"ls -la" fn (line:str -- ) {
+		print nl
+	}
+	os::popen! -> exitcode
+
+	// Count lines with a closure
+	0 -> count
+	"cat /etc/passwd" fn (line:str -- ) {
+		count 1 + -> count
+		drop
+	}
+	os::popen! drop
+	"Lines: " print count print nl
+}
 ```
 
 ---
