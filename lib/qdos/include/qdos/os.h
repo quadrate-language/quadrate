@@ -215,6 +215,25 @@ qd_exec_result usr_os_mkdir(qd_context* ctx);
  */
 qd_exec_result usr_os_list(qd_context* ctx);
 
+/**
+ * @brief Execute a command and stream output to callback
+ *
+ * @par Stack Effect: ( cmd:s callback:p -- exitcode:i )
+ *
+ * Executes a command using popen() and calls the callback function
+ * for each line of output. The callback receives a string and should
+ * have the signature: fn (line:str -- )
+ *
+ * @param ctx Execution context
+ * @return Execution result
+ *
+ * @par Example:
+ * @code
+ * "ls -la" fn (line:str -- ) { line . nl } os::popen! -> exitcode
+ * @endcode
+ */
+qd_exec_result usr_os_popen(qd_context* ctx);
+
 #ifdef __cplusplus
 }
 #endif

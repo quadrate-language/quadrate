@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
+#include <sys/wait.h>
 #include "os_fs.h"
 
 /**
@@ -454,6 +455,121 @@ qd_exec_result usr_os_setenv(qd_context* ctx) {
 	}
 
 	return (qd_exec_result){OS_ERR_OK};
+}
+
+qd_exec_result usr_os_popen(qd_context* ctx) {
+	size_t stack_size = qd_stack_size(ctx->st);
+	if (stack_size < 2) {
+		fprintf(stderr, "Fatal error in os::popen: Stack underflow (required 2 elements, have %zu)\n", stack_size);
+		qd_print_stack_trace(ctx);
+		abort();
+	}
+
+	// Pop callback (top of stack)
+	qd_stack_element_t callback_elem;
+	qd_stack_error err = qd_stack_pop(ctx->st, &callback_elem);
+	if (err != QD_STACK_OK) {
+		fprintf(stderr, "Fatal error in os::popen: Failed to pop callback\n");
+		qd_print_stack_trace(ctx);
+		abort();
+	}
+
+	if (callback_elem.type != QD_STACK_TYPE_PTR) {
+		fprintf(stderr, "Fatal error in os::popen: Expected pointer for callback, got type %d\n", callback_elem.type);
+		qd_print_stack_trace(ctx);
+		abort();
+	}
+
+	// Pop command string
+	qd_stack_element_t cmd_elem;
+	err = qd_stack_pop(ctx->st, &cmd_elem);
+	if (err != QD_STACK_OK) {
+		fprintf(stderr, "Fatal error in os::popen: Failed to pop command\n");
+		qd_print_stack_trace(ctx);
+		abort();
+	}
+
+	if (cmd_elem.type != QD_STACK_TYPE_STR) {
+		fprintf(stderr, "Fatal error in os::popen: Expected string for command, got type %d\n", cmd_elem.type);
+		qd_print_stack_trace(ctx);
+		abort();
+	}
+
+	// Open pipe to command
+	FILE* pipe = popen(qd_string_data(cmd_elem.value.s), "r");
+	qd_string_release(cmd_elem.value.s);
+
+	if (pipe == NULL) {
+		// Push exit code -1 to indicate failure
+		qd_stack_push_int(ctx->st, -1);
+		return (qd_exec_result){OS_ERR_IO};
+	}
+
+	// Read output line by line and call callback for each
+	char* line = NULL;
+	size_t line_cap = 0;
+	ssize_t line_len;
+
+	while ((line_len = getline(&line, &line_cap, pipe)) != -1) {
+		// Remove trailing newline if present
+		if (line_len > 0 && line[line_len - 1] == '\n') {
+			line[line_len - 1] = '\0';
+			line_len--;
+		}
+
+		// Push line string to stack
+		err = qd_stack_push_str(ctx->st, line);
+		if (err != QD_STACK_OK) {
+			fprintf(stderr, "Fatal error in os::popen: Failed to push line\n");
+			free(line);
+			pclose(pipe);
+			qd_print_stack_trace(ctx);
+			abort();
+		}
+
+		// Push callback to stack
+		err = qd_stack_push_ptr(ctx->st, callback_elem.value.p);
+		if (err != QD_STACK_OK) {
+			fprintf(stderr, "Fatal error in os::popen: Failed to push callback\n");
+			free(line);
+			pclose(pipe);
+			qd_print_stack_trace(ctx);
+			abort();
+		}
+
+		// Call the callback
+		qd_exec_result call_result = qd_call(ctx);
+		if (call_result.code != 0) {
+			// Callback returned an error
+			free(line);
+			pclose(pipe);
+			return call_result;
+		}
+	}
+
+	free(line);
+
+	// Get exit code
+	int status = pclose(pipe);
+	int exit_code = WIFEXITED(status) ? WEXITSTATUS(status) : -1;
+
+	// Push exit code (the return value)
+	err = qd_stack_push_int(ctx->st, (int64_t)exit_code);
+	if (err != QD_STACK_OK) {
+		fprintf(stderr, "Fatal error in os::popen: Failed to push exit code\n");
+		qd_print_stack_trace(ctx);
+		abort();
+	}
+
+	// Push Ok marker (1) for switch/if to match
+	err = qd_stack_push_int(ctx->st, OS_ERR_OK);
+	if (err != QD_STACK_OK) {
+		fprintf(stderr, "Fatal error in os::popen: Failed to push Ok marker\n");
+		qd_print_stack_trace(ctx);
+		abort();
+	}
+
+	return (qd_exec_result){0};  // 0 = success
 }
 
 qd_exec_result usr_os_list(qd_context* ctx) {

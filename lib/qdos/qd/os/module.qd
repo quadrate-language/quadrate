@@ -97,4 +97,12 @@ import "libqdos.a" as "os" {
 	/// @error ErrNotDirectory Path is not a directory
 	/// @example "/tmp" os::list! -> entries -> count
 	pub fn list(path:str -- entries:ptr count:i64)!
+
+	/// Execute a command and stream output line-by-line to a callback.
+	/// @param cmd str Command to execute
+	/// @param callback ptr Callback function (line:str -- )
+	/// @return exitcode i64 Command exit status
+	/// @error ErrIo Failed to execute command
+	/// @example "ls" my_callback os::popen! -> exitcode
+	pub fn popen(cmd:str callback:ptr -- exitcode:i64)!
 }
