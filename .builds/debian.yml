@@ -5,6 +5,7 @@ secrets:
 
 packages:
   - clang
+  - libssl-dev
   - llvm-dev
   - meson
   - nodejs

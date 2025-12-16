@@ -5,6 +5,7 @@ packages:
   - llvm
   - meson
   - nodejs
+  - openssl
   - tree-sitter-cli
   - valgrind
 
