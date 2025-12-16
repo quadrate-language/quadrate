@@ -1,0 +1,64 @@
+// Test Vec4 construction and basic operations
+use vec4
+
+fn main() {
+	// Test new constructor
+	1.0 2.0 3.0 4.0 vec4::new -> v
+	"vec4:" print nl
+	v @x print nl
+	v @y print nl
+	v @z print nl
+	v @w print nl
+
+	// Test zero
+	vec4::zero -> z
+	"zero:" print nl
+	z @x print nl
+	z @y print nl
+	z @z print nl
+	z @w print nl
+
+	// Test one
+	vec4::one -> o
+	"one:" print nl
+	o @x print nl
+	o @y print nl
+	o @z print nl
+	o @w print nl
+
+	// Test add
+	1.0 2.0 3.0 4.0 vec4::new -> a
+	5.0 6.0 7.0 8.0 vec4::new -> b
+	a b vec4::add -> c
+	"add:" print nl
+	c @x print nl
+	c @y print nl
+	c @z print nl
+	c @w print nl
+
+	// Test subtract
+	10.0 12.0 14.0 16.0 vec4::new -> d
+	3.0 4.0 5.0 6.0 vec4::new -> e
+	d e vec4::subtract -> f
+	"sub:" print nl
+	f @x print nl
+	f @y print nl
+	f @z print nl
+	f @w print nl
+
+	// Test scale
+	2.0 3.0 4.0 5.0 vec4::new -> g
+	g 2.0 vec4::scale -> h
+	"scale:" print nl
+	h @x print nl
+	h @y print nl
+	h @z print nl
+	h @w print nl
+
+	// Test dot
+	1.0 2.0 3.0 4.0 vec4::new -> i
+	5.0 6.0 7.0 8.0 vec4::new -> j
+	i j vec4::dot -> dot
+	"dot:" print nl
+	dot print nl
+}

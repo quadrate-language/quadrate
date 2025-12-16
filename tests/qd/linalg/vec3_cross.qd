@@ -1,0 +1,39 @@
+// Test Vec3 cross product
+use vec3
+
+fn main() {
+	// Cross product of unit vectors
+	// x cross y = z
+	vec3::unit_x -> ux
+	vec3::unit_y -> uy
+	ux uy vec3::cross -> c1
+	"x cross y:" print nl
+	c1 @x print nl
+	c1 @y print nl
+	c1 @z print nl
+
+	// y cross z = x
+	vec3::unit_z -> uz
+	uy uz vec3::cross -> c2
+	"y cross z:" print nl
+	c2 @x print nl
+	c2 @y print nl
+	c2 @z print nl
+
+	// z cross x = y
+	uz ux vec3::cross -> c3
+	"z cross x:" print nl
+	c3 @x print nl
+	c3 @y print nl
+	c3 @z print nl
+
+	// General cross product test
+	// (1,2,3) cross (4,5,6) = (2*6-3*5, 3*4-1*6, 1*5-2*4) = (-3, 6, -3)
+	1.0 2.0 3.0 vec3::new -> a
+	4.0 5.0 6.0 vec3::new -> b
+	a b vec3::cross -> c4
+	"general cross:" print nl
+	c4 @x print nl
+	c4 @y print nl
+	c4 @z print nl
+}

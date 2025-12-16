@@ -1,0 +1,228 @@
+/// 3D vector math operations.
+use math
+
+/// 3D vector with x, y, and z components.
+/// @field x f64 X component
+/// @field y f64 Y component
+/// @field z f64 Z component
+pub struct Vec3 {
+	x:f64
+	y:f64
+	z:f64
+}
+
+/// Create a new Vec3.
+/// @param x f64 X component
+/// @param y f64 Y component
+/// @param z f64 Z component
+/// @return v Vec3 New 3D vector
+/// @example 1.0 2.0 3.0 vec3::new -> v
+pub fn new(x:f64 y:f64 z:f64 -- v:Vec3) {
+	-> z_v
+	-> y_v
+	-> x_v
+	Vec3 {
+		x = x_v
+		y = y_v
+		z = z_v
+	}
+}
+
+/// Create a Vec3 with all components set to zero.
+/// @return v Vec3 Zero vector (0, 0, 0)
+/// @example vec3::zero -> v
+pub fn zero( -- v:Vec3) {
+	Vec3 {
+		x = 0.0
+		y = 0.0
+		z = 0.0
+	}
+}
+
+/// Create a Vec3 with all components set to one.
+/// @return v Vec3 One vector (1, 1, 1)
+/// @example vec3::one -> v
+pub fn one( -- v:Vec3) {
+	Vec3 {
+		x = 1.0
+		y = 1.0
+		z = 1.0
+	}
+}
+
+/// Unit vector along the X axis.
+/// @return v Vec3 Unit X vector (1, 0, 0)
+/// @example vec3::unit_x -> v
+pub fn unit_x( -- v:Vec3) {
+	Vec3 {
+		x = 1.0
+		y = 0.0
+		z = 0.0
+	}
+}
+
+/// Unit vector along the Y axis.
+/// @return v Vec3 Unit Y vector (0, 1, 0)
+/// @example vec3::unit_y -> v
+pub fn unit_y( -- v:Vec3) {
+	Vec3 {
+		x = 0.0
+		y = 1.0
+		z = 0.0
+	}
+}
+
+/// Unit vector along the Z axis.
+/// @return v Vec3 Unit Z vector (0, 0, 1)
+/// @example vec3::unit_z -> v
+pub fn unit_z( -- v:Vec3) {
+	Vec3 {
+		x = 0.0
+		y = 0.0
+		z = 1.0
+	}
+}
+
+/// Add two Vec3 vectors.
+/// @param a Vec3 First vector
+/// @param b Vec3 Second vector
+/// @return result Vec3 Sum of a and b
+/// @example v1 v2 vec3::add -> v3
+pub fn add(a:Vec3 b:Vec3 -- result:Vec3) {
+	-> b
+	-> a
+	Vec3 {
+		x = a @x b @x +
+		y = a @y b @y +
+		z = a @z b @z +
+	}
+}
+
+/// Subtract two Vec3 vectors.
+/// @param a Vec3 First vector
+/// @param b Vec3 Second vector
+/// @return result Vec3 Difference of a and b
+/// @example v1 v2 vec3::subtract -> v3
+pub fn subtract(a:Vec3 b:Vec3 -- result:Vec3) {
+	-> b
+	-> a
+	Vec3 {
+		x = a @x b @x -
+		y = a @y b @y -
+		z = a @z b @z -
+	}
+}
+
+/// Multiply Vec3 by scalar.
+/// @param v Vec3 Vector to scale
+/// @param s f64 Scalar multiplier
+/// @return result Vec3 Scaled vector
+/// @example v 2.0 vec3::scale -> v2
+pub fn scale(v:Vec3 s:f64 -- result:Vec3) {
+	-> s
+	-> v
+	Vec3 {
+		x = v @x s *
+		y = v @y s *
+		z = v @z s *
+	}
+}
+
+/// Dot product of two Vec3 vectors.
+/// @param a Vec3 First vector
+/// @param b Vec3 Second vector
+/// @return result f64 Dot product
+/// @example v1 v2 vec3::dot -> d
+pub fn dot(a:Vec3 b:Vec3 -- result:f64) {
+	-> b
+	-> a
+	a @x b @x * a @y b @y * + a @z b @z * +
+}
+
+/// Cross product of two Vec3 vectors.
+/// @param a Vec3 First vector
+/// @param b Vec3 Second vector
+/// @return result Vec3 Cross product
+/// @example v1 v2 vec3::cross -> v3
+pub fn cross(a:Vec3 b:Vec3 -- result:Vec3) {
+	-> b
+	-> a
+	Vec3 {
+		x = a @y b @z * a @z b @y * -
+		y = a @z b @x * a @x b @z * -
+		z = a @x b @y * a @y b @x * -
+	}
+}
+
+/// Length (magnitude) of a Vec3.
+/// @param v Vec3 Input vector
+/// @return result f64 Length of vector
+/// @example v vec3::length -> len
+pub fn length(v:Vec3 -- result:f64) {
+	-> v
+	v @x v @x * v @y v @y * + v @z v @z * + math::sqrt
+}
+
+/// Squared length of a Vec3 (avoids sqrt).
+/// @param v Vec3 Input vector
+/// @return result f64 Squared length of vector
+/// @example v vec3::length_sq -> len_sq
+pub fn length_sq(v:Vec3 -- result:f64) {
+	-> v
+	v @x v @x * v @y v @y * + v @z v @z * +
+}
+
+/// Normalize a Vec3 to unit length.
+/// @param v Vec3 Input vector
+/// @return result Vec3 Unit vector in same direction
+/// @example v vec3::normalize -> unit
+pub fn normalize(v:Vec3 -- result:Vec3) {
+	-> v
+	v length -> mag
+	mag 0.0 gt if {
+		v 1.0 mag / scale
+	} else {
+		zero
+	}
+}
+
+/// Negate a Vec3.
+/// @param v Vec3 Input vector
+/// @return result Vec3 Negated vector
+/// @example v vec3::neg -> neg_v
+pub fn neg(v:Vec3 -- result:Vec3) {
+	-> v
+	Vec3 {
+		x = v @x neg
+		y = v @y neg
+		z = v @z neg
+	}
+}
+
+/// Linear interpolation between two Vec3 vectors.
+/// @param a Vec3 Start vector
+/// @param b Vec3 End vector
+/// @param t f64 Interpolation factor (0.0 to 1.0)
+/// @return result Vec3 Interpolated vector
+/// @example v1 v2 0.5 vec3::lerp -> mid
+pub fn lerp(a:Vec3 b:Vec3 t:f64 -- result:Vec3) {
+	-> t
+	-> b
+	-> a
+	Vec3 {
+		x = a @x b @x a @x - t * +
+		y = a @y b @y a @y - t * +
+		z = a @z b @z a @z - t * +
+	}
+}
+
+/// Reflect vector v around normal n.
+/// @param v Vec3 Vector to reflect
+/// @param n Vec3 Normal vector
+/// @return result Vec3 Reflected vector
+/// @example v normal vec3::reflect -> reflected
+pub fn reflect(v:Vec3 n:Vec3 -- result:Vec3) {
+	-> n
+	-> v
+	v n v n dot 2.0 * scale subtract
+}

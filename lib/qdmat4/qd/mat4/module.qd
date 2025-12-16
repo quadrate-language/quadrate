@@ -1,0 +1,257 @@
+/// 4x4 matrix math operations for 3D transformations.
+use math
+
+/// 4x4 matrix in column-major order (OpenGL compatible).
+/// @field m00 f64 Element at row 0, column 0
+/// @field m01 f64 Element at row 1, column 0
+/// @field m02 f64 Element at row 2, column 0
+/// @field m03 f64 Element at row 3, column 0
+/// @field m10 f64 Element at row 0, column 1
+/// @field m11 f64 Element at row 1, column 1
+/// @field m12 f64 Element at row 2, column 1
+/// @field m13 f64 Element at row 3, column 1
+/// @field m20 f64 Element at row 0, column 2
+/// @field m21 f64 Element at row 1, column 2
+/// @field m22 f64 Element at row 2, column 2
+/// @field m23 f64 Element at row 3, column 2
+/// @field m30 f64 Element at row 0, column 3
+/// @field m31 f64 Element at row 1, column 3
+/// @field m32 f64 Element at row 2, column 3
+/// @field m33 f64 Element at row 3, column 3
+pub struct Mat4 {
+	m00:f64
+	m01:f64
+	m02:f64
+	m03:f64
+	m10:f64
+	m11:f64
+	m12:f64
+	m13:f64
+	m20:f64
+	m21:f64
+	m22:f64
+	m23:f64
+	m30:f64
+	m31:f64
+	m32:f64
+	m33:f64
+}
+
+/// Create identity Mat4.
+/// @return m Mat4 Identity matrix
+/// @example mat4::identity -> m
+pub fn identity( -- m:Mat4) {
+	Mat4 {
+		m00 = 1.0
+		m01 = 0.0
+		m02 = 0.0
+		m03 = 0.0
+		m10 = 0.0
+		m11 = 1.0
+		m12 = 0.0
+		m13 = 0.0
+		m20 = 0.0
+		m21 = 0.0
+		m22 = 1.0
+		m23 = 0.0
+		m30 = 0.0
+		m31 = 0.0
+		m32 = 0.0
+		m33 = 1.0
+	}
+}
+
+/// Create zero Mat4.
+/// @return m Mat4 Zero matrix
+/// @example mat4::zero -> m
+pub fn zero( -- m:Mat4) {
+	Mat4 {
+		m00 = 0.0
+		m01 = 0.0
+		m02 = 0.0
+		m03 = 0.0
+		m10 = 0.0
+		m11 = 0.0
+		m12 = 0.0
+		m13 = 0.0
+		m20 = 0.0
+		m21 = 0.0
+		m22 = 0.0
+		m23 = 0.0
+		m30 = 0.0
+		m31 = 0.0
+		m32 = 0.0
+		m33 = 0.0
+	}
+}
+
+/// Transpose of Mat4.
+/// @param m Mat4 Input matrix
+/// @return result Mat4 Transposed matrix
+/// @example m mat4::transpose -> m_t
+pub fn transpose(m:Mat4 -- result:Mat4) {
+	-> m
+	Mat4 {
+		m00 = m @m00
+		m01 = m @m10
+		m02 = m @m20
+		m03 = m @m30
+		m10 = m @m01
+		m11 = m @m11
+		m12 = m @m21
+		m13 = m @m31
+		m20 = m @m02
+		m21 = m @m12
+		m22 = m @m22
+		m23 = m @m32
+		m30 = m @m03
+		m31 = m @m13
+		m32 = m @m23
+		m33 = m @m33
+	}
+}
+
+/// Create translation Mat4.
+/// @param x f64 X translation
+/// @param y f64 Y translation
+/// @param z f64 Z translation
+/// @return m Mat4 Translation matrix
+/// @example 1.0 2.0 3.0 mat4::translation -> m
+pub fn translation(x:f64 y:f64 z:f64 -- m:Mat4) {
+	-> z_v
+	-> y_v
+	-> x_v
+	Mat4 {
+		m00 = 1.0
+		m01 = 0.0
+		m02 = 0.0
+		m03 = 0.0
+		m10 = 0.0
+		m11 = 1.0
+		m12 = 0.0
+		m13 = 0.0
+		m20 = 0.0
+		m21 = 0.0
+		m22 = 1.0
+		m23 = 0.0
+		m30 = x_v
+		m31 = y_v
+		m32 = z_v
+		m33 = 1.0
+	}
+}
+
+/// Create scale Mat4.
+/// @param sx f64 X scale factor
+/// @param sy f64 Y scale factor
+/// @param sz f64 Z scale factor
+/// @return m Mat4 Scale matrix
+/// @example 2.0 2.0 2.0 mat4::scaling -> m
+pub fn scaling(sx:f64 sy:f64 sz:f64 -- m:Mat4) {
+	-> sz_v
+	-> sy_v
+	-> sx_v
+	Mat4 {
+		m00 = sx_v
+		m01 = 0.0
+		m02 = 0.0
+		m03 = 0.0
+		m10 = 0.0
+		m11 = sy_v
+		m12 = 0.0
+		m13 = 0.0
+		m20 = 0.0
+		m21 = 0.0
+		m22 = sz_v
+		m23 = 0.0
+		m30 = 0.0
+		m31 = 0.0
+		m32 = 0.0
+		m33 = 1.0
+	}
+}
+
+/// Create rotation Mat4 around X axis.
+/// @param angle f64 Rotation angle in radians
+/// @return m Mat4 Rotation matrix
+/// @example 1.57 mat4::rotation_x -> m
+pub fn rotation_x(angle:f64 -- m:Mat4) {
+	-> angle
+	angle math::cos -> c
+	angle math::sin -> s
+	Mat4 {
+		m00 = 1.0
+		m01 = 0.0
+		m02 = 0.0
+		m03 = 0.0
+		m10 = 0.0
+		m11 = c
+		m12 = s
+		m13 = 0.0
+		m20 = 0.0
+		m21 = s neg
+		m22 = c
+		m23 = 0.0
+		m30 = 0.0
+		m31 = 0.0
+		m32 = 0.0
+		m33 = 1.0
+	}
+}
+
+/// Create rotation Mat4 around Y axis.
+/// @param angle f64 Rotation angle in radians
+/// @return m Mat4 Rotation matrix
+/// @example 1.57 mat4::rotation_y -> m
+pub fn rotation_y(angle:f64 -- m:Mat4) {
+	-> angle
+	angle math::cos -> c
+	angle math::sin -> s
+	Mat4 {
+		m00 = c
+		m01 = 0.0
+		m02 = s neg
+		m03 = 0.0
+		m10 = 0.0
+		m11 = 1.0
+		m12 = 0.0
+		m13 = 0.0
+		m20 = s
+		m21 = 0.0
+		m22 = c
+		m23 = 0.0
+		m30 = 0.0
+		m31 = 0.0
+		m32 = 0.0
+		m33 = 1.0
+	}
+}
+
+/// Create rotation Mat4 around Z axis.
+/// @param angle f64 Rotation angle in radians
+/// @return m Mat4 Rotation matrix
+/// @example 1.57 mat4::rotation_z -> m
+pub fn rotation_z(angle:f64 -- m:Mat4) {
+	-> angle
+	angle math::cos -> c
+	angle math::sin -> s
+	Mat4 {
+		m00 = c
+		m01 = s
+		m02 = 0.0
+		m03 = 0.0
+		m10 = s neg
+		m11 = c
+		m12 = 0.0
+		m13 = 0.0
+		m20 = 0.0
+		m21 = 0.0
+		m22 = 1.0
+		m23 = 0.0
+		m30 = 0.0
+		m31 = 0.0
+		m32 = 0.0
+		m33 = 1.0
+	}
+}
+

@@ -1,0 +1,59 @@
+// Test Vec2 construction and basic operations
+use vec2
+
+fn main() {
+	// Test new constructor
+	1.0 2.0 vec2::new -> v
+	"vec2:" print nl
+	v @x print nl
+	v @y print nl
+
+	// Test zero
+	vec2::zero -> z
+	"zero:" print nl
+	z @x print nl
+	z @y print nl
+
+	// Test one
+	vec2::one -> o
+	"one:" print nl
+	o @x print nl
+	o @y print nl
+
+	// Test add
+	1.0 2.0 vec2::new -> a
+	3.0 4.0 vec2::new -> b
+	a b vec2::add -> c
+	"add:" print nl
+	c @x print nl
+	c @y print nl
+
+	// Test subtract
+	5.0 7.0 vec2::new -> d
+	2.0 3.0 vec2::new -> e
+	d e vec2::subtract -> f
+	"sub:" print nl
+	f @x print nl
+	f @y print nl
+
+	// Test scale
+	2.0 3.0 vec2::new -> g
+	g 2.0 vec2::scale -> h
+	"scale:" print nl
+	h @x print nl
+	h @y print nl
+
+	// Test dot
+	1.0 2.0 vec2::new -> i
+	3.0 4.0 vec2::new -> j
+	i j vec2::dot -> dot
+	"dot:" print nl
+	dot print nl
+
+	// Test neg
+	3.0 4.0 vec2::new -> k
+	k vec2::neg -> l
+	"neg:" print nl
+	l @x print nl
+	l @y print nl
+}

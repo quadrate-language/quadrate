@@ -1,0 +1,55 @@
+// Test Quat construction and basic operations
+use quat
+
+fn main() {
+	// Test identity
+	quat::identity -> id
+	"identity:" print nl
+	id @w print nl
+	id @x print nl
+	id @y print nl
+	id @z print nl
+
+	// Test new constructor
+	1.0 0.0 0.0 0.0 quat::new -> q
+	"quat:" print nl
+	q @w print nl
+	q @x print nl
+	q @y print nl
+	q @z print nl
+
+	// Test conjugate
+	// conjugate of (1,2,3,4) is (1,-2,-3,-4)
+	1.0 2.0 3.0 4.0 quat::new -> q2
+	q2 quat::conjugate -> conj
+	"conjugate:" print nl
+	conj @w print nl
+	conj @x print nl
+	conj @y print nl
+	conj @z print nl
+
+	// Test dot
+	// (1,0,0,0) dot (1,0,0,0) = 1
+	quat::identity -> id1
+	quat::identity -> id2
+	id1 id2 quat::dot -> dot
+	"dot identity:" print nl
+	dot print nl
+
+	// (1,2,3,4) dot (1,2,3,4) = 1+4+9+16 = 30
+	1.0 2.0 3.0 4.0 quat::new -> q3
+	1.0 2.0 3.0 4.0 quat::new -> q4
+	q3 q4 quat::dot -> dot2
+	"dot:" print nl
+	dot2 print nl
+
+	// Test mul (identity * identity = identity)
+	quat::identity -> id3
+	quat::identity -> id4
+	id3 id4 quat::mul -> prod
+	"mul identity:" print nl
+	prod @w print nl
+	prod @x print nl
+	prod @y print nl
+	prod @z print nl
+}

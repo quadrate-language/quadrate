@@ -1,0 +1,34 @@
+identity diagonal:
+1
+1
+1
+1
+identity off-diagonal:
+0
+0
+0
+0
+zero:
+0
+0
+0
+0
+translation:
+1
+2
+3
+translation diagonal:
+1
+1
+1
+1
+scaling:
+2
+3
+4
+1
+transpose identity (should be same):
+1
+1
+1
+1

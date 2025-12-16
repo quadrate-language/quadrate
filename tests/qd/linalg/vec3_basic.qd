@@ -1,0 +1,85 @@
+// Test Vec3 construction and basic operations
+use vec3
+
+fn main() {
+	// Test new constructor
+	1.0 2.0 3.0 vec3::new -> v
+	"vec3:" print nl
+	v @x print nl
+	v @y print nl
+	v @z print nl
+
+	// Test zero
+	vec3::zero -> z
+	"zero:" print nl
+	z @x print nl
+	z @y print nl
+	z @z print nl
+
+	// Test one
+	vec3::one -> o
+	"one:" print nl
+	o @x print nl
+	o @y print nl
+	o @z print nl
+
+	// Test unit vectors
+	vec3::unit_x -> ux
+	"unit_x:" print nl
+	ux @x print nl
+	ux @y print nl
+	ux @z print nl
+
+	vec3::unit_y -> uy
+	"unit_y:" print nl
+	uy @x print nl
+	uy @y print nl
+	uy @z print nl
+
+	vec3::unit_z -> uz
+	"unit_z:" print nl
+	uz @x print nl
+	uz @y print nl
+	uz @z print nl
+
+	// Test add
+	1.0 2.0 3.0 vec3::new -> a
+	4.0 5.0 6.0 vec3::new -> b
+	a b vec3::add -> c
+	"add:" print nl
+	c @x print nl
+	c @y print nl
+	c @z print nl
+
+	// Test subtract
+	5.0 7.0 9.0 vec3::new -> d
+	2.0 3.0 4.0 vec3::new -> e
+	d e vec3::subtract -> f
+	"sub:" print nl
+	f @x print nl
+	f @y print nl
+	f @z print nl
+
+	// Test scale
+	2.0 3.0 4.0 vec3::new -> g
+	g 2.0 vec3::scale -> h
+	"scale:" print nl
+	h @x print nl
+	h @y print nl
+	h @z print nl
+
+	// Test dot
+	1.0 2.0 3.0 vec3::new -> i
+	4.0 5.0 6.0 vec3::new -> j
+	i j vec3::dot -> dot
+	"dot:" print nl
+	dot print nl
+
+	// Test neg
+	3.0 4.0 5.0 vec3::new -> k
+	k vec3::neg -> l
+	"neg:" print nl
+	l @x print nl
+	l @y print nl
+	l @z print nl
+}

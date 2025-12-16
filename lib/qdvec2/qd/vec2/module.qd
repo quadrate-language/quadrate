@@ -1,0 +1,157 @@
+/// 2D vector math operations.
+use math
+
+/// 2D vector with x and y components.
+/// @field x f64 X component
+/// @field y f64 Y component
+pub struct Vec2 {
+	x:f64
+	y:f64
+}
+
+/// Create a new Vec2.
+/// @param x f64 X component
+/// @param y f64 Y component
+/// @return v Vec2 New 2D vector
+/// @example 1.0 2.0 vec2::new -> v
+pub fn new(x:f64 y:f64 -- v:Vec2) {
+	-> y_v
+	-> x_v
+	Vec2 {
+		x = x_v
+		y = y_v
+	}
+}
+
+/// Create a Vec2 with all components set to zero.
+/// @return v Vec2 Zero vector (0, 0)
+/// @example vec2::zero -> v
+pub fn zero( -- v:Vec2) {
+	Vec2 {
+		x = 0.0
+		y = 0.0
+	}
+}
+
+/// Create a Vec2 with all components set to one.
+/// @return v Vec2 One vector (1, 1)
+/// @example vec2::one -> v
+pub fn one( -- v:Vec2) {
+	Vec2 {
+		x = 1.0
+		y = 1.0
+	}
+}
+
+/// Add two Vec2 vectors.
+/// @param a Vec2 First vector
+/// @param b Vec2 Second vector
+/// @return result Vec2 Sum of a and b
+/// @example v1 v2 vec2::add -> v3
+pub fn add(a:Vec2 b:Vec2 -- result:Vec2) {
+	-> b
+	-> a
+	Vec2 {
+		x = a @x b @x +
+		y = a @y b @y +
+	}
+}
+
+/// Subtract two Vec2 vectors.
+/// @param a Vec2 First vector
+/// @param b Vec2 Second vector
+/// @return result Vec2 Difference of a and b
+/// @example v1 v2 vec2::subtract -> v3
+pub fn subtract(a:Vec2 b:Vec2 -- result:Vec2) {
+	-> b
+	-> a
+	Vec2 {
+		x = a @x b @x -
+		y = a @y b @y -
+	}
+}
+
+/// Multiply Vec2 by scalar.
+/// @param v Vec2 Vector to scale
+/// @param s f64 Scalar multiplier
+/// @return result Vec2 Scaled vector
+/// @example v 2.0 vec2::scale -> v2
+pub fn scale(v:Vec2 s:f64 -- result:Vec2) {
+	-> s
+	-> v
+	Vec2 {
+		x = v @x s *
+		y = v @y s *
+	}
+}
+
+/// Dot product of two Vec2 vectors.
+/// @param a Vec2 First vector
+/// @param b Vec2 Second vector
+/// @return result f64 Dot product
+/// @example v1 v2 vec2::dot -> d
+pub fn dot(a:Vec2 b:Vec2 -- result:f64) {
+	-> b
+	-> a
+	a @x b @x * a @y b @y * +
+}
+
+/// Length (magnitude) of a Vec2.
+/// @param v Vec2 Input vector
+/// @return result f64 Length of vector
+/// @example v vec2::length -> len
+pub fn length(v:Vec2 -- result:f64) {
+	-> v
+	v @x v @x * v @y v @y * + math::sqrt
+}
+
+/// Squared length of a Vec2 (avoids sqrt).
+/// @param v Vec2 Input vector
+/// @return result f64 Squared length of vector
+/// @example v vec2::length_sq -> len_sq
+pub fn length_sq(v:Vec2 -- result:f64) {
+	-> v
+	v @x v @x * v @y v @y * +
+}
+
+/// Normalize a Vec2 to unit length.
+/// @param v Vec2 Input vector
+/// @return result Vec2 Unit vector in same direction
+/// @example v vec2::normalize -> unit
+pub fn normalize(v:Vec2 -- result:Vec2) {
+	-> v
+	v length -> mag
+	mag 0.0 gt if {
+		v 1.0 mag / scale
+	} else {
+		zero
+	}
+}
+
+/// Negate a Vec2.
+/// @param v Vec2 Input vector
+/// @return result Vec2 Negated vector
+/// @example v vec2::neg -> neg_v
+pub fn neg(v:Vec2 -- result:Vec2) {
+	-> v
+	Vec2 {
+		x = v @x neg
+		y = v @y neg
+	}
+}
+
+/// Linear interpolation between two Vec2 vectors.
+/// @param a Vec2 Start vector
+/// @param b Vec2 End vector
+/// @param t f64 Interpolation factor (0.0 to 1.0)
+/// @return result Vec2 Interpolated vector
+/// @example v1 v2 0.5 vec2::lerp -> mid
+pub fn lerp(a:Vec2 b:Vec2 t:f64 -- result:Vec2) {
+	-> t
+	-> b
+	-> a
+	Vec2 {
+		x = a @x b @x a @x - t * +
+		y = a @y b @y a @y - t * +
+	}
+}

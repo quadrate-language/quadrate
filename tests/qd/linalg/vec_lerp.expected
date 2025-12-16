@@ -1,0 +1,21 @@
+vec2_lerp t=0:
+0
+0
+vec2_lerp t=1:
+10
+20
+vec2_lerp t=0.5:
+5
+10
+vec3_lerp t=0:
+0
+0
+0
+vec3_lerp t=1:
+10
+20
+30
+vec3_lerp t=0.5:
+5
+10
+15
