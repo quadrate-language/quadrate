@@ -670,7 +670,8 @@ qd_exec_result qd_append(qd_context* ctx) {
 		if (valueElem.type == QD_STACK_TYPE_STR) {
 			// Push the string directly (push_ptr will retain it)
 			appendResult = qd_array_push_ptr(arr, valueElem.value.s);
-			// Don't release - array now owns it
+			// Release our reference - array retained its own
+			qd_string_release(valueElem.value.s);
 		} else {
 			fprintf(stderr, "append: type mismatch - string array, got type %d\n", valueElem.type);
 			if (valueElem.type == QD_STACK_TYPE_STR) {
