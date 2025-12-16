@@ -14,103 +14,7 @@
 | `y` | `f64` | Y component |
 | `z` | `f64` | Z component |
 
-**Creating a Vec3:**
-
-```qd
-Vec3 { x = 1.0 y = 2.0 z = 3.0 } -> v
-```
-
 ## Functions
-
-### `fn` zero
-
-Create a Vec3 with all components set to zero.
-
-**Signature:** `( -- v:Vec3)`
-
-| Output | Type | Description |
-|--------|------|-------------|
-| `v` | `Vec3` | Zero vector (0, 0, 0) |
-
-**Example:**
-
-```qd
-vec3::zero -> v
-```
-
----
-
-### `fn` one
-
-Create a Vec3 with all components set to one.
-
-**Signature:** `( -- v:Vec3)`
-
-| Output | Type | Description |
-|--------|------|-------------|
-| `v` | `Vec3` | One vector (1, 1, 1) |
-
-**Example:**
-
-```qd
-vec3::one -> v
-```
-
----
-
-### `fn` unit_x
-
-Unit vector along the X axis.
-
-**Signature:** `( -- v:Vec3)`
-
-| Output | Type | Description |
-|--------|------|-------------|
-| `v` | `Vec3` | Unit X vector (1, 0, 0) |
-
-**Example:**
-
-```qd
-vec3::unit_x -> v
-```
-
----
-
-### `fn` unit_y
-
-Unit vector along the Y axis.
-
-**Signature:** `( -- v:Vec3)`
-
-| Output | Type | Description |
-|--------|------|-------------|
-| `v` | `Vec3` | Unit Y vector (0, 1, 0) |
-
-**Example:**
-
-```qd
-vec3::unit_y -> v
-```
-
----
-
-### `fn` unit_z
-
-Unit vector along the Z axis.
-
-**Signature:** `( -- v:Vec3)`
-
-| Output | Type | Description |
-|--------|------|-------------|
-| `v` | `Vec3` | Unit Z vector (0, 0, 1) |
-
-**Example:**
-
-```qd
-vec3::unit_z -> v
-```
-
----
 
 ### `fn` add
 
@@ -130,76 +34,7 @@ Add two Vec3 vectors.
 **Example:**
 
 ```qd
-v1 v2 vec3::add -> v3
-```
-
----
-
-### `fn` subtract
-
-Subtract two Vec3 vectors.
-
-**Signature:** `(a:Vec3 b:Vec3 -- result:Vec3)`
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `a` | `Vec3` | First vector |
-| `b` | `Vec3` | Second vector |
-
-| Output | Type | Description |
-|--------|------|-------------|
-| `result` | `Vec3` | Difference of a and b |
-
-**Example:**
-
-```qd
-v1 v2 vec3::subtract -> v3
-```
-
----
-
-### `fn` scale
-
-Multiply Vec3 by scalar.
-
-**Signature:** `(v:Vec3 s:f64 -- result:Vec3)`
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `v` | `Vec3` | Vector to scale |
-| `s` | `f64` | Scalar multiplier |
-
-| Output | Type | Description |
-|--------|------|-------------|
-| `result` | `Vec3` | Scaled vector |
-
-**Example:**
-
-```qd
-v 2.0 vec3::scale -> v2
-```
-
----
-
-### `fn` dot
-
-Dot product of two Vec3 vectors.
-
-**Signature:** `(a:Vec3 b:Vec3 -- result:f64)`
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `a` | `Vec3` | First vector |
-| `b` | `Vec3` | Second vector |
-
-| Output | Type | Description |
-|--------|------|-------------|
-| `result` | `f64` | Dot product |
-
-**Example:**
-
-```qd
-v1 v2 vec3::dot -> d
+v1 v2 vec3::add  // v3
 ```
 
 ---
@@ -222,29 +57,30 @@ Cross product of two Vec3 vectors.
 **Example:**
 
 ```qd
-v1 v2 vec3::cross -> v3
+v1 v2 vec3::cross  // v3
 ```
 
 ---
 
-### `fn` length
+### `fn` dot
 
-Length (magnitude) of a Vec3.
+Dot product of two Vec3 vectors.
 
-**Signature:** `(v:Vec3 -- result:f64)`
+**Signature:** `(a:Vec3 b:Vec3 -- result:f64)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `v` | `Vec3` | Input vector |
+| `a` | `Vec3` | First vector |
+| `b` | `Vec3` | Second vector |
 
 | Output | Type | Description |
 |--------|------|-------------|
-| `result` | `f64` | Length of vector |
+| `result` | `f64` | Dot product |
 
 **Example:**
 
 ```qd
-v vec3::length -> len
+v1 v2 vec3::dot  // d
 ```
 
 ---
@@ -266,16 +102,16 @@ Squared length of a Vec3 (avoids sqrt).
 **Example:**
 
 ```qd
-v vec3::length_sq -> len_sq
+v vec3::length_sq  // len_sq
 ```
 
 ---
 
-### `fn` normalize
+### `fn` length
 
-Normalize a Vec3 to unit length.
+Length (magnitude) of a Vec3.
 
-**Signature:** `(v:Vec3 -- result:Vec3)`
+**Signature:** `(v:Vec3 -- result:f64)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -283,34 +119,12 @@ Normalize a Vec3 to unit length.
 
 | Output | Type | Description |
 |--------|------|-------------|
-| `result` | `Vec3` | Unit vector in same direction |
+| `result` | `f64` | Length of vector |
 
 **Example:**
 
 ```qd
-v vec3::normalize -> unit
-```
-
----
-
-### `fn` neg
-
-Negate a Vec3.
-
-**Signature:** `(v:Vec3 -- result:Vec3)`
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `v` | `Vec3` | Input vector |
-
-| Output | Type | Description |
-|--------|------|-------------|
-| `result` | `Vec3` | Negated vector |
-
-**Example:**
-
-```qd
-v vec3::neg -> neg_v
+v vec3::length  // len
 ```
 
 ---
@@ -334,7 +148,69 @@ Linear interpolation between two Vec3 vectors.
 **Example:**
 
 ```qd
-v1 v2 0.5 vec3::lerp -> mid
+v1 v2 0.5 vec3::lerp  // mid
+```
+
+---
+
+### `fn` neg
+
+Negate a Vec3.
+
+**Signature:** `(v:Vec3 -- result:Vec3)`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `v` | `Vec3` | Input vector |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `result` | `Vec3` | Negated vector |
+
+**Example:**
+
+```qd
+v vec3::neg  // neg_v
+```
+
+---
+
+### `fn` normalize
+
+Normalize a Vec3 to unit length.
+
+**Signature:** `(v:Vec3 -- result:Vec3)`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `v` | `Vec3` | Input vector |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `result` | `Vec3` | Unit vector in same direction |
+
+**Example:**
+
+```qd
+v vec3::normalize  // unit
+```
+
+---
+
+### `fn` one
+
+Create a Vec3 with all components set to one.
+
+**Signature:** `( -- v:Vec3)`
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `v` | `Vec3` | One vector (1, 1, 1) |
+
+**Example:**
+
+```qd
+vec3::one  // v
 ```
 
 ---
@@ -357,5 +233,124 @@ Reflect vector v around normal n.
 **Example:**
 
 ```qd
-v normal vec3::reflect -> reflected
+v normal vec3::reflect  // reflected
 ```
+
+---
+
+### `fn` scale
+
+Multiply Vec3 by scalar.
+
+**Signature:** `(v:Vec3 s:f64 -- result:Vec3)`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `v` | `Vec3` | Vector to scale |
+| `s` | `f64` | Scalar multiplier |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `result` | `Vec3` | Scaled vector |
+
+**Example:**
+
+```qd
+v 2.0 vec3::scale  // v2
+```
+
+---
+
+### `fn` subtract
+
+Subtract two Vec3 vectors.
+
+**Signature:** `(a:Vec3 b:Vec3 -- result:Vec3)`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `a` | `Vec3` | First vector |
+| `b` | `Vec3` | Second vector |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `result` | `Vec3` | Difference of a and b |
+
+**Example:**
+
+```qd
+v1 v2 vec3::subtract  // v3
+```
+
+---
+
+### `fn` unit_x
+
+Unit vector along the X axis.
+
+**Signature:** `( -- v:Vec3)`
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `v` | `Vec3` | Unit X vector (1, 0, 0) |
+
+**Example:**
+
+```qd
+vec3::unit_x  // v
+```
+
+---
+
+### `fn` unit_y
+
+Unit vector along the Y axis.
+
+**Signature:** `( -- v:Vec3)`
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `v` | `Vec3` | Unit Y vector (0, 1, 0) |
+
+**Example:**
+
+```qd
+vec3::unit_y  // v
+```
+
+---
+
+### `fn` unit_z
+
+Unit vector along the Z axis.
+
+**Signature:** `( -- v:Vec3)`
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `v` | `Vec3` | Unit Z vector (0, 0, 1) |
+
+**Example:**
+
+```qd
+vec3::unit_z  // v
+```
+
+---
+
+### `fn` zero
+
+Create a Vec3 with all components set to zero.
+
+**Signature:** `( -- v:Vec3)`
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `v` | `Vec3` | Zero vector (0, 0, 0) |
+
+**Example:**
+
+```qd
+vec3::zero  // v
+```
+

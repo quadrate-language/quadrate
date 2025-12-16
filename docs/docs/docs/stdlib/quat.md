@@ -15,54 +15,7 @@ Quaternion for representing rotations. Stored as (w, x, y, z) where w is the sca
 | `y` | `f64` | Y component of vector part |
 | `z` | `f64` | Z component of vector part |
 
-**Creating a Quat:**
-
-```qd
-Quat { w = 1.0 x = 0.0 y = 0.0 z = 0.0 } -> q
-```
-
 ## Functions
-
-### `fn` identity
-
-Create identity quaternion (no rotation).
-
-**Signature:** `( -- q:Quat)`
-
-| Output | Type | Description |
-|--------|------|-------------|
-| `q` | `Quat` | Identity quaternion |
-
-**Example:**
-
-```qd
-quat::identity -> q
-```
-
----
-
-### `fn` mul
-
-Quaternion multiplication.
-
-**Signature:** `(a:Quat b:Quat -- result:Quat)`
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `a` | `Quat` | First quaternion |
-| `b` | `Quat` | Second quaternion |
-
-| Output | Type | Description |
-|--------|------|-------------|
-| `result` | `Quat` | Product of a and b |
-
-**Example:**
-
-```qd
-q1 q2 quat::mul -> q3
-```
-
----
 
 ### `fn` conjugate
 
@@ -81,51 +34,7 @@ Conjugate of quaternion.
 **Example:**
 
 ```qd
-q quat::conjugate -> q_conj
-```
-
----
-
-### `fn` length
-
-Length (magnitude) of quaternion.
-
-**Signature:** `(q:Quat -- result:f64)`
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `q` | `Quat` | Input quaternion |
-
-| Output | Type | Description |
-|--------|------|-------------|
-| `result` | `f64` | Length of quaternion |
-
-**Example:**
-
-```qd
-q quat::length -> len
-```
-
----
-
-### `fn` normalize
-
-Normalize quaternion to unit length.
-
-**Signature:** `(q:Quat -- result:Quat)`
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `q` | `Quat` | Input quaternion |
-
-| Output | Type | Description |
-|--------|------|-------------|
-| `result` | `Quat` | Unit quaternion |
-
-**Example:**
-
-```qd
-q quat::normalize -> unit_q
+q quat::conjugate  // q_conj
 ```
 
 ---
@@ -148,5 +57,91 @@ Dot product of two quaternions.
 **Example:**
 
 ```qd
-q1 q2 quat::dot -> d
+q1 q2 quat::dot  // d
 ```
+
+---
+
+### `fn` identity
+
+Create identity quaternion (no rotation).
+
+**Signature:** `( -- q:Quat)`
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `q` | `Quat` | Identity quaternion |
+
+**Example:**
+
+```qd
+quat::identity  // q
+```
+
+---
+
+### `fn` length
+
+Length (magnitude) of quaternion.
+
+**Signature:** `(q:Quat -- result:f64)`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `q` | `Quat` | Input quaternion |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `result` | `f64` | Length of quaternion |
+
+**Example:**
+
+```qd
+q quat::length  // len
+```
+
+---
+
+### `fn` mul
+
+Quaternion multiplication.
+
+**Signature:** `(a:Quat b:Quat -- result:Quat)`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `a` | `Quat` | First quaternion |
+| `b` | `Quat` | Second quaternion |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `result` | `Quat` | Product of a and b |
+
+**Example:**
+
+```qd
+q1 q2 quat::mul  // q3
+```
+
+---
+
+### `fn` normalize
+
+Normalize quaternion to unit length.
+
+**Signature:** `(q:Quat -- result:Quat)`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `q` | `Quat` | Input quaternion |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `result` | `Quat` | Unit quaternion |
+
+**Example:**
+
+```qd
+q quat::normalize  // unit_q
+```
+

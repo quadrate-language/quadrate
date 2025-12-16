@@ -1,5 +1,6 @@
-Generated documentation for hof
-on combinators.
+# `use` hof
+
+Higher-Order Function combinators.
 Combinators are functions that combine or apply other functions in useful patterns.
 They enable functional programming without explicit temporary variables.
 

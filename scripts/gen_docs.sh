@@ -35,11 +35,13 @@ declare -A STDLIB_MODULES=(
     ["io"]="lib/qdio/qd/io/module.qd"
     ["json"]="lib/qdjson/qd/json/module.qd"
     ["limits"]="lib/qdlimits/qd/limits/module.qd"
+    ["mat4"]="lib/qdmat4/qd/mat4/module.qd"
     ["math"]="lib/qdmath/qd/math/module.qd"
     ["mem"]="lib/qdmem/qd/mem/module.qd"
     ["net"]="lib/qdnet/qd/net/module.qd"
     ["os"]="lib/qdos/qd/os/module.qd"
     ["path"]="lib/qdpath/qd/path/module.qd"
+    ["quat"]="lib/qdquat/qd/quat/module.qd"
     ["rand"]="lib/qdrand/qd/rand/module.qd"
     ["regex"]="lib/qdregex/qd/regex/module.qd"
     ["sb"]="lib/qdsb/qd/sb/module.qd"
@@ -53,6 +55,9 @@ declare -A STDLIB_MODULES=(
     ["unicode"]="lib/qdunicode/qd/unicode/module.qd"
     ["uri"]="lib/qduri/qd/uri/module.qd"
     ["uuid"]="lib/qduuid/qd/uuid/module.qd"
+    ["vec2"]="lib/qdvec2/qd/vec2/module.qd"
+    ["vec3"]="lib/qdvec3/qd/vec3/module.qd"
+    ["vec4"]="lib/qdvec4/qd/vec4/module.qd"
 )
 
 # Get module name from file path

@@ -1,0 +1,81 @@
+{
+  "name": "quat",
+  "description": "Quaternion math operations for 3D rotations.",
+  "constants": [
+
+  ],
+  "structs": [
+    {
+      "name": "Quat",
+      "description": "Quaternion for representing rotations. Stored as (w, x, y, z) where w is the scalar part.",
+      "fields": [
+        {"name": "w", "type": "f64", "description": "Scalar (real) component"},
+        {"name": "x", "type": "f64", "description": "X component of vector part"},
+        {"name": "y", "type": "f64", "description": "Y component of vector part"},
+        {"name": "z", "type": "f64", "description": "Z component of vector part"}
+      ]
+    }
+  ],
+  "functions": [
+    {
+      "name": "conjugate",
+      "signature": "(q:Quat -- result:Quat)",
+      "failable": false,
+      "description": "Conjugate of quaternion.",
+      "params": [{"name": "q", "type": "Quat", "description": "Input quaternion"}],
+      "returns": [{"name": "result", "type": "Quat", "description": "Conjugate quaternion"}],
+      "errors": [],
+      "examples": ["q quat::conjugate -> q_conj"]
+    },
+    {
+      "name": "dot",
+      "signature": "(a:Quat b:Quat -- result:f64)",
+      "failable": false,
+      "description": "Dot product of two quaternions.",
+      "params": [{"name": "a", "type": "Quat", "description": "First quaternion"}, {"name": "b", "type": "Quat", "description": "Second quaternion"}],
+      "returns": [{"name": "result", "type": "f64", "description": "Dot product"}],
+      "errors": [],
+      "examples": ["q1 q2 quat::dot -> d"]
+    },
+    {
+      "name": "identity",
+      "signature": "( -- q:Quat)",
+      "failable": false,
+      "description": "Create identity quaternion (no rotation).",
+      "params": [],
+      "returns": [{"name": "q", "type": "Quat", "description": "Identity quaternion"}],
+      "errors": [],
+      "examples": ["quat::identity -> q"]
+    },
+    {
+      "name": "length",
+      "signature": "(q:Quat -- result:f64)",
+      "failable": false,
+      "description": "Length (magnitude) of quaternion.",
+      "params": [{"name": "q", "type": "Quat", "description": "Input quaternion"}],
+      "returns": [{"name": "result", "type": "f64", "description": "Length of quaternion"}],
+      "errors": [],
+      "examples": ["q quat::length -> len"]
+    },
+    {
+      "name": "mul",
+      "signature": "(a:Quat b:Quat -- result:Quat)",
+      "failable": false,
+      "description": "Quaternion multiplication.",
+      "params": [{"name": "a", "type": "Quat", "description": "First quaternion"}, {"name": "b", "type": "Quat", "description": "Second quaternion"}],
+      "returns": [{"name": "result", "type": "Quat", "description": "Product of a and b"}],
+      "errors": [],
+      "examples": ["q1 q2 quat::mul -> q3"]
+    },
+    {
+      "name": "normalize",
+      "signature": "(q:Quat -- result:Quat)",
+      "failable": false,
+      "description": "Normalize quaternion to unit length.",
+      "params": [{"name": "q", "type": "Quat", "description": "Input quaternion"}],
+      "returns": [{"name": "result", "type": "Quat", "description": "Unit quaternion"}],
+      "errors": [],
+      "examples": ["q quat::normalize -> unit_q"]
+    }
+  ]
+}

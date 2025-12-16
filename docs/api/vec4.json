@@ -1,0 +1,101 @@
+{
+  "name": "vec4",
+  "description": "4D vector math operations (homogeneous coordinates).",
+  "constants": [
+
+  ],
+  "structs": [
+    {
+      "name": "Vec4",
+      "description": "4D vector with x, y, z, and w components.",
+      "fields": [
+        {"name": "x", "type": "f64", "description": "X component"},
+        {"name": "y", "type": "f64", "description": "Y component"},
+        {"name": "z", "type": "f64", "description": "Z component"},
+        {"name": "w", "type": "f64", "description": "W component"}
+      ]
+    }
+  ],
+  "functions": [
+    {
+      "name": "add",
+      "signature": "(a:Vec4 b:Vec4 -- result:Vec4)",
+      "failable": false,
+      "description": "Add two Vec4 vectors.",
+      "params": [{"name": "a", "type": "Vec4", "description": "First vector"}, {"name": "b", "type": "Vec4", "description": "Second vector"}],
+      "returns": [{"name": "result", "type": "Vec4", "description": "Sum of a and b"}],
+      "errors": [],
+      "examples": ["v1 v2 vec4::add -> v3"]
+    },
+    {
+      "name": "dot",
+      "signature": "(a:Vec4 b:Vec4 -- result:f64)",
+      "failable": false,
+      "description": "Dot product of two Vec4 vectors.",
+      "params": [{"name": "a", "type": "Vec4", "description": "First vector"}, {"name": "b", "type": "Vec4", "description": "Second vector"}],
+      "returns": [{"name": "result", "type": "f64", "description": "Dot product"}],
+      "errors": [],
+      "examples": ["v1 v2 vec4::dot -> d"]
+    },
+    {
+      "name": "length",
+      "signature": "(v:Vec4 -- result:f64)",
+      "failable": false,
+      "description": "Length (magnitude) of a Vec4.",
+      "params": [{"name": "v", "type": "Vec4", "description": "Input vector"}],
+      "returns": [{"name": "result", "type": "f64", "description": "Length of vector"}],
+      "errors": [],
+      "examples": ["v vec4::length -> len"]
+    },
+    {
+      "name": "normalize",
+      "signature": "(v:Vec4 -- result:Vec4)",
+      "failable": false,
+      "description": "Normalize a Vec4 to unit length.",
+      "params": [{"name": "v", "type": "Vec4", "description": "Input vector"}],
+      "returns": [{"name": "result", "type": "Vec4", "description": "Unit vector in same direction"}],
+      "errors": [],
+      "examples": ["v vec4::normalize -> unit"]
+    },
+    {
+      "name": "one",
+      "signature": "( -- v:Vec4)",
+      "failable": false,
+      "description": "Create a Vec4 with all components set to one.",
+      "params": [],
+      "returns": [{"name": "v", "type": "Vec4", "description": "One vector (1, 1, 1, 1)"}],
+      "errors": [],
+      "examples": ["vec4::one -> v"]
+    },
+    {
+      "name": "scale",
+      "signature": "(v:Vec4 s:f64 -- result:Vec4)",
+      "failable": false,
+      "description": "Multiply Vec4 by scalar.",
+      "params": [{"name": "v", "type": "Vec4", "description": "Vector to scale"}, {"name": "s", "type": "f64", "description": "Scalar multiplier"}],
+      "returns": [{"name": "result", "type": "Vec4", "description": "Scaled vector"}],
+      "errors": [],
+      "examples": ["v 2.0 vec4::scale -> v2"]
+    },
+    {
+      "name": "subtract",
+      "signature": "(a:Vec4 b:Vec4 -- result:Vec4)",
+      "failable": false,
+      "description": "Subtract two Vec4 vectors.",
+      "params": [{"name": "a", "type": "Vec4", "description": "First vector"}, {"name": "b", "type": "Vec4", "description": "Second vector"}],
+      "returns": [{"name": "result", "type": "Vec4", "description": "Difference of a and b"}],
+      "errors": [],
+      "examples": ["v1 v2 vec4::subtract -> v3"]
+    },
+    {
+      "name": "zero",
+      "signature": "( -- v:Vec4)",
+      "failable": false,
+      "description": "Create a Vec4 with all components set to zero.",
+      "params": [],
+      "returns": [{"name": "v", "type": "Vec4", "description": "Zero vector (0, 0, 0, 0)"}],
+      "errors": [],
+      "examples": ["vec4::zero -> v"]
+    }
+  ]
+}

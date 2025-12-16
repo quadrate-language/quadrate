@@ -40,15 +40,16 @@ fn main() {
 | [fmt](fmt.md) | Formatted output functions. |
 | [hex](hex.md) | Hexadecimal encoding and decoding. |
 | [hof](hof.md) | Higher-Order Function combinators. |
-| [http](http.md) | HTTP/HTTPS client for web requests. |
 | [io](io.md) | File and stream I/O operations. |
 | [json](json.md) | JSON parsing and querying without AST construction. |
 | [limits](limits.md) | Numeric limits and constants. |
+| [mat4](mat4.md) | 4x4 matrix math operations for 3D transformations. |
 | [math](math.md) | Mathematical functions and constants. |
 | [mem](mem.md) | Low-level memory allocation and manipulation. |
 | [net](net.md) | TCP network operations. |
 | [os](os.md) | Operating system interface. |
 | [path](path.md) | File path manipulation functions. |
+| [quat](quat.md) | Quaternion math operations for 3D rotations. |
 | [rand](rand.md) | Random number generation using xorshift64* algorithm. |
 | [regex](regex.md) | Regular expression matching using Thompson NFA. |
 | [sb](sb.md) | StringBuilder - Efficient string building. |
@@ -59,7 +60,9 @@ fn main() {
 | [strconv](strconv.md) | String to number conversions. |
 | [testing](testing.md) | Testing utilities for unit tests. |
 | [time](time.md) | Time operations and duration constants. |
-| [tls](tls.md) | TLS/SSL secure socket operations. |
 | [unicode](unicode.md) | Unicode character constants and classification. |
 | [uri](uri.md) | URI encoding, decoding, and parsing. |
 | [uuid](uuid.md) | UUID generation (version 4 random UUIDs). |
+| [vec2](vec2.md) | 2D vector math operations. |
+| [vec3](vec3.md) | 3D vector math operations. |
+| [vec4](vec4.md) | 4D vector math operations (homogeneous coordinates). |

@@ -42,71 +42,73 @@ Create identity Mat4.
 **Example:**
 
 ```qd
-mat4::identity -> m
+mat4::identity  // m
 ```
 
 ---
 
-### `fn` zero
+### `fn` rotation_x
 
-Create zero Mat4.
+Create rotation Mat4 around X axis.
 
-**Signature:** `( -- m:Mat4)`
-
-| Output | Type | Description |
-|--------|------|-------------|
-| `m` | `Mat4` | Zero matrix |
-
-**Example:**
-
-```qd
-mat4::zero -> m
-```
-
----
-
-### `fn` transpose
-
-Transpose of Mat4.
-
-**Signature:** `(m:Mat4 -- result:Mat4)`
+**Signature:** `(angle:f64 -- m:Mat4)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `m` | `Mat4` | Input matrix |
+| `angle` | `f64` | Rotation angle in radians |
 
 | Output | Type | Description |
 |--------|------|-------------|
-| `result` | `Mat4` | Transposed matrix |
+| `m` | `Mat4` | Rotation matrix |
 
 **Example:**
 
 ```qd
-m mat4::transpose -> m_t
+1.57 mat4::rotation_x  // m
 ```
 
 ---
 
-### `fn` translation
+### `fn` rotation_y
 
-Create translation Mat4.
+Create rotation Mat4 around Y axis.
 
-**Signature:** `(x:f64 y:f64 z:f64 -- m:Mat4)`
+**Signature:** `(angle:f64 -- m:Mat4)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `x` | `f64` | X translation |
-| `y` | `f64` | Y translation |
-| `z` | `f64` | Z translation |
+| `angle` | `f64` | Rotation angle in radians |
 
 | Output | Type | Description |
 |--------|------|-------------|
-| `m` | `Mat4` | Translation matrix |
+| `m` | `Mat4` | Rotation matrix |
 
 **Example:**
 
 ```qd
-1.0 2.0 3.0 mat4::translation -> m
+1.57 mat4::rotation_y  // m
+```
+
+---
+
+### `fn` rotation_z
+
+Create rotation Mat4 around Z axis.
+
+**Signature:** `(angle:f64 -- m:Mat4)`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `angle` | `f64` | Rotation angle in radians |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `m` | `Mat4` | Rotation matrix |
+
+**Example:**
+
+```qd
+1.57 mat4::rotation_z  // m
 ```
 
 ---
@@ -130,71 +132,70 @@ Create scale Mat4.
 **Example:**
 
 ```qd
-2.0 2.0 2.0 mat4::scaling -> m
+2.0 2.0 2.0 mat4::scaling  // m
 ```
 
 ---
 
-### `fn` rotation_x
+### `fn` translation
 
-Create rotation Mat4 around X axis.
+Create translation Mat4.
 
-**Signature:** `(angle:f64 -- m:Mat4)`
+**Signature:** `(x:f64 y:f64 z:f64 -- m:Mat4)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `angle` | `f64` | Rotation angle in radians |
+| `x` | `f64` | X translation |
+| `y` | `f64` | Y translation |
+| `z` | `f64` | Z translation |
 
 | Output | Type | Description |
 |--------|------|-------------|
-| `m` | `Mat4` | Rotation matrix |
+| `m` | `Mat4` | Translation matrix |
 
 **Example:**
 
 ```qd
-1.57 mat4::rotation_x -> m
+1.0 2.0 3.0 mat4::translation  // m
 ```
 
 ---
 
-### `fn` rotation_y
+### `fn` transpose
 
-Create rotation Mat4 around Y axis.
+Transpose of Mat4.
 
-**Signature:** `(angle:f64 -- m:Mat4)`
+**Signature:** `(m:Mat4 -- result:Mat4)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `angle` | `f64` | Rotation angle in radians |
+| `m` | `Mat4` | Input matrix |
 
 | Output | Type | Description |
 |--------|------|-------------|
-| `m` | `Mat4` | Rotation matrix |
+| `result` | `Mat4` | Transposed matrix |
 
 **Example:**
 
 ```qd
-1.57 mat4::rotation_y -> m
+m mat4::transpose  // m_t
 ```
 
 ---
 
-### `fn` rotation_z
+### `fn` zero
 
-Create rotation Mat4 around Z axis.
+Create zero Mat4.
 
-**Signature:** `(angle:f64 -- m:Mat4)`
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `angle` | `f64` | Rotation angle in radians |
+**Signature:** `( -- m:Mat4)`
 
 | Output | Type | Description |
 |--------|------|-------------|
-| `m` | `Mat4` | Rotation matrix |
+| `m` | `Mat4` | Zero matrix |
 
 **Example:**
 
 ```qd
-1.57 mat4::rotation_z -> m
+mat4::zero  // m
 ```
+
