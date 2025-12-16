@@ -15,32 +15,13 @@
 | `z` | `f64` | Z component |
 | `w` | `f64` | W component |
 
-## Functions
-
-### `fn` new
-
-Create a new Vec4.
-
-**Signature:** `(x:f64 y:f64 z:f64 w:f64 -- v:Vec4)`
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `x` | `f64` | X component |
-| `y` | `f64` | Y component |
-| `z` | `f64` | Z component |
-| `w` | `f64` | W component |
-
-| Output | Type | Description |
-|--------|------|-------------|
-| `v` | `Vec4` | New 4D vector |
-
-**Example:**
+**Creating a Vec4:**
 
 ```qd
-1.0 2.0 3.0 4.0 vec4::new -> v
+Vec4 { x = 1.0 y = 2.0 z = 3.0 w = 4.0 } -> v
 ```
 
----
+## Functions
 
 ### `fn` zero
 

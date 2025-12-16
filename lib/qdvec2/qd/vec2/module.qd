@@ -9,20 +9,6 @@ pub struct Vec2 {
 	y:f64
 }
 
-/// Create a new Vec2.
-/// @param x f64 X component
-/// @param y f64 Y component
-/// @return v Vec2 New 2D vector
-/// @example 1.0 2.0 vec2::new -> v
-pub fn new(x:f64 y:f64 -- v:Vec2) {
-	-> y_v
-	-> x_v
-	Vec2 {
-		x = x_v
-		y = y_v
-	}
-}
-
 /// Create a Vec2 with all components set to zero.
 /// @return v Vec2 Zero vector (0, 0)
 /// @example vec2::zero -> v

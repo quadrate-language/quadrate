@@ -11,23 +11,6 @@ pub struct Vec3 {
 	z:f64
 }
 
-/// Create a new Vec3.
-/// @param x f64 X component
-/// @param y f64 Y component
-/// @param z f64 Z component
-/// @return v Vec3 New 3D vector
-/// @example 1.0 2.0 3.0 vec3::new -> v
-pub fn new(x:f64 y:f64 z:f64 -- v:Vec3) {
-	-> z_v
-	-> y_v
-	-> x_v
-	Vec3 {
-		x = x_v
-		y = y_v
-		z = z_v
-	}
-}
-
 /// Create a Vec3 with all components set to zero.
 /// @return v Vec3 Zero vector (0, 0, 0)
 /// @example vec3::zero -> v

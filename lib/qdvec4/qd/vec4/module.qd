@@ -13,26 +13,6 @@ pub struct Vec4 {
 	w:f64
 }
 
-/// Create a new Vec4.
-/// @param x f64 X component
-/// @param y f64 Y component
-/// @param z f64 Z component
-/// @param w f64 W component
-/// @return v Vec4 New 4D vector
-/// @example 1.0 2.0 3.0 4.0 vec4::new -> v
-pub fn new(x:f64 y:f64 z:f64 w:f64 -- v:Vec4) {
-	-> w_v
-	-> z_v
-	-> y_v
-	-> x_v
-	Vec4 {
-		x = x_v
-		y = y_v
-		z = z_v
-		w = w_v
-	}
-}
-
 /// Create a Vec4 with all components set to zero.
 /// @return v Vec4 Zero vector (0, 0, 0, 0)
 /// @example vec4::zero -> v

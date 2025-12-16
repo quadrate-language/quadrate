@@ -14,31 +14,13 @@
 | `y` | `f64` | Y component |
 | `z` | `f64` | Z component |
 
-## Functions
-
-### `fn` new
-
-Create a new Vec3.
-
-**Signature:** `(x:f64 y:f64 z:f64 -- v:Vec3)`
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `x` | `f64` | X component |
-| `y` | `f64` | Y component |
-| `z` | `f64` | Z component |
-
-| Output | Type | Description |
-|--------|------|-------------|
-| `v` | `Vec3` | New 3D vector |
-
-**Example:**
+**Creating a Vec3:**
 
 ```qd
-1.0 2.0 3.0 vec3::new -> v
+Vec3 { x = 1.0 y = 2.0 z = 3.0 } -> v
 ```
 
----
+## Functions
 
 ### `fn` zero
 

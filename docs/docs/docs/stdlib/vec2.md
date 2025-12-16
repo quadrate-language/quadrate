@@ -13,30 +13,13 @@
 | `x` | `f64` | X component |
 | `y` | `f64` | Y component |
 
-## Functions
-
-### `fn` new
-
-Create a new Vec2.
-
-**Signature:** `(x:f64 y:f64 -- v:Vec2)`
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `x` | `f64` | X component |
-| `y` | `f64` | Y component |
-
-| Output | Type | Description |
-|--------|------|-------------|
-| `v` | `Vec2` | New 2D vector |
-
-**Example:**
+**Creating a Vec2:**
 
 ```qd
-1.0 2.0 vec2::new -> v
+Vec2 { x = 1.0 y = 2.0 } -> v
 ```
 
----
+## Functions
 
 ### `fn` zero
 
