@@ -99,10 +99,12 @@ import "libqdos.a" as "os" {
 	pub fn list(path:str -- entries:ptr count:i64)!
 
 	/// Execute a command and stream output line-by-line to a callback.
+	/// The callback is called synchronously for each line of output (without trailing newline).
+	/// The call blocks until the command completes. Closures with captured variables are supported.
 	/// @param cmd str Command to execute
 	/// @param callback ptr Callback function (line:str -- )
 	/// @return exitcode i64 Command exit status
 	/// @error ErrIo Failed to execute command
-	/// @example "ls" my_callback os::popen! -> exitcode
+	/// @example "ls -la" fn (line:str -- ) { print nl } os::popen! -> code
 	pub fn popen(cmd:str callback:ptr -- exitcode:i64)!
 }

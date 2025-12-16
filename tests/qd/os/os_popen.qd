@@ -1,0 +1,24 @@
+// Test os::popen function
+use os
+
+fn main() {
+	// Test basic output streaming
+	"echo -e 'line1\nline2\nline3'" fn (line:str -- ) {
+		print nl
+	} os::popen! -> exitcode
+	"exit:" print exitcode print nl
+
+	// Test with closure capturing variable
+	0 -> count
+	"echo -e 'a\nb\nc\nd'" fn (line:str -- ) {
+		count 1 + -> count
+		drop
+	} os::popen! drop
+	"count:" print count print nl
+
+	// Test non-zero exit code
+	"exit 42" fn (line:str -- ) {
+		drop
+	} os::popen! -> code
+	"code:" print code print nl
+}
