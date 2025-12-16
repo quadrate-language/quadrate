@@ -51,6 +51,9 @@ define do_build
 	@for lib in qdfmt qdio qdmath qdmem qdnet qdtls qdhttp qdos qdsignal qdstr qdstrconv qdtime qdtesting; do \
 		rm -f dist/lib/lib$$lib.a && cd $(1)/lib/$$lib && ar rcs ../../../../dist/lib/lib$$lib.a $$(ar -t lib$$lib.a) && echo "  lib$$lib.a" && cd ->/dev/null; \
 	done
+	@for lib in qdtls qdhttp; do \
+		if [ -f lib/$$lib/lib$$lib.deps ]; then cp lib/$$lib/lib$$lib.deps dist/lib/; fi; \
+	done
 	@for lib in $(LIBS_WITH_HEADERS); do cp -rf lib/$$lib/include/$$lib dist/include/; done
 	@mkdir -p dist/share/quadrate
 	@for mod in $(STDLIB_MODULES); do cp -r lib/qd*/qd/$$mod dist/share/quadrate/ 2>/dev/null || true; done

@@ -1,0 +1,5 @@
+-L${QUADRATE_LIBDIR}
+-lqdnet
+-lqdtls
+-lssl
+-lcrypto

@@ -6,6 +6,7 @@ packages:
   - meson
   - nodejs
   - openssl
+  - pkgconf
   - tree-sitter-cli
   - valgrind
 

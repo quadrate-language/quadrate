@@ -10,6 +10,7 @@ packages:
   - meson
   - nodejs
   - npm
+  - pkg-config
   - valgrind
 
 sources:
