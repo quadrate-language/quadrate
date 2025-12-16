@@ -903,19 +903,19 @@ namespace Qd {
 						std::ifstream manifestFile(manifestPath);
 						if (manifestFile.is_open()) {
 							std::string line;
-							bool inPackageSection = false;
+							bool inModuleSection = false;
 							while (std::getline(manifestFile, line)) {
 								line.erase(0, line.find_first_not_of(" \t\r\n"));
 								line.erase(line.find_last_not_of(" \t\r\n") + 1);
-								if (line == "[module]" || line == "[package]") {
-									inPackageSection = true;
+								if (line == "[module]") {
+									inModuleSection = true;
 									continue;
 								}
 								if (!line.empty() && line[0] == '[') {
-									inPackageSection = false;
+									inModuleSection = false;
 									continue;
 								}
-								if (inPackageSection) {
+								if (inModuleSection) {
 									size_t eqPos = line.find('=');
 									if (eqPos != std::string::npos) {
 										std::string key = line.substr(0, eqPos);

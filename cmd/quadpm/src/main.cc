@@ -187,22 +187,22 @@ std::string parseModuleName(const std::string& manifestPath) {
 	}
 
 	std::string line;
-	bool inPackageSection = false;
+	bool inModuleSection = false;
 
 	while (std::getline(file, line)) {
 		// Trim whitespace
 		line.erase(0, line.find_first_not_of(" \t\r\n"));
 		line.erase(line.find_last_not_of(" \t\r\n") + 1);
 
-		// Check for [module] section (also accept [package] for backwards compatibility)
-		if (line == "[module]" || line == "[package]") {
-			inPackageSection = true;
+		// Check for [module] section
+		if (line == "[module]") {
+			inModuleSection = true;
 			continue;
 		}
 
 		// Check for other sections
 		if (!line.empty() && line[0] == '[') {
-			inPackageSection = false;
+			inModuleSection = false;
 			continue;
 		}
 
@@ -212,7 +212,7 @@ std::string parseModuleName(const std::string& manifestPath) {
 		}
 
 		// Look for name = "value" in module section
-		if (inPackageSection) {
+		if (inModuleSection) {
 			size_t eqPos = line.find('=');
 			if (eqPos != std::string::npos) {
 				std::string key = line.substr(0, eqPos);

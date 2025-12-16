@@ -71,10 +71,10 @@ Key points:
 
 ## Step 3: Create quadrate.toml
 
-Create the package manifest `quadrate.toml`:
+Create the module manifest `quadrate.toml`:
 
 ```toml
-[package]
+[module]
 name = "mymodule"
 version = "1.0.0"
 description = "Math utilities for Quadrate"
@@ -172,7 +172,7 @@ quadc -I . -r examples/simple.qd
 quadc -I /path/to/qd-mymodule -r /path/to/qd-mymodule/examples/simple.qd
 ```
 
-The `-I` flag adds a module search path. The compiler reads `quadrate.toml` to match the module name, so your directory can be named anything (e.g., `qd-mymodule`) while the module is imported by its package name (e.g., `mymodule`).
+The `-I` flag adds a module search path. The compiler reads `quadrate.toml` to match the module name, so your directory can be named anything (e.g., `qd-mymodule`) while the module is imported by its module name (e.g., `mymodule`).
 
 You can specify multiple `-I` paths if your module depends on other local modules:
 
@@ -316,7 +316,7 @@ When users install your module with `quadpm get`, the C sources are automaticall
 If your C code depends on external system libraries (like OpenGL, SDL, or SQLite), declare them in `quadrate.toml`:
 
 ```toml
-[package]
+[module]
 name = "mymodule"
 version = "1.0.0"
 description = "My module with native dependencies"
@@ -426,7 +426,7 @@ pub fn reset( -- ) {
 If your module depends on other modules, declare them in `quadrate.toml`:
 
 ```toml
-[package]
+[module]
 name = "mymodule"
 version = "1.0.0"
 description = "My module"
@@ -486,7 +486,7 @@ Before publishing your module:
 Creating a distributable module involves:
 
 1. **Create `module.qd`** with `pub` functions
-2. **Create `quadrate.toml`** package manifest
+2. **Create `quadrate.toml`** module manifest
 3. **Add documentation** (README.md, LICENSE)
 4. **Include examples** for users
 5. **Optionally add C code** in `src/` for FFI
