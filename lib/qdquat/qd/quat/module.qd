@@ -26,26 +26,6 @@ pub fn identity( -- q:Quat) {
 	}
 }
 
-/// Create quaternion from components.
-/// @param w f64 Scalar component
-/// @param x f64 X component
-/// @param y f64 Y component
-/// @param z f64 Z component
-/// @return q Quat New quaternion
-/// @example 1.0 0.0 0.0 0.0 quat::new -> q
-pub fn new(w:f64 x:f64 y:f64 z:f64 -- q:Quat) {
-	-> z_v
-	-> y_v
-	-> x_v
-	-> w_v
-	Quat {
-		w = w_v
-		x = x_v
-		y = y_v
-		z = z_v
-	}
-}
-
 /// Quaternion multiplication.
 /// @param a Quat First quaternion
 /// @param b Quat Second quaternion

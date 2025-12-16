@@ -15,6 +15,12 @@ Quaternion for representing rotations. Stored as (w, x, y, z) where w is the sca
 | `y` | `f64` | Y component of vector part |
 | `z` | `f64` | Z component of vector part |
 
+**Creating a Quat:**
+
+```qd
+Quat { w = 1.0 x = 0.0 y = 0.0 z = 0.0 } -> q
+```
+
 ## Functions
 
 ### `fn` identity
@@ -31,31 +37,6 @@ Create identity quaternion (no rotation).
 
 ```qd
 quat::identity -> q
-```
-
----
-
-### `fn` new
-
-Create quaternion from components.
-
-**Signature:** `(w:f64 x:f64 y:f64 z:f64 -- q:Quat)`
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `w` | `f64` | Scalar component |
-| `x` | `f64` | X component |
-| `y` | `f64` | Y component |
-| `z` | `f64` | Z component |
-
-| Output | Type | Description |
-|--------|------|-------------|
-| `q` | `Quat` | New quaternion |
-
-**Example:**
-
-```qd
-1.0 0.0 0.0 0.0 quat::new -> q
 ```
 
 ---
