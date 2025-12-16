@@ -6957,7 +6957,28 @@ namespace Qd {
 										break;
 									}
 								}
-								libraryFlags += " " + depLine;
+
+								// For -l<name> entries, try to resolve to full path if it's a Quadrate library
+								if (depLine.rfind("-l", 0) == 0 && depLine.size() > 2) {
+									std::string depLibName = depLine.substr(2);
+									std::string depLibFile = "lib" + depLibName + ".a";
+
+									// Check flat path (e.g., dist/lib/libqdtls.a)
+									std::string flatDepLib = libDir + "/" + depLibFile;
+									// Check nested path (e.g., dist/lib/qdtls/libqdtls.a)
+									std::string nestedDepLib = libDir + "/" + depLibName + "/" + depLibFile;
+
+									if (std::filesystem::exists(flatDepLib)) {
+										libraryFlags += " " + flatDepLib;
+									} else if (std::filesystem::exists(nestedDepLib)) {
+										libraryFlags += " " + nestedDepLib;
+									} else {
+										// System library, use -l flag as-is
+										libraryFlags += " " + depLine;
+									}
+								} else {
+									libraryFlags += " " + depLine;
+								}
 							}
 						}
 						libraryFlags += " -Wl,--end-group";
