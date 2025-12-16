@@ -183,6 +183,33 @@ Create a directory.
 
 ---
 
+### `fn` popen
+
+Execute a command and stream output line-by-line to a callback. The callback is called synchronously for each line of output (without trailing newline). The call blocks until the command completes. Closures with captured variables are supported.
+
+**Signature:** `(cmd:str callback:ptr -- exitcode:i64)!`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `cmd` | `str` | Command to execute |
+| `callback` | `ptr` | Callback function (line:str -- ) |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `exitcode` | `i64` | Command exit status |
+
+| Error | Description |
+|-------|-------------|
+| `os::ErrIo` | Failed to execute command |
+
+**Example:**
+
+```qd
+"ls -la" fn (line:str -- ) { print nl } os::popen!  // code
+```
+
+---
+
 ### `fn` rename
 
 Rename or move a file.

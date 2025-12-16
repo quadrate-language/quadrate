@@ -143,6 +143,16 @@
       "examples": ["\"/tmp/newdir\" os::mkdir!"]
     },
     {
+      "name": "popen",
+      "signature": "(cmd:str callback:ptr -- exitcode:i64)",
+      "failable": true,
+      "description": "Execute a command and stream output line-by-line to a callback. The callback is called synchronously for each line of output (without trailing newline). The call blocks until the command completes. Closures with captured variables are supported.",
+      "params": [{"name": "cmd", "type": "str", "description": "Command to execute"}, {"name": "callback", "type": "ptr", "description": "Callback function (line:str -- )"}],
+      "returns": [{"name": "exitcode", "type": "i64", "description": "Command exit status"}],
+      "errors": [{"code": "ErrIo", "description": "Failed to execute command"}],
+      "examples": ["\"ls -la\" fn (line:str -- ) { print nl } os::popen! -> code"]
+    },
+    {
       "name": "rename",
       "signature": "(oldpath:str newpath:str -- )",
       "failable": true,
