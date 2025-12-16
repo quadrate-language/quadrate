@@ -355,6 +355,6 @@ fn main( -- ) {
 
 ## Next Steps
 
-- Learn about the [TLS module](../reference/stdlib/tls.md) for low-level secure connections
-- Explore the [Net module](../reference/stdlib/net.md) for raw TCP sockets
-- Check the [API Reference](../../api/http.json) for complete function details
+- Learn about the [TLS module](../stdlib/tls.md) for low-level secure connections
+- Explore the [Net module](../stdlib/net.md) for raw TCP sockets
+- Check the [Standard Library](../stdlib/index.md) for more modules

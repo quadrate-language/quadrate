@@ -40,6 +40,7 @@ fn main() {
 | [fmt](fmt.md) | Formatted output functions. |
 | [hex](hex.md) | Hexadecimal encoding and decoding. |
 | [hof](hof.md) | Higher-Order Function combinators. |
+| [http](http.md) | HTTP/HTTPS client for web requests. |
 | [io](io.md) | File and stream I/O operations. |
 | [json](json.md) | JSON parsing and querying without AST construction. |
 | [limits](limits.md) | Numeric limits and constants. |
@@ -58,6 +59,7 @@ fn main() {
 | [strconv](strconv.md) | String to number conversions. |
 | [testing](testing.md) | Testing utilities for unit tests. |
 | [time](time.md) | Time operations and duration constants. |
+| [tls](tls.md) | TLS/SSL secure socket operations. |
 | [unicode](unicode.md) | Unicode character constants and classification. |
 | [uri](uri.md) | URI encoding, decoding, and parsing. |
 | [uuid](uuid.md) | UUID generation (version 4 random UUIDs). |

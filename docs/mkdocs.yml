@@ -22,6 +22,7 @@ nav:
       - Structs: docs/tutorial-structs.md
       - Error Handling: docs/tutorial-errors.md
       - Creating Modules: docs/tutorial-modules.md
+      - HTTP Requests: docs/tutorial-http.md
   - Learn:
       - 1. Basics:
           - Hello World: docs/learn/1-basics/hello-world.md
@@ -106,6 +107,10 @@ nav:
       - Hashing:
           - sha256: docs/stdlib/sha256.md
           - crc32: docs/stdlib/crc32.md
-      - Web:
+      - Web & Networking:
+          - http: docs/stdlib/http.md
+          - tls: docs/stdlib/tls.md
           - uri: docs/stdlib/uri.md
+      - Signal Handling:
+          - signal: docs/stdlib/signal.md
   - About: about.md
