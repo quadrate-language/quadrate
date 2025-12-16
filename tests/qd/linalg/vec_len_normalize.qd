@@ -6,7 +6,7 @@ use quat
 
 fn main() {
 	// Test vec2::length with 3-4-5 triangle (length = 5)
-	3.0 4.0 vec2::new -> v2
+	Vec2 { x = 3.0 y = 4.0 } -> v2
 	v2 vec2::length -> len2
 	"vec2_len (3,4):" print nl
 	len2 print nl
@@ -17,7 +17,7 @@ fn main() {
 	len2sq print nl
 
 	// Test vec3::length with 3-4-5 and z=0
-	3.0 4.0 0.0 vec3::new -> v3a
+	Vec3 { x = 3.0 y = 4.0 z = 0.0 } -> v3a
 	v3a vec3::length -> len3a
 	"vec3_len (3,4,0):" print nl
 	len3a print nl
@@ -28,20 +28,20 @@ fn main() {
 	len3asq print nl
 
 	// Test vec4::length with unit vector
-	1.0 0.0 0.0 0.0 vec4::new -> v4a
+	Vec4 { x = 1.0 y = 0.0 z = 0.0 w = 0.0 } -> v4a
 	v4a vec4::length -> len4
 	"vec4_len (1,0,0,0):" print nl
 	len4 print nl
 
 	// Test vec2::normalize - unit vector stays the same
-	1.0 0.0 vec2::new -> unit2
+	Vec2 { x = 1.0 y = 0.0 } -> unit2
 	unit2 vec2::normalize -> norm2
 	"vec2_normalize (1,0):" print nl
 	norm2 @x print nl
 	norm2 @y print nl
 
 	// Test vec3::normalize
-	1.0 0.0 0.0 vec3::new -> unit3
+	Vec3 { x = 1.0 y = 0.0 z = 0.0 } -> unit3
 	unit3 vec3::normalize -> norm3
 	"vec3_normalize (1,0,0):" print nl
 	norm3 @x print nl

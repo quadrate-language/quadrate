@@ -2,8 +2,8 @@
 use vec4
 
 fn main() {
-	// Test new constructor
-	1.0 2.0 3.0 4.0 vec4::new -> v
+	// Test struct literal constructor
+	Vec4 { x = 1.0 y = 2.0 z = 3.0 w = 4.0 } -> v
 	"vec4:" print nl
 	v @x print nl
 	v @y print nl
@@ -27,8 +27,8 @@ fn main() {
 	o @w print nl
 
 	// Test add
-	1.0 2.0 3.0 4.0 vec4::new -> a
-	5.0 6.0 7.0 8.0 vec4::new -> b
+	Vec4 { x = 1.0 y = 2.0 z = 3.0 w = 4.0 } -> a
+	Vec4 { x = 5.0 y = 6.0 z = 7.0 w = 8.0 } -> b
 	a b vec4::add -> c
 	"add:" print nl
 	c @x print nl
@@ -37,8 +37,8 @@ fn main() {
 	c @w print nl
 
 	// Test subtract
-	10.0 12.0 14.0 16.0 vec4::new -> d
-	3.0 4.0 5.0 6.0 vec4::new -> e
+	Vec4 { x = 10.0 y = 12.0 z = 14.0 w = 16.0 } -> d
+	Vec4 { x = 3.0 y = 4.0 z = 5.0 w = 6.0 } -> e
 	d e vec4::subtract -> f
 	"sub:" print nl
 	f @x print nl
@@ -47,7 +47,7 @@ fn main() {
 	f @w print nl
 
 	// Test scale
-	2.0 3.0 4.0 5.0 vec4::new -> g
+	Vec4 { x = 2.0 y = 3.0 z = 4.0 w = 5.0 } -> g
 	g 2.0 vec4::scale -> h
 	"scale:" print nl
 	h @x print nl
@@ -56,8 +56,8 @@ fn main() {
 	h @w print nl
 
 	// Test dot
-	1.0 2.0 3.0 4.0 vec4::new -> i
-	5.0 6.0 7.0 8.0 vec4::new -> j
+	Vec4 { x = 1.0 y = 2.0 z = 3.0 w = 4.0 } -> i
+	Vec4 { x = 5.0 y = 6.0 z = 7.0 w = 8.0 } -> j
 	i j vec4::dot -> dot
 	"dot:" print nl
 	dot print nl

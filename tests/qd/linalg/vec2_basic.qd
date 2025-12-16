@@ -2,8 +2,8 @@
 use vec2
 
 fn main() {
-	// Test new constructor
-	1.0 2.0 vec2::new -> v
+	// Test struct literal constructor
+	Vec2 { x = 1.0 y = 2.0 } -> v
 	"vec2:" print nl
 	v @x print nl
 	v @y print nl
@@ -21,37 +21,37 @@ fn main() {
 	o @y print nl
 
 	// Test add
-	1.0 2.0 vec2::new -> a
-	3.0 4.0 vec2::new -> b
+	Vec2 { x = 1.0 y = 2.0 } -> a
+	Vec2 { x = 3.0 y = 4.0 } -> b
 	a b vec2::add -> c
 	"add:" print nl
 	c @x print nl
 	c @y print nl
 
 	// Test subtract
-	5.0 7.0 vec2::new -> d
-	2.0 3.0 vec2::new -> e
+	Vec2 { x = 5.0 y = 7.0 } -> d
+	Vec2 { x = 2.0 y = 3.0 } -> e
 	d e vec2::subtract -> f
 	"sub:" print nl
 	f @x print nl
 	f @y print nl
 
 	// Test scale
-	2.0 3.0 vec2::new -> g
+	Vec2 { x = 2.0 y = 3.0 } -> g
 	g 2.0 vec2::scale -> h
 	"scale:" print nl
 	h @x print nl
 	h @y print nl
 
 	// Test dot
-	1.0 2.0 vec2::new -> i
-	3.0 4.0 vec2::new -> j
+	Vec2 { x = 1.0 y = 2.0 } -> i
+	Vec2 { x = 3.0 y = 4.0 } -> j
 	i j vec2::dot -> dot
 	"dot:" print nl
 	dot print nl
 
 	// Test neg
-	3.0 4.0 vec2::new -> k
+	Vec2 { x = 3.0 y = 4.0 } -> k
 	k vec2::neg -> l
 	"neg:" print nl
 	l @x print nl
