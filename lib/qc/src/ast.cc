@@ -2976,11 +2976,32 @@ namespace Qd {
 					setNodePosition(importStmt, &scanner, src);
 
 					// Parse function declarations
+					size_t importSlashPos = SIZE_MAX;
 					while (true) {
 						token = u8t_scanner_scan(&scanner);
 						if (token == '}') {
 							break;
 						}
+
+						// Handle comments (// and /* */) inside import block
+						AstNodeComment* importComment = parseComment(&scanner, src, importSlashPos, token);
+						if (importComment != nullptr) {
+							importSlashPos = SIZE_MAX;
+							delete importComment; // Discard comments inside import block
+							continue;
+						}
+
+						// If we saw a slash but it wasn't a comment, reset
+						if (importSlashPos != SIZE_MAX) {
+							importSlashPos = SIZE_MAX;
+						}
+
+						// Track slashes for potential comments
+						if (token == '/') {
+							importSlashPos = u8t_scanner_token_start(&scanner);
+							continue;
+						}
+
 						if (token == U8T_IDENTIFIER) {
 							const char* keyword = u8t_scanner_token_text(&scanner, &n);
 							bool isPublic = false;
