@@ -183,4 +183,17 @@ qd_exec_result usr_io_eof(qd_context* ctx);
  */
 qd_exec_result usr_io_readline(qd_context* ctx);
 
+/**
+ * @brief Read entire file contents
+ *
+ * Stack effect: ( path:s -- contents:s )!
+ *
+ * Opens the file at the given path, reads the entire contents,
+ * and returns it as a string. The file is automatically closed.
+ *
+ * @param ctx Execution context
+ * @return Execution result
+ */
+qd_exec_result usr_io_read_file(qd_context* ctx);
+
 #endif // STDIOQD_IO_H

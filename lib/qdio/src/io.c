@@ -610,3 +610,106 @@ qd_exec_result usr_io_write(qd_context* ctx) {
 
     return (qd_exec_result){0};
 }
+
+qd_exec_result usr_io_read_file(qd_context* ctx) {
+    size_t stack_size = qd_stack_size(ctx->st);
+    if (stack_size < 1) {
+        fprintf(stderr, "Fatal error in io::read_file: Stack underflow (need 1, have %zu)\n", stack_size);
+        qd_print_stack_trace(ctx);
+        abort();
+    }
+
+    // Pop path
+    qd_stack_element_t path_elem;
+    qd_stack_error err = qd_stack_pop(ctx->st, &path_elem);
+    if (err != QD_STACK_OK) {
+        fprintf(stderr, "Fatal error in io::read_file: Failed to pop path\n");
+        abort();
+    }
+    if (path_elem.type != QD_STACK_TYPE_STR) {
+        fprintf(stderr, "Fatal error in io::read_file: Expected string for path, got %d\n", path_elem.type);
+        abort();
+    }
+
+    const char* path = qd_string_data(path_elem.value.s);
+
+    // Open file
+    FILE* fp = fopen(path, "rb");
+    if (!fp) {
+        qd_string_release(path_elem.value.s);
+        ctx->error_code = IO_ERR_NOT_FOUND;
+        if (ctx->error_msg) free(ctx->error_msg);
+        ctx->error_msg = strdup("io::read_file: file not found");
+        qd_push_i(ctx, IO_ERR_NOT_FOUND);
+        return (qd_exec_result){IO_ERR_NOT_FOUND};
+    }
+
+    // Get file size
+    if (fseek(fp, 0, SEEK_END) != 0) {
+        fclose(fp);
+        qd_string_release(path_elem.value.s);
+        ctx->error_code = IO_ERR_SEEK;
+        if (ctx->error_msg) free(ctx->error_msg);
+        ctx->error_msg = strdup("io::read_file: seek failed");
+        qd_push_i(ctx, IO_ERR_SEEK);
+        return (qd_exec_result){IO_ERR_SEEK};
+    }
+
+    long file_size = ftell(fp);
+    if (file_size < 0) {
+        fclose(fp);
+        qd_string_release(path_elem.value.s);
+        ctx->error_code = IO_ERR_SEEK;
+        if (ctx->error_msg) free(ctx->error_msg);
+        ctx->error_msg = strdup("io::read_file: ftell failed");
+        qd_push_i(ctx, IO_ERR_SEEK);
+        return (qd_exec_result){IO_ERR_SEEK};
+    }
+
+    // Seek back to start
+    if (fseek(fp, 0, SEEK_SET) != 0) {
+        fclose(fp);
+        qd_string_release(path_elem.value.s);
+        ctx->error_code = IO_ERR_SEEK;
+        if (ctx->error_msg) free(ctx->error_msg);
+        ctx->error_msg = strdup("io::read_file: seek to start failed");
+        qd_push_i(ctx, IO_ERR_SEEK);
+        return (qd_exec_result){IO_ERR_SEEK};
+    }
+
+    // Allocate buffer
+    char* buffer = malloc((size_t)file_size + 1);
+    if (!buffer) {
+        fclose(fp);
+        qd_string_release(path_elem.value.s);
+        ctx->error_code = IO_ERR_READ;
+        if (ctx->error_msg) free(ctx->error_msg);
+        ctx->error_msg = strdup("io::read_file: allocation failed");
+        qd_push_i(ctx, IO_ERR_READ);
+        return (qd_exec_result){IO_ERR_READ};
+    }
+
+    // Read entire file
+    size_t bytes_read = fread(buffer, 1, (size_t)file_size, fp);
+    buffer[bytes_read] = '\0';
+
+    fclose(fp);
+    qd_string_release(path_elem.value.s);
+
+    if (bytes_read < (size_t)file_size && ferror(fp)) {
+        free(buffer);
+        ctx->error_code = IO_ERR_READ;
+        if (ctx->error_msg) free(ctx->error_msg);
+        ctx->error_msg = strdup("io::read_file: read error");
+        qd_push_i(ctx, IO_ERR_READ);
+        return (qd_exec_result){IO_ERR_READ};
+    }
+
+    // On success, push result then Ok
+    qd_push_s(ctx, buffer);
+    qd_push_i(ctx, IO_ERR_OK);
+
+    free(buffer);
+
+    return (qd_exec_result){0};
+}

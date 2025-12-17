@@ -113,4 +113,12 @@ import "libqdio.a" as "io" {
 	/// @error ErrEof End of file or read error
 	/// @example io::readline! -> input
 	pub fn readline( -- line:str)!
+
+	/// Read entire file contents.
+	/// @param path str File path
+	/// @return contents str File contents as string
+	/// @error ErrNotFound File not found
+	/// @error ErrRead Read operation failed
+	/// @example "/etc/hostname" io::read_file! -> contents
+	pub fn read_file(path:str -- contents:str)!
 }

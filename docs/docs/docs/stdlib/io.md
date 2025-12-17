@@ -152,6 +152,34 @@ io::readline!  // input
 
 ---
 
+### `fn` read_file
+
+Read entire file contents.
+
+**Signature:** `(path:str -- contents:str)!`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `path` | `str` | File path |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `contents` | `str` | File contents as string |
+
+| Error | Description |
+|-------|-------------|
+| `io::ErrNotFound` | File not found |
+| `io::ErrRead` | Read operation failed |
+
+**Example:**
+
+```qd
+"/etc/hostname" io::read_file! -> contents
+contents print nl
+```
+
+---
+
 ### `fn` seek
 
 Seek to position in file.
