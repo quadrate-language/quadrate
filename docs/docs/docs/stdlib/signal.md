@@ -12,7 +12,7 @@ Example:
       signal::SIGINT signal::trap
       "Running. Press Ctrl+C to stop." print nl
 
-      1 while {
+      loop {
           signal::SIGINT signal::pending if {
               "Shutting down" print nl
               signal::SIGINT signal::clear

@@ -105,9 +105,13 @@ install: release
 	install -m 755 dist/lib/libqdrt.so $(DESTDIR)$(PREFIX)/lib/
 	install -m 755 dist/lib/libqd.so $(DESTDIR)$(PREFIX)/lib/
 	@for lib in $(LIBS_WITH_HEADERS); do cp -r dist/include/$$lib $(DESTDIR)$(PREFIX)/include/; done
+	@find $(DESTDIR)$(PREFIX)/include -type f -exec chmod 644 {} \;
+	@find $(DESTDIR)$(PREFIX)/include -type d -exec chmod 755 {} \;
 	@echo "Installing Quadrate standard library modules to $(DESTDIR)$(PREFIX)/share/quadrate/"
 	install -d $(DESTDIR)$(PREFIX)/share/quadrate
 	@for mod in $(STDLIB_MODULES); do cp -r lib/qd*/qd/$$mod $(DESTDIR)$(PREFIX)/share/quadrate/ 2>/dev/null || true; done
+	@find $(DESTDIR)$(PREFIX)/share/quadrate -type f -exec chmod 644 {} \;
+	@find $(DESTDIR)$(PREFIX)/share/quadrate -type d -exec chmod 755 {} \;
 	@echo "Installing bash completions to $(DESTDIR)$(PREFIX)/share/bash-completion/completions/"
 	install -d $(DESTDIR)$(PREFIX)/share/bash-completion/completions
 	install -m 644 completions/quad.bash $(DESTDIR)$(PREFIX)/share/bash-completion/completions/quad
