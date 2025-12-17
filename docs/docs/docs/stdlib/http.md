@@ -279,7 +279,7 @@ fn main() {
 			-> resp
 			resp @status http::StatusCreated eq
 			if {
-			    "Created successfully" print nl
+				"Created successfully" print nl
 			}
 			resp http::close
 		}

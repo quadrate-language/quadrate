@@ -229,14 +229,14 @@ fn main() {
 ```qd
 fn main() {
 	5 3 > if {
-	    "Five is greater than three" print nl
+		"Five is greater than three" print nl
 	}
 
 	// With else
 	10 20 > if {
-	    "10 > 20" print nl
+		"10 > 20" print nl
 	} else {
-	    "10 <= 20" print nl
+		"10 <= 20" print nl
 	}
 }
 ```
@@ -259,17 +259,17 @@ fn main() {
 fn main() {
 	// Count 0 to 4
 	0 5 1 for i {
-	    i print nl
+		i print nl
 	}
 
 	// Count by 2s
 	0 10 2 for i {
-	    i print nl  // 0, 2, 4, 6, 8
+		i print nl  // 0, 2, 4, 6, 8
 	}
 
 	// Count down
 	5 0 -1 for i {
-	    i print nl  // 5, 4, 3, 2, 1
+		i print nl  // 5, 4, 3, 2, 1
 	}
 }
 ```
@@ -282,11 +282,11 @@ Infinite loop with `break`:
 fn main() {
 	0 -> count
 	loop {
-	    count print nl
-	    count 1 + -> count
-	    count 5 >= if {
-	        break
-	    }
+		count print nl
+		count 1 + -> count
+		count 5 >= if {
+			break
+		}
 	}
 }
 ```
@@ -299,8 +299,8 @@ The `ctx` block creates an isolated computation context:
 fn main() {
 	10 20 30      // Stack: [10, 20, 30]
 	ctx {
-	    // Child gets copy: [10, 20, 30]
-	    + +       // 10 + 20 + 30 = 60
+		// Child gets copy: [10, 20, 30]
+		+ +       // 10 + 20 + 30 = 60
 	}
 	// Parent stack unchanged, result added: [10, 20, 30, 60]
 	print nl      // Prints: 60
@@ -315,9 +315,9 @@ fn main() {
 ```qd
 fn factorial(n:i64 -- result:i64) {
 	dup 1 <= if {
-	    drop 1
+		drop 1
 	} else {
-	    dup 1 - factorial *
+		dup 1 - factorial *
 	}
 }
 
@@ -332,17 +332,17 @@ fn main() {
 ```qd
 fn fib(n:i64 -- result:i64) {
 	dup 2 < if {
-	    // Base case: return n
+		// Base case: return n
 	} else {
-	    dup 1 - fib
-	    swap 2 - fib
-	    +
+		dup 1 - fib
+		swap 2 - fib
+		+
 	}
 }
 
 fn main() {
 	0 10 1 for i {
-	    i fib print nl
+		i fib print nl
 	}
 }
 ```

@@ -27,8 +27,8 @@ Use the struct name followed by field assignments in braces:
 ```qd
 fn main() {
 	Point {
-	    x = 3.0
-	    y = 4.0
+		x = 3.0
+		y = 4.0
 	} -> p
 
 	// Or on one line
@@ -220,8 +220,8 @@ fn main() {
 	Point { x = 10.0 y = 5.0 } -> br
 
 	Rectangle {
-	    top_left = tl
-	    bottom_right = br
+		top_left = tl
+		bottom_right = br
 	} -> rect
 
 	rect @top_left @x print nl      // Prints: 0

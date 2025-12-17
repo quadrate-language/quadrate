@@ -160,13 +160,13 @@ fn main() {
 
 			// Receive response
 			conn 8192 tls::receive switch {
-			    Ok {
-			        -> data drop
-			        data print
-			    }
-			    _ {
-			        "Receive failed" print nl
-			    }
+				Ok {
+					-> data drop
+					data print
+				}
+				_ {
+					"Receive failed" print nl
+				}
 			}
 
 			// Cleanup
@@ -194,14 +194,14 @@ fn handle_client(client_sock:i64 -- ) {
 
 			// Receive request
 			conn 4096 tls::receive switch {
-			    Ok {
-			        -> data drop
-			        "Received: " print data print nl
+				Ok {
+					-> data drop
+					"Received: " print data print nl
 
-			        // Send response
-			        conn "HTTP/1.1 200 OK\r\n\r\nHello, TLS!" tls::send! drop
-			    }
-			    _ { }
+					// Send response
+					conn "HTTP/1.1 200 OK\r\n\r\nHello, TLS!" tls::send! drop
+				}
+				_ { }
 			}
 
 			conn tls::close

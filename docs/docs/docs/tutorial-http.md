@@ -59,7 +59,7 @@ fn main( -- ) {
 			// Check status code using constants
 			resp @status http::StatusOK eq
 			if {
-			    "Success!" print nl
+				"Success!" print nl
 			}
 
 			// Print headers
@@ -242,11 +242,11 @@ fn main( -- ) {
 			-> resp
 			resp @status http::StatusOK eq
 			if {
-			    "Request succeeded" print nl
+				"Request succeeded" print nl
 			}
 			resp @status http::StatusNotFound eq
 			if {
-			    "Page not found" print nl
+				"Page not found" print nl
 			}
 			resp http::close
 		}
@@ -325,11 +325,11 @@ fn fetch_page(url:str -- ) {
 
 			resp @status 200 eq
 			if {
-			    "Page fetched successfully" print nl
-			    "Content length: " print
-			    resp @body str::len print nl
+				"Page fetched successfully" print nl
+				"Content length: " print
+				resp @body str::len print nl
 			} else {
-			    "HTTP error: " print resp @status print nl
+				"HTTP error: " print resp @status print nl
 			}
 
 			resp http::close
