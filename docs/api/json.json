@@ -75,7 +75,7 @@
       "params": [{"name": "json", "type": "str", "description": "JSON array string"}],
       "returns": [{"name": "length", "type": "i64", "description": "Number of elements"}],
       "errors": [],
-      "examples": ["\"[1,2,3]\" json::array_len .  // 3"]
+      "examples": ["\"[1,2,3]\" json::array_len print  // 3"]
     },
     {
       "name": "extract_str",
@@ -165,7 +165,7 @@
       "params": [{"name": "json", "type": "str", "description": "JSON object string"}, {"name": "key", "type": "str", "description": "Key to check"}],
       "returns": [{"name": "exists", "type": "i64", "description": "1 if exists, 0 otherwise"}],
       "errors": [],
-      "examples": ["\"{\\\"a\\\":1}\" \"a\" json::has_key .  // 1"]
+      "examples": ["\"{\\\"a\\\":1}\" \"a\" json::has_key print  // 1"]
     },
     {
       "name": "is_null_at",
@@ -175,7 +175,7 @@
       "params": [{"name": "json", "type": "str", "description": "JSON string"}, {"name": "pos", "type": "i64", "description": "Position to check"}],
       "returns": [{"name": "is_null", "type": "i64", "description": "1 if null, 0 otherwise"}],
       "errors": [],
-      "examples": ["\"null\" 0 json::is_null_at .  // 1"]
+      "examples": ["\"null\" 0 json::is_null_at print  // 1"]
     },
     {
       "name": "type_at",
@@ -185,7 +185,7 @@
       "params": [{"name": "json", "type": "str", "description": "JSON string"}, {"name": "pos", "type": "i64", "description": "Position to check"}],
       "returns": [{"name": "type", "type": "i64", "description": "Type constant (Null, Bool, Number, String, Array, Object)"}],
       "errors": [],
-      "examples": ["\"{\\\"a\\\":1}\" 5 json::type_at .  // 2 (Number)"]
+      "examples": ["\"{\\\"a\\\":1}\" 5 json::type_at print  // 2 (Number)"]
     }
   ]
 }

@@ -117,7 +117,7 @@ pub fn free(address:ptr -- ) {
 /// Check if pointer is null.
 /// @param address ptr Pointer to check
 /// @return is_null i64 1 if null, 0 otherwise
-/// @example buf mem::is_null .  // 0
+/// @example buf mem::is_null print  // 0
 pub fn is_null(address:ptr -- is_null:i64) {
 	0 eq
 }

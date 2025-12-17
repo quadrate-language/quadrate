@@ -104,7 +104,7 @@ Get length of JSON array.
 **Example:**
 
 ```qd
-"[1,2,3]" json::array_len .  // 3
+"[1,2,3]" json::array_len print  // 3
 ```
 
 ---
@@ -305,7 +305,7 @@ Check if key exists in object.
 **Example:**
 
 ```qd
-"{\"a\":1}" "a" json::has_key .  // 1
+"{\"a\":1}" "a" json::has_key print  // 1
 ```
 
 ---
@@ -328,7 +328,7 @@ Check if value at position is null.
 **Example:**
 
 ```qd
-"null" 0 json::is_null_at .  // 1
+"null" 0 json::is_null_at print  // 1
 ```
 
 ---
@@ -351,6 +351,6 @@ Get JSON value type at position.
 **Example:**
 
 ```qd
-"{\"a\":1}" 5 json::type_at .  // 2 (Number)
+"{\"a\":1}" 5 json::type_at print  // 2 (Number)
 ```
 

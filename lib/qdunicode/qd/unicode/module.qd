@@ -203,7 +203,7 @@ pub const tilde = 126
 /// Check if character is a digit (0-9).
 /// @param c i64 Character code
 /// @return result i64 1 if digit, 0 otherwise
-/// @example 48 unicode::is_digit .  // 1
+/// @example 48 unicode::is_digit print  // 1
 pub fn is_digit(c:i64 -- result:i64) {
 	-> c
 	c digit0 >= c digit9 <= *

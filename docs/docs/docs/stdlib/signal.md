@@ -10,11 +10,11 @@ Example:
 
   fn main() {
       signal::SIGINT signal::trap
-      "Running. Press Ctrl+C to stop." . nl
+      "Running. Press Ctrl+C to stop." print nl
 
       1 while {
           signal::SIGINT signal::pending if {
-              "Shutting down" . nl
+              "Shutting down" print nl
               signal::SIGINT signal::clear
               break
           }

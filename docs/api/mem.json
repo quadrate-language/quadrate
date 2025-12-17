@@ -106,7 +106,7 @@
       "params": [{"name": "address", "type": "ptr", "description": "Pointer to check"}],
       "returns": [{"name": "is_null", "type": "i64", "description": "1 if null, 0 otherwise"}],
       "errors": [],
-      "examples": ["buf mem::is_null .  // 0"]
+      "examples": ["buf mem::is_null print  // 0"]
     },
     {
       "name": "realloc",

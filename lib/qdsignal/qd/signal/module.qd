@@ -8,17 +8,16 @@
 ///
 ///   fn main() {
 ///       signal::SIGINT signal::trap
-///       "Running. Press Ctrl+C to stop." . nl
+///       "Running. Press Ctrl+C to stop." print nl
 ///
-///       1 while {
+///       loop {
 ///           signal::SIGINT signal::pending if {
-///               "Shutting down" . nl
+///               "Shutting down" print nl
 ///               signal::SIGINT signal::clear
 ///               break
 ///           }
 ///       }
 ///   }
-
 /// Hangup signal (terminal closed).
 pub const SIGHUP = 1
 /// Interrupt signal (Ctrl+C).
@@ -57,7 +56,6 @@ pub const SIGTSTP = 20
 pub const SIGTTIN = 21
 /// Background write to terminal.
 pub const SIGTTOU = 22
-
 import "libqdsignal.a" as "signal" {
 	/// Install a handler to catch the specified signal.
 	/// After trapping, the signal sets a pending flag instead of

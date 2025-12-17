@@ -515,7 +515,7 @@
       "params": [{"name": "c", "type": "i64", "description": "Character code"}],
       "returns": [{"name": "result", "type": "i64", "description": "1 if digit, 0 otherwise"}],
       "errors": [],
-      "examples": ["48 unicode::is_digit .  // 1"]
+      "examples": ["48 unicode::is_digit print  // 1"]
     }
   ]
 }

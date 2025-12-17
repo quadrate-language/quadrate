@@ -190,7 +190,7 @@
       "params": [{"name": "yr", "type": "i64", "description": "Year (needed for February)"}, {"name": "mon", "type": "i64", "description": "Month (1-12)"}],
       "returns": [{"name": "days", "type": "i64", "description": "Number of days in the month"}],
       "errors": [],
-      "examples": ["2024 2 time::days_in_month .  // 29"]
+      "examples": ["2024 2 time::days_in_month print  // 29"]
     },
     {
       "name": "day",
@@ -220,7 +220,7 @@
       "params": [{"name": "yr", "type": "i64", "description": "Year to check"}],
       "returns": [{"name": "is_leap", "type": "i64", "description": "1 if leap year, 0 otherwise"}],
       "errors": [],
-      "examples": ["2024 time::is_leap_year .  // 1"]
+      "examples": ["2024 time::is_leap_year print  // 1"]
     },
     {
       "name": "minute",
@@ -290,7 +290,7 @@
       "params": [],
       "returns": [{"name": "timestamp", "type": "i64", "description": "Seconds since 1970-01-01 00:00:00 UTC"}],
       "errors": [],
-      "examples": ["time::unix .  // 1700000000"]
+      "examples": ["time::unix print  // 1700000000"]
     },
     {
       "name": "weekday",

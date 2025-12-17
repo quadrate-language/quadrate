@@ -20,7 +20,7 @@ Clear a bit to 0.
 **Example:**
 
 ```qd
-0b1010 1 bits::clear_bit .  // 8 (0b1000)
+0b1010 1 bits::clear_bit print  // 8 (0b1000)
 ```
 
 ---
@@ -44,7 +44,7 @@ Extract a bit field from a value.
 **Example:**
 
 ```qd
-0b11010110 2 3 bits::extract .  // 5
+0b11010110 2 3 bits::extract print  // 5
 ```
 
 ---
@@ -67,7 +67,7 @@ Check if a bit is set.
 **Example:**
 
 ```qd
-0b1010 1 bits::has_bit .  // 1
+0b1010 1 bits::has_bit print  // 1
 ```
 
 ---
@@ -90,7 +90,7 @@ Bitwise operations for integer manipulation.  Core operations (and, or, xor, not
 **Example:**
 
 ```qd
-0xFF 4 bits::mask .  // 15
+0xFF 4 bits::mask print  // 15
 ```
 
 ---
@@ -112,7 +112,7 @@ Count set bits (population count).
 **Example:**
 
 ```qd
-0b1010110 bits::popcount .  // 4
+0b1010110 bits::popcount print  // 4
 ```
 
 ---
@@ -135,7 +135,7 @@ Reverse the bottom N bits.
 **Example:**
 
 ```qd
-0b1011 4 bits::reverse_bits .  // 13 (0b1101)
+0b1011 4 bits::reverse_bits print  // 13 (0b1101)
 ```
 
 ---
@@ -159,7 +159,7 @@ Rotate bits left within a width.
 **Example:**
 
 ```qd
-0b0011 1 4 bits::rotate_left .  // 6 (0b0110)
+0b0011 1 4 bits::rotate_left print  // 6 (0b0110)
 ```
 
 ---
@@ -183,7 +183,7 @@ Rotate bits right within a width.
 **Example:**
 
 ```qd
-0b0110 1 4 bits::rotate_right .  // 3 (0b0011)
+0b0110 1 4 bits::rotate_right print  // 3 (0b0011)
 ```
 
 ---
@@ -208,7 +208,7 @@ Set a bit field in a value.
 **Example:**
 
 ```qd
-0 0b101 2 3 bits::set_bits .  // 20 (0b10100)
+0 0b101 2 3 bits::set_bits print  // 20 (0b10100)
 ```
 
 ---
@@ -231,7 +231,7 @@ Set a bit to 1.
 **Example:**
 
 ```qd
-0b1000 1 bits::set_bit .  // 10 (0b1010)
+0b1000 1 bits::set_bit print  // 10 (0b1010)
 ```
 
 ---
@@ -254,6 +254,6 @@ Toggle a bit.
 **Example:**
 
 ```qd
-0b1010 0 bits::toggle_bit .  // 11 (0b1011)
+0b1010 0 bits::toggle_bit print  // 11 (0b1011)
 ```
 

@@ -137,7 +137,7 @@ fn find_bracket(json:str pos:i64 -- end_pos:i64) {
 /// @param json str JSON string
 /// @param pos i64 Position to check
 /// @return type i64 Type constant (Null, Bool, Number, String, Array, Object)
-/// @example "{\"a\":1}" 5 json::type_at .  // 2 (Number)
+/// @example "{\"a\":1}" 5 json::type_at print  // 2 (Number)
 pub fn type_at(json:str pos:i64 -- type:i64) {
 	-> pos -> json
 	json pos skip_ws -> pos
@@ -421,7 +421,7 @@ pub fn get_bool(json:str key:str -- value:i64 found:i64) {
 /// @param json str JSON object string
 /// @param key str Key to check
 /// @return exists i64 1 if exists, 0 otherwise
-/// @example "{\"a\":1}" "a" json::has_key .  // 1
+/// @example "{\"a\":1}" "a" json::has_key print  // 1
 pub fn has_key(json:str key:str -- exists:i64) {
 	-> key -> json
 	json 0 key find_key 0 >= if {
@@ -613,7 +613,7 @@ pub fn array_get_float(json:str index:i64 -- value:f64 found:i64) {
 /// Get length of JSON array.
 /// @param json str JSON array string
 /// @return length i64 Number of elements
-/// @example "[1,2,3]" json::array_len .  // 3
+/// @example "[1,2,3]" json::array_len print  // 3
 pub fn array_len(json:str -- length:i64) {
 	-> json
 	0 -> pos
@@ -662,7 +662,7 @@ pub fn array_len(json:str -- length:i64) {
 /// @param json str JSON string
 /// @param pos i64 Position to check
 /// @return is_null i64 1 if null, 0 otherwise
-/// @example "null" 0 json::is_null_at .  // 1
+/// @example "null" 0 json::is_null_at print  // 1
 pub fn is_null_at(json:str pos:i64 -- is_null:i64) {
 	-> pos -> json
 	json pos skip_ws -> pos

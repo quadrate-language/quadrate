@@ -83,7 +83,7 @@ qd_exec_result usr_os_system(qd_context* ctx);
  *
  * @par Example:
  * @code
- * "HOME" os::getenv .  // Print home directory
+ * "HOME" os::getenv print  // Print home directory
  * @endcode
  */
 qd_exec_result usr_os_getenv(qd_context* ctx);
@@ -118,7 +118,7 @@ qd_exec_result usr_os_setenv(qd_context* ctx);
  *
  * @par Example:
  * @code
- * "/tmp/test.txt" os::exists .  // Check if file exists
+ * "/tmp/test.txt" os::exists print  // Check if file exists
  * @endcode
  */
 qd_exec_result usr_os_exists(qd_context* ctx);

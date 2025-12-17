@@ -31,7 +31,7 @@ Absolute value.
 **Example:**
 
 ```qd
-||-5.0 math::abs .  // 5.0
+||-5.0 math::abs print  // 5.0
 ```
 
 ---
@@ -53,7 +53,7 @@ Arc cosine (inverse cosine).
 **Example:**
 
 ```qd
-1.0 math::acos .  // 0.0
+1.0 math::acos print  // 0.0
 ```
 
 ---
@@ -75,7 +75,7 @@ Arc sine (inverse sine).
 **Example:**
 
 ```qd
-0.0 math::asin .  // 0.0
+0.0 math::asin print  // 0.0
 ```
 
 ---
@@ -98,7 +98,7 @@ Two-argument arc tangent. Returns the angle in radians between the positive x-ax
 **Example:**
 
 ```qd
-1.0 1.0 math::atan2 .  // ~0.785 (π/4)
+1.0 1.0 math::atan2 print  // ~0.785 (π/4)
 ```
 
 ---
@@ -120,7 +120,7 @@ Arc tangent (inverse tangent).
 **Example:**
 
 ```qd
-0.0 math::atan .  // 0.0
+0.0 math::atan print  // 0.0
 ```
 
 ---
@@ -142,7 +142,7 @@ Cube root.
 **Example:**
 
 ```qd
-8.0 math::cbrt .  // 2.0
+8.0 math::cbrt print  // 2.0
 ```
 
 ---
@@ -164,7 +164,7 @@ Cube a number.
 **Example:**
 
 ```qd
-2.0 math::cb .  // 8.0
+2.0 math::cb print  // 8.0
 ```
 
 ---
@@ -186,7 +186,7 @@ Ceiling (round up).
 **Example:**
 
 ```qd
-2.3 math::ceil .  // 3.0
+2.3 math::ceil print  // 3.0
 ```
 
 ---
@@ -210,7 +210,7 @@ Clamp value to range.
 **Example:**
 
 ```qd
-15.0 0.0 10.0 math::clamp .  // 10.0
+15.0 0.0 10.0 math::clamp print  // 10.0
 ```
 
 ---
@@ -232,7 +232,7 @@ Cosine of angle in radians.
 **Example:**
 
 ```qd
-0.0 math::cos .  // 1.0
+0.0 math::cos print  // 1.0
 ```
 
 ---
@@ -254,7 +254,7 @@ Decrement integer by 1.
 **Example:**
 
 ```qd
-5 math::dec .  // 4
+5 math::dec print  // 4
 ```
 
 ---
@@ -276,7 +276,7 @@ Convert degrees to radians.
 **Example:**
 
 ```qd
-180.0 math::deg_to_rad .  // ~3.14159
+180.0 math::deg_to_rad print  // ~3.14159
 ```
 
 ---
@@ -298,7 +298,7 @@ Exponential function (e^x).
 **Example:**
 
 ```qd
-1.0 math::exp .  // ~2.718 (e)
+1.0 math::exp print  // ~2.718 (e)
 ```
 
 ---
@@ -320,7 +320,7 @@ Factorial (n!).
 **Example:**
 
 ```qd
-5 math::fac .  // 120
+5 math::fac print  // 120
 ```
 
 ---
@@ -342,7 +342,7 @@ Floor (round down).
 **Example:**
 
 ```qd
-2.7 math::floor .  // 2.0
+2.7 math::floor print  // 2.0
 ```
 
 ---
@@ -365,7 +365,7 @@ Floating-point modulo (remainder). Returns the remainder of x/y with the same si
 **Example:**
 
 ```qd
-5.5 2.0 math::fmod .  // 1.5
+5.5 2.0 math::fmod print  // 1.5
 ```
 
 ---
@@ -388,7 +388,7 @@ Hypotenuse (Euclidean distance). Computes sqrt(x² + y²) without intermediate o
 **Example:**
 
 ```qd
-3.0 4.0 math::hypot .  // 5.0
+3.0 4.0 math::hypot print  // 5.0
 ```
 
 ---
@@ -410,7 +410,7 @@ Increment integer by 1.
 **Example:**
 
 ```qd
-5 math::inc .  // 6
+5 math::inc print  // 6
 ```
 
 ---
@@ -432,7 +432,7 @@ Reciprocal (1/x).
 **Example:**
 
 ```qd
-4.0 math::inv .  // 0.25
+4.0 math::inv print  // 0.25
 ```
 
 ---
@@ -456,7 +456,7 @@ Linear interpolation between two values.
 **Example:**
 
 ```qd
-0.0 10.0 0.5 math::lerp .  // 5.0
+0.0 10.0 0.5 math::lerp print  // 5.0
 ```
 
 ---
@@ -478,7 +478,7 @@ Natural logarithm (base e).
 **Example:**
 
 ```qd
-2.718281828 math::ln .  // ~1.0
+2.718281828 math::ln print  // ~1.0
 ```
 
 ---
@@ -500,7 +500,7 @@ Base-10 logarithm.
 **Example:**
 
 ```qd
-100.0 math::log10 .  // 2.0
+100.0 math::log10 print  // 2.0
 ```
 
 ---
@@ -523,7 +523,7 @@ Logarithm with arbitrary base.
 **Example:**
 
 ```qd
-8.0 2.0 math::log .  // 3.0
+8.0 2.0 math::log print  // 3.0
 ```
 
 ---
@@ -546,7 +546,7 @@ Maximum of two values.
 **Example:**
 
 ```qd
-3 7 math::max .  // 7
+3 7 math::max print  // 7
 ```
 
 ---
@@ -569,7 +569,7 @@ Minimum of two values.
 **Example:**
 
 ```qd
-3 7 math::min .  // 3
+3 7 math::min print  // 3
 ```
 
 ---
@@ -592,7 +592,7 @@ Power function.
 **Example:**
 
 ```qd
-2.0 3.0 math::pow .  // 8.0
+2.0 3.0 math::pow print  // 8.0
 ```
 
 ---
@@ -614,7 +614,7 @@ Convert radians to degrees.
 **Example:**
 
 ```qd
-3.141592653589793 math::rad_to_deg .  // 180.0
+3.141592653589793 math::rad_to_deg print  // 180.0
 ```
 
 ---
@@ -636,7 +636,7 @@ Round to nearest integer.
 **Example:**
 
 ```qd
-2.5 math::round .  // 3.0
+2.5 math::round print  // 3.0
 ```
 
 ---
@@ -658,7 +658,7 @@ Sine of angle in radians.
 **Example:**
 
 ```qd
-0.0 math::sin .  // 0.0
+0.0 math::sin print  // 0.0
 ```
 
 ---
@@ -680,7 +680,7 @@ Square root.
 **Example:**
 
 ```qd
-4.0 math::sqrt .  // 2.0
+4.0 math::sqrt print  // 2.0
 ```
 
 ---
@@ -702,7 +702,7 @@ Square a number.
 **Example:**
 
 ```qd
-3.0 math::sq .  // 9.0
+3.0 math::sq print  // 9.0
 ```
 
 ---
@@ -724,7 +724,7 @@ Tangent of angle in radians.
 **Example:**
 
 ```qd
-0.0 math::tan .  // 0.0
+0.0 math::tan print  // 0.0
 ```
 
 ---
@@ -748,6 +748,6 @@ Check if value is within range (inclusive).
 **Example:**
 
 ```qd
-5 0 10 math::within .  // 1
+5 0 10 math::within print  // 1
 ```
 

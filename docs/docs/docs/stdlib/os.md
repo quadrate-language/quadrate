@@ -87,7 +87,7 @@ Check if path exists.
 **Example:**
 
 ```qd
-"/tmp" os::exists .  // 1
+"/tmp" os::exists print  // 1
 ```
 
 ---

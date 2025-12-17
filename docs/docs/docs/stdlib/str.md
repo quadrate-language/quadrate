@@ -31,7 +31,7 @@ Get character code at index.
 **Example:**
 
 ```qd
-"hello" 0 str::char_at .  // 104 ('h')
+"hello" 0 str::char_at print  // 104 ('h')
 ```
 
 ---
@@ -54,7 +54,7 @@ Compare two strings lexicographically.
 **Example:**
 
 ```qd
-"abc" "abd" str::compare .  // -1
+"abc" "abd" str::compare print  // -1
 ```
 
 ---
@@ -77,7 +77,7 @@ Concatenate two strings.
 **Example:**
 
 ```qd
-"hello" " world" str::concat .  // "hello world"
+"hello" " world" str::concat print  // "hello world"
 ```
 
 ---
@@ -100,7 +100,7 @@ Check if string contains substring.
 **Example:**
 
 ```qd
-"hello" "ell" str::contains .  // 1
+"hello" "ell" str::contains print  // 1
 ```
 
 ---
@@ -123,7 +123,7 @@ Check if string ends with suffix.
 **Example:**
 
 ```qd
-"hello" "lo" str::ends_with .  // 1
+"hello" "lo" str::ends_with print  // 1
 ```
 
 ---
@@ -145,7 +145,7 @@ Create string from character code.
 **Example:**
 
 ```qd
-65 str::from_char .  // "A"
+65 str::from_char print  // "A"
 ```
 
 ---
@@ -169,7 +169,7 @@ Find substring starting from position.
 **Example:**
 
 ```qd
-"hello hello" "hello" 1 str::index_of_from .  // 6
+"hello hello" "hello" 1 str::index_of_from print  // 6
 ```
 
 ---
@@ -192,7 +192,7 @@ Find first occurrence of substring.
 **Example:**
 
 ```qd
-"hello" "ll" str::index_of .  // 2
+"hello" "ll" str::index_of print  // 2
 ```
 
 ---
@@ -214,7 +214,7 @@ Get string length in bytes.
 **Example:**
 
 ```qd
-"hello" str::len .  // 5
+"hello" str::len print  // 5
 ```
 
 ---
@@ -236,7 +236,7 @@ Convert string to lowercase.
 **Example:**
 
 ```qd
-"HELLO" str::lower .  // "hello"
+"HELLO" str::lower print  // "hello"
 ```
 
 ---
@@ -264,7 +264,7 @@ Replace all occurrences of substring.
 **Example:**
 
 ```qd
-"hello" "l" "L" str::replace! .  // "heLLo"
+"hello" "l" "L" str::replace! print  // "heLLo"
 ```
 
 ---
@@ -315,7 +315,7 @@ Check if string starts with prefix.
 **Example:**
 
 ```qd
-"hello" "hel" str::starts_with .  // 1
+"hello" "hel" str::starts_with print  // 1
 ```
 
 ---
@@ -343,7 +343,7 @@ Extract substring.
 **Example:**
 
 ```qd
-"hello" 1 3 str::substring! .  // "ell"
+"hello" 1 3 str::substring! print  // "ell"
 ```
 
 ---
@@ -365,7 +365,7 @@ Remove leading and trailing whitespace.
 **Example:**
 
 ```qd
-"  hello  " str::trim .  // "hello"
+"  hello  " str::trim print  // "hello"
 ```
 
 ---
@@ -387,6 +387,6 @@ Convert string to uppercase.
 **Example:**
 
 ```qd
-"hello" str::upper .  // "HELLO"
+"hello" str::upper print  // "HELLO"
 ```
 

@@ -100,7 +100,7 @@
       "params": [{"name": "path", "type": "str", "description": "File or directory path"}],
       "returns": [{"name": "exists", "type": "i64", "description": "1 if exists, 0 otherwise"}],
       "errors": [],
-      "examples": ["\"/tmp\" os::exists .  // 1"]
+      "examples": ["\"/tmp\" os::exists print  // 1"]
     },
     {
       "name": "exit",

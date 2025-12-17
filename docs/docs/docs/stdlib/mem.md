@@ -219,7 +219,7 @@ Check if pointer is null.
 **Example:**
 
 ```qd
-buf mem::is_null .  // 0
+buf mem::is_null print  // 0
 ```
 
 ---

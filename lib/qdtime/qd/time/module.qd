@@ -39,7 +39,7 @@ pub const December = 12
 import "libqdtime.a" as "time" {
 	/// Get Unix timestamp in seconds.
 	/// @return timestamp i64 Seconds since 1970-01-01 00:00:00 UTC
-	/// @example time::unix .  // 1700000000
+	/// @example time::unix print  // 1700000000
 	pub fn unix( -- timestamp:i64)
 
 	/// Get current time in nanoseconds since epoch.
@@ -59,7 +59,7 @@ import "libqdtime.a" as "time" {
 /// Check if year is a leap year.
 /// @param yr i64 Year to check
 /// @return is_leap i64 1 if leap year, 0 otherwise
-/// @example 2024 time::is_leap_year .  // 1
+/// @example 2024 time::is_leap_year print  // 1
 pub fn is_leap_year(yr:i64 -- is_leap:i64) {
 	-> yr
 	yr 400 % 0 == if {
@@ -81,7 +81,7 @@ pub fn is_leap_year(yr:i64 -- is_leap:i64) {
 /// @param yr i64 Year (needed for February)
 /// @param mon i64 Month (1-12)
 /// @return days i64 Number of days in the month
-/// @example 2024 2 time::days_in_month .  // 29
+/// @example 2024 2 time::days_in_month print  // 29
 pub fn days_in_month(yr:i64 mon:i64 -- days:i64) {
 	-> mon
 	-> yr

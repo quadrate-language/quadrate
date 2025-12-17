@@ -56,7 +56,7 @@ import "libqdos.a" as "os" {
 	/// Check if path exists.
 	/// @param path str File or directory path
 	/// @return exists i64 1 if exists, 0 otherwise
-	/// @example "/tmp" os::exists .  // 1
+	/// @example "/tmp" os::exists print  // 1
 	pub fn exists(path:str -- exists:i64)
 
 	/// Delete a file or empty directory.

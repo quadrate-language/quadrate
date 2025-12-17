@@ -21,7 +21,7 @@ Parse decimal string to integer.
 **Example:**
 
 ```qd
-"42" strconv::atoi .  // 42
+"42" strconv::atoi print  // 42
 ```
 
 ---
@@ -44,7 +44,7 @@ Format integer in given base.
 **Example:**
 
 ```qd
-255 16 strconv::format_int .  // "ff"
+255 16 strconv::format_int print  // "ff"
 ```
 
 ---
@@ -66,7 +66,7 @@ Convert integer to decimal string.
 **Example:**
 
 ```qd
-42 strconv::itoa .  // "42"
+42 strconv::itoa print  // "42"
 ```
 
 ---
@@ -89,6 +89,6 @@ Parse integer from string in given base.
 **Example:**
 
 ```qd
-"ff" 16 strconv::parse_int .  // 255
+"ff" 16 strconv::parse_int print  // 255
 ```
 

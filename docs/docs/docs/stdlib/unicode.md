@@ -124,6 +124,6 @@ Check if character is a digit (0-9).
 **Example:**
 
 ```qd
-48 unicode::is_digit .  // 1
+48 unicode::is_digit print  // 1
 ```
 

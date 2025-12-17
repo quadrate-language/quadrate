@@ -148,7 +148,7 @@ Get number of days in a month.
 **Example:**
 
 ```qd
-2024 2 time::days_in_month .  // 29
+2024 2 time::days_in_month print  // 29
 ```
 
 ---
@@ -214,7 +214,7 @@ Check if year is a leap year.
 **Example:**
 
 ```qd
-2024 time::is_leap_year .  // 1
+2024 time::is_leap_year print  // 1
 ```
 
 ---
@@ -357,7 +357,7 @@ Get Unix timestamp in seconds.
 **Example:**
 
 ```qd
-time::unix .  // 1700000000
+time::unix print  // 1700000000
 ```
 
 ---
