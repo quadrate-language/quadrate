@@ -18,6 +18,7 @@
 ///           }
 ///       }
 ///   }
+
 /// Hangup signal (terminal closed).
 pub const SIGHUP = 1
 /// Interrupt signal (Ctrl+C).

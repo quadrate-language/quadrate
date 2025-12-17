@@ -281,10 +281,33 @@ generate_markdown() {
     # Title with `use` prefix
     output+="# \`use\` $module_name"$'\n\n'
 
-    # Module description
+    # Module description (with example block detection)
+    local in_example=0
     for desc in "${_module_desc[@]}"; do
-        output+="$desc"$'\n'
+        if [[ "$desc" =~ ^Example: ]]; then
+            output+="**Example:**"$'\n\n'
+            output+="\`\`\`qd"$'\n'
+            in_example=1
+        elif [[ $in_example -eq 1 ]]; then
+            # Check if still in indented example code
+            if [[ "$desc" =~ ^[[:space:]] ]] || [[ -z "$desc" ]]; then
+                # Remove leading indentation (2 spaces) from example lines
+                local unindented="${desc#  }"
+                output+="$unindented"$'\n'
+            else
+                # End of example block
+                output+="\`\`\`"$'\n\n'
+                in_example=0
+                output+="$desc"$'\n'
+            fi
+        else
+            output+="$desc"$'\n'
+        fi
     done
+    # Close example block if still open at end
+    if [[ $in_example -eq 1 ]]; then
+        output+="\`\`\`"$'\n'
+    fi
     if [[ ${#_module_desc[@]} -gt 0 ]]; then
         output+=$'\n'
     fi

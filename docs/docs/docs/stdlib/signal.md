@@ -5,21 +5,24 @@ Unix signal handling with polling-based API.
 Signals are caught and stored as flags. Use pending() to check
 if a signal was received, and clear() to reset the flag.
 
-Example:
-  use signal
+**Example:**
 
-  fn main() {
-      signal::SIGINT signal::trap
-      "Running. Press Ctrl+C to stop." print nl
+```qd
+use signal
 
-      loop {
-          signal::SIGINT signal::pending if {
-              "Shutting down" print nl
-              signal::SIGINT signal::clear
-              break
-          }
-      }
-  }
+fn main() {
+    signal::SIGINT signal::trap
+    "Running. Press Ctrl+C to stop." print nl
+
+    loop {
+        signal::SIGINT signal::pending if {
+            "Shutting down" print nl
+            signal::SIGINT signal::clear
+            break
+        }
+    }
+}
+```
 
 ## Constants
 
