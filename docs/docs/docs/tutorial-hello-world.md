@@ -8,7 +8,7 @@ Create a file called `hello.qd`:
 
 ```qd
 fn main() {
-    "Hello, World!" print nl
+	"Hello, World!" print nl
 }
 ```
 
@@ -69,8 +69,8 @@ Quadrate is **stack-based**. When you write a value, it goes onto a stack. When 
 
 ```qd
 fn main() {
-    2 3 +      // Push 2, push 3, add them → 5 on stack
-    print nl   // Pop 5 and print it
+	2 3 +      // Push 2, push 3, add them → 5 on stack
+	print nl   // Pop 5 and print it
 }
 ```
 
@@ -86,9 +86,9 @@ The [Stack Tutorial](tutorial-stack.md) covers this in detail. For now, just kno
 
 ```qd
 fn main() {
-    "Hello, " print
-    "World!" print
-    nl
+	"Hello, " print
+	"World!" print
+	nl
 }
 ```
 
@@ -96,8 +96,8 @@ fn main() {
 
 ```qd
 fn main() {
-    "World" -> name
-    "Hello, " print name print "!" print nl
+	"World" -> name
+	"Hello, " print name print "!" print nl
 }
 ```
 
@@ -105,8 +105,8 @@ fn main() {
 
 ```qd
 fn main() {
-    "2 + 3 = " print
-    2 3 + print nl
+	"2 + 3 = " print
+	2 3 + print nl
 }
 ```
 
@@ -114,13 +114,13 @@ fn main() {
 
 ```qd
 fn greet(name:str -- ) {
-    -> name
-    "Hello, " print name print "!" print nl
+	-> name
+	"Hello, " print name print "!" print nl
 }
 
 fn main() {
-    "Alice" greet
-    "Bob" greet
+	"Alice" greet
+	"Bob" greet
 }
 ```
 

@@ -19,9 +19,9 @@ When you write a literal value, it gets pushed onto the stack:
 
 ```qd
 fn main() {
-    42        // Push integer 42
-    3.14      // Push float 3.14
-    "hello"   // Push string "hello"
+	42        // Push integer 42
+	3.14      // Push float 3.14
+	"hello"   // Push string "hello"
 }
 ```
 
@@ -31,8 +31,8 @@ The `print` instruction pops a value and prints it:
 
 ```qd
 fn main() {
-    42 print nl      // Prints: 42
-    "hello" print nl // Prints: hello
+	42 print nl      // Prints: 42
+	"hello" print nl // Prints: hello
 }
 ```
 
@@ -42,17 +42,17 @@ Arithmetic operators pop two values and push the result:
 
 ```qd
 fn main() {
-    3 4 +     // Push 3, push 4, add them -> 7 on stack
-    print nl  // Prints: 7
+	3 4 +     // Push 3, push 4, add them -> 7 on stack
+	print nl  // Prints: 7
 
-    10 3 -    // 10 - 3 = 7
-    print nl  // Prints: 7
+	10 3 -    // 10 - 3 = 7
+	print nl  // Prints: 7
 
-    6 7 *     // 6 * 7 = 42
-    print nl  // Prints: 42
+	6 7 *     // 6 * 7 = 42
+	print nl  // Prints: 42
 
-    20 4 /    // 20 / 4 = 5
-    print nl  // Prints: 5
+	20 4 /    // 20 / 4 = 5
+	print nl  // Prints: 5
 }
 ```
 
@@ -64,8 +64,8 @@ Copy the top value:
 
 ```qd
 fn main() {
-    5 dup     // Stack: [5, 5]
-    + print nl // 5 + 5 = 10
+	5 dup     // Stack: [5, 5]
+	+ print nl // 5 + 5 = 10
 }
 ```
 
@@ -75,10 +75,10 @@ Remove the top value:
 
 ```qd
 fn main() {
-    1 2 3     // Stack: [1, 2, 3]
-    drop      // Stack: [1, 2]
-    drop      // Stack: [1]
-    print nl  // Prints: 1
+	1 2 3     // Stack: [1, 2, 3]
+	drop      // Stack: [1, 2]
+	drop      // Stack: [1]
+	print nl  // Prints: 1
 }
 ```
 
@@ -88,10 +88,10 @@ Exchange the two top values:
 
 ```qd
 fn main() {
-    1 2       // Stack: [1, 2]
-    swap      // Stack: [2, 1]
-    print nl  // Prints: 1
-    print nl  // Prints: 2
+	1 2       // Stack: [1, 2]
+	swap      // Stack: [2, 1]
+	print nl  // Prints: 1
+	print nl  // Prints: 2
 }
 ```
 
@@ -101,11 +101,11 @@ Copy the second value to the top:
 
 ```qd
 fn main() {
-    1 2       // Stack: [1, 2]
-    over      // Stack: [1, 2, 1]
-    print nl  // Prints: 1
-    print nl  // Prints: 2
-    print nl  // Prints: 1
+	1 2       // Stack: [1, 2]
+	over      // Stack: [1, 2, 1]
+	print nl  // Prints: 1
+	print nl  // Prints: 2
+	print nl  // Prints: 1
 }
 ```
 
@@ -115,11 +115,11 @@ Rotate the top three values:
 
 ```qd
 fn main() {
-    1 2 3     // Stack: [1, 2, 3]
-    rot       // Stack: [2, 3, 1]
-    print nl  // Prints: 1
-    print nl  // Prints: 3
-    print nl  // Prints: 2
+	1 2 3     // Stack: [1, 2, 3]
+	rot       // Stack: [2, 3, 1]
+	print nl  // Prints: 1
+	print nl  // Prints: 3
+	print nl  // Prints: 2
 }
 ```
 
@@ -129,11 +129,11 @@ While stack manipulation is powerful, sometimes you need named values. Use `->` 
 
 ```qd
 fn main() {
-    42 -> x       // Pop 42 into variable x
-    x print nl    // Push x, print it
+	42 -> x       // Pop 42 into variable x
+	x print nl    // Push x, print it
 
-    x x * -> square  // x squared
-    square print nl
+	x x * -> square  // x squared
+	square print nl
 }
 ```
 
@@ -144,19 +144,19 @@ Functions declare their stack effect with `(inputs -- outputs)`:
 ```qd
 // Takes two integers, returns one integer
 fn add(a:i64 b:i64 -- sum:i64) {
-    +
+	+
 }
 
 // Takes one integer, returns two integers
 fn dup_and_square(n:i64 -- n:i64 squared:i64) {
-    dup dup *
+	dup dup *
 }
 
 fn main() {
-    3 4 add print nl       // Prints: 7
-    5 dup_and_square
-    print nl               // Prints: 25
-    print nl               // Prints: 5
+	3 4 add print nl       // Prints: 7
+	5 dup_and_square
+	print nl               // Prints: 25
+	print nl               // Prints: 5
 }
 ```
 
@@ -184,9 +184,9 @@ Convert between types with the `cast<T>` operator:
 
 ```qd
 fn main() {
-    42 cast<f64> print nl     // Integer to float: 42.0
-    3.7 cast<i64> print nl    // Float to integer: 3 (truncates)
-    65 cast<str> print nl     // Integer to string: "65"
+	42 cast<f64> print nl     // Integer to float: 42.0
+	3.7 cast<i64> print nl    // Float to integer: 3 (truncates)
+	65 cast<str> print nl     // Integer to string: "65"
 }
 ```
 
@@ -196,12 +196,12 @@ Comparisons pop two values and push 1 (true) or 0 (false):
 
 ```qd
 fn main() {
-    5 3 >  print nl  // 5 > 3?  Prints: 1
-    5 3 <  print nl  // 5 < 3?  Prints: 0
-    5 5 == print nl  // 5 == 5? Prints: 1
-    5 3 != print nl  // 5 != 3? Prints: 1
-    5 5 >= print nl  // 5 >= 5? Prints: 1
-    5 5 <= print nl  // 5 <= 5? Prints: 1
+	5 3 >  print nl  // 5 > 3?  Prints: 1
+	5 3 <  print nl  // 5 < 3?  Prints: 0
+	5 5 == print nl  // 5 == 5? Prints: 1
+	5 3 != print nl  // 5 != 3? Prints: 1
+	5 5 >= print nl  // 5 >= 5? Prints: 1
+	5 5 <= print nl  // 5 <= 5? Prints: 1
 }
 ```
 
@@ -211,12 +211,12 @@ Quadrate uses `true` (1) and `false` (0):
 
 ```qd
 fn main() {
-    true print nl      // Prints: 1
-    false print nl     // Prints: 0
+	true print nl      // Prints: 1
+	false print nl     // Prints: 0
 
-    true false and print nl   // 0
-    true false or print nl    // 1
-    true not print nl         // 0
+	true false and print nl   // 0
+	true false or print nl    // 1
+	true not print nl         // 0
 }
 ```
 
@@ -228,16 +228,16 @@ fn main() {
 
 ```qd
 fn main() {
-    5 3 > if {
-        "Five is greater than three" print nl
-    }
+	5 3 > if {
+	    "Five is greater than three" print nl
+	}
 
-    // With else
-    10 20 > if {
-        "10 > 20" print nl
-    } else {
-        "10 <= 20" print nl
-    }
+	// With else
+	10 20 > if {
+	    "10 > 20" print nl
+	} else {
+	    "10 <= 20" print nl
+	}
 }
 ```
 
@@ -247,7 +247,7 @@ fn main() {
 
 ```qd
 fn main() {
-    5 3 > if { "yes" } else { "no" } print nl  // Prints: yes
+	5 3 > if { "yes" } else { "no" } print nl  // Prints: yes
 }
 ```
 
@@ -257,20 +257,20 @@ fn main() {
 
 ```qd
 fn main() {
-    // Count 0 to 4
-    0 5 1 for i {
-        i print nl
-    }
+	// Count 0 to 4
+	0 5 1 for i {
+	    i print nl
+	}
 
-    // Count by 2s
-    0 10 2 for i {
-        i print nl  // 0, 2, 4, 6, 8
-    }
+	// Count by 2s
+	0 10 2 for i {
+	    i print nl  // 0, 2, 4, 6, 8
+	}
 
-    // Count down
-    5 0 -1 for i {
-        i print nl  // 5, 4, 3, 2, 1
-    }
+	// Count down
+	5 0 -1 for i {
+	    i print nl  // 5, 4, 3, 2, 1
+	}
 }
 ```
 
@@ -280,14 +280,14 @@ Infinite loop with `break`:
 
 ```qd
 fn main() {
-    0 -> count
-    loop {
-        count print nl
-        count 1 + -> count
-        count 5 >= if {
-            break
-        }
-    }
+	0 -> count
+	loop {
+	    count print nl
+	    count 1 + -> count
+	    count 5 >= if {
+	        break
+	    }
+	}
 }
 ```
 
@@ -297,16 +297,16 @@ The `ctx` block creates an isolated computation context:
 
 ```qd
 fn main() {
-    10 20 30      // Stack: [10, 20, 30]
-    ctx {
-        // Child gets copy: [10, 20, 30]
-        + +       // 10 + 20 + 30 = 60
-    }
-    // Parent stack unchanged, result added: [10, 20, 30, 60]
-    print nl      // Prints: 60
-    print nl      // Prints: 30
-    print nl      // Prints: 20
-    print nl      // Prints: 10
+	10 20 30      // Stack: [10, 20, 30]
+	ctx {
+	    // Child gets copy: [10, 20, 30]
+	    + +       // 10 + 20 + 30 = 60
+	}
+	// Parent stack unchanged, result added: [10, 20, 30, 60]
+	print nl      // Prints: 60
+	print nl      // Prints: 30
+	print nl      // Prints: 20
+	print nl      // Prints: 10
 }
 ```
 
@@ -314,16 +314,16 @@ fn main() {
 
 ```qd
 fn factorial(n:i64 -- result:i64) {
-    dup 1 <= if {
-        drop 1
-    } else {
-        dup 1 - factorial *
-    }
+	dup 1 <= if {
+	    drop 1
+	} else {
+	    dup 1 - factorial *
+	}
 }
 
 fn main() {
-    5 factorial print nl   // Prints: 120
-    10 factorial print nl  // Prints: 3628800
+	5 factorial print nl   // Prints: 120
+	10 factorial print nl  // Prints: 3628800
 }
 ```
 
@@ -331,19 +331,19 @@ fn main() {
 
 ```qd
 fn fib(n:i64 -- result:i64) {
-    dup 2 < if {
-        // Base case: return n
-    } else {
-        dup 1 - fib
-        swap 2 - fib
-        +
-    }
+	dup 2 < if {
+	    // Base case: return n
+	} else {
+	    dup 1 - fib
+	    swap 2 - fib
+	    +
+	}
 }
 
 fn main() {
-    0 10 1 for i {
-        i fib print nl
-    }
+	0 10 1 for i {
+	    i fib print nl
+	}
 }
 ```
 

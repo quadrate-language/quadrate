@@ -11,16 +11,16 @@ if a signal was received, and clear() to reset the flag.
 use signal
 
 fn main() {
-    signal::SIGINT signal::trap
-    "Running. Press Ctrl+C to stop." print nl
+	signal::SIGINT signal::trap
+	"Running. Press Ctrl+C to stop." print nl
 
-    loop {
-        signal::SIGINT signal::pending if {
-            "Shutting down" print nl
-            signal::SIGINT signal::clear
-            break
-        }
-    }
+	loop {
+		signal::SIGINT signal::pending if {
+			"Shutting down" print nl
+			signal::SIGINT signal::clear
+			break
+		}
+	}
 }
 ```
 

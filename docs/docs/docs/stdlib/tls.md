@@ -147,37 +147,37 @@ use net
 use tls
 
 fn main() {
-    // Connect to server
-    "example.com" 443 net::connect -> sock
+	// Connect to server
+	"example.com" 443 net::connect -> sock
 
-    // Wrap with TLS
-    sock "example.com" tls::connect switch {
-        Ok {
-            -> conn
+	// Wrap with TLS
+	sock "example.com" tls::connect switch {
+		Ok {
+			-> conn
 
-            // Send HTTP request
-            conn "GET / HTTP/1.1\r\nHost: example.com\r\nConnection: close\r\n\r\n" tls::send! drop
+			// Send HTTP request
+			conn "GET / HTTP/1.1\r\nHost: example.com\r\nConnection: close\r\n\r\n" tls::send! drop
 
-            // Receive response
-            conn 8192 tls::receive switch {
-                Ok {
-                    -> data drop
-                    data print
-                }
-                _ {
-                    "Receive failed" print nl
-                }
-            }
+			// Receive response
+			conn 8192 tls::receive switch {
+			    Ok {
+			        -> data drop
+			        data print
+			    }
+			    _ {
+			        "Receive failed" print nl
+			    }
+			}
 
-            // Cleanup
-            conn tls::close
-        }
-        _ {
-            "TLS handshake failed" print nl
-        }
-    }
+			// Cleanup
+			conn tls::close
+		}
+		_ {
+			"TLS handshake failed" print nl
+		}
+	}
 
-    sock net::close
+	sock net::close
 }
 ```
 
@@ -188,41 +188,41 @@ use net
 use tls
 
 fn handle_client(client_sock:i64 -- ) {
-    client_sock "/path/cert.pem" "/path/key.pem" tls::accept switch {
-        Ok {
-            -> conn
+	client_sock "/path/cert.pem" "/path/key.pem" tls::accept switch {
+		Ok {
+			-> conn
 
-            // Receive request
-            conn 4096 tls::receive switch {
-                Ok {
-                    -> data drop
-                    "Received: " print data print nl
+			// Receive request
+			conn 4096 tls::receive switch {
+			    Ok {
+			        -> data drop
+			        "Received: " print data print nl
 
-                    // Send response
-                    conn "HTTP/1.1 200 OK\r\n\r\nHello, TLS!" tls::send! drop
-                }
-                _ { }
-            }
+			        // Send response
+			        conn "HTTP/1.1 200 OK\r\n\r\nHello, TLS!" tls::send! drop
+			    }
+			    _ { }
+			}
 
-            conn tls::close
-        }
-        tls::ErrCertificate {
-            "Certificate error" print nl
-        }
-        _ {
-            "TLS accept failed" print nl
-        }
-    }
+			conn tls::close
+		}
+		tls::ErrCertificate {
+			"Certificate error" print nl
+		}
+		_ {
+			"TLS accept failed" print nl
+		}
+	}
 
-    client_sock net::close
+	client_sock net::close
 }
 
 fn main() {
-    443 net::listen -> server
+	443 net::listen -> server
 
-    loop {
-        server net::accept handle_client
-    }
+	loop {
+		server net::accept handle_client
+	}
 }
 ```
 
@@ -233,26 +233,26 @@ use net
 use tls
 
 fn main() {
-    "secure.example.com" 443 net::connect -> sock
+	"secure.example.com" 443 net::connect -> sock
 
-    sock "secure.example.com" tls::connect switch {
-        Ok {
-            -> conn
-            "Connected securely!" print nl
-            conn tls::close
-        }
-        tls::ErrConnect {
-            "TLS handshake failed" print nl
-        }
-        tls::ErrCertificate {
-            "Certificate validation failed" print nl
-        }
-        _ {
-            "Unknown TLS error" print nl
-        }
-    }
+	sock "secure.example.com" tls::connect switch {
+		Ok {
+			-> conn
+			"Connected securely!" print nl
+			conn tls::close
+		}
+		tls::ErrConnect {
+			"TLS handshake failed" print nl
+		}
+		tls::ErrCertificate {
+			"Certificate validation failed" print nl
+		}
+		_ {
+			"Unknown TLS error" print nl
+		}
+	}
 
-    sock net::close
+	sock net::close
 }
 ```
 

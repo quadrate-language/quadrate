@@ -20,17 +20,17 @@ Create `greet.c`:
 #include <stdio.h>
 
 qd_exec_result hello(qd_context* ctx) {
-    // Pop a string from the stack
-    qd_stack_element_t elem;
-    qd_stack_pop(ctx->st, &elem);
+	// Pop a string from the stack
+	qd_stack_element_t elem;
+	qd_stack_pop(ctx->st, &elem);
 
-    // Print the greeting
-    printf("Hello, %s!\n", qd_string_data(elem.value.s));
+	// Print the greeting
+	printf("Hello, %s!\n", qd_string_data(elem.value.s));
 
-    // Release the string (required for memory management)
-    qd_string_release(elem.value.s);
+	// Release the string (required for memory management)
+	qd_string_release(elem.value.s);
 
-    return (qd_exec_result){0};  // 0 = success
+	return (qd_exec_result){0};  // 0 = success
 }
 ```
 
@@ -47,11 +47,11 @@ Create `main.qd`:
 
 ```qd
 import "libgreet.a" as "greet" {
-    pub fn hello(name:str -- )
+	pub fn hello(name:str -- )
 }
 
 fn main() {
-    "World" greet::hello
+	"World" greet::hello
 }
 ```
 
@@ -91,26 +91,26 @@ qd_stack_element_t elem;
 qd_stack_error err = qd_stack_pop(ctx->st, &elem);
 
 if (err != QD_STACK_OK) {
-    // Handle stack underflow
-    return (qd_exec_result){1};
+	// Handle stack underflow
+	return (qd_exec_result){1};
 }
 
 // Check the type
 switch (elem.type) {
-    case QD_STACK_TYPE_INT:
-        int64_t i = elem.value.i;
-        break;
-    case QD_STACK_TYPE_FLOAT:
-        double f = elem.value.f;
-        break;
-    case QD_STACK_TYPE_STR:
-        const char* s = qd_string_data(elem.value.s);
-        // Don't forget to release!
-        qd_string_release(elem.value.s);
-        break;
-    case QD_STACK_TYPE_PTR:
-        void* p = elem.value.p;
-        break;
+	case QD_STACK_TYPE_INT:
+		int64_t i = elem.value.i;
+		break;
+	case QD_STACK_TYPE_FLOAT:
+		double f = elem.value.f;
+		break;
+	case QD_STACK_TYPE_STR:
+		const char* s = qd_string_data(elem.value.s);
+		// Don't forget to release!
+		qd_string_release(elem.value.s);
+		break;
+	case QD_STACK_TYPE_PTR:
+		void* p = elem.value.p;
+		break;
 }
 ```
 
@@ -151,29 +151,29 @@ Here's a more complete example with multiple functions and return values.
 
 // Calculate hypotenuse: ( a:f64 b:f64 -- c:f64 )
 qd_exec_result hypot(qd_context* ctx) {
-    qd_stack_element_t b, a;
-    qd_stack_pop(ctx->st, &b);  // Pop b (top)
-    qd_stack_pop(ctx->st, &a);  // Pop a (below b)
+	qd_stack_element_t b, a;
+	qd_stack_pop(ctx->st, &b);  // Pop b (top)
+	qd_stack_pop(ctx->st, &a);  // Pop a (below b)
 
-    double result = sqrt(a.value.f * a.value.f + b.value.f * b.value.f);
-    qd_stack_push_float(ctx->st, result);
+	double result = sqrt(a.value.f * a.value.f + b.value.f * b.value.f);
+	qd_stack_push_float(ctx->st, result);
 
-    return (qd_exec_result){0};
+	return (qd_exec_result){0};
 }
 
 // Factorial: ( n:i64 -- result:i64 )
 qd_exec_result factorial(qd_context* ctx) {
-    qd_stack_element_t elem;
-    qd_stack_pop(ctx->st, &elem);
+	qd_stack_element_t elem;
+	qd_stack_pop(ctx->st, &elem);
 
-    int64_t n = elem.value.i;
-    int64_t result = 1;
-    for (int64_t i = 2; i <= n; i++) {
-        result *= i;
-    }
+	int64_t n = elem.value.i;
+	int64_t result = 1;
+	for (int64_t i = 2; i <= n; i++) {
+		result *= i;
+	}
 
-    qd_stack_push_int(ctx->st, result);
-    return (qd_exec_result){0};
+	qd_stack_push_int(ctx->st, result);
+	return (qd_exec_result){0};
 }
 ```
 
@@ -181,18 +181,18 @@ qd_exec_result factorial(qd_context* ctx) {
 
 ```qd
 import "libmath_ext.a" as "mathx" {
-    pub fn hypot(a:f64 b:f64 -- c:f64)
-    pub fn factorial(n:i64 -- result:i64)
+	pub fn hypot(a:f64 b:f64 -- c:f64)
+	pub fn factorial(n:i64 -- result:i64)
 }
 
 use fmt
 
 fn main() {
-    // Calculate hypotenuse of 3-4-5 triangle
-    3.0 4.0 mathx::hypot "%f\n" fmt::printf  // 5.0
+	// Calculate hypotenuse of 3-4-5 triangle
+	3.0 4.0 mathx::hypot "%f\n" fmt::printf  // 5.0
 
-    // Calculate 10!
-    10 mathx::factorial "%d\n" fmt::printf   // 3628800
+	// Calculate 10!
+	10 mathx::factorial "%d\n" fmt::printf   // 3628800
 }
 ```
 
@@ -202,22 +202,22 @@ Return a non-zero error code to indicate failure:
 
 ```c
 qd_exec_result my_function(qd_context* ctx) {
-    qd_stack_element_t elem;
-    qd_stack_error err = qd_stack_pop(ctx->st, &elem);
+	qd_stack_element_t elem;
+	qd_stack_error err = qd_stack_pop(ctx->st, &elem);
 
-    if (err != QD_STACK_OK) {
-        fprintf(stderr, "my_function: stack underflow\n");
-        return (qd_exec_result){1};  // Error code 1
-    }
+	if (err != QD_STACK_OK) {
+		fprintf(stderr, "my_function: stack underflow\n");
+		return (qd_exec_result){1};  // Error code 1
+	}
 
-    if (elem.type != QD_STACK_TYPE_INT) {
-        fprintf(stderr, "my_function: expected integer\n");
-        return (qd_exec_result){2};  // Error code 2
-    }
+	if (elem.type != QD_STACK_TYPE_INT) {
+		fprintf(stderr, "my_function: expected integer\n");
+		return (qd_exec_result){2};  // Error code 2
+	}
 
-    // ... do work ...
+	// ... do work ...
 
-    return (qd_exec_result){0};  // Success
+	return (qd_exec_result){0};  // Success
 }
 ```
 
@@ -225,11 +225,11 @@ In Quadrate, use the `!` suffix for failable functions:
 
 ```qd
 import "libmylib.a" as "mylib" {
-    pub fn my_function(x:i64 -- result:i64)!
+	pub fn my_function(x:i64 -- result:i64)!
 }
 
 fn main() {
-    42 mylib::my_function! -> result
+	42 mylib::my_function! -> result
 }
 ```
 
@@ -242,9 +242,9 @@ qd_stack_element_t elem;
 qd_stack_pop(ctx->st, &elem);
 
 if (elem.type == QD_STACK_TYPE_STR) {
-    const char* str = qd_string_data(elem.value.s);
-    // ... use the string ...
-    qd_string_release(elem.value.s);  // Required!
+	const char* str = qd_string_data(elem.value.s);
+	// ... use the string ...
+	qd_string_release(elem.value.s);  // Required!
 }
 ```
 
@@ -271,7 +271,7 @@ mylib.o: mylib.c
 
 ```meson
 mylib = static_library('mylib', 'mylib.c',
-    include_directories: include_directories('/usr/include'))
+	include_directories: include_directories('/usr/include'))
 ```
 
 ## Tips

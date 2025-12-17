@@ -183,17 +183,17 @@ use hof
 use hof
 
 fn validate_age( age:i64 -- valid:i64 ) {
-    -> age
+	-> age
 
-    // Must be: positive AND >= 18 AND <= 120
-    age fn (x:i64 -- r:i64) { 0 > } fn (x:i64 -- r:i64) { 18 >= } hof::bi and
-    age 120 <= and
+	// Must be: positive AND >= 18 AND <= 120
+	age fn (x:i64 -- r:i64) { 0 > } fn (x:i64 -- r:i64) { 18 >= } hof::bi and
+	age 120 <= and
 }
 
 fn main() {
-    25 validate_age if { "Valid" } else { "Invalid" } print nl
-    -5 validate_age if { "Valid" } else { "Invalid" } print nl
-    150 validate_age if { "Valid" } else { "Invalid" } print nl
+	25 validate_age if { "Valid" } else { "Invalid" } print nl
+	-5 validate_age if { "Valid" } else { "Invalid" } print nl
+	150 validate_age if { "Valid" } else { "Invalid" } print nl
 }
 ```
 
@@ -203,15 +203,15 @@ fn main() {
 use hof
 
 fn stats( n:i64 -- doubled:i64 squared:i64 incremented:i64 ) {
-    fn (x:i64 -- r:i64) { 2 * }
-    fn (x:i64 -- r:i64) { dup * }
-    fn (x:i64 -- r:i64) { 1 + }
-    hof::tri
+	fn (x:i64 -- r:i64) { 2 * }
+	fn (x:i64 -- r:i64) { dup * }
+	fn (x:i64 -- r:i64) { 1 + }
+	hof::tri
 }
 
 fn main() {
-    5 stats
-    // Stack: 10 25 6
+	5 stats
+	// Stack: 10 25 6
 }
 ```
 
@@ -221,16 +221,16 @@ fn main() {
 use hof
 
 fn main() {
-    // Compute 2^10 by doubling 10 times
-    1 10 fn (x:i64 -- r:i64) { 2 * } hof::times
-    print nl  // 1024
+	// Compute 2^10 by doubling 10 times
+	1 10 fn (x:i64 -- r:i64) { 2 * } hof::times
+	print nl  // 1024
 
-    // Compute factorial(5) iteratively
-    1 -> result
-    1 6 1 for i {
-        result i * -> result
-    }
-    result print nl  // 120
+	// Compute factorial(5) iteratively
+	1 -> result
+	1 6 1 for i {
+		result i * -> result
+	}
+	result print nl  // 120
 }
 ```
 

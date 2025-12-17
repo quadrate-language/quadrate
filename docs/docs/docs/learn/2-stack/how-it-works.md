@@ -35,9 +35,9 @@ Throughout this documentation, we show stacks like `[1, 2, 3]` where **3 is on t
 ```
 Stack: [1, 2, 3]
 
-    3  <-- top
-    2
-    1  <-- bottom
+	3  <-- top
+	2
+	1  <-- bottom
 ```
 
 ## Operations Consume and Produce

@@ -8,15 +8,15 @@ A distributable module has this structure:
 
 ```
 my-module/
-    module.qd        # Main module file (required)
-    qd.json          # Package manifest (required, npm-compatible)
-    README.md        # Documentation (recommended)
-    LICENSE          # License file (recommended)
-    examples/        # Example programs (optional)
-        simple.qd
-        demo.qd
-    src/             # C source files (optional, for FFI)
-        helper.c
+	module.qd        # Main module file (required)
+	qd.json          # Package manifest (required, npm-compatible)
+	README.md        # Documentation (recommended)
+	LICENSE          # License file (recommended)
+	examples/        # Example programs (optional)
+		simple.qd
+		demo.qd
+	src/             # C source files (optional, for FFI)
+		helper.c
 ```
 
 ## Step 1: Create the Module Directory
@@ -39,27 +39,27 @@ Create `module.qd` with your module's functions. Mark public functions with `pub
 
 /// Calculate the square of a number
 pub fn square(x:i64 -- result:i64) {
-    dup *
+	dup *
 }
 
 /// Calculate the cube of a number
 pub fn cube(x:i64 -- result:i64) {
-    dup dup * *
+	dup dup * *
 }
 
 /// Check if a number is even
 pub fn is_even(x:i64 -- result:i64) {
-    2 % 0 ==
+	2 % 0 ==
 }
 
 /// Check if a number is odd
 pub fn is_odd(x:i64 -- result:i64) {
-    2 % 0 !=
+	2 % 0 !=
 }
 
 // Private helper function (no pub keyword)
 fn helper(x:i64 -- y:i64) {
-    1 +
+	1 +
 }
 ```
 
@@ -93,7 +93,7 @@ The `name` field determines how users import your module:
 use mymodule
 
 fn main() {
-    5 mymodule::square print nl  // 25
+	5 mymodule::square print nl  // 25
 }
 ```
 
@@ -111,10 +111,10 @@ Create `examples/simple.qd`:
 use mymodule
 
 fn main() {
-    "5 squared: " print 5 mymodule::square print nl
-    "3 cubed: " print 3 mymodule::cube print nl
-    "4 is even: " print 4 mymodule::is_even print nl
-    "7 is odd: " print 7 mymodule::is_odd print nl
+	"5 squared: " print 5 mymodule::square print nl
+	"3 cubed: " print 3 mymodule::cube print nl
+	"4 is even: " print 4 mymodule::is_even print nl
+	"7 is odd: " print 7 mymodule::is_odd print nl
 }
 ```
 
@@ -139,8 +139,8 @@ quadpm get https://git.sr.ht/~yourname/qd-mymodule
 use mymodule
 
 fn main() {
-    5 mymodule::square print nl  // 25
-    3 mymodule::cube print nl    // 27
+	5 mymodule::square print nl  // 25
+	3 mymodule::cube print nl    // 27
 }
 ```
 
@@ -228,22 +228,22 @@ Create `src/helper.c`:
 
 // Check if stdout is a terminal
 qd_exec_result is_terminal(qd_context* ctx) {
-    int result = isatty(STDOUT_FILENO);
-    qd_stack_push_int(ctx->st, result);
-    return (qd_exec_result){0};
+	int result = isatty(STDOUT_FILENO);
+	qd_stack_push_int(ctx->st, result);
+	return (qd_exec_result){0};
 }
 
 // Check if an environment variable is set
 qd_exec_result env_is_set(qd_context* ctx) {
-    qd_stack_element_t elem;
-    qd_stack_pop(ctx->st, &elem);
+	qd_stack_element_t elem;
+	qd_stack_pop(ctx->st, &elem);
 
-    const char* name = qd_string_data(elem.value.s);
-    int result = getenv(name) != NULL;
+	const char* name = qd_string_data(elem.value.s);
+	int result = getenv(name) != NULL;
 
-    qd_string_release(elem.value.s);
-    qd_stack_push_int(ctx->st, result);
-    return (qd_exec_result){0};
+	qd_string_release(elem.value.s);
+	qd_stack_push_int(ctx->st, result);
+	return (qd_exec_result){0};
 }
 ```
 
@@ -262,17 +262,17 @@ Add an import block to `module.qd`:
 ```qd
 // Import C functions from static library
 import "libmymodule_static.a" as "native" {
-    fn is_terminal( -- result:i64)
-    fn env_is_set(name:str -- result:i64)
+	fn is_terminal( -- result:i64)
+	fn env_is_set(name:str -- result:i64)
 }
 
 // Wrap native functions with Quadrate interface
 pub fn is_tty( -- result:i64) {
-    native::is_terminal
+	native::is_terminal
 }
 
 pub fn has_env(name:str -- result:i64) {
-    native::env_is_set
+	native::env_is_set
 }
 ```
 
@@ -325,7 +325,7 @@ If your C code depends on external system libraries (like OpenGL, SDL, or SQLite
   "description": "My module with native dependencies",
   "license": "MIT",
   "native": {
-    "link": ["GL", "GLU", "glut"]
+	"link": ["GL", "GLU", "glut"]
   }
 }
 ```
@@ -339,7 +339,7 @@ For example, a GLUT wrapper module would have:
 ```json
 {
   "native": {
-    "link": ["glut", "GL", "GLU"]
+	"link": ["glut", "GL", "GLU"]
   }
 }
 ```
@@ -361,29 +361,29 @@ Here's a complete example based on the `qd-color` module:
 #include <string.h>
 
 qd_exec_result is_terminal(qd_context* ctx) {
-    qd_stack_push_int(ctx->st, isatty(STDOUT_FILENO));
-    return (qd_exec_result){0};
+	qd_stack_push_int(ctx->st, isatty(STDOUT_FILENO));
+	return (qd_exec_result){0};
 }
 
 qd_exec_result supports_color(qd_context* ctx) {
-    if (!isatty(STDOUT_FILENO)) {
-        qd_stack_push_int(ctx->st, 0);
-        return (qd_exec_result){0};
-    }
+	if (!isatty(STDOUT_FILENO)) {
+		qd_stack_push_int(ctx->st, 0);
+		return (qd_exec_result){0};
+	}
 
-    const char* term = getenv("TERM");
-    if (!term || strcmp(term, "dumb") == 0) {
-        qd_stack_push_int(ctx->st, 0);
-        return (qd_exec_result){0};
-    }
+	const char* term = getenv("TERM");
+	if (!term || strcmp(term, "dumb") == 0) {
+		qd_stack_push_int(ctx->st, 0);
+		return (qd_exec_result){0};
+	}
 
-    qd_stack_push_int(ctx->st, 1);
-    return (qd_exec_result){0};
+	qd_stack_push_int(ctx->st, 1);
+	return (qd_exec_result){0};
 }
 
 qd_exec_result no_color_set(qd_context* ctx) {
-    qd_stack_push_int(ctx->st, getenv("NO_COLOR") != NULL);
-    return (qd_exec_result){0};
+	qd_stack_push_int(ctx->st, getenv("NO_COLOR") != NULL);
+	return (qd_exec_result){0};
 }
 ```
 
@@ -393,38 +393,38 @@ qd_exec_result no_color_set(qd_context* ctx) {
 // Terminal color output module with smart terminal detection
 
 import "libcolor_static.a" as "term" {
-    fn is_terminal( -- result:i64)
-    fn supports_color( -- result:i64)
-    fn no_color_set( -- result:i64)
+	fn is_terminal( -- result:i64)
+	fn supports_color( -- result:i64)
+	fn no_color_set( -- result:i64)
 }
 
 // Check if colors should be used
 fn should_use_color( -- enabled:i64) {
-    term::no_color_set if {
-        0 return
-    }
-    term::supports_color
+	term::no_color_set if {
+		0 return
+	}
+	term::supports_color
 }
 
 // Helper to output color code only if colors are enabled
 fn emit_if_color(code:str -- ) {
-    should_use_color if {
-        code print
-    } else {
-        drop
-    }
+	should_use_color if {
+		code print
+	} else {
+		drop
+	}
 }
 
 pub fn red( -- ) {
-    "\e[31m" emit_if_color
+	"\e[31m" emit_if_color
 }
 
 pub fn green( -- ) {
-    "\e[32m" emit_if_color
+	"\e[32m" emit_if_color
 }
 
 pub fn reset( -- ) {
-    "\e[0m" emit_if_color
+	"\e[0m" emit_if_color
 }
 ```
 
@@ -439,8 +439,8 @@ If your module depends on other modules, declare them in `qd.json`:
   "description": "My module",
   "license": "MIT",
   "dependencies": {
-    "str": "*",
-    "fmt": "*"
+	"str": "*",
+	"fmt": "*"
   }
 }
 ```
@@ -452,7 +452,7 @@ use str
 use fmt
 
 pub fn greet(name:str -- ) {
-    "Hello, " name str::concat "!" str::concat print nl
+	"Hello, " name str::concat "!" str::concat print nl
 }
 ```
 

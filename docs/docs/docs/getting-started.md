@@ -65,7 +65,7 @@ Create a file called `hello.qd`:
 
 ```qd
 fn main() {
-    "Hello, World!" print nl
+	"Hello, World!" print nl
 }
 ```
 

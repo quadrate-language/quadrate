@@ -17,17 +17,17 @@ The easiest way to fetch a web page is with `http::get`:
 use http
 
 fn main( -- ) {
-    "https://example.com" http::get switch {
-        Ok {
-            -> resp
-            "Status: " print resp @status print nl
-            resp @body print nl
-            resp http::close
-        }
-        _ {
-            "Request failed" print nl
-        }
-    }
+	"https://example.com" http::get switch {
+		Ok {
+			-> resp
+			"Status: " print resp @status print nl
+			resp @body print nl
+			resp http::close
+		}
+		_ {
+			"Request failed" print nl
+		}
+	}
 }
 ```
 
@@ -52,30 +52,30 @@ The `http::Response` struct contains:
 use http
 
 fn main( -- ) {
-    "https://example.com" http::get switch {
-        Ok {
-            -> resp
+	"https://example.com" http::get switch {
+		Ok {
+			-> resp
 
-            // Check status code using constants
-            resp @status http::StatusOK eq
-            if {
-                "Success!" print nl
-            }
+			// Check status code using constants
+			resp @status http::StatusOK eq
+			if {
+			    "Success!" print nl
+			}
 
-            // Print headers
-            "Headers:" print nl
-            resp @headers print nl
+			// Print headers
+			"Headers:" print nl
+			resp @headers print nl
 
-            // Print body
-            "Body:" print nl
-            resp @body print nl
+			// Print body
+			"Body:" print nl
+			resp @body print nl
 
-            resp http::close
-        }
-        _ {
-            "Request failed" print nl
-        }
-    }
+			resp http::close
+		}
+		_ {
+			"Request failed" print nl
+		}
+	}
 }
 ```
 
@@ -87,33 +87,33 @@ For more control over your requests, use the builder pattern:
 use http
 
 fn main( -- ) {
-    // Create a new request
-    "https://example.com/api" http::new -> req
+	// Create a new request
+	"https://example.com/api" http::new -> req
 
-    // Set the HTTP method
-    req "POST" http::method
+	// Set the HTTP method
+	req "POST" http::method
 
-    // Add headers
-    req "Content-Type" "application/json" http::header
-    req "Authorization" "Bearer my-token" http::header
+	// Add headers
+	req "Content-Type" "application/json" http::header
+	req "Authorization" "Bearer my-token" http::header
 
-    // Set the request body
-    req "hello world" http::body
+	// Set the request body
+	req "hello world" http::body
 
-    // Send the request
-    req http::send switch {
-        Ok {
-            -> resp
-            "Status: " print resp @status print nl
-            resp http::close
-        }
-        _ {
-            "Request failed" print nl
-        }
-    }
+	// Send the request
+	req http::send switch {
+		Ok {
+			-> resp
+			"Status: " print resp @status print nl
+			resp http::close
+		}
+		_ {
+			"Request failed" print nl
+		}
+	}
 
-    // Clean up the request object
-    req http::free_request
+	// Clean up the request object
+	req http::free_request
 }
 ```
 
@@ -237,23 +237,23 @@ Use these constants instead of magic numbers:
 use http
 
 fn main( -- ) {
-    "https://example.com" http::get switch {
-        Ok {
-            -> resp
-            resp @status http::StatusOK eq
-            if {
-                "Request succeeded" print nl
-            }
-            resp @status http::StatusNotFound eq
-            if {
-                "Page not found" print nl
-            }
-            resp http::close
-        }
-        _ {
-            "Request failed" print nl
-        }
-    }
+	"https://example.com" http::get switch {
+		Ok {
+			-> resp
+			resp @status http::StatusOK eq
+			if {
+			    "Request succeeded" print nl
+			}
+			resp @status http::StatusNotFound eq
+			if {
+			    "Page not found" print nl
+			}
+			resp http::close
+		}
+		_ {
+			"Request failed" print nl
+		}
+	}
 }
 ```
 
@@ -276,21 +276,21 @@ Handle specific errors:
 use http
 
 fn main( -- ) {
-    "invalid-url" http::get switch {
-        Ok {
-            -> resp
-            resp http::close
-        }
-        6 {
-            "Invalid URL!" print nl
-        }
-        3 {
-            "TLS error - check certificates" print nl
-        }
-        _ {
-            "Other error" print nl
-        }
-    }
+	"invalid-url" http::get switch {
+		Ok {
+			-> resp
+			resp http::close
+		}
+		6 {
+			"Invalid URL!" print nl
+		}
+		3 {
+			"TLS error - check certificates" print nl
+		}
+		_ {
+			"Other error" print nl
+		}
+	}
 }
 ```
 
@@ -319,29 +319,29 @@ use http
 use str
 
 fn fetch_page(url:str -- ) {
-    url http::get switch {
-        Ok {
-            -> resp
+	url http::get switch {
+		Ok {
+			-> resp
 
-            resp @status 200 eq
-            if {
-                "Page fetched successfully" print nl
-                "Content length: " print
-                resp @body str::len print nl
-            } else {
-                "HTTP error: " print resp @status print nl
-            }
+			resp @status 200 eq
+			if {
+			    "Page fetched successfully" print nl
+			    "Content length: " print
+			    resp @body str::len print nl
+			} else {
+			    "HTTP error: " print resp @status print nl
+			}
 
-            resp http::close
-        }
-        _ {
-            "Failed to fetch page" print nl
-        }
-    }
+			resp http::close
+		}
+		_ {
+			"Failed to fetch page" print nl
+		}
+	}
 }
 
 fn main( -- ) {
-    "https://example.com" fetch_page
+	"https://example.com" fetch_page
 }
 ```
 

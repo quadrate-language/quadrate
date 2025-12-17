@@ -249,17 +249,17 @@ HTTP response data.
 use http
 
 fn main() {
-    "https://example.com" http::get switch {
-        Ok {
-            -> resp
-            "Status: " print resp @status print nl
-            resp @body print nl
-            resp http::close
-        }
-        _ {
-            "Request failed" print nl
-        }
-    }
+	"https://example.com" http::get switch {
+		Ok {
+			-> resp
+			"Status: " print resp @status print nl
+			resp @body print nl
+			resp http::close
+		}
+		_ {
+			"Request failed" print nl
+		}
+	}
 }
 ```
 
@@ -269,26 +269,26 @@ fn main() {
 use http
 
 fn main() {
-    "https://api.example.com/data" http::new -> req
-    req "POST" http::method
-    req "Content-Type" "application/json" http::header
-    req "{\"name\":\"test\"}" http::body
+	"https://api.example.com/data" http::new -> req
+	req "POST" http::method
+	req "Content-Type" "application/json" http::header
+	req "{\"name\":\"test\"}" http::body
 
-    req http::send switch {
-        Ok {
-            -> resp
-            resp @status http::StatusCreated eq
-            if {
-                "Created successfully" print nl
-            }
-            resp http::close
-        }
-        _ {
-            "Request failed" print nl
-        }
-    }
+	req http::send switch {
+		Ok {
+			-> resp
+			resp @status http::StatusCreated eq
+			if {
+			    "Created successfully" print nl
+			}
+			resp http::close
+		}
+		_ {
+			"Request failed" print nl
+		}
+	}
 
-    req http::free_request
+	req http::free_request
 }
 ```
 
@@ -298,23 +298,23 @@ fn main() {
 use http
 
 fn main() {
-    "https://invalid.example" http::get switch {
-        Ok {
-            -> resp
-            resp http::close
-        }
-        http::ErrConnect {
-            "Connection failed" print nl
-        }
-        http::ErrTls {
-            "TLS/SSL error" print nl
-        }
-        http::ErrTimeout {
-            "Request timed out" print nl
-        }
-        _ {
-            "Unknown error" print nl
-        }
-    }
+	"https://invalid.example" http::get switch {
+		Ok {
+			-> resp
+			resp http::close
+		}
+		http::ErrConnect {
+			"Connection failed" print nl
+		}
+		http::ErrTls {
+			"TLS/SSL error" print nl
+		}
+		http::ErrTimeout {
+			"Request timed out" print nl
+		}
+		_ {
+			"Unknown error" print nl
+		}
+	}
 }
 ```

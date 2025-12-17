@@ -10,7 +10,7 @@ check that conditions are met.
 use testing
 
 test "addition works" {
-    2 3 + 5 testing::assert_eq
+	2 3 + 5 testing::assert_eq
 }
 
 ## Functions
