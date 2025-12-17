@@ -108,11 +108,11 @@ See [Toolchain](toolchain.md) for documentation on all available tools including
 
 ### Neovim
 
-Tree-sitter grammar and LSP support are available: https://git.sr.ht/~klahr/quadrate.nvim
+Tree-sitter grammar and LSP support: [quadrate.nvim](https://git.sr.ht/~klahr/quadrate.nvim)
 
-### Code - OSS / Visual Studio Code
+### Visual Studio Code / Code - OSS
 
-Syntax highlighting and LSP support are available: https://git.sr.ht/~klahr/quadrate-vscode
+Syntax highlighting and LSP support: [quadrate-vscode](https://git.sr.ht/~klahr/quadrate-vscode)
 
 ## Next Steps
 
