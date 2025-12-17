@@ -3,10 +3,13 @@ quadpm_sources = files(
 	'src/main.cc',
 )
 
+# JSON parsing for qd.json manifest
+jansson_dep = dependency('jansson', version: '>=2.14', required: true, fallback: ['jansson', 'jansson_dep'])
+
 quadpm_exe = executable(
 	'quadpm',
 	quadpm_sources,
-	dependencies: [],
+	dependencies: [jansson_dep],
 	install: true,
 	cpp_args: ['-std=c++20'],
 )

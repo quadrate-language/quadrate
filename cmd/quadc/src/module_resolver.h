@@ -31,8 +31,8 @@ std::string getPackageFromModuleName(const std::string& moduleName);
 // Returns the full path to the module file, or empty string if not found
 std::string findModuleFile(const std::string& moduleName, const std::string& sourceDir);
 
-// Load dependencies from quadrate.toml and add them as include paths
-// Looks for quadrate.toml in the specified directory
+// Load dependencies from qd.json and add them as include paths
+// Looks for qd.json in the specified directory
 // Returns the list of include paths found
 std::vector<std::string> loadDependenciesFromManifest(const std::string& manifestDir);
 

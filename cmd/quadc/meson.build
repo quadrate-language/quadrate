@@ -11,10 +11,13 @@ if llvmgen_dep.found()
 	# Include qdrt source directory for platform headers
 	qdrt_src_inc = include_directories('../../lib/qdrt')
 
+	# JSON parsing for qd.json manifest
+	jansson_dep = dependency('jansson', version: '>=2.14', required: true, fallback: ['jansson', 'jansson_dep'])
+
 	quadc_exe = executable('quadc',
 		quadc_sources,
 		include_directories: [qdrt_src_inc],
-		dependencies: [qc_dep, llvmgen_dep, qdrt_dep],
+		dependencies: [qc_dep, llvmgen_dep, qdrt_dep, jansson_dep],
 		install: false
 	)
 

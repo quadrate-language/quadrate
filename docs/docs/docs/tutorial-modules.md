@@ -9,7 +9,7 @@ A distributable module has this structure:
 ```
 my-module/
     module.qd        # Main module file (required)
-    quadrate.toml    # Package manifest (required)
+    qd.json          # Package manifest (required, npm-compatible)
     README.md        # Documentation (recommended)
     LICENSE          # License file (recommended)
     examples/        # Example programs (optional)
@@ -69,20 +69,23 @@ Key points:
 - Functions without `pub` are private to the module
 - Add doc comments with `///` for each public function
 
-## Step 3: Create quadrate.toml
+## Step 3: Create qd.json
 
-Create the module manifest `quadrate.toml`:
+Create the module manifest `qd.json`. The format is based on npm's package.json for familiarity:
 
-```toml
-[module]
-name = "mymodule"
-version = "1.0.0"
-description = "Math utilities for Quadrate"
-license = "MIT"
-
-[dependencies]
-# No dependencies for this module
+```json
+{
+  "name": "mymodule",
+  "version": "1.0.0",
+  "description": "Math utilities for Quadrate",
+  "license": "MIT",
+  "dependencies": {}
+}
 ```
+
+**Standard fields** (npm-compatible): `name`, `version`, `description`, `license`, `dependencies`
+
+**Quadrate-specific fields**: `native` (for C library linkage)
 
 The `name` field determines how users import your module:
 
@@ -172,7 +175,7 @@ quadc -I . -r examples/simple.qd
 quadc -I /path/to/qd-mymodule -r /path/to/qd-mymodule/examples/simple.qd
 ```
 
-The `-I` flag adds a module search path. The compiler reads `quadrate.toml` to match the module name, so your directory can be named anything (e.g., `qd-mymodule`) while the module is imported by its module name (e.g., `mymodule`).
+The `-I` flag adds a module search path. The compiler reads `qd.json` to match the module name, so your directory can be named anything (e.g., `qd-mymodule`) while the module is imported by its module name (e.g., `mymodule`).
 
 You can specify multiple `-I` paths if your module depends on other local modules:
 
@@ -313,28 +316,32 @@ When users install your module with `quadpm get`, the C sources are automaticall
 
 ### Step 5: Link with External C Libraries (Optional)
 
-If your C code depends on external system libraries (like OpenGL, SDL, or SQLite), declare them in `quadrate.toml`:
+If your C code depends on external system libraries (like OpenGL, SDL, or SQLite), declare them in `qd.json`:
 
-```toml
-[module]
-name = "mymodule"
-version = "1.0.0"
-description = "My module with native dependencies"
-license = "MIT"
-
-[native]
-link = ["GL", "GLU", "glut"]
+```json
+{
+  "name": "mymodule",
+  "version": "1.0.0",
+  "description": "My module with native dependencies",
+  "license": "MIT",
+  "native": {
+    "link": ["GL", "GLU", "glut"]
+  }
+}
 ```
 
-The `[native]` section specifies:
+The `native` section specifies:
 
 - `link` - List of system libraries to link with (passed as `-l` flags to the linker)
 
 For example, a GLUT wrapper module would have:
 
-```toml
-[native]
-link = ["glut", "GL", "GLU"]
+```json
+{
+  "native": {
+    "link": ["glut", "GL", "GLU"]
+  }
+}
 ```
 
 This tells the compiler to link with `-lglut -lGL -lGLU` when building programs that use this module.
@@ -423,18 +430,19 @@ pub fn reset( -- ) {
 
 ## Using Dependencies
 
-If your module depends on other modules, declare them in `quadrate.toml`:
+If your module depends on other modules, declare them in `qd.json`:
 
-```toml
-[module]
-name = "mymodule"
-version = "1.0.0"
-description = "My module"
-license = "MIT"
-
-[dependencies]
-str = "*"
-fmt = "*"
+```json
+{
+  "name": "mymodule",
+  "version": "1.0.0",
+  "description": "My module",
+  "license": "MIT",
+  "dependencies": {
+    "str": "*",
+    "fmt": "*"
+  }
+}
 ```
 
 Then import them in your module:
@@ -473,7 +481,7 @@ pub fn greet(name:str -- ) {
 Before publishing your module:
 
 - [ ] All public functions have doc comments
-- [ ] `quadrate.toml` has correct name, version, description
+- [ ] `qd.json` has correct name, version, description
 - [ ] `README.md` explains installation and usage
 - [ ] Examples in `examples/` directory work
 - [ ] LICENSE file included
@@ -486,7 +494,7 @@ Before publishing your module:
 Creating a distributable module involves:
 
 1. **Create `module.qd`** with `pub` functions
-2. **Create `quadrate.toml`** module manifest
+2. **Create `qd.json`** module manifest
 3. **Add documentation** (README.md, LICENSE)
 4. **Include examples** for users
 5. **Optionally add C code** in `src/` for FFI

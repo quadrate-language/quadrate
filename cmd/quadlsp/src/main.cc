@@ -43,170 +43,59 @@ static std::string expandTilde(const std::string& path) {
 	return path;
 }
 
-// Load dependencies from quadrate.toml and return include paths
+// Load dependencies from qd.json and return include paths
 static std::vector<std::string> loadDependenciesFromManifest(const std::string& manifestDir) {
 	std::vector<std::string> includePaths;
 
-	std::string manifestPath = manifestDir + "/quadrate.toml";
-	std::ifstream file(manifestPath);
-	if (!file.is_open()) {
+	std::string manifestPath = manifestDir + "/qd.json";
+	json_error_t error;
+	json_t* root = json_load_file(manifestPath.c_str(), 0, &error);
+	if (!root) {
 		return includePaths;
 	}
 
-	std::string line;
-	bool inDepsSection = false;
-	std::string expandedDepName;
-	std::string currentUrl;
+	json_t* dependencies = json_object_get(root, "dependencies");
+	if (dependencies && json_is_object(dependencies)) {
+		const char* depName;
+		json_t* depValue;
+		json_object_foreach(dependencies, depName, depValue) {
+			std::string resolved;
 
-	while (std::getline(file, line)) {
-		// Trim whitespace
-		line.erase(0, line.find_first_not_of(" \t\r\n"));
-		if (!line.empty()) {
-			line.erase(line.find_last_not_of(" \t\r\n") + 1);
-		}
-
-		// Check for [dependencies] section
-		if (line == "[dependencies]") {
-			if (!expandedDepName.empty() && !currentUrl.empty()) {
-				std::string resolved = currentUrl;
-				bool isPath = (resolved.size() > 0 && (resolved[0] == '/' || resolved[0] == '.' ||
-				               (resolved.size() > 1 && resolved[0] == '~' && resolved[1] == '/')));
-				if (isPath) {
-					resolved = expandTilde(resolved);
-					if (resolved.size() > 0 && resolved[0] != '/') {
-						resolved = manifestDir + "/" + resolved;
-					}
-					try {
-						resolved = std::filesystem::weakly_canonical(resolved).string();
-					} catch (...) {}
-					if (std::filesystem::exists(resolved)) {
-						includePaths.push_back(resolved);
-					}
+			if (json_is_string(depValue)) {
+				// Simple form: "name": "url" or "name": "../path"
+				resolved = json_string_value(depValue);
+			} else if (json_is_object(depValue)) {
+				// Expanded form: { "url": "..." }
+				json_t* url = json_object_get(depValue, "url");
+				if (url && json_is_string(url)) {
+					resolved = json_string_value(url);
 				}
 			}
-			inDepsSection = true;
-			expandedDepName = "";
-			currentUrl = "";
-			continue;
-		}
 
-		// Check for [dependencies.name] section
-		if (line.size() > 15 && line.substr(0, 14) == "[dependencies.") {
-			if (!expandedDepName.empty() && !currentUrl.empty()) {
-				std::string resolved = currentUrl;
-				bool isPath = (resolved.size() > 0 && (resolved[0] == '/' || resolved[0] == '.' ||
-				               (resolved.size() > 1 && resolved[0] == '~' && resolved[1] == '/')));
-				if (isPath) {
-					resolved = expandTilde(resolved);
-					if (resolved.size() > 0 && resolved[0] != '/') {
-						resolved = manifestDir + "/" + resolved;
-					}
-					try {
-						resolved = std::filesystem::weakly_canonical(resolved).string();
-					} catch (...) {}
-					if (std::filesystem::exists(resolved)) {
-						includePaths.push_back(resolved);
-					}
+			if (resolved.empty()) {
+				continue;
+			}
+
+			// Check if it's a local path
+			bool isPath = (resolved.size() > 0 && (resolved[0] == '/' || resolved[0] == '.' ||
+			               (resolved.size() > 1 && resolved[0] == '~' && resolved[1] == '/')));
+
+			if (isPath) {
+				resolved = expandTilde(resolved);
+				if (resolved.size() > 0 && resolved[0] != '/') {
+					resolved = manifestDir + "/" + resolved;
 				}
-			}
-			size_t endBracket = line.find(']');
-			if (endBracket != std::string::npos) {
-				expandedDepName = line.substr(14, endBracket - 14);
-				currentUrl = "";
-				inDepsSection = false;
-			}
-			continue;
-		}
-
-		// Check for other sections
-		if (!line.empty() && line[0] == '[') {
-			if (!expandedDepName.empty() && !currentUrl.empty()) {
-				std::string resolved = currentUrl;
-				bool isPath = (resolved.size() > 0 && (resolved[0] == '/' || resolved[0] == '.' ||
-				               (resolved.size() > 1 && resolved[0] == '~' && resolved[1] == '/')));
-				if (isPath) {
-					resolved = expandTilde(resolved);
-					if (resolved.size() > 0 && resolved[0] != '/') {
-						resolved = manifestDir + "/" + resolved;
-					}
-					try {
-						resolved = std::filesystem::weakly_canonical(resolved).string();
-					} catch (...) {}
-					if (std::filesystem::exists(resolved)) {
-						includePaths.push_back(resolved);
-					}
-				}
-				expandedDepName = "";
-				currentUrl = "";
-			}
-			inDepsSection = false;
-			continue;
-		}
-
-		// Skip comments and empty lines
-		if (line.empty() || line[0] == '#') {
-			continue;
-		}
-
-		// Parse key = value
-		size_t eqPos = line.find('=');
-		if (eqPos != std::string::npos) {
-			std::string key = line.substr(0, eqPos);
-			std::string value = line.substr(eqPos + 1);
-
-			key.erase(0, key.find_first_not_of(" \t"));
-			key.erase(key.find_last_not_of(" \t") + 1);
-			value.erase(0, value.find_first_not_of(" \t"));
-			value.erase(value.find_last_not_of(" \t") + 1);
-
-			if (value.size() >= 2 && value[0] == '"' && value[value.size() - 1] == '"') {
-				value = value.substr(1, value.size() - 2);
-			}
-
-			if (!expandedDepName.empty()) {
-				if (key == "url") {
-					currentUrl = value;
-				}
-			} else if (inDepsSection) {
-				std::string resolved = value;
-				bool isPath = (resolved.size() > 0 && (resolved[0] == '/' || resolved[0] == '.' ||
-				               (resolved.size() > 1 && resolved[0] == '~' && resolved[1] == '/')));
-
-				if (isPath) {
-					resolved = expandTilde(resolved);
-					if (resolved.size() > 0 && resolved[0] != '/') {
-						resolved = manifestDir + "/" + resolved;
-					}
-					try {
-						resolved = std::filesystem::weakly_canonical(resolved).string();
-					} catch (...) {}
-					if (std::filesystem::exists(resolved)) {
-						includePaths.push_back(resolved);
-					}
+				try {
+					resolved = std::filesystem::weakly_canonical(resolved).string();
+				} catch (...) {}
+				if (std::filesystem::exists(resolved)) {
+					includePaths.push_back(resolved);
 				}
 			}
 		}
 	}
 
-	// Handle any pending expanded dependency
-	if (!expandedDepName.empty() && !currentUrl.empty()) {
-		std::string resolved = currentUrl;
-		bool isPath = (resolved.size() > 0 && (resolved[0] == '/' || resolved[0] == '.' ||
-		               (resolved.size() > 1 && resolved[0] == '~' && resolved[1] == '/')));
-		if (isPath) {
-			resolved = expandTilde(resolved);
-			if (resolved.size() > 0 && resolved[0] != '/') {
-				resolved = manifestDir + "/" + resolved;
-			}
-			try {
-				resolved = std::filesystem::weakly_canonical(resolved).string();
-			} catch (...) {}
-			if (std::filesystem::exists(resolved)) {
-				includePaths.push_back(resolved);
-			}
-		}
-	}
-
+	json_decref(root);
 	return includePaths;
 }
 
@@ -777,7 +666,7 @@ private:
 			// Get filename from URI for validator
 			std::string filePath = uri.substr(7); // Remove "file://"
 
-			// Load include paths from quadrate.toml if present
+			// Load include paths from qd.json if present
 			std::filesystem::path fileDir = std::filesystem::path(filePath).parent_path();
 			std::vector<std::string> manifestPaths = loadDependenciesFromManifest(fileDir.string());
 			if (!manifestPaths.empty()) {

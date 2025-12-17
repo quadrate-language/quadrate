@@ -3,6 +3,7 @@
 #include <filesystem>
 #include <fstream>
 #include <iostream>
+#include <jansson.h>
 #include <unordered_map>
 
 // Platform abstractions
@@ -196,48 +197,23 @@ std::string findModuleFile(const std::string& moduleName, const std::string& sou
 
 			// Check if the include path IS the module directory (contains module.qd directly)
 			// This handles: -I /path/to/mymodule where mymodule/module.qd exists
-			// and quadrate.toml says name = "mymodule"
+			// and qd.json says name = "mymodule"
 			std::string directModulePath = expandedPath + "/module.qd";
 			if (std::filesystem::exists(directModulePath)) {
-				// Check if this directory's quadrate.toml matches the module name
-				std::string manifestPath = expandedPath + "/quadrate.toml";
+				// Check if this directory's qd.json matches the module name
+				std::string manifestPath = expandedPath + "/qd.json";
 				if (std::filesystem::exists(manifestPath)) {
-					std::ifstream file(manifestPath);
-					if (file.is_open()) {
-						std::string line;
-						bool inModuleSection = false;
-						while (std::getline(file, line)) {
-							line.erase(0, line.find_first_not_of(" \t\r\n"));
-							line.erase(line.find_last_not_of(" \t\r\n") + 1);
-							if (line == "[module]") {
-								inModuleSection = true;
-								continue;
-							}
-							if (!line.empty() && line[0] == '[') {
-								inModuleSection = false;
-								continue;
-							}
-							if (inModuleSection) {
-								size_t eqPos = line.find('=');
-								if (eqPos != std::string::npos) {
-									std::string key = line.substr(0, eqPos);
-									std::string value = line.substr(eqPos + 1);
-									key.erase(0, key.find_first_not_of(" \t"));
-									key.erase(key.find_last_not_of(" \t") + 1);
-									value.erase(0, value.find_first_not_of(" \t"));
-									value.erase(value.find_last_not_of(" \t") + 1);
-									if (key == "name") {
-										if (value.size() >= 2 && value[0] == '"' && value[value.size() - 1] == '"') {
-											value = value.substr(1, value.size() - 2);
-										}
-										if (value == moduleName) {
-											return directModulePath;
-										}
-										break;
-									}
-								}
+					json_error_t error;
+					json_t* root = json_load_file(manifestPath.c_str(), 0, &error);
+					if (root) {
+						json_t* name = json_object_get(root, "name");
+						if (name && json_is_string(name)) {
+							if (json_string_value(name) == moduleName) {
+								json_decref(root);
+								return directModulePath;
 							}
 						}
+						json_decref(root);
 					}
 				}
 			}
@@ -311,215 +287,65 @@ std::string findModuleFile(const std::string& moduleName, const std::string& sou
 	return ""; // Not found
 }
 
-// Load dependencies from quadrate.toml and return include paths
+// Load dependencies from qd.json and return include paths
 std::vector<std::string> loadDependenciesFromManifest(const std::string& manifestDir) {
 	std::vector<std::string> includePaths;
 
-	std::string manifestPath = manifestDir + "/quadrate.toml";
-	std::ifstream file(manifestPath);
-	if (!file.is_open()) {
+	std::string manifestPath = manifestDir + "/qd.json";
+	json_error_t error;
+	json_t* root = json_load_file(manifestPath.c_str(), 0, &error);
+	if (!root) {
 		return includePaths;
 	}
 
-	std::string line;
-	bool inDepsSection = false;
-	std::string expandedDepName;
-	std::string currentUrl;
+	json_t* dependencies = json_object_get(root, "dependencies");
+	if (dependencies && json_is_object(dependencies)) {
+		const char* depName;
+		json_t* depValue;
+		json_object_foreach(dependencies, depName, depValue) {
+			std::string resolved;
 
-	while (std::getline(file, line)) {
-		// Trim whitespace
-		line.erase(0, line.find_first_not_of(" \t\r\n"));
-		if (!line.empty()) {
-			line.erase(line.find_last_not_of(" \t\r\n") + 1);
-		}
-
-		// Check for [dependencies] section
-		if (line == "[dependencies]") {
-			// Save any pending expanded dependency
-			if (!expandedDepName.empty() && !currentUrl.empty()) {
-				// Resolve the URL/path
-				std::string resolved = currentUrl;
-				// Check if it's a local path
-				bool isPath = (resolved.size() > 0 && (resolved[0] == '/' || resolved[0] == '.' ||
-				               (resolved.size() > 1 && resolved[0] == '~' && resolved[1] == '/')));
-				if (isPath) {
-					resolved = expandTilde(resolved);
-					if (resolved.size() > 0 && resolved[0] != '/') {
-						resolved = manifestDir + "/" + resolved;
-					}
-					try {
-						resolved = std::filesystem::weakly_canonical(resolved).string();
-					} catch (...) {}
-					if (std::filesystem::exists(resolved)) {
-						includePaths.push_back(resolved);
-					}
-				} else {
-					// Git URL - check if installed in packages dir
-					std::string installed = findLatestPackageVersion(expandedDepName);
-					if (!installed.empty()) {
-						std::filesystem::path p(installed);
-						includePaths.push_back(p.parent_path().string());
-					}
+			if (json_is_string(depValue)) {
+				// Simple form: "name": "url" or "name": "../path"
+				resolved = json_string_value(depValue);
+			} else if (json_is_object(depValue)) {
+				// Expanded form: { "url": "..." }
+				json_t* url = json_object_get(depValue, "url");
+				if (url && json_is_string(url)) {
+					resolved = json_string_value(url);
 				}
 			}
-			inDepsSection = true;
-			expandedDepName = "";
-			currentUrl = "";
-			continue;
-		}
 
-		// Check for [dependencies.name] section (expanded form)
-		if (line.size() > 15 && line.substr(0, 14) == "[dependencies.") {
-			// Save any pending expanded dependency
-			if (!expandedDepName.empty() && !currentUrl.empty()) {
-				std::string resolved = currentUrl;
-				bool isPath = (resolved.size() > 0 && (resolved[0] == '/' || resolved[0] == '.' ||
-				               (resolved.size() > 1 && resolved[0] == '~' && resolved[1] == '/')));
-				if (isPath) {
-					resolved = expandTilde(resolved);
-					if (resolved.size() > 0 && resolved[0] != '/') {
-						resolved = manifestDir + "/" + resolved;
-					}
-					try {
-						resolved = std::filesystem::weakly_canonical(resolved).string();
-					} catch (...) {}
-					if (std::filesystem::exists(resolved)) {
-						includePaths.push_back(resolved);
-					}
-				} else {
-					std::string installed = findLatestPackageVersion(expandedDepName);
-					if (!installed.empty()) {
-						std::filesystem::path p(installed);
-						includePaths.push_back(p.parent_path().string());
-					}
+			if (resolved.empty()) {
+				continue;
+			}
+
+			// Check if it's a local path
+			bool isPath = (resolved.size() > 0 && (resolved[0] == '/' || resolved[0] == '.' ||
+			               (resolved.size() > 1 && resolved[0] == '~' && resolved[1] == '/')));
+
+			if (isPath) {
+				resolved = expandTilde(resolved);
+				if (resolved.size() > 0 && resolved[0] != '/') {
+					resolved = manifestDir + "/" + resolved;
 				}
-			}
-			// Extract name from [dependencies.name]
-			size_t endBracket = line.find(']');
-			if (endBracket != std::string::npos) {
-				expandedDepName = line.substr(14, endBracket - 14);
-				currentUrl = "";
-				inDepsSection = false;
-			}
-			continue;
-		}
-
-		// Check for other sections
-		if (!line.empty() && line[0] == '[') {
-			// Save any pending expanded dependency
-			if (!expandedDepName.empty() && !currentUrl.empty()) {
-				std::string resolved = currentUrl;
-				bool isPath = (resolved.size() > 0 && (resolved[0] == '/' || resolved[0] == '.' ||
-				               (resolved.size() > 1 && resolved[0] == '~' && resolved[1] == '/')));
-				if (isPath) {
-					resolved = expandTilde(resolved);
-					if (resolved.size() > 0 && resolved[0] != '/') {
-						resolved = manifestDir + "/" + resolved;
-					}
-					try {
-						resolved = std::filesystem::weakly_canonical(resolved).string();
-					} catch (...) {}
-					if (std::filesystem::exists(resolved)) {
-						includePaths.push_back(resolved);
-					}
-				} else {
-					std::string installed = findLatestPackageVersion(expandedDepName);
-					if (!installed.empty()) {
-						std::filesystem::path p(installed);
-						includePaths.push_back(p.parent_path().string());
-					}
+				try {
+					resolved = std::filesystem::weakly_canonical(resolved).string();
+				} catch (...) {}
+				if (std::filesystem::exists(resolved)) {
+					includePaths.push_back(resolved);
 				}
-				expandedDepName = "";
-				currentUrl = "";
-			}
-			inDepsSection = false;
-			continue;
-		}
-
-		// Skip comments and empty lines
-		if (line.empty() || line[0] == '#') {
-			continue;
-		}
-
-		// Parse key = value
-		size_t eqPos = line.find('=');
-		if (eqPos != std::string::npos) {
-			std::string key = line.substr(0, eqPos);
-			std::string value = line.substr(eqPos + 1);
-
-			// Trim key and value
-			key.erase(0, key.find_first_not_of(" \t"));
-			key.erase(key.find_last_not_of(" \t") + 1);
-			value.erase(0, value.find_first_not_of(" \t"));
-			value.erase(value.find_last_not_of(" \t") + 1);
-
-			// Remove quotes from value
-			if (value.size() >= 2 && value[0] == '"' && value[value.size() - 1] == '"') {
-				value = value.substr(1, value.size() - 2);
-			}
-
-			// Handle expanded dependency section
-			if (!expandedDepName.empty()) {
-				if (key == "url") {
-					currentUrl = value;
-				}
-			}
-			// Handle simple dependency in [dependencies] section
-			else if (inDepsSection) {
-				std::string depName = key;
-				std::string resolved = value;
-
-				// Check if it's a local path
-				bool isPath = (resolved.size() > 0 && (resolved[0] == '/' || resolved[0] == '.' ||
-				               (resolved.size() > 1 && resolved[0] == '~' && resolved[1] == '/')));
-
-				if (isPath) {
-					resolved = expandTilde(resolved);
-					if (resolved.size() > 0 && resolved[0] != '/') {
-						resolved = manifestDir + "/" + resolved;
-					}
-					try {
-						resolved = std::filesystem::weakly_canonical(resolved).string();
-					} catch (...) {}
-					if (std::filesystem::exists(resolved)) {
-						includePaths.push_back(resolved);
-					}
-				} else {
-					// Git URL - check if installed in packages dir
-					std::string installed = findLatestPackageVersion(depName);
-					if (!installed.empty()) {
-						std::filesystem::path p(installed);
-						includePaths.push_back(p.parent_path().string());
-					}
+			} else {
+				// Git URL - check if installed in packages dir
+				std::string installed = findLatestPackageVersion(depName);
+				if (!installed.empty()) {
+					std::filesystem::path p(installed);
+					includePaths.push_back(p.parent_path().string());
 				}
 			}
 		}
 	}
 
-	// Save any final pending expanded dependency
-	if (!expandedDepName.empty() && !currentUrl.empty()) {
-		std::string resolved = currentUrl;
-		bool isPath = (resolved.size() > 0 && (resolved[0] == '/' || resolved[0] == '.' ||
-		               (resolved.size() > 1 && resolved[0] == '~' && resolved[1] == '/')));
-		if (isPath) {
-			resolved = expandTilde(resolved);
-			if (resolved.size() > 0 && resolved[0] != '/') {
-				resolved = manifestDir + "/" + resolved;
-			}
-			try {
-				resolved = std::filesystem::weakly_canonical(resolved).string();
-			} catch (...) {}
-			if (std::filesystem::exists(resolved)) {
-				includePaths.push_back(resolved);
-			}
-		} else {
-			std::string installed = findLatestPackageVersion(expandedDepName);
-			if (!installed.empty()) {
-				std::filesystem::path p(installed);
-				includePaths.push_back(p.parent_path().string());
-			}
-		}
-	}
-
+	json_decref(root);
 	return includePaths;
 }

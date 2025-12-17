@@ -895,43 +895,35 @@ namespace Qd {
 				std::string expandedPath = expandTilde(includePath);
 
 				// Check if the include path IS the module directory (contains module.qd directly)
-				// and quadrate.toml name matches the module name we're looking for
+				// and qd.json name matches the module name we're looking for
 				std::string directModulePath = expandedPath + "/module.qd";
 				if (std::filesystem::exists(directModulePath)) {
-					// Check quadrate.toml for module name
-					std::string manifestPath = expandedPath + "/quadrate.toml";
+					// Check qd.json for module name
+					std::string manifestPath = expandedPath + "/qd.json";
 					if (std::filesystem::exists(manifestPath)) {
 						std::ifstream manifestFile(manifestPath);
 						if (manifestFile.is_open()) {
-							std::string line;
-							bool inModuleSection = false;
-							while (std::getline(manifestFile, line)) {
-								line.erase(0, line.find_first_not_of(" \t\r\n"));
-								line.erase(line.find_last_not_of(" \t\r\n") + 1);
-								if (line == "[module]") {
-									inModuleSection = true;
-									continue;
-								}
-								if (!line.empty() && line[0] == '[') {
-									inModuleSection = false;
-									continue;
-								}
-								if (inModuleSection) {
-									size_t eqPos = line.find('=');
-									if (eqPos != std::string::npos) {
-										std::string key = line.substr(0, eqPos);
-										std::string value = line.substr(eqPos + 1);
-										key.erase(0, key.find_first_not_of(" \t"));
-										key.erase(key.find_last_not_of(" \t") + 1);
-										value.erase(0, value.find_first_not_of(" \t"));
-										value.erase(value.find_last_not_of(" \t") + 1);
-										if (key == "name") {
-											if (value.size() >= 2 && value[0] == '"' &&
-													value[value.size() - 1] == '"') {
-												value = value.substr(1, value.size() - 2);
-											}
-											if (value == moduleName) {
-												manifestFile.close();
+							// Simple JSON name extraction - look for "name": "value"
+							std::stringstream manifestBuffer;
+							manifestBuffer << manifestFile.rdbuf();
+							std::string manifestContent = manifestBuffer.str();
+							manifestFile.close();
+
+							// Find "name" key
+							size_t nameKeyPos = manifestContent.find("\"name\"");
+							if (nameKeyPos != std::string::npos) {
+								// Find colon after key
+								size_t colonPos = manifestContent.find(':', nameKeyPos + 6);
+								if (colonPos != std::string::npos) {
+									// Find opening quote of value
+									size_t valueStart = manifestContent.find('"', colonPos + 1);
+									if (valueStart != std::string::npos) {
+										// Find closing quote
+										size_t valueEnd = manifestContent.find('"', valueStart + 1);
+										if (valueEnd != std::string::npos) {
+											std::string nameValue =
+													manifestContent.substr(valueStart + 1, valueEnd - valueStart - 1);
+											if (nameValue == moduleName) {
 												mModuleDirectories[moduleName] = expandedPath;
 												file.open(directModulePath);
 												if (file.good()) {
@@ -944,12 +936,10 @@ namespace Qd {
 												}
 												file.close();
 											}
-											break;
 										}
 									}
 								}
 							}
-							manifestFile.close();
 						}
 					}
 				}

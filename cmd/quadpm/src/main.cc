@@ -9,6 +9,7 @@
 #include <filesystem>
 #include <fstream>
 #include <iostream>
+#include <jansson.h>
 #include <string>
 #include <vector>
 
@@ -74,9 +75,9 @@ int execCommandLive(const std::string& cmd) {
 	return system(cmd.c_str());
 }
 
-// Parse module name from quadrate.toml
+// Parse module name from qd.json
 // Returns empty string if file doesn't exist or name not found
-// Native build configuration from quadrate.toml
+// Native build configuration from qd.json
 struct NativeConfig {
 	std::vector<std::string> link; // Libraries to link with (-l flags)
 };
@@ -92,271 +93,107 @@ struct Dependency {
 // Forward declaration
 bool compileCsources(const std::string& moduleDir, const std::string& moduleName, const NativeConfig& nativeConfig);
 
-// Parse [native] section from quadrate.toml
+// Parse native section from qd.json
 NativeConfig parseNativeConfig(const std::string& manifestPath) {
 	NativeConfig config;
-	std::ifstream file(manifestPath);
-	if (!file.is_open()) {
+
+	json_error_t error;
+	json_t* root = json_load_file(manifestPath.c_str(), 0, &error);
+	if (!root) {
 		return config;
 	}
 
-	std::string line;
-	bool inNativeSection = false;
-
-	while (std::getline(file, line)) {
-		// Trim whitespace
-		line.erase(0, line.find_first_not_of(" \t\r\n"));
-		line.erase(line.find_last_not_of(" \t\r\n") + 1);
-
-		// Check for [native] section
-		if (line == "[native]") {
-			inNativeSection = true;
-			continue;
-		}
-
-		// Check for other sections
-		if (!line.empty() && line[0] == '[') {
-			inNativeSection = false;
-			continue;
-		}
-
-		// Skip comments and empty lines
-		if (line.empty() || line[0] == '#') {
-			continue;
-		}
-
-		// Look for link = ["lib1", "lib2"] in native section
-		if (inNativeSection) {
-			size_t eqPos = line.find('=');
-			if (eqPos != std::string::npos) {
-				std::string key = line.substr(0, eqPos);
-				std::string value = line.substr(eqPos + 1);
-
-				// Trim key and value
-				key.erase(0, key.find_first_not_of(" \t"));
-				key.erase(key.find_last_not_of(" \t") + 1);
-				value.erase(0, value.find_first_not_of(" \t"));
-				value.erase(value.find_last_not_of(" \t") + 1);
-
-				if (key == "link") {
-					// Parse array: ["lib1", "lib2"]
-					if (value.size() >= 2 && value[0] == '[' && value[value.size() - 1] == ']') {
-						value = value.substr(1, value.size() - 2);
-						// Split by comma
-						size_t pos = 0;
-						while (pos < value.size()) {
-							// Skip whitespace
-							while (pos < value.size() && (value[pos] == ' ' || value[pos] == '\t')) {
-								pos++;
-							}
-							if (pos >= value.size()) {
-								break;
-							}
-
-							// Find quoted string
-							if (value[pos] == '"') {
-								pos++;
-								size_t endQuote = value.find('"', pos);
-								if (endQuote != std::string::npos) {
-									config.link.push_back(value.substr(pos, endQuote - pos));
-									pos = endQuote + 1;
-								}
-							}
-
-							// Skip to next comma or end
-							while (pos < value.size() && value[pos] != ',') {
-								pos++;
-							}
-							if (pos < value.size()) {
-								pos++; // Skip comma
-							}
-						}
-					}
+	json_t* native = json_object_get(root, "native");
+	if (native && json_is_object(native)) {
+		json_t* link = json_object_get(native, "link");
+		if (link && json_is_array(link)) {
+			size_t index;
+			json_t* value;
+			json_array_foreach(link, index, value) {
+				if (json_is_string(value)) {
+					config.link.push_back(json_string_value(value));
 				}
 			}
 		}
 	}
 
+	json_decref(root);
 	return config;
 }
 
 std::string parseModuleName(const std::string& manifestPath) {
-	std::ifstream file(manifestPath);
-	if (!file.is_open()) {
+	json_error_t error;
+	json_t* root = json_load_file(manifestPath.c_str(), 0, &error);
+	if (!root) {
 		return "";
 	}
 
-	std::string line;
-	bool inModuleSection = false;
-
-	while (std::getline(file, line)) {
-		// Trim whitespace
-		line.erase(0, line.find_first_not_of(" \t\r\n"));
-		line.erase(line.find_last_not_of(" \t\r\n") + 1);
-
-		// Check for [module] section
-		if (line == "[module]") {
-			inModuleSection = true;
-			continue;
-		}
-
-		// Check for other sections
-		if (!line.empty() && line[0] == '[') {
-			inModuleSection = false;
-			continue;
-		}
-
-		// Skip comments and empty lines
-		if (line.empty() || line[0] == '#') {
-			continue;
-		}
-
-		// Look for name = "value" in module section
-		if (inModuleSection) {
-			size_t eqPos = line.find('=');
-			if (eqPos != std::string::npos) {
-				std::string key = line.substr(0, eqPos);
-				std::string value = line.substr(eqPos + 1);
-
-				// Trim key and value
-				key.erase(0, key.find_first_not_of(" \t"));
-				key.erase(key.find_last_not_of(" \t") + 1);
-				value.erase(0, value.find_first_not_of(" \t"));
-				value.erase(value.find_last_not_of(" \t") + 1);
-
-				if (key == "name") {
-					// Remove quotes from value
-					if (value.size() >= 2 && value[0] == '"' && value[value.size() - 1] == '"') {
-						return value.substr(1, value.size() - 2);
-					}
-					return value;
-				}
-			}
-		}
+	std::string result;
+	json_t* name = json_object_get(root, "name");
+	if (name && json_is_string(name)) {
+		result = json_string_value(name);
 	}
 
-	return "";
+	json_decref(root);
+	return result;
 }
 
-// Parse [dependencies] section from quadrate.toml
+// Parse dependencies from qd.json
 // Supports:
-//   name = "https://git.sr.ht/~user/repo@ref"  (git URL)
-//   name = "../local/path"                      (local path)
-//   [dependencies.name]                         (expanded form with sha256)
-//   url = "..."
-//   sha256 = "..."
+//   "name": "https://git.sr.ht/~user/repo@ref"  (git URL)
+//   "name": "../local/path"                      (local path)
+//   "name": "*"                                  (any version, npm-style)
+//   "name": { "url": "...", "integrity": "sha256-..." }  (expanded form)
 std::vector<Dependency> parseDependencies(const std::string& manifestPath) {
 	std::vector<Dependency> deps;
-	std::ifstream file(manifestPath);
-	if (!file.is_open()) {
+
+	json_error_t error;
+	json_t* root = json_load_file(manifestPath.c_str(), 0, &error);
+	if (!root) {
 		return deps;
 	}
 
-	std::string line;
-	bool inDepsSection = false;
-	std::string expandedDepName;  // For [dependencies.name] form
-	Dependency currentDep;
+	json_t* dependencies = json_object_get(root, "dependencies");
+	if (dependencies && json_is_object(dependencies)) {
+		const char* key;
+		json_t* value;
+		json_object_foreach(dependencies, key, value) {
+			Dependency dep;
+			dep.name = key;
 
-	while (std::getline(file, line)) {
-		// Trim whitespace
-		line.erase(0, line.find_first_not_of(" \t\r\n"));
-		line.erase(line.find_last_not_of(" \t\r\n") + 1);
-
-		// Check for [dependencies] section
-		if (line == "[dependencies]") {
-			// Save any pending expanded dependency
-			if (!expandedDepName.empty() && !currentDep.url.empty()) {
-				currentDep.name = expandedDepName;
-				deps.push_back(currentDep);
-			}
-			inDepsSection = true;
-			expandedDepName = "";
-			currentDep = Dependency{};
-			continue;
-		}
-
-		// Check for [dependencies.name] section (expanded form)
-		if (line.size() > 15 && line.substr(0, 14) == "[dependencies.") {
-			// Save any pending expanded dependency
-			if (!expandedDepName.empty() && !currentDep.url.empty()) {
-				currentDep.name = expandedDepName;
-				deps.push_back(currentDep);
-			}
-			// Extract name from [dependencies.name]
-			size_t endBracket = line.find(']');
-			if (endBracket != std::string::npos) {
-				expandedDepName = line.substr(14, endBracket - 14);
-				currentDep = Dependency{};
-				inDepsSection = false;  // Now in expanded dep section
-			}
-			continue;
-		}
-
-		// Check for other sections
-		if (!line.empty() && line[0] == '[') {
-			// Save any pending expanded dependency
-			if (!expandedDepName.empty() && !currentDep.url.empty()) {
-				currentDep.name = expandedDepName;
-				deps.push_back(currentDep);
-				expandedDepName = "";
-				currentDep = Dependency{};
-			}
-			inDepsSection = false;
-			continue;
-		}
-
-		// Skip comments and empty lines
-		if (line.empty() || line[0] == '#') {
-			continue;
-		}
-
-		// Parse key = value
-		size_t eqPos = line.find('=');
-		if (eqPos != std::string::npos) {
-			std::string key = line.substr(0, eqPos);
-			std::string value = line.substr(eqPos + 1);
-
-			// Trim key and value
-			key.erase(0, key.find_first_not_of(" \t"));
-			key.erase(key.find_last_not_of(" \t") + 1);
-			value.erase(0, value.find_first_not_of(" \t"));
-			value.erase(value.find_last_not_of(" \t") + 1);
-
-			// Remove quotes from value
-			if (value.size() >= 2 && value[0] == '"' && value[value.size() - 1] == '"') {
-				value = value.substr(1, value.size() - 2);
-			}
-
-			// Handle expanded dependency section
-			if (!expandedDepName.empty()) {
-				if (key == "url") {
-					currentDep.url = value;
-					// Check if it's a local path
-					currentDep.isPath = (value.size() > 0 && (value[0] == '/' || value[0] == '.' ||
-					                     (value.size() > 1 && value[0] == '~' && value[1] == '/')));
-				} else if (key == "sha256") {
-					currentDep.sha256 = value;
+			if (json_is_string(value)) {
+				// Simple form: "name": "url" or "name": "*"
+				dep.url = json_string_value(value);
+				// Check if it's a local path (starts with /, ./, ../, or ~/)
+				dep.isPath = (dep.url.size() > 0 && (dep.url[0] == '/' || dep.url[0] == '.' ||
+				              (dep.url.size() > 1 && dep.url[0] == '~' && dep.url[1] == '/')));
+			} else if (json_is_object(value)) {
+				// Expanded form: { "url": "...", "integrity": "sha256-..." }
+				json_t* url = json_object_get(value, "url");
+				if (url && json_is_string(url)) {
+					dep.url = json_string_value(url);
+					dep.isPath = (dep.url.size() > 0 && (dep.url[0] == '/' || dep.url[0] == '.' ||
+					              (dep.url.size() > 1 && dep.url[0] == '~' && dep.url[1] == '/')));
+				}
+				json_t* integrity = json_object_get(value, "integrity");
+				if (integrity && json_is_string(integrity)) {
+					std::string integrityStr = json_string_value(integrity);
+					// Strip "sha256-" prefix if present (npm-style)
+					if (integrityStr.size() > 7 && integrityStr.substr(0, 7) == "sha256-") {
+						dep.sha256 = integrityStr.substr(7);
+					} else {
+						dep.sha256 = integrityStr;
+					}
 				}
 			}
-			// Handle simple dependency in [dependencies] section
-			else if (inDepsSection) {
-				Dependency dep;
-				dep.name = key;
-				dep.url = value;
-				// Check if it's a local path (starts with /, ./, ../, or ~/)
-				dep.isPath = (value.size() > 0 && (value[0] == '/' || value[0] == '.' ||
-				              (value.size() > 1 && value[0] == '~' && value[1] == '/')));
+
+			if (!dep.url.empty()) {
 				deps.push_back(dep);
 			}
 		}
 	}
 
-	// Save any final pending expanded dependency
-	if (!expandedDepName.empty() && !currentDep.url.empty()) {
-		currentDep.name = expandedDepName;
-		deps.push_back(currentDep);
-	}
-
+	json_decref(root);
 	return deps;
 }
 
@@ -401,8 +238,8 @@ std::string gitClone(const GitRef& gitRef) {
 		return "";
 	}
 
-	// Check for quadrate.toml and use module name if specified
-	std::string manifestPath = targetDir + "/quadrate.toml";
+	// Check for qd.json and use module name if specified
+	std::string manifestPath = targetDir + "/qd.json";
 	std::string manifestModuleName = parseModuleName(manifestPath);
 	std::string finalDir = targetDir;
 	std::string actualModuleName = gitRef.moduleName;
@@ -441,7 +278,7 @@ std::string gitClone(const GitRef& gitRef) {
 	if (fs::exists(srcDir) && fs::is_directory(srcDir)) {
 		std::cout << COLOR_GREEN << "  ✓ Found src/ directory" << COLOR_RESET << "\n";
 		// Parse native config for link libraries
-		std::string finalManifestPath = finalDir + "/quadrate.toml";
+		std::string finalManifestPath = finalDir + "/qd.json";
 		NativeConfig nativeConfig = parseNativeConfig(finalManifestPath);
 		compileCsources(finalDir, actualModuleName, nativeConfig);
 	}
@@ -580,7 +417,7 @@ void printUsage() {
 	std::cout << "  -h, --help       Show this help message\n";
 	std::cout << "  -v, --version    Show version information\n\n";
 	std::cout << "Commands:\n";
-	std::cout << "  install          Install dependencies from quadrate.toml\n";
+	std::cout << "  install          Install dependencies from qd.json\n";
 	std::cout << "  get <url>[@ref]  Fetch and install a module from Git\n";
 	std::cout << "  update [name]    Update installed module(s) (git pull)\n";
 	std::cout << "  list             List installed modules\n";
@@ -591,13 +428,18 @@ void printUsage() {
 	std::cout << "  quadpm get https://git.sr.ht/~user/zlib@1.2.0\n";
 	std::cout << "  quadpm get https://github.com/user/http@main\n";
 	std::cout << "  quadpm list\n\n";
-	std::cout << "quadrate.toml dependencies format:\n";
-	std::cout << "  [dependencies]\n";
-	std::cout << "  glut = \"https://git.sr.ht/~user/qd-glut@v1.0.0\"\n";
-	std::cout << "  mylib = \"../local/path\"\n\n";
-	std::cout << "  [dependencies.crypto]\n";
-	std::cout << "  url = \"https://git.sr.ht/~user/qd-crypto@v2.0.0\"\n";
-	std::cout << "  sha256 = \"abc123...\"  # commit hash for integrity\n\n";
+	std::cout << "qd.json format (npm-compatible):\n";
+	std::cout << "  {\n";
+	std::cout << "    \"name\": \"mymodule\",\n";
+	std::cout << "    \"dependencies\": {\n";
+	std::cout << "      \"glut\": \"https://git.sr.ht/~user/qd-glut@v1.0.0\",\n";
+	std::cout << "      \"mylib\": \"../local/path\",\n";
+	std::cout << "      \"crypto\": {\n";
+	std::cout << "        \"url\": \"https://git.sr.ht/~user/qd-crypto@v2.0.0\",\n";
+	std::cout << "        \"integrity\": \"sha256-abc123...\"\n";
+	std::cout << "      }\n";
+	std::cout << "    }\n";
+	std::cout << "  }\n\n";
 	std::cout << "Environment:\n";
 	std::cout << "  QUADRATE_PATH      Module installation directory\n";
 	std::cout << "  XDG_DATA_HOME      If set, uses $XDG_DATA_HOME/quadrate/modules\n";
@@ -676,7 +518,7 @@ bool updateModule(const std::string& moduleDir) {
 	std::cout << COLOR_GREEN << "  ✓ Updated " << displayName << COLOR_RESET << "\n";
 
 	// Rebuild C sources if present
-	std::string manifestPath = moduleDir + "/quadrate.toml";
+	std::string manifestPath = moduleDir + "/qd.json";
 	NativeConfig nativeConfig = parseNativeConfig(manifestPath);
 	compileCsources(moduleDir, moduleName, nativeConfig);
 
@@ -687,18 +529,18 @@ bool updateModule(const std::string& moduleDir) {
 int buildModule() {
 	std::string cwd = fs::current_path().string();
 
-	// Check for quadrate.toml
-	std::string manifestPath = cwd + "/quadrate.toml";
+	// Check for qd.json
+	std::string manifestPath = cwd + "/qd.json";
 	if (!fs::exists(manifestPath)) {
-		std::cerr << COLOR_RED << "Error: No quadrate.toml found in current directory" << COLOR_RESET << "\n";
-		std::cerr << "Run this command from a module directory containing quadrate.toml\n";
+		std::cerr << COLOR_RED << "Error: No qd.json found in current directory" << COLOR_RESET << "\n";
+		std::cerr << "Run this command from a module directory containing qd.json\n";
 		return 1;
 	}
 
 	// Parse module name from manifest
 	std::string moduleName = parseModuleName(manifestPath);
 	if (moduleName.empty()) {
-		std::cerr << COLOR_RED << "Error: Could not parse module name from quadrate.toml" << COLOR_RESET << "\n";
+		std::cerr << COLOR_RED << "Error: Could not parse module name from qd.json" << COLOR_RESET << "\n";
 		return 1;
 	}
 
@@ -747,21 +589,21 @@ std::string computeSha256(const std::string& path) {
 	}
 }
 
-// Install dependencies from quadrate.toml
+// Install dependencies from qd.json
 int installDependencies() {
 	std::string cwd = fs::current_path().string();
 
-	// Check for quadrate.toml
-	std::string manifestPath = cwd + "/quadrate.toml";
+	// Check for qd.json
+	std::string manifestPath = cwd + "/qd.json";
 	if (!fs::exists(manifestPath)) {
-		std::cerr << COLOR_RED << "Error: No quadrate.toml found in current directory" << COLOR_RESET << "\n";
+		std::cerr << COLOR_RED << "Error: No qd.json found in current directory" << COLOR_RESET << "\n";
 		return 1;
 	}
 
 	// Parse dependencies
 	std::vector<Dependency> deps = parseDependencies(manifestPath);
 	if (deps.empty()) {
-		std::cout << "No dependencies found in quadrate.toml\n";
+		std::cout << "No dependencies found in qd.json\n";
 		return 0;
 	}
 

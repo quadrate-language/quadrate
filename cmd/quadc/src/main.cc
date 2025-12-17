@@ -50,7 +50,7 @@ int main(int argc, char** argv) {
 	// Set module include paths from command-line options
 	setModuleIncludePaths(opts.includePaths);
 
-	// Load dependencies from quadrate.toml
+	// Load dependencies from qd.json
 	// First check source file's directory, then fall back to cwd
 	std::vector<std::string> manifestPaths;
 	if (!opts.files.empty()) {
