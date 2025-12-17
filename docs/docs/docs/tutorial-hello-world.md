@@ -35,10 +35,9 @@ fn main() {
 
 - `fn` - keyword to declare a function
 - `main` - the function name (entry point for the program)
-- `()` - the **stack signature**:
-  - Left of `--`: inputs (parameters consumed from stack)
-  - Right of `--`: outputs (values left on stack)
-  - Empty on both sides means no inputs, no outputs
+- `()` - empty parentheses mean no inputs and no outputs
+
+Functions that take or return values use a **stack signature** with `--` to separate inputs from outputs. For example, `fn add(a:i64 b:i64 -- sum:i64)` takes two integers and returns one. We'll see this in the [Stack Tutorial](tutorial-stack.md).
 
 ### The String
 
