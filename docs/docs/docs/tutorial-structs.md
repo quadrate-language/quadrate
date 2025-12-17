@@ -291,6 +291,6 @@ Key concepts:
 
 ## Next Steps
 
+- **Next:** [Error Handling](tutorial-errors.md) - Working with fallible functions
 - [Standard Library](stdlib/index.md) - Available modules and functions
-- [Error Handling](tutorial-errors.md) - Working with fallible functions
 

@@ -64,6 +64,23 @@ nl
 
 Prints a newline character.
 
+## The Stack
+
+Quadrate is **stack-based**. When you write a value, it goes onto a stack. When you call an operation, it takes values from the stack and puts results back.
+
+```qd
+fn main() {
+    2 3 +      // Push 2, push 3, add them → 5 on stack
+    print nl   // Pop 5 and print it
+}
+```
+
+This is called **concatenative** programming - operations chain together left-to-right, each one consuming and producing stack values.
+
+The [Stack Tutorial](tutorial-stack.md) covers this in detail. For now, just know:
+- Values get **pushed** onto the stack
+- Operations **pop** their inputs and **push** their outputs
+
 ## Exploring Further
 
 ### Multiple Prints
@@ -137,6 +154,5 @@ quadc --dump-ir hello.qd
 
 ## Next Steps
 
-- [Stack Tutorial](tutorial-stack.md) - Learn how the stack works
-- [Structs Tutorial](tutorial-structs.md) - Work with structured data
-- [Error Handling](tutorial-errors.md) - Handle errors properly
+- **Next:** [Stack Tutorial](tutorial-stack.md) - Deep dive into stack-based programming
+- [Standard Library](stdlib/index.md) - Available modules and functions

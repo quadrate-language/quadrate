@@ -116,8 +116,16 @@ Syntax highlighting and LSP support are available: https://git.sr.ht/~klahr/quad
 
 ## Next Steps
 
-- [Hello World Tutorial](tutorial-hello-world.md) - A deeper look at your first program
-- [Stack Tutorial](tutorial-stack.md) - Understanding stack-based programming
-- [Structs Tutorial](tutorial-structs.md) - Working with structured data
+Continue learning Quadrate:
+
+1. [Hello World Tutorial](tutorial-hello-world.md) - Understanding your first program
+2. [Stack Tutorial](tutorial-stack.md) - The core concepts of stack-based programming
+3. [Structs Tutorial](tutorial-structs.md) - Working with structured data
+4. [Error Handling](tutorial-errors.md) - Handling errors properly
+5. [Modules Tutorial](tutorial-modules.md) - Creating reusable modules
+
+Reference:
+
 - [Standard Library](stdlib/index.md) - Available modules and functions
+- [Toolchain](toolchain.md) - All available tools
 

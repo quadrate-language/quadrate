@@ -360,6 +360,6 @@ Key concepts:
 
 ## Next Steps
 
-- [Structs Tutorial](tutorial-structs.md) - Working with structured data
+- **Next:** [Structs Tutorial](tutorial-structs.md) - Working with structured data
 - [Standard Library](stdlib/index.md) - Available modules and functions
 

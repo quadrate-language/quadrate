@@ -295,5 +295,5 @@ Key concepts:
 
 ## Next Steps
 
+- **Next:** [Modules Tutorial](tutorial-modules.md) - Creating reusable modules
 - [Standard Library](stdlib/index.md) - See which functions are fallible
-- [Examples](https://git.sr.ht/~klahr/quadrate/tree/master/item/examples) - Real-world error handling
