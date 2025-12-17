@@ -259,6 +259,7 @@ fn main() {
 	current 0 != while {
 		current @value print nl
 		current @next -> current
+		current 0 !=
 	}
 	// Output: 10 20 30
 }

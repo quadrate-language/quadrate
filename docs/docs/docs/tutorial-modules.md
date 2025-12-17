@@ -49,7 +49,7 @@ pub fn cube(x:i64 -- result:i64) {
 
 /// Check if a number is even
 pub fn is_even(x:i64 -- result:i64) {
-    2 % 0 =
+    2 % 0 ==
 }
 
 /// Check if a number is odd

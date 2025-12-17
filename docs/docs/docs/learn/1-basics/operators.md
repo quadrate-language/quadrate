@@ -112,8 +112,15 @@ fn main() {
 	true false and print nl  // 0
 	true false or print nl   // 1
 	false false or print nl  // 0
-	true not print nl        // 0
-	false not print nl       // 1
+}
+```
+
+For logical negation, use comparison with zero:
+
+```qd
+fn main() {
+	true 0 == print nl   // 0 (logical NOT true)
+	false 0 == print nl  // 1 (logical NOT false)
 }
 ```
 
@@ -126,12 +133,15 @@ fn main() {
 	0b1100 0b1010 and print nl  // 8 (0b1000)
 	0b1100 0b1010 or print nl   // 14 (0b1110)
 	0b1100 0b1010 xor print nl  // 6 (0b0110)
+	0b1111 not print nl         // -16 (bitwise NOT)
 	1 4 << print nl             // 16 (shift left)
 	16 2 >> print nl            // 4 (shift right)
 }
 ```
 
 You can also use `shl` and `shr` as word forms for `<<` and `>>`.
+
+**Note:** `and`, `or`, and `not` are bitwise operators. For logical operations on boolean values (0/1), `and` and `or` work correctly. For logical NOT, use `0 ==` instead.
 
 ## Combining Operations
 

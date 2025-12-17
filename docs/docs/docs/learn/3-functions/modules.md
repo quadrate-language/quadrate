@@ -191,7 +191,7 @@ pub struct Circle {
 }
 
 pub fn circle_area(r:f64 -- area:f64) {
-	sq Math::Pi *
+	dup * math::Pi *
 }
 
 pub fn circle_circumference(r:f64 -- c:f64) {

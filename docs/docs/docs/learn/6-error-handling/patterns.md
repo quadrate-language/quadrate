@@ -244,12 +244,13 @@ fn retry(max_attempts:i64 -- result:i64)! {
 	0 -> success
 	0 -> last_result
 
-	success not attempts max_attempts < and while {
+	success 0 == attempts max_attempts < and while {
 		unreliable_op if {
 			-> last_result
 			1 -> success
 		}
 		attempts inc -> attempts
+		success 0 == attempts max_attempts < and
 	}
 
 	success if {

@@ -116,11 +116,11 @@ fn copy_file(src:str dst:str -- )! {
 			// Copy data...
 		} else {
 			drop
-			"create failed" 2 error
+			"create failed" 2 panic
 		}
 	} else {
 		drop
-		"open failed" 1 error
+		"open failed" 1 panic
 	}
 }
 ```
@@ -200,7 +200,7 @@ Unlike try/finally in other languages, defer is simpler:
 fn example() {
 	"file.txt" open_file -> file
 	defer {
-		fileclose_file
+		file close_file
 	}
 	// ... use file
 }

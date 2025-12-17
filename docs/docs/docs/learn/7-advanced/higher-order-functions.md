@@ -247,10 +247,9 @@ The signatures are more verbose but provide compile-time type checking.
 
 ## Limitations
 
-Quadrate's anonymous functions are **function pointers**, not full closures:
+Quadrate's anonymous functions have some limitations:
 
-- Cannot capture local variables from enclosing scope
-- Cannot be composed or manipulated as data
 - Each must have an explicit type signature
+- Variables are captured by reference (changes are visible to the closure)
 
-For more advanced functional patterns, consider using named helper functions.
+For more advanced functional patterns, consider using named helper functions. See [Anonymous Functions](anonymous-functions.md) for details on closures and variable capture.

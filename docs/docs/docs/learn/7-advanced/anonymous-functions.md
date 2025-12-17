@@ -97,9 +97,9 @@ fn main() {
 }
 ```
 
-### Capture by Value
+### Capture by Reference
 
-Variables are captured by value at the time the closure is created. Changes to the original variable don't affect the captured value:
+Variables are captured by reference. Changes to the original variable are visible to the closure:
 
 ```qd
 fn main() {
@@ -110,7 +110,7 @@ fn main() {
 	get_x call print nl  // 10
 
 	99 -> x  // Change the original variable
-	get_x call print nl  // Still 10 (captured value)
+	get_x call print nl  // 99 (sees the change)
 }
 ```
 

@@ -16,20 +16,20 @@ The `!` tells the compiler this function can return an error.
 
 ## Signaling Errors
 
-Use the `error` instruction to signal an error:
+Use the `panic` instruction to signal an error:
 
 ```qd
 fn division(a:i64 b:i64 -- result:i64)! {
 	dup 0 == if {
 		drop drop
 		0  // Output value (required even on error)
-		"division by zero" -1 error
+		"division by zero" -1 panic
 	}
 	div
 }
 ```
 
-The `error` instruction takes:
+The `panic` instruction takes:
 1. An error message (string)
 2. An error code (integer)
 
@@ -66,7 +66,7 @@ fn division(a:i64 b:i64 -- result:i64)! {
 	dup 0 == if {
 		drop drop
 		0
-		"division by zero" -1 error
+		"division by zero" -1 panic
 	}
 	div
 }
