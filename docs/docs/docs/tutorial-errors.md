@@ -21,8 +21,7 @@ Use the `panic` instruction to signal an error:
 ```qd
 fn division(a:i64 b:i64 -- result:i64)! {
 	dup 0 == if {
-		drop drop
-		0  // Output value (required even on error)
+		drop2
 		"division by zero" -1 panic
 	}
 	div
@@ -32,6 +31,8 @@ fn division(a:i64 b:i64 -- result:i64)! {
 The `panic` instruction takes:
 1. An error message (string)
 2. An error code (integer)
+
+When a function panics, it does **not** produce any output values.
 
 ## Calling Fallible Functions
 
@@ -43,8 +44,7 @@ fn main() {
 		// Success: result is on stack
 		"Result: " print print nl
 	} else {
-		// Error: error value is on stack
-		drop
+		// Error: no outputs on stack
 		"Division failed!" print nl
 	}
 }
@@ -56,16 +56,54 @@ The compiler enforces this - you cannot ignore errors.
 
 After calling a fallible function:
 
-- **Success**: The `if` branch executes, result is on stack
-- **Error**: The `else` branch executes, error value is on stack (use `drop` to discard)
+- **Success**: The `if` branch executes, function outputs are on stack
+- **Error**: The `else` branch executes, function outputs are NOT on stack
+
+## Using switch Instead of if
+
+You can also use `switch` to handle fallible function results:
+
+```qd
+fn main() {
+	10 0 division switch {
+		Ok {
+			// Success: result is on stack
+			"Result: " print print nl
+		}
+		Err {
+			// Error occurred
+			"Division failed!" print nl
+		}
+	}
+}
+```
+
+The `switch` matches:
+- `Ok` for successful execution (outputs on stack)
+- `Err` for error (no outputs on stack)
+
+To get error details in the `Err` branch, use the `err` instruction:
+
+```qd
+fn main() {
+	10 0 division switch {
+		Ok {
+			"Result: " print print nl
+		}
+		Err {
+			err -> code -> msg
+			"Error: " print msg print " (code " print code print ")" print nl
+		}
+	}
+}
+```
 
 ## Complete Example
 
 ```qd
 fn division(a:i64 b:i64 -- result:i64)! {
 	dup 0 == if {
-		drop drop
-		0
+		drop2
 		"division by zero" -1 panic
 	}
 	div
@@ -76,7 +114,6 @@ fn main() {
 	1 0 division if {
 		"1 / 0 = " print print nl
 	} else {
-		drop
 		"Error: Cannot divide by zero!" print nl
 	}
 
@@ -84,7 +121,6 @@ fn main() {
 	10 2 division if {
 		"10 / 2 = " print print nl
 	} else {
-		drop
 		"Unexpected error" print nl
 	}
 }
@@ -143,13 +179,11 @@ fn main() {
 			-> bytes_read
 			"Read " print bytes_read print " bytes" print nl
 		} else {
-			drop
 			"Read error" print nl
 		}
 
 		buf mem::free
 	} else {
-		drop
 		"Could not open file" print nl
 	}
 }
@@ -177,13 +211,9 @@ fn read_file(path:str -- content:str)! {
 			-> bytes_read
 			buf bytes_read mem::to_string
 		} else {
-			drop
-			""
 			"read failed" 1 panic
 		}
 	} else {
-		drop
-		""
 		"open failed" 1 panic
 	}
 }
@@ -200,7 +230,6 @@ fn safe_divide(a:i64 b:i64 -- result:i64) {
 	division if {
 		// Success - return result
 	} else {
-		drop
 		0  // Return default value on error
 	}
 }
@@ -216,12 +245,9 @@ fn process(value:i64 -- result:i64)! {
 		half 0 > if {
 			half
 		} else {
-			0
 			"value too small" 1 panic
 		}
 	} else {
-		drop
-		0
 		"division failed" 1 panic
 	}
 }
@@ -236,22 +262,16 @@ fn try_all( -- success_count:i64) {
 	10 2 division if {
 		drop
 		count 1 + -> count
-	} else {
-		drop
 	}
 
 	10 5 division if {
 		drop
 		count 1 + -> count
-	} else {
-		drop
 	}
 
 	10 0 division if {
 		drop
 		count 1 + -> count
-	} else {
-		drop
 	}
 
 	count

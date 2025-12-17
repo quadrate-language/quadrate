@@ -135,7 +135,7 @@ quadpm get https://git.sr.ht/~yourname/qd-mymodule
 
 ## Usage
 
-```quadrate
+```qd
 use mymodule
 
 fn main() {

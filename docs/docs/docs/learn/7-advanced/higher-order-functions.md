@@ -12,7 +12,7 @@ In stack-based programming, you often need to:
 
 Without combinators, you need temporary variables:
 
-```quadrate
+```qd
 // Without combinators: Is n both positive AND even?
 6 -> n
 n 0 > -> is_positive
@@ -22,7 +22,7 @@ is_positive is_even and
 
 With combinators, it's one line:
 
-```quadrate
+```qd
 use hof
 
 6 fn (x:i64 -- r:i64) { 0 > } fn (x:i64 -- r:i64) { 2 % 0 == } hof::bi and
@@ -34,7 +34,7 @@ use hof
 
 Apply a single function to a value.
 
-```quadrate
+```qd
 use hof
 
 5 fn (x:i64 -- r:i64) { 2 * } hof::apply
@@ -45,7 +45,7 @@ use hof
 
 Apply **two** functions to the **same** value.
 
-```quadrate
+```qd
 use hof
 
 5 fn (x:i64 -- r:i64) { 2 * } fn (x:i64 -- r:i64) { 3 + } hof::bi
@@ -55,7 +55,7 @@ use hof
 
 **Use case**: Check multiple conditions on the same value.
 
-```quadrate
+```qd
 // Is age valid (positive) AND adult (>= 18)?
 age fn (x:i64 -- r:i64) { 0 > } fn (x:i64 -- r:i64) { 18 >= } hof::bi and
 ```
@@ -64,7 +64,7 @@ age fn (x:i64 -- r:i64) { 0 > } fn (x:i64 -- r:i64) { 18 >= } hof::bi and
 
 Apply **three** functions to the **same** value.
 
-```quadrate
+```qd
 use hof
 
 5 fn (x:i64 -- r:i64) { 1 + } fn (x:i64 -- r:i64) { 2 * } fn (x:i64 -- r:i64) { dup * } hof::tri
@@ -76,7 +76,7 @@ use hof
 
 Apply a function but **preserve the original** value.
 
-```quadrate
+```qd
 use hof
 
 5 fn (x:i64 -- r:i64) { 2 * } hof::keep
@@ -86,7 +86,7 @@ use hof
 
 **Use case**: Process a value while keeping it for later.
 
-```quadrate
+```qd
 // Print the value, then continue using it
 value fn (x:i64 -- r:i64) { dup print nl } hof::keep drop
 // Printed value, stack unchanged
@@ -96,7 +96,7 @@ value fn (x:i64 -- r:i64) { dup print nl } hof::keep drop
 
 Apply a function to the **second** element, preserving the **top**.
 
-```quadrate
+```qd
 use hof
 
 10 20 fn (x:i64 -- r:i64) { 2 * } hof::dip
@@ -110,7 +110,7 @@ use hof
 
 Apply the **same** function to **two** values.
 
-```quadrate
+```qd
 use hof
 
 3 4 fn (x:i64 -- r:i64) { dup * } hof::both
@@ -122,7 +122,7 @@ use hof
 
 Apply **different** functions to **two** values.
 
-```quadrate
+```qd
 use hof
 
 3 4 fn (x:i64 -- r:i64) { 1 + } fn (x:i64 -- r:i64) { 2 * } hof::bi_star
@@ -134,7 +134,7 @@ use hof
 
 Apply function **only if** condition is **true**.
 
-```quadrate
+```qd
 use hof
 
 5 1 fn (x:i64 -- r:i64) { 2 * } hof::when   // 10 (condition true)
@@ -143,7 +143,7 @@ use hof
 
 **Use case**: Conditional transformation.
 
-```quadrate
+```qd
 // Double negative numbers to make them "more negative"
 value value 0 < fn (x:i64 -- r:i64) { 2 * } hof::when
 ```
@@ -152,7 +152,7 @@ value value 0 < fn (x:i64 -- r:i64) { 2 * } hof::when
 
 Apply function **only if** condition is **false** (opposite of `when`).
 
-```quadrate
+```qd
 use hof
 
 5 0 fn (x:i64 -- r:i64) { 2 * } hof::unless  // 10 (condition false)
@@ -163,7 +163,7 @@ use hof
 
 Apply a function **n times** to an initial value.
 
-```quadrate
+```qd
 use hof
 
 1 5 fn (x:i64 -- r:i64) { 2 * } hof::times
@@ -179,7 +179,7 @@ use hof
 
 ### Data Validation
 
-```quadrate
+```qd
 use hof
 
 fn validate_age( age:i64 -- valid:i64 ) {
@@ -199,7 +199,7 @@ fn main() {
 
 ### Computing Multiple Results
 
-```quadrate
+```qd
 use hof
 
 fn stats( n:i64 -- doubled:i64 squared:i64 incremented:i64 ) {
@@ -217,7 +217,7 @@ fn main() {
 
 ### Iterative Computation
 
-```quadrate
+```qd
 use hof
 
 fn main() {
