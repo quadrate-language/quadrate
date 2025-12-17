@@ -18,10 +18,10 @@ class QuadrateLexer(RegexLexer):
 
     # Keywords
     keywords = (
-        'fn', 'pub', 'const', 'struct', 'use',
+        'fn', 'pub', 'const', 'struct', 'use', 'import', 'as', 'test',
         'if', 'else', 'for', 'loop', 'while', 'break', 'continue', 'return',
-        'defer', 'switch', 'default', 'ctx', 'with', 'unless',
-        'true', 'false', 'iter',
+        'defer', 'switch', 'ctx',
+        'true', 'false', 'Ok', 'Err',
     )
 
     # Built-in stack operations
