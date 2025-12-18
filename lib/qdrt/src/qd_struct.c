@@ -6,6 +6,7 @@
 #include "qdrt/qd_struct.h"
 #include "qdrt/array.h"
 #include "ptr_registry.h"
+#include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
 #include <stdatomic.h>

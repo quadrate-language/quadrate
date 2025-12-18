@@ -93,6 +93,11 @@ void qd_array_release(qd_array_t* arr) {
 		return;
 	}
 
+	if (arr->refcount == 0) {
+		fprintf(stderr, "Fatal error: free called on already-freed array\n");
+		abort();
+	}
+
 	arr->refcount--;
 	if (arr->refcount > 0) {
 		return;
