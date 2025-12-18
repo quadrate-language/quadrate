@@ -134,16 +134,32 @@ Error: Cannot divide by zero!
 
 ## Propagating Errors
 
-Sometimes you want to propagate an error up to the caller. Call the fallible function with `!` to crash on error:
+To propagate an error up to the caller, handle it with `if/else` and call `panic`:
 
 ```qd
 fn divide_and_double(a:i64 b:i64 -- result:i64)! {
-	division!  // Propagates error if division fails
+	division if {
+		2 *
+	} else {
+		"division failed" 1 panic
+	}
+}
+```
+
+If `division` fails, the `else` branch runs and `divide_and_double` panics with its own error.
+
+## Aborting on Error
+
+Use `!` when calling a fallible function to **abort the program** if it fails:
+
+```qd
+fn divide_and_double(a:i64 b:i64 -- result:i64)! {
+	division!  // ABORTS program if division fails
 	2 *
 }
 ```
 
-If `division` fails, `divide_and_double` will also fail with the same error.
+**Warning**: The `!` operator does NOT propagate errors - it terminates the entire program. Only use it when crashing is acceptable (e.g., during initialization or in scripts).
 
 ## Standard Library Errors
 
@@ -287,11 +303,12 @@ fn main() {
 Key concepts:
 
 1. **Mark fallible functions** with `!` after the signature
-2. **Signal panics** with `"message" code panic`
-3. **Handle errors** with `if { success } else { error }`
-4. **Skip error checks** by calling with `function!`
-5. **Use `defer`** for cleanup that runs regardless of errors
-6. **The compiler enforces** error handling - you can't ignore errors
+2. **Signal errors** with `"message" code panic`
+3. **Handle errors** with `if { success } else { error }` or `switch`
+4. **Propagate errors** by handling with `if/else` and calling `panic` in the else branch
+5. **Abort on error** by calling with `function!` (terminates program)
+6. **Use `defer`** for cleanup that runs regardless of errors
+7. **The compiler enforces** error handling - you can't ignore errors
 
 ## Next Steps
 

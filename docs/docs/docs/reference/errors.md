@@ -139,9 +139,9 @@ fn compute(x:i64 -- result:i64)! {
 }
 ```
 
-### With ! (skip error check)
+### With ! (abort on error)
 
-Skip error handling - panics if an error occurs:
+Abort the program if an error occurs:
 
 ```qd
 fn compute(x:i64 -- result:i64)! {
@@ -151,7 +151,22 @@ fn compute(x:i64 -- result:i64)! {
 }
 ```
 
-**Warning**: Using `!` means the program will crash if the function fails. Only use when you're certain the call won't fail, or when panicking is acceptable.
+**Warning**: Using `!` terminates the entire program if the function fails. Only use when crashing is acceptable (e.g., during initialization or in scripts).
+
+### Propagating errors
+
+To propagate errors to the caller, handle with `if/else` and call `panic`:
+
+```qd
+fn compute(x:i64 -- result:i64)! {
+	-> x
+	x 2 divide if {
+		10 +
+	} else {
+		"compute failed" 1 panic
+	}
+}
+```
 
 ---
 
