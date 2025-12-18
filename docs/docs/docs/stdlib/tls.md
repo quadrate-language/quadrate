@@ -28,6 +28,32 @@ sock "example.com" tls::connect! -> conn
 
 ---
 
+### `fn` connect_mtls
+
+Wrap a TCP socket with TLS encryption using client certificate (mTLS).
+
+**Signature:** `(socket:i64 hostname:str cert_path:str key_path:str -- conn:ptr)!`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `socket` | `i64` | TCP socket from net::connect |
+| `hostname` | `str` | Server hostname for SNI and certificate verification |
+| `cert_path` | `str` | Path to PEM client certificate file |
+| `key_path` | `str` | Path to PEM client private key file |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `conn` | `ptr` | TLS connection handle |
+
+**Example:**
+
+```qd
+"api.example.com" 443 net::connect -> sock
+sock "api.example.com" "/path/client.crt" "/path/client.key" tls::connect_mtls! -> conn
+```
+
+---
+
 ### `fn` accept
 
 Wrap a TCP socket with TLS encryption (server mode).
@@ -258,9 +284,53 @@ fn main() {
 
 ---
 
+### mTLS Client
+
+```qd
+use net
+use tls
+
+fn main() {
+	"api.secure.example.com" 443 net::connect -> sock
+
+	// Connect with client certificate authentication
+	sock "api.secure.example.com" "/path/client.crt" "/path/client.key" tls::connect_mtls switch {
+		Ok {
+			-> conn
+			"mTLS connected!" print nl
+
+			// Send authenticated request
+			conn "GET /secure HTTP/1.1\r\nHost: api.secure.example.com\r\n\r\n" tls::send! drop
+
+			// Receive response
+			conn 8192 tls::receive switch {
+				Ok {
+					-> data drop
+					data print
+				}
+				_ { }
+			}
+
+			conn tls::close
+		}
+		tls::ErrCertificate {
+			"Client certificate rejected" print nl
+		}
+		_ {
+			"mTLS handshake failed" print nl
+		}
+	}
+
+	sock net::close
+}
+```
+
+---
+
 ## Notes
 
-- The `http` module provides a higher-level API that handles TLS automatically
+- The `http` module provides a higher-level API that handles TLS automatically (including mTLS via `http::cert`)
 - Use `tls` directly when you need low-level control over secure connections
 - Certificate verification is enabled by default
 - Server mode requires valid certificate and key files in PEM format
+- For mTLS, both client certificate and private key must be in PEM format

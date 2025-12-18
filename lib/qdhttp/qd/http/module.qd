@@ -134,6 +134,13 @@ import "libqdhttp.a" as "http" {
 	/// @example req "{\"key\":\"value\"}" http::body
 	pub fn body(req:ptr body:str -- )
 
+	/// Set client certificate for mTLS (mutual TLS).
+	/// @param req ptr Request object
+	/// @param cert_path str Path to PEM client certificate file
+	/// @param key_path str Path to PEM client private key file
+	/// @example req "/path/client.crt" "/path/client.key" http::cert
+	pub fn cert(req:ptr cert_path:str key_path:str -- )
+
 	/// Execute HTTP request.
 	/// @param req ptr Request object
 	/// @return resp Response Response struct with status, headers, body

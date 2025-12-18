@@ -26,6 +26,17 @@ extern "C" {
 qd_exec_result usr_tls_connect(qd_context* ctx);
 
 /**
+ * @brief Wrap a socket with TLS using client certificate (mTLS)
+ * @par Stack Effect: ( socket:i hostname:s cert_path:s key_path:s -- tls_conn:ptr )
+ * @param ctx Execution context
+ * @return Execution result (fallible)
+ *
+ * Performs TLS handshake as client with client certificate authentication.
+ * Uses hostname for SNI and verification.
+ */
+qd_exec_result usr_tls_connect_mtls(qd_context* ctx);
+
+/**
  * @brief Wrap a socket with TLS (server mode)
  * @par Stack Effect: ( socket:i cert_path:s key_path:s -- tls_conn:ptr )
  * @param ctx Execution context

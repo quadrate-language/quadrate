@@ -57,6 +57,19 @@ void tls_platform_cleanup(void);
 tls_error_t tls_platform_connect(int socket_fd, const char* hostname, tls_conn_t* out_conn);
 
 /**
+ * @brief Create TLS client connection with client certificate (mTLS)
+ * @param socket_fd Underlying TCP socket file descriptor
+ * @param hostname Server hostname for SNI and verification
+ * @param cert_path Path to PEM client certificate file
+ * @param key_path Path to PEM client private key file
+ * @param out_conn Output: TLS connection handle
+ * @return TLS_OK on success, error code otherwise
+ */
+tls_error_t tls_platform_connect_mtls(int socket_fd, const char* hostname,
+                                      const char* cert_path, const char* key_path,
+                                      tls_conn_t* out_conn);
+
+/**
  * @brief Create TLS server connection
  * @param socket_fd Underlying TCP socket file descriptor
  * @param cert_path Path to PEM certificate file

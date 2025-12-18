@@ -58,6 +58,12 @@ qd_exec_result usr_http_header(qd_context* ctx);
 qd_exec_result usr_http_body(qd_context* ctx);
 
 /**
+ * @brief Set client certificate for mTLS
+ * Stack: ( req:ptr cert_path:str key_path:str -- )
+ */
+qd_exec_result usr_http_cert(qd_context* ctx);
+
+/**
  * @brief Execute HTTP request
  * Stack: ( req:ptr -- resp:ptr )
  * Fallible - pushes error code

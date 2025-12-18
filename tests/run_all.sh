@@ -94,7 +94,7 @@ while [[ $# -gt 0 ]]; do
             echo "Options:"
             echo "  --failed, -f       Run only previously failed tests"
             echo "  --test, -t NAME    Run specific test by name"
-            echo "  --suite, -s SUITE  Run specific suite (cpp, lsp, qd, formatter, linter, embed, quadpm)"
+            echo "  --suite, -s SUITE  Run specific suite (cpp, lsp, qd, formatter, linter, embed, quadpm, mtls)"
             echo "  --list, -l         List all available tests"
             echo "  --clear, -c        Clear failed tests file"
             echo "  --verbose, -v      Show verbose output"
@@ -795,6 +795,44 @@ run_quadpm_tests() {
     fi
 }
 
+# Run mTLS tests
+run_mtls_tests() {
+    local suite="mtls"
+
+    if ! should_run_test "$suite" "mtls_test"; then
+        return
+    fi
+
+    # Check for openssl
+    if ! command -v openssl &> /dev/null; then
+        log_skip "$suite" "mtls_test" "openssl not found"
+        return
+    fi
+
+    if [[ $USE_VALGRIND -eq 1 ]]; then
+        print_header "mTLS Tests ${DIM}(valgrind)${NC}"
+    else
+        print_header "mTLS Tests"
+    fi
+
+    local output
+    local exit_code
+    local valgrind_arg=""
+    if [[ $USE_VALGRIND -eq 1 ]]; then
+        valgrind_arg="valgrind"
+    fi
+
+    output=$(QUADC="$QUADC" bash "$PROJECT_ROOT/tests/run_mtls_test.sh" $valgrind_arg 2>&1)
+    exit_code=$?
+
+    if [[ $exit_code -eq 0 ]]; then
+        log_pass "$suite" "mtls_test"
+    else
+        local error_msg=$(echo "$output" | grep -A 20 "FAIL\|error\|Error" | head -20)
+        log_fail "$suite" "mtls_test" "test failed" "$error_msg"
+    fi
+}
+
 # List all available tests
 list_all_tests() {
     echo "Available tests:"
@@ -837,6 +875,10 @@ list_all_tests() {
 
     echo "Package Manager Tests (suite: quadpm):"
     echo "  quadpm_tests"
+    echo ""
+
+    echo "mTLS Tests (suite: mtls):"
+    echo "  mtls_test"
 }
 
 # Print summary
@@ -847,7 +889,7 @@ print_summary() {
     echo -e "${BOLD}═══════════════════════════════════════════════════════════════════════════════${NC}"
 
     # Print per-suite summary
-    for suite in cpp lsp qd formatter linter embed quadpm; do
+    for suite in cpp lsp qd formatter linter embed quadpm mtls; do
         local passed=${SUITE_PASSED[$suite]:-0}
         local failed=${SUITE_FAILED[$suite]:-0}
         local skipped=${SUITE_SKIPPED[$suite]:-0}
@@ -864,6 +906,7 @@ print_summary() {
             linter) suite_name="Linter" ;;
             embed) suite_name="Embed" ;;
             quadpm) suite_name="Package Manager" ;;
+            mtls) suite_name="mTLS" ;;
         esac
 
         printf "  %-20s" "$suite_name:"
@@ -971,6 +1014,10 @@ main() {
 
     if [[ -z "$SPECIFIC_SUITE" ]] || [[ "$SPECIFIC_SUITE" == "quadpm" ]]; then
         run_quadpm_tests
+    fi
+
+    if [[ -z "$SPECIFIC_SUITE" ]] || [[ "$SPECIFIC_SUITE" == "mtls" ]]; then
+        run_mtls_tests
     fi
 
     print_summary

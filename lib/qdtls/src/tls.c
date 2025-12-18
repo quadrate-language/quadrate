@@ -69,6 +69,105 @@ qd_exec_result usr_tls_connect(qd_context* ctx) {
 	return (qd_exec_result){0};
 }
 
+// Stack signature: ( socket:i hostname:s cert_path:s key_path:s -- tls_conn:ptr )
+// Fallible function - pushes error code
+qd_exec_result usr_tls_connect_mtls(qd_context* ctx) {
+	// Pop key_path
+	qd_stack_element_t key_elem;
+	qd_stack_error err = qd_stack_pop(ctx->st, &key_elem);
+	if (err != QD_STACK_OK) {
+		fprintf(stderr, "Fatal error in tls::connect_mtls: stack underflow\n");
+		abort();
+	}
+
+	// Pop cert_path
+	qd_stack_element_t cert_elem;
+	err = qd_stack_pop(ctx->st, &cert_elem);
+	if (err != QD_STACK_OK) {
+		if (key_elem.type == QD_STACK_TYPE_STR) qd_string_release(key_elem.value.s);
+		fprintf(stderr, "Fatal error in tls::connect_mtls: stack underflow\n");
+		abort();
+	}
+
+	// Pop hostname
+	qd_stack_element_t hostname_elem;
+	err = qd_stack_pop(ctx->st, &hostname_elem);
+	if (err != QD_STACK_OK) {
+		if (key_elem.type == QD_STACK_TYPE_STR) qd_string_release(key_elem.value.s);
+		if (cert_elem.type == QD_STACK_TYPE_STR) qd_string_release(cert_elem.value.s);
+		fprintf(stderr, "Fatal error in tls::connect_mtls: stack underflow\n");
+		abort();
+	}
+
+	// Pop socket
+	qd_stack_element_t socket_elem;
+	err = qd_stack_pop(ctx->st, &socket_elem);
+	if (err != QD_STACK_OK) {
+		if (key_elem.type == QD_STACK_TYPE_STR) qd_string_release(key_elem.value.s);
+		if (cert_elem.type == QD_STACK_TYPE_STR) qd_string_release(cert_elem.value.s);
+		if (hostname_elem.type == QD_STACK_TYPE_STR) qd_string_release(hostname_elem.value.s);
+		fprintf(stderr, "Fatal error in tls::connect_mtls: stack underflow\n");
+		abort();
+	}
+
+	// Type checks
+	if (socket_elem.type != QD_STACK_TYPE_INT) {
+		if (key_elem.type == QD_STACK_TYPE_STR) qd_string_release(key_elem.value.s);
+		if (cert_elem.type == QD_STACK_TYPE_STR) qd_string_release(cert_elem.value.s);
+		if (hostname_elem.type == QD_STACK_TYPE_STR) qd_string_release(hostname_elem.value.s);
+		fprintf(stderr, "Fatal error in tls::connect_mtls: socket must be an integer\n");
+		abort();
+	}
+
+	if (hostname_elem.type != QD_STACK_TYPE_STR) {
+		if (key_elem.type == QD_STACK_TYPE_STR) qd_string_release(key_elem.value.s);
+		if (cert_elem.type == QD_STACK_TYPE_STR) qd_string_release(cert_elem.value.s);
+		fprintf(stderr, "Fatal error in tls::connect_mtls: hostname must be a string\n");
+		abort();
+	}
+
+	if (cert_elem.type != QD_STACK_TYPE_STR) {
+		if (key_elem.type == QD_STACK_TYPE_STR) qd_string_release(key_elem.value.s);
+		qd_string_release(hostname_elem.value.s);
+		fprintf(stderr, "Fatal error in tls::connect_mtls: cert_path must be a string\n");
+		abort();
+	}
+
+	if (key_elem.type != QD_STACK_TYPE_STR) {
+		qd_string_release(cert_elem.value.s);
+		qd_string_release(hostname_elem.value.s);
+		fprintf(stderr, "Fatal error in tls::connect_mtls: key_path must be a string\n");
+		abort();
+	}
+
+	int socket_fd = (int)socket_elem.value.i;
+	const char* hostname = qd_string_data(hostname_elem.value.s);
+	const char* cert_path = qd_string_data(cert_elem.value.s);
+	const char* key_path = qd_string_data(key_elem.value.s);
+
+	// Perform TLS connect with client certificate
+	tls_conn_t conn = TLS_CONN_INVALID;
+	tls_error_t tls_err = tls_platform_connect_mtls(socket_fd, hostname, cert_path, key_path, &conn);
+
+	qd_string_release(hostname_elem.value.s);
+	qd_string_release(cert_elem.value.s);
+	qd_string_release(key_elem.value.s);
+
+	if (tls_err != TLS_OK) {
+		// On failure: set error and push only error code
+		ctx->error_code = (int)tls_err;
+		if (ctx->error_msg) free(ctx->error_msg);
+		ctx->error_msg = strdup(tls_platform_error_string(tls_err));
+		qd_push_i(ctx, (int64_t)tls_err);
+		return (qd_exec_result){(int)tls_err};
+	}
+
+	// On success: push result, then Ok
+	qd_push_p(ctx, conn);
+	qd_push_i(ctx, TLS_OK);
+	return (qd_exec_result){0};
+}
+
 // Stack signature: ( socket:i cert_path:s key_path:s -- tls_conn:ptr )
 // Fallible function - pushes error code
 qd_exec_result usr_tls_accept(qd_context* ctx) {

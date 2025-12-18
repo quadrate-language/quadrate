@@ -21,6 +21,8 @@ typedef struct {
 	size_t headers_len;
 	size_t headers_cap;
 	char* body;
+	char* client_cert;  // Path to client certificate for mTLS
+	char* client_key;   // Path to client private key for mTLS
 } http_request_t;
 
 /** HTTP Response structure - matches Quadrate struct layout */
@@ -132,6 +134,8 @@ qd_exec_result usr_http_new(qd_context* ctx) {
 	req->headers[0] = '\0';
 	req->headers_len = 0;
 	req->body = NULL;
+	req->client_cert = NULL;
+	req->client_key = NULL;
 
 	qd_string_release(url_elem.value.s);
 
@@ -241,6 +245,49 @@ qd_exec_result usr_http_body(qd_context* ctx) {
 	return (qd_exec_result){0};
 }
 
+/** Set client certificate for mTLS */
+qd_exec_result usr_http_cert(qd_context* ctx) {
+	// Pop key_path
+	qd_stack_element_t key_elem;
+	qd_stack_error err = qd_stack_pop(ctx->st, &key_elem);
+	if (err != QD_STACK_OK || key_elem.type != QD_STACK_TYPE_STR) {
+		fprintf(stderr, "Fatal error in http::cert: expected string for key_path\n");
+		abort();
+	}
+
+	// Pop cert_path
+	qd_stack_element_t cert_elem;
+	err = qd_stack_pop(ctx->st, &cert_elem);
+	if (err != QD_STACK_OK || cert_elem.type != QD_STACK_TYPE_STR) {
+		qd_string_release(key_elem.value.s);
+		fprintf(stderr, "Fatal error in http::cert: expected string for cert_path\n");
+		abort();
+	}
+
+	// Pop request
+	qd_stack_element_t req_elem;
+	err = qd_stack_pop(ctx->st, &req_elem);
+	if (err != QD_STACK_OK || req_elem.type != QD_STACK_TYPE_PTR) {
+		qd_string_release(key_elem.value.s);
+		qd_string_release(cert_elem.value.s);
+		fprintf(stderr, "Fatal error in http::cert: expected request pointer\n");
+		abort();
+	}
+
+	http_request_t* req = (http_request_t*)req_elem.value.p;
+
+	// Free existing paths if any
+	free(req->client_cert);
+	free(req->client_key);
+
+	req->client_cert = strdup(qd_string_data(cert_elem.value.s));
+	req->client_key = strdup(qd_string_data(key_elem.value.s));
+
+	qd_string_release(cert_elem.value.s);
+	qd_string_release(key_elem.value.s);
+	return (qd_exec_result){0};
+}
+
 /** Internal helper to free request struct */
 static void free_request_internal(http_request_t* req) {
 	if (req) {
@@ -248,6 +295,8 @@ static void free_request_internal(http_request_t* req) {
 		free(req->method);
 		free(req->headers);
 		free(req->body);
+		free(req->client_cert);
+		free(req->client_key);
 		free(req);
 	}
 }
@@ -271,6 +320,7 @@ extern qd_exec_result usr_net_send(qd_context* ctx);
 extern qd_exec_result usr_net_receive(qd_context* ctx);
 extern qd_exec_result usr_net_close(qd_context* ctx);
 extern qd_exec_result usr_tls_connect(qd_context* ctx);
+extern qd_exec_result usr_tls_connect_mtls(qd_context* ctx);
 extern qd_exec_result usr_tls_send(qd_context* ctx);
 extern qd_exec_result usr_tls_receive(qd_context* ctx);
 extern qd_exec_result usr_tls_close(qd_context* ctx);
@@ -356,12 +406,21 @@ qd_exec_result usr_http_send(qd_context* ctx) {
 	}
 	int sock_fd = (int)sock_elem.value.i;
 
-	// For HTTPS, wrap with TLS
+	// For HTTPS, wrap with TLS (use mTLS if client cert is set)
 	void* tls_conn = NULL;
 	if (url.is_https) {
 		qd_push_i(ctx, sock_fd);
 		qd_push_s(ctx, url.host);
-		(void)usr_tls_connect(ctx);
+
+		if (req->client_cert && req->client_key) {
+			// Use mTLS with client certificate
+			qd_push_s(ctx, req->client_cert);
+			qd_push_s(ctx, req->client_key);
+			(void)usr_tls_connect_mtls(ctx);
+		} else {
+			// Standard TLS
+			(void)usr_tls_connect(ctx);
+		}
 
 		// Pop status code
 		qd_stack_element_t tls_status;

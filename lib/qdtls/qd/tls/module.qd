@@ -38,6 +38,16 @@ import "libqdtls.a" as "tls" {
 	/// @example "example.com" 443 net::connect -> sock  sock "example.com" tls::connect! -> conn
 	pub fn connect(socket:i64 hostname:str -- conn:ptr)!
 
+	/// Wrap a TCP socket with TLS encryption using client certificate (mTLS).
+	/// Performs TLS handshake with client certificate authentication.
+	/// @param socket i64 TCP socket from net::connect
+	/// @param hostname str Server hostname for SNI and certificate verification
+	/// @param cert_path str Path to PEM client certificate file
+	/// @param key_path str Path to PEM client private key file
+	/// @return conn ptr TLS connection handle
+	/// @example sock "api.example.com" "/path/client.crt" "/path/client.key" tls::connect_mtls! -> conn
+	pub fn connect_mtls(socket:i64 hostname:str cert_path:str key_path:str -- conn:ptr)!
+
 	/// Wrap a TCP socket with TLS encryption (server mode).
 	/// Loads certificate and key, then performs TLS handshake.
 	/// @param socket i64 TCP socket from net::accept

@@ -97,12 +97,14 @@ qd_exec_result usr_net_connect(qd_context* ctx) {
 
 	// Connect to remote host using platform abstraction
 	net_socket_t sock_fd = net_platform_connect(host, port);
-	qd_string_release(host_elem.value.s);
 
 	if (sock_fd == NET_SOCKET_INVALID) {
 		fprintf(stderr, "Fatal error in usr_net_connect: failed to connect to %s:%d\n", host, port);
+		qd_string_release(host_elem.value.s);
 		abort();
 	}
+
+	qd_string_release(host_elem.value.s);
 
 	// Push socket to stack
 	qd_push_i(ctx, (int64_t)sock_fd);

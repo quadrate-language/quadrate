@@ -109,6 +109,26 @@ req "{\"key\":\"value\"}" http::body
 
 ---
 
+### `fn` cert
+
+Set client certificate for mTLS (mutual TLS) authentication.
+
+**Signature:** `(req:ptr cert_path:str key_path:str -- )`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `req` | `ptr` | Request object |
+| `cert_path` | `str` | Path to PEM client certificate file |
+| `key_path` | `str` | Path to PEM client private key file |
+
+**Example:**
+
+```qd
+req "/path/client.crt" "/path/client.key" http::cert
+```
+
+---
+
 ### `fn` send
 
 Execute HTTP request.
@@ -316,5 +336,41 @@ fn main() {
 			"Unknown error" print nl
 		}
 	}
+}
+```
+
+### mTLS Request
+
+```qd
+use http
+
+fn main() {
+	// Create request to mTLS-protected endpoint
+	"https://api.secure.example.com/data" http::new -> req
+
+	// Set client certificate for mutual TLS authentication
+	req "/path/client.crt" "/path/client.key" http::cert
+
+	// Configure request
+	req "GET" http::method
+	req "Accept" "application/json" http::header
+
+	// Send request (will use mTLS for TLS handshake)
+	req http::send switch {
+		Ok {
+			-> resp
+			"Status: " print resp @status print nl
+			resp @body print nl
+			resp http::close
+		}
+		http::ErrTls {
+			"mTLS authentication failed" print nl
+		}
+		_ {
+			"Request failed" print nl
+		}
+	}
+
+	req http::free_request
 }
 ```
