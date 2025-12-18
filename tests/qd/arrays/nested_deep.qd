@@ -1,0 +1,25 @@
+// Test deeply nested arrays (2 levels with one element each)
+
+fn main() {
+	// Create 1x1x4 nested structure
+	1 makep -> level1
+	1 makep -> level2
+	4 makei -> leaf
+
+	leaf 0 1 set
+	leaf 1 2 set
+	leaf 2 3 set
+	leaf 3 4 set
+
+	level2 0 leaf set
+	level1 0 level2 set
+
+	// Access all leaf elements through nested access
+	"[0][0][0]: " print level1 0 nth cast<ptr> 0 nth cast<ptr> 0 nth print nl
+	"[0][0][1]: " print level1 0 nth cast<ptr> 0 nth cast<ptr> 1 nth print nl
+	"[0][0][2]: " print level1 0 nth cast<ptr> 0 nth cast<ptr> 2 nth print nl
+	"[0][0][3]: " print level1 0 nth cast<ptr> 0 nth cast<ptr> 3 nth print nl
+
+	// Free top level (should cascade to all nested arrays)
+	level1 free
+}

@@ -1362,6 +1362,47 @@ qd_exec_result qd_casts(qd_context* ctx) {
 	return (qd_exec_result){0};
 }
 
+// castp - cast to pointer
+qd_exec_result qd_castp(qd_context* ctx) {
+	size_t stack_size = qd_stack_size(ctx->st);
+	if (stack_size < 1) {
+		fprintf(stderr, "Fatal error in castp: Stack underflow (requires 1 value)\n");
+		dump_stack(ctx);
+		qd_print_stack_trace(ctx);
+		abort();
+	}
+
+	qd_stack_element_t elem;
+	qd_stack_error err = qd_stack_pop(ctx->st, &elem);
+	if (err != QD_STACK_OK) {
+		fprintf(stderr, "Fatal error in castp: Failed to pop value\n");
+		dump_stack(ctx);
+		qd_print_stack_trace(ctx);
+		abort();
+	}
+
+	void* ptr_value = NULL;
+	if (elem.type == QD_STACK_TYPE_PTR) {
+		// Already a pointer - just push it back
+		ptr_value = elem.value.p;
+	} else if (elem.type == QD_STACK_TYPE_INT) {
+		// Cast integer to pointer
+		ptr_value = (void*)(intptr_t)elem.value.i;
+	} else {
+		fprintf(stderr, "Fatal error in castp: Cannot cast type %d to pointer\n", elem.type);
+		dump_stack(ctx);
+		qd_print_stack_trace(ctx);
+		abort();
+	}
+
+	err = qd_stack_push_ptr(ctx->st, ptr_value);
+	if (err != QD_STACK_OK) {
+		return (qd_exec_result){-2};
+	}
+
+	return (qd_exec_result){0};
+}
+
 // pow - exponentiation (base^exponent)
 
 // round - round to nearest integer

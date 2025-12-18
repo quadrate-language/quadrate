@@ -558,6 +558,16 @@ qd_exec_result qd_castf(qd_context* ctx);
  */
 qd_exec_result qd_casts(qd_context* ctx);
 
+/**
+ * @brief Cast top of stack to pointer
+ *
+ * Stack effect: ( value -- ptr )
+ *
+ * @param ctx Execution context
+ * @return Execution result (0 on success)
+ */
+qd_exec_result qd_castp(qd_context* ctx);
+
 /** @} */ // end of TypeCast group
 
 /**

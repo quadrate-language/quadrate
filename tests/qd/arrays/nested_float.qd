@@ -1,0 +1,29 @@
+// Test nested arrays with float elements
+
+fn main() {
+	// Create 2x3 matrix of floats
+	2 makep -> matrix
+
+	3 makef -> row1
+	row1 0 1.5 set
+	row1 1 2.5 set
+	row1 2 3.5 set
+
+	3 makef -> row2
+	row2 0 4.5 set
+	row2 1 5.5 set
+	row2 2 6.5 set
+
+	matrix 0 row1 set
+	matrix 1 row2 set
+
+	// Access all elements
+	"[0][0]: " print matrix 0 nth cast<ptr> 0 nth print nl
+	"[0][1]: " print matrix 0 nth cast<ptr> 1 nth print nl
+	"[0][2]: " print matrix 0 nth cast<ptr> 2 nth print nl
+	"[1][0]: " print matrix 1 nth cast<ptr> 0 nth print nl
+	"[1][1]: " print matrix 1 nth cast<ptr> 1 nth print nl
+	"[1][2]: " print matrix 1 nth cast<ptr> 2 nth print nl
+
+	matrix free
+}

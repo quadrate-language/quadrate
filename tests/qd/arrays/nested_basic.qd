@@ -1,0 +1,28 @@
+// Test basic nested arrays (array of arrays)
+
+fn main() {
+	// Create outer array to hold 1 inner array
+	1 makep -> outer
+
+	// Create inner array
+	4 makei -> arr
+	arr 0 100 set
+	arr 1 200 set
+	arr 2 300 set
+	arr 3 400 set
+
+	// Store inner array
+	outer 0 arr set
+
+	// Access and print elements (cast to ptr for nested nth)
+	"arr[0]: " print outer 0 nth cast<ptr> 0 nth print nl
+	"arr[1]: " print outer 0 nth cast<ptr> 1 nth print nl
+	"arr[2]: " print outer 0 nth cast<ptr> 2 nth print nl
+	"arr[3]: " print outer 0 nth cast<ptr> 3 nth print nl
+
+	// Print length
+	"arr len: " print outer 0 nth cast<ptr> len print nl
+
+	// Free outer array (should recursively free inner array)
+	outer free
+}

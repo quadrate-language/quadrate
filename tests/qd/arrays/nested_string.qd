@@ -1,0 +1,20 @@
+// Test nested arrays with string elements
+
+fn main() {
+	// Create array of one string array
+	1 makep -> outer
+
+	3 makes -> words
+	words 0 "hello" set
+	words 1 "world" set
+	words 2 "!" set
+
+	outer 0 words set
+
+	// Access and print
+	"[0][0]: " print outer 0 nth cast<ptr> 0 nth print nl
+	"[0][1]: " print outer 0 nth cast<ptr> 1 nth print nl
+	"[0][2]: " print outer 0 nth cast<ptr> 2 nth print nl
+
+	outer free
+}

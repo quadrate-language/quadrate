@@ -121,10 +121,14 @@ void qd_array_release(qd_array_t* arr) {
 		free(arr->data.p);
 		break;
 	case QD_ARRAY_TYPE_PTR:
-		// Release all struct references (safe for non-struct pointers via registry check)
+		// Release all references (arrays, structs, or raw pointers)
 		for (size_t i = 0; i < arr->length; i++) {
 			if (arr->data.p[i]) {
-				qd_struct_release(arr->data.p[i]);
+				if (qd_array_is_valid(arr->data.p[i])) {
+					qd_array_release((qd_array_t*)arr->data.p[i]);
+				} else {
+					qd_struct_release(arr->data.p[i]);
+				}
 			}
 		}
 		free(arr->data.p);
@@ -418,9 +422,19 @@ qd_exec_result qd_nth(qd_context* ctx) {
 		}
 		break;
 	}
-	case QD_ARRAY_TYPE_PTR:
-		qd_stack_push_ptr(ctx->st, arr->data.p[index]);
+	case QD_ARRAY_TYPE_PTR: {
+		void* ptr = arr->data.p[index];
+		if (ptr) {
+			// Retain the pointer - could be array or struct
+			if (qd_array_is_valid(ptr)) {
+				qd_array_retain((qd_array_t*)ptr);
+			} else {
+				qd_struct_retain(ptr);
+			}
+		}
+		qd_stack_push_ptr(ctx->st, ptr);
 		break;
+	}
 	default:
 		fprintf(stderr, "nth: unknown array type %d\n", arr->elemType);
 		qd_array_release(arr); // Release before error return
