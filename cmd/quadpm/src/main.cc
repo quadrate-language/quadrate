@@ -332,9 +332,21 @@ bool compileCsources(const std::string& moduleDir, const std::string& moduleName
 		objFiles.push_back(objFile);
 
 		// Compile with -fPIC for shared library compatibility
+		// Look for headers in multiple locations:
+		// 1. Local dist/include (when building within Quadrate source)
+		// 2. System /usr/include (when Quadrate is installed)
+		// 3. QUADRATE_LIBDIR/../include (for development with local builds)
 		std::string includeFlags = "-I/usr/include";
 		if (fs::exists("dist/include/qdrt")) {
 			includeFlags += " -Idist/include";
+		}
+		const char* libDir_env = std::getenv("QUADRATE_LIBDIR");
+		if (libDir_env) {
+			fs::path libPath(libDir_env);
+			fs::path includePath = libPath.parent_path() / "include";
+			if (fs::exists(includePath / "qdrt")) {
+				includeFlags += " -I" + includePath.string();
+			}
 		}
 
 		std::string compileCmd =
