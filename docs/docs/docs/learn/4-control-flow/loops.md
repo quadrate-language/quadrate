@@ -15,6 +15,13 @@ fn main() {
 }
 ```
 
+The syntax is `start end step for <iterator> { body }`:
+
+- **start** - Initial value (inclusive)
+- **end** - Final value (exclusive)
+- **step** - Increment per iteration
+- **iterator** - A named variable (e.g., `i`) that holds the current value and is accessible inside the loop body
+
 The range is `[start, end)` - includes start, excludes end.
 
 ## for with Step

@@ -223,12 +223,20 @@ int handleTest(const std::vector<std::string>& args) {
 		return 1;
 	}
 
-	std::vector<std::string> toolArgs;
-	toolArgs.push_back("--test");
+	// Collect test files
+	std::vector<std::string> testFiles;
+	std::vector<std::string> options;
+
+	for (const auto& arg : args) {
+		if (!arg.empty() && arg[0] == '-') {
+			options.push_back(arg);
+		} else {
+			testFiles.push_back(arg);
+		}
+	}
 
 	// If no files specified, look for *_test.qd or test_*.qd files
-	if (args.empty()) {
-		std::vector<std::string> testFiles;
+	if (testFiles.empty()) {
 		for (const auto& entry : fs::directory_iterator(fs::current_path())) {
 			if (entry.path().extension() == ".qd") {
 				std::string filename = entry.path().stem().string();
@@ -242,16 +250,25 @@ int handleTest(const std::vector<std::string>& args) {
 			return 1;
 		}
 		std::sort(testFiles.begin(), testFiles.end());
-		for (const auto& f : testFiles) {
-			toolArgs.push_back(f);
+	}
+
+	// Run each test file separately (quadc --test only processes one file at a time)
+	int result = 0;
+	for (const auto& file : testFiles) {
+		std::vector<std::string> toolArgs;
+		toolArgs.push_back("--test");
+		for (const auto& opt : options) {
+			toolArgs.push_back(opt);
 		}
-	} else {
-		for (const auto& arg : args) {
-			toolArgs.push_back(arg);
+		toolArgs.push_back(file);
+
+		int r = execTool(toolPath, toolArgs);
+		if (r != 0) {
+			result = r;
 		}
 	}
 
-	return execTool(toolPath, toolArgs);
+	return result;
 }
 
 int handleFmt(const std::vector<std::string>& args) {
