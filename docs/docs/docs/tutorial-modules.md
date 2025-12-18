@@ -428,24 +428,9 @@ pub fn reset( -- ) {
 }
 ```
 
-## Using Dependencies
+## Using Standard Library Modules
 
-If your module depends on other modules, declare them in `qd.json`:
-
-```json
-{
-  "name": "mymodule",
-  "version": "1.0.0",
-  "description": "My module",
-  "license": "MIT",
-  "dependencies": {
-	"str": "*",
-	"fmt": "*"
-  }
-}
-```
-
-Then import them in your module:
+Standard library modules are always linked automatically. Just import them in your module:
 
 ```qd
 use str
