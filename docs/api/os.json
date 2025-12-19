@@ -83,6 +83,16 @@
       "examples": ["\"src.txt\" \"dst.txt\" os::copy!"]
     },
     {
+      "name": "cwd",
+      "signature": "( -- path:str)",
+      "failable": true,
+      "description": "Get current working directory.",
+      "params": [],
+      "returns": [{"name": "path", "type": "str", "description": "Current working directory path"}],
+      "errors": [{"code": "ErrIo", "description": "Failed to get directory"}],
+      "examples": ["os::cwd! -> dir"]
+    },
+    {
       "name": "delete",
       "signature": "(path:str -- )",
       "failable": true,

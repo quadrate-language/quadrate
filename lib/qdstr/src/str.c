@@ -927,3 +927,89 @@ qd_exec_result usr_str_sort_desc(qd_context* ctx) {
 
 	return (qd_exec_result){0};
 }
+
+// join - join array of strings with delimiter ( parts:p count:i delim:s -- result:s )
+qd_exec_result usr_str_join(qd_context* ctx) {
+	qd_stack_element_t delim_elem, count_elem, parts_elem;
+
+	// Pop delimiter
+	qd_stack_error err = qd_stack_pop(ctx->st, &delim_elem);
+	if (err != QD_STACK_OK || delim_elem.type != QD_STACK_TYPE_STR) {
+		fprintf(stderr, "Fatal error in str::join: Expected string delimiter\n");
+		abort();
+	}
+
+	// Pop count
+	err = qd_stack_pop(ctx->st, &count_elem);
+	if (err != QD_STACK_OK || count_elem.type != QD_STACK_TYPE_INT) {
+		qd_string_release(delim_elem.value.s);
+		fprintf(stderr, "Fatal error in str::join: Expected integer count\n");
+		abort();
+	}
+
+	// Pop parts array
+	err = qd_stack_pop(ctx->st, &parts_elem);
+	if (err != QD_STACK_OK || parts_elem.type != QD_STACK_TYPE_PTR) {
+		qd_string_release(delim_elem.value.s);
+		fprintf(stderr, "Fatal error in str::join: Expected pointer to string array\n");
+		abort();
+	}
+
+	int64_t count = count_elem.value.i;
+	char** parts = (char**)parts_elem.value.p;
+	const char* delim = qd_string_data(delim_elem.value.s);
+	size_t delim_len = strlen(delim);
+
+	// Handle empty array
+	if (count <= 0 || parts == NULL) {
+		qd_string_release(delim_elem.value.s);
+		qd_push_s(ctx, "");
+		qd_push_i(ctx, STR_ERR_OK);
+		return (qd_exec_result){0};
+	}
+
+	// Calculate total length
+	size_t total_len = 0;
+	for (int64_t i = 0; i < count; i++) {
+		if (parts[i] != NULL) {
+			total_len += strlen(parts[i]);
+		}
+		if (i < count - 1) {
+			total_len += delim_len;
+		}
+	}
+
+	// Allocate result
+	char* result = malloc(total_len + 1);
+	if (!result) {
+		qd_string_release(delim_elem.value.s);
+		ctx->error_code = STR_ERR_ALLOC;
+		if (ctx->error_msg) free(ctx->error_msg);
+		ctx->error_msg = strdup("str::join: allocation failed");
+		qd_push_i(ctx, STR_ERR_ALLOC);
+		return (qd_exec_result){STR_ERR_ALLOC};
+	}
+
+	// Build result
+	char* dest = result;
+	for (int64_t i = 0; i < count; i++) {
+		if (parts[i] != NULL) {
+			size_t part_len = strlen(parts[i]);
+			memcpy(dest, parts[i], part_len);
+			dest += part_len;
+		}
+		if (i < count - 1) {
+			memcpy(dest, delim, delim_len);
+			dest += delim_len;
+		}
+	}
+	*dest = '\0';
+
+	qd_string_release(delim_elem.value.s);
+
+	qd_push_s(ctx, result);
+	free(result);
+	qd_push_i(ctx, STR_ERR_OK);
+
+	return (qd_exec_result){0};
+}

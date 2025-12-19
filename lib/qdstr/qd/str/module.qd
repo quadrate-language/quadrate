@@ -141,4 +141,13 @@ import "libqdstr.a" as "str" {
 	/// @return str str Quadrate string
 	/// @example entries 0 mem::get_ptr str::from_ptr print
 	pub fn from_ptr(ptr:ptr -- str:str)
+
+	/// Join array of strings with delimiter.
+	/// @param parts ptr Array of string pointers
+	/// @param count i64 Number of strings
+	/// @param delim str Delimiter string
+	/// @return result str Joined string
+	/// @error ErrAlloc Memory allocation failed
+	/// @example parts count "/" str::join! -> path
+	pub fn join(parts:ptr count:i64 delim:str -- result:str)!
 }

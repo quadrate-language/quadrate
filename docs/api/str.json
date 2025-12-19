@@ -113,6 +113,16 @@
       "examples": ["\"hello\" \"ll\" str::index_of print  // 2"]
     },
     {
+      "name": "join",
+      "signature": "(parts:ptr count:i64 delim:str -- result:str)",
+      "failable": true,
+      "description": "Join array of strings with delimiter.",
+      "params": [{"name": "parts", "type": "ptr", "description": "Array of string pointers"}, {"name": "count", "type": "i64", "description": "Number of strings"}, {"name": "delim", "type": "str", "description": "Delimiter string"}],
+      "returns": [{"name": "result", "type": "str", "description": "Joined string"}],
+      "errors": [{"code": "ErrAlloc", "description": "Memory allocation failed"}],
+      "examples": ["entries count \",\" str::join! print  // \"a,b,c\""]
+    },
+    {
       "name": "len",
       "signature": "(str:str -- len:i64)",
       "failable": false,

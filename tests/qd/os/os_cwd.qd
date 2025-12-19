@@ -1,0 +1,11 @@
+// Test os::cwd - get current working directory
+use os
+use str
+
+fn main() {
+	os::cwd! -> dir
+	// Check it starts with /
+	dir "/" str::starts_with print nl
+	// Check it's not empty
+	dir str::len 0 > print nl
+}

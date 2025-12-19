@@ -334,6 +334,24 @@ qd_exec_result usr_os_glob(qd_context* ctx);
  */
 qd_exec_result usr_os_mktemp(qd_context* ctx);
 
+/**
+ * @brief Get current working directory
+ *
+ * @par Stack Effect: ( -- path:s )
+ *
+ * Returns the current working directory as a string.
+ *
+ * @param ctx Execution context
+ * @return Execution result
+ *
+ * @par Example:
+ * @code
+ * os::cwd! -> dir
+ * dir print nl
+ * @endcode
+ */
+qd_exec_result usr_os_cwd(qd_context* ctx);
+
 #ifdef __cplusplus
 }
 #endif

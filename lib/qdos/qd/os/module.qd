@@ -155,4 +155,10 @@ import "libqdos.a" as "os" {
 	/// @error ErrIo Failed to create directory
 	/// @example os::mktemp! -> tmpdir
 	pub fn mktemp( -- path:str)!
+
+	/// Get current working directory.
+	/// @return path str Current working directory path
+	/// @error ErrIo Failed to get directory
+	/// @example os::cwd! -> dir
+	pub fn cwd( -- path:str)!
 }

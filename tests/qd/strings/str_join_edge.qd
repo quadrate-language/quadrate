@@ -1,0 +1,48 @@
+// Test str::join edge cases
+use str
+use os
+use mem
+
+fn main() {
+	// Test 1: Single element
+	os::mktemp! -> tmpdir
+	tmpdir "/only.txt" str::concat "x" io::write_file!
+	tmpdir os::list! -> count -> entries
+	entries count "," str::join! print nl
+
+	// Test 2: Empty delimiter
+	entries count "" str::join! print nl
+
+	// Free entries and clean up first test
+	0 count 1 for i {
+		entries i 8 * mem::get_ptr mem::free
+	}
+	entries mem::free
+	tmpdir "/only.txt" str::concat os::delete!
+	tmpdir os::rmdir!
+
+	// Test 3: Two elements
+	os::mktemp! -> tmpdir2
+	tmpdir2 "/a.txt" str::concat "a" io::write_file!
+	tmpdir2 "/b.txt" str::concat "b" io::write_file!
+	tmpdir2 os::list! -> count2 -> entries2
+	entries2 count2 str::sort
+	entries2 count2 " - " str::join! print nl
+
+	// Free entries2 and clean up
+	0 count2 1 for i {
+		entries2 i 8 * mem::get_ptr mem::free
+	}
+	entries2 mem::free
+	tmpdir2 "/a.txt" str::concat os::delete!
+	tmpdir2 "/b.txt" str::concat os::delete!
+	tmpdir2 os::rmdir!
+
+	// Test 4: Empty array (count=0)
+	8 mem::alloc! -> empty_arr  // allocate small buffer, count=0 matters
+	empty_arr 0 "," str::join! -> empty_result
+	"[" print empty_result print "]" print nl
+	empty_arr mem::free
+}
+
+use io

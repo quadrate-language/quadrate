@@ -216,6 +216,17 @@ qd_exec_result usr_str_sort_desc(qd_context* ctx);
  */
 qd_exec_result usr_str_from_ptr(qd_context* ctx);
 
+/**
+ * @brief Join array of strings with delimiter
+ * @par Stack Effect: ( parts:p count:i delim:s -- result:s )!
+ * @param ctx Execution context
+ * @return Execution result
+ *
+ * Joins an array of strings using the given delimiter.
+ * Returns a new string with all parts concatenated.
+ */
+qd_exec_result usr_str_join(qd_context* ctx);
+
 #ifdef __cplusplus
 }
 #endif

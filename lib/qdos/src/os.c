@@ -849,3 +849,21 @@ qd_exec_result usr_os_mktemp(qd_context* ctx) {
 	qd_stack_push_int(ctx->st, OS_ERR_OK);
 	return (qd_exec_result){0};
 }
+
+qd_exec_result usr_os_cwd(qd_context* ctx) {
+	char* cwd = getcwd(NULL, 0);
+	if (!cwd) {
+		int error_code = errno_to_os_error(errno);
+		ctx->error_code = error_code;
+		if (ctx->error_msg) free(ctx->error_msg);
+		ctx->error_msg = strdup("os::cwd: failed to get current directory");
+		qd_stack_push_int(ctx->st, (int64_t)error_code);
+		return (qd_exec_result){error_code};
+	}
+
+	// Push the path and Ok
+	qd_stack_push_str(ctx->st, cwd);
+	free(cwd);
+	qd_stack_push_int(ctx->st, OS_ERR_OK);
+	return (qd_exec_result){0};
+}

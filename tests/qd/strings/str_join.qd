@@ -1,0 +1,35 @@
+// Test str::join - join array of strings with os::list results
+use str
+use os
+use io
+use mem
+
+fn main() {
+	// Create temp dir with files
+	os::mktemp! -> tmpdir
+
+	// Create some test files
+	tmpdir "/a.txt" str::concat "a" io::write_file!
+	tmpdir "/b.txt" str::concat "b" io::write_file!
+	tmpdir "/c.txt" str::concat "c" io::write_file!
+
+	// List directory and join with comma
+	tmpdir os::list! -> count -> entries
+	entries count str::sort
+	entries count "," str::join! print nl
+
+	// Join with slash
+	entries count "/" str::join! print nl
+
+	// Free entries array (each string + the array itself)
+	0 count 1 for i {
+		entries i 8 * mem::get_ptr mem::free
+	}
+	entries mem::free
+
+	// Clean up
+	tmpdir "/a.txt" str::concat os::delete!
+	tmpdir "/b.txt" str::concat os::delete!
+	tmpdir "/c.txt" str::concat os::delete!
+	tmpdir os::rmdir!
+}
