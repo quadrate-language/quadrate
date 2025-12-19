@@ -21,9 +21,9 @@ int main(void) {
 	qd_build(app);
 
 	printf("\nTesting:\n");
-	qd_execute(ctx, "10 5 app::add . nl");		  // 15
-	qd_execute(ctx, "10 5 app::sub . nl");		  // 5
-	qd_execute(ctx, "10 5 app::double_sum . nl"); // (10+5)*2 = 30
+	qd_execute(ctx, "10 5 app::add print nl");		 // 15
+	qd_execute(ctx, "10 5 app::sub print nl");		 // 5
+	qd_execute(ctx, "10 5 app::double_sum print nl"); // (10+5)*2 = 30
 
 	qd_free_context(ctx);
 	return 0;

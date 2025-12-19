@@ -35,11 +35,11 @@ int main(void) {
 
 	// Call native function
 	printf("Current timestamp: ");
-	qd_execute(ctx, "utils::get_timestamp . nl");
+	qd_execute(ctx, "utils::get_timestamp print nl");
 
 	// Mix native and compiled functions
 	printf("Random number doubled: ");
-	qd_execute(ctx, "utils::random utils::double . nl");
+	qd_execute(ctx, "utils::random utils::double print nl");
 
 	qd_free_context(ctx);
 	return 0;

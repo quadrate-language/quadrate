@@ -522,7 +522,7 @@ void qd_execute(qd_context* ctx, const char* code) {
 		}
 
 		// Check for built-in operations
-		if (token == ".") {
+		if (token == "print") {
 			qd_print(ctx);
 		} else if (token == "nl") {
 			qd_nl(ctx);

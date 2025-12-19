@@ -574,6 +574,106 @@ qd_exec_result usr_os_popen(qd_context* ctx) {
 	return (qd_exec_result){0};  // 0 = success
 }
 
+// os::exec - execute command and capture output: (cmd:str -- stdout:str exitcode:i64)!
+qd_exec_result usr_os_exec(qd_context* ctx) {
+	size_t stack_size = qd_stack_size(ctx->st);
+	if (stack_size < 1) {
+		fprintf(stderr, "Fatal error in os::exec: Stack underflow (required 1 element, have %zu)\n", stack_size);
+		qd_print_stack_trace(ctx);
+		abort();
+	}
+
+	// Pop command string
+	qd_stack_element_t cmd_elem;
+	qd_stack_error err = qd_stack_pop(ctx->st, &cmd_elem);
+	if (err != QD_STACK_OK) {
+		fprintf(stderr, "Fatal error in os::exec: Failed to pop command\n");
+		qd_print_stack_trace(ctx);
+		abort();
+	}
+
+	if (cmd_elem.type != QD_STACK_TYPE_STR) {
+		fprintf(stderr, "Fatal error in os::exec: Expected string for command, got type %d\n", cmd_elem.type);
+		qd_print_stack_trace(ctx);
+		abort();
+	}
+
+	// Open pipe to command
+	FILE* pipe = popen(qd_string_data(cmd_elem.value.s), "r");
+	qd_string_release(cmd_elem.value.s);
+
+	if (pipe == NULL) {
+		int error_code = errno_to_os_error(errno);
+		ctx->error_code = error_code;
+		if (ctx->error_msg) free(ctx->error_msg);
+		ctx->error_msg = strdup("os::exec: failed to execute command");
+		qd_stack_push_int(ctx->st, (int64_t)error_code);
+		return (qd_exec_result){error_code};
+	}
+
+	// Read all output into a buffer
+	size_t buf_cap = 4096;
+	size_t buf_len = 0;
+	char* buf = malloc(buf_cap);
+	if (!buf) {
+		pclose(pipe);
+		ctx->error_code = OS_ERR_OUT_OF_MEMORY;
+		if (ctx->error_msg) free(ctx->error_msg);
+		ctx->error_msg = strdup("os::exec: out of memory");
+		qd_stack_push_int(ctx->st, (int64_t)OS_ERR_OUT_OF_MEMORY);
+		return (qd_exec_result){OS_ERR_OUT_OF_MEMORY};
+	}
+
+	char chunk[1024];
+	size_t bytes_read;
+	while ((bytes_read = fread(chunk, 1, sizeof(chunk), pipe)) > 0) {
+		// Grow buffer if needed
+		if (buf_len + bytes_read >= buf_cap) {
+			buf_cap *= 2;
+			char* new_buf = realloc(buf, buf_cap);
+			if (!new_buf) {
+				free(buf);
+				pclose(pipe);
+				ctx->error_code = OS_ERR_OUT_OF_MEMORY;
+				if (ctx->error_msg) free(ctx->error_msg);
+				ctx->error_msg = strdup("os::exec: out of memory");
+				qd_stack_push_int(ctx->st, (int64_t)OS_ERR_OUT_OF_MEMORY);
+				return (qd_exec_result){OS_ERR_OUT_OF_MEMORY};
+			}
+			buf = new_buf;
+		}
+		memcpy(buf + buf_len, chunk, bytes_read);
+		buf_len += bytes_read;
+	}
+	buf[buf_len] = '\0';
+
+	// Get exit code
+	int status = pclose(pipe);
+	int exit_code = WIFEXITED(status) ? WEXITSTATUS(status) : -1;
+
+	// Push stdout string
+	qd_stack_push_str(ctx->st, buf);
+	free(buf);
+
+	// Push exit code
+	err = qd_stack_push_int(ctx->st, (int64_t)exit_code);
+	if (err != QD_STACK_OK) {
+		fprintf(stderr, "Fatal error in os::exec: Failed to push exit code\n");
+		qd_print_stack_trace(ctx);
+		abort();
+	}
+
+	// Push Ok marker
+	err = qd_stack_push_int(ctx->st, OS_ERR_OK);
+	if (err != QD_STACK_OK) {
+		fprintf(stderr, "Fatal error in os::exec: Failed to push Ok marker\n");
+		qd_print_stack_trace(ctx);
+		abort();
+	}
+
+	return (qd_exec_result){0};
+}
+
 qd_exec_result usr_os_list(qd_context* ctx) {
 	size_t stack_size = qd_stack_size(ctx->st);
 	if (stack_size < 1) {

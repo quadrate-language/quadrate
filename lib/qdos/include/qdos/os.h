@@ -235,6 +235,23 @@ qd_exec_result usr_os_list(qd_context* ctx);
 qd_exec_result usr_os_popen(qd_context* ctx);
 
 /**
+ * @brief Execute command and capture all output
+ *
+ * @par Stack Effect: ( cmd:s -- stdout:s exitcode:i )!
+ *
+ * Simpler alternative to os::popen when you just need the full output.
+ *
+ * @param ctx Execution context
+ * @return Execution result
+ *
+ * @par Example:
+ * @code
+ * "echo hello" os::exec! -> exitcode -> stdout
+ * @endcode
+ */
+qd_exec_result usr_os_exec(qd_context* ctx);
+
+/**
  * @brief Get the current process ID
  *
  * @par Stack Effect: ( -- pid:i )

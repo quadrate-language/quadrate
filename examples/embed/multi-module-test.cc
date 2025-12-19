@@ -12,21 +12,21 @@ int main(void) {
 
 	// Module 2: string operations
 	qd_module* str_mod = qd_get_module(ctx, "str");
-	qd_add_script(str_mod, "fn greet() { \"Hello from str module!\" . nl }");
-	qd_add_script(str_mod, "fn farewell() { \"Goodbye!\" . nl }");
+	qd_add_script(str_mod, "fn greet() { \"Hello from str module!\" print nl }");
+	qd_add_script(str_mod, "fn farewell() { \"Goodbye!\" print nl }");
 	qd_build(str_mod);
 
 	// Module 3: calculator
 	qd_module* calc_mod = qd_get_module(ctx, "calc");
-	qd_add_script(calc_mod, "fn add_and_print(a:i64 b:i64 -- ) { + dup \"Result: \" . . nl }");
+	qd_add_script(calc_mod, "fn add_and_print(a:i64 b:i64 -- ) { + dup \"Result: \" print print nl }");
 	qd_build(calc_mod);
 
 	printf("=== Testing Multiple Modules ===\n\n");
 
 	// Test math module
 	printf("Math module:\n");
-	qd_execute(ctx, "5 math::square . nl"); // 5 * 5 = 25
-	qd_execute(ctx, "7 math::double . nl"); // 7 * 2 = 14
+	qd_execute(ctx, "5 math::square print nl"); // 5 * 5 = 25
+	qd_execute(ctx, "7 math::double print nl"); // 7 * 2 = 14
 
 	printf("\n");
 
@@ -45,7 +45,7 @@ int main(void) {
 
 	// Mix operations from different modules
 	printf("Mixed operations:\n");
-	qd_execute(ctx, "3 math::square 2 math::double + . nl"); // (3*3) + (2*2) = 9 + 4 = 13
+	qd_execute(ctx, "3 math::square 2 math::double + print nl"); // (3*3) + (2*2) = 9 + 4 = 13
 
 	qd_free_context(ctx);
 

@@ -107,6 +107,16 @@ import "libqdos.a" as "os" {
 	/// @example "ls -la" fn (line:str -- ) { print nl } os::popen! -> code
 	pub fn popen(cmd:str callback:ptr -- exitcode:i64)!
 
+	/// Execute a command and capture all output.
+	/// Simpler alternative to os::popen when you just need the full output.
+	/// @param cmd str Command to execute
+	/// @return stdout str All output from command
+	/// @return exitcode i64 Command exit status
+	/// @error ErrIo Failed to execute command
+	/// @error ErrOutOfMemory Out of memory
+	/// @example "echo hello" os::exec! -> exitcode -> stdout
+	pub fn exec(cmd:str -- stdout:str exitcode:i64)!
+
 	/// Get the current process ID.
 	/// @return pid i64 Process ID
 	/// @example os::getpid print nl
