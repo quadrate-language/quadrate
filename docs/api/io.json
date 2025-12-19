@@ -211,6 +211,16 @@
       "returns": [{"name": "bytes_written", "type": "i64", "description": "Actual bytes written"}],
       "errors": [{"code": "ErrInvalidArg", "description": "Invalid file handle, buffer, or count"}, {"code": "ErrWrite", "description": "Write operation failed"}],
       "examples": ["f buf len io::write! drop"]
+    },
+    {
+      "name": "write_file",
+      "signature": "(path:str contents:str -- )",
+      "failable": true,
+      "description": "Write string contents to file. Creates or truncates the file at the given path.",
+      "params": [{"name": "path", "type": "str", "description": "File path"}, {"name": "contents", "type": "str", "description": "String to write"}],
+      "returns": [],
+      "errors": [{"code": "ErrPermission", "description": "Permission denied or cannot create file"}, {"code": "ErrWrite", "description": "Write operation failed"}],
+      "examples": ["\"/tmp/test.txt\" \"Hello, world!\\n\" io::write_file!"]
     }
   ]
 }

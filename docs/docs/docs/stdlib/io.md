@@ -263,3 +263,27 @@ Write bytes from buffer.
 f buf len io::write! drop
 ```
 
+---
+
+### `fn` write_file
+
+Write string contents to file. Creates or truncates the file at the given path.
+
+**Signature:** `(path:str contents:str -- )!`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `path` | `str` | File path |
+| `contents` | `str` | String to write |
+
+| Error | Description |
+|-------|-------------|
+| `io::ErrPermission` | Permission denied or cannot create file |
+| `io::ErrWrite` | Write operation failed |
+
+**Example:**
+
+```qd
+"/tmp/test.txt" "Hello, world!\n" io::write_file!
+```
+

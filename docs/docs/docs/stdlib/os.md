@@ -267,6 +267,28 @@ Create a directory and all parent directories.
 
 ---
 
+### `fn` mktemp
+
+Create a unique temporary directory. Creates a directory in /tmp with a unique name. Caller is responsible for removing it when done (use os::rmdir).
+
+**Signature:** `( -- path:str)!`
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `path` | `str` | Path to the created directory |
+
+| Error | Description |
+|-------|-------------|
+| `os::ErrIo` | Failed to create directory |
+
+**Example:**
+
+```qd
+os::mktemp! -> tmpdir
+```
+
+---
+
 ### `fn` popen
 
 Execute a command and stream output line-by-line to a callback. The callback is called synchronously for each line of output (without trailing newline). The call blocks until the command completes. Closures with captured variables are supported.

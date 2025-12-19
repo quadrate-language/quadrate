@@ -121,4 +121,13 @@ import "libqdio.a" as "io" {
 	/// @error ErrRead Read operation failed
 	/// @example "/etc/hostname" io::read_file! -> contents
 	pub fn read_file(path:str -- contents:str)!
+
+	/// Write string contents to file.
+	/// Creates or truncates the file at the given path.
+	/// @param path str File path
+	/// @param contents str String to write
+	/// @error ErrPermission Permission denied or cannot create file
+	/// @error ErrWrite Write operation failed
+	/// @example "/tmp/test.txt" "Hello, world!\n" io::write_file!
+	pub fn write_file(path:str contents:str -- )!
 }

@@ -827,3 +827,25 @@ qd_exec_result usr_os_glob(qd_context* ctx) {
 	qd_stack_push_int(ctx->st, OS_ERR_OK);
 	return (qd_exec_result){OS_ERR_OK};
 }
+
+qd_exec_result usr_os_mktemp(qd_context* ctx) {
+	// Create template for mkdtemp
+	// Use /tmp/qd_XXXXXX format
+	char template[] = "/tmp/qd_XXXXXX";
+
+	// Create the temporary directory
+	char* result = mkdtemp(template);
+	if (!result) {
+		int error_code = errno_to_os_error(errno);
+		ctx->error_code = error_code;
+		if (ctx->error_msg) free(ctx->error_msg);
+		ctx->error_msg = strdup("os::mktemp: failed to create temp directory");
+		qd_stack_push_int(ctx->st, (int64_t)error_code);
+		return (qd_exec_result){error_code};
+	}
+
+	// Push the path and Ok
+	qd_stack_push_str(ctx->st, result);
+	qd_stack_push_int(ctx->st, OS_ERR_OK);
+	return (qd_exec_result){0};
+}

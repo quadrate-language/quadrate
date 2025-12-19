@@ -313,6 +313,27 @@ qd_exec_result usr_os_walk(qd_context* ctx);
  */
 qd_exec_result usr_os_glob(qd_context* ctx);
 
+/**
+ * @brief Create a unique temporary directory
+ *
+ * @par Stack Effect: ( -- path:s )
+ *
+ * Creates a unique temporary directory in /tmp and returns its path.
+ * The directory is created with mode 0700 (owner read/write/execute only).
+ * Caller is responsible for removing the directory when done (use os::rmdir).
+ *
+ * @param ctx Execution context
+ * @return Execution result
+ *
+ * @par Example:
+ * @code
+ * os::mktemp! -> tmpdir
+ * // Use tmpdir...
+ * tmpdir os::rmdir!  // Clean up when done
+ * @endcode
+ */
+qd_exec_result usr_os_mktemp(qd_context* ctx);
+
 #ifdef __cplusplus
 }
 #endif

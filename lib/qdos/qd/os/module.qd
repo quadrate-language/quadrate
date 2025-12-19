@@ -147,4 +147,12 @@ import "libqdos.a" as "os" {
 	/// @return count i64 Number of matches
 	/// @example "*.qd" os::glob! -> count -> entries
 	pub fn glob(pattern:str -- entries:ptr count:i64)!
+
+	/// Create a unique temporary directory.
+	/// Creates a directory in /tmp with a unique name.
+	/// Caller is responsible for removing it when done (use os::rmdir).
+	/// @return path str Path to the created directory
+	/// @error ErrIo Failed to create directory
+	/// @example os::mktemp! -> tmpdir
+	pub fn mktemp( -- path:str)!
 }

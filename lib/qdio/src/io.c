@@ -713,3 +713,73 @@ qd_exec_result usr_io_read_file(qd_context* ctx) {
 
     return (qd_exec_result){0};
 }
+
+qd_exec_result usr_io_write_file(qd_context* ctx) {
+    size_t stack_size = qd_stack_size(ctx->st);
+    if (stack_size < 2) {
+        fprintf(stderr, "Fatal error in io::write_file: Stack underflow (need 2, have %zu)\n", stack_size);
+        qd_print_stack_trace(ctx);
+        abort();
+    }
+
+    // Pop contents (top of stack)
+    qd_stack_element_t contents_elem;
+    qd_stack_error err = qd_stack_pop(ctx->st, &contents_elem);
+    if (err != QD_STACK_OK) {
+        fprintf(stderr, "Fatal error in io::write_file: Failed to pop contents\n");
+        abort();
+    }
+    if (contents_elem.type != QD_STACK_TYPE_STR) {
+        fprintf(stderr, "Fatal error in io::write_file: Expected string for contents, got %d\n", contents_elem.type);
+        abort();
+    }
+
+    // Pop path
+    qd_stack_element_t path_elem;
+    err = qd_stack_pop(ctx->st, &path_elem);
+    if (err != QD_STACK_OK) {
+        qd_string_release(contents_elem.value.s);
+        fprintf(stderr, "Fatal error in io::write_file: Failed to pop path\n");
+        abort();
+    }
+    if (path_elem.type != QD_STACK_TYPE_STR) {
+        qd_string_release(contents_elem.value.s);
+        fprintf(stderr, "Fatal error in io::write_file: Expected string for path, got %d\n", path_elem.type);
+        abort();
+    }
+
+    const char* path = qd_string_data(path_elem.value.s);
+    const char* contents = qd_string_data(contents_elem.value.s);
+    size_t len = strlen(contents);
+
+    // Open file for writing (truncate if exists)
+    FILE* fp = fopen(path, "wb");
+    if (!fp) {
+        qd_string_release(path_elem.value.s);
+        qd_string_release(contents_elem.value.s);
+        ctx->error_code = IO_ERR_PERMISSION;
+        if (ctx->error_msg) free(ctx->error_msg);
+        ctx->error_msg = strdup("io::write_file: failed to open file");
+        qd_push_i(ctx, IO_ERR_PERMISSION);
+        return (qd_exec_result){IO_ERR_PERMISSION};
+    }
+
+    // Write contents
+    size_t written = fwrite(contents, 1, len, fp);
+    fclose(fp);
+
+    qd_string_release(path_elem.value.s);
+    qd_string_release(contents_elem.value.s);
+
+    if (written < len) {
+        ctx->error_code = IO_ERR_WRITE;
+        if (ctx->error_msg) free(ctx->error_msg);
+        ctx->error_msg = strdup("io::write_file: write failed");
+        qd_push_i(ctx, IO_ERR_WRITE);
+        return (qd_exec_result){IO_ERR_WRITE};
+    }
+
+    // On success, push Ok
+    qd_push_i(ctx, IO_ERR_OK);
+    return (qd_exec_result){0};
+}

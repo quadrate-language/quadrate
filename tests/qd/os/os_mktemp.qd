@@ -1,0 +1,22 @@
+// Test os::mktemp - create temporary directory
+use os
+use str
+
+fn main() {
+	// Create a temp directory
+	os::mktemp! -> tmpdir
+	"Created: " print tmpdir "/tmp/qd_" str::starts_with print nl
+
+	// Verify it exists
+	tmpdir os::exists print nl
+
+	// Verify it's a directory
+	tmpdir os::is_dir print nl
+
+	// Clean up
+	tmpdir os::rmdir!
+	"Cleaned up" print nl
+
+	// Verify it's gone
+	tmpdir os::exists print nl
+}

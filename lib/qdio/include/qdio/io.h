@@ -196,4 +196,17 @@ qd_exec_result usr_io_readline(qd_context* ctx);
  */
 qd_exec_result usr_io_read_file(qd_context* ctx);
 
+/**
+ * @brief Write string contents to file
+ *
+ * Stack effect: ( path:s contents:s -- )!
+ *
+ * Creates or truncates the file at the given path and writes
+ * the string contents to it. The file is automatically closed.
+ *
+ * @param ctx Execution context
+ * @return Execution result
+ */
+qd_exec_result usr_io_write_file(qd_context* ctx);
+
 #endif // STDIOQD_IO_H

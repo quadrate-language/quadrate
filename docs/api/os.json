@@ -183,6 +183,16 @@
       "examples": ["\"/tmp/a/b/c\" os::mkdir!"]
     },
     {
+      "name": "mktemp",
+      "signature": "( -- path:str)",
+      "failable": true,
+      "description": "Create a unique temporary directory. Creates a directory in /tmp with a unique name. Caller is responsible for removing it when done (use os::rmdir).",
+      "params": [],
+      "returns": [{"name": "path", "type": "str", "description": "Path to the created directory"}],
+      "errors": [{"code": "ErrIo", "description": "Failed to create directory"}],
+      "examples": ["os::mktemp! -> tmpdir"]
+    },
+    {
       "name": "popen",
       "signature": "(cmd:str callback:ptr -- exitcode:i64)",
       "failable": true,
