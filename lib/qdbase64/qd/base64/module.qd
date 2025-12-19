@@ -6,7 +6,7 @@ use unicode
 
 // Build base64 encoding lookup table (64 bytes)
 fn make_enc_table( -- tbl:ptr) {
-	64 mem::alloc -> tbl
+	64 mem::alloc! -> tbl
 	// A-Z (0-25)
 	0 26 1 for it {
 		unicode::A it + tbl it mem::set_byte
@@ -28,7 +28,7 @@ fn make_enc_table( -- tbl:ptr) {
 
 // Build base64 decoding lookup table (128 bytes, -1 for invalid, -2 for '=')
 fn make_dec_table( -- tbl:ptr) {
-	128 mem::alloc -> tbl
+	128 mem::alloc! -> tbl
 	// Initialize all to -1 (invalid)
 	255 tbl 128 mem::fill
 	// A-Z -> 0-25
@@ -65,7 +65,7 @@ pub fn encode(input:str -- encoded:str) {
 
 	// Calculate output size: ceil(inlen/3) * 4
 	inlen 2 + 3 / 4 * -> outlen
-	outlen mem::alloc -> out
+	outlen mem::alloc! -> out
 
 	0 -> i
 	0 -> o
@@ -148,7 +148,7 @@ pub fn decode(encoded:str -- decoded:str) {
 		make_dec_table -> dec_tbl
 
 		// Allocate output buffer (max 3/4 of input length)
-		enclen 3 * 4 / 1 + mem::alloc -> buf
+		enclen 3 * 4 / 1 + mem::alloc! -> buf
 		0 -> o
 		0 -> i
 		0 -> v1

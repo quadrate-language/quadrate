@@ -3,7 +3,7 @@
   "description": "File path manipulation functions. POSIX-style paths with forward slash separator.",
   "constants": [
     {
-      "name": "SEP",
+      "name": "Sep",
       "value": "\"/\"",
       "description": "Path separator constant."
     }

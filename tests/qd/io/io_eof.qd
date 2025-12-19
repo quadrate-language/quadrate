@@ -25,7 +25,7 @@ fn main() {
 	write_buf mem::free
 
 	// Open and read
-	10 mem::alloc -> read_buf
+	10 mem::alloc! -> read_buf
 
 	"/tmp/test_eof.txt" io::Read io::open switch {
 		Ok {

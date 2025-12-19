@@ -7,7 +7,7 @@ POSIX-style paths with forward slash separator.
 
 | Name | Value | Description |
 |------|-------|-------------|
-| `SEP` | `"/"` | Path separator constant. |
+| `Sep` | `"/"` | Path separator constant. |
 
 ## Functions
 

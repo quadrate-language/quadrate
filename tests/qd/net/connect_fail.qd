@@ -1,0 +1,19 @@
+/// Test that net::connect returns error on failure instead of crashing.
+use net
+
+fn main( -- ) {
+	// Try to connect to an unlikely port - should fail gracefully
+	"localhost" 44444 net::connect switch {
+		Ok {
+			-> sock
+			sock net::close
+			"connected" print nl
+		}
+		net::ErrConnect {
+			"connect error handled" print nl
+		}
+		_ {
+			"unexpected error" print nl
+		}
+	}
+}

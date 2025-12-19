@@ -31,7 +31,7 @@ Get character code at index.
 **Example:**
 
 ```qd
-"hello" 0 str::char_at print  // 104 ('h')
+"hello" 0 str::char_at! print  // 104 ('h')
 ```
 
 ---

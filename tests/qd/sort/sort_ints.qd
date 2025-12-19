@@ -3,7 +3,7 @@ use sort
 
 fn main() {
 	// Create array [5, 2, 8, 1, 9]
-	5 8 * mem::alloc -> arr
+	5 8 * mem::alloc! -> arr
 	5 arr 0 mem::set_i64
 	2 arr 8 mem::set_i64
 	8 arr 16 mem::set_i64

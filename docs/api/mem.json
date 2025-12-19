@@ -16,7 +16,7 @@
       "params": [{"name": "bytes", "type": "i64", "description": "Number of bytes to allocate"}],
       "returns": [{"name": "address", "type": "ptr", "description": "Allocated memory, or null (0) on failure"}],
       "errors": [],
-      "examples": ["1024 mem::alloc -> buf"]
+      "examples": ["1024 mem::alloc! -> buf"]
     },
     {
       "name": "copy",
@@ -116,7 +116,7 @@
       "params": [{"name": "address", "type": "ptr", "description": "Existing allocation (or null for new alloc)"}, {"name": "new_bytes", "type": "i64", "description": "New size in bytes"}],
       "returns": [{"name": "new_address", "type": "ptr", "description": "Reallocated memory, or null on failure"}],
       "errors": [],
-      "examples": ["buf 2048 mem::realloc -> buf"]
+      "examples": ["buf 2048 mem::realloc! -> buf"]
     },
     {
       "name": "set_byte",

@@ -22,7 +22,7 @@ Wrap a TCP socket with TLS encryption (client mode).
 **Example:**
 
 ```qd
-"example.com" 443 net::connect -> sock
+"example.com" 443 net::connect! -> sock
 sock "example.com" tls::connect! -> conn
 ```
 
@@ -48,7 +48,7 @@ Wrap a TCP socket with TLS encryption using client certificate (mTLS).
 **Example:**
 
 ```qd
-"api.example.com" 443 net::connect -> sock
+"api.example.com" 443 net::connect! -> sock
 sock "api.example.com" "/path/client.crt" "/path/client.key" tls::connect_mtls! -> conn
 ```
 
@@ -73,7 +73,7 @@ Wrap a TCP socket with TLS encryption (server mode).
 **Example:**
 
 ```qd
-server net::accept -> client_sock
+server net::accept! -> client_sock
 client_sock "/path/cert.pem" "/path/key.pem" tls::accept! -> conn
 ```
 
@@ -174,7 +174,7 @@ use tls
 
 fn main() {
 	// Connect to server
-	"example.com" 443 net::connect -> sock
+	"example.com" 443 net::connect! -> sock
 
 	// Wrap with TLS
 	sock "example.com" tls::connect switch {
@@ -244,7 +244,7 @@ fn handle_client(client_sock:i64 -- ) {
 }
 
 fn main() {
-	443 net::listen -> server
+	443 net::listen! -> server
 
 	loop {
 		server net::accept handle_client
@@ -259,7 +259,7 @@ use net
 use tls
 
 fn main() {
-	"secure.example.com" 443 net::connect -> sock
+	"secure.example.com" 443 net::connect! -> sock
 
 	sock "secure.example.com" tls::connect switch {
 		Ok {
@@ -291,7 +291,7 @@ use net
 use tls
 
 fn main() {
-	"api.secure.example.com" 443 net::connect -> sock
+	"api.secure.example.com" 443 net::connect! -> sock
 
 	// Connect with client certificate authentication
 	sock "api.secure.example.com" "/path/client.crt" "/path/client.key" tls::connect_mtls switch {

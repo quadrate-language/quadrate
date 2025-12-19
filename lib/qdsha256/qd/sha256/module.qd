@@ -17,7 +17,7 @@ const H6_INIT = 528734635
 const H7_INIT = 1541459225
 
 fn make_k_table( -- tbl:ptr) {
-	512 mem::alloc -> tbl
+	512 mem::alloc! -> tbl
 	1116352408 tbl 0   mem::set_i64
 	1899447441 tbl 8   mem::set_i64
 	3049323471 tbl 16  mem::set_i64
@@ -131,7 +131,7 @@ fn process_block(msg:ptr block_offset:i64 h:ptr -- ) {
 	-> block_offset
 	-> msg
 	make_k_table -> k
-	512 mem::alloc -> w
+	512 mem::alloc! -> w
 
 	0 -> i
 	loop {
@@ -211,7 +211,7 @@ fn calculate_hash_state(dptr:ptr dlen:i64 -- h:ptr) {
 	-> dlen
 	-> dptr
 
-	64 mem::alloc -> h
+	64 mem::alloc! -> h
 	H0_INIT h 0 mem::set_i64
 	H1_INIT h 8 mem::set_i64
 	H2_INIT h 16 mem::set_i64
@@ -224,7 +224,7 @@ fn calculate_hash_state(dptr:ptr dlen:i64 -- h:ptr) {
 	dlen 1 + 8 + -> minlen
 	minlen 64 + 1 - 64 / 64 * -> padded_len
 
-	padded_len mem::alloc -> msg
+	padded_len mem::alloc! -> msg
 
 	// Copy message using bytes::copy (safe for binary)
 	msg 0 dptr 0 dlen bytes::copy
@@ -266,7 +266,7 @@ pub fn hash_bytes(buf:ptr length:i64 -- result:str) {
 	-> buf
 	buf length calculate_hash_state -> h
 
-	64 mem::alloc -> out
+	64 mem::alloc! -> out
 	0 -> i
 	loop {
 		i 8 >= if {
@@ -313,7 +313,7 @@ pub fn hash_raw(s:str -- buf:ptr) {
 	data length calculate_hash_state -> h
 	data mem::free
 
-	32 mem::alloc -> buf
+	32 mem::alloc! -> buf
 	0 -> i
 	loop {
 		i 8 >= if {

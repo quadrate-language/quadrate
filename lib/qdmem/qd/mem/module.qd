@@ -2,19 +2,30 @@
 ///
 /// SAFETY: These are unsafe operations with no bounds checking.
 /// Improper use can cause segmentation faults and memory corruption.
+
+/// Allocation failure error code
+pub const ErrAlloc = 2
+
+/// Invalid argument error code
+pub const ErrInvalidArg = 3
+
 import "libqdmem.a" as "mem" {
 	/// Allocate memory.
 	/// @param bytes i64 Number of bytes to allocate
-	/// @return address ptr Allocated memory, or null (0) on failure
-	/// @example 1024 mem::alloc -> buf
-	pub fn alloc(bytes:i64 -- address:ptr)
+	/// @return address ptr Allocated memory address
+	/// @error ErrAlloc Allocation failed
+	/// @error ErrInvalidArg Invalid size (negative)
+	/// @example 1024 mem::alloc! -> buf
+	pub fn alloc(bytes:i64 -- address:ptr)!
 
 	/// Reallocate memory to new size.
 	/// @param address ptr Existing allocation (or null for new alloc)
 	/// @param new_bytes i64 New size in bytes
-	/// @return new_address ptr Reallocated memory, or null on failure
-	/// @example buf 2048 mem::realloc -> buf
-	pub fn realloc(address:ptr new_bytes:i64 -- new_address:ptr)
+	/// @return new_address ptr Reallocated memory address
+	/// @error ErrAlloc Reallocation failed
+	/// @error ErrInvalidArg Invalid size (negative)
+	/// @example buf 2048 mem::realloc! -> buf
+	pub fn realloc(address:ptr new_bytes:i64 -- new_address:ptr)!
 
 	/// Set a byte at offset.
 	/// @param value i64 Byte value (0-255)

@@ -25,7 +25,7 @@
       ],
       "returns": [{"name": "conn", "type": "ptr", "description": "TLS connection handle"}],
       "errors": ["ErrInit", "ErrConnect", "ErrCertificate"],
-      "examples": ["\"example.com\" 443 net::connect -> sock  sock \"example.com\" tls::connect! -> conn"]
+      "examples": ["\"example.com\" 443 net::connect! -> sock  sock \"example.com\" tls::connect! -> conn"]
     },
     {
       "name": "accept",

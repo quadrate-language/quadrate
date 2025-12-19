@@ -31,7 +31,7 @@ fn make_table_entry(index:i64 -- entry:i64) {
 // Create the 256-entry CRC32 lookup table
 fn make_table( -- tbl:ptr) {
 	// 256 entries * 8 bytes per i64
-	2048 mem::alloc -> tbl
+	2048 mem::alloc! -> tbl
 	0 -> i
 	loop {
 		i 256 >= if {
@@ -70,7 +70,7 @@ pub fn checksum(s:str -- crc:i64) {
 		i slen >= if {
 			break
 		}
-		s i str::char_at -> byte
+		s i str::char_at! -> byte
 		// crc = table[(crc ^ byte) & 0xFF] ^ (crc >> 8)
 		crc byte xor 255 and -> index
 		tbl index table_get crc 8 shr xor -> crc
@@ -121,7 +121,7 @@ pub fn checksum_hex(s:str -- h:str) {
 	s checksum -> crc
 
 	// Convert to 8-char hex string
-	8 mem::alloc -> buf
+	8 mem::alloc! -> buf
 	0 -> i
 	loop {
 		i 8 >= if {
@@ -162,7 +162,7 @@ pub fn update(crc:i64 s:str -- new_crc:i64) {
 		i slen >= if {
 			break
 		}
-		s i str::char_at -> byte
+		s i str::char_at! -> byte
 		crc byte xor 255 and -> index
 		tbl index table_get crc 8 shr xor -> crc
 		i 1 + -> i

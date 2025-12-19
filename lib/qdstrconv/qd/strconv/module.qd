@@ -1,28 +1,36 @@
 /// String to number conversions.
+///
+/// Functions:
+/// - format_int: Format integer in any base (2-36)
+/// - parse_int: Parse string to integer in any base (2-36)
+/// - itoa: Convert integer to decimal string (shorthand for 10 format_int)
+/// - atoi: Parse decimal string to integer (shorthand for 10 parse_int)
 import "libqdstrconv.a" as "strconv" {
 	/// Format integer in given base.
 	/// @param value i64 Integer value
 	/// @param base i64 Numeric base (2-36)
-	/// @return str str Formatted string
+	/// @return s str Formatted string
 	/// @example 255 16 strconv::format_int print  // "ff"
-	pub fn format_int(value:i64 base:i64 -- str:str)
+	pub fn format_int(value:i64 base:i64 -- s:str)
 
 	/// Parse integer from string in given base.
-	/// @param str str String to parse
+	/// @param s str String to parse
 	/// @param base i64 Numeric base (2-36)
 	/// @return value i64 Parsed integer
 	/// @example "ff" 16 strconv::parse_int print  // 255
-	pub fn parse_int(str:str base:i64 -- value:i64)
+	pub fn parse_int(s:str base:i64 -- value:i64)
 
-	/// Convert integer to decimal string.
+	/// Convert integer to decimal string (base 10).
+	/// Equivalent to: value 10 strconv::format_int
 	/// @param value i64 Integer value
-	/// @return str str Decimal string
+	/// @return s str Decimal string
 	/// @example 42 strconv::itoa print  // "42"
-	pub fn itoa(value:i64 -- str:str)
+	pub fn itoa(value:i64 -- s:str)
 
-	/// Parse decimal string to integer.
-	/// @param str str Decimal string
+	/// Parse decimal string to integer (base 10).
+	/// Equivalent to: str 10 strconv::parse_int
+	/// @param s str Decimal string
 	/// @return value i64 Parsed integer
 	/// @example "42" strconv::atoi print  // 42
-	pub fn atoi(str:str -- value:i64)
+	pub fn atoi(s:str -- value:i64)
 }

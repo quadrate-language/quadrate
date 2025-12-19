@@ -3,7 +3,7 @@
 use str
 
 /// Path separator constant.
-pub const SEP = "/"
+pub const Sep = "/"
 
 /// Find last occurrence of slash in string.
 fn find_last_slash(s:str -- idx:i64) {
@@ -12,7 +12,7 @@ fn find_last_slash(s:str -- idx:i64) {
 	-1 -> result
 	0 slen 1 for it {
 		it -> i
-		s i str::char_at 47 == if {
+		s i str::char_at! 47 == if {
 			i -> result
 		}
 	}
@@ -26,7 +26,7 @@ fn find_last_dot(s:str -- idx:i64) {
 	-1 -> result
 	0 slen 1 for it {
 		it -> i
-		s i str::char_at 46 == if {
+		s i str::char_at! 46 == if {
 			i -> result
 		}
 	}
@@ -141,7 +141,7 @@ pub fn join(p1:str p2:str -- joined:str) {
 		len1 0 == if {
 			p2 -> result
 		} else {
-			p1 len1 1 - str::char_at 47 == if {
+			p1 len1 1 - str::char_at! 47 == if {
 				p1 p2 str::concat -> result
 			} else {
 				p1 "/" str::concat p2 str::concat -> result
@@ -169,7 +169,7 @@ pub fn normalize(path:str -- norm:str) {
 	path "//" "/" str::replace! -> result
 	result str::len -> rlen
 	rlen 1 > if {
-		result rlen 1 - str::char_at 47 == if {
+		result rlen 1 - str::char_at! 47 == if {
 			result 0 rlen 1 - str::substring! -> result
 		}
 	}

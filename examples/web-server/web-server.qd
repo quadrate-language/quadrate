@@ -4,20 +4,19 @@ fn main() {
 	"Serving on http://localhost:8080/" print nl
 
 	// Create server socket on port 8080
-	8080 net::listen
+	8080 net::listen! -> server
 
 	// Loop forever accepting connections
 	loop {
-		dup net::accept
+		server net::accept! -> client
 
 		// Read the request (ignore it)
-		dup 1024 net::receive
-		drop drop
+		client 1024 net::receive! drop drop
 
 		// Send HTTP response
-		dup
-		"HTTP/1.0 200 OK\r\nContent-Type: text/plain\r\nContent-Length: 6\r\n\r\nHello!" net::send
+		client
+		"HTTP/1.0 200 OK\r\nContent-Type: text/plain\r\nContent-Length: 6\r\n\r\nHello!" net::send!
 		drop
-		net::close
+		client net::close
 	}
 }

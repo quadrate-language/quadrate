@@ -276,16 +276,16 @@ pub fn copy(dst:ptr dst_off:i64 src:ptr src_off:i64 count:i64 -- ) {
 }
 
 /// Fill a buffer with a byte value.
+/// @param value i64 Byte value to fill with
 /// @param buf ptr Buffer to fill
 /// @param offset i64 Starting offset
 /// @param count i64 Number of bytes to fill
-/// @param value i64 Byte value to fill with
-/// @example buf 0 10 0 bytes::fill
-pub fn fill(buf:ptr offset:i64 count:i64 value:i64 -- ) {
-	-> value
+/// @example 0 buf 0 10 bytes::fill
+pub fn fill(value:i64 buf:ptr offset:i64 count:i64 -- ) {
 	-> count
 	-> offset
 	-> buf
+	-> value
 	0 -> i
 	loop {
 		i count >= if {

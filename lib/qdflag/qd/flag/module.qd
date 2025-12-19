@@ -178,7 +178,7 @@ fn parse_int(s:str -- value:i64) {
 	s str::len -> len
 
 	len 0 > if {
-		s 0 str::char_at unicode::minus == if {
+		s 0 str::char_at! unicode::minus == if {
 			-1 -> sign
 			1 -> i
 		}
@@ -186,7 +186,7 @@ fn parse_int(s:str -- value:i64) {
 
 	loop {
 		i len < if {
-			s i str::char_at -> ch
+			s i str::char_at! -> ch
 			ch unicode::is_digit if {
 				value 10 * ch unicode::digit0 - + -> value
 				i 1 + -> i
@@ -211,7 +211,7 @@ fn parse_float(s:str -- value:f64) {
 	1.0 -> decimal_place
 
 	len 0 > if {
-		s 0 str::char_at unicode::minus == if {
+		s 0 str::char_at! unicode::minus == if {
 			-1.0 -> sign
 			1 -> i
 		}
@@ -219,7 +219,7 @@ fn parse_float(s:str -- value:f64) {
 
 	loop {
 		i len < if {
-			s i str::char_at -> ch
+			s i str::char_at! -> ch
 			ch unicode::dot == if {
 				1 -> seen_dot
 				i 1 + -> i

@@ -34,9 +34,15 @@ TEST(AllocBasicTest) {
 	qd_exec_result result = usr_mem_alloc(ctx);
 	ASSERT_EQ(result.code, 0, "alloc should succeed");
 
+	// Pop Ok status first (success pushes [result, Ok])
+	qd_stack_element_t status_elem;
+	qd_stack_error err = qd_stack_pop(ctx->st, &status_elem);
+	ASSERT_EQ(err, QD_STACK_OK, "pop status should succeed");
+	ASSERT_EQ((int)status_elem.value.i, 1, "status should be Ok (1)");
+
 	// Check that a pointer was returned
 	qd_stack_element_t ptr_elem;
-	qd_stack_error err = qd_stack_pop(ctx->st, &ptr_elem);
+	err = qd_stack_pop(ctx->st, &ptr_elem);
 	ASSERT_EQ(err, QD_STACK_OK, "pop should succeed");
 	ASSERT_EQ(ptr_elem.type, QD_STACK_TYPE_PTR, "result should be ptr");
 	ASSERT(ptr_elem.value.p != NULL, "pointer should not be null");
@@ -55,6 +61,10 @@ TEST(SetGetByteTest) {
 	// Allocate buffer
 	qd_push_i(ctx, 16);
 	usr_mem_alloc(ctx);
+
+	// Pop Ok status first
+	qd_stack_element_t status_elem;
+	qd_stack_pop(ctx->st, &status_elem);
 
 	qd_stack_element_t ptr_elem;
 	qd_stack_pop(ctx->st, &ptr_elem);
@@ -107,6 +117,10 @@ TEST(SetGetI64Test) {
 	qd_push_i(ctx, 64);
 	usr_mem_alloc(ctx);
 
+	// Pop Ok status first
+	qd_stack_element_t status_elem;
+	qd_stack_pop(ctx->st, &status_elem);
+
 	qd_stack_element_t ptr_elem;
 	qd_stack_pop(ctx->st, &ptr_elem);
 	void* buffer = ptr_elem.value.p;
@@ -143,6 +157,10 @@ TEST(SetGetF64Test) {
 	qd_push_i(ctx, 64);
 	usr_mem_alloc(ctx);
 
+	// Pop Ok status first
+	qd_stack_element_t status_elem;
+	qd_stack_pop(ctx->st, &status_elem);
+
 	qd_stack_element_t ptr_elem;
 	qd_stack_pop(ctx->st, &ptr_elem);
 	void* buffer = ptr_elem.value.p;
@@ -178,6 +196,10 @@ TEST(SetGetPtrTest) {
 	// Allocate buffer
 	qd_push_i(ctx, 64);
 	usr_mem_alloc(ctx);
+
+	// Pop Ok status first
+	qd_stack_element_t status_elem;
+	qd_stack_pop(ctx->st, &status_elem);
 
 	qd_stack_element_t ptr_elem;
 	qd_stack_pop(ctx->st, &ptr_elem);

@@ -36,7 +36,7 @@
       "params": [{"name": "buf", "type": "ptr", "description": "Buffer to fill"}, {"name": "offset", "type": "i64", "description": "Starting offset"}, {"name": "count", "type": "i64", "description": "Number of bytes to fill"}, {"name": "value", "type": "i64", "description": "Byte value to fill with"}],
       "returns": [],
       "errors": [],
-      "examples": ["buf 0 10 0 bytes::fill"]
+      "examples": ["0 buf 0 10 bytes::fill"]
     },
     {
       "name": "read_u16_be",

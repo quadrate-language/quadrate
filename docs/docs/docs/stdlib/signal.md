@@ -11,13 +11,13 @@ if a signal was received, and clear() to reset the flag.
 use signal
 
 fn main() {
-	signal::SIGINT signal::trap
+	signal::SigInt signal::trap
 	"Running. Press Ctrl+C to stop." print nl
 
 	loop {
-		signal::SIGINT signal::pending if {
+		signal::SigInt signal::pending if {
 			"Shutting down" print nl
-			signal::SIGINT signal::clear
+			signal::SigInt signal::clear
 			break
 		}
 	}
@@ -28,25 +28,25 @@ fn main() {
 
 | Name | Value | Description |
 |------|-------|-------------|
-| `SIGABRT` | `6` | Abort signal. |
-| `SIGALRM` | `14` | Alarm clock. |
-| `SIGCHLD` | `17` | Child process stopped or terminated. |
-| `SIGCONT` | `18` | Continue if stopped. |
-| `SIGFPE` | `8` | Floating point exception. |
-| `SIGHUP` | `1` | Hangup signal (terminal closed). |
+| `SigAbrt` | `6` | Abort signal. |
+| `SigAlrm` | `14` | Alarm clock. |
+| `SigChld` | `17` | Child process stopped or terminated. |
+| `SigCont` | `18` | Continue if stopped. |
+| `SigFpe` | `8` | Floating point exception. |
+| `SigHup` | `1` | Hangup signal (terminal closed). |
 | `SIGILL` | `4` | Illegal instruction. |
-| `SIGINT` | `2` | Interrupt signal (Ctrl+C). |
-| `SIGKILL` | `9` | Kill signal (cannot be caught). |
-| `SIGPIPE` | `13` | Broken pipe. |
-| `SIGQUIT` | `3` | Quit signal (Ctrl+\). |
-| `SIGSEGV` | `11` | Segmentation fault. |
-| `SIGSTOP` | `19` | Stop signal (cannot be caught). |
-| `SIGTERM` | `15` | Termination signal. |
-| `SIGTSTP` | `20` | Terminal stop (Ctrl+Z). |
-| `SIGTTIN` | `21` | Background read from terminal. |
-| `SIGTTOU` | `22` | Background write to terminal. |
-| `SIGUSR1` | `10` | User-defined signal 1. |
-| `SIGUSR2` | `12` | User-defined signal 2. |
+| `SigInt` | `2` | Interrupt signal (Ctrl+C). |
+| `SigKill` | `9` | Kill signal (cannot be caught). |
+| `SigPipe` | `13` | Broken pipe. |
+| `SigQuit` | `3` | Quit signal (Ctrl+\). |
+| `SigSegv` | `11` | Segmentation fault. |
+| `SigStop` | `19` | Stop signal (cannot be caught). |
+| `SigTerm` | `15` | Termination signal. |
+| `SigTstp` | `20` | Terminal stop (Ctrl+Z). |
+| `SigTtin` | `21` | Background read from terminal. |
+| `SigTtou` | `22` | Background write to terminal. |
+| `SigUsr1` | `10` | User-defined signal 1. |
+| `SigUsr2` | `12` | User-defined signal 2. |
 
 ## Functions
 
@@ -63,7 +63,7 @@ Clear the pending flag for a signal.
 **Example:**
 
 ```qd
-signal::SIGINT signal::clear
+signal::SigInt signal::clear
 ```
 
 ---
@@ -81,7 +81,7 @@ Ignore the specified signal completely.
 **Example:**
 
 ```qd
-signal::SIGPIPE signal::ignore
+signal::SigPipe signal::ignore
 ```
 
 ---
@@ -103,7 +103,7 @@ Check if a signal is pending (received but not cleared). Returns 1 if pending, 0
 **Example:**
 
 ```qd
-signal::SIGINT signal::pending
+signal::SigInt signal::pending
 ```
 
 ---
@@ -121,7 +121,7 @@ Reset signal to default behavior.
 **Example:**
 
 ```qd
-signal::SIGINT signal::reset
+signal::SigInt signal::reset
 ```
 
 ---
@@ -134,12 +134,12 @@ Install a handler to catch the specified signal. After trapping, the signal sets
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `signum` | `i64` | Signal number (use signal::SIGINT, etc.) |
+| `signum` | `i64` | Signal number (use signal::SigInt, etc.) |
 
 **Example:**
 
 ```qd
-signal::SIGINT signal::trap
+signal::SigInt signal::trap
 ```
 
 ---

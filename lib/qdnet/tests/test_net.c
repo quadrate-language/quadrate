@@ -45,9 +45,15 @@ TEST(ListenBasicTest) {
 	qd_exec_result result = usr_net_listen(ctx);
 	ASSERT_EQ(result.code, 0, "listen should succeed");
 
+	// Pop Ok status first (success pushes [result, Ok])
+	qd_stack_element_t status_elem;
+	qd_stack_error err = qd_stack_pop(ctx->st, &status_elem);
+	ASSERT_EQ(err, QD_STACK_OK, "pop status should succeed");
+	ASSERT_EQ((int)status_elem.value.i, 1, "status should be Ok (1)");
+
 	// Check that a valid socket was returned
 	qd_stack_element_t socket_elem;
-	qd_stack_error err = qd_stack_pop(ctx->st, &socket_elem);
+	err = qd_stack_pop(ctx->st, &socket_elem);
 	ASSERT_EQ(err, QD_STACK_OK, "pop should succeed");
 	ASSERT_EQ(socket_elem.type, QD_STACK_TYPE_INT, "socket should be int");
 	ASSERT(socket_elem.value.i >= 0, "socket fd should be non-negative");
@@ -71,6 +77,10 @@ TEST(CloseBasicTest) {
 	qd_push_i(ctx, test_port);
 	usr_net_listen(ctx);
 
+	// Pop Ok status first (success pushes [result, Ok])
+	qd_stack_element_t status_elem;
+	qd_stack_pop(ctx->st, &status_elem);
+
 	// Get the socket fd
 	qd_stack_element_t socket_elem;
 	qd_stack_pop(ctx->st, &socket_elem);
@@ -93,6 +103,10 @@ TEST(ShutdownBasicTest) {
 	// Create a listening socket first
 	qd_push_i(ctx, test_port);
 	usr_net_listen(ctx);
+
+	// Pop Ok status first (success pushes [result, Ok])
+	qd_stack_element_t status_elem;
+	qd_stack_pop(ctx->st, &status_elem);
 
 	// Get the socket fd
 	qd_stack_element_t socket_elem;
@@ -126,6 +140,10 @@ static void* server_thread(void* arg) {
 	qd_push_i(ctx, port);
 	usr_net_listen(ctx);
 
+	// Pop Ok status, then socket
+	qd_stack_element_t status_elem;
+	qd_stack_pop(ctx->st, &status_elem);
+
 	qd_stack_element_t server_elem;
 	qd_stack_pop(ctx->st, &server_elem);
 	int64_t server_fd = server_elem.value.i;
@@ -133,6 +151,9 @@ static void* server_thread(void* arg) {
 	// Accept connection
 	qd_push_i(ctx, server_fd);
 	usr_net_accept(ctx);
+
+	// Pop Ok status, then client socket
+	qd_stack_pop(ctx->st, &status_elem);
 
 	qd_stack_element_t client_elem;
 	qd_stack_pop(ctx->st, &client_elem);
@@ -143,7 +164,9 @@ static void* server_thread(void* arg) {
 	qd_push_i(ctx, 1024);
 	usr_net_receive(ctx);
 
-	// Get bytes read and data
+	// Pop Ok status, then bytes read and data
+	qd_stack_pop(ctx->st, &status_elem);
+
 	qd_stack_element_t bytes_elem;
 	qd_stack_pop(ctx->st, &bytes_elem);
 
@@ -155,7 +178,9 @@ static void* server_thread(void* arg) {
 	qd_push_s(ctx, "PONG");
 	usr_net_send(ctx);
 
-	// Drop bytes sent result
+	// Pop Ok status, then bytes sent
+	qd_stack_pop(ctx->st, &status_elem);
+
 	qd_stack_element_t sent_elem;
 	qd_stack_pop(ctx->st, &sent_elem);
 
@@ -193,6 +218,11 @@ TEST(ClientServerIntegrationTest) {
 	qd_exec_result result = usr_net_connect(ctx);
 	ASSERT_EQ(result.code, 0, "connect should succeed");
 
+	// Pop Ok status first
+	qd_stack_element_t status_elem;
+	qd_stack_pop(ctx->st, &status_elem);
+	ASSERT_EQ((int)status_elem.value.i, 1, "status should be Ok (1)");
+
 	qd_stack_element_t socket_elem;
 	qd_stack_pop(ctx->st, &socket_elem);
 	int64_t socket_fd = socket_elem.value.i;
@@ -204,6 +234,10 @@ TEST(ClientServerIntegrationTest) {
 	result = usr_net_send(ctx);
 	ASSERT_EQ(result.code, 0, "send should succeed");
 
+	// Pop Ok status first
+	qd_stack_pop(ctx->st, &status_elem);
+	ASSERT_EQ((int)status_elem.value.i, 1, "status should be Ok (1)");
+
 	qd_stack_element_t bytes_sent_elem;
 	qd_stack_pop(ctx->st, &bytes_sent_elem);
 	ASSERT_EQ((int)bytes_sent_elem.value.i, 4, "should send 4 bytes");
@@ -213,6 +247,10 @@ TEST(ClientServerIntegrationTest) {
 	qd_push_i(ctx, 1024);
 	result = usr_net_receive(ctx);
 	ASSERT_EQ(result.code, 0, "receive should succeed");
+
+	// Pop Ok status first
+	qd_stack_pop(ctx->st, &status_elem);
+	ASSERT_EQ((int)status_elem.value.i, 1, "status should be Ok (1)");
 
 	// Get bytes read
 	qd_stack_element_t bytes_read_elem;

@@ -7,13 +7,13 @@ fn main() {
 	id print nl
 
 	// Check version nibble (position 14 should be '4')
-	id 14 str::char_at print nl
+	id 14 str::char_at! print nl
 
 	// Check dash positions (8, 13, 18, 23)
-	id 8 str::char_at print nl
-	id 13 str::char_at print nl
-	id 18 str::char_at print nl
-	id 23 str::char_at print nl
+	id 8 str::char_at! print nl
+	id 13 str::char_at! print nl
+	id 18 str::char_at! print nl
+	id 23 str::char_at! print nl
 
 	// Different seeds produce different UUIDs (just print them)
 	1 uuid::v4_seeded print nl

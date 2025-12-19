@@ -19,7 +19,7 @@ pub struct StringBuilder {
 /// @example sb::new -> builder
 pub fn new( -- sb:ptr) {
 	64 -> cap
-	cap mem::alloc -> buf
+	cap mem::alloc! -> buf
 	StringBuilder {
 		buf = buf
 		len = 0
@@ -36,7 +36,7 @@ pub fn with_capacity(capacity:i64 -- sb:ptr) {
 	capacity 16 < if {
 		16 -> capacity
 	}
-	capacity mem::alloc -> buf
+	capacity mem::alloc! -> buf
 	StringBuilder {
 		buf = buf
 		len = 0
@@ -69,7 +69,7 @@ pub fn append(sb:ptr s:str -- sb:ptr) {
 				break
 			}
 		}
-		buf cap mem::realloc -> buf
+		buf cap mem::realloc! -> buf
 	}
 
 	// Copy string bytes one by one
@@ -78,7 +78,7 @@ pub fn append(sb:ptr s:str -- sb:ptr) {
 		i slen >= if {
 			break
 		}
-		s i str::char_at -> byte
+		s i str::char_at! -> byte
 		byte buf curlen i + mem::set_byte
 		i 1 + -> i
 	}
@@ -107,7 +107,7 @@ pub fn append_char(sb:ptr c:i64 -- sb:ptr) {
 	// Check if we need to grow
 	curlen 1 + cap > if {
 		cap 2 * -> cap
-		buf cap mem::realloc -> buf
+		buf cap mem::realloc! -> buf
 	}
 
 	// Set the byte
@@ -164,7 +164,7 @@ pub fn append_int(sb:ptr n:i64 -- sb:ptr) {
 					break
 				}
 			}
-			buf cap mem::realloc -> buf
+			buf cap mem::realloc! -> buf
 		}
 
 		// Write digits backwards from end position
@@ -190,8 +190,8 @@ pub fn append_int(sb:ptr n:i64 -- sb:ptr) {
 /// Get current length of builder content.
 /// @param sb ptr Builder to check
 /// @return sblen i64 Current content length
-/// @example builder sb::length -> sblen
-pub fn length(sb:ptr -- sblen:i64) {
+/// @example builder sb::len -> sblen
+pub fn len(sb:ptr -- sblen:i64) {
 	-> sb
 	sb @len
 }

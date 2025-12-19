@@ -18,7 +18,7 @@ Use `mem::alloc` to allocate bytes:
 use mem
 
 fn main() {
-	1024 mem::alloc -> buf  // Allocate 1024 bytes
+	1024 mem::alloc! -> buf  // Allocate 1024 bytes
 	// Use buffer...
 	buf mem::free  // Free when done
 }
@@ -34,7 +34,7 @@ Ensure memory is freed with `defer`:
 use mem
 
 fn process() {
-	4096 mem::alloc -> buf
+	4096 mem::alloc! -> buf
 	defer {
 		buf mem::free
 	}
@@ -52,7 +52,7 @@ fn process() {
 use mem
 
 fn main() {
-	10 mem::alloc -> buf
+	10 mem::alloc! -> buf
 
 	65 buf 0 mem::set_byte  // Write 'A' at offset 0
 	66 buf 1 mem::set_byte  // Write 'B' at offset 1
@@ -70,7 +70,7 @@ fn main() {
 use mem
 
 fn main() {
-	8 mem::alloc -> buf
+	8 mem::alloc! -> buf
 
 	42 buf 0 mem::set_i64
 	buf 0 mem::get_i64 print nl  // 42
@@ -87,8 +87,8 @@ Copy memory between buffers:
 use mem
 
 fn main() {
-	10 mem::alloc -> src
-	10 mem::alloc -> dst
+	10 mem::alloc! -> src
+	10 mem::alloc! -> dst
 	defer {
 		src mem::free dst mem::free
 	}
@@ -114,7 +114,7 @@ Fill memory with a value:
 use mem
 
 fn main() {
-	100 mem::alloc -> buf
+	100 mem::alloc! -> buf
 	defer {
 		buf mem::free
 	}
@@ -133,10 +133,10 @@ Use `mem::realloc` to resize:
 use mem
 
 fn main() {
-	10 mem::alloc -> buf
+	10 mem::alloc! -> buf
 
 	// Grow buffer
-	buf 100 mem::realloc -> buf
+	buf 100 mem::realloc! -> buf
 
 	// Use larger buffer...
 
@@ -159,7 +159,7 @@ struct StringBuffer {
 
 fn sb_new(capacity:i64 -- sb:ptr) {
 	-> capacity
-	capacity mem::alloc -> data
+	capacity mem::alloc! -> data
 	StringBuffer {
 		data = data
 		len = 0
@@ -215,7 +215,7 @@ struct Pool {
 
 fn pool_new(size:i64 -- pool:ptr) {
 	-> size
-	size mem::alloc -> memory
+	size mem::alloc! -> memory
 	Pool {
 		memory = memory
 		size = size
@@ -284,7 +284,7 @@ fn main() {
 use mem
 
 fn safe_example() {
-	1024 mem::alloc -> buf
+	1024 mem::alloc! -> buf
 	buf 0 == if {
 		"Allocation failed!" print nl
 		// Handle error

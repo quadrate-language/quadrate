@@ -8,6 +8,12 @@
 #include <string.h>
 #include <ctype.h>
 
+// Error codes matching module.qd
+#define STR_ERR_OK 1            // Success (matches builtin Ok)
+#define STR_ERR_OUT_OF_BOUNDS 2 // Index out of bounds
+#define STR_ERR_ALLOC 3         // Allocation failed
+#define STR_ERR_INVALID_ARG 4   // Invalid argument
+
 // len - get string length ( str:s -- len:i )
 qd_exec_result usr_str_len(qd_context* ctx) {
 	qd_stack_element_t val;
@@ -645,49 +651,51 @@ qd_exec_result usr_str_compare(qd_context* ctx) {
 	return (qd_exec_result){0};
 }
 
-// char_at - get character code at index ( str:s index:i -- char_code:i )
+// char_at - get character code at index ( str:s index:i -- char_code:i )!
 qd_exec_result usr_str_char_at(qd_context* ctx) {
 	qd_stack_element_t index_elem, str_elem;
 
 	// Pop index
 	qd_stack_error err = qd_stack_pop(ctx->st, &index_elem);
 	if (err != QD_STACK_OK) {
-		fprintf(stderr, "Fatal error in str::char_at: Stack underflow\n");
-		abort();
+		qd_push_i(ctx, STR_ERR_INVALID_ARG);
+		return (qd_exec_result){STR_ERR_INVALID_ARG};
 	}
 
 	// Pop string
 	err = qd_stack_pop(ctx->st, &str_elem);
 	if (err != QD_STACK_OK) {
-		fprintf(stderr, "Fatal error in str::char_at: Stack underflow\n");
-		abort();
+		qd_push_i(ctx, STR_ERR_INVALID_ARG);
+		return (qd_exec_result){STR_ERR_INVALID_ARG};
 	}
 
 	if (str_elem.type != QD_STACK_TYPE_STR) {
-		fprintf(stderr, "Fatal error in str::char_at: Expected string\n");
-		abort();
+		qd_push_i(ctx, STR_ERR_INVALID_ARG);
+		return (qd_exec_result){STR_ERR_INVALID_ARG};
 	}
 
 	if (index_elem.type != QD_STACK_TYPE_INT) {
-		fprintf(stderr, "Fatal error in str::char_at: Expected integer index\n");
 		qd_string_release(str_elem.value.s);
-		abort();
+		qd_push_i(ctx, STR_ERR_INVALID_ARG);
+		return (qd_exec_result){STR_ERR_INVALID_ARG};
 	}
 
 	int64_t index = index_elem.value.i;
 	size_t str_len = strlen(qd_string_data(str_elem.value.s));
 
 	if (index < 0 || (size_t)index >= str_len) {
-		fprintf(stderr, "Fatal error in str::char_at: Index %ld out of bounds (length %zu)\n", index, str_len);
 		qd_string_release(str_elem.value.s);
-		abort();
+		qd_push_i(ctx, STR_ERR_OUT_OF_BOUNDS);
+		return (qd_exec_result){STR_ERR_OUT_OF_BOUNDS};
 	}
 
 	int64_t char_code = (unsigned char)qd_string_data(str_elem.value.s)[index];
 
 	qd_string_release(str_elem.value.s);
-	qd_push_i(ctx, char_code);
 
+	// Push result then Ok
+	qd_push_i(ctx, char_code);
+	qd_push_i(ctx, STR_ERR_OK);
 	return (qd_exec_result){0};
 }
 

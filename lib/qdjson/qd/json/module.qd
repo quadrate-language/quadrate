@@ -22,7 +22,7 @@ fn skip_ws(json:str pos:i64 -- new_pos:i64) {
 	json str::len -> slen
 	loop {
 		pos slen < if {
-			json pos str::char_at -> ch
+			json pos str::char_at! -> ch
 			ch unicode::space == ch unicode::tab == + ch unicode::newline == + ch unicode::cr == + 0 > if {
 				pos 1 + -> pos
 			} else {
@@ -47,7 +47,7 @@ pub fn find_str_end(json:str pos:i64 -- end_pos:i64) {
 	pos 1 + -> pos
 	loop {
 		pos slen < if {
-			json pos str::char_at -> ch
+			json pos str::char_at! -> ch
 			ch unicode::dquote == if {
 				pos 1 + -> pos
 				break
@@ -72,7 +72,7 @@ fn find_num_end(json:str pos:i64 -- end_pos:i64) {
 	json str::len -> slen
 	loop {
 		pos slen < if {
-			json pos str::char_at -> ch
+			json pos str::char_at! -> ch
 			ch unicode::digit0 >= ch unicode::digit9 <= *
 			ch unicode::minus == +
 			ch unicode::plus == +
@@ -99,7 +99,7 @@ fn find_bracket(json:str pos:i64 -- end_pos:i64) {
 	0 -> nesting
 	0 -> ch
 	json str::len -> slen
-	json pos str::char_at -> open_ch
+	json pos str::char_at! -> open_ch
 	open_ch unicode::lbrace == if {
 		unicode::rbrace
 	} else {
@@ -110,7 +110,7 @@ fn find_bracket(json:str pos:i64 -- end_pos:i64) {
 	pos 1 + -> pos
 	loop {
 		pos slen < nesting 0 > * if {
-			json pos str::char_at -> ch
+			json pos str::char_at! -> ch
 			ch unicode::dquote == if {
 				json pos find_str_end -> pos
 			} else {
@@ -145,7 +145,7 @@ pub fn type_at(json:str pos:i64 -- type:i64) {
 	pos slen >= if {
 		Null
 	} else {
-		json pos str::char_at -> ch
+		json pos str::char_at! -> ch
 		ch unicode::dquote == if {
 			String
 		} else {
@@ -206,7 +206,7 @@ fn skip_value(json:str pos:i64 -- new_pos:i64) {
 		} else {
 			loop {
 				pos slen < if {
-					json pos str::char_at -> ch
+					json pos str::char_at! -> ch
 					ch unicode::comma == ch unicode::rbrace == + ch unicode::rbracket == + 0 > if {
 						break
 					} else {
@@ -233,7 +233,7 @@ fn find_key(json:str pos:i64 key:str -- value_pos:i64) {
 	pos slen >= if {
 		-1
 	} else {
-		json pos str::char_at unicode::lbrace != if {
+		json pos str::char_at! unicode::lbrace != if {
 			-1
 		} else {
 			pos 1 + -> pos
@@ -243,14 +243,14 @@ fn find_key(json:str pos:i64 key:str -- value_pos:i64) {
 				pos slen >= if {
 					break
 				} else {
-					json pos str::char_at -> ch
+					json pos str::char_at! -> ch
 					ch unicode::rbrace == if {
 						break
 					} else {
 						ch unicode::comma == if {
 							pos 1 + -> pos
 							json pos skip_ws -> pos
-							json pos str::char_at -> ch
+							json pos str::char_at! -> ch
 						}
 
 						ch unicode::dquote == if {
@@ -259,7 +259,7 @@ fn find_key(json:str pos:i64 key:str -- value_pos:i64) {
 
 							json pos skip_ws -> pos
 							pos slen < if {
-								json pos str::char_at unicode::colon == if {
+								json pos str::char_at! unicode::colon == if {
 									pos 1 + -> pos
 									json pos skip_ws -> pos
 
@@ -295,14 +295,14 @@ fn parse_int(num_str:str -- value:i64) {
 	0 -> ch
 	num_str str::len -> num_len
 	num_len 0 > if {
-		num_str 0 str::char_at unicode::minus == if {
+		num_str 0 str::char_at! unicode::minus == if {
 			-1 -> sign
 			1 -> i
 		}
 	}
 	loop {
 		i num_len < if {
-			num_str i str::char_at -> ch
+			num_str i str::char_at! -> ch
 			ch unicode::digit0 >= ch unicode::digit9 <= * if {
 				value 10 * ch unicode::digit0 - + -> value
 				i 1 + -> i
@@ -404,7 +404,7 @@ pub fn get_bool(json:str key:str -- value:i64 found:i64) {
 		0 0
 	} else {
 		json pos skip_ws -> pos
-		json pos str::char_at -> ch
+		json pos str::char_at! -> ch
 		ch unicode::t == if {
 			1 1
 		} else {
@@ -446,7 +446,7 @@ pub fn get_object(json:str key:str -- value:str found:i64) {
 		"" 0
 	} else {
 		json pos skip_ws -> pos
-		json pos str::char_at unicode::lbrace != if {
+		json pos str::char_at! unicode::lbrace != if {
 			"" 0
 		} else {
 			json pos find_bracket -> end_pos
@@ -475,7 +475,7 @@ pub fn get_array(json:str key:str -- value:str found:i64) {
 		"" 0
 	} else {
 		json pos skip_ws -> pos
-		json pos str::char_at unicode::lbracket != if {
+		json pos str::char_at! unicode::lbracket != if {
 			"" 0
 		} else {
 			json pos find_bracket -> end_pos
@@ -501,7 +501,7 @@ fn find_elem(json:str pos:i64 index:i64 -- elem_pos:i64) {
 	pos slen >= if {
 		-1
 	} else {
-		json pos str::char_at unicode::lbracket != if {
+		json pos str::char_at! unicode::lbracket != if {
 			-1
 		} else {
 			pos 1 + -> pos
@@ -512,7 +512,7 @@ fn find_elem(json:str pos:i64 index:i64 -- elem_pos:i64) {
 				pos slen >= if {
 					break
 				} else {
-					json pos str::char_at -> ch
+					json pos str::char_at! -> ch
 					ch unicode::rbracket == if {
 						break
 					} else {
@@ -626,7 +626,7 @@ pub fn array_len(json:str -- length:i64) {
 	pos slen >= if {
 		0
 	} else {
-		json pos str::char_at unicode::lbracket != if {
+		json pos str::char_at! unicode::lbracket != if {
 			0
 		} else {
 			pos 1 + -> pos
@@ -636,14 +636,14 @@ pub fn array_len(json:str -- length:i64) {
 				pos slen >= if {
 					break
 				} else {
-					json pos str::char_at -> ch
+					json pos str::char_at! -> ch
 					ch unicode::rbracket == if {
 						break
 					} else {
 						ch unicode::comma == if {
 							pos 1 + -> pos
 							json pos skip_ws -> pos
-							json pos str::char_at -> ch
+							json pos str::char_at! -> ch
 						}
 
 						ch unicode::rbracket != if {
@@ -670,7 +670,7 @@ pub fn is_null_at(json:str pos:i64 -- is_null:i64) {
 	pos slen >= if {
 		1
 	} else {
-		json pos str::char_at unicode::n == if {
+		json pos str::char_at! unicode::n == if {
 			1
 		} else {
 			0

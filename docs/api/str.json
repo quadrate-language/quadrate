@@ -30,7 +30,7 @@
       "params": [{"name": "str", "type": "str", "description": "Input string"}, {"name": "index", "type": "i64", "description": "Character position"}],
       "returns": [{"name": "char_code", "type": "i64", "description": "ASCII/UTF-8 byte value"}],
       "errors": [],
-      "examples": ["\"hello\" 0 str::char_at print  // 104 ('h')"]
+      "examples": ["\"hello\" 0 str::char_at! print  // 104 ('h')"]
     },
     {
       "name": "compare",

@@ -1,6 +1,6 @@
-Trapped SIGINT
-OK: SIGINT not pending initially
-Ignored SIGPIPE
-Reset SIGPIPE
-Cleared SIGINT
+Trapped SigInt
+OK: SigInt not pending initially
+Ignored SigPipe
+Reset SigPipe
+Cleared SigInt
 All basic signal tests passed!

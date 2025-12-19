@@ -3,7 +3,7 @@ use net
 use tls
 
 fn main( -- ) {
-	"example.com" 443 net::connect -> sock
+	"example.com" 443 net::connect! -> sock
 
 	sock "example.com" tls::connect switch {
 		Ok {

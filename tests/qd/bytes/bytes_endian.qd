@@ -3,7 +3,7 @@ use bytes
 use mem
 
 fn main() {
-	8 mem::alloc -> buf
+	8 mem::alloc! -> buf
 
 	// Test 16-bit big-endian (0x1234 = 4660)
 	buf 0 4660 bytes::write_u16_be

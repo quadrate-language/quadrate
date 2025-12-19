@@ -189,7 +189,7 @@ fn main() {
 		defer { file io::close }
 
 		1024 -> buf_size
-		buf_size mem::alloc -> buf
+		buf_size mem::alloc! -> buf
 
 		file buf buf_size io::read if {
 			-> bytes_read
@@ -220,7 +220,7 @@ fn read_file(path:str -- content:str)! {
 		defer { file io::close }  // Always closes file
 
 		4096 -> size
-		size mem::alloc -> buf
+		size mem::alloc! -> buf
 		defer { buf mem::free }  // Always frees buffer
 
 		file buf size io::read if {

@@ -98,8 +98,9 @@ import "libqdstr.a" as "str" {
 	/// @param str str Input string
 	/// @param index i64 Character position
 	/// @return char_code i64 ASCII/UTF-8 byte value
-	/// @example "hello" 0 str::char_at print  // 104 ('h')
-	pub fn char_at(str:str index:i64 -- char_code:i64)
+	/// @error ErrOutOfBounds Index out of bounds
+	/// @example "hello" 0 str::char_at! print  // 104 ('h')
+	pub fn char_at(str:str index:i64 -- char_code:i64)!
 
 	/// Create string from character code.
 	/// @param char_code i64 ASCII/UTF-8 byte value

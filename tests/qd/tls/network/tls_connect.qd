@@ -4,7 +4,7 @@ use tls
 
 fn main( -- ) {
 	// Connect to example.com:443
-	"example.com" 443 net::connect -> sock
+	"example.com" 443 net::connect! -> sock
 
 	sock "example.com" tls::connect switch {
 		Ok {

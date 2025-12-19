@@ -34,9 +34,9 @@ const REGEX_SIZE = 40
 
 // Allocate a new regex structure
 fn regex_new( -- re:ptr) {
-	REGEX_SIZE mem::alloc -> re
-	MAX_STATES STATE_SIZE * mem::alloc -> states
-	MAX_CCLASS 8 * mem::alloc -> cclasses
+	REGEX_SIZE mem::alloc! -> re
+	MAX_STATES STATE_SIZE * mem::alloc! -> states
+	MAX_CCLASS 8 * mem::alloc! -> cclasses
 	states re RE_STATES mem::set_ptr
 	0 re RE_NSTATES mem::set_i64
 	0 re RE_START mem::set_i64
@@ -76,7 +76,7 @@ fn add_state(re:ptr stype:i64 -- idx:i64) {
 
 // Create character class bitmap (32 bytes = 256 bits)
 fn cclass_new( -- cc:ptr) {
-	32 mem::alloc -> cc
+	32 mem::alloc! -> cc
 	cc 32 mem::zero
 	cc
 }
@@ -136,7 +136,7 @@ const PSTATE_SIZE = 32
 // Parser: create parser state
 fn parser_new(pattern:str re:ptr -- ps:ptr) {
 	-> re -> pattern
-	PSTATE_SIZE mem::alloc -> ps
+	PSTATE_SIZE mem::alloc! -> ps
 	pattern mem::from_string -> plen -> pbuf
 	pbuf ps PS_PAT mem::set_ptr
 	0 ps PS_POS mem::set_i64
@@ -578,9 +578,9 @@ pub fn matches(re:ptr s:str -- result:i64) {
 	re RE_NSTATES mem::get_i64 -> nstates
 
 	// Allocate state sets and visited array
-	nstates 1 + 8 * mem::alloc -> clist
-	nstates 1 + 8 * mem::alloc -> nlist
-	nstates 8 * mem::alloc -> visited
+	nstates 1 + 8 * mem::alloc! -> clist
+	nstates 1 + 8 * mem::alloc! -> nlist
+	nstates 8 * mem::alloc! -> visited
 	visited nstates 8 * mem::zero
 
 	// Unique ID for epsilon closure
@@ -597,7 +597,7 @@ pub fn matches(re:ptr s:str -- result:i64) {
 			break
 		}
 
-		s pos str::char_at -> c
+		s pos str::char_at! -> c
 		listid 1 + -> listid
 
 		// Build next state set

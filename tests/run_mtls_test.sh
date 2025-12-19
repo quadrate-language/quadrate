@@ -114,7 +114,7 @@ ENDOFQD
 # Add dynamic paths using shell
 cat >> "$CERT_DIR/mtls_test.qd" << EOF
     // Connect to local server
-    "127.0.0.1" $PORT net::connect -> sock
+    "127.0.0.1" $PORT net::connect! -> sock
 
     // Connect with mTLS
     // Note: With self-signed certs, we expect certificate validation to fail

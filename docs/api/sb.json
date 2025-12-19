@@ -84,7 +84,7 @@
       "params": [{"name": "sb", "type": "ptr", "description": "Builder to check"}],
       "returns": [{"name": "sblen", "type": "i64", "description": "Current content length"}],
       "errors": [],
-      "examples": ["builder sb::length -> sblen"]
+      "examples": ["builder sb::len -> sblen"]
     },
     {
       "name": "new",

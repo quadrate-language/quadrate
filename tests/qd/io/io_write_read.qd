@@ -25,7 +25,7 @@ fn main() {
 	write_buf mem::free
 
 	// Read from the file: read to buffer, convert to string
-	100 mem::alloc -> read_buf
+	100 mem::alloc! -> read_buf
 
 	"/tmp/test_quadrate_io.txt" io::Read io::open switch {
 		Ok {

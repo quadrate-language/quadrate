@@ -2,13 +2,13 @@ use signal
 use time
 
 fn main() {
-	signal::SIGINT signal::trap
+	signal::SigInt signal::trap
 	"Press Ctrl+C to exit gracefully..." print nl
 	nl
 
 	0 -> count
 	loop {
-		signal::SIGINT signal::pending if {
+		signal::SigInt signal::pending if {
 			nl
 			"Caught Ctrl+C! Shutting down gracefully." print nl
 			"Goodbye!" print nl

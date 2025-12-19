@@ -16,7 +16,7 @@
       "params": [{"name": "server_socket", "type": "i64", "description": "Server socket from listen"}],
       "returns": [{"name": "client_socket", "type": "i64", "description": "Connected client socket"}],
       "errors": [],
-      "examples": ["server net::accept -> client"]
+      "examples": ["server net::accept! -> client"]
     },
     {
       "name": "close",
@@ -36,7 +36,7 @@
       "params": [{"name": "host", "type": "str", "description": "Hostname or IP address"}, {"name": "port", "type": "i64", "description": "Port number"}],
       "returns": [{"name": "socket", "type": "i64", "description": "Connected socket descriptor"}],
       "errors": [],
-      "examples": ["\"localhost\" 8080 net::connect -> sock"]
+      "examples": ["\"localhost\" 8080 net::connect! -> sock"]
     },
     {
       "name": "listen",
@@ -46,7 +46,7 @@
       "params": [{"name": "port", "type": "i64", "description": "Port number to listen on"}],
       "returns": [{"name": "socket", "type": "i64", "description": "Server socket descriptor"}],
       "errors": [],
-      "examples": ["8080 net::listen -> server"]
+      "examples": ["8080 net::listen! -> server"]
     },
     {
       "name": "receive",
@@ -56,7 +56,7 @@
       "params": [{"name": "socket", "type": "i64", "description": "Socket descriptor"}, {"name": "max_bytes", "type": "i64", "description": "Maximum bytes to receive"}],
       "returns": [{"name": "data", "type": "str", "description": "Received data"}, {"name": "bytes_read", "type": "i64", "description": "Actual bytes received"}],
       "errors": [],
-      "examples": ["sock 1024 net::receive -> data -> n"]
+      "examples": ["sock 1024 net::receive! -> data -> n"]
     },
     {
       "name": "send",
@@ -66,7 +66,7 @@
       "params": [{"name": "socket", "type": "i64", "description": "Socket descriptor"}, {"name": "data", "type": "str", "description": "Data to send"}],
       "returns": [{"name": "bytes_sent", "type": "i64", "description": "Number of bytes sent"}],
       "errors": [],
-      "examples": ["sock \"Hello\" net::send -> n"]
+      "examples": ["sock \"Hello\" net::send! -> n"]
     },
     {
       "name": "shutdown",

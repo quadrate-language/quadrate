@@ -43,10 +43,10 @@ fn read_file(path:str -- content:ptr length:i64)! {
 			-> f
 
 			4096 -> chunk_size
-			chunk_size mem::alloc -> chunk_buf
+			chunk_size mem::alloc! -> chunk_buf
 
 			0 -> total_len
-			0 mem::alloc -> result_buf
+			0 mem::alloc! -> result_buf
 
 			loop {
 				f chunk_buf chunk_size io::read switch {
@@ -56,7 +56,7 @@ fn read_file(path:str -- content:ptr length:i64)! {
 							break
 						}
 
-						result_buf total_len bytes_read + mem::realloc -> result_buf
+						result_buf total_len bytes_read + mem::realloc! -> result_buf
 						result_buf total_len chunk_buf 0 bytes_read bytes::copy
 						total_len bytes_read + -> total_len
 					}
@@ -137,14 +137,14 @@ fn parse_checksum_line(line:str -- hash:str filename:str valid:i64) {
 			i 64 >= if {
 				break
 			}
-			line i str::char_at str::from_char -> ch
+			line i str::char_at! str::from_char -> ch
 			hash_tmp ch str::concat -> hash_tmp
 			i 1 + -> i
 		}
 		hash_tmp -> hash
 
 		// Check separator (space + space or space + asterisk)
-		line 64 str::char_at 32 == line 64 str::char_at 42 == or if {
+		line 64 str::char_at! 32 == line 64 str::char_at! 42 == or if {
 			// Extract filename (after position 66)
 			66 -> start
 			"" -> fname_tmp
@@ -152,7 +152,7 @@ fn parse_checksum_line(line:str -- hash:str filename:str valid:i64) {
 				start line_len >= if {
 					break
 				}
-				line start str::char_at str::from_char -> ch
+				line start str::char_at! str::from_char -> ch
 				fname_tmp ch str::concat -> fname_tmp
 				start 1 + -> start
 			}
@@ -173,7 +173,7 @@ fn extract_line(content:str start:i64 end_pos:i64 -- line:str) {
 		start end_pos >= if {
 			break
 		}
-		content start str::char_at str::from_char -> ch
+		content start str::char_at! str::from_char -> ch
 		line ch str::concat -> line
 		start 1 + -> start
 	}
@@ -283,7 +283,7 @@ fn check_file(path:str quiet:i64 status_mode:i64 warn_mode:i64 ignore_missing:i6
 fn is_flag(arg:str -- result:i64) {
 	-> arg
 	arg str::len 0 > if {
-		arg 0 str::char_at 45 ==
+		arg 0 str::char_at! 45 ==
 	} else {
 		0
 	}

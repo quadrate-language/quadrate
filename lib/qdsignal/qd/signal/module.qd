@@ -7,84 +7,84 @@
 ///   use signal
 ///
 ///   fn main() {
-///       signal::SIGINT signal::trap
+///       signal::SigInt signal::trap
 ///       "Running. Press Ctrl+C to stop." print nl
 ///
 ///       loop {
-///           signal::SIGINT signal::pending if {
+///           signal::SigInt signal::pending if {
 ///               "Shutting down" print nl
-///               signal::SIGINT signal::clear
+///               signal::SigInt signal::clear
 ///               break
 ///           }
 ///       }
 ///   }
 
 /// Hangup signal (terminal closed).
-pub const SIGHUP = 1
+pub const SigHup = 1
 /// Interrupt signal (Ctrl+C).
-pub const SIGINT = 2
+pub const SigInt = 2
 /// Quit signal (Ctrl+\).
-pub const SIGQUIT = 3
+pub const SigQuit = 3
 /// Illegal instruction.
-pub const SIGILL = 4
+pub const SigIll = 4
 /// Abort signal.
-pub const SIGABRT = 6
+pub const SigAbrt = 6
 /// Floating point exception.
-pub const SIGFPE = 8
+pub const SigFpe = 8
 /// Kill signal (cannot be caught).
-pub const SIGKILL = 9
+pub const SigKill = 9
 /// Segmentation fault.
-pub const SIGSEGV = 11
+pub const SigSegv = 11
 /// Broken pipe.
-pub const SIGPIPE = 13
+pub const SigPipe = 13
 /// Alarm clock.
-pub const SIGALRM = 14
+pub const SigAlrm = 14
 /// Termination signal.
-pub const SIGTERM = 15
+pub const SigTerm = 15
 /// User-defined signal 1.
-pub const SIGUSR1 = 10
+pub const SigUsr1 = 10
 /// User-defined signal 2.
-pub const SIGUSR2 = 12
+pub const SigUsr2 = 12
 /// Child process stopped or terminated.
-pub const SIGCHLD = 17
+pub const SigChld = 17
 /// Continue if stopped.
-pub const SIGCONT = 18
+pub const SigCont = 18
 /// Stop signal (cannot be caught).
-pub const SIGSTOP = 19
+pub const SigStop = 19
 /// Terminal stop (Ctrl+Z).
-pub const SIGTSTP = 20
+pub const SigTstp = 20
 /// Background read from terminal.
-pub const SIGTTIN = 21
+pub const SigTtin = 21
 /// Background write to terminal.
-pub const SIGTTOU = 22
+pub const SigTtou = 22
 import "libqdsignal.a" as "signal" {
 	/// Install a handler to catch the specified signal.
 	/// After trapping, the signal sets a pending flag instead of
 	/// causing the default action (e.g., termination).
-	/// @param signum i64 Signal number (use signal::SIGINT, etc.)
-	/// @example signal::SIGINT signal::trap
+	/// @param signum i64 Signal number (use signal::SigInt, etc.)
+	/// @example signal::SigInt signal::trap
 	pub fn trap(signum:i64 -- )
 
 	/// Ignore the specified signal completely.
 	/// @param signum i64 Signal number
-	/// @example signal::SIGPIPE signal::ignore
+	/// @example signal::SigPipe signal::ignore
 	pub fn ignore(signum:i64 -- )
 
 	/// Reset signal to default behavior.
 	/// @param signum i64 Signal number
-	/// @example signal::SIGINT signal::reset
+	/// @example signal::SigInt signal::reset
 	pub fn reset(signum:i64 -- )
 
 	/// Check if a signal is pending (received but not cleared).
 	/// Returns 1 if pending, 0 otherwise. Does not clear the flag.
 	/// @param signum i64 Signal number
 	/// @return flag i64 1 if pending, 0 otherwise
-	/// @example signal::SIGINT signal::pending
+	/// @example signal::SigInt signal::pending
 	pub fn pending(signum:i64 -- flag:i64)
 
 	/// Clear the pending flag for a signal.
 	/// @param signum i64 Signal number
-	/// @example signal::SIGINT signal::clear
+	/// @example signal::SigInt signal::clear
 	pub fn clear(signum:i64 -- )
 
 	/// Block until any trapped signal is received.

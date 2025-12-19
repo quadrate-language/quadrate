@@ -21,7 +21,7 @@ fn read_entire_file(path:str -- content:str ok:i64) {
 			file 0 io::SeekSet io::seek if {
 				drop
 
-				size mem::alloc -> buf
+				size mem::alloc! -> buf
 				defer { buf mem::free }
 
 				file buf size io::read if {
@@ -107,7 +107,7 @@ fn read_entire_file(path:str -- content:str)! {
 	file 0 io::SeekEnd io::seek! -> size
 	file 0 io::SeekSet io::seek! drop
 
-	size mem::alloc -> buf
+	size mem::alloc! -> buf
 	defer { buf mem::free }
 
 	file buf size io::read! -> bytes_read
@@ -157,7 +157,7 @@ fn read_entire_file(path:str -- content:str)! {
 	file 0 io::SeekEnd io::seek! -> size
 	file 0 io::SeekSet io::seek! drop
 
-	size mem::alloc -> buf
+	size mem::alloc! -> buf
 	defer { buf mem::free }
 
 	file buf size io::read! -> bytes_read
@@ -219,7 +219,7 @@ fn copy_file(src:str dst:str -- total:i64)! {
 		dst_file io::close
 	}
 
-	BufferSize mem::alloc -> buf
+	BufferSize mem::alloc! -> buf
 	defer {
 		buf mem::free
 	}

@@ -7,6 +7,11 @@
 // Named with usr_ prefix for the import mechanism
 // Implementations are duplicated from qdrt/src/memory.c to avoid link-order issues
 
+// Error codes matching module.qd
+#define MEM_ERR_OK 1         // Success (matches builtin Ok)
+#define MEM_ERR_ALLOC 2      // Allocation failed
+#define MEM_ERR_INVALID_ARG 3  // Invalid argument
+
 /* Helper: Pop integer from stack */
 static qd_stack_error pop_int(qd_context* ctx, int64_t* value) {
 	qd_stack_element_t elem;
@@ -53,15 +58,25 @@ static qd_stack_error pop_ptr(qd_context* ctx, void** value) {
 qd_exec_result usr_mem_alloc(qd_context* ctx) {
 	int64_t bytes;
 	if (pop_int(ctx, &bytes) != QD_STACK_OK) {
-		return (qd_exec_result){-1};
+		qd_push_i(ctx, MEM_ERR_INVALID_ARG);
+		return (qd_exec_result){MEM_ERR_INVALID_ARG};
 	}
 
 	if (bytes < 0) {
-		return qd_push_p(ctx, NULL);
+		qd_push_i(ctx, MEM_ERR_INVALID_ARG);
+		return (qd_exec_result){MEM_ERR_INVALID_ARG};
 	}
 
 	void* ptr = malloc((size_t)bytes);
-	return qd_push_p(ctx, ptr);
+	if (ptr == NULL && bytes > 0) {
+		qd_push_i(ctx, MEM_ERR_ALLOC);
+		return (qd_exec_result){MEM_ERR_ALLOC};
+	}
+
+	// Push result then Ok
+	qd_push_p(ctx, ptr);
+	qd_push_i(ctx, MEM_ERR_OK);
+	return (qd_exec_result){0};
 }
 
 /* Reallocate memory */
@@ -70,19 +85,30 @@ qd_exec_result usr_mem_realloc(qd_context* ctx) {
 	void* ptr;
 
 	if (pop_int(ctx, &new_bytes) != QD_STACK_OK) {
-		return (qd_exec_result){-1};
+		qd_push_i(ctx, MEM_ERR_INVALID_ARG);
+		return (qd_exec_result){MEM_ERR_INVALID_ARG};
 	}
 
 	if (pop_ptr(ctx, &ptr) != QD_STACK_OK) {
-		return (qd_exec_result){-1};
+		qd_push_i(ctx, MEM_ERR_INVALID_ARG);
+		return (qd_exec_result){MEM_ERR_INVALID_ARG};
 	}
 
 	if (new_bytes < 0) {
-		return qd_push_p(ctx, NULL);
+		qd_push_i(ctx, MEM_ERR_INVALID_ARG);
+		return (qd_exec_result){MEM_ERR_INVALID_ARG};
 	}
 
 	void* new_ptr = realloc(ptr, (size_t)new_bytes);
-	return qd_push_p(ctx, new_ptr);
+	if (new_ptr == NULL && new_bytes > 0) {
+		qd_push_i(ctx, MEM_ERR_ALLOC);
+		return (qd_exec_result){MEM_ERR_ALLOC};
+	}
+
+	// Push result then Ok
+	qd_push_p(ctx, new_ptr);
+	qd_push_i(ctx, MEM_ERR_OK);
+	return (qd_exec_result){0};
 }
 
 /* Set byte at address */

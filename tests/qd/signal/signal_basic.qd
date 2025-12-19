@@ -1,28 +1,28 @@
 use signal
 
 fn main() {
-    // Test that we can trap SIGINT
-    signal::SIGINT signal::trap
-    "Trapped SIGINT" print nl
+    // Test that we can trap SigInt
+    signal::SigInt signal::trap
+    "Trapped SigInt" print nl
 
     // Check it's not pending initially
-    signal::SIGINT signal::pending if {
-        "ERROR: SIGINT should not be pending" print nl
+    signal::SigInt signal::pending if {
+        "ERROR: SigInt should not be pending" print nl
     } else {
-        "OK: SIGINT not pending initially" print nl
+        "OK: SigInt not pending initially" print nl
     }
 
     // Test ignore
-    signal::SIGPIPE signal::ignore
-    "Ignored SIGPIPE" print nl
+    signal::SigPipe signal::ignore
+    "Ignored SigPipe" print nl
 
     // Test reset
-    signal::SIGPIPE signal::reset
-    "Reset SIGPIPE" print nl
+    signal::SigPipe signal::reset
+    "Reset SigPipe" print nl
 
     // Test clear (should be safe even if not pending)
-    signal::SIGINT signal::clear
-    "Cleared SIGINT" print nl
+    signal::SigInt signal::clear
+    "Cleared SigInt" print nl
 
     "All basic signal tests passed!" print nl
 }

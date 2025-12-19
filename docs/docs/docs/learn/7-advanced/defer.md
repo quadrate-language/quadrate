@@ -77,7 +77,7 @@ Use defer to manage resources:
 use mem
 
 fn with_buffer() {
-	1024 mem::alloc -> buf
+	1024 mem::alloc! -> buf
 	defer {
 		buf mem::free
 	}
@@ -108,7 +108,7 @@ fn copy_file(src:str dst:str -- )! {
 				dst_file io::close
 			}
 
-			4096 mem::alloc -> buf
+			4096 mem::alloc! -> buf
 			defer {
 				buf mem::free
 			}

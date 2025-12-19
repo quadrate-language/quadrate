@@ -22,7 +22,7 @@ pub struct Uri {
 
 // Hex digit lookup table
 fn make_hex_table( -- tbl:ptr) {
-	16 mem::alloc -> tbl
+	16 mem::alloc! -> tbl
 	unicode::digit0 tbl 0 mem::set_byte
 	unicode::digit1 tbl 1 mem::set_byte
 	unicode::digit2 tbl 2 mem::set_byte
@@ -101,7 +101,7 @@ pub fn encode(s:str -- encoded:str) {
 		""
 	} else {
 		// Worst case: every char becomes %XX (3x size)
-		slen 3 * mem::alloc -> out
+		slen 3 * mem::alloc! -> out
 		make_hex_table -> hex_tbl
 
 		0 -> i
@@ -111,7 +111,7 @@ pub fn encode(s:str -- encoded:str) {
 			i slen >= if {
 				break
 			}
-			s i str::char_at -> c
+			s i str::char_at! -> c
 
 			c is_unreserved if {
 				// Safe char, pass through
@@ -150,7 +150,7 @@ pub fn decode(s:str -- decoded:str) {
 	slen 0 == if {
 		""
 	} else {
-		slen mem::alloc -> out
+		slen mem::alloc! -> out
 		0 -> i
 		0 -> o
 
@@ -158,12 +158,12 @@ pub fn decode(s:str -- decoded:str) {
 			i slen >= if {
 				break
 			}
-			s i str::char_at -> c
+			s i str::char_at! -> c
 
 			c unicode::percent == i 2 + slen < and if {
 				// Found '%', decode hex
-				s i 1 + str::char_at hex_value -> high
-				s i 2 + str::char_at hex_value -> low
+				s i 1 + str::char_at! hex_value -> high
+				s i 2 + str::char_at! hex_value -> low
 
 				high -1 != low -1 != and if {
 					high 4 shl low or -> byte
@@ -206,7 +206,7 @@ fn find_char(s:str start:i64 c:i64 -- pos:i64) {
 		i slen >= if {
 			break
 		}
-		s i str::char_at c == if {
+		s i str::char_at! c == if {
 			i -> pos
 			break
 		}
@@ -236,8 +236,8 @@ pub fn parse(s:str -- u:ptr) {
 	s pos unicode::colon find_char -> colon_pos
 	colon_pos -1 != if {
 		colon_pos 2 + slen < if {
-			s colon_pos 1 + str::char_at unicode::slash == if {
-				s colon_pos 2 + str::char_at unicode::slash == if {
+			s colon_pos 1 + str::char_at! unicode::slash == if {
+				s colon_pos 2 + str::char_at! unicode::slash == if {
 					s 0 colon_pos str::substring! -> scheme
 					colon_pos 3 + -> pos
 				}
@@ -279,14 +279,14 @@ pub fn parse(s:str -- u:ptr) {
 
 		// Check for IPv6 address in brackets [...]
 		hplen 0 > if {
-			hostport 0 str::char_at unicode::lbracket == if {
+			hostport 0 str::char_at! unicode::lbracket == if {
 				hostport 0 unicode::rbracket find_char -> bracket_end
 				bracket_end -1 != if {
 					// IPv6 address
 					hostport 1 bracket_end 1 - str::substring! -> host
 					// Check for port after ]
 					bracket_end 1 + hplen < if {
-						hostport bracket_end 1 + str::char_at unicode::colon == if {
+						hostport bracket_end 1 + str::char_at! unicode::colon == if {
 							// Parse port
 							0 -> port
 							bracket_end 2 + -> pi
@@ -294,7 +294,7 @@ pub fn parse(s:str -- u:ptr) {
 								pi hplen >= if {
 									break
 								}
-								hostport pi str::char_at -> digit
+								hostport pi str::char_at! -> digit
 								digit unicode::digit0 >= digit unicode::digit9 <= and if {
 									port 10 * digit unicode::digit0 - + -> port
 								}
@@ -322,7 +322,7 @@ pub fn parse(s:str -- u:ptr) {
 						pi hplen >= if {
 							break
 						}
-						hostport pi str::char_at -> digit
+						hostport pi str::char_at! -> digit
 						digit unicode::digit0 >= digit unicode::digit9 <= and if {
 							port 10 * digit unicode::digit0 - + -> port
 						}
@@ -480,7 +480,7 @@ pub fn build(u:ptr -- s:str) {
 				break
 			}
 			p 10 mod unicode::digit0 + -> digit
-			1 mem::alloc -> dbuf
+			1 mem::alloc! -> dbuf
 			digit dbuf 0 mem::set_byte
 			dbuf 1 mem::to_string port_str str::concat -> port_str
 			dbuf mem::free

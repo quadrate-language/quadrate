@@ -46,7 +46,7 @@ fn main() {
 	buf2 mem::free
 
 	// Read all content
-	100 mem::alloc -> read_buf
+	100 mem::alloc! -> read_buf
 
 	"/tmp/test_append.txt" io::Read io::open switch {
 		Ok {

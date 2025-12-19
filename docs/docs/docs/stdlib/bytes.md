@@ -70,7 +70,7 @@ Fill a buffer with a byte value.
 **Example:**
 
 ```qd
-buf 0 10 0 bytes::fill
+0 buf 0 10 bytes::fill
 ```
 
 ---

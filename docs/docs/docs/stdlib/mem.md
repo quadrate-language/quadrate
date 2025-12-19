@@ -24,7 +24,7 @@ Allocate memory.
 **Example:**
 
 ```qd
-1024 mem::alloc  // buf
+1024 mem::alloc!  // buf
 ```
 
 ---
@@ -242,7 +242,7 @@ Reallocate memory to new size.
 **Example:**
 
 ```qd
-buf 2048 mem::realloc  // buf
+buf 2048 mem::realloc!  // buf
 ```
 
 ---

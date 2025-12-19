@@ -144,7 +144,7 @@ fn read_file(path:str -- content:str)! {
 		}
 
 		4096 -> size
-		size mem::alloc -> buf
+		size mem::alloc! -> buf
 		defer {
 			// Always runs
 			buf mem::free

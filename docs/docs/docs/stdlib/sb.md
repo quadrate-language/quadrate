@@ -165,7 +165,7 @@ Get current length of builder content.
 **Example:**
 
 ```qd
-builder sb::length  // sblen
+builder sb::len  // sblen
 ```
 
 ---

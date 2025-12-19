@@ -1,34 +1,34 @@
 {
   "name": "signal",
-  "description": "Unix signal handling with polling-based API.  Signals are caught and stored as flags. Use pending() to check if a signal was received, and clear() to reset the flag.  Example:   use signal    fn main() {       signal::SIGINT signal::trap       \"Running. Press Ctrl+C to stop.\" print nl        loop {           signal::SIGINT signal::pending if {               \"Shutting down\" print nl               signal::SIGINT signal::clear               break           }       }   }",
+  "description": "Unix signal handling with polling-based API.  Signals are caught and stored as flags. Use pending() to check if a signal was received, and clear() to reset the flag.  Example:   use signal    fn main() {       signal::SigInt signal::trap       \"Running. Press Ctrl+C to stop.\" print nl        loop {           signal::SigInt signal::pending if {               \"Shutting down\" print nl               signal::SigInt signal::clear               break           }       }   }",
   "constants": [
     {
-      "name": "SIGABRT",
+      "name": "SigAbrt",
       "value": "6",
       "description": "Abort signal."
     },
     {
-      "name": "SIGALRM",
+      "name": "SigAlrm",
       "value": "14",
       "description": "Alarm clock."
     },
     {
-      "name": "SIGCHLD",
+      "name": "SigChld",
       "value": "17",
       "description": "Child process stopped or terminated."
     },
     {
-      "name": "SIGCONT",
+      "name": "SigCont",
       "value": "18",
       "description": "Continue if stopped."
     },
     {
-      "name": "SIGFPE",
+      "name": "SigFpe",
       "value": "8",
       "description": "Floating point exception."
     },
     {
-      "name": "SIGHUP",
+      "name": "SigHup",
       "value": "1",
       "description": "Hangup signal (terminal closed)."
     },
@@ -38,62 +38,62 @@
       "description": "Illegal instruction."
     },
     {
-      "name": "SIGINT",
+      "name": "SigInt",
       "value": "2",
       "description": "Interrupt signal (Ctrl+C)."
     },
     {
-      "name": "SIGKILL",
+      "name": "SigKill",
       "value": "9",
       "description": "Kill signal (cannot be caught)."
     },
     {
-      "name": "SIGPIPE",
+      "name": "SigPipe",
       "value": "13",
       "description": "Broken pipe."
     },
     {
-      "name": "SIGQUIT",
+      "name": "SigQuit",
       "value": "3",
       "description": "Quit signal (Ctrl+\\)."
     },
     {
-      "name": "SIGSEGV",
+      "name": "SigSegv",
       "value": "11",
       "description": "Segmentation fault."
     },
     {
-      "name": "SIGSTOP",
+      "name": "SigStop",
       "value": "19",
       "description": "Stop signal (cannot be caught)."
     },
     {
-      "name": "SIGTERM",
+      "name": "SigTerm",
       "value": "15",
       "description": "Termination signal."
     },
     {
-      "name": "SIGTSTP",
+      "name": "SigTstp",
       "value": "20",
       "description": "Terminal stop (Ctrl+Z)."
     },
     {
-      "name": "SIGTTIN",
+      "name": "SigTtin",
       "value": "21",
       "description": "Background read from terminal."
     },
     {
-      "name": "SIGTTOU",
+      "name": "SigTtou",
       "value": "22",
       "description": "Background write to terminal."
     },
     {
-      "name": "SIGUSR1",
+      "name": "SigUsr1",
       "value": "10",
       "description": "User-defined signal 1."
     },
     {
-      "name": "SIGUSR2",
+      "name": "SigUsr2",
       "value": "12",
       "description": "User-defined signal 2."
     }
@@ -110,7 +110,7 @@
       "params": [{"name": "signum", "type": "i64", "description": "Signal number"}],
       "returns": [],
       "errors": [],
-      "examples": ["signal::SIGINT signal::clear"]
+      "examples": ["signal::SigInt signal::clear"]
     },
     {
       "name": "ignore",
@@ -120,7 +120,7 @@
       "params": [{"name": "signum", "type": "i64", "description": "Signal number"}],
       "returns": [],
       "errors": [],
-      "examples": ["signal::SIGPIPE signal::ignore"]
+      "examples": ["signal::SigPipe signal::ignore"]
     },
     {
       "name": "pending",
@@ -130,7 +130,7 @@
       "params": [{"name": "signum", "type": "i64", "description": "Signal number"}],
       "returns": [{"name": "flag", "type": "i64", "description": "1 if pending, 0 otherwise"}],
       "errors": [],
-      "examples": ["signal::SIGINT signal::pending"]
+      "examples": ["signal::SigInt signal::pending"]
     },
     {
       "name": "reset",
@@ -140,17 +140,17 @@
       "params": [{"name": "signum", "type": "i64", "description": "Signal number"}],
       "returns": [],
       "errors": [],
-      "examples": ["signal::SIGINT signal::reset"]
+      "examples": ["signal::SigInt signal::reset"]
     },
     {
       "name": "trap",
       "signature": "(signum:i64 -- )",
       "failable": false,
       "description": "Install a handler to catch the specified signal. After trapping, the signal sets a pending flag instead of causing the default action (e.g., termination).",
-      "params": [{"name": "signum", "type": "i64", "description": "Signal number (use signal::SIGINT, etc.)"}],
+      "params": [{"name": "signum", "type": "i64", "description": "Signal number (use signal::SigInt, etc.)"}],
       "returns": [],
       "errors": [],
-      "examples": ["signal::SIGINT signal::trap"]
+      "examples": ["signal::SigInt signal::trap"]
     },
     {
       "name": "wait",

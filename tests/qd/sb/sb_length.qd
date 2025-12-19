@@ -4,15 +4,15 @@ use sb
 fn main() {
 	// Test empty
 	sb::new -> builder
-	builder sb::length print nl
+	builder sb::len print nl
 
 	// Test after append
 	builder "Hello" sb::append -> builder
-	builder sb::length print nl
+	builder sb::len print nl
 
 	// Test after more appends
 	builder " World" sb::append -> builder
-	builder sb::length print nl
+	builder sb::len print nl
 
 	builder sb::free
 }
