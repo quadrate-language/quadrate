@@ -1,0 +1,29 @@
+// Test os::rmdir function (remove directory recursively)
+use os
+
+fn main() {
+	// Cleanup from previous run
+	"/tmp/qd_rmdir_test" os::exists
+	if {
+		"/tmp/qd_rmdir_test" os::rmdir!
+	}
+
+	// Setup: Create a directory tree
+	"/tmp/qd_rmdir_test/a/b/c" os::mkdir!
+	"/tmp/qd_rmdir_test/a/d" os::mkdir!
+	"/tmp/qd_rmdir_test/e" os::mkdir!
+
+	// Verify setup
+	"/tmp/qd_rmdir_test" os::exists print nl
+	"/tmp/qd_rmdir_test/a/b/c" os::exists print nl
+	"/tmp/qd_rmdir_test/e" os::is_dir print nl
+
+	// Test: Remove entire tree
+	"/tmp/qd_rmdir_test" os::rmdir!
+
+	// Verify removal
+	"/tmp/qd_rmdir_test" os::exists print nl
+	"/tmp/qd_rmdir_test/a" os::exists print nl
+
+	"PASS" print nl
+}

@@ -17,7 +17,7 @@ Error codes: Ok=1 (success), specific errors start at 2
 
 Get character code at index.
 
-**Signature:** `(str:str index:i64 -- char_code:i64)`
+**Signature:** `(str:str index:i64 -- char_code:i64)!`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -27,6 +27,10 @@ Get character code at index.
 | Output | Type | Description |
 |--------|------|-------------|
 | `char_code` | `i64` | ASCII/UTF-8 byte value |
+
+| Error | Description |
+|-------|-------------|
+| `str::ErrOutOfBounds` | Index out of bounds |
 
 **Example:**
 
@@ -150,6 +154,28 @@ Create string from character code.
 
 ---
 
+### `fn` from_ptr
+
+Convert C string pointer to Quadrate string.
+
+**Signature:** `(ptr:ptr -- str:str)`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `ptr` | `ptr` | Pointer to null-terminated C string |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `str` | `str` | Quadrate string |
+
+**Example:**
+
+```qd
+entries 0 mem::get_ptr str::from_ptr print
+```
+
+---
+
 ### `fn` index_of_from
 
 Find substring starting from position.
@@ -265,6 +291,44 @@ Replace all occurrences of substring.
 
 ```qd
 "hello" "l" "L" str::replace! print  // "heLLo"
+```
+
+---
+
+### `fn` sort
+
+Sort array of strings in ascending alphabetical order.
+
+**Signature:** `(arr:ptr count:i64 -- )`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `arr` | `ptr` | Array of string pointers |
+| `count` | `i64` | Number of elements |
+
+**Example:**
+
+```qd
+entries count str::sort
+```
+
+---
+
+### `fn` sort_desc
+
+Sort array of strings in descending alphabetical order.
+
+**Signature:** `(arr:ptr count:i64 -- )`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `arr` | `ptr` | Array of string pointers |
+| `count` | `i64` | Number of elements |
+
+**Example:**
+
+```qd
+entries count str::sort_desc
 ```
 
 ---

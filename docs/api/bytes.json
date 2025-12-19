@@ -30,10 +30,10 @@
     },
     {
       "name": "fill",
-      "signature": "(buf:ptr offset:i64 count:i64 value:i64 -- )",
+      "signature": "(value:i64 buf:ptr offset:i64 count:i64 -- )",
       "failable": false,
       "description": "Fill a buffer with a byte value.",
-      "params": [{"name": "buf", "type": "ptr", "description": "Buffer to fill"}, {"name": "offset", "type": "i64", "description": "Starting offset"}, {"name": "count", "type": "i64", "description": "Number of bytes to fill"}, {"name": "value", "type": "i64", "description": "Byte value to fill with"}],
+      "params": [{"name": "value", "type": "i64", "description": "Byte value to fill with"}, {"name": "buf", "type": "ptr", "description": "Buffer to fill"}, {"name": "offset", "type": "i64", "description": "Starting offset"}, {"name": "count", "type": "i64", "description": "Number of bytes to fill"}],
       "returns": [],
       "errors": [],
       "examples": ["0 buf 0 10 bytes::fill"]

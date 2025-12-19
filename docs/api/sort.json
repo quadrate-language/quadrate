@@ -1,6 +1,6 @@
 {
   "name": "sort",
-  "description": "Sorting algorithms for arrays. Arrays are pointers to contiguous i64 values.",
+  "description": "Sorting algorithms for arrays. Arrays are pointers to contiguous i64 values or string pointers.",
   "constants": [
 
   ],
@@ -77,6 +77,26 @@
       "returns": [{"name": "idx", "type": "i64", "description": "Index if found, -1 otherwise"}],
       "errors": [],
       "examples": ["arr count 42 sort::search -> idx"]
+    },
+    {
+      "name": "strings",
+      "signature": "(arr:ptr count:i64 -- )",
+      "failable": false,
+      "description": "Sort an array of strings in ascending alphabetical order (insertion sort).",
+      "params": [{"name": "arr", "type": "ptr", "description": "Array of string pointers"}, {"name": "count", "type": "i64", "description": "Number of elements"}],
+      "returns": [],
+      "errors": [],
+      "examples": ["strs count sort::strings"]
+    },
+    {
+      "name": "strings_desc",
+      "signature": "(arr:ptr count:i64 -- )",
+      "failable": false,
+      "description": "Sort an array of strings in descending alphabetical order.",
+      "params": [{"name": "arr", "type": "ptr", "description": "Array of string pointers"}, {"name": "count", "type": "i64", "description": "Number of elements"}],
+      "returns": [],
+      "errors": [],
+      "examples": ["strs count sort::strings_desc"]
     }
   ]
 }

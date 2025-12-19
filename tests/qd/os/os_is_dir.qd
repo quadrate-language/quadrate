@@ -1,0 +1,27 @@
+// Test os::is_dir function
+use os
+
+fn main() {
+	// Test 1: /tmp should be a directory
+	"/tmp" os::is_dir print nl
+
+	// Test 2: /etc/passwd should not be a directory (it's a file)
+	"/etc/passwd" os::is_file
+	if {
+		"/etc/passwd" os::is_dir print nl
+	} else {
+		// If /etc/passwd doesn't exist, use a known file
+		"/bin/sh" os::is_dir print nl
+	}
+
+	// Test 3: Non-existent path should return 0
+	"/nonexistent_path_12345" os::is_dir print nl
+
+	// Test 4: Root directory should be a directory
+	"/" os::is_dir print nl
+
+	// Test 5: Current directory should be a directory
+	"." os::is_dir print nl
+
+	"PASS" print nl
+}

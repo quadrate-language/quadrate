@@ -1,0 +1,26 @@
+// Test os::is_file function
+use os
+
+fn main() {
+	// Test 1: /tmp should not be a regular file (it's a directory)
+	"/tmp" os::is_file print nl
+
+	// Test 2: /etc/passwd or /bin/sh should be a file
+	"/etc/passwd" os::exists
+	if {
+		"/etc/passwd" os::is_file print nl
+	} else {
+		"/bin/sh" os::is_file print nl
+	}
+
+	// Test 3: Non-existent path should return 0
+	"/nonexistent_path_12345.txt" os::is_file print nl
+
+	// Test 4: Root directory should not be a file
+	"/" os::is_file print nl
+
+	// Test 5: Current directory should not be a file
+	"." os::is_file print nl
+
+	"PASS" print nl
+}

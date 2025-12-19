@@ -82,11 +82,10 @@ import "libqdos.a" as "os" {
 	/// @example "src.txt" "dst.txt" os::copy!
 	pub fn copy(srcpath:str dstpath:str -- )!
 
-	/// Create a directory.
+	/// Create a directory and all parent directories.
 	/// @param path str Directory path
-	/// @error ErrExists File already exists
 	/// @error ErrPermission Permission denied
-	/// @example "/tmp/newdir" os::mkdir!
+	/// @example "/tmp/a/b/c" os::mkdir!
 	pub fn mkdir(path:str -- )!
 
 	/// List directory contents.
@@ -112,4 +111,40 @@ import "libqdos.a" as "os" {
 	/// @return pid i64 Process ID
 	/// @example os::getpid print nl
 	pub fn getpid( -- pid:i64)
+
+	/// Check if path is a directory.
+	/// @param path str Path to check
+	/// @return is_dir i64 1 if directory, 0 otherwise
+	/// @example "/tmp" os::is_dir print  // 1
+	pub fn is_dir(path:str -- is_dir:i64)
+
+	/// Check if path is a regular file.
+	/// @param path str Path to check
+	/// @return is_file i64 1 if regular file, 0 otherwise
+	/// @example "/etc/passwd" os::is_file print  // 1
+	pub fn is_file(path:str -- is_file:i64)
+
+	/// Remove directory and all contents recursively.
+	/// @param path str Directory path to remove
+	/// @error ErrNotFound Path not found
+	/// @error ErrPermission Permission denied
+	/// @example "/tmp/mydir" os::rmdir!
+	pub fn rmdir(path:str -- )!
+
+	/// Walk a directory tree recursively.
+	/// Calls callback for each file and directory.
+	/// @param path str Directory path to walk
+	/// @param callback ptr Callback function (path:str is_dir:i64 depth:i64 -- )
+	/// @error ErrNotFound Path not found
+	/// @error ErrNotDirectory Path is not a directory
+	/// @example "/tmp" fn (p:str is_dir:i64 depth:i64 -- ) { p print nl } os::walk!
+	pub fn walk(path:str callback:ptr -- )!
+
+	/// Match files using glob pattern.
+	/// Supports *, ?, and ** for recursive matching.
+	/// @param pattern str Glob pattern
+	/// @return entries ptr Array of matching paths
+	/// @return count i64 Number of matches
+	/// @example "*.qd" os::glob! -> count -> entries
+	pub fn glob(pattern:str -- entries:ptr count:i64)!
 }

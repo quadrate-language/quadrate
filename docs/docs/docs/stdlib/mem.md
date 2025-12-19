@@ -5,13 +5,20 @@ Low-level memory allocation and manipulation.
 SAFETY: These are unsafe operations with no bounds checking.
 Improper use can cause segmentation faults and memory corruption.
 
+## Constants
+
+| Name | Value | Description |
+|------|-------|-------------|
+| `ErrAlloc` | `2` | Allocation failure error code |
+| `ErrInvalidArg` | `3` | Invalid argument error code |
+
 ## Functions
 
 ### `fn` alloc
 
 Allocate memory.
 
-**Signature:** `(bytes:i64 -- address:ptr)`
+**Signature:** `(bytes:i64 -- address:ptr)!`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -19,7 +26,12 @@ Allocate memory.
 
 | Output | Type | Description |
 |--------|------|-------------|
-| `address` | `ptr` | Allocated memory, or null (0) on failure |
+| `address` | `ptr` | Allocated memory address |
+
+| Error | Description |
+|-------|-------------|
+| `mem::ErrAlloc` | Allocation failed |
+| `mem::ErrInvalidArg` | Invalid size (negative) |
 
 **Example:**
 
@@ -228,7 +240,7 @@ buf mem::is_null print  // 0
 
 Reallocate memory to new size.
 
-**Signature:** `(address:ptr new_bytes:i64 -- new_address:ptr)`
+**Signature:** `(address:ptr new_bytes:i64 -- new_address:ptr)!`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -237,7 +249,12 @@ Reallocate memory to new size.
 
 | Output | Type | Description |
 |--------|------|-------------|
-| `new_address` | `ptr` | Reallocated memory, or null on failure |
+| `new_address` | `ptr` | Reallocated memory address |
+
+| Error | Description |
+|-------|-------------|
+| `mem::ErrAlloc` | Reallocation failed |
+| `mem::ErrInvalidArg` | Invalid size (negative) |
 
 **Example:**
 

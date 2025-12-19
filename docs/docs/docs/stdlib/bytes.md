@@ -58,14 +58,14 @@ dst 0 src 0 10 bytes::copy
 
 Fill a buffer with a byte value.
 
-**Signature:** `(buf:ptr offset:i64 count:i64 value:i64 -- )`
+**Signature:** `(value:i64 buf:ptr offset:i64 count:i64 -- )`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
+| `value` | `i64` | Byte value to fill with |
 | `buf` | `ptr` | Buffer to fill |
 | `offset` | `i64` | Starting offset |
 | `count` | `i64` | Number of bytes to fill |
-| `value` | `i64` | Byte value to fill with |
 
 **Example:**
 

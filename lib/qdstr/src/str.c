@@ -832,3 +832,98 @@ qd_exec_result usr_str_from_char(qd_context* ctx) {
 
 	return (qd_exec_result){0};
 }
+
+// from_ptr - convert C string pointer to Quadrate string ( ptr:p -- str:s )
+qd_exec_result usr_str_from_ptr(qd_context* ctx) {
+	qd_stack_element_t ptr_elem;
+
+	qd_stack_error err = qd_stack_pop(ctx->st, &ptr_elem);
+	if (err != QD_STACK_OK) {
+		fprintf(stderr, "Fatal error in str::from_ptr: Stack underflow\n");
+		abort();
+	}
+
+	if (ptr_elem.type != QD_STACK_TYPE_PTR) {
+		fprintf(stderr, "Fatal error in str::from_ptr: Expected pointer\n");
+		abort();
+	}
+
+	const char* c_str = (const char*)ptr_elem.value.p;
+	if (c_str == NULL) {
+		qd_push_s(ctx, "");
+	} else {
+		qd_push_s(ctx, c_str);
+	}
+
+	return (qd_exec_result){0};
+}
+
+// Comparison function for qsort (ascending)
+static int str_cmp_asc(const void* a, const void* b) {
+	const char* str_a = *(const char**)a;
+	const char* str_b = *(const char**)b;
+	return strcmp(str_a, str_b);
+}
+
+// Comparison function for qsort (descending)
+static int str_cmp_desc(const void* a, const void* b) {
+	const char* str_a = *(const char**)a;
+	const char* str_b = *(const char**)b;
+	return strcmp(str_b, str_a);
+}
+
+// sort - sort array of strings in ascending order ( arr:p count:i -- )
+qd_exec_result usr_str_sort(qd_context* ctx) {
+	qd_stack_element_t count_elem, arr_elem;
+
+	// Pop count
+	qd_stack_error err = qd_stack_pop(ctx->st, &count_elem);
+	if (err != QD_STACK_OK || count_elem.type != QD_STACK_TYPE_INT) {
+		fprintf(stderr, "Fatal error in str::sort: Expected integer count\n");
+		abort();
+	}
+
+	// Pop array pointer
+	err = qd_stack_pop(ctx->st, &arr_elem);
+	if (err != QD_STACK_OK || arr_elem.type != QD_STACK_TYPE_PTR) {
+		fprintf(stderr, "Fatal error in str::sort: Expected pointer to string array\n");
+		abort();
+	}
+
+	int64_t count = count_elem.value.i;
+	char** arr = (char**)arr_elem.value.p;
+
+	if (count > 1 && arr != NULL) {
+		qsort(arr, (size_t)count, sizeof(char*), str_cmp_asc);
+	}
+
+	return (qd_exec_result){0};
+}
+
+// sort_desc - sort array of strings in descending order ( arr:p count:i -- )
+qd_exec_result usr_str_sort_desc(qd_context* ctx) {
+	qd_stack_element_t count_elem, arr_elem;
+
+	// Pop count
+	qd_stack_error err = qd_stack_pop(ctx->st, &count_elem);
+	if (err != QD_STACK_OK || count_elem.type != QD_STACK_TYPE_INT) {
+		fprintf(stderr, "Fatal error in str::sort_desc: Expected integer count\n");
+		abort();
+	}
+
+	// Pop array pointer
+	err = qd_stack_pop(ctx->st, &arr_elem);
+	if (err != QD_STACK_OK || arr_elem.type != QD_STACK_TYPE_PTR) {
+		fprintf(stderr, "Fatal error in str::sort_desc: Expected pointer to string array\n");
+		abort();
+	}
+
+	int64_t count = count_elem.value.i;
+	char** arr = (char**)arr_elem.value.p;
+
+	if (count > 1 && arr != NULL) {
+		qsort(arr, (size_t)count, sizeof(char*), str_cmp_desc);
+	}
+
+	return (qd_exec_result){0};
+}

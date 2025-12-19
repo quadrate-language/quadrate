@@ -1,0 +1,53 @@
+// Test str::sort function using os::glob to get string array
+use str
+use mem
+use os
+
+fn main() {
+	// Cleanup from previous run
+	"/tmp/qd_sort_test" os::exists
+	if {
+		"/tmp/qd_sort_test" os::rmdir!
+	}
+
+	// Create test directories with names that sort differently
+	"/tmp/qd_sort_test/delta" os::mkdir!
+	"/tmp/qd_sort_test/alpha" os::mkdir!
+	"/tmp/qd_sort_test/charlie" os::mkdir!
+	"/tmp/qd_sort_test/bravo" os::mkdir!
+
+	// Get string array via glob
+	"/tmp/qd_sort_test/*" os::glob! -> count -> entries
+
+	// Print count
+	"count:" print count print nl
+
+	// Sort ascending
+	entries count str::sort
+
+	// Print after sorting (should be alphabetical)
+	"sorted:" print nl
+	0 count 1 for i {
+		entries i 8 * mem::get_ptr str::from_ptr print nl
+	}
+
+	// Sort descending
+	entries count str::sort_desc
+
+	// Print after desc sorting (should be reverse alphabetical)
+	"desc:" print nl
+	0 count 1 for i {
+		entries i 8 * mem::get_ptr str::from_ptr print nl
+	}
+
+	// Free glob results
+	0 count 1 for i {
+		entries i 8 * mem::get_ptr mem::free
+	}
+	entries mem::free
+
+	// Cleanup
+	"/tmp/qd_sort_test" os::rmdir!
+
+	"PASS" print nl
+}

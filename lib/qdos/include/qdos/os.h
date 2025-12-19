@@ -177,19 +177,19 @@ qd_exec_result usr_os_rename(qd_context* ctx);
 qd_exec_result usr_os_copy(qd_context* ctx);
 
 /**
- * @brief Create a directory
+ * @brief Create a directory and all parent directories
  *
  * @par Stack Effect: ( path:s -- result:i )
  *
- * Creates a directory at the specified path.
- * Returns 0 on success, -1 on failure.
+ * Creates the directory and any missing parent directories (like mkdir -p).
+ * Returns 0 on success, error code on failure.
  *
  * @param ctx Execution context
  * @return Execution result
  *
  * @par Example:
  * @code
- * "/tmp/mydir" os::mkdir drop
+ * "/tmp/a/b/c" os::mkdir drop  // Creates /tmp/a, /tmp/a/b, /tmp/a/b/c
  * @endcode
  */
 qd_exec_result usr_os_mkdir(qd_context* ctx);
@@ -250,6 +250,68 @@ qd_exec_result usr_os_popen(qd_context* ctx);
  * @endcode
  */
 qd_exec_result usr_os_getpid(qd_context* ctx);
+
+/**
+ * @brief Check if path is a directory
+ *
+ * @par Stack Effect: ( path:s -- is_dir:i )
+ *
+ * Returns 1 if path is a directory, 0 otherwise.
+ *
+ * @param ctx Execution context
+ * @return Execution result
+ */
+qd_exec_result usr_os_is_dir(qd_context* ctx);
+
+/**
+ * @brief Check if path is a regular file
+ *
+ * @par Stack Effect: ( path:s -- is_file:i )
+ *
+ * Returns 1 if path is a regular file, 0 otherwise.
+ *
+ * @param ctx Execution context
+ * @return Execution result
+ */
+qd_exec_result usr_os_is_file(qd_context* ctx);
+
+/**
+ * @brief Remove directory and all contents recursively
+ *
+ * @par Stack Effect: ( path:s -- )
+ *
+ * Removes a directory and all its contents (like rm -rf).
+ *
+ * @param ctx Execution context
+ * @return Execution result
+ */
+qd_exec_result usr_os_rmdir(qd_context* ctx);
+
+/**
+ * @brief Walk a directory tree recursively
+ *
+ * @par Stack Effect: ( path:s callback:p -- )
+ *
+ * Calls the callback for each file and directory in the tree.
+ * Callback signature: fn (path:str is_dir:i64 depth:i64 -- )
+ *
+ * @param ctx Execution context
+ * @return Execution result
+ */
+qd_exec_result usr_os_walk(qd_context* ctx);
+
+/**
+ * @brief Match files using glob pattern
+ *
+ * @par Stack Effect: ( pattern:s -- entries:p count:i )
+ *
+ * Returns array of paths matching the glob pattern.
+ * Supports *, ?, and ** for recursive matching.
+ *
+ * @param ctx Execution context
+ * @return Execution result
+ */
+qd_exec_result usr_os_glob(qd_context* ctx);
 
 #ifdef __cplusplus
 }

@@ -1,6 +1,7 @@
 /// Sorting algorithms for arrays.
-/// Arrays are pointers to contiguous i64 values.
+/// Arrays are pointers to contiguous i64 values or string pointers.
 use mem
+use str
 
 /// Sort an array of i64 in ascending order (insertion sort).
 /// @param arr ptr Array of i64 values
@@ -174,4 +175,60 @@ pub fn search(arr:ptr count:i64 needle:i64 -- idx:i64) {
 		}
 	}
 	result
+}
+
+/// Sort an array of strings in ascending alphabetical order (insertion sort).
+/// @param arr ptr Array of string pointers
+/// @param count i64 Number of elements
+/// @example strs count sort::strings
+pub fn strings(arr:ptr count:i64 -- ) {
+	-> count
+	-> arr
+	// Insertion sort
+	1 count 1 for it {
+		it -> i
+		arr i 8 * mem::get_ptr -> key
+		i 1 - -> j
+		loop {
+			j 0 < if {
+				break
+			}
+			arr j 8 * mem::get_ptr -> jval
+			jval key str::compare 0 <= if {
+				break
+			}
+			// Move element right
+			jval arr j 1 + 8 * mem::set_ptr
+			j 1 - -> j
+		}
+		key arr j 1 + 8 * mem::set_ptr
+	}
+}
+
+/// Sort an array of strings in descending alphabetical order.
+/// @param arr ptr Array of string pointers
+/// @param count i64 Number of elements
+/// @example strs count sort::strings_desc
+pub fn strings_desc(arr:ptr count:i64 -- ) {
+	-> count
+	-> arr
+	// Insertion sort descending
+	1 count 1 for it {
+		it -> i
+		arr i 8 * mem::get_ptr -> key
+		i 1 - -> j
+		loop {
+			j 0 < if {
+				break
+			}
+			arr j 8 * mem::get_ptr -> jval
+			jval key str::compare 0 >= if {
+				break
+			}
+			// Move element right
+			jval arr j 1 + 8 * mem::set_ptr
+			j 1 - -> j
+		}
+		key arr j 1 + 8 * mem::set_ptr
+	}
 }

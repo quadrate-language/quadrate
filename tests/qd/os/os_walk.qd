@@ -1,0 +1,28 @@
+// Test os::walk function (walk directory tree recursively)
+use os
+
+fn main() {
+	// Cleanup from previous run
+	"/tmp/qd_walk_test" os::exists
+	if {
+		"/tmp/qd_walk_test" os::rmdir!
+	}
+
+	// Setup: Create a directory tree
+	"/tmp/qd_walk_test/a/b" os::mkdir!
+	"/tmp/qd_walk_test/c" os::mkdir!
+	"/tmp/qd_walk_test/d/e/f" os::mkdir!
+
+	// Test: Walk the tree - callback receives (path:str is_dir:i64 depth:i64)
+	// Just verify it works by printing depth and is_dir
+	"/tmp/qd_walk_test" fn (path:str isdir:i64 depth:i64 -- ) {
+		// Stack: path isdir depth
+		// Print depth:isdir
+		print ":" print print nl
+	} os::walk!
+
+	// Cleanup
+	"/tmp/qd_walk_test" os::rmdir!
+
+	"PASS" print nl
+}

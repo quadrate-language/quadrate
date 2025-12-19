@@ -185,6 +185,37 @@ qd_exec_result usr_str_index_of_from(qd_context* ctx);
  */
 qd_exec_result usr_str_from_char(qd_context* ctx);
 
+/**
+ * @brief Sort array of strings in ascending order
+ * @par Stack Effect: ( arr:p count:i -- )
+ * @param ctx Execution context
+ * @return Execution result
+ *
+ * Sorts the array of string pointers in place using strcmp comparison.
+ */
+qd_exec_result usr_str_sort(qd_context* ctx);
+
+/**
+ * @brief Sort array of strings in descending order
+ * @par Stack Effect: ( arr:p count:i -- )
+ * @param ctx Execution context
+ * @return Execution result
+ *
+ * Sorts the array of string pointers in place using strcmp comparison (reversed).
+ */
+qd_exec_result usr_str_sort_desc(qd_context* ctx);
+
+/**
+ * @brief Convert C string pointer to Quadrate string
+ * @par Stack Effect: ( ptr:p -- str:s )
+ * @param ctx Execution context
+ * @return Execution result
+ *
+ * Converts a pointer to a null-terminated C string into a Quadrate string.
+ * If the pointer is NULL, returns an empty string.
+ */
+qd_exec_result usr_str_from_ptr(qd_context* ctx);
+
 #ifdef __cplusplus
 }
 #endif

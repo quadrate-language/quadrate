@@ -389,8 +389,9 @@ qd_exec_result usr_os_mkdir(qd_context* ctx) {
 		abort();
 	}
 
-	// Create directory using C++17 filesystem wrapper (cross-platform)
-	int fs_error = os_fs_mkdir(qd_string_data(elem.value.s));
+	// Create directory and parents using C++17 filesystem wrapper (cross-platform)
+	// This behaves like mkdir -p, creating parent directories as needed
+	int fs_error = os_fs_mkdir_p(qd_string_data(elem.value.s));
 	int error_code = (fs_error != 0) ? errno_to_os_error(fs_error) : OS_ERR_OK;
 	qd_string_release(elem.value.s);
 
@@ -661,4 +662,168 @@ qd_exec_result usr_os_getpid(qd_context* ctx) {
 	}
 
 	return (qd_exec_result){0};
+}
+
+qd_exec_result usr_os_is_dir(qd_context* ctx) {
+	size_t stack_size = qd_stack_size(ctx->st);
+	if (stack_size < 1) {
+		fprintf(stderr, "Fatal error in os::is_dir: Stack underflow\n");
+		qd_print_stack_trace(ctx);
+		abort();
+	}
+
+	qd_stack_element_t elem;
+	qd_stack_error err = qd_stack_pop(ctx->st, &elem);
+	if (err != QD_STACK_OK || elem.type != QD_STACK_TYPE_STR) {
+		fprintf(stderr, "Fatal error in os::is_dir: Expected string path\n");
+		qd_print_stack_trace(ctx);
+		abort();
+	}
+
+	int is_dir = os_fs_is_dir(qd_string_data(elem.value.s));
+	qd_string_release(elem.value.s);
+
+	qd_stack_push_int(ctx->st, (int64_t)is_dir);
+	return (qd_exec_result){OS_ERR_OK};
+}
+
+qd_exec_result usr_os_is_file(qd_context* ctx) {
+	size_t stack_size = qd_stack_size(ctx->st);
+	if (stack_size < 1) {
+		fprintf(stderr, "Fatal error in os::is_file: Stack underflow\n");
+		qd_print_stack_trace(ctx);
+		abort();
+	}
+
+	qd_stack_element_t elem;
+	qd_stack_error err = qd_stack_pop(ctx->st, &elem);
+	if (err != QD_STACK_OK || elem.type != QD_STACK_TYPE_STR) {
+		fprintf(stderr, "Fatal error in os::is_file: Expected string path\n");
+		qd_print_stack_trace(ctx);
+		abort();
+	}
+
+	int is_file = os_fs_is_file(qd_string_data(elem.value.s));
+	qd_string_release(elem.value.s);
+
+	qd_stack_push_int(ctx->st, (int64_t)is_file);
+	return (qd_exec_result){OS_ERR_OK};
+}
+
+qd_exec_result usr_os_rmdir(qd_context* ctx) {
+	size_t stack_size = qd_stack_size(ctx->st);
+	if (stack_size < 1) {
+		fprintf(stderr, "Fatal error in os::rmdir: Stack underflow\n");
+		qd_print_stack_trace(ctx);
+		abort();
+	}
+
+	qd_stack_element_t elem;
+	qd_stack_error err = qd_stack_pop(ctx->st, &elem);
+	if (err != QD_STACK_OK || elem.type != QD_STACK_TYPE_STR) {
+		fprintf(stderr, "Fatal error in os::rmdir: Expected string path\n");
+		qd_print_stack_trace(ctx);
+		abort();
+	}
+
+	// Remove directory and all contents recursively (like rm -rf)
+	int fs_error = os_fs_rmdir_r(qd_string_data(elem.value.s));
+	int error_code = (fs_error != 0) ? errno_to_os_error(fs_error) : OS_ERR_OK;
+	qd_string_release(elem.value.s);
+
+	qd_stack_push_int(ctx->st, (int64_t)error_code);
+	return (qd_exec_result){error_code};
+}
+
+// Walk callback context for passing to C++ code
+typedef struct {
+	qd_context* ctx;
+	void* callback_ptr;
+} walk_callback_ctx;
+
+// C callback that calls the Quadrate callback
+static int walk_c_callback(const char* path, int is_dir, int depth, void* user_data) {
+	walk_callback_ctx* wctx = (walk_callback_ctx*)user_data;
+	qd_context* ctx = wctx->ctx;
+
+	// Push arguments: path, is_dir, depth
+	qd_stack_push_str(ctx->st, path);
+	qd_stack_push_int(ctx->st, (int64_t)is_dir);
+	qd_stack_push_int(ctx->st, (int64_t)depth);
+
+	// Push callback and call it
+	qd_stack_push_ptr(ctx->st, wctx->callback_ptr);
+	qd_exec_result result = qd_call(ctx);
+
+	return (result.code != 0) ? 1 : 0;
+}
+
+qd_exec_result usr_os_walk(qd_context* ctx) {
+	size_t stack_size = qd_stack_size(ctx->st);
+	if (stack_size < 2) {
+		fprintf(stderr, "Fatal error in os::walk: Stack underflow\n");
+		qd_print_stack_trace(ctx);
+		abort();
+	}
+
+	// Pop callback
+	qd_stack_element_t callback_elem;
+	qd_stack_error err = qd_stack_pop(ctx->st, &callback_elem);
+	if (err != QD_STACK_OK || callback_elem.type != QD_STACK_TYPE_PTR) {
+		fprintf(stderr, "Fatal error in os::walk: Expected callback pointer\n");
+		qd_print_stack_trace(ctx);
+		abort();
+	}
+
+	// Pop path
+	qd_stack_element_t path_elem;
+	err = qd_stack_pop(ctx->st, &path_elem);
+	if (err != QD_STACK_OK || path_elem.type != QD_STACK_TYPE_STR) {
+		fprintf(stderr, "Fatal error in os::walk: Expected string path\n");
+		qd_print_stack_trace(ctx);
+		abort();
+	}
+
+	walk_callback_ctx wctx = {ctx, callback_elem.value.p};
+	int fs_error = os_fs_walk(qd_string_data(path_elem.value.s), walk_c_callback, &wctx);
+	int error_code = (fs_error != 0) ? errno_to_os_error(fs_error) : OS_ERR_OK;
+	qd_string_release(path_elem.value.s);
+
+	qd_stack_push_int(ctx->st, (int64_t)error_code);
+	return (qd_exec_result){error_code};
+}
+
+qd_exec_result usr_os_glob(qd_context* ctx) {
+	size_t stack_size = qd_stack_size(ctx->st);
+	if (stack_size < 1) {
+		fprintf(stderr, "Fatal error in os::glob: Stack underflow\n");
+		qd_print_stack_trace(ctx);
+		abort();
+	}
+
+	qd_stack_element_t elem;
+	qd_stack_error err = qd_stack_pop(ctx->st, &elem);
+	if (err != QD_STACK_OK || elem.type != QD_STACK_TYPE_STR) {
+		fprintf(stderr, "Fatal error in os::glob: Expected string pattern\n");
+		qd_print_stack_trace(ctx);
+		abort();
+	}
+
+	size_t count = 0;
+	char** entries = os_fs_glob(qd_string_data(elem.value.s), &count);
+	qd_string_release(elem.value.s);
+
+	if (!entries) {
+		// No matches or error - push empty results
+		qd_stack_push_ptr(ctx->st, NULL);
+		qd_stack_push_int(ctx->st, 0);
+		qd_stack_push_int(ctx->st, OS_ERR_OK);
+		return (qd_exec_result){OS_ERR_OK};
+	}
+
+	// Push entries pointer and count
+	qd_stack_push_ptr(ctx->st, entries);
+	qd_stack_push_int(ctx->st, (int64_t)count);
+	qd_stack_push_int(ctx->st, OS_ERR_OK);
+	return (qd_exec_result){OS_ERR_OK};
 }

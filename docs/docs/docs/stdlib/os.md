@@ -150,6 +150,73 @@ os::getpid print nl
 
 ---
 
+### `fn` glob
+
+Match files using glob pattern. Supports *, ?, and ** for recursive matching.
+
+**Signature:** `(pattern:str -- entries:ptr count:i64)!`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `pattern` | `str` | Glob pattern |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `entries` | `ptr` | Array of matching paths |
+| `count` | `i64` | Number of matches |
+
+**Example:**
+
+```qd
+"*.qd" os::glob! -> count  // entries
+```
+
+---
+
+### `fn` is_dir
+
+Check if path is a directory.
+
+**Signature:** `(path:str -- is_dir:i64)`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `path` | `str` | Path to check |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `is_dir` | `i64` | 1 if directory, 0 otherwise |
+
+**Example:**
+
+```qd
+"/tmp" os::is_dir print  // 1
+```
+
+---
+
+### `fn` is_file
+
+Check if path is a regular file.
+
+**Signature:** `(path:str -- is_file:i64)`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `path` | `str` | Path to check |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `is_file` | `i64` | 1 if regular file, 0 otherwise |
+
+**Example:**
+
+```qd
+"/etc/passwd" os::is_file print  // 1
+```
+
+---
+
 ### `fn` list
 
 List directory contents.
@@ -180,7 +247,7 @@ List directory contents.
 
 ### `fn` mkdir
 
-Create a directory.
+Create a directory and all parent directories.
 
 **Signature:** `(path:str -- )!`
 
@@ -190,13 +257,12 @@ Create a directory.
 
 | Error | Description |
 |-------|-------------|
-| `os::ErrExists` | File already exists |
 | `os::ErrPermission` | Permission denied |
 
 **Example:**
 
 ```qd
-"/tmp/newdir" os::mkdir!
+"/tmp/a/b/c" os::mkdir!
 ```
 
 ---
@@ -252,6 +318,29 @@ Rename or move a file.
 
 ---
 
+### `fn` rmdir
+
+Remove directory and all contents recursively.
+
+**Signature:** `(path:str -- )!`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `path` | `str` | Directory path to remove |
+
+| Error | Description |
+|-------|-------------|
+| `os::ErrNotFound` | Path not found |
+| `os::ErrPermission` | Permission denied |
+
+**Example:**
+
+```qd
+"/tmp/mydir" os::rmdir!
+```
+
+---
+
 ### `fn` setenv
 
 Set environment variable.
@@ -289,5 +378,29 @@ Execute a shell command.
 
 ```qd
 "ls -la" os::system  // code
+```
+
+---
+
+### `fn` walk
+
+Walk a directory tree recursively. Calls callback for each file and directory.
+
+**Signature:** `(path:str callback:ptr -- )!`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `path` | `str` | Directory path to walk |
+| `callback` | `ptr` | Callback function (path:str is_dir:i64 depth:i64 -- ) |
+
+| Error | Description |
+|-------|-------------|
+| `os::ErrNotFound` | Path not found |
+| `os::ErrNotDirectory` | Path is not a directory |
+
+**Example:**
+
+```qd
+"/tmp" fn (p:str is_dir:i64 depth:i64 -- ) { p print nl } os::walk!
 ```
 

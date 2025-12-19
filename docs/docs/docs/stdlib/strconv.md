@@ -2,17 +2,23 @@
 
 String to number conversions.
 
+Functions:
+- format_int: Format integer in any base (2-36)
+- parse_int: Parse string to integer in any base (2-36)
+- itoa: Convert integer to decimal string (shorthand for 10 format_int)
+- atoi: Parse decimal string to integer (shorthand for 10 parse_int)
+
 ## Functions
 
 ### `fn` atoi
 
-Parse decimal string to integer.
+Parse decimal string to integer (base 10). Equivalent to: str 10 strconv::parse_int
 
-**Signature:** `(str:str -- value:i64)`
+**Signature:** `(s:str -- value:i64)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `str` | `str` | Decimal string |
+| `s` | `str` | Decimal string |
 
 | Output | Type | Description |
 |--------|------|-------------|
@@ -30,7 +36,7 @@ Parse decimal string to integer.
 
 Format integer in given base.
 
-**Signature:** `(value:i64 base:i64 -- str:str)`
+**Signature:** `(value:i64 base:i64 -- s:str)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -39,7 +45,7 @@ Format integer in given base.
 
 | Output | Type | Description |
 |--------|------|-------------|
-| `str` | `str` | Formatted string |
+| `s` | `str` | Formatted string |
 
 **Example:**
 
@@ -51,9 +57,9 @@ Format integer in given base.
 
 ### `fn` itoa
 
-Convert integer to decimal string.
+Convert integer to decimal string (base 10). Equivalent to: value 10 strconv::format_int
 
-**Signature:** `(value:i64 -- str:str)`
+**Signature:** `(value:i64 -- s:str)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -61,7 +67,7 @@ Convert integer to decimal string.
 
 | Output | Type | Description |
 |--------|------|-------------|
-| `str` | `str` | Decimal string |
+| `s` | `str` | Decimal string |
 
 **Example:**
 
@@ -75,11 +81,11 @@ Convert integer to decimal string.
 
 Parse integer from string in given base.
 
-**Signature:** `(str:str base:i64 -- value:i64)`
+**Signature:** `(s:str base:i64 -- value:i64)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `str` | `str` | String to parse |
+| `s` | `str` | String to parse |
 | `base` | `i64` | Numeric base (2-36) |
 
 | Output | Type | Description |

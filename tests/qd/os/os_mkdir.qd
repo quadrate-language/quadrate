@@ -1,0 +1,31 @@
+// Test os::mkdir function (create directory with parents)
+use os
+
+fn main() {
+	// Cleanup from previous run
+	"/tmp/qd_mkdir_test" os::exists
+	if {
+		"/tmp/qd_mkdir_test" os::rmdir!
+	}
+
+	// Test 1: Create nested directories in one call
+	"/tmp/qd_mkdir_test/a/b/c" os::mkdir!
+	"/tmp/qd_mkdir_test/a/b/c" os::is_dir print nl
+
+	// Test 2: Verify parent directories were created
+	"/tmp/qd_mkdir_test/a" os::is_dir print nl
+	"/tmp/qd_mkdir_test/a/b" os::is_dir print nl
+
+	// Test 3: mkdir on existing directory should succeed (idempotent)
+	"/tmp/qd_mkdir_test/a/b/c" os::mkdir!
+	"/tmp/qd_mkdir_test/a/b/c" os::is_dir print nl
+
+	// Test 4: Create another branch
+	"/tmp/qd_mkdir_test/a/d/e" os::mkdir!
+	"/tmp/qd_mkdir_test/a/d/e" os::is_dir print nl
+
+	// Cleanup
+	"/tmp/qd_mkdir_test" os::rmdir!
+
+	"PASS" print nl
+}

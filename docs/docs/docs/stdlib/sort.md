@@ -1,7 +1,7 @@
 # `use` sort
 
 Sorting algorithms for arrays.
-Arrays are pointers to contiguous i64 values.
+Arrays are pointers to contiguous i64 values or string pointers.
 
 ## Functions
 
@@ -151,5 +151,43 @@ Binary search for value in sorted array.
 
 ```qd
 arr count 42 sort::search  // idx
+```
+
+---
+
+### `fn` strings
+
+Sort an array of strings in ascending alphabetical order (insertion sort).
+
+**Signature:** `(arr:ptr count:i64 -- )`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `arr` | `ptr` | Array of string pointers |
+| `count` | `i64` | Number of elements |
+
+**Example:**
+
+```qd
+strs count sort::strings
+```
+
+---
+
+### `fn` strings_desc
+
+Sort an array of strings in descending alphabetical order.
+
+**Signature:** `(arr:ptr count:i64 -- )`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `arr` | `ptr` | Array of string pointers |
+| `count` | `i64` | Number of elements |
+
+**Example:**
+
+```qd
+strs count sort::strings_desc
 ```
 

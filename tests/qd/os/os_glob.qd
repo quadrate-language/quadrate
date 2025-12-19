@@ -1,0 +1,48 @@
+// Test os::glob function (pattern matching)
+use os
+use mem
+
+fn main() {
+	// Cleanup from previous run
+	"/tmp/qd_glob_test" os::exists
+	if {
+		"/tmp/qd_glob_test" os::rmdir!
+	}
+
+	// Setup: Create test directories
+	"/tmp/qd_glob_test/dir1" os::mkdir!
+	"/tmp/qd_glob_test/dir2" os::mkdir!
+	"/tmp/qd_glob_test/other" os::mkdir!
+
+	// Test 1: Match all dir* directories
+	"/tmp/qd_glob_test/dir*" os::glob! -> count -> entries
+	"dir_count:" print count print nl
+	// Free entries
+	0 count 1 for i {
+		entries i 8 * mem::get_ptr mem::free
+	}
+	entries mem::free
+
+	// Test 2: Match all with *
+	"/tmp/qd_glob_test/*" os::glob! -> all_count -> all_entries
+	"all_count:" print all_count print nl
+	// Free entries
+	0 all_count 1 for i {
+		all_entries i 8 * mem::get_ptr mem::free
+	}
+	all_entries mem::free
+
+	// Test 3: Match specific pattern with ?
+	"/tmp/qd_glob_test/dir?" os::glob! -> q_count -> q_entries
+	"question_count:" print q_count print nl
+	// Free entries
+	0 q_count 1 for i {
+		q_entries i 8 * mem::get_ptr mem::free
+	}
+	q_entries mem::free
+
+	// Cleanup
+	"/tmp/qd_glob_test" os::rmdir!
+
+	"PASS" print nl
+}

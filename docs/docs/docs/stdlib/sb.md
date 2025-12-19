@@ -148,7 +148,7 @@ builder sb::free
 
 ---
 
-### `fn` length
+### `fn` len
 
 Get current length of builder content.
 

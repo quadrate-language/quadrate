@@ -11,16 +11,16 @@ if a signal was received, and clear() to reset the flag.
 use signal
 
 fn main() {
-	signal::SigInt signal::trap
-	"Running. Press Ctrl+C to stop." print nl
+    signal::SigInt signal::trap
+    "Running. Press Ctrl+C to stop." print nl
 
-	loop {
-		signal::SigInt signal::pending if {
-			"Shutting down" print nl
-			signal::SigInt signal::clear
-			break
-		}
-	}
+    loop {
+        signal::SigInt signal::pending if {
+            "Shutting down" print nl
+            signal::SigInt signal::clear
+            break
+        }
+    }
 }
 ```
 
@@ -34,7 +34,7 @@ fn main() {
 | `SigCont` | `18` | Continue if stopped. |
 | `SigFpe` | `8` | Floating point exception. |
 | `SigHup` | `1` | Hangup signal (terminal closed). |
-| `SIGILL` | `4` | Illegal instruction. |
+| `SigIll` | `4` | Illegal instruction. |
 | `SigInt` | `2` | Interrupt signal (Ctrl+C). |
 | `SigKill` | `9` | Kill signal (cannot be caught). |
 | `SigPipe` | `13` | Broken pipe. |

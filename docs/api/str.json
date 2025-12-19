@@ -25,11 +25,11 @@
     {
       "name": "char_at",
       "signature": "(str:str index:i64 -- char_code:i64)",
-      "failable": false,
+      "failable": true,
       "description": "Get character code at index.",
       "params": [{"name": "str", "type": "str", "description": "Input string"}, {"name": "index", "type": "i64", "description": "Character position"}],
       "returns": [{"name": "char_code", "type": "i64", "description": "ASCII/UTF-8 byte value"}],
-      "errors": [],
+      "errors": [{"code": "ErrOutOfBounds", "description": "Index out of bounds"}],
       "examples": ["\"hello\" 0 str::char_at! print  // 104 ('h')"]
     },
     {
@@ -83,6 +83,16 @@
       "examples": ["65 str::from_char print  // \"A\""]
     },
     {
+      "name": "from_ptr",
+      "signature": "(ptr:ptr -- str:str)",
+      "failable": false,
+      "description": "Convert C string pointer to Quadrate string.",
+      "params": [{"name": "ptr", "type": "ptr", "description": "Pointer to null-terminated C string"}],
+      "returns": [{"name": "str", "type": "str", "description": "Quadrate string"}],
+      "errors": [],
+      "examples": ["entries 0 mem::get_ptr str::from_ptr print"]
+    },
+    {
       "name": "index_of_from",
       "signature": "(haystack:str needle:str start:i64 -- index:i64)",
       "failable": false,
@@ -131,6 +141,26 @@
       "returns": [{"name": "result", "type": "str", "description": "String with replacements"}],
       "errors": [{"code": "ErrAlloc", "description": "Memory allocation failed"}],
       "examples": ["\"hello\" \"l\" \"L\" str::replace! print  // \"heLLo\""]
+    },
+    {
+      "name": "sort",
+      "signature": "(arr:ptr count:i64 -- )",
+      "failable": false,
+      "description": "Sort array of strings in ascending alphabetical order.",
+      "params": [{"name": "arr", "type": "ptr", "description": "Array of string pointers"}, {"name": "count", "type": "i64", "description": "Number of elements"}],
+      "returns": [],
+      "errors": [],
+      "examples": ["entries count str::sort"]
+    },
+    {
+      "name": "sort_desc",
+      "signature": "(arr:ptr count:i64 -- )",
+      "failable": false,
+      "description": "Sort array of strings in descending alphabetical order.",
+      "params": [{"name": "arr", "type": "ptr", "description": "Array of string pointers"}, {"name": "count", "type": "i64", "description": "Number of elements"}],
+      "returns": [],
+      "errors": [],
+      "examples": ["entries count str::sort_desc"]
     },
     {
       "name": "split",

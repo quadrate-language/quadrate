@@ -133,6 +133,36 @@
       "examples": ["os::getpid print nl"]
     },
     {
+      "name": "glob",
+      "signature": "(pattern:str -- entries:ptr count:i64)",
+      "failable": true,
+      "description": "Match files using glob pattern. Supports *, ?, and ** for recursive matching.",
+      "params": [{"name": "pattern", "type": "str", "description": "Glob pattern"}],
+      "returns": [{"name": "entries", "type": "ptr", "description": "Array of matching paths"}, {"name": "count", "type": "i64", "description": "Number of matches"}],
+      "errors": [],
+      "examples": ["\"*.qd\" os::glob! -> count -> entries"]
+    },
+    {
+      "name": "is_dir",
+      "signature": "(path:str -- is_dir:i64)",
+      "failable": false,
+      "description": "Check if path is a directory.",
+      "params": [{"name": "path", "type": "str", "description": "Path to check"}],
+      "returns": [{"name": "is_dir", "type": "i64", "description": "1 if directory, 0 otherwise"}],
+      "errors": [],
+      "examples": ["\"/tmp\" os::is_dir print  // 1"]
+    },
+    {
+      "name": "is_file",
+      "signature": "(path:str -- is_file:i64)",
+      "failable": false,
+      "description": "Check if path is a regular file.",
+      "params": [{"name": "path", "type": "str", "description": "Path to check"}],
+      "returns": [{"name": "is_file", "type": "i64", "description": "1 if regular file, 0 otherwise"}],
+      "errors": [],
+      "examples": ["\"/etc/passwd\" os::is_file print  // 1"]
+    },
+    {
       "name": "list",
       "signature": "(path:str -- entries:ptr count:i64)",
       "failable": true,
@@ -146,11 +176,11 @@
       "name": "mkdir",
       "signature": "(path:str -- )",
       "failable": true,
-      "description": "Create a directory.",
+      "description": "Create a directory and all parent directories.",
       "params": [{"name": "path", "type": "str", "description": "Directory path"}],
       "returns": [],
-      "errors": [{"code": "ErrExists", "description": "File already exists"}, {"code": "ErrPermission", "description": "Permission denied"}],
-      "examples": ["\"/tmp/newdir\" os::mkdir!"]
+      "errors": [{"code": "ErrPermission", "description": "Permission denied"}],
+      "examples": ["\"/tmp/a/b/c\" os::mkdir!"]
     },
     {
       "name": "popen",
@@ -173,6 +203,16 @@
       "examples": ["\"old.txt\" \"new.txt\" os::rename!"]
     },
     {
+      "name": "rmdir",
+      "signature": "(path:str -- )",
+      "failable": true,
+      "description": "Remove directory and all contents recursively.",
+      "params": [{"name": "path", "type": "str", "description": "Directory path to remove"}],
+      "returns": [],
+      "errors": [{"code": "ErrNotFound", "description": "Path not found"}, {"code": "ErrPermission", "description": "Permission denied"}],
+      "examples": ["\"/tmp/mydir\" os::rmdir!"]
+    },
+    {
       "name": "setenv",
       "signature": "(name:str value:str -- )",
       "failable": false,
@@ -191,6 +231,16 @@
       "returns": [{"name": "exitcode", "type": "i64", "description": "Command exit status"}],
       "errors": [],
       "examples": ["\"ls -la\" os::system -> code"]
+    },
+    {
+      "name": "walk",
+      "signature": "(path:str callback:ptr -- )",
+      "failable": true,
+      "description": "Walk a directory tree recursively. Calls callback for each file and directory.",
+      "params": [{"name": "path", "type": "str", "description": "Directory path to walk"}, {"name": "callback", "type": "ptr", "description": "Callback function (path:str is_dir:i64 depth:i64 -- )"}],
+      "returns": [],
+      "errors": [{"code": "ErrNotFound", "description": "Path not found"}, {"code": "ErrNotDirectory", "description": "Path is not a directory"}],
+      "examples": ["\"/tmp\" fn (p:str is_dir:i64 depth:i64 -- ) { p print nl } os::walk!"]
     }
   ]
 }

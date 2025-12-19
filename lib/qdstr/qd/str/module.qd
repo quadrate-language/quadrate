@@ -123,4 +123,22 @@ import "libqdstr.a" as "str" {
 	/// @return result i64 <0 if str1<str2, 0 if equal, >0 if str1>str2
 	/// @example "abc" "abd" str::compare print  // -1
 	pub fn compare(str1:str str2:str -- result:i64)
+
+	/// Sort array of strings in ascending alphabetical order.
+	/// @param arr ptr Array of string pointers
+	/// @param count i64 Number of elements
+	/// @example entries count str::sort
+	pub fn sort(arr:ptr count:i64 -- )
+
+	/// Sort array of strings in descending alphabetical order.
+	/// @param arr ptr Array of string pointers
+	/// @param count i64 Number of elements
+	/// @example entries count str::sort_desc
+	pub fn sort_desc(arr:ptr count:i64 -- )
+
+	/// Convert C string pointer to Quadrate string.
+	/// @param ptr ptr Pointer to null-terminated C string
+	/// @return str str Quadrate string
+	/// @example entries 0 mem::get_ptr str::from_ptr print
+	pub fn from_ptr(ptr:ptr -- str:str)
 }

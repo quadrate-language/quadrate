@@ -153,6 +153,16 @@
       "examples": ["\"data.txt\" io::Read io::open! -> f"]
     },
     {
+      "name": "read_file",
+      "signature": "(path:str -- contents:str)",
+      "failable": true,
+      "description": "Read entire file contents.",
+      "params": [{"name": "path", "type": "str", "description": "File path"}],
+      "returns": [{"name": "contents", "type": "str", "description": "File contents as string"}],
+      "errors": [{"code": "ErrNotFound", "description": "File not found"}, {"code": "ErrRead", "description": "Read operation failed"}],
+      "examples": ["\"/etc/hostname\" io::read_file! -> contents"]
+    },
+    {
       "name": "read",
       "signature": "(handle:ptr buffer:ptr count:i64 -- bytes_read:i64)",
       "failable": true,

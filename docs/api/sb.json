@@ -77,7 +77,7 @@
       "examples": ["builder sb::free"]
     },
     {
-      "name": "length",
+      "name": "len",
       "signature": "(sb:ptr -- sblen:i64)",
       "failable": false,
       "description": "Get current length of builder content.",

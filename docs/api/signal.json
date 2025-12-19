@@ -33,7 +33,7 @@
       "description": "Hangup signal (terminal closed)."
     },
     {
-      "name": "SIGILL",
+      "name": "SigIll",
       "value": "4",
       "description": "Illegal instruction."
     },

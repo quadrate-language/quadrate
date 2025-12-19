@@ -1,0 +1,12 @@
+count:4
+sorted:
+/tmp/qd_sort_test/alpha
+/tmp/qd_sort_test/bravo
+/tmp/qd_sort_test/charlie
+/tmp/qd_sort_test/delta
+desc:
+/tmp/qd_sort_test/delta
+/tmp/qd_sort_test/charlie
+/tmp/qd_sort_test/bravo
+/tmp/qd_sort_test/alpha
+PASS
