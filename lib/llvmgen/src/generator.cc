@@ -5891,7 +5891,7 @@ namespace Qd {
 							typeStr != "s" && typeStr != "str" && typeStr != "string" && typeStr != "p" &&
 							typeStr != "ptr" && typeStr != "pointer") {
 						// This is a struct type - mark the parameter name as a struct local
-						// so it gets released at function cleanup (use unqualified name)
+						// so it gets released at function cleanup (use full qualified name)
 						localVariableStructTypes[param->name()] = extractStructName(typeStr);
 					}
 				}
@@ -7061,13 +7061,12 @@ namespace Qd {
 		return std::isupper(typeStr[0]);
 	}
 
-	// Helper function to extract struct name from possibly qualified type
-	// "http::Response" -> "Response", "Response" -> "Response"
+	// Helper function to get struct name from type string (preserves qualified names)
+	// "vec2::Vec2" -> "vec2::Vec2", "Response" -> "Response"
 	static std::string extractStructName(const std::string& typeStr) {
-		size_t colonPos = typeStr.find("::");
-		if (colonPos != std::string::npos) {
-			return typeStr.substr(colonPos + 2);
-		}
+		// Return the full type string, including module prefix if present
+		// This ensures qualified types like "vec2::Vec2" are preserved for proper lookup
+		// in structDefinitions which uses qualified names as keys
 		return typeStr;
 	}
 
@@ -7555,10 +7554,10 @@ namespace Qd {
 		const FieldInfo* matchingField = nullptr;
 
 		if (!structTypeName.empty()) {
-			// Look up field in the specific struct type
-			auto structIt = structDefinitions.find(structTypeName);
-			if (structIt != structDefinitions.end()) {
-				for (const auto& field : structIt->second.fields) {
+			// Look up field in the specific struct type (use findStructDefinition for proper module handling)
+			const StructLayout* layoutPtr = findStructDefinition(structTypeName);
+			if (layoutPtr != nullptr) {
+				for (const auto& field : layoutPtr->fields) {
 					if (field.name == fieldName) {
 						matchingField = &field;
 						break;
@@ -7702,10 +7701,10 @@ namespace Qd {
 		const FieldInfo* matchingField = nullptr;
 
 		if (!structTypeName.empty()) {
-			// Look up field in the specific struct type
-			auto structIt = structDefinitions.find(structTypeName);
-			if (structIt != structDefinitions.end()) {
-				for (const auto& field : structIt->second.fields) {
+			// Look up field in the specific struct type (use findStructDefinition for proper module handling)
+			const StructLayout* layoutPtr = findStructDefinition(structTypeName);
+			if (layoutPtr != nullptr) {
+				for (const auto& field : layoutPtr->fields) {
 					if (field.name == fieldName) {
 						matchingField = &field;
 						break;

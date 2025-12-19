@@ -1,0 +1,70 @@
+// Test field access with multiple modules that have structs with same-named fields
+// This specifically tests that the correct struct layout is used when
+// multiple modules define structs with fields like 'x', 'y', 'z', 'w'
+
+use vec2
+use vec3
+use vec4
+use quat
+
+// Function that takes vec2::Vec2 and accesses its fields
+fn get_vec2_x(v:vec2::Vec2 -- result:f64) {
+	-> v
+	v @x
+}
+
+fn get_vec2_y(v:vec2::Vec2 -- result:f64) {
+	-> v
+	v @y
+}
+
+// Function that takes vec3::Vec3 and accesses its fields
+fn get_vec3_x(v:vec3::Vec3 -- result:f64) {
+	-> v
+	v @x
+}
+
+fn get_vec3_z(v:vec3::Vec3 -- result:f64) {
+	-> v
+	v @z
+}
+
+// Function that takes vec4::Vec4 and accesses its fields
+fn get_vec4_w(v:vec4::Vec4 -- result:f64) {
+	-> v
+	v @w
+}
+
+// Function that takes quat::Quat and accesses its fields
+fn get_quat_w(q:quat::Quat -- result:f64) {
+	-> q
+	q @w
+}
+
+fn main() {
+	// Create structs with distinct values for each field (use qualified names)
+	vec2::Vec2 { x = 1.0 y = 2.0 } -> v2
+	vec3::Vec3 { x = 10.0 y = 20.0 z = 30.0 } -> v3
+	vec4::Vec4 { x = 100.0 y = 200.0 z = 300.0 w = 400.0 } -> v4
+	quat::Quat { x = 1000.0 y = 2000.0 z = 3000.0 w = 4000.0 } -> q
+
+	// Test vec2 field access via function
+	"vec2 x:" print v2 get_vec2_x print nl
+	"vec2 y:" print v2 get_vec2_y print nl
+
+	// Test vec3 field access via function
+	"vec3 x:" print v3 get_vec3_x print nl
+	"vec3 z:" print v3 get_vec3_z print nl
+
+	// Test vec4 field access via function
+	"vec4 w:" print v4 get_vec4_w print nl
+
+	// Test quat field access via function
+	"quat w:" print q get_quat_w print nl
+
+	// Test direct field access (should still work)
+	"direct v2.x:" print v2 @x print nl
+	"direct v3.z:" print v3 @z print nl
+	"direct v4.w:" print v4 @w print nl
+	"direct q.w:" print q @w print nl
+}

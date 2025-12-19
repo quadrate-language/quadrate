@@ -1,0 +1,10 @@
+vec2 x:1
+vec2 y:2
+vec3 x:10
+vec3 z:30
+vec4 w:400
+quat w:4000
+direct v2.x:1
+direct v3.z:30
+direct v4.w:400
+direct q.w:4000
