@@ -170,12 +170,29 @@ namespace Qd {
 	}
 
 	// Check if a type string is a known struct name (local or imported)
+	// Supports both unqualified names (Response) and qualified names (http::Response)
 	bool SemanticValidator::isStructTypeName(const std::string& typeStr) const {
+		// Check for qualified name (module::StructName)
+		size_t colonPos = typeStr.find("::");
+		if (colonPos != std::string::npos) {
+			std::string moduleName = typeStr.substr(0, colonPos);
+			std::string structName = typeStr.substr(colonPos + 2);
+			// Check if the module exists and has this struct
+			auto moduleIt = mModuleStructs.find(moduleName);
+			if (moduleIt != mModuleStructs.end()) {
+				const auto& structs = moduleIt->second;
+				if (structs.find(structName) != structs.end()) {
+					return true;
+				}
+			}
+			return false;
+		}
+
 		// Check local structs
 		if (mDefinedStructs.find(typeStr) != mDefinedStructs.end()) {
 			return true;
 		}
-		// Check imported module structs
+		// Check imported module structs (unqualified name)
 		for (const auto& moduleEntry : mModuleStructs) {
 			const auto& structs = moduleEntry.second;
 			if (structs.find(typeStr) != structs.end()) {
@@ -238,6 +255,15 @@ namespace Qd {
 			return;
 		}
 
+		// Create a key for deduplication
+		std::string errorKey = std::string("0:0:") + message;
+
+		// Skip if we've already reported this exact error
+		if (mReportedErrors.find(errorKey) != mReportedErrors.end()) {
+			return;
+		}
+		mReportedErrors.insert(errorKey);
+
 		mErrorCount++;
 
 		if (mStoreErrors) {
@@ -261,6 +287,20 @@ namespace Qd {
 		if (!shouldReport) {
 			return;
 		}
+
+		// Create a key for deduplication: line:column:message
+		std::string errorKey;
+		if (node) {
+			errorKey = std::to_string(node->line()) + ":" + std::to_string(node->column()) + ":" + message;
+		} else {
+			errorKey = std::string("0:0:") + message;
+		}
+
+		// Skip if we've already reported this exact error
+		if (mReportedErrors.find(errorKey) != mReportedErrors.end()) {
+			return;
+		}
+		mReportedErrors.insert(errorKey);
 
 		mErrorCount++;
 
@@ -323,6 +363,7 @@ namespace Qd {
 		mLoadedModuleFiles.clear();
 		mModuleFunctions.clear();
 		mModuleImportedFunctions.clear();
+		mReportedErrors.clear();
 
 		// Extract source directory and package name from filename
 		if (filename) {
@@ -576,7 +617,11 @@ namespace Qd {
 					} else if (typeName == "ptr" || typeName.find('*') != std::string::npos) {
 						fieldType = StackValueType::PTR;
 					} else if (!typeName.empty() && std::isupper(typeName[0])) {
-						// Struct type - treat as PTR and record the struct type name
+						// Unqualified struct type - treat as PTR and record the struct type name
+						fieldType = StackValueType::PTR;
+						mStructFieldStructTypes[structDecl->name()][field->name()] = typeName;
+					} else if (typeName.find("::") != std::string::npos) {
+						// Qualified struct type (e.g., vec2::Vec2)
 						fieldType = StackValueType::PTR;
 						mStructFieldStructTypes[structDecl->name()][field->name()] = typeName;
 					}
@@ -1242,7 +1287,7 @@ namespace Qd {
 		}
 
 		// Also collect struct field types so field access validation works
-		collectModuleStructFieldTypes(moduleAstRoot);
+		collectModuleStructFieldTypes(moduleAstRoot, moduleName);
 
 		// Collect public imported functions from the module
 		std::unordered_map<std::string, ImportedFunctionInfo> moduleImports;
@@ -1323,7 +1368,7 @@ namespace Qd {
 		}
 	}
 
-	void SemanticValidator::collectModuleStructFieldTypes(IAstNode* node) {
+	void SemanticValidator::collectModuleStructFieldTypes(IAstNode* node, const std::string& moduleName) {
 		if (!node) {
 			return;
 		}
@@ -1331,7 +1376,9 @@ namespace Qd {
 		// If this is a struct declaration, collect its field types and store the declaration
 		if (node->type() == IAstNode::Type::STRUCT_DECLARATION) {
 			AstNodeStructDeclaration* structDecl = static_cast<AstNodeStructDeclaration*>(node);
-			mModuleStructDeclarations[structDecl->name()] = structDecl;
+			// Use qualified key for module structs (e.g., "vec2::Vec2")
+			std::string qualifiedName = moduleName + "::" + structDecl->name();
+			mModuleStructDeclarations[qualifiedName] = structDecl;
 			std::unordered_map<std::string, StackValueType> fieldTypes;
 			std::vector<std::string> fieldOrder;
 			std::unordered_set<std::string> seenFieldNames;
@@ -1360,18 +1407,46 @@ namespace Qd {
 				} else if (!typeName.empty() && std::isupper(typeName[0])) {
 					// Struct type - treat as PTR and record the struct type name
 					fieldType = StackValueType::PTR;
-					mStructFieldStructTypes[structDecl->name()][field->name()] = typeName;
+					mStructFieldStructTypes[qualifiedName][field->name()] = typeName;
 				}
 				fieldTypes[field->name()] = fieldType;
 			}
-			mStructFieldTypes[structDecl->name()] = fieldTypes;
-			mStructFieldOrder[structDecl->name()] = fieldOrder;
+			mStructFieldTypes[qualifiedName] = fieldTypes;
+			mStructFieldOrder[qualifiedName] = fieldOrder;
 		}
 
 		// Recursively process children
 		for (size_t i = 0; i < node->childCount(); i++) {
-			collectModuleStructFieldTypes(node->child(i));
+			collectModuleStructFieldTypes(node->child(i), moduleName);
 		}
+	}
+
+	const std::unordered_map<std::string, StackValueType>* SemanticValidator::lookupStructFieldTypes(
+			const std::string& typeName) const {
+		// First try direct lookup (works for local structs and qualified names)
+		auto it = mStructFieldTypes.find(typeName);
+		if (it != mStructFieldTypes.end()) {
+			return &it->second;
+		}
+
+		// If the type is unqualified (no ::), try finding it in imported modules
+		if (typeName.find("::") == std::string::npos) {
+			// Check if any module has this struct
+			for (const auto& modulePair : mModuleStructs) {
+				const std::string& moduleName = modulePair.first;
+				const auto& moduleStructs = modulePair.second;
+				if (moduleStructs.find(typeName) != moduleStructs.end()) {
+					// Found it in a module, try qualified lookup
+					std::string qualifiedName = moduleName + "::" + typeName;
+					auto qualIt = mStructFieldTypes.find(qualifiedName);
+					if (qualIt != mStructFieldTypes.end()) {
+						return &qualIt->second;
+					}
+				}
+			}
+		}
+
+		return nullptr;
 	}
 
 	void SemanticValidator::collectModuleImportedFunctions(
@@ -1483,7 +1558,12 @@ namespace Qd {
 				} else if (isStructTypeName(typeStr)) {
 					// Struct type - treat as PTR but track the struct type
 					sig.consumes.push_back(StackValueType::PTR);
-					sig.parameterStructTypes[i] = typeStr;
+					// Qualify struct type with module name if not already qualified
+					if (typeStr.find("::") == std::string::npos) {
+						sig.parameterStructTypes[i] = moduleName + "::" + typeStr;
+					} else {
+						sig.parameterStructTypes[i] = typeStr;
+					}
 				} else {
 					// Untyped or unknown - use ANY
 					sig.consumes.push_back(StackValueType::ANY);
@@ -1507,7 +1587,12 @@ namespace Qd {
 						sig.produces.push_back(StackValueType::PTR);
 					} else if (isStructTypeName(typeStr)) {
 						sig.produces.push_back(StackValueType::PTR);
-						sig.producesStructTypes[i] = typeStr;
+						// Qualify struct type with module name if not already qualified
+						if (typeStr.find("::") == std::string::npos) {
+							sig.producesStructTypes[i] = moduleName + "::" + typeStr;
+						} else {
+							sig.producesStructTypes[i] = typeStr;
+						}
 					} else {
 						sig.produces.push_back(StackValueType::ANY);
 					}
@@ -1551,7 +1636,12 @@ namespace Qd {
 					} else if (isStructTypeName(typeStr)) {
 						// Struct type - treat as PTR but track the struct type
 						sig.consumes.push_back(StackValueType::PTR);
-						sig.parameterStructTypes[i] = typeStr;
+						// Qualify struct type with module name if not already qualified
+						if (typeStr.find("::") == std::string::npos) {
+							sig.parameterStructTypes[i] = moduleName + "::" + typeStr;
+						} else {
+							sig.parameterStructTypes[i] = typeStr;
+						}
 					} else {
 						// Untyped or unknown - treat as ANY
 						sig.consumes.push_back(StackValueType::ANY);
@@ -1580,7 +1670,12 @@ namespace Qd {
 						sig.produces.push_back(StackValueType::PTR);
 					} else if (isStructTypeName(typeStr)) {
 						sig.produces.push_back(StackValueType::PTR);
-						sig.producesStructTypes[i] = typeStr;
+						// Qualify struct type with module name if not already qualified
+						if (typeStr.find("::") == std::string::npos) {
+							sig.producesStructTypes[i] = moduleName + "::" + typeStr;
+						} else {
+							sig.producesStructTypes[i] = typeStr;
+						}
 					} else {
 						// Untyped or unknown - treat as ANY
 						sig.produces.push_back(StackValueType::ANY);
@@ -1640,6 +1735,43 @@ namespace Qd {
 		if (node->type() == IAstNode::Type::CONTINUE_STATEMENT) {
 			if (iteratorNames.empty()) {
 				reportError(node, "continue statement not within a loop");
+			}
+			return;
+		}
+
+		// Validate struct field types (check that qualified types reference valid modules/structs)
+		if (node->type() == IAstNode::Type::STRUCT_DECLARATION) {
+			AstNodeStructDeclaration* structDecl = static_cast<AstNodeStructDeclaration*>(node);
+			for (size_t i = 0; i < structDecl->childCount(); i++) {
+				IAstNode* child = structDecl->child(i);
+				if (child && child->type() == IAstNode::Type::STRUCT_FIELD) {
+					AstNodeStructField* field = static_cast<AstNodeStructField*>(child);
+					const std::string& typeName = field->typeName();
+
+					// Check for qualified type names (e.g., vec2::Vec2)
+					size_t colonPos = typeName.find("::");
+					if (colonPos != std::string::npos) {
+						std::string moduleName = typeName.substr(0, colonPos);
+						std::string structTypeName = typeName.substr(colonPos + 2);
+
+						// Check if the module is imported
+						if (mImportedModules.find(moduleName) == mImportedModules.end()) {
+							std::string errorMsg = "Module '" + moduleName +
+												   "' not imported for field type '" + typeName + "'. Add 'use " +
+												   moduleName + "' to use this type";
+							reportError(field, errorMsg.c_str());
+						} else {
+							// Check if the struct exists in the module
+							auto moduleIt = mModuleStructs.find(moduleName);
+							if (moduleIt == mModuleStructs.end() ||
+									moduleIt->second.find(structTypeName) == moduleIt->second.end()) {
+								std::string errorMsg = "Struct '" + structTypeName + "' not found in module '" +
+													   moduleName + "'";
+								reportError(field, errorMsg.c_str());
+							}
+						}
+					}
+				}
 			}
 			return;
 		}
@@ -1751,18 +1883,35 @@ namespace Qd {
 
 			bool validStruct = false;
 
-			// Check if struct is defined locally
-			if (mDefinedStructs.find(structName) != mDefinedStructs.end()) {
-				validStruct = true;
-			}
+			// Check if struct name is qualified (e.g., "vec2::Vec2")
+			size_t colonPos = structName.find("::");
+			if (colonPos != std::string::npos) {
+				// Qualified name - extract module and struct parts
+				std::string moduleName = structName.substr(0, colonPos);
+				std::string unqualifiedName = structName.substr(colonPos + 2);
 
-			// Check if struct is from an imported module
-			if (!validStruct) {
-				for (const auto& moduleEntry : mModuleStructs) {
-					const auto& structs = moduleEntry.second;
-					if (structs.find(structName) != structs.end() && structs.at(structName)) {
+				// Check if module exists and has this struct
+				auto moduleIt = mModuleStructs.find(moduleName);
+				if (moduleIt != mModuleStructs.end()) {
+					const auto& structs = moduleIt->second;
+					if (structs.find(unqualifiedName) != structs.end() && structs.at(unqualifiedName)) {
 						validStruct = true;
-						break;
+					}
+				}
+			} else {
+				// Unqualified name - check if struct is defined locally
+				if (mDefinedStructs.find(structName) != mDefinedStructs.end()) {
+					validStruct = true;
+				}
+
+				// Check if struct is from an imported module
+				if (!validStruct) {
+					for (const auto& moduleEntry : mModuleStructs) {
+						const auto& structs = moduleEntry.second;
+						if (structs.find(structName) != structs.end() && structs.at(structName)) {
+							validStruct = true;
+							break;
+						}
 					}
 				}
 			}
@@ -2520,9 +2669,9 @@ namespace Qd {
 				// Check if it's a struct construction
 				if (mDefinedStructs.find(name) != mDefinedStructs.end()) {
 					// Struct construction produces a pointer
-					auto structFieldIt = mStructFieldTypes.find(name);
-					if (structFieldIt != mStructFieldTypes.end()) {
-						size_t fieldCount = structFieldIt->second.size();
+					const auto* structFields = lookupStructFieldTypes(name);
+					if (structFields != nullptr) {
+						size_t fieldCount = structFields->size();
 						// Pop field values from both stacks
 						for (size_t fi = 0; fi < fieldCount && !typeStack.empty(); fi++) {
 							typeStack.pop_back();
@@ -2538,11 +2687,13 @@ namespace Qd {
 
 				// Check if it's a struct from an imported module
 				for (const auto& moduleEntry : mModuleStructs) {
+					const std::string& moduleName = moduleEntry.first;
 					const auto& structs = moduleEntry.second;
 					if (structs.find(name) != structs.end()) {
-						auto structFieldIt = mStructFieldTypes.find(name);
-						if (structFieldIt != mStructFieldTypes.end()) {
-							size_t fieldCount = structFieldIt->second.size();
+						std::string qualifiedName = moduleName + "::" + name;
+						const auto* structFields = lookupStructFieldTypes(qualifiedName);
+						if (structFields != nullptr) {
+							size_t fieldCount = structFields->size();
 							for (size_t fi = 0; fi < fieldCount && !typeStack.empty(); fi++) {
 								typeStack.pop_back();
 								if (!structTypeStack.empty()) {
@@ -2551,7 +2702,7 @@ namespace Qd {
 							}
 						}
 						typeStack.push_back(StackValueType::PTR);
-						structTypeStack.push_back(name); // Track the struct type
+						structTypeStack.push_back(qualifiedName); // Track the qualified struct type
 						break;
 					}
 				}
@@ -3044,15 +3195,33 @@ namespace Qd {
 				const std::string& name = construct->structName();
 				const auto& fieldInits = construct->fieldInits();
 
-				// Get struct declaration
+				// Get struct declaration - try local first, then module structs
+				// For module structs, we need to look up with qualified key
 				AstNodeStructDeclaration* structDecl = nullptr;
+				std::string lookupKey = name;  // Key for mStructFieldTypes lookup
 				auto structDeclIt = mStructDeclarations.find(name);
 				if (structDeclIt != mStructDeclarations.end()) {
 					structDecl = structDeclIt->second;
 				} else {
+					// Try qualified lookup first (for qualified names like "vec2::Vec2")
 					auto moduleDeclIt = mModuleStructDeclarations.find(name);
 					if (moduleDeclIt != mModuleStructDeclarations.end()) {
 						structDecl = moduleDeclIt->second;
+						lookupKey = name;
+					} else if (name.find("::") == std::string::npos) {
+						// Unqualified name - search in modules
+						for (const auto& modulePair : mModuleStructs) {
+							const std::string& moduleName = modulePair.first;
+							if (modulePair.second.find(name) != modulePair.second.end()) {
+								std::string qualifiedName = moduleName + "::" + name;
+								auto qualIt = mModuleStructDeclarations.find(qualifiedName);
+								if (qualIt != mModuleStructDeclarations.end()) {
+									structDecl = qualIt->second;
+									lookupKey = qualifiedName;
+									break;
+								}
+							}
+						}
 					}
 				}
 
@@ -3070,17 +3239,17 @@ namespace Qd {
 						StackValueType expectedType = StackValueType::UNKNOWN;
 						std::string expectedStructType;
 
-						auto structFieldTypesIt = mStructFieldTypes.find(name);
-						if (structFieldTypesIt != mStructFieldTypes.end()) {
-							auto fieldTypeIt = structFieldTypesIt->second.find(fieldName);
-							if (fieldTypeIt != structFieldTypesIt->second.end()) {
+						const auto* structFieldTypes = lookupStructFieldTypes(lookupKey);
+						if (structFieldTypes != nullptr) {
+							auto fieldTypeIt = structFieldTypes->find(fieldName);
+							if (fieldTypeIt != structFieldTypes->end()) {
 								fieldExists = true;
 								expectedType = fieldTypeIt->second;
 							}
 						}
 
 						// Also check mStructFieldStructTypes for PTR field types
-						auto structFieldStructTypesIt = mStructFieldStructTypes.find(name);
+						auto structFieldStructTypesIt = mStructFieldStructTypes.find(lookupKey);
 						if (structFieldStructTypesIt != mStructFieldStructTypes.end()) {
 							auto fieldStructTypeIt = structFieldStructTypesIt->second.find(fieldName);
 							if (fieldStructTypeIt != structFieldStructTypesIt->second.end()) {
@@ -3226,9 +3395,9 @@ namespace Qd {
 					}
 
 					// Check for missing fields using mStructFieldTypes (safe for imported modules)
-					auto structFieldTypesIt = mStructFieldTypes.find(name);
-					if (structFieldTypesIt != mStructFieldTypes.end()) {
-						for (const auto& fieldEntry : structFieldTypesIt->second) {
+					const auto* structFieldTypesForMissing = lookupStructFieldTypes(lookupKey);
+					if (structFieldTypesForMissing != nullptr) {
+						for (const auto& fieldEntry : *structFieldTypesForMissing) {
 							if (providedFields.find(fieldEntry.first) == providedFields.end()) {
 								std::string errorMsg = "Missing field '";
 								errorMsg += fieldEntry.first;
@@ -3318,12 +3487,12 @@ namespace Qd {
 								const std::string& fieldName = field->name();
 
 								// Get expected type from mStructFieldTypes
-								auto structFieldTypesIt = mStructFieldTypes.find(name);
-								if (structFieldTypesIt == mStructFieldTypes.end()) {
+								const auto* structFieldTypesPtr = lookupStructFieldTypes(name);
+								if (structFieldTypesPtr == nullptr) {
 									continue;
 								}
-								auto fieldTypeIt = structFieldTypesIt->second.find(fieldName);
-								if (fieldTypeIt == structFieldTypesIt->second.end()) {
+								auto fieldTypeIt = structFieldTypesPtr->find(fieldName);
+								if (fieldTypeIt == structFieldTypesPtr->end()) {
 									continue;
 								}
 								StackValueType expected = fieldTypeIt->second;
@@ -3412,11 +3581,13 @@ namespace Qd {
 
 				// Check if it's a struct from an imported module
 				for (const auto& moduleEntry : mModuleStructs) {
+					const std::string& moduleName = moduleEntry.first;
 					const auto& structs = moduleEntry.second;
 					if (structs.find(name) != structs.end() && structs.at(name)) {
-						// Struct construction from module
+						// Struct construction from module - use qualified name for lookups
+						std::string qualifiedStructName = moduleName + "::" + name;
 						// Try to find struct declaration
-						auto structDeclIt = mModuleStructDeclarations.find(name);
+						auto structDeclIt = mModuleStructDeclarations.find(qualifiedStructName);
 						if (structDeclIt != mModuleStructDeclarations.end()) {
 							AstNodeStructDeclaration* structDecl = structDeclIt->second;
 							const auto& fields = structDecl->fields();
@@ -3442,12 +3613,12 @@ namespace Qd {
 									const std::string& fieldName = field->name();
 
 									// Get expected type from mStructFieldTypes
-									auto structFieldTypesIt = mStructFieldTypes.find(name);
-									if (structFieldTypesIt == mStructFieldTypes.end()) {
+									const auto* structFieldTypesPtr = lookupStructFieldTypes(qualifiedStructName);
+									if (structFieldTypesPtr == nullptr) {
 										continue;
 									}
-									auto fieldTypeIt = structFieldTypesIt->second.find(fieldName);
-									if (fieldTypeIt == structFieldTypesIt->second.end()) {
+									auto fieldTypeIt = structFieldTypesPtr->find(fieldName);
+									if (fieldTypeIt == structFieldTypesPtr->end()) {
 										continue;
 									}
 									StackValueType expected = fieldTypeIt->second;
@@ -3501,7 +3672,7 @@ namespace Qd {
 						// Struct pointers can now be used flexibly - codegen handles all cases
 
 						typeStack.push_back(StackValueType::PTR);
-						structTypeStack.push_back(name); // Track which struct type this is
+						structTypeStack.push_back(qualifiedStructName); // Track the qualified struct type
 						break;
 					}
 				}
@@ -3626,9 +3797,9 @@ namespace Qd {
 								if (structTypeToRequiredFields.find(expectedStructType) ==
 										structTypeToRequiredFields.end()) {
 									// Check if this param's field accesses match this struct type's fields
-									auto structFieldIt = mStructFieldTypes.find(expectedStructType);
-									if (structFieldIt != mStructFieldTypes.end()) {
-										const auto& availableFields = structFieldIt->second;
+									const auto* structFieldPtr = lookupStructFieldTypes(expectedStructType);
+									if (structFieldPtr != nullptr) {
+										const auto& availableFields = *structFieldPtr;
 										bool allFieldsMatch = true;
 										for (const auto& reqField : paramField.second) {
 											if (availableFields.find(reqField.first) == availableFields.end()) {
@@ -3680,9 +3851,9 @@ namespace Qd {
 									auto reqFieldsIt = structTypeToRequiredFields.find(actualStructType);
 									if (reqFieldsIt != structTypeToRequiredFields.end()) {
 										const auto& requiredFields = *reqFieldsIt->second;
-										auto structFieldIt = mStructFieldTypes.find(actualStructType);
-										if (structFieldIt != mStructFieldTypes.end()) {
-											const auto& availableFields = structFieldIt->second;
+										const auto* structFieldPtr = lookupStructFieldTypes(actualStructType);
+										if (structFieldPtr != nullptr) {
+											const auto& availableFields = *structFieldPtr;
 
 											for (const auto& requiredFieldEntry : requiredFields) {
 												const std::string& requiredField = requiredFieldEntry.first;
@@ -3885,9 +4056,9 @@ namespace Qd {
 				// We distinguish inline construction from accessing an existing struct by checking:
 				// - If structTypeStack.back() == varName, the struct is already constructed (no pop)
 				// - Otherwise, the field values are on the stack waiting for construction (pop them)
-				auto inlineStructIt = mStructFieldTypes.find(varName);
-				if (inlineStructIt != mStructFieldTypes.end()) {
-					const auto& fields = inlineStructIt->second;
+				const auto* inlineStructFields = lookupStructFieldTypes(varName);
+				if (inlineStructFields != nullptr) {
+					const auto& fields = *inlineStructFields;
 					bool isExistingStruct = !structTypeStack.empty() && structTypeStack.back() == varName;
 
 					if (!isExistingStruct) {
@@ -3953,9 +4124,9 @@ namespace Qd {
 
 				if (!structType.empty()) {
 					// We know which struct type this is - validate against it
-					auto structFieldIt = mStructFieldTypes.find(structType);
-					if (structFieldIt != mStructFieldTypes.end()) {
-						const auto& fields = structFieldIt->second;
+					const auto* structFieldPtr = lookupStructFieldTypes(structType);
+					if (structFieldPtr != nullptr) {
+						const auto& fields = *structFieldPtr;
 						auto fieldIt = fields.find(fieldName);
 						if (fieldIt != fields.end()) {
 							fieldType = fieldIt->second;
@@ -4040,9 +4211,9 @@ namespace Qd {
 
 				if (!structType.empty()) {
 					// We know which struct type this is - validate against it
-					auto structFieldIt = mStructFieldTypes.find(structType);
-					if (structFieldIt != mStructFieldTypes.end()) {
-						const auto& fields = structFieldIt->second;
+					const auto* structFieldPtr = lookupStructFieldTypes(structType);
+					if (structFieldPtr != nullptr) {
+						const auto& fields = *structFieldPtr;
 						auto fieldIt = fields.find(fieldName);
 						if (fieldIt != fields.end()) {
 							fieldFound = true;
@@ -4141,12 +4312,13 @@ namespace Qd {
 					if (structIt != structs.end() && structIt->second) {
 						// This is a struct construction from a module
 						// Use mStructFieldTypes and mStructFieldOrder since the AST node may be invalid
-						auto structFieldTypesIt = mStructFieldTypes.find(functionName);
-						auto structFieldOrderIt = mStructFieldOrder.find(functionName);
+						// Use qualified name for lookup since module structs are stored with qualified keys
+						const auto* structFieldTypesPtr = lookupStructFieldTypes(qualifiedName);
+						auto structFieldOrderIt = mStructFieldOrder.find(qualifiedName);
 
-						if (structFieldTypesIt != mStructFieldTypes.end() &&
+						if (structFieldTypesPtr != nullptr &&
 								structFieldOrderIt != mStructFieldOrder.end()) {
-							const auto& fieldTypes = structFieldTypesIt->second;
+							const auto& fieldTypes = *structFieldTypesPtr;
 							const auto& fieldOrder = structFieldOrderIt->second;
 							size_t fieldCount = fieldOrder.size();
 

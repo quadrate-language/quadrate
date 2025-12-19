@@ -132,7 +132,10 @@ namespace Qd {
 		void collectModuleConstants(IAstNode* node, std::unordered_map<std::string, bool>& constants);
 		void collectModuleConstantValues(IAstNode* node, const std::string& moduleName);
 		void collectModuleStructs(IAstNode* node, std::unordered_map<std::string, bool>& structs);
-		void collectModuleStructFieldTypes(IAstNode* node);
+		void collectModuleStructFieldTypes(IAstNode* node, const std::string& moduleName);
+
+		// Helper: Look up struct field types, handling both qualified and unqualified names
+		const std::unordered_map<std::string, StackValueType>* lookupStructFieldTypes(const std::string& typeName) const;
 		void collectModuleImportedFunctions(
 				IAstNode* node, const std::string& moduleName, std::unordered_map<std::string, ImportedFunctionInfo>& imports);
 
@@ -300,6 +303,9 @@ namespace Qd {
 
 		// Warning count
 		size_t mWarningCount;
+
+		// Track reported errors to avoid duplicates (key: line:column:message)
+		std::unordered_set<std::string> mReportedErrors;
 
 		// Whether warnings should be treated as errors
 		bool mWerror;

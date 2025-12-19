@@ -1,0 +1,13 @@
+// Test error for invalid qualified struct type name
+
+use vec2
+
+// Function with invalid qualified struct type (NoSuchStruct doesn't exist)
+fn bad_func(p:vec2::NoSuchStruct -- ) {
+	-> p
+	p @x print nl
+}
+
+fn main() {
+	"test" print nl
+}

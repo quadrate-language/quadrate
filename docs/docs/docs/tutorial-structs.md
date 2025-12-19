@@ -142,7 +142,7 @@ fn main() {
 
 ## Structs with Functions
 
-Pass structs to functions using `ptr` type:
+Pass structs to functions using the struct type name:
 
 ```qd
 use math
@@ -152,14 +152,14 @@ struct Point {
 	y:f64
 }
 
-fn distance_from_origin(p:ptr -- dist:f64) {
+fn distance_from_origin(p:Point -- dist:f64) {
 	-> p
 	p @x dup *     // x squared
 	p @y dup * +   // + y squared
 	math::sqrt     // square root
 }
 
-fn print_point(p:ptr -- ) {
+fn print_point(p:Point -- ) {
 	-> p
 	"(" print p @x print ", " print p @y print ")" print nl
 }
@@ -239,26 +239,26 @@ struct Vec2 {
 	y:f64
 }
 
-fn vec2_new(x:f64 y:f64 -- v:ptr) {
+fn vec2_new(x:f64 y:f64 -- v:Vec2) {
 	-> y -> x
 	Vec2 { x = x y = y }
 }
 
-fn vec2_add(a:ptr b:ptr -- result:ptr) {
+fn vec2_add(a:Vec2 b:Vec2 -- result:Vec2) {
 	-> b -> a
 	a @x b @x + -> x
 	a @y b @y + -> y
 	Vec2 { x = x y = y }
 }
 
-fn vec2_magnitude(v:ptr -- mag:f64) {
+fn vec2_magnitude(v:Vec2 -- mag:f64) {
 	-> v
 	v @x dup *
 	v @y dup * +
 	math::sqrt
 }
 
-fn vec2_print(v:ptr -- ) {
+fn vec2_print(v:Vec2 -- ) {
 	-> v
 	"Vec2(" print v @x print ", " print v @y print ")" print nl
 }

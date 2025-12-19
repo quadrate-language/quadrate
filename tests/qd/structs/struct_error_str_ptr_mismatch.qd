@@ -8,7 +8,7 @@ struct WithPtr {
 	data:ptr
 }
 
-fn use_str_field(obj:ptr -- ) {
+fn use_str_field(obj:WithStr -- ) {
 	-> x
 	x @data drop  // Expects str field
 	x @name drop  // Expects name field (unique to WithStr)

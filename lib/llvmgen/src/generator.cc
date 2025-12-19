@@ -81,6 +81,10 @@ namespace Qd {
 	// Default stack size for runtime context creation
 	static const size_t DEFAULT_STACK_SIZE = 1024;
 
+	// Forward declarations for helper functions
+	static bool looksLikeStructType(const std::string& typeStr);
+	static std::string extractStructName(const std::string& typeStr);
+
 	class LlvmGenerator::Impl {
 	public:
 		std::unique_ptr<llvm::LLVMContext> context;
@@ -299,6 +303,7 @@ namespace Qd {
 
 		std::map<std::string, StructLayout> structDefinitions;
 		std::map<std::string, llvm::Function*> structDestructors; // Generated destructor for each struct type
+		std::string currentModuleName; // Current module being generated (empty for main file)
 
 		Impl(const std::string& moduleName) {
 			context = std::make_unique<llvm::LLVMContext>();
@@ -338,9 +343,11 @@ namespace Qd {
 		void generateLocalOne(const std::string& name, size_t lineNum, llvm::Value* ctx);
 		void generateLocalCleanup();
 		void generateCastInstructions(const std::vector<CastDirection>& casts, llvm::Value* ctx);
-		void processStructDeclaration(AstNodeStructDeclaration* structDecl);
+		void processStructDeclaration(AstNodeStructDeclaration* structDecl, const std::string& moduleName);
 		void generateStructDestructors(); // Generate destructor functions for all struct types
 		void generateStructConstruction(const std::string& structName, llvm::Value* ctx);
+		// Helper to find struct definition, trying both qualified and unqualified names
+		const StructLayout* findStructDefinition(const std::string& structName) const;
 		void generateFieldAccess(AstNodeFieldAccess* fieldAccess, llvm::Value* ctx);
 		void generateFieldSet(AstNodeFieldSet* fieldSet, llvm::Value* ctx);
 		void generateArrayLiteral(AstNodeArrayLiteral* arrayLiteral, llvm::Value* ctx);
@@ -3091,9 +3098,9 @@ namespace Qd {
 		}
 
 		// Check if it's a struct construction
-		auto structIt = structDefinitions.find(name);
-		if (structIt != structDefinitions.end()) {
-			generateStructConstruction(name, ctx);
+		const StructLayout* structLayout = findStructDefinition(name);
+		if (structLayout != nullptr) {
+			generateStructConstruction(structLayout->name, ctx);
 			return;
 		}
 
@@ -3502,10 +3509,13 @@ namespace Qd {
 
 		// Check if this is a struct construction
 		// All structs (both from main file and modules) are in structDefinitions
-		if (structDefinitions.find(name) != structDefinitions.end()) {
+		// Use qualified name for module struct lookup
+		std::string qualifiedName = scope + "::" + name;
+		const StructLayout* structLayout = findStructDefinition(qualifiedName);
+		if (structLayout != nullptr) {
 			// This is a struct construction from a module
 			// Generate struct allocation and field initialization
-			generateStructConstruction(name, ctx);
+			generateStructConstruction(structLayout->name, ctx);
 			return;
 		}
 
@@ -5478,14 +5488,14 @@ namespace Qd {
 			const std::string& structName = construct->structName();
 			const auto& fieldInits = construct->fieldInits();
 
-			// Get struct layout to know field order
-			auto layoutIt = structDefinitions.find(structName);
-			if (layoutIt == structDefinitions.end()) {
+			// Get struct layout to know field order (use helper to handle qualified names)
+			const StructLayout* layoutPtr = findStructDefinition(structName);
+			if (layoutPtr == nullptr) {
 				std::cerr << "Error: Unknown struct type in construction: " << structName << std::endl;
 				break;
 			}
 
-			const StructLayout& layout = layoutIt->second;
+			const StructLayout& layout = *layoutPtr;
 
 			// Build a map from field name to initializer
 			std::unordered_map<std::string, const StructFieldInit*> initMap;
@@ -5510,7 +5520,8 @@ namespace Qd {
 			}
 
 			// Now construct the struct (pops values from stack)
-			generateStructConstruction(structName, ctx);
+			// Use the layout name (which is qualified for module structs)
+			generateStructConstruction(layout.name, ctx);
 			break;
 		}
 		case IAstNode::Type::ARRAY_LITERAL:
@@ -5880,8 +5891,8 @@ namespace Qd {
 							typeStr != "s" && typeStr != "str" && typeStr != "string" && typeStr != "p" &&
 							typeStr != "ptr" && typeStr != "pointer") {
 						// This is a struct type - mark the parameter name as a struct local
-						// so it gets released at function cleanup
-						localVariableStructTypes[param->name()] = typeStr;
+						// so it gets released at function cleanup (use unqualified name)
+						localVariableStructTypes[param->name()] = extractStructName(typeStr);
 					}
 				}
 			}
@@ -6298,6 +6309,7 @@ namespace Qd {
 
 		// Process struct declarations from all modules
 		for (const auto& modulePair : moduleASTs) {
+			const std::string& moduleName = modulePair.first;
 			IAstNode* moduleRoot = modulePair.second;
 			if (!moduleRoot) {
 				continue;
@@ -6306,16 +6318,16 @@ namespace Qd {
 			for (size_t i = 0; i < moduleRoot->childCount(); i++) {
 				auto child = moduleRoot->child(i);
 				if (auto structNode = dynamic_cast<AstNodeStructDeclaration*>(child)) {
-					processStructDeclaration(structNode);
+					processStructDeclaration(structNode, moduleName);
 				}
 			}
 		}
 
-		// Process struct declarations from main file
+		// Process struct declarations from main file (no module name)
 		for (size_t i = 0; i < root->childCount(); i++) {
 			auto child = root->child(i);
 			if (auto structNode = dynamic_cast<AstNodeStructDeclaration*>(child)) {
-				processStructDeclaration(structNode);
+				processStructDeclaration(structNode, "");
 			}
 		}
 
@@ -6416,8 +6428,9 @@ namespace Qd {
 				for (auto* outParam : outputs) {
 					if (auto* param = dynamic_cast<AstNodeParameter*>(outParam)) {
 						const std::string& typeStr = param->typeString();
-						if (!typeStr.empty() && std::isupper(typeStr[0])) {
-							functionReturnStructType[funcNode->name()] = typeStr;
+						if (looksLikeStructType(typeStr)) {
+							// Store the unqualified struct name for lookup
+							functionReturnStructType[funcNode->name()] = extractStructName(typeStr);
 							foundExplicitStructType = true;
 							break; // Use first struct-typed output
 						}
@@ -6441,6 +6454,9 @@ namespace Qd {
 				continue;
 			}
 
+			// Set current module name for struct lookups during code generation
+			currentModuleName = moduleName;
+
 			for (size_t i = 0; i < moduleRoot->childCount(); i++) {
 				auto child = moduleRoot->child(i);
 				if (auto funcNode = dynamic_cast<AstNodeFunctionDeclaration*>(child)) {
@@ -6451,8 +6467,8 @@ namespace Qd {
 					for (auto* outParam : outputs) {
 						if (auto* param = dynamic_cast<AstNodeParameter*>(outParam)) {
 							const std::string& typeStr = param->typeString();
-							if (!typeStr.empty() && std::isupper(typeStr[0])) {
-								functionReturnStructType[qualifiedName] = typeStr;
+							if (looksLikeStructType(typeStr)) {
+								functionReturnStructType[qualifiedName] = extractStructName(typeStr);
 								foundExplicitStructType = true;
 								break;
 							}
@@ -6468,11 +6484,15 @@ namespace Qd {
 
 					// Generate module function with module name as prefix
 					if (!generateFunction(funcNode, false, moduleName)) {
+						currentModuleName = ""; // Reset on error
 						return false;
 					}
 				}
 			}
 		}
+
+		// Reset module name for main file generation
+		currentModuleName = "";
 
 		// Second pass: generate all user-defined functions from main file
 		for (size_t i = 0; i < root->childCount(); i++) {
@@ -7024,7 +7044,31 @@ namespace Qd {
 
 	// Helper function to check if a type name is a known struct
 	bool LlvmGenerator::Impl::isKnownStruct(const std::string& typeName) {
-		return structDefinitions.find(typeName) != structDefinitions.end();
+		return findStructDefinition(typeName) != nullptr;
+	}
+
+	// Helper function to check if a type string looks like a struct type
+	// Handles both unqualified (Response) and qualified (http::Response) names
+	static bool looksLikeStructType(const std::string& typeStr) {
+		if (typeStr.empty()) return false;
+		// Check for qualified name (module::StructName)
+		size_t colonPos = typeStr.find("::");
+		if (colonPos != std::string::npos) {
+			std::string structPart = typeStr.substr(colonPos + 2);
+			return !structPart.empty() && std::isupper(structPart[0]);
+		}
+		// Unqualified name - check first character
+		return std::isupper(typeStr[0]);
+	}
+
+	// Helper function to extract struct name from possibly qualified type
+	// "http::Response" -> "Response", "Response" -> "Response"
+	static std::string extractStructName(const std::string& typeStr) {
+		size_t colonPos = typeStr.find("::");
+		if (colonPos != std::string::npos) {
+			return typeStr.substr(colonPos + 2);
+		}
+		return typeStr;
 	}
 
 	// Helper function to get size of a type
@@ -7043,9 +7087,15 @@ namespace Qd {
 	}
 
 	// Process a struct declaration and calculate field offsets
-	void LlvmGenerator::Impl::processStructDeclaration(AstNodeStructDeclaration* structDecl) {
+	void LlvmGenerator::Impl::processStructDeclaration(AstNodeStructDeclaration* structDecl,
+			const std::string& moduleName) {
 		StructLayout layout;
-		layout.name = structDecl->name();
+		// Use qualified name for module structs to avoid collisions
+		if (!moduleName.empty()) {
+			layout.name = moduleName + "::" + structDecl->name();
+		} else {
+			layout.name = structDecl->name();
+		}
 		layout.isPublic = structDecl->isPublic();
 		layout.totalSize = 0;
 
@@ -7071,14 +7121,56 @@ namespace Qd {
 		structDefinitions[layout.name] = layout;
 	}
 
+	// Helper to find struct definition, trying both qualified and unqualified names
+	const LlvmGenerator::Impl::StructLayout* LlvmGenerator::Impl::findStructDefinition(
+			const std::string& structName) const {
+		// If the name is already qualified (contains "::"), try direct lookup first
+		if (structName.find("::") != std::string::npos) {
+			auto it = structDefinitions.find(structName);
+			if (it != structDefinitions.end()) {
+				return &it->second;
+			}
+			return nullptr; // Qualified name not found
+		}
+
+		// Unqualified name - if we're in a module context, first try with module prefix
+		// This ensures module's own structs are found before local (main file) structs
+		if (!currentModuleName.empty()) {
+			std::string qualifiedName = currentModuleName + "::" + structName;
+			auto qualIt = structDefinitions.find(qualifiedName);
+			if (qualIt != structDefinitions.end()) {
+				return &qualIt->second;
+			}
+		}
+
+		// Try direct lookup (for local/main file structs)
+		auto it = structDefinitions.find(structName);
+		if (it != structDefinitions.end()) {
+			return &it->second;
+		}
+
+		// Fallback: search all modules for this unqualified struct name
+		for (const auto& pair : structDefinitions) {
+			size_t colonPos = pair.first.find("::");
+			if (colonPos != std::string::npos) {
+				std::string unqualified = pair.first.substr(colonPos + 2);
+				if (unqualified == structName) {
+					return &pair.second;
+				}
+			}
+		}
+
+		return nullptr;
+	}
+
 	// Generate cleanup code for a struct - frees nested struct fields and string fields
 	void LlvmGenerator::Impl::generateStructCleanup(llvm::Value* structPtr, const std::string& structTypeName) {
-		auto structDefIt = structDefinitions.find(structTypeName);
-		if (structDefIt == structDefinitions.end()) {
+		const StructLayout* layoutPtr = findStructDefinition(structTypeName);
+		if (layoutPtr == nullptr) {
 			return;
 		}
 
-		const StructLayout& layout = structDefIt->second;
+		const StructLayout& layout = *layoutPtr;
 
 		// First, recursively cleanup nested struct fields
 		for (const auto& field : layout.fields) {
@@ -7214,13 +7306,13 @@ namespace Qd {
 
 	// Generate struct construction: pop values from stack, malloc, initialize, push pointer
 	void LlvmGenerator::Impl::generateStructConstruction(const std::string& structName, llvm::Value* ctx) {
-		auto it = structDefinitions.find(structName);
-		if (it == structDefinitions.end()) {
+		const StructLayout* layoutPtr = findStructDefinition(structName);
+		if (layoutPtr == nullptr) {
 			std::cerr << "Error: Unknown struct type: " << structName << std::endl;
 			return;
 		}
 
-		const StructLayout& layout = it->second;
+		const StructLayout& layout = *layoutPtr;
 
 		// Define context and stack types (stackElementTy is already a member variable)
 		llvm::Type* contextTy = llvm::StructType::get(*context, {llvm::PointerType::getUnqual(*context)}, false);

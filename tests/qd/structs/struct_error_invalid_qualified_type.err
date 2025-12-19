@@ -1,0 +1,1 @@
+Invalid type 'vec2::NoSuchStruct' in parameter 'p'. Valid types are: i64, f64, str, ptr, any, or a struct name

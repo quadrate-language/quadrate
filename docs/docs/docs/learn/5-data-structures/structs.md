@@ -46,7 +46,7 @@ struct Rectangle {
 	height:f64
 }
 
-fn area(rect:ptr -- a:f64) {
+fn area(rect:Rectangle -- a:f64) {
 	-> rect
 	rect @width rect @height *
 }
@@ -169,14 +169,14 @@ struct Point {
 	y:f64
 }
 
-fn point_distance(p1:ptr p2:ptr -- d:f64) {
+fn point_distance(p1:Point p2:Point -- d:f64) {
 	-> p2 -> p1
 	p2 @x p1 @x - dup *
 	p2 @y p1 @y - dup *
 	+ sqrt
 }
 
-fn point_move(p:ptr dx:f64 dy:f64 -- ) {
+fn point_move(p:Point dx:f64 dy:f64 -- ) {
 	-> dy -> dx -> p
 	p @x dx + p .x
 	p @y dy + p .y
@@ -210,7 +210,7 @@ struct Config {
 	max_retries:i64
 }
 
-fn config_new( -- cfg:ptr) {
+fn config_new( -- cfg:Config) {
 	Config {
 		debug = 0
 		verbose = 0
@@ -218,7 +218,7 @@ fn config_new( -- cfg:ptr) {
 	}
 }
 
-fn config_set_debug(cfg:ptr value:i64 -- cfg:ptr) {
+fn config_set_debug(cfg:Config value:i64 -- cfg:Config) {
 	-> value -> cfg
 	value cfg .debug
 	cfg
@@ -274,7 +274,7 @@ struct Stack {
 	capacity:i64
 }
 
-fn stack_new(capacity:i64 -- s:ptr) {
+fn stack_new(capacity:i64 -- s:Stack) {
 	-> capacity
 	capacity make<i64> -> data
 	Stack {
@@ -284,13 +284,13 @@ fn stack_new(capacity:i64 -- s:ptr) {
 	}
 }
 
-fn stack_push(s:ptr value:i64 -- ) {
+fn stack_push(s:Stack value:i64 -- ) {
 	-> value -> s
 	s @data s @top value set
 	s @top 1 + s .top
 }
 
-fn stack_pop(s:ptr -- value:i64) {
+fn stack_pop(s:Stack -- value:i64) {
 	-> s
 	s @top 1 - s .top
 	s @data s @top nth
@@ -318,7 +318,7 @@ struct Point {
 	y:f64
 }
 
-fn points_equal(a:ptr b:ptr -- equal:i64) {
+fn points_equal(a:Point b:Point -- equal:i64) {
 	-> b -> a
 	a @x b @x == a @y b @y == and
 }

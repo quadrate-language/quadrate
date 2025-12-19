@@ -1,1 +1,1 @@
-Type error in field access 'pt @z': Unknown variable or field
+Type error in field access 'pt @z': Struct 'Point' has no field named 'z'

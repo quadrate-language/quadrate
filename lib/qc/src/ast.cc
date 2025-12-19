@@ -440,7 +440,7 @@ namespace Qd {
 			}
 			if (isBuiltInInstruction(text)) {
 				std::string instrName(text);
-				// Check for generic type parameter: instruction<Type>
+				// Check for generic type parameter: instruction<Type> or instruction<module::Type>
 				// Use peekNextChar (no whitespace skip) to distinguish make<T> from len <
 				char32_t nextCh = peekNextChar(scanner, src);
 				if (nextCh == '<') {
@@ -448,6 +448,26 @@ namespace Qd {
 					char32_t typeToken = u8t_scanner_scan(scanner);
 					if (typeToken == U8T_IDENTIFIER) {
 						std::string typeParam = u8t_scanner_token_text(scanner, n);
+
+						// Check for qualified name: module::StructName
+						char32_t peekChar = u8t_scanner_peek(scanner);
+						if (peekChar == ':') {
+							u8t_scanner_scan(scanner); // Consume first ':'
+							char32_t secondColon = u8t_scanner_peek(scanner);
+							if (secondColon == ':') {
+								u8t_scanner_scan(scanner); // Consume second ':'
+								char32_t nameToken = u8t_scanner_scan(scanner);
+								if (nameToken == U8T_IDENTIFIER) {
+									const char* qualName = u8t_scanner_token_text(scanner, n);
+									typeParam += "::";
+									typeParam += qualName;
+								} else {
+									errorReporter->reportError(scanner, "Expected struct name after '::'");
+									return nullptr;
+								}
+							}
+						}
+
 						char32_t closeAngle = u8t_scanner_scan(scanner);
 						if (closeAngle == '>') {
 							IAstNode* node = new AstNodeInstruction(instrName, typeParam);
@@ -924,7 +944,7 @@ namespace Qd {
 
 			if (isBuiltInInstruction(text)) {
 				std::string instrName(text);
-				// Check for generic type parameter: instruction<Type>
+				// Check for generic type parameter: instruction<Type> or instruction<module::Type>
 				// Use peekNextChar (no whitespace skip) to distinguish make<T> from len <
 				char32_t nextCh = peekNextChar(scanner, src);
 				if (nextCh == '<') {
@@ -932,6 +952,26 @@ namespace Qd {
 					char32_t typeToken = u8t_scanner_scan(scanner);
 					if (typeToken == U8T_IDENTIFIER) {
 						std::string typeParam = u8t_scanner_token_text(scanner, n);
+
+						// Check for qualified name: module::StructName
+						char32_t peekChar = u8t_scanner_peek(scanner);
+						if (peekChar == ':') {
+							u8t_scanner_scan(scanner); // Consume first ':'
+							char32_t secondColon = u8t_scanner_peek(scanner);
+							if (secondColon == ':') {
+								u8t_scanner_scan(scanner); // Consume second ':'
+								char32_t nameToken = u8t_scanner_scan(scanner);
+								if (nameToken == U8T_IDENTIFIER) {
+									const char* qualName = u8t_scanner_token_text(scanner, n);
+									typeParam += "::";
+									typeParam += qualName;
+								} else {
+									errorReporter->reportError(scanner, "Expected struct name after '::'");
+									return nullptr;
+								}
+							}
+						}
+
 						char32_t closeAngle = u8t_scanner_scan(scanner);
 						if (closeAngle == '>') {
 							IAstNode* node = new AstNodeInstruction(instrName, typeParam);
@@ -1142,7 +1182,22 @@ namespace Qd {
 					token = u8t_scanner_scan(scanner);
 					if (token == U8T_IDENTIFIER) {
 						const char* paramType = u8t_scanner_token_text(scanner, &n);
-						AstNodeParameter* param = new AstNodeParameter(paramNameStr, paramType, isOutput);
+						std::string paramTypeStr(paramType);
+						// Check for qualified type name (module::Type)
+						char32_t peek1 = u8t_scanner_peek(scanner);
+						if (peek1 == ':') {
+							u8t_scanner_scan(scanner); // consume first ':'
+							char32_t peek2 = u8t_scanner_peek(scanner);
+							if (peek2 == ':') {
+								u8t_scanner_scan(scanner); // consume second ':'
+								token = u8t_scanner_scan(scanner);
+								if (token == U8T_IDENTIFIER) {
+									const char* structName = u8t_scanner_token_text(scanner, &n);
+									paramTypeStr = paramTypeStr + "::" + structName;
+								}
+							}
+						}
+						AstNodeParameter* param = new AstNodeParameter(paramNameStr, paramTypeStr, isOutput);
 						setNodePosition(param, scanner, src);
 						param->setParent(func);
 						if (isOutput) {
@@ -1255,7 +1310,22 @@ namespace Qd {
 					token = u8t_scanner_scan(scanner);
 					if (token == U8T_IDENTIFIER) {
 						const char* paramType = u8t_scanner_token_text(scanner, &n);
-						AstNodeParameter* param = new AstNodeParameter(paramNameStr, paramType, isOutput);
+						std::string paramTypeStr(paramType);
+						// Check for qualified type name (module::Type)
+						char32_t peek1 = u8t_scanner_peek(scanner);
+						if (peek1 == ':') {
+							u8t_scanner_scan(scanner); // consume first ':'
+							char32_t peek2 = u8t_scanner_peek(scanner);
+							if (peek2 == ':') {
+								u8t_scanner_scan(scanner); // consume second ':'
+								token = u8t_scanner_scan(scanner);
+								if (token == U8T_IDENTIFIER) {
+									const char* structName = u8t_scanner_token_text(scanner, &n);
+									paramTypeStr = paramTypeStr + "::" + structName;
+								}
+							}
+						}
+						AstNodeParameter* param = new AstNodeParameter(paramNameStr, paramTypeStr, isOutput);
 						setNodePosition(param, scanner, src);
 						param->setParent(func);
 						if (isOutput) {
@@ -1824,7 +1894,7 @@ namespace Qd {
 						tempNodes.push_back(node);
 					} else if (isBuiltInInstruction(text)) {
 						std::string instrName(text);
-						// Check for generic type parameter: instruction<Type>
+						// Check for generic type parameter: instruction<Type> or instruction<module::Type>
 						// Use peekNextChar (no whitespace skip) to distinguish make<T> from len <
 						char32_t nextCh = peekNextChar(scanner, src);
 						if (nextCh == '<') {
@@ -1832,6 +1902,25 @@ namespace Qd {
 							char32_t typeToken = u8t_scanner_scan(scanner);
 							if (typeToken == U8T_IDENTIFIER) {
 								std::string typeParam = u8t_scanner_token_text(scanner, &n);
+
+								// Check for qualified name: module::StructName
+								char32_t peekChar = u8t_scanner_peek(scanner);
+								if (peekChar == ':') {
+									u8t_scanner_scan(scanner); // Consume first ':'
+									char32_t secondColon = u8t_scanner_peek(scanner);
+									if (secondColon == ':') {
+										u8t_scanner_scan(scanner); // Consume second ':'
+										char32_t nameToken = u8t_scanner_scan(scanner);
+										if (nameToken == U8T_IDENTIFIER) {
+											const char* qualName = u8t_scanner_token_text(scanner, &n);
+											typeParam += "::";
+											typeParam += qualName;
+										} else {
+											errorReporter->reportError(scanner, "Expected struct name after '::'");
+										}
+									}
+								}
+
 								char32_t closeAngle = u8t_scanner_scan(scanner);
 								if (closeAngle == '>') {
 									IAstNode* id = new AstNodeInstruction(instrName, typeParam);
@@ -2242,6 +2331,27 @@ namespace Qd {
 					if (token == U8T_IDENTIFIER) {
 						const char* typeName = u8t_scanner_token_text(scanner, &n);
 						fieldType += typeName;
+
+						// Check for qualified name: *module::StructName
+						char32_t peekChar = u8t_scanner_peek(scanner);
+						if (peekChar == ':') {
+							u8t_scanner_scan(scanner); // Consume first ':'
+							char32_t secondColon = u8t_scanner_peek(scanner);
+							if (secondColon == ':') {
+								u8t_scanner_scan(scanner); // Consume second ':'
+								char32_t nameToken = u8t_scanner_scan(scanner);
+								if (nameToken == U8T_IDENTIFIER) {
+									const char* qualName = u8t_scanner_token_text(scanner, &n);
+									fieldType += "::";
+									fieldType += qualName;
+								} else {
+									errorReporter->reportError(scanner, "Expected struct name after '::'");
+								}
+							}
+							// Note: If second char wasn't ':', we've consumed a single ':'
+							// which is an error in this context, but that will be handled
+							// on the next field parse attempt
+						}
 					} else {
 						errorReporter->reportError(scanner, "Expected type name after '*'");
 						continue;
@@ -2250,6 +2360,27 @@ namespace Qd {
 					// Regular type
 					const char* typeName = u8t_scanner_token_text(scanner, &n);
 					fieldType = typeName;
+
+					// Check for qualified name: module::StructName
+					char32_t peekChar = u8t_scanner_peek(scanner);
+					if (peekChar == ':') {
+						u8t_scanner_scan(scanner); // Consume first ':'
+						char32_t secondColon = u8t_scanner_peek(scanner);
+						if (secondColon == ':') {
+							u8t_scanner_scan(scanner); // Consume second ':'
+							char32_t nameToken = u8t_scanner_scan(scanner);
+							if (nameToken == U8T_IDENTIFIER) {
+								const char* qualName = u8t_scanner_token_text(scanner, &n);
+								fieldType += "::";
+								fieldType += qualName;
+							} else {
+								errorReporter->reportError(scanner, "Expected struct name after '::'");
+							}
+						}
+						// Note: If second char wasn't ':', we've consumed a single ':'
+						// which is an error in this context, but that will be handled
+						// on the next field parse attempt
+					}
 				}
 
 				AstNodeStructField* field = new AstNodeStructField(fieldNameStr, fieldType);
@@ -3091,6 +3222,20 @@ namespace Qd {
 											if (token == U8T_IDENTIFIER) {
 												const char* paramType = u8t_scanner_token_text(&scanner, &n);
 												std::string paramTypeStr(paramType);
+												// Check for qualified type name (module::Type)
+												char32_t peek1 = u8t_scanner_peek(&scanner);
+												if (peek1 == ':') {
+													u8t_scanner_scan(&scanner); // consume first ':'
+													char32_t peek2 = u8t_scanner_peek(&scanner);
+													if (peek2 == ':') {
+														u8t_scanner_scan(&scanner); // consume second ':'
+														token = u8t_scanner_scan(&scanner);
+														if (token == U8T_IDENTIFIER) {
+															const char* structName = u8t_scanner_token_text(&scanner, &n);
+															paramTypeStr = paramTypeStr + "::" + structName;
+														}
+													}
+												}
 												AstNodeParameter* param =
 														new AstNodeParameter(paramNameStr, paramTypeStr, false);
 												func->inputParameters.push_back(param);
