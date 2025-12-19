@@ -135,9 +135,10 @@ namespace Qd {
 		void collectModuleStructFieldTypes(IAstNode* node, const std::string& moduleName);
 
 		// Helper: Look up struct field types, handling both qualified and unqualified names
-		const std::unordered_map<std::string, StackValueType>* lookupStructFieldTypes(const std::string& typeName) const;
-		void collectModuleImportedFunctions(
-				IAstNode* node, const std::string& moduleName, std::unordered_map<std::string, ImportedFunctionInfo>& imports);
+		const std::unordered_map<std::string, StackValueType>* lookupStructFieldTypes(
+				const std::string& typeName) const;
+		void collectModuleImportedFunctions(IAstNode* node, const std::string& moduleName,
+				std::unordered_map<std::string, ImportedFunctionInfo>& imports);
 
 		// Helper: Analyze function signatures in a module
 		void analyzeModuleFunctionSignatures(IAstNode* node, const std::string& moduleName);

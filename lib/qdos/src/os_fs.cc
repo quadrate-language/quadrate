@@ -272,7 +272,9 @@ char** os_fs_glob(const char* pattern, size_t* count) {
 		if (fs::is_directory(base_dir, ec)) {
 			if (recursive) {
 				for (const auto& entry : fs::recursive_directory_iterator(base_dir, ec)) {
-					if (ec) break;
+					if (ec) {
+						break;
+					}
 					std::string filename = entry.path().filename().string();
 					std::string rel_path = entry.path().string();
 					// Simple pattern match on filename for now
@@ -290,7 +292,9 @@ char** os_fs_glob(const char* pattern, size_t* count) {
 				}
 			} else {
 				for (const auto& entry : fs::directory_iterator(base_dir, ec)) {
-					if (ec) break;
+					if (ec) {
+						break;
+					}
 					std::string filename = entry.path().filename().string();
 					if (glob_match(glob_pattern, filename)) {
 						matches.push_back(entry.path().string());

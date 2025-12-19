@@ -84,10 +84,10 @@ struct NativeConfig {
 
 // Dependency from [dependencies] section
 struct Dependency {
-	std::string name;       // Module name (key in TOML)
-	std::string url;        // Git URL or local path
-	std::string sha256;     // Optional integrity hash
-	bool isPath;            // true if local path, false if git URL
+	std::string name;	// Module name (key in TOML)
+	std::string url;	// Git URL or local path
+	std::string sha256; // Optional integrity hash
+	bool isPath;		// true if local path, false if git URL
 };
 
 // Forward declaration
@@ -165,15 +165,17 @@ std::vector<Dependency> parseDependencies(const std::string& manifestPath) {
 				// Simple form: "name": "url" or "name": "*"
 				dep.url = json_string_value(value);
 				// Check if it's a local path (starts with /, ./, ../, or ~/)
-				dep.isPath = (dep.url.size() > 0 && (dep.url[0] == '/' || dep.url[0] == '.' ||
-				              (dep.url.size() > 1 && dep.url[0] == '~' && dep.url[1] == '/')));
+				dep.isPath =
+						(dep.url.size() > 0 && (dep.url[0] == '/' || dep.url[0] == '.' ||
+													   (dep.url.size() > 1 && dep.url[0] == '~' && dep.url[1] == '/')));
 			} else if (json_is_object(value)) {
 				// Expanded form: { "url": "...", "integrity": "sha256-..." }
 				json_t* url = json_object_get(value, "url");
 				if (url && json_is_string(url)) {
 					dep.url = json_string_value(url);
-					dep.isPath = (dep.url.size() > 0 && (dep.url[0] == '/' || dep.url[0] == '.' ||
-					              (dep.url.size() > 1 && dep.url[0] == '~' && dep.url[1] == '/')));
+					dep.isPath = (dep.url.size() > 0 &&
+								  (dep.url[0] == '/' || dep.url[0] == '.' ||
+										  (dep.url.size() > 1 && dep.url[0] == '~' && dep.url[1] == '/')));
 				}
 				json_t* integrity = json_object_get(value, "integrity");
 				if (integrity && json_is_string(integrity)) {
@@ -619,8 +621,8 @@ int installDependencies() {
 		return 0;
 	}
 
-	std::cout << COLOR_CYAN << "Installing " << deps.size() << " dependenc"
-	          << (deps.size() == 1 ? "y" : "ies") << "..." << COLOR_RESET << "\n\n";
+	std::cout << COLOR_CYAN << "Installing " << deps.size() << " dependenc" << (deps.size() == 1 ? "y" : "ies") << "..."
+			  << COLOR_RESET << "\n\n";
 
 	int failures = 0;
 	std::string modulesDir = getModulesDir();
@@ -725,8 +727,8 @@ int installDependencies() {
 
 	std::cout << "\n";
 	if (failures > 0) {
-		std::cout << COLOR_RED << failures << " dependenc" << (failures == 1 ? "y" : "ies")
-		          << " failed" << COLOR_RESET << "\n";
+		std::cout << COLOR_RED << failures << " dependenc" << (failures == 1 ? "y" : "ies") << " failed" << COLOR_RESET
+				  << "\n";
 		return 1;
 	}
 

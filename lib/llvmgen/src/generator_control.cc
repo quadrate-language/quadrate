@@ -1,0 +1,788 @@
+#include "generator_impl.h"
+
+namespace Qd {
+
+	void LlvmGenerator::Impl::generateIf(AstNodeIfStatement* ifStmt, llvm::Value* ctx) {
+		// Get current function
+		llvm::Function* currentFn = builder->GetInsertBlock()->getParent();
+
+		// Create basic blocks
+		llvm::BasicBlock* underflowBB = llvm::BasicBlock::Create(*context, "if.underflow", currentFn);
+		llvm::BasicBlock* popBB = llvm::BasicBlock::Create(*context, "if.pop", currentFn);
+		llvm::BasicBlock* thenBB = llvm::BasicBlock::Create(*context, "if.then", currentFn);
+		llvm::BasicBlock* elseBB =
+				ifStmt->elseBody() ? llvm::BasicBlock::Create(*context, "if.else", currentFn) : nullptr;
+		llvm::BasicBlock* mergeBB = llvm::BasicBlock::Create(*context, "if.merge", currentFn);
+
+		// Inline pop for condition - direct stack access for performance
+		// ctx is a pointer to a struct with first field being qd_stack* st
+		llvm::Type* contextTy = llvm::StructType::get(*context, {llvm::PointerType::get(*context, 0)}, false);
+		llvm::Value* stPtr = builder->CreateStructGEP(contextTy, ctx, 0, "st_ptr");
+		llvm::Value* st = builder->CreateLoad(llvm::PointerType::get(*context, 0), stPtr, "st");
+
+		// Stack type: { data*, capacity, size }
+		llvm::Type* stackTy = llvm::StructType::get(
+				*context, {llvm::PointerType::get(*context, 0), builder->getInt64Ty(), builder->getInt64Ty()}, false);
+
+		llvm::Value* sizePtr = builder->CreateStructGEP(stackTy, st, 2, "size_ptr");
+		llvm::Value* size = builder->CreateLoad(builder->getInt64Ty(), sizePtr, "size");
+
+		// Check for stack underflow before popping
+		llvm::Value* isEmpty = builder->CreateICmpEQ(size, builder->getInt64(0), "is_empty");
+		builder->CreateCondBr(isEmpty, underflowBB, popBB);
+
+		// Generate underflow error block
+		builder->SetInsertPoint(underflowBB);
+		// Call fprintf(stderr, ...) and abort
+		auto fprintfFn = module->getOrInsertFunction("fprintf",
+				llvm::FunctionType::get(builder->getInt32Ty(),
+						{llvm::PointerType::getUnqual(*context), llvm::PointerType::getUnqual(*context)}, true));
+		auto stderrGlobal = module->getOrInsertGlobal("stderr", llvm::PointerType::getUnqual(*context));
+		auto stderrVal = builder->CreateLoad(llvm::PointerType::getUnqual(*context), stderrGlobal, "stderr");
+		auto errorMsg =
+				builder->CreateGlobalString("Fatal error in if: Stack underflow (requires 1 value for condition)\n");
+		builder->CreateCall(fprintfFn, {stderrVal, errorMsg});
+		// Call qd_print_stack_trace(ctx)
+		auto printStackTraceFnTy =
+				llvm::FunctionType::get(builder->getVoidTy(), {llvm::PointerType::getUnqual(*context)}, false);
+		auto printStackTraceFn = module->getOrInsertFunction("qd_print_stack_trace", printStackTraceFnTy);
+		builder->CreateCall(printStackTraceFn, {ctx});
+		auto abortFn = module->getOrInsertFunction("abort", llvm::FunctionType::get(builder->getVoidTy(), false));
+		builder->CreateCall(abortFn, {});
+		builder->CreateUnreachable();
+
+		// Continue with normal pop in popBB
+		builder->SetInsertPoint(popBB);
+
+		llvm::Value* dataPtr = builder->CreateStructGEP(stackTy, st, 0, "data_ptr");
+		llvm::Value* data = builder->CreateLoad(llvm::PointerType::get(*context, 0), dataPtr, "data");
+
+		// Access top element value directly: data[size-1].value
+		llvm::Value* topIdx = builder->CreateSub(size, builder->getInt64(1), "top_idx");
+		llvm::Value* topElemPtr = builder->CreateGEP(stackElementTy, data, topIdx, "top_elem");
+		llvm::Value* valuePtr = builder->CreateStructGEP(stackElementTy, topElemPtr, 0, "value_ptr");
+		llvm::Value* value64 = builder->CreateLoad(builder->getInt64Ty(), valuePtr, "value64");
+
+		// Decrement size (inline pop)
+		llvm::Value* newSize = builder->CreateSub(size, builder->getInt64(1), "new_size");
+		builder->CreateStore(newSize, sizePtr);
+
+		// Convert to condition value
+		auto condValue = builder->CreateTrunc(value64, builder->getInt32Ty(), "cond");
+
+		// Check if condition is non-zero
+		auto isTrue = builder->CreateICmpNE(condValue, builder->getInt32(0), "is_true");
+
+		// Branch based on condition
+		if (elseBB) {
+			builder->CreateCondBr(isTrue, thenBB, elseBB);
+		} else {
+			builder->CreateCondBr(isTrue, thenBB, mergeBB);
+		}
+
+		// Generate then block
+		builder->SetInsertPoint(thenBB);
+		if (ifStmt->thenBody()) {
+			generateNode(ifStmt->thenBody(), ctx);
+		}
+		// Only add branch if block doesn't already have a terminator
+		llvm::BasicBlock* thenBlock = builder->GetInsertBlock();
+		if (thenBlock) {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wnull-dereference"
+			if (!thenBlock->getTerminator()) {
+#pragma GCC diagnostic pop
+				builder->CreateBr(mergeBB);
+			}
+		}
+
+		// Generate else block if present
+		if (elseBB) {
+			builder->SetInsertPoint(elseBB);
+			if (ifStmt->elseBody()) {
+				generateNode(ifStmt->elseBody(), ctx);
+			}
+			// Only add branch if block doesn't already have a terminator
+			llvm::BasicBlock* elseBlock = builder->GetInsertBlock();
+			if (elseBlock) {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wnull-dereference"
+				if (!elseBlock->getTerminator()) {
+#pragma GCC diagnostic pop
+					builder->CreateBr(mergeBB);
+				}
+			}
+		}
+
+		// Continue in merge block
+		builder->SetInsertPoint(mergeBB);
+	}
+
+	void LlvmGenerator::Impl::generateFor(AstNodeForStatement* forStmt, llvm::Value* ctx) {
+		// Get current function
+		llvm::Function* currentFn = builder->GetInsertBlock()->getParent();
+
+		// Pop start, end, step from stack (in reverse order: step, end, start)
+		auto stackFieldPtr =
+				builder->CreateStructGEP(llvm::StructType::get(*context,
+												 {
+														 llvm::PointerType::getUnqual(*context), // qd_stack* st
+														 builder->getInt64Ty(),					 // int64_t error_code
+														 llvm::PointerType::getUnqual(*context), // char* error_msg
+														 builder->getInt32Ty(),					 // int argc
+														 llvm::PointerType::getUnqual(*context), // char** argv
+														 llvm::PointerType::getUnqual(*context)	 // char* program_name
+												 }),
+						ctx, 0, "st_ptr");
+		auto stack = builder->CreateLoad(llvm::PointerType::getUnqual(*context), stackFieldPtr, "st");
+
+		// Create allocas in entry block to avoid stack growth in nested loops
+		llvm::BasicBlock& entryBlock = currentFn->getEntryBlock();
+		llvm::IRBuilder<> entryBuilder(&entryBlock, entryBlock.getFirstInsertionPt());
+		auto stepElemPtr = entryBuilder.CreateAlloca(stackElementTy, nullptr, "step_elem");
+		auto endElemPtr = entryBuilder.CreateAlloca(stackElementTy, nullptr, "end_elem");
+		auto startElemPtr = entryBuilder.CreateAlloca(stackElementTy, nullptr, "start_elem");
+
+		builder->CreateCall(stackPopFn, {stack, stepElemPtr});
+		builder->CreateCall(stackPopFn, {stack, endElemPtr});
+		builder->CreateCall(stackPopFn, {stack, startElemPtr});
+
+		// Extract values (stackElementTy layout: { i64 value, i32 type, i1 is_error_tainted })
+		// The i64 field is a union that holds either int or float bits
+		// Type field: 0=INT, 1=FLOAT, 2=PTR, 3=STR
+
+		// Check the type of start element to determine if we're using int or float loop
+		auto startTypePtr = builder->CreateStructGEP(stackElementTy, startElemPtr, 1, "start_type_ptr");
+		auto startType = builder->CreateLoad(builder->getInt32Ty(), startTypePtr, "start_type");
+		auto isFloatLoop = builder->CreateICmpEQ(startType, builder->getInt32(1), "is_float_loop");
+
+		// Extract start value
+		auto startValuePtr = builder->CreateStructGEP(stackElementTy, startElemPtr, 0, "start_value_ptr");
+		auto startBits = builder->CreateLoad(builder->getInt64Ty(), startValuePtr, "start_bits");
+
+		// Convert start based on type
+		auto startAsFloat = builder->CreateBitCast(startBits, builder->getDoubleTy(), "start_as_float");
+		auto startFloatToInt = builder->CreateFPToSI(startAsFloat, builder->getInt64Ty(), "start_float_to_int");
+		auto startValue = builder->CreateSelect(isFloatLoop, startFloatToInt, startBits, "start");
+
+		// Extract end value
+		auto endValuePtr = builder->CreateStructGEP(stackElementTy, endElemPtr, 0, "end_value_ptr");
+		auto endBits = builder->CreateLoad(builder->getInt64Ty(), endValuePtr, "end_bits");
+
+		auto endAsFloat = builder->CreateBitCast(endBits, builder->getDoubleTy(), "end_as_float");
+		auto endFloatToInt = builder->CreateFPToSI(endAsFloat, builder->getInt64Ty(), "end_float_to_int");
+		auto endValue = builder->CreateSelect(isFloatLoop, endFloatToInt, endBits, "end");
+
+		// Extract step value
+		auto stepValuePtr = builder->CreateStructGEP(stackElementTy, stepElemPtr, 0, "step_value_ptr");
+		auto stepBits = builder->CreateLoad(builder->getInt64Ty(), stepValuePtr, "step_bits");
+
+		auto stepAsFloat = builder->CreateBitCast(stepBits, builder->getDoubleTy(), "step_as_float");
+		auto stepFloatToInt = builder->CreateFPToSI(stepAsFloat, builder->getInt64Ty(), "step_float_to_int");
+		auto stepValue = builder->CreateSelect(isFloatLoop, stepFloatToInt, stepBits, "step");
+
+		// Create basic blocks
+		llvm::BasicBlock* loopHeaderBB = llvm::BasicBlock::Create(*context, "for.header", currentFn);
+		llvm::BasicBlock* loopBodyBB = llvm::BasicBlock::Create(*context, "for.body", currentFn);
+		llvm::BasicBlock* loopIncBB = llvm::BasicBlock::Create(*context, "for.inc", currentFn);
+		llvm::BasicBlock* loopExitBB = llvm::BasicBlock::Create(*context, "for.exit", currentFn);
+
+		// Remember the predecessor block for PHI node
+		llvm::BasicBlock* preBB = builder->GetInsertBlock();
+
+		// Jump to loop header
+		builder->CreateBr(loopHeaderBB);
+
+		// Loop header: check condition
+		builder->SetInsertPoint(loopHeaderBB);
+		llvm::PHINode* iterVar = builder->CreatePHI(builder->getInt64Ty(), 2, "i");
+		iterVar->addIncoming(startValue, preBB);
+
+		// Check if step is negative to determine comparison direction
+		auto stepIsNegative = builder->CreateICmpSLT(stepValue, builder->getInt64(0), "step_neg");
+		auto condPositive = builder->CreateICmpSLT(iterVar, endValue, "cmp_pos");
+		auto condNegative = builder->CreateICmpSGT(iterVar, endValue, "cmp_neg");
+		auto cond = builder->CreateSelect(stepIsNegative, condNegative, condPositive, "cmp");
+
+		// Add branch weights: loop body is likely (1000), exit is unlikely (1)
+		llvm::MDBuilder mdBuilder(*context);
+		llvm::MDNode* branchWeights = mdBuilder.createBranchWeights(1000, 1);
+		auto* br = builder->CreateCondBr(cond, loopBodyBB, loopExitBB);
+		br->setMetadata(llvm::LLVMContext::MD_prof, branchWeights);
+
+		// Loop body
+		builder->SetInsertPoint(loopBodyBB);
+
+		// Push loop context for break/continue
+		loopStack.push_back({loopExitBB, loopIncBB});
+
+		// Push defer scope for this loop - defers will be generated at end of iteration
+		pushDeferScope();
+
+		// Register the iterator variable with its name
+		const std::string& iterName = forStmt->iteratorName();
+		llvm::Value* prevIterVar = nullptr;
+		auto prevIt = iteratorVars.find(iterName);
+		if (prevIt != iteratorVars.end()) {
+			prevIterVar = prevIt->second; // Save previous value for restoration
+		}
+		iteratorVars[iterName] = iterVar;
+
+		if (forStmt->body()) {
+			generateNode(forStmt->body(), ctx);
+		}
+
+		// Restore previous iterator value (for nested loops with same name)
+		if (prevIterVar) {
+			iteratorVars[iterName] = prevIterVar;
+		} else {
+			iteratorVars.erase(iterName);
+		}
+
+		// Generate defer execution code at end of loop body
+		// This code will execute at runtime for each iteration
+		if (!deferScopeStack.empty() && !deferScopeStack.back().empty()) {
+			auto& currentScope = deferScopeStack.back();
+			// Generate IR to execute defers in REVERSE order (LIFO)
+			for (auto it = currentScope.rbegin(); it != currentScope.rend(); ++it) {
+				AstNodeDefer* deferNode = *it;
+				// Generate defer body inline
+				for (size_t i = 0; i < deferNode->childCount(); i++) {
+					IAstNode* child = deferNode->child(i);
+					if (child && child->type() == IAstNode::Type::BLOCK) {
+						for (size_t j = 0; j < child->childCount(); j++) {
+							generateNode(child->child(j), ctx);
+						}
+					} else {
+						generateNode(child, ctx);
+					}
+				}
+			}
+		}
+
+		// Pop defer scope (compilation-time cleanup)
+		popDeferScope();
+
+		// Only add branch if block doesn't already have a terminator
+		llvm::BasicBlock* loopBodyBlock = builder->GetInsertBlock();
+		if (loopBodyBlock) {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wnull-dereference"
+			if (!loopBodyBlock->getTerminator()) {
+#pragma GCC diagnostic pop
+				builder->CreateBr(loopIncBB);
+			}
+		}
+
+		loopStack.pop_back();
+
+		// Loop increment (nsw enables loop optimizations like strength reduction)
+		builder->SetInsertPoint(loopIncBB);
+		auto nextIter = builder->CreateNSWAdd(iterVar, stepValue, "next_i");
+		iterVar->addIncoming(nextIter, loopIncBB);
+		builder->CreateBr(loopHeaderBB);
+
+		// Continue after loop
+		builder->SetInsertPoint(loopExitBB);
+	}
+
+	void LlvmGenerator::Impl::generateWhile(AstNodeWhileStatement* whileStmt, llvm::Value* ctx) {
+		// Get current function
+		llvm::Function* currentFn = builder->GetInsertBlock()->getParent();
+
+		// Create basic blocks
+		llvm::BasicBlock* whileCondBB = llvm::BasicBlock::Create(*context, "while.cond", currentFn);
+		llvm::BasicBlock* underflowBB = llvm::BasicBlock::Create(*context, "while.underflow", currentFn);
+		llvm::BasicBlock* popBB = llvm::BasicBlock::Create(*context, "while.pop", currentFn);
+		llvm::BasicBlock* whileBodyBB = llvm::BasicBlock::Create(*context, "while.body", currentFn);
+		llvm::BasicBlock* whileExitBB = llvm::BasicBlock::Create(*context, "while.exit", currentFn);
+
+		// Jump to condition check
+		builder->CreateBr(whileCondBB);
+
+		// Condition block - pop value and check
+		builder->SetInsertPoint(whileCondBB);
+
+		// Inline pop for condition - direct stack access for performance
+		// ctx is a pointer to a struct with first field being qd_stack* st
+		llvm::Type* contextTy = llvm::StructType::get(*context, {llvm::PointerType::get(*context, 0)}, false);
+		llvm::Value* stPtr = builder->CreateStructGEP(contextTy, ctx, 0, "st_ptr");
+		llvm::Value* st = builder->CreateLoad(llvm::PointerType::get(*context, 0), stPtr, "st");
+
+		// Stack type: { data*, capacity, size }
+		llvm::Type* stackTy = llvm::StructType::get(
+				*context, {llvm::PointerType::get(*context, 0), builder->getInt64Ty(), builder->getInt64Ty()}, false);
+
+		llvm::Value* sizePtr = builder->CreateStructGEP(stackTy, st, 2, "size_ptr");
+		llvm::Value* size = builder->CreateLoad(builder->getInt64Ty(), sizePtr, "size");
+
+		// Check for stack underflow before popping
+		llvm::Value* isEmpty = builder->CreateICmpEQ(size, builder->getInt64(0), "is_empty");
+		builder->CreateCondBr(isEmpty, underflowBB, popBB);
+
+		// Generate underflow error block
+		builder->SetInsertPoint(underflowBB);
+		// Call fprintf(stderr, ...) and abort
+		auto fprintfFn = module->getOrInsertFunction("fprintf",
+				llvm::FunctionType::get(builder->getInt32Ty(),
+						{llvm::PointerType::getUnqual(*context), llvm::PointerType::getUnqual(*context)}, true));
+		auto stderrGlobal = module->getOrInsertGlobal("stderr", llvm::PointerType::getUnqual(*context));
+		auto stderrVal = builder->CreateLoad(llvm::PointerType::getUnqual(*context), stderrGlobal, "stderr");
+		auto errorMsg =
+				builder->CreateGlobalString("Fatal error in while: Stack underflow (requires 1 value for condition)\n");
+		builder->CreateCall(fprintfFn, {stderrVal, errorMsg});
+		// Call qd_print_stack_trace(ctx)
+		auto printStackTraceFnTy =
+				llvm::FunctionType::get(builder->getVoidTy(), {llvm::PointerType::getUnqual(*context)}, false);
+		auto printStackTraceFn = module->getOrInsertFunction("qd_print_stack_trace", printStackTraceFnTy);
+		builder->CreateCall(printStackTraceFn, {ctx});
+		auto abortFn = module->getOrInsertFunction("abort", llvm::FunctionType::get(builder->getVoidTy(), false));
+		builder->CreateCall(abortFn, {});
+		builder->CreateUnreachable();
+
+		// Continue with normal pop in popBB
+		builder->SetInsertPoint(popBB);
+
+		llvm::Value* dataPtr = builder->CreateStructGEP(stackTy, st, 0, "data_ptr");
+		llvm::Value* data = builder->CreateLoad(llvm::PointerType::get(*context, 0), dataPtr, "data");
+
+		// Access top element value directly: data[size-1].value
+		llvm::Value* topIdx = builder->CreateSub(size, builder->getInt64(1), "top_idx");
+		llvm::Value* topElemPtr = builder->CreateGEP(stackElementTy, data, topIdx, "top_elem");
+		llvm::Value* valuePtr = builder->CreateStructGEP(stackElementTy, topElemPtr, 0, "value_ptr");
+		llvm::Value* value64 = builder->CreateLoad(builder->getInt64Ty(), valuePtr, "value64");
+
+		// Decrement size (inline pop)
+		llvm::Value* newSize = builder->CreateSub(size, builder->getInt64(1), "new_size");
+		builder->CreateStore(newSize, sizePtr);
+
+		// Convert to condition value
+		auto condValue = builder->CreateTrunc(value64, builder->getInt32Ty(), "cond");
+
+		// Check if condition is non-zero
+		auto isTrue = builder->CreateICmpNE(condValue, builder->getInt32(0), "is_true");
+
+		// Branch based on condition with weights (loop body is likely)
+		llvm::MDBuilder mdBuilder(*context);
+		llvm::MDNode* branchWeights = mdBuilder.createBranchWeights(1000, 1);
+		auto* br = builder->CreateCondBr(isTrue, whileBodyBB, whileExitBB);
+		br->setMetadata(llvm::LLVMContext::MD_prof, branchWeights);
+
+		// While body
+		builder->SetInsertPoint(whileBodyBB);
+
+		// Push loop context for break/continue
+		// break jumps to whileExitBB, continue jumps back to whileCondBB
+		loopStack.push_back({whileExitBB, whileCondBB});
+
+		// Push defer scope for this loop iteration
+		pushDeferScope();
+
+		if (whileStmt->body()) {
+			generateNode(whileStmt->body(), ctx);
+		}
+
+		// Generate defer execution code at end of loop body
+		if (!deferScopeStack.empty() && !deferScopeStack.back().empty()) {
+			auto& currentScope = deferScopeStack.back();
+			for (auto it = currentScope.rbegin(); it != currentScope.rend(); ++it) {
+				AstNodeDefer* deferNode = *it;
+				for (size_t i = 0; i < deferNode->childCount(); i++) {
+					IAstNode* child = deferNode->child(i);
+					if (child && child->type() == IAstNode::Type::BLOCK) {
+						for (size_t j = 0; j < child->childCount(); j++) {
+							generateNode(child->child(j), ctx);
+						}
+					} else {
+						generateNode(child, ctx);
+					}
+				}
+			}
+		}
+
+		// Pop defer scope (compilation-time cleanup)
+		popDeferScope();
+
+		// Only add branch if block doesn't already have a terminator
+		llvm::BasicBlock* whileBlock = builder->GetInsertBlock();
+		if (whileBlock) {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wnull-dereference"
+			if (!whileBlock->getTerminator()) {
+#pragma GCC diagnostic pop
+				builder->CreateBr(whileCondBB); // Loop back to condition
+			}
+		}
+
+		loopStack.pop_back();
+
+		// Continue after loop (reached when condition is false or via break)
+		builder->SetInsertPoint(whileExitBB);
+	}
+
+	void LlvmGenerator::Impl::generateLoop(AstNodeLoopStatement* loopStmt, llvm::Value* ctx) {
+		// Get current function
+		llvm::Function* currentFn = builder->GetInsertBlock()->getParent();
+
+		// Create basic blocks
+		llvm::BasicBlock* loopBodyBB = llvm::BasicBlock::Create(*context, "loop.body", currentFn);
+		llvm::BasicBlock* loopExitBB = llvm::BasicBlock::Create(*context, "loop.exit", currentFn);
+
+		// Jump to loop body
+		builder->CreateBr(loopBodyBB);
+
+		// Loop body
+		builder->SetInsertPoint(loopBodyBB);
+
+		// Push loop context for break/continue
+		loopStack.push_back({loopExitBB, loopBodyBB});
+
+		// Push defer scope for this loop iteration
+		pushDeferScope();
+
+		if (loopStmt->body()) {
+			generateNode(loopStmt->body(), ctx);
+		}
+
+		// Generate defer execution code at end of loop body
+		if (!deferScopeStack.empty() && !deferScopeStack.back().empty()) {
+			auto& currentScope = deferScopeStack.back();
+			for (auto it = currentScope.rbegin(); it != currentScope.rend(); ++it) {
+				AstNodeDefer* deferNode = *it;
+				for (size_t i = 0; i < deferNode->childCount(); i++) {
+					IAstNode* child = deferNode->child(i);
+					if (child && child->type() == IAstNode::Type::BLOCK) {
+						for (size_t j = 0; j < child->childCount(); j++) {
+							generateNode(child->child(j), ctx);
+						}
+					} else {
+						generateNode(child, ctx);
+					}
+				}
+			}
+		}
+
+		// Pop defer scope (compilation-time cleanup)
+		popDeferScope();
+
+		// Only add branch if block doesn't already have a terminator
+		llvm::BasicBlock* loopBlock = builder->GetInsertBlock();
+		if (loopBlock) {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wnull-dereference"
+			if (!loopBlock->getTerminator()) {
+#pragma GCC diagnostic pop
+				builder->CreateBr(loopBodyBB); // Loop forever
+			}
+		}
+
+		loopStack.pop_back();
+
+		// Continue after loop (only reached via break)
+		builder->SetInsertPoint(loopExitBB);
+	}
+
+	void LlvmGenerator::Impl::generateCtxBlock(AstNodeCtx* ctxNode, llvm::Value* ctx) {
+		// Clone the parent context
+		auto clonedCtx = builder->CreateCall(cloneContextFn, {ctx}, "cloned_ctx");
+
+		// Execute the block with the cloned context
+		for (size_t i = 0; i < ctxNode->childCount(); i++) {
+			generateNode(ctxNode->child(i), clonedCtx);
+		}
+
+		// Get the stack from cloned context
+		auto stackFieldPtr =
+				builder->CreateStructGEP(llvm::StructType::get(*context,
+												 {
+														 llvm::PointerType::getUnqual(*context), // qd_stack* st
+														 builder->getInt64Ty(),					 // int64_t error_code
+														 llvm::PointerType::getUnqual(*context), // char* error_msg
+														 builder->getInt32Ty(),					 // int argc
+														 llvm::PointerType::getUnqual(*context), // char** argv
+														 llvm::PointerType::getUnqual(*context)	 // char* program_name
+												 }),
+						clonedCtx, 0, "cloned_st_ptr");
+		auto clonedStack = builder->CreateLoad(llvm::PointerType::getUnqual(*context), stackFieldPtr, "cloned_st");
+
+		// Pop exactly one value from the cloned stack
+		auto resultElemPtr = builder->CreateAlloca(stackElementTy, nullptr, "ctx_result_elem");
+		builder->CreateCall(stackPopFn, {clonedStack, resultElemPtr});
+
+		// Get the result value and type
+		auto resultValuePtr = builder->CreateStructGEP(stackElementTy, resultElemPtr, 0, "result_value_ptr");
+		auto resultValue = builder->CreateLoad(builder->getInt64Ty(), resultValuePtr, "result_value");
+		auto resultTypePtr = builder->CreateStructGEP(stackElementTy, resultElemPtr, 1, "result_type_ptr");
+		auto resultType = builder->CreateLoad(builder->getInt32Ty(), resultTypePtr, "result_type");
+
+		// Push the result to the parent context based on its type BEFORE freeing cloned context
+		// This is critical for strings: qd_push_s will duplicate the string, so we need
+		// the original string to still be valid when we call it
+		// Type field: 0=INT, 1=FLOAT, 2=PTR, 3=STR
+		llvm::Function* currentFn = builder->GetInsertBlock()->getParent();
+		llvm::BasicBlock* pushIntBB = llvm::BasicBlock::Create(*context, "ctx.push_int", currentFn);
+		llvm::BasicBlock* pushFloatBB = llvm::BasicBlock::Create(*context, "ctx.push_float", currentFn);
+		llvm::BasicBlock* pushPtrBB = llvm::BasicBlock::Create(*context, "ctx.push_ptr", currentFn);
+		llvm::BasicBlock* pushStrBB = llvm::BasicBlock::Create(*context, "ctx.push_str", currentFn);
+		llvm::BasicBlock* pushDoneBB = llvm::BasicBlock::Create(*context, "ctx.push_done", currentFn);
+
+		// Switch on type
+		auto switchInst = builder->CreateSwitch(resultType, pushDoneBB, 4);
+		switchInst->addCase(builder->getInt32(0), pushIntBB);	// INT
+		switchInst->addCase(builder->getInt32(1), pushFloatBB); // FLOAT
+		switchInst->addCase(builder->getInt32(2), pushPtrBB);	// PTR
+		switchInst->addCase(builder->getInt32(3), pushStrBB);	// STR
+
+		// Push INT
+		builder->SetInsertPoint(pushIntBB);
+		builder->CreateCall(pushIntFn, {ctx, resultValue});
+		builder->CreateBr(pushDoneBB);
+
+		// Push FLOAT
+		builder->SetInsertPoint(pushFloatBB);
+		auto floatValue = builder->CreateBitCast(resultValue, builder->getDoubleTy(), "float_value");
+		builder->CreateCall(pushFloatFn, {ctx, floatValue});
+		builder->CreateBr(pushDoneBB);
+
+		// Push PTR
+		builder->SetInsertPoint(pushPtrBB);
+		auto ptrValue = builder->CreateIntToPtr(resultValue, llvm::PointerType::getUnqual(*context), "ptr_value");
+		builder->CreateCall(pushPtrFn, {ctx, ptrValue});
+		builder->CreateBr(pushDoneBB);
+
+		// Push STR
+		builder->SetInsertPoint(pushStrBB);
+		auto strPtr = builder->CreateIntToPtr(resultValue, llvm::PointerType::getUnqual(*context), "str_ptr");
+		// Call qd_string_data to get const char* from qd_string_t*
+		if (!this->qdStringDataFn) {
+			auto qdStringDataFnTy = llvm::FunctionType::get(
+					llvm::PointerType::getUnqual(*context), {llvm::PointerType::getUnqual(*context)}, false);
+			this->qdStringDataFn = llvm::Function::Create(
+					qdStringDataFnTy, llvm::Function::ExternalLinkage, "qd_string_data", *module);
+		}
+		auto strData = builder->CreateCall(this->qdStringDataFn, {strPtr}, "str_data");
+		builder->CreateCall(pushStrFn, {ctx, strData});
+		// Release the string reference from cloned context (qd_push_s has created a new copy)
+		if (!this->qdStringReleaseFn) {
+			auto qdStringReleaseFnTy =
+					llvm::FunctionType::get(builder->getVoidTy(), {llvm::PointerType::getUnqual(*context)}, false);
+			this->qdStringReleaseFn = llvm::Function::Create(
+					qdStringReleaseFnTy, llvm::Function::ExternalLinkage, "qd_string_release", *module);
+		}
+		builder->CreateCall(this->qdStringReleaseFn, {strPtr});
+		builder->CreateBr(pushDoneBB);
+
+		// Free the cloned context AFTER pushing (qd_push_s has now duplicated the string)
+		builder->SetInsertPoint(pushDoneBB);
+		builder->CreateCall(freeContextFn, {clonedCtx});
+
+		// Continue after push
+		builder->SetInsertPoint(pushDoneBB);
+	}
+
+	void LlvmGenerator::Impl::generateNode(IAstNode* node, llvm::Value* ctx) {
+		if (!node) {
+			return;
+		}
+
+		// Set debug location for this node
+		if (debugInfoEnabled && debugBuilder && !debugScopeStack.empty()) {
+			unsigned line = static_cast<unsigned>(node->line());
+			unsigned column = static_cast<unsigned>(node->column());
+			if (line > 0) {
+				auto debugLoc = llvm::DILocation::get(*context, line, column, debugScopeStack.back());
+				builder->SetCurrentDebugLocation(debugLoc);
+			}
+		}
+
+		auto nodeType = node->type();
+
+		switch (nodeType) {
+		case IAstNode::Type::LITERAL:
+			generateLiteral(static_cast<AstNodeLiteral*>(node), ctx);
+			break;
+		case IAstNode::Type::INSTRUCTION:
+			generateInstruction(static_cast<AstNodeInstruction*>(node), ctx);
+			break;
+		case IAstNode::Type::LOCAL:
+			generateLocal(static_cast<AstNodeLocal*>(node), ctx);
+			break;
+		case IAstNode::Type::IF_STATEMENT:
+			generateIf(static_cast<AstNodeIfStatement*>(node), ctx);
+			break;
+		case IAstNode::Type::FOR_STATEMENT:
+			generateFor(static_cast<AstNodeForStatement*>(node), ctx);
+			break;
+		case IAstNode::Type::WHILE_STATEMENT:
+			generateWhile(static_cast<AstNodeWhileStatement*>(node), ctx);
+			break;
+		case IAstNode::Type::LOOP_STATEMENT:
+			generateLoop(static_cast<AstNodeLoopStatement*>(node), ctx);
+			break;
+		case IAstNode::Type::SWITCH_STATEMENT:
+			generateSwitchStatement(static_cast<AstNodeSwitchStatement*>(node), ctx);
+			break;
+		case IAstNode::Type::BREAK_STATEMENT:
+			// Execute defer scope before breaking from current loop
+			if (!loopStack.empty()) {
+				// Generate IR to execute defers before breaking
+				if (!deferScopeStack.empty() && !deferScopeStack.back().empty()) {
+					auto& currentScope = deferScopeStack.back();
+					for (auto it = currentScope.rbegin(); it != currentScope.rend(); ++it) {
+						AstNodeDefer* deferNode = *it;
+						for (size_t i = 0; i < deferNode->childCount(); i++) {
+							IAstNode* child = deferNode->child(i);
+							if (child && child->type() == IAstNode::Type::BLOCK) {
+								for (size_t j = 0; j < child->childCount(); j++) {
+									generateNode(child->child(j), ctx);
+								}
+							} else {
+								generateNode(child, ctx);
+							}
+						}
+					}
+				}
+				builder->CreateBr(loopStack.back().breakTarget);
+			}
+			break;
+		case IAstNode::Type::CONTINUE_STATEMENT:
+			// Execute defer scope before continuing to next iteration
+			if (!loopStack.empty()) {
+				// Generate IR to execute defers before continuing
+				if (!deferScopeStack.empty() && !deferScopeStack.back().empty()) {
+					auto& currentScope = deferScopeStack.back();
+					for (auto it = currentScope.rbegin(); it != currentScope.rend(); ++it) {
+						AstNodeDefer* deferNode = *it;
+						for (size_t i = 0; i < deferNode->childCount(); i++) {
+							IAstNode* child = deferNode->child(i);
+							if (child && child->type() == IAstNode::Type::BLOCK) {
+								for (size_t j = 0; j < child->childCount(); j++) {
+									generateNode(child->child(j), ctx);
+								}
+							} else {
+								generateNode(child, ctx);
+							}
+						}
+					}
+				}
+				builder->CreateBr(loopStack.back().continueTarget);
+			}
+			break;
+		case IAstNode::Type::RETURN_STATEMENT:
+			// Return from current function
+			if (currentFunctionReturnBlock) {
+				builder->CreateBr(currentFunctionReturnBlock);
+			}
+			break;
+		case IAstNode::Type::DEFER_STATEMENT:
+			// Collect defer statement for later execution at scope end
+			if (deferScopeStack.empty()) {
+				pushDeferScope();
+			}
+			deferScopeStack.back().push_back(static_cast<AstNodeDefer*>(node));
+			// Don't generate code now - will be generated at scope end
+			break;
+		case IAstNode::Type::CTX_STATEMENT:
+			generateCtxBlock(static_cast<AstNodeCtx*>(node), ctx);
+			break;
+		case IAstNode::Type::IDENTIFIER:
+			generateIdentifier(static_cast<AstNodeIdentifier*>(node), ctx);
+			break;
+		case IAstNode::Type::FUNCTION_POINTER_REFERENCE:
+			generateFunctionPointer(static_cast<AstNodeFunctionPointerReference*>(node), ctx);
+			break;
+		case IAstNode::Type::ANONYMOUS_FUNCTION:
+			generateAnonymousFunction(static_cast<AstNodeAnonymousFunction*>(node), ctx);
+			break;
+		case IAstNode::Type::BLOCK:
+			// For blocks, just recursively generate all children
+			for (size_t i = 0; i < node->childCount(); i++) {
+				generateNode(node->child(i), ctx);
+				// Stop if we've added a terminator (return, break, continue)
+				llvm::BasicBlock* currentBlock = builder->GetInsertBlock();
+				if (currentBlock) {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wnull-dereference"
+					if (currentBlock->getTerminator()) {
+#pragma GCC diagnostic pop
+						break;
+					}
+				}
+			}
+			break;
+		case IAstNode::Type::FUNCTION_DECLARATION:
+			// Skip - functions are handled at the top level
+			break;
+		case IAstNode::Type::TEST_DECLARATION:
+			// Skip - tests are handled at the top level
+			break;
+		case IAstNode::Type::SCOPED_IDENTIFIER:
+			generateScopedIdentifier(static_cast<AstNodeScopedIdentifier*>(node), ctx);
+			break;
+		case IAstNode::Type::USE_STATEMENT:
+			// Use statements are handled during program generation, not during execution
+			break;
+		case IAstNode::Type::FIELD_ACCESS:
+			generateFieldAccess(static_cast<AstNodeFieldAccess*>(node), ctx);
+			break;
+		case IAstNode::Type::FIELD_SET:
+			generateFieldSet(static_cast<AstNodeFieldSet*>(node), ctx);
+			break;
+		case IAstNode::Type::STRUCT_DECLARATION:
+			// Struct declarations are processed during program generation, not during execution
+			break;
+		case IAstNode::Type::STRUCT_CONSTRUCTION: {
+			// Struct construction with named fields: StructName { field1: expr1 field2: expr2 }
+			AstNodeStructConstruction* construct = static_cast<AstNodeStructConstruction*>(node);
+			const std::string& structName = construct->structName();
+			const auto& fieldInits = construct->fieldInits();
+
+			// Get struct layout to know field order (use helper to handle qualified names)
+			const StructLayout* layoutPtr = findStructDefinition(structName);
+			if (layoutPtr == nullptr) {
+				std::cerr << "Error: Unknown struct type in construction: " << structName << std::endl;
+				break;
+			}
+
+			const StructLayout& layout = *layoutPtr;
+
+			// Build a map from field name to initializer
+			std::unordered_map<std::string, const StructFieldInit*> initMap;
+			for (const auto& init : fieldInits) {
+				initMap[init.fieldName] = &init;
+			}
+
+			// Generate code for field initializers in struct definition order
+			// (generateStructConstruction pops them in reverse order)
+			for (const auto& field : layout.fields) {
+				auto initIt = initMap.find(field.name);
+				if (initIt != initMap.end()) {
+					// Generate code for the field initializer expression
+					for (IAstNode* valueNode : initIt->second->valueNodes) {
+						generateNode(valueNode, ctx);
+					}
+				} else {
+					// Missing field - should have been caught by semantic validator
+					std::cerr << "Error: Missing field initializer for '" << field.name << "' in struct " << structName
+							  << std::endl;
+				}
+			}
+
+			// Now construct the struct (pops values from stack)
+			// Use the layout name (which is qualified for module structs)
+			generateStructConstruction(layout.name, ctx);
+			break;
+		}
+		case IAstNode::Type::ARRAY_LITERAL:
+			generateArrayLiteral(static_cast<AstNodeArrayLiteral*>(node), ctx);
+			break;
+		case IAstNode::Type::ARRAY_INDEX:
+			// Array indexing is handled via 'nth' instruction
+			break;
+		default:
+			// Ignore other node types for now
+			break;
+		}
+	}
+
+} // namespace Qd

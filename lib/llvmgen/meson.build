@@ -18,6 +18,11 @@ if llvm_dep.found()
 
 	llvmgen_sources = files(
 		'src/generator.cc',
+		'src/generator_inline.cc',
+		'src/generator_typeaware.cc',
+		'src/generator_nodes.cc',
+		'src/generator_control.cc',
+		'src/generator_structs.cc',
 	)
 
 	llvmgen_inc = include_directories('include')

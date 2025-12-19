@@ -5,6 +5,9 @@ qc_sources = files(
 		'src/error_reporter.cc',
 		'src/source_formatter.cc',
 		'src/semantic_validator.cc',
+		'src/semantic_validator_modules.cc',
+		'src/semantic_validator_collect.cc',
+		'src/semantic_validator_typecheck.cc',
 )
 
 qc_inc = include_directories('include')

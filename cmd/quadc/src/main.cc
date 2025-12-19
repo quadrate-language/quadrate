@@ -475,8 +475,7 @@ int main(int argc, char** argv) {
 		// Add library search paths from -I include paths
 		for (const auto& includePath : opts.includePaths) {
 			std::string libPath = includePath + "/lib";
-			if (std::filesystem::exists(libPath) &&
-					addedPackagePaths.find(includePath) == addedPackagePaths.end()) {
+			if (std::filesystem::exists(libPath) && addedPackagePaths.find(includePath) == addedPackagePaths.end()) {
 				generator.addLibrarySearchPath(libPath);
 				addedPackagePaths.insert(includePath);
 			}

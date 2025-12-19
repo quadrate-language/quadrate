@@ -24,16 +24,16 @@ typedef void* tls_conn_t;
 
 /** TLS error codes - Ok=1 matches Quadrate builtin, errors start at 2 */
 typedef enum {
-	TLS_OK = 1,                  // Success (matches Quadrate Ok)
-	TLS_ERR_INIT = 2,            // Failed to initialize TLS library
-	TLS_ERR_CONNECT = 3,         // TLS handshake failed (client)
-	TLS_ERR_ACCEPT = 4,          // TLS handshake failed (server)
-	TLS_ERR_CERTIFICATE = 5,     // Certificate validation failed
-	TLS_ERR_READ = 6,            // Read error
-	TLS_ERR_WRITE = 7,           // Write error
-	TLS_ERR_CLOSED = 8,          // Connection closed by peer
-	TLS_ERR_MEMORY = 9,          // Memory allocation failed
-	TLS_ERR_INVALID_ARG = 10,    // Invalid argument
+	TLS_OK = 1,				  // Success (matches Quadrate Ok)
+	TLS_ERR_INIT = 2,		  // Failed to initialize TLS library
+	TLS_ERR_CONNECT = 3,	  // TLS handshake failed (client)
+	TLS_ERR_ACCEPT = 4,		  // TLS handshake failed (server)
+	TLS_ERR_CERTIFICATE = 5,  // Certificate validation failed
+	TLS_ERR_READ = 6,		  // Read error
+	TLS_ERR_WRITE = 7,		  // Write error
+	TLS_ERR_CLOSED = 8,		  // Connection closed by peer
+	TLS_ERR_MEMORY = 9,		  // Memory allocation failed
+	TLS_ERR_INVALID_ARG = 10, // Invalid argument
 } tls_error_t;
 
 /**
@@ -65,9 +65,8 @@ tls_error_t tls_platform_connect(int socket_fd, const char* hostname, tls_conn_t
  * @param out_conn Output: TLS connection handle
  * @return TLS_OK on success, error code otherwise
  */
-tls_error_t tls_platform_connect_mtls(int socket_fd, const char* hostname,
-                                      const char* cert_path, const char* key_path,
-                                      tls_conn_t* out_conn);
+tls_error_t tls_platform_connect_mtls(
+		int socket_fd, const char* hostname, const char* cert_path, const char* key_path, tls_conn_t* out_conn);
 
 /**
  * @brief Create TLS server connection

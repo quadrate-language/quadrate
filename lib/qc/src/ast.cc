@@ -3231,7 +3231,8 @@ namespace Qd {
 														u8t_scanner_scan(&scanner); // consume second ':'
 														token = u8t_scanner_scan(&scanner);
 														if (token == U8T_IDENTIFIER) {
-															const char* structName = u8t_scanner_token_text(&scanner, &n);
+															const char* structName =
+																	u8t_scanner_token_text(&scanner, &n);
 															paramTypeStr = paramTypeStr + "::" + structName;
 														}
 													}

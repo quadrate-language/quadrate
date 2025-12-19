@@ -1,0 +1,2906 @@
+#include <algorithm>
+#include <cstdint>
+#include <cstdlib>
+#include <cstring>
+#include <filesystem>
+#include <fstream>
+#include <functional>
+#include <iostream>
+#include <qc/ast.h>
+#include <qc/ast_node.h>
+#include <qc/ast_node_anonymous_function.h>
+#include <qc/ast_node_constant.h>
+#include <qc/ast_node_ctx.h>
+#include <qc/ast_node_defer.h>
+#include <qc/ast_node_field_access.h>
+#include <qc/ast_node_field_set.h>
+#include <qc/ast_node_for.h>
+#include <qc/ast_node_function.h>
+#include <qc/ast_node_function_pointer.h>
+#include <qc/ast_node_identifier.h>
+#include <qc/ast_node_if.h>
+#include <qc/ast_node_import.h>
+#include <qc/ast_node_instruction.h>
+#include <qc/ast_node_literal.h>
+#include <qc/ast_node_local.h>
+#include <qc/ast_node_parameter.h>
+#include <qc/ast_node_scoped.h>
+#include <qc/ast_node_struct.h>
+#include <qc/ast_node_switch.h>
+#include <qc/ast_node_test.h>
+#include <qc/ast_node_use.h>
+#include <qc/ast_node_while.h>
+#include <qc/colors.h>
+#include <qc/instructions.h>
+#include <qc/semantic_validator.h>
+#include <sstream>
+#include <unordered_set>
+
+namespace Qd {
+
+#include "semantic_validator_internal.h"
+
+	// Check if a type string is a known struct name (local or imported)
+	// Supports both unqualified names (Response) and qualified names (http::Response)
+
+	void SemanticValidator::analyzeBlockInIsolation(IAstNode* node, std::vector<StackValueType>& typeStack,
+			const std::unordered_map<std::string, StackValueType>& initialLocalVars) {
+		if (!node) {
+			return;
+		}
+
+		// Dummy structTypeStack for signature analysis (not used, but required by API)
+		std::vector<std::string> structTypeStack;
+
+		// Track local variable types for accurate signature analysis
+		// Start with any initial local variables (e.g., function parameters)
+		std::unordered_map<std::string, StackValueType> localVarTypes = initialLocalVars;
+
+		// Process each child in the block
+		for (size_t i = 0; i < node->childCount(); i++) {
+			IAstNode* child = node->child(i);
+			if (!child) {
+				continue;
+			}
+
+			switch (child->type()) {
+			case IAstNode::Type::LITERAL: {
+				AstNodeLiteral* lit = static_cast<AstNodeLiteral*>(child);
+				switch (lit->literalType()) {
+				case AstNodeLiteral::LiteralType::INTEGER:
+					typeStack.push_back(StackValueType::INT);
+					break;
+				case AstNodeLiteral::LiteralType::FLOAT:
+					typeStack.push_back(StackValueType::FLOAT);
+					break;
+				case AstNodeLiteral::LiteralType::STRING:
+					typeStack.push_back(StackValueType::STRING);
+					break;
+				}
+				break;
+			}
+
+			case IAstNode::Type::ARRAY_LITERAL: {
+				// Array literal pushes a pointer (array reference) onto the stack
+				typeStack.push_back(StackValueType::PTR);
+				break;
+			}
+
+			case IAstNode::Type::INSTRUCTION: {
+				AstNodeInstruction* instr = static_cast<AstNodeInstruction*>(child);
+				// During signature analysis, don't report errors - just simulate the stack
+				typeCheckInstructionInternal(child, instr->name().c_str(), typeStack, structTypeStack, false);
+				break;
+			}
+
+			case IAstNode::Type::BLOCK: {
+				// Recursively analyze nested blocks
+				analyzeBlockInIsolation(child, typeStack);
+				break;
+			}
+
+			case IAstNode::Type::IDENTIFIER: {
+				// Apply function signature if known (for iterative analysis)
+				AstNodeIdentifier* ident = static_cast<AstNodeIdentifier*>(child);
+				const std::string& name = ident->name();
+
+				// First check if it's a local variable reference
+				auto localIt = localVarTypes.find(name);
+				if (localIt != localVarTypes.end()) {
+					// Push the local variable's type
+					typeStack.push_back(localIt->second);
+					// Push the struct type if this is a struct variable
+					auto structTypeIt = mLocalVariableStructTypes.find(name);
+					if (structTypeIt != mLocalVariableStructTypes.end()) {
+						structTypeStack.push_back(structTypeIt->second);
+					} else {
+						structTypeStack.push_back("");
+					}
+					break;
+				}
+
+				auto sigIt = mFunctionSignatures.find(name);
+				if (sigIt != mFunctionSignatures.end()) {
+					// Apply the known signature: pop consumes, push produces
+					const FunctionSignature& sig = sigIt->second;
+					// Pop consumed types
+					for (size_t j = 0; j < sig.consumes.size() && !typeStack.empty(); j++) {
+						typeStack.pop_back();
+					}
+					// Push produced types
+					for (const auto& type : sig.produces) {
+						typeStack.push_back(type);
+					}
+					break;
+				}
+
+				// Check if it's a struct construction
+				if (mDefinedStructs.find(name) != mDefinedStructs.end()) {
+					// Struct construction produces a pointer
+					const auto* structFields = lookupStructFieldTypes(name);
+					if (structFields != nullptr) {
+						size_t fieldCount = structFields->size();
+						// Pop field values from both stacks
+						for (size_t fi = 0; fi < fieldCount && !typeStack.empty(); fi++) {
+							typeStack.pop_back();
+							if (!structTypeStack.empty()) {
+								structTypeStack.pop_back();
+							}
+						}
+					}
+					typeStack.push_back(StackValueType::PTR);
+					structTypeStack.push_back(name); // Track the struct type
+					break;
+				}
+
+				// Check if it's a struct from an imported module
+				for (const auto& moduleEntry : mModuleStructs) {
+					const std::string& moduleName = moduleEntry.first;
+					const auto& structs = moduleEntry.second;
+					if (structs.find(name) != structs.end()) {
+						std::string qualifiedName = moduleName + "::" + name;
+						const auto* structFields = lookupStructFieldTypes(qualifiedName);
+						if (structFields != nullptr) {
+							size_t fieldCount = structFields->size();
+							for (size_t fi = 0; fi < fieldCount && !typeStack.empty(); fi++) {
+								typeStack.pop_back();
+								if (!structTypeStack.empty()) {
+									structTypeStack.pop_back();
+								}
+							}
+						}
+						typeStack.push_back(StackValueType::PTR);
+						structTypeStack.push_back(qualifiedName); // Track the qualified struct type
+						break;
+					}
+				}
+
+				// Check if it's a constant
+				auto constIt = mConstantValues.find(name);
+				if (constIt != mConstantValues.end()) {
+					// Push the constant's type onto the stack
+					StackValueType constType = getConstantType(constIt->second);
+					typeStack.push_back(constType);
+				}
+				// If signature not known yet, skip (will be resolved in next iteration)
+				break;
+			}
+
+			case IAstNode::Type::FIELD_ACCESS: {
+				// Field access pushes a value onto the stack
+				// Detailed validation is done in the main type checking pass (case at line ~3266)
+				// Here we just handle the stack effect for signature analysis
+				AstNodeFieldAccess* fieldAccess = static_cast<AstNodeFieldAccess*>(child);
+				const std::string& fieldName = fieldAccess->fieldName();
+
+				StackValueType fieldType = StackValueType::UNKNOWN;
+				// Search in all known structs to determine the field type
+				for (const auto& structEntry : mStructFieldTypes) {
+					const auto& fields = structEntry.second;
+					auto it = fields.find(fieldName);
+					if (it != fields.end()) {
+						fieldType = it->second;
+						break;
+					}
+				}
+
+				// If still unknown, use ANY as fallback
+				if (fieldType == StackValueType::UNKNOWN) {
+					fieldType = StackValueType::ANY;
+				}
+
+				typeStack.push_back(fieldType);
+				break;
+			}
+			case IAstNode::Type::FIELD_SET: {
+				// Field set pops a value from the stack and stores it in the field
+				// Validation is done in the main type checking pass (case at line ~3415)
+				// Here we just handle the stack effect for signature analysis
+				if (!typeStack.empty()) {
+					typeStack.pop_back();
+				}
+				break;
+			}
+			case IAstNode::Type::SCOPED_IDENTIFIER: {
+				// Apply module function signature if known
+				AstNodeScopedIdentifier* scoped = static_cast<AstNodeScopedIdentifier*>(child);
+				const std::string& moduleName = scoped->scope();
+				const std::string& functionName = scoped->name();
+				std::string qualifiedName = moduleName + "::" + functionName;
+
+				auto sigIt = mFunctionSignatures.find(qualifiedName);
+				if (sigIt != mFunctionSignatures.end()) {
+					// Apply the known signature: pop consumes, push produces
+					const FunctionSignature& sig = sigIt->second;
+					// Pop consumed types
+					for (size_t j = 0; j < sig.consumes.size() && !typeStack.empty(); j++) {
+						typeStack.pop_back();
+					}
+					// Push produced types
+					for (const auto& type : sig.produces) {
+						typeStack.push_back(type);
+					}
+				}
+				// If signature not known yet, skip (will be resolved in next iteration)
+				break;
+			}
+
+			case IAstNode::Type::FUNCTION_POINTER_REFERENCE:
+				// Function pointer references push a pointer type onto the stack
+				typeStack.push_back(StackValueType::PTR);
+				break;
+
+			case IAstNode::Type::ANONYMOUS_FUNCTION:
+				// Anonymous functions push a function pointer onto the stack
+				// The function body will be validated separately during code generation
+				typeStack.push_back(StackValueType::PTR);
+				break;
+
+			case IAstNode::Type::STRUCT_CONSTRUCTION: {
+				// Struct construction with named fields: StructName { field: expr ... }
+				// Field expressions are self-contained, so struct construction just pushes PTR
+				AstNodeStructConstruction* construct = static_cast<AstNodeStructConstruction*>(child);
+				const std::string& structName = construct->structName();
+				typeStack.push_back(StackValueType::PTR);
+				structTypeStack.push_back(structName);
+				break;
+			}
+
+			case IAstNode::Type::LOCAL: {
+				// Local variable binding: pop value(s) from stack and store type(s)
+				// Supports multiple assignment: -> a b c
+				AstNodeLocal* local = static_cast<AstNodeLocal*>(child);
+				for (const std::string& varName : local->names()) {
+					if (!typeStack.empty()) {
+						StackValueType varType = typeStack.back();
+						typeStack.pop_back();
+						localVarTypes[varName] = varType;
+					}
+				}
+				break;
+			}
+
+			default:
+				// Other node types don't affect the type stack during signature analysis
+				break;
+			}
+		}
+	}
+
+	void SemanticValidator::typeCheckFunction(IAstNode* node) {
+		if (!node) {
+			return;
+		}
+
+		// Type check each function definition
+		if (node->type() == IAstNode::Type::FUNCTION_DECLARATION) {
+			AstNodeFunctionDeclaration* func = static_cast<AstNodeFunctionDeclaration*>(node);
+			std::vector<StackValueType> typeStack;
+			std::vector<std::string> structTypeStack;
+			std::unordered_map<std::string, StackValueType> localVariables;
+
+			// Clear local variable struct types for this function
+			mLocalVariableStructTypes.clear();
+
+			// Initialize type stack with input parameters
+			// Input parameters are on the stack when the function starts
+			// Note: Parameters are NOT registered as local variables - they must be
+			// explicitly bound with -> before use
+			for (size_t i = 0; i < func->inputParameters().size(); i++) {
+				AstNodeParameter* param = static_cast<AstNodeParameter*>(func->inputParameters()[i]);
+				const std::string& typeStr = param->typeString();
+
+				// Validate type name
+				if (!isValidTypeName(typeStr)) {
+					reportError(param, ("Invalid type '" + typeStr + "' in parameter '" + param->name() +
+											   "'. Valid types are: i64, f64, str, ptr, any, or a struct name")
+											   .c_str());
+				}
+
+				StackValueType paramType;
+				std::string structType = "";
+
+				if (typeStr == "i64") {
+					paramType = StackValueType::INT;
+				} else if (typeStr == "f64") {
+					paramType = StackValueType::FLOAT;
+				} else if (typeStr == "str") {
+					paramType = StackValueType::STRING;
+				} else if (typeStr == "ptr") {
+					paramType = StackValueType::PTR;
+				} else if (isStructTypeName(typeStr)) {
+					// Struct type - treat as PTR but track the struct type
+					paramType = StackValueType::PTR;
+					structType = typeStr;
+				} else {
+					// Untyped or unknown - treat as ANY
+					paramType = StackValueType::ANY;
+				}
+
+				typeStack.push_back(paramType);
+				structTypeStack.push_back(structType);
+			}
+
+			// Track whether current function is fallible (for panic validation)
+			mCurrentFunctionFallible = func->throws();
+
+			// Type check the function body
+			if (func->body()) {
+				typeCheckBlock(func->body(), typeStack, localVariables, structTypeStack);
+			}
+
+			// Reset fallible flag
+			mCurrentFunctionFallible = false;
+		}
+
+		// Type check test declarations
+		if (node->type() == IAstNode::Type::TEST_DECLARATION) {
+			AstNodeTest* test = static_cast<AstNodeTest*>(node);
+			std::vector<StackValueType> typeStack;
+			std::vector<std::string> structTypeStack;
+			std::unordered_map<std::string, StackValueType> localVariables;
+
+			// Clear local variable struct types for this test
+			mLocalVariableStructTypes.clear();
+
+			// Tests have no parameters - start with empty stack
+
+			// Type check the test body
+			if (test->body()) {
+				typeCheckBlock(test->body(), typeStack, localVariables, structTypeStack);
+			}
+		}
+
+		// Recursively process children
+		for (size_t i = 0; i < node->childCount(); i++) {
+			typeCheckFunction(node->child(i));
+		}
+	}
+
+	void SemanticValidator::typeCheckTest(IAstNode* node) {
+		// Tests are handled in typeCheckFunction along with functions
+		// This method exists for potential future specialized test validation
+		typeCheckFunction(node);
+	}
+
+	void SemanticValidator::typeCheckBlock(IAstNode* node, std::vector<StackValueType>& typeStack,
+			std::unordered_map<std::string, StackValueType>& localVariables,
+			std::vector<std::string>& structTypeStack) {
+		if (!node) {
+			return;
+		}
+
+		// Process each child in the block
+		for (size_t i = 0; i < node->childCount(); i++) {
+			IAstNode* child = node->child(i);
+			if (!child) {
+				continue;
+			}
+
+			switch (child->type()) {
+			case IAstNode::Type::LITERAL: {
+				AstNodeLiteral* lit = static_cast<AstNodeLiteral*>(child);
+				switch (lit->literalType()) {
+				case AstNodeLiteral::LiteralType::INTEGER:
+					typeStack.push_back(StackValueType::INT);
+					structTypeStack.push_back("");
+					break;
+				case AstNodeLiteral::LiteralType::FLOAT:
+					typeStack.push_back(StackValueType::FLOAT);
+					structTypeStack.push_back("");
+					break;
+				case AstNodeLiteral::LiteralType::STRING:
+					typeStack.push_back(StackValueType::STRING);
+					structTypeStack.push_back("");
+					break;
+				}
+				break;
+			}
+
+			case IAstNode::Type::ARRAY_LITERAL: {
+				// Array literal pushes a pointer (array reference) onto the stack
+				typeStack.push_back(StackValueType::PTR);
+				structTypeStack.push_back("");
+				break;
+			}
+
+			case IAstNode::Type::INSTRUCTION: {
+				AstNodeInstruction* instr = static_cast<AstNodeInstruction*>(child);
+				const std::string& instrName = instr->name();
+
+				// Check if instruction name shadows a local variable - if so, treat as variable reference
+				auto localIt = localVariables.find(instrName);
+				if (localIt != localVariables.end()) {
+					// Push the local variable's type onto the stack (variable shadowing)
+					typeStack.push_back(localIt->second);
+					if (localIt->second == StackValueType::PTR) {
+						auto structTypeIt = mLocalVariableStructTypes.find(instrName);
+						if (structTypeIt != mLocalVariableStructTypes.end()) {
+							structTypeStack.push_back(structTypeIt->second);
+						} else {
+							structTypeStack.push_back("");
+						}
+					} else {
+						structTypeStack.push_back("");
+					}
+				} else {
+					typeCheckInstruction(child, instrName.c_str(), typeStack, structTypeStack);
+				}
+				break;
+			}
+
+			case IAstNode::Type::BLOCK: {
+				// Recursively check nested blocks
+				typeCheckBlock(child, typeStack, localVariables, structTypeStack);
+				break;
+			}
+
+			case IAstNode::Type::IF_STATEMENT: {
+				// Check that stack has a condition value
+				if (typeStack.empty()) {
+					reportError(child, "Type error in 'if': Stack underflow (requires 1 condition value)");
+					break;
+				}
+				// Pop the condition value
+				typeStack.pop_back();
+				if (!structTypeStack.empty()) {
+					structTypeStack.pop_back();
+				}
+
+				// Analyze branches to track stack effects
+				AstNodeIfStatement* ifStmt = static_cast<AstNodeIfStatement*>(child);
+				IAstNode* thenBody = ifStmt->thenBody();
+				IAstNode* elseBody = ifStmt->elseBody();
+
+				if (thenBody && elseBody) {
+					// Analyze then branch
+					std::vector<StackValueType> thenStack = typeStack;
+					std::unordered_map<std::string, StackValueType> thenVars = localVariables;
+					std::vector<std::string> thenStructStack = structTypeStack;
+					typeCheckBlock(thenBody, thenStack, thenVars, thenStructStack);
+
+					// Analyze else branch
+					std::vector<StackValueType> elseStack = typeStack;
+					std::unordered_map<std::string, StackValueType> elseVars = localVariables;
+					std::vector<std::string> elseStructStack = structTypeStack;
+					typeCheckBlock(elseBody, elseStack, elseVars, elseStructStack);
+
+					int thenEffect = static_cast<int>(thenStack.size()) - static_cast<int>(typeStack.size());
+					int elseEffect = static_cast<int>(elseStack.size()) - static_cast<int>(typeStack.size());
+
+					// If both branches have the same positive effect, apply it
+					if (thenEffect == elseEffect && thenEffect > 0) {
+						for (size_t k = typeStack.size(); k < thenStack.size(); k++) {
+							typeStack.push_back(thenStack[k]);
+						}
+					}
+				} else if (thenBody) {
+					// Only then branch - analyze with a copy since branch might not execute
+					// (common pattern: fallible_func if { -> var ... })
+					std::vector<StackValueType> thenStack = typeStack;
+					std::unordered_map<std::string, StackValueType> thenVars = localVariables;
+					std::vector<std::string> thenStructStack = structTypeStack;
+					typeCheckBlock(thenBody, thenStack, thenVars, thenStructStack);
+					// Don't apply stack effects - the branch might not run
+				}
+				break;
+			}
+
+			case IAstNode::Type::DEFER_STATEMENT: {
+				// Defer blocks must have zero net stack effect
+				size_t stackSizeBefore = typeStack.size();
+
+				// Type check the defer body
+				for (size_t j = 0; j < child->childCount(); j++) {
+					IAstNode* deferChild = child->child(j);
+					if (deferChild && deferChild->type() == IAstNode::Type::BLOCK) {
+						typeCheckBlock(deferChild, typeStack, localVariables, structTypeStack);
+					}
+				}
+
+				int deferEffect = static_cast<int>(typeStack.size()) - static_cast<int>(stackSizeBefore);
+				if (deferEffect != 0) {
+					std::string errorMsg = "Stack effect error in 'defer': block must have zero net stack effect, but "
+										   "changes stack by ";
+					errorMsg += std::to_string(deferEffect);
+					reportError(child, errorMsg.c_str());
+				}
+
+				// Restore stack to before defer (defer shouldn't affect the surrounding stack)
+				while (typeStack.size() > stackSizeBefore) {
+					typeStack.pop_back();
+					if (!structTypeStack.empty()) {
+						structTypeStack.pop_back();
+					}
+				}
+				break;
+			}
+
+			case IAstNode::Type::SWITCH_STATEMENT: {
+				// Check that stack has a value to switch on
+				if (typeStack.empty()) {
+					reportError(child, "Type error in 'switch': Stack underflow (requires 1 value to match)");
+					break;
+				}
+				// Pop the switch value
+				typeStack.pop_back();
+				if (!structTypeStack.empty()) {
+					structTypeStack.pop_back();
+				}
+
+				// Analyze all case branches to track stack effects
+				AstNodeSwitchStatement* switchStmt = static_cast<AstNodeSwitchStatement*>(child);
+				const auto& cases = switchStmt->cases();
+				bool hasDefault = false;
+				bool allSameEffect = true;
+				int commonEffect = 0;
+				bool firstCase = true;
+				std::vector<StackValueType> firstCaseStack;
+
+				for (const auto* caseNode : cases) {
+					if (caseNode->isDefault()) {
+						hasDefault = true;
+					}
+					IAstNode* caseBody = caseNode->body();
+					if (caseBody) {
+						// Analyze case body with a copy of current stack
+						std::vector<StackValueType> caseStack = typeStack;
+						std::unordered_map<std::string, StackValueType> caseVars = localVariables;
+						std::vector<std::string> caseStructStack = structTypeStack;
+						typeCheckBlock(caseBody, caseStack, caseVars, caseStructStack);
+
+						int caseEffect = static_cast<int>(caseStack.size()) - static_cast<int>(typeStack.size());
+
+						if (firstCase) {
+							commonEffect = caseEffect;
+							firstCaseStack = caseStack;
+							firstCase = false;
+						} else if (caseEffect != commonEffect) {
+							allSameEffect = false;
+						}
+					}
+				}
+
+				// If there's a default case and all cases have the same positive effect,
+				// apply that effect to the type stack
+				if (hasDefault && allSameEffect && commonEffect > 0 && !firstCase) {
+					for (size_t k = typeStack.size(); k < firstCaseStack.size(); k++) {
+						typeStack.push_back(firstCaseStack[k]);
+					}
+				}
+				break;
+			}
+
+			case IAstNode::Type::FOR_STATEMENT:
+			case IAstNode::Type::WHILE_STATEMENT:
+			case IAstNode::Type::LOOP_STATEMENT: {
+				// For now, skip loop type checking (break/continue complicate analysis)
+				break;
+			}
+
+			case IAstNode::Type::CTX_STATEMENT: {
+				// For now, skip ctx type checking since it's complex
+				// (would need full stack effect analysis including clear, drop, etc.)
+				// The runtime enforces the single-value constraint anyway
+				// Just push a generic type to the parent stack
+				typeStack.push_back(StackValueType::INT);
+				structTypeStack.push_back("");
+				break;
+			}
+
+			case IAstNode::Type::LOCAL: {
+				// Handle local variable declaration: pop value from stack and store
+				// Supports multiple assignment: -> a b c pops 3 values
+				AstNodeLocal* local = static_cast<AstNodeLocal*>(child);
+				const std::vector<std::string>& varNames = local->names();
+
+				// Process each variable name (in order: first name gets top of stack)
+				for (const std::string& varName : varNames) {
+					// Check if variable name shadows a function
+					if (mDefinedFunctions.find(varName) != mDefinedFunctions.end()) {
+						std::string errorMsg = "Local variable '";
+						errorMsg += varName;
+						errorMsg += "' shadows function with same name";
+						reportError(local, errorMsg.c_str());
+						continue;
+					}
+
+					// Check if stack is empty
+					if (typeStack.empty()) {
+						std::string errorMsg = "Type error in local variable '";
+						errorMsg += varName;
+						errorMsg += "': Stack underflow (no value to store)";
+						reportError(local, errorMsg.c_str());
+						continue;
+					}
+
+					// Pop the value type from the stack and store it as the variable's type
+					StackValueType varType = typeStack.back();
+					typeStack.pop_back();
+					localVariables[varName] = varType;
+
+					// If it's a PTR type, also store which struct type it is (if any)
+					if (varType == StackValueType::PTR && !structTypeStack.empty()) {
+						std::string structType = structTypeStack.back();
+						structTypeStack.pop_back();
+						mLocalVariableStructTypes[varName] = structType;
+
+						// If there's a pending function signature, store it with this variable
+						if (mPendingFnSignature.has_value()) {
+							mLocalVariableFnSignatures[varName] = mPendingFnSignature.value();
+							mPendingFnSignature.reset();
+						}
+					} else if (!structTypeStack.empty()) {
+						structTypeStack.pop_back();
+					}
+				}
+				break;
+			}
+
+			case IAstNode::Type::STRUCT_CONSTRUCTION: {
+				// Handle struct construction with named fields: StructName { field: expr ... }
+				AstNodeStructConstruction* construct = static_cast<AstNodeStructConstruction*>(child);
+				const std::string& name = construct->structName();
+				const auto& fieldInits = construct->fieldInits();
+
+				// Get struct declaration - try local first, then module structs
+				// For module structs, we need to look up with qualified key
+				AstNodeStructDeclaration* structDecl = nullptr;
+				std::string lookupKey = name; // Key for mStructFieldTypes lookup
+				auto structDeclIt = mStructDeclarations.find(name);
+				if (structDeclIt != mStructDeclarations.end()) {
+					structDecl = structDeclIt->second;
+				} else {
+					// Try qualified lookup first (for qualified names like "vec2::Vec2")
+					auto moduleDeclIt = mModuleStructDeclarations.find(name);
+					if (moduleDeclIt != mModuleStructDeclarations.end()) {
+						structDecl = moduleDeclIt->second;
+						lookupKey = name;
+					} else if (name.find("::") == std::string::npos) {
+						// Unqualified name - search in modules
+						for (const auto& modulePair : mModuleStructs) {
+							const std::string& moduleName = modulePair.first;
+							if (modulePair.second.find(name) != modulePair.second.end()) {
+								std::string qualifiedName = moduleName + "::" + name;
+								auto qualIt = mModuleStructDeclarations.find(qualifiedName);
+								if (qualIt != mModuleStructDeclarations.end()) {
+									structDecl = qualIt->second;
+									lookupKey = qualifiedName;
+									break;
+								}
+							}
+						}
+					}
+				}
+
+				if (structDecl) {
+					std::unordered_set<std::string> providedFields;
+
+					// Process each field initializer
+					for (const auto& fieldInit : fieldInits) {
+						const std::string& fieldName = fieldInit.fieldName;
+						providedFields.insert(fieldName);
+
+						// Check if field exists in struct using mStructFieldTypes
+						// (don't use structDecl->fields() as it may have been freed for imported modules)
+						bool fieldExists = false;
+						StackValueType expectedType = StackValueType::UNKNOWN;
+						std::string expectedStructType;
+
+						const auto* structFieldTypes = lookupStructFieldTypes(lookupKey);
+						if (structFieldTypes != nullptr) {
+							auto fieldTypeIt = structFieldTypes->find(fieldName);
+							if (fieldTypeIt != structFieldTypes->end()) {
+								fieldExists = true;
+								expectedType = fieldTypeIt->second;
+							}
+						}
+
+						// Also check mStructFieldStructTypes for PTR field types
+						auto structFieldStructTypesIt = mStructFieldStructTypes.find(lookupKey);
+						if (structFieldStructTypesIt != mStructFieldStructTypes.end()) {
+							auto fieldStructTypeIt = structFieldStructTypesIt->second.find(fieldName);
+							if (fieldStructTypeIt != structFieldStructTypesIt->second.end()) {
+								expectedStructType = fieldStructTypeIt->second;
+							}
+						}
+
+						if (!fieldExists) {
+							std::string errorMsg = "Unknown field '";
+							errorMsg += fieldName;
+							errorMsg += "' in struct '";
+							errorMsg += name;
+							errorMsg += "'";
+							reportError(construct, errorMsg.c_str());
+							continue;
+						}
+
+						// Process the field's expression nodes to determine the type it produces
+						// We create a temporary type stack to track what the expression produces
+						std::vector<StackValueType> exprTypeStack;
+						std::vector<std::string> exprStructTypeStack;
+
+						for (IAstNode* exprNode : fieldInit.valueNodes) {
+							// Recursively type-check the expression node
+							// For simplicity, we simulate basic type inference here
+							switch (exprNode->type()) {
+							case IAstNode::Type::LITERAL: {
+								AstNodeLiteral* lit = static_cast<AstNodeLiteral*>(exprNode);
+								switch (lit->literalType()) {
+								case AstNodeLiteral::LiteralType::INTEGER:
+									exprTypeStack.push_back(StackValueType::INT);
+									exprStructTypeStack.push_back("");
+									break;
+								case AstNodeLiteral::LiteralType::FLOAT:
+									exprTypeStack.push_back(StackValueType::FLOAT);
+									exprStructTypeStack.push_back("");
+									break;
+								case AstNodeLiteral::LiteralType::STRING:
+									exprTypeStack.push_back(StackValueType::STRING);
+									exprStructTypeStack.push_back("");
+									break;
+								}
+								break;
+							}
+							case IAstNode::Type::IDENTIFIER: {
+								AstNodeIdentifier* ident = static_cast<AstNodeIdentifier*>(exprNode);
+								auto localIt = localVariables.find(ident->name());
+								if (localIt != localVariables.end()) {
+									exprTypeStack.push_back(localIt->second);
+									if (localIt->second == StackValueType::PTR) {
+										auto structTypeIt = mLocalVariableStructTypes.find(ident->name());
+										if (structTypeIt != mLocalVariableStructTypes.end()) {
+											exprStructTypeStack.push_back(structTypeIt->second);
+										} else {
+											exprStructTypeStack.push_back("");
+										}
+									} else {
+										exprStructTypeStack.push_back("");
+									}
+								} else {
+									exprTypeStack.push_back(StackValueType::UNKNOWN);
+									exprStructTypeStack.push_back("");
+								}
+								break;
+							}
+							case IAstNode::Type::STRUCT_CONSTRUCTION: {
+								// Nested struct construction
+								AstNodeStructConstruction* nested = static_cast<AstNodeStructConstruction*>(exprNode);
+								exprTypeStack.push_back(StackValueType::PTR);
+								exprStructTypeStack.push_back(nested->structName());
+								break;
+							}
+							case IAstNode::Type::INSTRUCTION: {
+								// Instructions modify the stack - simplified handling
+								AstNodeInstruction* instr = static_cast<AstNodeInstruction*>(exprNode);
+								const std::string& instrName = instr->name();
+								// Handle common arithmetic operations
+								if (instrName == "+" || instrName == "-" || instrName == "*" || instrName == "/" ||
+										instrName == "add" || instrName == "sub" || instrName == "mul" ||
+										instrName == "div") {
+									if (exprTypeStack.size() >= 2) {
+										exprTypeStack.pop_back();
+										exprStructTypeStack.pop_back();
+									}
+								}
+								break;
+							}
+							default:
+								// For other node types, assume they push one value
+								exprTypeStack.push_back(StackValueType::UNKNOWN);
+								exprStructTypeStack.push_back("");
+								break;
+							}
+						}
+
+						// After processing expression, check the resulting type
+						if (!exprTypeStack.empty()) {
+							StackValueType actualType = exprTypeStack.back();
+							std::string actualStructType =
+									exprStructTypeStack.empty() ? "" : exprStructTypeStack.back();
+
+							if (actualType != StackValueType::UNKNOWN && expectedType != StackValueType::UNKNOWN) {
+								if (actualType != expectedType) {
+									if (isImplicitCastAllowed(actualType, expectedType)) {
+										// Only warn for casts that should be warned about
+										if (shouldWarnImplicitCast(actualType, expectedType)) {
+											std::string warnMsg = "Implicit cast in struct construction '";
+											warnMsg += name;
+											warnMsg += "': Field '";
+											warnMsg += fieldName;
+											warnMsg += "' expects ";
+											warnMsg += stackValueTypeToString(expectedType);
+											warnMsg += ", but got ";
+											warnMsg += stackValueTypeToString(actualType);
+											reportWarning(construct, warnMsg.c_str());
+										}
+									} else {
+										std::string errorMsg = "Type error in struct construction '";
+										errorMsg += name;
+										errorMsg += "': Field '";
+										errorMsg += fieldName;
+										errorMsg += "' expects ";
+										errorMsg += expectedStructType.empty() ? stackValueTypeToString(expectedType)
+																			   : expectedStructType;
+										errorMsg += ", but got ";
+										errorMsg += actualStructType.empty() ? stackValueTypeToString(actualType)
+																			 : actualStructType;
+										reportError(construct, errorMsg.c_str());
+									}
+								} else if (!expectedStructType.empty() && actualStructType != expectedStructType) {
+									std::string errorMsg = "Type error in struct construction '";
+									errorMsg += name;
+									errorMsg += "': Field '";
+									errorMsg += fieldName;
+									errorMsg += "' expects ";
+									errorMsg += expectedStructType;
+									errorMsg += ", but got ";
+									errorMsg += actualStructType.empty() ? "ptr" : actualStructType;
+									reportError(construct, errorMsg.c_str());
+								}
+							}
+						}
+					}
+
+					// Check for missing fields using mStructFieldTypes (safe for imported modules)
+					const auto* structFieldTypesForMissing = lookupStructFieldTypes(lookupKey);
+					if (structFieldTypesForMissing != nullptr) {
+						for (const auto& fieldEntry : *structFieldTypesForMissing) {
+							if (providedFields.find(fieldEntry.first) == providedFields.end()) {
+								std::string errorMsg = "Missing field '";
+								errorMsg += fieldEntry.first;
+								errorMsg += "' in struct construction '";
+								errorMsg += name;
+								errorMsg += "'";
+								reportError(construct, errorMsg.c_str());
+							}
+						}
+					}
+				}
+
+				// Push pointer type for the constructed struct
+				typeStack.push_back(StackValueType::PTR);
+				structTypeStack.push_back(name);
+				break;
+			}
+
+			case IAstNode::Type::IDENTIFIER: {
+				// Handle function calls - apply their stack effect
+				AstNodeIdentifier* ident = static_cast<AstNodeIdentifier*>(child);
+				const std::string& name = ident->name();
+
+				// Check if it's a local variable reference
+				auto localIt = localVariables.find(name);
+				if (localIt != localVariables.end()) {
+					// Push the local variable's type onto the stack
+					typeStack.push_back(localIt->second);
+					// If it's a PTR, also push its struct type (if any)
+					if (localIt->second == StackValueType::PTR) {
+						auto structTypeIt = mLocalVariableStructTypes.find(name);
+						if (structTypeIt != mLocalVariableStructTypes.end()) {
+							structTypeStack.push_back(structTypeIt->second);
+						} else {
+							structTypeStack.push_back(""); // Unknown struct type
+						}
+
+						// If the variable has a known function signature, set it as pending
+						auto fnSigIt = mLocalVariableFnSignatures.find(name);
+						if (fnSigIt != mLocalVariableFnSignatures.end()) {
+							mPendingFnSignature = fnSigIt->second;
+						}
+					} else {
+						structTypeStack.push_back("");
+					}
+					break;
+				}
+
+				// Check if it's a constant
+				auto constIt = mConstantValues.find(name);
+				if (constIt != mConstantValues.end()) {
+					// Push the constant's type onto the stack
+					StackValueType constType = getConstantType(constIt->second);
+					typeStack.push_back(constType);
+					structTypeStack.push_back("");
+					break;
+				}
+
+				// Check if it's a struct construction
+				if (mDefinedStructs.find(name) != mDefinedStructs.end()) {
+					// Struct construction: consumes field values, produces pointer
+					auto structDeclIt = mStructDeclarations.find(name);
+					if (structDeclIt != mStructDeclarations.end()) {
+						AstNodeStructDeclaration* structDecl = structDeclIt->second;
+						const auto& fields = structDecl->fields();
+						size_t fieldCount = fields.size();
+
+						// Check if we have enough values on the stack
+						if (typeStack.size() < fieldCount) {
+							std::string errorMsg = "Type error in struct construction '";
+							errorMsg += name;
+							errorMsg += "': Stack underflow (requires ";
+							errorMsg += std::to_string(fieldCount);
+							errorMsg += " values, have ";
+							errorMsg += std::to_string(typeStack.size());
+							errorMsg += ")";
+							reportError(ident, errorMsg.c_str());
+						} else {
+							// Validate each field type (fields are in declaration order)
+							// Fields are consumed bottom-to-top from the stack
+							for (size_t fi = 0; fi < fieldCount; fi++) {
+								size_t stackIdx = typeStack.size() - fieldCount + fi;
+								StackValueType actual = typeStack[stackIdx];
+								std::string actualStructType =
+										(stackIdx < structTypeStack.size()) ? structTypeStack[stackIdx] : "";
+								const AstNodeStructField* field = fields[fi];
+								const std::string& fieldName = field->name();
+
+								// Get expected type from mStructFieldTypes
+								const auto* structFieldTypesPtr = lookupStructFieldTypes(name);
+								if (structFieldTypesPtr == nullptr) {
+									continue;
+								}
+								auto fieldTypeIt = structFieldTypesPtr->find(fieldName);
+								if (fieldTypeIt == structFieldTypesPtr->end()) {
+									continue;
+								}
+								StackValueType expected = fieldTypeIt->second;
+
+								// Check if this field expects a specific struct type
+								std::string expectedStructType;
+								auto structFieldStructTypesIt = mStructFieldStructTypes.find(name);
+								if (structFieldStructTypesIt != mStructFieldStructTypes.end()) {
+									auto fieldStructTypeIt = structFieldStructTypesIt->second.find(fieldName);
+									if (fieldStructTypeIt != structFieldStructTypesIt->second.end()) {
+										expectedStructType = fieldStructTypeIt->second;
+									}
+								}
+
+								// Skip check if actual type is UNKNOWN (can't determine type)
+								if (actual == StackValueType::UNKNOWN) {
+									continue;
+								}
+
+								// Check for type mismatch
+								if (actual != expected) {
+									// Check if implicit cast is allowed (int <-> float)
+									if (isImplicitCastAllowed(actual, expected)) {
+										// Only warn for casts that should be warned about
+										if (shouldWarnImplicitCast(actual, expected)) {
+											std::string warnMsg = "Implicit cast in struct construction '";
+											warnMsg += name;
+											warnMsg += "': Field '";
+											warnMsg += fieldName;
+											warnMsg += "' expects ";
+											warnMsg += stackValueTypeToString(expected);
+											warnMsg += ", but got ";
+											warnMsg += stackValueTypeToString(actual);
+											reportWarning(ident, warnMsg.c_str());
+										}
+									} else {
+										// Type mismatch error
+										std::string errorMsg = "Type error in struct construction '";
+										errorMsg += name;
+										errorMsg += "': Field '";
+										errorMsg += fieldName;
+										errorMsg += "' expects ";
+										errorMsg += expectedStructType.empty() ? stackValueTypeToString(expected)
+																			   : expectedStructType;
+										errorMsg += ", but got ";
+										errorMsg += actualStructType.empty() ? stackValueTypeToString(actual)
+																			 : actualStructType;
+										reportError(ident, errorMsg.c_str());
+									}
+								} else if (!expectedStructType.empty() && actualStructType != expectedStructType) {
+									// Types match (both PTR) but struct types don't match
+									std::string errorMsg = "Type error in struct construction '";
+									errorMsg += name;
+									errorMsg += "': Field '";
+									errorMsg += fieldName;
+									errorMsg += "' expects ";
+									errorMsg += expectedStructType;
+									errorMsg += ", but got ";
+									errorMsg += actualStructType.empty() ? "ptr" : actualStructType;
+									reportError(ident, errorMsg.c_str());
+								}
+							}
+						}
+
+						// Pop field values from stack
+						for (size_t fi = 0; fi < fieldCount && !typeStack.empty(); fi++) {
+							typeStack.pop_back();
+							if (!structTypeStack.empty()) {
+								structTypeStack.pop_back();
+							}
+						}
+					}
+
+					// Struct pointers can now be used:
+					// - Stored to variable with -> var
+					// - Accessed with @field
+					// - As arguments to other struct constructors
+					// - Returned on stack
+					// The code generator handles all these cases correctly.
+
+					// Push pointer type for the constructed struct, along with its struct type
+					typeStack.push_back(StackValueType::PTR);
+					structTypeStack.push_back(name); // Track which struct type this is
+					break;
+				}
+
+				// Check if it's a struct from an imported module
+				for (const auto& moduleEntry : mModuleStructs) {
+					const std::string& moduleName = moduleEntry.first;
+					const auto& structs = moduleEntry.second;
+					if (structs.find(name) != structs.end() && structs.at(name)) {
+						// Struct construction from module - use qualified name for lookups
+						std::string qualifiedStructName = moduleName + "::" + name;
+						// Try to find struct declaration
+						auto structDeclIt = mModuleStructDeclarations.find(qualifiedStructName);
+						if (structDeclIt != mModuleStructDeclarations.end()) {
+							AstNodeStructDeclaration* structDecl = structDeclIt->second;
+							const auto& fields = structDecl->fields();
+							size_t fieldCount = fields.size();
+
+							// Check if we have enough values on the stack
+							if (typeStack.size() < fieldCount) {
+								std::string errorMsg = "Type error in struct construction '";
+								errorMsg += name;
+								errorMsg += "': Stack underflow (requires ";
+								errorMsg += std::to_string(fieldCount);
+								errorMsg += " values, have ";
+								errorMsg += std::to_string(typeStack.size());
+								errorMsg += ")";
+								reportError(ident, errorMsg.c_str());
+							} else {
+								// Validate each field type (fields are in declaration order)
+								// Fields are consumed bottom-to-top from the stack
+								for (size_t fi = 0; fi < fieldCount; fi++) {
+									size_t stackIdx = typeStack.size() - fieldCount + fi;
+									StackValueType actual = typeStack[stackIdx];
+									const AstNodeStructField* field = fields[fi];
+									const std::string& fieldName = field->name();
+
+									// Get expected type from mStructFieldTypes
+									const auto* structFieldTypesPtr = lookupStructFieldTypes(qualifiedStructName);
+									if (structFieldTypesPtr == nullptr) {
+										continue;
+									}
+									auto fieldTypeIt = structFieldTypesPtr->find(fieldName);
+									if (fieldTypeIt == structFieldTypesPtr->end()) {
+										continue;
+									}
+									StackValueType expected = fieldTypeIt->second;
+
+									// Skip check if actual type is UNKNOWN (can't determine type)
+									if (actual == StackValueType::UNKNOWN) {
+										continue;
+									}
+
+									// Check for type mismatch
+									if (actual != expected) {
+										// Check if implicit cast is allowed (int <-> float)
+										if (isImplicitCastAllowed(actual, expected)) {
+											// Only warn for casts that should be warned about
+											if (shouldWarnImplicitCast(actual, expected)) {
+												std::string warnMsg = "Implicit cast in struct construction '";
+												warnMsg += name;
+												warnMsg += "': Field '";
+												warnMsg += fieldName;
+												warnMsg += "' expects ";
+												warnMsg += stackValueTypeToString(expected);
+												warnMsg += ", but got ";
+												warnMsg += stackValueTypeToString(actual);
+												reportWarning(ident, warnMsg.c_str());
+											}
+										} else {
+											// Type mismatch error
+											std::string errorMsg = "Type error in struct construction '";
+											errorMsg += name;
+											errorMsg += "': Field '";
+											errorMsg += fieldName;
+											errorMsg += "' expects ";
+											errorMsg += stackValueTypeToString(expected);
+											errorMsg += ", but got ";
+											errorMsg += stackValueTypeToString(actual);
+											reportError(ident, errorMsg.c_str());
+										}
+									}
+								}
+							}
+
+							// Pop field values from stack
+							for (size_t fi = 0; fi < fieldCount && !typeStack.empty(); fi++) {
+								typeStack.pop_back();
+								if (!structTypeStack.empty()) {
+									structTypeStack.pop_back();
+								}
+							}
+						}
+
+						// Struct pointers can now be used flexibly - codegen handles all cases
+
+						typeStack.push_back(StackValueType::PTR);
+						structTypeStack.push_back(qualifiedStructName); // Track the qualified struct type
+						break;
+					}
+				}
+
+				// Check if this is a user-defined function
+				auto sigIt = mFunctionSignatures.find(name);
+				if (sigIt != mFunctionSignatures.end()) {
+					const FunctionSignature& sig = sigIt->second;
+
+					// Validate '!' and '?' usage: only allowed on fallible functions (marked with '!')
+					if (ident->abortOnError() && !sig.throws) {
+						std::string errorMsg = "Cannot use '!' operator on function '" + name +
+											   "' which is not marked as fallible (add '!' after signature)";
+						reportError(ident, errorMsg.c_str());
+					}
+					if (ident->checkError() && !sig.throws) {
+						std::string errorMsg = "Cannot use '?' operator on function '" + name +
+											   "' which is not marked as fallible (add '!' after signature)";
+						reportError(ident, errorMsg.c_str());
+					}
+
+					// Check fallible functions without ! or ? must be followed by 'if' or 'switch'
+					if (sig.throws && !ident->abortOnError() && !ident->checkError()) {
+						IAstNode* nextNode = (i + 1 < node->childCount()) ? node->child(i + 1) : nullptr;
+						if (!nextNode || (nextNode->type() != IAstNode::Type::IF_STATEMENT &&
+												 nextNode->type() != IAstNode::Type::SWITCH_STATEMENT)) {
+							std::string errorMsg = "Fallible function '" + name +
+												   "' must be immediately followed by 'if' or 'switch' to check for "
+												   "errors, or use '!' to abort on error";
+							reportError(ident, errorMsg.c_str());
+						}
+					}
+
+					// Check if stack has enough values for function parameters
+					if (typeStack.size() < sig.consumes.size()) {
+						std::string errorMsg = "Type error in function call '";
+						errorMsg += name;
+						errorMsg += "': Stack underflow (requires ";
+						errorMsg += std::to_string(sig.consumes.size());
+						errorMsg += " values, have ";
+						errorMsg += std::to_string(typeStack.size());
+						errorMsg += ")";
+						reportError(ident, errorMsg.c_str());
+						break;
+					}
+
+					// Track which parameters need casts
+					std::vector<CastDirection> paramCasts(sig.consumes.size(), CastDirection::NONE);
+
+					// Check if the types match
+					for (size_t j = 0; j < sig.consumes.size(); j++) {
+						size_t stackIdx = typeStack.size() - sig.consumes.size() + j;
+						StackValueType expected = sig.consumes[j];
+						StackValueType actual = typeStack[stackIdx];
+
+						// Skip check if expected type is ANY or UNKNOWN
+						if (expected == StackValueType::ANY || expected == StackValueType::UNKNOWN) {
+							continue;
+						}
+
+						// Skip check if actual type is UNKNOWN or ANY (can't determine type at compile time)
+						if (actual == StackValueType::UNKNOWN || actual == StackValueType::ANY) {
+							continue;
+						}
+
+						// Check for type mismatch
+						if (actual != expected) {
+							// Check if implicit cast is allowed (int <-> float)
+							if (isImplicitCastAllowed(actual, expected)) {
+								// Warn about implicit cast
+								std::string warnMsg = "Implicit cast in function call '";
+								warnMsg += name;
+								warnMsg += "': Parameter ";
+								warnMsg += std::to_string(j + 1);
+								warnMsg += " expects ";
+								warnMsg += stackValueTypeToString(expected);
+								warnMsg += ", but got ";
+								warnMsg += stackValueTypeToString(actual);
+								reportWarning(ident, warnMsg.c_str());
+
+								// Record the cast direction
+								if (actual == StackValueType::INT && expected == StackValueType::FLOAT) {
+									paramCasts[j] = CastDirection::INT_TO_FLOAT;
+									// Update type stack to reflect the cast
+									typeStack[stackIdx] = StackValueType::FLOAT;
+								} else if (actual == StackValueType::FLOAT && expected == StackValueType::INT) {
+									paramCasts[j] = CastDirection::FLOAT_TO_INT;
+									// Update type stack to reflect the cast
+									typeStack[stackIdx] = StackValueType::INT;
+								}
+							} else {
+								// Type mismatch error
+								std::string errorMsg = "Type error in function call '";
+								errorMsg += name;
+								errorMsg += "': Parameter ";
+								errorMsg += std::to_string(j + 1);
+								errorMsg += " expects ";
+								errorMsg += stackValueTypeToString(expected);
+								errorMsg += ", but got ";
+								errorMsg += stackValueTypeToString(actual);
+								reportError(ident, errorMsg.c_str());
+							}
+						}
+					}
+
+					// Store cast information in the identifier node
+					ident->setParameterCasts(paramCasts);
+
+					// Validate struct field requirements for PTR parameters
+					if (!sig.parameterFieldAccess.empty()) {
+						// Build a mapping from struct type name to required fields
+						// by matching parameterStructTypes to parameterFieldAccess
+						std::unordered_map<std::string, const std::unordered_map<std::string, StackValueType>*>
+								structTypeToRequiredFields;
+						for (const auto& paramField : sig.parameterFieldAccess) {
+							// Find the struct type for this parameter by scanning parameterStructTypes
+							for (const auto& pst : sig.parameterStructTypes) {
+								// We need to match by name somehow - check if the parameter name matches
+								// Since we don't have direct name->index, we'll use struct type matching
+								const std::string& expectedStructType = pst.second;
+								// If this struct type hasn't been assigned required fields yet, assign them
+								if (structTypeToRequiredFields.find(expectedStructType) ==
+										structTypeToRequiredFields.end()) {
+									// Check if this param's field accesses match this struct type's fields
+									const auto* structFieldPtr = lookupStructFieldTypes(expectedStructType);
+									if (structFieldPtr != nullptr) {
+										const auto& availableFields = *structFieldPtr;
+										bool allFieldsMatch = true;
+										for (const auto& reqField : paramField.second) {
+											if (availableFields.find(reqField.first) == availableFields.end()) {
+												allFieldsMatch = false;
+												break;
+											}
+										}
+										if (allFieldsMatch && !paramField.second.empty()) {
+											structTypeToRequiredFields[expectedStructType] = &paramField.second;
+										}
+									}
+								}
+							}
+						}
+
+						// Validate each PTR parameter on the stack
+						for (size_t j = 0; j < sig.consumes.size(); j++) {
+							if (sig.consumes[j] == StackValueType::PTR) {
+								size_t stackIdx = typeStack.size() - sig.consumes.size() + j;
+								std::string actualStructType = "";
+								if (stackIdx < structTypeStack.size()) {
+									actualStructType = structTypeStack[stackIdx];
+								}
+
+								// Get expected struct type for this parameter index
+								std::string expectedStructType = "";
+								auto pstIt = sig.parameterStructTypes.find(j);
+								if (pstIt != sig.parameterStructTypes.end()) {
+									expectedStructType = pstIt->second;
+								}
+
+								// Validate struct type matches expectation
+								if (!expectedStructType.empty() && !actualStructType.empty() &&
+										actualStructType != expectedStructType) {
+									std::string errorMsg = "Type error in function call '";
+									errorMsg += name;
+									errorMsg += "': Parameter ";
+									errorMsg += std::to_string(j + 1);
+									errorMsg += " expects struct '";
+									errorMsg += expectedStructType;
+									errorMsg += "', but got '";
+									errorMsg += actualStructType;
+									errorMsg += "'";
+									reportError(ident, errorMsg.c_str());
+								}
+
+								// Validate field requirements for this specific struct type
+								if (!actualStructType.empty()) {
+									auto reqFieldsIt = structTypeToRequiredFields.find(actualStructType);
+									if (reqFieldsIt != structTypeToRequiredFields.end()) {
+										const auto& requiredFields = *reqFieldsIt->second;
+										const auto* structFieldPtr = lookupStructFieldTypes(actualStructType);
+										if (structFieldPtr != nullptr) {
+											const auto& availableFields = *structFieldPtr;
+
+											for (const auto& requiredFieldEntry : requiredFields) {
+												const std::string& requiredField = requiredFieldEntry.first;
+												StackValueType expectedType = requiredFieldEntry.second;
+
+												auto fieldIt = availableFields.find(requiredField);
+												if (fieldIt == availableFields.end()) {
+													std::string errorMsg = "Type error in function call '";
+													errorMsg += name;
+													errorMsg += "': Struct '";
+													errorMsg += actualStructType;
+													errorMsg += "' is missing required field '";
+													errorMsg += requiredField;
+													errorMsg += "'";
+													reportError(ident, errorMsg.c_str());
+												} else {
+													StackValueType actualType = fieldIt->second;
+													if (actualType != expectedType &&
+															expectedType != StackValueType::UNKNOWN &&
+															actualType != StackValueType::UNKNOWN) {
+														if (!isImplicitCastAllowed(actualType, expectedType)) {
+															std::string errorMsg = "Type error in function call '";
+															errorMsg += name;
+															errorMsg += "': Field '";
+															errorMsg += requiredField;
+															errorMsg += "' in struct '";
+															errorMsg += actualStructType;
+															errorMsg += "' has type ";
+															errorMsg += stackValueTypeToString(actualType);
+															errorMsg += ", but function expects ";
+															errorMsg += stackValueTypeToString(expectedType);
+															reportError(ident, errorMsg.c_str());
+														}
+													}
+												}
+											}
+										}
+									}
+								}
+							}
+						}
+					}
+
+					// Save consumed struct types before popping (for pass-through tracking)
+					std::vector<std::string> consumedStructTypes;
+					if (sig.consumes.size() > 0 && structTypeStack.size() >= sig.consumes.size()) {
+						// Save struct types in order (bottom to top of consumed portion)
+						size_t startIdx = structTypeStack.size() - sig.consumes.size();
+						for (size_t j = 0; j < sig.consumes.size(); j++) {
+							consumedStructTypes.push_back(structTypeStack[startIdx + j]);
+						}
+					}
+
+					// Validate struct types match expected parameter types
+					for (size_t paramIdx = 0; paramIdx < sig.consumes.size(); paramIdx++) {
+						if (sig.consumes[paramIdx] != StackValueType::PTR) {
+							continue;
+						}
+
+						// Check if this parameter has an expected struct type
+						auto expectedTypeIt = sig.parameterStructTypes.find(paramIdx);
+						if (expectedTypeIt == sig.parameterStructTypes.end()) {
+							continue; // No specific struct type required
+						}
+
+						const std::string& expectedStruct = expectedTypeIt->second;
+
+						// Get the actual struct type being passed
+						// Parameters are in declaration order, which matches stack order (bottom to top)
+						if (paramIdx < consumedStructTypes.size()) {
+							const std::string& actualStruct = consumedStructTypes[paramIdx];
+
+							if (!actualStruct.empty() && actualStruct != expectedStruct) {
+								std::string errorMsg = "Type error in function '";
+								errorMsg += name;
+								errorMsg += "': Parameter ";
+								errorMsg += std::to_string(paramIdx + 1);
+								errorMsg += " expects struct type '";
+								errorMsg += expectedStruct;
+								errorMsg += "' but got '";
+								errorMsg += actualStruct;
+								errorMsg += "'";
+								reportError(ident, errorMsg.c_str());
+							}
+						}
+					}
+
+					// Check if any parameter is PTR (function pointer) before consuming
+					bool consumesPtrParam = false;
+					for (const auto& paramType : sig.consumes) {
+						if (paramType == StackValueType::PTR) {
+							consumesPtrParam = true;
+							break;
+						}
+					}
+
+					// Consume the parameters from the stack
+					for (size_t j = 0; j < sig.consumes.size(); j++) {
+						typeStack.pop_back();
+						if (!structTypeStack.empty()) {
+							structTypeStack.pop_back();
+						}
+					}
+
+					// Reset pending function signature only if we consumed a PTR parameter -
+					// this ensures signatures from input function pointers don't leak to
+					// returned function pointers, but preserves signatures for functions
+					// that return closures without taking function pointer parameters
+					if (consumesPtrParam) {
+						mPendingFnSignature.reset();
+					}
+
+					// Helper lambda to determine struct type for a produced PTR value
+					auto getProducedStructType = [&](size_t produceIdx, StackValueType producedType) -> std::string {
+						if (producedType != StackValueType::PTR) {
+							return ""; // Only PTR types can have struct types
+						}
+						// First check if the signature explicitly declares the return struct type
+						auto structIt = sig.producesStructTypes.find(produceIdx);
+						if (structIt != sig.producesStructTypes.end()) {
+							return structIt->second;
+						}
+						// Fallback: Conservative heuristic: if we consumed PTR parameters and are producing PTR values,
+						// try to match them up in order (simple pass-through case)
+						size_t consumedPtrCount = 0;
+						size_t producedPtrCount = 0;
+						for (size_t ci = 0; ci < sig.consumes.size(); ci++) {
+							if (sig.consumes[ci] == StackValueType::PTR) {
+								consumedPtrCount++;
+							}
+						}
+						for (size_t pi = 0; pi < sig.produces.size(); pi++) {
+							if (sig.produces[pi] == StackValueType::PTR) {
+								if (pi == produceIdx) {
+									// This is the PTR we're producing - find which PTR index it is
+									break;
+								}
+								producedPtrCount++;
+							}
+						}
+						// If we have at least as many consumed PTR params as produced PTR values,
+						// try to match them up in order
+						if (producedPtrCount < consumedPtrCount && producedPtrCount < consumedStructTypes.size()) {
+							// Find the Nth consumed PTR parameter
+							size_t ptrIdx = 0;
+							for (size_t mi = 0; mi < sig.consumes.size() && mi < consumedStructTypes.size(); mi++) {
+								if (sig.consumes[mi] == StackValueType::PTR) {
+									if (ptrIdx == producedPtrCount) {
+										return consumedStructTypes[mi];
+									}
+									ptrIdx++;
+								}
+							}
+						}
+						return ""; // Unknown struct type
+					};
+
+					// Apply the produces effect
+					if (ident->checkError()) {
+						// func? - immediately check error
+						// Produces: value (untainted) + error_status (INT)
+						for (size_t idx = 0; idx < sig.produces.size(); idx++) {
+							const auto& type = sig.produces[idx];
+							typeStack.push_back(type); // Push untainted value
+							structTypeStack.push_back(getProducedStructType(idx, type));
+						}
+						typeStack.push_back(StackValueType::INT); // Error status (0 or 1)
+						structTypeStack.push_back("");
+					} else if (sig.throws && !ident->abortOnError()) {
+						// func without ! or ? - pushes result + error flag
+						for (size_t idx = 0; idx < sig.produces.size(); idx++) {
+							const auto& type = sig.produces[idx];
+							typeStack.push_back(type);
+							structTypeStack.push_back(getProducedStructType(idx, type));
+						}
+						typeStack.push_back(StackValueType::INT); // Error status (0 or 1)
+						structTypeStack.push_back("");
+					} else {
+						// Normal call or func!
+						for (size_t idx = 0; idx < sig.produces.size(); idx++) {
+							const auto& type = sig.produces[idx];
+							typeStack.push_back(type);
+							structTypeStack.push_back(getProducedStructType(idx, type));
+						}
+					}
+				}
+				// If it's not a user function, it must be a built-in (already validated in pass 2)
+				// Built-ins are handled as Instructions, not Identifiers in the AST
+				break;
+			}
+
+			case IAstNode::Type::FIELD_ACCESS: {
+				// Field access: varName @fieldName - pushes the field value onto stack
+				AstNodeFieldAccess* fieldAccess = static_cast<AstNodeFieldAccess*>(child);
+				const std::string& varName = fieldAccess->varName();
+				const std::string& fieldName = fieldAccess->fieldName();
+
+				// Check if varName is a struct type name (inline struct field access)
+				// e.g., "100 200 IntPair @x" - IntPair is a struct type, not a variable
+				// We distinguish inline construction from accessing an existing struct by checking:
+				// - If structTypeStack.back() == varName, the struct is already constructed (no pop)
+				// - Otherwise, the field values are on the stack waiting for construction (pop them)
+				const auto* inlineStructFields = lookupStructFieldTypes(varName);
+				if (inlineStructFields != nullptr) {
+					const auto& fields = *inlineStructFields;
+					bool isExistingStruct = !structTypeStack.empty() && structTypeStack.back() == varName;
+
+					if (!isExistingStruct) {
+						// This is inline struct field access - pop struct field values from stacks
+						size_t fieldCount = fields.size();
+						for (size_t fi = 0; fi < fieldCount && !typeStack.empty(); fi++) {
+							typeStack.pop_back();
+							if (!structTypeStack.empty()) {
+								structTypeStack.pop_back();
+							}
+						}
+					} else {
+						// Accessing an existing struct - pop just the struct pointer
+						typeStack.pop_back();
+						structTypeStack.pop_back();
+					}
+
+					// Find the field type
+					auto fieldIt = fields.find(fieldName);
+					if (fieldIt != fields.end()) {
+						StackValueType fieldType = fieldIt->second;
+						typeStack.push_back(fieldType);
+
+						// Check if field is a struct type
+						auto fieldStructIt = mStructFieldStructTypes.find(varName);
+						if (fieldStructIt != mStructFieldStructTypes.end()) {
+							auto structNameIt = fieldStructIt->second.find(fieldName);
+							if (structNameIt != fieldStructIt->second.end()) {
+								structTypeStack.push_back(structNameIt->second);
+							} else {
+								structTypeStack.push_back("");
+							}
+						} else {
+							structTypeStack.push_back("");
+						}
+					} else {
+						std::string errorMsg = "Type error in field access '";
+						errorMsg += varName;
+						errorMsg += " @";
+						errorMsg += fieldName;
+						errorMsg += "': Struct '";
+						errorMsg += varName;
+						errorMsg += "' has no field named '";
+						errorMsg += fieldName;
+						errorMsg += "'";
+						reportError(fieldAccess, errorMsg.c_str());
+						typeStack.push_back(StackValueType::ANY);
+						structTypeStack.push_back("");
+					}
+					break;
+				}
+
+				// Look up which struct type this variable holds
+				std::string structType = "";
+				auto structTypeIt = mLocalVariableStructTypes.find(varName);
+				if (structTypeIt != mLocalVariableStructTypes.end()) {
+					structType = structTypeIt->second;
+				}
+
+				// Validate the field exists on this struct type
+				StackValueType fieldType = StackValueType::UNKNOWN;
+				bool fieldFound = false;
+
+				if (!structType.empty()) {
+					// We know which struct type this is - validate against it
+					const auto* structFieldPtr = lookupStructFieldTypes(structType);
+					if (structFieldPtr != nullptr) {
+						const auto& fields = *structFieldPtr;
+						auto fieldIt = fields.find(fieldName);
+						if (fieldIt != fields.end()) {
+							fieldType = fieldIt->second;
+							fieldFound = true;
+						} else {
+							// Field doesn't exist on this struct type!
+							std::string errorMsg = "Type error in field access '";
+							errorMsg += varName;
+							errorMsg += " @";
+							errorMsg += fieldName;
+							errorMsg += "': Struct '";
+							errorMsg += structType;
+							errorMsg += "' has no field named '";
+							errorMsg += fieldName;
+							errorMsg += "'";
+							reportError(fieldAccess, errorMsg.c_str());
+							fieldType = StackValueType::ANY; // Continue with ANY to avoid cascading errors
+						}
+					}
+				} else {
+					// Variable is not a known struct type
+					// Check if variable is definitely a scalar type (not a struct)
+					auto localIt = localVariables.find(varName);
+					if (localIt != localVariables.end() &&
+							(localIt->second == StackValueType::INT || localIt->second == StackValueType::FLOAT ||
+									localIt->second == StackValueType::STRING)) {
+						// Variable is definitely a scalar type - this is an error
+						std::string errorMsg = "Type error in field access '";
+						errorMsg += varName;
+						errorMsg += " @";
+						errorMsg += fieldName;
+						errorMsg += "': Variable '";
+						errorMsg += varName;
+						errorMsg += "' is not a struct type";
+						reportError(fieldAccess, errorMsg.c_str());
+						fieldType = StackValueType::ANY; // Continue with ANY to avoid cascading errors
+					} else {
+						// Variable is either a pointer or unknown - search all structs (for parameters/pointers)
+						for (const auto& structEntry : mStructFieldTypes) {
+							const auto& fields = structEntry.second;
+							auto it = fields.find(fieldName);
+							if (it != fields.end()) {
+								fieldType = it->second;
+								fieldFound = true;
+								break;
+							}
+						}
+
+						if (!fieldFound) {
+							std::string errorMsg = "Type error in field access '";
+							errorMsg += varName;
+							errorMsg += " @";
+							errorMsg += fieldName;
+							errorMsg += "': Unknown variable or field";
+							reportError(fieldAccess, errorMsg.c_str());
+							fieldType = StackValueType::ANY;
+						}
+					}
+				}
+
+				// Push the field type onto the stack
+				typeStack.push_back(fieldType);
+				structTypeStack.push_back(""); // Field values are not struct pointers
+				break;
+			}
+
+			case IAstNode::Type::FIELD_SET: {
+				// Field set: value variable.fieldName - pops value from stack and stores in field
+				AstNodeFieldSet* fieldSet = static_cast<AstNodeFieldSet*>(child);
+				const std::string& varName = fieldSet->varName();
+				const std::string& fieldName = fieldSet->fieldName();
+
+				// Look up which struct type this variable holds
+				std::string structType = "";
+				auto structTypeIt = mLocalVariableStructTypes.find(varName);
+				if (structTypeIt != mLocalVariableStructTypes.end()) {
+					structType = structTypeIt->second;
+				}
+
+				// Validate the field exists on this struct type
+				bool fieldFound = false;
+
+				if (!structType.empty()) {
+					// We know which struct type this is - validate against it
+					const auto* structFieldPtr = lookupStructFieldTypes(structType);
+					if (structFieldPtr != nullptr) {
+						const auto& fields = *structFieldPtr;
+						auto fieldIt = fields.find(fieldName);
+						if (fieldIt != fields.end()) {
+							fieldFound = true;
+						} else {
+							// Field doesn't exist on this struct type!
+							std::string errorMsg = "Field '";
+							errorMsg += fieldName;
+							errorMsg += "' does not exist in struct '";
+							errorMsg += structType;
+							errorMsg += "'";
+							reportError(fieldSet, errorMsg.c_str());
+						}
+					}
+				} else {
+					// Variable is not a known struct type
+					auto localIt = localVariables.find(varName);
+					if (localIt != localVariables.end() &&
+							(localIt->second == StackValueType::INT || localIt->second == StackValueType::FLOAT ||
+									localIt->second == StackValueType::STRING)) {
+						// Variable is definitely a scalar type - this is an error
+						std::string errorMsg = "Variable '";
+						errorMsg += varName;
+						errorMsg += "' is not a struct type";
+						reportError(fieldSet, errorMsg.c_str());
+					} else {
+						// Variable is either a pointer or unknown - search all structs
+						for (const auto& structEntry : mStructFieldTypes) {
+							const auto& fields = structEntry.second;
+							auto it = fields.find(fieldName);
+							if (it != fields.end()) {
+								fieldFound = true;
+								break;
+							}
+						}
+
+						if (!fieldFound) {
+							std::string errorMsg = "Unknown variable '";
+							errorMsg += varName;
+							errorMsg += "' or field '";
+							errorMsg += fieldName;
+							errorMsg += "'";
+							reportError(fieldSet, errorMsg.c_str());
+						}
+					}
+				}
+
+				// Pop the value being assigned from the stack
+				if (!typeStack.empty()) {
+					typeStack.pop_back();
+					if (!structTypeStack.empty()) {
+						structTypeStack.pop_back();
+					}
+				}
+				break;
+			}
+
+			case IAstNode::Type::SCOPED_IDENTIFIER: {
+				// Handle module constants, structs, or function calls
+				AstNodeScopedIdentifier* scoped = static_cast<AstNodeScopedIdentifier*>(child);
+				const std::string& moduleName = scoped->scope();
+				const std::string& functionName = scoped->name();
+				std::string qualifiedName = moduleName + "::" + functionName;
+
+				// Check if this is a constant first
+				auto constIt = mModuleConstants.find(moduleName);
+				if (constIt != mModuleConstants.end()) {
+					const auto& constants = constIt->second;
+					if (constants.find(functionName) != constants.end()) {
+						// This is a constant - determine its type and push onto the stack
+						std::string constQualifiedName = moduleName + "::" + functionName;
+						auto valueIt = mModuleConstantValues.find(constQualifiedName);
+						if (valueIt != mModuleConstantValues.end()) {
+							const std::string& value = valueIt->second;
+							// Infer type from value
+							if (!value.empty() && value[0] == '"') {
+								typeStack.push_back(StackValueType::STRING);
+							} else if (value.find('.') != std::string::npos || value.find('e') != std::string::npos ||
+									   value.find('E') != std::string::npos) {
+								typeStack.push_back(StackValueType::FLOAT);
+							} else {
+								typeStack.push_back(StackValueType::INT);
+							}
+						} else {
+							typeStack.push_back(StackValueType::UNKNOWN);
+						}
+						structTypeStack.push_back("");
+						break;
+					}
+				}
+
+				// Check if this is a struct construction
+				auto moduleStructsIt = mModuleStructs.find(moduleName);
+				if (moduleStructsIt != mModuleStructs.end()) {
+					const auto& structs = moduleStructsIt->second;
+					auto structIt = structs.find(functionName);
+					if (structIt != structs.end() && structIt->second) {
+						// This is a struct construction from a module
+						// Use mStructFieldTypes and mStructFieldOrder since the AST node may be invalid
+						// Use qualified name for lookup since module structs are stored with qualified keys
+						const auto* structFieldTypesPtr = lookupStructFieldTypes(qualifiedName);
+						auto structFieldOrderIt = mStructFieldOrder.find(qualifiedName);
+
+						if (structFieldTypesPtr != nullptr && structFieldOrderIt != mStructFieldOrder.end()) {
+							const auto& fieldTypes = *structFieldTypesPtr;
+							const auto& fieldOrder = structFieldOrderIt->second;
+							size_t fieldCount = fieldOrder.size();
+
+							// Check if we have enough values on the stack
+							if (typeStack.size() < fieldCount) {
+								std::string errorMsg = "Type error in struct construction '";
+								errorMsg += qualifiedName;
+								errorMsg += "': Stack underflow (requires ";
+								errorMsg += std::to_string(fieldCount);
+								errorMsg += " values, have ";
+								errorMsg += std::to_string(typeStack.size());
+								errorMsg += ")";
+								reportError(scoped, errorMsg.c_str());
+							} else {
+								// Validate each field type (fields are in declaration order)
+								// Fields are consumed bottom-to-top from the stack
+								for (size_t fi = 0; fi < fieldOrder.size(); fi++) {
+									size_t stackIdx = typeStack.size() - fieldOrder.size() + fi;
+									StackValueType actual = typeStack[stackIdx];
+									const std::string& fieldName = fieldOrder[fi];
+
+									// Get expected type from fieldTypes
+									auto fieldTypeIt = fieldTypes.find(fieldName);
+									if (fieldTypeIt == fieldTypes.end()) {
+										continue;
+									}
+									StackValueType expected = fieldTypeIt->second;
+
+									// Skip check if actual type is UNKNOWN (can't determine type)
+									if (actual == StackValueType::UNKNOWN) {
+										continue;
+									}
+
+									// Check for type mismatch
+									if (actual != expected) {
+										// Check if implicit cast is allowed (int <-> float)
+										if (isImplicitCastAllowed(actual, expected)) {
+											// Only warn for casts that should be warned about
+											if (shouldWarnImplicitCast(actual, expected)) {
+												std::string warnMsg = "Implicit cast in struct construction '";
+												warnMsg += qualifiedName;
+												warnMsg += "': Field '";
+												warnMsg += fieldName;
+												warnMsg += "' expects ";
+												warnMsg += stackValueTypeToString(expected);
+												warnMsg += ", but got ";
+												warnMsg += stackValueTypeToString(actual);
+												reportWarning(scoped, warnMsg.c_str());
+											}
+										} else {
+											// Type mismatch error
+											std::string errorMsg = "Type error in struct construction '";
+											errorMsg += qualifiedName;
+											errorMsg += "': Field '";
+											errorMsg += fieldName;
+											errorMsg += "' expects ";
+											errorMsg += stackValueTypeToString(expected);
+											errorMsg += ", but got ";
+											errorMsg += stackValueTypeToString(actual);
+											reportError(scoped, errorMsg.c_str());
+										}
+									}
+								}
+							}
+
+							// Pop field values from stack
+							for (size_t fi = 0; fi < fieldCount && !typeStack.empty(); fi++) {
+								typeStack.pop_back();
+								if (!structTypeStack.empty()) {
+									structTypeStack.pop_back();
+								}
+							}
+						}
+
+						// Struct pointers can now be used flexibly - codegen handles all cases
+
+						// Push pointer type for the constructed struct, with qualified name as type
+						typeStack.push_back(StackValueType::PTR);
+						structTypeStack.push_back(functionName); // Track the struct type (bare name)
+						break;
+					}
+				}
+
+				// Look up the module function signature
+				auto sigIt = mFunctionSignatures.find(qualifiedName);
+				if (sigIt != mFunctionSignatures.end()) {
+					const FunctionSignature& sig = sigIt->second;
+
+					// Validate '!' and '?' usage: only allowed on fallible functions (marked with '!')
+					if (scoped->abortOnError() && !sig.throws) {
+						std::string errorMsg = "Cannot use '!' operator on function '" + qualifiedName +
+											   "' which is not marked as fallible (add '!' after signature)";
+						reportError(scoped, errorMsg.c_str());
+					}
+					if (scoped->checkError() && !sig.throws) {
+						std::string errorMsg = "Cannot use '?' operator on function '" + qualifiedName +
+											   "' which is not marked as fallible (add '!' after signature)";
+						reportError(scoped, errorMsg.c_str());
+					}
+
+					// Check fallible functions without ! or ? must be followed by 'if' or 'switch'
+					if (sig.throws && !scoped->abortOnError() && !scoped->checkError()) {
+						IAstNode* nextNode = (i + 1 < node->childCount()) ? node->child(i + 1) : nullptr;
+						if (!nextNode || (nextNode->type() != IAstNode::Type::IF_STATEMENT &&
+												 nextNode->type() != IAstNode::Type::SWITCH_STATEMENT)) {
+							std::string errorMsg = "Fallible function '" + qualifiedName +
+												   "' must be immediately followed by 'if' or 'switch' to check for "
+												   "errors, or use '!' to abort on error";
+							reportError(scoped, errorMsg.c_str());
+						}
+					}
+
+					// Check if stack has enough values for function parameters
+					if (typeStack.size() < sig.consumes.size()) {
+						std::string errorMsg = "Type error in function call '";
+						errorMsg += qualifiedName;
+						errorMsg += "': Stack underflow (requires ";
+						errorMsg += std::to_string(sig.consumes.size());
+						errorMsg += " values, have ";
+						errorMsg += std::to_string(typeStack.size());
+						errorMsg += ")";
+						reportError(scoped, errorMsg.c_str());
+						break;
+					}
+
+					// Track which parameters need casts
+					std::vector<CastDirection> paramCasts(sig.consumes.size(), CastDirection::NONE);
+
+					// Check if the types match
+					for (size_t j = 0; j < sig.consumes.size(); j++) {
+						size_t stackIdx = typeStack.size() - sig.consumes.size() + j;
+						StackValueType expected = sig.consumes[j];
+						StackValueType actual = typeStack[stackIdx];
+
+						// Skip check if expected type is ANY or UNKNOWN
+						if (expected == StackValueType::ANY || expected == StackValueType::UNKNOWN) {
+							continue;
+						}
+
+						// Skip check if actual type is UNKNOWN or ANY (can't determine type at compile time)
+						if (actual == StackValueType::UNKNOWN || actual == StackValueType::ANY) {
+							continue;
+						}
+
+						// Check for type mismatch
+						if (actual != expected) {
+							// Check if implicit cast is allowed (int <-> float)
+							if (isImplicitCastAllowed(actual, expected)) {
+								// Warn about implicit cast
+								std::string warnMsg = "Implicit cast in function call '";
+								warnMsg += qualifiedName;
+								warnMsg += "': Parameter ";
+								warnMsg += std::to_string(j + 1);
+								warnMsg += " expects ";
+								warnMsg += stackValueTypeToString(expected);
+								warnMsg += ", but got ";
+								warnMsg += stackValueTypeToString(actual);
+								reportWarning(scoped, warnMsg.c_str());
+
+								// Record the cast direction
+								if (actual == StackValueType::INT && expected == StackValueType::FLOAT) {
+									paramCasts[j] = CastDirection::INT_TO_FLOAT;
+									// Update type stack to reflect the cast
+									typeStack[stackIdx] = StackValueType::FLOAT;
+								} else if (actual == StackValueType::FLOAT && expected == StackValueType::INT) {
+									paramCasts[j] = CastDirection::FLOAT_TO_INT;
+									// Update type stack to reflect the cast
+									typeStack[stackIdx] = StackValueType::INT;
+								}
+							} else {
+								// Type mismatch error
+								std::string errorMsg = "Type error in function call '";
+								errorMsg += qualifiedName;
+								errorMsg += "': Parameter ";
+								errorMsg += std::to_string(j + 1);
+								errorMsg += " expects ";
+								errorMsg += stackValueTypeToString(expected);
+								errorMsg += ", but got ";
+								errorMsg += stackValueTypeToString(actual);
+								reportError(scoped, errorMsg.c_str());
+							}
+						}
+					}
+
+					// Store cast information in the scoped identifier node
+					scoped->setParameterCasts(paramCasts);
+
+					// Check if any parameter is PTR (function pointer) before consuming
+					bool consumesPtrParam = false;
+					for (const auto& paramType : sig.consumes) {
+						if (paramType == StackValueType::PTR) {
+							consumesPtrParam = true;
+							break;
+						}
+					}
+
+					// Consume the parameters from the stack
+					for (size_t j = 0; j < sig.consumes.size(); j++) {
+						typeStack.pop_back();
+						if (!structTypeStack.empty()) {
+							structTypeStack.pop_back();
+						}
+					}
+
+					// Reset pending function signature only if we consumed a PTR parameter -
+					// this ensures signatures from input function pointers don't leak to
+					// returned function pointers, but preserves signatures for functions
+					// that return closures without taking function pointer parameters
+					if (consumesPtrParam) {
+						mPendingFnSignature.reset();
+					}
+
+					// Apply the produces effect
+					if (scoped->checkError()) {
+						// func? - immediately check error
+						// Produces: value (untainted) + error_status (INT)
+						for (size_t idx = 0; idx < sig.produces.size(); idx++) {
+							typeStack.push_back(sig.produces[idx]); // Push untainted value
+							auto structIt = sig.producesStructTypes.find(idx);
+							structTypeStack.push_back(
+									structIt != sig.producesStructTypes.end() ? structIt->second : "");
+						}
+						typeStack.push_back(StackValueType::INT); // Error status (0 or 1)
+						structTypeStack.push_back("");
+					} else if (sig.throws && !scoped->abortOnError()) {
+						// func without ! or ? - pushes result + error flag
+						for (size_t idx = 0; idx < sig.produces.size(); idx++) {
+							typeStack.push_back(sig.produces[idx]);
+							auto structIt = sig.producesStructTypes.find(idx);
+							structTypeStack.push_back(
+									structIt != sig.producesStructTypes.end() ? structIt->second : "");
+						}
+						typeStack.push_back(StackValueType::INT); // Error status (0 or 1)
+						structTypeStack.push_back("");
+					} else {
+						// Normal call or func!
+						for (size_t idx = 0; idx < sig.produces.size(); idx++) {
+							typeStack.push_back(sig.produces[idx]);
+							auto structIt = sig.producesStructTypes.find(idx);
+							structTypeStack.push_back(
+									structIt != sig.producesStructTypes.end() ? structIt->second : "");
+						}
+					}
+				}
+				// If signature not found, module wasn't loaded or analyzed
+				// This was already checked in validation pass, so we can skip silently
+				break;
+			}
+
+			case IAstNode::Type::FUNCTION_POINTER_REFERENCE:
+				// Function pointer references push a pointer type onto the stack
+				typeStack.push_back(StackValueType::PTR);
+				break;
+
+			case IAstNode::Type::ANONYMOUS_FUNCTION: {
+				// Anonymous functions push a function pointer onto the stack
+				AstNodeAnonymousFunction* anonFunc = static_cast<AstNodeAnonymousFunction*>(child);
+
+				// Extract the function signature from input/output parameters
+				FunctionSignature sig;
+				for (const auto* paramNode : anonFunc->inputParameters()) {
+					AstNodeParameter* param = static_cast<AstNodeParameter*>(const_cast<IAstNode*>(paramNode));
+					sig.consumes.push_back(stringToStackValueType(param->typeString()));
+				}
+				for (const auto* paramNode : anonFunc->outputParameters()) {
+					AstNodeParameter* param = static_cast<AstNodeParameter*>(const_cast<IAstNode*>(paramNode));
+					sig.produces.push_back(stringToStackValueType(param->typeString()));
+				}
+
+				// Store as pending signature for subsequent LOCAL or call
+				mPendingFnSignature = sig;
+
+				typeStack.push_back(StackValueType::PTR);
+				structTypeStack.push_back(""); // Not a struct pointer
+				break;
+			}
+
+			default:
+				// Other node types don't affect the type stack
+				break;
+			}
+		}
+	}
+
+	void SemanticValidator::typeCheckInstruction(IAstNode* node, const char* name,
+			std::vector<StackValueType>& typeStack, std::vector<std::string>& structTypeStack) {
+		typeCheckInstructionInternal(node, name, typeStack, structTypeStack, true);
+	}
+
+	void SemanticValidator::typeCheckInstructionInternal(IAstNode* node, const char* name,
+			std::vector<StackValueType>& typeStack, std::vector<std::string>& structTypeStack, bool reportErrors) {
+		// Handle instruction aliases
+		if (strcmp(name, ".") == 0) {
+			name = "print";
+		} else if (strcmp(name, "/") == 0) {
+			name = "div";
+		} else if (strcmp(name, "*") == 0) {
+			name = "mul";
+		} else if (strcmp(name, "+") == 0) {
+			name = "add";
+		} else if (strcmp(name, "-") == 0) {
+			name = "sub";
+		} else if (strcmp(name, "==") == 0) {
+			name = "eq";
+		} else if (strcmp(name, "!=") == 0) {
+			name = "neq";
+		} else if (strcmp(name, "<") == 0) {
+			name = "lt";
+		} else if (strcmp(name, ">") == 0) {
+			name = "gt";
+		} else if (strcmp(name, "<=") == 0) {
+			name = "lte";
+		} else if (strcmp(name, ">=") == 0) {
+			name = "gte";
+		} else if (strcmp(name, "++") == 0) {
+			name = "inc";
+		} else if (strcmp(name, "--") == 0) {
+			name = "dec";
+		} else if (strcmp(name, "<<") == 0) {
+			name = "shl";
+		} else if (strcmp(name, ">>") == 0) {
+			name = "shr";
+		}
+
+		// panic instruction: ( msg code -- ) sets error flag
+		// Can only be called inside fallible functions (marked with !)
+		if (strcmp(name, "panic") == 0) {
+			if (!mCurrentFunctionFallible) {
+				reportErrorConditional(
+						node, "'panic' can only be used inside fallible functions (marked with !)", reportErrors);
+				return;
+			}
+			if (typeStack.size() < 2) {
+				reportErrorConditional(
+						node, "Type error in 'panic': Stack underflow (requires msg and code)", reportErrors);
+				return;
+			}
+			// Pop msg and code
+			typeStack.pop_back();
+			typeStack.pop_back();
+			if (structTypeStack.size() >= 2) {
+				structTypeStack.pop_back();
+				structTypeStack.pop_back();
+			}
+			return;
+		}
+
+		// err instruction: ( -- msg code ) retrieves error info from last failed fallible call
+		if (strcmp(name, "err") == 0) {
+			// Push msg (string) and code (int)
+			typeStack.push_back(StackValueType::STRING);
+			structTypeStack.push_back("");
+			typeStack.push_back(StackValueType::INT);
+			structTypeStack.push_back("");
+			return;
+		}
+
+		// read instruction: reads command-line arguments
+		// Stack: [...] -> [...] arg0 arg1 ... argN argc
+		// Since we don't know argc at compile-time, we push multiple values
+		// to allow reasonable operations after read (assumes up to 16 arguments)
+		// At runtime, arguments are parsed as int, float, or string based on content.
+		// At compile-time, we use STRING type for arguments since that's the most common case.
+		static const int READ_INSTRUCTION_MAX_ARGS = 16; // Maximum expected command-line arguments
+		if (strcmp(name, "read") == 0) {
+			typeStack.clear();
+			// Push 16 STRING-typed arguments (actual types determined at runtime)
+			for (int i = 0; i < READ_INSTRUCTION_MAX_ARGS; i++) {
+				typeStack.push_back(StackValueType::STRING);
+			}
+			// Push argc as integer (on top of stack)
+			typeStack.push_back(StackValueType::INT);
+			return;
+		}
+
+		// Arithmetic operations: abs, sq (preserve type)
+		if (strcmp(name, "abs") == 0 || strcmp(name, "sq") == 0) {
+			if (typeStack.empty()) {
+				std::string errorMsg = "Type error in '";
+				errorMsg += name;
+				errorMsg += "': Stack underflow (requires 1 numeric value)";
+				reportErrorConditional(node, errorMsg.c_str(), reportErrors);
+				return;
+			}
+
+			StackValueType top = typeStack.back();
+			if (!isNumericType(top)) {
+				std::string errorMsg = "Type error in '";
+				errorMsg += name;
+				errorMsg += "': Expected numeric type, got ";
+				errorMsg += typeToString(top);
+				reportErrorConditional(node, errorMsg.c_str(), reportErrors);
+				return;
+			}
+			// Type remains the same (already on stack)
+		}
+		// Trigonometric functions: sin, cos, tan, asin, acos, atan (always return float)
+		else if (strcmp(name, "sin") == 0 || strcmp(name, "cos") == 0 || strcmp(name, "tan") == 0 ||
+				 strcmp(name, "asin") == 0 || strcmp(name, "acos") == 0 || strcmp(name, "atan") == 0) {
+			if (typeStack.empty()) {
+				std::string errorMsg = "Type error in '";
+				errorMsg += name;
+				errorMsg += "': Stack underflow (requires 1 numeric value)";
+				reportError(node, errorMsg.c_str());
+				return;
+			}
+
+			StackValueType top = typeStack.back();
+			if (!isNumericType(top)) {
+				std::string errorMsg = "Type error in '";
+				errorMsg += name;
+				errorMsg += "': Expected numeric type, got ";
+				errorMsg += typeToString(top);
+				reportError(node, errorMsg.c_str());
+				return;
+			}
+			// Pop and push float (trig functions always return float)
+			typeStack.pop_back();
+			typeStack.push_back(StackValueType::FLOAT);
+		}
+		// Math functions: sqrt, cb, cbrt, ceil, floor, ln, log10, round (always return float)
+		else if (strcmp(name, "sqrt") == 0 || strcmp(name, "cb") == 0 || strcmp(name, "cbrt") == 0 ||
+				 strcmp(name, "ceil") == 0 || strcmp(name, "floor") == 0 || strcmp(name, "ln") == 0 ||
+				 strcmp(name, "log10") == 0 || strcmp(name, "round") == 0) {
+			if (typeStack.empty()) {
+				std::string errorMsg = "Type error in '";
+				errorMsg += name;
+				errorMsg += "': Stack underflow (requires 1 numeric value)";
+				reportError(node, errorMsg.c_str());
+				return;
+			}
+
+			StackValueType top = typeStack.back();
+			if (!isNumericType(top)) {
+				std::string errorMsg = "Type error in '";
+				errorMsg += name;
+				errorMsg += "': Expected numeric type, got ";
+				errorMsg += typeToString(top);
+				reportError(node, errorMsg.c_str());
+				return;
+			}
+			// Pop and push float (math functions always return float)
+			typeStack.pop_back();
+			typeStack.push_back(StackValueType::FLOAT);
+		}
+		// Factorial function: fac (integer only, returns integer)
+		else if (strcmp(name, "fac") == 0) {
+			if (typeStack.empty()) {
+				reportError(node, "Type error in 'fac': Stack underflow (requires 1 integer value)");
+				return;
+			}
+
+			StackValueType top = typeStack.back();
+			if (top != StackValueType::INT) {
+				std::string errorMsg = "Type error in 'fac': Expected integer type, got ";
+				errorMsg += typeToString(top);
+				reportError(node, errorMsg.c_str());
+				return;
+			}
+			// Type remains integer (already on stack)
+		}
+		// Increment/Decrement functions: inc, dec (preserve type)
+		else if (strcmp(name, "inc") == 0 || strcmp(name, "dec") == 0) {
+			if (typeStack.empty()) {
+				std::string errorMsg = "Type error in '";
+				errorMsg += name;
+				errorMsg += "': Stack underflow (requires 1 numeric value)";
+				reportError(node, errorMsg.c_str());
+				return;
+			}
+
+			StackValueType top = typeStack.back();
+			if (!isNumericType(top)) {
+				std::string errorMsg = "Type error in '";
+				errorMsg += name;
+				errorMsg += "': Expected numeric type, got ";
+				errorMsg += typeToString(top);
+				reportError(node, errorMsg.c_str());
+				return;
+			}
+			// Type remains the same (already on stack)
+		}
+		// Inverse function: inv (numeric input, returns float)
+		else if (strcmp(name, "inv") == 0) {
+			if (typeStack.empty()) {
+				reportError(node, "Type error in 'inv': Stack underflow (requires 1 numeric value)");
+				return;
+			}
+
+			StackValueType top = typeStack.back();
+			if (!isNumericType(top)) {
+				std::string errorMsg = "Type error in 'inv': Expected numeric type, got ";
+				errorMsg += typeToString(top);
+				reportError(node, errorMsg.c_str());
+				return;
+			}
+			// Pop and push float (inv always returns float)
+			typeStack.pop_back();
+			typeStack.push_back(StackValueType::FLOAT);
+		}
+		// Binary arithmetic operations: add, sub, mul, div, pow
+		else if (strcmp(name, "add") == 0 || strcmp(name, "sub") == 0 || strcmp(name, "mul") == 0 ||
+				 strcmp(name, "div") == 0 || strcmp(name, "pow") == 0) {
+			if (typeStack.size() < 2) {
+				std::string errorMsg = "Type error in '";
+				errorMsg += name;
+				errorMsg += "': Stack underflow (requires 2 numeric values)";
+				reportErrorConditional(node, errorMsg.c_str(), reportErrors);
+				return;
+			}
+
+			StackValueType b = typeStack.back();
+			typeStack.pop_back();
+			StackValueType a = typeStack.back();
+			typeStack.pop_back();
+
+			if (!isNumericType(a) || !isNumericType(b)) {
+				std::string errorMsg = "Type error in '";
+				errorMsg += name;
+				errorMsg += "': Expected numeric types, got ";
+				errorMsg += typeToString(a);
+				errorMsg += " and ";
+				errorMsg += typeToString(b);
+				reportErrorConditional(node, errorMsg.c_str(), reportErrors);
+				return;
+			}
+
+			// Result is float if either operand is float, otherwise int
+			StackValueType result = (a == StackValueType::FLOAT || b == StackValueType::FLOAT) ? StackValueType::FLOAT
+																							   : StackValueType::INT;
+			typeStack.push_back(result);
+		}
+		// Comparison operations: eq, neq, lt, gt, lte, gte (consume 2, produce int/bool)
+		else if (strcmp(name, "eq") == 0 || strcmp(name, "neq") == 0 || strcmp(name, "lt") == 0 ||
+				 strcmp(name, "gt") == 0 || strcmp(name, "lte") == 0 || strcmp(name, "gte") == 0) {
+			if (typeStack.size() < 2) {
+				std::string errorMsg = "Type error in '";
+				errorMsg += name;
+				errorMsg += "': Stack underflow (requires 2 values)";
+				reportErrorConditional(node, errorMsg.c_str(), reportErrors);
+				return;
+			}
+			// Pop both operands
+			typeStack.pop_back();
+			typeStack.pop_back();
+			if (structTypeStack.size() >= 2) {
+				structTypeStack.pop_back();
+				structTypeStack.pop_back();
+			}
+			// Push result (always int/bool)
+			typeStack.push_back(StackValueType::INT);
+			structTypeStack.push_back("");
+		}
+		// Logical operations: and, or (consume 2 bools, produce int/bool)
+		else if (strcmp(name, "and") == 0 || strcmp(name, "or") == 0) {
+			if (typeStack.size() < 2) {
+				std::string errorMsg = "Type error in '";
+				errorMsg += name;
+				errorMsg += "': Stack underflow (requires 2 values)";
+				reportErrorConditional(node, errorMsg.c_str(), reportErrors);
+				return;
+			}
+			// Pop both operands
+			typeStack.pop_back();
+			typeStack.pop_back();
+			if (structTypeStack.size() >= 2) {
+				structTypeStack.pop_back();
+				structTypeStack.pop_back();
+			}
+			// Push result (always int/bool)
+			typeStack.push_back(StackValueType::INT);
+			structTypeStack.push_back("");
+		}
+		// Logical negation: not (consume 1, produce int/bool)
+		else if (strcmp(name, "not") == 0) {
+			if (typeStack.empty()) {
+				reportErrorConditional(node, "Type error in 'not': Stack underflow (requires 1 value)", reportErrors);
+				return;
+			}
+			// Pop operand, push result (type stays int)
+			typeStack.pop_back();
+			if (!structTypeStack.empty()) {
+				structTypeStack.pop_back();
+			}
+			typeStack.push_back(StackValueType::INT);
+			structTypeStack.push_back("");
+		}
+		// Negation: neg (preserve numeric type)
+		else if (strcmp(name, "neg") == 0) {
+			if (typeStack.empty()) {
+				reportErrorConditional(
+						node, "Type error in 'neg': Stack underflow (requires 1 numeric value)", reportErrors);
+				return;
+			}
+			// Type stays the same
+		}
+		// Type casting: cast<T> (convert to type T)
+		else if (strcmp(name, "cast") == 0) {
+			if (typeStack.empty()) {
+				reportErrorConditional(node, "Type error in 'cast': Stack underflow (requires 1 value)", reportErrors);
+				return;
+			}
+			// Pop any type
+			typeStack.pop_back();
+			if (!structTypeStack.empty()) {
+				structTypeStack.pop_back();
+			}
+			// Determine result type from type parameter
+			StackValueType resultType = StackValueType::STRING; // default
+			if (node->type() == IAstNode::Type::INSTRUCTION) {
+				AstNodeInstruction* instr = static_cast<AstNodeInstruction*>(node);
+				if (instr->hasTypeParam()) {
+					const std::string& typeParam = instr->typeParam();
+					if (typeParam == "i64" || typeParam == "i32" || typeParam == "i16" || typeParam == "i8" ||
+							typeParam == "u64" || typeParam == "u32" || typeParam == "u16" || typeParam == "u8") {
+						resultType = StackValueType::INT;
+					} else if (typeParam == "f64" || typeParam == "f32") {
+						resultType = StackValueType::FLOAT;
+					} else if (typeParam == "str" || typeParam == "string") {
+						resultType = StackValueType::STRING;
+					} else if (typeParam == "ptr") {
+						resultType = StackValueType::PTR;
+					}
+				}
+			}
+			typeStack.push_back(resultType);
+			structTypeStack.push_back("");
+		}
+		// Modulo: mod (consume 2 ints, produce int)
+		else if (strcmp(name, "mod") == 0) {
+			if (typeStack.size() < 2) {
+				reportErrorConditional(
+						node, "Type error in 'mod': Stack underflow (requires 2 integer values)", reportErrors);
+				return;
+			}
+			// Pop both operands
+			typeStack.pop_back();
+			typeStack.pop_back();
+			if (structTypeStack.size() >= 2) {
+				structTypeStack.pop_back();
+				structTypeStack.pop_back();
+			}
+			// Push result (always int)
+			typeStack.push_back(StackValueType::INT);
+			structTypeStack.push_back("");
+		}
+		// Print operations: print, printv
+		else if (strcmp(name, "print") == 0 || strcmp(name, "printv") == 0) {
+			if (typeStack.empty()) {
+				std::string errorMsg = "Type error in '";
+				errorMsg += name;
+				errorMsg += "': Stack underflow (requires 1 value)";
+				reportErrorConditional(node, errorMsg.c_str(), reportErrors);
+				return;
+			}
+			typeStack.pop_back(); // Pop the value
+			if (!structTypeStack.empty()) {
+				structTypeStack.pop_back();
+			}
+		}
+		// Non-destructive print: prints, printsv
+		else if (strcmp(name, "prints") == 0 || strcmp(name, "printsv") == 0) {
+			// These don't modify the stack
+		}
+		// Stack operations: dup
+		else if (strcmp(name, "dup") == 0) {
+			if (typeStack.empty()) {
+				reportErrorConditional(node, "Type error in 'dup': Stack underflow (requires 1 value)", reportErrors);
+				return;
+			}
+			StackValueType top = typeStack.back();
+			typeStack.push_back(top); // Duplicate
+			// Duplicate struct type as well
+			if (!structTypeStack.empty()) {
+				std::string topStruct = structTypeStack.back();
+				structTypeStack.push_back(topStruct);
+			}
+		}
+		// Stack operations: dup2 ( a b -- a b a b )
+		else if (strcmp(name, "dup2") == 0) {
+			if (typeStack.size() < 2) {
+				reportError(node, "Type error in 'dup2': Stack underflow (requires 2 values)");
+				return;
+			}
+			// Get the second and top elements
+			StackValueType second = typeStack[typeStack.size() - 2];
+			StackValueType top = typeStack.back();
+			// Push copies of both
+			typeStack.push_back(second);
+			typeStack.push_back(top);
+			// Duplicate struct types as well
+			if (structTypeStack.size() >= 2) {
+				std::string secondStruct = structTypeStack[structTypeStack.size() - 2];
+				std::string topStruct = structTypeStack.back();
+				structTypeStack.push_back(secondStruct);
+				structTypeStack.push_back(topStruct);
+			}
+		}
+		// Stack operations: dupd ( a b -- a a b )
+		else if (strcmp(name, "dupd") == 0) {
+			if (typeStack.size() < 2) {
+				reportError(node, "Type error in 'dupd': Stack underflow (requires 2 values)");
+				return;
+			}
+			// Get the second and top elements
+			StackValueType second = typeStack[typeStack.size() - 2];
+			StackValueType top = typeStack.back();
+			// Push: second (duplicate of second), then top
+			typeStack.push_back(second);
+			typeStack.push_back(top);
+			// Duplicate struct types as well
+			if (structTypeStack.size() >= 2) {
+				std::string secondStruct = structTypeStack[structTypeStack.size() - 2];
+				std::string topStruct = structTypeStack.back();
+				structTypeStack.push_back(secondStruct);
+				structTypeStack.push_back(topStruct);
+			}
+		}
+		// Stack operations: swapd ( a b c -- b a c )
+		else if (strcmp(name, "swapd") == 0) {
+			if (typeStack.size() < 3) {
+				reportError(node, "Type error in 'swapd': Stack underflow (requires 3 values)");
+				return;
+			}
+			// Get third, second, and top elements
+			StackValueType third = typeStack[typeStack.size() - 3];
+			StackValueType second = typeStack[typeStack.size() - 2];
+			StackValueType top = typeStack.back();
+			// Remove all three
+			typeStack.pop_back();
+			typeStack.pop_back();
+			typeStack.pop_back();
+			// Push: second, third, top (swapped second and third)
+			typeStack.push_back(second);
+			typeStack.push_back(third);
+			typeStack.push_back(top);
+			// Swap struct types as well
+			if (structTypeStack.size() >= 3) {
+				std::string thirdStruct = structTypeStack[structTypeStack.size() - 3];
+				std::string secondStruct = structTypeStack[structTypeStack.size() - 2];
+				std::string topStruct = structTypeStack.back();
+				structTypeStack.pop_back();
+				structTypeStack.pop_back();
+				structTypeStack.pop_back();
+				structTypeStack.push_back(secondStruct);
+				structTypeStack.push_back(thirdStruct);
+				structTypeStack.push_back(topStruct);
+			}
+		}
+		// Stack operations: overd ( a b c -- a b a c )
+		else if (strcmp(name, "overd") == 0) {
+			if (typeStack.size() < 3) {
+				reportError(node, "Type error in 'overd': Stack underflow (requires 3 values)");
+				return;
+			}
+			// Get the third element
+			StackValueType third = typeStack[typeStack.size() - 3];
+			// Push a copy of it to the top
+			typeStack.push_back(third);
+			// Copy struct type as well
+			if (structTypeStack.size() >= 3) {
+				std::string thirdStruct = structTypeStack[structTypeStack.size() - 3];
+				structTypeStack.push_back(thirdStruct);
+			}
+		}
+		// Stack operations: nipd ( a b c -- a c )
+		else if (strcmp(name, "nipd") == 0) {
+			if (typeStack.size() < 3) {
+				reportError(node, "Type error in 'nipd': Stack underflow (requires 3 values)");
+				return;
+			}
+			// Get top element
+			StackValueType top = typeStack.back();
+			typeStack.pop_back();
+			// Remove second element
+			typeStack.pop_back();
+			// Push top back
+			typeStack.push_back(top);
+			// Remove second struct type as well
+			if (structTypeStack.size() >= 3) {
+				std::string topStruct = structTypeStack.back();
+				structTypeStack.pop_back();
+				structTypeStack.pop_back();
+				structTypeStack.push_back(topStruct);
+			}
+		}
+		// Stack operations: swap
+		else if (strcmp(name, "swap") == 0) {
+			if (typeStack.size() < 2) {
+				reportErrorConditional(node, "Type error in 'swap': Stack underflow (requires 2 values)", reportErrors);
+				return;
+			}
+			StackValueType a = typeStack.back();
+			typeStack.pop_back();
+			StackValueType b = typeStack.back();
+			typeStack.pop_back();
+			typeStack.push_back(a);
+			typeStack.push_back(b);
+			// Swap struct types as well
+			if (structTypeStack.size() >= 2) {
+				std::string aStruct = structTypeStack.back();
+				structTypeStack.pop_back();
+				std::string bStruct = structTypeStack.back();
+				structTypeStack.pop_back();
+				structTypeStack.push_back(aStruct);
+				structTypeStack.push_back(bStruct);
+			}
+		}
+		// Stack operations: over ( a b -- a b a )
+		else if (strcmp(name, "over") == 0) {
+			if (typeStack.size() < 2) {
+				reportError(node, "Type error in 'over': Stack underflow (requires 2 values)");
+				return;
+			}
+			// Get the second element
+			StackValueType second = typeStack[typeStack.size() - 2];
+			// Push a copy of it to the top
+			typeStack.push_back(second);
+			// Copy struct type as well
+			if (structTypeStack.size() >= 2) {
+				std::string secondStruct = structTypeStack[structTypeStack.size() - 2];
+				structTypeStack.push_back(secondStruct);
+			}
+		}
+		// Stack operations: nip ( a b -- b )
+		else if (strcmp(name, "nip") == 0) {
+			if (typeStack.size() < 2) {
+				reportError(node, "Type error in 'nip': Stack underflow (requires 2 values)");
+				return;
+			}
+			StackValueType top = typeStack.back();
+			typeStack.pop_back();
+			typeStack.pop_back();	  // Remove second element
+			typeStack.push_back(top); // Push top back
+			// Remove second struct type as well
+			if (structTypeStack.size() >= 2) {
+				std::string topStruct = structTypeStack.back();
+				structTypeStack.pop_back();
+				structTypeStack.pop_back();
+				structTypeStack.push_back(topStruct);
+			}
+		}
+		// Stack operations: drop ( a -- )
+		else if (strcmp(name, "drop") == 0) {
+			if (typeStack.empty()) {
+				reportErrorConditional(node, "Type error in 'drop': Stack underflow (requires 1 value)", reportErrors);
+				return;
+			}
+			typeStack.pop_back();
+			if (!structTypeStack.empty()) {
+				structTypeStack.pop_back();
+			}
+		}
+		// Stack operations: drop2 ( a b -- )
+		else if (strcmp(name, "drop2") == 0) {
+			if (typeStack.size() < 2) {
+				reportErrorConditional(
+						node, "Type error in 'drop2': Stack underflow (requires 2 values)", reportErrors);
+				return;
+			}
+			typeStack.pop_back();
+			typeStack.pop_back();
+			if (structTypeStack.size() >= 2) {
+				structTypeStack.pop_back();
+				structTypeStack.pop_back();
+			}
+		}
+		// Stack operations: rot ( a b c -- b c a )
+		else if (strcmp(name, "rot") == 0) {
+			if (typeStack.size() < 3) {
+				reportErrorConditional(node, "Type error in 'rot': Stack underflow (requires 3 values)", reportErrors);
+				return;
+			}
+			StackValueType c = typeStack.back();
+			typeStack.pop_back();
+			StackValueType b = typeStack.back();
+			typeStack.pop_back();
+			StackValueType a = typeStack.back();
+			typeStack.pop_back();
+			typeStack.push_back(b);
+			typeStack.push_back(c);
+			typeStack.push_back(a);
+			// Handle struct type stack
+			if (structTypeStack.size() >= 3) {
+				std::string cStruct = structTypeStack.back();
+				structTypeStack.pop_back();
+				std::string bStruct = structTypeStack.back();
+				structTypeStack.pop_back();
+				std::string aStruct = structTypeStack.back();
+				structTypeStack.pop_back();
+				structTypeStack.push_back(bStruct);
+				structTypeStack.push_back(cStruct);
+				structTypeStack.push_back(aStruct);
+			}
+		}
+		// Stack operations: tuck ( a b -- b a b )
+		else if (strcmp(name, "tuck") == 0) {
+			if (typeStack.size() < 2) {
+				reportErrorConditional(node, "Type error in 'tuck': Stack underflow (requires 2 values)", reportErrors);
+				return;
+			}
+			StackValueType b = typeStack.back();
+			typeStack.pop_back();
+			StackValueType a = typeStack.back();
+			typeStack.pop_back();
+			typeStack.push_back(b);
+			typeStack.push_back(a);
+			typeStack.push_back(b);
+			// Handle struct type stack
+			if (structTypeStack.size() >= 2) {
+				std::string bStruct = structTypeStack.back();
+				structTypeStack.pop_back();
+				std::string aStruct = structTypeStack.back();
+				structTypeStack.pop_back();
+				structTypeStack.push_back(bStruct);
+				structTypeStack.push_back(aStruct);
+				structTypeStack.push_back(bStruct);
+			}
+		}
+		// Stack operations: clear (empties the entire stack)
+		else if (strcmp(name, "clear") == 0) {
+			// Clear all elements from the type stack
+			typeStack.clear();
+			// Clear struct type stack as well
+			structTypeStack.clear();
+		}
+		// Stack operations: depth (pushes the current stack depth as an integer)
+		else if (strcmp(name, "depth") == 0) {
+			// Push an int type onto the stack (depth is always an integer)
+			typeStack.push_back(StackValueType::INT);
+			// Push empty struct type (int is not a struct)
+			structTypeStack.push_back("");
+		}
+		// call - invoke function pointer from stack
+		else if (strcmp(name, "call") == 0) {
+			if (typeStack.empty()) {
+				reportErrorConditional(node, "Type error in 'call': Stack underflow (requires 1 value)", reportErrors);
+				return;
+			}
+			// Pop the function pointer - runtime will verify it's a pointer type
+			typeStack.pop_back();
+			// Pop struct type as well
+			if (!structTypeStack.empty()) {
+				structTypeStack.pop_back();
+			}
+
+			// If we have a pending function signature from a known function pointer,
+			// apply its stack effect
+			if (mPendingFnSignature.has_value()) {
+				const FunctionSignature& sig = mPendingFnSignature.value();
+
+				// Consume input parameters from stack
+				if (typeStack.size() < sig.consumes.size()) {
+					std::string errorMsg = "Type error in 'call': Stack underflow for function pointer (requires ";
+					errorMsg += std::to_string(sig.consumes.size());
+					errorMsg += " values, have ";
+					errorMsg += std::to_string(typeStack.size());
+					errorMsg += ")";
+					reportErrorConditional(node, errorMsg.c_str(), reportErrors);
+					mPendingFnSignature.reset();
+					return;
+				}
+
+				// Pop consumed types
+				for (size_t j = 0; j < sig.consumes.size(); j++) {
+					typeStack.pop_back();
+					if (!structTypeStack.empty()) {
+						structTypeStack.pop_back();
+					}
+				}
+
+				// Push produced types
+				for (const auto& type : sig.produces) {
+					typeStack.push_back(type);
+					structTypeStack.push_back(""); // Don't track struct types for now
+				}
+
+				mPendingFnSignature.reset();
+			}
+			// Otherwise, we don't know what the called function will do to the stack
+		}
+		// Array creation: make, makei, makef, makes, makep ( size -- arr )
+		// All create typed arrays, always return pointer
+		else if (strcmp(name, "make") == 0 || strcmp(name, "makei") == 0 || strcmp(name, "makef") == 0 ||
+				 strcmp(name, "makes") == 0 || strcmp(name, "makep") == 0) {
+			if (typeStack.empty()) {
+				std::string errorMsg = "Type error in '";
+				errorMsg += name;
+				errorMsg += "': Stack underflow (requires 1 integer for size)";
+				reportErrorConditional(node, errorMsg.c_str(), reportErrors);
+				return;
+			}
+			// Pop size argument
+			typeStack.pop_back();
+			if (!structTypeStack.empty()) {
+				structTypeStack.pop_back();
+			}
+			// Push pointer (array) - regardless of element type, result is always a pointer
+			typeStack.push_back(StackValueType::PTR);
+			structTypeStack.push_back("");
+		}
+		// Array length: len ( arr -- len )
+		// Returns the length of an array, consuming the array reference
+		else if (strcmp(name, "len") == 0) {
+			if (typeStack.empty()) {
+				reportErrorConditional(node, "Type error in 'len': Stack underflow (requires 1 array)", reportErrors);
+				return;
+			}
+			// Verify top is a pointer (array)
+			StackValueType top = typeStack.back();
+			if (top != StackValueType::PTR) {
+				std::string errorMsg = "Type error in 'len': Expected array (ptr), got ";
+				errorMsg += typeToString(top);
+				reportErrorConditional(node, errorMsg.c_str(), reportErrors);
+				return;
+			}
+			// Pop array, push int (length)
+			typeStack.pop_back();
+			if (!structTypeStack.empty()) {
+				structTypeStack.pop_back();
+			}
+			typeStack.push_back(StackValueType::INT);
+			structTypeStack.push_back("");
+		}
+		// Array access: nth ( arr idx -- elem )
+		// Returns element at index, consuming the array reference
+		else if (strcmp(name, "nth") == 0) {
+			if (typeStack.size() < 2) {
+				reportErrorConditional(
+						node, "Type error in 'nth': Stack underflow (requires array and index)", reportErrors);
+				return;
+			}
+			// Pop index
+			typeStack.pop_back();
+			if (!structTypeStack.empty()) {
+				structTypeStack.pop_back();
+			}
+			// Verify array is a pointer
+			StackValueType arr = typeStack.back();
+			if (arr != StackValueType::PTR) {
+				std::string errorMsg = "Type error in 'nth': Expected array (ptr), got ";
+				errorMsg += typeToString(arr);
+				reportErrorConditional(node, errorMsg.c_str(), reportErrors);
+				return;
+			}
+			// Pop array, push element (ANY since we don't track element types)
+			typeStack.pop_back();
+			if (!structTypeStack.empty()) {
+				structTypeStack.pop_back();
+			}
+			typeStack.push_back(StackValueType::ANY);
+			structTypeStack.push_back("");
+		}
+		// Array set: set ( arr idx val -- )
+		// Sets element at index
+		else if (strcmp(name, "set") == 0) {
+			if (typeStack.size() < 3) {
+				reportErrorConditional(
+						node, "Type error in 'set': Stack underflow (requires array, index, and value)", reportErrors);
+				return;
+			}
+			// Pop value, index, array
+			typeStack.pop_back(); // value
+			typeStack.pop_back(); // index
+			typeStack.pop_back(); // array
+			if (structTypeStack.size() >= 3) {
+				structTypeStack.pop_back();
+				structTypeStack.pop_back();
+				structTypeStack.pop_back();
+			}
+		}
+		// Array append: append ( arr val -- arr' )
+		// Appends value to array and returns new array
+		else if (strcmp(name, "append") == 0) {
+			if (typeStack.size() < 2) {
+				reportErrorConditional(
+						node, "Type error in 'append': Stack underflow (requires array and value)", reportErrors);
+				return;
+			}
+			// Pop value
+			typeStack.pop_back();
+			if (!structTypeStack.empty()) {
+				structTypeStack.pop_back();
+			}
+			// Verify array is a pointer
+			StackValueType arr = typeStack.back();
+			if (arr != StackValueType::PTR) {
+				std::string errorMsg = "Type error in 'append': Expected array (ptr), got ";
+				errorMsg += typeToString(arr);
+				reportErrorConditional(node, errorMsg.c_str(), reportErrors);
+				return;
+			}
+			// Array stays on stack (as modified array), already PTR type
+		}
+		// free - deallocate memory pointed to by a pointer
+		else if (strcmp(name, "free") == 0) {
+			if (typeStack.empty()) {
+				reportErrorConditional(
+						node, "Type error in 'free': Stack underflow (requires 1 pointer)", reportErrors);
+				return;
+			}
+			StackValueType top = typeStack.back();
+			if (top != StackValueType::PTR) {
+				std::string errorMsg = "Type error in 'free': Expected pointer type, got ";
+				errorMsg += typeToString(top);
+				reportErrorConditional(node, errorMsg.c_str(), reportErrors);
+				return;
+			}
+			// Pop the pointer
+			typeStack.pop_back();
+			// Pop struct type as well
+			if (!structTypeStack.empty()) {
+				structTypeStack.pop_back();
+			}
+		}
+	}
+
+} // namespace Qd

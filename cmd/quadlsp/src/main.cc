@@ -77,8 +77,9 @@ static std::vector<std::string> loadDependenciesFromManifest(const std::string& 
 			}
 
 			// Check if it's a local path
-			bool isPath = (resolved.size() > 0 && (resolved[0] == '/' || resolved[0] == '.' ||
-			               (resolved.size() > 1 && resolved[0] == '~' && resolved[1] == '/')));
+			bool isPath =
+					(resolved.size() > 0 && (resolved[0] == '/' || resolved[0] == '.' ||
+													(resolved.size() > 1 && resolved[0] == '~' && resolved[1] == '/')));
 
 			if (isPath) {
 				resolved = expandTilde(resolved);
@@ -87,7 +88,8 @@ static std::vector<std::string> loadDependenciesFromManifest(const std::string& 
 				}
 				try {
 					resolved = std::filesystem::weakly_canonical(resolved).string();
-				} catch (...) {}
+				} catch (...) {
+				}
 				if (std::filesystem::exists(resolved)) {
 					includePaths.push_back(resolved);
 				}
