@@ -297,6 +297,44 @@ namespace Qd {
 		}
 	}
 
+	// Analyze if function body uses only integer types
+	// Returns true if the body contains no strings, floats, or module calls that might return non-integers
+	bool LlvmGenerator::Impl::analyzeIsBodyIntegerOnly(IAstNode* node) {
+		if (!node) {
+			return true;
+		}
+
+		// Check this node's type
+		switch (node->type()) {
+			case IAstNode::Type::LITERAL: {
+				auto* lit = static_cast<AstNodeLiteral*>(node);
+				// Only INTEGER literals are allowed
+				if (lit->literalType() != AstNodeLiteral::LiteralType::INTEGER) {
+					return false;
+				}
+				break;
+			}
+			case IAstNode::Type::SCOPED_IDENTIFIER:
+				// Module calls (like str::len) might return non-integers
+				// Be conservative and reject
+				return false;
+			case IAstNode::Type::ANONYMOUS_FUNCTION:
+				// Anonymous functions/closures are complex, reject for now
+				return false;
+			default:
+				break;
+		}
+
+		// Recursively check children
+		for (size_t i = 0; i < node->childCount(); i++) {
+			if (!analyzeIsBodyIntegerOnly(node->child(i))) {
+				return false;
+			}
+		}
+
+		return true;
+	}
+
 	bool LlvmGenerator::Impl::generateFunction(
 			AstNodeFunctionDeclaration* funcNode, bool isMain, const std::string& namePrefix) {
 		// Clear local variables for this function
@@ -583,6 +621,17 @@ namespace Qd {
 			}
 			// Only enable integer-only optimizations if there's at least one integer parameter
 			currentFunctionIsIntegerOnly = currentFunctionIsIntegerOnly && hasIntegerParams;
+
+			// Also check the function body for non-integer types (strings, floats, module calls)
+			if (currentFunctionIsIntegerOnly) {
+				// Scan the function body to ensure it only uses integers
+				for (size_t i = 0; i < funcNode->childCount(); i++) {
+					if (!analyzeIsBodyIntegerOnly(funcNode->child(i))) {
+						currentFunctionIsIntegerOnly = false;
+						break;
+					}
+				}
+			}
 
 			// Push function name onto call stack for debugging
 			// Skip for integer-only functions for performance (stack traces less useful for pure int math)

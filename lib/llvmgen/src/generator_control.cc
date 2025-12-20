@@ -122,64 +122,76 @@ namespace Qd {
 		// Get current function
 		llvm::Function* currentFn = builder->GetInsertBlock()->getParent();
 
-		// Pop start, end, step from stack (in reverse order: step, end, start)
-		auto stackFieldPtr =
-				builder->CreateStructGEP(llvm::StructType::get(*context,
-												 {
-														 llvm::PointerType::getUnqual(*context), // qd_stack* st
-														 builder->getInt64Ty(),					 // int64_t error_code
-														 llvm::PointerType::getUnqual(*context), // char* error_msg
-														 builder->getInt32Ty(),					 // int argc
-														 llvm::PointerType::getUnqual(*context), // char** argv
-														 llvm::PointerType::getUnqual(*context)	 // char* program_name
-												 }),
-						ctx, 0, "st_ptr");
-		auto stack = builder->CreateLoad(llvm::PointerType::getUnqual(*context), stackFieldPtr, "st");
+		llvm::Value* startValue;
+		llvm::Value* endValue;
+		llvm::Value* stepValue;
 
-		// Create allocas in entry block to avoid stack growth in nested loops
-		llvm::BasicBlock& entryBlock = currentFn->getEntryBlock();
-		llvm::IRBuilder<> entryBuilder(&entryBlock, entryBlock.getFirstInsertionPt());
-		auto stepElemPtr = entryBuilder.CreateAlloca(stackElementTy, nullptr, "step_elem");
-		auto endElemPtr = entryBuilder.CreateAlloca(stackElementTy, nullptr, "end_elem");
-		auto startElemPtr = entryBuilder.CreateAlloca(stackElementTy, nullptr, "start_elem");
+		// Fast path for integer-only functions: inline pops, no type checking
+		if (currentFunctionIsIntegerOnly) {
+			// Pop start, end, step directly as integers (in reverse order: step, end, start)
+			stepValue = generateInlinePopInt(ctx);
+			endValue = generateInlinePopInt(ctx);
+			startValue = generateInlinePopInt(ctx);
+		} else {
+			// Pop start, end, step from stack (in reverse order: step, end, start)
+			auto stackFieldPtr =
+					builder->CreateStructGEP(llvm::StructType::get(*context,
+													 {
+															 llvm::PointerType::getUnqual(*context), // qd_stack* st
+															 builder->getInt64Ty(),					 // int64_t error_code
+															 llvm::PointerType::getUnqual(*context), // char* error_msg
+															 builder->getInt32Ty(),					 // int argc
+															 llvm::PointerType::getUnqual(*context), // char** argv
+															 llvm::PointerType::getUnqual(*context)	 // char* program_name
+													 }),
+							ctx, 0, "st_ptr");
+			auto stack = builder->CreateLoad(llvm::PointerType::getUnqual(*context), stackFieldPtr, "st");
 
-		builder->CreateCall(stackPopFn, {stack, stepElemPtr});
-		builder->CreateCall(stackPopFn, {stack, endElemPtr});
-		builder->CreateCall(stackPopFn, {stack, startElemPtr});
+			// Create allocas in entry block to avoid stack growth in nested loops
+			llvm::BasicBlock& entryBlock = currentFn->getEntryBlock();
+			llvm::IRBuilder<> entryBuilder(&entryBlock, entryBlock.getFirstInsertionPt());
+			auto stepElemPtr = entryBuilder.CreateAlloca(stackElementTy, nullptr, "step_elem");
+			auto endElemPtr = entryBuilder.CreateAlloca(stackElementTy, nullptr, "end_elem");
+			auto startElemPtr = entryBuilder.CreateAlloca(stackElementTy, nullptr, "start_elem");
 
-		// Extract values (stackElementTy layout: { i64 value, i32 type, i1 is_error_tainted })
-		// The i64 field is a union that holds either int or float bits
-		// Type field: 0=INT, 1=FLOAT, 2=PTR, 3=STR
+			builder->CreateCall(stackPopFn, {stack, stepElemPtr});
+			builder->CreateCall(stackPopFn, {stack, endElemPtr});
+			builder->CreateCall(stackPopFn, {stack, startElemPtr});
 
-		// Check the type of start element to determine if we're using int or float loop
-		auto startTypePtr = builder->CreateStructGEP(stackElementTy, startElemPtr, 1, "start_type_ptr");
-		auto startType = builder->CreateLoad(builder->getInt32Ty(), startTypePtr, "start_type");
-		auto isFloatLoop = builder->CreateICmpEQ(startType, builder->getInt32(1), "is_float_loop");
+			// Extract values (stackElementTy layout: { i64 value, i32 type, i1 is_error_tainted })
+			// The i64 field is a union that holds either int or float bits
+			// Type field: 0=INT, 1=FLOAT, 2=PTR, 3=STR
 
-		// Extract start value
-		auto startValuePtr = builder->CreateStructGEP(stackElementTy, startElemPtr, 0, "start_value_ptr");
-		auto startBits = builder->CreateLoad(builder->getInt64Ty(), startValuePtr, "start_bits");
+			// Check the type of start element to determine if we're using int or float loop
+			auto startTypePtr = builder->CreateStructGEP(stackElementTy, startElemPtr, 1, "start_type_ptr");
+			auto startType = builder->CreateLoad(builder->getInt32Ty(), startTypePtr, "start_type");
+			auto isFloatLoop = builder->CreateICmpEQ(startType, builder->getInt32(1), "is_float_loop");
 
-		// Convert start based on type
-		auto startAsFloat = builder->CreateBitCast(startBits, builder->getDoubleTy(), "start_as_float");
-		auto startFloatToInt = builder->CreateFPToSI(startAsFloat, builder->getInt64Ty(), "start_float_to_int");
-		auto startValue = builder->CreateSelect(isFloatLoop, startFloatToInt, startBits, "start");
+			// Extract start value
+			auto startValuePtr = builder->CreateStructGEP(stackElementTy, startElemPtr, 0, "start_value_ptr");
+			auto startBits = builder->CreateLoad(builder->getInt64Ty(), startValuePtr, "start_bits");
 
-		// Extract end value
-		auto endValuePtr = builder->CreateStructGEP(stackElementTy, endElemPtr, 0, "end_value_ptr");
-		auto endBits = builder->CreateLoad(builder->getInt64Ty(), endValuePtr, "end_bits");
+			// Convert start based on type
+			auto startAsFloat = builder->CreateBitCast(startBits, builder->getDoubleTy(), "start_as_float");
+			auto startFloatToInt = builder->CreateFPToSI(startAsFloat, builder->getInt64Ty(), "start_float_to_int");
+			startValue = builder->CreateSelect(isFloatLoop, startFloatToInt, startBits, "start");
 
-		auto endAsFloat = builder->CreateBitCast(endBits, builder->getDoubleTy(), "end_as_float");
-		auto endFloatToInt = builder->CreateFPToSI(endAsFloat, builder->getInt64Ty(), "end_float_to_int");
-		auto endValue = builder->CreateSelect(isFloatLoop, endFloatToInt, endBits, "end");
+			// Extract end value
+			auto endValuePtr = builder->CreateStructGEP(stackElementTy, endElemPtr, 0, "end_value_ptr");
+			auto endBits = builder->CreateLoad(builder->getInt64Ty(), endValuePtr, "end_bits");
 
-		// Extract step value
-		auto stepValuePtr = builder->CreateStructGEP(stackElementTy, stepElemPtr, 0, "step_value_ptr");
-		auto stepBits = builder->CreateLoad(builder->getInt64Ty(), stepValuePtr, "step_bits");
+			auto endAsFloat = builder->CreateBitCast(endBits, builder->getDoubleTy(), "end_as_float");
+			auto endFloatToInt = builder->CreateFPToSI(endAsFloat, builder->getInt64Ty(), "end_float_to_int");
+			endValue = builder->CreateSelect(isFloatLoop, endFloatToInt, endBits, "end");
 
-		auto stepAsFloat = builder->CreateBitCast(stepBits, builder->getDoubleTy(), "step_as_float");
-		auto stepFloatToInt = builder->CreateFPToSI(stepAsFloat, builder->getInt64Ty(), "step_float_to_int");
-		auto stepValue = builder->CreateSelect(isFloatLoop, stepFloatToInt, stepBits, "step");
+			// Extract step value
+			auto stepValuePtr = builder->CreateStructGEP(stackElementTy, stepElemPtr, 0, "step_value_ptr");
+			auto stepBits = builder->CreateLoad(builder->getInt64Ty(), stepValuePtr, "step_bits");
+
+			auto stepAsFloat = builder->CreateBitCast(stepBits, builder->getDoubleTy(), "step_as_float");
+			auto stepFloatToInt = builder->CreateFPToSI(stepAsFloat, builder->getInt64Ty(), "step_float_to_int");
+			stepValue = builder->CreateSelect(isFloatLoop, stepFloatToInt, stepBits, "step");
+		}
 
 		// Create basic blocks
 		llvm::BasicBlock* loopHeaderBB = llvm::BasicBlock::Create(*context, "for.header", currentFn);

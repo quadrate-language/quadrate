@@ -498,14 +498,21 @@ namespace Qd {
 
 			// For indirect (captured) variables, load the actual storage pointer first
 			llvm::Value* storagePtr = localAlloca;
-			if (indirectLocalVariables.find(name) != indirectLocalVariables.end()) {
+			bool isIndirect = indirectLocalVariables.find(name) != indirectLocalVariables.end();
+			if (isIndirect) {
 				storagePtr =
 						builder->CreateLoad(llvm::PointerType::getUnqual(*context), localAlloca, name + "_storage");
 			}
 
-			// Note: We can't use currentFunctionIsIntegerOnly here because even if function
-			// parameters are integers, the function body may create non-integer values
-			// like structs or pointers.
+			// Fast path for integer-only functions with non-captured locals
+			// Skip type switch - we know all locals are integers
+			if (currentFunctionIsIntegerOnly && !isIndirect) {
+				llvm::Value* valuePtr = builder->CreateStructGEP(stackElementTy, storagePtr, 0, name + "_value_ptr");
+				llvm::Value* intVal = builder->CreateLoad(builder->getInt64Ty(), valuePtr, name + "_i");
+				generateInlinePushIntValue(ctx, intVal);
+				lastIdentifierPushed = name;
+				return;
+			}
 
 			// Extract type field (field index 1 in qd_stack_element_t)
 			llvm::Value* typePtr = builder->CreateStructGEP(stackElementTy, storagePtr, 1, name + "_type_ptr");
@@ -1546,8 +1553,16 @@ namespace Qd {
 		// For indirect (captured) variables, load the actual storage pointer
 		// localAlloca holds a pointer to heap memory, we need the heap memory address
 		llvm::Value* storagePtr = localAlloca;
-		if (indirectLocalVariables.find(name) != indirectLocalVariables.end()) {
+		bool isIndirect = indirectLocalVariables.find(name) != indirectLocalVariables.end();
+		if (isIndirect) {
 			storagePtr = builder->CreateLoad(llvm::PointerType::getUnqual(*context), localAlloca, name + "_storage");
+		}
+
+		// Fast path for integer-only functions with non-captured locals
+		// Skip old value release (integers don't need release) and use inline pop
+		if (currentFunctionIsIntegerOnly && !isCaptured && !isIndirect) {
+			generateInlinePopIntToStorage(ctx, storagePtr);
+			return;
 		}
 
 		// ALWAYS check and release old value before storing new one

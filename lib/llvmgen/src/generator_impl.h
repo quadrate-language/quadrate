@@ -365,6 +365,8 @@ namespace Qd {
 		void generateInlineDrop(llvm::Value* ctx);
 		void generateInlineOver(llvm::Value* ctx);
 		void generateInlineRot(llvm::Value* ctx);
+		llvm::Value* generateInlinePopInt(llvm::Value* ctx);					  // Returns popped i64 value
+		void generateInlinePopIntToStorage(llvm::Value* ctx, llvm::Value* dst); // Pops i64 and stores to dst alloca
 
 		// Type-aware operations
 		void generateTypeAwareAdd(llvm::Value* ctx);
@@ -383,6 +385,9 @@ namespace Qd {
 		void pushDeferScope();
 		void popDeferScope();
 		void executeDeferScope(llvm::Value* ctx);
+
+		// Analysis helpers
+		bool analyzeIsBodyIntegerOnly(IAstNode* node);
 	};
 
 } // namespace Qd
