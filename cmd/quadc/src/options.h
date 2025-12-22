@@ -25,6 +25,7 @@ struct Options {
 	bool werror = false;
 	bool readStdin = false;										 // Read source from stdin
 	bool testMode = false;										 // Compile and run tests
+	bool stackCodegen = false;									 // Use legacy stack-based code generation
 	std::unordered_map<std::string, std::string> moduleVersions; // module name -> version
 };
 

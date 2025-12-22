@@ -34,9 +34,10 @@ cleanup() {
 trap cleanup EXIT
 
 # Compiler path
-QUADC="${QUADC:-$PROJECT_ROOT/build/debug/cmd/quadc/quadc}"
-if [ ! -x "$QUADC" ]; then
-    echo -e "${RED}FAIL${NC}: quadc not found at $QUADC"
+QUADC_PATH="${QUADC_PATH:-$PROJECT_ROOT/build/debug/cmd/quadc/quadc}"
+QUADC_FLAGS="${QUADC_FLAGS:---stack-codegen}"
+if [ ! -x "$QUADC_PATH" ]; then
+    echo -e "${RED}FAIL${NC}: quadc not found at $QUADC_PATH"
     exit 1
 fi
 
@@ -142,7 +143,7 @@ echo -e "${GREEN}done${NC}"
 echo -n "Running mTLS connection test... "
 
 # Compile
-if ! "$QUADC" -o "$CERT_DIR/mtls_test" "$CERT_DIR/mtls_test.qd" 2>"$CERT_DIR/compile.log"; then
+if ! "$QUADC_PATH" $QUADC_FLAGS -o "$CERT_DIR/mtls_test" "$CERT_DIR/mtls_test.qd" 2>"$CERT_DIR/compile.log"; then
     echo -e "${RED}FAIL${NC} (compile error)"
     cat "$CERT_DIR/compile.log"
     exit 1

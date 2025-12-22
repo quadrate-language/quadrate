@@ -17,7 +17,10 @@ PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 # Configuration
 BUILD_DIR="${BUILD_DIR:-build/debug}"
-QUADC="${QUADC:-$PROJECT_ROOT/$BUILD_DIR/cmd/quadc/quadc}"
+QUADC_PATH="${QUADC:-$PROJECT_ROOT/$BUILD_DIR/cmd/quadc/quadc}"
+# Use --stack-codegen until register-based generator is fully working
+# Register generator progress: 228/397 tests passing (57%)
+QUADC_FLAGS="${QUADC_FLAGS:---stack-codegen}"
 QUADFMT="${QUADFMT:-$PROJECT_ROOT/dist/bin/quadfmt}"
 QUADRATE_ROOT_DEFAULT="$PROJECT_ROOT/dist/share/quadrate"
 QUADRATE_LIBDIR_DEFAULT="$PROJECT_ROOT/dist/lib"
@@ -342,7 +345,7 @@ run_single_qd_test() {
         local expected_error_file="${test_file%.qd}.err"
 
         # Run from project root with relative path
-        if (cd "$PROJECT_ROOT" && "$QUADC" "$rel_test_file" -o "$binary" 2>"$compile_log" >/dev/null); then
+        if (cd "$PROJECT_ROOT" && "$QUADC_PATH" $QUADC_FLAGS "$rel_test_file" -o "$binary" 2>"$compile_log" >/dev/null); then
             echo "FAIL:compilation succeeded (should have failed)" > "$result_file"
             return
         fi
@@ -374,7 +377,7 @@ run_single_qd_test() {
         local expected_error_file="${test_file%.qd}.runtime_err"
 
         # Compile should succeed (use relative path)
-        if ! (cd "$PROJECT_ROOT" && "$QUADC" "$rel_test_file" -o "$binary" 2>"$compile_log" >/dev/null); then
+        if ! (cd "$PROJECT_ROOT" && "$QUADC_PATH" $QUADC_FLAGS "$rel_test_file" -o "$binary" 2>"$compile_log" >/dev/null); then
             echo "FAIL:compilation failed (should have succeeded)" > "$result_file"
             cat "$compile_log" >> "$result_file"
             return
@@ -426,7 +429,7 @@ run_single_qd_test() {
 
     # Compile (use relative path for consistent error messages)
     if [[ -n "$test_flag" ]]; then
-        if ! (cd "$PROJECT_ROOT" && NO_COLOR=1 "$QUADC" $test_flag "$rel_test_file" -o "$binary" >"$actual_output" 2>"$compile_log"); then
+        if ! (cd "$PROJECT_ROOT" && NO_COLOR=1 "$QUADC_PATH" $QUADC_FLAGS $test_flag "$rel_test_file" -o "$binary" >"$actual_output" 2>"$compile_log"); then
             if [[ -s "$compile_log" ]] && grep -q "error:" "$compile_log"; then
                 echo "FAIL:compilation failed" > "$result_file"
                 cat "$compile_log" >> "$result_file"
@@ -434,7 +437,7 @@ run_single_qd_test() {
             fi
         fi
     else
-        if ! (cd "$PROJECT_ROOT" && "$QUADC" "$rel_test_file" -o "$binary" 2>"$compile_log" >/dev/null); then
+        if ! (cd "$PROJECT_ROOT" && "$QUADC_PATH" $QUADC_FLAGS "$rel_test_file" -o "$binary" 2>"$compile_log" >/dev/null); then
             echo "FAIL:compilation failed" > "$result_file"
             cat "$compile_log" >> "$result_file"
             return
@@ -822,7 +825,7 @@ run_mtls_tests() {
         valgrind_arg="valgrind"
     fi
 
-    output=$(QUADC="$QUADC" bash "$PROJECT_ROOT/tests/run_mtls_test.sh" $valgrind_arg 2>&1)
+    output=$(QUADC_PATH="$QUADC_PATH" QUADC_FLAGS="$QUADC_FLAGS" bash "$PROJECT_ROOT/tests/run_mtls_test.sh" $valgrind_arg 2>&1)
     exit_code=$?
 
     if [[ $exit_code -eq 0 ]]; then

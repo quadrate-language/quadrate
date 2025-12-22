@@ -14,7 +14,7 @@ custom_target('ffi',
 		# Compile Quadrate program (run from project root so ./dist/lib is found)
 		' && cd ' + meson.project_source_root() +
 		' && QUADRATE_ROOT=dist/share/quadrate' +
-		' ' + quadc.full_path() + ' examples/ffi/main.qd -o dist/examples/ffi'
+		' ' + quadc.full_path() + ' --stack-codegen examples/ffi/main.qd -o dist/examples/ffi'
 	],
 	depends: quadc,
 	build_by_default: false

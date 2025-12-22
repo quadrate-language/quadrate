@@ -12,6 +12,7 @@
 
 #include <stdbool.h>
 #include <stddef.h>
+#include <stdint.h>
 
 #ifdef __cplusplus
 #include <atomic>
@@ -136,6 +137,43 @@ const char* qd_string_data(const qd_string_t* str);
  * @return Length of the string (excluding null terminator)
  */
 size_t qd_string_length(const qd_string_t* str);
+
+/**
+ * @brief Create a string from an integer value
+ *
+ * Converts an int64_t to its string representation.
+ *
+ * @param value Integer value to convert
+ * @return New qd_string_t, or NULL on allocation failure
+ *
+ * @note The returned string has refcount=1; caller must release it
+ */
+qd_string_t* qd_string_from_int(int64_t value);
+
+/**
+ * @brief Create a string from an integer value in a given base
+ *
+ * Converts an int64_t to its string representation in the specified base.
+ *
+ * @param value Integer value to convert
+ * @param base Numeric base (2-36)
+ * @return New qd_string_t, or NULL on allocation failure
+ *
+ * @note The returned string has refcount=1; caller must release it
+ */
+qd_string_t* qd_string_from_int_base(int64_t value, int base);
+
+/**
+ * @brief Create a string from a double value
+ *
+ * Converts a double to its string representation.
+ *
+ * @param value Double value to convert
+ * @return New qd_string_t, or NULL on allocation failure
+ *
+ * @note The returned string has refcount=1; caller must release it
+ */
+qd_string_t* qd_string_from_double(double value);
 
 /**
  * @brief Smart concatenation with in-place optimization

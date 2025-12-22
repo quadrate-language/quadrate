@@ -25,6 +25,7 @@ void printHelp() {
 	std::cout << "  --test             Compile and run tests\n";
 	std::cout << "  --dump-ir          Print generated LLVM IR\n";
 	std::cout << "  --werror           Treat warnings as errors\n";
+	std::cout << "  --stack-codegen    Use legacy stack-based code generation\n";
 	std::cout << "  --                 Separator for program arguments (used with -r)\n";
 	std::cout << "\n";
 	std::cout << "Examples:\n";
@@ -108,6 +109,8 @@ bool parseArgs(int argc, char* argv[], Options& opts) {
 			opts.moduleVersions[moduleName] = version;
 		} else if (arg == "--werror") {
 			opts.werror = true;
+		} else if (arg == "--stack-codegen") {
+			opts.stackCodegen = true;
 		} else if (arg == "-O0") {
 			opts.optLevel = 0;
 		} else if (arg == "-O1") {

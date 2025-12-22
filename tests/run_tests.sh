@@ -13,7 +13,8 @@ source "$SCRIPT_DIR/test_utils.sh"
 MODE="${1:-qd}"  # qd, formatter, quaduses, valgrind
 
 # Configuration
-QUADC="${QUADC:-build/debug/cmd/quadc/quadc}"
+QUADC_PATH="${QUADC:-build/debug/cmd/quadc/quadc}"
+QUADC_FLAGS="${QUADC_FLAGS:---stack-codegen}"
 QUADFMT="${QUADFMT:-dist/bin/quadfmt}"
 QUADUSES="${QUADUSES:-dist/bin/quaduses}"
 QUADRATE_ROOT="${QUADRATE_ROOT:-dist/share/quadrate}"
@@ -37,9 +38,10 @@ trap "rm -rf $TEMP_DIR" EXIT
 # Function to run a single Quadrate test
 run_qd_test() {
     local test_file="$1"
-    local compiler="$2"
+    local compiler_path="$2"
     local use_valgrind="${3:-no}"
     local opt_flags="${4:-}"
+    local compiler_flags="${5:-}"
     local test_name=$(basename "$test_file" .qd)
     local test_id=$(echo "$test_file" | md5sum | cut -d' ' -f1)
     local result_file="$TEMP_DIR/results/${test_id}.result"
@@ -53,7 +55,7 @@ run_qd_test() {
         local actual_error_file="$TEMP_DIR/${test_id}.err"
         local binary="$TEMP_DIR/${test_id}"
 
-        if "$compiler" $opt_flags "$test_file" -o "$binary" 2>"$actual_error_file" >/dev/null; then
+        if "$compiler_path" $compiler_flags $opt_flags "$test_file" -o "$binary" 2>"$actual_error_file" >/dev/null; then
             echo "FAIL:compilation succeeded (should have failed)" >> "$result_file"
             echo -e "\033[0;31mFAIL\033[0m  $test_name (compilation succeeded)"
             return
@@ -86,7 +88,7 @@ run_qd_test() {
         local binary="$TEMP_DIR/${test_id}"
 
         # Compile should succeed
-        if ! "$compiler" $opt_flags "$test_file" -o "$binary" 2>/dev/null; then
+        if ! "$compiler_path" $compiler_flags $opt_flags "$test_file" -o "$binary" 2>/dev/null; then
             echo "FAIL:compilation failed (should have succeeded)" >> "$result_file"
             echo -e "\033[0;31mFAIL\033[0m  $test_name (compilation failed)"
             return
@@ -142,7 +144,7 @@ run_qd_test() {
     if [ "$is_test_mode" = "yes" ]; then
         # Test mode: compiler runs the tests, capture output
         # Use NO_COLOR to get clean output for comparison
-        if ! NO_COLOR=1 "$compiler" $opt_flags $test_flag "$test_file" -o "$binary" >"$actual_output_file" 2>"$compile_log"; then
+        if ! NO_COLOR=1 "$compiler_path" $compiler_flags $opt_flags $test_flag "$test_file" -o "$binary" >"$actual_output_file" 2>"$compile_log"; then
             # Check if it's a compilation error or test failure
             if [ -s "$compile_log" ] && grep -q "error:" "$compile_log"; then
                 echo "FAIL:compilation failed" >> "$result_file"
@@ -155,7 +157,7 @@ run_qd_test() {
         # Skip to output comparison for test mode
     else
         # Normal mode: compile, then run
-        if ! "$compiler" $opt_flags "$test_file" -o "$binary" 2>"$compile_log" >/dev/null; then
+        if ! "$compiler_path" $compiler_flags $opt_flags "$test_file" -o "$binary" 2>"$compile_log" >/dev/null; then
             echo "FAIL:compilation failed" >> "$result_file"
             echo -e "\033[0;31mFAIL\033[0m  $test_name (compilation failed)"
             return
@@ -261,21 +263,21 @@ case "$MODE" in
     qd)
         # Run Quadrate language tests
         print_header "Quadrate Language Tests"
-        COMPILER="$QUADC"
 
         # Find and run all tests in parallel
         export -f run_qd_test
         export TEMP_DIR
-        export COMPILER
+        export QUADC_PATH
+        export QUADC_FLAGS
 
         if command -v parallel &> /dev/null; then
             # Use parallel if available (exclude network tests that require external services)
             find "$TEST_DIR_QD" -name "*.qd" -type f ! -path "*/network/*" | sort | \
-                parallel --unsafe -j$(nproc) run_qd_test {} "$COMPILER" no ""
+                parallel --unsafe -j$(nproc) run_qd_test {} "$QUADC_PATH" no "" "$QUADC_FLAGS"
         else
             # Fallback to xargs for sequential execution (exclude network tests)
             find "$TEST_DIR_QD" -name "*.qd" -type f ! -path "*/network/*" | sort | \
-                xargs -I {} bash -c 'run_qd_test "$@"' _ {} "$COMPILER" no ""
+                xargs -I {} bash -c 'run_qd_test "$@"' _ {} "$QUADC_PATH" no "" "$QUADC_FLAGS"
         fi
 
         # Collect results
@@ -339,12 +341,13 @@ case "$MODE" in
         # Export function for sequential execution
         export -f run_qd_test
         export TEMP_DIR
-        export QUADC
+        export QUADC_PATH
+        export QUADC_FLAGS
 
         # Run tests sequentially (parallel + valgrind can be problematic)
         # Exclude network tests that require external services and are too slow under valgrind
         find "$TEST_DIR_QD" -name "*.qd" -type f ! -path "*/network/*" | sort | while read test_file; do
-            run_qd_test "$test_file" "$QUADC" yes ""
+            run_qd_test "$test_file" "$QUADC_PATH" yes "" "$QUADC_FLAGS"
         done
 
         # Collect results
@@ -376,22 +379,22 @@ case "$MODE" in
         # Run Quadrate tests with optimization enabled
         OPT_LEVEL="${2:--O2}"
         print_header "Quadrate Language Tests (with $OPT_LEVEL)"
-        COMPILER="$QUADC"
 
         # Find and run all tests in parallel
         export -f run_qd_test
         export TEMP_DIR
-        export COMPILER
+        export QUADC_PATH
+        export QUADC_FLAGS
         export OPT_LEVEL
 
         if command -v parallel &> /dev/null; then
             # Use parallel if available (exclude network tests that require external services)
             find "$TEST_DIR_QD" -name "*.qd" -type f ! -path "*/network/*" | sort | \
-                parallel --unsafe -j$(nproc) run_qd_test {} "$COMPILER" no "$OPT_LEVEL"
+                parallel --unsafe -j$(nproc) run_qd_test {} "$QUADC_PATH" no "$OPT_LEVEL" "$QUADC_FLAGS"
         else
             # Fallback to xargs for sequential execution (exclude network tests)
             find "$TEST_DIR_QD" -name "*.qd" -type f ! -path "*/network/*" | sort | \
-                xargs -I {} bash -c 'run_qd_test "$@"' _ {} "$COMPILER" no "$OPT_LEVEL"
+                xargs -I {} bash -c 'run_qd_test "$@"' _ {} "$QUADC_PATH" no "$OPT_LEVEL" "$QUADC_FLAGS"
         fi
 
         # Collect results

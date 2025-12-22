@@ -159,6 +159,60 @@ qd_string_t* qd_string_concat_smart(qd_string_t* str1, qd_string_t* str2) {
 	return result;
 }
 
+qd_string_t* qd_string_from_int(int64_t value) {
+	char buffer[32];  // More than enough for int64_t
+	int len = snprintf(buffer, sizeof(buffer), "%ld", (long)value);
+	if (len < 0) {
+		return NULL;
+	}
+	return qd_string_create_with_length(buffer, (size_t)len);
+}
+
+qd_string_t* qd_string_from_int_base(int64_t value, int base) {
+	if (base < 2 || base > 36) {
+		base = 10;
+	}
+
+	static const char digits[] = "0123456789abcdefghijklmnopqrstuvwxyz";
+	char buffer[68];  // 64 bits + sign + null terminator
+	char* ptr = buffer + sizeof(buffer) - 1;
+	*ptr = '\0';
+
+	int negative = 0;
+	uint64_t uvalue;
+
+	if (value < 0) {
+		negative = 1;
+		uvalue = (uint64_t)(-(value + 1)) + 1;  // Handle INT64_MIN correctly
+	} else {
+		uvalue = (uint64_t)value;
+	}
+
+	if (uvalue == 0) {
+		*--ptr = '0';
+	} else {
+		while (uvalue > 0) {
+			*--ptr = digits[uvalue % (unsigned)base];
+			uvalue /= (unsigned)base;
+		}
+	}
+
+	if (negative) {
+		*--ptr = '-';
+	}
+
+	return qd_string_create(ptr);
+}
+
+qd_string_t* qd_string_from_double(double value) {
+	char buffer[64];  // Enough for any double representation
+	int len = snprintf(buffer, sizeof(buffer), "%g", value);
+	if (len < 0) {
+		return NULL;
+	}
+	return qd_string_create_with_length(buffer, (size_t)len);
+}
+
 // String Builder Implementation
 
 #define QD_SB_GROWTH_FACTOR 2

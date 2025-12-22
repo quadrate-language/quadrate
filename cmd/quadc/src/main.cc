@@ -8,6 +8,7 @@
 #include <functional>
 #include <iostream>
 #include <llvmgen/generator.h>
+#include <llvmgen/register_generator.h>
 #include <qc/ast.h>
 #include <qc/ast_node.h>
 #include <qc/ast_node_function.h>
@@ -438,157 +439,172 @@ int main(int argc, char** argv) {
 			parsedModules.push_back(std::move(parsedMod));
 		}
 
-		// Now generate LLVM IR from all parsed modules
-		Qd::LlvmGenerator generator;
-
-		// Enable debug info if requested
-		if (opts.debugInfo) {
-			generator.setDebugInfo(true);
-		}
-
-		// Set optimization level
-		generator.setOptimizationLevel(opts.optLevel);
-
-		// Set stack size
-		generator.setStackSize(opts.stackSize);
-
-		// Enable test mode if requested
-		if (opts.testMode) {
-			generator.setTestMode(true);
-		}
-
-		// Add library search paths for third-party packages
-		// Track which packages we've already added to avoid duplicates
-		std::set<std::string> addedPackagePaths;
-		for (const auto& module : parsedModules) {
-			if (!module.packageDirectory.empty() &&
-					addedPackagePaths.find(module.packageDirectory) == addedPackagePaths.end()) {
-				// Add the package's lib directory to the linker search paths
-				std::string libPath = module.packageDirectory + "/lib";
-				if (std::filesystem::exists(libPath)) {
-					generator.addLibrarySearchPath(libPath);
-					addedPackagePaths.insert(module.packageDirectory);
-				}
+		// Lambda to configure and run any generator type
+		auto runGenerator = [&](auto& generator) -> int {
+			// Enable debug info if requested
+			if (opts.debugInfo) {
+				generator.setDebugInfo(true);
 			}
-		}
 
-		// Add library search paths from -I include paths
-		for (const auto& includePath : opts.includePaths) {
-			std::string libPath = includePath + "/lib";
-			if (std::filesystem::exists(libPath) && addedPackagePaths.find(includePath) == addedPackagePaths.end()) {
-				generator.addLibrarySearchPath(libPath);
-				addedPackagePaths.insert(includePath);
+			// Set optimization level
+			generator.setOptimizationLevel(opts.optLevel);
+
+			// Set stack size
+			generator.setStackSize(opts.stackSize);
+
+			// Enable test mode if requested
+			if (opts.testMode) {
+				generator.setTestMode(true);
 			}
-		}
 
-		// Add all dependency modules in REVERSE order (dependencies first)
-		// Modules were loaded in breadth-first order (main first, then dependents, then their dependencies)
-		// but we need to generate them depth-first (deep dependencies first, then their dependents)
-		for (auto it = parsedModules.rbegin(); it != parsedModules.rend(); ++it) {
-			if (it->package != "main") {
-				generator.addModuleAST(it->package, it->root, it->name);
-			}
-		}
-
-		// Generate main module last
-		Qd::IAstNode* mainRoot = nullptr;
-		std::string mainSourceFile;
-		for (auto& module : parsedModules) {
-			if (module.package == "main") {
-				mainRoot = module.root;
-				mainSourceFile = module.name;
-				break;
-			}
-		}
-
-		if (!mainRoot) {
-			std::cerr << Qd::Colors::bold() << "quadc: " << Qd::Colors::reset() << Qd::Colors::bold()
-					  << Qd::Colors::red() << "error: " << Qd::Colors::reset() << "no main module found" << std::endl;
-			return 1;
-		}
-
-		// Check if main function exists in main module (unless in test mode)
-		if (!opts.testMode) {
-			bool hasMainFunction = false;
-			for (size_t i = 0; i < mainRoot->childCount(); i++) {
-				Qd::IAstNode* child = mainRoot->child(i);
-				if (child && child->type() == Qd::IAstNode::Type::FUNCTION_DECLARATION) {
-					auto* funcDecl = static_cast<Qd::AstNodeFunctionDeclaration*>(child);
-					if (funcDecl->name() == "main") {
-						hasMainFunction = true;
-						break;
+			// Add library search paths for third-party packages
+			// Track which packages we've already added to avoid duplicates
+			std::set<std::string> addedPackagePaths;
+			for (const auto& module : parsedModules) {
+				if (!module.packageDirectory.empty() &&
+						addedPackagePaths.find(module.packageDirectory) == addedPackagePaths.end()) {
+					// Add the package's lib directory to the linker search paths
+					std::string libPath = module.packageDirectory + "/lib";
+					if (std::filesystem::exists(libPath)) {
+						generator.addLibrarySearchPath(libPath);
+						addedPackagePaths.insert(module.packageDirectory);
 					}
 				}
 			}
 
-			if (!hasMainFunction) {
-				std::cerr << Qd::Colors::bold() << "quadc: " << Qd::Colors::reset() << Qd::Colors::bold()
-						  << Qd::Colors::red() << "error: " << Qd::Colors::reset()
-						  << "no 'main' function found in main module" << std::endl;
-				std::cerr << Qd::Colors::bold() << "quadc: " << Qd::Colors::reset() << Qd::Colors::bold()
-						  << Qd::Colors::cyan() << "note: " << Qd::Colors::reset()
-						  << "a Quadrate program must have a 'main' function as the entry point" << std::endl;
-				return 1;
+			// Add library search paths from -I include paths
+			for (const auto& includePath : opts.includePaths) {
+				std::string libPath = includePath + "/lib";
+				if (std::filesystem::exists(libPath) && addedPackagePaths.find(includePath) == addedPackagePaths.end()) {
+					generator.addLibrarySearchPath(libPath);
+					addedPackagePaths.insert(includePath);
+				}
 			}
-		} else {
-			// In test mode, check if there are any tests
-			bool hasTests = false;
-			for (size_t i = 0; i < mainRoot->childCount(); i++) {
-				Qd::IAstNode* child = mainRoot->child(i);
-				if (child && child->type() == Qd::IAstNode::Type::TEST_DECLARATION) {
-					hasTests = true;
+
+			// Add all dependency modules in REVERSE order (dependencies first)
+			for (auto it = parsedModules.rbegin(); it != parsedModules.rend(); ++it) {
+				if (it->package != "main") {
+					generator.addModuleAST(it->package, it->root, it->name);
+				}
+			}
+
+			// Generate main module last
+			Qd::IAstNode* mainRoot = nullptr;
+			std::string mainSourceFile;
+			for (auto& module : parsedModules) {
+				if (module.package == "main") {
+					mainRoot = module.root;
+					mainSourceFile = module.name;
 					break;
 				}
 			}
 
-			if (!hasTests) {
+			if (!mainRoot) {
 				std::cerr << Qd::Colors::bold() << "quadc: " << Qd::Colors::reset() << Qd::Colors::bold()
-						  << Qd::Colors::red() << "error: " << Qd::Colors::reset()
-						  << "no test blocks found in --test mode" << std::endl;
-				std::cerr << Qd::Colors::bold() << "quadc: " << Qd::Colors::reset() << Qd::Colors::bold()
-						  << Qd::Colors::cyan() << "note: " << Qd::Colors::reset()
-						  << "use 'test \"name\" { ... }' to define tests" << std::endl;
+						  << Qd::Colors::red() << "error: " << Qd::Colors::reset() << "no main module found" << std::endl;
 				return 1;
 			}
-		}
 
-		// Pass the actual source file path for debug info
-		if (!generator.generate(mainRoot, mainSourceFile)) {
-			std::cerr << Qd::Colors::bold() << "quadc: " << Qd::Colors::reset() << Qd::Colors::bold()
-					  << Qd::Colors::red() << "error: " << Qd::Colors::reset() << "LLVM generation failed" << std::endl;
-			return 1;
-		}
+			// Check if main function exists in main module (unless in test mode)
+			if (!opts.testMode) {
+				bool hasMainFunction = false;
+				for (size_t i = 0; i < mainRoot->childCount(); i++) {
+					Qd::IAstNode* child = mainRoot->child(i);
+					if (child && child->type() == Qd::IAstNode::Type::FUNCTION_DECLARATION) {
+						auto* funcDecl = static_cast<Qd::AstNodeFunctionDeclaration*>(child);
+						if (funcDecl->name() == "main") {
+							hasMainFunction = true;
+							break;
+						}
+					}
+				}
 
-		// Print IR to stdout if requested
-		if (opts.dumpIR || opts.verbose) {
-			std::cout << "=== Generated LLVM IR ===" << std::endl;
-			std::cout << generator.getIRString() << std::endl;
-		}
+				if (!hasMainFunction) {
+					std::cerr << Qd::Colors::bold() << "quadc: " << Qd::Colors::reset() << Qd::Colors::bold()
+							  << Qd::Colors::red() << "error: " << Qd::Colors::reset()
+							  << "no 'main' function found in main module" << std::endl;
+					std::cerr << Qd::Colors::bold() << "quadc: " << Qd::Colors::reset() << Qd::Colors::bold()
+							  << Qd::Colors::cyan() << "note: " << Qd::Colors::reset()
+							  << "a Quadrate program must have a 'main' function as the entry point" << std::endl;
+					return 1;
+				}
+			} else {
+				// In test mode, check if there are any tests
+				bool hasTests = false;
+				for (size_t i = 0; i < mainRoot->childCount(); i++) {
+					Qd::IAstNode* child = mainRoot->child(i);
+					if (child && child->type() == Qd::IAstNode::Type::TEST_DECLARATION) {
+						hasTests = true;
+						break;
+					}
+				}
 
-		// Write IR to file if save-temps is enabled
-		if (opts.saveTemps) {
-			std::string irFile = (std::filesystem::path(outputDir) / (opts.outputName + ".ll")).string();
-			if (!generator.writeIR(irFile)) {
+				if (!hasTests) {
+					std::cerr << Qd::Colors::bold() << "quadc: " << Qd::Colors::reset() << Qd::Colors::bold()
+							  << Qd::Colors::red() << "error: " << Qd::Colors::reset()
+							  << "no test blocks found in --test mode" << std::endl;
+					std::cerr << Qd::Colors::bold() << "quadc: " << Qd::Colors::reset() << Qd::Colors::bold()
+							  << Qd::Colors::cyan() << "note: " << Qd::Colors::reset()
+							  << "use 'test \"name\" { ... }' to define tests" << std::endl;
+					return 1;
+				}
+			}
+
+			// Pass the actual source file path for debug info
+			if (!generator.generate(mainRoot, mainSourceFile)) {
 				std::cerr << Qd::Colors::bold() << "quadc: " << Qd::Colors::reset() << Qd::Colors::bold()
-						  << Qd::Colors::red() << "error: " << Qd::Colors::reset() << "failed to write IR file"
+						  << Qd::Colors::red() << "error: " << Qd::Colors::reset() << "LLVM generation failed" << std::endl;
+				return 1;
+			}
+
+			// Print IR to stdout if requested
+			if (opts.dumpIR || opts.verbose) {
+				std::cout << "=== Generated LLVM IR ===" << std::endl;
+				std::cout << generator.getIRString() << std::endl;
+			}
+
+			// Write IR to file if save-temps is enabled
+			if (opts.saveTemps) {
+				std::string irFile = (std::filesystem::path(outputDir) / (opts.outputName + ".ll")).string();
+				if (!generator.writeIR(irFile)) {
+					std::cerr << Qd::Colors::bold() << "quadc: " << Qd::Colors::reset() << Qd::Colors::bold()
+							  << Qd::Colors::red() << "error: " << Qd::Colors::reset() << "failed to write IR file"
+							  << std::endl;
+					return 1;
+				}
+				if (opts.verbose) {
+					std::cout << "Written IR to " << irFile << std::endl;
+				}
+			}
+
+			// Write executable
+			if (!generator.writeExecutable(outputPath)) {
+				std::cerr << Qd::Colors::bold() << "quadc: " << Qd::Colors::reset() << Qd::Colors::bold()
+						  << Qd::Colors::red() << "error: " << Qd::Colors::reset() << "failed to create executable"
 						  << std::endl;
 				return 1;
 			}
+
 			if (opts.verbose) {
-				std::cout << "Written IR to " << irFile << std::endl;
+				std::cout << "Written executable to " << outputPath << std::endl;
 			}
+
+			return 0;
+		};
+
+		// Use register-based code generator by default
+		// Fall back to stack-based with --stack-codegen for modules not yet supported
+		int genResult;
+		if (opts.stackCodegen) {
+			Qd::LlvmGenerator generator;
+			genResult = runGenerator(generator);
+		} else {
+			Qd::RegisterGenerator generator;
+			genResult = runGenerator(generator);
 		}
 
-		// Write executable
-		if (!generator.writeExecutable(outputPath)) {
-			std::cerr << Qd::Colors::bold() << "quadc: " << Qd::Colors::reset() << Qd::Colors::bold()
-					  << Qd::Colors::red() << "error: " << Qd::Colors::reset() << "failed to create executable"
-					  << std::endl;
-			return 1;
-		}
-
-		if (opts.verbose) {
-			std::cout << "Written executable to " << outputPath << std::endl;
+		if (genResult != 0) {
+			return genResult;
 		}
 
 		// Run the program if requested
