@@ -155,11 +155,11 @@ namespace Qd {
 			} else {
 				const char* xdgDataHome = std::getenv("XDG_DATA_HOME");
 				if (xdgDataHome) {
-					packagesDir = std::string(xdgDataHome) + "/quadrate/packages";
+					packagesDir = std::string(xdgDataHome) + "/quadrate/modules";
 				} else {
 					const char* pkgHome = std::getenv("HOME");
 					if (pkgHome) {
-						packagesDir = std::string(pkgHome) + "/quadrate/packages";
+						packagesDir = std::string(pkgHome) + "/quadrate/modules";
 					}
 				}
 			}
@@ -320,11 +320,11 @@ namespace Qd {
 			} else {
 				const char* xdgDataHome = std::getenv("XDG_DATA_HOME");
 				if (xdgDataHome) {
-					packagesDir = std::string(xdgDataHome) + "/quadrate/packages";
+					packagesDir = std::string(xdgDataHome) + "/quadrate/modules";
 				} else {
 					const char* pkgHome = std::getenv("HOME");
 					if (pkgHome) {
-						packagesDir = std::string(pkgHome) + "/quadrate/packages";
+						packagesDir = std::string(pkgHome) + "/quadrate/modules";
 					}
 				}
 			}

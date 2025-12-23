@@ -83,6 +83,49 @@ qd_exec_result qd_push_p(qd_context* ctx, void* value);
 /** @} */ // end of StackPush group
 
 /**
+ * @defgroup StackPop Stack Pop Operations
+ * @brief Functions for popping values from the stack
+ * @{
+ */
+
+/**
+ * @brief Pop a 64-bit integer from the stack
+ *
+ * @param ctx Execution context
+ * @return The popped integer value (0 on type mismatch or underflow)
+ */
+int64_t qd_pop_i(qd_context* ctx);
+
+/**
+ * @brief Pop a double-precision float from the stack
+ *
+ * @param ctx Execution context
+ * @return The popped float value (0.0 on type mismatch or underflow)
+ */
+double qd_pop_f(qd_context* ctx);
+
+/**
+ * @brief Pop a string from the stack and return its data
+ *
+ * @param ctx Execution context
+ * @return The string data (NULL on type mismatch or underflow)
+ *
+ * @note The returned string is a direct pointer to internal storage.
+ *       The caller should copy if needed beyond immediate use.
+ */
+const char* qd_pop_s(qd_context* ctx);
+
+/**
+ * @brief Pop a pointer from the stack
+ *
+ * @param ctx Execution context
+ * @return The popped pointer value (NULL on type mismatch or underflow)
+ */
+void* qd_pop_p(qd_context* ctx);
+
+/** @} */ // end of StackPop group
+
+/**
  * @defgroup IO Input/Output Operations
  * @brief Functions for I/O operations
  * @{

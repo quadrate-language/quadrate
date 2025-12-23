@@ -93,6 +93,59 @@ qd_exec_result qd_push_p(qd_context* ctx, void* value) {
 	return (qd_exec_result){0};
 }
 
+// Pop functions for bridge code (stack-based native functions)
+int64_t qd_pop_i(qd_context* ctx) {
+	qd_stack_element_t elem;
+	qd_stack_error err = qd_stack_pop(ctx->st, &elem);
+	if (err != QD_STACK_OK) {
+		return 0;
+	}
+	if (elem.type == QD_STACK_TYPE_INT) {
+		return elem.value.i;
+	} else if (elem.type == QD_STACK_TYPE_FLOAT) {
+		return (int64_t)elem.value.f;
+	}
+	return 0;
+}
+
+double qd_pop_f(qd_context* ctx) {
+	qd_stack_element_t elem;
+	qd_stack_error err = qd_stack_pop(ctx->st, &elem);
+	if (err != QD_STACK_OK) {
+		return 0.0;
+	}
+	if (elem.type == QD_STACK_TYPE_FLOAT) {
+		return elem.value.f;
+	} else if (elem.type == QD_STACK_TYPE_INT) {
+		return (double)elem.value.i;
+	}
+	return 0.0;
+}
+
+const char* qd_pop_s(qd_context* ctx) {
+	qd_stack_element_t elem;
+	qd_stack_error err = qd_stack_pop(ctx->st, &elem);
+	if (err != QD_STACK_OK) {
+		return NULL;
+	}
+	if (elem.type == QD_STACK_TYPE_STR && elem.value.s != NULL) {
+		return qd_string_data(elem.value.s);
+	}
+	return NULL;
+}
+
+void* qd_pop_p(qd_context* ctx) {
+	qd_stack_element_t elem;
+	qd_stack_error err = qd_stack_pop(ctx->st, &elem);
+	if (err != QD_STACK_OK) {
+		return NULL;
+	}
+	if (elem.type == QD_STACK_TYPE_PTR) {
+		return elem.value.p;
+	}
+	return NULL;
+}
+
 // Helper function to check if string contains whitespace
 qd_exec_result qd_peek(qd_context* ctx) {
 	qd_stack_element_t val;

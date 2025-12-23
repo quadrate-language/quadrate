@@ -203,6 +203,7 @@ namespace Qd {
 		std::map<std::string, llvm::Function*> userFunctions;
 		std::map<std::string, RegFunctionSignature> functionSignatures;
 		std::map<std::string, bool> fallibleFunctions;
+		std::set<std::string> stackBasedFunctions; // Functions using stack-based ABI (qd_context*)
 
 		// Module system
 		std::string currentModulePrefix = "main";
@@ -249,6 +250,19 @@ namespace Qd {
 		llvm::Function* qdStructAllocFn = nullptr;
 		llvm::Function* qdStructRetainFn = nullptr;
 		llvm::Function* qdStructReleaseFn = nullptr;
+
+		// Stack bridge functions (for stack-based native functions)
+		llvm::Function* qdCreateContextFn = nullptr;
+		llvm::Function* qdFreeContextFn = nullptr;
+		llvm::Function* qdPushIFn = nullptr;
+		llvm::Function* qdPushFFn = nullptr;
+		llvm::Function* qdPushSFn = nullptr;
+		llvm::Function* qdPushPFn = nullptr;
+		llvm::Function* qdPopIFn = nullptr;
+		llvm::Function* qdPopFFn = nullptr;
+		llvm::Function* qdPopSFn = nullptr;
+		llvm::Function* qdPopPFn = nullptr;
+		llvm::GlobalVariable* stackBridgeContext = nullptr; // Global qd_context* for bridge calls
 
 		// Counter for unique names
 		int varCounter = 0;

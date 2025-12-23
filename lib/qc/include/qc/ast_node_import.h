@@ -7,6 +7,12 @@
 #include <vector>
 
 namespace Qd {
+	// ABI type for imported native functions
+	enum class ImportABI {
+		DIRECT, // Direct C signatures (register-based, fast)
+		STACK	// Stack-based via qd_context* (compatible with embedding)
+	};
+
 	// Represents a function declaration within an import statement
 	struct ImportedFunction {
 		std::string name;								 // Function name in Quadrate (e.g., "printf")
@@ -29,8 +35,8 @@ namespace Qd {
 
 	class AstNodeImport : public IAstNode {
 	public:
-		AstNodeImport(const std::string& library, const std::string& namespaceName)
-			: mLibrary(library), mNamespace(namespaceName), mParent(nullptr), mLine(0), mColumn(0) {
+		AstNodeImport(const std::string& library, const std::string& namespaceName, ImportABI abi = ImportABI::DIRECT)
+			: mLibrary(library), mNamespace(namespaceName), mABI(abi), mParent(nullptr), mLine(0), mColumn(0) {
 		}
 
 		~AstNodeImport() {
@@ -80,6 +86,14 @@ namespace Qd {
 			return mNamespace;
 		}
 
+		ImportABI abi() const {
+			return mABI;
+		}
+
+		bool isStackBased() const {
+			return mABI == ImportABI::STACK;
+		}
+
 		void addFunction(ImportedFunction* func) {
 			mFunctions.push_back(func);
 		}
@@ -90,7 +104,8 @@ namespace Qd {
 
 	private:
 		std::string mLibrary;					   // Library file (e.g., "libstdqd.so")
-		std::string mNamespace;					   // Namespace (e.g., "std")
+		std::string mNamespace;					   // Namespace (e.g., "native" or "stack")
+		ImportABI mABI;							   // Calling convention (direct or stack-based)
 		std::vector<ImportedFunction*> mFunctions; // Declared functions
 		IAstNode* mParent;
 		size_t mLine;

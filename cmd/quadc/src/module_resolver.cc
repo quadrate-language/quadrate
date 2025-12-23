@@ -56,13 +56,13 @@ std::string getPackagesDir() {
 	// Check if XDG_DATA_HOME is set
 	const char* xdgDataHome = std::getenv("XDG_DATA_HOME");
 	if (xdgDataHome) {
-		return std::string(xdgDataHome) + "/quadrate/packages";
+		return std::string(xdgDataHome) + "/quadrate/modules";
 	}
 
-	// Default to ~/quadrate/packages
+	// Default to ~/quadrate/modules (where quadpm installs packages)
 	const char* home = std::getenv("HOME");
 	if (home) {
-		return std::string(home) + "/quadrate/packages";
+		return std::string(home) + "/quadrate/modules";
 	}
 
 	return ""; // No packages directory available

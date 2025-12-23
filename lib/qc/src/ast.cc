@@ -2,6 +2,7 @@
 #include "ast_node_comment.h"
 #include "ast_node_label.h"
 #include "source_utils.h"
+#include <cerrno>
 #include <cstdint>
 #include <cstdlib>
 #include <cstring>
@@ -158,10 +159,11 @@ namespace Qd {
 	static AstNodeStructConstruction* parseStructConstruction(const std::string& structName, u8t_scanner* scanner,
 			ErrorReporter* errorReporter, const char* src, size_t startPos);
 	static IAstNode* parseAnonymousFunction(u8t_scanner* scanner, ErrorReporter* errorReporter, const char* src);
+	static char32_t peekNextChar(u8t_scanner* scanner, const char* src);
 
 	// Helper to parse constant value after '=' (handles literals and env() function)
 	// Returns the resolved string value, or empty string on error
-	static std::string parseConstantValue(u8t_scanner* scanner, ErrorReporter* errorReporter) {
+	static std::string parseConstantValue(u8t_scanner* scanner, ErrorReporter* errorReporter, const char* src) {
 		size_t n;
 		char32_t token = u8t_scanner_scan(scanner);
 
@@ -239,7 +241,33 @@ namespace Qd {
 		// Handle literal values
 		if (token == U8T_INTEGER || token == U8T_FLOAT) {
 			const char* valueText = u8t_scanner_token_text(scanner, &n);
-			return std::string(valueText);
+			std::string result(valueText);
+
+			// Check for hex/binary literals: 0x... or 0b...
+			// The tokenizer breaks "0x1234" into "0" (INTEGER) and "x1234" (IDENTIFIER)
+			if (result == "0") {
+				// Peek at next character without skipping whitespace
+				char32_t nextChar = peekNextChar(scanner, src);
+				if (nextChar == 'x' || nextChar == 'X' || nextChar == 'b' || nextChar == 'B') {
+					// Scan the next token (should be identifier like "x1234")
+					char32_t nextToken = u8t_scanner_scan(scanner);
+					if (nextToken == U8T_IDENTIFIER) {
+						const char* hexPart = u8t_scanner_token_text(scanner, &n);
+						std::string combined = result + hexPart;
+
+						// Convert hex/binary to decimal for consistent storage
+						char* endPtr;
+						errno = 0;
+						long long value = strtoll(combined.c_str(), &endPtr, 0);
+						if (errno == 0 && *endPtr == '\0') {
+							return std::to_string(value);
+						}
+						// If conversion failed, return the combined string as-is
+						return combined;
+					}
+				}
+			}
+			return result;
 		} else if (token == U8T_STRING) {
 			// Keep quotes so LLVM generator knows it's a string
 			const char* valueText = u8t_scanner_token_text(scanner, &n);
@@ -2978,7 +3006,7 @@ namespace Qd {
 								std::string constNameStr(constName);
 								token = u8t_scanner_scan(&scanner);
 								if (token == '=') {
-									std::string value = parseConstantValue(&scanner, &errorReporter);
+									std::string value = parseConstantValue(&scanner, &errorReporter, src);
 									if (!value.empty()) {
 										AstNodeConstant* constDecl =
 												new AstNodeConstant(constNameStr, value.c_str(), true);
@@ -3096,6 +3124,13 @@ namespace Qd {
 						namespaceName = namespaceName.substr(1, namespaceName.length() - 2);
 					}
 
+					// Determine ABI from namespace name
+					// "stack" = stack-based (qd_context*), "native" or others = direct signatures
+					ImportABI abi = ImportABI::DIRECT;
+					if (namespaceName == "stack") {
+						abi = ImportABI::STACK;
+					}
+
 					// Expect '{'
 					token = u8t_scanner_scan(&scanner);
 					if (token != '{') {
@@ -3103,7 +3138,7 @@ namespace Qd {
 						break;
 					}
 
-					AstNodeImport* importStmt = new AstNodeImport(library, namespaceName);
+					AstNodeImport* importStmt = new AstNodeImport(library, namespaceName, abi);
 					setNodePosition(importStmt, &scanner, src);
 
 					// Parse function declarations
@@ -3269,7 +3304,7 @@ namespace Qd {
 						std::string constNameStr(constName);
 						token = u8t_scanner_scan(&scanner);
 						if (token == '=') {
-							std::string value = parseConstantValue(&scanner, &errorReporter);
+							std::string value = parseConstantValue(&scanner, &errorReporter, src);
 							if (!value.empty()) {
 								AstNodeConstant* constDecl = new AstNodeConstant(constNameStr, value.c_str());
 								setNodePosition(constDecl, &scanner, src);

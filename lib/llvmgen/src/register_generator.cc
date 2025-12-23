@@ -210,6 +210,53 @@ namespace Qd {
 		// strtod(const char*, char**) -> double
 		auto strtodFnTy = llvm::FunctionType::get(builder->getDoubleTy(), {ptrTy, ptrTy}, false);
 		llvm::Function::Create(strtodFnTy, llvm::Function::ExternalLinkage, "strtod", *module);
+
+		// Stack bridge functions for stack-based native calls
+		// qd_exec_result is struct { int32_t code; }
+		std::vector<llvm::Type*> execResultFields = {i32Ty};
+		auto* execResultTy = llvm::StructType::get(*context, execResultFields);
+
+		// qd_create_context(size_t) -> qd_context*
+		auto qdCreateContextFnTy = llvm::FunctionType::get(ptrTy, {i64Ty}, false);
+		qdCreateContextFn =
+				llvm::Function::Create(qdCreateContextFnTy, llvm::Function::ExternalLinkage, "qd_create_context", *module);
+
+		// qd_free_context(qd_context*)
+		auto qdFreeContextFnTy = llvm::FunctionType::get(voidTy, {ptrTy}, false);
+		qdFreeContextFn =
+				llvm::Function::Create(qdFreeContextFnTy, llvm::Function::ExternalLinkage, "qd_free_context", *module);
+
+		// qd_push_i(qd_context*, int64_t) -> qd_exec_result
+		auto qdPushIFnTy = llvm::FunctionType::get(execResultTy, {ptrTy, i64Ty}, false);
+		qdPushIFn = llvm::Function::Create(qdPushIFnTy, llvm::Function::ExternalLinkage, "qd_push_i", *module);
+
+		// qd_push_f(qd_context*, double) -> qd_exec_result
+		auto qdPushFFnTy = llvm::FunctionType::get(execResultTy, {ptrTy, builder->getDoubleTy()}, false);
+		qdPushFFn = llvm::Function::Create(qdPushFFnTy, llvm::Function::ExternalLinkage, "qd_push_f", *module);
+
+		// qd_push_s(qd_context*, const char*) -> qd_exec_result
+		auto qdPushSFnTy = llvm::FunctionType::get(execResultTy, {ptrTy, ptrTy}, false);
+		qdPushSFn = llvm::Function::Create(qdPushSFnTy, llvm::Function::ExternalLinkage, "qd_push_s", *module);
+
+		// qd_push_p(qd_context*, void*) -> qd_exec_result
+		auto qdPushPFnTy = llvm::FunctionType::get(execResultTy, {ptrTy, ptrTy}, false);
+		qdPushPFn = llvm::Function::Create(qdPushPFnTy, llvm::Function::ExternalLinkage, "qd_push_p", *module);
+
+		// qd_pop_i(qd_context*) -> int64_t
+		auto qdPopIFnTy = llvm::FunctionType::get(i64Ty, {ptrTy}, false);
+		qdPopIFn = llvm::Function::Create(qdPopIFnTy, llvm::Function::ExternalLinkage, "qd_pop_i", *module);
+
+		// qd_pop_f(qd_context*) -> double
+		auto qdPopFFnTy = llvm::FunctionType::get(builder->getDoubleTy(), {ptrTy}, false);
+		qdPopFFn = llvm::Function::Create(qdPopFFnTy, llvm::Function::ExternalLinkage, "qd_pop_f", *module);
+
+		// qd_pop_s(qd_context*) -> const char*
+		auto qdPopSFnTy = llvm::FunctionType::get(ptrTy, {ptrTy}, false);
+		qdPopSFn = llvm::Function::Create(qdPopSFnTy, llvm::Function::ExternalLinkage, "qd_pop_s", *module);
+
+		// qd_pop_p(qd_context*) -> void*
+		auto qdPopPFnTy = llvm::FunctionType::get(ptrTy, {ptrTy}, false);
+		qdPopPFn = llvm::Function::Create(qdPopPFnTy, llvm::Function::ExternalLinkage, "qd_pop_p", *module);
 	}
 
 	bool RegisterGenerator::generate(IAstNode* root, const std::string& moduleName) {
@@ -1010,6 +1057,111 @@ namespace Qd {
 			auto* func = funcIt->second;
 			auto sigIt = functionSignatures.find(funcName);
 
+			// Check if this is a stack-based function (needs bridge code)
+			if (stackBasedFunctions.count(funcName) > 0) {
+				// Stack-based function call: use bridge code
+				// 1. Get or create the bridge context
+				if (!stackBridgeContext) {
+					auto* ptrTy = llvm::PointerType::getUnqual(*context);
+					stackBridgeContext = new llvm::GlobalVariable(
+							*module, ptrTy, false, llvm::GlobalValue::InternalLinkage,
+							llvm::ConstantPointerNull::get(ptrTy), "qd_bridge_ctx");
+				}
+
+				// Load the context pointer
+				auto* ptrTy = llvm::PointerType::getUnqual(*context);
+				auto* ctxPtr = builder->CreateLoad(ptrTy, stackBridgeContext, "bridge_ctx");
+
+				// Check if context is null (lazy init)
+				auto* isNull = builder->CreateICmpEQ(ctxPtr, llvm::ConstantPointerNull::get(ptrTy));
+				auto* initBB = llvm::BasicBlock::Create(*context, "bridge_init", currentFunction);
+				auto* callBB = llvm::BasicBlock::Create(*context, "bridge_call", currentFunction);
+				builder->CreateCondBr(isNull, initBB, callBB);
+
+				// Init block: create context
+				builder->SetInsertPoint(initBB);
+				auto* newCtx = builder->CreateCall(qdCreateContextFn, {builder->getInt64(1024)});
+				builder->CreateStore(newCtx, stackBridgeContext);
+				builder->CreateBr(callBB);
+
+				// Call block: use the context
+				builder->SetInsertPoint(callBB);
+				auto* ctx = builder->CreateLoad(ptrTy, stackBridgeContext, "ctx");
+
+				// 2. Collect arguments from compile-time value stack (in reverse order)
+				std::vector<std::pair<llvm::Value*, ValueType>> collectedArgs;
+				if (sigIt != functionSignatures.end()) {
+					for (size_t i = 0; i < sigIt->second.params.size() && !valueStack.empty(); i++) {
+						auto& val = valueStack.back();
+						collectedArgs.insert(collectedArgs.begin(), {val.value, val.type});
+						valueStack.pop_back();
+					}
+				}
+
+				// 3. Push arguments to runtime stack (in correct order for stack-based function)
+				for (const auto& arg : collectedArgs) {
+					switch (arg.second) {
+						case ValueType::INT:
+						case ValueType::BOOL:
+							builder->CreateCall(qdPushIFn, {ctx, arg.first});
+							break;
+						case ValueType::FLOAT:
+							builder->CreateCall(qdPushFFn, {ctx, arg.first});
+							break;
+						case ValueType::STRING: {
+							// Get raw string data from qd_string_t*
+							auto* strDataFn = module->getFunction("qd_string_data");
+							auto* strData = builder->CreateCall(strDataFn, {arg.first});
+							builder->CreateCall(qdPushSFn, {ctx, strData});
+							break;
+						}
+						case ValueType::PTR:
+							builder->CreateCall(qdPushPFn, {ctx, arg.first});
+							break;
+					}
+				}
+
+				// 4. Call the stack-based function
+				builder->CreateCall(func, {ctx});
+
+				// 5. Pop results from runtime stack (in reverse order)
+				if (sigIt != functionSignatures.end() && !sigIt->second.returns.empty()) {
+					// Pop in reverse order since stack is LIFO
+					for (size_t i = sigIt->second.returns.size(); i > 0; i--) {
+						const auto& retInfo = sigIt->second.returns[i - 1];
+						llvm::Value* result = nullptr;
+						switch (retInfo.first) {
+							case ValueType::INT:
+							case ValueType::BOOL:
+								result = builder->CreateCall(qdPopIFn, {ctx});
+								valueStack.insert(valueStack.end() - static_cast<long>(sigIt->second.returns.size() - i),
+										TrackedValue(result, retInfo.first, retInfo.second, false));
+								break;
+							case ValueType::FLOAT:
+								result = builder->CreateCall(qdPopFFn, {ctx});
+								valueStack.insert(valueStack.end() - static_cast<long>(sigIt->second.returns.size() - i),
+										TrackedValue(result, retInfo.first, retInfo.second, false));
+								break;
+							case ValueType::STRING: {
+								auto* strData = builder->CreateCall(qdPopSFn, {ctx});
+								auto* strCreateFn = module->getFunction("qd_string_create");
+								result = builder->CreateCall(strCreateFn, {strData});
+								valueStack.insert(valueStack.end() - static_cast<long>(sigIt->second.returns.size() - i),
+										TrackedValue(result, retInfo.first, retInfo.second, true));
+								break;
+							}
+							case ValueType::PTR:
+								result = builder->CreateCall(qdPopPFn, {ctx});
+								valueStack.insert(valueStack.end() - static_cast<long>(sigIt->second.returns.size() - i),
+										TrackedValue(result, retInfo.first, retInfo.second, false));
+								break;
+						}
+					}
+				}
+				return;
+			}
+
+			// Direct function call (register-based)
 			// Pop arguments from value stack
 			std::vector<llvm::Value*> args;
 			if (sigIt != functionSignatures.end()) {
@@ -2893,6 +3045,111 @@ namespace Qd {
 			auto* func = funcIt->second;
 			auto sigIt = functionSignatures.find(funcName);
 
+			// Check if this is a stack-based function (needs bridge code)
+			if (stackBasedFunctions.count(funcName) > 0) {
+				// Stack-based function call: use bridge code
+				// 1. Get or create the bridge context
+				if (!stackBridgeContext) {
+					auto* ptrTy = llvm::PointerType::getUnqual(*context);
+					stackBridgeContext = new llvm::GlobalVariable(
+							*module, ptrTy, false, llvm::GlobalValue::InternalLinkage,
+							llvm::ConstantPointerNull::get(ptrTy), "qd_bridge_ctx");
+				}
+
+				// Load the context pointer
+				auto* ptrTy = llvm::PointerType::getUnqual(*context);
+				auto* ctxPtr = builder->CreateLoad(ptrTy, stackBridgeContext, "bridge_ctx");
+
+				// Check if context is null (lazy init)
+				auto* isNull = builder->CreateICmpEQ(ctxPtr, llvm::ConstantPointerNull::get(ptrTy));
+				auto* initBB = llvm::BasicBlock::Create(*context, "bridge_init", currentFunction);
+				auto* callBB = llvm::BasicBlock::Create(*context, "bridge_call", currentFunction);
+				builder->CreateCondBr(isNull, initBB, callBB);
+
+				// Init block: create context
+				builder->SetInsertPoint(initBB);
+				auto* newCtx = builder->CreateCall(qdCreateContextFn, {builder->getInt64(1024)});
+				builder->CreateStore(newCtx, stackBridgeContext);
+				builder->CreateBr(callBB);
+
+				// Call block: use the context
+				builder->SetInsertPoint(callBB);
+				auto* ctx = builder->CreateLoad(ptrTy, stackBridgeContext, "ctx");
+
+				// 2. Collect arguments from compile-time value stack (in reverse order)
+				std::vector<std::pair<llvm::Value*, ValueType>> collectedArgs;
+				if (sigIt != functionSignatures.end()) {
+					for (size_t i = 0; i < sigIt->second.params.size() && !valueStack.empty(); i++) {
+						auto& val = valueStack.back();
+						collectedArgs.insert(collectedArgs.begin(), {val.value, val.type});
+						valueStack.pop_back();
+					}
+				}
+
+				// 3. Push arguments to runtime stack (in correct order for stack-based function)
+				for (const auto& arg : collectedArgs) {
+					switch (arg.second) {
+						case ValueType::INT:
+						case ValueType::BOOL:
+							builder->CreateCall(qdPushIFn, {ctx, arg.first});
+							break;
+						case ValueType::FLOAT:
+							builder->CreateCall(qdPushFFn, {ctx, arg.first});
+							break;
+						case ValueType::STRING: {
+							// Get raw string data from qd_string_t*
+							auto* strDataFn = module->getFunction("qd_string_data");
+							auto* strData = builder->CreateCall(strDataFn, {arg.first});
+							builder->CreateCall(qdPushSFn, {ctx, strData});
+							break;
+						}
+						case ValueType::PTR:
+							builder->CreateCall(qdPushPFn, {ctx, arg.first});
+							break;
+					}
+				}
+
+				// 4. Call the stack-based function
+				builder->CreateCall(func, {ctx});
+
+				// 5. Pop results from runtime stack (in reverse order)
+				if (sigIt != functionSignatures.end() && !sigIt->second.returns.empty()) {
+					// Pop in reverse order since stack is LIFO
+					for (size_t i = sigIt->second.returns.size(); i > 0; i--) {
+						const auto& retInfo = sigIt->second.returns[i - 1];
+						llvm::Value* result = nullptr;
+						switch (retInfo.first) {
+							case ValueType::INT:
+							case ValueType::BOOL:
+								result = builder->CreateCall(qdPopIFn, {ctx});
+								valueStack.insert(valueStack.end() - static_cast<long>(sigIt->second.returns.size() - i),
+										TrackedValue(result, retInfo.first, retInfo.second, false));
+								break;
+							case ValueType::FLOAT:
+								result = builder->CreateCall(qdPopFFn, {ctx});
+								valueStack.insert(valueStack.end() - static_cast<long>(sigIt->second.returns.size() - i),
+										TrackedValue(result, retInfo.first, retInfo.second, false));
+								break;
+							case ValueType::STRING: {
+								auto* strData = builder->CreateCall(qdPopSFn, {ctx});
+								auto* strCreateFn = module->getFunction("qd_string_create");
+								result = builder->CreateCall(strCreateFn, {strData});
+								valueStack.insert(valueStack.end() - static_cast<long>(sigIt->second.returns.size() - i),
+										TrackedValue(result, retInfo.first, retInfo.second, true));
+								break;
+							}
+							case ValueType::PTR:
+								result = builder->CreateCall(qdPopPFn, {ctx});
+								valueStack.insert(valueStack.end() - static_cast<long>(sigIt->second.returns.size() - i),
+										TrackedValue(result, retInfo.first, retInfo.second, false));
+								break;
+						}
+					}
+				}
+				return;
+			}
+
+			// Direct function call (register-based)
 			std::vector<llvm::Value*> args;
 			if (sigIt != functionSignatures.end()) {
 				for (size_t i = 0; i < sigIt->second.params.size() && !valueStack.empty(); i++) {
@@ -6412,6 +6669,7 @@ namespace Qd {
 	void RegisterGenerator::processImportStatement(AstNodeImport* importNode, const std::string& moduleName) {
 		const std::string& namespaceName = importNode->namespaceName();
 		const std::string& library = importNode->library();
+		bool isStackBased = importNode->isStackBased();
 
 		// Track library for linking
 		importedLibraries.insert(library);
@@ -6430,33 +6688,53 @@ namespace Qd {
 				mangledName = func->name;
 			}
 
-			// Create function type based on parameters
-			std::vector<llvm::Type*> paramTypes;
-			for (const auto* param : func->inputParameters) {
-				paramTypes.push_back(getLlvmType(typeFromString(param->typeString())));
-			}
+			llvm::Function* fn = nullptr;
+			std::string scopedName = namespaceName + "::" + func->name;
 
-			// Determine return type
-			llvm::Type* returnType = builder->getVoidTy();
-			if (func->outputParameters.size() == 1) {
-				returnType = getLlvmType(typeFromString(func->outputParameters[0]->typeString()));
-			} else if (func->outputParameters.size() > 1) {
-				std::vector<llvm::Type*> returnTypes;
-				for (const auto* param : func->outputParameters) {
-					returnTypes.push_back(getLlvmType(typeFromString(param->typeString())));
+			if (isStackBased) {
+				// Stack-based ABI: C function signature is qd_exec_result (*)(qd_context*)
+				// We need qd_context* type and qd_exec_result type
+				auto* ptrTy = llvm::PointerType::getUnqual(*context);
+
+				// qd_exec_result is a struct { int32_t code; }
+				std::vector<llvm::Type*> execResultFields = {builder->getInt32Ty()};
+				auto* execResultTy = llvm::StructType::get(*context, execResultFields);
+
+				auto* funcType = llvm::FunctionType::get(execResultTy, {ptrTy}, false);
+				fn = module->getFunction(mangledName);
+				if (!fn) {
+					fn = llvm::Function::Create(funcType, llvm::Function::ExternalLinkage, mangledName, *module);
 				}
-				returnType = llvm::StructType::get(*context, returnTypes);
-			}
 
-			// Create external function declaration
-			auto* funcType = llvm::FunctionType::get(returnType, paramTypes, false);
-			llvm::Function* fn = module->getFunction(mangledName);
-			if (!fn) {
-				fn = llvm::Function::Create(funcType, llvm::Function::ExternalLinkage, mangledName, *module);
+				// Mark as stack-based for bridge code generation
+				stackBasedFunctions.insert(scopedName);
+			} else {
+				// Direct ABI: Create function type based on declared parameters
+				std::vector<llvm::Type*> paramTypes;
+				for (const auto* param : func->inputParameters) {
+					paramTypes.push_back(getLlvmType(typeFromString(param->typeString())));
+				}
+
+				// Determine return type
+				llvm::Type* returnType = builder->getVoidTy();
+				if (func->outputParameters.size() == 1) {
+					returnType = getLlvmType(typeFromString(func->outputParameters[0]->typeString()));
+				} else if (func->outputParameters.size() > 1) {
+					std::vector<llvm::Type*> returnTypes;
+					for (const auto* param : func->outputParameters) {
+						returnTypes.push_back(getLlvmType(typeFromString(param->typeString())));
+					}
+					returnType = llvm::StructType::get(*context, returnTypes);
+				}
+
+				auto* funcType = llvm::FunctionType::get(returnType, paramTypes, false);
+				fn = module->getFunction(mangledName);
+				if (!fn) {
+					fn = llvm::Function::Create(funcType, llvm::Function::ExternalLinkage, mangledName, *module);
+				}
 			}
 
 			// Register the function under namespaced name (e.g., "strconv::itoa")
-			std::string scopedName = namespaceName + "::" + func->name;
 			userFunctions[scopedName] = fn;
 
 			// Store signature info
