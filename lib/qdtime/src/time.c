@@ -1,57 +1,18 @@
 #include <qdtime/time.h>
-#include <qdrt/stack.h>
-#include <qdrt/runtime.h>
-#include <stdio.h>
-#include <stdlib.h>
+#include <stdint.h>
 #include "platform/time_platform.h"
 
-// unix - get current Unix timestamp in seconds ( -- timestamp:i64 )
-qd_exec_result usr_time_unix(qd_context* ctx) {
-	int64_t timestamp = time_platform_unix();
-
-	qd_stack_error err = qd_stack_push_int(ctx->st, timestamp);
-	if (err != QD_STACK_OK) {
-		fprintf(stderr, "Fatal error in time::unix: Stack overflow\n");
-		abort();
-	}
-
-	return (qd_exec_result){0};
+// Direct-call versions for register-based codegen
+int64_t qd_time_unix(void) {
+	return time_platform_unix();
 }
 
-// now - get current time in nanoseconds since epoch ( -- nanoseconds:i64 )
-qd_exec_result usr_time_now(qd_context* ctx) {
-	int64_t nanoseconds = time_platform_now_ns();
-
-	qd_stack_error err = qd_stack_push_int(ctx->st, nanoseconds);
-	if (err != QD_STACK_OK) {
-		fprintf(stderr, "Fatal error in time::now: Stack overflow\n");
-		abort();
-	}
-
-	return (qd_exec_result){0};
+int64_t qd_time_now(void) {
+	return time_platform_now_ns();
 }
 
-// sleep - sleep for N nanoseconds ( nanoseconds:i -- )
-qd_exec_result usr_time_sleep(qd_context* ctx) {
-	qd_stack_element_t val;
-	qd_stack_error err = qd_stack_pop(ctx->st, &val);
-
-	if (err != QD_STACK_OK) {
-		fprintf(stderr, "Fatal error in time::sleep: Stack underflow\n");
-		abort();
+void qd_time_sleep(int64_t nanoseconds) {
+	if (nanoseconds > 0) {
+		time_platform_sleep_ns(nanoseconds);
 	}
-
-	if (val.type != QD_STACK_TYPE_INT) {
-		fprintf(stderr, "Fatal error in time::sleep: Expected integer, got type %d\n", val.type);
-		abort();
-	}
-
-	if (val.value.i < 0) {
-		fprintf(stderr, "Fatal error in time::sleep: Duration cannot be negative\n");
-		abort();
-	}
-
-	time_platform_sleep_ns(val.value.i);
-
-	return (qd_exec_result){0};
 }

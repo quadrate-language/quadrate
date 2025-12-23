@@ -551,9 +551,12 @@ namespace Qd {
 		auto* entry = llvm::BasicBlock::Create(*context, "entry", func);
 		builder->SetInsertPoint(entry);
 
-		// Clear local variables
+		// Clear local variables and reset per-function allocas
 		localVariables.clear();
 		valueStack.clear();
+		nthIntAlloca = nullptr;
+		nthFloatAlloca = nullptr;
+		nthPtrAlloca = nullptr;
 
 		// Push parameters onto the value stack (in reverse order so first param is deeper)
 		// This matches Quadrate's stack-based calling convention where the body uses
@@ -918,6 +921,20 @@ namespace Qd {
 						case '"':
 							processed += '"';
 							i++;
+							break;
+						case 'x':
+							// Hex escape: \xHH
+							if (i + 3 < content.size()) {
+								char hex[3] = {content[i + 2], content[i + 3], 0};
+								char* end;
+								long val = strtol(hex, &end, 16);
+								if (end == hex + 2) {
+									processed += static_cast<char>(val);
+									i += 3;
+									break;
+								}
+							}
+							processed += content[i];
 							break;
 						default:
 							processed += content[i];
@@ -2361,28 +2378,35 @@ namespace Qd {
 				valueStack.pop_back();
 
 				if (arrVal.type == ValueType::PTR && indexVal.type == ValueType::INT) {
+					// Ensure reusable allocas exist in entry block
+					auto* ptrTy = llvm::PointerType::getUnqual(*context);
+					if (!nthFloatAlloca || !nthIntAlloca || !nthPtrAlloca) {
+						llvm::IRBuilder<> entryBuilder(&currentFunction->getEntryBlock(),
+						                               currentFunction->getEntryBlock().begin());
+						if (!nthFloatAlloca)
+							nthFloatAlloca = entryBuilder.CreateAlloca(builder->getDoubleTy(), nullptr, "nth_float_tmp");
+						if (!nthIntAlloca)
+							nthIntAlloca = entryBuilder.CreateAlloca(builder->getInt64Ty(), nullptr, "nth_int_tmp");
+						if (!nthPtrAlloca)
+							nthPtrAlloca = entryBuilder.CreateAlloca(ptrTy, nullptr, "nth_ptr_tmp");
+					}
+
 					// Check array element type based on structType
 					if (arrVal.structType == "array_float") {
 						auto* getFloatFn = module->getFunction("qd_array_get_float");
-						auto* resultAlloca =
-								builder->CreateAlloca(builder->getDoubleTy(), nullptr, "nth_float_result");
-						builder->CreateCall(getFloatFn, {arrVal.value, indexVal.value, resultAlloca});
-						auto* result = builder->CreateLoad(builder->getDoubleTy(), resultAlloca, "nth_float_val");
+						builder->CreateCall(getFloatFn, {arrVal.value, indexVal.value, nthFloatAlloca});
+						auto* result = builder->CreateLoad(builder->getDoubleTy(), nthFloatAlloca, "nth_float_val");
 						valueStack.push_back(TrackedValue(result, ValueType::FLOAT));
 					} else if (arrVal.structType == "array_str") {
 						auto* getPtrFn = module->getFunction("qd_array_get_ptr");
-						auto* ptrTy = llvm::PointerType::getUnqual(*context);
-						auto* resultAlloca = builder->CreateAlloca(ptrTy, nullptr, "nth_str_result");
-						builder->CreateCall(getPtrFn, {arrVal.value, indexVal.value, resultAlloca});
-						auto* result = builder->CreateLoad(ptrTy, resultAlloca, "nth_str_val");
+						builder->CreateCall(getPtrFn, {arrVal.value, indexVal.value, nthPtrAlloca});
+						auto* result = builder->CreateLoad(ptrTy, nthPtrAlloca, "nth_str_val");
 						valueStack.push_back(TrackedValue(result, ValueType::STRING));
 					} else if (arrVal.structType == "array_ptr" ||
 							   arrVal.structType.substr(0, 10) == "array_ptr:") {
 						auto* getPtrFn = module->getFunction("qd_array_get_ptr");
-						auto* ptrTy = llvm::PointerType::getUnqual(*context);
-						auto* resultAlloca = builder->CreateAlloca(ptrTy, nullptr, "nth_ptr_result");
-						builder->CreateCall(getPtrFn, {arrVal.value, indexVal.value, resultAlloca});
-						auto* result = builder->CreateLoad(ptrTy, resultAlloca, "nth_ptr_val");
+						builder->CreateCall(getPtrFn, {arrVal.value, indexVal.value, nthPtrAlloca});
+						auto* result = builder->CreateLoad(ptrTy, nthPtrAlloca, "nth_ptr_val");
 						// Extract element struct type if present (e.g., "array_ptr:Point" -> "Point")
 						std::string elemStructType;
 						if (arrVal.structType.length() > 10 && arrVal.structType.substr(0, 10) == "array_ptr:") {
@@ -2392,7 +2416,7 @@ namespace Qd {
 					} else if (arrVal.structType.empty() && arrVal.type == ValueType::PTR) {
 						// Unknown array type - check runtime elemType field (offset 32)
 						// elemType: 0=INT, 1=FLOAT, 2=STR, 3=PTR
-						auto* ptrTy = llvm::PointerType::getUnqual(*context);
+						// (ptrTy already declared above)
 
 						// Create allocas in entry block for all possible result types
 						llvm::IRBuilder<> entryBuilder(&currentFunction->getEntryBlock(),
@@ -2475,10 +2499,8 @@ namespace Qd {
 					} else {
 						// Default: integer array (known array_int type)
 						auto* getIntFn = module->getFunction("qd_array_get_int");
-						auto* resultAlloca =
-								builder->CreateAlloca(builder->getInt64Ty(), nullptr, "nth_int_result");
-						builder->CreateCall(getIntFn, {arrVal.value, indexVal.value, resultAlloca});
-						auto* result = builder->CreateLoad(builder->getInt64Ty(), resultAlloca, "nth_int_val");
+						builder->CreateCall(getIntFn, {arrVal.value, indexVal.value, nthIntAlloca});
+						auto* result = builder->CreateLoad(builder->getInt64Ty(), nthIntAlloca, "nth_int_val");
 						valueStack.push_back(TrackedValue(result, ValueType::INT));
 					}
 				}
@@ -2849,6 +2871,12 @@ namespace Qd {
 
 		if (moduleName == "io") {
 			if (generateNativeIoFunction(memberName)) {
+				return;
+			}
+		}
+
+		if (moduleName == "time") {
+			if (generateNativeTimeFunction(memberName)) {
 				return;
 			}
 		}
@@ -5110,6 +5138,52 @@ namespace Qd {
 		return false;
 	}
 
+	bool RegisterGenerator::generateNativeTimeFunction(const std::string& name) {
+		// time::unix ( -- timestamp:i64 )
+		if (name == "unix") {
+			auto* timeFn = module->getFunction("qd_time_unix");
+			if (!timeFn) {
+				auto* fnTy = llvm::FunctionType::get(builder->getInt64Ty(), {}, false);
+				timeFn = llvm::Function::Create(fnTy, llvm::Function::ExternalLinkage, "qd_time_unix", *module);
+			}
+			auto* result = builder->CreateCall(timeFn, {}, "unix_time");
+			valueStack.push_back(TrackedValue(result, ValueType::INT));
+			return true;
+		}
+
+		// time::now ( -- nanoseconds:i64 )
+		if (name == "now") {
+			auto* timeFn = module->getFunction("qd_time_now");
+			if (!timeFn) {
+				auto* fnTy = llvm::FunctionType::get(builder->getInt64Ty(), {}, false);
+				timeFn = llvm::Function::Create(fnTy, llvm::Function::ExternalLinkage, "qd_time_now", *module);
+			}
+			auto* result = builder->CreateCall(timeFn, {}, "now_ns");
+			valueStack.push_back(TrackedValue(result, ValueType::INT));
+			return true;
+		}
+
+		// time::sleep ( nanoseconds:i64 -- )
+		if (name == "sleep") {
+			if (valueStack.empty()) {
+				reportError("Stack underflow for time::sleep", 0);
+				return true;
+			}
+			auto durationVal = valueStack.back();
+			valueStack.pop_back();
+
+			auto* sleepFn = module->getFunction("qd_time_sleep");
+			if (!sleepFn) {
+				auto* fnTy = llvm::FunctionType::get(builder->getVoidTy(), {builder->getInt64Ty()}, false);
+				sleepFn = llvm::Function::Create(fnTy, llvm::Function::ExternalLinkage, "qd_time_sleep", *module);
+			}
+			builder->CreateCall(sleepFn, {durationVal.value});
+			return true;
+		}
+
+		return false;
+	}
+
 	void RegisterGenerator::generateFunctionPointer(AstNodeFunctionPointerReference* funcPtr) {
 		const std::string& name = funcPtr->functionName();
 		std::string funcName = mangleName(name, currentModulePrefix);
@@ -5965,16 +6039,23 @@ namespace Qd {
 		auto start = valueStack.back();
 		valueStack.pop_back();
 
-		// Create loop variable
+		// Create loop variable - reuse existing or create in entry block
 		std::string iterName = forStmt->iteratorName().empty() ? "$" : forStmt->iteratorName();
-		auto* iterAlloca = builder->CreateAlloca(builder->getInt64Ty(), nullptr, iterName);
+		llvm::AllocaInst* iterAlloca;
+		auto iterIt = localVariables.find(iterName);
+		if (iterIt != localVariables.end() && iterIt->second.type == ValueType::INT) {
+			iterAlloca = iterIt->second.alloca;
+		} else {
+			llvm::IRBuilder<> entryBuilder(&currentFunction->getEntryBlock(),
+			                               currentFunction->getEntryBlock().begin());
+			iterAlloca = entryBuilder.CreateAlloca(builder->getInt64Ty(), nullptr, iterName);
+			LocalInfo iterInfo;
+			iterInfo.alloca = iterAlloca;
+			iterInfo.type = ValueType::INT;
+			iterInfo.needsRelease = false;
+			localVariables[iterName] = iterInfo;
+		}
 		builder->CreateStore(start.value, iterAlloca);
-
-		LocalInfo iterInfo;
-		iterInfo.alloca = iterAlloca;
-		iterInfo.type = ValueType::INT;
-		iterInfo.needsRelease = false;
-		localVariables[iterName] = iterInfo;
 
 		// Create loop blocks
 		auto* condBB = llvm::BasicBlock::Create(*context, "for_cond", currentFunction);
@@ -6092,9 +6173,11 @@ namespace Qd {
 		std::vector<ValueType> stackTypes;
 		std::vector<std::string> stackStructTypes;
 
+		llvm::IRBuilder<> entryBuilder(&currentFunction->getEntryBlock(),
+		                               currentFunction->getEntryBlock().begin());
 		for (auto& val : valueStack) {
 			llvm::Type* ty = getLlvmType(val.type);
-			auto* alloca = builder->CreateAlloca(ty, nullptr, "loop_stack_val");
+			auto* alloca = entryBuilder.CreateAlloca(ty, nullptr, "loop_stack_val");
 			builder->CreateStore(val.value, alloca);
 			stackAllocas.push_back(alloca);
 			stackTypes.push_back(val.type);

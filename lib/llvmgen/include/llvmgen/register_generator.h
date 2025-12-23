@@ -258,6 +258,11 @@ namespace Qd {
 		llvm::AllocaInst* runtimeFloatAlloca = nullptr; // Stores float result if type=1
 		llvm::AllocaInst* runtimePtrAlloca = nullptr;	// Stores ptr result if type=2 or 3
 
+		// Reusable allocas for nth operations (created lazily in entry block)
+		llvm::AllocaInst* nthIntAlloca = nullptr;
+		llvm::AllocaInst* nthFloatAlloca = nullptr;
+		llvm::AllocaInst* nthPtrAlloca = nullptr;
+
 		// Setup methods
 		void setupRuntimeDeclarations();
 		void setupTargetTriple();
@@ -283,6 +288,7 @@ namespace Qd {
 		bool generateNativeTermFunction(const std::string& name);
 		bool generateNativeOsFunction(const std::string& name);
 		bool generateNativeIoFunction(const std::string& name);
+		bool generateNativeTimeFunction(const std::string& name);
 		bool tryGenerateBuiltinInstruction(const std::string& name);
 		void generateFunctionPointer(AstNodeFunctionPointerReference* funcPtr);
 		void generateAnonymousFunction(AstNodeAnonymousFunction* anonFunc);
