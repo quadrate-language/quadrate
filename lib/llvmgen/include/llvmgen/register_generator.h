@@ -133,6 +133,11 @@ namespace Qd {
 		llvm::BasicBlock* continueTarget;
 		llvm::AllocaInst* conditionAlloca;  // For while loops, stores condition before continue
 		std::vector<llvm::AllocaInst*> stackAllocas;  // For loop, stores stack values across iterations
+		std::string savedIterName;  // For restoring shadowed iterator
+		bool hasSavedIter = false;  // Whether we have a saved outer iterator
+		llvm::AllocaInst* savedIterAlloca = nullptr;
+		ValueType savedIterType = ValueType::INT;
+		bool savedIterNeedsRelease = false;
 	};
 
 	// Function signature for user-defined functions

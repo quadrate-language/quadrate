@@ -4,6 +4,7 @@
 // Run: quadc donut.qd -r
 // Press Ctrl+C to stop
 use math
+use time
 
 fn main() {
 	0.5 -> A  // X rotation
@@ -120,6 +121,8 @@ fn main() {
 
 		A 0.04 + -> A
 		B 0.02 + -> B
+
+		30 time::Millisecond * time::sleep  // ~33 fps
 	}
 
 	"\x1b[?25h" print  // Show cursor

@@ -6039,22 +6039,29 @@ namespace Qd {
 		auto start = valueStack.back();
 		valueStack.pop_back();
 
-		// Create loop variable - reuse existing or create in entry block
+		// Create loop variable - always create new, save existing if shadowing
 		std::string iterName = forStmt->iteratorName().empty() ? "$" : forStmt->iteratorName();
-		llvm::AllocaInst* iterAlloca;
+
+		// Check if we're shadowing an existing variable
+		RegLoopContext loopCtx;
+		loopCtx.savedIterName = iterName;
 		auto iterIt = localVariables.find(iterName);
-		if (iterIt != localVariables.end() && iterIt->second.type == ValueType::INT) {
-			iterAlloca = iterIt->second.alloca;
-		} else {
-			llvm::IRBuilder<> entryBuilder(&currentFunction->getEntryBlock(),
-			                               currentFunction->getEntryBlock().begin());
-			iterAlloca = entryBuilder.CreateAlloca(builder->getInt64Ty(), nullptr, iterName);
-			LocalInfo iterInfo;
-			iterInfo.alloca = iterAlloca;
-			iterInfo.type = ValueType::INT;
-			iterInfo.needsRelease = false;
-			localVariables[iterName] = iterInfo;
+		if (iterIt != localVariables.end()) {
+			loopCtx.hasSavedIter = true;
+			loopCtx.savedIterAlloca = iterIt->second.alloca;
+			loopCtx.savedIterType = iterIt->second.type;
+			loopCtx.savedIterNeedsRelease = iterIt->second.needsRelease;
 		}
+
+		// Create new iterator in entry block
+		llvm::IRBuilder<> entryBuilder(&currentFunction->getEntryBlock(),
+		                               currentFunction->getEntryBlock().begin());
+		auto* iterAlloca = entryBuilder.CreateAlloca(builder->getInt64Ty(), nullptr, iterName);
+		LocalInfo iterInfo;
+		iterInfo.alloca = iterAlloca;
+		iterInfo.type = ValueType::INT;
+		iterInfo.needsRelease = false;
+		localVariables[iterName] = iterInfo;
 		builder->CreateStore(start.value, iterAlloca);
 
 		// Create loop blocks
@@ -6063,8 +6070,11 @@ namespace Qd {
 		auto* stepBB = llvm::BasicBlock::Create(*context, "for_step", currentFunction);
 		auto* endBB = llvm::BasicBlock::Create(*context, "for_end", currentFunction);
 
-		// Push loop context
-		loopStack.push_back({endBB, stepBB, nullptr, {}});
+		// Push loop context with saved iterator info
+		loopCtx.breakTarget = endBB;
+		loopCtx.continueTarget = stepBB;
+		loopCtx.conditionAlloca = nullptr;
+		loopStack.push_back(loopCtx);
 
 		// Branch to condition
 		builder->CreateBr(condBB);
@@ -6104,11 +6114,21 @@ namespace Qd {
 		// End block
 		builder->SetInsertPoint(endBB);
 
-		// Pop loop context
+		// Pop loop context and restore shadowed iterator if any
+		auto savedCtx = loopStack.back();
 		loopStack.pop_back();
 
-		// Remove iterator from locals
-		localVariables.erase(iterName);
+		if (savedCtx.hasSavedIter) {
+			// Restore the outer iterator
+			LocalInfo restoredInfo;
+			restoredInfo.alloca = savedCtx.savedIterAlloca;
+			restoredInfo.type = savedCtx.savedIterType;
+			restoredInfo.needsRelease = savedCtx.savedIterNeedsRelease;
+			localVariables[savedCtx.savedIterName] = restoredInfo;
+		} else {
+			// No outer iterator to restore, just remove
+			localVariables.erase(iterName);
+		}
 	}
 
 	void RegisterGenerator::generateWhile(AstNodeWhileStatement* whileStmt) {
@@ -6129,7 +6149,7 @@ namespace Qd {
 		auto* bodyBB = llvm::BasicBlock::Create(*context, "while_body", currentFunction);
 		auto* endBB = llvm::BasicBlock::Create(*context, "while_end", currentFunction);
 
-		loopStack.push_back({endBB, condBB, condAlloca, {}});
+		loopStack.push_back({endBB, condBB, condAlloca, {}, "", false, nullptr, ValueType::INT, false});
 
 		builder->CreateBr(condBB);
 
@@ -6190,7 +6210,7 @@ namespace Qd {
 		auto* bodyBB = llvm::BasicBlock::Create(*context, "loop_body", currentFunction);
 		auto* endBB = llvm::BasicBlock::Create(*context, "loop_end", currentFunction);
 
-		loopStack.push_back({endBB, bodyBB, nullptr, stackAllocas});
+		loopStack.push_back({endBB, bodyBB, nullptr, stackAllocas, "", false, nullptr, ValueType::INT, false});
 
 		builder->CreateBr(bodyBB);
 
