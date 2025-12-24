@@ -339,6 +339,178 @@ else
     fail "List with QUADRATE_PATH failed" ""
 fi
 
+# ============================================
+# Lockfile Tests
+# ============================================
+
+# Test 16: install --frozen without lockfile
+echo ""
+echo "Test 16: install --frozen without lockfile"
+LOCKFILE_TEST_DIR="$TEST_CACHE_DIR/lockfile-test"
+mkdir -p "$LOCKFILE_TEST_DIR"
+cat > "$LOCKFILE_TEST_DIR/qd.json" << 'EOF'
+{
+  "name": "lockfile-test",
+  "dependencies": {
+    "testmod": "./testmod"
+  }
+}
+EOF
+mkdir -p "$LOCKFILE_TEST_DIR/testmod"
+echo "fn test() { 1 }" > "$LOCKFILE_TEST_DIR/testmod/module.qd"
+
+cd "$LOCKFILE_TEST_DIR"
+if output=$("$QUADPM" install --frozen 2>&1); then
+    fail "Should fail without lockfile" "$output"
+else
+    if echo "$output" | grep -q "requires qd.lock"; then
+        pass "install --frozen fails without lockfile"
+    else
+        fail "Error message unclear" "$output"
+    fi
+fi
+cd - > /dev/null
+
+# Test 17: install creates lockfile
+echo ""
+echo "Test 17: install creates lockfile"
+cd "$LOCKFILE_TEST_DIR"
+if output=$("$QUADPM" install 2>&1); then
+    if [ -f "qd.lock" ]; then
+        if grep -q '"version": 1' qd.lock; then
+            if grep -q '"testmod"' qd.lock; then
+                pass "install creates valid lockfile"
+            else
+                fail "Lockfile missing dependency" "$(cat qd.lock)"
+            fi
+        else
+            fail "Lockfile missing version" "$(cat qd.lock)"
+        fi
+    else
+        fail "Lockfile not created" "$output"
+    fi
+else
+    fail "Install command failed" "$output"
+fi
+cd - > /dev/null
+
+# Test 18: install --frozen with valid lockfile
+echo ""
+echo "Test 18: install --frozen with valid lockfile"
+cd "$LOCKFILE_TEST_DIR"
+if output=$("$QUADPM" install --frozen 2>&1); then
+    if echo "$output" | grep -q "Installing from lockfile"; then
+        pass "install --frozen works with valid lockfile"
+    else
+        fail "Should indicate lockfile usage" "$output"
+    fi
+else
+    fail "install --frozen failed with valid lockfile" "$output"
+fi
+cd - > /dev/null
+
+# Test 19: install --frozen with outdated lockfile (missing dep)
+echo ""
+echo "Test 19: install --frozen with outdated lockfile"
+cd "$LOCKFILE_TEST_DIR"
+# Add new dependency to qd.json but not to lockfile
+mkdir -p "$LOCKFILE_TEST_DIR/newmod"
+echo "fn new() { 2 }" > "$LOCKFILE_TEST_DIR/newmod/module.qd"
+cat > "$LOCKFILE_TEST_DIR/qd.json" << 'EOF'
+{
+  "name": "lockfile-test",
+  "dependencies": {
+    "testmod": "./testmod",
+    "newmod": "./newmod"
+  }
+}
+EOF
+if output=$("$QUADPM" install --frozen 2>&1); then
+    fail "Should fail with outdated lockfile" "$output"
+else
+    if echo "$output" | grep -q "not in lockfile"; then
+        pass "install --frozen detects outdated lockfile"
+    else
+        fail "Error message unclear" "$output"
+    fi
+fi
+cd - > /dev/null
+
+# Test 20: lock command generates lockfile
+echo ""
+echo "Test 20: lock command generates lockfile"
+cd "$LOCKFILE_TEST_DIR"
+rm -f qd.lock
+if output=$("$QUADPM" lock 2>&1); then
+    if [ -f "qd.lock" ]; then
+        if grep -q '"newmod"' qd.lock && grep -q '"testmod"' qd.lock; then
+            pass "lock command generates complete lockfile"
+        else
+            fail "Lockfile incomplete" "$(cat qd.lock)"
+        fi
+    else
+        fail "Lockfile not created" "$output"
+    fi
+else
+    fail "lock command failed" "$output"
+fi
+cd - > /dev/null
+
+# Test 21: lock command with missing dependencies
+echo ""
+echo "Test 21: lock command with missing dependencies"
+LOCK_MISSING_DIR="$TEST_CACHE_DIR/lock-missing-test"
+mkdir -p "$LOCK_MISSING_DIR"
+cat > "$LOCK_MISSING_DIR/qd.json" << 'EOF'
+{
+  "name": "lock-missing-test",
+  "dependencies": {
+    "nonexistent": "./nonexistent"
+  }
+}
+EOF
+cd "$LOCK_MISSING_DIR"
+if output=$("$QUADPM" lock 2>&1); then
+    fail "Should report missing dependencies" "$output"
+else
+    if echo "$output" | grep -q "not found\|not installed"; then
+        pass "lock command reports missing dependencies"
+    else
+        fail "Error message unclear" "$output"
+    fi
+fi
+cd - > /dev/null
+
+# Test 22: lockfile with git dependency (using test repo)
+echo ""
+echo "Test 22: lockfile with git dependency"
+LOCK_GIT_DIR="$TEST_CACHE_DIR/lock-git-test"
+mkdir -p "$LOCK_GIT_DIR"
+# Use file:// protocol to ensure it's treated as a git URL, not a local path
+cat > "$LOCK_GIT_DIR/qd.json" << EOF
+{
+  "name": "lock-git-test",
+  "dependencies": {
+    "test-repo": "file://$TEST_REPO@v1.0.0"
+  }
+}
+EOF
+cd "$LOCK_GIT_DIR"
+if output=$(QUADRATE_PATH="$TEST_CACHE_DIR/cache" "$QUADPM" install 2>&1); then
+    if [ -f "qd.lock" ]; then
+        if grep -q '"resolved":' qd.lock; then
+            pass "lockfile records git commit hash"
+        else
+            fail "Lockfile missing resolved commit" "$(cat qd.lock)"
+        fi
+    else
+        fail "Lockfile not created for git dep" "$output"
+    fi
+else
+    fail "Install with git dep failed" "$output"
+fi
+cd - > /dev/null
+
 # Print summary
 echo ""
 echo "=========================================="

@@ -10,6 +10,7 @@
 #include <fstream>
 #include <iostream>
 #include <jansson.h>
+#include <map>
 #include <string>
 #include <vector>
 
@@ -88,6 +89,17 @@ struct Dependency {
 	std::string url;	// Git URL or local path
 	std::string sha256; // Optional integrity hash
 	bool isPath;		// true if local path, false if git URL
+};
+
+// Locked dependency - resolved and pinned version
+struct LockedDependency {
+	std::string name;		 // Module name
+	std::string url;		 // Original Git URL
+	std::string ref;		 // Git ref (branch/tag)
+	std::string resolvedRef; // Resolved commit hash
+	std::string integrity;	 // SHA256 of commit
+	bool isPath;			 // true if local path
+	std::string resolvedPath; // Absolute path for local deps
 };
 
 // Forward declaration
@@ -202,6 +214,151 @@ std::vector<Dependency> parseDependencies(const std::string& manifestPath) {
 // Get the installed directory name for a module@ref
 std::string getInstalledDirName(const std::string& moduleName, const std::string& ref) {
 	return moduleName + "@" + ref;
+}
+
+// Lockfile format version
+const int LOCKFILE_VERSION = 1;
+
+// Read lockfile (qd.lock)
+std::vector<LockedDependency> readLockfile(const std::string& lockfilePath) {
+	std::vector<LockedDependency> locked;
+
+	json_error_t error;
+	json_t* root = json_load_file(lockfilePath.c_str(), 0, &error);
+	if (!root) {
+		return locked;
+	}
+
+	// Check version
+	json_t* version = json_object_get(root, "version");
+	if (!version || !json_is_integer(version) || json_integer_value(version) != LOCKFILE_VERSION) {
+		json_decref(root);
+		return locked;
+	}
+
+	json_t* packages = json_object_get(root, "packages");
+	if (!packages || !json_is_array(packages)) {
+		json_decref(root);
+		return locked;
+	}
+
+	size_t index;
+	json_t* pkg;
+	json_array_foreach(packages, index, pkg) {
+		if (!json_is_object(pkg)) {
+			continue;
+		}
+
+		LockedDependency dep;
+
+		json_t* name = json_object_get(pkg, "name");
+		if (name && json_is_string(name)) {
+			dep.name = json_string_value(name);
+		}
+
+		json_t* url = json_object_get(pkg, "url");
+		if (url && json_is_string(url)) {
+			dep.url = json_string_value(url);
+		}
+
+		json_t* ref = json_object_get(pkg, "ref");
+		if (ref && json_is_string(ref)) {
+			dep.ref = json_string_value(ref);
+		}
+
+		json_t* resolvedRef = json_object_get(pkg, "resolved");
+		if (resolvedRef && json_is_string(resolvedRef)) {
+			dep.resolvedRef = json_string_value(resolvedRef);
+		}
+
+		json_t* integrity = json_object_get(pkg, "integrity");
+		if (integrity && json_is_string(integrity)) {
+			dep.integrity = json_string_value(integrity);
+		}
+
+		json_t* isPath = json_object_get(pkg, "isPath");
+		dep.isPath = isPath && json_is_true(isPath);
+
+		json_t* resolvedPath = json_object_get(pkg, "resolvedPath");
+		if (resolvedPath && json_is_string(resolvedPath)) {
+			dep.resolvedPath = json_string_value(resolvedPath);
+		}
+
+		if (!dep.name.empty()) {
+			locked.push_back(dep);
+		}
+	}
+
+	json_decref(root);
+	return locked;
+}
+
+// Write lockfile (qd.lock)
+bool writeLockfile(const std::string& lockfilePath, const std::vector<LockedDependency>& locked) {
+	json_t* root = json_object();
+	if (!root) {
+		return false;
+	}
+
+	// Add version
+	json_object_set_new(root, "version", json_integer(LOCKFILE_VERSION));
+
+	// Add packages array
+	json_t* packages = json_array();
+	for (const auto& dep : locked) {
+		json_t* pkg = json_object();
+
+		json_object_set_new(pkg, "name", json_string(dep.name.c_str()));
+
+		if (!dep.url.empty()) {
+			json_object_set_new(pkg, "url", json_string(dep.url.c_str()));
+		}
+
+		if (!dep.ref.empty()) {
+			json_object_set_new(pkg, "ref", json_string(dep.ref.c_str()));
+		}
+
+		if (!dep.resolvedRef.empty()) {
+			json_object_set_new(pkg, "resolved", json_string(dep.resolvedRef.c_str()));
+		}
+
+		if (!dep.integrity.empty()) {
+			json_object_set_new(pkg, "integrity", json_string(dep.integrity.c_str()));
+		}
+
+		json_object_set_new(pkg, "isPath", dep.isPath ? json_true() : json_false());
+
+		if (!dep.resolvedPath.empty()) {
+			json_object_set_new(pkg, "resolvedPath", json_string(dep.resolvedPath.c_str()));
+		}
+
+		json_array_append_new(packages, pkg);
+	}
+
+	json_object_set_new(root, "packages", packages);
+
+	// Write to file with pretty formatting
+	int result = json_dump_file(root, lockfilePath.c_str(), JSON_INDENT(2) | JSON_SORT_KEYS);
+	json_decref(root);
+
+	return result == 0;
+}
+
+// Get commit hash for an installed module
+std::string getModuleCommitHash(const std::string& moduleDir) {
+	std::string gitDir = moduleDir + "/.git";
+	if (!fs::exists(gitDir)) {
+		return "";
+	}
+
+	std::string cmd = "git -C " + moduleDir + " rev-parse HEAD 2>/dev/null";
+	try {
+		std::string hash = execCommand(cmd);
+		hash.erase(hash.find_last_not_of(" \t\r\n") + 1);
+		return hash;
+	} catch (...) {
+		return "";
+	}
 }
 
 // Clone a Git repository to the modules directory
@@ -432,12 +589,21 @@ void printUsage() {
 	std::cout << "  -v, --version    Show version information\n\n";
 	std::cout << "Commands:\n";
 	std::cout << "  install          Install dependencies from qd.json\n";
+	std::cout << "    --frozen       Only install from qd.lock (fail if outdated)\n";
+	std::cout << "  lock             Generate/update qd.lock from installed modules\n";
 	std::cout << "  get <url>[@ref]  Fetch and install a module from Git\n";
 	std::cout << "  update [name]    Update installed module(s) (git pull)\n";
 	std::cout << "  list             List installed modules\n";
 	std::cout << "  build            Build C sources in current module directory\n\n";
+	std::cout << "Lockfile (qd.lock):\n";
+	std::cout << "  The lockfile pins exact commit hashes for reproducible builds.\n";
+	std::cout << "  - 'install' creates/updates qd.lock automatically\n";
+	std::cout << "  - 'install --frozen' uses qd.lock strictly (for CI)\n";
+	std::cout << "  - 'lock' regenerates qd.lock from installed modules\n\n";
 	std::cout << "Examples:\n";
 	std::cout << "  quadpm install\n";
+	std::cout << "  quadpm install --frozen\n";
+	std::cout << "  quadpm lock\n";
 	std::cout << "  quadpm get https://git.sr.ht/~user/zlib\n";
 	std::cout << "  quadpm get https://git.sr.ht/~user/zlib@1.2.0\n";
 	std::cout << "  quadpm get https://github.com/user/http@main\n";
@@ -603,8 +769,9 @@ std::string computeSha256(const std::string& path) {
 	}
 }
 
-// Install dependencies from qd.json
-int installDependencies() {
+// Install dependencies from qd.json (with lockfile support)
+// frozen: if true, only install from lockfile (fail if lockfile missing or outdated)
+int installDependencies(bool frozen = false) {
 	std::string cwd = fs::current_path().string();
 
 	// Check for qd.json
@@ -614,21 +781,59 @@ int installDependencies() {
 		return 1;
 	}
 
-	// Parse dependencies
+	// Check for lockfile
+	std::string lockfilePath = cwd + "/qd.lock";
+	std::vector<LockedDependency> lockedDeps = readLockfile(lockfilePath);
+	bool hasLockfile = !lockedDeps.empty();
+
+	if (frozen && !hasLockfile) {
+		std::cerr << COLOR_RED << "Error: --frozen requires qd.lock but none found" << COLOR_RESET << "\n";
+		std::cerr << "Run 'quadpm install' first to generate a lockfile\n";
+		return 1;
+	}
+
+	// Parse dependencies from manifest
 	std::vector<Dependency> deps = parseDependencies(manifestPath);
 	if (deps.empty()) {
 		std::cout << "No dependencies found in qd.json\n";
 		return 0;
 	}
 
-	std::cout << COLOR_CYAN << "Installing " << deps.size() << " dependenc" << (deps.size() == 1 ? "y" : "ies") << "..."
-			  << COLOR_RESET << "\n\n";
+	// Build a map of locked deps by name for quick lookup
+	std::map<std::string, LockedDependency> lockedByName;
+	for (const auto& locked : lockedDeps) {
+		lockedByName[locked.name] = locked;
+	}
+
+	// In frozen mode, verify all deps are in lockfile
+	if (frozen) {
+		for (const auto& dep : deps) {
+			if (lockedByName.find(dep.name) == lockedByName.end()) {
+				std::cerr << COLOR_RED << "Error: Dependency '" << dep.name << "' not in lockfile" << COLOR_RESET
+						  << "\n";
+				std::cerr << "Run 'quadpm install' to update the lockfile\n";
+				return 1;
+			}
+		}
+	}
+
+	if (hasLockfile) {
+		std::cout << COLOR_CYAN << "Installing from lockfile..." << COLOR_RESET << "\n\n";
+	} else {
+		std::cout << COLOR_CYAN << "Installing " << deps.size() << " dependenc" << (deps.size() == 1 ? "y" : "ies")
+				  << "..." << COLOR_RESET << "\n\n";
+	}
 
 	int failures = 0;
 	std::string modulesDir = getModulesDir();
+	std::vector<LockedDependency> newLockedDeps;
 
 	for (const auto& dep : deps) {
 		std::cout << COLOR_BOLD << dep.name << COLOR_RESET << ": ";
+
+		LockedDependency newLocked;
+		newLocked.name = dep.name;
+		newLocked.isPath = dep.isPath;
 
 		if (dep.isPath) {
 			// Local path dependency
@@ -661,34 +866,54 @@ int installDependencies() {
 			}
 
 			std::cout << COLOR_GREEN << "✓ " << COLOR_RESET << resolvedPath << " (local)\n";
+
+			newLocked.url = dep.url;
+			newLocked.resolvedPath = resolvedPath;
+			newLockedDeps.push_back(newLocked);
 		} else {
 			// Git URL dependency
 			GitRef gitRef = parseGitUrl(dep.url);
 
+			// Check if we have a locked version to use
+			auto lockedIt = lockedByName.find(dep.name);
+			std::string targetRef = gitRef.ref;
+			std::string expectedCommit;
+
+			if (lockedIt != lockedByName.end() && !lockedIt->second.resolvedRef.empty()) {
+				// Use locked commit hash for reproducibility
+				expectedCommit = lockedIt->second.resolvedRef;
+				if (frozen) {
+					// In frozen mode, clone at exact commit
+					targetRef = expectedCommit;
+				}
+			}
+
 			// Check if already installed
 			std::string installedDir = modulesDir + "/" + getInstalledDirName(gitRef.moduleName, gitRef.ref);
 			if (fs::exists(installedDir)) {
-				std::cout << COLOR_GREEN << "✓ " << COLOR_RESET << "already installed\n";
+				std::string currentCommit = getModuleCommitHash(installedDir);
 
-				// Verify sha256 if specified
-				if (!dep.sha256.empty()) {
-					// For git repos, we check the commit hash
-					std::string gitDir = installedDir + "/.git";
-					if (fs::exists(gitDir)) {
-						std::string cmd = "git -C " + installedDir + " rev-parse HEAD 2>/dev/null";
-						try {
-							std::string commitHash = execCommand(cmd);
-							commitHash.erase(commitHash.find_last_not_of(" \t\r\n") + 1);
-							if (commitHash != dep.sha256) {
-								std::cout << "  " << COLOR_YELLOW << "⚠ SHA256 mismatch!" << COLOR_RESET << "\n";
-								std::cout << "    Expected: " << dep.sha256 << "\n";
-								std::cout << "    Got:      " << commitHash << "\n";
-							}
-						} catch (...) {
-							// Ignore errors
-						}
-					}
+				// In frozen mode, verify commit matches lockfile
+				if (frozen && !expectedCommit.empty() && currentCommit != expectedCommit) {
+					std::cout << COLOR_RED << "✗ Commit mismatch (frozen)" << COLOR_RESET << "\n";
+					std::cout << "  Expected: " << expectedCommit << "\n";
+					std::cout << "  Got:      " << currentCommit << "\n";
+					failures++;
+					continue;
 				}
+
+				std::cout << COLOR_GREEN << "✓ " << COLOR_RESET << "already installed";
+				if (!currentCommit.empty()) {
+					std::cout << " (" << currentCommit.substr(0, 8) << ")";
+				}
+				std::cout << "\n";
+
+				// Record in lockfile
+				newLocked.url = gitRef.url;
+				newLocked.ref = gitRef.ref;
+				newLocked.resolvedRef = currentCommit;
+				newLocked.integrity = currentCommit;
+				newLockedDeps.push_back(newLocked);
 				continue;
 			}
 
@@ -700,28 +925,29 @@ int installDependencies() {
 				continue;
 			}
 
-			std::cout << COLOR_GREEN << "✓ " << COLOR_RESET << "installed\n";
+			// Get the actual commit hash
+			std::string newInstalledDir = modulesDir + "/" + getInstalledDirName(installedName, gitRef.ref);
+			std::string commitHash = getModuleCommitHash(newInstalledDir);
 
-			// Verify sha256 if specified
-			if (!dep.sha256.empty()) {
-				std::string newInstalledDir = modulesDir + "/" + getInstalledDirName(installedName, gitRef.ref);
-				std::string gitDir = newInstalledDir + "/.git";
-				if (fs::exists(gitDir)) {
-					std::string cmd = "git -C " + newInstalledDir + " rev-parse HEAD 2>/dev/null";
-					try {
-						std::string commitHash = execCommand(cmd);
-						commitHash.erase(commitHash.find_last_not_of(" \t\r\n") + 1);
-						if (commitHash != dep.sha256) {
-							std::cout << "  " << COLOR_RED << "✗ SHA256 mismatch!" << COLOR_RESET << "\n";
-							std::cout << "    Expected: " << dep.sha256 << "\n";
-							std::cout << "    Got:      " << commitHash << "\n";
-							failures++;
-						}
-					} catch (...) {
-						// Ignore errors
-					}
-				}
+			std::cout << COLOR_GREEN << "✓ " << COLOR_RESET << "installed";
+			if (!commitHash.empty()) {
+				std::cout << " (" << commitHash.substr(0, 8) << ")";
 			}
+			std::cout << "\n";
+
+			// Verify sha256 if specified in manifest
+			if (!dep.sha256.empty() && commitHash != dep.sha256) {
+				std::cout << "  " << COLOR_YELLOW << "⚠ SHA256 mismatch!" << COLOR_RESET << "\n";
+				std::cout << "    Expected: " << dep.sha256 << "\n";
+				std::cout << "    Got:      " << commitHash << "\n";
+			}
+
+			// Record in lockfile
+			newLocked.url = gitRef.url;
+			newLocked.ref = gitRef.ref;
+			newLocked.resolvedRef = commitHash;
+			newLocked.integrity = commitHash;
+			newLockedDeps.push_back(newLocked);
 		}
 	}
 
@@ -732,8 +958,117 @@ int installDependencies() {
 		return 1;
 	}
 
+	// Write lockfile (unless in frozen mode)
+	if (!frozen && !newLockedDeps.empty()) {
+		if (writeLockfile(lockfilePath, newLockedDeps)) {
+			std::cout << COLOR_GREEN << "✓ " << COLOR_RESET << "Updated qd.lock\n";
+		}
+	}
+
 	std::cout << COLOR_GREEN << "All dependencies installed!" << COLOR_RESET << "\n";
 	return 0;
+}
+
+// Generate/update lockfile without installing
+int generateLockfile() {
+	std::string cwd = fs::current_path().string();
+
+	// Check for qd.json
+	std::string manifestPath = cwd + "/qd.json";
+	if (!fs::exists(manifestPath)) {
+		std::cerr << COLOR_RED << "Error: No qd.json found in current directory" << COLOR_RESET << "\n";
+		return 1;
+	}
+
+	// Parse dependencies
+	std::vector<Dependency> deps = parseDependencies(manifestPath);
+	if (deps.empty()) {
+		std::cout << "No dependencies found in qd.json\n";
+		return 0;
+	}
+
+	std::cout << COLOR_CYAN << "Generating lockfile for " << deps.size() << " dependenc"
+			  << (deps.size() == 1 ? "y" : "ies") << "..." << COLOR_RESET << "\n\n";
+
+	std::string modulesDir = getModulesDir();
+	std::vector<LockedDependency> lockedDeps;
+	int missing = 0;
+
+	for (const auto& dep : deps) {
+		std::cout << COLOR_BOLD << dep.name << COLOR_RESET << ": ";
+
+		LockedDependency locked;
+		locked.name = dep.name;
+		locked.isPath = dep.isPath;
+
+		if (dep.isPath) {
+			// Local path dependency
+			std::string resolvedPath = dep.url;
+
+			if (resolvedPath.size() > 0 && resolvedPath[0] == '~') {
+				resolvedPath = getHomeDir() + resolvedPath.substr(1);
+			}
+			if (resolvedPath.size() > 0 && resolvedPath[0] != '/') {
+				resolvedPath = cwd + "/" + resolvedPath;
+			}
+			resolvedPath = fs::weakly_canonical(resolvedPath).string();
+
+			if (!fs::exists(resolvedPath)) {
+				std::cout << COLOR_YELLOW << "⚠ not found" << COLOR_RESET << "\n";
+				missing++;
+				continue;
+			}
+
+			locked.url = dep.url;
+			locked.resolvedPath = resolvedPath;
+			lockedDeps.push_back(locked);
+			std::cout << COLOR_GREEN << "✓ " << COLOR_RESET << resolvedPath << "\n";
+		} else {
+			// Git URL dependency
+			GitRef gitRef = parseGitUrl(dep.url);
+			std::string installedDir = modulesDir + "/" + getInstalledDirName(gitRef.moduleName, gitRef.ref);
+
+			if (!fs::exists(installedDir)) {
+				std::cout << COLOR_YELLOW << "⚠ not installed" << COLOR_RESET << "\n";
+				missing++;
+				continue;
+			}
+
+			std::string commitHash = getModuleCommitHash(installedDir);
+
+			locked.url = gitRef.url;
+			locked.ref = gitRef.ref;
+			locked.resolvedRef = commitHash;
+			locked.integrity = commitHash;
+			lockedDeps.push_back(locked);
+
+			std::cout << COLOR_GREEN << "✓ " << COLOR_RESET;
+			if (!commitHash.empty()) {
+				std::cout << commitHash.substr(0, 8);
+			}
+			std::cout << "\n";
+		}
+	}
+
+	std::cout << "\n";
+
+	if (missing > 0) {
+		std::cout << COLOR_YELLOW << missing << " dependenc" << (missing == 1 ? "y" : "ies")
+				  << " not installed - run 'quadpm install' first" << COLOR_RESET << "\n";
+	}
+
+	if (!lockedDeps.empty()) {
+		std::string lockfilePath = cwd + "/qd.lock";
+		if (writeLockfile(lockfilePath, lockedDeps)) {
+			std::cout << COLOR_GREEN << "✓ " << COLOR_RESET << "Wrote qd.lock (" << lockedDeps.size() << " packages)\n";
+			return 0;
+		} else {
+			std::cerr << COLOR_RED << "Error: Failed to write qd.lock" << COLOR_RESET << "\n";
+			return 1;
+		}
+	}
+
+	return missing > 0 ? 1 : 0;
 }
 
 // Update installed modules
@@ -848,7 +1183,18 @@ int main(int argc, char** argv) {
 	}
 
 	if (command == "install" || command == "i") {
-		return installDependencies();
+		// Check for --frozen flag
+		bool frozen = false;
+		for (int i = 2; i < argc; i++) {
+			if (std::string(argv[i]) == "--frozen") {
+				frozen = true;
+			}
+		}
+		return installDependencies(frozen);
+	}
+
+	if (command == "lock") {
+		return generateLockfile();
 	}
 
 	std::cerr << COLOR_RED << "Error: Unknown command '" << command << "'" << COLOR_RESET << "\n";
