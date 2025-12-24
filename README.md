@@ -129,8 +129,8 @@ fn main() {
     }
 
     // For loops (start end step)
-    0 10 1 for {
-        $ print nl    // $ is the loop counter
+    0 10 1 for i {
+        i print nl    // i is the loop counter
     }
 
     // While loops

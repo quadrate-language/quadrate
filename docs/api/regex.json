@@ -1,6 +1,6 @@
 {
   "name": "regex",
-  "description": "Regular expression matching using Thompson NFA. Supports = . * + ? | () [] [^] [a-z] ^ it and escapes. Note: Nested groups and alternation inside groups not yet supported.",
+  "description": "Regular expression matching using Thompson NFA. Supports . * + ? | () [] [^] [a-z] ^ $ and escapes. Note: Nested groups and alternation inside groups not yet supported.",
   "constants": [
 
   ],
