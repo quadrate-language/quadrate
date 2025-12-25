@@ -81,6 +81,23 @@ namespace Qd {
 			return mParameterCasts;
 		}
 
+		// Method call support
+		void setIsMethodCall(bool isMethod) {
+			mIsMethodCall = isMethod;
+		}
+
+		bool isMethodCall() const {
+			return mIsMethodCall;
+		}
+
+		void setReceiverType(const std::string& type) {
+			mReceiverType = type;
+		}
+
+		const std::string& receiverType() const {
+			return mReceiverType;
+		}
+
 	private:
 		std::string mName;
 		IAstNode* mParent;
@@ -89,6 +106,8 @@ namespace Qd {
 		size_t mLine;
 		size_t mColumn;
 		std::vector<CastDirection> mParameterCasts; // Which parameters need casts (indexed from bottom of stack)
+		bool mIsMethodCall = false;				   // True if this is a struct method call
+		std::string mReceiverType;				   // Struct type of receiver for method calls
 	};
 }
 

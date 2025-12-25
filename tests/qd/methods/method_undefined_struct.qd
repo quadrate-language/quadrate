@@ -1,0 +1,9 @@
+// Negative test: method on undefined struct type
+
+fn (p:UndefinedStruct) foo( -- ) {
+	1 print nl
+}
+
+fn main() {
+	1 drop
+}

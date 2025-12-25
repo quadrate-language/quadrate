@@ -1,6 +1,6 @@
 # Structs
 
-Demonstrates structs and constants.
+Demonstrates structs, methods, and constants.
 
 ## Run
 
@@ -13,5 +13,7 @@ quadc -r structs.qd
 - Struct definitions
 - Struct construction
 - Field access (`@field`)
+- **Struct methods** with receiver syntax (`fn (p:Point) methodName(...)`)
+- Method calls on struct values
 - Constants
 - `math::` module usage

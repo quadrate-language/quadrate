@@ -139,6 +139,25 @@ namespace Qd {
 			mTypeParams.push_back(typeParam);
 		}
 
+		// Receiver support for struct methods
+		bool hasReceiver() const {
+			return mHasReceiver;
+		}
+
+		const std::string& receiverName() const {
+			return mReceiverName;
+		}
+
+		const std::string& receiverType() const {
+			return mReceiverType;
+		}
+
+		void setReceiver(const std::string& name, const std::string& type) {
+			mReceiverName = name;
+			mReceiverType = type;
+			mHasReceiver = true;
+		}
+
 	private:
 		std::string mName;
 		std::vector<std::string> mTypeParams;
@@ -150,6 +169,11 @@ namespace Qd {
 		bool mIsPublic;
 		size_t mLine;
 		size_t mColumn;
+
+		// Receiver information for struct methods
+		std::string mReceiverName;
+		std::string mReceiverType;
+		bool mHasReceiver = false;
 	};
 }
 

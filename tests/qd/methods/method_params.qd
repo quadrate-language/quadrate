@@ -1,0 +1,14 @@
+struct Counter {
+	value:i64
+}
+
+fn (c:Counter) plus(n:i64 -- result:i64) {
+	-> n_val
+	c @value n_val +
+}
+
+fn main() {
+	Counter { value = 10 } -> c
+	5 c plus print nl
+	15 c plus print nl
+}

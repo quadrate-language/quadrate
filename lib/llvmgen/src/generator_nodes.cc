@@ -643,14 +643,24 @@ namespace Qd {
 		}
 
 		// Check if it's a user-defined function call
-		// First try the plain name, then try with current module prefix for intra-module calls
-		auto it = userFunctions.find(name);
+		// First check if this is a method call (identified by semantic validator)
+		// For methods, lookup uses ReceiverType::methodName
+		auto it = userFunctions.end();
 		std::string lookupName = name;
-		if (it == userFunctions.end() && currentModulePrefix != "main") {
-			std::string qualifiedName = currentModulePrefix + "::" + name;
-			it = userFunctions.find(qualifiedName);
-			if (it != userFunctions.end()) {
-				lookupName = qualifiedName;
+		if (ident->isMethodCall()) {
+			// Method call - use mangled name
+			lookupName = ident->receiverType() + "::" + name;
+			it = userFunctions.find(lookupName);
+		} else {
+			// Regular function call
+			// First try the plain name, then try with current module prefix for intra-module calls
+			it = userFunctions.find(name);
+			if (it == userFunctions.end() && currentModulePrefix != "main") {
+				std::string qualifiedName = currentModulePrefix + "::" + name;
+				it = userFunctions.find(qualifiedName);
+				if (it != userFunctions.end()) {
+					lookupName = qualifiedName;
+				}
 			}
 		}
 		if (it != userFunctions.end()) {
@@ -1011,6 +1021,76 @@ namespace Qd {
 
 		// Look up scoped name: scope::name
 		std::string fullName = scope + "::" + name;
+
+		// Check if this is an explicit method call (scope is struct type, name is method)
+		// The semantic validator marks these with isMethodCall()
+		if (scopedIdent->isMethodCall()) {
+			// Method call - look up in userFunctions with mangled name
+			auto it = userFunctions.find(fullName);
+			if (it != userFunctions.end()) {
+				// Generate any needed type casts before the function call
+				generateCastInstructions(scopedIdent->parameterCasts(), ctx);
+
+				// Clear error_code for fallible methods
+				auto preFallibleIt = fallibleFunctions.find(fullName);
+				if (preFallibleIt != fallibleFunctions.end() && preFallibleIt->second) {
+					auto contextStructTy = llvm::StructType::get(*context,
+							{llvm::PointerType::getUnqual(*context), builder->getInt64Ty(),
+									llvm::PointerType::getUnqual(*context), builder->getInt32Ty(),
+									llvm::PointerType::getUnqual(*context), llvm::PointerType::getUnqual(*context)});
+					auto errorCodePtr = builder->CreateStructGEP(contextStructTy, ctx, 1, "pre_call_error_code_ptr");
+					builder->CreateStore(builder->getInt64(0), errorCodePtr);
+				}
+
+				// Call the method
+				builder->CreateCall(it->second, {ctx});
+
+				// Handle fallible method return
+				auto fallibleIt = fallibleFunctions.find(fullName);
+				if (fallibleIt != fallibleFunctions.end() && fallibleIt->second) {
+					auto contextStructTy = llvm::StructType::get(*context,
+							{llvm::PointerType::getUnqual(*context), builder->getInt64Ty(),
+									llvm::PointerType::getUnqual(*context), builder->getInt32Ty(),
+									llvm::PointerType::getUnqual(*context), llvm::PointerType::getUnqual(*context)});
+
+					auto errorCodePtr = builder->CreateStructGEP(contextStructTy, ctx, 1, "error_code_ptr");
+					auto errorCode = builder->CreateLoad(builder->getInt64Ty(), errorCodePtr, "error_code");
+					auto hasError = builder->CreateICmpNE(errorCode, builder->getInt64(0), "has_error");
+
+					if (scopedIdent->abortOnError()) {
+						llvm::BasicBlock* errorBlock = llvm::BasicBlock::Create(
+								*context, "error_abort", builder->GetInsertBlock()->getParent());
+						llvm::BasicBlock* continueBlock = llvm::BasicBlock::Create(
+								*context, "no_error", builder->GetInsertBlock()->getParent());
+						builder->CreateCondBr(hasError, errorBlock, continueBlock);
+
+						builder->SetInsertPoint(errorBlock);
+						llvm::Value* errorMsg =
+								builder->CreateGlobalString("Fatal error: method '" + name + "' failed\n");
+						auto fprintfFn = module->getOrInsertFunction("fprintf",
+								llvm::FunctionType::get(builder->getInt32Ty(),
+										{llvm::PointerType::getUnqual(*context),
+												llvm::PointerType::getUnqual(*context)},
+										true));
+						auto stderrGlobal =
+								module->getOrInsertGlobal("stderr", llvm::PointerType::getUnqual(*context));
+						auto stderrVal = builder->CreateLoad(llvm::PointerType::getUnqual(*context), stderrGlobal);
+						builder->CreateCall(fprintfFn, {stderrVal, errorMsg});
+						auto abortFn = module->getOrInsertFunction(
+								"abort", llvm::FunctionType::get(builder->getVoidTy(), false));
+						builder->CreateCall(abortFn);
+						builder->CreateUnreachable();
+
+						builder->SetInsertPoint(continueBlock);
+					} else {
+						auto successStatus = builder->CreateSelect(
+								hasError, builder->getInt64(0), builder->getInt64(1), "success_status");
+						builder->CreateCall(pushIntFn, {ctx, successStatus});
+					}
+				}
+				return;
+			}
+		}
 
 		// Check if this is a constant first
 		auto constIt = moduleConstants.find(fullName);

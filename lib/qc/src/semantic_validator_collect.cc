@@ -78,6 +78,37 @@ namespace Qd {
 				}
 			}
 
+			// Handle struct methods (functions with receiver)
+			if (func->hasReceiver()) {
+				std::string structType = func->receiverType();
+				std::string methodName = func->name();
+
+				// Check that the receiver struct type exists
+				if (mDefinedStructs.find(structType) == mDefinedStructs.end()) {
+					std::string errorMsg =
+							"Method receiver type '" + structType + "' is not a defined struct";
+					reportError(func, errorMsg.c_str());
+					return;
+				}
+
+				// Check for duplicate method
+				if (mStructMethods.count(structType) && mStructMethods[structType].count(methodName)) {
+					std::string errorMsg =
+							"Duplicate method definition: '" + methodName + "' for struct '" + structType + "'";
+					reportError(func, errorMsg.c_str());
+					return;
+				}
+
+				// Register the method
+				mStructMethods[structType][methodName] = func->isPublic();
+				mStructMethodDecls[structType][methodName] = func;
+
+				// Also register with mangled name for code generation lookup
+				std::string mangledName = structType + "::" + methodName;
+				mDefinedFunctions.insert(mangledName);
+				return;
+			}
+
 			// Check for duplicate function name
 			if (mDefinedFunctions.find(func->name()) != mDefinedFunctions.end()) {
 				std::string errorMsg = "Duplicate function definition: '" + func->name() + "'";
@@ -488,6 +519,14 @@ namespace Qd {
 				}
 			}
 
+			// Check if it's a method name on any struct (type checking will verify the receiver)
+			for (const auto& structEntry : mStructMethods) {
+				if (structEntry.second.count(name)) {
+					// Potentially valid method call - type checking will verify receiver type
+					return;
+				}
+			}
+
 			// Not found - report error
 			std::string errorMsg = "Undefined function '";
 			errorMsg += name;
@@ -724,6 +763,13 @@ namespace Qd {
 			// Create a new scope for the function body (parameters NOT pre-registered)
 			std::unordered_set<std::string> funcLocalVariables = localVariables;
 			std::unordered_set<std::string> funcIterators; // Empty - no iterators in function scope by default
+
+			// For methods, the receiver is implicitly bound as a local variable
+			AstNodeFunctionDeclaration* func = static_cast<AstNodeFunctionDeclaration*>(node);
+			if (func->hasReceiver()) {
+				funcLocalVariables.insert(func->receiverName());
+			}
+
 			// Process function body
 			for (size_t i = 0; i < node->childCount(); i++) {
 				validateReferencesInternal(node->child(i), funcLocalVariables, funcIterators);
@@ -1119,7 +1165,21 @@ namespace Qd {
 				sig.produces = typeStack;
 			}
 			sig.throws = func->throws();
-			mFunctionSignatures[func->name()] = sig;
+
+			// For methods, use mangled name and append receiver to consumes
+			// Receiver is at stack top, so it goes at the end of consumes
+			if (func->hasReceiver()) {
+				// Append receiver as last consumed parameter (stack top)
+				size_t receiverIdx = sig.consumes.size();
+				sig.consumes.push_back(StackValueType::PTR);
+				sig.parameterStructTypes[receiverIdx] = func->receiverType();
+
+				// Use mangled name for methods
+				std::string mangledName = func->receiverType() + "::" + func->name();
+				mFunctionSignatures[mangledName] = sig;
+			} else {
+				mFunctionSignatures[func->name()] = sig;
+			}
 		}
 
 		// Recursively process children

@@ -344,6 +344,14 @@ namespace Qd {
 			// Track whether current function is fallible (for panic validation)
 			mCurrentFunctionFallible = func->throws();
 
+			// For methods, register the receiver as a local variable (it's implicitly bound)
+			if (func->hasReceiver()) {
+				const std::string& receiverName = func->receiverName();
+				const std::string& receiverType = func->receiverType();
+				localVariables[receiverName] = StackValueType::PTR;
+				mLocalVariableStructTypes[receiverName] = receiverType;
+			}
+
 			// Type check the function body
 			if (func->body()) {
 				typeCheckBlock(func->body(), typeStack, localVariables, structTypeStack);
@@ -1145,6 +1153,139 @@ namespace Qd {
 					}
 				}
 
+				// Check if this is a method call on a struct (stack top is receiver)
+				// Methods take precedence over global functions when stack top matches
+				std::string receiverStructType;
+				if (!typeStack.empty() && typeStack.back() == StackValueType::PTR && !structTypeStack.empty()) {
+					receiverStructType = structTypeStack.back();
+				}
+				if (!receiverStructType.empty() && mStructMethods.count(receiverStructType) &&
+						mStructMethods.at(receiverStructType).count(name)) {
+					// This is a method call - look up the signature with mangled name
+					std::string mangledName = receiverStructType + "::" + name;
+					auto methodSigIt = mFunctionSignatures.find(mangledName);
+					if (methodSigIt != mFunctionSignatures.end()) {
+						const FunctionSignature& sig = methodSigIt->second;
+
+						// Validate '!' and '?' usage
+						if (ident->abortOnError() && !sig.throws) {
+							std::string errorMsg = "Cannot use '!' operator on method '" + name +
+												   "' which is not marked as fallible";
+							reportError(ident, errorMsg.c_str());
+						}
+						if (ident->checkError() && !sig.throws) {
+							std::string errorMsg = "Cannot use '?' operator on method '" + name +
+												   "' which is not marked as fallible";
+							reportError(ident, errorMsg.c_str());
+						}
+
+						// Check fallible methods without ! or ? must be followed by 'if' or 'switch'
+						if (sig.throws && !ident->abortOnError() && !ident->checkError()) {
+							IAstNode* nextNode = (i + 1 < node->childCount()) ? node->child(i + 1) : nullptr;
+							if (!nextNode || (nextNode->type() != IAstNode::Type::IF_STATEMENT &&
+											  nextNode->type() != IAstNode::Type::SWITCH_STATEMENT)) {
+								std::string errorMsg = "Fallible method '" + name +
+													   "' must be immediately followed by 'if' or 'switch' to check for "
+													   "errors, or use '!' to abort on error";
+								reportError(ident, errorMsg.c_str());
+							}
+						}
+
+						// The receiver is already on the stack - it's consumed implicitly
+						// Check if stack has enough values for additional parameters (excluding receiver)
+						// The method signature's consumes[0] is the receiver, rest are additional params
+						size_t additionalParams = sig.consumes.size() > 0 ? sig.consumes.size() - 1 : 0;
+						if (typeStack.size() < 1 + additionalParams) {
+							std::string errorMsg = "Type error in method call '";
+							errorMsg += name;
+							errorMsg += "': Stack underflow (requires receiver + ";
+							errorMsg += std::to_string(additionalParams);
+							errorMsg += " values)";
+							reportError(ident, errorMsg.c_str());
+							break;
+						}
+
+						// Validate parameter types (skip receiver at index 0)
+						for (size_t j = 1; j < sig.consumes.size(); j++) {
+							size_t stackIdx = typeStack.size() - sig.consumes.size() + j;
+							StackValueType expected = sig.consumes[j];
+							StackValueType actual = typeStack[stackIdx];
+
+							if (expected == StackValueType::ANY || expected == StackValueType::UNKNOWN) {
+								continue;
+							}
+							if (actual == StackValueType::UNKNOWN || actual == StackValueType::ANY) {
+								continue;
+							}
+
+							if (actual != expected) {
+								if (isImplicitCastAllowed(actual, expected)) {
+									std::string warnMsg = "Implicit cast in method call '";
+									warnMsg += name;
+									warnMsg += "': Parameter ";
+									warnMsg += std::to_string(j);
+									warnMsg += " expects ";
+									warnMsg += stackValueTypeToString(expected);
+									warnMsg += ", but got ";
+									warnMsg += stackValueTypeToString(actual);
+									reportWarning(ident, warnMsg.c_str());
+								} else {
+									std::string errorMsg = "Type error in method call '";
+									errorMsg += name;
+									errorMsg += "': Parameter ";
+									errorMsg += std::to_string(j);
+									errorMsg += " expects ";
+									errorMsg += stackValueTypeToString(expected);
+									errorMsg += ", but got ";
+									errorMsg += stackValueTypeToString(actual);
+									reportError(ident, errorMsg.c_str());
+								}
+							}
+						}
+
+						// Pop all consumed values (receiver + params)
+						for (size_t j = 0; j < sig.consumes.size(); j++) {
+							typeStack.pop_back();
+							if (!structTypeStack.empty()) {
+								structTypeStack.pop_back();
+							}
+						}
+
+						// Push return values
+						if (ident->checkError()) {
+							for (size_t idx = 0; idx < sig.produces.size(); idx++) {
+								typeStack.push_back(sig.produces[idx]);
+								auto structIt = sig.producesStructTypes.find(idx);
+								structTypeStack.push_back(
+										structIt != sig.producesStructTypes.end() ? structIt->second : "");
+							}
+							typeStack.push_back(StackValueType::INT); // Error status
+							structTypeStack.push_back("");
+						} else if (sig.throws && !ident->abortOnError()) {
+							for (size_t idx = 0; idx < sig.produces.size(); idx++) {
+								typeStack.push_back(sig.produces[idx]);
+								auto structIt = sig.producesStructTypes.find(idx);
+								structTypeStack.push_back(
+										structIt != sig.producesStructTypes.end() ? structIt->second : "");
+							}
+							typeStack.push_back(StackValueType::INT); // Error status
+							structTypeStack.push_back("");
+						} else {
+							for (size_t idx = 0; idx < sig.produces.size(); idx++) {
+								typeStack.push_back(sig.produces[idx]);
+								auto structIt = sig.producesStructTypes.find(idx);
+								structTypeStack.push_back(
+										structIt != sig.producesStructTypes.end() ? structIt->second : "");
+							}
+						}
+
+						// Mark identifier as a method call for code generation
+						ident->setIsMethodCall(true);
+						ident->setReceiverType(receiverStructType);
+						break;
+					}
+				}
+
 				// Check if this is a user-defined function
 				auto sigIt = mFunctionSignatures.find(name);
 				if (sigIt != mFunctionSignatures.end()) {
@@ -1865,6 +2006,149 @@ namespace Qd {
 						// Push pointer type for the constructed struct, with qualified name as type
 						typeStack.push_back(StackValueType::PTR);
 						structTypeStack.push_back(functionName); // Track the struct type (bare name)
+						break;
+					}
+				}
+
+				// Check if this is an explicit method call (StructType::method)
+				// The scope could be a struct type name
+				if ((mDefinedStructs.count(moduleName) || mStructMethods.count(moduleName)) &&
+						mStructMethods.count(moduleName) && mStructMethods.at(moduleName).count(functionName)) {
+					// Explicit method call - check that stack top matches the receiver type
+					std::string receiverStructType;
+					if (!typeStack.empty() && typeStack.back() == StackValueType::PTR && !structTypeStack.empty()) {
+						receiverStructType = structTypeStack.back();
+					}
+
+					// Verify receiver type matches the explicit type (or is a subtype in the future)
+					if (!receiverStructType.empty() && receiverStructType != moduleName) {
+						std::string errorMsg = "Type error: Explicit method call '";
+						errorMsg += qualifiedName;
+						errorMsg += "' expects receiver of type '";
+						errorMsg += moduleName;
+						errorMsg += "' but stack top is '";
+						errorMsg += receiverStructType;
+						errorMsg += "'";
+						reportError(scoped, errorMsg.c_str());
+					}
+
+					// Look up method signature
+					auto methodSigIt = mFunctionSignatures.find(qualifiedName);
+					if (methodSigIt != mFunctionSignatures.end()) {
+						const FunctionSignature& sig = methodSigIt->second;
+
+						// Validate '!' and '?' usage
+						if (scoped->abortOnError() && !sig.throws) {
+							std::string errorMsg = "Cannot use '!' operator on method '" + functionName +
+												   "' which is not marked as fallible";
+							reportError(scoped, errorMsg.c_str());
+						}
+						if (scoped->checkError() && !sig.throws) {
+							std::string errorMsg = "Cannot use '?' operator on method '" + functionName +
+												   "' which is not marked as fallible";
+							reportError(scoped, errorMsg.c_str());
+						}
+
+						// Check fallible methods without ! or ? must be followed by 'if' or 'switch'
+						if (sig.throws && !scoped->abortOnError() && !scoped->checkError()) {
+							IAstNode* nextNode = (i + 1 < node->childCount()) ? node->child(i + 1) : nullptr;
+							if (!nextNode || (nextNode->type() != IAstNode::Type::IF_STATEMENT &&
+											  nextNode->type() != IAstNode::Type::SWITCH_STATEMENT)) {
+								std::string errorMsg = "Fallible method '" + functionName +
+													   "' must be immediately followed by 'if' or 'switch' to check for "
+													   "errors, or use '!' to abort on error";
+								reportError(scoped, errorMsg.c_str());
+							}
+						}
+
+						// Check if stack has enough values (receiver + params)
+						size_t additionalParams = sig.consumes.size() > 0 ? sig.consumes.size() - 1 : 0;
+						if (typeStack.size() < 1 + additionalParams) {
+							std::string errorMsg = "Type error in method call '";
+							errorMsg += functionName;
+							errorMsg += "': Stack underflow (requires receiver + ";
+							errorMsg += std::to_string(additionalParams);
+							errorMsg += " values)";
+							reportError(scoped, errorMsg.c_str());
+							break;
+						}
+
+						// Validate parameter types (skip receiver at index 0)
+						for (size_t j = 1; j < sig.consumes.size(); j++) {
+							size_t stackIdx = typeStack.size() - sig.consumes.size() + j;
+							StackValueType expected = sig.consumes[j];
+							StackValueType actual = typeStack[stackIdx];
+
+							if (expected == StackValueType::ANY || expected == StackValueType::UNKNOWN) {
+								continue;
+							}
+							if (actual == StackValueType::UNKNOWN || actual == StackValueType::ANY) {
+								continue;
+							}
+
+							if (actual != expected) {
+								if (isImplicitCastAllowed(actual, expected)) {
+									std::string warnMsg = "Implicit cast in method call '";
+									warnMsg += functionName;
+									warnMsg += "': Parameter ";
+									warnMsg += std::to_string(j);
+									warnMsg += " expects ";
+									warnMsg += stackValueTypeToString(expected);
+									warnMsg += ", but got ";
+									warnMsg += stackValueTypeToString(actual);
+									reportWarning(scoped, warnMsg.c_str());
+								} else {
+									std::string errorMsg = "Type error in method call '";
+									errorMsg += functionName;
+									errorMsg += "': Parameter ";
+									errorMsg += std::to_string(j);
+									errorMsg += " expects ";
+									errorMsg += stackValueTypeToString(expected);
+									errorMsg += ", but got ";
+									errorMsg += stackValueTypeToString(actual);
+									reportError(scoped, errorMsg.c_str());
+								}
+							}
+						}
+
+						// Pop all consumed values (receiver + params)
+						for (size_t j = 0; j < sig.consumes.size(); j++) {
+							typeStack.pop_back();
+							if (!structTypeStack.empty()) {
+								structTypeStack.pop_back();
+							}
+						}
+
+						// Push return values
+						if (scoped->checkError()) {
+							for (size_t idx = 0; idx < sig.produces.size(); idx++) {
+								typeStack.push_back(sig.produces[idx]);
+								auto structIt = sig.producesStructTypes.find(idx);
+								structTypeStack.push_back(
+										structIt != sig.producesStructTypes.end() ? structIt->second : "");
+							}
+							typeStack.push_back(StackValueType::INT);
+							structTypeStack.push_back("");
+						} else if (sig.throws && !scoped->abortOnError()) {
+							for (size_t idx = 0; idx < sig.produces.size(); idx++) {
+								typeStack.push_back(sig.produces[idx]);
+								auto structIt = sig.producesStructTypes.find(idx);
+								structTypeStack.push_back(
+										structIt != sig.producesStructTypes.end() ? structIt->second : "");
+							}
+							typeStack.push_back(StackValueType::INT);
+							structTypeStack.push_back("");
+						} else {
+							for (size_t idx = 0; idx < sig.produces.size(); idx++) {
+								typeStack.push_back(sig.produces[idx]);
+								auto structIt = sig.producesStructTypes.find(idx);
+								structTypeStack.push_back(
+										structIt != sig.producesStructTypes.end() ? structIt->second : "");
+							}
+						}
+
+						// Mark as method call for code generation
+						scoped->setIsMethodCall(true);
 						break;
 					}
 				}

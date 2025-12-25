@@ -1241,7 +1241,80 @@ namespace Qd {
 
 	static IAstNode* parseFunctionDeclaration(
 			u8t_scanner* scanner, ErrorReporter* errorReporter, const char* src, bool isPublic = false) {
+		// Check for receiver syntax: fn (receiver:Type) name(...)
+		std::string receiverName;
+		std::string receiverType;
+		bool hasReceiver = false;
+
 		char32_t token = u8t_scanner_scan(scanner);
+
+		// If first token is '(', this is receiver syntax
+		if (token == '(') {
+			hasReceiver = true;
+
+			// Parse receiver name
+			token = u8t_scanner_scan(scanner);
+			if (token != U8T_IDENTIFIER) {
+				errorReporter->reportError(scanner, "Expected receiver name after '(' in method declaration");
+				synchronize(scanner);
+				return nullptr;
+			}
+			size_t n;
+			receiverName = u8t_scanner_token_text(scanner, &n);
+
+			// Expect ':'
+			token = u8t_scanner_scan(scanner);
+			if (token != ':') {
+				errorReporter->reportError(scanner, "Expected ':' after receiver name in method declaration");
+				synchronize(scanner);
+				return nullptr;
+			}
+
+			// Parse receiver type (may be qualified like module::Type)
+			token = u8t_scanner_scan(scanner);
+			if (token != U8T_IDENTIFIER) {
+				errorReporter->reportError(scanner, "Expected receiver type after ':' in method declaration");
+				synchronize(scanner);
+				return nullptr;
+			}
+			receiverType = u8t_scanner_token_text(scanner, &n);
+
+			// Handle qualified types: module::Type
+			while (true) {
+				char32_t peek1 = u8t_scanner_peek(scanner);
+				if (peek1 == ':') {
+					u8t_scanner_scan(scanner); // consume first ':'
+					char32_t peek2 = u8t_scanner_peek(scanner);
+					if (peek2 == ':') {
+						u8t_scanner_scan(scanner); // consume second ':'
+						token = u8t_scanner_scan(scanner);
+						if (token == U8T_IDENTIFIER) {
+							receiverType += "::" + std::string(u8t_scanner_token_text(scanner, &n));
+						} else {
+							errorReporter->reportError(scanner, "Expected type name after '::' in receiver type");
+							synchronize(scanner);
+							return nullptr;
+						}
+					} else {
+						break;
+					}
+				} else {
+					break;
+				}
+			}
+
+			// Expect ')'
+			token = u8t_scanner_scan(scanner);
+			if (token != ')') {
+				errorReporter->reportError(scanner, "Expected ')' after receiver type in method declaration");
+				synchronize(scanner);
+				return nullptr;
+			}
+
+			// Now scan the actual function name
+			token = u8t_scanner_scan(scanner);
+		}
+
 		if (token != U8T_IDENTIFIER) {
 			errorReporter->reportError(scanner, "Expected function name after 'fn'");
 			synchronize(scanner);
@@ -1252,6 +1325,11 @@ namespace Qd {
 		const char* name = u8t_scanner_token_text(scanner, &n);
 		AstNodeFunctionDeclaration* func = new AstNodeFunctionDeclaration(name, isPublic);
 		setNodePosition(func, scanner, src);
+
+		// Set receiver if present
+		if (hasReceiver) {
+			func->setReceiver(receiverName, receiverType);
+		}
 
 		// Check for generic type parameters: fn name<T, U>(...)
 		char32_t peek = peekNextNonWhitespace(scanner, src);

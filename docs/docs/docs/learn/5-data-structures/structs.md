@@ -161,9 +161,73 @@ fn main() {
 
 ## Struct Methods
 
-Define functions that operate on structs:
+Methods are functions that operate on a specific struct type. Define them using receiver syntax:
 
 ```qd
+use math
+
+struct Point {
+	x:f64
+	y:f64
+}
+
+// Method with receiver syntax: fn (receiver:Type) name(params -- returns)
+fn (p:Point) magnitude( -- m:f64) {
+	p @x dup * p @y dup * + math::sqrt
+}
+
+fn (p:Point) move(dx:f64 dy:f64 -- ) {
+	-> dy -> dx
+	p @x dx + p .x
+	p @y dy + p .y
+}
+
+fn main() {
+	Point { x = 3.0 y = 4.0 } -> pt
+
+	// Call method on struct - receiver is popped from stack
+	pt magnitude print nl  // 5.0
+
+	// Methods can also work on inline struct construction
+	Point { x = 5.0 y = 12.0 } magnitude print nl  // 13.0
+
+	// Method with parameters
+	pt 1.0 1.0 move
+	pt @x print nl  // 4.0
+}
+```
+
+### Method Resolution
+
+When a struct is on the stack and you use an identifier, methods take precedence over global functions:
+
+```qd
+struct Counter {
+	value:i64
+}
+
+fn (c:Counter) bump( -- result:i64) {
+	c @value 1 +
+}
+
+fn bump( -- result:i64) {
+	999
+}
+
+fn main() {
+	Counter { value = 10 } -> c
+	c bump print nl   // 11 (calls method)
+	bump print nl     // 999 (calls global function)
+}
+```
+
+### Traditional Function Style
+
+You can also define functions that take structs as parameters:
+
+```qd
+use math
+
 struct Point {
 	x:f64
 	y:f64
@@ -173,29 +237,14 @@ fn point_distance(p1:Point p2:Point -- d:f64) {
 	-> p2 -> p1
 	p2 @x p1 @x - dup *
 	p2 @y p1 @y - dup *
-	+ sqrt
-}
-
-fn point_move(p:Point dx:f64 dy:f64 -- ) {
-	-> dy -> dx -> p
-	p @x dx + p .x
-	p @y dy + p .y
+	+ math::sqrt
 }
 
 fn main() {
-	Point {
-		x = 0.0
-		y = 0.0
-	} -> a
-	Point {
-		x = 3.0
-		y = 4.0
-	} -> b
+	Point { x = 0.0 y = 0.0 } -> a
+	Point { x = 3.0 y = 4.0 } -> b
 
 	a b point_distance print nl  // 5.0
-
-	a 1.0 1.0 point_move
-	a @x print nl  // 1.0
 }
 ```
 

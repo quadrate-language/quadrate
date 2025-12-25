@@ -80,6 +80,15 @@ namespace Qd {
 			return mParameterCasts;
 		}
 
+		// Method call support
+		void setIsMethodCall(bool isMethod) {
+			mIsMethodCall = isMethod;
+		}
+
+		bool isMethodCall() const {
+			return mIsMethodCall;
+		}
+
 	private:
 		std::string mScope;
 		std::string mName;
@@ -89,6 +98,7 @@ namespace Qd {
 		size_t mLine;
 		size_t mColumn;
 		std::vector<CastDirection> mParameterCasts; // Which parameters need casts (indexed from bottom of stack)
+		bool mIsMethodCall = false;					// True if this is a struct method call
 	};
 }
 

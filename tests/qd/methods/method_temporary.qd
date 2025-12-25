@@ -1,0 +1,14 @@
+use math
+
+struct Point {
+	x:f64
+	y:f64
+}
+
+fn (p:Point) magnitude( -- m:f64) {
+	p @x dup * p @y dup * + math::sqrt
+}
+
+fn main() {
+	Point { x = 3.0 y = 4.0 } magnitude print nl
+}

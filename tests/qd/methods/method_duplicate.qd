@@ -1,0 +1,18 @@
+// Negative test: duplicate method definition
+
+struct Point {
+	x:f64
+	y:f64
+}
+
+fn (p:Point) foo( -- ) {
+	1 print nl
+}
+
+fn (p:Point) foo( -- ) {
+	2 print nl
+}
+
+fn main() {
+	1 drop
+}

@@ -11,6 +11,7 @@
 namespace Qd {
 
 	class IAstNode;
+	class AstNodeFunctionDeclaration;
 
 	// Stack value type for type checking
 	enum class StackValueType {
@@ -298,6 +299,18 @@ namespace Qd {
 
 		// Function signatures: stack effect of each function
 		std::unordered_map<std::string, FunctionSignature> mFunctionSignatures;
+
+		// Struct methods: maps structType -> (methodName -> isPublic)
+		std::unordered_map<std::string, std::unordered_map<std::string, bool>> mStructMethods;
+
+		// Struct method declarations: maps structType -> (methodName -> AstNodeFunctionDeclaration*)
+		std::unordered_map<std::string, std::unordered_map<std::string, AstNodeFunctionDeclaration*>>
+				mStructMethodDecls;
+
+		// Module struct methods: maps module -> structType -> (methodName -> isPublic)
+		std::unordered_map<std::string,
+				std::unordered_map<std::string, std::unordered_map<std::string, bool>>>
+				mModuleStructMethods;
 
 		// Error count
 		size_t mErrorCount;

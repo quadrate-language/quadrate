@@ -511,7 +511,13 @@ namespace Qd {
 			}
 		} else {
 			// User-defined function: qd_exec_result usr_<prefix>_<name>(qd_context* ctx)
-			std::string fnName = "usr_" + namePrefix + "_" + funcNode->name();
+			// For methods: qd_exec_result usr_<prefix>_<ReceiverType>_<name>(qd_context* ctx)
+			std::string fnName;
+			if (funcNode->hasReceiver()) {
+				fnName = "usr_" + namePrefix + "_" + funcNode->receiverType() + "_" + funcNode->name();
+			} else {
+				fnName = "usr_" + namePrefix + "_" + funcNode->name();
+			}
 			// Check if function was already declared in pre-pass (for forward references)
 			fn = module->getFunction(fnName);
 			if (!fn) {
@@ -539,8 +545,13 @@ namespace Qd {
 			}
 
 			// Register the function with appropriate scope
-			std::string registerName =
-					(namePrefix == "main") ? funcNode->name() : (namePrefix + "::" + funcNode->name());
+			// For methods, register with mangled name: ReceiverType::methodName
+			std::string registerName;
+			if (funcNode->hasReceiver()) {
+				registerName = funcNode->receiverType() + "::" + funcNode->name();
+			} else {
+				registerName = (namePrefix == "main") ? funcNode->name() : (namePrefix + "::" + funcNode->name());
+			}
 			userFunctions[registerName] = fn;
 			fallibleFunctions[registerName] = funcNode->throws();
 
@@ -705,6 +716,37 @@ namespace Qd {
 						localVariableStructTypes[param->name()] = extractStructName(typeStr);
 					}
 				}
+			}
+
+			// For methods, pop the receiver from the stack and bind it as a local variable
+			// The receiver is implicitly passed and must be bound before the body executes
+			if (funcNode->hasReceiver()) {
+				const std::string& receiverName = funcNode->receiverName();
+				const std::string& receiverType = funcNode->receiverType();
+
+				// Create alloca for the receiver variable
+				llvm::Function* currentFn = builder->GetInsertBlock()->getParent();
+				llvm::IRBuilder<> tmpBuilder(&currentFn->getEntryBlock(), currentFn->getEntryBlock().begin());
+				llvm::AllocaInst* receiverAlloca = tmpBuilder.CreateAlloca(stackElementTy, nullptr, receiverName);
+
+				// Initialize type field
+				llvm::Value* typePtr =
+						tmpBuilder.CreateStructGEP(stackElementTy, receiverAlloca, 1, receiverName + "_init_type");
+				tmpBuilder.CreateStore(tmpBuilder.getInt32(static_cast<uint32_t>(-1)), typePtr);
+
+				// Store in local variables map
+				localVariables[receiverName] = receiverAlloca;
+				localVariableStructTypes[receiverName] = receiverType;
+
+				// Pop the receiver from the stack
+				auto contextStructTy = llvm::StructType::get(*context,
+						{llvm::PointerType::getUnqual(*context), builder->getInt64Ty(),
+								llvm::PointerType::getUnqual(*context), builder->getInt32Ty(),
+								llvm::PointerType::getUnqual(*context), llvm::PointerType::getUnqual(*context)});
+				llvm::Value* stackPtrPtr = builder->CreateStructGEP(contextStructTy, ctx, 0, "stack_ptr");
+				llvm::Value* stackPtr =
+						builder->CreateLoad(llvm::PointerType::getUnqual(*context), stackPtrPtr, "stack");
+				builder->CreateCall(stackPopFn, {stackPtr, receiverAlloca});
 			}
 
 			// Scan for captured variables to enable escaped closures
@@ -1226,12 +1268,21 @@ namespace Qd {
 					continue;
 				}
 				// Create function declaration with proper module prefix
-				std::string fnName = "usr_" + mainModuleName + "_" + funcNode->name();
+				// For methods, use mangled name: ReceiverType_methodName
+				std::string fnName;
+				std::string registerName;
+				if (funcNode->hasReceiver()) {
+					fnName = "usr_" + mainModuleName + "_" + funcNode->receiverType() + "_" + funcNode->name();
+					registerName = funcNode->receiverType() + "::" + funcNode->name();
+				} else {
+					fnName = "usr_" + mainModuleName + "_" + funcNode->name();
+					registerName = funcNode->name();
+				}
 				auto fnTy = llvm::FunctionType::get(execResultTy, {contextPtrTy}, false);
 				auto fn = llvm::Function::Create(fnTy, llvm::Function::ExternalLinkage, fnName, *module);
 				// Register the function for forward reference lookup
-				userFunctions[funcNode->name()] = fn;
-				fallibleFunctions[funcNode->name()] = funcNode->throws();
+				userFunctions[registerName] = fn;
+				fallibleFunctions[registerName] = funcNode->throws();
 				// Track return struct type if output parameter is a struct
 				const auto& outputs = funcNode->outputParameters();
 				bool foundExplicitStructType = false;
@@ -1240,7 +1291,7 @@ namespace Qd {
 						const std::string& typeStr = param->typeString();
 						if (looksLikeStructType(typeStr)) {
 							// Store the unqualified struct name for lookup
-							functionReturnStructType[funcNode->name()] = extractStructName(typeStr);
+							functionReturnStructType[registerName] = extractStructName(typeStr);
 							foundExplicitStructType = true;
 							break; // Use first struct-typed output
 						}
@@ -1250,7 +1301,7 @@ namespace Qd {
 				if (!foundExplicitStructType && funcNode->body()) {
 					std::string inferredType = findLastStructConstruction(funcNode->body());
 					if (!inferredType.empty()) {
-						functionReturnStructType[funcNode->name()] = inferredType;
+						functionReturnStructType[registerName] = inferredType;
 					}
 				}
 			}

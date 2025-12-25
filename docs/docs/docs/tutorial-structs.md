@@ -140,9 +140,88 @@ fn main() {
 }
 ```
 
-## Structs with Functions
+## Struct Methods
 
-Pass structs to functions using the struct type name:
+Define methods using receiver syntax - the struct is automatically bound to a local variable:
+
+```qd
+use math
+
+struct Point {
+	x:f64
+	y:f64
+}
+
+// Receiver syntax: fn (receiver:Type) name(params -- returns)
+fn (p:Point) magnitude( -- m:f64) {
+	p @x dup * p @y dup * + math::sqrt
+}
+
+fn (p:Point) print_point( -- ) {
+	"(" print p @x print ", " print p @y print ")" print nl
+}
+
+fn main() {
+	Point { x = 3.0 y = 4.0 } -> pt
+
+	pt print_point       // Prints: (3, 4)
+	pt magnitude print nl  // Prints: 5
+
+	// Works on inline structs too
+	Point { x = 5.0 y = 12.0 } magnitude print nl  // Prints: 13
+}
+```
+
+### Methods with Parameters
+
+Methods can take additional parameters after the receiver:
+
+```qd
+struct Counter {
+	value:i64
+}
+
+fn (c:Counter) add(n:i64 -- result:i64) {
+	-> n
+	c @value n +
+}
+
+fn main() {
+	Counter { value = 10 } -> c
+	5 c add print nl   // Prints: 15
+	10 c add print nl  // Prints: 20
+}
+```
+
+### Returning Structs from Functions
+
+When returning structs from factory functions, use the struct type name (not `ptr`) as the return type to enable method calls on the returned value:
+
+```qd
+struct Point {
+	x:f64
+	y:f64
+}
+
+fn (p:Point) show( -- ) {
+	"(" print p @x print ", " print p @y print ")" print nl
+}
+
+// Good: Return type is Point - enables method calls
+fn new_point(x:f64 y:f64 -- p:Point) {
+	-> y -> x
+	Point { x = x y = y }
+}
+
+fn main() {
+	1.0 2.0 new_point -> p
+	p show  // Works - compiler knows p is a Point
+}
+```
+
+## Functions with Struct Parameters
+
+You can also pass structs to regular functions:
 
 ```qd
 use math
@@ -159,15 +238,8 @@ fn distance_from_origin(p:Point -- dist:f64) {
 	math::sqrt     // square root
 }
 
-fn print_point(p:Point -- ) {
-	-> p
-	"(" print p @x print ", " print p @y print ")" print nl
-}
-
 fn main() {
 	Point { x = 3.0 y = 4.0 } -> p
-
-	p print_point              // Prints: (3, 4)
 	p distance_from_origin print nl  // Prints: 5
 }
 ```
@@ -286,8 +358,9 @@ Key concepts:
 2. **Create instances** with `Name { field = value ... }`
 3. **Access fields** with `@fieldname`
 4. **Modify fields** with `value struct .fieldname`
-5. **Pass to functions** as `ptr` type
-6. **Memory is managed** automatically or manually with `free`
+5. **Define methods** with `fn (receiver:Type) name(...)`
+6. **Call methods** with `struct methodName` (receiver is popped from stack)
+7. **Memory is managed** automatically via reference counting
 
 ## Next Steps
 

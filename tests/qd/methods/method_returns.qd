@@ -1,0 +1,20 @@
+use math
+
+struct Vec2 {
+	x:f64
+	y:f64
+}
+
+fn (v:Vec2) length( -- len:f64) {
+	v @x dup * v @y dup * + math::sqrt
+}
+
+fn (v:Vec2) lengthSquared( -- len2:f64) {
+	v @x dup * v @y dup * +
+}
+
+fn main() {
+	Vec2 { x = 3.0 y = 4.0 } -> v
+	v length print nl
+	v lengthSquared print nl
+}
