@@ -2,7 +2,7 @@
 fn make_counter( -- counter:ptr ) {
     0 -> count
     fn ( -- r:i64) {
-        count inc -> count
+        count ++ -> count
         count
     }
 }

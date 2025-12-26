@@ -43,13 +43,11 @@ fn main() {
 | [io](io.md) | File and stream I/O operations. |
 | [json](json.md) | JSON parsing and querying without AST construction. |
 | [limits](limits.md) | Numeric limits and constants. |
-| [mat4](mat4.md) | 4x4 matrix math operations for 3D transformations. |
-| [math](math.md) | Mathematical functions and constants. |
+| [math](math.md) | Mathematical functions, constants, vectors, matrices, and quaternions. |
 | [mem](mem.md) | Low-level memory allocation and manipulation. |
 | [net](net.md) | TCP network operations. |
 | [os](os.md) | Operating system interface. |
 | [path](path.md) | File path manipulation functions. |
-| [quat](quat.md) | Quaternion math operations for 3D rotations. |
 | [rand](rand.md) | Random number generation using xorshift64* algorithm. |
 | [regex](regex.md) | Regular expression matching using Thompson NFA. |
 | [sb](sb.md) | StringBuilder - Efficient string building. |
@@ -63,6 +61,3 @@ fn main() {
 | [unicode](unicode.md) | Unicode character constants and classification. |
 | [uri](uri.md) | URI encoding, decoding, and parsing. |
 | [uuid](uuid.md) | UUID generation (version 4 random UUIDs). |
-| [vec2](vec2.md) | 2D vector math operations. |
-| [vec3](vec3.md) | 3D vector math operations. |
-| [vec4](vec4.md) | 4D vector math operations (homogeneous coordinates). |

@@ -4,7 +4,7 @@ fn safe_div(a:i64 b:i64 -- c:i64)! {
 }
 
 fn normal_func(x:i64 -- y:i64) {
-	inc
+	++
 }
 
 fn main() {

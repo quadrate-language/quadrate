@@ -12,12 +12,12 @@ fn main() {
 	0 -- print nl          // -1
 	-99 -- print nl        // -100
 
-	// ++ is equivalent to inc
-	42 inc print nl        // 43
+	// ++ is the increment operator
+	42 ++ print nl         // 43
 	42 ++ print nl         // 43
 
-	// -- is equivalent to dec
-	42 dec print nl        // 41
+	// -- is the decrement operator
+	42 -- print nl         // 41
 	42 -- print nl         // 41
 
 	// Chained operations

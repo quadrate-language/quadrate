@@ -32,10 +32,10 @@ fn main() {
 	// Should print nl = 0.5
 	4.0 math::inv print nl
 	// Should print nl = 0.25
-	// Test inc/dec
-	5 inc print nl
+	// Test ++/--
+	5 ++ print nl
 	// Should print nl = 6
-	5 dec print nl
+	5 -- print nl
 	// Should print nl = 4
 	// Test fac (factorial)
 	5 math::fac print nl
