@@ -13,6 +13,8 @@
 #include <map>
 #include <string>
 #include <vector>
+#include <sys/wait.h>
+#include <unistd.h>
 
 namespace fs = std::filesystem;
 
@@ -53,27 +55,99 @@ std::string getModulesDir() {
 	return getHomeDir() + "/quadrate/modules";
 }
 
-// Execute a shell command and capture output
-std::string execCommand(const std::string& cmd) {
-	std::array<char, 128> buffer;
-	std::string result;
-	FILE* pipe = popen(cmd.c_str(), "r");
-	if (!pipe) {
-		throw std::runtime_error("popen() failed!");
+// Execute a command safely using fork/exec (no shell interpretation)
+// Returns exit status, captures stdout in 'output' if provided
+int execCommandSafe(const std::vector<std::string>& args, std::string* output = nullptr, bool showOutput = false) {
+	if (args.empty()) {
+		return -1;
 	}
-	while (fgets(buffer.data(), buffer.size(), pipe) != nullptr) {
-		result += buffer.data();
+
+	// Create pipe for capturing output
+	int pipefd[2] = {-1, -1};
+	if (output || showOutput) {
+		if (pipe(pipefd) == -1) {
+			return -1;
+		}
 	}
-	int status = pclose(pipe);
+
+	pid_t pid = fork();
+	if (pid == -1) {
+		if (pipefd[0] != -1) {
+			close(pipefd[0]);
+			close(pipefd[1]);
+		}
+		return -1;
+	}
+
+	if (pid == 0) {
+		// Child process
+		if (pipefd[1] != -1) {
+			close(pipefd[0]);
+			dup2(pipefd[1], STDOUT_FILENO);
+			dup2(pipefd[1], STDERR_FILENO);
+			close(pipefd[1]);
+		}
+
+		// Convert args to char* array
+		std::vector<char*> argv;
+		for (const auto& arg : args) {
+			argv.push_back(const_cast<char*>(arg.c_str()));
+		}
+		argv.push_back(nullptr);
+
+		execvp(argv[0], argv.data());
+		_exit(127); // exec failed
+	}
+
+	// Parent process
+	if (pipefd[1] != -1) {
+		close(pipefd[1]);
+	}
+
+	// Read output
+	if (pipefd[0] != -1) {
+		std::array<char, 256> buffer;
+		ssize_t n;
+		while ((n = read(pipefd[0], buffer.data(), buffer.size())) > 0) {
+			if (output) {
+				output->append(buffer.data(), static_cast<size_t>(n));
+			}
+			if (showOutput) {
+				std::cout.write(buffer.data(), n);
+			}
+		}
+		close(pipefd[0]);
+	}
+
+	int status;
+	waitpid(pid, &status, 0);
+
+	if (WIFEXITED(status)) {
+		return WEXITSTATUS(status);
+	}
+	return -1;
+}
+
+// Execute command and capture output (throws on failure)
+std::string execCommand(const std::vector<std::string>& args) {
+	std::string output;
+	int status = execCommandSafe(args, &output, false);
 	if (status != 0) {
 		throw std::runtime_error("Command failed with status: " + std::to_string(status));
 	}
-	return result;
+	return output;
 }
 
-// Execute a shell command, showing output in real-time
-int execCommandLive(const std::string& cmd) {
-	return system(cmd.c_str());
+// Execute command showing output in real-time
+int execCommandLive(const std::vector<std::string>& args) {
+	return execCommandSafe(args, nullptr, true);
+}
+
+// Check if a command exists in PATH
+bool commandExists(const std::string& cmd) {
+	std::string output;
+	int status = execCommandSafe({"which", cmd}, &output, false);
+	return status == 0;
 }
 
 // Parse module name from qd.json
@@ -351,9 +425,8 @@ std::string getModuleCommitHash(const std::string& moduleDir) {
 		return "";
 	}
 
-	std::string cmd = "git -C " + moduleDir + " rev-parse HEAD 2>/dev/null";
 	try {
-		std::string hash = execCommand(cmd);
+		std::string hash = execCommand({"git", "-C", moduleDir, "rev-parse", "HEAD"});
 		hash.erase(hash.find_last_not_of(" \t\r\n") + 1);
 		return hash;
 	} catch (...) {
@@ -384,9 +457,7 @@ std::string gitClone(const GitRef& gitRef) {
 	std::cout << "  → Cloning " << gitRef.url << "\n";
 
 	// Clone with --depth 1 for faster download
-	std::string cloneCmd = "git clone --depth 1 --branch " + gitRef.ref + " " + gitRef.url + " " + targetDir + " 2>&1";
-
-	int result = execCommandLive(cloneCmd);
+	int result = execCommandLive({"git", "clone", "--depth", "1", "--branch", gitRef.ref, gitRef.url, targetDir});
 
 	if (result != 0) {
 		std::cerr << COLOR_RED << "Error: Failed to clone repository" << COLOR_RESET << "\n";
@@ -478,8 +549,23 @@ bool compileCsources(const std::string& moduleDir, const std::string& moduleName
 
 	// Prefer clang, fallback to gcc
 	std::string compiler = "gcc";
-	if (system("which clang > /dev/null 2>&1") == 0) {
+	if (commandExists("clang")) {
 		compiler = "clang";
+	}
+
+	// Build include paths
+	std::vector<std::string> includePaths;
+	includePaths.push_back("-I/usr/include");
+	if (fs::exists("dist/include/qdrt")) {
+		includePaths.push_back("-Idist/include");
+	}
+	const char* libDir_env = std::getenv("QUADRATE_LIBDIR");
+	if (libDir_env) {
+		fs::path libPath(libDir_env);
+		fs::path includePath = libPath.parent_path() / "include";
+		if (fs::exists(includePath / "qdrt")) {
+			includePaths.push_back("-I" + includePath.string());
+		}
 	}
 
 	// Compile to object files
@@ -490,28 +576,16 @@ bool compileCsources(const std::string& moduleDir, const std::string& moduleName
 		std::string objFile = libDir + "/" + fs::path(cFile).stem().string() + ".o";
 		objFiles.push_back(objFile);
 
-		// Compile with -fPIC for shared library compatibility
-		// Look for headers in multiple locations:
-		// 1. Local dist/include (when building within Quadrate source)
-		// 2. System /usr/include (when Quadrate is installed)
-		// 3. QUADRATE_LIBDIR/../include (for development with local builds)
-		std::string includeFlags = "-I/usr/include";
-		if (fs::exists("dist/include/qdrt")) {
-			includeFlags += " -Idist/include";
+		// Build compile command as vector
+		std::vector<std::string> compileArgs = {compiler, "-c", "-fPIC", "-O2", "-Wall"};
+		for (const auto& inc : includePaths) {
+			compileArgs.push_back(inc);
 		}
-		const char* libDir_env = std::getenv("QUADRATE_LIBDIR");
-		if (libDir_env) {
-			fs::path libPath(libDir_env);
-			fs::path includePath = libPath.parent_path() / "include";
-			if (fs::exists(includePath / "qdrt")) {
-				includeFlags += " -I" + includePath.string();
-			}
-		}
+		compileArgs.push_back(cFile);
+		compileArgs.push_back("-o");
+		compileArgs.push_back(objFile);
 
-		std::string compileCmd =
-				compiler + " -c -fPIC -O2 -Wall " + includeFlags + " " + cFile + " -o " + objFile + " 2>&1";
-
-		int compileResult = execCommandLive(compileCmd);
+		int compileResult = execCommandLive(compileArgs);
 		if (compileResult != 0) {
 			std::cerr << COLOR_RED << "  ✗ Failed to compile " << COLOR_RESET << cFile << "\n";
 			compileFailed = true;
@@ -524,19 +598,17 @@ bool compileCsources(const std::string& moduleDir, const std::string& moduleName
 	}
 
 	// Create shared library
-	std::string objList;
+	std::vector<std::string> linkArgs = {compiler, "-shared"};
 	for (const auto& obj : objFiles) {
-		objList += obj + " ";
+		linkArgs.push_back(obj);
 	}
-
-	// Build link flags from native config
-	std::string linkFlags;
 	for (const auto& lib : nativeConfig.link) {
-		linkFlags += "-l" + lib + " ";
+		linkArgs.push_back("-l" + lib);
 	}
+	linkArgs.push_back("-o");
+	linkArgs.push_back(sharedLib);
 
-	std::string linkSharedCmd = compiler + " -shared " + objList + linkFlags + "-o " + sharedLib + " 2>&1";
-	int linkResult = execCommandLive(linkSharedCmd);
+	int linkResult = execCommandLive(linkArgs);
 
 	if (linkResult == 0) {
 		std::cout << COLOR_GREEN << "  ✓ Built " << COLOR_RESET << libName << ".so\n";
@@ -545,8 +617,11 @@ bool compileCsources(const std::string& moduleDir, const std::string& moduleName
 	}
 
 	// Create static library (note: static libs don't link with other libs directly)
-	std::string arCmd = "ar rcs " + staticLib + " " + objList + "2>&1";
-	int arResult = execCommandLive(arCmd);
+	std::vector<std::string> arArgs = {"ar", "rcs", staticLib};
+	for (const auto& obj : objFiles) {
+		arArgs.push_back(obj);
+	}
+	int arResult = execCommandLive(arArgs);
 
 	if (arResult == 0) {
 		std::cout << COLOR_GREEN << "  ✓ Built " << COLOR_RESET << libName << "_static.a\n";
@@ -687,8 +762,7 @@ bool updateModule(const std::string& moduleDir) {
 	std::cout << COLOR_CYAN << "Updating " << COLOR_BOLD << displayName << COLOR_RESET << "...\n";
 
 	// Run git pull in the module directory
-	std::string pullCmd = "cd " + moduleDir + " && git pull 2>&1";
-	int result = execCommandLive(pullCmd);
+	int result = execCommandLive({"git", "-C", moduleDir, "pull"});
 
 	if (result != 0) {
 		std::cerr << COLOR_RED << "  ✗ Failed to update " << displayName << COLOR_RESET << "\n";
@@ -758,12 +832,16 @@ int buildModule() {
 
 // Compute SHA256 hash of a file or directory
 std::string computeSha256(const std::string& path) {
-	std::string cmd = "sha256sum " + path + " 2>/dev/null | cut -d' ' -f1";
 	try {
-		std::string hash = execCommand(cmd);
+		std::string output = execCommand({"sha256sum", path});
+		// sha256sum output: "hash  filename\n" - extract just the hash
+		size_t spacePos = output.find(' ');
+		if (spacePos != std::string::npos) {
+			output = output.substr(0, spacePos);
+		}
 		// Trim whitespace
-		hash.erase(hash.find_last_not_of(" \t\r\n") + 1);
-		return hash;
+		output.erase(output.find_last_not_of(" \t\r\n") + 1);
+		return output;
 	} catch (...) {
 		return "";
 	}
