@@ -1,6 +1,7 @@
 quadpm_sources = files(
 	'src/git_ref.cc',
 	'src/main.cc',
+	'src/semver.cc',
 )
 
 # JSON parsing for qd.json manifest
@@ -16,3 +17,8 @@ quadpm_exe = executable(
 
 # Override find_program so tests use this build
 meson.override_find_program('quadpm', quadpm_exe)
+
+# Tests
+if get_option('build_tests')
+	subdir('tests')
+endif

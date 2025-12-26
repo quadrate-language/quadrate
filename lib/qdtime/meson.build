@@ -22,3 +22,8 @@ qdtime_dep = declare_dependency(
 	link_with: qdtime_static,
 	include_directories: qdtime_inc
 )
+
+# Tests
+if get_option('build_tests')
+	subdir('tests')
+endif

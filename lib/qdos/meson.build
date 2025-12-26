@@ -34,3 +34,8 @@ qdos_dep = declare_dependency(
 	dependencies: [cpp_dep, fs_dep],
 	include_directories: qdos_inc
 )
+
+# Tests
+if get_option('build_tests')
+	subdir('tests')
+endif

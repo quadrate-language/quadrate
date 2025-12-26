@@ -21,3 +21,8 @@ qdstrconv_dep = declare_dependency(
 	link_with: qdstrconv_static,
 	include_directories: qdstrconv_inc
 )
+
+# Tests
+if get_option('build_tests')
+	subdir('tests')
+endif

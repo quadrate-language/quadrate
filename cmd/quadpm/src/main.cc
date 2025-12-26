@@ -2,6 +2,8 @@
 // Manages 3rd party Git-based modules
 
 #include "git_ref.h"
+#include "semver.h"
+#include <algorithm>
 #include <array>
 #include <cstdio>
 #include <cstdlib>
@@ -11,6 +13,7 @@
 #include <iostream>
 #include <jansson.h>
 #include <map>
+#include <sstream>
 #include <string>
 #include <sys/wait.h>
 #include <unistd.h>
@@ -159,10 +162,12 @@ struct NativeConfig {
 
 // Dependency from [dependencies] section
 struct Dependency {
-	std::string name;	// Module name (key in TOML)
-	std::string url;	// Git URL or local path
-	std::string sha256; // Optional integrity hash
-	bool isPath;		// true if local path, false if git URL
+	std::string name;	 // Module name (key in TOML)
+	std::string url;	 // Git URL or local path
+	std::string version; // Version range (^1.0.0, ~2.0.0, >=1.0.0, etc.) or branch/tag
+	std::string sha256;	 // Optional integrity hash
+	bool isPath;		 // true if local path, false if git URL
+	bool isSemVer;		 // true if version is a semver range
 };
 
 // Locked dependency - resolved and pinned version
@@ -176,8 +181,9 @@ struct LockedDependency {
 	std::string resolvedPath; // Absolute path for local deps
 };
 
-// Forward declaration
+// Forward declarations
 bool compileCsources(const std::string& moduleDir, const std::string& moduleName, const NativeConfig& nativeConfig);
+bool isSemVerRange(const std::string& version);
 
 // Parse native section from qd.json
 NativeConfig parseNativeConfig(const std::string& manifestPath) {
@@ -226,9 +232,11 @@ std::string parseModuleName(const std::string& manifestPath) {
 
 // Parse dependencies from qd.json
 // Supports:
-//   "name": "https://git.sr.ht/~user/repo@ref"  (git URL)
+//   "name": "https://git.sr.ht/~user/repo@ref"  (git URL with branch/tag)
+//   "name": "https://git.sr.ht/~user/repo"      (git URL, default branch)
 //   "name": "../local/path"                      (local path)
-//   "name": "*"                                  (any version, npm-style)
+//   "name": "^1.0.0"                             (semver range, uses default registry)
+//   "name": { "url": "...", "version": "^1.0.0" }  (expanded form with semver)
 //   "name": { "url": "...", "integrity": "sha256-..." }  (expanded form)
 std::vector<Dependency> parseDependencies(const std::string& manifestPath) {
 	std::vector<Dependency> deps;
@@ -246,23 +254,58 @@ std::vector<Dependency> parseDependencies(const std::string& manifestPath) {
 		json_object_foreach(dependencies, key, value) {
 			Dependency dep;
 			dep.name = key;
+			dep.isPath = false;
+			dep.isSemVer = false;
 
 			if (json_is_string(value)) {
-				// Simple form: "name": "url" or "name": "*"
-				dep.url = json_string_value(value);
+				std::string strValue = json_string_value(value);
+
 				// Check if it's a local path (starts with /, ./, ../, or ~/)
-				dep.isPath =
-						(dep.url.size() > 0 && (dep.url[0] == '/' || dep.url[0] == '.' ||
-													   (dep.url.size() > 1 && dep.url[0] == '~' && dep.url[1] == '/')));
+				if (strValue.size() > 0 &&
+						(strValue[0] == '/' || strValue[0] == '.' ||
+								(strValue.size() > 1 && strValue[0] == '~' && strValue[1] == '/'))) {
+					dep.url = strValue;
+					dep.isPath = true;
+				}
+				// Check if it looks like a URL
+				else if (strValue.find("://") != std::string::npos || strValue.substr(0, 4) == "git@") {
+					// It's a URL - extract version if present
+					GitRef gitRef = parseGitUrl(strValue);
+					dep.url = gitRef.url;
+					dep.version = gitRef.ref;
+					// Check if the ref looks like semver
+					dep.isSemVer = isSemVerRange(dep.version);
+				}
+				// Otherwise treat as version constraint (semver range)
+				else {
+					dep.version = strValue;
+					dep.isSemVer = isSemVerRange(strValue);
+					// URL will need to be looked up - leave empty for now
+				}
 			} else if (json_is_object(value)) {
-				// Expanded form: { "url": "...", "integrity": "sha256-..." }
+				// Expanded form: { "url": "...", "version": "...", "integrity": "sha256-..." }
 				json_t* url = json_object_get(value, "url");
 				if (url && json_is_string(url)) {
-					dep.url = json_string_value(url);
+					std::string urlStr = json_string_value(url);
+					// Check if URL has inline version (@tag)
+					GitRef gitRef = parseGitUrl(urlStr);
+					dep.url = gitRef.url;
+					if (gitRef.ref != "main") {
+						dep.version = gitRef.ref;
+					}
 					dep.isPath = (dep.url.size() > 0 &&
 								  (dep.url[0] == '/' || dep.url[0] == '.' ||
 										  (dep.url.size() > 1 && dep.url[0] == '~' && dep.url[1] == '/')));
 				}
+
+				// Version field overrides inline @version
+				json_t* version = json_object_get(value, "version");
+				if (version && json_is_string(version)) {
+					dep.version = json_string_value(version);
+				}
+
+				dep.isSemVer = isSemVerRange(dep.version);
+
 				json_t* integrity = json_object_get(value, "integrity");
 				if (integrity && json_is_string(integrity)) {
 					std::string integrityStr = json_string_value(integrity);
@@ -275,7 +318,7 @@ std::vector<Dependency> parseDependencies(const std::string& manifestPath) {
 				}
 			}
 
-			if (!dep.url.empty()) {
+			if (!dep.url.empty() || !dep.version.empty()) {
 				deps.push_back(dep);
 			}
 		}
@@ -688,13 +731,24 @@ void printUsage() {
 	std::cout << "    \"name\": \"mymodule\",\n";
 	std::cout << "    \"dependencies\": {\n";
 	std::cout << "      \"glut\": \"https://git.sr.ht/~user/qd-glut@v1.0.0\",\n";
+	std::cout << "      \"http\": { \"url\": \"https://git.sr.ht/~user/qd-http\", \"version\": \"^2.0.0\" },\n";
 	std::cout << "      \"mylib\": \"../local/path\",\n";
 	std::cout << "      \"crypto\": {\n";
-	std::cout << "        \"url\": \"https://git.sr.ht/~user/qd-crypto@v2.0.0\",\n";
+	std::cout << "        \"url\": \"https://git.sr.ht/~user/qd-crypto\",\n";
+	std::cout << "        \"version\": \"~1.5.0\",\n";
 	std::cout << "        \"integrity\": \"sha256-abc123...\"\n";
 	std::cout << "      }\n";
 	std::cout << "    }\n";
 	std::cout << "  }\n\n";
+	std::cout << "Semver version ranges:\n";
+	std::cout << "  ^1.2.3    Compatible with version (>=1.2.3 <2.0.0)\n";
+	std::cout << "  ~1.2.3    Approximately equivalent (>=1.2.3 <1.3.0)\n";
+	std::cout << "  >=1.0.0   Greater than or equal\n";
+	std::cout << "  <2.0.0    Less than\n";
+	std::cout << "  1.2.x     Any patch version (>=1.2.0 <1.3.0)\n";
+	std::cout << "  *         Any version\n";
+	std::cout << "  1.0.0 - 2.0.0   Hyphen range (inclusive)\n";
+	std::cout << "  >=1.0.0 <2.0.0 || >=3.0.0   Multiple ranges\n\n";
 	std::cout << "Environment:\n";
 	std::cout << "  QUADRATE_PATH      Module installation directory\n";
 	std::cout << "  XDG_DATA_HOME      If set, uses $XDG_DATA_HOME/quadrate/modules\n";
@@ -847,6 +901,157 @@ std::string computeSha256(const std::string& path) {
 	}
 }
 
+// List all tags from a remote git repository
+// Returns pairs of (tag_name, commit_hash)
+std::vector<std::pair<std::string, std::string>> listRemoteTags(const std::string& gitUrl) {
+	std::vector<std::pair<std::string, std::string>> tags;
+
+	try {
+		// git ls-remote --tags <url>
+		std::string output = execCommand({"git", "ls-remote", "--tags", gitUrl});
+
+		// Parse output: "commit_hash\trefs/tags/tag_name" (one per line)
+		std::istringstream iss(output);
+		std::string line;
+		while (std::getline(iss, line)) {
+			if (line.empty()) {
+				continue;
+			}
+
+			// Split by tab
+			size_t tabPos = line.find('\t');
+			if (tabPos == std::string::npos) {
+				continue;
+			}
+
+			std::string commitHash = line.substr(0, tabPos);
+			std::string ref = line.substr(tabPos + 1);
+
+			// Skip ^{} dereferenced entries
+			if (ref.find("^{}") != std::string::npos) {
+				continue;
+			}
+
+			// Extract tag name from refs/tags/
+			const std::string prefix = "refs/tags/";
+			if (ref.substr(0, prefix.size()) != prefix) {
+				continue;
+			}
+
+			std::string tagName = ref.substr(prefix.size());
+			tags.emplace_back(tagName, commitHash);
+		}
+	} catch (...) {
+		// Failed to list tags
+	}
+
+	return tags;
+}
+
+// Check if a dependency version is a semver range (not a branch name or commit)
+bool isSemVerRange(const std::string& version) {
+	if (version.empty()) {
+		return false;
+	}
+
+	// Explicit semver operators
+	if (version[0] == '^' || version[0] == '~' || version[0] == '>' || version[0] == '<' || version[0] == '=') {
+		return true;
+	}
+
+	// Wildcard
+	if (version == "*" || version.find('x') != std::string::npos || version.find('X') != std::string::npos) {
+		return true;
+	}
+
+	// Hyphen range
+	if (version.find(" - ") != std::string::npos) {
+		return true;
+	}
+
+	// OR range
+	if (version.find("||") != std::string::npos) {
+		return true;
+	}
+
+	// Could be exact version (1.2.3) or branch name (main)
+	// Try parsing as semver
+	return isSemVer(version);
+}
+
+// Resolve a semver range to a specific tag
+// Returns the resolved tag name, or empty string if not found
+std::string resolveSemVerRange(const std::string& gitUrl, const std::string& range) {
+	std::cout << "  → Resolving version range: " << range << "\n";
+
+	// Parse the range
+	VersionRange versionRange = parseVersionRange(range);
+	if (!versionRange.isValid()) {
+		std::cerr << COLOR_RED << "  ✗ Invalid version range: " << range << COLOR_RESET << "\n";
+		return "";
+	}
+
+	// Get all tags
+	auto remoteTags = listRemoteTags(gitUrl);
+	if (remoteTags.empty()) {
+		std::cerr << COLOR_YELLOW << "  ⚠ No tags found in repository" << COLOR_RESET << "\n";
+		return "";
+	}
+
+	// Filter tags to those that are valid semver
+	std::vector<std::pair<SemVer, std::string>> semverTags;
+	for (const auto& [tagName, commitHash] : remoteTags) {
+		if (isSemVer(tagName)) {
+			SemVer v = parseSemVer(tagName);
+			if (v.isValid()) {
+				semverTags.emplace_back(v, tagName);
+			}
+		}
+	}
+
+	if (semverTags.empty()) {
+		std::cerr << COLOR_YELLOW << "  ⚠ No semver tags found (available: ";
+		for (size_t i = 0; i < remoteTags.size() && i < 5; i++) {
+			if (i > 0) {
+				std::cerr << ", ";
+			}
+			std::cerr << remoteTags[i].first;
+		}
+		if (remoteTags.size() > 5) {
+			std::cerr << ", ...";
+		}
+		std::cerr << ")" << COLOR_RESET << "\n";
+		return "";
+	}
+
+	// Sort by version (newest first)
+	std::sort(semverTags.begin(), semverTags.end(),
+			[](const auto& a, const auto& b) { return a.first > b.first; });
+
+	// Find best matching version
+	for (const auto& [version, tagName] : semverTags) {
+		if (versionRange.satisfies(version)) {
+			std::cout << "  → Resolved to: " << COLOR_GREEN << tagName << COLOR_RESET << " (" << version.toString()
+					  << ")\n";
+			return tagName;
+		}
+	}
+
+	std::cerr << COLOR_YELLOW << "  ⚠ No version satisfies range " << range << " (available: ";
+	for (size_t i = 0; i < semverTags.size() && i < 5; i++) {
+		if (i > 0) {
+			std::cerr << ", ";
+		}
+		std::cerr << semverTags[i].second;
+	}
+	if (semverTags.size() > 5) {
+		std::cerr << ", ...";
+	}
+	std::cerr << ")" << COLOR_RESET << "\n";
+
+	return "";
+}
+
 // Install dependencies from qd.json (with lockfile support)
 // frozen: if true, only install from lockfile (fail if lockfile missing or outdated)
 int installDependencies(bool frozen = false) {
@@ -950,20 +1155,42 @@ int installDependencies(bool frozen = false) {
 			newLockedDeps.push_back(newLocked);
 		} else {
 			// Git URL dependency
-			GitRef gitRef = parseGitUrl(dep.url);
+			GitRef gitRef;
+			gitRef.url = dep.url;
+			gitRef.moduleName = dep.name;
+
+			// Determine the version to use
+			std::string versionSpec = dep.version;
+			if (versionSpec.empty()) {
+				versionSpec = "main";
+			}
 
 			// Check if we have a locked version to use
 			auto lockedIt = lockedByName.find(dep.name);
-			std::string targetRef = gitRef.ref;
 			std::string expectedCommit;
 
 			if (lockedIt != lockedByName.end() && !lockedIt->second.resolvedRef.empty()) {
 				// Use locked commit hash for reproducibility
 				expectedCommit = lockedIt->second.resolvedRef;
 				if (frozen) {
-					// In frozen mode, clone at exact commit
-					targetRef = expectedCommit;
+					// In frozen mode, use locked ref
+					gitRef.ref = lockedIt->second.ref;
 				}
+			}
+
+			// Resolve semver range if needed (and not using lockfile)
+			if (!frozen && dep.isSemVer && !versionSpec.empty()) {
+				std::cout << "\n";
+				std::string resolvedTag = resolveSemVerRange(dep.url, versionSpec);
+				if (resolvedTag.empty()) {
+					std::cout << COLOR_RED << "✗ Failed to resolve version range: " << versionSpec << COLOR_RESET
+							  << "\n";
+					failures++;
+					continue;
+				}
+				gitRef.ref = resolvedTag;
+			} else if (!frozen) {
+				gitRef.ref = versionSpec;
 			}
 
 			// Check if already installed
@@ -980,7 +1207,7 @@ int installDependencies(bool frozen = false) {
 					continue;
 				}
 
-				std::cout << COLOR_GREEN << "✓ " << COLOR_RESET << "already installed";
+				std::cout << COLOR_GREEN << "✓ " << COLOR_RESET << "already installed @ " << gitRef.ref;
 				if (!currentCommit.empty()) {
 					std::cout << " (" << currentCommit.substr(0, 8) << ")";
 				}
@@ -1007,7 +1234,7 @@ int installDependencies(bool frozen = false) {
 			std::string newInstalledDir = modulesDir + "/" + getInstalledDirName(installedName, gitRef.ref);
 			std::string commitHash = getModuleCommitHash(newInstalledDir);
 
-			std::cout << COLOR_GREEN << "✓ " << COLOR_RESET << "installed";
+			std::cout << COLOR_GREEN << "✓ " << COLOR_RESET << "installed @ " << gitRef.ref;
 			if (!commitHash.empty()) {
 				std::cout << " (" << commitHash.substr(0, 8) << ")";
 			}
