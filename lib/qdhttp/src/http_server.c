@@ -125,27 +125,36 @@ static const char* http_status_text(int status) {
 }
 
 /** Parse address string like ":8080" or "127.0.0.1:3000" */
-static int parse_addr(const char* addr, char* host, int* port) {
+static int parse_addr(const char* addr, char* host, size_t host_size, int* port) {
 	const char* colon = strchr(addr, ':');
 	if (!colon) return -1;
 
 	if (colon == addr) {
-		strcpy(host, "0.0.0.0");
+		if (host_size < 8) return -1;  // "0.0.0.0" + null
+		memcpy(host, "0.0.0.0", 8);
 	} else {
 		size_t len = (size_t)(colon - addr);
-		if (len >= 256) return -1;
+		if (len >= host_size) return -1;
 		memcpy(host, addr, len);
 		host[len] = '\0';
 	}
 
-	*port = atoi(colon + 1);
-	if (*port <= 0 || *port > 65535) return -1;
+	// Validate port string contains only digits
+	const char* port_str = colon + 1;
+	if (*port_str == '\0') return -1;
+	for (const char* p = port_str; *p; p++) {
+		if (*p < '0' || *p > '9') return -1;
+	}
+
+	long port_val = strtol(port_str, NULL, 10);
+	if (port_val <= 0 || port_val > 65535) return -1;
+	*port = (int)port_val;
 
 	return 0;
 }
 
 /** Match route pattern against path, extract params */
-static bool match_route(const char* pattern, const char* path, char* params_out) {
+static bool match_route(const char* pattern, const char* path, char* params_out, size_t params_size) {
 	params_out[0] = '\0';
 	size_t params_len = 0;
 
@@ -164,6 +173,12 @@ static bool match_route(const char* pattern, const char* path, char* params_out)
 			const char* val_start = q;
 			while (*q && *q != '/') q++;
 			size_t val_len = (size_t)(q - val_start);
+
+			// Check bounds before adding to params
+			size_t needed = (params_len > 0 ? 1 : 0) + name_len + 1 + val_len + 1;
+			if (params_len + needed > params_size) {
+				return false;  // Params buffer too small
+			}
 
 			// Add to params
 			if (params_len > 0) {
@@ -434,6 +449,12 @@ static qd_exec_result register_route(qd_context* ctx, http_method_t method) {
 	http_route_t* route = &engine->routes[engine->route_count++];
 	route->method = method;
 	route->path = strdup(qd_string_data(path_elem.value.s));
+	if (!route->path) {
+		engine->route_count--;  // Rollback
+		qd_string_release(path_elem.value.s);
+		fprintf(stderr, "Fatal error in http route registration: memory allocation failed\n");
+		abort();
+	}
 	route->handler = handler_elem.value.p;
 	route->group_idx = -1;
 
@@ -549,7 +570,7 @@ static void handle_request(http_engine_t* engine, int client_fd, qd_context* ctx
 		}
 
 		// Match
-		if (match_route(full_pattern, path, params)) {
+		if (match_route(full_pattern, path, params, sizeof(params))) {
 			matched_route = route;
 			break;
 		}
@@ -557,6 +578,11 @@ static void handle_request(http_engine_t* engine, int client_fd, qd_context* ctx
 
 	// Create context struct
 	http_ctx_t* http_ctx = malloc(sizeof(http_ctx_t));
+	if (!http_ctx) {
+		send_response(client_fd, 500, NULL, "text/plain", "Internal Server Error");
+		close(client_fd);
+		return;
+	}
 	http_ctx->method = qd_string_create(method);
 	http_ctx->path = qd_string_create(path);
 	http_ctx->query = qd_string_create(query);
@@ -566,11 +592,9 @@ static void handle_request(http_engine_t* engine, int client_fd, qd_context* ctx
 	http_ctx->socket = client_fd;
 	http_ctx->responded = 0;
 
-	// Reset response headers
-	if (engine->response_headers) {
-		engine->response_headers[0] = '\0';
-		engine->response_headers_len = 0;
-	}
+	// Note: response_headers in engine is NOT thread-safe.
+	// Each request runs in its own thread, so we don't use shared state.
+	(void)engine->response_headers;  // Intentionally unused in threaded mode
 
 	if (!matched_route) {
 		// 404
@@ -645,7 +669,7 @@ qd_exec_result usr_http_run(qd_context* ctx) {
 	// Parse address
 	char host[256];
 	int port;
-	if (parse_addr(addr, host, &port) < 0) {
+	if (parse_addr(addr, host, sizeof(host), &port) < 0) {
 		qd_string_release(addr_elem.value.s);
 		qd_push_i(ctx, HTTP_ERR_BIND);
 		return (qd_exec_result){HTTP_ERR_BIND};
@@ -1031,6 +1055,12 @@ qd_exec_result usr_http_group(qd_context* ctx) {
 	int group_idx = engine->group_count++;
 	http_group_t* group = &engine->groups[group_idx];
 	group->prefix = strdup(qd_string_data(prefix_elem.value.s));
+	if (!group->prefix) {
+		engine->group_count--;  // Rollback
+		qd_string_release(prefix_elem.value.s);
+		fprintf(stderr, "Fatal error in http::group: memory allocation failed\n");
+		abort();
+	}
 	group->middleware_count = 0;
 
 	qd_string_release(prefix_elem.value.s);
@@ -1038,6 +1068,12 @@ qd_exec_result usr_http_group(qd_context* ctx) {
 	// Return group as (engine_ptr, group_idx) packed into a single pointer
 	// We'll use a small struct for this
 	int64_t* group_handle = malloc(sizeof(int64_t) * 2);
+	if (!group_handle) {
+		free(group->prefix);
+		engine->group_count--;  // Rollback
+		fprintf(stderr, "Fatal error in http::group: memory allocation failed\n");
+		abort();
+	}
 	group_handle[0] = (int64_t)(uintptr_t)engine;
 	group_handle[1] = group_idx;
 
@@ -1126,6 +1162,12 @@ static qd_exec_result register_group_route(qd_context* ctx, http_method_t method
 	http_route_t* route = &engine->routes[engine->route_count++];
 	route->method = method;
 	route->path = strdup(qd_string_data(path_elem.value.s));
+	if (!route->path) {
+		engine->route_count--;  // Rollback
+		qd_string_release(path_elem.value.s);
+		fprintf(stderr, "Fatal error in http group route registration: memory allocation failed\n");
+		abort();
+	}
 	route->handler = handler_elem.value.p;
 	route->group_idx = group_idx;
 

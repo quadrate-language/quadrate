@@ -44,7 +44,8 @@ typedef struct {
 static int parse_url(const char* url, url_parts_t* parts) {
 	memset(parts, 0, sizeof(url_parts_t));
 	parts->port = 80;
-	strcpy(parts->path, "/");
+	parts->path[0] = '/';
+	parts->path[1] = '\0';
 
 	const char* p = url;
 
@@ -89,14 +90,18 @@ static int parse_url(const char* url, url_parts_t* parts) {
 	// Path (including query string)
 	if (*p == '/' || *p == '?') {
 		size_t path_len = strlen(p);
-		if (path_len >= sizeof(parts->path)) {
-			return HTTP_ERR_INVALID_URL;
-		}
 		if (*p == '?') {
+			// Need room for '/' + path + null
+			if (path_len + 1 >= sizeof(parts->path)) {
+				return HTTP_ERR_INVALID_URL;
+			}
 			parts->path[0] = '/';
-			strcpy(parts->path + 1, p);
+			memcpy(parts->path + 1, p, path_len + 1);
 		} else {
-			strcpy(parts->path, p);
+			if (path_len >= sizeof(parts->path)) {
+				return HTTP_ERR_INVALID_URL;
+			}
+			memcpy(parts->path, p, path_len + 1);
 		}
 	}
 
@@ -131,6 +136,18 @@ qd_exec_result usr_http_new(qd_context* ctx) {
 	req->method = strdup("GET");
 	req->headers_cap = 1024;
 	req->headers = malloc(req->headers_cap);
+
+	// Check all allocations
+	if (!req->url || !req->method || !req->headers) {
+		free(req->url);
+		free(req->method);
+		free(req->headers);
+		free(req);
+		qd_string_release(url_elem.value.s);
+		fprintf(stderr, "Fatal error in http::new: memory allocation failed\n");
+		abort();
+	}
+
 	req->headers[0] = '\0';
 	req->headers_len = 0;
 	req->body = NULL;
@@ -165,6 +182,11 @@ qd_exec_result usr_http_method(qd_context* ctx) {
 	http_request_t* req = (http_request_t*)req_elem.value.p;
 	free(req->method);
 	req->method = strdup(qd_string_data(method_elem.value.s));
+	if (!req->method) {
+		qd_string_release(method_elem.value.s);
+		fprintf(stderr, "Fatal error in http::method: memory allocation failed\n");
+		abort();
+	}
 
 	qd_string_release(method_elem.value.s);
 	return (qd_exec_result){0};
@@ -207,11 +229,22 @@ qd_exec_result usr_http_header(qd_context* ctx) {
 	size_t needed = strlen(name) + 2 + strlen(value) + 2 + 1;
 	if (req->headers_len + needed > req->headers_cap) {
 		req->headers_cap = (req->headers_len + needed) * 2;
-		req->headers = realloc(req->headers, req->headers_cap);
+		char* new_headers = realloc(req->headers, req->headers_cap);
+		if (!new_headers) {
+			qd_string_release(name_elem.value.s);
+			qd_string_release(value_elem.value.s);
+			fprintf(stderr, "Fatal error in http::header: memory allocation failed\n");
+			abort();
+		}
+		req->headers = new_headers;
 	}
 
-	sprintf(req->headers + req->headers_len, "%s: %s\r\n", name, value);
-	req->headers_len += needed - 1;
+	int written = snprintf(req->headers + req->headers_len,
+	                       req->headers_cap - req->headers_len,
+	                       "%s: %s\r\n", name, value);
+	if (written > 0) {
+		req->headers_len += (size_t)written;
+	}
 
 	qd_string_release(name_elem.value.s);
 	qd_string_release(value_elem.value.s);
@@ -240,6 +273,11 @@ qd_exec_result usr_http_body(qd_context* ctx) {
 	http_request_t* req = (http_request_t*)req_elem.value.p;
 	free(req->body);
 	req->body = strdup(qd_string_data(body_elem.value.s));
+	if (!req->body) {
+		qd_string_release(body_elem.value.s);
+		fprintf(stderr, "Fatal error in http::body: memory allocation failed\n");
+		abort();
+	}
 
 	qd_string_release(body_elem.value.s);
 	return (qd_exec_result){0};
@@ -282,6 +320,16 @@ qd_exec_result usr_http_cert(qd_context* ctx) {
 
 	req->client_cert = strdup(qd_string_data(cert_elem.value.s));
 	req->client_key = strdup(qd_string_data(key_elem.value.s));
+	if (!req->client_cert || !req->client_key) {
+		free(req->client_cert);
+		free(req->client_key);
+		req->client_cert = NULL;
+		req->client_key = NULL;
+		qd_string_release(cert_elem.value.s);
+		qd_string_release(key_elem.value.s);
+		fprintf(stderr, "Fatal error in http::cert: memory allocation failed\n");
+		abort();
+	}
 
 	qd_string_release(cert_elem.value.s);
 	qd_string_release(key_elem.value.s);
@@ -327,6 +375,9 @@ extern qd_exec_result usr_tls_close(qd_context* ctx);
 
 /** Parse HTTP response, returns status code or -1 on error */
 static int parse_response(const char* data, size_t len, char** headers_out, char** body_out) {
+	*headers_out = NULL;
+	*body_out = NULL;
+
 	// Find "HTTP/1.x NNN"
 	if (len < 12 || strncmp(data, "HTTP/1.", 7) != 0) {
 		return -1;
@@ -345,6 +396,13 @@ static int parse_response(const char* data, size_t len, char** headers_out, char
 		// No body, headers only
 		*headers_out = strdup(data);
 		*body_out = strdup("");
+		if (!*headers_out || !*body_out) {
+			free(*headers_out);
+			free(*body_out);
+			*headers_out = NULL;
+			*body_out = NULL;
+			return -1;
+		}
 		return status;
 	}
 
@@ -354,16 +412,27 @@ static int parse_response(const char* data, size_t len, char** headers_out, char
 		first_header++;
 		size_t headers_len = (size_t)(header_end - first_header);
 		*headers_out = malloc(headers_len + 1);
+		if (!*headers_out) {
+			return -1;
+		}
 		memcpy(*headers_out, first_header, headers_len);
 		(*headers_out)[headers_len] = '\0';
 	} else {
 		*headers_out = strdup("");
+		if (!*headers_out) {
+			return -1;
+		}
 	}
 
 	// Extract body
 	const char* body_start = header_end + 4;
 	size_t body_len = len - (size_t)(body_start - data);
 	*body_out = malloc(body_len + 1);
+	if (!*body_out) {
+		free(*headers_out);
+		*headers_out = NULL;
+		return -1;
+	}
 	memcpy(*body_out, body_start, body_len);
 	(*body_out)[body_len] = '\0';
 
@@ -441,26 +510,64 @@ qd_exec_result usr_http_send(qd_context* ctx) {
 		tls_conn = conn_elem.value.p;
 	}
 
-	// Build HTTP request
+	// Build HTTP request with overflow-safe size calculation
 	size_t body_len = req->body ? strlen(req->body) : 0;
-	size_t request_size = strlen(req->method) + 1 + strlen(url.path) + 32 +
-	                      strlen(url.host) + 32 + req->headers_len + body_len + 128;
+	size_t method_len = strlen(req->method);
+	size_t path_len = strlen(url.path);
+	size_t host_len = strlen(url.host);
+
+	// Check for overflow before adding
+	size_t fixed_overhead = 128; // "HTTP/1.1\r\nHost: \r\nConnection: close\r\nContent-Length: ...\r\n\r\n"
+	if (method_len > SIZE_MAX - path_len ||
+	    method_len + path_len > SIZE_MAX - host_len ||
+	    method_len + path_len + host_len > SIZE_MAX - req->headers_len ||
+	    method_len + path_len + host_len + req->headers_len > SIZE_MAX - body_len ||
+	    method_len + path_len + host_len + req->headers_len + body_len > SIZE_MAX - fixed_overhead) {
+		if (url.is_https) {
+			qd_push_p(ctx, tls_conn);
+			usr_tls_close(ctx);
+		}
+		qd_push_i(ctx, sock_fd);
+		usr_net_close(ctx);
+		ctx->error_code = HTTP_ERR_MEMORY;
+		qd_push_i(ctx, HTTP_ERR_MEMORY);
+		return (qd_exec_result){HTTP_ERR_MEMORY};
+	}
+
+	size_t request_size = method_len + path_len + host_len + req->headers_len + body_len + fixed_overhead;
 	char* request = malloc(request_size);
-
-	int written = sprintf(request, "%s %s HTTP/1.1\r\nHost: %s\r\nConnection: close\r\n",
-	                      req->method, url.path, url.host);
-
-	if (req->headers_len > 0) {
-		written += sprintf(request + written, "%s", req->headers);
+	if (!request) {
+		if (url.is_https) {
+			qd_push_p(ctx, tls_conn);
+			usr_tls_close(ctx);
+		}
+		qd_push_i(ctx, sock_fd);
+		usr_net_close(ctx);
+		ctx->error_code = HTTP_ERR_MEMORY;
+		qd_push_i(ctx, HTTP_ERR_MEMORY);
+		return (qd_exec_result){HTTP_ERR_MEMORY};
 	}
 
-	if (body_len > 0) {
-		written += sprintf(request + written, "Content-Length: %zu\r\n\r\n%s",
-		                   body_len, req->body);
-	} else {
-		written += sprintf(request + written, "\r\n");
+	int written = snprintf(request, request_size,
+	                       "%s %s HTTP/1.1\r\nHost: %s\r\nConnection: close\r\n",
+	                       req->method, url.path, url.host);
+	if (written < 0) written = 0;
+	size_t pos = (size_t)written;
+
+	if (req->headers_len > 0 && pos < request_size) {
+		int n = snprintf(request + pos, request_size - pos, "%s", req->headers);
+		if (n > 0) pos += (size_t)n;
 	}
-	(void)written; // Silence unused warning
+
+	if (body_len > 0 && pos < request_size) {
+		int n = snprintf(request + pos, request_size - pos,
+		                 "Content-Length: %zu\r\n\r\n%s", body_len, req->body);
+		if (n > 0) pos += (size_t)n;
+	} else if (pos < request_size) {
+		int n = snprintf(request + pos, request_size - pos, "\r\n");
+		if (n > 0) pos += (size_t)n;
+	}
+	(void)pos; // Silence unused warning
 
 	// Send request
 	if (url.is_https) {
@@ -499,8 +606,20 @@ qd_exec_result usr_http_send(qd_context* ctx) {
 
 	// Receive response
 	char* response_data = malloc(65536);
+	if (!response_data) {
+		if (url.is_https) {
+			qd_push_p(ctx, tls_conn);
+			usr_tls_close(ctx);
+		}
+		qd_push_i(ctx, sock_fd);
+		usr_net_close(ctx);
+		ctx->error_code = HTTP_ERR_MEMORY;
+		qd_push_i(ctx, HTTP_ERR_MEMORY);
+		return (qd_exec_result){HTTP_ERR_MEMORY};
+	}
 	size_t response_len = 0;
 	size_t response_cap = 65536;
+	bool alloc_failed = false;
 
 	while (1) {
 		if (url.is_https) {
@@ -534,8 +653,15 @@ qd_exec_result usr_http_send(qd_context* ctx) {
 			size_t chunk_len = (size_t)bytes_read.value.i;
 
 			if (response_len + chunk_len >= response_cap) {
-				response_cap = (response_len + chunk_len) * 2;
-				response_data = realloc(response_data, response_cap);
+				size_t new_cap = (response_len + chunk_len) * 2;
+				char* new_data = realloc(response_data, new_cap);
+				if (!new_data) {
+					qd_string_release(data_elem.value.s);
+					alloc_failed = true;
+					break;
+				}
+				response_data = new_data;
+				response_cap = new_cap;
 			}
 			memcpy(response_data + response_len, chunk, chunk_len);
 			response_len += chunk_len;
@@ -562,14 +688,35 @@ qd_exec_result usr_http_send(qd_context* ctx) {
 			size_t chunk_len = (size_t)bytes_read.value.i;
 
 			if (response_len + chunk_len >= response_cap) {
-				response_cap = (response_len + chunk_len) * 2;
-				response_data = realloc(response_data, response_cap);
+				size_t new_cap = (response_len + chunk_len) * 2;
+				char* new_data = realloc(response_data, new_cap);
+				if (!new_data) {
+					qd_string_release(data_elem.value.s);
+					alloc_failed = true;
+					break;
+				}
+				response_data = new_data;
+				response_cap = new_cap;
 			}
 			memcpy(response_data + response_len, chunk, chunk_len);
 			response_len += chunk_len;
 			qd_string_release(data_elem.value.s);
 		}
 	}
+
+	if (alloc_failed) {
+		free(response_data);
+		if (url.is_https) {
+			qd_push_p(ctx, tls_conn);
+			usr_tls_close(ctx);
+		}
+		qd_push_i(ctx, sock_fd);
+		usr_net_close(ctx);
+		ctx->error_code = HTTP_ERR_MEMORY;
+		qd_push_i(ctx, HTTP_ERR_MEMORY);
+		return (qd_exec_result){HTTP_ERR_MEMORY};
+	}
+
 	response_data[response_len] = '\0';
 
 	// Close connections
@@ -596,6 +743,13 @@ qd_exec_result usr_http_send(qd_context* ctx) {
 
 	// Create response struct
 	http_response_t* resp = malloc(sizeof(http_response_t));
+	if (!resp) {
+		free(headers);
+		free(body);
+		ctx->error_code = HTTP_ERR_MEMORY;
+		qd_push_i(ctx, HTTP_ERR_MEMORY);
+		return (qd_exec_result){HTTP_ERR_MEMORY};
+	}
 	resp->status = status;
 	resp->headers = qd_string_create(headers);
 	resp->body = qd_string_create(body);
