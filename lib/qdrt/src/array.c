@@ -84,6 +84,10 @@ qd_array_t* qd_array_create(size_t capacity, qd_array_type elemType) {
 
 void qd_array_retain(qd_array_t* arr) {
 	if (arr) {
+		if (arr->refcount == SIZE_MAX) {
+			fprintf(stderr, "Fatal error: array refcount overflow\n");
+			abort();
+		}
 		arr->refcount++;
 	}
 }
@@ -212,6 +216,10 @@ int qd_array_set_ptr(qd_array_t* arr, size_t index, void* value) {
 
 // Helper to grow array capacity
 static int qd_array_grow(qd_array_t* arr) {
+	// Check for integer overflow before doubling
+	if (arr->capacity > SIZE_MAX / 2) {
+		return -1;  // Would overflow
+	}
 	size_t newCapacity = arr->capacity * 2;
 	if (newCapacity < QD_ARRAY_DEFAULT_CAPACITY) {
 		newCapacity = QD_ARRAY_DEFAULT_CAPACITY;

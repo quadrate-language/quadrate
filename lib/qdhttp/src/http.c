@@ -80,11 +80,13 @@ static int parse_url(const char* url, url_parts_t* parts) {
 	// Optional port
 	if (*p == ':') {
 		p++;
-		parts->port = atoi(p);
-		if (parts->port <= 0 || parts->port > 65535) {
+		char* endptr;
+		long port_val = strtol(p, &endptr, 10);
+		if (endptr == p || port_val <= 0 || port_val > 65535) {
 			return HTTP_ERR_INVALID_URL;
 		}
-		while (*p >= '0' && *p <= '9') p++;
+		parts->port = (int)port_val;
+		p = endptr;
 	}
 
 	// Path (including query string)
@@ -228,7 +230,15 @@ qd_exec_result usr_http_header(qd_context* ctx) {
 	// Format: "Name: Value\r\n"
 	size_t needed = strlen(name) + 2 + strlen(value) + 2 + 1;
 	if (req->headers_len + needed > req->headers_cap) {
-		req->headers_cap = (req->headers_len + needed) * 2;
+		// Check for overflow before doubling
+		size_t min_cap = req->headers_len + needed;
+		if (min_cap > SIZE_MAX / 2) {
+			qd_string_release(name_elem.value.s);
+			qd_string_release(value_elem.value.s);
+			fprintf(stderr, "Fatal error in http::header: headers too large\n");
+			abort();
+		}
+		req->headers_cap = min_cap * 2;
 		char* new_headers = realloc(req->headers, req->headers_cap);
 		if (!new_headers) {
 			qd_string_release(name_elem.value.s);
@@ -385,10 +395,12 @@ static int parse_response(const char* data, size_t len, char** headers_out, char
 
 	// Skip "HTTP/1.x "
 	const char* p = data + 9;
-	int status = atoi(p);
-	if (status < 100 || status > 599) {
+	char* endptr;
+	long status_val = strtol(p, &endptr, 10);
+	if (endptr == p || status_val < 100 || status_val > 599) {
 		return -1;
 	}
+	int status = (int)status_val;
 
 	// Find end of headers (\r\n\r\n)
 	const char* header_end = strstr(data, "\r\n\r\n");
@@ -653,7 +665,14 @@ qd_exec_result usr_http_send(qd_context* ctx) {
 			size_t chunk_len = (size_t)bytes_read.value.i;
 
 			if (response_len + chunk_len >= response_cap) {
-				size_t new_cap = (response_len + chunk_len) * 2;
+				// Check for overflow before doubling
+				size_t min_cap = response_len + chunk_len;
+				if (min_cap > SIZE_MAX / 2) {
+					qd_string_release(data_elem.value.s);
+					alloc_failed = true;
+					break;
+				}
+				size_t new_cap = min_cap * 2;
 				char* new_data = realloc(response_data, new_cap);
 				if (!new_data) {
 					qd_string_release(data_elem.value.s);
@@ -688,7 +707,14 @@ qd_exec_result usr_http_send(qd_context* ctx) {
 			size_t chunk_len = (size_t)bytes_read.value.i;
 
 			if (response_len + chunk_len >= response_cap) {
-				size_t new_cap = (response_len + chunk_len) * 2;
+				// Check for overflow before doubling
+				size_t min_cap = response_len + chunk_len;
+				if (min_cap > SIZE_MAX / 2) {
+					qd_string_release(data_elem.value.s);
+					alloc_failed = true;
+					break;
+				}
+				size_t new_cap = min_cap * 2;
 				char* new_data = realloc(response_data, new_cap);
 				if (!new_data) {
 					qd_string_release(data_elem.value.s);

@@ -951,6 +951,8 @@ qd_exec_result qd_panic(qd_context* ctx) {
 
 	// Duplicate the error message string (context owns a copy)
 	ctx->error_msg = strdup(qd_string_data(error_msg_elem.value.s));
+	// strdup failure results in NULL error_msg, which is acceptable
+	// (error_code still indicates the error condition)
 	// Release the qd_string_t
 	release_if_string(&error_msg_elem);
 

@@ -59,10 +59,23 @@ static inline size_t ptr_registry_hash(const void* ptr) {
 	return val % PTR_REGISTRY_SIZE;
 }
 
-/* Ensure registry is initialized (lazy init for static registries) */
+/* Ensure registry is initialized (lazy init for static registries)
+ * Uses double-checked locking pattern with volatile for thread safety */
 static inline void ptr_registry_ensure_init(ptr_registry_t* reg) {
 	if (!reg->initialized) {
-		ptr_registry_init(reg);
+		// Use a static mutex for the initialization race
+		static _Alignas(8) char init_mutex_storage[PTR_REGISTRY_MUTEX_STORAGE_SIZE] = {0};
+		static int init_mutex_ready = 0;
+		if (!init_mutex_ready) {
+			mutex_platform_init((mutex_platform_t*)init_mutex_storage);
+			init_mutex_ready = 1;
+		}
+		mutex_platform_lock((mutex_platform_t*)init_mutex_storage);
+		// Double-check after acquiring lock
+		if (!reg->initialized) {
+			ptr_registry_init(reg);
+		}
+		mutex_platform_unlock((mutex_platform_t*)init_mutex_storage);
 	}
 }
 

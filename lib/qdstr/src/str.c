@@ -14,6 +14,14 @@
 #define STR_ERR_ALLOC 3         // Allocation failed
 #define STR_ERR_INVALID_ARG 4   // Invalid argument
 
+/** Helper to safely set error message (handles strdup failure) */
+static void set_error_msg(qd_context* ctx, const char* msg) {
+	if (ctx->error_msg) free(ctx->error_msg);
+	ctx->error_msg = strdup(msg);
+	// If strdup fails, error_msg will be NULL, which is acceptable
+	// (error_code still indicates the error condition)
+}
+
 // len - get string length ( str:s -- len:i )
 qd_exec_result usr_str_len(qd_context* ctx) {
 	qd_stack_element_t val;
@@ -984,8 +992,7 @@ qd_exec_result usr_str_join(qd_context* ctx) {
 	if (!result) {
 		qd_string_release(delim_elem.value.s);
 		ctx->error_code = STR_ERR_ALLOC;
-		if (ctx->error_msg) free(ctx->error_msg);
-		ctx->error_msg = strdup("str::join: allocation failed");
+		set_error_msg(ctx, "str::join: allocation failed");
 		qd_push_i(ctx, STR_ERR_ALLOC);
 		return (qd_exec_result){STR_ERR_ALLOC};
 	}

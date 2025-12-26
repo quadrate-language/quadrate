@@ -13,6 +13,14 @@
 #include <string.h>
 #include "platform/tls_platform.h"
 
+/** Helper to safely set error message (handles strdup failure) */
+static void set_error_msg(qd_context* ctx, const char* msg) {
+	if (ctx->error_msg) free(ctx->error_msg);
+	ctx->error_msg = strdup(msg);
+	// If strdup fails, error_msg will be NULL, which is acceptable
+	// (error_code still indicates the error condition)
+}
+
 // Stack signature: ( socket:i hostname:s -- tls_conn:ptr )
 // Fallible function - pushes error code
 qd_exec_result usr_tls_connect(qd_context* ctx) {
@@ -57,8 +65,7 @@ qd_exec_result usr_tls_connect(qd_context* ctx) {
 	if (tls_err != TLS_OK) {
 		// On failure: set error and push only error code
 		ctx->error_code = (int)tls_err;
-		if (ctx->error_msg) free(ctx->error_msg);
-		ctx->error_msg = strdup(tls_platform_error_string(tls_err));
+		set_error_msg(ctx, tls_platform_error_string(tls_err));
 		qd_push_i(ctx, (int64_t)tls_err);
 		return (qd_exec_result){(int)tls_err};
 	}
@@ -156,8 +163,7 @@ qd_exec_result usr_tls_connect_mtls(qd_context* ctx) {
 	if (tls_err != TLS_OK) {
 		// On failure: set error and push only error code
 		ctx->error_code = (int)tls_err;
-		if (ctx->error_msg) free(ctx->error_msg);
-		ctx->error_msg = strdup(tls_platform_error_string(tls_err));
+		set_error_msg(ctx, tls_platform_error_string(tls_err));
 		qd_push_i(ctx, (int64_t)tls_err);
 		return (qd_exec_result){(int)tls_err};
 	}
@@ -232,8 +238,7 @@ qd_exec_result usr_tls_accept(qd_context* ctx) {
 	if (tls_err != TLS_OK) {
 		// On failure: set error and push only error code
 		ctx->error_code = (int)tls_err;
-		if (ctx->error_msg) free(ctx->error_msg);
-		ctx->error_msg = strdup(tls_platform_error_string(tls_err));
+		set_error_msg(ctx, tls_platform_error_string(tls_err));
 		qd_push_i(ctx, (int64_t)tls_err);
 		return (qd_exec_result){(int)tls_err};
 	}
@@ -289,8 +294,7 @@ qd_exec_result usr_tls_send(qd_context* ctx) {
 	if (tls_err != TLS_OK) {
 		// On failure: set error and push only error code
 		ctx->error_code = (int)tls_err;
-		if (ctx->error_msg) free(ctx->error_msg);
-		ctx->error_msg = strdup(tls_platform_error_string(tls_err));
+		set_error_msg(ctx, tls_platform_error_string(tls_err));
 		qd_push_i(ctx, (int64_t)tls_err);
 		return (qd_exec_result){(int)tls_err};
 	}
@@ -356,8 +360,7 @@ qd_exec_result usr_tls_receive(qd_context* ctx) {
 		// On failure: set error and push only error code
 		free(buffer);
 		ctx->error_code = (int)tls_err;
-		if (ctx->error_msg) free(ctx->error_msg);
-		ctx->error_msg = strdup(tls_platform_error_string(tls_err));
+		set_error_msg(ctx, tls_platform_error_string(tls_err));
 		qd_push_i(ctx, (int64_t)tls_err);
 		return (qd_exec_result){(int)tls_err};
 	}
