@@ -1099,6 +1099,20 @@ namespace Qd {
 						// Mark as imported C function (handles its own success status)
 						importedCFunctions.insert(fullName);
 
+						// Track return struct type for imported functions
+						for (auto* outParam : func->outputParameters) {
+							const std::string& typeStr = outParam->typeString();
+							if (looksLikeStructType(typeStr)) {
+								// Qualify with module name if needed
+								std::string qualifiedType = extractStructName(typeStr);
+								if (qualifiedType.find("::") == std::string::npos) {
+									qualifiedType = moduleName + "::" + qualifiedType;
+								}
+								functionReturnStructType[fullName] = qualifiedType;
+								break; // Use first struct-typed output
+							}
+						}
+
 						// Also register this function in userFunctions with the scoped name
 						// so that namespace::function calls work
 						std::string scopedName = "usr_" + namespaceName + "_" + func->name;
@@ -1128,6 +1142,20 @@ namespace Qd {
 							// Also register fallibility under the module name
 							fallibleFunctions[crossModuleName] = func->throws;
 							importedCFunctions.insert(crossModuleName);
+
+							// Track return struct type for cross-module access
+							for (auto* outParam : func->outputParameters) {
+								const std::string& typeStr = outParam->typeString();
+								if (looksLikeStructType(typeStr)) {
+									// Qualify with module name if needed
+									std::string qualifiedType = extractStructName(typeStr);
+									if (qualifiedType.find("::") == std::string::npos) {
+										qualifiedType = moduleName + "::" + qualifiedType;
+									}
+									functionReturnStructType[crossModuleName] = qualifiedType;
+									break;
+								}
+							}
 
 							// Create wrapper function accessible as usr_modulename_funcname
 							std::string moduleScoped = "usr_" + moduleName + "_" + func->name;

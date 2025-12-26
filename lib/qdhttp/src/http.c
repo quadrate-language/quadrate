@@ -12,6 +12,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
+#include <stddef.h>  // for offsetof
+#include <stdint.h>  // for uint8_t, uint64_t
 
 /** HTTP Request structure */
 typedef struct {
@@ -25,11 +27,15 @@ typedef struct {
 	char* client_key;   // Path to client private key for mTLS
 } http_request_t;
 
-/** HTTP Response structure - matches Quadrate struct layout */
+/** HTTP Response structure - matches Quadrate LLVM struct layout
+ * LLVM treats all types as 8 bytes (pointer-sized):
+ * - i64 fields: 8 bytes
+ * - str fields: 8 bytes (pointer to qd_string)
+ */
 typedef struct {
-	int64_t status;
-	struct qd_string* headers;
-	struct qd_string* body;
+	int64_t status;           // offset 0, 8 bytes
+	struct qd_string* headers;// offset 8, 8 bytes
+	struct qd_string* body;   // offset 16, 8 bytes
 } http_response_t;
 
 /** URL components */
@@ -477,10 +483,20 @@ qd_exec_result usr_http_send(qd_context* ctx) {
 	qd_push_i(ctx, url.port);
 	qd_exec_result connect_result = usr_net_connect(ctx);
 
+	// usr_net_connect pushes: socket_fd, then status_code (NET_ERR_OK=1)
+	// Pop status code first
+	qd_stack_element_t status_elem;
+	err = qd_stack_pop(ctx->st, &status_elem);
+	if (err != QD_STACK_OK || connect_result.code != 0 || status_elem.value.i != 1) {
+		ctx->error_code = HTTP_ERR_CONNECT;
+		qd_push_i(ctx, HTTP_ERR_CONNECT);
+		return (qd_exec_result){HTTP_ERR_CONNECT};
+	}
+
 	// Pop socket fd
 	qd_stack_element_t sock_elem;
 	err = qd_stack_pop(ctx->st, &sock_elem);
-	if (err != QD_STACK_OK || connect_result.code != 0) {
+	if (err != QD_STACK_OK) {
 		ctx->error_code = HTTP_ERR_CONNECT;
 		qd_push_i(ctx, HTTP_ERR_CONNECT);
 		return (qd_exec_result){HTTP_ERR_CONNECT};
@@ -610,6 +626,18 @@ qd_exec_result usr_http_send(qd_context* ctx) {
 		qd_push_i(ctx, sock_fd);
 		qd_push_s(ctx, request);
 		(void)usr_net_send(ctx);
+		// usr_net_send pushes: bytes_sent, status_code
+		// Pop status code first
+		qd_stack_element_t send_status;
+		qd_stack_pop(ctx->st, &send_status);
+		if (send_status.value.i != 1) {
+			free(request);
+			qd_push_i(ctx, sock_fd);
+			usr_net_close(ctx);
+			ctx->error_code = HTTP_ERR_SEND;
+			qd_push_i(ctx, HTTP_ERR_SEND);
+			return (qd_exec_result){HTTP_ERR_SEND};
+		}
 		// Pop bytes_sent
 		qd_stack_element_t bytes_sent;
 		qd_stack_pop(ctx->st, &bytes_sent);
@@ -690,6 +718,16 @@ qd_exec_result usr_http_send(qd_context* ctx) {
 			qd_push_i(ctx, 8192);
 			usr_net_receive(ctx);
 
+			// usr_net_receive pushes: data:s, bytes_read:i, status_code:i
+			// Pop status code first
+			qd_stack_element_t recv_status;
+			qd_stack_pop(ctx->st, &recv_status);
+
+			if (recv_status.value.i != 1) {
+				// Connection closed or error - check if we have data
+				break;
+			}
+
 			// Pop bytes_read
 			qd_stack_element_t bytes_read;
 			qd_stack_pop(ctx->st, &bytes_read);
@@ -768,6 +806,7 @@ qd_exec_result usr_http_send(qd_context* ctx) {
 	}
 
 	// Create response struct
+	// Note: LLVM uses 8-byte slots for all types (pointer-sized)
 	http_response_t* resp = malloc(sizeof(http_response_t));
 	if (!resp) {
 		free(headers);
@@ -779,6 +818,7 @@ qd_exec_result usr_http_send(qd_context* ctx) {
 	resp->status = status;
 	resp->headers = qd_string_create(headers);
 	resp->body = qd_string_create(body);
+
 	free(headers);
 	free(body);
 
