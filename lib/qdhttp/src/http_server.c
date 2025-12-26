@@ -21,6 +21,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include <pthread.h>
 
 // ============================================================
 // Internal Structures
@@ -88,6 +89,15 @@ typedef struct {
 	int64_t socket;
 	int64_t responded;
 } http_ctx_t;
+
+/** Thread arguments for request handling */
+typedef struct {
+	http_engine_t* engine;
+	int client_fd;
+} http_thread_args_t;
+
+// Forward declaration
+static void handle_request(http_engine_t* engine, int client_fd, qd_context* ctx);
 
 // ============================================================
 // Helper Functions
@@ -479,6 +489,23 @@ qd_exec_result usr_http_use(qd_context* ctx) {
 	return (qd_exec_result){0};
 }
 
+/** Thread function for handling a request */
+static void* request_thread_func(void* arg) {
+	http_thread_args_t* args = (http_thread_args_t*)arg;
+
+	// Create a new context for this thread
+	qd_context* thread_ctx = qd_create_context(1024);
+
+	// Handle the request
+	handle_request(args->engine, args->client_fd, thread_ctx);
+
+	// Clean up
+	qd_free_context(thread_ctx);
+	free(args);
+
+	return NULL;
+}
+
 /** Internal: Handle a single client request */
 static void handle_request(http_engine_t* engine, int client_fd, qd_context* ctx) {
 	// Receive request
@@ -684,7 +711,24 @@ qd_exec_result usr_http_run(qd_context* ctx) {
 			continue;
 		}
 
-		handle_request(engine, client_fd, ctx);
+		// Spawn a new thread for each request
+		http_thread_args_t* args = malloc(sizeof(http_thread_args_t));
+		if (args == NULL) {
+			close(client_fd);
+			continue;
+		}
+		args->engine = engine;
+		args->client_fd = client_fd;
+
+		pthread_t thread;
+		if (pthread_create(&thread, NULL, request_thread_func, args) != 0) {
+			// If thread creation fails, fall back to synchronous handling
+			free(args);
+			handle_request(engine, client_fd, ctx);
+		} else {
+			// Detach thread so it cleans up automatically
+			pthread_detach(thread);
+		}
 	}
 
 	close(server_fd);
