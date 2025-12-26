@@ -1,0 +1,48 @@
+/// Test HTTP engine creation and route registration
+use http
+
+fn handle_root(c:ptr -- ) {
+	-> c
+	c 200 "Hello" http::string
+}
+
+fn handle_users(c:ptr -- ) {
+	-> c
+	c 200 "Users list" http::string
+}
+
+fn handle_users_post(c:ptr -- ) {
+	-> c
+	c 201 "Created" http::string
+}
+
+fn handle_user_by_id(c:ptr -- ) {
+	-> c
+	c "id" http::param -> id
+	c 200 id http::string
+}
+
+fn main() {
+	// Create engine
+	http::engine -> e
+	"engine created" print nl
+
+	// Register routes
+	e "/" &handle_root http::GET
+	"GET / registered" print nl
+
+	e "/users" &handle_users http::GET
+	"GET /users registered" print nl
+
+	e "/users" &handle_users_post http::POST
+	"POST /users registered" print nl
+
+	e "/users/:id" &handle_user_by_id http::GET
+	"GET /users/:id registered" print nl
+
+	// Clean up
+	e http::free_engine
+	"engine freed" print nl
+
+	"PASS" print nl
+}

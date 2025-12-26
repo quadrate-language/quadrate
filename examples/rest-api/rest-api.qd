@@ -1,0 +1,143 @@
+/// REST API example demonstrating route groups and middleware.
+///
+/// This example shows how to build a structured API with:
+/// - Route groups for organizing endpoints
+/// - Middleware for logging and headers
+/// - Different response types (JSON, plain text)
+/// - Path and query parameters
+///
+/// Run with: quadc examples/rest-api/rest-api.qd -r
+///
+/// Try these endpoints:
+///   curl http://localhost:3000/
+///   curl http://localhost:3000/api/users
+///   curl http://localhost:3000/api/users/123
+///   curl http://localhost:3000/api/posts
+///   curl http://localhost:3000/search?q=hello
+use http
+
+// ============================================================
+// Middleware
+// ============================================================
+
+/// Global middleware - runs on every request
+fn logger_middleware(c:ptr -- ) {
+	-> c
+	// In a real app, you might log to a file
+	// For now, we just add a response header
+}
+
+/// API middleware - runs on /api/* routes
+fn api_middleware(c:ptr -- ) {
+	-> c
+	// Could check authentication, rate limiting, etc.
+}
+
+// ============================================================
+// Root Handlers
+// ============================================================
+
+fn handle_root(c:ptr -- ) {
+	-> c
+	c http::StatusOK "Welcome to the REST API. Try /api/users or /api/posts" http::string
+}
+
+fn handle_search(c:ptr -- ) {
+	-> c
+	c "q" http::query_param -> query
+	c http::StatusOK query http::string
+}
+
+// ============================================================
+// User Handlers
+// ============================================================
+
+fn handle_list_users(c:ptr -- ) {
+	-> c
+	c http::StatusOK "[]" http::json
+}
+
+fn handle_get_user(c:ptr -- ) {
+	-> c
+	c "id" http::param -> id
+	c http::StatusOK id http::json
+}
+
+fn handle_create_user(c:ptr -- ) {
+	-> c
+	c http::StatusCreated "{}" http::json
+}
+
+fn handle_delete_user(c:ptr -- ) {
+	-> c
+	c "id" http::param -> id
+	c http::StatusOK "{}" http::json
+}
+
+// ============================================================
+// Post Handlers
+// ============================================================
+
+fn handle_list_posts(c:ptr -- ) {
+	-> c
+	c http::StatusOK "[]" http::json
+}
+
+fn handle_get_post(c:ptr -- ) {
+	-> c
+	c "id" http::param -> id
+	c http::StatusOK id http::json
+}
+
+// ============================================================
+// Main
+// ============================================================
+
+fn main() {
+	"REST API Server" print nl
+	"================" print nl
+	nl
+	"Endpoints:" print nl
+	"  GET  /                  - Welcome message" print nl
+	"  GET  /search?q=...      - Search" print nl
+	"  GET  /api/users         - List users" print nl
+	"  GET  /api/users/:id     - Get user by ID" print nl
+	"  POST /api/users         - Create user" print nl
+	"  DELETE /api/users/:id   - Delete user" print nl
+	"  GET  /api/posts         - List posts" print nl
+	"  GET  /api/posts/:id     - Get post by ID" print nl
+	nl
+	"Starting on http://localhost:3000" print nl
+
+	// Create engine
+	http::engine -> e
+
+	// Add global middleware
+	e &logger_middleware http::use
+
+	// Root routes
+	e "/" &handle_root http::GET
+	e "/search" &handle_search http::GET
+
+	// Create /api group
+	e "/api" http::group -> api
+
+	// Add API middleware to group
+	api &api_middleware http::group_use
+
+	// User routes: /api/users/*
+	api "/users" &handle_list_users http::group_GET
+	api "/users/:id" &handle_get_user http::group_GET
+	api "/users" &handle_create_user http::group_POST
+	api "/users/:id" &handle_delete_user http::group_DELETE
+
+	// Post routes: /api/posts/*
+	api "/posts" &handle_list_posts http::group_GET
+	api "/posts/:id" &handle_get_post http::group_GET
+
+	// Start server
+	e ":3000" http::run!
+
+	// Cleanup
+	e http::free_engine
+}

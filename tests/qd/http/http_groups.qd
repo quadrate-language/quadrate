@@ -1,0 +1,35 @@
+/// Test HTTP route groups
+use http
+
+fn handle_api_users(c:ptr -- ) {
+	-> c
+	c 200 "API Users" http::string
+}
+
+fn handle_api_posts(c:ptr -- ) {
+	-> c
+	c 200 "API Posts" http::string
+}
+
+fn main() {
+	// Create engine
+	http::engine -> e
+	"engine created" print nl
+
+	// Create route group
+	e "/api" http::group -> api
+	"api group created" print nl
+
+	// Register routes on group
+	api "/users" &handle_api_users http::group_GET
+	"GET /api/users registered" print nl
+
+	api "/posts" &handle_api_posts http::group_GET
+	"GET /api/posts registered" print nl
+
+	// Clean up
+	e http::free_engine
+	"engine freed" print nl
+
+	"PASS" print nl
+}

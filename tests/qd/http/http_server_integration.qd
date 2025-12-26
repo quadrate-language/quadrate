@@ -1,0 +1,52 @@
+/// Integration test for HTTP server
+/// This test starts a server and handles requests
+use http
+
+fn handle_hello(c:ptr -- ) {
+	-> c
+	c 200 "Hello, World!" http::string
+}
+
+fn handle_json(c:ptr -- ) {
+	-> c
+	c 200 "{}" http::json
+}
+
+fn handle_html(c:ptr -- ) {
+	-> c
+	c 200 "<h1>Hello</h1>" http::html
+}
+
+fn handle_user(c:ptr -- ) {
+	-> c
+	c "id" http::param -> id
+	c 200 id http::string
+}
+
+fn handle_search(c:ptr -- ) {
+	-> c
+	c "q" http::query_param -> q
+	c 200 q http::string
+}
+
+fn handle_echo_header(c:ptr -- ) {
+	-> c
+	c "X-Test" http::get_header -> val
+	c 200 val http::string
+}
+
+fn main() {
+	// Create engine with routes
+	http::engine -> e
+
+	e "/" &handle_hello http::GET
+	e "/json" &handle_json http::GET
+	e "/html" &handle_html http::GET
+	e "/users/:id" &handle_user http::GET
+	e "/search" &handle_search http::GET
+	e "/echo" &handle_echo_header http::GET
+
+	// Start server (blocking) - use with run.sh script
+	e ":8765" http::run!
+	e http::free_engine
+}

@@ -1,0 +1,8 @@
+engine created
+global middleware added
+GET / registered
+api group created
+group middleware added
+GET /api/data registered
+engine freed
+PASS

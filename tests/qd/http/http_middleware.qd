@@ -1,0 +1,53 @@
+/// Test HTTP middleware registration
+use http
+
+fn global_middleware(c:ptr -- ) {
+	-> c
+	// Middleware can set headers, log, etc.
+	// For this test we just verify it's called
+}
+
+fn group_middleware(c:ptr -- ) {
+	-> c
+	// Group-specific middleware
+}
+
+fn handle_home(c:ptr -- ) {
+	-> c
+	c 200 "Home" http::string
+}
+
+fn handle_api_data(c:ptr -- ) {
+	-> c
+	c 200 "Data" http::json
+}
+
+fn main() {
+	// Create engine
+	http::engine -> e
+	"engine created" print nl
+
+	// Add global middleware
+	e &global_middleware http::use
+	"global middleware added" print nl
+
+	// Add route
+	e "/" &handle_home http::GET
+	"GET / registered" print nl
+
+	// Create group with middleware
+	e "/api" http::group -> api
+	"api group created" print nl
+
+	api &group_middleware http::group_use
+	"group middleware added" print nl
+
+	api "/data" &handle_api_data http::group_GET
+	"GET /api/data registered" print nl
+
+	// Clean up
+	e http::free_engine
+	"engine freed" print nl
+
+	"PASS" print nl
+}

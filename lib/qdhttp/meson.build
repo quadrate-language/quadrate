@@ -2,6 +2,7 @@ qdhttp_inc = include_directories('include')
 
 qdhttp_sources = files(
     'src/http.c',
+    'src/http_server.c',
 )
 
 qdhttp_static = static_library('qdhttp',

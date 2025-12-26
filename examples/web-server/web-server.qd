@@ -1,22 +1,48 @@
-use net
+/// Simple HTTP server example using the http module.
+/// Run with: quadc examples/web-server/web-server.qd -r
+/// Then visit http://localhost:8080 in your browser.
+use http
+
+// Handler for the root path
+fn handle_home(c:ptr -- ) {
+	-> c
+	c http::StatusOK "<h1>Welcome to Quadrate!</h1><p>Try these routes:</p><ul><li><a href='/hello'>/hello</a></li><li><a href='/json'>/json</a></li><li><a href='/users/42'>/users/42</a></li></ul>" http::html
+}
+
+// Handler for /hello
+fn handle_hello(c:ptr -- ) {
+	-> c
+	c http::StatusOK "Hello, World!" http::string
+}
+
+// Handler for /json - returns JSON response
+fn handle_json(c:ptr -- ) {
+	-> c
+	c http::StatusOK "{}" http::json
+}
+
+// Handler with path parameter: /users/:id
+fn handle_user(c:ptr -- ) {
+	-> c
+	c "id" http::param -> id
+	c http::StatusOK id http::string
+}
 
 fn main() {
-	"Serving on http://localhost:8080/" print nl
+	"Starting server on http://localhost:8080/" print nl
 
-	// Create server socket on port 8080
-	8080 net::listen! -> server
+	// Create HTTP engine
+	http::engine -> e
 
-	// Loop forever accepting connections
-	loop {
-		server net::accept! -> client
+	// Register routes
+	e "/" &handle_home http::GET
+	e "/hello" &handle_hello http::GET
+	e "/json" &handle_json http::GET
+	e "/users/:id" &handle_user http::GET
 
-		// Read the request (ignore it)
-		client 1024 net::receive! drop drop
+	// Start server (blocking)
+	e ":8080" http::run!
 
-		// Send HTTP response
-		client
-		"HTTP/1.0 200 OK\r\nContent-Type: text/plain\r\nContent-Length: 6\r\n\r\nHello!" net::send!
-		drop
-		client net::close
-	}
+	// Cleanup (unreachable in this example)
+	e http::free_engine
 }

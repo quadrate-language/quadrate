@@ -1,8 +1,8 @@
 /**
  * @file http.h
- * @brief HTTP client module for Quadrate
+ * @brief HTTP client and server module for Quadrate
  *
- * Provides HTTP/HTTPS client functionality using net and tls modules.
+ * Provides HTTP/HTTPS client and server functionality.
  */
 
 #ifndef QD_HTTP_H
@@ -27,11 +27,25 @@ extern "C" {
 #define HTTP_ERR_SEND 9
 #define HTTP_ERR_RECEIVE 10
 
+/** Server error codes */
+#define HTTP_ERR_BIND 20
+#define HTTP_ERR_ACCEPT 21
+#define HTTP_ERR_PARSE_REQUEST 22
+
 /** Maximum header size */
 #define HTTP_MAX_HEADERS 8192
 
 /** Maximum URL length */
 #define HTTP_MAX_URL 4096
+
+/** Maximum routes per engine */
+#define HTTP_MAX_ROUTES 256
+
+/** Maximum middleware per engine/group */
+#define HTTP_MAX_MIDDLEWARE 32
+
+/** Maximum route groups */
+#define HTTP_MAX_GROUPS 64
 
 /**
  * @brief Create new HTTP request
@@ -88,6 +102,174 @@ qd_exec_result usr_http_get(qd_context* ctx);
  * Stack: ( req:ptr -- )
  */
 qd_exec_result usr_http_free_request(qd_context* ctx);
+
+// ============================================================
+// Server API
+// ============================================================
+
+/**
+ * @brief Create new HTTP engine
+ * Stack: ( -- engine:ptr )
+ */
+qd_exec_result usr_http_engine(qd_context* ctx);
+
+/**
+ * @brief Register GET route
+ * Stack: ( engine:ptr path:str handler:fn -- )
+ */
+qd_exec_result usr_http_GET(qd_context* ctx);
+
+/**
+ * @brief Register POST route
+ * Stack: ( engine:ptr path:str handler:fn -- )
+ */
+qd_exec_result usr_http_POST(qd_context* ctx);
+
+/**
+ * @brief Register PUT route
+ * Stack: ( engine:ptr path:str handler:fn -- )
+ */
+qd_exec_result usr_http_PUT(qd_context* ctx);
+
+/**
+ * @brief Register DELETE route
+ * Stack: ( engine:ptr path:str handler:fn -- )
+ */
+qd_exec_result usr_http_DELETE(qd_context* ctx);
+
+/**
+ * @brief Register handler for any method
+ * Stack: ( engine:ptr path:str handler:fn -- )
+ */
+qd_exec_result usr_http_ANY(qd_context* ctx);
+
+/**
+ * @brief Add middleware to engine
+ * Stack: ( engine:ptr middleware:fn -- )
+ */
+qd_exec_result usr_http_use(qd_context* ctx);
+
+/**
+ * @brief Start server (blocking)
+ * Stack: ( engine:ptr addr:str -- )!
+ */
+qd_exec_result usr_http_run(qd_context* ctx);
+
+/**
+ * @brief Handle single request (non-blocking)
+ * Stack: ( engine:ptr -- handled:i64 )
+ */
+qd_exec_result usr_http_handle_one(qd_context* ctx);
+
+/**
+ * @brief Stop the server
+ * Stack: ( engine:ptr -- )
+ */
+qd_exec_result usr_http_stop(qd_context* ctx);
+
+/**
+ * @brief Free engine resources
+ * Stack: ( engine:ptr -- )
+ */
+qd_exec_result usr_http_free_engine(qd_context* ctx);
+
+// ============================================================
+// Context Methods
+// ============================================================
+
+/**
+ * @brief Get path parameter by name
+ * Stack: ( ctx:Ctx name:str -- value:str )
+ */
+qd_exec_result usr_http_param(qd_context* ctx);
+
+/**
+ * @brief Get query parameter by name
+ * Stack: ( ctx:Ctx name:str -- value:str )
+ */
+qd_exec_result usr_http_query_param(qd_context* ctx);
+
+/**
+ * @brief Get header value by name
+ * Stack: ( ctx:Ctx name:str -- value:str )
+ */
+qd_exec_result usr_http_get_header(qd_context* ctx);
+
+/**
+ * @brief Send plain text response
+ * Stack: ( ctx:Ctx status:i64 body:str -- )
+ */
+qd_exec_result usr_http_string(qd_context* ctx);
+
+/**
+ * @brief Send JSON response
+ * Stack: ( ctx:Ctx status:i64 body:str -- )
+ */
+qd_exec_result usr_http_json(qd_context* ctx);
+
+/**
+ * @brief Send HTML response
+ * Stack: ( ctx:Ctx status:i64 body:str -- )
+ */
+qd_exec_result usr_http_html(qd_context* ctx);
+
+/**
+ * @brief Set response header
+ * Stack: ( ctx:Ctx name:str value:str -- )
+ */
+qd_exec_result usr_http_set_header(qd_context* ctx);
+
+/**
+ * @brief Abort request and send error
+ * Stack: ( ctx:Ctx status:i64 body:str -- )
+ */
+qd_exec_result usr_http_abort(qd_context* ctx);
+
+/**
+ * @brief Check if response was sent
+ * Stack: ( ctx:Ctx -- sent:i64 )
+ */
+qd_exec_result usr_http_is_responded(qd_context* ctx);
+
+// ============================================================
+// Route Groups
+// ============================================================
+
+/**
+ * @brief Create route group with prefix
+ * Stack: ( engine:ptr prefix:str -- group:ptr )
+ */
+qd_exec_result usr_http_group(qd_context* ctx);
+
+/**
+ * @brief Add middleware to group
+ * Stack: ( group:ptr middleware:fn -- )
+ */
+qd_exec_result usr_http_group_use(qd_context* ctx);
+
+/**
+ * @brief Register GET on group
+ * Stack: ( group:ptr path:str handler:fn -- )
+ */
+qd_exec_result usr_http_group_GET(qd_context* ctx);
+
+/**
+ * @brief Register POST on group
+ * Stack: ( group:ptr path:str handler:fn -- )
+ */
+qd_exec_result usr_http_group_POST(qd_context* ctx);
+
+/**
+ * @brief Register PUT on group
+ * Stack: ( group:ptr path:str handler:fn -- )
+ */
+qd_exec_result usr_http_group_PUT(qd_context* ctx);
+
+/**
+ * @brief Register DELETE on group
+ * Stack: ( group:ptr path:str handler:fn -- )
+ */
+qd_exec_result usr_http_group_DELETE(qd_context* ctx);
 
 #ifdef __cplusplus
 }
