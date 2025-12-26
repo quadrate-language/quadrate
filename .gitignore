@@ -32,3 +32,9 @@ benchmarks/arithmetic_v8_specialized
 
 # Command binaries (built in-place)
 cmd/quadmcp/quadmcp
+
+# Fuzzer artifacts
+crash-*
+vgcore.*
+oom-*
+slow-unit-*

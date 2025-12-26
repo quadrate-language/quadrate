@@ -21,7 +21,7 @@ LIBS_WITH_HEADERS := qdrt qd qdfmt qdio qdmath qdmem qdnet qdtls qdhttp qdos qds
 # Standard library modules (pure Quadrate or mixed)
 STDLIB_MODULES := base64 bits flag fmt hof http io json limits math mem net tls os sb signal str strconv time unicode uri hex bytes crc32 sha256 regex path sort rand uuid testing
 
-.PHONY: all debug release tests tests-failed tests-clear valgrind asan examples format install uninstall clean docs
+.PHONY: all debug release tests tests-failed tests-clear valgrind asan fuzz examples format install uninstall clean docs
 
 all: debug
 
@@ -89,6 +89,17 @@ asan:
 	meson setup build/asan --buildtype=debug -Db_sanitize=address -Db_lundef=false $(MESON_FLAGS) --reconfigure || meson setup build/asan --buildtype=debug -Db_sanitize=address -Db_lundef=false $(MESON_FLAGS)
 	meson compile -C build/asan
 	@echo "ASAN build complete. Run tests with: meson test -C build/asan --print-errorlogs"
+
+# Fuzzing with libFuzzer (requires clang)
+# Usage: make fuzz [TIME=60] [LEN=5000]
+TIME ?= 60
+LEN ?= 5000
+fuzz:
+	@if ! which clang++ > /dev/null 2>&1; then echo "Error: clang++ required for fuzzing"; exit 1; fi
+	CC=clang CXX=clang++ meson setup build/fuzz --buildtype=debug -Dbuild_fuzz=true $(MESON_FLAGS) --reconfigure || CC=clang CXX=clang++ meson setup build/fuzz --buildtype=debug -Dbuild_fuzz=true $(MESON_FLAGS)
+	meson compile -C build/fuzz fuzz/fuzz_parser
+	@echo "Running fuzzer for $(TIME) seconds..."
+	./build/fuzz/fuzz/fuzz_parser fuzz/corpus/ -max_len=$(LEN) -max_total_time=$(TIME)
 
 examples: debug
 	@mkdir -p dist/examples

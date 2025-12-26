@@ -1,0 +1,6 @@
+fn main() {
+	0 1 -1 999999999
+	0.0 1.5 -3.14 1e10 1e-10
+	"" "hello" "with\nnewline" "with\ttab"
+	true false
+}

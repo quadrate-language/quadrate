@@ -1,0 +1,9 @@
+struct Point {
+	x: float
+	y: float
+}
+
+fn main() {
+	Point { x: 1.0 y: 2.0 } -> p
+	p.x p.y add
+}

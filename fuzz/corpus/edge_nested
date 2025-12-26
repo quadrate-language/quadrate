@@ -1,0 +1,4 @@
+fn main() {
+	if { if { if { if { 1 } } } }
+	for { for { for { break } } }
+}

@@ -1,0 +1,9 @@
+// line comment
+/* block comment */
+fn main() {
+	// nested // comment
+	/* multi
+	   line
+	   comment */
+	1 /* inline */ 2 add
+}

@@ -42,6 +42,11 @@ if get_option('build_examples')
 		subdir('examples')
 endif
 
+# Fuzzing targets (optional, requires clang)
+if get_option('build_fuzz')
+		subdir('fuzz')
+endif
+
 # Test setup for valgrind
 if get_option('build_tests')
 		valgrind = find_program('valgrind', required: false)
