@@ -374,3 +374,255 @@ fn main() {
 	req http::free_request
 }
 ```
+
+---
+
+# HTTP Server
+
+The `http` module also provides a Gin-inspired HTTP server for building web applications. The server handles requests concurrently using thread-per-request.
+
+## Server Functions
+
+### `fn` engine
+
+Create a new HTTP server engine.
+
+**Signature:** `( -- engine:ptr)`
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `engine` | `ptr` | Server engine handle |
+
+**Example:**
+
+```qd
+http::engine -> e
+```
+
+---
+
+### `fn` GET, POST, PUT, DELETE, ANY
+
+Register route handlers for specific HTTP methods.
+
+**Signature:** `(engine:ptr path:str handler:ptr -- )`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `engine` | `ptr` | Server engine |
+| `path` | `str` | Route path (supports `:param` for path parameters) |
+| `handler` | `ptr` | Handler function pointer |
+
+**Example:**
+
+```qd
+e "/" &handle_root http::GET
+e "/users" &handle_users http::POST
+e "/users/:id" &handle_user http::GET
+```
+
+---
+
+### `fn` run
+
+Start the HTTP server (blocking).
+
+**Signature:** `(engine:ptr addr:str -- )!`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `engine` | `ptr` | Server engine |
+| `addr` | `str` | Listen address (e.g., ":8080", "127.0.0.1:3000") |
+
+**Example:**
+
+```qd
+e ":8080" http::run!
+```
+
+---
+
+### `fn` free_engine
+
+Free the server engine.
+
+**Signature:** `(engine:ptr -- )`
+
+---
+
+## Handler Context
+
+Handler functions receive a context pointer for accessing request data and sending responses.
+
+### Request Methods
+
+| Function | Signature | Description |
+|----------|-----------|-------------|
+| `http::param` | `(ctx:ptr name:str -- value:str)` | Get path parameter (e.g., `:id`) |
+| `http::query_param` | `(ctx:ptr name:str -- value:str)` | Get query parameter |
+| `http::get_header` | `(ctx:ptr name:str -- value:str)` | Get request header |
+| `http::get_body` | `(ctx:ptr -- body:str)` | Get request body |
+| `http::get_method` | `(ctx:ptr -- method:str)` | Get HTTP method |
+| `http::get_path` | `(ctx:ptr -- path:str)` | Get request path |
+
+### Response Methods
+
+| Function | Signature | Description |
+|----------|-----------|-------------|
+| `http::string` | `(ctx:ptr status:i64 body:str -- )` | Send text response |
+| `http::json` | `(ctx:ptr status:i64 body:str -- )` | Send JSON response |
+| `http::html` | `(ctx:ptr status:i64 body:str -- )` | Send HTML response |
+| `http::set_header` | `(ctx:ptr name:str value:str -- )` | Set response header |
+| `http::status` | `(ctx:ptr code:i64 -- )` | Send status-only response |
+
+---
+
+## Route Groups
+
+Group routes with a common prefix and shared middleware.
+
+### `fn` group
+
+Create a route group.
+
+**Signature:** `(engine:ptr prefix:str -- group:ptr)`
+
+**Example:**
+
+```qd
+e "/api" http::group -> api
+api "/users" &handle_users http::group_GET
+api "/posts" &handle_posts http::group_GET
+```
+
+### Group Route Methods
+
+- `http::group_GET`
+- `http::group_POST`
+- `http::group_PUT`
+- `http::group_DELETE`
+- `http::group_ANY`
+
+---
+
+## Middleware
+
+Add middleware functions that run before handlers.
+
+### `fn` use
+
+Add global middleware.
+
+**Signature:** `(engine:ptr middleware:ptr -- )`
+
+### `fn` group_use
+
+Add middleware to a group.
+
+**Signature:** `(group:ptr middleware:ptr -- )`
+
+**Example:**
+
+```qd
+fn logger(c:ptr -- ) {
+	-> c
+	c http::get_method print " " print
+	c http::get_path print nl
+	c http::next
+}
+
+e &logger http::use
+```
+
+---
+
+## Concurrency
+
+The HTTP server uses **thread-per-request** concurrency. Each incoming request is handled in a separate thread with its own execution context. This allows the server to handle multiple simultaneous requests without blocking.
+
+- Requests are handled concurrently (not sequentially)
+- Each request gets an isolated execution context
+- No changes needed in handler code - concurrency is automatic
+- Thread cleanup is automatic
+
+---
+
+## Server Examples
+
+### Basic Server
+
+```qd
+use http
+
+fn handle_root(c:ptr -- ) {
+	-> c
+	c 200 "Hello, World!" http::string
+}
+
+fn main() {
+	http::engine -> e
+	e "/" &handle_root http::GET
+	e ":8080" http::run!
+	e http::free_engine
+}
+```
+
+### REST API
+
+```qd
+use http
+
+fn get_users(c:ptr -- ) {
+	-> c
+	c 200 "[{\"id\":1,\"name\":\"Alice\"}]" http::json
+}
+
+fn get_user(c:ptr -- ) {
+	-> c
+	c "id" http::param -> id
+	c 200 id http::string
+}
+
+fn create_user(c:ptr -- ) {
+	-> c
+	c http::get_body -> body
+	c 201 body http::json
+}
+
+fn main() {
+	http::engine -> e
+
+	e "/api" http::group -> api
+	api "/users" &get_users http::group_GET
+	api "/users/:id" &get_user http::group_GET
+	api "/users" &create_user http::group_POST
+
+	e ":8080" http::run!
+	e http::free_engine
+}
+```
+
+### With Middleware
+
+```qd
+use http
+
+fn cors(c:ptr -- ) {
+	-> c
+	c "Access-Control-Allow-Origin" "*" http::set_header
+	c http::next
+}
+
+fn handle_root(c:ptr -- ) {
+	-> c
+	c 200 "Hello!" http::string
+}
+
+fn main() {
+	http::engine -> e
+	e &cors http::use
+	e "/" &handle_root http::GET
+	e ":8080" http::run!
+	e http::free_engine
+}
+```
