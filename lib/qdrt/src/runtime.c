@@ -127,11 +127,7 @@ static bool validate_binary_numeric_op(qd_context* ctx, const char* op_name) {
 	// Check we have at least 2 elements
 	size_t stack_size = qd_stack_size(ctx->st);
 	if (stack_size < 2) {
-		fprintf(stderr, "Fatal error in %s: Stack underflow (required 2 elements, have %zu)\n",
-		        op_name, stack_size);
-		dump_stack(ctx);
-		qd_print_stack_trace(ctx);
-		abort();
+		QDRT_FATAL_UNDERFLOW(ctx, op_name, 2, stack_size);
 	}
 
 	// Check both are numeric types
@@ -141,17 +137,11 @@ static bool validate_binary_numeric_op(qd_context* ctx, const char* op_name) {
 		check_err = qd_stack_element(ctx->st, stack_size - 2, &check_a);
 	}
 	if (check_err != QD_STACK_OK) {
-		fprintf(stderr, "Fatal error in %s: Failed to access stack elements\n", op_name);
-		dump_stack(ctx);
-		qd_print_stack_trace(ctx);
-		abort();
+		QDRT_FATAL(ctx, op_name, "Failed to access stack elements");
 	}
 
 	if (!is_numeric_type(check_a.type) || !is_numeric_type(check_b.type)) {
-		fprintf(stderr, "Fatal error in %s: Type error (expected numeric types)\n", op_name);
-		dump_stack(ctx);
-		qd_print_stack_trace(ctx);
-		abort();
+		QDRT_FATAL(ctx, op_name, "Type error (expected numeric types)");
 	}
 
 	return true;
@@ -243,26 +233,17 @@ qd_exec_result qd_call(qd_context* ctx) {
 	qd_stack_error err = qd_stack_pop(ctx->st, &val);
 
 	if (err != QD_STACK_OK) {
-		fprintf(stderr, "Fatal error in call: Stack underflow\n");
-		dump_stack(ctx);
-		qd_print_stack_trace(ctx);
-		abort();
+		QDRT_FATAL(ctx, "call", "Stack underflow");
 	}
 
 	// Verify it's a pointer type
 	if (val.type != QD_STACK_TYPE_PTR) {
-		fprintf(stderr, "Fatal error in call: Expected pointer type, got %d\n", val.type);
-		dump_stack(ctx);
-		qd_print_stack_trace(ctx);
-		abort();
+		QDRT_FATAL(ctx, "call", "Expected pointer type, got %d");
 	}
 
 	void* ptr = val.value.p;
 	if (ptr == NULL) {
-		fprintf(stderr, "Fatal error in call: NULL pointer\n");
-		dump_stack(ctx);
-		qd_print_stack_trace(ctx);
-		abort();
+		QDRT_FATAL(ctx, "call", "NULL pointer");
 	}
 
 	// Check if this is a closure (magic marker at start of struct)
@@ -275,10 +256,7 @@ qd_exec_result qd_call(qd_context* ctx) {
 		memcpy(&func, &closure->fn_ptr, sizeof(func));
 
 		if (func == NULL) {
-			fprintf(stderr, "Fatal error in call: NULL closure function pointer\n");
-			dump_stack(ctx);
-			qd_print_stack_trace(ctx);
-			abort();
+			QDRT_FATAL(ctx, "call", "NULL closure function pointer");
 		}
 
 		// Call the closure with environment
@@ -300,21 +278,12 @@ qd_exec_result qd_call(qd_context* ctx) {
 // casti - cast top stack element to integer
 qd_exec_result qd_casti(qd_context* ctx) {
 	// Pop one value, convert to integer, push result
-	size_t stack_size = qd_stack_size(ctx->st);
-	if (stack_size < 1) {
-		fprintf(stderr, "Fatal error in casti: Stack underflow (requires 1 value)\n");
-		dump_stack(ctx);
-		qd_print_stack_trace(ctx);
-		abort();
-	}
+	QDRT_CHECK_STACK(ctx, "casti", 1);
 
 	qd_stack_element_t elem;
 	qd_stack_error err = qd_stack_pop(ctx->st, &elem);
 	if (err != QD_STACK_OK) {
-		fprintf(stderr, "Fatal error in casti: Failed to pop value\n");
-		dump_stack(ctx);
-		qd_print_stack_trace(ctx);
-		abort();
+		QDRT_FATAL(ctx, "casti", "Failed to pop value");
 	}
 
 	int64_t result;
@@ -326,10 +295,7 @@ qd_exec_result qd_casti(qd_context* ctx) {
 		result = atoll(qd_string_data(elem.value.s));
 		release_if_string(&elem);  // Release the string after conversion
 	} else {
-		fprintf(stderr, "Fatal error in casti: Cannot cast type to integer\n");
-		dump_stack(ctx);
-		qd_print_stack_trace(ctx);
-		abort();
+		QDRT_FATAL(ctx, "casti", "Cannot cast type to integer");
 	}
 
 	err = qd_stack_push_int(ctx->st, result);
@@ -345,7 +311,7 @@ qd_exec_result qd_castf(qd_context* ctx) {
 	// Pop one value, convert to float, push result
 	size_t stack_size = qd_stack_size(ctx->st);
 	if (stack_size < 1) {
-		fprintf(stderr, "Fatal error in castf: Stack underflow (requires 1 value)\n");
+		QDRT_FATAL(ctx, "castf", "Stack underflow (requires 1 value)");
 		dump_stack(ctx);
 		qd_print_stack_trace(ctx);
 		abort();
@@ -354,10 +320,7 @@ qd_exec_result qd_castf(qd_context* ctx) {
 	qd_stack_element_t elem;
 	qd_stack_error err = qd_stack_pop(ctx->st, &elem);
 	if (err != QD_STACK_OK) {
-		fprintf(stderr, "Fatal error in castf: Failed to pop value\n");
-		dump_stack(ctx);
-		qd_print_stack_trace(ctx);
-		abort();
+		QDRT_FATAL(ctx, "castf", "Failed to pop value");
 	}
 
 	double result;
@@ -369,10 +332,7 @@ qd_exec_result qd_castf(qd_context* ctx) {
 		result = atof(qd_string_data(elem.value.s));
 		release_if_string(&elem);  // Release the string after conversion
 	} else {
-		fprintf(stderr, "Fatal error in castf: Cannot cast type to float\n");
-		dump_stack(ctx);
-		qd_print_stack_trace(ctx);
-		abort();
+		QDRT_FATAL(ctx, "castf", "Cannot cast type to float");
 	}
 
 	err = qd_stack_push_float(ctx->st, result);
@@ -388,7 +348,7 @@ qd_exec_result qd_casts(qd_context* ctx) {
 	// Pop one value, convert to string, push result
 	size_t stack_size = qd_stack_size(ctx->st);
 	if (stack_size < 1) {
-		fprintf(stderr, "Fatal error in casts: Stack underflow (requires 1 value)\n");
+		QDRT_FATAL(ctx, "casts", "Stack underflow (requires 1 value)");
 		dump_stack(ctx);
 		qd_print_stack_trace(ctx);
 		abort();
@@ -397,10 +357,7 @@ qd_exec_result qd_casts(qd_context* ctx) {
 	qd_stack_element_t elem;
 	qd_stack_error err = qd_stack_pop(ctx->st, &elem);
 	if (err != QD_STACK_OK) {
-		fprintf(stderr, "Fatal error in casts: Failed to pop value\n");
-		dump_stack(ctx);
-		qd_print_stack_trace(ctx);
-		abort();
+		QDRT_FATAL(ctx, "casts", "Failed to pop value");
 	}
 
 	char buffer[64];
@@ -438,10 +395,7 @@ qd_exec_result qd_casts(qd_context* ctx) {
 			return (qd_exec_result){0};
 		}
 	} else {
-		fprintf(stderr, "Fatal error in casts: Cannot cast type to string\n");
-		dump_stack(ctx);
-		qd_print_stack_trace(ctx);
-		abort();
+		QDRT_FATAL(ctx, "casts", "Cannot cast type to string");
 	}
 
 	err = qd_stack_push_str(ctx->st, buffer);
@@ -456,7 +410,7 @@ qd_exec_result qd_casts(qd_context* ctx) {
 qd_exec_result qd_castp(qd_context* ctx) {
 	size_t stack_size = qd_stack_size(ctx->st);
 	if (stack_size < 1) {
-		fprintf(stderr, "Fatal error in castp: Stack underflow (requires 1 value)\n");
+		QDRT_FATAL(ctx, "castp", "Stack underflow (requires 1 value)");
 		dump_stack(ctx);
 		qd_print_stack_trace(ctx);
 		abort();
@@ -465,10 +419,7 @@ qd_exec_result qd_castp(qd_context* ctx) {
 	qd_stack_element_t elem;
 	qd_stack_error err = qd_stack_pop(ctx->st, &elem);
 	if (err != QD_STACK_OK) {
-		fprintf(stderr, "Fatal error in castp: Failed to pop value\n");
-		dump_stack(ctx);
-		qd_print_stack_trace(ctx);
-		abort();
+		QDRT_FATAL(ctx, "castp", "Failed to pop value");
 	}
 
 	void* ptr_value = NULL;
@@ -479,10 +430,7 @@ qd_exec_result qd_castp(qd_context* ctx) {
 		// Cast integer to pointer
 		ptr_value = (void*)(intptr_t)elem.value.i;
 	} else {
-		fprintf(stderr, "Fatal error in castp: Cannot cast type %d to pointer\n", elem.type);
-		dump_stack(ctx);
-		qd_print_stack_trace(ctx);
-		abort();
+		QDRT_FATAL(ctx, "castp", "Cannot cast type %d to pointer");
 	}
 
 	err = qd_stack_push_ptr(ctx->st, ptr_value);
@@ -523,7 +471,7 @@ static void dump_stack(qd_context* ctx) {
 	fprintf(stderr, "\nStack dump (%zu elements):\n", stack_size);
 
 	if (stack_size == 0) {
-		fprintf(stderr, "  (empty)\n");
+		fprintf(stderr, "  (empty)");
 		return;
 	}
 
@@ -550,7 +498,7 @@ static void dump_stack(qd_context* ctx) {
 				fprintf(stderr, "ptr = %p\n", elem.value.p);
 				break;
 			default:
-				fprintf(stderr, "<unknown type>\n");
+				fprintf(stderr, "<unknown type>");
 				break;
 		}
 	}
@@ -633,7 +581,7 @@ void qd_check_stack(qd_context* ctx, size_t count, const qd_stack_type* types, c
 qd_exec_result qd_free(qd_context* ctx) {
 	size_t stack_size = qd_stack_size(ctx->st);
 	if (stack_size < 1) {
-		fprintf(stderr, "Fatal error in free: Stack underflow (required 1 element, have %zu)\n", stack_size);
+		QDRT_FATAL(ctx, "free", "Stack underflow (required 1 element, have %zu)");
 		dump_stack(ctx);
 		qd_print_stack_trace(ctx);
 		abort();
@@ -647,10 +595,7 @@ qd_exec_result qd_free(qd_context* ctx) {
 
 	// Verify it's a pointer type
 	if (val.type != QD_STACK_TYPE_PTR) {
-		fprintf(stderr, "Fatal error in free: Expected pointer type, got type %d\n", val.type);
-		dump_stack(ctx);
-		qd_print_stack_trace(ctx);
-		abort();
+		QDRT_FATAL(ctx, "free", "Expected pointer type, got type %d");
 	}
 
 	// Check if this is a struct pointer (uses registry lookup)
@@ -673,7 +618,7 @@ qd_exec_result qd_free(qd_context* ctx) {
 qd_exec_result qd_free_struct(qd_context* ctx) {
 	size_t stack_size = qd_stack_size(ctx->st);
 	if (stack_size < 1) {
-		fprintf(stderr, "Fatal error in free: Stack underflow (required 1 element, have %zu)\n", stack_size);
+		QDRT_FATAL(ctx, "free", "Stack underflow (required 1 element, have %zu)");
 		dump_stack(ctx);
 		qd_print_stack_trace(ctx);
 		abort();
@@ -687,10 +632,7 @@ qd_exec_result qd_free_struct(qd_context* ctx) {
 
 	// Verify it's a pointer type
 	if (val.type != QD_STACK_TYPE_PTR) {
-		fprintf(stderr, "Fatal error in free: Expected pointer type, got type %d\n", val.type);
-		dump_stack(ctx);
-		qd_print_stack_trace(ctx);
-		abort();
+		QDRT_FATAL(ctx, "free", "Expected pointer type, got type %d");
 	}
 
 	// Release the struct (decrements refcount, frees when 0)
@@ -750,31 +692,25 @@ qd_exec_result qd_spawn(qd_context* ctx) {
 	qd_stack_error err = qd_stack_pop(ctx->st, &val);
 
 	if (err != QD_STACK_OK) {
-		fprintf(stderr, "Fatal error in spawn: Stack underflow\n");
-		dump_stack(ctx);
-		qd_print_stack_trace(ctx);
-		abort();
+		QDRT_FATAL(ctx, "spawn", "Stack underflow");
 	}
 
 	// Verify it's a pointer type
 	if (val.type != QD_STACK_TYPE_PTR) {
-		fprintf(stderr, "Fatal error in spawn: Expected pointer type, got %d\n", val.type);
-		dump_stack(ctx);
-		qd_print_stack_trace(ctx);
-		abort();
+		QDRT_FATAL(ctx, "spawn", "Expected pointer type, got %d");
 	}
 
 	// Create new context for the thread
 	qd_context* thread_ctx = qd_create_context(1024);
 	if (!thread_ctx) {
-		fprintf(stderr, "Fatal error in spawn: Failed to create context\n");
+		QDRT_FATAL(ctx, "spawn", "Failed to create context");
 		abort();
 	}
 
 	// Create thread info
 	qd_thread_info_t* info = malloc(sizeof(qd_thread_info_t));
 	if (!info) {
-		fprintf(stderr, "Fatal error in spawn: Failed to allocate thread info\n");
+		QDRT_FATAL(ctx, "spawn", "Failed to allocate thread info");
 		qd_free_context(thread_ctx);
 		abort();
 	}
@@ -784,7 +720,7 @@ qd_exec_result qd_spawn(qd_context* ctx) {
 	// Create thread using platform abstraction
 	thread_handle_t thread = thread_platform_create(qd_thread_wrapper, info);
 	if (!thread) {
-		fprintf(stderr, "Fatal error in spawn: thread_platform_create failed\n");
+		QDRT_FATAL(ctx, "spawn", "thread_platform_create failed");
 		qd_free_context(thread_ctx);
 		free(info);
 		abort();
@@ -806,18 +742,12 @@ qd_exec_result qd_detach(qd_context* ctx) {
 	qd_stack_error err = qd_stack_pop(ctx->st, &val);
 
 	if (err != QD_STACK_OK) {
-		fprintf(stderr, "Fatal error in detach: Stack underflow\n");
-		dump_stack(ctx);
-		qd_print_stack_trace(ctx);
-		abort();
+		QDRT_FATAL(ctx, "detach", "Stack underflow");
 	}
 
 	// Verify it's an integer type
 	if (val.type != QD_STACK_TYPE_INT) {
-		fprintf(stderr, "Fatal error in detach: Expected integer type, got %d\n", val.type);
-		dump_stack(ctx);
-		qd_print_stack_trace(ctx);
-		abort();
+		QDRT_FATAL(ctx, "detach", "Expected integer type, got %d");
 	}
 
 	// Get thread handle
@@ -826,7 +756,7 @@ qd_exec_result qd_detach(qd_context* ctx) {
 	// Detach thread using platform abstraction
 	int result = thread_platform_detach(thread);
 	if (result != THREAD_SUCCESS) {
-		fprintf(stderr, "Fatal error in detach: thread_platform_detach failed\n");
+		QDRT_FATAL(ctx, "detach", "thread_platform_detach failed");
 		abort();
 	}
 
@@ -840,18 +770,12 @@ qd_exec_result qd_wait(qd_context* ctx) {
 	qd_stack_error err = qd_stack_pop(ctx->st, &val);
 
 	if (err != QD_STACK_OK) {
-		fprintf(stderr, "Fatal error in wait: Stack underflow\n");
-		dump_stack(ctx);
-		qd_print_stack_trace(ctx);
-		abort();
+		QDRT_FATAL(ctx, "wait", "Stack underflow");
 	}
 
 	// Verify it's an integer type
 	if (val.type != QD_STACK_TYPE_INT) {
-		fprintf(stderr, "Fatal error in wait: Expected integer type, got %d\n", val.type);
-		dump_stack(ctx);
-		qd_print_stack_trace(ctx);
-		abort();
+		QDRT_FATAL(ctx, "wait", "Expected integer type, got %d");
 	}
 
 	// Get thread handle
@@ -860,7 +784,7 @@ qd_exec_result qd_wait(qd_context* ctx) {
 	// Join thread using platform abstraction
 	int result = thread_platform_join(thread);
 	if (result != THREAD_SUCCESS) {
-		fprintf(stderr, "Fatal error in wait: thread_platform_join failed\n");
+		QDRT_FATAL(ctx, "wait", "thread_platform_join failed");
 		abort();
 	}
 
@@ -874,19 +798,13 @@ qd_exec_result qd_err(qd_context* ctx) {
 	const char* msg = ctx->error_msg ? ctx->error_msg : "";
 	qd_stack_error err = qd_stack_push_str(ctx->st, msg);
 	if (err != QD_STACK_OK) {
-		fprintf(stderr, "Fatal error in err: Failed to push error message\n");
-		dump_stack(ctx);
-		qd_print_stack_trace(ctx);
-		abort();
+		QDRT_FATAL(ctx, "err", "Failed to push error message");
 	}
 
 	// Push error code
 	err = qd_stack_push_int(ctx->st, ctx->error_code);
 	if (err != QD_STACK_OK) {
-		fprintf(stderr, "Fatal error in err: Failed to push error code\n");
-		dump_stack(ctx);
-		qd_print_stack_trace(ctx);
-		abort();
+		QDRT_FATAL(ctx, "err", "Failed to push error code");
 	}
 
 	// Clear error state after reading
@@ -908,30 +826,21 @@ qd_exec_result qd_panic(qd_context* ctx) {
 	// Pop error code (integer) - it's on top
 	qd_stack_error err = qd_stack_pop(ctx->st, &error_code_elem);
 	if (err != QD_STACK_OK) {
-		fprintf(stderr, "Fatal error in panic: Stack underflow when popping error code\n");
-		dump_stack(ctx);
-		qd_print_stack_trace(ctx);
-		abort();
+		QDRT_FATAL(ctx, "panic", "Stack underflow when popping error code");
 	}
 
 	if (error_code_elem.type != QD_STACK_TYPE_INT) {
-		fprintf(stderr, "Fatal error in panic: Expected integer error code, got type %d\n", error_code_elem.type);
-		dump_stack(ctx);
-		qd_print_stack_trace(ctx);
-		abort();
+		QDRT_FATAL(ctx, "panic", "Expected integer error code, got type %d");
 	}
 
 	// Pop error message (string)
 	err = qd_stack_pop(ctx->st, &error_msg_elem);
 	if (err != QD_STACK_OK) {
-		fprintf(stderr, "Fatal error in panic: Stack underflow when popping error message\n");
-		dump_stack(ctx);
-		qd_print_stack_trace(ctx);
-		abort();
+		QDRT_FATAL(ctx, "panic", "Stack underflow when popping error message");
 	}
 
 	if (error_msg_elem.type != QD_STACK_TYPE_STR) {
-		fprintf(stderr, "Fatal error in panic: Expected string error message, got type %d\n", error_msg_elem.type);
+		QDRT_FATAL(ctx, "panic", "Expected string error message, got type %d");
 		dump_stack(ctx);
 		qd_print_stack_trace(ctx);
 		// Release the error code's string reference if needed
@@ -1099,7 +1008,7 @@ void qd_print_stack_trace(qd_context* ctx) {
 
 void qd_debug_print_stack(qd_context* ctx) {
 	if (!ctx || !ctx->st) {
-		fprintf(stderr, "Error: Invalid context\n");
+		fprintf(stderr, "Error: Invalid context");
 		return;
 	}
 
@@ -1117,13 +1026,13 @@ void qd_debug_print_stack(qd_context* ctx) {
 	fprintf(stderr, "Size: %zu element%s\n", stack_size, stack_size == 1 ? "" : "s");
 
 	if (stack_size == 0) {
-		fprintf(stderr, "(empty)\n");
+		fprintf(stderr, "(empty)");
 		return;
 	}
 
-	fprintf(stderr, "\nTop of stack (most recent):\n");
+	fprintf(stderr, "\nTop of stack (most recent):");
 	fprintf(stderr, "  %sIdx%s  %sType%s     %sValue%s\n", color_blue, color_end, color_green, color_end, color_yellow, color_end);
-	fprintf(stderr, "  ----------------------------------------\n");
+	fprintf(stderr, "  ----------------------------------------");
 
 	// Print from top (most recent) to bottom
 	for (size_t i = stack_size; i > 0; i--) {
@@ -1163,8 +1072,8 @@ void qd_debug_print_stack(qd_context* ctx) {
 			break;
 		}
 	}
-	fprintf(stderr, "Bottom of stack (oldest)\n");
-	fprintf(stderr, "\n");
+	fprintf(stderr, "Bottom of stack (oldest)");
+	fprintf(stderr, "");
 }
 
 // =============================================================================
