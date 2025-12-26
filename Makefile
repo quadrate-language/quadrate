@@ -21,7 +21,7 @@ LIBS_WITH_HEADERS := qdrt qd qdfmt qdio qdmath qdmem qdnet qdtls qdhttp qdos qds
 # Standard library modules (pure Quadrate or mixed)
 STDLIB_MODULES := base64 bits flag fmt hof http io json limits math mem net tls os sb signal str strconv time unicode uri hex bytes crc32 sha256 regex path sort rand uuid testing
 
-.PHONY: all debug release tests tests-failed tests-clear valgrind examples format install uninstall clean docs
+.PHONY: all debug release tests tests-failed tests-clear valgrind asan examples format install uninstall clean docs
 
 all: debug
 
@@ -82,6 +82,13 @@ tests-clear:
 valgrind: debug
 	@$(MAKE) examples --no-print-directory
 	@bash tests/run_all.sh --valgrind $(if $(TEST),--test $(TEST),) $(if $(SUITE),--suite $(SUITE),)
+
+# ASAN (AddressSanitizer) build for memory error detection
+# Note: Uses static linking for sanitizer runtime to avoid shared library issues
+asan:
+	meson setup build/asan --buildtype=debug -Db_sanitize=address -Db_lundef=false $(MESON_FLAGS) --reconfigure || meson setup build/asan --buildtype=debug -Db_sanitize=address -Db_lundef=false $(MESON_FLAGS)
+	meson compile -C build/asan
+	@echo "ASAN build complete. Run tests with: meson test -C build/asan --print-errorlogs"
 
 examples: debug
 	@mkdir -p dist/examples
