@@ -67,6 +67,10 @@ typedef struct {
 	http_group_t groups[HTTP_MAX_GROUPS];
 	int group_count;
 
+	// Group handles (for cleanup)
+	void* group_handles[HTTP_MAX_GROUPS];
+	int group_handle_count;
+
 	// Response headers buffer (per-request)
 	char* response_headers;
 	size_t response_headers_len;
@@ -373,6 +377,7 @@ qd_exec_result usr_http_engine(qd_context* ctx) {
 	engine->route_count = 0;
 	engine->middleware_count = 0;
 	engine->group_count = 0;
+	engine->group_handle_count = 0;
 	engine->response_headers = NULL;
 	engine->response_headers_len = 0;
 	engine->response_headers_cap = 0;
@@ -777,6 +782,11 @@ qd_exec_result usr_http_free_engine(qd_context* ctx) {
 		free(engine->groups[i].prefix);
 	}
 
+	// Free group handles
+	for (int i = 0; i < engine->group_handle_count; i++) {
+		free(engine->group_handles[i]);
+	}
+
 	// Free response headers buffer
 	free(engine->response_headers);
 
@@ -986,6 +996,9 @@ qd_exec_result usr_http_group(qd_context* ctx) {
 	int64_t* group_handle = malloc(sizeof(int64_t) * 2);
 	group_handle[0] = (int64_t)(uintptr_t)engine;
 	group_handle[1] = group_idx;
+
+	// Track handle for cleanup
+	engine->group_handles[engine->group_handle_count++] = group_handle;
 
 	qd_push_p(ctx, group_handle);
 	return (qd_exec_result){0};
