@@ -2961,7 +2961,16 @@ namespace Qd {
 
 	IAstNode* Ast::generate(const char* src, bool dumpTokens, const char* filename) {
 		u8t_scanner scanner;
-		u8t_scanner_init(&scanner, src);
+		if (!u8t_scanner_init(&scanner, src)) {
+			// Invalid UTF-8 input - return empty program with error
+			ErrorReporter errorReporter(src, filename);
+			errorReporter.reportError(0, 0, "Invalid UTF-8 encoding in source file");
+			if (mRoot) {
+				delete mRoot;
+			}
+			mRoot = new AstProgram();
+			return mRoot;
+		}
 
 		// If dumpTokens is true, scan and print all tokens, then reset the scanner
 		if (dumpTokens) {

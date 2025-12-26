@@ -261,9 +261,8 @@ std::vector<Dependency> parseDependencies(const std::string& manifestPath) {
 				std::string strValue = json_string_value(value);
 
 				// Check if it's a local path (starts with /, ./, ../, or ~/)
-				if (strValue.size() > 0 &&
-						(strValue[0] == '/' || strValue[0] == '.' ||
-								(strValue.size() > 1 && strValue[0] == '~' && strValue[1] == '/'))) {
+				if (strValue.size() > 0 && (strValue[0] == '/' || strValue[0] == '.' ||
+												   (strValue.size() > 1 && strValue[0] == '~' && strValue[1] == '/'))) {
 					dep.url = strValue;
 					dep.isPath = true;
 				}
@@ -1025,8 +1024,7 @@ std::string resolveSemVerRange(const std::string& gitUrl, const std::string& ran
 	}
 
 	// Sort by version (newest first)
-	std::sort(semverTags.begin(), semverTags.end(),
-			[](const auto& a, const auto& b) { return a.first > b.first; });
+	std::sort(semverTags.begin(), semverTags.end(), [](const auto& a, const auto& b) { return a.first > b.first; });
 
 	// Find best matching version
 	for (const auto& [version, tagName] : semverTags) {

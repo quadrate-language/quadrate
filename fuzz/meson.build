@@ -18,21 +18,40 @@ if cc.get_id() != 'clang'
 	subdir_done()
 endif
 
-# Fuzzing flags
+# Fuzzing flags - need to instrument all code for coverage
 fuzz_args = [
 	'-fsanitize=fuzzer,address,undefined',
 	'-fno-omit-frame-pointer',
 	'-g',
+	'-O1',  # Some optimization helps fuzzer performance
 ]
 
 fuzz_link_args = [
 	'-fsanitize=fuzzer,address,undefined',
 ]
 
-# Parser fuzz target
+# Get qc sources and includes for direct compilation with fuzzer instrumentation
+qc_src_dir = meson.project_source_root() / 'lib' / 'qc' / 'src'
+qc_inc = include_directories('../lib/qc/include')
+
+# u8t dependency
+u8t_dep = subproject('u8t').get_variable('u8t_dep')
+
+# Compile qc sources directly with fuzzer instrumentation
+fuzz_qc_sources = files(
+	qc_src_dir / 'ast.cc',
+	qc_src_dir / 'ast_printer.cc',
+	qc_src_dir / 'colors.cc',
+	qc_src_dir / 'error_reporter.cc',
+	qc_src_dir / 'source_formatter.cc',
+)
+
+# Parser fuzz target - compiles qc sources with fuzzer instrumentation
 fuzz_parser = executable('fuzz_parser',
 	'fuzz_parser.cc',
-	dependencies: [qc_dep],
+	fuzz_qc_sources,
+	include_directories: qc_inc,
+	dependencies: [u8t_dep],
 	cpp_args: fuzz_args,
 	link_args: fuzz_link_args,
 	build_by_default: true,

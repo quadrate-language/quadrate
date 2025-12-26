@@ -13,18 +13,37 @@ struct SemVer {
 	std::string build;		// Optional build metadata (ignored in comparisons)
 
 	// Check if this is a valid parsed version
-	bool isValid() const { return major >= 0 && minor >= 0 && patch >= 0; }
+	bool isValid() const {
+		return major >= 0 && minor >= 0 && patch >= 0;
+	}
 
 	// Compare two versions (-1: this < other, 0: equal, 1: this > other)
 	int compare(const SemVer& other) const;
 
 	// Comparison operators
-	bool operator<(const SemVer& other) const { return compare(other) < 0; }
-	bool operator>(const SemVer& other) const { return compare(other) > 0; }
-	bool operator<=(const SemVer& other) const { return compare(other) <= 0; }
-	bool operator>=(const SemVer& other) const { return compare(other) >= 0; }
-	bool operator==(const SemVer& other) const { return compare(other) == 0; }
-	bool operator!=(const SemVer& other) const { return compare(other) != 0; }
+	bool operator<(const SemVer& other) const {
+		return compare(other) < 0;
+	}
+
+	bool operator>(const SemVer& other) const {
+		return compare(other) > 0;
+	}
+
+	bool operator<=(const SemVer& other) const {
+		return compare(other) <= 0;
+	}
+
+	bool operator>=(const SemVer& other) const {
+		return compare(other) >= 0;
+	}
+
+	bool operator==(const SemVer& other) const {
+		return compare(other) == 0;
+	}
+
+	bool operator!=(const SemVer& other) const {
+		return compare(other) != 0;
+	}
 
 	// Convert to string
 	std::string toString() const;
@@ -39,14 +58,14 @@ bool isSemVer(const std::string& version);
 
 // Version constraint types
 enum class ConstraintOp {
-	EQ,	  // = or exact match (default)
-	GT,	  // >
-	GTE,  // >=
-	LT,	  // <
-	LTE,  // <=
+	EQ,	   // = or exact match (default)
+	GT,	   // >
+	GTE,   // >=
+	LT,	   // <
+	LTE,   // <=
 	CARET, // ^  (compatible with version, allows minor/patch updates)
 	TILDE, // ~  (approximately equivalent, allows patch updates)
-	ANY	  // *  (any version)
+	ANY	   // *  (any version)
 };
 
 // A single version constraint (e.g., ">=1.0.0" or "^2.1.0")
@@ -69,7 +88,9 @@ struct VersionRange {
 	bool satisfies(const SemVer& v) const;
 
 	// Check if this is a valid range
-	bool isValid() const { return !alternatives.empty(); }
+	bool isValid() const {
+		return !alternatives.empty();
+	}
 };
 
 // Parse a version range string
