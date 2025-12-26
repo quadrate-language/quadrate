@@ -1,16 +1,16 @@
 // Test qualified struct type names in function parameters
 // This tests the syntax: fn foo(param:module::StructName -- )
 
-use vec2
+use math
 
 // Function with qualified struct type parameter
-fn print_vec(v:vec2::Vec2 -- ) {
+fn print_vec(v:math::Vec2 -- ) {
 	-> v
 	"Vec2(" print v @x print "," print v @y print ")" print nl
 }
 
 // Function with multiple qualified struct type parameters
-fn add_vecs(a:vec2::Vec2 b:vec2::Vec2 -- sumx:f64 sumy:f64) {
+fn add_vecs(a:math::Vec2 b:math::Vec2 -- sumx:f64 sumy:f64) {
 	-> b
 	-> a
 	a @x b @x +
@@ -18,7 +18,7 @@ fn add_vecs(a:vec2::Vec2 b:vec2::Vec2 -- sumx:f64 sumy:f64) {
 }
 
 // Function with mixed qualified and primitive parameters
-fn scale_x(v:vec2::Vec2 factor:f64 -- result:f64) {
+fn scale_x(v:math::Vec2 factor:f64 -- result:f64) {
 	-> factor
 	-> v
 	v @x factor *
@@ -26,11 +26,11 @@ fn scale_x(v:vec2::Vec2 factor:f64 -- result:f64) {
 
 fn main() {
 	// Test 1: Single qualified parameter
-	vec2::zero -> v1
+	math::vec2_zero -> v1
 	v1 print_vec
 
 	// Test 2: Create non-zero vec using module functions
-	vec2::one -> v2
+	math::vec2_one -> v2
 	v2 print_vec
 
 	// Test 3: Multiple qualified parameters

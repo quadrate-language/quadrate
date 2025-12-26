@@ -1166,13 +1166,19 @@ namespace Qd {
 			}
 			sig.throws = func->throws();
 
-			// For methods, use mangled name and append receiver to consumes
-			// Receiver is at stack top, so it goes at the end of consumes
+			// For methods, use mangled name and insert receiver at beginning of consumes
+			// Receiver is at stack top, validation code expects consumes[0] = receiver
 			if (func->hasReceiver()) {
-				// Append receiver as last consumed parameter (stack top)
-				size_t receiverIdx = sig.consumes.size();
-				sig.consumes.push_back(StackValueType::PTR);
-				sig.parameterStructTypes[receiverIdx] = func->receiverType();
+				// Insert receiver at front of consumes (index 0)
+				sig.consumes.insert(sig.consumes.begin(), StackValueType::PTR);
+
+				// Shift all existing parameterStructTypes indices by +1
+				std::unordered_map<size_t, std::string> newParamStructTypes;
+				for (const auto& entry : sig.parameterStructTypes) {
+					newParamStructTypes[entry.first + 1] = entry.second;
+				}
+				newParamStructTypes[0] = func->receiverType();
+				sig.parameterStructTypes = std::move(newParamStructTypes);
 
 				// Use mangled name for methods
 				std::string mangledName = func->receiverType() + "::" + func->name();

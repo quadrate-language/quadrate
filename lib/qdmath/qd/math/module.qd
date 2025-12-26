@@ -1,4 +1,10 @@
 /// Mathematical functions and constants.
+use vec2.qd
+use vec3.qd
+use vec4.qd
+use quat.qd
+use mat4.qd
+
 /// Mathematical constant Pi (π ≈ 3.14159).
 pub const Pi = 3.141592653589793
 /// Euler's number (e ≈ 2.71828).
@@ -293,3 +299,4 @@ pub fn deg_to_rad(degrees:f64 -- radians:f64) {
 pub fn rad_to_deg(radians:f64 -- degrees:f64) {
 	180 mul 3.141592653589793 div
 }
+

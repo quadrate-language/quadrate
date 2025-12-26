@@ -134,6 +134,7 @@ namespace Qd {
 		void collectModuleConstantValues(IAstNode* node, const std::string& moduleName);
 		void collectModuleStructs(IAstNode* node, std::unordered_map<std::string, bool>& structs);
 		void collectModuleStructFieldTypes(IAstNode* node, const std::string& moduleName);
+		void collectModuleMethods(IAstNode* node, const std::string& moduleName);
 
 		// Helper: Look up struct field types, handling both qualified and unqualified names
 		const std::unordered_map<std::string, StackValueType>* lookupStructFieldTypes(

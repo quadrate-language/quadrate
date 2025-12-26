@@ -1,6 +1,6 @@
 {
   "name": "math",
-  "description": "",
+  "description": "Mathematical functions and constants.",
   "constants": [
     {
       "name": "E",
@@ -10,7 +10,7 @@
     {
       "name": "Pi",
       "value": "3.141592653589793",
-      "description": "Mathematical functions and constants. Mathematical constant Pi (π ≈ 3.14159)."
+      "description": "Mathematical constant Pi (π ≈ 3.14159)."
     },
     {
       "name": "Tau",
@@ -19,7 +19,65 @@
     }
   ],
   "structs": [
-
+    {
+      "name": "Mat4",
+      "description": "4x4 matrix in column-major order (OpenGL compatible).",
+      "fields": [
+        {"name": "m00", "type": "f64", "description": "Element at row 0, column 0"},
+        {"name": "m01", "type": "f64", "description": "Element at row 1, column 0"},
+        {"name": "m02", "type": "f64", "description": "Element at row 2, column 0"},
+        {"name": "m03", "type": "f64", "description": "Element at row 3, column 0"},
+        {"name": "m10", "type": "f64", "description": "Element at row 0, column 1"},
+        {"name": "m11", "type": "f64", "description": "Element at row 1, column 1"},
+        {"name": "m12", "type": "f64", "description": "Element at row 2, column 1"},
+        {"name": "m13", "type": "f64", "description": "Element at row 3, column 1"},
+        {"name": "m20", "type": "f64", "description": "Element at row 0, column 2"},
+        {"name": "m21", "type": "f64", "description": "Element at row 1, column 2"},
+        {"name": "m22", "type": "f64", "description": "Element at row 2, column 2"},
+        {"name": "m23", "type": "f64", "description": "Element at row 3, column 2"},
+        {"name": "m30", "type": "f64", "description": "Element at row 0, column 3"},
+        {"name": "m31", "type": "f64", "description": "Element at row 1, column 3"},
+        {"name": "m32", "type": "f64", "description": "Element at row 2, column 3"},
+        {"name": "m33", "type": "f64", "description": "Element at row 3, column 3"}
+      ]
+    },
+    {
+      "name": "Quat",
+      "description": "Quaternion for representing rotations. Stored as (w, x, y, z) where w is the scalar part.",
+      "fields": [
+        {"name": "w", "type": "f64", "description": "Scalar (real) component"},
+        {"name": "x", "type": "f64", "description": "X component of vector part"},
+        {"name": "y", "type": "f64", "description": "Y component of vector part"},
+        {"name": "z", "type": "f64", "description": "Z component of vector part"}
+      ]
+    },
+    {
+      "name": "Vec2",
+      "description": "2D vector with x and y components.",
+      "fields": [
+        {"name": "x", "type": "f64", "description": "X component"},
+        {"name": "y", "type": "f64", "description": "Y component"}
+      ]
+    },
+    {
+      "name": "Vec3",
+      "description": "3D vector with x, y, and z components.",
+      "fields": [
+        {"name": "x", "type": "f64", "description": "X component"},
+        {"name": "y", "type": "f64", "description": "Y component"},
+        {"name": "z", "type": "f64", "description": "Z component"}
+      ]
+    },
+    {
+      "name": "Vec4",
+      "description": "4D vector with x, y, z, and w components.",
+      "fields": [
+        {"name": "x", "type": "f64", "description": "X component"},
+        {"name": "y", "type": "f64", "description": "Y component"},
+        {"name": "z", "type": "f64", "description": "Z component"},
+        {"name": "w", "type": "f64", "description": "W component"}
+      ]
+    }
   ],
   "functions": [
     {
@@ -41,6 +99,36 @@
       "returns": [{"name": "result", "type": "f64", "description": "Angle in radians [0, π]"}],
       "errors": [],
       "examples": ["1.0 math::acos print  // 0.0"]
+    },
+    {
+      "name": "add",
+      "signature": "(v:Vec2) add(other:Vec2 -- result:Vec2)",
+      "failable": false,
+      "description": "Add another Vec2 to this vector.",
+      "params": [{"name": "other", "type": "Vec2", "description": "Vector to add"}],
+      "returns": [{"name": "result", "type": "Vec2", "description": "Sum of vectors"}],
+      "errors": [],
+      "examples": ["other v add -> sum"]
+    },
+    {
+      "name": "add",
+      "signature": "(v:Vec3) add(other:Vec3 -- result:Vec3)",
+      "failable": false,
+      "description": "Add another Vec3 to this vector.",
+      "params": [{"name": "other", "type": "Vec3", "description": "Vector to add"}],
+      "returns": [{"name": "result", "type": "Vec3", "description": "Sum of vectors"}],
+      "errors": [],
+      "examples": ["other v add -> sum"]
+    },
+    {
+      "name": "add",
+      "signature": "(v:Vec4) add(other:Vec4 -- result:Vec4)",
+      "failable": false,
+      "description": "Add another Vec4 to this vector.",
+      "params": [{"name": "other", "type": "Vec4", "description": "Vector to add"}],
+      "returns": [{"name": "result", "type": "Vec4", "description": "Sum of vectors"}],
+      "errors": [],
+      "examples": ["other v add -> sum"]
     },
     {
       "name": "asin",
@@ -113,6 +201,16 @@
       "examples": ["15.0 0.0 10.0 math::clamp print  // 10.0"]
     },
     {
+      "name": "conjugate",
+      "signature": "(q:Quat) conjugate( -- result:Quat)",
+      "failable": false,
+      "description": "Conjugate of this quaternion.",
+      "params": [],
+      "returns": [{"name": "result", "type": "Quat", "description": "Conjugate quaternion"}],
+      "errors": [],
+      "examples": ["q conjugate -> q_conj"]
+    },
+    {
       "name": "cos",
       "signature": "(x:f64 -- result:f64)",
       "failable": false,
@@ -121,6 +219,16 @@
       "returns": [{"name": "result", "type": "f64", "description": "Cosine value [-1, 1]"}],
       "errors": [],
       "examples": ["0.0 math::cos print  // 1.0"]
+    },
+    {
+      "name": "cross",
+      "signature": "(v:Vec3) cross(other:Vec3 -- result:Vec3)",
+      "failable": false,
+      "description": "Cross product with another Vec3.",
+      "params": [{"name": "other", "type": "Vec3", "description": "Other vector"}],
+      "returns": [{"name": "result", "type": "Vec3", "description": "Cross product (v x other)"}],
+      "errors": [],
+      "examples": ["other v cross -> c"]
     },
     {
       "name": "dec",
@@ -141,6 +249,46 @@
       "returns": [{"name": "radians", "type": "f64", "description": "Angle in radians"}],
       "errors": [],
       "examples": ["180.0 math::deg_to_rad print  // ~3.14159"]
+    },
+    {
+      "name": "dot",
+      "signature": "(q:Quat) dot(other:Quat -- result:f64)",
+      "failable": false,
+      "description": "Dot product with another quaternion.",
+      "params": [{"name": "other", "type": "Quat", "description": "Other quaternion"}],
+      "returns": [{"name": "result", "type": "f64", "description": "Dot product"}],
+      "errors": [],
+      "examples": ["other q dot -> d"]
+    },
+    {
+      "name": "dot",
+      "signature": "(v:Vec2) dot(other:Vec2 -- result:f64)",
+      "failable": false,
+      "description": "Dot product with another Vec2.",
+      "params": [{"name": "other", "type": "Vec2", "description": "Other vector"}],
+      "returns": [{"name": "result", "type": "f64", "description": "Dot product"}],
+      "errors": [],
+      "examples": ["other v dot -> d"]
+    },
+    {
+      "name": "dot",
+      "signature": "(v:Vec3) dot(other:Vec3 -- result:f64)",
+      "failable": false,
+      "description": "Dot product with another Vec3.",
+      "params": [{"name": "other", "type": "Vec3", "description": "Other vector"}],
+      "returns": [{"name": "result", "type": "f64", "description": "Dot product"}],
+      "errors": [],
+      "examples": ["other v dot -> d"]
+    },
+    {
+      "name": "dot",
+      "signature": "(v:Vec4) dot(other:Vec4 -- result:f64)",
+      "failable": false,
+      "description": "Dot product with another Vec4.",
+      "params": [{"name": "other", "type": "Vec4", "description": "Other vector"}],
+      "returns": [{"name": "result", "type": "f64", "description": "Dot product"}],
+      "errors": [],
+      "examples": ["other v dot -> d"]
     },
     {
       "name": "exp",
@@ -213,6 +361,66 @@
       "examples": ["4.0 math::inv print  // 0.25"]
     },
     {
+      "name": "length",
+      "signature": "(q:Quat) length( -- result:f64)",
+      "failable": false,
+      "description": "Length (magnitude) of this quaternion.",
+      "params": [],
+      "returns": [{"name": "result", "type": "f64", "description": "Length of quaternion"}],
+      "errors": [],
+      "examples": ["q length -> len"]
+    },
+    {
+      "name": "length_sq",
+      "signature": "(v:Vec2) length_sq( -- result:f64)",
+      "failable": false,
+      "description": "Squared length of this vector (avoids sqrt).",
+      "params": [],
+      "returns": [{"name": "result", "type": "f64", "description": "Squared length of vector"}],
+      "errors": [],
+      "examples": ["v length_sq -> len_sq"]
+    },
+    {
+      "name": "length_sq",
+      "signature": "(v:Vec3) length_sq( -- result:f64)",
+      "failable": false,
+      "description": "Squared length of this vector (avoids sqrt).",
+      "params": [],
+      "returns": [{"name": "result", "type": "f64", "description": "Squared length of vector"}],
+      "errors": [],
+      "examples": ["v length_sq -> len_sq"]
+    },
+    {
+      "name": "length",
+      "signature": "(v:Vec2) length( -- result:f64)",
+      "failable": false,
+      "description": "Length (magnitude) of this vector.",
+      "params": [],
+      "returns": [{"name": "result", "type": "f64", "description": "Length of vector"}],
+      "errors": [],
+      "examples": ["v length -> len"]
+    },
+    {
+      "name": "length",
+      "signature": "(v:Vec3) length( -- result:f64)",
+      "failable": false,
+      "description": "Length (magnitude) of this vector.",
+      "params": [],
+      "returns": [{"name": "result", "type": "f64", "description": "Length of vector"}],
+      "errors": [],
+      "examples": ["v length -> len"]
+    },
+    {
+      "name": "length",
+      "signature": "(v:Vec4) length( -- result:f64)",
+      "failable": false,
+      "description": "Length (magnitude) of this vector.",
+      "params": [],
+      "returns": [{"name": "result", "type": "f64", "description": "Length of vector"}],
+      "errors": [],
+      "examples": ["v length -> len"]
+    },
+    {
       "name": "lerp",
       "signature": "(a:f64 b:f64 t:f64 -- result:f64)",
       "failable": false,
@@ -221,6 +429,26 @@
       "returns": [{"name": "result", "type": "f64", "description": "a + (b - a) * t"}],
       "errors": [],
       "examples": ["0.0 10.0 0.5 math::lerp print  // 5.0"]
+    },
+    {
+      "name": "lerp",
+      "signature": "(v:Vec2) lerp(other:Vec2 t:f64 -- result:Vec2)",
+      "failable": false,
+      "description": "Linear interpolation to another Vec2.",
+      "params": [{"name": "other", "type": "Vec2", "description": "End vector"}, {"name": "t", "type": "f64", "description": "Interpolation factor (0.0 to 1.0)"}],
+      "returns": [{"name": "result", "type": "Vec2", "description": "Interpolated vector"}],
+      "errors": [],
+      "examples": ["other 0.5 v lerp -> mid"]
+    },
+    {
+      "name": "lerp",
+      "signature": "(v:Vec3) lerp(other:Vec3 t:f64 -- result:Vec3)",
+      "failable": false,
+      "description": "Linear interpolation to another Vec3.",
+      "params": [{"name": "other", "type": "Vec3", "description": "End vector"}, {"name": "t", "type": "f64", "description": "Interpolation factor (0.0 to 1.0)"}],
+      "returns": [{"name": "result", "type": "Vec3", "description": "Interpolated vector"}],
+      "errors": [],
+      "examples": ["other 0.5 v lerp -> mid"]
     },
     {
       "name": "ln",
@@ -253,6 +481,76 @@
       "examples": ["8.0 2.0 math::log print  // 3.0"]
     },
     {
+      "name": "mat4_identity",
+      "signature": "( -- m:Mat4)",
+      "failable": false,
+      "description": "Create identity Mat4.",
+      "params": [],
+      "returns": [{"name": "m", "type": "Mat4", "description": "Identity matrix"}],
+      "errors": [],
+      "examples": ["math::mat4_identity -> m"]
+    },
+    {
+      "name": "mat4_rotation_x",
+      "signature": "(angle:f64 -- m:Mat4)",
+      "failable": false,
+      "description": "Create rotation Mat4 around X axis.",
+      "params": [{"name": "angle", "type": "f64", "description": "Rotation angle in radians"}],
+      "returns": [{"name": "m", "type": "Mat4", "description": "Rotation matrix"}],
+      "errors": [],
+      "examples": ["1.57 math::mat4_rotation_x -> m"]
+    },
+    {
+      "name": "mat4_rotation_y",
+      "signature": "(angle:f64 -- m:Mat4)",
+      "failable": false,
+      "description": "Create rotation Mat4 around Y axis.",
+      "params": [{"name": "angle", "type": "f64", "description": "Rotation angle in radians"}],
+      "returns": [{"name": "m", "type": "Mat4", "description": "Rotation matrix"}],
+      "errors": [],
+      "examples": ["1.57 math::mat4_rotation_y -> m"]
+    },
+    {
+      "name": "mat4_rotation_z",
+      "signature": "(angle:f64 -- m:Mat4)",
+      "failable": false,
+      "description": "Create rotation Mat4 around Z axis.",
+      "params": [{"name": "angle", "type": "f64", "description": "Rotation angle in radians"}],
+      "returns": [{"name": "m", "type": "Mat4", "description": "Rotation matrix"}],
+      "errors": [],
+      "examples": ["1.57 math::mat4_rotation_z -> m"]
+    },
+    {
+      "name": "mat4_scaling",
+      "signature": "(sx:f64 sy:f64 sz:f64 -- m:Mat4)",
+      "failable": false,
+      "description": "Create scale Mat4.",
+      "params": [{"name": "sx", "type": "f64", "description": "X scale factor"}, {"name": "sy", "type": "f64", "description": "Y scale factor"}, {"name": "sz", "type": "f64", "description": "Z scale factor"}],
+      "returns": [{"name": "m", "type": "Mat4", "description": "Scale matrix"}],
+      "errors": [],
+      "examples": ["2.0 2.0 2.0 math::mat4_scaling -> m"]
+    },
+    {
+      "name": "mat4_translation",
+      "signature": "(x:f64 y:f64 z:f64 -- m:Mat4)",
+      "failable": false,
+      "description": "Create translation Mat4.",
+      "params": [{"name": "x", "type": "f64", "description": "X translation"}, {"name": "y", "type": "f64", "description": "Y translation"}, {"name": "z", "type": "f64", "description": "Z translation"}],
+      "returns": [{"name": "m", "type": "Mat4", "description": "Translation matrix"}],
+      "errors": [],
+      "examples": ["1.0 2.0 3.0 math::mat4_translation -> m"]
+    },
+    {
+      "name": "mat4_zero",
+      "signature": "( -- m:Mat4)",
+      "failable": false,
+      "description": "Create zero Mat4.",
+      "params": [],
+      "returns": [{"name": "m", "type": "Mat4", "description": "Zero matrix"}],
+      "errors": [],
+      "examples": ["math::mat4_zero -> m"]
+    },
+    {
       "name": "max",
       "signature": "(a:any b:any -- result:any)",
       "failable": false,
@@ -273,6 +571,76 @@
       "examples": ["3 7 math::min print  // 3"]
     },
     {
+      "name": "mul",
+      "signature": "(q:Quat) mul(other:Quat -- result:Quat)",
+      "failable": false,
+      "description": "Quaternion multiplication.",
+      "params": [{"name": "other", "type": "Quat", "description": "Quaternion to multiply with"}],
+      "returns": [{"name": "result", "type": "Quat", "description": "Product of this and other"}],
+      "errors": [],
+      "examples": ["other q mul -> product"]
+    },
+    {
+      "name": "neg",
+      "signature": "(v:Vec2) neg( -- result:Vec2)",
+      "failable": false,
+      "description": "Negate this vector.",
+      "params": [],
+      "returns": [{"name": "result", "type": "Vec2", "description": "Negated vector"}],
+      "errors": [],
+      "examples": ["v neg -> neg_v"]
+    },
+    {
+      "name": "neg",
+      "signature": "(v:Vec3) neg( -- result:Vec3)",
+      "failable": false,
+      "description": "Negate this vector.",
+      "params": [],
+      "returns": [{"name": "result", "type": "Vec3", "description": "Negated vector"}],
+      "errors": [],
+      "examples": ["v neg -> neg_v"]
+    },
+    {
+      "name": "normalize",
+      "signature": "(q:Quat) normalize( -- result:Quat)",
+      "failable": false,
+      "description": "Normalize this quaternion to unit length.",
+      "params": [],
+      "returns": [{"name": "result", "type": "Quat", "description": "Unit quaternion"}],
+      "errors": [],
+      "examples": ["q normalize -> unit_q"]
+    },
+    {
+      "name": "normalize",
+      "signature": "(v:Vec2) normalize( -- result:Vec2)",
+      "failable": false,
+      "description": "Normalize this vector to unit length.",
+      "params": [],
+      "returns": [{"name": "result", "type": "Vec2", "description": "Unit vector in same direction"}],
+      "errors": [],
+      "examples": ["v normalize -> unit"]
+    },
+    {
+      "name": "normalize",
+      "signature": "(v:Vec3) normalize( -- result:Vec3)",
+      "failable": false,
+      "description": "Normalize this vector to unit length.",
+      "params": [],
+      "returns": [{"name": "result", "type": "Vec3", "description": "Unit vector in same direction"}],
+      "errors": [],
+      "examples": ["v normalize -> unit"]
+    },
+    {
+      "name": "normalize",
+      "signature": "(v:Vec4) normalize( -- result:Vec4)",
+      "failable": false,
+      "description": "Normalize this vector to unit length.",
+      "params": [],
+      "returns": [{"name": "result", "type": "Vec4", "description": "Unit vector in same direction"}],
+      "errors": [],
+      "examples": ["v normalize -> unit"]
+    },
+    {
       "name": "pow",
       "signature": "(base:f64 exp:f64 -- result:f64)",
       "failable": false,
@@ -281,6 +649,16 @@
       "returns": [{"name": "result", "type": "f64", "description": "base raised to exp"}],
       "errors": [],
       "examples": ["2.0 3.0 math::pow print  // 8.0"]
+    },
+    {
+      "name": "quat_identity",
+      "signature": "( -- q:Quat)",
+      "failable": false,
+      "description": "Create identity quaternion (no rotation).",
+      "params": [],
+      "returns": [{"name": "q", "type": "Quat", "description": "Identity quaternion"}],
+      "errors": [],
+      "examples": ["math::quat_identity -> q"]
     },
     {
       "name": "rad_to_deg",
@@ -293,6 +671,16 @@
       "examples": ["3.141592653589793 math::rad_to_deg print  // 180.0"]
     },
     {
+      "name": "reflect",
+      "signature": "(v:Vec3) reflect(n:Vec3 -- result:Vec3)",
+      "failable": false,
+      "description": "Reflect this vector around a normal.",
+      "params": [{"name": "n", "type": "Vec3", "description": "Normal vector"}],
+      "returns": [{"name": "result", "type": "Vec3", "description": "Reflected vector"}],
+      "errors": [],
+      "examples": ["normal v reflect -> reflected"]
+    },
+    {
       "name": "round",
       "signature": "(x:f64 -- result:f64)",
       "failable": false,
@@ -301,6 +689,36 @@
       "returns": [{"name": "result", "type": "f64", "description": "Nearest integer to x"}],
       "errors": [],
       "examples": ["2.5 math::round print  // 3.0"]
+    },
+    {
+      "name": "scale",
+      "signature": "(v:Vec2) scale(s:f64 -- result:Vec2)",
+      "failable": false,
+      "description": "Multiply this vector by a scalar.",
+      "params": [{"name": "s", "type": "f64", "description": "Scalar multiplier"}],
+      "returns": [{"name": "result", "type": "Vec2", "description": "Scaled vector"}],
+      "errors": [],
+      "examples": ["2.0 v scale -> scaled"]
+    },
+    {
+      "name": "scale",
+      "signature": "(v:Vec3) scale(s:f64 -- result:Vec3)",
+      "failable": false,
+      "description": "Multiply this vector by a scalar.",
+      "params": [{"name": "s", "type": "f64", "description": "Scalar multiplier"}],
+      "returns": [{"name": "result", "type": "Vec3", "description": "Scaled vector"}],
+      "errors": [],
+      "examples": ["2.0 v scale -> scaled"]
+    },
+    {
+      "name": "scale",
+      "signature": "(v:Vec4) scale(s:f64 -- result:Vec4)",
+      "failable": false,
+      "description": "Multiply this vector by a scalar.",
+      "params": [{"name": "s", "type": "f64", "description": "Scalar multiplier"}],
+      "returns": [{"name": "result", "type": "Vec4", "description": "Scaled vector"}],
+      "errors": [],
+      "examples": ["2.0 v scale -> scaled"]
     },
     {
       "name": "sin",
@@ -333,6 +751,36 @@
       "examples": ["3.0 math::sq print  // 9.0"]
     },
     {
+      "name": "subtract",
+      "signature": "(v:Vec2) subtract(other:Vec2 -- result:Vec2)",
+      "failable": false,
+      "description": "Subtract another Vec2 from this vector.",
+      "params": [{"name": "other", "type": "Vec2", "description": "Vector to subtract"}],
+      "returns": [{"name": "result", "type": "Vec2", "description": "Difference of vectors"}],
+      "errors": [],
+      "examples": ["other v subtract -> diff"]
+    },
+    {
+      "name": "subtract",
+      "signature": "(v:Vec3) subtract(other:Vec3 -- result:Vec3)",
+      "failable": false,
+      "description": "Subtract another Vec3 from this vector.",
+      "params": [{"name": "other", "type": "Vec3", "description": "Vector to subtract"}],
+      "returns": [{"name": "result", "type": "Vec3", "description": "Difference of vectors"}],
+      "errors": [],
+      "examples": ["other v subtract -> diff"]
+    },
+    {
+      "name": "subtract",
+      "signature": "(v:Vec4) subtract(other:Vec4 -- result:Vec4)",
+      "failable": false,
+      "description": "Subtract another Vec4 from this vector.",
+      "params": [{"name": "other", "type": "Vec4", "description": "Vector to subtract"}],
+      "returns": [{"name": "result", "type": "Vec4", "description": "Difference of vectors"}],
+      "errors": [],
+      "examples": ["other v subtract -> diff"]
+    },
+    {
       "name": "tan",
       "signature": "(x:f64 -- result:f64)",
       "failable": false,
@@ -341,6 +789,106 @@
       "returns": [{"name": "result", "type": "f64", "description": "Tangent value"}],
       "errors": [],
       "examples": ["0.0 math::tan print  // 0.0"]
+    },
+    {
+      "name": "transpose",
+      "signature": "(m:Mat4) transpose( -- result:Mat4)",
+      "failable": false,
+      "description": "Transpose this matrix.",
+      "params": [],
+      "returns": [{"name": "result", "type": "Mat4", "description": "Transposed matrix"}],
+      "errors": [],
+      "examples": ["m transpose -> m_t"]
+    },
+    {
+      "name": "vec2_one",
+      "signature": "( -- v:Vec2)",
+      "failable": false,
+      "description": "Create a Vec2 with all components set to one.",
+      "params": [],
+      "returns": [{"name": "v", "type": "Vec2", "description": "One vector (1, 1)"}],
+      "errors": [],
+      "examples": ["math::vec2_one -> v"]
+    },
+    {
+      "name": "vec2_zero",
+      "signature": "( -- v:Vec2)",
+      "failable": false,
+      "description": "Create a Vec2 with all components set to zero.",
+      "params": [],
+      "returns": [{"name": "v", "type": "Vec2", "description": "Zero vector (0, 0)"}],
+      "errors": [],
+      "examples": ["math::vec2_zero -> v"]
+    },
+    {
+      "name": "vec3_one",
+      "signature": "( -- v:Vec3)",
+      "failable": false,
+      "description": "Create a Vec3 with all components set to one.",
+      "params": [],
+      "returns": [{"name": "v", "type": "Vec3", "description": "One vector (1, 1, 1)"}],
+      "errors": [],
+      "examples": ["math::vec3_one -> v"]
+    },
+    {
+      "name": "vec3_unit_x",
+      "signature": "( -- v:Vec3)",
+      "failable": false,
+      "description": "Unit vector along the X axis.",
+      "params": [],
+      "returns": [{"name": "v", "type": "Vec3", "description": "Unit X vector (1, 0, 0)"}],
+      "errors": [],
+      "examples": ["math::vec3_unit_x -> v"]
+    },
+    {
+      "name": "vec3_unit_y",
+      "signature": "( -- v:Vec3)",
+      "failable": false,
+      "description": "Unit vector along the Y axis.",
+      "params": [],
+      "returns": [{"name": "v", "type": "Vec3", "description": "Unit Y vector (0, 1, 0)"}],
+      "errors": [],
+      "examples": ["math::vec3_unit_y -> v"]
+    },
+    {
+      "name": "vec3_unit_z",
+      "signature": "( -- v:Vec3)",
+      "failable": false,
+      "description": "Unit vector along the Z axis.",
+      "params": [],
+      "returns": [{"name": "v", "type": "Vec3", "description": "Unit Z vector (0, 0, 1)"}],
+      "errors": [],
+      "examples": ["math::vec3_unit_z -> v"]
+    },
+    {
+      "name": "vec3_zero",
+      "signature": "( -- v:Vec3)",
+      "failable": false,
+      "description": "Create a Vec3 with all components set to zero.",
+      "params": [],
+      "returns": [{"name": "v", "type": "Vec3", "description": "Zero vector (0, 0, 0)"}],
+      "errors": [],
+      "examples": ["math::vec3_zero -> v"]
+    },
+    {
+      "name": "vec4_one",
+      "signature": "( -- v:Vec4)",
+      "failable": false,
+      "description": "Create a Vec4 with all components set to one.",
+      "params": [],
+      "returns": [{"name": "v", "type": "Vec4", "description": "One vector (1, 1, 1, 1)"}],
+      "errors": [],
+      "examples": ["math::vec4_one -> v"]
+    },
+    {
+      "name": "vec4_zero",
+      "signature": "( -- v:Vec4)",
+      "failable": false,
+      "description": "Create a Vec4 with all components set to zero.",
+      "params": [],
+      "returns": [{"name": "v", "type": "Vec4", "description": "Zero vector (0, 0, 0, 0)"}],
+      "errors": [],
+      "examples": ["math::vec4_zero -> v"]
     },
     {
       "name": "within",

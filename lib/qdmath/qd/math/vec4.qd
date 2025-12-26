@@ -1,0 +1,109 @@
+// ============================================================================
+// Vec4 - 4D vector math operations (homogeneous coordinates)
+// ============================================================================
+
+/// 4D vector with x, y, z, and w components.
+/// @field x f64 X component
+/// @field y f64 Y component
+/// @field z f64 Z component
+/// @field w f64 W component
+pub struct Vec4 {
+	x:f64
+	y:f64
+	z:f64
+	w:f64
+}
+
+/// Create a Vec4 with all components set to zero.
+/// @return v Vec4 Zero vector (0, 0, 0, 0)
+/// @example math::vec4_zero -> v
+pub fn vec4_zero( -- v:Vec4) {
+	Vec4 {
+		x = 0.0
+		y = 0.0
+		z = 0.0
+		w = 0.0
+	}
+}
+
+/// Create a Vec4 with all components set to one.
+/// @return v Vec4 One vector (1, 1, 1, 1)
+/// @example math::vec4_one -> v
+pub fn vec4_one( -- v:Vec4) {
+	Vec4 {
+		x = 1.0
+		y = 1.0
+		z = 1.0
+		w = 1.0
+	}
+}
+
+/// Add another Vec4 to this vector.
+/// @param other Vec4 Vector to add
+/// @return result Vec4 Sum of vectors
+/// @example other v add -> sum
+pub fn (v:Vec4) add(other:Vec4 -- result:Vec4) {
+	-> other
+	Vec4 {
+		x = v @x other @x +
+		y = v @y other @y +
+		z = v @z other @z +
+		w = v @w other @w +
+	}
+}
+
+/// Subtract another Vec4 from this vector.
+/// @param other Vec4 Vector to subtract
+/// @return result Vec4 Difference of vectors
+/// @example other v subtract -> diff
+pub fn (v:Vec4) subtract(other:Vec4 -- result:Vec4) {
+	-> other
+	Vec4 {
+		x = v @x other @x -
+		y = v @y other @y -
+		z = v @z other @z -
+		w = v @w other @w -
+	}
+}
+
+/// Multiply this vector by a scalar.
+/// @param s f64 Scalar multiplier
+/// @return result Vec4 Scaled vector
+/// @example 2.0 v scale -> scaled
+pub fn (v:Vec4) scale(s:f64 -- result:Vec4) {
+	-> s
+	Vec4 {
+		x = v @x s *
+		y = v @y s *
+		z = v @z s *
+		w = v @w s *
+	}
+}
+
+/// Dot product with another Vec4.
+/// @param other Vec4 Other vector
+/// @return result f64 Dot product
+/// @example other v dot -> d
+pub fn (v:Vec4) dot(other:Vec4 -- result:f64) {
+	-> other
+	v @x other @x * v @y other @y * + v @z other @z * + v @w other @w * +
+}
+
+/// Length (magnitude) of this vector.
+/// @return result f64 Length of vector
+/// @example v length -> len
+pub fn (v:Vec4) length( -- result:f64) {
+	v @x v @x * v @y v @y * + v @z v @z * + v @w v @w * + math::sqrt
+}
+
+/// Normalize this vector to unit length.
+/// @return result Vec4 Unit vector in same direction
+/// @example v normalize -> unit
+pub fn (v:Vec4) normalize( -- result:Vec4) {
+	v length -> mag
+	mag 0.0 gt if {
+		1.0 mag / v scale
+	} else {
+		vec4_zero
+	}
+}

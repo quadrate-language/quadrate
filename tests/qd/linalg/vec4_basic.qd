@@ -1,5 +1,5 @@
 // Test Vec4 construction and basic operations
-use vec4
+use math
 
 fn main() {
 	// Test struct literal constructor
@@ -11,7 +11,7 @@ fn main() {
 	v @w print nl
 
 	// Test zero
-	vec4::zero -> z
+	math::vec4_zero -> z
 	"zero:" print nl
 	z @x print nl
 	z @y print nl
@@ -19,46 +19,46 @@ fn main() {
 	z @w print nl
 
 	// Test one
-	vec4::one -> o
+	math::vec4_one -> o
 	"one:" print nl
 	o @x print nl
 	o @y print nl
 	o @z print nl
 	o @w print nl
 
-	// Test add
+	// Test add (method syntax: param receiver method)
 	Vec4 { x = 1.0 y = 2.0 z = 3.0 w = 4.0 } -> a
 	Vec4 { x = 5.0 y = 6.0 z = 7.0 w = 8.0 } -> b
-	a b vec4::add -> c
+	b a add -> c  // a.add(b) = a + b
 	"add:" print nl
 	c @x print nl
 	c @y print nl
 	c @z print nl
 	c @w print nl
 
-	// Test subtract
+	// Test subtract (method syntax)
 	Vec4 { x = 10.0 y = 12.0 z = 14.0 w = 16.0 } -> d
 	Vec4 { x = 3.0 y = 4.0 z = 5.0 w = 6.0 } -> e
-	d e vec4::subtract -> f
+	e d subtract -> f  // d.subtract(e) = d - e
 	"sub:" print nl
 	f @x print nl
 	f @y print nl
 	f @z print nl
 	f @w print nl
 
-	// Test scale
+	// Test scale (method syntax)
 	Vec4 { x = 2.0 y = 3.0 z = 4.0 w = 5.0 } -> g
-	g 2.0 vec4::scale -> h
+	2.0 g scale -> h  // g.scale(2.0)
 	"scale:" print nl
 	h @x print nl
 	h @y print nl
 	h @z print nl
 	h @w print nl
 
-	// Test dot
+	// Test dot (method syntax)
 	Vec4 { x = 1.0 y = 2.0 z = 3.0 w = 4.0 } -> i
 	Vec4 { x = 5.0 y = 6.0 z = 7.0 w = 8.0 } -> j
-	i j vec4::dot -> dot
+	j i dot -> dot_result  // i.dot(j)
 	"dot:" print nl
-	dot print nl
+	dot_result print nl
 }

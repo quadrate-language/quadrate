@@ -64,12 +64,31 @@ namespace Qd {
 			return !mTypeParam.empty();
 		}
 
+		// Method call support - for when an instruction name matches a struct method
+		void setIsMethodCall(bool isMethod) {
+			mIsMethodCall = isMethod;
+		}
+
+		bool isMethodCall() const {
+			return mIsMethodCall;
+		}
+
+		void setReceiverType(const std::string& type) {
+			mReceiverType = type;
+		}
+
+		const std::string& receiverType() const {
+			return mReceiverType;
+		}
+
 	private:
 		std::string mName;
 		std::string mTypeParam;
 		IAstNode* mParent;
 		size_t mLine;
 		size_t mColumn;
+		bool mIsMethodCall = false;
+		std::string mReceiverType;
 	};
 }
 

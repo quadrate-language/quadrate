@@ -35,13 +35,11 @@ declare -A STDLIB_MODULES=(
     ["io"]="lib/qdio/qd/io/module.qd"
     ["json"]="lib/qdjson/qd/json/module.qd"
     ["limits"]="lib/qdlimits/qd/limits/module.qd"
-    ["mat4"]="lib/qdmat4/qd/mat4/module.qd"
     ["math"]="lib/qdmath/qd/math/module.qd"
     ["mem"]="lib/qdmem/qd/mem/module.qd"
     ["net"]="lib/qdnet/qd/net/module.qd"
     ["os"]="lib/qdos/qd/os/module.qd"
     ["path"]="lib/qdpath/qd/path/module.qd"
-    ["quat"]="lib/qdquat/qd/quat/module.qd"
     ["rand"]="lib/qdrand/qd/rand/module.qd"
     ["regex"]="lib/qdregex/qd/regex/module.qd"
     ["sb"]="lib/qdsb/qd/sb/module.qd"
@@ -55,9 +53,6 @@ declare -A STDLIB_MODULES=(
     ["unicode"]="lib/qdunicode/qd/unicode/module.qd"
     ["uri"]="lib/qduri/qd/uri/module.qd"
     ["uuid"]="lib/qduuid/qd/uuid/module.qd"
-    ["vec2"]="lib/qdvec2/qd/vec2/module.qd"
-    ["vec3"]="lib/qdvec3/qd/vec3/module.qd"
-    ["vec4"]="lib/qdvec4/qd/vec4/module.qd"
 )
 
 # Get module name from file path
@@ -75,6 +70,28 @@ json_escape() {
     s="${s//$'\n'/\\n}"
     s="${s//$'\t'/\\t}"
     echo "$s"
+}
+
+# Expand use *.qd includes and concatenate all content
+expand_includes() {
+    local filepath="$1"
+    local dir
+    dir=$(dirname "$filepath")
+
+    while IFS= read -r line || [[ -n "$line" ]]; do
+        local trimmed="${line#"${line%%[![:space:]]*}"}"
+        trimmed="${trimmed%"${trimmed##*[![:space:]]}"}"
+
+        # Handle use *.qd includes
+        if [[ "$trimmed" =~ ^use[[:space:]]+([a-zA-Z0-9_]+\.qd) ]]; then
+            local include_file="$dir/${BASH_REMATCH[1]}"
+            if [[ -f "$include_file" ]]; then
+                expand_includes "$include_file"
+            fi
+        else
+            echo "$line"
+        fi
+    done < "$filepath"
 }
 
 # Parse a single module file and generate markdown + JSON
@@ -102,7 +119,7 @@ parse_module() {
     local struct_fields=""
     local struct_doc_fields=""
 
-    # Read file line by line
+    # Expand includes and parse the combined content
     while IFS= read -r line || [[ -n "$line" ]]; do
         local trimmed="${line#"${line%%[![:space:]]*}"}"
         trimmed="${trimmed%"${trimmed##*[![:space:]]}"}"
@@ -136,12 +153,13 @@ parse_module() {
             is_public=1
         fi
 
-        # Parse function
-        local fn_regex='fn[[:space:]]+([a-zA-Z_][a-zA-Z0-9_]*)[[:space:]]*\(([^)]*)\)[[:space:]]*(!?)'
+        # Parse function (including method syntax)
+        local fn_regex='fn[[:space:]]+(\([^)]*\)[[:space:]]+)?([a-zA-Z_][a-zA-Z0-9_]*)[[:space:]]*\(([^)]*)\)[[:space:]]*(!?)'
         if [[ "$trimmed" =~ $fn_regex ]]; then
-            local fn_name="${BASH_REMATCH[1]}"
-            local fn_sig="${BASH_REMATCH[2]}"
-            local fn_failable="${BASH_REMATCH[3]}"
+            local fn_receiver="${BASH_REMATCH[1]}"
+            local fn_name="${BASH_REMATCH[2]}"
+            local fn_sig="${BASH_REMATCH[3]}"
+            local fn_failable="${BASH_REMATCH[4]}"
 
             if [[ $is_public -eq 1 ]]; then
                 # Parse doc comment
@@ -180,6 +198,12 @@ parse_module() {
                     sig_str="()"
                 fi
 
+                # For methods, prepend receiver to signature display
+                if [[ -n "$fn_receiver" ]]; then
+                    fn_receiver="${fn_receiver%% }"
+                    sig_str="$fn_receiver $fn_name$sig_str"
+                fi
+
                 functions+=("$fn_name|$sig_str|$fn_failable|$desc|$params|$returns|$errors|$examples")
             fi
             doc_buffer=()
@@ -215,7 +239,6 @@ parse_module() {
                         local f_name="${BASH_REMATCH[1]}"
                         local f_type="${BASH_REMATCH[2]}"
                         local f_desc="${BASH_REMATCH[3]}"
-                        # Use § as field separator (unlikely in descriptions)
                         struct_doc_fields+="${f_name}~${f_type}~${f_desc}§"
                     elif [[ ! "$doc_line" =~ ^@ ]]; then
                         if [[ -n "$struct_desc" ]]; then
@@ -228,7 +251,6 @@ parse_module() {
                 if [[ -n "$struct_doc_fields" ]]; then
                     structs+=("$struct_name|$struct_desc|$struct_doc_fields")
                 else
-                    # Parse fields from struct body
                     in_struct=1
                     struct_fields=""
                 fi
@@ -243,7 +265,6 @@ parse_module() {
             elif [[ "$trimmed" =~ ^([a-zA-Z_][a-zA-Z0-9_]*)[[:space:]]*:[[:space:]]*([a-zA-Z0-9_]+) ]]; then
                 local f_name="${BASH_REMATCH[1]}"
                 local f_type="${BASH_REMATCH[2]}"
-                # Use § as field separator, ~ for internal separator
                 struct_fields+="${f_name}~${f_type}~§"
             fi
 
@@ -259,7 +280,7 @@ parse_module() {
             doc_buffer=()
         fi
 
-    done < "$filepath"
+    done < <(expand_includes "$filepath")
 
     # Generate markdown
     generate_markdown "$module_name" module_desc constants structs functions

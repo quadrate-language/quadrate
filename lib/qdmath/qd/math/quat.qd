@@ -1,0 +1,88 @@
+// ============================================================================
+// Quat - Quaternion math operations for 3D rotations
+// ============================================================================
+
+/// Quaternion for representing rotations.
+/// Stored as (w, x, y, z) where w is the scalar part.
+/// @field w f64 Scalar (real) component
+/// @field x f64 X component of vector part
+/// @field y f64 Y component of vector part
+/// @field z f64 Z component of vector part
+pub struct Quat {
+	w:f64
+	x:f64
+	y:f64
+	z:f64
+}
+
+/// Create identity quaternion (no rotation).
+/// @return q Quat Identity quaternion
+/// @example math::quat_identity -> q
+pub fn quat_identity( -- q:Quat) {
+	Quat {
+		w = 1.0
+		x = 0.0
+		y = 0.0
+		z = 0.0
+	}
+}
+
+/// Quaternion multiplication.
+/// @param other Quat Quaternion to multiply with
+/// @return result Quat Product of this and other
+/// @example other q mul -> product
+pub fn (q:Quat) mul(other:Quat -- result:Quat) {
+	-> other
+	Quat {
+		w = q @w other @w * q @x other @x * - q @y other @y * - q @z other @z * -
+		x = q @w other @x * q @x other @w * + q @y other @z * + q @z other @y * -
+		y = q @w other @y * q @y other @w * + q @z other @x * + q @x other @z * -
+		z = q @w other @z * q @z other @w * + q @x other @y * + q @y other @x * -
+	}
+}
+
+/// Conjugate of this quaternion.
+/// @return result Quat Conjugate quaternion
+/// @example q conjugate -> q_conj
+pub fn (q:Quat) conjugate( -- result:Quat) {
+	Quat {
+		w = q @w
+		x = q @x neg
+		y = q @y neg
+		z = q @z neg
+	}
+}
+
+/// Length (magnitude) of this quaternion.
+/// @return result f64 Length of quaternion
+/// @example q length -> len
+pub fn (q:Quat) length( -- result:f64) {
+	q @w q @w * q @x q @x * + q @y q @y * + q @z q @z * + math::sqrt
+}
+
+/// Normalize this quaternion to unit length.
+/// @return result Quat Unit quaternion
+/// @example q normalize -> unit_q
+pub fn (q:Quat) normalize( -- result:Quat) {
+	q length -> mag
+	mag 0.0 gt if {
+		1.0 mag / -> inv_mag
+		Quat {
+			w = q @w inv_mag *
+			x = q @x inv_mag *
+			y = q @y inv_mag *
+			z = q @z inv_mag *
+		}
+	} else {
+		quat_identity
+	}
+}
+
+/// Dot product with another quaternion.
+/// @param other Quat Other quaternion
+/// @return result f64 Dot product
+/// @example other q dot -> d
+pub fn (q:Quat) dot(other:Quat -- result:f64) {
+	-> other
+	q @w other @w * q @x other @x * + q @y other @y * + q @z other @z * +
+}

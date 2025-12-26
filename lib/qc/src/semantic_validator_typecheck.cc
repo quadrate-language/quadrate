@@ -262,7 +262,20 @@ namespace Qd {
 				AstNodeStructConstruction* construct = static_cast<AstNodeStructConstruction*>(child);
 				const std::string& structName = construct->structName();
 				typeStack.push_back(StackValueType::PTR);
-				structTypeStack.push_back(structName);
+
+				// Check if struct is from a module - use qualified name for method resolution
+				std::string qualifiedStructName = structName;
+				if (structName.find("::") == std::string::npos) {
+					// Unqualified name - check if it's from a module
+					for (const auto& moduleEntry : mModuleStructs) {
+						const auto& structs = moduleEntry.second;
+						if (structs.find(structName) != structs.end() && structs.at(structName)) {
+							qualifiedStructName = moduleEntry.first + "::" + structName;
+							break;
+						}
+					}
+				}
+				structTypeStack.push_back(qualifiedStructName);
 				break;
 			}
 
@@ -451,9 +464,61 @@ namespace Qd {
 					} else {
 						structTypeStack.push_back("");
 					}
-				} else {
-					typeCheckInstruction(child, instrName.c_str(), typeStack, structTypeStack);
+					break;
 				}
+
+				// Check if this is a method call on a struct (stack top is receiver)
+				// Methods take precedence over builtin instructions when stack top matches
+				std::string receiverStructType;
+				if (!typeStack.empty() && typeStack.back() == StackValueType::PTR && !structTypeStack.empty()) {
+					receiverStructType = structTypeStack.back();
+				}
+				if (!receiverStructType.empty() && mStructMethods.count(receiverStructType) &&
+						mStructMethods.at(receiverStructType).count(instrName)) {
+					// This is a method call - look up the signature with mangled name
+					std::string mangledName = receiverStructType + "::" + instrName;
+					auto methodSigIt = mFunctionSignatures.find(mangledName);
+					if (methodSigIt != mFunctionSignatures.end()) {
+						const FunctionSignature& sig = methodSigIt->second;
+
+						// The receiver is already on the stack - it's consumed implicitly
+						// Check if stack has enough values for additional parameters (excluding receiver)
+						size_t additionalParams = sig.consumes.size() > 0 ? sig.consumes.size() - 1 : 0;
+						if (typeStack.size() < 1 + additionalParams) {
+							std::string errorMsg = "Type error in method call '";
+							errorMsg += instrName;
+							errorMsg += "': Stack underflow (requires receiver + ";
+							errorMsg += std::to_string(additionalParams);
+							errorMsg += " values)";
+							reportError(instr, errorMsg.c_str());
+							break;
+						}
+
+						// Pop all consumed values (receiver + params)
+						for (size_t j = 0; j < sig.consumes.size(); j++) {
+							typeStack.pop_back();
+							if (!structTypeStack.empty()) {
+								structTypeStack.pop_back();
+							}
+						}
+
+						// Push return values
+						for (size_t idx = 0; idx < sig.produces.size(); idx++) {
+							typeStack.push_back(sig.produces[idx]);
+							auto structIt = sig.producesStructTypes.find(idx);
+							structTypeStack.push_back(
+									structIt != sig.producesStructTypes.end() ? structIt->second : "");
+						}
+
+						// Mark instruction as a method call for code generation
+						instr->setIsMethodCall(true);
+						instr->setReceiverType(receiverStructType);
+						break;
+					}
+				}
+
+				// Fall back to builtin instruction handling
+				typeCheckInstruction(child, instrName.c_str(), typeStack, structTypeStack);
 				break;
 			}
 
@@ -795,7 +860,19 @@ namespace Qd {
 								// Nested struct construction
 								AstNodeStructConstruction* nested = static_cast<AstNodeStructConstruction*>(exprNode);
 								exprTypeStack.push_back(StackValueType::PTR);
-								exprStructTypeStack.push_back(nested->structName());
+								// Qualify struct name if from module
+								std::string nestedStructName = nested->structName();
+								if (nestedStructName.find("::") == std::string::npos) {
+									for (const auto& moduleEntry : mModuleStructs) {
+										const auto& structs = moduleEntry.second;
+										if (structs.find(nestedStructName) != structs.end() &&
+												structs.at(nestedStructName)) {
+											nestedStructName = moduleEntry.first + "::" + nestedStructName;
+											break;
+										}
+									}
+								}
+								exprStructTypeStack.push_back(nestedStructName);
 								break;
 							}
 							case IAstNode::Type::INSTRUCTION: {
@@ -888,7 +965,21 @@ namespace Qd {
 
 				// Push pointer type for the constructed struct
 				typeStack.push_back(StackValueType::PTR);
-				structTypeStack.push_back(name);
+				// Use qualified name for method resolution (already computed in lookupKey for module structs)
+				if (lookupKey.find("::") != std::string::npos) {
+					structTypeStack.push_back(lookupKey);
+				} else {
+					// Check if struct is from a module - use qualified name
+					std::string qualifiedStructName = name;
+					for (const auto& moduleEntry : mModuleStructs) {
+						const auto& structs = moduleEntry.second;
+						if (structs.find(name) != structs.end() && structs.at(name)) {
+							qualifiedStructName = moduleEntry.first + "::" + name;
+							break;
+						}
+					}
+					structTypeStack.push_back(qualifiedStructName);
+				}
 				break;
 			}
 
@@ -1206,8 +1297,11 @@ namespace Qd {
 						}
 
 						// Validate parameter types (skip receiver at index 0)
+						// Stack order: [param1, param2, ..., paramN, receiver]
+						// Signature: [receiver, param1, param2, ..., paramN]
+						// For sig index j (1 to N), stack index is: size - consumes.size() + (j-1)
 						for (size_t j = 1; j < sig.consumes.size(); j++) {
-							size_t stackIdx = typeStack.size() - sig.consumes.size() + j;
+							size_t stackIdx = typeStack.size() - sig.consumes.size() + (j - 1);
 							StackValueType expected = sig.consumes[j];
 							StackValueType actual = typeStack[stackIdx];
 
@@ -2074,8 +2168,11 @@ namespace Qd {
 						}
 
 						// Validate parameter types (skip receiver at index 0)
+						// Stack order: [param1, param2, ..., paramN, receiver]
+						// Signature: [receiver, param1, param2, ..., paramN]
+						// For sig index j (1 to N), stack index is: size - consumes.size() + (j-1)
 						for (size_t j = 1; j < sig.consumes.size(); j++) {
-							size_t stackIdx = typeStack.size() - sig.consumes.size() + j;
+							size_t stackIdx = typeStack.size() - sig.consumes.size() + (j - 1);
 							StackValueType expected = sig.consumes[j];
 							StackValueType actual = typeStack[stackIdx];
 

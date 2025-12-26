@@ -597,6 +597,9 @@ namespace Qd {
 		// Also collect struct field types so field access validation works
 		collectModuleStructFieldTypes(moduleAstRoot, moduleName);
 
+		// Collect struct methods from the module
+		collectModuleMethods(moduleAstRoot, moduleName);
+
 		// Collect public imported functions from the module
 		std::unordered_map<std::string, ImportedFunctionInfo> moduleImports;
 		collectModuleImportedFunctions(moduleAstRoot, moduleName, moduleImports);
@@ -673,6 +676,41 @@ namespace Qd {
 		// Recursively process children
 		for (size_t i = 0; i < node->childCount(); i++) {
 			collectModuleStructs(node->child(i), structs);
+		}
+	}
+
+	void SemanticValidator::collectModuleMethods(IAstNode* node, const std::string& moduleName) {
+		if (!node) {
+			return;
+		}
+
+		// If this is a function declaration with a receiver, it's a struct method
+		if (node->type() == IAstNode::Type::FUNCTION_DECLARATION) {
+			AstNodeFunctionDeclaration* func = static_cast<AstNodeFunctionDeclaration*>(node);
+			if (func->hasReceiver()) {
+				std::string structType = func->receiverType();
+				std::string methodName = func->name();
+				bool isPublic = func->isPublic();
+
+				// Store in mModuleStructMethods: module -> structType -> (methodName -> isPublic)
+				mModuleStructMethods[moduleName][structType][methodName] = isPublic;
+
+				// Register in mStructMethods with qualified struct type
+				// so method resolution works: "moduleName::StructType" -> methodName -> isPublic
+				std::string qualifiedStructType = moduleName + "::" + structType;
+				mStructMethods[qualifiedStructType][methodName] = isPublic;
+				mStructMethodDecls[qualifiedStructType][methodName] = func;
+
+				// Also register with unqualified struct type for intra-module method calls
+				// This allows a module to call its own methods when struct type is not yet qualified
+				mStructMethods[structType][methodName] = isPublic;
+				mStructMethodDecls[structType][methodName] = func;
+			}
+		}
+
+		// Recursively process children
+		for (size_t i = 0; i < node->childCount(); i++) {
+			collectModuleMethods(node->child(i), moduleName);
 		}
 	}
 
@@ -882,8 +920,37 @@ namespace Qd {
 				sig.produces = typeStack;
 			}
 			sig.throws = func->throws();
-			std::string qualifiedName = moduleName + "::" + func->name();
-			mFunctionSignatures[qualifiedName] = sig;
+
+			// For methods, include receiver as implicit first parameter and use mangled name
+			if (func->hasReceiver()) {
+				// Insert receiver as first consumed parameter
+				sig.consumes.insert(sig.consumes.begin(), StackValueType::PTR);
+				// Track receiver struct type (shift other indices)
+				std::unordered_map<size_t, std::string> newParamStructTypes;
+				for (const auto& entry : sig.parameterStructTypes) {
+					newParamStructTypes[entry.first + 1] = entry.second;
+				}
+				std::string receiverType = func->receiverType();
+				if (receiverType.find("::") == std::string::npos) {
+					newParamStructTypes[0] = moduleName + "::" + receiverType;
+				} else {
+					newParamStructTypes[0] = receiverType;
+				}
+				sig.parameterStructTypes = newParamStructTypes;
+
+				// Use mangled name: moduleName::StructType::methodName
+				std::string qualifiedName = moduleName + "::" + func->receiverType() + "::" + func->name();
+				mFunctionSignatures[qualifiedName] = sig;
+
+				// Also register with unqualified struct type for intra-module method calls
+				std::string unqualifiedName = func->receiverType() + "::" + func->name();
+				if (unqualifiedName != qualifiedName) {
+					mFunctionSignatures[unqualifiedName] = sig;
+				}
+			} else {
+				std::string qualifiedName = moduleName + "::" + func->name();
+				mFunctionSignatures[qualifiedName] = sig;
+			}
 		}
 		// Analyze imported functions and register them with the module's namespace
 		else if (node->type() == IAstNode::Type::IMPORT_STATEMENT) {

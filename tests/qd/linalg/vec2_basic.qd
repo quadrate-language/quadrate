@@ -1,5 +1,5 @@
 // Test Vec2 construction and basic operations
-use vec2
+use math
 
 fn main() {
 	// Test struct literal constructor
@@ -9,51 +9,64 @@ fn main() {
 	v @y print nl
 
 	// Test zero
-	vec2::zero -> z
+	math::vec2_zero -> z
 	"zero:" print nl
 	z @x print nl
 	z @y print nl
 
 	// Test one
-	vec2::one -> o
+	math::vec2_one -> o
 	"one:" print nl
 	o @x print nl
 	o @y print nl
 
-	// Test add
+	// Test add (method syntax: param receiver method)
 	Vec2 { x = 1.0 y = 2.0 } -> a
 	Vec2 { x = 3.0 y = 4.0 } -> b
-	a b vec2::add -> c
+	b a add -> c  // a.add(b) = a + b
 	"add:" print nl
 	c @x print nl
 	c @y print nl
 
-	// Test subtract
+	// Test subtract (method syntax: param receiver method)
 	Vec2 { x = 5.0 y = 7.0 } -> d
 	Vec2 { x = 2.0 y = 3.0 } -> e
-	d e vec2::subtract -> f
+	e d subtract -> f  // d.subtract(e) = d - e
 	"sub:" print nl
 	f @x print nl
 	f @y print nl
 
-	// Test scale
+	// Test scale (method syntax: param receiver method)
 	Vec2 { x = 2.0 y = 3.0 } -> g
-	g 2.0 vec2::scale -> h
+	2.0 g scale -> h  // g.scale(2.0)
 	"scale:" print nl
 	h @x print nl
 	h @y print nl
 
-	// Test dot
+	// Test dot (method syntax: param receiver method)
 	Vec2 { x = 1.0 y = 2.0 } -> i
 	Vec2 { x = 3.0 y = 4.0 } -> j
-	i j vec2::dot -> dot
+	j i dot -> dot_result  // i.dot(j)
 	"dot:" print nl
-	dot print nl
+	dot_result print nl
 
-	// Test neg
+	// Test neg (method syntax: receiver method)
 	Vec2 { x = 3.0 y = 4.0 } -> k
-	k vec2::neg -> l
+	k neg -> l  // k.neg()
 	"neg:" print nl
 	l @x print nl
 	l @y print nl
+
+	// Test length (method syntax: receiver method)
+	Vec2 { x = 3.0 y = 4.0 } -> m
+	m length -> len  // m.length() = 5
+	"length:" print nl
+	len print nl
+
+	// Test normalize (method syntax: receiver method)
+	Vec2 { x = 3.0 y = 4.0 } -> n
+	n normalize -> norm  // n.normalize()
+	"normalize:" print nl
+	norm @x print nl
+	norm @y print nl
 }

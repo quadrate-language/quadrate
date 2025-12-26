@@ -545,10 +545,22 @@ namespace Qd {
 			}
 
 			// Register the function with appropriate scope
-			// For methods, register with mangled name: ReceiverType::methodName
+			// For methods, register with mangled name: module::ReceiverType::methodName
 			std::string registerName;
 			if (funcNode->hasReceiver()) {
-				registerName = funcNode->receiverType() + "::" + funcNode->name();
+				// Qualify struct type with module prefix for methods from modules
+				std::string qualifiedReceiverType = funcNode->receiverType();
+				if (namePrefix != "main" && qualifiedReceiverType.find("::") == std::string::npos) {
+					qualifiedReceiverType = namePrefix + "::" + qualifiedReceiverType;
+				}
+				registerName = qualifiedReceiverType + "::" + funcNode->name();
+
+				// Also register with unqualified struct type for intra-module method calls
+				std::string unqualifiedRegisterName = funcNode->receiverType() + "::" + funcNode->name();
+				if (unqualifiedRegisterName != registerName) {
+					userFunctions[unqualifiedRegisterName] = fn;
+					fallibleFunctions[unqualifiedRegisterName] = funcNode->throws();
+				}
 			} else {
 				registerName = (namePrefix == "main") ? funcNode->name() : (namePrefix + "::" + funcNode->name());
 			}
@@ -736,7 +748,12 @@ namespace Qd {
 
 				// Store in local variables map
 				localVariables[receiverName] = receiverAlloca;
-				localVariableStructTypes[receiverName] = receiverType;
+				// Qualify receiver type with module prefix if not already qualified
+				std::string qualifiedReceiverType = receiverType;
+				if (receiverType.find("::") == std::string::npos && currentModulePrefix != "main") {
+					qualifiedReceiverType = currentModulePrefix + "::" + receiverType;
+				}
+				localVariableStructTypes[receiverName] = qualifiedReceiverType;
 
 				// Pop the receiver from the stack
 				auto contextStructTy = llvm::StructType::get(*context,
@@ -1322,7 +1339,14 @@ namespace Qd {
 				auto child = moduleRoot->child(i);
 				if (auto funcNode = dynamic_cast<AstNodeFunctionDeclaration*>(child)) {
 					// Track return struct type for module functions (same logic as main file)
-					std::string qualifiedName = moduleName + "::" + funcNode->name();
+					// For methods, use format: moduleName::ReceiverType::methodName
+					std::string qualifiedName;
+					if (funcNode->hasReceiver()) {
+						qualifiedName =
+								moduleName + "::" + funcNode->receiverType() + "::" + funcNode->name();
+					} else {
+						qualifiedName = moduleName + "::" + funcNode->name();
+					}
 					const auto& outputs = funcNode->outputParameters();
 					bool foundExplicitStructType = false;
 					for (auto* outParam : outputs) {

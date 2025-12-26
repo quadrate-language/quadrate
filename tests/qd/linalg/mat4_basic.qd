@@ -1,9 +1,9 @@
 // Test Mat4 construction and basic operations
-use mat4
+use math
 
 fn main() {
 	// Test identity
-	mat4::identity -> id
+	math::mat4_identity -> id
 	"identity diagonal:" print nl
 	id @m00 print nl
 	id @m11 print nl
@@ -16,7 +16,7 @@ fn main() {
 	id @m32 print nl
 
 	// Test zero
-	mat4::zero -> z
+	math::mat4_zero -> z
 	"zero:" print nl
 	z @m00 print nl
 	z @m11 print nl
@@ -24,7 +24,7 @@ fn main() {
 	z @m33 print nl
 
 	// Test translation
-	1.0 2.0 3.0 mat4::translation -> t
+	1.0 2.0 3.0 math::mat4_translation -> t
 	"translation:" print nl
 	t @m30 print nl
 	t @m31 print nl
@@ -36,16 +36,16 @@ fn main() {
 	t @m33 print nl
 
 	// Test scaling
-	2.0 3.0 4.0 mat4::scaling -> s
+	2.0 3.0 4.0 math::mat4_scaling -> s
 	"scaling:" print nl
 	s @m00 print nl
 	s @m11 print nl
 	s @m22 print nl
 	s @m33 print nl
 
-	// Test transpose
-	mat4::identity -> id2
-	id2 mat4::transpose -> transposed
+	// Test transpose (method syntax: receiver method)
+	math::mat4_identity -> id2
+	id2 transpose -> transposed  // id2.transpose()
 	"transpose identity (should be same):" print nl
 	transposed @m00 print nl
 	transposed @m11 print nl

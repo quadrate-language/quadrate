@@ -21,3 +21,8 @@ dot:
 neg:
 -3
 -4
+length:
+5
+normalize:
+0.6
+0.8

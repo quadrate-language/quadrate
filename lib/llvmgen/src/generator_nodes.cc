@@ -105,6 +105,102 @@ namespace Qd {
 	void LlvmGenerator::Impl::generateInstruction(AstNodeInstruction* inst, llvm::Value* ctx) {
 		const std::string& name = inst->name();
 
+		// Check if instruction name shadows a local variable - if so, push the variable
+		auto localIt = localVariables.find(name);
+		if (localIt != localVariables.end()) {
+			// Push the local variable onto the stack (variable shadowing builtin instruction)
+			// This replicates the local variable push logic from generateIdentifier
+			llvm::AllocaInst* localAlloca = localIt->second;
+
+			// For indirect (captured) variables, load the actual storage pointer first
+			llvm::Value* storagePtr = localAlloca;
+			bool isIndirect = indirectLocalVariables.find(name) != indirectLocalVariables.end();
+			if (isIndirect) {
+				storagePtr =
+						builder->CreateLoad(llvm::PointerType::getUnqual(*context), localAlloca, name + "_storage");
+			}
+
+			// Extract type field
+			llvm::Value* typePtr = builder->CreateStructGEP(stackElementTy, storagePtr, 1, name + "_type_ptr");
+			llvm::Value* type = builder->CreateLoad(builder->getInt32Ty(), typePtr, name + "_type");
+
+			// Switch on type and push appropriate value
+			llvm::Value* valuePtr = builder->CreateStructGEP(stackElementTy, storagePtr, 0, name + "_value_ptr");
+
+			// Create basic blocks for type-based dispatch
+			llvm::Function* currentFn = builder->GetInsertBlock()->getParent();
+			llvm::BasicBlock* intBlock = llvm::BasicBlock::Create(*context, "local_int", currentFn);
+			llvm::BasicBlock* floatBlock = llvm::BasicBlock::Create(*context, "local_float", currentFn);
+			llvm::BasicBlock* strBlock = llvm::BasicBlock::Create(*context, "local_str", currentFn);
+			llvm::BasicBlock* ptrBlock = llvm::BasicBlock::Create(*context, "local_ptr", currentFn);
+			llvm::BasicBlock* endBlock = llvm::BasicBlock::Create(*context, "local_end", currentFn);
+
+			llvm::SwitchInst* sw = builder->CreateSwitch(type, endBlock, 4);
+			sw->addCase(builder->getInt32(0), intBlock); // QD_STACK_TYPE_INT
+			sw->addCase(builder->getInt32(1), floatBlock); // QD_STACK_TYPE_FLOAT
+			sw->addCase(builder->getInt32(3), strBlock); // QD_STACK_TYPE_STR
+			sw->addCase(builder->getInt32(2), ptrBlock); // QD_STACK_TYPE_PTR
+
+			// INT block
+			builder->SetInsertPoint(intBlock);
+			llvm::Value* intVal = builder->CreateLoad(builder->getInt64Ty(), valuePtr, name + "_i");
+			generateInlinePushIntValue(ctx, intVal);
+			builder->CreateBr(endBlock);
+
+			// FLOAT block
+			builder->SetInsertPoint(floatBlock);
+			llvm::Value* floatVal = builder->CreateLoad(builder->getDoubleTy(), valuePtr, name + "_f");
+			builder->CreateCall(pushFloatFn, {ctx, floatVal});
+			builder->CreateBr(endBlock);
+
+			// STR block
+			builder->SetInsertPoint(strBlock);
+			llvm::Value* strVal =
+					builder->CreateLoad(llvm::PointerType::getUnqual(*context), valuePtr, name + "_s");
+			builder->CreateCall(pushStrRefFn, {ctx, strVal});
+			builder->CreateBr(endBlock);
+
+			// PTR block
+			builder->SetInsertPoint(ptrBlock);
+			llvm::Value* ptrVal =
+					builder->CreateLoad(llvm::PointerType::getUnqual(*context), valuePtr, name + "_p");
+			builder->CreateCall(qdPtrRetainFn, {ptrVal});
+			builder->CreateCall(pushPtrFn, {ctx, ptrVal});
+			builder->CreateBr(endBlock);
+
+			builder->SetInsertPoint(endBlock);
+
+			// If this local variable has a known struct type, track it for the next pop
+			auto structTypeIt = localVariableStructTypes.find(name);
+			if (structTypeIt != localVariableStructTypes.end()) {
+				lastStructConstructed = structTypeIt->second;
+			}
+			return;
+		}
+
+		// Handle method call on struct (marked by semantic validator)
+		if (inst->isMethodCall()) {
+			const std::string& receiverType = inst->receiverType();
+			if (!receiverType.empty()) {
+				// Generate method call - use qualified function name
+				std::string mangledFnName = "usr_" + receiverType + "_" + name;
+				// Replace :: with _ for valid function names
+				for (size_t pos = 0; (pos = mangledFnName.find("::")) != std::string::npos;) {
+					mangledFnName.replace(pos, 2, "_");
+				}
+
+				llvm::Function* methodFn = module->getFunction(mangledFnName);
+				if (!methodFn) {
+					// Method not found - this shouldn't happen if validation passed
+					llvm::errs() << "Method function not found: " << mangledFnName << "\n";
+					return;
+				}
+
+				builder->CreateCall(methodFn, {ctx});
+				return;
+			}
+		}
+
 		// Handle generic make<T> instruction
 		if (name == "make" && inst->hasTypeParam()) {
 			const std::string& typeParam = inst->typeParam();
@@ -583,6 +679,12 @@ namespace Qd {
 
 			// Track that this identifier was just pushed (for smart free)
 			lastIdentifierPushed = name;
+
+			// If this local variable has a known struct type, track it for the next pop
+			auto structTypeIt = localVariableStructTypes.find(name);
+			if (structTypeIt != localVariableStructTypes.end()) {
+				lastStructConstructed = structTypeIt->second;
+			}
 			return;
 		}
 
@@ -699,6 +801,12 @@ namespace Qd {
 				generateInlineBitRshift(ctx);
 			} else {
 				builder->CreateCall(it->second, {ctx});
+			}
+
+			// Track return struct type for local variable binding (-> name)
+			auto returnTypeIt = functionReturnStructType.find(lookupName);
+			if (returnTypeIt != functionReturnStructType.end()) {
+				lastStructConstructed = returnTypeIt->second;
 			}
 
 			// Check if this function is fallible

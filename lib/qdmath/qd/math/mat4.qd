@@ -1,5 +1,6 @@
-/// 4x4 matrix math operations for 3D transformations.
-use math
+// ============================================================================
+// Mat4 - 4x4 matrix math operations for 3D transformations
+// ============================================================================
 
 /// 4x4 matrix in column-major order (OpenGL compatible).
 /// @field m00 f64 Element at row 0, column 0
@@ -39,8 +40,8 @@ pub struct Mat4 {
 
 /// Create identity Mat4.
 /// @return m Mat4 Identity matrix
-/// @example mat4::identity -> m
-pub fn identity( -- m:Mat4) {
+/// @example math::mat4_identity -> m
+pub fn mat4_identity( -- m:Mat4) {
 	Mat4 {
 		m00 = 1.0
 		m01 = 0.0
@@ -63,8 +64,8 @@ pub fn identity( -- m:Mat4) {
 
 /// Create zero Mat4.
 /// @return m Mat4 Zero matrix
-/// @example mat4::zero -> m
-pub fn zero( -- m:Mat4) {
+/// @example math::mat4_zero -> m
+pub fn mat4_zero( -- m:Mat4) {
 	Mat4 {
 		m00 = 0.0
 		m01 = 0.0
@@ -85,12 +86,10 @@ pub fn zero( -- m:Mat4) {
 	}
 }
 
-/// Transpose of Mat4.
-/// @param m Mat4 Input matrix
+/// Transpose this matrix.
 /// @return result Mat4 Transposed matrix
-/// @example m mat4::transpose -> m_t
-pub fn transpose(m:Mat4 -- result:Mat4) {
-	-> m
+/// @example m transpose -> m_t
+pub fn (m:Mat4) transpose( -- result:Mat4) {
 	Mat4 {
 		m00 = m @m00
 		m01 = m @m10
@@ -116,8 +115,8 @@ pub fn transpose(m:Mat4 -- result:Mat4) {
 /// @param y f64 Y translation
 /// @param z f64 Z translation
 /// @return m Mat4 Translation matrix
-/// @example 1.0 2.0 3.0 mat4::translation -> m
-pub fn translation(x:f64 y:f64 z:f64 -- m:Mat4) {
+/// @example 1.0 2.0 3.0 math::mat4_translation -> m
+pub fn mat4_translation(x:f64 y:f64 z:f64 -- m:Mat4) {
 	-> z_v
 	-> y_v
 	-> x_v
@@ -146,8 +145,8 @@ pub fn translation(x:f64 y:f64 z:f64 -- m:Mat4) {
 /// @param sy f64 Y scale factor
 /// @param sz f64 Z scale factor
 /// @return m Mat4 Scale matrix
-/// @example 2.0 2.0 2.0 mat4::scaling -> m
-pub fn scaling(sx:f64 sy:f64 sz:f64 -- m:Mat4) {
+/// @example 2.0 2.0 2.0 math::mat4_scaling -> m
+pub fn mat4_scaling(sx:f64 sy:f64 sz:f64 -- m:Mat4) {
 	-> sz_v
 	-> sy_v
 	-> sx_v
@@ -174,8 +173,8 @@ pub fn scaling(sx:f64 sy:f64 sz:f64 -- m:Mat4) {
 /// Create rotation Mat4 around X axis.
 /// @param angle f64 Rotation angle in radians
 /// @return m Mat4 Rotation matrix
-/// @example 1.57 mat4::rotation_x -> m
-pub fn rotation_x(angle:f64 -- m:Mat4) {
+/// @example 1.57 math::mat4_rotation_x -> m
+pub fn mat4_rotation_x(angle:f64 -- m:Mat4) {
 	-> angle
 	angle math::cos -> c
 	angle math::sin -> s
@@ -202,8 +201,8 @@ pub fn rotation_x(angle:f64 -- m:Mat4) {
 /// Create rotation Mat4 around Y axis.
 /// @param angle f64 Rotation angle in radians
 /// @return m Mat4 Rotation matrix
-/// @example 1.57 mat4::rotation_y -> m
-pub fn rotation_y(angle:f64 -- m:Mat4) {
+/// @example 1.57 math::mat4_rotation_y -> m
+pub fn mat4_rotation_y(angle:f64 -- m:Mat4) {
 	-> angle
 	angle math::cos -> c
 	angle math::sin -> s
@@ -230,8 +229,8 @@ pub fn rotation_y(angle:f64 -- m:Mat4) {
 /// Create rotation Mat4 around Z axis.
 /// @param angle f64 Rotation angle in radians
 /// @return m Mat4 Rotation matrix
-/// @example 1.57 mat4::rotation_z -> m
-pub fn rotation_z(angle:f64 -- m:Mat4) {
+/// @example 1.57 math::mat4_rotation_z -> m
+pub fn mat4_rotation_z(angle:f64 -- m:Mat4) {
 	-> angle
 	angle math::cos -> c
 	angle math::sin -> s
@@ -254,4 +253,3 @@ pub fn rotation_z(angle:f64 -- m:Mat4) {
 		m33 = 1.0
 	}
 }
-
