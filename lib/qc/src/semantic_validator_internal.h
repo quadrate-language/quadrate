@@ -129,21 +129,29 @@ inline size_t levenshteinDistance(const std::string& s1, const std::string& s2) 
 	size_t m = s1.size();
 	size_t n = s2.size();
 
-	if (m == 0) return n;
-	if (n == 0) return m;
+	if (m == 0) {
+		return n;
+	}
+	if (n == 0) {
+		return m;
+	}
 
 	std::vector<std::vector<size_t>> dp(m + 1, std::vector<size_t>(n + 1));
 
-	for (size_t i = 0; i <= m; i++) dp[i][0] = i;
-	for (size_t j = 0; j <= n; j++) dp[0][j] = j;
+	for (size_t i = 0; i <= m; i++) {
+		dp[i][0] = i;
+	}
+	for (size_t j = 0; j <= n; j++) {
+		dp[0][j] = j;
+	}
 
 	for (size_t i = 1; i <= m; i++) {
 		for (size_t j = 1; j <= n; j++) {
 			size_t cost = (s1[i - 1] == s2[j - 1]) ? 0 : 1;
 			dp[i][j] = std::min({
-				dp[i - 1][j] + 1,      // deletion
-				dp[i][j - 1] + 1,      // insertion
-				dp[i - 1][j - 1] + cost // substitution
+					dp[i - 1][j] + 1,		// deletion
+					dp[i][j - 1] + 1,		// insertion
+					dp[i - 1][j - 1] + cost // substitution
 			});
 		}
 	}
@@ -176,9 +184,8 @@ inline std::string findSimilarName(const std::string& name, const std::unordered
 }
 
 // Find similar names from a map of candidates
-template<typename T>
-inline std::string findSimilarNameInMap(const std::string& name,
-		const std::unordered_map<std::string, T>& candidates) {
+template <typename T>
+inline std::string findSimilarNameInMap(const std::string& name, const std::unordered_map<std::string, T>& candidates) {
 	std::unordered_set<std::string> keys;
 	for (const auto& pair : candidates) {
 		keys.insert(pair.first);
@@ -196,8 +203,8 @@ inline std::string findSimilarNameInArray(const std::string& name, const char* c
 }
 
 // Find similar function name from user functions OR builtins
-inline std::string findSimilarFunctionName(const std::string& name,
-		const std::unordered_set<std::string>& userFunctions) {
+inline std::string findSimilarFunctionName(
+		const std::string& name, const std::unordered_set<std::string>& userFunctions) {
 	// First check user-defined functions
 	std::string suggestion = findSimilarName(name, userFunctions);
 	if (!suggestion.empty()) {
