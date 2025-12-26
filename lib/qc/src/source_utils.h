@@ -39,16 +39,19 @@ namespace Qd {
 
 		while (currentCharIndex < charIndex && src[byteOffset] != '\0') {
 			unsigned char c = static_cast<unsigned char>(src[byteOffset]);
+			size_t seqLen = 1;
 			if ((c & 0x80) == 0) {
-				byteOffset += 1;
+				seqLen = 1;
 			} else if ((c & 0xE0) == 0xC0) {
-				byteOffset += 2;
+				seqLen = 2;
 			} else if ((c & 0xF0) == 0xE0) {
-				byteOffset += 3;
+				seqLen = 3;
 			} else if ((c & 0xF8) == 0xF0) {
-				byteOffset += 4;
-			} else {
-				byteOffset += 1;
+				seqLen = 4;
+			}
+			// Safely advance, stopping at null terminator
+			for (size_t i = 0; i < seqLen && src[byteOffset] != '\0'; i++) {
+				byteOffset++;
 			}
 			currentCharIndex++;
 		}
@@ -68,16 +71,19 @@ namespace Qd {
 		const char* p = start;
 		while (p < end && *p != '\0') {
 			unsigned char c = static_cast<unsigned char>(*p);
+			size_t seqLen = 1;
 			if ((c & 0x80) == 0) {
-				p += 1;
+				seqLen = 1;
 			} else if ((c & 0xE0) == 0xC0) {
-				p += 2;
+				seqLen = 2;
 			} else if ((c & 0xF0) == 0xE0) {
-				p += 3;
+				seqLen = 3;
 			} else if ((c & 0xF8) == 0xF0) {
-				p += 4;
-			} else {
-				p += 1;
+				seqLen = 4;
+			}
+			// Safely advance, stopping at end or null terminator
+			for (size_t i = 0; i < seqLen && p < end && *p != '\0'; i++) {
+				p++;
 			}
 			count++;
 		}

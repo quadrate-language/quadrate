@@ -2699,6 +2699,13 @@ namespace Qd {
 			}
 		}
 
+		// Clean up any remaining nodes that weren't added to a field
+		// (can happen with malformed input)
+		for (IAstNode* node : currentFieldNodes) {
+			delete node;
+		}
+		currentFieldNodes.clear();
+
 		return structConstruct;
 	}
 
