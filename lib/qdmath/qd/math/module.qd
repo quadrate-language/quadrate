@@ -1,11 +1,25 @@
 /// Mathematical functions and constants.
 
-/// Mathematical constant Pi (π ≈ 3.14159).
-pub const Pi = 3.141592653589793
-/// Euler's number (e ≈ 2.71828).
-pub const E = 2.718281828459045
+/// Mathematical constant Pi (π).
+pub const Pi = 3.141592653589793238
+/// Euler's number (e).
+pub const E = 2.718281828459045235
 /// Tau = 2π (full circle in radians).
-pub const Tau = 6.283185307179586
+pub const Tau = 6.283185307179586477
+/// Golden ratio φ = (1 + √5) / 2.
+pub const Phi = 1.618033988749894848
+/// Square root of 2.
+pub const Sqrt2 = 1.414213562373095049
+/// Square root of 3.
+pub const Sqrt3 = 1.732050807568877294
+/// Natural logarithm of 2.
+pub const Ln2 = 0.693147180559945309
+/// Natural logarithm of 10.
+pub const Ln10 = 2.302585092994045684
+/// Base-2 logarithm of e.
+pub const Log2E = 1.442695040888963407
+/// Base-10 logarithm of e.
+pub const Log10E = 0.434294481903251828
 import "libqdmath.a" as "math" {
 	/// Sine of angle in radians.
 	/// @param x f64 Angle in radians
