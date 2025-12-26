@@ -1,11 +1,11 @@
 # unit-check library (subproject only)
 unit_check_dep = subproject('unit-check').get_variable('unit_check_dep')
 
-test_tls = executable('test_tls',
-	'test_tls.c',
-	dependencies: [qdtls_dep, qdrt_static_dep, unit_check_dep],
+test_io = executable('test_io',
+	'test_io.c',
+	dependencies: [qdio_dep, qdrt_static_dep, unit_check_dep],
 	c_args: ['-Wno-sign-conversion'],
 	build_by_default: true
 )
 
-test('test_tls', test_tls, timeout: 60)
+test('test_io', test_io, timeout: 30)

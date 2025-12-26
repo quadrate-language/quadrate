@@ -20,3 +20,8 @@ qdio_dep = declare_dependency(
 	link_with: qdio_static,
 	include_directories: qdio_inc
 )
+
+# Tests
+if get_option('build_tests')
+	subdir('tests')
+endif

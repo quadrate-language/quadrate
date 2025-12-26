@@ -526,10 +526,14 @@ namespace Qd {
 				}
 			}
 
-			// Not found - report error
+			// Not found - report error with suggestion
 			std::string errorMsg = "Undefined function '";
 			errorMsg += name;
 			errorMsg += "'";
+			std::string suggestion = findSimilarFunctionName(name, mDefinedFunctions);
+			if (!suggestion.empty()) {
+				errorMsg += "; did you mean '" + suggestion + "'?";
+			}
 			reportError(ident, errorMsg.c_str());
 		}
 
@@ -540,10 +544,14 @@ namespace Qd {
 
 			// Check if the referenced function is defined
 			if (mDefinedFunctions.find(name) == mDefinedFunctions.end()) {
-				// Not found - report error
+				// Not found - report error with suggestion
 				std::string errorMsg = "Undefined function '";
 				errorMsg += name;
 				errorMsg += "' in function pointer reference";
+				std::string suggestion = findSimilarFunctionName(name, mDefinedFunctions);
+				if (!suggestion.empty()) {
+					errorMsg += "; did you mean '" + suggestion + "'?";
+				}
 				reportError(funcPtr, errorMsg.c_str());
 			}
 		}
@@ -598,10 +606,14 @@ namespace Qd {
 				return;
 			}
 
-			// Not found - report error
+			// Not found - report error with suggestion
 			std::string errorMsg = "Undefined struct '";
 			errorMsg += structName;
 			errorMsg += "'";
+			std::string suggestion = findSimilarName(structName, mDefinedStructs);
+			if (!suggestion.empty()) {
+				errorMsg += "; did you mean '" + suggestion + "'?";
+			}
 			reportError(construct, errorMsg.c_str());
 		}
 

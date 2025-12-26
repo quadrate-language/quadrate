@@ -4,12 +4,15 @@
 #ifndef QD_QC_SEMANTIC_VALIDATOR_INTERNAL_H
 #define QD_QC_SEMANTIC_VALIDATOR_INTERNAL_H
 
+#include <algorithm>
 #include <cstdint>
 #include <cstdlib>
 #include <qc/ast_node_literal.h>
+#include <qc/instructions.h>
 #include <qc/semantic_validator.h>
 #include <string>
 #include <unordered_set>
+#include <vector>
 
 // NOTE: This header is intended to be included inside namespace Qd {}
 // in semantic_validator implementation files.
@@ -119,6 +122,89 @@ inline bool shouldWarnImplicitCast(StackValueType actual, StackValueType expecte
 		return false;
 	}
 	return true;
+}
+
+// Calculate Levenshtein distance between two strings
+inline size_t levenshteinDistance(const std::string& s1, const std::string& s2) {
+	size_t m = s1.size();
+	size_t n = s2.size();
+
+	if (m == 0) return n;
+	if (n == 0) return m;
+
+	std::vector<std::vector<size_t>> dp(m + 1, std::vector<size_t>(n + 1));
+
+	for (size_t i = 0; i <= m; i++) dp[i][0] = i;
+	for (size_t j = 0; j <= n; j++) dp[0][j] = j;
+
+	for (size_t i = 1; i <= m; i++) {
+		for (size_t j = 1; j <= n; j++) {
+			size_t cost = (s1[i - 1] == s2[j - 1]) ? 0 : 1;
+			dp[i][j] = std::min({
+				dp[i - 1][j] + 1,      // deletion
+				dp[i][j - 1] + 1,      // insertion
+				dp[i - 1][j - 1] + cost // substitution
+			});
+		}
+	}
+
+	return dp[m][n];
+}
+
+// Find similar names from a set of candidates (returns empty string if no good match)
+inline std::string findSimilarName(const std::string& name, const std::unordered_set<std::string>& candidates) {
+	std::string bestMatch;
+	size_t bestDistance = SIZE_MAX;
+
+	// Maximum distance threshold - larger names allow more errors
+	size_t maxDistance = std::max(size_t(2), name.size() / 3);
+
+	for (const auto& candidate : candidates) {
+		// Skip if lengths are too different
+		if (candidate.size() > name.size() * 2 || name.size() > candidate.size() * 2) {
+			continue;
+		}
+
+		size_t distance = levenshteinDistance(name, candidate);
+		if (distance < bestDistance && distance <= maxDistance) {
+			bestDistance = distance;
+			bestMatch = candidate;
+		}
+	}
+
+	return bestMatch;
+}
+
+// Find similar names from a map of candidates
+template<typename T>
+inline std::string findSimilarNameInMap(const std::string& name,
+		const std::unordered_map<std::string, T>& candidates) {
+	std::unordered_set<std::string> keys;
+	for (const auto& pair : candidates) {
+		keys.insert(pair.first);
+	}
+	return findSimilarName(name, keys);
+}
+
+// Find similar names from a C-style array of strings
+inline std::string findSimilarNameInArray(const std::string& name, const char* const* arr, size_t count) {
+	std::unordered_set<std::string> candidates;
+	for (size_t i = 0; i < count; i++) {
+		candidates.insert(arr[i]);
+	}
+	return findSimilarName(name, candidates);
+}
+
+// Find similar function name from user functions OR builtins
+inline std::string findSimilarFunctionName(const std::string& name,
+		const std::unordered_set<std::string>& userFunctions) {
+	// First check user-defined functions
+	std::string suggestion = findSimilarName(name, userFunctions);
+	if (!suggestion.empty()) {
+		return suggestion;
+	}
+	// Then check builtins
+	return findSimilarNameInArray(name, VALIDATOR_INSTRUCTIONS, VALIDATOR_INSTRUCTION_COUNT);
 }
 
 #endif // QD_QC_SEMANTIC_VALIDATOR_INTERNAL_H
