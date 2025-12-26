@@ -1,9 +1,4 @@
 /// Mathematical functions and constants.
-use vec2.qd
-use vec3.qd
-use vec4.qd
-use quat.qd
-use mat4.qd
 
 /// Mathematical constant Pi (π ≈ 3.14159).
 pub const Pi = 3.141592653589793
@@ -300,3 +295,776 @@ pub fn rad_to_deg(radians:f64 -- degrees:f64) {
 	180 mul 3.141592653589793 div
 }
 
+
+// ============================================================================
+// Vec2 - 2D vector math operations
+// ============================================================================
+
+/// 2D vector with x and y components.
+/// @field x f64 X component
+/// @field y f64 Y component
+pub struct Vec2 {
+	x:f64
+	y:f64
+}
+
+/// Create a Vec2 with all components set to zero.
+/// @return v Vec2 Zero vector (0, 0)
+/// @example math::vec2_zero -> v
+pub fn vec2_zero( -- v:Vec2) {
+	Vec2 {
+		x = 0.0
+		y = 0.0
+	}
+}
+
+/// Create a Vec2 with all components set to one.
+/// @return v Vec2 One vector (1, 1)
+/// @example math::vec2_one -> v
+pub fn vec2_one( -- v:Vec2) {
+	Vec2 {
+		x = 1.0
+		y = 1.0
+	}
+}
+
+/// Add another Vec2 to this vector.
+/// @param other Vec2 Vector to add
+/// @return result Vec2 Sum of vectors
+/// @example other v add -> sum
+pub fn (v:Vec2) add(other:Vec2 -- result:Vec2) {
+	-> other
+	Vec2 {
+		x = v @x other @x +
+		y = v @y other @y +
+	}
+}
+
+/// Subtract another Vec2 from this vector.
+/// @param other Vec2 Vector to subtract
+/// @return result Vec2 Difference of vectors
+/// @example other v subtract -> diff
+pub fn (v:Vec2) subtract(other:Vec2 -- result:Vec2) {
+	-> other
+	Vec2 {
+		x = v @x other @x -
+		y = v @y other @y -
+	}
+}
+
+/// Multiply this vector by a scalar.
+/// @param s f64 Scalar multiplier
+/// @return result Vec2 Scaled vector
+/// @example 2.0 v scale -> scaled
+pub fn (v:Vec2) scale(s:f64 -- result:Vec2) {
+	-> s
+	Vec2 {
+		x = v @x s *
+		y = v @y s *
+	}
+}
+
+/// Dot product with another Vec2.
+/// @param other Vec2 Other vector
+/// @return result f64 Dot product
+/// @example other v dot -> d
+pub fn (v:Vec2) dot(other:Vec2 -- result:f64) {
+	-> other
+	v @x other @x * v @y other @y * +
+}
+
+/// Length (magnitude) of this vector.
+/// @return result f64 Length of vector
+/// @example v length -> len
+pub fn (v:Vec2) length( -- result:f64) {
+	v @x v @x * v @y v @y * + math::sqrt
+}
+
+/// Squared length of this vector (avoids sqrt).
+/// @return result f64 Squared length of vector
+/// @example v length_sq -> len_sq
+pub fn (v:Vec2) length_sq( -- result:f64) {
+	v @x v @x * v @y v @y * +
+}
+
+/// Normalize this vector to unit length.
+/// @return result Vec2 Unit vector in same direction
+/// @example v normalize -> unit
+pub fn (v:Vec2) normalize( -- result:Vec2) {
+	v length -> mag
+	mag 0.0 gt if {
+		1.0 mag / v scale
+	} else {
+		vec2_zero
+	}
+}
+
+/// Negate this vector.
+/// @return result Vec2 Negated vector
+/// @example v neg -> neg_v
+pub fn (v:Vec2) neg( -- result:Vec2) {
+	Vec2 {
+		x = v @x neg
+		y = v @y neg
+	}
+}
+
+/// Linear interpolation to another Vec2.
+/// @param other Vec2 End vector
+/// @param t f64 Interpolation factor (0.0 to 1.0)
+/// @return result Vec2 Interpolated vector
+/// @example other 0.5 v lerp -> mid
+pub fn (v:Vec2) lerp(other:Vec2 t:f64 -- result:Vec2) {
+	-> t
+	-> other
+	Vec2 {
+		x = v @x other @x v @x - t * +
+		y = v @y other @y v @y - t * +
+	}
+}
+
+// ============================================================================
+// Vec3 - 3D vector math operations
+// ============================================================================
+
+/// 3D vector with x, y, and z components.
+/// @field x f64 X component
+/// @field y f64 Y component
+/// @field z f64 Z component
+pub struct Vec3 {
+	x:f64
+	y:f64
+	z:f64
+}
+
+/// Create a Vec3 with all components set to zero.
+/// @return v Vec3 Zero vector (0, 0, 0)
+/// @example math::vec3_zero -> v
+pub fn vec3_zero( -- v:Vec3) {
+	Vec3 {
+		x = 0.0
+		y = 0.0
+		z = 0.0
+	}
+}
+
+/// Create a Vec3 with all components set to one.
+/// @return v Vec3 One vector (1, 1, 1)
+/// @example math::vec3_one -> v
+pub fn vec3_one( -- v:Vec3) {
+	Vec3 {
+		x = 1.0
+		y = 1.0
+		z = 1.0
+	}
+}
+
+/// Unit vector along the X axis.
+/// @return v Vec3 Unit X vector (1, 0, 0)
+/// @example math::vec3_unit_x -> v
+pub fn vec3_unit_x( -- v:Vec3) {
+	Vec3 {
+		x = 1.0
+		y = 0.0
+		z = 0.0
+	}
+}
+
+/// Unit vector along the Y axis.
+/// @return v Vec3 Unit Y vector (0, 1, 0)
+/// @example math::vec3_unit_y -> v
+pub fn vec3_unit_y( -- v:Vec3) {
+	Vec3 {
+		x = 0.0
+		y = 1.0
+		z = 0.0
+	}
+}
+
+/// Unit vector along the Z axis.
+/// @return v Vec3 Unit Z vector (0, 0, 1)
+/// @example math::vec3_unit_z -> v
+pub fn vec3_unit_z( -- v:Vec3) {
+	Vec3 {
+		x = 0.0
+		y = 0.0
+		z = 1.0
+	}
+}
+
+/// Add another Vec3 to this vector.
+/// @param other Vec3 Vector to add
+/// @return result Vec3 Sum of vectors
+/// @example other v add -> sum
+pub fn (v:Vec3) add(other:Vec3 -- result:Vec3) {
+	-> other
+	Vec3 {
+		x = v @x other @x +
+		y = v @y other @y +
+		z = v @z other @z +
+	}
+}
+
+/// Subtract another Vec3 from this vector.
+/// @param other Vec3 Vector to subtract
+/// @return result Vec3 Difference of vectors
+/// @example other v subtract -> diff
+pub fn (v:Vec3) subtract(other:Vec3 -- result:Vec3) {
+	-> other
+	Vec3 {
+		x = v @x other @x -
+		y = v @y other @y -
+		z = v @z other @z -
+	}
+}
+
+/// Multiply this vector by a scalar.
+/// @param s f64 Scalar multiplier
+/// @return result Vec3 Scaled vector
+/// @example 2.0 v scale -> scaled
+pub fn (v:Vec3) scale(s:f64 -- result:Vec3) {
+	-> s
+	Vec3 {
+		x = v @x s *
+		y = v @y s *
+		z = v @z s *
+	}
+}
+
+/// Dot product with another Vec3.
+/// @param other Vec3 Other vector
+/// @return result f64 Dot product
+/// @example other v dot -> d
+pub fn (v:Vec3) dot(other:Vec3 -- result:f64) {
+	-> other
+	v @x other @x * v @y other @y * + v @z other @z * +
+}
+
+/// Cross product with another Vec3.
+/// @param other Vec3 Other vector
+/// @return result Vec3 Cross product (v x other)
+/// @example other v cross -> c
+pub fn (v:Vec3) cross(other:Vec3 -- result:Vec3) {
+	-> other
+	Vec3 {
+		x = v @y other @z * v @z other @y * -
+		y = v @z other @x * v @x other @z * -
+		z = v @x other @y * v @y other @x * -
+	}
+}
+
+/// Length (magnitude) of this vector.
+/// @return result f64 Length of vector
+/// @example v length -> len
+pub fn (v:Vec3) length( -- result:f64) {
+	v @x v @x * v @y v @y * + v @z v @z * + math::sqrt
+}
+
+/// Squared length of this vector (avoids sqrt).
+/// @return result f64 Squared length of vector
+/// @example v length_sq -> len_sq
+pub fn (v:Vec3) length_sq( -- result:f64) {
+	v @x v @x * v @y v @y * + v @z v @z * +
+}
+
+/// Normalize this vector to unit length.
+/// @return result Vec3 Unit vector in same direction
+/// @example v normalize -> unit
+pub fn (v:Vec3) normalize( -- result:Vec3) {
+	v length -> mag
+	mag 0.0 gt if {
+		1.0 mag / v scale
+	} else {
+		vec3_zero
+	}
+}
+
+/// Negate this vector.
+/// @return result Vec3 Negated vector
+/// @example v neg -> neg_v
+pub fn (v:Vec3) neg( -- result:Vec3) {
+	Vec3 {
+		x = v @x neg
+		y = v @y neg
+		z = v @z neg
+	}
+}
+
+/// Linear interpolation to another Vec3.
+/// @param other Vec3 End vector
+/// @param t f64 Interpolation factor (0.0 to 1.0)
+/// @return result Vec3 Interpolated vector
+/// @example other 0.5 v lerp -> mid
+pub fn (v:Vec3) lerp(other:Vec3 t:f64 -- result:Vec3) {
+	-> t
+	-> other
+	Vec3 {
+		x = v @x other @x v @x - t * +
+		y = v @y other @y v @y - t * +
+		z = v @z other @z v @z - t * +
+	}
+}
+
+/// Reflect this vector around a normal.
+/// @param n Vec3 Normal vector
+/// @return result Vec3 Reflected vector
+/// @example normal v reflect -> reflected
+pub fn (v:Vec3) reflect(n:Vec3 -- result:Vec3) {
+	-> n
+	n v n dot 2.0 * v scale subtract
+}
+
+// ============================================================================
+// Vec4 - 4D vector math operations (homogeneous coordinates)
+// ============================================================================
+
+/// 4D vector with x, y, z, and w components.
+/// @field x f64 X component
+/// @field y f64 Y component
+/// @field z f64 Z component
+/// @field w f64 W component
+pub struct Vec4 {
+	x:f64
+	y:f64
+	z:f64
+	w:f64
+}
+
+/// Create a Vec4 with all components set to zero.
+/// @return v Vec4 Zero vector (0, 0, 0, 0)
+/// @example math::vec4_zero -> v
+pub fn vec4_zero( -- v:Vec4) {
+	Vec4 {
+		x = 0.0
+		y = 0.0
+		z = 0.0
+		w = 0.0
+	}
+}
+
+/// Create a Vec4 with all components set to one.
+/// @return v Vec4 One vector (1, 1, 1, 1)
+/// @example math::vec4_one -> v
+pub fn vec4_one( -- v:Vec4) {
+	Vec4 {
+		x = 1.0
+		y = 1.0
+		z = 1.0
+		w = 1.0
+	}
+}
+
+/// Add another Vec4 to this vector.
+/// @param other Vec4 Vector to add
+/// @return result Vec4 Sum of vectors
+/// @example other v add -> sum
+pub fn (v:Vec4) add(other:Vec4 -- result:Vec4) {
+	-> other
+	Vec4 {
+		x = v @x other @x +
+		y = v @y other @y +
+		z = v @z other @z +
+		w = v @w other @w +
+	}
+}
+
+/// Subtract another Vec4 from this vector.
+/// @param other Vec4 Vector to subtract
+/// @return result Vec4 Difference of vectors
+/// @example other v subtract -> diff
+pub fn (v:Vec4) subtract(other:Vec4 -- result:Vec4) {
+	-> other
+	Vec4 {
+		x = v @x other @x -
+		y = v @y other @y -
+		z = v @z other @z -
+		w = v @w other @w -
+	}
+}
+
+/// Multiply this vector by a scalar.
+/// @param s f64 Scalar multiplier
+/// @return result Vec4 Scaled vector
+/// @example 2.0 v scale -> scaled
+pub fn (v:Vec4) scale(s:f64 -- result:Vec4) {
+	-> s
+	Vec4 {
+		x = v @x s *
+		y = v @y s *
+		z = v @z s *
+		w = v @w s *
+	}
+}
+
+/// Dot product with another Vec4.
+/// @param other Vec4 Other vector
+/// @return result f64 Dot product
+/// @example other v dot -> d
+pub fn (v:Vec4) dot(other:Vec4 -- result:f64) {
+	-> other
+	v @x other @x * v @y other @y * + v @z other @z * + v @w other @w * +
+}
+
+/// Length (magnitude) of this vector.
+/// @return result f64 Length of vector
+/// @example v length -> len
+pub fn (v:Vec4) length( -- result:f64) {
+	v @x v @x * v @y v @y * + v @z v @z * + v @w v @w * + math::sqrt
+}
+
+/// Normalize this vector to unit length.
+/// @return result Vec4 Unit vector in same direction
+/// @example v normalize -> unit
+pub fn (v:Vec4) normalize( -- result:Vec4) {
+	v length -> mag
+	mag 0.0 gt if {
+		1.0 mag / v scale
+	} else {
+		vec4_zero
+	}
+}
+
+// ============================================================================
+// Quat - Quaternion math operations for 3D rotations
+// ============================================================================
+
+/// Quaternion for representing rotations.
+/// Stored as (w, x, y, z) where w is the scalar part.
+/// @field w f64 Scalar (real) component
+/// @field x f64 X component of vector part
+/// @field y f64 Y component of vector part
+/// @field z f64 Z component of vector part
+pub struct Quat {
+	w:f64
+	x:f64
+	y:f64
+	z:f64
+}
+
+/// Create identity quaternion (no rotation).
+/// @return q Quat Identity quaternion
+/// @example math::quat_identity -> q
+pub fn quat_identity( -- q:Quat) {
+	Quat {
+		w = 1.0
+		x = 0.0
+		y = 0.0
+		z = 0.0
+	}
+}
+
+/// Quaternion multiplication.
+/// @param other Quat Quaternion to multiply with
+/// @return result Quat Product of this and other
+/// @example other q mul -> product
+pub fn (q:Quat) mul(other:Quat -- result:Quat) {
+	-> other
+	Quat {
+		w = q @w other @w * q @x other @x * - q @y other @y * - q @z other @z * -
+		x = q @w other @x * q @x other @w * + q @y other @z * + q @z other @y * -
+		y = q @w other @y * q @y other @w * + q @z other @x * + q @x other @z * -
+		z = q @w other @z * q @z other @w * + q @x other @y * + q @y other @x * -
+	}
+}
+
+/// Conjugate of this quaternion.
+/// @return result Quat Conjugate quaternion
+/// @example q conjugate -> q_conj
+pub fn (q:Quat) conjugate( -- result:Quat) {
+	Quat {
+		w = q @w
+		x = q @x neg
+		y = q @y neg
+		z = q @z neg
+	}
+}
+
+/// Length (magnitude) of this quaternion.
+/// @return result f64 Length of quaternion
+/// @example q length -> len
+pub fn (q:Quat) length( -- result:f64) {
+	q @w q @w * q @x q @x * + q @y q @y * + q @z q @z * + math::sqrt
+}
+
+/// Normalize this quaternion to unit length.
+/// @return result Quat Unit quaternion
+/// @example q normalize -> unit_q
+pub fn (q:Quat) normalize( -- result:Quat) {
+	q length -> mag
+	mag 0.0 gt if {
+		1.0 mag / -> inv_mag
+		Quat {
+			w = q @w inv_mag *
+			x = q @x inv_mag *
+			y = q @y inv_mag *
+			z = q @z inv_mag *
+		}
+	} else {
+		quat_identity
+	}
+}
+
+/// Dot product with another quaternion.
+/// @param other Quat Other quaternion
+/// @return result f64 Dot product
+/// @example other q dot -> d
+pub fn (q:Quat) dot(other:Quat -- result:f64) {
+	-> other
+	q @w other @w * q @x other @x * + q @y other @y * + q @z other @z * +
+}
+
+// ============================================================================
+// Mat4 - 4x4 matrix math operations for 3D transformations
+// ============================================================================
+
+/// 4x4 matrix in column-major order (OpenGL compatible).
+/// @field m00 f64 Element at row 0, column 0
+/// @field m01 f64 Element at row 1, column 0
+/// @field m02 f64 Element at row 2, column 0
+/// @field m03 f64 Element at row 3, column 0
+/// @field m10 f64 Element at row 0, column 1
+/// @field m11 f64 Element at row 1, column 1
+/// @field m12 f64 Element at row 2, column 1
+/// @field m13 f64 Element at row 3, column 1
+/// @field m20 f64 Element at row 0, column 2
+/// @field m21 f64 Element at row 1, column 2
+/// @field m22 f64 Element at row 2, column 2
+/// @field m23 f64 Element at row 3, column 2
+/// @field m30 f64 Element at row 0, column 3
+/// @field m31 f64 Element at row 1, column 3
+/// @field m32 f64 Element at row 2, column 3
+/// @field m33 f64 Element at row 3, column 3
+pub struct Mat4 {
+	m00:f64
+	m01:f64
+	m02:f64
+	m03:f64
+	m10:f64
+	m11:f64
+	m12:f64
+	m13:f64
+	m20:f64
+	m21:f64
+	m22:f64
+	m23:f64
+	m30:f64
+	m31:f64
+	m32:f64
+	m33:f64
+}
+
+/// Create identity Mat4.
+/// @return m Mat4 Identity matrix
+/// @example math::mat4_identity -> m
+pub fn mat4_identity( -- m:Mat4) {
+	Mat4 {
+		m00 = 1.0
+		m01 = 0.0
+		m02 = 0.0
+		m03 = 0.0
+		m10 = 0.0
+		m11 = 1.0
+		m12 = 0.0
+		m13 = 0.0
+		m20 = 0.0
+		m21 = 0.0
+		m22 = 1.0
+		m23 = 0.0
+		m30 = 0.0
+		m31 = 0.0
+		m32 = 0.0
+		m33 = 1.0
+	}
+}
+
+/// Create zero Mat4.
+/// @return m Mat4 Zero matrix
+/// @example math::mat4_zero -> m
+pub fn mat4_zero( -- m:Mat4) {
+	Mat4 {
+		m00 = 0.0
+		m01 = 0.0
+		m02 = 0.0
+		m03 = 0.0
+		m10 = 0.0
+		m11 = 0.0
+		m12 = 0.0
+		m13 = 0.0
+		m20 = 0.0
+		m21 = 0.0
+		m22 = 0.0
+		m23 = 0.0
+		m30 = 0.0
+		m31 = 0.0
+		m32 = 0.0
+		m33 = 0.0
+	}
+}
+
+/// Transpose this matrix.
+/// @return result Mat4 Transposed matrix
+/// @example m transpose -> m_t
+pub fn (m:Mat4) transpose( -- result:Mat4) {
+	Mat4 {
+		m00 = m @m00
+		m01 = m @m10
+		m02 = m @m20
+		m03 = m @m30
+		m10 = m @m01
+		m11 = m @m11
+		m12 = m @m21
+		m13 = m @m31
+		m20 = m @m02
+		m21 = m @m12
+		m22 = m @m22
+		m23 = m @m32
+		m30 = m @m03
+		m31 = m @m13
+		m32 = m @m23
+		m33 = m @m33
+	}
+}
+
+/// Create translation Mat4.
+/// @param x f64 X translation
+/// @param y f64 Y translation
+/// @param z f64 Z translation
+/// @return m Mat4 Translation matrix
+/// @example 1.0 2.0 3.0 math::mat4_translation -> m
+pub fn mat4_translation(x:f64 y:f64 z:f64 -- m:Mat4) {
+	-> z_v
+	-> y_v
+	-> x_v
+	Mat4 {
+		m00 = 1.0
+		m01 = 0.0
+		m02 = 0.0
+		m03 = 0.0
+		m10 = 0.0
+		m11 = 1.0
+		m12 = 0.0
+		m13 = 0.0
+		m20 = 0.0
+		m21 = 0.0
+		m22 = 1.0
+		m23 = 0.0
+		m30 = x_v
+		m31 = y_v
+		m32 = z_v
+		m33 = 1.0
+	}
+}
+
+/// Create scale Mat4.
+/// @param sx f64 X scale factor
+/// @param sy f64 Y scale factor
+/// @param sz f64 Z scale factor
+/// @return m Mat4 Scale matrix
+/// @example 2.0 2.0 2.0 math::mat4_scaling -> m
+pub fn mat4_scaling(sx:f64 sy:f64 sz:f64 -- m:Mat4) {
+	-> sz_v
+	-> sy_v
+	-> sx_v
+	Mat4 {
+		m00 = sx_v
+		m01 = 0.0
+		m02 = 0.0
+		m03 = 0.0
+		m10 = 0.0
+		m11 = sy_v
+		m12 = 0.0
+		m13 = 0.0
+		m20 = 0.0
+		m21 = 0.0
+		m22 = sz_v
+		m23 = 0.0
+		m30 = 0.0
+		m31 = 0.0
+		m32 = 0.0
+		m33 = 1.0
+	}
+}
+
+/// Create rotation Mat4 around X axis.
+/// @param angle f64 Rotation angle in radians
+/// @return m Mat4 Rotation matrix
+/// @example 1.57 math::mat4_rotation_x -> m
+pub fn mat4_rotation_x(angle:f64 -- m:Mat4) {
+	-> angle
+	angle math::cos -> c
+	angle math::sin -> s
+	Mat4 {
+		m00 = 1.0
+		m01 = 0.0
+		m02 = 0.0
+		m03 = 0.0
+		m10 = 0.0
+		m11 = c
+		m12 = s
+		m13 = 0.0
+		m20 = 0.0
+		m21 = s neg
+		m22 = c
+		m23 = 0.0
+		m30 = 0.0
+		m31 = 0.0
+		m32 = 0.0
+		m33 = 1.0
+	}
+}
+
+/// Create rotation Mat4 around Y axis.
+/// @param angle f64 Rotation angle in radians
+/// @return m Mat4 Rotation matrix
+/// @example 1.57 math::mat4_rotation_y -> m
+pub fn mat4_rotation_y(angle:f64 -- m:Mat4) {
+	-> angle
+	angle math::cos -> c
+	angle math::sin -> s
+	Mat4 {
+		m00 = c
+		m01 = 0.0
+		m02 = s neg
+		m03 = 0.0
+		m10 = 0.0
+		m11 = 1.0
+		m12 = 0.0
+		m13 = 0.0
+		m20 = s
+		m21 = 0.0
+		m22 = c
+		m23 = 0.0
+		m30 = 0.0
+		m31 = 0.0
+		m32 = 0.0
+		m33 = 1.0
+	}
+}
+
+/// Create rotation Mat4 around Z axis.
+/// @param angle f64 Rotation angle in radians
+/// @return m Mat4 Rotation matrix
+/// @example 1.57 math::mat4_rotation_z -> m
+pub fn mat4_rotation_z(angle:f64 -- m:Mat4) {
+	-> angle
+	angle math::cos -> c
+	angle math::sin -> s
+	Mat4 {
+		m00 = c
+		m01 = s
+		m02 = 0.0
+		m03 = 0.0
+		m10 = s neg
+		m11 = c
+		m12 = 0.0
+		m13 = 0.0
+		m20 = 0.0
+		m21 = 0.0
+		m22 = 1.0
+		m23 = 0.0
+		m30 = 0.0
+		m31 = 0.0
+		m32 = 0.0
+		m33 = 1.0
+	}
+}
