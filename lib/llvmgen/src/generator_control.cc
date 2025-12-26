@@ -134,17 +134,17 @@ namespace Qd {
 			startValue = generateInlinePopInt(ctx);
 		} else {
 			// Pop start, end, step from stack (in reverse order: step, end, start)
-			auto stackFieldPtr =
-					builder->CreateStructGEP(llvm::StructType::get(*context,
-													 {
-															 llvm::PointerType::getUnqual(*context), // qd_stack* st
-															 builder->getInt64Ty(),					 // int64_t error_code
-															 llvm::PointerType::getUnqual(*context), // char* error_msg
-															 builder->getInt32Ty(),					 // int argc
-															 llvm::PointerType::getUnqual(*context), // char** argv
-															 llvm::PointerType::getUnqual(*context)	 // char* program_name
-													 }),
-							ctx, 0, "st_ptr");
+			auto stackFieldPtr = builder->CreateStructGEP(
+					llvm::StructType::get(*context,
+							{
+									llvm::PointerType::getUnqual(*context), // qd_stack* st
+									builder->getInt64Ty(),					// int64_t error_code
+									llvm::PointerType::getUnqual(*context), // char* error_msg
+									builder->getInt32Ty(),					// int argc
+									llvm::PointerType::getUnqual(*context), // char** argv
+									llvm::PointerType::getUnqual(*context)	// char* program_name
+							}),
+					ctx, 0, "st_ptr");
 			auto stack = builder->CreateLoad(llvm::PointerType::getUnqual(*context), stackFieldPtr, "st");
 
 			// Create allocas in entry block to avoid stack growth in nested loops

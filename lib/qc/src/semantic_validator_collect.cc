@@ -85,8 +85,7 @@ namespace Qd {
 
 				// Check that the receiver struct type exists
 				if (mDefinedStructs.find(structType) == mDefinedStructs.end()) {
-					std::string errorMsg =
-							"Method receiver type '" + structType + "' is not a defined struct";
+					std::string errorMsg = "Method receiver type '" + structType + "' is not a defined struct";
 					reportError(func, errorMsg.c_str());
 					return;
 				}

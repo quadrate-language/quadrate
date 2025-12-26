@@ -93,12 +93,12 @@ struct Dependency {
 
 // Locked dependency - resolved and pinned version
 struct LockedDependency {
-	std::string name;		 // Module name
-	std::string url;		 // Original Git URL
-	std::string ref;		 // Git ref (branch/tag)
-	std::string resolvedRef; // Resolved commit hash
-	std::string integrity;	 // SHA256 of commit
-	bool isPath;			 // true if local path
+	std::string name;		  // Module name
+	std::string url;		  // Original Git URL
+	std::string ref;		  // Git ref (branch/tag)
+	std::string resolvedRef;  // Resolved commit hash
+	std::string integrity;	  // SHA256 of commit
+	bool isPath;			  // true if local path
 	std::string resolvedPath; // Absolute path for local deps
 };
 

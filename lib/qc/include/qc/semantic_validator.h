@@ -309,8 +309,7 @@ namespace Qd {
 				mStructMethodDecls;
 
 		// Module struct methods: maps module -> structType -> (methodName -> isPublic)
-		std::unordered_map<std::string,
-				std::unordered_map<std::string, std::unordered_map<std::string, bool>>>
+		std::unordered_map<std::string, std::unordered_map<std::string, std::unordered_map<std::string, bool>>>
 				mModuleStructMethods;
 
 		// Error count

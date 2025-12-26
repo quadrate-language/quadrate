@@ -1260,13 +1260,13 @@ namespace Qd {
 
 						// Validate '!' and '?' usage
 						if (ident->abortOnError() && !sig.throws) {
-							std::string errorMsg = "Cannot use '!' operator on method '" + name +
-												   "' which is not marked as fallible";
+							std::string errorMsg =
+									"Cannot use '!' operator on method '" + name + "' which is not marked as fallible";
 							reportError(ident, errorMsg.c_str());
 						}
 						if (ident->checkError() && !sig.throws) {
-							std::string errorMsg = "Cannot use '?' operator on method '" + name +
-												   "' which is not marked as fallible";
+							std::string errorMsg =
+									"Cannot use '?' operator on method '" + name + "' which is not marked as fallible";
 							reportError(ident, errorMsg.c_str());
 						}
 
@@ -1274,10 +1274,11 @@ namespace Qd {
 						if (sig.throws && !ident->abortOnError() && !ident->checkError()) {
 							IAstNode* nextNode = (i + 1 < node->childCount()) ? node->child(i + 1) : nullptr;
 							if (!nextNode || (nextNode->type() != IAstNode::Type::IF_STATEMENT &&
-											  nextNode->type() != IAstNode::Type::SWITCH_STATEMENT)) {
-								std::string errorMsg = "Fallible method '" + name +
-													   "' must be immediately followed by 'if' or 'switch' to check for "
-													   "errors, or use '!' to abort on error";
+													 nextNode->type() != IAstNode::Type::SWITCH_STATEMENT)) {
+								std::string errorMsg =
+										"Fallible method '" + name +
+										"' must be immediately followed by 'if' or 'switch' to check for "
+										"errors, or use '!' to abort on error";
 								reportError(ident, errorMsg.c_str());
 							}
 						}
@@ -2147,10 +2148,11 @@ namespace Qd {
 						if (sig.throws && !scoped->abortOnError() && !scoped->checkError()) {
 							IAstNode* nextNode = (i + 1 < node->childCount()) ? node->child(i + 1) : nullptr;
 							if (!nextNode || (nextNode->type() != IAstNode::Type::IF_STATEMENT &&
-											  nextNode->type() != IAstNode::Type::SWITCH_STATEMENT)) {
-								std::string errorMsg = "Fallible method '" + functionName +
-													   "' must be immediately followed by 'if' or 'switch' to check for "
-													   "errors, or use '!' to abort on error";
+													 nextNode->type() != IAstNode::Type::SWITCH_STATEMENT)) {
+								std::string errorMsg =
+										"Fallible method '" + functionName +
+										"' must be immediately followed by 'if' or 'switch' to check for "
+										"errors, or use '!' to abort on error";
 								reportError(scoped, errorMsg.c_str());
 							}
 						}

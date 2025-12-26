@@ -306,23 +306,23 @@ namespace Qd {
 
 		// Check this node's type
 		switch (node->type()) {
-			case IAstNode::Type::LITERAL: {
-				auto* lit = static_cast<AstNodeLiteral*>(node);
-				// Only INTEGER literals are allowed
-				if (lit->literalType() != AstNodeLiteral::LiteralType::INTEGER) {
-					return false;
-				}
-				break;
+		case IAstNode::Type::LITERAL: {
+			auto* lit = static_cast<AstNodeLiteral*>(node);
+			// Only INTEGER literals are allowed
+			if (lit->literalType() != AstNodeLiteral::LiteralType::INTEGER) {
+				return false;
 			}
-			case IAstNode::Type::SCOPED_IDENTIFIER:
-				// Module calls (like str::len) might return non-integers
-				// Be conservative and reject
-				return false;
-			case IAstNode::Type::ANONYMOUS_FUNCTION:
-				// Anonymous functions/closures are complex, reject for now
-				return false;
-			default:
-				break;
+			break;
+		}
+		case IAstNode::Type::SCOPED_IDENTIFIER:
+			// Module calls (like str::len) might return non-integers
+			// Be conservative and reject
+			return false;
+		case IAstNode::Type::ANONYMOUS_FUNCTION:
+			// Anonymous functions/closures are complex, reject for now
+			return false;
+		default:
+			break;
 		}
 
 		// Recursively check children
@@ -1342,8 +1342,7 @@ namespace Qd {
 					// For methods, use format: moduleName::ReceiverType::methodName
 					std::string qualifiedName;
 					if (funcNode->hasReceiver()) {
-						qualifiedName =
-								moduleName + "::" + funcNode->receiverType() + "::" + funcNode->name();
+						qualifiedName = moduleName + "::" + funcNode->receiverType() + "::" + funcNode->name();
 					} else {
 						qualifiedName = moduleName + "::" + funcNode->name();
 					}

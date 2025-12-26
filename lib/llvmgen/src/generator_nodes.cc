@@ -136,10 +136,10 @@ namespace Qd {
 			llvm::BasicBlock* endBlock = llvm::BasicBlock::Create(*context, "local_end", currentFn);
 
 			llvm::SwitchInst* sw = builder->CreateSwitch(type, endBlock, 4);
-			sw->addCase(builder->getInt32(0), intBlock); // QD_STACK_TYPE_INT
+			sw->addCase(builder->getInt32(0), intBlock);   // QD_STACK_TYPE_INT
 			sw->addCase(builder->getInt32(1), floatBlock); // QD_STACK_TYPE_FLOAT
-			sw->addCase(builder->getInt32(3), strBlock); // QD_STACK_TYPE_STR
-			sw->addCase(builder->getInt32(2), ptrBlock); // QD_STACK_TYPE_PTR
+			sw->addCase(builder->getInt32(3), strBlock);   // QD_STACK_TYPE_STR
+			sw->addCase(builder->getInt32(2), ptrBlock);   // QD_STACK_TYPE_PTR
 
 			// INT block
 			builder->SetInsertPoint(intBlock);
@@ -155,15 +155,13 @@ namespace Qd {
 
 			// STR block
 			builder->SetInsertPoint(strBlock);
-			llvm::Value* strVal =
-					builder->CreateLoad(llvm::PointerType::getUnqual(*context), valuePtr, name + "_s");
+			llvm::Value* strVal = builder->CreateLoad(llvm::PointerType::getUnqual(*context), valuePtr, name + "_s");
 			builder->CreateCall(pushStrRefFn, {ctx, strVal});
 			builder->CreateBr(endBlock);
 
 			// PTR block
 			builder->SetInsertPoint(ptrBlock);
-			llvm::Value* ptrVal =
-					builder->CreateLoad(llvm::PointerType::getUnqual(*context), valuePtr, name + "_p");
+			llvm::Value* ptrVal = builder->CreateLoad(llvm::PointerType::getUnqual(*context), valuePtr, name + "_p");
 			builder->CreateCall(qdPtrRetainFn, {ptrVal});
 			builder->CreateCall(pushPtrFn, {ctx, ptrVal});
 			builder->CreateBr(endBlock);
@@ -1168,20 +1166,19 @@ namespace Qd {
 					if (scopedIdent->abortOnError()) {
 						llvm::BasicBlock* errorBlock = llvm::BasicBlock::Create(
 								*context, "error_abort", builder->GetInsertBlock()->getParent());
-						llvm::BasicBlock* continueBlock = llvm::BasicBlock::Create(
-								*context, "no_error", builder->GetInsertBlock()->getParent());
+						llvm::BasicBlock* continueBlock =
+								llvm::BasicBlock::Create(*context, "no_error", builder->GetInsertBlock()->getParent());
 						builder->CreateCondBr(hasError, errorBlock, continueBlock);
 
 						builder->SetInsertPoint(errorBlock);
 						llvm::Value* errorMsg =
 								builder->CreateGlobalString("Fatal error: method '" + name + "' failed\n");
-						auto fprintfFn = module->getOrInsertFunction("fprintf",
-								llvm::FunctionType::get(builder->getInt32Ty(),
-										{llvm::PointerType::getUnqual(*context),
-												llvm::PointerType::getUnqual(*context)},
-										true));
-						auto stderrGlobal =
-								module->getOrInsertGlobal("stderr", llvm::PointerType::getUnqual(*context));
+						auto fprintfFn = module->getOrInsertFunction(
+								"fprintf", llvm::FunctionType::get(builder->getInt32Ty(),
+												   {llvm::PointerType::getUnqual(*context),
+														   llvm::PointerType::getUnqual(*context)},
+												   true));
+						auto stderrGlobal = module->getOrInsertGlobal("stderr", llvm::PointerType::getUnqual(*context));
 						auto stderrVal = builder->CreateLoad(llvm::PointerType::getUnqual(*context), stderrGlobal);
 						builder->CreateCall(fprintfFn, {stderrVal, errorMsg});
 						auto abortFn = module->getOrInsertFunction(
