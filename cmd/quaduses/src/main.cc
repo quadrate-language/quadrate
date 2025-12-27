@@ -250,6 +250,8 @@ std::string generateWithUseStatements(const std::string& source, const std::set<
 	std::string line;
 	bool inUseSection = false;
 	bool useStatementsWritten = false;
+	bool isFirstLine = true;
+	bool hadShebang = false;
 
 	// Helper to format a use statement (with quotes if needed)
 	auto formatUseStatement = [&](const std::string& scope) -> std::string {
@@ -311,7 +313,27 @@ std::string generateWithUseStatements(const std::string& source, const std::set<
 		return false;
 	};
 
+	// Helper to check if line is a shebang
+	auto isShebangLine = [](const std::string& l) {
+		size_t start = 0;
+		while (start < l.length() && std::isspace(static_cast<unsigned char>(l[start]))) {
+			start++;
+		}
+		if (start + 1 < l.length()) {
+			return l[start] == '#' && l[start + 1] == '!';
+		}
+		return false;
+	};
+
 	while (std::getline(input, line)) {
+		// Handle shebang - must be first line
+		if (isFirstLine && isShebangLine(line)) {
+			output << line << '\n';
+			hadShebang = true;
+			isFirstLine = false;
+			continue;
+		}
+		isFirstLine = false;
 		// Check if we're entering or in the use statement section
 		if (isUseLine(line)) {
 			inUseSection = true;
@@ -321,6 +343,10 @@ std::string generateWithUseStatements(const std::string& source, const std::set<
 
 		// If we were in use section and hit a non-use, non-empty line, write use statements
 		if (inUseSection && !isEmptyLine(line) && !useStatementsWritten) {
+			// Add blank line after shebang before use statements
+			if (hadShebang) {
+				output << '\n';
+			}
 			// Write all needed use statements, sorted
 			std::vector<std::string> sortedUses(neededUses.begin(), neededUses.end());
 			std::sort(sortedUses.begin(), sortedUses.end());
@@ -335,6 +361,10 @@ std::string generateWithUseStatements(const std::string& source, const std::set<
 
 		// If we hit a non-comment, non-empty line and haven't written use statements yet, write them
 		if (!useStatementsWritten && !isUseLine(line) && !isEmptyLine(line) && !isCommentLine(line)) {
+			// Add blank line after shebang before use statements
+			if (hadShebang) {
+				output << '\n';
+			}
 			// Write all needed use statements, sorted
 			std::vector<std::string> sortedUses(neededUses.begin(), neededUses.end());
 			std::sort(sortedUses.begin(), sortedUses.end());
@@ -352,6 +382,10 @@ std::string generateWithUseStatements(const std::string& source, const std::set<
 
 	// If we never wrote use statements (file had only use statements or was empty)
 	if (!useStatementsWritten && !neededUses.empty()) {
+		// Add blank line after shebang before use statements
+		if (hadShebang) {
+			output << '\n';
+		}
 		std::vector<std::string> sortedUses(neededUses.begin(), neededUses.end());
 		std::sort(sortedUses.begin(), sortedUses.end());
 

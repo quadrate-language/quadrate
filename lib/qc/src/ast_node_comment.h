@@ -8,8 +8,9 @@ namespace Qd {
 	class AstNodeComment : public IAstNode {
 	public:
 		enum class CommentType {
-			LINE, // Single-line comment //
-			BLOCK // Multi-line comment /* */
+			LINE,   // Single-line comment //
+			BLOCK,  // Multi-line comment /* */
+			SHEBANG // Shebang #! (first line only)
 		};
 
 		AstNodeComment(const std::string& text, CommentType commentType)

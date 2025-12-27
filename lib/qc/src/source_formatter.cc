@@ -27,6 +27,12 @@ namespace Qd {
 		return trimmed.length() >= 2 && (trimmed.substr(0, 2) == "//" || trimmed.substr(0, 2) == "/*");
 	}
 
+	// Check if a line is a shebang (#!)
+	static bool isShebang(const std::string& line) {
+		std::string trimmed = trim(line);
+		return trimmed.length() >= 2 && trimmed.substr(0, 2) == "#!";
+	}
+
 	// Check if line starts with a keyword (after trimming), but skip if it's a comment
 	static bool startsWithKeyword(const std::string& line, const std::string& keyword) {
 		std::string trimmed = trim(line);
@@ -1231,7 +1237,7 @@ namespace Qd {
 		}
 
 		std::ostringstream output;
-		std::string prevTopLevelType; // "use", "const", "fn_start", "comment", ""
+		std::string prevTopLevelType; // "use", "const", "fn_start", "comment", "shebang", ""
 		int braceDepth = 0;
 		bool inFunction = false;
 		bool inBlockComment = false;			// Track multi-line block comment state
@@ -1334,6 +1340,14 @@ namespace Qd {
 			std::string currentType;
 
 			if (isTopLevel) {
+				// Handle shebang - must be first non-empty line
+				if (isShebang(trimmed) && i == 0) {
+					currentType = "shebang";
+					output << lines[i] << '\n';
+					prevTopLevelType = currentType;
+					continue;
+				}
+
 				// Handle top-level comments - buffer them to attach to following declaration
 				// Only buffer when truly at file-level (not inside import blocks)
 				if (isComment(trimmed) && braceDepthBeforeLine == 0) {
@@ -1344,6 +1358,10 @@ namespace Qd {
 
 				if (startsWithKeyword(trimmed, "use")) {
 					currentType = "use";
+					// Add blank line after shebang before use statements
+					if (prevTopLevelType == "shebang") {
+						output << '\n';
+					}
 					// Flush comments before use statement
 					flushCommentBuffer(prevTopLevelType == "fn_start");
 					// Buffer use statements for sorting
@@ -1391,7 +1409,8 @@ namespace Qd {
 							(prevTopLevelType == "const" && currentType == "fn_start") ||
 							(prevTopLevelType == "fn_start" && currentType == "fn_start") ||
 							(prevTopLevelType == "fn_start" && currentType == "use") ||
-							(prevTopLevelType == "fn_start" && currentType == "const")) {
+							(prevTopLevelType == "fn_start" && currentType == "const") ||
+							(prevTopLevelType == "shebang")) { // Always blank line after shebang
 						needsBlankLine = true;
 					}
 				}
@@ -1440,8 +1459,17 @@ namespace Qd {
 		int indentLevel = 0;
 		bool inMultilineComment = false;
 
+		bool isFirstLine = true;
 		while (std::getline(input, line)) {
 			std::string trimmed = trim(line);
+
+			// Handle shebang - must be first line, output as-is (no indentation)
+			if (isFirstLine && isShebang(trimmed)) {
+				output << trimmed << '\n';
+				isFirstLine = false;
+				continue;
+			}
+			isFirstLine = false;
 
 			// Handle single-line comments - just reindent them
 			if (trimmed.length() >= 2 && trimmed.substr(0, 2) == "//") {

@@ -145,6 +145,13 @@ namespace Qd {
 				if (current->type() == IAstNode::Type::FUNCTION_DECLARATION) {
 					addBlankLine = true;
 				}
+				// Shebang: add blank line after it (before use statements or anything else)
+				else if (current->type() == IAstNode::Type::COMMENT) {
+					const AstNodeComment* comment = static_cast<const AstNodeComment*>(current);
+					if (comment->commentType() == AstNodeComment::CommentType::SHEBANG) {
+						addBlankLine = true;
+					}
+				}
 				// Use statements: add blank line only if next is not a use statement
 				else if (current->type() == IAstNode::Type::USE_STATEMENT) {
 					if (next->type() != IAstNode::Type::USE_STATEMENT && next->type() != IAstNode::Type::COMMENT) {
@@ -1199,6 +1206,9 @@ namespace Qd {
 		writeIndent();
 		if (comment->commentType() == AstNodeComment::CommentType::LINE) {
 			write("//");
+			write(comment->text());
+		} else if (comment->commentType() == AstNodeComment::CommentType::SHEBANG) {
+			write("#!");
 			write(comment->text());
 		} else {
 			write("/*");

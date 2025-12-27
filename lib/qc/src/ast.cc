@@ -3019,6 +3019,31 @@ namespace Qd {
 		setNodePosition(program, &scanner, src);
 		mRoot = program;
 
+		// Check for shebang at the very beginning of the file
+		// Shebang must be on the first line, starting with #!
+		if (src[0] == '#' && src[1] == '!') {
+			// Read until end of line
+			const char* shebangEnd = src + 2;
+			while (*shebangEnd != '\0' && *shebangEnd != '\n' && *shebangEnd != '\r') {
+				shebangEnd++;
+			}
+			std::string shebangText(src + 2, static_cast<size_t>(shebangEnd - (src + 2)));
+			AstNodeComment* shebang = new AstNodeComment(shebangText, AstNodeComment::CommentType::SHEBANG);
+			shebang->setPosition(1, 1);
+			shebang->setParent(program);
+			program->addChild(shebang);
+
+			// Advance scanner past shebang line
+			size_t skipBytes = static_cast<size_t>(shebangEnd - src);
+			if (*shebangEnd == '\r' && *(shebangEnd + 1) == '\n') {
+				skipBytes += 2;
+			} else if (*shebangEnd == '\n' || *shebangEnd == '\r') {
+				skipBytes++;
+			}
+			scanner._str = src + skipBytes;
+			scanner._token_start = skipBytes;
+		}
+
 		char32_t token;
 		size_t slashPos = SIZE_MAX; // Position of first slash for comment detection
 		while ((token = u8t_scanner_scan(&scanner)) != U8T_EOF) {

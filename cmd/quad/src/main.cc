@@ -39,7 +39,8 @@ static const size_t NUM_COMMANDS = sizeof(commands) / sizeof(commands[0]);
 
 void printHelp() {
 	std::cout << Colors::bold() << "quad" << Colors::reset() << " - Quadrate language toolchain\n\n";
-	std::cout << Colors::bold() << "Usage:" << Colors::reset() << " quad <command> [options] [arguments]\n\n";
+	std::cout << Colors::bold() << "Usage:" << Colors::reset() << " quad <command> [options] [arguments]\n";
+	std::cout << "       quad <file.qd> [arguments]   (run a script directly)\n\n";
 	std::cout << Colors::bold() << "Commands:" << Colors::reset() << "\n";
 	std::cout << "  " << Colors::green() << "build" << Colors::reset() << "     Compile Quadrate source files\n";
 	std::cout << "  " << Colors::green() << "run" << Colors::reset() << "       Build and run a Quadrate program\n";
@@ -62,6 +63,8 @@ void printHelp() {
 			  << "                     Format all .qd files in-place\n";
 	std::cout << "  " << Colors::cyan() << "quad test" << Colors::reset()
 			  << "                    Run tests in current directory\n";
+	std::cout << "  " << Colors::cyan() << "quad script.qd" << Colors::reset()
+			  << "               Run script directly (for shebang)\n";
 	std::cout << "\n";
 	std::cout << "Run '" << Colors::cyan() << "quad help <command>" << Colors::reset()
 			  << "' for more information on a command.\n";
@@ -466,6 +469,23 @@ int main(int argc, char* argv[]) {
 	std::vector<std::string> args;
 	for (int i = 2; i < argc; i++) {
 		args.push_back(argv[i]);
+	}
+
+	// Check if first argument is a .qd file (for shebang support: #!/usr/bin/quad)
+	// If so, run it directly using quadc -r
+	if (command.length() > 3 && command.substr(command.length() - 3) == ".qd") {
+		std::string toolPath = findTool("quadc");
+		if (toolPath.empty()) {
+			std::cerr << "quad: quadc not found\n";
+			return 1;
+		}
+		std::vector<std::string> toolArgs;
+		toolArgs.push_back("-r");
+		toolArgs.push_back(command);
+		for (const auto& arg : args) {
+			toolArgs.push_back(arg);
+		}
+		return execTool(toolPath, toolArgs);
 	}
 
 	// Handle built-in commands
