@@ -1,0 +1,27 @@
+// Test generic swap function with different types
+
+fn swap<T>(a:T b:T -- b:T a:T) {
+	-> second
+	-> first
+	second first
+}
+
+fn main() {
+	// Test with integers
+	10 20 swap
+	-> a
+	-> b
+	"int: a=" print a print " b=" print b print nl
+
+	// Test with floats
+	1.5 2.5 swap
+	-> c
+	-> d
+	"float: c=" print c print " d=" print d print nl
+
+	// Test with strings
+	"hello" "world" swap
+	-> s1
+	-> s2
+	"str: s1=" print s1 print " s2=" print s2 print nl
+}

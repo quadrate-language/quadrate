@@ -1,0 +1,27 @@
+// Test generic apply function with function pointer
+
+fn apply<T>(x:T f:ptr -- result:T) {
+	-> func
+	-> val
+	val func call
+}
+
+fn double(x:i64 -- y:i64) {
+	2 *
+}
+
+fn square(x:i64 -- y:i64) {
+	dup *
+}
+
+fn main() {
+	// Apply double
+	5 fn (x:i64 -- y:i64) { 2 * } apply print nl
+
+	// Apply square
+	4 fn (x:i64 -- y:i64) { dup * } apply print nl
+
+	// Apply named functions
+	7 &double apply print nl
+	3 &square apply print nl
+}

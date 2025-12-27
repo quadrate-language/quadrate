@@ -18,29 +18,32 @@ void qdrt_dump_stack(qd_context* ctx);
 // =============================================================================
 
 // Fatal error with stack dump and abort
-#define QDRT_FATAL(ctx, op, msg) do { \
-	fprintf(stderr, "Fatal error in %s: %s\n", (op), (msg)); \
-	qdrt_dump_stack(ctx); \
-	qd_print_stack_trace(ctx); \
-	abort(); \
-} while(0)
+#define QDRT_FATAL(ctx, op, msg)                                                                                       \
+	do {                                                                                                               \
+		fprintf(stderr, "Fatal error in %s: %s\n", (op), (msg));                                                       \
+		qdrt_dump_stack(ctx);                                                                                          \
+		qd_print_stack_trace(ctx);                                                                                     \
+		abort();                                                                                                       \
+	} while (0)
 
 // Stack underflow error
-#define QDRT_FATAL_UNDERFLOW(ctx, op, required, have) do { \
-	fprintf(stderr, "Fatal error in %s: Stack underflow (required %zu elements, have %zu)\n", \
-		(op), (size_t)(required), (size_t)(have)); \
-	qdrt_dump_stack(ctx); \
-	qd_print_stack_trace(ctx); \
-	abort(); \
-} while(0)
+#define QDRT_FATAL_UNDERFLOW(ctx, op, required, have)                                                                  \
+	do {                                                                                                               \
+		fprintf(stderr, "Fatal error in %s: Stack underflow (required %zu elements, have %zu)\n", (op),                \
+				(size_t)(required), (size_t)(have));                                                                   \
+		qdrt_dump_stack(ctx);                                                                                          \
+		qd_print_stack_trace(ctx);                                                                                     \
+		abort();                                                                                                       \
+	} while (0)
 
 // Check stack has minimum elements, abort if not
-#define QDRT_CHECK_STACK(ctx, op, required) do { \
-	size_t _have = qd_stack_size((ctx)->st); \
-	if (_have < (size_t)(required)) { \
-		QDRT_FATAL_UNDERFLOW(ctx, op, required, _have); \
-	} \
-} while(0)
+#define QDRT_CHECK_STACK(ctx, op, required)                                                                            \
+	do {                                                                                                               \
+		size_t _have = qd_stack_size((ctx)->st);                                                                       \
+		if (_have < (size_t)(required)) {                                                                              \
+			QDRT_FATAL_UNDERFLOW(ctx, op, required, _have);                                                            \
+		}                                                                                                              \
+	} while (0)
 
 // Check if a stack type is numeric (int or float)
 static inline bool qdrt_is_numeric_type(qd_stack_type type) {

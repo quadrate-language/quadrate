@@ -312,6 +312,9 @@ namespace Qd {
 			std::vector<std::string> structTypeStack;
 			std::unordered_map<std::string, StackValueType> localVariables;
 
+			// Set current type parameters for generic functions
+			mCurrentTypeParams = func->typeParams();
+
 			// Clear local variable struct types for this function
 			mLocalVariableStructTypes.clear();
 
@@ -330,24 +333,12 @@ namespace Qd {
 											   .c_str());
 				}
 
-				StackValueType paramType;
+				StackValueType paramType = stringToStackValueType(typeStr);
 				std::string structType = "";
 
-				if (typeStr == "i64") {
-					paramType = StackValueType::INT;
-				} else if (typeStr == "f64") {
-					paramType = StackValueType::FLOAT;
-				} else if (typeStr == "str") {
-					paramType = StackValueType::STRING;
-				} else if (typeStr == "ptr") {
-					paramType = StackValueType::PTR;
-				} else if (isStructTypeName(typeStr)) {
-					// Struct type - treat as PTR but track the struct type
-					paramType = StackValueType::PTR;
+				// Track struct types for PTR parameters
+				if (paramType == StackValueType::PTR && isStructTypeName(typeStr)) {
 					structType = typeStr;
-				} else {
-					// Untyped or unknown - treat as ANY
-					paramType = StackValueType::ANY;
 				}
 
 				typeStack.push_back(paramType);
@@ -372,6 +363,9 @@ namespace Qd {
 
 			// Reset fallible flag
 			mCurrentFunctionFallible = false;
+
+			// Clear type parameters after type checking
+			mCurrentTypeParams.clear();
 		}
 
 		// Type check test declarations
@@ -1432,8 +1426,10 @@ namespace Qd {
 						StackValueType expected = sig.consumes[j];
 						StackValueType actual = typeStack[stackIdx];
 
-						// Skip check if expected type is ANY or UNKNOWN
-						if (expected == StackValueType::ANY || expected == StackValueType::UNKNOWN) {
+						// Skip check if expected type is ANY, UNKNOWN, or TYPEVAR (generic type parameter)
+						// TYPEVAR accepts any concrete type at the call site
+						if (expected == StackValueType::ANY || expected == StackValueType::UNKNOWN ||
+								expected == StackValueType::TYPEVAR) {
 							continue;
 						}
 
@@ -1654,6 +1650,19 @@ namespace Qd {
 						}
 					}
 
+					// For generic functions: unify type variables with concrete types
+					// Track the first concrete type unified with TYPEVAR (simple approach)
+					StackValueType unifiedTypeVarType = StackValueType::UNKNOWN;
+					for (size_t j = 0; j < sig.consumes.size(); j++) {
+						if (sig.consumes[j] == StackValueType::TYPEVAR) {
+							size_t stackIdx = typeStack.size() - sig.consumes.size() + j;
+							if (stackIdx < typeStack.size()) {
+								unifiedTypeVarType = typeStack[stackIdx];
+								break; // Use first TYPEVAR's unified type
+							}
+						}
+					}
+
 					// Consume the parameters from the stack
 					for (size_t j = 0; j < sig.consumes.size(); j++) {
 						typeStack.pop_back();
@@ -1715,12 +1724,20 @@ namespace Qd {
 						return ""; // Unknown struct type
 					};
 
+					// Helper to resolve TYPEVAR to unified concrete type
+					auto resolveTypeVar = [&](StackValueType type) -> StackValueType {
+						if (type == StackValueType::TYPEVAR && unifiedTypeVarType != StackValueType::UNKNOWN) {
+							return unifiedTypeVarType;
+						}
+						return type;
+					};
+
 					// Apply the produces effect
 					if (ident->checkError()) {
 						// func? - immediately check error
 						// Produces: value (untainted) + error_status (INT)
 						for (size_t idx = 0; idx < sig.produces.size(); idx++) {
-							const auto& type = sig.produces[idx];
+							StackValueType type = resolveTypeVar(sig.produces[idx]);
 							typeStack.push_back(type); // Push untainted value
 							structTypeStack.push_back(getProducedStructType(idx, type));
 						}
@@ -1729,7 +1746,7 @@ namespace Qd {
 					} else if (sig.throws && !ident->abortOnError()) {
 						// func without ! or ? - pushes result + error flag
 						for (size_t idx = 0; idx < sig.produces.size(); idx++) {
-							const auto& type = sig.produces[idx];
+							StackValueType type = resolveTypeVar(sig.produces[idx]);
 							typeStack.push_back(type);
 							structTypeStack.push_back(getProducedStructType(idx, type));
 						}
@@ -1738,7 +1755,7 @@ namespace Qd {
 					} else {
 						// Normal call or func!
 						for (size_t idx = 0; idx < sig.produces.size(); idx++) {
-							const auto& type = sig.produces[idx];
+							StackValueType type = resolveTypeVar(sig.produces[idx]);
 							typeStack.push_back(type);
 							structTypeStack.push_back(getProducedStructType(idx, type));
 						}
@@ -2303,8 +2320,10 @@ namespace Qd {
 						StackValueType expected = sig.consumes[j];
 						StackValueType actual = typeStack[stackIdx];
 
-						// Skip check if expected type is ANY or UNKNOWN
-						if (expected == StackValueType::ANY || expected == StackValueType::UNKNOWN) {
+						// Skip check if expected type is ANY, UNKNOWN, or TYPEVAR (generic type parameter)
+						// TYPEVAR accepts any concrete type at the call site
+						if (expected == StackValueType::ANY || expected == StackValueType::UNKNOWN ||
+								expected == StackValueType::TYPEVAR) {
 							continue;
 						}
 
@@ -2365,6 +2384,19 @@ namespace Qd {
 						}
 					}
 
+					// For generic functions: unify type variables with concrete types
+					// Track the first concrete type unified with TYPEVAR (simple approach)
+					StackValueType unifiedTypeVarType = StackValueType::UNKNOWN;
+					for (size_t j = 0; j < sig.consumes.size(); j++) {
+						if (sig.consumes[j] == StackValueType::TYPEVAR) {
+							size_t stackIdx = typeStack.size() - sig.consumes.size() + j;
+							if (stackIdx < typeStack.size()) {
+								unifiedTypeVarType = typeStack[stackIdx];
+								break; // Use first TYPEVAR's unified type
+							}
+						}
+					}
+
 					// Consume the parameters from the stack
 					for (size_t j = 0; j < sig.consumes.size(); j++) {
 						typeStack.pop_back();
@@ -2381,12 +2413,21 @@ namespace Qd {
 						mPendingFnSignature.reset();
 					}
 
+					// Helper to resolve TYPEVAR to unified concrete type
+					auto resolveTypeVar = [&](StackValueType type) -> StackValueType {
+						if (type == StackValueType::TYPEVAR && unifiedTypeVarType != StackValueType::UNKNOWN) {
+							return unifiedTypeVarType;
+						}
+						return type;
+					};
+
 					// Apply the produces effect
 					if (scoped->checkError()) {
 						// func? - immediately check error
 						// Produces: value (untainted) + error_status (INT)
 						for (size_t idx = 0; idx < sig.produces.size(); idx++) {
-							typeStack.push_back(sig.produces[idx]); // Push untainted value
+							StackValueType type = resolveTypeVar(sig.produces[idx]);
+							typeStack.push_back(type); // Push untainted value
 							auto structIt = sig.producesStructTypes.find(idx);
 							structTypeStack.push_back(
 									structIt != sig.producesStructTypes.end() ? structIt->second : "");
@@ -2396,7 +2437,8 @@ namespace Qd {
 					} else if (sig.throws && !scoped->abortOnError()) {
 						// func without ! or ? - pushes result + error flag
 						for (size_t idx = 0; idx < sig.produces.size(); idx++) {
-							typeStack.push_back(sig.produces[idx]);
+							StackValueType type = resolveTypeVar(sig.produces[idx]);
+							typeStack.push_back(type);
 							auto structIt = sig.producesStructTypes.find(idx);
 							structTypeStack.push_back(
 									structIt != sig.producesStructTypes.end() ? structIt->second : "");
@@ -2406,7 +2448,8 @@ namespace Qd {
 					} else {
 						// Normal call or func!
 						for (size_t idx = 0; idx < sig.produces.size(); idx++) {
-							typeStack.push_back(sig.produces[idx]);
+							StackValueType type = resolveTypeVar(sig.produces[idx]);
+							typeStack.push_back(type);
 							auto structIt = sig.producesStructTypes.find(idx);
 							structTypeStack.push_back(
 									structIt != sig.producesStructTypes.end() ? structIt->second : "");

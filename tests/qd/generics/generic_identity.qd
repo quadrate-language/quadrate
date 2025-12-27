@@ -1,0 +1,20 @@
+// Test generic identity function with different types
+
+fn identity<T>(x:T -- y:T) {
+	-> val
+	val
+}
+
+fn main() {
+	// Test with integer
+	42 identity print nl
+
+	// Test with float
+	3.14 identity print nl
+
+	// Test with string
+	"hello" identity print nl
+
+	// Test with negative number
+	-100 identity print nl
+}

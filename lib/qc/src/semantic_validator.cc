@@ -112,6 +112,12 @@ namespace Qd {
 		if (typeStr == "i64" || typeStr == "f64" || typeStr == "str" || typeStr == "ptr" || typeStr == "any") {
 			return true;
 		}
+		// Type parameters (for generic functions)
+		for (const auto& typeParam : mCurrentTypeParams) {
+			if (typeStr == typeParam) {
+				return true;
+			}
+		}
 		// Struct types
 		return isStructTypeName(typeStr);
 	}
@@ -365,6 +371,8 @@ namespace Qd {
 			return "unknown";
 		case StackValueType::TAINTED:
 			return "tainted";
+		case StackValueType::TYPEVAR:
+			return "typevar";
 		default:
 			return "unknown";
 		}
@@ -381,6 +389,16 @@ namespace Qd {
 			return StackValueType::STRING;
 		}
 		if (typeStr == "ptr" || typeStr.find('*') != std::string::npos) {
+			return StackValueType::PTR;
+		}
+		// Check if this is a type parameter (for generic functions)
+		for (const auto& typeParam : mCurrentTypeParams) {
+			if (typeStr == typeParam) {
+				return StackValueType::TYPEVAR;
+			}
+		}
+		// Check if this is a struct type
+		if (isStructTypeName(typeStr)) {
 			return StackValueType::PTR;
 		}
 		return StackValueType::ANY;

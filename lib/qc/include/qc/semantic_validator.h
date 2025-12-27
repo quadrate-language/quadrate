@@ -21,7 +21,8 @@ namespace Qd {
 		PTR,	 // For function pointers
 		ANY,	 // For operations that accept any type
 		UNKNOWN, // For unresolved types
-		TAINTED	 // For error-tainted values from throws functions
+		TAINTED, // For error-tainted values from throws functions
+		TYPEVAR	 // For generic type variables (T, U, etc.)
 	};
 
 	// Information about an imported C function exposed by a module

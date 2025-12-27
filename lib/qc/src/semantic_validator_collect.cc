@@ -1040,6 +1040,9 @@ namespace Qd {
 			AstNodeFunctionDeclaration* func = static_cast<AstNodeFunctionDeclaration*>(node);
 			std::vector<StackValueType> typeStack;
 
+			// Set current type parameters for generic functions
+			mCurrentTypeParams = func->typeParams();
+
 			// Collect parameter names and initialize type stack with input parameter types
 			// The input parameters ARE on the runtime stack when the function starts,
 			// but parameter names must be explicitly bound with -> before use
@@ -1057,18 +1060,7 @@ namespace Qd {
 				}
 
 				// Add parameter type to the type stack (values are on runtime stack)
-				StackValueType paramType;
-				if (typeStr == "i64") {
-					paramType = StackValueType::INT;
-				} else if (typeStr == "f64") {
-					paramType = StackValueType::FLOAT;
-				} else if (typeStr == "str") {
-					paramType = StackValueType::STRING;
-				} else if (typeStr == "ptr" || isStructTypeName(typeStr)) {
-					paramType = StackValueType::PTR;
-				} else {
-					paramType = StackValueType::ANY;
-				}
+				StackValueType paramType = stringToStackValueType(typeStr);
 				typeStack.push_back(paramType);
 			}
 
@@ -1095,21 +1087,12 @@ namespace Qd {
 											   .c_str());
 				}
 
-				if (typeStr == "i64") {
-					sig.consumes.push_back(StackValueType::INT);
-				} else if (typeStr == "f64") {
-					sig.consumes.push_back(StackValueType::FLOAT);
-				} else if (typeStr == "str") {
-					sig.consumes.push_back(StackValueType::STRING);
-				} else if (typeStr == "ptr") {
-					sig.consumes.push_back(StackValueType::PTR);
-				} else if (isStructTypeName(typeStr)) {
-					// Struct type - treat as PTR but track the struct type
-					sig.consumes.push_back(StackValueType::PTR);
+				StackValueType paramType = stringToStackValueType(typeStr);
+				sig.consumes.push_back(paramType);
+
+				// Track struct types for PTR parameters
+				if (paramType == StackValueType::PTR && isStructTypeName(typeStr)) {
 					sig.parameterStructTypes[paramIdx] = typeStr;
-				} else {
-					// Untyped or unknown - use ANY
-					sig.consumes.push_back(StackValueType::ANY);
 				}
 			}
 
@@ -1155,19 +1138,13 @@ namespace Qd {
 					AstNodeParameter* param = static_cast<AstNodeParameter*>(paramNode);
 					std::string typeStr = param->typeString();
 
-					if (typeStr == "i64") {
-						sig.produces.push_back(StackValueType::INT);
-					} else if (typeStr == "f64") {
-						sig.produces.push_back(StackValueType::FLOAT);
-					} else if (typeStr == "str") {
-						sig.produces.push_back(StackValueType::STRING);
-					} else if (typeStr == "ptr") {
-						sig.produces.push_back(StackValueType::PTR);
-					} else if (isStructTypeName(typeStr)) {
-						sig.produces.push_back(StackValueType::PTR);
+					// Use stringToStackValueType to handle all types including type parameters
+					StackValueType producedType = stringToStackValueType(typeStr);
+					sig.produces.push_back(producedType);
+
+					// Track struct types for PTR return values
+					if (producedType == StackValueType::PTR && isStructTypeName(typeStr)) {
 						sig.producesStructTypes[producesIdx] = typeStr;
-					} else {
-						sig.produces.push_back(StackValueType::ANY);
 					}
 					producesIdx++;
 				}
@@ -1197,6 +1174,9 @@ namespace Qd {
 			} else {
 				mFunctionSignatures[func->name()] = sig;
 			}
+
+			// Clear type parameters after processing function
+			mCurrentTypeParams.clear();
 		}
 
 		// Recursively process children
