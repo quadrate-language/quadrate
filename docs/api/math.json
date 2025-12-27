@@ -8,9 +8,44 @@
       "description": "Euler's number (e ≈ 2.71828)."
     },
     {
+      "name": "Ln2",
+      "value": "0.693147180559945",
+      "description": "Natural logarithm of 2."
+    },
+    {
+      "name": "Ln10",
+      "value": "2.302585092994046",
+      "description": "Natural logarithm of 10."
+    },
+    {
+      "name": "Log2E",
+      "value": "1.442695040888963",
+      "description": "Base-2 logarithm of e."
+    },
+    {
+      "name": "Log10E",
+      "value": "0.434294481903252",
+      "description": "Base-10 logarithm of e."
+    },
+    {
+      "name": "Phi",
+      "value": "1.618033988749895",
+      "description": "Golden ratio φ = (1 + √5) / 2."
+    },
+    {
       "name": "Pi",
       "value": "3.141592653589793",
       "description": "Mathematical constant Pi (π ≈ 3.14159)."
+    },
+    {
+      "name": "Sqrt2",
+      "value": "1.414213562373095",
+      "description": "Square root of 2."
+    },
+    {
+      "name": "Sqrt3",
+      "value": "1.732050807568877",
+      "description": "Square root of 3."
     },
     {
       "name": "Tau",

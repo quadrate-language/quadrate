@@ -7,7 +7,14 @@ Mathematical functions and constants.
 | Name | Value | Description |
 |------|-------|-------------|
 | `E` | `2.718281828459045` | Euler's number (e ≈ 2.71828). |
+| `Ln2` | `0.693147180559945` | Natural logarithm of 2. |
+| `Ln10` | `2.302585092994046` | Natural logarithm of 10. |
+| `Log2E` | `1.442695040888963` | Base-2 logarithm of e. |
+| `Log10E` | `0.434294481903252` | Base-10 logarithm of e. |
+| `Phi` | `1.618033988749895` | Golden ratio φ = (1 + √5) / 2. |
 | `Pi` | `3.141592653589793` | Mathematical constant Pi (π ≈ 3.14159). |
+| `Sqrt2` | `1.414213562373095` | Square root of 2. |
+| `Sqrt3` | `1.732050807568877` | Square root of 3. |
 | `Tau` | `6.283185307179586` | Tau = 2π (full circle in radians). |
 
 ## Structs
