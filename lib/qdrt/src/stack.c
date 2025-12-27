@@ -202,6 +202,33 @@ qd_stack_error qd_stack_pop(qd_stack* stack, qd_stack_element_t* element) {
 	return QD_STACK_OK;
 }
 
+qd_stack_error qd_stack_remove_at(qd_stack* stack, size_t index, qd_stack_element_t* element) {
+	if (stack == NULL) {
+		return QD_STACK_ERR_NULL_POINTER;
+	}
+	if (index >= stack->size) {
+		return QD_STACK_ERR_UNDERFLOW;
+	}
+
+	/* Save the element if requested */
+	if (element != NULL) {
+		*element = stack->data[index];
+	} else {
+		/* Release string reference if element not saved */
+		if (stack->data[index].type == QD_STACK_TYPE_STR) {
+			qd_string_release(stack->data[index].value.s);
+		}
+	}
+
+	/* Shift all elements above this index down by one */
+	for (size_t i = index; i < stack->size - 1; i++) {
+		stack->data[i] = stack->data[i + 1];
+	}
+
+	stack->size--;
+	return QD_STACK_OK;
+}
+
 qd_stack_error qd_stack_top_type(const qd_stack* stack, qd_stack_type* type) {
 	if (stack == NULL || type == NULL) {
 		return QD_STACK_ERR_NULL_POINTER;

@@ -180,6 +180,19 @@ qd_stack_error qd_stack_element(qd_stack* stack, size_t index, qd_stack_element_
 qd_stack_error qd_stack_pop(qd_stack* stack, qd_stack_element_t* element);
 
 /**
+ * @brief Remove an element at a specific index and shift remaining elements
+ *
+ * Removes the element at the given index (0 = bottom, size-1 = top) and
+ * shifts all elements above it down by one position.
+ *
+ * @param stack Source stack
+ * @param index Index of element to remove
+ * @param[out] element Receives the removed element (can be NULL to discard)
+ * @return QD_STACK_OK on success, QD_STACK_ERR_UNDERFLOW if index is invalid
+ */
+qd_stack_error qd_stack_remove_at(qd_stack* stack, size_t index, qd_stack_element_t* element);
+
+/**
  * @brief Get the current number of elements on the stack
  *
  * @param stack Target stack

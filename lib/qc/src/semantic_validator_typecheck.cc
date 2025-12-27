@@ -507,6 +507,7 @@ namespace Qd {
 						// Mark instruction as a method call for code generation
 						instr->setIsMethodCall(true);
 						instr->setReceiverType(receiverStructType);
+						instr->setMethodInputParamCount(additionalParams);
 						break;
 					}
 				}
@@ -1371,6 +1372,7 @@ namespace Qd {
 						// Mark identifier as a method call for code generation
 						ident->setIsMethodCall(true);
 						ident->setReceiverType(receiverStructType);
+						ident->setMethodInputParamCount(additionalParams);
 						break;
 					}
 				}

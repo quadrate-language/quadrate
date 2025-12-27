@@ -98,6 +98,14 @@ namespace Qd {
 			return mReceiverType;
 		}
 
+		void setMethodInputParamCount(size_t count) {
+			mMethodInputParamCount = count;
+		}
+
+		size_t methodInputParamCount() const {
+			return mMethodInputParamCount;
+		}
+
 	private:
 		std::string mName;
 		IAstNode* mParent;
@@ -108,6 +116,7 @@ namespace Qd {
 		std::vector<CastDirection> mParameterCasts; // Which parameters need casts (indexed from bottom of stack)
 		bool mIsMethodCall = false;					// True if this is a struct method call
 		std::string mReceiverType;					// Struct type of receiver for method calls
+		size_t mMethodInputParamCount = 0;			// Number of explicit input params (excluding receiver)
 	};
 }
 

@@ -81,6 +81,14 @@ namespace Qd {
 			return mReceiverType;
 		}
 
+		void setMethodInputParamCount(size_t count) {
+			mMethodInputParamCount = count;
+		}
+
+		size_t methodInputParamCount() const {
+			return mMethodInputParamCount;
+		}
+
 	private:
 		std::string mName;
 		std::string mTypeParam;
@@ -89,6 +97,7 @@ namespace Qd {
 		size_t mColumn;
 		bool mIsMethodCall = false;
 		std::string mReceiverType;
+		size_t mMethodInputParamCount = 0;
 	};
 }
 
