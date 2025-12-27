@@ -1,0 +1,21 @@
+/// A pair of two values.
+pub struct Pair<T, U> {
+	first: T
+	second: U
+}
+
+/// Get the first element of a pair.
+pub fn (p:Pair<T, U>) first<T, U>(-- a:T) {
+	p @first
+}
+
+/// Get the second element of a pair.
+pub fn (p:Pair<T, U>) second<T, U>(-- b:U) {
+	p @second
+}
+
+/// Unpack a pair onto the stack.
+pub fn (p:Pair<T, U>) unpack<T, U>(-- a:T b:U) {
+	p @first
+	p @second
+}
