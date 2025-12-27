@@ -2945,6 +2945,30 @@ namespace Qd {
 			typeStack.push_back(resultType);
 			structTypeStack.push_back("");
 		}
+		// Type size introspection: sizeof<T> or sizeof (on value)
+		else if (strcmp(name, "sizeof") == 0) {
+			if (node->type() == IAstNode::Type::INSTRUCTION) {
+				AstNodeInstruction* instr = static_cast<AstNodeInstruction*>(node);
+				if (instr->hasTypeParam()) {
+					// sizeof<T> - compile-time, just push an int
+					typeStack.push_back(StackValueType::INT);
+					structTypeStack.push_back("");
+				} else {
+					// sizeof on value - pop value, push int
+					if (typeStack.empty()) {
+						reportErrorConditional(
+								node, "Type error in 'sizeof': Stack underflow (requires 1 value)", reportErrors);
+						return;
+					}
+					typeStack.pop_back();
+					if (!structTypeStack.empty()) {
+						structTypeStack.pop_back();
+					}
+					typeStack.push_back(StackValueType::INT);
+					structTypeStack.push_back("");
+				}
+			}
+		}
 		// Modulo: mod (consume 2 ints, produce int)
 		else if (strcmp(name, "mod") == 0) {
 			if (typeStack.size() < 2) {

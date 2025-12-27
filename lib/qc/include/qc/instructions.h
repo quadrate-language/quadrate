@@ -23,8 +23,8 @@ namespace Qd {
 			"over", "over2", "overd", "pick", "roll", "rot", "swap", "swap2", "swapd", "tuck",
 			// Array operations
 			"append", "make", "makef", "makei", "makep", "makes", "set",
-			// Type casting
-			"cast",
+			// Type casting and introspection
+			"cast", "sizeof",
 			// I/O
 			"nl", "print", "prints", "printsv", "printv", "read",
 			// Threading
@@ -51,8 +51,8 @@ namespace Qd {
 			"over", "over2", "overd", "pick", "roll", "rot", "swap", "swap2", "swapd", "tuck",
 			// Array operations
 			"append", "make", "makef", "makei", "makep", "makes", "set",
-			// Type casting
-			"cast",
+			// Type casting and introspection
+			"cast", "sizeof",
 			// I/O
 			"nl", "print", "prints", "printsv", "printv", "read",
 			// Threading
