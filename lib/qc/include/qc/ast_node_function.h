@@ -152,9 +152,24 @@ namespace Qd {
 			return mReceiverType;
 		}
 
+		const std::vector<std::string>& receiverTypeParams() const {
+			return mReceiverTypeParams;
+		}
+
+		bool hasReceiverTypeParams() const {
+			return !mReceiverTypeParams.empty();
+		}
+
 		void setReceiver(const std::string& name, const std::string& type) {
 			mReceiverName = name;
 			mReceiverType = type;
+			mHasReceiver = true;
+		}
+
+		void setReceiver(const std::string& name, const std::string& type, const std::vector<std::string>& typeParams) {
+			mReceiverName = name;
+			mReceiverType = type;
+			mReceiverTypeParams = typeParams;
 			mHasReceiver = true;
 		}
 
@@ -173,6 +188,7 @@ namespace Qd {
 		// Receiver information for struct methods
 		std::string mReceiverName;
 		std::string mReceiverType;
+		std::vector<std::string> mReceiverTypeParams;
 		bool mHasReceiver = false;
 	};
 }

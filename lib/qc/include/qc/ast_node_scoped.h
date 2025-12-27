@@ -89,6 +89,14 @@ namespace Qd {
 			return mIsMethodCall;
 		}
 
+		void setReceiverType(const std::string& type) {
+			mReceiverType = type;
+		}
+
+		const std::string& receiverType() const {
+			return mReceiverType;
+		}
+
 	private:
 		std::string mScope;
 		std::string mName;
@@ -99,6 +107,7 @@ namespace Qd {
 		size_t mColumn;
 		std::vector<CastDirection> mParameterCasts; // Which parameters need casts (indexed from bottom of stack)
 		bool mIsMethodCall = false;					// True if this is a struct method call
+		std::string mReceiverType;					// Receiver struct type for method calls
 	};
 }
 

@@ -1132,13 +1132,16 @@ namespace Qd {
 		// The semantic validator marks these with isMethodCall()
 		if (scopedIdent->isMethodCall()) {
 			// Method call - look up in userFunctions with mangled name
-			auto it = userFunctions.find(fullName);
+			// Use receiver type if set, otherwise use scope::name
+			std::string lookupName =
+					scopedIdent->receiverType().empty() ? fullName : (scopedIdent->receiverType() + "::" + name);
+			auto it = userFunctions.find(lookupName);
 			if (it != userFunctions.end()) {
 				// Generate any needed type casts before the function call
 				generateCastInstructions(scopedIdent->parameterCasts(), ctx);
 
 				// Clear error_code for fallible methods
-				auto preFallibleIt = fallibleFunctions.find(fullName);
+				auto preFallibleIt = fallibleFunctions.find(lookupName);
 				if (preFallibleIt != fallibleFunctions.end() && preFallibleIt->second) {
 					auto contextStructTy = llvm::StructType::get(*context,
 							{llvm::PointerType::getUnqual(*context), builder->getInt64Ty(),
@@ -1152,7 +1155,7 @@ namespace Qd {
 				builder->CreateCall(it->second, {ctx});
 
 				// Handle fallible method return
-				auto fallibleIt = fallibleFunctions.find(fullName);
+				auto fallibleIt = fallibleFunctions.find(lookupName);
 				if (fallibleIt != fallibleFunctions.end() && fallibleIt->second) {
 					auto contextStructTy = llvm::StructType::get(*context,
 							{llvm::PointerType::getUnqual(*context), builder->getInt64Ty(),

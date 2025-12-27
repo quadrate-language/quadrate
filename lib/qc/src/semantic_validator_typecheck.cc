@@ -467,10 +467,11 @@ namespace Qd {
 				if (!typeStack.empty() && typeStack.back() == StackValueType::PTR && !structTypeStack.empty()) {
 					receiverStructType = structTypeStack.back();
 				}
-				if (!receiverStructType.empty() && mStructMethods.count(receiverStructType) &&
-						mStructMethods.at(receiverStructType).count(instrName)) {
+				// For generic types, find the registered type (e.g., Box<i64> -> Box<T>)
+				std::string registeredStructType = findMethodStructType(receiverStructType, instrName);
+				if (!registeredStructType.empty()) {
 					// This is a method call - look up the signature with mangled name
-					std::string mangledName = receiverStructType + "::" + instrName;
+					std::string mangledName = registeredStructType + "::" + instrName;
 					auto methodSigIt = mFunctionSignatures.find(mangledName);
 					if (methodSigIt != mFunctionSignatures.end()) {
 						const FunctionSignature& sig = methodSigIt->second;
@@ -505,8 +506,9 @@ namespace Qd {
 						}
 
 						// Mark instruction as a method call for code generation
+						// Use registeredStructType (the generic type) for proper function name lookup
 						instr->setIsMethodCall(true);
-						instr->setReceiverType(receiverStructType);
+						instr->setReceiverType(registeredStructType);
 						instr->setMethodInputParamCount(additionalParams);
 						break;
 					}
@@ -899,7 +901,11 @@ namespace Qd {
 							std::string actualStructType =
 									exprStructTypeStack.empty() ? "" : exprStructTypeStack.back();
 
-							if (actualType != StackValueType::UNKNOWN && expectedType != StackValueType::UNKNOWN) {
+							// Skip type checking if expected type is a type parameter (for generics)
+							bool isGenericField = !expectedStructType.empty() && isCurrentTypeParam(expectedStructType);
+
+							if (!isGenericField && actualType != StackValueType::UNKNOWN &&
+									expectedType != StackValueType::UNKNOWN) {
 								if (actualType != expectedType) {
 									if (isImplicitCastAllowed(actualType, expectedType)) {
 										// Only warn for casts that should be warned about
@@ -1069,6 +1075,13 @@ namespace Qd {
 									}
 								}
 
+								// Skip check if expected type is a type parameter (for generics)
+								bool isGenericField =
+										!expectedStructType.empty() && isCurrentTypeParam(expectedStructType);
+								if (isGenericField) {
+									continue;
+								}
+
 								// Skip check if actual type is UNKNOWN (can't determine type)
 								if (actual == StackValueType::UNKNOWN) {
 									continue;
@@ -1185,6 +1198,23 @@ namespace Qd {
 									}
 									StackValueType expected = fieldTypeIt->second;
 
+									// Check if field expects a struct type (including type parameters)
+									std::string expectedStructType;
+									auto structFieldStructTypesIt = mStructFieldStructTypes.find(qualifiedStructName);
+									if (structFieldStructTypesIt != mStructFieldStructTypes.end()) {
+										auto fieldStructTypeIt = structFieldStructTypesIt->second.find(fieldName);
+										if (fieldStructTypeIt != structFieldStructTypesIt->second.end()) {
+											expectedStructType = fieldStructTypeIt->second;
+										}
+									}
+
+									// Skip check if expected type is a type parameter (for generics)
+									bool isGenericField =
+											!expectedStructType.empty() && isCurrentTypeParam(expectedStructType);
+									if (isGenericField) {
+										continue;
+									}
+
 									// Skip check if actual type is UNKNOWN (can't determine type)
 									if (actual == StackValueType::UNKNOWN) {
 										continue;
@@ -1245,10 +1275,11 @@ namespace Qd {
 				if (!typeStack.empty() && typeStack.back() == StackValueType::PTR && !structTypeStack.empty()) {
 					receiverStructType = structTypeStack.back();
 				}
-				if (!receiverStructType.empty() && mStructMethods.count(receiverStructType) &&
-						mStructMethods.at(receiverStructType).count(name)) {
+				// For generic types, find the registered type (e.g., Box<i64> -> Box<T>)
+				std::string registeredStructType = findMethodStructType(receiverStructType, name);
+				if (!registeredStructType.empty()) {
 					// This is a method call - look up the signature with mangled name
-					std::string mangledName = receiverStructType + "::" + name;
+					std::string mangledName = registeredStructType + "::" + name;
 					auto methodSigIt = mFunctionSignatures.find(mangledName);
 					if (methodSigIt != mFunctionSignatures.end()) {
 						const FunctionSignature& sig = methodSigIt->second;
@@ -1370,8 +1401,9 @@ namespace Qd {
 						}
 
 						// Mark identifier as a method call for code generation
+						// Use registeredStructType (the generic type) for proper function name lookup
 						ident->setIsMethodCall(true);
-						ident->setReceiverType(receiverStructType);
+						ident->setReceiverType(registeredStructType);
 						ident->setMethodInputParamCount(additionalParams);
 						break;
 					}
@@ -2268,6 +2300,77 @@ namespace Qd {
 						// Mark as method call for code generation
 						scoped->setIsMethodCall(true);
 						break;
+					}
+				}
+
+				// Check if this is a module method call (e.g., ct::unwrap on a ct::Box)
+				// The stack top should be a struct from the same module
+				if (!typeStack.empty() && typeStack.back() == StackValueType::PTR && !structTypeStack.empty()) {
+					std::string receiverStructType = structTypeStack.back();
+
+					// Check if receiver struct belongs to this module
+					// receiverStructType could be like "ct::Box<i64>" and moduleName is "ct"
+					if (receiverStructType.find(moduleName + "::") == 0) {
+						// Find the registered struct type for method lookup
+						std::string registeredStructType = findMethodStructType(receiverStructType, functionName);
+						if (!registeredStructType.empty()) {
+							// This is a module method call - look up the signature
+							std::string methodQualifiedName = registeredStructType + "::" + functionName;
+							auto methodSigIt = mFunctionSignatures.find(methodQualifiedName);
+							if (methodSigIt != mFunctionSignatures.end()) {
+								const FunctionSignature& sig = methodSigIt->second;
+
+								// Validate '!' and '?' usage
+								if (scoped->abortOnError() && !sig.throws) {
+									std::string errorMsg = "Cannot use '!' operator on method '" + functionName +
+														   "' which is not marked as fallible";
+									reportError(scoped, errorMsg.c_str());
+								}
+								if (scoped->checkError() && !sig.throws) {
+									std::string errorMsg = "Cannot use '?' operator on method '" + functionName +
+														   "' which is not marked as fallible";
+									reportError(scoped, errorMsg.c_str());
+								}
+
+								// Check if stack has enough values (receiver + params)
+								size_t additionalParams = sig.consumes.size() > 0 ? sig.consumes.size() - 1 : 0;
+								if (typeStack.size() < 1 + additionalParams) {
+									std::string errorMsg = "Type error in method call '";
+									errorMsg += functionName;
+									errorMsg += "': Stack underflow (requires receiver + ";
+									errorMsg += std::to_string(additionalParams);
+									errorMsg += " values)";
+									reportError(scoped, errorMsg.c_str());
+									break;
+								}
+
+								// Pop all consumed values (receiver + params)
+								for (size_t j = 0; j < sig.consumes.size(); j++) {
+									typeStack.pop_back();
+									if (!structTypeStack.empty()) {
+										structTypeStack.pop_back();
+									}
+								}
+
+								// Push return values
+								if (scoped->checkError() && sig.throws) {
+									typeStack.push_back(StackValueType::INT);
+									structTypeStack.push_back("");
+								} else {
+									for (size_t idx = 0; idx < sig.produces.size(); idx++) {
+										typeStack.push_back(sig.produces[idx]);
+										auto structIt = sig.producesStructTypes.find(idx);
+										structTypeStack.push_back(
+												structIt != sig.producesStructTypes.end() ? structIt->second : "");
+									}
+								}
+
+								// Mark as method call for code generation
+								scoped->setIsMethodCall(true);
+								scoped->setReceiverType(registeredStructType);
+								break;
+							}
+						}
 					}
 				}
 

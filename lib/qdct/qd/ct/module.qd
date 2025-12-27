@@ -1,0 +1,151 @@
+/// Collections module - basic collection types with generics.
+/// Provides fundamental data structures for grouping values.
+
+/// A box containing a single value.
+pub struct Box<T> {
+	value: T
+}
+
+/// Create a new box from a value.
+/// @param v T The value to box
+/// @return b Box<T> The new box
+pub fn box<T>(v:T -- b:Box<T>) {
+	-> v
+	Box<T> { value = v }
+}
+
+/// Unwrap a box to get its value.
+/// @param b Box<T> The box
+/// @return v T The contained value
+pub fn (b:Box<T>) unwrap<T>(-- v:T) {
+	b @value
+}
+
+/// Map a function over the box's value.
+/// @param f ptr Function (T -- T)
+/// @param b Box<T> The box
+/// @return r Box<T> New box with transformed value
+pub fn (b:Box<T>) map<T>(f:ptr -- r:Box<T>) {
+	-> f
+	b @value f call -> v
+	Box<T> { value = v }
+}
+
+/// A pair of two values.
+/// Useful for returning two related values or as map entries.
+pub struct Pair<T, U> {
+	first: T
+	second: U
+}
+
+/// Create a new pair from two values.
+/// @param a T First value
+/// @param b U Second value
+/// @return p Pair<T,U> The new pair
+pub fn pair<T, U>(a:T b:U -- p:Pair<T, U>) {
+	-> b
+	-> a
+	Pair<T, U> { first = a second = b }
+}
+
+/// Get the first element of a pair.
+/// @param p Pair<T,U> The pair
+/// @return a T First value
+pub fn (p:Pair<T, U>) fst<T, U>(-- a:T) {
+	p @first
+}
+
+/// Get the second element of a pair.
+/// @param p Pair<T,U> The pair
+/// @return b U Second value
+pub fn (p:Pair<T, U>) snd<T, U>(-- b:U) {
+	p @second
+}
+
+/// Unpack a pair onto the stack.
+/// @param p Pair<T,U> The pair
+/// @return a T First value
+/// @return b U Second value
+pub fn (p:Pair<T, U>) unpack<T, U>(-- a:T b:U) {
+	p @first
+	p @second
+}
+
+/// Swap the elements of a pair.
+/// @param p Pair<T,U> The pair
+/// @return q Pair<U,T> New pair with swapped elements
+pub fn (p:Pair<T, U>) swap_pair<T, U>(-- q:Pair<U, T>) {
+	Pair<U, T> { first = p @second second = p @first }
+}
+
+/// Map a function over both elements.
+/// @param f ptr Function (T -- T)
+/// @param p Pair<T,T> The pair
+/// @return q Pair<T,T> New pair with f applied to both elements
+pub fn (p:Pair<T, T>) map_both<T>(f:ptr -- q:Pair<T, T>) {
+	-> f
+	p @first f call -> a
+	p @second f call -> b
+	Pair<T, T> { first = a second = b }
+}
+
+/// An optional value that may or may not be present.
+pub struct Option<T> {
+	has_value: i64
+	value: T
+}
+
+/// Create an Option containing a value (Some).
+/// @param v T The value
+/// @return o Option<T> The option containing the value
+pub fn some<T>(v:T -- o:Option<T>) {
+	-> v
+	Option<T> { has_value = 1 value = v }
+}
+
+/// Create an empty Option (None).
+/// @return o Option<T> The empty option
+pub fn none<T>(-- o:Option<T>) {
+	Option<T> { has_value = 0 value = 0 }
+}
+
+/// Check if the option has a value.
+/// @param o Option<T> The option
+/// @return b i64 1 if has value, 0 if none
+pub fn (o:Option<T>) is_some<T>(-- b:i64) {
+	o @has_value
+}
+
+/// Check if the option is empty.
+/// @param o Option<T> The option
+/// @return b i64 1 if empty, 0 if has value
+pub fn (o:Option<T>) is_none<T>(-- b:i64) {
+	o @has_value 0 eq
+}
+
+/// Get the value from an Option, or a default if none.
+/// @param default T The default value
+/// @param o Option<T> The option
+/// @return v T The value or default
+pub fn (o:Option<T>) unwrap_or<T>(default:T -- v:T) {
+	-> default
+	o @has_value if {
+		o @value
+	} else {
+		default
+	}
+}
+
+/// Map a function over the option's value if present.
+/// @param f ptr Function (T -- T)
+/// @param o Option<T> The option
+/// @return r Option<T> New option with transformed value
+pub fn (o:Option<T>) map_opt<T>(f:ptr -- r:Option<T>) {
+	-> f
+	o @has_value if {
+		o @value f call -> v
+		Option<T> { has_value = 1 value = v }
+	} else {
+		o
+	}
+}

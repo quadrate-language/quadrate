@@ -204,6 +204,13 @@ namespace Qd {
 		// Helper: Check if a type string is a known struct name
 		bool isStructTypeName(const std::string& typeStr) const;
 
+		// Helper: Check if a type string is a current type parameter (for generics)
+		bool isCurrentTypeParam(const std::string& typeStr) const;
+
+		// Helper: Find the registered struct type for method lookup (handles generic types)
+		// Given a concrete type like Box<i64>, returns the registered type like Box<T> if method exists
+		std::string findMethodStructType(const std::string& concreteType, const std::string& methodName) const;
+
 		// Report an error (gcc/clang style)
 		void reportError(const char* message);
 		void reportError(const IAstNode* node, const char* message);

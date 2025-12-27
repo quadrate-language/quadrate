@@ -26,7 +26,11 @@ namespace Qd {
 	class AstNodeStructConstruction : public IAstNode {
 	public:
 		AstNodeStructConstruction(const std::string& structName)
-			: mStructName(structName), mParent(nullptr), mLine(0), mColumn(0) {
+			: mStructName(structName), mTypeArgs(), mParent(nullptr), mLine(0), mColumn(0) {
+		}
+
+		AstNodeStructConstruction(const std::string& structName, const std::vector<std::string>& typeArgs)
+			: mStructName(structName), mTypeArgs(typeArgs), mParent(nullptr), mLine(0), mColumn(0) {
 		}
 
 		~AstNodeStructConstruction() {
@@ -99,8 +103,21 @@ namespace Qd {
 			return mFieldInits;
 		}
 
+		const std::vector<std::string>& typeArgs() const {
+			return mTypeArgs;
+		}
+
+		bool hasTypeArgs() const {
+			return !mTypeArgs.empty();
+		}
+
+		void addTypeArg(const std::string& typeArg) {
+			mTypeArgs.push_back(typeArg);
+		}
+
 	private:
 		std::string mStructName;
+		std::vector<std::string> mTypeArgs;
 		std::vector<StructFieldInit> mFieldInits;
 		IAstNode* mParent;
 		size_t mLine;

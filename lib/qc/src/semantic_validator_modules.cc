@@ -825,6 +825,19 @@ namespace Qd {
 			AstNodeFunctionDeclaration* func = static_cast<AstNodeFunctionDeclaration*>(node);
 			std::vector<StackValueType> typeStack;
 
+			// Set current type params for generic functions
+			mCurrentTypeParams = func->typeParams();
+			// Also include receiver type params if this is a method on a generic struct
+			if (func->hasReceiverTypeParams()) {
+				for (const auto& tp : func->receiverTypeParams()) {
+					// Only add if not already in type params
+					if (std::find(mCurrentTypeParams.begin(), mCurrentTypeParams.end(), tp) ==
+							mCurrentTypeParams.end()) {
+						mCurrentTypeParams.push_back(tp);
+					}
+				}
+			}
+
 			// Initialize type stack with input parameters
 			// Input parameters are on the stack when the function starts
 			for (size_t i = 0; i < func->inputParameters().size(); i++) {
@@ -951,6 +964,9 @@ namespace Qd {
 				std::string qualifiedName = moduleName + "::" + func->name();
 				mFunctionSignatures[qualifiedName] = sig;
 			}
+
+			// Clear type params after processing function
+			mCurrentTypeParams.clear();
 		}
 		// Analyze imported functions and register them with the module's namespace
 		else if (node->type() == IAstNode::Type::IMPORT_STATEMENT) {

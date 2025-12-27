@@ -77,11 +77,18 @@ namespace Qd {
 	// Supports both unqualified names (Response) and qualified names (http::Response)
 
 	bool SemanticValidator::isStructTypeName(const std::string& typeStr) const {
+		// Extract base type if generic (e.g., Box<T> -> Box)
+		std::string baseName = typeStr;
+		size_t anglePos = typeStr.find('<');
+		if (anglePos != std::string::npos) {
+			baseName = typeStr.substr(0, anglePos);
+		}
+
 		// Check for qualified name (module::StructName)
-		size_t colonPos = typeStr.find("::");
+		size_t colonPos = baseName.find("::");
 		if (colonPos != std::string::npos) {
-			std::string moduleName = typeStr.substr(0, colonPos);
-			std::string structName = typeStr.substr(colonPos + 2);
+			std::string moduleName = baseName.substr(0, colonPos);
+			std::string structName = baseName.substr(colonPos + 2);
 			// Check if the module exists and has this struct
 			auto moduleIt = mModuleStructs.find(moduleName);
 			if (moduleIt != mModuleStructs.end()) {
@@ -94,13 +101,13 @@ namespace Qd {
 		}
 
 		// Check local structs
-		if (mDefinedStructs.find(typeStr) != mDefinedStructs.end()) {
+		if (mDefinedStructs.find(baseName) != mDefinedStructs.end()) {
 			return true;
 		}
 		// Check imported module structs (unqualified name)
 		for (const auto& moduleEntry : mModuleStructs) {
 			const auto& structs = moduleEntry.second;
-			if (structs.find(typeStr) != structs.end()) {
+			if (structs.find(baseName) != structs.end()) {
 				return true;
 			}
 		}
@@ -118,8 +125,91 @@ namespace Qd {
 				return true;
 			}
 		}
+
+		// Check for generic types like Box<T> or Pair<T, U>
+		size_t anglePos = typeStr.find('<');
+		if (anglePos != std::string::npos) {
+			// Extract base type
+			std::string baseType = typeStr.substr(0, anglePos);
+			// Base type must be a valid struct name
+			if (!isStructTypeName(baseType)) {
+				return false;
+			}
+			// Extract and validate type arguments
+			size_t closePos = typeStr.rfind('>');
+			if (closePos == std::string::npos || closePos <= anglePos) {
+				return false;
+			}
+			std::string typeArgs = typeStr.substr(anglePos + 1, closePos - anglePos - 1);
+			// Parse comma-separated type arguments
+			size_t start = 0;
+			while (start < typeArgs.size()) {
+				size_t commaPos = typeArgs.find(',', start);
+				std::string arg;
+				if (commaPos == std::string::npos) {
+					arg = typeArgs.substr(start);
+					start = typeArgs.size();
+				} else {
+					arg = typeArgs.substr(start, commaPos - start);
+					start = commaPos + 1;
+				}
+				// Trim whitespace
+				while (!arg.empty() && arg.front() == ' ') {
+					arg.erase(0, 1);
+				}
+				while (!arg.empty() && arg.back() == ' ') {
+					arg.pop_back();
+				}
+				// Each type arg must be a valid type (recursive)
+				if (!arg.empty() && !isValidTypeName(arg)) {
+					return false;
+				}
+			}
+			return true;
+		}
+
 		// Struct types
 		return isStructTypeName(typeStr);
+	}
+
+	bool SemanticValidator::isCurrentTypeParam(const std::string& typeStr) const {
+		// Check if it's an explicit type parameter in the current function
+		for (const auto& typeParam : mCurrentTypeParams) {
+			if (typeStr == typeParam) {
+				return true;
+			}
+		}
+
+		// Heuristic: if it's a single uppercase letter (or short uppercase name) and NOT a known struct,
+		// treat it as a type parameter. This handles struct type params like T, U, V when they
+		// appear in generic struct fields but the current function only uses a subset of them.
+		if (!typeStr.empty() && typeStr.length() <= 2) {
+			bool allUpper = true;
+			for (char c : typeStr) {
+				if (!std::isupper(static_cast<unsigned char>(c))) {
+					allUpper = false;
+					break;
+				}
+			}
+			if (allUpper) {
+				// It's a short uppercase identifier - check if it's NOT a known struct
+				if (mDefinedStructs.find(typeStr) == mDefinedStructs.end()) {
+					// Check module structs too
+					bool isKnownStruct = false;
+					for (const auto& moduleEntry : mModuleStructs) {
+						if (moduleEntry.second.find(typeStr) != moduleEntry.second.end()) {
+							isKnownStruct = true;
+							break;
+						}
+					}
+					if (!isKnownStruct) {
+						return true; // Treat as type parameter
+					}
+				}
+			}
+		}
+
+		return false;
 	}
 
 	StackValueType SemanticValidator::getConstantType(const std::string& value) const {
@@ -444,6 +534,72 @@ namespace Qd {
 		}
 
 		return matchingStruct;
+	}
+
+	std::string SemanticValidator::findMethodStructType(
+			const std::string& concreteType, const std::string& methodName) const {
+		// First try direct lookup
+		auto it = mStructMethods.find(concreteType);
+		if (it != mStructMethods.end() && it->second.count(methodName)) {
+			return concreteType;
+		}
+
+		// Extract base type (e.g., "Box" from "Box<i64>" or "ct::Box<i64>")
+		std::string baseType = concreteType;
+		std::string modulePrefix;
+
+		// Check for module prefix
+		size_t colonPos = concreteType.find("::");
+		size_t anglePos = concreteType.find('<');
+		if (colonPos != std::string::npos && (anglePos == std::string::npos || colonPos < anglePos)) {
+			modulePrefix = concreteType.substr(0, colonPos + 2);
+			baseType = concreteType.substr(colonPos + 2);
+		}
+
+		// Remove generic args from base type
+		anglePos = baseType.find('<');
+		if (anglePos != std::string::npos) {
+			baseType = baseType.substr(0, anglePos);
+		}
+
+		// Search for generic variants that have this method
+		// Look for patterns like "BaseType<T>", "module::BaseType<T>", "BaseType<T, U>", etc.
+		for (const auto& pair : mStructMethods) {
+			const std::string& registeredType = pair.first;
+			const auto& methods = pair.second;
+
+			// Check if this type has the method
+			if (methods.count(methodName) == 0) {
+				continue;
+			}
+
+			// Check if registeredType matches our base type pattern
+			std::string registeredBase = registeredType;
+			std::string registeredPrefix;
+
+			// Extract prefix from registered type
+			size_t regColonPos = registeredType.find("::");
+			size_t regAnglePos = registeredType.find('<');
+			if (regColonPos != std::string::npos && (regAnglePos == std::string::npos || regColonPos < regAnglePos)) {
+				registeredPrefix = registeredType.substr(0, regColonPos + 2);
+				registeredBase = registeredType.substr(regColonPos + 2);
+			}
+
+			// Remove generic args from registered base
+			regAnglePos = registeredBase.find('<');
+			if (regAnglePos != std::string::npos) {
+				registeredBase = registeredBase.substr(0, regAnglePos);
+			}
+
+			// Check if bases match and prefixes match (if present)
+			if (registeredBase == baseType &&
+					(modulePrefix.empty() || registeredPrefix.empty() || modulePrefix == registeredPrefix)) {
+				// Found a matching generic type with this method
+				return registeredType;
+			}
+		}
+
+		return "";
 	}
 
 } // namespace Qd

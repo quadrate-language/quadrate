@@ -155,8 +155,9 @@ namespace Qd {
 	static IAstNode* parseLoopStatement(u8t_scanner* scanner, ErrorReporter* errorReporter, const char* src);
 	static IAstNode* parseIfStatement(u8t_scanner* scanner, ErrorReporter* errorReporter, const char* src);
 	static IAstNode* parseSwitchStatement(u8t_scanner* scanner, ErrorReporter* errorReporter, const char* src);
-	static AstNodeStructConstruction* parseStructConstruction(const std::string& structName, u8t_scanner* scanner,
-			ErrorReporter* errorReporter, const char* src, size_t startPos);
+	static AstNodeStructConstruction* parseStructConstruction(const std::string& structName,
+			const std::vector<std::string>& typeArgs, u8t_scanner* scanner, ErrorReporter* errorReporter,
+			const char* src, size_t startPos);
 	static IAstNode* parseAnonymousFunction(u8t_scanner* scanner, ErrorReporter* errorReporter, const char* src);
 
 	// Helper to parse constant value after '=' (handles literals and env() function)
@@ -1009,11 +1010,58 @@ namespace Qd {
 						const char* memberName = u8t_scanner_token_text(scanner, n);
 						std::string fullName = scopeName + "::" + memberName;
 
-						// Check if this is struct construction: module::StructName { ... }
+						// Check if this is struct construction: module::StructName { ... } or module::StructName<T> {
+						// ... } Only treat '<' as generic type args if member name starts with uppercase (struct names)
+						// and it's not followed by '=' (which would make it '<=' operator)
 						char32_t afterMember = peekNextNonWhitespace(scanner, src);
+						bool memberLooksLikeStruct =
+								memberName != nullptr && memberName[0] != '\0' && std::isupper(memberName[0]);
+						bool isGenericBracket = false;
+						if (afterMember == '<' && memberLooksLikeStruct) {
+							// Check if this is '<=' operator by looking at character after '<'
+							// Look ahead in the raw string to see if '<' is followed by '='
+							const char* currentPos = scanner->_str;
+							// Skip whitespace and find '<'
+							while (*currentPos && (*currentPos == ' ' || *currentPos == '\t' || *currentPos == '\n')) {
+								currentPos++;
+							}
+							if (*currentPos == '<' && *(currentPos + 1) != '=') {
+								isGenericBracket = true;
+							}
+						}
+						if (isGenericBracket) {
+							// Parse type arguments for generic struct construction
+							u8t_scanner_scan(scanner); // Consume '<'
+							std::vector<std::string> typeArgs;
+							while (true) {
+								char32_t argToken = u8t_scanner_scan(scanner);
+								if (argToken == '>') {
+									break;
+								}
+								if (argToken == U8T_IDENTIFIER) {
+									const char* typeArg = u8t_scanner_token_text(scanner, n);
+									typeArgs.push_back(std::string(typeArg));
+									char32_t peekComma = peekNextNonWhitespace(scanner, src);
+									if (peekComma == ',') {
+										u8t_scanner_scan(scanner);
+									}
+								} else if (argToken != ',') {
+									errorReporter->reportError(scanner, "Expected type argument or '>'");
+									break;
+								}
+							}
+							afterMember = peekNextNonWhitespace(scanner, src);
+							if (afterMember == '{') {
+								u8t_scanner_scan(scanner); // Consume '{'
+								return parseStructConstruction(
+										fullName, typeArgs, scanner, errorReporter, src, identPos);
+							}
+							errorReporter->reportError(scanner, "Expected '{' after generic type arguments");
+							return nullptr;
+						}
 						if (afterMember == '{') {
 							u8t_scanner_scan(scanner); // Consume '{'
-							return parseStructConstruction(fullName, scanner, errorReporter, src, identPos);
+							return parseStructConstruction(fullName, {}, scanner, errorReporter, src, identPos);
 						}
 
 						AstNodeScopedIdentifier* scoped = new AstNodeScopedIdentifier(scopeName, memberName);
@@ -1035,11 +1083,60 @@ namespace Qd {
 				// This is an edge case that shouldn't normally happen.
 			}
 
-			// Check if this is struct construction: StructName { ... }
+			// Check if this is struct construction: StructName { ... } or StructName<T> { ... }
 			nextToken = peekNextNonWhitespace(scanner, src);
+			// Only treat '<' as generic type args if identifier looks like a struct name (PascalCase)
+			// and it's not followed by '=' (which would make it '<=' operator)
+			bool identLooksLikeStruct = !identName.empty() && std::isupper(identName[0]);
+			bool isGenericBracketIdent = false;
+			if (nextToken == '<' && identLooksLikeStruct) {
+				// Check if this is '<=' operator by looking at character after '<'
+				const char* currentPosIdent = scanner->_str;
+				// Skip whitespace and find '<'
+				while (*currentPosIdent &&
+						(*currentPosIdent == ' ' || *currentPosIdent == '\t' || *currentPosIdent == '\n')) {
+					currentPosIdent++;
+				}
+				if (*currentPosIdent == '<' && *(currentPosIdent + 1) != '=') {
+					isGenericBracketIdent = true;
+				}
+			}
+			if (isGenericBracketIdent) {
+				// Parse type arguments for generic struct construction
+				u8t_scanner_scan(scanner); // Consume '<'
+				std::vector<std::string> typeArgs;
+				while (true) {
+					char32_t argToken = u8t_scanner_scan(scanner);
+					if (argToken == '>') {
+						break;
+					}
+					if (argToken == U8T_IDENTIFIER) {
+						const char* typeArg = u8t_scanner_token_text(scanner, n);
+						typeArgs.push_back(std::string(typeArg));
+						// Check for comma or closing >
+						char32_t peekComma = peekNextNonWhitespace(scanner, src);
+						if (peekComma == ',') {
+							u8t_scanner_scan(scanner); // Consume ','
+						}
+					} else if (argToken != ',') {
+						errorReporter->reportError(scanner, "Expected type argument or '>' in generic struct");
+						break;
+					}
+				}
+				// Now expect '{'
+				nextToken = peekNextNonWhitespace(scanner, src);
+				if (nextToken == '{') {
+					u8t_scanner_scan(scanner); // Consume '{'
+					return parseStructConstruction(identName, typeArgs, scanner, errorReporter, src, identPos);
+				}
+				// Not a struct construction after all - fall through to regular identifier
+				// but type args were consumed, this is an error
+				errorReporter->reportError(scanner, "Expected '{' after generic type arguments");
+				return nullptr;
+			}
 			if (nextToken == '{') {
 				u8t_scanner_scan(scanner); // Consume '{'
-				return parseStructConstruction(identName, scanner, errorReporter, src, identPos);
+				return parseStructConstruction(identName, {}, scanner, errorReporter, src, identPos);
 			}
 
 			AstNodeIdentifier* node = new AstNodeIdentifier(text);
@@ -1197,6 +1294,29 @@ namespace Qd {
 								}
 							}
 						}
+						// Check for generic type parameters: Type<T> or Type<T, U>
+						char32_t peekAngle = u8t_scanner_peek(scanner);
+						if (peekAngle == '<') {
+							u8t_scanner_scan(scanner); // consume '<'
+							paramTypeStr += "<";
+							int depth = 1;
+							while (depth > 0) {
+								token = u8t_scanner_scan(scanner);
+								if (token == '<') {
+									depth++;
+									paramTypeStr += "<";
+								} else if (token == '>') {
+									depth--;
+									paramTypeStr += ">";
+								} else if (token == ',') {
+									paramTypeStr += ",";
+								} else if (token == U8T_IDENTIFIER) {
+									paramTypeStr += std::string(u8t_scanner_token_text(scanner, &n));
+								} else if (token == U8T_EOF) {
+									break; // Prevent infinite loop on malformed input
+								}
+							}
+						}
 						AstNodeParameter* param = new AstNodeParameter(paramNameStr, paramTypeStr, isOutput);
 						setNodePosition(param, scanner, src);
 						param->setParent(func);
@@ -1241,9 +1361,10 @@ namespace Qd {
 
 	static IAstNode* parseFunctionDeclaration(
 			u8t_scanner* scanner, ErrorReporter* errorReporter, const char* src, bool isPublic = false) {
-		// Check for receiver syntax: fn (receiver:Type) name(...)
+		// Check for receiver syntax: fn (receiver:Type) name(...) or fn (receiver:Type<T>) name(...)
 		std::string receiverName;
 		std::string receiverType;
+		std::vector<std::string> receiverTypeParams;
 		bool hasReceiver = false;
 
 		char32_t token = u8t_scanner_scan(scanner);
@@ -1303,6 +1424,29 @@ namespace Qd {
 				}
 			}
 
+			// Handle generic type parameters: Type<T> or Type<T, U>
+			char32_t peekAngle = u8t_scanner_peek(scanner);
+			if (peekAngle == '<') {
+				u8t_scanner_scan(scanner); // consume '<'
+				while (true) {
+					token = u8t_scanner_scan(scanner);
+					if (token == '>') {
+						break;
+					}
+					if (token == U8T_IDENTIFIER) {
+						receiverTypeParams.push_back(std::string(u8t_scanner_token_text(scanner, &n)));
+						char32_t peekComma = u8t_scanner_peek(scanner);
+						if (peekComma == ',') {
+							u8t_scanner_scan(scanner); // consume ','
+						}
+					} else if (token != ',') {
+						errorReporter->reportError(scanner, "Expected type parameter or '>' in receiver type");
+						synchronize(scanner);
+						return nullptr;
+					}
+				}
+			}
+
 			// Expect ')'
 			token = u8t_scanner_scan(scanner);
 			if (token != ')') {
@@ -1328,7 +1472,7 @@ namespace Qd {
 
 		// Set receiver if present
 		if (hasReceiver) {
-			func->setReceiver(receiverName, receiverType);
+			func->setReceiver(receiverName, receiverType, receiverTypeParams);
 		}
 
 		// Check for generic type parameters: fn name<T, U>(...)
@@ -1400,6 +1544,29 @@ namespace Qd {
 								if (token == U8T_IDENTIFIER) {
 									const char* structName = u8t_scanner_token_text(scanner, &n);
 									paramTypeStr = paramTypeStr + "::" + structName;
+								}
+							}
+						}
+						// Check for generic type parameters: Type<T> or Type<T, U>
+						char32_t peekAngle = u8t_scanner_peek(scanner);
+						if (peekAngle == '<') {
+							u8t_scanner_scan(scanner); // consume '<'
+							paramTypeStr += "<";
+							int depth = 1;
+							while (depth > 0) {
+								token = u8t_scanner_scan(scanner);
+								if (token == '<') {
+									depth++;
+									paramTypeStr += "<";
+								} else if (token == '>') {
+									depth--;
+									paramTypeStr += ">";
+								} else if (token == ',') {
+									paramTypeStr += ",";
+								} else if (token == U8T_IDENTIFIER) {
+									paramTypeStr += std::string(u8t_scanner_token_text(scanner, &n));
+								} else if (token == U8T_EOF) {
+									break; // Prevent infinite loop on malformed input
 								}
 							}
 						}
@@ -2034,12 +2201,52 @@ namespace Qd {
 									const char* memberName = u8t_scanner_token_text(scanner, &n);
 									std::string fullName = scopeName + "::" + memberName;
 
-									// Check for struct construction: module::StructName { ... }
+									// Check for struct construction: module::StructName { ... } or
+									// module::StructName<T> { ... } Only treat '<' as generic type args if member name
+									// starts with uppercase (struct names) and it's not followed by '=' (which would
+									// make it '<=' operator)
 									char32_t afterMember = peekNextNonWhitespace(scanner, src);
+									std::vector<std::string> typeArgs;
+									bool memberLooksLikeStruct2 = memberName != nullptr && memberName[0] != '\0' &&
+																  std::isupper(memberName[0]);
+									bool isGenericBracket2 = false;
+									if (afterMember == '<' && memberLooksLikeStruct2) {
+										// Check if this is '<=' operator by looking at character after '<'
+										const char* currentPos2 = scanner->_str;
+										// Skip whitespace and find '<'
+										while (*currentPos2 &&
+												(*currentPos2 == ' ' || *currentPos2 == '\t' || *currentPos2 == '\n')) {
+											currentPos2++;
+										}
+										if (*currentPos2 == '<' && *(currentPos2 + 1) != '=') {
+											isGenericBracket2 = true;
+										}
+									}
+									if (isGenericBracket2) {
+										u8t_scanner_scan(scanner); // Consume '<'
+										while (true) {
+											char32_t argToken = u8t_scanner_scan(scanner);
+											if (argToken == '>') {
+												break;
+											}
+											if (argToken == U8T_IDENTIFIER) {
+												const char* typeArg = u8t_scanner_token_text(scanner, &n);
+												typeArgs.push_back(std::string(typeArg));
+												char32_t peekComma = peekNextNonWhitespace(scanner, src);
+												if (peekComma == ',') {
+													u8t_scanner_scan(scanner);
+												}
+											} else if (argToken != ',') {
+												errorReporter->reportError(scanner, "Expected type argument or '>'");
+												break;
+											}
+										}
+										afterMember = peekNextNonWhitespace(scanner, src);
+									}
 									if (afterMember == '{') {
 										u8t_scanner_scan(scanner); // Consume '{'
 										AstNodeStructConstruction* structConstruct = parseStructConstruction(
-												fullName, scanner, errorReporter, src, identPos);
+												fullName, typeArgs, scanner, errorReporter, src, identPos);
 										if (structConstruct) {
 											// Push to tempNodes so @field can access it
 											tempNodes.push_back(structConstruct);
@@ -2065,12 +2272,50 @@ namespace Qd {
 							}
 						}
 
-						// Check for struct construction: StructName { ... }
+						// Check for struct construction: StructName { ... } or StructName<T> { ... }
+						// Only treat '<' as generic type args if identifier starts with uppercase (struct names)
+						// and it's not followed by '=' (which would make it '<=' operator)
 						nextToken = peekNextNonWhitespace(scanner, src);
+						std::vector<std::string> typeArgs;
+						bool looksLikeStructName = !identName.empty() && std::isupper(identName[0]);
+						bool isGenericBracket3 = false;
+						if (nextToken == '<' && looksLikeStructName) {
+							// Check if this is '<=' operator by looking at character after '<'
+							const char* currentPos3 = scanner->_str;
+							// Skip whitespace and find '<'
+							while (*currentPos3 &&
+									(*currentPos3 == ' ' || *currentPos3 == '\t' || *currentPos3 == '\n')) {
+								currentPos3++;
+							}
+							if (*currentPos3 == '<' && *(currentPos3 + 1) != '=') {
+								isGenericBracket3 = true;
+							}
+						}
+						if (isGenericBracket3) {
+							u8t_scanner_scan(scanner); // Consume '<'
+							while (true) {
+								char32_t argToken = u8t_scanner_scan(scanner);
+								if (argToken == '>') {
+									break;
+								}
+								if (argToken == U8T_IDENTIFIER) {
+									const char* typeArg = u8t_scanner_token_text(scanner, &n);
+									typeArgs.push_back(std::string(typeArg));
+									char32_t peekComma = peekNextNonWhitespace(scanner, src);
+									if (peekComma == ',') {
+										u8t_scanner_scan(scanner);
+									}
+								} else if (argToken != ',') {
+									errorReporter->reportError(scanner, "Expected type argument or '>'");
+									break;
+								}
+							}
+							nextToken = peekNextNonWhitespace(scanner, src);
+						}
 						if (nextToken == '{') {
 							u8t_scanner_scan(scanner); // Consume '{'
 							AstNodeStructConstruction* structConstruct =
-									parseStructConstruction(identName, scanner, errorReporter, src, identPos);
+									parseStructConstruction(identName, typeArgs, scanner, errorReporter, src, identPos);
 							if (structConstruct) {
 								// Push to tempNodes so @field can access it
 								tempNodes.push_back(structConstruct);
@@ -2472,10 +2717,12 @@ namespace Qd {
 	}
 
 	// Parse struct construction body: StructName { field1: expr1 field2: expr2 ... }
+	// or StructName<T> { field1: expr1 ... } for generic structs
 	// Called after the opening '{' has been consumed
-	static AstNodeStructConstruction* parseStructConstruction(const std::string& structName, u8t_scanner* scanner,
-			ErrorReporter* errorReporter, const char* src, size_t startPos) {
-		AstNodeStructConstruction* structConstruct = new AstNodeStructConstruction(structName);
+	static AstNodeStructConstruction* parseStructConstruction(const std::string& structName,
+			const std::vector<std::string>& typeArgs, u8t_scanner* scanner, ErrorReporter* errorReporter,
+			const char* src, size_t startPos) {
+		AstNodeStructConstruction* structConstruct = new AstNodeStructConstruction(structName, typeArgs);
 		size_t line, column;
 		size_t startPosByte = charIndexToByteOffset(src, startPos);
 		calculateLineColumn(src, startPosByte, &line, &column);
@@ -2576,14 +2823,39 @@ namespace Qd {
 				}
 
 				// Not a field name, parse as expression element
-				// Check if it's a struct construction (nested)
+				// Check if it's a struct construction (nested) - StructName { ... } or StructName<T> { ... }
+				// Only treat '<' as generic type args if identifier starts with uppercase (struct names)
 				char32_t nextNonWs = peekNextNonWhitespace(scanner, src);
+				std::vector<std::string> nestedTypeArgs;
+				bool textLooksLikeStruct = text != nullptr && text[0] != '\0' && std::isupper(text[0]);
+				if (nextNonWs == '<' && textLooksLikeStruct) {
+					u8t_scanner_scan(scanner); // Consume '<'
+					while (true) {
+						char32_t argToken = u8t_scanner_scan(scanner);
+						if (argToken == '>') {
+							break;
+						}
+						if (argToken == U8T_IDENTIFIER) {
+							size_t n2;
+							const char* typeArg = u8t_scanner_token_text(scanner, &n2);
+							nestedTypeArgs.push_back(std::string(typeArg));
+							char32_t peek = peekNextNonWhitespace(scanner, src);
+							if (peek == ',') {
+								u8t_scanner_scan(scanner);
+							}
+						} else if (argToken != ',') {
+							errorReporter->reportError(scanner, "Expected type argument or '>'");
+							break;
+						}
+					}
+					nextNonWs = peekNextNonWhitespace(scanner, src);
+				}
 				if (nextNonWs == '{') {
 					size_t nestedPos = u8t_scanner_token_start(scanner);
 					std::string nestedName(text);
 					u8t_scanner_scan(scanner); // Consume '{'
 					AstNodeStructConstruction* nested =
-							parseStructConstruction(nestedName, scanner, errorReporter, src, nestedPos);
+							parseStructConstruction(nestedName, nestedTypeArgs, scanner, errorReporter, src, nestedPos);
 					if (nested) {
 						currentFieldNodes.push_back(nested);
 					}
@@ -2609,13 +2881,53 @@ namespace Qd {
 							const char* memberName = u8t_scanner_token_text(scanner, &n);
 							std::string fullName = scopeName + "::" + memberName;
 
-							// Check for nested struct: module::StructName { ... }
+							// Check for nested struct: module::StructName { ... } or module::StructName<T> { ... }
+							// Only treat '<' as generic type args if member name starts with uppercase (struct names)
+							// and it's not followed by '=' (which would make it '<=' operator)
 							char32_t afterMember = peekNextNonWhitespace(scanner, src);
+							std::vector<std::string> scopedNestedTypeArgs;
+							bool memberLooksLikeStruct3 =
+									memberName != nullptr && memberName[0] != '\0' && std::isupper(memberName[0]);
+							bool isGenericBracket4 = false;
+							if (afterMember == '<' && memberLooksLikeStruct3) {
+								// Check if this is '<=' operator by looking at character after '<'
+								const char* currentPos4 = scanner->_str;
+								// Skip whitespace and find '<'
+								while (*currentPos4 &&
+										(*currentPos4 == ' ' || *currentPos4 == '\t' || *currentPos4 == '\n')) {
+									currentPos4++;
+								}
+								if (*currentPos4 == '<' && *(currentPos4 + 1) != '=') {
+									isGenericBracket4 = true;
+								}
+							}
+							if (isGenericBracket4) {
+								u8t_scanner_scan(scanner); // Consume '<'
+								while (true) {
+									char32_t argToken = u8t_scanner_scan(scanner);
+									if (argToken == '>') {
+										break;
+									}
+									if (argToken == U8T_IDENTIFIER) {
+										size_t n2;
+										const char* typeArg = u8t_scanner_token_text(scanner, &n2);
+										scopedNestedTypeArgs.push_back(std::string(typeArg));
+										char32_t peekComma = peekNextNonWhitespace(scanner, src);
+										if (peekComma == ',') {
+											u8t_scanner_scan(scanner);
+										}
+									} else if (argToken != ',') {
+										errorReporter->reportError(scanner, "Expected type argument or '>'");
+										break;
+									}
+								}
+								afterMember = peekNextNonWhitespace(scanner, src);
+							}
 							if (afterMember == '{') {
 								size_t nestedPos = u8t_scanner_token_start(scanner);
 								u8t_scanner_scan(scanner); // Consume '{'
-								AstNodeStructConstruction* nested =
-										parseStructConstruction(fullName, scanner, errorReporter, src, nestedPos);
+								AstNodeStructConstruction* nested = parseStructConstruction(
+										fullName, scopedNestedTypeArgs, scanner, errorReporter, src, nestedPos);
 								if (nested) {
 									currentFieldNodes.push_back(nested);
 								}

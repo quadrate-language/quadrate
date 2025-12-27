@@ -1,0 +1,41 @@
+use ct
+
+fn main() {
+	// Test Box
+	42 ct::box -> b
+	b unwrap print nl
+
+	// Test Pair creation
+	10 20 ct::pair -> p
+
+	// Access elements
+	p fst print nl
+	p snd print nl
+
+	// Unpack
+	p unpack -> y -> x
+	x print nl
+	y print nl
+
+	// Swap
+	p swap_pair -> q
+	q fst print nl
+	q snd print nl
+
+	// Map over both elements
+	fn (x:i64 -- y:i64) { 2 * } p map_both -> r
+	r fst print nl
+	r snd print nl
+
+	// Test Option - Some
+	100 ct::some -> opt_some
+	opt_some is_some print nl
+	opt_some is_none print nl
+	0 opt_some unwrap_or print nl
+
+	// Test Option - None
+	ct::none -> opt_none
+	opt_none is_some print nl
+	opt_none is_none print nl
+	-1 opt_none unwrap_or print nl
+}

@@ -1,0 +1,37 @@
+=== Box<i64> ===
+42
+=== Box<i64> 2 ===
+314
+=== Box map ===
+20
+=== Pair<i64, i64> ===
+100
+200
+=== Pair unpack ===
+100
+200
+=== Pair swap ===
+200
+100
+=== Pair<i64, i64> 2 ===
+15
+999
+=== Pair map_both ===
+15
+30
+=== Option<i64> some ===
+1
+0
+77
+=== Option<i64> none ===
+0
+1
+-999
+=== Option map_opt ===
+52
+=== Option map_opt none ===
+-1
+=== Method chaining ===
+10
+20
+=== Done ===

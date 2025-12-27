@@ -19,7 +19,7 @@ LIBS_WITH_C := qdrt qd qdfmt qdio qdmath qdmem qdnet qdtls qdhttp qdos qdsignal 
 LIBS_WITH_HEADERS := qdrt qd qdfmt qdio qdmath qdmem qdnet qdtls qdhttp qdos qdstr qdstrconv qdtime qdtesting
 
 # Standard library modules (pure Quadrate or mixed)
-STDLIB_MODULES := base64 bits flag fmt hof http io json limits math mem net tls os sb signal str strconv time unicode uri hex bytes crc32 sha256 regex path sort rand uuid testing
+STDLIB_MODULES := base64 bits ct flag fmt hof http io json limits math mem net tls os sb signal str strconv time unicode uri hex bytes crc32 sha256 regex path sort rand uuid testing
 
 .PHONY: all debug release tests tests-failed tests-clear valgrind asan fuzz examples format install uninstall clean docs
 
