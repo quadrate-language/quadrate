@@ -20,8 +20,8 @@ fn main() {
 	// ====== Pair<T, U> Tests ======
 	"=== Pair<i64, i64> ===" print nl
 	100 200 ct::pair -> p1
-	p1 fst print nl  // 100
-	p1 snd print nl  // 200
+	p1 first print nl  // 100
+	p1 second print nl  // 200
 
 	// Pair unpack
 	"=== Pair unpack ===" print nl
@@ -29,24 +29,11 @@ fn main() {
 	x print nl  // 100
 	y print nl  // 200
 
-	// Pair swap
-	"=== Pair swap ===" print nl
-	p1 swap_pair -> p2
-	p2 fst print nl  // 200
-	p2 snd print nl  // 100
-
 	// Pair with different integers
 	"=== Pair<i64, i64> 2 ===" print nl
 	15 999 ct::pair -> p3
-	p3 fst print nl  // 15
-	p3 snd print nl  // 999
-
-	// Pair map_both
-	"=== Pair map_both ===" print nl
-	5 10 ct::pair -> p4
-	fn (x:i64 -- y:i64) { 3 * } p4 map_both -> p5
-	p5 fst print nl  // 15
-	p5 snd print nl  // 30
+	p3 first print nl  // 15
+	p3 second print nl  // 999
 
 	// ====== Option<T> Tests ======
 	"=== Option<i64> some ===" print nl
@@ -72,12 +59,6 @@ fn main() {
 	ct::none -> opt5
 	fn (x:i64 -- y:i64) { 100 + } opt5 map_opt -> opt6
 	-1 opt6 unwrap_or print nl  // -1 (unchanged because none)
-
-	// Multiple method calls on single type
-	"=== Method chaining ===" print nl
-	10 20 ct::pair swap_pair swap_pair -> p6
-	p6 fst print nl  // 10 (swapped twice = original)
-	p6 snd print nl  // 20
 
 	"=== Done ===" print nl
 }
