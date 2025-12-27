@@ -32,7 +32,6 @@ Assert that two values are equal. Works with any type (i64, f64, str, ptr).
 5 5 testing::assert_eq  // passes
 "hello" "hello" testing::assert_eq  // passes
 ```
-
 ---
 
 ### `fn` assert_false
@@ -51,7 +50,6 @@ Assert that a value is falsy. Falsy means: zero for integers, zero for floats, e
 0 testing::assert_false  // passes
 "" testing::assert_false  // passes
 ```
-
 ---
 
 ### `fn` assert_ne
@@ -70,7 +68,6 @@ Assert that two values are not equal. Works with any type (i64, f64, str, ptr).
 ```qd
 5 6 testing::assert_ne  // passes
 ```
-
 ---
 
 ### `fn` assert_true
@@ -89,7 +86,6 @@ Assert that a value is truthy. Truthy means: non-zero for integers, non-zero for
 1 testing::assert_true  // passes
 "hello" testing::assert_true  // passes
 ```
-
 ---
 
 ### `fn` fail
@@ -107,4 +103,3 @@ Unconditionally fail a test with a message.
 ```qd
 "Not implemented" testing::fail
 ```
-

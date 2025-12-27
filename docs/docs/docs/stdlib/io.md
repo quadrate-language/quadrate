@@ -48,7 +48,6 @@ Close a file.
 ```qd
 f io::close
 ```
-
 ---
 
 ### `fn` eof
@@ -71,7 +70,6 @@ Check if at end of file.
 ```qd
 f io::eof -> f  // at_end
 ```
-
 ---
 
 ### `fn` open
@@ -98,7 +96,6 @@ Open a file.
 ```qd
 "data.txt" io::Read io::open!  // f
 ```
-
 ---
 
 ### `fn` read_file
@@ -125,7 +122,6 @@ Read entire file contents.
 ```qd
 "/etc/hostname" io::read_file!  // contents
 ```
-
 ---
 
 ### `fn` read
@@ -154,7 +150,6 @@ Read bytes into buffer.
 ```qd
 f buf 1024 io::read!  // n
 ```
-
 ---
 
 ### `fn` readline
@@ -176,7 +171,6 @@ Read a line from stdin.
 ```qd
 io::readline!  // input
 ```
-
 ---
 
 ### `fn` seek
@@ -206,7 +200,6 @@ Seek to position in file.
 ```qd
 f 0 io::SeekSet io::seek! drop
 ```
-
 ---
 
 ### `fn` tell
@@ -233,7 +226,29 @@ Get current position in file.
 ```qd
 f io::tell!  // pos
 ```
+---
 
+### `fn` write_file
+
+Write string contents to file. Creates or truncates the file at the given path.
+
+**Signature:** `(path:str contents:str -- )!`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `path` | `str` | File path |
+| `contents` | `str` | String to write |
+
+| Error | Description |
+|-------|-------------|
+| `io::ErrPermission` | Permission denied or cannot create file |
+| `io::ErrWrite` | Write operation failed |
+
+**Example:**
+
+```qd
+"/tmp/test.txt" "Hello, world!\n" io::write_file!
+```
 ---
 
 ### `fn` write
@@ -262,28 +277,3 @@ Write bytes from buffer.
 ```qd
 f buf len io::write! drop
 ```
-
----
-
-### `fn` write_file
-
-Write string contents to file. Creates or truncates the file at the given path.
-
-**Signature:** `(path:str contents:str -- )!`
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `path` | `str` | File path |
-| `contents` | `str` | String to write |
-
-| Error | Description |
-|-------|-------------|
-| `io::ErrPermission` | Permission denied or cannot create file |
-| `io::ErrWrite` | Write operation failed |
-
-**Example:**
-
-```qd
-"/tmp/test.txt" "Hello, world!\n" io::write_file!
-```
-

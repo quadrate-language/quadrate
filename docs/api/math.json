@@ -4,52 +4,52 @@
   "constants": [
     {
       "name": "E",
-      "value": "2.718281828459045",
-      "description": "Euler's number (e ≈ 2.71828)."
-    },
-    {
-      "name": "Ln2",
-      "value": "0.693147180559945",
-      "description": "Natural logarithm of 2."
+      "value": "2.718281828459045235",
+      "description": "Euler's number (e)."
     },
     {
       "name": "Ln10",
-      "value": "2.302585092994046",
+      "value": "2.302585092994045684",
       "description": "Natural logarithm of 10."
     },
     {
-      "name": "Log2E",
-      "value": "1.442695040888963",
-      "description": "Base-2 logarithm of e."
+      "name": "Ln2",
+      "value": "0.693147180559945309",
+      "description": "Natural logarithm of 2."
     },
     {
       "name": "Log10E",
-      "value": "0.434294481903252",
+      "value": "0.434294481903251828",
       "description": "Base-10 logarithm of e."
     },
     {
+      "name": "Log2E",
+      "value": "1.442695040888963407",
+      "description": "Base-2 logarithm of e."
+    },
+    {
       "name": "Phi",
-      "value": "1.618033988749895",
+      "value": "1.618033988749894848",
       "description": "Golden ratio φ = (1 + √5) / 2."
     },
     {
       "name": "Pi",
-      "value": "3.141592653589793",
-      "description": "Mathematical constant Pi (π ≈ 3.14159)."
+      "value": "3.141592653589793238",
+      "description": "Mathematical constant Pi (π)."
     },
     {
       "name": "Sqrt2",
-      "value": "1.414213562373095",
+      "value": "1.414213562373095049",
       "description": "Square root of 2."
     },
     {
       "name": "Sqrt3",
-      "value": "1.732050807568877",
+      "value": "1.732050807568877294",
       "description": "Square root of 3."
     },
     {
       "name": "Tau",
-      "value": "6.283185307179586",
+      "value": "6.283185307179586477",
       "description": "Tau = 2π (full circle in radians)."
     }
   ],

@@ -1,7 +1,7 @@
 # `use` regex
 
 Regular expression matching using Thompson NFA.
-Supports = . * + ? | () [] [^] [a-z] ^ it and escapes.
+Supports . * + ? | () [] [^] [a-z] ^ $ and escapes.
 Note: Nested groups and alternation inside groups not yet supported.
 
 ## Functions
@@ -19,7 +19,6 @@ Compile a regex pattern.
 | Output | Type | Description |
 |--------|------|-------------|
 | `re` | `ptr` | Compiled regex (null on error) |
-
 ---
 
 ### `fn` is_match
@@ -42,7 +41,6 @@ Compile and test if pattern matches string.
 ```qd
 "hello.*" "hello world" regex::is_match  // result
 ```
-
 ---
 
 ### `fn` matches
@@ -59,7 +57,6 @@ Test if a string matches a compiled regex (full match).
 | Output | Type | Description |
 |--------|------|-------------|
 | `matches` | `i64` | 1 if matches, 0 otherwise |
-
 ---
 
 ### `fn` release
@@ -67,4 +64,3 @@ Test if a string matches a compiled regex (full match).
 Free a compiled regex.
 
 **Signature:** `(re:ptr -- )`
-

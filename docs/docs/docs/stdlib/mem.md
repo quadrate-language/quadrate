@@ -38,7 +38,6 @@ Allocate memory.
 ```qd
 1024 mem::alloc!  // buf
 ```
-
 ---
 
 ### `fn` copy
@@ -58,7 +57,6 @@ Copy bytes between memory regions.
 ```qd
 dst src 100 mem::copy
 ```
-
 ---
 
 ### `fn` fill
@@ -78,7 +76,6 @@ Fill memory region with byte value.
 ```qd
 0xFF buf 1024 mem::fill
 ```
-
 ---
 
 ### `fn` free
@@ -96,7 +93,6 @@ Free allocated memory.
 ```qd
 buf mem::free
 ```
-
 ---
 
 ### `fn` from_string
@@ -119,7 +115,6 @@ Convert string to buffer.
 ```qd
 "hello" mem::from_string -> len  // buf
 ```
-
 ---
 
 ### `fn` get_byte
@@ -142,7 +137,6 @@ Get a byte at offset.
 ```qd
 buf 0 mem::get_byte  // b
 ```
-
 ---
 
 ### `fn` get_f64
@@ -165,7 +159,6 @@ Get a 64-bit float at offset.
 ```qd
 buf 0 mem::get_f64  // x
 ```
-
 ---
 
 ### `fn` get_i64
@@ -188,7 +181,6 @@ Get a 64-bit integer at offset.
 ```qd
 buf 0 mem::get_i64  // n
 ```
-
 ---
 
 ### `fn` get_ptr
@@ -211,7 +203,6 @@ Get a pointer at offset.
 ```qd
 buf 0 mem::get_ptr  // p
 ```
-
 ---
 
 ### `fn` is_null
@@ -233,7 +224,6 @@ Check if pointer is null.
 ```qd
 buf mem::is_null print  // 0
 ```
-
 ---
 
 ### `fn` realloc
@@ -261,7 +251,6 @@ Reallocate memory to new size.
 ```qd
 buf 2048 mem::realloc!  // buf
 ```
-
 ---
 
 ### `fn` set_byte
@@ -281,7 +270,6 @@ Set a byte at offset.
 ```qd
 65 buf 0 mem::set_byte
 ```
-
 ---
 
 ### `fn` set_f64
@@ -301,7 +289,6 @@ Set a 64-bit float at offset.
 ```qd
 3.14 buf 0 mem::set_f64
 ```
-
 ---
 
 ### `fn` set_i64
@@ -321,7 +308,6 @@ Set a 64-bit integer at offset.
 ```qd
 42 buf 0 mem::set_i64
 ```
-
 ---
 
 ### `fn` set_ptr
@@ -341,7 +327,6 @@ Set a pointer at offset.
 ```qd
 other_buf buf 0 mem::set_ptr
 ```
-
 ---
 
 ### `fn` to_string
@@ -364,7 +349,6 @@ Convert buffer to string.
 ```qd
 buf len mem::to_string  // s
 ```
-
 ---
 
 ### `fn` zero
@@ -383,4 +367,3 @@ Zero out memory region.
 ```qd
 buf 1024 mem::zero
 ```
-

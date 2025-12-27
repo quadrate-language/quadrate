@@ -24,7 +24,6 @@ Decode a base64 string.
 ```qd
 "SGVsbG8=" base64::decode  // text
 ```
-
 ---
 
 ### `fn` encode
@@ -46,4 +45,3 @@ Encode a string to base64.
 ```qd
 "Hello" base64::encode  // b64
 ```
-

@@ -37,7 +37,6 @@ Get character code at index.
 ```qd
 "hello" 0 str::char_at! print  // 104 ('h')
 ```
-
 ---
 
 ### `fn` compare
@@ -60,7 +59,6 @@ Compare two strings lexicographically.
 ```qd
 "abc" "abd" str::compare print  // -1
 ```
-
 ---
 
 ### `fn` concat
@@ -83,7 +81,6 @@ Concatenate two strings.
 ```qd
 "hello" " world" str::concat print  // "hello world"
 ```
-
 ---
 
 ### `fn` contains
@@ -106,7 +103,6 @@ Check if string contains substring.
 ```qd
 "hello" "ell" str::contains print  // 1
 ```
-
 ---
 
 ### `fn` ends_with
@@ -129,7 +125,6 @@ Check if string ends with suffix.
 ```qd
 "hello" "lo" str::ends_with print  // 1
 ```
-
 ---
 
 ### `fn` from_char
@@ -151,7 +146,6 @@ Create string from character code.
 ```qd
 65 str::from_char print  // "A"
 ```
-
 ---
 
 ### `fn` from_ptr
@@ -173,7 +167,6 @@ Convert C string pointer to Quadrate string.
 ```qd
 entries 0 mem::get_ptr str::from_ptr print
 ```
-
 ---
 
 ### `fn` index_of_from
@@ -197,7 +190,6 @@ Find substring starting from position.
 ```qd
 "hello hello" "hello" 1 str::index_of_from print  // 6
 ```
-
 ---
 
 ### `fn` index_of
@@ -220,7 +212,33 @@ Find first occurrence of substring.
 ```qd
 "hello" "ll" str::index_of print  // 2
 ```
+---
 
+### `fn` join
+
+Join array of strings with delimiter.
+
+**Signature:** `(parts:ptr count:i64 delim:str -- result:str)!`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `parts` | `ptr` | Array of string pointers |
+| `count` | `i64` | Number of strings |
+| `delim` | `str` | Delimiter string |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `result` | `str` | Joined string |
+
+| Error | Description |
+|-------|-------------|
+| `str::ErrAlloc` | Memory allocation failed |
+
+**Example:**
+
+```qd
+parts count "/" str::join!  // path
+```
 ---
 
 ### `fn` len
@@ -242,7 +260,6 @@ Get string length in bytes.
 ```qd
 "hello" str::len print  // 5
 ```
-
 ---
 
 ### `fn` lower
@@ -264,7 +281,6 @@ Convert string to lowercase.
 ```qd
 "HELLO" str::lower print  // "hello"
 ```
-
 ---
 
 ### `fn` replace
@@ -292,7 +308,6 @@ Replace all occurrences of substring.
 ```qd
 "hello" "l" "L" str::replace! print  // "heLLo"
 ```
-
 ---
 
 ### `fn` sort
@@ -311,7 +326,6 @@ Sort array of strings in ascending alphabetical order.
 ```qd
 entries count str::sort
 ```
-
 ---
 
 ### `fn` sort_desc
@@ -330,7 +344,6 @@ Sort array of strings in descending alphabetical order.
 ```qd
 entries count str::sort_desc
 ```
-
 ---
 
 ### `fn` split
@@ -358,7 +371,6 @@ Split string by delimiter.
 ```qd
 "a,b,c" "," str::split!  // parts=["a","b","c"], count=3
 ```
-
 ---
 
 ### `fn` starts_with
@@ -381,7 +393,6 @@ Check if string starts with prefix.
 ```qd
 "hello" "hel" str::starts_with print  // 1
 ```
-
 ---
 
 ### `fn` substring
@@ -409,7 +420,6 @@ Extract substring.
 ```qd
 "hello" 1 3 str::substring! print  // "ell"
 ```
-
 ---
 
 ### `fn` trim
@@ -431,7 +441,6 @@ Remove leading and trailing whitespace.
 ```qd
 "  hello  " str::trim print  // "hello"
 ```
-
 ---
 
 ### `fn` upper
@@ -453,4 +462,3 @@ Convert string to uppercase.
 ```qd
 "hello" str::upper print  // "HELLO"
 ```
-

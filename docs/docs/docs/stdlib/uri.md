@@ -3,21 +3,6 @@
 URI encoding, decoding, and parsing.
 Handles percent-encoding and URI component extraction.
 
-## Structs
-
-### `struct` Uri
-
-Parsed URI components.
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `scheme` | `str` | URI scheme (e.g., "https") |
-| `host` | `str` | Host name |
-| `port` | `i64` | Port number (0 if not specified) |
-| `path` | `str` | Path component |
-| `query` | `str` | Query string (without leading "?") |
-| `fragment` | `str` | Fragment (without leading "#") |
-
 ## Functions
 
 ### `fn` build
@@ -39,7 +24,6 @@ Build a URI string from components.
 ```qd
 u uri::build  // url
 ```
-
 ---
 
 ### `fn` decode
@@ -61,7 +45,6 @@ Decode a percent-encoded string.
 ```qd
 "hello%20world" uri::decode  // decoded
 ```
-
 ---
 
 ### `fn` encode
@@ -83,29 +66,6 @@ Percent-encode a string for use in URIs.
 ```qd
 "hello world" uri::encode  // encoded
 ```
-
----
-
-### `fn` parse
-
-Parse a URI string into components.
-
-**Signature:** `(s:str -- u:ptr)`
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `s` | `str` | URI string to parse |
-
-| Output | Type | Description |
-|--------|------|-------------|
-| `u` | `Uri` | Parsed URI struct |
-
-**Example:**
-
-```qd
-"https://example.com:8080/path?q=1#top" uri::parse  // u
-```
-
 ---
 
 ### `fn` query_get
@@ -128,7 +88,6 @@ Get a query parameter value by key.
 ```qd
 "foo=bar&x=1" "foo" uri::query_get  // val
 ```
-
 ---
 
 ### `fn` query_has
@@ -150,5 +109,41 @@ Check if a query parameter exists.
 
 ```qd
 "foo=bar&x=1" "foo" uri::query_has  // exists
+```
+## Uri
+
+Parsed URI components.
+
+### Struct
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `scheme` | `str` | URI scheme (e.g., "https") |
+| `host` | `str` | Host name |
+| `port` | `i64` | Port number (0 if not specified) |
+| `path` | `str` | Path component |
+| `query` | `str` | Query string (without leading "?") |
+| `fragment` | `str` | Fragment (without leading "#") |
+
+### Constructors
+
+#### `fn` parse
+
+Parse a URI string into components.
+
+**Signature:** `(s:str -- u:ptr)`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `s` | `str` | URI string to parse |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `u` | `Uri` | Parsed URI struct |
+
+**Example:**
+
+```qd
+"https://example.com:8080/path?q=1#top" uri::parse  // u
 ```
 

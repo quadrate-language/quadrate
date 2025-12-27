@@ -3,18 +3,6 @@
 StringBuilder - Efficient string building.
 Avoids O(n²) cost of repeated str::concat.
 
-## Structs
-
-### `struct` StringBuilder
-
-Growable string buffer for efficient string building.
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `buf` | `ptr` | Internal buffer |
-| `len` | `i64` | Current length |
-| `cap` | `i64` | Buffer capacity |
-
 ## Functions
 
 ### `fn` append_char
@@ -37,7 +25,6 @@ Append a single character (by code point).
 ```qd
 builder 65 sb::append_char  // builder
 ```
-
 ---
 
 ### `fn` append_int
@@ -60,7 +47,6 @@ Append an integer as string.
 ```qd
 builder 42 sb::append_int  // builder
 ```
-
 ---
 
 ### `fn` append
@@ -83,7 +69,6 @@ Append a string to the builder.
 ```qd
 builder "hello" sb::append  // builder
 ```
-
 ---
 
 ### `fn` build
@@ -105,7 +90,6 @@ Build the final string (does not consume builder).
 ```qd
 builder sb::build  // result
 ```
-
 ---
 
 ### `fn` finish
@@ -127,7 +111,6 @@ Build string and free builder in one call.
 ```qd
 builder sb::finish  // result
 ```
-
 ---
 
 ### `fn` free
@@ -145,7 +128,6 @@ Free the builder's resources.
 ```qd
 builder sb::free
 ```
-
 ---
 
 ### `fn` len
@@ -167,7 +149,6 @@ Get current length of builder content.
 ```qd
 builder sb::len  // sblen
 ```
-
 ---
 
 ### `fn` new
@@ -185,7 +166,6 @@ Create a new StringBuilder with default capacity.
 ```qd
 sb::new  // builder
 ```
-
 ---
 
 ### `fn` with_capacity
@@ -207,4 +187,15 @@ Create a StringBuilder with specific initial capacity.
 ```qd
 1024 sb::with_capacity  // builder
 ```
+## StringBuilder
+
+Growable string buffer for efficient string building.
+
+### Struct
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `buf` | `ptr` | Internal buffer |
+| `len` | `i64` | Current length |
+| `cap` | `i64` | Buffer capacity |
 

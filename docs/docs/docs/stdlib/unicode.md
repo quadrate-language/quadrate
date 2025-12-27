@@ -126,4 +126,3 @@ Check if character is a digit (0-9).
 ```qd
 48 unicode::is_digit print  // 1
 ```
-

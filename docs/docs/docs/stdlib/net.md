@@ -39,7 +39,6 @@ Accept an incoming connection.
 ```qd
 server net::accept!  // client
 ```
-
 ---
 
 ### `fn` close
@@ -57,7 +56,6 @@ Close socket and release resources.
 ```qd
 sock net::close
 ```
-
 ---
 
 ### `fn` connect
@@ -84,7 +82,6 @@ Connect to a remote host.
 ```qd
 "localhost" 8080 net::connect!  // sock
 ```
-
 ---
 
 ### `fn` listen
@@ -110,7 +107,6 @@ Start listening for connections on a port.
 ```qd
 8080 net::listen!  // server
 ```
-
 ---
 
 ### `fn` receive
@@ -138,7 +134,6 @@ Receive data from socket.
 ```qd
 sock 1024 net::receive! -> data  // n
 ```
-
 ---
 
 ### `fn` send
@@ -165,7 +160,6 @@ Send data over socket.
 ```qd
 sock "Hello" net::send!  // n
 ```
-
 ---
 
 ### `fn` shutdown
@@ -183,4 +177,3 @@ Shutdown socket for reading/writing.
 ```qd
 sock net::shutdown
 ```
-

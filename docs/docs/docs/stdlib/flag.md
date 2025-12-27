@@ -11,17 +11,6 @@ Error codes: Ok=1 (success), specific errors start at 2
 | `ErrNotFound` | `2` | Error: Flag not found. |
 | `ErrNoValue` | `3` | Error: Value not found (flag exists but has no value). |
 
-## Structs
-
-### `struct` Flag
-
-Parsed command-line arguments.
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `argc` | `i64` | Argument count |
-| `argv` | `str` | Arguments string |
-
 ## Functions
 
 ### `fn` boolean
@@ -44,7 +33,6 @@ Check if a boolean flag exists.
 ```qd
 f "--verbose" flag::boolean if { "verbose" print nl }
 ```
-
 ---
 
 ### `fn` destroy
@@ -62,7 +50,6 @@ Free a Flag struct and its argv string.
 ```qd
 f flag::destroy
 ```
-
 ---
 
 ### `fn` float
@@ -89,7 +76,6 @@ Get float value of a flag.
 ```qd
 f "--rate" flag::float!  // rate
 ```
-
 ---
 
 ### `fn` int
@@ -116,7 +102,6 @@ Get integer value of a flag.
 ```qd
 f "--count" flag::int!  // count
 ```
-
 ---
 
 ### `fn` parse
@@ -138,7 +123,6 @@ Parse arguments from read instruction.
 ```qd
 read flag::parse  // f
 ```
-
 ---
 
 ### `fn` positional
@@ -159,7 +143,6 @@ Get positional argument at index.
 | Error | Description |
 |-------|-------------|
 | `flag::ErrNotFound` | Not yet implemented |
-
 ---
 
 ### `fn` string
@@ -187,4 +170,14 @@ Get string value of a flag.
 ```qd
 f "--name" flag::string!  // name
 ```
+## Flag
+
+Parsed command-line arguments.
+
+### Struct
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `argc` | `i64` | Argument count |
+| `argv` | `str` | Arguments string |
 

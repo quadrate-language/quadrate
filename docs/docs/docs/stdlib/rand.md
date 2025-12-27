@@ -3,16 +3,6 @@
 Random number generation using xorshift64* algorithm.
 Fast, high-quality PRNG suitable for most applications.
 
-## Structs
-
-### `struct` Rng
-
-Random number generator state.
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `state` | `i64` | Internal RNG state |
-
 ## Functions
 
 ### `fn` boolean
@@ -35,7 +25,6 @@ Generate random boolean.
 ```qd
 rng rand::boolean  // rng b
 ```
-
 ---
 
 ### `fn` int
@@ -59,7 +48,6 @@ Generate random i64 in range [0, max).
 ```qd
 rng 100 rand::int  // rng n
 ```
-
 ---
 
 ### `fn` new
@@ -77,7 +65,6 @@ Create a new RNG seeded from current time.
 ```qd
 rand::new  // rng
 ```
-
 ---
 
 ### `fn` next
@@ -100,7 +87,6 @@ Generate next random i64.
 ```qd
 rng rand::next  // rng n
 ```
-
 ---
 
 ### `fn` range
@@ -125,7 +111,6 @@ Generate random i64 in range [min, max).
 ```qd
 rng 10 20 rand::range  // rng n
 ```
-
 ---
 
 ### `fn` with_seed
@@ -147,4 +132,13 @@ Create a new RNG with specific seed.
 ```qd
 12345 rand::with_seed  // rng
 ```
+## Rng
+
+Random number generator state.
+
+### Struct
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `state` | `i64` | Internal RNG state |
 

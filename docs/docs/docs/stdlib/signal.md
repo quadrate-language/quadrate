@@ -65,7 +65,6 @@ Clear the pending flag for a signal.
 ```qd
 signal::SigInt signal::clear
 ```
-
 ---
 
 ### `fn` ignore
@@ -83,7 +82,6 @@ Ignore the specified signal completely.
 ```qd
 signal::SigPipe signal::ignore
 ```
-
 ---
 
 ### `fn` pending
@@ -105,7 +103,6 @@ Check if a signal is pending (received but not cleared). Returns 1 if pending, 0
 ```qd
 signal::SigInt signal::pending
 ```
-
 ---
 
 ### `fn` reset
@@ -123,7 +120,6 @@ Reset signal to default behavior.
 ```qd
 signal::SigInt signal::reset
 ```
-
 ---
 
 ### `fn` trap
@@ -141,7 +137,6 @@ Install a handler to catch the specified signal. After trapping, the signal sets
 ```qd
 signal::SigInt signal::trap
 ```
-
 ---
 
 ### `fn` wait
@@ -159,4 +154,3 @@ Block until any trapped signal is received. Returns the signal number that was r
 ```qd
 signal::wait  // sig
 ```
-

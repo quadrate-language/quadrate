@@ -203,16 +203,6 @@
       "examples": ["f io::tell! -> pos"]
     },
     {
-      "name": "write",
-      "signature": "(handle:ptr buffer:ptr count:i64 -- bytes_written:i64)",
-      "failable": true,
-      "description": "Write bytes from buffer.",
-      "params": [{"name": "handle", "type": "ptr", "description": "File handle"}, {"name": "buffer", "type": "ptr", "description": "Buffer containing data"}, {"name": "count", "type": "i64", "description": "Number of bytes to write"}],
-      "returns": [{"name": "bytes_written", "type": "i64", "description": "Actual bytes written"}],
-      "errors": [{"code": "ErrInvalidArg", "description": "Invalid file handle, buffer, or count"}, {"code": "ErrWrite", "description": "Write operation failed"}],
-      "examples": ["f buf len io::write! drop"]
-    },
-    {
       "name": "write_file",
       "signature": "(path:str contents:str -- )",
       "failable": true,
@@ -221,6 +211,16 @@
       "returns": [],
       "errors": [{"code": "ErrPermission", "description": "Permission denied or cannot create file"}, {"code": "ErrWrite", "description": "Write operation failed"}],
       "examples": ["\"/tmp/test.txt\" \"Hello, world!\\n\" io::write_file!"]
+    },
+    {
+      "name": "write",
+      "signature": "(handle:ptr buffer:ptr count:i64 -- bytes_written:i64)",
+      "failable": true,
+      "description": "Write bytes from buffer.",
+      "params": [{"name": "handle", "type": "ptr", "description": "File handle"}, {"name": "buffer", "type": "ptr", "description": "Buffer containing data"}, {"name": "count", "type": "i64", "description": "Number of bytes to write"}],
+      "returns": [{"name": "bytes_written", "type": "i64", "description": "Actual bytes written"}],
+      "errors": [{"code": "ErrInvalidArg", "description": "Invalid file handle, buffer, or count"}, {"code": "ErrWrite", "description": "Write operation failed"}],
+      "examples": ["f buf len io::write! drop"]
     }
   ]
 }

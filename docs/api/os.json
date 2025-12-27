@@ -103,6 +103,16 @@
       "examples": ["\"/tmp/test.txt\" os::delete!"]
     },
     {
+      "name": "exec",
+      "signature": "(cmd:str -- stdout:str exitcode:i64)",
+      "failable": true,
+      "description": "Execute a command and capture all output. Simpler alternative to os::popen when you just need the full output.",
+      "params": [{"name": "cmd", "type": "str", "description": "Command to execute"}],
+      "returns": [{"name": "stdout", "type": "str", "description": "All output from command"}, {"name": "exitcode", "type": "i64", "description": "Command exit status"}],
+      "errors": [{"code": "ErrIo", "description": "Failed to execute command"}, {"code": "ErrOutOfMemory", "description": "Out of memory"}],
+      "examples": ["\"echo hello\" os::exec! -> exitcode -> stdout"]
+    },
+    {
       "name": "exists",
       "signature": "(path:str -- exists:i64)",
       "failable": false,

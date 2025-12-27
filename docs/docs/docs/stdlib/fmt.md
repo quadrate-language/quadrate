@@ -19,7 +19,6 @@ Print formatted output to stdout.
 ```qd
 "world" "Hello %s\n" fmt::printf  // Hello world
 ```
-
 ---
 
 ### `fn` sprintf
@@ -41,4 +40,3 @@ Format a string with printf-style specifiers.
 ```qd
 "world" "Hello %s\n" fmt::sprintf  // "Hello world\n"
 ```
-

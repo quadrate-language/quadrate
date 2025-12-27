@@ -21,7 +21,6 @@ Sort an array of i64 in ascending order (insertion sort).
 ```qd
 arr count sort::ints
 ```
-
 ---
 
 ### `fn` ints_desc
@@ -40,7 +39,6 @@ Sort an array of i64 in descending order.
 ```qd
 arr count sort::ints_desc
 ```
-
 ---
 
 ### `fn` is_sorted
@@ -63,7 +61,6 @@ Check if array is sorted in ascending order.
 ```qd
 arr count sort::is_sorted  // result
 ```
-
 ---
 
 ### `fn` max
@@ -86,7 +83,6 @@ Find maximum value in array.
 ```qd
 arr count sort::max  // val
 ```
-
 ---
 
 ### `fn` min
@@ -109,7 +105,6 @@ Find minimum value in array.
 ```qd
 arr count sort::min  // val
 ```
-
 ---
 
 ### `fn` reverse
@@ -128,7 +123,6 @@ Reverse an array in place.
 ```qd
 arr count sort::reverse
 ```
-
 ---
 
 ### `fn` search
@@ -152,7 +146,6 @@ Binary search for value in sorted array.
 ```qd
 arr count 42 sort::search  // idx
 ```
-
 ---
 
 ### `fn` strings
@@ -171,7 +164,6 @@ Sort an array of strings in ascending alphabetical order (insertion sort).
 ```qd
 strs count sort::strings
 ```
-
 ---
 
 ### `fn` strings_desc
@@ -190,4 +182,3 @@ Sort an array of strings in descending alphabetical order.
 ```qd
 strs count sort::strings_desc
 ```
-

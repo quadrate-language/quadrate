@@ -22,7 +22,6 @@ Clear a bit to 0.
 ```qd
 0b1010 1 bits::clear_bit print  // 8 (0b1000)
 ```
-
 ---
 
 ### `fn` extract
@@ -46,7 +45,6 @@ Extract a bit field from a value.
 ```qd
 0b11010110 2 3 bits::extract print  // 5
 ```
-
 ---
 
 ### `fn` has_bit
@@ -69,7 +67,6 @@ Check if a bit is set.
 ```qd
 0b1010 1 bits::has_bit print  // 1
 ```
-
 ---
 
 ### `fn` mask
@@ -92,7 +89,6 @@ Bitwise operations for integer manipulation.  Core operations (and, or, xor, not
 ```qd
 0xFF 4 bits::mask print  // 15
 ```
-
 ---
 
 ### `fn` popcount
@@ -114,7 +110,6 @@ Count set bits (population count).
 ```qd
 0b1010110 bits::popcount print  // 4
 ```
-
 ---
 
 ### `fn` reverse_bits
@@ -137,7 +132,6 @@ Reverse the bottom N bits.
 ```qd
 0b1011 4 bits::reverse_bits print  // 13 (0b1101)
 ```
-
 ---
 
 ### `fn` rotate_left
@@ -161,7 +155,6 @@ Rotate bits left within a width.
 ```qd
 0b0011 1 4 bits::rotate_left print  // 6 (0b0110)
 ```
-
 ---
 
 ### `fn` rotate_right
@@ -185,7 +178,6 @@ Rotate bits right within a width.
 ```qd
 0b0110 1 4 bits::rotate_right print  // 3 (0b0011)
 ```
-
 ---
 
 ### `fn` set_bits
@@ -210,7 +202,6 @@ Set a bit field in a value.
 ```qd
 0 0b101 2 3 bits::set_bits print  // 20 (0b10100)
 ```
-
 ---
 
 ### `fn` set_bit
@@ -233,7 +224,6 @@ Set a bit to 1.
 ```qd
 0b1000 1 bits::set_bit print  // 10 (0b1010)
 ```
-
 ---
 
 ### `fn` toggle_bit
@@ -256,4 +246,3 @@ Toggle a bit.
 ```qd
 0b1010 0 bits::toggle_bit print  // 11 (0b1011)
 ```
-

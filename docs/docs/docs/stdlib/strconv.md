@@ -29,7 +29,6 @@ Parse decimal string to integer (base 10). Equivalent to: str 10 strconv::parse_
 ```qd
 "42" strconv::atoi print  // 42
 ```
-
 ---
 
 ### `fn` format_int
@@ -52,7 +51,6 @@ Format integer in given base.
 ```qd
 255 16 strconv::format_int print  // "ff"
 ```
-
 ---
 
 ### `fn` itoa
@@ -74,7 +72,6 @@ Convert integer to decimal string (base 10). Equivalent to: value 10 strconv::fo
 ```qd
 42 strconv::itoa print  // "42"
 ```
-
 ---
 
 ### `fn` parse_int
@@ -97,4 +94,3 @@ Parse integer from string in given base.
 ```qd
 "ff" 16 strconv::parse_int print  // 255
 ```
-

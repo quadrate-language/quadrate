@@ -36,7 +36,6 @@ Get array element as float by index.
 ```qd
 "[1.5,2.5]" 0 json::array_get_float  // 1.5 1
 ```
-
 ---
 
 ### `fn` array_get_int
@@ -60,7 +59,6 @@ Get array element as integer by index.
 ```qd
 "[10,20,30]" 2 json::array_get_int  // 30 1
 ```
-
 ---
 
 ### `fn` array_get_string
@@ -84,7 +82,6 @@ Get array element as string by index.
 ```qd
 "[\"a\",\"b\"]" 1 json::array_get_string  // "b" 1
 ```
-
 ---
 
 ### `fn` array_len
@@ -106,7 +103,6 @@ Get length of JSON array.
 ```qd
 "[1,2,3]" json::array_len print  // 3
 ```
-
 ---
 
 ### `fn` extract_str
@@ -123,7 +119,6 @@ Extract string value at position.
 | Output | Type | Description |
 |--------|------|-------------|
 | `value` | `str` | Extracted string |
-
 ---
 
 ### `fn` find_str_end
@@ -140,7 +135,6 @@ Find end of JSON string (pos at opening quote).
 | Output | Type | Description |
 |--------|------|-------------|
 | `end_pos` | `i64` | Position after closing quote |
-
 ---
 
 ### `fn` get_array
@@ -164,7 +158,6 @@ Get nested array as string by key.
 ```qd
 "{\"arr\":[1,2]}" "arr" json::get_array  // "[1,2]" 1
 ```
-
 ---
 
 ### `fn` get_bool
@@ -188,7 +181,6 @@ Get boolean value by key from object.
 ```qd
 "{\"ok\":true}" "ok" json::get_bool  // 1 1
 ```
-
 ---
 
 ### `fn` get_float
@@ -212,7 +204,6 @@ Get float value by key from object.
 ```qd
 "{\"pi\":3.14}" "pi" json::get_float  // 3.14 1
 ```
-
 ---
 
 ### `fn` get_int
@@ -236,7 +227,6 @@ Get integer value by key from object.
 ```qd
 "{\"age\":42}" "age" json::get_int  // 42 1
 ```
-
 ---
 
 ### `fn` get_object
@@ -260,7 +250,6 @@ Get nested object as string by key.
 ```qd
 "{\"obj\":{\"x\":1}}" "obj" json::get_object  // "{\"x\":1}" 1
 ```
-
 ---
 
 ### `fn` get_string
@@ -284,7 +273,6 @@ Get string value by key from object.
 ```qd
 "{\"name\":\"Bob\"}" "name" json::get_string  // "Bob" 1
 ```
-
 ---
 
 ### `fn` has_key
@@ -307,7 +295,6 @@ Check if key exists in object.
 ```qd
 "{\"a\":1}" "a" json::has_key print  // 1
 ```
-
 ---
 
 ### `fn` is_null_at
@@ -330,7 +317,6 @@ Check if value at position is null.
 ```qd
 "null" 0 json::is_null_at print  // 1
 ```
-
 ---
 
 ### `fn` type_at
@@ -353,4 +339,3 @@ Get JSON value type at position.
 ```qd
 "{\"a\":1}" 5 json::type_at print  // 2 (Number)
 ```
-

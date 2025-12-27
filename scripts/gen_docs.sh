@@ -289,6 +289,99 @@ parse_module() {
     generate_json "$module_name" module_desc constants structs functions
 }
 
+# Helper to extract receiver type from signature like "(v:Vec2) name(...)"
+get_receiver_type() {
+    local sig="$1"
+    # Match pattern like "(v:Vec2) name" - extract Vec2
+    # Only match if the first part is a valid identifier (no spaces or --)
+    local pattern='^\(([a-zA-Z_][a-zA-Z0-9_]*):([A-Za-z][a-zA-Z0-9_]*)\)'
+    if [[ "$sig" =~ $pattern ]]; then
+        echo "${BASH_REMATCH[2]}"
+    fi
+}
+
+# Helper to output a single function's documentation
+output_function() {
+    local module_name="$1"
+    local func="$2"
+    local heading_level="$3"  # "###" or "####"
+    local output=""
+
+    IFS='|' read -r f_name f_sig f_failable f_desc f_params f_returns f_errors f_examples <<< "$func"
+
+    output+="$heading_level \`fn\` $f_name"$'\n\n'
+
+    # Description
+    if [[ -n "$f_desc" ]]; then
+        output+="$f_desc"$'\n\n'
+    fi
+
+    # Signature
+    output+="**Signature:** \`$f_sig$f_failable\`"$'\n\n'
+
+    # Parameters table
+    if [[ -n "$f_params" ]]; then
+        output+="| Parameter | Type | Description |"$'\n'
+        output+="|-----------|------|-------------|"$'\n'
+        IFS=';' read -ra param_arr <<< "$f_params"
+        for param in "${param_arr[@]}"; do
+            [[ -z "$param" ]] && continue
+            IFS=':' read -r p_name p_type p_desc <<< "$param"
+            output+="| \`$p_name\` | \`$p_type\` | $p_desc |"$'\n'
+        done
+        output+=$'\n'
+    fi
+
+    # Returns table
+    if [[ -n "$f_returns" ]]; then
+        output+="| Output | Type | Description |"$'\n'
+        output+="|--------|------|-------------|"$'\n'
+        IFS=';' read -ra return_arr <<< "$f_returns"
+        for ret in "${return_arr[@]}"; do
+            [[ -z "$ret" ]] && continue
+            IFS=':' read -r r_name r_type r_desc <<< "$ret"
+            output+="| \`$r_name\` | \`$r_type\` | $r_desc |"$'\n'
+        done
+        output+=$'\n'
+    fi
+
+    # Errors table
+    if [[ -n "$f_errors" ]]; then
+        output+="| Error | Description |"$'\n'
+        output+="|-------|-------------|"$'\n'
+        IFS=';' read -ra error_arr <<< "$f_errors"
+        for err in "${error_arr[@]}"; do
+            [[ -z "$err" ]] && continue
+            IFS=':' read -r e_code e_desc <<< "$err"
+            if [[ -n "$e_code" ]]; then
+                output+="| \`$module_name::$e_code\` | $e_desc |"$'\n'
+            else
+                output+="| - | $e_desc |"$'\n'
+            fi
+        done
+        output+=$'\n'
+    fi
+
+    # Examples
+    if [[ -n "$f_examples" ]]; then
+        output+="**Example:**"$'\n\n'
+        output+="\`\`\`qd"$'\n'
+        IFS=';' read -ra example_arr <<< "$f_examples"
+        for ex in "${example_arr[@]}"; do
+            [[ -z "$ex" ]] && continue
+            # Transform "code -> output" format
+            if [[ "$ex" =~ ^(.+)[[:space:]]-\>[[:space:]](.+)$ ]]; then
+                output+="${BASH_REMATCH[1]}  // ${BASH_REMATCH[2]}"$'\n'
+            else
+                output+="$ex"$'\n'
+            fi
+        done
+        output+="\`\`\`"$'\n'
+    fi
+
+    echo -n "$output"
+}
+
 # Generate markdown documentation
 generate_markdown() {
     local module_name="$1"
@@ -349,121 +442,131 @@ generate_markdown() {
         output+=$'\n'
     fi
 
-    # Sort structs by name
+    # Sort functions and structs
+    IFS=$'\n' sorted_functions=($(sort <<<"${_functions[*]}")); unset IFS
     IFS=$'\n' sorted_structs=($(sort <<<"${_structs[*]}")); unset IFS
 
-    # Structs
-    if [[ ${#sorted_structs[@]} -gt 0 && -n "${sorted_structs[0]}" ]]; then
-        output+="## Structs"$'\n\n'
-        for struct in "${sorted_structs[@]}"; do
-            [[ -z "$struct" ]] && continue
-            IFS='|' read -r s_name s_desc s_fields <<< "$struct"
-            output+="### \`struct\` $s_name"$'\n\n'
-            if [[ -n "$s_desc" ]]; then
-                output+="$s_desc"$'\n\n'
-            fi
-            # Fields table (using § as field separator, ~ as internal separator)
-            if [[ -n "$s_fields" ]]; then
-                output+="| Field | Type | Description |"$'\n'
-                output+="|-------|------|-------------|"$'\n'
-                IFS='§' read -ra field_arr <<< "$s_fields"
-                for field in "${field_arr[@]}"; do
-                    [[ -z "$field" ]] && continue
-                    IFS='~' read -r f_name f_type f_desc <<< "$field"
-                    output+="| \`$f_name\` | \`$f_type\` | $f_desc |"$'\n'
-                done
-                output+=$'\n'
-            fi
-        done
-    fi
+    # Collect struct names for grouping
+    declare -A struct_names
+    for struct in "${sorted_structs[@]}"; do
+        [[ -z "$struct" ]] && continue
+        IFS='|' read -r s_name s_desc s_fields <<< "$struct"
+        struct_names["$s_name"]=1
+    done
 
-    # Sort functions by name
-    IFS=$'\n' sorted_functions=($(sort <<<"${_functions[*]}")); unset IFS
+    # Separate functions into:
+    # - standalone (no receiver, doesn't construct a struct)
+    # - constructors (no receiver, returns a struct type)
+    # - methods (has receiver matching a struct)
+    local -a standalone_funcs=()
+    declare -A struct_methods      # struct_name -> list of method functions
+    declare -A struct_constructors # struct_name -> list of constructor functions
 
-    # Functions
-    if [[ ${#sorted_functions[@]} -gt 0 && -n "${sorted_functions[0]}" ]]; then
+    for func in "${sorted_functions[@]}"; do
+        [[ -z "$func" ]] && continue
+        IFS='|' read -r f_name f_sig f_failable f_desc f_params f_returns f_errors f_examples <<< "$func"
+
+        local receiver_type
+        receiver_type=$(get_receiver_type "$f_sig")
+
+        if [[ -n "$receiver_type" ]] && [[ -v "struct_names[$receiver_type]" ]]; then
+            # Method on a struct (has receiver)
+            struct_methods["$receiver_type"]+="$func"$'\n'
+        else
+            # Check if this is a constructor (returns a struct type)
+            local is_constructor=0
+            for s_name in "${!struct_names[@]}"; do
+                # Match function name pattern like vec2_zero, mat4_identity
+                local s_lower="${s_name,,}"
+                if [[ "$f_name" =~ ^${s_lower}_ ]] || [[ "$f_returns" == *":$s_name:"* ]]; then
+                    struct_constructors["$s_name"]+="$func"$'\n'
+                    is_constructor=1
+                    break
+                fi
+            done
+            if [[ $is_constructor -eq 0 ]]; then
+                standalone_funcs+=("$func")
+            fi
+        fi
+    done
+
+    # Output standalone functions first (functions that don't belong to any struct)
+    if [[ ${#standalone_funcs[@]} -gt 0 && -n "${standalone_funcs[0]}" ]]; then
         output+="## Functions"$'\n\n'
         local first=1
-        for func in "${sorted_functions[@]}"; do
+        for func in "${standalone_funcs[@]}"; do
             [[ -z "$func" ]] && continue
-            IFS='|' read -r f_name f_sig f_failable f_desc f_params f_returns f_errors f_examples <<< "$func"
-
             if [[ $first -eq 0 ]]; then
                 output+="---"$'\n\n'
             fi
             first=0
-
-            output+="### \`fn\` $f_name"$'\n\n'
-
-            # Description
-            if [[ -n "$f_desc" ]]; then
-                output+="$f_desc"$'\n\n'
-            fi
-
-            # Signature
-            output+="**Signature:** \`$f_sig$f_failable\`"$'\n\n'
-
-            # Parameters table
-            if [[ -n "$f_params" ]]; then
-                output+="| Parameter | Type | Description |"$'\n'
-                output+="|-----------|------|-------------|"$'\n'
-                IFS=';' read -ra param_arr <<< "$f_params"
-                for param in "${param_arr[@]}"; do
-                    [[ -z "$param" ]] && continue
-                    IFS=':' read -r p_name p_type p_desc <<< "$param"
-                    output+="| \`$p_name\` | \`$p_type\` | $p_desc |"$'\n'
-                done
-                output+=$'\n'
-            fi
-
-            # Returns table
-            if [[ -n "$f_returns" ]]; then
-                output+="| Output | Type | Description |"$'\n'
-                output+="|--------|------|-------------|"$'\n'
-                IFS=';' read -ra return_arr <<< "$f_returns"
-                for ret in "${return_arr[@]}"; do
-                    [[ -z "$ret" ]] && continue
-                    IFS=':' read -r r_name r_type r_desc <<< "$ret"
-                    output+="| \`$r_name\` | \`$r_type\` | $r_desc |"$'\n'
-                done
-                output+=$'\n'
-            fi
-
-            # Errors table
-            if [[ -n "$f_errors" ]]; then
-                output+="| Error | Description |"$'\n'
-                output+="|-------|-------------|"$'\n'
-                IFS=';' read -ra error_arr <<< "$f_errors"
-                for err in "${error_arr[@]}"; do
-                    [[ -z "$err" ]] && continue
-                    IFS=':' read -r e_code e_desc <<< "$err"
-                    if [[ -n "$e_code" ]]; then
-                        output+="| \`$module_name::$e_code\` | $e_desc |"$'\n'
-                    else
-                        output+="| - | $e_desc |"$'\n'
-                    fi
-                done
-                output+=$'\n'
-            fi
-
-            # Examples
-            if [[ -n "$f_examples" ]]; then
-                output+="**Example:**"$'\n\n'
-                output+="\`\`\`qd"$'\n'
-                IFS=';' read -ra example_arr <<< "$f_examples"
-                for ex in "${example_arr[@]}"; do
-                    [[ -z "$ex" ]] && continue
-                    # Transform "code -> output" format
-                    if [[ "$ex" =~ ^(.+)[[:space:]]-\>[[:space:]](.+)$ ]]; then
-                        output+="${BASH_REMATCH[1]}  // ${BASH_REMATCH[2]}"$'\n'
-                    else
-                        output+="$ex"$'\n'
-                    fi
-                done
-                output+="\`\`\`"$'\n\n'
-            fi
+            output+="$(output_function "$module_name" "$func" "###")"$'\n'
         done
     fi
+
+    # Output each struct with its constructors and methods
+    for struct in "${sorted_structs[@]}"; do
+        [[ -z "$struct" ]] && continue
+        IFS='|' read -r s_name s_desc s_fields <<< "$struct"
+
+        output+="## $s_name"$'\n\n'
+
+        if [[ -n "$s_desc" ]]; then
+            output+="$s_desc"$'\n\n'
+        fi
+
+        # Fields table
+        output+="### Struct"$'\n\n'
+        if [[ -n "$s_fields" ]]; then
+            output+="| Field | Type | Description |"$'\n'
+            output+="|-------|------|-------------|"$'\n'
+            IFS='§' read -ra field_arr <<< "$s_fields"
+            for field in "${field_arr[@]}"; do
+                [[ -z "$field" ]] && continue
+                IFS='~' read -r f_name f_type f_desc <<< "$field"
+                output+="| \`$f_name\` | \`$f_type\` | $f_desc |"$'\n'
+            done
+            output+=$'\n'
+        fi
+
+        # Constructor functions for this struct
+        local constructors=""
+        if [[ -v "struct_constructors[$s_name]" ]]; then
+            constructors="${struct_constructors[$s_name]}"
+        fi
+        if [[ -n "$constructors" ]]; then
+            output+="### Constructors"$'\n\n'
+            local first=1
+            while IFS= read -r func; do
+                [[ -z "$func" ]] && continue
+                if [[ $first -eq 0 ]]; then
+                    output+="---"$'\n\n'
+                fi
+                first=0
+                output+="$(output_function "$module_name" "$func" "####")"$'\n'
+            done <<< "$constructors"
+            output+=$'\n'
+        fi
+
+        # Methods for this struct
+        local methods=""
+        if [[ -v "struct_methods[$s_name]" ]]; then
+            methods="${struct_methods[$s_name]}"
+        fi
+        if [[ -n "$methods" ]]; then
+            output+="### Methods"$'\n\n'
+            local first=1
+            while IFS= read -r func; do
+                [[ -z "$func" ]] && continue
+                if [[ $first -eq 0 ]]; then
+                    output+="---"$'\n\n'
+                fi
+                first=0
+                output+="$(output_function "$module_name" "$func" "####")"$'\n'
+            done <<< "$methods"
+            output+=$'\n'
+        fi
+    done
 
     # Write to file
     local md_path="$DOCS_DIR/$module_name.md"

@@ -30,7 +30,6 @@ Get the filename part of a path.
 ```qd
 "/home/user/file.txt" path::basename  // "file.txt"
 ```
-
 ---
 
 ### `fn` dirname
@@ -52,7 +51,6 @@ Get the directory part of a path.
 ```qd
 "/home/user/file.txt" path::dirname  // "/home/user"
 ```
-
 ---
 
 ### `fn` ext
@@ -74,7 +72,6 @@ Get the file extension (including dot).
 ```qd
 "file.txt" path::ext  // ".txt"
 ```
-
 ---
 
 ### `fn` is_absolute
@@ -96,7 +93,6 @@ Check if path is absolute.
 ```qd
 "/home/user" path::is_absolute  // 1
 ```
-
 ---
 
 ### `fn` join
@@ -119,7 +115,6 @@ Join two path components.
 ```qd
 "/home" "user" path::join  // "/home/user"
 ```
-
 ---
 
 ### `fn` normalize
@@ -141,7 +136,6 @@ Normalize a path (remove redundant separators).
 ```qd
 "/home//user/" path::normalize  // "/home/user"
 ```
-
 ---
 
 ### `fn` stem
@@ -163,4 +157,3 @@ Get filename without extension.
 ```qd
 "file.txt" path::stem  // "file"
 ```
-

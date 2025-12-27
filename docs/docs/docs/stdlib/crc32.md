@@ -26,7 +26,6 @@ Calculate CRC32 of a byte buffer.
 ```qd
 buf buflen crc32::checksum_buf  // crc
 ```
-
 ---
 
 ### `fn` checksum_hex
@@ -48,7 +47,6 @@ Calculate CRC32 and return as 8-character hex string.
 ```qd
 "Hello" crc32::hex  // h  // "f7d18982"
 ```
-
 ---
 
 ### `fn` checksum
@@ -70,7 +68,6 @@ Calculate CRC32 checksum of a string.
 ```qd
 "Hello" crc32::checksum  // crc
 ```
-
 ---
 
 ### `fn` finalize
@@ -92,7 +89,6 @@ Finalize a running CRC to get the final checksum.
 ```qd
 crc_state crc32::finalize  // crc
 ```
-
 ---
 
 ### `fn` update
@@ -115,7 +111,6 @@ Update a running CRC with more data. Use for streaming/incremental CRC calculati
 ```qd
 4294967295 "Hello" crc32::update " World" crc32::update crc32::finalize  // crc
 ```
-
 ---
 
 ### `fn` verify
@@ -138,4 +133,3 @@ Verify data against an expected CRC32.
 ```qd
 "Hello" 4157704578 crc32::verify  // ok
 ```
-

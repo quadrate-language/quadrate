@@ -27,7 +27,6 @@ Check if all elements satisfy a predicate.
 ```qd
 arr count fn (x:i64 -- r:i64) { 0 > } hof::all  // all positive?
 ```
-
 ---
 
 ### `fn` any
@@ -51,7 +50,6 @@ Check if any element satisfies a predicate.
 ```qd
 arr count fn (x:i64 -- r:i64) { 0 > } hof::any  // any positive?
 ```
-
 ---
 
 ### `fn` apply
@@ -74,7 +72,6 @@ Apply a function to a value.
 ```qd
 5 fn (x:i64 -- r:i64) { 2 * } hof::apply print nl  // 10
 ```
-
 ---
 
 ### `fn` bi_star
@@ -100,7 +97,6 @@ Apply two functions to two values (first to first, second to second).
 ```qd
 3 4 fn (x:i64 -- r:i64) { 1 + } fn (x:i64 -- r:i64) { 2 * } hof::bi_star  // Stack: 4 8
 ```
-
 ---
 
 ### `fn` bi
@@ -125,7 +121,6 @@ Apply two functions to the same value.
 ```qd
 5 fn (x:i64 -- r:i64) { 2 * } fn (x:i64 -- r:i64) { 3 + } hof::bi  // Stack: 10 8
 ```
-
 ---
 
 ### `fn` both
@@ -150,7 +145,6 @@ Apply a function to two values separately.
 ```qd
 3 4 fn (x:i64 -- r:i64) { dup * } hof::both  // Stack: 9 16
 ```
-
 ---
 
 ### `fn` compose
@@ -173,7 +167,6 @@ Compose two functions: compose(f, g)(x) = g(f(x)). First f is applied, then g is
 ```qd
 fn (x:i64 -- r:i64) { 2 * } fn (x:i64 -- r:i64) { 1 + } hof::compose  // f  5 f call print nl  // 11
 ```
-
 ---
 
 ### `fn` curry_right
@@ -196,7 +189,6 @@ Curry right: create a new function with the second argument fixed.
 ```qd
 2 fn (x:i64 y:i64 -- r:i64) { / } hof::curry_right  // half  10 half call print nl  // 5
 ```
-
 ---
 
 ### `fn` curry
@@ -219,7 +211,6 @@ Curry: create a new function with the first argument fixed.
 ```qd
 5 fn (x:i64 y:i64 -- r:i64) { + } hof::curry  // add5  10 add5 call print nl  // 15
 ```
-
 ---
 
 ### `fn` dip
@@ -244,7 +235,6 @@ Apply a function to the second stack element, preserving the top.
 ```qd
 10 20 fn (x:i64 -- r:i64) { 2 * } hof::dip  // Stack: 20 20
 ```
-
 ---
 
 ### `fn` filter
@@ -269,7 +259,6 @@ Filter an array, keeping only elements that satisfy a predicate.
 ```qd
 arr count fn (x:i64 -- r:i64) { 2 mod 0 == } hof::filter  // keep evens
 ```
-
 ---
 
 ### `fn` find
@@ -294,7 +283,6 @@ Find the first element satisfying a predicate.
 ```qd
 arr count fn (x:i64 -- r:i64) { 10 > } hof::find  // first > 10
 ```
-
 ---
 
 ### `fn` fold
@@ -319,7 +307,6 @@ Fold/reduce an array left-to-right with a binary function.
 ```qd
 arr count 0 fn (acc:i64 x:i64 -- r:i64) { + } hof::fold  // sum of array
 ```
-
 ---
 
 ### `fn` fold_right
@@ -344,7 +331,6 @@ Fold/reduce an array right-to-left with a binary function.
 ```qd
 arr count 0 fn (x:i64 acc:i64 -- r:i64) { + } hof::fold_right  // sum of array
 ```
-
 ---
 
 ### `fn` keep
@@ -368,7 +354,6 @@ Apply a function but keep the original value.
 ```qd
 5 fn (x:i64 -- r:i64) { 2 * } hof::keep  // Stack: 10 5
 ```
-
 ---
 
 ### `fn` map
@@ -393,7 +378,6 @@ Map a function over an array, returning a new array.
 ```qd
 arr count fn (x:i64 -- r:i64) { 2 * } hof::map  // double each element
 ```
-
 ---
 
 ### `fn` times
@@ -417,7 +401,6 @@ Apply function n times to an initial value.
 ```qd
 2 4 fn (x:i64 -- r:i64) { dup * } hof::times print nl  // 65536 (2^16)
 ```
-
 ---
 
 ### `fn` tri
@@ -444,7 +427,6 @@ Apply three functions to the same value.
 ```qd
 5 fn (x:i64 -- r:i64) { 1 + } fn (x:i64 -- r:i64) { 2 * } fn (x:i64 -- r:i64) { dup * } hof::tri  // Stack: 6 10 25
 ```
-
 ---
 
 ### `fn` unless
@@ -469,7 +451,6 @@ Apply function only if condition is false, otherwise return value unchanged.
 5 0 fn (x:i64 -- r:i64) { 2 * } hof::unless print nl  // 10
 5 1 fn (x:i64 -- r:i64) { 2 * } hof::unless print nl  // 5
 ```
-
 ---
 
 ### `fn` when
@@ -494,4 +475,3 @@ Apply function only if condition is true, otherwise return value unchanged.
 5 1 fn (x:i64 -- r:i64) { 2 * } hof::when print nl  // 10
 5 0 fn (x:i64 -- r:i64) { 2 * } hof::when print nl  // 5
 ```
-

@@ -54,7 +54,6 @@ Add duration to a timestamp.
 ```qd
 time::now time::Day 4 * time::add .
 ```
-
 ---
 
 ### `fn` after
@@ -77,7 +76,6 @@ Check if timestamp is after another.
 ```qd
 ts1 ts2 time::after .
 ```
-
 ---
 
 ### `fn` before
@@ -100,7 +98,6 @@ Check if timestamp is before another.
 ```qd
 ts1 ts2 time::before .
 ```
-
 ---
 
 ### `fn` date
@@ -127,7 +124,6 @@ Create Unix timestamp from date components.
 ```qd
 2024 1 15 12 30 0 time::date .
 ```
-
 ---
 
 ### `fn` days_in_month
@@ -150,7 +146,6 @@ Get number of days in a month.
 ```qd
 2024 2 time::days_in_month print  // 29
 ```
-
 ---
 
 ### `fn` day
@@ -172,7 +167,6 @@ Extract day of month from Unix timestamp (1-31).
 ```qd
 time::unix time::day .
 ```
-
 ---
 
 ### `fn` hour
@@ -194,7 +188,6 @@ Extract hour from Unix timestamp (0-23).
 ```qd
 time::unix time::hour .
 ```
-
 ---
 
 ### `fn` is_leap_year
@@ -216,7 +209,6 @@ Check if year is a leap year.
 ```qd
 2024 time::is_leap_year print  // 1
 ```
-
 ---
 
 ### `fn` minute
@@ -238,7 +230,6 @@ Extract minute from Unix timestamp (0-59).
 ```qd
 time::unix time::minute .
 ```
-
 ---
 
 ### `fn` month
@@ -260,7 +251,6 @@ Extract month from Unix timestamp (1-12).
 ```qd
 time::unix time::month .
 ```
-
 ---
 
 ### `fn` now
@@ -278,7 +268,6 @@ Get current time in nanoseconds since epoch.
 ```qd
 time::now  // start
 ```
-
 ---
 
 ### `fn` second
@@ -300,7 +289,6 @@ Extract second from Unix timestamp (0-59).
 ```qd
 time::unix time::second .
 ```
-
 ---
 
 ### `fn` sleep
@@ -318,7 +306,6 @@ Sleep for duration in nanoseconds.
 ```qd
 time::Second time::sleep
 ```
-
 ---
 
 ### `fn` sub
@@ -341,7 +328,6 @@ Get difference between two timestamps in seconds.
 ```qd
 end_time start_time time::sub .
 ```
-
 ---
 
 ### `fn` unix
@@ -359,7 +345,6 @@ Get Unix timestamp in seconds.
 ```qd
 time::unix print  // 1700000000
 ```
-
 ---
 
 ### `fn` weekday
@@ -381,7 +366,6 @@ Get day of week from Unix timestamp (0=Sunday, 6=Saturday).
 ```qd
 time::unix time::weekday .
 ```
-
 ---
 
 ### `fn` year_day
@@ -403,7 +387,6 @@ Get day of year from Unix timestamp (1-366).
 ```qd
 time::unix time::year_day .
 ```
-
 ---
 
 ### `fn` year
@@ -425,4 +408,3 @@ Extract year from Unix timestamp.
 ```qd
 time::unix time::year .
 ```
-

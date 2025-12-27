@@ -44,7 +44,27 @@ Copy a file.
 ```qd
 "src.txt" "dst.txt" os::copy!
 ```
+---
 
+### `fn` cwd
+
+Get current working directory.
+
+**Signature:** `( -- path:str)!`
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `path` | `str` | Current working directory path |
+
+| Error | Description |
+|-------|-------------|
+| `os::ErrIo` | Failed to get directory |
+
+**Example:**
+
+```qd
+os::cwd!  // dir
+```
 ---
 
 ### `fn` delete
@@ -67,7 +87,33 @@ Delete a file or empty directory.
 ```qd
 "/tmp/test.txt" os::delete!
 ```
+---
 
+### `fn` exec
+
+Execute a command and capture all output. Simpler alternative to os::popen when you just need the full output.
+
+**Signature:** `(cmd:str -- stdout:str exitcode:i64)!`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `cmd` | `str` | Command to execute |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `stdout` | `str` | All output from command |
+| `exitcode` | `i64` | Command exit status |
+
+| Error | Description |
+|-------|-------------|
+| `os::ErrIo` | Failed to execute command |
+| `os::ErrOutOfMemory` | Out of memory |
+
+**Example:**
+
+```qd
+"echo hello" os::exec! -> exitcode  // stdout
+```
 ---
 
 ### `fn` exists
@@ -89,7 +135,6 @@ Check if path exists.
 ```qd
 "/tmp" os::exists print  // 1
 ```
-
 ---
 
 ### `fn` exit
@@ -107,7 +152,6 @@ Exit the program with status code.
 ```qd
 os::ExitSuccess os::exit
 ```
-
 ---
 
 ### `fn` getenv
@@ -129,7 +173,6 @@ Get environment variable value.
 ```qd
 "HOME" os::getenv  // home
 ```
-
 ---
 
 ### `fn` getpid
@@ -147,7 +190,6 @@ Get the current process ID.
 ```qd
 os::getpid print nl
 ```
-
 ---
 
 ### `fn` glob
@@ -170,7 +212,6 @@ Match files using glob pattern. Supports *, ?, and ** for recursive matching.
 ```qd
 "*.qd" os::glob! -> count  // entries
 ```
-
 ---
 
 ### `fn` is_dir
@@ -192,7 +233,6 @@ Check if path is a directory.
 ```qd
 "/tmp" os::is_dir print  // 1
 ```
-
 ---
 
 ### `fn` is_file
@@ -214,7 +254,6 @@ Check if path is a regular file.
 ```qd
 "/etc/passwd" os::is_file print  // 1
 ```
-
 ---
 
 ### `fn` list
@@ -242,7 +281,6 @@ List directory contents.
 ```qd
 "/tmp" os::list! -> entries  // count
 ```
-
 ---
 
 ### `fn` mkdir
@@ -264,7 +302,6 @@ Create a directory and all parent directories.
 ```qd
 "/tmp/a/b/c" os::mkdir!
 ```
-
 ---
 
 ### `fn` mktemp
@@ -284,9 +321,8 @@ Create a unique temporary directory. Creates a directory in /tmp with a unique n
 **Example:**
 
 ```qd
-os::mktemp! -> tmpdir
+os::mktemp!  // tmpdir
 ```
-
 ---
 
 ### `fn` popen
@@ -313,7 +349,6 @@ Execute a command and stream output line-by-line to a callback. The callback is 
 ```qd
 "ls -la" fn (line:str -- ) { print nl } os::popen!  // code
 ```
-
 ---
 
 ### `fn` rename
@@ -337,7 +372,6 @@ Rename or move a file.
 ```qd
 "old.txt" "new.txt" os::rename!
 ```
-
 ---
 
 ### `fn` rmdir
@@ -360,7 +394,6 @@ Remove directory and all contents recursively.
 ```qd
 "/tmp/mydir" os::rmdir!
 ```
-
 ---
 
 ### `fn` setenv
@@ -379,7 +412,6 @@ Set environment variable.
 ```qd
 "MY_VAR" "hello" os::setenv
 ```
-
 ---
 
 ### `fn` system
@@ -401,7 +433,6 @@ Execute a shell command.
 ```qd
 "ls -la" os::system  // code
 ```
-
 ---
 
 ### `fn` walk
@@ -425,4 +456,3 @@ Walk a directory tree recursively. Calls callback for each file and directory.
 ```qd
 "/tmp" fn (p:str is_dir:i64 depth:i64 -- ) { p print nl } os::walk!
 ```
-
