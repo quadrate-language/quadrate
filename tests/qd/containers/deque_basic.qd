@@ -1,0 +1,48 @@
+use ct
+
+fn main() {
+	// Create empty deque
+	Deque<i64> { data = 0 head = 0 tail = 0 len = 0 cap = 0 } -> d
+
+	// Test is_empty
+	d is_empty if { "empty: yes" print nl }
+
+	// Push to back (like queue)
+	d 1 push_back! -> d
+	d 2 push_back! -> d
+	d 3 push_back! -> d
+
+	"after push_back 1,2,3: len=" print d length print nl
+
+	// Peek front and back
+	"peek_front: " print d peek_front! print nl
+	"peek_back: " print d peek_back! print nl
+
+	// Push to front
+	d 0 push_front! -> d
+	"after push_front 0: len=" print d length print nl
+	"peek_front: " print d peek_front! print nl
+
+	// Pop from front
+	d pop_front! -> d -> val
+	"pop_front: " print val print nl
+	"peek_front: " print d peek_front! print nl
+
+	// Pop from back
+	d pop_back! -> d -> val
+	"pop_back: " print val print nl
+	"peek_back: " print d peek_back! print nl
+
+	"final len: " print d length print nl
+
+	// Empty it
+	d pop_front! -> d -> val
+	"pop_front: " print val print nl
+	d pop_front! -> d -> val
+	"pop_front: " print val print nl
+
+	d is_empty if { "now empty: yes" print nl }
+
+	d release
+	"done" print nl
+}

@@ -1,0 +1,264 @@
+/// Deque<T> - A Double-Ended Queue
+/// ================================
+///
+/// Deque provides O(1) push/pop from both ends.
+/// Implemented using a circular buffer.
+///
+/// ## Creating a Deque
+///
+/// Create an empty deque:
+///
+///     Deque<i64> { data = 0 head = 0 tail = 0 len = 0 cap = 0 } -> d
+///
+/// ## Basic Operations
+///
+/// Push to front/back:
+///
+///     d 42 push_front! -> d
+///     d 42 push_back! -> d
+///
+/// Pop from front/back:
+///
+///     d pop_front! -> d -> val
+///     d pop_back! -> d -> val
+///
+/// Peek front/back:
+///
+///     d peek_front! -> val
+///     d peek_back! -> val
+///
+/// ## Memory Management
+///
+/// Always call release when done:
+///
+///     d release
+
+use mem
+
+/// Double-ended queue with elements of type T.
+///
+/// Fields:
+///   data - Pointer to circular buffer
+///   head - Index of front element
+///   tail - Index after last element
+///   len  - Number of elements
+///   cap  - Buffer capacity
+pub struct Deque<T> {
+	data: ptr
+	head: i64
+	tail: i64
+	len: i64
+	cap: i64
+}
+
+/// Push an element to the back.
+///
+/// Example:
+///     d 42 push_back! -> d
+///
+/// Stack: (d val -- d2)
+pub fn (d:Deque<T>) push_back<T>(val:T -- d2:Deque<T>)! {
+	-> val
+
+	d @data -> data
+	d @head -> head
+	d @tail -> tail
+	d @len -> len
+	d @cap -> cap
+
+	// Grow capacity if full
+	len cap >= cap 0 == or if {
+		cap 0 == if { 8 } else { cap 2 * } -> new_cap
+		new_cap 8 * mem::alloc! -> new_data
+
+		// Copy elements in order (unwrap circular buffer)
+		cap 0 > if {
+			0 -> i
+			loop {
+				i len >= if { break }
+				head i + cap mod -> src_idx
+				data src_idx 8 * mem::get_i64 -> v
+				v new_data i 8 * mem::set_i64
+				i 1 + -> i
+			}
+			data mem::free
+		}
+
+		new_data -> data
+		0 -> head
+		len -> tail
+		new_cap -> cap
+	}
+
+	val data tail 8 * mem::set_i64
+
+	tail 1 + cap mod -> new_tail
+
+	Deque<T> { data = data head = head tail = new_tail len = len 1 + cap = cap }
+}
+
+/// Push an element to the front.
+///
+/// Example:
+///     d 42 push_front! -> d
+///
+/// Stack: (d val -- d2)
+pub fn (d:Deque<T>) push_front<T>(val:T -- d2:Deque<T>)! {
+	-> val
+
+	d @data -> data
+	d @head -> head
+	d @tail -> tail
+	d @len -> len
+	d @cap -> cap
+
+	// Grow capacity if full
+	len cap >= cap 0 == or if {
+		cap 0 == if { 8 } else { cap 2 * } -> new_cap
+		new_cap 8 * mem::alloc! -> new_data
+
+		// Copy elements in order (unwrap circular buffer)
+		cap 0 > if {
+			0 -> i
+			loop {
+				i len >= if { break }
+				head i + cap mod -> src_idx
+				data src_idx 8 * mem::get_i64 -> v
+				v new_data i 8 * mem::set_i64
+				i 1 + -> i
+			}
+			data mem::free
+		}
+
+		new_data -> data
+		0 -> head
+		len -> tail
+		new_cap -> cap
+	}
+
+	// Move head backwards (wrap around)
+	head 1 - -> new_head
+	new_head 0 < if {
+		cap 1 - -> new_head
+	}
+
+	val data new_head 8 * mem::set_i64
+
+	Deque<T> { data = data head = new_head tail = tail len = len 1 + cap = cap }
+}
+
+/// Remove and return the front element.
+///
+/// Example:
+///     d pop_front! -> d -> val
+///
+/// Stack: (d -- val d2)
+pub fn (d:Deque<T>) pop_front<T>(-- val:T d2:Deque<T>)! {
+	d @len -> len
+
+	len 0 == if {
+		"pop_front: deque is empty" 1 err
+	}
+
+	d @data -> data
+	d @head -> head
+	d @tail -> tail
+	d @cap -> cap
+
+	data head 8 * mem::get_i64 -> val
+
+	head 1 + cap mod -> new_head
+
+	val
+	Deque<T> { data = data head = new_head tail = tail len = len 1 - cap = cap }
+}
+
+/// Remove and return the back element.
+///
+/// Example:
+///     d pop_back! -> d -> val
+///
+/// Stack: (d -- val d2)
+pub fn (d:Deque<T>) pop_back<T>(-- val:T d2:Deque<T>)! {
+	d @len -> len
+
+	len 0 == if {
+		"pop_back: deque is empty" 1 err
+	}
+
+	d @data -> data
+	d @head -> head
+	d @tail -> tail
+	d @cap -> cap
+
+	// Move tail backwards to get last element
+	tail 1 - -> new_tail
+	new_tail 0 < if {
+		cap 1 - -> new_tail
+	}
+
+	data new_tail 8 * mem::get_i64 -> val
+
+	val
+	Deque<T> { data = data head = head tail = new_tail len = len 1 - cap = cap }
+}
+
+/// View the front element without removing it.
+///
+/// Stack: (d -- val)
+pub fn (d:Deque<T>) peek_front<T>(-- val:T)! {
+	d @len -> len
+
+	len 0 == if {
+		"peek_front: deque is empty" 1 err
+	}
+
+	d @data -> data
+	d @head -> head
+
+	data head 8 * mem::get_i64
+}
+
+/// View the back element without removing it.
+///
+/// Stack: (d -- val)
+pub fn (d:Deque<T>) peek_back<T>(-- val:T)! {
+	d @len -> len
+
+	len 0 == if {
+		"peek_back: deque is empty" 1 err
+	}
+
+	d @data -> data
+	d @tail -> tail
+	d @cap -> cap
+
+	tail 1 - -> back_idx
+	back_idx 0 < if {
+		cap 1 - -> back_idx
+	}
+
+	data back_idx 8 * mem::get_i64
+}
+
+/// Get the number of elements.
+///
+/// Stack: (d -- n)
+pub fn (d:Deque<T>) length<T>(-- n:i64) {
+	d @len
+}
+
+/// Check if the deque is empty.
+///
+/// Stack: (d -- bool)
+pub fn (d:Deque<T>) is_empty<T>(-- b:i64) {
+	d @len 0 ==
+}
+
+/// Free the deque's memory.
+///
+/// Stack: (d --)
+pub fn (d:Deque<T>) release<T>(--) {
+	d @data -> data
+	data 0 neq if { data mem::free }
+}

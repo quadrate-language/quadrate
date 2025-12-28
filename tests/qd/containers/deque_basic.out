@@ -1,0 +1,15 @@
+empty: yes
+after push_back 1,2,3: len=3
+peek_front: 1
+peek_back: 3
+after push_front 0: len=4
+peek_front: 0
+pop_front: 0
+peek_front: 1
+pop_back: 3
+peek_back: 2
+final len: 2
+pop_front: 1
+pop_front: 2
+now empty: yes
+done

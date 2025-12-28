@@ -1,0 +1,10 @@
+empty: yes
+length: 3
+peek: 1
+dequeue 1: 1
+dequeue 2: 2
+remaining: 1
+peek after: 3
+dequeue 3: 3
+now empty: yes
+done

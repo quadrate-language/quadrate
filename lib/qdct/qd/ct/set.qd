@@ -1,0 +1,298 @@
+/// Set - A String Set Collection
+/// ==============================
+///
+/// Set stores unique string elements with O(1) average lookup time.
+/// Implemented using open addressing with linear probing.
+///
+/// ## Creating a Set
+///
+/// Create an empty set:
+///
+///     Set { keys = 0 states = 0 len = 0 cap = 0 } -> s
+///
+/// ## Basic Operations
+///
+/// Add an element (set is returned, must be captured):
+///
+///     s "alice" add! -> s
+///
+/// Check if element exists:
+///
+///     s "alice" contains -> exists
+///
+/// Remove an element:
+///
+///     s "alice" remove! -> s
+///
+/// ## Memory Management
+///
+/// Always call release when done to free memory:
+///
+///     s release
+
+use crc32
+use mem
+use str
+
+/// Set of unique string elements.
+///
+/// Fields:
+///   keys   - Array of string key pointers
+///   states - Array of slot states (0=empty, 1=occupied, 2=deleted)
+///   len    - Number of elements
+///   cap    - Allocated capacity
+pub struct Set {
+	keys: ptr
+	states: ptr
+	len: i64
+	cap: i64
+}
+
+// Internal: Hash a string key to an index
+fn set_hash_key(key:str cap:i64 -- idx:i64) {
+	-> cap
+	-> key
+	key crc32::checksum cap mod -> idx
+	idx 0 < if {
+		idx cap + -> idx
+	}
+	idx
+}
+
+// Internal: Find slot for key
+fn set_find_slot(keys:ptr states:ptr cap:i64 key:str -- slot:i64 found:i64) {
+	-> key
+	-> cap
+	-> states
+	-> keys
+
+	key cap set_hash_key -> start
+	start -> idx
+	-1 -> first_deleted
+
+	loop {
+		states idx 8 * mem::get_i64 -> state
+
+		state 0 == if {
+			first_deleted 0 >= if {
+				first_deleted 0
+			} else {
+				idx 0
+			}
+			break
+		}
+
+		state 2 == if {
+			first_deleted 0 < if {
+				idx -> first_deleted
+			}
+		} else {
+			keys idx 8 * mem::get_ptr str::from_ptr -> existing_key
+			existing_key key eq if {
+				idx 1
+				break
+			}
+		}
+
+		idx 1 + cap mod -> idx
+		idx start == if {
+			first_deleted 0 >= if {
+				first_deleted 0
+			} else {
+				-1 0
+			}
+			break
+		}
+	}
+}
+
+// Internal: Grow the set when load factor exceeds threshold
+fn (s:Set) set_grow(-- s2:Set)! {
+	s @keys -> old_keys
+	s @states -> old_states
+	s @len -> len
+	s @cap -> old_cap
+
+	8 -> new_cap
+	old_cap 0 > if {
+		old_cap 2 * -> new_cap
+	}
+
+	new_cap 8 * mem::alloc! -> new_keys
+	new_cap 8 * mem::alloc! -> new_states
+
+	new_states new_cap 8 * mem::zero
+
+	old_cap 0 > if {
+		0 -> i
+		loop {
+			i old_cap >= if { break }
+
+			old_states i 8 * mem::get_i64 1 == if {
+				old_keys i 8 * mem::get_ptr -> key_ptr
+
+				key_ptr str::from_ptr -> key
+				new_keys new_states new_cap key set_find_slot -> found -> slot
+
+				key_ptr new_keys slot 8 * mem::set_ptr
+				1 new_states slot 8 * mem::set_i64
+			}
+
+			i 1 + -> i
+		}
+
+		old_keys mem::free
+		old_states mem::free
+	}
+
+	Set { keys = new_keys states = new_states len = len cap = new_cap }
+}
+
+/// Add an element to the set.
+///
+/// If the element already exists, the set is unchanged.
+/// Returns the updated set which must be captured.
+///
+/// Example:
+///     s "alice" add! -> s
+///
+/// Stack: (s key -- s2)
+pub fn (s:Set) add(key:str -- s2:Set)! {
+	-> key
+
+	s @len -> len
+	s @cap -> cap
+
+	len 10 * cap 7 * >= cap 0 == or if {
+		s set_grow! -> s
+		s @cap -> cap
+	}
+
+	s @keys -> keys
+	s @states -> states
+
+	keys states cap key set_find_slot -> found -> slot
+
+	slot 0 < if {
+		"add: set is full" 1 err
+	}
+
+	found 0 == if {
+		key str::len -> klen
+		klen 1 + mem::alloc! -> key_buf
+		key mem::from_string -> tmplen -> tmpbuf
+		key_buf tmpbuf klen mem::copy
+		0 key_buf klen mem::set_byte
+		tmpbuf mem::free
+		key_buf keys slot 8 * mem::set_ptr
+		1 states slot 8 * mem::set_i64
+		len 1 + -> len
+	}
+
+	Set { keys = keys states = states len = len cap = cap }
+}
+
+/// Check if an element exists in the set.
+///
+/// Example:
+///     s "alice" contains if { "found!" print nl }
+///
+/// Stack: (s key -- exists)
+pub fn (s:Set) contains(key:str -- exists:i64) {
+	-> key
+
+	s @cap -> cap
+
+	cap 0 == if {
+		0
+	} else {
+		s @keys -> keys
+		s @states -> states
+		keys states cap key set_find_slot -> found -> slot
+		found
+	}
+}
+
+/// Remove an element from the set.
+///
+/// Returns error if the element is not found.
+/// Returns the updated set which must be captured.
+///
+/// Example:
+///     s "alice" remove! -> s
+///
+/// Stack: (s key -- s2)
+pub fn (s:Set) remove(key:str -- s2:Set)! {
+	-> key
+
+	s @keys -> keys
+	s @states -> states
+	s @len -> len
+	s @cap -> cap
+
+	cap 0 == if {
+		"remove: set is empty" 1 err
+	}
+
+	keys states cap key set_find_slot -> found -> slot
+
+	found 0 == if {
+		"remove: element not found" 1 err
+	}
+
+	keys slot 8 * mem::get_ptr mem::free
+	2 states slot 8 * mem::set_i64
+
+	Set { keys = keys states = states len = len 1 - cap = cap }
+}
+
+/// Get the number of elements in the set.
+///
+/// Example:
+///     s length -> n
+///
+/// Stack: (s -- n)
+pub fn (s:Set) length(-- n:i64) {
+	s @len
+}
+
+/// Check if the set is empty.
+///
+/// Example:
+///     s is_empty if { "empty!" print nl }
+///
+/// Stack: (s -- bool)
+pub fn (s:Set) is_empty(-- b:i64) {
+	s @len 0 ==
+}
+
+/// Free the set's memory.
+///
+/// IMPORTANT: Always call this when done with a set
+/// to prevent memory leaks.
+///
+/// Example:
+///     s release
+///
+/// Stack: (s --)
+pub fn (s:Set) release(--) {
+	s @keys -> keys
+	s @states -> states
+	s @cap -> cap
+
+	cap 0 > if {
+		0 -> i
+		loop {
+			i cap >= if { break }
+
+			states i 8 * mem::get_i64 1 == if {
+				keys i 8 * mem::get_ptr mem::free
+			}
+
+			i 1 + -> i
+		}
+	}
+
+	keys 0 neq if { keys mem::free }
+	states 0 neq if { states mem::free }
+}

@@ -1,0 +1,34 @@
+use ct
+
+fn main() {
+	// Create empty set
+	Set { keys = 0 states = 0 len = 0 cap = 0 } -> s
+
+	// Test is_empty on new set
+	s is_empty if { "empty: yes" print nl }
+
+	// Add elements
+	s "alice" add! -> s
+	s "bob" add! -> s
+	s "charlie" add! -> s
+
+	// Test length
+	"length: " print s length print nl
+
+	// Test contains
+	s "alice" contains if { "has alice: yes" print nl }
+	s "bob" contains if { "has bob: yes" print nl }
+	s "missing" contains if { "has missing: yes" print nl } else { "has missing: no" print nl }
+
+	// Test duplicate add (should not increase length)
+	s "alice" add! -> s
+	"after dup add: " print s length print nl
+
+	// Test remove
+	s "bob" remove! -> s
+	"after remove: " print s length print nl
+	s "bob" contains if { "bob found" print nl } else { "bob removed: yes" print nl }
+
+	s release
+	"done" print nl
+}
