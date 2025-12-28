@@ -235,6 +235,12 @@ namespace Qd {
 					auto stderrVal = builder->CreateLoad(llvm::PointerType::getUnqual(*context), stderrGlobal);
 					builder->CreateCall(fprintfFn, {stderrVal, errorMsg});
 
+					// Print stack trace
+					auto printStackTraceFnTy =
+							llvm::FunctionType::get(builder->getVoidTy(), {llvm::PointerType::getUnqual(*context)}, false);
+					auto printStackTraceFn = module->getOrInsertFunction("qd_print_stack_trace", printStackTraceFnTy);
+					builder->CreateCall(printStackTraceFn, {ctx});
+
 					auto abortFn =
 							module->getOrInsertFunction("abort", llvm::FunctionType::get(builder->getVoidTy(), false));
 					builder->CreateCall(abortFn);
@@ -960,6 +966,12 @@ namespace Qd {
 					auto stderrVal = builder->CreateLoad(llvm::PointerType::getUnqual(*context), stderrGlobal);
 					builder->CreateCall(fprintfFn, {stderrVal, errorMsg});
 
+					// Print stack trace
+					auto printStackTraceFnTy =
+							llvm::FunctionType::get(builder->getVoidTy(), {llvm::PointerType::getUnqual(*context)}, false);
+					auto printStackTraceFn = module->getOrInsertFunction("qd_print_stack_trace", printStackTraceFnTy);
+					builder->CreateCall(printStackTraceFn, {ctx});
+
 					auto abortFn =
 							module->getOrInsertFunction("abort", llvm::FunctionType::get(builder->getVoidTy(), false));
 					builder->CreateCall(abortFn);
@@ -1308,6 +1320,13 @@ namespace Qd {
 						auto stderrGlobal = module->getOrInsertGlobal("stderr", llvm::PointerType::getUnqual(*context));
 						auto stderrVal = builder->CreateLoad(llvm::PointerType::getUnqual(*context), stderrGlobal);
 						builder->CreateCall(fprintfFn, {stderrVal, errorMsg});
+
+						// Print stack trace
+						auto printStackTraceFnTy =
+								llvm::FunctionType::get(builder->getVoidTy(), {llvm::PointerType::getUnqual(*context)}, false);
+						auto printStackTraceFn = module->getOrInsertFunction("qd_print_stack_trace", printStackTraceFnTy);
+						builder->CreateCall(printStackTraceFn, {ctx});
+
 						auto abortFn = module->getOrInsertFunction(
 								"abort", llvm::FunctionType::get(builder->getVoidTy(), false));
 						builder->CreateCall(abortFn);
@@ -1446,6 +1465,12 @@ namespace Qd {
 				auto stderrGlobal = module->getOrInsertGlobal("stderr", llvm::PointerType::getUnqual(*context));
 				auto stderrVal = builder->CreateLoad(llvm::PointerType::getUnqual(*context), stderrGlobal);
 				builder->CreateCall(fprintfFn, {stderrVal, errorMsg});
+
+				// Print stack trace
+				auto printStackTraceFnTy =
+						llvm::FunctionType::get(builder->getVoidTy(), {llvm::PointerType::getUnqual(*context)}, false);
+				auto printStackTraceFn = module->getOrInsertFunction("qd_print_stack_trace", printStackTraceFnTy);
+				builder->CreateCall(printStackTraceFn, {ctx});
 
 				auto abortFn =
 						module->getOrInsertFunction("abort", llvm::FunctionType::get(builder->getVoidTy(), false));

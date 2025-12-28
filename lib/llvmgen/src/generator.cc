@@ -1588,6 +1588,8 @@ namespace Qd {
 		mImpl->mainModuleName = moduleName;
 		// Add main source file to moduleSourceFiles for stack trace info
 		mImpl->moduleSourceFiles["main"] = mImpl->sourceFileName;
+		// Also add with the actual module name for user function lookups
+		mImpl->moduleSourceFiles[moduleName] = mImpl->sourceFileName;
 		return mImpl->generateProgram(root);
 	}
 
