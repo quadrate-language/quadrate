@@ -63,7 +63,9 @@ qd_exec_result usr_io_open(qd_context* ctx) {
     if (!fp) {
         // On failure, only push the error code
         ctx->error_code = IO_ERR_NOT_FOUND;
-        set_error_msg(ctx, "io::open failed");
+        char err_buf[256];
+        snprintf(err_buf, sizeof(err_buf), "%s", strerror(errno));
+        set_error_msg(ctx, err_buf);
         qd_push_i(ctx, IO_ERR_NOT_FOUND);
         return (qd_exec_result){IO_ERR_NOT_FOUND};
     }
@@ -171,7 +173,9 @@ qd_exec_result usr_io_read_string(qd_context* ctx) {
 
     if (bytes_read < (size_t)count && ferror(fp)) {
         ctx->error_code = IO_ERR_READ;
-        set_error_msg(ctx, "io::read_string: read error");
+        char err_buf[256];
+        snprintf(err_buf, sizeof(err_buf), "%s", strerror(errno));
+        set_error_msg(ctx, err_buf);
         free(buffer);
         qd_push_i(ctx, ctx->error_code);
         return (qd_exec_result){IO_ERR_READ};
@@ -238,7 +242,9 @@ qd_exec_result usr_io_write_string(qd_context* ctx) {
 
     if (written < len) {
         ctx->error_code = IO_ERR_WRITE;
-        set_error_msg(ctx, "io::write_string: write error");
+        char err_buf[256];
+        snprintf(err_buf, sizeof(err_buf), "%s", strerror(errno));
+        set_error_msg(ctx, err_buf);
         qd_push_i(ctx, ctx->error_code);
         return (qd_exec_result){IO_ERR_WRITE};
     }
@@ -319,7 +325,9 @@ qd_exec_result usr_io_seekg(qd_context* ctx) {
 
     if (fseek(fp, offset, seek_whence) != 0) {
         ctx->error_code = IO_ERR_SEEK;
-        set_error_msg(ctx, "io::seek: seek failed");
+        char err_buf[256];
+        snprintf(err_buf, sizeof(err_buf), "%s", strerror(errno));
+        set_error_msg(ctx, err_buf);
         qd_push_i(ctx, ctx->error_code);
         return (qd_exec_result){IO_ERR_SEEK};
     }
@@ -327,7 +335,9 @@ qd_exec_result usr_io_seekg(qd_context* ctx) {
     int64_t position = ftell(fp);
     if (position < 0) {
         ctx->error_code = IO_ERR_SEEK;
-        set_error_msg(ctx, "io::seek: ftell failed");
+        char err_buf[256];
+        snprintf(err_buf, sizeof(err_buf), "%s", strerror(errno));
+        set_error_msg(ctx, err_buf);
         qd_push_i(ctx, ctx->error_code);
         return (qd_exec_result){IO_ERR_SEEK};
     }
@@ -406,7 +416,9 @@ qd_exec_result usr_io_tell(qd_context* ctx) {
     int64_t position = ftell(fp);
     if (position < 0) {
         ctx->error_code = IO_ERR_SEEK;
-        set_error_msg(ctx, "io::tell: ftell failed");
+        char err_buf[256];
+        snprintf(err_buf, sizeof(err_buf), "%s", strerror(errno));
+        set_error_msg(ctx, err_buf);
         qd_push_i(ctx, ctx->error_code);
         return (qd_exec_result){IO_ERR_SEEK};
     }
@@ -485,7 +497,9 @@ qd_exec_result usr_io_read(qd_context* ctx) {
 
     if (bytes_read < (size_t)count && ferror(fp)) {
         ctx->error_code = IO_ERR_READ;
-        set_error_msg(ctx, "io::read: read error");
+        char err_buf[256];
+        snprintf(err_buf, sizeof(err_buf), "%s", strerror(errno));
+        set_error_msg(ctx, err_buf);
         qd_push_i(ctx, ctx->error_code);
         return (qd_exec_result){IO_ERR_READ};
     }
@@ -592,7 +606,9 @@ qd_exec_result usr_io_write(qd_context* ctx) {
 
     if (bytes_written < (size_t)count && ferror(fp)) {
         ctx->error_code = IO_ERR_WRITE;
-        set_error_msg(ctx, "io::write: write error");
+        char err_buf[256];
+        snprintf(err_buf, sizeof(err_buf), "%s", strerror(errno));
+        set_error_msg(ctx, err_buf);
         qd_push_i(ctx, ctx->error_code);
         return (qd_exec_result){IO_ERR_WRITE};
     }
@@ -629,39 +645,51 @@ qd_exec_result usr_io_read_file(qd_context* ctx) {
     // Open file
     FILE* fp = fopen(path, "rb");
     if (!fp) {
+        int saved_errno = errno;
         qd_string_release(path_elem.value.s);
         ctx->error_code = IO_ERR_NOT_FOUND;
-        set_error_msg(ctx, "io::read_file: file not found");
+        char err_buf[256];
+        snprintf(err_buf, sizeof(err_buf), "%s", strerror(saved_errno));
+        set_error_msg(ctx, err_buf);
         qd_push_i(ctx, IO_ERR_NOT_FOUND);
         return (qd_exec_result){IO_ERR_NOT_FOUND};
     }
 
     // Get file size
     if (fseek(fp, 0, SEEK_END) != 0) {
+        int saved_errno = errno;
         fclose(fp);
         qd_string_release(path_elem.value.s);
         ctx->error_code = IO_ERR_SEEK;
-        set_error_msg(ctx, "io::read_file: seek failed");
+        char err_buf[256];
+        snprintf(err_buf, sizeof(err_buf), "%s", strerror(saved_errno));
+        set_error_msg(ctx, err_buf);
         qd_push_i(ctx, IO_ERR_SEEK);
         return (qd_exec_result){IO_ERR_SEEK};
     }
 
     long file_size = ftell(fp);
     if (file_size < 0) {
+        int saved_errno = errno;
         fclose(fp);
         qd_string_release(path_elem.value.s);
         ctx->error_code = IO_ERR_SEEK;
-        set_error_msg(ctx, "io::read_file: ftell failed");
+        char err_buf[256];
+        snprintf(err_buf, sizeof(err_buf), "%s", strerror(saved_errno));
+        set_error_msg(ctx, err_buf);
         qd_push_i(ctx, IO_ERR_SEEK);
         return (qd_exec_result){IO_ERR_SEEK};
     }
 
     // Seek back to start
     if (fseek(fp, 0, SEEK_SET) != 0) {
+        int saved_errno = errno;
         fclose(fp);
         qd_string_release(path_elem.value.s);
         ctx->error_code = IO_ERR_SEEK;
-        set_error_msg(ctx, "io::read_file: seek to start failed");
+        char err_buf[256];
+        snprintf(err_buf, sizeof(err_buf), "%s", strerror(saved_errno));
+        set_error_msg(ctx, err_buf);
         qd_push_i(ctx, IO_ERR_SEEK);
         return (qd_exec_result){IO_ERR_SEEK};
     }
@@ -683,13 +711,16 @@ qd_exec_result usr_io_read_file(qd_context* ctx) {
 
     // Check for read error before closing file (ferror requires open file)
     int had_read_error = (bytes_read < (size_t)file_size && ferror(fp));
+    int saved_errno = errno;
     fclose(fp);
     qd_string_release(path_elem.value.s);
 
     if (had_read_error) {
         free(buffer);
         ctx->error_code = IO_ERR_READ;
-        set_error_msg(ctx, "io::read_file: read error");
+        char err_buf[256];
+        snprintf(err_buf, sizeof(err_buf), "%s", strerror(saved_errno));
+        set_error_msg(ctx, err_buf);
         qd_push_i(ctx, IO_ERR_READ);
         return (qd_exec_result){IO_ERR_READ};
     }
@@ -744,16 +775,20 @@ qd_exec_result usr_io_write_file(qd_context* ctx) {
     // Open file for writing (truncate if exists)
     FILE* fp = fopen(path, "wb");
     if (!fp) {
+        int saved_errno = errno;
         qd_string_release(path_elem.value.s);
         qd_string_release(contents_elem.value.s);
         ctx->error_code = IO_ERR_PERMISSION;
-        set_error_msg(ctx, "io::write_file: failed to open file");
+        char err_buf[256];
+        snprintf(err_buf, sizeof(err_buf), "%s", strerror(saved_errno));
+        set_error_msg(ctx, err_buf);
         qd_push_i(ctx, IO_ERR_PERMISSION);
         return (qd_exec_result){IO_ERR_PERMISSION};
     }
 
     // Write contents
     size_t written = fwrite(contents, 1, len, fp);
+    int saved_errno = errno;
     fclose(fp);
 
     qd_string_release(path_elem.value.s);
@@ -761,7 +796,9 @@ qd_exec_result usr_io_write_file(qd_context* ctx) {
 
     if (written < len) {
         ctx->error_code = IO_ERR_WRITE;
-        set_error_msg(ctx, "io::write_file: write failed");
+        char err_buf[256];
+        snprintf(err_buf, sizeof(err_buf), "%s", strerror(saved_errno));
+        set_error_msg(ctx, err_buf);
         qd_push_i(ctx, IO_ERR_WRITE);
         return (qd_exec_result){IO_ERR_WRITE};
     }

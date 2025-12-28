@@ -1006,6 +1006,20 @@ void qd_print_stack_trace(qd_context* ctx) {
 	}
 }
 
+void qd_print_error_msg(qd_context* ctx, const char* func_name) {
+	// Check NO_COLOR environment variable
+	const bool use_color = getenv("NO_COLOR") == NULL;
+	const char* color_red = use_color ? "\x1b[1;31m" : "";
+	const char* color_reset = use_color ? "\x1b[0m" : "";
+
+	if (ctx->error_msg && ctx->error_msg[0] != '\0') {
+		fprintf(stderr, "%sFatal error:%s function '%s' failed: %s\n", color_red, color_reset, func_name,
+				ctx->error_msg);
+	} else {
+		fprintf(stderr, "%sFatal error:%s function '%s' failed\n", color_red, color_reset, func_name);
+	}
+}
+
 void qd_debug_print_stack(qd_context* ctx) {
 	if (!ctx || !ctx->st) {
 		fprintf(stderr, "Error: Invalid context");

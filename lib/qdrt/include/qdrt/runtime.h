@@ -741,6 +741,17 @@ void qd_pop_call(qd_context* ctx);
 void qd_print_stack_trace(qd_context* ctx);
 
 /**
+ * @brief Print a formatted error message for a failed function
+ *
+ * Prints "Fatal error: function 'name' failed: <error_msg>" to stderr.
+ * If ctx->error_msg is empty, omits the ": <error_msg>" part.
+ *
+ * @param ctx Execution context
+ * @param func_name Name of the function that failed
+ */
+void qd_print_error_msg(qd_context* ctx, const char* func_name);
+
+/**
  * @brief Print the data stack contents for debugging
  *
  * Prints all values currently on the data stack to stderr.

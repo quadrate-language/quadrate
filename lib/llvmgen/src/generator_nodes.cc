@@ -226,14 +226,13 @@ namespace Qd {
 
 					// Error block: print message and abort
 					builder->SetInsertPoint(errorBlock);
-					llvm::Value* errorMsg = builder->CreateGlobalString("Fatal error: method '" + name + "' failed\n");
-					auto fprintfFn = module->getOrInsertFunction("fprintf",
-							llvm::FunctionType::get(builder->getInt32Ty(),
-									{llvm::PointerType::getUnqual(*context), llvm::PointerType::getUnqual(*context)},
-									true));
-					auto stderrGlobal = module->getOrInsertGlobal("stderr", llvm::PointerType::getUnqual(*context));
-					auto stderrVal = builder->CreateLoad(llvm::PointerType::getUnqual(*context), stderrGlobal);
-					builder->CreateCall(fprintfFn, {stderrVal, errorMsg});
+
+					// Print error message with context->error_msg if available
+					auto funcNameStr = builder->CreateGlobalString(name);
+					auto printErrorMsgFnTy = llvm::FunctionType::get(builder->getVoidTy(),
+							{llvm::PointerType::getUnqual(*context), llvm::PointerType::getUnqual(*context)}, false);
+					auto printErrorMsgFn = module->getOrInsertFunction("qd_print_error_msg", printErrorMsgFnTy);
+					builder->CreateCall(printErrorMsgFn, {ctx, funcNameStr});
 
 					// Print stack trace
 					auto printStackTraceFnTy =
@@ -956,15 +955,13 @@ namespace Qd {
 
 					// Error block: print message and abort
 					builder->SetInsertPoint(errorBlock);
-					llvm::Value* errorMsg =
-							builder->CreateGlobalString("Fatal error: function '" + name + "' failed\n");
-					auto fprintfFn = module->getOrInsertFunction("fprintf",
-							llvm::FunctionType::get(builder->getInt32Ty(),
-									{llvm::PointerType::getUnqual(*context), llvm::PointerType::getUnqual(*context)},
-									true));
-					auto stderrGlobal = module->getOrInsertGlobal("stderr", llvm::PointerType::getUnqual(*context));
-					auto stderrVal = builder->CreateLoad(llvm::PointerType::getUnqual(*context), stderrGlobal);
-					builder->CreateCall(fprintfFn, {stderrVal, errorMsg});
+
+					// Print error message with context->error_msg if available
+					auto funcNameStr = builder->CreateGlobalString(name);
+					auto printErrorMsgFnTy = llvm::FunctionType::get(builder->getVoidTy(),
+							{llvm::PointerType::getUnqual(*context), llvm::PointerType::getUnqual(*context)}, false);
+					auto printErrorMsgFn = module->getOrInsertFunction("qd_print_error_msg", printErrorMsgFnTy);
+					builder->CreateCall(printErrorMsgFn, {ctx, funcNameStr});
 
 					// Print stack trace
 					auto printStackTraceFnTy =
@@ -1310,16 +1307,13 @@ namespace Qd {
 						builder->CreateCondBr(hasError, errorBlock, continueBlock);
 
 						builder->SetInsertPoint(errorBlock);
-						llvm::Value* errorMsg =
-								builder->CreateGlobalString("Fatal error: method '" + name + "' failed\n");
-						auto fprintfFn = module->getOrInsertFunction(
-								"fprintf", llvm::FunctionType::get(builder->getInt32Ty(),
-												   {llvm::PointerType::getUnqual(*context),
-														   llvm::PointerType::getUnqual(*context)},
-												   true));
-						auto stderrGlobal = module->getOrInsertGlobal("stderr", llvm::PointerType::getUnqual(*context));
-						auto stderrVal = builder->CreateLoad(llvm::PointerType::getUnqual(*context), stderrGlobal);
-						builder->CreateCall(fprintfFn, {stderrVal, errorMsg});
+
+						// Print error message with context->error_msg if available
+						auto funcNameStr = builder->CreateGlobalString(name);
+						auto printErrorMsgFnTy = llvm::FunctionType::get(builder->getVoidTy(),
+								{llvm::PointerType::getUnqual(*context), llvm::PointerType::getUnqual(*context)}, false);
+						auto printErrorMsgFn = module->getOrInsertFunction("qd_print_error_msg", printErrorMsgFnTy);
+						builder->CreateCall(printErrorMsgFn, {ctx, funcNameStr});
 
 						// Print stack trace
 						auto printStackTraceFnTy =
@@ -1457,14 +1451,13 @@ namespace Qd {
 
 				// Error block: print message and abort
 				builder->SetInsertPoint(errorBlock);
-				llvm::Value* errorMsg = builder->CreateGlobalString("Fatal error: function '" + name + "' failed\n");
-				auto fprintfFn = module->getOrInsertFunction("fprintf",
-						llvm::FunctionType::get(builder->getInt32Ty(),
-								{llvm::PointerType::getUnqual(*context), llvm::PointerType::getUnqual(*context)},
-								true));
-				auto stderrGlobal = module->getOrInsertGlobal("stderr", llvm::PointerType::getUnqual(*context));
-				auto stderrVal = builder->CreateLoad(llvm::PointerType::getUnqual(*context), stderrGlobal);
-				builder->CreateCall(fprintfFn, {stderrVal, errorMsg});
+
+				// Print error message with context->error_msg if available
+				auto funcNameStr = builder->CreateGlobalString(name);
+				auto printErrorMsgFnTy = llvm::FunctionType::get(builder->getVoidTy(),
+						{llvm::PointerType::getUnqual(*context), llvm::PointerType::getUnqual(*context)}, false);
+				auto printErrorMsgFn = module->getOrInsertFunction("qd_print_error_msg", printErrorMsgFnTy);
+				builder->CreateCall(printErrorMsgFn, {ctx, funcNameStr});
 
 				// Print stack trace
 				auto printStackTraceFnTy =
