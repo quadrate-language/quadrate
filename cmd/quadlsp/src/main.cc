@@ -930,8 +930,21 @@ private:
 
 				for (const auto& func : functions) {
 					json_t* item = json_object();
-					json_object_set_new(item, "label", json_string(func.name.c_str()));
-					json_object_set_new(item, "kind", json_integer(3)); // Function
+
+					// Build label with generic type params if applicable
+					std::string label = func.name;
+					if (func.isGeneric) {
+						label += "<";
+						for (size_t i = 0; i < func.typeParams.size(); i++) {
+							if (i > 0) {
+								label += ", ";
+							}
+							label += func.typeParams[i];
+						}
+						label += ">";
+					}
+					json_object_set_new(item, "label", json_string(label.c_str()));
+					json_object_set_new(item, "kind", json_integer(func.isMethod ? 2 : 3)); // Method=2, Function=3
 
 					// Add snippet with placeholders
 					json_object_set_new(item, "insertTextFormat", json_integer(2)); // Snippet format
@@ -943,7 +956,31 @@ private:
 					// Build documentation
 					std::ostringstream docStream;
 					docStream << "**Module:** `" << modulePrefix << "`\n\n";
-					docStream << "**Function signature:**\n```quadrate\n" << func.signature << "\n```\n\n";
+					if (func.isMethod) {
+						docStream << "**Method on:** `" << func.receiverType;
+						if (!func.receiverTypeParams.empty()) {
+							docStream << "<";
+							for (size_t i = 0; i < func.receiverTypeParams.size(); i++) {
+								if (i > 0) {
+									docStream << ", ";
+								}
+								docStream << func.receiverTypeParams[i];
+							}
+							docStream << ">";
+						}
+						docStream << "`\n\n";
+					}
+					if (func.isGeneric) {
+						docStream << "**Type parameters:** `<";
+						for (size_t i = 0; i < func.typeParams.size(); i++) {
+							if (i > 0) {
+								docStream << ", ";
+							}
+							docStream << func.typeParams[i];
+						}
+						docStream << ">`\n\n";
+					}
+					docStream << "**Signature:**\n```quadrate\n" << func.signature << "\n```\n\n";
 					if (!func.inputParams.empty()) {
 						docStream << "**Stack before call:** ";
 						for (size_t i = 0; i < func.inputParams.size(); i++) {
@@ -976,13 +1013,36 @@ private:
 				std::vector<StructInfo> structs = extractModuleStructs(modulePath);
 				for (const auto& structInfo : structs) {
 					json_t* item = json_object();
-					json_object_set_new(item, "label", json_string(structInfo.name.c_str()));
+
+					// Build label with generic type params if applicable
+					std::string structLabel = structInfo.name;
+					if (structInfo.isGeneric) {
+						structLabel += "<";
+						for (size_t i = 0; i < structInfo.typeParams.size(); i++) {
+							if (i > 0) {
+								structLabel += ", ";
+							}
+							structLabel += structInfo.typeParams[i];
+						}
+						structLabel += ">";
+					}
+					json_object_set_new(item, "label", json_string(structLabel.c_str()));
 					json_object_set_new(item, "kind", json_integer(22)); // Struct kind
 
 					// Build documentation showing struct fields
 					std::ostringstream docStream;
 					docStream << "**Module:** `" << modulePrefix << "`\n\n";
-					docStream << "**Struct:** `" << structInfo.name << "`\n\n";
+					docStream << "**Struct:** `" << structLabel << "`\n\n";
+					if (structInfo.isGeneric) {
+						docStream << "**Type parameters:** `<";
+						for (size_t i = 0; i < structInfo.typeParams.size(); i++) {
+							if (i > 0) {
+								docStream << ", ";
+							}
+							docStream << structInfo.typeParams[i];
+						}
+						docStream << ">`\n\n";
+					}
 					docStream << "**Fields:**\n";
 					for (const auto& field : structInfo.fields) {
 						docStream << "- `" << field.first << ": " << field.second << "`\n";
@@ -1034,8 +1094,21 @@ private:
 
 				for (const auto& func : functions) {
 					json_t* item = json_object();
-					json_object_set_new(item, "label", json_string(func.name.c_str()));
-					json_object_set_new(item, "kind", json_integer(3)); // Function
+
+					// Build label with generic type params if applicable
+					std::string label = func.name;
+					if (func.isGeneric) {
+						label += "<";
+						for (size_t i = 0; i < func.typeParams.size(); i++) {
+							if (i > 0) {
+								label += ", ";
+							}
+							label += func.typeParams[i];
+						}
+						label += ">";
+					}
+					json_object_set_new(item, "label", json_string(label.c_str()));
+					json_object_set_new(item, "kind", json_integer(func.isMethod ? 2 : 3)); // Method=2, Function=3
 
 					// Add snippet with placeholders
 					json_object_set_new(item, "insertTextFormat", json_integer(2)); // Snippet format
@@ -1046,7 +1119,31 @@ private:
 
 					// Build documentation showing what needs to be on the stack
 					std::ostringstream docStream;
-					docStream << "**Function signature:**\n```quadrate\n" << func.signature << "\n```\n\n";
+					if (func.isMethod) {
+						docStream << "**Method on:** `" << func.receiverType;
+						if (!func.receiverTypeParams.empty()) {
+							docStream << "<";
+							for (size_t i = 0; i < func.receiverTypeParams.size(); i++) {
+								if (i > 0) {
+									docStream << ", ";
+								}
+								docStream << func.receiverTypeParams[i];
+							}
+							docStream << ">";
+						}
+						docStream << "`\n\n";
+					}
+					if (func.isGeneric) {
+						docStream << "**Type parameters:** `<";
+						for (size_t i = 0; i < func.typeParams.size(); i++) {
+							if (i > 0) {
+								docStream << ", ";
+							}
+							docStream << func.typeParams[i];
+						}
+						docStream << ">`\n\n";
+					}
+					docStream << "**Signature:**\n```quadrate\n" << func.signature << "\n```\n\n";
 					if (!func.inputParams.empty()) {
 						docStream << "**Stack before call:** ";
 						for (size_t i = 0; i < func.inputParams.size(); i++) {
@@ -1080,12 +1177,35 @@ private:
 			std::vector<StructInfo> structs = extractStructs(documentText);
 			for (const auto& structInfo : structs) {
 				json_t* item = json_object();
-				json_object_set_new(item, "label", json_string(structInfo.name.c_str()));
+
+				// Build label with generic type params if applicable
+				std::string structLabel = structInfo.name;
+				if (structInfo.isGeneric) {
+					structLabel += "<";
+					for (size_t i = 0; i < structInfo.typeParams.size(); i++) {
+						if (i > 0) {
+							structLabel += ", ";
+						}
+						structLabel += structInfo.typeParams[i];
+					}
+					structLabel += ">";
+				}
+				json_object_set_new(item, "label", json_string(structLabel.c_str()));
 				json_object_set_new(item, "kind", json_integer(22)); // Struct kind
 
 				// Build documentation showing struct fields
 				std::ostringstream docStream;
-				docStream << "**Struct:** `" << structInfo.name << "`\n\n";
+				docStream << "**Struct:** `" << structLabel << "`\n\n";
+				if (structInfo.isGeneric) {
+					docStream << "**Type parameters:** `<";
+					for (size_t i = 0; i < structInfo.typeParams.size(); i++) {
+						if (i > 0) {
+							docStream << ", ";
+						}
+						docStream << structInfo.typeParams[i];
+					}
+					docStream << ">`\n\n";
+				}
 				docStream << "**Fields:**\n";
 				for (const auto& field : structInfo.fields) {
 					docStream << "- `" << field.first << ": " << field.second << "`\n";
@@ -1369,9 +1489,56 @@ private:
 				FunctionInfo info;
 				info.name = funcNode->name();
 
+				// Extract generic type parameters
+				info.isGeneric = funcNode->isGeneric();
+				if (info.isGeneric) {
+					info.typeParams = funcNode->typeParams();
+				}
+
+				// Extract method receiver information
+				info.isMethod = funcNode->hasReceiver();
+				if (info.isMethod) {
+					info.receiverName = funcNode->receiverName();
+					info.receiverType = funcNode->receiverType();
+					if (funcNode->hasReceiverTypeParams()) {
+						info.receiverTypeParams = funcNode->receiverTypeParams();
+					}
+				}
+
 				// Build signature parts
 				std::ostringstream sigStream;
-				sigStream << "fn " << info.name << "(";
+
+				// Include receiver in signature for methods
+				if (info.isMethod) {
+					sigStream << "fn (" << info.receiverName << ":" << info.receiverType;
+					if (!info.receiverTypeParams.empty()) {
+						sigStream << "<";
+						for (size_t j = 0; j < info.receiverTypeParams.size(); j++) {
+							if (j > 0) {
+								sigStream << ", ";
+							}
+							sigStream << info.receiverTypeParams[j];
+						}
+						sigStream << ">";
+					}
+					sigStream << ") " << info.name;
+				} else {
+					sigStream << "fn " << info.name;
+				}
+
+				// Add type parameters to signature
+				if (info.isGeneric) {
+					sigStream << "<";
+					for (size_t j = 0; j < info.typeParams.size(); j++) {
+						if (j > 0) {
+							sigStream << ", ";
+						}
+						sigStream << info.typeParams[j];
+					}
+					sigStream << ">";
+				}
+
+				sigStream << "(";
 
 				// Extract input parameters
 				const auto& inputs = funcNode->inputParameters();
@@ -1402,6 +1569,9 @@ private:
 				}
 
 				sigStream << ")";
+				if (funcNode->throws()) {
+					sigStream << "!";
+				}
 				info.signature = sigStream.str();
 
 				// Build snippet with placeholders for input parameters
@@ -1420,6 +1590,9 @@ private:
 					snippetStream << " ";
 				}
 				snippetStream << info.name;
+				if (funcNode->throws()) {
+					snippetStream << "!";
+				}
 
 				info.snippet = snippetStream.str();
 
@@ -1533,9 +1706,29 @@ private:
 				StructInfo info;
 				info.name = structNode->name();
 
+				// Extract generic type parameters
+				info.isGeneric = structNode->isGeneric();
+				if (info.isGeneric) {
+					info.typeParams = structNode->typeParams();
+				}
+
 				// Build signature
 				std::ostringstream sig;
-				sig << "struct " << info.name << " { ";
+				sig << "struct " << info.name;
+
+				// Include type parameters in signature
+				if (info.isGeneric) {
+					sig << "<";
+					for (size_t j = 0; j < info.typeParams.size(); j++) {
+						if (j > 0) {
+							sig << ", ";
+						}
+						sig << info.typeParams[j];
+					}
+					sig << ">";
+				}
+
+				sig << " { ";
 				for (const auto* field : structNode->fields()) {
 					const Qd::AstNodeStructField* structField = static_cast<const Qd::AstNodeStructField*>(field);
 					info.fields.push_back({structField->name(), structField->typeName()});
@@ -1639,7 +1832,37 @@ private:
 						if (func.name == word) {
 							// Build documentation for user function
 							std::ostringstream docStream;
-							docStream << "**Function:** `" << func.signature << "`\n\n";
+
+							// Show if it's a method
+							if (func.isMethod) {
+								docStream << "**Method on:** `" << func.receiverType;
+								if (!func.receiverTypeParams.empty()) {
+									docStream << "<";
+									for (size_t i = 0; i < func.receiverTypeParams.size(); i++) {
+										if (i > 0) {
+											docStream << ", ";
+										}
+										docStream << func.receiverTypeParams[i];
+									}
+									docStream << ">";
+								}
+								docStream << "`\n\n";
+							}
+
+							// Show type parameters for generic functions
+							if (func.isGeneric) {
+								docStream << "**Type parameters:** `<";
+								for (size_t i = 0; i < func.typeParams.size(); i++) {
+									if (i > 0) {
+										docStream << ", ";
+									}
+									docStream << func.typeParams[i];
+								}
+								docStream << ">`\n\n";
+							}
+
+							docStream << "**" << (func.isMethod ? "Method" : "Function") << ":**\n```quadrate\n"
+									  << func.signature << "\n```\n\n";
 							if (!func.inputParams.empty()) {
 								docStream << "**Inputs:** ";
 								for (size_t i = 0; i < func.inputParams.size(); i++) {
@@ -1704,8 +1927,74 @@ private:
 											if (funcNode->name() == symbolName) {
 												// Build function documentation
 												std::ostringstream docStream;
-												docStream << "**Function (from " << moduleName << "):** `fn "
-														  << funcNode->name() << "(";
+
+												// Show if it's a method
+												if (funcNode->hasReceiver()) {
+													docStream << "**Method on:** `" << funcNode->receiverType();
+													if (funcNode->hasReceiverTypeParams()) {
+														docStream << "<";
+														const auto& rTypeParams = funcNode->receiverTypeParams();
+														for (size_t j = 0; j < rTypeParams.size(); j++) {
+															if (j > 0) {
+																docStream << ", ";
+															}
+															docStream << rTypeParams[j];
+														}
+														docStream << ">";
+													}
+													docStream << "`\n\n";
+												}
+
+												// Show type parameters for generic functions
+												if (funcNode->isGeneric()) {
+													docStream << "**Type parameters:** `<";
+													const auto& typeParams = funcNode->typeParams();
+													for (size_t j = 0; j < typeParams.size(); j++) {
+														if (j > 0) {
+															docStream << ", ";
+														}
+														docStream << typeParams[j];
+													}
+													docStream << ">`\n\n";
+												}
+
+												docStream << "**" << (funcNode->hasReceiver() ? "Method" : "Function")
+														  << " (from " << moduleName << "):**\n```quadrate\n";
+
+												// Build full signature
+												if (funcNode->hasReceiver()) {
+													docStream << "fn (" << funcNode->receiverName() << ":"
+															  << funcNode->receiverType();
+													if (funcNode->hasReceiverTypeParams()) {
+														docStream << "<";
+														const auto& rTypeParams = funcNode->receiverTypeParams();
+														for (size_t j = 0; j < rTypeParams.size(); j++) {
+															if (j > 0) {
+																docStream << ", ";
+															}
+															docStream << rTypeParams[j];
+														}
+														docStream << ">";
+													}
+													docStream << ") " << funcNode->name();
+												} else {
+													docStream << "fn " << funcNode->name();
+												}
+
+												// Add type parameters
+												if (funcNode->isGeneric()) {
+													docStream << "<";
+													const auto& typeParams = funcNode->typeParams();
+													for (size_t j = 0; j < typeParams.size(); j++) {
+														if (j > 0) {
+															docStream << ", ";
+														}
+														docStream << typeParams[j];
+													}
+													docStream << ">";
+												}
+
+												docStream << "(";
 
 												// Input parameters
 												const auto& inputs = funcNode->inputParameters();
@@ -1731,7 +2020,11 @@ private:
 													docStream << param->name() << ":" << param->typeString();
 												}
 
-												docStream << ")`";
+												docStream << ")";
+												if (funcNode->throws()) {
+													docStream << "!";
+												}
+												docStream << "\n```";
 
 												result = json_object();
 												json_t* contents = json_object();
@@ -3709,9 +4002,56 @@ private:
 				FunctionInfo info;
 				info.name = funcNode->name();
 
+				// Extract generic type parameters
+				info.isGeneric = funcNode->isGeneric();
+				if (info.isGeneric) {
+					info.typeParams = funcNode->typeParams();
+				}
+
+				// Extract method receiver information
+				info.isMethod = funcNode->hasReceiver();
+				if (info.isMethod) {
+					info.receiverName = funcNode->receiverName();
+					info.receiverType = funcNode->receiverType();
+					if (funcNode->hasReceiverTypeParams()) {
+						info.receiverTypeParams = funcNode->receiverTypeParams();
+					}
+				}
+
 				// Build signature parts
 				std::ostringstream sigStream;
-				sigStream << "fn " << info.name << "(";
+
+				// Include receiver in signature for methods
+				if (info.isMethod) {
+					sigStream << "fn (" << info.receiverName << ":" << info.receiverType;
+					if (!info.receiverTypeParams.empty()) {
+						sigStream << "<";
+						for (size_t j = 0; j < info.receiverTypeParams.size(); j++) {
+							if (j > 0) {
+								sigStream << ", ";
+							}
+							sigStream << info.receiverTypeParams[j];
+						}
+						sigStream << ">";
+					}
+					sigStream << ") " << info.name;
+				} else {
+					sigStream << "fn " << info.name;
+				}
+
+				// Add type parameters to signature
+				if (info.isGeneric) {
+					sigStream << "<";
+					for (size_t j = 0; j < info.typeParams.size(); j++) {
+						if (j > 0) {
+							sigStream << ", ";
+						}
+						sigStream << info.typeParams[j];
+					}
+					sigStream << ">";
+				}
+
+				sigStream << "(";
 
 				// Extract input parameters
 				const auto& inputs = funcNode->inputParameters();
@@ -3742,6 +4082,9 @@ private:
 				}
 
 				sigStream << ")";
+				if (funcNode->throws()) {
+					sigStream << "!";
+				}
 				info.signature = sigStream.str();
 
 				// Build snippet with placeholders for input parameters
@@ -3761,6 +4104,9 @@ private:
 					snippetStream << " ";
 				}
 				snippetStream << info.name;
+				if (funcNode->throws()) {
+					snippetStream << "!";
+				}
 
 				info.snippet = snippetStream.str();
 
@@ -3866,9 +4212,29 @@ private:
 				StructInfo info;
 				info.name = structNode->name();
 
+				// Extract generic type parameters
+				info.isGeneric = structNode->isGeneric();
+				if (info.isGeneric) {
+					info.typeParams = structNode->typeParams();
+				}
+
 				// Build signature
 				std::ostringstream sig;
-				sig << "struct " << info.name << " { ";
+				sig << "struct " << info.name;
+
+				// Include type parameters in signature
+				if (info.isGeneric) {
+					sig << "<";
+					for (size_t j = 0; j < info.typeParams.size(); j++) {
+						if (j > 0) {
+							sig << ", ";
+						}
+						sig << info.typeParams[j];
+					}
+					sig << ">";
+				}
+
+				sig << " { ";
 				for (const auto* field : structNode->fields()) {
 					const Qd::AstNodeStructField* structField = static_cast<const Qd::AstNodeStructField*>(field);
 					info.fields.push_back({structField->name(), structField->typeName()});

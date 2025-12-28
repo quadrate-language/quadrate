@@ -467,7 +467,6 @@ namespace Qd {
 				// e.g., for method set(idx, elem): v idx elem set!
 				std::string receiverStructType;
 				std::string registeredStructType;
-				size_t receiverStackIdx = 0;
 
 				// First pass: find any struct on the stack that has this method
 				// to determine the method signature and expected parameter count
@@ -518,7 +517,6 @@ namespace Qd {
 								// Valid receiver-first call
 								receiverStructType = structAtExpectedPos;
 								registeredStructType = actualRegisteredType;
-								receiverStackIdx = expectedReceiverIdx;
 								foundValidReceiver = true;
 							}
 						}
@@ -539,19 +537,9 @@ namespace Qd {
 							break;
 						}
 
-						// receiverPositionFromTop is now always additionalParams (by construction)
+						// receiverPositionFromTop equals additionalParams by construction
+						// (we verified the receiver is at the expected position above)
 						size_t receiverPositionFromTop = additionalParams;
-						(void)receiverStackIdx; // Used only for setting, actual validation above
-
-						if (typeStack.size() < sig.consumes.size()) {
-							std::string errorMsg = "Type error in method call '";
-							errorMsg += instrName;
-							errorMsg += "': Stack underflow (requires receiver + ";
-							errorMsg += std::to_string(additionalParams);
-							errorMsg += " values)";
-							reportError(instr, errorMsg.c_str());
-							break;
-						}
 
 						// Pop all consumed values (receiver + params)
 						for (size_t j = 0; j < sig.consumes.size(); j++) {

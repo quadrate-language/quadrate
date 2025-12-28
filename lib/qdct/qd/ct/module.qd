@@ -1,5 +1,28 @@
-/// Common Types module
-/// Contains generic container types like Pair and Vec.
+/// ct - Common Types Module
+/// =========================
+///
+/// This module provides generic container types for Quadrate.
+///
+/// ## Available Types
+///
+/// - Vec<T>      : Dynamic array (growable list)
+/// - Pair<T, U>  : Two-element tuple
+///
+/// ## Usage
+///
+///     use ct
+///
+///     fn main() {
+///         // Create and use a vector
+///         Vec<i64> { data = 0 len = 0 cap = 0 } -> v
+///         v 10 push! -> v
+///         v 0 get! print nl
+///         v release
+///
+///         // Create and use a pair
+///         Pair<i64, str> { first = 1 second = "one" } -> p
+///         p first print nl
+///     }
 
 use "pair.qd"
 use "vec.qd"

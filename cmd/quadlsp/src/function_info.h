@@ -11,6 +11,16 @@ struct FunctionInfo {
 	std::vector<std::string> outputParams; // "name:type" format
 	std::string signature;				   // Full signature string
 	std::string snippet;				   // LSP snippet with placeholders
+
+	// Generic type support
+	std::vector<std::string> typeParams; // Type parameters: "T", "U", etc.
+	bool isGeneric = false;				 // True if function has type params
+
+	// Method support (receiver-first convention)
+	bool isMethod = false;						   // True if function has receiver
+	std::string receiverName;					   // Receiver parameter name (e.g., "v")
+	std::string receiverType;					   // Receiver struct type (e.g., "Vec")
+	std::vector<std::string> receiverTypeParams;   // Receiver type params if generic
 };
 
 #endif

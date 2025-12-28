@@ -324,6 +324,38 @@ namespace Qd {
 	}
 
 	// Format a function signature line
+	// Helper to find matching closing bracket for angle brackets
+	static size_t findMatchingAngleBracket(const std::string& s, size_t openPos) {
+		int depth = 0;
+		for (size_t i = openPos; i < s.length(); i++) {
+			if (s[i] == '<') {
+				depth++;
+			} else if (s[i] == '>') {
+				depth--;
+				if (depth == 0) {
+					return i;
+				}
+			}
+		}
+		return std::string::npos;
+	}
+
+	// Helper to find matching closing paren
+	static size_t findMatchingParen(const std::string& s, size_t openPos) {
+		int depth = 0;
+		for (size_t i = openPos; i < s.length(); i++) {
+			if (s[i] == '(') {
+				depth++;
+			} else if (s[i] == ')') {
+				depth--;
+				if (depth == 0) {
+					return i;
+				}
+			}
+		}
+		return std::string::npos;
+	}
+
 	static std::string formatFunctionSignature(const std::string& line) {
 		std::string trimmed = trim(line);
 
@@ -343,46 +375,82 @@ namespace Qd {
 			return line;
 		}
 
-		// Find the function name, parameters, and opening brace
+		// Find "fn " position
 		size_t fnPos = workingLine.find("fn ");
 		if (fnPos == std::string::npos) {
 			return line;
 		}
 
-		size_t nameStart = fnPos + 3;
-		while (nameStart < workingLine.length() && std::isspace(static_cast<unsigned char>(workingLine[nameStart]))) {
-			nameStart++;
+		size_t pos = fnPos + 3;
+		while (pos < workingLine.length() && std::isspace(static_cast<unsigned char>(workingLine[pos]))) {
+			pos++;
 		}
 
-		size_t parenPos = workingLine.find('(', nameStart);
-		if (parenPos == std::string::npos) {
-			return line;
+		// Check for receiver: (receiverName:Type<Params>)
+		std::string receiver;
+		if (pos < workingLine.length() && workingLine[pos] == '(') {
+			// Find matching close paren for receiver
+			size_t closeReceiverPos = findMatchingParen(workingLine, pos);
+			if (closeReceiverPos != std::string::npos) {
+				// Extract receiver content
+				std::string receiverContent = workingLine.substr(pos + 1, closeReceiverPos - pos - 1);
+				receiver = "(" + trim(receiverContent) + ") ";
+				pos = closeReceiverPos + 1;
+				// Skip whitespace after receiver
+				while (pos < workingLine.length() && std::isspace(static_cast<unsigned char>(workingLine[pos]))) {
+					pos++;
+				}
+			}
 		}
 
-		std::string name = trim(workingLine.substr(nameStart, parenPos - nameStart));
+		// Extract function name (up to '<' for type params or '(' for params)
+		size_t nameStart = pos;
+		size_t nameEnd = pos;
+		while (nameEnd < workingLine.length()) {
+			char c = workingLine[nameEnd];
+			if (c == '<' || c == '(' || std::isspace(static_cast<unsigned char>(c))) {
+				break;
+			}
+			nameEnd++;
+		}
+
+		std::string name = workingLine.substr(nameStart, nameEnd - nameStart);
 
 		// If name is empty, this is an anonymous function - delegate to that formatter
 		if (name.empty()) {
 			return formatAnonymousFunctionSignature(trimmed);
 		}
 
-		// Find matching closing paren
-		int depth = 0;
-		size_t closeParenPos = parenPos;
-		for (size_t i = parenPos; i < workingLine.length(); i++) {
-			if (workingLine[i] == '(') {
-				depth++;
-			}
-			if (workingLine[i] == ')') {
-				depth--;
-				if (depth == 0) {
-					closeParenPos = i;
-					break;
+		pos = nameEnd;
+		while (pos < workingLine.length() && std::isspace(static_cast<unsigned char>(workingLine[pos]))) {
+			pos++;
+		}
+
+		// Check for type parameters: <T, U>
+		std::string typeParams;
+		if (pos < workingLine.length() && workingLine[pos] == '<') {
+			size_t closeAnglePos = findMatchingAngleBracket(workingLine, pos);
+			if (closeAnglePos != std::string::npos) {
+				std::string typeParamsContent = workingLine.substr(pos + 1, closeAnglePos - pos - 1);
+				typeParams = "<" + trim(typeParamsContent) + ">";
+				pos = closeAnglePos + 1;
+				// Skip whitespace after type params
+				while (pos < workingLine.length() && std::isspace(static_cast<unsigned char>(workingLine[pos]))) {
+					pos++;
 				}
 			}
 		}
 
-		if (closeParenPos == parenPos) {
+		// Now we should be at the parameter list '('
+		if (pos >= workingLine.length() || workingLine[pos] != '(') {
+			return line; // Malformed
+		}
+
+		size_t parenPos = pos;
+
+		// Find matching closing paren for parameters
+		size_t closeParenPos = findMatchingParen(workingLine, parenPos);
+		if (closeParenPos == std::string::npos) {
 			return line; // No closing paren found
 		}
 
@@ -437,7 +505,7 @@ namespace Qd {
 
 		// Check for '!' after the closing paren (error-returning function)
 		std::string suffix;
-		size_t pos = closeParenPos + 1;
+		pos = closeParenPos + 1;
 		while (pos < workingLine.length() && std::isspace(workingLine[pos])) {
 			pos++;
 		}
@@ -450,12 +518,12 @@ namespace Qd {
 		size_t bracePos = workingLine.find('{', pos);
 		bool hasBrace = (bracePos != std::string::npos);
 
-		// Format: [pub] fn name( params )! {
+		// Format: [pub] fn [receiver] name[<typeParams>]( params )! {
 		std::string result;
 		if (isPublic) {
-			result = "pub fn " + name + "(" + formattedSig + ")" + suffix;
+			result = "pub fn " + receiver + name + typeParams + "(" + formattedSig + ")" + suffix;
 		} else {
-			result = "fn " + name + "(" + formattedSig + ")" + suffix;
+			result = "fn " + receiver + name + typeParams + "(" + formattedSig + ")" + suffix;
 		}
 		if (hasBrace) {
 			result += " {";

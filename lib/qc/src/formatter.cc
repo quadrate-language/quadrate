@@ -193,7 +193,44 @@ namespace Qd {
 			write("pub ");
 		}
 		write("fn ");
+
+		// Format receiver for methods (e.g., "(v:Vec<T>) ")
+		if (func->hasReceiver()) {
+			write("(");
+			write(func->receiverName());
+			write(":");
+			write(func->receiverType());
+
+			// Format receiver type parameters
+			if (func->hasReceiverTypeParams()) {
+				write("<");
+				const auto& recvTypeParams = func->receiverTypeParams();
+				for (size_t i = 0; i < recvTypeParams.size(); i++) {
+					if (i > 0) {
+						write(", ");
+					}
+					write(recvTypeParams[i]);
+				}
+				write(">");
+			}
+			write(") ");
+		}
+
 		write(func->name());
+
+		// Format generic type parameters (e.g., "<T, U>")
+		if (func->isGeneric()) {
+			write("<");
+			const auto& typeParams = func->typeParams();
+			for (size_t i = 0; i < typeParams.size(); i++) {
+				if (i > 0) {
+					write(", ");
+				}
+				write(typeParams[i]);
+			}
+			write(">");
+		}
+
 		write("(");
 
 		// Format input parameters
@@ -237,7 +274,14 @@ namespace Qd {
 			write(" ");
 		}
 
-		write(") {");
+		write(")");
+
+		// Add throws indicator
+		if (func->throws()) {
+			write("!");
+		}
+
+		write(" {");
 		newLine();
 
 		// Format body - keep instructions/literals inline
@@ -1256,6 +1300,20 @@ namespace Qd {
 		}
 		write("struct ");
 		write(structDecl->name());
+
+		// Format generic type parameters
+		if (structDecl->isGeneric()) {
+			write("<");
+			const auto& typeParams = structDecl->typeParams();
+			for (size_t i = 0; i < typeParams.size(); i++) {
+				if (i > 0) {
+					write(", ");
+				}
+				write(typeParams[i]);
+			}
+			write(">");
+		}
+
 		write(" {");
 		newLine();
 
