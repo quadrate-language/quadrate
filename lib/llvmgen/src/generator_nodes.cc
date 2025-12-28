@@ -194,7 +194,57 @@ namespace Qd {
 					return;
 				}
 
+				// Rotate stack so receiver is on top before calling method
+				// Only roll if receiver is NOT already on top
+				size_t receiverPositionFromTop = inst->methodReceiverPositionFromTop();
+				if (receiverPositionFromTop > 0) {
+					// Push the count and call qd_roll
+					// roll (N+1) brings the (N+1)th element (0-indexed from top) to top
+					builder->CreateCall(pushIntFn, {ctx, builder->getInt64(receiverPositionFromTop + 1)});
+					auto rollFnTy = llvm::FunctionType::get(execResultTy, {contextPtrTy}, false);
+					auto rollFn = module->getOrInsertFunction("qd_roll", rollFnTy);
+					builder->CreateCall(rollFn, {ctx});
+				}
+
 				builder->CreateCall(methodFn, {ctx});
+
+				// Handle fallible method calls
+				if (inst->abortOnError()) {
+					// Check error code and abort if set
+					auto contextStructTy = llvm::StructType::get(*context,
+							{llvm::PointerType::getUnqual(*context), builder->getInt64Ty(), builder->getInt64Ty()});
+					auto errorCodePtr = builder->CreateStructGEP(contextStructTy, ctx, 1, "error_code_ptr");
+					auto errorCode = builder->CreateLoad(builder->getInt64Ty(), errorCodePtr, "error_code");
+					auto hasError = builder->CreateICmpNE(errorCode, builder->getInt64(0), "has_error");
+
+					llvm::BasicBlock* errorBlock =
+							llvm::BasicBlock::Create(*context, "error_abort", builder->GetInsertBlock()->getParent());
+					llvm::BasicBlock* continueBlock =
+							llvm::BasicBlock::Create(*context, "no_error", builder->GetInsertBlock()->getParent());
+
+					builder->CreateCondBr(hasError, errorBlock, continueBlock);
+
+					// Error block: print message and abort
+					builder->SetInsertPoint(errorBlock);
+					llvm::Value* errorMsg = builder->CreateGlobalString("Fatal error: method '" + name + "' failed\n");
+					auto fprintfFn = module->getOrInsertFunction("fprintf",
+							llvm::FunctionType::get(builder->getInt32Ty(),
+									{llvm::PointerType::getUnqual(*context), llvm::PointerType::getUnqual(*context)},
+									true));
+					auto stderrGlobal = module->getOrInsertGlobal("stderr", llvm::PointerType::getUnqual(*context));
+					auto stderrVal = builder->CreateLoad(llvm::PointerType::getUnqual(*context), stderrGlobal);
+					builder->CreateCall(fprintfFn, {stderrVal, errorMsg});
+
+					auto abortFn =
+							module->getOrInsertFunction("abort", llvm::FunctionType::get(builder->getVoidTy(), false));
+					builder->CreateCall(abortFn);
+					builder->CreateUnreachable();
+
+					// Continue block - user-defined methods don't push a success status
+					builder->SetInsertPoint(continueBlock);
+					// Note: don't drop here - only imported C functions push success status
+				}
+
 				return;
 			}
 		}
@@ -846,6 +896,19 @@ namespace Qd {
 			} else if (lookupName == "bits::rshift") {
 				generateInlineBitRshift(ctx);
 			} else {
+				// For method calls, rotate stack so receiver is on top before calling
+				// Only roll if receiver is NOT already on top
+				if (ident->isMethodCall()) {
+					size_t receiverPositionFromTop = ident->methodReceiverPositionFromTop();
+					if (receiverPositionFromTop > 0) {
+						// Push the count and call qd_roll
+						// roll (N+1) brings the (N+1)th element (0-indexed from top) to top
+						builder->CreateCall(pushIntFn, {ctx, builder->getInt64(receiverPositionFromTop + 1)});
+						auto rollFnTy = llvm::FunctionType::get(execResultTy, {contextPtrTy}, false);
+						auto rollFn = module->getOrInsertFunction("qd_roll", rollFnTy);
+						builder->CreateCall(rollFn, {ctx});
+					}
+				}
 				builder->CreateCall(it->second, {ctx});
 			}
 
@@ -902,8 +965,9 @@ namespace Qd {
 					builder->CreateCall(abortFn);
 					builder->CreateUnreachable();
 
-					// Continue block
+					// Continue block - user-defined functions don't push success status
 					builder->SetInsertPoint(continueBlock);
+					// Note: don't drop here - only imported C functions push success status
 				} else {
 					// No operator or ? operator: push error status
 					// Convert bool to success status: true (error) -> 0, false (no error) -> 1
@@ -1199,6 +1263,18 @@ namespace Qd {
 					builder->CreateStore(builder->getInt64(0), errorCodePtr);
 				}
 
+				// For method calls, rotate stack so receiver is on top before calling
+				// Only roll if receiver is NOT already on top
+				size_t receiverPositionFromTop = scopedIdent->methodReceiverPositionFromTop();
+				if (receiverPositionFromTop > 0) {
+					// Push the count and call qd_roll
+					// roll (N+1) brings the (N+1)th element (0-indexed from top) to top
+					builder->CreateCall(pushIntFn, {ctx, builder->getInt64(receiverPositionFromTop + 1)});
+					auto rollFnTy = llvm::FunctionType::get(execResultTy, {contextPtrTy}, false);
+					auto rollFn = module->getOrInsertFunction("qd_roll", rollFnTy);
+					builder->CreateCall(rollFn, {ctx});
+				}
+
 				// Call the method
 				builder->CreateCall(it->second, {ctx});
 
@@ -1237,7 +1313,9 @@ namespace Qd {
 						builder->CreateCall(abortFn);
 						builder->CreateUnreachable();
 
+						// Continue - user-defined methods don't push success status
 						builder->SetInsertPoint(continueBlock);
+						// Note: don't drop here - only imported C functions push success status
 					} else {
 						auto successStatus = builder->CreateSelect(
 								hasError, builder->getInt64(0), builder->getInt64(1), "success_status");

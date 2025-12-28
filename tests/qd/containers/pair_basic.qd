@@ -1,0 +1,26 @@
+// Test Pair<T,U> basic operations
+use ct
+
+fn main() {
+	// Create a pair of integers
+	Pair<i64, i64> { first = 10 second = 20 } -> p1
+
+	// Test first method
+	p1 first 10 == if { "first_ok" print nl }
+
+	// Test second method
+	p1 second 20 == if { "second_ok" print nl }
+
+	// Test unpack method
+	p1 unpack -> b -> a
+	a 10 == if { "unpack_a_ok" print nl }
+	b 20 == if { "unpack_b_ok" print nl }
+
+	// Create mixed type pair (int and float won't work directly with generics)
+	// Let's create another int pair
+	Pair<i64, i64> { first = 100 second = 200 } -> p2
+	p2 first 100 == if { "p2_first_ok" print nl }
+	p2 second 200 == if { "p2_second_ok" print nl }
+
+	"done" print nl
+}

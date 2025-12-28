@@ -23,6 +23,7 @@
 #include <qc/ast_node_instruction.h>
 #include <qc/ast_node_literal.h>
 #include <qc/ast_node_local.h>
+#include <qc/ast_node_loop.h>
 #include <qc/ast_node_parameter.h>
 #include <qc/ast_node_scoped.h>
 #include <qc/ast_node_struct.h>
@@ -461,14 +462,27 @@ namespace Qd {
 					break;
 				}
 
-				// Check if this is a method call on a struct (stack top is receiver)
-				// Methods take precedence over builtin instructions when stack top matches
+				// Check if this is a method call on a struct
+				// Methods require: receiver pushed first, then parameters on top
+				// e.g., for method set(idx, elem): v idx elem set!
 				std::string receiverStructType;
-				if (!typeStack.empty() && typeStack.back() == StackValueType::PTR && !structTypeStack.empty()) {
-					receiverStructType = structTypeStack.back();
+				std::string registeredStructType;
+				size_t receiverStackIdx = 0;
+
+				// First pass: find any struct on the stack that has this method
+				// to determine the method signature and expected parameter count
+				size_t searchLimit = std::min(structTypeStack.size(), typeStack.size());
+				for (size_t idx = searchLimit; idx > 0; idx--) {
+					const std::string& structType = structTypeStack[idx - 1];
+					if (!structType.empty()) {
+						std::string potentialRegisteredType = findMethodStructType(structType, instrName);
+						if (!potentialRegisteredType.empty()) {
+							registeredStructType = potentialRegisteredType;
+							break;
+						}
+					}
 				}
-				// For generic types, find the registered type (e.g., Box<i64> -> Box<T>)
-				std::string registeredStructType = findMethodStructType(receiverStructType, instrName);
+
 				if (!registeredStructType.empty()) {
 					// This is a method call - look up the signature with mangled name
 					std::string mangledName = registeredStructType + "::" + instrName;
@@ -476,10 +490,60 @@ namespace Qd {
 					if (methodSigIt != mFunctionSignatures.end()) {
 						const FunctionSignature& sig = methodSigIt->second;
 
-						// The receiver is already on the stack - it's consumed implicitly
-						// Check if stack has enough values for additional parameters (excluding receiver)
+						// Calculate expected receiver position based on parameter count
+						// With receiver-first: receiver should be at position additionalParams from top
 						size_t additionalParams = sig.consumes.size() > 0 ? sig.consumes.size() - 1 : 0;
-						if (typeStack.size() < 1 + additionalParams) {
+
+						// Second pass: check if there's a valid receiver at the expected position
+						// Expected receiver index in stack (0-indexed from bottom)
+						// For additionalParams=1 and stack [receiver, param], receiver is at index 0
+						if (typeStack.size() <= additionalParams) {
+							std::string errorMsg = "Type error in method call '";
+							errorMsg += instrName;
+							errorMsg += "': Stack underflow (requires receiver + ";
+							errorMsg += std::to_string(additionalParams);
+							errorMsg += " values)";
+							reportError(instr, errorMsg.c_str());
+							break;
+						}
+
+						size_t expectedReceiverIdx = typeStack.size() - 1 - additionalParams;
+
+						// Verify the struct at expected position has this method
+						bool foundValidReceiver = false;
+						if (expectedReceiverIdx < structTypeStack.size()) {
+							const std::string& structAtExpectedPos = structTypeStack[expectedReceiverIdx];
+							std::string actualRegisteredType = findMethodStructType(structAtExpectedPos, instrName);
+							if (!actualRegisteredType.empty()) {
+								// Valid receiver-first call
+								receiverStructType = structAtExpectedPos;
+								registeredStructType = actualRegisteredType;
+								receiverStackIdx = expectedReceiverIdx;
+								foundValidReceiver = true;
+							}
+						}
+
+						if (!foundValidReceiver) {
+							std::string errorMsg = "Method call '";
+							errorMsg += instrName;
+							errorMsg += "': receiver must be pushed first, then ";
+							errorMsg += std::to_string(additionalParams);
+							errorMsg += " parameter(s) on top (e.g., 'receiver";
+							for (size_t p = 0; p < additionalParams; p++) {
+								errorMsg += " param";
+							}
+							errorMsg += " ";
+							errorMsg += instrName;
+							errorMsg += "')";
+							reportError(instr, errorMsg.c_str());
+							break;
+						}
+
+						// receiverPositionFromTop is now always additionalParams (by construction)
+						size_t receiverPositionFromTop = additionalParams;
+						(void)receiverStackIdx; // Used only for setting, actual validation above
+
+						if (typeStack.size() < sig.consumes.size()) {
 							std::string errorMsg = "Type error in method call '";
 							errorMsg += instrName;
 							errorMsg += "': Stack underflow (requires receiver + ";
@@ -510,6 +574,8 @@ namespace Qd {
 						instr->setIsMethodCall(true);
 						instr->setReceiverType(registeredStructType);
 						instr->setMethodInputParamCount(additionalParams);
+						// Use the receiver position calculated earlier (before stack modifications)
+						instr->setMethodReceiverPositionFromTop(receiverPositionFromTop);
 						break;
 					}
 				}
@@ -661,10 +727,81 @@ namespace Qd {
 				break;
 			}
 
-			case IAstNode::Type::FOR_STATEMENT:
-			case IAstNode::Type::WHILE_STATEMENT:
+			case IAstNode::Type::FOR_STATEMENT: {
+				// For loops: pop 3 values (start, end, step), type check body with iterator variable
+				AstNodeForStatement* forStmt = static_cast<AstNodeForStatement*>(child);
+
+				// Pop start, end, step from type stack
+				for (int popIdx = 0; popIdx < 3; popIdx++) {
+					if (!typeStack.empty()) {
+						typeStack.pop_back();
+						if (!structTypeStack.empty()) {
+							structTypeStack.pop_back();
+						}
+					}
+				}
+
+				// Type check body with a copy of the state (loop body effects are complex with break/continue)
+				std::vector<StackValueType> loopStack = typeStack;
+				std::unordered_map<std::string, StackValueType> loopVars = localVariables;
+				std::vector<std::string> loopStructStack = structTypeStack;
+
+				// Add iterator variable as INT
+				const std::string& iterName = forStmt->iteratorName();
+				loopVars[iterName] = StackValueType::INT;
+
+				// Type check the body with error suppression (marks method calls without reporting type errors)
+				// This is necessary because loop bodies can have complex stack effects that are hard to analyze
+				bool wasInLoopBody = mInLoopBody;
+				mInLoopBody = true;
+				if (forStmt->body()) {
+					typeCheckBlock(forStmt->body(), loopStack, loopVars, loopStructStack);
+				}
+				mInLoopBody = wasInLoopBody;
+				// Don't modify parent stack - loops don't have consistent stack effects
+				break;
+			}
+
+			case IAstNode::Type::WHILE_STATEMENT: {
+				// While loops: pop 1 condition value, type check body
+				// Pop condition
+				if (!typeStack.empty()) {
+					typeStack.pop_back();
+					if (!structTypeStack.empty()) {
+						structTypeStack.pop_back();
+					}
+				}
+
+				// Type check body with a copy of the state
+				std::vector<StackValueType> loopStack = typeStack;
+				std::unordered_map<std::string, StackValueType> loopVars = localVariables;
+				std::vector<std::string> loopStructStack = structTypeStack;
+
+				bool wasInLoopBody = mInLoopBody;
+				mInLoopBody = true;
+				AstNodeWhileStatement* whileStmt = static_cast<AstNodeWhileStatement*>(child);
+				if (whileStmt->body()) {
+					typeCheckBlock(whileStmt->body(), loopStack, loopVars, loopStructStack);
+				}
+				mInLoopBody = wasInLoopBody;
+				// Don't modify parent stack
+				break;
+			}
+
 			case IAstNode::Type::LOOP_STATEMENT: {
-				// For now, skip loop type checking (break/continue complicate analysis)
+				// Infinite loops: just type check body
+				std::vector<StackValueType> loopStack = typeStack;
+				std::unordered_map<std::string, StackValueType> loopVars = localVariables;
+				std::vector<std::string> loopStructStack = structTypeStack;
+
+				bool wasInLoopBody = mInLoopBody;
+				mInLoopBody = true;
+				AstNodeLoopStatement* loopStmt = static_cast<AstNodeLoopStatement*>(child);
+				if (loopStmt->body()) {
+					typeCheckBlock(loopStmt->body(), loopStack, loopVars, loopStructStack);
+				}
+				mInLoopBody = wasInLoopBody;
+				// Don't modify parent stack
 				break;
 			}
 
@@ -1269,14 +1406,26 @@ namespace Qd {
 					}
 				}
 
-				// Check if this is a method call on a struct (stack top is receiver)
-				// Methods take precedence over global functions when stack top matches
+				// Check if this is a method call on a struct
+				// Methods require: receiver pushed first, then parameters on top
+				// e.g., for method set(idx, elem): v idx elem set!
 				std::string receiverStructType;
-				if (!typeStack.empty() && typeStack.back() == StackValueType::PTR && !structTypeStack.empty()) {
-					receiverStructType = structTypeStack.back();
+				std::string registeredStructType;
+				size_t receiverStackIdx = 0;
+
+				// First pass: find any struct on the stack that has this method
+				// to determine the method signature and expected parameter count
+				size_t searchLimit = std::min(structTypeStack.size(), typeStack.size());
+				for (size_t idx = searchLimit; idx > 0; idx--) {
+					const std::string& structType = structTypeStack[idx - 1];
+					if (!structType.empty()) {
+						std::string potentialRegisteredType = findMethodStructType(structType, name);
+						if (!potentialRegisteredType.empty()) {
+							registeredStructType = potentialRegisteredType;
+							break;
+						}
+					}
 				}
-				// For generic types, find the registered type (e.g., Box<i64> -> Box<T>)
-				std::string registeredStructType = findMethodStructType(receiverStructType, name);
 				if (!registeredStructType.empty()) {
 					// This is a method call - look up the signature with mangled name
 					std::string mangledName = registeredStructType + "::" + name;
@@ -1309,11 +1458,57 @@ namespace Qd {
 							}
 						}
 
-						// The receiver is already on the stack - it's consumed implicitly
-						// Check if stack has enough values for additional parameters (excluding receiver)
-						// The method signature's consumes[0] is the receiver, rest are additional params
+						// Calculate expected receiver position based on parameter count
+						// With receiver-first: receiver should be at position additionalParams from top
 						size_t additionalParams = sig.consumes.size() > 0 ? sig.consumes.size() - 1 : 0;
-						if (typeStack.size() < 1 + additionalParams) {
+
+						// Second pass: check if there's a valid receiver at the expected position
+						if (typeStack.size() <= additionalParams) {
+							std::string errorMsg = "Type error in method call '";
+							errorMsg += name;
+							errorMsg += "': Stack underflow (requires receiver + ";
+							errorMsg += std::to_string(additionalParams);
+							errorMsg += " values)";
+							reportError(ident, errorMsg.c_str());
+							break;
+						}
+
+						size_t expectedReceiverIdx = typeStack.size() - 1 - additionalParams;
+
+						// Verify the struct at expected position has this method
+						bool foundValidReceiver = false;
+						if (expectedReceiverIdx < structTypeStack.size()) {
+							const std::string& structAtExpectedPos = structTypeStack[expectedReceiverIdx];
+							std::string actualRegisteredType = findMethodStructType(structAtExpectedPos, name);
+							if (!actualRegisteredType.empty()) {
+								// Valid receiver-first call
+								receiverStructType = structAtExpectedPos;
+								registeredStructType = actualRegisteredType;
+								receiverStackIdx = expectedReceiverIdx;
+								foundValidReceiver = true;
+							}
+						}
+
+						if (!foundValidReceiver) {
+							std::string errorMsg = "Method call '";
+							errorMsg += name;
+							errorMsg += "': receiver must be pushed first, then ";
+							errorMsg += std::to_string(additionalParams);
+							errorMsg += " parameter(s) on top (e.g., 'receiver";
+							for (size_t p = 0; p < additionalParams; p++) {
+								errorMsg += " param";
+							}
+							errorMsg += " ";
+							errorMsg += name;
+							errorMsg += "')";
+							reportError(ident, errorMsg.c_str());
+							break;
+						}
+
+						// receiverPositionFromTop is now always additionalParams (by construction)
+						size_t receiverPositionFromTop = additionalParams;
+
+						if (typeStack.size() < sig.consumes.size()) {
 							std::string errorMsg = "Type error in method call '";
 							errorMsg += name;
 							errorMsg += "': Stack underflow (requires receiver + ";
@@ -1324,11 +1519,15 @@ namespace Qd {
 						}
 
 						// Validate parameter types (skip receiver at index 0)
-						// Stack order: [param1, param2, ..., paramN, receiver]
+						// Stack order: [receiver, param1, param2, ..., paramN] with receiver at bottom
 						// Signature: [receiver, param1, param2, ..., paramN]
-						// For sig index j (1 to N), stack index is: size - consumes.size() + (j-1)
+						// For sig index j (1 to N), stack index is: receiverIdx + j
 						for (size_t j = 1; j < sig.consumes.size(); j++) {
-							size_t stackIdx = typeStack.size() - sig.consumes.size() + (j - 1);
+							size_t stackIdx = receiverStackIdx + j;
+							// Bounds check before accessing typeStack
+							if (stackIdx >= typeStack.size()) {
+								break;
+							}
 							StackValueType expected = sig.consumes[j];
 							StackValueType actual = typeStack[stackIdx];
 
@@ -1405,6 +1604,8 @@ namespace Qd {
 						ident->setIsMethodCall(true);
 						ident->setReceiverType(registeredStructType);
 						ident->setMethodInputParamCount(additionalParams);
+						// Use the receiver position calculated earlier (before stack modifications)
+						ident->setMethodReceiverPositionFromTop(receiverPositionFromTop);
 						break;
 					}
 				}
@@ -1467,8 +1668,10 @@ namespace Qd {
 							continue;
 						}
 
-						// Skip check if actual type is UNKNOWN or ANY (can't determine type at compile time)
-						if (actual == StackValueType::UNKNOWN || actual == StackValueType::ANY) {
+						// Skip check if actual type is UNKNOWN, ANY, or TYPEVAR (can't determine type at compile time)
+						// TYPEVAR occurs when a generic type parameter (like T) is passed to a typed function
+						if (actual == StackValueType::UNKNOWN || actual == StackValueType::ANY ||
+								actual == StackValueType::TYPEVAR) {
 							continue;
 						}
 
@@ -2299,6 +2502,9 @@ namespace Qd {
 
 						// Mark as method call for code generation
 						scoped->setIsMethodCall(true);
+						scoped->setMethodInputParamCount(additionalParams);
+						// For explicit method calls, receiver is always on top of stack
+						scoped->setMethodReceiverPositionFromTop(0);
 						break;
 					}
 				}
@@ -2368,6 +2574,9 @@ namespace Qd {
 								// Mark as method call for code generation
 								scoped->setIsMethodCall(true);
 								scoped->setReceiverType(registeredStructType);
+								scoped->setMethodInputParamCount(additionalParams);
+								// For module method calls, receiver is always on top of stack
+								scoped->setMethodReceiverPositionFromTop(0);
 								break;
 							}
 						}
@@ -2432,8 +2641,10 @@ namespace Qd {
 							continue;
 						}
 
-						// Skip check if actual type is UNKNOWN or ANY (can't determine type at compile time)
-						if (actual == StackValueType::UNKNOWN || actual == StackValueType::ANY) {
+						// Skip check if actual type is UNKNOWN, ANY, or TYPEVAR (can't determine type at compile time)
+						// TYPEVAR occurs when a generic type parameter (like T) is passed to a typed function
+						if (actual == StackValueType::UNKNOWN || actual == StackValueType::ANY ||
+								actual == StackValueType::TYPEVAR) {
 							continue;
 						}
 
@@ -2832,6 +3043,11 @@ namespace Qd {
 			typeStack.pop_back();
 			StackValueType a = typeStack.back();
 			typeStack.pop_back();
+			// Keep structTypeStack in sync
+			if (structTypeStack.size() >= 2) {
+				structTypeStack.pop_back();
+				structTypeStack.pop_back();
+			}
 
 			if (!isNumericType(a) || !isNumericType(b)) {
 				std::string errorMsg = "Type error in '";
@@ -2848,6 +3064,7 @@ namespace Qd {
 			StackValueType result = (a == StackValueType::FLOAT || b == StackValueType::FLOAT) ? StackValueType::FLOAT
 																							   : StackValueType::INT;
 			typeStack.push_back(result);
+			structTypeStack.push_back(""); // Arithmetic result is never a struct
 		}
 		// Comparison operations: eq, neq, lt, gt, lte, gte (consume 2, produce int/bool)
 		else if (strcmp(name, "eq") == 0 || strcmp(name, "neq") == 0 || strcmp(name, "lt") == 0 ||

@@ -42,7 +42,7 @@ namespace Qd {
 
 	SemanticValidator::SemanticValidator()
 		: mFilename(nullptr), mErrorCount(0), mWarningCount(0), mWerror(false), mIsModuleFile(false),
-		  mStoreErrors(false), mWarningMinLine(0), mCurrentFunctionFallible(false) {
+		  mStoreErrors(false), mWarningMinLine(0), mCurrentFunctionFallible(false), mInLoopBody(false) {
 	}
 
 	const std::unordered_map<std::string, StackValueType>* SemanticValidator::lookupStructFieldTypes(
@@ -237,11 +237,13 @@ namespace Qd {
 	}
 
 	void SemanticValidator::reportError(const char* message) {
-		reportErrorConditional(message, true);
+		// Suppress errors inside loop bodies (we still analyze for method call marking)
+		reportErrorConditional(message, !mInLoopBody);
 	}
 
 	void SemanticValidator::reportError(const IAstNode* node, const char* message) {
-		reportErrorConditional(node, message, true);
+		// Suppress errors inside loop bodies (we still analyze for method call marking)
+		reportErrorConditional(node, message, !mInLoopBody);
 	}
 
 	void SemanticValidator::reportErrorConditional(const char* message, bool shouldReport) {
@@ -564,6 +566,9 @@ namespace Qd {
 
 		// Search for generic variants that have this method
 		// Look for patterns like "BaseType<T>", "module::BaseType<T>", "BaseType<T, U>", etc.
+		// Two-pass search: first look for exact prefix match, then fallback to any match
+		std::string fallbackMatch;
+
 		for (const auto& pair : mStructMethods) {
 			const std::string& registeredType = pair.first;
 			const auto& methods = pair.second;
@@ -591,15 +596,25 @@ namespace Qd {
 				registeredBase = registeredBase.substr(0, regAnglePos);
 			}
 
-			// Check if bases match and prefixes match (if present)
-			if (registeredBase == baseType &&
-					(modulePrefix.empty() || registeredPrefix.empty() || modulePrefix == registeredPrefix)) {
-				// Found a matching generic type with this method
+			// Check if bases match
+			if (registeredBase != baseType) {
+				continue;
+			}
+
+			// Exact prefix match - return immediately
+			if (!modulePrefix.empty() && modulePrefix == registeredPrefix) {
 				return registeredType;
+			}
+
+			// Fallback: if we have a module prefix but registered doesn't (or vice versa)
+			// Store as fallback but keep looking for exact match
+			if (fallbackMatch.empty() &&
+					(modulePrefix.empty() || registeredPrefix.empty() || modulePrefix == registeredPrefix)) {
+				fallbackMatch = registeredType;
 			}
 		}
 
-		return "";
+		return fallbackMatch;
 	}
 
 } // namespace Qd

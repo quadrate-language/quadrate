@@ -97,6 +97,22 @@ namespace Qd {
 			return mReceiverType;
 		}
 
+		void setMethodInputParamCount(size_t count) {
+			mMethodInputParamCount = count;
+		}
+
+		size_t methodInputParamCount() const {
+			return mMethodInputParamCount;
+		}
+
+		void setMethodReceiverPositionFromTop(size_t pos) {
+			mMethodReceiverPositionFromTop = pos;
+		}
+
+		size_t methodReceiverPositionFromTop() const {
+			return mMethodReceiverPositionFromTop;
+		}
+
 	private:
 		std::string mScope;
 		std::string mName;
@@ -108,6 +124,8 @@ namespace Qd {
 		std::vector<CastDirection> mParameterCasts; // Which parameters need casts (indexed from bottom of stack)
 		bool mIsMethodCall = false;					// True if this is a struct method call
 		std::string mReceiverType;					// Receiver struct type for method calls
+		size_t mMethodInputParamCount = 0;			// Number of input params excluding receiver
+		size_t mMethodReceiverPositionFromTop = 0;	// Receiver position from top of stack (0 = on top)
 	};
 }
 

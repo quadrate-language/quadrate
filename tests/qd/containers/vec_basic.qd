@@ -1,0 +1,38 @@
+// Basic Vec<T> operations test
+use ct
+
+fn main() {
+	Vec<i64> { data = 0 len = 0 cap = 0 } -> v
+
+	// Test initial state
+	v length -> len
+	len 0 == if { "empty_ok" print nl }
+
+	v is_empty if { "is_empty_ok" print nl }
+
+	// Push elements
+	v 10 push! -> v
+	v 20 push! -> v
+	v 30 push! -> v
+
+	// Test length after pushes
+	v length 3 == if { "len_3_ok" print nl }
+
+	// Test get
+	v 0 get! 10 == if { "get_0_ok" print nl }
+	v 1 get! 20 == if { "get_1_ok" print nl }
+	v 2 get! 30 == if { "get_2_ok" print nl }
+
+	// Test pop
+	v pop! -> v -> popped
+	popped 30 == if { "pop_ok" print nl }
+	v length 2 == if { "len_after_pop_ok" print nl }
+
+	// Test set (receiver first, then params)
+	v 0 100 set! -> v
+	v 0 get! 100 == if { "set_ok" print nl }
+
+	// Cleanup
+	v release
+	"done" print nl
+}

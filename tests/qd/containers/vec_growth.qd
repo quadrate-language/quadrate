@@ -1,0 +1,35 @@
+// Test Vec<T> growth and capacity management
+use ct
+
+fn main() {
+	Vec<i64> { data = 0 len = 0 cap = 0 } -> v
+
+	// Initial state
+	v capacity 0 == if { "cap_initial_0" print nl }
+
+	// Push more elements to trigger growth
+	0 20 1 for i {
+		v i push! -> v
+	}
+
+	// Check length after 20 pushes
+	v length 20 == if { "len_20_ok" print nl }
+
+	// Capacity should have grown (at least 20)
+	v capacity 20 >= if { "cap_grown_ok" print nl }
+
+	// Verify all values
+	1 -> all_ok
+	0 20 1 for i {
+		v i get! i neq if { 0 -> all_ok }
+	}
+	all_ok if { "all_values_ok" print nl }
+
+	// Reset and check
+	v reset -> v
+	v length 0 == if { "reset_len_0" print nl }
+	v capacity 0 > if { "reset_cap_kept" print nl }
+
+	v release
+	"done" print nl
+}

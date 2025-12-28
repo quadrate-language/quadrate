@@ -89,6 +89,23 @@ namespace Qd {
 			return mMethodInputParamCount;
 		}
 
+		void setMethodReceiverPositionFromTop(size_t pos) {
+			mMethodReceiverPositionFromTop = pos;
+		}
+
+		size_t methodReceiverPositionFromTop() const {
+			return mMethodReceiverPositionFromTop;
+		}
+
+		// Fallible call support - marks this instruction as a fallible function call (!)
+		void setAbortOnError(bool abort) {
+			mAbortOnError = abort;
+		}
+
+		bool abortOnError() const {
+			return mAbortOnError;
+		}
+
 	private:
 		std::string mName;
 		std::string mTypeParam;
@@ -98,6 +115,8 @@ namespace Qd {
 		bool mIsMethodCall = false;
 		std::string mReceiverType;
 		size_t mMethodInputParamCount = 0;
+		size_t mMethodReceiverPositionFromTop = 0;
+		bool mAbortOnError = false;
 	};
 }
 

@@ -2,44 +2,44 @@
 use math
 
 fn main() {
-	// Test vec2 lerp at t=0 (should equal a) - method syntax
+	// Test vec2 lerp at t=0 (should equal a) - method syntax: receiver param1 param2 method
 	Vec2 { x = 0.0 y = 0.0 } -> a2
 	Vec2 { x = 10.0 y = 20.0 } -> b2
-	b2 0.0 a2 lerp -> r0  // a2.lerp(b2, 0.0)
+	a2 b2 0.0 lerp -> r0  // a2.lerp(b2, 0.0)
 	"vec2_lerp t=0:" print nl
 	r0 @x print nl
 	r0 @y print nl
 
 	// Test vec2 lerp at t=1 (should equal b) - method syntax
-	b2 1.0 a2 lerp -> r1  // a2.lerp(b2, 1.0)
+	a2 b2 1.0 lerp -> r1  // a2.lerp(b2, 1.0)
 	"vec2_lerp t=1:" print nl
 	r1 @x print nl
 	r1 @y print nl
 
 	// Test vec2 lerp at t=0.5 (midpoint) - method syntax
-	b2 0.5 a2 lerp -> r5  // a2.lerp(b2, 0.5)
+	a2 b2 0.5 lerp -> r5  // a2.lerp(b2, 0.5)
 	"vec2_lerp t=0.5:" print nl
 	r5 @x print nl
 	r5 @y print nl
 
-	// Test vec3 lerp at t=0 (method syntax: param param receiver method)
+	// Test vec3 lerp at t=0 (method syntax: receiver param1 param2 method)
 	Vec3 { x = 0.0 y = 0.0 z = 0.0 } -> a3
 	Vec3 { x = 10.0 y = 20.0 z = 30.0 } -> b3
-	b3 0.0 a3 lerp -> r3_0  // a3.lerp(b3, 0.0)
+	a3 b3 0.0 lerp -> r3_0  // a3.lerp(b3, 0.0)
 	"vec3_lerp t=0:" print nl
 	r3_0 @x print nl
 	r3_0 @y print nl
 	r3_0 @z print nl
 
 	// Test vec3 lerp at t=1 (method syntax)
-	b3 1.0 a3 lerp -> r3_1  // a3.lerp(b3, 1.0)
+	a3 b3 1.0 lerp -> r3_1  // a3.lerp(b3, 1.0)
 	"vec3_lerp t=1:" print nl
 	r3_1 @x print nl
 	r3_1 @y print nl
 	r3_1 @z print nl
 
 	// Test vec3 lerp at t=0.5 (method syntax)
-	b3 0.5 a3 lerp -> r3_5  // a3.lerp(b3, 0.5)
+	a3 b3 0.5 lerp -> r3_5  // a3.lerp(b3, 0.5)
 	"vec3_lerp t=0.5:" print nl
 	r3_5 @x print nl
 	r3_5 @y print nl

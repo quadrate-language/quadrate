@@ -1,4 +1,5 @@
 /// Common Types module
-/// Contains generic container types like Pair.
+/// Contains generic container types like Pair and Vec.
 
 use "pair.qd"
+use "vec.qd"

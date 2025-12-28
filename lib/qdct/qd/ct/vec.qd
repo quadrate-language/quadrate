@@ -1,0 +1,118 @@
+/// A dynamic array (vector) of elements.
+/// Elements are stored contiguously in memory.
+use mem
+
+/// Dynamic array structure.
+/// data: pointer to element storage
+/// len: number of elements
+/// cap: allocated capacity
+pub struct Vec<T> {
+	data: ptr
+	len: i64
+	cap: i64
+}
+
+/// Push an element to the end of the vector.
+/// Grows capacity if needed.
+pub fn (v:Vec<T>) push<T>(elem:T -- v2:Vec<T>)! {
+	-> elem
+
+	v @len -> len
+	v @cap -> cap
+	v @data -> data
+
+	// Check if we need to grow
+	len cap >= if {
+		// Double capacity (or start with 8)
+		cap 0 == if { 8 } else { cap 2 * } -> new_cap
+		data new_cap sizeof<T> * mem::realloc! -> data
+		new_cap -> cap
+	}
+
+	// Store element at data + len * sizeof<T>
+	elem data len sizeof<T> * mem::set_i64
+
+	// Return updated vector
+	Vec<T> { data = data len = len 1 + cap = cap }
+}
+
+/// Pop and return the last element.
+pub fn (v:Vec<T>) pop<T>(-- elem:T v2:Vec<T>)! {
+	v @len -> len
+	v @cap -> cap
+	v @data -> data
+
+	len 0 <= if {
+		"pop: vector is empty" 1 panic
+	}
+
+	// Get last element
+	data len 1 - sizeof<T> * mem::get_i64 -> elem
+
+	// Return element and updated vector
+	elem
+	Vec<T> { data = data len = len 1 - cap = cap }
+}
+
+/// Get element at index.
+pub fn (v:Vec<T>) get<T>(idx:i64 -- elem:T)! {
+	-> idx
+
+	v @len -> len
+	v @data -> data
+
+	idx 0 < idx len >= or if {
+		"get: index out of bounds" 1 panic
+	}
+
+	data idx sizeof<T> * mem::get_i64
+}
+
+/// Set element at index.
+pub fn (v:Vec<T>) set<T>(idx:i64 elem:T -- v2:Vec<T>)! {
+	-> elem
+	-> idx
+
+	v @len -> len
+	v @cap -> cap
+	v @data -> data
+
+	idx 0 < idx len >= or if {
+		"set: index out of bounds" 1 panic
+	}
+
+	elem data idx sizeof<T> * mem::set_i64
+
+	Vec<T> { data = data len = len cap = cap }
+}
+
+/// Get the number of elements.
+pub fn (v:Vec<T>) length<T>(-- n:i64) {
+	v @len
+}
+
+/// Get the capacity.
+pub fn (v:Vec<T>) capacity<T>(-- n:i64) {
+	v @cap
+}
+
+/// Check if vector is empty.
+pub fn (v:Vec<T>) is_empty<T>(-- b:i64) {
+	v @len 0 ==
+}
+
+/// Remove all elements (keeps capacity).
+pub fn (v:Vec<T>) reset<T>(-- v2:Vec<T>) {
+	v @cap -> cap
+	v @data -> data
+	Vec<T> { data = data len = 0 cap = cap }
+}
+
+/// Free the vector's memory.
+/// Call this when done with the vector.
+pub fn (v:Vec<T>) release<T>(--) {
+	v @data -> data
+	data 0 neq if {
+		data mem::free
+	}
+}

@@ -1,0 +1,41 @@
+// Stress test Vec<T> with many operations
+use ct
+
+fn main() {
+	Vec<i64> { data = 0 len = 0 cap = 0 } -> v
+
+	// Push 100 elements
+	0 100 1 for i {
+		v i push! -> v
+	}
+	v length 100 == if { "push_100_ok" print nl }
+
+	// Verify some values
+	v 0 get! 0 == if { "get_first_ok" print nl }
+	v 50 get! 50 == if { "get_mid_ok" print nl }
+	v 99 get! 99 == if { "get_last_ok" print nl }
+
+	// Pop 50 elements
+	0 50 1 for i {
+		v pop! -> v drop
+	}
+	v length 50 == if { "pop_50_ok" print nl }
+
+	// Set some values (receiver first: v idx elem set!)
+	0 10 1 for i {
+		v i 1000 i + set! -> v
+	}
+	v 5 get! 1005 == if { "set_ok" print nl }
+
+	// Reset and verify
+	v reset -> v
+	v length 0 == if { "reset_ok" print nl }
+	v capacity 0 > if { "cap_kept_ok" print nl }
+
+	// Push more after reset
+	v 42 push! -> v
+	v 0 get! 42 == if { "after_reset_ok" print nl }
+
+	v release
+	"done" print nl
+}

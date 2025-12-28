@@ -20,33 +20,33 @@ fn main() {
 	o @x print nl
 	o @y print nl
 
-	// Test add (method syntax: param receiver method)
+	// Test add (method syntax: receiver param method)
 	Vec2 { x = 1.0 y = 2.0 } -> a
 	Vec2 { x = 3.0 y = 4.0 } -> b
-	b a add -> c  // a.add(b) = a + b
+	a b add -> c  // a.add(b) = a + b
 	"add:" print nl
 	c @x print nl
 	c @y print nl
 
-	// Test subtract (method syntax: param receiver method)
+	// Test subtract (method syntax: receiver param method)
 	Vec2 { x = 5.0 y = 7.0 } -> d
 	Vec2 { x = 2.0 y = 3.0 } -> e
-	e d subtract -> f  // d.subtract(e) = d - e
+	d e subtract -> f  // d.subtract(e) = d - e
 	"sub:" print nl
 	f @x print nl
 	f @y print nl
 
-	// Test scale (method syntax: param receiver method)
+	// Test scale (method syntax: receiver param method)
 	Vec2 { x = 2.0 y = 3.0 } -> g
-	2.0 g scale -> h  // g.scale(2.0)
+	g 2.0 scale -> h  // g.scale(2.0)
 	"scale:" print nl
 	h @x print nl
 	h @y print nl
 
-	// Test dot (method syntax: param receiver method)
+	// Test dot (method syntax: receiver param method)
 	Vec2 { x = 1.0 y = 2.0 } -> i
 	Vec2 { x = 3.0 y = 4.0 } -> j
-	j i dot -> dot_result  // i.dot(j)
+	i j dot -> dot_result  // i.dot(j)
 	"dot:" print nl
 	dot_result print nl
 

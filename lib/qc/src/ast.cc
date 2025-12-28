@@ -2433,10 +2433,28 @@ namespace Qd {
 					setNodePosition(instr, scanner, src);
 					tempNodes.push_back(instr);
 				} else {
-					// Handle '!' as alias for 'not'
-					AstNodeInstruction* instr = new AstNodeInstruction("!");
-					setNodePosition(instr, scanner, src);
-					tempNodes.push_back(instr);
+					// Handle '!' as fallible call marker on previous node
+					// If previous node is an identifier or instruction, mark it as a fallible call
+					if (!tempNodes.empty()) {
+						IAstNode* prevNode = tempNodes.back();
+						if (prevNode->type() == IAstNode::Type::IDENTIFIER) {
+							static_cast<AstNodeIdentifier*>(prevNode)->setAbortOnError(true);
+						} else if (prevNode->type() == IAstNode::Type::INSTRUCTION) {
+							static_cast<AstNodeInstruction*>(prevNode)->setAbortOnError(true);
+						} else if (prevNode->type() == IAstNode::Type::SCOPED_IDENTIFIER) {
+							static_cast<AstNodeScopedIdentifier*>(prevNode)->setAbortOnError(true);
+						} else {
+							// Fall back to creating 'not' instruction for other cases
+							AstNodeInstruction* instr = new AstNodeInstruction("not");
+							setNodePosition(instr, scanner, src);
+							tempNodes.push_back(instr);
+						}
+					} else {
+						// No previous node, treat as 'not' instruction
+						AstNodeInstruction* instr = new AstNodeInstruction("not");
+						setNodePosition(instr, scanner, src);
+						tempNodes.push_back(instr);
+					}
 				}
 			} else if (token == '&') {
 				// Handle '&' for function pointer references

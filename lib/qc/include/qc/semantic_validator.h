@@ -357,6 +357,10 @@ namespace Qd {
 
 		// Additional module search paths from -I flags
 		std::vector<std::string> mIncludePaths;
+
+		// Whether we're currently type checking inside a loop body
+		// When true, type errors are suppressed (but method calls are still marked)
+		bool mInLoopBody;
 	};
 
 } // namespace Qd

@@ -9,6 +9,6 @@ fn (c:Counter) plus(n:i64 -- result:i64) {
 
 fn main() {
 	Counter { value = 10 } -> c
-	5 c plus print nl
-	15 c plus print nl
+	c 5 plus print nl
+	c 15 plus print nl
 }

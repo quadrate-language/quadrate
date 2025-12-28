@@ -6,7 +6,7 @@ fn main() {
 	// x cross y = z
 	math::vec3_unit_x -> ux
 	math::vec3_unit_y -> uy
-	uy ux cross -> c1  // ux.cross(uy) = ux × uy
+	ux uy cross -> c1  // ux.cross(uy) = ux × uy
 	"x cross y:" print nl
 	c1 @x print nl
 	c1 @y print nl
@@ -14,14 +14,14 @@ fn main() {
 
 	// y cross z = x
 	math::vec3_unit_z -> uz
-	uz uy cross -> c2  // uy.cross(uz) = uy × uz
+	uy uz cross -> c2  // uy.cross(uz) = uy × uz
 	"y cross z:" print nl
 	c2 @x print nl
 	c2 @y print nl
 	c2 @z print nl
 
 	// z cross x = y
-	ux uz cross -> c3  // uz.cross(ux) = uz × ux
+	uz ux cross -> c3  // uz.cross(ux) = uz × ux
 	"z cross x:" print nl
 	c3 @x print nl
 	c3 @y print nl
@@ -31,7 +31,7 @@ fn main() {
 	// (1,2,3) cross (4,5,6) = (2*6-3*5, 3*4-1*6, 1*5-2*4) = (-3, 6, -3)
 	Vec3 { x = 1.0 y = 2.0 z = 3.0 } -> a
 	Vec3 { x = 4.0 y = 5.0 z = 6.0 } -> b
-	b a cross -> c4  // a.cross(b) = a × b
+	a b cross -> c4  // a.cross(b) = a × b
 	"general cross:" print nl
 	c4 @x print nl
 	c4 @y print nl

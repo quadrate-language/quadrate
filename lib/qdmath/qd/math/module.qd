@@ -407,7 +407,7 @@ pub fn (v:Vec2) length_sq( -- result:f64) {
 pub fn (v:Vec2) normalize( -- result:Vec2) {
 	v length -> mag
 	mag 0.0 gt if {
-		1.0 mag / v scale
+		v 1.0 mag / scale
 	} else {
 		vec2_zero
 	}
@@ -587,7 +587,7 @@ pub fn (v:Vec3) length_sq( -- result:f64) {
 pub fn (v:Vec3) normalize( -- result:Vec3) {
 	v length -> mag
 	mag 0.0 gt if {
-		1.0 mag / v scale
+		v 1.0 mag / scale
 	} else {
 		vec3_zero
 	}
@@ -625,7 +625,7 @@ pub fn (v:Vec3) lerp(other:Vec3 t:f64 -- result:Vec3) {
 /// @example normal v reflect -> reflected
 pub fn (v:Vec3) reflect(n:Vec3 -- result:Vec3) {
 	-> n
-	n v n dot 2.0 * v scale subtract
+	n v n dot 2.0 * v swap scale swap subtract
 }
 
 // ============================================================================
@@ -732,7 +732,7 @@ pub fn (v:Vec4) length( -- result:f64) {
 pub fn (v:Vec4) normalize( -- result:Vec4) {
 	v length -> mag
 	mag 0.0 gt if {
-		1.0 mag / v scale
+		v 1.0 mag / scale
 	} else {
 		vec4_zero
 	}
