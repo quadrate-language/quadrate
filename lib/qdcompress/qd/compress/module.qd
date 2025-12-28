@@ -1,0 +1,90 @@
+/// Compression and decompression using gzip/zlib.
+///
+/// ## Error Codes
+///
+/// - ErrAlloc (2): Memory allocation failed
+/// - ErrInvalidArg (3): Invalid argument
+/// - ErrCompress (4): Compression failed
+/// - ErrDecompress (5): Decompression failed
+///
+/// ## Example
+///
+///     use compress
+///
+///     fn main() {
+///         "Hello, World!" compress::gzip! -> compressed
+///         compressed compress::gunzip! -> original
+///         original print nl   // "Hello, World!"
+///     }
+
+/// Memory allocation failed.
+pub const ErrAlloc = 2
+
+/// Invalid argument.
+pub const ErrInvalidArg = 3
+
+/// Compression failed.
+pub const ErrCompress = 4
+
+/// Decompression failed.
+pub const ErrDecompress = 5
+
+/// Compression level: fastest (least compression).
+pub const LevelFast = 1
+
+/// Compression level: default balance of speed and size.
+pub const LevelDefault = 6
+
+/// Compression level: best (most compression, slowest).
+pub const LevelBest = 9
+
+import "libqdcompress.a" as "compress" {
+	/// Compress data using gzip format with default compression level.
+	///
+	/// @param data str Data to compress
+	/// @return compressed str Compressed data
+	/// @error ErrAlloc Memory allocation failed
+	/// @error ErrCompress Compression failed
+	/// @example "Hello, World!" compress::gzip! -> compressed
+	pub fn gzip(data:str -- compressed:str)!
+
+	/// Compress data using gzip format with specified compression level.
+	///
+	/// @param data str Data to compress
+	/// @param level i64 Compression level (1-9, use LevelFast/LevelDefault/LevelBest)
+	/// @return compressed str Compressed data
+	/// @error ErrAlloc Memory allocation failed
+	/// @error ErrCompress Compression failed
+	/// @example "Hello, World!" compress::LevelBest compress::gzip_level! -> compressed
+	pub fn gzip_level(data:str level:i64 -- compressed:str)!
+
+	/// Decompress gzip data.
+	///
+	/// @param compressed str Gzip-compressed data
+	/// @return data str Decompressed data
+	/// @error ErrAlloc Memory allocation failed
+	/// @error ErrDecompress Decompression failed (invalid data)
+	/// @example compressed compress::gunzip! -> data
+	pub fn gunzip(compressed:str -- data:str)!
+
+	/// Compress data using raw deflate (no gzip header/trailer).
+	///
+	/// Raw deflate produces smaller output than gzip but requires
+	/// you to track the original size separately for decompression.
+	///
+	/// @param data str Data to compress
+	/// @return compressed str Compressed data
+	/// @error ErrAlloc Memory allocation failed
+	/// @error ErrCompress Compression failed
+	/// @example "Hello, World!" compress::deflate! -> compressed
+	pub fn deflate(data:str -- compressed:str)!
+
+	/// Decompress raw deflate data.
+	///
+	/// @param compressed str Deflate-compressed data
+	/// @return data str Decompressed data
+	/// @error ErrAlloc Memory allocation failed
+	/// @error ErrDecompress Decompression failed (invalid data)
+	/// @example compressed compress::inflate! -> data
+	pub fn inflate(compressed:str -- data:str)!
+}

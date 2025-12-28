@@ -1,0 +1,13 @@
+Testing gzip:
+  Original: Hello, World! This is a test of the compression library.
+  Decompressed: Hello, World! This is a test of the compression library.
+  Round-trip: PASS
+Testing gzip_level:
+  Level 9 round-trip: PASS
+Testing deflate/inflate:
+  Deflate round-trip: PASS
+Testing empty string:
+  Empty string: PASS
+Testing larger data:
+  Large data round-trip: PASS
+done

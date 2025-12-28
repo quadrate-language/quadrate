@@ -1,0 +1,59 @@
+use compress
+use str
+
+fn main() {
+	// Test with larger data sizes
+
+	// Build progressively larger strings
+	"Base text for compression testing. " -> base
+
+	// 36 bytes
+	"Testing ~36 bytes:" print nl
+	base compress::gzip! -> c1
+	c1 compress::gunzip! -> d1
+	base d1 str::compare 0 == if {
+		"  PASS" print nl
+	} else {
+		"  FAIL" print nl
+	}
+
+	// ~1KB
+	"Testing ~1KB:" print nl
+	base -> kb
+	0 32 1 for i {
+		kb base str::concat -> kb
+	}
+	kb compress::gzip! -> c2
+	c2 compress::gunzip! -> d2
+	kb d2 str::compare 0 == if {
+		"  PASS" print nl
+	} else {
+		"  FAIL" print nl
+	}
+
+	// ~32KB (stress test)
+	"Testing ~32KB:" print nl
+	kb -> big
+	0 32 1 for i {
+		big kb str::concat -> big
+	}
+	big compress::gzip! -> c3
+	c3 compress::gunzip! -> d3
+	big d3 str::compare 0 == if {
+		"  PASS" print nl
+	} else {
+		"  FAIL" print nl
+	}
+
+	// Test deflate with large data too
+	"Testing deflate ~32KB:" print nl
+	big compress::deflate! -> c4
+	c4 compress::inflate! -> d4
+	big d4 str::compare 0 == if {
+		"  PASS" print nl
+	} else {
+		"  FAIL" print nl
+	}
+
+	"done" print nl
+}

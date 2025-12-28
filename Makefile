@@ -13,13 +13,13 @@ export CXX := clang++
 CMDS := quad quadc quadfmt quadlint quadlsp quadpm quaduses
 
 # Libraries with C components (need static archive creation)
-LIBS_WITH_C := qdrt qd qdfmt qdio qdmath qdmem qdnet qdtls qdhttp qdos qdsignal qdstr qdstrconv qdtime qdtesting
+LIBS_WITH_C := qdrt qd qdfmt qdio qdmath qdmem qdnet qdtls qdhttp qdos qdsignal qdstr qdstrconv qdtime qdtesting qdcompress
 
 # Libraries with headers to install
 LIBS_WITH_HEADERS := qdrt qd qdfmt qdio qdmath qdmem qdnet qdtls qdhttp qdos qdstr qdstrconv qdtime qdtesting
 
 # Standard library modules (pure Quadrate or mixed)
-STDLIB_MODULES := base64 bits ct flag fmt hof http io json limits math mem net tls os sb signal str strconv time unicode uri hex bytes crc32 sha256 regex path sort rand uuid testing
+STDLIB_MODULES := base64 bits ct flag fmt hof http io json limits math mem net tls os sb signal str strconv time unicode uri hex bytes crc32 sha256 regex path sort rand uuid testing compress
 
 .PHONY: all debug release tests tests-failed tests-clear valgrind asan fuzz examples format install uninstall clean docs
 
@@ -48,10 +48,10 @@ define do_build
 	@echo "Creating static libraries..."
 	@rm -f dist/lib/libqdrt.a && cd $(1)/lib/qdrt && ar rcs ../../../../dist/lib/libqdrt.a $$(ar -t libqdrt_static.a) && echo "  libqdrt.a"
 	@rm -f dist/lib/libqd.a && cd $(1)/lib/qd && ar rcs ../../../../dist/lib/libqd.a $$(ar -t libqd_static.a) && echo "  libqd.a"
-	@for lib in qdfmt qdio qdmath qdmem qdnet qdtls qdhttp qdos qdsignal qdstr qdstrconv qdtime qdtesting; do \
+	@for lib in qdfmt qdio qdmath qdmem qdnet qdtls qdhttp qdos qdsignal qdstr qdstrconv qdtime qdtesting qdcompress; do \
 		rm -f dist/lib/lib$$lib.a && cd $(1)/lib/$$lib && ar rcs ../../../../dist/lib/lib$$lib.a $$(ar -t lib$$lib.a) && echo "  lib$$lib.a" && cd ->/dev/null; \
 	done
-	@for lib in qdtls qdhttp; do \
+	@for lib in qdtls qdhttp qdcompress; do \
 		if [ -f lib/$$lib/lib$$lib.deps ]; then cp lib/$$lib/lib$$lib.deps dist/lib/; fi; \
 	done
 	@for lib in $(LIBS_WITH_HEADERS); do cp -rf lib/$$lib/include/$$lib dist/include/; done

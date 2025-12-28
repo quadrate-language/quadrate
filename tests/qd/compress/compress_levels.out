@@ -1,0 +1,7 @@
+Testing all compression levels:
+  Level 1 (fast): PASS
+  Level 6 (default): PASS
+  Level 9 (best): PASS
+  Level 0 (clamped): PASS
+  Level 10 (clamped): PASS
+done

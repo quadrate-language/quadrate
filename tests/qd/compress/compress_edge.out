@@ -1,0 +1,23 @@
+Testing single character:
+  Single char: PASS
+Testing highly compressible data:
+  Repeated chars: PASS
+Testing low compressibility data:
+  Random-ish data: PASS
+Testing special characters:
+  Special chars: PASS
+Testing unicode:
+  Unicode: PASS
+Testing all whitespace:
+  All whitespace: PASS
+Testing double compression:
+  Double compression: PASS
+Testing deflate edge cases:
+  Empty deflate: PASS
+  Single char deflate: PASS
+  Unicode deflate: PASS
+Testing long repeated pattern:
+  Long pattern: PASS
+Testing mixed entropy:
+  Mixed entropy: PASS
+done

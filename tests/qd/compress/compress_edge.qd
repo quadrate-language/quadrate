@@ -1,0 +1,139 @@
+use compress
+use str
+
+fn main() {
+	// Edge case tests for compression
+
+	// Test single character
+	"Testing single character:" print nl
+	"x" compress::gzip! -> c1
+	c1 compress::gunzip! -> d1
+	"x" d1 str::compare 0 == if {
+		"  Single char: PASS" print nl
+	} else {
+		"  Single char: FAIL" print nl
+	}
+
+	// Test repeated characters (high compressibility)
+	"Testing highly compressible data:" print nl
+	"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" -> repeat
+	repeat compress::gzip! -> c2
+	c2 compress::gunzip! -> d2
+	repeat d2 str::compare 0 == if {
+		"  Repeated chars: PASS" print nl
+	} else {
+		"  Repeated chars: FAIL" print nl
+	}
+
+	// Test already compressed-like random-ish data (low compressibility)
+	"Testing low compressibility data:" print nl
+	"aB1!cD2@eF3#gH4$iJ5%kL6^mN7&oP8*qR9(sT0)uV-wX+yZ=" -> random
+	random compress::gzip! -> c3
+	c3 compress::gunzip! -> d3
+	random d3 str::compare 0 == if {
+		"  Random-ish data: PASS" print nl
+	} else {
+		"  Random-ish data: FAIL" print nl
+	}
+
+	// Test with newlines and special chars
+	"Testing special characters:" print nl
+	"line1\nline2\nline3\ttab\there" -> special
+	special compress::gzip! -> c4
+	c4 compress::gunzip! -> d4
+	special d4 str::compare 0 == if {
+		"  Special chars: PASS" print nl
+	} else {
+		"  Special chars: FAIL" print nl
+	}
+
+	// Test unicode
+	"Testing unicode:" print nl
+	"Hello 世界 مرحبا мир 🎉" -> unicode
+	unicode compress::gzip! -> c5
+	c5 compress::gunzip! -> d5
+	unicode d5 str::compare 0 == if {
+		"  Unicode: PASS" print nl
+	} else {
+		"  Unicode: FAIL" print nl
+	}
+
+	// Test all whitespace
+	"Testing all whitespace:" print nl
+	"   \t\t\t\n\n\n   " -> whitespace
+	whitespace compress::gzip! -> c6
+	c6 compress::gunzip! -> d6
+	whitespace d6 str::compare 0 == if {
+		"  All whitespace: PASS" print nl
+	} else {
+		"  All whitespace: FAIL" print nl
+	}
+
+	// Test double compression (compress already compressed data)
+	"Testing double compression:" print nl
+	"test data for double compression" compress::gzip! -> once
+	once compress::gzip! -> twice
+	twice compress::gunzip! -> back_once
+	back_once compress::gunzip! -> original
+	"test data for double compression" original str::compare 0 == if {
+		"  Double compression: PASS" print nl
+	} else {
+		"  Double compression: FAIL" print nl
+	}
+
+	// Test deflate with same edge cases
+	"Testing deflate edge cases:" print nl
+	"" compress::deflate! -> cd1
+	cd1 compress::inflate! -> dd1
+	"" dd1 str::compare 0 == if {
+		"  Empty deflate: PASS" print nl
+	} else {
+		"  Empty deflate: FAIL" print nl
+	}
+
+	"x" compress::deflate! -> cd2
+	cd2 compress::inflate! -> dd2
+	"x" dd2 str::compare 0 == if {
+		"  Single char deflate: PASS" print nl
+	} else {
+		"  Single char deflate: FAIL" print nl
+	}
+
+	// Test unicode with deflate
+	"Hello 世界 🎉" compress::deflate! -> cd3
+	cd3 compress::inflate! -> dd3
+	"Hello 世界 🎉" dd3 str::compare 0 == if {
+		"  Unicode deflate: PASS" print nl
+	} else {
+		"  Unicode deflate: FAIL" print nl
+	}
+
+	// Test long repeated pattern
+	"Testing long repeated pattern:" print nl
+	"abcdefghij" -> pattern
+	pattern pattern str::concat -> pattern
+	pattern pattern str::concat -> pattern
+	pattern pattern str::concat -> pattern
+	pattern pattern str::concat -> pattern
+	// 160 bytes of repeating pattern
+	pattern compress::gzip! -> cp
+	cp compress::gunzip! -> dp
+	pattern dp str::compare 0 == if {
+		"  Long pattern: PASS" print nl
+	} else {
+		"  Long pattern: FAIL" print nl
+	}
+
+	// Test alternating high/low entropy
+	"Testing mixed entropy:" print nl
+	"AAAAAAAAAAAAAAAAAAAA1234567890!@#$%^&*()BBBBBBBBBBBBBBBBBBBB" -> mixed
+	mixed compress::gzip! -> cm
+	cm compress::gunzip! -> dm
+	mixed dm str::compare 0 == if {
+		"  Mixed entropy: PASS" print nl
+	} else {
+		"  Mixed entropy: FAIL" print nl
+	}
+
+	"done" print nl
+}
