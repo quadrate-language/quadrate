@@ -1,0 +1,116 @@
+use ct
+
+fn main() {
+	// Test 1: Empty map operations
+	"=== Empty map tests ===" print nl
+	HashMap<i64> { keys = 0 values = 0 states = 0 len = 0 cap = 0 } -> m
+	m is_empty if { "empty check: OK" print nl }
+	m "missing" has if { "ERROR" print nl } else { "has on empty: OK" print nl }
+	m length 0 == if { "length 0: OK" print nl }
+	m release
+
+	// Test 2: Single element operations
+	"=== Single element tests ===" print nl
+	HashMap<i64> { keys = 0 values = 0 states = 0 len = 0 cap = 0 } -> m
+	m "key" 42 insert! -> m
+	m length 1 == if { "single insert: OK" print nl }
+	m "key" get! 42 == if { "single get: OK" print nl }
+	m "key" remove! -> m
+	m length 0 == if { "single remove: OK" print nl }
+	m is_empty if { "back to empty: OK" print nl }
+	m release
+
+	// Test 3: Empty string key
+	"=== Empty string key ===" print nl
+	HashMap<i64> { keys = 0 values = 0 states = 0 len = 0 cap = 0 } -> m
+	m "" 999 insert! -> m
+	m "" has if { "empty key has: OK" print nl }
+	m "" get! 999 == if { "empty key get: OK" print nl }
+	m "" remove! -> m
+	m "" has if { "ERROR" print nl } else { "empty key remove: OK" print nl }
+	m release
+
+	// Test 4: Long key
+	"=== Long key ===" print nl
+	HashMap<i64> { keys = 0 values = 0 states = 0 len = 0 cap = 0 } -> m
+	m "this_is_a_very_long_key_that_should_still_work_correctly_in_the_hashmap" 123 insert! -> m
+	m "this_is_a_very_long_key_that_should_still_work_correctly_in_the_hashmap" get! 123 == if { "long key: OK" print nl }
+	m release
+
+	// Test 5: Special characters in keys
+	"=== Special char keys ===" print nl
+	HashMap<i64> { keys = 0 values = 0 states = 0 len = 0 cap = 0 } -> m
+	m "key with spaces" 1 insert! -> m
+	m "key\twith\ttabs" 2 insert! -> m
+	m "key/with/slashes" 3 insert! -> m
+	m "key:with:colons" 4 insert! -> m
+	m "key with spaces" get! 1 == if { "spaces: OK" print nl }
+	m "key\twith\ttabs" get! 2 == if { "tabs: OK" print nl }
+	m "key/with/slashes" get! 3 == if { "slashes: OK" print nl }
+	m "key:with:colons" get! 4 == if { "colons: OK" print nl }
+	m release
+
+	// Test 6: Negative values
+	"=== Negative values ===" print nl
+	HashMap<i64> { keys = 0 values = 0 states = 0 len = 0 cap = 0 } -> m
+	m "neg1" -1 insert! -> m
+	m "neg_max" -9223372036854775808 insert! -> m
+	m "pos_max" 9223372036854775807 insert! -> m
+	m "neg1" get! -1 == if { "neg1: OK" print nl }
+	m "neg_max" get! -9223372036854775808 == if { "neg_max: OK" print nl }
+	m "pos_max" get! 9223372036854775807 == if { "pos_max: OK" print nl }
+	m release
+
+	// Test 7: Zero value
+	"=== Zero value ===" print nl
+	HashMap<i64> { keys = 0 values = 0 states = 0 len = 0 cap = 0 } -> m
+	m "zero" 0 insert! -> m
+	m "zero" get! 0 == if { "zero value: OK" print nl }
+	m release
+
+	// Test 8: Multiple updates to same key
+	"=== Multiple updates ===" print nl
+	HashMap<i64> { keys = 0 values = 0 states = 0 len = 0 cap = 0 } -> m
+	m "counter" 1 insert! -> m
+	m "counter" 2 insert! -> m
+	m "counter" 3 insert! -> m
+	m "counter" 4 insert! -> m
+	m "counter" 5 insert! -> m
+	m length 1 == if { "length still 1: OK" print nl }
+	m "counter" get! 5 == if { "final value 5: OK" print nl }
+	m release
+
+	// Test 9: Insert-remove-reinsert same key
+	"=== Insert-remove-reinsert ===" print nl
+	HashMap<i64> { keys = 0 values = 0 states = 0 len = 0 cap = 0 } -> m
+	m "key" 100 insert! -> m
+	m "key" remove! -> m
+	m "key" 200 insert! -> m
+	m "key" get! 200 == if { "reinsert: OK" print nl }
+	m release
+
+	// Test 10: Many removes then inserts (tombstone reuse)
+	"=== Tombstone reuse ===" print nl
+	HashMap<i64> { keys = 0 values = 0 states = 0 len = 0 cap = 0 } -> m
+	m "a" 1 insert! -> m
+	m "b" 2 insert! -> m
+	m "c" 3 insert! -> m
+	m "d" 4 insert! -> m
+	m "e" 5 insert! -> m
+	m "a" remove! -> m
+	m "b" remove! -> m
+	m "c" remove! -> m
+	m "d" remove! -> m
+	// Only 'e' remains
+	m length 1 == if { "after removes len=1: OK" print nl }
+	// Insert new items (should reuse tombstones)
+	m "f" 6 insert! -> m
+	m "g" 7 insert! -> m
+	m "h" 8 insert! -> m
+	m length 4 == if { "after reinserts len=4: OK" print nl }
+	m "e" get! 5 == if { "e still 5: OK" print nl }
+	m "f" get! 6 == if { "f is 6: OK" print nl }
+	m release
+
+	"=== All edge case tests passed ===" print nl
+}

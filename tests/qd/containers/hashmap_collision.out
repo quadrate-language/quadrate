@@ -1,0 +1,14 @@
+initial: len=5
+after removing b,d: len=3
+a: 1
+c: 3
+e: 5
+after adding f,g: len=5
+a: 1
+c: 3
+e: 5
+f: 6
+g: 7
+b not found (OK)
+d not found (OK)
+done

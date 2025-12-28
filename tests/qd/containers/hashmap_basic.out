@@ -1,0 +1,14 @@
+empty: yes
+length: 3
+has alice: yes
+has bob: yes
+has missing: no
+alice: 42
+bob: 30
+charlie: 25
+alice updated: 100
+length after update: 3
+after remove bob: 2
+bob removed: yes
+empty after ops: no
+done

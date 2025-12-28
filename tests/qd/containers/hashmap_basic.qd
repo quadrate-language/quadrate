@@ -1,0 +1,43 @@
+use ct
+
+fn main() {
+	// Create empty hashmap
+	HashMap<i64> { keys = 0 values = 0 states = 0 len = 0 cap = 0 } -> m
+
+	// Test is_empty on new map
+	m is_empty if { "empty: yes" print nl }
+
+	// Insert some key-value pairs
+	m "alice" 42 insert! -> m
+	m "bob" 30 insert! -> m
+	m "charlie" 25 insert! -> m
+
+	// Test length
+	"length: " print m length print nl
+
+	// Test has
+	m "alice" has if { "has alice: yes" print nl }
+	m "bob" has if { "has bob: yes" print nl }
+	m "missing" has not if { "has missing: no" print nl }
+
+	// Test get
+	"alice: " print m "alice" get! print nl
+	"bob: " print m "bob" get! print nl
+	"charlie: " print m "charlie" get! print nl
+
+	// Test update (insert existing key)
+	m "alice" 100 insert! -> m
+	"alice updated: " print m "alice" get! print nl
+	"length after update: " print m length print nl
+
+	// Test remove
+	m "bob" remove! -> m
+	"after remove bob: " print m length print nl
+	m "bob" has not if { "bob removed: yes" print nl }
+
+	// Test is_empty after operations
+	m is_empty not if { "empty after ops: no" print nl }
+
+	m release
+	"done" print nl
+}

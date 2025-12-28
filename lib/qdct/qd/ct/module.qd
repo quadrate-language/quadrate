@@ -7,6 +7,7 @@
 ///
 /// - Vec<T>      : Dynamic array (growable list)
 /// - Pair<T, U>  : Two-element tuple
+/// - HashMap<V>  : String-keyed hash map
 ///
 /// ## Usage
 ///
@@ -22,7 +23,14 @@
 ///         // Create and use a pair
 ///         Pair<i64, str> { first = 1 second = "one" } -> p
 ///         p first print nl
+///
+///         // Create and use a hash map
+///         HashMap<i64> { keys = 0 values = 0 states = 0 len = 0 cap = 0 } -> m
+///         m "alice" 42 insert! -> m
+///         m "alice" get! print nl  // 42
+///         m release
 ///     }
 
 use "pair.qd"
 use "vec.qd"
+use "hashmap.qd"
