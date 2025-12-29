@@ -5,6 +5,41 @@
 #include <stdlib.h>
 #include <string.h>
 
+// We intentionally use non-literal format strings since we're implementing printf
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wformat-nonliteral"
+
+// Helper function to skip past format specifier modifiers (flags, width, precision)
+// Returns pointer to the conversion specifier character
+static const char* skip_format_modifiers(const char* p) {
+	// Skip flags: -, +, space, #, 0
+	while (*p == '-' || *p == '+' || *p == ' ' || *p == '#' || *p == '0') {
+		p++;
+	}
+	// Skip width
+	while (*p >= '0' && *p <= '9') {
+		p++;
+	}
+	// Skip precision
+	if (*p == '.') {
+		p++;
+		while (*p >= '0' && *p <= '9') {
+			p++;
+		}
+	}
+	// Skip length modifiers (l, ll, h, hh, L, z, j, t)
+	if (*p == 'l') {
+		p++;
+		if (*p == 'l') p++;
+	} else if (*p == 'h') {
+		p++;
+		if (*p == 'h') p++;
+	} else if (*p == 'L' || *p == 'z' || *p == 'j' || *p == 't') {
+		p++;
+	}
+	return p;
+}
+
 // Helper function to count format specifiers in format string
 static int count_format_specifiers(const char* fmt) {
 	int count = 0;
@@ -14,7 +49,13 @@ static int count_format_specifiers(const char* fmt) {
 			if (*p == '%') {
 				// Literal '%', not a format specifier
 				continue;
-			} else if (*p == 's' || *p == 'd' || *p == 'i' || *p == 'f') {
+			}
+			// Skip modifiers to find the conversion specifier
+			p = skip_format_modifiers(p);
+			if (*p == 's' || *p == 'd' || *p == 'i' || *p == 'f' ||
+			    *p == 'e' || *p == 'E' || *p == 'g' || *p == 'G' ||
+			    *p == 'x' || *p == 'X' || *p == 'o' || *p == 'u' ||
+			    *p == 'c' || *p == 'p') {
 				count++;
 			}
 		}
@@ -71,12 +112,27 @@ qd_exec_result usr_fmt_printf(qd_context* ctx) {
 	int arg_idx = arg_count - 1; // Start from the last argument
 	for (const char* p = format; *p; p++) {
 		if (*p == '%' && *(p + 1)) {
+			const char* spec_start = p; // Remember start of format specifier
 			p++; // Skip '%'
 
 			if (*p == '%') {
 				// Literal '%'
 				putchar('%');
-			} else if (*p == 's') {
+				continue;
+			}
+
+			// Skip to conversion specifier
+			const char* conv = skip_format_modifiers(p);
+			char conv_char = *conv;
+
+			// Extract the full format specifier (e.g., "%.2f")
+			size_t spec_len = (size_t)(conv - spec_start + 1);
+			char spec_buf[64];
+			if (spec_len >= sizeof(spec_buf)) spec_len = sizeof(spec_buf) - 1;
+			memcpy(spec_buf, spec_start, spec_len);
+			spec_buf[spec_len] = '\0';
+
+			if (conv_char == 's') {
 				// String argument
 				if (arg_idx < 0) {
 					fprintf(stderr, "Fatal error in usr_fmt_printf: Not enough arguments for format string\n");
@@ -96,9 +152,10 @@ qd_exec_result usr_fmt_printf(qd_context* ctx) {
 					qd_string_release(fmt_elem.value.s);
 					abort();
 				}
-				printf("%s", qd_string_data(elements[arg_idx].value.s));
+				printf(spec_buf, qd_string_data(elements[arg_idx].value.s));
 				arg_idx--;
-			} else if (*p == 'd' || *p == 'i') {
+			} else if (conv_char == 'd' || conv_char == 'i' || conv_char == 'x' ||
+			           conv_char == 'X' || conv_char == 'o' || conv_char == 'u') {
 				// Integer argument
 				if (arg_idx < 0) {
 					fprintf(stderr, "Fatal error in usr_fmt_printf: Not enough arguments for format string\n");
@@ -107,8 +164,8 @@ qd_exec_result usr_fmt_printf(qd_context* ctx) {
 					abort();
 				}
 				if (elements[arg_idx].type != QD_STACK_TYPE_INT) {
-					fprintf(stderr, "Fatal error in usr_fmt_printf: Expected int for %%d, got type %d\n",
-						elements[arg_idx].type);
+					fprintf(stderr, "Fatal error in usr_fmt_printf: Expected int for %%%c, got type %d\n",
+						conv_char, elements[arg_idx].type);
 					if (elements) {
 						for (int i = 0; i < arg_count; i++) {
 							if (elements[i].type == QD_STACK_TYPE_STR) qd_string_release(elements[i].value.s);
@@ -118,9 +175,17 @@ qd_exec_result usr_fmt_printf(qd_context* ctx) {
 					qd_string_release(fmt_elem.value.s);
 					abort();
 				}
-				printf("%ld", elements[arg_idx].value.i);
+				// Insert 'l' modifier for long if not already present
+				char int_spec[68];
+				size_t idx = spec_len - 1;
+				memcpy(int_spec, spec_buf, idx);
+				int_spec[idx++] = 'l';
+				int_spec[idx++] = conv_char;
+				int_spec[idx] = '\0';
+				printf(int_spec, elements[arg_idx].value.i);
 				arg_idx--;
-			} else if (*p == 'f') {
+			} else if (conv_char == 'f' || conv_char == 'e' || conv_char == 'E' ||
+			           conv_char == 'g' || conv_char == 'G') {
 				// Float argument
 				if (arg_idx < 0) {
 					fprintf(stderr, "Fatal error in usr_fmt_printf: Not enough arguments for format string\n");
@@ -129,7 +194,29 @@ qd_exec_result usr_fmt_printf(qd_context* ctx) {
 					abort();
 				}
 				if (elements[arg_idx].type != QD_STACK_TYPE_FLOAT) {
-					fprintf(stderr, "Fatal error in usr_fmt_printf: Expected float for %%f, got type %d\n",
+					fprintf(stderr, "Fatal error in usr_fmt_printf: Expected float for %%%c, got type %d\n",
+						conv_char, elements[arg_idx].type);
+					if (elements) {
+						for (int i = 0; i < arg_count; i++) {
+							if (elements[i].type == QD_STACK_TYPE_STR) qd_string_release(elements[i].value.s);
+						}
+						free(elements);
+					}
+					qd_string_release(fmt_elem.value.s);
+					abort();
+				}
+				printf(spec_buf, elements[arg_idx].value.f);
+				arg_idx--;
+			} else if (conv_char == 'c') {
+				// Character argument (from int)
+				if (arg_idx < 0) {
+					fprintf(stderr, "Fatal error in usr_fmt_printf: Not enough arguments for format string\n");
+					free(elements);
+					qd_string_release(fmt_elem.value.s);
+					abort();
+				}
+				if (elements[arg_idx].type != QD_STACK_TYPE_INT) {
+					fprintf(stderr, "Fatal error in usr_fmt_printf: Expected int for %%c, got type %d\n",
 						elements[arg_idx].type);
 					if (elements) {
 						for (int i = 0; i < arg_count; i++) {
@@ -140,13 +227,37 @@ qd_exec_result usr_fmt_printf(qd_context* ctx) {
 					qd_string_release(fmt_elem.value.s);
 					abort();
 				}
-				printf("%f", elements[arg_idx].value.f);
+				printf(spec_buf, (int)elements[arg_idx].value.i);
+				arg_idx--;
+			} else if (conv_char == 'p') {
+				// Pointer argument
+				if (arg_idx < 0) {
+					fprintf(stderr, "Fatal error in usr_fmt_printf: Not enough arguments for format string\n");
+					free(elements);
+					qd_string_release(fmt_elem.value.s);
+					abort();
+				}
+				if (elements[arg_idx].type != QD_STACK_TYPE_PTR) {
+					fprintf(stderr, "Fatal error in usr_fmt_printf: Expected ptr for %%p, got type %d\n",
+						elements[arg_idx].type);
+					if (elements) {
+						for (int i = 0; i < arg_count; i++) {
+							if (elements[i].type == QD_STACK_TYPE_STR) qd_string_release(elements[i].value.s);
+						}
+						free(elements);
+					}
+					qd_string_release(fmt_elem.value.s);
+					abort();
+				}
+				printf(spec_buf, elements[arg_idx].value.p);
 				arg_idx--;
 			} else {
 				// Unknown format specifier, just print it
 				putchar('%');
 				putchar(*p);
+				continue;
 			}
+			p = conv; // Advance past the conversion character
 		} else {
 			// Regular character
 			putchar(*p);
@@ -229,12 +340,30 @@ qd_exec_result usr_fmt_sprintf(qd_context* ctx) {
 	int arg_idx = arg_count - 1;
 	for (const char* p = format; *p; p++) {
 		if (*p == '%' && *(p + 1)) {
+			const char* spec_start = p; // Remember start of format specifier
 			p++; // Skip '%'
 
 			if (*p == '%') {
 				// Literal '%'
 				qd_sb_append(sb, "%", 1);
-			} else if (*p == 's') {
+				continue;
+			}
+
+			// Skip to conversion specifier
+			const char* conv = skip_format_modifiers(p);
+			char conv_char = *conv;
+
+			// Extract the full format specifier (e.g., "%.2f")
+			size_t spec_len = (size_t)(conv - spec_start + 1);
+			char spec_buf[64];
+			if (spec_len >= sizeof(spec_buf)) spec_len = sizeof(spec_buf) - 1;
+			memcpy(spec_buf, spec_start, spec_len);
+			spec_buf[spec_len] = '\0';
+
+			char result_buf[256];
+			int len = 0;
+
+			if (conv_char == 's') {
 				// String argument
 				if (arg_idx < 0) {
 					fprintf(stderr, "Fatal error in usr_fmt_sprintf: Not enough arguments for format string\n");
@@ -256,10 +385,11 @@ qd_exec_result usr_fmt_sprintf(qd_context* ctx) {
 					qd_string_release(fmt_elem.value.s);
 					abort();
 				}
-				const char* str_val = qd_string_data(elements[arg_idx].value.s);
-				qd_sb_append(sb, str_val, strlen(str_val));
+				len = snprintf(result_buf, sizeof(result_buf), spec_buf, qd_string_data(elements[arg_idx].value.s));
+				qd_sb_append(sb, result_buf, (size_t)len);
 				arg_idx--;
-			} else if (*p == 'd' || *p == 'i') {
+			} else if (conv_char == 'd' || conv_char == 'i' || conv_char == 'x' ||
+			           conv_char == 'X' || conv_char == 'o' || conv_char == 'u') {
 				// Integer argument
 				if (arg_idx < 0) {
 					fprintf(stderr, "Fatal error in usr_fmt_sprintf: Not enough arguments for format string\n");
@@ -269,8 +399,8 @@ qd_exec_result usr_fmt_sprintf(qd_context* ctx) {
 					abort();
 				}
 				if (elements[arg_idx].type != QD_STACK_TYPE_INT) {
-					fprintf(stderr, "Fatal error in usr_fmt_sprintf: Expected int for %%d, got type %d\n",
-						elements[arg_idx].type);
+					fprintf(stderr, "Fatal error in usr_fmt_sprintf: Expected int for %%%c, got type %d\n",
+						conv_char, elements[arg_idx].type);
 					qd_sb_free(sb);
 					if (elements) {
 						for (int i = 0; i < arg_count; i++) {
@@ -281,11 +411,18 @@ qd_exec_result usr_fmt_sprintf(qd_context* ctx) {
 					qd_string_release(fmt_elem.value.s);
 					abort();
 				}
-				char int_buf[32];
-				int len = snprintf(int_buf, sizeof(int_buf), "%ld", elements[arg_idx].value.i);
-				qd_sb_append(sb, int_buf, (size_t)len);
+				// Insert 'l' modifier for long
+				char int_spec[68];
+				size_t idx = spec_len - 1;
+				memcpy(int_spec, spec_buf, idx);
+				int_spec[idx++] = 'l';
+				int_spec[idx++] = conv_char;
+				int_spec[idx] = '\0';
+				len = snprintf(result_buf, sizeof(result_buf), int_spec, elements[arg_idx].value.i);
+				qd_sb_append(sb, result_buf, (size_t)len);
 				arg_idx--;
-			} else if (*p == 'f') {
+			} else if (conv_char == 'f' || conv_char == 'e' || conv_char == 'E' ||
+			           conv_char == 'g' || conv_char == 'G') {
 				// Float argument
 				if (arg_idx < 0) {
 					fprintf(stderr, "Fatal error in usr_fmt_sprintf: Not enough arguments for format string\n");
@@ -295,7 +432,32 @@ qd_exec_result usr_fmt_sprintf(qd_context* ctx) {
 					abort();
 				}
 				if (elements[arg_idx].type != QD_STACK_TYPE_FLOAT) {
-					fprintf(stderr, "Fatal error in usr_fmt_sprintf: Expected float for %%f, got type %d\n",
+					fprintf(stderr, "Fatal error in usr_fmt_sprintf: Expected float for %%%c, got type %d\n",
+						conv_char, elements[arg_idx].type);
+					qd_sb_free(sb);
+					if (elements) {
+						for (int i = 0; i < arg_count; i++) {
+							if (elements[i].type == QD_STACK_TYPE_STR) qd_string_release(elements[i].value.s);
+						}
+						free(elements);
+					}
+					qd_string_release(fmt_elem.value.s);
+					abort();
+				}
+				len = snprintf(result_buf, sizeof(result_buf), spec_buf, elements[arg_idx].value.f);
+				qd_sb_append(sb, result_buf, (size_t)len);
+				arg_idx--;
+			} else if (conv_char == 'c') {
+				// Character argument (from int)
+				if (arg_idx < 0) {
+					fprintf(stderr, "Fatal error in usr_fmt_sprintf: Not enough arguments for format string\n");
+					qd_sb_free(sb);
+					free(elements);
+					qd_string_release(fmt_elem.value.s);
+					abort();
+				}
+				if (elements[arg_idx].type != QD_STACK_TYPE_INT) {
+					fprintf(stderr, "Fatal error in usr_fmt_sprintf: Expected int for %%c, got type %d\n",
 						elements[arg_idx].type);
 					qd_sb_free(sb);
 					if (elements) {
@@ -307,15 +469,41 @@ qd_exec_result usr_fmt_sprintf(qd_context* ctx) {
 					qd_string_release(fmt_elem.value.s);
 					abort();
 				}
-				char float_buf[64];
-				int len = snprintf(float_buf, sizeof(float_buf), "%f", elements[arg_idx].value.f);
-				qd_sb_append(sb, float_buf, (size_t)len);
+				len = snprintf(result_buf, sizeof(result_buf), spec_buf, (int)elements[arg_idx].value.i);
+				qd_sb_append(sb, result_buf, (size_t)len);
+				arg_idx--;
+			} else if (conv_char == 'p') {
+				// Pointer argument
+				if (arg_idx < 0) {
+					fprintf(stderr, "Fatal error in usr_fmt_sprintf: Not enough arguments for format string\n");
+					qd_sb_free(sb);
+					free(elements);
+					qd_string_release(fmt_elem.value.s);
+					abort();
+				}
+				if (elements[arg_idx].type != QD_STACK_TYPE_PTR) {
+					fprintf(stderr, "Fatal error in usr_fmt_sprintf: Expected ptr for %%p, got type %d\n",
+						elements[arg_idx].type);
+					qd_sb_free(sb);
+					if (elements) {
+						for (int i = 0; i < arg_count; i++) {
+							if (elements[i].type == QD_STACK_TYPE_STR) qd_string_release(elements[i].value.s);
+						}
+						free(elements);
+					}
+					qd_string_release(fmt_elem.value.s);
+					abort();
+				}
+				len = snprintf(result_buf, sizeof(result_buf), spec_buf, elements[arg_idx].value.p);
+				qd_sb_append(sb, result_buf, (size_t)len);
 				arg_idx--;
 			} else {
 				// Unknown format specifier, just append it
 				qd_sb_append(sb, "%", 1);
 				qd_sb_append(sb, p, 1);
+				continue;
 			}
+			p = conv; // Advance past the conversion character
 		} else {
 			// Regular character
 			qd_sb_append(sb, p, 1);
@@ -367,3 +555,5 @@ qd_exec_result usr_fmt_sprintf(qd_context* ctx) {
 
 	return (qd_exec_result){0};
 }
+
+#pragma GCC diagnostic pop
