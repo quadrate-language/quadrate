@@ -1,0 +1,23 @@
+// Test SHA-256 basic functionality
+use crypto
+use str
+
+fn main() {
+	// Test one-shot SHA-256
+	"Hello" crypto::sha256 -> hash
+	hash print nl
+
+	// Verify against known value
+	hash "185f8db32271fe25f561a6fc938b2e264306ec304eda518007d1764826381969" str::compare 0 == if {
+		"sha256_hello_ok" print nl
+	}
+
+	// Test verify function
+	"Hello" "185f8db32271fe25f561a6fc938b2e264306ec304eda518007d1764826381969" crypto::sha256_verify 1 == if {
+		"verify_ok" print nl
+	}
+
+	"Hello" "0000000000000000000000000000000000000000000000000000000000000000" crypto::sha256_verify 0 == if {
+		"verify_fail_ok" print nl
+	}
+}

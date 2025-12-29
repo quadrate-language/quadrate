@@ -45,7 +45,7 @@
 ///   - m "key" get!        (get value for key)
 ///   - m "key" has         (check if key exists)
 
-use crc32
+use crypto
 use mem
 use str
 
@@ -69,7 +69,7 @@ pub struct HashMap<V> {
 fn hash_key(key:str cap:i64 -- idx:i64) {
 	-> cap
 	-> key
-	key crc32::checksum cap mod -> idx
+	key crypto::crc32 cap mod -> idx
 	// Ensure positive index
 	idx 0 < if {
 		idx cap + -> idx

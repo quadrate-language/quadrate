@@ -1,0 +1,16 @@
+// Test CRC32 streaming API
+use crypto
+
+fn main() {
+	// Test streaming CRC32
+	crypto::Crc32 {} -> c
+	c "Hello" update -> c
+	c " World" update -> c
+	c value -> crc
+	"streaming_crc=" print crc print nl
+
+	// Verify against known value for "Hello World"
+	crc 1243066710 == if { "streaming_ok" print nl }
+
+	c release
+}

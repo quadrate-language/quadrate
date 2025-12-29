@@ -1,8 +1,8 @@
 use bytes
+use crypto
 use flag
 use io
 use mem
-use sha256
 use str
 
 const VERSION = "1.0.0"
@@ -91,7 +91,7 @@ fn hash_file(path:str binary_mode:i64 tag_mode:i64 zero_mode:i64 -- ) {
 			-> length
 			-> buf
 
-			buf length sha256::hash_bytes -> hash_str
+			buf length crypto::sha256_bytes -> hash_str
 
 			tag_mode if {
 				"SHA256 (" print path print ") = " print hash_str print
@@ -230,7 +230,7 @@ fn check_file(path:str quiet:i64 status_mode:i64 warn_mode:i64 ignore_missing:i6
 								-> file_len
 								-> file_buf
 
-								file_buf file_len sha256::hash_bytes -> actual_hash
+								file_buf file_len crypto::sha256_bytes -> actual_hash
 								file_buf mem::free
 
 								actual_hash expected_hash str::compare 0 == if {

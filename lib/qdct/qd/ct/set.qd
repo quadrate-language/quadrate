@@ -30,7 +30,7 @@
 ///
 ///     s release
 
-use crc32
+use crypto
 use mem
 use str
 
@@ -52,7 +52,7 @@ pub struct Set {
 fn set_hash_key(key:str cap:i64 -- idx:i64) {
 	-> cap
 	-> key
-	key crc32::checksum cap mod -> idx
+	key crypto::crc32 cap mod -> idx
 	idx 0 < if {
 		idx cap + -> idx
 	}

@@ -1,0 +1,19 @@
+// Test SHA-256 streaming API
+use crypto
+use str
+
+fn main() {
+	// Test streaming SHA-256
+	crypto::Sha256 {} -> h
+	h "Hello" sha256_update -> h
+	h " World" sha256_update -> h
+	h finalize -> hash
+	h sha256_release
+
+	hash print nl
+
+	// "Hello World" SHA-256
+	hash "a591a6d40bf420404a011733cfb7b190d62c65bf0bcda32b57b277d9ad9f146e" str::compare 0 == if {
+		"streaming_ok" print nl
+	}
+}
