@@ -1118,14 +1118,27 @@ namespace Qd {
 					// Check for missing fields using mStructFieldTypes (safe for imported modules)
 					const auto* structFieldTypesForMissing = lookupStructFieldTypes(lookupKey);
 					if (structFieldTypesForMissing != nullptr) {
+						// Get fields with defaults for this struct
+						const std::unordered_set<std::string>* fieldsWithDefaults = nullptr;
+						auto defaultsIt = mStructFieldsWithDefaults.find(lookupKey);
+						if (defaultsIt != mStructFieldsWithDefaults.end()) {
+							fieldsWithDefaults = &defaultsIt->second;
+						}
+
 						for (const auto& fieldEntry : *structFieldTypesForMissing) {
 							if (providedFields.find(fieldEntry.first) == providedFields.end()) {
-								std::string errorMsg = "Missing field '";
-								errorMsg += fieldEntry.first;
-								errorMsg += "' in struct construction '";
-								errorMsg += name;
-								errorMsg += "'";
-								reportError(construct, errorMsg.c_str());
+								// Check if field has a default value
+								bool hasDefault =
+										fieldsWithDefaults != nullptr &&
+										fieldsWithDefaults->find(fieldEntry.first) != fieldsWithDefaults->end();
+								if (!hasDefault) {
+									std::string errorMsg = "Missing field '";
+									errorMsg += fieldEntry.first;
+									errorMsg += "' in struct construction '";
+									errorMsg += name;
+									errorMsg += "'";
+									reportError(construct, errorMsg.c_str());
+								}
 							}
 						}
 					}

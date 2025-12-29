@@ -1,0 +1,12 @@
+p1.x=0
+p1.y=0
+p2.x=42
+p2.y=0
+p3.x=100
+p3.y=200
+c1.enabled=1
+c1.count=10
+c1.name=default
+c2.enabled=1
+c2.count=10
+c2.name=custom

@@ -2777,6 +2777,65 @@ namespace Qd {
 				AstNodeStructField* field = new AstNodeStructField(fieldNameStr, fieldType);
 				setNodePosition(field, scanner, src);
 				field->setParent(structDecl);
+
+				// Check for default value: field:type = expr
+				// For simplicity, only support single-token defaults (literals or identifiers)
+				char32_t peekDefault = peekNextNonWhitespace(scanner, src);
+				if (peekDefault == '=') {
+					u8t_scanner_scan(scanner); // Consume '='
+
+					std::vector<IAstNode*> defaultNodes;
+
+					// Parse the default value (single token for now)
+					char32_t valToken = u8t_scanner_scan(scanner);
+					if (valToken == U8T_INTEGER) {
+						const char* numText = u8t_scanner_token_text(scanner, &n);
+						AstNodeLiteral* numNode =
+								new AstNodeLiteral(numText, AstNodeLiteral::LiteralType::INTEGER);
+						setNodePosition(numNode, scanner, src);
+						defaultNodes.push_back(numNode);
+					} else if (valToken == U8T_FLOAT) {
+						const char* numText = u8t_scanner_token_text(scanner, &n);
+						AstNodeLiteral* numNode =
+								new AstNodeLiteral(numText, AstNodeLiteral::LiteralType::FLOAT);
+						setNodePosition(numNode, scanner, src);
+						defaultNodes.push_back(numNode);
+					} else if (valToken == U8T_STRING) {
+						const char* strText = u8t_scanner_token_text(scanner, &n);
+						AstNodeLiteral* strNode =
+								new AstNodeLiteral(strText, AstNodeLiteral::LiteralType::STRING);
+						setNodePosition(strNode, scanner, src);
+						defaultNodes.push_back(strNode);
+					} else if (valToken == U8T_IDENTIFIER) {
+						const char* idText = u8t_scanner_token_text(scanner, &n);
+						AstNodeIdentifier* ident = new AstNodeIdentifier(idText);
+						setNodePosition(ident, scanner, src);
+						defaultNodes.push_back(ident);
+					} else if (valToken == '-') {
+						// Negative number
+						char32_t numToken = u8t_scanner_scan(scanner);
+						if (numToken == U8T_INTEGER) {
+							const char* numText = u8t_scanner_token_text(scanner, &n);
+							std::string negNum = std::string("-") + numText;
+							AstNodeLiteral* numNode =
+									new AstNodeLiteral(negNum, AstNodeLiteral::LiteralType::INTEGER);
+							setNodePosition(numNode, scanner, src);
+							defaultNodes.push_back(numNode);
+						} else if (numToken == U8T_FLOAT) {
+							const char* numText = u8t_scanner_token_text(scanner, &n);
+							std::string negNum = std::string("-") + numText;
+							AstNodeLiteral* numNode =
+									new AstNodeLiteral(negNum, AstNodeLiteral::LiteralType::FLOAT);
+							setNodePosition(numNode, scanner, src);
+							defaultNodes.push_back(numNode);
+						}
+					}
+
+					if (!defaultNodes.empty()) {
+						field->setDefaultValue(std::move(defaultNodes));
+					}
+				}
+
 				structDecl->addField(field);
 			}
 		}

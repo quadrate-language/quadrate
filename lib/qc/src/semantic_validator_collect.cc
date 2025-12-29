@@ -252,6 +252,11 @@ namespace Qd {
 						mStructFieldStructTypes[structDecl->name()][field->name()] = typeName;
 					}
 					fieldTypes[field->name()] = fieldType;
+
+					// Track fields with default values
+					if (field->hasDefaultValue()) {
+						mStructFieldsWithDefaults[structDecl->name()].insert(field->name());
+					}
 				}
 			}
 			mStructFieldTypes[structDecl->name()] = fieldTypes;

@@ -1,0 +1,41 @@
+// Test struct field default values
+
+struct Point {
+    x:i64 = 0
+    y:i64 = 0
+}
+
+struct Config {
+    enabled:i64 = 1
+    count:i64 = 10
+    name:str = "default"
+}
+
+fn main() {
+    // Create struct with no fields - use all defaults
+    Point {} -> p1
+    "p1.x=" print p1 @x print nl
+    "p1.y=" print p1 @y print nl
+
+    // Create struct with partial fields
+    Point { x = 42 } -> p2
+    "p2.x=" print p2 @x print nl
+    "p2.y=" print p2 @y print nl
+
+    // Override all defaults
+    Point { x = 100 y = 200 } -> p3
+    "p3.x=" print p3 @x print nl
+    "p3.y=" print p3 @y print nl
+
+    // Config with defaults
+    Config {} -> c1
+    "c1.enabled=" print c1 @enabled print nl
+    "c1.count=" print c1 @count print nl
+    "c1.name=" print c1 @name print nl
+
+    // Config with partial override
+    Config { name = "custom" } -> c2
+    "c2.enabled=" print c2 @enabled print nl
+    "c2.count=" print c2 @count print nl
+    "c2.name=" print c2 @name print nl
+}

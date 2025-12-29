@@ -803,8 +803,13 @@ namespace Qd {
 					for (IAstNode* valueNode : initIt->second->valueNodes) {
 						generateNode(valueNode, ctx);
 					}
+				} else if (!field.defaultValue.empty()) {
+					// Use default value for this field
+					for (IAstNode* defaultNode : field.defaultValue) {
+						generateNode(defaultNode, ctx);
+					}
 				} else {
-					// Missing field - should have been caught by semantic validator
+					// Missing field with no default - should have been caught by semantic validator
 					std::cerr << "Error: Missing field initializer for '" << field.name << "' in struct " << structName
 							  << std::endl;
 				}

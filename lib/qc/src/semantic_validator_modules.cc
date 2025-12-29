@@ -756,6 +756,11 @@ namespace Qd {
 					mStructFieldStructTypes[qualifiedName][field->name()] = typeName;
 				}
 				fieldTypes[field->name()] = fieldType;
+
+				// Track fields with default values
+				if (field->hasDefaultValue()) {
+					mStructFieldsWithDefaults[qualifiedName].insert(field->name());
+				}
 			}
 			mStructFieldTypes[qualifiedName] = fieldTypes;
 			mStructFieldOrder[qualifiedName] = fieldOrder;

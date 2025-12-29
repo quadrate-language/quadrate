@@ -3,10 +3,13 @@
 
 #include "ast_node.h"
 #include <string>
+#include <vector>
 
 namespace Qd {
 	/**
 	 * @brief AST node representing a struct field
+	 *
+	 * Example: x:i64 or x:i64 = 42
 	 */
 	class AstNodeStructField : public IAstNode {
 	public:
@@ -14,15 +17,24 @@ namespace Qd {
 			: mName(name), mTypeName(typeName), mParent(nullptr), mLine(0), mColumn(0) {
 		}
 
+		~AstNodeStructField() {
+			for (auto* node : mDefaultValue) {
+				delete node;
+			}
+		}
+
 		IAstNode::Type type() const override {
 			return Type::STRUCT_FIELD;
 		}
 
 		size_t childCount() const override {
-			return 0;
+			return mDefaultValue.size();
 		}
 
-		IAstNode* child(size_t) const override {
+		IAstNode* child(size_t index) const override {
+			if (index < mDefaultValue.size()) {
+				return mDefaultValue[index];
+			}
 			return nullptr;
 		}
 
@@ -55,9 +67,25 @@ namespace Qd {
 			return mTypeName;
 		}
 
+		bool hasDefaultValue() const {
+			return !mDefaultValue.empty();
+		}
+
+		const std::vector<IAstNode*>& defaultValue() const {
+			return mDefaultValue;
+		}
+
+		void setDefaultValue(std::vector<IAstNode*> nodes) {
+			mDefaultValue = std::move(nodes);
+			for (auto* node : mDefaultValue) {
+				node->setParent(this);
+			}
+		}
+
 	private:
 		std::string mName;
 		std::string mTypeName;
+		std::vector<IAstNode*> mDefaultValue;
 		IAstNode* mParent;
 		size_t mLine;
 		size_t mColumn;

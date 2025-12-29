@@ -259,6 +259,9 @@ namespace Qd {
 		// Struct field order: maps struct name -> vector of field names (in declaration order)
 		std::unordered_map<std::string, std::vector<std::string>> mStructFieldOrder;
 
+		// Struct fields with defaults: maps struct name -> set of field names that have default values
+		std::unordered_map<std::string, std::unordered_set<std::string>> mStructFieldsWithDefaults;
+
 		// Track which struct type each local variable holds (for PTR types)
 		// Maps variable name -> struct type name (empty string if not a struct pointer)
 		std::unordered_map<std::string, std::string> mLocalVariableStructTypes;

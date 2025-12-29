@@ -63,6 +63,13 @@ namespace Qd {
 			fieldInfo.offset = layout.totalSize;
 			fieldInfo.size = getTypeSize(field->typeName());
 
+			// Copy default value nodes (we don't own them, just reference)
+			if (field->hasDefaultValue()) {
+				for (auto* node : field->defaultValue()) {
+					fieldInfo.defaultValue.push_back(node);
+				}
+			}
+
 			// Add field to layout
 			layout.fields.push_back(fieldInfo);
 
