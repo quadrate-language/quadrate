@@ -52,9 +52,34 @@
       ]
     },
     {
+      "name": "Bitwise",
+      "instructions": [
+        {"name": "and", "signature": "(a b -- a&b)", "description": "Bitwise AND"},
+        {"name": "or", "signature": "(a b -- a|b)", "description": "Bitwise OR"},
+        {"name": "xor", "signature": "(a b -- a^b)", "description": "Bitwise XOR"},
+        {"name": "not", "signature": "(a -- ~a)", "description": "Bitwise NOT"},
+        {"name": "shl", "signature": "(a n -- a<<n)", "description": "Shift left by n bits", "alias": "<<"},
+        {"name": "shr", "signature": "(a n -- a>>n)", "description": "Shift right by n bits", "alias": ">>"}
+      ]
+    },
+    {
       "name": "Type Casting",
       "instructions": [
-        {"name": "cast<T>", "signature": "(a -- T)", "description": "Cast to specified type (i64, f64, str, ptr)"}
+        {"name": "cast<T>", "signature": "(a -- T)", "description": "Cast to specified type (i64, f64, str, ptr)"},
+        {"name": "sizeof<T>", "signature": "(-- size)", "description": "Get size of type in bytes: sizeof<MyStruct>"}
+      ]
+    },
+    {
+      "name": "Arrays",
+      "instructions": [
+        {"name": "makei", "signature": "(n -- arr)", "description": "Create array of n integers"},
+        {"name": "makef", "signature": "(n -- arr)", "description": "Create array of n floats"},
+        {"name": "makes", "signature": "(n -- arr)", "description": "Create array of n strings"},
+        {"name": "makep", "signature": "(n -- arr)", "description": "Create array of n pointers"},
+        {"name": "nth", "signature": "(arr i -- val)", "description": "Get element at index i"},
+        {"name": "set", "signature": "(arr i val -- arr)", "description": "Set element at index i"},
+        {"name": "len", "signature": "(arr -- n)", "description": "Get array length"},
+        {"name": "append", "signature": "(arr val -- arr)", "description": "Append element to array"}
       ]
     },
     {
@@ -96,8 +121,9 @@
     {
       "name": "Error Handling",
       "instructions": [
-        {"name": "error", "signature": "(msg code --)", "description": "Raise an error"},
-        {"name": "!", "signature": "()", "description": "Call failable function: fn! { success } else { error }"}
+        {"name": "panic", "signature": "(msg code --)", "description": "Raise an error and return from current fallible function"},
+        {"name": "err", "signature": "(-- msg code)", "description": "Get last error message and code after a fallible function fails. Use in the error branch of switch."},
+        {"name": "!", "signature": "()", "description": "Call fallible function with auto-panic: fn! will abort on error"}
       ]
     },
     {

@@ -88,6 +88,10 @@ typedef struct {
 	struct qd_string* params;
 	int64_t socket;
 	int64_t responded;
+	// Internal: response headers buffer (not exposed to Quadrate)
+	char* response_headers;
+	size_t response_headers_len;
+	size_t response_headers_cap;
 } http_ctx_t;
 
 /** Thread arguments for request handling */
@@ -162,6 +166,25 @@ static bool match_route(const char* pattern, const char* path, char* params_out,
 	const char* q = path;
 
 	while (*p && *q) {
+		// Wildcard: /* matches everything after
+		if (*p == '/' && p[1] == '*' && p[2] == '\0') {
+			// Store rest of path as "_path" param
+			size_t rest_len = strlen(q);
+			size_t needed = (params_len > 0 ? 1 : 0) + 5 + 1 + rest_len + 1;  // "_path=..."
+			if (params_len + needed <= params_size) {
+				if (params_len > 0) {
+					params_out[params_len++] = '\n';
+				}
+				memcpy(params_out + params_len, "_path", 5);
+				params_len += 5;
+				params_out[params_len++] = '=';
+				memcpy(params_out + params_len, q, rest_len);
+				params_len += rest_len;
+				params_out[params_len] = '\0';
+			}
+			return true;  // Wildcard matches everything
+		}
+
 		if (*p == ':') {
 			// Extract parameter name
 			p++;
@@ -196,6 +219,11 @@ static bool match_route(const char* pattern, const char* path, char* params_out,
 		} else {
 			return false;
 		}
+	}
+
+	// Check for wildcard at end of pattern (when path is exactly the prefix)
+	if (*p == '/' && p[1] == '*' && p[2] == '\0') {
+		return true;
 	}
 
 	// Both should be at end (or pattern could end with trailing slash)
@@ -591,6 +619,9 @@ static void handle_request(http_engine_t* engine, int client_fd, qd_context* ctx
 	http_ctx->params = qd_string_create(params);
 	http_ctx->socket = client_fd;
 	http_ctx->responded = 0;
+	http_ctx->response_headers = NULL;
+	http_ctx->response_headers_len = 0;
+	http_ctx->response_headers_cap = 0;
 
 	// Note: response_headers in engine is NOT thread-safe.
 	// Each request runs in its own thread, so we don't use shared state.
@@ -640,6 +671,7 @@ static void handle_request(http_engine_t* engine, int client_fd, qd_context* ctx
 	qd_string_release(http_ctx->headers);
 	qd_string_release(http_ctx->body);
 	qd_string_release(http_ctx->params);
+	free(http_ctx->response_headers);
 	free(http_ctx);
 
 	close(client_fd);
@@ -961,7 +993,7 @@ static qd_exec_result send_response_internal(qd_context* ctx, const char* conten
 
 	if (!http_ctx->responded) {
 		send_response((int)http_ctx->socket, (int)status_elem.value.i,
-		              NULL, content_type, qd_string_data(body_elem.value.s));
+		              http_ctx->response_headers, content_type, qd_string_data(body_elem.value.s));
 		http_ctx->responded = 1;
 	}
 
@@ -999,12 +1031,45 @@ qd_exec_result usr_http_set_header(qd_context* ctx) {
 		abort();
 	}
 
-	// Pop ctx (unused for now - headers are stored in engine)
+	// Pop ctx
 	http_ctx_t* http_ctx = pop_ctx(ctx);
-	(void)http_ctx;
 
-	// TODO: Store headers in engine->response_headers for inclusion in response
-	// For now, this is a no-op placeholder
+	// Store header in response_headers buffer
+	const char* name = qd_string_data(name_elem.value.s);
+	const char* value = qd_string_data(value_elem.value.s);
+	size_t name_len = strlen(name);
+	size_t value_len = strlen(value);
+	size_t needed = name_len + 2 + value_len + 2;  // "Name: Value\r\n"
+
+	// Grow buffer if needed
+	if (http_ctx->response_headers_len + needed + 1 > http_ctx->response_headers_cap) {
+		size_t new_cap = http_ctx->response_headers_cap == 0 ? 512 : http_ctx->response_headers_cap * 2;
+		while (new_cap < http_ctx->response_headers_len + needed + 1) {
+			new_cap *= 2;
+		}
+		char* new_buf = realloc(http_ctx->response_headers, new_cap);
+		if (!new_buf) {
+			qd_string_release(name_elem.value.s);
+			qd_string_release(value_elem.value.s);
+			fprintf(stderr, "Fatal error in http::set_header: memory allocation failed\n");
+			abort();
+		}
+		http_ctx->response_headers = new_buf;
+		http_ctx->response_headers_cap = new_cap;
+	}
+
+	// Append header
+	char* p = http_ctx->response_headers + http_ctx->response_headers_len;
+	memcpy(p, name, name_len);
+	p += name_len;
+	*p++ = ':';
+	*p++ = ' ';
+	memcpy(p, value, value_len);
+	p += value_len;
+	*p++ = '\r';
+	*p++ = '\n';
+	*p = '\0';
+	http_ctx->response_headers_len += needed;
 
 	qd_string_release(name_elem.value.s);
 	qd_string_release(value_elem.value.s);
@@ -1189,4 +1254,240 @@ qd_exec_result usr_http_group_PUT(qd_context* ctx) {
 
 qd_exec_result usr_http_group_DELETE(qd_context* ctx) {
 	return register_group_route(ctx, HTTP_METHOD_DELETE);
+}
+
+// ============================================================
+// Static File Serving
+// ============================================================
+
+/** Get MIME type from file extension */
+static const char* get_mime_type(const char* path) {
+	const char* ext = strrchr(path, '.');
+	if (!ext) return "application/octet-stream";
+	ext++;  // Skip the dot
+
+	// Common web types
+	if (strcasecmp(ext, "html") == 0 || strcasecmp(ext, "htm") == 0) return "text/html; charset=utf-8";
+	if (strcasecmp(ext, "css") == 0) return "text/css; charset=utf-8";
+	if (strcasecmp(ext, "js") == 0) return "application/javascript; charset=utf-8";
+	if (strcasecmp(ext, "json") == 0) return "application/json; charset=utf-8";
+	if (strcasecmp(ext, "xml") == 0) return "application/xml; charset=utf-8";
+	if (strcasecmp(ext, "txt") == 0) return "text/plain; charset=utf-8";
+	if (strcasecmp(ext, "csv") == 0) return "text/csv; charset=utf-8";
+
+	// Images
+	if (strcasecmp(ext, "png") == 0) return "image/png";
+	if (strcasecmp(ext, "jpg") == 0 || strcasecmp(ext, "jpeg") == 0) return "image/jpeg";
+	if (strcasecmp(ext, "gif") == 0) return "image/gif";
+	if (strcasecmp(ext, "svg") == 0) return "image/svg+xml";
+	if (strcasecmp(ext, "ico") == 0) return "image/x-icon";
+	if (strcasecmp(ext, "webp") == 0) return "image/webp";
+
+	// Fonts
+	if (strcasecmp(ext, "woff") == 0) return "font/woff";
+	if (strcasecmp(ext, "woff2") == 0) return "font/woff2";
+	if (strcasecmp(ext, "ttf") == 0) return "font/ttf";
+	if (strcasecmp(ext, "otf") == 0) return "font/otf";
+	if (strcasecmp(ext, "eot") == 0) return "application/vnd.ms-fontobject";
+
+	// Audio/Video
+	if (strcasecmp(ext, "mp3") == 0) return "audio/mpeg";
+	if (strcasecmp(ext, "wav") == 0) return "audio/wav";
+	if (strcasecmp(ext, "mp4") == 0) return "video/mp4";
+	if (strcasecmp(ext, "webm") == 0) return "video/webm";
+	if (strcasecmp(ext, "ogg") == 0) return "audio/ogg";
+
+	// Documents
+	if (strcasecmp(ext, "pdf") == 0) return "application/pdf";
+	if (strcasecmp(ext, "zip") == 0) return "application/zip";
+	if (strcasecmp(ext, "gz") == 0) return "application/gzip";
+	if (strcasecmp(ext, "tar") == 0) return "application/x-tar";
+
+	// WebAssembly
+	if (strcasecmp(ext, "wasm") == 0) return "application/wasm";
+
+	return "application/octet-stream";
+}
+
+/** Send file response (internal helper) */
+static int send_file_response(int socket, const char* filepath, const char* extra_headers) {
+	// Open file
+	int fd = open(filepath, O_RDONLY);
+	if (fd < 0) {
+		return -1;  // File not found or permission denied
+	}
+
+	// Get file size
+	off_t file_size = lseek(fd, 0, SEEK_END);
+	if (file_size < 0) {
+		close(fd);
+		return -1;
+	}
+	lseek(fd, 0, SEEK_SET);
+
+	// Read file into buffer
+	char* file_data = malloc((size_t)file_size);
+	if (!file_data) {
+		close(fd);
+		return -2;  // Memory error
+	}
+
+	ssize_t bytes_read = read(fd, file_data, (size_t)file_size);
+	close(fd);
+
+	if (bytes_read != file_size) {
+		free(file_data);
+		return -1;
+	}
+
+	// Get MIME type
+	const char* content_type = get_mime_type(filepath);
+
+	// Build response header
+	char header[4096];
+	int header_len = snprintf(header, sizeof(header),
+		"HTTP/1.1 200 OK\r\n"
+		"Content-Type: %s\r\n"
+		"Content-Length: %zu\r\n"
+		"Connection: close\r\n"
+		"%s"
+		"\r\n",
+		content_type,
+		(size_t)file_size,
+		extra_headers ? extra_headers : "");
+
+	// Send response
+	if (send(socket, header, (size_t)header_len, 0) < 0) {
+		free(file_data);
+		return -3;
+	}
+	if (file_size > 0 && send(socket, file_data, (size_t)file_size, 0) < 0) {
+		free(file_data);
+		return -3;
+	}
+
+	free(file_data);
+	return 0;
+}
+
+qd_exec_result usr_http_static_file(qd_context* ctx) {
+	// Pop filepath
+	qd_stack_element_t path_elem;
+	qd_stack_error err = qd_stack_pop(ctx->st, &path_elem);
+	if (err != QD_STACK_OK || path_elem.type != QD_STACK_TYPE_STR) {
+		fprintf(stderr, "Fatal error in http::static_file: expected path string\n");
+		abort();
+	}
+
+	// Pop ctx
+	http_ctx_t* http_ctx = pop_ctx(ctx);
+
+	if (http_ctx->responded) {
+		qd_string_release(path_elem.value.s);
+		return (qd_exec_result){0};
+	}
+
+	const char* filepath = qd_string_data(path_elem.value.s);
+
+	// Security: prevent path traversal
+	if (strstr(filepath, "..") != NULL) {
+		send_response((int)http_ctx->socket, 403, http_ctx->response_headers,
+		              "text/plain", "Forbidden");
+		http_ctx->responded = 1;
+		qd_string_release(path_elem.value.s);
+		return (qd_exec_result){0};
+	}
+
+	int result = send_file_response((int)http_ctx->socket, filepath, http_ctx->response_headers);
+	if (result < 0) {
+		send_response((int)http_ctx->socket, 404, http_ctx->response_headers,
+		              "text/plain", "Not Found");
+	}
+	http_ctx->responded = 1;
+
+	qd_string_release(path_elem.value.s);
+	return (qd_exec_result){0};
+}
+
+qd_exec_result usr_http_static(qd_context* ctx) {
+	// Pop fs_path (filesystem path)
+	qd_stack_element_t fs_path_elem;
+	qd_stack_error err = qd_stack_pop(ctx->st, &fs_path_elem);
+	if (err != QD_STACK_OK || fs_path_elem.type != QD_STACK_TYPE_STR) {
+		fprintf(stderr, "Fatal error in http::static: expected fs_path string\n");
+		abort();
+	}
+
+	// Pop route_prefix
+	qd_stack_element_t prefix_elem;
+	err = qd_stack_pop(ctx->st, &prefix_elem);
+	if (err != QD_STACK_OK || prefix_elem.type != QD_STACK_TYPE_STR) {
+		qd_string_release(fs_path_elem.value.s);
+		fprintf(stderr, "Fatal error in http::static: expected prefix string\n");
+		abort();
+	}
+
+	// Pop ctx
+	http_ctx_t* http_ctx = pop_ctx(ctx);
+
+	if (http_ctx->responded) {
+		qd_string_release(fs_path_elem.value.s);
+		qd_string_release(prefix_elem.value.s);
+		return (qd_exec_result){0};
+	}
+
+	const char* fs_path = qd_string_data(fs_path_elem.value.s);
+	const char* prefix = qd_string_data(prefix_elem.value.s);
+	const char* request_path = qd_string_data(http_ctx->path);
+
+	// Check if request path starts with prefix
+	size_t prefix_len = strlen(prefix);
+	if (strncmp(request_path, prefix, prefix_len) != 0) {
+		send_response((int)http_ctx->socket, 404, http_ctx->response_headers,
+		              "text/plain", "Not Found");
+		http_ctx->responded = 1;
+		qd_string_release(fs_path_elem.value.s);
+		qd_string_release(prefix_elem.value.s);
+		return (qd_exec_result){0};
+	}
+
+	// Get the relative path after the prefix
+	const char* rel_path = request_path + prefix_len;
+	if (*rel_path == '/') rel_path++;  // Skip leading slash
+
+	// Security: prevent path traversal
+	if (strstr(rel_path, "..") != NULL) {
+		send_response((int)http_ctx->socket, 403, http_ctx->response_headers,
+		              "text/plain", "Forbidden");
+		http_ctx->responded = 1;
+		qd_string_release(fs_path_elem.value.s);
+		qd_string_release(prefix_elem.value.s);
+		return (qd_exec_result){0};
+	}
+
+	// Build full filepath
+	char filepath[4096];
+	size_t fs_path_len = strlen(fs_path);
+	if (fs_path_len > 0 && fs_path[fs_path_len - 1] == '/') {
+		snprintf(filepath, sizeof(filepath), "%s%s", fs_path, rel_path);
+	} else {
+		snprintf(filepath, sizeof(filepath), "%s/%s", fs_path, rel_path);
+	}
+
+	// If path is empty or ends with /, try index.html
+	size_t filepath_len = strlen(filepath);
+	if (filepath_len == 0 || filepath[filepath_len - 1] == '/') {
+		strncat(filepath, "index.html", sizeof(filepath) - filepath_len - 1);
+	}
+
+	int result = send_file_response((int)http_ctx->socket, filepath, http_ctx->response_headers);
+	if (result < 0) {
+		send_response((int)http_ctx->socket, 404, http_ctx->response_headers,
+		              "text/plain", "Not Found");
+	}
+	http_ctx->responded = 1;
+
+	qd_string_release(fs_path_elem.value.s);
+	qd_string_release(prefix_elem.value.s);
+	return (qd_exec_result){0};
 }

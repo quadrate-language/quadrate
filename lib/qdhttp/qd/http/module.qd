@@ -201,7 +201,9 @@ import "libqdhttp.a" as "http" {
 
 	/// Register GET route.
 	/// @param engine ptr Engine
-	/// @param path str Route path (supports :param for path parameters)
+	/// @param path str Route path. Supports:
+	///   - :param for path parameters (e.g., "/users/:id")
+	///   - /* for wildcard suffix (e.g., "/static/*" matches /static/anything)
 	/// @param handler ptr Handler function receiving Ctx
 	/// @example e "/" fn(c:Ctx -- ) { c 200 "Hello" http::string } http::GET
 	pub fn GET(engine:ptr path:str handler:ptr -- )
@@ -362,4 +364,32 @@ import "libqdhttp.a" as "http" {
 
 	/// Register DELETE on group.
 	pub fn group_DELETE(group:ptr path:str handler:ptr -- )
+
+	// ============================================================
+	// Static File Serving
+	// ============================================================
+
+	/// Serve a single file from the filesystem.
+	/// Automatically detects MIME type from file extension.
+	/// Returns 404 if file not found, 403 for path traversal attempts.
+	/// @param c Ctx Context
+	/// @param filepath str Path to file on filesystem
+	/// @example c "/var/www/index.html" http::static_file
+	pub fn static_file(c:Ctx filepath:str -- )
+
+	/// Serve files from a directory.
+	/// Maps URL paths to filesystem paths. Use with a wildcard route (/*).
+	/// Automatically serves index.html for directory requests.
+	/// Returns 404 if file not found, 403 for path traversal attempts.
+	/// @param c Ctx Context
+	/// @param prefix str URL prefix to strip (e.g., "/static")
+	/// @param fs_path str Filesystem directory path (e.g., "./public")
+	/// @example
+	/// // Serve files from ./public at /static/*
+	/// fn handle_static(c:ptr -- ) {
+	///     -> c
+	///     c "/static" "./public" http::static
+	/// }
+	/// e "/static/*" &handle_static http::GET
+	pub fn static(c:Ctx prefix:str fs_path:str -- )
 }

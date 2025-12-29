@@ -271,6 +271,23 @@ qd_exec_result usr_http_group_PUT(qd_context* ctx);
  */
 qd_exec_result usr_http_group_DELETE(qd_context* ctx);
 
+// ============================================================
+// Static File Serving
+// ============================================================
+
+/**
+ * @brief Serve a single file
+ * Stack: ( ctx:Ctx filepath:str -- )
+ */
+qd_exec_result usr_http_static_file(qd_context* ctx);
+
+/**
+ * @brief Serve files from directory (used in handler)
+ * Maps request path to filesystem. Must be called in a route handler.
+ * Stack: ( ctx:Ctx prefix:str fs_path:str -- )
+ */
+qd_exec_result usr_http_static(qd_context* ctx);
+
 #ifdef __cplusplus
 }
 #endif

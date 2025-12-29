@@ -693,6 +693,8 @@ qd_exec_result usr_str_char_at(qd_context* ctx) {
 
 	if (index < 0 || (size_t)index >= str_len) {
 		qd_string_release(str_elem.value.s);
+		ctx->error_code = STR_ERR_OUT_OF_BOUNDS;
+		set_error_msg(ctx, "index out of bounds");
 		qd_push_i(ctx, STR_ERR_OUT_OF_BOUNDS);
 		return (qd_exec_result){STR_ERR_OUT_OF_BOUNDS};
 	}
