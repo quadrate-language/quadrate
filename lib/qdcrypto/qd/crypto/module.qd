@@ -24,5 +24,6 @@
 /// h release
 
 use "crc32.qd"
+use "md5.qd"
 use "sha256.qd"
 use "sha512.qd"

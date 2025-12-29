@@ -91,7 +91,7 @@ fn hash_file(path:str binary_mode:i64 tag_mode:i64 zero_mode:i64 -- ) {
 			-> length
 			-> buf
 
-			buf length crypto::sha256_bytes -> hash_str
+			buf length crypto::sha256_bytes! -> hash_str
 
 			tag_mode if {
 				"SHA256 (" print path print ") = " print hash_str print

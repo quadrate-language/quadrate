@@ -5,10 +5,10 @@ use str
 fn main() {
 	// Test streaming SHA-256
 	crypto::Sha256 {} -> h
-	h "Hello" sha256_update -> h
-	h " World" sha256_update -> h
-	h finalize -> hash
-	h sha256_release
+	h "Hello" update! -> h
+	h " World" update! -> h
+	h finish! -> hash
+	h release
 
 	hash print nl
 
