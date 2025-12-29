@@ -882,6 +882,7 @@ qd_context* qd_create_context(size_t stack_size) {
 		}
 		ctx->error_code = 0;
 		ctx->error_msg = NULL;
+		ctx->error_context = NULL;
 		ctx->argc = 0;
 		ctx->argv = NULL;
 		ctx->program_name = NULL;
@@ -900,6 +901,9 @@ void qd_free_context(qd_context* ctx) {
 	}
 	if (ctx->error_msg) {
 		free(ctx->error_msg);
+	}
+	if (ctx->error_context) {
+		free(ctx->error_context);
 	}
 	free(ctx);
 }
@@ -933,6 +937,17 @@ qd_context* qd_clone_context(const qd_context* src) {
 		}
 	} else {
 		ctx->error_msg = NULL;
+	}
+	if (src->error_context != NULL) {
+		ctx->error_context = strdup(src->error_context);
+		if (ctx->error_context == NULL) {
+			if (ctx->error_msg) free(ctx->error_msg);
+			qd_stack_destroy(ctx->st);
+			free(ctx);
+			return NULL;
+		}
+	} else {
+		ctx->error_context = NULL;
 	}
 
 	/* Share command-line arguments (not copied) */
@@ -1006,17 +1021,61 @@ void qd_print_stack_trace(qd_context* ctx) {
 	}
 }
 
+void qd_set_error_context(qd_context* ctx, const char* context) {
+	if (ctx->error_context) {
+		free(ctx->error_context);
+	}
+	ctx->error_context = context ? strdup(context) : NULL;
+}
+
+void qd_clear_error_context(qd_context* ctx) {
+	if (ctx->error_context) {
+		free(ctx->error_context);
+		ctx->error_context = NULL;
+	}
+}
+
 void qd_print_error_msg(qd_context* ctx, const char* func_name) {
 	// Check NO_COLOR environment variable
 	const bool use_color = getenv("NO_COLOR") == NULL;
 	const char* color_red = use_color ? "\x1b[1;31m" : "";
+	const char* color_dim = use_color ? "\x1b[2m" : "";
 	const char* color_reset = use_color ? "\x1b[0m" : "";
 
-	if (ctx->error_msg && ctx->error_msg[0] != '\0') {
-		fprintf(stderr, "%sFatal error:%s function '%s' failed: %s\n", color_red, color_reset, func_name,
-				ctx->error_msg);
+	fprintf(stderr, "%sFatal error:%s ", color_red, color_reset);
+
+	// Build error chain from call stack (bottom to top, i.e., main -> ... -> current)
+	if (ctx->call_stack_depth > 0) {
+		for (size_t i = 0; i < ctx->call_stack_depth; i++) {
+			const char* name = ctx->call_stack[i];
+			// Extract just the function name (after :: if present)
+			const char* short_name = strrchr(name, ':');
+			if (short_name && short_name > name && *(short_name - 1) == ':') {
+				short_name++; // Skip past ::
+			} else {
+				short_name = name;
+			}
+			fprintf(stderr, "%s%s%s -> ", color_dim, short_name, color_reset);
+		}
+	}
+
+	// Print the failing function name
+	fprintf(stderr, "%s", func_name);
+
+	// Print user-defined context if available, then the error message
+	if (ctx->error_context && ctx->error_context[0] != '\0') {
+		if (ctx->error_msg && ctx->error_msg[0] != '\0') {
+			fprintf(stderr, " failed: %s: %s\n", ctx->error_context, ctx->error_msg);
+		} else {
+			fprintf(stderr, " failed: %s\n", ctx->error_context);
+		}
+		// Clear context after use
+		free(ctx->error_context);
+		ctx->error_context = NULL;
+	} else if (ctx->error_msg && ctx->error_msg[0] != '\0') {
+		fprintf(stderr, " failed: %s\n", ctx->error_msg);
 	} else {
-		fprintf(stderr, "%sFatal error:%s function '%s' failed\n", color_red, color_reset, func_name);
+		fprintf(stderr, " failed\n");
 	}
 }
 

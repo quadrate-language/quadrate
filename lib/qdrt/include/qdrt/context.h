@@ -54,6 +54,9 @@ typedef struct {
 	const char* call_stack_files[QD_MAX_CALL_STACK_DEPTH]; ///< Source files
 	size_t call_stack_lines[QD_MAX_CALL_STACK_DEPTH];	   ///< Line numbers
 	size_t call_stack_depth;							   ///< Current depth of the call stack
+
+	/** @brief User-defined error context (prepended to error_msg on failure) */
+	char* error_context;
 } qd_context;
 
 #ifdef __cplusplus

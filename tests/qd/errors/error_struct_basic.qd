@@ -1,0 +1,22 @@
+// Test basic error syntax with anonymous error { } and panic
+
+fn validate(x:i64 -- )! {
+    -> x
+    x 0 < if {
+        error { code = 100 message = "must be non-negative" } panic
+    }
+}
+
+fn test_success()! {
+    5 validate!
+    "ok" print nl
+}
+
+fn test_fail()! {
+    -5 validate!
+    "should not reach" print nl
+}
+
+fn main() {
+    test_success!
+}

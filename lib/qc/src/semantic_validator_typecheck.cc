@@ -888,6 +888,39 @@ namespace Qd {
 					}
 				}
 
+				// Special handling for anonymous error literal: error { code = X message = Y }
+				// This pushes message then code onto the stack (for panic to consume)
+				if (name == "__error__") {
+					// Validate only 'code' and 'message' fields are allowed
+					bool hasCode = false;
+					bool hasMessage = false;
+					for (const auto& fieldInit : fieldInits) {
+						const std::string& fieldName = fieldInit.fieldName;
+						if (fieldName == "code") {
+							hasCode = true;
+						} else if (fieldName == "message") {
+							hasMessage = true;
+						} else {
+							std::string errorMsg = "Unknown field '";
+							errorMsg += fieldName;
+							errorMsg += "' in error literal; only 'code' and 'message' are allowed";
+							reportError(construct, errorMsg.c_str());
+						}
+					}
+					if (!hasCode) {
+						reportError(construct, "Error literal requires 'code' field");
+					}
+					if (!hasMessage) {
+						reportError(construct, "Error literal requires 'message' field");
+					}
+					// Pushes message (str) then code (int) onto stack
+					typeStack.push_back(StackValueType::STRING);
+					structTypeStack.push_back("");
+					typeStack.push_back(StackValueType::INT);
+					structTypeStack.push_back("");
+					break;
+				}
+
 				if (structDecl) {
 					std::unordered_set<std::string> providedFields;
 
@@ -926,6 +959,15 @@ namespace Qd {
 							errorMsg += "' in struct '";
 							errorMsg += name;
 							errorMsg += "'";
+							// Try to suggest a similar field name
+							if (structFieldTypes != nullptr) {
+								std::string suggestion = findSimilarNameInMap(fieldName, *structFieldTypes);
+								if (!suggestion.empty()) {
+									errorMsg += "; did you mean '";
+									errorMsg += suggestion;
+									errorMsg += "'?";
+								}
+							}
 							reportError(construct, errorMsg.c_str());
 							continue;
 						}
@@ -1997,6 +2039,25 @@ namespace Qd {
 				const std::string& varName = fieldAccess->varName();
 				const std::string& fieldName = fieldAccess->fieldName();
 
+				// Special handling for global error access: error @code or error @message
+				if (varName == "__global_error__") {
+					if (fieldName == "code") {
+						typeStack.push_back(StackValueType::INT);
+						structTypeStack.push_back("");
+					} else if (fieldName == "message") {
+						typeStack.push_back(StackValueType::STRING);
+						structTypeStack.push_back("");
+					} else {
+						std::string errorMsg = "Unknown field '";
+						errorMsg += fieldName;
+						errorMsg += "' in error; only 'code' and 'message' are available";
+						reportError(fieldAccess, errorMsg.c_str());
+						typeStack.push_back(StackValueType::ANY);
+						structTypeStack.push_back("");
+					}
+					break;
+				}
+
 				// Check if varName is a struct type name (inline struct field access)
 				// e.g., "100 200 IntPair @x" - IntPair is a struct type, not a variable
 				// We distinguish inline construction from accessing an existing struct by checking:
@@ -2088,6 +2149,13 @@ namespace Qd {
 							errorMsg += "' has no field named '";
 							errorMsg += fieldName;
 							errorMsg += "'";
+							// Suggest a similar field name
+							std::string suggestion = findSimilarNameInMap(fieldName, fields);
+							if (!suggestion.empty()) {
+								errorMsg += "; did you mean '";
+								errorMsg += suggestion;
+								errorMsg += "'?";
+							}
 							reportError(fieldAccess, errorMsg.c_str());
 							fieldType = StackValueType::ANY; // Continue with ANY to avoid cascading errors
 						}
@@ -2127,6 +2195,27 @@ namespace Qd {
 							errorMsg += " @";
 							errorMsg += fieldName;
 							errorMsg += "': Unknown variable or field";
+							// Try to suggest a similar variable name first
+							std::string varSuggestion = findSimilarNameInMap(varName, localVariables);
+							if (!varSuggestion.empty()) {
+								errorMsg += "; did you mean variable '";
+								errorMsg += varSuggestion;
+								errorMsg += "'?";
+							} else {
+								// Try to find a similar field name across all structs
+								std::unordered_set<std::string> allFields;
+								for (const auto& structEntry : mStructFieldTypes) {
+									for (const auto& field : structEntry.second) {
+										allFields.insert(field.first);
+									}
+								}
+								std::string fieldSuggestion = findSimilarName(fieldName, allFields);
+								if (!fieldSuggestion.empty()) {
+									errorMsg += "; did you mean field '";
+									errorMsg += fieldSuggestion;
+									errorMsg += "'?";
+								}
+							}
 							reportError(fieldAccess, errorMsg.c_str());
 							fieldType = StackValueType::ANY;
 						}
@@ -2170,6 +2259,13 @@ namespace Qd {
 							errorMsg += "' does not exist in struct '";
 							errorMsg += structType;
 							errorMsg += "'";
+							// Suggest a similar field name
+							std::string suggestion = findSimilarNameInMap(fieldName, fields);
+							if (!suggestion.empty()) {
+								errorMsg += "; did you mean '";
+								errorMsg += suggestion;
+								errorMsg += "'?";
+							}
 							reportError(fieldSet, errorMsg.c_str());
 						}
 					}
@@ -2201,6 +2297,27 @@ namespace Qd {
 							errorMsg += "' or field '";
 							errorMsg += fieldName;
 							errorMsg += "'";
+							// Try to suggest a similar variable name first
+							std::string varSuggestion = findSimilarNameInMap(varName, localVariables);
+							if (!varSuggestion.empty()) {
+								errorMsg += "; did you mean variable '";
+								errorMsg += varSuggestion;
+								errorMsg += "'?";
+							} else {
+								// Try to find a similar field name across all structs
+								std::unordered_set<std::string> allFields;
+								for (const auto& structEntry : mStructFieldTypes) {
+									for (const auto& field : structEntry.second) {
+										allFields.insert(field.first);
+									}
+								}
+								std::string fieldSuggestion = findSimilarName(fieldName, allFields);
+								if (!fieldSuggestion.empty()) {
+									errorMsg += "; did you mean field '";
+									errorMsg += fieldSuggestion;
+									errorMsg += "'?";
+								}
+							}
 							reportError(fieldSet, errorMsg.c_str());
 						}
 					}
@@ -2840,7 +2957,7 @@ namespace Qd {
 			name = "shr";
 		}
 
-		// panic instruction: ( msg code -- ) sets error flag
+		// panic instruction: ( msg code -- ) sets error flag and returns from function
 		// Can only be called inside fallible functions (marked with !)
 		if (strcmp(name, "panic") == 0) {
 			if (!mCurrentFunctionFallible) {
@@ -2848,9 +2965,12 @@ namespace Qd {
 						node, "'panic' can only be used inside fallible functions (marked with !)", reportErrors);
 				return;
 			}
+
+			// Requires (msg code) on stack
 			if (typeStack.size() < 2) {
-				reportErrorConditional(
-						node, "Type error in 'panic': Stack underflow (requires msg and code)", reportErrors);
+				reportErrorConditional(node,
+						"Type error in 'panic': Stack underflow (requires msg and code)",
+						reportErrors);
 				return;
 			}
 			// Pop msg and code

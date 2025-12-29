@@ -634,7 +634,12 @@ namespace Qd {
 					AstNodeIdentifier* varIdent = static_cast<AstNodeIdentifier*>(tempNodes.back());
 					tempNodes.pop_back();
 
-					AstNodeFieldAccess* fieldAccess = new AstNodeFieldAccess(varIdent->name(), fieldName);
+					// Special handling for 'error @field' - access global error struct
+					std::string varName = varIdent->name();
+					if (varName == "error") {
+						varName = "__global_error__";
+					}
+					AstNodeFieldAccess* fieldAccess = new AstNodeFieldAccess(varName, fieldName);
 					setNodePosition(fieldAccess, scanner, src);
 					delete varIdent;
 					tempNodes.push_back(fieldAccess);
@@ -995,6 +1000,17 @@ namespace Qd {
 			// Save identifier position for potential struct construction
 			size_t identPos = u8t_scanner_token_start(scanner);
 			std::string identName(text);
+
+			// Check for anonymous error literal: error { code = X message = Y }
+			if (identName == "error") {
+				char32_t errNextToken = peekNextNonWhitespace(scanner, src);
+				if (errNextToken == '{') {
+					u8t_scanner_scan(scanner); // Consume '{'
+					// Parse as anonymous error struct using special name __error__
+					return parseStructConstruction("__error__", {}, scanner, errorReporter, src, identPos);
+				}
+				// Note: error @field is handled in parseBlockBody via sawAt flag
+			}
 
 			// Check for scoped identifier (module::function, module::constant, or module::StructName)
 			char32_t nextToken = u8t_scanner_peek(scanner);
@@ -1707,7 +1723,12 @@ namespace Qd {
 					AstNodeIdentifier* varIdent = static_cast<AstNodeIdentifier*>(tempNodes.back());
 					tempNodes.pop_back();
 
-					AstNodeFieldAccess* fieldAccess = new AstNodeFieldAccess(varIdent->name(), fieldName);
+					// Special handling for 'error @field' - access global error struct
+					std::string varName = varIdent->name();
+					if (varName == "error") {
+						varName = "__global_error__";
+					}
+					AstNodeFieldAccess* fieldAccess = new AstNodeFieldAccess(varName, fieldName);
 					setNodePosition(fieldAccess, scanner, src);
 					delete varIdent;
 					tempNodes.push_back(fieldAccess);
@@ -2187,6 +2208,35 @@ namespace Qd {
 						size_t identPos = u8t_scanner_token_start(scanner);
 						std::string identName(text);
 
+						// Check for anonymous error literal: error { code = X message = Y }
+						if (identName == "error") {
+							char32_t errNextToken = peekNextNonWhitespace(scanner, src);
+							if (errNextToken == '{') {
+								u8t_scanner_scan(scanner); // Consume '{'
+								// Parse as anonymous error struct using special name __error__
+								AstNodeStructConstruction* errorConstruct =
+										parseStructConstruction("__error__", {}, scanner, errorReporter, src, identPos);
+								if (errorConstruct) {
+									tempNodes.push_back(errorConstruct);
+								}
+								continue;
+							} else if (errNextToken == '@') {
+								// error @field - access global error struct
+								u8t_scanner_scan(scanner); // Consume '@'
+								char32_t fieldToken = u8t_scanner_scan(scanner);
+								if (fieldToken == U8T_IDENTIFIER) {
+									const char* fieldName = u8t_scanner_token_text(scanner, &n);
+									// Create special field access for global error
+									AstNodeFieldAccess* errorField = new AstNodeFieldAccess("__global_error__", fieldName);
+									setNodePosition(errorField, scanner, src);
+									tempNodes.push_back(errorField);
+								} else {
+									errorReporter->reportError(scanner, "Expected field name after 'error @'");
+								}
+								continue;
+							}
+						}
+
 						// Check for scoped identifier or struct construction
 						char32_t nextToken = u8t_scanner_peek(scanner);
 						if (nextToken == ':') {
@@ -2594,8 +2644,8 @@ namespace Qd {
 		return test;
 	}
 
-	static IAstNode* parseStructDeclaration(
-			u8t_scanner* scanner, ErrorReporter* errorReporter, const char* src, bool isPublic = false) {
+	static IAstNode* parseStructDeclaration(u8t_scanner* scanner, ErrorReporter* errorReporter, const char* src,
+			bool isPublic = false) {
 		size_t n;
 		char32_t token = u8t_scanner_scan(scanner);
 		if (token != U8T_IDENTIFIER) {
@@ -2764,7 +2814,12 @@ namespace Qd {
 					AstNodeIdentifier* varIdent = static_cast<AstNodeIdentifier*>(currentFieldNodes.back());
 					currentFieldNodes.pop_back();
 
-					AstNodeFieldAccess* fieldAccess = new AstNodeFieldAccess(varIdent->name(), fieldName);
+					// Special handling for 'error @field' - access global error struct
+					std::string varName = varIdent->name();
+					if (varName == "error") {
+						varName = "__global_error__";
+					}
+					AstNodeFieldAccess* fieldAccess = new AstNodeFieldAccess(varName, fieldName);
 					setNodePosition(fieldAccess, scanner, src);
 					delete varIdent;
 					currentFieldNodes.push_back(fieldAccess);
@@ -2841,6 +2896,22 @@ namespace Qd {
 				}
 
 				// Not a field name, parse as expression element
+
+				// Check for anonymous error literal: error { code = X message = Y }
+				if (strcmp(text, "error") == 0) {
+					char32_t errNextToken = peekNextNonWhitespace(scanner, src);
+					if (errNextToken == '{') {
+						size_t errorPos = u8t_scanner_token_start(scanner);
+						u8t_scanner_scan(scanner); // Consume '{'
+						AstNodeStructConstruction* errorConstruct =
+								parseStructConstruction("__error__", {}, scanner, errorReporter, src, errorPos);
+						if (errorConstruct) {
+							currentFieldNodes.push_back(errorConstruct);
+						}
+						continue;
+					}
+				}
+
 				// Check if it's a struct construction (nested) - StructName { ... } or StructName<T> { ... }
 				// Only treat '<' as generic type args if identifier starts with uppercase (struct names)
 				char32_t nextNonWs = peekNextNonWhitespace(scanner, src);
@@ -3443,7 +3514,8 @@ namespace Qd {
 								synchronize(&scanner);
 							}
 						} else {
-							errorReporter.reportError(&scanner, "Expected 'fn', 'struct', or 'const' after 'pub'");
+							errorReporter.reportError(
+									&scanner, "Expected 'fn', 'struct', or 'const' after 'pub'");
 							synchronize(&scanner);
 						}
 					} else {

@@ -752,6 +752,24 @@ void qd_print_stack_trace(qd_context* ctx);
 void qd_print_error_msg(qd_context* ctx, const char* func_name);
 
 /**
+ * @brief Set user-defined error context
+ *
+ * Sets a context string that will be prepended to the error message
+ * when a failable function fails. Cleared automatically after use.
+ *
+ * @param ctx Execution context
+ * @param context Context string (e.g., "reading config file")
+ */
+void qd_set_error_context(qd_context* ctx, const char* context);
+
+/**
+ * @brief Clear user-defined error context
+ *
+ * @param ctx Execution context
+ */
+void qd_clear_error_context(qd_context* ctx);
+
+/**
  * @brief Print the data stack contents for debugging
  *
  * Prints all values currently on the data stack to stderr.

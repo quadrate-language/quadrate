@@ -19,9 +19,10 @@ namespace Qd {
 			: mName(name), mIsPublic(isPublic), mParent(nullptr), mLine(0), mColumn(0) {
 		}
 
-		AstNodeStructDeclaration(
-				const std::string& name, const std::vector<std::string>& typeParams, bool isPublic = false)
-			: mName(name), mTypeParams(typeParams), mIsPublic(isPublic), mParent(nullptr), mLine(0), mColumn(0) {
+		AstNodeStructDeclaration(const std::string& name, const std::vector<std::string>& typeParams,
+				bool isPublic = false)
+			: mName(name), mTypeParams(typeParams), mIsPublic(isPublic), mParent(nullptr),
+			  mLine(0), mColumn(0) {
 		}
 
 		~AstNodeStructDeclaration() {

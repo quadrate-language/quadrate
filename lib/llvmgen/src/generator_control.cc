@@ -749,6 +749,36 @@ namespace Qd {
 			const std::string& structName = construct->structName();
 			const auto& fieldInits = construct->fieldInits();
 
+			// Special handling for anonymous error literal: error { code = X message = Y }
+			// This just pushes message then code onto the stack (for panic to consume)
+			if (structName == "__error__") {
+				// Find message and code initializers
+				const StructFieldInit* messageInit = nullptr;
+				const StructFieldInit* codeInit = nullptr;
+				for (const auto& init : fieldInits) {
+					if (init.fieldName == "message") {
+						messageInit = &init;
+					} else if (init.fieldName == "code") {
+						codeInit = &init;
+					}
+				}
+
+				// Generate code for message first (goes on stack first)
+				if (messageInit) {
+					for (IAstNode* valueNode : messageInit->valueNodes) {
+						generateNode(valueNode, ctx);
+					}
+				}
+
+				// Then generate code for code (goes on top of stack)
+				if (codeInit) {
+					for (IAstNode* valueNode : codeInit->valueNodes) {
+						generateNode(valueNode, ctx);
+					}
+				}
+				break;
+			}
+
 			// Get struct layout to know field order (use helper to handle qualified names)
 			const StructLayout* layoutPtr = findStructDefinition(structName);
 			if (layoutPtr == nullptr) {

@@ -431,6 +431,13 @@ namespace Qd {
 									moduleIt->second.find(structTypeName) == moduleIt->second.end()) {
 								std::string errorMsg =
 										"Struct '" + structTypeName + "' not found in module '" + moduleName + "'";
+								// Suggest a similar struct name from the module
+								if (moduleIt != mModuleStructs.end()) {
+									std::string suggestion = findSimilarNameInMap(structTypeName, moduleIt->second);
+									if (!suggestion.empty()) {
+										errorMsg += "; did you mean '" + suggestion + "'?";
+									}
+								}
 								reportError(field, errorMsg.c_str());
 							}
 						}
@@ -560,6 +567,17 @@ namespace Qd {
 		if (node->type() == IAstNode::Type::STRUCT_CONSTRUCTION) {
 			AstNodeStructConstruction* construct = static_cast<AstNodeStructConstruction*>(node);
 			const std::string& structName = construct->structName();
+
+			// Special handling for anonymous error literal
+			if (structName == "__error__") {
+				// Validate field initializer expressions
+				for (const auto& fieldInit : construct->fieldInits()) {
+					for (IAstNode* valueNode : fieldInit.valueNodes) {
+						validateReferencesInternal(valueNode, localVariables, iteratorNames);
+					}
+				}
+				return;
+			}
 
 			bool validStruct = false;
 
@@ -721,6 +739,14 @@ namespace Qd {
 							errorMsg += "' not found in module '";
 							errorMsg += scopeName;
 							errorMsg += "'";
+							// Try to suggest a similar name from the module
+							auto moduleFuncsIt = mModuleFunctions.find(scopeName);
+							if (moduleFuncsIt != mModuleFunctions.end()) {
+								std::string suggestion = findSimilarNameInMap(functionName, moduleFuncsIt->second);
+								if (!suggestion.empty()) {
+									errorMsg += "; did you mean '" + suggestion + "'?";
+								}
+							}
 							reportError(scoped, errorMsg.c_str());
 						}
 					}

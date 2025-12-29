@@ -367,6 +367,51 @@ namespace Qd {
 		const std::string& varName = fieldAccess->varName();
 		const std::string& fieldName = fieldAccess->fieldName();
 
+		// Special handling for global error access: error @code or error @message
+		if (varName == "__global_error__") {
+			// Context struct layout: { stack*, error_code (i64), error_msg (char*), ... }
+			llvm::Type* contextTy = llvm::StructType::get(
+					*context,
+					{llvm::PointerType::getUnqual(*context), // st
+					 builder->getInt64Ty(),                  // error_code
+					 llvm::PointerType::getUnqual(*context), // error_msg
+					 builder->getInt32Ty()},                 // argc (partial struct, enough for our needs)
+					false);
+
+			if (fieldName == "code") {
+				// Access ctx->error_code (offset 1) and push as int
+				llvm::Value* errorCodePtr = builder->CreateStructGEP(contextTy, ctx, 1, "error_code_ptr");
+				llvm::Value* errorCode = builder->CreateLoad(builder->getInt64Ty(), errorCodePtr, "error_code");
+
+				// Push error code onto stack (use class member pushIntFn)
+				if (!pushIntFn) {
+					auto fnTy = llvm::FunctionType::get(execResultTy, {contextPtrTy, builder->getInt64Ty()}, false);
+					pushIntFn = llvm::Function::Create(fnTy, llvm::Function::ExternalLinkage, "qd_push_i", *module);
+				}
+				builder->CreateCall(pushIntFn, {ctx, errorCode});
+			} else if (fieldName == "message") {
+				// Access ctx->error_msg (offset 2) and push as string
+				llvm::Value* errorMsgPtr = builder->CreateStructGEP(contextTy, ctx, 2, "error_msg_ptr");
+				llvm::Value* errorMsg =
+						builder->CreateLoad(llvm::PointerType::getUnqual(*context), errorMsgPtr, "error_msg");
+
+				// If error_msg is NULL, use empty string
+				llvm::Value* isNull = builder->CreateICmpEQ(
+						errorMsg, llvm::ConstantPointerNull::get(llvm::PointerType::getUnqual(*context)));
+				llvm::Value* emptyStr = builder->CreateGlobalString("", "empty_str");
+				llvm::Value* msgToUse = builder->CreateSelect(isNull, emptyStr, errorMsg, "msg_to_use");
+
+				// Push error message onto stack using qd_push_str_cstr (use class member pushStrFn)
+				if (!pushStrFn) {
+					auto fnTy = llvm::FunctionType::get(
+							execResultTy, {contextPtrTy, llvm::PointerType::getUnqual(*context)}, false);
+					pushStrFn = llvm::Function::Create(fnTy, llvm::Function::ExternalLinkage, "qd_push_str_cstr", *module);
+				}
+				builder->CreateCall(pushStrFn, {ctx, msgToUse});
+			}
+			return;
+		}
+
 		llvm::Value* structPtr = nullptr;
 		std::string structTypeName;
 		bool needsReleaseAfterAccess = false; // Track if we need to release the struct after field access
