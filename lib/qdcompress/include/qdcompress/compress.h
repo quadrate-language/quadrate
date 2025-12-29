@@ -6,8 +6,8 @@
 #ifndef QDCOMPRESS_H
 #define QDCOMPRESS_H
 
-#include <qdrt/exec_result.h>
 #include <qdrt/context.h>
+#include <qdrt/exec_result.h>
 
 #ifdef __cplusplus
 extern "C" {

@@ -1,0 +1,569 @@
+/// SHA-256 Implementation
+/// ======================
+///
+/// SHA-256 hash with streaming and one-shot APIs.
+///
+/// @example
+/// use crypto
+///
+/// // One-shot
+/// "Hello" sha256! -> hash
+///
+/// // Streaming
+/// Sha256 {} -> h
+/// h "Hello" update! -> h
+/// h " World" update! -> h
+/// h finish! -> hash
+/// h release
+
+use bits
+use mem
+use str
+
+// SHA-256 initial hash values
+const SHA256_H0 = 1779033703
+const SHA256_H1 = 3144134277
+const SHA256_H2 = 1013904242
+const SHA256_H3 = 2773480762
+const SHA256_H4 = 1359893119
+const SHA256_H5 = 2600822924
+const SHA256_H6 = 528734635
+const SHA256_H7 = 1541459225
+
+/// SHA-256 hasher state for streaming computation.
+/// @field h0-h7 Hash state (initialized to standard IV)
+/// @field buf Buffer for incomplete blocks
+/// @field buflen Current buffer fill level
+/// @field total Total bytes processed
+pub struct Sha256 {
+	h0:i64 = 1779033703
+	h1:i64 = 3144134277
+	h2:i64 = 1013904242
+	h3:i64 = 2773480762
+	h4:i64 = 1359893119
+	h5:i64 = 2600822924
+	h6:i64 = 528734635
+	h7:i64 = 1541459225
+	buf:ptr = 0
+	buflen:i64 = 0
+	total:i64 = 0
+}
+
+// SHA-256 round constants
+fn sha256_make_k( -- k:ptr) {
+	512 mem::alloc! -> k
+	1116352408 k 0   mem::set_i64
+	1899447441 k 8   mem::set_i64
+	3049323471 k 16  mem::set_i64
+	3921009573 k 24  mem::set_i64
+	961987163 k 32  mem::set_i64
+	1508970993 k 40  mem::set_i64
+	2453635748 k 48  mem::set_i64
+	2870763221 k 56  mem::set_i64
+	3624381080 k 64  mem::set_i64
+	310598401 k 72  mem::set_i64
+	607225278 k 80  mem::set_i64
+	1426881987 k 88  mem::set_i64
+	1925078388 k 96  mem::set_i64
+	2162078206 k 104 mem::set_i64
+	2614888103 k 112 mem::set_i64
+	3248222580 k 120 mem::set_i64
+	3835390401 k 128 mem::set_i64
+	4022224774 k 136 mem::set_i64
+	264347078 k 144 mem::set_i64
+	604807628 k 152 mem::set_i64
+	770255983 k 160 mem::set_i64
+	1249150122 k 168 mem::set_i64
+	1555081692 k 176 mem::set_i64
+	1996064986 k 184 mem::set_i64
+	2554220882 k 192 mem::set_i64
+	2821834349 k 200 mem::set_i64
+	2952996808 k 208 mem::set_i64
+	3210313671 k 216 mem::set_i64
+	3336571891 k 224 mem::set_i64
+	3584528711 k 232 mem::set_i64
+	113926993 k 240 mem::set_i64
+	338241895 k 248 mem::set_i64
+	666307205 k 256 mem::set_i64
+	773529912 k 264 mem::set_i64
+	1294757372 k 272 mem::set_i64
+	1396182291 k 280 mem::set_i64
+	1695183700 k 288 mem::set_i64
+	1986661051 k 296 mem::set_i64
+	2177026350 k 304 mem::set_i64
+	2456956037 k 312 mem::set_i64
+	2730485921 k 320 mem::set_i64
+	2820302411 k 328 mem::set_i64
+	3259730800 k 336 mem::set_i64
+	3345764771 k 344 mem::set_i64
+	3516065817 k 352 mem::set_i64
+	3600352804 k 360 mem::set_i64
+	4094571909 k 368 mem::set_i64
+	275423344 k 376 mem::set_i64
+	430227734 k 384 mem::set_i64
+	506948616 k 392 mem::set_i64
+	659060556 k 400 mem::set_i64
+	883997877 k 408 mem::set_i64
+	958139571 k 416 mem::set_i64
+	1322822218 k 424 mem::set_i64
+	1537002063 k 432 mem::set_i64
+	1747873779 k 440 mem::set_i64
+	1955562222 k 448 mem::set_i64
+	2024104815 k 456 mem::set_i64
+	2227730452 k 464 mem::set_i64
+	2361852424 k 472 mem::set_i64
+	2428436474 k 480 mem::set_i64
+	2756734187 k 488 mem::set_i64
+	3204031479 k 496 mem::set_i64
+	3329325298 k 504 mem::set_i64
+	k
+}
+
+fn sha256_rotr32(x:i64 n:i64 -- result:i64) {
+	-> n -> x
+	x 32 bits::mask -> x
+	x n shr x 32 n - shl or 32 bits::mask
+}
+
+fn sha256_ch(x:i64 y:i64 z:i64 -- result:i64) {
+	-> z -> y -> x
+	x y and x not z and xor 32 bits::mask
+}
+
+fn sha256_maj(x:i64 y:i64 z:i64 -- result:i64) {
+	-> z -> y -> x
+	x y and x z and xor y z and xor 32 bits::mask
+}
+
+fn sha256_sigma0(x:i64 -- result:i64) {
+	-> x
+	x 2 sha256_rotr32 x 13 sha256_rotr32 xor x 22 sha256_rotr32 xor
+}
+
+fn sha256_sigma1(x:i64 -- result:i64) {
+	-> x
+	x 6 sha256_rotr32 x 11 sha256_rotr32 xor x 25 sha256_rotr32 xor
+}
+
+fn sha256_gamma0(x:i64 -- result:i64) {
+	-> x
+	x 7 sha256_rotr32 x 18 sha256_rotr32 xor x 3 shr xor 32 bits::mask
+}
+
+fn sha256_gamma1(x:i64 -- result:i64) {
+	-> x
+	x 17 sha256_rotr32 x 19 sha256_rotr32 xor x 10 shr xor 32 bits::mask
+}
+
+fn sha256_add32(a:i64 b:i64 -- result:i64) {
+	+ 32 bits::mask
+}
+
+// Read 32-bit big-endian from buffer
+fn sha256_read_u32_be(buf:ptr offset:i64 -- val:i64) {
+	-> offset -> buf
+	buf offset mem::get_byte 24 shl
+	buf offset 1 + mem::get_byte 16 shl or
+	buf offset 2 + mem::get_byte 8 shl or
+	buf offset 3 + mem::get_byte or
+}
+
+// Write 32-bit big-endian to buffer
+fn sha256_write_u32_be(buf:ptr offset:i64 val:i64 -- ) {
+	-> val -> offset -> buf
+	val 24 shr 255 and buf offset mem::set_byte
+	val 16 shr 255 and buf offset 1 + mem::set_byte
+	val 8 shr 255 and buf offset 2 + mem::set_byte
+	val 255 and buf offset 3 + mem::set_byte
+}
+
+// Process a single 64-byte block (returns updated h values)
+fn sha256_process_block(
+	hh0:i64 hh1:i64 hh2:i64 hh3:i64 hh4:i64 hh5:i64 hh6:i64 hh7:i64 block:ptr --
+	r0:i64 r1:i64 r2:i64 r3:i64 r4:i64 r5:i64 r6:i64 r7:i64
+) {
+	-> block
+	-> hh7 -> hh6 -> hh5 -> hh4 -> hh3 -> hh2 -> hh1 -> hh0
+
+	sha256_make_k -> k
+	512 mem::alloc! -> w
+
+	// Load message block into w[0..15]
+	0 16 1 for i {
+		block i 4 * sha256_read_u32_be w i 8 * mem::set_i64
+	}
+
+	// Expand to w[16..63]
+	16 64 1 for i {
+		w i 2 - 8 * mem::get_i64 sha256_gamma1 -> s1
+		w i 7 - 8 * mem::get_i64 -> w7
+		w i 15 - 8 * mem::get_i64 sha256_gamma0 -> s0
+		w i 16 - 8 * mem::get_i64 -> w16
+		s1 w7 sha256_add32 s0 sha256_add32 w16 sha256_add32 w i 8 * mem::set_i64
+	}
+
+	// Initialize working variables
+	hh0 -> a
+	hh1 -> b
+	hh2 -> cc
+	hh3 -> d
+	hh4 -> e
+	hh5 -> f
+	hh6 -> g
+	hh7 -> hhh
+
+	// 64 rounds
+	0 64 1 for i {
+		e sha256_sigma1 e f g sha256_ch sha256_add32 hhh sha256_add32
+		k i 8 * mem::get_i64 sha256_add32 w i 8 * mem::get_i64 sha256_add32 -> t1
+		a sha256_sigma0 a b cc sha256_maj sha256_add32 -> t2
+
+		g -> hhh
+		f -> g
+		e -> f
+		d t1 sha256_add32 -> e
+		cc -> d
+		b -> cc
+		a -> b
+		t1 t2 sha256_add32 -> a
+	}
+
+	w mem::free
+	k mem::free
+
+	// Return updated hash state
+	hh0 a sha256_add32
+	hh1 b sha256_add32
+	hh2 cc sha256_add32
+	hh3 d sha256_add32
+	hh4 e sha256_add32
+	hh5 f sha256_add32
+	hh6 g sha256_add32
+	hh7 hhh sha256_add32
+}
+
+/// Update SHA-256 state with additional data.
+/// @param h Sha256 The hasher state
+/// @param data str Data to hash
+/// @return h2 Sha256 Updated hasher state
+pub fn (h:Sha256) update(data:str -- h2:Sha256)! {
+	-> data
+
+	h @h0 -> hh0
+	h @h1 -> hh1
+	h @h2 -> hh2
+	h @h3 -> hh3
+	h @h4 -> hh4
+	h @h5 -> hh5
+	h @h6 -> hh6
+	h @h7 -> hh7
+	h @buf -> buf
+	h @buflen -> buflen
+	h @total -> total
+
+	// Lazy init buffer
+	buf 0 == if {
+		64 mem::alloc! -> buf
+	}
+
+	data str::len -> dlen
+	total dlen + -> total
+
+	0 -> i
+	loop {
+		i dlen >= if { break }
+
+		// Fill buffer
+		loop {
+			buflen 64 >= if { break }
+			i dlen >= if { break }
+			data i str::char_at! buf buflen mem::set_byte
+			buflen 1 + -> buflen
+			i 1 + -> i
+		}
+
+		// Process complete block
+		buflen 64 == if {
+			hh0 hh1 hh2 hh3 hh4 hh5 hh6 hh7 buf sha256_process_block
+			-> hh7 -> hh6 -> hh5 -> hh4 -> hh3 -> hh2 -> hh1 -> hh0
+			0 -> buflen
+		}
+	}
+
+	// Return new Sha256 with updated state
+	Sha256 {
+		h0 = hh0
+		h1 = hh1
+		h2 = hh2
+		h3 = hh3
+		h4 = hh4
+		h5 = hh5
+		h6 = hh6
+		h7 = hh7
+		buf = buf
+		buflen = buflen
+		total = total
+	}
+}
+
+/// Finalize SHA-256 and get result as hex string.
+/// @param h Sha256 The hasher state
+/// @return hash str 64-character hex string (lowercase)
+pub fn (h:Sha256) finish( -- hash:str)! {
+	h @h0 -> hh0
+	h @h1 -> hh1
+	h @h2 -> hh2
+	h @h3 -> hh3
+	h @h4 -> hh4
+	h @h5 -> hh5
+	h @h6 -> hh6
+	h @h7 -> hh7
+	h @buf -> buf
+	h @buflen -> buflen
+	h @total -> total
+
+	buf 0 == if {
+		64 mem::alloc! -> buf
+	}
+
+	// Pad message
+	128 buf buflen mem::set_byte
+	buflen 1 + -> buflen
+
+	// If not enough room for length, pad and process
+	buflen 56 > if {
+		loop {
+			buflen 64 >= if { break }
+			0 buf buflen mem::set_byte
+			buflen 1 + -> buflen
+		}
+		hh0 hh1 hh2 hh3 hh4 hh5 hh6 hh7 buf sha256_process_block
+		-> hh7 -> hh6 -> hh5 -> hh4 -> hh3 -> hh2 -> hh1 -> hh0
+		0 -> buflen
+	}
+
+	// Pad to 56 bytes
+	loop {
+		buflen 56 >= if { break }
+		0 buf buflen mem::set_byte
+		buflen 1 + -> buflen
+	}
+
+	// Append length in bits (big-endian, 64-bit)
+	total 8 * -> bitlen
+	buf 56 0 sha256_write_u32_be
+	buf 60 bitlen sha256_write_u32_be
+
+	hh0 hh1 hh2 hh3 hh4 hh5 hh6 hh7 buf sha256_process_block
+	-> hh7 -> hh6 -> hh5 -> hh4 -> hh3 -> hh2 -> hh1 -> hh0
+
+	// Convert to hex
+	64 mem::alloc! -> out
+	0 -> pos
+
+	// Write 8 hex chars for each word
+	0 8 1 for j {
+		hh0 28 j 4 * - shr 15 and -> nibble
+		nibble 10 < if { 48 nibble + } else { 87 nibble + }
+		out pos mem::set_byte
+		pos 1 + -> pos
+	}
+	0 8 1 for j {
+		hh1 28 j 4 * - shr 15 and -> nibble
+		nibble 10 < if { 48 nibble + } else { 87 nibble + }
+		out pos mem::set_byte
+		pos 1 + -> pos
+	}
+	0 8 1 for j {
+		hh2 28 j 4 * - shr 15 and -> nibble
+		nibble 10 < if { 48 nibble + } else { 87 nibble + }
+		out pos mem::set_byte
+		pos 1 + -> pos
+	}
+	0 8 1 for j {
+		hh3 28 j 4 * - shr 15 and -> nibble
+		nibble 10 < if { 48 nibble + } else { 87 nibble + }
+		out pos mem::set_byte
+		pos 1 + -> pos
+	}
+	0 8 1 for j {
+		hh4 28 j 4 * - shr 15 and -> nibble
+		nibble 10 < if { 48 nibble + } else { 87 nibble + }
+		out pos mem::set_byte
+		pos 1 + -> pos
+	}
+	0 8 1 for j {
+		hh5 28 j 4 * - shr 15 and -> nibble
+		nibble 10 < if { 48 nibble + } else { 87 nibble + }
+		out pos mem::set_byte
+		pos 1 + -> pos
+	}
+	0 8 1 for j {
+		hh6 28 j 4 * - shr 15 and -> nibble
+		nibble 10 < if { 48 nibble + } else { 87 nibble + }
+		out pos mem::set_byte
+		pos 1 + -> pos
+	}
+	0 8 1 for j {
+		hh7 28 j 4 * - shr 15 and -> nibble
+		nibble 10 < if { 48 nibble + } else { 87 nibble + }
+		out pos mem::set_byte
+		pos 1 + -> pos
+	}
+
+	out 64 mem::to_string -> result
+	out mem::free
+	// Note: buf is freed by release, not here
+	result
+}
+
+/// Free resources used by SHA-256 hasher.
+/// @param h Sha256 The hasher state to free
+pub fn (h:Sha256) release( -- ) {
+	h @buf -> buf
+	buf 0 != if {
+		buf mem::free
+	}
+}
+
+/// One-shot SHA-256 of a string.
+/// @param s str Input string
+/// @return hash str 64-character hex string
+/// @example "Hello" sha256! -> hash
+pub fn sha256(s:str -- hash:str)! {
+	-> s
+	Sha256 {} -> h
+	h s update! -> h
+	h finish! -> result
+	h release
+	result
+}
+
+/// Calculate SHA-256 hash of raw bytes.
+/// @param buf ptr Input buffer
+/// @param length i64 Length of buffer in bytes
+/// @return hash str 64-character hex string (lowercase)
+pub fn sha256_bytes(buf:ptr length:i64 -- hash:str)! {
+	-> length -> buf
+
+	// Initialize hash state
+	SHA256_H0 -> hh0
+	SHA256_H1 -> hh1
+	SHA256_H2 -> hh2
+	SHA256_H3 -> hh3
+	SHA256_H4 -> hh4
+	SHA256_H5 -> hh5
+	SHA256_H6 -> hh6
+	SHA256_H7 -> hh7
+
+	64 mem::alloc! -> block
+	0 -> buflen
+	0 -> total
+
+	// Process full blocks
+	0 -> i
+	loop {
+		i length >= if { break }
+
+		buf i mem::get_byte block buflen mem::set_byte
+		buflen 1 + -> buflen
+		total 1 + -> total
+
+		buflen 64 == if {
+			hh0 hh1 hh2 hh3 hh4 hh5 hh6 hh7 block sha256_process_block
+			-> hh7 -> hh6 -> hh5 -> hh4 -> hh3 -> hh2 -> hh1 -> hh0
+			0 -> buflen
+		}
+
+		i 1 + -> i
+	}
+
+	// Pad message
+	128 block buflen mem::set_byte
+	buflen 1 + -> buflen
+
+	// If not enough room for length, pad and process
+	buflen 56 > if {
+		loop {
+			buflen 64 >= if { break }
+			0 block buflen mem::set_byte
+			buflen 1 + -> buflen
+		}
+		hh0 hh1 hh2 hh3 hh4 hh5 hh6 hh7 block sha256_process_block
+		-> hh7 -> hh6 -> hh5 -> hh4 -> hh3 -> hh2 -> hh1 -> hh0
+		0 -> buflen
+	}
+
+	// Pad to 56 bytes
+	loop {
+		buflen 56 >= if { break }
+		0 block buflen mem::set_byte
+		buflen 1 + -> buflen
+	}
+
+	// Append length in bits (big-endian, 64-bit)
+	total 8 * -> bitlen
+	block 56 0 sha256_write_u32_be
+	block 60 bitlen sha256_write_u32_be
+
+	hh0 hh1 hh2 hh3 hh4 hh5 hh6 hh7 block sha256_process_block
+	-> hh7 -> hh6 -> hh5 -> hh4 -> hh3 -> hh2 -> hh1 -> hh0
+
+	// Convert to hex
+	64 mem::alloc! -> out
+	0 -> pos
+
+	0 8 1 for j {
+		hh0 28 j 4 * - shr 15 and -> nibble
+		nibble 10 < if { 48 nibble + } else { 87 nibble + }
+		out pos mem::set_byte
+		pos 1 + -> pos
+	}
+	0 8 1 for j {
+		hh1 28 j 4 * - shr 15 and -> nibble
+		nibble 10 < if { 48 nibble + } else { 87 nibble + }
+		out pos mem::set_byte
+		pos 1 + -> pos
+	}
+	0 8 1 for j {
+		hh2 28 j 4 * - shr 15 and -> nibble
+		nibble 10 < if { 48 nibble + } else { 87 nibble + }
+		out pos mem::set_byte
+		pos 1 + -> pos
+	}
+	0 8 1 for j {
+		hh3 28 j 4 * - shr 15 and -> nibble
+		nibble 10 < if { 48 nibble + } else { 87 nibble + }
+		out pos mem::set_byte
+		pos 1 + -> pos
+	}
+	0 8 1 for j {
+		hh4 28 j 4 * - shr 15 and -> nibble
+		nibble 10 < if { 48 nibble + } else { 87 nibble + }
+		out pos mem::set_byte
+		pos 1 + -> pos
+	}
+	0 8 1 for j {
+		hh5 28 j 4 * - shr 15 and -> nibble
+		nibble 10 < if { 48 nibble + } else { 87 nibble + }
+		out pos mem::set_byte
+		pos 1 + -> pos
+	}
+	0 8 1 for j {
+		hh6 28 j 4 * - shr 15 and -> nibble
+		nibble 10 < if { 48 nibble + } else { 87 nibble + }
+		out pos mem::set_byte
+		pos 1 + -> pos
+	}
+	0 8 1 for j {
+		hh7 28 j 4 * - shr 15 and -> nibble
+		nibble 10 < if { 48 nibble + } else { 87 nibble + }
+		out pos mem::set_byte
+		pos 1 + -> pos
+	}
+
+	out 64 mem::to_string -> result
+	out mem::free
+	block mem::free
+	result
+}

@@ -1,0 +1,558 @@
+/// SHA-512 Implementation
+/// ======================
+///
+/// SHA-512 hash with streaming and one-shot APIs.
+///
+/// @example
+/// use crypto
+///
+/// // One-shot
+/// "Hello" sha512! -> hash
+///
+/// // Streaming
+/// Sha512 {} -> h
+/// h "Hello" update! -> h
+/// h " World" update! -> h
+/// h finish! -> hash
+/// h release
+
+use mem
+use str
+
+// SHA-512 initial hash values (signed equivalents for values > 2^63-1)
+const SHA512_H0 = 7640891576956012808
+const SHA512_H1 = -4942790177534073029
+const SHA512_H2 = 4354685564936845355
+const SHA512_H3 = -6534734903238641935
+const SHA512_H4 = 5840696475078001361
+const SHA512_H5 = -7276294671716946913
+const SHA512_H6 = 2270897969802886507
+const SHA512_H7 = 6620516959819538809
+
+/// SHA-512 hasher state for streaming computation.
+pub struct Sha512 {
+	h0:i64 = 7640891576956012808
+	h1:i64 = -4942790177534073029
+	h2:i64 = 4354685564936845355
+	h3:i64 = -6534734903238641935
+	h4:i64 = 5840696475078001361
+	h5:i64 = -7276294671716946913
+	h6:i64 = 2270897969802886507
+	h7:i64 = 6620516959819538809
+	buf:ptr = 0
+	buflen:i64 = 0
+	total:i64 = 0
+}
+
+// SHA-512 round constants (signed equivalents for values > 2^63-1)
+fn sha512_make_k( -- k:ptr) {
+	640 mem::alloc! -> k
+	4794697086780616226 k 0 mem::set_i64
+	8158064640168781261 k 8 mem::set_i64
+	-5349999486874862801 k 16 mem::set_i64
+	-1606136188198331460 k 24 mem::set_i64
+	4131703408338449720 k 32 mem::set_i64
+	6480981068601479193 k 40 mem::set_i64
+	-7908458776815382629 k 48 mem::set_i64
+	-6116909921290321640 k 56 mem::set_i64
+	-2880145864133508542 k 64 mem::set_i64
+	1334009975649890238 k 72 mem::set_i64
+	2608012711638119052 k 80 mem::set_i64
+	6128411473006802146 k 88 mem::set_i64
+	8268148722764581231 k 96 mem::set_i64
+	-9160688886553864527 k 104 mem::set_i64
+	-7215885187991268811 k 112 mem::set_i64
+	-4495734319001033068 k 120 mem::set_i64
+	-1973867731355612462 k 128 mem::set_i64
+	-1171420211273849373 k 136 mem::set_i64
+	1135362057144423861 k 144 mem::set_i64
+	2597628984639134821 k 152 mem::set_i64
+	3308224258029322869 k 160 mem::set_i64
+	5365058923640841347 k 168 mem::set_i64
+	6679025012923562964 k 176 mem::set_i64
+	8573033837759648693 k 184 mem::set_i64
+	-7476448914759557205 k 192 mem::set_i64
+	-6327057829258317296 k 200 mem::set_i64
+	-5763719355590565569 k 208 mem::set_i64
+	-4658551843659510044 k 216 mem::set_i64
+	-4116276920077217854 k 224 mem::set_i64
+	-3051310485924567259 k 232 mem::set_i64
+	489312712824947311 k 240 mem::set_i64
+	1452737877330783856 k 248 mem::set_i64
+	2861767655752347644 k 256 mem::set_i64
+	3322285676063803686 k 264 mem::set_i64
+	5560940570517711597 k 272 mem::set_i64
+	5996557281743188959 k 280 mem::set_i64
+	7280758554555802590 k 288 mem::set_i64
+	8532644243296465576 k 296 mem::set_i64
+	-9096487096722542874 k 304 mem::set_i64
+	-7894198246740708037 k 312 mem::set_i64
+	-6719396339535248540 k 320 mem::set_i64
+	-6333637450476146687 k 328 mem::set_i64
+	-4446306890439682159 k 336 mem::set_i64
+	-4076793802049405392 k 344 mem::set_i64
+	-3345356375505022440 k 352 mem::set_i64
+	-2983346525034927856 k 360 mem::set_i64
+	-860691631967231958 k 368 mem::set_i64
+	1182934255886127544 k 376 mem::set_i64
+	1847814050463011016 k 384 mem::set_i64
+	2177327727835720531 k 392 mem::set_i64
+	2830643537854262169 k 400 mem::set_i64
+	3796741975233480872 k 408 mem::set_i64
+	4115178125766777443 k 416 mem::set_i64
+	5681478168544905931 k 424 mem::set_i64
+	6601373596472566643 k 432 mem::set_i64
+	7507060721942968483 k 440 mem::set_i64
+	8399075790359081724 k 448 mem::set_i64
+	8693463985226723168 k 456 mem::set_i64
+	-8878714635349349518 k 464 mem::set_i64
+	-8302665154208450068 k 472 mem::set_i64
+	-8016688836872298968 k 480 mem::set_i64
+	-6606660893046293015 k 488 mem::set_i64
+	-4685533653050689259 k 496 mem::set_i64
+	-4147400797238176981 k 504 mem::set_i64
+	-3880063495543823972 k 512 mem::set_i64
+	-3348786107499101689 k 520 mem::set_i64
+	-1523767162380948706 k 528 mem::set_i64
+	-757361751448694408 k 536 mem::set_i64
+	500013540394364858 k 544 mem::set_i64
+	748580250866718886 k 552 mem::set_i64
+	1242879168328830382 k 560 mem::set_i64
+	1977374033974150939 k 568 mem::set_i64
+	2944078676154940804 k 576 mem::set_i64
+	3659926193048069267 k 584 mem::set_i64
+	4368137639120453308 k 592 mem::set_i64
+	4836135668995329356 k 600 mem::set_i64
+	5532061633213252278 k 608 mem::set_i64
+	6448918945643986474 k 616 mem::set_i64
+	6902733635092675308 k 624 mem::set_i64
+	7801388544844847127 k 632 mem::set_i64
+	k
+}
+
+fn sha512_rotr64(x:i64 n:i64 -- result:i64) {
+	-> n -> x
+	x n shr x 64 n - shl or
+}
+
+fn sha512_ch(x:i64 y:i64 z:i64 -- result:i64) {
+	-> z -> y -> x
+	x y and x not z and xor
+}
+
+fn sha512_maj(x:i64 y:i64 z:i64 -- result:i64) {
+	-> z -> y -> x
+	x y and x z and xor y z and xor
+}
+
+fn sha512_sigma0(x:i64 -- result:i64) {
+	-> x
+	x 28 sha512_rotr64 x 34 sha512_rotr64 xor x 39 sha512_rotr64 xor
+}
+
+fn sha512_sigma1(x:i64 -- result:i64) {
+	-> x
+	x 14 sha512_rotr64 x 18 sha512_rotr64 xor x 41 sha512_rotr64 xor
+}
+
+fn sha512_gamma0(x:i64 -- result:i64) {
+	-> x
+	x 1 sha512_rotr64 x 8 sha512_rotr64 xor x 7 shr xor
+}
+
+fn sha512_gamma1(x:i64 -- result:i64) {
+	-> x
+	x 19 sha512_rotr64 x 61 sha512_rotr64 xor x 6 shr xor
+}
+
+// Read 64-bit big-endian from buffer
+fn sha512_read_u64_be(buf:ptr offset:i64 -- val:i64) {
+	-> offset -> buf
+	buf offset mem::get_byte 56 shl
+	buf offset 1 + mem::get_byte 48 shl or
+	buf offset 2 + mem::get_byte 40 shl or
+	buf offset 3 + mem::get_byte 32 shl or
+	buf offset 4 + mem::get_byte 24 shl or
+	buf offset 5 + mem::get_byte 16 shl or
+	buf offset 6 + mem::get_byte 8 shl or
+	buf offset 7 + mem::get_byte or
+}
+
+// Write 64-bit big-endian to buffer
+fn sha512_write_u64_be(buf:ptr offset:i64 val:i64 -- ) {
+	-> val -> offset -> buf
+	val 56 shr 255 and buf offset mem::set_byte
+	val 48 shr 255 and buf offset 1 + mem::set_byte
+	val 40 shr 255 and buf offset 2 + mem::set_byte
+	val 32 shr 255 and buf offset 3 + mem::set_byte
+	val 24 shr 255 and buf offset 4 + mem::set_byte
+	val 16 shr 255 and buf offset 5 + mem::set_byte
+	val 8 shr 255 and buf offset 6 + mem::set_byte
+	val 255 and buf offset 7 + mem::set_byte
+}
+
+// Process a single 128-byte block
+fn sha512_process_block(
+	hh0:i64 hh1:i64 hh2:i64 hh3:i64 hh4:i64 hh5:i64 hh6:i64 hh7:i64 block:ptr --
+	r0:i64 r1:i64 r2:i64 r3:i64 r4:i64 r5:i64 r6:i64 r7:i64
+) {
+	-> block
+	-> hh7 -> hh6 -> hh5 -> hh4 -> hh3 -> hh2 -> hh1 -> hh0
+
+	sha512_make_k -> k
+	640 mem::alloc! -> w
+
+	// Load message block into w[0..15]
+	0 16 1 for i {
+		block i 8 * sha512_read_u64_be w i 8 * mem::set_i64
+	}
+
+	// Expand to w[16..79]
+	16 80 1 for i {
+		w i 2 - 8 * mem::get_i64 sha512_gamma1 -> s1
+		w i 7 - 8 * mem::get_i64 -> w7
+		w i 15 - 8 * mem::get_i64 sha512_gamma0 -> s0
+		w i 16 - 8 * mem::get_i64 -> w16
+		s1 w7 + s0 + w16 + w i 8 * mem::set_i64
+	}
+
+	// Initialize working variables
+	hh0 -> a
+	hh1 -> b
+	hh2 -> cc
+	hh3 -> d
+	hh4 -> e
+	hh5 -> f
+	hh6 -> g
+	hh7 -> hhh
+
+	// 80 rounds
+	0 80 1 for i {
+		e sha512_sigma1 e f g sha512_ch + hhh + k i 8 * mem::get_i64 + w i 8 * mem::get_i64 + -> t1
+		a sha512_sigma0 a b cc sha512_maj + -> t2
+
+		g -> hhh
+		f -> g
+		e -> f
+		d t1 + -> e
+		cc -> d
+		b -> cc
+		a -> b
+		t1 t2 + -> a
+	}
+
+	w mem::free
+	k mem::free
+
+	hh0 a +
+	hh1 b +
+	hh2 cc +
+	hh3 d +
+	hh4 e +
+	hh5 f +
+	hh6 g +
+	hh7 hhh +
+}
+
+/// Update SHA-512 state with additional data.
+pub fn (h:Sha512) update(data:str -- h2:Sha512)! {
+	-> data
+
+	h @h0 -> hh0
+	h @h1 -> hh1
+	h @h2 -> hh2
+	h @h3 -> hh3
+	h @h4 -> hh4
+	h @h5 -> hh5
+	h @h6 -> hh6
+	h @h7 -> hh7
+	h @buf -> buf
+	h @buflen -> buflen
+	h @total -> total
+
+	// Lazy init buffer (128 bytes for SHA-512)
+	buf 0 == if {
+		128 mem::alloc! -> buf
+	}
+
+	data str::len -> dlen
+	total dlen + -> total
+
+	0 -> i
+	loop {
+		i dlen >= if { break }
+
+		// Fill buffer
+		loop {
+			buflen 128 >= if { break }
+			i dlen >= if { break }
+			data i str::char_at! buf buflen mem::set_byte
+			buflen 1 + -> buflen
+			i 1 + -> i
+		}
+
+		// Process complete block
+		buflen 128 == if {
+			hh0 hh1 hh2 hh3 hh4 hh5 hh6 hh7 buf sha512_process_block
+			-> hh7 -> hh6 -> hh5 -> hh4 -> hh3 -> hh2 -> hh1 -> hh0
+			0 -> buflen
+		}
+	}
+
+	Sha512 {
+		h0 = hh0 h1 = hh1 h2 = hh2 h3 = hh3
+		h4 = hh4 h5 = hh5 h6 = hh6 h7 = hh7
+		buf = buf buflen = buflen total = total
+	}
+}
+
+/// Finalize SHA-512 and get result as hex string.
+pub fn (h:Sha512) finish( -- hash:str)! {
+	h @h0 -> hh0
+	h @h1 -> hh1
+	h @h2 -> hh2
+	h @h3 -> hh3
+	h @h4 -> hh4
+	h @h5 -> hh5
+	h @h6 -> hh6
+	h @h7 -> hh7
+	h @buf -> buf
+	h @buflen -> buflen
+	h @total -> total
+
+	buf 0 == if {
+		128 mem::alloc! -> buf
+	}
+
+	// Pad message
+	128 buf buflen mem::set_byte
+	buflen 1 + -> buflen
+
+	// If not enough room for length (need 16 bytes), pad and process
+	buflen 112 > if {
+		loop {
+			buflen 128 >= if { break }
+			0 buf buflen mem::set_byte
+			buflen 1 + -> buflen
+		}
+		hh0 hh1 hh2 hh3 hh4 hh5 hh6 hh7 buf sha512_process_block
+		-> hh7 -> hh6 -> hh5 -> hh4 -> hh3 -> hh2 -> hh1 -> hh0
+		0 -> buflen
+	}
+
+	// Pad to 112 bytes
+	loop {
+		buflen 112 >= if { break }
+		0 buf buflen mem::set_byte
+		buflen 1 + -> buflen
+	}
+
+	// Append length in bits (big-endian, 128-bit - we use low 64 bits)
+	total 8 * -> bitlen
+	buf 112 0 sha512_write_u64_be
+	buf 120 bitlen sha512_write_u64_be
+
+	hh0 hh1 hh2 hh3 hh4 hh5 hh6 hh7 buf sha512_process_block
+	-> hh7 -> hh6 -> hh5 -> hh4 -> hh3 -> hh2 -> hh1 -> hh0
+
+	// Convert to hex (128 chars for 512 bits)
+	128 mem::alloc! -> out
+	0 -> pos
+
+	// Helper to write 16 hex chars for each 64-bit word
+	0 16 1 for j {
+		hh0 60 j 4 * - shr 15 and -> nibble
+		nibble 10 < if { 48 nibble + } else { 87 nibble + }
+		out pos mem::set_byte
+		pos 1 + -> pos
+	}
+	0 16 1 for j {
+		hh1 60 j 4 * - shr 15 and -> nibble
+		nibble 10 < if { 48 nibble + } else { 87 nibble + }
+		out pos mem::set_byte
+		pos 1 + -> pos
+	}
+	0 16 1 for j {
+		hh2 60 j 4 * - shr 15 and -> nibble
+		nibble 10 < if { 48 nibble + } else { 87 nibble + }
+		out pos mem::set_byte
+		pos 1 + -> pos
+	}
+	0 16 1 for j {
+		hh3 60 j 4 * - shr 15 and -> nibble
+		nibble 10 < if { 48 nibble + } else { 87 nibble + }
+		out pos mem::set_byte
+		pos 1 + -> pos
+	}
+	0 16 1 for j {
+		hh4 60 j 4 * - shr 15 and -> nibble
+		nibble 10 < if { 48 nibble + } else { 87 nibble + }
+		out pos mem::set_byte
+		pos 1 + -> pos
+	}
+	0 16 1 for j {
+		hh5 60 j 4 * - shr 15 and -> nibble
+		nibble 10 < if { 48 nibble + } else { 87 nibble + }
+		out pos mem::set_byte
+		pos 1 + -> pos
+	}
+	0 16 1 for j {
+		hh6 60 j 4 * - shr 15 and -> nibble
+		nibble 10 < if { 48 nibble + } else { 87 nibble + }
+		out pos mem::set_byte
+		pos 1 + -> pos
+	}
+	0 16 1 for j {
+		hh7 60 j 4 * - shr 15 and -> nibble
+		nibble 10 < if { 48 nibble + } else { 87 nibble + }
+		out pos mem::set_byte
+		pos 1 + -> pos
+	}
+
+	out 128 mem::to_string -> result
+	out mem::free
+	result
+}
+
+/// Free resources used by SHA-512 hasher.
+pub fn (h:Sha512) release( -- ) {
+	h @buf -> buf
+	buf 0 != if {
+		buf mem::free
+	}
+}
+
+/// One-shot SHA-512 of a string.
+/// @param s str Input string
+/// @return hash str 128-character hex string
+pub fn sha512(s:str -- hash:str)! {
+	-> s
+	Sha512 {} -> h
+	h s update! -> h
+	h finish! -> result
+	h release
+	result
+}
+
+/// Calculate SHA-512 hash of raw bytes.
+/// @param buf ptr Input buffer
+/// @param length i64 Length of buffer in bytes
+/// @return hash str 128-character hex string
+pub fn sha512_bytes(buf:ptr length:i64 -- hash:str)! {
+	-> length -> buf
+
+	SHA512_H0 -> hh0
+	SHA512_H1 -> hh1
+	SHA512_H2 -> hh2
+	SHA512_H3 -> hh3
+	SHA512_H4 -> hh4
+	SHA512_H5 -> hh5
+	SHA512_H6 -> hh6
+	SHA512_H7 -> hh7
+
+	128 mem::alloc! -> block
+	0 -> buflen
+	0 -> total
+
+	0 -> i
+	loop {
+		i length >= if { break }
+
+		buf i mem::get_byte block buflen mem::set_byte
+		buflen 1 + -> buflen
+		total 1 + -> total
+
+		buflen 128 == if {
+			hh0 hh1 hh2 hh3 hh4 hh5 hh6 hh7 block sha512_process_block
+			-> hh7 -> hh6 -> hh5 -> hh4 -> hh3 -> hh2 -> hh1 -> hh0
+			0 -> buflen
+		}
+
+		i 1 + -> i
+	}
+
+	// Pad
+	128 block buflen mem::set_byte
+	buflen 1 + -> buflen
+
+	buflen 112 > if {
+		loop {
+			buflen 128 >= if { break }
+			0 block buflen mem::set_byte
+			buflen 1 + -> buflen
+		}
+		hh0 hh1 hh2 hh3 hh4 hh5 hh6 hh7 block sha512_process_block
+		-> hh7 -> hh6 -> hh5 -> hh4 -> hh3 -> hh2 -> hh1 -> hh0
+		0 -> buflen
+	}
+
+	loop {
+		buflen 112 >= if { break }
+		0 block buflen mem::set_byte
+		buflen 1 + -> buflen
+	}
+
+	total 8 * -> bitlen
+	block 112 0 sha512_write_u64_be
+	block 120 bitlen sha512_write_u64_be
+
+	hh0 hh1 hh2 hh3 hh4 hh5 hh6 hh7 block sha512_process_block
+	-> hh7 -> hh6 -> hh5 -> hh4 -> hh3 -> hh2 -> hh1 -> hh0
+
+	128 mem::alloc! -> out
+	0 -> pos
+
+	0 16 1 for j {
+		hh0 60 j 4 * - shr 15 and -> nibble
+		nibble 10 < if { 48 nibble + } else { 87 nibble + }
+		out pos mem::set_byte
+		pos 1 + -> pos
+	}
+	0 16 1 for j {
+		hh1 60 j 4 * - shr 15 and -> nibble
+		nibble 10 < if { 48 nibble + } else { 87 nibble + }
+		out pos mem::set_byte
+		pos 1 + -> pos
+	}
+	0 16 1 for j {
+		hh2 60 j 4 * - shr 15 and -> nibble
+		nibble 10 < if { 48 nibble + } else { 87 nibble + }
+		out pos mem::set_byte
+		pos 1 + -> pos
+	}
+	0 16 1 for j {
+		hh3 60 j 4 * - shr 15 and -> nibble
+		nibble 10 < if { 48 nibble + } else { 87 nibble + }
+		out pos mem::set_byte
+		pos 1 + -> pos
+	}
+	0 16 1 for j {
+		hh4 60 j 4 * - shr 15 and -> nibble
+		nibble 10 < if { 48 nibble + } else { 87 nibble + }
+		out pos mem::set_byte
+		pos 1 + -> pos
+	}
+	0 16 1 for j {
+		hh5 60 j 4 * - shr 15 and -> nibble
+		nibble 10 < if { 48 nibble + } else { 87 nibble + }
+		out pos mem::set_byte
+		pos 1 + -> pos
+	}
+	0 16 1 for j {
+		hh6 60 j 4 * - shr 15 and -> nibble
+		nibble 10 < if { 48 nibble + } else { 87 nibble + }
+		out pos mem::set_byte
+		pos 1 + -> pos
+	}
+	0 16 1 for j {
+		hh7 60 j 4 * - shr 15 and -> nibble
+		nibble 10 < if { 48 nibble + } else { 87 nibble + }
+		out pos mem::set_byte
+		pos 1 + -> pos
+	}
+
+	out 128 mem::to_string -> result
+	out mem::free
+	block mem::free
+	result
+}

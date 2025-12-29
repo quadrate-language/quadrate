@@ -1,0 +1,48 @@
+// Test that if/else returning values doesn't break struct method resolution
+// This was a bug where structTypeStack wasn't synced with typeStack
+
+use mem
+
+struct Point {
+	x: i64
+	y: i64
+}
+
+fn (p:Point) get_x( -- x:i64) {
+	p @x
+}
+
+fn (p:Point) get_y( -- y:i64) {
+	p @y
+}
+
+fn main() {
+	Point { x = 10 y = 20 } -> p1
+
+	// Call method before if/else
+	p1 get_x print nl
+
+	// if/else returning string
+	1 1 == if { "match" } else { "no match" } print nl
+
+	// Call method after if/else - this used to fail
+	p1 get_y print nl
+
+	// Multiple if/else with different types
+	Point { x = 30 y = 40 } -> p2
+	p2 get_x print nl
+
+	2 3 > if { "greater" } else { "not greater" } print nl
+
+	p2 get_y print nl
+
+	// Nested case
+	Point { x = 50 y = 60 } -> p3
+	1 1 == if {
+		2 2 == if { "inner" } else { "outer" } print nl
+	} else {
+		"else" print nl
+	}
+	p3 get_x print nl
+	p3 get_y print nl
+}

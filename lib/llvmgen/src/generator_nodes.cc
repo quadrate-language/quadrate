@@ -235,8 +235,8 @@ namespace Qd {
 					builder->CreateCall(printErrorMsgFn, {ctx, funcNameStr});
 
 					// Print stack trace
-					auto printStackTraceFnTy =
-							llvm::FunctionType::get(builder->getVoidTy(), {llvm::PointerType::getUnqual(*context)}, false);
+					auto printStackTraceFnTy = llvm::FunctionType::get(
+							builder->getVoidTy(), {llvm::PointerType::getUnqual(*context)}, false);
 					auto printStackTraceFn = module->getOrInsertFunction("qd_print_stack_trace", printStackTraceFnTy);
 					builder->CreateCall(printStackTraceFn, {ctx});
 
@@ -964,8 +964,8 @@ namespace Qd {
 					builder->CreateCall(printErrorMsgFn, {ctx, funcNameStr});
 
 					// Print stack trace
-					auto printStackTraceFnTy =
-							llvm::FunctionType::get(builder->getVoidTy(), {llvm::PointerType::getUnqual(*context)}, false);
+					auto printStackTraceFnTy = llvm::FunctionType::get(
+							builder->getVoidTy(), {llvm::PointerType::getUnqual(*context)}, false);
 					auto printStackTraceFn = module->getOrInsertFunction("qd_print_stack_trace", printStackTraceFnTy);
 					builder->CreateCall(printStackTraceFn, {ctx});
 
@@ -1311,14 +1311,16 @@ namespace Qd {
 						// Print error message with context->error_msg if available
 						auto funcNameStr = builder->CreateGlobalString(name);
 						auto printErrorMsgFnTy = llvm::FunctionType::get(builder->getVoidTy(),
-								{llvm::PointerType::getUnqual(*context), llvm::PointerType::getUnqual(*context)}, false);
+								{llvm::PointerType::getUnqual(*context), llvm::PointerType::getUnqual(*context)},
+								false);
 						auto printErrorMsgFn = module->getOrInsertFunction("qd_print_error_msg", printErrorMsgFnTy);
 						builder->CreateCall(printErrorMsgFn, {ctx, funcNameStr});
 
 						// Print stack trace
-						auto printStackTraceFnTy =
-								llvm::FunctionType::get(builder->getVoidTy(), {llvm::PointerType::getUnqual(*context)}, false);
-						auto printStackTraceFn = module->getOrInsertFunction("qd_print_stack_trace", printStackTraceFnTy);
+						auto printStackTraceFnTy = llvm::FunctionType::get(
+								builder->getVoidTy(), {llvm::PointerType::getUnqual(*context)}, false);
+						auto printStackTraceFn =
+								module->getOrInsertFunction("qd_print_stack_trace", printStackTraceFnTy);
 						builder->CreateCall(printStackTraceFn, {ctx});
 
 						auto abortFn = module->getOrInsertFunction(

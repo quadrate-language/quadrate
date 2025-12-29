@@ -2227,7 +2227,8 @@ namespace Qd {
 								if (fieldToken == U8T_IDENTIFIER) {
 									const char* fieldName = u8t_scanner_token_text(scanner, &n);
 									// Create special field access for global error
-									AstNodeFieldAccess* errorField = new AstNodeFieldAccess("__global_error__", fieldName);
+									AstNodeFieldAccess* errorField =
+											new AstNodeFieldAccess("__global_error__", fieldName);
 									setNodePosition(errorField, scanner, src);
 									tempNodes.push_back(errorField);
 								} else {
@@ -2644,8 +2645,8 @@ namespace Qd {
 		return test;
 	}
 
-	static IAstNode* parseStructDeclaration(u8t_scanner* scanner, ErrorReporter* errorReporter, const char* src,
-			bool isPublic = false) {
+	static IAstNode* parseStructDeclaration(
+			u8t_scanner* scanner, ErrorReporter* errorReporter, const char* src, bool isPublic = false) {
 		size_t n;
 		char32_t token = u8t_scanner_scan(scanner);
 		if (token != U8T_IDENTIFIER) {
@@ -2790,20 +2791,17 @@ namespace Qd {
 					char32_t valToken = u8t_scanner_scan(scanner);
 					if (valToken == U8T_INTEGER) {
 						const char* numText = u8t_scanner_token_text(scanner, &n);
-						AstNodeLiteral* numNode =
-								new AstNodeLiteral(numText, AstNodeLiteral::LiteralType::INTEGER);
+						AstNodeLiteral* numNode = new AstNodeLiteral(numText, AstNodeLiteral::LiteralType::INTEGER);
 						setNodePosition(numNode, scanner, src);
 						defaultNodes.push_back(numNode);
 					} else if (valToken == U8T_FLOAT) {
 						const char* numText = u8t_scanner_token_text(scanner, &n);
-						AstNodeLiteral* numNode =
-								new AstNodeLiteral(numText, AstNodeLiteral::LiteralType::FLOAT);
+						AstNodeLiteral* numNode = new AstNodeLiteral(numText, AstNodeLiteral::LiteralType::FLOAT);
 						setNodePosition(numNode, scanner, src);
 						defaultNodes.push_back(numNode);
 					} else if (valToken == U8T_STRING) {
 						const char* strText = u8t_scanner_token_text(scanner, &n);
-						AstNodeLiteral* strNode =
-								new AstNodeLiteral(strText, AstNodeLiteral::LiteralType::STRING);
+						AstNodeLiteral* strNode = new AstNodeLiteral(strText, AstNodeLiteral::LiteralType::STRING);
 						setNodePosition(strNode, scanner, src);
 						defaultNodes.push_back(strNode);
 					} else if (valToken == U8T_IDENTIFIER) {
@@ -2817,15 +2815,13 @@ namespace Qd {
 						if (numToken == U8T_INTEGER) {
 							const char* numText = u8t_scanner_token_text(scanner, &n);
 							std::string negNum = std::string("-") + numText;
-							AstNodeLiteral* numNode =
-									new AstNodeLiteral(negNum, AstNodeLiteral::LiteralType::INTEGER);
+							AstNodeLiteral* numNode = new AstNodeLiteral(negNum, AstNodeLiteral::LiteralType::INTEGER);
 							setNodePosition(numNode, scanner, src);
 							defaultNodes.push_back(numNode);
 						} else if (numToken == U8T_FLOAT) {
 							const char* numText = u8t_scanner_token_text(scanner, &n);
 							std::string negNum = std::string("-") + numText;
-							AstNodeLiteral* numNode =
-									new AstNodeLiteral(negNum, AstNodeLiteral::LiteralType::FLOAT);
+							AstNodeLiteral* numNode = new AstNodeLiteral(negNum, AstNodeLiteral::LiteralType::FLOAT);
 							setNodePosition(numNode, scanner, src);
 							defaultNodes.push_back(numNode);
 						}
@@ -3573,8 +3569,7 @@ namespace Qd {
 								synchronize(&scanner);
 							}
 						} else {
-							errorReporter.reportError(
-									&scanner, "Expected 'fn', 'struct', or 'const' after 'pub'");
+							errorReporter.reportError(&scanner, "Expected 'fn', 'struct', or 'const' after 'pub'");
 							synchronize(&scanner);
 						}
 					} else {

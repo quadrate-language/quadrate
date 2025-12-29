@@ -616,6 +616,12 @@ namespace Qd {
 					if (thenEffect == elseEffect && thenEffect > 0) {
 						for (size_t k = typeStack.size(); k < thenStack.size(); k++) {
 							typeStack.push_back(thenStack[k]);
+							// Also sync structTypeStack to keep method resolution working
+							if (k < thenStructStack.size()) {
+								structTypeStack.push_back(thenStructStack[k]);
+							} else {
+								structTypeStack.push_back("");
+							}
 						}
 					}
 				} else if (thenBody) {
@@ -2981,9 +2987,8 @@ namespace Qd {
 
 			// Requires (msg code) on stack
 			if (typeStack.size() < 2) {
-				reportErrorConditional(node,
-						"Type error in 'panic': Stack underflow (requires msg and code)",
-						reportErrors);
+				reportErrorConditional(
+						node, "Type error in 'panic': Stack underflow (requires msg and code)", reportErrors);
 				return;
 			}
 			// Pop msg and code

@@ -377,12 +377,11 @@ namespace Qd {
 		// Special handling for global error access: error @code or error @message
 		if (varName == "__global_error__") {
 			// Context struct layout: { stack*, error_code (i64), error_msg (char*), ... }
-			llvm::Type* contextTy = llvm::StructType::get(
-					*context,
-					{llvm::PointerType::getUnqual(*context), // st
-					 builder->getInt64Ty(),                  // error_code
-					 llvm::PointerType::getUnqual(*context), // error_msg
-					 builder->getInt32Ty()},                 // argc (partial struct, enough for our needs)
+			llvm::Type* contextTy = llvm::StructType::get(*context,
+					{llvm::PointerType::getUnqual(*context),		// st
+							builder->getInt64Ty(),					// error_code
+							llvm::PointerType::getUnqual(*context), // error_msg
+							builder->getInt32Ty()},					// argc (partial struct, enough for our needs)
 					false);
 
 			if (fieldName == "code") {
@@ -412,7 +411,8 @@ namespace Qd {
 				if (!pushStrFn) {
 					auto fnTy = llvm::FunctionType::get(
 							execResultTy, {contextPtrTy, llvm::PointerType::getUnqual(*context)}, false);
-					pushStrFn = llvm::Function::Create(fnTy, llvm::Function::ExternalLinkage, "qd_push_str_cstr", *module);
+					pushStrFn =
+							llvm::Function::Create(fnTy, llvm::Function::ExternalLinkage, "qd_push_str_cstr", *module);
 				}
 				builder->CreateCall(pushStrFn, {ctx, msgToUse});
 			}
