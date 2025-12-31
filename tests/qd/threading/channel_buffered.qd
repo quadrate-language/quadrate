@@ -1,0 +1,24 @@
+// Test buffered channel operations
+use thread
+
+fn main() {
+	10 thread::chan_buffered! -> ch
+	"created" print nl
+
+	ch 42 send!
+	ch 100 send!
+	"sent values" print nl
+
+	ch recv! -> v1
+	ch recv! -> v2
+	"recv: " print v1 print " " print v2 print nl
+
+	ch len -> l
+	"len: " print l print nl
+
+	ch cap -> c
+	"cap: " print c print nl
+
+	ch free
+	"done" print nl
+}

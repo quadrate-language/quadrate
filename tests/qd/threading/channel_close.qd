@@ -1,0 +1,22 @@
+// Test channel close
+use thread
+
+fn main() {
+	5 thread::chan_buffered! -> ch
+
+	ch is_closed -> closed
+	"closed before: " print closed print nl
+
+	ch 42 send!
+	ch close
+
+	ch is_closed -> closed
+	"closed after: " print closed print nl
+
+	// Can still receive from closed channel
+	ch recv! -> v
+	"received: " print v print nl
+
+	ch free
+	"done" print nl
+}

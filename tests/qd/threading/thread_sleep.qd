@@ -1,0 +1,8 @@
+// Test thread sleep
+use thread
+
+fn main() {
+	"start" print nl
+	50 thread::sleep
+	"end" print nl
+}

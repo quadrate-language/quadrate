@@ -1,10 +1,12 @@
-// Basic threading test - spawn and wait
+// Basic threading test - spawn and join
+use thread
+
 fn worker() {
 	"Thread completed" print nl
 }
 
 fn main() {
-	&worker spawn
-	wait
+	&worker thread::spawn! -> t
+	t join!
 	"Main completed" print nl
 }

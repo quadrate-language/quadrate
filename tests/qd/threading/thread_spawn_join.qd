@@ -1,0 +1,12 @@
+// Test basic thread spawn and join
+use thread
+
+fn worker() {
+	"worker" print nl
+}
+
+fn main() {
+	&worker thread::spawn! -> t
+	t join!
+	"done" print nl
+}

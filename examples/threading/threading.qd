@@ -1,23 +1,28 @@
-use time
+// Threading example - demonstrates concurrent execution
+use thread
 
 fn alpha() {
-	0 100 1 for it {
-		10 time::Millisecond * time::sleep
+	0 10 1 for it {
+		10 thread::sleep
 		"alpha" print nl
 	}
 }
 
 fn bravo() {
-	0 100 1 for it {
-		50 time::Millisecond * time::sleep
+	0 10 1 for it {
+		25 thread::sleep
 		"bravo" print nl
 	}
 }
 
 fn main() {
-	&alpha spawn
-	&bravo spawn
+	// Spawn two threads
+	&alpha thread::spawn! -> t1
+	&bravo thread::spawn! -> t2
 
-	detach
-	wait
+	// Wait for both to complete
+	t1 join!
+	t2 join!
+
+	"done" print nl
 }

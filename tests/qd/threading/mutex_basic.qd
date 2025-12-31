@@ -1,0 +1,20 @@
+// Test basic mutex operations
+use thread
+
+fn main() {
+	thread::mutex_new! -> m
+	"created" print nl
+
+	m lock!
+	"locked" print nl
+
+	m unlock!
+	"unlocked" print nl
+
+	m try_lock -> got
+	"try_lock: " print got print nl
+
+	m unlock!
+	m free
+	"done" print nl
+}

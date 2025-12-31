@@ -1,0 +1,5 @@
+try_send 42: 1
+try_send 100: 0
+try_recv: 1 value=42
+try_recv empty: 0
+done

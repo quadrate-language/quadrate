@@ -1,0 +1,25 @@
+// Test non-blocking channel operations
+use thread
+
+fn main() {
+	1 thread::chan_buffered! -> ch
+
+	// try_send should succeed
+	ch 42 try_send -> ok
+	"try_send 42: " print ok print nl
+
+	// try_send should fail (buffer full)
+	ch 100 try_send -> ok
+	"try_send 100: " print ok print nl
+
+	// try_recv should succeed (success is on top, then value)
+	ch try_recv -> ok -> v
+	"try_recv: " print ok print " value=" print v print nl
+
+	// try_recv should fail (empty)
+	ch try_recv -> v -> ok
+	"try_recv empty: " print ok print nl
+
+	ch free
+	"done" print nl
+}
