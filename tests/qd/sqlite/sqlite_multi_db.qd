@@ -1,0 +1,46 @@
+// Test multiple database connections
+use sqlite
+
+fn main() {
+	// Open two separate in-memory databases
+	":memory:" sqlite::open! -> db1
+	":memory:" sqlite::open! -> db2
+
+	// Create different tables in each
+	"CREATE TABLE t1 (id INTEGER PRIMARY KEY, val TEXT)" db1 sqlite::exec!
+	"CREATE TABLE t2 (id INTEGER PRIMARY KEY, num INTEGER)" db2 sqlite::exec!
+
+	// Insert into db1
+	"INSERT INTO t1 (val) VALUES ('from db1')" db1 sqlite::exec!
+
+	// Insert into db2
+	"INSERT INTO t2 (num) VALUES (42)" db2 sqlite::exec!
+
+	// Query db1
+	"SELECT val FROM t1" db1 sqlite::prepare! -> q1
+	q1 sqlite::step! drop
+	0 q1 sqlite::column_text -> v1
+	"db1: " print v1 print nl
+	q1 sqlite::finalize
+
+	// Query db2
+	"SELECT num FROM t2" db2 sqlite::prepare! -> q2
+	q2 sqlite::step! drop
+	0 q2 sqlite::column_int -> v2
+	"db2: " print v2 print nl
+	q2 sqlite::finalize
+
+	// Verify databases are independent
+	// db2 should not have table t1
+	"SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='t1'" db2 sqlite::prepare! -> q3
+	q3 sqlite::step! drop
+	0 q3 sqlite::column_int -> cnt
+	"t1 exists in db2: " print cnt print nl
+	q3 sqlite::finalize
+
+	// Close in reverse order
+	db2 sqlite::close
+	db1 sqlite::close
+
+	"done" print nl
+}

@@ -1,0 +1,57 @@
+// Test large integer values (INT64 bounds)
+use sqlite
+
+fn main() {
+	":memory:" sqlite::open! -> db
+
+	"CREATE TABLE bigints (id INTEGER PRIMARY KEY, val INTEGER)" db sqlite::exec!
+
+	"INSERT INTO bigints (val) VALUES (?)" db sqlite::prepare! -> ins
+
+	// Zero
+	0 1 ins sqlite::bind_int!
+	ins sqlite::step! drop
+	ins sqlite::reset!
+
+	// Positive
+	9223372036854775807 1 ins sqlite::bind_int!  // INT64_MAX
+	ins sqlite::step! drop
+	ins sqlite::reset!
+
+	// Negative
+	-9223372036854775808 1 ins sqlite::bind_int!  // INT64_MIN
+	ins sqlite::step! drop
+	ins sqlite::reset!
+
+	// Common values
+	2147483647 1 ins sqlite::bind_int!  // INT32_MAX
+	ins sqlite::step! drop
+	ins sqlite::reset!
+
+	-2147483648 1 ins sqlite::bind_int!  // INT32_MIN
+	ins sqlite::step! drop
+
+	ins sqlite::finalize
+
+	// Query back and verify
+	"SELECT val FROM bigints ORDER BY id" db sqlite::prepare! -> q
+
+	q sqlite::step! while {
+		0 q sqlite::column_int -> val
+		val print nl
+		q sqlite::step!
+	}
+
+	q sqlite::finalize
+
+	// Test arithmetic on big numbers
+	"SELECT MAX(val), MIN(val) FROM bigints" db sqlite::prepare! -> q2
+	q2 sqlite::step! drop
+	0 q2 sqlite::column_int -> maxv
+	1 q2 sqlite::column_int -> minv
+	"max: " print maxv print nl
+	"min: " print minv print nl
+	q2 sqlite::finalize
+
+	db sqlite::close
+}

@@ -1,0 +1,5 @@
+insert 1: rowid=1 changes=1
+insert 2: rowid=2 changes=1
+insert 3: rowid=3 changes=1
+update: changes=2
+delete: changes=1

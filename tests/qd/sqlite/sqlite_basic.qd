@@ -1,0 +1,48 @@
+// Test basic SQLite operations
+use sqlite
+
+fn main() {
+	// Open in-memory database
+	":memory:" sqlite::open! -> db
+
+	// Create table
+	"CREATE TABLE users (id INTEGER PRIMARY KEY, name TEXT, age INTEGER)"
+	db sqlite::exec!
+
+	// Insert data using exec
+	"INSERT INTO users (name, age) VALUES ('Alice', 30)"
+	db sqlite::exec!
+
+	"INSERT INTO users (name, age) VALUES ('Bob', 25)"
+	db sqlite::exec!
+
+	// Query data
+	"SELECT id, name, age FROM users ORDER BY id" db sqlite::prepare! -> stmt
+
+	// First row
+	stmt sqlite::step! -> has_row
+	has_row 1 == if {
+		0 stmt sqlite::column_int -> id
+		1 stmt sqlite::column_text -> name
+		2 stmt sqlite::column_int -> age
+		id print ":" print name print ":" print age print nl
+	}
+
+	// Second row
+	stmt sqlite::step! -> has_row2
+	has_row2 1 == if {
+		0 stmt sqlite::column_int -> id2
+		1 stmt sqlite::column_text -> name2
+		2 stmt sqlite::column_int -> age2
+		id2 print ":" print name2 print ":" print age2 print nl
+	}
+
+	// Third row (should be done)
+	stmt sqlite::step! -> has_row3
+	has_row3 0 == if {
+		"done" print nl
+	}
+
+	stmt sqlite::finalize
+	db sqlite::close
+}

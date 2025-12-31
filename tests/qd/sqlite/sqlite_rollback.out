@@ -1,0 +1,2 @@
+during transaction: 999
+after rollback: 100

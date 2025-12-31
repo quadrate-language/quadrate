@@ -1,0 +1,49 @@
+// Test unicode and special characters
+use sqlite
+
+fn main() {
+	":memory:" sqlite::open! -> db
+
+	"CREATE TABLE texts (id INTEGER PRIMARY KEY, val TEXT)" db sqlite::exec!
+
+	"INSERT INTO texts (val) VALUES (?)" db sqlite::prepare! -> ins
+
+	// Unicode characters
+	"Hello, World!" 1 ins sqlite::bind_text!
+	ins sqlite::step! drop
+	ins sqlite::reset!
+
+	// Japanese
+	"こんにちは" 1 ins sqlite::bind_text!
+	ins sqlite::step! drop
+	ins sqlite::reset!
+
+	// Emoji
+	"🎉🚀💡" 1 ins sqlite::bind_text!
+	ins sqlite::step! drop
+	ins sqlite::reset!
+
+	// Mixed
+	"Café résumé naïve" 1 ins sqlite::bind_text!
+	ins sqlite::step! drop
+	ins sqlite::reset!
+
+	// Quotes and special SQL chars (single quotes work in double-quoted strings)
+	"It's a test with quotes" 1 ins sqlite::bind_text!
+	ins sqlite::step! drop
+
+	ins sqlite::finalize
+
+	// Query back
+	"SELECT id, val FROM texts ORDER BY id" db sqlite::prepare! -> q
+
+	q sqlite::step! while {
+		0 q sqlite::column_int -> id
+		1 q sqlite::column_text -> val
+		id print ": " print val print nl
+		q sqlite::step!
+	}
+
+	q sqlite::finalize
+	db sqlite::close
+}

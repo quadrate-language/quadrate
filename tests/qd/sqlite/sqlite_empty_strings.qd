@@ -1,0 +1,48 @@
+// Test empty string handling
+use sqlite
+
+fn main() {
+	":memory:" sqlite::open! -> db
+
+	"CREATE TABLE strings (id INTEGER PRIMARY KEY, val TEXT)" db sqlite::exec!
+
+	"INSERT INTO strings (val) VALUES (?)" db sqlite::prepare! -> ins
+
+	// Insert empty string
+	"" 1 ins sqlite::bind_text!
+	ins sqlite::step! drop
+	ins sqlite::reset!
+
+	// Insert single space
+	" " 1 ins sqlite::bind_text!
+	ins sqlite::step! drop
+	ins sqlite::reset!
+
+	// Insert normal string
+	"hello" 1 ins sqlite::bind_text!
+	ins sqlite::step! drop
+
+	ins sqlite::finalize
+
+	// Query back
+	"SELECT id, val, LENGTH(val) FROM strings ORDER BY id" db sqlite::prepare! -> q
+
+	q sqlite::step! while {
+		0 q sqlite::column_int -> id
+		1 q sqlite::column_text -> val
+		2 q sqlite::column_int -> len
+		id print ": '" print val print "' len=" print len print nl
+		q sqlite::step!
+	}
+
+	q sqlite::finalize
+
+	// Search for empty string
+	"SELECT COUNT(*) FROM strings WHERE val = ''" db sqlite::prepare! -> q2
+	q2 sqlite::step! drop
+	0 q2 sqlite::column_int -> empty_count
+	"empty string count: " print empty_count print nl
+	q2 sqlite::finalize
+
+	db sqlite::close
+}

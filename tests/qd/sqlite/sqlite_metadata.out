@@ -1,0 +1,3 @@
+columns: 4
+names: id,name,price,stock
+types: 1,3,2,1

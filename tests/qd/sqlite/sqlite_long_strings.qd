@@ -1,0 +1,44 @@
+// Test long string handling
+use sqlite
+
+fn main() {
+	":memory:" sqlite::open! -> db
+
+	"CREATE TABLE blobs (id INTEGER PRIMARY KEY, data TEXT)" db sqlite::exec!
+
+	// Use a moderately long literal string (100 chars)
+	"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" -> long_str
+
+	// Insert long string
+	"INSERT INTO blobs (data) VALUES (?)" db sqlite::prepare! -> ins
+	long_str 1 ins sqlite::bind_text!
+	ins sqlite::step! drop
+	ins sqlite::finalize
+
+	// Query and verify length
+	"SELECT LENGTH(data), SUBSTR(data, 1, 5), SUBSTR(data, 96, 5) FROM blobs" db sqlite::prepare! -> q
+	q sqlite::step! drop
+	0 q sqlite::column_int -> len
+	1 q sqlite::column_text -> start
+	2 q sqlite::column_text -> end
+	"length: " print len print nl
+	"start: " print start print nl
+	"end: " print end print nl
+	q sqlite::finalize
+
+	// Verify round-trip
+	"SELECT data FROM blobs" db sqlite::prepare! -> q2
+	q2 sqlite::step! drop
+	0 q2 sqlite::column_text -> retrieved
+
+	// Check length matches
+	"SELECT LENGTH(?)" db sqlite::prepare! -> q3
+	retrieved 1 q3 sqlite::bind_text!
+	q3 sqlite::step! drop
+	0 q3 sqlite::column_int -> retrieved_len
+	"retrieved length: " print retrieved_len print nl
+	q3 sqlite::finalize
+
+	q2 sqlite::finalize
+	db sqlite::close
+}

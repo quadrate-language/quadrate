@@ -1,0 +1,36 @@
+// Test last_insert_rowid and changes
+use sqlite
+
+fn main() {
+	":memory:" sqlite::open! -> db
+
+	"CREATE TABLE items (id INTEGER PRIMARY KEY, name TEXT)" db sqlite::exec!
+
+	// Insert and check rowid
+	"INSERT INTO items (name) VALUES ('first')" db sqlite::exec!
+	db sqlite::last_insert_rowid -> id1
+	db sqlite::changes -> c1
+	"insert 1: rowid=" print id1 print " changes=" print c1 print nl
+
+	"INSERT INTO items (name) VALUES ('second')" db sqlite::exec!
+	db sqlite::last_insert_rowid -> id2
+	db sqlite::changes -> c2
+	"insert 2: rowid=" print id2 print " changes=" print c2 print nl
+
+	"INSERT INTO items (name) VALUES ('third')" db sqlite::exec!
+	db sqlite::last_insert_rowid -> id3
+	db sqlite::changes -> c3
+	"insert 3: rowid=" print id3 print " changes=" print c3 print nl
+
+	// Update multiple rows
+	"UPDATE items SET name = 'updated' WHERE id <= 2" db sqlite::exec!
+	db sqlite::changes -> c4
+	"update: changes=" print c4 print nl
+
+	// Delete
+	"DELETE FROM items WHERE id = 3" db sqlite::exec!
+	db sqlite::changes -> c5
+	"delete: changes=" print c5 print nl
+
+	db sqlite::close
+}

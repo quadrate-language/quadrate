@@ -1,0 +1,4 @@
+1: '' len=0
+2: ' ' len=1
+3: 'hello' len=5
+empty string count: 1

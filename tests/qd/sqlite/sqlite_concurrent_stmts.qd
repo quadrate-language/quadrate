@@ -1,0 +1,41 @@
+// Test multiple concurrent prepared statements
+use sqlite
+
+fn main() {
+	":memory:" sqlite::open! -> db
+
+	"CREATE TABLE data (id INTEGER PRIMARY KEY, category TEXT, value INTEGER)" db sqlite::exec!
+
+	// Insert test data
+	"INSERT INTO data (category, value) VALUES ('A', 10)" db sqlite::exec!
+	"INSERT INTO data (category, value) VALUES ('A', 20)" db sqlite::exec!
+	"INSERT INTO data (category, value) VALUES ('B', 30)" db sqlite::exec!
+	"INSERT INTO data (category, value) VALUES ('B', 40)" db sqlite::exec!
+
+	// Prepare multiple statements at once
+	"SELECT DISTINCT category FROM data ORDER BY category" db sqlite::prepare! -> cats
+	"SELECT value FROM data WHERE category = ? ORDER BY value" db sqlite::prepare! -> vals
+
+	// Nested iteration - for each category, get all values
+	cats sqlite::step! while {
+		0 cats sqlite::column_text -> cat
+		cat print ": " print
+
+		// Use second statement while first is active
+		cat 1 vals sqlite::bind_text!
+		vals sqlite::step! while {
+			0 vals sqlite::column_int -> val
+			val print " " print
+			vals sqlite::step!
+		}
+		vals sqlite::reset!
+
+		nl
+		cats sqlite::step!
+	}
+
+	cats sqlite::finalize
+	vals sqlite::finalize
+
+	db sqlite::close
+}

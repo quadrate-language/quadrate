@@ -1,0 +1,6 @@
+1: type=1 val=42
+2: type=2 val=3.14
+3: type=3 val=hello
+4: type=5 val=NULL
+int as float: 42
+float as int: 3

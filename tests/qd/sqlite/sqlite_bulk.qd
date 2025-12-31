@@ -1,0 +1,50 @@
+// Test bulk inserts with transaction
+use sqlite
+
+fn main() {
+	":memory:" sqlite::open! -> db
+
+	"CREATE TABLE numbers (id INTEGER PRIMARY KEY, value INTEGER)" db sqlite::exec!
+
+	// Bulk insert with transaction for performance
+	db sqlite::begin!
+
+	"INSERT INTO numbers (value) VALUES (?)" db sqlite::prepare! -> ins
+
+	0 -> i
+	i 100 < while {
+		i 1 ins sqlite::bind_int!
+		ins sqlite::step! drop
+		ins sqlite::reset!
+		i 1 + -> i
+		i 100 <
+	}
+
+	ins sqlite::finalize
+
+	db sqlite::commit!
+
+	// Count rows
+	"SELECT COUNT(*) FROM numbers" db sqlite::prepare! -> q1
+	q1 sqlite::step! drop
+	0 q1 sqlite::column_int -> count
+	"count: " print count print nl
+	q1 sqlite::finalize
+
+	// Sum values
+	"SELECT SUM(value) FROM numbers" db sqlite::prepare! -> q2
+	q2 sqlite::step! drop
+	0 q2 sqlite::column_int -> sum
+	"sum: " print sum print nl
+	q2 sqlite::finalize
+
+	// Min/max
+	"SELECT MIN(value), MAX(value) FROM numbers" db sqlite::prepare! -> q3
+	q3 sqlite::step! drop
+	0 q3 sqlite::column_int -> min
+	1 q3 sqlite::column_int -> max
+	"min: " print min print " max: " print max print nl
+	q3 sqlite::finalize
+
+	db sqlite::close
+}

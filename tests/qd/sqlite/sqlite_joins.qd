@@ -1,0 +1,33 @@
+// Test multiple tables with JOINs
+use sqlite
+
+fn main() {
+	":memory:" sqlite::open! -> db
+
+	// Create tables
+	"CREATE TABLE authors (id INTEGER PRIMARY KEY, name TEXT)" db sqlite::exec!
+	"CREATE TABLE books (id INTEGER PRIMARY KEY, title TEXT, author_id INTEGER)" db sqlite::exec!
+
+	// Insert authors
+	"INSERT INTO authors (name) VALUES ('Alice')" db sqlite::exec!
+	"INSERT INTO authors (name) VALUES ('Bob')" db sqlite::exec!
+
+	// Insert books
+	"INSERT INTO books (title, author_id) VALUES ('Book A', 1)" db sqlite::exec!
+	"INSERT INTO books (title, author_id) VALUES ('Book B', 1)" db sqlite::exec!
+	"INSERT INTO books (title, author_id) VALUES ('Book C', 2)" db sqlite::exec!
+
+	// Query with JOIN
+	"SELECT b.title, a.name FROM books b JOIN authors a ON b.author_id = a.id ORDER BY b.id"
+	db sqlite::prepare! -> query
+
+	query sqlite::step! while {
+		0 query sqlite::column_text -> title
+		1 query sqlite::column_text -> author
+		title print " by " print author print nl
+		query sqlite::step!
+	}
+
+	query sqlite::finalize
+	db sqlite::close
+}

@@ -1,0 +1,32 @@
+// Test aggregate functions and GROUP BY
+use sqlite
+
+fn main() {
+	":memory:" sqlite::open! -> db
+
+	"CREATE TABLE sales (category TEXT, amount REAL)" db sqlite::exec!
+
+	// Insert test data
+	"INSERT INTO sales VALUES ('A', 100.0)" db sqlite::exec!
+	"INSERT INTO sales VALUES ('A', 150.0)" db sqlite::exec!
+	"INSERT INTO sales VALUES ('A', 200.0)" db sqlite::exec!
+	"INSERT INTO sales VALUES ('B', 50.0)" db sqlite::exec!
+	"INSERT INTO sales VALUES ('B', 75.0)" db sqlite::exec!
+	"INSERT INTO sales VALUES ('C', 300.0)" db sqlite::exec!
+
+	// Group by with aggregates
+	"SELECT category, COUNT(*), SUM(amount), AVG(amount) FROM sales GROUP BY category ORDER BY category"
+	db sqlite::prepare! -> query
+
+	query sqlite::step! while {
+		0 query sqlite::column_text -> cat
+		1 query sqlite::column_int -> cnt
+		2 query sqlite::column_float -> sum
+		3 query sqlite::column_float -> avg
+		cat print ": count=" print cnt print " sum=" print sum print " avg=" print avg print nl
+		query sqlite::step!
+	}
+
+	query sqlite::finalize
+	db sqlite::close
+}

@@ -1,0 +1,41 @@
+// Test prepared statements with parameter binding
+use sqlite
+
+fn main() {
+	":memory:" sqlite::open! -> db
+
+	"CREATE TABLE products (id INTEGER PRIMARY KEY, name TEXT, price REAL)"
+	db sqlite::exec!
+
+	// Prepare insert statement
+	"INSERT INTO products (name, price) VALUES (?, ?)" db sqlite::prepare! -> ins
+
+	// Insert first product
+	"Widget" 1 ins sqlite::bind_text!
+	9.99 2 ins sqlite::bind_float!
+	ins sqlite::step! drop
+	ins sqlite::reset!
+
+	// Insert second product
+	"Gadget" 1 ins sqlite::bind_text!
+	19.99 2 ins sqlite::bind_float!
+	ins sqlite::step! drop
+
+	ins sqlite::finalize
+
+	// Query with parameter
+	"SELECT name, price FROM products WHERE price > ? ORDER BY price"
+	db sqlite::prepare! -> query
+
+	5.0 1 query sqlite::bind_float!
+
+	query sqlite::step! while {
+		0 query sqlite::column_text -> name
+		1 query sqlite::column_float -> price
+		name print "=" print price print nl
+		query sqlite::step!
+	}
+
+	query sqlite::finalize
+	db sqlite::close
+}

@@ -1,0 +1,36 @@
+// Test column metadata functions
+use sqlite
+
+fn main() {
+	":memory:" sqlite::open! -> db
+
+	"CREATE TABLE products (id INTEGER PRIMARY KEY, name TEXT, price REAL, stock INTEGER)"
+	db sqlite::exec!
+
+	"INSERT INTO products (name, price, stock) VALUES ('Widget', 9.99, 100)"
+	db sqlite::exec!
+
+	"SELECT id, name, price, stock FROM products" db sqlite::prepare! -> query
+
+	// Check column count
+	query sqlite::column_count -> count
+	"columns: " print count print nl
+
+	// Check column names
+	0 query sqlite::column_name -> name0
+	1 query sqlite::column_name -> name1
+	2 query sqlite::column_name -> name2
+	3 query sqlite::column_name -> name3
+	"names: " print name0 print "," print name1 print "," print name2 print "," print name3 print nl
+
+	// Step to get data and check types
+	query sqlite::step! drop
+	0 query sqlite::column_type -> type0
+	1 query sqlite::column_type -> type1
+	2 query sqlite::column_type -> type2
+	3 query sqlite::column_type -> type3
+	"types: " print type0 print "," print type1 print "," print type2 print "," print type3 print nl
+
+	query sqlite::finalize
+	db sqlite::close
+}

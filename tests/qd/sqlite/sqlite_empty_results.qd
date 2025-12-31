@@ -1,0 +1,44 @@
+// Test empty result sets and empty tables
+use sqlite
+
+fn main() {
+	":memory:" sqlite::open! -> db
+
+	"CREATE TABLE empty_table (id INTEGER PRIMARY KEY, value TEXT)" db sqlite::exec!
+
+	// Query empty table
+	"SELECT * FROM empty_table" db sqlite::prepare! -> q1
+	q1 sqlite::step! -> has_row
+	"empty table has_row: " print has_row print nl
+	q1 sqlite::finalize
+
+	// Insert one row
+	"INSERT INTO empty_table (value) VALUES ('test')" db sqlite::exec!
+
+	// Query with WHERE that matches nothing
+	"SELECT * FROM empty_table WHERE id = 999" db sqlite::prepare! -> q2
+	q2 sqlite::step! -> has_row2
+	"no match has_row: " print has_row2 print nl
+	q2 sqlite::finalize
+
+	// COUNT on empty result
+	"SELECT COUNT(*) FROM empty_table WHERE id = 999" db sqlite::prepare! -> q3
+	q3 sqlite::step! drop
+	0 q3 sqlite::column_int -> cnt
+	"count of nothing: " print cnt print nl
+	q3 sqlite::finalize
+
+	// Delete all rows
+	"DELETE FROM empty_table" db sqlite::exec!
+	db sqlite::changes -> deleted
+	"deleted: " print deleted print nl
+
+	// Query again
+	"SELECT COUNT(*) FROM empty_table" db sqlite::prepare! -> q4
+	q4 sqlite::step! drop
+	0 q4 sqlite::column_int -> cnt2
+	"after delete count: " print cnt2 print nl
+	q4 sqlite::finalize
+
+	db sqlite::close
+}

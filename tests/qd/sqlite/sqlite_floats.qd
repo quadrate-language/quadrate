@@ -1,0 +1,44 @@
+// Test float handling and precision
+use sqlite
+
+fn main() {
+	":memory:" sqlite::open! -> db
+
+	"CREATE TABLE measurements (id INTEGER PRIMARY KEY, value REAL)" db sqlite::exec!
+
+	"INSERT INTO measurements (value) VALUES (?)" db sqlite::prepare! -> ins
+
+	// Test various float values
+	3.14159265358979 1 ins sqlite::bind_float!
+	ins sqlite::step! drop
+	ins sqlite::reset!
+
+	0.0 1 ins sqlite::bind_float!
+	ins sqlite::step! drop
+	ins sqlite::reset!
+
+	-273.15 1 ins sqlite::bind_float!
+	ins sqlite::step! drop
+	ins sqlite::reset!
+
+	1000000.5 1 ins sqlite::bind_float!
+	ins sqlite::step! drop
+	ins sqlite::reset!
+
+	0.000001 1 ins sqlite::bind_float!
+	ins sqlite::step! drop
+
+	ins sqlite::finalize
+
+	// Query and verify
+	"SELECT value FROM measurements ORDER BY id" db sqlite::prepare! -> query
+
+	query sqlite::step! while {
+		0 query sqlite::column_float -> val
+		val print nl
+		query sqlite::step!
+	}
+
+	query sqlite::finalize
+	db sqlite::close
+}

@@ -1,0 +1,32 @@
+// Test transaction rollback
+use sqlite
+
+fn main() {
+	":memory:" sqlite::open! -> db
+
+	"CREATE TABLE counter (id INTEGER PRIMARY KEY, value INTEGER)" db sqlite::exec!
+	"INSERT INTO counter (value) VALUES (100)" db sqlite::exec!
+
+	// Start transaction and make changes
+	db sqlite::begin!
+	"UPDATE counter SET value = 999 WHERE id = 1" db sqlite::exec!
+
+	// Verify change is visible in transaction
+	"SELECT value FROM counter WHERE id = 1" db sqlite::prepare! -> q1
+	q1 sqlite::step! drop
+	0 q1 sqlite::column_int -> val1
+	"during transaction: " print val1 print nl
+	q1 sqlite::finalize
+
+	// Rollback
+	db sqlite::rollback!
+
+	// Verify original value restored
+	"SELECT value FROM counter WHERE id = 1" db sqlite::prepare! -> q2
+	q2 sqlite::step! drop
+	0 q2 sqlite::column_int -> val2
+	"after rollback: " print val2 print nl
+	q2 sqlite::finalize
+
+	db sqlite::close
+}

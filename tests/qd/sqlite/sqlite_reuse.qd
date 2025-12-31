@@ -1,0 +1,43 @@
+// Test statement reuse with reset
+use sqlite
+
+fn main() {
+	":memory:" sqlite::open! -> db
+
+	"CREATE TABLE lookup (key TEXT PRIMARY KEY, value TEXT)" db sqlite::exec!
+	"INSERT INTO lookup VALUES ('a', 'apple')" db sqlite::exec!
+	"INSERT INTO lookup VALUES ('b', 'banana')" db sqlite::exec!
+	"INSERT INTO lookup VALUES ('c', 'cherry')" db sqlite::exec!
+
+	// Reuse same prepared statement multiple times
+	"SELECT value FROM lookup WHERE key = ?" db sqlite::prepare! -> query
+
+	// First lookup
+	"a" 1 query sqlite::bind_text!
+	query sqlite::step! drop
+	0 query sqlite::column_text -> v1
+	"a -> " print v1 print nl
+	query sqlite::reset!
+
+	// Second lookup
+	"b" 1 query sqlite::bind_text!
+	query sqlite::step! drop
+	0 query sqlite::column_text -> v2
+	"b -> " print v2 print nl
+	query sqlite::reset!
+
+	// Third lookup
+	"c" 1 query sqlite::bind_text!
+	query sqlite::step! drop
+	0 query sqlite::column_text -> v3
+	"c -> " print v3 print nl
+	query sqlite::reset!
+
+	// Non-existent key
+	"z" 1 query sqlite::bind_text!
+	query sqlite::step! -> found
+	"z found: " print found print nl
+
+	query sqlite::finalize
+	db sqlite::close
+}

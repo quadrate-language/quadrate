@@ -1,0 +1,47 @@
+// Test NULL value handling
+use sqlite
+
+fn main() {
+	":memory:" sqlite::open! -> db
+
+	"CREATE TABLE nullable (id INTEGER PRIMARY KEY, name TEXT, value INTEGER)"
+	db sqlite::exec!
+
+	// Insert with NULL using prepared statement
+	"INSERT INTO nullable (name, value) VALUES (?, ?)" db sqlite::prepare! -> ins
+
+	// Row 1: both values
+	"Alice" 1 ins sqlite::bind_text!
+	100 2 ins sqlite::bind_int!
+	ins sqlite::step! drop
+	ins sqlite::reset!
+
+	// Row 2: NULL value
+	"Bob" 1 ins sqlite::bind_text!
+	2 ins sqlite::bind_null!
+	ins sqlite::step! drop
+	ins sqlite::reset!
+
+	// Row 3: NULL name
+	1 ins sqlite::bind_null!
+	200 2 ins sqlite::bind_int!
+	ins sqlite::step! drop
+
+	ins sqlite::finalize
+
+	// Query and check types
+	"SELECT id, name, value FROM nullable ORDER BY id" db sqlite::prepare! -> query
+
+	query sqlite::step! while {
+		0 query sqlite::column_int -> id
+		1 query sqlite::column_type -> name_type
+		2 query sqlite::column_type -> value_type
+
+		id print ": name_type=" print name_type print " value_type=" print value_type print nl
+
+		query sqlite::step!
+	}
+
+	query sqlite::finalize
+	db sqlite::close
+}

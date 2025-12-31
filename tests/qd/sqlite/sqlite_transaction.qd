@@ -1,0 +1,35 @@
+// Test transactions
+use sqlite
+
+fn main() {
+	":memory:" sqlite::open! -> db
+
+	"CREATE TABLE accounts (id INTEGER PRIMARY KEY, balance INTEGER)"
+	db sqlite::exec!
+
+	"INSERT INTO accounts (balance) VALUES (100)" db sqlite::exec!
+	"INSERT INTO accounts (balance) VALUES (50)" db sqlite::exec!
+
+	// Begin transaction
+	db sqlite::begin!
+
+	// Transfer 25 from account 1 to account 2
+	"UPDATE accounts SET balance = balance - 25 WHERE id = 1" db sqlite::exec!
+	"UPDATE accounts SET balance = balance + 25 WHERE id = 2" db sqlite::exec!
+
+	// Commit
+	db sqlite::commit!
+
+	// Verify balances
+	"SELECT id, balance FROM accounts ORDER BY id" db sqlite::prepare! -> query
+
+	query sqlite::step! while {
+		0 query sqlite::column_int -> id
+		1 query sqlite::column_int -> balance
+		"Account " print id print ": " print balance print nl
+		query sqlite::step!
+	}
+
+	query sqlite::finalize
+	db sqlite::close
+}

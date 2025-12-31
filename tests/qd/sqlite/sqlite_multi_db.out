@@ -1,0 +1,4 @@
+db1: from db1
+db2: 42
+t1 exists in db2: 0
+done
