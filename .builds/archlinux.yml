@@ -7,6 +7,7 @@ packages:
   - nodejs
   - openssl
   - pkgconf
+  - sqlite
   - tree-sitter-cli
   - valgrind
 

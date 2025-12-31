@@ -5,6 +5,7 @@ secrets:
 
 packages:
   - clang
+  - libsqlite3-dev
   - libssl-dev
   - llvm-dev
   - meson
