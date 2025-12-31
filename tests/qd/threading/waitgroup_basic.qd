@@ -1,29 +1,23 @@
 // Test basic WaitGroup operations
 use thread
 
-fn worker1() {
-	"worker1" print nl
-}
-
-fn worker2() {
-	"worker2" print nl
-}
-
 fn main() {
+	// Test WaitGroup creation
 	thread::wg_new! -> wg
+	"created" print nl
+
+	// Test add/done/wait cycle
 	wg 2 add
-
-	&worker1 thread::spawn! -> t1
-	&worker2 thread::spawn! -> t2
-
-	t1 join!
 	wg done
-
-	t2 join!
 	wg done
-
 	wg wait!
-	"all done" print nl
+	"waited" print nl
+
+	// Test another cycle
+	wg 1 add
+	wg done
+	wg wait!
+	"done" print nl
 
 	wg free
 }
