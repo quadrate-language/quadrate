@@ -1,0 +1,40 @@
+// Test JSON log format
+use log
+use io
+use str
+
+fn main() {
+	log::new! -> logger
+
+	// Disable stdout, log to file for deterministic testing
+	logger disable_stdout
+	logger "/tmp/test_log_json.log" add_file!
+
+	// Set JSON format
+	logger log::FormatJson set_format
+
+	// Log a message
+	logger "test message" info
+
+	logger free
+
+	// Read log file and verify JSON structure
+	"/tmp/test_log_json.log" io::read_file! -> content
+
+	// Check JSON contains expected fields
+	content "{" str::contains if {
+		"has json open brace: ok" print nl
+	}
+	content "level" str::contains if {
+		"has level field: ok" print nl
+	}
+	content "msg" str::contains if {
+		"has msg field: ok" print nl
+	}
+	content "time" str::contains if {
+		"has time field: ok" print nl
+	}
+	content "test message" str::contains if {
+		"has message content: ok" print nl
+	}
+}

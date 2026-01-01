@@ -1,0 +1,25 @@
+// Test log file rotation
+use log
+use io
+
+fn main() {
+	log::new! -> logger
+
+	// Disable stdout, log to rotating file
+	logger disable_stdout
+	// Rotate by size: 100 bytes max, keep 3 files
+	logger "/tmp/test_log_rotate.log" log::RotateSize 100 3 add_file_rotate!
+
+	// Log several messages to trigger rotation
+	logger "message 1" info
+	logger "message 2" info
+	logger "message 3" info
+
+	logger free
+
+	// Verify the log file exists and has content
+	"/tmp/test_log_rotate.log" io::read_file! -> content
+	content "" neq if {
+		"rotate log has content: ok" print nl
+	}
+}

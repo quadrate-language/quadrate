@@ -1,0 +1,37 @@
+// Test changing format dynamically
+use log
+use io
+use str
+
+fn main() {
+	log::new! -> logger
+	logger disable_stdout
+	logger "/tmp/test_log_format_change.log" add_file!
+
+	// Start with text format
+	logger log::FormatText set_format
+	logger "text message" info
+
+	// Change to JSON format
+	logger log::FormatJson set_format
+	logger "json message" info
+
+	// Back to text
+	logger log::FormatText set_format
+	logger "text again" info
+
+	logger free
+
+	// Verify both formats present
+	"/tmp/test_log_format_change.log" io::read_file! -> content
+
+	// Should have text format (no JSON braces at start of some lines)
+	content "text message" str::contains if {
+		"text format present: ok" print nl
+	}
+
+	// Should have JSON format (has braces)
+	content "{" str::contains if {
+		"json format present: ok" print nl
+	}
+}

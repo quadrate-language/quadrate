@@ -1,0 +1,25 @@
+// Test logging empty and whitespace messages
+use log
+use io
+use str
+
+fn main() {
+	log::new! -> logger
+	logger disable_stdout
+	logger "/tmp/test_log_empty.log" add_file!
+
+	// Empty message
+	logger "" info
+
+	// Whitespace only
+	logger " " info
+	logger "   " info
+
+	logger free
+
+	// Verify file was created
+	"/tmp/test_log_empty.log" io::read_file! -> content
+	content "" neq if {
+		"empty messages logged: ok" print nl
+	}
+}

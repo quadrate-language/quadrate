@@ -1,0 +1,78 @@
+// Test logging from multiple threads concurrently
+// Each thread creates its own logger writing to the same file
+use log
+use thread
+use io
+use str
+
+fn worker1() {
+	log::new! -> logger
+	logger disable_stdout
+	logger "/tmp/test_log_multithread.log" add_file!
+	0 10 1 for i {
+		logger "thread1 message" info
+	}
+	logger free
+}
+
+fn worker2() {
+	log::new! -> logger
+	logger disable_stdout
+	logger "/tmp/test_log_multithread.log" add_file!
+	0 10 1 for i {
+		logger "thread2 message" info
+	}
+	logger free
+}
+
+fn worker3() {
+	log::new! -> logger
+	logger disable_stdout
+	logger "/tmp/test_log_multithread.log" add_file!
+	0 10 1 for i {
+		logger "thread3 message" info
+	}
+	logger free
+}
+
+fn worker4() {
+	log::new! -> logger
+	logger disable_stdout
+	logger "/tmp/test_log_multithread.log" add_file!
+	0 10 1 for i {
+		logger "thread4 message" info
+	}
+	logger free
+}
+
+fn main() {
+	// Spawn multiple threads logging concurrently
+	&worker1 thread::spawn! -> t1
+	&worker2 thread::spawn! -> t2
+	&worker3 thread::spawn! -> t3
+	&worker4 thread::spawn! -> t4
+
+	t1 join!
+	t2 join!
+	t3 join!
+	t4 join!
+
+	// Small delay to ensure file is flushed
+	10 thread::sleep
+
+	// Verify log file has content from all threads
+	"/tmp/test_log_multithread.log" io::read_file! -> content
+
+	content "thread1" str::contains if {
+		"thread1 logged: ok" print nl
+	}
+	content "thread2" str::contains if {
+		"thread2 logged: ok" print nl
+	}
+	content "thread3" str::contains if {
+		"thread3 logged: ok" print nl
+	}
+	content "thread4" str::contains if {
+		"thread4 logged: ok" print nl
+	}
+}

@@ -1,0 +1,3 @@
+logger1 has debug: ok
+logger2 filtered debug: ok
+logger2 has error: ok

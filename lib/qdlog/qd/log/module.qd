@@ -1,0 +1,258 @@
+/// Logging module - structured logging with levels and rotation.
+///
+/// Provides:
+/// - Log levels: Debug, Info, Warn, Error
+/// - Structured key-value logging
+/// - Multiple outputs (stdout, files)
+/// - Log rotation (by size, daily, hourly)
+/// - Text and JSON formats
+///
+/// ## Example
+///
+///     use log
+///
+///     fn main() {
+///         // Create logger
+///         log::new! -> logger
+///
+///         // Basic logging
+///         logger "server started" log::info
+///         logger "connection failed" log::error
+///
+///         // Set minimum level
+///         logger log::LevelWarn log::set_level
+///
+///         // Add file output with rotation
+///         logger "/var/log/app.log" log::RotateDaily 0 7 log::add_file_rotate!
+///
+///         // Structured logging with key-value pairs
+///         logger "user login" "user" "alice" "ip" "192.168.1.1" 2 log::info_kv
+///
+///         // JSON format
+///         logger log::FormatJson log::set_format
+///
+///         // Cleanup
+///         logger log::free
+///     }
+
+/// Log level: Debug (most verbose).
+pub const LevelDebug = 0
+
+/// Log level: Info (normal messages).
+pub const LevelInfo = 1
+
+/// Log level: Warn (warnings).
+pub const LevelWarn = 2
+
+/// Log level: Error (errors only).
+pub const LevelError = 3
+
+/// Log level: Off (no logging).
+pub const LevelOff = 4
+
+/// Output format: human-readable text.
+pub const FormatText = 0
+
+/// Output format: JSON lines.
+pub const FormatJson = 1
+
+/// Rotation mode: no rotation.
+pub const RotateNone = 0
+
+/// Rotation mode: rotate by file size.
+pub const RotateSize = 1
+
+/// Rotation mode: rotate daily.
+pub const RotateDaily = 2
+
+/// Rotation mode: rotate hourly.
+pub const RotateHourly = 3
+
+/// Error: Memory allocation failed.
+pub const ErrAlloc = 2
+
+/// Error: File operation failed.
+pub const ErrFile = 3
+
+/// Error: Invalid argument.
+pub const ErrInvalid = 4
+
+// Import C functions
+import "libqdlog.a" as "log" {
+	fn raw_new( -- logger:ptr)
+	fn raw_free(logger:ptr -- )
+	fn raw_set_level(level:i64 logger:ptr -- )
+	fn raw_get_level(logger:ptr -- level:i64)
+	fn raw_set_format(format:i64 logger:ptr -- )
+	fn raw_enable_stdout(logger:ptr -- )
+	fn raw_disable_stdout(logger:ptr -- )
+	fn raw_add_file(path:str logger:ptr -- err:i64)
+	fn raw_add_file_rotate(max_files:i64 max_size:i64 mode:i64 path:str logger:ptr -- err:i64)
+	fn raw_log(msg:str level:i64 logger:ptr -- )
+	fn raw_log_kv(pairs_count:i64 pairs:ptr msg:str level:i64 logger:ptr -- )
+	fn raw_flush(logger:ptr -- )
+	fn raw_check_rotate(logger:ptr -- )
+}
+
+/// Logger handle.
+pub struct Logger {
+	handle: ptr
+}
+
+/// Create a new logger.
+///
+/// By default logs to stdout at Info level in text format.
+///
+/// @return logger Logger New logger handle
+/// @example log::new! -> logger
+pub fn new( -- logger:Logger)! {
+	log::raw_new -> h
+	h 0 eq if {
+		"failed to create logger" ErrAlloc panic
+	}
+	Logger { handle = h }
+}
+
+/// Free logger resources.
+///
+/// @example logger log::free
+pub fn (logger:Logger) free( -- ) {
+	logger @handle log::raw_free
+}
+
+/// Set minimum log level.
+///
+/// Messages below this level are ignored.
+///
+/// @param level i64 Minimum level (LevelDebug, LevelInfo, LevelWarn, LevelError, LevelOff)
+/// @example logger log::LevelWarn log::set_level
+pub fn (logger:Logger) set_level(level:i64 -- ) {
+	-> level
+	level logger @handle log::raw_set_level
+}
+
+/// Get current log level.
+///
+/// @return level i64 Current minimum level
+/// @example logger log::get_level -> level
+pub fn (logger:Logger) get_level( -- level:i64) {
+	logger @handle log::raw_get_level
+}
+
+/// Set output format.
+///
+/// @param format i64 Format (FormatText or FormatJson)
+/// @example logger log::FormatJson log::set_format
+pub fn (logger:Logger) set_format(format:i64 -- ) {
+	-> format
+	format logger @handle log::raw_set_format
+}
+
+/// Enable stdout output (default).
+///
+/// @example logger log::enable_stdout
+pub fn (logger:Logger) enable_stdout( -- ) {
+	logger @handle log::raw_enable_stdout
+}
+
+/// Disable stdout output.
+///
+/// @example logger log::disable_stdout
+pub fn (logger:Logger) disable_stdout( -- ) {
+	logger @handle log::raw_disable_stdout
+}
+
+/// Add file output (no rotation).
+///
+/// @param path str Log file path
+/// @error ErrFile Failed to open file
+/// @example logger "/var/log/app.log" log::add_file!
+pub fn (logger:Logger) add_file(path:str -- )! {
+	-> path
+	path logger @handle log::raw_add_file -> err
+	err 0 neq if {
+		"failed to open log file" err panic
+	}
+}
+
+/// Add file output with rotation.
+///
+/// @param path str Base log file path
+/// @param mode i64 Rotation mode (RotateNone, RotateSize, RotateDaily, RotateHourly)
+/// @param max_size i64 Max file size for RotateSize (bytes), 0 for time-based
+/// @param max_files i64 Max rotated files to keep (0 = unlimited)
+/// @error ErrFile Failed to open file
+/// @example logger "/var/log/app.log" log::RotateDaily 0 7 log::add_file_rotate!
+pub fn (logger:Logger) add_file_rotate(path:str mode:i64 max_size:i64 max_files:i64 -- )! {
+	-> max_files
+	-> max_size
+	-> mode
+	-> path
+	max_files max_size mode path logger @handle log::raw_add_file_rotate -> err
+	err 0 neq if {
+		"failed to open log file" err panic
+	}
+}
+
+/// Log a debug message.
+///
+/// @param msg str Message to log
+/// @example logger "processing item" log::debug
+pub fn (logger:Logger) debug(msg:str -- ) {
+	-> msg
+	msg LevelDebug logger @handle log::raw_log
+}
+
+/// Log an info message.
+///
+/// @param msg str Message to log
+/// @example logger "server started" log::info
+pub fn (logger:Logger) info(msg:str -- ) {
+	-> msg
+	msg LevelInfo logger @handle log::raw_log
+}
+
+/// Log a warning message.
+///
+/// @param msg str Message to log
+/// @example logger "connection timeout" log::warn
+pub fn (logger:Logger) warn(msg:str -- ) {
+	-> msg
+	msg LevelWarn logger @handle log::raw_log
+}
+
+/// Log an error message.
+///
+/// @param msg str Message to log
+/// @example logger "connection failed" log::error
+pub fn (logger:Logger) error(msg:str -- ) {
+	-> msg
+	msg LevelError logger @handle log::raw_log
+}
+
+/// Log a message at specified level.
+///
+/// @param level i64 Log level
+/// @param msg str Message to log
+/// @example logger log::LevelInfo "custom message" log::log
+pub fn (logger:Logger) log(level:i64 msg:str -- ) {
+	-> msg
+	-> level
+	msg level logger @handle log::raw_log
+}
+
+/// Flush all outputs.
+///
+/// @example logger log::flush
+pub fn (logger:Logger) flush( -- ) {
+	logger @handle log::raw_flush
+}
+
+/// Check and perform rotation if needed.
+///
+/// Called automatically before each log, but can be called manually.
+///
+/// @example logger log::check_rotate
+pub fn (logger:Logger) check_rotate( -- ) {
+	logger @handle log::raw_check_rotate
+}
