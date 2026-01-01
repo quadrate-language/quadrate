@@ -42,7 +42,8 @@ namespace Qd {
 
 	SemanticValidator::SemanticValidator()
 		: mFilename(nullptr), mErrorCount(0), mWarningCount(0), mWerror(false), mIsModuleFile(false),
-		  mStoreErrors(false), mWarningMinLine(0), mCurrentFunctionFallible(false), mInLoopBody(false) {
+		  mStoreErrors(false), mWarningMinLine(0), mCurrentFunctionFallible(false), mInLoopBody(false),
+		  mSource(nullptr) {
 	}
 
 	const std::unordered_map<std::string, StackValueType>* SemanticValidator::lookupStructFieldTypes(
@@ -317,7 +318,49 @@ namespace Qd {
 			}
 			std::cerr << Colors::bold() << Colors::red() << "error:" << Colors::reset() << " ";
 			std::cerr << Colors::bold() << message << Colors::reset() << std::endl;
+
+			// Print source context if available
+			if (mSource && node) {
+				printSourceContext(node->line(), node->column());
+			}
 		}
+	}
+
+	void SemanticValidator::printSourceContext(size_t line, size_t column) {
+		if (!mSource || line == 0) {
+			return;
+		}
+
+		// Find the line in the source
+		size_t currentLine = 1;
+		const char* lineStart = mSource;
+		const char* ptr = mSource;
+
+		while (*ptr != '\0' && currentLine < line) {
+			if (*ptr == '\n') {
+				currentLine++;
+				lineStart = ptr + 1;
+			}
+			ptr++;
+		}
+
+		// Find line end
+		const char* lineEnd = lineStart;
+		while (*lineEnd != '\0' && *lineEnd != '\n') {
+			lineEnd++;
+		}
+
+		// Print line number gutter and source line
+		std::cerr << Colors::cyan() << "    " << line << " | " << Colors::reset();
+		std::cerr.write(lineStart, lineEnd - lineStart);
+		std::cerr << std::endl;
+
+		// Print caret pointer
+		std::cerr << Colors::cyan() << "      | " << Colors::reset();
+		for (size_t i = 1; i < column; i++) {
+			std::cerr << " ";
+		}
+		std::cerr << Colors::green() << "^" << Colors::reset() << std::endl;
 	}
 
 	void SemanticValidator::reportWarning(const IAstNode* node, const char* message) {
@@ -342,6 +385,11 @@ namespace Qd {
 		}
 		std::cerr << Colors::bold() << Colors::magenta() << "warning:" << Colors::reset() << " ";
 		std::cerr << Colors::bold() << message << Colors::reset() << std::endl;
+
+		// Print source context if available
+		if (mSource && node) {
+			printSourceContext(node->line(), node->column());
+		}
 		mWarningCount++;
 	}
 

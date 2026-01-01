@@ -118,7 +118,14 @@ namespace Qd {
 			mIncludePaths = paths;
 		}
 
+		// Set source text for error context printing
+		void setSource(const char* source) {
+			mSource = source;
+		}
+
 	private:
+		// Print source context with line number and caret pointer
+		void printSourceContext(size_t line, size_t column);
 		// Pass 1: Collect all function definitions
 		void collectDefinitions(IAstNode* node);
 
@@ -364,6 +371,9 @@ namespace Qd {
 		// Whether we're currently type checking inside a loop body
 		// When true, type errors are suppressed (but method calls are still marked)
 		bool mInLoopBody;
+
+		// Source text for error context printing (optional, may be null)
+		const char* mSource;
 	};
 
 } // namespace Qd

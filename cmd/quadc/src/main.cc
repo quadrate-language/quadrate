@@ -128,6 +128,7 @@ int main(int argc, char** argv) {
 			// Semantic validation - catch errors before LLVM generation
 			Qd::SemanticValidator validator;
 			validator.setIncludePaths(opts.includePaths);
+			validator.setSource(buffer.c_str());
 			size_t errorCount = validator.validate(root, "<stdin>", false, opts.werror);
 			if (errorCount > 0) {
 				// Validation failed - do not proceed
@@ -201,6 +202,7 @@ int main(int argc, char** argv) {
 			// Semantic validation - catch errors before LLVM generation
 			Qd::SemanticValidator validator;
 			validator.setIncludePaths(opts.includePaths);
+			validator.setSource(buffer.c_str());
 			size_t errorCount = validator.validate(root, file.c_str(), false, opts.werror);
 			if (errorCount > 0) {
 				// Validation failed - do not proceed
@@ -344,6 +346,7 @@ int main(int argc, char** argv) {
 			// Pass true for isModuleFile to skip reporting errors for missing nested module imports
 			Qd::SemanticValidator validator;
 			validator.setIncludePaths(opts.includePaths);
+			validator.setSource(buffer.c_str());
 			size_t errorCount = validator.validate(root, moduleFilePath.c_str(), true, opts.werror);
 			if (errorCount > 0) {
 				// Validation failed - do not proceed
