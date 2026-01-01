@@ -1,0 +1,33 @@
+// Test shift operations edge cases
+fn main() {
+	// Shift by 0 (no change)
+	"=== Shift by 0 ===" print nl
+	42 0 shl print nl     // 42
+	42 0 shr print nl     // 42
+	-1 0 shl print nl     // -1
+	-1 0 shr print nl     // -1
+
+	// Large shifts
+	"=== Large shifts ===" print nl
+	1 63 shl print nl     // -9223372036854775808 (min i64)
+	1 62 shl print nl     // 4611686018427387904
+
+	// Shift with negative numbers (logical shift right)
+	"=== Negative shifts ===" print nl
+	-1 4 shr print nl     // Large positive (logical shift)
+	-16 4 shr print nl    // Large positive
+
+	// Progressive shifts
+	"=== Progressive ===" print nl
+	1 -> x
+	0 8 1 for i {
+		x print " " print
+		x 1 shl -> x
+	}
+	nl
+
+	// Shift and mask pattern (common in bit manipulation)
+	"=== Shift + mask ===" print nl
+	43981 8 shr 255 and print nl  // 0xABCD >> 8 & 0xFF = 0xAB = 171
+	43981 0 shr 255 and print nl  // 0xABCD & 0xFF = 0xCD = 205
+}

@@ -1,0 +1,32 @@
+// Test float to int casting (truncation behavior)
+fn main() {
+	// Positive floats - truncates toward zero
+	"=== Positive floats ===" print nl
+	1.0 cast<i64> print nl       // 1
+	1.5 cast<i64> print nl       // 1
+	1.9 cast<i64> print nl       // 1
+	1.99999 cast<i64> print nl   // 1
+	2.0 cast<i64> print nl       // 2
+
+	// Negative floats - truncates toward zero
+	"=== Negative floats ===" print nl
+	-1.0 cast<i64> print nl      // -1
+	-1.5 cast<i64> print nl      // -1
+	-1.9 cast<i64> print nl      // -1
+	-2.0 cast<i64> print nl      // -2
+
+	// Zero
+	"=== Zero ===" print nl
+	0.0 cast<i64> print nl       // 0
+	-0.0 cast<i64> print nl      // 0
+
+	// Large values
+	"=== Large values ===" print nl
+	1000000.0 cast<i64> print nl       // 1000000
+	1000000.999 cast<i64> print nl     // 1000000
+	-1000000.5 cast<i64> print nl      // -1000000
+
+	// Int to float roundtrip
+	"=== Roundtrip ===" print nl
+	42 cast<f64> cast<i64> print nl    // 42
+}

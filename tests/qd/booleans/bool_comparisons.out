@@ -1,0 +1,27 @@
+=== Equality ===
+1
+0
+1
+=== Inequality ===
+0
+1
+=== Less than ===
+1
+0
+0
+=== Greater than ===
+1
+0
+0
+=== Less or equal ===
+1
+0
+1
+=== Greater or equal ===
+1
+0
+1
+=== Float comparisons ===
+1
+1
+1

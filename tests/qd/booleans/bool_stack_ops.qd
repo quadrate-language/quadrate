@@ -1,0 +1,30 @@
+// Test booleans with stack operations
+fn main() {
+	// dup with booleans
+	"=== dup ===" print nl
+	true dup print " " print print nl
+	false dup print " " print print nl
+
+	// swap with booleans
+	"=== swap ===" print nl
+	true false swap print " " print print nl
+
+	// Boolean arithmetic (since booleans are integers)
+	"=== Arithmetic ===" print nl
+	true true add print nl     // 1 + 1 = 2
+	true false add print nl    // 1 + 0 = 1
+	false false add print nl   // 0 + 0 = 0
+
+	// Boolean as array index
+	"=== As index ===" print nl
+	["zero" "one"] -> arr
+	arr false nth print nl
+	arr true nth print nl
+
+	// Logical operations on comparison results
+	"=== Logical ===" print nl
+	5 3 gt 2 1 gt and print nl  // (5>3) && (2>1) = 1 && 1 = 1
+	5 3 gt 1 2 gt and print nl  // (5>3) && (1>2) = 1 && 0 = 0
+	5 3 gt 1 2 gt or print nl   // (5>3) || (1>2) = 1 || 0 = 1
+	1 2 gt 3 4 gt or print nl   // (1>2) || (3>4) = 0 || 0 = 0
+}

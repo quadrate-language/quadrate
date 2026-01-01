@@ -1,0 +1,27 @@
+// Test string to numeric casting
+fn main() {
+	// String to int
+	"=== String to int ===" print nl
+	"0" cast<i64> print nl
+	"42" cast<i64> print nl
+	"-100" cast<i64> print nl
+	"1000000" cast<i64> print nl
+
+	// String to float
+	"=== String to float ===" print nl
+	"0.0" cast<f64> print nl
+	"3.14" cast<f64> print nl
+	"-2.5" cast<f64> print nl
+	"1e6" cast<f64> print nl
+
+	// Numeric to string
+	"=== Int to string ===" print nl
+	0 cast<str> print nl
+	42 cast<str> print nl
+	-100 cast<str> print nl
+
+	"=== Float to string ===" print nl
+	0.0 cast<str> print nl
+	3.14 cast<str> print nl
+	-2.5 cast<str> print nl
+}

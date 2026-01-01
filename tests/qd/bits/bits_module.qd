@@ -1,0 +1,66 @@
+// Test bits module functions
+use bits
+
+fn main() {
+	"=== mask ===" print nl
+	255 4 bits::mask print nl    // 15 (keep bottom 4 bits of 0xFF)
+	255 8 bits::mask print nl    // 255 (keep bottom 8 bits)
+	15 2 bits::mask print nl     // 3 (keep bottom 2 bits)
+
+	"=== has_bit ===" print nl
+	10 1 bits::has_bit print nl  // 1 (0b1010 has bit 1 set)
+	10 0 bits::has_bit print nl  // 0 (0b1010 bit 0 is 0)
+	10 3 bits::has_bit print nl  // 1 (0b1010 has bit 3 set)
+	10 2 bits::has_bit print nl  // 0 (0b1010 bit 2 is 0)
+
+	"=== set_bit ===" print nl
+	8 1 bits::set_bit print nl   // 10 (0b1000 | 0b0010 = 0b1010)
+	0 0 bits::set_bit print nl   // 1
+	0 3 bits::set_bit print nl   // 8
+	5 1 bits::set_bit print nl   // 7 (0b101 | 0b010 = 0b111)
+
+	"=== clear_bit ===" print nl
+	10 1 bits::clear_bit print nl // 8 (0b1010 & ~0b0010 = 0b1000)
+	15 0 bits::clear_bit print nl // 14 (0b1111 & ~0b0001 = 0b1110)
+	8 3 bits::clear_bit print nl  // 0 (0b1000 & ~0b1000 = 0b0000)
+
+	"=== toggle_bit ===" print nl
+	10 0 bits::toggle_bit print nl // 11 (0b1010 ^ 0b0001 = 0b1011)
+	10 1 bits::toggle_bit print nl // 8 (0b1010 ^ 0b0010 = 0b1000)
+	0 7 bits::toggle_bit print nl  // 128
+
+	"=== popcount ===" print nl
+	0 bits::popcount print nl    // 0 (no bits set)
+	1 bits::popcount print nl    // 1 (one bit set)
+	7 bits::popcount print nl    // 3 (0b111 = 3 bits set)
+	255 bits::popcount print nl  // 8 (0xFF = 8 bits set)
+	86 bits::popcount print nl   // 4 (0b1010110 = 4 bits set)
+
+	"=== reverse_bits ===" print nl
+	11 4 bits::reverse_bits print nl  // 13 (0b1011 -> 0b1101)
+	1 4 bits::reverse_bits print nl   // 8 (0b0001 -> 0b1000)
+	8 4 bits::reverse_bits print nl   // 1 (0b1000 -> 0b0001)
+	15 4 bits::reverse_bits print nl  // 15 (0b1111 -> 0b1111)
+	6 4 bits::reverse_bits print nl   // 6 (0b0110 -> 0b0110)
+
+	"=== extract ===" print nl
+	214 2 3 bits::extract print nl  // 5 (0b11010110 >> 2 = 0b110101, & 0b111 = 0b101 = 5)
+	255 0 4 bits::extract print nl  // 15 (bottom 4 bits)
+	255 4 4 bits::extract print nl  // 15 (next 4 bits)
+	170 1 3 bits::extract print nl  // 5 (0b10101010 >> 1 = 0b1010101, & 0b111 = 0b101 = 5)
+
+	"=== set_bits ===" print nl
+	0 5 2 3 bits::set_bits print nl  // 20 (0b101 << 2 = 0b10100 = 20)
+	255 0 0 4 bits::set_bits print nl // 240 (clear bottom 4 bits: 0b11110000)
+	0 15 0 4 bits::set_bits print nl  // 15 (set bottom 4 bits to 0b1111)
+
+	"=== rotate_left ===" print nl
+	3 1 4 bits::rotate_left print nl  // 6 (0b0011 -> 0b0110)
+	6 1 4 bits::rotate_left print nl  // 12 (0b0110 -> 0b1100)
+	9 2 4 bits::rotate_left print nl  // 6 (0b1001 -> 0b0110)
+
+	"=== rotate_right ===" print nl
+	6 1 4 bits::rotate_right print nl // 3 (0b0110 -> 0b0011)
+	3 1 4 bits::rotate_right print nl // 9 (0b0011 -> 0b1001)
+	12 2 4 bits::rotate_right print nl // 3 (0b1100 -> 0b0011)
+}

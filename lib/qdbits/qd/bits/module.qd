@@ -18,7 +18,7 @@ pub fn mask(value:i64 num_bits:i64 -- result:i64) {
 /// @return result i64 Extracted bits, right-aligned
 /// @example 0b11010110 2 3 bits::extract print  // 5
 pub fn extract(value:i64 start_bit:i64 num_bits:i64 -- result:i64) {
-	swap shr swap mask
+	rot rot shr swap mask
 }
 
 /// Set a bit field in a value.
@@ -68,7 +68,7 @@ pub fn rotate_right(value:i64 bits:i64 width:i64 -- result:i64) {
 /// @example 0b1010110 bits::popcount print  // 4
 pub fn popcount(value:i64 -- count:i64) {
 	0 swap
-	64 0 1 for it {
+	0 64 1 for it {
 		dup 1 and rot add swap 1 shr
 	}
 	drop
@@ -82,7 +82,7 @@ pub fn popcount(value:i64 -- count:i64) {
 pub fn reverse_bits(value:i64 width:i64 -- result:i64) {
 	-> w -> v
 	0 -> result
-	w 0 1 for it {
+	0 w 1 for it {
 		result 1 shl v 1 and or -> result
 		v 1 shr -> v
 	}
@@ -104,7 +104,7 @@ pub fn has_bit(value:i64 bit_pos:i64 -- flag:i64) {
 /// @return result i64 Value with bit set
 /// @example 0b1000 1 bits::set_bit print  // 10 (0b1010)
 pub fn set_bit(value:i64 bit_pos:i64 -- result:i64) {
-	1 over shl or
+	1 swap shl or
 }
 
 /// Clear a bit to 0.

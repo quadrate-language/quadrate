@@ -1,0 +1,43 @@
+// Test boolean comparisons
+fn main() {
+	// Equality
+	"=== Equality ===" print nl
+	1 1 eq print nl      // 1 (true)
+	1 2 eq print nl      // 0 (false)
+	0 0 eq print nl      // 1 (true)
+
+	// Inequality
+	"=== Inequality ===" print nl
+	1 1 neq print nl     // 0 (false)
+	1 2 neq print nl     // 1 (true)
+
+	// Less than
+	"=== Less than ===" print nl
+	1 2 lt print nl      // 1
+	2 1 lt print nl      // 0
+	1 1 lt print nl      // 0
+
+	// Greater than
+	"=== Greater than ===" print nl
+	2 1 gt print nl      // 1
+	1 2 gt print nl      // 0
+	1 1 gt print nl      // 0
+
+	// Less than or equal
+	"=== Less or equal ===" print nl
+	1 2 lte print nl     // 1
+	2 1 lte print nl     // 0
+	1 1 lte print nl     // 1
+
+	// Greater than or equal
+	"=== Greater or equal ===" print nl
+	2 1 gte print nl     // 1
+	1 2 gte print nl     // 0
+	1 1 gte print nl     // 1
+
+	// With floats
+	"=== Float comparisons ===" print nl
+	1.5 2.5 lt print nl  // 1
+	2.5 1.5 gt print nl  // 1
+	1.0 1.0 eq print nl  // 1
+}

@@ -1,0 +1,38 @@
+// Test booleans in control flow
+fn main() {
+	// Simple if with true/false
+	"=== Simple if ===" print nl
+	true if { "true branch" print nl }
+	false if { "false branch" print nl }
+	"after false if" print nl
+
+	// If-else with booleans
+	"=== If-else ===" print nl
+	true if { "A" } else { "B" } print nl
+	false if { "A" } else { "B" } print nl
+
+	// Comparison results in if
+	"=== Comparison in if ===" print nl
+	5 3 gt if { "5 > 3" print nl }
+	3 5 gt if { "3 > 5" print nl }
+	"done" print nl
+
+	// Boolean in while (must leave condition on stack)
+	"=== While loop ===" print nl
+	5 -> i
+	i 0 gt while {
+		i print " " print
+		i 1 sub -> i
+		i 0 gt
+	}
+	nl
+
+	// Nested conditions
+	"=== Nested ===" print nl
+	true if {
+		false if {
+			"inner" print nl
+		}
+		"outer" print nl
+	}
+}

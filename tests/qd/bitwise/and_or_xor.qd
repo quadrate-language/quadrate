@@ -1,0 +1,29 @@
+// Test bitwise AND, OR, XOR operators
+fn main() {
+	// AND tests
+	"=== AND ===" print nl
+	10 12 and print nl          // 1010 & 1100 = 1000 = 8
+	255 15 and print nl         // 0xFF & 0x0F = 15
+	0 255 and print nl          // 0
+	255 255 and print nl        // 255
+	-1 255 and print nl         // all 1s AND 0xFF = 255
+
+	// OR tests
+	"=== OR ===" print nl
+	10 5 or print nl            // 1010 | 0101 = 1111 = 15
+	240 15 or print nl          // 0xF0 | 0x0F = 0xFF = 255
+	0 255 or print nl           // 255
+	0 0 or print nl             // 0
+
+	// XOR tests
+	"=== XOR ===" print nl
+	10 12 xor print nl          // 1010 ^ 1100 = 0110 = 6
+	255 255 xor print nl        // 0 (same values cancel)
+	255 0 xor print nl          // 255
+	15 10 xor print nl          // 1111 ^ 1010 = 0101 = 5
+
+	// Combined operations
+	"=== Combined ===" print nl
+	10 12 and 3 or print nl     // (8 | 3) = 11
+	255 170 xor 85 and print nl // (0x55 & 0x55) = 85
+}

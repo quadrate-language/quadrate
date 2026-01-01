@@ -1,0 +1,19 @@
+// Test bitwise NOT operator
+fn main() {
+	// Basic NOT
+	0 not print nl              // -1 (all 1s)
+	-1 not print nl             // 0
+	1 not print nl              // -2
+
+	// NOT with masks to see specific bits
+	255 not 255 and print nl    // 0 (bottom 8 bits of ~0xFF)
+	240 not 255 and print nl    // 0x0F = 15
+	15 not 255 and print nl     // 0xF0 = 240
+
+	// Double NOT is identity
+	42 not not print nl         // 42
+	-100 not not print nl       // -100
+
+	// NOT combined with other ops
+	10 not 15 and print nl      // ~1010 & 1111 = 0101 = 5
+}

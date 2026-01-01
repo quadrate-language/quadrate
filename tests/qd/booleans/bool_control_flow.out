@@ -1,0 +1,13 @@
+=== Simple if ===
+true branch
+after false if
+=== If-else ===
+A
+B
+=== Comparison in if ===
+5 > 3
+done
+=== While loop ===
+5 4 3 2 1 
+=== Nested ===
+outer

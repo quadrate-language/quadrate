@@ -1,0 +1,28 @@
+// Test arithmetic at limits
+use limits
+
+fn main() {
+	// Compare limits to actual values
+	"=== Limit comparisons ===" print nl
+	127 limits::I8Max eq print nl             // 1
+	-128 limits::I8Min eq print nl            // 1
+	32767 limits::I16Max eq print nl          // 1
+	2147483647 limits::I32Max eq print nl     // 1
+
+	// Overflow detection (values near limits)
+	"=== Near limits ===" print nl
+	limits::I8Max 1 sub print nl              // 126
+	limits::I8Min 1 add print nl              // -127
+	limits::I16Max 1 sub print nl             // 32766
+	limits::I32Max 1 sub print nl             // 2147483646
+
+	// Unsigned limits
+	"=== Unsigned limits ===" print nl
+	255 limits::U8Max eq print nl             // 1
+	65535 limits::U16Max eq print nl          // 1
+	4294967295 limits::U32Max eq print nl     // 1
+
+	// Float epsilon test
+	"=== Float epsilon ===" print nl
+	1.0 limits::F64Epsilon add 1.0 neq print nl  // 1 (adding epsilon changes value)
+}

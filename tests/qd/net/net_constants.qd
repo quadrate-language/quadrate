@@ -1,0 +1,22 @@
+// Test net module error constants
+use net
+
+fn main() {
+	// Error constants should be accessible
+	"=== Error constants ===" print nl
+	"ErrListen: " print net::ErrListen print nl
+	"ErrAccept: " print net::ErrAccept print nl
+	"ErrConnect: " print net::ErrConnect print nl
+	"ErrSend: " print net::ErrSend print nl
+	"ErrReceive: " print net::ErrReceive print nl
+	"ErrInvalidArg: " print net::ErrInvalidArg print nl
+
+	// Constants should have expected values
+	"=== Verify values ===" print nl
+	net::ErrListen 2 eq print nl
+	net::ErrAccept 3 eq print nl
+	net::ErrConnect 4 eq print nl
+	net::ErrSend 5 eq print nl
+	net::ErrReceive 6 eq print nl
+	net::ErrInvalidArg 7 eq print nl
+}

@@ -1,0 +1,14 @@
+=== Error constants ===
+ErrListen: 2
+ErrAccept: 3
+ErrConnect: 4
+ErrSend: 5
+ErrReceive: 6
+ErrInvalidArg: 7
+=== Verify values ===
+1
+1
+1
+1
+1
+1

@@ -1,0 +1,16 @@
+=== Limit comparisons ===
+1
+1
+1
+1
+=== Near limits ===
+126
+-127
+32766
+2147483646
+=== Unsigned limits ===
+1
+1
+1
+=== Float epsilon ===
+1

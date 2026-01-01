@@ -1,0 +1,18 @@
+=== String to int ===
+0
+42
+-100
+1000000
+=== String to float ===
+0
+3.14
+-2.5
+1e+06
+=== Int to string ===
+0
+42
+-100
+=== Float to string ===
+0
+3.14
+-2.5

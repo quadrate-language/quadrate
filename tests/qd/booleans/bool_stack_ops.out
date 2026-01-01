@@ -1,0 +1,17 @@
+=== dup ===
+1 1
+0 0
+=== swap ===
+1 0
+=== Arithmetic ===
+2
+1
+0
+=== As index ===
+zero
+one
+=== Logical ===
+1
+0
+1
+0
