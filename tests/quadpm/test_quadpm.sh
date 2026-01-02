@@ -76,7 +76,7 @@ fi
 echo ""
 echo "Test 2: Version output"
 if output=$("$QUADPM" --version 2>&1); then
-    if echo "$output" | grep -q "quadpm 0.1.0"; then
+    if echo "$output" | grep -q "quadpm 2.0.0-alpha"; then
         pass "Version displays correctly"
     else
         fail "Version output incorrect" "$output"
