@@ -1,3 +1,4 @@
+subdir('version')
 subdir('qc')
 subdir('qdrt')
 subdir('llvmgen')

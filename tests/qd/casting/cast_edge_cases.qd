@@ -1,0 +1,58 @@
+// Test casting edge cases
+use limits
+
+fn main() {
+	// Very small positive floats
+	"=== Small floats to int ===" print nl
+	0.001 cast<i64> print nl          // 0
+	0.0001 cast<i64> print nl         // 0
+	0.999999999 cast<i64> print nl    // 0
+
+	// Float precision boundary
+	"=== Float precision ===" print nl
+	limits::F64Epsilon cast<i64> print nl  // 0 (very small)
+	1.0 limits::F64Epsilon add cast<i64> print nl  // 1
+
+	// Large float to int
+	"=== Large floats ===" print nl
+	10000000000.0 cast<i64> print nl  // 10000000000
+	-10000000000.0 cast<i64> print nl // -10000000000
+
+	// Int to float precision
+	"=== Int to float ===" print nl
+	limits::I32Max cast<f64> cast<i64> print nl    // 2147483647 (should round-trip)
+	limits::I32Min cast<f64> cast<i64> print nl    // -2147483648
+
+	// String parsing edge cases
+	"=== String parsing ===" print nl
+	"0" cast<i64> print nl            // 0
+	"-0" cast<i64> print nl           // 0
+	"   42" cast<i64> print nl        // 42 (leading whitespace)
+	"-123" cast<i64> print nl         // -123
+	"+456" cast<i64> print nl         // 456
+	"0.0" cast<f64> print nl          // 0.0
+	"-0.0" cast<f64> print nl         // -0.0 or 0.0
+	".5" cast<f64> print nl           // 0.5
+	"1e5" cast<f64> print nl          // 100000.0
+	"-1e-5" cast<f64> print nl        // -0.00001
+
+	// Integer to string
+	"=== Int to string ===" print nl
+	0 cast<str> print nl              // "0"
+	-1 cast<str> print nl             // "-1"
+	limits::I32Max cast<str> print nl // "2147483647"
+	limits::I32Min cast<str> print nl // "-2147483648"
+
+	// Float to string (basic check)
+	"=== Float to string ===" print nl
+	0.0 cast<str> print nl            // "0" or "0.0"
+	1.5 cast<str> print nl            // "1.5"
+	-2.25 cast<str> print nl          // "-2.25"
+
+	// Chained casts
+	"=== Chained casts ===" print nl
+	"100" cast<i64> cast<f64> cast<str> cast<f64> cast<i64> print nl  // 100
+	3.7 cast<i64> cast<str> print nl  // "3" (truncates then converts)
+
+	"done" print nl
+}

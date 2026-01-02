@@ -1,4 +1,6 @@
 #include "options.h"
+#include "version.h"
+#include <cstdio>
 #include <iostream>
 #include <unistd.h>
 
@@ -36,7 +38,7 @@ void printHelp() {
 }
 
 void printVersion() {
-	std::cout << QUADC_VERSION << "\n";
+	std::cout << quadrate_version_string("quadc") << "\n";
 }
 
 bool parseArgs(int argc, char* argv[], Options& opts) {

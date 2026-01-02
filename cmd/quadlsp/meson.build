@@ -8,6 +8,7 @@ jansson_dep = dependency('jansson', version: '>=2.14', required: true, fallback:
 
 quadlsp_exe = executable('quadlsp',
 	quadlsp_sources,
+	include_directories: [version_inc],
 	dependencies: [qc_dep, jansson_dep],
 	install: true
 )

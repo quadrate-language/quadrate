@@ -3,6 +3,7 @@
 
 #include "git_ref.h"
 #include "semver.h"
+#include "version.h"
 #include <algorithm>
 #include <array>
 #include <cstdio>
@@ -693,7 +694,7 @@ bool compileCsources(const std::string& moduleDir, const std::string& moduleName
 
 // Print version information
 void printVersion() {
-	std::cout << "quadpm 0.1.0\n";
+	std::cout << quadrate_version_string("quadpm") << "\n";
 }
 
 // Print usage information

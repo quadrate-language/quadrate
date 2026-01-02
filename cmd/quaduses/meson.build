@@ -6,6 +6,7 @@ quaduses_sources = files(
 
 quaduses = executable('quaduses',
 	quaduses_sources,
+	include_directories: [version_inc],
 	dependencies: qc_dep,
 	install: false
 )

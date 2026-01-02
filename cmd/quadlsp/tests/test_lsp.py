@@ -111,7 +111,7 @@ class LSPTester:
 
         serverInfo = result.get("serverInfo", {})
         self.assert_equal(serverInfo.get("name"), "quadlsp", "Initialize: Server name")
-        self.assert_equal(serverInfo.get("version"), "0.1.0", "Initialize: Server version")
+        self.assert_equal(serverInfo.get("version"), "2.0.0-alpha", "Initialize: Server version")
 
     def test_shutdown(self):
         """Test LSP shutdown request"""

@@ -16,6 +16,8 @@
 #include <unordered_set>
 #include <vector>
 
+#include "version.h"
+
 using namespace Qd;
 
 struct Options {
@@ -58,7 +60,7 @@ void printHelp() {
 }
 
 void printVersion() {
-	std::cout << "0.1.0\n";
+	std::cout << quadrate_version_string("quadlint") << "\n";
 }
 
 bool parseArgs(int argc, char* argv[], Options& opts) {

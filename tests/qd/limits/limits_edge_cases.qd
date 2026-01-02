@@ -1,0 +1,53 @@
+// Test limits edge cases
+use limits
+
+fn main() {
+	// Integer boundary comparisons
+	"=== Boundary comparisons ===" print nl
+	limits::I64Max limits::I64Max eq print nl     // 1
+	limits::I64Min limits::I64Min eq print nl     // 1
+	limits::I64Max limits::I64Min gt print nl     // 1
+	limits::I64Min limits::I64Max lt print nl     // 1
+
+	// Operations at boundaries
+	"=== At max boundary ===" print nl
+	limits::I64Max 0 add print nl                 // unchanged
+	limits::I64Max 0 sub print nl                 // unchanged
+	limits::I64Max 1 mul print nl                 // unchanged
+	limits::I64Max 1 div print nl                 // unchanged
+
+	// Operations at min boundary
+	"=== At min boundary ===" print nl
+	limits::I64Min 0 add print nl                 // unchanged
+	limits::I64Min 0 sub print nl                 // unchanged
+	limits::I64Min 1 mul print nl                 // unchanged
+
+	// Float boundary tests
+	"=== Float boundaries ===" print nl
+	limits::F64Max limits::F64Max eq print nl     // 1
+	limits::F64Min limits::F64Min eq print nl     // 1
+	limits::F64Max 0.0 gt print nl                // 1
+	limits::F64Min 0.0 gt print nl                // 1
+
+	// Epsilon tests
+	"=== Epsilon precision ===" print nl
+	1.0 limits::F64Epsilon add 1.0 neq print nl   // 1 (epsilon changes value)
+	1.0 limits::F64Epsilon sub 1.0 neq print nl   // 1
+	limits::F64Epsilon 0.0 gt print nl            // 1 (epsilon is positive)
+
+	// Sign boundary tests
+	"=== Sign boundaries ===" print nl
+	0 1 sub -1 eq print nl                        // 1
+	-1 1 add 0 eq print nl                        // 1
+	1 neg -1 eq print nl                          // 1
+	-1 neg 1 eq print nl                          // 1
+
+	// Modulo edge cases
+	"=== Modulo edge cases ===" print nl
+	0 5 mod print nl                              // 0
+	5 5 mod print nl                              // 0
+	1 limits::I32Max mod print nl                 // 1
+	limits::I32Max limits::I32Max mod print nl    // 0
+
+	"done" print nl
+}

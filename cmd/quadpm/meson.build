@@ -10,6 +10,7 @@ jansson_dep = dependency('jansson', version: '>=2.14', required: true, fallback:
 quadpm_exe = executable(
 	'quadpm',
 	quadpm_sources,
+	include_directories: [version_inc],
 	dependencies: [jansson_dep],
 	install: true,
 	cpp_args: ['-std=c++20'],

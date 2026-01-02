@@ -1,0 +1,66 @@
+// Test boolean edge cases
+fn main() {
+	// Logical negation using "0 eq" pattern (since 'not' is bitwise)
+	"=== Logical negation ===" print nl
+	1 0 eq print nl            // 0 (1 is not zero)
+	0 0 eq print nl            // 1 (0 is zero)
+	42 0 eq print nl           // 0 (42 is not zero)
+	-1 0 eq print nl           // 0 (-1 is not zero)
+
+	// Double logical negation
+	"=== Double logical negation ===" print nl
+	1 0 eq 0 eq print nl       // 1 (1 -> 0 -> 1)
+	0 0 eq 0 eq print nl       // 0 (0 -> 1 -> 0)
+
+	// Negated comparisons
+	"=== Negated comparisons ===" print nl
+	1 2 lt 0 eq print nl       // 0 (1 < 2 is true, not true = false)
+	2 1 lt 0 eq print nl       // 1 (2 < 1 is false, not false = true)
+	5 5 eq 0 eq print nl       // 0 (5 == 5 is true, not true = false)
+	5 6 eq 0 eq print nl       // 1 (5 == 6 is false, not false = true)
+
+	// Chained logical operations
+	"=== Chained and/or ===" print nl
+	1 1 and 1 and print nl     // 1 (true and true and true)
+	1 0 and 1 and print nl     // 0 (true and false = false)
+	0 0 or 0 or print nl       // 0 (false or false or false)
+	0 1 or 0 or print nl       // 1 (false or true = true)
+
+	// Mixed and/or (tests associativity)
+	"=== Mixed and/or ===" print nl
+	1 0 and 1 or print nl      // 1 ((true and false) or true = true)
+	1 1 and 0 or print nl      // 1 ((true and true) or false = true)
+	0 1 or 0 and print nl      // 0 ((false or true) and false = false)
+
+	// Zero comparisons edge cases
+	"=== Zero comparisons ===" print nl
+	0 0 eq print nl            // 1 (zero equals zero)
+	0 0 lt print nl            // 0 (zero not less than zero)
+	0 0 lte print nl           // 1 (zero <= zero)
+	0 0 gt print nl            // 0 (zero not greater than zero)
+	0 0 gte print nl           // 1 (zero >= zero)
+	0 0 neq print nl           // 0 (zero equals zero)
+
+	// Negative number comparisons
+	"=== Negative comparisons ===" print nl
+	-1 0 lt print nl           // 1 (negative less than zero)
+	-1 -2 gt print nl          // 1 (-1 > -2)
+	-1 -1 eq print nl          // 1 (-1 equals -1)
+	-5 5 lt print nl           // 1 (-5 < 5)
+
+	// Boolean as integer arithmetic
+	"=== Boolean as integer ===" print nl
+	1 2 eq 5 add print nl      // 5 (0 + 5)
+	1 1 eq 5 add print nl      // 6 (1 + 5)
+	1 2 lt 10 mul print nl     // 10 (1 * 10)
+	2 1 lt 10 mul print nl     // 0 (0 * 10)
+
+	// Truthy value check (any non-zero is true)
+	"=== Truthy values ===" print nl
+	1 if { 1 print nl }
+	42 if { 1 print nl }
+	-1 if { 1 print nl }
+	0 if { 0 print nl } else { 1 print nl }
+
+	"done" print nl
+}

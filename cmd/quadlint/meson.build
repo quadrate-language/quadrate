@@ -4,6 +4,7 @@ quadlint_sources = files(
 
 quadlint = executable('quadlint',
 	quadlint_sources,
+	include_directories: [version_inc],
 	dependencies: qc_dep,
 	install: true
 )

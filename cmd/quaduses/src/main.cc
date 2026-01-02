@@ -17,6 +17,8 @@
 #include <u8t/scanner.h>
 #include <vector>
 
+#include "version.h"
+
 namespace fs = std::filesystem;
 
 using namespace Qd;
@@ -44,7 +46,7 @@ void printHelp() {
 }
 
 void printVersion() {
-	std::cout << "0.1.0\n";
+	std::cout << quadrate_version_string("quaduses") << "\n";
 }
 
 bool parseArgs(int argc, char* argv[], Options& opts) {

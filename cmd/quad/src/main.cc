@@ -7,6 +7,8 @@
 #include <string>
 #include <vector>
 
+#include "version.h"
+
 // Platform abstractions
 extern "C" {
 #include "src/platform/exe_path_platform.h"
@@ -15,8 +17,6 @@ extern "C" {
 
 namespace fs = std::filesystem;
 using Qd::Colors;
-
-static const char* VERSION = "0.1.0";
 
 struct Command {
 	const char* name;
@@ -71,7 +71,7 @@ void printHelp() {
 }
 
 void printVersion() {
-	std::cout << "quad " << VERSION << "\n";
+	std::cout << quadrate_version_string("quad") << "\n";
 }
 
 // Get the directory where the quad binary is located

@@ -14,6 +14,8 @@
 #include <unistd.h>
 #include <vector>
 
+#include "version.h"
+
 // Signal handling for crash recovery
 static sigjmp_buf g_jmpBuf;
 static volatile sig_atomic_t g_inExecution = 0;
@@ -36,8 +38,6 @@ static void signalHandler(int sig) {
 	signal(sig, SIG_DFL);
 	raise(sig);
 }
-
-#define QUADRATE_VERSION "0.1.0"
 
 // ANSI color codes
 #define COLOR_RESET "\033[0m"
@@ -1012,7 +1012,7 @@ private:
 };
 
 void printVersion() {
-	printf("%s\n", QUADRATE_VERSION);
+	printf("%s\n", quadrate_version_string("quadrepl"));
 }
 
 void printHelp() {

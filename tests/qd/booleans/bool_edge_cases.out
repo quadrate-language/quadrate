@@ -1,0 +1,45 @@
+=== Logical negation ===
+0
+1
+0
+0
+=== Double logical negation ===
+1
+0
+=== Negated comparisons ===
+0
+1
+0
+1
+=== Chained and/or ===
+1
+0
+0
+1
+=== Mixed and/or ===
+1
+1
+0
+=== Zero comparisons ===
+1
+0
+1
+0
+1
+0
+=== Negative comparisons ===
+1
+1
+1
+1
+=== Boolean as integer ===
+5
+6
+10
+0
+=== Truthy values ===
+1
+1
+1
+1
+done

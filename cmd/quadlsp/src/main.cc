@@ -1,6 +1,7 @@
 #include "constant_info.h"
 #include "function_info.h"
 #include "struct_info.h"
+#include "version.h"
 #include <cstdio>
 #include <cstring>
 #include <filesystem>
@@ -470,7 +471,7 @@ private:
 
 		json_t* serverInfo = json_object();
 		json_object_set_new(serverInfo, "name", json_string("quadlsp"));
-		json_object_set_new(serverInfo, "version", json_string("0.1.0"));
+		json_object_set_new(serverInfo, "version", json_string(QUADRATE_VERSION));
 		json_object_set_new(result, "serverInfo", serverInfo);
 
 		json_object_set_new(response, "result", result);
@@ -4277,7 +4278,7 @@ void printHelp() {
 }
 
 void printVersion() {
-	std::cout << "0.1.0\n";
+	std::cout << quadrate_version_string("quadlsp") << "\n";
 }
 
 int main(int argc, char* argv[]) {

@@ -1,0 +1,16 @@
+#ifndef QUADRATE_VERSION_H
+#define QUADRATE_VERSION_H
+
+#define QUADRATE_VERSION "@VERSION@"
+#define QUADRATE_GIT_COMMIT "@VCS_TAG@"
+#define QUADRATE_BUILD_DATE __DATE__
+
+// Full version string for --version output
+static inline const char* quadrate_version_string(const char* tool_name) {
+	static char buf[256];
+	snprintf(buf, sizeof(buf), "%s %s (%s, built %s)",
+		tool_name, QUADRATE_VERSION, QUADRATE_GIT_COMMIT, QUADRATE_BUILD_DATE);
+	return buf;
+}
+
+#endif
