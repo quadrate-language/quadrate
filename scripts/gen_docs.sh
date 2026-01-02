@@ -31,7 +31,6 @@ declare -A STDLIB_MODULES=(
     ["flag"]="lib/qdflag/qd/flag/module.qd"
     ["fmt"]="lib/qdfmt/qd/fmt/module.qd"
     ["hex"]="lib/qdhex/qd/hex/module.qd"
-    ["hof"]="lib/qdhof/qd/hof/module.qd"
     ["io"]="lib/qdio/qd/io/module.qd"
     ["json"]="lib/qdjson/qd/json/module.qd"
     ["limits"]="lib/qdlimits/qd/limits/module.qd"

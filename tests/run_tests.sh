@@ -30,9 +30,70 @@ export QUADRATE_LIBDIR
 
 # Create temp directory
 mkdir -p "$TEMP_DIR/results"
+mkdir -p "$TEMP_DIR/external_modules"
 
 # Cleanup on exit
 trap "rm -rf $TEMP_DIR" EXIT
+
+# Clone external modules (if external_modules.txt exists)
+EXTERNAL_MODULES_FILE="$SCRIPT_DIR/external_modules.txt"
+declare -A EXTERNAL_MODULE_PATHS
+if [ -f "$EXTERNAL_MODULES_FILE" ]; then
+    echo "Cloning external modules..."
+    while IFS=' ' read -r module_name git_url || [ -n "$module_name" ]; do
+        # Skip comments and empty lines
+        [[ "$module_name" =~ ^# ]] && continue
+        [[ -z "$module_name" ]] && continue
+
+        module_dir="$TEMP_DIR/external_modules/$module_name"
+        if git clone --depth 1 --quiet "$git_url" "$module_dir" 2>/dev/null; then
+            EXTERNAL_MODULE_PATHS["$module_name"]="$module_dir"
+            echo "  ✓ $module_name"
+        else
+            echo "  ✗ $module_name (clone failed - tests will be skipped)"
+        fi
+    done < "$EXTERNAL_MODULES_FILE"
+    echo ""
+fi
+export EXTERNAL_MODULE_PATHS
+
+# Helper function to get include flags for a test file
+get_include_flags() {
+    local test_file="$1"
+    local include_flags=""
+
+    # Extract module name from path (e.g., tests/qd/hof/apply.qd -> hof)
+    local rel_path="${test_file#$TEST_DIR_QD/}"
+    local module_name="${rel_path%%/*}"
+
+    # Check if this module is external
+    if [[ -n "${EXTERNAL_MODULE_PATHS[$module_name]:-}" ]]; then
+        include_flags="-I ${EXTERNAL_MODULE_PATHS[$module_name]}"
+    fi
+
+    echo "$include_flags"
+}
+
+# Helper function to check if a test should be skipped (external module not cloned)
+should_skip_external() {
+    local test_file="$1"
+
+    # Extract module name from path
+    local rel_path="${test_file#$TEST_DIR_QD/}"
+    local module_name="${rel_path%%/*}"
+
+    # Check if this module is in external_modules.txt but not cloned
+    if [ -f "$EXTERNAL_MODULES_FILE" ]; then
+        if grep -q "^$module_name " "$EXTERNAL_MODULES_FILE" 2>/dev/null; then
+            if [[ -z "${EXTERNAL_MODULE_PATHS[$module_name]:-}" ]]; then
+                return 0  # Should skip
+            fi
+        fi
+    fi
+    return 1  # Should not skip
+}
+export -f get_include_flags should_skip_external
+export EXTERNAL_MODULES_FILE TEST_DIR_QD
 
 # Function to run a single Quadrate test
 run_qd_test() {
@@ -46,6 +107,16 @@ run_qd_test() {
 
     echo "NAME:$test_name" > "$result_file"
 
+    # Check if this test should be skipped (external module not cloned)
+    if should_skip_external "$test_file"; then
+        echo "SKIP:external module not available" >> "$result_file"
+        echo -e "\033[1;33mSKIP\033[0m  $test_name (external module not available)"
+        return
+    fi
+
+    # Get include flags for external modules
+    local include_flags=$(get_include_flags "$test_file")
+
     # Check if this is a compile-time error test
     if [ -f "${test_file%.qd}.err" ]; then
         # Negative test - should fail to compile
@@ -53,7 +124,7 @@ run_qd_test() {
         local actual_error_file="$TEMP_DIR/${test_id}.err"
         local binary="$TEMP_DIR/${test_id}"
 
-        if "$compiler" $opt_flags "$test_file" -o "$binary" 2>"$actual_error_file" >/dev/null; then
+        if "$compiler" $opt_flags $include_flags "$test_file" -o "$binary" 2>"$actual_error_file" >/dev/null; then
             echo "FAIL:compilation succeeded (should have failed)" >> "$result_file"
             echo -e "\033[0;31mFAIL\033[0m  $test_name (compilation succeeded)"
             return
@@ -86,7 +157,7 @@ run_qd_test() {
         local binary="$TEMP_DIR/${test_id}"
 
         # Compile should succeed
-        if ! "$compiler" $opt_flags "$test_file" -o "$binary" 2>/dev/null; then
+        if ! "$compiler" $opt_flags $include_flags "$test_file" -o "$binary" 2>/dev/null; then
             echo "FAIL:compilation failed (should have succeeded)" >> "$result_file"
             echo -e "\033[0;31mFAIL\033[0m  $test_name (compilation failed)"
             return
@@ -142,7 +213,7 @@ run_qd_test() {
     if [ "$is_test_mode" = "yes" ]; then
         # Test mode: compiler runs the tests, capture output
         # Use NO_COLOR to get clean output for comparison
-        if ! NO_COLOR=1 "$compiler" $opt_flags $test_flag "$test_file" -o "$binary" >"$actual_output_file" 2>"$compile_log"; then
+        if ! NO_COLOR=1 "$compiler" $opt_flags $include_flags $test_flag "$test_file" -o "$binary" >"$actual_output_file" 2>"$compile_log"; then
             # Check if it's a compilation error or test failure
             if [ -s "$compile_log" ] && grep -q "error:" "$compile_log"; then
                 echo "FAIL:compilation failed" >> "$result_file"
@@ -155,7 +226,7 @@ run_qd_test() {
         # Skip to output comparison for test mode
     else
         # Normal mode: compile, then run
-        if ! "$compiler" $opt_flags "$test_file" -o "$binary" 2>"$compile_log" >/dev/null; then
+        if ! "$compiler" $opt_flags $include_flags "$test_file" -o "$binary" 2>"$compile_log" >/dev/null; then
             echo "FAIL:compilation failed" >> "$result_file"
             echo -e "\033[0;31mFAIL\033[0m  $test_name (compilation failed)"
             return

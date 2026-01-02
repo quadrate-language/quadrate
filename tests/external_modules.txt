@@ -1,0 +1,6 @@
+# External modules for testing
+# Format: module_name git_url
+# Tests in tests/qd/<module_name>/ will use -I flag to find these modules
+# If clone fails, tests for that module are skipped
+
+hof https://github.com/quadrate-language/hof
