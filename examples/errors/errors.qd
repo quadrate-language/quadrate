@@ -3,7 +3,7 @@ fn division(a:i64 b:i64 -- result:i64)! {
 	dup 0 == if {
 		drop drop
 		0
-		-1 "division by zero" panic
+		"division by zero" -1 panic
 	}
 	div
 }

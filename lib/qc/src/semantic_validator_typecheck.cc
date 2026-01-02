@@ -612,8 +612,11 @@ namespace Qd {
 					int thenEffect = static_cast<int>(thenStack.size()) - static_cast<int>(typeStack.size());
 					int elseEffect = static_cast<int>(elseStack.size()) - static_cast<int>(typeStack.size());
 
-					// Warn if branches have different stack effects (not an error since optional
-					// value consumption is a valid pattern in stack-based languages)
+					// For fallible functions, both branches receive the result values on the stack.
+					// The if branch (success) and else branch (error) should both handle the result
+					// (either use it or drop it), so they should have the same stack effect.
+					// For non-fallible if/else, branches should also be balanced.
+					// Only warn when the effects are actually different.
 					if (thenEffect != elseEffect) {
 						std::string errorMsg = "Stack effect mismatch: 'if' branch changes stack by ";
 						errorMsg += std::to_string(thenEffect);

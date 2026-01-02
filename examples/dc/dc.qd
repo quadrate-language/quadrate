@@ -80,12 +80,43 @@ fn stack_clear(s:ptr -- ) {
 	0 s.size
 }
 
+// Check if stack has at least n items, print error if not
+fn stack_check(s:ptr n:i64 -- ok:i64) {
+	-> n
+	-> s
+	s @size n >= -> ok
+	ok 0 == if {
+		"dc: stack empty" print nl
+	}
+	ok
+}
+
+// Check if value is non-zero, print error if not
+fn check_nonzero(val:f64 msg:str -- ok:i64) {
+	-> msg
+	-> val
+	val 0.0 != -> ok
+	ok 0 == if {
+		msg print nl
+	}
+	ok
+}
+
+// Check if value is non-negative, print error if not
+fn check_nonneg(val:f64 msg:str -- ok:i64) {
+	-> msg
+	-> val
+	val 0.0 >= -> ok
+	ok 0 == if {
+		msg print nl
+	}
+	ok
+}
+
 fn stack_dup(s:ptr -- ) {
 	-> s
-	s @size -> sz
-	sz 0 <= if {
-		"dc: stack empty" print nl
-	} else {
+	s 1 stack_check if {
+		s @size -> sz
 		s @data sz 1 - 8 * mem::get_f64 -> val
 		s val stack_push
 	}
@@ -93,10 +124,8 @@ fn stack_dup(s:ptr -- ) {
 
 fn stack_swap(s:ptr -- ) {
 	-> s
-	s @size -> sz
-	sz 2 < if {
-		"dc: stack empty" print nl
-	} else {
+	s 2 stack_check if {
+		s @size -> sz
 		s @data sz 1 - 8 * mem::get_f64 -> a
 		s @data sz 2 - 8 * mem::get_f64 -> b
 		b s @data sz 1 - 8 * mem::set_f64
@@ -153,8 +182,8 @@ fn is_number(tok:str -- result:i64) {
 fn process_token(s:ptr tok:str -- ) {
 	-> tok
 	-> s
-	0 -> first
-	tok is_number if {
+	tok is_number -> is_num
+	is_num if {
 		tok 0 str::char_at! -> first
 		first unicode::underscore == if {
 			tok 1 tok str::len 1 - str::substring! cast<f64> -> val
@@ -163,7 +192,8 @@ fn process_token(s:ptr tok:str -- ) {
 			tok cast<f64> -> val
 			s val stack_push
 		}
-	} else {
+	}
+	is_num 0 == if {
 		tok str::len 0 > if {
 			s tok process_operator
 		}
@@ -181,62 +211,48 @@ fn process_operator(s:ptr op:str -- ) {
 	"" -> octal
 	op 0 str::char_at! switch {
 		unicode::plus {
-			s stack_depth 2 >= if {
+			s 2 stack_check if {
 				s stack_pop -> b
 				s stack_pop -> a
 				s a b add stack_push
-			} else {
-				"dc: stack empty" print nl
 			}
 		}
 		unicode::minus {
-			s stack_depth 2 >= if {
+			s 2 stack_check if {
 				s stack_pop -> b
 				s stack_pop -> a
 				s a b sub stack_push
-			} else {
-				"dc: stack empty" print nl
 			}
 		}
 		unicode::asterisk {
-			s stack_depth 2 >= if {
+			s 2 stack_check if {
 				s stack_pop -> b
 				s stack_pop -> a
 				s a b mul stack_push
-			} else {
-				"dc: stack empty" print nl
 			}
 		}
 		unicode::slash {
-			s stack_depth 2 >= if {
-				s stack_peek 0.0 != if {
+			s 2 stack_check if {
+				s stack_peek "dc: divide by zero" check_nonzero if {
 					s stack_pop -> b
 					s stack_pop -> a
 					s a b div stack_push
-				} else {
-					"dc: divide by zero" print nl
 				}
-			} else {
-				"dc: stack empty" print nl
 			}
 		}
 		unicode::percent {
-			s stack_depth 2 >= if {
-				s stack_peek 0.0 != if {
+			s 2 stack_check if {
+				s stack_peek "dc: remainder by zero" check_nonzero if {
 					s stack_pop -> b
 					s stack_pop -> a
 					// Remainder for floats: a - floor(a/b)*b
 					a a b div math::floor b mul sub -> r
 					s r stack_push
-				} else {
-					"dc: remainder by zero" print nl
 				}
-			} else {
-				"dc: stack empty" print nl
 			}
 		}
 		unicode::caret {
-			s stack_depth 2 >= if {
+			s 2 stack_check if {
 				s stack_pop -> b
 				s stack_pop -> a
 				// Check if exponent is non-integer, floor it if so
@@ -246,35 +262,25 @@ fn process_operator(s:ptr op:str -- ) {
 				}
 				a b math::pow -> r
 				s r stack_push
-			} else {
-				"dc: stack empty" print nl
 			}
 		}
 		unicode::v {
-			s stack_depth 1 >= if {
-				s stack_peek 0.0 >= if {
+			s 1 stack_check if {
+				s stack_peek "dc: square root of negative number" check_nonneg if {
 					s stack_pop -> a
 					a math::sqrt -> r
 					s r stack_push
-				} else {
-					"dc: square root of negative number" print nl
 				}
-			} else {
-				"dc: stack empty" print nl
 			}
 		}
 		unicode::p {
-			s stack_depth 1 >= if {
+			s 1 stack_check if {
 				s stack_peek print nl
-			} else {
-				"dc: stack empty" print nl
 			}
 		}
 		unicode::n {
-			s stack_depth 1 >= if {
+			s 1 stack_check if {
 				s stack_pop print
-			} else {
-				"dc: stack empty" print nl
 			}
 		}
 		unicode::f {
@@ -291,8 +297,8 @@ fn process_operator(s:ptr op:str -- ) {
 		}
 		unicode::tilde {
 			// Divmod: push both quotient and remainder
-			s stack_depth 2 >= if {
-				s stack_peek 0.0 != if {
+			s 2 stack_check if {
+				s stack_peek "dc: divide by zero" check_nonzero if {
 					s stack_pop -> b
 					s stack_pop -> a
 					a b div math::floor -> q
@@ -300,25 +306,19 @@ fn process_operator(s:ptr op:str -- ) {
 					a q b mul sub -> r
 					s q stack_push
 					s r stack_push
-				} else {
-					"dc: divide by zero" print nl
 				}
-			} else {
-				"dc: stack empty" print nl
 			}
 		}
 		unicode::c {
 			s stack_clear
 		}
 		unicode::d {
-			s stack_depth 1 >= if {
+			s 1 stack_check if {
 				s stack_dup
-			} else {
-				"dc: stack empty" print nl
 			}
 		}
 		unicode::r {
-			s stack_depth 2 >= if {
+			s 2 stack_check if {
 				s stack_swap
 			}
 		}
@@ -356,15 +356,14 @@ fn process_line(s:ptr input:str -- ) {
 			// No more spaces - process remaining as last token
 			s trimmed process_token
 			break
-		} else {
-			// Extract token before space
-			trimmed 0 space_pos str::substring! -> token
-			token str::len 0 > if {
-				s token process_token
-			}
-			// Skip past space and continue
-			trimmed space_pos 1 + trimmed str::len space_pos - 1 - str::substring! -> trimmed
 		}
+		// Extract token before space
+		trimmed 0 space_pos str::substring! -> token
+		token str::len 0 > if {
+			s token process_token
+		}
+		// Skip past space and continue
+		trimmed space_pos 1 + trimmed str::len space_pos - 1 - str::substring! -> trimmed
 	}
 }
 
@@ -429,13 +428,16 @@ fn repl(s:ptr -- ) {
 	-> s
 	"" -> input
 	loop {
-		io::readline! if {
-			-> input
-			s input process_line
-			input drop
-		} else {
-			// EOF or error - exit
-			0 os::exit
+		io::readline switch {
+			Ok {
+				-> input
+				s input process_line
+				input drop
+			}
+			_ {
+				// EOF or error - exit
+				0 os::exit
+			}
 		}
 	}
 }

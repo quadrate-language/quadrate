@@ -134,6 +134,7 @@ pub fn int(f:ptr name:str -- value:i64)! {
 		-> s
 		s parse_int
 	} else {
+		drop  // drop unused string from 'string' call
 		"flag not found" ErrNotFound panic
 		0
 	}
@@ -153,6 +154,7 @@ pub fn float(f:ptr name:str -- value:f64)! {
 		-> s
 		s parse_float
 	} else {
+		drop  // drop unused string from 'string' call
 		"flag not found" ErrNotFound panic
 		0.0
 	}

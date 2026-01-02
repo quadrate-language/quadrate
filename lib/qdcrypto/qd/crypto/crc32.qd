@@ -38,10 +38,12 @@ fn crc32_make_entry(index:i64 -- entry:i64) {
 	-> index
 	index -> crc
 	0 8 1 for j {
+		crc 1 shr -> shifted
+		shifted CRC32_POLY xor -> xored
 		crc 1 and 1 == if {
-			crc 1 shr CRC32_POLY xor -> crc
+			xored -> crc
 		} else {
-			crc 1 shr -> crc
+			shifted -> crc
 		}
 	}
 	crc

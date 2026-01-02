@@ -253,7 +253,8 @@ fn check_file(path:str quiet:i64 status_mode:i64 warn_mode:i64 ignore_missing:i6
 								}
 							}
 						}
-					} else {
+					}
+					valid 0 == if {
 						warn_mode status_mode 0 == and if {
 							"sha256sum: " print path print ":" print line_num print ": improperly formatted SHA256 checksum line" print nl
 						}
@@ -297,72 +298,81 @@ fn is_not_flag(arg:str -- result:i64) {
 fn main() {
 	read flag::parse -> f
 
-	// Check for help/version first
+	0 -> handled
+
+	// Check for help first
 	f "--help" flag::boolean f "-h" flag::boolean or if {
 		print_help
 		f flag::destroy
-	} else {
-		f "--version" flag::boolean if {
-			print_version
-			f flag::destroy
-		} else {
-			// Parse mode flags
-			f "-b" flag::boolean f "--binary" flag::boolean or -> binary_mode
-			f "-t" flag::boolean f "--text" flag::boolean or if {
-				0 -> binary_mode
-			}
-			f "--tag" flag::boolean -> tag_mode
-			f "-z" flag::boolean f "--zero" flag::boolean or -> zero_mode
+		1 -> handled
+	}
 
-			// Parse check mode flags
-			f "-c" flag::boolean f "--check" flag::boolean or -> check_mode
-			f "--quiet" flag::boolean f "-q" flag::boolean or -> quiet
-			f "--status" flag::boolean -> status_mode
-			f "-w" flag::boolean f "--warn" flag::boolean or -> warn_mode
-			f "--ignore-missing" flag::boolean -> ignore_missing
-			f "--strict" flag::boolean -> strict
+	// Check for version
+	handled 0 == f "--version" flag::boolean and if {
+		print_version
+		f flag::destroy
+		1 -> handled
+	}
 
-			f flag::destroy
+	// Main processing
+	handled 0 == if {
+		// Parse mode flags
+		f "-b" flag::boolean f "--binary" flag::boolean or -> binary_mode
+		f "-t" flag::boolean f "--text" flag::boolean or if {
+			0 -> binary_mode
+		}
+		f "--tag" flag::boolean -> tag_mode
+		f "-z" flag::boolean f "--zero" flag::boolean or -> zero_mode
 
-			// Re-read args to get filenames
-			read -> argc
-			0 -> file_count
-			0 -> total_failures
+		// Parse check mode flags
+		f "-c" flag::boolean f "--check" flag::boolean or -> check_mode
+		f "--quiet" flag::boolean f "-q" flag::boolean or -> quiet
+		f "--status" flag::boolean -> status_mode
+		f "-w" flag::boolean f "--warn" flag::boolean or -> warn_mode
+		f "--ignore-missing" flag::boolean -> ignore_missing
+		f "--strict" flag::boolean -> strict
 
-			argc 0 > if {
-				argc -> remaining
+		f flag::destroy
 
-				loop {
-					remaining 0 <= if {
-						break
+		// Re-read args to get filenames
+		read -> argc
+		0 -> file_count
+		0 -> total_failures
+
+		argc 0 > if {
+			argc -> remaining
+
+			loop {
+				remaining 0 <= if {
+					break
+				}
+				-> arg
+				remaining 1 - -> remaining
+
+				arg is_not_flag if {
+					check_mode if {
+						arg quiet status_mode warn_mode ignore_missing strict check_file -> failures
+						total_failures failures + -> total_failures
 					}
-					-> arg
-					remaining 1 - -> remaining
-
-					arg is_not_flag if {
-						check_mode if {
-							arg quiet status_mode warn_mode ignore_missing strict check_file -> failures
-							total_failures failures + -> total_failures
-						} else {
-							arg binary_mode tag_mode zero_mode hash_file
-						}
-						file_count 1 + -> file_count
+					check_mode 0 == if {
+						arg binary_mode tag_mode zero_mode hash_file
 					}
+					file_count 1 + -> file_count
 				}
 			}
+		}
 
-			// If no files specified, show usage hint
-			file_count 0 == if {
-				check_mode 0 == if {
-					"sha256sum: missing file operand" print nl
-					"Try 'sha256sum --help' for more information." print nl
-				}
+		// If no files specified, show usage hint
+		file_count 0 == if {
+			check_mode 0 == if {
+				"sha256sum: missing file operand" print nl
+				"Try 'sha256sum --help' for more information." print nl
 			}
+		}
 
-			// Report check summary if needed
-			check_mode total_failures 0 > and status_mode 0 == and if {
-				"sha256sum: WARNING: " print total_failures print " computed checksum did NOT match" print nl
-			}
+		// Report check summary if needed
+		check_mode total_failures 0 > and status_mode 0 == and if {
+			"sha256sum: WARNING: " print total_failures print " computed checksum did NOT match" print nl
 		}
 	}
 }
