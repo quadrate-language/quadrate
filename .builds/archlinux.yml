@@ -13,6 +13,9 @@ packages:
 
 sources:
   - git://git@git.sr.ht:~klahr/quadrate
+  - https://github.com/quadrate-language/hof
+  - https://github.com/quadrate-language/log
+  - https://github.com/quadrate-language/compress
 
 tasks:
   - build: |

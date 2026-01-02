@@ -16,6 +16,9 @@ packages:
 
 sources:
   - git+ssh://git@git.sr.ht/~klahr/quadrate
+  - https://github.com/quadrate-language/hof
+  - https://github.com/quadrate-language/log
+  - https://github.com/quadrate-language/compress
 
 environment:
   GIT_SSH_COMMAND: "ssh -o StrictHostKeyChecking=no"

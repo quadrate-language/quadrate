@@ -1,1 +1,0 @@
-# qdcompress tests - currently empty

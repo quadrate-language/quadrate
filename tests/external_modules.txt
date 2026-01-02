@@ -4,3 +4,5 @@
 # If clone fails, tests for that module are skipped
 
 hof https://github.com/quadrate-language/hof
+log https://github.com/quadrate-language/log
+compress https://github.com/quadrate-language/compress
