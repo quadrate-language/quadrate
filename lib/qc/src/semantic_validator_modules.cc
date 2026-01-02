@@ -2,6 +2,7 @@
 #include <cstdint>
 #include <cstdlib>
 #include <cstring>
+#include <dirent.h>
 #include <filesystem>
 #include <fstream>
 #include <functional>
@@ -34,11 +35,135 @@
 #include <qc/instructions.h>
 #include <qc/semantic_validator.h>
 #include <sstream>
+#include <sys/stat.h>
+#include <unistd.h>
 #include <unordered_set>
 
 namespace Qd {
 
 #include "semantic_validator_internal.h"
+
+	// Helper: Get the packages directory path
+	static std::string getPackagesDirectory() {
+		const char* quadratePath = std::getenv("QUADRATE_PATH");
+		if (quadratePath) {
+			return quadratePath;
+		}
+		const char* xdgDataHome = std::getenv("XDG_DATA_HOME");
+		if (xdgDataHome) {
+			return std::string(xdgDataHome) + "/quadrate/packages";
+		}
+		const char* home = std::getenv("HOME");
+		if (home) {
+			return std::string(home) + "/quadrate/packages";
+		}
+		return "";
+	}
+
+	// Helper: Check if a module name is a full path import (contains host/path)
+	// e.g., "git.sr.ht/~klahr/collections" or "github.com/user/repo"
+	static bool isFullPathImport(const std::string& moduleName) {
+		// Full path imports contain '/' but don't start with '.', '~', or '/'
+		if (moduleName.empty()) {
+			return false;
+		}
+		// Skip relative paths, absolute paths, or home-relative paths
+		if (moduleName[0] == '.' || moduleName[0] == '~' || moduleName[0] == '/') {
+			return false;
+		}
+		// Skip .qd file imports
+		if (moduleName.size() >= 3 && moduleName.substr(moduleName.size() - 3) == ".qd") {
+			return false;
+		}
+		// Must contain at least one slash to be a full path
+		return moduleName.find('/') != std::string::npos;
+	}
+
+	// Helper: Parse namespace from qd.json file
+	// Returns the namespace value, or empty string if not found
+	static std::string parseNamespaceFromQdJson(const std::string& qdJsonPath) {
+		std::ifstream file(qdJsonPath);
+		if (!file.is_open()) {
+			return "";
+		}
+		std::stringstream buffer;
+		buffer << file.rdbuf();
+		std::string content = buffer.str();
+		file.close();
+
+		// Simple JSON parsing for "namespace" field
+		size_t pos = content.find("\"namespace\"");
+		if (pos == std::string::npos) {
+			return "";
+		}
+		// Find colon after key
+		size_t colonPos = content.find(':', pos + 11);
+		if (colonPos == std::string::npos) {
+			return "";
+		}
+		// Find opening quote of value
+		size_t valueStart = content.find('"', colonPos + 1);
+		if (valueStart == std::string::npos) {
+			return "";
+		}
+		// Find closing quote
+		size_t valueEnd = content.find('"', valueStart + 1);
+		if (valueEnd == std::string::npos) {
+			return "";
+		}
+		return content.substr(valueStart + 1, valueEnd - valueStart - 1);
+	}
+
+	// Helper: Find all installed packages that claim a given namespace
+	// Returns list of package paths that have namespace field matching the given namespace
+	static std::vector<std::string> findPackagesWithNamespace(
+			const std::string& packagesDir, const std::string& namespaceName) {
+		std::vector<std::string> result;
+		std::string cacheDir = packagesDir + "/cache";
+
+		if (!std::filesystem::exists(cacheDir)) {
+			return result;
+		}
+
+		// Recursively scan cache directory for qd.json files
+		try {
+			for (const auto& entry : std::filesystem::recursive_directory_iterator(cacheDir)) {
+				if (entry.is_regular_file() && entry.path().filename() == "qd.json") {
+					std::string ns = parseNamespaceFromQdJson(entry.path().string());
+					if (ns == namespaceName) {
+						// Get the package directory (parent of qd.json)
+						result.push_back(entry.path().parent_path().string());
+					}
+				}
+			}
+		} catch (...) {
+			// Ignore filesystem errors
+		}
+
+		return result;
+	}
+
+	// Helper: Resolve a symlink to its target path
+	static std::string resolveSymlink(const std::string& symlinkPath) {
+		char resolved[PATH_MAX];
+		ssize_t len = readlink(symlinkPath.c_str(), resolved, sizeof(resolved) - 1);
+		if (len != -1) {
+			resolved[len] = '\0';
+			// If the target is relative, make it absolute based on symlink location
+			std::string target(resolved);
+			if (!target.empty() && target[0] != '/') {
+				std::filesystem::path symlinkDir = std::filesystem::path(symlinkPath).parent_path();
+				target = (symlinkDir / target).string();
+			}
+			// Normalize the path
+			try {
+				return std::filesystem::canonical(target).string();
+			} catch (...) {
+				return target;
+			}
+		}
+		return "";
+	}
 
 	// Check if a type string is a known struct name (local or imported)
 	// Supports both unqualified names (Response) and qualified names (http::Response)
@@ -313,37 +438,101 @@ namespace Qd {
 			}
 
 			// Try 3: Third-party packages directory (installed via quadpm)
-			std::string packagesDir;
-			const char* quadratePath = std::getenv("QUADRATE_PATH");
-			if (quadratePath) {
-				packagesDir = quadratePath;
-			} else {
-				const char* xdgDataHome = std::getenv("XDG_DATA_HOME");
-				if (xdgDataHome) {
-					packagesDir = std::string(xdgDataHome) + "/quadrate/packages";
-				} else {
-					const char* pkgHome = std::getenv("HOME");
-					if (pkgHome) {
-						packagesDir = std::string(pkgHome) + "/quadrate/packages";
-					}
-				}
-			}
+			// Supports both full path imports (e.g., "use git.sr.ht/~klahr/collections")
+			// and namespace resolution via _namespaces/ symlinks
+			std::string packagesDir = getPackagesDirectory();
 
 			if (!packagesDir.empty() && std::filesystem::exists(packagesDir)) {
-				// Look for directories matching moduleName@*
-				try {
-					for (const auto& entry : std::filesystem::directory_iterator(packagesDir)) {
-						if (!entry.is_directory()) {
-							continue;
+				std::string cacheDir = packagesDir + "/cache";
+				std::string namespacesDir = packagesDir + "/_namespaces";
+
+				// Check if this is a full path import (e.g., "git.sr.ht/~klahr/collections")
+				if (isFullPathImport(moduleName)) {
+					// Full path import - look in cache/{hostPath}@*/module.qd
+					// Extract the namespace from qd.json to use as the effective module name
+					if (std::filesystem::exists(cacheDir)) {
+						try {
+							// Look for directories matching moduleName@*
+							for (const auto& entry : std::filesystem::recursive_directory_iterator(cacheDir)) {
+								if (!entry.is_directory()) {
+									continue;
+								}
+								std::string dirPath = entry.path().string();
+								// Check if this directory matches moduleName@version pattern
+								std::string relativePath = dirPath.substr(cacheDir.length() + 1);
+								size_t atPos = relativePath.find('@');
+								if (atPos != std::string::npos) {
+									std::string hostPath = relativePath.substr(0, atPos);
+									if (hostPath == moduleName) {
+										// Found matching package
+										modulePath = dirPath + "/module.qd";
+										if (std::filesystem::exists(modulePath)) {
+											// Get namespace from qd.json (defaults to module name)
+											std::string qdJsonPath = dirPath + "/qd.json";
+											std::string effectiveNamespace = parseNamespaceFromQdJson(qdJsonPath);
+											if (effectiveNamespace.empty()) {
+												// No namespace in qd.json - extract from module name
+												size_t lastSlash = moduleName.find_last_of('/');
+												effectiveNamespace = (lastSlash != std::string::npos)
+																			 ? moduleName.substr(lastSlash + 1)
+																			 : moduleName;
+											}
+
+											file.open(modulePath);
+											if (file.good()) {
+												mModuleDirectories[effectiveNamespace] = dirPath;
+												// Register the namespace in imported modules so mylib::foo works
+												mImportedModules.insert(effectiveNamespace);
+												std::stringstream buffer;
+												buffer << file.rdbuf();
+												std::string source = buffer.str();
+												file.close();
+												parseModuleAndCollectFunctions(effectiveNamespace, source);
+												return;
+											}
+											file.close();
+										}
+									}
+								}
+							}
+						} catch (...) {
+							// Ignore filesystem errors
 						}
-						std::string dirName = entry.path().filename().string();
-						std::string prefix = moduleName + "@";
-						if (dirName.size() > prefix.size() && dirName.substr(0, prefix.size()) == prefix) {
-							// Found a matching package
-							modulePath = entry.path().string() + "/module.qd";
+					}
+				} else {
+					// Short module name - first check _namespaces/ symlink
+					std::string nsSymlink = namespacesDir + "/" + moduleName;
+					if (std::filesystem::exists(nsSymlink)) {
+						// Check for ambiguous namespace (multiple packages claiming same namespace)
+						std::vector<std::string> conflictingPackages =
+								findPackagesWithNamespace(packagesDir, moduleName);
+						if (conflictingPackages.size() > 1 && reportErrors) {
+							// Multiple packages claim this namespace - error
+							std::string errorMsg = "Ambiguous module '";
+							errorMsg += moduleName;
+							errorMsg += "': multiple installed packages claim this namespace.\n";
+							errorMsg += "Use full path import to disambiguate:\n";
+							for (const auto& pkg : conflictingPackages) {
+								// Extract hostPath from cache path
+								std::string relativePath = pkg.substr(cacheDir.length() + 1);
+								size_t atPos = relativePath.find('@');
+								if (atPos != std::string::npos) {
+									errorMsg += "  use ";
+									errorMsg += relativePath.substr(0, atPos);
+									errorMsg += "\n";
+								}
+							}
+							reportError(errorMsg.c_str());
+							return;
+						}
+
+						// Resolve symlink to get package directory
+						std::string targetPath = resolveSymlink(nsSymlink);
+						if (!targetPath.empty()) {
+							modulePath = targetPath + "/module.qd";
 							file.open(modulePath);
 							if (file.good()) {
-								mModuleDirectories[moduleName] = entry.path().string();
+								mModuleDirectories[moduleName] = targetPath;
 								std::stringstream buffer;
 								buffer << file.rdbuf();
 								std::string source = buffer.str();
@@ -352,11 +541,39 @@ namespace Qd {
 								return;
 							}
 							file.close();
-							break; // Only try first matching version
 						}
 					}
-				} catch (...) {
-					// Ignore errors iterating directory
+
+					// Fallback: Look for directories matching moduleName@* in cache (legacy format)
+					if (std::filesystem::exists(cacheDir)) {
+						try {
+							for (const auto& entry : std::filesystem::directory_iterator(cacheDir)) {
+								if (!entry.is_directory()) {
+									continue;
+								}
+								std::string dirName = entry.path().filename().string();
+								std::string prefix = moduleName + "@";
+								if (dirName.size() > prefix.size() && dirName.substr(0, prefix.size()) == prefix) {
+									// Found a matching package
+									modulePath = entry.path().string() + "/module.qd";
+									file.open(modulePath);
+									if (file.good()) {
+										mModuleDirectories[moduleName] = entry.path().string();
+										std::stringstream buffer;
+										buffer << file.rdbuf();
+										std::string source = buffer.str();
+										file.close();
+										parseModuleAndCollectFunctions(moduleName, source);
+										return;
+									}
+									file.close();
+									break; // Only try first matching version
+								}
+							}
+						} catch (...) {
+							// Ignore errors iterating directory
+						}
+					}
 				}
 			}
 

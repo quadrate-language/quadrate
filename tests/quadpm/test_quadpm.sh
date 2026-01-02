@@ -191,8 +191,8 @@ cd - > /dev/null
 if output=$(QUADRATE_PATH="$TEST_CACHE_DIR/cache" "$QUADPM" get "$TEST_REPO@v1.0.0" 2>&1); then
     if echo "$output" | grep -q "✓ Installed to"; then
         if echo "$output" | grep -q "✓ Found module.qd"; then
-            # Verify package was actually created
-            if [ -d "$TEST_CACHE_DIR/cache/test-repo@v1.0.0" ]; then
+            # Verify package was actually created (uses Go-style path: local/path/to/repo@version)
+            if find "$TEST_CACHE_DIR/cache" -type d -name "test-repo@v1.0.0" | grep -q .; then
                 pass "Installs package successfully"
             else
                 fail "Package directory not created" "$output"
@@ -262,8 +262,8 @@ cd - > /dev/null
 if output=$(QUADRATE_PATH="$TEST_CACHE_DIR/cache" "$QUADPM" get "$TEST_C_REPO@v1.0.0" 2>&1); then
     if echo "$output" | grep -q "Found src/ directory"; then
         if echo "$output" | grep -q "✓ Built"; then
-            # Verify library was created
-            if [ -f "$TEST_CACHE_DIR/cache/test-c-repo@v1.0.0/lib/libtest-c-repo_static.a" ]; then
+            # Verify library was created (uses Go-style path: local/path/to/repo@version/lib/)
+            if find "$TEST_CACHE_DIR/cache" -name "libtest-c-repo_static.a" | grep -q .; then
                 pass "Compiles C sources successfully"
             else
                 fail "Library file not created" "$output"
@@ -892,6 +892,147 @@ else
     fail "Frozen install failed" "$output"
 fi
 cd - > /dev/null
+
+# Test 31: Namespace registration
+echo ""
+echo "Test 31: Namespace registration"
+NAMESPACE_DIR="$TEST_CACHE_DIR/namespace-test"
+mkdir -p "$NAMESPACE_DIR/mylib"
+
+# Create a module with custom namespace
+echo "fn lib_func() { 1 }" > "$NAMESPACE_DIR/mylib/module.qd"
+cat > "$NAMESPACE_DIR/mylib/qd.json" << 'EOF'
+{
+  "name": "mylib",
+  "namespace": "ml"
+}
+EOF
+cd "$NAMESPACE_DIR/mylib"
+git init -q
+git config user.name "Test User"
+git config user.email "test@example.com"
+git config commit.gpgSign false
+git config tag.gpgSign false
+git add .
+git commit -q -m "Initial"
+git tag -a v1.0.0 -m "v1.0.0"
+cd - > /dev/null
+
+if output=$(QUADRATE_PATH="$TEST_CACHE_DIR/cache" "$QUADPM" get "$NAMESPACE_DIR/mylib@v1.0.0" 2>&1); then
+    if echo "$output" | grep -q "Namespace 'ml' registered"; then
+        # Check that symlink was created
+        if [ -L "$TEST_CACHE_DIR/cache/_namespaces/ml" ]; then
+            pass "Namespace registered with symlink"
+        else
+            fail "Namespace symlink not created" "$output"
+        fi
+    else
+        fail "Namespace not registered" "$output"
+    fi
+else
+    fail "Installation failed" "$output"
+fi
+
+# Test 32: Namespace from module name (no explicit namespace)
+echo ""
+echo "Test 32: Namespace defaults to module name"
+mkdir -p "$NAMESPACE_DIR/anotherlib"
+echo "fn another_func() { 2 }" > "$NAMESPACE_DIR/anotherlib/module.qd"
+cat > "$NAMESPACE_DIR/anotherlib/qd.json" << 'EOF'
+{
+  "name": "anotherlib"
+}
+EOF
+cd "$NAMESPACE_DIR/anotherlib"
+git init -q
+git config user.name "Test User"
+git config user.email "test@example.com"
+git config commit.gpgSign false
+git config tag.gpgSign false
+git add .
+git commit -q -m "Initial"
+git tag -a v1.0.0 -m "v1.0.0"
+cd - > /dev/null
+
+if output=$(QUADRATE_PATH="$TEST_CACHE_DIR/cache" "$QUADPM" get "$NAMESPACE_DIR/anotherlib@v1.0.0" 2>&1); then
+    if echo "$output" | grep -q "Namespace 'anotherlib' registered"; then
+        if [ -L "$TEST_CACHE_DIR/cache/_namespaces/anotherlib" ]; then
+            pass "Namespace defaults to module name"
+        else
+            fail "Namespace symlink not created" "$output"
+        fi
+    else
+        fail "Namespace not registered" "$output"
+    fi
+else
+    fail "Installation failed" "$output"
+fi
+
+# Test 33: Namespace conflict warning
+echo ""
+echo "Test 33: Namespace conflict warning"
+mkdir -p "$NAMESPACE_DIR/conflicting"
+echo "fn conflict_func() { 3 }" > "$NAMESPACE_DIR/conflicting/module.qd"
+# Use same namespace "ml" as Test 31
+cat > "$NAMESPACE_DIR/conflicting/qd.json" << 'EOF'
+{
+  "name": "conflicting",
+  "namespace": "ml"
+}
+EOF
+cd "$NAMESPACE_DIR/conflicting"
+git init -q
+git config user.name "Test User"
+git config user.email "test@example.com"
+git config commit.gpgSign false
+git config tag.gpgSign false
+git add .
+git commit -q -m "Initial"
+git tag -a v1.0.0 -m "v1.0.0"
+cd - > /dev/null
+
+if output=$(QUADRATE_PATH="$TEST_CACHE_DIR/cache" "$QUADPM" get "$NAMESPACE_DIR/conflicting@v1.0.0" 2>&1); then
+    if echo "$output" | grep -q "namespace 'ml' also claimed by"; then
+        if echo "$output" | grep -q "Use full path"; then
+            pass "Namespace conflict detected with instructions"
+        else
+            fail "Missing disambiguation instructions" "$output"
+        fi
+    else
+        fail "Namespace conflict not detected" "$output"
+    fi
+else
+    fail "Installation failed" "$output"
+fi
+
+# Test 34: Go-style directory structure
+echo ""
+echo "Test 34: Go-style directory structure"
+# Check that the directory structure uses host/path format
+# For git URLs it should be like: git.sr.ht/~user/repo@version
+# For local paths it should be like: local/path/to/repo@version
+if find "$TEST_CACHE_DIR/cache" -type d -name "mylib@v1.0.0" | grep -q "local/"; then
+    pass "Go-style directory structure for local paths"
+else
+    fail "Wrong directory structure" "$(find "$TEST_CACHE_DIR/cache" -type d -name '*@*')"
+fi
+
+# Test 35: List shows namespaces
+echo ""
+echo "Test 35: List command shows namespaces"
+if output=$(QUADRATE_PATH="$TEST_CACHE_DIR/cache" "$QUADPM" list 2>&1); then
+    if echo "$output" | grep -q "namespace:"; then
+        if echo "$output" | grep -q "Registered namespaces:"; then
+            pass "List command shows namespaces"
+        else
+            fail "Namespace section not shown" "$output"
+        fi
+    else
+        fail "Namespace info not shown in list" "$output"
+    fi
+else
+    fail "List command failed" "$output"
+fi
 
 # Print summary
 echo ""

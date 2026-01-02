@@ -257,6 +257,25 @@ std::string parseModuleName(const std::string& manifestPath) {
 	return result;
 }
 
+// Parse namespace from qd.json
+// Returns the namespace (for use in code), defaulting to module name if not specified
+std::string parseNamespace(const std::string& manifestPath) {
+	json_error_t error;
+	json_t* root = json_load_file(manifestPath.c_str(), 0, &error);
+	if (!root) {
+		return "";
+	}
+
+	std::string result;
+	json_t* ns = json_object_get(root, "namespace");
+	if (ns && json_is_string(ns)) {
+		result = json_string_value(ns);
+	}
+
+	json_decref(root);
+	return result;
+}
+
 // Parse dependencies from qd.json
 // Supports:
 //   "name": "https://git.sr.ht/~user/repo@ref"  (git URL with branch/tag)
@@ -355,8 +374,119 @@ std::vector<Dependency> parseDependencies(const std::string& manifestPath) {
 }
 
 // Get the installed directory name for a module@ref
-std::string getInstalledDirName(const std::string& moduleName, const std::string& ref) {
-	return moduleName + "@" + ref;
+// For Go-style paths, this returns host/user/repo@ref format
+std::string getInstalledDirName(const std::string& hostPath, const std::string& ref) {
+	// Extract the repo name (last component)
+	size_t lastSlash = hostPath.find_last_of('/');
+	if (lastSlash != std::string::npos) {
+		// Return host/user/repo@ref format
+		std::string prefix = hostPath.substr(0, lastSlash + 1);
+		std::string repoName = hostPath.substr(lastSlash + 1);
+		return prefix + repoName + "@" + ref;
+	}
+	return hostPath + "@" + ref;
+}
+
+// Get the namespaces directory path
+std::string getNamespacesDir() {
+	return getModulesDir() + "/_namespaces";
+}
+
+// Create or update a namespace symlink
+// Returns true on success, false on conflict (different package already owns namespace)
+bool createNamespaceSymlink(const std::string& namespaceName, const std::string& targetPath) {
+	std::string namespacesDir = getNamespacesDir();
+	fs::create_directories(namespacesDir);
+
+	std::string symlinkPath = namespacesDir + "/" + namespaceName;
+
+	// Check if symlink already exists
+	if (fs::exists(symlinkPath) || fs::is_symlink(symlinkPath)) {
+		// Check if it points to the same target
+		try {
+			std::string existingTarget = fs::read_symlink(symlinkPath).string();
+			// Normalize for comparison (both should be relative to namespaces dir)
+			if (existingTarget == targetPath || fs::weakly_canonical(namespacesDir + "/" + existingTarget) ==
+														fs::weakly_canonical(namespacesDir + "/" + targetPath)) {
+				return true; // Same target, no conflict
+			}
+			// Different target - this is a conflict
+			return false;
+		} catch (const std::exception&) {
+			// If we can't read symlink, remove and recreate
+			fs::remove(symlinkPath);
+		}
+	}
+
+	// Create relative symlink
+	// Target should be relative to _namespaces/ directory
+	try {
+		fs::create_symlink(targetPath, symlinkPath);
+		return true;
+	} catch (const std::exception& e) {
+		std::cerr << COLOR_RED << "Error creating namespace symlink: " << COLOR_RESET << e.what() << "\n";
+		return false;
+	}
+}
+
+// Get all namespaces that point to a given hostPath
+std::vector<std::string> getNamespacesForPackage(const std::string& hostPathWithRef) {
+	std::vector<std::string> namespaces;
+	std::string namespacesDir = getNamespacesDir();
+
+	if (!fs::exists(namespacesDir)) {
+		return namespaces;
+	}
+
+	for (const auto& entry : fs::directory_iterator(namespacesDir)) {
+		if (fs::is_symlink(entry.path())) {
+			try {
+				std::string target = fs::read_symlink(entry.path()).string();
+				// Check if target contains the hostPathWithRef
+				if (target.find(hostPathWithRef) != std::string::npos) {
+					namespaces.push_back(entry.path().filename().string());
+				}
+			} catch (const std::exception&) {
+				// Ignore broken symlinks
+			}
+		}
+	}
+
+	return namespaces;
+}
+
+// Find which packages provide a given namespace
+std::vector<std::string> findPackagesWithNamespace(const std::string& namespaceName) {
+	std::vector<std::string> packages;
+	std::string modulesDir = getModulesDir();
+
+	if (!fs::exists(modulesDir)) {
+		return packages;
+	}
+
+	// Recursively search for qd.json files
+	for (const auto& entry : fs::recursive_directory_iterator(modulesDir)) {
+		if (entry.is_regular_file() && entry.path().filename() == "qd.json") {
+			std::string manifestPath = entry.path().string();
+			std::string ns = parseNamespace(manifestPath);
+			std::string name = parseModuleName(manifestPath);
+
+			// If namespace not specified, use module name
+			if (ns.empty()) {
+				ns = name;
+			}
+
+			if (ns == namespaceName) {
+				// Get the package directory relative to modules dir
+				std::string pkgDir = entry.path().parent_path().string();
+				if (pkgDir.substr(0, modulesDir.size()) == modulesDir) {
+					packages.push_back(pkgDir.substr(modulesDir.size() + 1)); // +1 for '/'
+				}
+			}
+		}
+	}
+
+	return packages;
 }
 
 // Lockfile format version
@@ -504,6 +634,7 @@ std::string getModuleCommitHash(const std::string& moduleDir) {
 }
 
 // Clone a Git repository to the modules directory
+// Uses Go-style paths: host/user/repo@version
 // Returns the actual module name (from manifest if present, otherwise from git ref)
 // Returns empty string on failure
 std::string gitClone(const GitRef& gitRef) {
@@ -512,7 +643,9 @@ std::string gitClone(const GitRef& gitRef) {
 	// Create modules directory if it doesn't exist
 	fs::create_directories(modulesDir);
 
-	std::string targetDir = modulesDir + "/" + getInstalledDirName(gitRef.moduleName, gitRef.ref);
+	// Use hostPath for Go-style directory structure
+	std::string installedDirName = getInstalledDirName(gitRef.hostPath, gitRef.ref);
+	std::string targetDir = modulesDir + "/" + installedDirName;
 
 	// Check if already exists
 	if (fs::exists(targetDir)) {
@@ -521,9 +654,13 @@ std::string gitClone(const GitRef& gitRef) {
 		return gitRef.moduleName;
 	}
 
-	std::cout << COLOR_CYAN << "Fetching " << COLOR_BOLD << gitRef.moduleName << COLOR_RESET << COLOR_CYAN << " "
+	std::cout << COLOR_CYAN << "Fetching " << COLOR_BOLD << gitRef.hostPath << COLOR_RESET << COLOR_CYAN << " @ "
 			  << gitRef.ref << "..." << COLOR_RESET << "\n";
 	std::cout << "  → Cloning " << gitRef.url << "\n";
+
+	// Create parent directories for Go-style path
+	fs::path targetPath(targetDir);
+	fs::create_directories(targetPath.parent_path());
 
 	// Clone with --depth 1 for faster download
 	int result = execCommandLive({"git", "clone", "--depth", "1", "--branch", gitRef.ref, gitRef.url, targetDir});
@@ -537,31 +674,10 @@ std::string gitClone(const GitRef& gitRef) {
 		return "";
 	}
 
-	// Check for qd.json and use module name if specified
-	std::string manifestPath = targetDir + "/qd.json";
-	std::string manifestModuleName = parseModuleName(manifestPath);
 	std::string finalDir = targetDir;
 	std::string actualModuleName = gitRef.moduleName;
 
-	if (!manifestModuleName.empty() && manifestModuleName != gitRef.moduleName) {
-		// Module specifies a different name, rename the directory
-		finalDir = modulesDir + "/" + getInstalledDirName(manifestModuleName, gitRef.ref);
-		actualModuleName = manifestModuleName;
-
-		// Check if target with new name already exists
-		if (fs::exists(finalDir)) {
-			std::cerr << COLOR_RED << "Error: Module '" << manifestModuleName << "' already exists at: " << COLOR_RESET
-					  << finalDir << "\n";
-			fs::remove_all(targetDir);
-			return "";
-		}
-
-		fs::rename(targetDir, finalDir);
-		std::cout << COLOR_GREEN << "  ✓ Installed as '" << manifestModuleName << "' to " << COLOR_RESET << finalDir
-				  << "\n";
-	} else {
-		std::cout << COLOR_GREEN << "  ✓ Installed to " << COLOR_RESET << finalDir << "\n";
-	}
+	std::cout << COLOR_GREEN << "  ✓ Installed to " << COLOR_RESET << finalDir << "\n";
 
 	// Show what module file was found
 	std::string moduleFile = finalDir + "/module.qd";
@@ -572,13 +688,56 @@ std::string gitClone(const GitRef& gitRef) {
 		std::cout << "    Module may need to be structured with module.qd at root\n";
 	}
 
+	// Parse namespace from qd.json and create symlink
+	std::string manifestPath = finalDir + "/qd.json";
+	std::string manifestModuleName = parseModuleName(manifestPath);
+	std::string manifestNamespace = parseNamespace(manifestPath);
+
+	// Determine the namespace: explicit namespace > module name > repo name
+	std::string namespaceName;
+	if (!manifestNamespace.empty()) {
+		namespaceName = manifestNamespace;
+	} else if (!manifestModuleName.empty()) {
+		namespaceName = manifestModuleName;
+	} else {
+		namespaceName = gitRef.moduleName;
+	}
+
+	// Create namespace symlink
+	// Relative path from _namespaces/ to the package directory
+	std::string relativeTarget = "../" + installedDirName;
+
+	// Check for namespace conflicts
+	std::vector<std::string> existingPackages = findPackagesWithNamespace(namespaceName);
+	bool hasConflict = false;
+	for (const auto& pkg : existingPackages) {
+		if (pkg != installedDirName) {
+			hasConflict = true;
+			std::cout << COLOR_YELLOW << "  ⚠ Warning: namespace '" << namespaceName
+					  << "' also claimed by: " << COLOR_RESET << pkg << "\n";
+		}
+	}
+
+	if (createNamespaceSymlink(namespaceName, relativeTarget)) {
+		std::cout << COLOR_GREEN << "  ✓ Namespace '" << namespaceName << "' registered" << COLOR_RESET << "\n";
+		if (hasConflict) {
+			std::cout << COLOR_YELLOW << "    Note: Use full path in 'use' directive to disambiguate" << COLOR_RESET
+					  << "\n";
+			std::cout << COLOR_CYAN << "    use " << gitRef.hostPath << COLOR_RESET << "\n";
+		}
+	} else {
+		std::cout << COLOR_YELLOW << "  ⚠ Namespace '" << namespaceName << "' already registered to different package"
+				  << COLOR_RESET << "\n";
+		std::cout << COLOR_CYAN << "    Use full path in 'use' directive: use " << gitRef.hostPath << COLOR_RESET
+				  << "\n";
+	}
+
 	// Check for C source files and compile if found
 	std::string srcDir = finalDir + "/src";
 	if (fs::exists(srcDir) && fs::is_directory(srcDir)) {
 		std::cout << COLOR_GREEN << "  ✓ Found src/ directory" << COLOR_RESET << "\n";
 		// Parse native config for link libraries
-		std::string finalManifestPath = finalDir + "/qd.json";
-		NativeConfig nativeConfig = parseNativeConfig(finalManifestPath);
+		NativeConfig nativeConfig = parseNativeConfig(manifestPath);
 		compileCsources(finalDir, actualModuleName, nativeConfig);
 	}
 
@@ -784,7 +943,7 @@ void printUsage() {
 	std::cout << "  Default: ~/quadrate/modules\n";
 }
 
-// List installed modules
+// List installed modules (handles Go-style host/user/repo@version paths)
 void listModules() {
 	std::string modulesDir = getModulesDir();
 
@@ -797,35 +956,103 @@ void listModules() {
 	std::cout << COLOR_BOLD << "Installed modules:" << COLOR_RESET << "\n";
 	std::cout << "Location: " << modulesDir << "\n\n";
 
-	bool found = false;
-	for (const auto& entry : fs::directory_iterator(modulesDir)) {
-		if (entry.is_directory()) {
-			found = true;
-			std::string name = entry.path().filename().string();
+	// Collect all packages with their info
+	struct PackageInfo {
+		std::string hostPath;	   // e.g., "git.sr.ht/~klahr/collections"
+		std::string version;	   // e.g., "v1.0.0"
+		std::string fullPath;	   // Full filesystem path
+		std::string namespaceName; // Namespace for code usage
+	};
 
-			// Parse module@version format
-			size_t atPos = name.find('@');
-			if (atPos != std::string::npos) {
-				std::string module = name.substr(0, atPos);
-				std::string version = name.substr(atPos + 1);
-				std::cout << "  " << COLOR_BOLD << module << COLOR_RESET << " @ " << COLOR_CYAN << version
-						  << COLOR_RESET << "\n";
-			} else {
-				std::cout << "  " << name << "\n";
-			}
+	std::vector<PackageInfo> packages;
 
-			// Check for module.qd
-			std::string moduleFile = entry.path().string() + "/module.qd";
-			if (fs::exists(moduleFile)) {
-				std::cout << "    → " << COLOR_GREEN << "module.qd found" << COLOR_RESET << "\n";
-			} else {
-				std::cout << "    → " << COLOR_YELLOW << "module.qd missing" << COLOR_RESET << "\n";
-			}
+	// Recursively find packages (directories containing module.qd or qd.json)
+	for (const auto& entry : fs::recursive_directory_iterator(modulesDir)) {
+		if (!entry.is_directory()) {
+			continue;
 		}
+		std::string dirname = entry.path().filename().string();
+		// Skip _namespaces directory
+		if (dirname == "_namespaces") {
+			continue;
+		}
+		// Check if this looks like a package directory (has @ in name and contains module.qd or qd.json)
+		size_t atPos = dirname.find('@');
+		if (atPos == std::string::npos) {
+			continue;
+		}
+		std::string moduleFile = entry.path().string() + "/module.qd";
+		std::string manifestFile = entry.path().string() + "/qd.json";
+		if (!fs::exists(moduleFile) && !fs::exists(manifestFile)) {
+			continue;
+		}
+
+		// Extract package info
+		PackageInfo info;
+		info.fullPath = entry.path().string();
+		info.version = dirname.substr(atPos + 1);
+
+		// Get host/user/repo from path relative to modules dir
+		std::string relativePath = info.fullPath.substr(modulesDir.size() + 1); // +1 for '/'
+		size_t relAtPos = relativePath.find('@');
+		if (relAtPos != std::string::npos) {
+			info.hostPath = relativePath.substr(0, relAtPos);
+		} else {
+			info.hostPath = relativePath;
+		}
+
+		// Get namespace from qd.json
+		if (fs::exists(manifestFile)) {
+			std::string ns = parseNamespace(manifestFile);
+			std::string name = parseModuleName(manifestFile);
+			if (!ns.empty()) {
+				info.namespaceName = ns;
+			} else if (!name.empty()) {
+				info.namespaceName = name;
+			} else {
+				// Extract from path
+				size_t lastSlash = info.hostPath.find_last_of('/');
+				info.namespaceName =
+						(lastSlash != std::string::npos) ? info.hostPath.substr(lastSlash + 1) : info.hostPath;
+			}
+		} else {
+			size_t lastSlash = info.hostPath.find_last_of('/');
+			info.namespaceName = (lastSlash != std::string::npos) ? info.hostPath.substr(lastSlash + 1) : info.hostPath;
+		}
+
+		packages.push_back(info);
 	}
 
-	if (!found) {
+	if (packages.empty()) {
 		std::cout << "No modules installed.\n";
+		return;
+	}
+
+	// Sort by hostPath
+	std::sort(packages.begin(), packages.end(),
+			[](const PackageInfo& a, const PackageInfo& b) { return a.hostPath < b.hostPath; });
+
+	for (const auto& pkg : packages) {
+		std::cout << "  " << COLOR_BOLD << pkg.hostPath << COLOR_RESET << " @ " << COLOR_CYAN << pkg.version
+				  << COLOR_RESET << "\n";
+		std::cout << "    namespace: " << COLOR_GREEN << pkg.namespaceName << COLOR_RESET << "\n";
+	}
+
+	// Show namespace symlinks
+	std::string namespacesDir = getNamespacesDir();
+	if (fs::exists(namespacesDir)) {
+		std::cout << "\n" << COLOR_BOLD << "Registered namespaces:" << COLOR_RESET << "\n";
+		for (const auto& entry : fs::directory_iterator(namespacesDir)) {
+			if (fs::is_symlink(entry.path())) {
+				std::string ns = entry.path().filename().string();
+				try {
+					std::string target = fs::read_symlink(entry.path()).string();
+					std::cout << "  " << COLOR_GREEN << ns << COLOR_RESET << " → " << target << "\n";
+				} catch (const std::exception&) {
+					std::cout << "  " << COLOR_YELLOW << ns << COLOR_RESET << " → (broken)\n";
+				}
+			}
+		}
 	}
 }
 
@@ -1160,8 +1387,9 @@ InstallResult installSingleDependency(const Dependency& dep, const std::string& 
 
 	result.actualRef = gitRef.ref;
 
-	// Check if already installed
-	std::string installedDir = modulesDir + "/" + getInstalledDirName(gitRef.moduleName, gitRef.ref);
+	// Check if already installed (using Go-style hostPath)
+	std::string installedDirName = getInstalledDirName(gitRef.hostPath, gitRef.ref);
+	std::string installedDir = modulesDir + "/" + installedDirName;
 	if (fs::exists(installedDir)) {
 		std::string currentCommit = getModuleCommitHash(installedDir);
 
@@ -1193,9 +1421,8 @@ InstallResult installSingleDependency(const Dependency& dep, const std::string& 
 		return result;
 	}
 
-	// Get the actual commit hash
-	std::string newInstalledDir = modulesDir + "/" + getInstalledDirName(installedName, gitRef.ref);
-	std::string commitHash = getModuleCommitHash(newInstalledDir);
+	// Get the actual commit hash (use the same hostPath-based directory)
+	std::string commitHash = getModuleCommitHash(installedDir);
 
 	std::cout << COLOR_GREEN << "✓ " << COLOR_RESET << "installed @ " << gitRef.ref;
 	if (!commitHash.empty()) {
@@ -1210,7 +1437,7 @@ InstallResult installSingleDependency(const Dependency& dep, const std::string& 
 		std::cout << "    Got:      " << commitHash << "\n";
 	}
 
-	result.modulePath = newInstalledDir;
+	result.modulePath = installedDir;
 	result.commitHash = commitHash;
 	result.success = true;
 	return result;
@@ -1417,7 +1644,7 @@ int generateLockfile() {
 		} else {
 			// Git URL dependency
 			GitRef gitRef = parseGitUrl(dep.url);
-			std::string installedDir = modulesDir + "/" + getInstalledDirName(gitRef.moduleName, gitRef.ref);
+			std::string installedDir = modulesDir + "/" + getInstalledDirName(gitRef.hostPath, gitRef.ref);
 
 			if (!fs::exists(installedDir)) {
 				std::cout << COLOR_YELLOW << "⚠ not installed" << COLOR_RESET << "\n";
