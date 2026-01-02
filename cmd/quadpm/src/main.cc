@@ -14,6 +14,8 @@
 #include <iostream>
 #include <jansson.h>
 #include <map>
+#include <queue>
+#include <set>
 #include <sstream>
 #include <string>
 #include <sys/wait.h>
@@ -185,6 +187,30 @@ struct LockedDependency {
 // Forward declarations
 bool compileCsources(const std::string& moduleDir, const std::string& moduleName, const NativeConfig& nativeConfig);
 bool isSemVerRange(const std::string& version);
+std::vector<Dependency> parseDependencies(const std::string& manifestPath);
+
+// Get the path where a module would be installed
+std::string getModuleInstallPath(const std::string& moduleName, const std::string& ref) {
+	return getModulesDir() + "/" + moduleName + "@" + ref;
+}
+
+// Get the path to a local module's directory
+std::string resolveLocalPath(const std::string& path, const std::string& basePath) {
+	std::string resolvedPath = path;
+
+	// Expand ~ to home directory
+	if (resolvedPath.size() > 0 && resolvedPath[0] == '~') {
+		resolvedPath = getHomeDir() + resolvedPath.substr(1);
+	}
+
+	// Make relative paths absolute
+	if (resolvedPath.size() > 0 && resolvedPath[0] != '/') {
+		resolvedPath = basePath + "/" + resolvedPath;
+	}
+
+	// Normalize the path
+	return fs::weakly_canonical(resolvedPath).string();
+}
 
 // Parse native section from qd.json
 NativeConfig parseNativeConfig(const std::string& manifestPath) {
@@ -718,6 +744,9 @@ void printUsage() {
 	std::cout << "  - 'install' creates/updates qd.lock automatically\n";
 	std::cout << "  - 'install --frozen' uses qd.lock strictly (for CI)\n";
 	std::cout << "  - 'lock' regenerates qd.lock from installed modules\n\n";
+	std::cout << "Transitive Dependencies:\n";
+	std::cout << "  quadpm automatically resolves and installs transitive dependencies.\n";
+	std::cout << "  If package A depends on B, and B depends on C, all three are installed.\n\n";
 	std::cout << "Examples:\n";
 	std::cout << "  quadpm install\n";
 	std::cout << "  quadpm install --frozen\n";
@@ -1051,8 +1080,145 @@ std::string resolveSemVerRange(const std::string& gitUrl, const std::string& ran
 	return "";
 }
 
+// Install a single dependency (helper for installDependencies)
+// Returns the installed module path on success, empty string on failure
+// Sets installedRef to the actual ref that was installed
+struct InstallResult {
+	std::string modulePath; // Path to installed module
+	std::string actualRef;	// Actual ref installed (may differ from requested)
+	std::string commitHash; // Git commit hash
+	bool alreadyInstalled;	// Was already installed
+	bool success;
+};
+
+InstallResult installSingleDependency(const Dependency& dep, const std::string& basePath,
+		const std::map<std::string, LockedDependency>& lockedByName, bool frozen) {
+	InstallResult result;
+	result.success = false;
+	result.alreadyInstalled = false;
+
+	std::string modulesDir = getModulesDir();
+
+	if (dep.isPath) {
+		// Local path dependency
+		std::string resolvedPath = resolveLocalPath(dep.url, basePath);
+
+		if (!fs::exists(resolvedPath)) {
+			std::cout << COLOR_RED << "✗ Path not found: " << resolvedPath << COLOR_RESET << "\n";
+			return result;
+		}
+
+		// Verify it has a module.qd
+		if (!fs::exists(resolvedPath + "/module.qd")) {
+			std::cout << COLOR_RED << "✗ Not a module (no module.qd): " << resolvedPath << COLOR_RESET << "\n";
+			return result;
+		}
+
+		std::cout << COLOR_GREEN << "✓ " << COLOR_RESET << resolvedPath << " (local)\n";
+
+		result.modulePath = resolvedPath;
+		result.success = true;
+		return result;
+	}
+
+	// Git URL dependency
+	GitRef gitRef;
+	gitRef.url = dep.url;
+	gitRef.moduleName = dep.name;
+
+	// Determine the version to use
+	std::string versionSpec = dep.version;
+	if (versionSpec.empty()) {
+		versionSpec = "main";
+	}
+
+	// Check if we have a locked version to use
+	auto lockedIt = lockedByName.find(dep.name);
+	std::string expectedCommit;
+
+	if (lockedIt != lockedByName.end() && !lockedIt->second.resolvedRef.empty()) {
+		// Use locked commit hash for reproducibility
+		expectedCommit = lockedIt->second.resolvedRef;
+		if (frozen) {
+			// In frozen mode, use locked ref
+			gitRef.ref = lockedIt->second.ref;
+		}
+	}
+
+	// Resolve semver range if needed (and not using lockfile)
+	if (!frozen && dep.isSemVer && !versionSpec.empty()) {
+		std::cout << "\n";
+		std::string resolvedTag = resolveSemVerRange(dep.url, versionSpec);
+		if (resolvedTag.empty()) {
+			std::cout << COLOR_RED << "✗ Failed to resolve version range: " << versionSpec << COLOR_RESET << "\n";
+			return result;
+		}
+		gitRef.ref = resolvedTag;
+	} else if (!frozen) {
+		gitRef.ref = versionSpec;
+	}
+
+	result.actualRef = gitRef.ref;
+
+	// Check if already installed
+	std::string installedDir = modulesDir + "/" + getInstalledDirName(gitRef.moduleName, gitRef.ref);
+	if (fs::exists(installedDir)) {
+		std::string currentCommit = getModuleCommitHash(installedDir);
+
+		// In frozen mode, verify commit matches lockfile
+		if (frozen && !expectedCommit.empty() && currentCommit != expectedCommit) {
+			std::cout << COLOR_RED << "✗ Commit mismatch (frozen)" << COLOR_RESET << "\n";
+			std::cout << "  Expected: " << expectedCommit << "\n";
+			std::cout << "  Got:      " << currentCommit << "\n";
+			return result;
+		}
+
+		std::cout << COLOR_GREEN << "✓ " << COLOR_RESET << "already installed @ " << gitRef.ref;
+		if (!currentCommit.empty()) {
+			std::cout << " (" << currentCommit.substr(0, 8) << ")";
+		}
+		std::cout << "\n";
+
+		result.modulePath = installedDir;
+		result.commitHash = currentCommit;
+		result.alreadyInstalled = true;
+		result.success = true;
+		return result;
+	}
+
+	// Clone the repository
+	std::string installedName = gitClone(gitRef);
+	if (installedName.empty()) {
+		std::cout << COLOR_RED << "✗ Failed to clone" << COLOR_RESET << "\n";
+		return result;
+	}
+
+	// Get the actual commit hash
+	std::string newInstalledDir = modulesDir + "/" + getInstalledDirName(installedName, gitRef.ref);
+	std::string commitHash = getModuleCommitHash(newInstalledDir);
+
+	std::cout << COLOR_GREEN << "✓ " << COLOR_RESET << "installed @ " << gitRef.ref;
+	if (!commitHash.empty()) {
+		std::cout << " (" << commitHash.substr(0, 8) << ")";
+	}
+	std::cout << "\n";
+
+	// Verify sha256 if specified in manifest
+	if (!dep.sha256.empty() && commitHash != dep.sha256) {
+		std::cout << "  " << COLOR_YELLOW << "⚠ SHA256 mismatch!" << COLOR_RESET << "\n";
+		std::cout << "    Expected: " << dep.sha256 << "\n";
+		std::cout << "    Got:      " << commitHash << "\n";
+	}
+
+	result.modulePath = newInstalledDir;
+	result.commitHash = commitHash;
+	result.success = true;
+	return result;
+}
+
 // Install dependencies from qd.json (with lockfile support)
 // frozen: if true, only install from lockfile (fail if lockfile missing or outdated)
+// Supports transitive dependencies - will recursively install dependencies of dependencies
 int installDependencies(bool frozen = false) {
 	std::string cwd = fs::current_path().string();
 
@@ -1074,9 +1240,9 @@ int installDependencies(bool frozen = false) {
 		return 1;
 	}
 
-	// Parse dependencies from manifest
-	std::vector<Dependency> deps = parseDependencies(manifestPath);
-	if (deps.empty()) {
+	// Parse direct dependencies from manifest
+	std::vector<Dependency> directDeps = parseDependencies(manifestPath);
+	if (directDeps.empty()) {
 		std::cout << "No dependencies found in qd.json\n";
 		return 0;
 	}
@@ -1087,9 +1253,9 @@ int installDependencies(bool frozen = false) {
 		lockedByName[locked.name] = locked;
 	}
 
-	// In frozen mode, verify all deps are in lockfile
+	// In frozen mode, verify all direct deps are in lockfile
 	if (frozen) {
-		for (const auto& dep : deps) {
+		for (const auto& dep : directDeps) {
 			if (lockedByName.find(dep.name) == lockedByName.end()) {
 				std::cerr << COLOR_RED << "Error: Dependency '" << dep.name << "' not in lockfile" << COLOR_RESET
 						  << "\n";
@@ -1099,159 +1265,79 @@ int installDependencies(bool frozen = false) {
 		}
 	}
 
+	// Use a queue for BFS traversal of dependency graph
+	// Each entry is (dependency, base_path for resolving relative paths)
+	std::queue<std::pair<Dependency, std::string>> pendingDeps;
+	std::set<std::string> processedDeps; // Track by name to avoid duplicates
+	std::vector<LockedDependency> newLockedDeps;
+	int failures = 0;
+	int totalInstalled = 0;
+
+	// Add direct dependencies to queue
+	for (const auto& dep : directDeps) {
+		pendingDeps.push({dep, cwd});
+	}
+
 	if (hasLockfile) {
 		std::cout << COLOR_CYAN << "Installing from lockfile..." << COLOR_RESET << "\n\n";
 	} else {
-		std::cout << COLOR_CYAN << "Installing " << deps.size() << " dependenc" << (deps.size() == 1 ? "y" : "ies")
-				  << "..." << COLOR_RESET << "\n\n";
+		std::cout << COLOR_CYAN << "Installing " << directDeps.size() << " direct dependenc"
+				  << (directDeps.size() == 1 ? "y" : "ies") << " (+ transitive)..." << COLOR_RESET << "\n\n";
 	}
 
-	int failures = 0;
-	std::string modulesDir = getModulesDir();
-	std::vector<LockedDependency> newLockedDeps;
+	// Process dependencies using BFS
+	while (!pendingDeps.empty()) {
+		auto [dep, basePath] = pendingDeps.front();
+		pendingDeps.pop();
 
-	for (const auto& dep : deps) {
+		// Skip if already processed
+		if (processedDeps.count(dep.name) > 0) {
+			continue;
+		}
+		processedDeps.insert(dep.name);
+
 		std::cout << COLOR_BOLD << dep.name << COLOR_RESET << ": ";
 
+		// Install this dependency
+		InstallResult installResult = installSingleDependency(dep, basePath, lockedByName, frozen);
+
+		if (!installResult.success) {
+			failures++;
+			continue;
+		}
+
+		totalInstalled++;
+
+		// Record in lockfile
 		LockedDependency newLocked;
 		newLocked.name = dep.name;
 		newLocked.isPath = dep.isPath;
-
 		if (dep.isPath) {
-			// Local path dependency
-			std::string resolvedPath = dep.url;
-
-			// Expand ~ to home directory
-			if (resolvedPath.size() > 0 && resolvedPath[0] == '~') {
-				resolvedPath = getHomeDir() + resolvedPath.substr(1);
-			}
-
-			// Make relative paths absolute
-			if (resolvedPath.size() > 0 && resolvedPath[0] != '/') {
-				resolvedPath = cwd + "/" + resolvedPath;
-			}
-
-			// Normalize the path
-			resolvedPath = fs::weakly_canonical(resolvedPath).string();
-
-			if (!fs::exists(resolvedPath)) {
-				std::cout << COLOR_RED << "✗ Path not found: " << resolvedPath << COLOR_RESET << "\n";
-				failures++;
-				continue;
-			}
-
-			// Verify it has a module.qd
-			if (!fs::exists(resolvedPath + "/module.qd")) {
-				std::cout << COLOR_RED << "✗ Not a module (no module.qd): " << resolvedPath << COLOR_RESET << "\n";
-				failures++;
-				continue;
-			}
-
-			std::cout << COLOR_GREEN << "✓ " << COLOR_RESET << resolvedPath << " (local)\n";
-
 			newLocked.url = dep.url;
-			newLocked.resolvedPath = resolvedPath;
-			newLockedDeps.push_back(newLocked);
+			newLocked.resolvedPath = installResult.modulePath;
 		} else {
-			// Git URL dependency
-			GitRef gitRef;
-			gitRef.url = dep.url;
-			gitRef.moduleName = dep.name;
+			newLocked.url = dep.url;
+			newLocked.ref = installResult.actualRef;
+			newLocked.resolvedRef = installResult.commitHash;
+			newLocked.integrity = installResult.commitHash;
+		}
+		newLockedDeps.push_back(newLocked);
 
-			// Determine the version to use
-			std::string versionSpec = dep.version;
-			if (versionSpec.empty()) {
-				versionSpec = "main";
-			}
+		// Check for transitive dependencies in the installed module
+		std::string depManifest = installResult.modulePath + "/qd.json";
+		if (fs::exists(depManifest)) {
+			std::vector<Dependency> transitiveDeps = parseDependencies(depManifest);
+			if (!transitiveDeps.empty()) {
+				std::cout << "  → " << COLOR_CYAN << transitiveDeps.size() << " transitive dependenc"
+						  << (transitiveDeps.size() == 1 ? "y" : "ies") << COLOR_RESET << "\n";
 
-			// Check if we have a locked version to use
-			auto lockedIt = lockedByName.find(dep.name);
-			std::string expectedCommit;
-
-			if (lockedIt != lockedByName.end() && !lockedIt->second.resolvedRef.empty()) {
-				// Use locked commit hash for reproducibility
-				expectedCommit = lockedIt->second.resolvedRef;
-				if (frozen) {
-					// In frozen mode, use locked ref
-					gitRef.ref = lockedIt->second.ref;
+				// Add transitive deps to queue (use installed module's dir as base for relative paths)
+				for (const auto& transDep : transitiveDeps) {
+					if (processedDeps.count(transDep.name) == 0) {
+						pendingDeps.push({transDep, installResult.modulePath});
+					}
 				}
 			}
-
-			// Resolve semver range if needed (and not using lockfile)
-			if (!frozen && dep.isSemVer && !versionSpec.empty()) {
-				std::cout << "\n";
-				std::string resolvedTag = resolveSemVerRange(dep.url, versionSpec);
-				if (resolvedTag.empty()) {
-					std::cout << COLOR_RED << "✗ Failed to resolve version range: " << versionSpec << COLOR_RESET
-							  << "\n";
-					failures++;
-					continue;
-				}
-				gitRef.ref = resolvedTag;
-			} else if (!frozen) {
-				gitRef.ref = versionSpec;
-			}
-
-			// Check if already installed
-			std::string installedDir = modulesDir + "/" + getInstalledDirName(gitRef.moduleName, gitRef.ref);
-			if (fs::exists(installedDir)) {
-				std::string currentCommit = getModuleCommitHash(installedDir);
-
-				// In frozen mode, verify commit matches lockfile
-				if (frozen && !expectedCommit.empty() && currentCommit != expectedCommit) {
-					std::cout << COLOR_RED << "✗ Commit mismatch (frozen)" << COLOR_RESET << "\n";
-					std::cout << "  Expected: " << expectedCommit << "\n";
-					std::cout << "  Got:      " << currentCommit << "\n";
-					failures++;
-					continue;
-				}
-
-				std::cout << COLOR_GREEN << "✓ " << COLOR_RESET << "already installed @ " << gitRef.ref;
-				if (!currentCommit.empty()) {
-					std::cout << " (" << currentCommit.substr(0, 8) << ")";
-				}
-				std::cout << "\n";
-
-				// Record in lockfile
-				newLocked.url = gitRef.url;
-				newLocked.ref = gitRef.ref;
-				newLocked.resolvedRef = currentCommit;
-				newLocked.integrity = currentCommit;
-				newLockedDeps.push_back(newLocked);
-				continue;
-			}
-
-			// Clone the repository
-			std::string installedName = gitClone(gitRef);
-			if (installedName.empty()) {
-				std::cout << COLOR_RED << "✗ Failed to clone" << COLOR_RESET << "\n";
-				failures++;
-				continue;
-			}
-
-			// Get the actual commit hash
-			std::string newInstalledDir = modulesDir + "/" + getInstalledDirName(installedName, gitRef.ref);
-			std::string commitHash = getModuleCommitHash(newInstalledDir);
-
-			std::cout << COLOR_GREEN << "✓ " << COLOR_RESET << "installed @ " << gitRef.ref;
-			if (!commitHash.empty()) {
-				std::cout << " (" << commitHash.substr(0, 8) << ")";
-			}
-			std::cout << "\n";
-
-			// Verify sha256 if specified in manifest
-			if (!dep.sha256.empty() && commitHash != dep.sha256) {
-				std::cout << "  " << COLOR_YELLOW << "⚠ SHA256 mismatch!" << COLOR_RESET << "\n";
-				std::cout << "    Expected: " << dep.sha256 << "\n";
-				std::cout << "    Got:      " << commitHash << "\n";
-			}
-
-			// Record in lockfile
-			newLocked.url = gitRef.url;
-			newLocked.ref = gitRef.ref;
-			newLocked.resolvedRef = commitHash;
-			newLocked.integrity = commitHash;
-			newLockedDeps.push_back(newLocked);
 		}
 	}
 
@@ -1265,11 +1351,12 @@ int installDependencies(bool frozen = false) {
 	// Write lockfile (unless in frozen mode)
 	if (!frozen && !newLockedDeps.empty()) {
 		if (writeLockfile(lockfilePath, newLockedDeps)) {
-			std::cout << COLOR_GREEN << "✓ " << COLOR_RESET << "Updated qd.lock\n";
+			std::cout << COLOR_GREEN << "✓ " << COLOR_RESET << "Updated qd.lock (" << newLockedDeps.size()
+					  << " packages)\n";
 		}
 	}
 
-	std::cout << COLOR_GREEN << "All dependencies installed!" << COLOR_RESET << "\n";
+	std::cout << COLOR_GREEN << "All " << totalInstalled << " dependencies installed!" << COLOR_RESET << "\n";
 	return 0;
 }
 

@@ -511,6 +511,388 @@ else
 fi
 cd - > /dev/null
 
+# Test 23: Transitive dependencies
+echo ""
+echo "Test 23: Transitive dependencies"
+TRANSITIVE_DIR="$TEST_CACHE_DIR/transitive-test"
+mkdir -p "$TRANSITIVE_DIR/module_c" "$TRANSITIVE_DIR/module_b" "$TRANSITIVE_DIR/module_a" "$TRANSITIVE_DIR/main"
+
+# Module C (leaf)
+echo "fn c_func() { 100 }" > "$TRANSITIVE_DIR/module_c/module.qd"
+
+# Module B depends on C
+echo "fn b_func() { 200 }" > "$TRANSITIVE_DIR/module_b/module.qd"
+cat > "$TRANSITIVE_DIR/module_b/qd.json" << 'EOF'
+{
+  "name": "module_b",
+  "dependencies": {
+    "module_c": "../module_c"
+  }
+}
+EOF
+
+# Module A depends on B
+echo "fn a_func() { 300 }" > "$TRANSITIVE_DIR/module_a/module.qd"
+cat > "$TRANSITIVE_DIR/module_a/qd.json" << 'EOF'
+{
+  "name": "module_a",
+  "dependencies": {
+    "module_b": "../module_b"
+  }
+}
+EOF
+
+# Main depends on A
+cat > "$TRANSITIVE_DIR/main/qd.json" << 'EOF'
+{
+  "name": "main",
+  "dependencies": {
+    "module_a": "../module_a"
+  }
+}
+EOF
+
+cd "$TRANSITIVE_DIR/main"
+if output=$("$QUADPM" install 2>&1); then
+    # Check that all 3 modules were installed (A, B, C)
+    if echo "$output" | grep -q "3 dependencies installed"; then
+        if grep -q '"module_c"' qd.lock; then
+            pass "Transitive dependencies resolved correctly"
+        else
+            fail "Transitive dep (module_c) not in lockfile" "$(cat qd.lock)"
+        fi
+    else
+        fail "Should install 3 dependencies (1 direct + 2 transitive)" "$output"
+    fi
+else
+    fail "Install with transitive deps failed" "$output"
+fi
+cd - > /dev/null
+
+# Test 24: Diamond dependencies (A depends on B and C, both depend on D)
+echo ""
+echo "Test 24: Diamond dependencies"
+DIAMOND_DIR="$TEST_CACHE_DIR/diamond-test"
+mkdir -p "$DIAMOND_DIR/mod_d" "$DIAMOND_DIR/mod_c" "$DIAMOND_DIR/mod_b" "$DIAMOND_DIR/mod_a" "$DIAMOND_DIR/main"
+
+# Module D (leaf - shared dependency)
+echo "fn d_func() { 400 }" > "$DIAMOND_DIR/mod_d/module.qd"
+
+# Module C depends on D
+echo "fn c_func() { 300 }" > "$DIAMOND_DIR/mod_c/module.qd"
+cat > "$DIAMOND_DIR/mod_c/qd.json" << 'EOF'
+{
+  "name": "mod_c",
+  "dependencies": {
+    "mod_d": "../mod_d"
+  }
+}
+EOF
+
+# Module B depends on D
+echo "fn b_func() { 200 }" > "$DIAMOND_DIR/mod_b/module.qd"
+cat > "$DIAMOND_DIR/mod_b/qd.json" << 'EOF'
+{
+  "name": "mod_b",
+  "dependencies": {
+    "mod_d": "../mod_d"
+  }
+}
+EOF
+
+# Module A depends on B and C
+echo "fn a_func() { 100 }" > "$DIAMOND_DIR/mod_a/module.qd"
+cat > "$DIAMOND_DIR/mod_a/qd.json" << 'EOF'
+{
+  "name": "mod_a",
+  "dependencies": {
+    "mod_b": "../mod_b",
+    "mod_c": "../mod_c"
+  }
+}
+EOF
+
+# Main depends on A
+cat > "$DIAMOND_DIR/main/qd.json" << 'EOF'
+{
+  "name": "main",
+  "dependencies": {
+    "mod_a": "../mod_a"
+  }
+}
+EOF
+
+cd "$DIAMOND_DIR/main"
+if output=$("$QUADPM" install 2>&1); then
+    # Should install 4 unique deps: A, B, C, D (D only once despite diamond)
+    if echo "$output" | grep -q "4 dependencies installed"; then
+        # Check D appears exactly once in lockfile
+        d_count=$(grep -c '"mod_d"' qd.lock)
+        if [ "$d_count" -eq 1 ]; then
+            pass "Diamond dependencies deduplicated correctly"
+        else
+            fail "Module D should appear exactly once in lockfile" "count=$d_count"
+        fi
+    else
+        fail "Should install 4 dependencies" "$output"
+    fi
+else
+    fail "Install with diamond deps failed" "$output"
+fi
+cd - > /dev/null
+
+# Test 25: Deep dependency chain (5 levels)
+echo ""
+echo "Test 25: Deep dependency chain (5 levels)"
+DEEP_DIR="$TEST_CACHE_DIR/deep-test"
+mkdir -p "$DEEP_DIR/level5" "$DEEP_DIR/level4" "$DEEP_DIR/level3" "$DEEP_DIR/level2" "$DEEP_DIR/level1" "$DEEP_DIR/main"
+
+# Level 5 (deepest - no deps)
+echo "fn level5() { 5 }" > "$DEEP_DIR/level5/module.qd"
+
+# Level 4 depends on 5
+echo "fn level4() { 4 }" > "$DEEP_DIR/level4/module.qd"
+cat > "$DEEP_DIR/level4/qd.json" << 'EOF'
+{
+  "name": "level4",
+  "dependencies": { "level5": "../level5" }
+}
+EOF
+
+# Level 3 depends on 4
+echo "fn level3() { 3 }" > "$DEEP_DIR/level3/module.qd"
+cat > "$DEEP_DIR/level3/qd.json" << 'EOF'
+{
+  "name": "level3",
+  "dependencies": { "level4": "../level4" }
+}
+EOF
+
+# Level 2 depends on 3
+echo "fn level2() { 2 }" > "$DEEP_DIR/level2/module.qd"
+cat > "$DEEP_DIR/level2/qd.json" << 'EOF'
+{
+  "name": "level2",
+  "dependencies": { "level3": "../level3" }
+}
+EOF
+
+# Level 1 depends on 2
+echo "fn level1() { 1 }" > "$DEEP_DIR/level1/module.qd"
+cat > "$DEEP_DIR/level1/qd.json" << 'EOF'
+{
+  "name": "level1",
+  "dependencies": { "level2": "../level2" }
+}
+EOF
+
+# Main depends on level1
+cat > "$DEEP_DIR/main/qd.json" << 'EOF'
+{
+  "name": "main",
+  "dependencies": { "level1": "../level1" }
+}
+EOF
+
+cd "$DEEP_DIR/main"
+if output=$("$QUADPM" install 2>&1); then
+    if echo "$output" | grep -q "5 dependencies installed"; then
+        # Verify deepest level is in lockfile
+        if grep -q '"level5"' qd.lock; then
+            pass "Deep dependency chain resolved (5 levels)"
+        else
+            fail "Deepest dependency not in lockfile" "$(cat qd.lock)"
+        fi
+    else
+        fail "Should install 5 dependencies" "$output"
+    fi
+else
+    fail "Install with deep deps failed" "$output"
+fi
+cd - > /dev/null
+
+# Test 26: Multiple direct deps with shared transitive
+echo ""
+echo "Test 26: Multiple direct deps with shared transitive"
+SHARED_DIR="$TEST_CACHE_DIR/shared-test"
+mkdir -p "$SHARED_DIR/shared" "$SHARED_DIR/dep_x" "$SHARED_DIR/dep_y" "$SHARED_DIR/main"
+
+# Shared module (used by both X and Y)
+echo "fn shared_func() { 999 }" > "$SHARED_DIR/shared/module.qd"
+
+# Dep X depends on shared
+echo "fn x_func() { 1 }" > "$SHARED_DIR/dep_x/module.qd"
+cat > "$SHARED_DIR/dep_x/qd.json" << 'EOF'
+{
+  "name": "dep_x",
+  "dependencies": { "shared": "../shared" }
+}
+EOF
+
+# Dep Y depends on shared
+echo "fn y_func() { 2 }" > "$SHARED_DIR/dep_y/module.qd"
+cat > "$SHARED_DIR/dep_y/qd.json" << 'EOF'
+{
+  "name": "dep_y",
+  "dependencies": { "shared": "../shared" }
+}
+EOF
+
+# Main depends on both X and Y directly
+cat > "$SHARED_DIR/main/qd.json" << 'EOF'
+{
+  "name": "main",
+  "dependencies": {
+    "dep_x": "../dep_x",
+    "dep_y": "../dep_y"
+  }
+}
+EOF
+
+cd "$SHARED_DIR/main"
+if output=$("$QUADPM" install 2>&1); then
+    # Should install 3 deps: X, Y, shared (shared only once)
+    if echo "$output" | grep -q "3 dependencies installed"; then
+        shared_count=$(grep -c '"shared"' qd.lock)
+        if [ "$shared_count" -eq 1 ]; then
+            pass "Shared transitive dep installed once"
+        else
+            fail "Shared dep should appear once" "count=$shared_count"
+        fi
+    else
+        fail "Should install 3 dependencies" "$output"
+    fi
+else
+    fail "Install with shared deps failed" "$output"
+fi
+cd - > /dev/null
+
+# Test 27: Re-install with existing transitive deps
+echo ""
+echo "Test 27: Re-install with existing transitive deps"
+cd "$SHARED_DIR/main"
+rm -f qd.lock
+if output=$("$QUADPM" install 2>&1); then
+    # Run install again - should use lockfile and succeed
+    if output2=$("$QUADPM" install 2>&1); then
+        # For local deps, it uses lockfile on second run
+        if echo "$output2" | grep -q "Installing from lockfile\|3 dependencies installed"; then
+            pass "Re-install handles existing transitive deps"
+        else
+            fail "Should complete successfully" "$output2"
+        fi
+    else
+        fail "Re-install failed" "$output2"
+    fi
+else
+    fail "Initial install failed" "$output"
+fi
+cd - > /dev/null
+
+# Test 28: Transitive dep with empty dependencies
+echo ""
+echo "Test 28: Transitive dep with qd.json but no dependencies"
+EMPTY_DEPS_DIR="$TEST_CACHE_DIR/empty-deps-test"
+mkdir -p "$EMPTY_DEPS_DIR/leaf" "$EMPTY_DEPS_DIR/middle" "$EMPTY_DEPS_DIR/main"
+
+# Leaf has qd.json but empty dependencies
+echo "fn leaf_func() { 1 }" > "$EMPTY_DEPS_DIR/leaf/module.qd"
+cat > "$EMPTY_DEPS_DIR/leaf/qd.json" << 'EOF'
+{
+  "name": "leaf",
+  "dependencies": {}
+}
+EOF
+
+# Middle depends on leaf
+echo "fn middle_func() { 2 }" > "$EMPTY_DEPS_DIR/middle/module.qd"
+cat > "$EMPTY_DEPS_DIR/middle/qd.json" << 'EOF'
+{
+  "name": "middle",
+  "dependencies": { "leaf": "../leaf" }
+}
+EOF
+
+# Main depends on middle
+cat > "$EMPTY_DEPS_DIR/main/qd.json" << 'EOF'
+{
+  "name": "main",
+  "dependencies": { "middle": "../middle" }
+}
+EOF
+
+cd "$EMPTY_DEPS_DIR/main"
+if output=$("$QUADPM" install 2>&1); then
+    if echo "$output" | grep -q "2 dependencies installed"; then
+        pass "Handles qd.json with empty dependencies"
+    else
+        fail "Should install 2 dependencies" "$output"
+    fi
+else
+    fail "Install failed" "$output"
+fi
+cd - > /dev/null
+
+# Test 29: Transitive dep without qd.json (pure Quadrate module)
+echo ""
+echo "Test 29: Transitive dep without qd.json"
+PURE_DIR="$TEST_CACHE_DIR/pure-test"
+mkdir -p "$PURE_DIR/pure_leaf" "$PURE_DIR/wrapper" "$PURE_DIR/main"
+
+# Pure leaf - only module.qd, no qd.json
+echo "fn pure_func() { 42 }" > "$PURE_DIR/pure_leaf/module.qd"
+
+# Wrapper depends on pure_leaf
+echo "fn wrapper_func() { 1 }" > "$PURE_DIR/wrapper/module.qd"
+cat > "$PURE_DIR/wrapper/qd.json" << 'EOF'
+{
+  "name": "wrapper",
+  "dependencies": { "pure_leaf": "../pure_leaf" }
+}
+EOF
+
+# Main depends on wrapper
+cat > "$PURE_DIR/main/qd.json" << 'EOF'
+{
+  "name": "main",
+  "dependencies": { "wrapper": "../wrapper" }
+}
+EOF
+
+cd "$PURE_DIR/main"
+if output=$("$QUADPM" install 2>&1); then
+    if echo "$output" | grep -q "2 dependencies installed"; then
+        if grep -q '"pure_leaf"' qd.lock; then
+            pass "Handles transitive dep without qd.json"
+        else
+            fail "Pure leaf not in lockfile" "$(cat qd.lock)"
+        fi
+    else
+        fail "Should install 2 dependencies" "$output"
+    fi
+else
+    fail "Install failed" "$output"
+fi
+cd - > /dev/null
+
+# Test 30: Frozen install with transitive deps in lockfile
+echo ""
+echo "Test 30: Frozen install with transitive deps"
+cd "$PURE_DIR/main"
+# First create lockfile
+"$QUADPM" install > /dev/null 2>&1
+# Now try frozen install
+if output=$("$QUADPM" install --frozen 2>&1); then
+    if echo "$output" | grep -q "Installing from lockfile"; then
+        pass "Frozen install works with transitive deps"
+    else
+        fail "Should use lockfile" "$output"
+    fi
+else
+    fail "Frozen install failed" "$output"
+fi
+cd - > /dev/null
+
 # Print summary
 echo ""
 echo "=========================================="
