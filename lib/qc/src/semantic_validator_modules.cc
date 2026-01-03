@@ -214,8 +214,11 @@ namespace Qd {
 		std::string effectiveModuleName;
 		if (isDirectFile) {
 			// For .qd file imports from top-level files, derive package name from filename
-			// For intra-module imports (when currentPackage != mCurrentPackage), use the current package name
-			if (!mIsModuleFile && currentPackage == mCurrentPackage) {
+			// For intra-module imports (inside a module's USE statements), use the current package name
+			// We detect intra-module imports by checking if we're in a module dependency chain
+			// (i.e., processing nested imports from a module.qd file)
+			bool isIntraModuleImport = !mModuleDependencyChain.empty();
+			if (!mIsModuleFile && !isIntraModuleImport) {
 				effectiveModuleName = getPackageFromModuleName(moduleName);
 			} else {
 				effectiveModuleName = currentPackage;
