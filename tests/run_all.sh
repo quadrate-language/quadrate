@@ -120,6 +120,100 @@ fi
 mkdir -p "$TEMP_DIR"
 trap "rm -rf $TEMP_DIR" EXIT
 
+# External module support
+EXTERNAL_MODULES_FILE="$SCRIPT_DIR/external_modules.txt"
+EXTERNAL_MODULES_PATHS_FILE="$TEMP_DIR/external_module_paths.txt"
+QUADPM="${QUADPM:-$PROJECT_ROOT/$BUILD_DIR/cmd/quadpm/quadpm}"
+EXTERNAL_MODULES_DIR="$TEMP_DIR/modules"
+touch "$EXTERNAL_MODULES_PATHS_FILE"
+
+# Install external modules (if external_modules.txt exists)
+if [[ -f "$EXTERNAL_MODULES_FILE" ]]; then
+    while IFS=' ' read -r module_name git_url || [[ -n "$module_name" ]]; do
+        # Skip comments and empty lines
+        [[ "$module_name" =~ ^# ]] && continue
+        [[ -z "$module_name" ]] && continue
+
+        # Check for pre-cloned source in sibling directory (CI environment)
+        sibling_dir="$(dirname "$PROJECT_ROOT")/$module_name"
+        if [[ -f "$sibling_dir/module.qd" ]]; then
+            # Build native module if it has src/ directory
+            if [[ -d "$sibling_dir/src" ]]; then
+                (cd "$sibling_dir" && QUADRATE_LIBDIR="$QUADRATE_LIBDIR_DEFAULT" "$QUADPM" build >/dev/null 2>&1) || true
+            fi
+            # Store parent directory as include path
+            echo "$module_name $(dirname "$sibling_dir")" >> "$EXTERNAL_MODULES_PATHS_FILE"
+            continue
+        fi
+
+        # Check for local override via QUADRATE_EXTERNAL_MODULES env var
+        if [[ -n "${QUADRATE_EXTERNAL_MODULES:-}" ]]; then
+            local_dir="$QUADRATE_EXTERNAL_MODULES/$module_name"
+            if [[ -f "$local_dir/module.qd" ]]; then
+                # Build native module if it has src/ directory
+                if [[ -d "$local_dir/src" ]]; then
+                    (cd "$local_dir" && QUADRATE_LIBDIR="$QUADRATE_LIBDIR_DEFAULT" "$QUADPM" build >/dev/null 2>&1) || true
+                fi
+                echo "$module_name $QUADRATE_EXTERNAL_MODULES" >> "$EXTERNAL_MODULES_PATHS_FILE"
+                continue
+            fi
+        fi
+
+        # Use quadpm to install module
+        if QUADRATE_PATH="$EXTERNAL_MODULES_DIR" QUADRATE_LIBDIR="$QUADRATE_LIBDIR_DEFAULT" \
+           QDRT_INCLUDE="$PROJECT_ROOT/dist/include" \
+           "$QUADPM" get "${git_url}@master" >/dev/null 2>&1; then
+            ns_path="$EXTERNAL_MODULES_DIR/_namespaces/$module_name"
+            if [[ -L "$ns_path" ]]; then
+                actual_dir=$(readlink -f "$ns_path")
+                if [[ -d "$actual_dir/src" ]]; then
+                    (cd "$actual_dir" && QUADRATE_LIBDIR="$QUADRATE_LIBDIR_DEFAULT" "$QUADPM" build >/dev/null 2>&1) || true
+                fi
+                echo "$module_name $EXTERNAL_MODULES_DIR/_namespaces" >> "$EXTERNAL_MODULES_PATHS_FILE"
+            fi
+        fi
+    done < "$EXTERNAL_MODULES_FILE"
+fi
+
+# Helper function to get include flags for a test file
+get_include_flags() {
+    local test_file="$1"
+    local test_dir="$PROJECT_ROOT/tests/qd"
+
+    # Extract module name from path (e.g., tests/qd/hof/apply.qd -> hof)
+    local rel_path="${test_file#$test_dir/}"
+    local module_name="${rel_path%%/*}"
+
+    # Look up include path from file (format: "module_name include_path")
+    if [[ -f "$EXTERNAL_MODULES_PATHS_FILE" ]]; then
+        local include_path=$(grep "^$module_name " "$EXTERNAL_MODULES_PATHS_FILE" 2>/dev/null | cut -d' ' -f2-)
+        if [[ -n "$include_path" ]]; then
+            echo "-I $include_path"
+            return
+        fi
+    fi
+    echo ""
+}
+
+# Helper function to check if a test should be skipped (external module not available)
+should_skip_external() {
+    local test_file="$1"
+    local test_dir="$PROJECT_ROOT/tests/qd"
+
+    local rel_path="${test_file#$test_dir/}"
+    local module_name="${rel_path%%/*}"
+
+    # Check if this module is in external_modules.txt but not in paths file (not cloned)
+    if [[ -f "$EXTERNAL_MODULES_FILE" ]]; then
+        if grep -q "^$module_name " "$EXTERNAL_MODULES_FILE" 2>/dev/null; then
+            if ! grep -q "^$module_name " "$EXTERNAL_MODULES_PATHS_FILE" 2>/dev/null; then
+                return 0  # Should skip
+            fi
+        fi
+    fi
+    return 1  # Should not skip
+}
+
 # Progress tracking
 CURRENT_TEST_NUM=0
 CURRENT_TEST_TOTAL=0
@@ -334,6 +428,15 @@ run_single_qd_test() {
     local actual_output="$TEMP_DIR/qd_${test_name//\//_}.out"
     local compile_log="$TEMP_DIR/qd_${test_name//\//_}.compile"
 
+    # Check if this test should be skipped (external module not available)
+    if should_skip_external "$test_file"; then
+        echo "SKIP:external module not available" > "$result_file"
+        return
+    fi
+
+    # Get include flags for external modules
+    local include_flags=$(get_include_flags "$test_file")
+
     # Use relative path for test file (for error message matching)
     local rel_test_file="${test_file#$PROJECT_ROOT/}"
 
@@ -342,7 +445,7 @@ run_single_qd_test() {
         local expected_error_file="${test_file%.qd}.err"
 
         # Run from project root with relative path
-        if (cd "$PROJECT_ROOT" && "$QUADC" "$rel_test_file" -o "$binary" 2>"$compile_log" >/dev/null); then
+        if (cd "$PROJECT_ROOT" && "$QUADC" $include_flags "$rel_test_file" -o "$binary" 2>"$compile_log" >/dev/null); then
             echo "FAIL:compilation succeeded (should have failed)" > "$result_file"
             return
         fi
@@ -374,7 +477,7 @@ run_single_qd_test() {
         local expected_error_file="${test_file%.qd}.runtime_err"
 
         # Compile should succeed (use relative path)
-        if ! (cd "$PROJECT_ROOT" && "$QUADC" "$rel_test_file" -o "$binary" 2>"$compile_log" >/dev/null); then
+        if ! (cd "$PROJECT_ROOT" && "$QUADC" $include_flags "$rel_test_file" -o "$binary" 2>"$compile_log" >/dev/null); then
             echo "FAIL:compilation failed (should have succeeded)" > "$result_file"
             cat "$compile_log" >> "$result_file"
             return
@@ -426,7 +529,7 @@ run_single_qd_test() {
 
     # Compile (use relative path for consistent error messages)
     if [[ -n "$test_flag" ]]; then
-        if ! (cd "$PROJECT_ROOT" && NO_COLOR=1 "$QUADC" $test_flag "$rel_test_file" -o "$binary" >"$actual_output" 2>"$compile_log"); then
+        if ! (cd "$PROJECT_ROOT" && NO_COLOR=1 "$QUADC" $include_flags $test_flag "$rel_test_file" -o "$binary" >"$actual_output" 2>"$compile_log"); then
             if [[ -s "$compile_log" ]] && grep -q "error:" "$compile_log"; then
                 echo "FAIL:compilation failed" > "$result_file"
                 cat "$compile_log" >> "$result_file"
@@ -434,7 +537,7 @@ run_single_qd_test() {
             fi
         fi
     else
-        if ! (cd "$PROJECT_ROOT" && "$QUADC" "$rel_test_file" -o "$binary" 2>"$compile_log" >/dev/null); then
+        if ! (cd "$PROJECT_ROOT" && "$QUADC" $include_flags "$rel_test_file" -o "$binary" 2>"$compile_log" >/dev/null); then
             echo "FAIL:compilation failed" > "$result_file"
             cat "$compile_log" >> "$result_file"
             return
