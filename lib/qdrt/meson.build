@@ -17,6 +17,22 @@ qdrt_sources = files(
 
 qdrt_inc = include_directories('include')
 
+# Version information from project
+version_str = meson.project_version()
+version_parts = version_str.split('-')[0].split('.')
+version_major = version_parts[0].to_int()
+version_minor = version_parts[1].to_int()
+version_patch = version_parts[2].to_int()
+version_api = version_major * 10000 + version_minor * 100 + version_patch
+
+version_args = [
+		'-DQD_VERSION="@0@"'.format(version_str),
+		'-DQD_VERSION_MAJOR=@0@'.format(version_major),
+		'-DQD_VERSION_MINOR=@0@'.format(version_minor),
+		'-DQD_VERSION_PATCH=@0@'.format(version_patch),
+		'-DQD_VERSION_API=@0@'.format(version_api),
+]
+
 # Math library dependency
 cc = meson.get_compiler('c')
 m_dep = cc.find_library('m', required: false)
@@ -29,6 +45,7 @@ qdrt_shared = shared_library('qdrt',
 		qdrt_sources,
 		include_directories: qdrt_inc,
 		dependencies: [m_dep, dl_dep],
+		c_args: version_args,
 		install_rpath: '$ORIGIN',
 		install: false
 )
@@ -38,7 +55,7 @@ qdrt_static = static_library('qdrt_static',
 		qdrt_sources,
 		include_directories: qdrt_inc,
 		dependencies: [m_dep, dl_dep],
-		c_args: ['-ffunction-sections', '-fdata-sections'],
+		c_args: version_args + ['-ffunction-sections', '-fdata-sections'],
 		install: false
 )
 

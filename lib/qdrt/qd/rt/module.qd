@@ -1,0 +1,15 @@
+/// Runtime information and version constants.
+/// Provides version information about the Quadrate runtime.
+
+import "libqdrt.a" as "rt" {
+	/// Get the Quadrate version string.
+	/// @return version str Version string (e.g., "2.0.0-alpha")
+	/// @example rt::version print nl  // 2.0.0-alpha
+	pub fn version( -- version:str)
+
+	/// Get the Quadrate API version number.
+	/// Encoded as: major * 10000 + minor * 100 + patch.
+	/// @return api i64 API version number (e.g., 20000 for v2.0.0)
+	/// @example rt::version_api print nl  // 20000
+	pub fn version_api( -- api:i64)
+}

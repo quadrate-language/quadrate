@@ -1169,3 +1169,64 @@ qd_stack_error qdrt_push_element(qd_stack* stack, const qd_stack_element_t* elem
 	return push_element(stack, elem);
 }
 
+// =============================================================================
+// Version Information
+// =============================================================================
+
+const char* qd_version(void) {
+#ifdef QD_VERSION
+	return QD_VERSION;
+#else
+	return "unknown";
+#endif
+}
+
+int qd_version_api(void) {
+#ifdef QD_VERSION_API
+	return QD_VERSION_API;
+#else
+	return 0;
+#endif
+}
+
+int qd_version_major(void) {
+#ifdef QD_VERSION_MAJOR
+	return QD_VERSION_MAJOR;
+#else
+	return 0;
+#endif
+}
+
+int qd_version_minor(void) {
+#ifdef QD_VERSION_MINOR
+	return QD_VERSION_MINOR;
+#else
+	return 0;
+#endif
+}
+
+int qd_version_patch(void) {
+#ifdef QD_VERSION_PATCH
+	return QD_VERSION_PATCH;
+#else
+	return 0;
+#endif
+}
+
+qd_exec_result qd_rt_version(qd_context* ctx) {
+	return qd_push_s(ctx, qd_version());
+}
+
+qd_exec_result qd_rt_version_api(qd_context* ctx) {
+	return qd_push_i(ctx, qd_version_api());
+}
+
+// User-facing functions (usr_ prefix for import mechanism)
+qd_exec_result usr_rt_version(qd_context* ctx) {
+	return qd_push_s(ctx, qd_version());
+}
+
+qd_exec_result usr_rt_version_api(qd_context* ctx) {
+	return qd_push_i(ctx, qd_version_api());
+}
+

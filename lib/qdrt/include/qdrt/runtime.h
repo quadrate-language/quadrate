@@ -1004,6 +1004,72 @@ void qd_closure_unregister(void* ptr);
 
 /** @} */ // end of ClosureRegistry group
 
+/**
+ * @defgroup Version Version Information
+ * @brief Functions for querying runtime version
+ * @{
+ */
+
+/**
+ * @brief Get the Quadrate version string
+ *
+ * @return Version string (e.g., "2.0.0-alpha")
+ */
+const char* qd_version(void);
+
+/**
+ * @brief Get the Quadrate API version number
+ *
+ * Encoded as: major * 10000 + minor * 100 + patch
+ * For example, version 2.0.0 returns 20000.
+ *
+ * @return API version number
+ */
+int qd_version_api(void);
+
+/**
+ * @brief Get the Quadrate major version number
+ *
+ * @return Major version number
+ */
+int qd_version_major(void);
+
+/**
+ * @brief Get the Quadrate minor version number
+ *
+ * @return Minor version number
+ */
+int qd_version_minor(void);
+
+/**
+ * @brief Get the Quadrate patch version number
+ *
+ * @return Patch version number
+ */
+int qd_version_patch(void);
+
+/**
+ * @brief Push version string onto stack
+ *
+ * Stack: ( -- version:str )
+ *
+ * @param ctx Execution context
+ * @return Execution result (0 on success)
+ */
+qd_exec_result qd_rt_version(qd_context* ctx);
+
+/**
+ * @brief Push API version number onto stack
+ *
+ * Stack: ( -- api_version:i )
+ *
+ * @param ctx Execution context
+ * @return Execution result (0 on success)
+ */
+qd_exec_result qd_rt_version_api(qd_context* ctx);
+
+/** @} */ // end of Version group
+
 #ifdef __cplusplus
 }
 #endif
