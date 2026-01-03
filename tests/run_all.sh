@@ -625,7 +625,8 @@ run_qd_tests() {
     export QUADC TEMP_DIR PROJECT_ROOT USE_VALGRIND
     export QUADRATE_ROOT="${QUADRATE_ROOT:-$QUADRATE_ROOT_DEFAULT}"
     export QUADRATE_LIBDIR="${QUADRATE_LIBDIR:-$QUADRATE_LIBDIR_DEFAULT}"
-    export -f run_single_qd_test
+    export EXTERNAL_MODULES_PATHS_FILE EXTERNAL_MODULES_FILE
+    export -f run_single_qd_test get_include_flags should_skip_external
 
     CURRENT_TEST_TOTAL=$total
     CURRENT_TEST_NUM=0
