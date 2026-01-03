@@ -752,9 +752,9 @@ bool compileCsources(const std::string& moduleDir, const std::string& moduleName
 		return true; // No src dir is not an error
 	}
 
-	// Collect all .c files
+	// Collect all .c files recursively (including platform subdirectories)
 	std::vector<std::string> cFiles;
-	for (const auto& entry : fs::directory_iterator(srcDir)) {
+	for (const auto& entry : fs::recursive_directory_iterator(srcDir)) {
 		if (entry.is_regular_file() && entry.path().extension() == ".c") {
 			cFiles.push_back(entry.path().string());
 		}
@@ -785,6 +785,13 @@ bool compileCsources(const std::string& moduleDir, const std::string& moduleName
 	// Build include paths
 	std::vector<std::string> includePaths;
 	includePaths.push_back("-I/usr/include");
+	// Module's own include directory
+	std::string moduleIncDir = moduleDir + "/include";
+	if (fs::exists(moduleIncDir)) {
+		includePaths.push_back("-I" + moduleIncDir);
+	}
+	// Module's src directory (for platform headers)
+	includePaths.push_back("-I" + srcDir);
 	if (fs::exists("dist/include/qdrt")) {
 		includePaths.push_back("-Idist/include");
 	}

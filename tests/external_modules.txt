@@ -6,3 +6,7 @@
 hof https://github.com/quadrate-language/hof
 log https://github.com/quadrate-language/log
 compress https://github.com/quadrate-language/compress
+net https://github.com/quadrate-language/net
+tls https://github.com/quadrate-language/tls
+# http pending migration - tests skipped until external package created
+http https://github.com/quadrate-language/http

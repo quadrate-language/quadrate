@@ -9,7 +9,7 @@ thread_dep = dependency('threads')
 
 qdhttp_static = static_library('qdhttp',
     qdhttp_sources,
-    include_directories: [qdhttp_inc, qdrt_inc, qdnet_inc, qdtls_inc],
+    include_directories: [qdhttp_inc, qdrt_inc],
     dependencies: [thread_dep],
     c_args: ['-Wall', '-Wextra'],
     install: false,
@@ -20,7 +20,7 @@ qdhttp_dep = declare_dependency(
     link_with: qdhttp_static,
 )
 
-# Tests
-if get_option('build_tests')
-    subdir('tests')
-endif
+# Tests disabled - http module being migrated to external package
+# if get_option('build_tests')
+#     subdir('tests')
+# endif
