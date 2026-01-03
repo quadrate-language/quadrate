@@ -1,0 +1,8 @@
+{
+  "name": "sha256sum",
+  "version": "1.0.0",
+  "description": "SHA256 checksum utility",
+  "dependencies": {
+    "crypto": "https://github.com/quadrate-language/crypto"
+  }
+}
