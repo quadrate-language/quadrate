@@ -22,7 +22,11 @@ LIBS_WITH_HEADERS := qdrt qd qdfmt qdio qdmath qdmem qdos qdstr qdstrconv qdtime
 # Standard library modules (pure Quadrate or mixed)
 # Note: http moved to external module (https://github.com/quadrate-language/http)
 # Note: sqlite moved to external module (https://github.com/quadrate-language/sqlite)
-STDLIB_MODULES := base64 bits ct flag fmt io json limits math mem os sb signal str strconv thread time unicode uri hex bytes crc32 sha256 regex path sort rand uuid testing
+# Note: json moved to external module (https://github.com/quadrate-language/json)
+# Note: regex moved to external module (https://github.com/quadrate-language/regex)
+# Note: ct moved to external module (https://github.com/quadrate-language/ct)
+# Note: crypto (sha256, sha512, md5, crc32) moved to external module (https://github.com/quadrate-language/crypto)
+STDLIB_MODULES := base64 bits flag fmt io limits math mem os sb signal str strconv thread time unicode uri hex bytes path sort rand uuid testing
 
 .PHONY: all debug release tests tests-failed tests-clear valgrind asan fuzz examples format install uninstall clean docs
 
