@@ -53,6 +53,15 @@ if [ -f "$EXTERNAL_MODULES_FILE" ]; then
         # Check for pre-cloned source in sibling directory (CI environment)
         sibling_dir="$(dirname "$PROJECT_ROOT")/$module_name"
         if [ -f "$sibling_dir/module.qd" ]; then
+            # Build native module if it has src/ directory
+            if [ -d "$sibling_dir/src" ]; then
+                echo -n "  Building $module_name... "
+                if (cd "$sibling_dir" && QUADRATE_LIBDIR="$PROJECT_ROOT/$QUADRATE_LIBDIR" "$QUADPM" build >/dev/null 2>&1); then
+                    echo "done"
+                else
+                    echo "failed (tests may fail)"
+                fi
+            fi
             # Store parent directory as include path
             echo "$module_name $(dirname "$sibling_dir")" >> "$EXTERNAL_MODULES_PATHS_FILE"
             echo "  ✓ $module_name (pre-cloned)"
@@ -63,6 +72,15 @@ if [ -f "$EXTERNAL_MODULES_FILE" ]; then
         if [ -n "${QUADRATE_EXTERNAL_MODULES:-}" ]; then
             local_dir="$QUADRATE_EXTERNAL_MODULES/$module_name"
             if [ -f "$local_dir/module.qd" ]; then
+                # Build native module if it has src/ directory
+                if [ -d "$local_dir/src" ]; then
+                    echo -n "  Building $module_name... "
+                    if (cd "$local_dir" && QUADRATE_LIBDIR="$PROJECT_ROOT/$QUADRATE_LIBDIR" "$QUADPM" build >/dev/null 2>&1); then
+                        echo "done"
+                    else
+                        echo "failed (tests may fail)"
+                    fi
+                fi
                 # Store QUADRATE_EXTERNAL_MODULES as include path
                 echo "$module_name $QUADRATE_EXTERNAL_MODULES" >> "$EXTERNAL_MODULES_PATHS_FILE"
                 echo "  ✓ $module_name (local)"
@@ -77,6 +95,17 @@ if [ -f "$EXTERNAL_MODULES_FILE" ]; then
             # Use _namespaces directory as include path (symlinks provide clean names)
             ns_path="$EXTERNAL_MODULES_DIR/_namespaces/$module_name"
             if [ -L "$ns_path" ]; then
+                # Get actual module directory (follow symlink)
+                actual_dir=$(readlink -f "$ns_path")
+                # Build native module if it has src/ directory
+                if [ -d "$actual_dir/src" ]; then
+                    echo -n "  Building $module_name... "
+                    if (cd "$actual_dir" && QUADRATE_LIBDIR="$PROJECT_ROOT/$QUADRATE_LIBDIR" "$QUADPM" build >/dev/null 2>&1); then
+                        echo "done"
+                    else
+                        echo "failed (tests may fail)"
+                    fi
+                fi
                 echo "$module_name $EXTERNAL_MODULES_DIR/_namespaces" >> "$EXTERNAL_MODULES_PATHS_FILE"
                 echo "  ✓ $module_name"
             else

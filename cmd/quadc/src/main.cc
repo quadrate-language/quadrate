@@ -385,6 +385,15 @@ int main(int argc, char** argv) {
 				}
 			}
 
+			// Also check for native modules from include paths (e.g., -I /path/to/modules)
+			// If the module's source directory has a lib/ subdirectory, treat it as a package
+			if (packageDir.empty()) {
+				std::string libDir = moduleFileSourceDir + "/lib";
+				if (std::filesystem::exists(libDir) && std::filesystem::is_directory(libDir)) {
+					packageDir = moduleFileSourceDir;
+				}
+			}
+
 			ParsedModule parsedMod;
 			parsedMod.name = moduleFilePath; // Store full file path for debug info
 			parsedMod.package = packageName;

@@ -770,8 +770,9 @@ bool compileCsources(const std::string& moduleDir, const std::string& moduleName
 	std::string libDir = moduleDir + "/lib";
 	fs::create_directories(libDir);
 
-	// Library names
-	std::string libName = "lib" + moduleName;
+	// Library names - use libqd prefix to match standard library convention
+	// This ensures the compiler uses usr_<namespace>_<func> name mangling
+	std::string libName = "libqd" + moduleName;
 	std::string sharedLib = libDir + "/" + libName + ".so";
 	std::string staticLib = libDir + "/" + libName + "_static.a";
 
