@@ -125,6 +125,7 @@ EXTERNAL_MODULES_FILE="$SCRIPT_DIR/external_modules.txt"
 EXTERNAL_MODULES_PATHS_FILE="$TEMP_DIR/external_module_paths.txt"
 QUADPM="${QUADPM:-$PROJECT_ROOT/$BUILD_DIR/cmd/quadpm/quadpm}"
 EXTERNAL_MODULES_DIR="$TEMP_DIR/modules"
+SIBLING_PARENT_DIR=""  # Will be set if sibling modules are found
 touch "$EXTERNAL_MODULES_PATHS_FILE"
 
 # Install external modules (if external_modules.txt exists)
@@ -137,9 +138,16 @@ if [[ -f "$EXTERNAL_MODULES_FILE" ]]; then
         # Check for pre-cloned source in sibling directory (CI environment)
         sibling_dir="$(dirname "$PROJECT_ROOT")/$module_name"
         if [[ -f "$sibling_dir/module.qd" ]]; then
+            # Remember the parent directory for dependency resolution
+            SIBLING_PARENT_DIR="$(dirname "$sibling_dir")"
             # Build native module if it has src/ directory
+            # Pass QUADRATE_PATH so quadpm can find sibling dependencies
             if [[ -d "$sibling_dir/src" ]]; then
-                (cd "$sibling_dir" && QUADRATE_LIBDIR="$QUADRATE_LIBDIR_DEFAULT" "$QUADPM" build >/dev/null 2>&1) || true
+                build_log="$TEMP_DIR/build_${module_name}.log"
+                if ! (cd "$sibling_dir" && QUADRATE_PATH="$SIBLING_PARENT_DIR" QUADRATE_LIBDIR="$QUADRATE_LIBDIR_DEFAULT" "$QUADPM" build >"$build_log" 2>&1); then
+                    echo "Warning: Failed to build $module_name:" >&2
+                    head -20 "$build_log" >&2
+                fi
             fi
             # Store parent directory as include path
             echo "$module_name $(dirname "$sibling_dir")" >> "$EXTERNAL_MODULES_PATHS_FILE"
@@ -152,7 +160,11 @@ if [[ -f "$EXTERNAL_MODULES_FILE" ]]; then
             if [[ -f "$local_dir/module.qd" ]]; then
                 # Build native module if it has src/ directory
                 if [[ -d "$local_dir/src" ]]; then
-                    (cd "$local_dir" && QUADRATE_LIBDIR="$QUADRATE_LIBDIR_DEFAULT" "$QUADPM" build >/dev/null 2>&1) || true
+                    build_log="$TEMP_DIR/build_${module_name}.log"
+                    if ! (cd "$local_dir" && QUADRATE_PATH="$QUADRATE_EXTERNAL_MODULES" QUADRATE_LIBDIR="$QUADRATE_LIBDIR_DEFAULT" "$QUADPM" build >"$build_log" 2>&1); then
+                        echo "Warning: Failed to build $module_name:" >&2
+                        head -20 "$build_log" >&2
+                    fi
                 fi
                 echo "$module_name $QUADRATE_EXTERNAL_MODULES" >> "$EXTERNAL_MODULES_PATHS_FILE"
                 continue
@@ -167,7 +179,11 @@ if [[ -f "$EXTERNAL_MODULES_FILE" ]]; then
             if [[ -L "$ns_path" ]]; then
                 actual_dir=$(readlink -f "$ns_path")
                 if [[ -d "$actual_dir/src" ]]; then
-                    (cd "$actual_dir" && QUADRATE_LIBDIR="$QUADRATE_LIBDIR_DEFAULT" "$QUADPM" build >/dev/null 2>&1) || true
+                    build_log="$TEMP_DIR/build_${module_name}.log"
+                    if ! (cd "$actual_dir" && QUADRATE_PATH="$EXTERNAL_MODULES_DIR/_namespaces" QUADRATE_LIBDIR="$QUADRATE_LIBDIR_DEFAULT" "$QUADPM" build >"$build_log" 2>&1); then
+                        echo "Warning: Failed to build $module_name:" >&2
+                        head -20 "$build_log" >&2
+                    fi
                 fi
                 echo "$module_name $EXTERNAL_MODULES_DIR/_namespaces" >> "$EXTERNAL_MODULES_PATHS_FILE"
             fi
