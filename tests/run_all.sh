@@ -925,7 +925,7 @@ run_mtls_tests() {
         valgrind_arg="valgrind"
     fi
 
-    output=$(QUADC="$QUADC" bash "$PROJECT_ROOT/tests/run_mtls_test.sh" $valgrind_arg 2>&1)
+    output=$(QUADC="$QUADC" QUADRATE_LIBDIR="$QUADRATE_LIBDIR_DEFAULT" QUADRATE_EXTERNAL_MODULES="${QUADRATE_EXTERNAL_MODULES:-}" bash "$PROJECT_ROOT/tests/run_mtls_test.sh" $valgrind_arg 2>&1)
     exit_code=$?
 
     if [[ $exit_code -eq 0 ]]; then

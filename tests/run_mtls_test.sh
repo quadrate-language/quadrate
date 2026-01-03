@@ -40,6 +40,23 @@ if [ ! -x "$QUADC" ]; then
     exit 1
 fi
 
+# Build include flags for external modules (net, tls are external)
+INCLUDE_FLAGS=""
+if [ -n "${QUADRATE_EXTERNAL_MODULES:-}" ]; then
+    INCLUDE_FLAGS="-I $QUADRATE_EXTERNAL_MODULES"
+fi
+
+# Check if net and tls modules are available
+if [ -z "$INCLUDE_FLAGS" ]; then
+    echo -e "${RED}SKIP${NC}: QUADRATE_EXTERNAL_MODULES not set (net/tls are external modules)"
+    exit 0
+fi
+
+if [ ! -f "$QUADRATE_EXTERNAL_MODULES/net/module.qd" ] || [ ! -f "$QUADRATE_EXTERNAL_MODULES/tls/module.qd" ]; then
+    echo -e "${RED}SKIP${NC}: net or tls module not found in $QUADRATE_EXTERNAL_MODULES"
+    exit 0
+fi
+
 # Check for openssl
 if ! command -v openssl &> /dev/null; then
     echo -e "${RED}SKIP${NC}: openssl not found, skipping mTLS test"
@@ -142,7 +159,7 @@ echo -e "${GREEN}done${NC}"
 echo -n "Running mTLS connection test... "
 
 # Compile
-if ! "$QUADC" -o "$CERT_DIR/mtls_test" "$CERT_DIR/mtls_test.qd" 2>"$CERT_DIR/compile.log"; then
+if ! "$QUADC" $INCLUDE_FLAGS -o "$CERT_DIR/mtls_test" "$CERT_DIR/mtls_test.qd" 2>"$CERT_DIR/compile.log"; then
     echo -e "${RED}FAIL${NC} (compile error)"
     cat "$CERT_DIR/compile.log"
     exit 1
