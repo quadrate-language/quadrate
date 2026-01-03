@@ -392,6 +392,117 @@ std::string getNamespacesDir() {
 	return getModulesDir() + "/_namespaces";
 }
 
+// Find the library directory for a dependency by name
+// Searches: 1) qd_modules/_namespaces/<name>, 2) sibling directories ../<name>
+// currentModuleDir is used to find sibling directories
+// Returns empty string if not found
+std::string findDependencyLibDir(const std::string& depName, const std::string& currentModuleDir = "") {
+	// First check qd_modules/_namespaces
+	std::string namespacesDir = getNamespacesDir();
+	std::string symlinkPath = namespacesDir + "/" + depName;
+
+	std::string moduleDir;
+
+	if (fs::exists(symlinkPath)) {
+		// Resolve symlink to get actual module directory
+		try {
+			if (fs::is_symlink(symlinkPath)) {
+				fs::path resolved = fs::read_symlink(symlinkPath);
+				if (resolved.is_relative()) {
+					moduleDir = fs::canonical(namespacesDir / resolved).string();
+				} else {
+					moduleDir = resolved.string();
+				}
+			} else {
+				moduleDir = symlinkPath;
+			}
+		} catch (const std::exception&) {
+			// Fall through to sibling check
+		}
+	}
+
+	// If not found in namespaces, check sibling directories
+	if (moduleDir.empty() && !currentModuleDir.empty()) {
+		fs::path parentDir = fs::path(currentModuleDir).parent_path();
+		std::string siblingPath = (parentDir / depName).string();
+		if (fs::exists(siblingPath) && fs::is_directory(siblingPath)) {
+			moduleDir = siblingPath;
+		}
+	}
+
+	if (moduleDir.empty()) {
+		return "";
+	}
+
+	std::string libDir = moduleDir + "/lib";
+	if (fs::exists(libDir) && fs::is_directory(libDir)) {
+		return libDir;
+	}
+	return "";
+}
+
+// Collect transitive native dependencies from a module's qd.json
+// moduleDir is the directory containing qd.json (used for sibling lookup)
+void collectTransitiveDeps(const std::string& manifestPath,
+						   const std::string& moduleDir,
+						   std::vector<std::string>& staticLibs,
+						   std::vector<std::string>& linkFlags,
+						   std::set<std::string>& visited) {
+	std::vector<Dependency> deps = parseDependencies(manifestPath);
+
+	for (const auto& dep : deps) {
+		if (visited.count(dep.name)) {
+			continue; // Avoid cycles
+		}
+		visited.insert(dep.name);
+
+		std::string libDir = findDependencyLibDir(dep.name, moduleDir);
+		if (libDir.empty()) {
+			continue; // Dependency not installed or has no lib
+		}
+
+		// Find the static library
+		std::string staticLib;
+		std::string depsFile;
+		for (const auto& entry : fs::directory_iterator(libDir)) {
+			std::string filename = entry.path().filename().string();
+			if (filename.find("_static.a") != std::string::npos) {
+				staticLib = entry.path().string();
+			} else if (filename.find("_static.deps") != std::string::npos) {
+				depsFile = entry.path().string();
+			}
+		}
+
+		// Add static library path
+		if (!staticLib.empty()) {
+			staticLibs.push_back(staticLib);
+		}
+
+		// Read and add deps file contents
+		if (!depsFile.empty()) {
+			std::ifstream ifs(depsFile);
+			std::string line;
+			while (std::getline(ifs, line)) {
+				if (!line.empty() && line[0] == '-') {
+					// It's a flag like -lssl
+					linkFlags.push_back(line);
+				} else if (!line.empty()) {
+					// It's a library path - check if absolute or needs resolution
+					staticLibs.push_back(line);
+				}
+			}
+		}
+
+		// Recursively process this dependency's dependencies
+		// Find the actual module dir from libDir (go up one level)
+		fs::path depModuleDir = fs::path(libDir).parent_path();
+		std::string depManifestPath = (depModuleDir / "qd.json").string();
+		if (fs::exists(depManifestPath)) {
+			collectTransitiveDeps(depManifestPath, depModuleDir.string(), staticLibs, linkFlags, visited);
+		}
+	}
+}
+
 // Create or update a namespace symlink
 // Returns true on success, false on conflict (different package already owns namespace)
 bool createNamespaceSymlink(const std::string& namespaceName, const std::string& targetPath) {
@@ -861,13 +972,44 @@ bool compileCsources(const std::string& moduleDir, const std::string& moduleName
 
 	if (arResult == 0) {
 		std::cout << COLOR_GREEN << "  ✓ Built " << COLOR_RESET << libName << "_static.a\n";
-		// If there are link dependencies, write them to a .deps file for the compiler to use
-		if (!nativeConfig.link.empty()) {
+
+		// Collect all dependencies for the .deps file:
+		// 1. Direct link flags from native.link (e.g., -lssl, -lcrypto)
+		// 2. Static libraries from qd.json dependencies
+		// 3. Transitive deps from dependencies' deps files
+		std::vector<std::string> staticLibs;
+		std::vector<std::string> linkFlags;
+		std::set<std::string> visited;
+
+		// Add direct link flags
+		for (const auto& lib : nativeConfig.link) {
+			linkFlags.push_back("-l" + lib);
+		}
+
+		// Collect transitive dependencies from qd.json
+		std::string manifestPath = moduleDir + "/qd.json";
+		if (fs::exists(manifestPath)) {
+			collectTransitiveDeps(manifestPath, moduleDir, staticLibs, linkFlags, visited);
+		}
+
+		// Write deps file if there are any dependencies
+		if (!linkFlags.empty() || !staticLibs.empty()) {
 			std::string depsFile = libDir + "/" + libName + "_static.deps";
 			std::ofstream deps(depsFile);
 			if (deps.is_open()) {
-				for (const auto& lib : nativeConfig.link) {
-					deps << "-l" << lib << "\n";
+				// Write link flags first (deduped)
+				std::set<std::string> seenFlags;
+				for (const auto& flag : linkFlags) {
+					if (seenFlags.insert(flag).second) {
+						deps << flag << "\n";
+					}
+				}
+				// Write static library paths (deduped)
+				std::set<std::string> seenLibs;
+				for (const auto& lib : staticLibs) {
+					if (seenLibs.insert(lib).second) {
+						deps << lib << "\n";
+					}
 				}
 				deps.close();
 				std::cout << COLOR_GREEN << "  ✓ Wrote " << COLOR_RESET << libName << "_static.deps\n";

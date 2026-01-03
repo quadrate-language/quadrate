@@ -13,13 +13,14 @@ export CXX := clang++
 CMDS := quad quadc quadfmt quadlint quadlsp quadpm quaduses
 
 # Libraries with C components (need static archive creation)
-LIBS_WITH_C := qdrt qd qdfmt qdio qdmath qdmem qdhttp qdos qdsignal qdstr qdstrconv qdtime qdthread qdtesting qdsqlite
+LIBS_WITH_C := qdrt qd qdfmt qdio qdmath qdmem qdos qdsignal qdstr qdstrconv qdtime qdthread qdtesting qdsqlite
 
 # Libraries with headers to install
-LIBS_WITH_HEADERS := qdrt qd qdfmt qdio qdmath qdmem qdhttp qdos qdstr qdstrconv qdtime qdtesting
+LIBS_WITH_HEADERS := qdrt qd qdfmt qdio qdmath qdmem qdos qdstr qdstrconv qdtime qdtesting
 
 # Standard library modules (pure Quadrate or mixed)
-STDLIB_MODULES := base64 bits ct flag fmt http io json limits math mem os sb signal str strconv thread time unicode uri hex bytes crc32 sha256 regex path sort rand uuid testing sqlite
+# Note: http moved to external module (https://github.com/quadrate-language/http)
+STDLIB_MODULES := base64 bits ct flag fmt io json limits math mem os sb signal str strconv thread time unicode uri hex bytes crc32 sha256 regex path sort rand uuid testing sqlite
 
 .PHONY: all debug release tests tests-failed tests-clear valgrind asan fuzz examples format install uninstall clean docs
 
@@ -48,10 +49,10 @@ define do_build
 	@echo "Creating static libraries..."
 	@rm -f dist/lib/libqdrt.a && cd $(1)/lib/qdrt && ar rcs ../../../../dist/lib/libqdrt.a $$(ar -t libqdrt_static.a) && echo "  libqdrt.a"
 	@rm -f dist/lib/libqd.a && cd $(1)/lib/qd && ar rcs ../../../../dist/lib/libqd.a $$(ar -t libqd_static.a) && echo "  libqd.a"
-	@for lib in qdfmt qdio qdmath qdmem qdhttp qdos qdsignal qdstr qdstrconv qdtime qdthread qdtesting qdsqlite; do \
+	@for lib in qdfmt qdio qdmath qdmem qdos qdsignal qdstr qdstrconv qdtime qdthread qdtesting qdsqlite; do \
 		rm -f dist/lib/lib$$lib.a && cd $(1)/lib/$$lib && ar rcs ../../../../dist/lib/lib$$lib.a $$(ar -t lib$$lib.a) && echo "  lib$$lib.a" && cd ->/dev/null; \
 	done
-	@for lib in qdhttp qdthread qdsqlite; do \
+	@for lib in qdthread qdsqlite; do \
 		if [ -f lib/$$lib/lib$$lib.deps ]; then cp lib/$$lib/lib$$lib.deps dist/lib/; fi; \
 	done
 	@for lib in $(LIBS_WITH_HEADERS); do cp -rf lib/$$lib/include/$$lib dist/include/; done
@@ -104,7 +105,7 @@ fuzz:
 examples: debug
 	@mkdir -p dist/examples
 	meson setup $(BUILD_DIR_DEBUG) --buildtype=debug --reconfigure -Dbuild_examples=true $(MESON_FLAGS)
-	meson compile -C $(BUILD_DIR_DEBUG) examples/embed/embed examples/embed/embed_copy examples/embed/multi-module-test examples/embed/multi-module-test_copy examples/embed/native-functions-test examples/embed/native-functions-test_copy examples/embed/incremental-test examples/embed/incremental-test_copy examples/ffi/ffi examples/hello-world/hello-world examples/hello-world-c/hello-world-c examples/bmi/bmi examples/dc/dc examples/defer/defer examples/donut/donut examples/errors/errors examples/fibonacci/fibonacci examples/modules/modules examples/sha256sum/sha256sum examples/sierpinski/sierpinski examples/stars/stars examples/threading/threading examples/web-server/web-server
+	meson compile -C $(BUILD_DIR_DEBUG) examples/embed/embed examples/embed/embed_copy examples/embed/multi-module-test examples/embed/multi-module-test_copy examples/embed/native-functions-test examples/embed/native-functions-test_copy examples/embed/incremental-test examples/embed/incremental-test_copy examples/ffi/ffi examples/hello-world/hello-world examples/hello-world-c/hello-world-c examples/bmi/bmi examples/dc/dc examples/defer/defer examples/donut/donut examples/errors/errors examples/fibonacci/fibonacci examples/modules/modules examples/sha256sum/sha256sum examples/sierpinski/sierpinski examples/stars/stars examples/threading/threading
 	@echo "Copying shared libraries for embed examples..."
 	@cp -f $(BUILD_DIR_DEBUG)/lib/qd/libqd.so dist/lib/
 	@cp -f $(BUILD_DIR_DEBUG)/lib/qdrt/libqdrt.so dist/lib/
