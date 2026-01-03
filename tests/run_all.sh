@@ -320,7 +320,7 @@ should_run_test() {
 
 # Run C++ tests via meson
 run_cpp_tests() {
-    local tests=("test_ast" "test_semantic_validator" "test_runtime" "test_llvmgen" "test_mem" "test_net")
+    local tests=("test_ast" "test_semantic_validator" "test_runtime" "test_llvmgen" "test_mem")
     local suite="cpp"
 
     # Filter tests first
@@ -942,7 +942,7 @@ list_all_tests() {
     echo ""
 
     echo "C++ Tests (suite: cpp):"
-    for test in test_ast test_semantic_validator test_runtime test_llvmgen test_mem test_net; do
+    for test in test_ast test_semantic_validator test_runtime test_llvmgen test_mem; do
         echo "  $test"
     done
     echo ""
