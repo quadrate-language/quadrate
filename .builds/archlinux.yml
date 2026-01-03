@@ -10,6 +10,7 @@ packages:
   - sqlite
   - tree-sitter-cli
   - valgrind
+  - zlib
 
 sources:
   - git://git@git.sr.ht:~klahr/quadrate

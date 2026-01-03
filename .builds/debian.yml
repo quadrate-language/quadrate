@@ -13,6 +13,7 @@ packages:
   - npm
   - pkg-config
   - valgrind
+  - zlib1g-dev
 
 sources:
   - git+ssh://git@git.sr.ht/~klahr/quadrate
