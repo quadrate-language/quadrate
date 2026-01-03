@@ -13,14 +13,16 @@ export CXX := clang++
 CMDS := quad quadc quadfmt quadlint quadlsp quadpm quaduses
 
 # Libraries with C components (need static archive creation)
-LIBS_WITH_C := qdrt qd qdfmt qdio qdmath qdmem qdos qdsignal qdstr qdstrconv qdtime qdthread qdtesting qdsqlite
+# Note: qdsqlite moved to external module (https://github.com/quadrate-language/sqlite)
+LIBS_WITH_C := qdrt qd qdfmt qdio qdmath qdmem qdos qdsignal qdstr qdstrconv qdtime qdthread qdtesting
 
 # Libraries with headers to install
 LIBS_WITH_HEADERS := qdrt qd qdfmt qdio qdmath qdmem qdos qdstr qdstrconv qdtime qdtesting
 
 # Standard library modules (pure Quadrate or mixed)
 # Note: http moved to external module (https://github.com/quadrate-language/http)
-STDLIB_MODULES := base64 bits ct flag fmt io json limits math mem os sb signal str strconv thread time unicode uri hex bytes crc32 sha256 regex path sort rand uuid testing sqlite
+# Note: sqlite moved to external module (https://github.com/quadrate-language/sqlite)
+STDLIB_MODULES := base64 bits ct flag fmt io json limits math mem os sb signal str strconv thread time unicode uri hex bytes crc32 sha256 regex path sort rand uuid testing
 
 .PHONY: all debug release tests tests-failed tests-clear valgrind asan fuzz examples format install uninstall clean docs
 
@@ -49,10 +51,10 @@ define do_build
 	@echo "Creating static libraries..."
 	@rm -f dist/lib/libqdrt.a && cd $(1)/lib/qdrt && ar rcs ../../../../dist/lib/libqdrt.a $$(ar -t libqdrt_static.a) && echo "  libqdrt.a"
 	@rm -f dist/lib/libqd.a && cd $(1)/lib/qd && ar rcs ../../../../dist/lib/libqd.a $$(ar -t libqd_static.a) && echo "  libqd.a"
-	@for lib in qdfmt qdio qdmath qdmem qdos qdsignal qdstr qdstrconv qdtime qdthread qdtesting qdsqlite; do \
+	@for lib in qdfmt qdio qdmath qdmem qdos qdsignal qdstr qdstrconv qdtime qdthread qdtesting; do \
 		rm -f dist/lib/lib$$lib.a && cd $(1)/lib/$$lib && ar rcs ../../../../dist/lib/lib$$lib.a $$(ar -t lib$$lib.a) && echo "  lib$$lib.a" && cd ->/dev/null; \
 	done
-	@for lib in qdthread qdsqlite; do \
+	@for lib in qdthread; do \
 		if [ -f lib/$$lib/lib$$lib.deps ]; then cp lib/$$lib/lib$$lib.deps dist/lib/; fi; \
 	done
 	@for lib in $(LIBS_WITH_HEADERS); do cp -rf lib/$$lib/include/$$lib dist/include/; done
