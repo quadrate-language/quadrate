@@ -14,3 +14,8 @@ json https://github.com/quadrate-language/json
 regex https://github.com/quadrate-language/regex
 ct https://github.com/quadrate-language/ct
 crypto https://github.com/quadrate-language/crypto
+uri https://github.com/quadrate-language/uri
+hex https://github.com/quadrate-language/hex
+base64 https://github.com/quadrate-language/base64
+uuid https://github.com/quadrate-language/uuid
+sort https://github.com/quadrate-language/sort
