@@ -13,7 +13,7 @@
 #include <unit-check/uc.h>
 #include <stdlib.h>
 #include <string.h>
-#include <pthread.h>
+#include <threads.h>
 #include <unistd.h>
 #include <time.h>
 
@@ -131,7 +131,7 @@ TEST(ShutdownBasicTest) {
 // ========== Client-Server Integration Test ==========
 
 // Server thread function
-static void* server_thread(void* arg) {
+static int server_thread(void* arg) {
 	int port = *(int*)arg;
 
 	qd_context* ctx = create_test_context();
@@ -197,15 +197,15 @@ static void* server_thread(void* arg) {
 	usr_net_close(ctx);
 
 	destroy_test_context(ctx);
-	return NULL;
+	return 0;
 }
 
 TEST(ClientServerIntegrationTest) {
 	int port = test_port++;
-	pthread_t server_tid;
+	thrd_t server_tid;
 
 	// Start server thread
-	pthread_create(&server_tid, NULL, server_thread, &port);
+	thrd_create(&server_tid, server_thread, &port);
 
 	// Give server time to start
 	usleep(100000);  // 100ms
@@ -269,7 +269,7 @@ TEST(ClientServerIntegrationTest) {
 	usr_net_close(ctx);
 
 	// Wait for server thread
-	pthread_join(server_tid, NULL);
+	thrd_join(server_tid, NULL);
 
 	destroy_test_context(ctx);
 }

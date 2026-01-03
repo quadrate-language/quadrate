@@ -17,7 +17,7 @@
 #define PTR_REGISTRY_SIZE 1024
 
 // Storage size for platform mutex (must be >= actual mutex size on all platforms)
-// pthread_mutex_t is typically 40 bytes on Linux x86_64
+// C11 mtx_t is typically 40 bytes on Linux x86_64
 #define PTR_REGISTRY_MUTEX_STORAGE_SIZE 64
 
 typedef struct ptr_registry_entry {

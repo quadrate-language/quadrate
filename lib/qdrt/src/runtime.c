@@ -666,7 +666,7 @@ typedef struct {
 } qd_thread_info_t;
 
 // Wrapper function for platform threads that calls the Quadrate function
-static void* qd_thread_wrapper(void* arg) {
+static int qd_thread_wrapper(void* arg) {
 	qd_thread_info_t* info = (qd_thread_info_t*)arg;
 
 	// Call the function
@@ -682,7 +682,7 @@ static void* qd_thread_wrapper(void* arg) {
 	qd_free_context(info->ctx);
 	free(info);
 
-	return NULL;
+	return 0;
 }
 
 // spawn - create a new thread ( fn:ptr -- thread_id:i )

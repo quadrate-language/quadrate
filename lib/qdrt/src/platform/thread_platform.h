@@ -10,8 +10,8 @@ extern "C" {
 // Platform-agnostic thread handle type
 typedef void* thread_handle_t;
 
-// Thread function signature
-typedef void* (*thread_func_t)(void*);
+// Thread function signature (C11 style: returns int, takes void*)
+typedef int (*thread_func_t)(void*);
 
 // Thread error codes
 #define THREAD_SUCCESS 0

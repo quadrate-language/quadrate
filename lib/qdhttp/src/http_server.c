@@ -21,7 +21,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
-#include <pthread.h>
+#include <threads.h>
 
 // ============================================================
 // Internal Structures
@@ -539,7 +539,7 @@ qd_exec_result usr_http_use(qd_context* ctx) {
 }
 
 /** Thread function for handling a request */
-static void* request_thread_func(void* arg) {
+static int request_thread_func(void* arg) {
 	http_thread_args_t* args = (http_thread_args_t*)arg;
 
 	// Create a new context for this thread
@@ -552,7 +552,7 @@ static void* request_thread_func(void* arg) {
 	qd_free_context(thread_ctx);
 	free(args);
 
-	return NULL;
+	return 0;
 }
 
 /** Internal: Handle a single client request */
@@ -776,14 +776,14 @@ qd_exec_result usr_http_run(qd_context* ctx) {
 		args->engine = engine;
 		args->client_fd = client_fd;
 
-		pthread_t thread;
-		if (pthread_create(&thread, NULL, request_thread_func, args) != 0) {
+		thrd_t thread;
+		if (thrd_create(&thread, request_thread_func, args) != thrd_success) {
 			// If thread creation fails, fall back to synchronous handling
 			free(args);
 			handle_request(engine, client_fd, ctx);
 		} else {
 			// Detach thread so it cleans up automatically
-			pthread_detach(thread);
+			thrd_detach(thread);
 		}
 	}
 

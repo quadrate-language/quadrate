@@ -263,7 +263,8 @@ if output=$(QUADRATE_PATH="$TEST_CACHE_DIR/cache" "$QUADPM" get "$TEST_C_REPO@v1
     if echo "$output" | grep -q "Found src/ directory"; then
         if echo "$output" | grep -q "✓ Built"; then
             # Verify library was created (uses Go-style path: local/path/to/repo@version/lib/)
-            if find "$TEST_CACHE_DIR/cache" -name "libtest-c-repo_static.a" | grep -q .; then
+            # Library name has 'qd' prefix: libqd<module>_static.a
+            if find "$TEST_CACHE_DIR/cache" -name "libqdtest-c-repo_static.a" | grep -q .; then
                 pass "Compiles C sources successfully"
             else
                 fail "Library file not created" "$output"
