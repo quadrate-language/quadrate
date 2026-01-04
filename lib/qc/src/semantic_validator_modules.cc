@@ -673,6 +673,30 @@ namespace Qd {
 					return;
 				}
 				file.close();
+
+				// Try 7b: quadpm's modules/_namespaces directory (symlinks to installed modules)
+				std::string namespacePath = std::string(home) + "/quadrate/modules/_namespaces/" + moduleName + "/module.qd";
+				if (std::filesystem::exists(namespacePath)) {
+					try {
+						// Resolve symlink to get canonical path
+						std::string canonicalPath = std::filesystem::canonical(namespacePath).string();
+						file.open(canonicalPath);
+						if (file.good()) {
+							// Store the canonical module directory
+							std::filesystem::path modDir = std::filesystem::path(canonicalPath).parent_path();
+							mModuleDirectories[moduleName] = modDir.string();
+							std::stringstream buffer;
+							buffer << file.rdbuf();
+							std::string source = buffer.str();
+							file.close();
+							parseModuleAndCollectFunctions(moduleName, source);
+							return;
+						}
+						file.close();
+					} catch (...) {
+						// Ignore errors resolving symlink
+					}
+				}
 			}
 		}
 

@@ -1502,6 +1502,7 @@ InstallResult installSingleDependency(const Dependency& dep, const std::string& 
 	GitRef gitRef;
 	gitRef.url = dep.url;
 	gitRef.moduleName = dep.name;
+	gitRef.hostPath = extractHostPath(dep.url);
 
 	// Determine the version to use
 	std::string versionSpec = dep.version;
