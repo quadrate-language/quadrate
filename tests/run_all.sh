@@ -180,7 +180,7 @@ if [[ -f "$EXTERNAL_MODULES_FILE" ]]; then
                 actual_dir=$(readlink -f "$ns_path")
                 if [[ -d "$actual_dir/src" ]]; then
                     build_log="$TEMP_DIR/build_${module_name}.log"
-                    if ! (cd "$actual_dir" && QUADRATE_PATH="$EXTERNAL_MODULES_DIR/_namespaces" QUADRATE_LIBDIR="$QUADRATE_LIBDIR_DEFAULT" "$QUADPM" build >"$build_log" 2>&1); then
+                    if ! (cd "$actual_dir" && QUADRATE_PATH="$EXTERNAL_MODULES_DIR" QUADRATE_LIBDIR="$QUADRATE_LIBDIR_DEFAULT" "$QUADPM" build >"$build_log" 2>&1); then
                         echo "Warning: Failed to build $module_name:" >&2
                         head -20 "$build_log" >&2
                     fi

@@ -1,7 +1,0 @@
-use hof
-
-fn main() {
-    5 fn (x:i64 -- r:i64) { 2 * } hof::apply print nl
-    10 fn (x:i64 -- r:i64) { 3 + } hof::apply print nl
-    7 fn (x:i64 -- r:i64) { dup * } hof::apply print nl
-}

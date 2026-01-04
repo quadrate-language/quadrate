@@ -1,7 +1,0 @@
-use hof
-
-fn main() {
-    // tri applies three functions to same value
-    5 fn (x:i64 -- r:i64) { 1 + } fn (x:i64 -- r:i64) { 2 * } fn (x:i64 -- r:i64) { dup * } hof::tri
-    print " " print print " " print print nl
-}

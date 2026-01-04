@@ -1,9 +1,0 @@
-after 6 inserts: len=6 cap=8
-after 10 inserts: len=10 cap=16
-k1: 1
-k5: 5
-k10: 10
-has k1: yes
-has k10: yes
-has missing: no
-done

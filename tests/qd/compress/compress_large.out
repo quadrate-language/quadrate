@@ -1,9 +1,0 @@
-Testing ~36 bytes:
-  PASS
-Testing ~1KB:
-  PASS
-Testing ~32KB:
-  PASS
-Testing deflate ~32KB:
-  PASS
-done

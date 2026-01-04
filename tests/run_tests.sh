@@ -104,7 +104,7 @@ if [ -f "$EXTERNAL_MODULES_FILE" ]; then
                 # Build native module if it has src/ directory
                 if [ -d "$actual_dir/src" ]; then
                     echo -n "  Building $module_name... "
-                    if (cd "$actual_dir" && QUADRATE_PATH="$EXTERNAL_MODULES_DIR/_namespaces" QUADRATE_LIBDIR="$PROJECT_ROOT/$QUADRATE_LIBDIR" "$QUADPM" build >/dev/null 2>&1); then
+                    if (cd "$actual_dir" && QUADRATE_PATH="$EXTERNAL_MODULES_DIR" QUADRATE_LIBDIR="$PROJECT_ROOT/$QUADRATE_LIBDIR" "$QUADPM" build >/dev/null 2>&1); then
                         echo "done"
                     else
                         echo "failed (tests may fail)"

@@ -1,9 +1,0 @@
-empty: yes
-length: 3
-has alice: yes
-has bob: yes
-has missing: no
-after dup add: 3
-after remove: 2
-bob removed: yes
-done

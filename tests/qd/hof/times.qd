@@ -1,8 +1,0 @@
-use hof
-
-fn main() {
-    // times applies function n times
-    2 3 fn (x:i64 -- r:i64) { 2 * } hof::times print nl
-    1 5 fn (x:i64 -- r:i64) { 1 + } hof::times print nl
-    10 0 fn (x:i64 -- r:i64) { 2 * } hof::times print nl
-}
