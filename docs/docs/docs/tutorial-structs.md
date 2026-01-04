@@ -181,15 +181,15 @@ struct Counter {
 	value:i64
 }
 
-fn (c:Counter) add(n:i64 -- result:i64) {
+fn (c:Counter) plus(n:i64 -- result:i64) {
 	-> n
 	c @value n +
 }
 
 fn main() {
 	Counter { value = 10 } -> c
-	5 c add print nl   // Prints: 15
-	10 c add print nl  // Prints: 20
+	c 5 plus print nl   // Prints: 15
+	c 10 plus print nl  // Prints: 20
 }
 ```
 

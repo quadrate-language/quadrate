@@ -2,6 +2,12 @@
 
 Higher-order functions (HOF) are functions that take other functions as arguments. The `hof` module provides **combinators**—functions that combine or apply other functions in useful patterns.
 
+!!! note "External Package"
+    The `hof` module is an external package. Install it first:
+    ```bash
+    quadpm install hof
+    ```
+
 ## Why Combinators?
 
 In stack-based programming, you often need to:

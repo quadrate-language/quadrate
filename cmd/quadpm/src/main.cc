@@ -443,11 +443,8 @@ std::string findDependencyLibDir(const std::string& depName, const std::string& 
 
 // Collect transitive native dependencies from a module's qd.json
 // moduleDir is the directory containing qd.json (used for sibling lookup)
-void collectTransitiveDeps(const std::string& manifestPath,
-						   const std::string& moduleDir,
-						   std::vector<std::string>& staticLibs,
-						   std::vector<std::string>& linkFlags,
-						   std::set<std::string>& visited) {
+void collectTransitiveDeps(const std::string& manifestPath, const std::string& moduleDir,
+		std::vector<std::string>& staticLibs, std::vector<std::string>& linkFlags, std::set<std::string>& visited) {
 	std::vector<Dependency> deps = parseDependencies(manifestPath);
 
 	for (const auto& dep : deps) {

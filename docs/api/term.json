@@ -1,37 +1,157 @@
 {
   "name": "term",
-  "description": "Terminal colors and formatting using ANSI escape codes. Use these constants to colorize terminal output.",
+  "description": "Terminal colors and formatting using ANSI escape codes. Use these constants to colorize terminal output. @example term::Green print \"PASS\" print term::Reset print nl",
   "constants": [
-    {"name": "Reset", "value": "\"\\x1b[0m\"", "description": "Reset all formatting."},
-    {"name": "Bold", "value": "\"\\x1b[1m\"", "description": "Bold text."},
-    {"name": "Dim", "value": "\"\\x1b[2m\"", "description": "Dim text."},
-    {"name": "Italic", "value": "\"\\x1b[3m\"", "description": "Italic text."},
-    {"name": "Underline", "value": "\"\\x1b[4m\"", "description": "Underline text."},
-    {"name": "Black", "value": "\"\\x1b[30m\"", "description": "Black foreground."},
-    {"name": "Red", "value": "\"\\x1b[31m\"", "description": "Red foreground."},
-    {"name": "Green", "value": "\"\\x1b[32m\"", "description": "Green foreground."},
-    {"name": "Yellow", "value": "\"\\x1b[33m\"", "description": "Yellow foreground."},
-    {"name": "Blue", "value": "\"\\x1b[34m\"", "description": "Blue foreground."},
-    {"name": "Magenta", "value": "\"\\x1b[35m\"", "description": "Magenta foreground."},
-    {"name": "Cyan", "value": "\"\\x1b[36m\"", "description": "Cyan foreground."},
-    {"name": "White", "value": "\"\\x1b[37m\"", "description": "White foreground."},
-    {"name": "BrightBlack", "value": "\"\\x1b[90m\"", "description": "Bright black (gray) foreground."},
-    {"name": "BrightRed", "value": "\"\\x1b[91m\"", "description": "Bright red foreground."},
-    {"name": "BrightGreen", "value": "\"\\x1b[92m\"", "description": "Bright green foreground."},
-    {"name": "BrightYellow", "value": "\"\\x1b[93m\"", "description": "Bright yellow foreground."},
-    {"name": "BrightBlue", "value": "\"\\x1b[94m\"", "description": "Bright blue foreground."},
-    {"name": "BrightMagenta", "value": "\"\\x1b[95m\"", "description": "Bright magenta foreground."},
-    {"name": "BrightCyan", "value": "\"\\x1b[96m\"", "description": "Bright cyan foreground."},
-    {"name": "BrightWhite", "value": "\"\\x1b[97m\"", "description": "Bright white foreground."},
-    {"name": "BgBlack", "value": "\"\\x1b[40m\"", "description": "Black background."},
-    {"name": "BgRed", "value": "\"\\x1b[41m\"", "description": "Red background."},
-    {"name": "BgGreen", "value": "\"\\x1b[42m\"", "description": "Green background."},
-    {"name": "BgYellow", "value": "\"\\x1b[43m\"", "description": "Yellow background."},
-    {"name": "BgBlue", "value": "\"\\x1b[44m\"", "description": "Blue background."},
-    {"name": "BgMagenta", "value": "\"\\x1b[45m\"", "description": "Magenta background."},
-    {"name": "BgCyan", "value": "\"\\x1b[46m\"", "description": "Cyan background."},
-    {"name": "BgWhite", "value": "\"\\x1b[47m\"", "description": "White background."}
+    {
+      "name": "BgBlack",
+      "value": "\"\\x1b[40m\"",
+      "description": "Black background."
+    },
+    {
+      "name": "BgBlue",
+      "value": "\"\\x1b[44m\"",
+      "description": "Blue background."
+    },
+    {
+      "name": "BgCyan",
+      "value": "\"\\x1b[46m\"",
+      "description": "Cyan background."
+    },
+    {
+      "name": "BgGreen",
+      "value": "\"\\x1b[42m\"",
+      "description": "Green background."
+    },
+    {
+      "name": "BgMagenta",
+      "value": "\"\\x1b[45m\"",
+      "description": "Magenta background."
+    },
+    {
+      "name": "BgRed",
+      "value": "\"\\x1b[41m\"",
+      "description": "Red background."
+    },
+    {
+      "name": "BgWhite",
+      "value": "\"\\x1b[47m\"",
+      "description": "White background."
+    },
+    {
+      "name": "BgYellow",
+      "value": "\"\\x1b[43m\"",
+      "description": "Yellow background."
+    },
+    {
+      "name": "Black",
+      "value": "\"\\x1b[30m\"",
+      "description": "Black foreground."
+    },
+    {
+      "name": "Blue",
+      "value": "\"\\x1b[34m\"",
+      "description": "Blue foreground."
+    },
+    {
+      "name": "Bold",
+      "value": "\"\\x1b[1m\"",
+      "description": "Bold text."
+    },
+    {
+      "name": "BrightBlack",
+      "value": "\"\\x1b[90m\"",
+      "description": "Bright black (gray) foreground."
+    },
+    {
+      "name": "BrightBlue",
+      "value": "\"\\x1b[94m\"",
+      "description": "Bright blue foreground."
+    },
+    {
+      "name": "BrightCyan",
+      "value": "\"\\x1b[96m\"",
+      "description": "Bright cyan foreground."
+    },
+    {
+      "name": "BrightGreen",
+      "value": "\"\\x1b[92m\"",
+      "description": "Bright green foreground."
+    },
+    {
+      "name": "BrightMagenta",
+      "value": "\"\\x1b[95m\"",
+      "description": "Bright magenta foreground."
+    },
+    {
+      "name": "BrightRed",
+      "value": "\"\\x1b[91m\"",
+      "description": "Bright red foreground."
+    },
+    {
+      "name": "BrightWhite",
+      "value": "\"\\x1b[97m\"",
+      "description": "Bright white foreground."
+    },
+    {
+      "name": "BrightYellow",
+      "value": "\"\\x1b[93m\"",
+      "description": "Bright yellow foreground."
+    },
+    {
+      "name": "Cyan",
+      "value": "\"\\x1b[36m\"",
+      "description": "Cyan foreground."
+    },
+    {
+      "name": "Dim",
+      "value": "\"\\x1b[2m\"",
+      "description": "Dim text."
+    },
+    {
+      "name": "Green",
+      "value": "\"\\x1b[32m\"",
+      "description": "Green foreground."
+    },
+    {
+      "name": "Italic",
+      "value": "\"\\x1b[3m\"",
+      "description": "Italic text."
+    },
+    {
+      "name": "Magenta",
+      "value": "\"\\x1b[35m\"",
+      "description": "Magenta foreground."
+    },
+    {
+      "name": "Red",
+      "value": "\"\\x1b[31m\"",
+      "description": "Red foreground."
+    },
+    {
+      "name": "Reset",
+      "value": "\"\\x1b[0m\"",
+      "description": "Reset all formatting."
+    },
+    {
+      "name": "Underline",
+      "value": "\"\\x1b[4m\"",
+      "description": "Underline text."
+    },
+    {
+      "name": "White",
+      "value": "\"\\x1b[37m\"",
+      "description": "White foreground."
+    },
+    {
+      "name": "Yellow",
+      "value": "\"\\x1b[33m\"",
+      "description": "Yellow foreground."
+    }
   ],
-  "structs": [],
-  "functions": []
+  "structs": [
+
+  ],
+  "functions": [
+
+  ]
 }

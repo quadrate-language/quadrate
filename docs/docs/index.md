@@ -98,7 +98,7 @@ quad run greet.qd -- Millie
 
 ## Learn More
 
-- **[Standard Library](docs/stdlib/index.md)** - Strings, I/O, math, networking, and more
+- **[Standard Library](docs/stdlib/index.md)** - Strings, I/O, math, threading, and more
 - **[Language Reference](docs/reference/index.md)** - All keywords and built-in operations
 - **[About Quadrate](about.md)** - Philosophy, history, and links
 

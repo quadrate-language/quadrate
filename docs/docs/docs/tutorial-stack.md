@@ -207,7 +207,7 @@ fn main() {
 
 ## Booleans and Logic
 
-Quadrate uses `true` (1) and `false` (0):
+Quadrate uses `true` (1) and `false` (0). Any non-zero value is truthy in conditionals:
 
 ```qd
 fn main() {
@@ -216,9 +216,14 @@ fn main() {
 
 	true false and print nl   // 0
 	true false or print nl    // 1
-	true not print nl         // 0
+
+	// Logical negation: use '0 =='
+	true 0 == print nl        // 0 (false)
+	false 0 == print nl       // 1 (true)
 }
 ```
+
+Note: The `not` instruction is bitwise NOT, not logical NOT. Use `0 ==` for logical negation.
 
 ## Control Flow
 

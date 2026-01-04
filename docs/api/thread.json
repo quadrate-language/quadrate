@@ -1,27 +1,259 @@
 {
   "name": "thread",
-  "description": "Threading primitives using C11 threads. Provides Thread, Mutex, Channel, and WaitGroup for concurrent programming.",
+  "description": "Thread module - threading primitives using C11 threads.  Provides: - Thread: spawn, join, detach threads - Mutex: mutual exclusion locks - Channel: Go-style channels for thread communication - WaitGroup: wait for multiple threads to complete  ## Example      use thread      fn worker() {         \"Hello from thread!\" print nl     }      fn main() {         // Spawn and join a thread         &worker thread::spawn! -> t         t join!          // Mutex for synchronization         thread::mutex_new! -> m         m lock!         m unlock!         m free          // Channel for communication         10 thread::chan_buffered! -> ch         ch 42 send!         ch recv! -> val         ch free          // WaitGroup to wait for multiple threads         thread::wg_new! -> wg         wg 2 add         wg done         wg done         wg wait!         wg free     }",
   "constants": [
-    {"name": "ErrCreate", "value": "2", "description": "Failed to create thread."},
-    {"name": "ErrJoin", "value": "3", "description": "Failed to join thread."},
-    {"name": "ErrDetach", "value": "4", "description": "Failed to detach thread."},
-    {"name": "ErrMutex", "value": "5", "description": "Mutex operation failed."},
-    {"name": "ErrChannel", "value": "6", "description": "Channel operation failed."},
-    {"name": "ErrClosed", "value": "7", "description": "Channel is closed."},
-    {"name": "ErrTimeout", "value": "8", "description": "Operation timed out."}
+    {
+      "name": "ErrChannel",
+      "value": "6",
+      "description": "Error: Channel operation failed."
+    },
+    {
+      "name": "ErrClosed",
+      "value": "7",
+      "description": "Error: Channel is closed."
+    },
+    {
+      "name": "ErrCreate",
+      "value": "2",
+      "description": "Error: Failed to create thread."
+    },
+    {
+      "name": "ErrDetach",
+      "value": "4",
+      "description": "Error: Failed to detach thread."
+    },
+    {
+      "name": "ErrJoin",
+      "value": "3",
+      "description": "Error: Failed to join thread."
+    },
+    {
+      "name": "ErrMutex",
+      "value": "5",
+      "description": "Error: Mutex operation failed."
+    },
+    {
+      "name": "ErrTimeout",
+      "value": "8",
+      "description": "Error: Operation timed out."
+    }
   ],
   "structs": [
-    {"name": "Thread", "description": "A thread handle."},
-    {"name": "Mutex", "description": "A mutual exclusion lock."},
-    {"name": "Channel", "description": "A channel for thread communication."},
-    {"name": "WaitGroup", "description": "A WaitGroup waits for a collection of threads to finish."}
+    {
+      "name": "Channel",
+      "description": "A channel for thread communication.",
+      "fields": [
+        {"name": "handle", "type": "ptr", "description": ""}
+      ]
+    },
+    {
+      "name": "Mutex",
+      "description": "A mutual exclusion lock.",
+      "fields": [
+        {"name": "handle", "type": "ptr", "description": ""}
+      ]
+    },
+    {
+      "name": "Thread",
+      "description": "A thread handle.",
+      "fields": [
+        {"name": "handle", "type": "ptr", "description": ""}
+      ]
+    },
+    {
+      "name": "WaitGroup",
+      "description": "A WaitGroup waits for a collection of threads to finish.",
+      "fields": [
+        {"name": "handle", "type": "ptr", "description": ""}
+      ]
+    }
   ],
   "functions": [
+    {
+      "name": "add",
+      "signature": "(wg:WaitGroup) add(n:i64 -- )",
+      "failable": false,
+      "description": "Add to the WaitGroup counter. ",
+      "params": [{"name": "n", "type": "i64", "description": "Number to add (usually 1 per thread)"}],
+      "returns": [],
+      "errors": [],
+      "examples": ["wg 2 add"]
+    },
+    {
+      "name": "cap",
+      "signature": "(ch:Channel) cap( -- c:i64)",
+      "failable": false,
+      "description": "Get channel capacity. ",
+      "params": [],
+      "returns": [{"name": "cap", "type": "i64", "description": "Buffer capacity (0 for unbuffered)"}],
+      "errors": [],
+      "examples": ["ch cap -> c"]
+    },
+    {
+      "name": "chan_buffered",
+      "signature": "(capacity:i64 -- ch:Channel)",
+      "failable": true,
+      "description": "Create a new buffered channel. ",
+      "params": [{"name": "capacity", "type": "i64", "description": "Buffer size"}],
+      "returns": [{"name": "ch", "type": "Channel", "description": "New channel handle"}],
+      "errors": [{"code": "ErrChannel", "description": "Failed to create channel"}],
+      "examples": ["10 thread::chan_buffered! -> ch"]
+    },
+    {
+      "name": "chan_new",
+      "signature": "( -- ch:Channel)",
+      "failable": true,
+      "description": "Create a new unbuffered (synchronous) channel. ",
+      "params": [],
+      "returns": [{"name": "ch", "type": "Channel", "description": "New channel handle"}],
+      "errors": [{"code": "ErrChannel", "description": "Failed to create channel"}],
+      "examples": ["thread::chan_new! -> ch"]
+    },
+    {
+      "name": "close",
+      "signature": "(ch:Channel) close( -- )",
+      "failable": false,
+      "description": "Close the channel. ",
+      "params": [],
+      "returns": [],
+      "errors": [],
+      "examples": ["ch close"]
+    },
+    {
+      "name": "detach",
+      "signature": "(t:Thread) detach( -- )",
+      "failable": true,
+      "description": "Detach the thread. ",
+      "params": [],
+      "returns": [],
+      "errors": [],
+      "examples": ["t detach!"]
+    },
+    {
+      "name": "done",
+      "signature": "(wg:WaitGroup) done( -- )",
+      "failable": false,
+      "description": "Mark one unit of work as done. ",
+      "params": [],
+      "returns": [],
+      "errors": [],
+      "examples": ["wg done"]
+    },
+    {
+      "name": "free",
+      "signature": "(ch:Channel) free( -- )",
+      "failable": false,
+      "description": "Free the channel. ",
+      "params": [],
+      "returns": [],
+      "errors": [],
+      "examples": ["ch free"]
+    },
+    {
+      "name": "free",
+      "signature": "(m:Mutex) free( -- )",
+      "failable": false,
+      "description": "Free the mutex. ",
+      "params": [],
+      "returns": [],
+      "errors": [],
+      "examples": ["m free"]
+    },
+    {
+      "name": "free",
+      "signature": "(wg:WaitGroup) free( -- )",
+      "failable": false,
+      "description": "Free the WaitGroup. ",
+      "params": [],
+      "returns": [],
+      "errors": [],
+      "examples": ["wg free"]
+    },
+    {
+      "name": "is_alive",
+      "signature": "(t:Thread) is_alive( -- alive:i64)",
+      "failable": false,
+      "description": "Check if the thread is still alive. ",
+      "params": [],
+      "returns": [{"name": "alive", "type": "i64", "description": "1 if running, 0 if completed"}],
+      "errors": [],
+      "examples": ["t is_alive -> running"]
+    },
+    {
+      "name": "is_closed",
+      "signature": "(ch:Channel) is_closed( -- closed:i64)",
+      "failable": false,
+      "description": "Check if the channel is closed. ",
+      "params": [],
+      "returns": [{"name": "closed", "type": "i64", "description": "1 if closed, 0 if open"}],
+      "errors": [],
+      "examples": ["ch is_closed -> done"]
+    },
+    {
+      "name": "join",
+      "signature": "(t:Thread) join( -- )",
+      "failable": true,
+      "description": "Wait for the thread to complete. ",
+      "params": [],
+      "returns": [],
+      "errors": [],
+      "examples": ["t join!"]
+    },
+    {
+      "name": "len",
+      "signature": "(ch:Channel) len( -- n:i64)",
+      "failable": false,
+      "description": "Get number of values in channel buffer. ",
+      "params": [],
+      "returns": [{"name": "n", "type": "i64", "description": "Number of buffered values"}],
+      "errors": [],
+      "examples": ["ch len -> n"]
+    },
+    {
+      "name": "lock",
+      "signature": "(m:Mutex) lock( -- )",
+      "failable": true,
+      "description": "Lock the mutex. ",
+      "params": [],
+      "returns": [],
+      "errors": [],
+      "examples": ["m lock!"]
+    },
+    {
+      "name": "mutex_new",
+      "signature": "( -- m:Mutex)",
+      "failable": true,
+      "description": "Create a new mutex. ",
+      "params": [],
+      "returns": [{"name": "m", "type": "Mutex", "description": "New mutex handle"}],
+      "errors": [{"code": "ErrMutex", "description": "Failed to create mutex"}],
+      "examples": ["thread::mutex_new! -> m"]
+    },
+    {
+      "name": "recv",
+      "signature": "(ch:Channel) recv( -- val:i64)",
+      "failable": true,
+      "description": "Receive a value from the channel. ",
+      "params": [],
+      "returns": [{"name": "val", "type": "i64", "description": "Received value"}],
+      "errors": [{"code": "ErrClosed", "description": "Channel closed with no values"}],
+      "examples": ["ch recv! -> val"]
+    },
+    {
+      "name": "send",
+      "signature": "(ch:Channel) send(val:i64 -- )",
+      "failable": true,
+      "description": "Send a value on the channel. ",
+      "params": [{"name": "val", "type": "i64", "description": "Value to send"}],
+      "returns": [],
+      "errors": [{"code": "ErrClosed", "description": "Cannot send on closed channel"}],
+      "examples": ["ch 42 send!"]
+    },
     {
       "name": "sleep",
       "signature": "(ms:i64 -- )",
       "failable": false,
-      "description": "Sleep the current thread for the specified duration in milliseconds.",
+      "description": "Sleep the current thread for the specified duration in milliseconds. ",
       "params": [{"name": "ms", "type": "i64", "description": "Sleep duration in milliseconds"}],
       "returns": [],
       "errors": [],
@@ -29,253 +261,73 @@
     },
     {
       "name": "spawn",
-      "signature": "(func:ptr -- t:Thread)!",
+      "signature": "(func:ptr -- t:Thread)",
       "failable": true,
-      "description": "Spawn a new thread running the given function.",
+      "description": "Spawn a new thread running the given function. ",
       "params": [{"name": "func", "type": "ptr", "description": "Function pointer (use &function_name)"}],
       "returns": [{"name": "t", "type": "Thread", "description": "Thread handle"}],
-      "errors": ["ErrCreate"],
+      "errors": [{"code": "ErrCreate", "description": "Failed to create thread"}],
       "examples": ["&worker thread::spawn! -> t"]
     },
     {
-      "name": "Thread.join",
-      "signature": "(t:Thread -- )!",
-      "failable": true,
-      "description": "Wait for the thread to complete.",
-      "params": [{"name": "t", "type": "Thread", "description": "Thread handle"}],
-      "returns": [],
-      "errors": ["ErrJoin"],
-      "examples": ["t join!"]
-    },
-    {
-      "name": "Thread.detach",
-      "signature": "(t:Thread -- )!",
-      "failable": true,
-      "description": "Detach the thread.",
-      "params": [{"name": "t", "type": "Thread", "description": "Thread handle"}],
-      "returns": [],
-      "errors": ["ErrDetach"],
-      "examples": ["t detach!"]
-    },
-    {
-      "name": "Thread.is_alive",
-      "signature": "(t:Thread -- alive:i64)",
+      "name": "try_lock",
+      "signature": "(m:Mutex) try_lock( -- success:i64)",
       "failable": false,
-      "description": "Check if the thread is still alive.",
-      "params": [{"name": "t", "type": "Thread", "description": "Thread handle"}],
-      "returns": [{"name": "alive", "type": "i64", "description": "1 if running, 0 if completed"}],
-      "errors": [],
-      "examples": ["t is_alive -> running"]
-    },
-    {
-      "name": "mutex_new",
-      "signature": "( -- m:Mutex)!",
-      "failable": true,
-      "description": "Create a new mutex.",
+      "description": "Try to lock the mutex without blocking. ",
       "params": [],
-      "returns": [{"name": "m", "type": "Mutex", "description": "New mutex handle"}],
-      "errors": ["ErrMutex"],
-      "examples": ["thread::mutex_new! -> m"]
-    },
-    {
-      "name": "Mutex.lock",
-      "signature": "(m:Mutex -- )!",
-      "failable": true,
-      "description": "Lock the mutex (blocking).",
-      "params": [{"name": "m", "type": "Mutex", "description": "Mutex handle"}],
-      "returns": [],
-      "errors": ["ErrMutex"],
-      "examples": ["m lock!"]
-    },
-    {
-      "name": "Mutex.unlock",
-      "signature": "(m:Mutex -- )!",
-      "failable": true,
-      "description": "Unlock the mutex.",
-      "params": [{"name": "m", "type": "Mutex", "description": "Mutex handle"}],
-      "returns": [],
-      "errors": ["ErrMutex"],
-      "examples": ["m unlock!"]
-    },
-    {
-      "name": "Mutex.try_lock",
-      "signature": "(m:Mutex -- success:i64)",
-      "failable": false,
-      "description": "Try to lock the mutex without blocking.",
-      "params": [{"name": "m", "type": "Mutex", "description": "Mutex handle"}],
       "returns": [{"name": "success", "type": "i64", "description": "1 if locked, 0 if already held"}],
       "errors": [],
       "examples": ["m try_lock -> got"]
     },
     {
-      "name": "Mutex.free",
-      "signature": "(m:Mutex -- )",
+      "name": "try_recv",
+      "signature": "(ch:Channel) try_recv( -- val:i64 success:i64)",
       "failable": false,
-      "description": "Free the mutex.",
-      "params": [{"name": "m", "type": "Mutex", "description": "Mutex handle"}],
-      "returns": [],
-      "errors": [],
-      "examples": ["m free"]
-    },
-    {
-      "name": "chan_new",
-      "signature": "( -- ch:Channel)!",
-      "failable": true,
-      "description": "Create a new unbuffered (synchronous) channel.",
+      "description": "Try to receive without blocking. ",
       "params": [],
-      "returns": [{"name": "ch", "type": "Channel", "description": "New channel handle"}],
-      "errors": ["ErrChannel"],
-      "examples": ["thread::chan_new! -> ch"]
-    },
-    {
-      "name": "chan_buffered",
-      "signature": "(capacity:i64 -- ch:Channel)!",
-      "failable": true,
-      "description": "Create a new buffered channel.",
-      "params": [{"name": "capacity", "type": "i64", "description": "Buffer size"}],
-      "returns": [{"name": "ch", "type": "Channel", "description": "New channel handle"}],
-      "errors": ["ErrChannel"],
-      "examples": ["10 thread::chan_buffered! -> ch"]
-    },
-    {
-      "name": "Channel.send",
-      "signature": "(ch:Channel val:i64 -- )!",
-      "failable": true,
-      "description": "Send a value on the channel (blocking).",
-      "params": [{"name": "ch", "type": "Channel", "description": "Channel handle"}, {"name": "val", "type": "i64", "description": "Value to send"}],
-      "returns": [],
-      "errors": ["ErrClosed"],
-      "examples": ["ch 42 send!"]
-    },
-    {
-      "name": "Channel.recv",
-      "signature": "(ch:Channel -- val:i64)!",
-      "failable": true,
-      "description": "Receive a value from the channel (blocking).",
-      "params": [{"name": "ch", "type": "Channel", "description": "Channel handle"}],
-      "returns": [{"name": "val", "type": "i64", "description": "Received value"}],
-      "errors": ["ErrClosed"],
-      "examples": ["ch recv! -> val"]
-    },
-    {
-      "name": "Channel.try_send",
-      "signature": "(ch:Channel val:i64 -- success:i64)",
-      "failable": false,
-      "description": "Try to send without blocking.",
-      "params": [{"name": "ch", "type": "Channel", "description": "Channel handle"}, {"name": "val", "type": "i64", "description": "Value to send"}],
-      "returns": [{"name": "success", "type": "i64", "description": "1 if sent, 0 if would block"}],
-      "errors": [],
-      "examples": ["ch 42 try_send -> sent"]
-    },
-    {
-      "name": "Channel.try_recv",
-      "signature": "(ch:Channel -- val:i64 success:i64)",
-      "failable": false,
-      "description": "Try to receive without blocking.",
-      "params": [{"name": "ch", "type": "Channel", "description": "Channel handle"}],
       "returns": [{"name": "val", "type": "i64", "description": "Received value (0 if failed)"}, {"name": "success", "type": "i64", "description": "1 if received, 0 if would block"}],
       "errors": [],
       "examples": ["ch try_recv -> success -> val"]
     },
     {
-      "name": "Channel.close",
-      "signature": "(ch:Channel -- )",
+      "name": "try_send",
+      "signature": "(ch:Channel) try_send(val:i64 -- success:i64)",
       "failable": false,
-      "description": "Close the channel.",
-      "params": [{"name": "ch", "type": "Channel", "description": "Channel handle"}],
-      "returns": [],
+      "description": "Try to send without blocking. ",
+      "params": [{"name": "val", "type": "i64", "description": "Value to send"}],
+      "returns": [{"name": "success", "type": "i64", "description": "1 if sent, 0 if would block"}],
       "errors": [],
-      "examples": ["ch close"]
+      "examples": ["ch 42 try_send -> sent"]
     },
     {
-      "name": "Channel.is_closed",
-      "signature": "(ch:Channel -- closed:i64)",
-      "failable": false,
-      "description": "Check if the channel is closed.",
-      "params": [{"name": "ch", "type": "Channel", "description": "Channel handle"}],
-      "returns": [{"name": "closed", "type": "i64", "description": "1 if closed, 0 if open"}],
-      "errors": [],
-      "examples": ["ch is_closed -> done"]
-    },
-    {
-      "name": "Channel.len",
-      "signature": "(ch:Channel -- n:i64)",
-      "failable": false,
-      "description": "Get number of values in channel buffer.",
-      "params": [{"name": "ch", "type": "Channel", "description": "Channel handle"}],
-      "returns": [{"name": "n", "type": "i64", "description": "Number of buffered values"}],
-      "errors": [],
-      "examples": ["ch len -> n"]
-    },
-    {
-      "name": "Channel.cap",
-      "signature": "(ch:Channel -- c:i64)",
-      "failable": false,
-      "description": "Get channel capacity.",
-      "params": [{"name": "ch", "type": "Channel", "description": "Channel handle"}],
-      "returns": [{"name": "c", "type": "i64", "description": "Buffer capacity (0 for unbuffered)"}],
-      "errors": [],
-      "examples": ["ch cap -> c"]
-    },
-    {
-      "name": "Channel.free",
-      "signature": "(ch:Channel -- )",
-      "failable": false,
-      "description": "Free the channel.",
-      "params": [{"name": "ch", "type": "Channel", "description": "Channel handle"}],
-      "returns": [],
-      "errors": [],
-      "examples": ["ch free"]
-    },
-    {
-      "name": "wg_new",
-      "signature": "( -- wg:WaitGroup)!",
+      "name": "unlock",
+      "signature": "(m:Mutex) unlock( -- )",
       "failable": true,
-      "description": "Create a new WaitGroup.",
+      "description": "Unlock the mutex. ",
       "params": [],
-      "returns": [{"name": "wg", "type": "WaitGroup", "description": "New WaitGroup handle"}],
-      "errors": ["ErrCreate"],
-      "examples": ["thread::wg_new! -> wg"]
-    },
-    {
-      "name": "WaitGroup.add",
-      "signature": "(wg:WaitGroup n:i64 -- )",
-      "failable": false,
-      "description": "Add to the WaitGroup counter.",
-      "params": [{"name": "wg", "type": "WaitGroup", "description": "WaitGroup handle"}, {"name": "n", "type": "i64", "description": "Number to add (usually 1 per thread)"}],
       "returns": [],
       "errors": [],
-      "examples": ["wg 2 add"]
+      "examples": ["m unlock!"]
     },
     {
-      "name": "WaitGroup.done",
-      "signature": "(wg:WaitGroup -- )",
-      "failable": false,
-      "description": "Mark one unit of work as done.",
-      "params": [{"name": "wg", "type": "WaitGroup", "description": "WaitGroup handle"}],
-      "returns": [],
-      "errors": [],
-      "examples": ["wg done"]
-    },
-    {
-      "name": "WaitGroup.wait",
-      "signature": "(wg:WaitGroup -- )!",
+      "name": "wait",
+      "signature": "(wg:WaitGroup) wait( -- )",
       "failable": true,
-      "description": "Wait for all threads to complete.",
-      "params": [{"name": "wg", "type": "WaitGroup", "description": "WaitGroup handle"}],
+      "description": "Wait for all threads to complete. ",
+      "params": [],
       "returns": [],
-      "errors": ["ErrCreate"],
+      "errors": [{"code": "ErrCreate", "description": "Invalid WaitGroup"}],
       "examples": ["wg wait!"]
     },
     {
-      "name": "WaitGroup.free",
-      "signature": "(wg:WaitGroup -- )",
-      "failable": false,
-      "description": "Free the WaitGroup.",
-      "params": [{"name": "wg", "type": "WaitGroup", "description": "WaitGroup handle"}],
-      "returns": [],
-      "errors": [],
-      "examples": ["wg free"]
+      "name": "wg_new",
+      "signature": "( -- wg:WaitGroup)",
+      "failable": true,
+      "description": "Create a new WaitGroup. ",
+      "params": [],
+      "returns": [{"name": "wg", "type": "WaitGroup", "description": "New WaitGroup handle"}],
+      "errors": [{"code": "ErrCreate", "description": "Failed to create WaitGroup"}],
+      "examples": ["thread::wg_new! -> wg"]
     }
   ]
 }

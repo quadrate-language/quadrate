@@ -675,7 +675,8 @@ namespace Qd {
 				file.close();
 
 				// Try 7b: quadpm's modules/_namespaces directory (symlinks to installed modules)
-				std::string namespacePath = std::string(home) + "/quadrate/modules/_namespaces/" + moduleName + "/module.qd";
+				std::string namespacePath =
+						std::string(home) + "/quadrate/modules/_namespaces/" + moduleName + "/module.qd";
 				if (std::filesystem::exists(namespacePath)) {
 					try {
 						// Resolve symlink to get canonical path

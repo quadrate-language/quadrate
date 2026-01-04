@@ -22,7 +22,6 @@ nav:
       - Structs: docs/tutorial-structs.md
       - Error Handling: docs/tutorial-errors.md
       - Creating Modules: docs/tutorial-modules.md
-      - HTTP Requests: docs/tutorial-http.md
   - Learn:
       - 1. Basics:
           - Hello World: docs/learn/1-basics/hello-world.md
@@ -77,46 +76,29 @@ nav:
           - strconv: docs/stdlib/strconv.md
           - fmt: docs/stdlib/fmt.md
           - sb: docs/stdlib/sb.md
-          - regex: docs/stdlib/regex.md
           - unicode: docs/stdlib/unicode.md
-      - Data & Encoding:
-          - json: docs/stdlib/json.md
-          - base64: docs/stdlib/base64.md
-          - hex: docs/stdlib/hex.md
+      - Data:
           - bytes: docs/stdlib/bytes.md
       - Math & Numbers:
           - math: docs/stdlib/math.md
           - limits: docs/stdlib/limits.md
           - bits: docs/stdlib/bits.md
           - rand: docs/stdlib/rand.md
-      - Linear Algebra:
-          - vec2: docs/stdlib/vec2.md
-          - vec3: docs/stdlib/vec3.md
-          - vec4: docs/stdlib/vec4.md
-          - mat4: docs/stdlib/mat4.md
-          - quat: docs/stdlib/quat.md
       - I/O & System:
           - io: docs/stdlib/io.md
           - os: docs/stdlib/os.md
           - path: docs/stdlib/path.md
-          - net: docs/stdlib/net.md
-      - Time & IDs:
+      - Time:
           - time: docs/stdlib/time.md
-          - uuid: docs/stdlib/uuid.md
+      - Concurrency:
+          - thread: docs/stdlib/thread.md
       - Utilities:
           - mem: docs/stdlib/mem.md
-          - sort: docs/stdlib/sort.md
           - flag: docs/stdlib/flag.md
           - testing: docs/stdlib/testing.md
-      - Functional:
-          - hof: docs/stdlib/hof.md
-      - Hashing:
-          - sha256: docs/stdlib/sha256.md
-          - crc32: docs/stdlib/crc32.md
-      - Web & Networking:
-          - http: docs/stdlib/http.md
-          - tls: docs/stdlib/tls.md
-          - uri: docs/stdlib/uri.md
+      - Terminal:
+          - term: docs/stdlib/term.md
       - Signal Handling:
           - signal: docs/stdlib/signal.md
+  - External Packages: docs/external-packages.md
   - About: about.md
