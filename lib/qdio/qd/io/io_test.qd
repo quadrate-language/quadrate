@@ -1,0 +1,35 @@
+// Unit tests for the io module
+use io
+use testing
+
+test "io constants" {
+	io::Read "r" testing::assert_eq
+	io::Write "w" testing::assert_eq
+	io::Append "a" testing::assert_eq
+	io::ReadBinary "rb" testing::assert_eq
+	io::WriteBinary "wb" testing::assert_eq
+	io::SeekSet 0 testing::assert_eq
+	io::SeekCur 1 testing::assert_eq
+	io::SeekEnd 2 testing::assert_eq
+}
+
+test "io error constants" {
+	io::ErrNotFound 2 testing::assert_eq
+	io::ErrPermission 3 testing::assert_eq
+	io::ErrInvalidHandle 4 testing::assert_eq
+	io::ErrRead 5 testing::assert_eq
+	io::ErrWrite 6 testing::assert_eq
+	io::ErrSeek 7 testing::assert_eq
+	io::ErrEof 8 testing::assert_eq
+}
+
+// Helper function for write/read file test
+fn test_write_read_file( -- result:i64) {
+	"/tmp/quadrate_io_test.txt" "Hello, World!" io::write_file!
+	"/tmp/quadrate_io_test.txt" io::read_file! -> contents
+	contents "Hello, World!" eq
+}
+
+test "io::write_file and read_file" {
+	test_write_read_file testing::assert_true
+}

@@ -1,0 +1,115 @@
+// Unit tests for the bytes module
+use bytes
+use mem
+use testing
+
+test "bytes::swap16" {
+	0x1234 bytes::swap16 0x3412 testing::assert_eq
+	0x00FF bytes::swap16 0xFF00 testing::assert_eq
+	0xABCD bytes::swap16 0xCDAB testing::assert_eq
+	0x0000 bytes::swap16 0x0000 testing::assert_eq
+}
+
+test "bytes::swap32" {
+	0x12345678 bytes::swap32 0x78563412 testing::assert_eq
+	0x000000FF bytes::swap32 0xFF000000 testing::assert_eq
+	0xAABBCCDD bytes::swap32 0xDDCCBBAA testing::assert_eq
+	0x00000000 bytes::swap32 0x00000000 testing::assert_eq
+}
+
+test "bytes::swap64" {
+	0x0102030405060708 bytes::swap64 0x0807060504030201 testing::assert_eq
+}
+
+// Helper for read/write tests
+fn test_read_write_u16_be( -- result:i64) {
+	16 mem::alloc! -> buf
+	buf 0 0x1234 bytes::write_u16_be
+	buf 0 bytes::read_u16_be -> val
+	buf mem::free
+	val 0x1234 eq
+}
+
+fn test_read_write_u16_le( -- result:i64) {
+	16 mem::alloc! -> buf
+	buf 0 0x1234 bytes::write_u16_le
+	buf 0 bytes::read_u16_le -> val
+	buf mem::free
+	val 0x1234 eq
+}
+
+fn test_read_write_u32_be( -- result:i64) {
+	16 mem::alloc! -> buf
+	buf 0 0x12345678 bytes::write_u32_be
+	buf 0 bytes::read_u32_be -> val
+	buf mem::free
+	val 0x12345678 eq
+}
+
+fn test_read_write_u32_le( -- result:i64) {
+	16 mem::alloc! -> buf
+	buf 0 0x12345678 bytes::write_u32_le
+	buf 0 bytes::read_u32_le -> val
+	buf mem::free
+	val 0x12345678 eq
+}
+
+test "bytes::read_write_u16_be roundtrip" {
+	test_read_write_u16_be testing::assert_true
+}
+
+test "bytes::read_write_u16_le roundtrip" {
+	test_read_write_u16_le testing::assert_true
+}
+
+test "bytes::read_write_u32_be roundtrip" {
+	test_read_write_u32_be testing::assert_true
+}
+
+test "bytes::read_write_u32_le roundtrip" {
+	test_read_write_u32_le testing::assert_true
+}
+
+// Helper for fill and compare
+fn test_bytes_fill( -- result:i64) {
+	16 mem::alloc! -> buf
+	0xAB buf 0 16 bytes::fill
+	buf 0 mem::get_byte -> b1
+	buf 15 mem::get_byte -> b2
+	buf mem::free
+	b1 0xAB eq b2 0xAB eq and
+}
+
+fn test_bytes_compare_equal( -- result:i64) {
+	16 mem::alloc! -> buf1
+	16 mem::alloc! -> buf2
+	0x42 buf1 0 16 bytes::fill
+	0x42 buf2 0 16 bytes::fill
+	buf1 0 buf2 0 16 bytes::compare -> cmp
+	buf1 mem::free
+	buf2 mem::free
+	cmp 0 eq
+}
+
+fn test_bytes_compare_different( -- result:i64) {
+	16 mem::alloc! -> buf1
+	16 mem::alloc! -> buf2
+	0x41 buf1 0 16 bytes::fill
+	0x42 buf2 0 16 bytes::fill
+	buf1 0 buf2 0 16 bytes::compare -> cmp
+	buf1 mem::free
+	buf2 mem::free
+	cmp 0 neq
+}
+
+test "bytes::fill" {
+	test_bytes_fill testing::assert_true
+}
+
+test "bytes::compare equal" {
+	test_bytes_compare_equal testing::assert_true
+}
+
+test "bytes::compare different" {
+	test_bytes_compare_different testing::assert_true
+}

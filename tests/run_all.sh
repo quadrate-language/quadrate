@@ -5,7 +5,7 @@
 #   ./tests/run_all.sh                    # Run all tests
 #   ./tests/run_all.sh --failed           # Run only previously failed tests
 #   ./tests/run_all.sh --test NAME        # Run specific test
-#   ./tests/run_all.sh --suite SUITE      # Run specific suite (cpp, lsp, qd, formatter, linter, embed, quadpm)
+#   ./tests/run_all.sh --suite SUITE      # Run specific suite (cpp, lsp, qd, formatter, linter, embed, quadpm, stdlib, mtls)
 #   ./tests/run_all.sh --clear            # Clear failed tests file
 #   ./tests/run_all.sh --list             # List all available tests
 
@@ -94,7 +94,7 @@ while [[ $# -gt 0 ]]; do
             echo "Options:"
             echo "  --failed, -f       Run only previously failed tests"
             echo "  --test, -t NAME    Run specific test by name"
-            echo "  --suite, -s SUITE  Run specific suite (cpp, lsp, qd, formatter, linter, embed, quadpm, mtls)"
+            echo "  --suite, -s SUITE  Run specific suite (cpp, lsp, qd, formatter, linter, embed, quadpm, stdlib, mtls)"
             echo "  --list, -l         List all available tests"
             echo "  --clear, -c        Clear failed tests file"
             echo "  --verbose, -v      Show verbose output"
@@ -953,6 +953,52 @@ run_mtls_tests() {
     fi
 }
 
+run_stdlib_tests() {
+    local suite="stdlib"
+    local quad="$PROJECT_ROOT/$BUILD_DIR/cmd/quad/quad"
+
+    if ! should_run_test "$suite" "stdlib_tests"; then
+        return
+    fi
+
+    # Check if quad exists
+    if [[ ! -x "$quad" ]]; then
+        log_skip "$suite" "stdlib_tests" "quad not found"
+        return
+    fi
+
+    print_header "Standard Library Unit Tests"
+
+    local output
+    local exit_code
+
+    # Run quad test ./... from lib directory to find all *_test.qd files
+    output=$(cd "$PROJECT_ROOT/lib" && \
+        QUADRATE_ROOT="$QUADRATE_ROOT_DEFAULT" \
+        QUADRATE_LIBDIR="$QUADRATE_LIBDIR_DEFAULT" \
+        "$quad" test ./... 2>&1)
+    exit_code=$?
+
+    # Count passed/failed from output
+    local passed=$(echo "$output" | grep -oE '[0-9]+ passed' | awk '{sum+=$1} END {print sum+0}')
+    local failed=$(echo "$output" | grep -oE '[0-9]+ failed' | awk '{sum+=$1} END {print sum+0}')
+
+    if [[ $exit_code -eq 0 ]] && [[ $failed -eq 0 ]]; then
+        # Log each passing test file as a single pass
+        SUITE_PASSED[$suite]=$((${SUITE_PASSED[$suite]:-0} + passed))
+        TOTAL_PASSED=$((TOTAL_PASSED + passed))
+        echo -e "  ${GREEN}✓${NC} stdlib_tests ${DIM}($passed tests passed)${NC}"
+    else
+        SUITE_FAILED[$suite]=$((${SUITE_FAILED[$suite]:-0} + 1))
+        TOTAL_FAILED=$((TOTAL_FAILED + 1))
+        FAILED_TESTS_LIST+=("stdlib:stdlib_tests")
+        echo -e "  ${RED}✗${NC} stdlib_tests ${DIM}($passed passed, $failed failed)${NC}"
+        if [[ -n "$output" ]]; then
+            echo "$output" | grep -E "(✗|FAIL|Assertion failed)" | head -10 | sed 's/^/      /'
+        fi
+    fi
+}
+
 # List all available tests
 list_all_tests() {
     echo "Available tests:"
@@ -997,6 +1043,10 @@ list_all_tests() {
     echo "  quadpm_tests"
     echo ""
 
+    echo "Standard Library Unit Tests (suite: stdlib):"
+    echo "  stdlib_tests"
+    echo ""
+
     echo "mTLS Tests (suite: mtls):"
     echo "  mtls_test"
 }
@@ -1009,7 +1059,7 @@ print_summary() {
     echo -e "${BOLD}═══════════════════════════════════════════════════════════════════════════════${NC}"
 
     # Print per-suite summary
-    for suite in cpp lsp qd formatter linter embed quadpm mtls; do
+    for suite in cpp lsp qd formatter linter embed quadpm stdlib mtls; do
         local passed=${SUITE_PASSED[$suite]:-0}
         local failed=${SUITE_FAILED[$suite]:-0}
         local skipped=${SUITE_SKIPPED[$suite]:-0}
@@ -1026,6 +1076,7 @@ print_summary() {
             linter) suite_name="Linter" ;;
             embed) suite_name="Embed" ;;
             quadpm) suite_name="Package Manager" ;;
+            stdlib) suite_name="Stdlib Unit Tests" ;;
             mtls) suite_name="mTLS" ;;
         esac
 
@@ -1134,6 +1185,10 @@ main() {
 
     if [[ -z "$SPECIFIC_SUITE" ]] || [[ "$SPECIFIC_SUITE" == "quadpm" ]]; then
         run_quadpm_tests
+    fi
+
+    if [[ -z "$SPECIFIC_SUITE" ]] || [[ "$SPECIFIC_SUITE" == "stdlib" ]]; then
+        run_stdlib_tests
     fi
 
     if [[ -z "$SPECIFIC_SUITE" ]] || [[ "$SPECIFIC_SUITE" == "mtls" ]]; then

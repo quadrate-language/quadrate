@@ -1,0 +1,112 @@
+// Unit tests for the mem module
+use mem
+use testing
+
+// Helper functions to avoid variable scoping issues in tests
+fn test_alloc_and_free( -- result:i64) {
+	1024 mem::alloc! -> buf
+	buf mem::is_null not -> ok
+	buf mem::free
+	ok
+}
+
+fn test_set_get_byte( -- result:i64) {
+	16 mem::alloc! -> buf
+	65 buf 0 mem::set_byte
+	buf 0 mem::get_byte -> val
+	buf mem::free
+	val 65 eq
+}
+
+fn test_set_get_i64( -- result:i64) {
+	16 mem::alloc! -> buf
+	12345678 buf 0 mem::set_i64
+	buf 0 mem::get_i64 -> val
+	buf mem::free
+	val 12345678 eq
+}
+
+fn test_set_get_f64( -- result:i64) {
+	16 mem::alloc! -> buf
+	3.14159 buf 0 mem::set_f64
+	buf 0 mem::get_f64 -> val
+	buf mem::free
+	// Check approximate equality (float comparison)
+	val 3.14 > val 3.15 < and
+}
+
+fn test_mem_zero( -- result:i64) {
+	16 mem::alloc! -> buf
+	255 buf 0 mem::set_byte
+	255 buf 1 mem::set_byte
+	buf 16 mem::zero
+	buf 0 mem::get_byte -> b0
+	buf 1 mem::get_byte -> b1
+	buf mem::free
+	b0 0 eq b1 0 eq and
+}
+
+fn test_mem_fill( -- result:i64) {
+	16 mem::alloc! -> buf
+	0xAB buf 16 mem::fill
+	buf 0 mem::get_byte -> b0
+	buf 15 mem::get_byte -> b15
+	buf mem::free
+	b0 0xAB eq b15 0xAB eq and
+}
+
+fn test_mem_copy( -- result:i64) {
+	16 mem::alloc! -> src
+	16 mem::alloc! -> dst
+	0xAB src 16 mem::fill
+	dst src 16 mem::copy
+	dst 0 mem::get_byte -> b0
+	dst 15 mem::get_byte -> b15
+	src mem::free
+	dst mem::free
+	b0 0xAB eq b15 0xAB eq and
+}
+
+fn test_to_from_string( -- result:i64) {
+	"hello" mem::from_string -> len -> buf
+	len 5 eq -> len_ok
+	buf len mem::to_string -> s
+	buf mem::free
+	s "hello" eq len_ok and
+}
+
+test "mem::alloc and free" {
+	test_alloc_and_free testing::assert_true
+}
+
+test "mem::set_byte and get_byte" {
+	test_set_get_byte testing::assert_true
+}
+
+test "mem::set_i64 and get_i64" {
+	test_set_get_i64 testing::assert_true
+}
+
+test "mem::set_f64 and get_f64" {
+	test_set_get_f64 testing::assert_true
+}
+
+test "mem::zero" {
+	test_mem_zero testing::assert_true
+}
+
+test "mem::fill" {
+	test_mem_fill testing::assert_true
+}
+
+test "mem::copy" {
+	test_mem_copy testing::assert_true
+}
+
+test "mem::to_string and from_string" {
+	test_to_from_string testing::assert_true
+}
+
+test "mem::is_null" {
+	0 mem::is_null testing::assert_true
+}

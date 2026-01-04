@@ -1,0 +1,87 @@
+// Unit tests for the sb (StringBuilder) module
+use sb
+use testing
+
+test "sb::new and build" {
+	sb::new -> builder
+	builder sb::build "" testing::assert_eq
+	builder sb::free
+}
+
+test "sb::append single string" {
+	sb::new -> builder
+	builder "hello" sb::append -> builder
+	builder sb::build "hello" testing::assert_eq
+	builder sb::free
+}
+
+test "sb::append multiple strings" {
+	sb::new -> builder
+	builder "hello" sb::append -> builder
+	builder " " sb::append -> builder
+	builder "world" sb::append -> builder
+	builder sb::build "hello world" testing::assert_eq
+	builder sb::free
+}
+
+test "sb::append_char" {
+	sb::new -> builder
+	builder 65 sb::append_char -> builder  // 'A'
+	builder 66 sb::append_char -> builder  // 'B'
+	builder 67 sb::append_char -> builder  // 'C'
+	builder sb::build "ABC" testing::assert_eq
+	builder sb::free
+}
+
+test "sb::append_int" {
+	sb::new -> builder
+	builder 42 sb::append_int -> builder
+	builder sb::build "42" testing::assert_eq
+	builder sb::free
+}
+
+test "sb::append_int negative" {
+	sb::new -> builder
+	builder -123 sb::append_int -> builder
+	builder sb::build "-123" testing::assert_eq
+	builder sb::free
+}
+
+test "sb::append_int zero" {
+	sb::new -> builder
+	builder 0 sb::append_int -> builder
+	builder sb::build "0" testing::assert_eq
+	builder sb::free
+}
+
+test "sb::len" {
+	sb::new -> builder
+	builder sb::len 0 testing::assert_eq
+	builder "hello" sb::append -> builder
+	builder sb::len 5 testing::assert_eq
+	builder " world" sb::append -> builder
+	builder sb::len 11 testing::assert_eq
+	builder sb::free
+}
+
+test "sb::with_capacity" {
+	1024 sb::with_capacity -> builder
+	builder "test" sb::append -> builder
+	builder sb::build "test" testing::assert_eq
+	builder sb::free
+}
+
+test "sb::finish" {
+	sb::new -> builder
+	builder "result" sb::append -> builder
+	builder sb::finish -> result
+	result "result" testing::assert_eq
+}
+
+test "sb mixed append" {
+	sb::new -> builder
+	builder "count: " sb::append -> builder
+	builder 100 sb::append_int -> builder
+	builder sb::finish -> result
+	result "count: 100" testing::assert_eq
+}

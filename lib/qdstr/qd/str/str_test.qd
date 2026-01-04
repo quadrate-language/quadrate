@@ -1,0 +1,110 @@
+// Unit tests for the str module
+use str
+use testing
+
+test "str::len" {
+	"hello" str::len 5 testing::assert_eq
+	"" str::len 0 testing::assert_eq
+	"a" str::len 1 testing::assert_eq
+	"hello world" str::len 11 testing::assert_eq
+}
+
+test "str::concat" {
+	"hello" " world" str::concat "hello world" testing::assert_eq
+	"" "test" str::concat "test" testing::assert_eq
+	"test" "" str::concat "test" testing::assert_eq
+	"" "" str::concat "" testing::assert_eq
+}
+
+test "str::contains" {
+	"hello world" "world" str::contains testing::assert_true
+	"hello world" "foo" str::contains testing::assert_false
+	"hello world" "" str::contains testing::assert_true
+	"" "test" str::contains testing::assert_false
+	"hello" "hello" str::contains testing::assert_true
+}
+
+test "str::starts_with" {
+	"hello world" "hello" str::starts_with testing::assert_true
+	"hello world" "world" str::starts_with testing::assert_false
+	"hello world" "" str::starts_with testing::assert_true
+	"" "test" str::starts_with testing::assert_false
+	"hello" "hello" str::starts_with testing::assert_true
+}
+
+test "str::ends_with" {
+	"hello world" "world" str::ends_with testing::assert_true
+	"hello world" "hello" str::ends_with testing::assert_false
+	"hello world" "" str::ends_with testing::assert_true
+	"" "test" str::ends_with testing::assert_false
+	"hello" "hello" str::ends_with testing::assert_true
+}
+
+test "str::upper" {
+	"hello" str::upper "HELLO" testing::assert_eq
+	"HELLO" str::upper "HELLO" testing::assert_eq
+	"HeLLo" str::upper "HELLO" testing::assert_eq
+	"123" str::upper "123" testing::assert_eq
+	"" str::upper "" testing::assert_eq
+}
+
+test "str::lower" {
+	"HELLO" str::lower "hello" testing::assert_eq
+	"hello" str::lower "hello" testing::assert_eq
+	"HeLLo" str::lower "hello" testing::assert_eq
+	"123" str::lower "123" testing::assert_eq
+	"" str::lower "" testing::assert_eq
+}
+
+test "str::trim" {
+	"  hello  " str::trim "hello" testing::assert_eq
+	"hello" str::trim "hello" testing::assert_eq
+	"  hello" str::trim "hello" testing::assert_eq
+	"hello  " str::trim "hello" testing::assert_eq
+	"   " str::trim "" testing::assert_eq
+	"" str::trim "" testing::assert_eq
+}
+
+test "str::index_of" {
+	"hello world" "world" str::index_of 6 testing::assert_eq
+	"hello world" "hello" str::index_of 0 testing::assert_eq
+	"hello world" "foo" str::index_of -1 testing::assert_eq
+	"hello" "l" str::index_of 2 testing::assert_eq
+}
+
+test "str::index_of_from" {
+	"hello hello" "hello" 1 str::index_of_from 6 testing::assert_eq
+	"aaa" "a" 1 str::index_of_from 1 testing::assert_eq
+	"hello" "x" 0 str::index_of_from -1 testing::assert_eq
+}
+
+test "str::replace" {
+	"hello world" "world" "there" str::replace! "hello there" testing::assert_eq
+	"aaa" "a" "b" str::replace! "bbb" testing::assert_eq
+	"hello" "x" "y" str::replace! "hello" testing::assert_eq
+}
+
+test "str::substring" {
+	"hello world" 0 5 str::substring! "hello" testing::assert_eq
+	"hello world" 6 5 str::substring! "world" testing::assert_eq
+	"hello" 0 0 str::substring! "" testing::assert_eq
+}
+
+test "str::char_at returns char code" {
+	"hello" 0 str::char_at! 104 testing::assert_eq  // 'h' = 104
+	"hello" 1 str::char_at! 101 testing::assert_eq  // 'e' = 101
+	"ABC" 0 str::char_at! 65 testing::assert_eq     // 'A' = 65
+}
+
+test "str::from_char" {
+	65 str::from_char "A" testing::assert_eq
+	97 str::from_char "a" testing::assert_eq
+	48 str::from_char "0" testing::assert_eq
+}
+
+test "str::compare" {
+	"abc" "abc" str::compare 0 testing::assert_eq
+	"abc" "abd" str::compare 0 < testing::assert_true
+	"abd" "abc" str::compare 0 > testing::assert_true
+	"" "" str::compare 0 testing::assert_eq
+}

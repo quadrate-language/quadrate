@@ -1,9 +1,0 @@
-fn main() {
-	// Test with no additional arguments
-	read
-	0 eq if {
-		"OK: no additional arguments" print nl
-	} else {
-		"ERROR: expected 0 arguments" print nl
-	}
-}

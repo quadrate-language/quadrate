@@ -1,0 +1,64 @@
+// Unit tests for the rand module
+use rand
+use testing
+
+// Helper function to test deterministic seeds
+fn test_seed_determinism( -- result:i64) {
+	12345 rand::with_seed -> rng1
+	12345 rand::with_seed -> rng2
+
+	// rand::next returns (rng:ptr, n:i64) - n is on top of stack
+	rng1 rand::next -> n1 -> rng1
+	rng2 rand::next -> n2 -> rng2
+
+	n1 n2 eq
+}
+
+// Helper to test int range
+fn test_int_range( -- result:i64) {
+	42 rand::with_seed -> rng
+	rng 100 rand::int -> val -> rng
+	val 0 >= val 100 < and
+}
+
+// Helper to test range bounds
+fn test_range_bounds( -- result:i64) {
+	42 rand::with_seed -> rng
+	rng 10 20 rand::range -> val -> rng
+	val 10 >= val 20 < and
+}
+
+// Helper to test boolean bounds
+fn test_boolean_bounds( -- result:i64) {
+	42 rand::with_seed -> rng
+	rng rand::boolean -> val -> rng
+	val 0 >= val 2 < and
+}
+
+// Helper to test different values
+fn test_different_values( -- result:i64) {
+	42 rand::with_seed -> rng
+	rng rand::next -> n1 -> rng
+	rng rand::next -> n2 -> rng
+	n1 n2 neq
+}
+
+test "rand::with_seed produces deterministic results" {
+	test_seed_determinism testing::assert_true
+}
+
+test "rand::int produces values in range" {
+	test_int_range testing::assert_true
+}
+
+test "rand::range produces values in range" {
+	test_range_bounds testing::assert_true
+}
+
+test "rand::boolean produces 0 or 1" {
+	test_boolean_bounds testing::assert_true
+}
+
+test "rand::next produces different values" {
+	test_different_values testing::assert_true
+}

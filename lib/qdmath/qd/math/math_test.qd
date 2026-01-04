@@ -1,0 +1,118 @@
+// Unit tests for the math module
+use math
+use testing
+
+test "math constants" {
+	math::Pi 3.14 > testing::assert_true
+	math::Pi 3.15 < testing::assert_true
+	math::E 2.71 > testing::assert_true
+	math::E 2.72 < testing::assert_true
+	math::Tau math::Pi 2.0 * 0.0001 - > testing::assert_true
+}
+
+test "math::sin and cos" {
+	0.0 math::sin 0.0 testing::assert_eq
+	0.0 math::cos 1.0 testing::assert_eq
+	math::Pi 2.0 / math::sin 1.0 - 0.0001 < testing::assert_true  // sin(π/2) ≈ 1
+	math::Pi math::cos -1.0 - 0.0001 < testing::assert_true       // cos(π) ≈ -1
+}
+
+test "math::sqrt" {
+	4.0 math::sqrt 2.0 testing::assert_eq
+	9.0 math::sqrt 3.0 testing::assert_eq
+	16.0 math::sqrt 4.0 testing::assert_eq
+	0.0 math::sqrt 0.0 testing::assert_eq
+}
+
+test "math::pow" {
+	2.0 3.0 math::pow 8.0 testing::assert_eq
+	3.0 2.0 math::pow 9.0 testing::assert_eq
+	10.0 0.0 math::pow 1.0 testing::assert_eq
+	5.0 1.0 math::pow 5.0 testing::assert_eq
+}
+
+test "math::exp and ln" {
+	0.0 math::exp 1.0 testing::assert_eq
+	1.0 math::exp math::E - 0.0001 < testing::assert_true
+	1.0 math::ln 0.0 testing::assert_eq
+	math::E math::ln 1.0 - 0.0001 < testing::assert_true
+}
+
+test "math::ceil floor round" {
+	2.3 math::ceil 3.0 testing::assert_eq
+	2.7 math::floor 2.0 testing::assert_eq
+	2.5 math::round 3.0 testing::assert_eq
+	2.4 math::round 2.0 testing::assert_eq
+	-2.3 math::ceil -2.0 testing::assert_eq
+	-2.7 math::floor -3.0 testing::assert_eq
+}
+
+test "math::abs" {
+	5.0 math::abs 5.0 testing::assert_eq
+	-5.0 math::abs 5.0 testing::assert_eq
+	0.0 math::abs 0.0 testing::assert_eq
+}
+
+test "math::min max" {
+	3 7 math::min 3 testing::assert_eq
+	3 7 math::max 7 testing::assert_eq
+	-5 5 math::min -5 testing::assert_eq
+	-5 5 math::max 5 testing::assert_eq
+}
+
+test "math::clamp" {
+	5.0 0.0 10.0 math::clamp 5.0 testing::assert_eq
+	15.0 0.0 10.0 math::clamp 10.0 testing::assert_eq
+	-5.0 0.0 10.0 math::clamp 0.0 testing::assert_eq
+}
+
+test "math::within" {
+	5 0 10 math::within testing::assert_true
+	0 0 10 math::within testing::assert_true
+	10 0 10 math::within testing::assert_true
+	-1 0 10 math::within testing::assert_false
+	11 0 10 math::within testing::assert_false
+}
+
+test "math::inc dec" {
+	5 math::inc 6 testing::assert_eq
+	5 math::dec 4 testing::assert_eq
+	0 math::inc 1 testing::assert_eq
+	0 math::dec -1 testing::assert_eq
+}
+
+test "math::sq cb" {
+	3.0 math::sq 9.0 testing::assert_eq
+	2.0 math::cb 8.0 testing::assert_eq
+	0.0 math::sq 0.0 testing::assert_eq
+}
+
+test "math::fac" {
+	0 math::fac 1 testing::assert_eq
+	1 math::fac 1 testing::assert_eq
+	5 math::fac 120 testing::assert_eq
+	6 math::fac 720 testing::assert_eq
+}
+
+test "math::lerp" {
+	0.0 10.0 0.5 math::lerp 5.0 testing::assert_eq
+	0.0 10.0 0.0 math::lerp 0.0 testing::assert_eq
+	0.0 10.0 1.0 math::lerp 10.0 testing::assert_eq
+}
+
+test "math::hypot" {
+	3.0 4.0 math::hypot 5.0 testing::assert_eq
+	5.0 12.0 math::hypot 13.0 testing::assert_eq
+}
+
+test "math::log10" {
+	10.0 math::log10 1.0 testing::assert_eq
+	100.0 math::log10 2.0 testing::assert_eq
+	1000.0 math::log10 3.0 testing::assert_eq
+}
+
+test "math::cbrt" {
+	8.0 math::cbrt 2.0 testing::assert_eq
+	1.0 math::cbrt 1.0 testing::assert_eq
+	0.0 math::cbrt 0.0 testing::assert_eq
+}

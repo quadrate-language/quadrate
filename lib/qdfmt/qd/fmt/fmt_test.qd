@@ -1,0 +1,11 @@
+// Unit tests for the fmt module
+use fmt
+use testing
+
+test "fmt::sprintf with string" {
+	"world" "Hello %s" fmt::sprintf "Hello world" testing::assert_eq
+}
+
+test "fmt::sprintf with newline" {
+	"test" "%s\n" fmt::sprintf "test\n" testing::assert_eq
+}

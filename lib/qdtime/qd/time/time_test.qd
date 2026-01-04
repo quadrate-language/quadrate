@@ -1,0 +1,95 @@
+// Unit tests for the time module
+use time
+use testing
+
+test "time constants" {
+	time::Nanosecond 1 testing::assert_eq
+	time::Microsecond 1000 testing::assert_eq
+	time::Millisecond 1000000 testing::assert_eq
+	time::Second 1000000000 testing::assert_eq
+}
+
+test "time weekday constants" {
+	time::Sunday 0 testing::assert_eq
+	time::Monday 1 testing::assert_eq
+	time::Saturday 6 testing::assert_eq
+}
+
+test "time month constants" {
+	time::January 1 testing::assert_eq
+	time::February 2 testing::assert_eq
+	time::December 12 testing::assert_eq
+}
+
+test "time::is_leap_year" {
+	2024 time::is_leap_year testing::assert_true    // divisible by 4
+	2023 time::is_leap_year testing::assert_false   // not divisible by 4
+	2000 time::is_leap_year testing::assert_true    // divisible by 400
+	1900 time::is_leap_year testing::assert_false   // divisible by 100 but not 400
+	2020 time::is_leap_year testing::assert_true
+}
+
+test "time::days_in_month" {
+	2024 1 time::days_in_month 31 testing::assert_eq   // January
+	2024 2 time::days_in_month 29 testing::assert_eq   // February (leap year)
+	2023 2 time::days_in_month 28 testing::assert_eq   // February (non-leap)
+	2024 4 time::days_in_month 30 testing::assert_eq   // April
+	2024 12 time::days_in_month 31 testing::assert_eq  // December
+}
+
+// Unix timestamp 0 = 1970-01-01 00:00:00 UTC
+test "time::year from epoch" {
+	0 time::year 1970 testing::assert_eq
+}
+
+test "time::month from epoch" {
+	0 time::month 1 testing::assert_eq
+}
+
+test "time::day from epoch" {
+	0 time::day 1 testing::assert_eq
+}
+
+test "time::hour from epoch" {
+	0 time::hour 0 testing::assert_eq
+}
+
+test "time::minute from epoch" {
+	0 time::minute 0 testing::assert_eq
+}
+
+test "time::second from epoch" {
+	0 time::second 0 testing::assert_eq
+}
+
+// Jan 1, 1970 was Thursday (4)
+test "time::weekday from epoch" {
+	0 time::weekday time::Thursday testing::assert_eq
+}
+
+test "time::date creates timestamp" {
+	// Create timestamp for epoch and verify
+	1970 1 1 0 0 0 time::date 0 testing::assert_eq
+}
+
+test "time::before" {
+	0 100 time::before testing::assert_true
+	100 0 time::before testing::assert_false
+	50 50 time::before testing::assert_false
+}
+
+test "time::after" {
+	100 0 time::after testing::assert_true
+	0 100 time::after testing::assert_false
+	50 50 time::after testing::assert_false
+}
+
+test "time::sub" {
+	100 50 time::sub 50 testing::assert_eq
+	50 100 time::sub -50 testing::assert_eq
+}
+
+test "time::add" {
+	100 50 time::add 150 testing::assert_eq
+	0 time::Second time::add time::Second testing::assert_eq
+}

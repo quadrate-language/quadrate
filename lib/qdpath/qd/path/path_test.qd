@@ -1,0 +1,52 @@
+// Unit tests for the path module
+use path
+use testing
+
+test "path::dirname" {
+	"/home/user/file.txt" path::dirname "/home/user" testing::assert_eq
+	"/file.txt" path::dirname "/" testing::assert_eq
+	"file.txt" path::dirname "." testing::assert_eq
+	"/home/user/" path::dirname "/home/user" testing::assert_eq
+}
+
+test "path::basename" {
+	"/home/user/file.txt" path::basename "file.txt" testing::assert_eq
+	"/file.txt" path::basename "file.txt" testing::assert_eq
+	"file.txt" path::basename "file.txt" testing::assert_eq
+	"/home/user/" path::basename "" testing::assert_eq
+}
+
+test "path::ext" {
+	"file.txt" path::ext ".txt" testing::assert_eq
+	"/home/user/file.txt" path::ext ".txt" testing::assert_eq
+	"file.tar.gz" path::ext ".gz" testing::assert_eq
+	"file" path::ext "" testing::assert_eq
+	".hidden" path::ext "" testing::assert_eq
+}
+
+test "path::stem" {
+	"file.txt" path::stem "file" testing::assert_eq
+	"/home/user/file.txt" path::stem "file" testing::assert_eq
+	"file.tar.gz" path::stem "file.tar" testing::assert_eq
+	"file" path::stem "file" testing::assert_eq
+}
+
+test "path::join" {
+	"/home" "user" path::join "/home/user" testing::assert_eq
+	"/home/" "user" path::join "/home/user" testing::assert_eq
+	"" "file.txt" path::join "file.txt" testing::assert_eq
+	"/home" "/etc" path::join "/etc" testing::assert_eq
+}
+
+test "path::is_absolute" {
+	"/home/user" path::is_absolute testing::assert_true
+	"home/user" path::is_absolute testing::assert_false
+	"/" path::is_absolute testing::assert_true
+	"." path::is_absolute testing::assert_false
+}
+
+test "path::normalize" {
+	"/home//user" path::normalize "/home/user" testing::assert_eq
+	"/home/user/" path::normalize "/home/user" testing::assert_eq
+	"/home//user/" path::normalize "/home/user" testing::assert_eq
+}

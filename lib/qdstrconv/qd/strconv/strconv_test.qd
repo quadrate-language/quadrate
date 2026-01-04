@@ -1,0 +1,62 @@
+// Unit tests for the strconv module
+use strconv
+use testing
+
+test "strconv::itoa" {
+	42 strconv::itoa "42" testing::assert_eq
+	0 strconv::itoa "0" testing::assert_eq
+	-123 strconv::itoa "-123" testing::assert_eq
+	1000000 strconv::itoa "1000000" testing::assert_eq
+}
+
+test "strconv::atoi" {
+	"42" strconv::atoi 42 testing::assert_eq
+	"0" strconv::atoi 0 testing::assert_eq
+	"-123" strconv::atoi -123 testing::assert_eq
+	"1000000" strconv::atoi 1000000 testing::assert_eq
+}
+
+test "strconv::format_int base 16" {
+	255 16 strconv::format_int "ff" testing::assert_eq
+	16 16 strconv::format_int "10" testing::assert_eq
+	0 16 strconv::format_int "0" testing::assert_eq
+	256 16 strconv::format_int "100" testing::assert_eq
+}
+
+test "strconv::format_int base 2" {
+	5 2 strconv::format_int "101" testing::assert_eq
+	8 2 strconv::format_int "1000" testing::assert_eq
+	0 2 strconv::format_int "0" testing::assert_eq
+	15 2 strconv::format_int "1111" testing::assert_eq
+}
+
+test "strconv::format_int base 8" {
+	8 8 strconv::format_int "10" testing::assert_eq
+	64 8 strconv::format_int "100" testing::assert_eq
+	7 8 strconv::format_int "7" testing::assert_eq
+}
+
+test "strconv::parse_int base 16" {
+	"ff" 16 strconv::parse_int 255 testing::assert_eq
+	"10" 16 strconv::parse_int 16 testing::assert_eq
+	"0" 16 strconv::parse_int 0 testing::assert_eq
+	"100" 16 strconv::parse_int 256 testing::assert_eq
+}
+
+test "strconv::parse_int base 2" {
+	"101" 2 strconv::parse_int 5 testing::assert_eq
+	"1000" 2 strconv::parse_int 8 testing::assert_eq
+	"0" 2 strconv::parse_int 0 testing::assert_eq
+	"1111" 2 strconv::parse_int 15 testing::assert_eq
+}
+
+test "strconv::parse_int base 8" {
+	"10" 8 strconv::parse_int 8 testing::assert_eq
+	"100" 8 strconv::parse_int 64 testing::assert_eq
+	"7" 8 strconv::parse_int 7 testing::assert_eq
+}
+
+test "strconv roundtrip" {
+	12345 strconv::itoa strconv::atoi 12345 testing::assert_eq
+	255 16 strconv::format_int 16 strconv::parse_int 255 testing::assert_eq
+}

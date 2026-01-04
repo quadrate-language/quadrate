@@ -1,0 +1,41 @@
+// Unit tests for the unicode module
+use unicode
+use testing
+
+test "unicode character constants" {
+	unicode::space 32 testing::assert_eq
+	unicode::tab 9 testing::assert_eq
+	unicode::newline 10 testing::assert_eq
+	unicode::A 65 testing::assert_eq
+	unicode::Z 90 testing::assert_eq
+	unicode::a 97 testing::assert_eq
+	unicode::z 122 testing::assert_eq
+	unicode::digit0 48 testing::assert_eq
+	unicode::digit9 57 testing::assert_eq
+}
+
+test "unicode punctuation constants" {
+	unicode::exclaim 33 testing::assert_eq
+	unicode::dquote 34 testing::assert_eq
+	unicode::hash 35 testing::assert_eq
+	unicode::dollar 36 testing::assert_eq
+	unicode::lparen 40 testing::assert_eq
+	unicode::rparen 41 testing::assert_eq
+	unicode::lbrace 123 testing::assert_eq
+	unicode::rbrace 125 testing::assert_eq
+}
+
+test "unicode::is_digit" {
+	48 unicode::is_digit testing::assert_true    // '0'
+	49 unicode::is_digit testing::assert_true    // '1'
+	57 unicode::is_digit testing::assert_true    // '9'
+	47 unicode::is_digit testing::assert_false   // '/' (before '0')
+	58 unicode::is_digit testing::assert_false   // ':' (after '9')
+	65 unicode::is_digit testing::assert_false   // 'A'
+}
+
+test "unicode control characters" {
+	unicode::nul 0 testing::assert_eq
+	unicode::cr 13 testing::assert_eq
+	unicode::esc 27 testing::assert_eq
+}

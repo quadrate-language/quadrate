@@ -977,8 +977,8 @@ namespace Qd {
 			// Extract the error code (first field of qd_exec_result)
 			auto errorCode = builder->CreateExtractValue(result, {0}, "error_code");
 
-			// Check if test passed
-			auto isSuccess = builder->CreateICmpEQ(errorCode, builder->getInt32(0), "is_success");
+			// Check if test passed (0 = non-fallible success, 1 = fallible success/Ok)
+			auto isSuccess = builder->CreateICmpULE(errorCode, builder->getInt32(1), "is_success");
 
 			auto successBB = llvm::BasicBlock::Create(*context, "test_success", mainFn);
 			auto failBB = llvm::BasicBlock::Create(*context, "test_fail", mainFn);
@@ -1793,6 +1793,85 @@ namespace Qd {
 
 		// Build library flags - link static libraries directly
 		// Check for nested structure (build directory) first, then flat structure (dist)
+
+		// Track which libraries have been processed to avoid duplicates and circular dependencies
+		std::set<std::string> processedLibraries;
+		std::string allDepsFlags;
+
+		// Helper function to recursively process a library and its .deps file
+		std::function<void(const std::string&)> processLibraryDeps;
+		processLibraryDeps = [&](const std::string& libPath) {
+			// Skip if already processed
+			if (processedLibraries.count(libPath)) {
+				return;
+			}
+			processedLibraries.insert(libPath);
+
+			// Check for .deps file
+			std::string depsFile = libPath;
+			if (depsFile.size() > 2 && depsFile.substr(depsFile.size() - 2) == ".a") {
+				depsFile = depsFile.substr(0, depsFile.size() - 2) + ".deps";
+			}
+
+			if (std::filesystem::exists(depsFile)) {
+				std::ifstream deps(depsFile);
+				if (deps.is_open()) {
+					std::string depLine;
+					while (std::getline(deps, depLine)) {
+						// Trim whitespace
+						depLine.erase(0, depLine.find_first_not_of(" \t\r\n"));
+						depLine.erase(depLine.find_last_not_of(" \t\r\n") + 1);
+						if (!depLine.empty()) {
+							// Expand ${VAR} environment variables
+							size_t pos = 0;
+							while ((pos = depLine.find("${", pos)) != std::string::npos) {
+								size_t endPos = depLine.find("}", pos);
+								if (endPos != std::string::npos) {
+									std::string varName = depLine.substr(pos + 2, endPos - pos - 2);
+									const char* varValue = std::getenv(varName.c_str());
+									std::string replacement = varValue ? varValue : "";
+									depLine.replace(pos, endPos - pos + 1, replacement);
+									pos += replacement.length();
+								} else {
+									break;
+								}
+							}
+
+							// Check if it's an absolute path to a .a file (transitive native dependency)
+							if (depLine[0] == '/' && depLine.size() > 2 && depLine.substr(depLine.size() - 2) == ".a") {
+								// Add to flags and recursively process its deps
+								allDepsFlags += " " + depLine;
+								processLibraryDeps(depLine);
+							}
+							// For -l<name> entries, try to resolve to full path if it's a Quadrate library
+							else if (depLine.rfind("-l", 0) == 0 && depLine.size() > 2) {
+								std::string depLibName = depLine.substr(2);
+								std::string depLibFile = "lib" + depLibName + ".a";
+
+								// Check flat path (e.g., dist/lib/libqdtls.a)
+								std::string flatDepLib = libDir + "/" + depLibFile;
+								// Check nested path (e.g., dist/lib/qdtls/libqdtls.a)
+								std::string nestedDepLib = libDir + "/" + depLibName + "/" + depLibFile;
+
+								if (std::filesystem::exists(flatDepLib)) {
+									allDepsFlags += " " + flatDepLib;
+									processLibraryDeps(flatDepLib);
+								} else if (std::filesystem::exists(nestedDepLib)) {
+									allDepsFlags += " " + nestedDepLib;
+									processLibraryDeps(nestedDepLib);
+								} else {
+									// System library, use -l flag as-is
+									allDepsFlags += " " + depLine;
+								}
+							} else {
+								allDepsFlags += " " + depLine;
+							}
+						}
+					}
+				}
+			}
+		};
+
 		std::string qdrtStaticPath;
 		// Try new naming convention first (libqdrt.a), then legacy (libqdrt_static.a)
 		std::string nestedPath = libDir + "/qdrt/libqdrt_static.a";
@@ -1858,68 +1937,9 @@ namespace Qd {
 					}
 				}
 
-				// Check for .deps file with additional link dependencies
-				std::string depsFile = foundLibPath;
-				if (depsFile.size() > 2 && depsFile.substr(depsFile.size() - 2) == ".a") {
-					depsFile = depsFile.substr(0, depsFile.size() - 2) + ".deps";
-				}
-				if (std::filesystem::exists(depsFile)) {
-					std::ifstream deps(depsFile);
-					if (deps.is_open()) {
-						// Use --start-group/--end-group to resolve circular dependencies
-						// between the static library and its shared library deps
-						libraryFlags += " -Wl,--start-group " + foundLibPath;
-						std::string depLine;
-						while (std::getline(deps, depLine)) {
-							// Trim whitespace
-							depLine.erase(0, depLine.find_first_not_of(" \t\r\n"));
-							depLine.erase(depLine.find_last_not_of(" \t\r\n") + 1);
-							if (!depLine.empty()) {
-								// Expand ${VAR} environment variables
-								size_t pos = 0;
-								while ((pos = depLine.find("${", pos)) != std::string::npos) {
-									size_t endPos = depLine.find("}", pos);
-									if (endPos != std::string::npos) {
-										std::string varName = depLine.substr(pos + 2, endPos - pos - 2);
-										const char* varValue = std::getenv(varName.c_str());
-										std::string replacement = varValue ? varValue : "";
-										depLine.replace(pos, endPos - pos + 1, replacement);
-										pos += replacement.length();
-									} else {
-										break;
-									}
-								}
-
-								// For -l<name> entries, try to resolve to full path if it's a Quadrate library
-								if (depLine.rfind("-l", 0) == 0 && depLine.size() > 2) {
-									std::string depLibName = depLine.substr(2);
-									std::string depLibFile = "lib" + depLibName + ".a";
-
-									// Check flat path (e.g., dist/lib/libqdtls.a)
-									std::string flatDepLib = libDir + "/" + depLibFile;
-									// Check nested path (e.g., dist/lib/qdtls/libqdtls.a)
-									std::string nestedDepLib = libDir + "/" + depLibName + "/" + depLibFile;
-
-									if (std::filesystem::exists(flatDepLib)) {
-										libraryFlags += " " + flatDepLib;
-									} else if (std::filesystem::exists(nestedDepLib)) {
-										libraryFlags += " " + nestedDepLib;
-									} else {
-										// System library, use -l flag as-is
-										libraryFlags += " " + depLine;
-									}
-								} else {
-									libraryFlags += " " + depLine;
-								}
-							}
-						}
-						libraryFlags += " -Wl,--end-group";
-					} else {
-						libraryFlags += " " + foundLibPath;
-					}
-				} else {
-					libraryFlags += " " + foundLibPath;
-				}
+				// Add the library and recursively process its .deps file for transitive dependencies
+				libraryFlags += " " + foundLibPath;
+				processLibraryDeps(foundLibPath);
 			} else {
 				// Handle .so libraries (dynamic linking)
 				std::string libName = library;
@@ -1939,6 +1959,12 @@ namespace Qd {
 		// Add standard system libraries
 		// Note: C11 threads don't need -lpthread, but we need -lstdc++ for C++ filesystem code
 		libraryFlags += " -lm -lstdc++";
+
+		// Add transitive dependencies from .deps files
+		// Use --start-group/--end-group to resolve circular dependencies between static libraries
+		if (!allDepsFlags.empty()) {
+			libraryFlags += " -Wl,--start-group" + allDepsFlags + " -Wl,--end-group";
+		}
 
 		// Note: We don't add -L flags for module lib directories because:
 		// 1. Static libraries are already linked by full path

@@ -93,6 +93,12 @@ std::string findTool(const std::string& toolName) {
 		if (fs::exists(toolPath)) {
 			return toolPath.string();
 		}
+		// Also check sibling directory pattern (for build directory structure)
+		// e.g., build/debug/cmd/quad/quad -> build/debug/cmd/quadc/quadc
+		toolPath = execDir.parent_path() / toolName / toolName;
+		if (fs::exists(toolPath)) {
+			return toolPath.string();
+		}
 	}
 
 	// Fall back to PATH lookup
@@ -219,6 +225,45 @@ int handleRun(const std::vector<std::string>& args) {
 	return execTool(toolPath, toolArgs);
 }
 
+// Check if a path should be skipped during test discovery
+bool shouldSkipDir(const fs::path& path) {
+	std::string name = path.filename().string();
+	// Skip hidden directories, build artifacts, and dist
+	if (!name.empty() && name[0] == '.') {
+		return true;
+	}
+	if (name == "build" || name == "dist" || name == "node_modules") {
+		return true;
+	}
+	return false;
+}
+
+// Find test files recursively in a directory
+std::vector<std::string> findTestFilesRecursive(const fs::path& dir) {
+	std::vector<std::string> files;
+	try {
+		for (auto it = fs::recursive_directory_iterator(dir); it != fs::recursive_directory_iterator(); ++it) {
+			const auto& entry = *it;
+			// Skip certain directories
+			if (entry.is_directory() && shouldSkipDir(entry.path())) {
+				it.disable_recursion_pending();
+				continue;
+			}
+			if (entry.path().extension() == ".qd") {
+				std::string filename = entry.path().stem().string();
+				if (filename.find("test_") == 0 ||
+						(filename.length() >= 5 && filename.rfind("_test") == filename.length() - 5)) {
+					files.push_back(entry.path().string());
+				}
+			}
+		}
+	} catch (const fs::filesystem_error&) {
+		// Ignore permission errors etc.
+	}
+	std::sort(files.begin(), files.end());
+	return files;
+}
+
 int handleTest(const std::vector<std::string>& args) {
 	std::string toolPath = findTool("quadc");
 	if (toolPath.empty()) {
@@ -229,9 +274,12 @@ int handleTest(const std::vector<std::string>& args) {
 	// Collect test files
 	std::vector<std::string> testFiles;
 	std::vector<std::string> options;
+	bool recursive = false;
 
 	for (const auto& arg : args) {
-		if (!arg.empty() && arg[0] == '-') {
+		if (arg == "./..." || arg == "...") {
+			recursive = true;
+		} else if (!arg.empty() && arg[0] == '-') {
 			options.push_back(arg);
 		} else {
 			testFiles.push_back(arg);
@@ -240,16 +288,26 @@ int handleTest(const std::vector<std::string>& args) {
 
 	// If no files specified, look for *_test.qd or test_*.qd files
 	if (testFiles.empty()) {
-		for (const auto& entry : fs::directory_iterator(fs::current_path())) {
-			if (entry.path().extension() == ".qd") {
-				std::string filename = entry.path().stem().string();
-				if (filename.find("test_") == 0 || filename.rfind("_test") == filename.length() - 5) {
-					testFiles.push_back(entry.path().string());
+		if (recursive) {
+			// Search recursively from current directory
+			testFiles = findTestFilesRecursive(fs::current_path());
+		} else {
+			// Search only current directory
+			for (const auto& entry : fs::directory_iterator(fs::current_path())) {
+				if (entry.path().extension() == ".qd") {
+					std::string filename = entry.path().stem().string();
+					if (filename.find("test_") == 0 ||
+							(filename.length() >= 5 && filename.rfind("_test") == filename.length() - 5)) {
+						testFiles.push_back(entry.path().string());
+					}
 				}
 			}
 		}
 		if (testFiles.empty()) {
 			std::cerr << "quad: no test files found (looking for *_test.qd or test_*.qd)\n";
+			if (!recursive) {
+				std::cerr << "hint: use 'quad test ./...' to search recursively\n";
+			}
 			return 1;
 		}
 		std::sort(testFiles.begin(), testFiles.end());
