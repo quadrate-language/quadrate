@@ -108,6 +108,12 @@ namespace Qd {
 		std::string sourceFileName;
 		llvm::DIType* contextDebugType = nullptr;
 		llvm::DIType* stackElementDebugType = nullptr;
+		llvm::DIType* int64DebugType = nullptr;
+		llvm::DIType* floatDebugType = nullptr;
+		llvm::DIType* stringDebugType = nullptr;
+
+		// Map of local variable names to their declared types (from function parameters)
+		std::unordered_map<std::string, std::string> localVariableTypeHints;
 
 		// Optimization level (0-3)
 		int optimizationLevel = 0;

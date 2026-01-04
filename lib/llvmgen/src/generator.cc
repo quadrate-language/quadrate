@@ -217,7 +217,7 @@ namespace Qd {
 			// Create debug type info for runtime structures so GDB can inspect them
 			// This is needed for JIT-compiled code where GDB can't access libqdrt's debug symbols
 
-			// Basic types
+			// Basic types - store in member variables for use in local variable debug info
 			auto int64Type = debugBuilder->createBasicType("int64_t", 64, llvm::dwarf::DW_ATE_signed);
 			auto doubleType = debugBuilder->createBasicType("double", 64, llvm::dwarf::DW_ATE_float);
 			auto boolType = debugBuilder->createBasicType("bool", 8, llvm::dwarf::DW_ATE_boolean);
@@ -225,6 +225,11 @@ namespace Qd {
 			auto sizeType = debugBuilder->createBasicType("size_t", 64, llvm::dwarf::DW_ATE_unsigned);
 			auto charPtrType = debugBuilder->createPointerType(charType, 64);
 			auto voidPtrType = debugBuilder->createPointerType(nullptr, 64);
+
+			// Store basic types for use in local variable debug info
+			int64DebugType = int64Type;
+			floatDebugType = doubleType;
+			stringDebugType = charPtrType;
 
 			// qd_stack_type enum (just use int32 for simplicity)
 			auto stackTypeEnum = debugBuilder->createBasicType("int", 32, llvm::dwarf::DW_ATE_signed);
@@ -347,6 +352,19 @@ namespace Qd {
 		heapCapturePointers.clear();
 		indirectLocalVariables.clear();
 		closureVariables.clear();
+		localVariableTypeHints.clear();
+
+		// Populate type hints from function input parameters
+		// This allows debug info to show proper types for locals
+		for (const auto* paramNode : funcNode->inputParameters()) {
+			if (const auto* param = dynamic_cast<const AstNodeParameter*>(paramNode)) {
+				const std::string& paramName = param->name();
+				const std::string& typeStr = param->typeString();
+				if (!typeStr.empty()) {
+					localVariableTypeHints[paramName] = typeStr;
+				}
+			}
+		}
 
 		// Check if function returns a pointer (structs must be heap-allocated in such functions)
 		// Note: Quadrate allows implicit returns (values left on stack), so we check both:

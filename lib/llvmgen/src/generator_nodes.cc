@@ -1861,21 +1861,52 @@ namespace Qd {
 					localFile = subprog->getFile();
 				}
 
+				// Determine the debug type based on type hints from function parameters
+				// This allows the debugger to show the logical value (e.g., 42) instead of
+				// the full qd_stack_element_t struct
+				llvm::DIType* debugType = stackElementDebugType;
+				auto typeHintIt = localVariableTypeHints.find(name);
+				if (typeHintIt != localVariableTypeHints.end()) {
+					const std::string& typeStr = typeHintIt->second;
+					if ((typeStr == "i64" || typeStr == "int" || typeStr == "int64" || typeStr == "i") &&
+							int64DebugType) {
+						debugType = int64DebugType;
+					} else if ((typeStr == "f64" || typeStr == "float" || typeStr == "f") && floatDebugType) {
+						debugType = floatDebugType;
+					} else if ((typeStr == "str" || typeStr == "string") && stringDebugType) {
+						debugType = stringDebugType;
+					}
+					// For struct types, keep using stackElementDebugType
+				}
+
 				// Create local variable debug info
-				// Note: localAlloca is an alloca of qd_stack_element_t (structure on stack),
-				// so the debug type should be the structure type, not a pointer.
+				// The value union is at offset 0 of qd_stack_element_t, so for primitive types
+				// we can use the same location but with the primitive type for cleaner display
 				auto localVar = debugBuilder->createAutoVariable(debugScopeStack.back(), // Scope (current function)
 						name,															 // Variable name
 						localFile,														 // File
 						static_cast<unsigned>(lineNum),									 // Line number
-						stackElementDebugType,											 // Type (the struct)
+						debugType,														 // Type
 						true															 // Always preserve
 				);
 
+				// Create expression based on whether variable is captured
+				// For captured variables, the alloca holds a pointer to heap memory
+				// We need DW_OP_deref to follow the pointer to the actual value
+				llvm::DIExpression* expr;
+				if (isCaptured) {
+					// Captured variable: alloca -> heap pointer -> qd_stack_element_t -> value
+					// Use DW_OP_deref to dereference the pointer stored in the alloca
+					expr = debugBuilder->createExpression({llvm::dwarf::DW_OP_deref});
+				} else {
+					// Normal variable: alloca directly contains qd_stack_element_t
+					expr = debugBuilder->createExpression();
+				}
+
 				// Insert declare to make it visible in debugger
-				debugBuilder->insertDeclare(localAlloca,  // Storage (the alloca)
-						localVar,						  // Variable
-						debugBuilder->createExpression(), // Expression
+				debugBuilder->insertDeclare(localAlloca, // Storage (the alloca)
+						localVar,						 // Variable
+						expr,							 // Expression
 						llvm::DILocation::get(*context, static_cast<unsigned>(lineNum), 0, debugScopeStack.back()),
 						builder->GetInsertBlock());
 			}
