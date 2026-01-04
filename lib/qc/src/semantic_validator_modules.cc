@@ -1212,6 +1212,11 @@ namespace Qd {
 			} else {
 				std::string qualifiedName = moduleName + "::" + func->name();
 				mFunctionSignatures[qualifiedName] = sig;
+
+				// Also register with unqualified name for intra-module function calls
+				// This allows functions within the same module to call each other
+				// without qualifying the name (e.g., 'is_unreserved' instead of 'uri::is_unreserved')
+				mFunctionSignatures[func->name()] = sig;
 			}
 
 			// Clear type params after processing function

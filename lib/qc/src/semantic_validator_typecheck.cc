@@ -3295,6 +3295,26 @@ namespace Qd {
 			typeStack.push_back(StackValueType::INT);
 			structTypeStack.push_back("");
 		}
+		// Bitwise shift and XOR operations: shl, shr, xor (consume 2 ints, produce int)
+		else if (strcmp(name, "shl") == 0 || strcmp(name, "shr") == 0 || strcmp(name, "xor") == 0) {
+			if (typeStack.size() < 2) {
+				std::string errorMsg = "Type error in '";
+				errorMsg += name;
+				errorMsg += "': Stack underflow (requires 2 values)";
+				reportErrorConditional(node, errorMsg.c_str(), reportErrors);
+				return;
+			}
+			// Pop both operands
+			typeStack.pop_back();
+			typeStack.pop_back();
+			if (structTypeStack.size() >= 2) {
+				structTypeStack.pop_back();
+				structTypeStack.pop_back();
+			}
+			// Push result (always int)
+			typeStack.push_back(StackValueType::INT);
+			structTypeStack.push_back("");
+		}
 		// Negation: neg (preserve numeric type)
 		else if (strcmp(name, "neg") == 0) {
 			if (typeStack.empty()) {
