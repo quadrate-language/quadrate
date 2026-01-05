@@ -59,18 +59,18 @@ fn main() {
 			}
 			unicode::lbracket {
 				tape dp mem::get_byte 0 == if {
-					1 -> nest
+					1
 					loop {
-						nest 0 == if {
-							break
+						dup 0 == if {
+							drop break
 						}
 						ip ++ -> ip
 						code ip str::char_at! switch {
 							unicode::lbracket {
-								nest ++ -> nest
+								++
 							}
 							unicode::rbracket {
-								nest -- -> nest
+								--
 							}
 						}
 					}
@@ -78,18 +78,18 @@ fn main() {
 			}
 			unicode::rbracket {
 				tape dp mem::get_byte 0 != if {
-					1 -> nest
+					1
 					loop {
-						nest 0 == if {
-							break
+						dup 0 == if {
+							drop break
 						}
 						ip -- -> ip
 						code ip str::char_at! switch {
 							unicode::rbracket {
-								nest ++ -> nest
+								++
 							}
 							unicode::lbracket {
-								nest -- -> nest
+								--
 							}
 						}
 					}

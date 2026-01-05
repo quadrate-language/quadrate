@@ -2,6 +2,7 @@
 build
 dist
 .intermediate
+.vscode
 
 # IDE/Editor
 .cache/clangd/index
