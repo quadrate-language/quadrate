@@ -190,33 +190,21 @@ Quadrate includes batteries for common tasks:
 | Module | Purpose | Key Functions |
 |--------|---------|---------------|
 | **os** | System interface | `env`, `exec`, `getpid`, `getcwd`, `exit` |
-| **net** | TCP networking | `listen`, `accept`, `connect`, `send`, `recv` |
 | **time** | Time & sleep | `now`, `sleep`, `Second`, `Millisecond` |
 | **thread** | Threading | `spawn`, `join`, `detach`, `Mutex`, `Channel`, `WaitGroup` |
 | **signal** | Signal handling | `trap`, `pending`, `clear`, `SigInt`, `SigTerm` |
-
-### Data & Encoding
-
-| Module | Purpose | Key Functions |
-|--------|---------|---------------|
-| **base64** | Base64 encoding | `encode`, `decode` |
-| **hex** | Hex encoding | `encode`, `decode` |
-| **uri** | URI parsing/building | `parse`, `build`, `encode`, `decode` |
 
 ### Utility Modules
 
 | Module | Purpose | Key Functions |
 |--------|---------|---------------|
 | **rand** | Random numbers | `new`, `int`, `range`, `bool`, `with_seed` |
-| **uuid** | UUID generation | `v4`, `v4_seeded`, `is_valid` |
 | **path** | File path manipulation | `dirname`, `basename`, `ext`, `join`, `is_absolute` |
-| **sort** | Array sorting | `ints`, `ints_desc`, `min`, `max`, `search`, `reverse` |
 | **sb** | String builder | `new`, `append`, `append_char`, `build`, `clear` |
 | **bytes** | Byte arrays | `new`, `get`, `set`, `len`, `to_str` |
 | **strconv** | String conversion | `itoa`, `atoi`, `ftoa`, `atof` |
 | **unicode** | Unicode support | `is_letter`, `is_digit`, `to_upper`, `to_lower` |
 | **flag** | CLI argument parsing | `string`, `int`, `bool`, `parse` |
-| **hof** | Higher-order functions | `apply`, `compose`, `pipe`, `fork` |
 | **testing** | Unit testing | `assert_eq`, `assert_ne`, `assert_true`, `fail` |
 
 ### External Modules
@@ -225,11 +213,22 @@ These modules are available as separate packages via `quadpm`:
 
 | Module | Purpose | Repository |
 |--------|---------|------------|
-| **json** | JSON parsing | [quadrate-language/json](https://github.com/quadrate-language/json) |
-| **regex** | Regular expressions | [quadrate-language/regex](https://github.com/quadrate-language/regex) |
-| **http** | HTTP client/server | [quadrate-language/http](https://github.com/quadrate-language/http) |
+| **base64** | Base64 encoding | [quadrate-language/base64](https://github.com/quadrate-language/base64) |
+| **compress** | Compression | [quadrate-language/compress](https://github.com/quadrate-language/compress) |
 | **crypto** | SHA-256, CRC32, etc. | [quadrate-language/crypto](https://github.com/quadrate-language/crypto) |
+| **ct** | Compile-time execution | [quadrate-language/ct](https://github.com/quadrate-language/ct) |
+| **hex** | Hex encoding | [quadrate-language/hex](https://github.com/quadrate-language/hex) |
+| **hof** | Higher-order functions | [quadrate-language/hof](https://github.com/quadrate-language/hof) |
+| **http** | HTTP client/server | [quadrate-language/http](https://github.com/quadrate-language/http) |
+| **json** | JSON parsing | [quadrate-language/json](https://github.com/quadrate-language/json) |
+| **log** | Logging | [quadrate-language/log](https://github.com/quadrate-language/log) |
+| **net** | TCP networking | [quadrate-language/net](https://github.com/quadrate-language/net) |
+| **regex** | Regular expressions | [quadrate-language/regex](https://github.com/quadrate-language/regex) |
+| **sort** | Array sorting | [quadrate-language/sort](https://github.com/quadrate-language/sort) |
 | **sqlite** | SQLite database | [quadrate-language/sqlite](https://github.com/quadrate-language/sqlite) |
+| **tls** | TLS/SSL | [quadrate-language/tls](https://github.com/quadrate-language/tls) |
+| **uri** | URI parsing/building | [quadrate-language/uri](https://github.com/quadrate-language/uri) |
+| **uuid** | UUID generation | [quadrate-language/uuid](https://github.com/quadrate-language/uuid) |
 
 Example with formatted output:
 ```rust
@@ -577,25 +576,6 @@ Stack trace:
 ---
 
 ## Real-World Examples
-
-### TCP Server (with net module)
-
-```rust
-use net
-
-fn handle_client(client:i64 -- ) {
-    dup "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\n\r\nHello!"
-    net::send! drop
-    net::close
-}
-
-fn main() {
-    8080 net::listen! -> server
-    loop {
-        server net::accept! handle_client
-    }
-}
-```
 
 ### File Processing
 
