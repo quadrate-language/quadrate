@@ -1579,6 +1579,17 @@ namespace Qd {
 
 			// Generate comparison
 			IAstNode* caseValue = caseNode->value();
+
+			// Set debug location to the case value's line for proper stepping
+			// (caseNode->line() returns the closing brace position due to parsing order)
+			if (debugInfoEnabled && debugBuilder && !debugScopeStack.empty() && caseValue) {
+				unsigned caseLine = static_cast<unsigned>(caseValue->line());
+				unsigned caseColumn = static_cast<unsigned>(caseValue->column());
+				if (caseLine > 0) {
+					auto debugLoc = llvm::DILocation::get(*context, caseLine, caseColumn, debugScopeStack.back());
+					builder->SetCurrentDebugLocation(debugLoc);
+				}
+			}
 			llvm::Value* matches = nullptr;
 
 			if (caseValue->type() == IAstNode::Type::LITERAL) {
@@ -1719,6 +1730,7 @@ namespace Qd {
 			builder->SetInsertPoint(defaultBB);
 			for (auto* caseNode : cases) {
 				if (caseNode->isDefault() && caseNode->body()) {
+					// Debug location will be set by generateNode for the body
 					generateNode(caseNode->body(), ctx);
 					break;
 				}
