@@ -682,19 +682,17 @@ quadrate/
 
 ## Platform Support
 
-**Tested Platforms:**
-- Linux (x86_64, aarch64) — fully tested in CI
-- FreeBSD — builds in CI
+**Tested in CI:**
+- Linux x86_64 (Arch Linux, Debian)
 
 **Potentially Compatible:**
-- macOS (x86_64, Apple Silicon) — should work but untested
-- Other BSD systems (OpenBSD, NetBSD) — should work but untested
+- Linux aarch64, FreeBSD, Haiku, other Unix-like systems
 
-**Note**: Linux receives full test coverage in CI. FreeBSD builds are verified but tests are not currently run. Other Unix-like systems should work in theory (standard POSIX + LLVM). Contributions for testing and fixes on other platforms are welcome!
+Contributions for testing on other platforms are welcome.
 
 **Compiler Requirements:**
 - C11 and C++20 compiler (GCC 10+ or Clang 10+)
-- LLVM 14+ (for code generation)
+- LLVM 14+
 
 ---
 
