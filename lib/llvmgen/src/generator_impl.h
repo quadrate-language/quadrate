@@ -117,7 +117,12 @@ namespace Qd {
 
 		// Track the last type pushed to the stack for debug info inference
 		// This helps show proper types for untyped locals like "42 -> x"
-		enum class LastPushedType { UNKNOWN, INTEGER, FLOAT, STRING };
+		enum class LastPushedType {
+			UNKNOWN,
+			INTEGER,
+			FLOAT,
+			STRING
+		};
 		LastPushedType lastPushedType = LastPushedType::UNKNOWN;
 
 		// Optimization level (0-3)

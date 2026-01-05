@@ -1,4 +1,5 @@
 #include "module_resolver.h"
+#include <algorithm>
 #include <cstdlib>
 #include <filesystem>
 #include <fstream>
@@ -118,6 +119,53 @@ std::string findLatestPackageVersion(const std::string& moduleName) {
 	}
 
 	return latestPath;
+}
+
+// Helper: Get all .qd files in a directory, sorted alphabetically
+static std::vector<std::string> globQdFiles(const std::string& directory) {
+	std::vector<std::string> files;
+
+	try {
+		if (!std::filesystem::exists(directory) || !std::filesystem::is_directory(directory)) {
+			return files;
+		}
+
+		for (const auto& entry : std::filesystem::directory_iterator(directory)) {
+			if (entry.is_regular_file()) {
+				std::string filename = entry.path().filename().string();
+				if (filename.size() > 3 && filename.substr(filename.size() - 3) == ".qd") {
+					// Exclude test files (*_test.qd) from module loading
+					if (filename.size() > 8 && filename.substr(filename.size() - 8) == "_test.qd") {
+						continue;
+					}
+					files.push_back(entry.path().string());
+				}
+			}
+		}
+
+		// Sort alphabetically for deterministic order
+		std::sort(files.begin(), files.end());
+	} catch (...) {
+		// Ignore filesystem errors
+	}
+
+	return files;
+}
+
+// Helper: Try to get module files from a directory
+// Returns module.qd if it exists, otherwise all .qd files in the directory
+static std::vector<std::string> tryGetModuleFilesFromDir(const std::string& moduleDir) {
+	std::vector<std::string> result;
+
+	// First try module.qd (backwards compatibility)
+	std::string modulePath = moduleDir + "/module.qd";
+	if (std::filesystem::exists(modulePath)) {
+		result.push_back(modulePath);
+		return result;
+	}
+
+	// Fallback: glob all .qd files
+	return globQdFiles(moduleDir);
 }
 
 std::string getPackageFromModuleName(const std::string& moduleName) {
@@ -296,6 +344,120 @@ std::string findModuleFile(const std::string& moduleName, const std::string& sou
 	}
 
 	return ""; // Not found
+}
+
+std::vector<std::string> findModuleFiles(const std::string& moduleName, const std::string& sourceDir) {
+	// Check if this is a direct file import (ends with .qd)
+	bool isDirectFile = moduleName.size() >= 3 && moduleName.substr(moduleName.size() - 3) == ".qd";
+
+	if (isDirectFile) {
+		// For direct file imports, just return the single file
+		std::string singleFile = findModuleFile(moduleName, sourceDir);
+		if (!singleFile.empty()) {
+			return {singleFile};
+		}
+		return {};
+	}
+
+	// Module directory import
+	std::vector<std::string> result;
+
+	// Try 1: Local path (relative to source file)
+	result = tryGetModuleFilesFromDir(sourceDir + "/" + moduleName);
+	if (!result.empty()) {
+		return result;
+	}
+
+	// Try 2: Include paths from -I flags
+	for (const auto& includePath : g_moduleIncludePaths) {
+		std::string expandedPath = expandTilde(includePath);
+
+		// Check if the include path IS the module directory
+		result = tryGetModuleFilesFromDir(expandedPath);
+		if (!result.empty()) {
+			// Verify qd.json name matches
+			std::string manifestPath = expandedPath + "/qd.json";
+			if (std::filesystem::exists(manifestPath)) {
+				json_error_t error;
+				json_t* root = json_load_file(manifestPath.c_str(), 0, &error);
+				if (root) {
+					json_t* name = json_object_get(root, "name");
+					if (name && json_is_string(name) && json_string_value(name) == moduleName) {
+						json_decref(root);
+						return result;
+					}
+					json_decref(root);
+				}
+			}
+			result.clear();
+		}
+
+		// Check for module as subdirectory of include path
+		result = tryGetModuleFilesFromDir(expandedPath + "/" + moduleName);
+		if (!result.empty()) {
+			return result;
+		}
+	}
+
+	// Try 3: Third-party packages directory
+	std::string packagePath = findLatestPackageVersion(moduleName);
+	if (!packagePath.empty()) {
+		result = tryGetModuleFilesFromDir(packagePath);
+		if (!result.empty()) {
+			return result;
+		}
+	}
+
+	// Try 4: QUADRATE_ROOT environment variable
+	const char* quadrateRoot = getenv("QUADRATE_ROOT");
+	if (quadrateRoot) {
+		result = tryGetModuleFilesFromDir(std::string(quadrateRoot) + "/" + moduleName);
+		if (!result.empty()) {
+			return result;
+		}
+	}
+
+	// Try 5: Standard library directories relative to current directory
+	result = tryGetModuleFilesFromDir("lib/qd" + moduleName + "/qd/" + moduleName);
+	if (!result.empty()) {
+		return result;
+	}
+
+	// Try 6: Standard library relative to executable
+	{
+		char exePathBuf[4096];
+		int len = exe_path_platform_get(exePathBuf, sizeof(exePathBuf));
+		if (len > 0 && static_cast<size_t>(len) < sizeof(exePathBuf)) {
+			try {
+				std::filesystem::path exePath = std::filesystem::canonical(exePathBuf);
+				std::filesystem::path exeDir = exePath.parent_path();
+				std::filesystem::path shareDir = exeDir / ".." / "share" / "quadrate" / moduleName;
+				result = tryGetModuleFilesFromDir(shareDir.string());
+				if (!result.empty()) {
+					return result;
+				}
+			} catch (...) {
+				// Ignore errors resolving path
+			}
+		}
+	}
+
+	// Try 7: $HOME/quadrate directory
+	const char* home = getenv("HOME");
+	if (home) {
+		result = tryGetModuleFilesFromDir(std::string(home) + "/quadrate/" + moduleName);
+		if (!result.empty()) {
+			return result;
+		}
+	}
+
+	// Try 8: System-wide installation
+	result = tryGetModuleFilesFromDir("/usr/share/quadrate/" + moduleName);
+	if (!result.empty()) {
+		return result;
+	}
+
+	return {}; // Not found
 }
 
 // Load dependencies from qd.json and return include paths

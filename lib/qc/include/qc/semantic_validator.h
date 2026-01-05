@@ -133,6 +133,9 @@ namespace Qd {
 		void loadModuleDefinitions(
 				const std::string& moduleName, const std::string& currentPackage, bool reportErrors = true);
 
+		// Helper: Try to load a module from a directory (module.qd or glob *.qd)
+		bool tryLoadModuleFromDirectory(const std::string& moduleDir, const std::string& moduleName);
+
 		// Helper: Parse module source and collect function definitions
 		void parseModuleAndCollectFunctions(const std::string& moduleName, const std::string& source);
 

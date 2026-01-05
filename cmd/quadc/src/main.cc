@@ -305,149 +305,152 @@ int main(int argc, char** argv) {
 			std::string moduleSourceDir =
 					moduleToSourceDir.count(moduleName) ? moduleToSourceDir[moduleName] : sourceDirectory;
 
-			std::string moduleFilePath = findModuleFile(moduleName, moduleSourceDir);
-			if (moduleFilePath.empty()) {
-				// Module file not found - skip silently (already validated)
+			std::vector<std::string> moduleFilePaths = findModuleFiles(moduleName, moduleSourceDir);
+			if (moduleFilePaths.empty()) {
+				// Module files not found - skip silently (already validated)
 				continue;
 			}
 
-			// Read module file
-			std::ifstream moduleFile(moduleFilePath);
-			if (!moduleFile.is_open()) {
-				continue;
-			}
-			moduleFile.seekg(0, std::ios::end);
-			auto pos = moduleFile.tellg();
-			moduleFile.seekg(0);
-			if (pos < 0) {
-				continue;
-			}
-			size_t size = static_cast<size_t>(pos);
-			std::string buffer(size, ' ');
-			moduleFile.read(&buffer[0], static_cast<std::streamsize>(size));
-
-			// Parse the module
-			auto ast = std::make_unique<Qd::Ast>();
-			auto root = ast->generate(buffer.c_str(), false, moduleFilePath.c_str());
-			if (!root || ast->hasErrors()) {
-				std::cerr << Qd::Colors::bold() << "quadc: " << Qd::Colors::reset() << Qd::Colors::bold()
-						  << Qd::Colors::red() << "error: " << Qd::Colors::reset()
-						  << "failed to parse module: " << moduleName << std::endl;
-				// Print stored parse errors
-				for (const auto& error : ast->getErrors()) {
-					std::cerr << Qd::Colors::bold() << moduleFilePath << ":" << error.line << ":" << error.column
-							  << ": " << Qd::Colors::reset() << Qd::Colors::bold() << Qd::Colors::red()
-							  << "error: " << Qd::Colors::reset() << error.message << std::endl;
+			// Process all files for this module
+			for (const auto& moduleFilePath : moduleFilePaths) {
+				// Read module file
+				std::ifstream moduleFile(moduleFilePath);
+				if (!moduleFile.is_open()) {
+					continue;
 				}
-				return 1;
-			}
+				moduleFile.seekg(0, std::ios::end);
+				auto pos = moduleFile.tellg();
+				moduleFile.seekg(0);
+				if (pos < 0) {
+					continue;
+				}
+				size_t size = static_cast<size_t>(pos);
+				std::string buffer(size, ' ');
+				moduleFile.read(&buffer[0], static_cast<std::streamsize>(size));
 
-			// Semantic validation - catch errors before LLVM generation
-			// Pass true for isModuleFile to skip reporting errors for missing nested module imports
-			Qd::SemanticValidator validator;
-			validator.setIncludePaths(opts.includePaths);
-			validator.setSource(buffer.c_str());
-			size_t errorCount = validator.validate(root, moduleFilePath.c_str(), true, opts.werror);
-			if (errorCount > 0) {
-				// Validation failed - do not proceed
-				return 1;
-			}
-
-			// Get module's source directory
-			std::filesystem::path moduleFilePathObj(moduleFilePath);
-			std::string moduleFileSourceDir = moduleFilePathObj.parent_path().string();
-			if (moduleFileSourceDir.empty()) {
-				moduleFileSourceDir = ".";
-			}
-
-			// Detect if this module is from a third-party package
-			// Package paths look like: /path/to/packages/modulename@version/module.qd
-			std::string packageDir;
-			std::string packagesDir = getPackagesDir();
-			if (!packagesDir.empty()) {
-				std::string normalizedModulePath = std::filesystem::absolute(moduleFilePath).string();
-				std::string normalizedPackagesDir = std::filesystem::absolute(packagesDir).string();
-
-				// Check if module path starts with packages directory
-				if (normalizedModulePath.size() > normalizedPackagesDir.size() &&
-						normalizedModulePath.substr(0, normalizedPackagesDir.size()) == normalizedPackagesDir) {
-					// Extract the package directory (e.g., /path/to/packages/color@master)
-					std::string relativePath = normalizedModulePath.substr(normalizedPackagesDir.size());
-					if (!relativePath.empty() && relativePath[0] == '/') {
-						relativePath = relativePath.substr(1);
+				// Parse the module
+				auto ast = std::make_unique<Qd::Ast>();
+				auto root = ast->generate(buffer.c_str(), false, moduleFilePath.c_str());
+				if (!root || ast->hasErrors()) {
+					std::cerr << Qd::Colors::bold() << "quadc: " << Qd::Colors::reset() << Qd::Colors::bold()
+							  << Qd::Colors::red() << "error: " << Qd::Colors::reset()
+							  << "failed to parse module: " << moduleName << std::endl;
+					// Print stored parse errors
+					for (const auto& error : ast->getErrors()) {
+						std::cerr << Qd::Colors::bold() << moduleFilePath << ":" << error.line << ":" << error.column
+								  << ": " << Qd::Colors::reset() << Qd::Colors::bold() << Qd::Colors::red()
+								  << "error: " << Qd::Colors::reset() << error.message << std::endl;
 					}
-					// Get the first path component (modulename@version)
-					size_t slashPos = relativePath.find('/');
-					if (slashPos != std::string::npos) {
-						std::string packageDirName = relativePath.substr(0, slashPos);
-						packageDir = normalizedPackagesDir + "/" + packageDirName;
-					}
+					return 1;
 				}
-			}
 
-			// Also check for native modules from include paths (e.g., -I /path/to/modules)
-			// If the module's source directory has a lib/ subdirectory, treat it as a package
-			if (packageDir.empty()) {
-				std::string libDir = moduleFileSourceDir + "/lib";
-				if (std::filesystem::exists(libDir) && std::filesystem::is_directory(libDir)) {
-					packageDir = moduleFileSourceDir;
+				// Semantic validation - catch errors before LLVM generation
+				// Pass true for isModuleFile to skip reporting errors for missing nested module imports
+				Qd::SemanticValidator validator;
+				validator.setIncludePaths(opts.includePaths);
+				validator.setSource(buffer.c_str());
+				size_t errorCount = validator.validate(root, moduleFilePath.c_str(), true, opts.werror);
+				if (errorCount > 0) {
+					// Validation failed - do not proceed
+					return 1;
 				}
-			}
 
-			ParsedModule parsedMod;
-			parsedMod.name = moduleFilePath; // Store full file path for debug info
-			parsedMod.package = packageName;
-			parsedMod.sourceDirectory = moduleFileSourceDir;
-			parsedMod.packageDirectory = packageDir;
-			parsedMod.root = root;
-			parsedMod.ast = std::move(ast);
-
-			// Collect imports from this module
-			std::function<void(Qd::IAstNode*)> collectImports = [&](Qd::IAstNode* node) {
-				if (!node) {
-					return;
+				// Get module's source directory
+				std::filesystem::path moduleFilePathObj(moduleFilePath);
+				std::string moduleFileSourceDir = moduleFilePathObj.parent_path().string();
+				if (moduleFileSourceDir.empty()) {
+					moduleFileSourceDir = ".";
 				}
-				if (node->type() == Qd::IAstNode::Type::USE_STATEMENT) {
-					auto* useNode = static_cast<Qd::AstNodeUse*>(node);
-					parsedMod.importedModules.push_back(useNode->module());
-				}
-				for (size_t i = 0; i < node->childCount(); i++) {
-					collectImports(node->child(i));
-				}
-			};
-			collectImports(root);
 
-			// Add any modules imported by this module to the set
-			for (const auto& transitiveModule : parsedMod.importedModules) {
-				if (!processedModules.count(transitiveModule)) {
-					allModules.insert(transitiveModule);
+				// Detect if this module is from a third-party package
+				// Package paths look like: /path/to/packages/modulename@version/module.qd
+				std::string packageDir;
+				std::string packagesDir = getPackagesDir();
+				if (!packagesDir.empty()) {
+					std::string normalizedModulePath = std::filesystem::absolute(moduleFilePath).string();
+					std::string normalizedPackagesDir = std::filesystem::absolute(packagesDir).string();
 
-					// Determine package for transitive imports
-					bool isDirectFile = transitiveModule.size() >= 3 &&
-										transitiveModule.substr(transitiveModule.size() - 3) == ".qd";
-					if (isDirectFile) {
-						// Check if importing file is a module directory (doesn't end in .qd)
-						bool importerIsModuleDirectory =
-								!(moduleName.size() >= 3 && moduleName.substr(moduleName.size() - 3) == ".qd");
-
-						if (importerIsModuleDirectory) {
-							// Intra-module import: use importer's package
-							moduleToPackage[transitiveModule] = packageName;
-						} else {
-							// Top-level import: derive package from filename
-							moduleToPackage[transitiveModule] = getPackageFromModuleName(transitiveModule);
+					// Check if module path starts with packages directory
+					if (normalizedModulePath.size() > normalizedPackagesDir.size() &&
+							normalizedModulePath.substr(0, normalizedPackagesDir.size()) == normalizedPackagesDir) {
+						// Extract the package directory (e.g., /path/to/packages/color@master)
+						std::string relativePath = normalizedModulePath.substr(normalizedPackagesDir.size());
+						if (!relativePath.empty() && relativePath[0] == '/') {
+							relativePath = relativePath.substr(1);
 						}
-						// File imports use the importing module's source directory
-						moduleToSourceDir[transitiveModule] = moduleFileSourceDir;
-					} else {
-						// Regular module imports get their own package and search from original source dir
-						moduleToPackage[transitiveModule] = transitiveModule;
-						moduleToSourceDir[transitiveModule] = sourceDirectory;
+						// Get the first path component (modulename@version)
+						size_t slashPos = relativePath.find('/');
+						if (slashPos != std::string::npos) {
+							std::string packageDirName = relativePath.substr(0, slashPos);
+							packageDir = normalizedPackagesDir + "/" + packageDirName;
+						}
 					}
 				}
-			}
 
-			parsedModules.push_back(std::move(parsedMod));
+				// Also check for native modules from include paths (e.g., -I /path/to/modules)
+				// If the module's source directory has a lib/ subdirectory, treat it as a package
+				if (packageDir.empty()) {
+					std::string libDir = moduleFileSourceDir + "/lib";
+					if (std::filesystem::exists(libDir) && std::filesystem::is_directory(libDir)) {
+						packageDir = moduleFileSourceDir;
+					}
+				}
+
+				ParsedModule parsedMod;
+				parsedMod.name = moduleFilePath; // Store full file path for debug info
+				parsedMod.package = packageName;
+				parsedMod.sourceDirectory = moduleFileSourceDir;
+				parsedMod.packageDirectory = packageDir;
+				parsedMod.root = root;
+				parsedMod.ast = std::move(ast);
+
+				// Collect imports from this module
+				std::function<void(Qd::IAstNode*)> collectImports = [&](Qd::IAstNode* node) {
+					if (!node) {
+						return;
+					}
+					if (node->type() == Qd::IAstNode::Type::USE_STATEMENT) {
+						auto* useNode = static_cast<Qd::AstNodeUse*>(node);
+						parsedMod.importedModules.push_back(useNode->module());
+					}
+					for (size_t i = 0; i < node->childCount(); i++) {
+						collectImports(node->child(i));
+					}
+				};
+				collectImports(root);
+
+				// Add any modules imported by this module to the set
+				for (const auto& transitiveModule : parsedMod.importedModules) {
+					if (!processedModules.count(transitiveModule)) {
+						allModules.insert(transitiveModule);
+
+						// Determine package for transitive imports
+						bool isDirectFile = transitiveModule.size() >= 3 &&
+											transitiveModule.substr(transitiveModule.size() - 3) == ".qd";
+						if (isDirectFile) {
+							// Check if importing file is a module directory (doesn't end in .qd)
+							bool importerIsModuleDirectory =
+									!(moduleName.size() >= 3 && moduleName.substr(moduleName.size() - 3) == ".qd");
+
+							if (importerIsModuleDirectory) {
+								// Intra-module import: use importer's package
+								moduleToPackage[transitiveModule] = packageName;
+							} else {
+								// Top-level import: derive package from filename
+								moduleToPackage[transitiveModule] = getPackageFromModuleName(transitiveModule);
+							}
+							// File imports use the importing module's source directory
+							moduleToSourceDir[transitiveModule] = moduleFileSourceDir;
+						} else {
+							// Regular module imports get their own package and search from original source dir
+							moduleToPackage[transitiveModule] = transitiveModule;
+							moduleToSourceDir[transitiveModule] = sourceDirectory;
+						}
+					}
+				}
+
+				parsedModules.push_back(std::move(parsedMod));
+			} // end for each file in module
 		}
 
 		// Now generate LLVM IR from all parsed modules

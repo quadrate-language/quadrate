@@ -31,6 +31,12 @@ std::string getPackageFromModuleName(const std::string& moduleName);
 // Returns the full path to the module file, or empty string if not found
 std::string findModuleFile(const std::string& moduleName, const std::string& sourceDir);
 
+// Find all module files, searching in multiple locations
+// For module.qd-based modules, returns just that file
+// For multi-file modules (no module.qd), returns all *.qd files in the directory
+// Returns empty vector if not found
+std::vector<std::string> findModuleFiles(const std::string& moduleName, const std::string& sourceDir);
+
 // Load dependencies from qd.json and add them as include paths
 // Looks for qd.json in the specified directory
 // Returns the list of include paths found

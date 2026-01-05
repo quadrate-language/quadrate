@@ -7,6 +7,7 @@
 #include <algorithm>
 #include <cstdint>
 #include <cstdlib>
+#include <filesystem>
 #include <qc/ast_node_literal.h>
 #include <qc/instructions.h>
 #include <qc/semantic_validator.h>
@@ -212,6 +213,38 @@ inline std::string findSimilarFunctionName(
 	}
 	// Then check builtins
 	return findSimilarNameInArray(name, VALIDATOR_INSTRUCTIONS, VALIDATOR_INSTRUCTION_COUNT);
+}
+
+// Get all .qd files in a directory, sorted alphabetically
+// Returns empty vector if directory doesn't exist or is empty
+inline std::vector<std::string> globQdFiles(const std::string& directory) {
+	std::vector<std::string> files;
+
+	try {
+		if (!std::filesystem::exists(directory) || !std::filesystem::is_directory(directory)) {
+			return files;
+		}
+
+		for (const auto& entry : std::filesystem::directory_iterator(directory)) {
+			if (entry.is_regular_file()) {
+				std::string filename = entry.path().filename().string();
+				if (filename.size() > 3 && filename.substr(filename.size() - 3) == ".qd") {
+					// Exclude test files (*_test.qd) from module loading
+					if (filename.size() > 8 && filename.substr(filename.size() - 8) == "_test.qd") {
+						continue;
+					}
+					files.push_back(entry.path().string());
+				}
+			}
+		}
+
+		// Sort alphabetically for deterministic order
+		std::sort(files.begin(), files.end());
+	} catch (...) {
+		// Ignore filesystem errors
+	}
+
+	return files;
 }
 
 #endif // QD_QC_SEMANTIC_VALIDATOR_INTERNAL_H

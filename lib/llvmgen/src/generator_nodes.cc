@@ -1901,12 +1901,14 @@ namespace Qd {
 					// not a plain char*, so displaying as char* shows garbage
 					switch (lastPushedType) {
 					case LastPushedType::INTEGER:
-						if (int64DebugType)
+						if (int64DebugType) {
 							debugType = int64DebugType;
+						}
 						break;
 					case LastPushedType::FLOAT:
-						if (floatDebugType)
+						if (floatDebugType) {
 							debugType = floatDebugType;
+						}
 						break;
 					// STRING intentionally not handled - keep as struct for accurate display
 					default:

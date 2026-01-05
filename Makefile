@@ -26,7 +26,7 @@ LIBS_WITH_HEADERS := qdrt qd qdfmt qdio qdmath qdmem qdos qdstr qdstrconv qdtime
 # Note: regex moved to external module (https://github.com/quadrate-language/regex)
 # Note: ct moved to external module (https://github.com/quadrate-language/ct)
 # Note: crypto (sha256, sha512, md5, crc32) moved to external module (https://github.com/quadrate-language/crypto)
-STDLIB_MODULES := base64 bits flag fmt io limits math mem os sb signal str strconv thread time unicode uri hex bytes path sort rand uuid testing
+STDLIB_MODULES := base64 bits flag fmt io limits math mem os sb signal str strconv term thread time unicode uri hex bytes path sort rand uuid testing
 
 .PHONY: all debug release tests tests-failed tests-clear valgrind asan fuzz examples format install uninstall clean docs
 

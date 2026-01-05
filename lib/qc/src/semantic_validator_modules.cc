@@ -168,6 +168,47 @@ namespace Qd {
 	// Check if a type string is a known struct name (local or imported)
 	// Supports both unqualified names (Response) and qualified names (http::Response)
 
+	// Helper: Try to load a module from a directory
+	// First tries module.qd (backwards compat), then falls back to globbing all .qd files
+	// Returns true if module was found and loaded, false otherwise
+	bool SemanticValidator::tryLoadModuleFromDirectory(const std::string& moduleDir, const std::string& moduleName) {
+		// First try module.qd (backwards compatibility)
+		std::string modulePath = moduleDir + "/module.qd";
+		std::ifstream file(modulePath);
+		if (file.good()) {
+			mModuleDirectories[moduleName] = moduleDir;
+			std::stringstream buffer;
+			buffer << file.rdbuf();
+			std::string source = buffer.str();
+			file.close();
+			parseModuleAndCollectFunctions(moduleName, source);
+			return true;
+		}
+		file.close();
+
+		// Fallback: glob all .qd files in the directory
+		std::vector<std::string> qdFiles = globQdFiles(moduleDir);
+		if (qdFiles.empty()) {
+			return false;
+		}
+
+		mModuleDirectories[moduleName] = moduleDir;
+		// Parse all files and merge into the same namespace
+		for (const auto& qdFile : qdFiles) {
+			file.open(qdFile);
+			if (file.good()) {
+				std::stringstream buffer;
+				buffer << file.rdbuf();
+				std::string source = buffer.str();
+				file.close();
+				parseModuleAndCollectFunctions(moduleName, source);
+			} else {
+				file.close();
+			}
+		}
+		return true;
+	}
+
 	void SemanticValidator::loadModuleDefinitions(
 			const std::string& moduleName, const std::string& currentPackage, bool reportErrors) {
 		// Check for circular dependency
@@ -355,21 +396,11 @@ namespace Qd {
 				file.close();
 			}
 		} else {
-			// Module directory import: use moduleName (looks for moduleName/module.qd)
+			// Module directory import: use moduleName (looks for moduleName/module.qd or moduleName/*.qd)
 			// Try 1: Local path (relative to source file)
-			modulePath = mSourceDirectory + "/" + moduleName + "/module.qd";
-			file.open(modulePath);
-			if (file.good()) {
-				// Found it locally - store the module directory
-				mModuleDirectories[moduleName] = mSourceDirectory + "/" + moduleName;
-				std::stringstream buffer;
-				buffer << file.rdbuf();
-				std::string source = buffer.str();
-				file.close();
-				parseModuleAndCollectFunctions(moduleName, source);
+			if (tryLoadModuleFromDirectory(mSourceDirectory + "/" + moduleName, moduleName)) {
 				return;
 			}
-			file.close();
 
 			// Try 2: Include paths from -I flags
 			for (const auto& includePath : mIncludePaths) {
@@ -426,18 +457,9 @@ namespace Qd {
 				}
 
 				// Check for module as subdirectory of include path
-				std::string includedPath = expandedPath + "/" + moduleName + "/module.qd";
-				file.open(includedPath);
-				if (file.good()) {
-					mModuleDirectories[moduleName] = expandedPath + "/" + moduleName;
-					std::stringstream buffer;
-					buffer << file.rdbuf();
-					std::string source = buffer.str();
-					file.close();
-					parseModuleAndCollectFunctions(moduleName, source);
+				if (tryLoadModuleFromDirectory(expandedPath + "/" + moduleName, moduleName)) {
 					return;
 				}
-				file.close();
 			}
 
 			// Try 3: Third-party packages directory (installed via quadpm)
@@ -583,19 +605,9 @@ namespace Qd {
 			// Try 3: QUADRATE_ROOT environment variable
 			const char* quadrateRoot = std::getenv("QUADRATE_ROOT");
 			if (quadrateRoot) {
-				modulePath = std::string(quadrateRoot) + "/" + moduleName + "/module.qd";
-				file.open(modulePath);
-				if (file.good()) {
-					// Store the module directory
-					mModuleDirectories[moduleName] = std::string(quadrateRoot) + "/" + moduleName;
-					std::stringstream buffer;
-					buffer << file.rdbuf();
-					std::string source = buffer.str();
-					file.close();
-					parseModuleAndCollectFunctions(moduleName, source);
+				if (tryLoadModuleFromDirectory(std::string(quadrateRoot) + "/" + moduleName, moduleName)) {
 					return;
 				}
-				file.close();
 			}
 
 			// Try 4: QUADRATE_LIBDIR environment variable (for development/dist)
@@ -634,24 +646,13 @@ namespace Qd {
 			file.close();
 
 			// Try 6: Standard library relative to executable (for installed binaries)
-			// Get executable path and look for ../share/quadrate/<module>/module.qd
+			// Get executable path and look for ../share/quadrate/<module>/
 			try {
 				std::filesystem::path exePath = std::filesystem::canonical("/proc/self/exe");
 				std::filesystem::path exeDir = exePath.parent_path();
-				std::filesystem::path sharePath = exeDir / ".." / "share" / "quadrate" / moduleName / "module.qd";
-				if (std::filesystem::exists(sharePath)) {
-					modulePath = sharePath.string();
-					file.open(modulePath);
-					if (file.good()) {
-						mModuleDirectories[moduleName] = sharePath.parent_path().string();
-						std::stringstream buffer;
-						buffer << file.rdbuf();
-						std::string source = buffer.str();
-						file.close();
-						parseModuleAndCollectFunctions(moduleName, source);
-						return;
-					}
-					file.close();
+				std::filesystem::path shareDir = exeDir / ".." / "share" / "quadrate" / moduleName;
+				if (tryLoadModuleFromDirectory(shareDir.string(), moduleName)) {
+					return;
 				}
 			} catch (...) {
 				// Ignore errors reading executable path
@@ -660,19 +661,9 @@ namespace Qd {
 			// Try 7: $HOME/quadrate directory
 			const char* home = std::getenv("HOME");
 			if (home) {
-				modulePath = std::string(home) + "/quadrate/" + moduleName + "/module.qd";
-				file.open(modulePath);
-				if (file.good()) {
-					// Store the module directory
-					mModuleDirectories[moduleName] = std::string(home) + "/quadrate/" + moduleName;
-					std::stringstream buffer;
-					buffer << file.rdbuf();
-					std::string source = buffer.str();
-					file.close();
-					parseModuleAndCollectFunctions(moduleName, source);
+				if (tryLoadModuleFromDirectory(std::string(home) + "/quadrate/" + moduleName, moduleName)) {
 					return;
 				}
-				file.close();
 
 				// Try 7b: quadpm's modules/_namespaces directory (symlinks to installed modules)
 				std::string namespacePath =
