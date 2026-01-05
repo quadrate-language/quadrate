@@ -21,11 +21,13 @@ namespace Qd {
 			} else {
 				generateInlinePushInt(ctx, val);
 			}
+			lastPushedType = LastPushedType::INTEGER;
 			break;
 		}
 		case AstNodeLiteral::LiteralType::FLOAT: {
 			auto val = llvm::ConstantFP::get(builder->getDoubleTy(), std::stod(value));
 			builder->CreateCall(pushFloatFn, {ctx, val});
+			lastPushedType = LastPushedType::FLOAT;
 			break;
 		}
 		case AstNodeLiteral::LiteralType::STRING: {
@@ -97,6 +99,7 @@ namespace Qd {
 
 			auto strValue = builder->CreateGlobalString(processed, ".str");
 			builder->CreateCall(pushStrFn, {ctx, strValue});
+			lastPushedType = LastPushedType::STRING;
 			break;
 		}
 		}
@@ -1877,6 +1880,26 @@ namespace Qd {
 						debugType = stringDebugType;
 					}
 					// For struct types, keep using stackElementDebugType
+				} else if (currentFunctionIsIntegerOnly && int64DebugType) {
+					// For integer-only functions, default untyped locals to int64
+					debugType = int64DebugType;
+				} else if (lastPushedType != LastPushedType::UNKNOWN) {
+					// Infer type from the last pushed value (e.g., "42 -> x" means x is int)
+					// Note: Strings are kept as structs because qd_string_t is a ref-counted struct,
+					// not a plain char*, so displaying as char* shows garbage
+					switch (lastPushedType) {
+					case LastPushedType::INTEGER:
+						if (int64DebugType)
+							debugType = int64DebugType;
+						break;
+					case LastPushedType::FLOAT:
+						if (floatDebugType)
+							debugType = floatDebugType;
+						break;
+					// STRING intentionally not handled - keep as struct for accurate display
+					default:
+						break;
+					}
 				}
 
 				// Create local variable debug info
@@ -1914,6 +1937,9 @@ namespace Qd {
 			// Variable already exists, reuse it
 			localAlloca = it->second;
 		}
+
+		// Reset type tracking after local assignment to avoid type leakage
+		lastPushedType = LastPushedType::UNKNOWN;
 
 		// For indirect (captured) variables, load the actual storage pointer
 		// localAlloca holds a pointer to heap memory, we need the heap memory address

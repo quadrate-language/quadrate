@@ -115,6 +115,11 @@ namespace Qd {
 		// Map of local variable names to their declared types (from function parameters)
 		std::unordered_map<std::string, std::string> localVariableTypeHints;
 
+		// Track the last type pushed to the stack for debug info inference
+		// This helps show proper types for untyped locals like "42 -> x"
+		enum class LastPushedType { UNKNOWN, INTEGER, FLOAT, STRING };
+		LastPushedType lastPushedType = LastPushedType::UNKNOWN;
+
 		// Optimization level (0-3)
 		int optimizationLevel = 0;
 
