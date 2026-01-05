@@ -1,0 +1,102 @@
+// Brainfuck interpreter
+// Usage: bf <program.bf>
+use io
+use mem
+use os
+use str
+use unicode
+
+const TapeSize = 30000
+
+fn main() {
+	read 1 < if {
+		"usage: bf <program.bf>" print nl
+		1 os::exit
+	}
+	-> filename
+
+	filename io::read_file! -> code
+	code str::len -> code_len
+
+	TapeSize mem::alloc! -> tape
+	defer {
+		tape mem::free
+	}
+	tape TapeSize mem::zero
+
+	0 -> ip // instruction pointer
+	0 -> dp // data pointer
+
+	loop {
+		ip code_len >= if {
+			break
+		}
+
+		code ip str::char_at! switch {
+			unicode::gt {
+				dp ++ -> dp
+			}
+			unicode::lt {
+				dp -- -> dp
+			}
+			unicode::plus {
+				tape dp mem::get_byte ++ 255 and tape dp mem::set_byte
+			}
+			unicode::minus {
+				tape dp mem::get_byte -- 255 and tape dp mem::set_byte
+			}
+			unicode::dot {
+				tape dp mem::get_byte str::from_char print
+			}
+			unicode::comma {
+				io::readline! -> line
+				line str::len 0 > if {
+					line 0 str::char_at!
+				} else {
+					0
+				}
+				tape dp mem::set_byte
+			}
+			unicode::lbracket {
+				tape dp mem::get_byte 0 == if {
+					1 -> nest
+					loop {
+						nest 0 == if {
+							break
+						}
+						ip ++ -> ip
+						code ip str::char_at! switch {
+							unicode::lbracket {
+								nest ++ -> nest
+							}
+							unicode::rbracket {
+								nest -- -> nest
+							}
+						}
+					}
+				}
+			}
+			unicode::rbracket {
+				tape dp mem::get_byte 0 != if {
+					1 -> nest
+					loop {
+						nest 0 == if {
+							break
+						}
+						ip -- -> ip
+						code ip str::char_at! switch {
+							unicode::rbracket {
+								nest ++ -> nest
+							}
+							unicode::lbracket {
+								nest -- -> nest
+							}
+						}
+					}
+				}
+			}
+		}
+
+		ip ++ -> ip
+	}
+}
