@@ -178,31 +178,30 @@ Quadrate includes batteries for common tasks:
 | Module | Purpose | Key Functions |
 |--------|---------|---------------|
 | **fmt** | Formatted I/O | `printf`, `sprintf`, `scanf` |
-| **io** | File operations | `open`, `read`, `write`, `close` |
-| **mem** | Memory management | `alloc`, `free`, `copy`, `set`, `get` |
+| **io** | File operations | `open`, `read`, `write`, `close`, `read_file` |
+| **mem** | Memory management | `alloc`, `free`, `copy`, `zero`, `get_byte`, `set_byte` |
 | **str** | String manipulation | `concat`, `split`, `substr`, `replace`, `len` |
-| **math** | Mathematics | `sin`, `cos`, `sqrt`, `pow`, `log`, `sq` |
+| **math** | Math and linear algebra | `sin`, `cos`, `sqrt`, `Vec2`, `Vec3`, `Mat4`, `Quat` |
 | **bits** | Bit manipulation | `and`, `or`, `xor`, `lshift`, `rshift` |
+| **limits** | Integer limits | `MaxInt`, `MinInt`, `MaxUint` |
 
-### System & Networking
+### System & Concurrency
 
 | Module | Purpose | Key Functions |
 |--------|---------|---------------|
-| **os** | System interface | `env`, `exec`, `getpid`, `getcwd` |
+| **os** | System interface | `env`, `exec`, `getpid`, `getcwd`, `exit` |
 | **net** | TCP networking | `listen`, `accept`, `connect`, `send`, `recv` |
 | **time** | Time & sleep | `now`, `sleep`, `Second`, `Millisecond` |
+| **thread** | Threading | `spawn`, `join`, `detach`, `Mutex`, `Channel`, `WaitGroup` |
+| **signal** | Signal handling | `trap`, `pending`, `clear`, `SigInt`, `SigTerm` |
 
 ### Data & Encoding
 
 | Module | Purpose | Key Functions |
 |--------|---------|---------------|
-| **json** | JSON parsing | `parse`, `get`, `get_str`, `get_int`, `get_array` |
 | **base64** | Base64 encoding | `encode`, `decode` |
 | **hex** | Hex encoding | `encode`, `decode` |
-| **sha256** | SHA-256 hashing | `hash`, `hash_str` |
-| **crc32** | CRC32 checksums | `hash`, `hash_str` |
 | **uri** | URI parsing/building | `parse`, `build`, `encode`, `decode` |
-| **regex** | Regular expressions | `match`, `find`, `replace`, `split` |
 
 ### Utility Modules
 
@@ -217,6 +216,20 @@ Quadrate includes batteries for common tasks:
 | **strconv** | String conversion | `itoa`, `atoi`, `ftoa`, `atof` |
 | **unicode** | Unicode support | `is_letter`, `is_digit`, `to_upper`, `to_lower` |
 | **flag** | CLI argument parsing | `string`, `int`, `bool`, `parse` |
+| **hof** | Higher-order functions | `apply`, `compose`, `pipe`, `fork` |
+| **testing** | Unit testing | `assert_eq`, `assert_ne`, `assert_true`, `fail` |
+
+### External Modules
+
+These modules are available as separate packages via `quadpm`:
+
+| Module | Purpose | Repository |
+|--------|---------|------------|
+| **json** | JSON parsing | [quadrate-language/json](https://github.com/quadrate-language/json) |
+| **regex** | Regular expressions | [quadrate-language/regex](https://github.com/quadrate-language/regex) |
+| **http** | HTTP client/server | [quadrate-language/http](https://github.com/quadrate-language/http) |
+| **crypto** | SHA-256, CRC32, etc. | [quadrate-language/crypto](https://github.com/quadrate-language/crypto) |
+| **sqlite** | SQLite database | [quadrate-language/sqlite](https://github.com/quadrate-language/sqlite) |
 
 Example with formatted output:
 ```rust
@@ -350,9 +363,8 @@ See `examples/embed/` for complete working examples.
 Experiment with Quadrate interactively:
 
 ```bash
-$ quadrate
-Quadrate REPL v0.1.0
-Type 'help' for commands, 'exit' to quit
+$ quad repl
+# or: quadrepl
 
 []> 5 3
 [5 3]> +
@@ -366,8 +378,7 @@ Type 'help' for commands, 'exit' to quit
 
 **REPL Commands:**
 - `clear` - Clear the stack
-- `help` - Show available commands
-- `exit` / `Ctrl-D` - Exit REPL
+- `Ctrl-D` - Exit REPL
 
 ### Code Formatter
 
@@ -399,10 +410,12 @@ Supports:
 
 | Tool | Purpose |
 |------|---------|
+| **quad** | Unified CLI (`quad build`, `quad run`, `quad test`, `quad fmt`, etc.) |
 | **quadc** | Compiler (`-r` run, `-o` output, `-g` debug info, `--save-temps` keep intermediate files) |
 | **quadfmt** | Code formatter with consistent style |
+| **quadlint** | Static analyzer for common issues |
 | **quadlsp** | Language server for IDE integration |
-| **quadrate** | Interactive REPL for quick experimentation |
+| **quadrepl** | Interactive REPL for quick experimentation |
 | **quaduses** | Analyze module dependencies and function usage |
 | **quadpm** | Package manager for installing and managing libraries |
 
@@ -565,23 +578,21 @@ Stack trace:
 
 ## Real-World Examples
 
-### HTTP Server (with net module)
+### TCP Server (with net module)
 
 ```rust
 use net
-use fmt
 
 fn handle_client(client:i64 -- ) {
-    dup "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\n\r\nHello, World!"
-    net::send drop
+    dup "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\n\r\nHello!"
+    net::send! drop
     net::close
 }
 
 fn main() {
-    8080 net::listen
+    8080 net::listen! -> server
     loop {
-        dup net::accept
-        handle_client
+        server net::accept! handle_client
     }
 }
 ```
@@ -598,7 +609,7 @@ fn process_file(filename:str -- ) {
     io::Read io::open! -> file
 
     // Allocate buffer for reading
-    1024 mem::alloc -> buffer
+    1024 mem::alloc! -> buffer
 
     // Read and process data
     file buffer 1024 io::read! -> bytes_read
@@ -607,7 +618,7 @@ fn process_file(filename:str -- ) {
 
     // Cleanup
     buffer mem::free
-    file io::close
+    file io::close!
 }
 
 fn main() {
@@ -629,7 +640,7 @@ fn render() {
 }
 
 fn main() {
-    time::Millisecond 16 mul -> frame_time  // 60 FPS = 16.67ms
+    time::Millisecond 16 * -> frame_time  // 60 FPS = 16.67ms
 
     loop {
         time::now -> start_time
