@@ -14,12 +14,23 @@ fn main() {
 	"/tmp/qd_walk_test/d/e/f" os::mkdir!
 
 	// Test: Walk the tree - callback receives (path:str is_dir:i64 depth:i64)
-	// Just verify it works by printing depth and is_dir
+	// Count entries at each depth (filesystem walk order varies by platform)
+	// Expected: depth0=3 (a,c,d), depth1=2 (b,e), depth2=1 (f)
+	0 -> count0
+	0 -> count1
+	0 -> count2
 	"/tmp/qd_walk_test" fn (path:str isdir:i64 depth:i64 -- ) {
-		// Stack: path isdir depth
-		// Print depth:isdir
-		print ":" print print nl
+		// Stack: path isdir depth (depth on top)
+		dup 0 == if { count0 1 + -> count0 }
+		dup 1 == if { count1 1 + -> count1 }
+		dup 2 == if { count2 1 + -> count2 }
+		drop drop drop  // clean up stack: depth isdir path
 	} os::walk!
+
+	// Print counts for each depth
+	"depth0=" print count0 print nl
+	"depth1=" print count1 print nl
+	"depth2=" print count2 print nl
 
 	// Cleanup
 	"/tmp/qd_walk_test" os::rmdir!

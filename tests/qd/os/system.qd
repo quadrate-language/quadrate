@@ -11,6 +11,7 @@ fn main() {
 	print nl  // Should print 0 (success)
 
 	// Test false command (exits with non-zero)
+	// Return value varies by platform (1 on some, 256 on others), so check non-zero
 	"false" os::system
-	print nl  // Should print non-zero (typically 256 or 1 depending on shell)
+	0 != if { "non-zero" } else { "zero" } print nl
 }
