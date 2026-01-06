@@ -27,10 +27,13 @@ if llvm_dep.found()
 
 	llvmgen_inc = include_directories('include')
 
+	# Include qdrt source directory for platform headers (exe_path_platform.h)
+	qdrt_src_inc = include_directories('../qdrt')
+
 	# Static library
 	llvmgen_lib = static_library('llvmgen',
 		llvmgen_sources,
-		include_directories: [llvmgen_inc, qc_inc],
+		include_directories: [llvmgen_inc, qc_inc, qdrt_src_inc],
 		dependencies: [llvm_dep, qc_dep],
 		cpp_args: llvm_cxxflags,
 		link_args: llvm_ldflags + llvm_libs,

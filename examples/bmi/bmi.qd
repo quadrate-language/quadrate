@@ -1,5 +1,7 @@
+use math
+
 fn bmi(weight:f64 height:f64 -- bmi:f64) {
-	sq /
+	math::sq /
 }
 
 fn main() {

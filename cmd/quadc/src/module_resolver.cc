@@ -12,6 +12,14 @@ extern "C" {
 #include "src/platform/exe_path_platform.h"
 }
 
+// Platform-specific data directory name
+// Haiku uses "data" instead of "share" for data files
+#ifdef __HAIKU__
+static constexpr const char* DATA_DIR_NAME = "data";
+#else
+static constexpr const char* DATA_DIR_NAME = "share";
+#endif
+
 // Global module version pins (set from command-line -l flags)
 static std::unordered_map<std::string, std::string> g_moduleVersionPins;
 
@@ -298,7 +306,8 @@ std::string findModuleFile(const std::string& moduleName, const std::string& sou
 		}
 
 		// Try 5: Standard library relative to executable (for installed binaries)
-		// Get executable path and look for ../share/quadrate/<module>/module.qd
+		// Get executable path and look for ../<data>/quadrate/<module>/module.qd
+		// Note: DATA_DIR_NAME is "data" on Haiku, "share" on other platforms
 		{
 			char exePathBuf[4096];
 			int len = exe_path_platform_get(exePathBuf, sizeof(exePathBuf));
@@ -306,7 +315,7 @@ std::string findModuleFile(const std::string& moduleName, const std::string& sou
 				try {
 					std::filesystem::path exePath = std::filesystem::canonical(exePathBuf);
 					std::filesystem::path exeDir = exePath.parent_path();
-					std::filesystem::path sharePath = exeDir / ".." / "share" / "quadrate" / moduleName / "module.qd";
+					std::filesystem::path sharePath = exeDir / ".." / DATA_DIR_NAME / "quadrate" / moduleName / "module.qd";
 					if (std::filesystem::exists(sharePath)) {
 						return sharePath.string();
 					}
@@ -337,7 +346,12 @@ std::string findModuleFile(const std::string& moduleName, const std::string& sou
 		}
 
 		// Try 7: System-wide installation
+#ifdef __HAIKU__
+		// On Haiku, check both system and user data directories
+		std::string systemPath = "/boot/system/data/quadrate/" + moduleName + "/module.qd";
+#else
 		std::string systemPath = "/usr/share/quadrate/" + moduleName + "/module.qd";
+#endif
 		if (std::filesystem::exists(systemPath)) {
 			return systemPath;
 		}
@@ -424,6 +438,7 @@ std::vector<std::string> findModuleFiles(const std::string& moduleName, const st
 	}
 
 	// Try 6: Standard library relative to executable
+	// Note: DATA_DIR_NAME is "data" on Haiku, "share" on other platforms
 	{
 		char exePathBuf[4096];
 		int len = exe_path_platform_get(exePathBuf, sizeof(exePathBuf));
@@ -431,7 +446,7 @@ std::vector<std::string> findModuleFiles(const std::string& moduleName, const st
 			try {
 				std::filesystem::path exePath = std::filesystem::canonical(exePathBuf);
 				std::filesystem::path exeDir = exePath.parent_path();
-				std::filesystem::path shareDir = exeDir / ".." / "share" / "quadrate" / moduleName;
+				std::filesystem::path shareDir = exeDir / ".." / DATA_DIR_NAME / "quadrate" / moduleName;
 				result = tryGetModuleFilesFromDir(shareDir.string());
 				if (!result.empty()) {
 					return result;
@@ -452,7 +467,11 @@ std::vector<std::string> findModuleFiles(const std::string& moduleName, const st
 	}
 
 	// Try 8: System-wide installation
+#ifdef __HAIKU__
+	result = tryGetModuleFilesFromDir("/boot/system/data/quadrate/" + moduleName);
+#else
 	result = tryGetModuleFilesFromDir("/usr/share/quadrate/" + moduleName);
+#endif
 	if (!result.empty()) {
 		return result;
 	}

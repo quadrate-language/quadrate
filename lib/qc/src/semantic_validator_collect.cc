@@ -312,6 +312,8 @@ namespace Qd {
 			for (const auto* func : import->functions()) {
 				std::string qualifiedName = import->namespaceName() + "::" + func->name;
 				mImportedLibraryFunctions.insert(qualifiedName);
+				// Also register unqualified name for use within the same module
+				mImportedLibraryFunctions.insert(func->name);
 
 				// Also register function signature for type checking
 				FunctionSignature sig;
@@ -500,6 +502,12 @@ namespace Qd {
 			// Check if it's a built-in instruction
 			if (isBuiltInInstruction(name)) {
 				// Valid built-in, no error
+				return;
+			}
+
+			// Check if it's an imported library function (unqualified, within same module)
+			if (mImportedLibraryFunctions.find(name) != mImportedLibraryFunctions.end()) {
+				// Valid imported library function
 				return;
 			}
 

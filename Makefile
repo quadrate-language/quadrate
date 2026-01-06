@@ -3,7 +3,17 @@ BUILD_DIR_RELEASE := build/release
 
 MESON_FLAGS := -Dbuild_tests=true -Db_pie=false
 
-PREFIX ?= /usr
+# Detect Haiku and set appropriate paths
+UNAME_S := $(shell uname -s)
+ifeq ($(UNAME_S),Haiku)
+    PREFIX ?= $(HOME)/config/non-packaged
+    DATADIR = $(PREFIX)/data
+    INCLUDEDIR = $(PREFIX)/develop/headers
+else
+    PREFIX ?= /usr
+    DATADIR = $(PREFIX)/share
+    INCLUDEDIR = $(PREFIX)/include
+endif
 
 # Use clang by default for better LLVM integration
 export CC  := clang
@@ -122,36 +132,36 @@ format:
 install: release
 	install -d $(DESTDIR)$(PREFIX)/bin
 	install -d $(DESTDIR)$(PREFIX)/lib
-	install -d $(DESTDIR)$(PREFIX)/include
+	install -d $(DESTDIR)$(INCLUDEDIR)
 	@for cmd in $(CMDS); do install -m 755 dist/bin/$$cmd $(DESTDIR)$(PREFIX)/bin/; done
 	@if [ -f dist/bin/quadrepl ]; then install -m 755 dist/bin/quadrepl $(DESTDIR)$(PREFIX)/bin/; fi
 	@for lib in $(LIBS_WITH_C); do install -m 644 dist/lib/lib$$lib.a $(DESTDIR)$(PREFIX)/lib/; done
 	@for deps in dist/lib/*.deps; do if [ -f "$$deps" ]; then install -m 644 "$$deps" $(DESTDIR)$(PREFIX)/lib/; fi; done
 	install -m 755 dist/lib/libqdrt.so $(DESTDIR)$(PREFIX)/lib/
 	install -m 755 dist/lib/libqd.so $(DESTDIR)$(PREFIX)/lib/
-	@for lib in $(LIBS_WITH_HEADERS); do cp -r dist/include/$$lib $(DESTDIR)$(PREFIX)/include/; done
-	@find $(DESTDIR)$(PREFIX)/include -type f -exec chmod 644 {} +
-	@find $(DESTDIR)$(PREFIX)/include -type d -exec chmod 755 {} +
-	@echo "Installing Quadrate standard library modules to $(DESTDIR)$(PREFIX)/share/quadrate/"
-	install -d $(DESTDIR)$(PREFIX)/share/quadrate
-	@for mod in $(STDLIB_MODULES); do cp -r lib/qd*/qd/$$mod $(DESTDIR)$(PREFIX)/share/quadrate/ 2>/dev/null || true; done
-	@find $(DESTDIR)$(PREFIX)/share/quadrate -type f -exec chmod 644 {} +
-	@find $(DESTDIR)$(PREFIX)/share/quadrate -type d -exec chmod 755 {} +
-	@echo "Installing bash completions to $(DESTDIR)$(PREFIX)/share/bash-completion/completions/"
-	install -d $(DESTDIR)$(PREFIX)/share/bash-completion/completions
-	install -m 644 completions/quad.bash $(DESTDIR)$(PREFIX)/share/bash-completion/completions/quad
-	@for cmd in quadc quadfmt quadlint quadlsp quadpm quadrepl quaduses; do ln -sf quad $(DESTDIR)$(PREFIX)/share/bash-completion/completions/$$cmd; done
+	@for lib in $(LIBS_WITH_HEADERS); do cp -r dist/include/$$lib $(DESTDIR)$(INCLUDEDIR)/; done
+	@find $(DESTDIR)$(INCLUDEDIR) -type f -exec chmod 644 {} +
+	@find $(DESTDIR)$(INCLUDEDIR) -type d -exec chmod 755 {} +
+	@echo "Installing Quadrate standard library modules to $(DESTDIR)$(DATADIR)/quadrate/"
+	install -d $(DESTDIR)$(DATADIR)/quadrate
+	@for mod in $(STDLIB_MODULES); do cp -r lib/qd*/qd/$$mod $(DESTDIR)$(DATADIR)/quadrate/ 2>/dev/null || true; done
+	@find $(DESTDIR)$(DATADIR)/quadrate -type f -exec chmod 644 {} +
+	@find $(DESTDIR)$(DATADIR)/quadrate -type d -exec chmod 755 {} +
+	@echo "Installing bash completions to $(DESTDIR)$(DATADIR)/bash-completion/completions/"
+	install -d $(DESTDIR)$(DATADIR)/bash-completion/completions
+	install -m 644 completions/quad.bash $(DESTDIR)$(DATADIR)/bash-completion/completions/quad
+	@for cmd in quadc quadfmt quadlint quadlsp quadpm quadrepl quaduses; do ln -sf quad $(DESTDIR)$(DATADIR)/bash-completion/completions/$$cmd; done
 
 uninstall:
 	@for cmd in $(CMDS) quadrepl; do rm -f $(DESTDIR)$(PREFIX)/bin/$$cmd; done
 	@for lib in $(LIBS_WITH_C); do rm -f $(DESTDIR)$(PREFIX)/lib/lib$$lib.a; done
 	rm -f $(DESTDIR)$(PREFIX)/lib/libqdrt.so
 	rm -f $(DESTDIR)$(PREFIX)/lib/libqd.so
-	@for lib in $(LIBS_WITH_HEADERS); do rm -rf $(DESTDIR)$(PREFIX)/include/$$lib; done
-	@echo "Removing Quadrate standard library modules from $(DESTDIR)$(PREFIX)/share/quadrate/"
-	rm -rf $(DESTDIR)$(PREFIX)/share/quadrate
-	@echo "Removing bash completions from $(DESTDIR)$(PREFIX)/share/bash-completion/completions/"
-	@for cmd in quad quadc quadfmt quadlint quadlsp quadpm quadrepl quaduses; do rm -f $(DESTDIR)$(PREFIX)/share/bash-completion/completions/$$cmd; done
+	@for lib in $(LIBS_WITH_HEADERS); do rm -rf $(DESTDIR)$(INCLUDEDIR)/$$lib; done
+	@echo "Removing Quadrate standard library modules from $(DESTDIR)$(DATADIR)/quadrate/"
+	rm -rf $(DESTDIR)$(DATADIR)/quadrate
+	@echo "Removing bash completions from $(DESTDIR)$(DATADIR)/bash-completion/completions/"
+	@for cmd in quad quadc quadfmt quadlint quadlsp quadpm quadrepl quaduses; do rm -f $(DESTDIR)$(DATADIR)/bash-completion/completions/$$cmd; done
 
 docs:
 	@echo "=========================================="

@@ -24,6 +24,14 @@ extern "C" {
 #include "src/platform/exe_path_platform.h"
 }
 
+// Platform-specific data directory name
+// Haiku uses "data" instead of "share" for data files
+#ifdef __HAIKU__
+static constexpr const char* DATA_DIR_NAME = "data";
+#else
+static constexpr const char* DATA_DIR_NAME = "share";
+#endif
+
 namespace fs = std::filesystem;
 
 // Helper to find module file in standard locations
@@ -47,13 +55,14 @@ static std::string findModuleFile(const std::string& moduleName) {
 			return devPath;
 		}
 		// Also try installed structure
-		std::string installPath = std::string(libDir) + "/../share/quadrate/" + moduleName + "/module.qd";
+		std::string installPath = std::string(libDir) + "/../" + DATA_DIR_NAME + "/quadrate/" + moduleName + "/module.qd";
 		if (fs::exists(installPath)) {
 			return installPath;
 		}
 	}
 
 	// Try 3: Standard library relative to executable
+	// Note: DATA_DIR_NAME is "data" on Haiku, "share" on other platforms
 	{
 		char exePathBuf[4096];
 		int len = exe_path_platform_get(exePathBuf, sizeof(exePathBuf));
@@ -61,7 +70,7 @@ static std::string findModuleFile(const std::string& moduleName) {
 			try {
 				fs::path exePath = fs::canonical(exePathBuf);
 				fs::path exeDir = exePath.parent_path();
-				fs::path sharePath = exeDir / ".." / "share" / "quadrate" / moduleName / "module.qd";
+				fs::path sharePath = exeDir / ".." / DATA_DIR_NAME / "quadrate" / moduleName / "module.qd";
 				if (fs::exists(sharePath)) {
 					return sharePath.string();
 				}
@@ -109,18 +118,47 @@ static std::string findLibraryDir() {
 		}
 	}
 
-	// Try 3: System installed location (/usr/lib)
+	// Try 3: Library directory relative to executable (installed binaries)
+	{
+		char exePathBuf[4096];
+		int len = exe_path_platform_get(exePathBuf, sizeof(exePathBuf));
+		if (len > 0 && static_cast<size_t>(len) < sizeof(exePathBuf)) {
+			try {
+				fs::path exePath = fs::canonical(exePathBuf);
+				fs::path exeDir = exePath.parent_path();
+				fs::path installedLib = exeDir / ".." / "lib";
+				if (fs::exists(installedLib / "libqdrt.a") || fs::exists(installedLib / "libqdrt.so")) {
+					return installedLib.string();
+				}
+			} catch (...) {
+				// Ignore errors resolving path
+			}
+		}
+	}
+
+#ifdef __HAIKU__
+	// Try 4: Haiku system library location
+	if (fs::exists("/boot/system/lib/libqdrt.a")) {
+		return "/boot/system/lib";
+	}
+#else
+	// Try 4: System installed location (/usr/lib)
 	if (fs::exists("/usr/lib/libqdrt.a")) {
 		return "/usr/lib";
 	}
 
-	// Try 4: /usr/local/lib
+	// Try 5: /usr/local/lib
 	if (fs::exists("/usr/local/lib/libqdrt.a")) {
 		return "/usr/local/lib";
 	}
+#endif
 
-	// Fallback to /usr/lib
+	// Fallback
+#ifdef __HAIKU__
+	return "/boot/system/lib";
+#else
 	return "/usr/lib";
+#endif
 }
 
 // Helper to find a static library file

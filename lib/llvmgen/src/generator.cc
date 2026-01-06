@@ -1,5 +1,10 @@
 #include "generator_impl.h"
 
+// Platform abstractions
+extern "C" {
+#include "src/platform/exe_path_platform.h"
+}
+
 namespace Qd {
 
 	void LlvmGenerator::Impl::setupRuntimeDeclarations() {
@@ -1783,13 +1788,17 @@ namespace Qd {
 		}
 		// Check relative to executable (installed binaries)
 		if (libDir.empty()) {
-			std::error_code ec;
-			std::filesystem::path exePath = std::filesystem::canonical("/proc/self/exe", ec);
-			if (!ec) {
-				std::filesystem::path exeDir = exePath.parent_path();
-				std::filesystem::path installedLib = exeDir / ".." / "lib";
-				if (std::filesystem::exists(installedLib)) {
-					libDir = installedLib.string();
+			char exePathBuf[4096];
+			int len = exe_path_platform_get(exePathBuf, sizeof(exePathBuf));
+			if (len > 0 && static_cast<size_t>(len) < sizeof(exePathBuf)) {
+				std::error_code ec;
+				std::filesystem::path exePath = std::filesystem::canonical(exePathBuf, ec);
+				if (!ec) {
+					std::filesystem::path exeDir = exePath.parent_path();
+					std::filesystem::path installedLib = exeDir / ".." / "lib";
+					if (std::filesystem::exists(installedLib)) {
+						libDir = installedLib.string();
+					}
 				}
 			}
 		}

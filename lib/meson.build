@@ -1,6 +1,6 @@
 subdir('version')
-subdir('qc')
 subdir('qdrt')
+subdir('qc')
 subdir('llvmgen')
 subdir('qd')
 # qdbits is now pure Quadrate (no C library needed)

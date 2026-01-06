@@ -7,6 +7,20 @@
 #include <fstream>
 #include <functional>
 #include <iostream>
+
+// Platform abstractions
+extern "C" {
+#include "src/platform/exe_path_platform.h"
+}
+
+// Platform-specific data directory name
+// Haiku uses "data" instead of "share" for data files
+#ifdef __HAIKU__
+static constexpr const char* DATA_DIR_NAME = "data";
+#else
+static constexpr const char* DATA_DIR_NAME = "share";
+#endif
+
 #include <qc/ast.h>
 #include <qc/ast_node.h>
 #include <qc/ast_node_anonymous_function.h>
@@ -646,16 +660,23 @@ namespace Qd {
 			file.close();
 
 			// Try 6: Standard library relative to executable (for installed binaries)
-			// Get executable path and look for ../share/quadrate/<module>/
-			try {
-				std::filesystem::path exePath = std::filesystem::canonical("/proc/self/exe");
-				std::filesystem::path exeDir = exePath.parent_path();
-				std::filesystem::path shareDir = exeDir / ".." / "share" / "quadrate" / moduleName;
-				if (tryLoadModuleFromDirectory(shareDir.string(), moduleName)) {
-					return;
+			// Get executable path and look for ../<data>/quadrate/<module>/
+			// Note: DATA_DIR_NAME is "data" on Haiku, "share" on other platforms
+			{
+				char exePathBuf[4096];
+				int len = exe_path_platform_get(exePathBuf, sizeof(exePathBuf));
+				if (len > 0 && static_cast<size_t>(len) < sizeof(exePathBuf)) {
+					try {
+						std::filesystem::path exePath = std::filesystem::canonical(exePathBuf);
+						std::filesystem::path exeDir = exePath.parent_path();
+						std::filesystem::path shareDir = exeDir / ".." / DATA_DIR_NAME / "quadrate" / moduleName;
+						if (tryLoadModuleFromDirectory(shareDir.string(), moduleName)) {
+							return;
+						}
+					} catch (...) {
+						// Ignore errors reading executable path
+					}
 				}
-			} catch (...) {
-				// Ignore errors reading executable path
 			}
 
 			// Try 7: $HOME/quadrate directory

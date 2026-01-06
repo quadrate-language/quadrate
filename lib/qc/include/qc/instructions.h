@@ -43,9 +43,6 @@ namespace Qd {
 			"eq", "gt", "gte", "inc", "lt", "lte", "mod", "mul", "neg", "neq", "sub", "within",
 			// Bitwise operations
 			"and", "not", "or", "shl", "shr", "xor",
-			// Math library functions (imported by stdlib modules)
-			"abs", "acos", "asin", "atan", "cb", "cbrt", "ceil", "cos", "fac", "floor", "inv", "ln", "log10", "max",
-			"min", "pow", "round", "sin", "sq", "sqrt", "tan",
 			// Stack operations
 			"call", "clear", "depth", "drop", "drop2", "dup", "dup2", "dupd", "free", "len", "nip", "nipd", "nth",
 			"over", "over2", "overd", "pick", "roll", "rot", "swap", "swap2", "swapd", "tuck",
