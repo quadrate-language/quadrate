@@ -1,3 +1,4 @@
+# Common sources
 qdrt_sources = files(
 		'src/runtime.c',
 		'src/runtime_stack.c',
@@ -10,10 +11,16 @@ qdrt_sources = files(
 		'src/array.c',
 		'src/platform/thread.c',
 		'src/platform/mutex.c',
-		'src/platform/posix/exe_path_linux.c',
 		'src/platform/posix/process_posix.c',
 		'src/platform/posix/dynlib_posix.c',
 )
+
+# Platform-specific exe_path implementation
+if host_machine.system() == 'haiku'
+    qdrt_sources += files('src/platform/haiku/exe_path_haiku.c')
+else
+    qdrt_sources += files('src/platform/posix/exe_path_linux.c')
+endif
 
 qdrt_inc = include_directories('include')
 
