@@ -212,6 +212,27 @@ std::string resolveLocalPath(const std::string& path, const std::string& basePat
 	return fs::weakly_canonical(resolvedPath).string();
 }
 
+// Get current platform name for platform-specific config
+std::string getPlatformName() {
+#if defined(__HAIKU__)
+	return "haiku";
+#elif defined(__linux__)
+	return "linux";
+#elif defined(__APPLE__)
+	return "darwin";
+#elif defined(_WIN32)
+	return "windows";
+#elif defined(__FreeBSD__)
+	return "freebsd";
+#elif defined(__OpenBSD__)
+	return "openbsd";
+#elif defined(__NetBSD__)
+	return "netbsd";
+#else
+	return "unknown";
+#endif
+}
+
 // Parse native section from qd.json
 NativeConfig parseNativeConfig(const std::string& manifestPath) {
 	NativeConfig config;
@@ -224,11 +245,25 @@ NativeConfig parseNativeConfig(const std::string& manifestPath) {
 
 	json_t* native = json_object_get(root, "native");
 	if (native && json_is_object(native)) {
+		// Parse common link libraries
 		json_t* link = json_object_get(native, "link");
 		if (link && json_is_array(link)) {
 			size_t index;
 			json_t* value;
 			json_array_foreach(link, index, value) {
+				if (json_is_string(value)) {
+					config.link.push_back(json_string_value(value));
+				}
+			}
+		}
+
+		// Parse platform-specific link libraries (e.g., link_haiku, link_linux)
+		std::string platformKey = "link_" + getPlatformName();
+		json_t* platformLink = json_object_get(native, platformKey.c_str());
+		if (platformLink && json_is_array(platformLink)) {
+			size_t index;
+			json_t* value;
+			json_array_foreach(platformLink, index, value) {
 				if (json_is_string(value)) {
 					config.link.push_back(json_string_value(value));
 				}

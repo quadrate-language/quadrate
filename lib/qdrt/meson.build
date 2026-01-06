@@ -37,8 +37,14 @@ version_args = [
 cc = meson.get_compiler('c')
 m_dep = cc.find_library('m', required: false)
 
-# Dynamic library loading dependency (dl on POSIX systems)
-dl_dep = cc.find_library('dl', required: true)
+# Dynamic library loading dependency
+# - On Haiku: dlopen/dlsym are in libroot (linked by default)
+# - On Linux/BSD/etc: they're in libdl
+if host_machine.system() == 'haiku'
+    dl_dep = dependency('', required: false)  # Not needed, libroot is implicit
+else
+    dl_dep = cc.find_library('dl', required: true)
+endif
 
 # Shared library - public runtime API
 qdrt_shared = shared_library('qdrt',

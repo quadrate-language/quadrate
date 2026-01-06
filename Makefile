@@ -1,7 +1,7 @@
 BUILD_DIR_DEBUG   := build/debug
 BUILD_DIR_RELEASE := build/release
 
-MESON_FLAGS := -Dbuild_tests=true
+MESON_FLAGS := -Dbuild_tests=true -Db_pie=false
 
 PREFIX ?= /usr
 
