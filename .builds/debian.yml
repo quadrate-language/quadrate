@@ -4,11 +4,11 @@ secrets:
   - ea8ca0d9-1859-4db5-bb99-8f12baf60b59
 
 packages:
-  - clang-19
-  - libclang-rt-19-dev
+  - clang
+  - libclang-rt-dev
   - libsqlite3-dev
   - libssl-dev
-  - llvm-19-dev
+  - llvm-dev
   - meson
   - nodejs
   - npm
