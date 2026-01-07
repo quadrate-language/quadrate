@@ -12,26 +12,21 @@ Quadrate requires the following build tools:
 
 ### Installing Dependencies
 
-> **Note:** Arch Linux is currently the only tested and supported platform. Other platforms may work but are untested.
+> **Note:** Arch Linux, Debian and Haiku are currently the only tested and supported platforms. Other platforms may work but are untested.
 
 #### Arch Linux
 ```bash
-sudo pacman -S meson clang ninja llvm readline
+pacman -S meson clang ninja llvm readline
 ```
 
-#### Ubuntu/Debian
+#### Debian
 ```bash
-sudo apt install meson ninja-build clang llvm-dev libreadline-dev
+apt install meson clang libreadline-dev
 ```
 
-#### Fedora
+#### Haiku
 ```bash
-sudo dnf install meson ninja-build clang llvm-devel readline-devel
-```
-
-#### FreeBSD
-```bash
-pkg install meson ninja llvm readline
+pkgman install meson llvm21 llvm21_clang readline_devel
 ```
 
 ## Installation
@@ -44,14 +39,20 @@ Clone the repository and build:
 git clone https://git.sr.ht/~klahr/quadrate
 cd quadrate
 make release
-sudo make install
+make install
 ```
 
 This installs:
 
+#### Default Locations
 - Binaries to `/usr/bin/`
 - Libraries to `/usr/lib/`
 - Standard library to `/usr/share/quadrate/`
+
+#### Haiku Specific Locations
+- Binaries to `/boot/home/config/non-packaged/bin/`
+- Libraries to `/boot/home/config/non-packaged/lib/`
+- Standard library to `/boot/home/config/non-packaged/data/quadrate/`
 
 ### Verifying Installation
 

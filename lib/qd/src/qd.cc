@@ -258,6 +258,11 @@ void qd_build(qd_module* mod) {
 	}
 
 	if (mod->scripts.empty()) {
+		// If we have native functions but no scripts, just mark as compiled
+		if (!mod->native_functions.empty()) {
+			mod->compiled = true;
+			return;
+		}
 		fprintf(stderr, "qd_build: No scripts to compile for module '%s'\n", mod->name.c_str());
 		return;
 	}
@@ -598,7 +603,7 @@ void qd_execute(qd_context* ctx, const char* code) {
 			}
 
 			qd_module* mod = mod_it->second;
-			if (!mod->compiled || !mod->dl_handle) {
+			if (!mod->compiled) {
 				fprintf(stderr, "qd_execute: Module '%s' not compiled\n", module_name.c_str());
 				continue;
 			}

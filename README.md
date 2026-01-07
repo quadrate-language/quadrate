@@ -319,14 +319,12 @@ int main() {
     qd_module* utils = qd_get_module(ctx, "utils");
 
     // Register C function
-    qd_register_function(utils, "get_timestamp",
-        reinterpret_cast<void(*)()>(get_timestamp));
+    qd_register_function(utils, "get_timestamp", reinterpret_cast<void(*)()>(get_timestamp));
 
-    // Use it from Quadrate
-    qd_add_script(utils, "fn show_time() { get_timestamp print nl }");
     qd_build(utils);
 
-    qd_execute(ctx, "utils::show_time");
+    // Call native Quadrate function, and print the result
+    qd_execute(ctx, "utils::get_timestamp print nl");
 
     qd_free_context(ctx);
     return 0;
@@ -339,8 +337,7 @@ int main() {
 # Compile and link
 clang++ myapp.cc -o myapp -lqd -lqdrt
 
-# Run (ensure libraries are in path)
-export LD_LIBRARY_PATH=/usr/lib:$LD_LIBRARY_PATH
+# Run
 ./myapp
 ```
 
@@ -369,9 +366,8 @@ $ quad repl
 [5 3]> +
 [8]> dup
 [8 8]> *
-[64]> .
+[64]> print
 64
-[64]> clear
 []>
 ```
 
@@ -382,6 +378,10 @@ $ quad repl
 ### Code Formatter
 
 Keep your code consistent:
+
+```bash
+quad fmt myfile.qd
+```
 
 ```bash
 quadfmt myfile.qd          # Preview formatting
@@ -445,11 +445,11 @@ make examples
 # Format source code
 make format
 
-# Install to /usr (or PREFIX=/path/to/install)
-sudo make install
+# Install
+make install
 
 # Uninstall
-sudo make uninstall
+make uninstall
 
 # Clean build artifacts
 make clean
@@ -472,7 +472,7 @@ Quadrate generates full DWARF debug information:
 
 ```bash
 # Compile with debug symbols
-quadc myprogram.qd -g -o myprogram
+quad build -g -o myprogram myprogram.qd 
 
 # Debug with GDB
 gdb ./myprogram
@@ -540,11 +540,7 @@ All assertions are polymorphic—they work with integers, floats, strings, and p
 
 ```bash
 # Compile and run tests
-quadc --test myfile.qd
-
-# Compile tests to a binary
-quadc --test -o test_binary myfile.qd
-./test_binary
+quad test myfile_test.qd
 ```
 
 ### Example Output
@@ -638,41 +634,6 @@ fn main() {
 
 ---
 
-## Performance
-
-Quadrate compiles to native code with LLVM optimizations:
-
-- **Native compilation**: Compiles to machine code via LLVM backend
-- **Static dispatch**: No virtual calls, no dynamic lookup
-- **Inline optimizations**: Hot path operations are inlined
-- **No GC pauses**: Manual memory management where you need it
-- **Predictable performance**: No JIT warm-up, consistent timing
-
-**Performance characteristics**:
-- Stack-based execution model has overhead compared to register-based languages
-- Integer-heavy workloads show good performance with type specialization
-- Typically slower than C/C++ but faster than interpreted languages
-- See `benchmarks/` directory for detailed performance analysis
-
-*(Performance varies by workload. Profile your specific use case.)*
-
----
-
-## Project Structure
-
-```
-quadrate/
-├── cmd/          # Command-line tools (quadc, quadfmt, quadlsp, etc.)
-├── lib/
-│   ├── qc/       # Compiler frontend (parser, semantic analysis)
-│   ├── llvmgen/  # LLVM code generator (native compilation)
-│   ├── qdrt/     # Low-level runtime (stack, builtins)
-│   ├── qd/       # High-level embedding API
-│   └── qd*/      # Standard library modules (qdmath, qdstr, qdio, etc.)
-├── tests/        # Test suites
-└── examples/     # Example programs
-```
-
 ## Editor Support
 
 - **Neovim**: https://git.sr.ht/~klahr/quadrate.nvim
@@ -682,11 +643,11 @@ quadrate/
 
 ## Platform Support
 
-**Tested in CI:**
-- Linux x86_64 (Arch Linux, Debian)
+**Tested:**
+- Linux x86_64 (Arch Linux, Debian, Haiku)
 
 **Potentially Compatible:**
-- Linux aarch64, FreeBSD, Haiku, other Unix-like systems
+- Linux aarch64, FreeBSD, other Unix-like systems
 
 Contributions for testing on other platforms are welcome.
 

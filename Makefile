@@ -172,10 +172,8 @@ docs:
 		echo "⚠️  Warning: doxygen not found - skipping documentation generation" && \
 		echo "" && \
 		echo "To generate documentation, install doxygen and graphviz (optional, for diagrams):" && \
-		echo "  Arch Linux:    sudo pacman -S doxygen graphviz" && \
-		echo "  Ubuntu/Debian: sudo apt install doxygen graphviz" && \
-		echo "  Fedora:        sudo dnf install doxygen graphviz" && \
-		echo "  macOS:         brew install doxygen graphviz" && \
+		echo "  Arch Linux: sudo pacman -S doxygen graphviz" && \
+		echo "  Debian:     sudo apt install doxygen graphviz" && \
 		echo ""; \
 	else \
 		echo "Running doxygen..." && \
