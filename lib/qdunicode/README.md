@@ -6,7 +6,7 @@ Unicode utilities (`unicode::` module).
 
 Unicode character classification and transformation.
 
-## Key Functions
+## Key functions
 
 - `is_letter`, `is_digit`, `is_space` - Classification
 - `to_upper`, `to_lower` - Case conversion

@@ -6,7 +6,7 @@ Memory management (`mem::` module).
 
 Direct memory allocation and manipulation for low-level programming.
 
-## Key Functions
+## Key functions
 
 - `alloc`, `realloc` - Allocation
 - `get_byte`, `set_byte` - Byte access

@@ -1,4 +1,4 @@
-# Sierpinski Triangle
+# Sierpinski triangle
 
 Prints a Sierpinski triangle pattern.
 

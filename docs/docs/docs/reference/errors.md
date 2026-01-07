@@ -1,4 +1,4 @@
-# Error Handling
+# Error handling
 
 Built-in operations for error handling.
 
@@ -13,7 +13,7 @@ Built-in operations for error handling.
 
 ---
 
-## Result Constants
+## Result constants
 
 Quadrate provides two builtin constants for result handling:
 
@@ -28,7 +28,7 @@ Each module defines specific error codes starting at 2. For example:
 
 ---
 
-## Signaling Panics
+## Signaling panics
 
 ### panic
 
@@ -42,7 +42,7 @@ Signals a panic with a message and code. Used in fallible functions.
 
 ---
 
-## Fallible Functions
+## Fallible functions
 
 Functions that can fail are marked with `!` after the signature:
 
@@ -56,7 +56,7 @@ fn divide(a:i64 b:i64 -- result:i64)! {
 }
 ```
 
-## Handling Errors
+## Handling errors
 
 ### With switch (recommended)
 
@@ -97,7 +97,7 @@ Handle success/failure without matching specific errors:
 }
 ```
 
-## Calling Fallible Functions
+## Calling fallible functions
 
 ### With switch (matching error codes)
 
@@ -170,7 +170,7 @@ fn compute(x:i64 -- result:i64)! {
 
 ---
 
-## Error Codes
+## Error codes
 
 By convention:
 
@@ -198,7 +198,7 @@ str::ErrAlloc        // 3 - Memory allocation failed
 
 ---
 
-## Best Practices
+## Best practices
 
 1. **Use switch for specific errors** - Match module error codes
 2. **Use if-else for simple cases** - When you don't need specific codes

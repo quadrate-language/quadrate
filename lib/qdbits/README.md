@@ -6,7 +6,7 @@ Bitwise operations (`bits::` module).
 
 Bitwise logical and shift operations on integers.
 
-## Key Functions
+## Key functions
 
 - `and`, `or`, `xor`, `not` - Logical operations
 - `lshift`, `rshift` - Shift operations

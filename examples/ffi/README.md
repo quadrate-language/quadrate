@@ -1,4 +1,4 @@
-# FFI Example
+# FFI example
 
 Demonstrates how to call C code from Quadrate using the Foreign Function Interface (FFI).
 
@@ -7,7 +7,7 @@ Demonstrates how to call C code from Quadrate using the Foreign Function Interfa
 - `greet.c` - C library with a `hello` function that prints a greeting
 - `main.qd` - Quadrate program that imports and calls the C function
 
-## How FFI Works
+## How FFI works
 
 1. Write a C function with signature `qd_exec_result <function>(qd_context* ctx)`
 2. Use `qd_stack_pop()` to get arguments, `qd_stack_push_*()` to return values
@@ -31,14 +31,14 @@ QUADRATE_LIBDIR=.:../../dist/lib QUADRATE_ROOT=../../dist/share/quadrate \
     ../../build/debug/cmd/quadc/quadc main.qd -r
 ```
 
-## Expected Output
+## Expected output
 
 ```
 Hello, World!
 Hello, Quadrate!
 ```
 
-## Function Naming
+## Function naming
 
 The C function name must match the function name in the import declaration:
 
@@ -50,7 +50,7 @@ import "libgreet.a" as "greet" {
 
 The compiler generates a wrapper `usr_greet_hello` that calls your `hello` function.
 
-## Stack Operations
+## Stack operations
 
 FFI functions manipulate the Quadrate stack directly:
 
@@ -78,7 +78,7 @@ qd_exec_result hello(qd_context* ctx) {
 }
 ```
 
-## Available Types
+## Available types
 
 | Quadrate | C Field | Type Constant |
 |----------|---------|---------------|
@@ -87,7 +87,7 @@ qd_exec_result hello(qd_context* ctx) {
 | `str` | `elem.value.s` (`qd_string*`) | `QD_STACK_TYPE_STR` |
 | `ptr` | `elem.value.p` (`void*`) | `QD_STACK_TYPE_PTR` |
 
-## Required Headers
+## Required headers
 
 ```c
 #include <qdrt/context.h>      // qd_context

@@ -1,4 +1,4 @@
-# Bitwise Operations
+# Bitwise operations
 
 Operations for bit manipulation.
 
@@ -15,7 +15,7 @@ Operations for bit manipulation.
 
 ---
 
-## Logical Operations
+## Logical operations
 
 ### and
 
@@ -59,7 +59,7 @@ Computes bitwise NOT (ones' complement).
 
 ---
 
-## Shift Operations
+## Shift operations
 
 ### << (shl)
 
@@ -85,9 +85,9 @@ Shifts a right by n bits (arithmetic shift).
 
 ---
 
-## Common Uses
+## Common uses
 
-### Setting Bits
+### Setting bits
 
 ```qd
 const FlagRead = 1
@@ -98,7 +98,7 @@ const FlagExec = 4
 FlagRead FlagWrite or -> permissions
 ```
 
-### Checking Bits
+### Checking bits
 
 ```qd
 permissions FlagRead and 0 != if {
@@ -106,13 +106,13 @@ permissions FlagRead and 0 != if {
 }
 ```
 
-### Clearing Bits
+### Clearing bits
 
 ```qd
 permissions FlagWrite not and -> permissions
 ```
 
-### Toggling Bits
+### Toggling bits
 
 ```qd
 permissions FlagExec xor -> permissions

@@ -1,8 +1,8 @@
-# Tutorial: Hello World
+# Tutorial: hello world
 
 This tutorial walks through your first Quadrate program in detail.
 
-## Creating the Program
+## Creating the program
 
 Create a file called `hello.qd`:
 
@@ -12,7 +12,7 @@ fn main() {
 }
 ```
 
-## Running It
+## Running it
 
 ```bash
 quad run hello.qd
@@ -23,11 +23,11 @@ Output:
 Hello, World!
 ```
 
-## Understanding the Code
+## Understanding the code
 
 Let's break down each part:
 
-### The Function Declaration
+### The function declaration
 
 ```qd
 fn main() {
@@ -39,7 +39,7 @@ fn main() {
 
 Functions that take or return values use a **stack signature** with `--` to separate inputs from outputs. For example, `fn add(a:i64 b:i64 -- sum:i64)` takes two integers and returns one. We'll see this in the [Stack Tutorial](tutorial-stack.md).
 
-### The String
+### The string
 
 ```qd
 "Hello, World!"
@@ -47,7 +47,7 @@ Functions that take or return values use a **stack signature** with `--` to sepa
 
 This **pushes** the string onto the stack. In Quadrate, writing a literal value puts it on the stack.
 
-### The Print
+### The print
 
 ```qd
 print
@@ -55,7 +55,7 @@ print
 
 This **pops** the top value from the stack and prints it.
 
-### The Newline
+### The newline
 
 ```qd
 nl
@@ -63,7 +63,7 @@ nl
 
 Prints a newline character.
 
-## The Stack
+## The stack
 
 Quadrate is **stack-based**. When you write a value, it goes onto a stack. When you call an operation, it takes values from the stack and puts results back.
 
@@ -80,9 +80,9 @@ The [Stack Tutorial](tutorial-stack.md) covers this in detail. For now, just kno
 - Values get **pushed** onto the stack
 - Operations **pop** their inputs and **push** their outputs
 
-## Exploring Further
+## Exploring further
 
-### Multiple Prints
+### Multiple prints
 
 ```qd
 fn main() {
@@ -92,7 +92,7 @@ fn main() {
 }
 ```
 
-### Using Variables
+### Using variables
 
 ```qd
 fn main() {
@@ -101,7 +101,7 @@ fn main() {
 }
 ```
 
-### Adding Numbers
+### Adding numbers
 
 ```qd
 fn main() {
@@ -110,7 +110,7 @@ fn main() {
 }
 ```
 
-### A Simple Function
+### A simple function
 
 ```qd
 fn greet(name:str -- ) {
@@ -130,28 +130,28 @@ Hello, Alice!
 Hello, Bob!
 ```
 
-## Compilation Options
+## Compilation options
 
-### Compile Only
+### Compile only
 
 ```bash
 quadc hello.qd -o hello
 ./hello
 ```
 
-### Verbose Output
+### Verbose output
 
 ```bash
 quadc --verbose hello.qd
 ```
 
-### View Generated IR
+### View generated IR
 
 ```bash
 quadc --dump-ir hello.qd
 ```
 
-## Next Steps
+## Next steps
 
 - **Next:** [Stack Tutorial](tutorial-stack.md) - Deep dive into stack-based programming
 - [Standard Library](stdlib/index.md) - Available modules and functions

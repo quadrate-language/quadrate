@@ -16,7 +16,7 @@ Communicates via stdin/stdout using JSON-RPC.
 - Auto-completion (built-in instructions)
 - Document formatting
 
-## Editor Integration
+## Editor integration
 
 Configure your editor to use `quadlsp` as the language server for `.qd` files.
 

@@ -1,4 +1,4 @@
-# Foreign Function Interface (FFI)
+# Foreign function interface (FFI)
 
 Quadrate can call C functions directly through its Foreign Function Interface. This allows you to:
 
@@ -7,11 +7,11 @@ Quadrate can call C functions directly through its Foreign Function Interface. T
 - Interface with system APIs
 - Create custom native modules
 
-## Basic Example
+## Basic example
 
 Let's create a simple C function that Quadrate can call.
 
-### Step 1: Write the C Code
+### Step 1: write the C code
 
 Create `greet.c`:
 
@@ -34,14 +34,14 @@ qd_exec_result hello(qd_context* ctx) {
 }
 ```
 
-### Step 2: Compile to a Static Library
+### Step 2: compile to a static library
 
 ```bash
 cc -c greet.c -o greet.o -I/usr/include
 ar rcs libgreet.a greet.o
 ```
 
-### Step 3: Import in Quadrate
+### Step 3: import in Quadrate
 
 Create `main.qd`:
 
@@ -55,7 +55,7 @@ fn main() {
 }
 ```
 
-### Step 4: Run
+### Step 4: run
 
 ```bash
 quad run main.qd
@@ -66,7 +66,7 @@ Output:
 Hello, World!
 ```
 
-## Function Signature
+## Function signature
 
 All FFI functions must have this signature:
 
@@ -76,15 +76,15 @@ qd_exec_result function_name(qd_context* ctx)
 
 The function name in C must match the name declared in the Quadrate import block. The compiler generates a wrapper with the `usr_<module>_<function>` naming convention.
 
-## Required Header
+## Required header
 
 ```c
 #include <qdrt/ffi.h>  // All FFI types and functions
 ```
 
-## Stack Operations
+## Stack operations
 
-### Popping Values
+### Popping values
 
 ```c
 qd_stack_element_t elem;
@@ -114,7 +114,7 @@ switch (elem.type) {
 }
 ```
 
-### Pushing Values
+### Pushing values
 
 ```c
 // Push an integer
@@ -130,7 +130,7 @@ qd_stack_push_str(ctx->st, "hello");
 qd_stack_push_ptr(ctx->st, some_pointer);
 ```
 
-## Type Mapping
+## Type mapping
 
 | Quadrate | C Type | Stack Field | Type Constant |
 |----------|--------|-------------|---------------|
@@ -139,7 +139,7 @@ qd_stack_push_ptr(ctx->st, some_pointer);
 | `str` | `qd_string*` | `elem.value.s` | `QD_STACK_TYPE_STR` |
 | `ptr` | `void*` | `elem.value.p` | `QD_STACK_TYPE_PTR` |
 
-## Complete Example: Math Operations
+## Complete example: math operations
 
 Here's a more complete example with multiple functions and return values.
 
@@ -196,7 +196,7 @@ fn main() {
 }
 ```
 
-## Error Handling
+## Error handling
 
 Return a non-zero error code to indicate failure:
 
@@ -233,7 +233,7 @@ fn main() {
 }
 ```
 
-## Memory Management
+## Memory management
 
 **Important:** Always release strings after use:
 
@@ -250,7 +250,7 @@ if (elem.type == QD_STACK_TYPE_STR) {
 
 Failure to release strings will cause memory leaks.
 
-## Build Integration
+## Build integration
 
 For larger projects, add FFI libraries to your build system:
 
@@ -282,7 +282,7 @@ mylib = static_library('mylib', 'mylib.c',
 4. **Use descriptive error messages** - they help debugging
 5. **Keep functions small** - easier to test and maintain
 
-## See Also
+## See also
 
 - [Memory Management](memory.md) - Understanding Quadrate's memory model
 - [Function Pointers](function-pointers.md) - Passing functions as values

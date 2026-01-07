@@ -1,4 +1,4 @@
-# Pygments Quadrate Lexer
+# Pygments Quadrate lexer
 
 Syntax highlighting for the [Quadrate](https://git.sr.ht/~klahr/quadrate) programming language.
 
@@ -16,7 +16,7 @@ pip install -e .
 
 ## Usage
 
-### In Markdown (MkDocs)
+### In markdown (mkdocs)
 
 ````markdown
 ```qd
@@ -26,7 +26,7 @@ fn main() {
 ```
 ````
 
-### Command Line
+### Command line
 
 ```bash
 pygmentize -l quadrate -f html example.qd

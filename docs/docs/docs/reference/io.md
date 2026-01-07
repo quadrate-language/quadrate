@@ -86,7 +86,7 @@ Arguments are pushed onto the stack with the count on top.
 
 ---
 
-## Common Patterns
+## Common patterns
 
 ### Print with newline
 

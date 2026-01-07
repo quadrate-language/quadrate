@@ -1,19 +1,19 @@
-# Security Policy
+# Security policy
 
-## Reporting a Vulnerability
+## Reporting a vulnerability
 
 If you discover a security vulnerability in Quadrate, please report it responsibly:
 
 1. **Email**: Send details to ~klahr/quadrate@lists.sr.ht with subject prefix `[SECURITY]`
 2. **Do not** open public issues for security vulnerabilities
 
-## Response Timeline
+## Response timeline
 
 - **Acknowledgment**: Within 48 hours
 - **Initial assessment**: Within 7 days
 - **Fix timeline**: Depends on severity, typically within 30 days
 
-## Supported Versions
+## Supported versions
 
 Only the latest release receives security updates.
 
@@ -31,7 +31,7 @@ Security issues in:
 - Standard library modules
 - Language server (quadlsp)
 
-## Out of Scope
+## Out of scope
 
 - Vulnerabilities in user-written Quadrate code
 - Issues in third-party dependencies (report to their maintainers)

@@ -1,4 +1,4 @@
-# Comparison Operations
+# Comparison operations
 
 Operations that compare values and return boolean results (0 or 1).
 
@@ -92,7 +92,7 @@ Outputs 1 if a is greater than or equal to b, 0 otherwise.
 
 ---
 
-## Range Check
+## Range check
 
 ### within
 
@@ -107,7 +107,7 @@ Outputs 1 if val is in [low, high), 0 otherwise.
 
 ---
 
-## Word Forms
+## Word forms
 
 Both symbol and word forms are available:
 

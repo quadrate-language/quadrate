@@ -1,8 +1,8 @@
-# Standard Library
+# Standard library
 
 The Quadrate standard library provides modules for common programming tasks.
 
-## Using Modules
+## Using modules
 
 Import a module with `use`:
 
@@ -16,7 +16,7 @@ fn main() {
 }
 ```
 
-## Fallible Functions
+## Fallible functions
 
 Functions marked with `!` can fail and require error handling:
 
@@ -28,7 +28,7 @@ fn main() {
 }
 ```
 
-## Available Modules
+## Available modules
 
 | Module | Description |
 |--------|-------------|

@@ -6,7 +6,7 @@ Formatted I/O (`fmt::` module).
 
 Printf-style formatted output and input.
 
-## Key Functions
+## Key functions
 
 - `printf` - Formatted print to stdout
 - `sprintf` - Formatted string creation

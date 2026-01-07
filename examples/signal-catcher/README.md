@@ -1,4 +1,4 @@
-# Signal Catcher
+# Signal catcher
 
 Demonstrates graceful signal handling with Ctrl+C.
 

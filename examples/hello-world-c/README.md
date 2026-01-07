@@ -1,4 +1,4 @@
-# Hello World (C Embedding)
+# Hello world (C embedding)
 
 Hello World using the C embedding API.
 

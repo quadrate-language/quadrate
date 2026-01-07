@@ -17,7 +17,7 @@ CC=clang CXX=clang++ meson setup build/fuzz --buildtype=debug -Dbuild_fuzz=true
 meson compile -C build/fuzz
 ```
 
-## Running the Fuzzer
+## Running the fuzzer
 
 ```bash
 # Basic run (uses seed corpus)
@@ -45,7 +45,7 @@ The `corpus/` directory contains seed inputs for the fuzzer:
 
 The fuzzer will mutate these inputs to find crashes.
 
-## Reproducing Crashes
+## Reproducing crashes
 
 When the fuzzer finds a crash, it saves the input to a file. To reproduce:
 
@@ -54,7 +54,7 @@ When the fuzzer finds a crash, it saves the input to a file. To reproduce:
 ./build/fuzz/fuzz/fuzz_parser crash-<hash>
 ```
 
-## Adding New Fuzz Targets
+## Adding new fuzz targets
 
 1. Create a new `fuzz_<target>.cc` file
 2. Implement `LLVMFuzzerTestOneInput(const uint8_t* data, size_t size)`

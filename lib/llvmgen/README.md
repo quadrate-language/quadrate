@@ -6,7 +6,7 @@ LLVM code generator for Quadrate.
 
 Generates LLVM IR from the Quadrate AST. Used for JIT compilation in embedded mode and produces optimized native code.
 
-## Key Components
+## Key components
 
 - **generator** - AST to LLVM IR translation
 - Runtime function declarations

@@ -6,7 +6,7 @@ String manipulation functions (`str::` module).
 
 String operations including length, search, concatenation, and case conversion.
 
-## Key Functions
+## Key functions
 
 - `len`, `concat`, `substring` - Basic operations
 - `contains`, `starts_with`, `ends_with`, `index_of` - Search

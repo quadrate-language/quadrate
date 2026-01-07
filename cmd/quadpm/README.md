@@ -21,7 +21,7 @@ quadpm get https://github.com/user/lib@v1.0.0
 quadpm list
 ```
 
-## Package Location
+## Package location
 
 Packages are installed to:
 1. `$QUADRATE_PATH/` (if set)

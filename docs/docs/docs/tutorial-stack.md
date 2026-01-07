@@ -1,8 +1,8 @@
-# Tutorial: Understanding the Stack
+# Tutorial: understanding the stack
 
 Quadrate is a **stack-based** programming language. If you're coming from languages like Python, JavaScript, or C, this concept might be new to you. This tutorial will help you understand how stacks work and why they make Quadrate powerful.
 
-## What is a Stack?
+## What is a stack?
 
 A stack is a data structure where you can only add or remove items from the top - like a stack of plates. The last item you put on is the first one you can take off (LIFO - Last In, First Out).
 
@@ -11,9 +11,9 @@ In Quadrate, all computation happens on the stack:
 - **Push**: Put a value on top of the stack
 - **Pop**: Remove and use the value on top
 
-## Basic Stack Operations
+## Basic stack operations
 
-### Pushing Values
+### Pushing values
 
 When you write a literal value, it gets pushed onto the stack:
 
@@ -25,7 +25,7 @@ fn main() {
 }
 ```
 
-### Printing Values
+### Printing values
 
 The `print` instruction pops a value and prints it:
 
@@ -56,9 +56,9 @@ fn main() {
 }
 ```
 
-## Stack Manipulation
+## Stack manipulation
 
-### `dup` - Duplicate
+### `dup` - duplicate
 
 Copy the top value:
 
@@ -69,7 +69,7 @@ fn main() {
 }
 ```
 
-### `drop` - Discard
+### `drop` - discard
 
 Remove the top value:
 
@@ -82,7 +82,7 @@ fn main() {
 }
 ```
 
-### `swap` - Swap Top Two
+### `swap` - swap top two
 
 Exchange the two top values:
 
@@ -95,7 +95,7 @@ fn main() {
 }
 ```
 
-### `over` - Copy Second
+### `over` - copy second
 
 Copy the second value to the top:
 
@@ -109,7 +109,7 @@ fn main() {
 }
 ```
 
-### `rot` - Rotate Top Three
+### `rot` - rotate top three
 
 Rotate the top three values:
 
@@ -123,7 +123,7 @@ fn main() {
 }
 ```
 
-## Local Variables
+## Local variables
 
 While stack manipulation is powerful, sometimes you need named values. Use `->` to pop into a local variable:
 
@@ -137,7 +137,7 @@ fn main() {
 }
 ```
 
-## Function Signatures
+## Function signatures
 
 Functions declare their stack effect with `(inputs -- outputs)`:
 
@@ -160,7 +160,7 @@ fn main() {
 }
 ```
 
-### Reading Stack Effects
+### Reading stack effects
 
 The signature `fn foo(a:i64 b:i64 -- c:i64)` means:
 
@@ -178,7 +178,7 @@ Quadrate has these basic types:
 | `str` | String | `"hello"` |
 | `ptr` | Pointer (for structs, arrays) | - |
 
-### Type Casting
+### Type casting
 
 Convert between types with the `cast<T>` operator:
 
@@ -190,7 +190,7 @@ fn main() {
 }
 ```
 
-## Comparison Operators
+## Comparison operators
 
 Comparisons pop two values and push 1 (true) or 0 (false):
 
@@ -205,7 +205,7 @@ fn main() {
 }
 ```
 
-## Booleans and Logic
+## Booleans and logic
 
 Quadrate uses `true` (1) and `false` (0). Any non-zero value is truthy in conditionals:
 
@@ -225,9 +225,9 @@ fn main() {
 
 Note: The `not` instruction is bitwise NOT, not logical NOT. Use `0 ==` for logical negation.
 
-## Control Flow
+## Control flow
 
-### If Statements
+### If statements
 
 `if` pops a condition and executes the block if true:
 
@@ -246,7 +246,7 @@ fn main() {
 }
 ```
 
-### If as Expression
+### If as expression
 
 `if` can leave a value on the stack:
 
@@ -256,7 +256,7 @@ fn main() {
 }
 ```
 
-### For Loops
+### For loops
 
 `for` takes start, end, step:
 
@@ -279,7 +279,7 @@ fn main() {
 }
 ```
 
-### Loop and Break
+### Loop and break
 
 Infinite loop with `break`:
 
@@ -296,7 +296,7 @@ fn main() {
 }
 ```
 
-## The `ctx` Block
+## The `ctx` block
 
 The `ctx` block creates an isolated computation context:
 
@@ -315,7 +315,7 @@ fn main() {
 }
 ```
 
-## Practical Example: Factorial
+## Practical example: factorial
 
 ```qd
 fn factorial(n:i64 -- result:i64) {
@@ -332,7 +332,7 @@ fn main() {
 }
 ```
 
-## Practical Example: Fibonacci
+## Practical example: fibonacci
 
 ```qd
 fn fib(n:i64 -- result:i64) {
@@ -363,7 +363,7 @@ Key concepts:
 5. **Function signatures** (`fn name(inputs -- outputs)`) declare stack effects
 6. **Control flow** uses values from the stack
 
-## Next Steps
+## Next steps
 
 - **Next:** [Structs Tutorial](tutorial-structs.md) - Working with structured data
 - [Standard Library](stdlib/index.md) - Available modules and functions

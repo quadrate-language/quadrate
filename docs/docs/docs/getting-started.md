@@ -1,4 +1,4 @@
-# Getting Started
+# Getting started
 
 This guide will help you install Quadrate and write your first program.
 
@@ -10,7 +10,7 @@ Quadrate requires the following build tools:
 - **Ninja** (build backend)
 - **Clang/LLVM** (compiler toolchain)
 
-### Installing Dependencies
+### Installing dependencies
 
 > **Note:** Arch Linux, Debian and Haiku are currently the only tested and supported platforms. Other platforms may work but are untested.
 
@@ -31,7 +31,7 @@ pkgman install meson llvm21 llvm21_clang readline_devel
 
 ## Installation
 
-### From Source
+### From source
 
 Clone the repository and build:
 
@@ -44,23 +44,23 @@ make install
 
 This installs:
 
-#### Default Locations
+#### Default locations
 - Binaries to `/usr/bin/`
 - Libraries to `/usr/lib/`
 - Standard library to `/usr/share/quadrate/`
 
-#### Haiku Specific Locations
+#### Haiku specific locations
 - Binaries to `/boot/home/config/non-packaged/bin/`
 - Libraries to `/boot/home/config/non-packaged/lib/`
 - Standard library to `/boot/home/config/non-packaged/data/quadrate/`
 
-### Verifying Installation
+### Verifying installation
 
 ```bash
 quad version
 ```
 
-## Your First Program
+## Your first program
 
 Create a file called `hello.qd`:
 
@@ -81,7 +81,7 @@ Output:
 Hello, World!
 ```
 
-### What Just Happened?
+### What just happened?
 
 - `fn main()` declares a function called `main` with no inputs and no outputs
 - `"Hello, World!"` pushes a string onto the stack
@@ -105,7 +105,7 @@ For most tasks, `quad` is all you need. It automatically finds your source files
 
 See [Toolchain](toolchain.md) for documentation on all available tools including the compiler (`quadc`), formatter (`quadfmt`), linter (`quadlint`), and more.
 
-## Editor Support
+## Editor support
 
 ### Neovim
 
@@ -115,7 +115,7 @@ Tree-sitter grammar and LSP support: [quadrate.nvim](https://git.sr.ht/~klahr/qu
 
 Syntax highlighting and LSP support: [quadrate-vscode](https://git.sr.ht/~klahr/quadrate-vscode)
 
-## Next Steps
+## Next steps
 
 Continue learning Quadrate:
 

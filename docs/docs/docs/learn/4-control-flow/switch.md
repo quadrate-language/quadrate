@@ -1,8 +1,8 @@
-# Switch Statements
+# Switch statements
 
 Handle multiple conditions cleanly with `switch`.
 
-## Basic Switch
+## Basic switch
 
 ```qd
 fn day_name(day:i64 -- name:str) {
@@ -40,7 +40,7 @@ fn main() {
 }
 ```
 
-## The Default Case
+## The default case
 
 Use `_` for the default (fallback) case:
 
@@ -67,7 +67,7 @@ fn main() {
 }
 ```
 
-## When to Use Switch vs If-Else
+## When to use switch vs If-Else
 
 Use **switch** when:
 
@@ -131,9 +131,9 @@ fn get_color_if(code:i64 -- name:str) {
 }
 ```
 
-## Common Patterns
+## Common patterns
 
-### Menu Handler
+### Menu handler
 
 ```qd
 fn handle_menu(choice:i64 -- ) {
@@ -158,7 +158,7 @@ fn handle_menu(choice:i64 -- ) {
 }
 ```
 
-### State Machine
+### State machine
 
 ```qd
 fn next_state(current:i64 input:i64 -- next:i64) {
@@ -192,6 +192,6 @@ fn next_state(current:i64 input:i64 -- next:i64) {
 }
 ```
 
-## What's Next?
+## What's next?
 
 Now let's explore [Data Structures](../5-data-structures/arrays.md) - arrays, structs, and more.

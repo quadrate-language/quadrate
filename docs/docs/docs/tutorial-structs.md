@@ -1,8 +1,8 @@
-# Tutorial: Structs
+# Tutorial: structs
 
 Structs let you group related data together. This tutorial covers defining structs, creating instances, accessing fields, and memory management.
 
-## Defining a Struct
+## Defining a struct
 
 Use `struct` to define a new type:
 
@@ -20,7 +20,7 @@ Field syntax is `name:type`. Supported types:
 - `str` - string
 - `ptr` - pointer (for nested structs)
 
-## Creating Instances
+## Creating instances
 
 Use the struct name followed by field assignments in braces:
 
@@ -36,7 +36,7 @@ fn main() {
 }
 ```
 
-## Accessing Fields
+## Accessing fields
 
 Use `@fieldname` to access a field:
 
@@ -63,7 +63,7 @@ fn main() {
 }
 ```
 
-## Modifying Fields
+## Modifying fields
 
 Use `.fieldname` to set a field value:
 
@@ -84,11 +84,11 @@ fn main() {
 
 The syntax is: `value struct .fieldname`
 
-## Memory Management
+## Memory management
 
 Structs are allocated on the heap with reference counting.
 
-### Automatic Cleanup
+### Automatic cleanup
 
 Structs are automatically freed when they go out of scope:
 
@@ -104,7 +104,7 @@ fn main() {
 }
 ```
 
-### Manual Cleanup
+### Manual cleanup
 
 You can also free structs explicitly:
 
@@ -116,7 +116,7 @@ fn main() {
 }
 ```
 
-## Constants with Structs
+## Constants with structs
 
 Use `const` for configuration values:
 
@@ -140,7 +140,7 @@ fn main() {
 }
 ```
 
-## Struct Methods
+## Struct methods
 
 Define methods using receiver syntax - the struct is automatically bound to a local variable:
 
@@ -172,7 +172,7 @@ fn main() {
 }
 ```
 
-### Methods with Parameters
+### Methods with parameters
 
 Methods can take additional parameters after the receiver:
 
@@ -193,7 +193,7 @@ fn main() {
 }
 ```
 
-### Returning Structs from Functions
+### Returning structs from functions
 
 When returning structs from factory functions, use the struct type name (not `ptr`) as the return type to enable method calls on the returned value:
 
@@ -219,7 +219,7 @@ fn main() {
 }
 ```
 
-## Functions with Struct Parameters
+## Functions with struct parameters
 
 You can also pass structs to regular functions:
 
@@ -244,7 +244,7 @@ fn main() {
 }
 ```
 
-## Arrays of Structs
+## Arrays of structs
 
 Create arrays of struct pointers:
 
@@ -272,7 +272,7 @@ fn main() {
 }
 ```
 
-## Nested Structs
+## Nested structs
 
 Use `ptr` fields for nested structures:
 
@@ -301,7 +301,7 @@ fn main() {
 }
 ```
 
-## Complete Example: Vector Math
+## Complete example: vector math
 
 ```qd
 use math
@@ -362,7 +362,7 @@ Key concepts:
 6. **Call methods** with `struct methodName` (receiver is popped from stack)
 7. **Memory is managed** automatically via reference counting
 
-## Next Steps
+## Next steps
 
 - **Next:** [Error Handling](tutorial-errors.md) - Working with fallible functions
 - [Standard Library](stdlib/index.md) - Available modules and functions

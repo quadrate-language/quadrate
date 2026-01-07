@@ -6,7 +6,7 @@ Testing utilities (`testing::` module).
 
 Assertion functions for writing tests.
 
-## Key Functions
+## Key functions
 
 - `assert_eq` - Assert values equal
 - `assert_ne` - Assert values not equal

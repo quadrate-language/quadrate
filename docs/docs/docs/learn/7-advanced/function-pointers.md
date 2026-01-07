@@ -1,8 +1,8 @@
-# Function Pointers
+# Function pointers
 
 Function pointers let you store and call functions dynamically.
 
-## Getting a Function Pointer
+## Getting a function pointer
 
 Use `&` to get a pointer to a function:
 
@@ -17,7 +17,7 @@ fn main() {
 }
 ```
 
-## Calling Function Pointers
+## Calling function pointers
 
 Use `call` to invoke a function pointer:
 
@@ -32,7 +32,7 @@ fn main() {
 }
 ```
 
-## Passing Functions as Arguments
+## Passing functions as arguments
 
 ```qd
 fn apply(x:i64 f:ptr -- result:i64) {
@@ -51,7 +51,7 @@ fn main() {
 }
 ```
 
-## Storing in Arrays
+## Storing in arrays
 
 ```qd
 fn addition(a:i64 b:i64 -- r:i64) {
@@ -107,7 +107,7 @@ fn main() {
 }
 ```
 
-## Higher-Order Functions
+## Higher-order functions
 
 ### Map
 
@@ -192,7 +192,7 @@ fn main() {
 }
 ```
 
-## Storing in Structs
+## Storing in structs
 
 ```qd
 struct Handler {
@@ -225,7 +225,7 @@ fn main() {
 }
 ```
 
-## Function Tables
+## Function tables
 
 Dispatch based on a selector:
 
@@ -263,6 +263,6 @@ fn cmd_quit() {
 }
 ```
 
-## What's Next?
+## What's next?
 
 Learn about [Anonymous Functions](anonymous-functions.md) for inline function definitions, or [Memory Management](memory.md) for manual memory control.

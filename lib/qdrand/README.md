@@ -6,7 +6,7 @@ Random number generation (`rand::` module).
 
 Pseudorandom number generation with optional seeding.
 
-## Key Functions
+## Key functions
 
 - `new` - Create new generator
 - `with_seed` - Create seeded generator

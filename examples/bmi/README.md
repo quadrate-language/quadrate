@@ -1,4 +1,4 @@
-# BMI Calculator
+# BMI calculator
 
 Simple body mass index calculator.
 

@@ -2,9 +2,9 @@
 
 Arrays store multiple values of the same type.
 
-## Creating Arrays
+## Creating arrays
 
-### Array Literals
+### Array literals
 
 ```qd
 fn main() {
@@ -13,7 +13,7 @@ fn main() {
 }
 ```
 
-### Empty Arrays with Size
+### Empty arrays with size
 
 ```qd
 fn main() {
@@ -23,7 +23,7 @@ fn main() {
 }
 ```
 
-## Accessing Elements
+## Accessing elements
 
 Use `nth` to read elements (0-indexed):
 
@@ -37,7 +37,7 @@ fn main() {
 }
 ```
 
-## Setting Elements
+## Setting elements
 
 Use `set` to write elements:
 
@@ -53,7 +53,7 @@ fn main() {
 }
 ```
 
-## Array Length
+## Array length
 
 Use `len` to get the length:
 
@@ -67,9 +67,9 @@ fn main() {
 }
 ```
 
-## Iterating Arrays
+## Iterating arrays
 
-### With for Loop
+### With for loop
 
 ```qd
 fn main() {
@@ -81,7 +81,7 @@ fn main() {
 }
 ```
 
-## Array Operations
+## Array operations
 
 ### Sum
 
@@ -100,7 +100,7 @@ fn main() {
 }
 ```
 
-### Find Maximum
+### Find maximum
 
 ```qd
 fn max(arr:ptr -- result:i64) {
@@ -119,7 +119,7 @@ fn main() {
 }
 ```
 
-### Count Matches
+### Count matches
 
 ```qd
 fn count_if(arr:ptr value:i64 -- count:i64) {
@@ -138,7 +138,7 @@ fn main() {
 }
 ```
 
-## Array of Floats
+## Array of floats
 
 ```qd
 fn main() {
@@ -150,7 +150,7 @@ fn main() {
 }
 ```
 
-## Array of Strings
+## Array of strings
 
 ```qd
 fn main() {
@@ -162,7 +162,7 @@ fn main() {
 }
 ```
 
-## Copying Arrays
+## Copying arrays
 
 Arrays are references. To copy:
 
@@ -187,9 +187,9 @@ fn main() {
 }
 ```
 
-## Common Patterns
+## Common patterns
 
-### Initialize with Value
+### Initialize with value
 
 ```qd
 fn fill(arr:ptr value:i64 -- ) {
@@ -209,7 +209,7 @@ fn main() {
 }
 ```
 
-### Reverse Array
+### Reverse array
 
 ```qd
 fn reverse(arr:ptr -- ) {
@@ -236,7 +236,7 @@ fn main() {
 }
 ```
 
-### Filter Array
+### Filter array
 
 ```qd
 fn filter_positive(arr:ptr -- result:ptr) {
@@ -270,6 +270,6 @@ fn main() {
 }
 ```
 
-## What's Next?
+## What's next?
 
 Learn about [Structs](structs.md) to create custom data types.

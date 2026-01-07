@@ -1,8 +1,8 @@
-# Calling Functions
+# Calling functions
 
 In Quadrate, you call functions by simply writing their name.
 
-## Basic Calls
+## Basic calls
 
 ```qd
 fn double(x:i64 -- result:i64) {
@@ -16,7 +16,7 @@ fn main() {
 
 No parentheses needed! Just push the arguments, then write the function name.
 
-## Chaining Functions
+## Chaining functions
 
 Functions naturally chain together:
 
@@ -41,7 +41,7 @@ fn main() {
 
 Each function consumes its inputs and produces outputs for the next.
 
-## Multiple Arguments
+## Multiple arguments
 
 Push all arguments before calling:
 
@@ -58,7 +58,7 @@ fn main() {
 Stack before call: `[1, 2, 3]`
 Stack after call: `[6]`
 
-## Multiple Outputs
+## Multiple outputs
 
 Capture multiple outputs:
 
@@ -80,7 +80,7 @@ fn main() {
 }
 ```
 
-## Using Outputs
+## Using outputs
 
 You can immediately use outputs:
 
@@ -102,7 +102,7 @@ fn main() {
 }
 ```
 
-## Calling Library Functions
+## Calling library functions
 
 Library functions work the same way:
 
@@ -116,7 +116,7 @@ fn main() {
 }
 ```
 
-## Recursive Calls
+## Recursive calls
 
 Functions can call themselves:
 
@@ -135,7 +135,7 @@ fn main() {
 }
 ```
 
-## Mutual Recursion
+## Mutual recursion
 
 Functions can call each other:
 
@@ -164,7 +164,7 @@ fn main() {
 }
 ```
 
-## Order of Evaluation
+## Order of evaluation
 
 Operations execute left to right:
 
@@ -184,7 +184,7 @@ fn main() {
 }
 ```
 
-## Nested Calls
+## Nested calls
 
 Functions can call other functions:
 
@@ -202,6 +202,6 @@ fn main() {
 }
 ```
 
-## What's Next?
+## What's next?
 
 Learn how to organize code into [Modules](modules.md) for larger projects.

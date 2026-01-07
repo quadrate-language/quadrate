@@ -1,8 +1,8 @@
-# Language Reference
+# Language reference
 
 This section documents all Quadrate keywords and built-in instructions.
 
-## Quick Navigation
+## Quick navigation
 
 - [Keywords](keywords.md) - Language keywords like `fn`, `if`, `for`, `struct`
 - [Stack Operations](stack.md) - `dup`, `drop`, `swap`, `rot`, etc.
@@ -27,7 +27,7 @@ Quadrate has four basic types:
 | `str` | String | `"hello"` |
 | `ptr` | Pointer | Struct instances, arrays |
 
-## Stack Signatures
+## Stack signatures
 
 Function signatures use `(inputs -- outputs)` notation:
 
@@ -38,7 +38,7 @@ fn add(a:i64 b:i64 -- sum:i64) { + }
 - **Before `--`**: Values consumed from stack (bottom to top)
 - **After `--`**: Values produced on stack (bottom to top)
 
-## Fallible Functions
+## Fallible functions
 
 Functions that can fail are marked with `!`:
 

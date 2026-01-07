@@ -1,4 +1,4 @@
-# Web Server
+# Web server
 
 Simple HTTP server using the `net::` module.
 

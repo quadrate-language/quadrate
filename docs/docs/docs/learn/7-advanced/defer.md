@@ -2,7 +2,7 @@
 
 The `defer` statement schedules code to run when the function exits.
 
-## Basic Usage
+## Basic usage
 
 ```qd
 fn main() {
@@ -22,7 +22,7 @@ fn main() {
 
 The deferred code runs after the function body completes.
 
-## Guaranteed Cleanup
+## Guaranteed cleanup
 
 Defers run even when errors occur:
 
@@ -47,7 +47,7 @@ fn process_file(path:str -- )! {
 }
 ```
 
-## LIFO Order
+## LIFO order
 
 Multiple defers execute in reverse order (last in, first out):
 
@@ -69,7 +69,7 @@ fn main() {
 // first
 ```
 
-## Resource Management
+## Resource management
 
 Use defer to manage resources:
 
@@ -87,7 +87,7 @@ fn with_buffer() {
 }
 ```
 
-## Multiple Resources
+## Multiple resources
 
 ```qd
 use io
@@ -127,7 +127,7 @@ fn copy_file(src:str dst:str -- )! {
 
 Resources are released in reverse order of acquisition.
 
-## Defer with Variables
+## Defer with variables
 
 Defers capture the current value of variables:
 
@@ -146,7 +146,7 @@ fn main() {
 // Output: x = 42
 ```
 
-## Common Patterns
+## Common patterns
 
 ### Transaction
 
@@ -179,7 +179,7 @@ fn traced_operation(name:str -- ) {
 }
 ```
 
-## Defer vs Finally
+## Defer vs finally
 
 Unlike try/finally in other languages, defer is simpler:
 
@@ -206,7 +206,7 @@ fn example() {
 }
 ```
 
-## Nested Functions
+## Nested functions
 
 Defers only apply to their own function:
 
@@ -238,6 +238,6 @@ fn main() {
 // outer cleanup
 ```
 
-## What's Next?
+## What's next?
 
 Learn about [Context](context.md) for passing data through your program.

@@ -1,8 +1,8 @@
-# How the Stack Works
+# How the stack works
 
 The stack is the core concept in Quadrate. Everything revolves around it.
 
-## What is a Stack?
+## What is a stack?
 
 A stack is like a pile of plates:
 
@@ -10,7 +10,7 @@ A stack is like a pile of plates:
 - You can only remove plates from the **top**
 - The last plate you put on is the first one you take off (LIFO)
 
-## Push and Pop
+## Push and pop
 
 In Quadrate:
 
@@ -28,7 +28,7 @@ fn main() {
 }
 ```
 
-## Visualizing the Stack
+## Visualizing the stack
 
 Throughout this documentation, we show stacks like `[1, 2, 3]` where **3 is on top** (rightmost).
 
@@ -40,7 +40,7 @@ Stack: [1, 2, 3]
 	1  <-- bottom
 ```
 
-## Operations Consume and Produce
+## Operations consume and produce
 
 Every operation has a **stack effect**:
 
@@ -57,7 +57,7 @@ Examples:
 | `dup` | 1 | 2 | Copies top value |
 | `drop` | 1 | 0 | Discards top value |
 
-## Stack Effects in Signatures
+## Stack effects in signatures
 
 Function signatures declare stack effects with `(inputs -- outputs)`:
 
@@ -83,7 +83,7 @@ Benefits of stack-based programming:
 3. **Composability** - Functions chain naturally
 4. **Simple mental model** - Just push and pop
 
-## A Complete Example
+## A complete example
 
 Let's trace through a calculation:
 
@@ -105,6 +105,6 @@ Step by step:
 | `print` | Pop and print 20 | [] |
 | `nl` | Print newline | [] |
 
-## What's Next?
+## What's next?
 
 Now let's learn [Stack Manipulation](manipulation.md) - operations to rearrange values on the stack.

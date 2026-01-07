@@ -6,7 +6,7 @@ String builder (`sb::` module).
 
 Efficient string construction for building strings incrementally.
 
-## Key Functions
+## Key functions
 
 - `new` - Create builder
 - `append`, `append_char` - Add content

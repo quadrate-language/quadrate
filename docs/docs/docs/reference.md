@@ -1,4 +1,4 @@
-# Language Reference
+# Language reference
 
 This page documents all Quadrate keywords and built-in instructions.
 
@@ -293,7 +293,7 @@ false if { } else { "no" print }
 
 ---
 
-## Built-in Instructions
+## Built-in instructions
 
 ### BITWISE OPERATIONS
 

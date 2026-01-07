@@ -1,4 +1,4 @@
-# Error Handling
+# Error handling
 
 Demonstrates fallible functions and error handling.
 

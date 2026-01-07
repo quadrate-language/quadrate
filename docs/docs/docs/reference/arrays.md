@@ -1,4 +1,4 @@
-# Array Operations
+# Array operations
 
 Operations for creating and manipulating arrays.
 
@@ -15,7 +15,7 @@ Operations for creating and manipulating arrays.
 
 ---
 
-## Creating Arrays
+## Creating arrays
 
 ### make<T>
 
@@ -29,7 +29,7 @@ Creates an array of size pointers.
 
 ---
 
-## Array Access
+## Array access
 
 ### len
 
@@ -87,7 +87,7 @@ arr free
 
 ---
 
-## Array Literals
+## Array literals
 
 Create arrays with literal syntax:
 

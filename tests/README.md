@@ -11,7 +11,7 @@ tests/
 └── run_tests.sh  # Unified test runner
 ```
 
-## Running Tests
+## Running tests
 
 ```bash
 # All tests
@@ -27,7 +27,7 @@ bash tests/run_tests.sh formatter
 bash tests/run_tests.sh valgrind
 ```
 
-## Adding Tests
+## Adding tests
 
 1. Create `tests/qd/category/test_name.qd`
 2. Run manually: `quadc -r tests/qd/category/test_name.qd`

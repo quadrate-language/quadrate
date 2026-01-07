@@ -1,8 +1,8 @@
-# Example: File Processing
+# Example: file processing
 
 Working with files in Quadrate.
 
-## Reading a File
+## Reading a file
 
 ```qd
 use io
@@ -53,7 +53,7 @@ fn main() {
 }
 ```
 
-## Writing a File
+## Writing a file
 
 ```qd
 use io
@@ -91,7 +91,7 @@ fn main() {
 }
 ```
 
-## Line-by-Line Processing
+## Line-by-line processing
 
 ```qd
 use io
@@ -141,7 +141,7 @@ fn main() {
 }
 ```
 
-## Word Count
+## Word count
 
 ```qd
 use io
@@ -198,7 +198,7 @@ fn main() {
 }
 ```
 
-## Copy File
+## Copy file
 
 ```qd
 use io
@@ -251,13 +251,13 @@ fn main() {
 }
 ```
 
-## Key Concepts
+## Key concepts
 
 1. **defer for cleanup** - Files and buffers always cleaned up
 2. **Error handling** - Every I/O operation can fail
 3. **Buffer management** - Read in chunks for efficiency
 4. **String operations** - Split, parse, transform
 
-## What's Next?
+## What's next?
 
 See [Language Reference](../../reference.md)

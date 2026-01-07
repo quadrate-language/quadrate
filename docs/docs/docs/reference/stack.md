@@ -1,4 +1,4 @@
-# Stack Operations
+# Stack operations
 
 Operations for manipulating values on the stack.
 
@@ -144,7 +144,7 @@ Rotates the top three values, moving third to top.
 
 ---
 
-## Other Operations
+## Other operations
 
 ### nip
 

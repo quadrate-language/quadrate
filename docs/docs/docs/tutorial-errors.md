@@ -1,8 +1,8 @@
-# Tutorial: Error Handling
+# Tutorial: error handling
 
 Quadrate has a robust error handling system built around **fallible functions**. This tutorial covers how to define, call, and handle errors in your code.
 
-## Fallible Functions
+## Fallible functions
 
 A fallible function is one that might fail. Mark it with `!` after the signature:
 
@@ -14,7 +14,7 @@ fn division(a:i64 b:i64 -- result:i64)! {
 
 The `!` tells the compiler this function can return an error.
 
-## Signaling Errors
+## Signaling errors
 
 Use the `panic` instruction to signal an error:
 
@@ -34,7 +34,7 @@ The `panic` instruction takes:
 
 When a function panics, it does **not** produce any output values.
 
-## Calling Fallible Functions
+## Calling fallible functions
 
 When you call a fallible function, you **must** handle the error with `if`:
 
@@ -52,14 +52,14 @@ fn main() {
 
 The compiler enforces this - you cannot ignore errors.
 
-## How It Works
+## How it works
 
 After calling a fallible function:
 
 - **Success**: The `if` branch executes, function outputs are on stack
 - **Error**: The `else` branch executes, function outputs are NOT on stack
 
-## Using switch Instead of if
+## Using switch instead of if
 
 You can also use `switch` to handle fallible function results:
 
@@ -98,7 +98,7 @@ fn main() {
 }
 ```
 
-## Complete Example
+## Complete example
 
 ```qd
 fn division(a:i64 b:i64 -- result:i64)! {
@@ -132,7 +132,7 @@ Error: Cannot divide by zero!
 10 / 2 = 5
 ```
 
-## Propagating Errors
+## Propagating errors
 
 To propagate an error up to the caller, handle it with `if/else` and call `panic`:
 
@@ -148,7 +148,7 @@ fn divide_and_double(a:i64 b:i64 -- result:i64)! {
 
 If `division` fails, the `else` branch runs and `divide_and_double` panics with its own error.
 
-## Aborting on Error
+## Aborting on error
 
 Use `!` when calling a fallible function to **abort the program** if it fails:
 
@@ -161,11 +161,11 @@ fn divide_and_double(a:i64 b:i64 -- result:i64)! {
 
 **Warning**: The `!` operator does NOT propagate errors - it terminates the entire program. Only use it when crashing is acceptable (e.g., during initialization or in scripts).
 
-## Standard Library Errors
+## Standard library errors
 
 Many standard library functions are fallible. Common examples:
 
-### String Operations
+### String operations
 
 ```qd
 use str
@@ -205,7 +205,7 @@ fn main() {
 }
 ```
 
-## The `defer` Statement
+## The `defer` statement
 
 Use `defer` to ensure cleanup happens even when errors occur:
 
@@ -237,9 +237,9 @@ fn read_file(path:str -- content:str)! {
 
 Defers execute in LIFO order (last registered, first executed).
 
-## Error Handling Patterns
+## Error handling patterns
 
-### Pattern 1: Handle and Continue
+### Pattern 1: handle and continue
 
 ```qd
 fn safe_divide(a:i64 b:i64 -- result:i64) {
@@ -251,7 +251,7 @@ fn safe_divide(a:i64 b:i64 -- result:i64) {
 }
 ```
 
-### Pattern 2: Early Return on Error
+### Pattern 2: early return on error
 
 ```qd
 fn process(value:i64 -- result:i64)! {
@@ -269,7 +269,7 @@ fn process(value:i64 -- result:i64)! {
 }
 ```
 
-### Pattern 3: Collect Multiple Results
+### Pattern 3: collect multiple results
 
 ```qd
 fn try_all( -- success_count:i64) {
@@ -310,7 +310,7 @@ Key concepts:
 6. **Use `defer`** for cleanup that runs regardless of errors
 7. **The compiler enforces** error handling - you can't ignore errors
 
-## Next Steps
+## Next steps
 
 - **Next:** [Modules Tutorial](tutorial-modules.md) - Creating reusable modules
 - [Standard Library](stdlib/index.md) - See which functions are fallible

@@ -2,7 +2,7 @@
 
 Constants define fixed values that cannot change.
 
-## Defining Constants
+## Defining constants
 
 ```qd
 const Pi = 3.14159265358979
@@ -12,7 +12,7 @@ const Greeting = "Hello, World!"
 
 Constants are defined at the top level, outside functions.
 
-## Using Constants
+## Using constants
 
 ```qd
 const Pi = 3.14159265358979
@@ -33,7 +33,7 @@ fn main() {
 }
 ```
 
-## Constant Types
+## Constant types
 
 Constants can be any basic type:
 
@@ -53,7 +53,7 @@ const Version = "1.0.0"
 const AppName = "MyApp"
 ```
 
-## Constants vs Variables
+## Constants vs variables
 
 | Feature | Constant | Variable |
 |---------|----------|----------|
@@ -62,7 +62,7 @@ const AppName = "MyApp"
 | Scope | Global | Function |
 | Syntax | `const Name = value` | `value -> name` |
 
-## Naming Convention
+## Naming convention
 
 Use PascalCase for constants:
 
@@ -72,7 +72,7 @@ const DefaultTimeout = 30
 const ApiBaseUrl = "https://api.example.com"
 ```
 
-## Constants for Configuration
+## Constants for configuration
 
 ```qd
 const DebugMode = 1
@@ -90,7 +90,7 @@ fn main() {
 }
 ```
 
-## Constants for Magic Numbers
+## Constants for magic numbers
 
 Replace magic numbers with named constants:
 
@@ -115,7 +115,7 @@ fn is_valid_port(port:i64 -- valid:i64) {
 }
 ```
 
-## Constants for Error Codes
+## Constants for error codes
 
 ```qd
 const ErrNone = 0
@@ -145,7 +145,7 @@ fn handle_error(code:i64 -- ) {
 }
 ```
 
-## Constants for Bit Flags
+## Constants for bit flags
 
 ```qd
 const FlagRead = 1
@@ -170,7 +170,7 @@ fn main() {
 }
 ```
 
-## Computed Constants
+## Computed constants
 
 Constants must be literal values. For computed values, use functions:
 
@@ -187,7 +187,7 @@ fn main() {
 }
 ```
 
-## Module Constants
+## Module constants
 
 Constants can be accessed from other modules:
 
@@ -206,7 +206,7 @@ fn main() {
 }
 ```
 
-## Best Practices
+## Best practices
 
 1. **Name clearly**: `MaxConnections` not `MC`
 2. **Group related constants**: Keep HTTP status codes together
@@ -225,6 +225,6 @@ const ReadTimeout = 60
 const WriteTimeout = 60
 ```
 
-## What's Next?
+## What's next?
 
 Learn about [Error Handling](../6-error-handling/basics.md) to write robust code.

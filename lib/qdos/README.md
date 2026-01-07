@@ -6,7 +6,7 @@ Operating system interface (`os::` module).
 
 System-level operations including process control, environment, and filesystem.
 
-## Key Functions
+## Key functions
 
 - `exit` - Terminate program
 - `system` - Execute shell command

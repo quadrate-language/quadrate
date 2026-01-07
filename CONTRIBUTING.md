@@ -2,7 +2,7 @@
 
 Thank you for your interest in contributing to Quadrate! We welcome contributions of all kinds, including bug reports, feature requests, documentation improvements, and code contributions.
 
-## Building the Project
+## Building the project
 
 ### Prerequisites
 - Meson 0.55 or higher
@@ -12,7 +12,7 @@ Thank you for your interest in contributing to Quadrate! We welcome contribution
 - clang-format (for code formatting)
 - valgrind (optional, for memory leak testing)
 
-### Build Commands
+### Build commands
 
 ```bash
 # Debug build (with sanitizers enabled)
@@ -41,7 +41,7 @@ Build outputs are placed in the `dist/` directory:
 
 Intermediate build files are in `build/debug/` or `build/release/`.
 
-## Running Tests
+## Running tests
 
 ```bash
 # Run all tests
@@ -53,7 +53,7 @@ make valgrind
 
 Tests are located in `lib/*/tests/` directories and use Meson's built-in test framework.
 
-## Code Style
+## Code style
 
 Quadrate follows a consistent code style enforced by `.clang-format`:
 
@@ -66,7 +66,7 @@ Quadrate follows a consistent code style enforced by `.clang-format`:
 - **Line length**: 120 characters maximum
 - **Pointer/Reference alignment**: Left (`int* ptr`, not `int *ptr`)
 
-### Formatting Your Code
+### Formatting your code
 
 Format your code before submitting:
 
@@ -75,7 +75,7 @@ Format your code before submitting:
 make format
 ```
 
-## Project Structure
+## Project structure
 
 ```
 quadrate/
@@ -109,7 +109,7 @@ lib/name/
 └── tests/         # Unit tests
 ```
 
-## Compiler Warnings
+## Compiler warnings
 
 All warnings are treated as errors (`-Werror`). The build uses comprehensive warning flags including:
 - `-Wall -Wextra -Wpedantic`
@@ -118,11 +118,11 @@ All warnings are treated as errors (`-Werror`). The build uses comprehensive war
 
 Ensure your code compiles without warnings.
 
-## Submitting Contributions
+## Submitting contributions
 
 Quadrate is hosted on [SourceHut](https://sr.ht/~klahr/quadrate). We use email-based workflows:
 
-### Sending Patches
+### Sending patches
 
 1. Make your changes in a local branch
 2. Commit with clear, descriptive messages
@@ -134,7 +134,7 @@ git send-email --to=~klahr/quadrate@lists.sr.ht HEAD^
 
 If you're new to `git send-email`, see [git-send-email.io](https://git-send-email.io) for setup instructions.
 
-### Commit Messages
+### Commit messages
 
 Write clear commit messages:
 
@@ -148,7 +148,7 @@ Explain what changed and why, not how (the diff shows how).
 - Reference issues if applicable
 ```
 
-### Before Submitting
+### Before submitting
 
 - [ ] Code compiles without warnings (`make debug` or `make release`)
 - [ ] Tests pass (`make tests`)
@@ -156,7 +156,7 @@ Explain what changed and why, not how (the diff shows how).
 - [ ] New features include tests
 - [ ] Public API changes are documented
 
-## Reporting Issues
+## Reporting issues
 
 Report bugs and request features via the [issue tracker](https://todo.sr.ht/~klahr/quadrate) or by sending email to the mailing list.
 

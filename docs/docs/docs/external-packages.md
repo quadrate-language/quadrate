@@ -1,4 +1,4 @@
-# External Packages
+# External packages
 
 The following modules have been moved out of the core standard library and are now available as separate packages. Install them using `quadpm`:
 
@@ -6,7 +6,7 @@ The following modules have been moved out of the core standard library and are n
 quadpm install <package-name>
 ```
 
-## Available Packages
+## Available packages
 
 | Package | Description | Install |
 |---------|-------------|---------|
@@ -44,7 +44,7 @@ fn main() {
 }
 ```
 
-## Package Management
+## Package management
 
 ```bash
 # Install a package
@@ -63,6 +63,6 @@ quadpm update json
 quadpm remove json
 ```
 
-## Creating Packages
+## Creating packages
 
 See the [Creating Modules](tutorial-modules.md) tutorial for information on creating your own packages.

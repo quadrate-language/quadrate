@@ -2,7 +2,7 @@
 
 Quadrate is a stack-based programming language for people who want to understand exactly what their code is doing.
 
-## The Philosophy
+## The philosophy
 
 Most programming languages hide complexity behind abstractions. Variables, objects, and implicit conversions make code easier to write but harder to reason about. Where did that value come from? What happens when this function is called?
 
@@ -18,7 +18,7 @@ fn double(x:i64 -- result:i64) {
 
 This function takes one integer and leaves one integer. No hidden inputs, no side effects, no surprises.
 
-## The Heritage
+## The heritage
 
 Stack-based programming has a rich history:
 
@@ -28,7 +28,7 @@ Stack-based programming has a rich history:
 
 Quadrate builds on these foundations while adding modern conveniences: static types, LLVM compilation, and a complete development toolchain.
 
-## Design Principles
+## Design principles
 
 **Explicit over implicit.** If something happens, you should see it in the code.
 
@@ -38,7 +38,7 @@ Quadrate builds on these foundations while adding modern conveniences: static ty
 
 **Complete over minimal.** Ship the formatter, linter and LSP.
 
-## Source Code
+## Source code
 
 Quadrate is open source and developed in the open:
 
@@ -46,7 +46,7 @@ Quadrate is open source and developed in the open:
 
 Contributions, bug reports, and feedback are welcome. The project uses SourceHut for hosting and mailing lists for discussion.
 
-## Built With
+## Built with
 
 Quadrate wouldn't exist without these projects:
 

@@ -1,4 +1,4 @@
-# Values and Types
+# Values and types
 
 Quadrate has four basic types. Understanding them is essential.
 
@@ -40,7 +40,7 @@ fn main() {
 }
 ```
 
-### Escape Sequences
+### Escape sequences
 
 | Escape | Meaning |
 |--------|---------|
@@ -86,7 +86,7 @@ fn main() {
 
 Any non-zero value is considered true in conditionals.
 
-## Type in Function Signatures
+## Type in function signatures
 
 When you write functions, you specify types:
 
@@ -106,6 +106,6 @@ The signature `(a:i64 b:i64 -- sum:i64)` means:
 - Two inputs: integers `a` and `b`
 - One output: integer `sum`
 
-## What's Next?
+## What's next?
 
 Now let's learn about [Operators](operators.md) to do things with these values.

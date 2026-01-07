@@ -1,8 +1,8 @@
-# Context Blocks (ctx)
+# Context blocks (ctx)
 
 Context blocks execute code in an isolated environment while preserving the parent stack.
 
-## What is a Context Block?
+## What is a context block?
 
 A `ctx` block creates a copy of the current context (including the stack), executes statements in isolation, and optionally outputs a value to the parent.
 
@@ -16,7 +16,7 @@ Stack effect: `(S -- S r)` where `S` is preserved and `r` is the optional output
 
 **Note**: Strings are deep-copied, but pointers (including struct pointers) are shallow-copied. Both parent and child will reference the same struct instances.
 
-## Basic Usage
+## Basic usage
 
 ```qd
 fn main() {
@@ -43,7 +43,7 @@ Output:
 1
 ```
 
-## Stack Isolation
+## Stack isolation
 
 The parent stack is completely isolated from modifications inside the `ctx` block:
 
@@ -70,9 +70,9 @@ Output:
 100
 ```
 
-## Copy Semantics
+## Copy semantics
 
-### Strings (Deep Copy)
+### Strings (deep copy)
 
 Strings are deep-copied, so modifications in child don't affect parent:
 
@@ -95,7 +95,7 @@ modified
 original
 ```
 
-### Pointers and Structs (Shallow Copy)
+### Pointers and structs (shallow copy)
 
 Pointers are shallow-copied - parent and child share the same memory:
 
@@ -126,7 +126,7 @@ Output:
 
 If you need isolation for structs, create a new instance inside the `ctx` block.
 
-## Chained Context Blocks
+## Chained context blocks
 
 Context blocks can be chained for multi-step computations:
 
@@ -155,7 +155,7 @@ Output:
 30
 ```
 
-## With Control Flow
+## With control flow
 
 Control flow works normally inside context blocks:
 
@@ -177,9 +177,9 @@ fn main() {
 }
 ```
 
-## Use Cases
+## Use cases
 
-### Safe Computation
+### Safe computation
 
 Compute a value without affecting the current stack:
 
@@ -197,7 +197,7 @@ fn compute_average(arr:ptr -- avg:f64) {
 }
 ```
 
-### Temporary Workspace
+### Temporary workspace
 
 Use the copied stack as temporary workspace:
 
@@ -217,7 +217,7 @@ fn process( -- result:i64) {
 }
 ```
 
-### Conditional Results
+### Conditional results
 
 Output different values based on conditions:
 
@@ -238,7 +238,7 @@ fn classify(x:i64 -- category:str) {
 }
 ```
 
-## Key Points
+## Key points
 
 1. `ctx { }` creates an isolated copy of the entire context
 2. The parent stack is completely preserved
@@ -247,6 +247,6 @@ fn classify(x:i64 -- category:str) {
 5. Pointers/structs are shallow-copied (shared)
 6. Stack effect: `(S -- S)` or `(S -- S r)` if outputting a value
 
-## What's Next?
+## What's next?
 
 Learn about [Function Pointers](function-pointers.md) for dynamic dispatch.

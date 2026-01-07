@@ -1,8 +1,8 @@
-# Hello World
+# Hello world
 
 Let's write your first Quadrate program.
 
-## Your First Program
+## Your first program
 
 Create a file called `hello.qd`:
 
@@ -24,9 +24,9 @@ Output:
 Hello, World!
 ```
 
-## Breaking It Down
+## Breaking it down
 
-### The Function
+### The function
 
 ```qd
 fn main() {
@@ -37,7 +37,7 @@ fn main() {
 - `()` is the **stack signature** (more on this later)
 - `{` starts the function body
 
-### The String
+### The string
 
 ```qd
 "Hello, World!"
@@ -84,7 +84,7 @@ fn main() {
 }
 ```
 
-## Multiple Prints
+## Multiple prints
 
 You can print multiple things:
 
@@ -102,7 +102,7 @@ Output:
 Hello, World!
 ```
 
-## Printing Numbers
+## Printing numbers
 
 Numbers work the same way:
 
@@ -120,6 +120,6 @@ Output:
 3.14
 ```
 
-## What's Next?
+## What's next?
 
 Now that you can print things, let's learn about [Values and Types](values-types.md).

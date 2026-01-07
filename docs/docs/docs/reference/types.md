@@ -1,4 +1,4 @@
-# Type Casting
+# Type casting
 
 Operations for converting between types.
 
@@ -32,9 +32,9 @@ Converts a value to the specified type using the `cast<T>` syntax.
 
 ---
 
-## Type System
+## Type system
 
-### Basic Types
+### Basic types
 
 | Type | Description | Size |
 |------|-------------|------|
@@ -44,7 +44,7 @@ Converts a value to the specified type using the `cast<T>` syntax.
 | `ptr` | Pointer | 8 bytes |
 | `bool` | Boolean (alias for i64) | 8 bytes |
 
-### Type Declarations
+### Type declarations
 
 In function signatures:
 
@@ -54,11 +54,11 @@ fn process(x:i64 y:f64 name:str data:ptr -- result:i64) {
 }
 ```
 
-### Type Checking
+### Type checking
 
 Types are checked at compile time. The compiler verifies stack effects match declared signatures.
 
-### Implicit Conversions
+### Implicit conversions
 
 Quadrate does not perform implicit type conversions. Use explicit casts:
 

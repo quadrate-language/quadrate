@@ -1,8 +1,8 @@
-# Stack Manipulation
+# Stack manipulation
 
 These operations rearrange values on the stack without changing them.
 
-## dup - Duplicate
+## dup - duplicate
 
 Copy the top value:
 
@@ -22,7 +22,7 @@ fn main() {
 }
 ```
 
-## drop - Discard
+## drop - discard
 
 Remove the top value:
 
@@ -37,7 +37,7 @@ fn main() {
 
 Use `drop` to discard values you don't need.
 
-## swap - Exchange
+## swap - exchange
 
 Swap the top two values:
 
@@ -60,7 +60,7 @@ fn main() {
 }
 ```
 
-## over - Copy Second
+## over - copy second
 
 Copy the second value to the top:
 
@@ -74,7 +74,7 @@ fn main() {
 }
 ```
 
-## rot - Rotate Three
+## rot - rotate three
 
 Rotate the top three values (third moves to top):
 
@@ -88,7 +88,7 @@ fn main() {
 }
 ```
 
-## nip - Remove Second
+## nip - remove second
 
 Remove the second value:
 
@@ -102,7 +102,7 @@ fn main() {
 
 `nip` is equivalent to `swap drop`.
 
-## tuck - Copy Under
+## tuck - copy under
 
 Copy the top value under the second:
 
@@ -116,7 +116,7 @@ fn main() {
 }
 ```
 
-## Two-Element Variants
+## Two-element variants
 
 Operations with `2` suffix work on pairs:
 
@@ -128,11 +128,11 @@ fn main() {
 }
 ```
 
-## Deep Stack Access
+## Deep stack access
 
 For values deeper in the stack:
 
-### pick - Copy nth Value
+### pick - copy nth value
 
 ```qd
 fn main() {
@@ -144,7 +144,7 @@ fn main() {
 
 Index 0 is the top, 1 is second, etc.
 
-### roll - Move nth Value
+### roll - move nth value
 
 ```qd
 fn main() {
@@ -155,9 +155,9 @@ fn main() {
 }
 ```
 
-## Utility Operations
+## Utility operations
 
-### depth - Stack Size
+### depth - stack size
 
 ```qd
 fn main() {
@@ -166,7 +166,7 @@ fn main() {
 }
 ```
 
-### clear - Empty Stack
+### clear - empty stack
 
 ```qd
 fn main() {
@@ -176,7 +176,7 @@ fn main() {
 }
 ```
 
-## Quick Reference
+## Quick reference
 
 | Op | Before | After | Description |
 |----|--------|-------|-------------|
@@ -188,6 +188,6 @@ fn main() {
 | `nip` | [a, b] | [b] | Remove second |
 | `tuck` | [a, b] | [b, a, b] | Copy top under |
 
-## What's Next?
+## What's next?
 
 Stack manipulation can get complex. Let's learn about [Local Variables](local-variables.md) for when you need to name values.

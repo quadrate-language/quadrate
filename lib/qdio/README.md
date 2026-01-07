@@ -6,7 +6,7 @@ File I/O operations (`io::` module).
 
 File opening, reading, writing, and standard I/O operations.
 
-## Key Functions
+## Key functions
 
 - `open`, `close` - File handle management
 - `read`, `write` - Data transfer

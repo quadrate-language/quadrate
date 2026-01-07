@@ -1,8 +1,8 @@
-# Tutorial: Creating Distributable Modules
+# Tutorial: creating distributable modules
 
 This tutorial covers creating reusable modules that can be shared and installed by others. You'll learn the complete workflow from creating a module to publishing it.
 
-## Module Structure
+## Module structure
 
 A distributable module has this structure:
 
@@ -19,7 +19,7 @@ my-module/
 		helper.c
 ```
 
-## Step 1: Create the Module Directory
+## Step 1: create the module directory
 
 Create a new directory for your module:
 
@@ -29,7 +29,7 @@ cd qd-mymodule
 git init
 ```
 
-## Step 2: Write module.qd
+## Step 2: write module.qd
 
 Create `module.qd` with your module's functions. Mark public functions with `pub`:
 
@@ -69,7 +69,7 @@ Key points:
 - Functions without `pub` are private to the module
 - Add doc comments with `///` for each public function
 
-## Step 3: Create qd.json
+## Step 3: create qd.json
 
 Create the module manifest `qd.json`. The format is based on npm's package.json for familiarity:
 
@@ -97,7 +97,7 @@ fn main() {
 }
 ```
 
-## Step 4: Add Examples
+## Step 4: add examples
 
 Create an `examples/` directory with usage examples:
 
@@ -118,12 +118,12 @@ fn main() {
 }
 ```
 
-## Step 5: Add README.md
+## Step 5: add README.md
 
 Create `README.md` with documentation:
 
 ```markdown
-# mymodule - Math Utilities for Quadrate
+# mymodule - math utilities for Quadrate
 
 Additional math functions for Quadrate programs.
 
@@ -144,7 +144,7 @@ fn main() {
 }
 ```
 
-## API Reference
+## API reference
 
 ### `mymodule::square(x:i64 -- result:i64)`
 Returns x squared.
@@ -163,7 +163,7 @@ Returns 1 if x is odd, 0 otherwise.
 MIT
 ```
 
-## Step 6: Test Your Module
+## Step 6: test your module
 
 During development, use the `-I` flag to tell the compiler where to find your module:
 
@@ -183,7 +183,7 @@ You can specify multiple `-I` paths if your module depends on other local module
 quadc -I . -I ../other-module -r examples/simple.qd
 ```
 
-## Step 7: Publish
+## Step 7: publish
 
 Commit and push to a Git repository:
 
@@ -206,17 +206,17 @@ Or with a specific version tag:
 quadpm get https://git.sr.ht/~yourname/qd-mymodule@1.0.0
 ```
 
-## Adding C Code (FFI)
+## Adding C code (FFI)
 
 For performance-critical code or system integration, you can add C functions to your module.
 
-### Step 1: Create src/ Directory
+### Step 1: create src/ directory
 
 ```bash
 mkdir src
 ```
 
-### Step 2: Write the C Code
+### Step 2: write the C code
 
 Create `src/helper.c`:
 
@@ -255,7 +255,7 @@ Key requirements:
 - Release strings after use with `qd_string_release()`
 - Return `(qd_exec_result){0}` for success
 
-### Step 3: Import in module.qd
+### Step 3: import in module.qd
 
 Add an import block to `module.qd`:
 
@@ -282,7 +282,7 @@ The import block:
 - `as "native"` - namespace for imported functions
 - Function signatures must match the C implementation
 
-### Step 4: Build and Test
+### Step 4: build and test
 
 Use `quadpm build` to compile C sources during development:
 
@@ -304,17 +304,17 @@ quadc -I . -r examples/simple.qd
 The typical development cycle is:
 
 ```bash
-# 1. Edit C code in src/
-# 2. Rebuild the library
+# 1. edit C code in src/
+# 2. rebuild the library
 quadpm build
 
-# 3. Test your changes
+# 3. test your changes
 quadc -I . -r examples/simple.qd
 ```
 
 When users install your module with `quadpm get`, the C sources are automatically compiled.
 
-### Step 5: Link with External C Libraries (Optional)
+### Step 5: link with external C libraries (optional)
 
 If your C code depends on external system libraries (like OpenGL, SDL, or SQLite), declare them in `qd.json`:
 
@@ -348,7 +348,7 @@ This tells the compiler to link with `-lglut -lGL -lGLU` when building programs 
 
 **Important**: The library names should match what you'd pass to `-l`. For `libfoo.so`, use `"foo"`.
 
-### Full Example: Color Module with Terminal Detection
+### Full example: color module with terminal detection
 
 Here's a complete example based on the `qd-color` module:
 
@@ -428,7 +428,7 @@ pub fn reset( -- ) {
 }
 ```
 
-## Using Standard Library Modules
+## Using standard library modules
 
 Standard library modules are always linked automatically. Just import them in your module:
 
@@ -441,7 +441,7 @@ pub fn greet(name:str -- ) {
 }
 ```
 
-## Best Practices
+## Best practices
 
 1. **Use `pub` sparingly** - Only export functions that are part of your public API
 
@@ -461,7 +461,7 @@ pub fn greet(name:str -- ) {
 
 8. **Handle errors gracefully** - Use fallible functions (`!`) for operations that can fail
 
-## Publishing Checklist
+## Publishing checklist
 
 Before publishing your module:
 
@@ -491,7 +491,7 @@ Users install your module with:
 quadpm get https://your-git-host/your-module
 ```
 
-## See Also
+## See also
 
 - [Modules](learn/3-functions/modules.md) - Basic module usage
 - [FFI](learn/7-advanced/ffi.md) - C interoperability details

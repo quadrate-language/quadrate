@@ -6,7 +6,7 @@ Command-line argument parsing (`flag::` module).
 
 Parse command-line arguments and flags.
 
-## Key Functions
+## Key functions
 
 - `parse` - Parse arguments
 - `string`, `int`, `bool` - Get flag values

@@ -1,8 +1,8 @@
-# Defining Functions
+# Defining functions
 
 Functions are the building blocks of Quadrate programs. They transform values on the stack.
 
-## Basic Syntax
+## Basic syntax
 
 ```qd
 fn name(inputs -- outputs) {
@@ -16,7 +16,7 @@ Every function has:
 - A **signature** describing stack effects
 - A **body** with the implementation
 
-## Your First Function
+## Your first function
 
 ```qd
 fn square(x:i64 -- result:i64) {
@@ -33,7 +33,7 @@ The signature `(x:i64 -- result:i64)` means:
 - **Input**: Takes one integer `x` from the stack
 - **Output**: Leaves one integer `result` on the stack
 
-## Stack Effect Signature
+## Stack effect signature
 
 The `--` separates inputs from outputs:
 
@@ -59,7 +59,7 @@ fn push_two( -- a:i64 b:i64) {
 | `(-- x:i64)` | No inputs, 1 output |
 | `()` | No inputs, no outputs |
 
-## Parameter Names
+## Parameter names
 
 Parameter names document the values but don't create variables automatically:
 
@@ -75,7 +75,7 @@ fn distance(x1:f64 y1:f64 x2:f64 y2:f64 -- d:f64) {
 }
 ```
 
-## Multiple Outputs
+## Multiple outputs
 
 Functions can have multiple outputs:
 
@@ -93,7 +93,7 @@ fn main() {
 }
 ```
 
-## Functions Without Parameters
+## Functions without parameters
 
 ```qd
 fn greet() {
@@ -110,7 +110,7 @@ fn main() {
 }
 ```
 
-## The main Function
+## The main function
 
 Every program needs a `main` function:
 
@@ -122,7 +122,7 @@ fn main() {
 
 `main` takes no inputs and has no outputs.
 
-## Function Names
+## Function names
 
 Rules for function names:
 
@@ -136,7 +136,7 @@ fn _private_helper() { }
 fn processItem2() { }
 ```
 
-## Type Annotations
+## Type annotations
 
 Always specify types for parameters:
 
@@ -155,7 +155,7 @@ fn format_price(price:f64 currency:str -- formatted:str) {
 }
 ```
 
-## Documentation Comments
+## Documentation comments
 
 Use `///` for documentation:
 
@@ -173,6 +173,6 @@ fn factorial(n:i64 -- result:i64) {
 }
 ```
 
-## What's Next?
+## What's next?
 
 Now let's learn how to [Call Functions](calling.md) and chain them together.

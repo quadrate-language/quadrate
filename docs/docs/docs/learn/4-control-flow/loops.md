@@ -2,7 +2,7 @@
 
 Quadrate provides several ways to repeat operations.
 
-## for Loops
+## for loops
 
 Iterate over a range:
 
@@ -24,7 +24,7 @@ The syntax is `start end step for <iterator> { body }`:
 
 The range is `[start, end)` - includes start, excludes end.
 
-## for with Step
+## for with step
 
 Specify a custom step:
 
@@ -37,7 +37,7 @@ fn main() {
 }
 ```
 
-## Counting Down
+## Counting down
 
 Use negative step:
 
@@ -50,7 +50,7 @@ fn main() {
 }
 ```
 
-## Iterating Over Arrays
+## Iterating over arrays
 
 Use index-based iteration:
 
@@ -66,7 +66,7 @@ fn main() {
 }
 ```
 
-## loop - Infinite Loop
+## loop - infinite loop
 
 Use `loop` with `break`:
 
@@ -84,7 +84,7 @@ fn main() {
 }
 ```
 
-## break - Exit Loop
+## break - exit loop
 
 Exit immediately:
 
@@ -100,7 +100,7 @@ fn main() {
 }
 ```
 
-## continue - Skip Iteration
+## continue - skip iteration
 
 Skip to next iteration:
 
@@ -116,7 +116,7 @@ fn main() {
 }
 ```
 
-## Nested Loops
+## Nested loops
 
 Loops can be nested:
 
@@ -131,7 +131,7 @@ fn main() {
 }
 ```
 
-## Loop with Accumulator
+## Loop with accumulator
 
 Build up a result:
 
@@ -150,7 +150,7 @@ fn main() {
 }
 ```
 
-## Finding Elements
+## Finding elements
 
 Search with early exit:
 
@@ -174,9 +174,9 @@ fn main() {
 }
 ```
 
-## Common Patterns
+## Common patterns
 
-### Sum Array
+### Sum array
 
 ```qd
 fn sum_array(arr:ptr -- total:i64) {
@@ -189,7 +189,7 @@ fn sum_array(arr:ptr -- total:i64) {
 }
 ```
 
-### Count Matches
+### Count matches
 
 ```qd
 fn count_positive(arr:ptr -- count:i64) {
@@ -204,6 +204,6 @@ fn count_positive(arr:ptr -- count:i64) {
 }
 ```
 
-## What's Next?
+## What's next?
 
 Learn about [Switch Statements](switch.md) for multi-way branching.

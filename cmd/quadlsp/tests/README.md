@@ -1,8 +1,8 @@
-# LSP Tests
+# LSP tests
 
 Test suite for the Quadrate Language Server.
 
-## Test Files
+## Test files
 
 - `test_lsp.py` - Basic functionality (21 tests)
 - `test_lsp_extended.py` - Edge cases (35 tests)

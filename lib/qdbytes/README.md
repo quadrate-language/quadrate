@@ -6,7 +6,7 @@ Byte array operations (`bytes::` module).
 
 Operations on byte arrays.
 
-## Key Functions
+## Key functions
 
 - `new` - Create byte array
 - `get`, `set` - Element access

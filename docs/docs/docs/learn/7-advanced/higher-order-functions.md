@@ -1,4 +1,4 @@
-# Higher-Order Functions
+# Higher-order functions
 
 Higher-order functions (HOF) are functions that take other functions as arguments. The `hof` module provides **combinators**—functions that combine or apply other functions in useful patterns.
 
@@ -8,7 +8,7 @@ Higher-order functions (HOF) are functions that take other functions as argument
     quadpm install hof
     ```
 
-## Why Combinators?
+## Why combinators?
 
 In stack-based programming, you often need to:
 
@@ -34,7 +34,7 @@ use hof
 6 fn (x:i64 -- r:i64) { 0 > } fn (x:i64 -- r:i64) { 2 % 0 == } hof::bi and
 ```
 
-## Available Combinators
+## Available combinators
 
 ### apply
 
@@ -181,9 +181,9 @@ use hof
 // (2^2=4, 4^2=16, 16^2=256)
 ```
 
-## Practical Examples
+## Practical examples
 
-### Data Validation
+### Data validation
 
 ```qd
 use hof
@@ -203,7 +203,7 @@ fn main() {
 }
 ```
 
-### Computing Multiple Results
+### Computing multiple results
 
 ```qd
 use hof
@@ -221,7 +221,7 @@ fn main() {
 }
 ```
 
-### Iterative Computation
+### Iterative computation
 
 ```qd
 use hof
@@ -240,7 +240,7 @@ fn main() {
 }
 ```
 
-## Comparison with Factor
+## Comparison with factor
 
 Quadrate's combinators are inspired by [Factor](https://factorcode.org/), but with explicit type signatures:
 

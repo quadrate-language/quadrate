@@ -12,7 +12,7 @@ Built-in operations for concurrent execution.
 
 ---
 
-## Thread Management
+## Thread management
 
 ### spawn
 
@@ -59,7 +59,7 @@ t detach  // Thread runs on its own
 
 ## Examples
 
-### Multiple Workers
+### Multiple workers
 
 ```qd
 fn task(id:i64 -- ) {
@@ -83,7 +83,7 @@ fn main() {
 }
 ```
 
-### Fire and Forget
+### Fire and forget
 
 ```qd
 fn background_task() {
@@ -101,13 +101,13 @@ fn main() {
 
 ## Considerations
 
-### Thread Safety
+### Thread safety
 
 - Each thread has its own stack
 - Shared data requires synchronization
 - Be careful with mutable state
 
-### Best Practices
+### Best practices
 
 1. **Join threads** - Use `wait` to ensure completion
 2. **Handle errors** - Threads can fail independently

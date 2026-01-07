@@ -2,7 +2,7 @@
 
 Control the flow of your program with `if` and `else`.
 
-## The if Statement
+## The if statement
 
 Execute code when a condition is true:
 
@@ -32,7 +32,7 @@ fn main() {
 }
 ```
 
-## Nested Conditionals
+## Nested conditionals
 
 ```qd
 fn classify(n:i64 -- ) {
@@ -55,7 +55,7 @@ fn main() {
 }
 ```
 
-## Conditional Expressions
+## Conditional expressions
 
 `if` can leave values on the stack:
 
@@ -77,7 +77,7 @@ fn main() {
 
 Both branches must leave the same number of values on the stack.
 
-## Combining Conditions
+## Combining conditions
 
 Use logical operators:
 
@@ -103,7 +103,7 @@ fn main() {
 }
 ```
 
-## Comparison Operators
+## Comparison operators
 
 | Operator | Meaning |
 |----------|---------|
@@ -128,9 +128,9 @@ fn main() {
 }
 ```
 
-## Common Patterns
+## Common patterns
 
-### Guard Clauses
+### Guard clauses
 
 ```qd
 fn process(x:i64 -- result:i64) {
@@ -143,7 +143,7 @@ fn process(x:i64 -- result:i64) {
 }
 ```
 
-### Default Values
+### Default values
 
 ```qd
 fn get_or_default(value:i64 default:i64 -- result:i64) {
@@ -156,7 +156,7 @@ fn get_or_default(value:i64 default:i64 -- result:i64) {
 }
 ```
 
-### Range Checking
+### Range checking
 
 ```qd
 fn is_valid_age(age:i64 -- valid:i64) {
@@ -171,6 +171,6 @@ fn main() {
 }
 ```
 
-## What's Next?
+## What's next?
 
 Learn about [Loops](loops.md) to repeat operations.

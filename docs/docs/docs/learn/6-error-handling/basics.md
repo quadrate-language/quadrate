@@ -1,8 +1,8 @@
-# Error Handling Basics
+# Error handling basics
 
 Quadrate has a robust error handling system built around **fallible functions**.
 
-## Fallible Functions
+## Fallible functions
 
 A fallible function is one that might fail. Mark it with `!` after the signature:
 
@@ -14,7 +14,7 @@ fn divide(a:i64 b:i64 -- result:i64)! {
 
 The `!` tells the compiler this function can return an error.
 
-## Signaling Panics
+## Signaling panics
 
 Use the `panic` instruction to signal an error:
 
@@ -33,7 +33,7 @@ The `panic` instruction takes (in push order):
 1. An error message (string)
 2. An error code (integer)
 
-## Handling Errors
+## Handling errors
 
 When you call a fallible function, you **must** handle the error with `if`:
 
@@ -51,14 +51,14 @@ fn main() {
 
 The compiler enforces this - you cannot ignore errors.
 
-## How It Works
+## How it works
 
 After calling a fallible function:
 
 - **Success (if branch)**: The function's outputs are on the stack
 - **Error (else branch)**: The function's outputs are NOT on the stack (the stack is as it was before the call)
 
-## Complete Example
+## Complete example
 
 ```qd
 fn divide(a:i64 b:i64 -- result:i64)! {
@@ -92,7 +92,7 @@ Error: Cannot divide by zero!
 10 / 2 = 5
 ```
 
-## Skipping Error Checks
+## Skipping error checks
 
 Call a fallible function with `!` to skip error handling:
 
@@ -105,7 +105,7 @@ fn divide_and_double(a:i64 b:i64 -- result:i64)! {
 
 **Warning**: If `divide` fails, the program will panic. Only use `!` when you're certain the call won't fail.
 
-## Stack Behavior
+## Stack behavior
 
 When a fallible function succeeds, the `if` branch has the function's outputs on the stack.
 
@@ -129,7 +129,7 @@ fn main() {
 }
 ```
 
-## Standard Library Errors
+## Standard library errors
 
 Many standard library functions are fallible:
 
@@ -156,7 +156,7 @@ fn main() {
 }
 ```
 
-## Retrieving Error Information
+## Retrieving error information
 
 Use the `err` instruction to retrieve the error message and code:
 
@@ -210,7 +210,7 @@ fn main() {
 }
 ```
 
-## Key Rules
+## Key rules
 
 1. Mark fallible functions with `!` after the signature
 2. Use `"message" code panic` to signal panics
@@ -219,6 +219,6 @@ fn main() {
 5. The compiler enforces error handling
 6. The `if` branch has the function outputs; the `else` branch does not
 
-## What's Next?
+## What's next?
 
 Learn [Error Handling Patterns](patterns.md) for common scenarios.

@@ -33,7 +33,7 @@ Stack-based semantics make data flow obvious. No hidden allocations, no implicit
 
 ---
 
-## Quick Start
+## Quick start
 
 ### Installation
 
@@ -68,9 +68,9 @@ That's it! The `-r` flag compiles and immediately runs your program.
 
 ---
 
-## Language Overview
+## Language overview
 
-### Stack-Oriented Programming
+### Stack-oriented programming
 
 Values live on an explicit stack. Functions manipulate the stack directly:
 
@@ -81,7 +81,7 @@ fn main() {
 }
 ```
 
-### Type-Safe Stack Signatures
+### Type-safe stack signatures
 
 Functions declare their stack effects using type signatures:
 
@@ -107,7 +107,7 @@ fn main() {
 
 The signature `(x:f64 y:f64 -- result:f64)` means: "Consumes two f64 values from the stack, produces one f64 result."
 
-### Built-in Stack Operations
+### Built-in stack operations
 
 | Operation | Effect | Description |
 |-----------|--------|-------------|
@@ -117,7 +117,7 @@ The signature `(x:f64 y:f64 -- result:f64)` means: "Consumes two f64 values from
 | `over` | `(a b -- a b a)` | Copy second value to top |
 | `rot` | `(a b c -- b c a)` | Rotate top three values |
 
-### Control Flow
+### Control flow
 
 ```rust
 fn main() {
@@ -151,7 +151,7 @@ fn main() {
 }
 ```
 
-### Modules and Code Organization
+### Modules and code organization
 
 ```rust
 use math
@@ -169,11 +169,11 @@ fn main() {
 
 ---
 
-## Standard Library
+## Standard library
 
 Quadrate includes batteries for common tasks:
 
-### Core Modules
+### Core modules
 
 | Module | Purpose | Key Functions |
 |--------|---------|---------------|
@@ -185,7 +185,7 @@ Quadrate includes batteries for common tasks:
 | **bits** | Bit manipulation | `and`, `or`, `xor`, `lshift`, `rshift` |
 | **limits** | Integer limits | `MaxInt`, `MinInt`, `MaxUint` |
 
-### System & Concurrency
+### System & concurrency
 
 | Module | Purpose | Key Functions |
 |--------|---------|---------------|
@@ -194,7 +194,7 @@ Quadrate includes batteries for common tasks:
 | **thread** | Threading | `spawn`, `join`, `detach`, `Mutex`, `Channel`, `WaitGroup` |
 | **signal** | Signal handling | `trap`, `pending`, `clear`, `SigInt`, `SigTerm` |
 
-### Utility Modules
+### Utility modules
 
 | Module | Purpose | Key Functions |
 |--------|---------|---------------|
@@ -207,7 +207,7 @@ Quadrate includes batteries for common tasks:
 | **flag** | CLI argument parsing | `string`, `int`, `bool`, `parse` |
 | **testing** | Unit testing | `assert_eq`, `assert_ne`, `assert_true`, `fail` |
 
-### External Modules
+### External modules
 
 These modules are available as separate packages via `quadpm`:
 
@@ -240,7 +240,7 @@ fn main() {
 }
 ```
 
-### Example: UUID and Random Numbers
+### Example: UUID and random numbers
 
 ```rust
 use uuid
@@ -257,7 +257,7 @@ fn main() {
 }
 ```
 
-### Example: Path Manipulation
+### Example: path manipulation
 
 ```rust
 use path
@@ -276,7 +276,7 @@ fn main() {
 
 Quadrate's JIT engine lets you embed scripting in your applications. Scripts compile to native code at runtime via LLVM—no interpreter overhead.
 
-### Basic Embedding
+### Basic embedding
 
 ```cpp
 #include <qd/qd.h>
@@ -300,7 +300,7 @@ int main() {
 }
 ```
 
-### Registering Native Functions
+### Registering native functions
 
 Expose C/C++ functions to Quadrate scripts:
 
@@ -352,7 +352,7 @@ See `examples/embed/` for complete working examples.
 
 ---
 
-## Interactive Development
+## Interactive development
 
 ### REPL
 
@@ -375,7 +375,7 @@ $ quad repl
 - `clear` - Clear the stack
 - `Ctrl-D` - Exit REPL
 
-### Code Formatter
+### Code formatter
 
 Keep your code consistent:
 
@@ -388,7 +388,7 @@ quadfmt myfile.qd          # Preview formatting
 quadfmt -w myfile.qd       # Format in place
 ```
 
-### Language Server
+### Language server
 
 IDE integration via LSP:
 
@@ -420,7 +420,7 @@ Supports:
 
 ---
 
-## Building from Source
+## Building from source
 
 ```bash
 # Clone repository
@@ -455,7 +455,7 @@ make uninstall
 make clean
 ```
 
-### Build Options
+### Build options
 
 ```bash
 # Custom build with Meson directly
@@ -499,7 +499,7 @@ Inside GDB:
 
 Quadrate includes a built-in test framework for writing and running unit tests.
 
-### Writing Tests
+### Writing tests
 
 Use the `test` keyword to define test blocks, and assertion functions from the `testing` module:
 
@@ -524,7 +524,7 @@ test "boolean checks" {
 }
 ```
 
-### Available Assertions
+### Available assertions
 
 | Function | Description |
 |----------|-------------|
@@ -536,14 +536,14 @@ test "boolean checks" {
 
 All assertions are polymorphic—they work with integers, floats, strings, and pointers.
 
-### Running Tests
+### Running tests
 
 ```bash
 # Compile and run tests
 quad test myfile_test.qd
 ```
 
-### Example Output
+### Example output
 
 ```
 Running 3 tests...
@@ -556,7 +556,7 @@ Running 3 tests...
 
 Tests return exit code 0 if all pass, 1 if any fail—making them suitable for CI pipelines.
 
-### Test with Failure Messages
+### Test with failure messages
 
 When an assertion fails, it prints detailed information:
 
@@ -571,9 +571,9 @@ Stack trace:
 
 ---
 
-## Real-World Examples
+## Real-world examples
 
-### File Processing
+### File processing
 
 ```rust
 use io
@@ -602,7 +602,7 @@ fn main() {
 }
 ```
 
-### Game Loop
+### Game loop
 
 ```rust
 use time
@@ -634,14 +634,14 @@ fn main() {
 
 ---
 
-## Editor Support
+## Editor support
 
 - **Neovim**: https://git.sr.ht/~klahr/quadrate.nvim
 - **VS Code**: https://git.sr.ht/~klahr/quadrate-vscode
 
 ---
 
-## Platform Support
+## Platform support
 
 **Tested:**
 - Linux x86_64 (Arch Linux, Debian, Haiku)
@@ -661,13 +661,13 @@ Contributions for testing on other platforms are welcome.
 
 We enthusiastically welcome contributions!
 
-### Reporting Issues
+### Reporting issues
 
 Report bugs and request features:
 **SourceHut**: https://todo.sr.ht/~klahr/quadrate
 **GitHub**: https://github.com/quadrate-lang/quadrate/issues
 
-### Submitting Patches
+### Submitting patches
 
 **Email patches to**: ~klahr/quadrate@lists.sr.ht
 
@@ -676,7 +676,7 @@ See: https://man.sr.ht/git.sr.ht/send-email.md
 
 **Or use GitHub**: Submit pull requests if you prefer
 
-### Development Setup
+### Development setup
 
 ```bash
 git clone https://git.sr.ht/~klahr/quadrate
@@ -696,7 +696,7 @@ Quadrate is free software: you can redistribute it and/or modify it under the te
 
 See [`LICENSE`](./LICENSE) for full terms.
 
-### Note on AI Assistance
+### Note on AI assistance
 
 Portions of this codebase were initially drafted with AI assistance and subsequently reviewed, modified, and maintained by humans. All code meets the same quality standards regardless of origin.
 

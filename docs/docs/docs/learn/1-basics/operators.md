@@ -16,7 +16,7 @@ fn main() {
 }
 ```
 
-### How It Works
+### How it works
 
 ```qd
 3 4 +
@@ -34,7 +34,7 @@ Stack visualization:
 [7]      -- after "+"
 ```
 
-### Word Forms
+### Word forms
 
 You can also use words instead of symbols:
 
@@ -53,7 +53,7 @@ fn main() {
 }
 ```
 
-### Other Arithmetic
+### Other arithmetic
 
 ```qd
 fn main() {
@@ -80,7 +80,7 @@ fn main() {
 }
 ```
 
-### Word Forms
+### Word forms
 
 | Symbol | Word |
 |--------|------|
@@ -91,7 +91,7 @@ fn main() {
 | `>` | `gt` |
 | `>=` | `gte` |
 
-### Range Check
+### Range check
 
 `within` checks if a value is in a range [low, high):
 
@@ -143,7 +143,7 @@ You can also use `shl` and `shr` as word forms for `<<` and `>>`.
 
 **Note:** `and`, `or`, and `not` are bitwise operators. For logical operations on boolean values (0/1), `and` and `or` work correctly. For logical NOT, use `0 ==` instead.
 
-## Combining Operations
+## Combining operations
 
 Build complex expressions by chaining:
 
@@ -159,6 +159,6 @@ fn main() {
 
 The order you write operations is the order they execute. No operator precedence to remember!
 
-## What's Next?
+## What's next?
 
 You've learned the basics! Now let's dive deeper into [How the Stack Works](../2-stack/how-it-works.md).

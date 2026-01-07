@@ -6,7 +6,7 @@ Time operations (`time::` module).
 
 Time retrieval and sleep functions.
 
-## Key Functions
+## Key functions
 
 - `unix` - Unix timestamp in seconds
 - `now` - High-precision nanoseconds

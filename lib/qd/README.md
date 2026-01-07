@@ -6,7 +6,7 @@ High-level embedding API for Quadrate.
 
 Provides a simplified C API for embedding Quadrate scripts in applications. Handles module management, script compilation, and function execution.
 
-## Key Functions
+## Key functions
 
 - `qd_create_context()` - Create execution context
 - `qd_get_module()` - Get or create a module

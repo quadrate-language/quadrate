@@ -1,4 +1,4 @@
-# Arithmetic Operations
+# Arithmetic operations
 
 Mathematical operations on numbers.
 
@@ -17,7 +17,7 @@ Mathematical operations on numbers.
 
 ---
 
-## Basic Operations
+## Basic operations
 
 ### + (add)
 
@@ -71,7 +71,7 @@ Computes a modulo b.
 
 ---
 
-## Unary Operations
+## Unary operations
 
 ### neg
 
@@ -107,7 +107,7 @@ Subtracts 1 from a number.
 
 ---
 
-## Word Forms
+## Word forms
 
 Both symbol and word forms are available:
 

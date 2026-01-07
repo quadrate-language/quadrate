@@ -80,7 +80,7 @@ use str
 
 ---
 
-## Control Flow
+## Control flow
 
 ### if
 
@@ -193,7 +193,7 @@ _ {
 
 ---
 
-## Other Keywords
+## Other keywords
 
 ### defer
 

@@ -1,8 +1,8 @@
-# Anonymous Functions
+# Anonymous functions
 
 Anonymous functions (also called lambdas) let you define functions inline without naming them. They're useful for quick one-off operations and callbacks.
 
-## Basic Syntax
+## Basic syntax
 
 Use `fn (signature) { body }` to create an anonymous function:
 
@@ -18,7 +18,7 @@ fn main() {
 
 The signature follows the same format as regular functions: `(inputs -- outputs)`.
 
-## Inline Usage
+## Inline usage
 
 Anonymous functions can be used directly without storing them:
 
@@ -32,7 +32,7 @@ fn main() {
 }
 ```
 
-## Side-Effect Functions
+## Side-effect functions
 
 Functions that don't return values use an empty output signature:
 
@@ -46,7 +46,7 @@ fn main() {
 }
 ```
 
-## Reusing Anonymous Functions
+## Reusing anonymous functions
 
 Once stored, an anonymous function can be called multiple times:
 
@@ -62,7 +62,7 @@ fn main() {
 }
 ```
 
-## Control Flow Inside
+## Control flow inside
 
 Anonymous functions can contain conditionals and other control flow:
 
@@ -81,7 +81,7 @@ fn main() {
 }
 ```
 
-## Closures (Variable Capture)
+## Closures (variable capture)
 
 Anonymous functions can capture variables from their enclosing scope, creating closures:
 
@@ -97,7 +97,7 @@ fn main() {
 }
 ```
 
-### Capture by Reference
+### Capture by reference
 
 Variables are captured by reference. Changes to the original variable are visible to the closure:
 
@@ -114,7 +114,7 @@ fn main() {
 }
 ```
 
-### Multiple Captures
+### Multiple captures
 
 Closures can capture multiple variables:
 
@@ -130,7 +130,7 @@ fn main() {
 }
 ```
 
-### Closures in Loops
+### Closures in loops
 
 Closures created inside loops capture the current value at each iteration:
 
@@ -145,7 +145,7 @@ fn main() {
 }
 ```
 
-### Nested Closures
+### Nested closures
 
 Closures can be nested, with inner closures capturing variables from outer closures:
 
@@ -163,7 +163,7 @@ fn main() {
 }
 ```
 
-### Returning Closures
+### Returning closures
 
 Functions can return closures that capture their local variables:
 
@@ -182,7 +182,7 @@ fn main() {
 }
 ```
 
-## Calling Named Functions
+## Calling named functions
 
 Anonymous functions can call regular named functions:
 
@@ -197,7 +197,7 @@ fn main() {
 }
 ```
 
-## Parameter Names
+## Parameter names
 
 Parameter names in the signature are for documentation only. Inside the body, values come from the stack:
 
@@ -213,7 +213,7 @@ fn main() {
 }
 ```
 
-## Comparison with Function Pointers
+## Comparison with function pointers
 
 Anonymous functions and function pointers both use `call`:
 
@@ -234,9 +234,9 @@ fn main() {
 
 The difference is that anonymous functions are defined inline, while function pointers reference separately defined functions.
 
-## Use Cases
+## Use cases
 
-### Quick Transformations
+### Quick transformations
 
 ```qd
 fn main() {
@@ -245,7 +245,7 @@ fn main() {
 }
 ```
 
-### Deferred Actions
+### Deferred actions
 
 ```qd
 fn main() {
@@ -259,7 +259,7 @@ fn main() {
 }
 ```
 
-### Configurable Behavior
+### Configurable behavior
 
 ```qd
 fn process(value:i64 transform:ptr -- result:i64) {
@@ -272,6 +272,6 @@ fn main() {
 }
 ```
 
-## What's Next?
+## What's next?
 
 Learn about [Memory Management](memory.md) for manual memory control.

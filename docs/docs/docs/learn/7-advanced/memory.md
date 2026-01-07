@@ -1,8 +1,8 @@
-# Memory Management
+# Memory management
 
 Quadrate provides manual memory management through the `mem` module.
 
-## The mem Module
+## The mem module
 
 ```qd
 use mem
@@ -10,7 +10,7 @@ use mem
 
 The `mem` module provides functions for allocating, freeing, and manipulating memory.
 
-## Allocating Memory
+## Allocating memory
 
 Use `mem::alloc` to allocate bytes:
 
@@ -26,7 +26,7 @@ fn main() {
 
 Always pair `alloc` with `free`.
 
-## Using defer for Cleanup
+## Using defer for cleanup
 
 Ensure memory is freed with `defer`:
 
@@ -44,7 +44,7 @@ fn process() {
 }
 ```
 
-## Reading and Writing Memory
+## Reading and writing memory
 
 ### Write byte
 
@@ -79,7 +79,7 @@ fn main() {
 }
 ```
 
-## Memory Copy
+## Memory copy
 
 Copy memory between buffers:
 
@@ -106,7 +106,7 @@ fn main() {
 }
 ```
 
-## Memory Fill
+## Memory fill
 
 Fill memory with a value:
 
@@ -125,7 +125,7 @@ fn main() {
 }
 ```
 
-## Resizing Memory
+## Resizing memory
 
 Use `mem::realloc` to resize:
 
@@ -144,9 +144,9 @@ fn main() {
 }
 ```
 
-## Common Patterns
+## Common patterns
 
-### Dynamic String Buffer
+### Dynamic string buffer
 
 ```qd
 use mem
@@ -202,7 +202,7 @@ fn main() {
 }
 ```
 
-### Memory Pool
+### Memory pool
 
 ```qd
 use mem
@@ -272,7 +272,7 @@ fn main() {
 }
 ```
 
-## Safety Guidelines
+## Safety guidelines
 
 1. **Always free allocated memory** - Use defer to ensure cleanup
 2. **Don't use freed memory** - Null pointers after freeing
@@ -300,6 +300,6 @@ fn safe_example() {
 }
 ```
 
-## What's Next?
+## What's next?
 
 Continue to [File Processing Examples](../8-examples/file-processing.md) to see these concepts in real programs.

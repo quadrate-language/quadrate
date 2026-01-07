@@ -10,7 +10,7 @@ Other built-in operations.
 
 ---
 
-## Function Pointers
+## Function pointers
 
 ### call
 
@@ -31,7 +31,7 @@ fn main() {
 
 ---
 
-## Getting Function Pointers
+## Getting function pointers
 
 Use `&` to get a pointer to a function:
 
@@ -39,7 +39,7 @@ Use `&` to get a pointer to a function:
 &myfunction -> ptr
 ```
 
-## Calling Function Pointers
+## Calling function pointers
 
 Push arguments, then the pointer, then `call`:
 
@@ -50,7 +50,7 @@ Push arguments, then the pointer, then `call`:
 
 ---
 
-## Common Uses
+## Common uses
 
 ### Callbacks
 
@@ -73,7 +73,7 @@ fn main() {
 }
 ```
 
-### Function Tables
+### Function tables
 
 ```qd
 use mem
@@ -102,7 +102,7 @@ fn main() {
 }
 ```
 
-### Higher-Order Functions
+### Higher-order functions
 
 ```qd
 fn map(arr:ptr f:ptr -- result:ptr) {
@@ -124,6 +124,6 @@ fn main() {
 
 ---
 
-## See Also
+## See also
 
 - [Function Pointers](../learn/7-advanced/function-pointers.md) in the Learn section

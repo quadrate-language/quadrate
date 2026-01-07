@@ -6,7 +6,7 @@ Compiler frontend library for Quadrate.
 
 Provides parsing, AST representation, semantic analysis, and error reporting. Used by the compiler and language tools.
 
-## Key Components
+## Key components
 
 - **parser** - Converts source code to AST
 - **ast** - Typed AST node classes

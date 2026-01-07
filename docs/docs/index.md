@@ -12,7 +12,7 @@ fn main() {
 
 Quadrate is a **concatenative, stack-based language** that compiles to native code. If you've ever wondered what programming would feel like without variables cluttering every line, you're in the right place.
 
-## What Makes Quadrate Different?
+## What makes Quadrate different?
 
 In most languages, you write `result = add(a, b)`. In Quadrate, you write:
 
@@ -50,7 +50,7 @@ quad run factorial.qd
 
 **Handle errors honestly.** Fallible functions force you to deal with errors. No exceptions flying across your codebase.
 
-## Get Started
+## Get started
 
 New to Quadrate? Start here:
 
@@ -60,7 +60,7 @@ New to Quadrate? Start here:
 
 Or dive into the **[Learn section](docs/learn/1-basics/hello-world.md)** for a complete tutorial from basics to advanced topics.
 
-## The Toolchain
+## The toolchain
 
 Quadrate comes with everything you need:
 
@@ -74,7 +74,7 @@ Quadrate comes with everything you need:
 | `quadrepl` | REPL - experiment interactively |
 | `quadpm` | Package manager - manage dependencies |
 
-## A Taste of the Language
+## A taste of the language
 
 Here's a slightly more involved example - reading command line arguments:
 
@@ -96,7 +96,7 @@ fn main() {
 quad run greet.qd -- Millie
 ```
 
-## Learn More
+## Learn more
 
 - **[Standard Library](docs/stdlib/index.md)** - Strings, I/O, math, threading, and more
 - **[Language Reference](docs/reference/index.md)** - All keywords and built-in operations

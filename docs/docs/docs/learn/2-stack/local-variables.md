@@ -1,8 +1,8 @@
-# Local Variables
+# Local variables
 
 When stack manipulation gets complex, use local variables.
 
-## The `->` Operator
+## The `->` operator
 
 Pop a value and store it in a named variable:
 
@@ -13,7 +13,7 @@ fn main() {
 }
 ```
 
-## Why Use Variables?
+## Why use variables?
 
 Compare these two approaches:
 
@@ -40,7 +40,7 @@ fn distance(x1:f64 y1:f64 x2:f64 y2:f64 -- d:f64) {
 
 The second version is much clearer!
 
-## Storing Multiple Values
+## Storing multiple values
 
 You can store multiple values:
 
@@ -56,7 +56,7 @@ fn main() {
 
 **Note:** Values are popped in reverse order. The top of stack (`3`) goes into the first variable (`c`).
 
-## Variables in Expressions
+## Variables in expressions
 
 Use variables like any other value:
 
@@ -71,7 +71,7 @@ fn main() {
 }
 ```
 
-## Reassigning Variables
+## Reassigning variables
 
 You can update a variable:
 
@@ -102,7 +102,7 @@ fn bar() {
 }
 ```
 
-## Block Scope
+## Block scope
 
 Variables defined inside blocks (`if`, `for`, `loop`, `switch`) are only visible within that block:
 
@@ -128,9 +128,9 @@ fn main() {
 }
 ```
 
-## Common Patterns
+## Common patterns
 
-### Swap with Variables
+### Swap with variables
 
 ```qd
 fn main() {
@@ -140,7 +140,7 @@ fn main() {
 }
 ```
 
-### Using a Value Multiple Times
+### Using a value multiple times
 
 ```qd
 fn main() {
@@ -151,7 +151,7 @@ fn main() {
 }
 ```
 
-### Computing Intermediate Results
+### Computing intermediate results
 
 ```qd
 fn quadratic(a:f64 b:f64 c:f64 x:f64 -- result:f64) {
@@ -168,7 +168,7 @@ fn quadratic(a:f64 b:f64 c:f64 x:f64 -- result:f64) {
 }
 ```
 
-## When to Use Variables vs Stack
+## When to use variables vs stack
 
 **Use stack manipulation when:**
 
@@ -182,6 +182,6 @@ fn quadratic(a:f64 b:f64 c:f64 x:f64 -- result:f64) {
 - Operations span many lines
 - Clarity is more important than brevity
 
-## What's Next?
+## What's next?
 
 Now let's learn how to [Define Functions](../3-functions/defining.md).

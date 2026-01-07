@@ -1,8 +1,8 @@
-# Error Handling Patterns
+# Error handling patterns
 
 Common patterns for handling errors effectively.
 
-## Pattern 1: Default Value
+## Pattern 1: default value
 
 Return a default value when an error occurs:
 
@@ -30,7 +30,7 @@ fn main() {
 }
 ```
 
-## Pattern 2: Try Multiple Options
+## Pattern 2: try multiple options
 
 Try alternatives when first option fails:
 
@@ -53,7 +53,7 @@ fn parse_with_fallback(primary:str fallback:str -- value:i64) {
 }
 ```
 
-## Pattern 3: Collect Results
+## Pattern 3: collect results
 
 Continue despite errors, collect successes:
 
@@ -92,7 +92,7 @@ fn main() {
 }
 ```
 
-## Pattern 4: Error Chain
+## Pattern 4: error chain
 
 Propagate errors through multiple operations:
 
@@ -125,7 +125,7 @@ fn pipeline(x:i64 -- result:i64)! {
 }
 ```
 
-## Pattern 5: Cleanup with defer
+## Pattern 5: cleanup with defer
 
 Use `defer` for guaranteed cleanup:
 
@@ -164,7 +164,7 @@ fn read_file(path:str -- content:str)! {
 
 Defers execute in LIFO order (last in, first out).
 
-## Pattern 6: Resource Wrapper
+## Pattern 6: resource wrapper
 
 Wrap resource operations:
 
@@ -204,7 +204,7 @@ fn with_file(path:str -- ) {
 }
 ```
 
-## Pattern 7: Validation
+## Pattern 7: validation
 
 Validate before processing:
 
@@ -229,7 +229,7 @@ fn process(x:i64 -- result:i64)! {
 }
 ```
 
-## Pattern 8: Retry Logic
+## Pattern 8: retry logic
 
 Retry on transient failures:
 
@@ -261,7 +261,7 @@ fn retry(max_attempts:i64 -- result:i64)! {
 }
 ```
 
-## Pattern 9: Error Context
+## Pattern 9: error context
 
 Add context to errors:
 
@@ -281,7 +281,7 @@ fn parse_config(path:str -- cfg:ptr)! {
 }
 ```
 
-## Pattern 10: Batch Processing
+## Pattern 10: batch processing
 
 Process items, log failures:
 
@@ -305,7 +305,7 @@ fn process_batch(items:ptr -- processed:i64 failed:i64) {
 }
 ```
 
-## Best Practices
+## Best practices
 
 1. **Always handle errors** - Don't just `drop` without logging
 2. **Use meaningful messages** - Help debugging
@@ -314,6 +314,6 @@ fn process_batch(items:ptr -- processed:i64 failed:i64) {
 5. **Fail fast** - Validate early, fail early
 6. **Consider recovery** - Not every error should crash
 
-## What's Next?
+## What's next?
 
 Learn about [Advanced Topics](../7-advanced/defer.md) like defer, context, and memory management.

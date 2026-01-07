@@ -6,7 +6,7 @@ File path manipulation (`path::` module).
 
 Cross-platform file path operations.
 
-## Key Functions
+## Key functions
 
 - `dirname`, `basename` - Path components
 - `ext` - File extension

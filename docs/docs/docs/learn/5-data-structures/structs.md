@@ -2,7 +2,7 @@
 
 Structs group related data together into custom types.
 
-## Defining Structs
+## Defining structs
 
 ```qd
 struct Point {
@@ -16,7 +16,7 @@ struct Person {
 }
 ```
 
-## Creating Instances
+## Creating instances
 
 Use the struct name with field initializers:
 
@@ -36,7 +36,7 @@ fn main() {
 }
 ```
 
-## Reading Fields
+## Reading fields
 
 Use `@fieldname` to read:
 
@@ -60,7 +60,7 @@ fn main() {
 }
 ```
 
-## Writing Fields
+## Writing fields
 
 Use `.fieldname` to write:
 
@@ -84,7 +84,7 @@ fn main() {
 }
 ```
 
-## Nested Structs
+## Nested structs
 
 Structs can contain other structs:
 
@@ -119,7 +119,7 @@ fn main() {
 }
 ```
 
-## Structs with Arrays
+## Structs with arrays
 
 ```qd
 struct Point {
@@ -159,7 +159,7 @@ fn main() {
 }
 ```
 
-## Struct Methods
+## Struct methods
 
 Methods are functions that operate on a specific struct type. Define them using receiver syntax:
 
@@ -197,7 +197,7 @@ fn main() {
 }
 ```
 
-### Method Resolution
+### Method resolution
 
 When a struct is on the stack and you use an identifier, methods take precedence over global functions:
 
@@ -221,7 +221,7 @@ fn main() {
 }
 ```
 
-### Traditional Function Style
+### Traditional function style
 
 You can also define functions that take structs as parameters:
 
@@ -248,9 +248,9 @@ fn main() {
 }
 ```
 
-## Common Patterns
+## Common patterns
 
-### Builder Pattern
+### Builder pattern
 
 ```qd
 struct Config {
@@ -279,7 +279,7 @@ fn main() {
 }
 ```
 
-### Linked List Node
+### Linked list node
 
 ```qd
 struct Node {
@@ -314,7 +314,7 @@ fn main() {
 }
 ```
 
-### Stack Data Structure
+### Stack data structure
 
 ```qd
 struct Stack {
@@ -357,7 +357,7 @@ fn main() {
 }
 ```
 
-## Struct Equality
+## Struct equality
 
 Compare structs field by field:
 
@@ -391,6 +391,6 @@ fn main() {
 }
 ```
 
-## What's Next?
+## What's next?
 
 Learn about [Constants](constants.md) to define fixed values.

@@ -1,4 +1,4 @@
-# Performance Characteristics
+# Performance characteristics
 
 This document describes Quadrate's performance characteristics and optimization guidance.
 
@@ -6,7 +6,7 @@ This document describes Quadrate's performance characteristics and optimization 
 
 Quadrate compiles to native code via LLVM, providing performance comparable to other compiled languages. It is typically faster than interpreted languages (Python, Ruby) and comparable to JIT-compiled languages (Node.js, LuaJIT).
 
-## Optimization Levels
+## Optimization levels
 
 The `quadc` compiler supports LLVM optimization levels:
 
@@ -19,9 +19,9 @@ The `quadc` compiler supports LLVM optimization levels:
 
 Note: Higher optimization levels increase compile time but typically improve runtime performance.
 
-## Memory and Types
+## Memory and types
 
-### Value Types vs Pointers
+### Value types vs pointers
 
 - **Integers and floats** are passed by value (copied)
 - **Strings** are pointers to heap-allocated data with reference counting
@@ -36,7 +36,7 @@ struct Point { x:i64 y:i64 }
 struct LargeData { buffer:ptr size:i64 /* ... many fields */ }
 ```
 
-### String Operations
+### String operations
 
 | Operation | Complexity | Notes |
 |-----------|------------|-------|
@@ -72,26 +72,26 @@ fn build_string(n:i64 -- result:str) {
 - Get/Set: Average O(1), worst O(n)
 - Iteration: O(n)
 
-## Function Calls
+## Function calls
 
 - Regular function calls have minimal overhead (LLVM inlines small functions)
 - Recursive functions are not tail-call optimized (may cause stack overflow on deep recursion)
 - Anonymous functions (closures) have slightly higher overhead due to capture handling
 
-## Stack Operations
+## Stack operations
 
 Core stack operations are highly optimized:
 - `dup`, `swap`, `drop`, `over`, `rot` - essentially free (register operations)
 - `pick n`, `roll n` - O(n) for deep stack access
 
-## I/O Performance
+## I/O performance
 
 File I/O uses buffered operations:
 - Default buffer size: 8KB
 - Use `io::flush` for immediate write when needed
 - For bulk reads, `io::read_all` is more efficient than repeated `io::read_line`
 
-## Benchmark Reference
+## Benchmark reference
 
 Example benchmark results (Intel i7, -O3):
 
@@ -105,7 +105,7 @@ These numbers are for reference only. Performance varies by:
 - Optimization level
 - Workload characteristics
 
-## Optimization Tips
+## Optimization tips
 
 1. **Use appropriate types**: `i64` for integers, `f64` for floating point
 2. **Avoid string concatenation in loops**: Use `sb` module
@@ -114,7 +114,7 @@ These numbers are for reference only. Performance varies by:
 5. **Use `-O3` for production**: Significant improvements for numerical code
 6. **Profile your code**: Use `time` module to measure hot paths
 
-## Comparison with Other Languages
+## Comparison with other languages
 
 Quadrate performance typically falls in this range:
 

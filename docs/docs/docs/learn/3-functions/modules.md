@@ -2,7 +2,7 @@
 
 Modules organize code into reusable units. They help structure larger programs.
 
-## Importing Modules
+## Importing modules
 
 Use `use` to import a module:
 
@@ -16,7 +16,7 @@ fn main() {
 
 The `use` statement makes the module available via its namespace.
 
-## Calling Module Functions
+## Calling module functions
 
 Use `::` to call functions from a module:
 
@@ -30,7 +30,7 @@ fn main() {
 }
 ```
 
-## Multiple Imports
+## Multiple imports
 
 Import several modules at once:
 
@@ -46,7 +46,7 @@ fn main() {
 }
 ```
 
-## Standard Library Modules
+## Standard library modules
 
 Quadrate includes many built-in modules:
 
@@ -79,7 +79,7 @@ Quadrate includes many built-in modules:
 | `uri` | URI parsing and building |
 | `uuid` | UUID generation |
 
-## Example: Using Multiple Modules
+## Example: using multiple modules
 
 ```qd
 use math
@@ -99,7 +99,7 @@ fn main() {
 }
 ```
 
-## Creating Your Own Modules
+## Creating your own modules
 
 A module is a folder containing a `module.qd` file. Functions marked with `pub` are accessible from outside.
 
@@ -133,7 +133,7 @@ fn main() {
 }
 ```
 
-## Including Single Files
+## Including single files
 
 You can also include a single `.qd` file directly:
 
@@ -154,7 +154,7 @@ fn main() {
 
 Note the `.qd` extension in the `use` statement.
 
-## Public vs Private
+## Public vs private
 
 Use `pub` to mark functions that can be called from outside the module:
 
@@ -171,7 +171,7 @@ fn _helper(x:i64 -- y:i64) {
 }
 ```
 
-## Module Structure
+## Module structure
 
 A typical module contains:
 
@@ -199,7 +199,7 @@ pub fn circle_circumference(r:f64 -- c:f64) {
 }
 ```
 
-## Module Search Path
+## Module search path
 
 Quadrate looks for modules in:
 
@@ -207,7 +207,7 @@ Quadrate looks for modules in:
 2. `$QUADRATE_ROOT` if set
 3. Standard library locations
 
-## Avoiding Name Conflicts
+## Avoiding name conflicts
 
 Module namespaces prevent conflicts:
 
@@ -222,6 +222,6 @@ fn main() {
 }
 ```
 
-## What's Next?
+## What's next?
 
 Now let's learn about [Control Flow](../4-control-flow/conditionals.md) - conditionals, loops, and more.
