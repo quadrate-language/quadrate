@@ -12,19 +12,21 @@ Quadrate requires the following build tools:
 
 ### Installing dependencies
 
-> **Note:** Arch Linux, Debian and Haiku are currently the only tested and supported platforms. Other platforms may work but are untested.
+> **Note:** [Arch Linux](https://archlinux.org/), [Debian](https://www.debian.org/) and [Haiku](https://haiku-os.org/) are currently the only tested and supported platforms. Other platforms may work but are untested.
 
-#### Arch Linux
+<img src="https://archlinux.org/static/logos/archlinux-logo-dark-scalable.svg" alt="https://archlinux.org/" style="height: 40px">
+
 ```bash
 pacman -S meson clang ninja llvm readline
 ```
 
-#### Debian
+#### <img src="https://www.debian.org/logos/openlogo-nd.svg" alt="https://www.debian.org/" style="height: 32px"> Debian
 ```bash
 apt install meson clang libreadline-dev
 ```
 
-#### Haiku
+<img src="https://raw.githubusercontent.com/haiku/haiku/b31ff5b650da52911640cd5514a08887732f3342/data/artwork/HAIKU%20logo%20-%20black.svg" alt="https://www.haiku-os.org/" style="height: 32px">
+
 ```bash
 pkgman install meson llvm21 llvm21_clang readline_devel
 ```
