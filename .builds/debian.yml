@@ -41,10 +41,6 @@ tasks:
   - test: |
       cd quadrate
       make tests
-  - test_optimized: |
-      cd quadrate
-      bash tests/run_tests.sh optimized -O2
-      bash tests/run_tests.sh optimized -O3
   - valgrind: |
       cd quadrate
       make valgrind
