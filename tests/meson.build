@@ -5,8 +5,8 @@
 quadc = find_program('quadc')
 
 test('qd_tests',
-	find_program('run_tests.sh'),
-	args: ['qd'],
+	find_program('run_all.sh'),
+	args: ['--suite', 'qd'],
 	workdir: meson.project_source_root(),
 	env: {
 		'QUADC': quadc.full_path(),

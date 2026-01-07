@@ -5,7 +5,7 @@
 #   ./tests/run_all.sh                    # Run all tests
 #   ./tests/run_all.sh --failed           # Run only previously failed tests
 #   ./tests/run_all.sh --test NAME        # Run specific test
-#   ./tests/run_all.sh --suite SUITE      # Run specific suite (cpp, lsp, qd, formatter, linter, embed, quadpm, stdlib, mtls, fuzz)
+#   ./tests/run_all.sh --suite SUITE      # Run specific suite (cpp, lsp, qd, formatter, linter, embed, quadpm, args, stdlib, mtls, fuzz)
 #   ./tests/run_all.sh --clear            # Clear failed tests file
 #   ./tests/run_all.sh --list             # List all available tests
 
@@ -99,7 +99,7 @@ while [[ $# -gt 0 ]]; do
             echo "Options:"
             echo "  --failed, -f       Run only previously failed tests"
             echo "  --test, -t NAME    Run specific test by name"
-            echo "  --suite, -s SUITE  Run specific suite (cpp, lsp, qd, formatter, linter, embed, quadpm, stdlib, mtls, fuzz)"
+            echo "  --suite, -s SUITE  Run specific suite (cpp, lsp, qd, formatter, linter, embed, quadpm, args, stdlib, mtls, fuzz)"
             echo "  --fuzz-time SECS   Fuzz test duration in seconds (default: 10)"
             echo "  --list, -l         List all available tests"
             echo "  --clear, -c        Clear failed tests file"
@@ -921,6 +921,74 @@ run_quadpm_tests() {
     fi
 }
 
+# Run command-line argument tests
+run_args_tests() {
+    local suite="args"
+    local test_dir="$PROJECT_ROOT/tests/run_args"
+
+    if ! should_run_test "$suite" "args_tests"; then
+        return
+    fi
+
+    print_header "CLI Argument Tests"
+
+    # Check if test files exist
+    if [[ ! -d "$test_dir" ]]; then
+        log_skip "$suite" "args_tests" "test directory not found"
+        return
+    fi
+
+    local passed=0
+    local failed=0
+
+    # Test function: run_arg_test <description> <qd_file> <expected_output> [args...]
+    run_arg_test() {
+        local desc="$1"
+        local qd_file="$2"
+        local expected="$3"
+        shift 3
+        local args=("$@")
+
+        local cmd=("$QUADC" "-r" "$test_dir/$qd_file")
+        if [[ ${#args[@]} -gt 0 ]]; then
+            cmd+=("--")
+            cmd+=("${args[@]}")
+        fi
+
+        local actual
+        # Capture only stdout, ignore stderr (compiler warnings)
+        actual=$("${cmd[@]}" 2>/dev/null)
+
+        if [[ "$actual" == "$expected" ]]; then
+            ((passed++))
+        else
+            ((failed++))
+            if [[ $VERBOSE -eq 1 ]]; then
+                echo "  ${desc}: expected '$expected', got '$actual'"
+            fi
+        fi
+    }
+
+    # Run tests
+    run_arg_test "greet with single arg" "greet.qd" "Hello, Alice!" "Alice"
+    run_arg_test "greet with no args" "greet.qd" "Usage: greet <name>"
+    run_arg_test "echo multiple args" "echo_args.qd" "argc=3
+arg0=third
+arg1=second
+arg2=first" "first" "second" "third"
+    run_arg_test "echo no args" "echo_args.qd" "argc=0"
+    run_arg_test "echo single arg" "echo_args.qd" "argc=1
+arg0=hello" "hello"
+    run_arg_test "arg with spaces" "spaces_in_args.qd" "Got: [Hello World]" "Hello World"
+    run_arg_test "spaces test no args" "spaces_in_args.qd" "No arguments"
+
+    if [[ $failed -eq 0 ]]; then
+        log_pass "$suite" "args_tests" "($passed tests)"
+    else
+        log_fail "$suite" "args_tests" "$failed/$((passed + failed)) tests failed"
+    fi
+}
+
 # Run mTLS tests
 run_mtls_tests() {
     local suite="mtls"
@@ -1246,6 +1314,10 @@ main() {
 
     if [[ -z "$SPECIFIC_SUITE" ]] || [[ "$SPECIFIC_SUITE" == "quadpm" ]]; then
         run_quadpm_tests
+    fi
+
+    if [[ -z "$SPECIFIC_SUITE" ]] || [[ "$SPECIFIC_SUITE" == "args" ]]; then
+        run_args_tests
     fi
 
     if [[ -z "$SPECIFIC_SUITE" ]] || [[ "$SPECIFIC_SUITE" == "stdlib" ]]; then
