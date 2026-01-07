@@ -113,10 +113,10 @@ TIME ?= 60
 LEN ?= 5000
 fuzz:
 	@if ! which clang++ > /dev/null 2>&1; then echo "Error: clang++ required for fuzzing"; exit 1; fi
-	CC=clang CXX=clang++ meson setup build/fuzz --buildtype=debug -Dbuild_fuzz=true $(MESON_FLAGS) --reconfigure || CC=clang CXX=clang++ meson setup build/fuzz --buildtype=debug -Dbuild_fuzz=true $(MESON_FLAGS)
-	meson compile -C build/fuzz fuzz/fuzz_parser
+	@CC=clang CXX=clang++ meson setup build/fuzz --buildtype=debug -Dbuild_fuzz=true $(MESON_FLAGS) --reconfigure >/dev/null 2>&1 || CC=clang CXX=clang++ meson setup build/fuzz --buildtype=debug -Dbuild_fuzz=true $(MESON_FLAGS) >/dev/null 2>&1
+	@meson compile -C build/fuzz tests/fuzz/fuzz_parser >/dev/null 2>&1
 	@echo "Running fuzzer for $(TIME) seconds..."
-	./build/fuzz/fuzz/fuzz_parser fuzz/corpus/ -max_len=$(LEN) -max_total_time=$(TIME)
+	@./build/fuzz/tests/fuzz/fuzz_parser tests/fuzz/corpus/ -max_len=$(LEN) -max_total_time=$(TIME) >/dev/null 2>&1 && echo "Done. No crashes found." || echo "Fuzzer crashed - check for crash-* files"
 
 examples: debug
 	@mkdir -p dist/examples

@@ -2,6 +2,24 @@
 
 This directory contains fuzzing targets for the Quadrate parser using libFuzzer.
 
+## Quick start
+
+Fuzz tests are integrated into the test runner:
+
+```bash
+# Run quick 10-second fuzz test (part of make tests)
+make tests
+
+# Run fuzz tests only
+bash tests/run_all.sh --suite fuzz
+
+# Run longer fuzz session
+bash tests/run_all.sh --suite fuzz --fuzz-time 60
+
+# Extended fuzzing via make
+make fuzz TIME=300
+```
+
 ## Prerequisites
 
 - Clang compiler (libFuzzer is built into Clang)
@@ -21,19 +39,19 @@ meson compile -C build/fuzz
 
 ```bash
 # Basic run (uses seed corpus)
-./build/fuzz/fuzz/fuzz_parser fuzz/corpus/
+./build/fuzz/tests/fuzz/fuzz_parser tests/fuzz/corpus/
 
 # Limit input size (recommended)
-./build/fuzz/fuzz/fuzz_parser fuzz/corpus/ -max_len=10000
+./build/fuzz/tests/fuzz/fuzz_parser tests/fuzz/corpus/ -max_len=10000
 
 # Run for limited time (e.g., 60 seconds)
-./build/fuzz/fuzz/fuzz_parser fuzz/corpus/ -max_total_time=60
+./build/fuzz/tests/fuzz/fuzz_parser tests/fuzz/corpus/ -max_total_time=60
 
 # Use multiple cores
-./build/fuzz/fuzz/fuzz_parser fuzz/corpus/ -jobs=4 -workers=4
+./build/fuzz/tests/fuzz/fuzz_parser tests/fuzz/corpus/ -jobs=4 -workers=4
 
 # Save crashes to specific directory
-./build/fuzz/fuzz/fuzz_parser fuzz/corpus/ -artifact_prefix=fuzz/crashes/
+./build/fuzz/tests/fuzz/fuzz_parser tests/fuzz/corpus/ -artifact_prefix=tests/fuzz/crashes/
 ```
 
 ## Corpus
@@ -51,7 +69,7 @@ When the fuzzer finds a crash, it saves the input to a file. To reproduce:
 
 ```bash
 # Run with specific crash input
-./build/fuzz/fuzz/fuzz_parser crash-<hash>
+./build/fuzz/tests/fuzz/fuzz_parser crash-<hash>
 ```
 
 ## Adding new fuzz targets

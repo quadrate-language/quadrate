@@ -44,7 +44,7 @@ endif
 
 # Fuzzing targets (optional, requires clang)
 if get_option('build_fuzz')
-		subdir('fuzz')
+		subdir('tests/fuzz')
 endif
 
 # Test setup for valgrind

@@ -5,7 +5,7 @@
 #   meson compile -C build/fuzz
 #
 # Run fuzzer with:
-#   ./build/fuzz/fuzz/fuzz_parser fuzz/corpus/ -max_len=10000
+#   ./build/fuzz/tests/fuzz/fuzz_parser tests/fuzz/corpus/ -max_len=10000
 
 # Check if fuzzing is enabled and we're using clang
 if not get_option('build_fuzz')
@@ -32,7 +32,7 @@ fuzz_link_args = [
 
 # Get qc sources and includes for direct compilation with fuzzer instrumentation
 qc_src_dir = meson.project_source_root() / 'lib' / 'qc' / 'src'
-qc_inc = include_directories('../lib/qc/include')
+qc_inc = include_directories('../../lib/qc/include')
 
 # u8t dependency
 u8t_dep = subproject('u8t').get_variable('u8t_dep')

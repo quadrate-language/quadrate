@@ -1,0 +1,5 @@
+# Ignore auto-generated corpus files (SHA hashes)
+# Keep only hand-crafted edge_* seeds
+*
+!.gitignore
+!edge_*

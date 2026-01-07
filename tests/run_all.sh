@@ -5,7 +5,7 @@
 #   ./tests/run_all.sh                    # Run all tests
 #   ./tests/run_all.sh --failed           # Run only previously failed tests
 #   ./tests/run_all.sh --test NAME        # Run specific test
-#   ./tests/run_all.sh --suite SUITE      # Run specific suite (cpp, lsp, qd, formatter, linter, embed, quadpm, stdlib, mtls)
+#   ./tests/run_all.sh --suite SUITE      # Run specific suite (cpp, lsp, qd, formatter, linter, embed, quadpm, stdlib, mtls, fuzz)
 #   ./tests/run_all.sh --clear            # Clear failed tests file
 #   ./tests/run_all.sh --list             # List all available tests
 
@@ -57,6 +57,7 @@ LIST_TESTS=0
 CLEAR_FAILED=0
 VERBOSE=0
 USE_VALGRIND=0
+FUZZ_TIME=10
 
 while [[ $# -gt 0 ]]; do
     case $1 in
@@ -70,6 +71,10 @@ while [[ $# -gt 0 ]]; do
             ;;
         --suite|-s)
             SPECIFIC_SUITE="$2"
+            shift 2
+            ;;
+        --fuzz-time)
+            FUZZ_TIME="$2"
             shift 2
             ;;
         --list|-l)
@@ -94,7 +99,8 @@ while [[ $# -gt 0 ]]; do
             echo "Options:"
             echo "  --failed, -f       Run only previously failed tests"
             echo "  --test, -t NAME    Run specific test by name"
-            echo "  --suite, -s SUITE  Run specific suite (cpp, lsp, qd, formatter, linter, embed, quadpm, stdlib, mtls)"
+            echo "  --suite, -s SUITE  Run specific suite (cpp, lsp, qd, formatter, linter, embed, quadpm, stdlib, mtls, fuzz)"
+            echo "  --fuzz-time SECS   Fuzz test duration in seconds (default: 10)"
             echo "  --list, -l         List all available tests"
             echo "  --clear, -c        Clear failed tests file"
             echo "  --verbose, -v      Show verbose output"
@@ -999,6 +1005,56 @@ run_stdlib_tests() {
     fi
 }
 
+run_fuzz_tests() {
+    local suite="fuzz"
+
+    if ! should_run_test "$suite" "fuzz_parser"; then
+        return
+    fi
+
+    if ! command -v clang++ &> /dev/null; then
+        log_skip "$suite" "fuzz_parser" "clang++ not found"
+        return
+    fi
+
+    print_header "Fuzz Tests ${DIM}(${FUZZ_TIME}s)${NC}"
+
+    local fuzz_build="$PROJECT_ROOT/build/fuzz"
+    local fuzz_exe="$fuzz_build/tests/fuzz/fuzz_parser"
+
+    if [[ ! -x "$fuzz_exe" ]]; then
+        echo -e "  ${DIM}Building fuzz target...${NC}"
+        local build_output
+        if ! build_output=$(CC=clang CXX=clang++ meson setup "$fuzz_build" --buildtype=debug -Dbuild_fuzz=true 2>&1); then
+            log_fail "$suite" "fuzz_parser" "build setup failed" "$build_output"
+            return
+        fi
+        if ! build_output=$(meson compile -C "$fuzz_build" tests/fuzz/fuzz_parser 2>&1); then
+            log_fail "$suite" "fuzz_parser" "build failed" "$build_output"
+            return
+        fi
+    fi
+
+    local corpus_dir="$PROJECT_ROOT/tests/fuzz/corpus"
+    local crash_dir="$TEMP_DIR/fuzz_crashes"
+    mkdir -p "$crash_dir"
+
+    "$fuzz_exe" "$corpus_dir" \
+        -max_len=5000 \
+        -max_total_time="$FUZZ_TIME" \
+        -artifact_prefix="$crash_dir/" \
+        > /dev/null 2>&1
+
+    local crash_count=$(find "$crash_dir" -type f 2>/dev/null | wc -l)
+
+    if [[ $crash_count -gt 0 ]]; then
+        local crash_files=$(ls "$crash_dir" 2>/dev/null | head -5)
+        log_fail "$suite" "fuzz_parser" "$crash_count crash(es) found" "Crashes saved to: $crash_dir\n$crash_files"
+    else
+        log_pass "$suite" "fuzz_parser"
+    fi
+}
+
 # List all available tests
 list_all_tests() {
     echo "Available tests:"
@@ -1049,6 +1105,10 @@ list_all_tests() {
 
     echo "mTLS Tests (suite: mtls):"
     echo "  mtls_test"
+    echo ""
+
+    echo "Fuzz Tests (suite: fuzz):"
+    echo "  fuzz_parser"
 }
 
 # Print summary
@@ -1059,7 +1119,7 @@ print_summary() {
     echo -e "${BOLD}═══════════════════════════════════════════════════════════════════════════════${NC}"
 
     # Print per-suite summary
-    for suite in cpp lsp qd formatter linter embed quadpm stdlib mtls; do
+    for suite in cpp lsp qd formatter linter embed quadpm stdlib mtls fuzz; do
         local passed=${SUITE_PASSED[$suite]:-0}
         local failed=${SUITE_FAILED[$suite]:-0}
         local skipped=${SUITE_SKIPPED[$suite]:-0}
@@ -1078,6 +1138,7 @@ print_summary() {
             quadpm) suite_name="Package Manager" ;;
             stdlib) suite_name="Stdlib Unit Tests" ;;
             mtls) suite_name="mTLS" ;;
+            fuzz) suite_name="Fuzz" ;;
         esac
 
         printf "  %-20s" "$suite_name:"
@@ -1193,6 +1254,10 @@ main() {
 
     if [[ -z "$SPECIFIC_SUITE" ]] || [[ "$SPECIFIC_SUITE" == "mtls" ]]; then
         run_mtls_tests
+    fi
+
+    if [[ -z "$SPECIFIC_SUITE" ]] || [[ "$SPECIFIC_SUITE" == "fuzz" ]]; then
+        run_fuzz_tests
     fi
 
     print_summary
