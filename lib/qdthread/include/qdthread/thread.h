@@ -22,9 +22,6 @@ extern "C" {
 #define THREAD_ERR_CLOSED 7
 #define THREAD_ERR_TIMEOUT 8
 
-// =============================================================================
-// Thread
-// =============================================================================
 
 typedef struct qd_thread {
 	thrd_t handle;
@@ -40,9 +37,6 @@ qd_exec_result usr_thread_raw_detach(qd_context* ctx);	 // (thread:ptr -- )!
 qd_exec_result usr_thread_raw_is_alive(qd_context* ctx); // (thread:ptr -- alive:i64)
 qd_exec_result usr_thread_raw_sleep(qd_context* ctx);	 // (ms:i64 -- )
 
-// =============================================================================
-// Mutex
-// =============================================================================
 
 typedef struct qd_mutex {
 	mtx_t handle;
@@ -56,9 +50,6 @@ qd_exec_result usr_thread_raw_mutex_unlock(qd_context* ctx);   // (mutex:ptr -- 
 qd_exec_result usr_thread_raw_mutex_try_lock(qd_context* ctx); // (mutex:ptr -- success:i64)
 qd_exec_result usr_thread_raw_mutex_free(qd_context* ctx);	   // (mutex:ptr -- )
 
-// =============================================================================
-// Channel
-// =============================================================================
 
 typedef struct qd_channel {
 	mtx_t mutex;
@@ -86,9 +77,6 @@ qd_exec_result usr_thread_raw_chan_len(qd_context* ctx);	   // (ch:ptr -- len:i6
 qd_exec_result usr_thread_raw_chan_cap(qd_context* ctx);	   // (ch:ptr -- cap:i64)
 qd_exec_result usr_thread_raw_chan_free(qd_context* ctx);	   // (ch:ptr -- )
 
-// =============================================================================
-// WaitGroup
-// =============================================================================
 
 typedef struct qd_waitgroup {
 	mtx_t mutex;

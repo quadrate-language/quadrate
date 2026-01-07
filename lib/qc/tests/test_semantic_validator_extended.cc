@@ -11,9 +11,7 @@ static size_t validateCode(const char* src) {
 	return validator.validate(root, "test.qd");
 }
 
-// ============================================================================
 // Stack Operations Edge Cases
-// ============================================================================
 
 TEST(DropEmpty) {
 	const char* src = "fn main() { drop }";
@@ -87,9 +85,7 @@ TEST(RollZero) {
 	ASSERT(errors == 0, "roll 0 should succeed (no-op)");
 }
 
-// ============================================================================
 // Arithmetic Operations Edge Cases
-// ============================================================================
 
 TEST(DivByZero) {
 	// Division by zero is a runtime error, not a compile-time error
@@ -134,9 +130,7 @@ TEST(SqFloat) {
 	ASSERT(errors == 0, "sq on float should succeed");
 }
 
-// ============================================================================
 // Comparison Operations
-// ============================================================================
 
 TEST(EqInts) {
 	const char* src = "fn main() { 1 2 eq drop }";
@@ -174,9 +168,7 @@ TEST(WithinInts) {
 	ASSERT(errors == 0, "within on ints should succeed");
 }
 
-// ============================================================================
 // Logical Operations
-// ============================================================================
 
 TEST(AndOperation) {
 	const char* src = "fn main() { 1 0 and drop }";
@@ -202,9 +194,7 @@ TEST(XorOperation) {
 	ASSERT(errors == 0, "xor operation should succeed");
 }
 
-// ============================================================================
 // Bitwise Operations
-// ============================================================================
 
 TEST(BitwiseAndOperation) {
 	// Use decimal instead of hex (Quadrate doesn't support hex literals)
@@ -226,9 +216,7 @@ TEST(ShrOperation) {
 	ASSERT(errors == 0, "shr operation should succeed");
 }
 
-// ============================================================================
 // Control Flow Edge Cases
-// ============================================================================
 
 TEST(IfEmpty) {
 	// If with nothing before it - should consume condition from stack
@@ -274,9 +262,7 @@ TEST(ReturnStatement) {
 	ASSERT(errors == 0, "return statement should succeed");
 }
 
-// ============================================================================
 // Local Variables
-// ============================================================================
 
 TEST(LocalAssignment) {
 	const char* src = "fn main() { 42 -> x x print }";
@@ -302,9 +288,7 @@ TEST(UndefinedLocal) {
 	ASSERT(errors >= 1, "undefined local should error");
 }
 
-// ============================================================================
 // Function Calls
-// ============================================================================
 
 TEST(RecursiveFunction) {
 	const char* src = R"(
@@ -348,9 +332,7 @@ TEST(FunctionOrderIndependence) {
 	ASSERT(errors == 0, "forward reference should succeed");
 }
 
-// ============================================================================
 // Structs
-// ============================================================================
 
 TEST(StructConstruction) {
 	const char* src = R"(
@@ -404,9 +386,7 @@ TEST(StructMissingField) {
 	ASSERT(errors >= 1, "struct with missing field should error");
 }
 
-// ============================================================================
 // Constants
-// ============================================================================
 
 TEST(ConstantReference) {
 	const char* src = R"(
@@ -432,9 +412,7 @@ TEST(UndefinedConstant) {
 	ASSERT(errors >= 1, "undefined constant should error");
 }
 
-// ============================================================================
 // Defer Statements
-// ============================================================================
 
 TEST(DeferSimple) {
 	const char* src = "fn main() { defer { 42 print } }";
@@ -465,9 +443,7 @@ TEST(DeferWithLocal) {
 	ASSERT(errors == 0, "defer with local should succeed");
 }
 
-// ============================================================================
 // Anonymous Functions
-// ============================================================================
 
 TEST(AnonymousFunctionSimple) {
 	const char* src = R"(
@@ -490,9 +466,7 @@ TEST(AnonymousFunctionCapture) {
 	ASSERT(errors == 0, "anonymous function with capture should succeed");
 }
 
-// ============================================================================
 // Generic Functions
-// ============================================================================
 
 TEST(GenericIdentity) {
 	const char* src = R"(
@@ -514,9 +488,7 @@ TEST(GenericPair) {
 	ASSERT(errors == 0, "generic pair swap should succeed");
 }
 
-// ============================================================================
 // Print Variants
-// ============================================================================
 
 TEST(PrintInt) {
 	const char* src = "fn main() { 42 print }";
@@ -548,9 +520,7 @@ TEST(Newline) {
 	ASSERT(errors == 0, "nl should succeed");
 }
 
-// ============================================================================
 // Edge Cases
-// ============================================================================
 
 TEST(EmptyFunction) {
 	const char* src = "fn empty() {}";

@@ -15,9 +15,7 @@
 // Global registry of valid struct pointers
 static ptr_registry_t struct_registry = PTR_REGISTRY_INITIALIZER;
 
-// ============================================================================
 // Struct operations
-// ============================================================================
 
 qd_struct_header_t* qd_struct_get_header(void* struct_ptr) {
 	// Cast through void* to suppress alignment warnings - the header
@@ -114,9 +112,7 @@ size_t qd_struct_refcount(const void* struct_ptr) {
 	return atomic_load(&header->refcount);
 }
 
-// ============================================================================
 // Generic pointer retain/release (works for both arrays and structs)
-// ============================================================================
 
 void* qd_ptr_retain(void* ptr) {
 	if (ptr == NULL) {

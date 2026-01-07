@@ -13,9 +13,7 @@
 // Dump current stack contents for debugging (called on errors)
 void qdrt_dump_stack(qd_context* ctx);
 
-// =============================================================================
 // Error handling macros - consolidate repetitive error reporting
-// =============================================================================
 
 // Fatal error with stack dump and abort
 #define QDRT_FATAL(ctx, op, msg)                                                                                       \

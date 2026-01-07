@@ -24,7 +24,6 @@ static void destroy_test_context(qd_context* ctx) {
 	free(ctx);
 }
 
-// ========== Alloc Tests ==========
 
 TEST(AllocBasicTest) {
 	qd_context* ctx = create_test_context();
@@ -53,7 +52,6 @@ TEST(AllocBasicTest) {
 	destroy_test_context(ctx);
 }
 
-// ========== Set/Get Byte Tests ==========
 
 TEST(SetGetByteTest) {
 	qd_context* ctx = create_test_context();
@@ -108,7 +106,6 @@ TEST(SetGetByteTest) {
 	destroy_test_context(ctx);
 }
 
-// ========== Set/Get Int64 Tests ==========
 
 TEST(SetGetI64Test) {
 	qd_context* ctx = create_test_context();
@@ -148,7 +145,6 @@ TEST(SetGetI64Test) {
 	destroy_test_context(ctx);
 }
 
-// ========== Set/Get Float64 Tests ==========
 
 TEST(SetGetF64Test) {
 	qd_context* ctx = create_test_context();
@@ -188,7 +184,6 @@ TEST(SetGetF64Test) {
 	destroy_test_context(ctx);
 }
 
-// ========== Set/Get Ptr Tests ==========
 
 TEST(SetGetPtrTest) {
 	qd_context* ctx = create_test_context();
@@ -231,7 +226,6 @@ TEST(SetGetPtrTest) {
 	destroy_test_context(ctx);
 }
 
-// ========== Zero Tests ==========
 
 TEST(ZeroTest) {
 	qd_context* ctx = create_test_context();
@@ -261,7 +255,6 @@ TEST(ZeroTest) {
 	destroy_test_context(ctx);
 }
 
-// ========== Fill Tests ==========
 
 TEST(FillTest) {
 	qd_context* ctx = create_test_context();
@@ -292,7 +285,6 @@ TEST(FillTest) {
 	destroy_test_context(ctx);
 }
 
-// ========== Copy Tests ==========
 
 TEST(CopyTest) {
 	qd_context* ctx = create_test_context();
@@ -330,7 +322,6 @@ TEST(CopyTest) {
 	destroy_test_context(ctx);
 }
 
-// ========== To/From String Tests ==========
 
 TEST(ToStringTest) {
 	qd_context* ctx = create_test_context();

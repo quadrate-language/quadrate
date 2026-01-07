@@ -25,7 +25,6 @@ static void destroy_test_context(qd_context* ctx) {
 #define TIME_MILLISECOND (1000LL * TIME_MICROSECOND)
 #define TIME_SECOND      (1000LL * TIME_MILLISECOND)
 
-// ========== Unix Time Tests ==========
 
 TEST(TimeUnixTest) {
 	qd_context* ctx = create_test_context();
@@ -63,7 +62,6 @@ TEST(TimeUnixIncreasingTest) {
 	destroy_test_context(ctx);
 }
 
-// ========== Now (nanoseconds) Tests ==========
 
 TEST(TimeNowTest) {
 	qd_context* ctx = create_test_context();
@@ -98,7 +96,6 @@ TEST(TimeNowIncreasingTest) {
 	destroy_test_context(ctx);
 }
 
-// ========== Sleep Tests ==========
 
 TEST(TimeSleepBasicTest) {
 	qd_context* ctx = create_test_context();
@@ -139,7 +136,6 @@ TEST(TimeSleepZeroTest) {
 	destroy_test_context(ctx);
 }
 
-// ========== Precision Tests ==========
 
 TEST(TimeNowVsUnixConsistencyTest) {
 	qd_context* ctx = create_test_context();

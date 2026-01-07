@@ -23,7 +23,6 @@ static void destroy_test_context(qd_context* ctx) {
 	free(ctx);
 }
 
-// ========== qd_mul tests ==========
 
 TEST(MulIntegersTest) {
 	qd_context* ctx = create_test_context();
@@ -130,7 +129,6 @@ TEST(MulNegativeTest) {
 	destroy_test_context(ctx);
 }
 
-// ========== qd_add tests ==========
 
 TEST(AddIntegersTest) {
 	qd_context* ctx = create_test_context();
@@ -237,7 +235,6 @@ TEST(AddZeroTest) {
 	destroy_test_context(ctx);
 }
 
-// ========== qd_sub tests ==========
 
 TEST(SubIntegersTest) {
 	qd_context* ctx = create_test_context();
@@ -344,7 +341,6 @@ TEST(SubZeroTest) {
 	destroy_test_context(ctx);
 }
 
-// ========== Error case tests ==========
 
 TEST(MulTypeErrorTest) {
 	qd_context* ctx = create_test_context();
@@ -388,7 +384,6 @@ int main(void) {
 	return UC_PrintResults();
 }
 
-// ========== print behavior tests ==========
 
 TEST(PrintPopsStackTest) {
 	qd_context* ctx = create_test_context();
@@ -604,7 +599,6 @@ TEST(PrintsvMixedTypesTest) {
 	destroy_test_context(ctx);
 }
 
-// ========== qd_dup tests ==========
 
 TEST(DupIntegerTest) {
 	qd_context* ctx = create_test_context();
@@ -712,7 +706,6 @@ TEST(DupNonDestructiveTest) {
 	destroy_test_context(ctx);
 }
 
-// ========== qd_swap tests ==========
 
 TEST(SwapIntegersTest) {
 	qd_context* ctx = create_test_context();
@@ -823,7 +816,6 @@ TEST(SwapDoesNotAffectRestOfStackTest) {
 	destroy_test_context(ctx);
 }
 
-// ========== qd_over tests ==========
 
 TEST(OverIntegersTest) {
 	qd_context* ctx = create_test_context();
@@ -957,7 +949,6 @@ TEST(OverPreservesRestOfStackTest) {
 	destroy_test_context(ctx);
 }
 
-// ========== qd_nip tests ==========
 
 TEST(NipIntegersTest) {
 	qd_context* ctx = create_test_context();
@@ -1463,7 +1454,6 @@ TEST(SwapWithDupTest) {
 	destroy_test_context(ctx);
 }
 
-// ========== comparison tests ==========
 
 // qd_eq tests
 TEST(EqIntegersEqualTest) {
@@ -2086,7 +2076,6 @@ TEST(ComparisonChainTest) {
 	destroy_test_context(ctx);
 }
 
-// ========== qd_within tests ==========
 
 TEST(WithinValueInRangeIntegersTest) {
 	qd_context* ctx = create_test_context();
@@ -2441,7 +2430,6 @@ TEST(WithinInvertedRangeTest) {
 	destroy_test_context(ctx);
 }
 
-// ========== qd_drop tests ==========
 
 TEST(DropIntegerTest) {
 	qd_context* ctx = create_test_context();
@@ -2497,7 +2485,6 @@ TEST(DropFloatTest) {
 	destroy_test_context(ctx);
 }
 
-// ========== qd_drop2 tests ==========
 
 TEST(Drop2Test) {
 	qd_context* ctx = create_test_context();
@@ -2537,7 +2524,6 @@ TEST(Drop2StringsTest) {
 	destroy_test_context(ctx);
 }
 
-// ========== qd_rot tests ==========
 
 TEST(RotTest) {
 	qd_context* ctx = create_test_context();
@@ -2593,7 +2579,6 @@ TEST(RotMixedTypesTest) {
 	destroy_test_context(ctx);
 }
 
-// ========== qd_mod tests ==========
 
 TEST(ModPositiveTest) {
 	qd_context* ctx = create_test_context();
@@ -2644,7 +2629,6 @@ TEST(ModZeroTest) {
 	destroy_test_context(ctx);
 }
 
-// ========== qd_neg tests ==========
 
 TEST(NegIntegerTest) {
 	qd_context* ctx = create_test_context();
@@ -2701,7 +2685,6 @@ TEST(NegNegativeTest) {
 	destroy_test_context(ctx);
 }
 
-// ========== New Stack Manipulation Tests ==========
 
 TEST(TuckTest) {
 	qd_context* ctx = create_test_context();

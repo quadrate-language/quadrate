@@ -23,7 +23,6 @@ static void destroy_test_context(qd_context* ctx) {
 	qd_free_context(ctx);
 }
 
-// ========== getenv Tests ==========
 
 TEST(OsGetenvPathTest) {
 	qd_context* ctx = create_test_context();
@@ -56,7 +55,6 @@ TEST(OsGetenvNotSetTest) {
 	destroy_test_context(ctx);
 }
 
-// ========== setenv/getenv Roundtrip ==========
 
 TEST(OsSetenvGetenvTest) {
 	qd_context* ctx = create_test_context();
@@ -81,7 +79,6 @@ TEST(OsSetenvGetenvTest) {
 	destroy_test_context(ctx);
 }
 
-// ========== exists Tests ==========
 
 TEST(OsExistsRootTest) {
 	qd_context* ctx = create_test_context();
@@ -122,7 +119,6 @@ TEST(OsExistsNotFoundTest) {
 	destroy_test_context(ctx);
 }
 
-// ========== is_dir Tests ==========
 
 TEST(OsIsDirTmpTest) {
 	qd_context* ctx = create_test_context();
@@ -150,7 +146,6 @@ TEST(OsIsDirFileTest) {
 	destroy_test_context(ctx);
 }
 
-// ========== is_file Tests ==========
 
 TEST(OsIsFilePasswdTest) {
 	qd_context* ctx = create_test_context();
@@ -178,7 +173,6 @@ TEST(OsIsFileDirTest) {
 	destroy_test_context(ctx);
 }
 
-// ========== getpid Tests ==========
 
 TEST(OsGetpidTest) {
 	qd_context* ctx = create_test_context();
@@ -194,7 +188,6 @@ TEST(OsGetpidTest) {
 	destroy_test_context(ctx);
 }
 
-// ========== cwd Tests ==========
 
 TEST(OsCwdTest) {
 	qd_context* ctx = create_test_context();
@@ -216,7 +209,6 @@ TEST(OsCwdTest) {
 	destroy_test_context(ctx);
 }
 
-// ========== mktemp Tests ==========
 
 TEST(OsMktempTest) {
 	qd_context* ctx = create_test_context();
@@ -251,7 +243,6 @@ TEST(OsMktempTest) {
 	destroy_test_context(ctx);
 }
 
-// ========== mkdir/rmdir Tests ==========
 
 TEST(OsMkdirRmdirTest) {
 	qd_context* ctx = create_test_context();

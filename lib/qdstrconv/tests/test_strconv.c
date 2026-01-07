@@ -20,7 +20,6 @@ static void destroy_test_context(qd_context* ctx) {
 	qd_free_context(ctx);
 }
 
-// ========== itoa Tests ==========
 
 TEST(StrconvItoaPositiveTest) {
 	qd_context* ctx = create_test_context();
@@ -65,7 +64,6 @@ TEST(StrconvItoaZeroTest) {
 	destroy_test_context(ctx);
 }
 
-// ========== atoi Tests ==========
 
 TEST(StrconvAtoiPositiveTest) {
 	qd_context* ctx = create_test_context();
@@ -107,7 +105,6 @@ TEST(StrconvAtoiZeroTest) {
 	destroy_test_context(ctx);
 }
 
-// ========== format_int Tests ==========
 
 TEST(StrconvFormatIntHexTest) {
 	qd_context* ctx = create_test_context();
@@ -154,7 +151,6 @@ TEST(StrconvFormatIntOctalTest) {
 	destroy_test_context(ctx);
 }
 
-// ========== parse_int Tests ==========
 
 TEST(StrconvParseIntHexTest) {
 	qd_context* ctx = create_test_context();
@@ -198,7 +194,6 @@ TEST(StrconvParseIntOctalTest) {
 	destroy_test_context(ctx);
 }
 
-// ========== Roundtrip Tests ==========
 
 TEST(StrconvRoundtripDecimalTest) {
 	qd_context* ctx = create_test_context();

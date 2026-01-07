@@ -28,9 +28,6 @@ static void push_element(qd_context* ctx, qd_stack_element_t elem) {
 	}
 }
 
-// =============================================================================
-// Thread Implementation
-// =============================================================================
 
 typedef struct {
 	qd_stack_element_t func;
@@ -206,9 +203,6 @@ qd_exec_result usr_thread_raw_sleep(qd_context* ctx) {
 	return (qd_exec_result){0};
 }
 
-// =============================================================================
-// Mutex Implementation
-// =============================================================================
 
 // new( -- mutex:ptr)!
 qd_exec_result usr_thread_raw_mutex_new(qd_context* ctx) {
@@ -334,9 +328,6 @@ qd_exec_result usr_thread_raw_mutex_free(qd_context* ctx) {
 	return (qd_exec_result){0};
 }
 
-// =============================================================================
-// Channel Implementation
-// =============================================================================
 
 // Helper: create channel with given capacity
 static qd_channel* channel_create(size_t capacity) {
@@ -737,9 +728,6 @@ qd_exec_result usr_thread_raw_chan_free(qd_context* ctx) {
 	return (qd_exec_result){0};
 }
 
-// =============================================================================
-// WaitGroup Implementation
-// =============================================================================
 
 // new( -- wg:ptr)!
 qd_exec_result usr_thread_raw_wg_new(qd_context* ctx) {

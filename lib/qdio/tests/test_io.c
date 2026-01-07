@@ -33,7 +33,6 @@ static char* create_temp_path(const char* suffix) {
 	return path;
 }
 
-// ========== Open/Close Tests ==========
 
 TEST(IoOpenReadTest) {
 	qd_context* ctx = create_test_context();
@@ -125,7 +124,6 @@ TEST(IoCloseNullTest) {
 	destroy_test_context(ctx);
 }
 
-// ========== Read/Write String Tests ==========
 
 TEST(IoWriteReadStringTest) {
 	qd_context* ctx = create_test_context();
@@ -244,7 +242,6 @@ TEST(IoWriteReadEmptyTest) {
 	destroy_test_context(ctx);
 }
 
-// ========== Seek/Tell Tests ==========
 
 TEST(IoSeekTellTest) {
 	qd_context* ctx = create_test_context();
@@ -352,7 +349,6 @@ TEST(IoSeekEndTest) {
 	destroy_test_context(ctx);
 }
 
-// ========== EOF Tests ==========
 
 TEST(IoEofTest) {
 	qd_context* ctx = create_test_context();
@@ -409,7 +405,6 @@ TEST(IoEofTest) {
 	destroy_test_context(ctx);
 }
 
-// ========== read_file/write_file Tests ==========
 
 TEST(IoReadFileTest) {
 	qd_context* ctx = create_test_context();
@@ -483,7 +478,6 @@ TEST(IoReadFileNotFoundTest) {
 	destroy_test_context(ctx);
 }
 
-// ========== Memory Management Tests ==========
 
 TEST(IoMemoryTest) {
 	qd_context* ctx = create_test_context();

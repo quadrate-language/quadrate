@@ -22,7 +22,6 @@ static void destroy_test_context(qd_context* ctx) {
 	qd_free_context(ctx);
 }
 
-// ========== Length Tests ==========
 
 TEST(StrLenTest) {
 	qd_context* ctx = create_test_context();
@@ -51,7 +50,6 @@ TEST(StrLenEmptyTest) {
 	destroy_test_context(ctx);
 }
 
-// ========== Concat Tests ==========
 
 TEST(StrConcatTest) {
 	qd_context* ctx = create_test_context();
@@ -84,7 +82,6 @@ TEST(StrConcatEmptyTest) {
 	destroy_test_context(ctx);
 }
 
-// ========== Contains Tests ==========
 
 TEST(StrContainsTest) {
 	qd_context* ctx = create_test_context();
@@ -114,7 +111,6 @@ TEST(StrContainsNotFoundTest) {
 	destroy_test_context(ctx);
 }
 
-// ========== Starts/Ends With Tests ==========
 
 TEST(StrStartsWithTest) {
 	qd_context* ctx = create_test_context();
@@ -144,7 +140,6 @@ TEST(StrEndsWithTest) {
 	destroy_test_context(ctx);
 }
 
-// ========== Case Conversion Tests ==========
 
 TEST(StrUpperTest) {
 	qd_context* ctx = create_test_context();
@@ -174,7 +169,6 @@ TEST(StrLowerTest) {
 	destroy_test_context(ctx);
 }
 
-// ========== Trim Tests ==========
 
 TEST(StrTrimTest) {
 	qd_context* ctx = create_test_context();
@@ -190,7 +184,6 @@ TEST(StrTrimTest) {
 	destroy_test_context(ctx);
 }
 
-// ========== Compare Tests ==========
 
 TEST(StrCompareEqualTest) {
 	qd_context* ctx = create_test_context();
@@ -234,7 +227,6 @@ TEST(StrCompareGreaterTest) {
 	destroy_test_context(ctx);
 }
 
-// ========== Fallible functions - pop status code first ==========
 
 TEST(StrSubstringTest) {
 	qd_context* ctx = create_test_context();

@@ -1149,9 +1149,7 @@ void qd_debug_print_stack(qd_context* ctx) {
 	fprintf(stderr, "");
 }
 
-// =============================================================================
 // Exported helper functions for split runtime files (runtime_stack.c, etc.)
-// =============================================================================
 
 void qdrt_dump_stack(qd_context* ctx) {
 	dump_stack(ctx);
@@ -1169,9 +1167,7 @@ qd_stack_error qdrt_push_element(qd_stack* stack, const qd_stack_element_t* elem
 	return push_element(stack, elem);
 }
 
-// =============================================================================
 // Public helper functions
-// =============================================================================
 
 void qd_dump_stack(qd_context* ctx) {
 	dump_stack(ctx);
@@ -1186,9 +1182,7 @@ void qd_set_error_msg(qd_context* ctx, const char* msg) {
 	// (error_code still indicates the error condition)
 }
 
-// =============================================================================
 // Version Information
-// =============================================================================
 
 const char* qd_version(void) {
 #ifdef QD_VERSION

@@ -4,9 +4,7 @@
 #include <qc/ast_printer.h>
 #include <unit-check/uc.h>
 
-// ============================================================================
 // Empty and Whitespace Inputs
-// ============================================================================
 
 TEST(EmptyInput) {
 	Qd::Ast ast;
@@ -36,9 +34,7 @@ TEST(OnlyNewlines) {
 	ASSERT(root->childCount() == 0, "newlines-only should have 0 children");
 }
 
-// ============================================================================
 // Comment Edge Cases
-// ============================================================================
 
 TEST(CommentOnly) {
 	Qd::Ast ast;
@@ -85,9 +81,7 @@ TEST(EmptyBlockComment) {
 	ASSERT(root->childCount() == 1, "should have 1 function");
 }
 
-// ============================================================================
 // String Edge Cases
-// ============================================================================
 
 TEST(EmptyString) {
 	Qd::Ast ast;
@@ -129,9 +123,7 @@ TEST(LongString) {
 	ASSERT(root->childCount() == 1, "should have 1 function");
 }
 
-// ============================================================================
 // Number Edge Cases
-// ============================================================================
 
 TEST(ZeroInteger) {
 	Qd::Ast ast;
@@ -192,9 +184,7 @@ TEST(MultipleLeadingZeros) {
 	ASSERT(root != nullptr, "root should not be null");
 }
 
-// ============================================================================
 // Identifier Edge Cases
-// ============================================================================
 
 TEST(SingleCharIdentifier) {
 	Qd::Ast ast;
@@ -245,9 +235,7 @@ TEST(IdentifierWithNumbers) {
 	ASSERT(root->childCount() == 1, "should have 1 function");
 }
 
-// ============================================================================
 // Deep Nesting
-// ============================================================================
 
 TEST(DeeplyNestedBlocks) {
 	Qd::Ast ast;
@@ -276,9 +264,7 @@ TEST(MixedNestedControl) {
 	ASSERT(root != nullptr, "root should not be null");
 }
 
-// ============================================================================
 // Function Declaration Edge Cases
-// ============================================================================
 
 TEST(FunctionNoParams) {
 	Qd::Ast ast;
@@ -334,9 +320,7 @@ TEST(PublicFunction) {
 	ASSERT(root->childCount() == 1, "should have 1 function");
 }
 
-// ============================================================================
 // Generic Functions
-// ============================================================================
 
 TEST(GenericFunctionSingleParam) {
 	Qd::Ast ast;
@@ -356,9 +340,7 @@ TEST(GenericFunctionMultipleParams) {
 	ASSERT(root->childCount() == 1, "should have 1 function");
 }
 
-// ============================================================================
 // Struct Definitions
-// ============================================================================
 
 TEST(EmptyStruct) {
 	Qd::Ast ast;
@@ -387,9 +369,7 @@ TEST(StructManyFields) {
 	ASSERT(root->childCount() == 1, "should have 1 struct");
 }
 
-// ============================================================================
 // Constant Declarations
-// ============================================================================
 
 TEST(IntConstant) {
 	Qd::Ast ast;
@@ -427,9 +407,7 @@ TEST(MultipleConstants) {
 	ASSERT(root->childCount() == 3, "should have 3 constants");
 }
 
-// ============================================================================
 // Use Statements
-// ============================================================================
 
 TEST(SingleUse) {
 	Qd::Ast ast;
@@ -449,9 +427,7 @@ TEST(MultipleUse) {
 	ASSERT(root->childCount() == 3, "should have 3 use statements");
 }
 
-// ============================================================================
 // Anonymous Functions
-// ============================================================================
 
 TEST(SimpleAnonymousFunction) {
 	Qd::Ast ast;
@@ -470,9 +446,7 @@ TEST(AnonymousFunctionNoParams) {
 	ASSERT(root != nullptr, "root should not be null");
 }
 
-// ============================================================================
 // Control Flow Edge Cases
-// ============================================================================
 
 TEST(IfWithoutElse) {
 	Qd::Ast ast;
@@ -535,9 +509,7 @@ TEST(ForWithIterator) {
 	ASSERT(root != nullptr, "root should not be null");
 }
 
-// ============================================================================
 // Error Recovery
-// ============================================================================
 
 TEST(MissingClosingBrace) {
 	Qd::Ast ast;
@@ -593,9 +565,7 @@ TEST(MultipleConsecutiveErrors) {
 	ASSERT(ast.hasErrors(), "should have errors");
 }
 
-// ============================================================================
 // Mixed Complex Programs
-// ============================================================================
 
 TEST(CompleteProgram) {
 	Qd::Ast ast;
