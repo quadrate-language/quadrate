@@ -7,12 +7,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-// Helper to set error message
-static void set_error_msg(qd_context* ctx, const char* msg) {
-	if (ctx->error_msg) free(ctx->error_msg);
-	ctx->error_msg = strdup(msg);
-}
-
 // Helper to push a stack element based on its type
 static void push_element(qd_context* ctx, qd_stack_element_t elem) {
 	switch (elem.type) {
@@ -76,14 +70,14 @@ qd_exec_result usr_thread_raw_spawn(qd_context* ctx) {
 	qd_stack_error err = qd_stack_pop(ctx->st, &func_elem);
 
 	if (err != QD_STACK_OK) {
-		set_error_msg(ctx, "thread::spawn: expected function");
+		qd_set_error_msg(ctx, "thread::spawn: expected function");
 		ctx->error_code = THREAD_ERR_CREATE;
 		return (qd_exec_result){THREAD_ERR_CREATE};
 	}
 
 	qd_thread* thread = malloc(sizeof(qd_thread));
 	if (!thread) {
-		set_error_msg(ctx, "thread::spawn: failed to allocate thread");
+		qd_set_error_msg(ctx, "thread::spawn: failed to allocate thread");
 		ctx->error_code = THREAD_ERR_CREATE;
 		return (qd_exec_result){THREAD_ERR_CREATE};
 	}
@@ -91,7 +85,7 @@ qd_exec_result usr_thread_raw_spawn(qd_context* ctx) {
 	qd_thread_spawn_data* data = malloc(sizeof(qd_thread_spawn_data));
 	if (!data) {
 		free(thread);
-		set_error_msg(ctx, "thread::spawn: failed to allocate thread data");
+		qd_set_error_msg(ctx, "thread::spawn: failed to allocate thread data");
 		ctx->error_code = THREAD_ERR_CREATE;
 		return (qd_exec_result){THREAD_ERR_CREATE};
 	}
@@ -102,7 +96,7 @@ qd_exec_result usr_thread_raw_spawn(qd_context* ctx) {
 	if (result != thrd_success) {
 		free(data);
 		free(thread);
-		set_error_msg(ctx, "thread::spawn: failed to create thread");
+		qd_set_error_msg(ctx, "thread::spawn: failed to create thread");
 		ctx->error_code = THREAD_ERR_CREATE;
 		return (qd_exec_result){THREAD_ERR_CREATE};
 	}
@@ -122,7 +116,7 @@ qd_exec_result usr_thread_raw_join(qd_context* ctx) {
 	qd_stack_error err = qd_stack_pop(ctx->st, &elem);
 
 	if (err != QD_STACK_OK || elem.type != QD_STACK_TYPE_PTR) {
-		set_error_msg(ctx, "thread::join: expected thread pointer");
+		qd_set_error_msg(ctx, "thread::join: expected thread pointer");
 		ctx->error_code = THREAD_ERR_JOIN;
 		return (qd_exec_result){THREAD_ERR_JOIN};
 	}
@@ -130,14 +124,14 @@ qd_exec_result usr_thread_raw_join(qd_context* ctx) {
 	qd_thread* thread = (qd_thread*)elem.value.p;
 
 	if (!thread || thread->joined || thread->detached) {
-		set_error_msg(ctx, "thread::join: invalid thread or already joined/detached");
+		qd_set_error_msg(ctx, "thread::join: invalid thread or already joined/detached");
 		ctx->error_code = THREAD_ERR_JOIN;
 		return (qd_exec_result){THREAD_ERR_JOIN};
 	}
 
 	int result = thrd_join(thread->handle, NULL);
 	if (result != thrd_success) {
-		set_error_msg(ctx, "thread::join: failed to join thread");
+		qd_set_error_msg(ctx, "thread::join: failed to join thread");
 		ctx->error_code = THREAD_ERR_JOIN;
 		return (qd_exec_result){THREAD_ERR_JOIN};
 	}
@@ -155,7 +149,7 @@ qd_exec_result usr_thread_raw_detach(qd_context* ctx) {
 	qd_stack_error err = qd_stack_pop(ctx->st, &elem);
 
 	if (err != QD_STACK_OK || elem.type != QD_STACK_TYPE_PTR) {
-		set_error_msg(ctx, "thread::detach: expected thread pointer");
+		qd_set_error_msg(ctx, "thread::detach: expected thread pointer");
 		ctx->error_code = THREAD_ERR_DETACH;
 		return (qd_exec_result){THREAD_ERR_DETACH};
 	}
@@ -163,14 +157,14 @@ qd_exec_result usr_thread_raw_detach(qd_context* ctx) {
 	qd_thread* thread = (qd_thread*)elem.value.p;
 
 	if (!thread || thread->joined || thread->detached) {
-		set_error_msg(ctx, "thread::detach: invalid thread or already joined/detached");
+		qd_set_error_msg(ctx, "thread::detach: invalid thread or already joined/detached");
 		ctx->error_code = THREAD_ERR_DETACH;
 		return (qd_exec_result){THREAD_ERR_DETACH};
 	}
 
 	int result = thrd_detach(thread->handle);
 	if (result != thrd_success) {
-		set_error_msg(ctx, "thread::detach: failed to detach thread");
+		qd_set_error_msg(ctx, "thread::detach: failed to detach thread");
 		ctx->error_code = THREAD_ERR_DETACH;
 		return (qd_exec_result){THREAD_ERR_DETACH};
 	}
@@ -224,7 +218,7 @@ qd_exec_result usr_thread_raw_sleep(qd_context* ctx) {
 qd_exec_result usr_thread_raw_mutex_new(qd_context* ctx) {
 	qd_mutex* mutex = malloc(sizeof(qd_mutex));
 	if (!mutex) {
-		set_error_msg(ctx, "mutex::new: failed to allocate mutex");
+		qd_set_error_msg(ctx, "mutex::new: failed to allocate mutex");
 		ctx->error_code = THREAD_ERR_MUTEX;
 		return (qd_exec_result){THREAD_ERR_MUTEX};
 	}
@@ -232,7 +226,7 @@ qd_exec_result usr_thread_raw_mutex_new(qd_context* ctx) {
 	int result = mtx_init(&mutex->handle, mtx_plain);
 	if (result != thrd_success) {
 		free(mutex);
-		set_error_msg(ctx, "mutex::new: failed to initialize mutex");
+		qd_set_error_msg(ctx, "mutex::new: failed to initialize mutex");
 		ctx->error_code = THREAD_ERR_MUTEX;
 		return (qd_exec_result){THREAD_ERR_MUTEX};
 	}
@@ -249,7 +243,7 @@ qd_exec_result usr_thread_raw_mutex_lock(qd_context* ctx) {
 	qd_stack_error err = qd_stack_pop(ctx->st, &elem);
 
 	if (err != QD_STACK_OK || elem.type != QD_STACK_TYPE_PTR) {
-		set_error_msg(ctx, "mutex::lock: expected mutex pointer");
+		qd_set_error_msg(ctx, "mutex::lock: expected mutex pointer");
 		ctx->error_code = THREAD_ERR_MUTEX;
 		return (qd_exec_result){THREAD_ERR_MUTEX};
 	}
@@ -257,14 +251,14 @@ qd_exec_result usr_thread_raw_mutex_lock(qd_context* ctx) {
 	qd_mutex* mutex = (qd_mutex*)elem.value.p;
 
 	if (!mutex || !mutex->initialized) {
-		set_error_msg(ctx, "mutex::lock: invalid mutex");
+		qd_set_error_msg(ctx, "mutex::lock: invalid mutex");
 		ctx->error_code = THREAD_ERR_MUTEX;
 		return (qd_exec_result){THREAD_ERR_MUTEX};
 	}
 
 	int result = mtx_lock(&mutex->handle);
 	if (result != thrd_success) {
-		set_error_msg(ctx, "mutex::lock: failed to lock mutex");
+		qd_set_error_msg(ctx, "mutex::lock: failed to lock mutex");
 		ctx->error_code = THREAD_ERR_MUTEX;
 		return (qd_exec_result){THREAD_ERR_MUTEX};
 	}
@@ -279,7 +273,7 @@ qd_exec_result usr_thread_raw_mutex_unlock(qd_context* ctx) {
 	qd_stack_error err = qd_stack_pop(ctx->st, &elem);
 
 	if (err != QD_STACK_OK || elem.type != QD_STACK_TYPE_PTR) {
-		set_error_msg(ctx, "mutex::unlock: expected mutex pointer");
+		qd_set_error_msg(ctx, "mutex::unlock: expected mutex pointer");
 		ctx->error_code = THREAD_ERR_MUTEX;
 		return (qd_exec_result){THREAD_ERR_MUTEX};
 	}
@@ -287,14 +281,14 @@ qd_exec_result usr_thread_raw_mutex_unlock(qd_context* ctx) {
 	qd_mutex* mutex = (qd_mutex*)elem.value.p;
 
 	if (!mutex || !mutex->initialized) {
-		set_error_msg(ctx, "mutex::unlock: invalid mutex");
+		qd_set_error_msg(ctx, "mutex::unlock: invalid mutex");
 		ctx->error_code = THREAD_ERR_MUTEX;
 		return (qd_exec_result){THREAD_ERR_MUTEX};
 	}
 
 	int result = mtx_unlock(&mutex->handle);
 	if (result != thrd_success) {
-		set_error_msg(ctx, "mutex::unlock: failed to unlock mutex");
+		qd_set_error_msg(ctx, "mutex::unlock: failed to unlock mutex");
 		ctx->error_code = THREAD_ERR_MUTEX;
 		return (qd_exec_result){THREAD_ERR_MUTEX};
 	}
@@ -396,7 +390,7 @@ static qd_channel* channel_create(size_t capacity) {
 qd_exec_result usr_thread_raw_chan_new(qd_context* ctx) {
 	qd_channel* ch = channel_create(0);  // unbuffered
 	if (!ch) {
-		set_error_msg(ctx, "channel::new: failed to create channel");
+		qd_set_error_msg(ctx, "channel::new: failed to create channel");
 		ctx->error_code = THREAD_ERR_CHANNEL;
 		return (qd_exec_result){THREAD_ERR_CHANNEL};
 	}
@@ -412,7 +406,7 @@ qd_exec_result usr_thread_raw_chan_buffered(qd_context* ctx) {
 	qd_stack_error err = qd_stack_pop(ctx->st, &elem);
 
 	if (err != QD_STACK_OK || elem.type != QD_STACK_TYPE_INT) {
-		set_error_msg(ctx, "channel::buffered: expected capacity");
+		qd_set_error_msg(ctx, "channel::buffered: expected capacity");
 		ctx->error_code = THREAD_ERR_CHANNEL;
 		return (qd_exec_result){THREAD_ERR_CHANNEL};
 	}
@@ -422,7 +416,7 @@ qd_exec_result usr_thread_raw_chan_buffered(qd_context* ctx) {
 
 	qd_channel* ch = channel_create((size_t)capacity);
 	if (!ch) {
-		set_error_msg(ctx, "channel::buffered: failed to create channel");
+		qd_set_error_msg(ctx, "channel::buffered: failed to create channel");
 		ctx->error_code = THREAD_ERR_CHANNEL;
 		return (qd_exec_result){THREAD_ERR_CHANNEL};
 	}
@@ -439,21 +433,21 @@ qd_exec_result usr_thread_raw_chan_send(qd_context* ctx) {
 
 	err = qd_stack_pop(ctx->st, &ch_elem);
 	if (err != QD_STACK_OK || ch_elem.type != QD_STACK_TYPE_PTR) {
-		set_error_msg(ctx, "channel::send: expected channel pointer");
+		qd_set_error_msg(ctx, "channel::send: expected channel pointer");
 		ctx->error_code = THREAD_ERR_CHANNEL;
 		return (qd_exec_result){THREAD_ERR_CHANNEL};
 	}
 
 	err = qd_stack_pop(ctx->st, &val_elem);
 	if (err != QD_STACK_OK) {
-		set_error_msg(ctx, "channel::send: expected value");
+		qd_set_error_msg(ctx, "channel::send: expected value");
 		ctx->error_code = THREAD_ERR_CHANNEL;
 		return (qd_exec_result){THREAD_ERR_CHANNEL};
 	}
 
 	qd_channel* ch = (qd_channel*)ch_elem.value.p;
 	if (!ch) {
-		set_error_msg(ctx, "channel::send: invalid channel");
+		qd_set_error_msg(ctx, "channel::send: invalid channel");
 		ctx->error_code = THREAD_ERR_CHANNEL;
 		return (qd_exec_result){THREAD_ERR_CHANNEL};
 	}
@@ -462,7 +456,7 @@ qd_exec_result usr_thread_raw_chan_send(qd_context* ctx) {
 
 	if (ch->closed) {
 		mtx_unlock(&ch->mutex);
-		set_error_msg(ctx, "channel::send: send on closed channel");
+		qd_set_error_msg(ctx, "channel::send: send on closed channel");
 		ctx->error_code = THREAD_ERR_CLOSED;
 		return (qd_exec_result){THREAD_ERR_CLOSED};
 	}
@@ -476,7 +470,7 @@ qd_exec_result usr_thread_raw_chan_send(qd_context* ctx) {
 
 	if (ch->closed) {
 		mtx_unlock(&ch->mutex);
-		set_error_msg(ctx, "channel::send: send on closed channel");
+		qd_set_error_msg(ctx, "channel::send: send on closed channel");
 		ctx->error_code = THREAD_ERR_CLOSED;
 		return (qd_exec_result){THREAD_ERR_CLOSED};
 	}
@@ -499,14 +493,14 @@ qd_exec_result usr_thread_raw_chan_recv(qd_context* ctx) {
 	qd_stack_error err = qd_stack_pop(ctx->st, &ch_elem);
 
 	if (err != QD_STACK_OK || ch_elem.type != QD_STACK_TYPE_PTR) {
-		set_error_msg(ctx, "channel::recv: expected channel pointer");
+		qd_set_error_msg(ctx, "channel::recv: expected channel pointer");
 		ctx->error_code = THREAD_ERR_CHANNEL;
 		return (qd_exec_result){THREAD_ERR_CHANNEL};
 	}
 
 	qd_channel* ch = (qd_channel*)ch_elem.value.p;
 	if (!ch) {
-		set_error_msg(ctx, "channel::recv: invalid channel");
+		qd_set_error_msg(ctx, "channel::recv: invalid channel");
 		ctx->error_code = THREAD_ERR_CHANNEL;
 		return (qd_exec_result){THREAD_ERR_CHANNEL};
 	}
@@ -521,7 +515,7 @@ qd_exec_result usr_thread_raw_chan_recv(qd_context* ctx) {
 	// If closed and empty, return error
 	if (ch->count == 0 && ch->closed) {
 		mtx_unlock(&ch->mutex);
-		set_error_msg(ctx, "channel::recv: recv on closed empty channel");
+		qd_set_error_msg(ctx, "channel::recv: recv on closed empty channel");
 		ctx->error_code = THREAD_ERR_CLOSED;
 		return (qd_exec_result){THREAD_ERR_CLOSED};
 	}
@@ -755,14 +749,14 @@ qd_exec_result usr_thread_raw_chan_free(qd_context* ctx) {
 qd_exec_result usr_thread_raw_wg_new(qd_context* ctx) {
 	qd_waitgroup* wg = malloc(sizeof(qd_waitgroup));
 	if (!wg) {
-		set_error_msg(ctx, "waitgroup::new: failed to allocate");
+		qd_set_error_msg(ctx, "waitgroup::new: failed to allocate");
 		ctx->error_code = THREAD_ERR_CREATE;
 		return (qd_exec_result){THREAD_ERR_CREATE};
 	}
 
 	if (mtx_init(&wg->mutex, mtx_plain) != thrd_success) {
 		free(wg);
-		set_error_msg(ctx, "waitgroup::new: failed to init mutex");
+		qd_set_error_msg(ctx, "waitgroup::new: failed to init mutex");
 		ctx->error_code = THREAD_ERR_CREATE;
 		return (qd_exec_result){THREAD_ERR_CREATE};
 	}
@@ -770,7 +764,7 @@ qd_exec_result usr_thread_raw_wg_new(qd_context* ctx) {
 	if (cnd_init(&wg->done) != thrd_success) {
 		mtx_destroy(&wg->mutex);
 		free(wg);
-		set_error_msg(ctx, "waitgroup::new: failed to init condvar");
+		qd_set_error_msg(ctx, "waitgroup::new: failed to init condvar");
 		ctx->error_code = THREAD_ERR_CREATE;
 		return (qd_exec_result){THREAD_ERR_CREATE};
 	}
@@ -834,14 +828,14 @@ qd_exec_result usr_thread_raw_wg_wait(qd_context* ctx) {
 	qd_stack_error err = qd_stack_pop(ctx->st, &elem);
 
 	if (err != QD_STACK_OK || elem.type != QD_STACK_TYPE_PTR) {
-		set_error_msg(ctx, "waitgroup::wait: expected pointer");
+		qd_set_error_msg(ctx, "waitgroup::wait: expected pointer");
 		ctx->error_code = THREAD_ERR_CREATE;
 		return (qd_exec_result){THREAD_ERR_CREATE};
 	}
 
 	qd_waitgroup* wg = (qd_waitgroup*)elem.value.p;
 	if (!wg) {
-		set_error_msg(ctx, "waitgroup::wait: invalid waitgroup");
+		qd_set_error_msg(ctx, "waitgroup::wait: invalid waitgroup");
 		ctx->error_code = THREAD_ERR_CREATE;
 		return (qd_exec_result){THREAD_ERR_CREATE};
 	}

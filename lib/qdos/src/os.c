@@ -9,14 +9,6 @@
 #include <unistd.h>
 #include "os_fs.h"
 
-/** Helper to safely set error message (handles strdup failure) */
-static void set_error_msg(qd_context* ctx, const char* msg) {
-	if (ctx->error_msg) free(ctx->error_msg);
-	ctx->error_msg = strdup(msg);
-	// If strdup fails, error_msg will be NULL, which is acceptable
-	// (error_code still indicates the error condition)
-}
-
 /**
  * @brief Translate errno to os module error code
  */
@@ -613,7 +605,7 @@ qd_exec_result usr_os_exec(qd_context* ctx) {
 	if (pipe == NULL) {
 		int error_code = errno_to_os_error(errno);
 		ctx->error_code = error_code;
-		set_error_msg(ctx, "os::exec: failed to execute command");
+		qd_set_error_msg(ctx, "os::exec: failed to execute command");
 		qd_stack_push_int(ctx->st, (int64_t)error_code);
 		return (qd_exec_result){error_code};
 	}
@@ -625,7 +617,7 @@ qd_exec_result usr_os_exec(qd_context* ctx) {
 	if (!buf) {
 		pclose(pipe);
 		ctx->error_code = OS_ERR_OUT_OF_MEMORY;
-		set_error_msg(ctx, "os::exec: out of memory");
+		qd_set_error_msg(ctx, "os::exec: out of memory");
 		qd_stack_push_int(ctx->st, (int64_t)OS_ERR_OUT_OF_MEMORY);
 		return (qd_exec_result){OS_ERR_OUT_OF_MEMORY};
 	}
@@ -641,7 +633,7 @@ qd_exec_result usr_os_exec(qd_context* ctx) {
 				free(buf);
 				pclose(pipe);
 				ctx->error_code = OS_ERR_OUT_OF_MEMORY;
-				set_error_msg(ctx, "os::exec: out of memory");
+				qd_set_error_msg(ctx, "os::exec: out of memory");
 				qd_stack_push_int(ctx->st, (int64_t)OS_ERR_OUT_OF_MEMORY);
 				return (qd_exec_result){OS_ERR_OUT_OF_MEMORY};
 			}
@@ -943,7 +935,7 @@ qd_exec_result usr_os_mktemp(qd_context* ctx) {
 	if (!result) {
 		int error_code = errno_to_os_error(errno);
 		ctx->error_code = error_code;
-		set_error_msg(ctx, "os::mktemp: failed to create temp directory");
+		qd_set_error_msg(ctx, "os::mktemp: failed to create temp directory");
 		qd_stack_push_int(ctx->st, (int64_t)error_code);
 		return (qd_exec_result){error_code};
 	}
@@ -959,7 +951,7 @@ qd_exec_result usr_os_cwd(qd_context* ctx) {
 	if (!cwd) {
 		int error_code = errno_to_os_error(errno);
 		ctx->error_code = error_code;
-		set_error_msg(ctx, "os::cwd: failed to get current directory");
+		qd_set_error_msg(ctx, "os::cwd: failed to get current directory");
 		qd_stack_push_int(ctx->st, (int64_t)error_code);
 		return (qd_exec_result){error_code};
 	}

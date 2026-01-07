@@ -1170,6 +1170,23 @@ qd_stack_error qdrt_push_element(qd_stack* stack, const qd_stack_element_t* elem
 }
 
 // =============================================================================
+// Public helper functions
+// =============================================================================
+
+void qd_dump_stack(qd_context* ctx) {
+	dump_stack(ctx);
+}
+
+void qd_set_error_msg(qd_context* ctx, const char* msg) {
+	if (ctx->error_msg) {
+		free(ctx->error_msg);
+	}
+	ctx->error_msg = strdup(msg);
+	// If strdup fails, error_msg will be NULL, which is acceptable
+	// (error_code still indicates the error condition)
+}
+
+// =============================================================================
 // Version Information
 // =============================================================================
 

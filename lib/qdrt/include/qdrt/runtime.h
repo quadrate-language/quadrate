@@ -784,6 +784,27 @@ void qd_clear_error_context(qd_context* ctx);
  */
 void qd_debug_print_stack(qd_context* ctx);
 
+/**
+ * @brief Dump stack contents for error reporting
+ *
+ * Prints all stack values to stderr with type information.
+ * Used internally for fatal error reporting.
+ *
+ * @param ctx Execution context
+ */
+void qd_dump_stack(qd_context* ctx);
+
+/**
+ * @brief Safely set error message on context
+ *
+ * Sets ctx->error_msg, freeing any previous message.
+ * Handles strdup failure gracefully (error_msg will be NULL).
+ *
+ * @param ctx Execution context
+ * @param msg Error message to set (will be copied)
+ */
+void qd_set_error_msg(qd_context* ctx, const char* msg);
+
 /** @} */ // end of CallStack group
 
 /**

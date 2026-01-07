@@ -11,14 +11,6 @@
 #include <string.h>
 #include <errno.h>
 
-/** Helper to safely set error message (handles strdup failure) */
-static void set_error_msg(qd_context* ctx, const char* msg) {
-    if (ctx->error_msg) free(ctx->error_msg);
-    ctx->error_msg = strdup(msg);
-    // If strdup fails, error_msg will be NULL, which is acceptable
-    // (error_code still indicates the error condition)
-}
-
 qd_exec_result usr_io_open(qd_context* ctx) {
     size_t stack_size = qd_stack_size(ctx->st);
     if (stack_size < 2) {
@@ -65,7 +57,7 @@ qd_exec_result usr_io_open(qd_context* ctx) {
         ctx->error_code = IO_ERR_NOT_FOUND;
         char err_buf[256];
         snprintf(err_buf, sizeof(err_buf), "%s", strerror(errno));
-        set_error_msg(ctx, err_buf);
+        qd_set_error_msg(ctx, err_buf);
         qd_push_i(ctx, IO_ERR_NOT_FOUND);
         return (qd_exec_result){IO_ERR_NOT_FOUND};
     }
@@ -146,7 +138,7 @@ qd_exec_result usr_io_read_string(qd_context* ctx) {
     #define IO_MAX_READ_SIZE (1024 * 1024 * 1024)
     if (!fp || count < 0 || count > IO_MAX_READ_SIZE) {
         ctx->error_code = IO_ERR_INVALID_HANDLE;
-        set_error_msg(ctx, "io::read_string: invalid file handle or count (max 1GB)");
+        qd_set_error_msg(ctx, "io::read_string: invalid file handle or count (max 1GB)");
         qd_push_i(ctx, ctx->error_code);
         return (qd_exec_result){IO_ERR_INVALID_HANDLE};
     }
@@ -162,7 +154,7 @@ qd_exec_result usr_io_read_string(qd_context* ctx) {
     char* buffer = malloc((size_t)count + 1);
     if (!buffer) {
         ctx->error_code = IO_ERR_READ;
-        set_error_msg(ctx, "io::read_string: allocation failed");
+        qd_set_error_msg(ctx, "io::read_string: allocation failed");
         qd_push_i(ctx, ctx->error_code);
         return (qd_exec_result){IO_ERR_READ};
     }
@@ -175,7 +167,7 @@ qd_exec_result usr_io_read_string(qd_context* ctx) {
         ctx->error_code = IO_ERR_READ;
         char err_buf[256];
         snprintf(err_buf, sizeof(err_buf), "%s", strerror(errno));
-        set_error_msg(ctx, err_buf);
+        qd_set_error_msg(ctx, err_buf);
         free(buffer);
         qd_push_i(ctx, ctx->error_code);
         return (qd_exec_result){IO_ERR_READ};
@@ -231,7 +223,7 @@ qd_exec_result usr_io_write_string(qd_context* ctx) {
 
     if (!fp) {
         ctx->error_code = IO_ERR_INVALID_HANDLE;
-        set_error_msg(ctx, "io::write_string: invalid file handle");
+        qd_set_error_msg(ctx, "io::write_string: invalid file handle");
         qd_string_release(data_elem.value.s);
         qd_push_i(ctx, ctx->error_code);
         return (qd_exec_result){IO_ERR_INVALID_HANDLE};
@@ -244,7 +236,7 @@ qd_exec_result usr_io_write_string(qd_context* ctx) {
         ctx->error_code = IO_ERR_WRITE;
         char err_buf[256];
         snprintf(err_buf, sizeof(err_buf), "%s", strerror(errno));
-        set_error_msg(ctx, err_buf);
+        qd_set_error_msg(ctx, err_buf);
         qd_push_i(ctx, ctx->error_code);
         return (qd_exec_result){IO_ERR_WRITE};
     }
@@ -305,7 +297,7 @@ qd_exec_result usr_io_seekg(qd_context* ctx) {
 
     if (!fp) {
         ctx->error_code = IO_ERR_INVALID_HANDLE;
-        set_error_msg(ctx, "io::seek: invalid file handle");
+        qd_set_error_msg(ctx, "io::seek: invalid file handle");
         qd_push_i(ctx, ctx->error_code);
         return (qd_exec_result){IO_ERR_INVALID_HANDLE};
     }
@@ -318,7 +310,7 @@ qd_exec_result usr_io_seekg(qd_context* ctx) {
         case 2: seek_whence = SEEK_END; break;
         default:
             ctx->error_code = IO_ERR_INVALID_ARG;
-            set_error_msg(ctx, "io::seek: invalid whence value");
+            qd_set_error_msg(ctx, "io::seek: invalid whence value");
             qd_push_i(ctx, ctx->error_code);
             return (qd_exec_result){IO_ERR_INVALID_ARG};
     }
@@ -327,7 +319,7 @@ qd_exec_result usr_io_seekg(qd_context* ctx) {
         ctx->error_code = IO_ERR_SEEK;
         char err_buf[256];
         snprintf(err_buf, sizeof(err_buf), "%s", strerror(errno));
-        set_error_msg(ctx, err_buf);
+        qd_set_error_msg(ctx, err_buf);
         qd_push_i(ctx, ctx->error_code);
         return (qd_exec_result){IO_ERR_SEEK};
     }
@@ -337,7 +329,7 @@ qd_exec_result usr_io_seekg(qd_context* ctx) {
         ctx->error_code = IO_ERR_SEEK;
         char err_buf[256];
         snprintf(err_buf, sizeof(err_buf), "%s", strerror(errno));
-        set_error_msg(ctx, err_buf);
+        qd_set_error_msg(ctx, err_buf);
         qd_push_i(ctx, ctx->error_code);
         return (qd_exec_result){IO_ERR_SEEK};
     }
@@ -408,7 +400,7 @@ qd_exec_result usr_io_tell(qd_context* ctx) {
     FILE* fp = (FILE*)elem.value.p;
     if (!fp) {
         ctx->error_code = IO_ERR_INVALID_HANDLE;
-        set_error_msg(ctx, "io::tell: invalid file handle");
+        qd_set_error_msg(ctx, "io::tell: invalid file handle");
         qd_push_i(ctx, ctx->error_code);
         return (qd_exec_result){IO_ERR_INVALID_HANDLE};
     }
@@ -418,7 +410,7 @@ qd_exec_result usr_io_tell(qd_context* ctx) {
         ctx->error_code = IO_ERR_SEEK;
         char err_buf[256];
         snprintf(err_buf, sizeof(err_buf), "%s", strerror(errno));
-        set_error_msg(ctx, err_buf);
+        qd_set_error_msg(ctx, err_buf);
         qd_push_i(ctx, ctx->error_code);
         return (qd_exec_result){IO_ERR_SEEK};
     }
@@ -481,7 +473,7 @@ qd_exec_result usr_io_read(qd_context* ctx) {
 
     if (!fp || !buffer || count < 0) {
         ctx->error_code = IO_ERR_INVALID_ARG;
-        set_error_msg(ctx, "io::read: invalid file handle, buffer, or count");
+        qd_set_error_msg(ctx, "io::read: invalid file handle, buffer, or count");
         qd_push_i(ctx, ctx->error_code);
         return (qd_exec_result){IO_ERR_INVALID_ARG};
     }
@@ -499,7 +491,7 @@ qd_exec_result usr_io_read(qd_context* ctx) {
         ctx->error_code = IO_ERR_READ;
         char err_buf[256];
         snprintf(err_buf, sizeof(err_buf), "%s", strerror(errno));
-        set_error_msg(ctx, err_buf);
+        qd_set_error_msg(ctx, err_buf);
         qd_push_i(ctx, ctx->error_code);
         return (qd_exec_result){IO_ERR_READ};
     }
@@ -519,7 +511,7 @@ qd_exec_result usr_io_readline(qd_context* ctx) {
 
     if (nread == -1) {
         ctx->error_code = IO_ERR_EOF;
-        set_error_msg(ctx, "io::readline: read error or EOF");
+        qd_set_error_msg(ctx, "io::readline: read error or EOF");
         free(line);
         qd_push_i(ctx, IO_ERR_EOF);
         return (qd_exec_result){IO_ERR_EOF};
@@ -590,7 +582,7 @@ qd_exec_result usr_io_write(qd_context* ctx) {
 
     if (!fp || !buffer || count < 0) {
         ctx->error_code = IO_ERR_INVALID_ARG;
-        set_error_msg(ctx, "io::write: invalid file handle, buffer, or count");
+        qd_set_error_msg(ctx, "io::write: invalid file handle, buffer, or count");
         qd_push_i(ctx, ctx->error_code);
         return (qd_exec_result){IO_ERR_INVALID_ARG};
     }
@@ -608,7 +600,7 @@ qd_exec_result usr_io_write(qd_context* ctx) {
         ctx->error_code = IO_ERR_WRITE;
         char err_buf[256];
         snprintf(err_buf, sizeof(err_buf), "%s", strerror(errno));
-        set_error_msg(ctx, err_buf);
+        qd_set_error_msg(ctx, err_buf);
         qd_push_i(ctx, ctx->error_code);
         return (qd_exec_result){IO_ERR_WRITE};
     }
@@ -650,7 +642,7 @@ qd_exec_result usr_io_read_file(qd_context* ctx) {
         ctx->error_code = IO_ERR_NOT_FOUND;
         char err_buf[256];
         snprintf(err_buf, sizeof(err_buf), "%s", strerror(saved_errno));
-        set_error_msg(ctx, err_buf);
+        qd_set_error_msg(ctx, err_buf);
         qd_push_i(ctx, IO_ERR_NOT_FOUND);
         return (qd_exec_result){IO_ERR_NOT_FOUND};
     }
@@ -663,7 +655,7 @@ qd_exec_result usr_io_read_file(qd_context* ctx) {
         ctx->error_code = IO_ERR_SEEK;
         char err_buf[256];
         snprintf(err_buf, sizeof(err_buf), "%s", strerror(saved_errno));
-        set_error_msg(ctx, err_buf);
+        qd_set_error_msg(ctx, err_buf);
         qd_push_i(ctx, IO_ERR_SEEK);
         return (qd_exec_result){IO_ERR_SEEK};
     }
@@ -676,7 +668,7 @@ qd_exec_result usr_io_read_file(qd_context* ctx) {
         ctx->error_code = IO_ERR_SEEK;
         char err_buf[256];
         snprintf(err_buf, sizeof(err_buf), "%s", strerror(saved_errno));
-        set_error_msg(ctx, err_buf);
+        qd_set_error_msg(ctx, err_buf);
         qd_push_i(ctx, IO_ERR_SEEK);
         return (qd_exec_result){IO_ERR_SEEK};
     }
@@ -689,7 +681,7 @@ qd_exec_result usr_io_read_file(qd_context* ctx) {
         ctx->error_code = IO_ERR_SEEK;
         char err_buf[256];
         snprintf(err_buf, sizeof(err_buf), "%s", strerror(saved_errno));
-        set_error_msg(ctx, err_buf);
+        qd_set_error_msg(ctx, err_buf);
         qd_push_i(ctx, IO_ERR_SEEK);
         return (qd_exec_result){IO_ERR_SEEK};
     }
@@ -700,7 +692,7 @@ qd_exec_result usr_io_read_file(qd_context* ctx) {
         fclose(fp);
         qd_string_release(path_elem.value.s);
         ctx->error_code = IO_ERR_READ;
-        set_error_msg(ctx, "io::read_file: allocation failed");
+        qd_set_error_msg(ctx, "io::read_file: allocation failed");
         qd_push_i(ctx, IO_ERR_READ);
         return (qd_exec_result){IO_ERR_READ};
     }
@@ -720,7 +712,7 @@ qd_exec_result usr_io_read_file(qd_context* ctx) {
         ctx->error_code = IO_ERR_READ;
         char err_buf[256];
         snprintf(err_buf, sizeof(err_buf), "%s", strerror(saved_errno));
-        set_error_msg(ctx, err_buf);
+        qd_set_error_msg(ctx, err_buf);
         qd_push_i(ctx, IO_ERR_READ);
         return (qd_exec_result){IO_ERR_READ};
     }
@@ -781,7 +773,7 @@ qd_exec_result usr_io_write_file(qd_context* ctx) {
         ctx->error_code = IO_ERR_PERMISSION;
         char err_buf[256];
         snprintf(err_buf, sizeof(err_buf), "%s", strerror(saved_errno));
-        set_error_msg(ctx, err_buf);
+        qd_set_error_msg(ctx, err_buf);
         qd_push_i(ctx, IO_ERR_PERMISSION);
         return (qd_exec_result){IO_ERR_PERMISSION};
     }
@@ -798,7 +790,7 @@ qd_exec_result usr_io_write_file(qd_context* ctx) {
         ctx->error_code = IO_ERR_WRITE;
         char err_buf[256];
         snprintf(err_buf, sizeof(err_buf), "%s", strerror(saved_errno));
-        set_error_msg(ctx, err_buf);
+        qd_set_error_msg(ctx, err_buf);
         qd_push_i(ctx, IO_ERR_WRITE);
         return (qd_exec_result){IO_ERR_WRITE};
     }
