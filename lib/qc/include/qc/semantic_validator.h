@@ -129,17 +129,14 @@ namespace Qd {
 		// Pass 1: Collect all function definitions
 		void collectDefinitions(IAstNode* node);
 
-		// Helper: Load module definitions from a module file
 		void loadModuleDefinitions(
 				const std::string& moduleName, const std::string& currentPackage, bool reportErrors = true);
 
 		// Helper: Try to load a module from a directory (module.qd or glob *.qd)
 		bool tryLoadModuleFromDirectory(const std::string& moduleDir, const std::string& moduleName);
 
-		// Helper: Parse module source and collect function definitions
 		void parseModuleAndCollectFunctions(const std::string& moduleName, const std::string& source);
 
-		// Helper: Collect function definitions from a module AST
 		void collectModuleFunctions(IAstNode* node, std::unordered_map<std::string, bool>& functions);
 		void collectModuleConstants(IAstNode* node, std::unordered_map<std::string, bool>& constants);
 		void collectModuleConstantValues(IAstNode* node, const std::string& moduleName);
@@ -153,7 +150,6 @@ namespace Qd {
 		void collectModuleImportedFunctions(IAstNode* node, const std::string& moduleName,
 				std::unordered_map<std::string, ImportedFunctionInfo>& imports);
 
-		// Helper: Analyze function signatures in a module
 		void analyzeModuleFunctionSignatures(IAstNode* node, const std::string& moduleName);
 
 		// Pass 2: Validate all function calls and references
@@ -193,28 +189,20 @@ namespace Qd {
 		// Check if a name is a built-in instruction
 		bool isBuiltInInstruction(const char* name) const;
 
-		// Helper: Check if type is numeric (int or float)
 		bool isNumericType(StackValueType type) const;
 
-		// Helper: Determine the type of a constant value from its string representation
 		StackValueType getConstantType(const std::string& value) const;
 
-		// Helper: Get string representation of type
 		const char* typeToString(StackValueType type) const;
 
-		// Helper: Find struct type that matches a set of field accesses
 		std::string findStructTypeByFields(const std::unordered_map<std::string, StackValueType>& accessedFields);
 
-		// Helper: Convert type string to StackValueType
 		StackValueType stringToStackValueType(const std::string& typeStr);
 
-		// Helper: Check if a type string is valid (i64, f64, str, ptr, any, or known struct name)
 		bool isValidTypeName(const std::string& typeStr) const;
 
-		// Helper: Check if a type string is a known struct name
 		bool isStructTypeName(const std::string& typeStr) const;
 
-		// Helper: Check if a type string is a current type parameter (for generics)
 		bool isCurrentTypeParam(const std::string& typeStr) const;
 
 		// Helper: Find the registered struct type for method lookup (handles generic types)

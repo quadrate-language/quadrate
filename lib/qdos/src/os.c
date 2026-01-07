@@ -45,7 +45,7 @@ static int errno_to_os_error(int err) {
 }
 
 qd_exec_result usr_os_exit(qd_context* ctx) {
-	// Check stack has at least 1 element
+
 	size_t stack_size = qd_stack_size(ctx->st);
 	if (stack_size < 1) {
 		fprintf(stderr, "Fatal error in os::exit: Stack underflow (required 1 element, have %zu)\n", stack_size);
@@ -77,7 +77,7 @@ qd_exec_result usr_os_exit(qd_context* ctx) {
 }
 
 qd_exec_result usr_os_system(qd_context* ctx) {
-	// Check stack has at least 1 element
+
 	size_t stack_size = qd_stack_size(ctx->st);
 	if (stack_size < 1) {
 		fprintf(stderr, "Fatal error in os::system: Stack underflow (required 1 element, have %zu)\n", stack_size);
@@ -237,8 +237,6 @@ qd_exec_result usr_os_rename(qd_context* ctx) {
 		qd_print_stack_trace(ctx);
 		abort();
 	}
-
-	// Pop newpath (top of stack)
 	qd_stack_element_t newpath_elem;
 	qd_stack_error err = qd_stack_pop(ctx->st, &newpath_elem);
 	if (err != QD_STACK_OK) {
@@ -252,8 +250,6 @@ qd_exec_result usr_os_rename(qd_context* ctx) {
 		qd_print_stack_trace(ctx);
 		abort();
 	}
-
-	// Pop oldpath
 	qd_stack_element_t oldpath_elem;
 	err = qd_stack_pop(ctx->st, &oldpath_elem);
 	if (err != QD_STACK_OK) {
@@ -295,8 +291,6 @@ qd_exec_result usr_os_copy(qd_context* ctx) {
 		qd_print_stack_trace(ctx);
 		abort();
 	}
-
-	// Pop dstpath (top of stack)
 	qd_stack_element_t dstpath_elem;
 	qd_stack_error err = qd_stack_pop(ctx->st, &dstpath_elem);
 	if (err != QD_STACK_OK) {
@@ -310,8 +304,6 @@ qd_exec_result usr_os_copy(qd_context* ctx) {
 		qd_print_stack_trace(ctx);
 		abort();
 	}
-
-	// Pop srcpath
 	qd_stack_element_t srcpath_elem;
 	err = qd_stack_pop(ctx->st, &srcpath_elem);
 	if (err != QD_STACK_OK) {
@@ -414,8 +406,6 @@ qd_exec_result usr_os_setenv(qd_context* ctx) {
 		qd_print_stack_trace(ctx);
 		abort();
 	}
-
-	// Pop value (top of stack)
 	qd_stack_element_t value_elem;
 	qd_stack_error err = qd_stack_pop(ctx->st, &value_elem);
 	if (err != QD_STACK_OK) {
@@ -429,8 +419,6 @@ qd_exec_result usr_os_setenv(qd_context* ctx) {
 		qd_print_stack_trace(ctx);
 		abort();
 	}
-
-	// Pop name
 	qd_stack_element_t name_elem;
 	err = qd_stack_pop(ctx->st, &name_elem);
 	if (err != QD_STACK_OK) {
@@ -466,8 +454,6 @@ qd_exec_result usr_os_popen(qd_context* ctx) {
 		qd_print_stack_trace(ctx);
 		abort();
 	}
-
-	// Pop callback (top of stack)
 	qd_stack_element_t callback_elem;
 	qd_stack_error err = qd_stack_pop(ctx->st, &callback_elem);
 	if (err != QD_STACK_OK) {
@@ -862,8 +848,6 @@ qd_exec_result usr_os_walk(qd_context* ctx) {
 		qd_print_stack_trace(ctx);
 		abort();
 	}
-
-	// Pop callback
 	qd_stack_element_t callback_elem;
 	qd_stack_error err = qd_stack_pop(ctx->st, &callback_elem);
 	if (err != QD_STACK_OK || callback_elem.type != QD_STACK_TYPE_PTR) {
@@ -871,8 +855,6 @@ qd_exec_result usr_os_walk(qd_context* ctx) {
 		qd_print_stack_trace(ctx);
 		abort();
 	}
-
-	// Pop path
 	qd_stack_element_t path_elem;
 	err = qd_stack_pop(ctx->st, &path_elem);
 	if (err != QD_STACK_OK || path_elem.type != QD_STACK_TYPE_STR) {

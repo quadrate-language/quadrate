@@ -91,7 +91,7 @@ _quad() {
             ;;
         uses)
             if [[ "$cur" == -* ]]; then
-                COMPREPLY=( $(compgen -W "-w --write -n --check --help --version" -- "$cur") )
+                COMPREPLY=( $(compgen -W "-w --write --help --version" -- "$cur") )
             else
                 _quad_qd_files "$cur"
             fi
@@ -128,7 +128,7 @@ _quadc() {
     esac
 
     if [[ "$cur" == -* ]]; then
-        COMPREPLY=( $(compgen -W "-h --help -v --version -o -r --run -g -O0 -O1 -O2 -O3 -s -l --verbose --dump-tokens --dump-ir --save-temps --test --werror" -- "$cur") )
+        COMPREPLY=( $(compgen -W "-h --help -v --version -o -r --run -g -O0 -O1 -O2 -O3 -s -l -I --verbose --dump-tokens --dump-ir --save-temps --test --werror" -- "$cur") )
     else
         _quad_qd_files "$cur"
     fi
@@ -179,7 +179,7 @@ _quadpm() {
     local cur prev words cword
     _init_completion || return
 
-    local commands="get update list ls"
+    local commands="install lock get update list build"
 
     if [[ $cword -eq 1 ]]; then
         if [[ "$cur" == -* ]]; then
@@ -192,13 +192,18 @@ _quadpm() {
 
     local cmd="${words[1]}"
     case "$cmd" in
+        install)
+            if [[ "$cur" == -* ]]; then
+                COMPREPLY=( $(compgen -W "--frozen" -- "$cur") )
+            fi
+            ;;
         get)
             # No completion for URLs
             ;;
         update)
             # Could complete installed module names, but that requires reading the modules dir
             ;;
-        list|ls)
+        list|lock|build)
             # No arguments
             ;;
     esac

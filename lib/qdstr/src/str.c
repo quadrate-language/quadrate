@@ -39,15 +39,11 @@ qd_exec_result usr_str_len(qd_context* ctx) {
 // concat - concatenate two strings ( str1:s str2:s -- result:s )
 qd_exec_result usr_str_concat(qd_context* ctx) {
 	qd_stack_element_t str2, str1;
-
-	// Pop str2 (top)
 	qd_stack_error err = qd_stack_pop(ctx->st, &str2);
 	if (err != QD_STACK_OK) {
 		fprintf(stderr, "Fatal error in str::concat: Stack underflow\n");
 		abort();
 	}
-
-	// Pop str1
 	err = qd_stack_pop(ctx->st, &str1);
 	if (err != QD_STACK_OK) {
 		fprintf(stderr, "Fatal error in str::concat: Stack underflow\n");
@@ -88,15 +84,11 @@ qd_exec_result usr_str_concat(qd_context* ctx) {
 // contains - check if string contains substring ( str:s needle:s -- contains:i )
 qd_exec_result usr_str_contains(qd_context* ctx) {
 	qd_stack_element_t needle, haystack;
-
-	// Pop needle (top)
 	qd_stack_error err = qd_stack_pop(ctx->st, &needle);
 	if (err != QD_STACK_OK) {
 		fprintf(stderr, "Fatal error in str::contains: Stack underflow\n");
 		abort();
 	}
-
-	// Pop haystack
 	err = qd_stack_pop(ctx->st, &haystack);
 	if (err != QD_STACK_OK) {
 		fprintf(stderr, "Fatal error in str::contains: Stack underflow\n");
@@ -123,15 +115,11 @@ qd_exec_result usr_str_contains(qd_context* ctx) {
 // starts_with - check if string starts with prefix ( str:s prefix:s -- result:i )
 qd_exec_result usr_str_starts_with(qd_context* ctx) {
 	qd_stack_element_t prefix, str;
-
-	// Pop prefix (top)
 	qd_stack_error err = qd_stack_pop(ctx->st, &prefix);
 	if (err != QD_STACK_OK) {
 		fprintf(stderr, "Fatal error in str::starts_with: Stack underflow\n");
 		abort();
 	}
-
-	// Pop str
 	err = qd_stack_pop(ctx->st, &str);
 	if (err != QD_STACK_OK) {
 		fprintf(stderr, "Fatal error in str::starts_with: Stack underflow\n");
@@ -164,15 +152,11 @@ qd_exec_result usr_str_starts_with(qd_context* ctx) {
 // ends_with - check if string ends with suffix ( str:s suffix:s -- result:i )
 qd_exec_result usr_str_ends_with(qd_context* ctx) {
 	qd_stack_element_t suffix, str;
-
-	// Pop suffix (top)
 	qd_stack_error err = qd_stack_pop(ctx->st, &suffix);
 	if (err != QD_STACK_OK) {
 		fprintf(stderr, "Fatal error in str::ends_with: Stack underflow\n");
 		abort();
 	}
-
-	// Pop str
 	err = qd_stack_pop(ctx->st, &str);
 	if (err != QD_STACK_OK) {
 		fprintf(stderr, "Fatal error in str::ends_with: Stack underflow\n");
@@ -336,22 +320,16 @@ qd_exec_result usr_str_trim(qd_context* ctx) {
 // substring - extract substring ( str:s start:i length:i -- result:s )!
 qd_exec_result usr_str_substring(qd_context* ctx) {
 	qd_stack_element_t len_elem, start_elem, str_elem;
-
-	// Pop length
 	qd_stack_error err = qd_stack_pop(ctx->st, &len_elem);
 	if (err != QD_STACK_OK) {
 		fprintf(stderr, "Fatal error in str::substring: Stack underflow\n");
 		abort();
 	}
-
-	// Pop start
 	err = qd_stack_pop(ctx->st, &start_elem);
 	if (err != QD_STACK_OK) {
 		fprintf(stderr, "Fatal error in str::substring: Stack underflow\n");
 		abort();
 	}
-
-	// Pop string
 	err = qd_stack_pop(ctx->st, &str_elem);
 	if (err != QD_STACK_OK) {
 		fprintf(stderr, "Fatal error in str::substring: Stack underflow\n");
@@ -413,15 +391,11 @@ qd_exec_result usr_str_substring(qd_context* ctx) {
 // Returns pointer to array of qd_string* and count
 qd_exec_result usr_str_split(qd_context* ctx) {
 	qd_stack_element_t delim_elem, str_elem;
-
-	// Pop delimiter
 	qd_stack_error err = qd_stack_pop(ctx->st, &delim_elem);
 	if (err != QD_STACK_OK) {
 		fprintf(stderr, "Fatal error in str::split: Stack underflow\n");
 		abort();
 	}
-
-	// Pop string
 	err = qd_stack_pop(ctx->st, &str_elem);
 	if (err != QD_STACK_OK) {
 		fprintf(stderr, "Fatal error in str::split: Stack underflow\n");
@@ -509,23 +483,17 @@ qd_exec_result usr_str_split(qd_context* ctx) {
 // replace - replace all occurrences ( str:s old:s new:s -- result:s )
 qd_exec_result usr_str_replace(qd_context* ctx) {
 	qd_stack_element_t new_elem, old_elem, str_elem;
-
-	// Pop new
 	qd_stack_error err = qd_stack_pop(ctx->st, &new_elem);
 	if (err != QD_STACK_OK) {
 		fprintf(stderr, "Fatal error in str::replace: Stack underflow\n");
 		abort();
 	}
-
-	// Pop old
 	err = qd_stack_pop(ctx->st, &old_elem);
 	if (err != QD_STACK_OK) {
 		fprintf(stderr, "Fatal error in str::replace: Stack underflow\n");
 		if (new_elem.type == QD_STACK_TYPE_STR) qd_string_release(new_elem.value.s);
 		abort();
 	}
-
-	// Pop str
 	err = qd_stack_pop(ctx->st, &str_elem);
 	if (err != QD_STACK_OK) {
 		fprintf(stderr, "Fatal error in str::replace: Stack underflow\n");
@@ -618,15 +586,11 @@ qd_exec_result usr_str_replace(qd_context* ctx) {
 // Returns: -1 if str1 < str2, 0 if equal, 1 if str1 > str2
 qd_exec_result usr_str_compare(qd_context* ctx) {
 	qd_stack_element_t str2_elem, str1_elem;
-
-	// Pop str2
 	qd_stack_error err = qd_stack_pop(ctx->st, &str2_elem);
 	if (err != QD_STACK_OK) {
 		fprintf(stderr, "Fatal error in str::compare: Stack underflow\n");
 		abort();
 	}
-
-	// Pop str1
 	err = qd_stack_pop(ctx->st, &str1_elem);
 	if (err != QD_STACK_OK) {
 		fprintf(stderr, "Fatal error in str::compare: Stack underflow\n");
@@ -654,15 +618,11 @@ qd_exec_result usr_str_compare(qd_context* ctx) {
 // char_at - get character code at index ( str:s index:i -- char_code:i )!
 qd_exec_result usr_str_char_at(qd_context* ctx) {
 	qd_stack_element_t index_elem, str_elem;
-
-	// Pop index
 	qd_stack_error err = qd_stack_pop(ctx->st, &index_elem);
 	if (err != QD_STACK_OK) {
 		qd_push_i(ctx, STR_ERR_INVALID_ARG);
 		return (qd_exec_result){STR_ERR_INVALID_ARG};
 	}
-
-	// Pop string
 	err = qd_stack_pop(ctx->st, &str_elem);
 	if (err != QD_STACK_OK) {
 		qd_push_i(ctx, STR_ERR_INVALID_ARG);
@@ -704,15 +664,11 @@ qd_exec_result usr_str_char_at(qd_context* ctx) {
 // index_of - find index of substring ( haystack:s needle:s -- index:i )
 qd_exec_result usr_str_index_of(qd_context* ctx) {
 	qd_stack_element_t needle_elem, haystack_elem;
-
-	// Pop needle
 	qd_stack_error err = qd_stack_pop(ctx->st, &needle_elem);
 	if (err != QD_STACK_OK) {
 		fprintf(stderr, "Fatal error in str::index_of: Stack underflow\n");
 		abort();
 	}
-
-	// Pop haystack
 	err = qd_stack_pop(ctx->st, &haystack_elem);
 	if (err != QD_STACK_OK) {
 		fprintf(stderr, "Fatal error in str::index_of: Stack underflow\n");
@@ -743,22 +699,16 @@ qd_exec_result usr_str_index_of(qd_context* ctx) {
 // index_of_from - find index of substring starting from position ( haystack:s needle:s start:i -- index:i )
 qd_exec_result usr_str_index_of_from(qd_context* ctx) {
 	qd_stack_element_t start_elem, needle_elem, haystack_elem;
-
-	// Pop start
 	qd_stack_error err = qd_stack_pop(ctx->st, &start_elem);
 	if (err != QD_STACK_OK) {
 		fprintf(stderr, "Fatal error in str::index_of_from: Stack underflow\n");
 		abort();
 	}
-
-	// Pop needle
 	err = qd_stack_pop(ctx->st, &needle_elem);
 	if (err != QD_STACK_OK) {
 		fprintf(stderr, "Fatal error in str::index_of_from: Stack underflow\n");
 		abort();
 	}
-
-	// Pop haystack
 	err = qd_stack_pop(ctx->st, &haystack_elem);
 	if (err != QD_STACK_OK) {
 		fprintf(stderr, "Fatal error in str::index_of_from: Stack underflow\n");
@@ -877,8 +827,6 @@ static int str_cmp_desc(const void* a, const void* b) {
 // sort - sort array of strings in ascending order ( arr:p count:i -- )
 qd_exec_result usr_str_sort(qd_context* ctx) {
 	qd_stack_element_t count_elem, arr_elem;
-
-	// Pop count
 	qd_stack_error err = qd_stack_pop(ctx->st, &count_elem);
 	if (err != QD_STACK_OK || count_elem.type != QD_STACK_TYPE_INT) {
 		fprintf(stderr, "Fatal error in str::sort: Expected integer count\n");
@@ -905,8 +853,6 @@ qd_exec_result usr_str_sort(qd_context* ctx) {
 // sort_desc - sort array of strings in descending order ( arr:p count:i -- )
 qd_exec_result usr_str_sort_desc(qd_context* ctx) {
 	qd_stack_element_t count_elem, arr_elem;
-
-	// Pop count
 	qd_stack_error err = qd_stack_pop(ctx->st, &count_elem);
 	if (err != QD_STACK_OK || count_elem.type != QD_STACK_TYPE_INT) {
 		fprintf(stderr, "Fatal error in str::sort_desc: Expected integer count\n");
@@ -933,15 +879,11 @@ qd_exec_result usr_str_sort_desc(qd_context* ctx) {
 // join - join array of strings with delimiter ( parts:p count:i delim:s -- result:s )
 qd_exec_result usr_str_join(qd_context* ctx) {
 	qd_stack_element_t delim_elem, count_elem, parts_elem;
-
-	// Pop delimiter
 	qd_stack_error err = qd_stack_pop(ctx->st, &delim_elem);
 	if (err != QD_STACK_OK || delim_elem.type != QD_STACK_TYPE_STR) {
 		fprintf(stderr, "Fatal error in str::join: Expected string delimiter\n");
 		abort();
 	}
-
-	// Pop count
 	err = qd_stack_pop(ctx->st, &count_elem);
 	if (err != QD_STACK_OK || count_elem.type != QD_STACK_TYPE_INT) {
 		qd_string_release(delim_elem.value.s);

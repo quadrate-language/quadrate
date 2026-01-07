@@ -19,7 +19,6 @@ qd_exec_result usr_io_open(qd_context* ctx) {
         abort();
     }
 
-    // Pop mode (top of stack)
     qd_stack_element_t mode_elem;
     qd_stack_error err = qd_stack_pop(ctx->st, &mode_elem);
     if (err != QD_STACK_OK) {
@@ -30,8 +29,6 @@ qd_exec_result usr_io_open(qd_context* ctx) {
         fprintf(stderr, "Fatal error in io::open: Expected string for mode, got %d\n", mode_elem.type);
         abort();
     }
-
-    // Pop path
     qd_stack_element_t path_elem;
     err = qd_stack_pop(ctx->st, &path_elem);
     if (err != QD_STACK_OK) {
@@ -45,15 +42,11 @@ qd_exec_result usr_io_open(qd_context* ctx) {
         abort();
     }
 
-    // Open file
     FILE* fp = fopen(qd_string_data(path_elem.value.s), qd_string_data(mode_elem.value.s));
-
-    // Clean up strings
     qd_string_release(path_elem.value.s);
     qd_string_release(mode_elem.value.s);
 
     if (!fp) {
-        // On failure, only push the error code
         ctx->error_code = IO_ERR_NOT_FOUND;
         char err_buf[256];
         snprintf(err_buf, sizeof(err_buf), "%s", strerror(errno));
@@ -62,7 +55,6 @@ qd_exec_result usr_io_open(qd_context* ctx) {
         return (qd_exec_result){IO_ERR_NOT_FOUND};
     }
 
-    // On success, push the result then Ok
     qd_exec_result push_result = qd_push_p(ctx, fp);
     if (push_result.code != 0) {
         fprintf(stderr, "Fatal error in io::open: Failed to push pointer to stack\n");
@@ -107,7 +99,6 @@ qd_exec_result usr_io_read_string(qd_context* ctx) {
         abort();
     }
 
-    // Pop count
     qd_stack_element_t count_elem;
     qd_stack_error err = qd_stack_pop(ctx->st, &count_elem);
     if (err != QD_STACK_OK) {
@@ -119,7 +110,6 @@ qd_exec_result usr_io_read_string(qd_context* ctx) {
         abort();
     }
 
-    // Pop handle
     qd_stack_element_t handle_elem;
     err = qd_stack_pop(ctx->st, &handle_elem);
     if (err != QD_STACK_OK) {
@@ -150,7 +140,6 @@ qd_exec_result usr_io_read_string(qd_context* ctx) {
         return (qd_exec_result){0};
     }
 
-    // Allocate buffer
     char* buffer = malloc((size_t)count + 1);
     if (!buffer) {
         ctx->error_code = IO_ERR_READ;
@@ -159,7 +148,6 @@ qd_exec_result usr_io_read_string(qd_context* ctx) {
         return (qd_exec_result){IO_ERR_READ};
     }
 
-    // Read from file
     size_t bytes_read = fread(buffer, 1, (size_t)count, fp);
     buffer[bytes_read] = '\0';
 
@@ -173,7 +161,6 @@ qd_exec_result usr_io_read_string(qd_context* ctx) {
         return (qd_exec_result){IO_ERR_READ};
     }
 
-    // On success, push results then Ok
     qd_push_s(ctx, buffer);
     qd_push_i(ctx, (int64_t)bytes_read);
     qd_push_i(ctx, IO_ERR_OK);
@@ -190,8 +177,6 @@ qd_exec_result usr_io_write_string(qd_context* ctx) {
         qd_print_stack_trace(ctx);
         abort();
     }
-
-    // Pop data
     qd_stack_element_t data_elem;
     qd_stack_error err = qd_stack_pop(ctx->st, &data_elem);
     if (err != QD_STACK_OK) {
@@ -202,8 +187,6 @@ qd_exec_result usr_io_write_string(qd_context* ctx) {
         fprintf(stderr, "Fatal error in io::write: Expected string for data, got %d\n", data_elem.type);
         abort();
     }
-
-    // Pop handle
     qd_stack_element_t handle_elem;
     err = qd_stack_pop(ctx->st, &handle_elem);
     if (err != QD_STACK_OK) {
@@ -241,7 +224,6 @@ qd_exec_result usr_io_write_string(qd_context* ctx) {
         return (qd_exec_result){IO_ERR_WRITE};
     }
 
-    // On success, push result then Ok
     qd_push_i(ctx, (int64_t)written);
     qd_push_i(ctx, IO_ERR_OK);
     return (qd_exec_result){0};
@@ -254,8 +236,6 @@ qd_exec_result usr_io_seekg(qd_context* ctx) {
         qd_print_stack_trace(ctx);
         abort();
     }
-
-    // Pop whence
     qd_stack_element_t whence_elem;
     qd_stack_error err = qd_stack_pop(ctx->st, &whence_elem);
     if (err != QD_STACK_OK) {
@@ -266,8 +246,6 @@ qd_exec_result usr_io_seekg(qd_context* ctx) {
         fprintf(stderr, "Fatal error in io::seekg: Expected integer for whence, got %d\n", whence_elem.type);
         abort();
     }
-
-    // Pop offset
     qd_stack_element_t offset_elem;
     err = qd_stack_pop(ctx->st, &offset_elem);
     if (err != QD_STACK_OK) {
@@ -278,8 +256,6 @@ qd_exec_result usr_io_seekg(qd_context* ctx) {
         fprintf(stderr, "Fatal error in io::seekg: Expected integer for offset, got %d\n", offset_elem.type);
         abort();
     }
-
-    // Pop handle
     qd_stack_element_t handle_elem;
     err = qd_stack_pop(ctx->st, &handle_elem);
     if (err != QD_STACK_OK) {
@@ -334,7 +310,6 @@ qd_exec_result usr_io_seekg(qd_context* ctx) {
         return (qd_exec_result){IO_ERR_SEEK};
     }
 
-    // On success, push result then Ok
     qd_push_i(ctx, position);
     qd_push_i(ctx, IO_ERR_OK);
 
@@ -415,7 +390,6 @@ qd_exec_result usr_io_tell(qd_context* ctx) {
         return (qd_exec_result){IO_ERR_SEEK};
     }
 
-    // On success, push result then Ok
     qd_push_i(ctx, position);
     qd_push_i(ctx, IO_ERR_OK);
 
@@ -430,8 +404,6 @@ qd_exec_result usr_io_read(qd_context* ctx) {
         qd_print_stack_trace(ctx);
         abort();
     }
-
-    // Pop count
     qd_stack_element_t count_elem;
     qd_stack_error err = qd_stack_pop(ctx->st, &count_elem);
     if (err != QD_STACK_OK) {
@@ -442,8 +414,6 @@ qd_exec_result usr_io_read(qd_context* ctx) {
         fprintf(stderr, "Fatal error in io::read_bytes: Expected integer for count, got %d\n", count_elem.type);
         abort();
     }
-
-    // Pop buffer
     qd_stack_element_t buffer_elem;
     err = qd_stack_pop(ctx->st, &buffer_elem);
     if (err != QD_STACK_OK) {
@@ -454,8 +424,6 @@ qd_exec_result usr_io_read(qd_context* ctx) {
         fprintf(stderr, "Fatal error in io::read_bytes: Expected pointer for buffer, got %d\n", buffer_elem.type);
         abort();
     }
-
-    // Pop handle
     qd_stack_element_t handle_elem;
     err = qd_stack_pop(ctx->st, &handle_elem);
     if (err != QD_STACK_OK) {
@@ -484,7 +452,6 @@ qd_exec_result usr_io_read(qd_context* ctx) {
         return (qd_exec_result){0};
     }
 
-    // Read from file
     size_t bytes_read = fread(buffer, 1, (size_t)count, fp);
 
     if (bytes_read < (size_t)count && ferror(fp)) {
@@ -496,7 +463,6 @@ qd_exec_result usr_io_read(qd_context* ctx) {
         return (qd_exec_result){IO_ERR_READ};
     }
 
-    // On success, push result then Ok
     qd_push_i(ctx, (int64_t)bytes_read);
     qd_push_i(ctx, IO_ERR_OK);
 
@@ -517,13 +483,11 @@ qd_exec_result usr_io_readline(qd_context* ctx) {
         return (qd_exec_result){IO_ERR_EOF};
     }
 
-    // Remove trailing newline if present
     if (nread > 0 && line[nread - 1] == '\n') {
         line[nread - 1] = '\0';
         nread--;
     }
 
-    // On success, push result then Ok
     qd_push_s(ctx, line);
     qd_push_i(ctx, IO_ERR_OK);
     free(line);
@@ -539,8 +503,6 @@ qd_exec_result usr_io_write(qd_context* ctx) {
         qd_print_stack_trace(ctx);
         abort();
     }
-
-    // Pop count
     qd_stack_element_t count_elem;
     qd_stack_error err = qd_stack_pop(ctx->st, &count_elem);
     if (err != QD_STACK_OK) {
@@ -551,8 +513,6 @@ qd_exec_result usr_io_write(qd_context* ctx) {
         fprintf(stderr, "Fatal error in io::write_bytes: Expected integer for count, got %d\n", count_elem.type);
         abort();
     }
-
-    // Pop buffer
     qd_stack_element_t buffer_elem;
     err = qd_stack_pop(ctx->st, &buffer_elem);
     if (err != QD_STACK_OK) {
@@ -563,8 +523,6 @@ qd_exec_result usr_io_write(qd_context* ctx) {
         fprintf(stderr, "Fatal error in io::write_bytes: Expected pointer for buffer, got %d\n", buffer_elem.type);
         abort();
     }
-
-    // Pop handle
     qd_stack_element_t handle_elem;
     err = qd_stack_pop(ctx->st, &handle_elem);
     if (err != QD_STACK_OK) {
@@ -593,7 +551,6 @@ qd_exec_result usr_io_write(qd_context* ctx) {
         return (qd_exec_result){0};
     }
 
-    // Write to file
     size_t bytes_written = fwrite(buffer, 1, (size_t)count, fp);
 
     if (bytes_written < (size_t)count && ferror(fp)) {
@@ -605,7 +562,6 @@ qd_exec_result usr_io_write(qd_context* ctx) {
         return (qd_exec_result){IO_ERR_WRITE};
     }
 
-    // On success, push result then Ok
     qd_push_i(ctx, (int64_t)bytes_written);
     qd_push_i(ctx, IO_ERR_OK);
 
@@ -619,8 +575,6 @@ qd_exec_result usr_io_read_file(qd_context* ctx) {
         qd_print_stack_trace(ctx);
         abort();
     }
-
-    // Pop path
     qd_stack_element_t path_elem;
     qd_stack_error err = qd_stack_pop(ctx->st, &path_elem);
     if (err != QD_STACK_OK) {
@@ -634,7 +588,6 @@ qd_exec_result usr_io_read_file(qd_context* ctx) {
 
     const char* path = qd_string_data(path_elem.value.s);
 
-    // Open file
     FILE* fp = fopen(path, "rb");
     if (!fp) {
         int saved_errno = errno;
@@ -647,7 +600,6 @@ qd_exec_result usr_io_read_file(qd_context* ctx) {
         return (qd_exec_result){IO_ERR_NOT_FOUND};
     }
 
-    // Get file size
     if (fseek(fp, 0, SEEK_END) != 0) {
         int saved_errno = errno;
         fclose(fp);
@@ -673,7 +625,6 @@ qd_exec_result usr_io_read_file(qd_context* ctx) {
         return (qd_exec_result){IO_ERR_SEEK};
     }
 
-    // Seek back to start
     if (fseek(fp, 0, SEEK_SET) != 0) {
         int saved_errno = errno;
         fclose(fp);
@@ -686,7 +637,6 @@ qd_exec_result usr_io_read_file(qd_context* ctx) {
         return (qd_exec_result){IO_ERR_SEEK};
     }
 
-    // Allocate buffer
     char* buffer = malloc((size_t)file_size + 1);
     if (!buffer) {
         fclose(fp);
@@ -697,7 +647,6 @@ qd_exec_result usr_io_read_file(qd_context* ctx) {
         return (qd_exec_result){IO_ERR_READ};
     }
 
-    // Read entire file
     size_t bytes_read = fread(buffer, 1, (size_t)file_size, fp);
     buffer[bytes_read] = '\0';
 
@@ -717,7 +666,6 @@ qd_exec_result usr_io_read_file(qd_context* ctx) {
         return (qd_exec_result){IO_ERR_READ};
     }
 
-    // On success, push result then Ok
     qd_push_s(ctx, buffer);
     qd_push_i(ctx, IO_ERR_OK);
 
@@ -733,8 +681,6 @@ qd_exec_result usr_io_write_file(qd_context* ctx) {
         qd_print_stack_trace(ctx);
         abort();
     }
-
-    // Pop contents (top of stack)
     qd_stack_element_t contents_elem;
     qd_stack_error err = qd_stack_pop(ctx->st, &contents_elem);
     if (err != QD_STACK_OK) {
@@ -745,8 +691,6 @@ qd_exec_result usr_io_write_file(qd_context* ctx) {
         fprintf(stderr, "Fatal error in io::write_file: Expected string for contents, got %d\n", contents_elem.type);
         abort();
     }
-
-    // Pop path
     qd_stack_element_t path_elem;
     err = qd_stack_pop(ctx->st, &path_elem);
     if (err != QD_STACK_OK) {
@@ -778,7 +722,6 @@ qd_exec_result usr_io_write_file(qd_context* ctx) {
         return (qd_exec_result){IO_ERR_PERMISSION};
     }
 
-    // Write contents
     size_t written = fwrite(contents, 1, len, fp);
     int saved_errno = errno;
     fclose(fp);
@@ -795,7 +738,6 @@ qd_exec_result usr_io_write_file(qd_context* ctx) {
         return (qd_exec_result){IO_ERR_WRITE};
     }
 
-    // On success, push Ok
     qd_push_i(ctx, IO_ERR_OK);
     return (qd_exec_result){0};
 }

@@ -32,16 +32,13 @@ static void push_element(qd_context* ctx, qd_stack_element_t elem) {
 // Thread Implementation
 // =============================================================================
 
-// Thread spawn data - holds the closure to call
 typedef struct {
 	qd_stack_element_t func;
 } qd_thread_spawn_data;
 
-// Thread entry point wrapper
 static int thread_entry(void* arg) {
 	qd_thread_spawn_data* data = (qd_thread_spawn_data*)arg;
 
-	// Create a new context for this thread
 	qd_context* thread_ctx = qd_create_context(1024);
 	if (!thread_ctx) {
 		free(data);
@@ -58,7 +55,6 @@ static int thread_entry(void* arg) {
 		func(thread_ctx);
 	}
 
-	// Clean up
 	qd_free_context(thread_ctx);
 	free(data);
 	return 0;

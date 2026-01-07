@@ -15,7 +15,6 @@ qd_exec_result usr_math_sin(qd_context* ctx) {
 		abort();
 	}
 
-	// Check it's a numeric type (int or float)
 	qd_stack_element_t a;
 	qd_stack_error err = qd_stack_peek(ctx->st, &a);
 	if (err != QD_STACK_OK) {
@@ -284,7 +283,6 @@ qd_exec_result usr_math_atan(qd_context* ctx) {
 
 // sqrt - square root
 qd_exec_result usr_math_sqrt(qd_context* ctx) {
-	// Pop one numeric value, push float result
 	size_t stack_size = qd_stack_size(ctx->st);
 	if (stack_size < 1) {
 		fprintf(stderr, "Fatal error in math::sqrt: Stack underflow (requires 1 value)\n");
@@ -334,7 +332,6 @@ qd_exec_result usr_math_sqrt(qd_context* ctx) {
 
 // cbrt - cube root
 qd_exec_result usr_math_cbrt(qd_context* ctx) {
-	// Pop one numeric value, push float result
 	size_t stack_size = qd_stack_size(ctx->st);
 	if (stack_size < 1) {
 		fprintf(stderr, "Fatal error in math::cbrt: Stack underflow (requires 1 value)\n");
@@ -376,8 +373,6 @@ qd_exec_result usr_math_cbrt(qd_context* ctx) {
 
 // pow - exponentiation (base^exponent)
 qd_exec_result usr_math_pow(qd_context* ctx) {
-	// Pop two numeric values: base, then exponent
-	// Push result as float
 	size_t stack_size = qd_stack_size(ctx->st);
 	if (stack_size < 2) {
 		fprintf(stderr, "Fatal error in math::pow: Stack underflow (requires 2 values)\n");
@@ -386,7 +381,6 @@ qd_exec_result usr_math_pow(qd_context* ctx) {
 		abort();
 	}
 
-	// Pop exponent (top of stack)
 	qd_stack_element_t exponent_elem;
 	qd_stack_error err = qd_stack_pop(ctx->st, &exponent_elem);
 	if (err != QD_STACK_OK) {
@@ -396,7 +390,6 @@ qd_exec_result usr_math_pow(qd_context* ctx) {
 		abort();
 	}
 
-	// Pop base
 	qd_stack_element_t base_elem;
 	err = qd_stack_pop(ctx->st, &base_elem);
 	if (err != QD_STACK_OK) {
@@ -406,7 +399,6 @@ qd_exec_result usr_math_pow(qd_context* ctx) {
 		abort();
 	}
 
-	// Convert both to double
 	double base, exponent;
 	if (base_elem.type == QD_STACK_TYPE_INT) {
 		base = (double)base_elem.value.i;
@@ -430,10 +422,8 @@ qd_exec_result usr_math_pow(qd_context* ctx) {
 		abort();
 	}
 
-	// Compute base^exponent
 	double result = pow(base, exponent);
 
-	// Push result as float
 	err = qd_stack_push_float(ctx->st, result);
 	if (err != QD_STACK_OK) {
 		return (qd_exec_result){-2};
@@ -444,7 +434,6 @@ qd_exec_result usr_math_pow(qd_context* ctx) {
 
 // ln - natural logarithm (base e)
 qd_exec_result usr_math_ln(qd_context* ctx) {
-	// Pop one numeric value, push float result
 	size_t stack_size = qd_stack_size(ctx->st);
 	if (stack_size < 1) {
 		fprintf(stderr, "Fatal error in math::ln: Stack underflow (requires 1 value)\n");
@@ -494,7 +483,6 @@ qd_exec_result usr_math_ln(qd_context* ctx) {
 
 // log10 - base 10 logarithm
 qd_exec_result usr_math_log10(qd_context* ctx) {
-	// Pop one numeric value, push float result
 	size_t stack_size = qd_stack_size(ctx->st);
 	if (stack_size < 1) {
 		fprintf(stderr, "Fatal error in math::log10: Stack underflow (requires 1 value)\n");
@@ -544,7 +532,6 @@ qd_exec_result usr_math_log10(qd_context* ctx) {
 
 // ceil - ceiling (round up)
 qd_exec_result usr_math_ceil(qd_context* ctx) {
-	// Pop one numeric value, push float result
 	size_t stack_size = qd_stack_size(ctx->st);
 	if (stack_size < 1) {
 		fprintf(stderr, "Fatal error in math::ceil: Stack underflow (requires 1 value)\n");
@@ -586,7 +573,6 @@ qd_exec_result usr_math_ceil(qd_context* ctx) {
 
 // floor - floor (round down)
 qd_exec_result usr_math_floor(qd_context* ctx) {
-	// Pop one numeric value, push float result
 	size_t stack_size = qd_stack_size(ctx->st);
 	if (stack_size < 1) {
 		fprintf(stderr, "Fatal error in math::floor: Stack underflow (requires 1 value)\n");
@@ -628,7 +614,6 @@ qd_exec_result usr_math_floor(qd_context* ctx) {
 
 // round - round to nearest integer
 qd_exec_result usr_math_round(qd_context* ctx) {
-	// Pop one numeric value, push float result
 	size_t stack_size = qd_stack_size(ctx->st);
 	if (stack_size < 1) {
 		fprintf(stderr, "Fatal error in math::round: Stack underflow (requires 1 value)\n");
@@ -661,7 +646,6 @@ qd_exec_result usr_math_round(qd_context* ctx) {
 	// Round to nearest integer
 	double result = round(value);
 
-	// Push result as float
 	err = qd_stack_push_float(ctx->st, result);
 	if (err != QD_STACK_OK) {
 		return (qd_exec_result){-2};
@@ -681,7 +665,6 @@ qd_exec_result usr_math_atan2(qd_context* ctx) {
 		abort();
 	}
 
-	// Pop x (top of stack)
 	qd_stack_element_t x_elem;
 	qd_stack_error err = qd_stack_pop(ctx->st, &x_elem);
 	if (err != QD_STACK_OK) {
@@ -691,7 +674,6 @@ qd_exec_result usr_math_atan2(qd_context* ctx) {
 		abort();
 	}
 
-	// Pop y
 	qd_stack_element_t y_elem;
 	err = qd_stack_pop(ctx->st, &y_elem);
 	if (err != QD_STACK_OK) {
@@ -701,7 +683,6 @@ qd_exec_result usr_math_atan2(qd_context* ctx) {
 		abort();
 	}
 
-	// Convert both to double
 	double x, y;
 	if (x_elem.type == QD_STACK_TYPE_INT) {
 		x = (double)x_elem.value.i;
@@ -746,7 +727,6 @@ qd_exec_result usr_math_hypot(qd_context* ctx) {
 		abort();
 	}
 
-	// Pop y (top of stack)
 	qd_stack_element_t y_elem;
 	qd_stack_error err = qd_stack_pop(ctx->st, &y_elem);
 	if (err != QD_STACK_OK) {
@@ -756,7 +736,6 @@ qd_exec_result usr_math_hypot(qd_context* ctx) {
 		abort();
 	}
 
-	// Pop x
 	qd_stack_element_t x_elem;
 	err = qd_stack_pop(ctx->st, &x_elem);
 	if (err != QD_STACK_OK) {
@@ -766,7 +745,6 @@ qd_exec_result usr_math_hypot(qd_context* ctx) {
 		abort();
 	}
 
-	// Convert both to double
 	double x, y;
 	if (x_elem.type == QD_STACK_TYPE_INT) {
 		x = (double)x_elem.value.i;
@@ -853,7 +831,6 @@ qd_exec_result usr_math_fmod(qd_context* ctx) {
 		abort();
 	}
 
-	// Pop y (divisor, top of stack)
 	qd_stack_element_t y_elem;
 	qd_stack_error err = qd_stack_pop(ctx->st, &y_elem);
 	if (err != QD_STACK_OK) {
@@ -863,7 +840,6 @@ qd_exec_result usr_math_fmod(qd_context* ctx) {
 		abort();
 	}
 
-	// Pop x (dividend)
 	qd_stack_element_t x_elem;
 	err = qd_stack_pop(ctx->st, &x_elem);
 	if (err != QD_STACK_OK) {
@@ -873,7 +849,6 @@ qd_exec_result usr_math_fmod(qd_context* ctx) {
 		abort();
 	}
 
-	// Convert both to double
 	double x, y;
 	if (x_elem.type == QD_STACK_TYPE_INT) {
 		x = (double)x_elem.value.i;
