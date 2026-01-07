@@ -165,26 +165,12 @@ uninstall:
 
 docs:
 	@echo "=========================================="
-	@echo "  Generating API Documentation"
+	@echo "  Building documentation"
 	@echo "=========================================="
-	@if ! which doxygen > /dev/null 2>&1; then \
-		echo "" && \
-		echo "⚠️  Warning: doxygen not found - skipping documentation generation" && \
-		echo "" && \
-		echo "To generate documentation, install doxygen and graphviz (optional, for diagrams):" && \
-		echo "  Arch Linux: sudo pacman -S doxygen graphviz" && \
-		echo "  Debian:     sudo apt install doxygen graphviz" && \
-		echo ""; \
-	else \
-		echo "Running doxygen..." && \
-		doxygen Doxyfile && \
-		echo "" && \
-		echo "Documentation generated successfully!" && \
-		echo "HTML docs: dist/docs/html/index.html" && \
-		echo "" && \
-		echo "To view documentation, run:" && \
-		echo "  xdg-open dist/docs/html/index.html"; \
-	fi
+	@cd docs && mkdocs build
+	@echo ""
+	@echo "Documentation built successfully!"
+	@echo "To serve locally: cd docs && mkdocs serve"
 
 clean:
 	rm -rf build
