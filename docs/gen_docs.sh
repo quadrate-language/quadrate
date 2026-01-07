@@ -8,13 +8,13 @@
 # Also generates the language reference from lib/qc/include/qc/reference.def.
 #
 # Usage:
-#     ./scripts/gen_docs.sh                           # Generate all docs
-#     ./scripts/gen_docs.sh lib/qdmath/qd/math/module.qd  # Single file
+#     ./docs/gen_docs.sh                           # Generate all docs
+#     ./docs/gen_docs.sh lib/qdmath/qd/math/module.qd  # Single file
 #
 
 set -euo pipefail
 
-# Find project root (directory containing this script's parent)
+# Find project root (parent of docs directory)
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 
