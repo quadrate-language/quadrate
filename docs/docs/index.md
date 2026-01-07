@@ -1,6 +1,6 @@
 # Quadrate
 
-A programming language where data flows through your code like water through pipes.
+A stack-based concatenative programming language with static typing and LLVM compilation.
 
 > **Quadrate is under active development. Language syntax and standard library interfaces may change in future releases.**
 
@@ -10,17 +10,17 @@ fn main() {
 }
 ```
 
-Quadrate is a **concatenative, stack-based language** that compiles to native code. If you've ever wondered what programming would feel like without variables cluttering every line, you're in the right place.
+Quadrate is a concatenative language where data flows through a stack. Operations consume values from the stack and produce new values. Function signatures explicitly declare stack effects, enabling compile-time validation.
 
-## What makes Quadrate different?
+## Core concepts
 
-In most languages, you write `result = add(a, b)`. In Quadrate, you write:
+In Quadrate, you write operations in postfix notation:
 
 ```qd
 a b +
 ```
 
-Values flow onto a stack, operations consume them and produce new values. It's simple, explicit, and surprisingly powerful.
+Values are pushed onto a stack, then operations consume them. The compiler validates all stack operations at compile time.
 
 ```qd
 fn factorial(n:i64 -- result:i64) {
@@ -40,15 +40,15 @@ fn main() {
 quad run factorial.qd
 ```
 
-## Why Quadrate?
+## Key features
 
-**See the data flow.** Function signatures tell you exactly what goes in and what comes out. No hidden state, no surprises.
+**Explicit stack effects.** Function signatures declare what they consume and produce: `(inputs -- outputs)`. The compiler validates all stack operations.
 
-**Catch errors early.** The compiler validates stack effects and types before your code runs. If it compiles, the stack is balanced.
+**Static type checking.** Stack types are validated at compile time. Type mismatches are caught before execution.
 
-**Run fast.** LLVM compilation means your code runs at native speed, not in an interpreter.
+**Native code generation.** LLVM backend produces optimized native binaries. No interpreter or VM overhead.
 
-**Handle errors honestly.** Fallible functions force you to deal with errors. No exceptions flying across your codebase.
+**Structured error handling.** Fallible functions are marked with `!` and must be explicitly handled at call sites. No exceptions.
 
 ## Get started
 
@@ -56,7 +56,7 @@ New to Quadrate? Start here:
 
 1. **[Install Quadrate](docs/getting-started.md)** - Get the toolchain running
 2. **[Hello World](docs/learn/1-basics/hello-world.md)** - Write your first program
-3. **[Learn the Stack](docs/learn/2-stack/how-it-works.md)** - Understand the core concept
+3. **[Learn the Stack](docs/learn/2-stack/how-it-works.md)** - Understand stack-based evaluation
 
 Or dive into the **[Learn section](docs/learn/1-basics/hello-world.md)** for a complete tutorial from basics to advanced topics.
 
@@ -74,9 +74,9 @@ Quadrate comes with everything you need:
 | `quadrepl` | REPL - experiment interactively |
 | `quadpm` | Package manager - manage dependencies |
 
-## A taste of the language
+## Command-line arguments
 
-Here's a slightly more involved example - reading command line arguments:
+Reading command-line arguments:
 
 ```qd
 use str
@@ -100,7 +100,7 @@ quad run greet.qd -- Millie
 
 - **[Standard Library](docs/stdlib/index.md)** - Strings, I/O, math, threading, and more
 - **[Language Reference](docs/reference/index.md)** - All keywords and built-in operations
-- **[About Quadrate](about.md)** - Philosophy, history, and links
+- **[About Quadrate](about.md)** - Design philosophy and links
 
 ## License
 

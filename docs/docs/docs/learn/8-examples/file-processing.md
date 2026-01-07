@@ -260,4 +260,4 @@ fn main() {
 
 ## What's next?
 
-See [Language Reference](../../reference.md)
+See [Language Reference](../../reference/index.md)

@@ -65,4 +65,4 @@ quadpm remove json
 
 ## Creating packages
 
-See the [Creating Modules](tutorial-modules.md) tutorial for information on creating your own packages.
+See the [Modules](learn/3-functions/modules.md) section for information on creating your own packages.

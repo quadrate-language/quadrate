@@ -1,14 +1,10 @@
 # About Quadrate
 
-Quadrate is a stack-based programming language for people who want to understand exactly what their code is doing.
+Quadrate is a stack-based programming language designed for explicit data flow and compile-time verification.
 
-## The philosophy
+## Design philosophy
 
-Most programming languages hide complexity behind abstractions. Variables, objects, and implicit conversions make code easier to write but harder to reason about. Where did that value come from? What happens when this function is called?
-
-Quadrate takes a different approach: **make the data flow visible**.
-
-Every function declares its stack effect - what it takes and what it leaves behind. When you read Quadrate code, you can trace values through the program like following a wire through a circuit.
+Quadrate makes data flow explicit through stack-based evaluation. Every function declares its stack effect - what values it consumes and produces. This enables the compiler to validate all operations before execution.
 
 ```qd
 fn double(x:i64 -- result:i64) {
@@ -16,27 +12,27 @@ fn double(x:i64 -- result:i64) {
 }
 ```
 
-This function takes one integer and leaves one integer. No hidden inputs, no side effects, no surprises.
+This function takes one integer and produces one integer. The signature documents the stack effect, and the compiler enforces it.
 
-## The heritage
+## Stack language heritage
 
-Stack-based programming has a rich history:
+Stack-based programming has a long history:
 
 - **Forth** (1970) - The original, still used in embedded systems
-- **PostScript** (1982) - Powers every PDF you've ever read
+- **PostScript** (1982) - Powers PDF rendering
 - **Factor** (2003) - Modern stack language with advanced features
 
-Quadrate builds on these foundations while adding modern conveniences: static types, LLVM compilation, and a complete development toolchain.
+Quadrate builds on these foundations while adding static types, LLVM compilation, and a complete development toolchain.
 
 ## Design principles
 
-**Explicit over implicit.** If something happens, you should see it in the code.
+**Explicit over implicit.** Operations and their effects are visible in the code.
 
-**Compile-time over runtime.** Catch errors before the program runs, not after.
+**Compile-time over runtime.** Errors are caught during compilation, not execution.
 
-**Simple over clever.** A straightforward solution beats an elegant one.
+**Simple over clever.** Straightforward solutions are preferred.
 
-**Complete over minimal.** Ship the formatter, linter and LSP.
+**Complete over minimal.** The toolchain includes formatter, linter, LSP, and package manager.
 
 ## Source code
 

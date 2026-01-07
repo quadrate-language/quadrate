@@ -119,11 +119,12 @@ Syntax highlighting and LSP support: [quadrate-vscode](https://git.sr.ht/~klahr/
 
 Continue learning Quadrate:
 
-1. [Hello World Tutorial](tutorial-hello-world.md) - Understanding your first program
-2. [Stack Tutorial](tutorial-stack.md) - The core concepts of stack-based programming
-3. [Structs Tutorial](tutorial-structs.md) - Working with structured data
-4. [Error Handling](tutorial-errors.md) - Handling errors properly
-5. [Modules Tutorial](tutorial-modules.md) - Creating reusable modules
+1. [Hello World](learn/1-basics/hello-world.md) - Understanding your first program
+2. [The Stack](learn/2-stack/how-it-works.md) - Core concepts of stack-based programming
+3. [Functions](learn/3-functions/defining.md) - Defining and calling functions
+4. [Structs](learn/5-data-structures/structs.md) - Working with structured data
+5. [Error Handling](learn/6-error-handling/basics.md) - Handling errors properly
+6. [Modules](learn/3-functions/modules.md) - Creating reusable modules
 
 Reference:
 

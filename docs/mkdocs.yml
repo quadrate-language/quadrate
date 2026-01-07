@@ -16,12 +16,6 @@ markdown_extensions:
 nav:
   - Home: index.md
   - Getting Started: docs/getting-started.md
-  - Tutorials:
-      - Hello World: docs/tutorial-hello-world.md
-      - Stack: docs/tutorial-stack.md
-      - Structs: docs/tutorial-structs.md
-      - Error Handling: docs/tutorial-errors.md
-      - Creating Modules: docs/tutorial-modules.md
   - Learn:
       - 1. Basics:
           - Hello World: docs/learn/1-basics/hello-world.md
@@ -100,5 +94,6 @@ nav:
           - term: docs/stdlib/term.md
       - Signal Handling:
           - signal: docs/stdlib/signal.md
+  - Toolchain: docs/toolchain.md
   - External Packages: docs/external-packages.md
   - About: about.md
