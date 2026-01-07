@@ -924,7 +924,7 @@ run_quadpm_tests() {
 # Run command-line argument tests
 run_args_tests() {
     local suite="args"
-    local test_dir="$PROJECT_ROOT/tests/run_args"
+    local test_dir="$PROJECT_ROOT/tests/qd/args"
 
     if ! should_run_test "$suite" "args_tests"; then
         return

@@ -7,12 +7,12 @@ Quadrate test suite.
 ```
 tests/
 ├── qd/           # Quadrate language tests (.qd files with .out expected output)
+│   └── args/     # CLI argument passing tests
 ├── formatter/    # Code formatter tests
 ├── linter/       # Linter tests
 ├── fuzz/         # Fuzzing tests with libFuzzer
 ├── quadpm/       # Package manager tests
 ├── quaduses/     # Dependency analyzer tests
-├── run_args/     # CLI argument passing tests
 ├── run_all.sh    # Unified test runner (main entry point)
 ├── run_embed_tests.sh    # Embedding API tests
 ├── run_linter_tests.sh   # Linter test runner
