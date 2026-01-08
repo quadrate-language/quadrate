@@ -1107,7 +1107,9 @@ run_fuzz_tests() {
     local crash_dir="$TEMP_DIR/fuzz_crashes"
     mkdir -p "$crash_dir"
 
-    "$fuzz_exe" "$corpus_dir" \
+    # Disable leak detection for fuzz tests - valgrind tests cover memory leaks
+    # This prevents false positives from different ASan versions across platforms
+    ASAN_OPTIONS=detect_leaks=0 "$fuzz_exe" "$corpus_dir" \
         -max_len=5000 \
         -max_total_time="$FUZZ_TIME" \
         -artifact_prefix="$crash_dir/" \
