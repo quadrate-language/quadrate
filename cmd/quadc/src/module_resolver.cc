@@ -163,16 +163,6 @@ static std::vector<std::string> globQdFiles(const std::string& directory) {
 // Helper: Try to get module files from a directory
 // Returns module.qd if it exists, otherwise all .qd files in the directory
 static std::vector<std::string> tryGetModuleFilesFromDir(const std::string& moduleDir) {
-	std::vector<std::string> result;
-
-	// First try module.qd (backwards compatibility)
-	std::string modulePath = moduleDir + "/module.qd";
-	if (std::filesystem::exists(modulePath)) {
-		result.push_back(modulePath);
-		return result;
-	}
-
-	// Fallback: glob all .qd files
 	return globQdFiles(moduleDir);
 }
 
@@ -239,125 +229,10 @@ std::string findModuleFile(const std::string& moduleName, const std::string& sou
 
 		// File not found
 		return "";
-	} else {
-		// Module directory import (original behavior)
-		// Try 1: Local path (relative to source file)
-		std::string localPath = sourceDir + "/" + moduleName + "/module.qd";
-		if (std::filesystem::exists(localPath)) {
-			return localPath;
-		}
-
-		// Try 2: Include paths from -I flags
-		for (const auto& includePath : g_moduleIncludePaths) {
-			std::string expandedPath = expandTilde(includePath);
-
-			// Check if the include path IS the module directory (contains module.qd directly)
-			// This handles: -I /path/to/mymodule where mymodule/module.qd exists
-			// and qd.json says name = "mymodule"
-			std::string directModulePath = expandedPath + "/module.qd";
-			if (std::filesystem::exists(directModulePath)) {
-				// Check if this directory's qd.json matches the module name
-				std::string manifestPath = expandedPath + "/qd.json";
-				if (std::filesystem::exists(manifestPath)) {
-					json_error_t error;
-					json_t* root = json_load_file(manifestPath.c_str(), 0, &error);
-					if (root) {
-						json_t* name = json_object_get(root, "name");
-						if (name && json_is_string(name)) {
-							if (json_string_value(name) == moduleName) {
-								json_decref(root);
-								return directModulePath;
-							}
-						}
-						json_decref(root);
-					}
-				}
-			}
-
-			// Check for module as subdirectory of include path
-			std::string includedPath = expandedPath + "/" + moduleName + "/module.qd";
-			if (std::filesystem::exists(includedPath)) {
-				return includedPath;
-			}
-		}
-
-		// Try 3: Third-party packages directory (installed via quadpm)
-		std::string packagePath = findLatestPackageVersion(moduleName);
-		if (!packagePath.empty()) {
-			std::string moduleFile = packagePath + "/module.qd";
-			if (std::filesystem::exists(moduleFile)) {
-				return moduleFile;
-			}
-		}
-
-		// Try 3: QUADRATE_ROOT environment variable
-		const char* quadrateRoot = getenv("QUADRATE_ROOT");
-		if (quadrateRoot) {
-			std::string rootPath = std::string(quadrateRoot) + "/" + moduleName + "/module.qd";
-			if (std::filesystem::exists(rootPath)) {
-				return rootPath;
-			}
-		}
-
-		// Try 4: Standard library directories relative to current directory (for development)
-		std::string stdLibPath = "lib/qd" + moduleName + "/qd/" + moduleName + "/module.qd";
-		if (std::filesystem::exists(stdLibPath)) {
-			return stdLibPath;
-		}
-
-		// Try 5: Standard library relative to executable (for installed binaries)
-		// Get executable path and look for ../<data>/quadrate/<module>/module.qd
-		// Note: DATA_DIR_NAME is "data" on Haiku, "share" on other platforms
-		{
-			char exePathBuf[4096];
-			int len = exe_path_platform_get(exePathBuf, sizeof(exePathBuf));
-			if (len > 0 && static_cast<size_t>(len) < sizeof(exePathBuf)) {
-				try {
-					std::filesystem::path exePath = std::filesystem::canonical(exePathBuf);
-					std::filesystem::path exeDir = exePath.parent_path();
-					std::filesystem::path sharePath = exeDir / ".." / DATA_DIR_NAME / "quadrate" / moduleName / "module.qd";
-					if (std::filesystem::exists(sharePath)) {
-						return sharePath.string();
-					}
-				} catch (...) {
-					// Ignore errors resolving path
-				}
-			}
-		}
-
-		// Try 6: $HOME/quadrate directory
-		const char* home = getenv("HOME");
-		if (home) {
-			std::string homePath = std::string(home) + "/quadrate/" + moduleName + "/module.qd";
-			if (std::filesystem::exists(homePath)) {
-				return homePath;
-			}
-
-			// Also check quadpm's modules/_namespaces directory (symlinks to installed modules)
-			std::string namespacePath =
-					std::string(home) + "/quadrate/modules/_namespaces/" + moduleName + "/module.qd";
-			if (std::filesystem::exists(namespacePath)) {
-				try {
-					return std::filesystem::canonical(namespacePath).string();
-				} catch (...) {
-					return namespacePath;
-				}
-			}
-		}
-
-		// Try 7: System-wide installation
-#ifdef __HAIKU__
-		// On Haiku, check both system and user data directories
-		std::string systemPath = "/boot/system/data/quadrate/" + moduleName + "/module.qd";
-#else
-		std::string systemPath = "/usr/share/quadrate/" + moduleName + "/module.qd";
-#endif
-		if (std::filesystem::exists(systemPath)) {
-			return systemPath;
-		}
 	}
 
-	return ""; // Not found
+	// Module directory imports are handled by findModuleFiles()
+	return "";
 }
 
 std::vector<std::string> findModuleFiles(const std::string& moduleName, const std::string& sourceDir) {
@@ -464,6 +339,12 @@ std::vector<std::string> findModuleFiles(const std::string& moduleName, const st
 		if (!result.empty()) {
 			return result;
 		}
+
+		// Also check quadpm's modules/_namespaces directory (symlinks to installed modules)
+		result = tryGetModuleFilesFromDir(std::string(home) + "/quadrate/modules/_namespaces/" + moduleName);
+		if (!result.empty()) {
+			return result;
+		}
 	}
 
 	// Try 8: System-wide installation
@@ -530,11 +411,19 @@ std::vector<std::string> loadDependenciesFromManifest(const std::string& manifes
 					includePaths.push_back(resolved);
 				}
 			} else {
-				// Git URL - check if installed in packages dir
-				std::string installed = findLatestPackageVersion(depName);
-				if (!installed.empty()) {
-					std::filesystem::path p(installed);
-					includePaths.push_back(p.parent_path().string());
+				// Git URL - check if installed in packages dir via _namespaces symlink
+				const char* home = getenv("HOME");
+				if (home) {
+					std::string namespacePath = std::string(home) + "/quadrate/modules/_namespaces/" + depName;
+					if (std::filesystem::exists(namespacePath)) {
+						try {
+							std::string resolvedPath = std::filesystem::canonical(namespacePath).string();
+							includePaths.push_back(resolvedPath);
+						} catch (...) {
+							// If canonical fails, try the path anyway
+							includePaths.push_back(namespacePath);
+						}
+					}
 				}
 			}
 		}
