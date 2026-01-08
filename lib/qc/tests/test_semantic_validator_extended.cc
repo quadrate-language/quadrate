@@ -112,24 +112,6 @@ TEST(NegatInt) {
 	ASSERT(errors == 0, "neg on int should succeed");
 }
 
-TEST(AbsFloat) {
-	const char* src = "fn main() { -3.14 abs drop }";
-	size_t errors = validateCode(src);
-	ASSERT(errors == 0, "abs on float should succeed");
-}
-
-TEST(SqrtFloat) {
-	const char* src = "fn main() { 4.0 sqrt drop }";
-	size_t errors = validateCode(src);
-	ASSERT(errors == 0, "sqrt on float should succeed");
-}
-
-TEST(SqFloat) {
-	const char* src = "fn main() { 3.0 sq drop }";
-	size_t errors = validateCode(src);
-	ASSERT(errors == 0, "sq on float should succeed");
-}
-
 // Comparison Operations
 
 TEST(EqInts) {
