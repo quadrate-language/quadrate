@@ -190,7 +190,7 @@ cd - > /dev/null
 
 if output=$(QUADRATE_PATH="$TEST_CACHE_DIR/cache" "$QUADPM" get "$TEST_REPO@v1.0.0" 2>&1); then
     if echo "$output" | grep -q "✓ Installed to"; then
-        if echo "$output" | grep -q "✓ Found module.qd"; then
+        if echo "$output" | grep -q "✓ Found .qd files"; then
             # Verify package was actually created (uses Go-style path: local/path/to/repo@version)
             if find "$TEST_CACHE_DIR/cache" -type d -name "test-repo@v1.0.0" | grep -q .; then
                 pass "Installs package successfully"
@@ -198,7 +198,7 @@ if output=$(QUADRATE_PATH="$TEST_CACHE_DIR/cache" "$QUADPM" get "$TEST_REPO@v1.0
                 fail "Package directory not created" "$output"
             fi
         else
-            fail "Module.qd not found after install" "$output"
+            fail ".qd files not found after install" "$output"
         fi
     else
         fail "Installation output incorrect" "$output"
@@ -263,8 +263,8 @@ if output=$(QUADRATE_PATH="$TEST_CACHE_DIR/cache" "$QUADPM" get "$TEST_C_REPO@v1
     if echo "$output" | grep -q "Found src/ directory"; then
         if echo "$output" | grep -q "✓ Built"; then
             # Verify library was created (uses Go-style path: local/path/to/repo@version/lib/)
-            # Library name has 'qd' prefix: libqd<module>_static.a
-            if find "$TEST_CACHE_DIR/cache" -name "libqdtest-c-repo_static.a" | grep -q .; then
+            # Library name: lib<module>_static.a (third-party modules don't use libqd prefix)
+            if find "$TEST_CACHE_DIR/cache" -name "libtest-c-repo_static.a" | grep -q .; then
                 pass "Compiles C sources successfully"
             else
                 fail "Library file not created" "$output"

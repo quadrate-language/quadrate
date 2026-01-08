@@ -713,9 +713,9 @@ private:
 		bool isExternalModule = false;
 		if (uri.substr(0, 7) == "file://") {
 			std::string filePath = uri.substr(7);
-			// Check if file is in standard library or package locations
+			// Check if file is in standard library or module locations
 			if (filePath.find("/usr/share/quadrate/") != std::string::npos ||
-					filePath.find("/.quadrate/packages/") != std::string::npos) {
+					filePath.find("/.quadrate/modules/") != std::string::npos) {
 				isExternalModule = true;
 			}
 			// Also check QUADRATE_ROOT
@@ -2644,13 +2644,13 @@ private:
 		// Check if XDG_DATA_HOME is set
 		const char* xdgDataHome = getenv("XDG_DATA_HOME");
 		if (xdgDataHome) {
-			return std::string(xdgDataHome) + "/quadrate/packages";
+			return std::string(xdgDataHome) + "/quadrate/modules";
 		}
 
-		// Default to ~/quadrate/packages
+		// Default to ~/quadrate/modules
 		const char* home = getenv("HOME");
 		if (home) {
-			return std::string(home) + "/quadrate/packages";
+			return std::string(home) + "/quadrate/modules";
 		}
 
 		return "";

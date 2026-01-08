@@ -61,6 +61,20 @@ std::string getModulesDir() {
 	return getHomeDir() + "/quadrate/modules";
 }
 
+// Check if a directory contains any .qd files
+bool hasQuadrateFiles(const std::string& dirPath) {
+	if (!fs::exists(dirPath) || !fs::is_directory(dirPath)) {
+		return false;
+	}
+
+	for (const auto& entry : fs::directory_iterator(dirPath)) {
+		if (entry.is_regular_file() && entry.path().extension() == ".qd") {
+			return true;
+		}
+	}
+	return false;
+}
+
 // Execute a command safely using fork/exec (no shell interpretation)
 // Returns exit status, captures stdout in 'output' if provided
 int execCommandSafe(const std::vector<std::string>& args, std::string* output = nullptr, bool showOutput = false) {
@@ -822,13 +836,12 @@ std::string gitClone(const GitRef& gitRef) {
 
 	std::cout << COLOR_GREEN << "  ✓ Installed to " << COLOR_RESET << finalDir << "\n";
 
-	// Show what module file was found
-	std::string moduleFile = finalDir + "/module.qd";
-	if (fs::exists(moduleFile)) {
-		std::cout << COLOR_GREEN << "  ✓ Found module.qd" << COLOR_RESET << "\n";
+	// Check if module has any .qd files
+	if (hasQuadrateFiles(finalDir)) {
+		std::cout << COLOR_GREEN << "  ✓ Found .qd files" << COLOR_RESET << "\n";
 	} else {
-		std::cout << COLOR_YELLOW << "  ⚠ Warning: module.qd not found at root" << COLOR_RESET << "\n";
-		std::cout << "    Module may need to be structured with module.qd at root\n";
+		std::cout << COLOR_YELLOW << "  ⚠ Warning: no .qd files found at root" << COLOR_RESET << "\n";
+		std::cout << "    Module should contain at least one .qd file\n";
 	}
 
 	// Parse namespace from qd.json and create symlink
@@ -887,6 +900,26 @@ std::string gitClone(const GitRef& gitRef) {
 	return actualModuleName;
 }
 
+// Check if C source files use Quadrate name mangling convention (usr_* functions)
+// Returns true if any function matching pattern "usr_<moduleName>_" is found
+bool usesQuadrateNaming(const std::vector<std::string>& cFiles, const std::string& moduleName) {
+	std::string pattern = "usr_" + moduleName + "_";
+
+	for (const auto& file : cFiles) {
+		std::ifstream f(file);
+		if (!f.is_open()) continue;
+
+		std::string line;
+		while (std::getline(f, line)) {
+			if (line.find(pattern) != std::string::npos) {
+				// Found the pattern
+				return true;
+			}
+		}
+	}
+	return false;
+}
+
 // Compile C sources in a module directory
 // Returns true on success, false on failure
 bool compileCsources(const std::string& moduleDir, const std::string& moduleName, const NativeConfig& nativeConfig) {
@@ -913,9 +946,11 @@ bool compileCsources(const std::string& moduleDir, const std::string& moduleName
 	std::string libDir = moduleDir + "/lib";
 	fs::create_directories(libDir);
 
-	// Library names - use libqd prefix to match standard library convention
-	// This ensures the compiler uses usr_<namespace>_<func> name mangling
-	std::string libName = "libqd" + moduleName;
+	// Auto-detect naming convention by checking C source files
+	// If C files use usr_<module>_* functions, use libqd* prefix for name mangling
+	// Otherwise use lib* prefix for plain C functions
+	bool useQdPrefix = usesQuadrateNaming(cFiles, moduleName);
+	std::string libName = useQdPrefix ? ("libqd" + moduleName) : ("lib" + moduleName);
 	std::string sharedLib = libDir + "/" + libName + ".so";
 	std::string staticLib = libDir + "/" + libName + "_static.a";
 
@@ -1148,7 +1183,7 @@ void listModules() {
 
 	std::vector<PackageInfo> packages;
 
-	// Recursively find packages (directories containing module.qd or qd.json)
+	// Recursively find packages (directories containing .qd files or qd.json)
 	for (const auto& entry : fs::recursive_directory_iterator(modulesDir)) {
 		if (!entry.is_directory()) {
 			continue;
@@ -1158,14 +1193,14 @@ void listModules() {
 		if (dirname == "_namespaces") {
 			continue;
 		}
-		// Check if this looks like a package directory (has @ in name and contains module.qd or qd.json)
+		// Check if this looks like a package directory (has @ in name and contains .qd files or qd.json)
 		size_t atPos = dirname.find('@');
 		if (atPos == std::string::npos) {
 			continue;
 		}
-		std::string moduleFile = entry.path().string() + "/module.qd";
-		std::string manifestFile = entry.path().string() + "/qd.json";
-		if (!fs::exists(moduleFile) && !fs::exists(manifestFile)) {
+		std::string dirPath = entry.path().string();
+		std::string manifestFile = dirPath + "/qd.json";
+		if (!hasQuadrateFiles(dirPath) && !fs::exists(manifestFile)) {
 			continue;
 		}
 
@@ -1517,9 +1552,9 @@ InstallResult installSingleDependency(const Dependency& dep, const std::string& 
 			return result;
 		}
 
-		// Verify it has a module.qd
-		if (!fs::exists(resolvedPath + "/module.qd")) {
-			std::cout << COLOR_RED << "✗ Not a module (no module.qd): " << resolvedPath << COLOR_RESET << "\n";
+		// Verify it has at least one .qd file
+		if (!hasQuadrateFiles(resolvedPath)) {
+			std::cout << COLOR_RED << "✗ Not a module (no .qd files found): " << resolvedPath << COLOR_RESET << "\n";
 			return result;
 		}
 

@@ -57,7 +57,7 @@ namespace Qd {
 
 #include "semantic_validator_internal.h"
 
-	// Helper: Get the packages directory path
+	// Helper: Get the modules directory path
 	static std::string getPackagesDirectory() {
 		const char* quadratePath = std::getenv("QUADRATE_PATH");
 		if (quadratePath) {
@@ -65,11 +65,11 @@ namespace Qd {
 		}
 		const char* xdgDataHome = std::getenv("XDG_DATA_HOME");
 		if (xdgDataHome) {
-			return std::string(xdgDataHome) + "/quadrate/packages";
+			return std::string(xdgDataHome) + "/quadrate/modules";
 		}
 		const char* home = std::getenv("HOME");
 		if (home) {
-			return std::string(home) + "/quadrate/packages";
+			return std::string(home) + "/quadrate/modules";
 		}
 		return "";
 	}
@@ -329,8 +329,8 @@ namespace Qd {
 			}
 
 			// If not found in same directory, try standard paths
-			// Try 2: Third-party packages directory (installed via quadpm)
-			// Get packages directory
+			// Try 2: Third-party modules directory (installed via quadpm)
+			// Get modules directory
 			std::string packagesDir;
 			const char* quadratePath = std::getenv("QUADRATE_PATH");
 			if (quadratePath) {
@@ -338,11 +338,11 @@ namespace Qd {
 			} else {
 				const char* xdgDataHome = std::getenv("XDG_DATA_HOME");
 				if (xdgDataHome) {
-					packagesDir = std::string(xdgDataHome) + "/quadrate/packages";
+					packagesDir = std::string(xdgDataHome) + "/quadrate/modules";
 				} else {
 					const char* pkgHome = std::getenv("HOME");
 					if (pkgHome) {
-						packagesDir = std::string(pkgHome) + "/quadrate/packages";
+						packagesDir = std::string(pkgHome) + "/quadrate/modules";
 					}
 				}
 			}
@@ -420,47 +420,36 @@ namespace Qd {
 			for (const auto& includePath : mIncludePaths) {
 				std::string expandedPath = expandTilde(includePath);
 
-				// Check if the include path IS the module directory (contains module.qd directly)
+				// Check if the include path IS the module directory
 				// and qd.json name matches the module name we're looking for
-				std::string directModulePath = expandedPath + "/module.qd";
-				if (std::filesystem::exists(directModulePath)) {
-					// Check qd.json for module name
-					std::string manifestPath = expandedPath + "/qd.json";
-					if (std::filesystem::exists(manifestPath)) {
-						std::ifstream manifestFile(manifestPath);
-						if (manifestFile.is_open()) {
-							// Simple JSON name extraction - look for "name": "value"
-							std::stringstream manifestBuffer;
-							manifestBuffer << manifestFile.rdbuf();
-							std::string manifestContent = manifestBuffer.str();
-							manifestFile.close();
+				std::string manifestPath = expandedPath + "/qd.json";
+				if (std::filesystem::exists(manifestPath)) {
+					std::ifstream manifestFile(manifestPath);
+					if (manifestFile.is_open()) {
+						// Simple JSON name extraction - look for "name": "value"
+						std::stringstream manifestBuffer;
+						manifestBuffer << manifestFile.rdbuf();
+						std::string manifestContent = manifestBuffer.str();
+						manifestFile.close();
 
-							// Find "name" key
-							size_t nameKeyPos = manifestContent.find("\"name\"");
-							if (nameKeyPos != std::string::npos) {
-								// Find colon after key
-								size_t colonPos = manifestContent.find(':', nameKeyPos + 6);
-								if (colonPos != std::string::npos) {
-									// Find opening quote of value
-									size_t valueStart = manifestContent.find('"', colonPos + 1);
-									if (valueStart != std::string::npos) {
-										// Find closing quote
-										size_t valueEnd = manifestContent.find('"', valueStart + 1);
-										if (valueEnd != std::string::npos) {
-											std::string nameValue =
-													manifestContent.substr(valueStart + 1, valueEnd - valueStart - 1);
-											if (nameValue == moduleName) {
-												mModuleDirectories[moduleName] = expandedPath;
-												file.open(directModulePath);
-												if (file.good()) {
-													std::stringstream buffer;
-													buffer << file.rdbuf();
-													std::string source = buffer.str();
-													file.close();
-													parseModuleAndCollectFunctions(moduleName, source);
-													return;
-												}
-												file.close();
+						// Find "name" key
+						size_t nameKeyPos = manifestContent.find("\"name\"");
+						if (nameKeyPos != std::string::npos) {
+							// Find colon after key
+							size_t colonPos = manifestContent.find(':', nameKeyPos + 6);
+							if (colonPos != std::string::npos) {
+								// Find opening quote of value
+								size_t valueStart = manifestContent.find('"', colonPos + 1);
+								if (valueStart != std::string::npos) {
+									// Find closing quote
+									size_t valueEnd = manifestContent.find('"', valueStart + 1);
+									if (valueEnd != std::string::npos) {
+										std::string nameValue =
+												manifestContent.substr(valueStart + 1, valueEnd - valueStart - 1);
+										if (nameValue == moduleName) {
+											// Name matches - try to load from this directory
+											if (tryLoadModuleFromDirectory(expandedPath, moduleName)) {
+												return;
 											}
 										}
 									}

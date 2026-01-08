@@ -10,8 +10,8 @@ quadpm <command> [args]
 
 ## Commands
 
-- `get <url>[@version]` - Install package from Git
-- `list`, `ls` - List installed packages
+- `get <url>[@version]` - Install module from Git
+- `list`, `ls` - List installed modules
 
 ## Examples
 
@@ -21,9 +21,9 @@ quadpm get https://github.com/user/lib@v1.0.0
 quadpm list
 ```
 
-## Package location
+## Module location
 
-Packages are installed to:
+Modules are installed to:
 1. `$QUADRATE_PATH/` (if set)
-2. `$XDG_DATA_HOME/quadrate/packages/`
-3. `~/quadrate/packages/` (default)
+2. `$XDG_DATA_HOME/quadrate/modules/`
+3. `~/quadrate/modules/` (default)
