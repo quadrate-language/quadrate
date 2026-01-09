@@ -94,6 +94,21 @@ static std::vector<std::string> loadDependenciesFromManifest(const std::string& 
 				if (std::filesystem::exists(resolved)) {
 					includePaths.push_back(resolved);
 				}
+			} else {
+				// Git URL - check if installed in packages dir via _namespaces symlink
+				const char* home = getenv("HOME");
+				if (home) {
+					std::string namespacePath = std::string(home) + "/quadrate/modules/_namespaces/" + depName;
+					if (std::filesystem::exists(namespacePath)) {
+						try {
+							std::string resolvedPath = std::filesystem::canonical(namespacePath).string();
+							includePaths.push_back(resolvedPath);
+						} catch (...) {
+							// If canonical fails, try the path anyway
+							includePaths.push_back(namespacePath);
+						}
+					}
+				}
 			}
 		}
 	}
