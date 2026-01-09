@@ -1330,7 +1330,9 @@ main() {
         run_mtls_tests
     fi
 
-    if [[ -z "$SPECIFIC_SUITE" ]] || [[ "$SPECIFIC_SUITE" == "fuzz" ]]; then
+    # Fuzz tests only run when explicitly requested (--suite fuzz)
+    # They are non-deterministic and meant for local bug discovery, not CI
+    if [[ "$SPECIFIC_SUITE" == "fuzz" ]]; then
         run_fuzz_tests
     fi
 
