@@ -1,6 +1,9 @@
 quadpm_sources = files(
 	'src/git_ref.cc',
 	'src/main.cc',
+	'src/pm_commands.cc',
+	'src/pm_manifest.cc',
+	'src/pm_utils.cc',
 	'src/semver.cc',
 )
 

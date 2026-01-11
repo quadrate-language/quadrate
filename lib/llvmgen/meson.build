@@ -21,6 +21,8 @@ if llvm_dep.found()
 		'src/generator_inline.cc',
 		'src/generator_typeaware.cc',
 		'src/generator_nodes.cc',
+		'src/generator_nodes_instructions.cc',
+		'src/generator_nodes_locals.cc',
 		'src/generator_control.cc',
 		'src/generator_structs.cc',
 	)

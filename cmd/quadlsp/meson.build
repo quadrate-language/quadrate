@@ -1,5 +1,7 @@
 quadlsp_sources = files(
 	'src/main.cc',
+	'src/lsp_completion.cc',
+	'src/lsp_navigation.cc',
 )
 
 # jansson_dep is declared in root meson.build
