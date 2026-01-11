@@ -2,7 +2,9 @@
 # Creates a 1.44 MB floppy ISO image containing Quadrate source code
 
 REPO_ROOT := ../..
-VERSION := $(shell git -C $(REPO_ROOT) describe --tags --always 2>/dev/null || echo "2.0.0")
+# Get version from meson.build (e.g., '2.0.0-alpha' -> 'v2.0.0-alpha')
+MESON_VERSION := $(shell grep "version:" $(REPO_ROOT)/meson.build | head -1 | sed "s/.*'\([^']*\)'.*/\1/")
+VERSION := v$(MESON_VERSION)
 ISO_NAME := quadrate-$(VERSION)-src.iso
 STAGING := staging
 MAX_SIZE := 1474560  # 1.44 MB in bytes
@@ -65,10 +67,10 @@ $(STAGING): clean
 	@echo "" >> $(STAGING)/README.TXT
 	@echo "https://quadrate-lang.org" >> $(STAGING)/README.TXT
 
-	# Add extras from this directory
-	@if [ -f FILE_ID.DIZ ]; then cp FILE_ID.DIZ $(STAGING)/; fi
-	@if [ -f QUADRATE.ANS ]; then cp QUADRATE.ANS $(STAGING)/; fi
-	@if [ -f QUAD.NFO ]; then cp QUAD.NFO $(STAGING)/; fi
+	# Add extras from this directory (inject version)
+	@if [ -f FILE_ID.DIZ ]; then sed 's/__VERSION__/$(VERSION)/g' FILE_ID.DIZ > $(STAGING)/FILE_ID.DIZ; fi
+	@if [ -f QUADRATE.ANS ]; then sed 's/__VERSION__/$(VERSION)/g' QUADRATE.ANS > $(STAGING)/QUADRATE.ANS; fi
+	@if [ -f QUAD.NFO ]; then sed 's/__VERSION__/$(VERSION)/g' QUAD.NFO > $(STAGING)/QUAD.NFO; fi
 	@if [ -f HELLO.QD ]; then cp HELLO.QD $(STAGING)/; fi
 
 	@echo "  Contents:"

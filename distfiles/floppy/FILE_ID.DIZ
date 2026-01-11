@@ -1,5 +1,5 @@
   ╔═══════════════════════════════════╗
-  ║   Q U A D R A T E   v 2.0.0     ║
+  ║   Q U A D R A T E  __VERSION__  ║
   ╠═══════════════════════════════════╣
   ║ Stack-based programming language ║
   ║ Compiles to native code via LLVM ║

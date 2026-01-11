@@ -9,7 +9,7 @@
 
     ========================================================================
 
-                   A Stack-Based Programming Language v2.0.0
+                   A Stack-Based Programming Language __VERSION__
 
                          Compiles to Native via LLVM
 
