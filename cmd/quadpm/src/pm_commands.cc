@@ -128,7 +128,9 @@ bool usesQuadrateNaming(const std::vector<std::string>& cFiles, const std::strin
 
 	for (const auto& file : cFiles) {
 		std::ifstream f(file);
-		if (!f.is_open()) continue;
+		if (!f.is_open()) {
+			continue;
+		}
 
 		std::string line;
 		while (std::getline(f, line)) {
@@ -1175,8 +1177,8 @@ int removeModule(const std::string& targetModuleName) {
 		}
 
 		bool matches = (dirname == targetModuleName || moduleName == targetModuleName || hostPath == targetModuleName ||
-				(!manifestNamespace.empty() && manifestNamespace == targetModuleName) ||
-				(!manifestModuleName.empty() && manifestModuleName == targetModuleName));
+						(!manifestNamespace.empty() && manifestNamespace == targetModuleName) ||
+						(!manifestModuleName.empty() && manifestModuleName == targetModuleName));
 
 		if (matches) {
 			foundPath = dirPath;

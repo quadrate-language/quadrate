@@ -187,7 +187,8 @@ json_t* QuadrateLSP::findDefinitionInModule(
 
 				json_t* end = json_object();
 				json_object_set_new(end, "line", json_integer(static_cast<json_int_t>(lspLine)));
-				json_object_set_new(end, "character", json_integer(static_cast<json_int_t>(constNode->name().length())));
+				json_object_set_new(
+						end, "character", json_integer(static_cast<json_int_t>(constNode->name().length())));
 				json_object_set_new(range, "end", end);
 
 				json_object_set_new(location, "range", range);
@@ -323,8 +324,7 @@ std::string QuadrateLSP::findStructTypeOfVariable(Qd::IAstNode* root, const std:
 								}
 								// Check if it's a plain identifier (Struct)
 								else if (prevSibling->type() == Qd::IAstNode::Type::IDENTIFIER) {
-									Qd::AstNodeIdentifier* identNode =
-											static_cast<Qd::AstNodeIdentifier*>(prevSibling);
+									Qd::AstNodeIdentifier* identNode = static_cast<Qd::AstNodeIdentifier*>(prevSibling);
 									structType = identNode->name();
 									return;
 								}
@@ -467,8 +467,8 @@ json_t* QuadrateLSP::handleFieldAccessDefinition(
 											json_t* range = json_object();
 											json_t* start_json = json_object();
 											size_t lspLine = (field->line() > 0) ? field->line() - 1 : 0;
-											json_object_set_new(start_json, "line",
-													json_integer(static_cast<json_int_t>(lspLine)));
+											json_object_set_new(
+													start_json, "line", json_integer(static_cast<json_int_t>(lspLine)));
 											json_object_set_new(start_json, "character", json_integer(0));
 											json_object_set_new(range, "start", start_json);
 
@@ -507,8 +507,7 @@ json_t* QuadrateLSP::handleFieldAccessDefinition(
 								json_t* range = json_object();
 								json_t* start_json = json_object();
 								size_t lspLine = (field->line() > 0) ? field->line() - 1 : 0;
-								json_object_set_new(
-										start_json, "line", json_integer(static_cast<json_int_t>(lspLine)));
+								json_object_set_new(start_json, "line", json_integer(static_cast<json_int_t>(lspLine)));
 								json_object_set_new(start_json, "character", json_integer(0));
 								json_object_set_new(range, "start", start_json);
 
@@ -677,8 +676,7 @@ void QuadrateLSP::handleDefinition(const std::string& id, const std::string& uri
 					Qd::IAstNode* child = root->child(i);
 
 					if (child && child->type() == Qd::IAstNode::Type::FUNCTION_DECLARATION) {
-						Qd::AstNodeFunctionDeclaration* funcNode =
-								static_cast<Qd::AstNodeFunctionDeclaration*>(child);
+						Qd::AstNodeFunctionDeclaration* funcNode = static_cast<Qd::AstNodeFunctionDeclaration*>(child);
 
 						if (funcNode->name() == word) {
 							// Found the definition
@@ -694,8 +692,8 @@ void QuadrateLSP::handleDefinition(const std::string& id, const std::string& uri
 
 							json_t* end = json_object();
 							json_object_set_new(end, "line", json_integer(static_cast<json_int_t>(lspLine)));
-							json_object_set_new(end, "character",
-									json_integer(static_cast<json_int_t>(funcNode->name().length())));
+							json_object_set_new(
+									end, "character", json_integer(static_cast<json_int_t>(funcNode->name().length())));
 							json_object_set_new(range, "end", end);
 
 							json_object_set_new(location, "range", range);
@@ -703,8 +701,7 @@ void QuadrateLSP::handleDefinition(const std::string& id, const std::string& uri
 							break;
 						}
 					} else if (child && child->type() == Qd::IAstNode::Type::STRUCT_DECLARATION) {
-						Qd::AstNodeStructDeclaration* structNode =
-								static_cast<Qd::AstNodeStructDeclaration*>(child);
+						Qd::AstNodeStructDeclaration* structNode = static_cast<Qd::AstNodeStructDeclaration*>(child);
 
 						if (structNode->name() == word) {
 							// Found the struct definition
@@ -989,7 +986,8 @@ void QuadrateLSP::handleFoldingRange(const std::string& id, const std::string& u
 	json_decref(response);
 }
 
-void QuadrateLSP::handleDocumentHighlight(const std::string& id, const std::string& uri, size_t line, size_t character) {
+void QuadrateLSP::handleDocumentHighlight(
+		const std::string& id, const std::string& uri, size_t line, size_t character) {
 	json_t* response = json_object();
 	json_object_set_new(response, "jsonrpc", json_string("2.0"));
 	json_object_set_new(response, "id", json_integer(std::stoi(id)));

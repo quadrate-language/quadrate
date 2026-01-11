@@ -37,7 +37,6 @@ bool irContains(const std::string& ir, const std::string& pattern) {
 	return ir.find(pattern) != std::string::npos;
 }
 
-
 TEST(EmptyMainFunction) {
 	const char* src = "fn main() { }";
 	std::string ir = generateIR(src);
@@ -52,7 +51,6 @@ TEST(SimplePrint) {
 	ASSERT(!ir.empty(), "should generate IR for simple print");
 	ASSERT(irContains(ir, "42"), "should contain literal 42");
 }
-
 
 TEST(IntegerAddition) {
 	const char* src = "fn main() { 10 20 add print }";
@@ -85,7 +83,6 @@ TEST(ChainedArithmetic) {
 	ASSERT(!ir.empty(), "should generate IR for chained arithmetic");
 }
 
-
 TEST(FloatLiteral) {
 	const char* src = "fn main() { 3.14 print }";
 	std::string ir = generateIR(src);
@@ -98,14 +95,12 @@ TEST(FloatArithmetic) {
 	ASSERT(!ir.empty(), "should generate IR for float arithmetic");
 }
 
-
 TEST(StringLiteral) {
 	const char* src = "fn main() { \"hello\" print }";
 	std::string ir = generateIR(src);
 	ASSERT(!ir.empty(), "should generate IR for string literal");
 	ASSERT(irContains(ir, "hello"), "should contain string content");
 }
-
 
 TEST(StackDup) {
 	const char* src = "fn main() { 42 dup add print }";
@@ -136,7 +131,6 @@ TEST(StackRot) {
 	std::string ir = generateIR(src);
 	ASSERT(!ir.empty(), "should generate IR for rot operation");
 }
-
 
 TEST(IfStatementTrue) {
 	const char* src = R"(
@@ -193,7 +187,6 @@ TEST(LoopStatement) {
 	std::string ir = generateIR(src);
 	ASSERT(!ir.empty(), "should generate IR for loop statement");
 }
-
 
 TEST(SimpleFunctionCall) {
 	const char* src = R"(
@@ -254,7 +247,6 @@ TEST(RecursiveFunction) {
 	ASSERT(irContains(ir, "factorial"), "should reference factorial function");
 }
 
-
 TEST(LocalVariable) {
 	const char* src = R"(
 		fn main() {
@@ -279,7 +271,6 @@ TEST(MultipleLocals) {
 	ASSERT(!ir.empty(), "should generate IR for multiple locals");
 }
 
-
 TEST(IntegerComparison) {
 	const char* src = R"(
 		fn main() {
@@ -292,7 +283,6 @@ TEST(IntegerComparison) {
 	ASSERT(!ir.empty(), "should generate IR for comparisons");
 	ASSERT(irContains(ir, "icmp"), "should contain integer compare");
 }
-
 
 TEST(StructDefinition) {
 	const char* src = R"(
@@ -313,7 +303,6 @@ TEST(StructDefinition) {
 	ASSERT(irContains(ir, "Point") || irContains(ir, "getelementptr"), "should reference struct");
 }
 
-
 TEST(DeferStatement) {
 	const char* src = R"(
 		fn main() {
@@ -327,7 +316,6 @@ TEST(DeferStatement) {
 	ASSERT(!ir.empty(), "should generate IR for defer");
 }
 
-
 TEST(ConstantDefinition) {
 	const char* src = R"(
 		const answer = 42
@@ -339,7 +327,6 @@ TEST(ConstantDefinition) {
 	ASSERT(!ir.empty(), "should generate IR with constant");
 	ASSERT(irContains(ir, "42"), "should contain constant value");
 }
-
 
 TEST(BooleanOperations) {
 	const char* src = R"(
@@ -353,7 +340,6 @@ TEST(BooleanOperations) {
 	ASSERT(!ir.empty(), "should generate IR for boolean operations");
 }
 
-
 TEST(InvalidCodeReturnsEmpty) {
 	const char* src = "fn main() { undefined_func }";
 	std::string ir = generateIR(src);
@@ -365,7 +351,6 @@ TEST(SyntaxErrorReturnsEmpty) {
 	std::string ir = generateIR(src);
 	ASSERT(ir.empty(), "syntax error should return empty IR");
 }
-
 
 TEST(OptimizationLevelZero) {
 	const char* src = "fn main() { 42 print }";

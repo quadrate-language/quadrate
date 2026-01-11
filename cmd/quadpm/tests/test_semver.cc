@@ -6,7 +6,6 @@
 #include "../src/semver.h"
 #include <unit-check/uc.h>
 
-
 TEST(SemVerParseBasicTest) {
 	SemVer v = parseSemVer("1.2.3");
 	ASSERT_EQ(1, v.major, "major version");
@@ -69,7 +68,6 @@ TEST(SemVerParseMajorOnlyTest) {
 	ASSERT_TRUE(v.isValid(), "should be valid");
 }
 
-
 TEST(SemVerCompareMajorTest) {
 	SemVer v1 = parseSemVer("1.0.0");
 	SemVer v2 = parseSemVer("2.0.0");
@@ -108,7 +106,6 @@ TEST(SemVerComparePrereleaseOrderTest) {
 	ASSERT_TRUE(v1 < v2, "1.0.0-alpha < 1.0.0-beta");
 }
 
-
 TEST(IsSemVerValidTest) {
 	ASSERT_TRUE(isSemVer("1.2.3"), "1.2.3 is semver");
 	ASSERT_TRUE(isSemVer("v1.2.3"), "v1.2.3 is semver");
@@ -120,7 +117,6 @@ TEST(IsSemVerInvalidTest) {
 	ASSERT_FALSE(isSemVer("develop"), "develop is not semver");
 	ASSERT_FALSE(isSemVer("feature/test"), "feature/test is not semver");
 }
-
 
 TEST(VersionRangeExactTest) {
 	VersionRange r = parseVersionRange("1.2.3");
@@ -206,7 +202,6 @@ TEST(VersionRangeHyphenTest) {
 	ASSERT_FALSE(r.satisfies(parseSemVer("2.0.1")), "should not satisfy 2.0.1");
 }
 
-
 TEST(FindBestMatchTest) {
 	std::vector<SemVer> versions = {
 			parseSemVer("1.0.0"),
@@ -233,7 +228,6 @@ TEST(FindBestMatchNoMatchTest) {
 	SemVer best = findBestMatch(r, versions);
 	ASSERT_FALSE(best.isValid(), "should not find match");
 }
-
 
 TEST(SemVerToStringBasicTest) {
 	SemVer v = parseSemVer("1.2.3");

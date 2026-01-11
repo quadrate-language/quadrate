@@ -827,5 +827,4 @@ namespace Qd {
 		}
 	}
 
-
 } // namespace Qd

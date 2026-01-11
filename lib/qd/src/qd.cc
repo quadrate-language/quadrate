@@ -55,7 +55,8 @@ static std::string findModuleFile(const std::string& moduleName) {
 			return devPath;
 		}
 		// Also try installed structure
-		std::string installPath = std::string(libDir) + "/../" + DATA_DIR_NAME + "/quadrate/" + moduleName + "/module.qd";
+		std::string installPath =
+				std::string(libDir) + "/../" + DATA_DIR_NAME + "/quadrate/" + moduleName + "/module.qd";
 		if (fs::exists(installPath)) {
 			return installPath;
 		}

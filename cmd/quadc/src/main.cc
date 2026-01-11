@@ -10,9 +10,9 @@
 #include <llvmgen/generator.h>
 #include <qc/ast.h>
 #include <qc/ast_node.h>
-#include <qc/ast_printer.h>
 #include <qc/ast_node_function.h>
 #include <qc/ast_node_use.h>
+#include <qc/ast_printer.h>
 #include <qc/colors.h>
 #include <qc/semantic_validator.h>
 #include <set>

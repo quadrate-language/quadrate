@@ -201,7 +201,7 @@ bool createNamespaceSymlink(const std::string& namespaceName, const std::string&
 			std::string existingTarget = fs::read_symlink(symlinkPath).string();
 			// Normalize for comparison (both should be relative to namespaces dir)
 			if (existingTarget == targetPath || fs::weakly_canonical(namespacesDir + "/" + existingTarget) ==
-													fs::weakly_canonical(namespacesDir + "/" + targetPath)) {
+														fs::weakly_canonical(namespacesDir + "/" + targetPath)) {
 				return true; // Same target, no conflict
 			}
 			// Different target - this is a conflict

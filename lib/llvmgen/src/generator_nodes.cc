@@ -105,7 +105,6 @@ namespace Qd {
 		}
 	}
 
-
 	// generateInstruction is in generator_nodes_instructions.cc
 
 	void LlvmGenerator::Impl::generateIdentifier(AstNodeIdentifier* ident, llvm::Value* ctx) {
@@ -1257,7 +1256,6 @@ namespace Qd {
 		// Skip free block
 		builder->SetInsertPoint(skipFreeBB);
 	}
-
 
 	// generateLocal, generateLocalOne, generateLocalCleanup, collectAllCapturesFromAST are in generator_nodes_locals.cc
 

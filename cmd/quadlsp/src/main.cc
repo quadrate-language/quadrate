@@ -648,8 +648,7 @@ void QuadrateLSP::publishDiagnostics(const std::string& uri, const std::string& 
 			json_t* end = json_object();
 			// End at the same position plus a reasonable offset for visibility
 			json_object_set_new(end, "line", json_integer(static_cast<json_int_t>(lspLine)));
-			json_object_set_new(
-					end, "character", json_integer(static_cast<json_int_t>(lspColumn + ERROR_SPAN_LENGTH)));
+			json_object_set_new(end, "character", json_integer(static_cast<json_int_t>(lspColumn + ERROR_SPAN_LENGTH)));
 			json_object_set_new(range, "start", start);
 			json_object_set_new(range, "end", end);
 
@@ -741,8 +740,7 @@ void QuadrateLSP::publishDiagnostics(const std::string& uri, const std::string& 
 			json_object_set_new(start, "character", json_integer(static_cast<json_int_t>(lspColumn)));
 			json_t* end = json_object();
 			json_object_set_new(end, "line", json_integer(static_cast<json_int_t>(lspLine)));
-			json_object_set_new(
-					end, "character", json_integer(static_cast<json_int_t>(lspColumn + ERROR_SPAN_LENGTH)));
+			json_object_set_new(end, "character", json_integer(static_cast<json_int_t>(lspColumn + ERROR_SPAN_LENGTH)));
 			json_object_set_new(range, "start", start);
 			json_object_set_new(range, "end", end);
 
@@ -810,22 +808,19 @@ std::string QuadrateLSP::getBuiltInDocumentation(const std::string& word) {
 			{"tan", "Tangent function.\n\n**Stack effect:** `a -- result`"},
 			{"if", "Conditional execution.\n\n**Syntax:** `condition if { ... } else { ... }`"},
 			{"for", "Loop construct.\n\n**Syntax:** `start end step for name { ... }`"},
-			{"while",
-					"Conditional loop.\n\n**Syntax:** `condition while { ... next-condition }`\n\nPops and checks "
-					"condition each iteration. Continues while truthy."},
+			{"while", "Conditional loop.\n\n**Syntax:** `condition while { ... next-condition }`\n\nPops and checks "
+					  "condition each iteration. Continues while truthy."},
 			{"loop", "Infinite loop.\n\n**Syntax:** `loop { ... }`"},
-			{"free",
-					"Free allocated memory.\n\n**Stack effect:** `ptr --`\n\nFrees memory allocated for structs or "
-					"strings. Automatically frees nested string fields in structs."},
+			{"free", "Free allocated memory.\n\n**Stack effect:** `ptr --`\n\nFrees memory allocated for structs or "
+					 "strings. Automatically frees nested string fields in structs."},
 			{"struct", "Declare a struct type.\n\n**Syntax:** `struct Name { field1:type1 field2:type2 "
 					   "}`\n\nDefines a "
 					   "composite data type with named fields."},
 			{"pub", "Public visibility modifier.\n\n**Syntax:** `pub struct Name { ... }` or `pub fn name(...) { "
 					"... "
 					"}`\n\nMakes structs or functions visible to other modules."},
-			{"defer",
-					"Defer execution until scope exit.\n\n**Syntax:** `defer { ... }`\n\nExecutes code block when "
-					"function returns, useful for cleanup."},
+			{"defer", "Defer execution until scope exit.\n\n**Syntax:** `defer { ... }`\n\nExecutes code block when "
+					  "function returns, useful for cleanup."},
 	};
 
 	auto it = docs.find(word);
@@ -1469,8 +1464,7 @@ void QuadrateLSP::handleSignatureHelp(const std::string& id, const std::string& 
 													std::ostringstream sigStream;
 													sigStream << "fn " << importedFunc->name << "(";
 
-													for (size_t j = 0; j < importedFunc->inputParameters.size();
-															j++) {
+													for (size_t j = 0; j < importedFunc->inputParameters.size(); j++) {
 														if (j > 0) {
 															sigStream << " ";
 														}
@@ -1480,8 +1474,7 @@ void QuadrateLSP::handleSignatureHelp(const std::string& id, const std::string& 
 
 													sigStream << " -- ";
 
-													for (size_t j = 0; j < importedFunc->outputParameters.size();
-															j++) {
+													for (size_t j = 0; j < importedFunc->outputParameters.size(); j++) {
 														if (j > 0) {
 															sigStream << " ";
 														}
@@ -1628,8 +1621,7 @@ void QuadrateLSP::handleDocumentSymbols(const std::string& id, const std::string
 						if (j > 0) {
 							detail << " ";
 						}
-						const Qd::AstNodeStructField* field =
-								static_cast<const Qd::AstNodeStructField*>(fields[j]);
+						const Qd::AstNodeStructField* field = static_cast<const Qd::AstNodeStructField*>(fields[j]);
 						detail << field->name() << ":" << field->typeName();
 					}
 					detail << " }";
@@ -1672,7 +1664,8 @@ void QuadrateLSP::handleDocumentSymbols(const std::string& id, const std::string
 
 					json_t* end = json_object();
 					json_object_set_new(end, "line", json_integer(static_cast<json_int_t>(lspLine)));
-					json_object_set_new(end, "character", json_integer(static_cast<json_int_t>(namespaceName.length())));
+					json_object_set_new(
+							end, "character", json_integer(static_cast<json_int_t>(namespaceName.length())));
 					json_object_set_new(range, "end", end);
 
 					json_object_set_new(nsSymbol, "range", range);
