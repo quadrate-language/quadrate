@@ -1,0 +1,11 @@
+  ╔═══════════════════════════════════╗
+  ║   Q U A D R A T E   v 2.0.0     ║
+  ╠═══════════════════════════════════╣
+  ║ Stack-based programming language ║
+  ║ Compiles to native code via LLVM ║
+  ╟───────────────────────────────────╢
+  ║ tar xzf SOURCE.TGZ && make       ║
+  ║ Requires: GCC/Clang, LLVM 14+    ║
+  ╟───────────────────────────────────╢
+  ║ git.sr.ht/~klahr/quadrate  FREE! ║
+  ╚═══════════════════════════════════╝

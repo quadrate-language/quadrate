@@ -1,0 +1,68 @@
+// ╔═══════════════════════════════════════════════════════════════════════════╗
+// ║  HELLO.QD - Quadrate Demo Program                                         ║
+// ║  A taste of stack-based programming!                                      ║
+// ╚═══════════════════════════════════════════════════════════════════════════╝
+
+use math
+
+// Factorial: n on stack, returns n!
+// Stack operations work with the value on top
+fn factorial(n:i64 -- result:i64) {
+    dup 1 <= if { drop 1 } else { dup 1 - factorial * }
+}
+
+// Fibonacci: returns nth fibonacci number
+fn fibonacci(n:i64 -- result:i64) {
+    dup 2 < if {
+        // Base case: return n itself (0 or 1)
+    } else {
+        // fib(n-1) + fib(n-2)
+        dup 1 - fibonacci
+        swap 2 - fibonacci
+        +
+    }
+}
+
+// Calculate distance between two points
+// Stack: x1 y1 x2 y2 -- distance
+fn distance(x1:f64 y1:f64 x2:f64 y2:f64 -- dist:f64) {
+    -> y2 -> x2 -> y1 -> x1    // pop into locals
+    x2 x1 - dup *              // (x2-x1)^2
+    y2 y1 - dup *              // (y2-y1)^2
+    +                          // sum
+    math::sqrt                 // square root
+}
+
+// Main entry point
+fn main() {
+    "╔═══════════════════════════════════════╗" print nl
+    "║     QUADRATE DEMO - Hello, World!     ║" print nl
+    "╚═══════════════════════════════════════╝" print nl
+    nl
+
+    // Basic output
+    "The stack is all you need." print nl
+    nl
+
+    // Factorial
+    "Factorial of 10: " print
+    10 factorial print nl
+
+    // Fibonacci
+    "Fibonacci(20):   " print
+    20 fibonacci print nl
+
+    // Distance calculation
+    "Distance (0,0) to (3,4): " print
+    0.0 0.0 3.0 4.0 distance print nl
+
+    nl
+    "Stack operations demo:" print nl
+    "  5 3 + = " print 5 3 + print nl
+    "  7 2 * = " print 7 2 * print nl
+    "  10 3 / = " print 10 3 / print nl
+    "  10 3 % = " print 10 3 % print nl
+
+    nl
+    "Thanks for trying Quadrate!" print nl
+}

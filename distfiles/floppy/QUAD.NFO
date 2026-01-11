@@ -1,0 +1,130 @@
+
+        ╔════════════════════════════════════════════════════════════╗
+        ║                                                            ║
+        ║   ███  █  █  ███  ███   ███   ███  █████ █████             ║
+        ║  █   █ █  █ █   █ █  █  █  █ █   █   █   █                 ║
+        ║  █   █ █  █ █████ █  █  ███  █████   █   ████              ║
+        ║  █ ▄ █ █  █ █   █ █  █  █ █  █   █   █   █                 ║
+        ║   ███   ██  █   █ ███   █  █ █   █   █   █████             ║
+        ║     ▀                                                      ║
+        ║           A STACK-BASED PROGRAMMING LANGUAGE               ║
+        ║                     VERSION 2.0.0                          ║
+        ║                                                            ║
+        ╚════════════════════════════════════════════════════════════╝
+
+═══════════════════════════════════════════════════════════════════════════════
+                                  ABOUT
+═══════════════════════════════════════════════════════════════════════════════
+
+  QUADRATE is a stack-based programming language that compiles to native
+  machine code via LLVM. Inspired by Forth, but with modern amenities like
+  static typing, modules, structs, and closures.
+
+  THE STACK IS ALL YOU NEED.
+
+═══════════════════════════════════════════════════════════════════════════════
+                               FEATURES
+═══════════════════════════════════════════════════════════════════════════════
+
+  [*] Stack-based execution model
+  [*] Compiles to native code via LLVM
+  [*] Static type checking
+  [*] Module system with standard library
+  [*] Structs and arrays
+  [*] First-class functions and closures
+  [*] Defer statements for cleanup
+  [*] Built-in testing framework
+  [*] Language server (LSP) for IDE support
+  [*] Code formatter and linter
+
+═══════════════════════════════════════════════════════════════════════════════
+                             QUICK START
+═══════════════════════════════════════════════════════════════════════════════
+
+  1. EXTRACT THE SOURCE
+
+     tar xzf SOURCE.TGZ
+     cd quadrate
+
+  2. BUILD
+
+     make release
+
+  3. INSTALL (optional)
+
+     sudo make install
+
+  4. RUN YOUR FIRST PROGRAM
+
+     echo 'fn main() { "Hello, World!" print nl }' > hello.qd
+     quad run hello.qd
+
+═══════════════════════════════════════════════════════════════════════════════
+                            REQUIREMENTS
+═══════════════════════════════════════════════════════════════════════════════
+
+  - C++20 compiler (GCC 10+ or Clang 10+)
+  - LLVM 14 or higher
+  - Meson build system
+  - A POSIX-compatible operating system (Linux, BSD, macOS)
+
+═══════════════════════════════════════════════════════════════════════════════
+                              EXAMPLE
+═══════════════════════════════════════════════════════════════════════════════
+
+  use math
+
+  fn factorial(n:i64 -- result:i64) {
+      n 1 <= if { 1 } else { n n 1 - factorial * }
+  }
+
+  fn main() {
+      "Factorial of 10: " print
+      10 factorial print nl
+
+      "Square root of 2: " print
+      2.0 math::sqrt print nl
+  }
+
+═══════════════════════════════════════════════════════════════════════════════
+                              TOOLCHAIN
+═══════════════════════════════════════════════════════════════════════════════
+
+  quad      - Unified CLI (recommended)
+  quadc     - Compiler
+  quadfmt   - Code formatter
+  quadlint  - Static analyzer
+  quadlsp   - Language server
+  quadpm    - Package manager
+  quadrepl  - Interactive REPL
+  quaduses  - Import manager
+
+═══════════════════════════════════════════════════════════════════════════════
+                               LINKS
+═══════════════════════════════════════════════════════════════════════════════
+
+  SOURCE CODE    https://git.sr.ht/~klahr/quadrate
+  MAILING LIST   ~klahr/quadrate@lists.sr.ht
+
+═══════════════════════════════════════════════════════════════════════════════
+                               GREETS
+═══════════════════════════════════════════════════════════════════════════════
+
+  Shouts to all the Forthers, stack pushers, and concatenative coders!
+
+  And to everyone who still appreciates a good floppy disk.
+
+═══════════════════════════════════════════════════════════════════════════════
+                              LICENSE
+═══════════════════════════════════════════════════════════════════════════════
+
+  Quadrate is released under the GNU GPL v3.
+  See LICENSE file in source archive for details.
+
+═══════════════════════════════════════════════════════════════════════════════
+
+  "In a world of objects, be a stack."
+
+                                                            (c) 2024-2026
+
+═══════════════════════════════════════════════════════════════════════════════

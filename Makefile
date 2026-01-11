@@ -38,7 +38,7 @@ LIBS_WITH_HEADERS := qdrt qd qdfmt qdio qdmath qdmem qdos qdstr qdstrconv qdtime
 # Note: crypto (sha256, sha512, md5, crc32) moved to external module (https://github.com/quadrate-language/crypto)
 STDLIB_MODULES := base64 bits flag fmt io limits math mem os sb signal str strconv term thread time unicode uri hex bytes path sort rand uuid testing
 
-.PHONY: all debug release tests tests-failed tests-clear valgrind asan fuzz examples format install uninstall clean docs
+.PHONY: all debug release tests tests-failed tests-clear valgrind asan fuzz examples format install uninstall clean docs dist-floppy
 
 all: debug
 
@@ -84,6 +84,12 @@ debug:
 
 release:
 	$(call do_build,$(BUILD_DIR_RELEASE),release,Release build complete - static libraries ready)
+	@echo "Stripping binaries..."
+	@for cmd in $(CMDS) quadrepl; do \
+		if [ -f dist/bin/$$cmd ]; then strip dist/bin/$$cmd && echo "  $$cmd"; fi; \
+	done
+	@strip dist/lib/*.so 2>/dev/null || true
+	@echo "Release binaries stripped"
 
 tests: debug
 	@$(MAKE) examples --no-print-directory
@@ -171,6 +177,12 @@ docs:
 	@echo ""
 	@echo "Documentation built successfully!"
 	@echo "To serve locally: cd docs && mkdocs serve"
+
+dist-floppy:
+	@echo "=========================================="
+	@echo "  Creating floppy disk ISO"
+	@echo "=========================================="
+	@$(MAKE) -C distfiles/floppy
 
 clean:
 	rm -rf build

@@ -39,3 +39,9 @@ crash-*
 vgcore.*
 oom-*
 slow-unit-*
+fuzz/
+tests/fuzz/corpus/
+
+# Floppy dist artifacts
+distfiles/floppy/staging/
+distfiles/floppy/*.iso

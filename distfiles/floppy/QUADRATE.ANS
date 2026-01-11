@@ -1,0 +1,51 @@
+
+
+     ####    ##  ##    ####    #####    #####      ####    ######   ######
+    ##  ##   ##  ##   ##  ##   ##  ##   ##  ##    ##  ##     ##     ##
+    ##  ##   ##  ##   ######   ##  ##   #####     ######     ##     #####
+    ##  ##   ##  ##   ##  ##   ##  ##   ##  ##    ##  ##     ##     ##
+     ####     ####    ##  ##   #####    ##  ##    ##  ##     ##     ######
+        ##
+
+    ========================================================================
+
+                   A Stack-Based Programming Language v2.0.0
+
+                         Compiles to Native via LLVM
+
+    ========================================================================
+
+
+       "The stack is all you need."
+
+
+       EXAMPLE:
+       --------
+       fn factorial(n:i64 -- result:i64) {
+           n 1 <= if { 1 } else { n n 1 - factorial * }
+       }
+
+       fn main() {
+           10 factorial print nl    // prints 3628800
+       }
+
+
+    ========================================================================
+
+       TO BUILD:
+         tar xzf SOURCE.TGZ
+         cd quadrate
+         make release
+         make install
+
+       REQUIRES:
+         - C++20 compiler (GCC 10+ / Clang 10+)
+         - LLVM 14+
+         - Meson build system
+
+    ========================================================================
+
+                        https://git.sr.ht/~klahr/quadrate
+
+                              (c) 2024-2026
+
