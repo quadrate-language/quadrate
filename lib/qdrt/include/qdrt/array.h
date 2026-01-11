@@ -16,7 +16,12 @@
 #include <stdint.h>
 
 #ifdef __cplusplus
+#include <atomic>
+typedef std::atomic<size_t> qd_array_atomic_size_t;
 extern "C" {
+#else
+#include <stdatomic.h>
+typedef atomic_size_t qd_array_atomic_size_t;
 #endif
 
 /**
@@ -44,13 +49,14 @@ typedef enum {
  *
  * Arrays are heap-allocated and reference-counted.
  * When the reference count reaches 0, the array and its contents are freed.
+ * Arrays use atomic reference counting for thread-safety.
  */
 typedef struct qd_array {
-	size_t magic;			///< Magic number for validation (QD_ARRAY_MAGIC)
-	size_t refcount;		///< Reference count
-	size_t length;			///< Number of elements
-	size_t capacity;		///< Allocated capacity
-	qd_array_type elemType; ///< Type of elements in the array
+	size_t magic;					 ///< Magic number for validation (QD_ARRAY_MAGIC)
+	qd_array_atomic_size_t refcount; ///< Atomic reference count
+	size_t length;					 ///< Number of elements
+	size_t capacity;				 ///< Allocated capacity
+	qd_array_type elemType;			 ///< Type of elements in the array
 
 	union {
 		int64_t* i; ///< Integer array data
@@ -82,6 +88,7 @@ qd_array_t* qd_array_create(size_t capacity, qd_array_type elemType);
  * @brief Retain (increment reference count of) an array
  *
  * @param arr Array to retain
+ * @note Thread-safe: uses atomic operations
  */
 void qd_array_retain(qd_array_t* arr);
 
@@ -92,6 +99,7 @@ void qd_array_retain(qd_array_t* arr);
  * For string arrays, all string references are released.
  *
  * @param arr Array to release (can be NULL)
+ * @note Thread-safe: uses atomic operations
  */
 void qd_array_release(qd_array_t* arr);
 

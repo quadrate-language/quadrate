@@ -1145,8 +1145,7 @@ void qd_debug_print_stack(qd_context* ctx) {
 			break;
 		}
 	}
-	fprintf(stderr, "Bottom of stack (oldest)");
-	fprintf(stderr, "");
+	fprintf(stderr, "Bottom of stack (oldest)\n");
 }
 
 // Exported helper functions for split runtime files (runtime_stack.c, etc.)

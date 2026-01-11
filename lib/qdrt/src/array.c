@@ -37,7 +37,7 @@ qd_array_t* qd_array_create(size_t capacity, qd_array_type elemType) {
 	}
 
 	arr->magic = QD_ARRAY_MAGIC;
-	arr->refcount = 1;
+	atomic_init(&arr->refcount, 1);
 	arr->length = 0;
 	arr->capacity = capacity;
 	arr->elemType = elemType;
@@ -84,11 +84,7 @@ qd_array_t* qd_array_create(size_t capacity, qd_array_type elemType) {
 
 void qd_array_retain(qd_array_t* arr) {
 	if (arr) {
-		if (arr->refcount == SIZE_MAX) {
-			fprintf(stderr, "Fatal error: array refcount overflow\n");
-			abort();
-		}
-		arr->refcount++;
+		atomic_fetch_add(&arr->refcount, 1);
 	}
 }
 
@@ -97,13 +93,12 @@ void qd_array_release(qd_array_t* arr) {
 		return;
 	}
 
-	if (arr->refcount == 0) {
+	size_t old_count = atomic_fetch_sub(&arr->refcount, 1);
+	if (old_count == 0) {
 		fprintf(stderr, "Fatal error: free called on already-freed array\n");
 		abort();
 	}
-
-	arr->refcount--;
-	if (arr->refcount > 0) {
+	if (old_count > 1) {
 		return;
 	}
 
