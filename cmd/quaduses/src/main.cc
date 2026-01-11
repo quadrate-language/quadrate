@@ -1,7 +1,5 @@
 #include <algorithm>
 #include <cstring>
-#include <filesystem>
-#include <fstream>
 #include <functional>
 #include <iostream>
 #include <map>
@@ -11,6 +9,7 @@
 #include <qc/ast_node_scoped.h>
 #include <qc/ast_node_use.h>
 #include <qc/formatter.h>
+#include <qdcli/file_utils.h>
 #include <set>
 #include <sstream>
 #include <string>
@@ -18,8 +17,6 @@
 #include <vector>
 
 #include "version.h"
-
-namespace fs = std::filesystem;
 
 using namespace Qd;
 
@@ -79,43 +76,6 @@ bool parseArgs(int argc, char* argv[], Options& opts) {
 	return true;
 }
 
-// Collect all .qd files from a path (file or directory)
-std::vector<std::string> collectFiles(const std::string& path) {
-	std::vector<std::string> files;
-
-	if (fs::is_directory(path)) {
-		for (const auto& entry : fs::recursive_directory_iterator(path)) {
-			if (entry.is_regular_file() && entry.path().extension() == ".qd") {
-				files.push_back(entry.path().string());
-			}
-		}
-		std::sort(files.begin(), files.end());
-	} else {
-		files.push_back(path);
-	}
-
-	return files;
-}
-
-std::string readFile(const std::string& filename) {
-	std::ifstream file(filename);
-	if (!file.good()) {
-		throw std::runtime_error("No such file or directory");
-	}
-
-	std::stringstream buffer;
-	buffer << file.rdbuf();
-	return buffer.str();
-}
-
-void writeFile(const std::string& filename, const std::string& content) {
-	std::ofstream file(filename);
-	if (!file.good()) {
-		throw std::runtime_error("Cannot write to file");
-	}
-	file << content;
-}
-
 // Collect all scoped identifiers (namespace::function calls) from the AST
 void collectScopedIdentifiers(const IAstNode* node, std::set<std::string>& scopes) {
 	if (!node) {
@@ -173,54 +133,6 @@ void collectUseStatements(const IAstNode* node, std::set<std::string>& uses) {
 			uses.insert(useNode->module());
 		}
 	}
-}
-
-// Generate new source with updated use statements
-// Validate UTF-8 encoding
-bool isValidUtf8(const std::string& source) {
-	size_t i = 0;
-	while (i < source.length()) {
-		unsigned char c = static_cast<unsigned char>(source[i]);
-
-		// Check for null bytes (binary file indicator)
-		if (c == 0) {
-			return false;
-		}
-
-		// ASCII (0xxxxxxx)
-		if ((c & 0x80) == 0) {
-			i++;
-			continue;
-		}
-
-		// Determine number of continuation bytes
-		size_t cont_bytes = 0;
-		if ((c & 0xE0) == 0xC0) {
-			cont_bytes = 1; // 110xxxxx
-		} else if ((c & 0xF0) == 0xE0) {
-			cont_bytes = 2; // 1110xxxx
-		} else if ((c & 0xF8) == 0xF0) {
-			cont_bytes = 3; // 11110xxx
-		} else {
-			return false; // Invalid UTF-8 start byte
-		}
-
-		// Check we have enough bytes
-		if (i + cont_bytes >= source.length()) {
-			return false;
-		}
-
-		// Validate continuation bytes (10xxxxxx)
-		for (size_t j = 1; j <= cont_bytes; j++) {
-			unsigned char next = static_cast<unsigned char>(source[i + j]);
-			if ((next & 0xC0) != 0x80) {
-				return false;
-			}
-		}
-
-		i += cont_bytes + 1;
-	}
-	return true;
 }
 
 // Helper to extract package name from module identifier
@@ -402,10 +314,10 @@ std::string generateWithUseStatements(const std::string& source, const std::set<
 bool processFile(const std::string& filename, const Options& opts) {
 	try {
 		// Read source file
-		std::string source = readFile(filename);
+		std::string source = qdcli::readFile(filename);
 
 		// Validate UTF-8 encoding
-		if (!isValidUtf8(source)) {
+		if (!qdcli::isValidUtf8(source)) {
 			std::cerr << "quaduses: " << filename << ": invalid UTF-8 encoding or binary file\n";
 			return false;
 		}
@@ -468,7 +380,7 @@ bool processFile(const std::string& filename, const Options& opts) {
 
 		if (opts.inPlace) {
 			// In-place mode: write back to file
-			writeFile(filename, result);
+			qdcli::writeFile(filename, result);
 			std::cout << filename << ": updated use statements\n";
 			return true;
 		} else {
@@ -502,7 +414,7 @@ int main(int argc, char* argv[]) {
 	// Collect all files from paths
 	std::vector<std::string> allFiles;
 	for (const auto& path : opts.paths) {
-		auto files = collectFiles(path);
+		auto files = qdcli::collectFiles(path);
 		allFiles.insert(allFiles.end(), files.begin(), files.end());
 	}
 

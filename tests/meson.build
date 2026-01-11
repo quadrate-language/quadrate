@@ -16,19 +16,8 @@ test('qd_tests',
 	timeout: 300
 )
 
-# Linter tests
-quadlint = find_program('quadlint', required: false, dirs: meson.project_build_root() / 'cmd/quadlint')
-if quadlint.found()
-	test('linter_tests',
-		find_program('run_linter_tests.sh'),
-		suite: 'linter',
-		workdir: meson.project_source_root(),
-		env: {
-			'QUADLINT': quadlint.full_path(),
-		},
-		timeout: 60
-	)
-endif
+# Linter tests are run directly by run_all.sh (not via meson test)
+# to avoid circular dependency
 
 # quadpm tests
 quadpm_exe = find_program('quadpm', required: false, dirs: meson.project_build_root() / 'cmd/quadpm')
@@ -44,10 +33,11 @@ if quadpm_exe.found()
 	)
 endif
 
-# Embed examples tests
+# Embed examples tests (via run_all.sh)
 if get_option('build_examples')
 	test('embed_tests',
-		find_program('run_embed_tests.sh'),
+		find_program('run_all.sh'),
+		args: ['--suite', 'embed'],
 		suite: 'embed',
 		workdir: meson.project_source_root(),
 		env: {

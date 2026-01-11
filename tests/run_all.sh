@@ -796,9 +796,11 @@ run_formatter_tests() {
     CURRENT_TEST_TOTAL=0
 }
 
-# Run linter tests via meson
+# Run linter tests directly (compare quadlint output to expected .out files)
 run_linter_tests() {
     local suite="linter"
+    local test_dir="$PROJECT_ROOT/tests/linter"
+    local quadlint="${QUADLINT:-$PROJECT_ROOT/$BUILD_DIR/cmd/quadlint/quadlint}"
 
     if ! should_run_test "$suite" "linter_tests"; then
         return
@@ -810,20 +812,59 @@ run_linter_tests() {
         print_header "Linter Tests"
     fi
 
-    local output
-    local exit_code
-    local valgrind_opt=""
-    if [[ $USE_VALGRIND -eq 1 ]]; then
-        valgrind_opt="--setup=valgrind"
+    if [[ ! -x "$quadlint" ]]; then
+        log_skip "$suite" "linter_tests" "quadlint not found"
+        return
     fi
-    output=$(meson test -C "$PROJECT_ROOT/$BUILD_DIR" $valgrind_opt --suite linter 2>&1)
-    exit_code=$?
 
-    if [[ $exit_code -eq 0 ]]; then
-        log_pass "$suite" "linter_tests"
-    else
-        local error_msg=$(echo "$output" | grep -A 50 "FAIL\|error\|Error\|valgrind" | head -20)
-        log_fail "$suite" "linter_tests" "test failed" "$error_msg"
+    local valgrind_cmd=""
+    if [[ $USE_VALGRIND -eq 1 ]]; then
+        valgrind_cmd="valgrind --leak-check=full --error-exitcode=1 --quiet"
+    fi
+
+    local all_passed=true
+    local test_count=0
+    local pass_count=0
+
+    # Find all .qd test files
+    while IFS= read -r test_file; do
+        local test_name=$(basename "$test_file" .qd)
+        local test_subdir=$(basename "$(dirname "$test_file")")
+        local full_test_name="${test_subdir}/${test_name}"
+        local expected_file="${test_file%.qd}.out"
+
+        if [[ ! -f "$expected_file" ]]; then
+            continue
+        fi
+
+        if ! should_run_test "$suite" "$full_test_name"; then
+            continue
+        fi
+
+        test_count=$((test_count + 1))
+
+        # Run linter and capture output
+        local actual_output
+        if [[ -n "$valgrind_cmd" ]]; then
+            actual_output=$($valgrind_cmd "$quadlint" "$test_file" 2>&1) || true
+        else
+            actual_output=$("$quadlint" "$test_file" 2>&1) || true
+        fi
+
+        # Compare output (normalize absolute paths to relative)
+        local expected_output=$(cat "$expected_file")
+        local normalized_output=$(echo "$actual_output" | sed "s|$PROJECT_ROOT/||g")
+        if [[ "$normalized_output" == "$expected_output" ]]; then
+            log_pass "$suite" "$full_test_name"
+            pass_count=$((pass_count + 1))
+        else
+            all_passed=false
+            log_fail "$suite" "$full_test_name" "output mismatch" "Expected:\n$expected_output\n\nGot:\n$normalized_output"
+        fi
+    done < <(find "$test_dir" -name "*.qd" -type f | sort)
+
+    if [[ $test_count -eq 0 ]]; then
+        log_skip "$suite" "linter_tests" "no tests found"
     fi
 }
 

@@ -1,4 +1,6 @@
 subdir('version')
+subdir('qdplatform')
+subdir('qdcli')
 subdir('qdrt')
 subdir('qc')
 subdir('llvmgen')

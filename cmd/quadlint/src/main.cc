@@ -1,6 +1,5 @@
 #include <cstdint>
 #include <cstring>
-#include <fstream>
 #include <iostream>
 #include <qc/ast.h>
 #include <qc/ast_node_function.h>
@@ -9,8 +8,8 @@
 #include <qc/ast_node_local.h>
 #include <qc/ast_node_struct.h>
 #include <qc/colors.h>
+#include <qdcli/file_utils.h>
 #include <set>
-#include <sstream>
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
@@ -109,17 +108,6 @@ bool parseArgs(int argc, char* argv[], Options& opts) {
 	}
 
 	return true;
-}
-
-std::string readFile(const std::string& filename) {
-	std::ifstream file(filename);
-	if (!file.good()) {
-		throw std::runtime_error("No such file or directory");
-	}
-
-	std::stringstream buffer;
-	buffer << file.rdbuf();
-	return buffer.str();
 }
 
 // Recursively collect all function definitions
@@ -336,7 +324,7 @@ std::vector<LintIssue> lintFile(const std::string& filename, const Options& opts
 
 	try {
 		// Read and parse file
-		std::string source = readFile(filename);
+		std::string source = qdcli::readFile(filename);
 		Ast ast;
 		IAstNode* root = ast.generate(source.c_str(), false, filename.c_str());
 

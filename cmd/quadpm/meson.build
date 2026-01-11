@@ -4,8 +4,7 @@ quadpm_sources = files(
 	'src/semver.cc',
 )
 
-# JSON parsing for qd.json manifest
-jansson_dep = dependency('jansson', version: '>=2.14', required: true, fallback: ['jansson', 'jansson_dep'])
+# jansson_dep is declared in root meson.build
 
 quadpm_exe = executable(
 	'quadpm',

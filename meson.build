@@ -32,6 +32,9 @@ cpp_args = [
 add_project_arguments(common_args, language: ['c', 'cpp'])
 add_project_arguments(cpp_args, language: 'cpp')
 
+# Common dependencies (used by multiple cmd tools)
+jansson_dep = dependency('jansson', version: '>=2.14', required: true, fallback: ['jansson', 'jansson_dep'])
+
 # Subdirectories
 subdir('lib')
 subdir('cmd')

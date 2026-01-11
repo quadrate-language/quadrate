@@ -7,6 +7,6 @@ quadfmt_sources = files(
 quadfmt = executable('quadfmt',
 		quadfmt_sources,
 		include_directories: [version_inc],
-		dependencies: qc_dep,
+		dependencies: [qc_dep, qdcli_dep],
 		install: false
 )

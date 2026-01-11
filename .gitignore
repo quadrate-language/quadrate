@@ -10,6 +10,7 @@ compile_commands.json
 
 # Temporary files
 .tmp*
+.out/
 qd_*/
 
 # Shared libraries (built artifacts)

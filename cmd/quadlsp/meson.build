@@ -2,9 +2,7 @@ quadlsp_sources = files(
 	'src/main.cc',
 )
 
-# Find jansson library for JSON handling
-# Requires jansson 2.14+ (matches subproject version in jansson.wrap)
-jansson_dep = dependency('jansson', version: '>=2.14', required: true, fallback: ['jansson', 'jansson_dep'])
+# jansson_dep is declared in root meson.build
 
 quadlsp_exe = executable('quadlsp',
 	quadlsp_sources,
