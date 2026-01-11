@@ -10,6 +10,7 @@ This section documents all Quadrate keywords and built-in instructions.
 - [Comparison](comparison.md) - `==`, `!=`, `<`, `>`, `<=`, `>=`
 - [Bitwise](bitwise.md) - `and`, `or`, `xor`, `not`, `shl`, `shr`
 - [Arrays](arrays.md) - Array creation and manipulation
+- [Generics](generics.md) - Generic functions with `<T>`
 - [Type Casting](types.md) - `cast<T>`
 - [Input/Output](io.md) - `print`, `nl`, `read`
 - [Error Handling](errors.md) - `panic`
