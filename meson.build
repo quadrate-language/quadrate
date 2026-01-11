@@ -1,5 +1,5 @@
 project('quadrate', ['c', 'cpp'],
-		version: '2.0.0-alpha',
+		version: files('VERSION'),
 		default_options: [
 				'c_std=c11',
 				'cpp_std=c++20',

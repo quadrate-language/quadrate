@@ -2,9 +2,8 @@
 # Creates a 1.44 MB floppy ISO image containing Quadrate source code
 
 REPO_ROOT := ../..
-# Get version from meson.build (e.g., '2.0.0-alpha' -> 'v2.0.0-alpha')
-MESON_VERSION := $(shell grep "version:" $(REPO_ROOT)/meson.build | head -1 | sed "s/.*'\([^']*\)'.*/\1/")
-VERSION := v$(MESON_VERSION)
+# Get version from VERSION file (single source of truth)
+VERSION := v$(shell cat $(REPO_ROOT)/VERSION)
 ISO_NAME := quadrate-$(VERSION)-src.iso
 STAGING := staging
 MAX_SIZE := 1474560  # 1.44 MB in bytes

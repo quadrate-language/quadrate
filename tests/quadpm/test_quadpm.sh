@@ -75,8 +75,10 @@ fi
 # Test 2: Version output
 echo ""
 echo "Test 2: Version output"
+# Read expected version from VERSION file
+EXPECTED_VERSION=$(cat "$SCRIPT_DIR/../../VERSION" 2>/dev/null || echo "2.0.0-alpha")
 if output=$("$QUADPM" --version 2>&1); then
-    if echo "$output" | grep -q "quadpm 2.0.0-alpha"; then
+    if echo "$output" | grep -q "quadpm $EXPECTED_VERSION"; then
         pass "Version displays correctly"
     else
         fail "Version output incorrect" "$output"

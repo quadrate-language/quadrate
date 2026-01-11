@@ -29,16 +29,11 @@ LIBS_WITH_C := qdrt qd qdfmt qdio qdmath qdmem qdos qdsignal qdstr qdstrconv qdt
 # Libraries with headers to install
 LIBS_WITH_HEADERS := qdrt qd qdfmt qdio qdmath qdmem qdos qdstr qdstrconv qdtime qdtesting
 
-# Standard library modules (pure Quadrate or mixed)
-# Note: http moved to external module (https://github.com/quadrate-language/http)
-# Note: sqlite moved to external module (https://github.com/quadrate-language/sqlite)
-# Note: json moved to external module (https://github.com/quadrate-language/json)
-# Note: regex moved to external module (https://github.com/quadrate-language/regex)
-# Note: ct moved to external module (https://github.com/quadrate-language/ct)
-# Note: crypto (sha256, sha512, md5, crc32) moved to external module (https://github.com/quadrate-language/crypto)
-STDLIB_MODULES := base64 bits flag fmt io limits math mem os sb signal str strconv term thread time unicode uri hex bytes path sort rand uuid testing
+# Standard library modules (auto-discovered from lib/qd*/qd/*/)
+# Note: Some modules moved to external repos: http, sqlite, json, regex, ct, crypto
+STDLIB_MODULES := $(shell find lib/qd*/qd -maxdepth 1 -mindepth 1 -type d -exec basename {} \; 2>/dev/null | sort -u)
 
-.PHONY: all debug release tests tests-failed tests-clear valgrind asan fuzz examples format install uninstall clean docs dist-floppy
+.PHONY: all debug release tests tests-failed tests-clear valgrind asan fuzz examples format install uninstall clean docs dist-floppy quadmcp
 
 all: debug
 
@@ -63,10 +58,10 @@ define do_build
 		fi; \
 	else echo "Note: quadrepl not built (readline not found)"; fi
 	@echo "Creating static libraries..."
-	@rm -f dist/lib/libqdrt.a && cd $(1)/lib/qdrt && ar rcs ../../../../dist/lib/libqdrt.a $$(ar -t libqdrt_static.a) && echo "  libqdrt.a"
-	@rm -f dist/lib/libqd.a && cd $(1)/lib/qd && ar rcs ../../../../dist/lib/libqd.a $$(ar -t libqd_static.a) && echo "  libqd.a"
+	@(cd $(1)/lib/qdrt && ar rcs libqdrt.a $$(ar -t libqdrt_static.a) && cp libqdrt.a ../../../../dist/lib/) && echo "  libqdrt.a"
+	@(cd $(1)/lib/qd && ar rcs libqd.a $$(ar -t libqd_static.a) && cp libqd.a ../../../../dist/lib/) && echo "  libqd.a"
 	@for lib in qdfmt qdio qdmath qdmem qdos qdsignal qdstr qdstrconv qdtime qdthread qdtesting; do \
-		rm -f dist/lib/lib$$lib.a && cd $(1)/lib/$$lib && ar rcs ../../../../dist/lib/lib$$lib.a $$(ar -t lib$$lib.a) && echo "  lib$$lib.a" && cd ->/dev/null; \
+		(cd $(1)/lib/$$lib && ar rcs lib$${lib}_regular.a $$(ar -t lib$$lib.a) && cp lib$${lib}_regular.a ../../../../dist/lib/lib$$lib.a) && echo "  lib$$lib.a"; \
 	done
 	@for lib in qdthread; do \
 		if [ -f lib/$$lib/lib$$lib.deps ]; then cp lib/$$lib/lib$$lib.deps dist/lib/; fi; \
@@ -135,12 +130,23 @@ examples: debug
 format:
 	find cmd lib examples -type f \( -name '*.cc' -o -name '*.h' \) -not -name 'utf8.h' -not -path '*/utf8/*' -exec clang-format -i {} +
 
+# Build quadmcp (MCP server for AI assistants) - requires Go
+quadmcp:
+	@if command -v go >/dev/null 2>&1; then \
+		echo "Building quadmcp (MCP server)..."; \
+		cd cmd/quadmcp && go build -o quadmcp . && cp quadmcp ../../dist/bin/; \
+		echo "  quadmcp built successfully"; \
+	else \
+		echo "Note: Go not found, skipping quadmcp build"; \
+	fi
+
 install: release
 	install -d $(DESTDIR)$(PREFIX)/bin
 	install -d $(DESTDIR)$(PREFIX)/lib
 	install -d $(DESTDIR)$(INCLUDEDIR)
 	@for cmd in $(CMDS); do install -m 755 dist/bin/$$cmd $(DESTDIR)$(PREFIX)/bin/; done
 	@if [ -f dist/bin/quadrepl ]; then install -m 755 dist/bin/quadrepl $(DESTDIR)$(PREFIX)/bin/; fi
+	@if [ -f dist/bin/quadmcp ]; then install -m 755 dist/bin/quadmcp $(DESTDIR)$(PREFIX)/bin/; fi
 	@for lib in $(LIBS_WITH_C); do install -m 644 dist/lib/lib$$lib.a $(DESTDIR)$(PREFIX)/lib/; done
 	@for deps in dist/lib/*.deps; do if [ -f "$$deps" ]; then install -m 644 "$$deps" $(DESTDIR)$(PREFIX)/lib/; fi; done
 	install -m 755 dist/lib/libqdrt.so $(DESTDIR)$(PREFIX)/lib/
@@ -159,7 +165,7 @@ install: release
 	@for cmd in quadc quadfmt quadlint quadlsp quadpm quadrepl quaduses; do ln -sf quad $(DESTDIR)$(DATADIR)/bash-completion/completions/$$cmd; done
 
 uninstall:
-	@for cmd in $(CMDS) quadrepl; do rm -f $(DESTDIR)$(PREFIX)/bin/$$cmd; done
+	@for cmd in $(CMDS) quadrepl quadmcp; do rm -f $(DESTDIR)$(PREFIX)/bin/$$cmd; done
 	@for lib in $(LIBS_WITH_C); do rm -f $(DESTDIR)$(PREFIX)/lib/lib$$lib.a; done
 	rm -f $(DESTDIR)$(PREFIX)/lib/libqdrt.so
 	rm -f $(DESTDIR)$(PREFIX)/lib/libqd.so
