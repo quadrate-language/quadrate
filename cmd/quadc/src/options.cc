@@ -23,6 +23,7 @@ void printHelp() {
 	std::cout << "  --save-temps       Keep temporary files for debugging\n";
 	std::cout << "  --verbose          Show detailed compilation steps\n";
 	std::cout << "  --dump-tokens      Print lexer tokens\n";
+	std::cout << "  --dump-ast         Print parsed AST structure\n";
 	std::cout << "  -r, --run          Compile and run immediately\n";
 	std::cout << "  --test             Compile and run tests\n";
 	std::cout << "  --dump-ir          Print generated LLVM IR\n";
@@ -73,6 +74,8 @@ bool parseArgs(int argc, char* argv[], Options& opts) {
 			opts.verbose = true;
 		} else if (arg == "--dump-tokens") {
 			opts.dumpTokens = true;
+		} else if (arg == "--dump-ast") {
+			opts.dumpAst = true;
 		} else if (arg == "-r" || arg == "--run") {
 			opts.run = true;
 		} else if (arg == "--dump-ir") {

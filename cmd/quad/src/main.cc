@@ -2,6 +2,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <filesystem>
+#include <fstream>
 #include <iostream>
 #include <qc/colors.h>
 #include <string>
@@ -33,6 +34,8 @@ static const Command commands[] = {
 		{"repl", "quadrepl", "Start interactive REPL"},
 		{"uses", "quaduses", "Analyze module dependencies"},
 		{"lsp", "quadlsp", "Start language server"},
+		{"init", nullptr, "Initialize a new Quadrate project"},
+		{"clean", nullptr, "Remove build artifacts"},
 };
 
 static const size_t NUM_COMMANDS = sizeof(commands) / sizeof(commands[0]);
@@ -50,6 +53,8 @@ void printHelp() {
 	std::cout << "  " << Colors::green() << "repl" << Colors::reset() << "      Start interactive REPL\n";
 	std::cout << "  " << Colors::green() << "uses" << Colors::reset() << "      Analyze module dependencies\n";
 	std::cout << "  " << Colors::green() << "lsp" << Colors::reset() << "       Start language server\n";
+	std::cout << "  " << Colors::green() << "init" << Colors::reset() << "      Initialize a new Quadrate project\n";
+	std::cout << "  " << Colors::green() << "clean" << Colors::reset() << "     Remove build artifacts\n";
 	std::cout << "  " << Colors::green() << "help" << Colors::reset() << "      Show help for a command\n";
 	std::cout << "  " << Colors::green() << "version" << Colors::reset() << "   Show version information\n";
 	std::cout << "\n";
@@ -488,6 +493,131 @@ int handleLsp(const std::vector<std::string>& args) {
 	return execTool(toolPath, args);
 }
 
+int handleInit(const std::vector<std::string>& args) {
+	std::string projectName = "myproject";
+
+	// Parse arguments
+	for (size_t i = 0; i < args.size(); i++) {
+		if (args[i] == "-h" || args[i] == "--help") {
+			std::cout << "quad init - Initialize a new Quadrate project\n\n";
+			std::cout << "Usage: quad init [name]\n\n";
+			std::cout << "Creates a new Quadrate project in the current directory with:\n";
+			std::cout << "  - qd.json      Package manifest\n";
+			std::cout << "  - main.qd      Main source file\n";
+			std::cout << "  - .gitignore   Git ignore file\n\n";
+			std::cout << "Options:\n";
+			std::cout << "  -h, --help     Show this help message\n";
+			return 0;
+		} else if (!args[i].empty() && args[i][0] != '-') {
+			projectName = args[i];
+		}
+	}
+
+	// Check if qd.json already exists
+	if (fs::exists("qd.json")) {
+		std::cerr << "quad: qd.json already exists in this directory\n";
+		return 1;
+	}
+
+	// Create qd.json
+	std::ofstream qdJson("qd.json");
+	if (!qdJson) {
+		std::cerr << "quad: failed to create qd.json\n";
+		return 1;
+	}
+	qdJson << "{\n";
+	qdJson << "  \"name\": \"" << projectName << "\",\n";
+	qdJson << "  \"version\": \"0.1.0\",\n";
+	qdJson << "  \"dependencies\": {}\n";
+	qdJson << "}\n";
+	qdJson.close();
+	std::cout << Colors::green() << "Created" << Colors::reset() << " qd.json\n";
+
+	// Create main.qd if it doesn't exist
+	if (!fs::exists("main.qd")) {
+		std::ofstream mainQd("main.qd");
+		if (mainQd) {
+			mainQd << "fn main() {\n";
+			mainQd << "\t\"Hello, World!\" print nl\n";
+			mainQd << "}\n";
+			mainQd.close();
+			std::cout << Colors::green() << "Created" << Colors::reset() << " main.qd\n";
+		}
+	}
+
+	// Create .gitignore if it doesn't exist
+	if (!fs::exists(".gitignore")) {
+		std::ofstream gitignore(".gitignore");
+		if (gitignore) {
+			gitignore << "# Build output\n";
+			gitignore << "main\n";
+			gitignore << "*.o\n";
+			gitignore << "\n";
+			gitignore << "# Editor files\n";
+			gitignore << ".vscode/\n";
+			gitignore << "*.swp\n";
+			gitignore << "*~\n";
+			gitignore.close();
+			std::cout << Colors::green() << "Created" << Colors::reset() << " .gitignore\n";
+		}
+	}
+
+	std::cout << "\nProject initialized. Run " << Colors::cyan() << "quad run" << Colors::reset()
+			  << " to compile and execute.\n";
+	return 0;
+}
+
+int handleClean(const std::vector<std::string>& args) {
+	// Parse arguments
+	for (const auto& arg : args) {
+		if (arg == "-h" || arg == "--help") {
+			std::cout << "quad clean - Remove build artifacts\n\n";
+			std::cout << "Usage: quad clean\n\n";
+			std::cout << "Removes common build artifacts:\n";
+			std::cout << "  - Executables matching .qd filenames\n";
+			std::cout << "  - *.o object files\n";
+			std::cout << "  - *.ll LLVM IR files\n";
+			std::cout << "  - *.s assembly files\n\n";
+			std::cout << "Options:\n";
+			std::cout << "  -h, --help     Show this help message\n";
+			return 0;
+		}
+	}
+
+	int count = 0;
+
+	// Find .qd files and remove corresponding executables
+	for (const auto& entry : fs::directory_iterator(fs::current_path())) {
+		if (entry.path().extension() == ".qd") {
+			fs::path execPath = entry.path().stem(); // Remove .qd extension
+			if (fs::exists(execPath) && !fs::is_directory(execPath)) {
+				std::cout << Colors::red() << "Removing" << Colors::reset() << " " << execPath.string() << "\n";
+				fs::remove(execPath);
+				count++;
+			}
+		}
+	}
+
+	// Remove .o, .ll, .s files
+	for (const auto& entry : fs::directory_iterator(fs::current_path())) {
+		std::string ext = entry.path().extension().string();
+		if (ext == ".o" || ext == ".ll" || ext == ".s") {
+			std::cout << Colors::red() << "Removing" << Colors::reset() << " " << entry.path().filename().string()
+					  << "\n";
+			fs::remove(entry.path());
+			count++;
+		}
+	}
+
+	if (count == 0) {
+		std::cout << "Nothing to clean.\n";
+	} else {
+		std::cout << "\nRemoved " << count << " file(s).\n";
+	}
+
+	return 0;
+}
+
 int handleHelp(const std::vector<std::string>& args) {
 	if (args.empty()) {
 		printHelp();
@@ -580,6 +710,12 @@ int main(int argc, char* argv[]) {
 	}
 	if (command == "lsp") {
 		return handleLsp(args);
+	}
+	if (command == "init") {
+		return handleInit(args);
+	}
+	if (command == "clean") {
+		return handleClean(args);
 	}
 
 	std::cerr << "quad: unknown command '" << command << "'\n";

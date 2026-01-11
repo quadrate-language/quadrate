@@ -10,6 +10,7 @@
 #include <llvmgen/generator.h>
 #include <qc/ast.h>
 #include <qc/ast_node.h>
+#include <qc/ast_printer.h>
 #include <qc/ast_node_function.h>
 #include <qc/ast_node_use.h>
 #include <qc/colors.h>
@@ -125,6 +126,13 @@ int main(int argc, char** argv) {
 				return 1;
 			}
 
+			// Print AST if requested
+			if (opts.dumpAst) {
+				std::cout << "=== AST for <stdin> ===" << std::endl;
+				Qd::AstPrinter::print(root);
+				std::cout << std::endl;
+			}
+
 			// Semantic validation - catch errors before LLVM generation
 			Qd::SemanticValidator validator;
 			validator.setIncludePaths(opts.includePaths);
@@ -197,6 +205,13 @@ int main(int argc, char** argv) {
 				std::cerr << Qd::Colors::bold() << "quadc: " << Qd::Colors::reset() << "parsing failed for " << file
 						  << " with " << ast->errorCount() << " errors" << std::endl;
 				return 1;
+			}
+
+			// Print AST if requested
+			if (opts.dumpAst) {
+				std::cout << "=== AST for " << file << " ===" << std::endl;
+				Qd::AstPrinter::print(root);
+				std::cout << std::endl;
 			}
 
 			// Semantic validation - catch errors before LLVM generation

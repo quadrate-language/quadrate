@@ -1113,6 +1113,7 @@ void printUsage() {
 	std::cout << "  lock             Generate/update qd.lock from installed modules\n";
 	std::cout << "  get <url>[@ref]  Fetch and install a module from Git\n";
 	std::cout << "  update [name]    Update installed module(s) (git pull)\n";
+	std::cout << "  remove <name>    Remove an installed module\n";
 	std::cout << "  list             List installed modules\n";
 	std::cout << "  build            Build C sources in current module directory\n\n";
 	std::cout << "Lockfile (qd.lock):\n";
@@ -1962,6 +1963,163 @@ int updateModules(const std::string& targetModuleName) {
 	return failures > 0 ? 1 : 0;
 }
 
+// Remove an installed module
+int removeModule(const std::string& targetModuleName) {
+	if (targetModuleName.empty()) {
+		std::cerr << COLOR_RED << "Error: Module name required" << COLOR_RESET << "\n";
+		std::cerr << "Usage: quadpm remove <name>\n";
+		return 1;
+	}
+
+	std::string modulesDir = getModulesDir();
+
+	if (!fs::exists(modulesDir)) {
+		std::cerr << COLOR_RED << "Error: No modules installed" << COLOR_RESET << "\n";
+		return 1;
+	}
+
+	// Find the module directory
+	std::string foundPath;
+	std::string foundName;
+	std::string foundHostPath;
+
+	// Recursively search for matching package
+	for (const auto& entry : fs::recursive_directory_iterator(modulesDir)) {
+		if (!entry.is_directory()) {
+			continue;
+		}
+
+		std::string dirname = entry.path().filename().string();
+
+		// Skip _namespaces directory
+		if (dirname == "_namespaces") {
+			continue;
+		}
+
+		// Check if this looks like a package directory (has @ in name)
+		size_t atPos = dirname.find('@');
+		if (atPos == std::string::npos) {
+			continue;
+		}
+
+		// Must have .qd files or qd.json to be a valid package
+		std::string dirPath = entry.path().string();
+		std::string manifestFile = dirPath + "/qd.json";
+		if (!hasQuadrateFiles(dirPath) && !fs::exists(manifestFile)) {
+			continue;
+		}
+
+		std::string moduleName = dirname.substr(0, atPos);
+
+		// Get host/user/repo from path relative to modules dir
+		std::string relativePath = dirPath.substr(modulesDir.size() + 1); // +1 for '/'
+		size_t relAtPos = relativePath.find('@');
+		std::string hostPath = (relAtPos != std::string::npos) ? relativePath.substr(0, relAtPos) : relativePath;
+
+		// Match by:
+		// 1. Full directory name (e.g., "json@master")
+		// 2. Just the module name (e.g., "json")
+		// 3. Full hostPath (e.g., "github.com/quadrate-language/json")
+		// 4. Namespace from qd.json
+		std::string manifestNamespace;
+		std::string manifestModuleName;
+		if (fs::exists(manifestFile)) {
+			manifestNamespace = parseNamespace(manifestFile);
+			manifestModuleName = parseModuleName(manifestFile);
+		}
+
+		bool matches = (dirname == targetModuleName || moduleName == targetModuleName || hostPath == targetModuleName ||
+				(!manifestNamespace.empty() && manifestNamespace == targetModuleName) ||
+				(!manifestModuleName.empty() && manifestModuleName == targetModuleName));
+
+		if (matches) {
+			foundPath = dirPath;
+			foundName = dirname;
+			foundHostPath = hostPath;
+			break;
+		}
+	}
+
+	if (foundPath.empty()) {
+		std::cerr << COLOR_RED << "Error: Module '" << targetModuleName << "' not found" << COLOR_RESET << "\n";
+		std::cerr << "Use 'quadpm list' to see installed modules\n";
+		return 1;
+	}
+
+	// Get module namespace before removing (for symlink cleanup)
+	std::string manifestPath = foundPath + "/qd.json";
+	std::string namespaceName;
+	if (fs::exists(manifestPath)) {
+		namespaceName = parseNamespace(manifestPath);
+		if (namespaceName.empty()) {
+			namespaceName = parseModuleName(manifestPath);
+		}
+	}
+	if (namespaceName.empty()) {
+		size_t lastSlash = foundHostPath.find_last_of('/');
+		namespaceName = (lastSlash != std::string::npos) ? foundHostPath.substr(lastSlash + 1) : foundHostPath;
+		// Remove @version if present
+		size_t atPos = namespaceName.find('@');
+		if (atPos != std::string::npos) {
+			namespaceName = namespaceName.substr(0, atPos);
+		}
+	}
+
+	std::cout << COLOR_CYAN << "Removing " << COLOR_BOLD << foundHostPath << COLOR_RESET << "...\n";
+
+	// Remove the module directory
+	try {
+		fs::remove_all(foundPath);
+		std::cout << COLOR_GREEN << "  ✓ Removed " << COLOR_RESET << foundPath << "\n";
+	} catch (const std::exception& e) {
+		std::cerr << COLOR_RED << "  ✗ Failed to remove directory: " << e.what() << COLOR_RESET << "\n";
+		return 1;
+	}
+
+	// Clean up parent directories if empty (for Go-style paths)
+	fs::path parentPath = fs::path(foundPath).parent_path();
+	while (parentPath.string().size() > modulesDir.size()) {
+		try {
+			if (fs::is_empty(parentPath)) {
+				fs::remove(parentPath);
+			} else {
+				break;
+			}
+		} catch (const std::exception&) {
+			break;
+		}
+		parentPath = parentPath.parent_path();
+	}
+
+	// Remove namespace symlink if it points to this module
+	std::string namespacesDir = getNamespacesDir();
+	std::string symlinkPath = namespacesDir + "/" + namespaceName;
+
+	if (fs::exists(symlinkPath) || fs::is_symlink(symlinkPath)) {
+		try {
+			// Check if symlink points to the removed module
+			std::string target = fs::read_symlink(symlinkPath).string();
+			// Extract just the final directory name from the relative target
+			// Target is like "../github.com/user/repo@version"
+			if (target.find(foundName) != std::string::npos) {
+				fs::remove(symlinkPath);
+				std::cout << COLOR_GREEN << "  ✓ Removed namespace '" << namespaceName << "'" << COLOR_RESET << "\n";
+			}
+		} catch (const std::exception&) {
+			// Symlink might be broken or inaccessible
+			try {
+				fs::remove(symlinkPath);
+				std::cout << COLOR_GREEN << "  ✓ Cleaned up broken namespace symlink" << COLOR_RESET << "\n";
+			} catch (const std::exception&) {
+				// Ignore cleanup failures
+			}
+		}
+	}
+
+	std::cout << "\n" << COLOR_GREEN << "Module removed successfully!" << COLOR_RESET << "\n";
+	return 0;
+}
+
 int main(int argc, char** argv) {
 	if (argc < 2) {
 		printUsage();
@@ -2012,6 +2170,11 @@ int main(int argc, char** argv) {
 	if (command == "update") {
 		std::string targetModuleName = (argc >= 3) ? argv[2] : "";
 		return updateModules(targetModuleName);
+	}
+
+	if (command == "remove" || command == "rm" || command == "uninstall") {
+		std::string targetModuleName = (argc >= 3) ? argv[2] : "";
+		return removeModule(targetModuleName);
 	}
 
 	if (command == "build") {

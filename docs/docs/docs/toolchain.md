@@ -13,6 +13,8 @@ quad fmt hello.qd      # Format code
 quad lint hello.qd     # Check for issues
 quad test              # Run tests
 quad repl              # Start interactive shell
+quad init              # Initialize a new project
+quad clean             # Remove build artifacts
 ```
 
 For most development tasks, `quad` is all you need.
@@ -27,6 +29,7 @@ quadc hello.qd -o myprogram # Compile with custom output name
 quadc -r hello.qd           # Compile and run immediately
 quadc --verbose hello.qd    # Show compilation details
 quadc --dump-ir hello.qd    # Output LLVM IR (for debugging)
+quadc --dump-ast hello.qd   # Output parsed AST structure
 quadc --dump-tokens hello.qd # Show token stream
 ```
 
@@ -90,6 +93,7 @@ Module manager for installing third-party modules from Git repositories.
 quadpm list                              # List installed modules
 quadpm get <url>[@ref]                   # Install a module from Git
 quadpm update [name]                     # Update installed module(s)
+quadpm remove <name>                     # Remove an installed module
 quadpm build                             # Build C sources in current module
 ```
 

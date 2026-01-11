@@ -19,6 +19,7 @@ struct Options {
 	bool saveTemps = false;
 	bool verbose = false;
 	bool dumpTokens = false;
+	bool dumpAst = false;
 	bool run = false;
 	bool dumpIR = false;
 	bool debugInfo = false;
