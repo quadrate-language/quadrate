@@ -195,7 +195,7 @@ namespace Qd {
 			buffer << file.rdbuf();
 			std::string source = buffer.str();
 			file.close();
-			parseModuleAndCollectFunctions(moduleName, source);
+			parseModuleAndCollectFunctions(moduleName, source, modulePath);
 			return true;
 		}
 		file.close();
@@ -215,7 +215,7 @@ namespace Qd {
 				buffer << file.rdbuf();
 				std::string source = buffer.str();
 				file.close();
-				parseModuleAndCollectFunctions(moduleName, source);
+				parseModuleAndCollectFunctions(moduleName, source, qdFile);
 			} else {
 				file.close();
 			}
@@ -300,7 +300,7 @@ namespace Qd {
 					std::string source = buffer.str();
 					file.close();
 					// Parse and add to effective module namespace
-					parseModuleAndCollectFunctions(effectiveModuleName, source);
+					parseModuleAndCollectFunctions(effectiveModuleName, source, expandedModuleName);
 					return;
 				}
 				file.close();
@@ -322,7 +322,7 @@ namespace Qd {
 					std::string source = buffer.str();
 					file.close();
 					// Parse and add to effective module namespace
-					parseModuleAndCollectFunctions(effectiveModuleName, source);
+					parseModuleAndCollectFunctions(effectiveModuleName, source, modulePath);
 					return;
 				}
 				file.close();
@@ -366,7 +366,7 @@ namespace Qd {
 								buffer << file.rdbuf();
 								std::string source = buffer.str();
 								file.close();
-								parseModuleAndCollectFunctions(effectiveModuleName, source);
+								parseModuleAndCollectFunctions(effectiveModuleName, source, modulePath);
 								return;
 							}
 							file.close();
@@ -388,7 +388,7 @@ namespace Qd {
 					buffer << file.rdbuf();
 					std::string source = buffer.str();
 					file.close();
-					parseModuleAndCollectFunctions(effectiveModuleName, source);
+					parseModuleAndCollectFunctions(effectiveModuleName, source, modulePath);
 					return;
 				}
 				file.close();
@@ -404,7 +404,7 @@ namespace Qd {
 					buffer << file.rdbuf();
 					std::string source = buffer.str();
 					file.close();
-					parseModuleAndCollectFunctions(effectiveModuleName, source);
+					parseModuleAndCollectFunctions(effectiveModuleName, source, modulePath);
 					return;
 				}
 				file.close();
@@ -515,7 +515,7 @@ namespace Qd {
 												buffer << file.rdbuf();
 												std::string source = buffer.str();
 												file.close();
-												parseModuleAndCollectFunctions(effectiveNamespace, source);
+												parseModuleAndCollectFunctions(effectiveNamespace, source, modulePath);
 												return;
 											}
 											file.close();
@@ -565,7 +565,7 @@ namespace Qd {
 								buffer << file.rdbuf();
 								std::string source = buffer.str();
 								file.close();
-								parseModuleAndCollectFunctions(moduleName, source);
+								parseModuleAndCollectFunctions(moduleName, source, modulePath);
 								return;
 							}
 							file.close();
@@ -591,7 +591,7 @@ namespace Qd {
 										buffer << file.rdbuf();
 										std::string source = buffer.str();
 										file.close();
-										parseModuleAndCollectFunctions(moduleName, source);
+										parseModuleAndCollectFunctions(moduleName, source, modulePath);
 										return;
 									}
 									file.close();
@@ -627,7 +627,7 @@ namespace Qd {
 					buffer << file.rdbuf();
 					std::string source = buffer.str();
 					file.close();
-					parseModuleAndCollectFunctions(moduleName, source);
+					parseModuleAndCollectFunctions(moduleName, source, modulePath);
 					return;
 				}
 				file.close();
@@ -643,7 +643,7 @@ namespace Qd {
 				buffer << file.rdbuf();
 				std::string source = buffer.str();
 				file.close();
-				parseModuleAndCollectFunctions(moduleName, source);
+				parseModuleAndCollectFunctions(moduleName, source, stdLibPath);
 				return;
 			}
 			file.close();
@@ -691,7 +691,7 @@ namespace Qd {
 							buffer << file.rdbuf();
 							std::string source = buffer.str();
 							file.close();
-							parseModuleAndCollectFunctions(moduleName, source);
+							parseModuleAndCollectFunctions(moduleName, source, canonicalPath);
 							return;
 						}
 						file.close();
@@ -770,13 +770,26 @@ namespace Qd {
 		}
 	}
 
-	void SemanticValidator::parseModuleAndCollectFunctions(const std::string& moduleName, const std::string& source) {
-		// Parse the module file to AST
-		Ast moduleAst;
-		IAstNode* moduleAstRoot = moduleAst.generate(source.c_str(), false, nullptr);
+	void SemanticValidator::parseModuleAndCollectFunctions(
+			const std::string& moduleName, const std::string& source, const std::string& filePath) {
+		// Parse the module file to AST - use unique_ptr so we can cache it
+		auto moduleAst = std::make_unique<Ast>();
+		IAstNode* moduleAstRoot = moduleAst->generate(source.c_str(), false, filePath.c_str());
 		if (!moduleAstRoot) {
 			// Failed to parse - skip silently
 			return;
+		}
+
+		// Cache the parsed AST for reuse by the module loop
+		if (!filePath.empty()) {
+			ParsedModuleAst cached;
+			cached.ast = std::move(moduleAst);
+			cached.root = moduleAstRoot;
+			cached.source = source;
+			cached.filePath = filePath;
+			mParsedModuleAsts[filePath] = std::move(cached);
+			// Update moduleAst to point to the cached version (we moved from it)
+			moduleAst.reset();
 		}
 
 		// Process USE statements in the module first (to load .qd file imports)

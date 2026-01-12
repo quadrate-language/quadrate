@@ -2,6 +2,7 @@
 #define QD_QC_SEMANTIC_VALIDATOR_H
 
 #include "ast.h"
+#include <memory>
 #include <optional>
 #include <string>
 #include <unordered_map>
@@ -31,6 +32,14 @@ namespace Qd {
 		std::string importNamespace; // e.g., "native" - the namespace used within the module
 		std::string cFunctionName;	 // The actual C function name
 		bool throws;				 // Whether the function can throw errors
+	};
+
+	// Cached parsed module AST
+	struct ParsedModuleAst {
+		std::unique_ptr<Ast> ast;
+		IAstNode* root = nullptr;
+		std::string source;
+		std::string filePath;
 	};
 
 	// Function signature - describes stack effect of a function
@@ -123,6 +132,12 @@ namespace Qd {
 			mSource = source;
 		}
 
+		// Get cached parsed module ASTs (populated during validation)
+		// Key: file path, Value: ParsedModuleAst with AST ownership
+		std::unordered_map<std::string, ParsedModuleAst>& getParsedModuleAsts() {
+			return mParsedModuleAsts;
+		}
+
 	private:
 		// Print source context with line number and caret pointer
 		void printSourceContext(size_t line, size_t column);
@@ -135,7 +150,8 @@ namespace Qd {
 		// Helper: Try to load a module from a directory (module.qd or glob *.qd)
 		bool tryLoadModuleFromDirectory(const std::string& moduleDir, const std::string& moduleName);
 
-		void parseModuleAndCollectFunctions(const std::string& moduleName, const std::string& source);
+		void parseModuleAndCollectFunctions(
+				const std::string& moduleName, const std::string& source, const std::string& filePath);
 
 		void collectModuleFunctions(IAstNode* node, std::unordered_map<std::string, bool>& functions);
 		void collectModuleConstants(IAstNode* node, std::unordered_map<std::string, bool>& constants);
@@ -365,6 +381,10 @@ namespace Qd {
 
 		// Source text for error context printing (optional, may be null)
 		const char* mSource;
+
+		// Cached parsed module ASTs - populated during validation for reuse by callers
+		// Key: file path, Value: ParsedModuleAst with AST ownership
+		std::unordered_map<std::string, ParsedModuleAst> mParsedModuleAsts;
 	};
 
 } // namespace Qd

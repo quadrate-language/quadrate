@@ -2,6 +2,7 @@
 #include "options.h"
 #include "parsed_module.h"
 #include "temp_dir_guard.h"
+#include <chrono>
 #include <cstring>
 #include <filesystem>
 #include <fstream>
@@ -22,7 +23,103 @@
 #include <unordered_set>
 #include <vector>
 
+// Global AST cache to avoid re-parsing module files
+// Key: canonical file path, Value: { unique_ptr<Ast>, root node, source string }
+struct CachedAst {
+	std::unique_ptr<Qd::Ast> ast;
+	Qd::IAstNode* root;
+	std::string source;
+};
+static std::unordered_map<std::string, CachedAst> g_astCache;
+
+// Get or parse a file, using the cache
+// Returns root node on success (cached or freshly parsed), nullptr on failure
+// On failure, outAst will point to the Ast object so caller can retrieve parse errors
+static Qd::IAstNode* getOrParseFile(const std::string& filePath, Qd::Ast** outAst, std::string* outSource) {
+	// Get canonical path for cache key
+	std::string canonicalPath;
+	try {
+		canonicalPath = std::filesystem::canonical(filePath).string();
+	} catch (...) {
+		canonicalPath = filePath;
+	}
+
+	// Check cache for successful parse
+	auto it = g_astCache.find(canonicalPath);
+	if (it != g_astCache.end()) {
+		if (outAst)
+			*outAst = it->second.ast.get();
+		if (outSource)
+			*outSource = it->second.source;
+		return it->second.root;
+	}
+
+	// Not cached, read and parse
+	std::ifstream file(filePath);
+	if (!file.is_open()) {
+		if (outAst)
+			*outAst = nullptr;
+		return nullptr;
+	}
+	file.seekg(0, std::ios::end);
+	auto pos = file.tellg();
+	file.seekg(0);
+	if (pos < 0) {
+		if (outAst)
+			*outAst = nullptr;
+		return nullptr;
+	}
+	size_t size = static_cast<size_t>(pos);
+	std::string buffer(size, ' ');
+	file.read(&buffer[0], static_cast<std::streamsize>(size));
+
+	auto ast = std::make_unique<Qd::Ast>();
+	auto root = ast->generate(buffer.c_str(), false, filePath.c_str());
+
+	// Don't cache failed parses, but store so we can report errors
+	if (!root || ast->hasErrors()) {
+		// Store temporarily so caller can get errors, but don't add to cache
+		static CachedAst failedParse;
+		failedParse.ast = std::move(ast);
+		failedParse.root = nullptr;
+		failedParse.source = std::move(buffer);
+		if (outAst)
+			*outAst = failedParse.ast.get();
+		if (outSource)
+			*outSource = failedParse.source;
+		return nullptr;
+	}
+
+	// Store successful parse in cache
+	CachedAst cached;
+	cached.ast = std::move(ast);
+	cached.root = root;
+	cached.source = std::move(buffer);
+
+	auto& entry = g_astCache[canonicalPath];
+	entry = std::move(cached);
+
+	if (outAst)
+		*outAst = entry.ast.get();
+	if (outSource)
+		*outSource = entry.source;
+	return entry.root;
+}
+
 int main(int argc, char** argv) {
+	// Timing helper - only active when QUADC_TIMING is set
+	static bool timing = std::getenv("QUADC_TIMING") != nullptr;
+	auto timeStart = std::chrono::steady_clock::now();
+	auto timeLast = timeStart;
+	auto printTiming = [&](const char* label) {
+		if (timing) {
+			auto now = std::chrono::steady_clock::now();
+			auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(now - timeLast).count();
+			std::cerr << "[TIMING] " << label << ": " << ms << "ms" << std::endl;
+			timeLast = now;
+		}
+	};
+
 	Options opts;
 
 	// Show help if no arguments provided
@@ -190,9 +287,12 @@ int main(int argc, char** argv) {
 			std::string buffer(size, ' ');
 			qdFile.read(&buffer[0], static_cast<std::streamsize>(size));
 
+			printTiming("setup");
+
 			// Parse the source
 			auto ast = std::make_unique<Qd::Ast>();
 			auto root = ast->generate(buffer.c_str(), opts.dumpTokens, file.c_str());
+			printTiming("parse");
 			if (!root || ast->hasErrors()) {
 				// Print stored parsing errors
 				for (const auto& error : ast->getErrors()) {
@@ -219,9 +319,29 @@ int main(int argc, char** argv) {
 			validator.setIncludePaths(opts.includePaths);
 			validator.setSource(buffer.c_str());
 			size_t errorCount = validator.validate(root, file.c_str(), false, opts.werror);
+			printTiming("semantic");
 			if (errorCount > 0) {
 				// Validation failed - do not proceed
 				return 1;
+			}
+
+			// Copy cached ASTs from validator to global cache for reuse in module loop
+			for (auto& [path, cached] : validator.getParsedModuleAsts()) {
+				// Canonicalize the path to match how getOrParseFile looks up
+				std::string canonicalPath;
+				try {
+					canonicalPath = std::filesystem::canonical(path).string();
+				} catch (...) {
+					canonicalPath = path;
+				}
+				// Only copy if not already in global cache
+				if (g_astCache.find(canonicalPath) == g_astCache.end()) {
+					CachedAst entry;
+					entry.ast = std::move(cached.ast);
+					entry.root = cached.root;
+					entry.source = std::move(cached.source);
+					g_astCache[canonicalPath] = std::move(entry);
+				}
 			}
 
 			// Get source directory for module resolution
@@ -328,43 +448,46 @@ int main(int argc, char** argv) {
 
 			// Process all files for this module
 			for (const auto& moduleFilePath : moduleFilePaths) {
-				// Read module file
-				std::ifstream moduleFile(moduleFilePath);
-				if (!moduleFile.is_open()) {
-					continue;
-				}
-				moduleFile.seekg(0, std::ios::end);
-				auto pos = moduleFile.tellg();
-				moduleFile.seekg(0);
-				if (pos < 0) {
-					continue;
-				}
-				size_t size = static_cast<size_t>(pos);
-				std::string buffer(size, ' ');
-				moduleFile.read(&buffer[0], static_cast<std::streamsize>(size));
+				// Parse module file (uses cache if already parsed by semantic validator)
+				Qd::Ast* ast = nullptr;
+				std::string buffer;
 
-				// Parse the module
-				auto ast = std::make_unique<Qd::Ast>();
-				auto root = ast->generate(buffer.c_str(), false, moduleFilePath.c_str());
-				if (!root || ast->hasErrors()) {
+				auto parseStart = std::chrono::steady_clock::now();
+				Qd::IAstNode* root = getOrParseFile(moduleFilePath, &ast, &buffer);
+				auto parseEnd = std::chrono::steady_clock::now();
+				if (timing) {
+					auto parseMs =
+							std::chrono::duration_cast<std::chrono::milliseconds>(parseEnd - parseStart).count();
+					std::cerr << "[TIMING] moduleLoop parse " << moduleName << ": " << parseMs << "ms" << std::endl;
+				}
+				if (!root) {
 					std::cerr << Qd::Colors::bold() << "quadc: " << Qd::Colors::reset() << Qd::Colors::bold()
 							  << Qd::Colors::red() << "error: " << Qd::Colors::reset()
 							  << "failed to parse module: " << moduleName << std::endl;
-					// Print stored parse errors
-					for (const auto& error : ast->getErrors()) {
-						std::cerr << Qd::Colors::bold() << moduleFilePath << ":" << error.line << ":" << error.column
-								  << ": " << Qd::Colors::reset() << Qd::Colors::bold() << Qd::Colors::red()
-								  << "error: " << Qd::Colors::reset() << error.message << std::endl;
+					// Print stored parse errors if available
+					if (ast) {
+						for (const auto& error : ast->getErrors()) {
+							std::cerr << Qd::Colors::bold() << moduleFilePath << ":" << error.line << ":"
+									  << error.column << ": " << Qd::Colors::reset() << Qd::Colors::bold()
+									  << Qd::Colors::red() << "error: " << Qd::Colors::reset() << error.message
+									  << std::endl;
+						}
 					}
 					return 1;
 				}
 
 				// Semantic validation - catch errors before LLVM generation
 				// Pass true for isModuleFile to skip reporting errors for missing nested module imports
+				auto valStart = std::chrono::steady_clock::now();
 				Qd::SemanticValidator validator;
 				validator.setIncludePaths(opts.includePaths);
 				validator.setSource(buffer.c_str());
 				size_t errorCount = validator.validate(root, moduleFilePath.c_str(), true, opts.werror);
+				auto valEnd = std::chrono::steady_clock::now();
+				if (timing) {
+					auto valMs = std::chrono::duration_cast<std::chrono::milliseconds>(valEnd - valStart).count();
+					std::cerr << "[TIMING] moduleLoop validate " << moduleName << ": " << valMs << "ms" << std::endl;
+				}
 				if (errorCount > 0) {
 					// Validation failed - do not proceed
 					return 1;
@@ -417,7 +540,7 @@ int main(int argc, char** argv) {
 				parsedMod.sourceDirectory = moduleFileSourceDir;
 				parsedMod.packageDirectory = packageDir;
 				parsedMod.root = root;
-				parsedMod.ast = std::move(ast);
+				// Note: parsedMod.ast is nullptr - AST ownership is held by the global cache
 
 				// Collect imports from this module
 				std::function<void(Qd::IAstNode*)> collectImports = [&](Qd::IAstNode* node) {
@@ -587,12 +710,15 @@ int main(int argc, char** argv) {
 			}
 		}
 
+		printTiming("moduleResolution");
+
 		// Pass the actual source file path for debug info
 		if (!generator.generate(mainRoot, mainSourceFile)) {
 			std::cerr << Qd::Colors::bold() << "quadc: " << Qd::Colors::reset() << Qd::Colors::bold()
 					  << Qd::Colors::red() << "error: " << Qd::Colors::reset() << "LLVM generation failed" << std::endl;
 			return 1;
 		}
+		printTiming("irGeneration");
 
 		// Print IR to stdout if requested
 		if (opts.dumpIR || opts.verbose) {
