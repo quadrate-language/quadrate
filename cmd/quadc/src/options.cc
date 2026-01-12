@@ -28,6 +28,7 @@ void printHelp() {
 	std::cout << "  --test             Compile and run tests\n";
 	std::cout << "  --dump-ir          Print generated LLVM IR\n";
 	std::cout << "  --werror           Treat warnings as errors\n";
+	std::cout << "  --target <triple>  Cross-compile for target (e.g., aarch64-linux-gnu)\n";
 	std::cout << "  --                 Separator for program arguments (used with -r)\n";
 	std::cout << "\n";
 	std::cout << "Examples:\n";
@@ -113,6 +114,13 @@ bool parseArgs(int argc, char* argv[], Options& opts) {
 			opts.moduleVersions[moduleName] = version;
 		} else if (arg == "--werror") {
 			opts.werror = true;
+		} else if (arg == "--target") {
+			if (i + 1 >= argc) {
+				std::cerr << "quadc: option '--target' requires an argument\n";
+				std::cerr << "Try 'quadc --help' for more information.\n";
+				return false;
+			}
+			opts.targetTriple = argv[++i];
 		} else if (arg == "-O0") {
 			opts.optLevel = 0;
 		} else if (arg == "-O1") {

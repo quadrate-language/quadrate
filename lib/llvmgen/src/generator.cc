@@ -1594,6 +1594,13 @@ namespace Qd {
 		mImpl->testMode = enabled;
 	}
 
+	void LlvmGenerator::setTargetTriple(const std::string& triple) {
+		if (!mImpl) {
+			mImpl = std::make_unique<Impl>("temp");
+		}
+		mImpl->targetTriple = triple;
+	}
+
 	bool LlvmGenerator::generate(IAstNode* root, const std::string& moduleName) {
 		if (!mImpl) {
 			mImpl = std::make_unique<Impl>(moduleName);
@@ -1666,7 +1673,13 @@ namespace Qd {
 		llvm::InitializeAllAsmParsers();
 		llvm::InitializeAllAsmPrinters();
 
-		auto targetTripleStr = llvm::sys::getDefaultTargetTriple();
+		// Use custom target triple if set, otherwise use host default
+		std::string targetTripleStr;
+		if (!mImpl->targetTriple.empty()) {
+			targetTripleStr = mImpl->targetTriple;
+		} else {
+			targetTripleStr = llvm::sys::getDefaultTargetTriple();
+		}
 		llvm::Triple targetTriple(targetTripleStr);
 // LLVM 20+ changed API to accept Triple objects instead of strings
 #if LLVM_VERSION_MAJOR >= 20
@@ -1682,8 +1695,13 @@ namespace Qd {
 			return false;
 		}
 
-		// Use host CPU for better optimization (instead of "generic")
-		auto cpu = llvm::sys::getHostCPUName();
+		// Use host CPU for native compilation, "generic" for cross-compilation
+		std::string cpu;
+		if (!mImpl->targetTriple.empty()) {
+			cpu = "generic";
+		} else {
+			cpu = std::string(llvm::sys::getHostCPUName());
+		}
 		auto features = "";
 		llvm::TargetOptions opt;
 // LLVM 20+ changed API to accept Triple objects instead of strings

@@ -487,6 +487,11 @@ int main(int argc, char** argv) {
 			generator.setTestMode(true);
 		}
 
+		// Set target triple for cross-compilation if specified
+		if (!opts.targetTriple.empty()) {
+			generator.setTargetTriple(opts.targetTriple);
+		}
+
 		// Add library search paths for third-party packages
 		// Track which packages we've already added to avoid duplicates
 		std::set<std::string> addedPackagePaths;

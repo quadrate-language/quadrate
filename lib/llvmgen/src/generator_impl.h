@@ -131,6 +131,9 @@ namespace Qd {
 		// Stack size
 		size_t stackSize = DEFAULT_STACK_SIZE;
 
+		// Target triple for cross-compilation (empty = use host default)
+		std::string targetTriple;
+
 		// Runtime types
 		llvm::Type* contextPtrTy = nullptr;
 		llvm::Type* execResultTy = nullptr;

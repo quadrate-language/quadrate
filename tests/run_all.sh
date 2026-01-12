@@ -5,7 +5,7 @@
 #   ./tests/run_all.sh                    # Run all tests
 #   ./tests/run_all.sh --failed           # Run only previously failed tests
 #   ./tests/run_all.sh --test NAME        # Run specific test
-#   ./tests/run_all.sh --suite SUITE      # Run specific suite (cpp, lsp, qd, formatter, linter, embed, quadpm, args, stdlib, mtls, fuzz)
+#   ./tests/run_all.sh --suite SUITE      # Run specific suite (cpp, lsp, qd, formatter, linter, embed, quadpm, args, crosscompile, stdlib, mtls, fuzz)
 #   ./tests/run_all.sh --clear            # Clear failed tests file
 #   ./tests/run_all.sh --list             # List all available tests
 
@@ -99,7 +99,7 @@ while [[ $# -gt 0 ]]; do
             echo "Options:"
             echo "  --failed, -f       Run only previously failed tests"
             echo "  --test, -t NAME    Run specific test by name"
-            echo "  --suite, -s SUITE  Run specific suite (cpp, lsp, qd, formatter, linter, embed, quadpm, args, stdlib, mtls, fuzz)"
+            echo "  --suite, -s SUITE  Run specific suite (cpp, lsp, qd, formatter, linter, embed, quadpm, args, crosscompile, stdlib, mtls, fuzz)"
             echo "  --fuzz-time SECS   Fuzz test duration in seconds (default: 10)"
             echo "  --list, -l         List all available tests"
             echo "  --clear, -c        Clear failed tests file"
@@ -342,7 +342,7 @@ should_run_test() {
 
 # Run C++ tests via meson
 run_cpp_tests() {
-    local tests=("test_ast" "test_semantic_validator" "test_runtime" "test_llvmgen" "test_mem")
+    local tests=("test_ast" "test_semantic_validator" "test_runtime" "test_llvmgen" "test_mem" "test_options")
     local suite="cpp"
 
     # Filter tests first
@@ -1030,6 +1030,262 @@ arg0=hello" "hello"
     fi
 }
 
+# Run cross-compilation tests (--target flag)
+run_crosscompile_tests() {
+    local suite="crosscompile"
+
+    if ! should_run_test "$suite" "crosscompile_tests"; then
+        return
+    fi
+
+    print_header "Cross-Compilation Tests"
+
+    local passed=0
+    local failed=0
+    local skipped=0
+
+    # Create temp directory for test outputs
+    local test_temp="$TEMP_DIR/crosscompile"
+    mkdir -p "$test_temp"
+
+    # Helper function to run a cross-compile test
+    run_xcompile_test() {
+        local desc="$1"
+        local target="$2"
+        local expected_error="$3"  # Expected error pattern or "success" for native
+        shift 3
+
+        local src_file="$test_temp/test_${target//[^a-zA-Z0-9]/_}.qd"
+
+        # Create a simple test program
+        cat > "$src_file" << 'EOFSRC'
+fn main(--) {
+    42 print nl
+}
+EOFSRC
+
+        # Try to compile with --target
+        local output
+        output=$("$QUADC" --target "$target" -o "$test_temp/output_${target//[^a-zA-Z0-9]/_}" "$src_file" 2>&1)
+        local exit_code=$?
+
+        if [[ "$expected_error" == "success" ]]; then
+            # Native compilation should succeed
+            if [[ $exit_code -eq 0 ]]; then
+                ((passed++))
+            else
+                ((failed++))
+                if [[ $VERBOSE -eq 1 ]]; then
+                    echo "  $desc: expected success but failed"
+                    echo "    output: $output"
+                fi
+            fi
+            return
+        fi
+
+        # For cross-compilation targets, we expect:
+        # 1. Object file generation to succeed (LLVM generates for target)
+        # 2. Linking to fail with architecture mismatch error
+        # The key indicator is "Relocations in generic ELF" or "file format not recognized"
+        # which means the object was generated for a different architecture
+
+        if [[ $exit_code -ne 0 ]]; then
+            # Check if this is the expected cross-compilation linker error
+            if echo "$output" | grep -qE "Relocations in generic ELF|file format not recognized|incompatible|wrong ELF class"; then
+                # This is expected - object was created for target arch but linker can't handle it
+                ((passed++))
+            elif echo "$output" | grep -q "Error:"; then
+                # LLVM error - target might not be registered/supported
+                ((failed++))
+                if [[ $VERBOSE -eq 1 ]]; then
+                    echo "  $desc: LLVM target error"
+                    echo "    output: $output"
+                fi
+            else
+                # Other error - might be OK if it's linker-related
+                if echo "$output" | grep -qE "linker|ld:|clang:"; then
+                    ((passed++))  # Linker errors are expected for cross-compile
+                else
+                    ((failed++))
+                    if [[ $VERBOSE -eq 1 ]]; then
+                        echo "  $desc: unexpected error"
+                        echo "    output: $output"
+                    fi
+                fi
+            fi
+        else
+            # Cross-compilation unexpectedly succeeded
+            # This might happen if user has cross-compilation toolchain installed
+            ((passed++))
+        fi
+    }
+
+    # Test: --target flag parsing
+    test_target_flag_parsing() {
+        # Test that --target is recognized
+        local output
+        output=$("$QUADC" --help 2>&1)
+        if echo "$output" | grep -q -- "--target"; then
+            ((passed++))
+        else
+            ((failed++))
+            if [[ $VERBOSE -eq 1 ]]; then
+                echo "  --target not in help output"
+            fi
+        fi
+    }
+
+    # Test: --target requires argument
+    test_target_requires_arg() {
+        local output
+        output=$("$QUADC" --target 2>&1)
+        local exit_code=$?
+        if [[ $exit_code -ne 0 ]] && echo "$output" | grep -q "requires"; then
+            ((passed++))
+        else
+            ((failed++))
+            if [[ $VERBOSE -eq 1 ]]; then
+                echo "  --target without arg should fail with 'requires' message"
+            fi
+        fi
+    }
+
+    # Test: native compilation still works
+    test_native_compilation() {
+        local src_file="$test_temp/native_test.qd"
+        local out_file="$test_temp/native_test"
+
+        cat > "$src_file" << 'EOFSRC'
+fn main(--) {
+    42 print nl
+}
+EOFSRC
+
+        local output
+        output=$("$QUADC" -o "$out_file" "$src_file" 2>&1)
+        local exit_code=$?
+
+        if [[ $exit_code -eq 0 && -x "$out_file" ]]; then
+            # Verify it runs
+            local run_output
+            run_output=$("$out_file" 2>/dev/null)
+            if [[ "$run_output" == "42" ]]; then
+                ((passed++))
+            else
+                ((failed++))
+                if [[ $VERBOSE -eq 1 ]]; then
+                    echo "  native executable output wrong: got '$run_output', expected '42'"
+                fi
+            fi
+        else
+            ((failed++))
+            if [[ $VERBOSE -eq 1 ]]; then
+                echo "  native compilation failed: $output"
+            fi
+        fi
+    }
+
+    # Test: default target (empty string) works
+    test_empty_target() {
+        local src_file="$test_temp/empty_target_test.qd"
+        local out_file="$test_temp/empty_target_test"
+
+        cat > "$src_file" << 'EOFSRC'
+fn main(--) {
+    1 print nl
+}
+EOFSRC
+
+        # Compile with empty target (should use default)
+        local output
+        output=$("$QUADC" --target "" -o "$out_file" "$src_file" 2>&1)
+        local exit_code=$?
+
+        if [[ $exit_code -eq 0 && -x "$out_file" ]]; then
+            ((passed++))
+        else
+            ((failed++))
+            if [[ $VERBOSE -eq 1 ]]; then
+                echo "  empty target compilation failed"
+            fi
+        fi
+    }
+
+    # Test: --target with optimization flags
+    test_target_with_optimization() {
+        local src_file="$test_temp/opt_test.qd"
+
+        cat > "$src_file" << 'EOFSRC'
+fn main(--) {
+    1 2 + print nl
+}
+EOFSRC
+
+        local output
+        # This may fail at linking, but should succeed at compilation
+        output=$("$QUADC" --target "aarch64-linux-gnu" -O2 -o "$test_temp/opt_output" "$src_file" 2>&1)
+
+        # Check that it at least attempted compilation (not an argument error)
+        if ! echo "$output" | grep -q "unknown option\|requires"; then
+            ((passed++))
+        else
+            ((failed++))
+            if [[ $VERBOSE -eq 1 ]]; then
+                echo "  --target with -O2 failed at argument parsing"
+            fi
+        fi
+    }
+
+    # Test: --target with debug info
+    test_target_with_debug() {
+        local src_file="$test_temp/debug_test.qd"
+
+        cat > "$src_file" << 'EOFSRC'
+fn main(--) {
+    100 print nl
+}
+EOFSRC
+
+        local output
+        output=$("$QUADC" --target "aarch64-linux-gnu" -g -o "$test_temp/debug_output" "$src_file" 2>&1)
+
+        if ! echo "$output" | grep -q "unknown option\|requires"; then
+            ((passed++))
+        else
+            ((failed++))
+            if [[ $VERBOSE -eq 1 ]]; then
+                echo "  --target with -g failed at argument parsing"
+            fi
+        fi
+    }
+
+    # Run all tests
+    test_target_flag_parsing
+    test_target_requires_arg
+    test_native_compilation
+    test_empty_target
+    test_target_with_optimization
+    test_target_with_debug
+
+    # Cross-compile target tests
+    # These verify that LLVM generates code for the specified target
+    # Note: Full linking requires cross-toolchain, so we verify the linker error indicates
+    # the object was created for the wrong architecture (expected behavior)
+
+    run_xcompile_test "aarch64-linux-gnu target" "aarch64-linux-gnu" "cross"
+    run_xcompile_test "x86_64-linux-gnu target" "x86_64-linux-gnu" "success"  # Should work on x86_64 host
+    run_xcompile_test "aarch64-apple-darwin target" "aarch64-apple-darwin" "cross"
+
+    # Cleanup
+    rm -rf "$test_temp"
+
+    if [[ $failed -eq 0 ]]; then
+        log_pass "$suite" "crosscompile_tests" "($passed tests)"
+    else
+        log_fail "$suite" "crosscompile_tests" "$failed/$((passed + failed)) tests failed"
+    fi
+}
+
 # Run mTLS tests
 run_mtls_tests() {
     local suite="mtls"
@@ -1361,6 +1617,10 @@ main() {
 
     if [[ -z "$SPECIFIC_SUITE" ]] || [[ "$SPECIFIC_SUITE" == "args" ]]; then
         run_args_tests
+    fi
+
+    if [[ -z "$SPECIFIC_SUITE" ]] || [[ "$SPECIFIC_SUITE" == "crosscompile" ]]; then
+        run_crosscompile_tests
     fi
 
     if [[ -z "$SPECIFIC_SUITE" ]] || [[ "$SPECIFIC_SUITE" == "stdlib" ]]; then

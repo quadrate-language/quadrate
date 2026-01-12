@@ -217,6 +217,23 @@ namespace Qd {
 		 */
 		void setTestMode(bool enabled);
 
+		/**
+		 * @brief Set target triple for cross-compilation
+		 *
+		 * Sets the LLVM target triple for cross-compilation. When not set,
+		 * the compiler uses the host system's default target.
+		 *
+		 * @param triple Target triple (e.g., "aarch64-linux-gnu", "x86_64-apple-darwin")
+		 *
+		 * @note Must be called before writeObject() or writeExecutable()
+		 * @note Common triples:
+		 *       - aarch64-linux-gnu (ARM64 Linux)
+		 *       - x86_64-linux-gnu (x86-64 Linux)
+		 *       - aarch64-apple-darwin (ARM64 macOS)
+		 *       - x86_64-apple-darwin (x86-64 macOS)
+		 */
+		void setTargetTriple(const std::string& triple);
+
 	private:
 		/**
 		 * @brief Private implementation (Pimpl idiom)

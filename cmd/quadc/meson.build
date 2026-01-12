@@ -22,6 +22,11 @@ if llvmgen_dep.found()
 
 	# Make available to parent scopes
 	meson.override_find_program('quadc', quadc_exe)
+
+	# Tests
+	if get_option('build_tests')
+		subdir('tests')
+	endif
 else
 	error('LLVM is required to build quadc (the default compiler)')
 endif

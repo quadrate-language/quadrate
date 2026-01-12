@@ -377,6 +377,105 @@ TEST(OptimizationLevelTwo) {
 	ASSERT(result, "should generate with O2");
 }
 
+// Target triple tests for cross-compilation support
+
+TEST(SetTargetTripleAarch64) {
+	const char* src = "fn main() { 42 print }";
+	Qd::Ast ast;
+	Qd::IAstNode* root = ast.generate(src, false, "test.qd");
+	ASSERT(root != nullptr, "should parse successfully");
+
+	Qd::LlvmGenerator gen;
+	gen.setTargetTriple("aarch64-linux-gnu");
+	bool result = gen.generate(root, "test");
+	ASSERT(result, "should generate with aarch64 target");
+	ASSERT(!gen.getIRString().empty(), "should produce IR");
+}
+
+TEST(SetTargetTripleX86_64) {
+	const char* src = "fn main() { 42 print }";
+	Qd::Ast ast;
+	Qd::IAstNode* root = ast.generate(src, false, "test.qd");
+	ASSERT(root != nullptr, "should parse successfully");
+
+	Qd::LlvmGenerator gen;
+	gen.setTargetTriple("x86_64-linux-gnu");
+	bool result = gen.generate(root, "test");
+	ASSERT(result, "should generate with x86_64 target");
+}
+
+TEST(SetTargetTripleArmMacOS) {
+	const char* src = "fn main() { 42 print }";
+	Qd::Ast ast;
+	Qd::IAstNode* root = ast.generate(src, false, "test.qd");
+	ASSERT(root != nullptr, "should parse successfully");
+
+	Qd::LlvmGenerator gen;
+	gen.setTargetTriple("aarch64-apple-darwin");
+	bool result = gen.generate(root, "test");
+	ASSERT(result, "should generate with aarch64-apple-darwin target");
+}
+
+TEST(SetTargetTripleEmptyUsesDefault) {
+	const char* src = "fn main() { 42 print }";
+	Qd::Ast ast;
+	Qd::IAstNode* root = ast.generate(src, false, "test.qd");
+	ASSERT(root != nullptr, "should parse successfully");
+
+	Qd::LlvmGenerator gen;
+	gen.setTargetTriple(""); // Empty string should use default
+	bool result = gen.generate(root, "test");
+	ASSERT(result, "should generate with default target when empty");
+}
+
+TEST(SetTargetTripleBeforeGenerate) {
+	const char* src = "fn main() { 42 print }";
+	Qd::Ast ast;
+	Qd::IAstNode* root = ast.generate(src, false, "test.qd");
+	ASSERT(root != nullptr, "should parse successfully");
+
+	Qd::LlvmGenerator gen;
+	// Set target triple before generate() - should work
+	gen.setTargetTriple("aarch64-linux-gnu");
+	gen.setOptimizationLevel(2);
+	gen.setStackSize(2048);
+	bool result = gen.generate(root, "test");
+	ASSERT(result, "should generate with all settings applied");
+}
+
+TEST(TargetTripleWithComplexCode) {
+	const char* src = R"(
+		struct Point {
+			x:i64
+			y:i64
+		}
+		fn add_points(a:Point b:Point -- c:Point) {
+			Point {
+				x = a @x b @x +
+				y = a @y b @y +
+			}
+		}
+		fn main() {
+			Point { x = 10 y = 20 } -> p1
+			Point { x = 5 y = 15 } -> p2
+			p1 p2 add_points -> result
+			result @x print nl
+		}
+	)";
+	Qd::Ast ast;
+	Qd::IAstNode* root = ast.generate(src, false, "test.qd");
+	ASSERT(root != nullptr, "should parse complex code");
+
+	Qd::SemanticValidator validator;
+	size_t errors = validator.validate(root, "test.qd");
+	ASSERT(errors == 0, "should validate complex code");
+
+	Qd::LlvmGenerator gen;
+	gen.setTargetTriple("aarch64-linux-gnu");
+	bool result = gen.generate(root, "test");
+	ASSERT(result, "should generate complex code for aarch64");
+}
+
 // Main - required for test executable
 int main(void) {
 	return UC_PrintResults();
