@@ -1,4 +1,5 @@
 #include "generator_impl.h"
+#include <chrono>
 
 // Platform abstractions
 extern "C" {
@@ -1777,10 +1778,20 @@ namespace Qd {
 	}
 
 	bool LlvmGenerator::writeExecutable(const std::string& filename) {
+		// Timing helper - only active when QUADC_TIMING is set
+		static bool timing = std::getenv("QUADC_TIMING") != nullptr;
+		auto start = std::chrono::steady_clock::now();
+
 		// Generate object file first
 		std::string objFile = filename + ".o";
 		if (!writeObject(objFile)) {
 			return false;
+		}
+
+		if (timing) {
+			auto objEnd = std::chrono::steady_clock::now();
+			auto objMs = std::chrono::duration_cast<std::chrono::milliseconds>(objEnd - start).count();
+			std::cerr << "[TIMING] writeObject: " << objMs << "ms" << std::endl;
 		}
 
 		// Determine library directory
@@ -2016,8 +2027,116 @@ namespace Qd {
 		// 2. Deps use system libraries via -l flags and shouldn't be shadowed by module libs
 		// (e.g., a module named "glut" would have libglut.so which would shadow system -lglut)
 
-		std::string linkCmd = "clang -Wl,--gc-sections -o " + filename + " " + objFile + " " + libraryFlags;
-		int result = system(linkCmd.c_str());
+		// Try to use ld.lld directly for faster linking
+		// Fall back to clang if lld fails or is not available
+		int result = -1;
+		bool usedLld = false;
+
+		// Check if ld.lld is available and we're not cross-compiling
+		if (mImpl->targetTriple.empty()) {
+			// Check for lld availability
+			if (system("which ld.lld >/dev/null 2>&1") == 0) {
+				// Try direct lld linking - significantly faster than going through clang
+				// Find CRT files using standard locations
+				std::string crtDir;
+				std::string gccCrtDir;
+
+				// Common CRT locations on Linux
+				if (std::filesystem::exists("/usr/lib/crt1.o")) {
+					crtDir = "/usr/lib";
+				} else if (std::filesystem::exists("/usr/lib64/crt1.o")) {
+					crtDir = "/usr/lib64";
+				} else if (std::filesystem::exists("/usr/lib/x86_64-linux-gnu/crt1.o")) {
+					crtDir = "/usr/lib/x86_64-linux-gnu";
+				}
+
+				// Find GCC CRT files (crtbegin.o, crtend.o) - try common GCC paths
+				for (const auto& path : {"/usr/lib64/gcc/x86_64-pc-linux-gnu",
+										 "/usr/lib/gcc/x86_64-pc-linux-gnu",
+										 "/usr/lib/gcc/x86_64-linux-gnu"}) {
+					if (std::filesystem::exists(path)) {
+						// Find the latest GCC version directory
+						for (const auto& entry : std::filesystem::directory_iterator(path)) {
+							if (entry.is_directory()) {
+								std::string checkPath = entry.path().string() + "/crtbeginS.o";
+								if (std::filesystem::exists(checkPath)) {
+									gccCrtDir = entry.path().string();
+									break;
+								}
+							}
+						}
+						if (!gccCrtDir.empty())
+							break;
+					}
+				}
+
+				if (!crtDir.empty() && !gccCrtDir.empty()) {
+					// Build lld command with CRT files
+					std::string lldCmd = "ld.lld --hash-style=gnu --build-id --eh-frame-hdr -m elf_x86_64 -pie "
+										 "-dynamic-linker /lib64/ld-linux-x86-64.so.2 "
+										 "--gc-sections -o " +
+										 filename + " " + crtDir + "/Scrt1.o " + crtDir + "/crti.o " + gccCrtDir +
+										 "/crtbeginS.o " + "-L" + gccCrtDir + " -L" + crtDir + " " + objFile + " " +
+										 qdrtStaticPath;
+
+					// Add imported libraries
+					for (const auto& lib : mImpl->importedLibraries) {
+						if (lib.size() >= 2 && lib.substr(lib.size() - 2) == ".a") {
+							lldCmd += " " + lib;
+						} else {
+							std::string libName = lib;
+							if (libName.rfind("lib", 0) == 0)
+								libName = libName.substr(3);
+							if (libName.size() >= 3 && libName.substr(libName.size() - 3) == ".so")
+								libName = libName.substr(0, libName.size() - 3);
+							lldCmd += " -l" + libName;
+						}
+					}
+
+					// Add standard libraries and CRT files
+					lldCmd += " -lm -lstdc++ -lgcc --as-needed -lgcc_s --no-as-needed -lc -lgcc --as-needed -lgcc_s "
+							  "--no-as-needed " +
+							  gccCrtDir + "/crtendS.o " + crtDir + "/crtn.o";
+
+					// Add transitive dependencies
+					if (!allDepsFlags.empty()) {
+						lldCmd += " --start-group" + allDepsFlags + " --end-group";
+					}
+
+					// Suppress output
+					lldCmd += " 2>/dev/null";
+
+					if (timing) {
+						auto lldStart = std::chrono::steady_clock::now();
+						result = system(lldCmd.c_str());
+						auto lldEnd = std::chrono::steady_clock::now();
+						auto lldMs = std::chrono::duration_cast<std::chrono::milliseconds>(lldEnd - lldStart).count();
+						std::cerr << "[TIMING] system(ld.lld): " << lldMs << "ms" << std::endl;
+					} else {
+						result = system(lldCmd.c_str());
+					}
+
+					if (result == 0) {
+						usedLld = true;
+					}
+				}
+			}
+		}
+
+		// Fall back to clang if lld wasn't used or failed
+		if (!usedLld) {
+			std::string linkCmd = "clang -Wl,--gc-sections -o " + filename + " " + objFile + " " + libraryFlags;
+
+			if (timing) {
+				auto linkStart = std::chrono::steady_clock::now();
+				result = system(linkCmd.c_str());
+				auto linkEnd = std::chrono::steady_clock::now();
+				auto linkMs = std::chrono::duration_cast<std::chrono::milliseconds>(linkEnd - linkStart).count();
+				std::cerr << "[TIMING] system(clang): " << linkMs << "ms" << std::endl;
+			} else {
+				result = system(linkCmd.c_str());
+			}
+		}
 
 		// Clean up object file
 		std::remove(objFile.c_str());
