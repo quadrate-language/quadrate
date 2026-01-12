@@ -43,13 +43,31 @@
 
 namespace Qd {
 
-	// Helper to set position on a node from scanner
+	// Source position lookup helper - combines line map and char-byte map
+	struct SourceMaps {
+		SourceLineMap lineMap;
+		CharByteMap charByteMap;
+		SourceMaps(const char* src) : lineMap(src), charByteMap(src) {}
+	};
+
+	// Thread-local pointer to current source maps (set at start of generate())
+	// This allows helper functions to use optimized lookup without signature changes
+	static thread_local const SourceMaps* tCurrentSourceMaps = nullptr;
+
+	// Helper to set position on a node from scanner - uses optimized maps if available
 	static void setNodePosition(IAstNode* node, u8t_scanner* scanner, const char* src) {
 		size_t charPos = u8t_scanner_token_start(scanner);
-		// Convert character position to byte position for calculateLineColumn
-		size_t bytePos = charIndexToByteOffset(src, charPos);
 		size_t line, column;
-		calculateLineColumn(src, bytePos, &line, &column);
+
+		if (tCurrentSourceMaps) {
+			// O(log n) lookup using precomputed tables
+			size_t bytePos = tCurrentSourceMaps->charByteMap.getByteOffset(charPos);
+			tCurrentSourceMaps->lineMap.getLineColumn(bytePos, &line, &column);
+		} else {
+			// Fallback: O(n) lookup
+			size_t bytePos = charIndexToByteOffset(src, charPos);
+			calculateLineColumn(src, bytePos, &line, &column);
+		}
 		node->setPosition(line, column);
 	}
 
@@ -77,16 +95,27 @@ namespace Qd {
 			return nullptr;
 		}
 
-		// Capture comment start position
+		// Capture comment start position - use optimized maps if available
 		size_t commentStartCharPos = firstSlashPos;
-		size_t commentStartBytePos = charIndexToByteOffset(src, commentStartCharPos);
+		size_t commentStartBytePos;
 		size_t commentLine, commentColumn;
-		calculateLineColumn(src, commentStartBytePos, &commentLine, &commentColumn);
+		if (tCurrentSourceMaps) {
+			commentStartBytePos = tCurrentSourceMaps->charByteMap.getByteOffset(commentStartCharPos);
+			tCurrentSourceMaps->lineMap.getLineColumn(commentStartBytePos, &commentLine, &commentColumn);
+		} else {
+			commentStartBytePos = charIndexToByteOffset(src, commentStartCharPos);
+			calculateLineColumn(src, commentStartBytePos, &commentLine, &commentColumn);
+		}
 
 		// Get character position and convert to byte offset for content start
 		size_t charPos = u8t_scanner_token_start(scanner);
 		size_t tokenLen = u8t_scanner_token_len(scanner);
-		size_t bytePos = charIndexToByteOffset(src, charPos + tokenLen);
+		size_t bytePos;
+		if (tCurrentSourceMaps) {
+			bytePos = tCurrentSourceMaps->charByteMap.getByteOffset(charPos + tokenLen);
+		} else {
+			bytePos = charIndexToByteOffset(src, charPos + tokenLen);
+		}
 
 		// Read comment text directly from source
 		const char* commentStart = src + bytePos;
@@ -3428,6 +3457,10 @@ namespace Qd {
 			return mRoot;
 		}
 
+		// Build source position lookup tables - O(n) once, then O(log n) for each lookup
+		SourceMaps sourceMaps(src);
+		tCurrentSourceMaps = &sourceMaps;
+
 		// If dumpTokens is true, scan and print all tokens, then reset the scanner
 		if (dumpTokens) {
 			char32_t token;
@@ -3880,6 +3913,9 @@ namespace Qd {
 		// Store the error count and details for later checking
 		mErrorCount = errorReporter.errorCount();
 		mErrors = errorReporter.getErrors();
+
+		// Clear thread-local source maps pointer
+		tCurrentSourceMaps = nullptr;
 
 		return mRoot;
 	}
