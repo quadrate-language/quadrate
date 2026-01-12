@@ -31,7 +31,9 @@
 #include <llvm/Target/TargetMachine.h>
 #include <llvm/Target/TargetOptions.h>
 #include <llvm/TargetParser/Host.h>
+#include <llvm/Passes/PassBuilder.h>
 #include <llvm/Transforms/IPO.h>
+#include <llvm/Transforms/IPO/GlobalDCE.h>
 #include <llvm/Transforms/InstCombine/InstCombine.h>
 #include <llvm/Transforms/Scalar.h>
 #include <llvm/Transforms/Scalar/GVN.h>
@@ -127,6 +129,9 @@ namespace Qd {
 
 		// Optimization level (0-3)
 		int optimizationLevel = 0;
+
+		// Export mode - use external linkage for shared library compilation
+		bool exportMode = false;
 
 		// Stack size
 		size_t stackSize = DEFAULT_STACK_SIZE;

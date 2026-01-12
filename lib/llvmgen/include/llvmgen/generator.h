@@ -181,6 +181,20 @@ namespace Qd {
 		void setOptimizationLevel(int level);
 
 		/**
+		 * @brief Enable export mode for shared library compilation
+		 *
+		 * When export mode is enabled, all user functions use external linkage
+		 * so they can be called via dlsym from embedding applications.
+		 * GlobalDCE optimization is disabled in export mode.
+		 *
+		 * @param enabled True to enable export mode (default: false)
+		 *
+		 * @note Must be called before generate()
+		 * @note Use this when compiling modules for the qd embedding API
+		 */
+		void setExportMode(bool enabled);
+
+		/**
 		 * @brief Add a library search path for linking
 		 *
 		 * Adds a directory to be searched for libraries during linking.

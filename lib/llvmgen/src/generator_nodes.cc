@@ -871,8 +871,11 @@ namespace Qd {
 		llvm::Function* fn = module->getFunction(mangledName);
 		if (!fn) {
 			// Function doesn't exist yet, declare it
+			// Use InternalLinkage for user functions unless in export mode (shared library compilation)
+			// InternalLinkage allows LLVM to eliminate unused functions via GlobalDCE
+			auto linkage = exportMode ? llvm::Function::ExternalLinkage : llvm::Function::InternalLinkage;
 			auto fnTy = llvm::FunctionType::get(execResultTy, {contextPtrTy}, false);
-			fn = llvm::Function::Create(fnTy, llvm::Function::ExternalLinkage, mangledName, *module);
+			fn = llvm::Function::Create(fnTy, linkage, mangledName, *module);
 		}
 
 		// Generate any needed type casts before the function call

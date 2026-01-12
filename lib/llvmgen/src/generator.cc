@@ -546,7 +546,10 @@ namespace Qd {
 			fn = module->getFunction(fnName);
 			if (!fn) {
 				auto fnTy = llvm::FunctionType::get(execResultTy, {contextPtrTy}, false);
-				fn = llvm::Function::Create(fnTy, llvm::Function::ExternalLinkage, fnName, *module);
+				// Use InternalLinkage for user functions unless in export mode (shared library compilation)
+				// InternalLinkage allows LLVM to eliminate unused functions via GlobalDCE
+				auto linkage = exportMode ? llvm::Function::ExternalLinkage : llvm::Function::InternalLinkage;
+				fn = llvm::Function::Create(fnTy, linkage, fnName, *module);
 			}
 
 			// Add debug info for user function
@@ -1348,7 +1351,10 @@ namespace Qd {
 					registerName = funcNode->name();
 				}
 				auto fnTy = llvm::FunctionType::get(execResultTy, {contextPtrTy}, false);
-				auto fn = llvm::Function::Create(fnTy, llvm::Function::ExternalLinkage, fnName, *module);
+				// Use InternalLinkage for user functions unless in export mode (shared library compilation)
+				// InternalLinkage allows LLVM to eliminate unused functions via GlobalDCE
+				auto linkage = exportMode ? llvm::Function::ExternalLinkage : llvm::Function::InternalLinkage;
+				auto fn = llvm::Function::Create(fnTy, linkage, fnName, *module);
 				// Register the function for forward reference lookup
 				userFunctions[registerName] = fn;
 				fallibleFunctions[registerName] = funcNode->throws();
@@ -1571,6 +1577,14 @@ namespace Qd {
 		mImpl->optimizationLevel = level;
 	}
 
+	void LlvmGenerator::setExportMode(bool enabled) {
+		if (!mImpl) {
+			// Create implementation with a temporary module name - will be recreated in generate()
+			mImpl = std::make_unique<Impl>("temp");
+		}
+		mImpl->exportMode = enabled;
+	}
+
 	void LlvmGenerator::addLibrarySearchPath(const std::string& path) {
 		if (!mImpl) {
 			// Create implementation with a temporary module name - will be recreated in generate()
@@ -1754,8 +1768,26 @@ namespace Qd {
 			}
 			fpm.doFinalization();
 
-			// Run module passes
+			// Run legacy module passes (if any were added to mpm)
 			mpm.run(*mImpl->module);
+
+			// Use GlobalDCE to eliminate unused internal functions (skip in export mode)
+			if (!mImpl->exportMode) {
+				llvm::LoopAnalysisManager lam;
+				llvm::FunctionAnalysisManager fam;
+				llvm::CGSCCAnalysisManager cgam;
+				llvm::ModuleAnalysisManager mam;
+				llvm::PassBuilder pb;
+				pb.registerModuleAnalyses(mam);
+				pb.registerCGSCCAnalyses(cgam);
+				pb.registerFunctionAnalyses(fam);
+				pb.registerLoopAnalyses(lam);
+				pb.crossRegisterProxies(lam, fam, cgam, mam);
+
+				llvm::ModulePassManager npm;
+				npm.addPass(llvm::GlobalDCEPass());
+				npm.run(*mImpl->module, mam);
+			}
 		}
 
 		std::error_code ec;
@@ -1947,6 +1979,9 @@ namespace Qd {
 
 		std::string libraryFlags = qdrtStaticPath;
 
+		// Track resolved static library paths for use in lld command
+		std::vector<std::string> resolvedStaticLibs;
+
 		// Add imported libraries
 		for (const auto& library : mImpl->importedLibraries) {
 			// Check if it's already a .a file (static library)
@@ -1995,6 +2030,7 @@ namespace Qd {
 
 				// Add the library and recursively process its .deps file for transitive dependencies
 				libraryFlags += " " + foundLibPath;
+				resolvedStaticLibs.push_back(foundLibPath);
 				processLibraryDeps(foundLibPath);
 			} else {
 				// Handle .so libraries (dynamic linking)
@@ -2079,16 +2115,18 @@ namespace Qd {
 										 "/crtbeginS.o " + "-L" + gccCrtDir + " -L" + crtDir + " " + objFile + " " +
 										 qdrtStaticPath;
 
-					// Add imported libraries
+					// Add resolved static libraries (already have full paths)
+					for (const auto& libPath : resolvedStaticLibs) {
+						lldCmd += " " + libPath;
+					}
+
+					// Add dynamic libraries (.so)
 					for (const auto& lib : mImpl->importedLibraries) {
-						if (lib.size() >= 2 && lib.substr(lib.size() - 2) == ".a") {
-							lldCmd += " " + lib;
-						} else {
+						if (lib.size() >= 3 && lib.substr(lib.size() - 3) == ".so") {
 							std::string libName = lib;
 							if (libName.rfind("lib", 0) == 0)
 								libName = libName.substr(3);
-							if (libName.size() >= 3 && libName.substr(libName.size() - 3) == ".so")
-								libName = libName.substr(0, libName.size() - 3);
+							libName = libName.substr(0, libName.size() - 3);
 							lldCmd += " -l" + libName;
 						}
 					}
@@ -2103,7 +2141,7 @@ namespace Qd {
 						lldCmd += " --start-group" + allDepsFlags + " --end-group";
 					}
 
-					// Suppress output
+					// Suppress error output (errors will fall back to clang)
 					lldCmd += " 2>/dev/null";
 
 					if (timing) {

@@ -386,6 +386,7 @@ void qd_build(qd_module* mod) {
 		// Generate LLVM IR
 		Qd::LlvmGenerator generator;
 		generator.setOptimizationLevel(2);
+		generator.setExportMode(true); // Enable export mode for shared library compilation
 
 		// Add all imported modules first (in reverse order for proper dependency ordering)
 		for (auto it = moduleASTs.rbegin(); it != moduleASTs.rend(); ++it) {
