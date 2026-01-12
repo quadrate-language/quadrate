@@ -12,6 +12,14 @@ compile_commands.json
 .tmp*
 .out/
 qd_*/
+.failed_tests
+
+# Python
+__pycache__/
+*.pyc
+
+# macOS
+.DS_Store
 
 # Shared libraries (built artifacts)
 *.so
