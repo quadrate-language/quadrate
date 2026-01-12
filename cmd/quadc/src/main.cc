@@ -30,6 +30,7 @@ struct CachedAst {
 	Qd::IAstNode* root;
 	std::string source;
 };
+
 static std::unordered_map<std::string, CachedAst> g_astCache;
 
 // Get or parse a file, using the cache
@@ -47,26 +48,30 @@ static Qd::IAstNode* getOrParseFile(const std::string& filePath, Qd::Ast** outAs
 	// Check cache for successful parse
 	auto it = g_astCache.find(canonicalPath);
 	if (it != g_astCache.end()) {
-		if (outAst)
+		if (outAst) {
 			*outAst = it->second.ast.get();
-		if (outSource)
+		}
+		if (outSource) {
 			*outSource = it->second.source;
+		}
 		return it->second.root;
 	}
 
 	// Not cached, read and parse
 	std::ifstream file(filePath);
 	if (!file.is_open()) {
-		if (outAst)
+		if (outAst) {
 			*outAst = nullptr;
+		}
 		return nullptr;
 	}
 	file.seekg(0, std::ios::end);
 	auto pos = file.tellg();
 	file.seekg(0);
 	if (pos < 0) {
-		if (outAst)
+		if (outAst) {
 			*outAst = nullptr;
+		}
 		return nullptr;
 	}
 	size_t size = static_cast<size_t>(pos);
@@ -83,10 +88,12 @@ static Qd::IAstNode* getOrParseFile(const std::string& filePath, Qd::Ast** outAs
 		failedParse.ast = std::move(ast);
 		failedParse.root = nullptr;
 		failedParse.source = std::move(buffer);
-		if (outAst)
+		if (outAst) {
 			*outAst = failedParse.ast.get();
-		if (outSource)
+		}
+		if (outSource) {
 			*outSource = failedParse.source;
+		}
 		return nullptr;
 	}
 
@@ -99,10 +106,12 @@ static Qd::IAstNode* getOrParseFile(const std::string& filePath, Qd::Ast** outAs
 	auto& entry = g_astCache[canonicalPath];
 	entry = std::move(cached);
 
-	if (outAst)
+	if (outAst) {
 		*outAst = entry.ast.get();
-	if (outSource)
+	}
+	if (outSource) {
 		*outSource = entry.source;
+	}
 	return entry.root;
 }
 
@@ -456,8 +465,7 @@ int main(int argc, char** argv) {
 				Qd::IAstNode* root = getOrParseFile(moduleFilePath, &ast, &buffer);
 				auto parseEnd = std::chrono::steady_clock::now();
 				if (timing) {
-					auto parseMs =
-							std::chrono::duration_cast<std::chrono::milliseconds>(parseEnd - parseStart).count();
+					auto parseMs = std::chrono::duration_cast<std::chrono::milliseconds>(parseEnd - parseStart).count();
 					std::cerr << "[TIMING] moduleLoop parse " << moduleName << ": " << parseMs << "ms" << std::endl;
 				}
 				if (!root) {

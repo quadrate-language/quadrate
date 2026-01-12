@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <chrono>
 #include <cstdint>
 #include <cstdlib>
 #include <cstring>
@@ -772,9 +773,23 @@ namespace Qd {
 
 	void SemanticValidator::parseModuleAndCollectFunctions(
 			const std::string& moduleName, const std::string& source, const std::string& filePath) {
+		// Timing helper - only active when QUADC_TIMING is set
+		static bool timing = std::getenv("QUADC_TIMING") != nullptr;
+		auto timeLast = std::chrono::steady_clock::now();
+		auto printTiming = [&](const char* label) {
+			if (timing) {
+				auto now = std::chrono::steady_clock::now();
+				auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(now - timeLast).count();
+				std::cerr << "[TIMING]     parseModule/" << label << ": " << ms << "ms (" << moduleName << ")"
+						  << std::endl;
+				timeLast = now;
+			}
+		};
+
 		// Parse the module file to AST - use unique_ptr so we can cache it
 		auto moduleAst = std::make_unique<Ast>();
 		IAstNode* moduleAstRoot = moduleAst->generate(source.c_str(), false, filePath.c_str());
+		printTiming("astGenerate");
 		if (!moduleAstRoot) {
 			// Failed to parse - skip silently
 			return;

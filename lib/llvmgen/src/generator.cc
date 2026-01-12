@@ -1677,6 +1677,18 @@ namespace Qd {
 	}
 
 	bool LlvmGenerator::writeObject(const std::string& filename) {
+		// Timing helper - only active when QUADC_TIMING is set
+		static bool timing = std::getenv("QUADC_TIMING") != nullptr;
+		auto timeLast = std::chrono::steady_clock::now();
+		auto printTiming = [&](const char* label) {
+			if (timing) {
+				auto now = std::chrono::steady_clock::now();
+				auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(now - timeLast).count();
+				std::cerr << "[TIMING]   writeObject/" << label << ": " << ms << "ms" << std::endl;
+				timeLast = now;
+			}
+		};
+
 		if (!mImpl || !mImpl->module) {
 			return false;
 		}
@@ -1687,6 +1699,7 @@ namespace Qd {
 		llvm::InitializeAllTargetMCs();
 		llvm::InitializeAllAsmParsers();
 		llvm::InitializeAllAsmPrinters();
+		printTiming("initTargets");
 
 		// Use custom target triple if set, otherwise use host default
 		std::string targetTripleStr;
@@ -1719,16 +1732,36 @@ namespace Qd {
 		}
 		auto features = "";
 		llvm::TargetOptions opt;
+
+		// Map optimization level to LLVM CodeGenOptLevel
+		// Using None for -O0 significantly speeds up code generation
+		llvm::CodeGenOptLevel codeGenOptLevel;
+		switch (mImpl->optimizationLevel) {
+		case 0:
+			codeGenOptLevel = llvm::CodeGenOptLevel::None;
+			break;
+		case 1:
+			codeGenOptLevel = llvm::CodeGenOptLevel::Less;
+			break;
+		case 2:
+			codeGenOptLevel = llvm::CodeGenOptLevel::Default;
+			break;
+		default:
+			codeGenOptLevel = llvm::CodeGenOptLevel::Aggressive;
+			break;
+		}
+
 // LLVM 20+ changed API to accept Triple objects instead of strings
 #if LLVM_VERSION_MAJOR >= 20
-		std::unique_ptr<llvm::TargetMachine> targetMachine(target->createTargetMachine(
-				targetTriple, cpu, features, opt, std::optional<llvm::Reloc::Model>(llvm::Reloc::PIC_)));
+		std::unique_ptr<llvm::TargetMachine> targetMachine(target->createTargetMachine(targetTriple, cpu, features, opt,
+				std::optional<llvm::Reloc::Model>(llvm::Reloc::PIC_), std::nullopt, codeGenOptLevel));
 #else
-		std::unique_ptr<llvm::TargetMachine> targetMachine(target->createTargetMachine(
-				targetTriple.getTriple(), cpu, features, opt, std::optional<llvm::Reloc::Model>(llvm::Reloc::PIC_)));
+		std::unique_ptr<llvm::TargetMachine> targetMachine(target->createTargetMachine(targetTriple.getTriple(), cpu,
+				features, opt, std::optional<llvm::Reloc::Model>(llvm::Reloc::PIC_), std::nullopt, codeGenOptLevel));
 #endif
 
 		mImpl->module->setDataLayout(targetMachine->createDataLayout());
+		printTiming("createTargetMachine");
 
 		// Run optimization passes if optimization level > 0
 		if (mImpl->optimizationLevel > 0) {
@@ -1788,6 +1821,7 @@ namespace Qd {
 				npm.addPass(llvm::GlobalDCEPass());
 				npm.run(*mImpl->module, mam);
 			}
+			printTiming("optimizationPasses");
 		}
 
 		std::error_code ec;
@@ -1802,8 +1836,11 @@ namespace Qd {
 			std::cerr << "TargetMachine can't emit a file of this type" << std::endl;
 			return false;
 		}
+		printTiming("setupCodeGen");
 
 		pass.run(*mImpl->module);
+		printTiming("codeGen");
+
 		dest.flush();
 
 		return true;
@@ -2087,9 +2124,8 @@ namespace Qd {
 				}
 
 				// Find GCC CRT files (crtbegin.o, crtend.o) - try common GCC paths
-				for (const auto& path : {"/usr/lib64/gcc/x86_64-pc-linux-gnu",
-										 "/usr/lib/gcc/x86_64-pc-linux-gnu",
-										 "/usr/lib/gcc/x86_64-linux-gnu"}) {
+				for (const auto& path : {"/usr/lib64/gcc/x86_64-pc-linux-gnu", "/usr/lib/gcc/x86_64-pc-linux-gnu",
+							 "/usr/lib/gcc/x86_64-linux-gnu"}) {
 					if (std::filesystem::exists(path)) {
 						// Find the latest GCC version directory
 						for (const auto& entry : std::filesystem::directory_iterator(path)) {
@@ -2101,8 +2137,9 @@ namespace Qd {
 								}
 							}
 						}
-						if (!gccCrtDir.empty())
+						if (!gccCrtDir.empty()) {
 							break;
+						}
 					}
 				}
 
@@ -2124,8 +2161,9 @@ namespace Qd {
 					for (const auto& lib : mImpl->importedLibraries) {
 						if (lib.size() >= 3 && lib.substr(lib.size() - 3) == ".so") {
 							std::string libName = lib;
-							if (libName.rfind("lib", 0) == 0)
+							if (libName.rfind("lib", 0) == 0) {
 								libName = libName.substr(3);
+							}
 							libName = libName.substr(0, libName.size() - 3);
 							lldCmd += " -l" + libName;
 						}

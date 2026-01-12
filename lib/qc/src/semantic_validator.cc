@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <chrono>
 #include <cstdint>
 #include <cstdlib>
 #include <cstring>
@@ -394,6 +395,18 @@ namespace Qd {
 	}
 
 	size_t SemanticValidator::validate(IAstNode* program, const char* filename, bool isModuleFile, bool werror) {
+		// Timing helper - only active when QUADC_TIMING is set
+		static bool timing = std::getenv("QUADC_TIMING") != nullptr;
+		auto timeLast = std::chrono::steady_clock::now();
+		auto printTiming = [&](const char* label) {
+			if (timing) {
+				auto now = std::chrono::steady_clock::now();
+				auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(now - timeLast).count();
+				std::cerr << "[TIMING]   semantic/" << label << ": " << ms << "ms" << std::endl;
+				timeLast = now;
+			}
+		};
+
 		mErrorCount = 0;
 		mWarningCount = 0;
 		mWerror = werror;
@@ -437,9 +450,11 @@ namespace Qd {
 
 		// Pass 1: Collect all function definitions
 		collectDefinitions(program);
+		printTiming("collectDefinitions");
 
 		// Pass 2: Validate all references
 		validateReferences(program);
+		printTiming("validateReferences");
 
 		// Pass 3a: Analyze function signatures (stack effects)
 		// Use iterative analysis until signatures converge (fixed point)
@@ -484,9 +499,11 @@ namespace Qd {
 					  << "Function signature analysis did not converge after " << MAX_SIGNATURE_ANALYSIS_ITERATIONS
 					  << " iterations. Type checking may be incomplete." << std::endl;
 		}
+		printTiming("analyzeFunctionSignatures");
 
 		// Pass 3b: Type check using function signatures
 		typeCheckFunction(program);
+		printTiming("typeCheck");
 
 		return mErrorCount;
 	}
