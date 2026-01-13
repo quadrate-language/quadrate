@@ -1,3 +1,4 @@
+#include "ast_cache.h"
 #include "module_resolver.h"
 #include "options.h"
 #include "parsed_module.h"
@@ -6,13 +7,11 @@
 #include <cstring>
 #include <filesystem>
 #include <fstream>
-#include <functional>
 #include <iostream>
 #include <llvmgen/generator.h>
 #include <qc/ast.h>
 #include <qc/ast_node.h>
 #include <qc/ast_node_function.h>
-#include <qc/ast_node_use.h>
 #include <qc/ast_printer.h>
 #include <qc/colors.h>
 #include <qc/semantic_validator.h>
@@ -22,107 +21,6 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
-
-// Global AST cache to avoid re-parsing module files
-// Key: canonical file path, Value: { unique_ptr<Ast>, root node, source string }
-struct CachedAst {
-	std::unique_ptr<Qd::Ast> ast;
-	Qd::IAstNode* root;
-	std::string source;
-};
-
-static std::unordered_map<std::string, CachedAst> g_astCache;
-
-// Get or parse a file, using the cache
-// Returns root node on success (cached or freshly parsed), nullptr on failure
-// On failure, outAst will point to the Ast object so caller can retrieve parse errors
-// outFromCache is set to true if the AST came from the cache (already validated)
-static Qd::IAstNode* getOrParseFile(
-		const std::string& filePath, Qd::Ast** outAst, std::string* outSource, bool* outFromCache = nullptr) {
-	// Get canonical path for cache key
-	std::string canonicalPath;
-	try {
-		canonicalPath = std::filesystem::canonical(filePath).string();
-	} catch (...) {
-		canonicalPath = filePath;
-	}
-
-	// Check cache for successful parse
-	auto it = g_astCache.find(canonicalPath);
-	if (it != g_astCache.end()) {
-		if (outAst) {
-			*outAst = it->second.ast.get();
-		}
-		if (outSource) {
-			*outSource = it->second.source;
-		}
-		if (outFromCache) {
-			*outFromCache = true;
-		}
-		return it->second.root;
-	}
-
-	if (outFromCache) {
-		*outFromCache = false;
-	}
-
-	// Not cached, read and parse
-	std::ifstream file(filePath);
-	if (!file.is_open()) {
-		if (outAst) {
-			*outAst = nullptr;
-		}
-		return nullptr;
-	}
-	file.seekg(0, std::ios::end);
-	auto pos = file.tellg();
-	file.seekg(0);
-	if (pos < 0) {
-		if (outAst) {
-			*outAst = nullptr;
-		}
-		return nullptr;
-	}
-	size_t size = static_cast<size_t>(pos);
-	std::string buffer(size, ' ');
-	file.read(&buffer[0], static_cast<std::streamsize>(size));
-
-	auto ast = std::make_unique<Qd::Ast>();
-	auto root = ast->generate(buffer.c_str(), false, filePath.c_str());
-
-	// Don't cache failed parses, but store so we can report errors
-	if (!root || ast->hasErrors()) {
-		// Store temporarily so caller can get errors, but don't add to cache
-		static CachedAst failedParse;
-		failedParse.ast = std::move(ast);
-		failedParse.root = nullptr;
-		failedParse.source = std::move(buffer);
-		if (outAst) {
-			*outAst = failedParse.ast.get();
-		}
-		if (outSource) {
-			*outSource = failedParse.source;
-		}
-		return nullptr;
-	}
-
-	// Store successful parse in cache
-	CachedAst cached;
-	cached.ast = std::move(ast);
-	cached.root = root;
-	cached.source = std::move(buffer);
-
-	auto& entry = g_astCache[canonicalPath];
-	entry = std::move(cached);
-
-	if (outAst) {
-		*outAst = entry.ast.get();
-	}
-	if (outSource) {
-		*outSource = entry.source;
-	}
-	return entry.root;
-}
 
 int main(int argc, char** argv) {
 	// Timing helper - only active when QUADC_TIMING is set
@@ -264,22 +162,7 @@ int main(int argc, char** argv) {
 			module.sourceDirectory = ".";
 			module.root = root;
 			module.ast = std::move(ast);
-
-			// Collect imported modules
-			std::function<void(Qd::IAstNode*)> collectImports = [&](Qd::IAstNode* node) {
-				if (!node) {
-					return;
-				}
-				// Check for USE statement nodes (type == USE_STATEMENT)
-				if (node->type() == Qd::IAstNode::Type::USE_STATEMENT) {
-					auto* useNode = static_cast<Qd::AstNodeUse*>(node);
-					module.importedModules.push_back(useNode->module());
-				}
-				for (size_t i = 0; i < node->childCount(); i++) {
-					collectImports(node->child(i));
-				}
-			};
-			collectImports(root);
+			module.importedModules = collectImportedModules(root);
 
 			parsedModules.push_back(std::move(module));
 		}
@@ -344,23 +227,7 @@ int main(int argc, char** argv) {
 			}
 
 			// Copy cached ASTs from validator to global cache for reuse in module loop
-			for (auto& [path, cached] : validator.getParsedModuleAsts()) {
-				// Canonicalize the path to match how getOrParseFile looks up
-				std::string canonicalPath;
-				try {
-					canonicalPath = std::filesystem::canonical(path).string();
-				} catch (...) {
-					canonicalPath = path;
-				}
-				// Only copy if not already in global cache
-				if (g_astCache.find(canonicalPath) == g_astCache.end()) {
-					CachedAst entry;
-					entry.ast = std::move(cached.ast);
-					entry.root = cached.root;
-					entry.source = std::move(cached.source);
-					g_astCache[canonicalPath] = std::move(entry);
-				}
-			}
+			AstCache::instance().importFromValidator(validator);
 
 			// Get source directory for module resolution
 			std::filesystem::path filePath(file);
@@ -375,22 +242,7 @@ int main(int argc, char** argv) {
 			module.sourceDirectory = sourceDirectory;
 			module.root = root;
 			module.ast = std::move(ast);
-
-			// Collect imported modules
-			std::function<void(Qd::IAstNode*)> collectImports = [&](Qd::IAstNode* node) {
-				if (!node) {
-					return;
-				}
-				// Check for USE statement nodes (type == USE_STATEMENT)
-				if (node->type() == Qd::IAstNode::Type::USE_STATEMENT) {
-					auto* useNode = static_cast<Qd::AstNodeUse*>(node);
-					module.importedModules.push_back(useNode->module());
-				}
-				for (size_t i = 0; i < node->childCount(); i++) {
-					collectImports(node->child(i));
-				}
-			};
-			collectImports(root);
+			module.importedModules = collectImportedModules(root);
 
 			parsedModules.push_back(std::move(module));
 		}
@@ -472,7 +324,7 @@ int main(int argc, char** argv) {
 				bool fromCache = false;
 
 				auto parseStart = std::chrono::steady_clock::now();
-				Qd::IAstNode* root = getOrParseFile(moduleFilePath, &ast, &buffer, &fromCache);
+				Qd::IAstNode* root = AstCache::instance().getOrParse(moduleFilePath, &ast, &buffer, &fromCache);
 				auto parseEnd = std::chrono::steady_clock::now();
 				if (timing) {
 					auto parseMs = std::chrono::duration_cast<std::chrono::milliseconds>(parseEnd - parseStart).count();
@@ -566,21 +418,7 @@ int main(int argc, char** argv) {
 				parsedMod.packageDirectory = packageDir;
 				parsedMod.root = root;
 				// Note: parsedMod.ast is nullptr - AST ownership is held by the global cache
-
-				// Collect imports from this module
-				std::function<void(Qd::IAstNode*)> collectImports = [&](Qd::IAstNode* node) {
-					if (!node) {
-						return;
-					}
-					if (node->type() == Qd::IAstNode::Type::USE_STATEMENT) {
-						auto* useNode = static_cast<Qd::AstNodeUse*>(node);
-						parsedMod.importedModules.push_back(useNode->module());
-					}
-					for (size_t i = 0; i < node->childCount(); i++) {
-						collectImports(node->child(i));
-					}
-				};
-				collectImports(root);
+				parsedMod.importedModules = collectImportedModules(root);
 
 				// Add any modules imported by this module to the set
 				for (const auto& transitiveModule : parsedMod.importedModules) {
@@ -693,8 +531,7 @@ int main(int argc, char** argv) {
 		// Check if main function exists in main module (unless in test mode)
 		if (!opts.testMode) {
 			bool hasMainFunction = false;
-			for (size_t i = 0; i < mainRoot->childCount(); i++) {
-				Qd::IAstNode* child = mainRoot->child(i);
+			for (auto* child : mainRoot->children()) {
 				if (child && child->type() == Qd::IAstNode::Type::FUNCTION_DECLARATION) {
 					auto* funcDecl = static_cast<Qd::AstNodeFunctionDeclaration*>(child);
 					if (funcDecl->name() == "main") {
@@ -716,8 +553,7 @@ int main(int argc, char** argv) {
 		} else {
 			// In test mode, check if there are any tests
 			bool hasTests = false;
-			for (size_t i = 0; i < mainRoot->childCount(); i++) {
-				Qd::IAstNode* child = mainRoot->child(i);
+			for (auto* child : mainRoot->children()) {
 				if (child && child->type() == Qd::IAstNode::Type::TEST_DECLARATION) {
 					hasTests = true;
 					break;

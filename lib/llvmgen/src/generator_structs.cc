@@ -944,12 +944,12 @@ namespace Qd {
 		for (auto it = currentScope.rbegin(); it != currentScope.rend(); ++it) {
 			AstNodeDefer* deferNode = *it;
 			// Generate defer body
-			for (size_t i = 0; i < deferNode->childCount(); i++) {
-				IAstNode* child = deferNode->child(i);
+			for (auto* child : deferNode->children()) {
+				
 				// If the child is a block, generate its children directly
 				if (child && child->type() == IAstNode::Type::BLOCK) {
-					for (size_t j = 0; j < child->childCount(); j++) {
-						generateNode(child->child(j), ctx);
+					for (auto* innerChild : child->children()) {
+						generateNode(innerChild, ctx);
 					}
 				} else {
 					generateNode(child, ctx);
@@ -980,8 +980,8 @@ namespace Qd {
 		}
 
 		// Recursively search children
-		for (size_t i = 0; i < node->childCount(); i++) {
-			std::string childResult = findLastStructConstruction(node->child(i));
+		for (auto* child : node->children()) {
+			std::string childResult = findLastStructConstruction(child);
 			if (!childResult.empty()) {
 				result = childResult; // Keep the last one found
 			}

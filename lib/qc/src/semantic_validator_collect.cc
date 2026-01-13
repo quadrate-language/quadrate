@@ -208,8 +208,7 @@ namespace Qd {
 			// Collect field types
 			std::unordered_map<std::string, StackValueType> fieldTypes;
 			std::unordered_set<std::string> seenFieldNames;
-			for (size_t i = 0; i < structDecl->childCount(); i++) {
-				IAstNode* child = structDecl->child(i);
+			for (auto* child : structDecl->children()) {
 				if (child && child->type() == IAstNode::Type::STRUCT_FIELD) {
 					AstNodeStructField* field = static_cast<AstNodeStructField*>(child);
 
@@ -363,8 +362,8 @@ namespace Qd {
 		}
 
 		// Recursively process children
-		for (size_t i = 0; i < node->childCount(); i++) {
-			collectDefinitions(node->child(i));
+		for (auto* child : node->children()) {
+			collectDefinitions(child);
 		}
 	}
 
@@ -414,8 +413,7 @@ namespace Qd {
 		// Validate struct field types (check that qualified types reference valid modules/structs)
 		if (node->type() == IAstNode::Type::STRUCT_DECLARATION) {
 			AstNodeStructDeclaration* structDecl = static_cast<AstNodeStructDeclaration*>(node);
-			for (size_t i = 0; i < structDecl->childCount(); i++) {
-				IAstNode* child = structDecl->child(i);
+			for (auto* child : structDecl->children()) {
 				if (child && child->type() == IAstNode::Type::STRUCT_FIELD) {
 					AstNodeStructField* field = static_cast<AstNodeStructField*>(child);
 					const std::string& typeName = field->typeName();
@@ -788,8 +786,8 @@ namespace Qd {
 			std::unordered_set<std::string> childIterators = iteratorNames;
 			childIterators.insert(forStmt->iteratorName());
 			std::unordered_set<std::string> forLocals = localVariables; // New scope for the for body
-			for (size_t i = 0; i < node->childCount(); i++) {
-				validateReferencesInternal(node->child(i), forLocals, childIterators);
+			for (auto* child : node->children()) {
+				validateReferencesInternal(child, forLocals, childIterators);
 			}
 			return;
 		}
@@ -801,8 +799,8 @@ namespace Qd {
 			std::unordered_set<std::string> childIterators = iteratorNames;
 			childIterators.insert("__loop__"); // Placeholder to indicate we're inside a loop/switch
 			std::unordered_set<std::string> loopLocals = localVariables; // New scope for the loop body
-			for (size_t i = 0; i < node->childCount(); i++) {
-				validateReferencesInternal(node->child(i), loopLocals, childIterators);
+			for (auto* child : node->children()) {
+				validateReferencesInternal(child, loopLocals, childIterators);
 			}
 			return;
 		}
@@ -821,8 +819,8 @@ namespace Qd {
 			}
 
 			// Process function body
-			for (size_t i = 0; i < node->childCount(); i++) {
-				validateReferencesInternal(node->child(i), funcLocalVariables, funcIterators);
+			for (auto* child : node->children()) {
+				validateReferencesInternal(child, funcLocalVariables, funcIterators);
 			}
 			return;
 		}
@@ -847,8 +845,8 @@ namespace Qd {
 		if (node->type() == IAstNode::Type::BLOCK) {
 			// Create a new scope for the block body
 			std::unordered_set<std::string> blockLocals = localVariables;
-			for (size_t i = 0; i < node->childCount(); i++) {
-				validateReferencesInternal(node->child(i), blockLocals, iteratorNames);
+			for (auto* child : node->children()) {
+				validateReferencesInternal(child, blockLocals, iteratorNames);
 			}
 			return;
 		}
@@ -881,8 +879,8 @@ namespace Qd {
 		}
 
 		// Recursively process children
-		for (size_t i = 0; i < node->childCount(); i++) {
-			validateReferencesInternal(node->child(i), localVariables, iteratorNames);
+		for (auto* child : node->children()) {
+			validateReferencesInternal(child, localVariables, iteratorNames);
 		}
 	}
 
@@ -1009,8 +1007,8 @@ namespace Qd {
 			std::unordered_set<std::string> childIterators = iteratorNames;
 			childIterators.insert(forStmt->iteratorName());
 			std::unordered_set<std::string> forLocals = localVariables;
-			for (size_t i = 0; i < node->childCount(); i++) {
-				collectCapturedVariables(node->child(i), forLocals, childIterators, outerScopeVariables, anonFunc);
+			for (auto* child : node->children()) {
+				collectCapturedVariables(child, forLocals, childIterators, outerScopeVariables, anonFunc);
 			}
 			return;
 		}
@@ -1019,8 +1017,8 @@ namespace Qd {
 		if (node->type() == IAstNode::Type::WHILE_STATEMENT || node->type() == IAstNode::Type::LOOP_STATEMENT ||
 				node->type() == IAstNode::Type::SWITCH_STATEMENT) {
 			std::unordered_set<std::string> loopLocals = localVariables;
-			for (size_t i = 0; i < node->childCount(); i++) {
-				collectCapturedVariables(node->child(i), loopLocals, iteratorNames, outerScopeVariables, anonFunc);
+			for (auto* child : node->children()) {
+				collectCapturedVariables(child, loopLocals, iteratorNames, outerScopeVariables, anonFunc);
 			}
 			return;
 		}
@@ -1042,8 +1040,8 @@ namespace Qd {
 		// Handle blocks - create new scope
 		if (node->type() == IAstNode::Type::BLOCK) {
 			std::unordered_set<std::string> blockLocals = localVariables;
-			for (size_t i = 0; i < node->childCount(); i++) {
-				collectCapturedVariables(node->child(i), blockLocals, iteratorNames, outerScopeVariables, anonFunc);
+			for (auto* child : node->children()) {
+				collectCapturedVariables(child, blockLocals, iteratorNames, outerScopeVariables, anonFunc);
 			}
 			return;
 		}
@@ -1064,8 +1062,8 @@ namespace Qd {
 		}
 
 		// Recursively process children
-		for (size_t i = 0; i < node->childCount(); i++) {
-			collectCapturedVariables(node->child(i), localVariables, iteratorNames, outerScopeVariables, anonFunc);
+		for (auto* child : node->children()) {
+			collectCapturedVariables(child, localVariables, iteratorNames, outerScopeVariables, anonFunc);
 		}
 	}
 
@@ -1219,8 +1217,8 @@ namespace Qd {
 		}
 
 		// Recursively process children
-		for (size_t i = 0; i < node->childCount(); i++) {
-			analyzeFunctionSignatures(node->child(i));
+		for (auto* child : node->children()) {
+			analyzeFunctionSignatures(child);
 		}
 	}
 
@@ -1297,8 +1295,8 @@ namespace Qd {
 			}
 
 			// Recursively process children
-			for (size_t i = 0; i < n->childCount(); i++) {
-				collectRecursive(n->child(i));
+			for (auto* child : n->children()) {
+				collectRecursive(child);
 			}
 		};
 

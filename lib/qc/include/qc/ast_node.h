@@ -2,8 +2,54 @@
 #define QD_QC_AST_NODE_H
 
 #include <cstddef>
+#include <iterator>
 
 namespace Qd {
+	class IAstNode;
+
+	// Iterator for traversing AST node children
+	class AstChildIterator {
+	public:
+		using iterator_category = std::forward_iterator_tag;
+		using value_type = IAstNode*;
+		using difference_type = std::ptrdiff_t;
+		using pointer = IAstNode**;
+		using reference = IAstNode*;
+
+		AstChildIterator(const IAstNode* node, size_t index) : mNode(node), mIndex(index) {}
+
+		inline IAstNode* operator*() const;
+		AstChildIterator& operator++() {
+			++mIndex;
+			return *this;
+		}
+		AstChildIterator operator++(int) {
+			auto tmp = *this;
+			++mIndex;
+			return tmp;
+		}
+		bool operator==(const AstChildIterator& other) const { return mIndex == other.mIndex; }
+		bool operator!=(const AstChildIterator& other) const { return mIndex != other.mIndex; }
+
+	private:
+		const IAstNode* mNode;
+		size_t mIndex;
+	};
+
+	// Range for iterating over AST node children with range-based for
+	class AstChildRange {
+	public:
+		explicit AstChildRange(const IAstNode* node) : mNode(node) {}
+
+		inline AstChildIterator begin() const;
+		inline AstChildIterator end() const;
+		inline size_t size() const;
+		inline bool empty() const;
+
+	private:
+		const IAstNode* mNode;
+	};
+
 	class IAstNode {
 	public:
 		enum class Type {
@@ -59,7 +105,17 @@ namespace Qd {
 		virtual size_t line() const = 0;
 		virtual size_t column() const = 0;
 		virtual void setPosition(size_t line, size_t column) = 0;
+
+		// Returns a range for iterating over children with range-based for
+		AstChildRange children() const { return AstChildRange(this); }
 	};
+
+	// Inline implementations (must be after IAstNode is fully defined)
+	inline IAstNode* AstChildIterator::operator*() const { return mNode->child(mIndex); }
+	inline AstChildIterator AstChildRange::begin() const { return AstChildIterator(mNode, 0); }
+	inline AstChildIterator AstChildRange::end() const { return AstChildIterator(mNode, mNode->childCount()); }
+	inline size_t AstChildRange::size() const { return mNode->childCount(); }
+	inline bool AstChildRange::empty() const { return mNode->childCount() == 0; }
 }
 
 #endif

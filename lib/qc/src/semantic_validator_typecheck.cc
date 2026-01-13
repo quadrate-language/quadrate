@@ -57,7 +57,7 @@ namespace Qd {
 		// Start with any initial local variables (e.g., function parameters)
 		std::unordered_map<std::string, StackValueType> localVarTypes = initialLocalVars;
 
-		// Process each child in the block
+		// Process each child in the block (using index-based loop for peek-ahead access)
 		for (size_t i = 0; i < node->childCount(); i++) {
 			IAstNode* child = node->child(i);
 			if (!child) {
@@ -388,8 +388,8 @@ namespace Qd {
 		}
 
 		// Recursively process children
-		for (size_t i = 0; i < node->childCount(); i++) {
-			typeCheckFunction(node->child(i));
+		for (auto* child : node->children()) {
+			typeCheckFunction(child);
 		}
 	}
 
@@ -406,7 +406,7 @@ namespace Qd {
 			return;
 		}
 
-		// Process each child in the block
+		// Process each child in the block (using index-based loop for peek-ahead access)
 		for (size_t i = 0; i < node->childCount(); i++) {
 			IAstNode* child = node->child(i);
 			if (!child) {
@@ -652,8 +652,7 @@ namespace Qd {
 				size_t stackSizeBefore = typeStack.size();
 
 				// Type check the defer body
-				for (size_t j = 0; j < child->childCount(); j++) {
-					IAstNode* deferChild = child->child(j);
+				for (auto* deferChild : child->children()) {
 					if (deferChild && deferChild->type() == IAstNode::Type::BLOCK) {
 						typeCheckBlock(deferChild, typeStack, localVariables, structTypeStack);
 					}

@@ -259,11 +259,11 @@ namespace Qd {
 			for (auto it = currentScope.rbegin(); it != currentScope.rend(); ++it) {
 				AstNodeDefer* deferNode = *it;
 				// Generate defer body inline
-				for (size_t i = 0; i < deferNode->childCount(); i++) {
-					IAstNode* child = deferNode->child(i);
+				for (auto* child : deferNode->children()) {
+					
 					if (child && child->type() == IAstNode::Type::BLOCK) {
-						for (size_t j = 0; j < child->childCount(); j++) {
-							generateNode(child->child(j), ctx);
+						for (auto* innerChild : child->children()) {
+							generateNode(innerChild, ctx);
 						}
 					} else {
 						generateNode(child, ctx);
@@ -399,11 +399,11 @@ namespace Qd {
 			auto& currentScope = deferScopeStack.back();
 			for (auto it = currentScope.rbegin(); it != currentScope.rend(); ++it) {
 				AstNodeDefer* deferNode = *it;
-				for (size_t i = 0; i < deferNode->childCount(); i++) {
-					IAstNode* child = deferNode->child(i);
+				for (auto* child : deferNode->children()) {
+					
 					if (child && child->type() == IAstNode::Type::BLOCK) {
-						for (size_t j = 0; j < child->childCount(); j++) {
-							generateNode(child->child(j), ctx);
+						for (auto* innerChild : child->children()) {
+							generateNode(innerChild, ctx);
 						}
 					} else {
 						generateNode(child, ctx);
@@ -461,11 +461,11 @@ namespace Qd {
 			auto& currentScope = deferScopeStack.back();
 			for (auto it = currentScope.rbegin(); it != currentScope.rend(); ++it) {
 				AstNodeDefer* deferNode = *it;
-				for (size_t i = 0; i < deferNode->childCount(); i++) {
-					IAstNode* child = deferNode->child(i);
+				for (auto* child : deferNode->children()) {
+					
 					if (child && child->type() == IAstNode::Type::BLOCK) {
-						for (size_t j = 0; j < child->childCount(); j++) {
-							generateNode(child->child(j), ctx);
+						for (auto* innerChild : child->children()) {
+							generateNode(innerChild, ctx);
 						}
 					} else {
 						generateNode(child, ctx);
@@ -499,8 +499,8 @@ namespace Qd {
 		auto clonedCtx = builder->CreateCall(cloneContextFn, {ctx}, "cloned_ctx");
 
 		// Execute the block with the cloned context
-		for (size_t i = 0; i < ctxNode->childCount(); i++) {
-			generateNode(ctxNode->child(i), clonedCtx);
+		for (auto* child : ctxNode->children()) {
+			generateNode(child, clonedCtx);
 		}
 
 		// Get the stack from cloned context
@@ -642,11 +642,11 @@ namespace Qd {
 					auto& currentScope = deferScopeStack.back();
 					for (auto it = currentScope.rbegin(); it != currentScope.rend(); ++it) {
 						AstNodeDefer* deferNode = *it;
-						for (size_t i = 0; i < deferNode->childCount(); i++) {
-							IAstNode* child = deferNode->child(i);
+						for (auto* child : deferNode->children()) {
+							
 							if (child && child->type() == IAstNode::Type::BLOCK) {
-								for (size_t j = 0; j < child->childCount(); j++) {
-									generateNode(child->child(j), ctx);
+								for (auto* innerChild : child->children()) {
+									generateNode(innerChild, ctx);
 								}
 							} else {
 								generateNode(child, ctx);
@@ -665,11 +665,11 @@ namespace Qd {
 					auto& currentScope = deferScopeStack.back();
 					for (auto it = currentScope.rbegin(); it != currentScope.rend(); ++it) {
 						AstNodeDefer* deferNode = *it;
-						for (size_t i = 0; i < deferNode->childCount(); i++) {
-							IAstNode* child = deferNode->child(i);
+						for (auto* child : deferNode->children()) {
+							
 							if (child && child->type() == IAstNode::Type::BLOCK) {
-								for (size_t j = 0; j < child->childCount(); j++) {
-									generateNode(child->child(j), ctx);
+								for (auto* innerChild : child->children()) {
+									generateNode(innerChild, ctx);
 								}
 							} else {
 								generateNode(child, ctx);
@@ -708,8 +708,8 @@ namespace Qd {
 			break;
 		case IAstNode::Type::BLOCK:
 			// For blocks, just recursively generate all children
-			for (size_t i = 0; i < node->childCount(); i++) {
-				generateNode(node->child(i), ctx);
+			for (auto* child : node->children()) {
+				generateNode(child, ctx);
 				// Stop if we've added a terminator (return, break, continue)
 				llvm::BasicBlock* currentBlock = builder->GetInsertBlock();
 				if (currentBlock) {

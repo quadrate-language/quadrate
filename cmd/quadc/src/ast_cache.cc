@@ -1,0 +1,138 @@
+#include "ast_cache.h"
+#include <filesystem>
+#include <fstream>
+#include <functional>
+#include <qc/ast_node_use.h>
+
+AstCache& AstCache::instance() {
+	static AstCache cache;
+	return cache;
+}
+
+std::string AstCache::canonicalize(const std::string& filePath) const {
+	try {
+		return std::filesystem::canonical(filePath).string();
+	} catch (...) {
+		return filePath;
+	}
+}
+
+Qd::IAstNode* AstCache::getOrParse(
+		const std::string& filePath, Qd::Ast** outAst, std::string* outSource, bool* outFromCache) {
+	std::string canonicalPath = canonicalize(filePath);
+
+	// Check cache for successful parse
+	auto it = mCache.find(canonicalPath);
+	if (it != mCache.end()) {
+		if (outAst) {
+			*outAst = it->second.ast.get();
+		}
+		if (outSource) {
+			*outSource = it->second.source;
+		}
+		if (outFromCache) {
+			*outFromCache = true;
+		}
+		return it->second.root;
+	}
+
+	if (outFromCache) {
+		*outFromCache = false;
+	}
+
+	// Not cached, read and parse
+	std::ifstream file(filePath);
+	if (!file.is_open()) {
+		if (outAst) {
+			*outAst = nullptr;
+		}
+		return nullptr;
+	}
+	file.seekg(0, std::ios::end);
+	auto pos = file.tellg();
+	file.seekg(0);
+	if (pos < 0) {
+		if (outAst) {
+			*outAst = nullptr;
+		}
+		return nullptr;
+	}
+	size_t size = static_cast<size_t>(pos);
+	std::string buffer(size, ' ');
+	file.read(&buffer[0], static_cast<std::streamsize>(size));
+
+	auto ast = std::make_unique<Qd::Ast>();
+	auto root = ast->generate(buffer.c_str(), false, filePath.c_str());
+
+	// Don't cache failed parses, but store so we can report errors
+	if (!root || ast->hasErrors()) {
+		mFailedParse.ast = std::move(ast);
+		mFailedParse.root = nullptr;
+		mFailedParse.source = std::move(buffer);
+		if (outAst) {
+			*outAst = mFailedParse.ast.get();
+		}
+		if (outSource) {
+			*outSource = mFailedParse.source;
+		}
+		return nullptr;
+	}
+
+	// Store successful parse in cache
+	CachedAst cached;
+	cached.ast = std::move(ast);
+	cached.root = root;
+	cached.source = std::move(buffer);
+
+	auto& entry = mCache[canonicalPath];
+	entry = std::move(cached);
+
+	if (outAst) {
+		*outAst = entry.ast.get();
+	}
+	if (outSource) {
+		*outSource = entry.source;
+	}
+	return entry.root;
+}
+
+void AstCache::importFromValidator(Qd::SemanticValidator& validator) {
+	for (auto& [path, cached] : validator.getParsedModuleAsts()) {
+		std::string canonicalPath = canonicalize(path);
+
+		// Only import if not already cached
+		if (mCache.find(canonicalPath) == mCache.end()) {
+			CachedAst entry;
+			entry.ast = std::move(cached.ast);
+			entry.root = cached.root;
+			entry.source = std::move(cached.source);
+			mCache[canonicalPath] = std::move(entry);
+		}
+	}
+}
+
+bool AstCache::contains(const std::string& filePath) const {
+	return mCache.find(canonicalize(filePath)) != mCache.end();
+}
+
+void AstCache::clear() {
+	mCache.clear();
+}
+
+std::vector<std::string> collectImportedModules(Qd::IAstNode* root) {
+	std::vector<std::string> imports;
+	std::function<void(Qd::IAstNode*)> collect = [&](Qd::IAstNode* node) {
+		if (!node) {
+			return;
+		}
+		if (node->type() == Qd::IAstNode::Type::USE_STATEMENT) {
+			auto* useNode = static_cast<Qd::AstNodeUse*>(node);
+			imports.push_back(useNode->module());
+		}
+		for (auto* child : node->children()) {
+			collect(child);
+		}
+	};
+	collect(root);
+	return imports;
+}

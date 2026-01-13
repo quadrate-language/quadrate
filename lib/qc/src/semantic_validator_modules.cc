@@ -809,8 +809,7 @@ namespace Qd {
 
 		// Process USE statements in the module first (to load .qd file imports)
 		// We need to recursively collect definitions, including from imported .qd files
-		for (size_t i = 0; i < moduleAstRoot->childCount(); i++) {
-			IAstNode* child = moduleAstRoot->child(i);
+		for (auto* child : moduleAstRoot->children()) {
 			if (child && child->type() == IAstNode::Type::USE_STATEMENT) {
 				AstNodeUse* use = static_cast<AstNodeUse*>(child);
 				// Recursively load this module/file with the current module as context
@@ -914,8 +913,8 @@ namespace Qd {
 		}
 
 		// Recursively process children
-		for (size_t i = 0; i < node->childCount(); i++) {
-			collectModuleFunctions(node->child(i), functions);
+		for (auto* child : node->children()) {
+			collectModuleFunctions(child, functions);
 		}
 	}
 
@@ -931,8 +930,8 @@ namespace Qd {
 		}
 
 		// Recursively process children
-		for (size_t i = 0; i < node->childCount(); i++) {
-			collectModuleConstants(node->child(i), constants);
+		for (auto* child : node->children()) {
+			collectModuleConstants(child, constants);
 		}
 	}
 
@@ -948,8 +947,8 @@ namespace Qd {
 		}
 
 		// Recursively process children
-		for (size_t i = 0; i < node->childCount(); i++) {
-			collectModuleStructs(node->child(i), structs);
+		for (auto* child : node->children()) {
+			collectModuleStructs(child, structs);
 		}
 	}
 
@@ -983,8 +982,8 @@ namespace Qd {
 		}
 
 		// Recursively process children
-		for (size_t i = 0; i < node->childCount(); i++) {
-			collectModuleMethods(node->child(i), moduleName);
+		for (auto* child : node->children()) {
+			collectModuleMethods(child, moduleName);
 		}
 	}
 
@@ -1041,8 +1040,8 @@ namespace Qd {
 		}
 
 		// Recursively process children
-		for (size_t i = 0; i < node->childCount(); i++) {
-			collectModuleStructFieldTypes(node->child(i), moduleName);
+		for (auto* child : node->children()) {
+			collectModuleStructFieldTypes(child, moduleName);
 		}
 	}
 
@@ -1071,8 +1070,8 @@ namespace Qd {
 		}
 
 		// Recursively process children
-		for (size_t i = 0; i < node->childCount(); i++) {
-			collectModuleImportedFunctions(node->child(i), moduleName, imports);
+		for (auto* child : node->children()) {
+			collectModuleImportedFunctions(child, moduleName, imports);
 		}
 	}
 
@@ -1089,8 +1088,8 @@ namespace Qd {
 		}
 
 		// Recursively process children
-		for (size_t i = 0; i < node->childCount(); i++) {
-			collectModuleConstantValues(node->child(i), moduleName);
+		for (auto* child : node->children()) {
+			collectModuleConstantValues(child, moduleName);
 		}
 	}
 
@@ -1338,8 +1337,8 @@ namespace Qd {
 		}
 
 		// Recursively process children
-		for (size_t i = 0; i < node->childCount(); i++) {
-			analyzeModuleFunctionSignatures(node->child(i), moduleName);
+		for (auto* child : node->children()) {
+			analyzeModuleFunctionSignatures(child, moduleName);
 		}
 	}
 

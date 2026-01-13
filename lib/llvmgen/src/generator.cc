@@ -359,8 +359,8 @@ namespace Qd {
 		}
 
 		// Recursively process children
-		for (size_t i = 0; i < node->childCount(); i++) {
-			collectCalledFunctions(node->child(i), currentModule, calledFunctions);
+		for (auto* child : node->children()) {
+			collectCalledFunctions(child, currentModule, calledFunctions);
 		}
 	}
 
@@ -370,8 +370,7 @@ namespace Qd {
 		std::set<std::string> worklist;
 
 		// Collect direct calls from main file
-		for (size_t i = 0; i < mainRoot->childCount(); i++) {
-			auto child = mainRoot->child(i);
+		for (auto* child : mainRoot->children()) {
 			if (auto funcNode = dynamic_cast<AstNodeFunctionDeclaration*>(child)) {
 				// Mark main file functions as reachable
 				std::string funcName = funcNode->name();
@@ -409,8 +408,7 @@ namespace Qd {
 						continue;
 					}
 
-					for (size_t i = 0; i < moduleRoot->childCount(); i++) {
-						auto child = moduleRoot->child(i);
+					for (auto* child : moduleRoot->children()) {
 						if (auto funcNode = dynamic_cast<AstNodeFunctionDeclaration*>(child)) {
 							std::string qualifiedName = moduleName + "::" + funcNode->name();
 							std::string methodName;
@@ -463,8 +461,8 @@ namespace Qd {
 		}
 
 		// Recursively check children
-		for (size_t i = 0; i < node->childCount(); i++) {
-			if (!analyzeIsBodyIntegerOnly(node->child(i))) {
+		for (auto* child : node->children()) {
+			if (!analyzeIsBodyIntegerOnly(child)) {
 				return false;
 			}
 		}
@@ -802,8 +800,8 @@ namespace Qd {
 			// Also check the function body for non-integer types (strings, floats, module calls)
 			if (currentFunctionIsIntegerOnly) {
 				// Scan the function body to ensure it only uses integers
-				for (size_t i = 0; i < funcNode->childCount(); i++) {
-					if (!analyzeIsBodyIntegerOnly(funcNode->child(i))) {
+				for (auto* child : funcNode->children()) {
+					if (!analyzeIsBodyIntegerOnly(child)) {
 						currentFunctionIsIntegerOnly = false;
 						break;
 					}
@@ -1225,8 +1223,7 @@ namespace Qd {
 				continue;
 			}
 
-			for (size_t i = 0; i < moduleRoot->childCount(); i++) {
-				auto child = moduleRoot->child(i);
+			for (auto* child : moduleRoot->children()) {
 				if (auto importNode = dynamic_cast<AstNodeImport*>(child)) {
 					// Process import: create external function declarations
 					const std::string& namespaceName = importNode->namespaceName();
@@ -1354,8 +1351,7 @@ namespace Qd {
 				continue;
 			}
 
-			for (size_t i = 0; i < moduleRoot->childCount(); i++) {
-				auto child = moduleRoot->child(i);
+			for (auto* child : moduleRoot->children()) {
 				if (auto constNode = dynamic_cast<AstNodeConstant*>(child)) {
 					// Store constant with scope::name key
 					std::string fullName = moduleName + "::" + constNode->name();
@@ -1367,8 +1363,7 @@ namespace Qd {
 		}
 
 		// Collect constants from main file
-		for (size_t i = 0; i < root->childCount(); i++) {
-			auto child = root->child(i);
+		for (auto* child : root->children()) {
 			if (auto constNode = dynamic_cast<AstNodeConstant*>(child)) {
 				// Store constant with just the name (no scope prefix for main file)
 				moduleConstants[constNode->name()] = constNode->value();
@@ -1385,8 +1380,7 @@ namespace Qd {
 				continue;
 			}
 
-			for (size_t i = 0; i < moduleRoot->childCount(); i++) {
-				auto child = moduleRoot->child(i);
+			for (auto* child : moduleRoot->children()) {
 				if (auto structNode = dynamic_cast<AstNodeStructDeclaration*>(child)) {
 					processStructDeclaration(structNode, moduleName);
 				}
@@ -1394,8 +1388,7 @@ namespace Qd {
 		}
 
 		// Process struct declarations from main file (no module name)
-		for (size_t i = 0; i < root->childCount(); i++) {
-			auto child = root->child(i);
+		for (auto* child : root->children()) {
 			if (auto structNode = dynamic_cast<AstNodeStructDeclaration*>(child)) {
 				processStructDeclaration(structNode, "");
 			}
@@ -1406,8 +1399,7 @@ namespace Qd {
 		printTiming("processStructs");
 
 		// Process import statements from main file
-		for (size_t i = 0; i < root->childCount(); i++) {
-			auto child = root->child(i);
+		for (auto* child : root->children()) {
 			if (auto importNode = dynamic_cast<AstNodeImport*>(child)) {
 				const std::string& namespaceName = importNode->namespaceName();
 				const std::string& library = importNode->library();
@@ -1463,8 +1455,7 @@ namespace Qd {
 		// Check if there's a 'main' function in the root AND the module name looks like standalone
 		// (not a module name like "repl_0" which starts with "repl_")
 		bool hasMainFunction = false;
-		for (size_t i = 0; i < root->childCount(); i++) {
-			auto child = root->child(i);
+		for (auto* child : root->children()) {
 			if (auto funcNode = dynamic_cast<AstNodeFunctionDeclaration*>(child)) {
 				if (funcNode->name() == "main") {
 					hasMainFunction = true;
@@ -1479,8 +1470,7 @@ namespace Qd {
 
 		// Pre-pass: declare all user-defined functions from main file (for forward references)
 		// This ensures functions can call each other regardless of definition order
-		for (size_t i = 0; i < root->childCount(); i++) {
-			auto child = root->child(i);
+		for (auto* child : root->children()) {
 			if (auto funcNode = dynamic_cast<AstNodeFunctionDeclaration*>(child)) {
 				// Skip main function declaration in standalone mode - it will be the C main
 				if (generateCMain && funcNode->name() == "main") {
@@ -1549,8 +1539,7 @@ namespace Qd {
 			// Set current module name for struct lookups during code generation
 			currentModuleName = moduleName;
 
-			for (size_t i = 0; i < moduleRoot->childCount(); i++) {
-				auto child = moduleRoot->child(i);
+			for (auto* child : moduleRoot->children()) {
 				if (auto funcNode = dynamic_cast<AstNodeFunctionDeclaration*>(child)) {
 					// Track return struct type for module functions (same logic as main file)
 					// For methods, use format: moduleName::ReceiverType::methodName
@@ -1605,8 +1594,7 @@ namespace Qd {
 		printTiming("generateModuleFunctions");
 
 		// Second pass: generate all user-defined functions from main file
-		for (size_t i = 0; i < root->childCount(); i++) {
-			auto child = root->child(i);
+		for (auto* child : root->children()) {
 			if (auto funcNode = dynamic_cast<AstNodeFunctionDeclaration*>(child)) {
 				// Skip main function in standalone mode - handle separately
 				if (generateCMain && funcNode->name() == "main" && !testMode) {
@@ -1637,8 +1625,7 @@ namespace Qd {
 					continue;
 				}
 
-				for (size_t i = 0; i < moduleRoot->childCount(); i++) {
-					auto child = moduleRoot->child(i);
+				for (auto* child : moduleRoot->children()) {
 					if (auto testNode = dynamic_cast<AstNodeTest*>(child)) {
 						if (!generateTest(testNode, moduleName)) {
 							return false;
@@ -1659,8 +1646,7 @@ namespace Qd {
 			}
 
 			// Generate test functions from main file
-			for (size_t i = 0; i < root->childCount(); i++) {
-				auto child = root->child(i);
+			for (auto* child : root->children()) {
 				if (auto testNode = dynamic_cast<AstNodeTest*>(child)) {
 					if (!generateTest(testNode, mainModuleName)) {
 						return false;
@@ -1691,8 +1677,7 @@ namespace Qd {
 
 		// Fourth pass: generate C main function (only in standalone mode, not in test mode)
 		if (generateCMain && !testMode) {
-			for (size_t i = 0; i < root->childCount(); i++) {
-				auto child = root->child(i);
+			for (auto* child : root->children()) {
 				if (auto funcNode = dynamic_cast<AstNodeFunctionDeclaration*>(child)) {
 					if (funcNode->name() == "main") {
 						if (!generateFunction(funcNode, true)) {

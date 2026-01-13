@@ -3,6 +3,7 @@
 if llvmgen_dep.found()
 	quadc_sources = files(
 		'src/main.cc',
+		'src/ast_cache.cc',
 		'src/module_resolver.cc',
 		'src/options.cc',
 		'src/temp_dir_guard.cc',

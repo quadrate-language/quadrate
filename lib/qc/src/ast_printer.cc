@@ -238,16 +238,17 @@ namespace Qd {
 			printf("\"");
 		}
 
-		size_t childCount = node->childCount();
-		if (childCount > 0) {
+		auto children = node->children();
+		if (!children.empty()) {
 			printf(",");
 			printf("\"children\":[");
-			for (size_t i = 0; i < childCount; i++) {
-				IAstNode* child = node->child(i);
-				printJsonNode(child);
-				if (i < childCount - 1) {
+			bool first = true;
+			for (auto* child : children) {
+				if (!first) {
 					printf(",");
 				}
+				first = false;
+				printJsonNode(child);
 			}
 			printf("]");
 		}

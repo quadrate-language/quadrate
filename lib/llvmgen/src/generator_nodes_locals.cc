@@ -822,8 +822,8 @@ namespace Qd {
 		}
 
 		// Recursively scan all children
-		for (size_t i = 0; i < node->childCount(); i++) {
-			collectAllCapturesFromAST(node->child(i), captures);
+		for (auto* child : node->children()) {
+			collectAllCapturesFromAST(child, captures);
 		}
 	}
 
