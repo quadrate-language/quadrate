@@ -1,6 +1,7 @@
 #include "generator_impl.h"
 #include <chrono>
 #include <dlfcn.h>
+#include <thread>
 
 // Platform abstractions
 extern "C" {
@@ -2443,8 +2444,20 @@ namespace Qd {
 		}
 		printTiming("loadRuntime");
 
-		// Create LLJIT instance
-		auto jitExpected = llvm::orc::LLJITBuilder().create();
+		// Create LLJIT instance with concurrent compilation and no optimization
+		// JIT mode is for quick testing, so skip optimizations for faster compilation
+		auto jtmb = llvm::orc::JITTargetMachineBuilder::detectHost();
+		if (!jtmb) {
+			std::cerr << "Error: Failed to detect host for JIT: " << toString(jtmb.takeError()) << std::endl;
+			dlclose(rtHandle);
+			return -1;
+		}
+		jtmb->setCodeGenOptLevel(llvm::CodeGenOptLevel::None);
+
+		auto jitExpected = llvm::orc::LLJITBuilder()
+								   .setJITTargetMachineBuilder(std::move(*jtmb))
+								   .setNumCompileThreads(std::thread::hardware_concurrency())
+								   .create();
 		if (!jitExpected) {
 			std::cerr << "Error: Failed to create JIT: " << toString(jitExpected.takeError()) << std::endl;
 			dlclose(rtHandle);
@@ -2481,7 +2494,15 @@ namespace Qd {
 		// Look up the main function
 		auto mainSymbol = jit->lookup("main");
 		if (!mainSymbol) {
-			std::cerr << "Error: Could not find 'main' function: " << toString(mainSymbol.takeError()) << std::endl;
+			std::string errMsg = toString(mainSymbol.takeError());
+			// Check if this is a symbol resolution failure (missing stdlib symbols)
+			// The error contains "materialize" when symbols can't be resolved
+			if (errMsg.find("materialize") != std::string::npos || errMsg.find("usr_") != std::string::npos) {
+				std::cerr << "\nJIT error: Program uses stdlib functions not available for JIT execution.\n";
+				std::cerr << "Use --no-jit flag for programs using math, str, io, or other stdlib modules.\n";
+			} else {
+				std::cerr << "Error: Could not find 'main' function: " << errMsg << std::endl;
+			}
 			dlclose(rtHandle);
 			return -1;
 		}

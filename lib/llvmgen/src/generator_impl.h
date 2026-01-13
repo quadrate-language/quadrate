@@ -40,6 +40,7 @@
 #include <llvm/Transforms/Utils.h>
 
 // OrcJIT headers for JIT execution
+#include <llvm/ExecutionEngine/Orc/JITTargetMachineBuilder.h>
 #include <llvm/ExecutionEngine/Orc/LLJIT.h>
 #include <llvm/ExecutionEngine/Orc/ThreadSafeModule.h>
 
