@@ -9,7 +9,7 @@ if llvm_dep.found()
 	if llvm_config.found()
 		llvm_cxxflags = run_command(llvm_config, '--cxxflags', check: true).stdout().strip().split()
 		llvm_ldflags = run_command(llvm_config, '--ldflags', check: true).stdout().strip().split()
-		llvm_libs = run_command(llvm_config, '--libs', 'core', 'native', check: true).stdout().strip().split()
+		llvm_libs = run_command(llvm_config, '--libs', 'core', 'native', 'orcjit', check: true).stdout().strip().split()
 	else
 		llvm_cxxflags = []
 		llvm_ldflags = []

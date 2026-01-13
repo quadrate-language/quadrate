@@ -1,5 +1,6 @@
 #include "generator_impl.h"
 #include <chrono>
+#include <dlfcn.h>
 
 // Platform abstractions
 extern "C" {
@@ -2391,6 +2392,114 @@ namespace Qd {
 		std::remove(objFile.c_str());
 
 		return result == 0;
+	}
+
+	int LlvmGenerator::runJIT() {
+		static bool timing = std::getenv("QUADC_TIMING") != nullptr;
+		auto timeStart = std::chrono::steady_clock::now();
+		auto printTiming = [&](const char* label) {
+			if (timing) {
+				auto now = std::chrono::steady_clock::now();
+				auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(now - timeStart).count();
+				std::cerr << "[TIMING]   jit/" << label << ": " << ms << "ms" << std::endl;
+				timeStart = now;
+			}
+		};
+
+		if (!mImpl->module) {
+			std::cerr << "Error: No module generated. Call generate() first." << std::endl;
+			return -1;
+		}
+
+		// Initialize native target for JIT
+		llvm::InitializeNativeTarget();
+		llvm::InitializeNativeTargetAsmPrinter();
+		printTiming("initTargets");
+
+		// Load runtime library so JIT can resolve symbols
+		// The runtime symbols need to be available in the current process
+		void* rtHandle = dlopen("libqdrt.so", RTLD_NOW | RTLD_GLOBAL);
+		if (!rtHandle) {
+			// Try with full path from QUADRATE_LIBDIR
+			const char* libDir = std::getenv("QUADRATE_LIBDIR");
+			if (libDir) {
+				std::string fullPath = std::string(libDir) + "/libqdrt.so";
+				rtHandle = dlopen(fullPath.c_str(), RTLD_NOW | RTLD_GLOBAL);
+			}
+			if (!rtHandle) {
+				// Try relative to executable
+				char exePathBuf[4096];
+				int len = exe_path_platform_get(exePathBuf, sizeof(exePathBuf));
+				if (len > 0) {
+					std::filesystem::path exePath(exePathBuf);
+					std::filesystem::path libPath = exePath.parent_path() / ".." / "lib" / "libqdrt.so";
+					rtHandle = dlopen(libPath.c_str(), RTLD_NOW | RTLD_GLOBAL);
+				}
+			}
+			if (!rtHandle) {
+				std::cerr << "Error: Could not load libqdrt.so for JIT execution: " << dlerror() << std::endl;
+				return -1;
+			}
+		}
+		printTiming("loadRuntime");
+
+		// Create LLJIT instance
+		auto jitExpected = llvm::orc::LLJITBuilder().create();
+		if (!jitExpected) {
+			std::cerr << "Error: Failed to create JIT: " << toString(jitExpected.takeError()) << std::endl;
+			dlclose(rtHandle);
+			return -1;
+		}
+		auto jit = std::move(*jitExpected);
+		printTiming("createJIT");
+
+		// Add a generator for resolving symbols from the current process (including libqdrt)
+		auto& mainJD = jit->getMainJITDylib();
+		auto processSymbolsGenerator =
+				llvm::orc::DynamicLibrarySearchGenerator::GetForCurrentProcess(jit->getDataLayout().getGlobalPrefix());
+		if (!processSymbolsGenerator) {
+			std::cerr << "Error: Failed to create process symbol generator: "
+					  << toString(processSymbolsGenerator.takeError()) << std::endl;
+			dlclose(rtHandle);
+			return -1;
+		}
+		mainJD.addGenerator(std::move(*processSymbolsGenerator));
+		printTiming("setupSymbols");
+
+		// Move the module to a ThreadSafeModule
+		// We need to transfer ownership, so create new context/module
+		auto tsMod = llvm::orc::ThreadSafeModule(std::move(mImpl->module), std::move(mImpl->context));
+
+		// Add the module to the JIT
+		if (auto err = jit->addIRModule(std::move(tsMod))) {
+			std::cerr << "Error: Failed to add module to JIT: " << toString(std::move(err)) << std::endl;
+			dlclose(rtHandle);
+			return -1;
+		}
+		printTiming("addModule");
+
+		// Look up the main function
+		auto mainSymbol = jit->lookup("main");
+		if (!mainSymbol) {
+			std::cerr << "Error: Could not find 'main' function: " << toString(mainSymbol.takeError()) << std::endl;
+			dlclose(rtHandle);
+			return -1;
+		}
+		printTiming("lookupMain");
+
+		// Cast to function pointer and call with argc/argv
+		// The generated main expects: int main(int argc, char** argv)
+		auto mainFn = mainSymbol->toPtr<int(int, char**)>();
+		printTiming("prepareCall");
+
+		// Set up minimal argc/argv (program name only, no user arguments)
+		const char* programName = "quadc";
+		char* argv[] = {const_cast<char*>(programName), nullptr};
+		int result = mainFn(1, argv);
+		printTiming("execute");
+
+		dlclose(rtHandle);
+		return result;
 	}
 
 } // namespace Qd

@@ -24,7 +24,8 @@ void printHelp() {
 	std::cout << "  --verbose          Show detailed compilation steps\n";
 	std::cout << "  --dump-tokens      Print lexer tokens\n";
 	std::cout << "  --dump-ast         Print parsed AST structure\n";
-	std::cout << "  -r, --run          Compile and run immediately\n";
+	std::cout << "  -r, --run          Compile and run immediately (uses JIT by default)\n";
+	std::cout << "  --no-jit           Disable JIT execution for -r mode (use traditional linking)\n";
 	std::cout << "  --test             Compile and run tests\n";
 	std::cout << "  --dump-ir          Print generated LLVM IR\n";
 	std::cout << "  --werror           Treat warnings as errors\n";
@@ -79,6 +80,8 @@ bool parseArgs(int argc, char* argv[], Options& opts) {
 			opts.dumpAst = true;
 		} else if (arg == "-r" || arg == "--run") {
 			opts.run = true;
+		} else if (arg == "--no-jit") {
+			opts.noJIT = true;
 		} else if (arg == "--dump-ir") {
 			opts.dumpIR = true;
 		} else if (arg == "--test") {

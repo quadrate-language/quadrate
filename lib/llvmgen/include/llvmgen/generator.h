@@ -248,6 +248,21 @@ namespace Qd {
 		 */
 		void setTargetTriple(const std::string& triple);
 
+		/**
+		 * @brief Execute the program using JIT compilation
+		 *
+		 * Compiles and executes the program directly in memory using LLVM's
+		 * OrcJIT. This is faster than writeExecutable() for run-once scenarios
+		 * as it avoids writing to disk and invoking the external linker.
+		 *
+		 * @return Exit code from the program's main function
+		 *
+		 * @note Must call generate() first
+		 * @note Requires libqdrt.so to be available at runtime
+		 * @note Not available when cross-compiling
+		 */
+		int runJIT();
+
 	private:
 		/**
 		 * @brief Private implementation (Pimpl idiom)

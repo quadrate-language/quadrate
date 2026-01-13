@@ -765,7 +765,26 @@ int main(int argc, char** argv) {
 			}
 		}
 
-		// Write executable
+		// Use JIT for -r mode when not cross-compiling and --no-jit not specified
+		// JIT is faster because it skips disk I/O and the external linker
+		bool useJIT = opts.run && !opts.noJIT && opts.targetTriple.empty() && opts.runArgs.empty() && !opts.testMode;
+
+		if (useJIT) {
+			// JIT execution - compile and run in memory
+			if (opts.verbose) {
+				std::cout << "\n=== JIT Execution ===" << std::endl;
+			}
+			auto jitStart = std::chrono::steady_clock::now();
+			int exitCode = generator.runJIT();
+			if (timing) {
+				auto jitEnd = std::chrono::steady_clock::now();
+				auto jitMs = std::chrono::duration_cast<std::chrono::milliseconds>(jitEnd - jitStart).count();
+				std::cerr << "[TIMING] jit: " << jitMs << "ms" << std::endl;
+			}
+			return exitCode;
+		}
+
+		// Traditional path: write executable to disk
 		if (!generator.writeExecutable(outputPath)) {
 			std::cerr << Qd::Colors::bold() << "quadc: " << Qd::Colors::reset() << Qd::Colors::bold()
 					  << Qd::Colors::red() << "error: " << Qd::Colors::reset() << "failed to create executable"
@@ -777,7 +796,7 @@ int main(int argc, char** argv) {
 			std::cout << "Written executable to " << outputPath << std::endl;
 		}
 
-		// Run the program if requested
+		// Run the program if requested (traditional linking path)
 		if (opts.run) {
 			if (opts.verbose) {
 				std::cout << "\n=== Running " << outputPath << " ===" << std::endl;
