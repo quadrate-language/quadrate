@@ -220,6 +220,9 @@ namespace Qd {
 		// Imported libraries for linking
 		std::set<std::string> importedLibraries;
 
+		// Global string cache to avoid creating duplicate constants
+		std::map<std::string, llvm::Value*> globalStringCache;
+
 		// Additional library search paths
 		std::vector<std::string> librarySearchPaths;
 
@@ -325,6 +328,7 @@ namespace Qd {
 
 		// Core generation methods
 		void setupRuntimeDeclarations();
+		llvm::Value* getOrCreateGlobalString(const std::string& str);
 		bool generateProgram(IAstNode* root);
 		bool generateFunction(
 				AstNodeFunctionDeclaration* funcNode, bool isMain, const std::string& namePrefix = "main");
@@ -367,6 +371,13 @@ namespace Qd {
 		// Helpers
 		void collectAllCapturesFromAST(IAstNode* node, std::set<std::string>& captures);
 		std::string findLastStructConstruction(IAstNode* node);
+		void collectCalledFunctions(
+				IAstNode* node, const std::string& currentModule, std::set<std::string>& calledFunctions);
+		void computeReachableFunctions(IAstNode* mainRoot, std::set<std::string>& reachable);
+
+		// Set of functions reachable from main (computed before IR generation)
+		std::set<std::string> reachableFunctions;
+		bool useReachabilityAnalysis = true;
 
 		// Inline stack operations
 		void generateInlinePushInt(llvm::Value* ctx, int64_t value);

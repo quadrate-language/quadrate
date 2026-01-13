@@ -8,6 +8,16 @@ extern "C" {
 
 namespace Qd {
 
+	llvm::Value* LlvmGenerator::Impl::getOrCreateGlobalString(const std::string& str) {
+		auto it = globalStringCache.find(str);
+		if (it != globalStringCache.end()) {
+			return it->second;
+		}
+		llvm::Value* globalStr = builder->CreateGlobalString(str);
+		globalStringCache[str] = globalStr;
+		return globalStr;
+	}
+
 	void LlvmGenerator::Impl::setupRuntimeDeclarations() {
 		// Context type is opaque pointer
 		contextPtrTy = llvm::PointerType::getUnqual(*context);
@@ -310,6 +320,120 @@ namespace Qd {
 
 	// Analyze if function body uses only integer types
 	// Returns true if the body contains no strings, floats, or module calls that might return non-integers
+	// Collect all function calls from an AST node (for reachability analysis)
+	void LlvmGenerator::Impl::collectCalledFunctions(
+			IAstNode* node, const std::string& currentModule, std::set<std::string>& calledFunctions) {
+		if (!node) {
+			return;
+		}
+
+		// Check for scoped identifier (module::function call)
+		if (node->type() == IAstNode::Type::SCOPED_IDENTIFIER) {
+			auto* scoped = static_cast<AstNodeScopedIdentifier*>(node);
+			std::string qualifiedName = scoped->scope() + "::" + scoped->name();
+			calledFunctions.insert(qualifiedName);
+		}
+
+		// Check for identifier (local function call or module function)
+		if (node->type() == IAstNode::Type::IDENTIFIER) {
+			auto* ident = static_cast<AstNodeIdentifier*>(node);
+			const std::string& name = ident->name();
+			// Could be a local function or module function - add both possibilities
+			calledFunctions.insert(name); // local
+			if (!currentModule.empty()) {
+				calledFunctions.insert(currentModule + "::" + name); // module-qualified
+			}
+		}
+
+		// Check for instruction (could be a function call)
+		if (node->type() == IAstNode::Type::INSTRUCTION) {
+			auto* inst = static_cast<AstNodeInstruction*>(node);
+			const std::string& name = inst->name();
+			// Add as potential function call
+			calledFunctions.insert(name);
+			if (!currentModule.empty()) {
+				calledFunctions.insert(currentModule + "::" + name);
+			}
+		}
+
+		// Recursively process children
+		for (size_t i = 0; i < node->childCount(); i++) {
+			collectCalledFunctions(node->child(i), currentModule, calledFunctions);
+		}
+	}
+
+	// Compute all functions reachable from main
+	void LlvmGenerator::Impl::computeReachableFunctions(IAstNode* mainRoot, std::set<std::string>& reachable) {
+		// Start with functions called from main
+		std::set<std::string> worklist;
+
+		// Collect direct calls from main file
+		for (size_t i = 0; i < mainRoot->childCount(); i++) {
+			auto child = mainRoot->child(i);
+			if (auto funcNode = dynamic_cast<AstNodeFunctionDeclaration*>(child)) {
+				// Mark main file functions as reachable
+				std::string funcName = funcNode->name();
+				reachable.insert(funcName);
+				reachable.insert(mainModuleName + "::" + funcName);
+
+				// Collect calls from function body
+				if (funcNode->body()) {
+					collectCalledFunctions(funcNode->body(), mainModuleName, worklist);
+				}
+			}
+			if (auto testNode = dynamic_cast<AstNodeTest*>(child)) {
+				// Test functions are reachable in test mode
+				if (testNode->body()) {
+					collectCalledFunctions(testNode->body(), mainModuleName, worklist);
+				}
+			}
+		}
+
+		// Process worklist until no new functions are found
+		while (!worklist.empty()) {
+			std::set<std::string> newWorklist;
+
+			for (const std::string& funcName : worklist) {
+				if (reachable.count(funcName)) {
+					continue; // Already processed
+				}
+				reachable.insert(funcName);
+
+				// Find the function definition in module ASTs
+				for (const auto& modulePair : moduleASTs) {
+					const std::string& moduleName = modulePair.first;
+					IAstNode* moduleRoot = modulePair.second;
+					if (!moduleRoot) {
+						continue;
+					}
+
+					for (size_t i = 0; i < moduleRoot->childCount(); i++) {
+						auto child = moduleRoot->child(i);
+						if (auto funcNode = dynamic_cast<AstNodeFunctionDeclaration*>(child)) {
+							std::string qualifiedName = moduleName + "::" + funcNode->name();
+							std::string methodName;
+							if (funcNode->hasReceiver()) {
+								methodName = moduleName + "::" + funcNode->receiverType() + "::" + funcNode->name();
+							}
+
+							// Check if this function matches what we're looking for
+							if (funcName == qualifiedName || funcName == funcNode->name() || funcName == methodName ||
+									(!methodName.empty() &&
+											funcName == funcNode->receiverType() + "::" + funcNode->name())) {
+								// Found the function - collect its calls
+								if (funcNode->body()) {
+									collectCalledFunctions(funcNode->body(), moduleName, newWorklist);
+								}
+							}
+						}
+					}
+				}
+			}
+
+			worklist = std::move(newWorklist);
+		}
+	}
+
 	bool LlvmGenerator::Impl::analyzeIsBodyIntegerOnly(IAstNode* node) {
 		if (!node) {
 			return true;
@@ -483,7 +607,8 @@ namespace Qd {
 			if (srcIt != moduleSourceFiles.end()) {
 				sourceFile = srcIt->second;
 			}
-			auto sourceFileStr = builder->CreateGlobalString(sourceFile);
+			// Use cached source file string
+			auto sourceFileStr = getOrCreateGlobalString(sourceFile);
 			auto lineNum = builder->getInt64(funcNode->line());
 			builder->CreateCall(pushCallFn, {ctx, funcNameStr, sourceFileStr, lineNum});
 
@@ -694,7 +819,8 @@ namespace Qd {
 				if (srcIt != moduleSourceFiles.end()) {
 					sourceFile = srcIt->second;
 				}
-				auto sourceFileStr = builder->CreateGlobalString(sourceFile);
+				// Use cached source file string since all functions in a module share the same path
+				auto sourceFileStr = getOrCreateGlobalString(sourceFile);
 				auto lineNum = builder->getInt64(funcNode->line());
 				builder->CreateCall(pushCallFn, {ctx, funcNameStr, sourceFileStr, lineNum});
 			}
@@ -905,7 +1031,8 @@ namespace Qd {
 		if (srcIt != moduleSourceFiles.end()) {
 			sourceFile = srcIt->second;
 		}
-		auto sourceFileStr = builder->CreateGlobalString(sourceFile);
+		// Use cached source file string
+		auto sourceFileStr = getOrCreateGlobalString(sourceFile);
 		auto lineNum = builder->getInt64(testNode->line());
 		builder->CreateCall(pushCallFn, {ctx, funcNameStr, sourceFileStr, lineNum});
 
@@ -1068,12 +1195,25 @@ namespace Qd {
 	}
 
 	bool LlvmGenerator::Impl::generateProgram(IAstNode* root) {
+		// Timing helper - only active when QUADC_TIMING is set
+		static bool timing = std::getenv("QUADC_TIMING") != nullptr;
+		auto timeLast = std::chrono::steady_clock::now();
+		auto printTiming = [&](const char* label) {
+			if (timing) {
+				auto now = std::chrono::steady_clock::now();
+				auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(now - timeLast).count();
+				std::cerr << "[TIMING]   irGeneration/" << label << ": " << ms << "ms" << std::endl;
+				timeLast = now;
+			}
+		};
+
 		if (!root) {
 			std::cerr << "Error: Root node is null" << std::endl;
 			return false;
 		}
 
 		setupRuntimeDeclarations();
+		printTiming("setupRuntimeDeclarations");
 
 		// Process import statements from all modules
 		for (const auto& modulePair : moduleASTs) {
@@ -1202,6 +1342,8 @@ namespace Qd {
 			}
 		}
 
+		printTiming("processModuleImports");
+
 		// Collect constants from all modules
 		for (const auto& modulePair : moduleASTs) {
 			const std::string& moduleName = modulePair.first;
@@ -1231,6 +1373,8 @@ namespace Qd {
 			}
 		}
 
+		printTiming("collectConstants");
+
 		// Process struct declarations from all modules
 		for (const auto& modulePair : moduleASTs) {
 			const std::string& moduleName = modulePair.first;
@@ -1257,6 +1401,7 @@ namespace Qd {
 
 		// Generate destructor functions for all struct types (after all structs are known)
 		generateStructDestructors();
+		printTiming("processStructs");
 
 		// Process import statements from main file
 		for (size_t i = 0; i < root->childCount(); i++) {
@@ -1382,6 +1527,15 @@ namespace Qd {
 			}
 		}
 
+		printTiming("declareMainFunctions");
+
+		// Compute reachable functions to skip generating IR for unused module functions
+		if (useReachabilityAnalysis) {
+			reachableFunctions.clear();
+			computeReachableFunctions(root, reachableFunctions);
+		}
+		printTiming("computeReachability");
+
 		// First pass: generate functions from all loaded modules (in dependency order)
 		for (const auto& modulePair : moduleASTs) {
 			const std::string& moduleName = modulePair.first;
@@ -1424,6 +1578,17 @@ namespace Qd {
 						}
 					}
 
+					// Skip generating IR for unreachable functions (saves significant time)
+					if (useReachabilityAnalysis) {
+						bool isReachable =
+								reachableFunctions.count(qualifiedName) || reachableFunctions.count(funcNode->name()) ||
+								(funcNode->hasReceiver() &&
+										reachableFunctions.count(funcNode->receiverType() + "::" + funcNode->name()));
+						if (!isReachable) {
+							continue; // Skip this function - not reachable from main
+						}
+					}
+
 					// Generate module function with module name as prefix
 					if (!generateFunction(funcNode, false, moduleName)) {
 						currentModuleName = ""; // Reset on error
@@ -1435,6 +1600,7 @@ namespace Qd {
 
 		// Reset module name for main file generation
 		currentModuleName = "";
+		printTiming("generateModuleFunctions");
 
 		// Second pass: generate all user-defined functions from main file
 		for (size_t i = 0; i < root->childCount(); i++) {
@@ -1450,6 +1616,8 @@ namespace Qd {
 				}
 			}
 		}
+
+		printTiming("generateMainFunctions");
 
 		// Third pass: generate test functions (in test mode)
 		if (testMode) {
@@ -1533,6 +1701,8 @@ namespace Qd {
 			}
 		}
 
+		printTiming("generateCMain");
+
 		// Verify module
 		// Finalize debug info
 		if (debugInfoEnabled && debugBuilder) {
@@ -1545,6 +1715,7 @@ namespace Qd {
 			std::cerr << "LLVM module verification failed:\n" << errorMsg << std::endl;
 			return false;
 		}
+		printTiming("verifyModule");
 
 		return !compilationFailed;
 	}
@@ -1763,6 +1934,26 @@ namespace Qd {
 		mImpl->module->setDataLayout(targetMachine->createDataLayout());
 		printTiming("createTargetMachine");
 
+		// Always run GlobalDCE to eliminate unused internal functions (even at -O0)
+		// This significantly reduces code generation time by not compiling dead code
+		if (!mImpl->exportMode) {
+			llvm::LoopAnalysisManager lam;
+			llvm::FunctionAnalysisManager fam;
+			llvm::CGSCCAnalysisManager cgam;
+			llvm::ModuleAnalysisManager mam;
+			llvm::PassBuilder pb;
+			pb.registerModuleAnalyses(mam);
+			pb.registerCGSCCAnalyses(cgam);
+			pb.registerFunctionAnalyses(fam);
+			pb.registerLoopAnalyses(lam);
+			pb.crossRegisterProxies(lam, fam, cgam, mam);
+
+			llvm::ModulePassManager npm;
+			npm.addPass(llvm::GlobalDCEPass());
+			npm.run(*mImpl->module, mam);
+		}
+		printTiming("globalDCE");
+
 		// Run optimization passes if optimization level > 0
 		if (mImpl->optimizationLevel > 0) {
 			// Use legacy PassManager for optimization passes
@@ -1803,24 +1994,6 @@ namespace Qd {
 
 			// Run legacy module passes (if any were added to mpm)
 			mpm.run(*mImpl->module);
-
-			// Use GlobalDCE to eliminate unused internal functions (skip in export mode)
-			if (!mImpl->exportMode) {
-				llvm::LoopAnalysisManager lam;
-				llvm::FunctionAnalysisManager fam;
-				llvm::CGSCCAnalysisManager cgam;
-				llvm::ModuleAnalysisManager mam;
-				llvm::PassBuilder pb;
-				pb.registerModuleAnalyses(mam);
-				pb.registerCGSCCAnalyses(cgam);
-				pb.registerFunctionAnalyses(fam);
-				pb.registerLoopAnalyses(lam);
-				pb.crossRegisterProxies(lam, fam, cgam, mam);
-
-				llvm::ModulePassManager npm;
-				npm.addPass(llvm::GlobalDCEPass());
-				npm.run(*mImpl->module, mam);
-			}
 			printTiming("optimizationPasses");
 		}
 

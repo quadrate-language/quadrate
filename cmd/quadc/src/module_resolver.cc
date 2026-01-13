@@ -306,14 +306,9 @@ std::vector<std::string> findModuleFiles(const std::string& moduleName, const st
 		}
 	}
 
-	// Try 5: Standard library directories relative to current directory
-	result = tryGetModuleFilesFromDir("lib/qd" + moduleName + "/qd/" + moduleName);
-	if (!result.empty()) {
-		return result;
-	}
-
-	// Try 6: Standard library relative to executable
+	// Try 5: Standard library relative to executable
 	// Note: DATA_DIR_NAME is "data" on Haiku, "share" on other platforms
+	// Check this before the source tree path so we use the same files as semantic validator
 	{
 		char exePathBuf[4096];
 		int len = exe_path_platform_get(exePathBuf, sizeof(exePathBuf));
@@ -330,6 +325,12 @@ std::vector<std::string> findModuleFiles(const std::string& moduleName, const st
 				// Ignore errors resolving path
 			}
 		}
+	}
+
+	// Try 6: Standard library directories relative to current directory (development fallback)
+	result = tryGetModuleFilesFromDir("lib/qd" + moduleName + "/qd/" + moduleName);
+	if (!result.empty()) {
+		return result;
 	}
 
 	// Try 7: $HOME/quadrate directory

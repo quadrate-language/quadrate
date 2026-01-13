@@ -14,7 +14,7 @@ namespace Qd {
 	 */
 	class SourceLineMap {
 	public:
-		explicit SourceLineMap(const char* src) : mSrc(src) {
+		explicit SourceLineMap(const char* src) {
 			// Build table of byte offsets for each line start
 			mLineStarts.push_back(0); // Line 1 starts at byte 0
 			for (size_t i = 0; src[i] != '\0'; i++) {
@@ -30,15 +30,12 @@ namespace Qd {
 		void getLineColumn(size_t bytePos, size_t* line, size_t* column) const {
 			// Binary search for the line containing this byte position
 			auto it = std::upper_bound(mLineStarts.begin(), mLineStarts.end(), bytePos);
-			size_t lineIndex = (it == mLineStarts.begin())
-									   ? 0
-									   : static_cast<size_t>(it - mLineStarts.begin() - 1);
-			*line = lineIndex + 1; // 1-based line number
+			size_t lineIndex = (it == mLineStarts.begin()) ? 0 : static_cast<size_t>(it - mLineStarts.begin() - 1);
+			*line = lineIndex + 1;							// 1-based line number
 			*column = bytePos - mLineStarts[lineIndex] + 1; // 1-based column
 		}
 
 	private:
-		const char* mSrc;
 		std::vector<size_t> mLineStarts;
 	};
 

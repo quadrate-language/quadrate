@@ -36,7 +36,9 @@ static std::unordered_map<std::string, CachedAst> g_astCache;
 // Get or parse a file, using the cache
 // Returns root node on success (cached or freshly parsed), nullptr on failure
 // On failure, outAst will point to the Ast object so caller can retrieve parse errors
-static Qd::IAstNode* getOrParseFile(const std::string& filePath, Qd::Ast** outAst, std::string* outSource) {
+// outFromCache is set to true if the AST came from the cache (already validated)
+static Qd::IAstNode* getOrParseFile(
+		const std::string& filePath, Qd::Ast** outAst, std::string* outSource, bool* outFromCache = nullptr) {
 	// Get canonical path for cache key
 	std::string canonicalPath;
 	try {
@@ -54,7 +56,14 @@ static Qd::IAstNode* getOrParseFile(const std::string& filePath, Qd::Ast** outAs
 		if (outSource) {
 			*outSource = it->second.source;
 		}
+		if (outFromCache) {
+			*outFromCache = true;
+		}
 		return it->second.root;
+	}
+
+	if (outFromCache) {
+		*outFromCache = false;
 	}
 
 	// Not cached, read and parse
@@ -460,9 +469,10 @@ int main(int argc, char** argv) {
 				// Parse module file (uses cache if already parsed by semantic validator)
 				Qd::Ast* ast = nullptr;
 				std::string buffer;
+				bool fromCache = false;
 
 				auto parseStart = std::chrono::steady_clock::now();
-				Qd::IAstNode* root = getOrParseFile(moduleFilePath, &ast, &buffer);
+				Qd::IAstNode* root = getOrParseFile(moduleFilePath, &ast, &buffer, &fromCache);
 				auto parseEnd = std::chrono::steady_clock::now();
 				if (timing) {
 					auto parseMs = std::chrono::duration_cast<std::chrono::milliseconds>(parseEnd - parseStart).count();
@@ -485,16 +495,23 @@ int main(int argc, char** argv) {
 				}
 
 				// Semantic validation - catch errors before LLVM generation
-				// Pass true for isModuleFile to skip reporting errors for missing nested module imports
-				auto valStart = std::chrono::steady_clock::now();
-				Qd::SemanticValidator validator;
-				validator.setIncludePaths(opts.includePaths);
-				validator.setSource(buffer.c_str());
-				size_t errorCount = validator.validate(root, moduleFilePath.c_str(), true, opts.werror);
-				auto valEnd = std::chrono::steady_clock::now();
-				if (timing) {
-					auto valMs = std::chrono::duration_cast<std::chrono::milliseconds>(valEnd - valStart).count();
-					std::cerr << "[TIMING] moduleLoop validate " << moduleName << ": " << valMs << "ms" << std::endl;
+				// Skip validation if AST came from cache (already validated during main file semantic analysis)
+				// Only validate freshly parsed files to catch internal module errors
+				size_t errorCount = 0;
+				if (!fromCache) {
+					auto valStart = std::chrono::steady_clock::now();
+					Qd::SemanticValidator validator;
+					validator.setIncludePaths(opts.includePaths);
+					validator.setSource(buffer.c_str());
+					errorCount = validator.validate(root, moduleFilePath.c_str(), true, opts.werror);
+					auto valEnd = std::chrono::steady_clock::now();
+					if (timing) {
+						auto valMs = std::chrono::duration_cast<std::chrono::milliseconds>(valEnd - valStart).count();
+						std::cerr << "[TIMING] moduleLoop validate " << moduleName << ": " << valMs << "ms"
+								  << std::endl;
+					}
+				} else if (timing) {
+					std::cerr << "[TIMING] moduleLoop validate " << moduleName << ": 0ms (cached)" << std::endl;
 				}
 				if (errorCount > 0) {
 					// Validation failed - do not proceed

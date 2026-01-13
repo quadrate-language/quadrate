@@ -47,12 +47,31 @@ namespace Qd {
 	struct SourceMaps {
 		SourceLineMap lineMap;
 		CharByteMap charByteMap;
-		SourceMaps(const char* src) : lineMap(src), charByteMap(src) {}
+
+		SourceMaps(const char* src) : lineMap(src), charByteMap(src) {
+		}
 	};
 
 	// Thread-local pointer to current source maps (set at start of generate())
 	// This allows helper functions to use optimized lookup without signature changes
 	static thread_local const SourceMaps* tCurrentSourceMaps = nullptr;
+
+	// Optimized charIndexToByteOffset - uses precomputed table when available
+	static size_t fastCharToByteOffset(const char* src, size_t charIndex) {
+		if (tCurrentSourceMaps) {
+			return tCurrentSourceMaps->charByteMap.getByteOffset(charIndex);
+		}
+		return fastCharToByteOffset(src, charIndex);
+	}
+
+	// Optimized calculateLineColumn - uses precomputed table when available
+	static void fastLineColumn(const char* src, size_t bytePos, size_t* line, size_t* column) {
+		if (tCurrentSourceMaps) {
+			tCurrentSourceMaps->lineMap.getLineColumn(bytePos, line, column);
+		} else {
+			fastLineColumn(src, bytePos, line, column);
+		}
+	}
 
 	// Helper to set position on a node from scanner - uses optimized maps if available
 	static void setNodePosition(IAstNode* node, u8t_scanner* scanner, const char* src) {
@@ -65,8 +84,8 @@ namespace Qd {
 			tCurrentSourceMaps->lineMap.getLineColumn(bytePos, &line, &column);
 		} else {
 			// Fallback: O(n) lookup
-			size_t bytePos = charIndexToByteOffset(src, charPos);
-			calculateLineColumn(src, bytePos, &line, &column);
+			size_t bytePos = fastCharToByteOffset(src, charPos);
+			fastLineColumn(src, bytePos, &line, &column);
 		}
 		node->setPosition(line, column);
 	}
@@ -103,8 +122,8 @@ namespace Qd {
 			commentStartBytePos = tCurrentSourceMaps->charByteMap.getByteOffset(commentStartCharPos);
 			tCurrentSourceMaps->lineMap.getLineColumn(commentStartBytePos, &commentLine, &commentColumn);
 		} else {
-			commentStartBytePos = charIndexToByteOffset(src, commentStartCharPos);
-			calculateLineColumn(src, commentStartBytePos, &commentLine, &commentColumn);
+			commentStartBytePos = fastCharToByteOffset(src, commentStartCharPos);
+			fastLineColumn(src, commentStartBytePos, &commentLine, &commentColumn);
 		}
 
 		// Get character position and convert to byte offset for content start
@@ -114,7 +133,7 @@ namespace Qd {
 		if (tCurrentSourceMaps) {
 			bytePos = tCurrentSourceMaps->charByteMap.getByteOffset(charPos + tokenLen);
 		} else {
-			bytePos = charIndexToByteOffset(src, charPos + tokenLen);
+			bytePos = fastCharToByteOffset(src, charPos + tokenLen);
 		}
 
 		// Read comment text directly from source
@@ -289,7 +308,7 @@ namespace Qd {
 		size_t pos = tokenStart + tokenLen;
 
 		// Convert character index to byte offset
-		size_t bytePos = charIndexToByteOffset(src, pos);
+		size_t bytePos = fastCharToByteOffset(src, pos);
 
 		if (src[bytePos] != '\0') {
 			return static_cast<char32_t>(static_cast<unsigned char>(src[bytePos]));
@@ -306,7 +325,7 @@ namespace Qd {
 		size_t pos = tokenStart + tokenLen;
 
 		// Convert character index to byte offset
-		size_t bytePos = charIndexToByteOffset(src, pos);
+		size_t bytePos = fastCharToByteOffset(src, pos);
 
 		// Skip whitespace
 		while (src[bytePos] != '\0') {
@@ -354,7 +373,7 @@ namespace Qd {
 			size_t tokenLen = u8t_scanner_token_len(scanner);
 			size_t tokenEndChar = tokenStart + tokenLen;
 			// Convert character index to byte offset for indexing into src
-			size_t tokenEndByte = charIndexToByteOffset(src, tokenEndChar);
+			size_t tokenEndByte = fastCharToByteOffset(src, tokenEndChar);
 			// If character immediately after '-' is '>', this is NOT subtraction
 			if (tokenEndByte < strlen(src) && src[tokenEndByte] == '>') {
 				return nullptr; // Not an operator alias, will be handled as local declaration
@@ -543,7 +562,7 @@ namespace Qd {
 			size_t tokenLen = u8t_scanner_token_len(scanner);
 			size_t tokenEndChar = tokenStart + tokenLen;
 			// Convert character index to byte offset for indexing into src
-			size_t tokenEndByte = charIndexToByteOffset(src, tokenEndChar);
+			size_t tokenEndByte = fastCharToByteOffset(src, tokenEndChar);
 			if (tokenEndByte < strlen(src) && src[tokenEndByte] == '>') {
 				// This is '-> variableName' (single variable binding)
 				u8t_scanner_scan(scanner); // Consume '>'
@@ -557,8 +576,8 @@ namespace Qd {
 
 					IAstNode* node = new AstNodeLocal(varNames);
 					size_t line, column;
-					size_t tokenStartByte = charIndexToByteOffset(src, tokenStart);
-					calculateLineColumn(src, tokenStartByte, &line, &column);
+					size_t tokenStartByte = fastCharToByteOffset(src, tokenStart);
+					fastLineColumn(src, tokenStartByte, &line, &column);
 					node->setPosition(line, column);
 					return node;
 				}
@@ -623,7 +642,7 @@ namespace Qd {
 				IAstNode* node = new AstNodeFunctionPointerReference(functionName);
 				// Set position to the & token
 				size_t line, column;
-				calculateLineColumn(src, ampPos, &line, &column);
+				fastLineColumn(src, ampPos, &line, &column);
 				node->setPosition(line, column);
 				return node;
 			}
@@ -881,11 +900,11 @@ namespace Qd {
 			size_t tokenLen = u8t_scanner_token_len(scanner);
 			size_t tokenEndChar = tokenStart + tokenLen;
 			// Convert character index to byte offset for indexing into src
-			size_t tokenEndByte = charIndexToByteOffset(src, tokenEndChar);
+			size_t tokenEndByte = fastCharToByteOffset(src, tokenEndChar);
 			// Check if character immediately after '-' is '>'
 			if (tokenEndByte < strlen(src) && src[tokenEndByte] == '>') {
 				// This is a local declaration: -> varName (single variable binding)
-				size_t arrowPosByte = charIndexToByteOffset(src, tokenStart);
+				size_t arrowPosByte = fastCharToByteOffset(src, tokenStart);
 				u8t_scanner_scan(scanner); // Consume '>'
 
 				// Single identifier is required
@@ -897,7 +916,7 @@ namespace Qd {
 
 					IAstNode* node = new AstNodeLocal(varNames);
 					size_t line, column;
-					calculateLineColumn(src, arrowPosByte, &line, &column);
+					fastLineColumn(src, arrowPosByte, &line, &column);
 					node->setPosition(line, column);
 					return node;
 				} else {
@@ -1206,7 +1225,7 @@ namespace Qd {
 				IAstNode* node = new AstNodeFunctionPointerReference(functionName);
 				// Set position to the & token
 				size_t line, column;
-				calculateLineColumn(src, ampPos, &line, &column);
+				fastLineColumn(src, ampPos, &line, &column);
 				node->setPosition(line, column);
 				return node;
 			} else {
@@ -1220,7 +1239,7 @@ namespace Qd {
 			size_t bracketPos = u8t_scanner_token_start(scanner);
 			AstNodeArrayLiteral* arrNode = new AstNodeArrayLiteral();
 			size_t line, column;
-			calculateLineColumn(src, bracketPos, &line, &column);
+			fastLineColumn(src, bracketPos, &line, &column);
 			arrNode->setPosition(line, column);
 
 			// Parse array elements until we hit ']'
@@ -2444,7 +2463,7 @@ namespace Qd {
 				size_t tokenLen = u8t_scanner_token_len(scanner);
 				size_t tokenEndChar = tokenStart + tokenLen;
 				// Convert character index to byte offset for indexing into src
-				size_t tokenEndByte = charIndexToByteOffset(src, tokenEndChar);
+				size_t tokenEndByte = fastCharToByteOffset(src, tokenEndChar);
 				if (tokenEndByte < strlen(src) && src[tokenEndByte] == '>') {
 					// This is '-> varName' (single variable binding)
 					u8t_scanner_scan(scanner); // Consume '>'
@@ -2459,8 +2478,8 @@ namespace Qd {
 						IAstNode* node = new AstNodeLocal(varNames);
 						size_t line, column;
 						// Note: calculateLineColumn expects byte position
-						size_t tokenStartByte = charIndexToByteOffset(src, tokenStart);
-						calculateLineColumn(src, tokenStartByte, &line, &column);
+						size_t tokenStartByte = fastCharToByteOffset(src, tokenStart);
+						fastLineColumn(src, tokenStartByte, &line, &column);
 						node->setPosition(line, column);
 						tempNodes.push_back(node);
 					} else {
@@ -2544,7 +2563,7 @@ namespace Qd {
 					const char* functionName = u8t_scanner_token_text(scanner, &n);
 					AstNodeFunctionPointerReference* funcPtr = new AstNodeFunctionPointerReference(functionName);
 					size_t line, column;
-					calculateLineColumn(src, ampPos, &line, &column);
+					fastLineColumn(src, ampPos, &line, &column);
 					funcPtr->setPosition(line, column);
 					tempNodes.push_back(funcPtr);
 				} else {
@@ -2555,7 +2574,7 @@ namespace Qd {
 				size_t bracketPos = u8t_scanner_token_start(scanner);
 				AstNodeArrayLiteral* arrNode = new AstNodeArrayLiteral();
 				size_t line, column;
-				calculateLineColumn(src, bracketPos, &line, &column);
+				fastLineColumn(src, bracketPos, &line, &column);
 				arrNode->setPosition(line, column);
 
 				// Parse array elements until we hit ']'
@@ -2876,8 +2895,8 @@ namespace Qd {
 			const char* src, size_t startPos) {
 		AstNodeStructConstruction* structConstruct = new AstNodeStructConstruction(structName, typeArgs);
 		size_t line, column;
-		size_t startPosByte = charIndexToByteOffset(src, startPos);
-		calculateLineColumn(src, startPosByte, &line, &column);
+		size_t startPosByte = fastCharToByteOffset(src, startPos);
+		fastLineColumn(src, startPosByte, &line, &column);
 		structConstruct->setPosition(line, column);
 
 		std::string currentFieldName;
@@ -3169,8 +3188,8 @@ namespace Qd {
 					size_t n;
 					const char* functionName = u8t_scanner_token_text(scanner, &n);
 					AstNodeFunctionPointerReference* node = new AstNodeFunctionPointerReference(functionName);
-					size_t ampPosByte = charIndexToByteOffset(src, ampPos);
-					calculateLineColumn(src, ampPosByte, &line, &column);
+					size_t ampPosByte = fastCharToByteOffset(src, ampPos);
+					fastLineColumn(src, ampPosByte, &line, &column);
 					node->setPosition(line, column);
 					currentFieldNodes.push_back(node);
 				}
@@ -3768,7 +3787,7 @@ namespace Qd {
 
 								size_t funcLine, funcColumn;
 								size_t pos = u8t_scanner_token_start(&scanner);
-								calculateLineColumn(src, pos, &funcLine, &funcColumn);
+								fastLineColumn(src, pos, &funcLine, &funcColumn);
 								func->line = funcLine;
 								func->column = funcColumn;
 
