@@ -11,10 +11,10 @@
 #include <unordered_set>
 #include <vector>
 
+#include "instructions.h"
 #include <qc/ast_node.h>
 #include <qc/ast_node_instruction.h>
 #include <qc/ast_node_literal.h>
-#include <qc/instructions.h>
 #include <qc/semantic_validator.h>
 
 namespace Qd {

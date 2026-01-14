@@ -1,3 +1,4 @@
+#include "instructions.h"
 #include <algorithm>
 #include <cstdint>
 #include <cstdlib>
@@ -32,7 +33,6 @@
 #include <qc/ast_node_use.h>
 #include <qc/ast_node_while.h>
 #include <qc/colors.h>
-#include <qc/instructions.h>
 #include <qc/semantic_validator.h>
 #include <sstream>
 #include <unordered_set>

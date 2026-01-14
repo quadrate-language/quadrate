@@ -4,12 +4,12 @@
 #ifndef QD_QC_SEMANTIC_VALIDATOR_INTERNAL_H
 #define QD_QC_SEMANTIC_VALIDATOR_INTERNAL_H
 
+#include "instructions.h"
 #include <algorithm>
 #include <cstdint>
 #include <cstdlib>
 #include <filesystem>
 #include <qc/ast_node_literal.h>
-#include <qc/instructions.h>
 #include <qc/semantic_validator.h>
 #include <string>
 #include <unordered_set>

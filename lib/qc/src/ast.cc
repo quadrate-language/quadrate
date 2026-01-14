@@ -1,6 +1,7 @@
 #include "ast_node_block.h"
 #include "ast_node_comment.h"
 #include "ast_node_label.h"
+#include "instructions.h"
 #include "source_utils.h"
 #include <cstdint>
 #include <cstdlib>
@@ -37,7 +38,6 @@
 #include <qc/ast_node_while.h>
 #include <qc/colors.h>
 #include <qc/error_reporter.h>
-#include <qc/instructions.h>
 #include <u8t/scanner.h>
 #include <vector>
 

@@ -22,6 +22,7 @@ static constexpr const char* DATA_DIR_NAME = "data";
 static constexpr const char* DATA_DIR_NAME = "share";
 #endif
 
+#include "instructions.h"
 #include <qc/ast.h>
 #include <qc/ast_node.h>
 #include <qc/ast_node_anonymous_function.h>
@@ -47,7 +48,6 @@ static constexpr const char* DATA_DIR_NAME = "share";
 #include <qc/ast_node_use.h>
 #include <qc/ast_node_while.h>
 #include <qc/colors.h>
-#include <qc/instructions.h>
 #include <qc/semantic_validator.h>
 #include <sstream>
 #include <sys/stat.h>
