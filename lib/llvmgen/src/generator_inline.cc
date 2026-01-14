@@ -2,36 +2,49 @@
 
 namespace Qd {
 
+	void LlvmGenerator::Impl::emitFatalError(llvm::Value* ctx, const char* message) {
+		auto fprintfFn = module->getOrInsertFunction("fprintf",
+				llvm::FunctionType::get(builder->getInt32Ty(),
+						{llvm::PointerType::getUnqual(*context), llvm::PointerType::getUnqual(*context)}, true));
+		auto stderrGlobal = module->getOrInsertGlobal("stderr", llvm::PointerType::getUnqual(*context));
+		auto stderrVal = builder->CreateLoad(llvm::PointerType::getUnqual(*context), stderrGlobal, "stderr");
+		auto errorMsg = builder->CreateGlobalString(message);
+		builder->CreateCall(fprintfFn, {stderrVal, errorMsg});
+		builder->CreateCall(printStackTraceFn, {ctx});
+		builder->CreateCall(abortFn, {});
+		builder->CreateUnreachable();
+	}
+
+	LlvmGenerator::Impl::StackAccess LlvmGenerator::Impl::getStackAccess(llvm::Value* ctx) {
+		StackAccess sa;
+		// Get ctx->st
+		llvm::Value* stPtr = builder->CreateStructGEP(contextStructTy, ctx, 0, "st_ptr");
+		llvm::Value* st = builder->CreateLoad(llvm::PointerType::get(*context, 0), stPtr, "st");
+		// Get st->size
+		sa.sizePtr = builder->CreateStructGEP(stackStructTy, st, 2, "size_ptr");
+		sa.size = builder->CreateLoad(builder->getInt64Ty(), sa.sizePtr, "size");
+		// Get st->data
+		llvm::Value* dataPtr = builder->CreateStructGEP(stackStructTy, st, 0, "data_ptr");
+		sa.data = builder->CreateLoad(llvm::PointerType::get(*context, 0), dataPtr, "data");
+		return sa;
+	}
+
 	LlvmGenerator::Impl::BinaryOpContext LlvmGenerator::Impl::setupBinaryOp(llvm::Value* ctx) {
 		BinaryOpContext boc;
-
-		// Get ctx->st
-		llvm::Type* contextTy = llvm::StructType::get(*context, {llvm::PointerType::get(*context, 0)}, false);
-		llvm::Value* stPtr = builder->CreateStructGEP(contextTy, ctx, 0, "st_ptr");
-		llvm::Value* st = builder->CreateLoad(llvm::PointerType::get(*context, 0), stPtr, "st");
-
-		// Get stack structure
-		llvm::Type* stackTy = llvm::StructType::get(
-				*context, {llvm::PointerType::get(*context, 0), builder->getInt64Ty(), builder->getInt64Ty()}, false);
-
-		// Get st->size
-		boc.sizePtr = builder->CreateStructGEP(stackTy, st, 2, "size_ptr");
-		boc.size = builder->CreateLoad(builder->getInt64Ty(), boc.sizePtr, "size");
-
-		// Get st->data
-		llvm::Value* dataPtr = builder->CreateStructGEP(stackTy, st, 0, "data_ptr");
-		llvm::Value* data = builder->CreateLoad(llvm::PointerType::get(*context, 0), dataPtr, "data");
+		auto sa = getStackAccess(ctx);
+		boc.sizePtr = sa.sizePtr;
+		boc.size = sa.size;
 
 		// Load first operand: data[size - 2]
 		llvm::Value* idx1 = builder->CreateSub(boc.size, builder->getInt64(2), "idx1");
-		llvm::Value* elem1Ptr = builder->CreateGEP(stackElementTy, data, idx1, "elem1_ptr");
+		llvm::Value* elem1Ptr = builder->CreateGEP(stackElementTy, sa.data, idx1, "elem1_ptr");
 		llvm::Value* value1Ptr = builder->CreateStructGEP(stackElementTy, elem1Ptr, 0, "value1_ptr");
 		boc.resultPtr = builder->CreateBitCast(value1Ptr, llvm::PointerType::get(*context, 0));
 		boc.value1 = builder->CreateLoad(builder->getInt64Ty(), boc.resultPtr, "value1");
 
 		// Load second operand: data[size - 1]
 		llvm::Value* idx2 = builder->CreateSub(boc.size, builder->getInt64(1), "idx2");
-		llvm::Value* elem2Ptr = builder->CreateGEP(stackElementTy, data, idx2, "elem2_ptr");
+		llvm::Value* elem2Ptr = builder->CreateGEP(stackElementTy, sa.data, idx2, "elem2_ptr");
 		llvm::Value* value2Ptr = builder->CreateStructGEP(stackElementTy, elem2Ptr, 0, "value2_ptr");
 		llvm::Value* value2PtrCast = builder->CreateBitCast(value2Ptr, llvm::PointerType::get(*context, 0));
 		boc.value2 = builder->CreateLoad(builder->getInt64Ty(), value2PtrCast, "value2");
@@ -54,25 +67,16 @@ namespace Qd {
 		// Inline implementation of qd_push_i for runtime integer values
 		// Same as generateInlinePushInt but takes llvm::Value* instead of int64_t
 
-		llvm::Type* contextTy = llvm::StructType::get(*context, {llvm::PointerType::get(*context, 0)}, false);
-		llvm::Value* stPtr = builder->CreateStructGEP(contextTy, ctx, 0, "st_ptr");
+		llvm::Value* stPtr = builder->CreateStructGEP(contextStructTy, ctx, 0, "st_ptr");
 		llvm::Value* st = builder->CreateLoad(llvm::PointerType::get(*context, 0), stPtr, "st");
 
-		llvm::Type* stackTy = llvm::StructType::get(*context,
-				{
-						llvm::PointerType::get(*context, 0), // data
-						builder->getInt64Ty(),				 // capacity
-						builder->getInt64Ty()				 // size
-				},
-				false);
-
-		llvm::Value* sizePtr = builder->CreateStructGEP(stackTy, st, 2, "size_ptr");
+		llvm::Value* sizePtr = builder->CreateStructGEP(stackStructTy, st, 2, "size_ptr");
 		llvm::Value* size = builder->CreateLoad(builder->getInt64Ty(), sizePtr, "size");
 
 		// Skip overflow check for integer-only functions (predictable stack usage)
 		if (!currentFunctionIsIntegerOnly) {
 			// Check for overflow
-			llvm::Value* capacityPtr = builder->CreateStructGEP(stackTy, st, 1, "capacity_ptr");
+			llvm::Value* capacityPtr = builder->CreateStructGEP(stackStructTy, st, 1, "capacity_ptr");
 			llvm::Value* capacity = builder->CreateLoad(builder->getInt64Ty(), capacityPtr, "capacity");
 			llvm::Value* hasSpace = builder->CreateICmpULT(size, capacity, "has_space");
 
@@ -83,27 +87,13 @@ namespace Qd {
 
 			// Generate overflow error
 			builder->SetInsertPoint(overflowBB);
-			auto fprintfFn = module->getOrInsertFunction("fprintf",
-					llvm::FunctionType::get(builder->getInt32Ty(),
-							{llvm::PointerType::getUnqual(*context), llvm::PointerType::getUnqual(*context)}, true));
-			auto stderrGlobal = module->getOrInsertGlobal("stderr", llvm::PointerType::getUnqual(*context));
-			auto stderrVal = builder->CreateLoad(llvm::PointerType::getUnqual(*context), stderrGlobal, "stderr");
-			auto errorMsg =
-					builder->CreateGlobalString("Fatal error: Stack overflow (use -s to increase stack size)\n");
-			builder->CreateCall(fprintfFn, {stderrVal, errorMsg});
-			auto printStackTraceFnTy =
-					llvm::FunctionType::get(builder->getVoidTy(), {llvm::PointerType::getUnqual(*context)}, false);
-			auto printStackTraceFn = module->getOrInsertFunction("qd_print_stack_trace", printStackTraceFnTy);
-			builder->CreateCall(printStackTraceFn, {ctx});
-			auto abortFn = module->getOrInsertFunction("abort", llvm::FunctionType::get(builder->getVoidTy(), false));
-			builder->CreateCall(abortFn, {});
-			builder->CreateUnreachable();
+			emitFatalError(ctx, "Fatal error: Stack overflow (use -s to increase stack size)\n");
 
 			// Do the push
 			builder->SetInsertPoint(pushBB);
 		}
 
-		llvm::Value* dataPtr = builder->CreateStructGEP(stackTy, st, 0, "data_ptr");
+		llvm::Value* dataPtr = builder->CreateStructGEP(stackStructTy, st, 0, "data_ptr");
 		llvm::Value* data = builder->CreateLoad(llvm::PointerType::get(*context, 0), dataPtr, "data");
 
 		llvm::Value* elemPtr = builder->CreateGEP(stackElementTy, data, size, "elem_ptr");
@@ -202,28 +192,14 @@ namespace Qd {
 
 	void LlvmGenerator::Impl::generateInlineBitNot(llvm::Value* ctx) {
 		// Inline implementation of bitwise NOT: ( a:int -- result:int )
-		llvm::Type* contextTy = llvm::StructType::get(*context, {llvm::PointerType::get(*context, 0)}, false);
-		llvm::Value* stPtr = builder->CreateStructGEP(contextTy, ctx, 0, "st_ptr");
-		llvm::Value* st = builder->CreateLoad(llvm::PointerType::get(*context, 0), stPtr, "st");
-
-		llvm::Type* stackTy = llvm::StructType::get(
-				*context, {llvm::PointerType::get(*context, 0), builder->getInt64Ty(), builder->getInt64Ty()}, false);
-
-		llvm::Value* sizePtr = builder->CreateStructGEP(stackTy, st, 2, "size_ptr");
-		llvm::Value* size = builder->CreateLoad(builder->getInt64Ty(), sizePtr, "size");
-
-		llvm::Value* dataPtr = builder->CreateStructGEP(stackTy, st, 0, "data_ptr");
-		llvm::Value* data = builder->CreateLoad(llvm::PointerType::get(*context, 0), dataPtr, "data");
-
-		llvm::Value* idx = builder->CreateSub(size, builder->getInt64(1), "idx");
-		llvm::Value* elemPtr = builder->CreateGEP(stackElementTy, data, idx, "elem_ptr");
+		auto sa = getStackAccess(ctx);
+		llvm::Value* idx = builder->CreateSub(sa.size, builder->getInt64(1), "idx");
+		llvm::Value* elemPtr = builder->CreateGEP(stackElementTy, sa.data, idx, "elem_ptr");
 		llvm::Value* valuePtr = builder->CreateStructGEP(stackElementTy, elemPtr, 0, "value_ptr");
 		llvm::Value* valuePtrCast = builder->CreateBitCast(valuePtr, llvm::PointerType::get(*context, 0));
 		llvm::Value* value = builder->CreateLoad(builder->getInt64Ty(), valuePtrCast, "value");
-
 		llvm::Value* result = builder->CreateNot(value, "not_result");
 		builder->CreateStore(result, valuePtrCast);
-		// Stack size unchanged for unary operation
 	}
 
 	void LlvmGenerator::Impl::generateInlineBitLshift(llvm::Value* ctx) {
@@ -240,178 +216,84 @@ namespace Qd {
 
 	void LlvmGenerator::Impl::generateInlineDup(llvm::Value* ctx) {
 		// Inline dup: duplicate top stack element
-		// Simple operation, no type checking needed
-
-		llvm::Type* contextTy = llvm::StructType::get(*context, {llvm::PointerType::get(*context, 0)}, false);
-		llvm::Value* stPtr = builder->CreateStructGEP(contextTy, ctx, 0, "st_ptr");
-		llvm::Value* st = builder->CreateLoad(llvm::PointerType::get(*context, 0), stPtr, "st");
-
-		llvm::Type* stackTy = llvm::StructType::get(
-				*context, {llvm::PointerType::get(*context, 0), builder->getInt64Ty(), builder->getInt64Ty()}, false);
-
-		llvm::Value* sizePtr = builder->CreateStructGEP(stackTy, st, 2, "size_ptr");
-		llvm::Value* size = builder->CreateLoad(builder->getInt64Ty(), sizePtr, "size");
-
-		llvm::Value* dataPtr = builder->CreateStructGEP(stackTy, st, 0, "data_ptr");
-		llvm::Value* data = builder->CreateLoad(llvm::PointerType::get(*context, 0), dataPtr, "data");
-
+		auto sa = getStackAccess(ctx);
 		// Get pointer to top element (size - 1)
-		llvm::Value* topIdx = builder->CreateSub(size, builder->getInt64(1), "top_idx");
-		llvm::Value* topElemPtr = builder->CreateGEP(stackElementTy, data, topIdx, "top_elem");
-
+		llvm::Value* topIdx = builder->CreateSub(sa.size, builder->getInt64(1), "top_idx");
+		llvm::Value* topElemPtr = builder->CreateGEP(stackElementTy, sa.data, topIdx, "top_elem");
 		// Get pointer to new element (size)
-		llvm::Value* newElemPtr = builder->CreateGEP(stackElementTy, data, size, "new_elem");
-
-		// Copy entire element (value union, type, is_error_tainted)
-		// Element size is 16 bytes (8 for union, 4 for type, 1 for bool + padding)
+		llvm::Value* newElemPtr = builder->CreateGEP(stackElementTy, sa.data, sa.size, "new_elem");
+		// Copy entire element
 		llvm::Value* topValue = builder->CreateLoad(stackElementTy, topElemPtr, "top_value");
 		builder->CreateStore(topValue, newElemPtr);
-
 		// Increment size
-		llvm::Value* newSize = builder->CreateAdd(size, builder->getInt64(1), "new_size");
-		builder->CreateStore(newSize, sizePtr);
+		llvm::Value* newSize = builder->CreateAdd(sa.size, builder->getInt64(1), "new_size");
+		builder->CreateStore(newSize, sa.sizePtr);
 	}
 
 	void LlvmGenerator::Impl::generateInlineSwap(llvm::Value* ctx) {
 		// Inline swap: swap top two stack elements
+		auto sa = getStackAccess(ctx);
 		llvm::Function* currentFn = builder->GetInsertBlock()->getParent();
 
-		llvm::Type* contextTy = llvm::StructType::get(*context, {llvm::PointerType::get(*context, 0)}, false);
-		llvm::Value* stPtr = builder->CreateStructGEP(contextTy, ctx, 0, "st_ptr");
-		llvm::Value* st = builder->CreateLoad(llvm::PointerType::get(*context, 0), stPtr, "st");
-
-		llvm::Type* stackTy = llvm::StructType::get(
-				*context, {llvm::PointerType::get(*context, 0), builder->getInt64Ty(), builder->getInt64Ty()}, false);
-
-		llvm::Value* sizePtr = builder->CreateStructGEP(stackTy, st, 2, "size_ptr");
-		llvm::Value* size = builder->CreateLoad(builder->getInt64Ty(), sizePtr, "size");
-
 		// Check for stack underflow (need at least 2 elements)
-		llvm::Value* hasEnough = builder->CreateICmpUGE(size, builder->getInt64(2), "has_enough");
+		llvm::Value* hasEnough = builder->CreateICmpUGE(sa.size, builder->getInt64(2), "has_enough");
 		llvm::BasicBlock* underflowBB = llvm::BasicBlock::Create(*context, "swap.underflow", currentFn);
 		llvm::BasicBlock* swapBB = llvm::BasicBlock::Create(*context, "swap.do", currentFn);
 		builder->CreateCondBr(hasEnough, swapBB, underflowBB);
 
 		// Generate underflow error
 		builder->SetInsertPoint(underflowBB);
-		auto fprintfFn = module->getOrInsertFunction("fprintf",
-				llvm::FunctionType::get(builder->getInt32Ty(),
-						{llvm::PointerType::getUnqual(*context), llvm::PointerType::getUnqual(*context)}, true));
-		auto stderrGlobal = module->getOrInsertGlobal("stderr", llvm::PointerType::getUnqual(*context));
-		auto stderrVal = builder->CreateLoad(llvm::PointerType::getUnqual(*context), stderrGlobal, "stderr");
-		auto errorMsg = builder->CreateGlobalString("Fatal error in swap: Stack underflow (requires 2 elements)\n");
-		builder->CreateCall(fprintfFn, {stderrVal, errorMsg});
-		auto printStackTraceFnTy =
-				llvm::FunctionType::get(builder->getVoidTy(), {llvm::PointerType::getUnqual(*context)}, false);
-		auto printStackTraceFn = module->getOrInsertFunction("qd_print_stack_trace", printStackTraceFnTy);
-		builder->CreateCall(printStackTraceFn, {ctx});
-		auto abortFn = module->getOrInsertFunction("abort", llvm::FunctionType::get(builder->getVoidTy(), false));
-		builder->CreateCall(abortFn, {});
-		builder->CreateUnreachable();
+		emitFatalError(ctx, "Fatal error in swap: Stack underflow (requires 2 elements)\n");
 
 		// Do the swap
 		builder->SetInsertPoint(swapBB);
-		llvm::Value* dataPtr = builder->CreateStructGEP(stackTy, st, 0, "data_ptr");
-		llvm::Value* data = builder->CreateLoad(llvm::PointerType::get(*context, 0), dataPtr, "data");
-
-		// Get pointers to top two elements
-		llvm::Value* idx1 = builder->CreateSub(size, builder->getInt64(2), "idx1");
-		llvm::Value* elem1Ptr = builder->CreateGEP(stackElementTy, data, idx1, "elem1_ptr");
-
-		llvm::Value* idx2 = builder->CreateSub(size, builder->getInt64(1), "idx2");
-		llvm::Value* elem2Ptr = builder->CreateGEP(stackElementTy, data, idx2, "elem2_ptr");
-
-		// Load both elements
+		llvm::Value* idx1 = builder->CreateSub(sa.size, builder->getInt64(2), "idx1");
+		llvm::Value* elem1Ptr = builder->CreateGEP(stackElementTy, sa.data, idx1, "elem1_ptr");
+		llvm::Value* idx2 = builder->CreateSub(sa.size, builder->getInt64(1), "idx2");
+		llvm::Value* elem2Ptr = builder->CreateGEP(stackElementTy, sa.data, idx2, "elem2_ptr");
 		llvm::Value* elem1 = builder->CreateLoad(stackElementTy, elem1Ptr, "elem1");
 		llvm::Value* elem2 = builder->CreateLoad(stackElementTy, elem2Ptr, "elem2");
-
-		// Store them swapped
 		builder->CreateStore(elem2, elem1Ptr);
 		builder->CreateStore(elem1, elem2Ptr);
 	}
 
 	void LlvmGenerator::Impl::generateInlineDrop(llvm::Value* ctx) {
 		// Inline drop: remove top stack element
-
-		llvm::Type* contextTy = llvm::StructType::get(*context, {llvm::PointerType::get(*context, 0)}, false);
-		llvm::Value* stPtr = builder->CreateStructGEP(contextTy, ctx, 0, "st_ptr");
-		llvm::Value* st = builder->CreateLoad(llvm::PointerType::get(*context, 0), stPtr, "st");
-
-		llvm::Type* stackTy = llvm::StructType::get(
-				*context, {llvm::PointerType::get(*context, 0), builder->getInt64Ty(), builder->getInt64Ty()}, false);
-
-		llvm::Value* sizePtr = builder->CreateStructGEP(stackTy, st, 2, "size_ptr");
-		llvm::Value* size = builder->CreateLoad(builder->getInt64Ty(), sizePtr, "size");
-
-		// Simply decrement size
-		llvm::Value* newSize = builder->CreateSub(size, builder->getInt64(1), "new_size");
-		builder->CreateStore(newSize, sizePtr);
+		auto sa = getStackAccess(ctx);
+		llvm::Value* newSize = builder->CreateSub(sa.size, builder->getInt64(1), "new_size");
+		builder->CreateStore(newSize, sa.sizePtr);
 	}
 
 	void LlvmGenerator::Impl::generateInlineOver(llvm::Value* ctx) {
 		// Inline over: copy second element to top ( a b -- a b a )
-
-		llvm::Type* contextTy = llvm::StructType::get(*context, {llvm::PointerType::get(*context, 0)}, false);
-		llvm::Value* stPtr = builder->CreateStructGEP(contextTy, ctx, 0, "st_ptr");
-		llvm::Value* st = builder->CreateLoad(llvm::PointerType::get(*context, 0), stPtr, "st");
-
-		llvm::Type* stackTy = llvm::StructType::get(
-				*context, {llvm::PointerType::get(*context, 0), builder->getInt64Ty(), builder->getInt64Ty()}, false);
-
-		llvm::Value* sizePtr = builder->CreateStructGEP(stackTy, st, 2, "size_ptr");
-		llvm::Value* size = builder->CreateLoad(builder->getInt64Ty(), sizePtr, "size");
-
-		llvm::Value* dataPtr = builder->CreateStructGEP(stackTy, st, 0, "data_ptr");
-		llvm::Value* data = builder->CreateLoad(llvm::PointerType::get(*context, 0), dataPtr, "data");
-
+		auto sa = getStackAccess(ctx);
 		// Get second from top (size - 2)
-		llvm::Value* secondIdx = builder->CreateSub(size, builder->getInt64(2), "second_idx");
-		llvm::Value* secondElemPtr = builder->CreateGEP(stackElementTy, data, secondIdx, "second_elem");
-
+		llvm::Value* secondIdx = builder->CreateSub(sa.size, builder->getInt64(2), "second_idx");
+		llvm::Value* secondElemPtr = builder->CreateGEP(stackElementTy, sa.data, secondIdx, "second_elem");
 		// Get new top position (size)
-		llvm::Value* newElemPtr = builder->CreateGEP(stackElementTy, data, size, "new_elem");
-
+		llvm::Value* newElemPtr = builder->CreateGEP(stackElementTy, sa.data, sa.size, "new_elem");
 		// Copy second element to new top
 		llvm::Value* secondValue = builder->CreateLoad(stackElementTy, secondElemPtr, "second_value");
 		builder->CreateStore(secondValue, newElemPtr);
-
 		// Increment size
-		llvm::Value* newSize = builder->CreateAdd(size, builder->getInt64(1), "new_size");
-		builder->CreateStore(newSize, sizePtr);
+		llvm::Value* newSize = builder->CreateAdd(sa.size, builder->getInt64(1), "new_size");
+		builder->CreateStore(newSize, sa.sizePtr);
 	}
 
 	void LlvmGenerator::Impl::generateInlineRot(llvm::Value* ctx) {
 		// Inline rot: rotate top three elements ( a b c -- b c a )
-
-		llvm::Type* contextTy = llvm::StructType::get(*context, {llvm::PointerType::get(*context, 0)}, false);
-		llvm::Value* stPtr = builder->CreateStructGEP(contextTy, ctx, 0, "st_ptr");
-		llvm::Value* st = builder->CreateLoad(llvm::PointerType::get(*context, 0), stPtr, "st");
-
-		llvm::Type* stackTy = llvm::StructType::get(
-				*context, {llvm::PointerType::get(*context, 0), builder->getInt64Ty(), builder->getInt64Ty()}, false);
-
-		llvm::Value* sizePtr = builder->CreateStructGEP(stackTy, st, 2, "size_ptr");
-		llvm::Value* size = builder->CreateLoad(builder->getInt64Ty(), sizePtr, "size");
-
-		llvm::Value* dataPtr = builder->CreateStructGEP(stackTy, st, 0, "data_ptr");
-		llvm::Value* data = builder->CreateLoad(llvm::PointerType::get(*context, 0), dataPtr, "data");
-
+		auto sa = getStackAccess(ctx);
 		// Get pointers to top three elements
-		llvm::Value* idx1 = builder->CreateSub(size, builder->getInt64(3), "idx1");
-		llvm::Value* elem1Ptr = builder->CreateGEP(stackElementTy, data, idx1, "elem1_ptr");
-
-		llvm::Value* idx2 = builder->CreateSub(size, builder->getInt64(2), "idx2");
-		llvm::Value* elem2Ptr = builder->CreateGEP(stackElementTy, data, idx2, "elem2_ptr");
-
-		llvm::Value* idx3 = builder->CreateSub(size, builder->getInt64(1), "idx3");
-		llvm::Value* elem3Ptr = builder->CreateGEP(stackElementTy, data, idx3, "elem3_ptr");
-
-		// Load all three
+		llvm::Value* idx1 = builder->CreateSub(sa.size, builder->getInt64(3), "idx1");
+		llvm::Value* elem1Ptr = builder->CreateGEP(stackElementTy, sa.data, idx1, "elem1_ptr");
+		llvm::Value* idx2 = builder->CreateSub(sa.size, builder->getInt64(2), "idx2");
+		llvm::Value* elem2Ptr = builder->CreateGEP(stackElementTy, sa.data, idx2, "elem2_ptr");
+		llvm::Value* idx3 = builder->CreateSub(sa.size, builder->getInt64(1), "idx3");
+		llvm::Value* elem3Ptr = builder->CreateGEP(stackElementTy, sa.data, idx3, "elem3_ptr");
+		// Load all three and rotate: a b c -> b c a
 		llvm::Value* elem1 = builder->CreateLoad(stackElementTy, elem1Ptr, "elem1");
 		llvm::Value* elem2 = builder->CreateLoad(stackElementTy, elem2Ptr, "elem2");
 		llvm::Value* elem3 = builder->CreateLoad(stackElementTy, elem3Ptr, "elem3");
-
-		// Rotate: a b c -> b c a
 		builder->CreateStore(elem2, elem1Ptr);
 		builder->CreateStore(elem3, elem2Ptr);
 		builder->CreateStore(elem1, elem3Ptr);
@@ -419,76 +301,36 @@ namespace Qd {
 
 	llvm::Value* LlvmGenerator::Impl::generateInlinePopInt(llvm::Value* ctx) {
 		// Inline pop for integer-only functions - returns the popped i64 value
-		// Assumes stack is not empty (caller must ensure this in integer-only context)
-
-		llvm::Type* contextTy = llvm::StructType::get(*context, {llvm::PointerType::get(*context, 0)}, false);
-		llvm::Value* stPtr = builder->CreateStructGEP(contextTy, ctx, 0, "st_ptr");
-		llvm::Value* st = builder->CreateLoad(llvm::PointerType::get(*context, 0), stPtr, "st");
-
-		llvm::Type* stackTy = llvm::StructType::get(
-				*context, {llvm::PointerType::get(*context, 0), builder->getInt64Ty(), builder->getInt64Ty()}, false);
-
-		// Get current size
-		llvm::Value* sizePtr = builder->CreateStructGEP(stackTy, st, 2, "size_ptr");
-		llvm::Value* size = builder->CreateLoad(builder->getInt64Ty(), sizePtr, "size");
-
-		// Get data pointer
-		llvm::Value* dataPtr = builder->CreateStructGEP(stackTy, st, 0, "data_ptr");
-		llvm::Value* data = builder->CreateLoad(llvm::PointerType::get(*context, 0), dataPtr, "data");
-
+		auto sa = getStackAccess(ctx);
 		// Load top element value: data[size - 1].value
-		llvm::Value* topIdx = builder->CreateSub(size, builder->getInt64(1), "top_idx");
-		llvm::Value* topElemPtr = builder->CreateGEP(stackElementTy, data, topIdx, "top_elem");
+		llvm::Value* topIdx = builder->CreateSub(sa.size, builder->getInt64(1), "top_idx");
+		llvm::Value* topElemPtr = builder->CreateGEP(stackElementTy, sa.data, topIdx, "top_elem");
 		llvm::Value* valuePtr = builder->CreateStructGEP(stackElementTy, topElemPtr, 0, "value_ptr");
 		llvm::Value* value = builder->CreateLoad(builder->getInt64Ty(), valuePtr, "pop_value");
-
 		// Decrement size
-		llvm::Value* newSize = builder->CreateSub(size, builder->getInt64(1), "new_size");
-		builder->CreateStore(newSize, sizePtr);
-
+		llvm::Value* newSize = builder->CreateSub(sa.size, builder->getInt64(1), "new_size");
+		builder->CreateStore(newSize, sa.sizePtr);
 		return value;
 	}
 
 	void LlvmGenerator::Impl::generateInlinePopIntToStorage(llvm::Value* ctx, llvm::Value* dst) {
 		// Inline pop for integer-only functions - stores directly to a qd_stack_element_t alloca
-		// Assumes stack is not empty (caller must ensure this in integer-only context)
-
-		llvm::Type* contextTy = llvm::StructType::get(*context, {llvm::PointerType::get(*context, 0)}, false);
-		llvm::Value* stPtr = builder->CreateStructGEP(contextTy, ctx, 0, "st_ptr");
-		llvm::Value* st = builder->CreateLoad(llvm::PointerType::get(*context, 0), stPtr, "st");
-
-		llvm::Type* stackTy = llvm::StructType::get(
-				*context, {llvm::PointerType::get(*context, 0), builder->getInt64Ty(), builder->getInt64Ty()}, false);
-
-		// Get current size
-		llvm::Value* sizePtr = builder->CreateStructGEP(stackTy, st, 2, "size_ptr");
-		llvm::Value* size = builder->CreateLoad(builder->getInt64Ty(), sizePtr, "size");
-
-		// Get data pointer
-		llvm::Value* dataPtr = builder->CreateStructGEP(stackTy, st, 0, "data_ptr");
-		llvm::Value* data = builder->CreateLoad(llvm::PointerType::get(*context, 0), dataPtr, "data");
-
+		auto sa = getStackAccess(ctx);
 		// Load top element value: data[size - 1].value
-		llvm::Value* topIdx = builder->CreateSub(size, builder->getInt64(1), "top_idx");
-		llvm::Value* topElemPtr = builder->CreateGEP(stackElementTy, data, topIdx, "top_elem");
+		llvm::Value* topIdx = builder->CreateSub(sa.size, builder->getInt64(1), "top_idx");
+		llvm::Value* topElemPtr = builder->CreateGEP(stackElementTy, sa.data, topIdx, "top_elem");
 		llvm::Value* valuePtr = builder->CreateStructGEP(stackElementTy, topElemPtr, 0, "value_ptr");
 		llvm::Value* value = builder->CreateLoad(builder->getInt64Ty(), valuePtr, "pop_value");
-
 		// Store to destination (qd_stack_element_t: { i64 value, i32 type, i1 tainted })
 		llvm::Value* dstValuePtr = builder->CreateStructGEP(stackElementTy, dst, 0, "dst_value_ptr");
 		builder->CreateStore(value, dstValuePtr);
-
-		// Set type to INT (0)
 		llvm::Value* dstTypePtr = builder->CreateStructGEP(stackElementTy, dst, 1, "dst_type_ptr");
 		builder->CreateStore(builder->getInt32(0), dstTypePtr);
-
-		// Set tainted to false
 		llvm::Value* dstTaintedPtr = builder->CreateStructGEP(stackElementTy, dst, 2, "dst_tainted_ptr");
 		builder->CreateStore(builder->getInt1(false), dstTaintedPtr);
-
 		// Decrement size
-		llvm::Value* newSize = builder->CreateSub(size, builder->getInt64(1), "new_size");
-		builder->CreateStore(newSize, sizePtr);
+		llvm::Value* newSize = builder->CreateSub(sa.size, builder->getInt64(1), "new_size");
+		builder->CreateStore(newSize, sa.sizePtr);
 	}
 
 } // namespace Qd

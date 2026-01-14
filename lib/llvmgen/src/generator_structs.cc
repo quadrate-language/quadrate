@@ -162,13 +162,7 @@ namespace Qd {
 						builder->CreateLoad(llvm::PointerType::getUnqual(*context), fieldBytePtr, "string_ptr");
 
 				// Call qd_string_release() on the string
-				if (!this->qdStringReleaseFn) {
-					auto qdStringReleaseFnTy = llvm::FunctionType::get(
-							builder->getVoidTy(), {llvm::PointerType::getUnqual(*context)}, false);
-					this->qdStringReleaseFn = llvm::Function::Create(
-							qdStringReleaseFnTy, llvm::Function::ExternalLinkage, "qd_string_release", *module);
-				}
-				builder->CreateCall(this->qdStringReleaseFn, {stringPtr});
+				builder->CreateCall(qdStringReleaseFn, {stringPtr});
 			}
 		}
 	}
@@ -177,14 +171,6 @@ namespace Qd {
 		// Destructor function type: void (*)(void*)
 		auto destructorFnTy =
 				llvm::FunctionType::get(builder->getVoidTy(), {llvm::PointerType::getUnqual(*context)}, false);
-
-		// Ensure qd_string_release is declared (needed for string field cleanup)
-		if (!qdStringReleaseFn) {
-			auto qdStringReleaseFnTy =
-					llvm::FunctionType::get(builder->getVoidTy(), {llvm::PointerType::getUnqual(*context)}, false);
-			qdStringReleaseFn = llvm::Function::Create(
-					qdStringReleaseFnTy, llvm::Function::ExternalLinkage, "qd_string_release", *module);
-		}
 
 		for (const auto& [structName, layout] : structDefinitions) {
 			// Check if this struct has any fields that need cleanup
@@ -273,15 +259,6 @@ namespace Qd {
 
 		const StructLayout& layout = *layoutPtr;
 
-		// Define context and stack types (stackElementTy is already a member variable)
-		llvm::Type* contextTy = llvm::StructType::get(*context, {llvm::PointerType::getUnqual(*context)}, false);
-		llvm::Type* stackTy = llvm::StructType::get(*context,
-				{
-						llvm::PointerType::getUnqual(*context), // data
-						builder->getInt64Ty(),					// size
-						builder->getInt64Ty()					// capacity
-				},
-				false);
 
 		// Allocate struct - use stack if function doesn't return pointer, heap otherwise
 		llvm::Value* structPtr = nullptr;
@@ -315,11 +292,11 @@ namespace Qd {
 			auto bytePtr = builder->CreateGEP(builder->getInt8Ty(), structPtr, fieldOffset, "field_byte_ptr");
 
 			// Pop value from stack
-			llvm::Value* stackPtr = builder->CreateStructGEP(contextTy, ctx, 0, "st_ptr");
+			llvm::Value* stackPtr = builder->CreateStructGEP(contextStructTy, ctx, 0, "st_ptr");
 			llvm::Value* st = builder->CreateLoad(llvm::PointerType::getUnqual(*context), stackPtr, "st");
 
 			// Get stack size
-			llvm::Value* sizePtr = builder->CreateStructGEP(stackTy, st, 2, "size_ptr");
+			llvm::Value* sizePtr = builder->CreateStructGEP(stackStructTy, st, 2, "size_ptr");
 			llvm::Value* size = builder->CreateLoad(builder->getInt64Ty(), sizePtr, "size");
 
 			// Decrement size
@@ -327,7 +304,7 @@ namespace Qd {
 			builder->CreateStore(newSize, sizePtr);
 
 			// Get element pointer
-			llvm::Value* dataPtr = builder->CreateStructGEP(stackTy, st, 0, "data_ptr");
+			llvm::Value* dataPtr = builder->CreateStructGEP(stackStructTy, st, 0, "data_ptr");
 			llvm::Value* data = builder->CreateLoad(llvm::PointerType::getUnqual(*context), dataPtr, "data");
 			llvm::Value* elemPtr = builder->CreateGEP(stackElementTy, data, newSize, "elem_ptr");
 
@@ -376,17 +353,9 @@ namespace Qd {
 
 		// Special handling for global error access: error @code or error @message
 		if (varName == "__global_error__") {
-			// Context struct layout: { stack*, error_code (i64), error_msg (char*), ... }
-			llvm::Type* contextTy = llvm::StructType::get(*context,
-					{llvm::PointerType::getUnqual(*context),		// st
-							builder->getInt64Ty(),					// error_code
-							llvm::PointerType::getUnqual(*context), // error_msg
-							builder->getInt32Ty()},					// argc (partial struct, enough for our needs)
-					false);
-
 			if (fieldName == "code") {
 				// Access ctx->error_code (offset 1) and push as int
-				llvm::Value* errorCodePtr = builder->CreateStructGEP(contextTy, ctx, 1, "error_code_ptr");
+				llvm::Value* errorCodePtr = builder->CreateStructGEP(contextStructTy, ctx, 1, "error_code_ptr");
 				llvm::Value* errorCode = builder->CreateLoad(builder->getInt64Ty(), errorCodePtr, "error_code");
 
 				// Push error code onto stack (use class member pushIntFn)
@@ -397,7 +366,7 @@ namespace Qd {
 				builder->CreateCall(pushIntFn, {ctx, errorCode});
 			} else if (fieldName == "message") {
 				// Access ctx->error_msg (offset 2) and push as string
-				llvm::Value* errorMsgPtr = builder->CreateStructGEP(contextTy, ctx, 2, "error_msg_ptr");
+				llvm::Value* errorMsgPtr = builder->CreateStructGEP(contextStructTy, ctx, 2, "error_msg_ptr");
 				llvm::Value* errorMsg =
 						builder->CreateLoad(llvm::PointerType::getUnqual(*context), errorMsgPtr, "error_msg");
 
@@ -435,8 +404,6 @@ namespace Qd {
 			}
 
 			// Pop struct pointer from stack
-			llvm::Type* contextStructTy =
-					llvm::StructType::get(*context, {llvm::PointerType::getUnqual(*context)}, false);
 			llvm::Value* stackPtrPtr = builder->CreateStructGEP(contextStructTy, ctx, 0, "stack_ptr");
 			llvm::Value* stackPtr = builder->CreateLoad(llvm::PointerType::getUnqual(*context), stackPtrPtr, "stack");
 
@@ -460,8 +427,6 @@ namespace Qd {
 				structTypeName = varName;
 
 				// Pop the just-constructed struct pointer from stack
-				llvm::Type* contextStructTy =
-						llvm::StructType::get(*context, {llvm::PointerType::getUnqual(*context)}, false);
 				llvm::Value* stackPtrPtr = builder->CreateStructGEP(contextStructTy, ctx, 0, "stack_ptr");
 				llvm::Value* stackPtr =
 						builder->CreateLoad(llvm::PointerType::getUnqual(*context), stackPtrPtr, "stack");
@@ -489,8 +454,6 @@ namespace Qd {
 					builder->CreateCall(funcIt->second, {ctx});
 
 					// Pop the result (struct pointer) from stack
-					llvm::Type* contextStructTy =
-							llvm::StructType::get(*context, {llvm::PointerType::getUnqual(*context)}, false);
 					llvm::Value* stackPtrPtr = builder->CreateStructGEP(contextStructTy, ctx, 0, "stack_ptr");
 					llvm::Value* stackPtr =
 							builder->CreateLoad(llvm::PointerType::getUnqual(*context), stackPtrPtr, "stack");
@@ -740,22 +703,12 @@ namespace Qd {
 		auto fieldOffset = builder->getInt64(matchingField->offset);
 		auto bytePtr = builder->CreateGEP(builder->getInt8Ty(), structPtr, fieldOffset, "field_byte_ptr");
 
-		// Define stack types
-		llvm::Type* contextTy = llvm::StructType::get(*context, {llvm::PointerType::getUnqual(*context)}, false);
-		llvm::Type* stackTy = llvm::StructType::get(*context,
-				{
-						llvm::PointerType::getUnqual(*context), // data
-						builder->getInt64Ty(),					// size
-						builder->getInt64Ty()					// capacity
-				},
-				false);
-
 		// Pop value from stack
-		llvm::Value* stackPtr = builder->CreateStructGEP(contextTy, ctx, 0, "st_ptr");
+		llvm::Value* stackPtr = builder->CreateStructGEP(contextStructTy, ctx, 0, "st_ptr");
 		llvm::Value* st = builder->CreateLoad(llvm::PointerType::getUnqual(*context), stackPtr, "st");
 
 		// Get stack size
-		llvm::Value* sizePtr = builder->CreateStructGEP(stackTy, st, 2, "size_ptr");
+		llvm::Value* sizePtr = builder->CreateStructGEP(stackStructTy, st, 2, "size_ptr");
 		llvm::Value* size = builder->CreateLoad(builder->getInt64Ty(), sizePtr, "size");
 
 		// Decrement size
@@ -763,7 +716,7 @@ namespace Qd {
 		builder->CreateStore(newSize, sizePtr);
 
 		// Get element pointer
-		llvm::Value* dataPtr = builder->CreateStructGEP(stackTy, st, 0, "data_ptr");
+		llvm::Value* dataPtr = builder->CreateStructGEP(stackStructTy, st, 0, "data_ptr");
 		llvm::Value* data = builder->CreateLoad(llvm::PointerType::getUnqual(*context), dataPtr, "data");
 		llvm::Value* elemPtr = builder->CreateGEP(stackElementTy, data, newSize, "elem_ptr");
 
@@ -900,13 +853,6 @@ namespace Qd {
 								{llvm::PointerType::getUnqual(*context)}, false);
 						createStrFn = llvm::Function::Create(
 								fnTy, llvm::Function::ExternalLinkage, "qd_string_create", *module);
-					}
-					// Ensure qdStringReleaseFn is available
-					if (!qdStringReleaseFn) {
-						auto qdStringReleaseFnTy = llvm::FunctionType::get(
-								builder->getVoidTy(), {llvm::PointerType::getUnqual(*context)}, false);
-						qdStringReleaseFn = llvm::Function::Create(
-								qdStringReleaseFnTy, llvm::Function::ExternalLinkage, "qd_string_release", *module);
 					}
 					llvm::Value* strConstant = builder->CreateGlobalString(strVal, "arr_str");
 					llvm::Value* qdStr = builder->CreateCall(createStrFn, {strConstant}, "qd_str");

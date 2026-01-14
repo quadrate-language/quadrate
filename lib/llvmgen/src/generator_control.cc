@@ -16,15 +16,10 @@ namespace Qd {
 
 		// Inline pop for condition - direct stack access for performance
 		// ctx is a pointer to a struct with first field being qd_stack* st
-		llvm::Type* contextTy = llvm::StructType::get(*context, {llvm::PointerType::get(*context, 0)}, false);
-		llvm::Value* stPtr = builder->CreateStructGEP(contextTy, ctx, 0, "st_ptr");
+		llvm::Value* stPtr = builder->CreateStructGEP(contextStructTy, ctx, 0, "st_ptr");
 		llvm::Value* st = builder->CreateLoad(llvm::PointerType::get(*context, 0), stPtr, "st");
 
-		// Stack type: { data*, capacity, size }
-		llvm::Type* stackTy = llvm::StructType::get(
-				*context, {llvm::PointerType::get(*context, 0), builder->getInt64Ty(), builder->getInt64Ty()}, false);
-
-		llvm::Value* sizePtr = builder->CreateStructGEP(stackTy, st, 2, "size_ptr");
+		llvm::Value* sizePtr = builder->CreateStructGEP(stackStructTy, st, 2, "size_ptr");
 		llvm::Value* size = builder->CreateLoad(builder->getInt64Ty(), sizePtr, "size");
 
 		// Check for stack underflow before popping
@@ -33,28 +28,12 @@ namespace Qd {
 
 		// Generate underflow error block
 		builder->SetInsertPoint(underflowBB);
-		// Call fprintf(stderr, ...) and abort
-		auto fprintfFn = module->getOrInsertFunction("fprintf",
-				llvm::FunctionType::get(builder->getInt32Ty(),
-						{llvm::PointerType::getUnqual(*context), llvm::PointerType::getUnqual(*context)}, true));
-		auto stderrGlobal = module->getOrInsertGlobal("stderr", llvm::PointerType::getUnqual(*context));
-		auto stderrVal = builder->CreateLoad(llvm::PointerType::getUnqual(*context), stderrGlobal, "stderr");
-		auto errorMsg =
-				builder->CreateGlobalString("Fatal error in if: Stack underflow (requires 1 value for condition)\n");
-		builder->CreateCall(fprintfFn, {stderrVal, errorMsg});
-		// Call qd_print_stack_trace(ctx)
-		auto printStackTraceFnTy =
-				llvm::FunctionType::get(builder->getVoidTy(), {llvm::PointerType::getUnqual(*context)}, false);
-		auto printStackTraceFn = module->getOrInsertFunction("qd_print_stack_trace", printStackTraceFnTy);
-		builder->CreateCall(printStackTraceFn, {ctx});
-		auto abortFn = module->getOrInsertFunction("abort", llvm::FunctionType::get(builder->getVoidTy(), false));
-		builder->CreateCall(abortFn, {});
-		builder->CreateUnreachable();
+		emitFatalError(ctx, "Fatal error in if: Stack underflow (requires 1 value for condition)\n");
 
 		// Continue with normal pop in popBB
 		builder->SetInsertPoint(popBB);
 
-		llvm::Value* dataPtr = builder->CreateStructGEP(stackTy, st, 0, "data_ptr");
+		llvm::Value* dataPtr = builder->CreateStructGEP(stackStructTy, st, 0, "data_ptr");
 		llvm::Value* data = builder->CreateLoad(llvm::PointerType::get(*context, 0), dataPtr, "data");
 
 		// Access top element value directly: data[size-1].value
@@ -317,15 +296,10 @@ namespace Qd {
 
 		// Inline pop for condition - direct stack access for performance
 		// ctx is a pointer to a struct with first field being qd_stack* st
-		llvm::Type* contextTy = llvm::StructType::get(*context, {llvm::PointerType::get(*context, 0)}, false);
-		llvm::Value* stPtr = builder->CreateStructGEP(contextTy, ctx, 0, "st_ptr");
+		llvm::Value* stPtr = builder->CreateStructGEP(contextStructTy, ctx, 0, "st_ptr");
 		llvm::Value* st = builder->CreateLoad(llvm::PointerType::get(*context, 0), stPtr, "st");
 
-		// Stack type: { data*, capacity, size }
-		llvm::Type* stackTy = llvm::StructType::get(
-				*context, {llvm::PointerType::get(*context, 0), builder->getInt64Ty(), builder->getInt64Ty()}, false);
-
-		llvm::Value* sizePtr = builder->CreateStructGEP(stackTy, st, 2, "size_ptr");
+		llvm::Value* sizePtr = builder->CreateStructGEP(stackStructTy, st, 2, "size_ptr");
 		llvm::Value* size = builder->CreateLoad(builder->getInt64Ty(), sizePtr, "size");
 
 		// Check for stack underflow before popping
@@ -334,28 +308,12 @@ namespace Qd {
 
 		// Generate underflow error block
 		builder->SetInsertPoint(underflowBB);
-		// Call fprintf(stderr, ...) and abort
-		auto fprintfFn = module->getOrInsertFunction("fprintf",
-				llvm::FunctionType::get(builder->getInt32Ty(),
-						{llvm::PointerType::getUnqual(*context), llvm::PointerType::getUnqual(*context)}, true));
-		auto stderrGlobal = module->getOrInsertGlobal("stderr", llvm::PointerType::getUnqual(*context));
-		auto stderrVal = builder->CreateLoad(llvm::PointerType::getUnqual(*context), stderrGlobal, "stderr");
-		auto errorMsg =
-				builder->CreateGlobalString("Fatal error in while: Stack underflow (requires 1 value for condition)\n");
-		builder->CreateCall(fprintfFn, {stderrVal, errorMsg});
-		// Call qd_print_stack_trace(ctx)
-		auto printStackTraceFnTy =
-				llvm::FunctionType::get(builder->getVoidTy(), {llvm::PointerType::getUnqual(*context)}, false);
-		auto printStackTraceFn = module->getOrInsertFunction("qd_print_stack_trace", printStackTraceFnTy);
-		builder->CreateCall(printStackTraceFn, {ctx});
-		auto abortFn = module->getOrInsertFunction("abort", llvm::FunctionType::get(builder->getVoidTy(), false));
-		builder->CreateCall(abortFn, {});
-		builder->CreateUnreachable();
+		emitFatalError(ctx, "Fatal error in while: Stack underflow (requires 1 value for condition)\n");
 
 		// Continue with normal pop in popBB
 		builder->SetInsertPoint(popBB);
 
-		llvm::Value* dataPtr = builder->CreateStructGEP(stackTy, st, 0, "data_ptr");
+		llvm::Value* dataPtr = builder->CreateStructGEP(stackStructTy, st, 0, "data_ptr");
 		llvm::Value* data = builder->CreateLoad(llvm::PointerType::get(*context, 0), dataPtr, "data");
 
 		// Access top element value directly: data[size-1].value
@@ -566,22 +524,10 @@ namespace Qd {
 		builder->SetInsertPoint(pushStrBB);
 		auto strPtr = builder->CreateIntToPtr(resultValue, llvm::PointerType::getUnqual(*context), "str_ptr");
 		// Call qd_string_data to get const char* from qd_string_t*
-		if (!this->qdStringDataFn) {
-			auto qdStringDataFnTy = llvm::FunctionType::get(
-					llvm::PointerType::getUnqual(*context), {llvm::PointerType::getUnqual(*context)}, false);
-			this->qdStringDataFn = llvm::Function::Create(
-					qdStringDataFnTy, llvm::Function::ExternalLinkage, "qd_string_data", *module);
-		}
-		auto strData = builder->CreateCall(this->qdStringDataFn, {strPtr}, "str_data");
+		auto strData = builder->CreateCall(qdStringDataFn, {strPtr}, "str_data");
 		builder->CreateCall(pushStrFn, {ctx, strData});
 		// Release the string reference from cloned context (qd_push_s has created a new copy)
-		if (!this->qdStringReleaseFn) {
-			auto qdStringReleaseFnTy =
-					llvm::FunctionType::get(builder->getVoidTy(), {llvm::PointerType::getUnqual(*context)}, false);
-			this->qdStringReleaseFn = llvm::Function::Create(
-					qdStringReleaseFnTy, llvm::Function::ExternalLinkage, "qd_string_release", *module);
-		}
-		builder->CreateCall(this->qdStringReleaseFn, {strPtr});
+		builder->CreateCall(qdStringReleaseFn, {strPtr});
 		builder->CreateBr(pushDoneBB);
 
 		// Free the cloned context AFTER pushing (qd_push_s has now duplicated the string)

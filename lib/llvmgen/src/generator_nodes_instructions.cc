@@ -114,8 +114,6 @@ namespace Qd {
 				// Handle fallible method calls
 				if (inst->abortOnError()) {
 					// Check error code and abort if set
-					auto contextStructTy = llvm::StructType::get(*context,
-							{llvm::PointerType::getUnqual(*context), builder->getInt64Ty(), builder->getInt64Ty()});
 					auto errorCodePtr = builder->CreateStructGEP(contextStructTy, ctx, 1, "error_code_ptr");
 					auto errorCode = builder->CreateLoad(builder->getInt64Ty(), errorCodePtr, "error_code");
 					auto hasError = builder->CreateICmpNE(errorCode, builder->getInt64(0), "has_error");
@@ -132,20 +130,9 @@ namespace Qd {
 
 					// Print error message with context->error_msg if available
 					auto funcNameStr = builder->CreateGlobalString(name);
-					auto printErrorMsgFnTy = llvm::FunctionType::get(builder->getVoidTy(),
-							{llvm::PointerType::getUnqual(*context), llvm::PointerType::getUnqual(*context)}, false);
-					auto printErrorMsgFn = module->getOrInsertFunction("qd_print_error_msg", printErrorMsgFnTy);
 					builder->CreateCall(printErrorMsgFn, {ctx, funcNameStr});
-
-					// Print stack trace
-					auto printStackTraceFnTy = llvm::FunctionType::get(
-							builder->getVoidTy(), {llvm::PointerType::getUnqual(*context)}, false);
-					auto printStackTraceFn = module->getOrInsertFunction("qd_print_stack_trace", printStackTraceFnTy);
 					builder->CreateCall(printStackTraceFn, {ctx});
-
-					auto abortFn =
-							module->getOrInsertFunction("abort", llvm::FunctionType::get(builder->getVoidTy(), false));
-					builder->CreateCall(abortFn);
+					builder->CreateCall(abortFn, {});
 					builder->CreateUnreachable();
 
 					// Continue block - user-defined methods don't push a success status

@@ -148,6 +148,9 @@ namespace Qd {
 		llvm::Type* contextPtrTy = nullptr;
 		llvm::Type* execResultTy = nullptr;
 		llvm::Type* stackElementTy = nullptr;
+		llvm::StructType* contextStructTy = nullptr; // Cached context struct layout: {st, error_code, error_msg, argc, argv, program_name}
+		llvm::StructType* closureStructTy = nullptr; // Cached closure struct layout: {magic, fn, env, capture_count}
+		llvm::StructType* stackStructTy = nullptr;   // Cached stack struct layout: {data, capacity, size}
 
 		// Runtime functions
 		llvm::Function* createContextFn = nullptr;
@@ -162,7 +165,6 @@ namespace Qd {
 		llvm::Function* printsFn = nullptr;
 		llvm::Function* nlFn = nullptr;
 		llvm::Function* stackPopFn = nullptr;
-		llvm::Function* stackRemoveAtFn = nullptr;
 		llvm::Function* stackSizeFn = nullptr;
 		llvm::Function* pushCallFn = nullptr;
 		llvm::Function* popCallFn = nullptr;
@@ -186,6 +188,9 @@ namespace Qd {
 		llvm::Function* notFn = nullptr;
 		llvm::Function* shlFn = nullptr;
 		llvm::Function* shrFn = nullptr;
+		llvm::Function* abortFn = nullptr;
+		llvm::Function* printStackTraceFn = nullptr;
+		llvm::Function* printErrorMsgFn = nullptr;
 
 		// Loop context for break/continue
 		struct LoopContext {
@@ -385,6 +390,17 @@ namespace Qd {
 		std::set<std::string> reachableFunctions;
 		bool useReachabilityAnalysis = true;
 
+		// Common stack access helper - extracts the repeated pattern of accessing ctx->st
+		struct StackAccess {
+			llvm::Value* sizePtr;
+			llvm::Value* size;
+			llvm::Value* data;
+		};
+		StackAccess getStackAccess(llvm::Value* ctx);
+
+		// Fatal error helper - emits fprintf(stderr, msg), qd_print_stack_trace(ctx), abort(), unreachable
+		void emitFatalError(llvm::Value* ctx, const char* message);
+
 		// Inline stack operation helpers
 		struct BinaryOpContext {
 			llvm::Value* size;
@@ -423,6 +439,19 @@ namespace Qd {
 		void generateInlineRot(llvm::Value* ctx);
 		llvm::Value* generateInlinePopInt(llvm::Value* ctx);					// Returns popped i64 value
 		void generateInlinePopIntToStorage(llvm::Value* ctx, llvm::Value* dst); // Pops i64 and stores to dst alloca
+
+		// Type-aware operation helpers
+		struct TypeAwareOpContext {
+			llvm::Value* size;
+			llvm::Value* sizePtr;
+			llvm::Value* elem1Ptr;
+			llvm::Value* elem2Ptr;
+			llvm::BasicBlock* fastPath;
+			llvm::BasicBlock* slowPath;
+			llvm::BasicBlock* endBlock;
+		};
+		TypeAwareOpContext setupTypeAwareOp(llvm::Value* ctx, const char* opName);
+		void finishTypeAwareOp(const TypeAwareOpContext& toc, llvm::Value* result, llvm::Value* resultPtr);
 
 		// Type-aware operations
 		void generateTypeAwareAdd(llvm::Value* ctx);

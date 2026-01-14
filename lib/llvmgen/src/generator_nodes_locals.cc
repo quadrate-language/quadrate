@@ -24,16 +24,6 @@ namespace Qd {
 					builder->CreateLoad(llvm::PointerType::getUnqual(*context), ptrAlloca, name + "_cap_store_ptr");
 
 			// Get the stack pointer from context
-			auto contextStructTy = llvm::StructType::get(*context,
-					{
-							llvm::PointerType::getUnqual(*context), // qd_stack* st
-							builder->getInt64Ty(),					// int64_t error_code
-							llvm::PointerType::getUnqual(*context), // char* error_msg
-							builder->getInt32Ty(),					// int argc
-							llvm::PointerType::getUnqual(*context), // char** argv
-							llvm::PointerType::getUnqual(*context)	// char* program_name
-					});
-
 			llvm::Value* stackPtrPtr = builder->CreateStructGEP(contextStructTy, ctx, 0, "stack_ptr");
 			llvm::Value* stackPtr = builder->CreateLoad(llvm::PointerType::getUnqual(*context), stackPtrPtr, "stack");
 
@@ -58,19 +48,10 @@ namespace Qd {
 				// Create alloca to hold the heap pointer (to the elem part, not the refcount)
 				localAlloca = tmpBuilder.CreateAlloca(llvm::PointerType::getUnqual(*context), nullptr, name + "_ptr");
 
-				// Get or create malloc function
-				llvm::Function* localMallocFn = module->getFunction("malloc");
-				if (!localMallocFn) {
-					auto mallocFnTy = llvm::FunctionType::get(
-							llvm::PointerType::getUnqual(*context), {tmpBuilder.getInt64Ty()}, false);
-					localMallocFn =
-							llvm::Function::Create(mallocFnTy, llvm::Function::ExternalLinkage, "malloc", *module);
-				}
-
 				// Allocate heap memory in ENTRY BLOCK (important for loops - only allocate once)
 				// 8 bytes refcount + 24 bytes qd_stack_element_t = 32 bytes
 				llvm::Value* heapBlock =
-						tmpBuilder.CreateCall(localMallocFn, {tmpBuilder.getInt64(32)}, name + "_heap_block");
+						tmpBuilder.CreateCall(mallocFn, {tmpBuilder.getInt64(32)}, name + "_heap_block");
 
 				// Initialize refcount to 1
 				tmpBuilder.CreateStore(tmpBuilder.getInt64(1), heapBlock);
@@ -235,13 +216,7 @@ namespace Qd {
 				builder->CreateLoad(llvm::PointerType::getUnqual(*context), oldValuePtrStr, name + "_old_str");
 
 		// Call qd_string_release() on the old string
-		if (!this->qdStringReleaseFn) {
-			auto qdStringReleaseFnTy =
-					llvm::FunctionType::get(builder->getVoidTy(), {llvm::PointerType::getUnqual(*context)}, false);
-			this->qdStringReleaseFn = llvm::Function::Create(
-					qdStringReleaseFnTy, llvm::Function::ExternalLinkage, "qd_string_release", *module);
-		}
-		builder->CreateCall(this->qdStringReleaseFn, {oldStrPtr});
+		builder->CreateCall(qdStringReleaseFn, {oldStrPtr});
 		builder->CreateBr(afterReleaseBlock);
 
 		// Check if old value was a pointer - release appropriately
@@ -262,10 +237,6 @@ namespace Qd {
 		// Use the closure registry to safely detect closures without reading from freed memory.
 		{
 			// Check closure registry to see if it's actually a closure (safe for any pointer)
-			auto closureStructTy = llvm::StructType::get(
-					*context, {builder->getInt64Ty(), llvm::PointerType::getUnqual(*context),
-									  llvm::PointerType::getUnqual(*context), builder->getInt64Ty()});
-
 			auto closureIsValidFnTy =
 					llvm::FunctionType::get(builder->getInt32Ty(), {llvm::PointerType::getUnqual(*context)}, false);
 			auto closureIsValidFn = module->getOrInsertFunction("qd_closure_is_valid", closureIsValidFnTy);
@@ -319,13 +290,7 @@ namespace Qd {
 			builder->CreateCondBr(shouldFree, freeCapBlock, capContinue);
 
 			builder->SetInsertPoint(freeCapBlock);
-			llvm::Function* localFreeFn = module->getFunction("free");
-			if (!localFreeFn) {
-				auto freeFnTy =
-						llvm::FunctionType::get(builder->getVoidTy(), {llvm::PointerType::getUnqual(*context)}, false);
-				localFreeFn = llvm::Function::Create(freeFnTy, llvm::Function::ExternalLinkage, "free", *module);
-			}
-			builder->CreateCall(localFreeFn, {refCountPtr});
+			builder->CreateCall(freeFn, {refCountPtr});
 			builder->CreateBr(capContinue);
 
 			builder->SetInsertPoint(capContinue);
@@ -340,14 +305,8 @@ namespace Qd {
 			auto closureUnregisterFn = module->getOrInsertFunction("qd_closure_unregister", closureUnregisterFnTy);
 			builder->CreateCall(closureUnregisterFn, {oldPtrVal});
 
-			llvm::Function* closureFreeFn = module->getFunction("free");
-			if (!closureFreeFn) {
-				auto freeFnTy =
-						llvm::FunctionType::get(builder->getVoidTy(), {llvm::PointerType::getUnqual(*context)}, false);
-				closureFreeFn = llvm::Function::Create(freeFnTy, llvm::Function::ExternalLinkage, "free", *module);
-			}
-			builder->CreateCall(closureFreeFn, {envPtr});
-			builder->CreateCall(closureFreeFn, {oldPtrVal});
+			builder->CreateCall(freeFn, {envPtr});
+			builder->CreateCall(freeFn, {oldPtrVal});
 			builder->CreateBr(afterReleaseBlock);
 
 			// Release as generic pointer (not a closure)
@@ -360,18 +319,6 @@ namespace Qd {
 		builder->SetInsertPoint(afterReleaseBlock);
 
 		// Get the stack pointer from context
-		// Context layout: {qd_stack* st, int64_t error_code, char* error_msg, int argc, char** argv, char*
-		// program_name}
-		auto contextStructTy = llvm::StructType::get(*context,
-				{
-						llvm::PointerType::getUnqual(*context), // qd_stack* st
-						builder->getInt64Ty(),					// int64_t error_code
-						llvm::PointerType::getUnqual(*context), // char* error_msg
-						builder->getInt32Ty(),					// int argc
-						llvm::PointerType::getUnqual(*context), // char** argv
-						llvm::PointerType::getUnqual(*context)	// char* program_name
-				});
-
 		llvm::Value* stackPtrPtr = builder->CreateStructGEP(contextStructTy, ctx, 0, "stack_ptr");
 		llvm::Value* stackPtr = builder->CreateLoad(llvm::PointerType::getUnqual(*context), stackPtrPtr, "stack");
 
@@ -389,20 +336,7 @@ namespace Qd {
 
 		// Error block: print error and abort
 		builder->SetInsertPoint(popErrorBB);
-		auto stderrGlobal = module->getOrInsertGlobal("stderr", llvm::PointerType::getUnqual(*context));
-		auto fprintfFnTy = llvm::FunctionType::get(builder->getInt32Ty(),
-				{llvm::PointerType::getUnqual(*context), llvm::PointerType::getUnqual(*context)}, true);
-		auto fprintfFn = module->getOrInsertFunction("fprintf", fprintfFnTy);
-		auto stderrVal = builder->CreateLoad(llvm::PointerType::getUnqual(*context), stderrGlobal, "stderr");
-		auto errorMsg = builder->CreateGlobalString("Fatal error: Stack underflow when assigning to local variable\n");
-		builder->CreateCall(fprintfFn, {stderrVal, errorMsg});
-		auto printStackTraceFnTy =
-				llvm::FunctionType::get(builder->getVoidTy(), {llvm::PointerType::getUnqual(*context)}, false);
-		auto printStackTraceFn = module->getOrInsertFunction("qd_print_stack_trace", printStackTraceFnTy);
-		builder->CreateCall(printStackTraceFn, {ctx});
-		auto abortFn = module->getOrInsertFunction("abort", llvm::FunctionType::get(builder->getVoidTy(), false));
-		builder->CreateCall(abortFn, {});
-		builder->CreateUnreachable();
+		emitFatalError(ctx, "Fatal error: Stack underflow when assigning to local variable\n");
 
 		// Continue in success block
 		builder->SetInsertPoint(popOkBB);
@@ -493,13 +427,7 @@ namespace Qd {
 				builder->SetInsertPoint(capIsStr);
 				llvm::Value* capStrVal =
 						builder->CreateLoad(llvm::PointerType::getUnqual(*context), heapPtr, "cap_str");
-				if (!this->qdStringReleaseFn) {
-					auto qdStringReleaseFnTy = llvm::FunctionType::get(
-							builder->getVoidTy(), {llvm::PointerType::getUnqual(*context)}, false);
-					this->qdStringReleaseFn = llvm::Function::Create(
-							qdStringReleaseFnTy, llvm::Function::ExternalLinkage, "qd_string_release", *module);
-				}
-				builder->CreateCall(this->qdStringReleaseFn, {capStrVal});
+				builder->CreateCall(qdStringReleaseFn, {capStrVal});
 				builder->CreateBr(capDoFree);
 
 				// Check if type == 2 (pointer - could be struct, array, or closure)
@@ -516,14 +444,8 @@ namespace Qd {
 
 				// Free the heap block
 				builder->SetInsertPoint(capDoFree);
-				llvm::Function* capFreeFn = module->getFunction("free");
-				if (!capFreeFn) {
-					auto freeFnTy = llvm::FunctionType::get(
-							builder->getVoidTy(), {llvm::PointerType::getUnqual(*context)}, false);
-					capFreeFn = llvm::Function::Create(freeFnTy, llvm::Function::ExternalLinkage, "free", *module);
-				}
 				// Free starting at refcount (the actual malloc block start)
-				builder->CreateCall(capFreeFn, {refCountPtr});
+				builder->CreateCall(freeFn, {refCountPtr});
 				builder->CreateBr(skipFreeCapBlock);
 
 				builder->SetInsertPoint(skipFreeCapBlock);
@@ -568,13 +490,7 @@ namespace Qd {
 					builder->CreateLoad(llvm::PointerType::getUnqual(*context), valuePtr, varName + "_cleanup_str");
 
 			// Call qd_string_release() on the string
-			if (!this->qdStringReleaseFn) {
-				auto qdStringReleaseFnTy =
-						llvm::FunctionType::get(builder->getVoidTy(), {llvm::PointerType::getUnqual(*context)}, false);
-				this->qdStringReleaseFn = llvm::Function::Create(
-						qdStringReleaseFnTy, llvm::Function::ExternalLinkage, "qd_string_release", *module);
-			}
-			builder->CreateCall(this->qdStringReleaseFn, {strPtr});
+			builder->CreateCall(qdStringReleaseFn, {strPtr});
 			builder->CreateBr(skipFreeBlock);
 
 			// Check if type == QD_STACK_TYPE_PTR (2) and handle appropriately
@@ -591,11 +507,6 @@ namespace Qd {
 						builder->CreateStructGEP(stackElementTy, localAlloca, 0, varName + "_cleanup_ptr_value_ptr");
 				llvm::Value* closurePtr = builder->CreateLoad(
 						llvm::PointerType::getUnqual(*context), ptrValuePtr, varName + "_cleanup_closure");
-
-				// Closure struct layout: { i64 magic, ptr fn, ptr env, i64 capture_count }
-				auto closureStructTy = llvm::StructType::get(
-						*context, {builder->getInt64Ty(), llvm::PointerType::getUnqual(*context),
-										  llvm::PointerType::getUnqual(*context), builder->getInt64Ty()});
 
 				// Check if this is a valid closure using the registry (safe - doesn't dereference)
 				auto closureIsValidFnTy =
@@ -699,13 +610,7 @@ namespace Qd {
 				builder->SetInsertPoint(loopCapIsStr);
 				llvm::Value* loopCapStrVal =
 						builder->CreateLoad(llvm::PointerType::getUnqual(*context), capVarPtr, "loop_cap_str");
-				if (!this->qdStringReleaseFn) {
-					auto qdStringReleaseFnTy = llvm::FunctionType::get(
-							builder->getVoidTy(), {llvm::PointerType::getUnqual(*context)}, false);
-					this->qdStringReleaseFn = llvm::Function::Create(
-							qdStringReleaseFnTy, llvm::Function::ExternalLinkage, "qd_string_release", *module);
-				}
-				builder->CreateCall(this->qdStringReleaseFn, {loopCapStrVal});
+				builder->CreateCall(qdStringReleaseFn, {loopCapStrVal});
 				builder->CreateBr(loopCapDoFree);
 
 				// Check if type == 2 (pointer - could be struct, array, or closure)
@@ -723,14 +628,8 @@ namespace Qd {
 
 				// Free the heap block
 				builder->SetInsertPoint(loopCapDoFree);
-				llvm::Function* localFreeFn = module->getFunction("free");
-				if (!localFreeFn) {
-					auto freeFnTy = llvm::FunctionType::get(
-							builder->getVoidTy(), {llvm::PointerType::getUnqual(*context)}, false);
-					localFreeFn = llvm::Function::Create(freeFnTy, llvm::Function::ExternalLinkage, "free", *module);
-				}
 				// Free starting at refcount (the actual malloc block)
-				builder->CreateCall(localFreeFn, {refCountPtr});
+				builder->CreateCall(freeFn, {refCountPtr});
 				builder->CreateBr(capContinue);
 
 				// Continue to next capture
@@ -747,14 +646,8 @@ namespace Qd {
 				auto closureUnregisterFn = module->getOrInsertFunction("qd_closure_unregister", closureUnregisterFnTy);
 				builder->CreateCall(closureUnregisterFn, {closurePtr});
 
-				llvm::Function* closureFreeFn = module->getFunction("free");
-				if (!closureFreeFn) {
-					auto freeFnTy = llvm::FunctionType::get(
-							builder->getVoidTy(), {llvm::PointerType::getUnqual(*context)}, false);
-					closureFreeFn = llvm::Function::Create(freeFnTy, llvm::Function::ExternalLinkage, "free", *module);
-				}
-				builder->CreateCall(closureFreeFn, {envPtr});
-				builder->CreateCall(closureFreeFn, {closurePtr});
+				builder->CreateCall(freeFn, {envPtr});
+				builder->CreateCall(freeFn, {closurePtr});
 				builder->CreateBr(skipFreeBlock);
 			} else if (isArray) {
 				// Array variable - call qd_array_release

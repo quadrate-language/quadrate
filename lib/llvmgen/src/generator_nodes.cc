@@ -363,15 +363,6 @@ namespace Qd {
 			// This ensures each call starts with a clean state
 			auto preFallibleIt = fallibleFunctions.find(lookupName);
 			if (preFallibleIt != fallibleFunctions.end() && preFallibleIt->second) {
-				auto contextStructTy = llvm::StructType::get(
-						*context, {
-										  llvm::PointerType::getUnqual(*context), // qd_stack* st
-										  builder->getInt64Ty(),				  // int64_t error_code
-										  llvm::PointerType::getUnqual(*context), // char* error_msg
-										  builder->getInt32Ty(),				  // int argc
-										  llvm::PointerType::getUnqual(*context), // char** argv
-										  llvm::PointerType::getUnqual(*context)  // char* program_name
-								  });
 				auto errorCodePtr = builder->CreateStructGEP(contextStructTy, ctx, 1, "pre_call_error_code_ptr");
 				builder->CreateStore(builder->getInt64(0), errorCodePtr);
 			}
@@ -417,18 +408,6 @@ namespace Qd {
 			if (fallibleIt != fallibleFunctions.end() && fallibleIt->second) {
 				// This is a fallible function - push error status after the call
 				// Get the error_code field from context (field index 1)
-				// Context layout: {qd_stack* st, int64_t error_code, char* error_msg, int argc, char** argv, char*
-				// program_name}
-				auto contextStructTy = llvm::StructType::get(
-						*context, {
-										  llvm::PointerType::getUnqual(*context), // qd_stack* st
-										  builder->getInt64Ty(),				  // int64_t error_code
-										  llvm::PointerType::getUnqual(*context), // char* error_msg
-										  builder->getInt32Ty(),				  // int argc
-										  llvm::PointerType::getUnqual(*context), // char** argv
-										  llvm::PointerType::getUnqual(*context)  // char* program_name
-								  });
-
 				auto errorCodePtr = builder->CreateStructGEP(contextStructTy, ctx, 1, "error_code_ptr");
 				auto errorCode = builder->CreateLoad(builder->getInt64Ty(), errorCodePtr, "error_code");
 				auto hasError = builder->CreateICmpNE(errorCode, builder->getInt64(0), "has_error");
@@ -447,20 +426,9 @@ namespace Qd {
 
 					// Print error message with context->error_msg if available
 					auto funcNameStr = builder->CreateGlobalString(name);
-					auto printErrorMsgFnTy = llvm::FunctionType::get(builder->getVoidTy(),
-							{llvm::PointerType::getUnqual(*context), llvm::PointerType::getUnqual(*context)}, false);
-					auto printErrorMsgFn = module->getOrInsertFunction("qd_print_error_msg", printErrorMsgFnTy);
 					builder->CreateCall(printErrorMsgFn, {ctx, funcNameStr});
-
-					// Print stack trace
-					auto printStackTraceFnTy = llvm::FunctionType::get(
-							builder->getVoidTy(), {llvm::PointerType::getUnqual(*context)}, false);
-					auto printStackTraceFn = module->getOrInsertFunction("qd_print_stack_trace", printStackTraceFnTy);
 					builder->CreateCall(printStackTraceFn, {ctx});
-
-					auto abortFn =
-							module->getOrInsertFunction("abort", llvm::FunctionType::get(builder->getVoidTy(), false));
-					builder->CreateCall(abortFn);
+					builder->CreateCall(abortFn, {});
 					builder->CreateUnreachable();
 
 					// Continue block - user-defined functions don't push success status
@@ -635,23 +603,10 @@ namespace Qd {
 		if (hasClosure) {
 			// Allocate closure struct: { magic, fn_ptr, env_ptr, capture_count }
 			// Magic marker to identify closures: 0xCL05UR3E (closure in leet speak)
-			// Closure struct type: { i64, i8*, i8*, i64 }
-			auto closureStructTy = llvm::StructType::get(
-					*context, {builder->getInt64Ty(), llvm::PointerType::getUnqual(*context),
-									  llvm::PointerType::getUnqual(*context), builder->getInt64Ty()});
-
 			// Allocate environment array (array of pointers for capture-by-reference)
 			size_t envSize = captures.size() * 8; // sizeof(pointer) = 8 bytes on 64-bit
 
-			// Get or create malloc function
-			llvm::Function* closureMallocFn = module->getFunction("malloc");
-			if (!closureMallocFn) {
-				auto closureMallocFnTy =
-						llvm::FunctionType::get(llvm::PointerType::getUnqual(*context), {builder->getInt64Ty()}, false);
-				closureMallocFn =
-						llvm::Function::Create(closureMallocFnTy, llvm::Function::ExternalLinkage, "malloc", *module);
-			}
-			llvm::Value* envAlloc = builder->CreateCall(closureMallocFn, {builder->getInt64(envSize)}, "env_alloc");
+			llvm::Value* envAlloc = builder->CreateCall(mallocFn, {builder->getInt64(envSize)}, "env_alloc");
 
 			// Store pointers to captured variables in environment (capture-by-reference)
 			// Environment is now an array of pointers to qd_stack_element_t
@@ -686,7 +641,7 @@ namespace Qd {
 			}
 
 			// Allocate closure struct (magic + 2 pointers + capture_count = 32 bytes)
-			llvm::Value* closureAlloc = builder->CreateCall(closureMallocFn, {builder->getInt64(32)}, "closure_alloc");
+			llvm::Value* closureAlloc = builder->CreateCall(mallocFn, {builder->getInt64(32)}, "closure_alloc");
 
 			// Store magic marker (0xCL05UR3E = 0xC105023E in hex)
 			llvm::Value* magicSlot = builder->CreateStructGEP(closureStructTy, closureAlloc, 0, "magic_slot");
@@ -753,10 +708,6 @@ namespace Qd {
 				// Clear error_code for fallible methods
 				auto preFallibleIt = fallibleFunctions.find(lookupName);
 				if (preFallibleIt != fallibleFunctions.end() && preFallibleIt->second) {
-					auto contextStructTy = llvm::StructType::get(*context,
-							{llvm::PointerType::getUnqual(*context), builder->getInt64Ty(),
-									llvm::PointerType::getUnqual(*context), builder->getInt32Ty(),
-									llvm::PointerType::getUnqual(*context), llvm::PointerType::getUnqual(*context)});
 					auto errorCodePtr = builder->CreateStructGEP(contextStructTy, ctx, 1, "pre_call_error_code_ptr");
 					builder->CreateStore(builder->getInt64(0), errorCodePtr);
 				}
@@ -779,11 +730,6 @@ namespace Qd {
 				// Handle fallible method return
 				auto fallibleIt = fallibleFunctions.find(lookupName);
 				if (fallibleIt != fallibleFunctions.end() && fallibleIt->second) {
-					auto contextStructTy = llvm::StructType::get(*context,
-							{llvm::PointerType::getUnqual(*context), builder->getInt64Ty(),
-									llvm::PointerType::getUnqual(*context), builder->getInt32Ty(),
-									llvm::PointerType::getUnqual(*context), llvm::PointerType::getUnqual(*context)});
-
 					auto errorCodePtr = builder->CreateStructGEP(contextStructTy, ctx, 1, "error_code_ptr");
 					auto errorCode = builder->CreateLoad(builder->getInt64Ty(), errorCodePtr, "error_code");
 					auto hasError = builder->CreateICmpNE(errorCode, builder->getInt64(0), "has_error");
@@ -799,22 +745,9 @@ namespace Qd {
 
 						// Print error message with context->error_msg if available
 						auto funcNameStr = builder->CreateGlobalString(name);
-						auto printErrorMsgFnTy = llvm::FunctionType::get(builder->getVoidTy(),
-								{llvm::PointerType::getUnqual(*context), llvm::PointerType::getUnqual(*context)},
-								false);
-						auto printErrorMsgFn = module->getOrInsertFunction("qd_print_error_msg", printErrorMsgFnTy);
 						builder->CreateCall(printErrorMsgFn, {ctx, funcNameStr});
-
-						// Print stack trace
-						auto printStackTraceFnTy = llvm::FunctionType::get(
-								builder->getVoidTy(), {llvm::PointerType::getUnqual(*context)}, false);
-						auto printStackTraceFn =
-								module->getOrInsertFunction("qd_print_stack_trace", printStackTraceFnTy);
 						builder->CreateCall(printStackTraceFn, {ctx});
-
-						auto abortFn = module->getOrInsertFunction(
-								"abort", llvm::FunctionType::get(builder->getVoidTy(), false));
-						builder->CreateCall(abortFn);
+						builder->CreateCall(abortFn, {});
 						builder->CreateUnreachable();
 
 						// Continue - user-defined methods don't push success status
@@ -885,15 +818,6 @@ namespace Qd {
 		// This ensures each call starts with a clean state
 		auto preFallibleIt = fallibleFunctions.find(fullName);
 		if (preFallibleIt != fallibleFunctions.end() && preFallibleIt->second) {
-			auto contextStructTy =
-					llvm::StructType::get(*context, {
-															llvm::PointerType::getUnqual(*context), // qd_stack* st
-															builder->getInt64Ty(), // int64_t error_code
-															llvm::PointerType::getUnqual(*context), // char* error_msg
-															builder->getInt32Ty(),					// int argc
-															llvm::PointerType::getUnqual(*context), // char** argv
-															llvm::PointerType::getUnqual(*context) // char* program_name
-													});
 			auto errorCodePtr = builder->CreateStructGEP(contextStructTy, ctx, 1, "pre_call_error_code_ptr");
 			builder->CreateStore(builder->getInt64(0), errorCodePtr);
 		}
@@ -920,16 +844,6 @@ namespace Qd {
 		auto fallibleIt = fallibleFunctions.find(fullName);
 		if (fallibleIt != fallibleFunctions.end() && fallibleIt->second) {
 			// This is a fallible function - push error status after the call
-			auto contextStructTy =
-					llvm::StructType::get(*context, {
-															llvm::PointerType::getUnqual(*context), // qd_stack* st
-															builder->getInt64Ty(), // int64_t error_code
-															llvm::PointerType::getUnqual(*context), // char* error_msg
-															builder->getInt32Ty(),					// int argc
-															llvm::PointerType::getUnqual(*context), // char** argv
-															llvm::PointerType::getUnqual(*context) // char* program_name
-													});
-
 			auto errorCodePtr = builder->CreateStructGEP(contextStructTy, ctx, 1, "error_code_ptr");
 			auto errorCode = builder->CreateLoad(builder->getInt64Ty(), errorCodePtr, "error_code");
 			auto hasError = builder->CreateICmpNE(errorCode, builder->getInt64(0), "has_error");
@@ -948,20 +862,9 @@ namespace Qd {
 
 				// Print error message with context->error_msg if available
 				auto funcNameStr = builder->CreateGlobalString(name);
-				auto printErrorMsgFnTy = llvm::FunctionType::get(builder->getVoidTy(),
-						{llvm::PointerType::getUnqual(*context), llvm::PointerType::getUnqual(*context)}, false);
-				auto printErrorMsgFn = module->getOrInsertFunction("qd_print_error_msg", printErrorMsgFnTy);
 				builder->CreateCall(printErrorMsgFn, {ctx, funcNameStr});
-
-				// Print stack trace
-				auto printStackTraceFnTy =
-						llvm::FunctionType::get(builder->getVoidTy(), {llvm::PointerType::getUnqual(*context)}, false);
-				auto printStackTraceFn = module->getOrInsertFunction("qd_print_stack_trace", printStackTraceFnTy);
 				builder->CreateCall(printStackTraceFn, {ctx});
-
-				auto abortFn =
-						module->getOrInsertFunction("abort", llvm::FunctionType::get(builder->getVoidTy(), false));
-				builder->CreateCall(abortFn);
+				builder->CreateCall(abortFn, {});
 				builder->CreateUnreachable();
 
 				// Continue block
@@ -1120,13 +1023,7 @@ namespace Qd {
 							builder->CreateLoad(llvm::PointerType::getUnqual(*context), valuePtr, "switch_str");
 
 					// Call qd_string_data to get const char*
-					if (!this->qdStringDataFn) {
-						auto qdStringDataFnTy = llvm::FunctionType::get(llvm::PointerType::getUnqual(*context),
-								{llvm::PointerType::getUnqual(*context)}, false);
-						this->qdStringDataFn = llvm::Function::Create(
-								qdStringDataFnTy, llvm::Function::ExternalLinkage, "qd_string_data", *module);
-					}
-					auto switchStrData = builder->CreateCall(this->qdStringDataFn, {switchStrPtr}, "switch_str_data");
+					auto switchStrData = builder->CreateCall(qdStringDataFn, {switchStrPtr}, "switch_str_data");
 
 					// Create case string constant
 					auto caseStr = builder->CreateGlobalString(lit->value().substr(1, lit->value().length() - 2));
@@ -1162,14 +1059,7 @@ namespace Qd {
 								builder->CreateLoad(llvm::PointerType::getUnqual(*context), valuePtr, "switch_str");
 
 						// Call qd_string_data to get const char*
-						if (!this->qdStringDataFn) {
-							auto qdStringDataFnTy = llvm::FunctionType::get(llvm::PointerType::getUnqual(*context),
-									{llvm::PointerType::getUnqual(*context)}, false);
-							this->qdStringDataFn = llvm::Function::Create(
-									qdStringDataFnTy, llvm::Function::ExternalLinkage, "qd_string_data", *module);
-						}
-						auto switchStrData =
-								builder->CreateCall(this->qdStringDataFn, {switchStrPtr}, "switch_str_data");
+						auto switchStrData = builder->CreateCall(qdStringDataFn, {switchStrPtr}, "switch_str_data");
 
 						// Create case string constant (strip quotes)
 						auto caseStr = builder->CreateGlobalString(value.substr(1, value.length() - 2));
@@ -1247,13 +1137,7 @@ namespace Qd {
 		builder->SetInsertPoint(freeStringBB);
 		auto valuePtr = builder->CreateStructGEP(switchElemTy, switchElem, 0, "value_ptr");
 		auto strPtr = builder->CreateLoad(llvm::PointerType::getUnqual(*context), valuePtr, "str_ptr");
-		if (!this->qdStringReleaseFn) {
-			auto qdStringReleaseFnTy =
-					llvm::FunctionType::get(builder->getVoidTy(), {llvm::PointerType::getUnqual(*context)}, false);
-			this->qdStringReleaseFn = llvm::Function::Create(
-					qdStringReleaseFnTy, llvm::Function::ExternalLinkage, "qd_string_release", *module);
-		}
-		builder->CreateCall(this->qdStringReleaseFn, {strPtr});
+		builder->CreateCall(qdStringReleaseFn, {strPtr});
 		builder->CreateBr(skipFreeBB);
 
 		// Skip free block

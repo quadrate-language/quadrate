@@ -31,160 +31,109 @@ namespace Qd {
 	void LlvmGenerator::Impl::setupRuntimeDeclarations() {
 		// Context type is opaque pointer
 		contextPtrTy = llvm::PointerType::getUnqual(*context);
+		auto ptrTy = contextPtrTy; // alias for readability
 
 		// exec_result is a struct with one i32 field
 		execResultTy = llvm::StructType::create(*context, {builder->getInt32Ty()}, "qd_exec_result");
 
 		// qd_stack_element_t layout: { union(i64, double, ptr, ptr), i32 type, i8 is_error_tainted }
-		// Union is 8 bytes (i64/double), type is i32, bool is i8
-		// For simplicity, represent union as i64 since all variants fit
 		stackElementTy = llvm::StructType::create(*context,
-				{
-						builder->getInt64Ty(), // union value (we'll access as i64)
-						builder->getInt32Ty(), // type
-						builder->getInt8Ty()   // is_error_tainted (bool is 1 byte, not 1 bit)
-				},
-				"qd_stack_element_t");
+				{builder->getInt64Ty(), builder->getInt32Ty(), builder->getInt8Ty()}, "qd_stack_element_t");
 
-		// qd_create_context(size_t stack_size) -> qd_context*
-		auto createContextFnTy = llvm::FunctionType::get(contextPtrTy, {builder->getInt64Ty()}, false);
-		createContextFn = llvm::Function::Create(
-				createContextFnTy, llvm::Function::ExternalLinkage, "qd_create_context", *module);
+		// Context layout: {qd_stack* st, int64_t error_code, char* error_msg, int argc, char** argv, char* program_name}
+		contextStructTy = llvm::StructType::create(*context,
+				{ptrTy, builder->getInt64Ty(), ptrTy, builder->getInt32Ty(), ptrTy, ptrTy}, "qd_context_t");
 
-		// qd_free_context(qd_context* ctx) -> void
-		auto freeContextFnTy = llvm::FunctionType::get(builder->getVoidTy(), {contextPtrTy}, false);
-		freeContextFn =
-				llvm::Function::Create(freeContextFnTy, llvm::Function::ExternalLinkage, "qd_free_context", *module);
+		// Closure layout: {int64_t magic, ptr fn, ptr env, int64_t capture_count}
+		closureStructTy = llvm::StructType::create(*context,
+				{builder->getInt64Ty(), ptrTy, ptrTy, builder->getInt64Ty()}, "qd_closure_t");
 
-		// qd_clone_context(const qd_context* src) -> qd_context*
-		auto cloneContextFnTy = llvm::FunctionType::get(contextPtrTy, {contextPtrTy}, false);
-		cloneContextFn =
-				llvm::Function::Create(cloneContextFnTy, llvm::Function::ExternalLinkage, "qd_clone_context", *module);
+		// Stack layout: {ptr data, int64_t capacity, int64_t size}
+		stackStructTy = llvm::StructType::create(*context,
+				{ptrTy, builder->getInt64Ty(), builder->getInt64Ty()}, "qd_stack_t");
 
-		// qd_push_i(qd_context* ctx, int64_t value) -> qd_exec_result
-		auto pushIntFnTy = llvm::FunctionType::get(execResultTy, {contextPtrTy, builder->getInt64Ty()}, false);
-		pushIntFn = llvm::Function::Create(pushIntFnTy, llvm::Function::ExternalLinkage, "qd_push_i", *module);
+		// Common function type signatures
+		auto ctxToResultTy = llvm::FunctionType::get(execResultTy, {contextPtrTy}, false);
+		auto ctxToVoidTy = llvm::FunctionType::get(builder->getVoidTy(), {contextPtrTy}, false);
+		auto ptrToVoidTy = llvm::FunctionType::get(builder->getVoidTy(), {ptrTy}, false);
+		auto ptrToPtrTy = llvm::FunctionType::get(ptrTy, {ptrTy}, false);
+		auto ctxPtrToResultTy = llvm::FunctionType::get(execResultTy, {contextPtrTy, ptrTy}, false);
 
-		// qd_push_f(qd_context* ctx, double value) -> qd_exec_result
-		auto pushFloatFnTy = llvm::FunctionType::get(execResultTy, {contextPtrTy, builder->getDoubleTy()}, false);
-		pushFloatFn = llvm::Function::Create(pushFloatFnTy, llvm::Function::ExternalLinkage, "qd_push_f", *module);
+		// Helper to declare external functions
+		auto declareFn = [this](llvm::FunctionType* ty, const char* name) {
+			return llvm::Function::Create(ty, llvm::Function::ExternalLinkage, name, *module);
+		};
 
-		// qd_push_s(qd_context* ctx, const char* value) -> qd_exec_result
-		auto pushStrFnTy =
-				llvm::FunctionType::get(execResultTy, {contextPtrTy, llvm::PointerType::getUnqual(*context)}, false);
-		pushStrFn = llvm::Function::Create(pushStrFnTy, llvm::Function::ExternalLinkage, "qd_push_s", *module);
+		// Context management: (i64) -> ctx, (ctx) -> void, (ctx) -> ctx
+		auto i64ToCtxTy = llvm::FunctionType::get(contextPtrTy, {builder->getInt64Ty()}, false);
+		createContextFn = declareFn(i64ToCtxTy, "qd_create_context");
+		freeContextFn = declareFn(ctxToVoidTy, "qd_free_context");
+		cloneContextFn = declareFn(ptrToPtrTy, "qd_clone_context");
 
-		// qd_push_s_ref(qd_context* ctx, qd_string_t* value) -> qd_exec_result
-		auto pushStrRefFnTy =
-				llvm::FunctionType::get(execResultTy, {contextPtrTy, llvm::PointerType::getUnqual(*context)}, false);
-		pushStrRefFn =
-				llvm::Function::Create(pushStrRefFnTy, llvm::Function::ExternalLinkage, "qd_push_s_ref", *module);
+		// Push functions: (ctx, value) -> result
+		auto ctxI64ToResultTy = llvm::FunctionType::get(execResultTy, {contextPtrTy, builder->getInt64Ty()}, false);
+		auto ctxF64ToResultTy = llvm::FunctionType::get(execResultTy, {contextPtrTy, builder->getDoubleTy()}, false);
+		pushIntFn = declareFn(ctxI64ToResultTy, "qd_push_i");
+		pushFloatFn = declareFn(ctxF64ToResultTy, "qd_push_f");
+		pushStrFn = declareFn(ctxPtrToResultTy, "qd_push_s");
+		pushStrRefFn = declareFn(ctxPtrToResultTy, "qd_push_s_ref");
+		pushPtrFn = declareFn(ctxPtrToResultTy, "qd_push_p");
 
-		// qd_push_p(qd_context* ctx, void* value) -> qd_exec_result
-		auto pushPtrFnTy =
-				llvm::FunctionType::get(execResultTy, {contextPtrTy, llvm::PointerType::getUnqual(*context)}, false);
-		pushPtrFn = llvm::Function::Create(pushPtrFnTy, llvm::Function::ExternalLinkage, "qd_push_p", *module);
+		// Runtime operations: (ctx) -> result
+		callFn = declareFn(ctxToResultTy, "qd_call");
+		printsFn = declareFn(ctxToResultTy, "qd_prints");
+		nlFn = declareFn(ctxToResultTy, "qd_nl");
+		addFn = declareFn(ctxToResultTy, "qd_add");
+		subFn = declareFn(ctxToResultTy, "qd_sub");
+		mulFn = declareFn(ctxToResultTy, "qd_mul");
+		andFn = declareFn(ctxToResultTy, "qd_and");
+		orFn = declareFn(ctxToResultTy, "qd_or");
+		xorFn = declareFn(ctxToResultTy, "qd_xor");
+		notFn = declareFn(ctxToResultTy, "qd_not");
+		shlFn = declareFn(ctxToResultTy, "qd_shl");
+		shrFn = declareFn(ctxToResultTy, "qd_shr");
 
-		// qd_call(qd_context* ctx) -> qd_exec_result
-		auto callFnTy = llvm::FunctionType::get(execResultTy, {contextPtrTy}, false);
-		callFn = llvm::Function::Create(callFnTy, llvm::Function::ExternalLinkage, "qd_call", *module);
+		// Call stack management
+		auto pushCallFnTy = llvm::FunctionType::get(
+				builder->getVoidTy(), {contextPtrTy, ptrTy, ptrTy, builder->getInt64Ty()}, false);
+		pushCallFn = declareFn(pushCallFnTy, "qd_push_call");
+		popCallFn = declareFn(ctxToVoidTy, "qd_pop_call");
 
-		// qd_prints(qd_context* ctx) -> qd_exec_result
-		auto printsFnTy = llvm::FunctionType::get(execResultTy, {contextPtrTy}, false);
-		printsFn = llvm::Function::Create(printsFnTy, llvm::Function::ExternalLinkage, "qd_prints", *module);
+		// Stack checking
+		auto checkStackFnTy = llvm::FunctionType::get(
+				builder->getVoidTy(), {contextPtrTy, builder->getInt64Ty(), ptrTy, ptrTy}, false);
+		checkStackFn = declareFn(checkStackFnTy, "qd_check_stack");
 
-		// qd_nl(qd_context* ctx) -> qd_exec_result
-		auto nlFnTy = llvm::FunctionType::get(execResultTy, {contextPtrTy}, false);
-		nlFn = llvm::Function::Create(nlFnTy, llvm::Function::ExternalLinkage, "qd_nl", *module);
+		// Stack operations
+		auto stackPopFnTy = llvm::FunctionType::get(builder->getInt32Ty(), {ptrTy, ptrTy}, false);
+		auto ptrToI64Ty = llvm::FunctionType::get(builder->getInt64Ty(), {ptrTy}, false);
+		stackPopFn = declareFn(stackPopFnTy, "qd_stack_pop");
+		stackSizeFn = declareFn(ptrToI64Ty, "qd_stack_size");
 
-		// qd_add/sub/mul(qd_context* ctx) -> qd_exec_result
-		auto arithFnTy = llvm::FunctionType::get(execResultTy, {contextPtrTy}, false);
-		addFn = llvm::Function::Create(arithFnTy, llvm::Function::ExternalLinkage, "qd_add", *module);
-		subFn = llvm::Function::Create(arithFnTy, llvm::Function::ExternalLinkage, "qd_sub", *module);
-		mulFn = llvm::Function::Create(arithFnTy, llvm::Function::ExternalLinkage, "qd_mul", *module);
+		// C library functions
+		auto i64ToPtrTy = llvm::FunctionType::get(ptrTy, {builder->getInt64Ty()}, false);
+		strdupFn = declareFn(ptrToPtrTy, "strdup");
+		mallocFn = declareFn(i64ToPtrTy, "malloc");
+		freeFn = declareFn(ptrToVoidTy, "free");
 
-		// qd_and/or/xor/not/shl/shr(qd_context* ctx) -> qd_exec_result (bitwise operations)
-		andFn = llvm::Function::Create(arithFnTy, llvm::Function::ExternalLinkage, "qd_and", *module);
-		orFn = llvm::Function::Create(arithFnTy, llvm::Function::ExternalLinkage, "qd_or", *module);
-		xorFn = llvm::Function::Create(arithFnTy, llvm::Function::ExternalLinkage, "qd_xor", *module);
-		notFn = llvm::Function::Create(arithFnTy, llvm::Function::ExternalLinkage, "qd_not", *module);
-		shlFn = llvm::Function::Create(arithFnTy, llvm::Function::ExternalLinkage, "qd_shl", *module);
-		shrFn = llvm::Function::Create(arithFnTy, llvm::Function::ExternalLinkage, "qd_shr", *module);
+		// Struct/pointer management
+		auto allocFnTy = llvm::FunctionType::get(ptrTy, {builder->getInt64Ty(), ptrTy}, false);
+		qdStructAllocFn = declareFn(allocFnTy, "qd_struct_alloc");
+		qdStructReleaseFn = declareFn(ptrToVoidTy, "qd_struct_release");
+		qdStructRetainFn = declareFn(ptrToPtrTy, "qd_struct_retain");
+		qdPtrReleaseFn = declareFn(ptrToVoidTy, "qd_ptr_release");
+		qdPtrRetainFn = declareFn(ptrToPtrTy, "qd_ptr_retain");
 
-		// qd_push_call(qd_context* ctx, const char* func_name, const char* file, size_t line) -> void
-		auto pushCallFnTy = llvm::FunctionType::get(builder->getVoidTy(),
-				{contextPtrTy, llvm::PointerType::getUnqual(*context), llvm::PointerType::getUnqual(*context),
-						builder->getInt64Ty()},
-				false);
-		pushCallFn = llvm::Function::Create(pushCallFnTy, llvm::Function::ExternalLinkage, "qd_push_call", *module);
+		// Error handling functions
+		auto noargToVoidTy = llvm::FunctionType::get(builder->getVoidTy(), false);
+		auto ptrPtrToVoidTy = llvm::FunctionType::get(builder->getVoidTy(), {ptrTy, ptrTy}, false);
+		abortFn = declareFn(noargToVoidTy, "abort");
+		printStackTraceFn = declareFn(ctxToVoidTy, "qd_print_stack_trace");
+		printErrorMsgFn = declareFn(ptrPtrToVoidTy, "qd_print_error_msg");
 
-		// qd_pop_call(qd_context* ctx) -> void
-		auto popCallFnTy = llvm::FunctionType::get(builder->getVoidTy(), {contextPtrTy}, false);
-		popCallFn = llvm::Function::Create(popCallFnTy, llvm::Function::ExternalLinkage, "qd_pop_call", *module);
-
-		// qd_check_stack(qd_context* ctx, size_t count, const qd_stack_type* types, const char* func_name) -> void
-		auto checkStackFnTy = llvm::FunctionType::get(builder->getVoidTy(),
-				{contextPtrTy, builder->getInt64Ty(), llvm::PointerType::getUnqual(*context),
-						llvm::PointerType::getUnqual(*context)},
-				false);
-		checkStackFn =
-				llvm::Function::Create(checkStackFnTy, llvm::Function::ExternalLinkage, "qd_check_stack", *module);
-
-		// For if statements, we need: qd_stack_pop and qd_stack_size
-		// qd_stack_pop(qd_stack* st, qd_stack_element_t* elem) -> qd_stack_error (i32)
-		auto stackPopFnTy = llvm::FunctionType::get(builder->getInt32Ty(),
-				{llvm::PointerType::getUnqual(*context), llvm::PointerType::getUnqual(*context)}, false);
-		stackPopFn = llvm::Function::Create(stackPopFnTy, llvm::Function::ExternalLinkage, "qd_stack_pop", *module);
-
-		// qd_stack_size(qd_stack* st) -> size_t
-		auto stackSizeFnTy =
-				llvm::FunctionType::get(builder->getInt64Ty(), {llvm::PointerType::getUnqual(*context)}, false);
-		stackSizeFn = llvm::Function::Create(stackSizeFnTy, llvm::Function::ExternalLinkage, "qd_stack_size", *module);
-
-		// strdup(const char* s) -> char*
-		auto strdupFnTy = llvm::FunctionType::get(
-				llvm::PointerType::getUnqual(*context), {llvm::PointerType::getUnqual(*context)}, false);
-		strdupFn = llvm::Function::Create(strdupFnTy, llvm::Function::ExternalLinkage, "strdup", *module);
-
-		// malloc(size_t size) -> void*
-		auto mallocFnTy =
-				llvm::FunctionType::get(llvm::PointerType::getUnqual(*context), {builder->getInt64Ty()}, false);
-		mallocFn = llvm::Function::Create(mallocFnTy, llvm::Function::ExternalLinkage, "malloc", *module);
-
-		// free(void* ptr)
-		auto freeFnTy = llvm::FunctionType::get(builder->getVoidTy(), {llvm::PointerType::getUnqual(*context)}, false);
-		this->freeFn = llvm::Function::Create(freeFnTy, llvm::Function::ExternalLinkage, "free", *module);
-
-		// qd_struct_alloc(size_t size, destructor_fn destructor) -> void*
-		// Destructor is void (*)(void*) - use opaque pointer
-		auto qdStructAllocFnTy = llvm::FunctionType::get(llvm::PointerType::getUnqual(*context),
-				{builder->getInt64Ty(), llvm::PointerType::getUnqual(*context)}, false);
-		this->qdStructAllocFn =
-				llvm::Function::Create(qdStructAllocFnTy, llvm::Function::ExternalLinkage, "qd_struct_alloc", *module);
-
-		// qd_struct_release(void* ptr)
-		auto qdStructReleaseFnTy =
-				llvm::FunctionType::get(builder->getVoidTy(), {llvm::PointerType::getUnqual(*context)}, false);
-		this->qdStructReleaseFn = llvm::Function::Create(
-				qdStructReleaseFnTy, llvm::Function::ExternalLinkage, "qd_struct_release", *module);
-
-		// qd_struct_retain(void* ptr) -> void*
-		auto qdStructRetainFnTy = llvm::FunctionType::get(
-				llvm::PointerType::getUnqual(*context), {llvm::PointerType::getUnqual(*context)}, false);
-		this->qdStructRetainFn = llvm::Function::Create(
-				qdStructRetainFnTy, llvm::Function::ExternalLinkage, "qd_struct_retain", *module);
-
-		// qd_ptr_release(void* ptr) - generic release for arrays and structs
-		auto qdPtrReleaseFnTy =
-				llvm::FunctionType::get(builder->getVoidTy(), {llvm::PointerType::getUnqual(*context)}, false);
-		this->qdPtrReleaseFn =
-				llvm::Function::Create(qdPtrReleaseFnTy, llvm::Function::ExternalLinkage, "qd_ptr_release", *module);
-
-		// qd_ptr_retain(void* ptr) -> void* - generic retain for arrays and structs
-		auto qdPtrRetainFnTy = llvm::FunctionType::get(
-				llvm::PointerType::getUnqual(*context), {llvm::PointerType::getUnqual(*context)}, false);
-		this->qdPtrRetainFn =
-				llvm::Function::Create(qdPtrRetainFnTy, llvm::Function::ExternalLinkage, "qd_ptr_retain", *module);
+		// String functions
+		qdStringReleaseFn = declareFn(ptrToVoidTy, "qd_string_release");
+		qdStringDataFn = declareFn(ptrToPtrTy, "qd_string_data");
 
 		// Initialize debug info if enabled
 		if (debugInfoEnabled) {
@@ -567,15 +516,6 @@ namespace Qd {
 			auto argcArg = fn->getArg(0); // i32 argc
 			auto argvArg = fn->getArg(1); // i8** argv
 
-			// Define the context struct type to access fields
-			auto contextStructTy = llvm::StructType::get(*context,
-					{llvm::PointerType::getUnqual(*context),		  // st
-							builder->getInt64Ty(),					  // error_code
-							llvm::PointerType::getUnqual(*context),	  // error_msg
-							builder->getInt32Ty(),					  // argc
-							llvm::PointerType::getUnqual(*context),	  // argv
-							llvm::PointerType::getUnqual(*context)}); // program_name
-
 			// Store argc (field index 3)
 			auto argcPtr = builder->CreateStructGEP(contextStructTy, ctx, 3, "argc.ptr");
 			builder->CreateStore(argcArg, argcPtr);
@@ -917,10 +857,6 @@ namespace Qd {
 				localVariableStructTypes[receiverName] = qualifiedReceiverType;
 
 				// Pop the receiver from the stack
-				auto contextStructTy = llvm::StructType::get(*context,
-						{llvm::PointerType::getUnqual(*context), builder->getInt64Ty(),
-								llvm::PointerType::getUnqual(*context), builder->getInt32Ty(),
-								llvm::PointerType::getUnqual(*context), llvm::PointerType::getUnqual(*context)});
 				llvm::Value* stackPtrPtr = builder->CreateStructGEP(contextStructTy, ctx, 0, "stack_ptr");
 				llvm::Value* stackPtr =
 						builder->CreateLoad(llvm::PointerType::getUnqual(*context), stackPtrPtr, "stack");
