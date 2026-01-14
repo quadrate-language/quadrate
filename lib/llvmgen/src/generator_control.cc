@@ -113,16 +113,15 @@ namespace Qd {
 			startValue = generateInlinePopInt(ctx);
 		} else {
 			// Pop start, end, step from stack (in reverse order: step, end, start)
-			auto stackFieldPtr = builder->CreateStructGEP(
-					llvm::StructType::get(*context,
-							{
-									ptrTy, // qd_stack* st
-									int64Ty,					// int64_t error_code
-									ptrTy, // char* error_msg
-									int32Ty,					// int argc
-									ptrTy, // char** argv
-									ptrTy	// char* program_name
-							}),
+			auto stackFieldPtr = builder->CreateStructGEP(llvm::StructType::get(*context,
+																  {
+																		  ptrTy,   // qd_stack* st
+																		  int64Ty, // int64_t error_code
+																		  ptrTy,   // char* error_msg
+																		  int32Ty, // int argc
+																		  ptrTy,   // char** argv
+																		  ptrTy	   // char* program_name
+																  }),
 					ctx, 0, "st_ptr");
 			auto stack = builder->CreateLoad(ptrTy, stackFieldPtr, "st");
 
@@ -239,7 +238,6 @@ namespace Qd {
 				AstNodeDefer* deferNode = *it;
 				// Generate defer body inline
 				for (auto* child : deferNode->children()) {
-					
 					if (child && child->type() == IAstNode::Type::BLOCK) {
 						for (auto* innerChild : child->children()) {
 							generateNode(innerChild, ctx);
@@ -358,7 +356,6 @@ namespace Qd {
 			for (auto it = currentScope.rbegin(); it != currentScope.rend(); ++it) {
 				AstNodeDefer* deferNode = *it;
 				for (auto* child : deferNode->children()) {
-					
 					if (child && child->type() == IAstNode::Type::BLOCK) {
 						for (auto* innerChild : child->children()) {
 							generateNode(innerChild, ctx);
@@ -420,7 +417,6 @@ namespace Qd {
 			for (auto it = currentScope.rbegin(); it != currentScope.rend(); ++it) {
 				AstNodeDefer* deferNode = *it;
 				for (auto* child : deferNode->children()) {
-					
 					if (child && child->type() == IAstNode::Type::BLOCK) {
 						for (auto* innerChild : child->children()) {
 							generateNode(innerChild, ctx);
@@ -462,17 +458,16 @@ namespace Qd {
 		}
 
 		// Get the stack from cloned context
-		auto stackFieldPtr =
-				builder->CreateStructGEP(llvm::StructType::get(*context,
-												 {
-														 ptrTy, // qd_stack* st
-														 int64Ty,					 // int64_t error_code
-														 ptrTy, // char* error_msg
-														 int32Ty,					 // int argc
-														 ptrTy, // char** argv
-														 ptrTy	 // char* program_name
-												 }),
-						clonedCtx, 0, "cloned_st_ptr");
+		auto stackFieldPtr = builder->CreateStructGEP(llvm::StructType::get(*context,
+															  {
+																	  ptrTy,   // qd_stack* st
+																	  int64Ty, // int64_t error_code
+																	  ptrTy,   // char* error_msg
+																	  int32Ty, // int argc
+																	  ptrTy,   // char** argv
+																	  ptrTy	   // char* program_name
+															  }),
+				clonedCtx, 0, "cloned_st_ptr");
 		auto clonedStack = builder->CreateLoad(ptrTy, stackFieldPtr, "cloned_st");
 
 		// Pop exactly one value from the cloned stack
@@ -589,7 +584,6 @@ namespace Qd {
 					for (auto it = currentScope.rbegin(); it != currentScope.rend(); ++it) {
 						AstNodeDefer* deferNode = *it;
 						for (auto* child : deferNode->children()) {
-							
 							if (child && child->type() == IAstNode::Type::BLOCK) {
 								for (auto* innerChild : child->children()) {
 									generateNode(innerChild, ctx);
@@ -612,7 +606,6 @@ namespace Qd {
 					for (auto it = currentScope.rbegin(); it != currentScope.rend(); ++it) {
 						AstNodeDefer* deferNode = *it;
 						for (auto* child : deferNode->children()) {
-							
 							if (child && child->type() == IAstNode::Type::BLOCK) {
 								for (auto* innerChild : child->children()) {
 									generateNode(innerChild, ctx);

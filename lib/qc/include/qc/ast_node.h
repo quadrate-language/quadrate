@@ -16,20 +16,29 @@ namespace Qd {
 		using pointer = IAstNode**;
 		using reference = IAstNode*;
 
-		AstChildIterator(const IAstNode* node, size_t index) : mNode(node), mIndex(index) {}
+		AstChildIterator(const IAstNode* node, size_t index) : mNode(node), mIndex(index) {
+		}
 
 		inline IAstNode* operator*() const;
+
 		AstChildIterator& operator++() {
 			++mIndex;
 			return *this;
 		}
+
 		AstChildIterator operator++(int) {
 			auto tmp = *this;
 			++mIndex;
 			return tmp;
 		}
-		bool operator==(const AstChildIterator& other) const { return mIndex == other.mIndex; }
-		bool operator!=(const AstChildIterator& other) const { return mIndex != other.mIndex; }
+
+		bool operator==(const AstChildIterator& other) const {
+			return mIndex == other.mIndex;
+		}
+
+		bool operator!=(const AstChildIterator& other) const {
+			return mIndex != other.mIndex;
+		}
 
 	private:
 		const IAstNode* mNode;
@@ -39,7 +48,8 @@ namespace Qd {
 	// Range for iterating over AST node children with range-based for
 	class AstChildRange {
 	public:
-		explicit AstChildRange(const IAstNode* node) : mNode(node) {}
+		explicit AstChildRange(const IAstNode* node) : mNode(node) {
+		}
 
 		inline AstChildIterator begin() const;
 		inline AstChildIterator end() const;
@@ -107,15 +117,31 @@ namespace Qd {
 		virtual void setPosition(size_t line, size_t column) = 0;
 
 		// Returns a range for iterating over children with range-based for
-		AstChildRange children() const { return AstChildRange(this); }
+		AstChildRange children() const {
+			return AstChildRange(this);
+		}
 	};
 
 	// Inline implementations (must be after IAstNode is fully defined)
-	inline IAstNode* AstChildIterator::operator*() const { return mNode->child(mIndex); }
-	inline AstChildIterator AstChildRange::begin() const { return AstChildIterator(mNode, 0); }
-	inline AstChildIterator AstChildRange::end() const { return AstChildIterator(mNode, mNode->childCount()); }
-	inline size_t AstChildRange::size() const { return mNode->childCount(); }
-	inline bool AstChildRange::empty() const { return mNode->childCount() == 0; }
+	inline IAstNode* AstChildIterator::operator*() const {
+		return mNode->child(mIndex);
+	}
+
+	inline AstChildIterator AstChildRange::begin() const {
+		return AstChildIterator(mNode, 0);
+	}
+
+	inline AstChildIterator AstChildRange::end() const {
+		return AstChildIterator(mNode, mNode->childCount());
+	}
+
+	inline size_t AstChildRange::size() const {
+		return mNode->childCount();
+	}
+
+	inline bool AstChildRange::empty() const {
+		return mNode->childCount() == 0;
+	}
 }
 
 #endif

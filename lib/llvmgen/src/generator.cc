@@ -43,20 +43,17 @@ namespace Qd {
 		execResultTy = llvm::StructType::create(*context, {i32t}, "qd_exec_result");
 
 		// qd_stack_element_t layout: { union(i64, double, ptr, ptr), i32 type, i8 is_error_tainted }
-		stackElementTy = llvm::StructType::create(*context,
-				{i64t, i32t, builder->getInt8Ty()}, "qd_stack_element_t");
+		stackElementTy = llvm::StructType::create(*context, {i64t, i32t, builder->getInt8Ty()}, "qd_stack_element_t");
 
-		// Context layout: {qd_stack* st, int64_t error_code, char* error_msg, int argc, char** argv, char* program_name}
-		contextStructTy = llvm::StructType::create(*context,
-				{ptrTy, i64t, ptrTy, i32t, ptrTy, ptrTy}, "qd_context_t");
+		// Context layout: {qd_stack* st, int64_t error_code, char* error_msg, int argc, char** argv, char*
+		// program_name}
+		contextStructTy = llvm::StructType::create(*context, {ptrTy, i64t, ptrTy, i32t, ptrTy, ptrTy}, "qd_context_t");
 
 		// Closure layout: {int64_t magic, ptr fn, ptr env, int64_t capture_count}
-		closureStructTy = llvm::StructType::create(*context,
-				{i64t, ptrTy, ptrTy, i64t}, "qd_closure_t");
+		closureStructTy = llvm::StructType::create(*context, {i64t, ptrTy, ptrTy, i64t}, "qd_closure_t");
 
 		// Stack layout: {ptr data, int64_t capacity, int64_t size}
-		stackStructTy = llvm::StructType::create(*context,
-				{ptrTy, i64t, i64t}, "qd_stack_t");
+		stackStructTy = llvm::StructType::create(*context, {ptrTy, i64t, i64t}, "qd_stack_t");
 
 		// Common function type signatures
 		auto ctxToResultTy = llvm::FunctionType::get(execResultTy, {contextPtrTy}, false);
@@ -100,14 +97,13 @@ namespace Qd {
 		shrFn = declareFn(ctxToResultTy, "qd_shr");
 
 		// Call stack management
-		auto pushCallFnTy = llvm::FunctionType::get(
-				builder->getVoidTy(), {contextPtrTy, ptrTy, ptrTy, int64Ty}, false);
+		auto pushCallFnTy = llvm::FunctionType::get(builder->getVoidTy(), {contextPtrTy, ptrTy, ptrTy, int64Ty}, false);
 		pushCallFn = declareFn(pushCallFnTy, "qd_push_call");
 		popCallFn = declareFn(ctxToVoidTy, "qd_pop_call");
 
 		// Stack checking
-		auto checkStackFnTy = llvm::FunctionType::get(
-				builder->getVoidTy(), {contextPtrTy, int64Ty, ptrTy, ptrTy}, false);
+		auto checkStackFnTy =
+				llvm::FunctionType::get(builder->getVoidTy(), {contextPtrTy, int64Ty, ptrTy, ptrTy}, false);
 		checkStackFn = declareFn(checkStackFnTy, "qd_check_stack");
 
 		// Stack operations
@@ -482,8 +478,7 @@ namespace Qd {
 
 		if (isMain) {
 			// Create main function: i32 @main(i32 %argc, i8** %argv)
-			auto mainFnTy = llvm::FunctionType::get(
-					int32Ty, {int32Ty, ptrTy}, false);
+			auto mainFnTy = llvm::FunctionType::get(int32Ty, {int32Ty, ptrTy}, false);
 			fn = llvm::Function::Create(mainFnTy, llvm::Function::ExternalLinkage, "main", *module);
 
 			// Add debug info for main function
@@ -864,8 +859,7 @@ namespace Qd {
 
 				// Pop the receiver from the stack
 				llvm::Value* stackPtrPtr = builder->CreateStructGEP(contextStructTy, ctx, 0, "stack_ptr");
-				llvm::Value* stackPtr =
-						builder->CreateLoad(ptrTy, stackPtrPtr, "stack");
+				llvm::Value* stackPtr = builder->CreateLoad(ptrTy, stackPtrPtr, "stack");
 				builder->CreateCall(stackPopFn, {stackPtr, receiverAlloca});
 			}
 
@@ -1029,21 +1023,18 @@ namespace Qd {
 	bool LlvmGenerator::Impl::generateTestRunner(
 			const std::vector<std::pair<std::string, std::string>>& testNamesWithDisplay) {
 		// Create main function: i32 @main(i32 %argc, i8** %argv)
-		auto mainFnTy = llvm::FunctionType::get(
-				int32Ty, {int32Ty, ptrTy}, false);
+		auto mainFnTy = llvm::FunctionType::get(int32Ty, {int32Ty, ptrTy}, false);
 		auto mainFn = llvm::Function::Create(mainFnTy, llvm::Function::ExternalLinkage, "main", *module);
 
 		auto entryBB = llvm::BasicBlock::Create(*context, "entry", mainFn);
 		builder->SetInsertPoint(entryBB);
 
 		// Check NO_COLOR environment variable
-		auto getenvFnTy = llvm::FunctionType::get(
-				ptrTy, {ptrTy}, false);
+		auto getenvFnTy = llvm::FunctionType::get(ptrTy, {ptrTy}, false);
 		auto getenvFn = module->getOrInsertFunction("getenv", getenvFnTy);
 		auto noColorStr = builder->CreateGlobalString("NO_COLOR", "no_color_env");
 		auto noColorVal = builder->CreateCall(getenvFn, {noColorStr}, "no_color");
-		auto noColorNull = builder->CreateICmpEQ(
-				noColorVal, llvm::ConstantPointerNull::get(ptrTy), "no_color_null");
+		auto noColorNull = builder->CreateICmpEQ(noColorVal, llvm::ConstantPointerNull::get(ptrTy), "no_color_null");
 		// useColor = (getenv("NO_COLOR") == NULL)
 		auto useColor = noColorNull;
 
@@ -1052,8 +1043,7 @@ namespace Qd {
 		auto ctx = builder->CreateCall(createContextFn, {stackSizeVal}, "ctx");
 
 		// Create printf function for direct output
-		auto printfFnTy =
-				llvm::FunctionType::get(int32Ty, {ptrTy}, true);
+		auto printfFnTy = llvm::FunctionType::get(int32Ty, {ptrTy}, true);
 		auto printfFn = module->getOrInsertFunction("printf", printfFnTy);
 
 		// Counters for passed/failed tests

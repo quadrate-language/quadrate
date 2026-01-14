@@ -1,4 +1,5 @@
-#pragma once
+#ifndef QD_QC_INSTRUCTIONS_H
+#define QD_QC_INSTRUCTIONS_H
 
 #include <cstring>
 
@@ -80,3 +81,5 @@ namespace Qd {
 		return false;
 	}
 }
+
+#endif // QD_QC_INSTRUCTIONS_H

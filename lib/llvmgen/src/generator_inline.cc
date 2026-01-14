@@ -3,9 +3,7 @@
 namespace Qd {
 
 	void LlvmGenerator::Impl::emitFatalError(llvm::Value* ctx, const char* message) {
-		auto fprintfFn = module->getOrInsertFunction("fprintf",
-				llvm::FunctionType::get(int32Ty,
-						{ptrTy, ptrTy}, true));
+		auto fprintfFn = module->getOrInsertFunction("fprintf", llvm::FunctionType::get(int32Ty, {ptrTy, ptrTy}, true));
 		auto stderrGlobal = module->getOrInsertGlobal("stderr", ptrTy);
 		auto stderrVal = builder->CreateLoad(ptrTy, stderrGlobal, "stderr");
 		auto errorMsg = builder->CreateGlobalString(message);

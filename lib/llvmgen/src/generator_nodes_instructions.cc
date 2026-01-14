@@ -19,8 +19,7 @@ namespace Qd {
 			llvm::Value* storagePtr = localAlloca;
 			bool isIndirect = indirectLocalVariables.find(name) != indirectLocalVariables.end();
 			if (isIndirect) {
-				storagePtr =
-						builder->CreateLoad(ptrTy, localAlloca, name + "_storage");
+				storagePtr = builder->CreateLoad(ptrTy, localAlloca, name + "_storage");
 			}
 
 			// Extract type field

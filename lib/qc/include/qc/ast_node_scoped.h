@@ -7,7 +7,12 @@
 #include <vector>
 
 namespace Qd {
+	// Forward declaration for friend access
+	class SemanticValidator;
+
 	class AstNodeScopedIdentifier : public IAstNode {
+		friend class SemanticValidator;
+
 	public:
 		AstNodeScopedIdentifier(const std::string& scope, const std::string& name)
 			: mScope(scope), mName(name), mParent(nullptr), mAbortOnError(false), mCheckError(false), mLine(0),
@@ -71,42 +76,20 @@ namespace Qd {
 			return mCheckError;
 		}
 
-		// Set which parameter positions need implicit casts
-		void setParameterCasts(const std::vector<CastDirection>& casts) {
-			mParameterCasts = casts;
-		}
-
 		const std::vector<CastDirection>& parameterCasts() const {
 			return mParameterCasts;
-		}
-
-		// Method call support
-		void setIsMethodCall(bool isMethod) {
-			mIsMethodCall = isMethod;
 		}
 
 		bool isMethodCall() const {
 			return mIsMethodCall;
 		}
 
-		void setReceiverType(const std::string& type) {
-			mReceiverType = type;
-		}
-
 		const std::string& receiverType() const {
 			return mReceiverType;
 		}
 
-		void setMethodInputParamCount(size_t count) {
-			mMethodInputParamCount = count;
-		}
-
 		size_t methodInputParamCount() const {
 			return mMethodInputParamCount;
-		}
-
-		void setMethodReceiverPositionFromTop(size_t pos) {
-			mMethodReceiverPositionFromTop = pos;
 		}
 
 		size_t methodReceiverPositionFromTop() const {
@@ -114,6 +97,27 @@ namespace Qd {
 		}
 
 	private:
+		// Semantic validation setters (only accessible by SemanticValidator)
+		void setParameterCasts(const std::vector<CastDirection>& casts) {
+			mParameterCasts = casts;
+		}
+
+		void setIsMethodCall(bool isMethod) {
+			mIsMethodCall = isMethod;
+		}
+
+		void setReceiverType(const std::string& type) {
+			mReceiverType = type;
+		}
+
+		void setMethodInputParamCount(size_t count) {
+			mMethodInputParamCount = count;
+		}
+
+		void setMethodReceiverPositionFromTop(size_t pos) {
+			mMethodReceiverPositionFromTop = pos;
+		}
+
 		std::string mScope;
 		std::string mName;
 		IAstNode* mParent;

@@ -25,8 +25,8 @@ public:
 	// Returns root node on success (cached or freshly parsed), nullptr on failure
 	// On failure, outAst will point to the Ast object so caller can retrieve parse errors
 	// outFromCache is set to true if the AST came from the cache (already validated)
-	Qd::IAstNode* getOrParse(const std::string& filePath, Qd::Ast** outAst = nullptr,
-			std::string* outSource = nullptr, bool* outFromCache = nullptr);
+	Qd::IAstNode* getOrParse(const std::string& filePath, Qd::Ast** outAst = nullptr, std::string* outSource = nullptr,
+			bool* outFromCache = nullptr);
 
 	// Import cached ASTs from semantic validator
 	void importFromValidator(Qd::SemanticValidator& validator);

@@ -141,8 +141,7 @@ namespace Qd {
 				auto fieldOffset = builder->getInt64(field.offset);
 				auto fieldBytePtr =
 						builder->CreateGEP(builder->getInt8Ty(), structPtr, fieldOffset, "nested_field_ptr");
-				llvm::Value* nestedStructPtr =
-						builder->CreateLoad(ptrTy, fieldBytePtr, "nested_struct_ptr");
+				llvm::Value* nestedStructPtr = builder->CreateLoad(ptrTy, fieldBytePtr, "nested_struct_ptr");
 
 				// Recursively cleanup the nested struct
 				generateStructCleanup(nestedStructPtr, field.typeName);
@@ -158,8 +157,7 @@ namespace Qd {
 				// Calculate field offset and load string pointer
 				auto fieldOffset = builder->getInt64(field.offset);
 				auto fieldBytePtr = builder->CreateGEP(builder->getInt8Ty(), structPtr, fieldOffset, "str_field_ptr");
-				llvm::Value* stringPtr =
-						builder->CreateLoad(ptrTy, fieldBytePtr, "string_ptr");
+				llvm::Value* stringPtr = builder->CreateLoad(ptrTy, fieldBytePtr, "string_ptr");
 
 				// Call qd_string_release() on the string
 				builder->CreateCall(qdStringReleaseFn, {stringPtr});
@@ -169,8 +167,7 @@ namespace Qd {
 
 	void LlvmGenerator::Impl::generateStructDestructors() {
 		// Destructor function type: void (*)(void*)
-		auto destructorFnTy =
-				llvm::FunctionType::get(builder->getVoidTy(), {ptrTy}, false);
+		auto destructorFnTy = llvm::FunctionType::get(builder->getVoidTy(), {ptrTy}, false);
 
 		for (const auto& [structName, layout] : structDefinitions) {
 			// Check if this struct has any fields that need cleanup
@@ -221,8 +218,7 @@ namespace Qd {
 					auto fieldOffset = builder->getInt64(field.offset);
 					auto fieldBytePtr =
 							builder->CreateGEP(builder->getInt8Ty(), structPtr, fieldOffset, "nested_field_ptr");
-					llvm::Value* nestedStructPtr = builder->CreateLoad(
-							ptrTy, fieldBytePtr, "nested_struct_ptr");
+					llvm::Value* nestedStructPtr = builder->CreateLoad(ptrTy, fieldBytePtr, "nested_struct_ptr");
 					builder->CreateCall(qdStructReleaseFn, {nestedStructPtr});
 				}
 			}
@@ -233,8 +229,7 @@ namespace Qd {
 					auto fieldOffset = builder->getInt64(field.offset);
 					auto fieldBytePtr =
 							builder->CreateGEP(builder->getInt8Ty(), structPtr, fieldOffset, "str_field_ptr");
-					llvm::Value* stringPtr =
-							builder->CreateLoad(ptrTy, fieldBytePtr, "string_ptr");
+					llvm::Value* stringPtr = builder->CreateLoad(ptrTy, fieldBytePtr, "string_ptr");
 					builder->CreateCall(qdStringReleaseFn, {stringPtr});
 				}
 			}
@@ -258,7 +253,6 @@ namespace Qd {
 		}
 
 		const StructLayout& layout = *layoutPtr;
-
 
 		// Allocate struct - use stack if function doesn't return pointer, heap otherwise
 		llvm::Value* structPtr = nullptr;
@@ -327,8 +321,7 @@ namespace Qd {
 					   field.typeName.find('*') != std::string::npos ||
 					   (!field.typeName.empty() && std::isupper(field.typeName[0]) && isKnownStruct(field.typeName))) {
 				// Pointer type (including ptr, str, raw pointers, and struct-typed fields)
-				llvm::Value* ptrValue =
-						builder->CreateLoad(ptrTy, valuePtr, "ptr_val");
+				llvm::Value* ptrValue = builder->CreateLoad(ptrTy, valuePtr, "ptr_val");
 				// NOTE: We do NOT retain nested struct fields here.
 				// Retain happens when pushing a local to the stack (in generateIdentifier).
 				// The containing struct's destructor will release nested structs.
@@ -367,19 +360,16 @@ namespace Qd {
 			} else if (fieldName == "message") {
 				// Access ctx->error_msg (offset 2) and push as string
 				llvm::Value* errorMsgPtr = builder->CreateStructGEP(contextStructTy, ctx, 2, "error_msg_ptr");
-				llvm::Value* errorMsg =
-						builder->CreateLoad(ptrTy, errorMsgPtr, "error_msg");
+				llvm::Value* errorMsg = builder->CreateLoad(ptrTy, errorMsgPtr, "error_msg");
 
 				// If error_msg is NULL, use empty string
-				llvm::Value* isNull = builder->CreateICmpEQ(
-						errorMsg, llvm::ConstantPointerNull::get(ptrTy));
+				llvm::Value* isNull = builder->CreateICmpEQ(errorMsg, llvm::ConstantPointerNull::get(ptrTy));
 				llvm::Value* emptyStr = builder->CreateGlobalString("", "empty_str");
 				llvm::Value* msgToUse = builder->CreateSelect(isNull, emptyStr, errorMsg, "msg_to_use");
 
 				// Push error message onto stack using qd_push_str_cstr (use class member pushStrFn)
 				if (!pushStrFn) {
-					auto fnTy = llvm::FunctionType::get(
-							execResultTy, {contextPtrTy, ptrTy}, false);
+					auto fnTy = llvm::FunctionType::get(execResultTy, {contextPtrTy, ptrTy}, false);
 					pushStrFn =
 							llvm::Function::Create(fnTy, llvm::Function::ExternalLinkage, "qd_push_str_cstr", *module);
 				}
@@ -428,8 +418,7 @@ namespace Qd {
 
 				// Pop the just-constructed struct pointer from stack
 				llvm::Value* stackPtrPtr = builder->CreateStructGEP(contextStructTy, ctx, 0, "stack_ptr");
-				llvm::Value* stackPtr =
-						builder->CreateLoad(ptrTy, stackPtrPtr, "stack");
+				llvm::Value* stackPtr = builder->CreateLoad(ptrTy, stackPtrPtr, "stack");
 
 				llvm::Value* tempElem = builder->CreateAlloca(stackElementTy, nullptr, "temp_elem");
 				builder->CreateCall(stackPopFn, {stackPtr, tempElem});
@@ -455,8 +444,7 @@ namespace Qd {
 
 					// Pop the result (struct pointer) from stack
 					llvm::Value* stackPtrPtr = builder->CreateStructGEP(contextStructTy, ctx, 0, "stack_ptr");
-					llvm::Value* stackPtr =
-							builder->CreateLoad(ptrTy, stackPtrPtr, "stack");
+					llvm::Value* stackPtr = builder->CreateLoad(ptrTy, stackPtrPtr, "stack");
 
 					llvm::Value* tempElem = builder->CreateAlloca(stackElementTy, nullptr, "temp_elem");
 					builder->CreateCall(stackPopFn, {stackPtr, tempElem});
@@ -475,8 +463,7 @@ namespace Qd {
 					if (capIt != capturedVariableRefs.end()) {
 						// Load the pointer to the outer variable, then access the value
 						llvm::AllocaInst* ptrAlloca = capIt->second;
-						llvm::Value* outerVarPtr = builder->CreateLoad(
-								ptrTy, ptrAlloca, varName + "_cap_ptr");
+						llvm::Value* outerVarPtr = builder->CreateLoad(ptrTy, ptrAlloca, varName + "_cap_ptr");
 
 						// Look up the struct type from local variable tracking
 						auto typeIt = localVariableStructTypes.find(varName);
@@ -506,8 +493,7 @@ namespace Qd {
 						llvm::Value* structPtrAlloca = it->second;
 						// For indirect (captured) variables, load the actual storage pointer first
 						if (indirectLocalVariables.find(varName) != indirectLocalVariables.end()) {
-							structPtrAlloca = builder->CreateLoad(
-									ptrTy, it->second, varName + "_storage");
+							structPtrAlloca = builder->CreateLoad(ptrTy, it->second, varName + "_storage");
 						}
 						llvm::Value* valuePtr =
 								builder->CreateStructGEP(stackElementTy, structPtrAlloca, 0, varName + "_value_ptr");
@@ -574,15 +560,13 @@ namespace Qd {
 			lastFieldAccessResultType.clear(); // Not a struct type
 		} else if (matchingField->typeName == "str") {
 			llvm::Value* fieldPtr = bytePtr;
-			llvm::Value* ptrValue =
-					builder->CreateLoad(ptrTy, fieldPtr, "field_value");
+			llvm::Value* ptrValue = builder->CreateLoad(ptrTy, fieldPtr, "field_value");
 			builder->CreateCall(pushStrRefFn, {ctx, ptrValue});
 			lastFieldAccessResultType.clear(); // Not a struct type
 		} else if (matchingField->typeName == "ptr" || matchingField->typeName.find('*') != std::string::npos) {
 			// Handle ptr type and raw pointer types
 			llvm::Value* fieldPtr = bytePtr;
-			llvm::Value* ptrValue =
-					builder->CreateLoad(ptrTy, fieldPtr, "field_value");
+			llvm::Value* ptrValue = builder->CreateLoad(ptrTy, fieldPtr, "field_value");
 			// Retain the pointer before pushing (it could be an array/struct that will be released after use)
 			builder->CreateCall(qdPtrRetainFn, {ptrValue});
 			builder->CreateCall(pushPtrFn, {ctx, ptrValue});
@@ -591,8 +575,7 @@ namespace Qd {
 				   isKnownStruct(matchingField->typeName)) {
 			// Struct-typed field - stored as pointer, push as PTR
 			llvm::Value* fieldPtr = bytePtr;
-			llvm::Value* ptrValue =
-					builder->CreateLoad(ptrTy, fieldPtr, "field_value");
+			llvm::Value* ptrValue = builder->CreateLoad(ptrTy, fieldPtr, "field_value");
 			// Retain the struct pointer before pushing
 			builder->CreateCall(qdPtrRetainFn, {ptrValue});
 			builder->CreateCall(pushPtrFn, {ctx, ptrValue});
@@ -624,8 +607,7 @@ namespace Qd {
 		if (capIt != capturedVariableRefs.end()) {
 			// Load the pointer to the outer variable, then access the value
 			llvm::AllocaInst* ptrAlloca = capIt->second;
-			llvm::Value* outerVarPtr =
-					builder->CreateLoad(ptrTy, ptrAlloca, varName + "_cap_ptr");
+			llvm::Value* outerVarPtr = builder->CreateLoad(ptrTy, ptrAlloca, varName + "_cap_ptr");
 
 			// Look up the struct type from local variable tracking
 			auto typeIt = localVariableStructTypes.find(varName);
@@ -655,8 +637,7 @@ namespace Qd {
 			llvm::Value* structPtrAlloca = it->second;
 			// For indirect (captured) variables, load the actual storage pointer first
 			if (indirectLocalVariables.find(varName) != indirectLocalVariables.end()) {
-				structPtrAlloca =
-						builder->CreateLoad(ptrTy, it->second, varName + "_storage");
+				structPtrAlloca = builder->CreateLoad(ptrTy, it->second, varName + "_storage");
 			}
 			llvm::Value* structValuePtr =
 					builder->CreateStructGEP(stackElementTy, structPtrAlloca, 0, varName + "_value_ptr");
@@ -757,8 +738,7 @@ namespace Qd {
 			// Empty array - create with default type (INT)
 			llvm::Function* createArrayFn = module->getFunction("qd_array_create");
 			if (!createArrayFn) {
-				auto fnTy = llvm::FunctionType::get(
-						ptrTy, {int64Ty, int32Ty}, false);
+				auto fnTy = llvm::FunctionType::get(ptrTy, {int64Ty, int32Ty}, false);
 				createArrayFn =
 						llvm::Function::Create(fnTy, llvm::Function::ExternalLinkage, "qd_array_create", *module);
 			}
@@ -784,30 +764,26 @@ namespace Qd {
 		// Declare array functions if not already declared
 		llvm::Function* createArrayFn = module->getFunction("qd_array_create");
 		if (!createArrayFn) {
-			auto fnTy = llvm::FunctionType::get(
-					ptrTy, {int64Ty, int32Ty}, false);
+			auto fnTy = llvm::FunctionType::get(ptrTy, {int64Ty, int32Ty}, false);
 			createArrayFn = llvm::Function::Create(fnTy, llvm::Function::ExternalLinkage, "qd_array_create", *module);
 		}
 
 		llvm::Function* pushIntArrFn = module->getFunction("qd_array_push_int");
 		if (!pushIntArrFn) {
-			auto fnTy = llvm::FunctionType::get(
-					int32Ty, {ptrTy, int64Ty}, false);
+			auto fnTy = llvm::FunctionType::get(int32Ty, {ptrTy, int64Ty}, false);
 			pushIntArrFn = llvm::Function::Create(fnTy, llvm::Function::ExternalLinkage, "qd_array_push_int", *module);
 		}
 
 		llvm::Function* pushFloatArrFn = module->getFunction("qd_array_push_float");
 		if (!pushFloatArrFn) {
-			auto fnTy = llvm::FunctionType::get(
-					int32Ty, {ptrTy, builder->getDoubleTy()}, false);
+			auto fnTy = llvm::FunctionType::get(int32Ty, {ptrTy, builder->getDoubleTy()}, false);
 			pushFloatArrFn =
 					llvm::Function::Create(fnTy, llvm::Function::ExternalLinkage, "qd_array_push_float", *module);
 		}
 
 		llvm::Function* pushPtrArrFn = module->getFunction("qd_array_push_ptr");
 		if (!pushPtrArrFn) {
-			auto fnTy = llvm::FunctionType::get(int32Ty,
-					{ptrTy, ptrTy}, false);
+			auto fnTy = llvm::FunctionType::get(int32Ty, {ptrTy, ptrTy}, false);
 			pushPtrArrFn = llvm::Function::Create(fnTy, llvm::Function::ExternalLinkage, "qd_array_push_ptr", *module);
 		}
 
@@ -849,8 +825,7 @@ namespace Qd {
 					// Create qd_string and push
 					llvm::Function* createStrFn = module->getFunction("qd_string_create");
 					if (!createStrFn) {
-						auto fnTy = llvm::FunctionType::get(ptrTy,
-								{ptrTy}, false);
+						auto fnTy = llvm::FunctionType::get(ptrTy, {ptrTy}, false);
 						createStrFn = llvm::Function::Create(
 								fnTy, llvm::Function::ExternalLinkage, "qd_string_create", *module);
 					}
@@ -891,7 +866,6 @@ namespace Qd {
 			AstNodeDefer* deferNode = *it;
 			// Generate defer body
 			for (auto* child : deferNode->children()) {
-				
 				// If the child is a block, generate its children directly
 				if (child && child->type() == IAstNode::Type::BLOCK) {
 					for (auto* innerChild : child->children()) {
