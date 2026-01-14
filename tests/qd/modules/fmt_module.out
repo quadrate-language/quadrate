@@ -1,0 +1,17 @@
+=== printf string ===
+Hello world
+=== printf integer ===
+The answer is 42
+=== printf multiple ===
+World, Hello!
+=== printf float ===
+Pi is 3.14
+=== sprintf ===
+formatted: test
+=== sprintf integer ===
+value: 100
+=== sprintf multiple ===
+30 + 20 + 10
+=== Hex format ===
+hex: ff
+done

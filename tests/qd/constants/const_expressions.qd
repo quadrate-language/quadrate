@@ -1,0 +1,36 @@
+// Test compile-time constants
+const A = 10
+const B = 20
+const STR = "hello"
+const NEG = -5
+const FLOAT = 3.14
+
+fn main() {
+	// Integer constants
+	"=== Integer constants ===" print nl
+	A print nl
+	B print nl
+	NEG print nl
+
+	// Constant arithmetic
+	"=== Constant arithmetic ===" print nl
+	A B + print nl        // 30
+	B A - print nl        // 10
+	A A * print nl        // 100
+
+	// String constant
+	"=== String constant ===" print nl
+	STR print nl
+
+	// Float constant
+	"=== Float constant ===" print nl
+	FLOAT print nl
+
+	// Constants in expressions
+	"=== In expressions ===" print nl
+	A 5 + print nl        // 15
+	B 2 / print nl        // 10
+	NEG NEG * print nl    // 25
+
+	"done" print nl
+}

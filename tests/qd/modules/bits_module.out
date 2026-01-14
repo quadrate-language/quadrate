@@ -1,0 +1,48 @@
+=== mask ===
+15
+255
+7
+=== extract ===
+5
+15
+5
+=== set_bits ===
+20
+15
+250
+=== rotate_left ===
+6
+4
+1
+=== rotate_right ===
+3
+1
+8
+=== popcount ===
+4
+8
+0
+1
+4
+=== reverse_bits ===
+13
+1
+8
+=== has_bit ===
+1
+0
+1
+0
+=== set_bit ===
+10
+1
+128
+=== clear_bit ===
+8
+254
+11
+=== toggle_bit ===
+11
+8
+8
+done

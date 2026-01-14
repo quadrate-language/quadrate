@@ -1,0 +1,38 @@
+=== itoa ===
+42
+0
+-123
+999999
+=== atoi ===
+42
+0
+-123
+999999
+=== format_int base 16 (hex) ===
+ff
+0
+10
+1000
+=== format_int base 2 (binary) ===
+1000
+11111111
+0
+=== format_int base 8 (octal) ===
+100
+377
+=== parse_int base 16 ===
+255
+255
+16
+4096
+=== parse_int base 2 ===
+8
+255
+0
+=== parse_int base 8 ===
+64
+255
+=== roundtrip ===
+12345
+255
+done

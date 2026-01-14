@@ -1,0 +1,56 @@
+// Test defer statement comprehensively
+fn test_basic_defer() {
+	"start" print nl
+	defer { "deferred" print nl }
+	"middle" print nl
+}
+
+fn test_multiple_defers() {
+	defer { "defer 1" print nl }
+	defer { "defer 2" print nl }
+	defer { "defer 3" print nl }
+	"body" print nl
+}
+
+fn test_defer_in_loop() {
+	0 3 1 for i {
+		defer { "loop defer" print nl }
+		"loop body " print i print nl
+	}
+}
+
+fn test_defer_with_return( -- x:i64) {
+	defer { "cleanup" print nl }
+	"before return" print nl
+	42
+}
+
+fn test_nested_defer() {
+	defer { "outer defer" print nl }
+	"outer start" print nl
+	1 1 eq if {
+		defer { "inner defer" print nl }
+		"inner body" print nl
+	}
+	"outer end" print nl
+}
+
+fn main() {
+	"=== Basic defer ===" print nl
+	test_basic_defer
+
+	"=== Multiple defers (LIFO order) ===" print nl
+	test_multiple_defers
+
+	"=== Defer in loop ===" print nl
+	test_defer_in_loop
+
+	"=== Defer with return ===" print nl
+	test_defer_with_return -> result
+	"result: " print result print nl
+
+	"=== Nested defer ===" print nl
+	test_nested_defer
+
+	"done" print nl
+}

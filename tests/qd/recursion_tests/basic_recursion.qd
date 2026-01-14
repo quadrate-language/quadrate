@@ -1,0 +1,53 @@
+// Test basic recursion patterns
+fn factorial(n:i64 -- result:i64) {
+	-> num
+	num 1 <= if {
+		1
+	} else {
+		num num 1 - factorial *
+	}
+}
+
+fn fibonacci(n:i64 -- result:i64) {
+	-> num
+	num 2 < if {
+		num
+	} else {
+		num 1 - fibonacci num 2 - fibonacci +
+	}
+}
+
+fn sum_to_n(n:i64 -- result:i64) {
+	-> num
+	num 0 <= if {
+		0
+	} else {
+		num num 1 - sum_to_n +
+	}
+}
+
+fn main() {
+	// Factorial
+	"=== Factorial ===" print nl
+	0 factorial print nl    // 1
+	1 factorial print nl    // 1
+	5 factorial print nl    // 120
+	10 factorial print nl   // 3628800
+
+	// Fibonacci
+	"=== Fibonacci ===" print nl
+	0 fibonacci print nl    // 0
+	1 fibonacci print nl    // 1
+	5 fibonacci print nl    // 5
+	10 fibonacci print nl   // 55
+	15 fibonacci print nl   // 610
+
+	// Sum to N
+	"=== Sum to N ===" print nl
+	0 sum_to_n print nl     // 0
+	1 sum_to_n print nl     // 1
+	10 sum_to_n print nl    // 55
+	100 sum_to_n print nl   // 5050
+
+	"done" print nl
+}

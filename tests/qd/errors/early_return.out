@@ -1,0 +1,7 @@
+=== Early return ===
+sum(0..2): 3
+10: failed (hit 5)
+=== Safe divide ===
+100/10 = 10
+100/0 failed
+done

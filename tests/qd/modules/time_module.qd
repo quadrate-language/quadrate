@@ -1,0 +1,76 @@
+// Test time module - time constants and date functions
+use time
+
+fn main() {
+	"=== Duration constants ===" print nl
+	time::Nanosecond print nl
+	time::Microsecond print nl
+	time::Millisecond print nl
+	time::Second print nl
+	time::Minute print nl
+	time::Hour print nl
+
+	"=== Weekday constants ===" print nl
+	time::Sunday print nl
+	time::Monday print nl
+	time::Saturday print nl
+
+	"=== Month constants ===" print nl
+	time::January print nl
+	time::June print nl
+	time::December print nl
+
+	"=== is_leap_year ===" print nl
+	2000 time::is_leap_year print nl
+	2024 time::is_leap_year print nl
+	2100 time::is_leap_year print nl
+	2023 time::is_leap_year print nl
+
+	"=== days_in_month ===" print nl
+	2024 1 time::days_in_month print nl
+	2024 2 time::days_in_month print nl
+	2023 2 time::days_in_month print nl
+	2024 4 time::days_in_month print nl
+	2024 12 time::days_in_month print nl
+
+	"=== date and extract ===" print nl
+	2024 1 15 12 30 45 time::date -> ts
+	ts time::year print nl
+	ts time::month print nl
+	ts time::day print nl
+	ts time::hour print nl
+	ts time::minute print nl
+	ts time::second print nl
+
+	"=== Unix epoch ===" print nl
+	1970 1 1 0 0 0 time::date print nl
+
+	"=== known date ===" print nl
+	2000 6 15 0 0 0 time::date -> ts2
+	ts2 time::year print nl
+	ts2 time::month print nl
+	ts2 time::day print nl
+
+	"=== weekday ===" print nl
+	1970 1 1 0 0 0 time::date time::weekday print nl
+	2024 1 1 0 0 0 time::date time::weekday print nl
+
+	"=== year_day ===" print nl
+	2024 1 1 0 0 0 time::date time::year_day print nl
+	2024 12 31 0 0 0 time::date time::year_day print nl
+
+	"=== add ===" print nl
+	1000 time::Second time::add print nl
+
+	"=== before and after ===" print nl
+	100 200 time::before print nl
+	200 100 time::before print nl
+	200 100 time::after print nl
+	100 200 time::after print nl
+
+	"=== sub ===" print nl
+	200 100 time::sub print nl
+	100 200 time::sub print nl
+
+	"done" print nl
+}

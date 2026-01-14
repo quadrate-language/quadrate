@@ -1,0 +1,47 @@
+=== Control character constants ===
+0
+9
+10
+13
+27
+=== Space and punctuation ===
+32
+33
+34
+35
+36
+=== Digit constants ===
+48
+49
+57
+=== Uppercase letters ===
+65
+90
+=== Lowercase letters ===
+97
+122
+=== Bracket/brace constants ===
+40
+41
+91
+93
+123
+125
+=== Operator constants ===
+43
+45
+42
+47
+61
+60
+62
+=== is_digit function ===
+1
+1
+1
+0
+0
+0
+=== Using constants to build strings ===
+Hi
+done

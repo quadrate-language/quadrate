@@ -1,0 +1,29 @@
+=== Constants ===
+2
+3
+8
+0
+1
+2
+=== Mode constants exist ===
+1
+1
+1
+1
+=== write_file and read_file ===
+Hello, World!
+=== open, write, seek, read, close ===
+3
+3
+65
+66
+67
+=== tell and seek ===
+0
+1
+1
+2
+=== eof ===
+0
+1
+done

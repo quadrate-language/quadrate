@@ -1,0 +1,26 @@
+=== Basic hex ===
+0
+1
+10
+15
+255
+256
+=== Mixed case ===
+43981
+43981
+43981
+=== Larger values ===
+4096
+65535
+65536
+4294967295
+=== Hex arithmetic ===
+48
+254
+256
+16
+=== Hex comparisons ===
+1
+1
+1
+done

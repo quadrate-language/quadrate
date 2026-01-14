@@ -1,0 +1,13 @@
+=== Error constants ===
+2
+3
+4
+=== Manual Flag struct ===
+=== boolean ===
+1
+0
+=== string ===
+test
+=== int ===
+42
+done

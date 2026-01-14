@@ -1,0 +1,89 @@
+// Test bytes module - endianness and buffer operations
+use bytes
+use mem
+
+fn main() {
+	// Allocate buffers
+	16 mem::alloc! -> buf
+	16 mem::alloc! -> buf2
+
+	// === Byte swap operations ===
+	"=== swap16 ===" print nl
+	0x1234 bytes::swap16 print nl          // 0x3412 = 13330
+	0x00FF bytes::swap16 print nl          // 0xFF00 = 65280
+	0xFF00 bytes::swap16 print nl          // 0x00FF = 255
+
+	"=== swap32 ===" print nl
+	0x12345678 bytes::swap32 print nl      // 0x78563412 = 2018915346
+	0x000000FF bytes::swap32 print nl      // 0xFF000000 = 4278190080
+	0xFF000000 bytes::swap32 print nl      // 0x000000FF = 255
+
+	"=== swap64 ===" print nl
+	0x0102030405060708 bytes::swap64 print nl  // 0x0807060504030201 = 578437695752307201
+
+	// === 16-bit read/write ===
+	"=== u16 big-endian ===" print nl
+	buf 0 0x1234 bytes::write_u16_be
+	buf 0 bytes::read_u16_be print nl      // 0x1234 = 4660
+
+	"=== u16 little-endian ===" print nl
+	buf 0 0x1234 bytes::write_u16_le
+	buf 0 bytes::read_u16_le print nl      // 0x1234 = 4660
+
+	// === 32-bit read/write ===
+	"=== u32 big-endian ===" print nl
+	buf 0 0x12345678 bytes::write_u32_be
+	buf 0 bytes::read_u32_be print nl      // 0x12345678 = 305419896
+
+	"=== u32 little-endian ===" print nl
+	buf 0 0x12345678 bytes::write_u32_le
+	buf 0 bytes::read_u32_le print nl      // 0x12345678 = 305419896
+
+	// === 64-bit read/write ===
+	"=== u64 big-endian ===" print nl
+	buf 0 0x123456789ABCDEF0 bytes::write_u64_be
+	buf 0 bytes::read_u64_be print nl      // 1311768467463790320
+
+	"=== u64 little-endian ===" print nl
+	buf 0 0x123456789ABCDEF0 bytes::write_u64_le
+	buf 0 bytes::read_u64_le print nl      // 1311768467463790320
+
+	// === Buffer fill ===
+	"=== fill ===" print nl
+	42 buf 0 4 bytes::fill
+	buf 0 mem::get_byte print nl           // 42
+	buf 1 mem::get_byte print nl           // 42
+	buf 2 mem::get_byte print nl           // 42
+	buf 3 mem::get_byte print nl           // 42
+
+	// === Buffer copy ===
+	"=== copy ===" print nl
+	100 buf 0 mem::set_byte
+	101 buf 1 mem::set_byte
+	102 buf 2 mem::set_byte
+	103 buf 3 mem::set_byte
+	buf2 0 buf 0 4 bytes::copy
+	buf2 0 mem::get_byte print nl          // 100
+	buf2 1 mem::get_byte print nl          // 101
+	buf2 2 mem::get_byte print nl          // 102
+	buf2 3 mem::get_byte print nl          // 103
+
+	// === Buffer compare ===
+	"=== compare ===" print nl
+	// Fill same values
+	50 buf 0 4 bytes::fill
+	50 buf2 0 4 bytes::fill
+	buf 0 buf2 0 4 bytes::compare print nl  // 0 (equal)
+	// Make buf[0] > buf2[0]
+	60 buf 0 mem::set_byte
+	buf 0 buf2 0 4 bytes::compare 0 > print nl  // 1 (positive)
+	// Make buf[0] < buf2[0]
+	40 buf 0 mem::set_byte
+	buf 0 buf2 0 4 bytes::compare 0 < print nl  // 1 (negative)
+
+	// Cleanup
+	buf mem::free
+	buf2 mem::free
+
+	"done" print nl
+}

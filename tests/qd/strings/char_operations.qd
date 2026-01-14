@@ -1,0 +1,39 @@
+// Test character-level string operations
+use str
+
+fn main() {
+	// char_at - get ASCII code at index
+	"=== char_at ===" print nl
+	"hello" 0 str::char_at! print nl    // 104 (h)
+	"hello" 1 str::char_at! print nl    // 101 (e)
+	"hello" 4 str::char_at! print nl    // 111 (o)
+	"ABC" 0 str::char_at! print nl      // 65 (A)
+	"ABC" 1 str::char_at! print nl      // 66 (B)
+	"ABC" 2 str::char_at! print nl      // 67 (C)
+
+	// from_char - create string from char code
+	"=== from_char ===" print nl
+	65 str::from_char print nl          // A
+	66 str::from_char print nl          // B
+	97 str::from_char print nl          // a
+	48 str::from_char print nl          // 0
+	32 str::from_char print nl          // space
+
+	// index_of - find substring
+	"=== index_of ===" print nl
+	"hello world" "world" str::index_of print nl   // 6
+	"hello world" "hello" str::index_of print nl   // 0
+	"hello world" "o" str::index_of print nl       // 4
+	"hello world" "xyz" str::index_of print nl     // -1
+	"" "test" str::index_of print nl               // -1
+
+	// index_of_from - find from position
+	"=== index_of_from ===" print nl
+	"hello hello" "hello" 0 str::index_of_from print nl   // 0
+	"hello hello" "hello" 1 str::index_of_from print nl   // 6
+	"abcabc" "abc" 0 str::index_of_from print nl          // 0
+	"abcabc" "abc" 1 str::index_of_from print nl          // 3
+	"abcabc" "abc" 4 str::index_of_from print nl          // -1
+
+	"done" print nl
+}

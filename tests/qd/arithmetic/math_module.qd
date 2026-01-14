@@ -1,0 +1,77 @@
+// Test math module functions
+use math
+
+fn main() {
+	// Constants
+	"=== Constants ===" print nl
+	math::Pi 3.14 > print nl         // 1
+	math::E 2.71 > print nl          // 1
+	math::Sqrt2 1.41 > print nl      // 1
+
+	// Basic trig
+	"=== Trig ===" print nl
+	0.0 math::sin 0.0 eq print nl    // 1 (sin(0) = 0)
+	0.0 math::cos 1.0 eq print nl    // 1 (cos(0) = 1)
+	0.0 math::tan 0.0 eq print nl    // 1 (tan(0) = 0)
+
+	// Sqrt and power
+	"=== Sqrt/Power ===" print nl
+	4.0 math::sqrt 2.0 eq print nl   // 1
+	9.0 math::sqrt 3.0 eq print nl   // 1
+	8.0 math::cbrt 2.0 eq print nl   // 1
+	2.0 3.0 math::pow 8.0 eq print nl // 1
+
+	// Logarithms
+	"=== Logs ===" print nl
+	100.0 math::log10 2.0 eq print nl // 1 (log10(100) = 2)
+
+	// Rounding
+	"=== Rounding ===" print nl
+	2.3 math::ceil 3.0 eq print nl   // 1
+	2.7 math::floor 2.0 eq print nl  // 1
+	2.5 math::round 3.0 eq print nl  // 1
+	2.4 math::round 2.0 eq print nl  // 1
+
+	// Helper functions
+	"=== Helpers ===" print nl
+	5 math::inc print nl             // 6
+	5 math::dec print nl             // 4
+	3.0 math::sq 9.0 eq print nl     // 1
+	2.0 math::cb 8.0 eq print nl     // 1
+	-5.0 math::abs 5.0 eq print nl   // 1
+	4.0 math::inv 0.25 eq print nl   // 1
+	5 math::fac print nl             // 120
+
+	// Min/Max
+	"=== Min/Max ===" print nl
+	3 7 math::min print nl           // 3
+	3 7 math::max print nl           // 7
+	-5 5 math::min print nl          // -5
+	-5 5 math::max print nl          // 5
+
+	// Clamp
+	"=== Clamp ===" print nl
+	15.0 0.0 10.0 math::clamp 10.0 eq print nl  // 1
+	-5.0 0.0 10.0 math::clamp 0.0 eq print nl   // 1
+	5.0 0.0 10.0 math::clamp 5.0 eq print nl    // 1
+
+	// Within
+	"=== Within ===" print nl
+	5 0 10 math::within print nl     // 1
+	15 0 10 math::within print nl    // 0
+	0 0 10 math::within print nl     // 1
+	10 0 10 math::within print nl    // 1
+
+	// Lerp
+	"=== Lerp ===" print nl
+	0.0 10.0 0.5 math::lerp 5.0 eq print nl   // 1
+	0.0 10.0 0.0 math::lerp 0.0 eq print nl   // 1
+	0.0 10.0 1.0 math::lerp 10.0 eq print nl  // 1
+
+	// Angle conversion
+	"=== Angles ===" print nl
+	180.0 math::deg_to_rad math::Pi - math::abs 0.0001 < print nl  // 1
+	math::Pi math::rad_to_deg 180.0 - math::abs 0.0001 < print nl  // 1
+
+	"done" print nl
+}

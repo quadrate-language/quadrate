@@ -1,0 +1,52 @@
+// Test thread module - threading primitives
+use thread
+
+fn main() {
+	"=== Error constants ===" print nl
+	thread::ErrCreate print nl
+	thread::ErrJoin print nl
+	thread::ErrMutex print nl
+	thread::ErrChannel print nl
+	thread::ErrClosed print nl
+
+	"=== Mutex ===" print nl
+	thread::mutex_new! -> m
+	m try_lock print nl
+	m unlock!
+	m lock!
+	m unlock!
+	m free
+	"mutex ok" print nl
+
+	"=== Buffered channel ===" print nl
+	5 thread::chan_buffered! -> ch
+	ch cap print nl
+	ch len print nl
+	ch is_closed print nl
+	ch 42 send!
+	ch len print nl
+	ch 100 send!
+	ch len print nl
+	ch recv! print nl
+	ch len print nl
+	ch recv! print nl
+	ch close
+	ch is_closed print nl
+	ch free
+	"channel ok" print nl
+
+	"=== WaitGroup ===" print nl
+	thread::wg_new! -> wg
+	wg 2 add
+	wg done
+	wg done
+	wg wait!
+	wg free
+	"waitgroup ok" print nl
+
+	"=== sleep ===" print nl
+	1 thread::sleep
+	"slept 1ms" print nl
+
+	"done" print nl
+}

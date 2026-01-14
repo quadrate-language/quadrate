@@ -1,0 +1,62 @@
+// Test rand module - random number generation
+use rand
+
+fn main() {
+	"=== with_seed and next ===" print nl
+	12345 rand::with_seed -> rng
+	rng rand::next -> n1 -> rng
+	n1 0 != print nl
+	rng rand::next -> n2 -> rng
+	n2 0 != print nl
+	n1 n2 != print nl
+
+	"=== deterministic seed produces same sequence ===" print nl
+	12345 rand::with_seed -> rng1
+	12345 rand::with_seed -> rng2
+	rng1 rand::next -> a -> rng1
+	rng2 rand::next -> b -> rng2
+	a b eq print nl
+	rng1 rand::next -> a -> rng1
+	rng2 rand::next -> b -> rng2
+	a b eq print nl
+
+	"=== int in range ===" print nl
+	42 rand::with_seed -> rng
+	rng 100 rand::int -> n -> rng
+	n 0 >= print nl
+	n 100 < print nl
+	rng 10 rand::int -> n -> rng
+	n 0 >= print nl
+	n 10 < print nl
+
+	"=== range ===" print nl
+	42 rand::with_seed -> rng
+	rng 10 20 rand::range -> n -> rng
+	n 10 >= print nl
+	n 20 < print nl
+	rng 0 5 rand::range -> n -> rng
+	n 0 >= print nl
+	n 5 < print nl
+
+	"=== boolean ===" print nl
+	42 rand::with_seed -> rng
+	rng rand::boolean -> b -> rng
+	b 0 >= print nl
+	b 2 < print nl
+	rng rand::boolean -> b -> rng
+	b 0 >= print nl
+	b 2 < print nl
+
+	"=== multiple values stay in range ===" print nl
+	99 rand::with_seed -> rng
+	1 -> all_valid
+	0 10 1 for it {
+		rng 50 rand::int -> n -> rng
+		n 0 < n 50 >= or if {
+			0 -> all_valid
+		}
+	}
+	all_valid print nl
+
+	"done" print nl
+}

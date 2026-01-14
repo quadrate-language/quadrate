@@ -1,0 +1,42 @@
+// Test common bit manipulation patterns
+fn main() {
+	// Set specific bit
+	"=== Set bit ===" print nl
+	0 1 0 shl or print nl     // Set bit 0: 1
+	0 1 3 shl or print nl     // Set bit 3: 8
+	0 1 7 shl or print nl     // Set bit 7: 128
+
+	// Clear specific bit
+	"=== Clear bit ===" print nl
+	255 1 0 shl not and print nl   // Clear bit 0: 254
+	255 1 3 shl not and print nl   // Clear bit 3: 247
+	255 1 7 shl not and print nl   // Clear bit 7: 127
+
+	// Toggle specific bit
+	"=== Toggle bit ===" print nl
+	0 1 3 shl xor print nl    // Toggle bit 3 off->on: 8
+	8 1 3 shl xor print nl    // Toggle bit 3 on->off: 0
+	255 1 0 shl xor print nl  // Toggle bit 0: 254
+
+	// Check if bit is set
+	"=== Check bit ===" print nl
+	8 1 3 shl and 0 neq print nl   // Bit 3 set in 8? 1
+	7 1 3 shl and 0 neq print nl   // Bit 3 set in 7? 0
+	255 1 7 shl and 0 neq print nl // Bit 7 set in 255? 1
+
+	// Extract byte from word
+	"=== Extract bytes ===" print nl
+	0xAABBCCDD 0xFF and print nl           // Low byte: 0xDD = 221
+	0xAABBCCDD 8 shr 0xFF and print nl     // Byte 1: 0xCC = 204
+	0xAABBCCDD 16 shr 0xFF and print nl    // Byte 2: 0xBB = 187
+	0xAABBCCDD 24 shr 0xFF and print nl    // Byte 3: 0xAA = 170
+
+	// Count trailing zeros (manual check)
+	"=== Trailing patterns ===" print nl
+	8 1 and print nl          // 0 (bit 0 not set)
+	8 2 and print nl          // 0 (bit 1 not set)
+	8 4 and print nl          // 0 (bit 2 not set)
+	8 8 and print nl          // 8 (bit 3 set)
+
+	"done" print nl
+}

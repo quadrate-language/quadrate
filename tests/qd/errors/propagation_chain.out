@@ -1,0 +1,6 @@
+=== Pipeline tests ===
+5 -> 31
+-5 failed (step1)
+95 failed (step2)
+15 failed (step3)
+done

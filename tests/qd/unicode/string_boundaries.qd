@@ -1,0 +1,39 @@
+// Test string boundary conditions
+use str
+
+fn main() {
+	// Very long strings
+	"=== Long strings ===" print nl
+	"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" str::len print nl  // 50
+	"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" str::len print nl  // 100
+
+	// Single character strings
+	"=== Single char ===" print nl
+	"a" print nl
+	"Z" print nl
+	"0" print nl
+	" " str::len print nl   // 1 (print length instead of char)
+	"!" print nl
+
+	// Only whitespace
+	"=== Whitespace only ===" print nl
+	" " str::len print nl
+	"  " str::len print nl
+	"\t" str::len print nl
+	"\n" str::len print nl
+	"   " str::trim str::len print nl  // 0 after trim
+
+	// String with all special chars
+	"=== Special chars ===" print nl
+	"!@#$%^&*()" str::len print nl
+	"<>[]{}|\\" str::len print nl
+	".,;:!?'" str::len print nl
+
+	// Repeated patterns
+	"=== Patterns ===" print nl
+	"abcabcabc" "abc" str::contains print nl
+	"abcabcabc" "abc" str::starts_with print nl
+	"abcabcabc" "abc" str::ends_with print nl
+
+	"done" print nl
+}

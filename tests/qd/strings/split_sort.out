@@ -1,0 +1,29 @@
+=== split basic ===
+3
+a
+b
+c
+=== split with spaces ===
+3
+hello
+world
+test
+=== split no delimiter ===
+1
+one
+=== split by newline ===
+3
+line1
+line2
+line3
+=== compare equal ===
+0
+=== compare less ===
+1
+1
+1
+=== compare greater ===
+1
+1
+1
+done

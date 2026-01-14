@@ -1,0 +1,36 @@
+// Test limits module - numeric limits constants
+use limits
+
+fn main() {
+	"=== i64 limits ===" print nl
+	limits::I64Max print nl
+	limits::I64Min print nl
+
+	"=== i8 limits ===" print nl
+	limits::I8Max print nl
+	limits::I8Min print nl
+
+	"=== i16 limits ===" print nl
+	limits::I16Max print nl
+	limits::I16Min print nl
+
+	"=== i32 limits ===" print nl
+	limits::I32Max print nl
+	limits::I32Min print nl
+
+	"=== unsigned maximums ===" print nl
+	limits::U8Max print nl
+	limits::U16Max print nl
+	limits::U32Max print nl
+
+	"=== using limits in comparisons ===" print nl
+	100 limits::I8Max lt print nl
+	200 limits::I8Max gt print nl
+	0 limits::U8Max lt print nl
+
+	"=== float limits exist ===" print nl
+	limits::F64Max 0.0 gt print nl
+	limits::F64Epsilon 0.0 gt print nl
+
+	"done" print nl
+}

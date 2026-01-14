@@ -1,0 +1,56 @@
+// Test sb (StringBuilder) module
+use sb
+
+fn main() {
+	"=== Basic append ===" print nl
+	sb::new -> builder
+	builder "Hello" sb::append -> builder
+	builder ", " sb::append -> builder
+	builder "World!" sb::append -> builder
+	builder sb::build print nl
+
+	"=== Length ===" print nl
+	builder sb::len print nl
+	builder sb::free
+
+	"=== append_char ===" print nl
+	sb::new -> b
+	b 65 sb::append_char -> b
+	b 66 sb::append_char -> b
+	b 67 sb::append_char -> b
+	b sb::build print nl
+	b sb::free
+
+	"=== append_int ===" print nl
+	sb::new -> b
+	b 42 sb::append_int -> b
+	b " " sb::append -> b
+	b 0 sb::append_int -> b
+	b " " sb::append -> b
+	b -123 sb::append_int -> b
+	b sb::build print nl
+	b sb::free
+
+	"=== with_capacity ===" print nl
+	1024 sb::with_capacity -> b
+	b "large buffer" sb::append -> b
+	b sb::build print nl
+	b sb::free
+
+	"=== finish ===" print nl
+	sb::new -> b
+	b "finished" sb::append -> b
+	b sb::finish -> result
+	result print nl
+
+	"=== Building path-like strings ===" print nl
+	sb::new -> b
+	b "/home" sb::append -> b
+	b "/" sb::append -> b
+	b "user" sb::append -> b
+	b "/" sb::append -> b
+	b "file.txt" sb::append -> b
+	b sb::finish print nl
+
+	"done" print nl
+}

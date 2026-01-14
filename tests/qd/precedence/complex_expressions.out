@@ -1,0 +1,21 @@
+=== Chained arithmetic ===
+15
+32
+12
+=== All operations ===
+22
+9
+7
+=== Comparison with arithmetic ===
+1
+0
+0
+=== Logical with comparison ===
+1
+1
+1
+=== Deeply nested ===
+14
+120
+15
+done

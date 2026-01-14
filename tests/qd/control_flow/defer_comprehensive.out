@@ -1,0 +1,27 @@
+=== Basic defer ===
+start
+middle
+deferred
+=== Multiple defers (LIFO order) ===
+body
+defer 3
+defer 2
+defer 1
+=== Defer in loop ===
+loop body 0
+loop defer
+loop body 1
+loop defer
+loop body 2
+loop defer
+=== Defer with return ===
+before return
+cleanup
+result: 42
+=== Nested defer ===
+outer start
+inner body
+outer end
+inner defer
+outer defer
+done

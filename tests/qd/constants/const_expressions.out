@@ -1,0 +1,17 @@
+=== Integer constants ===
+10
+20
+-5
+=== Constant arithmetic ===
+30
+10
+100
+=== String constant ===
+hello
+=== Float constant ===
+3.14
+=== In expressions ===
+15
+10
+25
+done

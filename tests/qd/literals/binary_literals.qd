@@ -1,0 +1,46 @@
+// Test binary literal parsing
+fn main() {
+	// Basic binary values
+	"=== Basic binary ===" print nl
+	0b0 print nl
+	0b1 print nl
+	0b10 print nl
+	0b11 print nl
+	0b100 print nl
+	0b1111 print nl
+	0b10000 print nl
+
+	// 8-bit patterns
+	"=== 8-bit patterns ===" print nl
+	0b00000000 print nl     // 0
+	0b11111111 print nl     // 255
+	0b10101010 print nl     // 170
+	0b01010101 print nl     // 85
+	0b10000001 print nl     // 129
+
+	// Powers of 2
+	"=== Powers of 2 ===" print nl
+	0b1 print nl            // 1
+	0b10 print nl           // 2
+	0b100 print nl          // 4
+	0b1000 print nl         // 8
+	0b10000 print nl        // 16
+	0b100000 print nl       // 32
+	0b1000000 print nl      // 64
+	0b10000000 print nl     // 128
+
+	// Binary arithmetic
+	"=== Binary arithmetic ===" print nl
+	0b1010 0b0101 + print nl    // 10 + 5 = 15
+	0b1111 0b0001 - print nl    // 15 - 1 = 14
+	0b100 0b10 * print nl       // 4 * 2 = 8
+	0b1000 0b10 / print nl      // 8 / 2 = 4
+
+	// Binary in bitwise
+	"=== Binary bitwise ===" print nl
+	0b1010 0b1100 and print nl  // 1010 & 1100 = 1000 = 8
+	0b1010 0b0101 or print nl   // 1010 | 0101 = 1111 = 15
+	0b1010 0b1100 xor print nl  // 1010 ^ 1100 = 0110 = 6
+
+	"done" print nl
+}

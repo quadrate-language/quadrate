@@ -1,0 +1,24 @@
+=== i64 limits ===
+9223372036854775807
+-9223372036854775807
+=== i8 limits ===
+127
+-128
+=== i16 limits ===
+32767
+-32768
+=== i32 limits ===
+2147483647
+-2147483648
+=== unsigned maximums ===
+255
+65535
+4294967295
+=== using limits in comparisons ===
+1
+1
+1
+=== float limits exist ===
+1
+1
+done

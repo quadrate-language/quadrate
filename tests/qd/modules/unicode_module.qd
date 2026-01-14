@@ -1,0 +1,63 @@
+// Test unicode module - constants and character classification
+use unicode
+use str
+
+fn main() {
+	"=== Control character constants ===" print nl
+	unicode::nul print nl
+	unicode::tab print nl
+	unicode::newline print nl
+	unicode::cr print nl
+	unicode::esc print nl
+
+	"=== Space and punctuation ===" print nl
+	unicode::space print nl
+	unicode::exclaim print nl
+	unicode::dquote print nl
+	unicode::hash print nl
+	unicode::dollar print nl
+
+	"=== Digit constants ===" print nl
+	unicode::digit0 print nl
+	unicode::digit1 print nl
+	unicode::digit9 print nl
+
+	"=== Uppercase letters ===" print nl
+	unicode::A print nl
+	unicode::Z print nl
+
+	"=== Lowercase letters ===" print nl
+	unicode::a print nl
+	unicode::z print nl
+
+	"=== Bracket/brace constants ===" print nl
+	unicode::lparen print nl
+	unicode::rparen print nl
+	unicode::lbracket print nl
+	unicode::rbracket print nl
+	unicode::lbrace print nl
+	unicode::rbrace print nl
+
+	"=== Operator constants ===" print nl
+	unicode::plus print nl
+	unicode::minus print nl
+	unicode::asterisk print nl
+	unicode::slash print nl
+	unicode::equals print nl
+	unicode::lt print nl
+	unicode::gt print nl
+
+	"=== is_digit function ===" print nl
+	unicode::digit0 unicode::is_digit print nl
+	unicode::digit5 unicode::is_digit print nl
+	unicode::digit9 unicode::is_digit print nl
+	unicode::A unicode::is_digit print nl
+	unicode::a unicode::is_digit print nl
+	unicode::space unicode::is_digit print nl
+
+	"=== Using constants to build strings ===" print nl
+	unicode::H str::from_char print
+	unicode::i str::from_char print nl
+
+	"done" print nl
+}

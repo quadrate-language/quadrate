@@ -1,0 +1,35 @@
+// Test type coercion in function calls
+fn take_float(x:f64 -- result:f64) {
+	-> val
+	val 2.0 *
+}
+
+fn take_int(x:i64 -- result:i64) {
+	-> val
+	val 2 *
+}
+
+fn mixed_args(a:i64 b:f64 -- result:f64) {
+	-> float_val
+	-> int_val
+	int_val cast<f64> float_val +
+}
+
+fn main() {
+	// Explicit integer to float function
+	"=== Int to float func ===" print nl
+	5 cast<f64> take_float print nl    // 10.0
+	10 cast<f64> take_float print nl   // 20.0
+
+	// Explicit float to integer function
+	"=== Float to int func ===" print nl
+	5.9 cast<i64> take_int print nl    // 10 (truncates to 5)
+	10.1 cast<i64> take_int print nl   // 20 (truncates to 10)
+
+	// Mixed argument types
+	"=== Mixed args ===" print nl
+	5 2.5 mixed_args print nl          // 7.5
+	10 3.14 mixed_args print nl        // 13.14
+
+	"done" print nl
+}

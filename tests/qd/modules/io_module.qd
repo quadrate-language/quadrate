@@ -1,0 +1,70 @@
+// Test io module - file I/O operations
+use io
+use os
+use str
+use mem
+
+fn main() {
+	"=== Constants ===" print nl
+	io::ErrNotFound print nl
+	io::ErrPermission print nl
+	io::ErrEof print nl
+	io::SeekSet print nl
+	io::SeekCur print nl
+	io::SeekEnd print nl
+
+	"=== Mode constants exist ===" print nl
+	io::Read str::len 0 gt print nl
+	io::Write str::len 0 gt print nl
+	io::Append str::len 0 gt print nl
+	io::ReadWrite str::len 0 gt print nl
+
+	"=== write_file and read_file ===" print nl
+	os::mktemp! -> tmpdir
+	tmpdir "/test.txt" str::concat -> testfile
+	testfile "Hello, World!" io::write_file!
+	testfile io::read_file! print nl
+
+	"=== open, write, seek, read, close ===" print nl
+	tmpdir "/binary.dat" str::concat -> binfile
+	binfile io::Write io::open! -> f
+	8 mem::alloc! -> buf
+	65 buf 0 mem::set_byte
+	66 buf 1 mem::set_byte
+	67 buf 2 mem::set_byte
+	f buf 3 io::write! print nl
+	f io::close
+
+	// Read it back
+	binfile io::Read io::open! -> f2
+	8 mem::alloc! -> buf2
+	f2 buf2 3 io::read! print nl
+	buf2 0 mem::get_byte print nl
+	buf2 1 mem::get_byte print nl
+	buf2 2 mem::get_byte print nl
+	f2 io::close
+
+	"=== tell and seek ===" print nl
+	binfile io::Read io::open! -> f3
+	f3 io::tell! print nl
+	f3 1 io::SeekSet io::seek! print nl
+	f3 io::tell! print nl
+	f3 1 io::SeekCur io::seek! print nl
+	f3 io::close
+
+	"=== eof ===" print nl
+	binfile io::Read io::open! -> f4
+	f4 io::eof -> is_eof -> f4
+	is_eof print nl
+	f4 buf2 100 io::read! drop
+	f4 io::eof -> is_eof2 -> f4
+	is_eof2 print nl
+	f4 io::close
+
+	// Cleanup
+	buf mem::free
+	buf2 mem::free
+	tmpdir os::rmdir!
+
+	"done" print nl
+}

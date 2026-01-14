@@ -1,0 +1,24 @@
+// Test integer underflow behavior
+use limits
+
+fn main() {
+	// Subtraction underflow
+	"=== Subtraction underflow ===" print nl
+	0 1 - print nl                // -1
+	0 limits::I64Max - print nl   // negative of max
+	limits::I64Min 1 - print nl   // underflow
+
+	// Negation at boundaries
+	"=== Negation boundaries ===" print nl
+	limits::I64Max neg print nl   // -max
+	limits::I64Min neg print nl   // positive or overflow?
+	0 neg print nl                // 0
+
+	// Decrement at boundary
+	"=== Decrement ===" print nl
+	limits::I64Min 1 - print nl   // underflow
+	1 1 - print nl                // 0
+	0 1 - print nl                // -1
+
+	"done" print nl
+}

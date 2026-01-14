@@ -1,0 +1,25 @@
+=== with_seed and next ===
+1
+1
+1
+=== deterministic seed produces same sequence ===
+1
+1
+=== int in range ===
+1
+1
+1
+1
+=== range ===
+1
+1
+1
+1
+=== boolean ===
+1
+1
+1
+1
+=== multiple values stay in range ===
+1
+done

@@ -1,0 +1,56 @@
+=== Duration constants ===
+1
+1000
+1000000
+1000000000
+60000000000
+3600000000000
+=== Weekday constants ===
+0
+1
+6
+=== Month constants ===
+1
+6
+12
+=== is_leap_year ===
+1
+1
+0
+0
+=== days_in_month ===
+31
+29
+28
+30
+31
+=== date and extract ===
+2024
+1
+15
+12
+30
+45
+=== Unix epoch ===
+0
+=== known date ===
+2000
+6
+15
+=== weekday ===
+4
+1
+=== year_day ===
+1
+366
+=== add ===
+1000001000
+=== before and after ===
+1
+0
+1
+0
+=== sub ===
+100
+-100
+done

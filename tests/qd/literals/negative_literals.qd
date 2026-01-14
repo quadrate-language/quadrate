@@ -1,0 +1,41 @@
+// Test negative number literals
+fn main() {
+	// Basic negative integers
+	"=== Negative integers ===" print nl
+	-1 print nl
+	-10 print nl
+	-100 print nl
+	-1000 print nl
+
+	// Negative floats
+	"=== Negative floats ===" print nl
+	-1.0 print nl
+	-3.14 print nl
+	-0.5 print nl
+	-100.001 print nl
+
+	// Negative arithmetic
+	"=== Negative arithmetic ===" print nl
+	-5 -3 + print nl       // -8
+	-10 5 + print nl       // -5
+	5 -10 + print nl       // -5
+	-5 -5 - print nl       // 0
+	-3 4 * print nl        // -12
+	-12 -3 / print nl      // 4
+
+	// Negative comparisons
+	"=== Negative comparisons ===" print nl
+	-5 -3 lt print nl      // 1 (-5 < -3)
+	-3 -5 gt print nl      // 1 (-3 > -5)
+	-5 -5 eq print nl      // 1
+	-1 0 lt print nl       // 1
+	0 -1 gt print nl       // 1
+
+	// Sign operations
+	"=== Sign operations ===" print nl
+	-5 neg print nl        // 5
+	5 neg print nl         // -5
+	0 neg print nl         // 0
+
+	"done" print nl
+}

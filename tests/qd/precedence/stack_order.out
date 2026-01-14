@@ -1,0 +1,23 @@
+=== Basic stack order ===
+6
+6
+4
+24
+=== Non-commutative ops ===
+5
+10
+2
+7
+9
+5
+=== Mixed operations ===
+20
+14
+14
+5
+20
+=== Comparison chains ===
+1
+1
+1
+done

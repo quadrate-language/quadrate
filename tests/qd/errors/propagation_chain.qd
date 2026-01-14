@@ -1,0 +1,74 @@
+// Test error propagation through multiple function calls
+fn step1(x:i64 -- result:i64)! {
+	-> val
+	val 0 < if {
+		0 "step1: negative input" 1 panic
+	}
+	val 10 +
+}
+
+fn step2(x:i64 -- result:i64)! {
+	-> val
+	val 100 > if {
+		0 "step2: too large" 1 panic
+	}
+	val 2 *
+}
+
+fn step3(x:i64 -- result:i64)! {
+	-> val
+	val 50 mod 0 eq if {
+		0 "step3: divisible by 50" 1 panic
+	}
+	val 1 +
+}
+
+fn pipeline(x:i64 -- result:i64)! {
+	-> val
+	val step1 if {
+		step2 if {
+			step3 if {
+				// success
+			} else {
+				0 "pipeline: step3 failed" 1 panic
+			}
+		} else {
+			0 "pipeline: step2 failed" 1 panic
+		}
+	} else {
+		0 "pipeline: step1 failed" 1 panic
+	}
+}
+
+fn main() {
+	// Test successful pipeline
+	"=== Pipeline tests ===" print nl
+	5 pipeline if {
+		"5 -> " print print nl
+	} else {
+		"5 failed" print nl
+	}
+
+	// Test step1 failure (negative)
+	-5 pipeline if {
+		"-5 -> " print print nl
+	} else {
+		"-5 failed (step1)" print nl
+	}
+
+	// Test step2 failure (too large after step1)
+	95 pipeline if {
+		"95 -> " print print nl
+	} else {
+		"95 failed (step2)" print nl
+	}
+
+	// Test step3 failure (divisible by 50)
+	15 pipeline if {
+		"15 -> " print print nl
+	} else {
+		"15 failed (step3)" print nl
+	}
+
+	"done" print nl
+}

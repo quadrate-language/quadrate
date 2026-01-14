@@ -1,0 +1,30 @@
+// Test signal module - signal constants and basic operations
+use signal
+
+fn main() {
+	"=== Signal constants ===" print nl
+	signal::SigHup print nl
+	signal::SigInt print nl
+	signal::SigQuit print nl
+	signal::SigKill print nl
+	signal::SigTerm print nl
+	signal::SigUsr1 print nl
+	signal::SigUsr2 print nl
+
+	"=== trap and pending ===" print nl
+	signal::SigUsr1 signal::trap
+	signal::SigUsr1 signal::pending print nl
+
+	"=== clear ===" print nl
+	signal::SigUsr1 signal::clear
+	signal::SigUsr1 signal::pending print nl
+
+	"=== reset ===" print nl
+	signal::SigUsr1 signal::reset
+	signal::SigUsr1 signal::pending print nl
+
+	"=== ignore ===" print nl
+	signal::SigPipe signal::ignore
+
+	"done" print nl
+}

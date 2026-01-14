@@ -1,0 +1,48 @@
+// Test tail-recursive patterns (might be optimized)
+fn factorial_tail(n:i64 acc:i64 -- result:i64) {
+	-> accumulator
+	-> num
+	num 1 <= if {
+		accumulator
+	} else {
+		num 1 - num accumulator * factorial_tail
+	}
+}
+
+fn sum_tail(n:i64 acc:i64 -- result:i64) {
+	-> accumulator
+	-> num
+	num 0 <= if {
+		accumulator
+	} else {
+		num 1 - num accumulator + sum_tail
+	}
+}
+
+fn countdown_tail(n:i64 -- ) {
+	-> num
+	num 0 <= if {
+		// done
+	} else {
+		num print nl
+		num 1 - countdown_tail
+	}
+}
+
+fn main() {
+	// Tail-recursive factorial
+	"=== Tail factorial ===" print nl
+	5 1 factorial_tail print nl    // 120
+	10 1 factorial_tail print nl   // 3628800
+
+	// Tail-recursive sum
+	"=== Tail sum ===" print nl
+	10 0 sum_tail print nl         // 55
+	100 0 sum_tail print nl        // 5050
+
+	// Tail-recursive countdown
+	"=== Countdown ===" print nl
+	5 countdown_tail
+
+	"done" print nl
+}

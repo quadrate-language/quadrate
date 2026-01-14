@@ -1,0 +1,38 @@
+// Test path module functions
+use path
+
+fn main() {
+	// dirname
+	"=== dirname ===" print nl
+	"/home/user/file.txt" path::dirname print nl   // /home/user
+	"/home/user/" path::dirname print nl           // /home/user
+	"/file.txt" path::dirname print nl             // (empty or /)
+	"file.txt" path::dirname print nl              // .
+
+	// basename
+	"=== basename ===" print nl
+	"/home/user/file.txt" path::basename print nl  // file.txt
+	"/home/user/" path::basename print nl          // (empty)
+	"file.txt" path::basename print nl             // file.txt
+	"/file.txt" path::basename print nl            // file.txt
+
+	// ext
+	"=== ext ===" print nl
+	"/home/user/file.txt" path::ext print nl       // .txt
+	"file.tar.gz" path::ext print nl               // .gz
+	"noext" path::ext print nl                     // (empty)
+	".hidden" path::ext print nl                   // .hidden or empty
+
+	// join
+	"=== join ===" print nl
+	"/home" "user" path::join print nl             // /home/user
+	"dir" "file.txt" path::join print nl           // dir/file.txt
+
+	// is_absolute
+	"=== is_absolute ===" print nl
+	"/home/user" path::is_absolute print nl        // 1
+	"relative/path" path::is_absolute print nl     // 0
+	"." path::is_absolute print nl                 // 0
+
+	"done" print nl
+}

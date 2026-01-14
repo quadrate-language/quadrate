@@ -1,0 +1,28 @@
+=== Negative integers ===
+-1
+-10
+-100
+-1000
+=== Negative floats ===
+-1
+-3.14
+-0.5
+-100.001
+=== Negative arithmetic ===
+-8
+-5
+-5
+0
+-12
+4
+=== Negative comparisons ===
+1
+1
+1
+1
+1
+=== Sign operations ===
+5
+-5
+0
+done

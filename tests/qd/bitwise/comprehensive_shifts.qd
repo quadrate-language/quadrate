@@ -1,0 +1,43 @@
+// Comprehensive bit shift tests
+fn main() {
+	// Left shift basics
+	"=== Left shift ===" print nl
+	1 0 shl print nl      // 1
+	1 1 shl print nl      // 2
+	1 2 shl print nl      // 4
+	1 3 shl print nl      // 8
+	1 4 shl print nl      // 16
+	1 8 shl print nl      // 256
+	1 16 shl print nl     // 65536
+	1 31 shl print nl     // 2147483648
+
+	// Right shift basics
+	"=== Right shift ===" print nl
+	256 0 shr print nl    // 256
+	256 1 shr print nl    // 128
+	256 2 shr print nl    // 64
+	256 4 shr print nl    // 16
+	256 8 shr print nl    // 1
+	256 9 shr print nl    // 0
+
+	// Shift multiple bits
+	"=== Multi-bit values ===" print nl
+	255 1 shl print nl    // 510
+	255 4 shl print nl    // 4080
+	4080 4 shr print nl   // 255
+
+	// Shift and mask patterns
+	"=== Shift and mask ===" print nl
+	0xABCD 8 shr print nl         // 0xAB = 171
+	0xABCD 8 shl print nl         // 0xABCD00 = 11259136
+	0xABCD 0xFF and print nl      // 0xCD = 205
+	0xABCD 8 shr 0xFF and print nl // 0xAB = 171
+
+	// Edge cases
+	"=== Edge cases ===" print nl
+	0 10 shl print nl     // 0
+	0 10 shr print nl     // 0
+	-1 1 shr print nl     // arithmetic or logical shift?
+
+	"done" print nl
+}

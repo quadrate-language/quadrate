@@ -1,0 +1,36 @@
+// Test term module - ANSI escape codes
+use term
+use str
+
+fn main() {
+	"=== Basic colors exist ===" print nl
+	term::Red str::len 0 gt print nl
+	term::Green str::len 0 gt print nl
+	term::Blue str::len 0 gt print nl
+	term::Reset str::len 0 gt print nl
+
+	"=== Formatting codes exist ===" print nl
+	term::Bold str::len 0 gt print nl
+	term::Dim str::len 0 gt print nl
+	term::Italic str::len 0 gt print nl
+	term::Underline str::len 0 gt print nl
+
+	"=== Background colors exist ===" print nl
+	term::BgRed str::len 0 gt print nl
+	term::BgGreen str::len 0 gt print nl
+	term::BgBlue str::len 0 gt print nl
+
+	"=== Bright colors exist ===" print nl
+	term::BrightRed str::len 0 gt print nl
+	term::BrightGreen str::len 0 gt print nl
+	term::BrightBlue str::len 0 gt print nl
+
+	"=== All constants are non-empty ===" print nl
+	term::Black str::len 0 gt print nl
+	term::White str::len 0 gt print nl
+	term::Yellow str::len 0 gt print nl
+	term::Cyan str::len 0 gt print nl
+	term::Magenta str::len 0 gt print nl
+
+	"done" print nl
+}

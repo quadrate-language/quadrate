@@ -1,0 +1,10 @@
+=== Int to float func ===
+10
+20
+=== Float to int func ===
+10
+20
+=== Mixed args ===
+7.5
+13.14
+done

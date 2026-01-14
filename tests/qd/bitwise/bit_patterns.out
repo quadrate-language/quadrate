@@ -1,0 +1,27 @@
+=== Set bit ===
+1
+8
+128
+=== Clear bit ===
+254
+247
+127
+=== Toggle bit ===
+8
+0
+254
+=== Check bit ===
+1
+0
+1
+=== Extract bytes ===
+221
+204
+187
+170
+=== Trailing patterns ===
+0
+0
+0
+8
+done

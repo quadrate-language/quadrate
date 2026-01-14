@@ -1,0 +1,64 @@
+// Test bits module - bitwise operations
+use bits
+
+fn main() {
+	"=== mask ===" print nl
+	0xFF 4 bits::mask print nl
+	0xFFFF 8 bits::mask print nl
+	0b11111111 3 bits::mask print nl
+
+	"=== extract ===" print nl
+	0b11010110 2 3 bits::extract print nl
+	0xFF 4 4 bits::extract print nl
+	0b10101010 1 4 bits::extract print nl
+
+	"=== set_bits ===" print nl
+	0 0b101 2 3 bits::set_bits print nl
+	0xFF 0 4 4 bits::set_bits print nl
+	0b11110000 0b1010 0 4 bits::set_bits print nl
+
+	"=== rotate_left ===" print nl
+	0b0011 1 4 bits::rotate_left print nl
+	0b0001 2 4 bits::rotate_left print nl
+	0b1000 1 4 bits::rotate_left print nl
+
+	"=== rotate_right ===" print nl
+	0b0110 1 4 bits::rotate_right print nl
+	0b0100 2 4 bits::rotate_right print nl
+	0b0001 1 4 bits::rotate_right print nl
+
+	"=== popcount ===" print nl
+	0b1010110 bits::popcount print nl
+	0xFF bits::popcount print nl
+	0 bits::popcount print nl
+	1 bits::popcount print nl
+	0b10101010 bits::popcount print nl
+
+	"=== reverse_bits ===" print nl
+	0b1011 4 bits::reverse_bits print nl
+	0b1000 4 bits::reverse_bits print nl
+	0b0001 4 bits::reverse_bits print nl
+
+	"=== has_bit ===" print nl
+	0b1010 1 bits::has_bit print nl
+	0b1010 0 bits::has_bit print nl
+	0b1010 3 bits::has_bit print nl
+	0b1010 2 bits::has_bit print nl
+
+	"=== set_bit ===" print nl
+	0b1000 1 bits::set_bit print nl
+	0 0 bits::set_bit print nl
+	0 7 bits::set_bit print nl
+
+	"=== clear_bit ===" print nl
+	0b1010 1 bits::clear_bit print nl
+	0xFF 0 bits::clear_bit print nl
+	0b1111 2 bits::clear_bit print nl
+
+	"=== toggle_bit ===" print nl
+	0b1010 0 bits::toggle_bit print nl
+	0b1010 1 bits::toggle_bit print nl
+	0b0000 3 bits::toggle_bit print nl
+
+	"done" print nl
+}

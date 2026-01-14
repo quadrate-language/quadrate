@@ -1,0 +1,33 @@
+=== Basic binary ===
+0
+1
+2
+3
+4
+15
+16
+=== 8-bit patterns ===
+0
+255
+170
+85
+129
+=== Powers of 2 ===
+1
+2
+4
+8
+16
+32
+64
+128
+=== Binary arithmetic ===
+15
+14
+8
+4
+=== Binary bitwise ===
+8
+15
+6
+done

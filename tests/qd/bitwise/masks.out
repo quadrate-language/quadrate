@@ -1,0 +1,19 @@
+=== Create masks ===
+1
+15
+255
+65535
+=== Apply masks ===
+239
+52719
+224
+=== Extract fields ===
+6
+13
+=== Combine values ===
+43981
+1193046
+=== Clear and set ===
+240
+245
+done

@@ -1,0 +1,19 @@
+=== Byte lengths ===
+1
+2
+3
+4
+=== Mixed byte-widths ===
+10
+11
+=== Multi-byte comparison ===
+1
+1
+=== Multi-byte contains ===
+1
+1
+=== Empty string ===
+0
+0
+1
+done

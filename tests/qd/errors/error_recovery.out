@@ -1,0 +1,11 @@
+=== Default recovery ===
+10
+20
+-1
+50
+=== Multiple attempts ===
+0: failed, trying 10
+10: 10
+=== Fallback chain ===
+4
+done

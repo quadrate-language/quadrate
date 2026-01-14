@@ -1,0 +1,25 @@
+=== Error constants ===
+2
+3
+5
+6
+7
+=== Mutex ===
+1
+mutex ok
+=== Buffered channel ===
+5
+0
+0
+1
+2
+42
+1
+100
+1
+channel ok
+=== WaitGroup ===
+waitgroup ok
+=== sleep ===
+slept 1ms
+done

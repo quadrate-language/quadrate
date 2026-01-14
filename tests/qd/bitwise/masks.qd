@@ -1,0 +1,32 @@
+// Test bit mask operations
+fn main() {
+	// Create masks
+	"=== Create masks ===" print nl
+	1 1 shl 1 - print nl          // 1-bit mask: 1
+	1 4 shl 1 - print nl          // 4-bit mask: 15
+	1 8 shl 1 - print nl          // 8-bit mask: 255
+	1 16 shl 1 - print nl         // 16-bit mask: 65535
+
+	// Apply masks
+	"=== Apply masks ===" print nl
+	0xABCDEF 0xFF and print nl        // Low 8 bits: 239
+	0xABCDEF 0xFFFF and print nl      // Low 16 bits: 52719
+	0xABCDEF 0xF0 and print nl        // Middle nibble: 224
+
+	// Mask and shift extract
+	"=== Extract fields ===" print nl
+	0b11010110 0b00001111 and print nl     // Low nibble: 6
+	0b11010110 4 shr 0b00001111 and print nl // High nibble: 13
+
+	// Combine values with masks
+	"=== Combine values ===" print nl
+	0xAB 8 shl 0xCD or print nl   // 0xABCD = 43981
+	0x12 16 shl 0x34 8 shl or 0x56 or print nl  // 0x123456 = 1193046
+
+	// Clear and set field
+	"=== Clear and set ===" print nl
+	0xFF 0x0F not and print nl    // Clear low nibble: 240
+	0xFF 0x0F not and 0x05 or print nl  // Set low nibble to 5: 245
+
+	"done" print nl
+}

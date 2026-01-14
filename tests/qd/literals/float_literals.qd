@@ -1,0 +1,38 @@
+// Test float literal parsing
+fn main() {
+	// Basic floats
+	"=== Basic floats ===" print nl
+	0.0 print nl
+	1.0 print nl
+	3.14 print nl
+	2.718 print nl
+
+	// Small decimals
+	"=== Small decimals ===" print nl
+	0.1 print nl
+	0.01 print nl
+	0.001 print nl
+	0.0001 print nl
+
+	// Large floats
+	"=== Large floats ===" print nl
+	100.5 print nl
+	1000.25 print nl
+	10000.125 print nl
+
+	// Float arithmetic
+	"=== Float arithmetic ===" print nl
+	1.5 2.5 + print nl     // 4.0
+	5.0 2.0 - print nl     // 3.0
+	2.5 4.0 * print nl     // 10.0
+	10.0 4.0 / print nl    // 2.5
+
+	// Float comparisons
+	"=== Float comparisons ===" print nl
+	1.5 1.5 eq print nl    // 1
+	1.5 2.5 lt print nl    // 1
+	2.5 1.5 gt print nl    // 1
+	1.0 1.0 neq print nl   // 0
+
+	"done" print nl
+}

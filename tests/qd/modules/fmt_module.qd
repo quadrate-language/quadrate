@@ -1,0 +1,30 @@
+// Test fmt module - printf and sprintf
+use fmt
+
+fn main() {
+	"=== printf string ===" print nl
+	"world" "Hello %s\n" fmt::printf
+
+	"=== printf integer ===" print nl
+	42 "The answer is %d\n" fmt::printf
+
+	"=== printf multiple ===" print nl
+	"World" "Hello" "%s, %s!\n" fmt::printf
+
+	"=== printf float ===" print nl
+	3.14159 "Pi is %.2f\n" fmt::printf
+
+	"=== sprintf ===" print nl
+	"test" "formatted: %s" fmt::sprintf print nl
+
+	"=== sprintf integer ===" print nl
+	100 "value: %d" fmt::sprintf print nl
+
+	"=== sprintf multiple ===" print nl
+	30 20 10 "%d + %d + %d" fmt::sprintf print nl
+
+	"=== Hex format ===" print nl
+	255 "hex: %x" fmt::sprintf print nl
+
+	"done" print nl
+}

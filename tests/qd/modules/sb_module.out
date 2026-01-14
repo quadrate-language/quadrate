@@ -1,0 +1,15 @@
+=== Basic append ===
+Hello, World!
+=== Length ===
+13
+=== append_char ===
+ABC
+=== append_int ===
+42 0 -123
+=== with_capacity ===
+large buffer
+=== finish ===
+finished
+=== Building path-like strings ===
+/home/user/file.txt
+done

@@ -1,0 +1,23 @@
+=== dirname ===
+/home/user
+/home/user
+/
+.
+=== basename ===
+file.txt
+
+file.txt
+file.txt
+=== ext ===
+.txt
+.gz
+
+
+=== join ===
+/home/user
+dir/file.txt
+=== is_absolute ===
+1
+0
+0
+done

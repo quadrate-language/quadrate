@@ -1,0 +1,37 @@
+// Test integer overflow behavior
+use limits
+
+fn main() {
+	// Test max value operations
+	"=== Max value operations ===" print nl
+	limits::I64Max print nl
+	limits::I64Max 0 + print nl
+	limits::I64Max 1 - print nl
+	limits::I64Max 1 * print nl
+
+	// Test min value operations
+	"=== Min value operations ===" print nl
+	limits::I64Min print nl
+	limits::I64Min 0 + print nl
+	limits::I64Min 1 + print nl
+	limits::I64Min 1 * print nl
+	limits::I64Min -1 * print nl
+
+	// Test overflow wrapping (if applicable)
+	"=== Overflow behavior ===" print nl
+	limits::I64Max 1 + print nl    // Wraps to min or saturates?
+	limits::I64Min 1 - print nl    // Wraps to max or saturates?
+
+	// Test multiplication at boundaries
+	"=== Multiplication boundaries ===" print nl
+	limits::I32Max 2 * print nl    // Should not overflow 64-bit
+	limits::I32Max limits::I32Max * print nl  // Large but fits in 64-bit
+
+	// Test division at boundaries
+	"=== Division boundaries ===" print nl
+	limits::I64Max 2 / print nl
+	limits::I64Min 2 / print nl
+	limits::I64Max limits::I64Max / print nl  // 1
+
+	"done" print nl
+}

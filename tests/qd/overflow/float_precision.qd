@@ -1,0 +1,31 @@
+// Test float precision edge cases
+use limits
+
+fn main() {
+	// Epsilon precision
+	"=== Epsilon precision ===" print nl
+	1.0 limits::F64Epsilon + 1.0 neq print nl  // 1 (epsilon changes value)
+	1.0 limits::F64Epsilon - 1.0 neq print nl  // 1
+
+	// Very small numbers
+	"=== Very small numbers ===" print nl
+	0.0000001 0.0000001 + print nl
+	0.0000001 0.0000001 * print nl
+
+	// Large float arithmetic
+	"=== Large float arithmetic ===" print nl
+	1000000.0 1000000.0 + print nl
+	1000000.0 1000000.0 * print nl
+
+	// Float precision loss test
+	"=== Precision loss ===" print nl
+	0.1 0.2 + 0.3 eq print nl         // May be 0 due to float imprecision
+	0.1 0.1 + 0.1 + 0.3 eq print nl   // May be 0 due to float imprecision
+
+	// Large integer as float
+	"=== Large integer as float ===" print nl
+	9007199254740992.0 print nl   // 2^53 - largest integer exactly representable
+	9007199254740993.0 print nl   // May lose precision
+
+	"done" print nl
+}

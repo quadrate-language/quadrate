@@ -1,0 +1,39 @@
+// Test hexadecimal literal parsing
+fn main() {
+	// Basic hex values
+	"=== Basic hex ===" print nl
+	0x0 print nl
+	0x1 print nl
+	0xA print nl
+	0xF print nl
+	0xFF print nl
+	0x100 print nl
+
+	// Mixed case
+	"=== Mixed case ===" print nl
+	0xABCD print nl
+	0xabcd print nl
+	0xAbCd print nl
+
+	// Larger values
+	"=== Larger values ===" print nl
+	0x1000 print nl
+	0xFFFF print nl
+	0x10000 print nl
+	0xFFFFFFFF print nl
+
+	// Hex in arithmetic
+	"=== Hex arithmetic ===" print nl
+	0x10 0x20 + print nl          // 16 + 32 = 48
+	0xFF 0x01 - print nl          // 255 - 1 = 254
+	0x10 0x10 * print nl          // 16 * 16 = 256
+	0x100 0x10 / print nl         // 256 / 16 = 16
+
+	// Hex in comparisons
+	"=== Hex comparisons ===" print nl
+	0xFF 255 eq print nl          // true
+	0x100 256 eq print nl         // true
+	0xA 10 eq print nl            // true
+
+	"done" print nl
+}
