@@ -249,36 +249,7 @@ namespace Qd {
 	}
 
 	void SemanticValidator::reportErrorConditional(const char* message, bool shouldReport) {
-		if (!shouldReport) {
-			return;
-		}
-
-		// Create a key for deduplication
-		std::string errorKey = std::string("0:0:") + message;
-
-		// Skip if we've already reported this exact error
-		if (mReportedErrors.find(errorKey) != mReportedErrors.end()) {
-			return;
-		}
-		mReportedErrors.insert(errorKey);
-
-		mErrorCount++;
-
-		if (mStoreErrors) {
-			ErrorInfo err;
-			err.line = 0;
-			err.column = 0;
-			err.message = message;
-			mStoredErrors.push_back(err);
-		} else {
-			// GCC/Clang style: quadc: filename: error: message
-			std::cerr << Colors::bold() << "quadc: " << Colors::reset();
-			if (mFilename) {
-				std::cerr << Colors::bold() << mFilename << ":" << Colors::reset() << " ";
-			}
-			std::cerr << Colors::bold() << Colors::red() << "error:" << Colors::reset() << " ";
-			std::cerr << Colors::bold() << message << Colors::reset() << std::endl;
-		}
+		reportErrorConditional(nullptr, message, shouldReport);
 	}
 
 	void SemanticValidator::reportErrorConditional(const IAstNode* node, const char* message, bool shouldReport) {

@@ -385,6 +385,17 @@ namespace Qd {
 		std::set<std::string> reachableFunctions;
 		bool useReachabilityAnalysis = true;
 
+		// Inline stack operation helpers
+		struct BinaryOpContext {
+			llvm::Value* size;
+			llvm::Value* sizePtr;
+			llvm::Value* value1;
+			llvm::Value* value2;
+			llvm::Value* resultPtr; // Where to store result (value1's location)
+		};
+		BinaryOpContext setupBinaryOp(llvm::Value* ctx);
+		void finishBinaryOp(const BinaryOpContext& boc, llvm::Value* result);
+
 		// Inline stack operations
 		void generateInlinePushInt(llvm::Value* ctx, int64_t value);
 		void generateInlinePushIntValue(llvm::Value* ctx, llvm::Value* value);
