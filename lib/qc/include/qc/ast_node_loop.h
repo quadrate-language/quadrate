@@ -1,22 +1,16 @@
 #ifndef QD_QC_AST_NODE_LOOP_H
 #define QD_QC_AST_NODE_LOOP_H
 
-#include "ast_node.h"
+#include "ast_node_base.h"
 
 namespace Qd {
-	class AstNodeLoopStatement : public IAstNode {
+	class AstNodeLoopStatement : public AstNodeBase<IAstNode::Type::LOOP_STATEMENT> {
 	public:
-		AstNodeLoopStatement() : mParent(nullptr), mBody(nullptr), mLine(0), mColumn(0) {
+		AstNodeLoopStatement() : mBody(nullptr) {
 		}
 
 		~AstNodeLoopStatement() {
-			if (mBody) {
-				delete mBody;
-			}
-		}
-
-		IAstNode::Type type() const override {
-			return Type::LOOP_STATEMENT;
+			delete mBody;
 		}
 
 		size_t childCount() const override {
@@ -30,27 +24,6 @@ namespace Qd {
 			return nullptr;
 		}
 
-		IAstNode* parent() const override {
-			return mParent;
-		}
-
-		void setParent(IAstNode* parent) override {
-			mParent = parent;
-		}
-
-		size_t line() const override {
-			return mLine;
-		}
-
-		size_t column() const override {
-			return mColumn;
-		}
-
-		void setPosition(size_t line, size_t column) override {
-			mLine = line;
-			mColumn = column;
-		}
-
 		void setBody(IAstNode* body) {
 			mBody = body;
 		}
@@ -60,10 +33,7 @@ namespace Qd {
 		}
 
 	private:
-		IAstNode* mParent;
 		IAstNode* mBody;
-		size_t mLine;
-		size_t mColumn;
 	};
 }
 

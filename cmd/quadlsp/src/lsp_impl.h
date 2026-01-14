@@ -1,9 +1,7 @@
 #ifndef QUADLSP_LSP_IMPL_H
 #define QUADLSP_LSP_IMPL_H
 
-#include "constant_info.h"
-#include "function_info.h"
-#include "struct_info.h"
+#include "lsp_types.h"
 #include <jansson.h>
 #include <map>
 #include <qc/ast_node.h>

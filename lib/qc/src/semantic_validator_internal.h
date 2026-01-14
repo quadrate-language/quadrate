@@ -212,7 +212,7 @@ inline std::string findSimilarFunctionName(
 		return suggestion;
 	}
 	// Then check builtins
-	return findSimilarNameInArray(name, VALIDATOR_INSTRUCTIONS, VALIDATOR_INSTRUCTION_COUNT);
+	return findSimilarNameInArray(name, BUILTIN_INSTRUCTIONS, BUILTIN_INSTRUCTION_COUNT);
 }
 
 // Get all .qd files in a directory, sorted alphabetically

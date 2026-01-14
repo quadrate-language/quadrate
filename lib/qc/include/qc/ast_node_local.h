@@ -1,7 +1,7 @@
 #ifndef QD_QC_AST_NODE_LOCAL_H
 #define QD_QC_AST_NODE_LOCAL_H
 
-#include <qc/ast_node.h>
+#include "ast_node_base.h"
 #include <string>
 #include <vector>
 
@@ -17,19 +17,12 @@ namespace Qd {
 	 * Multiple assignment pops multiple values: -> a b c pops 3 values, assigns top to a, next to b, etc.
 	 * References to the variable name later will push a copy of the value to the stack.
 	 */
-	class AstNodeLocal : public IAstNode {
+	class AstNodeLocal : public AstNodeBase<IAstNode::Type::LOCAL> {
 	public:
-		explicit AstNodeLocal(const std::string& name) : mNames{name}, mParent(nullptr), mLine(0), mColumn(0) {
+		explicit AstNodeLocal(const std::string& name) : mNames{name} {
 		}
 
-		explicit AstNodeLocal(const std::vector<std::string>& names)
-			: mNames(names), mParent(nullptr), mLine(0), mColumn(0) {
-		}
-
-		~AstNodeLocal() override = default;
-
-		Type type() const override {
-			return Type::LOCAL;
+		explicit AstNodeLocal(const std::vector<std::string>& names) : mNames(names) {
 		}
 
 		// For backwards compatibility - returns first name
@@ -51,38 +44,14 @@ namespace Qd {
 			return 0;
 		}
 
-		IAstNode* child(size_t /*index*/) const override {
+		IAstNode* child(size_t) const override {
 			return nullptr;
-		}
-
-		IAstNode* parent() const override {
-			return mParent;
-		}
-
-		void setParent(IAstNode* parent) override {
-			mParent = parent;
-		}
-
-		size_t line() const override {
-			return mLine;
-		}
-
-		size_t column() const override {
-			return mColumn;
-		}
-
-		void setPosition(size_t line, size_t column) override {
-			mLine = line;
-			mColumn = column;
 		}
 
 	private:
 		std::vector<std::string> mNames;
-		IAstNode* mParent;
-		size_t mLine;
-		size_t mColumn;
 	};
 
 } // namespace Qd
 
-#endif // QC_AST_NODE_LOCAL_H
+#endif // QD_QC_AST_NODE_LOCAL_H

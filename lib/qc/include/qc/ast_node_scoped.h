@@ -2,7 +2,7 @@
 #define QD_QC_AST_NODE_SCOPED_H
 
 #include "ast_node.h"
-#include "ast_node_identifier.h" // For CastDirection enum
+#include "ast_types.h"
 #include <string>
 #include <vector>
 

@@ -3,6 +3,7 @@
 #include <qc/colors.h>
 #include <qc/error_reporter.h>
 #include <string.h>
+#include <u8t/scanner.h>
 
 namespace Qd {
 

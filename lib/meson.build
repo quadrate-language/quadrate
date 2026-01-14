@@ -1,3 +1,6 @@
+# Common include directories (must be defined before subdirs that use them)
+qdrt_src_inc = include_directories('qdrt')
+
 subdir('version')
 subdir('qdplatform')
 subdir('qdcli')

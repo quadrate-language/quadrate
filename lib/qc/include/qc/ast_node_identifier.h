@@ -2,19 +2,13 @@
 #define QD_QC_AST_NODE_IDENTIFIER_H
 
 #include "ast_node.h"
+#include "ast_types.h"
 #include <string>
 #include <vector>
 
 namespace Qd {
 	// Forward declaration for friend access
 	class SemanticValidator;
-
-	// Cast direction for implicit casts
-	enum class CastDirection {
-		NONE,
-		INT_TO_FLOAT, // casti -> castf
-		FLOAT_TO_INT  // castf -> casti
-	};
 
 	class AstNodeIdentifier : public IAstNode {
 		friend class SemanticValidator;

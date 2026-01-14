@@ -1,10 +1,12 @@
 #ifndef QD_QC_ERROR_REPORTER_H
 #define QD_QC_ERROR_REPORTER_H
 
-#include <stdio.h>
+#include <cstddef>
 #include <string>
-#include <u8t/scanner.h>
 #include <vector>
+
+// Forward declaration for u8t scanner (avoid including full header)
+struct u8t_scanner;
 
 namespace Qd {
 	struct ErrorInfo {

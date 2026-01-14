@@ -13,9 +13,6 @@ qc_sources = files(
 
 qc_inc = include_directories('include')
 
-# Include qdrt source directory for platform headers (exe_path_platform.h)
-qdrt_src_inc = include_directories('../qdrt')
-
 # u8t library (subproject only)
 u8t_dep = subproject('u8t').get_variable('u8t_dep')
 

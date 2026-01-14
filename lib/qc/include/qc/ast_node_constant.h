@@ -1,47 +1,22 @@
 #ifndef QD_QC_AST_NODE_CONSTANT_H
 #define QD_QC_AST_NODE_CONSTANT_H
 
-#include "ast_node.h"
+#include "ast_node_base.h"
 #include <string>
 
 namespace Qd {
-	class AstNodeConstant : public IAstNode {
+	class AstNodeConstant : public AstNodeBase<IAstNode::Type::CONSTANT_DECLARATION> {
 	public:
 		AstNodeConstant(const std::string& name, const char* value, bool isPublic = false)
-			: mName(name), mValue(value), mIsPublic(isPublic), mParent(nullptr), mLine(0), mColumn(0) {
-		}
-
-		IAstNode::Type type() const override {
-			return Type::CONSTANT_DECLARATION;
+			: mName(name), mValue(value), mIsPublic(isPublic) {
 		}
 
 		size_t childCount() const override {
 			return 0;
 		}
 
-		IAstNode* child(size_t /*index*/) const override {
+		IAstNode* child(size_t) const override {
 			return nullptr;
-		}
-
-		IAstNode* parent() const override {
-			return mParent;
-		}
-
-		void setParent(IAstNode* parent) override {
-			mParent = parent;
-		}
-
-		size_t line() const override {
-			return mLine;
-		}
-
-		size_t column() const override {
-			return mColumn;
-		}
-
-		void setPosition(size_t line, size_t column) override {
-			mLine = line;
-			mColumn = column;
 		}
 
 		const std::string& name() const {
@@ -60,9 +35,6 @@ namespace Qd {
 		std::string mName;
 		std::string mValue;
 		bool mIsPublic;
-		IAstNode* mParent;
-		size_t mLine;
-		size_t mColumn;
 	};
 }
 

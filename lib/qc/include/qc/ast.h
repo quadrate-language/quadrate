@@ -8,13 +8,11 @@
 #ifndef QD_QC_AST_H
 #define QD_QC_AST_H
 
+#include "ast_node.h"
 #include "error_reporter.h"
-#include <u8t/scanner.h>
 #include <vector>
 
 namespace Qd {
-
-	class IAstNode;
 
 	/**
 	 * @brief Abstract Syntax Tree parser for Quadrate source code

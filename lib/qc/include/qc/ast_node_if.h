@@ -1,26 +1,17 @@
 #ifndef QD_QC_AST_NODE_IF_H
 #define QD_QC_AST_NODE_IF_H
 
-#include "ast_node.h"
-#include <string>
+#include "ast_node_base.h"
 
 namespace Qd {
-	class AstNodeIfStatement : public IAstNode {
+	class AstNodeIfStatement : public AstNodeBase<IAstNode::Type::IF_STATEMENT> {
 	public:
-		AstNodeIfStatement() : mParent(nullptr), mThenBody(nullptr), mElseBody(nullptr), mLine(0), mColumn(0) {
+		AstNodeIfStatement() : mThenBody(nullptr), mElseBody(nullptr) {
 		}
 
 		~AstNodeIfStatement() {
-			if (mThenBody) {
-				delete mThenBody;
-			}
-			if (mElseBody) {
-				delete mElseBody;
-			}
-		}
-
-		IAstNode::Type type() const override {
-			return Type::IF_STATEMENT;
+			delete mThenBody;
+			delete mElseBody;
 		}
 
 		size_t childCount() const override {
@@ -45,27 +36,6 @@ namespace Qd {
 			return nullptr;
 		}
 
-		IAstNode* parent() const override {
-			return mParent;
-		}
-
-		void setParent(IAstNode* parent) override {
-			mParent = parent;
-		}
-
-		size_t line() const override {
-			return mLine;
-		}
-
-		size_t column() const override {
-			return mColumn;
-		}
-
-		void setPosition(size_t line, size_t column) override {
-			mLine = line;
-			mColumn = column;
-		}
-
 		void setThenBody(IAstNode* thenBody) {
 			mThenBody = thenBody;
 		}
@@ -83,11 +53,8 @@ namespace Qd {
 		}
 
 	private:
-		IAstNode* mParent;
 		IAstNode* mThenBody;
 		IAstNode* mElseBody;
-		size_t mLine;
-		size_t mColumn;
 	};
 }
 
