@@ -20,12 +20,12 @@ namespace Qd {
 			bool isIndirect = indirectLocalVariables.find(name) != indirectLocalVariables.end();
 			if (isIndirect) {
 				storagePtr =
-						builder->CreateLoad(llvm::PointerType::getUnqual(*context), localAlloca, name + "_storage");
+						builder->CreateLoad(ptrTy, localAlloca, name + "_storage");
 			}
 
 			// Extract type field
 			llvm::Value* typePtr = builder->CreateStructGEP(stackElementTy, storagePtr, 1, name + "_type_ptr");
-			llvm::Value* type = builder->CreateLoad(builder->getInt32Ty(), typePtr, name + "_type");
+			llvm::Value* type = builder->CreateLoad(int32Ty, typePtr, name + "_type");
 
 			// Switch on type and push appropriate value
 			llvm::Value* valuePtr = builder->CreateStructGEP(stackElementTy, storagePtr, 0, name + "_value_ptr");
@@ -46,7 +46,7 @@ namespace Qd {
 
 			// INT block
 			builder->SetInsertPoint(intBlock);
-			llvm::Value* intVal = builder->CreateLoad(builder->getInt64Ty(), valuePtr, name + "_i");
+			llvm::Value* intVal = builder->CreateLoad(int64Ty, valuePtr, name + "_i");
 			generateInlinePushIntValue(ctx, intVal);
 			builder->CreateBr(endBlock);
 
@@ -58,13 +58,13 @@ namespace Qd {
 
 			// STR block
 			builder->SetInsertPoint(strBlock);
-			llvm::Value* strVal = builder->CreateLoad(llvm::PointerType::getUnqual(*context), valuePtr, name + "_s");
+			llvm::Value* strVal = builder->CreateLoad(ptrTy, valuePtr, name + "_s");
 			builder->CreateCall(pushStrRefFn, {ctx, strVal});
 			builder->CreateBr(endBlock);
 
 			// PTR block
 			builder->SetInsertPoint(ptrBlock);
-			llvm::Value* ptrVal = builder->CreateLoad(llvm::PointerType::getUnqual(*context), valuePtr, name + "_p");
+			llvm::Value* ptrVal = builder->CreateLoad(ptrTy, valuePtr, name + "_p");
 			builder->CreateCall(qdPtrRetainFn, {ptrVal});
 			builder->CreateCall(pushPtrFn, {ctx, ptrVal});
 			builder->CreateBr(endBlock);
@@ -115,7 +115,7 @@ namespace Qd {
 				if (inst->abortOnError()) {
 					// Check error code and abort if set
 					auto errorCodePtr = builder->CreateStructGEP(contextStructTy, ctx, 1, "error_code_ptr");
-					auto errorCode = builder->CreateLoad(builder->getInt64Ty(), errorCodePtr, "error_code");
+					auto errorCode = builder->CreateLoad(int64Ty, errorCodePtr, "error_code");
 					auto hasError = builder->CreateICmpNE(errorCode, builder->getInt64(0), "has_error");
 
 					llvm::BasicBlock* errorBlock =

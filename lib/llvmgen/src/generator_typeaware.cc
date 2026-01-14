@@ -17,10 +17,10 @@ namespace Qd {
 
 		// Load types of both elements
 		llvm::Value* type1Ptr = builder->CreateStructGEP(stackElementTy, toc.elem1Ptr, 1, "type1_ptr");
-		llvm::Value* type1 = builder->CreateLoad(builder->getInt32Ty(), type1Ptr, "type1");
+		llvm::Value* type1 = builder->CreateLoad(int32Ty, type1Ptr, "type1");
 
 		llvm::Value* type2Ptr = builder->CreateStructGEP(stackElementTy, toc.elem2Ptr, 1, "type2_ptr");
-		llvm::Value* type2 = builder->CreateLoad(builder->getInt32Ty(), type2Ptr, "type2");
+		llvm::Value* type2 = builder->CreateLoad(int32Ty, type2Ptr, "type2");
 
 		// Check if both are integers (QD_STACK_TYPE_INT = 0)
 		llvm::Value* type1IsInt = builder->CreateICmpEQ(type1, builder->getInt32(0), "type1_is_int");
@@ -54,12 +54,12 @@ namespace Qd {
 
 		// Fast path: load values and add
 		llvm::Value* value1Ptr = builder->CreateStructGEP(stackElementTy, toc.elem1Ptr, 0, "value1_ptr");
-		llvm::Value* value1iPtrCast = builder->CreateBitCast(value1Ptr, llvm::PointerType::get(*context, 0));
-		llvm::Value* value1 = builder->CreateLoad(builder->getInt64Ty(), value1iPtrCast, "value1");
+		llvm::Value* value1iPtrCast = builder->CreateBitCast(value1Ptr, ptrTy);
+		llvm::Value* value1 = builder->CreateLoad(int64Ty, value1iPtrCast, "value1");
 
 		llvm::Value* value2Ptr = builder->CreateStructGEP(stackElementTy, toc.elem2Ptr, 0, "value2_ptr");
-		llvm::Value* value2iPtrCast = builder->CreateBitCast(value2Ptr, llvm::PointerType::get(*context, 0));
-		llvm::Value* value2 = builder->CreateLoad(builder->getInt64Ty(), value2iPtrCast, "value2");
+		llvm::Value* value2iPtrCast = builder->CreateBitCast(value2Ptr, ptrTy);
+		llvm::Value* value2 = builder->CreateLoad(int64Ty, value2iPtrCast, "value2");
 
 		llvm::Value* result = builder->CreateNSWAdd(value1, value2, "add_result");
 		finishTypeAwareOp(toc, result, value1iPtrCast);
@@ -76,12 +76,12 @@ namespace Qd {
 		auto toc = setupTypeAwareOp(ctx, "sub");
 
 		llvm::Value* value1Ptr = builder->CreateStructGEP(stackElementTy, toc.elem1Ptr, 0, "value1_ptr");
-		llvm::Value* value1iPtrCast = builder->CreateBitCast(value1Ptr, llvm::PointerType::get(*context, 0));
-		llvm::Value* value1 = builder->CreateLoad(builder->getInt64Ty(), value1iPtrCast, "value1");
+		llvm::Value* value1iPtrCast = builder->CreateBitCast(value1Ptr, ptrTy);
+		llvm::Value* value1 = builder->CreateLoad(int64Ty, value1iPtrCast, "value1");
 
 		llvm::Value* value2Ptr = builder->CreateStructGEP(stackElementTy, toc.elem2Ptr, 0, "value2_ptr");
-		llvm::Value* value2iPtrCast = builder->CreateBitCast(value2Ptr, llvm::PointerType::get(*context, 0));
-		llvm::Value* value2 = builder->CreateLoad(builder->getInt64Ty(), value2iPtrCast, "value2");
+		llvm::Value* value2iPtrCast = builder->CreateBitCast(value2Ptr, ptrTy);
+		llvm::Value* value2 = builder->CreateLoad(int64Ty, value2iPtrCast, "value2");
 
 		llvm::Value* result = builder->CreateNSWSub(value1, value2, "sub_result");
 		finishTypeAwareOp(toc, result, value1iPtrCast);
@@ -97,12 +97,12 @@ namespace Qd {
 		auto toc = setupTypeAwareOp(ctx, "mul");
 
 		llvm::Value* value1Ptr = builder->CreateStructGEP(stackElementTy, toc.elem1Ptr, 0, "value1_ptr");
-		llvm::Value* value1iPtrCast = builder->CreateBitCast(value1Ptr, llvm::PointerType::get(*context, 0));
-		llvm::Value* value1 = builder->CreateLoad(builder->getInt64Ty(), value1iPtrCast, "value1");
+		llvm::Value* value1iPtrCast = builder->CreateBitCast(value1Ptr, ptrTy);
+		llvm::Value* value1 = builder->CreateLoad(int64Ty, value1iPtrCast, "value1");
 
 		llvm::Value* value2Ptr = builder->CreateStructGEP(stackElementTy, toc.elem2Ptr, 0, "value2_ptr");
-		llvm::Value* value2iPtrCast = builder->CreateBitCast(value2Ptr, llvm::PointerType::get(*context, 0));
-		llvm::Value* value2 = builder->CreateLoad(builder->getInt64Ty(), value2iPtrCast, "value2");
+		llvm::Value* value2iPtrCast = builder->CreateBitCast(value2Ptr, ptrTy);
+		llvm::Value* value2 = builder->CreateLoad(int64Ty, value2iPtrCast, "value2");
 
 		llvm::Value* result = builder->CreateNSWMul(value1, value2, "mul_result");
 		finishTypeAwareOp(toc, result, value1iPtrCast);
@@ -118,15 +118,15 @@ namespace Qd {
 		auto toc = setupTypeAwareOp(ctx, "lt");
 
 		llvm::Value* value1Ptr = builder->CreateStructGEP(stackElementTy, toc.elem1Ptr, 0, "value1_ptr");
-		llvm::Value* value1iPtrCast = builder->CreateBitCast(value1Ptr, llvm::PointerType::get(*context, 0));
-		llvm::Value* value1 = builder->CreateLoad(builder->getInt64Ty(), value1iPtrCast, "value1");
+		llvm::Value* value1iPtrCast = builder->CreateBitCast(value1Ptr, ptrTy);
+		llvm::Value* value1 = builder->CreateLoad(int64Ty, value1iPtrCast, "value1");
 
 		llvm::Value* value2Ptr = builder->CreateStructGEP(stackElementTy, toc.elem2Ptr, 0, "value2_ptr");
-		llvm::Value* value2iPtrCast = builder->CreateBitCast(value2Ptr, llvm::PointerType::get(*context, 0));
-		llvm::Value* value2 = builder->CreateLoad(builder->getInt64Ty(), value2iPtrCast, "value2");
+		llvm::Value* value2iPtrCast = builder->CreateBitCast(value2Ptr, ptrTy);
+		llvm::Value* value2 = builder->CreateLoad(int64Ty, value2iPtrCast, "value2");
 
 		llvm::Value* cmpResult = builder->CreateICmpSLT(value1, value2, "lt_result");
-		llvm::Value* result = builder->CreateZExt(cmpResult, builder->getInt64Ty(), "result_i64");
+		llvm::Value* result = builder->CreateZExt(cmpResult, int64Ty, "result_i64");
 		finishTypeAwareOp(toc, result, value1iPtrCast);
 
 		builder->SetInsertPoint(toc.slowPath);
@@ -145,15 +145,15 @@ namespace Qd {
 		auto toc = setupTypeAwareOp(ctx, "gt");
 
 		llvm::Value* value1Ptr = builder->CreateStructGEP(stackElementTy, toc.elem1Ptr, 0, "value1_ptr");
-		llvm::Value* value1iPtrCast = builder->CreateBitCast(value1Ptr, llvm::PointerType::get(*context, 0));
-		llvm::Value* value1 = builder->CreateLoad(builder->getInt64Ty(), value1iPtrCast, "value1");
+		llvm::Value* value1iPtrCast = builder->CreateBitCast(value1Ptr, ptrTy);
+		llvm::Value* value1 = builder->CreateLoad(int64Ty, value1iPtrCast, "value1");
 
 		llvm::Value* value2Ptr = builder->CreateStructGEP(stackElementTy, toc.elem2Ptr, 0, "value2_ptr");
-		llvm::Value* value2iPtrCast = builder->CreateBitCast(value2Ptr, llvm::PointerType::get(*context, 0));
-		llvm::Value* value2 = builder->CreateLoad(builder->getInt64Ty(), value2iPtrCast, "value2");
+		llvm::Value* value2iPtrCast = builder->CreateBitCast(value2Ptr, ptrTy);
+		llvm::Value* value2 = builder->CreateLoad(int64Ty, value2iPtrCast, "value2");
 
 		llvm::Value* cmpResult = builder->CreateICmpSGT(value1, value2, "gt_result");
-		llvm::Value* result = builder->CreateZExt(cmpResult, builder->getInt64Ty(), "result_i64");
+		llvm::Value* result = builder->CreateZExt(cmpResult, int64Ty, "result_i64");
 		finishTypeAwareOp(toc, result, value1iPtrCast);
 
 		builder->SetInsertPoint(toc.slowPath);
@@ -172,15 +172,15 @@ namespace Qd {
 		auto toc = setupTypeAwareOp(ctx, "eq");
 
 		llvm::Value* value1Ptr = builder->CreateStructGEP(stackElementTy, toc.elem1Ptr, 0, "value1_ptr");
-		llvm::Value* value1iPtrCast = builder->CreateBitCast(value1Ptr, llvm::PointerType::get(*context, 0));
-		llvm::Value* value1 = builder->CreateLoad(builder->getInt64Ty(), value1iPtrCast, "value1");
+		llvm::Value* value1iPtrCast = builder->CreateBitCast(value1Ptr, ptrTy);
+		llvm::Value* value1 = builder->CreateLoad(int64Ty, value1iPtrCast, "value1");
 
 		llvm::Value* value2Ptr = builder->CreateStructGEP(stackElementTy, toc.elem2Ptr, 0, "value2_ptr");
-		llvm::Value* value2iPtrCast = builder->CreateBitCast(value2Ptr, llvm::PointerType::get(*context, 0));
-		llvm::Value* value2 = builder->CreateLoad(builder->getInt64Ty(), value2iPtrCast, "value2");
+		llvm::Value* value2iPtrCast = builder->CreateBitCast(value2Ptr, ptrTy);
+		llvm::Value* value2 = builder->CreateLoad(int64Ty, value2iPtrCast, "value2");
 
 		llvm::Value* cmpResult = builder->CreateICmpEQ(value1, value2, "eq_result");
-		llvm::Value* result = builder->CreateZExt(cmpResult, builder->getInt64Ty(), "result_i64");
+		llvm::Value* result = builder->CreateZExt(cmpResult, int64Ty, "result_i64");
 		finishTypeAwareOp(toc, result, value1iPtrCast);
 
 		builder->SetInsertPoint(toc.slowPath);
@@ -199,15 +199,15 @@ namespace Qd {
 		auto toc = setupTypeAwareOp(ctx, "neq");
 
 		llvm::Value* value1Ptr = builder->CreateStructGEP(stackElementTy, toc.elem1Ptr, 0, "value1_ptr");
-		llvm::Value* value1iPtrCast = builder->CreateBitCast(value1Ptr, llvm::PointerType::get(*context, 0));
-		llvm::Value* value1 = builder->CreateLoad(builder->getInt64Ty(), value1iPtrCast, "value1");
+		llvm::Value* value1iPtrCast = builder->CreateBitCast(value1Ptr, ptrTy);
+		llvm::Value* value1 = builder->CreateLoad(int64Ty, value1iPtrCast, "value1");
 
 		llvm::Value* value2Ptr = builder->CreateStructGEP(stackElementTy, toc.elem2Ptr, 0, "value2_ptr");
-		llvm::Value* value2iPtrCast = builder->CreateBitCast(value2Ptr, llvm::PointerType::get(*context, 0));
-		llvm::Value* value2 = builder->CreateLoad(builder->getInt64Ty(), value2iPtrCast, "value2");
+		llvm::Value* value2iPtrCast = builder->CreateBitCast(value2Ptr, ptrTy);
+		llvm::Value* value2 = builder->CreateLoad(int64Ty, value2iPtrCast, "value2");
 
 		llvm::Value* cmpResult = builder->CreateICmpNE(value1, value2, "neq_result");
-		llvm::Value* result = builder->CreateZExt(cmpResult, builder->getInt64Ty(), "result_i64");
+		llvm::Value* result = builder->CreateZExt(cmpResult, int64Ty, "result_i64");
 		finishTypeAwareOp(toc, result, value1iPtrCast);
 
 		builder->SetInsertPoint(toc.slowPath);
@@ -226,15 +226,15 @@ namespace Qd {
 		auto toc = setupTypeAwareOp(ctx, "lte");
 
 		llvm::Value* value1Ptr = builder->CreateStructGEP(stackElementTy, toc.elem1Ptr, 0, "value1_ptr");
-		llvm::Value* value1iPtrCast = builder->CreateBitCast(value1Ptr, llvm::PointerType::get(*context, 0));
-		llvm::Value* value1 = builder->CreateLoad(builder->getInt64Ty(), value1iPtrCast, "value1");
+		llvm::Value* value1iPtrCast = builder->CreateBitCast(value1Ptr, ptrTy);
+		llvm::Value* value1 = builder->CreateLoad(int64Ty, value1iPtrCast, "value1");
 
 		llvm::Value* value2Ptr = builder->CreateStructGEP(stackElementTy, toc.elem2Ptr, 0, "value2_ptr");
-		llvm::Value* value2iPtrCast = builder->CreateBitCast(value2Ptr, llvm::PointerType::get(*context, 0));
-		llvm::Value* value2 = builder->CreateLoad(builder->getInt64Ty(), value2iPtrCast, "value2");
+		llvm::Value* value2iPtrCast = builder->CreateBitCast(value2Ptr, ptrTy);
+		llvm::Value* value2 = builder->CreateLoad(int64Ty, value2iPtrCast, "value2");
 
 		llvm::Value* cmpResult = builder->CreateICmpSLE(value1, value2, "lte_result");
-		llvm::Value* result = builder->CreateZExt(cmpResult, builder->getInt64Ty(), "result_i64");
+		llvm::Value* result = builder->CreateZExt(cmpResult, int64Ty, "result_i64");
 		finishTypeAwareOp(toc, result, value1iPtrCast);
 
 		builder->SetInsertPoint(toc.slowPath);
@@ -253,15 +253,15 @@ namespace Qd {
 		auto toc = setupTypeAwareOp(ctx, "gte");
 
 		llvm::Value* value1Ptr = builder->CreateStructGEP(stackElementTy, toc.elem1Ptr, 0, "value1_ptr");
-		llvm::Value* value1iPtrCast = builder->CreateBitCast(value1Ptr, llvm::PointerType::get(*context, 0));
-		llvm::Value* value1 = builder->CreateLoad(builder->getInt64Ty(), value1iPtrCast, "value1");
+		llvm::Value* value1iPtrCast = builder->CreateBitCast(value1Ptr, ptrTy);
+		llvm::Value* value1 = builder->CreateLoad(int64Ty, value1iPtrCast, "value1");
 
 		llvm::Value* value2Ptr = builder->CreateStructGEP(stackElementTy, toc.elem2Ptr, 0, "value2_ptr");
-		llvm::Value* value2iPtrCast = builder->CreateBitCast(value2Ptr, llvm::PointerType::get(*context, 0));
-		llvm::Value* value2 = builder->CreateLoad(builder->getInt64Ty(), value2iPtrCast, "value2");
+		llvm::Value* value2iPtrCast = builder->CreateBitCast(value2Ptr, ptrTy);
+		llvm::Value* value2 = builder->CreateLoad(int64Ty, value2iPtrCast, "value2");
 
 		llvm::Value* cmpResult = builder->CreateICmpSGE(value1, value2, "gte_result");
-		llvm::Value* result = builder->CreateZExt(cmpResult, builder->getInt64Ty(), "result_i64");
+		llvm::Value* result = builder->CreateZExt(cmpResult, int64Ty, "result_i64");
 		finishTypeAwareOp(toc, result, value1iPtrCast);
 
 		builder->SetInsertPoint(toc.slowPath);
@@ -280,12 +280,12 @@ namespace Qd {
 		auto toc = setupTypeAwareOp(ctx, "div");
 
 		llvm::Value* value1Ptr = builder->CreateStructGEP(stackElementTy, toc.elem1Ptr, 0, "value1_ptr");
-		llvm::Value* value1iPtrCast = builder->CreateBitCast(value1Ptr, llvm::PointerType::get(*context, 0));
-		llvm::Value* value1 = builder->CreateLoad(builder->getInt64Ty(), value1iPtrCast, "value1");
+		llvm::Value* value1iPtrCast = builder->CreateBitCast(value1Ptr, ptrTy);
+		llvm::Value* value1 = builder->CreateLoad(int64Ty, value1iPtrCast, "value1");
 
 		llvm::Value* value2Ptr = builder->CreateStructGEP(stackElementTy, toc.elem2Ptr, 0, "value2_ptr");
-		llvm::Value* value2iPtrCast = builder->CreateBitCast(value2Ptr, llvm::PointerType::get(*context, 0));
-		llvm::Value* value2 = builder->CreateLoad(builder->getInt64Ty(), value2iPtrCast, "value2");
+		llvm::Value* value2iPtrCast = builder->CreateBitCast(value2Ptr, ptrTy);
+		llvm::Value* value2 = builder->CreateLoad(int64Ty, value2iPtrCast, "value2");
 
 		// Check for division by zero - jump to slow path if zero
 		llvm::Value* isZero = builder->CreateICmpEQ(value2, builder->getInt64(0), "divisor_is_zero");
@@ -316,12 +316,12 @@ namespace Qd {
 		auto toc = setupTypeAwareOp(ctx, "mod");
 
 		llvm::Value* value1Ptr = builder->CreateStructGEP(stackElementTy, toc.elem1Ptr, 0, "value1_ptr");
-		llvm::Value* value1iPtrCast = builder->CreateBitCast(value1Ptr, llvm::PointerType::get(*context, 0));
-		llvm::Value* value1 = builder->CreateLoad(builder->getInt64Ty(), value1iPtrCast, "value1");
+		llvm::Value* value1iPtrCast = builder->CreateBitCast(value1Ptr, ptrTy);
+		llvm::Value* value1 = builder->CreateLoad(int64Ty, value1iPtrCast, "value1");
 
 		llvm::Value* value2Ptr = builder->CreateStructGEP(stackElementTy, toc.elem2Ptr, 0, "value2_ptr");
-		llvm::Value* value2iPtrCast = builder->CreateBitCast(value2Ptr, llvm::PointerType::get(*context, 0));
-		llvm::Value* value2 = builder->CreateLoad(builder->getInt64Ty(), value2iPtrCast, "value2");
+		llvm::Value* value2iPtrCast = builder->CreateBitCast(value2Ptr, ptrTy);
+		llvm::Value* value2 = builder->CreateLoad(int64Ty, value2iPtrCast, "value2");
 
 		// Check for modulo by zero - jump to slow path if zero
 		llvm::Value* isZero = builder->CreateICmpEQ(value2, builder->getInt64(0), "divisor_is_zero");

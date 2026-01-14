@@ -21,11 +21,11 @@ namespace Qd {
 			// This is a captured variable - load the pointer and store the value there
 			llvm::AllocaInst* ptrAlloca = capIt->second;
 			llvm::Value* outerVarPtr =
-					builder->CreateLoad(llvm::PointerType::getUnqual(*context), ptrAlloca, name + "_cap_store_ptr");
+					builder->CreateLoad(ptrTy, ptrAlloca, name + "_cap_store_ptr");
 
 			// Get the stack pointer from context
 			llvm::Value* stackPtrPtr = builder->CreateStructGEP(contextStructTy, ctx, 0, "stack_ptr");
-			llvm::Value* stackPtr = builder->CreateLoad(llvm::PointerType::getUnqual(*context), stackPtrPtr, "stack");
+			llvm::Value* stackPtr = builder->CreateLoad(ptrTy, stackPtrPtr, "stack");
 
 			// Pop directly into the captured variable's storage
 			builder->CreateCall(stackPopFn, {stackPtr, outerVarPtr});
@@ -46,7 +46,7 @@ namespace Qd {
 				// Variable will be captured by a closure - allocate on heap for escaped closure support
 				// Layout: { int64_t refcount, qd_stack_element_t elem } = 32 bytes
 				// Create alloca to hold the heap pointer (to the elem part, not the refcount)
-				localAlloca = tmpBuilder.CreateAlloca(llvm::PointerType::getUnqual(*context), nullptr, name + "_ptr");
+				localAlloca = tmpBuilder.CreateAlloca(ptrTy, nullptr, name + "_ptr");
 
 				// Allocate heap memory in ENTRY BLOCK (important for loops - only allocate once)
 				// 8 bytes refcount + 24 bytes qd_stack_element_t = 32 bytes
@@ -175,7 +175,7 @@ namespace Qd {
 		llvm::Value* storagePtr = localAlloca;
 		bool isIndirect = indirectLocalVariables.find(name) != indirectLocalVariables.end();
 		if (isIndirect) {
-			storagePtr = builder->CreateLoad(llvm::PointerType::getUnqual(*context), localAlloca, name + "_storage");
+			storagePtr = builder->CreateLoad(ptrTy, localAlloca, name + "_storage");
 		}
 
 		// Fast path for integer-only functions with non-captured locals
@@ -189,7 +189,7 @@ namespace Qd {
 		// This handles both explicit reassignment and loop iterations
 		// The type == -1 check handles the first assignment (no old value to release)
 		llvm::Value* oldTypePtr = builder->CreateStructGEP(stackElementTy, storagePtr, 1, name + "_old_type_ptr");
-		llvm::Value* oldType = builder->CreateLoad(builder->getInt32Ty(), oldTypePtr, name + "_old_type");
+		llvm::Value* oldType = builder->CreateLoad(int32Ty, oldTypePtr, name + "_old_type");
 
 		// Create basic blocks for conditional release (strings only - structs are stack-allocated)
 		llvm::Function* currentFn = builder->GetInsertBlock()->getParent();
@@ -213,7 +213,7 @@ namespace Qd {
 		llvm::Value* oldValuePtrStr =
 				builder->CreateStructGEP(stackElementTy, storagePtr, 0, name + "_old_value_ptr_str");
 		llvm::Value* oldStrPtr =
-				builder->CreateLoad(llvm::PointerType::getUnqual(*context), oldValuePtrStr, name + "_old_str");
+				builder->CreateLoad(ptrTy, oldValuePtrStr, name + "_old_str");
 
 		// Call qd_string_release() on the old string
 		builder->CreateCall(qdStringReleaseFn, {oldStrPtr});
@@ -230,7 +230,7 @@ namespace Qd {
 		llvm::Value* oldValuePtrPtr =
 				builder->CreateStructGEP(stackElementTy, storagePtr, 0, name + "_old_value_ptr_ptr");
 		llvm::Value* oldPtrVal =
-				builder->CreateLoad(llvm::PointerType::getUnqual(*context), oldValuePtrPtr, name + "_old_ptr");
+				builder->CreateLoad(ptrTy, oldValuePtrPtr, name + "_old_ptr");
 
 		// Always check for closure on ptr reassignments - the variable could hold a closure
 		// even if not tracked in closureVariables (e.g., first iteration of a loop).
@@ -238,7 +238,7 @@ namespace Qd {
 		{
 			// Check closure registry to see if it's actually a closure (safe for any pointer)
 			auto closureIsValidFnTy =
-					llvm::FunctionType::get(builder->getInt32Ty(), {llvm::PointerType::getUnqual(*context)}, false);
+					llvm::FunctionType::get(int32Ty, {ptrTy}, false);
 			auto closureIsValidFn = module->getOrInsertFunction("qd_closure_is_valid", closureIsValidFnTy);
 			llvm::Value* isClosureResult = builder->CreateCall(closureIsValidFn, {oldPtrVal}, "is_closure_result");
 			llvm::Value* isMagicValid = builder->CreateICmpNE(isClosureResult, builder->getInt32(0), "old_is_closure");
@@ -253,10 +253,10 @@ namespace Qd {
 			builder->SetInsertPoint(releaseClosureBlock);
 			llvm::Value* envPtrSlot = builder->CreateStructGEP(closureStructTy, oldPtrVal, 2, name + "_old_env_slot");
 			llvm::Value* envPtr =
-					builder->CreateLoad(llvm::PointerType::getUnqual(*context), envPtrSlot, "old_env_ptr");
+					builder->CreateLoad(ptrTy, envPtrSlot, "old_env_ptr");
 			llvm::Value* capCountSlot =
 					builder->CreateStructGEP(closureStructTy, oldPtrVal, 3, name + "_old_cap_count_slot");
-			llvm::Value* capCount = builder->CreateLoad(builder->getInt64Ty(), capCountSlot, "old_cap_count");
+			llvm::Value* capCount = builder->CreateLoad(int64Ty, capCountSlot, "old_cap_count");
 
 			// Loop through captured variables and decrement refcounts
 			llvm::BasicBlock* loopHeader = llvm::BasicBlock::Create(*context, name + "_old_cap_loop_header", currentFn);
@@ -264,23 +264,23 @@ namespace Qd {
 			llvm::BasicBlock* afterLoop = llvm::BasicBlock::Create(*context, name + "_old_cap_loop_done", currentFn);
 
 			llvm::AllocaInst* loopIdxAlloca =
-					builder->CreateAlloca(builder->getInt64Ty(), nullptr, name + "_old_cap_idx");
+					builder->CreateAlloca(int64Ty, nullptr, name + "_old_cap_idx");
 			builder->CreateStore(builder->getInt64(0), loopIdxAlloca);
 			builder->CreateBr(loopHeader);
 
 			builder->SetInsertPoint(loopHeader);
-			llvm::Value* loopIdx = builder->CreateLoad(builder->getInt64Ty(), loopIdxAlloca, "idx");
+			llvm::Value* loopIdx = builder->CreateLoad(int64Ty, loopIdxAlloca, "idx");
 			llvm::Value* loopCond = builder->CreateICmpSLT(loopIdx, capCount, "loop_cond");
 			builder->CreateCondBr(loopCond, loopBody, afterLoop);
 
 			builder->SetInsertPoint(loopBody);
 			llvm::Value* capSlot =
-					builder->CreateGEP(llvm::PointerType::getUnqual(*context), envPtr, loopIdx, name + "_old_cap_slot");
+					builder->CreateGEP(ptrTy, envPtr, loopIdx, name + "_old_cap_slot");
 			llvm::Value* capVarPtr =
-					builder->CreateLoad(llvm::PointerType::getUnqual(*context), capSlot, "old_cap_var_ptr");
+					builder->CreateLoad(ptrTy, capSlot, "old_cap_var_ptr");
 			llvm::Value* refCountPtr = builder->CreateGEP(builder->getInt8Ty(), capVarPtr,
 					builder->getInt64(static_cast<uint64_t>(-8)), name + "_old_refcount_ptr");
-			llvm::Value* refCount = builder->CreateLoad(builder->getInt64Ty(), refCountPtr, "old_refcount");
+			llvm::Value* refCount = builder->CreateLoad(int64Ty, refCountPtr, "old_refcount");
 			llvm::Value* newRefCount = builder->CreateSub(refCount, builder->getInt64(1), "old_new_refcount");
 			builder->CreateStore(newRefCount, refCountPtr);
 
@@ -301,7 +301,7 @@ namespace Qd {
 			builder->SetInsertPoint(afterLoop);
 			// Unregister closure from registry before freeing
 			auto closureUnregisterFnTy =
-					llvm::FunctionType::get(builder->getVoidTy(), {llvm::PointerType::getUnqual(*context)}, false);
+					llvm::FunctionType::get(builder->getVoidTy(), {ptrTy}, false);
 			auto closureUnregisterFn = module->getOrInsertFunction("qd_closure_unregister", closureUnregisterFnTy);
 			builder->CreateCall(closureUnregisterFn, {oldPtrVal});
 
@@ -320,7 +320,7 @@ namespace Qd {
 
 		// Get the stack pointer from context
 		llvm::Value* stackPtrPtr = builder->CreateStructGEP(contextStructTy, ctx, 0, "stack_ptr");
-		llvm::Value* stackPtr = builder->CreateLoad(llvm::PointerType::getUnqual(*context), stackPtrPtr, "stack");
+		llvm::Value* stackPtr = builder->CreateLoad(ptrTy, stackPtrPtr, "stack");
 
 		// Call qd_stack_pop to pop the value from the runtime stack
 		// Note: We can't optimize this for "integer-only" functions because even if the
@@ -387,12 +387,12 @@ namespace Qd {
 			if (indirectLocalVariables.find(varName) != indirectLocalVariables.end()) {
 				// Load the heap pointer (elem location)
 				llvm::Value* heapPtr = builder->CreateLoad(
-						llvm::PointerType::getUnqual(*context), localAlloca, varName + "_heap_cleanup");
+						ptrTy, localAlloca, varName + "_heap_cleanup");
 
 				// Refcount is 8 bytes before the elem pointer
 				llvm::Value* refCountPtr = builder->CreateGEP(builder->getInt8Ty(), heapPtr,
 						builder->getInt64(static_cast<uint64_t>(-8)), varName + "_refcount_cleanup");
-				llvm::Value* refCount = builder->CreateLoad(builder->getInt64Ty(), refCountPtr, "refcount");
+				llvm::Value* refCount = builder->CreateLoad(int64Ty, refCountPtr, "refcount");
 				llvm::Value* newRefCount = builder->CreateSub(refCount, builder->getInt64(1), "new_refcount");
 				builder->CreateStore(newRefCount, refCountPtr);
 
@@ -410,7 +410,7 @@ namespace Qd {
 				// heapPtr points to qd_stack_element_t; type is at offset 8 within it
 				llvm::Value* capTypePtr = builder->CreateGEP(
 						builder->getInt8Ty(), heapPtr, builder->getInt64(8), varName + "_cap_type_ptr");
-				llvm::Value* capType = builder->CreateLoad(builder->getInt32Ty(), capTypePtr, "cap_type");
+				llvm::Value* capType = builder->CreateLoad(int32Ty, capTypePtr, "cap_type");
 
 				// Create blocks for type-specific cleanup
 				llvm::BasicBlock* capIsStr = llvm::BasicBlock::Create(*context, varName + "_cap_is_str", currentFn);
@@ -426,7 +426,7 @@ namespace Qd {
 				// Release string
 				builder->SetInsertPoint(capIsStr);
 				llvm::Value* capStrVal =
-						builder->CreateLoad(llvm::PointerType::getUnqual(*context), heapPtr, "cap_str");
+						builder->CreateLoad(ptrTy, heapPtr, "cap_str");
 				builder->CreateCall(qdStringReleaseFn, {capStrVal});
 				builder->CreateBr(capDoFree);
 
@@ -438,7 +438,7 @@ namespace Qd {
 				// Release pointer (works for structs and arrays)
 				builder->SetInsertPoint(capIsPtr);
 				llvm::Value* capPtrVal =
-						builder->CreateLoad(llvm::PointerType::getUnqual(*context), heapPtr, "cap_ptr");
+						builder->CreateLoad(ptrTy, heapPtr, "cap_ptr");
 				builder->CreateCall(qdPtrReleaseFn, {capPtrVal});
 				builder->CreateBr(capDoFree);
 
@@ -461,7 +461,7 @@ namespace Qd {
 			// Load the type field to check if it's a string or array
 			llvm::Value* typePtr =
 					builder->CreateStructGEP(stackElementTy, localAlloca, 1, varName + "_cleanup_type_ptr");
-			llvm::Value* type = builder->CreateLoad(builder->getInt32Ty(), typePtr, varName + "_cleanup_type");
+			llvm::Value* type = builder->CreateLoad(int32Ty, typePtr, varName + "_cleanup_type");
 
 			// Create basic blocks for conditional free
 			llvm::Function* currentFn = builder->GetInsertBlock()->getParent();
@@ -487,7 +487,7 @@ namespace Qd {
 			llvm::Value* valuePtr =
 					builder->CreateStructGEP(stackElementTy, localAlloca, 0, varName + "_cleanup_value_ptr");
 			llvm::Value* strPtr =
-					builder->CreateLoad(llvm::PointerType::getUnqual(*context), valuePtr, varName + "_cleanup_str");
+					builder->CreateLoad(ptrTy, valuePtr, varName + "_cleanup_str");
 
 			// Call qd_string_release() on the string
 			builder->CreateCall(qdStringReleaseFn, {strPtr});
@@ -506,11 +506,11 @@ namespace Qd {
 				llvm::Value* ptrValuePtr =
 						builder->CreateStructGEP(stackElementTy, localAlloca, 0, varName + "_cleanup_ptr_value_ptr");
 				llvm::Value* closurePtr = builder->CreateLoad(
-						llvm::PointerType::getUnqual(*context), ptrValuePtr, varName + "_cleanup_closure");
+						ptrTy, ptrValuePtr, varName + "_cleanup_closure");
 
 				// Check if this is a valid closure using the registry (safe - doesn't dereference)
 				auto closureIsValidFnTy =
-						llvm::FunctionType::get(builder->getInt32Ty(), {llvm::PointerType::getUnqual(*context)}, false);
+						llvm::FunctionType::get(int32Ty, {ptrTy}, false);
 				auto closureIsValidFn = module->getOrInsertFunction("qd_closure_is_valid", closureIsValidFnTy);
 				llvm::Value* isClosureResult = builder->CreateCall(closureIsValidFn, {closurePtr}, "is_closure_result");
 				llvm::Value* isMagicValid =
@@ -532,11 +532,11 @@ namespace Qd {
 				// Load environment pointer
 				llvm::Value* envPtrSlot = builder->CreateStructGEP(closureStructTy, closurePtr, 2, "env_slot");
 				llvm::Value* envPtr =
-						builder->CreateLoad(llvm::PointerType::getUnqual(*context), envPtrSlot, "env_ptr");
+						builder->CreateLoad(ptrTy, envPtrSlot, "env_ptr");
 
 				// Load capture count
 				llvm::Value* capCountSlot = builder->CreateStructGEP(closureStructTy, closurePtr, 3, "cap_count_slot");
-				llvm::Value* capCount = builder->CreateLoad(builder->getInt64Ty(), capCountSlot, "cap_count");
+				llvm::Value* capCount = builder->CreateLoad(int64Ty, capCountSlot, "cap_count");
 
 				// Loop through captured variables and decrement refcounts
 				// Create loop blocks
@@ -547,13 +547,13 @@ namespace Qd {
 
 				// Loop counter
 				llvm::AllocaInst* loopIdxAlloca =
-						builder->CreateAlloca(builder->getInt64Ty(), nullptr, varName + "_cap_idx");
+						builder->CreateAlloca(int64Ty, nullptr, varName + "_cap_idx");
 				builder->CreateStore(builder->getInt64(0), loopIdxAlloca);
 				builder->CreateBr(loopHeader);
 
 				// Loop header - check if idx < capCount
 				builder->SetInsertPoint(loopHeader);
-				llvm::Value* loopIdx = builder->CreateLoad(builder->getInt64Ty(), loopIdxAlloca, "idx");
+				llvm::Value* loopIdx = builder->CreateLoad(int64Ty, loopIdxAlloca, "idx");
 				llvm::Value* loopCond = builder->CreateICmpSLT(loopIdx, capCount, "loop_cond");
 				builder->CreateCondBr(loopCond, loopBody, afterLoop);
 
@@ -562,15 +562,15 @@ namespace Qd {
 
 				// Get pointer to captured variable from environment
 				llvm::Value* capSlot = builder->CreateGEP(
-						llvm::PointerType::getUnqual(*context), envPtr, loopIdx, varName + "_cap_slot");
+						ptrTy, envPtr, loopIdx, varName + "_cap_slot");
 				llvm::Value* capVarPtr =
-						builder->CreateLoad(llvm::PointerType::getUnqual(*context), capSlot, "cap_var_ptr");
+						builder->CreateLoad(ptrTy, capSlot, "cap_var_ptr");
 
 				// The captured variable pointer points to the qd_stack_element_t at offset 8
 				// Refcount is at offset 0 (8 bytes before the elem)
 				llvm::Value* refCountPtr = builder->CreateGEP(builder->getInt8Ty(), capVarPtr,
 						builder->getInt64(static_cast<uint64_t>(-8)), varName + "_refcount_ptr");
-				llvm::Value* refCount = builder->CreateLoad(builder->getInt64Ty(), refCountPtr, "refcount");
+				llvm::Value* refCount = builder->CreateLoad(int64Ty, refCountPtr, "refcount");
 
 				// Decrement refcount
 				llvm::Value* newRefCount = builder->CreateSub(refCount, builder->getInt64(1), "new_refcount");
@@ -589,7 +589,7 @@ namespace Qd {
 				// capVarPtr points to qd_stack_element_t; type is at offset 8 within it
 				llvm::Value* loopCapTypePtr = builder->CreateGEP(
 						builder->getInt8Ty(), capVarPtr, builder->getInt64(8), varName + "_loop_cap_type_ptr");
-				llvm::Value* loopCapType = builder->CreateLoad(builder->getInt32Ty(), loopCapTypePtr, "loop_cap_type");
+				llvm::Value* loopCapType = builder->CreateLoad(int32Ty, loopCapTypePtr, "loop_cap_type");
 
 				// Create blocks for type-specific cleanup
 				llvm::BasicBlock* loopCapIsStr =
@@ -609,7 +609,7 @@ namespace Qd {
 				// Release string
 				builder->SetInsertPoint(loopCapIsStr);
 				llvm::Value* loopCapStrVal =
-						builder->CreateLoad(llvm::PointerType::getUnqual(*context), capVarPtr, "loop_cap_str");
+						builder->CreateLoad(ptrTy, capVarPtr, "loop_cap_str");
 				builder->CreateCall(qdStringReleaseFn, {loopCapStrVal});
 				builder->CreateBr(loopCapDoFree);
 
@@ -622,7 +622,7 @@ namespace Qd {
 				// Release pointer (works for structs and arrays)
 				builder->SetInsertPoint(loopCapIsPtr);
 				llvm::Value* loopCapPtrVal =
-						builder->CreateLoad(llvm::PointerType::getUnqual(*context), capVarPtr, "loop_cap_ptr");
+						builder->CreateLoad(ptrTy, capVarPtr, "loop_cap_ptr");
 				builder->CreateCall(qdPtrReleaseFn, {loopCapPtrVal});
 				builder->CreateBr(loopCapDoFree);
 
@@ -642,7 +642,7 @@ namespace Qd {
 				builder->SetInsertPoint(afterLoop);
 				// Unregister closure from registry before freeing
 				auto closureUnregisterFnTy =
-						llvm::FunctionType::get(builder->getVoidTy(), {llvm::PointerType::getUnqual(*context)}, false);
+						llvm::FunctionType::get(builder->getVoidTy(), {ptrTy}, false);
 				auto closureUnregisterFn = module->getOrInsertFunction("qd_closure_unregister", closureUnregisterFnTy);
 				builder->CreateCall(closureUnregisterFn, {closurePtr});
 
@@ -660,13 +660,13 @@ namespace Qd {
 				llvm::Value* ptrValuePtr =
 						builder->CreateStructGEP(stackElementTy, localAlloca, 0, varName + "_cleanup_ptr_value_ptr");
 				llvm::Value* arrPtr = builder->CreateLoad(
-						llvm::PointerType::getUnqual(*context), ptrValuePtr, varName + "_cleanup_arr");
+						ptrTy, ptrValuePtr, varName + "_cleanup_arr");
 
 				// Call qd_array_release() on the array
 				llvm::Function* arrayReleaseFn = module->getFunction("qd_array_release");
 				if (!arrayReleaseFn) {
 					auto arrayReleaseFnTy = llvm::FunctionType::get(
-							builder->getVoidTy(), {llvm::PointerType::getUnqual(*context)}, false);
+							builder->getVoidTy(), {ptrTy}, false);
 					arrayReleaseFn = llvm::Function::Create(
 							arrayReleaseFnTy, llvm::Function::ExternalLinkage, "qd_array_release", *module);
 				}
@@ -683,7 +683,7 @@ namespace Qd {
 				llvm::Value* ptrValuePtr =
 						builder->CreateStructGEP(stackElementTy, localAlloca, 0, varName + "_cleanup_ptr_value_ptr");
 				llvm::Value* ptrVal = builder->CreateLoad(
-						llvm::PointerType::getUnqual(*context), ptrValuePtr, varName + "_cleanup_ptr");
+						ptrTy, ptrValuePtr, varName + "_cleanup_ptr");
 				builder->CreateCall(qdPtrReleaseFn, {ptrVal});
 				builder->CreateBr(skipFreeBlock);
 			}

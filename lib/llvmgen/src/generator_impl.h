@@ -151,6 +151,9 @@ namespace Qd {
 		llvm::StructType* contextStructTy = nullptr; // Cached context struct layout: {st, error_code, error_msg, argc, argv, program_name}
 		llvm::StructType* closureStructTy = nullptr; // Cached closure struct layout: {magic, fn, env, capture_count}
 		llvm::StructType* stackStructTy = nullptr;   // Cached stack struct layout: {data, capacity, size}
+		llvm::PointerType* ptrTy = nullptr;          // Cached pointer type (replaces PointerType::getUnqual(*context))
+		llvm::Type* int64Ty = nullptr;               // Cached i64 type
+		llvm::Type* int32Ty = nullptr;               // Cached i32 type
 
 		// Runtime functions
 		llvm::Function* createContextFn = nullptr;

@@ -29,28 +29,34 @@ namespace Qd {
 	}
 
 	void LlvmGenerator::Impl::setupRuntimeDeclarations() {
-		// Context type is opaque pointer
-		contextPtrTy = llvm::PointerType::getUnqual(*context);
-		auto ptrTy = contextPtrTy; // alias for readability
+		// Cached primitive types - initialize all before use
+		ptrTy = llvm::PointerType::getUnqual(*context);
+		int64Ty = builder->getInt64Ty();
+		int32Ty = builder->getInt32Ty();
+		contextPtrTy = ptrTy; // alias for contextPtrTy
+
+		// Use builder directly for struct creation to avoid any initialization ordering issues
+		auto i32t = builder->getInt32Ty();
+		auto i64t = builder->getInt64Ty();
 
 		// exec_result is a struct with one i32 field
-		execResultTy = llvm::StructType::create(*context, {builder->getInt32Ty()}, "qd_exec_result");
+		execResultTy = llvm::StructType::create(*context, {i32t}, "qd_exec_result");
 
 		// qd_stack_element_t layout: { union(i64, double, ptr, ptr), i32 type, i8 is_error_tainted }
 		stackElementTy = llvm::StructType::create(*context,
-				{builder->getInt64Ty(), builder->getInt32Ty(), builder->getInt8Ty()}, "qd_stack_element_t");
+				{i64t, i32t, builder->getInt8Ty()}, "qd_stack_element_t");
 
 		// Context layout: {qd_stack* st, int64_t error_code, char* error_msg, int argc, char** argv, char* program_name}
 		contextStructTy = llvm::StructType::create(*context,
-				{ptrTy, builder->getInt64Ty(), ptrTy, builder->getInt32Ty(), ptrTy, ptrTy}, "qd_context_t");
+				{ptrTy, i64t, ptrTy, i32t, ptrTy, ptrTy}, "qd_context_t");
 
 		// Closure layout: {int64_t magic, ptr fn, ptr env, int64_t capture_count}
 		closureStructTy = llvm::StructType::create(*context,
-				{builder->getInt64Ty(), ptrTy, ptrTy, builder->getInt64Ty()}, "qd_closure_t");
+				{i64t, ptrTy, ptrTy, i64t}, "qd_closure_t");
 
 		// Stack layout: {ptr data, int64_t capacity, int64_t size}
 		stackStructTy = llvm::StructType::create(*context,
-				{ptrTy, builder->getInt64Ty(), builder->getInt64Ty()}, "qd_stack_t");
+				{ptrTy, i64t, i64t}, "qd_stack_t");
 
 		// Common function type signatures
 		auto ctxToResultTy = llvm::FunctionType::get(execResultTy, {contextPtrTy}, false);
@@ -65,13 +71,13 @@ namespace Qd {
 		};
 
 		// Context management: (i64) -> ctx, (ctx) -> void, (ctx) -> ctx
-		auto i64ToCtxTy = llvm::FunctionType::get(contextPtrTy, {builder->getInt64Ty()}, false);
+		auto i64ToCtxTy = llvm::FunctionType::get(contextPtrTy, {int64Ty}, false);
 		createContextFn = declareFn(i64ToCtxTy, "qd_create_context");
 		freeContextFn = declareFn(ctxToVoidTy, "qd_free_context");
 		cloneContextFn = declareFn(ptrToPtrTy, "qd_clone_context");
 
 		// Push functions: (ctx, value) -> result
-		auto ctxI64ToResultTy = llvm::FunctionType::get(execResultTy, {contextPtrTy, builder->getInt64Ty()}, false);
+		auto ctxI64ToResultTy = llvm::FunctionType::get(execResultTy, {contextPtrTy, int64Ty}, false);
 		auto ctxF64ToResultTy = llvm::FunctionType::get(execResultTy, {contextPtrTy, builder->getDoubleTy()}, false);
 		pushIntFn = declareFn(ctxI64ToResultTy, "qd_push_i");
 		pushFloatFn = declareFn(ctxF64ToResultTy, "qd_push_f");
@@ -95,29 +101,29 @@ namespace Qd {
 
 		// Call stack management
 		auto pushCallFnTy = llvm::FunctionType::get(
-				builder->getVoidTy(), {contextPtrTy, ptrTy, ptrTy, builder->getInt64Ty()}, false);
+				builder->getVoidTy(), {contextPtrTy, ptrTy, ptrTy, int64Ty}, false);
 		pushCallFn = declareFn(pushCallFnTy, "qd_push_call");
 		popCallFn = declareFn(ctxToVoidTy, "qd_pop_call");
 
 		// Stack checking
 		auto checkStackFnTy = llvm::FunctionType::get(
-				builder->getVoidTy(), {contextPtrTy, builder->getInt64Ty(), ptrTy, ptrTy}, false);
+				builder->getVoidTy(), {contextPtrTy, int64Ty, ptrTy, ptrTy}, false);
 		checkStackFn = declareFn(checkStackFnTy, "qd_check_stack");
 
 		// Stack operations
-		auto stackPopFnTy = llvm::FunctionType::get(builder->getInt32Ty(), {ptrTy, ptrTy}, false);
-		auto ptrToI64Ty = llvm::FunctionType::get(builder->getInt64Ty(), {ptrTy}, false);
+		auto stackPopFnTy = llvm::FunctionType::get(int32Ty, {ptrTy, ptrTy}, false);
+		auto ptrToI64Ty = llvm::FunctionType::get(int64Ty, {ptrTy}, false);
 		stackPopFn = declareFn(stackPopFnTy, "qd_stack_pop");
 		stackSizeFn = declareFn(ptrToI64Ty, "qd_stack_size");
 
 		// C library functions
-		auto i64ToPtrTy = llvm::FunctionType::get(ptrTy, {builder->getInt64Ty()}, false);
+		auto i64ToPtrTy = llvm::FunctionType::get(ptrTy, {int64Ty}, false);
 		strdupFn = declareFn(ptrToPtrTy, "strdup");
 		mallocFn = declareFn(i64ToPtrTy, "malloc");
 		freeFn = declareFn(ptrToVoidTy, "free");
 
 		// Struct/pointer management
-		auto allocFnTy = llvm::FunctionType::get(ptrTy, {builder->getInt64Ty(), ptrTy}, false);
+		auto allocFnTy = llvm::FunctionType::get(ptrTy, {int64Ty, ptrTy}, false);
 		qdStructAllocFn = declareFn(allocFnTy, "qd_struct_alloc");
 		qdStructReleaseFn = declareFn(ptrToVoidTy, "qd_struct_release");
 		qdStructRetainFn = declareFn(ptrToPtrTy, "qd_struct_retain");
@@ -477,7 +483,7 @@ namespace Qd {
 		if (isMain) {
 			// Create main function: i32 @main(i32 %argc, i8** %argv)
 			auto mainFnTy = llvm::FunctionType::get(
-					builder->getInt32Ty(), {builder->getInt32Ty(), llvm::PointerType::getUnqual(*context)}, false);
+					int32Ty, {int32Ty, ptrTy}, false);
 			fn = llvm::Function::Create(mainFnTy, llvm::Function::ExternalLinkage, "main", *module);
 
 			// Add debug info for main function
@@ -799,13 +805,13 @@ namespace Qd {
 				}
 
 				// Create global array constant
-				auto arrayType = llvm::ArrayType::get(builder->getInt32Ty(), typeValues.size());
+				auto arrayType = llvm::ArrayType::get(int32Ty, typeValues.size());
 				auto arrayInit = llvm::ConstantArray::get(arrayType, typeValues);
 				auto globalArray = new llvm::GlobalVariable(
 						*module, arrayType, true, llvm::GlobalValue::PrivateLinkage, arrayInit, "input_types");
 
 				// Call qd_check_stack(ctx, count, types, func_name)
-				auto arrayPtr = builder->CreateBitCast(globalArray, llvm::PointerType::getUnqual(*context));
+				auto arrayPtr = builder->CreateBitCast(globalArray, ptrTy);
 				builder->CreateCall(checkStackFn,
 						{ctx, builder->getInt64(funcNode->inputParameters().size()), arrayPtr, funcNameStr});
 			}
@@ -859,7 +865,7 @@ namespace Qd {
 				// Pop the receiver from the stack
 				llvm::Value* stackPtrPtr = builder->CreateStructGEP(contextStructTy, ctx, 0, "stack_ptr");
 				llvm::Value* stackPtr =
-						builder->CreateLoad(llvm::PointerType::getUnqual(*context), stackPtrPtr, "stack");
+						builder->CreateLoad(ptrTy, stackPtrPtr, "stack");
 				builder->CreateCall(stackPopFn, {stackPtr, receiverAlloca});
 			}
 
@@ -956,7 +962,7 @@ namespace Qd {
 		ctx->setName("ctx");
 
 		// Create error tracking alloca for this test
-		testErrorAlloca = builder->CreateAlloca(builder->getInt32Ty(), nullptr, "test_error");
+		testErrorAlloca = builder->CreateAlloca(int32Ty, nullptr, "test_error");
 		builder->CreateStore(builder->getInt32(0), testErrorAlloca);
 
 		// Initialize defer scope for this test
@@ -1010,7 +1016,7 @@ namespace Qd {
 		builder->CreateCall(popCallFn, {ctx});
 
 		// Return the accumulated error status
-		auto finalError = builder->CreateLoad(builder->getInt32Ty(), testErrorAlloca, "final_error");
+		auto finalError = builder->CreateLoad(int32Ty, testErrorAlloca, "final_error");
 		auto result = builder->CreateInsertValue(llvm::UndefValue::get(execResultTy), finalError, {0}, "test_result");
 		builder->CreateRet(result);
 
@@ -1024,7 +1030,7 @@ namespace Qd {
 			const std::vector<std::pair<std::string, std::string>>& testNamesWithDisplay) {
 		// Create main function: i32 @main(i32 %argc, i8** %argv)
 		auto mainFnTy = llvm::FunctionType::get(
-				builder->getInt32Ty(), {builder->getInt32Ty(), llvm::PointerType::getUnqual(*context)}, false);
+				int32Ty, {int32Ty, ptrTy}, false);
 		auto mainFn = llvm::Function::Create(mainFnTy, llvm::Function::ExternalLinkage, "main", *module);
 
 		auto entryBB = llvm::BasicBlock::Create(*context, "entry", mainFn);
@@ -1032,12 +1038,12 @@ namespace Qd {
 
 		// Check NO_COLOR environment variable
 		auto getenvFnTy = llvm::FunctionType::get(
-				llvm::PointerType::getUnqual(*context), {llvm::PointerType::getUnqual(*context)}, false);
+				ptrTy, {ptrTy}, false);
 		auto getenvFn = module->getOrInsertFunction("getenv", getenvFnTy);
 		auto noColorStr = builder->CreateGlobalString("NO_COLOR", "no_color_env");
 		auto noColorVal = builder->CreateCall(getenvFn, {noColorStr}, "no_color");
 		auto noColorNull = builder->CreateICmpEQ(
-				noColorVal, llvm::ConstantPointerNull::get(llvm::PointerType::getUnqual(*context)), "no_color_null");
+				noColorVal, llvm::ConstantPointerNull::get(ptrTy), "no_color_null");
 		// useColor = (getenv("NO_COLOR") == NULL)
 		auto useColor = noColorNull;
 
@@ -1047,12 +1053,12 @@ namespace Qd {
 
 		// Create printf function for direct output
 		auto printfFnTy =
-				llvm::FunctionType::get(builder->getInt32Ty(), {llvm::PointerType::getUnqual(*context)}, true);
+				llvm::FunctionType::get(int32Ty, {ptrTy}, true);
 		auto printfFn = module->getOrInsertFunction("printf", printfFnTy);
 
 		// Counters for passed/failed tests
-		auto passedCountAlloca = builder->CreateAlloca(builder->getInt32Ty(), nullptr, "passed_count");
-		auto failedCountAlloca = builder->CreateAlloca(builder->getInt32Ty(), nullptr, "failed_count");
+		auto passedCountAlloca = builder->CreateAlloca(int32Ty, nullptr, "passed_count");
+		auto failedCountAlloca = builder->CreateAlloca(int32Ty, nullptr, "failed_count");
 		builder->CreateStore(builder->getInt32(0), passedCountAlloca);
 		builder->CreateStore(builder->getInt32(0), failedCountAlloca);
 
@@ -1086,7 +1092,7 @@ namespace Qd {
 
 			// Success block
 			builder->SetInsertPoint(successBB);
-			auto passedCount = builder->CreateLoad(builder->getInt32Ty(), passedCountAlloca, "passed");
+			auto passedCount = builder->CreateLoad(int32Ty, passedCountAlloca, "passed");
 			auto newPassed = builder->CreateAdd(passedCount, builder->getInt32(1), "new_passed");
 			builder->CreateStore(newPassed, passedCountAlloca);
 
@@ -1100,7 +1106,7 @@ namespace Qd {
 
 			// Fail block
 			builder->SetInsertPoint(failBB);
-			auto failedCount = builder->CreateLoad(builder->getInt32Ty(), failedCountAlloca, "failed");
+			auto failedCount = builder->CreateLoad(int32Ty, failedCountAlloca, "failed");
 			auto newFailed = builder->CreateAdd(failedCount, builder->getInt32(1), "new_failed");
 			builder->CreateStore(newFailed, failedCountAlloca);
 
@@ -1117,8 +1123,8 @@ namespace Qd {
 		}
 
 		// Print summary using printf with colors
-		auto finalPassed = builder->CreateLoad(builder->getInt32Ty(), passedCountAlloca, "final_passed");
-		auto finalFailed = builder->CreateLoad(builder->getInt32Ty(), failedCountAlloca, "final_failed");
+		auto finalPassed = builder->CreateLoad(int32Ty, passedCountAlloca, "final_passed");
+		auto finalFailed = builder->CreateLoad(int32Ty, failedCountAlloca, "final_failed");
 
 		// Select colored or plain summary
 		auto summaryFmtColor =

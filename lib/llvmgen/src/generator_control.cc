@@ -17,10 +17,10 @@ namespace Qd {
 		// Inline pop for condition - direct stack access for performance
 		// ctx is a pointer to a struct with first field being qd_stack* st
 		llvm::Value* stPtr = builder->CreateStructGEP(contextStructTy, ctx, 0, "st_ptr");
-		llvm::Value* st = builder->CreateLoad(llvm::PointerType::get(*context, 0), stPtr, "st");
+		llvm::Value* st = builder->CreateLoad(ptrTy, stPtr, "st");
 
 		llvm::Value* sizePtr = builder->CreateStructGEP(stackStructTy, st, 2, "size_ptr");
-		llvm::Value* size = builder->CreateLoad(builder->getInt64Ty(), sizePtr, "size");
+		llvm::Value* size = builder->CreateLoad(int64Ty, sizePtr, "size");
 
 		// Check for stack underflow before popping
 		llvm::Value* isEmpty = builder->CreateICmpEQ(size, builder->getInt64(0), "is_empty");
@@ -34,20 +34,20 @@ namespace Qd {
 		builder->SetInsertPoint(popBB);
 
 		llvm::Value* dataPtr = builder->CreateStructGEP(stackStructTy, st, 0, "data_ptr");
-		llvm::Value* data = builder->CreateLoad(llvm::PointerType::get(*context, 0), dataPtr, "data");
+		llvm::Value* data = builder->CreateLoad(ptrTy, dataPtr, "data");
 
 		// Access top element value directly: data[size-1].value
 		llvm::Value* topIdx = builder->CreateSub(size, builder->getInt64(1), "top_idx");
 		llvm::Value* topElemPtr = builder->CreateGEP(stackElementTy, data, topIdx, "top_elem");
 		llvm::Value* valuePtr = builder->CreateStructGEP(stackElementTy, topElemPtr, 0, "value_ptr");
-		llvm::Value* value64 = builder->CreateLoad(builder->getInt64Ty(), valuePtr, "value64");
+		llvm::Value* value64 = builder->CreateLoad(int64Ty, valuePtr, "value64");
 
 		// Decrement size (inline pop)
 		llvm::Value* newSize = builder->CreateSub(size, builder->getInt64(1), "new_size");
 		builder->CreateStore(newSize, sizePtr);
 
 		// Convert to condition value
-		auto condValue = builder->CreateTrunc(value64, builder->getInt32Ty(), "cond");
+		auto condValue = builder->CreateTrunc(value64, int32Ty, "cond");
 
 		// Check if condition is non-zero
 		auto isTrue = builder->CreateICmpNE(condValue, builder->getInt32(0), "is_true");
@@ -116,15 +116,15 @@ namespace Qd {
 			auto stackFieldPtr = builder->CreateStructGEP(
 					llvm::StructType::get(*context,
 							{
-									llvm::PointerType::getUnqual(*context), // qd_stack* st
-									builder->getInt64Ty(),					// int64_t error_code
-									llvm::PointerType::getUnqual(*context), // char* error_msg
-									builder->getInt32Ty(),					// int argc
-									llvm::PointerType::getUnqual(*context), // char** argv
-									llvm::PointerType::getUnqual(*context)	// char* program_name
+									ptrTy, // qd_stack* st
+									int64Ty,					// int64_t error_code
+									ptrTy, // char* error_msg
+									int32Ty,					// int argc
+									ptrTy, // char** argv
+									ptrTy	// char* program_name
 							}),
 					ctx, 0, "st_ptr");
-			auto stack = builder->CreateLoad(llvm::PointerType::getUnqual(*context), stackFieldPtr, "st");
+			auto stack = builder->CreateLoad(ptrTy, stackFieldPtr, "st");
 
 			// Create allocas in entry block to avoid stack growth in nested loops
 			llvm::BasicBlock& entryBlock = currentFn->getEntryBlock();
@@ -143,32 +143,32 @@ namespace Qd {
 
 			// Check the type of start element to determine if we're using int or float loop
 			auto startTypePtr = builder->CreateStructGEP(stackElementTy, startElemPtr, 1, "start_type_ptr");
-			auto startType = builder->CreateLoad(builder->getInt32Ty(), startTypePtr, "start_type");
+			auto startType = builder->CreateLoad(int32Ty, startTypePtr, "start_type");
 			auto isFloatLoop = builder->CreateICmpEQ(startType, builder->getInt32(1), "is_float_loop");
 
 			// Extract start value
 			auto startValuePtr = builder->CreateStructGEP(stackElementTy, startElemPtr, 0, "start_value_ptr");
-			auto startBits = builder->CreateLoad(builder->getInt64Ty(), startValuePtr, "start_bits");
+			auto startBits = builder->CreateLoad(int64Ty, startValuePtr, "start_bits");
 
 			// Convert start based on type
 			auto startAsFloat = builder->CreateBitCast(startBits, builder->getDoubleTy(), "start_as_float");
-			auto startFloatToInt = builder->CreateFPToSI(startAsFloat, builder->getInt64Ty(), "start_float_to_int");
+			auto startFloatToInt = builder->CreateFPToSI(startAsFloat, int64Ty, "start_float_to_int");
 			startValue = builder->CreateSelect(isFloatLoop, startFloatToInt, startBits, "start");
 
 			// Extract end value
 			auto endValuePtr = builder->CreateStructGEP(stackElementTy, endElemPtr, 0, "end_value_ptr");
-			auto endBits = builder->CreateLoad(builder->getInt64Ty(), endValuePtr, "end_bits");
+			auto endBits = builder->CreateLoad(int64Ty, endValuePtr, "end_bits");
 
 			auto endAsFloat = builder->CreateBitCast(endBits, builder->getDoubleTy(), "end_as_float");
-			auto endFloatToInt = builder->CreateFPToSI(endAsFloat, builder->getInt64Ty(), "end_float_to_int");
+			auto endFloatToInt = builder->CreateFPToSI(endAsFloat, int64Ty, "end_float_to_int");
 			endValue = builder->CreateSelect(isFloatLoop, endFloatToInt, endBits, "end");
 
 			// Extract step value
 			auto stepValuePtr = builder->CreateStructGEP(stackElementTy, stepElemPtr, 0, "step_value_ptr");
-			auto stepBits = builder->CreateLoad(builder->getInt64Ty(), stepValuePtr, "step_bits");
+			auto stepBits = builder->CreateLoad(int64Ty, stepValuePtr, "step_bits");
 
 			auto stepAsFloat = builder->CreateBitCast(stepBits, builder->getDoubleTy(), "step_as_float");
-			auto stepFloatToInt = builder->CreateFPToSI(stepAsFloat, builder->getInt64Ty(), "step_float_to_int");
+			auto stepFloatToInt = builder->CreateFPToSI(stepAsFloat, int64Ty, "step_float_to_int");
 			stepValue = builder->CreateSelect(isFloatLoop, stepFloatToInt, stepBits, "step");
 		}
 
@@ -186,7 +186,7 @@ namespace Qd {
 
 		// Loop header: check condition
 		builder->SetInsertPoint(loopHeaderBB);
-		llvm::PHINode* iterVar = builder->CreatePHI(builder->getInt64Ty(), 2, "i");
+		llvm::PHINode* iterVar = builder->CreatePHI(int64Ty, 2, "i");
 		iterVar->addIncoming(startValue, preBB);
 
 		// Check if step is negative to determine comparison direction
@@ -297,10 +297,10 @@ namespace Qd {
 		// Inline pop for condition - direct stack access for performance
 		// ctx is a pointer to a struct with first field being qd_stack* st
 		llvm::Value* stPtr = builder->CreateStructGEP(contextStructTy, ctx, 0, "st_ptr");
-		llvm::Value* st = builder->CreateLoad(llvm::PointerType::get(*context, 0), stPtr, "st");
+		llvm::Value* st = builder->CreateLoad(ptrTy, stPtr, "st");
 
 		llvm::Value* sizePtr = builder->CreateStructGEP(stackStructTy, st, 2, "size_ptr");
-		llvm::Value* size = builder->CreateLoad(builder->getInt64Ty(), sizePtr, "size");
+		llvm::Value* size = builder->CreateLoad(int64Ty, sizePtr, "size");
 
 		// Check for stack underflow before popping
 		llvm::Value* isEmpty = builder->CreateICmpEQ(size, builder->getInt64(0), "is_empty");
@@ -314,20 +314,20 @@ namespace Qd {
 		builder->SetInsertPoint(popBB);
 
 		llvm::Value* dataPtr = builder->CreateStructGEP(stackStructTy, st, 0, "data_ptr");
-		llvm::Value* data = builder->CreateLoad(llvm::PointerType::get(*context, 0), dataPtr, "data");
+		llvm::Value* data = builder->CreateLoad(ptrTy, dataPtr, "data");
 
 		// Access top element value directly: data[size-1].value
 		llvm::Value* topIdx = builder->CreateSub(size, builder->getInt64(1), "top_idx");
 		llvm::Value* topElemPtr = builder->CreateGEP(stackElementTy, data, topIdx, "top_elem");
 		llvm::Value* valuePtr = builder->CreateStructGEP(stackElementTy, topElemPtr, 0, "value_ptr");
-		llvm::Value* value64 = builder->CreateLoad(builder->getInt64Ty(), valuePtr, "value64");
+		llvm::Value* value64 = builder->CreateLoad(int64Ty, valuePtr, "value64");
 
 		// Decrement size (inline pop)
 		llvm::Value* newSize = builder->CreateSub(size, builder->getInt64(1), "new_size");
 		builder->CreateStore(newSize, sizePtr);
 
 		// Convert to condition value
-		auto condValue = builder->CreateTrunc(value64, builder->getInt32Ty(), "cond");
+		auto condValue = builder->CreateTrunc(value64, int32Ty, "cond");
 
 		// Check if condition is non-zero
 		auto isTrue = builder->CreateICmpNE(condValue, builder->getInt32(0), "is_true");
@@ -465,15 +465,15 @@ namespace Qd {
 		auto stackFieldPtr =
 				builder->CreateStructGEP(llvm::StructType::get(*context,
 												 {
-														 llvm::PointerType::getUnqual(*context), // qd_stack* st
-														 builder->getInt64Ty(),					 // int64_t error_code
-														 llvm::PointerType::getUnqual(*context), // char* error_msg
-														 builder->getInt32Ty(),					 // int argc
-														 llvm::PointerType::getUnqual(*context), // char** argv
-														 llvm::PointerType::getUnqual(*context)	 // char* program_name
+														 ptrTy, // qd_stack* st
+														 int64Ty,					 // int64_t error_code
+														 ptrTy, // char* error_msg
+														 int32Ty,					 // int argc
+														 ptrTy, // char** argv
+														 ptrTy	 // char* program_name
 												 }),
 						clonedCtx, 0, "cloned_st_ptr");
-		auto clonedStack = builder->CreateLoad(llvm::PointerType::getUnqual(*context), stackFieldPtr, "cloned_st");
+		auto clonedStack = builder->CreateLoad(ptrTy, stackFieldPtr, "cloned_st");
 
 		// Pop exactly one value from the cloned stack
 		auto resultElemPtr = builder->CreateAlloca(stackElementTy, nullptr, "ctx_result_elem");
@@ -481,9 +481,9 @@ namespace Qd {
 
 		// Get the result value and type
 		auto resultValuePtr = builder->CreateStructGEP(stackElementTy, resultElemPtr, 0, "result_value_ptr");
-		auto resultValue = builder->CreateLoad(builder->getInt64Ty(), resultValuePtr, "result_value");
+		auto resultValue = builder->CreateLoad(int64Ty, resultValuePtr, "result_value");
 		auto resultTypePtr = builder->CreateStructGEP(stackElementTy, resultElemPtr, 1, "result_type_ptr");
-		auto resultType = builder->CreateLoad(builder->getInt32Ty(), resultTypePtr, "result_type");
+		auto resultType = builder->CreateLoad(int32Ty, resultTypePtr, "result_type");
 
 		// Push the result to the parent context based on its type BEFORE freeing cloned context
 		// This is critical for strings: qd_push_s will duplicate the string, so we need
@@ -516,13 +516,13 @@ namespace Qd {
 
 		// Push PTR
 		builder->SetInsertPoint(pushPtrBB);
-		auto ptrValue = builder->CreateIntToPtr(resultValue, llvm::PointerType::getUnqual(*context), "ptr_value");
+		auto ptrValue = builder->CreateIntToPtr(resultValue, ptrTy, "ptr_value");
 		builder->CreateCall(pushPtrFn, {ctx, ptrValue});
 		builder->CreateBr(pushDoneBB);
 
 		// Push STR
 		builder->SetInsertPoint(pushStrBB);
-		auto strPtr = builder->CreateIntToPtr(resultValue, llvm::PointerType::getUnqual(*context), "str_ptr");
+		auto strPtr = builder->CreateIntToPtr(resultValue, ptrTy, "str_ptr");
 		// Call qd_string_data to get const char* from qd_string_t*
 		auto strData = builder->CreateCall(qdStringDataFn, {strPtr}, "str_data");
 		builder->CreateCall(pushStrFn, {ctx, strData});

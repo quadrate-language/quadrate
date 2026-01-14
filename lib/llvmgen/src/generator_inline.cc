@@ -4,10 +4,10 @@ namespace Qd {
 
 	void LlvmGenerator::Impl::emitFatalError(llvm::Value* ctx, const char* message) {
 		auto fprintfFn = module->getOrInsertFunction("fprintf",
-				llvm::FunctionType::get(builder->getInt32Ty(),
-						{llvm::PointerType::getUnqual(*context), llvm::PointerType::getUnqual(*context)}, true));
-		auto stderrGlobal = module->getOrInsertGlobal("stderr", llvm::PointerType::getUnqual(*context));
-		auto stderrVal = builder->CreateLoad(llvm::PointerType::getUnqual(*context), stderrGlobal, "stderr");
+				llvm::FunctionType::get(int32Ty,
+						{ptrTy, ptrTy}, true));
+		auto stderrGlobal = module->getOrInsertGlobal("stderr", ptrTy);
+		auto stderrVal = builder->CreateLoad(ptrTy, stderrGlobal, "stderr");
 		auto errorMsg = builder->CreateGlobalString(message);
 		builder->CreateCall(fprintfFn, {stderrVal, errorMsg});
 		builder->CreateCall(printStackTraceFn, {ctx});
@@ -19,13 +19,13 @@ namespace Qd {
 		StackAccess sa;
 		// Get ctx->st
 		llvm::Value* stPtr = builder->CreateStructGEP(contextStructTy, ctx, 0, "st_ptr");
-		llvm::Value* st = builder->CreateLoad(llvm::PointerType::get(*context, 0), stPtr, "st");
+		llvm::Value* st = builder->CreateLoad(ptrTy, stPtr, "st");
 		// Get st->size
 		sa.sizePtr = builder->CreateStructGEP(stackStructTy, st, 2, "size_ptr");
-		sa.size = builder->CreateLoad(builder->getInt64Ty(), sa.sizePtr, "size");
+		sa.size = builder->CreateLoad(int64Ty, sa.sizePtr, "size");
 		// Get st->data
 		llvm::Value* dataPtr = builder->CreateStructGEP(stackStructTy, st, 0, "data_ptr");
-		sa.data = builder->CreateLoad(llvm::PointerType::get(*context, 0), dataPtr, "data");
+		sa.data = builder->CreateLoad(ptrTy, dataPtr, "data");
 		return sa;
 	}
 
@@ -39,15 +39,15 @@ namespace Qd {
 		llvm::Value* idx1 = builder->CreateSub(boc.size, builder->getInt64(2), "idx1");
 		llvm::Value* elem1Ptr = builder->CreateGEP(stackElementTy, sa.data, idx1, "elem1_ptr");
 		llvm::Value* value1Ptr = builder->CreateStructGEP(stackElementTy, elem1Ptr, 0, "value1_ptr");
-		boc.resultPtr = builder->CreateBitCast(value1Ptr, llvm::PointerType::get(*context, 0));
-		boc.value1 = builder->CreateLoad(builder->getInt64Ty(), boc.resultPtr, "value1");
+		boc.resultPtr = builder->CreateBitCast(value1Ptr, ptrTy);
+		boc.value1 = builder->CreateLoad(int64Ty, boc.resultPtr, "value1");
 
 		// Load second operand: data[size - 1]
 		llvm::Value* idx2 = builder->CreateSub(boc.size, builder->getInt64(1), "idx2");
 		llvm::Value* elem2Ptr = builder->CreateGEP(stackElementTy, sa.data, idx2, "elem2_ptr");
 		llvm::Value* value2Ptr = builder->CreateStructGEP(stackElementTy, elem2Ptr, 0, "value2_ptr");
-		llvm::Value* value2PtrCast = builder->CreateBitCast(value2Ptr, llvm::PointerType::get(*context, 0));
-		boc.value2 = builder->CreateLoad(builder->getInt64Ty(), value2PtrCast, "value2");
+		llvm::Value* value2PtrCast = builder->CreateBitCast(value2Ptr, ptrTy);
+		boc.value2 = builder->CreateLoad(int64Ty, value2PtrCast, "value2");
 
 		return boc;
 	}
@@ -68,16 +68,16 @@ namespace Qd {
 		// Same as generateInlinePushInt but takes llvm::Value* instead of int64_t
 
 		llvm::Value* stPtr = builder->CreateStructGEP(contextStructTy, ctx, 0, "st_ptr");
-		llvm::Value* st = builder->CreateLoad(llvm::PointerType::get(*context, 0), stPtr, "st");
+		llvm::Value* st = builder->CreateLoad(ptrTy, stPtr, "st");
 
 		llvm::Value* sizePtr = builder->CreateStructGEP(stackStructTy, st, 2, "size_ptr");
-		llvm::Value* size = builder->CreateLoad(builder->getInt64Ty(), sizePtr, "size");
+		llvm::Value* size = builder->CreateLoad(int64Ty, sizePtr, "size");
 
 		// Skip overflow check for integer-only functions (predictable stack usage)
 		if (!currentFunctionIsIntegerOnly) {
 			// Check for overflow
 			llvm::Value* capacityPtr = builder->CreateStructGEP(stackStructTy, st, 1, "capacity_ptr");
-			llvm::Value* capacity = builder->CreateLoad(builder->getInt64Ty(), capacityPtr, "capacity");
+			llvm::Value* capacity = builder->CreateLoad(int64Ty, capacityPtr, "capacity");
 			llvm::Value* hasSpace = builder->CreateICmpULT(size, capacity, "has_space");
 
 			llvm::Function* currentFn = builder->GetInsertBlock()->getParent();
@@ -94,13 +94,13 @@ namespace Qd {
 		}
 
 		llvm::Value* dataPtr = builder->CreateStructGEP(stackStructTy, st, 0, "data_ptr");
-		llvm::Value* data = builder->CreateLoad(llvm::PointerType::get(*context, 0), dataPtr, "data");
+		llvm::Value* data = builder->CreateLoad(ptrTy, dataPtr, "data");
 
 		llvm::Value* elemPtr = builder->CreateGEP(stackElementTy, data, size, "elem_ptr");
 
 		// Store runtime value
 		llvm::Value* valuePtr = builder->CreateStructGEP(stackElementTy, elemPtr, 0, "value_ptr");
-		llvm::Value* valueiPtr = builder->CreateBitCast(valuePtr, llvm::PointerType::get(*context, 0));
+		llvm::Value* valueiPtr = builder->CreateBitCast(valuePtr, ptrTy);
 		builder->CreateStore(value, valueiPtr);
 
 		// Set type to integer
@@ -144,7 +144,7 @@ namespace Qd {
 			llvm::Value* ctx, llvm::CmpInst::Predicate pred, const char* resultName) {
 		auto boc = setupBinaryOp(ctx);
 		llvm::Value* cmpResult = builder->CreateICmp(pred, boc.value1, boc.value2, resultName);
-		llvm::Value* result = builder->CreateZExt(cmpResult, builder->getInt64Ty(), "result_i64");
+		llvm::Value* result = builder->CreateZExt(cmpResult, int64Ty, "result_i64");
 		finishBinaryOp(boc, result);
 	}
 
@@ -196,8 +196,8 @@ namespace Qd {
 		llvm::Value* idx = builder->CreateSub(sa.size, builder->getInt64(1), "idx");
 		llvm::Value* elemPtr = builder->CreateGEP(stackElementTy, sa.data, idx, "elem_ptr");
 		llvm::Value* valuePtr = builder->CreateStructGEP(stackElementTy, elemPtr, 0, "value_ptr");
-		llvm::Value* valuePtrCast = builder->CreateBitCast(valuePtr, llvm::PointerType::get(*context, 0));
-		llvm::Value* value = builder->CreateLoad(builder->getInt64Ty(), valuePtrCast, "value");
+		llvm::Value* valuePtrCast = builder->CreateBitCast(valuePtr, ptrTy);
+		llvm::Value* value = builder->CreateLoad(int64Ty, valuePtrCast, "value");
 		llvm::Value* result = builder->CreateNot(value, "not_result");
 		builder->CreateStore(result, valuePtrCast);
 	}
@@ -306,7 +306,7 @@ namespace Qd {
 		llvm::Value* topIdx = builder->CreateSub(sa.size, builder->getInt64(1), "top_idx");
 		llvm::Value* topElemPtr = builder->CreateGEP(stackElementTy, sa.data, topIdx, "top_elem");
 		llvm::Value* valuePtr = builder->CreateStructGEP(stackElementTy, topElemPtr, 0, "value_ptr");
-		llvm::Value* value = builder->CreateLoad(builder->getInt64Ty(), valuePtr, "pop_value");
+		llvm::Value* value = builder->CreateLoad(int64Ty, valuePtr, "pop_value");
 		// Decrement size
 		llvm::Value* newSize = builder->CreateSub(sa.size, builder->getInt64(1), "new_size");
 		builder->CreateStore(newSize, sa.sizePtr);
@@ -320,7 +320,7 @@ namespace Qd {
 		llvm::Value* topIdx = builder->CreateSub(sa.size, builder->getInt64(1), "top_idx");
 		llvm::Value* topElemPtr = builder->CreateGEP(stackElementTy, sa.data, topIdx, "top_elem");
 		llvm::Value* valuePtr = builder->CreateStructGEP(stackElementTy, topElemPtr, 0, "value_ptr");
-		llvm::Value* value = builder->CreateLoad(builder->getInt64Ty(), valuePtr, "pop_value");
+		llvm::Value* value = builder->CreateLoad(int64Ty, valuePtr, "pop_value");
 		// Store to destination (qd_stack_element_t: { i64 value, i32 type, i1 tainted })
 		llvm::Value* dstValuePtr = builder->CreateStructGEP(stackElementTy, dst, 0, "dst_value_ptr");
 		builder->CreateStore(value, dstValuePtr);

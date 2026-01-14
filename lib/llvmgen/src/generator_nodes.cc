@@ -116,12 +116,12 @@ namespace Qd {
 			// Load the pointer to the outer variable, then access through it
 			llvm::AllocaInst* ptrAlloca = capIt->second;
 			llvm::Value* outerVarPtr =
-					builder->CreateLoad(llvm::PointerType::getUnqual(*context), ptrAlloca, name + "_cap_ptr");
+					builder->CreateLoad(ptrTy, ptrAlloca, name + "_cap_ptr");
 
 			// Now outerVarPtr points to a qd_stack_element_t - use it like localAlloca below
 			// Extract type field
 			llvm::Value* typePtr = builder->CreateStructGEP(stackElementTy, outerVarPtr, 1, name + "_cap_type_ptr");
-			llvm::Value* type = builder->CreateLoad(builder->getInt32Ty(), typePtr, name + "_cap_type");
+			llvm::Value* type = builder->CreateLoad(int32Ty, typePtr, name + "_cap_type");
 
 			// Value pointer
 			llvm::Value* valuePtr = builder->CreateStructGEP(stackElementTy, outerVarPtr, 0, name + "_cap_value_ptr");
@@ -146,7 +146,7 @@ namespace Qd {
 
 			// INT block
 			builder->SetInsertPoint(intBlock);
-			llvm::Value* intVal = builder->CreateLoad(builder->getInt64Ty(), valuePtr, name + "_cap_i");
+			llvm::Value* intVal = builder->CreateLoad(int64Ty, valuePtr, name + "_cap_i");
 			generateInlinePushIntValue(ctx, intVal);
 			builder->CreateBr(endBlock);
 
@@ -159,14 +159,14 @@ namespace Qd {
 			// STR block
 			builder->SetInsertPoint(strBlock);
 			llvm::Value* strVal =
-					builder->CreateLoad(llvm::PointerType::getUnqual(*context), valuePtr, name + "_cap_s");
+					builder->CreateLoad(ptrTy, valuePtr, name + "_cap_s");
 			builder->CreateCall(pushStrRefFn, {ctx, strVal});
 			builder->CreateBr(endBlock);
 
 			// PTR block
 			builder->SetInsertPoint(ptrBlock);
 			llvm::Value* ptrVal =
-					builder->CreateLoad(llvm::PointerType::getUnqual(*context), valuePtr, name + "_cap_p");
+					builder->CreateLoad(ptrTy, valuePtr, name + "_cap_p");
 			builder->CreateCall(qdPtrRetainFn, {ptrVal});
 			builder->CreateCall(pushPtrFn, {ctx, ptrVal});
 			builder->CreateBr(endBlock);
@@ -187,14 +187,14 @@ namespace Qd {
 			bool isIndirect = indirectLocalVariables.find(name) != indirectLocalVariables.end();
 			if (isIndirect) {
 				storagePtr =
-						builder->CreateLoad(llvm::PointerType::getUnqual(*context), localAlloca, name + "_storage");
+						builder->CreateLoad(ptrTy, localAlloca, name + "_storage");
 			}
 
 			// Fast path for integer-only functions with non-captured locals
 			// Skip type switch - we know all locals are integers
 			if (currentFunctionIsIntegerOnly && !isIndirect) {
 				llvm::Value* valuePtr = builder->CreateStructGEP(stackElementTy, storagePtr, 0, name + "_value_ptr");
-				llvm::Value* intVal = builder->CreateLoad(builder->getInt64Ty(), valuePtr, name + "_i");
+				llvm::Value* intVal = builder->CreateLoad(int64Ty, valuePtr, name + "_i");
 				generateInlinePushIntValue(ctx, intVal);
 				lastIdentifierPushed = name;
 				return;
@@ -202,7 +202,7 @@ namespace Qd {
 
 			// Extract type field (field index 1 in qd_stack_element_t)
 			llvm::Value* typePtr = builder->CreateStructGEP(stackElementTy, storagePtr, 1, name + "_type_ptr");
-			llvm::Value* type = builder->CreateLoad(builder->getInt32Ty(), typePtr, name + "_type");
+			llvm::Value* type = builder->CreateLoad(int32Ty, typePtr, name + "_type");
 
 			// Switch on type and push appropriate value
 			llvm::Value* valuePtr = builder->CreateStructGEP(stackElementTy, storagePtr, 0, name + "_value_ptr");
@@ -227,7 +227,7 @@ namespace Qd {
 
 			// INT block: load i64 and push inline
 			builder->SetInsertPoint(intBlock);
-			llvm::Value* intVal = builder->CreateLoad(builder->getInt64Ty(), valuePtr, name + "_i");
+			llvm::Value* intVal = builder->CreateLoad(int64Ty, valuePtr, name + "_i");
 			generateInlinePushIntValue(ctx, intVal);
 			builder->CreateBr(endBlock);
 
@@ -239,20 +239,20 @@ namespace Qd {
 
 			// STR block: load qd_string_t* and push with retain
 			builder->SetInsertPoint(strBlock);
-			llvm::Value* strVal = builder->CreateLoad(llvm::PointerType::getUnqual(*context), valuePtr, name + "_s");
+			llvm::Value* strVal = builder->CreateLoad(ptrTy, valuePtr, name + "_s");
 			builder->CreateCall(pushStrRefFn, {ctx, strVal});
 			builder->CreateBr(endBlock);
 
 			// PTR block: load void* and push (retain for arrays and potential structs)
 			builder->SetInsertPoint(ptrBlock);
-			llvm::Value* ptrVal = builder->CreateLoad(llvm::PointerType::getUnqual(*context), valuePtr, name + "_p");
+			llvm::Value* ptrVal = builder->CreateLoad(ptrTy, valuePtr, name + "_p");
 			// Retain based on variable type
 			if (localArrayVariables.find(name) != localArrayVariables.end()) {
 				// Retain array variables
 				llvm::Function* arrayRetainFn = module->getFunction("qd_array_retain");
 				if (!arrayRetainFn) {
 					auto arrayRetainFnTy = llvm::FunctionType::get(
-							builder->getVoidTy(), {llvm::PointerType::getUnqual(*context)}, false);
+							builder->getVoidTy(), {ptrTy}, false);
 					arrayRetainFn = llvm::Function::Create(
 							arrayRetainFnTy, llvm::Function::ExternalLinkage, "qd_array_retain", *module);
 				}
@@ -329,7 +329,7 @@ namespace Qd {
 		if (fpAliasIt != functionPointerAliases.end()) {
 			// Get the function pointer and push it to the stack
 			llvm::Function* func = fpAliasIt->second;
-			llvm::Value* funcPtr = builder->CreateBitCast(func, llvm::PointerType::getUnqual(*context));
+			llvm::Value* funcPtr = builder->CreateBitCast(func, ptrTy);
 			builder->CreateCall(pushPtrFn, {ctx, funcPtr});
 			return;
 		}
@@ -409,7 +409,7 @@ namespace Qd {
 				// This is a fallible function - push error status after the call
 				// Get the error_code field from context (field index 1)
 				auto errorCodePtr = builder->CreateStructGEP(contextStructTy, ctx, 1, "error_code_ptr");
-				auto errorCode = builder->CreateLoad(builder->getInt64Ty(), errorCodePtr, "error_code");
+				auto errorCode = builder->CreateLoad(int64Ty, errorCodePtr, "error_code");
 				auto hasError = builder->CreateICmpNE(errorCode, builder->getInt64(0), "has_error");
 
 				if (ident->abortOnError()) {
@@ -464,7 +464,7 @@ namespace Qd {
 			// Get pointer to the function
 			llvm::Function* fn = it->second;
 			// Cast function pointer to void* and push onto stack
-			auto funcPtrValue = builder->CreateBitCast(fn, llvm::PointerType::getUnqual(*context));
+			auto funcPtrValue = builder->CreateBitCast(fn, ptrTy);
 			builder->CreateCall(pushPtrFn, {ctx, funcPtrValue});
 		} else {
 			// Function not found - this should have been caught by semantic analysis
@@ -513,7 +513,7 @@ namespace Qd {
 		// For non-closures: takes (context), returns exec_result
 		llvm::FunctionType* fnTy;
 		if (hasClosure) {
-			fnTy = llvm::FunctionType::get(execResultTy, {contextPtrTy, llvm::PointerType::getUnqual(*context)}, false);
+			fnTy = llvm::FunctionType::get(execResultTy, {contextPtrTy, ptrTy}, false);
 		} else {
 			fnTy = llvm::FunctionType::get(execResultTy, {contextPtrTy}, false);
 		}
@@ -546,13 +546,13 @@ namespace Qd {
 				llvm::Function* currentFn = builder->GetInsertBlock()->getParent();
 				llvm::IRBuilder<> tmpBuilder(&currentFn->getEntryBlock(), currentFn->getEntryBlock().begin());
 				llvm::AllocaInst* ptrAlloca =
-						tmpBuilder.CreateAlloca(llvm::PointerType::getUnqual(*context), nullptr, capName + "_ref");
+						tmpBuilder.CreateAlloca(ptrTy, nullptr, capName + "_ref");
 
 				// Load pointer from environment array
 				llvm::Value* envSlot = builder->CreateGEP(
-						llvm::PointerType::getUnqual(*context), envPtr, builder->getInt64(i), capName + "_env_slot");
+						ptrTy, envPtr, builder->getInt64(i), capName + "_env_slot");
 				llvm::Value* outerPtr =
-						builder->CreateLoad(llvm::PointerType::getUnqual(*context), envSlot, capName + "_outer_ptr");
+						builder->CreateLoad(ptrTy, envSlot, capName + "_outer_ptr");
 
 				// Store the pointer in our local alloca
 				builder->CreateStore(outerPtr, ptrAlloca);
@@ -622,20 +622,20 @@ namespace Qd {
 					// For indirect (heap-allocated) variables, load the heap pointer and increment refcount
 					if (indirectLocalVariables.find(capName) != indirectLocalVariables.end()) {
 						capturePtr = builder->CreateLoad(
-								llvm::PointerType::getUnqual(*context), outerAlloca, capName + "_heap_ptr");
+								ptrTy, outerAlloca, capName + "_heap_ptr");
 
 						// Increment refcount for this capture (the closure takes ownership)
 						// Refcount is 8 bytes before the elem pointer
 						llvm::Value* refCountPtr = builder->CreateGEP(builder->getInt8Ty(), capturePtr,
 								builder->getInt64(static_cast<uint64_t>(-8)), capName + "_refcount_ptr");
-						llvm::Value* refCount = builder->CreateLoad(builder->getInt64Ty(), refCountPtr, "refcount");
+						llvm::Value* refCount = builder->CreateLoad(int64Ty, refCountPtr, "refcount");
 						llvm::Value* newRefCount = builder->CreateAdd(refCount, builder->getInt64(1), "new_refcount");
 						builder->CreateStore(newRefCount, refCountPtr);
 					}
 
 					// Store pointer to captured variable into environment array
 					llvm::Value* envSlot = builder->CreateGEP(
-							llvm::PointerType::getUnqual(*context), envAlloc, builder->getInt64(i), capName + "_slot");
+							ptrTy, envAlloc, builder->getInt64(i), capName + "_slot");
 					builder->CreateStore(capturePtr, envSlot);
 				}
 			}
@@ -649,7 +649,7 @@ namespace Qd {
 
 			// Store function pointer
 			llvm::Value* fnPtrSlot = builder->CreateStructGEP(closureStructTy, closureAlloc, 1, "fn_ptr_slot");
-			llvm::Value* fnPtrCast = builder->CreateBitCast(fn, llvm::PointerType::getUnqual(*context), "fn_ptr_cast");
+			llvm::Value* fnPtrCast = builder->CreateBitCast(fn, ptrTy, "fn_ptr_cast");
 			builder->CreateStore(fnPtrCast, fnPtrSlot);
 
 			// Store environment pointer
@@ -662,7 +662,7 @@ namespace Qd {
 
 			// Register the closure in the closure registry for safe detection
 			auto closureRegisterFnTy =
-					llvm::FunctionType::get(builder->getVoidTy(), {llvm::PointerType::getUnqual(*context)}, false);
+					llvm::FunctionType::get(builder->getVoidTy(), {ptrTy}, false);
 			auto closureRegisterFn = module->getOrInsertFunction("qd_closure_register", closureRegisterFnTy);
 			builder->CreateCall(closureRegisterFn, {closureAlloc});
 
@@ -674,7 +674,7 @@ namespace Qd {
 			lastClosureCaptureCount = captures.size();
 		} else {
 			// No captures - just push the function pointer (existing behavior)
-			auto funcPtrValue = builder->CreateBitCast(fn, llvm::PointerType::getUnqual(*context));
+			auto funcPtrValue = builder->CreateBitCast(fn, ptrTy);
 			builder->CreateCall(pushPtrFn, {ctx, funcPtrValue});
 
 			// Not a closure
@@ -731,7 +731,7 @@ namespace Qd {
 				auto fallibleIt = fallibleFunctions.find(lookupName);
 				if (fallibleIt != fallibleFunctions.end() && fallibleIt->second) {
 					auto errorCodePtr = builder->CreateStructGEP(contextStructTy, ctx, 1, "error_code_ptr");
-					auto errorCode = builder->CreateLoad(builder->getInt64Ty(), errorCodePtr, "error_code");
+					auto errorCode = builder->CreateLoad(int64Ty, errorCodePtr, "error_code");
 					auto hasError = builder->CreateICmpNE(errorCode, builder->getInt64(0), "has_error");
 
 					if (scopedIdent->abortOnError()) {
@@ -835,7 +835,7 @@ namespace Qd {
 		if (testErrorAlloca) {
 			auto errorCode = builder->CreateExtractValue(callResult, {0}, "err_code");
 			auto hasError = builder->CreateICmpNE(errorCode, builder->getInt32(0), "has_err");
-			auto currentError = builder->CreateLoad(builder->getInt32Ty(), testErrorAlloca, "cur_err");
+			auto currentError = builder->CreateLoad(int32Ty, testErrorAlloca, "cur_err");
 			auto newError = builder->CreateSelect(hasError, errorCode, currentError, "new_err");
 			builder->CreateStore(newError, testErrorAlloca);
 		}
@@ -845,7 +845,7 @@ namespace Qd {
 		if (fallibleIt != fallibleFunctions.end() && fallibleIt->second) {
 			// This is a fallible function - push error status after the call
 			auto errorCodePtr = builder->CreateStructGEP(contextStructTy, ctx, 1, "error_code_ptr");
-			auto errorCode = builder->CreateLoad(builder->getInt64Ty(), errorCodePtr, "error_code");
+			auto errorCode = builder->CreateLoad(int64Ty, errorCodePtr, "error_code");
 			auto hasError = builder->CreateICmpNE(errorCode, builder->getInt64(0), "has_error");
 
 			if (scopedIdent->abortOnError()) {
@@ -900,21 +900,21 @@ namespace Qd {
 		// Get the runtime stack pop function
 		auto stackPopFunc = module->getFunction("qd_stack_pop");
 		auto switchElemTy = llvm::StructType::get(*context,
-				{builder->getInt64Ty(),			// value (union as i64)
-						builder->getInt32Ty(),	// type
+				{int64Ty,			// value (union as i64)
+						int32Ty,	// type
 						builder->getInt1Ty()}); // is_error_tainted
 
 		// Pop the value to switch on from the stack
 		auto stackFieldPtr =
 				builder->CreateStructGEP(llvm::StructType::get(*context,
-												 {llvm::PointerType::getUnqual(*context),		   // qd_stack* st
-														 builder->getInt64Ty(),					   // int64_t error_code
-														 llvm::PointerType::getUnqual(*context),   // char* error_msg
-														 builder->getInt32Ty(),					   // int argc
-														 llvm::PointerType::getUnqual(*context),   // char** argv
-														 llvm::PointerType::getUnqual(*context)}), // char* program_name
+												 {ptrTy,		   // qd_stack* st
+														 int64Ty,					   // int64_t error_code
+														 ptrTy,   // char* error_msg
+														 int32Ty,					   // int argc
+														 ptrTy,   // char** argv
+														 ptrTy}), // char* program_name
 						ctx, 0, "st_ptr");
-		auto stack = builder->CreateLoad(llvm::PointerType::getUnqual(*context), stackFieldPtr, "st");
+		auto stack = builder->CreateLoad(ptrTy, stackFieldPtr, "st");
 
 		// Create alloca in entry block to avoid stack growth in loops
 		llvm::BasicBlock& entryBlock = currentFn->getEntryBlock();
@@ -990,7 +990,7 @@ namespace Qd {
 				if (lit->literalType() == AstNodeLiteral::LiteralType::INTEGER) {
 					// Compare switch value with case value (integer)
 					auto valuePtr = builder->CreateStructGEP(switchElemTy, switchElem, 0, "value_ptr");
-					auto switchVal = builder->CreateLoad(builder->getInt64Ty(), valuePtr, "switch_val");
+					auto switchVal = builder->CreateLoad(int64Ty, valuePtr, "switch_val");
 
 					int64_t parsedVal = 0;
 					if (!safeParseInt64(lit->value(), parsedVal)) {
@@ -1011,8 +1011,8 @@ namespace Qd {
 					auto strcmpFn = module->getFunction("strcmp");
 					if (!strcmpFn) {
 						// Declare strcmp if not already declared
-						auto charPtrTy = llvm::PointerType::getUnqual(*context);
-						auto strcmpTy = llvm::FunctionType::get(builder->getInt32Ty(), {charPtrTy, charPtrTy}, false);
+						auto charPtrTy = ptrTy;
+						auto strcmpTy = llvm::FunctionType::get(int32Ty, {charPtrTy, charPtrTy}, false);
 						strcmpFn = llvm::Function::Create(
 								strcmpTy, llvm::Function::ExternalLinkage, "strcmp", module.get());
 					}
@@ -1020,7 +1020,7 @@ namespace Qd {
 					// Get switch string value (qd_string_t*)
 					auto valuePtr = builder->CreateStructGEP(switchElemTy, switchElem, 0, "value_ptr");
 					auto switchStrPtr =
-							builder->CreateLoad(llvm::PointerType::getUnqual(*context), valuePtr, "switch_str");
+							builder->CreateLoad(ptrTy, valuePtr, "switch_str");
 
 					// Call qd_string_data to get const char*
 					auto switchStrData = builder->CreateCall(qdStringDataFn, {switchStrPtr}, "switch_str_data");
@@ -1048,15 +1048,15 @@ namespace Qd {
 						// String constant
 						auto strcmpFn = module->getFunction("strcmp");
 						if (!strcmpFn) {
-							auto charPtrTy = llvm::PointerType::getUnqual(*context);
+							auto charPtrTy = ptrTy;
 							auto strcmpTy =
-									llvm::FunctionType::get(builder->getInt32Ty(), {charPtrTy, charPtrTy}, false);
+									llvm::FunctionType::get(int32Ty, {charPtrTy, charPtrTy}, false);
 							strcmpFn = llvm::Function::Create(
 									strcmpTy, llvm::Function::ExternalLinkage, "strcmp", module.get());
 						}
 
 						auto switchStrPtr =
-								builder->CreateLoad(llvm::PointerType::getUnqual(*context), valuePtr, "switch_str");
+								builder->CreateLoad(ptrTy, valuePtr, "switch_str");
 
 						// Call qd_string_data to get const char*
 						auto switchStrData = builder->CreateCall(qdStringDataFn, {switchStrPtr}, "switch_str_data");
@@ -1072,7 +1072,7 @@ namespace Qd {
 						matches = builder->CreateFCmpOEQ(switchVal, caseVal, "case_match");
 					} else {
 						// Integer constant
-						auto switchVal = builder->CreateLoad(builder->getInt64Ty(), valuePtr, "switch_val");
+						auto switchVal = builder->CreateLoad(int64Ty, valuePtr, "switch_val");
 						int64_t parsedVal = 0;
 						if (!safeParseInt64(value, parsedVal)) {
 							std::cerr << "quadc: error: Invalid integer constant value '" << value << "' for "
@@ -1125,7 +1125,7 @@ namespace Qd {
 
 		// Clean up switch value if it's a string (need to free the allocated memory)
 		auto typePtr = builder->CreateStructGEP(switchElemTy, switchElem, 1, "type_ptr");
-		auto switchType = builder->CreateLoad(builder->getInt32Ty(), typePtr, "switch_type");
+		auto switchType = builder->CreateLoad(int32Ty, typePtr, "switch_type");
 		auto isString = builder->CreateICmpEQ(switchType, builder->getInt32(3), "is_string"); // QD_STACK_TYPE_STR = 3
 
 		llvm::BasicBlock* freeStringBB = llvm::BasicBlock::Create(*context, "free_string", currentFn);
@@ -1136,7 +1136,7 @@ namespace Qd {
 		// Release string reference
 		builder->SetInsertPoint(freeStringBB);
 		auto valuePtr = builder->CreateStructGEP(switchElemTy, switchElem, 0, "value_ptr");
-		auto strPtr = builder->CreateLoad(llvm::PointerType::getUnqual(*context), valuePtr, "str_ptr");
+		auto strPtr = builder->CreateLoad(ptrTy, valuePtr, "str_ptr");
 		builder->CreateCall(qdStringReleaseFn, {strPtr});
 		builder->CreateBr(skipFreeBB);
 
