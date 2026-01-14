@@ -41,6 +41,30 @@ namespace Qd {
 
 #include "semantic_validator_internal.h"
 
+	// Helper: Convert literal type to stack value type
+	static StackValueType getLiteralStackType(AstNodeLiteral::LiteralType litType) {
+		switch (litType) {
+		case AstNodeLiteral::LiteralType::INTEGER:
+			return StackValueType::INT;
+		case AstNodeLiteral::LiteralType::FLOAT:
+			return StackValueType::FLOAT;
+		case AstNodeLiteral::LiteralType::STRING:
+			return StackValueType::STRING;
+		default:
+			return StackValueType::INT;
+		}
+	}
+
+	// Helper: Push produces types from a function signature onto the type stacks
+	static void pushProducesTypes(const FunctionSignature& sig, std::vector<StackValueType>& typeStack,
+			std::vector<std::string>& structTypeStack) {
+		for (size_t idx = 0; idx < sig.produces.size(); idx++) {
+			typeStack.push_back(sig.produces[idx]);
+			auto structIt = sig.producesStructTypes.find(idx);
+			structTypeStack.push_back(structIt != sig.producesStructTypes.end() ? structIt->second : "");
+		}
+	}
+
 	// Check if a type string is a known struct name (local or imported)
 	// Supports both unqualified names (Response) and qualified names (http::Response)
 
@@ -67,17 +91,7 @@ namespace Qd {
 			switch (child->type()) {
 			case IAstNode::Type::LITERAL: {
 				AstNodeLiteral* lit = static_cast<AstNodeLiteral*>(child);
-				switch (lit->literalType()) {
-				case AstNodeLiteral::LiteralType::INTEGER:
-					typeStack.push_back(StackValueType::INT);
-					break;
-				case AstNodeLiteral::LiteralType::FLOAT:
-					typeStack.push_back(StackValueType::FLOAT);
-					break;
-				case AstNodeLiteral::LiteralType::STRING:
-					typeStack.push_back(StackValueType::STRING);
-					break;
-				}
+				typeStack.push_back(getLiteralStackType(lit->literalType()));
 				break;
 			}
 
@@ -416,20 +430,8 @@ namespace Qd {
 			switch (child->type()) {
 			case IAstNode::Type::LITERAL: {
 				AstNodeLiteral* lit = static_cast<AstNodeLiteral*>(child);
-				switch (lit->literalType()) {
-				case AstNodeLiteral::LiteralType::INTEGER:
-					typeStack.push_back(StackValueType::INT);
-					structTypeStack.push_back("");
-					break;
-				case AstNodeLiteral::LiteralType::FLOAT:
-					typeStack.push_back(StackValueType::FLOAT);
-					structTypeStack.push_back("");
-					break;
-				case AstNodeLiteral::LiteralType::STRING:
-					typeStack.push_back(StackValueType::STRING);
-					structTypeStack.push_back("");
-					break;
-				}
+				typeStack.push_back(getLiteralStackType(lit->literalType()));
+				structTypeStack.push_back("");
 				break;
 			}
 
@@ -550,12 +552,7 @@ namespace Qd {
 						}
 
 						// Push return values
-						for (size_t idx = 0; idx < sig.produces.size(); idx++) {
-							typeStack.push_back(sig.produces[idx]);
-							auto structIt = sig.producesStructTypes.find(idx);
-							structTypeStack.push_back(
-									structIt != sig.producesStructTypes.end() ? structIt->second : "");
-						}
+						pushProducesTypes(sig, typeStack, structTypeStack);
 
 						// Mark instruction as a method call for code generation
 						// Use registeredStructType (the generic type) for proper function name lookup
@@ -1034,20 +1031,8 @@ namespace Qd {
 							switch (exprNode->type()) {
 							case IAstNode::Type::LITERAL: {
 								AstNodeLiteral* lit = static_cast<AstNodeLiteral*>(exprNode);
-								switch (lit->literalType()) {
-								case AstNodeLiteral::LiteralType::INTEGER:
-									exprTypeStack.push_back(StackValueType::INT);
-									exprStructTypeStack.push_back("");
-									break;
-								case AstNodeLiteral::LiteralType::FLOAT:
-									exprTypeStack.push_back(StackValueType::FLOAT);
-									exprStructTypeStack.push_back("");
-									break;
-								case AstNodeLiteral::LiteralType::STRING:
-									exprTypeStack.push_back(StackValueType::STRING);
-									exprStructTypeStack.push_back("");
-									break;
-								}
+								exprTypeStack.push_back(getLiteralStackType(lit->literalType()));
+								exprStructTypeStack.push_back("");
 								break;
 							}
 							case IAstNode::Type::IDENTIFIER: {
@@ -1667,30 +1652,15 @@ namespace Qd {
 
 						// Push return values
 						if (ident->checkError()) {
-							for (size_t idx = 0; idx < sig.produces.size(); idx++) {
-								typeStack.push_back(sig.produces[idx]);
-								auto structIt = sig.producesStructTypes.find(idx);
-								structTypeStack.push_back(
-										structIt != sig.producesStructTypes.end() ? structIt->second : "");
-							}
+							pushProducesTypes(sig, typeStack, structTypeStack);
 							typeStack.push_back(StackValueType::INT); // Error status
 							structTypeStack.push_back("");
 						} else if (sig.throws && !ident->abortOnError()) {
-							for (size_t idx = 0; idx < sig.produces.size(); idx++) {
-								typeStack.push_back(sig.produces[idx]);
-								auto structIt = sig.producesStructTypes.find(idx);
-								structTypeStack.push_back(
-										structIt != sig.producesStructTypes.end() ? structIt->second : "");
-							}
+							pushProducesTypes(sig, typeStack, structTypeStack);
 							typeStack.push_back(StackValueType::INT); // Error status
 							structTypeStack.push_back("");
 						} else {
-							for (size_t idx = 0; idx < sig.produces.size(); idx++) {
-								typeStack.push_back(sig.produces[idx]);
-								auto structIt = sig.producesStructTypes.find(idx);
-								structTypeStack.push_back(
-										structIt != sig.producesStructTypes.end() ? structIt->second : "");
-							}
+							pushProducesTypes(sig, typeStack, structTypeStack);
 						}
 
 						// Mark identifier as a method call for code generation
@@ -2643,30 +2613,15 @@ namespace Qd {
 
 						// Push return values
 						if (scoped->checkError()) {
-							for (size_t idx = 0; idx < sig.produces.size(); idx++) {
-								typeStack.push_back(sig.produces[idx]);
-								auto structIt = sig.producesStructTypes.find(idx);
-								structTypeStack.push_back(
-										structIt != sig.producesStructTypes.end() ? structIt->second : "");
-							}
+							pushProducesTypes(sig, typeStack, structTypeStack);
 							typeStack.push_back(StackValueType::INT);
 							structTypeStack.push_back("");
 						} else if (sig.throws && !scoped->abortOnError()) {
-							for (size_t idx = 0; idx < sig.produces.size(); idx++) {
-								typeStack.push_back(sig.produces[idx]);
-								auto structIt = sig.producesStructTypes.find(idx);
-								structTypeStack.push_back(
-										structIt != sig.producesStructTypes.end() ? structIt->second : "");
-							}
+							pushProducesTypes(sig, typeStack, structTypeStack);
 							typeStack.push_back(StackValueType::INT);
 							structTypeStack.push_back("");
 						} else {
-							for (size_t idx = 0; idx < sig.produces.size(); idx++) {
-								typeStack.push_back(sig.produces[idx]);
-								auto structIt = sig.producesStructTypes.find(idx);
-								structTypeStack.push_back(
-										structIt != sig.producesStructTypes.end() ? structIt->second : "");
-							}
+							pushProducesTypes(sig, typeStack, structTypeStack);
 						}
 
 						// Mark as method call for code generation
@@ -2732,12 +2687,7 @@ namespace Qd {
 									typeStack.push_back(StackValueType::INT);
 									structTypeStack.push_back("");
 								} else {
-									for (size_t idx = 0; idx < sig.produces.size(); idx++) {
-										typeStack.push_back(sig.produces[idx]);
-										auto structIt = sig.producesStructTypes.find(idx);
-										structTypeStack.push_back(
-												structIt != sig.producesStructTypes.end() ? structIt->second : "");
-									}
+									pushProducesTypes(sig, typeStack, structTypeStack);
 								}
 
 								// Mark as method call for code generation

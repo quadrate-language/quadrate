@@ -20,6 +20,14 @@ namespace Qd {
 		return globalStr;
 	}
 
+	void LlvmGenerator::Impl::createForwardingWrapperBody(llvm::Function* wrapperFn, llvm::Function* targetFn) {
+		auto entryBB = llvm::BasicBlock::Create(*context, "entry", wrapperFn);
+		builder->SetInsertPoint(entryBB);
+		auto ctx = wrapperFn->arg_begin();
+		auto result = builder->CreateCall(targetFn, {ctx});
+		builder->CreateRet(result);
+	}
+
 	void LlvmGenerator::Impl::setupRuntimeDeclarations() {
 		// Context type is opaque pointer
 		contextPtrTy = llvm::PointerType::getUnqual(*context);
@@ -1287,12 +1295,7 @@ namespace Qd {
 							auto fnTy = llvm::FunctionType::get(execResultTy, {contextPtrTy}, false);
 							auto aliasFn =
 									llvm::Function::Create(fnTy, llvm::Function::ExternalLinkage, scopedName, *module);
-							// Create a simple wrapper that forwards to the real function
-							auto entryBB = llvm::BasicBlock::Create(*context, "entry", aliasFn);
-							builder->SetInsertPoint(entryBB);
-							auto ctx = aliasFn->arg_begin();
-							auto result = builder->CreateCall(fn, {ctx});
-							builder->CreateRet(result);
+							createForwardingWrapperBody(aliasFn, fn);
 						}
 
 						// If this is a public imported function, make it available for cross-module access
@@ -1329,11 +1332,7 @@ namespace Qd {
 								auto fnTy = llvm::FunctionType::get(execResultTy, {contextPtrTy}, false);
 								auto wrapperFn = llvm::Function::Create(
 										fnTy, llvm::Function::ExternalLinkage, moduleScoped, *module);
-								auto entryBB = llvm::BasicBlock::Create(*context, "entry", wrapperFn);
-								builder->SetInsertPoint(entryBB);
-								auto ctx = wrapperFn->arg_begin();
-								auto result = builder->CreateCall(fn, {ctx});
-								builder->CreateRet(result);
+								createForwardingWrapperBody(wrapperFn, fn);
 							}
 						}
 					}
@@ -1441,11 +1440,7 @@ namespace Qd {
 					if (scopedName != mangledName && !module->getFunction(scopedName)) {
 						auto aliasFn =
 								llvm::Function::Create(fnTy, llvm::Function::ExternalLinkage, scopedName, *module);
-						auto entryBB = llvm::BasicBlock::Create(*context, "entry", aliasFn);
-						builder->SetInsertPoint(entryBB);
-						auto ctx = aliasFn->arg_begin();
-						auto result = builder->CreateCall(fn, {ctx});
-						builder->CreateRet(result);
+						createForwardingWrapperBody(aliasFn, fn);
 					}
 				}
 			}

@@ -339,6 +339,48 @@ namespace Qd {
 		return 0;
 	}
 
+	// Helper to parse type arguments between '<' and '>'
+	// Assumes '<' has already been consumed. Returns vector of type argument names.
+	static std::vector<std::string> parseTypeArguments(
+			u8t_scanner* scanner, const char* src, ErrorReporter* errorReporter) {
+		std::vector<std::string> typeArgs;
+		while (true) {
+			char32_t argToken = u8t_scanner_scan(scanner);
+			if (argToken == '>') {
+				break;
+			}
+			if (argToken == U8T_IDENTIFIER) {
+				size_t n;
+				const char* typeArg = u8t_scanner_token_text(scanner, &n);
+				typeArgs.push_back(std::string(typeArg));
+				char32_t peekComma = peekNextNonWhitespace(scanner, src);
+				if (peekComma == ',') {
+					u8t_scanner_scan(scanner);
+				}
+			} else if (argToken != ',') {
+				errorReporter->reportError(scanner, "Expected type argument or '>'");
+				break;
+			}
+		}
+		return typeArgs;
+	}
+
+	// Helper to create boolean/result constant literals (true, false, Ok, Err)
+	// Returns nullptr if text is not a boolean/result constant
+	static IAstNode* tryCreateBooleanLiteral(const char* text, u8t_scanner* scanner, const char* src) {
+		if (strcmp(text, "true") == 0 || strcmp(text, "Ok") == 0) {
+			IAstNode* node = new AstNodeLiteral("1", AstNodeLiteral::LiteralType::INTEGER);
+			setNodePosition(node, scanner, src);
+			return node;
+		}
+		if (strcmp(text, "false") == 0 || strcmp(text, "Err") == 0) {
+			IAstNode* node = new AstNodeLiteral("0", AstNodeLiteral::LiteralType::INTEGER);
+			setNodePosition(node, scanner, src);
+			return node;
+		}
+		return nullptr;
+	}
+
 	// Helper to synchronize parser after an error
 	// Skips tokens until a synchronization point is found
 	static void synchronize(u8t_scanner* scanner) {
@@ -467,25 +509,9 @@ namespace Qd {
 			return node;
 		} else if (token == U8T_IDENTIFIER) {
 			const char* text = u8t_scanner_token_text(scanner, n);
-			// Handle boolean literals: true = 1, false = 0
-			if (strcmp(text, "true") == 0) {
-				IAstNode* node = new AstNodeLiteral("1", AstNodeLiteral::LiteralType::INTEGER);
-				setNodePosition(node, scanner, src);
-				return node;
-			} else if (strcmp(text, "false") == 0) {
-				IAstNode* node = new AstNodeLiteral("0", AstNodeLiteral::LiteralType::INTEGER);
-				setNodePosition(node, scanner, src);
-				return node;
-			}
-			// Handle result constants: Ok = 1, Err = 0
-			if (strcmp(text, "Ok") == 0) {
-				IAstNode* node = new AstNodeLiteral("1", AstNodeLiteral::LiteralType::INTEGER);
-				setNodePosition(node, scanner, src);
-				return node;
-			} else if (strcmp(text, "Err") == 0) {
-				IAstNode* node = new AstNodeLiteral("0", AstNodeLiteral::LiteralType::INTEGER);
-				setNodePosition(node, scanner, src);
-				return node;
+			// Handle boolean/result constants (true, false, Ok, Err)
+			if (auto* boolNode = tryCreateBooleanLiteral(text, scanner, src)) {
+				return boolNode;
 			}
 			if (isBuiltInInstruction(text)) {
 				std::string instrName(text);
@@ -930,25 +956,9 @@ namespace Qd {
 		if (token == U8T_IDENTIFIER) {
 			const char* text = u8t_scanner_token_text(scanner, n);
 
-			// Handle boolean literals: true = 1, false = 0
-			if (strcmp(text, "true") == 0) {
-				IAstNode* node = new AstNodeLiteral("1", AstNodeLiteral::LiteralType::INTEGER);
-				setNodePosition(node, scanner, src);
-				return node;
-			} else if (strcmp(text, "false") == 0) {
-				IAstNode* node = new AstNodeLiteral("0", AstNodeLiteral::LiteralType::INTEGER);
-				setNodePosition(node, scanner, src);
-				return node;
-			}
-			// Handle result constants: Ok = 1, Err = 0
-			if (strcmp(text, "Ok") == 0) {
-				IAstNode* node = new AstNodeLiteral("1", AstNodeLiteral::LiteralType::INTEGER);
-				setNodePosition(node, scanner, src);
-				return node;
-			} else if (strcmp(text, "Err") == 0) {
-				IAstNode* node = new AstNodeLiteral("0", AstNodeLiteral::LiteralType::INTEGER);
-				setNodePosition(node, scanner, src);
-				return node;
+			// Handle boolean/result constants (true, false, Ok, Err)
+			if (auto* boolNode = tryCreateBooleanLiteral(text, scanner, src)) {
+				return boolNode;
 			}
 
 			// break and continue are always allowed
@@ -1096,24 +1106,7 @@ namespace Qd {
 						if (isGenericBracket) {
 							// Parse type arguments for generic struct construction
 							u8t_scanner_scan(scanner); // Consume '<'
-							std::vector<std::string> typeArgs;
-							while (true) {
-								char32_t argToken = u8t_scanner_scan(scanner);
-								if (argToken == '>') {
-									break;
-								}
-								if (argToken == U8T_IDENTIFIER) {
-									const char* typeArg = u8t_scanner_token_text(scanner, n);
-									typeArgs.push_back(std::string(typeArg));
-									char32_t peekComma = peekNextNonWhitespace(scanner, src);
-									if (peekComma == ',') {
-										u8t_scanner_scan(scanner);
-									}
-								} else if (argToken != ',') {
-									errorReporter->reportError(scanner, "Expected type argument or '>'");
-									break;
-								}
-							}
+							auto typeArgs = parseTypeArguments(scanner, src, errorReporter);
 							afterMember = peekNextNonWhitespace(scanner, src);
 							if (afterMember == '{') {
 								u8t_scanner_scan(scanner); // Consume '{'
@@ -1168,25 +1161,7 @@ namespace Qd {
 			if (isGenericBracketIdent) {
 				// Parse type arguments for generic struct construction
 				u8t_scanner_scan(scanner); // Consume '<'
-				std::vector<std::string> typeArgs;
-				while (true) {
-					char32_t argToken = u8t_scanner_scan(scanner);
-					if (argToken == '>') {
-						break;
-					}
-					if (argToken == U8T_IDENTIFIER) {
-						const char* typeArg = u8t_scanner_token_text(scanner, n);
-						typeArgs.push_back(std::string(typeArg));
-						// Check for comma or closing >
-						char32_t peekComma = peekNextNonWhitespace(scanner, src);
-						if (peekComma == ',') {
-							u8t_scanner_scan(scanner); // Consume ','
-						}
-					} else if (argToken != ',') {
-						errorReporter->reportError(scanner, "Expected type argument or '>' in generic struct");
-						break;
-					}
-				}
+				auto typeArgs = parseTypeArguments(scanner, src, errorReporter);
 				// Now expect '{'
 				nextToken = peekNextNonWhitespace(scanner, src);
 				if (nextToken == '{') {
@@ -2188,24 +2163,9 @@ namespace Qd {
 					}
 					continue; // Skip fallthrough after ctx parsing
 				} else {
-					// Handle boolean literals: true = 1, false = 0
-					if (strcmp(text, "true") == 0) {
-						IAstNode* node = new AstNodeLiteral("1", AstNodeLiteral::LiteralType::INTEGER);
-						setNodePosition(node, scanner, src);
-						tempNodes.push_back(node);
-					} else if (strcmp(text, "false") == 0) {
-						IAstNode* node = new AstNodeLiteral("0", AstNodeLiteral::LiteralType::INTEGER);
-						setNodePosition(node, scanner, src);
-						tempNodes.push_back(node);
-						// Handle result constants: Ok = 1, Err = 0
-					} else if (strcmp(text, "Ok") == 0) {
-						IAstNode* node = new AstNodeLiteral("1", AstNodeLiteral::LiteralType::INTEGER);
-						setNodePosition(node, scanner, src);
-						tempNodes.push_back(node);
-					} else if (strcmp(text, "Err") == 0) {
-						IAstNode* node = new AstNodeLiteral("0", AstNodeLiteral::LiteralType::INTEGER);
-						setNodePosition(node, scanner, src);
-						tempNodes.push_back(node);
+					// Handle boolean/result constants (true, false, Ok, Err)
+					if (auto* boolNode = tryCreateBooleanLiteral(text, scanner, src)) {
+						tempNodes.push_back(boolNode);
 					} else if (isBuiltInInstruction(text)) {
 						std::string instrName(text);
 						// Check for generic type parameter: instruction<Type> or instruction<module::Type>
@@ -2323,23 +2283,7 @@ namespace Qd {
 									}
 									if (isGenericBracket2) {
 										u8t_scanner_scan(scanner); // Consume '<'
-										while (true) {
-											char32_t argToken = u8t_scanner_scan(scanner);
-											if (argToken == '>') {
-												break;
-											}
-											if (argToken == U8T_IDENTIFIER) {
-												const char* typeArg = u8t_scanner_token_text(scanner, &n);
-												typeArgs.push_back(std::string(typeArg));
-												char32_t peekComma = peekNextNonWhitespace(scanner, src);
-												if (peekComma == ',') {
-													u8t_scanner_scan(scanner);
-												}
-											} else if (argToken != ',') {
-												errorReporter->reportError(scanner, "Expected type argument or '>'");
-												break;
-											}
-										}
+										typeArgs = parseTypeArguments(scanner, src, errorReporter);
 										afterMember = peekNextNonWhitespace(scanner, src);
 									}
 									if (afterMember == '{') {
@@ -2392,23 +2336,7 @@ namespace Qd {
 						}
 						if (isGenericBracket3) {
 							u8t_scanner_scan(scanner); // Consume '<'
-							while (true) {
-								char32_t argToken = u8t_scanner_scan(scanner);
-								if (argToken == '>') {
-									break;
-								}
-								if (argToken == U8T_IDENTIFIER) {
-									const char* typeArg = u8t_scanner_token_text(scanner, &n);
-									typeArgs.push_back(std::string(typeArg));
-									char32_t peekComma = peekNextNonWhitespace(scanner, src);
-									if (peekComma == ',') {
-										u8t_scanner_scan(scanner);
-									}
-								} else if (argToken != ',') {
-									errorReporter->reportError(scanner, "Expected type argument or '>'");
-									break;
-								}
-							}
+							typeArgs = parseTypeArguments(scanner, src, errorReporter);
 							nextToken = peekNextNonWhitespace(scanner, src);
 						}
 						if (nextToken == '{') {
@@ -3022,24 +2950,7 @@ namespace Qd {
 				bool textLooksLikeStruct = text != nullptr && text[0] != '\0' && std::isupper(text[0]);
 				if (nextNonWs == '<' && textLooksLikeStruct) {
 					u8t_scanner_scan(scanner); // Consume '<'
-					while (true) {
-						char32_t argToken = u8t_scanner_scan(scanner);
-						if (argToken == '>') {
-							break;
-						}
-						if (argToken == U8T_IDENTIFIER) {
-							size_t n2;
-							const char* typeArg = u8t_scanner_token_text(scanner, &n2);
-							nestedTypeArgs.push_back(std::string(typeArg));
-							char32_t peek = peekNextNonWhitespace(scanner, src);
-							if (peek == ',') {
-								u8t_scanner_scan(scanner);
-							}
-						} else if (argToken != ',') {
-							errorReporter->reportError(scanner, "Expected type argument or '>'");
-							break;
-						}
-					}
+					nestedTypeArgs = parseTypeArguments(scanner, src, errorReporter);
 					nextNonWs = peekNextNonWhitespace(scanner, src);
 				}
 				if (nextNonWs == '{') {
@@ -3095,24 +3006,7 @@ namespace Qd {
 							}
 							if (isGenericBracket4) {
 								u8t_scanner_scan(scanner); // Consume '<'
-								while (true) {
-									char32_t argToken = u8t_scanner_scan(scanner);
-									if (argToken == '>') {
-										break;
-									}
-									if (argToken == U8T_IDENTIFIER) {
-										size_t n2;
-										const char* typeArg = u8t_scanner_token_text(scanner, &n2);
-										scopedNestedTypeArgs.push_back(std::string(typeArg));
-										char32_t peekComma = peekNextNonWhitespace(scanner, src);
-										if (peekComma == ',') {
-											u8t_scanner_scan(scanner);
-										}
-									} else if (argToken != ',') {
-										errorReporter->reportError(scanner, "Expected type argument or '>'");
-										break;
-									}
-								}
+								scopedNestedTypeArgs = parseTypeArguments(scanner, src, errorReporter);
 								afterMember = peekNextNonWhitespace(scanner, src);
 							}
 							if (afterMember == '{') {
@@ -3423,16 +3317,13 @@ namespace Qd {
 					}
 				} else {
 					// Handle boolean literals and result constants in switch cases
-					if (strcmp(valueText, "true") == 0 || strcmp(valueText, "Ok") == 0) {
-						caseValue = new AstNodeLiteral("1", AstNodeLiteral::LiteralType::INTEGER);
-					} else if (strcmp(valueText, "false") == 0 || strcmp(valueText, "Err") == 0) {
-						caseValue = new AstNodeLiteral("0", AstNodeLiteral::LiteralType::INTEGER);
-					} else {
+					caseValue = tryCreateBooleanLiteral(valueText, scanner, src);
+					if (!caseValue) {
 						caseValue = isBuiltInInstruction(valueText)
 											? static_cast<IAstNode*>(new AstNodeInstruction(valueText))
 											: static_cast<IAstNode*>(new AstNodeIdentifier(valueText));
+						setNodePosition(caseValue, scanner, src);
 					}
-					setNodePosition(caseValue, scanner, src);
 				}
 			}
 

@@ -334,6 +334,7 @@ namespace Qd {
 		// Core generation methods
 		void setupRuntimeDeclarations();
 		llvm::Value* getOrCreateGlobalString(const std::string& str);
+		void createForwardingWrapperBody(llvm::Function* wrapperFn, llvm::Function* targetFn);
 		bool generateProgram(IAstNode* root);
 		bool generateFunction(
 				AstNodeFunctionDeclaration* funcNode, bool isMain, const std::string& namePrefix = "main");
@@ -391,6 +392,7 @@ namespace Qd {
 		void generateInlineIntSub(llvm::Value* ctx);
 		void generateInlineIntMul(llvm::Value* ctx);
 		void generateInlineIntMod(llvm::Value* ctx);
+		void generateInlineIntCompare(llvm::Value* ctx, llvm::CmpInst::Predicate pred, const char* resultName);
 		void generateInlineIntLt(llvm::Value* ctx);
 		void generateInlineIntGt(llvm::Value* ctx);
 		void generateInlineIntEq(llvm::Value* ctx);

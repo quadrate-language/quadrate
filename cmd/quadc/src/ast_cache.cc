@@ -1,6 +1,6 @@
 #include "ast_cache.h"
+#include "diagnostics.h"
 #include <filesystem>
-#include <fstream>
 #include <functional>
 #include <qc/ast_node_use.h>
 
@@ -41,25 +41,14 @@ Qd::IAstNode* AstCache::getOrParse(
 	}
 
 	// Not cached, read and parse
-	std::ifstream file(filePath);
-	if (!file.is_open()) {
+	auto bufferOpt = readFileContents(filePath);
+	if (!bufferOpt) {
 		if (outAst) {
 			*outAst = nullptr;
 		}
 		return nullptr;
 	}
-	file.seekg(0, std::ios::end);
-	auto pos = file.tellg();
-	file.seekg(0);
-	if (pos < 0) {
-		if (outAst) {
-			*outAst = nullptr;
-		}
-		return nullptr;
-	}
-	size_t size = static_cast<size_t>(pos);
-	std::string buffer(size, ' ');
-	file.read(&buffer[0], static_cast<std::streamsize>(size));
+	std::string buffer = std::move(*bufferOpt);
 
 	auto ast = std::make_unique<Qd::Ast>();
 	auto root = ast->generate(buffer.c_str(), false, filePath.c_str());
