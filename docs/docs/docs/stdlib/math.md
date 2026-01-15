@@ -727,6 +727,217 @@ Check if value is within range (inclusive).
 ```qd
 5 0 10 math::within print  // 1
 ```
+---
+
+### `fn` sinh
+
+Hyperbolic sine.
+
+**Signature:** `(x:f64 -- result:f64)`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `x` | `f64` | Any value |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `result` | `f64` | Hyperbolic sine of x |
+
+**Example:**
+
+```qd
+1.0 math::sinh print  // ~1.175
+```
+---
+
+### `fn` cosh
+
+Hyperbolic cosine.
+
+**Signature:** `(x:f64 -- result:f64)`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `x` | `f64` | Any value |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `result` | `f64` | Hyperbolic cosine of x |
+
+**Example:**
+
+```qd
+0.0 math::cosh print  // 1.0
+```
+---
+
+### `fn` tanh
+
+Hyperbolic tangent.
+
+**Signature:** `(x:f64 -- result:f64)`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `x` | `f64` | Any value |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `result` | `f64` | Hyperbolic tangent of x [-1, 1] |
+
+**Example:**
+
+```qd
+0.0 math::tanh print  // 0.0
+```
+---
+
+### `fn` asinh
+
+Inverse hyperbolic sine.
+
+**Signature:** `(x:f64 -- result:f64)`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `x` | `f64` | Any value |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `result` | `f64` | Inverse hyperbolic sine of x |
+
+**Example:**
+
+```qd
+0.0 math::asinh print  // 0.0
+```
+---
+
+### `fn` acosh
+
+Inverse hyperbolic cosine.
+
+**Signature:** `(x:f64 -- result:f64)`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `x` | `f64` | Value >= 1 |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `result` | `f64` | Inverse hyperbolic cosine of x |
+
+**Example:**
+
+```qd
+1.0 math::acosh print  // 0.0
+```
+---
+
+### `fn` atanh
+
+Inverse hyperbolic tangent.
+
+**Signature:** `(x:f64 -- result:f64)`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `x` | `f64` | Value in range (-1, 1) |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `result` | `f64` | Inverse hyperbolic tangent of x |
+
+**Example:**
+
+```qd
+0.0 math::atanh print  // 0.0
+```
+---
+
+### `fn` log2
+
+Base-2 logarithm.
+
+**Signature:** `(x:f64 -- result:f64)`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `x` | `f64` | Positive value |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `result` | `f64` | Log base 2 of x |
+
+**Example:**
+
+```qd
+8.0 math::log2 print  // 3.0
+```
+---
+
+### `fn` exp2
+
+Exponential base 2 (2^x).
+
+**Signature:** `(x:f64 -- result:f64)`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `x` | `f64` | Exponent |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `result` | `f64` | 2 raised to x |
+
+**Example:**
+
+```qd
+3.0 math::exp2 print  // 8.0
+```
+---
+
+### `fn` trunc
+
+Truncate toward zero.
+
+**Signature:** `(x:f64 -- result:f64)`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `x` | `f64` | Any value |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `result` | `f64` | Integer part of x (toward zero) |
+
+**Example:**
+
+```qd
+-2.7 math::trunc print  // -2.0
+```
+---
+
+### `fn` sign
+
+Sign function.
+
+**Signature:** `(x:f64 -- result:f64)`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `x` | `f64` | Input value |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `result` | `f64` | -1 if x < 0, 0 if x == 0, 1 if x > 0 |
+
+**Example:**
+
+```qd
+-5.0 math::sign print  // -1.0
+```
+
 ## Mat4
 
 4x4 matrix in column-major order (OpenGL compatible).
@@ -895,8 +1106,157 @@ Create zero Mat4.
 ```qd
 math::mat4_zero  // m
 ```
+---
+
+#### `fn` mat4_look_at
+
+Create a look-at view matrix.
+
+**Signature:** `(eye:Vec3 target:Vec3 up:Vec3 -- m:Mat4)`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `eye` | `Vec3` | Camera position |
+| `target` | `Vec3` | Point to look at |
+| `up` | `Vec3` | Up direction |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `m` | `Mat4` | View matrix |
+
+**Example:**
+
+```qd
+eye target up math::mat4_look_at -> view
+```
+---
+
+#### `fn` mat4_perspective
+
+Create a perspective projection matrix.
+
+**Signature:** `(fov:f64 aspect:f64 near:f64 far:f64 -- m:Mat4)`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `fov` | `f64` | Field of view in radians |
+| `aspect` | `f64` | Aspect ratio (width/height) |
+| `near` | `f64` | Near clipping plane |
+| `far` | `f64` | Far clipping plane |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `m` | `Mat4` | Perspective projection matrix |
+
+**Example:**
+
+```qd
+1.047 1.777 0.1 100.0 math::mat4_perspective -> proj
+```
+---
+
+#### `fn` mat4_orthographic
+
+Create an orthographic projection matrix.
+
+**Signature:** `(left:f64 right:f64 bottom:f64 top:f64 near:f64 far:f64 -- m:Mat4)`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `left` | `f64` | Left clipping plane |
+| `right` | `f64` | Right clipping plane |
+| `bottom` | `f64` | Bottom clipping plane |
+| `top` | `f64` | Top clipping plane |
+| `near` | `f64` | Near clipping plane |
+| `far` | `f64` | Far clipping plane |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `m` | `Mat4` | Orthographic projection matrix |
+
+**Example:**
+
+```qd
+-1.0 1.0 -1.0 1.0 0.1 100.0 math::mat4_orthographic -> proj
+```
+---
+
+#### `fn` mat4_from_quat
+
+Create rotation matrix from quaternion.
+
+**Signature:** `(q:Quat -- m:Mat4)`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `q` | `Quat` | Rotation quaternion |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `m` | `Mat4` | Rotation matrix |
+
+**Example:**
+
+```qd
+q math::mat4_from_quat -> rot_mat
+```
 
 ### Methods
+
+#### `fn` mul
+
+Matrix multiplication.
+
+**Signature:** `(m:Mat4) mul(other:Mat4 -- result:Mat4)`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `other` | `Mat4` | Matrix to multiply with |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `result` | `Mat4` | Product of matrices (m * other) |
+
+**Example:**
+
+```qd
+other m mul -> product
+```
+---
+
+#### `fn` determinant
+
+Matrix determinant.
+
+**Signature:** `(m:Mat4) determinant( -- result:f64)`
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `result` | `f64` | Determinant of matrix |
+
+**Example:**
+
+```qd
+m determinant -> det
+```
+---
+
+#### `fn` inverse
+
+Matrix inverse.
+
+**Signature:** `(m:Mat4) inverse( -- result:Mat4)`
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `result` | `Mat4` | Inverse matrix (returns identity if singular) |
+
+**Example:**
+
+```qd
+m inverse -> m_inv
+```
+---
 
 #### `fn` transpose
 
@@ -912,6 +1272,48 @@ Transpose this matrix.
 
 ```qd
 m transpose  // m_t
+```
+---
+
+#### `fn` transform_point
+
+Transform a Vec3 point by this matrix (w=1).
+
+**Signature:** `(m:Mat4) transform_point(v:Vec3 -- result:Vec3)`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `v` | `Vec3` | Point to transform |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `result` | `Vec3` | Transformed point |
+
+**Example:**
+
+```qd
+point m transform_point -> transformed
+```
+---
+
+#### `fn` transform_vec4
+
+Transform a Vec4 by this matrix.
+
+**Signature:** `(m:Mat4) transform_vec4(v:Vec4 -- result:Vec4)`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `v` | `Vec4` | Vector to transform |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `result` | `Vec4` | Transformed vector |
+
+**Example:**
+
+```qd
+vec m transform_vec4 -> transformed
 ```
 
 ## Quat
@@ -943,6 +1345,51 @@ Create identity quaternion (no rotation).
 
 ```qd
 math::quat_identity  // q
+```
+---
+
+#### `fn` quat_from_axis_angle
+
+Create quaternion from axis and angle.
+
+**Signature:** `(axis:Vec3 angle:f64 -- result:Quat)`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `axis` | `Vec3` | Rotation axis (should be normalized) |
+| `angle` | `f64` | Rotation angle in radians |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `result` | `Quat` | Rotation quaternion |
+
+**Example:**
+
+```qd
+axis 1.57 math::quat_from_axis_angle -> q
+```
+---
+
+#### `fn` quat_from_euler
+
+Create quaternion from Euler angles (XYZ order).
+
+**Signature:** `(pitch:f64 yaw:f64 roll:f64 -- result:Quat)`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `pitch` | `f64` | Rotation around X axis (radians) |
+| `yaw` | `f64` | Rotation around Y axis (radians) |
+| `roll` | `f64` | Rotation around Z axis (radians) |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `result` | `Quat` | Rotation quaternion |
+
+**Example:**
+
+```qd
+0.0 1.57 0.0 math::quat_from_euler -> q
 ```
 
 ### Methods
@@ -1037,6 +1484,83 @@ Normalize this quaternion to unit length.
 
 ```qd
 q normalize  // unit_q
+```
+---
+
+#### `fn` inverse
+
+Inverse of this quaternion.
+
+**Signature:** `(q:Quat) inverse( -- result:Quat)`
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `result` | `Quat` | Inverse quaternion |
+
+**Example:**
+
+```qd
+q inverse -> q_inv
+```
+---
+
+#### `fn` length_sq
+
+Squared length of quaternion.
+
+**Signature:** `(q:Quat) length_sq( -- result:f64)`
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `result` | `f64` | Squared length |
+
+**Example:**
+
+```qd
+q length_sq -> len_sq
+```
+---
+
+#### `fn` slerp
+
+Spherical linear interpolation to another quaternion.
+
+**Signature:** `(q:Quat) slerp(other:Quat t:f64 -- result:Quat)`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `other` | `Quat` | End quaternion |
+| `t` | `f64` | Interpolation factor (0.0 to 1.0) |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `result` | `Quat` | Interpolated quaternion |
+
+**Example:**
+
+```qd
+other 0.5 q slerp -> mid
+```
+---
+
+#### `fn` rotate_vec3
+
+Rotate a Vec3 by this quaternion.
+
+**Signature:** `(q:Quat) rotate_vec3(v:Vec3 -- result:Vec3)`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `v` | `Vec3` | Vector to rotate |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `result` | `Vec3` | Rotated vector |
+
+**Example:**
+
+```qd
+v q rotate_vec3 -> rotated
 ```
 
 ## Vec2
@@ -1258,6 +1782,82 @@ Subtract another Vec2 from this vector.
 
 ```qd
 other v subtract  // diff
+```
+---
+
+#### `fn` distance
+
+Distance to another Vec2.
+
+**Signature:** `(v:Vec2) distance(other:Vec2 -- result:f64)`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `other` | `Vec2` | Other point |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `result` | `f64` | Distance between points |
+
+**Example:**
+
+```qd
+other v distance -> d
+```
+---
+
+#### `fn` angle
+
+Angle of this vector from positive X axis.
+
+**Signature:** `(v:Vec2) angle( -- result:f64)`
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `result` | `f64` | Angle in radians [-π, π] |
+
+**Example:**
+
+```qd
+v angle -> a
+```
+---
+
+#### `fn` rotate
+
+Rotate this vector by an angle.
+
+**Signature:** `(v:Vec2) rotate(angle:f64 -- result:Vec2)`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `angle` | `f64` | Rotation angle in radians |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `result` | `Vec2` | Rotated vector |
+
+**Example:**
+
+```qd
+1.57 v rotate -> rotated
+```
+---
+
+#### `fn` perpendicular
+
+Get perpendicular vector (90° counterclockwise rotation).
+
+**Signature:** `(v:Vec2) perpendicular( -- result:Vec2)`
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `result` | `Vec2` | Perpendicular vector |
+
+**Example:**
+
+```qd
+v perpendicular -> perp
 ```
 
 ## Vec3
@@ -1574,6 +2174,48 @@ Subtract another Vec3 from this vector.
 ```qd
 other v subtract  // diff
 ```
+---
+
+#### `fn` distance
+
+Distance to another Vec3.
+
+**Signature:** `(v:Vec3) distance(other:Vec3 -- result:f64)`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `other` | `Vec3` | Other point |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `result` | `f64` | Distance between points |
+
+**Example:**
+
+```qd
+other v distance -> d
+```
+---
+
+#### `fn` angle_between
+
+Angle between this vector and another.
+
+**Signature:** `(v:Vec3) angle_between(other:Vec3 -- result:f64)`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `other` | `Vec3` | Other vector |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `result` | `f64` | Angle in radians [0, π] |
+
+**Example:**
+
+```qd
+other v angle_between -> a
+```
 
 ## Vec4
 
@@ -1741,4 +2383,59 @@ Subtract another Vec4 from this vector.
 ```qd
 other v subtract  // diff
 ```
+---
 
+#### `fn` length_sq
+
+Squared length of this vector (avoids sqrt).
+
+**Signature:** `(v:Vec4) length_sq( -- result:f64)`
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `result` | `f64` | Squared length of vector |
+
+**Example:**
+
+```qd
+v length_sq -> len_sq
+```
+---
+
+#### `fn` neg
+
+Negate this vector.
+
+**Signature:** `(v:Vec4) neg( -- result:Vec4)`
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `result` | `Vec4` | Negated vector |
+
+**Example:**
+
+```qd
+v neg -> neg_v
+```
+---
+
+#### `fn` lerp
+
+Linear interpolation to another Vec4.
+
+**Signature:** `(v:Vec4) lerp(other:Vec4 t:f64 -- result:Vec4)`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `other` | `Vec4` | End vector |
+| `t` | `f64` | Interpolation factor (0.0 to 1.0) |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `result` | `Vec4` | Interpolated vector |
+
+**Example:**
+
+```qd
+other 0.5 v lerp -> mid
+```

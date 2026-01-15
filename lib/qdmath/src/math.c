@@ -890,3 +890,168 @@ qd_exec_result usr_math_fmod(qd_context* ctx) {
 	return (qd_exec_result){0};
 }
 
+// sinh - hyperbolic sine
+qd_exec_result usr_math_sinh(qd_context* ctx) {
+	size_t stack_size = qd_stack_size(ctx->st);
+	if (stack_size < 1) {
+		fprintf(stderr, "Fatal error in math::sinh: Stack underflow\n");
+		abort();
+	}
+
+	qd_stack_element_t elem;
+	qd_stack_error err = qd_stack_pop(ctx->st, &elem);
+	if (err != QD_STACK_OK) return (qd_exec_result){-2};
+
+	double value = (elem.type == QD_STACK_TYPE_INT) ? (double)elem.value.i : elem.value.f;
+	err = qd_stack_push_float(ctx->st, sinh(value));
+	return (err != QD_STACK_OK) ? (qd_exec_result){-2} : (qd_exec_result){0};
+}
+
+// cosh - hyperbolic cosine
+qd_exec_result usr_math_cosh(qd_context* ctx) {
+	size_t stack_size = qd_stack_size(ctx->st);
+	if (stack_size < 1) {
+		fprintf(stderr, "Fatal error in math::cosh: Stack underflow\n");
+		abort();
+	}
+
+	qd_stack_element_t elem;
+	qd_stack_error err = qd_stack_pop(ctx->st, &elem);
+	if (err != QD_STACK_OK) return (qd_exec_result){-2};
+
+	double value = (elem.type == QD_STACK_TYPE_INT) ? (double)elem.value.i : elem.value.f;
+	err = qd_stack_push_float(ctx->st, cosh(value));
+	return (err != QD_STACK_OK) ? (qd_exec_result){-2} : (qd_exec_result){0};
+}
+
+// tanh - hyperbolic tangent
+qd_exec_result usr_math_tanh(qd_context* ctx) {
+	size_t stack_size = qd_stack_size(ctx->st);
+	if (stack_size < 1) {
+		fprintf(stderr, "Fatal error in math::tanh: Stack underflow\n");
+		abort();
+	}
+
+	qd_stack_element_t elem;
+	qd_stack_error err = qd_stack_pop(ctx->st, &elem);
+	if (err != QD_STACK_OK) return (qd_exec_result){-2};
+
+	double value = (elem.type == QD_STACK_TYPE_INT) ? (double)elem.value.i : elem.value.f;
+	err = qd_stack_push_float(ctx->st, tanh(value));
+	return (err != QD_STACK_OK) ? (qd_exec_result){-2} : (qd_exec_result){0};
+}
+
+// asinh - inverse hyperbolic sine
+qd_exec_result usr_math_asinh(qd_context* ctx) {
+	size_t stack_size = qd_stack_size(ctx->st);
+	if (stack_size < 1) {
+		fprintf(stderr, "Fatal error in math::asinh: Stack underflow\n");
+		abort();
+	}
+
+	qd_stack_element_t elem;
+	qd_stack_error err = qd_stack_pop(ctx->st, &elem);
+	if (err != QD_STACK_OK) return (qd_exec_result){-2};
+
+	double value = (elem.type == QD_STACK_TYPE_INT) ? (double)elem.value.i : elem.value.f;
+	err = qd_stack_push_float(ctx->st, asinh(value));
+	return (err != QD_STACK_OK) ? (qd_exec_result){-2} : (qd_exec_result){0};
+}
+
+// acosh - inverse hyperbolic cosine
+qd_exec_result usr_math_acosh(qd_context* ctx) {
+	size_t stack_size = qd_stack_size(ctx->st);
+	if (stack_size < 1) {
+		fprintf(stderr, "Fatal error in math::acosh: Stack underflow\n");
+		abort();
+	}
+
+	qd_stack_element_t elem;
+	qd_stack_error err = qd_stack_pop(ctx->st, &elem);
+	if (err != QD_STACK_OK) return (qd_exec_result){-2};
+
+	double value = (elem.type == QD_STACK_TYPE_INT) ? (double)elem.value.i : elem.value.f;
+	if (value < 1.0) {
+		fprintf(stderr, "Fatal error in math::acosh: Domain error (requires value >= 1)\n");
+		abort();
+	}
+	err = qd_stack_push_float(ctx->st, acosh(value));
+	return (err != QD_STACK_OK) ? (qd_exec_result){-2} : (qd_exec_result){0};
+}
+
+// atanh - inverse hyperbolic tangent
+qd_exec_result usr_math_atanh(qd_context* ctx) {
+	size_t stack_size = qd_stack_size(ctx->st);
+	if (stack_size < 1) {
+		fprintf(stderr, "Fatal error in math::atanh: Stack underflow\n");
+		abort();
+	}
+
+	qd_stack_element_t elem;
+	qd_stack_error err = qd_stack_pop(ctx->st, &elem);
+	if (err != QD_STACK_OK) return (qd_exec_result){-2};
+
+	double value = (elem.type == QD_STACK_TYPE_INT) ? (double)elem.value.i : elem.value.f;
+	if (value <= -1.0 || value >= 1.0) {
+		fprintf(stderr, "Fatal error in math::atanh: Domain error (requires -1 < value < 1)\n");
+		abort();
+	}
+	err = qd_stack_push_float(ctx->st, atanh(value));
+	return (err != QD_STACK_OK) ? (qd_exec_result){-2} : (qd_exec_result){0};
+}
+
+// log2 - base-2 logarithm
+qd_exec_result usr_math_log2(qd_context* ctx) {
+	size_t stack_size = qd_stack_size(ctx->st);
+	if (stack_size < 1) {
+		fprintf(stderr, "Fatal error in math::log2: Stack underflow\n");
+		abort();
+	}
+
+	qd_stack_element_t elem;
+	qd_stack_error err = qd_stack_pop(ctx->st, &elem);
+	if (err != QD_STACK_OK) return (qd_exec_result){-2};
+
+	double value = (elem.type == QD_STACK_TYPE_INT) ? (double)elem.value.i : elem.value.f;
+	if (value <= 0.0) {
+		fprintf(stderr, "Fatal error in math::log2: Domain error (requires positive value)\n");
+		abort();
+	}
+	err = qd_stack_push_float(ctx->st, log2(value));
+	return (err != QD_STACK_OK) ? (qd_exec_result){-2} : (qd_exec_result){0};
+}
+
+// exp2 - 2^x
+qd_exec_result usr_math_exp2(qd_context* ctx) {
+	size_t stack_size = qd_stack_size(ctx->st);
+	if (stack_size < 1) {
+		fprintf(stderr, "Fatal error in math::exp2: Stack underflow\n");
+		abort();
+	}
+
+	qd_stack_element_t elem;
+	qd_stack_error err = qd_stack_pop(ctx->st, &elem);
+	if (err != QD_STACK_OK) return (qd_exec_result){-2};
+
+	double value = (elem.type == QD_STACK_TYPE_INT) ? (double)elem.value.i : elem.value.f;
+	err = qd_stack_push_float(ctx->st, exp2(value));
+	return (err != QD_STACK_OK) ? (qd_exec_result){-2} : (qd_exec_result){0};
+}
+
+// trunc - truncate toward zero
+qd_exec_result usr_math_trunc(qd_context* ctx) {
+	size_t stack_size = qd_stack_size(ctx->st);
+	if (stack_size < 1) {
+		fprintf(stderr, "Fatal error in math::trunc: Stack underflow\n");
+		abort();
+	}
+
+	qd_stack_element_t elem;
+	qd_stack_error err = qd_stack_pop(ctx->st, &elem);
+	if (err != QD_STACK_OK) return (qd_exec_result){-2};
+
+	double value = (elem.type == QD_STACK_TYPE_INT) ? (double)elem.value.i : elem.value.f;
+	err = qd_stack_push_float(ctx->st, trunc(value));
+	return (err != QD_STACK_OK) ? (qd_exec_result){-2} : (qd_exec_result){0};
+}
+

@@ -1,0 +1,92 @@
+// Test Quaternion math functions
+use math
+
+fn approx_eq(a:f64 b:f64 -- result:i64) {
+	-> b -> a
+	a b - math::abs 0.001 <
+}
+
+fn main() {
+	// Identity quaternion
+	"=== Quat Identity ===" print nl
+	math::quat_identity -> id
+	id @w 1.0 approx_eq print nl                   // 1
+	id @x 0.0 approx_eq print nl                   // 1
+	id @y 0.0 approx_eq print nl                   // 1
+	id @z 0.0 approx_eq print nl                   // 1
+
+	// Quaternion from axis-angle
+	"=== Quat From Axis-Angle ===" print nl
+	math::vec3_unit_y math::Pi 2.0 / math::quat_from_axis_angle -> q90y
+	q90y length 1.0 approx_eq print nl             // 1 (unit quaternion)
+	// 90° around Y: w=cos(45°)≈0.707, y=sin(45°)≈0.707
+	q90y @w 0.7071 approx_eq print nl              // 1
+	q90y @y 0.7071 approx_eq print nl              // 1
+
+	// Quaternion from Euler
+	"=== Quat From Euler ===" print nl
+	0.0 0.0 0.0 math::quat_from_euler -> q_zero
+	q_zero @w 1.0 approx_eq print nl               // 1 (no rotation = identity)
+
+	// Conjugate
+	"=== Quat Conjugate ===" print nl
+	math::Quat { w = 1.0 x = 2.0 y = 3.0 z = 4.0 } -> q1
+	q1 conjugate -> q1_conj
+	q1_conj @w 1.0 approx_eq print nl              // 1
+	q1_conj @x -2.0 approx_eq print nl             // 1
+	q1_conj @y -3.0 approx_eq print nl             // 1
+	q1_conj @z -4.0 approx_eq print nl             // 1
+
+	// Length
+	"=== Quat Length ===" print nl
+	math::Quat { w = 1.0 x = 0.0 y = 0.0 z = 0.0 } length 1.0 approx_eq print nl   // 1
+	math::Quat { w = 3.0 x = 0.0 y = 0.0 z = 4.0 } length 5.0 approx_eq print nl   // 1
+	q1 length_sq 30.0 approx_eq print nl           // 1 (1+4+9+16 = 30)
+
+	// Normalize
+	"=== Quat Normalize ===" print nl
+	math::Quat { w = 3.0 x = 0.0 y = 0.0 z = 4.0 } normalize -> unit_q
+	unit_q length 1.0 approx_eq print nl           // 1
+	unit_q @w 0.6 approx_eq print nl               // 1 (3/5)
+	unit_q @z 0.8 approx_eq print nl               // 1 (4/5)
+
+	// Dot
+	"=== Quat Dot ===" print nl
+	math::Quat { w = 1.0 x = 2.0 y = 3.0 z = 4.0 } -> qa
+	math::Quat { w = 5.0 x = 6.0 y = 7.0 z = 8.0 } -> qb
+	qb qa dot 70.0 approx_eq print nl              // 1 (1*5 + 2*6 + 3*7 + 4*8 = 70)
+
+	// Multiply - identity * q = q
+	"=== Quat Multiply ===" print nl
+	math::quat_identity q90y mul -> prod
+	prod @w q90y @w approx_eq print nl             // 1
+	prod @y q90y @y approx_eq print nl             // 1
+
+	// Inverse
+	"=== Quat Inverse ===" print nl
+	q90y inverse -> q90y_inv
+	q90y q90y_inv mul -> should_be_id
+	should_be_id @w 1.0 approx_eq print nl         // 1 (q * q^-1 = identity)
+	should_be_id @x 0.0 approx_eq print nl         // 1
+	should_be_id @y 0.0 approx_eq print nl         // 1
+	should_be_id @z 0.0 approx_eq print nl         // 1
+
+	// Rotate vector
+	"=== Quat Rotate Vec3 ===" print nl
+	// Rotate unit_x by 90° around Y should give unit_z (pointing forward)
+	q90y math::vec3_unit_x rotate_vec3 -> rotated
+	rotated @x 0.0 approx_eq print nl              // 1
+	rotated @y 0.0 approx_eq print nl              // 1
+	rotated @z -1.0 approx_eq print nl             // 1 (pointing -Z in right-hand system)
+
+	// Slerp
+	"=== Quat Slerp ===" print nl
+	math::quat_identity -> q_start
+	q90y -> q_end
+	q_start q_end 0.0 slerp -> s0
+	s0 @w 1.0 approx_eq print nl                   // 1 (t=0 gives start)
+	q_start q_end 1.0 slerp -> s1
+	s1 @w q90y @w approx_eq print nl               // 1 (t=1 gives end)
+
+	"done" print nl
+}

@@ -1,0 +1,82 @@
+// Test Vec4 math functions
+use math
+
+fn approx_eq(a:f64 b:f64 -- result:i64) {
+	-> b -> a
+	a b - math::abs 0.0001 <
+}
+
+fn main() {
+	// Constructors
+	"=== Vec4 Constructors ===" print nl
+	math::vec4_zero -> z
+	z @x 0.0 approx_eq print nl                    // 1
+	z @y 0.0 approx_eq print nl                    // 1
+	z @z 0.0 approx_eq print nl                    // 1
+	z @w 0.0 approx_eq print nl                    // 1
+	math::vec4_one -> o
+	o @x 1.0 approx_eq print nl                    // 1
+	o @y 1.0 approx_eq print nl                    // 1
+	o @z 1.0 approx_eq print nl                    // 1
+	o @w 1.0 approx_eq print nl                    // 1
+
+	// Basic operations
+	"=== Vec4 Basic Ops ===" print nl
+	math::Vec4 { x = 1.0 y = 2.0 z = 3.0 w = 4.0 } -> v1
+	math::Vec4 { x = 5.0 y = 6.0 z = 7.0 w = 8.0 } -> v2
+
+	v2 v1 add -> sum
+	sum @x 6.0 approx_eq print nl                  // 1
+	sum @y 8.0 approx_eq print nl                  // 1
+	sum @z 10.0 approx_eq print nl                 // 1
+	sum @w 12.0 approx_eq print nl                 // 1
+
+	v2 v1 subtract -> diff                         // v2 - v1 = (5-1, 6-2, 7-3, 8-4) = (4, 4, 4, 4)
+	diff @x 4.0 approx_eq print nl                 // 1
+	diff @y 4.0 approx_eq print nl                 // 1
+	diff @z 4.0 approx_eq print nl                 // 1
+	diff @w 4.0 approx_eq print nl                 // 1
+
+	v1 2.0 scale -> scaled
+	scaled @x 2.0 approx_eq print nl               // 1
+	scaled @y 4.0 approx_eq print nl               // 1
+	scaled @z 6.0 approx_eq print nl               // 1
+	scaled @w 8.0 approx_eq print nl               // 1
+
+	// Dot
+	"=== Vec4 Dot ===" print nl
+	v2 v1 dot 70.0 approx_eq print nl              // 1 (1*5 + 2*6 + 3*7 + 4*8 = 70)
+
+	// Length
+	"=== Vec4 Length ===" print nl
+	math::Vec4 { x = 2.0 y = 0.0 z = 0.0 w = 0.0 } length 2.0 approx_eq print nl   // 1
+	v1 length_sq 30.0 approx_eq print nl           // 1 (1+4+9+16 = 30)
+
+	// Normalize
+	"=== Vec4 Normalize ===" print nl
+	math::Vec4 { x = 3.0 y = 0.0 z = 0.0 w = 4.0 } -> norm_v
+	norm_v normalize -> unit
+	unit length 1.0 approx_eq print nl             // 1
+	unit @x 0.6 approx_eq print nl                 // 1 (3/5)
+	unit @w 0.8 approx_eq print nl                 // 1 (4/5)
+
+	// Neg
+	"=== Vec4 Neg ===" print nl
+	v1 neg -> neg_v
+	neg_v @x -1.0 approx_eq print nl               // 1
+	neg_v @y -2.0 approx_eq print nl               // 1
+	neg_v @z -3.0 approx_eq print nl               // 1
+	neg_v @w -4.0 approx_eq print nl               // 1
+
+	// Lerp
+	"=== Vec4 Lerp ===" print nl
+	math::Vec4 { x = 0.0 y = 0.0 z = 0.0 w = 0.0 } -> a
+	math::Vec4 { x = 10.0 y = 20.0 z = 30.0 w = 40.0 } -> b
+	a b 0.5 lerp -> mid
+	mid @x 5.0 approx_eq print nl                  // 1
+	mid @y 10.0 approx_eq print nl                 // 1
+	mid @z 15.0 approx_eq print nl                 // 1
+	mid @w 20.0 approx_eq print nl                 // 1
+
+	"done" print nl
+}

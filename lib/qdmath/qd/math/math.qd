@@ -136,6 +136,60 @@ import "libqdmath.a" as "math" {
 	/// @return result f64 Remainder of x/y
 	/// @example 5.5 2.0 math::fmod print  // 1.5
 	pub fn fmod(x:f64 y:f64 -- result:f64)
+
+	/// Hyperbolic sine.
+	/// @param x f64 Any value
+	/// @return result f64 Hyperbolic sine of x
+	/// @example 1.0 math::sinh print  // ~1.175
+	pub fn sinh(x:f64 -- result:f64)
+
+	/// Hyperbolic cosine.
+	/// @param x f64 Any value
+	/// @return result f64 Hyperbolic cosine of x
+	/// @example 0.0 math::cosh print  // 1.0
+	pub fn cosh(x:f64 -- result:f64)
+
+	/// Hyperbolic tangent.
+	/// @param x f64 Any value
+	/// @return result f64 Hyperbolic tangent of x [-1, 1]
+	/// @example 0.0 math::tanh print  // 0.0
+	pub fn tanh(x:f64 -- result:f64)
+
+	/// Inverse hyperbolic sine.
+	/// @param x f64 Any value
+	/// @return result f64 Inverse hyperbolic sine of x
+	/// @example 0.0 math::asinh print  // 0.0
+	pub fn asinh(x:f64 -- result:f64)
+
+	/// Inverse hyperbolic cosine.
+	/// @param x f64 Value >= 1
+	/// @return result f64 Inverse hyperbolic cosine of x
+	/// @example 1.0 math::acosh print  // 0.0
+	pub fn acosh(x:f64 -- result:f64)
+
+	/// Inverse hyperbolic tangent.
+	/// @param x f64 Value in range (-1, 1)
+	/// @return result f64 Inverse hyperbolic tangent of x
+	/// @example 0.0 math::atanh print  // 0.0
+	pub fn atanh(x:f64 -- result:f64)
+
+	/// Base-2 logarithm.
+	/// @param x f64 Positive value
+	/// @return result f64 Log base 2 of x
+	/// @example 8.0 math::log2 print  // 3.0
+	pub fn log2(x:f64 -- result:f64)
+
+	/// Exponential base 2 (2^x).
+	/// @param x f64 Exponent
+	/// @return result f64 2 raised to x
+	/// @example 3.0 math::exp2 print  // 8.0
+	pub fn exp2(x:f64 -- result:f64)
+
+	/// Truncate toward zero.
+	/// @param x f64 Any value
+	/// @return result f64 Integer part of x (toward zero)
+	/// @example -2.7 math::trunc print  // -2.0
+	pub fn trunc(x:f64 -- result:f64)
 }
 
 /// Increment integer by 1.
@@ -405,9 +459,13 @@ pub fn (v:Vec2) length_sq( -- result:f64) {
 /// @return result Vec2 Unit vector in same direction
 /// @example v normalize -> unit
 pub fn (v:Vec2) normalize( -- result:Vec2) {
-	v length -> mag
+	v @x v @x * v @y v @y * + math::sqrt -> mag
 	mag 0.0 gt if {
-		v 1.0 mag / scale
+		1.0 mag / -> inv_mag
+		Vec2 {
+			x = v @x inv_mag *
+			y = v @y inv_mag *
+		}
 	} else {
 		vec2_zero
 	}
@@ -434,6 +492,46 @@ pub fn (v:Vec2) lerp(other:Vec2 t:f64 -- result:Vec2) {
 	Vec2 {
 		x = v @x other @x v @x - t * +
 		y = v @y other @y v @y - t * +
+	}
+}
+
+/// Distance to another Vec2.
+/// @param other Vec2 Other point
+/// @return result f64 Distance between points
+/// @example other v distance -> d
+pub fn (v:Vec2) distance(other:Vec2 -- result:f64) {
+	-> other
+	v @x other @x - dup * v @y other @y - dup * + math::sqrt
+}
+
+/// Angle of this vector from positive X axis.
+/// @return result f64 Angle in radians [-π, π]
+/// @example v angle -> a
+pub fn (v:Vec2) angle( -- result:f64) {
+	v @y v @x math::atan2
+}
+
+/// Rotate this vector by an angle.
+/// @param angle f64 Rotation angle in radians
+/// @return result Vec2 Rotated vector
+/// @example 1.57 v rotate -> rotated
+pub fn (v:Vec2) rotate(angle:f64 -- result:Vec2) {
+	-> angle
+	angle math::cos -> c
+	angle math::sin -> s
+	Vec2 {
+		x = v @x c * v @y s * -
+		y = v @x s * v @y c * +
+	}
+}
+
+/// Get perpendicular vector (90° counterclockwise rotation).
+/// @return result Vec2 Perpendicular vector
+/// @example v perpendicular -> perp
+pub fn (v:Vec2) perpendicular( -- result:Vec2) {
+	Vec2 {
+		x = v @y neg
+		y = v @x
 	}
 }
 
@@ -585,9 +683,14 @@ pub fn (v:Vec3) length_sq( -- result:f64) {
 /// @return result Vec3 Unit vector in same direction
 /// @example v normalize -> unit
 pub fn (v:Vec3) normalize( -- result:Vec3) {
-	v length -> mag
+	v @x v @x * v @y v @y * + v @z v @z * + math::sqrt -> mag
 	mag 0.0 gt if {
-		v 1.0 mag / scale
+		1.0 mag / -> inv_mag
+		Vec3 {
+			x = v @x inv_mag *
+			y = v @y inv_mag *
+			z = v @z inv_mag *
+		}
 	} else {
 		vec3_zero
 	}
@@ -625,7 +728,36 @@ pub fn (v:Vec3) lerp(other:Vec3 t:f64 -- result:Vec3) {
 /// @example normal v reflect -> reflected
 pub fn (v:Vec3) reflect(n:Vec3 -- result:Vec3) {
 	-> n
-	n v n dot 2.0 * v swap scale swap subtract
+	v @x n @x * v @y n @y * + v @z n @z * + 2.0 * -> factor
+	Vec3 {
+		x = v @x n @x factor * -
+		y = v @y n @y factor * -
+		z = v @z n @z factor * -
+	}
+}
+
+/// Distance to another Vec3.
+/// @param other Vec3 Other point
+/// @return result f64 Distance between points
+/// @example other v distance -> d
+pub fn (v:Vec3) distance(other:Vec3 -- result:f64) {
+	-> other
+	v @x other @x - dup *
+	v @y other @y - dup * +
+	v @z other @z - dup * +
+	math::sqrt
+}
+
+/// Angle between this vector and another.
+/// @param other Vec3 Other vector
+/// @return result f64 Angle in radians [0, π]
+/// @example other v angle_between -> a
+pub fn (v:Vec3) angle_between(other:Vec3 -- result:f64) {
+	-> other
+	v @x other @x * v @y other @y * + v @z other @z * + -> dot_val
+	v @x v @x * v @y v @y * + v @z v @z * + math::sqrt -> v_len
+	other @x other @x * other @y other @y * + other @z other @z * + math::sqrt -> o_len
+	dot_val v_len o_len * / math::acos
 }
 
 // ============================================================================
@@ -730,11 +862,52 @@ pub fn (v:Vec4) length( -- result:f64) {
 /// @return result Vec4 Unit vector in same direction
 /// @example v normalize -> unit
 pub fn (v:Vec4) normalize( -- result:Vec4) {
-	v length -> mag
+	v @x v @x * v @y v @y * + v @z v @z * + v @w v @w * + math::sqrt -> mag
 	mag 0.0 gt if {
-		v 1.0 mag / scale
+		1.0 mag / -> inv_mag
+		Vec4 {
+			x = v @x inv_mag *
+			y = v @y inv_mag *
+			z = v @z inv_mag *
+			w = v @w inv_mag *
+		}
 	} else {
 		vec4_zero
+	}
+}
+
+/// Squared length of this vector (avoids sqrt).
+/// @return result f64 Squared length of vector
+/// @example v length_sq -> len_sq
+pub fn (v:Vec4) length_sq( -- result:f64) {
+	v @x v @x * v @y v @y * + v @z v @z * + v @w v @w * +
+}
+
+/// Negate this vector.
+/// @return result Vec4 Negated vector
+/// @example v neg -> neg_v
+pub fn (v:Vec4) neg( -- result:Vec4) {
+	Vec4 {
+		x = v @x neg
+		y = v @y neg
+		z = v @z neg
+		w = v @w neg
+	}
+}
+
+/// Linear interpolation to another Vec4.
+/// @param other Vec4 End vector
+/// @param t f64 Interpolation factor (0.0 to 1.0)
+/// @return result Vec4 Interpolated vector
+/// @example other 0.5 v lerp -> mid
+pub fn (v:Vec4) lerp(other:Vec4 t:f64 -- result:Vec4) {
+	-> t
+	-> other
+	Vec4 {
+		x = v @x other @x v @x - t * +
+		y = v @y other @y v @y - t * +
+		z = v @z other @z v @z - t * +
+		w = v @w other @w v @w - t * +
 	}
 }
 
@@ -804,7 +977,7 @@ pub fn (q:Quat) length( -- result:f64) {
 /// @return result Quat Unit quaternion
 /// @example q normalize -> unit_q
 pub fn (q:Quat) normalize( -- result:Quat) {
-	q length -> mag
+	q @w q @w * q @x q @x * + q @y q @y * + q @z q @z * + math::sqrt -> mag
 	mag 0.0 gt if {
 		1.0 mag / -> inv_mag
 		Quat {
@@ -825,6 +998,136 @@ pub fn (q:Quat) normalize( -- result:Quat) {
 pub fn (q:Quat) dot(other:Quat -- result:f64) {
 	-> other
 	q @w other @w * q @x other @x * + q @y other @y * + q @z other @z * +
+}
+
+/// Inverse of this quaternion.
+/// @return result Quat Inverse quaternion
+/// @example q inverse -> q_inv
+pub fn (q:Quat) inverse( -- result:Quat) {
+	q @w q @w * q @x q @x * + q @y q @y * + q @z q @z * + -> len_sq
+	len_sq 0.0 gt if {
+		1.0 len_sq / -> inv_len_sq
+		Quat {
+			w = q @w inv_len_sq *
+			x = q @x neg inv_len_sq *
+			y = q @y neg inv_len_sq *
+			z = q @z neg inv_len_sq *
+		}
+	} else {
+		quat_identity
+	}
+}
+
+/// Squared length of quaternion.
+/// @return result f64 Squared length
+pub fn (q:Quat) length_sq( -- result:f64) {
+	q @w q @w * q @x q @x * + q @y q @y * + q @z q @z * +
+}
+
+/// Spherical linear interpolation to another quaternion.
+/// @param other Quat End quaternion
+/// @param t f64 Interpolation factor (0.0 to 1.0)
+/// @return result Quat Interpolated quaternion
+/// @example other 0.5 q slerp -> mid
+pub fn (q:Quat) slerp(other:Quat t:f64 -- result:Quat) {
+	-> t
+	-> other
+	q @w other @w * q @x other @x * + q @y other @y * + q @z other @z * + -> dot_val
+	dot_val 0.0 lt if {
+		other @w neg other .w
+		other @x neg other .x
+		other @y neg other .y
+		other @z neg other .z
+		dot_val neg -> dot_val
+	}
+	dot_val 0.9995 gt if {
+		Quat {
+			w = q @w other @w q @w - t * +
+			x = q @x other @x q @x - t * +
+			y = q @y other @y q @y - t * +
+			z = q @z other @z q @z - t * +
+		} normalize
+	} else {
+		dot_val math::acos -> theta
+		theta t * -> theta_t
+		theta_t math::sin -> sin_t
+		theta math::sin -> sin_theta
+		theta_t math::cos q @w * sin_t other @w q @w dot_val * - * sin_theta / + -> w_r
+		theta_t math::cos q @x * sin_t other @x q @x dot_val * - * sin_theta / + -> x_r
+		theta_t math::cos q @y * sin_t other @y q @y dot_val * - * sin_theta / + -> y_r
+		theta_t math::cos q @z * sin_t other @z q @z dot_val * - * sin_theta / + -> z_r
+		Quat { w = w_r x = x_r y = y_r z = z_r }
+	}
+}
+
+/// Rotate a Vec3 by this quaternion.
+/// @param v Vec3 Vector to rotate
+/// @return result Vec3 Rotated vector
+/// @example v q rotate_vec3 -> rotated
+pub fn (q:Quat) rotate_vec3(v:Vec3 -- result:Vec3) {
+	-> v
+	q @x 2.0 * -> qx2
+	q @y 2.0 * -> qy2
+	q @z 2.0 * -> qz2
+	q @w qx2 * -> wx2
+	q @w qy2 * -> wy2
+	q @w qz2 * -> wz2
+	q @x qx2 * -> xx2
+	q @x qy2 * -> xy2
+	q @x qz2 * -> xz2
+	q @y qy2 * -> yy2
+	q @y qz2 * -> yz2
+	q @z qz2 * -> zz2
+	Vec3 {
+		x = v @x 1.0 yy2 - zz2 - * v @y xy2 wz2 - * + v @z xz2 wy2 + * +
+		y = v @x xy2 wz2 + * v @y 1.0 xx2 - zz2 - * + v @z yz2 wx2 - * +
+		z = v @x xz2 wy2 - * v @y yz2 wx2 + * + v @z 1.0 xx2 - yy2 - * +
+	}
+}
+
+/// Create quaternion from axis and angle.
+/// @param axis Vec3 Rotation axis (should be normalized)
+/// @param angle f64 Rotation angle in radians
+/// @return result Quat Rotation quaternion
+/// @example axis 1.57 quat_from_axis_angle -> q
+pub fn quat_from_axis_angle(axis:Vec3 angle:f64 -- result:Quat) {
+	-> angle
+	-> axis
+	angle 0.5 * -> half_angle
+	half_angle math::sin -> s
+	Quat {
+		w = half_angle math::cos
+		x = axis @x s *
+		y = axis @y s *
+		z = axis @z s *
+	}
+}
+
+/// Create quaternion from Euler angles (XYZ order).
+/// @param pitch f64 Rotation around X axis (radians)
+/// @param yaw f64 Rotation around Y axis (radians)
+/// @param roll f64 Rotation around Z axis (radians)
+/// @return result Quat Rotation quaternion
+/// @example 0.0 1.57 0.0 quat_from_euler -> q
+pub fn quat_from_euler(pitch:f64 yaw:f64 roll:f64 -- result:Quat) {
+	-> roll
+	-> yaw
+	-> pitch
+	pitch 0.5 * -> hp
+	yaw 0.5 * -> hy
+	roll 0.5 * -> hr
+	hp math::cos -> cp
+	hp math::sin -> sp
+	hy math::cos -> cy
+	hy math::sin -> sy
+	hr math::cos -> cr
+	hr math::sin -> sr
+	Quat {
+		w = cp cy cr * * sp sy sr * * +
+		x = sp cy cr * * cp sy sr * * -
+		y = cp sy cr * * sp cy sr * * +
+		z = cp cy sr * * sp sy cr * * -
+	}
 }
 
 // ============================================================================
@@ -1080,5 +1383,324 @@ pub fn mat4_rotation_z(angle:f64 -- m:Mat4) {
 		m31 = 0.0
 		m32 = 0.0
 		m33 = 1.0
+	}
+}
+
+/// Matrix multiplication.
+/// @param other Mat4 Matrix to multiply with
+/// @return result Mat4 Product of matrices (m * other)
+/// @example other m mul -> product
+pub fn (m:Mat4) mul(other:Mat4 -- result:Mat4) {
+	-> other
+	Mat4 {
+		m00 = m @m00 other @m00 * m @m10 other @m01 * + m @m20 other @m02 * + m @m30 other @m03 * +
+		m01 = m @m01 other @m00 * m @m11 other @m01 * + m @m21 other @m02 * + m @m31 other @m03 * +
+		m02 = m @m02 other @m00 * m @m12 other @m01 * + m @m22 other @m02 * + m @m32 other @m03 * +
+		m03 = m @m03 other @m00 * m @m13 other @m01 * + m @m23 other @m02 * + m @m33 other @m03 * +
+		m10 = m @m00 other @m10 * m @m10 other @m11 * + m @m20 other @m12 * + m @m30 other @m13 * +
+		m11 = m @m01 other @m10 * m @m11 other @m11 * + m @m21 other @m12 * + m @m31 other @m13 * +
+		m12 = m @m02 other @m10 * m @m12 other @m11 * + m @m22 other @m12 * + m @m32 other @m13 * +
+		m13 = m @m03 other @m10 * m @m13 other @m11 * + m @m23 other @m12 * + m @m33 other @m13 * +
+		m20 = m @m00 other @m20 * m @m10 other @m21 * + m @m20 other @m22 * + m @m30 other @m23 * +
+		m21 = m @m01 other @m20 * m @m11 other @m21 * + m @m21 other @m22 * + m @m31 other @m23 * +
+		m22 = m @m02 other @m20 * m @m12 other @m21 * + m @m22 other @m22 * + m @m32 other @m23 * +
+		m23 = m @m03 other @m20 * m @m13 other @m21 * + m @m23 other @m22 * + m @m33 other @m23 * +
+		m30 = m @m00 other @m30 * m @m10 other @m31 * + m @m20 other @m32 * + m @m30 other @m33 * +
+		m31 = m @m01 other @m30 * m @m11 other @m31 * + m @m21 other @m32 * + m @m31 other @m33 * +
+		m32 = m @m02 other @m30 * m @m12 other @m31 * + m @m22 other @m32 * + m @m32 other @m33 * +
+		m33 = m @m03 other @m30 * m @m13 other @m31 * + m @m23 other @m32 * + m @m33 other @m33 * +
+	}
+}
+
+/// Matrix determinant.
+/// @return result f64 Determinant of matrix
+/// @example m determinant -> det
+pub fn (m:Mat4) determinant( -- result:f64) {
+	// Compute 2x2 determinants for submatrices
+	m @m22 m @m33 * m @m23 m @m32 * - -> s0
+	m @m21 m @m33 * m @m23 m @m31 * - -> s1
+	m @m21 m @m32 * m @m22 m @m31 * - -> s2
+	m @m20 m @m33 * m @m23 m @m30 * - -> s3
+	m @m20 m @m32 * m @m22 m @m30 * - -> s4
+	m @m20 m @m31 * m @m21 m @m30 * - -> s5
+
+	// Compute 3x3 cofactors for first row
+	m @m11 s0 * m @m12 s1 * - m @m13 s2 * + -> c0
+	m @m10 s0 * m @m12 s3 * - m @m13 s4 * + -> c1
+	m @m10 s1 * m @m11 s3 * - m @m13 s5 * + -> c2
+	m @m10 s2 * m @m11 s4 * - m @m12 s5 * + -> c3
+
+	// Combine using first row
+	m @m00 c0 * m @m01 c1 * - m @m02 c2 * + m @m03 c3 * -
+}
+
+/// Matrix inverse.
+/// @return result Mat4 Inverse matrix (returns identity if singular)
+/// @example m inverse -> m_inv
+pub fn (m:Mat4) inverse( -- result:Mat4) {
+	// Compute 2x2 determinants for bottom-right
+	m @m22 m @m33 * m @m23 m @m32 * - -> s0
+	m @m21 m @m33 * m @m23 m @m31 * - -> s1
+	m @m21 m @m32 * m @m22 m @m31 * - -> s2
+	m @m20 m @m33 * m @m23 m @m30 * - -> s3
+	m @m20 m @m32 * m @m22 m @m30 * - -> s4
+	m @m20 m @m31 * m @m21 m @m30 * - -> s5
+
+	// Compute 2x2 determinants for top-right and bottom-left
+	m @m02 m @m13 * m @m03 m @m12 * - -> t0
+	m @m01 m @m13 * m @m03 m @m11 * - -> t1
+	m @m01 m @m12 * m @m02 m @m11 * - -> t2
+	m @m00 m @m13 * m @m03 m @m10 * - -> t3
+	m @m00 m @m12 * m @m02 m @m10 * - -> t4
+	m @m00 m @m11 * m @m01 m @m10 * - -> t5
+
+	// Compute cofactors
+	m @m11 s0 * m @m12 s1 * - m @m13 s2 * + -> c00
+	m @m10 s0 * neg m @m12 s3 * + m @m13 s4 * - -> c01
+	m @m10 s1 * m @m11 s3 * - m @m13 s5 * + -> c02
+	m @m10 s2 * neg m @m11 s4 * + m @m12 s5 * - -> c03
+
+	m @m01 s0 * neg m @m02 s1 * + m @m03 s2 * - -> c10
+	m @m00 s0 * m @m02 s3 * - m @m03 s4 * + -> c11
+	m @m00 s1 * neg m @m01 s3 * + m @m03 s5 * - -> c12
+	m @m00 s2 * m @m01 s4 * - m @m02 s5 * + -> c13
+
+	m @m31 t0 * m @m32 t1 * - m @m33 t2 * + -> c20
+	m @m30 t0 * neg m @m32 t3 * + m @m33 t4 * - -> c21
+	m @m30 t1 * m @m31 t3 * - m @m33 t5 * + -> c22
+	m @m30 t2 * neg m @m31 t4 * + m @m32 t5 * - -> c23
+
+	m @m21 t0 * neg m @m22 t1 * + m @m23 t2 * - -> c30
+	m @m20 t0 * m @m22 t3 * - m @m23 t4 * + -> c31
+	m @m20 t1 * neg m @m21 t3 * + m @m23 t5 * - -> c32
+	m @m20 t2 * m @m21 t4 * - m @m22 t5 * + -> c33
+
+	// Compute determinant using first row of cofactor matrix
+	m @m00 c00 * m @m01 c01 * + m @m02 c02 * + m @m03 c03 * + -> det
+
+	det math::abs 0.000001 lt if {
+		mat4_identity
+	} else {
+		1.0 det / -> inv_det
+		Mat4 {
+			m00 = c00 inv_det *
+			m01 = c10 inv_det *
+			m02 = c20 inv_det *
+			m03 = c30 inv_det *
+			m10 = c01 inv_det *
+			m11 = c11 inv_det *
+			m12 = c21 inv_det *
+			m13 = c31 inv_det *
+			m20 = c02 inv_det *
+			m21 = c12 inv_det *
+			m22 = c22 inv_det *
+			m23 = c32 inv_det *
+			m30 = c03 inv_det *
+			m31 = c13 inv_det *
+			m32 = c23 inv_det *
+			m33 = c33 inv_det *
+		}
+	}
+}
+
+/// Transform a Vec3 point by this matrix (w=1).
+/// @param v Vec3 Point to transform
+/// @return result Vec3 Transformed point
+/// @example point m transform_point -> transformed
+pub fn (m:Mat4) transform_point(v:Vec3 -- result:Vec3) {
+	-> v
+	m @m00 v @x * m @m10 v @y * + m @m20 v @z * + m @m30 + -> rx
+	m @m01 v @x * m @m11 v @y * + m @m21 v @z * + m @m31 + -> ry
+	m @m02 v @x * m @m12 v @y * + m @m22 v @z * + m @m32 + -> rz
+	m @m03 v @x * m @m13 v @y * + m @m23 v @z * + m @m33 + -> rw
+	rw math::abs 0.000001 gt if {
+		Vec3 { x = rx rw / y = ry rw / z = rz rw / }
+	} else {
+		Vec3 { x = rx y = ry z = rz }
+	}
+}
+
+/// Transform a Vec4 by this matrix.
+/// @param v Vec4 Vector to transform
+/// @return result Vec4 Transformed vector
+/// @example vec m transform_vec4 -> transformed
+pub fn (m:Mat4) transform_vec4(v:Vec4 -- result:Vec4) {
+	-> v
+	Vec4 {
+		x = m @m00 v @x * m @m10 v @y * + m @m20 v @z * + m @m30 v @w * +
+		y = m @m01 v @x * m @m11 v @y * + m @m21 v @z * + m @m31 v @w * +
+		z = m @m02 v @x * m @m12 v @y * + m @m22 v @z * + m @m32 v @w * +
+		w = m @m03 v @x * m @m13 v @y * + m @m23 v @z * + m @m33 v @w * +
+	}
+}
+
+/// Create a look-at view matrix.
+/// @param eye Vec3 Camera position
+/// @param target Vec3 Point to look at
+/// @param up Vec3 Up direction
+/// @return m Mat4 View matrix
+/// @example eye target up mat4_look_at -> view
+pub fn mat4_look_at(eye:Vec3 target:Vec3 up:Vec3 -- m:Mat4) {
+	-> up
+	-> target
+	-> eye
+	eye @x target @x - -> fx
+	eye @y target @y - -> fy
+	eye @z target @z - -> fz
+	fx fx * fy fy * + fz fz * + math::sqrt -> f_len
+	f_len 0.0 gt if { fx f_len / -> fx fy f_len / -> fy fz f_len / -> fz }
+	up @y fz * up @z fy * - -> sx
+	up @z fx * up @x fz * - -> sy
+	up @x fy * up @y fx * - -> sz
+	sx sx * sy sy * + sz sz * + math::sqrt -> s_len
+	s_len 0.0 gt if { sx s_len / -> sx sy s_len / -> sy sz s_len / -> sz }
+	fy sz * fz sy * - -> ux
+	fz sx * fx sz * - -> uy
+	fx sy * fy sx * - -> uz
+	sx eye @x * sy eye @y * + sz eye @z * + neg -> dot_s_eye
+	ux eye @x * uy eye @y * + uz eye @z * + neg -> dot_u_eye
+	fx eye @x * fy eye @y * + fz eye @z * + neg -> dot_f_eye
+	Mat4 {
+		m00 = sx
+		m01 = ux
+		m02 = fx
+		m03 = 0.0
+		m10 = sy
+		m11 = uy
+		m12 = fy
+		m13 = 0.0
+		m20 = sz
+		m21 = uz
+		m22 = fz
+		m23 = 0.0
+		m30 = dot_s_eye
+		m31 = dot_u_eye
+		m32 = dot_f_eye
+		m33 = 1.0
+	}
+}
+
+/// Create a perspective projection matrix.
+/// @param fov f64 Field of view in radians
+/// @param aspect f64 Aspect ratio (width/height)
+/// @param near f64 Near clipping plane
+/// @param far f64 Far clipping plane
+/// @return m Mat4 Perspective projection matrix
+/// @example 1.047 1.777 0.1 100.0 mat4_perspective -> proj
+pub fn mat4_perspective(fov:f64 aspect:f64 near:f64 far:f64 -- m:Mat4) {
+	-> far
+	-> near
+	-> aspect
+	-> fov
+	fov 0.5 * math::tan -> tan_half_fov
+	1.0 tan_half_fov / -> f
+	Mat4 {
+		m00 = f aspect /
+		m01 = 0.0
+		m02 = 0.0
+		m03 = 0.0
+		m10 = 0.0
+		m11 = f
+		m12 = 0.0
+		m13 = 0.0
+		m20 = 0.0
+		m21 = 0.0
+		m22 = far near + near far - /
+		m23 = 1.0 neg
+		m30 = 0.0
+		m31 = 0.0
+		m32 = 2.0 far * near * near far - /
+		m33 = 0.0
+	}
+}
+
+/// Create an orthographic projection matrix.
+/// @param left f64 Left clipping plane
+/// @param right f64 Right clipping plane
+/// @param bottom f64 Bottom clipping plane
+/// @param top f64 Top clipping plane
+/// @param near f64 Near clipping plane
+/// @param far f64 Far clipping plane
+/// @return m Mat4 Orthographic projection matrix
+/// @example -1.0 1.0 -1.0 1.0 0.1 100.0 mat4_orthographic -> proj
+pub fn mat4_orthographic(left:f64 right:f64 bottom:f64 top:f64 near:f64 far:f64 -- m:Mat4) {
+	-> far
+	-> near
+	-> top
+	-> bottom
+	-> right
+	-> left
+	Mat4 {
+		m00 = 2.0 right left - /
+		m01 = 0.0
+		m02 = 0.0
+		m03 = 0.0
+		m10 = 0.0
+		m11 = 2.0 top bottom - /
+		m12 = 0.0
+		m13 = 0.0
+		m20 = 0.0
+		m21 = 0.0
+		m22 = 2.0 neg far near - /
+		m23 = 0.0
+		m30 = right left + right left - / neg
+		m31 = top bottom + top bottom - / neg
+		m32 = far near + far near - / neg
+		m33 = 1.0
+	}
+}
+
+/// Create rotation matrix from quaternion.
+/// @param q Quat Rotation quaternion
+/// @return m Mat4 Rotation matrix
+/// @example q mat4_from_quat -> rot_mat
+pub fn mat4_from_quat(q:Quat -- m:Mat4) {
+	-> q
+	q @x 2.0 * -> x2
+	q @y 2.0 * -> y2
+	q @z 2.0 * -> z2
+	q @x x2 * -> xx
+	q @x y2 * -> xy
+	q @x z2 * -> xz
+	q @y y2 * -> yy
+	q @y z2 * -> yz
+	q @z z2 * -> zz
+	q @w x2 * -> wx
+	q @w y2 * -> wy
+	q @w z2 * -> wz
+	Mat4 {
+		m00 = 1.0 yy - zz -
+		m01 = xy wz +
+		m02 = xz wy -
+		m03 = 0.0
+		m10 = xy wz -
+		m11 = 1.0 xx - zz -
+		m12 = yz wx +
+		m13 = 0.0
+		m20 = xz wy +
+		m21 = yz wx -
+		m22 = 1.0 xx - yy -
+		m23 = 0.0
+		m30 = 0.0
+		m31 = 0.0
+		m32 = 0.0
+		m33 = 1.0
+	}
+}
+
+/// Sign function.
+/// @param x f64 Input value
+/// @return result f64 -1 if x < 0, 0 if x == 0, 1 if x > 0
+/// @example -5.0 math::sign print  // -1.0
+pub fn sign(x:f64 -- result:f64) {
+	-> x
+	x 0.0 lt if {
+		1.0 neg
+	} else {
+		x 0.0 gt if {
+			1.0
+		} else {
+			0.0
+		}
 	}
 }

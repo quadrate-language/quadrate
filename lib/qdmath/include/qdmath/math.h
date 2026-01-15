@@ -42,6 +42,24 @@ qd_exec_result usr_math_atan(qd_context* ctx);
 /** @brief Two-argument arctangent - Stack Effect: ( y:f x:f -- atan2(y,x):f ) */
 qd_exec_result usr_math_atan2(qd_context* ctx);
 
+/** @brief Hyperbolic sine - Stack Effect: ( x:f -- sinh(x):f ) */
+qd_exec_result usr_math_sinh(qd_context* ctx);
+
+/** @brief Hyperbolic cosine - Stack Effect: ( x:f -- cosh(x):f ) */
+qd_exec_result usr_math_cosh(qd_context* ctx);
+
+/** @brief Hyperbolic tangent - Stack Effect: ( x:f -- tanh(x):f ) */
+qd_exec_result usr_math_tanh(qd_context* ctx);
+
+/** @brief Inverse hyperbolic sine - Stack Effect: ( x:f -- asinh(x):f ) */
+qd_exec_result usr_math_asinh(qd_context* ctx);
+
+/** @brief Inverse hyperbolic cosine - Stack Effect: ( x:f -- acosh(x):f ) */
+qd_exec_result usr_math_acosh(qd_context* ctx);
+
+/** @brief Inverse hyperbolic tangent - Stack Effect: ( x:f -- atanh(x):f ) */
+qd_exec_result usr_math_atanh(qd_context* ctx);
+
 /** @} */ // end of Trigonometric group
 
 /**
@@ -85,6 +103,12 @@ qd_exec_result usr_math_ln(qd_context* ctx);
 /** @brief Base-10 logarithm - Stack Effect: ( x:f -- log10(x):f ) */
 qd_exec_result usr_math_log10(qd_context* ctx);
 
+/** @brief Base-2 logarithm - Stack Effect: ( x:f -- log2(x):f ) */
+qd_exec_result usr_math_log2(qd_context* ctx);
+
+/** @brief Exponential base 2 (2^x) - Stack Effect: ( x:f -- 2^x:f ) */
+qd_exec_result usr_math_exp2(qd_context* ctx);
+
 /** @} */ // end of Logarithmic group
 
 /**
@@ -101,6 +125,9 @@ qd_exec_result usr_math_floor(qd_context* ctx);
 
 /** @brief Round to nearest integer - Stack Effect: ( x:f -- round(x):f ) */
 qd_exec_result usr_math_round(qd_context* ctx);
+
+/** @brief Truncate toward zero - Stack Effect: ( x:f -- trunc(x):f ) */
+qd_exec_result usr_math_trunc(qd_context* ctx);
 
 /** @brief Floating-point modulo - Stack Effect: ( x:f y:f -- x mod y:f ) */
 qd_exec_result usr_math_fmod(qd_context* ctx);

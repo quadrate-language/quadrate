@@ -1,0 +1,52 @@
+// Test hyperbolic and additional math functions
+use math
+
+fn approx_eq(a:f64 b:f64 -- result:i64) {
+	-> b -> a
+	a b - math::abs 0.0001 <
+}
+
+fn main() {
+	// Hyperbolic functions
+	"=== Hyperbolic ===" print nl
+	0.0 math::sinh 0.0 approx_eq print nl          // 1 (sinh(0) = 0)
+	0.0 math::cosh 1.0 approx_eq print nl          // 1 (cosh(0) = 1)
+	0.0 math::tanh 0.0 approx_eq print nl          // 1 (tanh(0) = 0)
+	1.0 math::sinh 1.1752 approx_eq print nl       // 1 (sinh(1) ≈ 1.1752)
+	1.0 math::cosh 1.5431 approx_eq print nl       // 1 (cosh(1) ≈ 1.5431)
+	1.0 math::tanh 0.7616 approx_eq print nl       // 1 (tanh(1) ≈ 0.7616)
+
+	// Inverse hyperbolic
+	"=== Inverse Hyperbolic ===" print nl
+	0.0 math::asinh 0.0 approx_eq print nl         // 1 (asinh(0) = 0)
+	1.0 math::acosh 0.0 approx_eq print nl         // 1 (acosh(1) = 0)
+	0.0 math::atanh 0.0 approx_eq print nl         // 1 (atanh(0) = 0)
+	1.1752 math::asinh 1.0 approx_eq print nl      // 1 (asinh(sinh(1)) ≈ 1)
+	0.5 math::atanh 0.5493 approx_eq print nl      // 1 (atanh(0.5) ≈ 0.5493)
+
+	// Log2 and exp2
+	"=== Log2/Exp2 ===" print nl
+	8.0 math::log2 3.0 approx_eq print nl          // 1 (log2(8) = 3)
+	16.0 math::log2 4.0 approx_eq print nl         // 1 (log2(16) = 4)
+	1.0 math::log2 0.0 approx_eq print nl          // 1 (log2(1) = 0)
+	3.0 math::exp2 8.0 approx_eq print nl          // 1 (2^3 = 8)
+	4.0 math::exp2 16.0 approx_eq print nl         // 1 (2^4 = 16)
+	0.0 math::exp2 1.0 approx_eq print nl          // 1 (2^0 = 1)
+
+	// Trunc
+	"=== Trunc ===" print nl
+	2.7 math::trunc 2.0 approx_eq print nl         // 1
+	2.7 neg math::trunc 2.0 neg approx_eq print nl // 1 (trunc(-2.7) = -2)
+	2.0 math::trunc 2.0 approx_eq print nl         // 1
+	0.9 math::trunc 0.0 approx_eq print nl         // 1
+
+	// Sign
+	"=== Sign ===" print nl
+	5.0 math::sign 1.0 approx_eq print nl          // 1
+	5.0 neg math::sign 1.0 neg approx_eq print nl  // 1
+	0.0 math::sign 0.0 approx_eq print nl          // 1
+	0.001 math::sign 1.0 approx_eq print nl        // 1
+	0.001 neg math::sign 1.0 neg approx_eq print nl // 1
+
+	"done" print nl
+}
