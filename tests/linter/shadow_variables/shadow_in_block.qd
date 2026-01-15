@@ -1,0 +1,9 @@
+// Test shadow variable detection
+fn main() {
+	5 -> x
+	x 0 > if {
+		10 -> x  // shadows outer x
+		x print nl
+	}
+	x print nl
+}

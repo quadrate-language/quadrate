@@ -15,6 +15,10 @@ namespace Qd {
 	}
 
 	void ErrorReporter::reportError(size_t line, size_t column, const char* message) {
+		reportErrorWithHint(line, column, message, nullptr);
+	}
+
+	void ErrorReporter::reportErrorWithHint(size_t line, size_t column, const char* message, const char* hint) {
 		mErrorCount++;
 
 		// Store error if requested (for LSP)
@@ -23,6 +27,11 @@ namespace Qd {
 			error.line = line;
 			error.column = column;
 			error.message = message;
+			if (hint) {
+				error.message += " (hint: ";
+				error.message += hint;
+				error.message += ")";
+			}
 			mErrors.push_back(error);
 			return; // Don't print to stderr when storing
 		}
@@ -37,6 +46,11 @@ namespace Qd {
 		std::cerr << Colors::bold() << Colors::red() << "error:" << Colors::reset() << " ";
 		std::cerr << Colors::bold() << message << Colors::reset() << std::endl;
 		printSourceContext(line, column);
+
+		// Print hint if provided
+		if (hint) {
+			std::cerr << Colors::cyan() << "  hint:" << Colors::reset() << " " << hint << std::endl;
+		}
 	}
 
 	void ErrorReporter::printSourceContext(size_t line, size_t column) {

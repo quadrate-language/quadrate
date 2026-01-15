@@ -392,9 +392,9 @@ run_lsp_tests() {
     # Skip stress test under valgrind (too slow)
     local tests
     if [[ $USE_VALGRIND -eq 1 ]]; then
-        tests=("test_lsp" "test_lsp_extended")
+        tests=("test_lsp" "test_lsp_extended" "test_lsp_features")
     else
-        tests=("test_lsp" "test_lsp_extended" "test_lsp_stress")
+        tests=("test_lsp" "test_lsp_extended" "test_lsp_stress" "test_lsp_features")
     fi
     local suite="lsp"
 
@@ -1434,7 +1434,7 @@ list_all_tests() {
     echo ""
 
     echo "LSP Tests (suite: lsp):"
-    for test in test_lsp test_lsp_extended test_lsp_stress; do
+    for test in test_lsp test_lsp_extended test_lsp_stress test_lsp_features; do
         echo "  $test"
     done
     echo ""

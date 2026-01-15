@@ -579,7 +579,8 @@ namespace Qd {
 			case IAstNode::Type::IF_STATEMENT: {
 				// Check that stack has a condition value
 				if (typeStack.empty()) {
-					reportError(child, "Type error in 'if': Stack underflow (requires 1 condition value)");
+					reportErrorWithHint(child, "Type error in 'if': Stack underflow (requires 1 condition value)",
+							"push a condition before 'if', e.g. 'x 0 > if { ... }'");
 					break;
 				}
 				// Pop the condition value
@@ -676,7 +677,8 @@ namespace Qd {
 			case IAstNode::Type::SWITCH_STATEMENT: {
 				// Check that stack has a value to switch on
 				if (typeStack.empty()) {
-					reportError(child, "Type error in 'switch': Stack underflow (requires 1 value to match)");
+					reportErrorWithHint(child, "Type error in 'switch': Stack underflow (requires 1 value to match)",
+							"push a value before 'switch', e.g. 'x switch { case 1 { ... } }'");
 					break;
 				}
 				// Pop the switch value

@@ -1,0 +1,7 @@
+// Test empty block detection
+fn main() {
+	5 0 > if {
+		// empty block - only comment
+	}
+	"done" print nl
+}

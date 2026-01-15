@@ -1,0 +1,9 @@
+// Test constant condition detection
+fn main() {
+	1 if {
+		"always runs" print nl
+	}
+	0 if {
+		"never runs" print nl
+	}
+}

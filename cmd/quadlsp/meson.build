@@ -44,4 +44,14 @@ if get_option('build_tests')
 			timeout: 120
 		)
 	endif
+
+	# Feature tests (hover, go-to-definition, find references, etc.)
+	test_lsp_features_script = find_program('tests/test_lsp_features.py', required: false)
+	if test_lsp_features_script.found()
+		test('test_lsp_features',
+			test_lsp_features_script,
+			depends: [quadlsp_exe],
+			timeout: 60
+		)
+	endif
 endif

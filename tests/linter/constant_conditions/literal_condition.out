@@ -1,0 +1,4 @@
+[1mtests/linter/constant_conditions/literal_condition.qd:3:2:[0m [1m[1;35mwarning:[0m [1mConstant condition: expression is always true[0m
+[1mtests/linter/constant_conditions/literal_condition.qd:6:2:[0m [1m[1;35mwarning:[0m [1mConstant condition: expression is always false[0m
+
+2 issues found

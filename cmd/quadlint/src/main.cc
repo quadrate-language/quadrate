@@ -5,6 +5,7 @@
 #include <qc/ast_node_function.h>
 #include <qc/ast_node_function_pointer.h>
 #include <qc/ast_node_identifier.h>
+#include <qc/ast_node_literal.h>
 #include <qc/ast_node_local.h>
 #include <qc/ast_node_struct.h>
 #include <qc/colors.h>
@@ -28,6 +29,9 @@ struct Options {
 	bool noDeadCode = false;
 	bool noDeepNesting = false;
 	bool noMissingDefer = false;
+	bool noShadowVariables = false;
+	bool noEmptyBlocks = false;
+	bool noConstantConditions = false;
 	int maxNestingDepth = 4;
 };
 
@@ -51,6 +55,9 @@ void printHelp() {
 	std::cout << "  --no-dead-code            Disable dead code warnings\n";
 	std::cout << "  --no-deep-nesting         Disable deep nesting warnings\n";
 	std::cout << "  --no-missing-defer        Disable missing defer warnings\n";
+	std::cout << "  --no-shadow-variables     Disable shadow variable warnings\n";
+	std::cout << "  --no-empty-blocks         Disable empty block warnings\n";
+	std::cout << "  --no-constant-conditions  Disable constant condition warnings\n";
 	std::cout << "  --max-nesting <N>         Maximum nesting depth (default: 4)\n";
 	std::cout << "\n";
 	std::cout << "Examples:\n";
@@ -82,6 +89,12 @@ bool parseArgs(int argc, char* argv[], Options& opts) {
 			opts.noDeepNesting = true;
 		} else if (arg == "--no-missing-defer") {
 			opts.noMissingDefer = true;
+		} else if (arg == "--no-shadow-variables") {
+			opts.noShadowVariables = true;
+		} else if (arg == "--no-empty-blocks") {
+			opts.noEmptyBlocks = true;
+		} else if (arg == "--no-constant-conditions") {
+			opts.noConstantConditions = true;
 		} else if (arg == "--max-nesting") {
 			if (i + 1 >= argc) {
 				std::cerr << "quadlint: --max-nesting requires an argument\n";
@@ -319,6 +332,145 @@ void detectMissingDefer(IAstNode* node, const std::string& filename, std::vector
 	}
 }
 
+// Detect shadow variables (inner scope variable shadows outer scope)
+void detectShadowVariables(IAstNode* node, const std::string& filename, std::vector<LintIssue>& issues,
+		std::vector<std::unordered_set<std::string>>& scopeStack) {
+	if (!node) {
+		return;
+	}
+
+	// Enter new scope for functions and blocks
+	bool newScope = false;
+	if (node->type() == IAstNode::Type::FUNCTION_DECLARATION || node->type() == IAstNode::Type::BLOCK) {
+		scopeStack.emplace_back();
+		newScope = true;
+	}
+
+	// Check for local variable declarations
+	if (node->type() == IAstNode::Type::LOCAL) {
+		AstNodeLocal* local = static_cast<AstNodeLocal*>(node);
+		std::string varName = local->name();
+
+		// Check if this variable shadows one in an outer scope
+		for (size_t i = 0; i < scopeStack.size() - 1; i++) {
+			if (scopeStack[i].find(varName) != scopeStack[i].end()) {
+				LintIssue issue;
+				issue.filename = filename;
+				issue.line = node->line();
+				issue.column = node->column();
+				issue.message = "Variable '" + varName + "' shadows variable from outer scope";
+				issue.level = "warning";
+				issues.push_back(issue);
+				break;
+			}
+		}
+
+		// Add to current scope
+		if (!scopeStack.empty()) {
+			scopeStack.back().insert(varName);
+		}
+	}
+
+	// Recursively check children
+	for (size_t i = 0; i < node->childCount(); i++) {
+		detectShadowVariables(node->child(i), filename, issues, scopeStack);
+	}
+
+	// Exit scope
+	if (newScope) {
+		scopeStack.pop_back();
+	}
+}
+
+// Count actual statements in a block (excluding comments/unknown nodes)
+size_t countStatements(IAstNode* block) {
+	size_t count = 0;
+	for (size_t i = 0; i < block->childCount(); i++) {
+		IAstNode* child = block->child(i);
+		if (child && child->type() != IAstNode::Type::UNKNOWN && child->type() != IAstNode::Type::COMMENT) {
+			count++;
+		}
+	}
+	return count;
+}
+
+// Detect empty blocks (if/for/loop/switch with no statements)
+void detectEmptyBlocks(IAstNode* node, const std::string& filename, std::vector<LintIssue>& issues) {
+	if (!node) {
+		return;
+	}
+
+	// Check for control structures with empty bodies
+	if (node->type() == IAstNode::Type::IF_STATEMENT || node->type() == IAstNode::Type::FOR_STATEMENT ||
+			node->type() == IAstNode::Type::LOOP_STATEMENT) {
+		// Find the block child
+		for (size_t i = 0; i < node->childCount(); i++) {
+			IAstNode* child = node->child(i);
+			if (child && child->type() == IAstNode::Type::BLOCK && countStatements(child) == 0) {
+				LintIssue issue;
+				issue.filename = filename;
+				issue.line = node->line();
+				issue.column = node->column();
+				std::string blockType = node->type() == IAstNode::Type::IF_STATEMENT	 ? "if"
+										: node->type() == IAstNode::Type::FOR_STATEMENT	 ? "for"
+										: node->type() == IAstNode::Type::LOOP_STATEMENT ? "loop"
+																						 : "block";
+				issue.message = "Empty '" + blockType + "' block";
+				issue.level = "warning";
+				issues.push_back(issue);
+				break;
+			}
+		}
+	}
+
+	// Recursively check children
+	for (size_t i = 0; i < node->childCount(); i++) {
+		detectEmptyBlocks(node->child(i), filename, issues);
+	}
+}
+
+// Detect constant conditions (if with literal condition)
+// In Quadrate's stack-based syntax, the condition comes BEFORE the if statement as a sibling
+void detectConstantConditions(IAstNode* node, const std::string& filename, std::vector<LintIssue>& issues) {
+	if (!node) {
+		return;
+	}
+
+	// Check blocks for patterns like: LITERAL IF_STATEMENT
+	if (node->type() == IAstNode::Type::BLOCK) {
+		for (size_t i = 1; i < node->childCount(); i++) {
+			IAstNode* current = node->child(i);
+			IAstNode* previous = node->child(i - 1);
+
+			if (!current || !previous) {
+				continue;
+			}
+
+			// Check for if statement preceded by a literal
+			if (current->type() == IAstNode::Type::IF_STATEMENT && previous->type() == IAstNode::Type::LITERAL) {
+				AstNodeLiteral* literal = static_cast<AstNodeLiteral*>(previous);
+				if (literal->literalType() == AstNodeLiteral::LiteralType::INTEGER) {
+					std::string value = literal->value();
+					bool isAlwaysTrue = (value != "0");
+					LintIssue issue;
+					issue.filename = filename;
+					issue.line = previous->line();
+					issue.column = previous->column();
+					issue.message =
+							"Constant condition: expression is always " + std::string(isAlwaysTrue ? "true" : "false");
+					issue.level = "warning";
+					issues.push_back(issue);
+				}
+			}
+		}
+	}
+
+	// Recursively check children
+	for (size_t i = 0; i < node->childCount(); i++) {
+		detectConstantConditions(node->child(i), filename, issues);
+	}
+}
+
 std::vector<LintIssue> lintFile(const std::string& filename, const Options& opts) {
 	std::vector<LintIssue> issues;
 
@@ -414,6 +566,22 @@ std::vector<LintIssue> lintFile(const std::string& filename, const Options& opts
 		// Check for missing defer
 		if (!opts.noMissingDefer) {
 			detectMissingDefer(root, filename, issues);
+		}
+
+		// Check for shadow variables
+		if (!opts.noShadowVariables) {
+			std::vector<std::unordered_set<std::string>> scopeStack;
+			detectShadowVariables(root, filename, issues, scopeStack);
+		}
+
+		// Check for empty blocks
+		if (!opts.noEmptyBlocks) {
+			detectEmptyBlocks(root, filename, issues);
+		}
+
+		// Check for constant conditions
+		if (!opts.noConstantConditions) {
+			detectConstantConditions(root, filename, issues);
 		}
 
 	} catch (const std::exception& e) {

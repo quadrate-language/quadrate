@@ -16,3 +16,8 @@ qdcli_dep = declare_dependency(
 	link_with: qdcli_lib,
 	include_directories: qdcli_inc,
 )
+
+# Tests
+if get_option('build_tests')
+	subdir('tests')
+endif

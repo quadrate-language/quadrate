@@ -23,6 +23,7 @@ namespace Qd {
 
 		void reportError(u8t_scanner* scanner, const char* message);
 		void reportError(size_t line, size_t column, const char* message);
+		void reportErrorWithHint(size_t line, size_t column, const char* message, const char* hint);
 
 		size_t errorCount() const {
 			return mErrorCount;

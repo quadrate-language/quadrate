@@ -228,10 +228,13 @@ namespace Qd {
 		// Report an error (gcc/clang style)
 		void reportError(const char* message);
 		void reportError(const IAstNode* node, const char* message);
+		void reportErrorWithHint(const IAstNode* node, const char* message, const char* hint);
 
 		// Report an error conditionally (for signature analysis)
 		void reportErrorConditional(const char* message, bool shouldReport);
 		void reportErrorConditional(const IAstNode* node, const char* message, bool shouldReport);
+		void reportErrorConditionalWithHint(
+				const IAstNode* node, const char* message, const char* hint, bool shouldReport);
 
 		// Report a warning (gcc/clang style)
 		void reportWarning(const IAstNode* node, const char* message);

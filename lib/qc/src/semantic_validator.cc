@@ -248,6 +248,11 @@ namespace Qd {
 		reportErrorConditional(node, message, !mInLoopBody);
 	}
 
+	void SemanticValidator::reportErrorWithHint(const IAstNode* node, const char* message, const char* hint) {
+		// Suppress errors inside loop bodies (we still analyze for method call marking)
+		reportErrorConditionalWithHint(node, message, hint, !mInLoopBody);
+	}
+
 	void SemanticValidator::reportErrorConditional(const char* message, bool shouldReport) {
 		reportErrorConditional(nullptr, message, shouldReport);
 	}
@@ -294,6 +299,63 @@ namespace Qd {
 			// Print source context if available
 			if (mSource && node) {
 				printSourceContext(node->line(), node->column());
+			}
+		}
+	}
+
+	void SemanticValidator::reportErrorConditionalWithHint(
+			const IAstNode* node, const char* message, const char* hint, bool shouldReport) {
+		if (!shouldReport) {
+			return;
+		}
+
+		// Create a key for deduplication: line:column:message
+		std::string errorKey;
+		if (node) {
+			errorKey = std::to_string(node->line()) + ":" + std::to_string(node->column()) + ":" + message;
+		} else {
+			errorKey = std::string("0:0:") + message;
+		}
+
+		// Skip if we've already reported this exact error
+		if (mReportedErrors.find(errorKey) != mReportedErrors.end()) {
+			return;
+		}
+		mReportedErrors.insert(errorKey);
+
+		mErrorCount++;
+
+		if (mStoreErrors) {
+			ErrorInfo err;
+			err.line = node ? node->line() : 0;
+			err.column = node ? node->column() : 0;
+			err.message = message;
+			if (hint) {
+				err.message += " (hint: ";
+				err.message += hint;
+				err.message += ")";
+			}
+			mStoredErrors.push_back(err);
+		} else {
+			// GCC/Clang style: quadc: filename:line:column: error: message
+			std::cerr << Colors::bold() << "quadc: " << Colors::reset();
+			if (mFilename && node) {
+				std::cerr << Colors::bold() << mFilename << ":" << node->line() << ":" << node->column() << ":"
+						  << Colors::reset() << " ";
+			} else if (mFilename) {
+				std::cerr << Colors::bold() << mFilename << ":" << Colors::reset() << " ";
+			}
+			std::cerr << Colors::bold() << Colors::red() << "error:" << Colors::reset() << " ";
+			std::cerr << Colors::bold() << message << Colors::reset() << std::endl;
+
+			// Print source context if available
+			if (mSource && node) {
+				printSourceContext(node->line(), node->column());
+			}
+
+			// Print hint if provided
+			if (hint) {
+				std::cerr << Colors::cyan() << "  hint:" << Colors::reset() << " " << hint << std::endl;
 			}
 		}
 	}

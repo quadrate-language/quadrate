@@ -397,7 +397,8 @@ namespace Qd {
 		// Check if this is a break statement
 		if (node->type() == IAstNode::Type::BREAK_STATEMENT) {
 			if (iteratorNames.empty()) {
-				reportError(node, "break statement not within loop or switch");
+				reportErrorWithHint(node, "break statement not within loop or switch",
+						"break can only be used inside 'loop', 'for', or 'switch' statements");
 			}
 			return;
 		}
@@ -405,7 +406,8 @@ namespace Qd {
 		// Check if this is a continue statement
 		if (node->type() == IAstNode::Type::CONTINUE_STATEMENT) {
 			if (iteratorNames.empty()) {
-				reportError(node, "continue statement not within a loop");
+				reportErrorWithHint(node, "continue statement not within a loop",
+						"continue can only be used inside 'loop' or 'for' statements");
 			}
 			return;
 		}
