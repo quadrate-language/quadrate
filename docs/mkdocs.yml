@@ -58,6 +58,7 @@ nav:
       - Comparison: docs/reference/comparison.md
       - Bitwise: docs/reference/bitwise.md
       - Arrays: docs/reference/arrays.md
+      - Generics: docs/reference/generics.md
       - Type Casting: docs/reference/types.md
       - Input/Output: docs/reference/io.md
       - Error Handling: docs/reference/errors.md
