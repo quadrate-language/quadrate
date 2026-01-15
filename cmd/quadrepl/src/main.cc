@@ -1,6 +1,7 @@
 #include <qc/ast.h>
 #include <qc/colors.h>
 #include <qd/qd.h>
+#include <qdplatform/platform.h>
 #include <qdrt/stack.h>
 
 #include <csetjmp>
@@ -8,13 +9,115 @@
 #include <cstdio>
 #include <cstdlib>
 #include <iostream>
+#include <pwd.h>
 #include <readline/history.h>
 #include <readline/readline.h>
 #include <string>
+#include <sys/types.h>
 #include <unistd.h>
 #include <vector>
 
 #include "version.h"
+
+// History file path
+static std::string g_historyFile;
+
+// Completions for tab completion
+static const char* g_keywords[] = {
+	"fn", "pub", "if", "else", "for", "while", "loop", "break", "continue",
+	"return", "use", "struct", "const", "defer", "switch", "case", "test",
+	nullptr
+};
+
+static const char* g_builtins[] = {
+	// Stack operations
+	"dup", "drop", "swap", "over", "rot", "nip", "tuck", "pick", "roll",
+	// Arithmetic
+	"add", "sub", "mul", "div", "mod", "neg", "inc", "dec",
+	// Comparison
+	"eq", "ne", "lt", "gt", "le", "ge",
+	// Logic
+	"and", "or", "not", "xor",
+	// Bitwise
+	"shl", "shr", "band", "bor", "bnot", "bxor",
+	// I/O
+	"print", "prints", "printv", "printsv", "nl", "read",
+	// Type conversion
+	"i2f", "f2i", "i2s", "f2s",
+	// Arrays
+	"makei", "makef", "makes", "make", "len", "nth", "set", "append",
+	nullptr
+};
+
+static const char* g_modules[] = {
+	"math::", "str::", "io::", "fmt::", "os::", "mem::", "time::", "thread::",
+	"flag::", "path::", "rand::", "unicode::", "strconv::", "bytes::", "bits::",
+	"signal::", "term::", "limits::", "testing::", "sb::",
+	nullptr
+};
+
+// Generator function for readline completion
+static char* completionGenerator(const char* text, int state) {
+	static int listIndex;
+	static size_t len;
+	static int phase; // 0=keywords, 1=builtins, 2=modules
+	const char* name;
+
+	if (!state) {
+		listIndex = 0;
+		phase = 0;
+		len = strlen(text);
+	}
+
+	while (phase < 3) {
+		const char** list;
+		switch (phase) {
+		case 0: list = g_keywords; break;
+		case 1: list = g_builtins; break;
+		case 2: list = g_modules; break;
+		default: return nullptr;
+		}
+
+		while ((name = list[listIndex]) != nullptr) {
+			listIndex++;
+			if (strncmp(name, text, len) == 0) {
+				return strdup(name);
+			}
+		}
+		phase++;
+		listIndex = 0;
+	}
+
+	return nullptr;
+}
+
+// Completion function for readline
+static char** completionFunction(const char* text, int start, int end) {
+	(void)start;
+	(void)end;
+	rl_attempted_completion_over = 1; // Don't fall back to filename completion
+	return rl_completion_matches(text, completionGenerator);
+}
+
+// Get history file path
+static std::string getHistoryFilePath() {
+	const char* home = getenv("HOME");
+	if (!home) {
+		struct passwd* pw = getpwuid(getuid());
+		if (pw) {
+			home = pw->pw_dir;
+		}
+	}
+	if (home) {
+#ifdef QD_PLATFORM_HAIKU
+		// Haiku uses ~/config/settings/ for user settings
+		return std::string(home) + "/config/settings/quadrepl_history";
+#else
+		return std::string(home) + "/.quadrepl_history";
+#endif
+	}
+	return "";
+}
 
 // Signal handling for crash recovery
 static sigjmp_buf g_jmpBuf;
@@ -70,6 +173,15 @@ public:
 	}
 
 	void run() {
+		// Initialize readline completion
+		rl_attempted_completion_function = completionFunction;
+
+		// Load history from file
+		g_historyFile = getHistoryFilePath();
+		if (!g_historyFile.empty()) {
+			read_history(g_historyFile.c_str());
+		}
+
 		printWelcome();
 
 		std::string accumulated; // Accumulated multiline input
@@ -107,6 +219,7 @@ public:
 				if (printOnExit) {
 					printStackToStdout();
 				}
+				saveHistory();
 				break;
 			}
 
@@ -143,6 +256,7 @@ public:
 				if (printOnExit) {
 					printStackToStdout();
 				}
+				saveHistory();
 				break;
 			} else if (completeInput == "help" || completeInput == ":help" || completeInput == ":h") {
 				printHelp();
@@ -518,6 +632,7 @@ private:
 				COLOR_RESET);
 		printf("\n");
 		printf("%sKey Bindings:%s\n", COLOR_BOLD, COLOR_RESET);
+		printf("  %sTab%s           Auto-complete keywords, builtins, modules\n", COLOR_GREEN, COLOR_RESET);
 		printf("  %sUp/Down Arrow%s  Navigate command history\n", COLOR_GREEN, COLOR_RESET);
 		printf("  %sCtrl+R%s        Search command history\n", COLOR_GREEN, COLOR_RESET);
 		printf("  %sCtrl+D%s        Exit REPL (EOF)\n", COLOR_GREEN, COLOR_RESET);
@@ -577,6 +692,12 @@ private:
 		useStatements.clear();
 		expectedStackDepth = 0;
 		printf("%sREPL reset%s\n", COLOR_DIM, COLOR_RESET);
+	}
+
+	void saveHistory() {
+		if (!g_historyFile.empty()) {
+			write_history(g_historyFile.c_str());
+		}
 	}
 
 	void processLine(const std::string& line) {

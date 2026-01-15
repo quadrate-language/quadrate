@@ -208,3 +208,74 @@ pub fn is_digit(c:i64 -- result:i64) {
 	-> c
 	c digit0 >= c digit9 <= *
 }
+
+/// Check if character is an uppercase letter (A-Z).
+/// @param c i64 Character code
+/// @return result i64 1 if uppercase, 0 otherwise
+/// @example 65 unicode::is_upper print  // 1
+pub fn is_upper(c:i64 -- result:i64) {
+	-> c
+	c A >= c Z <= *
+}
+
+/// Check if character is a lowercase letter (a-z).
+/// @param c i64 Character code
+/// @return result i64 1 if lowercase, 0 otherwise
+/// @example 97 unicode::is_lower print  // 1
+pub fn is_lower(c:i64 -- result:i64) {
+	-> c
+	c a >= c z <= *
+}
+
+/// Check if character is an alphabetic letter (A-Z or a-z).
+/// @param c i64 Character code
+/// @return result i64 1 if alphabetic, 0 otherwise
+/// @example 65 unicode::is_alpha print  // 1
+pub fn is_alpha(c:i64 -- result:i64) {
+	-> c
+	c is_upper c is_lower or
+}
+
+/// Check if character is alphanumeric (A-Z, a-z, or 0-9).
+/// @param c i64 Character code
+/// @return result i64 1 if alphanumeric, 0 otherwise
+/// @example 65 unicode::is_alnum print  // 1
+pub fn is_alnum(c:i64 -- result:i64) {
+	-> c
+	c is_alpha c is_digit or
+}
+
+/// Check if character is whitespace (space, tab, newline, carriage return).
+/// @param c i64 Character code
+/// @return result i64 1 if whitespace, 0 otherwise
+/// @example 32 unicode::is_space print  // 1
+pub fn is_space(c:i64 -- result:i64) {
+	-> c
+	c space == c tab == or c newline == or c cr == or
+}
+
+/// Convert uppercase letter to lowercase.
+/// @param c i64 Character code
+/// @return result i64 Lowercase character code (unchanged if not uppercase)
+/// @example 65 unicode::to_lower print  // 97
+pub fn to_lower(c:i64 -- result:i64) {
+	-> c
+	c is_upper if {
+		c A - a +
+	} else {
+		c
+	}
+}
+
+/// Convert lowercase letter to uppercase.
+/// @param c i64 Character code
+/// @return result i64 Uppercase character code (unchanged if not lowercase)
+/// @example 97 unicode::to_upper print  // 65
+pub fn to_upper(c:i64 -- result:i64) {
+	-> c
+	c is_lower if {
+		c a - A +
+	} else {
+		c
+	}
+}

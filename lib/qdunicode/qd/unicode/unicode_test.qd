@@ -39,3 +39,60 @@ test "unicode control characters" {
 	unicode::cr 13 testing::assert_eq
 	unicode::esc 27 testing::assert_eq
 }
+
+test "unicode::is_upper" {
+	65 unicode::is_upper testing::assert_true    // 'A'
+	90 unicode::is_upper testing::assert_true    // 'Z'
+	77 unicode::is_upper testing::assert_true    // 'M'
+	97 unicode::is_upper testing::assert_false   // 'a'
+	48 unicode::is_upper testing::assert_false   // '0'
+}
+
+test "unicode::is_lower" {
+	97 unicode::is_lower testing::assert_true    // 'a'
+	122 unicode::is_lower testing::assert_true   // 'z'
+	109 unicode::is_lower testing::assert_true   // 'm'
+	65 unicode::is_lower testing::assert_false   // 'A'
+	48 unicode::is_lower testing::assert_false   // '0'
+}
+
+test "unicode::is_alpha" {
+	65 unicode::is_alpha testing::assert_true    // 'A'
+	97 unicode::is_alpha testing::assert_true    // 'a'
+	90 unicode::is_alpha testing::assert_true    // 'Z'
+	122 unicode::is_alpha testing::assert_true   // 'z'
+	48 unicode::is_alpha testing::assert_false   // '0'
+	32 unicode::is_alpha testing::assert_false   // space
+}
+
+test "unicode::is_alnum" {
+	65 unicode::is_alnum testing::assert_true    // 'A'
+	97 unicode::is_alnum testing::assert_true    // 'a'
+	48 unicode::is_alnum testing::assert_true    // '0'
+	57 unicode::is_alnum testing::assert_true    // '9'
+	32 unicode::is_alnum testing::assert_false   // space
+	33 unicode::is_alnum testing::assert_false   // '!'
+}
+
+test "unicode::is_space" {
+	32 unicode::is_space testing::assert_true    // space
+	9 unicode::is_space testing::assert_true     // tab
+	10 unicode::is_space testing::assert_true    // newline
+	13 unicode::is_space testing::assert_true    // carriage return
+	65 unicode::is_space testing::assert_false   // 'A'
+	48 unicode::is_space testing::assert_false   // '0'
+}
+
+test "unicode::to_lower" {
+	65 unicode::to_lower 97 testing::assert_eq   // 'A' -> 'a'
+	90 unicode::to_lower 122 testing::assert_eq  // 'Z' -> 'z'
+	97 unicode::to_lower 97 testing::assert_eq   // 'a' unchanged
+	48 unicode::to_lower 48 testing::assert_eq   // '0' unchanged
+}
+
+test "unicode::to_upper" {
+	97 unicode::to_upper 65 testing::assert_eq   // 'a' -> 'A'
+	122 unicode::to_upper 90 testing::assert_eq  // 'z' -> 'Z'
+	65 unicode::to_upper 65 testing::assert_eq   // 'A' unchanged
+	48 unicode::to_upper 48 testing::assert_eq   // '0' unchanged
+}

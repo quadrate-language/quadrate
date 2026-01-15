@@ -9,6 +9,7 @@ pub const ErrNoValue = 3
 pub const ErrInvalidValue = 4
 
 use str
+use strconv
 use unicode
 
 /// Parsed command-line arguments.
@@ -104,7 +105,7 @@ pub fn string(f:ptr name:str -- value:str)! {
 
 	f @argv pattern str::index_of -> idx
 	idx 0 < if {
-		"flag not found" ErrNotFound panic
+		"flag not found: " name str::concat ErrNotFound panic
 	}
 
 	idx 1 + name str::len + 1 + -> start
@@ -112,7 +113,7 @@ pub fn string(f:ptr name:str -- value:str)! {
 
 	argv "\n" start str::index_of_from -> end_idx
 	end_idx 0 < if {
-		"value not found" ErrNoValue panic
+		"flag has no value: " name str::concat ErrNoValue panic
 	}
 
 	argv start end_idx start - str::substring! -> value
@@ -135,7 +136,7 @@ pub fn int(f:ptr name:str -- value:i64)! {
 		s parse_int
 	} else {
 		drop  // drop unused string from 'string' call
-		"flag not found" ErrNotFound panic
+		"flag not found: " name str::concat ErrNotFound panic
 		0
 	}
 }
@@ -155,7 +156,7 @@ pub fn float(f:ptr name:str -- value:f64)! {
 		s parse_float
 	} else {
 		drop  // drop unused string from 'string' call
-		"flag not found" ErrNotFound panic
+		"flag not found: " name str::concat ErrNotFound panic
 		0.0
 	}
 }
@@ -227,7 +228,7 @@ pub fn positional(f:ptr index:i64 -- value:str)! {
 		end_idx 1 + -> start
 	}
 
-	"positional argument not found" ErrNotFound panic
+	"positional argument not found at index " index strconv::itoa str::concat ErrNotFound panic
 	""
 }
 
