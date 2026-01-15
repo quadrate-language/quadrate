@@ -74,11 +74,11 @@ test "math::within" {
 	11 0 10 math::within testing::assert_false
 }
 
-test "math::inc dec" {
-	5 math::inc 6 testing::assert_eq
-	5 math::dec 4 testing::assert_eq
-	0 math::inc 1 testing::assert_eq
-	0 math::dec -1 testing::assert_eq
+test "inc dec builtins" {
+	5 inc 6 testing::assert_eq
+	5 dec 4 testing::assert_eq
+	0 inc 1 testing::assert_eq
+	0 dec -1 testing::assert_eq
 }
 
 test "math::sq cb" {
