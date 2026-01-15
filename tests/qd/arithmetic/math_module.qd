@@ -34,8 +34,8 @@ fn main() {
 
 	// Helper functions
 	"=== Helpers ===" print nl
-	5 math::inc print nl             // 6
-	5 math::dec print nl             // 4
+	5 inc print nl                   // 6 (builtin)
+	5 dec print nl                   // 4 (builtin)
 	3.0 math::sq 9.0 eq print nl     // 1
 	2.0 math::cb 8.0 eq print nl     // 1
 	-5.0 math::abs 5.0 eq print nl   // 1

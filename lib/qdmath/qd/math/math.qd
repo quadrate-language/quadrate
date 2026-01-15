@@ -192,22 +192,6 @@ import "libqdmath.a" as "math" {
 	pub fn trunc(x:f64 -- result:f64)
 }
 
-/// Increment integer by 1.
-/// @param x i64 Value to increment
-/// @return result i64 x + 1
-/// @example 5 math::inc print  // 6
-pub fn inc(x:i64 -- result:i64) {
-	1 add
-}
-
-/// Decrement integer by 1.
-/// @param x i64 Value to decrement
-/// @return result i64 x - 1
-/// @example 5 math::dec print  // 4
-pub fn dec(x:i64 -- result:i64) {
-	1 sub
-}
-
 /// Square a number.
 /// @param x f64 Value to square
 /// @return result f64 x * x
