@@ -57,7 +57,7 @@ fn main() {
 	}
 	f7 flag::destroy
 
-	// Test positional (not implemented yet)
+	// Test positional arguments
 	"file.txt" 1 flag::parse -> f8
 	f8 0 flag::positional if {
 		print nl
