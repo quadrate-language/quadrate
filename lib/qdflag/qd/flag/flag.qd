@@ -162,13 +162,72 @@ pub fn float(f:ptr name:str -- value:f64)! {
 
 /// Get positional argument at index.
 /// @param f ptr Flag struct
-/// @param index i64 Position (0-based)
+/// @param index i64 Position (0-based, skips flags starting with -)
 /// @return value str Positional argument
-/// @error ErrNotFound Not yet implemented
+/// @error ErrNotFound Index out of bounds
 pub fn positional(f:ptr index:i64 -- value:str)! {
 	-> index
 	-> f
-	"positional not yet implemented" ErrNotFound panic
+	"" -> result
+	0 -> pos_idx
+	0 -> start
+	0 -> end_idx
+	f @argv -> argv
+	argv str::len -> len
+
+	// Skip initial newline
+	1 -> start
+
+	loop {
+		start len >= if {
+			break
+		}
+
+		// Find end of current arg
+		argv "\n" start str::index_of_from -> end_idx
+		end_idx 0 < if {
+			len -> end_idx
+		}
+
+		// Skip empty args
+		end_idx start == if {
+			start 1 + -> start
+			continue
+		}
+
+		// Check if this is a flag (starts with -)
+		argv start str::char_at! unicode::minus != if {
+			// This is a positional argument
+			pos_idx index == if {
+				argv start end_idx start - str::substring! -> result
+				result return
+			}
+			pos_idx 1 + -> pos_idx
+		} else {
+			// This is a flag - check if it has a value after it
+			// Skip the flag, but also skip its value if it doesn't start with -
+			end_idx 1 + -> start
+			start len < if {
+				argv "\n" start str::index_of_from -> end_idx
+				end_idx 0 < if {
+					len -> end_idx
+				}
+				// Check if next arg is a value (not starting with -)
+				start end_idx < if {
+					argv start str::char_at! unicode::minus != if {
+						// Skip this value too (it belongs to the flag)
+						end_idx 1 + -> start
+						continue
+					}
+				}
+			}
+			continue
+		}
+
+		end_idx 1 + -> start
+	}
+
+	"positional argument not found" ErrNotFound panic
 	""
 }
 

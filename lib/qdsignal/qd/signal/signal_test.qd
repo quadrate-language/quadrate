@@ -1,0 +1,50 @@
+// Unit tests for the signal module
+use signal
+use testing
+
+test "signal constants" {
+	signal::SigHup 1 testing::assert_eq
+	signal::SigInt 2 testing::assert_eq
+	signal::SigQuit 3 testing::assert_eq
+	signal::SigIll 4 testing::assert_eq
+	signal::SigAbrt 6 testing::assert_eq
+	signal::SigFpe 8 testing::assert_eq
+	signal::SigKill 9 testing::assert_eq
+	signal::SigSegv 11 testing::assert_eq
+	signal::SigPipe 13 testing::assert_eq
+	signal::SigAlrm 14 testing::assert_eq
+	signal::SigTerm 15 testing::assert_eq
+}
+
+test "signal user constants" {
+	signal::SigUsr1 10 testing::assert_eq
+	signal::SigUsr2 12 testing::assert_eq
+}
+
+test "signal job control constants" {
+	signal::SigChld 17 testing::assert_eq
+	signal::SigCont 18 testing::assert_eq
+	signal::SigStop 19 testing::assert_eq
+	signal::SigTstp 20 testing::assert_eq
+	signal::SigTtin 21 testing::assert_eq
+	signal::SigTtou 22 testing::assert_eq
+}
+
+test "signal::trap and pending" {
+	// Trap SIGUSR1 (safe to test with)
+	signal::SigUsr1 signal::trap
+
+	// Initially no signal pending
+	signal::SigUsr1 signal::pending testing::assert_false
+
+	// Reset handler
+	signal::SigUsr1 signal::reset
+}
+
+test "signal::ignore" {
+	// Test ignoring a signal (SIGPIPE is safe)
+	signal::SigPipe signal::ignore
+
+	// Reset to default
+	signal::SigPipe signal::reset
+}

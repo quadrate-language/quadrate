@@ -1,0 +1,38 @@
+// Unit tests for the limits module
+use limits
+use testing
+
+test "limits::I64 bounds" {
+	limits::I64Max 0 > testing::assert_true
+	limits::I64Min 0 < testing::assert_true
+	limits::I64Max limits::I64Min > testing::assert_true
+}
+
+test "limits::F64 bounds" {
+	limits::F64Max 0.0 > testing::assert_true
+	limits::F64Min 0.0 > testing::assert_true
+	limits::F64Max limits::F64Min > testing::assert_true
+	limits::F64Epsilon 0.0 > testing::assert_true
+	limits::F64Epsilon 1.0 < testing::assert_true
+}
+
+test "limits::I8 bounds" {
+	limits::I8Max 127 testing::assert_eq
+	limits::I8Min -128 testing::assert_eq
+}
+
+test "limits::I16 bounds" {
+	limits::I16Max 32767 testing::assert_eq
+	limits::I16Min -32768 testing::assert_eq
+}
+
+test "limits::I32 bounds" {
+	limits::I32Max 2147483647 testing::assert_eq
+	limits::I32Min -2147483648 testing::assert_eq
+}
+
+test "limits::unsigned bounds" {
+	limits::U8Max 255 testing::assert_eq
+	limits::U16Max 65535 testing::assert_eq
+	limits::U32Max 4294967295 testing::assert_eq
+}

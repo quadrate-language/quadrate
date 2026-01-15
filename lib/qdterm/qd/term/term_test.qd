@@ -1,0 +1,49 @@
+// Unit tests for the term module
+use term
+use str
+use testing
+
+test "term::Reset constant" {
+	term::Reset str::len 0 > testing::assert_true
+	term::Reset "\x1b[0m" testing::assert_eq
+}
+
+test "term::text styles" {
+	term::Bold str::len 0 > testing::assert_true
+	term::Dim str::len 0 > testing::assert_true
+	term::Italic str::len 0 > testing::assert_true
+	term::Underline str::len 0 > testing::assert_true
+}
+
+test "term::foreground colors" {
+	term::Black str::len 0 > testing::assert_true
+	term::Red str::len 0 > testing::assert_true
+	term::Green str::len 0 > testing::assert_true
+	term::Yellow str::len 0 > testing::assert_true
+	term::Blue str::len 0 > testing::assert_true
+	term::Magenta str::len 0 > testing::assert_true
+	term::Cyan str::len 0 > testing::assert_true
+	term::White str::len 0 > testing::assert_true
+}
+
+test "term::bright foreground colors" {
+	term::BrightBlack str::len 0 > testing::assert_true
+	term::BrightRed str::len 0 > testing::assert_true
+	term::BrightGreen str::len 0 > testing::assert_true
+	term::BrightYellow str::len 0 > testing::assert_true
+	term::BrightBlue str::len 0 > testing::assert_true
+	term::BrightMagenta str::len 0 > testing::assert_true
+	term::BrightCyan str::len 0 > testing::assert_true
+	term::BrightWhite str::len 0 > testing::assert_true
+}
+
+test "term::background colors" {
+	term::BgBlack str::len 0 > testing::assert_true
+	term::BgRed str::len 0 > testing::assert_true
+	term::BgGreen str::len 0 > testing::assert_true
+	term::BgYellow str::len 0 > testing::assert_true
+	term::BgBlue str::len 0 > testing::assert_true
+	term::BgMagenta str::len 0 > testing::assert_true
+	term::BgCyan str::len 0 > testing::assert_true
+	term::BgWhite str::len 0 > testing::assert_true
+}

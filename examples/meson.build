@@ -1,3 +1,4 @@
+subdir('bf')
 subdir('bmi')
 subdir('dc')
 subdir('defer')
@@ -8,6 +9,8 @@ subdir('ffi')
 subdir('fibonacci')
 subdir('hello-world')
 subdir('hello-world-c')
+subdir('hof')
+subdir('lambdas')
 subdir('modules')
 # Note: rest-api and web-server removed - they depend on http which is now an external module
 # subdir('rest-api')
