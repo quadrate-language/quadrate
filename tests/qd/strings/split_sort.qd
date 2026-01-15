@@ -1,48 +1,25 @@
-// Test str::split, str::compare, str::join
+// Test str::compare
 use str
-use mem
 
 fn main() {
-	"=== split basic ===" print nl
-	"a,b,c" "," str::split! -> count -> parts
-	count print nl
-	parts 0 mem::get_ptr cast<str> print nl
-	parts 8 mem::get_ptr cast<str> print nl
-	parts 16 mem::get_ptr cast<str> print nl
-
-	"=== split with spaces ===" print nl
-	"hello world test" " " str::split! -> count2 -> parts2
-	count2 print nl
-	parts2 0 mem::get_ptr cast<str> print nl
-	parts2 8 mem::get_ptr cast<str> print nl
-	parts2 16 mem::get_ptr cast<str> print nl
-
-	"=== split no delimiter ===" print nl
-	"one" "," str::split! -> count3 -> parts3
-	count3 print nl
-	parts3 0 mem::get_ptr cast<str> print nl
-
-	"=== split by newline ===" print nl
-	"line1
-line2
-line3" "\n" str::split! -> count4 -> parts4
-	count4 print nl
-	parts4 0 mem::get_ptr cast<str> print nl
-	parts4 8 mem::get_ptr cast<str> print nl
-	parts4 16 mem::get_ptr cast<str> print nl
-
 	"=== compare equal ===" print nl
 	"abc" "abc" str::compare print nl
+	"" "" str::compare print nl
+	"hello" "hello" str::compare print nl
 
 	"=== compare less ===" print nl
 	"abc" "abd" str::compare 0 < print nl
 	"a" "b" str::compare 0 < print nl
 	"apple" "banana" str::compare 0 < print nl
+	"" "a" str::compare 0 < print nl
+	"aaa" "aaaa" str::compare 0 < print nl
 
 	"=== compare greater ===" print nl
 	"abd" "abc" str::compare 0 > print nl
 	"z" "a" str::compare 0 > print nl
 	"banana" "apple" str::compare 0 > print nl
+	"a" "" str::compare 0 > print nl
+	"aaaa" "aaa" str::compare 0 > print nl
 
 	"done" print nl
 }

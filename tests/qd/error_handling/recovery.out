@@ -1,0 +1,19 @@
+=== Valid input ===
+50
+=== Negative input ===
+caught negative
+=== Too large ===
+caught too large
+=== With default (valid) ===
+50
+=== With default (invalid) ===
+99
+=== Try multiple (first valid) ===
+50
+=== Try multiple (second valid) ===
+60
+=== Try multiple (third valid) ===
+70
+=== Try multiple (all invalid) ===
+-1
+done

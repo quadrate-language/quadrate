@@ -1,0 +1,11 @@
+=== Direct success ===
+42
+=== Direct failure ===
+caught failure
+=== Chained success ===
+84
+=== Chained failure ===
+propagated failure
+=== Triple chain success ===
+84
+done

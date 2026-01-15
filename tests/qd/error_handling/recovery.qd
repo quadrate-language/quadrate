@@ -1,0 +1,85 @@
+// Test error recovery patterns
+fn validate(x:i64 -- result:i64)! {
+	-> x
+	x 0 < if {
+		0 "negative" 1 panic
+	}
+	x 100 > if {
+		0 "too large" 2 panic
+	}
+	x
+}
+
+fn with_default(x:i64 default:i64 -- result:i64) {
+	-> default
+	-> x
+	x validate if {
+		// success, use value
+	} else {
+		drop  // drop error value
+		default
+	}
+}
+
+fn try_multiple(a:i64 b:i64 c:i64 -- result:i64) {
+	-> c -> b -> a
+	a validate if {
+		// a is valid
+	} else {
+		drop
+		b validate if {
+			// b is valid
+		} else {
+			drop
+			c validate if {
+				// c is valid
+			} else {
+				drop
+				-1  // all failed
+			}
+		}
+	}
+}
+
+fn main() {
+	"=== Valid input ===" print nl
+	50 validate if {
+		print nl
+	} else {
+		drop "failed" print nl
+	}
+
+	"=== Negative input ===" print nl
+	-10 validate if {
+		print nl
+	} else {
+		drop "caught negative" print nl
+	}
+
+	"=== Too large ===" print nl
+	200 validate if {
+		print nl
+	} else {
+		drop "caught too large" print nl
+	}
+
+	"=== With default (valid) ===" print nl
+	50 99 with_default print nl
+
+	"=== With default (invalid) ===" print nl
+	-10 99 with_default print nl
+
+	"=== Try multiple (first valid) ===" print nl
+	50 60 70 try_multiple print nl
+
+	"=== Try multiple (second valid) ===" print nl
+	-10 60 70 try_multiple print nl
+
+	"=== Try multiple (third valid) ===" print nl
+	-10 200 70 try_multiple print nl
+
+	"=== Try multiple (all invalid) ===" print nl
+	-10 200 -20 try_multiple print nl
+
+	"done" print nl
+}
