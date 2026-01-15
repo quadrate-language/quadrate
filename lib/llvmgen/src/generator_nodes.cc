@@ -1,5 +1,8 @@
 #include "generator_impl.h"
 
+#include <cerrno>
+#include <cstdlib>
+
 namespace Qd {
 
 	void LlvmGenerator::Impl::generateLiteral(AstNodeLiteral* lit, llvm::Value* ctx) {
@@ -25,7 +28,17 @@ namespace Qd {
 			break;
 		}
 		case AstNodeLiteral::LiteralType::FLOAT: {
-			auto val = llvm::ConstantFP::get(builder->getDoubleTy(), std::stod(value));
+			double dval = 0.0;
+			char* endptr = nullptr;
+			errno = 0;
+			dval = std::strtod(value.c_str(), &endptr);
+			if (errno == ERANGE || (endptr != nullptr && *endptr != '\0' && endptr == value.c_str())) {
+				std::cerr << "quadc: error: Invalid float literal '" << value << "' (out of range or invalid format)"
+						  << std::endl;
+				compilationFailed = true;
+				dval = 0.0;
+			}
+			auto val = llvm::ConstantFP::get(builder->getDoubleTy(), dval);
 			builder->CreateCall(pushFloatFn, {ctx, val});
 			lastPushedType = LastPushedType::FLOAT;
 			break;

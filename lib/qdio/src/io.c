@@ -11,6 +11,77 @@
 #include <string.h>
 #include <errno.h>
 
+#define FILE_REGISTRY_SIZE 256
+
+typedef struct file_registry_entry {
+    FILE* fp;
+    struct file_registry_entry* next;
+} file_registry_entry_t;
+
+static file_registry_entry_t* file_registry[FILE_REGISTRY_SIZE] = {0};
+
+static size_t file_registry_hash(const FILE* fp) {
+    uintptr_t val = (uintptr_t)fp;
+    val = val ^ (val >> 16);
+    return val % FILE_REGISTRY_SIZE;
+}
+
+static void file_registry_add(FILE* fp) {
+    if (!fp) return;
+    size_t idx = file_registry_hash(fp);
+    file_registry_entry_t* entry = (file_registry_entry_t*)malloc(sizeof(file_registry_entry_t));
+    if (entry) {
+        entry->fp = fp;
+        entry->next = file_registry[idx];
+        file_registry[idx] = entry;
+    }
+}
+
+static int file_registry_contains(const FILE* fp) {
+    if (!fp) return 0;
+    size_t idx = file_registry_hash(fp);
+    file_registry_entry_t* entry = file_registry[idx];
+    while (entry) {
+        if (entry->fp == fp) {
+            return 1;
+        }
+        entry = entry->next;
+    }
+    return 0;
+}
+
+static void file_registry_remove(FILE* fp) {
+    if (!fp) return;
+    size_t idx = file_registry_hash(fp);
+    file_registry_entry_t** pp = &file_registry[idx];
+    while (*pp) {
+        if ((*pp)->fp == fp) {
+            file_registry_entry_t* to_free = *pp;
+            *pp = (*pp)->next;
+            free(to_free);
+            return;
+        }
+        pp = &(*pp)->next;
+    }
+}
+
+// Helper to validate a FILE handle before use
+static int is_valid_file_handle(FILE* fp, qd_context* ctx, const char* op_name) {
+    if (!fp) {
+        ctx->error_code = IO_ERR_INVALID_HANDLE;
+        qd_set_error_msg(ctx, "null file handle");
+        return 0;
+    }
+    if (!file_registry_contains(fp)) {
+        ctx->error_code = IO_ERR_INVALID_HANDLE;
+        char err_buf[128];
+        snprintf(err_buf, sizeof(err_buf), "%s: invalid or already closed file handle", op_name);
+        qd_set_error_msg(ctx, err_buf);
+        return 0;
+    }
+    return 1;
+}
+
 qd_exec_result usr_io_open(qd_context* ctx) {
     size_t stack_size = qd_stack_size(ctx->st);
     if (stack_size < 2) {
@@ -42,7 +113,18 @@ qd_exec_result usr_io_open(qd_context* ctx) {
         abort();
     }
 
-    FILE* fp = fopen(qd_string_data(path_elem.value.s), qd_string_data(mode_elem.value.s));
+    const char* path = qd_string_data(path_elem.value.s);
+    const char* mode = qd_string_data(mode_elem.value.s);
+    if (!path || !mode) {
+        qd_string_release(path_elem.value.s);
+        qd_string_release(mode_elem.value.s);
+        ctx->error_code = IO_ERR_INVALID_ARG;
+        qd_set_error_msg(ctx, "io::open: null path or mode string");
+        qd_push_i(ctx, IO_ERR_INVALID_ARG);
+        return (qd_exec_result){IO_ERR_INVALID_ARG};
+    }
+
+    FILE* fp = fopen(path, mode);
     qd_string_release(path_elem.value.s);
     qd_string_release(mode_elem.value.s);
 
@@ -55,8 +137,13 @@ qd_exec_result usr_io_open(qd_context* ctx) {
         return (qd_exec_result){IO_ERR_NOT_FOUND};
     }
 
+    // Register the file handle for tracking
+    file_registry_add(fp);
+
     qd_exec_result push_result = qd_push_p(ctx, fp);
     if (push_result.code != 0) {
+        file_registry_remove(fp);
+        fclose(fp);
         fprintf(stderr, "Fatal error in io::open: Failed to push pointer to stack\n");
         abort();
     }
@@ -84,9 +171,15 @@ qd_exec_result usr_io_close(qd_context* ctx) {
     }
 
     FILE* fp = (FILE*)elem.value.p;
-    if (fp) {
-        fclose(fp); // Ignore errors on close
+    if (!is_valid_file_handle(fp, ctx, "io::close")) {
+        // Still return success - closing an invalid handle is a no-op
+        // but we've set the error message for debugging
+        return (qd_exec_result){0};
     }
+
+    // Remove from registry before closing
+    file_registry_remove(fp);
+    fclose(fp);
 
     return (qd_exec_result){0};
 }
@@ -124,13 +217,19 @@ qd_exec_result usr_io_read_string(qd_context* ctx) {
     FILE* fp = (FILE*)handle_elem.value.p;
     int64_t count = count_elem.value.i;
 
-    // Validate count is within reasonable bounds (max 1GB to prevent DoS)
-    #define IO_MAX_READ_SIZE (1024 * 1024 * 1024)
-    if (!fp || count < 0 || count > IO_MAX_READ_SIZE) {
-        ctx->error_code = IO_ERR_INVALID_HANDLE;
-        qd_set_error_msg(ctx, "io::read_string: invalid file handle or count (max 1GB)");
+    // Validate file handle using registry
+    if (!is_valid_file_handle(fp, ctx, "io::read_string")) {
         qd_push_i(ctx, ctx->error_code);
         return (qd_exec_result){IO_ERR_INVALID_HANDLE};
+    }
+
+    // Validate count is within reasonable bounds (max 1GB to prevent DoS)
+    #define IO_MAX_READ_SIZE (1024 * 1024 * 1024)
+    if (count < 0 || count > IO_MAX_READ_SIZE) {
+        ctx->error_code = IO_ERR_INVALID_ARG;
+        qd_set_error_msg(ctx, "io::read_string: invalid count (max 1GB)");
+        qd_push_i(ctx, ctx->error_code);
+        return (qd_exec_result){IO_ERR_INVALID_ARG};
     }
 
     if (count == 0) {
@@ -202,11 +301,16 @@ qd_exec_result usr_io_write_string(qd_context* ctx) {
 
     FILE* fp = (FILE*)handle_elem.value.p;
     const char* data = qd_string_data(data_elem.value.s);
+    if (!data) {
+        qd_string_release(data_elem.value.s);
+        ctx->error_code = IO_ERR_INVALID_ARG;
+        qd_set_error_msg(ctx, "io::write_string: null data string");
+        qd_push_i(ctx, ctx->error_code);
+        return (qd_exec_result){IO_ERR_INVALID_ARG};
+    }
     size_t len = strlen(data);
 
-    if (!fp) {
-        ctx->error_code = IO_ERR_INVALID_HANDLE;
-        qd_set_error_msg(ctx, "io::write_string: invalid file handle");
+    if (!is_valid_file_handle(fp, ctx, "io::write_string")) {
         qd_string_release(data_elem.value.s);
         qd_push_i(ctx, ctx->error_code);
         return (qd_exec_result){IO_ERR_INVALID_HANDLE};
@@ -271,9 +375,7 @@ qd_exec_result usr_io_seekg(qd_context* ctx) {
     int64_t offset = offset_elem.value.i;
     int whence = (int)whence_elem.value.i;
 
-    if (!fp) {
-        ctx->error_code = IO_ERR_INVALID_HANDLE;
-        qd_set_error_msg(ctx, "io::seek: invalid file handle");
+    if (!is_valid_file_handle(fp, ctx, "io::seek")) {
         qd_push_i(ctx, ctx->error_code);
         return (qd_exec_result){IO_ERR_INVALID_HANDLE};
     }
@@ -338,7 +440,7 @@ qd_exec_result usr_io_eof(qd_context* ctx) {
     FILE* fp = (FILE*)elem.value.p;
     int64_t is_eof = 0;
 
-    if (fp) {
+    if (is_valid_file_handle(fp, ctx, "io::eof")) {
         is_eof = feof(fp) ? 1 : 0;
     }
 
@@ -373,9 +475,7 @@ qd_exec_result usr_io_tell(qd_context* ctx) {
     }
 
     FILE* fp = (FILE*)elem.value.p;
-    if (!fp) {
-        ctx->error_code = IO_ERR_INVALID_HANDLE;
-        qd_set_error_msg(ctx, "io::tell: invalid file handle");
+    if (!is_valid_file_handle(fp, ctx, "io::tell")) {
         qd_push_i(ctx, ctx->error_code);
         return (qd_exec_result){IO_ERR_INVALID_HANDLE};
     }
@@ -439,9 +539,14 @@ qd_exec_result usr_io_read(qd_context* ctx) {
     void* buffer = buffer_elem.value.p;
     int64_t count = count_elem.value.i;
 
-    if (!fp || !buffer || count < 0) {
+    if (!is_valid_file_handle(fp, ctx, "io::read")) {
+        qd_push_i(ctx, ctx->error_code);
+        return (qd_exec_result){IO_ERR_INVALID_HANDLE};
+    }
+
+    if (!buffer || count < 0) {
         ctx->error_code = IO_ERR_INVALID_ARG;
-        qd_set_error_msg(ctx, "io::read: invalid file handle, buffer, or count");
+        qd_set_error_msg(ctx, "io::read: invalid buffer or count");
         qd_push_i(ctx, ctx->error_code);
         return (qd_exec_result){IO_ERR_INVALID_ARG};
     }
@@ -538,9 +643,14 @@ qd_exec_result usr_io_write(qd_context* ctx) {
     void* buffer = buffer_elem.value.p;
     int64_t count = count_elem.value.i;
 
-    if (!fp || !buffer || count < 0) {
+    if (!is_valid_file_handle(fp, ctx, "io::write")) {
+        qd_push_i(ctx, ctx->error_code);
+        return (qd_exec_result){IO_ERR_INVALID_HANDLE};
+    }
+
+    if (!buffer || count < 0) {
         ctx->error_code = IO_ERR_INVALID_ARG;
-        qd_set_error_msg(ctx, "io::write: invalid file handle, buffer, or count");
+        qd_set_error_msg(ctx, "io::write: invalid buffer or count");
         qd_push_i(ctx, ctx->error_code);
         return (qd_exec_result){IO_ERR_INVALID_ARG};
     }
@@ -587,6 +697,13 @@ qd_exec_result usr_io_read_file(qd_context* ctx) {
     }
 
     const char* path = qd_string_data(path_elem.value.s);
+    if (!path) {
+        qd_string_release(path_elem.value.s);
+        ctx->error_code = IO_ERR_INVALID_ARG;
+        qd_set_error_msg(ctx, "io::read_file: null path string");
+        qd_push_i(ctx, IO_ERR_INVALID_ARG);
+        return (qd_exec_result){IO_ERR_INVALID_ARG};
+    }
 
     FILE* fp = fopen(path, "rb");
     if (!fp) {
@@ -706,6 +823,14 @@ qd_exec_result usr_io_write_file(qd_context* ctx) {
 
     const char* path = qd_string_data(path_elem.value.s);
     const char* contents = qd_string_data(contents_elem.value.s);
+    if (!path || !contents) {
+        qd_string_release(path_elem.value.s);
+        qd_string_release(contents_elem.value.s);
+        ctx->error_code = IO_ERR_INVALID_ARG;
+        qd_set_error_msg(ctx, "io::write_file: null path or contents string");
+        qd_push_i(ctx, IO_ERR_INVALID_ARG);
+        return (qd_exec_result){IO_ERR_INVALID_ARG};
+    }
     size_t len = strlen(contents);
 
     // Open file for writing (truncate if exists)

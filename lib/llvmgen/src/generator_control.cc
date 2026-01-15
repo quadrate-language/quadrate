@@ -66,13 +66,8 @@ namespace Qd {
 		}
 		// Only add branch if block doesn't already have a terminator
 		llvm::BasicBlock* thenBlock = builder->GetInsertBlock();
-		if (thenBlock) {
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wnull-dereference"
-			if (!thenBlock->getTerminator()) {
-#pragma GCC diagnostic pop
-				builder->CreateBr(mergeBB);
-			}
+		if (thenBlock != nullptr && thenBlock->getTerminator() == nullptr) {
+			builder->CreateBr(mergeBB);
 		}
 
 		// Generate else block if present
@@ -83,13 +78,8 @@ namespace Qd {
 			}
 			// Only add branch if block doesn't already have a terminator
 			llvm::BasicBlock* elseBlock = builder->GetInsertBlock();
-			if (elseBlock) {
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wnull-dereference"
-				if (!elseBlock->getTerminator()) {
-#pragma GCC diagnostic pop
-					builder->CreateBr(mergeBB);
-				}
+			if (elseBlock != nullptr && elseBlock->getTerminator() == nullptr) {
+				builder->CreateBr(mergeBB);
 			}
 		}
 
@@ -254,13 +244,8 @@ namespace Qd {
 
 		// Only add branch if block doesn't already have a terminator
 		llvm::BasicBlock* loopBodyBlock = builder->GetInsertBlock();
-		if (loopBodyBlock) {
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wnull-dereference"
-			if (!loopBodyBlock->getTerminator()) {
-#pragma GCC diagnostic pop
-				builder->CreateBr(loopIncBB);
-			}
+		if (loopBodyBlock != nullptr && loopBodyBlock->getTerminator() == nullptr) {
+			builder->CreateBr(loopIncBB);
 		}
 
 		loopStack.pop_back();
@@ -372,13 +357,8 @@ namespace Qd {
 
 		// Only add branch if block doesn't already have a terminator
 		llvm::BasicBlock* whileBlock = builder->GetInsertBlock();
-		if (whileBlock) {
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wnull-dereference"
-			if (!whileBlock->getTerminator()) {
-#pragma GCC diagnostic pop
-				builder->CreateBr(whileCondBB); // Loop back to condition
-			}
+		if (whileBlock != nullptr && whileBlock->getTerminator() == nullptr) {
+			builder->CreateBr(whileCondBB); // Loop back to condition
 		}
 
 		loopStack.pop_back();
@@ -433,13 +413,8 @@ namespace Qd {
 
 		// Only add branch if block doesn't already have a terminator
 		llvm::BasicBlock* loopBlock = builder->GetInsertBlock();
-		if (loopBlock) {
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wnull-dereference"
-			if (!loopBlock->getTerminator()) {
-#pragma GCC diagnostic pop
-				builder->CreateBr(loopBodyBB); // Loop forever
-			}
+		if (loopBlock != nullptr && loopBlock->getTerminator() == nullptr) {
+			builder->CreateBr(loopBodyBB); // Loop forever
 		}
 
 		loopStack.pop_back();
@@ -651,13 +626,8 @@ namespace Qd {
 				generateNode(child, ctx);
 				// Stop if we've added a terminator (return, break, continue)
 				llvm::BasicBlock* currentBlock = builder->GetInsertBlock();
-				if (currentBlock) {
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wnull-dereference"
-					if (currentBlock->getTerminator()) {
-#pragma GCC diagnostic pop
-						break;
-					}
+				if (currentBlock != nullptr && currentBlock->getTerminator() != nullptr) {
+					break;
 				}
 			}
 			break;

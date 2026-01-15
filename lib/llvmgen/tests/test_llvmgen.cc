@@ -476,6 +476,470 @@ TEST(TargetTripleWithComplexCode) {
 	ASSERT(result, "should generate complex code for aarch64");
 }
 
+TEST(NestedStructAccess) {
+	const char* src = R"(
+		struct Inner {
+			value:i64
+		}
+		struct Outer {
+			inner:Inner
+			count:i64
+		}
+		fn main() {
+			Inner { value = 42 } -> i
+			Outer { inner = i count = 1 } -> o
+			o @inner @value print
+		}
+	)";
+	std::string ir = generateIR(src);
+	ASSERT(!ir.empty(), "should generate IR for nested struct access");
+	ASSERT(irContains(ir, "getelementptr"), "should contain struct field access");
+}
+
+TEST(StructFieldAccess) {
+	const char* src = R"(
+		struct Counter {
+			value:i64
+		}
+		fn main() {
+			Counter { value = 10 } -> c
+			c @value 1 + print
+		}
+	)";
+	std::string ir = generateIR(src);
+	ASSERT(!ir.empty(), "should generate IR for struct field access");
+}
+
+TEST(StructAsParameter) {
+	const char* src = R"(
+		struct Point {
+			x:i64
+			y:i64
+		}
+		fn distance_squared(p:Point -- d:i64) {
+			p @x p @x * p @y p @y * +
+		}
+		fn main() {
+			Point { x = 3 y = 4 } distance_squared print
+		}
+	)";
+	std::string ir = generateIR(src);
+	ASSERT(!ir.empty(), "should generate IR for struct as parameter");
+}
+
+TEST(StructWithStringField) {
+	const char* src = R"(
+		struct Person {
+			name:str
+			age:i64
+		}
+		fn main() {
+			Person { name = "Alice" age = 30 } -> p
+			p @name print
+		}
+	)";
+	std::string ir = generateIR(src);
+	ASSERT(!ir.empty(), "should generate IR for struct with string field");
+}
+
+TEST(MultipleDeferStatements) {
+	const char* src = R"(
+		fn main() {
+			defer { 1 print }
+			defer { 2 print }
+			defer { 3 print }
+			0 print
+		}
+	)";
+	std::string ir = generateIR(src);
+	ASSERT(!ir.empty(), "should generate IR for multiple defers");
+	// Multiple defers execute in LIFO order
+}
+
+TEST(DeferInLoop) {
+	const char* src = R"(
+		fn main() {
+			0 3 1 for i {
+				defer { i print }
+			}
+		}
+	)";
+	std::string ir = generateIR(src);
+	ASSERT(!ir.empty(), "should generate IR for defer in loop");
+}
+
+TEST(DeferWithLocalVariable) {
+	const char* src = R"(
+		fn main() {
+			42 -> x
+			defer { x print }
+			x 1 + -> x
+		}
+	)";
+	std::string ir = generateIR(src);
+	ASSERT(!ir.empty(), "should generate IR for defer with local variable");
+}
+
+TEST(NestedDeferScopes) {
+	const char* src = R"(
+		fn main() {
+			defer { 1 print }
+			1 1 eq if {
+				defer { 2 print }
+			}
+			defer { 3 print }
+		}
+	)";
+	std::string ir = generateIR(src);
+	ASSERT(!ir.empty(), "should generate IR for nested defer scopes");
+}
+
+TEST(SimpleAnonymousFunction) {
+	const char* src = R"(
+		fn apply(x:i64 f:ptr -- r:i64) {
+			-> f -> x
+			x f call
+		}
+		fn main() {
+			fn (n:i64 -- r:i64) { -> n n 2 * } -> doubler
+			5 doubler apply print
+		}
+	)";
+	std::string ir = generateIR(src);
+	ASSERT(!ir.empty(), "should generate IR for anonymous function");
+}
+
+TEST(ClosureWithCapture) {
+	const char* src = R"(
+		fn main() {
+			10 -> multiplier
+			fn (x:i64 -- r:i64) { -> x x multiplier mul } -> times_mult
+			5 times_mult call print
+		}
+	)";
+	std::string ir = generateIR(src);
+	ASSERT(!ir.empty(), "should generate IR for closure with capture");
+}
+
+TEST(HigherOrderFunction) {
+	const char* src = R"(
+		fn apply(x:i64 f:ptr -- r:i64) {
+			-> f -> x
+			x f call
+		}
+		fn double(n:i64 -- r:i64) { -> n n 2 * }
+		fn main() {
+			fn (n:i64 -- r:i64) { -> n n 2 * } -> doubler
+			5 doubler apply print
+		}
+	)";
+	std::string ir = generateIR(src);
+	ASSERT(!ir.empty(), "should generate IR for higher-order function");
+	ASSERT(irContains(ir, "call"), "should contain function calls");
+}
+
+TEST(ClosureNoCapture) {
+	const char* src = R"(
+		fn main() {
+			fn (a:i64 b:i64 -- r:i64) { -> b -> a a b add } -> add_fn
+			3 4 add_fn call print
+		}
+	)";
+	std::string ir = generateIR(src);
+	ASSERT(!ir.empty(), "should generate IR for closure without capture");
+}
+
+TEST(OptimizationLevelThree) {
+	const char* src = R"(
+		fn main() {
+			0 -> sum
+			0 100 1 for i {
+				sum i + -> sum
+			}
+			sum print
+		}
+	)";
+	Qd::Ast ast;
+	Qd::IAstNode* root = ast.generate(src, false, "test.qd");
+	ASSERT(root != nullptr, "should parse loop code");
+
+	Qd::SemanticValidator validator;
+	ASSERT(validator.validate(root, "test.qd") == 0, "should validate");
+
+	Qd::LlvmGenerator gen;
+	gen.setOptimizationLevel(3);
+	bool result = gen.generate(root, "test");
+	ASSERT(result, "should generate with O3 optimization");
+}
+
+TEST(ConstantFolding) {
+	const char* src = R"(
+		fn main() {
+			2 3 * 4 + print
+		}
+	)";
+	Qd::Ast ast;
+	Qd::IAstNode* root = ast.generate(src, false, "test.qd");
+	ASSERT(root != nullptr, "should parse constant expr");
+
+	Qd::SemanticValidator validator;
+	ASSERT(validator.validate(root, "test.qd") == 0, "should validate");
+
+	Qd::LlvmGenerator gen;
+	gen.setOptimizationLevel(2);
+	bool result = gen.generate(root, "test");
+	ASSERT(result, "should generate with constant folding");
+	std::string ir = gen.getIRString();
+	// With optimization, constant expressions may be folded
+	ASSERT(!ir.empty(), "should have IR output");
+}
+
+TEST(WhileLoop) {
+	const char* src = R"(
+		fn main() {
+			0 -> i
+			{
+				i 5 lt
+			} while {
+				i print
+				i 1 + -> i
+			}
+		}
+	)";
+	std::string ir = generateIR(src);
+	ASSERT(!ir.empty(), "should generate IR for while loop");
+}
+
+TEST(BreakInLoop) {
+	const char* src = R"(
+		fn main() {
+			0 10 1 for i {
+				i 5 eq if { break }
+				i print
+			}
+		}
+	)";
+	std::string ir = generateIR(src);
+	ASSERT(!ir.empty(), "should generate IR for break statement");
+}
+
+TEST(ContinueInLoop) {
+	const char* src = R"(
+		fn main() {
+			0 10 1 for i {
+				i 2 mod 0 eq if { continue }
+				i print
+			}
+		}
+	)";
+	std::string ir = generateIR(src);
+	ASSERT(!ir.empty(), "should generate IR for continue statement");
+}
+
+TEST(SwitchStatement) {
+	const char* src = R"(
+		fn main() {
+			2 switch {
+				1 { "one" print }
+				2 { "two" print }
+				_ { "other" print }
+			}
+		}
+	)";
+	std::string ir = generateIR(src);
+	ASSERT(!ir.empty(), "should generate IR for switch statement");
+}
+
+TEST(NestedControlFlow) {
+	const char* src = R"(
+		fn main() {
+			0 3 1 for i {
+				0 3 1 for j {
+					i j eq if {
+						i print
+					}
+				}
+			}
+		}
+	)";
+	std::string ir = generateIR(src);
+	ASSERT(!ir.empty(), "should generate IR for nested control flow");
+}
+
+TEST(MethodCallOnStruct) {
+	const char* src = R"(
+		struct Counter { value:i64 }
+		fn (c:Counter) getValue(-- r:i64) { c @value }
+		fn main() {
+			Counter { value = 5 } -> c
+			c getValue print
+		}
+	)";
+	std::string ir = generateIR(src);
+	ASSERT(!ir.empty(), "should generate IR for method call on struct");
+}
+
+TEST(ArrayLiteral) {
+	const char* src = R"(
+		fn main() {
+			[1 2 3] -> arr
+			arr 0 nth print
+		}
+	)";
+	std::string ir = generateIR(src);
+	ASSERT(!ir.empty(), "should generate IR for array literal");
+}
+
+TEST(NegationOperator) {
+	const char* src = R"(
+		fn main() {
+			42 neg print
+			3.14 neg print
+		}
+	)";
+	std::string ir = generateIR(src);
+	ASSERT(!ir.empty(), "should generate IR for negation operator");
+}
+
+TEST(BitwiseXor) {
+	const char* src = R"(
+		fn main() {
+			5 3 xor print
+		}
+	)";
+	std::string ir = generateIR(src);
+	ASSERT(!ir.empty(), "should generate IR for xor operation");
+}
+
+TEST(ModuloOperator) {
+	const char* src = R"(
+		fn main() {
+			17 5 mod print
+			17 5 % print
+		}
+	)";
+	std::string ir = generateIR(src);
+	ASSERT(!ir.empty(), "should generate IR for modulo operator");
+}
+
+TEST(MultipleReturnValuesUsed) {
+	const char* src = R"(
+		fn divmod(a:i64 b:i64 -- quot:i64 rem:i64) {
+			over over div
+			rot rot mod
+		}
+		fn main() {
+			17 5 divmod -> rem -> quot
+			quot print rem print
+		}
+	)";
+	std::string ir = generateIR(src);
+	ASSERT(!ir.empty(), "should generate IR for multiple return values");
+}
+
+TEST(CtxStatement) {
+	const char* src = R"(
+		fn main() {
+			ctx {
+				42 print
+			}
+		}
+	)";
+	std::string ir = generateIR(src);
+	ASSERT(!ir.empty(), "should generate IR for ctx statement");
+}
+
+TEST(LogicalOperations) {
+	const char* src = R"(
+		fn main() {
+			1 0 and print
+			1 0 or print
+			1 not print
+		}
+	)";
+	std::string ir = generateIR(src);
+	ASSERT(!ir.empty(), "should generate IR for logical operations");
+}
+
+TEST(ShiftOperations) {
+	const char* src = R"(
+		fn main() {
+			8 2 shl print
+			8 2 shr print
+		}
+	)";
+	std::string ir = generateIR(src);
+	ASSERT(!ir.empty(), "should generate IR for shift operations");
+}
+
+TEST(IncrementDecrement) {
+	const char* src = R"(
+		fn main() {
+			5 inc print
+			5 dec print
+		}
+	)";
+	std::string ir = generateIR(src);
+	ASSERT(!ir.empty(), "should generate IR for inc/dec");
+}
+
+TEST(FloatToIntConversion) {
+	const char* src = R"(
+		fn main() {
+			3.7 cast<i64> print
+			42 cast<f64> print
+		}
+	)";
+	std::string ir = generateIR(src);
+	ASSERT(!ir.empty(), "should generate IR for type conversions");
+}
+
+TEST(StackPickRoll) {
+	const char* src = R"(
+		fn main() {
+			1 2 3 2 pick print
+			1 2 3 2 roll print
+		}
+	)";
+	std::string ir = generateIR(src);
+	ASSERT(!ir.empty(), "should generate IR for pick and roll");
+}
+
+TEST(StackNipTuck) {
+	const char* src = R"(
+		fn main() {
+			1 2 nip print
+			1 2 tuck drop drop print
+		}
+	)";
+	std::string ir = generateIR(src);
+	ASSERT(!ir.empty(), "should generate IR for nip and tuck");
+}
+
+TEST(StructMethodSum) {
+	const char* src = R"(
+		struct Point { x:i64 y:i64 }
+		fn (p:Point) sum(-- s:i64) { p @x p @y add }
+		fn main() {
+			Point { x = 3 y = 4 } -> pt
+			pt sum print
+		}
+	)";
+	std::string ir = generateIR(src);
+	ASSERT(!ir.empty(), "should generate IR for struct method");
+}
+
+TEST(PublicFunction) {
+	const char* src = R"(
+		pub fn exported(x:i64 -- r:i64) { 2 mul }
+		fn main() {
+			5 exported print
+		}
+	)";
+	std::string ir = generateIR(src);
+	ASSERT(!ir.empty(), "should generate IR for public function");
+}
+
 // Main - required for test executable
 int main(void) {
 	return UC_PrintResults();

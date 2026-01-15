@@ -883,13 +883,8 @@ namespace Qd {
 
 			// If the block doesn't end with a terminator, branch to return block
 			llvm::BasicBlock* funcBodyBlock = builder->GetInsertBlock();
-			if (funcBodyBlock) {
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wnull-dereference"
-				if (!funcBodyBlock->getTerminator()) {
-#pragma GCC diagnostic pop
-					builder->CreateBr(returnBB);
-				}
+			if (funcBodyBlock != nullptr && funcBodyBlock->getTerminator() == nullptr) {
+				builder->CreateBr(returnBB);
 			}
 
 			// Generate return block - this is where function-level defers execute
@@ -988,13 +983,8 @@ namespace Qd {
 
 		// Branch to return block if no terminator
 		llvm::BasicBlock* testBodyBlock = builder->GetInsertBlock();
-		if (testBodyBlock) {
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wnull-dereference"
-			if (!testBodyBlock->getTerminator()) {
-#pragma GCC diagnostic pop
-				builder->CreateBr(returnBB);
-			}
+		if (testBodyBlock != nullptr && testBodyBlock->getTerminator() == nullptr) {
+			builder->CreateBr(returnBB);
 		}
 
 		// Generate return block
