@@ -142,7 +142,7 @@ Get positional argument at index.
 
 | Error | Description |
 |-------|-------------|
-| `flag::ErrNotFound` | Not yet implemented |
+| `flag::ErrNotFound` | Index out of bounds |
 ---
 
 ### `fn` string

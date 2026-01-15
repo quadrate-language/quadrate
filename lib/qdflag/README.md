@@ -9,6 +9,7 @@ Parse command-line arguments and flags.
 ## Key functions
 
 - `parse` - Parse arguments
-- `string`, `int`, `bool` - Get flag values
+- `string`, `int`, `float` - Get typed flag values
 - `boolean` - Check flag presence
+- `positional` - Get positional arguments
 - `destroy` - Free parser
