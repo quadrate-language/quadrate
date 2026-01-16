@@ -80,6 +80,16 @@ private:
 	void handleRename(
 			const std::string& id, const std::string& uri, size_t line, size_t character, const std::string& newName);
 
+	// Code actions (quick fixes)
+	void handleCodeAction(const std::string& id, const std::string& uri, size_t startLine, size_t startChar,
+			size_t endLine, size_t endChar, json_t* diagnostics);
+
+	// Workspace symbols
+	void handleWorkspaceSymbols(const std::string& id, const std::string& query);
+
+	// Inlay hints (inline type/parameter hints)
+	void handleInlayHints(const std::string& id, const std::string& uri, size_t startLine, size_t endLine);
+
 	// Navigation helpers (implemented in lsp_navigation.cc)
 	void findIdentifiersInNode(Qd::IAstNode* node, const std::string& targetName, std::vector<Qd::IAstNode*>& results);
 	Qd::AstNodeLocal* findLocalDeclaration(Qd::IAstNode* startNode, const std::string& varName, size_t requestLine);

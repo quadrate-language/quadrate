@@ -3,6 +3,8 @@
 
 #include "lsp_impl.h"
 #include "version.h"
+#include <algorithm>
+#include <cctype>
 #include <cstdio>
 #include <cstring>
 #include <filesystem>
@@ -380,6 +382,39 @@ void QuadrateLSP::handleMessage(const std::string& message) {
 				handleFoldingRange(id, uri);
 			}
 		}
+	} else if (method == "textDocument/codeAction") {
+		json_t* params = getJsonObject(root, "params");
+		json_t* textDocument = getJsonObject(params, "textDocument");
+		std::string uri = getJsonString(textDocument, "uri");
+
+		json_t* range = getJsonObject(params, "range");
+		json_t* rangeStart = getJsonObject(range, "start");
+		json_t* rangeEnd = getJsonObject(range, "end");
+		size_t startLine = static_cast<size_t>(json_integer_value(json_object_get(rangeStart, "line")));
+		size_t startChar = static_cast<size_t>(json_integer_value(json_object_get(rangeStart, "character")));
+		size_t endLine = static_cast<size_t>(json_integer_value(json_object_get(rangeEnd, "line")));
+		size_t endChar = static_cast<size_t>(json_integer_value(json_object_get(rangeEnd, "character")));
+
+		json_t* context = getJsonObject(params, "context");
+		json_t* diagnostics = json_object_get(context, "diagnostics");
+
+		handleCodeAction(id, uri, startLine, startChar, endLine, endChar, diagnostics);
+	} else if (method == "workspace/symbol") {
+		json_t* params = getJsonObject(root, "params");
+		std::string query = getJsonString(params, "query");
+		handleWorkspaceSymbols(id, query);
+	} else if (method == "textDocument/inlayHint") {
+		json_t* params = getJsonObject(root, "params");
+		json_t* textDocument = getJsonObject(params, "textDocument");
+		std::string uri = getJsonString(textDocument, "uri");
+
+		json_t* range = getJsonObject(params, "range");
+		json_t* rangeStart = getJsonObject(range, "start");
+		json_t* rangeEnd = getJsonObject(range, "end");
+		size_t startLine = static_cast<size_t>(json_integer_value(json_object_get(rangeStart, "line")));
+		size_t endLine = static_cast<size_t>(json_integer_value(json_object_get(rangeEnd, "line")));
+
+		handleInlayHints(id, uri, startLine, endLine);
 	} else if (method == "textDocument/rename") {
 		json_t* params = getJsonObject(root, "params");
 		if (params) {
@@ -466,6 +501,22 @@ void QuadrateLSP::handleInitialize(const std::string& id, json_t* initOptions) {
 
 	// Folding ranges (code folding for functions, blocks)
 	json_object_set_new(capabilities, "foldingRangeProvider", json_true());
+
+	// Code actions (quick fixes)
+	json_t* codeActionProvider = json_object();
+	json_t* codeActionKinds = json_array();
+	json_array_append_new(codeActionKinds, json_string("quickfix"));
+	json_array_append_new(codeActionKinds, json_string("source.organizeImports"));
+	json_object_set_new(codeActionProvider, "codeActionKinds", codeActionKinds);
+	json_object_set_new(capabilities, "codeActionProvider", codeActionProvider);
+
+	// Workspace symbols
+	json_object_set_new(capabilities, "workspaceSymbolProvider", json_true());
+
+	// Inlay hints (inline type/parameter hints)
+	json_t* inlayHintProvider = json_object();
+	json_object_set_new(inlayHintProvider, "resolveProvider", json_false());
+	json_object_set_new(capabilities, "inlayHintProvider", inlayHintProvider);
 
 	json_object_set_new(result, "capabilities", capabilities);
 
@@ -965,6 +1016,355 @@ std::string QuadrateLSP::resolveModulePath(const std::string& moduleName, const 
 	}
 
 	return "";
+}
+
+void QuadrateLSP::handleCodeAction(const std::string& id, const std::string& uri, size_t startLine, size_t startChar,
+		size_t endLine, size_t endChar, json_t* diagnostics) {
+	(void)startChar;
+	(void)endLine;
+	(void)endChar;
+
+	json_t* response = json_object();
+	json_object_set_new(response, "jsonrpc", json_string("2.0"));
+	json_object_set_new(response, "id", json_integer(std::stoi(id)));
+
+	json_t* actions = json_array();
+
+	// Get document text
+	std::string documentText;
+	auto docIter = documents_.find(uri);
+	if (docIter != documents_.end()) {
+		documentText = docIter->second;
+	}
+
+	// Process diagnostics to offer quick fixes
+	if (diagnostics && json_is_array(diagnostics)) {
+		size_t diagIndex;
+		json_t* diag;
+		json_array_foreach(diagnostics, diagIndex, diag) {
+			std::string message = getJsonString(diag, "message");
+
+			// Check for "Unknown module" error - offer to add 'use' statement
+			if (message.find("Unknown module") != std::string::npos ||
+					message.find("Unresolved module") != std::string::npos) {
+				// Extract module name from message
+				size_t quoteStart = message.find('\'');
+				size_t quoteEnd = message.find('\'', quoteStart + 1);
+				if (quoteStart != std::string::npos && quoteEnd != std::string::npos) {
+					std::string moduleName = message.substr(quoteStart + 1, quoteEnd - quoteStart - 1);
+
+					// Create code action to add 'use' statement
+					json_t* action = json_object();
+					json_object_set_new(action, "title",
+							json_string(("Add 'use " + moduleName + "' at top of file").c_str()));
+					json_object_set_new(action, "kind", json_string("quickfix"));
+
+					// Create workspace edit
+					json_t* edit = json_object();
+					json_t* changes = json_object();
+					json_t* edits = json_array();
+
+					json_t* textEdit = json_object();
+					json_t* range = json_object();
+					json_t* start = json_object();
+					json_object_set_new(start, "line", json_integer(0));
+					json_object_set_new(start, "character", json_integer(0));
+					json_t* end = json_object();
+					json_object_set_new(end, "line", json_integer(0));
+					json_object_set_new(end, "character", json_integer(0));
+					json_object_set_new(range, "start", start);
+					json_object_set_new(range, "end", end);
+					json_object_set_new(textEdit, "range", range);
+					json_object_set_new(textEdit, "newText", json_string(("use " + moduleName + "\n").c_str()));
+					json_array_append_new(edits, textEdit);
+
+					json_object_set_new(changes, uri.c_str(), edits);
+					json_object_set_new(edit, "changes", changes);
+					json_object_set_new(action, "edit", edit);
+
+					json_array_append_new(actions, action);
+				}
+			}
+
+			// Check for "unused variable" warning - offer to remove or prefix with underscore
+			if (message.find("Unused variable") != std::string::npos ||
+					message.find("unused variable") != std::string::npos) {
+				// Extract variable name from message
+				size_t quoteStart = message.find('\'');
+				size_t quoteEnd = message.find('\'', quoteStart + 1);
+				if (quoteStart != std::string::npos && quoteEnd != std::string::npos) {
+					std::string varName = message.substr(quoteStart + 1, quoteEnd - quoteStart - 1);
+
+					// Offer to prefix with underscore to suppress warning
+					json_t* action = json_object();
+					json_object_set_new(
+							action, "title", json_string(("Rename to '_" + varName + "' to suppress warning").c_str()));
+					json_object_set_new(action, "kind", json_string("quickfix"));
+
+					// Find the variable declaration and create edit
+					json_t* diagRange = json_object_get(diag, "range");
+					if (diagRange) {
+						json_t* diagStart = json_object_get(diagRange, "start");
+						size_t diagLine = static_cast<size_t>(json_integer_value(json_object_get(diagStart, "line")));
+						size_t diagCol =
+								static_cast<size_t>(json_integer_value(json_object_get(diagStart, "character")));
+
+						json_t* edit = json_object();
+						json_t* changes = json_object();
+						json_t* edits = json_array();
+
+						json_t* textEdit = json_object();
+						json_t* range = json_object();
+						json_t* start = json_object();
+						json_object_set_new(start, "line", json_integer(static_cast<json_int_t>(diagLine)));
+						json_object_set_new(start, "character", json_integer(static_cast<json_int_t>(diagCol)));
+						json_t* end = json_object();
+						json_object_set_new(end, "line", json_integer(static_cast<json_int_t>(diagLine)));
+						json_object_set_new(end, "character",
+								json_integer(static_cast<json_int_t>(diagCol + varName.length())));
+						json_object_set_new(range, "start", start);
+						json_object_set_new(range, "end", end);
+						json_object_set_new(textEdit, "range", range);
+						json_object_set_new(textEdit, "newText", json_string(("_" + varName).c_str()));
+						json_array_append_new(edits, textEdit);
+
+						json_object_set_new(changes, uri.c_str(), edits);
+						json_object_set_new(edit, "changes", changes);
+						json_object_set_new(action, "edit", edit);
+
+						json_array_append_new(actions, action);
+					}
+				}
+			}
+		}
+	}
+
+	// Offer to organize imports if cursor is at the top of the file
+	if (startLine < 5) {
+		// Check if there are any 'use' statements in the document
+		if (!documentText.empty() && documentText.find("use ") != std::string::npos) {
+			json_t* action = json_object();
+			json_object_set_new(action, "title", json_string("Organize imports"));
+			json_object_set_new(action, "kind", json_string("source.organizeImports"));
+			// This would require more complex logic to actually organize imports
+			// For now, just advertise the action
+			json_array_append_new(actions, action);
+		}
+	}
+
+	json_object_set_new(response, "result", actions);
+	sendMessage(response);
+	json_decref(response);
+}
+
+void QuadrateLSP::handleInlayHints(
+		const std::string& id, const std::string& uri, size_t startLine, size_t endLine) {
+	json_t* response = json_object();
+	json_object_set_new(response, "jsonrpc", json_string("2.0"));
+	json_object_set_new(response, "id", json_integer(std::stoi(id)));
+
+	json_t* hints = json_array();
+
+	// Get document text
+	std::string documentText;
+	auto docIter = documents_.find(uri);
+	if (docIter != documents_.end()) {
+		documentText = docIter->second;
+	}
+
+	if (!documentText.empty()) {
+		// Parse the document to get AST
+		Qd::Ast ast;
+		Qd::IAstNode* astRoot = ast.generate(documentText.c_str(), false, nullptr);
+
+		if (astRoot && !ast.hasErrors()) {
+			(void)astRoot; // Used only for validation
+			// Extract functions from the document for signature lookup
+			std::vector<FunctionInfo> functions = extractFunctions(documentText);
+
+			// Create a map for quick function lookup
+			std::map<std::string, FunctionInfo> funcMap;
+			for (const auto& func : functions) {
+				funcMap[func.name] = func;
+			}
+
+			// Look for local variable declarations (-> syntax) to show type hints
+			// Parse line by line within the requested range
+			std::istringstream iss(documentText);
+			std::string line;
+			size_t lineNum = 0;
+
+			while (std::getline(iss, line)) {
+				if (lineNum >= startLine && lineNum <= endLine) {
+					// Look for -> (local variable declaration)
+					size_t arrowPos = line.find("->");
+					if (arrowPos != std::string::npos) {
+						// Find the variable name after ->
+						size_t varStart = arrowPos + 2;
+						while (varStart < line.size() && (line[varStart] == ' ' || line[varStart] == '\t')) {
+							varStart++;
+						}
+
+						if (varStart < line.size() && (std::isalpha(line[varStart]) || line[varStart] == '_')) {
+							size_t varEnd = varStart;
+							while (varEnd < line.size() &&
+									(std::isalnum(line[varEnd]) || line[varEnd] == '_')) {
+								varEnd++;
+							}
+
+							// We could infer type from context but that's complex
+							// For now, just add a hint marker at the arrow
+							json_t* hint = json_object();
+							json_t* position = json_object();
+							json_object_set_new(position, "line", json_integer(static_cast<json_int_t>(lineNum)));
+							json_object_set_new(
+									position, "character", json_integer(static_cast<json_int_t>(arrowPos)));
+							json_object_set_new(hint, "position", position);
+							json_object_set_new(hint, "label", json_string(": local"));
+							json_object_set_new(hint, "kind", json_integer(1)); // Type hint
+							json_object_set_new(hint, "paddingLeft", json_true());
+
+							json_array_append_new(hints, hint);
+						}
+					}
+
+					// Look for function calls with module prefix (module::func)
+					size_t colonPos = 0;
+					while ((colonPos = line.find("::", colonPos)) != std::string::npos) {
+						// Check if this is followed by a function name
+						size_t funcStart = colonPos + 2;
+						if (funcStart < line.size() && (std::isalpha(line[funcStart]) || line[funcStart] == '_')) {
+							size_t funcEnd = funcStart;
+							while (funcEnd < line.size() &&
+									(std::isalnum(line[funcEnd]) || line[funcEnd] == '_')) {
+								funcEnd++;
+							}
+
+							std::string funcName = line.substr(funcStart, funcEnd - funcStart);
+
+							// Check if we have info about this function
+							auto it = funcMap.find(funcName);
+							if (it != funcMap.end() && !it->second.inputParams.empty()) {
+								// Add parameter hint after the function name
+								std::string paramHint = "(";
+								for (size_t i = 0; i < it->second.inputParams.size(); i++) {
+									if (i > 0) {
+										paramHint += ", ";
+									}
+									// Extract just the parameter name from "name:type"
+									std::string param = it->second.inputParams[i];
+									size_t colonIdx = param.find(':');
+									if (colonIdx != std::string::npos) {
+										paramHint += param.substr(0, colonIdx);
+									} else {
+										paramHint += param;
+									}
+								}
+								paramHint += ")";
+
+								json_t* hint = json_object();
+								json_t* position = json_object();
+								json_object_set_new(
+										position, "line", json_integer(static_cast<json_int_t>(lineNum)));
+								json_object_set_new(
+										position, "character", json_integer(static_cast<json_int_t>(funcEnd)));
+								json_object_set_new(hint, "position", position);
+								json_object_set_new(hint, "label", json_string(paramHint.c_str()));
+								json_object_set_new(hint, "kind", json_integer(2)); // Parameter hint
+								json_object_set_new(hint, "paddingLeft", json_true());
+
+								json_array_append_new(hints, hint);
+							}
+						}
+						colonPos += 2;
+					}
+				}
+				lineNum++;
+			}
+		}
+	}
+
+	json_object_set_new(response, "result", hints);
+	sendMessage(response);
+	json_decref(response);
+}
+
+void QuadrateLSP::handleWorkspaceSymbols(const std::string& id, const std::string& query) {
+	json_t* response = json_object();
+	json_object_set_new(response, "jsonrpc", json_string("2.0"));
+	json_object_set_new(response, "id", json_integer(std::stoi(id)));
+
+	json_t* symbols = json_array();
+
+	// Search through all open documents
+	for (const auto& [docUri, docText] : documents_) {
+		// Extract functions
+		std::vector<FunctionInfo> functions = extractFunctions(docText);
+		for (const auto& func : functions) {
+			// Filter by query (case-insensitive substring match)
+			std::string lowerName = func.name;
+			std::string lowerQuery = query;
+			std::transform(lowerName.begin(), lowerName.end(), lowerName.begin(), ::tolower);
+			std::transform(lowerQuery.begin(), lowerQuery.end(), lowerQuery.begin(), ::tolower);
+
+			if (lowerQuery.empty() || lowerName.find(lowerQuery) != std::string::npos) {
+				json_t* symbol = json_object();
+				json_object_set_new(symbol, "name", json_string(func.name.c_str()));
+				json_object_set_new(symbol, "kind", json_integer(12)); // Function
+
+				json_t* location = json_object();
+				json_object_set_new(location, "uri", json_string(docUri.c_str()));
+				json_t* symRange = json_object();
+				json_t* symStart = json_object();
+				json_object_set_new(symStart, "line", json_integer(0));
+				json_object_set_new(symStart, "character", json_integer(0));
+				json_t* symEnd = json_object();
+				json_object_set_new(symEnd, "line", json_integer(0));
+				json_object_set_new(symEnd, "character", json_integer(0));
+				json_object_set_new(symRange, "start", symStart);
+				json_object_set_new(symRange, "end", symEnd);
+				json_object_set_new(location, "range", symRange);
+				json_object_set_new(symbol, "location", location);
+
+				json_array_append_new(symbols, symbol);
+			}
+		}
+
+		// Extract structs
+		std::vector<StructInfo> structs = extractStructs(docText);
+		for (const auto& st : structs) {
+			std::string lowerName = st.name;
+			std::string lowerQuery = query;
+			std::transform(lowerName.begin(), lowerName.end(), lowerName.begin(), ::tolower);
+			std::transform(lowerQuery.begin(), lowerQuery.end(), lowerQuery.begin(), ::tolower);
+
+			if (lowerQuery.empty() || lowerName.find(lowerQuery) != std::string::npos) {
+				json_t* symbol = json_object();
+				json_object_set_new(symbol, "name", json_string(st.name.c_str()));
+				json_object_set_new(symbol, "kind", json_integer(23)); // Struct
+
+				json_t* location = json_object();
+				json_object_set_new(location, "uri", json_string(docUri.c_str()));
+				json_t* symRange = json_object();
+				json_t* symStart = json_object();
+				json_object_set_new(symStart, "line", json_integer(0));
+				json_object_set_new(symStart, "character", json_integer(0));
+				json_t* symEnd = json_object();
+				json_object_set_new(symEnd, "line", json_integer(0));
+				json_object_set_new(symEnd, "character", json_integer(0));
+				json_object_set_new(symRange, "start", symStart);
+				json_object_set_new(symRange, "end", symEnd);
+				json_object_set_new(location, "range", symRange);
+				json_object_set_new(symbol, "location", location);
+
+				json_array_append_new(symbols, symbol);
+			}
+		}
+	}
+
+	json_object_set_new(response, "result", symbols);
+	sendMessage(response);
+	json_decref(response);
 }
 
 void QuadrateLSP::handleHover(const std::string& id, const std::string& uri, size_t line, size_t character) {

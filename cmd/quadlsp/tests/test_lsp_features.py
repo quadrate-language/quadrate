@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """
 Feature-specific tests for Quadrate LSP
-Tests hover, go-to-definition, find references, and document symbols
+Tests hover, go-to-definition, find references, document symbols,
+code actions, workspace symbols, and inlay hints
 """
 
 import json
@@ -306,6 +307,295 @@ class LSPFeatureTester:
         if response:
             self.assert_test("result" in response, "Response has result field")
 
+    # ============================================================================
+    # Code action tests
+    # ============================================================================
+
+    def test_code_action_basic(self):
+        """Test code action request"""
+        print("\n=== Testing Code Action Basic ===")
+
+        request = {
+            "jsonrpc": "2.0",
+            "id": 70,
+            "method": "textDocument/codeAction",
+            "params": {
+                "textDocument": {"uri": "file:///tmp/test.qd"},
+                "range": {
+                    "start": {"line": 0, "character": 0},
+                    "end": {"line": 0, "character": 10}
+                },
+                "context": {
+                    "diagnostics": []
+                }
+            }
+        }
+
+        response = self.send_request(request)
+        self.assert_test(response is not None, "Code action request returns response")
+        if response:
+            self.assert_test("result" in response, "Response has result field")
+            result = response.get("result", [])
+            self.assert_test(isinstance(result, list), "Result is a list")
+
+    def test_code_action_with_diagnostic(self):
+        """Test code action with diagnostic for unknown module"""
+        print("\n=== Testing Code Action with Diagnostic ===")
+
+        request = {
+            "jsonrpc": "2.0",
+            "id": 71,
+            "method": "textDocument/codeAction",
+            "params": {
+                "textDocument": {"uri": "file:///tmp/test.qd"},
+                "range": {
+                    "start": {"line": 0, "character": 0},
+                    "end": {"line": 0, "character": 10}
+                },
+                "context": {
+                    "diagnostics": [
+                        {
+                            "range": {
+                                "start": {"line": 0, "character": 0},
+                                "end": {"line": 0, "character": 10}
+                            },
+                            "message": "Unknown module 'math'",
+                            "severity": 1
+                        }
+                    ]
+                }
+            }
+        }
+
+        response = self.send_request(request)
+        self.assert_test(response is not None, "Code action with diagnostic returns response")
+        if response:
+            self.assert_test("result" in response, "Response has result field")
+
+    def test_code_action_unused_variable(self):
+        """Test code action for unused variable warning"""
+        print("\n=== Testing Code Action Unused Variable ===")
+
+        request = {
+            "jsonrpc": "2.0",
+            "id": 72,
+            "method": "textDocument/codeAction",
+            "params": {
+                "textDocument": {"uri": "file:///tmp/test.qd"},
+                "range": {
+                    "start": {"line": 0, "character": 0},
+                    "end": {"line": 0, "character": 10}
+                },
+                "context": {
+                    "diagnostics": [
+                        {
+                            "range": {
+                                "start": {"line": 0, "character": 0},
+                                "end": {"line": 0, "character": 5}
+                            },
+                            "message": "Unused variable 'foo'",
+                            "severity": 2
+                        }
+                    ]
+                }
+            }
+        }
+
+        response = self.send_request(request)
+        self.assert_test(response is not None, "Code action for unused variable returns response")
+        if response:
+            self.assert_test("result" in response, "Response has result field")
+
+    def test_code_action_empty_diagnostics(self):
+        """Test code action with empty diagnostics"""
+        print("\n=== Testing Code Action Empty Diagnostics ===")
+
+        request = {
+            "jsonrpc": "2.0",
+            "id": 73,
+            "method": "textDocument/codeAction",
+            "params": {
+                "textDocument": {"uri": "file:///tmp/test.qd"},
+                "range": {
+                    "start": {"line": 5, "character": 0},
+                    "end": {"line": 5, "character": 20}
+                },
+                "context": {
+                    "diagnostics": []
+                }
+            }
+        }
+
+        response = self.send_request(request)
+        self.assert_test(response is not None, "Empty diagnostics doesn't crash")
+
+    # ============================================================================
+    # Workspace symbols tests
+    # ============================================================================
+
+    def test_workspace_symbols_basic(self):
+        """Test workspace symbols request"""
+        print("\n=== Testing Workspace Symbols Basic ===")
+
+        request = {
+            "jsonrpc": "2.0",
+            "id": 80,
+            "method": "workspace/symbol",
+            "params": {
+                "query": ""
+            }
+        }
+
+        response = self.send_request(request)
+        self.assert_test(response is not None, "Workspace symbols request returns response")
+        if response:
+            self.assert_test("result" in response, "Response has result field")
+            result = response.get("result", [])
+            self.assert_test(isinstance(result, list), "Result is a list")
+
+    def test_workspace_symbols_with_query(self):
+        """Test workspace symbols with search query"""
+        print("\n=== Testing Workspace Symbols with Query ===")
+
+        request = {
+            "jsonrpc": "2.0",
+            "id": 81,
+            "method": "workspace/symbol",
+            "params": {
+                "query": "test"
+            }
+        }
+
+        response = self.send_request(request)
+        self.assert_test(response is not None, "Workspace symbols with query returns response")
+        if response:
+            self.assert_test("result" in response, "Response has result field")
+
+    def test_workspace_symbols_no_match(self):
+        """Test workspace symbols with non-matching query"""
+        print("\n=== Testing Workspace Symbols No Match ===")
+
+        request = {
+            "jsonrpc": "2.0",
+            "id": 82,
+            "method": "workspace/symbol",
+            "params": {
+                "query": "xyznonexistent123"
+            }
+        }
+
+        response = self.send_request(request)
+        self.assert_test(response is not None, "Non-matching query doesn't crash")
+        if response:
+            result = response.get("result", [])
+            self.assert_test(isinstance(result, list), "Result is still a list")
+
+    def test_workspace_symbols_special_chars(self):
+        """Test workspace symbols with special characters in query"""
+        print("\n=== Testing Workspace Symbols Special Chars ===")
+
+        request = {
+            "jsonrpc": "2.0",
+            "id": 83,
+            "method": "workspace/symbol",
+            "params": {
+                "query": "!@#$%"
+            }
+        }
+
+        response = self.send_request(request)
+        self.assert_test(response is not None, "Special characters don't crash")
+
+    # ============================================================================
+    # Inlay hints tests
+    # ============================================================================
+
+    def test_inlay_hints_basic(self):
+        """Test inlay hints request"""
+        print("\n=== Testing Inlay Hints Basic ===")
+
+        request = {
+            "jsonrpc": "2.0",
+            "id": 90,
+            "method": "textDocument/inlayHint",
+            "params": {
+                "textDocument": {"uri": "file:///tmp/test.qd"},
+                "range": {
+                    "start": {"line": 0, "character": 0},
+                    "end": {"line": 100, "character": 0}
+                }
+            }
+        }
+
+        response = self.send_request(request)
+        self.assert_test(response is not None, "Inlay hints request returns response")
+        if response:
+            self.assert_test("result" in response, "Response has result field")
+            result = response.get("result", [])
+            self.assert_test(isinstance(result, list), "Result is a list")
+
+    def test_inlay_hints_small_range(self):
+        """Test inlay hints for a small range"""
+        print("\n=== Testing Inlay Hints Small Range ===")
+
+        request = {
+            "jsonrpc": "2.0",
+            "id": 91,
+            "method": "textDocument/inlayHint",
+            "params": {
+                "textDocument": {"uri": "file:///tmp/test.qd"},
+                "range": {
+                    "start": {"line": 0, "character": 0},
+                    "end": {"line": 5, "character": 0}
+                }
+            }
+        }
+
+        response = self.send_request(request)
+        self.assert_test(response is not None, "Small range inlay hints works")
+        if response:
+            self.assert_test("result" in response, "Response has result field")
+
+    def test_inlay_hints_empty_range(self):
+        """Test inlay hints for empty range"""
+        print("\n=== Testing Inlay Hints Empty Range ===")
+
+        request = {
+            "jsonrpc": "2.0",
+            "id": 92,
+            "method": "textDocument/inlayHint",
+            "params": {
+                "textDocument": {"uri": "file:///tmp/test.qd"},
+                "range": {
+                    "start": {"line": 0, "character": 0},
+                    "end": {"line": 0, "character": 0}
+                }
+            }
+        }
+
+        response = self.send_request(request)
+        self.assert_test(response is not None, "Empty range doesn't crash")
+
+    def test_inlay_hints_nonexistent_file(self):
+        """Test inlay hints for non-existent file"""
+        print("\n=== Testing Inlay Hints Non-Existent File ===")
+
+        request = {
+            "jsonrpc": "2.0",
+            "id": 93,
+            "method": "textDocument/inlayHint",
+            "params": {
+                "textDocument": {"uri": "file:///nonexistent/path.qd"},
+                "range": {
+                    "start": {"line": 0, "character": 0},
+                    "end": {"line": 10, "character": 0}
+                }
+            }
+        }
+
+        response = self.send_request(request)
+        self.assert_test(response is not None, "Non-existent file doesn't crash")
+
     def run_all_tests(self):
         """Run all feature tests"""
         print("=" * 60)
@@ -337,6 +627,24 @@ class LSPFeatureTester:
 
         # Folding range tests
         self.test_folding_range_basic()
+
+        # Code action tests
+        self.test_code_action_basic()
+        self.test_code_action_with_diagnostic()
+        self.test_code_action_unused_variable()
+        self.test_code_action_empty_diagnostics()
+
+        # Workspace symbols tests
+        self.test_workspace_symbols_basic()
+        self.test_workspace_symbols_with_query()
+        self.test_workspace_symbols_no_match()
+        self.test_workspace_symbols_special_chars()
+
+        # Inlay hints tests
+        self.test_inlay_hints_basic()
+        self.test_inlay_hints_small_range()
+        self.test_inlay_hints_empty_range()
+        self.test_inlay_hints_nonexistent_file()
 
         print("\n" + "=" * 60)
         print(f"Tests run:    {self.test_count}")
