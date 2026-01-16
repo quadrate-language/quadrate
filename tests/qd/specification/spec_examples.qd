@@ -1,0 +1,206 @@
+// Specification code examples verification
+// Tests examples from docs/docs/docs/specification.md
+
+use math
+
+// Section 3.2.1 - Structs
+struct Point {
+    x:f64
+    y:f64
+}
+
+struct Person {
+    name:str
+    age:i64
+}
+
+// Section 3.3 - Generic Types
+fn identity<T>(x:T -- y:T) {
+    -> val
+    val
+}
+
+struct Box<T> {
+    value:T
+}
+
+struct Pair<A, B> {
+    first:A
+    second:B
+}
+
+// Section 3.4 - Function Types
+fn double(x:i64 -- r:i64) {
+    2 *
+}
+
+fn apply(x:i64 f:ptr -- result:i64) {
+    -> func -> val
+    val func call
+}
+
+// Section 4.3 - Stack Effect Signatures
+fn add(a:i64 b:i64 -- sum:i64) {
+    +
+}
+
+fn swap_pair(a:i64 b:i64 -- r1:i64 r2:i64) {
+    swap
+}
+
+fn print_value(x:i64 -- ) {
+    print nl
+}
+
+fn get_constant( -- c:i64) {
+    42
+}
+
+// Section 4.4 - Local Variables
+fn example_locals(x:i64 y:i64 -- result:i64) {
+    -> b
+    -> a
+    a b +
+}
+
+// Section 7.4 - Methods (struct with method)
+struct Vec2 { x:f64 y:f64 }
+
+fn length(v:Vec2 -- len:f64) {
+    -> v
+    v @x v @x * v @y v @y * + math::sqrt
+}
+
+// Section 10.1 - Fallible Functions
+fn divide(a:i64 b:i64 -- result:i64)! {
+    dup 0 == if {
+        drop drop
+        "division by zero" -1 panic
+    }
+    /
+}
+
+fn main() {
+    "=== Specification Examples Test ===" print nl
+
+    // Section 3.2.2 - Arrays
+    "Testing arrays..." print nl
+    [1 2 3 4 5] -> arr
+    arr 0 nth print nl          // 1
+    arr len print nl            // 5
+
+    // Section 3.3 - Generic identity
+    "Testing generics..." print nl
+    42 identity print nl        // 42
+    "hello" identity print nl   // hello
+
+    // Section 3.4 - Function pointers
+    "Testing function pointers..." print nl
+    5 &double apply print nl    // 10
+
+    // Section 3.6 - Type Coercion
+    "Testing casts..." print nl
+    3.14 cast<i64> print nl     // 3
+    42 cast<f64> print nl       // 42.0
+    100 cast<str> print nl      // 100
+
+    // Section 4.4 - Local Variables
+    "Testing local variables..." print nl
+    10 20 example_locals print nl   // 30
+    10 20 30 -> z -> y -> x
+    x print nl                  // 10
+    y print nl                  // 20
+    z print nl                  // 30
+
+    // Section 6.1 - If-Else
+    "Testing if-else..." print nl
+    15 -> x
+    x 10 > if {
+        "greater than 10" print nl
+    } else {
+        "10 or less" print nl
+    }
+
+    // Section 6.2 - For Loops
+    "Testing for loops..." print nl
+    0 5 1 for i {
+        i print nl
+    }
+
+    // Section 6.3 - While Loops
+    "Testing while loops..." print nl
+    0 -> i
+    i 3 < while {
+        i print nl
+        i 1 + -> i
+        i 3 <
+    }
+
+    // Section 6.5 - Switch-Case
+    "Testing switch..." print nl
+    2 -> val
+    val switch {
+        1 { "one" print nl }
+        2 { "two" print nl }
+        3 { "three" print nl }
+        _ { "other" print nl }
+    }
+
+    // Section 6.7 - Defer
+    "Testing defer..." print nl
+    defer { "third" print nl }
+    defer { "second" print nl }
+    defer { "first" print nl }
+
+    // Section 7.2 - Function Calls
+    "Testing function calls..." print nl
+    10 20 add print nl          // 30
+    3.14 math::sin print nl     // ~0
+
+    // Section 7.5 - Closures
+    "Testing closures..." print nl
+    42 -> captured
+    fn ( -- r:i64) { captured } -> get_x
+    get_x call print nl         // 42
+
+    10 -> a
+    20 -> b
+    fn ( -- r:i64) { a b + } -> sum_fn
+    sum_fn call print nl        // 30
+
+    fn (x:i64 y:i64 -- r:i64) { -> bb -> aa aa bb + } -> add_fn
+    3 4 add_fn call print nl    // 7
+
+    // Section 7.6 - Function Pointers
+    "Testing function pointers..." print nl
+    &double -> func_ptr
+    5 func_ptr call print nl    // 10
+
+    // Section 8.2-8.4 - Struct construction and field access
+    "Testing structs..." print nl
+    Point { x = 1.5 y = 2.5 } -> p
+    p @x print nl               // 1.5
+    p @y print nl               // 2.5
+    5.0 p.x
+    p @x print nl               // 5.0
+
+    // Section 8.5 - Generic Structs
+    Box<i64> { value = 100 } -> box
+    box @value print nl         // 100
+
+    // Section 10.3 - Error handling
+    "Testing error handling..." print nl
+    10 2 divide if {
+        print nl                // 5
+    } else {
+        "Division failed" print nl
+    }
+
+    10 0 divide if {
+        print nl
+    } else {
+        "Division by zero caught" print nl
+    }
+
+    "=== All tests complete ===" print nl
+}

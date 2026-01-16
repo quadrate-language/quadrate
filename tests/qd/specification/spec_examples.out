@@ -1,0 +1,54 @@
+=== Specification Examples Test ===
+Testing arrays...
+1
+5
+Testing generics...
+42
+hello
+Testing function pointers...
+10
+Testing casts...
+3
+42
+100
+Testing local variables...
+30
+10
+20
+30
+Testing if-else...
+greater than 10
+Testing for loops...
+0
+1
+2
+3
+4
+Testing while loops...
+0
+1
+2
+Testing switch...
+two
+Testing defer...
+Testing function calls...
+30
+0.00159265
+Testing closures...
+42
+30
+7
+Testing function pointers...
+10
+Testing structs...
+1.5
+2.5
+5
+100
+Testing error handling...
+5
+Division by zero caught
+=== All tests complete ===
+first
+second
+third

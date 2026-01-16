@@ -1197,7 +1197,7 @@ namespace Qd {
 			}
 		}
 
-		// Handle array literal: [elem1 elem2 ...] (commas optional)
+		// Handle array literal: [elem1 elem2 ...]
 		if (token == '[') {
 			size_t bracketPos = u8t_scanner_token_start(scanner);
 			AstNodeArrayLiteral* arrNode = new AstNodeArrayLiteral();
@@ -1210,11 +1210,6 @@ namespace Qd {
 			while ((elemToken = u8t_scanner_scan(scanner)) != U8T_EOF) {
 				if (elemToken == ']') {
 					break;
-				}
-
-				// Skip commas (optional separator)
-				if (elemToken == ',') {
-					continue;
 				}
 
 				// Skip whitespace tokens if any
@@ -2477,7 +2472,7 @@ namespace Qd {
 					errorReporter->reportError(scanner, "Expected function name after '&'");
 				}
 			} else if (token == '[') {
-				// Handle array literal: [elem1 elem2 ...] (commas optional)
+				// Handle array literal: [elem1 elem2 ...]
 				size_t bracketPos = u8t_scanner_token_start(scanner);
 				AstNodeArrayLiteral* arrNode = new AstNodeArrayLiteral();
 				size_t line, column;
@@ -2489,11 +2484,6 @@ namespace Qd {
 				while ((elemToken = u8t_scanner_scan(scanner)) != U8T_EOF) {
 					if (elemToken == ']') {
 						break;
-					}
-
-					// Skip commas (optional separator)
-					if (elemToken == ',') {
-						continue;
 					}
 
 					// Skip whitespace tokens if any

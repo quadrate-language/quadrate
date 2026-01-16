@@ -168,7 +168,7 @@ Examples: `"hello"`, `"line1\nline2"`
 **Punctuation:**
 ```
 :     Type annotation
-,     Optional separator (arrays)
+,     Type parameter separator
 ( )   Function signatures
 { }   Blocks
 [ ]   Array literals
@@ -522,22 +522,21 @@ start end step for iterator {
 ### 6.3 While Loops
 
 ```quadrate
-while {
-    // condition and body
-    // use 'break' to exit
+condition while {
+    // body
+    condition  // last expression becomes condition for next iteration
 }
 ```
 
+The initial condition is on the stack before `while`. The block executes if the condition is true (non-zero). The block's last expression becomes the condition for the next iteration.
+
 **Example:**
 ```quadrate
-0 -> count
-while {
-    count 10 < if {
-        count print nl
-        count 1 + -> count
-    } else {
-        break
-    }
+0 -> i
+i 5 < while {
+    i print nl
+    i 1 + -> i
+    i 5 <        // condition for next iteration
 }
 ```
 
@@ -1345,7 +1344,7 @@ statement       = expression | if_stmt | for_stmt | while_stmt | loop_stmt
 
 if_stmt         = expression "if" block [ "else" block ] ;
 for_stmt        = expression expression expression "for" identifier block ;
-while_stmt      = "while" block ;
+while_stmt      = expression "while" block ;  /* block's last expr is next condition */
 loop_stmt       = "loop" block ;
 switch_stmt     = expression "switch" "{" { case_clause } "}" ;
 case_clause     = ( literal | identifier | "_" ) block ;
