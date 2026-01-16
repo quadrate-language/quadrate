@@ -95,6 +95,7 @@ nav:
           - term: docs/stdlib/term.md
       - Signal Handling:
           - signal: docs/stdlib/signal.md
+  - Language Specification: docs/specification.md
   - Toolchain: docs/toolchain.md
   - External Packages: docs/external-packages.md
   - About: about.md
