@@ -1055,8 +1055,8 @@ void QuadrateLSP::handleCodeAction(const std::string& id, const std::string& uri
 
 					// Create code action to add 'use' statement
 					json_t* action = json_object();
-					json_object_set_new(action, "title",
-							json_string(("Add 'use " + moduleName + "' at top of file").c_str()));
+					json_object_set_new(
+							action, "title", json_string(("Add 'use " + moduleName + "' at top of file").c_str()));
 					json_object_set_new(action, "kind", json_string("quickfix"));
 
 					// Create workspace edit
@@ -1120,8 +1120,8 @@ void QuadrateLSP::handleCodeAction(const std::string& id, const std::string& uri
 						json_object_set_new(start, "character", json_integer(static_cast<json_int_t>(diagCol)));
 						json_t* end = json_object();
 						json_object_set_new(end, "line", json_integer(static_cast<json_int_t>(diagLine)));
-						json_object_set_new(end, "character",
-								json_integer(static_cast<json_int_t>(diagCol + varName.length())));
+						json_object_set_new(
+								end, "character", json_integer(static_cast<json_int_t>(diagCol + varName.length())));
 						json_object_set_new(range, "start", start);
 						json_object_set_new(range, "end", end);
 						json_object_set_new(textEdit, "range", range);
@@ -1157,8 +1157,7 @@ void QuadrateLSP::handleCodeAction(const std::string& id, const std::string& uri
 	json_decref(response);
 }
 
-void QuadrateLSP::handleInlayHints(
-		const std::string& id, const std::string& uri, size_t startLine, size_t endLine) {
+void QuadrateLSP::handleInlayHints(const std::string& id, const std::string& uri, size_t startLine, size_t endLine) {
 	json_t* response = json_object();
 	json_object_set_new(response, "jsonrpc", json_string("2.0"));
 	json_object_set_new(response, "id", json_integer(std::stoi(id)));
@@ -1207,8 +1206,7 @@ void QuadrateLSP::handleInlayHints(
 
 						if (varStart < line.size() && (std::isalpha(line[varStart]) || line[varStart] == '_')) {
 							size_t varEnd = varStart;
-							while (varEnd < line.size() &&
-									(std::isalnum(line[varEnd]) || line[varEnd] == '_')) {
+							while (varEnd < line.size() && (std::isalnum(line[varEnd]) || line[varEnd] == '_')) {
 								varEnd++;
 							}
 
@@ -1217,8 +1215,7 @@ void QuadrateLSP::handleInlayHints(
 							json_t* hint = json_object();
 							json_t* position = json_object();
 							json_object_set_new(position, "line", json_integer(static_cast<json_int_t>(lineNum)));
-							json_object_set_new(
-									position, "character", json_integer(static_cast<json_int_t>(arrowPos)));
+							json_object_set_new(position, "character", json_integer(static_cast<json_int_t>(arrowPos)));
 							json_object_set_new(hint, "position", position);
 							json_object_set_new(hint, "label", json_string(": local"));
 							json_object_set_new(hint, "kind", json_integer(1)); // Type hint
@@ -1235,8 +1232,7 @@ void QuadrateLSP::handleInlayHints(
 						size_t funcStart = colonPos + 2;
 						if (funcStart < line.size() && (std::isalpha(line[funcStart]) || line[funcStart] == '_')) {
 							size_t funcEnd = funcStart;
-							while (funcEnd < line.size() &&
-									(std::isalnum(line[funcEnd]) || line[funcEnd] == '_')) {
+							while (funcEnd < line.size() && (std::isalnum(line[funcEnd]) || line[funcEnd] == '_')) {
 								funcEnd++;
 							}
 
@@ -1264,8 +1260,7 @@ void QuadrateLSP::handleInlayHints(
 
 								json_t* hint = json_object();
 								json_t* position = json_object();
-								json_object_set_new(
-										position, "line", json_integer(static_cast<json_int_t>(lineNum)));
+								json_object_set_new(position, "line", json_integer(static_cast<json_int_t>(lineNum)));
 								json_object_set_new(
 										position, "character", json_integer(static_cast<json_int_t>(funcEnd)));
 								json_object_set_new(hint, "position", position);
