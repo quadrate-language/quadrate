@@ -876,6 +876,205 @@ qd_exec_result usr_str_sort_desc(qd_context* ctx) {
 	return (qd_exec_result){0};
 }
 
+// repeat - repeat string n times ( str:s n:i -- result:s )
+qd_exec_result usr_str_repeat(qd_context* ctx) {
+	qd_stack_element_t n_elem, str_elem;
+	qd_stack_error err = qd_stack_pop(ctx->st, &n_elem);
+	if (err != QD_STACK_OK || n_elem.type != QD_STACK_TYPE_INT) {
+		fprintf(stderr, "Fatal error in str::repeat: Expected integer count\n");
+		abort();
+	}
+	err = qd_stack_pop(ctx->st, &str_elem);
+	if (err != QD_STACK_OK || str_elem.type != QD_STACK_TYPE_STR) {
+		fprintf(stderr, "Fatal error in str::repeat: Expected string\n");
+		abort();
+	}
+
+	int64_t n = n_elem.value.i;
+	if (n < 0) {
+		n = 0;
+	}
+
+	size_t str_len = strlen(qd_string_data(str_elem.value.s));
+	size_t result_len = str_len * (size_t)n;
+
+	char* result = malloc(result_len + 1);
+	if (!result) {
+		fprintf(stderr, "Fatal error in str::repeat: Memory allocation failed\n");
+		qd_string_release(str_elem.value.s);
+		abort();
+	}
+
+	char* dest = result;
+	for (int64_t i = 0; i < n; i++) {
+		memcpy(dest, qd_string_data(str_elem.value.s), str_len);
+		dest += str_len;
+	}
+	*dest = '\0';
+
+	qd_string_release(str_elem.value.s);
+	qd_push_s(ctx, result);
+	free(result);
+
+	return (qd_exec_result){0};
+}
+
+// reverse - reverse a string ( str:s -- result:s )
+qd_exec_result usr_str_reverse(qd_context* ctx) {
+	qd_stack_element_t str_elem;
+	qd_stack_error err = qd_stack_pop(ctx->st, &str_elem);
+	if (err != QD_STACK_OK || str_elem.type != QD_STACK_TYPE_STR) {
+		fprintf(stderr, "Fatal error in str::reverse: Expected string\n");
+		abort();
+	}
+
+	size_t len = strlen(qd_string_data(str_elem.value.s));
+	char* result = malloc(len + 1);
+	if (!result) {
+		fprintf(stderr, "Fatal error in str::reverse: Memory allocation failed\n");
+		qd_string_release(str_elem.value.s);
+		abort();
+	}
+
+	const char* src = qd_string_data(str_elem.value.s);
+	for (size_t i = 0; i < len; i++) {
+		result[i] = src[len - 1 - i];
+	}
+	result[len] = '\0';
+
+	qd_string_release(str_elem.value.s);
+	qd_push_s(ctx, result);
+	free(result);
+
+	return (qd_exec_result){0};
+}
+
+// trim_left - remove leading whitespace ( str:s -- result:s )
+qd_exec_result usr_str_trim_left(qd_context* ctx) {
+	qd_stack_element_t str_elem;
+	qd_stack_error err = qd_stack_pop(ctx->st, &str_elem);
+	if (err != QD_STACK_OK || str_elem.type != QD_STACK_TYPE_STR) {
+		fprintf(stderr, "Fatal error in str::trim_left: Expected string\n");
+		abort();
+	}
+
+	const char* start = qd_string_data(str_elem.value.s);
+	while (*start && isspace((unsigned char)*start)) {
+		start++;
+	}
+
+	qd_string_release(str_elem.value.s);
+	qd_push_s(ctx, start);
+
+	return (qd_exec_result){0};
+}
+
+// trim_right - remove trailing whitespace ( str:s -- result:s )
+qd_exec_result usr_str_trim_right(qd_context* ctx) {
+	qd_stack_element_t str_elem;
+	qd_stack_error err = qd_stack_pop(ctx->st, &str_elem);
+	if (err != QD_STACK_OK || str_elem.type != QD_STACK_TYPE_STR) {
+		fprintf(stderr, "Fatal error in str::trim_right: Expected string\n");
+		abort();
+	}
+
+	const char* src = qd_string_data(str_elem.value.s);
+	size_t len = strlen(src);
+
+	while (len > 0 && isspace((unsigned char)src[len - 1])) {
+		len--;
+	}
+
+	char* result = malloc(len + 1);
+	if (!result) {
+		fprintf(stderr, "Fatal error in str::trim_right: Memory allocation failed\n");
+		qd_string_release(str_elem.value.s);
+		abort();
+	}
+
+	memcpy(result, src, len);
+	result[len] = '\0';
+
+	qd_string_release(str_elem.value.s);
+	qd_push_s(ctx, result);
+	free(result);
+
+	return (qd_exec_result){0};
+}
+
+// count - count occurrences of substring ( haystack:s needle:s -- count:i )
+qd_exec_result usr_str_count(qd_context* ctx) {
+	qd_stack_element_t needle_elem, haystack_elem;
+	qd_stack_error err = qd_stack_pop(ctx->st, &needle_elem);
+	if (err != QD_STACK_OK || needle_elem.type != QD_STACK_TYPE_STR) {
+		fprintf(stderr, "Fatal error in str::count: Expected string needle\n");
+		abort();
+	}
+	err = qd_stack_pop(ctx->st, &haystack_elem);
+	if (err != QD_STACK_OK || haystack_elem.type != QD_STACK_TYPE_STR) {
+		qd_string_release(needle_elem.value.s);
+		fprintf(stderr, "Fatal error in str::count: Expected string haystack\n");
+		abort();
+	}
+
+	const char* haystack = qd_string_data(haystack_elem.value.s);
+	const char* needle = qd_string_data(needle_elem.value.s);
+	size_t needle_len = strlen(needle);
+
+	int64_t count = 0;
+	if (needle_len > 0) {
+		const char* pos = haystack;
+		while ((pos = strstr(pos, needle)) != NULL) {
+			count++;
+			pos += needle_len;
+		}
+	}
+
+	qd_string_release(haystack_elem.value.s);
+	qd_string_release(needle_elem.value.s);
+
+	qd_push_i(ctx, count);
+	return (qd_exec_result){0};
+}
+
+// last_index_of - find last occurrence of substring ( haystack:s needle:s -- index:i )
+qd_exec_result usr_str_last_index_of(qd_context* ctx) {
+	qd_stack_element_t needle_elem, haystack_elem;
+	qd_stack_error err = qd_stack_pop(ctx->st, &needle_elem);
+	if (err != QD_STACK_OK || needle_elem.type != QD_STACK_TYPE_STR) {
+		fprintf(stderr, "Fatal error in str::last_index_of: Expected string needle\n");
+		abort();
+	}
+	err = qd_stack_pop(ctx->st, &haystack_elem);
+	if (err != QD_STACK_OK || haystack_elem.type != QD_STACK_TYPE_STR) {
+		qd_string_release(needle_elem.value.s);
+		fprintf(stderr, "Fatal error in str::last_index_of: Expected string haystack\n");
+		abort();
+	}
+
+	const char* haystack = qd_string_data(haystack_elem.value.s);
+	const char* needle = qd_string_data(needle_elem.value.s);
+	size_t needle_len = strlen(needle);
+
+	int64_t result = -1;
+	if (needle_len > 0) {
+		const char* pos = haystack;
+		while ((pos = strstr(pos, needle)) != NULL) {
+			result = (int64_t)(pos - haystack);
+			pos += needle_len;
+		}
+	} else {
+		// Empty needle matches at the end
+		result = (int64_t)strlen(haystack);
+	}
+
+	qd_string_release(haystack_elem.value.s);
+	qd_string_release(needle_elem.value.s);
+
+	qd_push_i(ctx, result);
+	return (qd_exec_result){0};
+}
+
 // join - join array of strings with delimiter ( parts:p count:i delim:s -- result:s )
 qd_exec_result usr_str_join(qd_context* ctx) {
 	qd_stack_element_t delim_elem, count_elem, parts_elem;

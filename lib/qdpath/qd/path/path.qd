@@ -175,3 +175,46 @@ pub fn normalize(path:str -- norm:str) {
 	}
 	result
 }
+
+/// Change or add file extension.
+/// @param path str File path
+/// @param newext str New extension (with or without leading dot)
+/// @return result str Path with new extension
+/// @example "file.txt" ".md" path::with_ext -> "file.md"
+pub fn with_ext(path:str newext:str -- result:str) {
+	-> newext
+	-> path
+	// Get the stem (filename without extension)
+	path stem -> base
+	// Get directory
+	path dirname -> dir
+	// Ensure extension starts with dot
+	newext str::len 0 > if {
+		newext 0 str::char_at! 46 != if {
+			"." newext str::concat -> newext
+		}
+	}
+	// Build result
+	dir "." str::compare 0 == if {
+		base newext str::concat
+	} else {
+		dir "/" str::concat base str::concat newext str::concat
+	}
+}
+
+/// Check if path has an extension.
+/// @param path str File path
+/// @return result i64 1 if has extension, 0 otherwise
+/// @example "file.txt" path::has_ext -> 1
+pub fn has_ext(path:str -- result:i64) {
+	-> path
+	path ext str::len 0 >
+}
+
+/// Get parent directory (same as dirname but clearer name).
+/// @param path str File path
+/// @return parent str Parent directory
+/// @example "/home/user/file.txt" path::parent -> "/home/user"
+pub fn parent(path:str -- parent:str) {
+	dirname
+}

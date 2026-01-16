@@ -1,5 +1,6 @@
 #include <cstdint>
 #include <cstring>
+#include <functional>
 #include <iostream>
 #include <qc/ast.h>
 #include <qc/ast_node_function.h>
@@ -32,7 +33,12 @@ struct Options {
 	bool noShadowVariables = false;
 	bool noEmptyBlocks = false;
 	bool noConstantConditions = false;
+	// Stricter checks (disabled by default, enable with flags)
+	bool checkMagicNumbers = false;
+	bool checkLongFunctions = false;
+	bool checkNamingConventions = false;
 	int maxNestingDepth = 4;
+	int maxFunctionLines = 50;
 };
 
 struct LintIssue {
@@ -59,6 +65,11 @@ void printHelp() {
 	std::cout << "  --no-empty-blocks         Disable empty block warnings\n";
 	std::cout << "  --no-constant-conditions  Disable constant condition warnings\n";
 	std::cout << "  --max-nesting <N>         Maximum nesting depth (default: 4)\n";
+	std::cout << "\nStricter checks (disabled by default):\n";
+	std::cout << "  --check-magic-numbers     Enable magic number detection\n";
+	std::cout << "  --check-long-functions    Enable long function detection\n";
+	std::cout << "  --check-naming            Enable naming convention checks\n";
+	std::cout << "  --max-function-lines <N>  Maximum function lines (default: 50)\n";
 	std::cout << "\n";
 	std::cout << "Examples:\n";
 	std::cout << "  quadlint file.qd          Lint a single file\n";
@@ -95,6 +106,12 @@ bool parseArgs(int argc, char* argv[], Options& opts) {
 			opts.noEmptyBlocks = true;
 		} else if (arg == "--no-constant-conditions") {
 			opts.noConstantConditions = true;
+		} else if (arg == "--check-magic-numbers") {
+			opts.checkMagicNumbers = true;
+		} else if (arg == "--check-long-functions") {
+			opts.checkLongFunctions = true;
+		} else if (arg == "--check-naming") {
+			opts.checkNamingConventions = true;
 		} else if (arg == "--max-nesting") {
 			if (i + 1 >= argc) {
 				std::cerr << "quadlint: --max-nesting requires an argument\n";
@@ -103,6 +120,16 @@ bool parseArgs(int argc, char* argv[], Options& opts) {
 			opts.maxNestingDepth = std::atoi(argv[++i]);
 			if (opts.maxNestingDepth < 1) {
 				std::cerr << "quadlint: --max-nesting must be at least 1\n";
+				return false;
+			}
+		} else if (arg == "--max-function-lines") {
+			if (i + 1 >= argc) {
+				std::cerr << "quadlint: --max-function-lines requires an argument\n";
+				return false;
+			}
+			opts.maxFunctionLines = std::atoi(argv[++i]);
+			if (opts.maxFunctionLines < 1) {
+				std::cerr << "quadlint: --max-function-lines must be at least 1\n";
 				return false;
 			}
 		} else if (arg[0] == '-') {
@@ -471,6 +498,171 @@ void detectConstantConditions(IAstNode* node, const std::string& filename, std::
 	}
 }
 
+// Detect magic numbers (numeric literals other than -1, 0, 1)
+void detectMagicNumbers(IAstNode* node, const std::string& filename, std::vector<LintIssue>& issues) {
+	if (!node) {
+		return;
+	}
+
+	if (node->type() == IAstNode::Type::LITERAL) {
+		AstNodeLiteral* literal = static_cast<AstNodeLiteral*>(node);
+		if (literal->literalType() == AstNodeLiteral::LiteralType::INTEGER) {
+			std::string value = literal->value();
+			// Allow -1, 0, 1 as common values
+			if (value != "0" && value != "1" && value != "-1") {
+				// Check if inside a constant declaration (which is acceptable)
+				IAstNode* parent = node->parent();
+				bool inConstant = false;
+				while (parent) {
+					if (parent->type() == IAstNode::Type::CONSTANT_DECLARATION) {
+						inConstant = true;
+						break;
+					}
+					parent = parent->parent();
+				}
+
+				if (!inConstant) {
+					LintIssue issue;
+					issue.filename = filename;
+					issue.line = node->line();
+					issue.column = node->column();
+					issue.message = "Magic number '" + value + "' - consider using a named constant";
+					issue.level = "warning";
+					issues.push_back(issue);
+				}
+			}
+		}
+	}
+
+	// Recursively check children
+	for (size_t i = 0; i < node->childCount(); i++) {
+		detectMagicNumbers(node->child(i), filename, issues);
+	}
+}
+
+// Detect long functions
+void detectLongFunctions(IAstNode* node, const std::string& filename, int maxLines, std::vector<LintIssue>& issues) {
+	if (!node) {
+		return;
+	}
+
+	if (node->type() == IAstNode::Type::FUNCTION_DECLARATION) {
+		AstNodeFunctionDeclaration* func = static_cast<AstNodeFunctionDeclaration*>(node);
+
+		// Find the end line by traversing all children
+		size_t startLine = func->line();
+		size_t endLine = startLine;
+
+		std::function<void(Qd::IAstNode*)> findMaxLine = [&](Qd::IAstNode* n) {
+			if (!n) {
+				return;
+			}
+			if (n->line() > endLine) {
+				endLine = n->line();
+			}
+			for (size_t i = 0; i < n->childCount(); i++) {
+				findMaxLine(n->child(i));
+			}
+		};
+		findMaxLine(func);
+
+		size_t functionLines = endLine - startLine + 1;
+		if (functionLines > static_cast<size_t>(maxLines)) {
+			LintIssue issue;
+			issue.filename = filename;
+			issue.line = func->line();
+			issue.column = func->column();
+			issue.message = "Function '" + func->name() + "' is too long (" + std::to_string(functionLines) +
+							" lines, max: " + std::to_string(maxLines) + ")";
+			issue.level = "warning";
+			issues.push_back(issue);
+		}
+	}
+
+	// Recursively check children
+	for (size_t i = 0; i < node->childCount(); i++) {
+		detectLongFunctions(node->child(i), filename, maxLines, issues);
+	}
+}
+
+// Helper to check if string is snake_case
+bool isSnakeCase(const std::string& name) {
+	if (name.empty()) {
+		return true;
+	}
+	for (size_t i = 0; i < name.length(); i++) {
+		char c = name[i];
+		if (!(islower(static_cast<unsigned char>(c)) || isdigit(static_cast<unsigned char>(c)) || c == '_')) {
+			return false;
+		}
+	}
+	// Should not start or end with underscore
+	if (name[0] == '_' || name[name.length() - 1] == '_') {
+		return false;
+	}
+	return true;
+}
+
+// Helper to check if string is PascalCase
+bool isPascalCase(const std::string& name) {
+	if (name.empty()) {
+		return true;
+	}
+	// First character should be uppercase
+	if (!isupper(static_cast<unsigned char>(name[0]))) {
+		return false;
+	}
+	// Rest should be alphanumeric (no underscores)
+	for (size_t i = 1; i < name.length(); i++) {
+		char c = name[i];
+		if (!isalnum(static_cast<unsigned char>(c))) {
+			return false;
+		}
+	}
+	return true;
+}
+
+// Detect naming convention violations
+void detectNamingConventions(IAstNode* node, const std::string& filename, std::vector<LintIssue>& issues) {
+	if (!node) {
+		return;
+	}
+
+	// Check function names (should be snake_case)
+	if (node->type() == IAstNode::Type::FUNCTION_DECLARATION) {
+		AstNodeFunctionDeclaration* func = static_cast<AstNodeFunctionDeclaration*>(node);
+		std::string name = func->name();
+		if (!isSnakeCase(name)) {
+			LintIssue issue;
+			issue.filename = filename;
+			issue.line = func->line();
+			issue.column = func->column();
+			issue.message = "Function '" + name + "' should use snake_case";
+			issue.level = "warning";
+			issues.push_back(issue);
+		}
+	}
+	// Check struct names (should be PascalCase)
+	else if (node->type() == IAstNode::Type::STRUCT_DECLARATION) {
+		AstNodeStructDeclaration* structDecl = static_cast<AstNodeStructDeclaration*>(node);
+		std::string name = structDecl->name();
+		if (!isPascalCase(name)) {
+			LintIssue issue;
+			issue.filename = filename;
+			issue.line = structDecl->line();
+			issue.column = structDecl->column();
+			issue.message = "Struct '" + name + "' should use PascalCase";
+			issue.level = "warning";
+			issues.push_back(issue);
+		}
+	}
+
+	// Recursively check children
+	for (size_t i = 0; i < node->childCount(); i++) {
+		detectNamingConventions(node->child(i), filename, issues);
+	}
+}
+
 std::vector<LintIssue> lintFile(const std::string& filename, const Options& opts) {
 	std::vector<LintIssue> issues;
 
@@ -582,6 +774,21 @@ std::vector<LintIssue> lintFile(const std::string& filename, const Options& opts
 		// Check for constant conditions
 		if (!opts.noConstantConditions) {
 			detectConstantConditions(root, filename, issues);
+		}
+
+		// Check for magic numbers (opt-in)
+		if (opts.checkMagicNumbers) {
+			detectMagicNumbers(root, filename, issues);
+		}
+
+		// Check for long functions (opt-in)
+		if (opts.checkLongFunctions) {
+			detectLongFunctions(root, filename, opts.maxFunctionLines, issues);
+		}
+
+		// Check for naming conventions (opt-in)
+		if (opts.checkNamingConventions) {
+			detectNamingConventions(root, filename, issues);
 		}
 
 	} catch (const std::exception& e) {

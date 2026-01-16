@@ -8,6 +8,7 @@
 #include <csignal>
 #include <cstdio>
 #include <cstdlib>
+#include <fstream>
 #include <iostream>
 #include <pwd.h>
 #include <readline/history.h>
@@ -23,38 +24,30 @@
 static std::string g_historyFile;
 
 // Completions for tab completion
-static const char* g_keywords[] = {
-	"fn", "pub", "if", "else", "for", "while", "loop", "break", "continue",
-	"return", "use", "struct", "const", "defer", "switch", "case", "test",
-	nullptr
-};
+static const char* g_keywords[] = {"fn", "pub", "if", "else", "for", "while", "loop", "break", "continue", "return",
+		"use", "struct", "const", "defer", "switch", "case", "test", nullptr};
 
 static const char* g_builtins[] = {
-	// Stack operations
-	"dup", "drop", "swap", "over", "rot", "nip", "tuck", "pick", "roll",
-	// Arithmetic
-	"add", "sub", "mul", "div", "mod", "neg", "inc", "dec",
-	// Comparison
-	"eq", "ne", "lt", "gt", "le", "ge",
-	// Logic
-	"and", "or", "not", "xor",
-	// Bitwise
-	"shl", "shr", "band", "bor", "bnot", "bxor",
-	// I/O
-	"print", "prints", "printv", "printsv", "nl", "read",
-	// Type conversion
-	"i2f", "f2i", "i2s", "f2s",
-	// Arrays
-	"makei", "makef", "makes", "make", "len", "nth", "set", "append",
-	nullptr
-};
+		// Stack operations
+		"dup", "drop", "swap", "over", "rot", "nip", "tuck", "pick", "roll",
+		// Arithmetic
+		"add", "sub", "mul", "div", "mod", "neg", "inc", "dec",
+		// Comparison
+		"eq", "ne", "lt", "gt", "le", "ge",
+		// Logic
+		"and", "or", "not", "xor",
+		// Bitwise
+		"shl", "shr", "band", "bor", "bnot", "bxor",
+		// I/O
+		"print", "prints", "printv", "printsv", "nl", "read",
+		// Type conversion
+		"i2f", "f2i", "i2s", "f2s",
+		// Arrays
+		"makei", "makef", "makes", "make", "len", "nth", "set", "append", nullptr};
 
 static const char* g_modules[] = {
-	"math::", "str::", "io::", "fmt::", "os::", "mem::", "time::", "thread::",
-	"flag::", "path::", "rand::", "unicode::", "strconv::", "bytes::", "bits::",
-	"signal::", "term::", "limits::", "testing::", "sb::",
-	nullptr
-};
+		"math::", "str::", "io::", "fmt::", "os::", "mem::", "time::", "thread::", "flag::", "path::", "rand::",
+		"unicode::", "strconv::", "bytes::", "bits::", "signal::", "term::", "limits::", "testing::", "sb::", nullptr};
 
 // Generator function for readline completion
 static char* completionGenerator(const char* text, int state) {
@@ -72,10 +65,17 @@ static char* completionGenerator(const char* text, int state) {
 	while (phase < 3) {
 		const char** list;
 		switch (phase) {
-		case 0: list = g_keywords; break;
-		case 1: list = g_builtins; break;
-		case 2: list = g_modules; break;
-		default: return nullptr;
+		case 0:
+			list = g_keywords;
+			break;
+		case 1:
+			list = g_builtins;
+			break;
+		case 2:
+			list = g_modules;
+			break;
+		default:
+			return nullptr;
 		}
 
 		while ((name = list[listIndex]) != nullptr) {
@@ -270,8 +270,26 @@ public:
 			} else if (completeInput == "reset" || completeInput == ":reset") {
 				reset();
 				continue;
+			} else if (completeInput.substr(0, 6) == ".save ") {
+				std::string filename = trim(completeInput.substr(6));
+				if (filename.empty()) {
+					printf("%sUsage: .save <filename>%s\n", COLOR_RED, COLOR_RESET);
+				} else {
+					saveSession(filename);
+				}
+				continue;
+			} else if (completeInput.substr(0, 6) == ".load ") {
+				std::string filename = trim(completeInput.substr(6));
+				if (filename.empty()) {
+					printf("%sUsage: .load <filename>%s\n", COLOR_RED, COLOR_RESET);
+				} else {
+					loadSession(filename);
+				}
+				continue;
 			}
 
+			// Record successful commands for session history
+			sessionHistory.push_back(completeInput);
 			processLine(completeInput);
 		}
 	}
@@ -516,7 +534,8 @@ private:
 	qd_module* mod;
 	std::vector<std::string> functionDefs;
 	std::vector<std::string> useStatements;
-	std::vector<std::string> history; // Accumulated expressions
+	std::vector<std::string> history;		 // Accumulated expressions
+	std::vector<std::string> sessionHistory; // Commands for .save/.load
 	int moduleCounter;
 	size_t lastSuccessfulExprCount; // Number of expressions successfully compiled
 	size_t expectedStackDepth;		// Expected stack depth based on successful operations
@@ -618,6 +637,42 @@ private:
 		printf("\n");
 	}
 
+	void saveSession(const std::string& filename) {
+		std::ofstream file(filename);
+		if (!file.good()) {
+			printf("%sError: Could not open file '%s' for writing%s\n", COLOR_RED, filename.c_str(), COLOR_RESET);
+			return;
+		}
+
+		// Save session history
+		for (const auto& cmd : sessionHistory) {
+			file << cmd << "\n";
+		}
+
+		printf("%sSession saved to '%s' (%zu commands)%s\n", COLOR_GREEN, filename.c_str(), sessionHistory.size(),
+				COLOR_RESET);
+	}
+
+	void loadSession(const std::string& filename) {
+		std::ifstream file(filename);
+		if (!file.good()) {
+			printf("%sError: Could not open file '%s' for reading%s\n", COLOR_RED, filename.c_str(), COLOR_RESET);
+			return;
+		}
+
+		std::string line;
+		size_t count = 0;
+		while (std::getline(file, line)) {
+			if (!line.empty()) {
+				processLine(line);
+				sessionHistory.push_back(line);
+				count++;
+			}
+		}
+
+		printf("%sLoaded %zu commands from '%s'%s\n", COLOR_GREEN, count, filename.c_str(), COLOR_RESET);
+	}
+
 	void printHelp() {
 		printf("\n");
 		printf("%sREPL Commands:%s\n", COLOR_BOLD, COLOR_RESET);
@@ -630,6 +685,8 @@ private:
 		printf("  %sclear%s, %s:clear%s   Clear the stack\n", COLOR_GREEN, COLOR_RESET, COLOR_GREEN, COLOR_RESET);
 		printf("  %sreset%s, %s:reset%s   Reset REPL (clear everything)\n", COLOR_GREEN, COLOR_RESET, COLOR_GREEN,
 				COLOR_RESET);
+		printf("  %s.save <file>%s    Save session history to file\n", COLOR_GREEN, COLOR_RESET);
+		printf("  %s.load <file>%s    Load and execute commands from file\n", COLOR_GREEN, COLOR_RESET);
 		printf("\n");
 		printf("%sKey Bindings:%s\n", COLOR_BOLD, COLOR_RESET);
 		printf("  %sTab%s           Auto-complete keywords, builtins, modules\n", COLOR_GREEN, COLOR_RESET);

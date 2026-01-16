@@ -150,4 +150,43 @@ import "libqdstr.a" as "str" {
 	/// @error ErrAlloc Memory allocation failed
 	/// @example parts count "/" str::join! -> path
 	pub fn join(parts:ptr count:i64 delim:str -- result:str)!
+
+	/// Repeat string n times.
+	/// @param str str Input string
+	/// @param n i64 Number of repetitions
+	/// @return result str Repeated string
+	/// @example "ab" 3 str::repeat print  // "ababab"
+	pub fn repeat(str:str n:i64 -- result:str)
+
+	/// Reverse a string.
+	/// @param str str Input string
+	/// @return result str Reversed string
+	/// @example "hello" str::reverse print  // "olleh"
+	pub fn reverse(str:str -- result:str)
+
+	/// Remove leading whitespace.
+	/// @param str str Input string
+	/// @return result str String with leading whitespace removed
+	/// @example "  hello" str::trim_left print  // "hello"
+	pub fn trim_left(str:str -- result:str)
+
+	/// Remove trailing whitespace.
+	/// @param str str Input string
+	/// @return result str String with trailing whitespace removed
+	/// @example "hello  " str::trim_right print  // "hello"
+	pub fn trim_right(str:str -- result:str)
+
+	/// Count occurrences of substring.
+	/// @param haystack str String to search in
+	/// @param needle str Substring to count
+	/// @return count i64 Number of occurrences
+	/// @example "ababa" "aba" str::count print  // 1 (non-overlapping)
+	pub fn count(haystack:str needle:str -- count:i64)
+
+	/// Find last occurrence of substring.
+	/// @param haystack str String to search in
+	/// @param needle str Substring to find
+	/// @return index i64 Index of last match, -1 if not found
+	/// @example "hello hello" "hello" str::last_index_of print  // 6
+	pub fn last_index_of(haystack:str needle:str -- index:i64)
 }

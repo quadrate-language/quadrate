@@ -18,7 +18,10 @@ qdrt_sources = files(
 # Platform-specific exe_path implementation
 if host_machine.system() == 'haiku'
     qdrt_sources += files('src/platform/haiku/exe_path_haiku.c')
+elif host_machine.system() == 'freebsd' or host_machine.system() == 'netbsd' or host_machine.system() == 'openbsd'
+    qdrt_sources += files('src/platform/bsd/exe_path_bsd.c')
 else
+    # Linux and other systems with /proc/self/exe
     qdrt_sources += files('src/platform/posix/exe_path_linux.c')
 endif
 

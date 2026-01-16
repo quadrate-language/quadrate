@@ -50,3 +50,23 @@ test "path::normalize" {
 	"/home/user/" path::normalize "/home/user" testing::assert_eq
 	"/home//user/" path::normalize "/home/user" testing::assert_eq
 }
+
+test "path::with_ext" {
+	"file.txt" ".md" path::with_ext "file.md" testing::assert_eq
+	"file.txt" "md" path::with_ext "file.md" testing::assert_eq
+	"file" ".txt" path::with_ext "file.txt" testing::assert_eq
+	"/home/user/file.txt" ".md" path::with_ext "/home/user/file.md" testing::assert_eq
+}
+
+test "path::has_ext" {
+	"file.txt" path::has_ext testing::assert_true
+	"file" path::has_ext testing::assert_false
+	"/home/user/file.txt" path::has_ext testing::assert_true
+	".hidden" path::has_ext testing::assert_false
+}
+
+test "path::parent" {
+	"/home/user/file.txt" path::parent "/home/user" testing::assert_eq
+	"/file.txt" path::parent "/" testing::assert_eq
+	"file.txt" path::parent "." testing::assert_eq
+}

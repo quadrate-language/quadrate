@@ -187,4 +187,18 @@ int updateModules(const std::string& targetModuleName);
 // Remove an installed module
 int removeModule(const std::string& targetModuleName);
 
+// Show outdated packages with available updates
+int showOutdated();
+
+// Version conflict information
+struct VersionConflict {
+	std::string packageName;
+	std::vector<std::pair<std::string, std::string>> requirements; // (requirer, version_range)
+};
+
+// Check for version conflicts in dependencies
+// Returns empty vector if no conflicts, otherwise list of conflicts
+std::vector<VersionConflict> detectVersionConflicts(
+		const std::vector<Dependency>& deps, const std::string& basePath, std::set<std::string>& visited);
+
 #endif // QUADPM_IMPL_H

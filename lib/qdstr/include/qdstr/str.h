@@ -227,6 +227,63 @@ qd_exec_result usr_str_from_ptr(qd_context* ctx);
  */
 qd_exec_result usr_str_join(qd_context* ctx);
 
+/**
+ * @brief Repeat string n times
+ * @par Stack Effect: ( str:s n:i -- result:s )
+ * @param ctx Execution context
+ * @return Execution result
+ *
+ * Creates a new string by repeating str n times.
+ */
+qd_exec_result usr_str_repeat(qd_context* ctx);
+
+/**
+ * @brief Reverse a string
+ * @par Stack Effect: ( str:s -- result:s )
+ * @param ctx Execution context
+ * @return Execution result
+ *
+ * Creates a new string with characters in reverse order.
+ */
+qd_exec_result usr_str_reverse(qd_context* ctx);
+
+/**
+ * @brief Remove leading whitespace
+ * @par Stack Effect: ( str:s -- result:s )
+ * @param ctx Execution context
+ * @return Execution result
+ */
+qd_exec_result usr_str_trim_left(qd_context* ctx);
+
+/**
+ * @brief Remove trailing whitespace
+ * @par Stack Effect: ( str:s -- result:s )
+ * @param ctx Execution context
+ * @return Execution result
+ */
+qd_exec_result usr_str_trim_right(qd_context* ctx);
+
+/**
+ * @brief Count occurrences of substring
+ * @par Stack Effect: ( haystack:s needle:s -- count:i )
+ * @param ctx Execution context
+ * @return Execution result
+ *
+ * Returns the number of non-overlapping occurrences of needle in haystack.
+ */
+qd_exec_result usr_str_count(qd_context* ctx);
+
+/**
+ * @brief Find last occurrence of substring
+ * @par Stack Effect: ( haystack:s needle:s -- index:i )
+ * @param ctx Execution context
+ * @return Execution result
+ *
+ * Returns the index of the last occurrence of needle in haystack.
+ * Returns -1 if not found.
+ */
+qd_exec_result usr_str_last_index_of(qd_context* ctx);
+
 #ifdef __cplusplus
 }
 #endif

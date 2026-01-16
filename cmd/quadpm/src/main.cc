@@ -28,6 +28,7 @@ static void printUsage() {
 	std::cout << "  update [name]    Update installed module(s) (git pull)\n";
 	std::cout << "  remove <name>    Remove an installed module\n";
 	std::cout << "  list             List installed modules\n";
+	std::cout << "  outdated         Show packages with available updates\n";
 	std::cout << "  build            Build C sources in current module directory\n\n";
 	std::cout << "Lockfile (qd.lock):\n";
 	std::cout << "  The lockfile pins exact commit hashes for reproducible builds.\n";
@@ -148,6 +149,10 @@ int main(int argc, char** argv) {
 
 	if (command == "lock") {
 		return generateLockfile();
+	}
+
+	if (command == "outdated") {
+		return showOutdated();
 	}
 
 	std::cerr << COLOR_RED << "Error: Unknown command '" << command << "'" << COLOR_RESET << "\n";

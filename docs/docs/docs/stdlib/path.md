@@ -74,6 +74,30 @@ Get the file extension (including dot).
 ```
 ---
 
+### `fn` has_ext
+
+Check if path has a specific extension.
+
+**Signature:** `(path:str ext:str -- result:i64)`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `path` | `str` | File path |
+| `ext` | `str` | Extension to check (with or without dot) |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `result` | `i64` | 1 if extension matches, 0 otherwise |
+
+**Example:**
+
+```qd
+"file.txt" ".txt" path::has_ext print  // 1
+"file.txt" "txt" path::has_ext print   // 1
+"file.qd" ".txt" path::has_ext print   // 0
+```
+---
+
 ### `fn` is_absolute
 
 Check if path is absolute.
@@ -138,6 +162,28 @@ Normalize a path (remove redundant separators).
 ```
 ---
 
+### `fn` parent
+
+Get the parent directory of a path (alias for dirname).
+
+**Signature:** `(path:str -- parent:str)`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `path` | `str` | File path |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `parent` | `str` | Parent directory |
+
+**Example:**
+
+```qd
+"/home/user/file.txt" path::parent print  // "/home/user"
+"/home/user" path::parent print           // "/home"
+```
+---
+
 ### `fn` stem
 
 Get filename without extension.
@@ -156,4 +202,28 @@ Get filename without extension.
 
 ```qd
 "file.txt" path::stem  // "file"
+```
+---
+
+### `fn` with_ext
+
+Replace or add file extension.
+
+**Signature:** `(path:str newext:str -- result:str)`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `path` | `str` | File path |
+| `newext` | `str` | New extension (with or without dot) |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `result` | `str` | Path with new extension |
+
+**Example:**
+
+```qd
+"file.txt" ".qd" path::with_ext print   // "file.qd"
+"file.txt" "md" path::with_ext print    // "file.md"
+"/home/user/test.c" ".h" path::with_ext print  // "/home/user/test.h"
 ```

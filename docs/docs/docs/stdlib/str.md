@@ -105,6 +105,29 @@ Check if string contains substring.
 ```
 ---
 
+### `fn` count
+
+Count non-overlapping occurrences of substring.
+
+**Signature:** `(haystack:str needle:str -- count:i64)`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `haystack` | `str` | String to search in |
+| `needle` | `str` | Substring to count |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `count` | `i64` | Number of occurrences |
+
+**Example:**
+
+```qd
+"ababa" "a" str::count print  // 3
+"aaa" "aa" str::count print   // 1 (non-overlapping)
+```
+---
+
 ### `fn` ends_with
 
 Check if string ends with suffix.
@@ -262,6 +285,28 @@ Get string length in bytes.
 ```
 ---
 
+### `fn` last_index_of
+
+Find last occurrence of substring.
+
+**Signature:** `(haystack:str needle:str -- index:i64)`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `haystack` | `str` | String to search in |
+| `needle` | `str` | Substring to find |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `index` | `i64` | Index of last match, -1 if not found |
+
+**Example:**
+
+```qd
+"hello hello" "hello" str::last_index_of print  // 6
+```
+---
+
 ### `fn` lower
 
 Convert string to lowercase.
@@ -280,6 +325,49 @@ Convert string to lowercase.
 
 ```qd
 "HELLO" str::lower print  // "hello"
+```
+---
+
+### `fn` repeat
+
+Repeat string n times.
+
+**Signature:** `(str:str n:i64 -- result:str)`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `str` | `str` | String to repeat |
+| `n` | `i64` | Number of repetitions |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `result` | `str` | Repeated string |
+
+**Example:**
+
+```qd
+"ab" 3 str::repeat print  // "ababab"
+```
+---
+
+### `fn` reverse
+
+Reverse a string.
+
+**Signature:** `(str:str -- result:str)`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `str` | `str` | Input string |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `result` | `str` | Reversed string |
+
+**Example:**
+
+```qd
+"hello" str::reverse print  // "olleh"
 ```
 ---
 
@@ -440,6 +528,48 @@ Remove leading and trailing whitespace.
 
 ```qd
 "  hello  " str::trim print  // "hello"
+```
+---
+
+### `fn` trim_left
+
+Remove leading whitespace only.
+
+**Signature:** `(str:str -- result:str)`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `str` | `str` | Input string |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `result` | `str` | String with leading whitespace removed |
+
+**Example:**
+
+```qd
+"  hello  " str::trim_left print  // "hello  "
+```
+---
+
+### `fn` trim_right
+
+Remove trailing whitespace only.
+
+**Signature:** `(str:str -- result:str)`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `str` | `str` | Input string |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `result` | `str` | String with trailing whitespace removed |
+
+**Example:**
+
+```qd
+"  hello  " str::trim_right print  // "  hello"
 ```
 ---
 

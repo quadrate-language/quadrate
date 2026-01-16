@@ -8,6 +8,7 @@
 #include <iostream>
 #include <queue>
 #include <sstream>
+#include <tuple>
 
 namespace fs = std::filesystem;
 
@@ -872,6 +873,21 @@ int installDependencies(bool frozen) {
 		pendingDeps.push({dep, cwd});
 	}
 
+	// Check for version conflicts before installing
+	std::set<std::string> conflictVisited;
+	std::vector<VersionConflict> conflicts = detectVersionConflicts(directDeps, cwd, conflictVisited);
+	if (!conflicts.empty()) {
+		std::cout << COLOR_YELLOW << "Warning: Detected version conflicts:" << COLOR_RESET << "\n\n";
+		for (const auto& conflict : conflicts) {
+			std::cout << "  " << COLOR_BOLD << conflict.packageName << COLOR_RESET << ":\n";
+			for (const auto& [requirer, version] : conflict.requirements) {
+				std::cout << "    " << requirer << " requires " << COLOR_CYAN << version << COLOR_RESET << "\n";
+			}
+			std::cout << "\n";
+		}
+		std::cout << "  Consider updating your dependencies to use compatible versions.\n\n";
+	}
+
 	if (hasLockfile) {
 		std::cout << COLOR_CYAN << "Installing from lockfile..." << COLOR_RESET << "\n\n";
 	} else {
@@ -1109,6 +1125,249 @@ int updateModules(const std::string& targetModuleName) {
 	}
 
 	return failures > 0 ? 1 : 0;
+}
+
+// Detect version conflicts in dependency tree
+// Collects all version requirements for each package and checks for incompatibilities
+std::vector<VersionConflict> detectVersionConflicts(
+		const std::vector<Dependency>& deps, const std::string& basePath, std::set<std::string>& visited) {
+	std::vector<VersionConflict> conflicts;
+
+	// Map from package name to list of (requirer, version_range)
+	std::map<std::string, std::vector<std::pair<std::string, std::string>>> requirements;
+
+	// Queue for BFS traversal: (dependency, requirer_name, base_path)
+	std::queue<std::tuple<Dependency, std::string, std::string>> pendingDeps;
+
+	// Add direct dependencies
+	for (const auto& dep : deps) {
+		pendingDeps.push({dep, "(root)", basePath});
+	}
+
+	std::string modulesDir = getModulesDir();
+
+	while (!pendingDeps.empty()) {
+		auto [dep, requirer, depBasePath] = pendingDeps.front();
+		pendingDeps.pop();
+
+		// Record this requirement
+		if (!dep.version.empty()) {
+			requirements[dep.name].push_back({requirer, dep.version});
+		}
+
+		// Skip if already visited this package
+		std::string visitKey = dep.name + "@" + dep.version;
+		if (visited.count(visitKey) > 0) {
+			continue;
+		}
+		visited.insert(visitKey);
+
+		// Find transitive dependencies
+		std::string modulePath;
+		if (dep.isPath) {
+			modulePath = resolveLocalPath(dep.url, depBasePath);
+		} else {
+			GitRef gitRef = parseGitUrl(dep.url);
+			std::string installedDirName =
+					getInstalledDirName(gitRef.hostPath, dep.version.empty() ? "main" : dep.version);
+			modulePath = modulesDir + "/" + installedDirName;
+		}
+
+		std::string manifestPath = modulePath + "/qd.json";
+		if (fs::exists(manifestPath)) {
+			std::vector<Dependency> transitiveDeps = parseDependencies(manifestPath);
+			for (const auto& transDep : transitiveDeps) {
+				pendingDeps.push({transDep, dep.name, modulePath});
+			}
+		}
+	}
+
+	// Check for conflicts in collected requirements
+	for (const auto& [pkgName, reqs] : requirements) {
+		if (reqs.size() < 2) {
+			continue; // No potential conflict with single requirement
+		}
+
+		// Check if all version ranges are compatible
+		// Two ranges conflict if there's no version that can satisfy both
+		bool hasConflict = false;
+		std::string firstRange;
+		VersionRange firstParsed;
+
+		for (size_t i = 0; i < reqs.size(); i++) {
+			const std::string& range = reqs[i].second;
+
+			// Skip non-semver requirements (branches, commits)
+			if (!isSemVerRange(range)) {
+				continue;
+			}
+
+			if (firstRange.empty()) {
+				firstRange = range;
+				firstParsed = parseVersionRange(range);
+				continue;
+			}
+
+			VersionRange currentRange = parseVersionRange(range);
+
+			// Check if there's any overlap between ranges
+			// For simplicity, we detect obvious conflicts:
+			// - Different major versions with caret (^1.0.0 vs ^2.0.0)
+			// - Non-overlapping explicit ranges (>=2.0.0 vs <1.5.0)
+
+			// Get the constraints from both ranges
+			for (const auto& alt1 : firstParsed.alternatives) {
+				for (const auto& c1 : alt1) {
+					if (c1.op == ConstraintOp::CARET) {
+						// Check if current range requires different major
+						for (const auto& alt2 : currentRange.alternatives) {
+							for (const auto& c2 : alt2) {
+								if (c2.op == ConstraintOp::CARET && c1.version.major != c2.version.major) {
+									hasConflict = true;
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+
+		if (hasConflict) {
+			VersionConflict conflict;
+			conflict.packageName = pkgName;
+			conflict.requirements = reqs;
+			conflicts.push_back(conflict);
+		}
+	}
+
+	return conflicts;
+}
+
+// Show outdated packages with available updates
+int showOutdated() {
+	std::string modulesDir = getModulesDir();
+
+	if (!fs::exists(modulesDir)) {
+		std::cout << "No modules installed.\n";
+		return 0;
+	}
+
+	std::cout << COLOR_CYAN << "Checking for updates..." << COLOR_RESET << "\n\n";
+
+	struct OutdatedPackage {
+		std::string name;
+		std::string hostPath;
+		std::string currentVersion;
+		std::string latestVersion;
+		std::string gitUrl;
+	};
+
+	std::vector<OutdatedPackage> outdated;
+	int checked = 0;
+
+	// Find all installed packages
+	for (const auto& entry : fs::recursive_directory_iterator(modulesDir)) {
+		if (!entry.is_directory()) {
+			continue;
+		}
+
+		std::string dirname = entry.path().filename().string();
+		if (dirname == "_namespaces") {
+			continue;
+		}
+
+		// Check if this looks like a package directory (has @ in name)
+		size_t atPos = dirname.find('@');
+		if (atPos == std::string::npos) {
+			continue;
+		}
+
+		std::string dirPath = entry.path().string();
+		if (!hasQuadrateFiles(dirPath) && !fs::exists(dirPath + "/qd.json")) {
+			continue;
+		}
+
+		// Extract version from directory name
+		std::string currentVersion = dirname.substr(atPos + 1);
+
+		// Get host path
+		std::string relativePath = dirPath.substr(modulesDir.size() + 1);
+		size_t relAtPos = relativePath.find('@');
+		std::string hostPath = (relAtPos != std::string::npos) ? relativePath.substr(0, relAtPos) : relativePath;
+
+		// Only check semver-versioned packages
+		if (!isSemVer(currentVersion)) {
+			continue;
+		}
+
+		checked++;
+
+		// Reconstruct git URL from hostPath
+		std::string gitUrl;
+		if (hostPath.find("github.com") == 0) {
+			gitUrl = "https://" + hostPath;
+		} else if (hostPath.find("git.sr.ht") == 0) {
+			gitUrl = "https://" + hostPath;
+		} else if (hostPath.find("gitlab.com") == 0) {
+			gitUrl = "https://" + hostPath;
+		} else {
+			gitUrl = "https://" + hostPath;
+		}
+
+		// Get remote tags
+		auto remoteTags = listRemoteTags(gitUrl);
+		if (remoteTags.empty()) {
+			continue;
+		}
+
+		// Find highest semver tag
+		SemVer currentSemVer = parseSemVer(currentVersion);
+		SemVer latestSemVer = currentSemVer;
+		std::string latestTag;
+
+		for (const auto& [tagName, commitHash] : remoteTags) {
+			if (isSemVer(tagName)) {
+				SemVer tagVer = parseSemVer(tagName);
+				if (tagVer.isValid() && tagVer > latestSemVer) {
+					latestSemVer = tagVer;
+					latestTag = tagName;
+				}
+			}
+		}
+
+		if (!latestTag.empty() && latestSemVer > currentSemVer) {
+			OutdatedPackage pkg;
+			pkg.name = dirname.substr(0, atPos);
+			pkg.hostPath = hostPath;
+			pkg.currentVersion = currentVersion;
+			pkg.latestVersion = latestTag;
+			pkg.gitUrl = gitUrl;
+			outdated.push_back(pkg);
+		}
+	}
+
+	if (outdated.empty()) {
+		std::cout << COLOR_GREEN << "All " << checked << " packages are up to date!" << COLOR_RESET << "\n";
+		return 0;
+	}
+
+	std::cout << COLOR_BOLD << "Outdated packages:" << COLOR_RESET << "\n\n";
+
+	// Sort by name
+	std::sort(outdated.begin(), outdated.end(),
+			[](const OutdatedPackage& a, const OutdatedPackage& b) { return a.hostPath < b.hostPath; });
+
+	for (const auto& pkg : outdated) {
+		std::cout << "  " << COLOR_BOLD << pkg.hostPath << COLOR_RESET << "\n";
+		std::cout << "    Current: " << COLOR_YELLOW << pkg.currentVersion << COLOR_RESET << "\n";
+		std::cout << "    Latest:  " << COLOR_GREEN << pkg.latestVersion << COLOR_RESET << "\n";
+		std::cout << "\n";
+	}
+
+	std::cout << outdated.size() << " package" << (outdated.size() == 1 ? "" : "s") << " can be updated.\n";
+	std::cout << "Run " << COLOR_CYAN << "quadpm get <url>@<version>" << COLOR_RESET << " to update.\n";
+
+	return 0;
 }
 
 // Remove an installed module

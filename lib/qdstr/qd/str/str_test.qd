@@ -108,3 +108,50 @@ test "str::compare" {
 	"abd" "abc" str::compare 0 > testing::assert_true
 	"" "" str::compare 0 testing::assert_eq
 }
+
+test "str::repeat" {
+	"ab" 3 str::repeat "ababab" testing::assert_eq
+	"x" 5 str::repeat "xxxxx" testing::assert_eq
+	"hello" 1 str::repeat "hello" testing::assert_eq
+	"test" 0 str::repeat "" testing::assert_eq
+	"" 10 str::repeat "" testing::assert_eq
+}
+
+test "str::reverse" {
+	"hello" str::reverse "olleh" testing::assert_eq
+	"abc" str::reverse "cba" testing::assert_eq
+	"a" str::reverse "a" testing::assert_eq
+	"" str::reverse "" testing::assert_eq
+	"12345" str::reverse "54321" testing::assert_eq
+}
+
+test "str::trim_left" {
+	"  hello" str::trim_left "hello" testing::assert_eq
+	"hello" str::trim_left "hello" testing::assert_eq
+	"  hello  " str::trim_left "hello  " testing::assert_eq
+	"   " str::trim_left "" testing::assert_eq
+	"" str::trim_left "" testing::assert_eq
+}
+
+test "str::trim_right" {
+	"hello  " str::trim_right "hello" testing::assert_eq
+	"hello" str::trim_right "hello" testing::assert_eq
+	"  hello  " str::trim_right "  hello" testing::assert_eq
+	"   " str::trim_right "" testing::assert_eq
+	"" str::trim_right "" testing::assert_eq
+}
+
+test "str::count" {
+	"ababa" "a" str::count 3 testing::assert_eq
+	"hello" "l" str::count 2 testing::assert_eq
+	"hello" "x" str::count 0 testing::assert_eq
+	"aaa" "aa" str::count 1 testing::assert_eq  // non-overlapping
+	"" "test" str::count 0 testing::assert_eq
+}
+
+test "str::last_index_of" {
+	"hello hello" "hello" str::last_index_of 6 testing::assert_eq
+	"abcabc" "abc" str::last_index_of 3 testing::assert_eq
+	"hello" "x" str::last_index_of -1 testing::assert_eq
+	"hello" "hello" str::last_index_of 0 testing::assert_eq
+}

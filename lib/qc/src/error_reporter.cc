@@ -8,6 +8,11 @@
 namespace Qd {
 
 	void ErrorReporter::reportError(u8t_scanner* scanner, const char* message) {
+		// Don't report errors in panic mode (cascading errors)
+		if (mPanicMode) {
+			return;
+		}
+
 		size_t pos = u8t_scanner_token_start(scanner);
 		size_t line, column;
 		calculateLineColumn(mSource, pos, &line, &column);
@@ -18,8 +23,77 @@ namespace Qd {
 		reportErrorWithHint(line, column, message, nullptr);
 	}
 
+	void ErrorReporter::reportWarning(size_t line, size_t column, const char* message) {
+		mWarningCount++;
+
+		// Store warning if requested (for LSP)
+		if (mStoreErrors) {
+			ErrorInfo warning;
+			warning.line = line;
+			warning.column = column;
+			warning.message = std::string("[warning] ") + message;
+			mErrors.push_back(warning);
+			return;
+		}
+
+		// Format: filename:line:column: warning: message
+		std::cerr << Colors::bold() << "quadc: " << Colors::reset();
+		if (mFilename) {
+			std::cerr << Colors::bold() << mFilename << ":" << line << ":" << column << ":" << Colors::reset() << " ";
+		} else {
+			std::cerr << Colors::bold() << line << ":" << column << ":" << Colors::reset() << " ";
+		}
+		std::cerr << Colors::bold() << Colors::magenta() << "warning:" << Colors::reset() << " ";
+		std::cerr << message << std::endl;
+		printSourceContext(line, column);
+	}
+
 	void ErrorReporter::reportErrorWithHint(size_t line, size_t column, const char* message, const char* hint) {
+		// Don't report errors in panic mode (cascading errors)
+		if (mPanicMode) {
+			return;
+		}
+
 		mErrorCount++;
+
+		// Check if we've hit the error limit
+		if (mMaxErrors > 0 && mErrorCount == mMaxErrors) {
+			// Still report this error, but warn about limit
+			if (!mStoreErrors) {
+				// Report the current error first
+				std::cerr << Colors::bold() << "quadc: " << Colors::reset();
+				if (mFilename) {
+					std::cerr << Colors::bold() << mFilename << ":" << line << ":" << column << ":" << Colors::reset()
+							  << " ";
+				}
+				std::cerr << Colors::bold() << Colors::red() << "error:" << Colors::reset() << " ";
+				std::cerr << Colors::bold() << message << Colors::reset() << std::endl;
+				printSourceContext(line, column);
+				if (hint) {
+					std::cerr << Colors::cyan() << "  hint:" << Colors::reset() << " " << hint << std::endl;
+				}
+
+				// Then print the limit warning
+				std::cerr << Colors::bold() << Colors::magenta() << "\nquadc: error limit reached (" << mMaxErrors
+						  << " errors). Further errors suppressed." << Colors::reset() << std::endl;
+				return;
+			}
+		} else if (mMaxErrors > 0 && mErrorCount > mMaxErrors) {
+			// Beyond limit - store for LSP but don't print
+			if (mStoreErrors) {
+				ErrorInfo error;
+				error.line = line;
+				error.column = column;
+				error.message = message;
+				if (hint) {
+					error.message += " (hint: ";
+					error.message += hint;
+					error.message += ")";
+				}
+				mErrors.push_back(error);
+			}
+			return;
+		}
 
 		// Store error if requested (for LSP)
 		if (mStoreErrors) {
