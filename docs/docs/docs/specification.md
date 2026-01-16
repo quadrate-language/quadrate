@@ -102,10 +102,10 @@ digit      := '0'..'9'
 ```
 
 Naming conventions:
-- **Functions**: `camelCase` or `snake_case`
-- **Structs**: `PascalCase`
-- **Constants**: `UPPER_CASE` or `PascalCase`
-- **Variables**: `snake_case` or `camelCase`
+- **Structs**: `PascalCase` (e.g., `Point`, `HttpRequest`)
+- **Constants**: `PascalCase` (e.g., `MaxSize`, `DefaultTimeout`)
+- **Functions**: `snake_case` (e.g., `get_value`, `parse_input`)
+- **Variables**: `snake_case` (e.g., `file_path`, `line_count`)
 - **Type parameters**: Single uppercase letters (`T`, `U`, `V`)
 
 #### 2.3.4 Literals
@@ -132,24 +132,49 @@ Examples: `"hello"`, `"line1\nline2"`
 
 #### 2.3.5 Operators and Punctuation
 
-**Single-character:**
+**Arithmetic operators:**
 ```
-+ - * / % < > = ! & | ^ ~ @ . : ; , ( ) { } [ ]
++     Addition
+-     Subtraction
+*     Multiplication
+/     Division
+%     Modulo
 ```
 
-**Multi-character:**
+**Comparison operators:**
 ```
-->    Local variable binding
-::    Scope resolution
-++    Increment
---    Decrement
-<<    Shift left
->>    Shift right
+<     Less than
+>     Greater than
 ==    Equal
 !=    Not equal
 <=    Less than or equal
 >=    Greater than or equal
 ```
+
+**Other operators:**
+```
+++    Increment
+--    Decrement
+<<    Shift left
+>>    Shift right
+->    Local variable binding
+::    Scope resolution
+@     Field access (read)
+.     Field set (write)
+&     Function pointer prefix
+!     Abort-on-error suffix
+```
+
+**Punctuation:**
+```
+:     Type annotation
+,     Optional separator (arrays)
+( )   Function signatures
+{ }   Blocks
+[ ]   Array literals
+```
+
+**Note**: Bitwise operators use named forms: `and`, `or`, `xor`, `not`, `shl`, `shr`.
 
 ### 2.4 Whitespace
 
@@ -194,7 +219,7 @@ Structs are represented as `ptr` on the stack (pointer to heap or stack allocate
 
 #### 3.2.2 Arrays
 
-Dynamic arrays created via array literals or `make` instructions:
+Dynamic arrays created via array literals or `make<T>` instruction:
 
 ```quadrate
 [1 2 3 4 5]           // Integer array
@@ -291,6 +316,7 @@ struct qd_stack_element {
 All operations are postfix. Arguments are popped from the stack, results are pushed.
 
 **Duplication:**
+
 | Operation | Stack Effect | Description |
 |-----------|--------------|-------------|
 | `dup` | `( a -- a a )` | Duplicate top |
@@ -298,6 +324,7 @@ All operations are postfix. Arguments are popped from the stack, results are pus
 | `dupd` | `( a b -- a a b )` | Duplicate second |
 
 **Swapping:**
+
 | Operation | Stack Effect | Description |
 |-----------|--------------|-------------|
 | `swap` | `( a b -- b a )` | Swap top two |
@@ -305,6 +332,7 @@ All operations are postfix. Arguments are popped from the stack, results are pus
 | `swapd` | `( a b c -- b a c )` | Swap under top |
 
 **Removal:**
+
 | Operation | Stack Effect | Description |
 |-----------|--------------|-------------|
 | `drop` | `( a -- )` | Remove top |
@@ -314,6 +342,7 @@ All operations are postfix. Arguments are popped from the stack, results are pus
 | `clear` | `( ... -- )` | Clear entire stack |
 
 **Rearrangement:**
+
 | Operation | Stack Effect | Description |
 |-----------|--------------|-------------|
 | `over` | `( a b -- a b a )` | Copy second to top |
@@ -635,16 +664,27 @@ vec length
 fn (params -- returns) { body }
 ```
 
-**With captures:**
-```quadrate
-fn [captured_var] (params -- returns) { body }
-```
+**Implicit capture**: Variables from the enclosing scope are automatically captured when referenced inside the closure body. No explicit capture list is needed.
 
 **Example:**
 ```quadrate
 42 -> x
-fn [x] ( -- r:i64) { x } -> get_x
-get_x call print    // Prints 42
+fn ( -- r:i64) { x } -> get_x    // x is automatically captured
+get_x call print nl              // Prints 42
+```
+
+**Multiple captures:**
+```quadrate
+10 -> a
+20 -> b
+fn ( -- r:i64) { a b + } -> sum  // Both a and b are captured
+sum call print nl                // Prints 30
+```
+
+**Closure without captures** (plain function pointer):
+```quadrate
+fn (x:i64 y:i64 -- r:i64) { -> b -> a a b + } -> add_fn
+3 4 add_fn call print nl         // Prints 7
 ```
 
 ### 7.6 Function Pointers
@@ -728,13 +768,15 @@ struct Result<T, E> {
 
 A module is either:
 - A single `.qd` file
-- A directory containing `module.qd` (entry point) and other `.qd` files
+- A directory containing `.qd` files (all files are loaded and merged into the module namespace)
+
+Test files (`*_test.qd`) are excluded from module loading.
 
 ### 9.2 Module Resolution
 
 When `use modulename` is encountered, search order:
 
-1. Local path: `./modulename/module.qd` or `./modulename/*.qd`
+1. Local path: `./modulename/*.qd` (all `.qd` files in directory)
 2. Include paths (from `-I` flags)
 3. Third-party packages: `~/.quadrate/modules/`
 4. `$QUADRATE_PATH` environment variable
@@ -789,17 +831,21 @@ import "libfoo.a" as "foo" {
 
 ```
 mymodule/
-├── module.qd       // Entry point
+├── api.qd          // Public API functions
 ├── helpers.qd      // Helper functions
 └── types.qd        // Type definitions
 ```
 
-In `module.qd`:
-```quadrate
-use helpers.qd
-use types.qd
+All `.qd` files in the directory are automatically loaded and merged into the same module namespace. No file has special significance - they are all equal. No explicit imports between files in the same module are needed.
 
-pub fn main_feature() { }
+```quadrate
+// api.qd
+pub fn main_feature() {
+    helper_function    // Can call functions from helpers.qd
+}
+
+// helpers.qd
+fn helper_function() { }
 ```
 
 ---
@@ -987,7 +1033,7 @@ struct qd_array {
 
 ### 11.6 Closure Captures
 
-Captured variables are heap-allocated with reference counting:
+Variables referenced inside a closure are automatically detected and captured (implicit capture). Captured variables are heap-allocated with reference counting:
 
 ```c
 struct captured_var {
@@ -1062,11 +1108,7 @@ See [Section 4.2](#42-stack-operations) for complete list.
 
 | Instruction | Stack Effect | Description |
 |-------------|--------------|-------------|
-| `make` | `(n -- arr)` | Create array with capacity n |
-| `makei` | `( -- arr)` | Create empty integer array |
-| `makef` | `( -- arr)` | Create empty float array |
-| `makes` | `( -- arr)` | Create empty string array |
-| `makep` | `( -- arr)` | Create empty pointer array |
+| `make<T>` | `(n -- arr)` | Create typed array of size n |
 | `append` | `(arr elem -- arr)` | Append element |
 | `set` | `(arr idx elem -- )` | Set element at index |
 | `nth` | `(arr idx -- elem)` | Get element at index |
@@ -1102,14 +1144,6 @@ See [Section 4.2](#42-stack-operations) for complete list.
 | Instruction | Stack Effect | Description |
 |-------------|--------------|-------------|
 | `call` | `(ptr -- ...)` | Call function via pointer |
-
-### 12.10 Threading
-
-| Instruction | Stack Effect | Description |
-|-------------|--------------|-------------|
-| `spawn` | `(ptr -- thread)` | Spawn thread |
-| `wait` | `(thread -- )` | Wait for thread |
-| `detach` | `(thread -- )` | Detach thread |
 
 ---
 
@@ -1330,8 +1364,8 @@ array_lit       = "[" { expression } "]" ;
 field_access    = "@" identifier ;
 field_set       = expression identifier "." identifier ;
 local_bind      = "->" identifier ;
-anon_fn         = "fn" [ "[" identifier { "," identifier } "]" ] signature block ;
-fn_call         = identifier [ "!" | "?" ] ;
+anon_fn         = "fn" signature block ;  /* captures are implicit */
+fn_call         = identifier [ "!" ] ;
 
 type            = "i64" | "f64" | "str" | "ptr" | identifier [type_args] | "*" type ;
 type_args       = "<" type { "," type } ">" ;
@@ -1341,9 +1375,9 @@ operator        = "+" | "-" | "*" | "/" | "%" | "++" | "--"
                 | "<<" | ">>" ;
 
 instruction     = "dup" | "swap" | "drop" | "over" | "rot" | "nip" | "tuck"
-                | "pick" | "roll" | "nth" | "len" | "make" | "append" | "set"
-                | "print" | "nl" | "read" | "call" | "panic" | "err"
-                | "cast" "<" type ">" | ... ;
+                | "pick" | "roll" | "nth" | "len" | "append" | "set"
+                | "make" "<" type ">" | "cast" "<" type ">"
+                | "print" | "nl" | "read" | "call" | "panic" | "err" | ... ;
 ```
 
 ---

@@ -1520,14 +1520,9 @@ namespace Qd {
 									"Cannot use '!' operator on method '" + name + "' which is not marked as fallible";
 							reportError(ident, errorMsg.c_str());
 						}
-						if (ident->checkError() && !sig.throws) {
-							std::string errorMsg =
-									"Cannot use '?' operator on method '" + name + "' which is not marked as fallible";
-							reportError(ident, errorMsg.c_str());
-						}
 
-						// Check fallible methods without ! or ? must be followed by 'if' or 'switch'
-						if (sig.throws && !ident->abortOnError() && !ident->checkError()) {
+						// Check fallible methods without ! must be followed by 'if' or 'switch'
+						if (sig.throws && !ident->abortOnError()) {
 							IAstNode* nextNode = (i + 1 < node->childCount()) ? node->child(i + 1) : nullptr;
 							if (!nextNode || (nextNode->type() != IAstNode::Type::IF_STATEMENT &&
 													 nextNode->type() != IAstNode::Type::SWITCH_STATEMENT)) {
@@ -1653,11 +1648,7 @@ namespace Qd {
 						}
 
 						// Push return values
-						if (ident->checkError()) {
-							pushProducesTypes(sig, typeStack, structTypeStack);
-							typeStack.push_back(StackValueType::INT); // Error status
-							structTypeStack.push_back("");
-						} else if (sig.throws && !ident->abortOnError()) {
+						if (sig.throws && !ident->abortOnError()) {
 							pushProducesTypes(sig, typeStack, structTypeStack);
 							typeStack.push_back(StackValueType::INT); // Error status
 							structTypeStack.push_back("");
@@ -1681,20 +1672,15 @@ namespace Qd {
 				if (sigIt != mFunctionSignatures.end()) {
 					const FunctionSignature& sig = sigIt->second;
 
-					// Validate '!' and '?' usage: only allowed on fallible functions (marked with '!')
+					// Validate '!' usage: only allowed on fallible functions (marked with '!')
 					if (ident->abortOnError() && !sig.throws) {
 						std::string errorMsg = "Cannot use '!' operator on function '" + name +
 											   "' which is not marked as fallible (add '!' after signature)";
 						reportError(ident, errorMsg.c_str());
 					}
-					if (ident->checkError() && !sig.throws) {
-						std::string errorMsg = "Cannot use '?' operator on function '" + name +
-											   "' which is not marked as fallible (add '!' after signature)";
-						reportError(ident, errorMsg.c_str());
-					}
 
-					// Check fallible functions without ! or ? must be followed by 'if' or 'switch'
-					if (sig.throws && !ident->abortOnError() && !ident->checkError()) {
+					// Check fallible functions without ! must be followed by 'if' or 'switch'
+					if (sig.throws && !ident->abortOnError()) {
 						IAstNode* nextNode = (i + 1 < node->childCount()) ? node->child(i + 1) : nullptr;
 						if (!nextNode || (nextNode->type() != IAstNode::Type::IF_STATEMENT &&
 												 nextNode->type() != IAstNode::Type::SWITCH_STATEMENT)) {
@@ -2036,18 +2022,8 @@ namespace Qd {
 					};
 
 					// Apply the produces effect
-					if (ident->checkError()) {
-						// func? - immediately check error
-						// Produces: value (untainted) + error_status (INT)
-						for (size_t idx = 0; idx < sig.produces.size(); idx++) {
-							StackValueType type = resolveTypeVar(sig.produces[idx]);
-							typeStack.push_back(type); // Push untainted value
-							structTypeStack.push_back(getProducedStructType(idx, type));
-						}
-						typeStack.push_back(StackValueType::INT); // Error status (0 or 1)
-						structTypeStack.push_back("");
-					} else if (sig.throws && !ident->abortOnError()) {
-						// func without ! or ? - pushes result + error flag
+					if (sig.throws && !ident->abortOnError()) {
+						// func without ! - pushes result + error flag
 						for (size_t idx = 0; idx < sig.produces.size(); idx++) {
 							StackValueType type = resolveTypeVar(sig.produces[idx]);
 							typeStack.push_back(type);
@@ -2533,14 +2509,9 @@ namespace Qd {
 												   "' which is not marked as fallible";
 							reportError(scoped, errorMsg.c_str());
 						}
-						if (scoped->checkError() && !sig.throws) {
-							std::string errorMsg = "Cannot use '?' operator on method '" + functionName +
-												   "' which is not marked as fallible";
-							reportError(scoped, errorMsg.c_str());
-						}
 
-						// Check fallible methods without ! or ? must be followed by 'if' or 'switch'
-						if (sig.throws && !scoped->abortOnError() && !scoped->checkError()) {
+						// Check fallible methods without ! must be followed by 'if' or 'switch'
+						if (sig.throws && !scoped->abortOnError()) {
 							IAstNode* nextNode = (i + 1 < node->childCount()) ? node->child(i + 1) : nullptr;
 							if (!nextNode || (nextNode->type() != IAstNode::Type::IF_STATEMENT &&
 													 nextNode->type() != IAstNode::Type::SWITCH_STATEMENT)) {
@@ -2614,11 +2585,7 @@ namespace Qd {
 						}
 
 						// Push return values
-						if (scoped->checkError()) {
-							pushProducesTypes(sig, typeStack, structTypeStack);
-							typeStack.push_back(StackValueType::INT);
-							structTypeStack.push_back("");
-						} else if (sig.throws && !scoped->abortOnError()) {
+						if (sig.throws && !scoped->abortOnError()) {
 							pushProducesTypes(sig, typeStack, structTypeStack);
 							typeStack.push_back(StackValueType::INT);
 							structTypeStack.push_back("");
@@ -2652,14 +2619,9 @@ namespace Qd {
 							if (methodSigIt != mFunctionSignatures.end()) {
 								const FunctionSignature& sig = methodSigIt->second;
 
-								// Validate '!' and '?' usage
+								// Validate '!' usage
 								if (scoped->abortOnError() && !sig.throws) {
 									std::string errorMsg = "Cannot use '!' operator on method '" + functionName +
-														   "' which is not marked as fallible";
-									reportError(scoped, errorMsg.c_str());
-								}
-								if (scoped->checkError() && !sig.throws) {
-									std::string errorMsg = "Cannot use '?' operator on method '" + functionName +
 														   "' which is not marked as fallible";
 									reportError(scoped, errorMsg.c_str());
 								}
@@ -2685,12 +2647,7 @@ namespace Qd {
 								}
 
 								// Push return values
-								if (scoped->checkError() && sig.throws) {
-									typeStack.push_back(StackValueType::INT);
-									structTypeStack.push_back("");
-								} else {
-									pushProducesTypes(sig, typeStack, structTypeStack);
-								}
+								pushProducesTypes(sig, typeStack, structTypeStack);
 
 								// Mark as method call for code generation
 								scoped->setIsMethodCall(true);
@@ -2709,20 +2666,15 @@ namespace Qd {
 				if (sigIt != mFunctionSignatures.end()) {
 					const FunctionSignature& sig = sigIt->second;
 
-					// Validate '!' and '?' usage: only allowed on fallible functions (marked with '!')
+					// Validate '!' usage: only allowed on fallible functions (marked with '!')
 					if (scoped->abortOnError() && !sig.throws) {
 						std::string errorMsg = "Cannot use '!' operator on function '" + qualifiedName +
 											   "' which is not marked as fallible (add '!' after signature)";
 						reportError(scoped, errorMsg.c_str());
 					}
-					if (scoped->checkError() && !sig.throws) {
-						std::string errorMsg = "Cannot use '?' operator on function '" + qualifiedName +
-											   "' which is not marked as fallible (add '!' after signature)";
-						reportError(scoped, errorMsg.c_str());
-					}
 
-					// Check fallible functions without ! or ? must be followed by 'if' or 'switch'
-					if (sig.throws && !scoped->abortOnError() && !scoped->checkError()) {
+					// Check fallible functions without ! must be followed by 'if' or 'switch'
+					if (sig.throws && !scoped->abortOnError()) {
 						IAstNode* nextNode = (i + 1 < node->childCount()) ? node->child(i + 1) : nullptr;
 						if (!nextNode || (nextNode->type() != IAstNode::Type::IF_STATEMENT &&
 												 nextNode->type() != IAstNode::Type::SWITCH_STATEMENT)) {
@@ -2859,20 +2811,8 @@ namespace Qd {
 					};
 
 					// Apply the produces effect
-					if (scoped->checkError()) {
-						// func? - immediately check error
-						// Produces: value (untainted) + error_status (INT)
-						for (size_t idx = 0; idx < sig.produces.size(); idx++) {
-							StackValueType type = resolveTypeVar(sig.produces[idx]);
-							typeStack.push_back(type); // Push untainted value
-							auto structIt = sig.producesStructTypes.find(idx);
-							structTypeStack.push_back(
-									structIt != sig.producesStructTypes.end() ? structIt->second : "");
-						}
-						typeStack.push_back(StackValueType::INT); // Error status (0 or 1)
-						structTypeStack.push_back("");
-					} else if (sig.throws && !scoped->abortOnError()) {
-						// func without ! or ? - pushes result + error flag
+					if (sig.throws && !scoped->abortOnError()) {
+						// func without ! - pushes result + error flag
 						for (size_t idx = 0; idx < sig.produces.size(); idx++) {
 							StackValueType type = resolveTypeVar(sig.produces[idx]);
 							typeStack.push_back(type);
