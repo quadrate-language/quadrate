@@ -90,7 +90,7 @@ GitRef parseGitUrl(const std::string& input) {
 		result.ref = input.substr(atPos + 1);
 	} else {
 		result.url = input;
-		result.ref = "main"; // Default to main branch
+		result.ref = ""; // Empty = use repo's default branch
 	}
 
 	result.moduleName = extractModuleName(result.url);

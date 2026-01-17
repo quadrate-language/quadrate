@@ -8,7 +8,7 @@
 // Examples:
 //   https://git.sr.ht/~user/zlib@1.2.0
 //   https://github.com/user/http@main
-//   https://github.com/user/json  (defaults to main)
+//   https://github.com/user/json  (uses repo's default branch)
 struct GitRef {
 	std::string url;
 	std::string ref;

@@ -34,7 +34,7 @@ std::string gitClone(const GitRef& gitRef) {
 	}
 
 	std::cout << COLOR_CYAN << "Fetching " << COLOR_BOLD << gitRef.hostPath << COLOR_RESET << COLOR_CYAN << " @ "
-			  << gitRef.ref << "..." << COLOR_RESET << "\n";
+			  << (gitRef.ref.empty() ? "default branch" : gitRef.ref) << "..." << COLOR_RESET << "\n";
 	std::cout << "  → Cloning " << gitRef.url << "\n";
 
 	// Create parent directories for Go-style path
@@ -42,7 +42,14 @@ std::string gitClone(const GitRef& gitRef) {
 	fs::create_directories(targetPath.parent_path());
 
 	// Clone with --depth 1 for faster download
-	int result = execCommandLive({"git", "clone", "--depth", "1", "--branch", gitRef.ref, gitRef.url, targetDir});
+	std::vector<std::string> cloneCmd = {"git", "clone", "--depth", "1"};
+	if (!gitRef.ref.empty()) {
+		cloneCmd.push_back("--branch");
+		cloneCmd.push_back(gitRef.ref);
+	}
+	cloneCmd.push_back(gitRef.url);
+	cloneCmd.push_back(targetDir);
+	int result = execCommandLive(cloneCmd);
 
 	if (result != 0) {
 		std::cerr << COLOR_RED << "Error: Failed to clone repository" << COLOR_RESET << "\n";
@@ -769,7 +776,8 @@ InstallResult installSingleDependency(const Dependency& dep, const std::string& 
 			return result;
 		}
 
-		std::cout << COLOR_GREEN << "✓ " << COLOR_RESET << "already installed @ " << gitRef.ref;
+		std::cout << COLOR_GREEN << "✓ " << COLOR_RESET << "already installed @ "
+				  << (gitRef.ref.empty() ? "HEAD" : gitRef.ref);
 		if (!currentCommit.empty()) {
 			std::cout << " (" << currentCommit.substr(0, 8) << ")";
 		}
@@ -792,7 +800,7 @@ InstallResult installSingleDependency(const Dependency& dep, const std::string& 
 	// Get the actual commit hash (use the same hostPath-based directory)
 	std::string commitHash = getModuleCommitHash(installedDir);
 
-	std::cout << COLOR_GREEN << "✓ " << COLOR_RESET << "installed @ " << gitRef.ref;
+	std::cout << COLOR_GREEN << "✓ " << COLOR_RESET << "installed @ " << (gitRef.ref.empty() ? "HEAD" : gitRef.ref);
 	if (!commitHash.empty()) {
 		std::cout << " (" << commitHash.substr(0, 8) << ")";
 	}

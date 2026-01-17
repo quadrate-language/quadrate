@@ -195,15 +195,18 @@ std::string getPlatformName() {
 // Get the installed directory name for a module@ref
 // For Go-style paths, this returns host/user/repo@ref format
 std::string getInstalledDirName(const std::string& hostPath, const std::string& ref) {
+	// Use "HEAD" for empty ref (repo's default branch)
+	std::string actualRef = ref.empty() ? "HEAD" : ref;
+
 	// Extract the repo name (last component)
 	size_t lastSlash = hostPath.find_last_of('/');
 	if (lastSlash != std::string::npos) {
 		// Return host/user/repo@ref format
 		std::string prefix = hostPath.substr(0, lastSlash + 1);
 		std::string repoName = hostPath.substr(lastSlash + 1);
-		return prefix + repoName + "@" + ref;
+		return prefix + repoName + "@" + actualRef;
 	}
-	return hostPath + "@" + ref;
+	return hostPath + "@" + actualRef;
 }
 
 // Get the namespaces directory path
