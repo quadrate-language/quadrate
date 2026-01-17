@@ -33,7 +33,7 @@ LIBS_WITH_HEADERS := qdrt qd qdfmt qdio qdmath qdmem qdos qdstr qdstrconv qdtime
 # Note: Some modules moved to external repos: http, sqlite, json, regex, ct, crypto
 STDLIB_MODULES := $(shell find lib/qd*/qd -maxdepth 1 -mindepth 1 -type d -exec basename {} \; 2>/dev/null | sort -u)
 
-.PHONY: all debug release tests tests-failed tests-clear valgrind asan fuzz examples format install uninstall clean docs dist-floppy quadmcp
+.PHONY: all debug release tests tests-failed tests-clear valgrind asan fuzz examples format install uninstall clean docs quadmcp
 
 all: debug
 
@@ -183,12 +183,6 @@ docs:
 	@echo ""
 	@echo "Documentation built successfully!"
 	@echo "To serve locally: cd docs && mkdocs serve"
-
-dist-floppy:
-	@echo "=========================================="
-	@echo "  Creating floppy disk ISO"
-	@echo "=========================================="
-	@$(MAKE) -C distfiles/floppy
 
 clean:
 	rm -rf build
