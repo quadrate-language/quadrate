@@ -108,7 +108,7 @@ fn main() {
 	Counter { value = 0 } -> c
 
 	c ctx {
-		-> c2
+		-> c2  // bind context value
 		c2 @value 1 + c2 .value  // Increment the struct's value
 		c2 @value  // Output the new value
 	}

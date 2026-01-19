@@ -64,7 +64,7 @@ Capture multiple outputs:
 
 ```qd
 fn minmax(a:i64 b:i64 -- min:i64 max:i64) {
-	-> b -> a
+	-> b -> a  // bind parameters
 	a b < if {
 		a b
 	} else {

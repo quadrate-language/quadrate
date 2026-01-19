@@ -9,15 +9,15 @@ use io
 use mem
 
 fn read_entire_file(path:str -- content:str ok:i64) {
-	-> path
+	-> path  // bind parameter
 
 	path io::Read io::open if {
-		-> file
+		-> file  // bind file handle
 		defer { file io::close }
 
 		// Get file size by seeking to end
 		file 0 io::SeekEnd io::seek if {
-			-> size
+			-> size  // bind file size
 			file 0 io::SeekSet io::seek if {
 				drop
 
@@ -25,7 +25,7 @@ fn read_entire_file(path:str -- content:str ok:i64) {
 				defer { buf mem::free }
 
 				file buf size io::read if {
-					-> bytes_read
+					-> bytes_read  // bind read count
 					buf bytes_read mem::to_string 1
 				} else {
 					"" 0
@@ -60,10 +60,10 @@ use io
 use mem
 
 fn write_file(path:str content:str -- ok:i64) {
-	-> content -> path
+	-> content -> path  // bind parameters
 
 	path io::Write io::open if {
-		-> file
+		-> file  // bind file handle
 
 		content mem::from_string -> size -> buf
 
@@ -99,7 +99,7 @@ use mem
 use str
 
 fn read_entire_file(path:str -- content:str)! {
-	-> path
+	-> path  // bind parameter
 
 	path io::Read io::open! -> file
 	defer { file io::close }
@@ -115,12 +115,12 @@ fn read_entire_file(path:str -- content:str)! {
 }
 
 fn process_lines(path:str -- ) {
-	-> path
+	-> path  // bind parameter
 
 	path read_entire_file if {
-		-> content
+		-> content  // bind file content
 		content "\n" str::split if {
-			-> count -> lines
+			-> count -> lines  // bind split results
 
 			0 count 1 for i {
 				i 1 + lines i 8 * mem::get_ptr cast<str> process_line
@@ -132,7 +132,7 @@ fn process_lines(path:str -- ) {
 }
 
 fn process_line(num:i64 line:str -- ) {
-	-> line -> num
+	-> line -> num  // bind parameters
 	num print ": " print line print nl
 }
 
@@ -149,7 +149,7 @@ use mem
 use str
 
 fn read_entire_file(path:str -- content:str)! {
-	-> path
+	-> path  // bind parameter
 
 	path io::Read io::open! -> file
 	defer { file io::close }
@@ -165,7 +165,7 @@ fn read_entire_file(path:str -- content:str)! {
 }
 
 fn count_words(path:str -- words:i64 lines:i64 chars:i64)! {
-	-> path
+	-> path  // bind parameter
 
 	path read_entire_file! -> content
 
@@ -176,7 +176,7 @@ fn count_words(path:str -- words:i64 lines:i64 chars:i64)! {
 
 	0 -> words
 	0 line_count 1 for i {
-		line_parts i 8 * mem::get_ptr cast<str> -> line
+		line_parts i 8 * mem::get_ptr cast<str> -> line  // get current line
 		line str::len 0 > if {
 			line " " str::split! -> word_count drop
 			words word_count + -> words

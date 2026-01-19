@@ -36,7 +36,7 @@ fn main() {
 
 ```qd
 fn classify(n:i64 -- ) {
-	-> n
+	-> n  // bind parameter
 	n 0 < if {
 		"negative" print nl
 	} else {

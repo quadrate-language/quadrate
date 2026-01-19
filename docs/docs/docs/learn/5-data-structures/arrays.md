@@ -87,7 +87,7 @@ fn main() {
 
 ```qd
 fn sum(arr:ptr -- total:i64) {
-	-> arr
+	-> arr  // bind parameter
 	0 -> total
 	0 arr len 1 for i {
 		total arr i nth + -> total

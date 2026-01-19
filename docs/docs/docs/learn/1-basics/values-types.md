@@ -96,7 +96,7 @@ fn sum(a:i64 b:i64 -- result:i64) {
 }
 
 fn greet(name:str -- ) {
-	-> name
+	-> name  // bind parameter
 	"Hello, " print name print nl
 }
 ```

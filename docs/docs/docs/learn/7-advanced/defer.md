@@ -94,16 +94,16 @@ use io
 use mem
 
 fn copy_file(src:str dst:str -- )! {
-	-> dst -> src
+	-> dst -> src  // bind parameters
 
 	src io::Read io::open if {
-		-> src_file
+		-> src_file  // bind file handle
 		defer {
 			src_file io::close
 		}
 
 		dst io::Write io::create if {
-			-> dst_file
+			-> dst_file  // bind file handle
 			defer {
 				dst_file io::close
 			}

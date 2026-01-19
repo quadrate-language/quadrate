@@ -47,7 +47,7 @@ struct Rectangle {
 }
 
 fn area(rect:Rectangle -- a:f64) {
-	-> rect
+	-> rect  // bind parameter
 	rect @width rect @height *
 }
 
@@ -177,7 +177,7 @@ fn (p:Point) magnitude( -- m:f64) {
 }
 
 fn (p:Point) move(dx:f64 dy:f64 -- ) {
-	-> dy -> dx
+	-> dy -> dx  // bind parameters
 	p @x dx + p .x
 	p @y dy + p .y
 }
@@ -234,7 +234,7 @@ struct Point {
 }
 
 fn point_distance(p1:Point p2:Point -- d:f64) {
-	-> p2 -> p1
+	-> p2 -> p1  // bind parameters
 	p2 @x p1 @x - dup *
 	p2 @y p1 @y - dup *
 	+ math::sqrt

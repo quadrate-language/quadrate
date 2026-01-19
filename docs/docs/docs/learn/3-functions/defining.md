@@ -64,14 +64,13 @@ fn push_two( -- a:i64 b:i64) {
 Parameter names document the values but don't create variables automatically:
 
 ```qd
-fn distance(x1:f64 y1:f64 x2:f64 y2:f64 -- d:f64) {
-	// Parameters are on the stack, not in variables
-	// Use -> to bind them to names
-	-> y2 -> x2 -> y1 -> x1
+use math
 
-	x2 x1 - dup *
-	y2 y1 - dup *
-	+ sqrt
+fn distance(x1:f64 y1:f64 x2:f64 y2:f64 -- d:f64) {
+	-> y2 -> x2 -> y1 -> x1  // bind parameters to variables
+	x2 x1 - dup *  // (x2-x1)^2
+	y2 y1 - dup *  // (y2-y1)^2
+	+ math::sqrt
 }
 ```
 
@@ -81,9 +80,9 @@ Functions can have multiple outputs:
 
 ```qd
 fn divmod(a:i64 b:i64 -- quotient:i64 remainder:i64) {
-	-> b -> a
-	a b /
-	a b %
+	-> b -> a  // bind parameters
+	a b /      // quotient
+	a b %      // remainder
 }
 
 fn main() {
@@ -132,7 +131,6 @@ Rules for function names:
 
 ```qd
 fn calculate_total() { }
-fn _private_helper() { }
 fn processItem2() { }
 ```
 

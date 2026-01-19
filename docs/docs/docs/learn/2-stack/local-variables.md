@@ -15,30 +15,24 @@ fn main() {
 
 ## Why use variables?
 
-Compare these two approaches:
+Compare these two approaches for computing `(x - y) * (x + y)`:
 
 **Stack manipulation only:**
 
 ```qd
-fn distance(x1:f64 y1:f64 x2:f64 y2:f64 -- d:f64) {
-	rot - dup *   // (y2-y1)^2
-	rot rot - dup * // (x2-x1)^2
-	+ sqrt
+fn diff_of_squares(x:i64 y:i64 -- result:i64) {
+	over over - rot rot + *
 }
 ```
 
 **With local variables:**
 
 ```qd
-fn distance(x1:f64 y1:f64 x2:f64 y2:f64 -- d:f64) {
-	-> y2 -> x2 -> y1 -> x1
-	x2 x1 - dup *
-	y2 y1 - dup *
-	+ sqrt
+fn diff_of_squares(x:i64 y:i64 -- result:i64) {
+	-> y -> x  // bind parameters
+	x y - x y + *
 }
 ```
-
-The second version is much clearer!
 
 ## Storing multiple values
 
@@ -53,8 +47,6 @@ fn main() {
 	c print nl
 }
 ```
-
-**Note:** Values are popped in reverse order. The top of stack (`3`) goes into the first variable (`c`).
 
 ## Variables in expressions
 
@@ -134,9 +126,10 @@ fn main() {
 
 ```qd
 fn main() {
-	1 2          // [1, 2]
-	-> b -> a    // a=1, b=2
-	b a          // [2, 1]
+	1 -> a
+	2 -> b
+	b print nl  // 2
+	a print nl  // 1
 }
 ```
 
@@ -145,9 +138,9 @@ fn main() {
 ```qd
 fn main() {
 	42 -> x
-	x print nl
-	x x * print nl
-	x x x * * print nl
+	x print nl        // 42
+	x x * print nl    // 1764
+	x x x * * print nl  // 74088
 }
 ```
 
@@ -155,16 +148,10 @@ fn main() {
 
 ```qd
 fn quadratic(a:f64 b:f64 c:f64 x:f64 -- result:f64) {
-	-> x -> c -> b -> a
-
-	// ax^2 + bx + c
-	a x dup * *    // ax^2
-	-> ax2
-
-	b x *          // bx
-	-> bx
-
-	ax2 bx + c +   // ax^2 + bx + c
+	-> x -> c -> b -> a  // bind parameters
+	a x dup * * -> ax2   // ax^2
+	b x * -> bx         // bx
+	ax2 bx + c +        // ax^2 + bx + c
 }
 ```
 
