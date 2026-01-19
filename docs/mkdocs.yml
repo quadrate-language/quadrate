@@ -17,30 +17,30 @@ nav:
   - Home: index.md
   - Getting Started: docs/getting-started.md
   - Learn:
-      - 1. Basics:
-          - Hello World: docs/learn/1-basics/hello-world.md
-          - Values and Types: docs/learn/1-basics/values-types.md
-          - Operators: docs/learn/1-basics/operators.md
+      - 1. Hello World: docs/learn/1-basics/hello-world.md
       - 2. The Stack:
           - How it Works: docs/learn/2-stack/how-it-works.md
           - Stack Manipulation: docs/learn/2-stack/manipulation.md
           - Local Variables: docs/learn/2-stack/local-variables.md
-      - 3. Functions:
+      - 3. Basics:
+          - Values and Types: docs/learn/1-basics/values-types.md
+          - Operators: docs/learn/1-basics/operators.md
+      - 4. Functions:
           - Defining Functions: docs/learn/3-functions/defining.md
           - Calling Functions: docs/learn/3-functions/calling.md
           - Modules: docs/learn/3-functions/modules.md
-      - 4. Control Flow:
+      - 5. Control Flow:
           - Conditionals: docs/learn/4-control-flow/conditionals.md
           - Loops: docs/learn/4-control-flow/loops.md
           - Switch: docs/learn/4-control-flow/switch.md
-      - 5. Data Structures:
+      - 6. Data Structures:
           - Arrays: docs/learn/5-data-structures/arrays.md
           - Structs: docs/learn/5-data-structures/structs.md
           - Constants: docs/learn/5-data-structures/constants.md
-      - 6. Error Handling:
+      - 7. Error Handling:
           - Basics: docs/learn/6-error-handling/basics.md
           - Patterns: docs/learn/6-error-handling/patterns.md
-      - 7. Advanced Topics:
+      - 8. Advanced Topics:
           - Defer: docs/learn/7-advanced/defer.md
           - Context: docs/learn/7-advanced/context.md
           - Function Pointers: docs/learn/7-advanced/function-pointers.md
@@ -48,7 +48,7 @@ nav:
           - Higher-Order Functions: docs/learn/7-advanced/higher-order-functions.md
           - Memory Management: docs/learn/7-advanced/memory.md
           - FFI (C Interop): docs/learn/7-advanced/ffi.md
-      - 8. Examples:
+      - 9. Examples:
           - File Processing: docs/learn/8-examples/file-processing.md
   - Reference:
       - Overview: docs/reference/index.md

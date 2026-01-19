@@ -184,4 +184,4 @@ fn quadratic(a:f64 b:f64 c:f64 x:f64 -- result:f64) {
 
 ## What's next?
 
-Now let's learn how to [Define Functions](../3-functions/defining.md).
+Now let's learn about [Values and Types](../1-basics/values-types.md).

@@ -16,24 +16,6 @@ fn main() {
 }
 ```
 
-### How it works
-
-```qd
-3 4 +
-```
-
-1. Push `3` onto the stack
-2. Push `4` onto the stack
-3. `+` pops both, adds them, pushes `7`
-
-Stack visualization:
-
-```
-[3]      -- after "3"
-[3, 4]   -- after "4"
-[7]      -- after "+"
-```
-
 ### Word forms
 
 You can also use words instead of symbols:
@@ -161,4 +143,4 @@ The order you write operations is the order they execute. No operator precedence
 
 ## What's next?
 
-You've learned the basics! Now let's dive deeper into [How the Stack Works](../2-stack/how-it-works.md).
+You've learned the basics! Now let's learn how to [Define Functions](../3-functions/defining.md).

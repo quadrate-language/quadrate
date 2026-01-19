@@ -122,4 +122,4 @@ Output:
 
 ## What's next?
 
-Now that you can print things, let's learn about [Values and Types](values-types.md).
+Now that you can print things, let's learn [How the Stack Works](../2-stack/how-it-works.md).
