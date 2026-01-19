@@ -18,12 +18,12 @@ Constants are defined at the top level, outside functions.
 const Pi = 3.14159265358979
 
 fn circle_area(r:f64 -- area:f64) {
-	-> r
+	-> r  // bind parameter
 	r dup * Pi *
 }
 
 fn circle_circumference(r:f64 -- c:f64) {
-	-> r
+	-> r  // bind parameter
 	2.0 r * Pi *
 }
 
@@ -98,7 +98,7 @@ Replace magic numbers with named constants:
 
 ```qd
 fn is_valid_port(port:i64 -- valid:i64) {
-	-> port
+	-> port  // bind parameter
 	port 0 > port 65535 <= and
 }
 ```
@@ -110,7 +110,7 @@ const MinPort = 1
 const MaxPort = 65535
 
 fn is_valid_port(port:i64 -- valid:i64) {
-	-> port
+	-> port  // bind parameter
 	port MinPort >= port MaxPort <= and
 }
 ```
@@ -124,7 +124,7 @@ const ErrPermission = 2
 const ErrTimeout = 3
 
 fn handle_error(code:i64 -- ) {
-	-> code
+	-> code  // bind parameter
 	code switch {
 		ErrNone {
 			"Success" print nl
@@ -153,12 +153,12 @@ const FlagWrite = 2
 const FlagExecute = 4
 
 fn has_read(flags:i64 -- result:i64) {
-	-> flags
+	-> flags  // bind parameter
 	flags FlagRead and 0 !=
 }
 
 fn has_write(flags:i64 -- result:i64) {
-	-> flags
+	-> flags  // bind parameter
 	flags FlagWrite and 0 !=
 }
 

@@ -158,7 +158,7 @@ struct StringBuffer {
 }
 
 fn sb_new(capacity:i64 -- sb:ptr) {
-	-> capacity
+	-> capacity  // bind parameter
 	capacity mem::alloc! -> data
 	StringBuffer {
 		data = data
@@ -168,7 +168,7 @@ fn sb_new(capacity:i64 -- sb:ptr) {
 }
 
 fn sb_free(sb:ptr -- ) {
-	-> sb
+	-> sb  // bind parameter
 	sb @data mem::free
 }
 
@@ -214,7 +214,7 @@ struct Pool {
 }
 
 fn pool_new(size:i64 -- pool:ptr) {
-	-> size
+	-> size  // bind parameter
 	size mem::alloc! -> memory
 	Pool {
 		memory = memory
@@ -235,12 +235,12 @@ fn pool_alloc(pool:ptr bytes:i64 -- offset:i64) {
 }
 
 fn pool_reset(pool:ptr -- ) {
-	-> pool
+	-> pool  // bind parameter
 	0 pool.used
 }
 
 fn pool_free(pool:ptr -- ) {
-	-> pool
+	-> pool  // bind parameter
 	pool @memory mem::free
 }
 

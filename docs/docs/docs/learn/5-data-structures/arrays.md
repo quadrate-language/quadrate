@@ -104,7 +104,7 @@ fn main() {
 
 ```qd
 fn max(arr:ptr -- result:i64) {
-	-> arr
+	-> arr  // bind parameter
 	arr 0 nth -> result
 	0 arr len 1 for i {
 		arr i nth result > if {
@@ -168,7 +168,7 @@ Arrays are references. To copy:
 
 ```qd
 fn copy_array(src:ptr -- dst:ptr) {
-	-> src
+	-> src  // bind parameter
 	src len make<i64> -> dst
 	0 src len 1 for i {
 		dst i src i nth set
@@ -213,7 +213,7 @@ fn main() {
 
 ```qd
 fn reverse(arr:ptr -- ) {
-	-> arr
+	-> arr  // bind parameter
 	0 -> i
 	arr len 1 - -> j
 	i j < while {
@@ -240,7 +240,7 @@ fn main() {
 
 ```qd
 fn filter_positive(arr:ptr -- result:ptr) {
-	-> arr
+	-> arr  // bind parameter
 	// First count positives
 	0 -> count
 	0 arr len 1 for i {

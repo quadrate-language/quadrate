@@ -102,27 +102,13 @@ fn main() {
 }
 ```
 
-## Calling library functions
-
-Library functions work the same way:
-
-```qd
-use math
-
-fn main() {
-	3.14159 math::sin print nl  // sine
-	2.0 math::sqrt print nl     // square root
-	-5.0 math::abs print nl     // absolute value
-}
-```
-
 ## Recursive calls
 
 Functions can call themselves:
 
 ```qd
 fn factorial(n:i64 -- result:i64) {
-	-> n
+	-> n  // bind parameter
 	n 1 <= if {
 		1
 	} else {
@@ -141,7 +127,7 @@ Functions can call each other:
 
 ```qd
 fn is_even(n:i64 -- result:i64) {
-	-> n
+	-> n  // bind parameter
 	n 0 == if {
 		1
 	} else {
@@ -150,7 +136,7 @@ fn is_even(n:i64 -- result:i64) {
 }
 
 fn is_odd(n:i64 -- result:i64) {
-	-> n
+	-> n  // bind parameter
 	n 0 == if {
 		0
 	} else {
@@ -161,26 +147,6 @@ fn is_odd(n:i64 -- result:i64) {
 fn main() {
 	4 is_even print nl  // 1 (true)
 	4 is_odd print nl   // 0 (false)
-}
-```
-
-## Order of evaluation
-
-Operations execute left to right:
-
-```qd
-fn main() {
-	// This:
-	2 3 + 4 *
-
-	// Means:
-	// 1. Push 2
-	// 2. Push 3
-	// 3. Add (2+3=5)
-	// 4. Push 4
-	// 5. Multiply (5*4=20)
-
-	print nl  // 20
 }
 ```
 

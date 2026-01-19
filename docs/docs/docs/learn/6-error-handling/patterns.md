@@ -16,7 +16,7 @@ fn divide(a:i64 b:i64 -- result:i64)! {
 }
 
 fn safe_divide(a:i64 b:i64 default:i64 -- result:i64) {
-	-> default
+	-> default  // bind parameter
 	divide if {
 		// Success - return result
 	} else {
@@ -40,7 +40,7 @@ fn try_parse(s:str -- value:i64)! {
 }
 
 fn parse_with_fallback(primary:str fallback:str -- value:i64) {
-	-> fallback -> primary
+	-> fallback -> primary  // bind parameters
 	primary try_parse if {
 		// Primary succeeded
 	} else {
@@ -112,7 +112,7 @@ fn step2(x:i64 -- y:i64)! {
 }
 
 fn pipeline(x:i64 -- result:i64)! {
-	-> x
+	-> x  // bind parameter
 	x step1 if {
 		step2 if {
 			// Both succeeded
@@ -134,10 +134,10 @@ use io
 use mem
 
 fn read_file(path:str -- content:str)! {
-	-> path
+	-> path  // bind parameter
 
 	path io::ReadOnly io::open if {
-		-> file
+		-> file  // bind file handle
 		defer {
 			// Always runs
 			file io::close
@@ -175,9 +175,9 @@ struct File {
 }
 
 fn file_open(path:str -- f:ptr)! {
-	-> path
+	-> path  // bind parameter
 	path io::Read io::open if {
-		-> handle
+		-> handle  // bind handle
 		File {
 			handle = handle
 			path = path
@@ -188,14 +188,14 @@ fn file_open(path:str -- f:ptr)! {
 }
 
 fn file_close(f:ptr -- ) {
-	-> f
+	-> f  // bind parameter
 	f @handle io::close
 }
 
 fn with_file(path:str -- ) {
-	-> path
+	-> path  // bind parameter
 	path file_open if {
-		-> f
+		-> f  // bind file
 		defer {
 			f file_close
 		}
@@ -210,7 +210,7 @@ Validate before processing:
 
 ```qd
 fn validate_input(x:i64 -- )! {
-	-> x
+	-> x  // bind parameter
 	x 0 < if {
 		"negative not allowed" 1 panic
 	}
@@ -220,7 +220,7 @@ fn validate_input(x:i64 -- )! {
 }
 
 fn process(x:i64 -- result:i64)! {
-	-> x
+	-> x  // bind parameter
 	x validate_input if {
 		x dup *  // Safe to process
 	} else {
@@ -239,7 +239,7 @@ fn unreliable_op( -- result:i64)! {
 }
 
 fn retry(max_attempts:i64 -- result:i64)! {
-	-> max_attempts
+	-> max_attempts  // bind parameter
 	0 -> attempts
 	0 -> success
 	0 -> last_result
@@ -267,9 +267,9 @@ Add context to errors:
 
 ```qd
 fn parse_config(path:str -- cfg:ptr)! {
-	-> path
+	-> path  // bind parameter
 	path read_file if {
-		-> content
+		-> content  // bind content
 		content parse_json if {
 			// Success
 		} else {
@@ -287,7 +287,7 @@ Process items, log failures:
 
 ```qd
 fn process_batch(items:ptr -- processed:i64 failed:i64) {
-	-> items
+	-> items  // bind parameter
 	0 -> processed
 	0 -> failed
 

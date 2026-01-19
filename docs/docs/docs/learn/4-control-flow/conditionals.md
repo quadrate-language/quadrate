@@ -61,7 +61,7 @@ fn main() {
 
 ```qd
 fn abs(x:i64 -- result:i64) {
-	-> x
+	-> x  // bind parameter
 	x 0 < if {
 		x neg
 	} else {
@@ -134,7 +134,7 @@ fn main() {
 
 ```qd
 fn process(x:i64 -- result:i64) {
-	-> x
+	-> x  // bind parameter
 	x 0 < if {
 		0
 		return // Early return for invalid input
@@ -160,7 +160,7 @@ fn get_or_default(value:i64 default:i64 -- result:i64) {
 
 ```qd
 fn is_valid_age(age:i64 -- valid:i64) {
-	-> age
+	-> age  // bind parameter
 	age 0 >= age 150 <= and
 }
 

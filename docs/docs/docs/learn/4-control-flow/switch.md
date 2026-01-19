@@ -6,7 +6,7 @@ Handle multiple conditions cleanly with `switch`.
 
 ```qd
 fn day_name(day:i64 -- name:str) {
-	-> day
+	-> day  // bind parameter
 	day switch {
 		1 {
 			"Monday"
@@ -46,7 +46,7 @@ Use `_` for the default (fallback) case:
 
 ```qd
 fn describe(n:i64 -- desc:str) {
-	-> n
+	-> n  // bind parameter
 	n switch {
 		0 {
 			"zero"
@@ -85,7 +85,7 @@ Use **if-else** when:
 
 ```qd
 fn get_color(code:i64 -- name:str) {
-	-> code
+	-> code  // bind parameter
 	code switch {
 		0 {
 			"black"
@@ -110,7 +110,7 @@ fn get_color(code:i64 -- name:str) {
 
 ```qd
 fn get_color_if(code:i64 -- name:str) {
-	-> code
+	-> code  // bind parameter
 	code 0 == if {
 		"black"
 	} else {
@@ -137,7 +137,7 @@ fn get_color_if(code:i64 -- name:str) {
 
 ```qd
 fn handle_menu(choice:i64 -- ) {
-	-> choice
+	-> choice  // bind parameter
 	choice switch {
 		1 {
 			"Creating new file..." print nl

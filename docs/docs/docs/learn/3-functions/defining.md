@@ -162,7 +162,7 @@ Use `///` for documentation:
 /// @param n The number to calculate factorial of
 /// @output The factorial result
 fn factorial(n:i64 -- result:i64) {
-	-> n
+	-> n  // bind parameter
 	n 1 <= if {
 		1
 	} else {

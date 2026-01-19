@@ -30,22 +30,6 @@ fn main() {
 }
 ```
 
-## Multiple imports
-
-Import several modules at once:
-
-```qd
-use fmt
-use math
-use os
-
-fn main() {
-	// Use functions from any imported module
-	2.0 math::sqrt "%f" fmt::printf
-	0 os::exit
-}
-```
-
 ## Standard library modules
 
 Quadrate includes many built-in modules:
@@ -101,12 +85,12 @@ fn main() {
 
 ## Creating your own modules
 
-A module is a folder containing a `module.qd` file. Functions marked with `pub` are accessible from outside.
+A module is a folder containing `.qd` files. All `.qd` files in the folder are included as part of the module. Functions marked with `pub` are accessible from outside.
 
-Create a folder `mymath/` with a `module.qd` inside:
+Create a folder `mymath/` with source files inside:
 
 ```qd
-// mymath/module.qd
+// mymath/math.qd
 
 pub fn square(x:i64 -- result:i64) {
 	dup *
@@ -159,14 +143,14 @@ Note the `.qd` extension in the `use` statement.
 Use `pub` to mark functions that can be called from outside the module:
 
 ```qd
-// mymodule/module.qd
+// mymodule/mymodule.qd
 
 pub fn public_function(x:i64 -- result:i64) {
-	_helper 2 *
+	helper 2 *
 }
 
 // No pub - only callable within this module
-fn _helper(x:i64 -- y:i64) {
+fn helper(x:i64 -- y:i64) {
 	1 +
 }
 ```
@@ -181,21 +165,26 @@ A typical module contains:
 4. **Private helper functions**
 
 ```qd
-// geometry/module.qd
+// geometry/geometry.qd
 use math
 
-pub const Phi = 1.61803398874989484820 
+pub const Phi = 1.61803398874989484820
 
 pub struct Circle {
 	radius:f64
 }
 
 pub fn circle_area(r:f64 -- area:f64) {
-	dup * math::Pi *
+	square math::Pi *
 }
 
 pub fn circle_circumference(r:f64 -- c:f64) {
 	2.0 * math::Pi *
+}
+
+// Private helper
+fn square(x:f64 -- result:f64) {
+	dup *
 }
 ```
 

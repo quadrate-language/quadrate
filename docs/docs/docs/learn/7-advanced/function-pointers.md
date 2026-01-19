@@ -97,7 +97,7 @@ fn for_each(arr:ptr callback:ptr -- ) {
 }
 
 fn print_item(x:i64 -- ) {
-	-> x
+	-> x  // bind parameter
 	x print " " print
 }
 
@@ -159,7 +159,7 @@ fn filter(arr:ptr pred:ptr -- result:ptr) {
 }
 
 fn is_even(x:i64 -- result:i64) {
-	-> x
+	-> x  // bind parameter
 	x 2 % 0 ==
 }
 
@@ -201,12 +201,12 @@ struct Handler {
 }
 
 fn greet(name:str -- ) {
-	-> name
+	-> name  // bind parameter
 	"Hello, " print name print nl
 }
 
 fn farewell(name:str -- ) {
-	-> name
+	-> name  // bind parameter
 	"Goodbye, " print name print nl
 }
 
@@ -231,7 +231,7 @@ Dispatch based on a selector:
 
 ```qd
 fn handle_cmd(cmd:i64 -- ) {
-	-> cmd
+	-> cmd  // bind parameter
 
 	4 make<ptr> -> handlers
 	handlers 0 &cmd_help set

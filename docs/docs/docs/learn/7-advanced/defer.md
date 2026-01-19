@@ -30,9 +30,9 @@ Defers run even when errors occur:
 use io
 
 fn process_file(path:str -- )! {
-	-> path
+	-> path  // bind parameter
 	path io::Read io::open if {
-		-> file
+		-> file  // bind file handle
 		defer {
 			// Always runs
 			file io::close
@@ -169,7 +169,7 @@ fn transaction()! {
 
 ```qd
 fn traced_operation(name:str -- ) {
-	-> name
+	-> name  // bind parameter
 	"Entering " print name print nl
 	defer {
 		"Exiting " print name print nl

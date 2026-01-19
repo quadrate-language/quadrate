@@ -185,7 +185,7 @@ Compute a value without affecting the current stack:
 
 ```qd
 fn compute_average(arr:ptr -- avg:f64) {
-	-> arr
+	-> arr  // bind parameter
 	arr ctx {
 		0.0 -> sum
 		0 arr len 1 for i {
@@ -211,7 +211,7 @@ fn process( -- result:i64) {
 	}
 	// Original [1, 2, 3, 4, 5] preserved, 30 added
 	// Can now decide what to keep
-	-> result
+	-> result  // bind ctx result
 	clear  // Clean up original values
 	result
 }
@@ -223,7 +223,7 @@ Output different values based on conditions:
 
 ```qd
 fn classify(x:i64 -- category:str) {
-	-> x
+	-> x  // bind parameter
 	x ctx {
 		0 < if {
 			"negative"

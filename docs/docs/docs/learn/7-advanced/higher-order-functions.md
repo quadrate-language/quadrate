@@ -189,7 +189,7 @@ use hof
 use hof
 
 fn validate_age( age:i64 -- valid:i64 ) {
-	-> age
+	-> age  // bind parameter
 
 	// Must be: positive AND >= 18 AND <= 120
 	age fn (x:i64 -- r:i64) { 0 > } fn (x:i64 -- r:i64) { 18 >= } hof::bi and
@@ -259,3 +259,7 @@ Quadrate's anonymous functions have some limitations:
 - Variables are captured by reference (changes are visible to the closure)
 
 For more advanced functional patterns, consider using named helper functions. See [Anonymous Functions](anonymous-functions.md) for details on closures and variable capture.
+
+## What's next?
+
+Now let's learn about [Memory Management](memory.md).

@@ -288,7 +288,7 @@ struct Node {
 }
 
 fn node_new(value:i64 -- node:ptr) {
-	-> value
+	-> value  // bind parameter
 	Node {
 		value = value
 		next = 0
@@ -324,7 +324,7 @@ struct Stack {
 }
 
 fn stack_new(capacity:i64 -- s:Stack) {
-	-> capacity
+	-> capacity  // bind parameter
 	capacity make<i64> -> data
 	Stack {
 		data = data
@@ -340,7 +340,7 @@ fn stack_push(s:Stack value:i64 -- ) {
 }
 
 fn stack_pop(s:Stack -- value:i64) {
-	-> s
+	-> s  // bind parameter
 	s @top 1 - s .top
 	s @data s @top nth
 }
