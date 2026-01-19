@@ -62,33 +62,11 @@ This installs:
 quad version
 ```
 
-## Your first program
-
-Create a file called `hello.qd`:
-
-```qd
-fn main() {
-	"Hello, World!" print nl
-}
-```
-
-Compile and run it:
+To verify everything works, try running a quick test:
 
 ```bash
-quad run hello.qd
+echo 'fn main() { "Hello!" print nl }' | quad run -
 ```
-
-Output:
-```
-Hello, World!
-```
-
-### What just happened?
-
-- `fn main()` declares a function called `main` with no inputs and no outputs
-- `"Hello, World!"` pushes a string onto the stack
-- `print` pops the string and prints it
-- `nl` prints a newline
 
 ## Using quad
 
@@ -119,14 +97,15 @@ Syntax highlighting and LSP support: [quadrate-vscode](https://git.sr.ht/~klahr/
 
 ## Next steps
 
-Continue learning Quadrate:
+Now that Quadrate is installed, continue to [Hello World](learn/1-basics/hello-world.md) to write your first program.
 
-1. [Hello World](learn/1-basics/hello-world.md) - Understanding your first program
-2. [The Stack](learn/2-stack/how-it-works.md) - Core concepts of stack-based programming
-3. [Functions](learn/3-functions/defining.md) - Defining and calling functions
-4. [Structs](learn/5-data-structures/structs.md) - Working with structured data
-5. [Error Handling](learn/6-error-handling/basics.md) - Handling errors properly
-6. [Modules](learn/3-functions/modules.md) - Creating reusable modules
+The learn guide covers:
+
+- [The Stack](learn/2-stack/how-it-works.md) - Core concepts of stack-based programming
+- [Functions](learn/3-functions/defining.md) - Defining and calling functions
+- [Structs](learn/5-data-structures/structs.md) - Working with structured data
+- [Error Handling](learn/6-error-handling/basics.md) - Handling errors properly
+- [Modules](learn/3-functions/modules.md) - Creating reusable modules
 
 Reference:
 
