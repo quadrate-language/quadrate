@@ -71,16 +71,12 @@ KEYWORD(return, "Exits the current function immediately.")
 KEYWORD(defer, "Schedules a block to run when the function exits, in LIFO order.")
 
 /// Multi-way branch keyword.
-/// @example x switch { 1 => { "one" } 2 => { "two" } default => { "other" } }
+/// @example x switch { 1 { "one" } 2 { "two" } _ { "other" } }
 KEYWORD(switch, "Branches based on matching the top of stack against case values.")
 
-/// Switch case arrow.
-/// @example 1 => { "one" print }
-KEYWORD(=>, "Separates a case value from its block in a switch statement.")
-
-/// Default switch case.
-/// @example default => { "no match" print }
-KEYWORD(default, "Provides a fallback block when no switch case matches.")
+/// Wildcard/default case in switch.
+/// @example _ { "no match" print }
+KEYWORD(_, "Provides a fallback block when no switch case matches.")
 
 /// Isolated stack context.
 /// @example 1 2 3 ctx { + + } // Stack: [1, 2, 3, 6]

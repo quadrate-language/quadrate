@@ -31,16 +31,12 @@ Absolute value.
 
 | Output | Type | Description |
 |--------|------|-------------|
-| `result` | `f64` |  |
-
-| Error | Description |
-|-------|-------------|
-| `math::x` |  |
+| `result` | `f64` | Absolute value of x |
 
 **Example:**
 
 ```qd
-||-5.0 math::abs print  // 5.0
+-5.0 math::abs print  // 5.0
 ```
 ---
 

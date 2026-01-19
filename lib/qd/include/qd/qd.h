@@ -103,17 +103,17 @@ bool qd_is_compiled(qd_module* mod);
 void qd_set_warning_min_line(qd_module* mod, size_t line);
 
 /**
- * @brief Execute a Quadrate function
+ * @brief Execute Quadrate code
  *
- * Executes a function from the compiled module. The function must have been
- * either defined in a script or registered as a native function.
+ * Executes Quadrate code, which can include function calls, literals, and
+ * stack operations. Supports both simple function calls and inline expressions.
  *
  * @param ctx Execution context
- * @param fn Fully-qualified function name (e.g., "module::function")
+ * @param code Quadrate code to execute (e.g., "5 math::square print nl")
  *
  * @note Check ctx->error_code after execution to detect errors
  */
-void qd_execute(qd_context* ctx, const char* fn);
+void qd_execute(qd_context* ctx, const char* code);
 
 #ifdef __cplusplus
 }

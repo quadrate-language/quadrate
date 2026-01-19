@@ -112,7 +112,7 @@ use math
 fn main() {
 	3.14159 math::sin print nl  // sine
 	2.0 math::sqrt print nl     // square root
-	-5 abs print nl             // absolute value
+	-5.0 math::abs print nl     // absolute value
 }
 ```
 

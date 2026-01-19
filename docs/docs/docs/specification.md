@@ -1125,9 +1125,9 @@ See [Section 4.2](#42-stack-operations) for complete list.
 | Instruction | Stack Effect | Description |
 |-------------|--------------|-------------|
 | `print` | `(x -- )` | Print value |
-| `prints` | `(s -- )` | Print string |
 | `printv` | `(x -- x)` | Print value, keep on stack |
-| `printsv` | `(s -- s)` | Print string, keep on stack |
+| `prints` | `( -- )` | Print entire stack contents (debug) |
+| `printsv` | `( -- )` | Print entire stack with type info (debug) |
 | `nl` | `( -- )` | Print newline |
 | `read` | `( -- s)` | Read line from stdin |
 

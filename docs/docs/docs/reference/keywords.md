@@ -14,14 +14,14 @@ Language keywords for declarations, control flow, and more.
 | [`if`](#if) | Conditional execution |
 | [`else`](#else) | Alternative block when if condition is false |
 | [`for`](#for) | Iteration with counter |
+| [`while`](#while) | Conditional loop |
 | [`loop`](#loop) | Infinite loop |
 | [`break`](#break) | Exit loop |
 | [`continue`](#continue) | Skip to next iteration |
 | [`return`](#return) | Exit function |
 | [`defer`](#defer) | Schedule cleanup code |
 | [`switch`](#switch) | Multi-way branching |
-| [`=>`](#case-arrow) | Case separator in switch |
-| [`default`](#default) | Fallback case in switch |
+| [`_`](#wildcard) | Wildcard/default case in switch |
 | [`ctx`](#ctx) | Context variable access |
 | [`->`](#arrow) | Variable binding |
 | [`true`](#true) | Boolean true (1) |
@@ -114,6 +114,19 @@ Iterates from start to end with a step, binding the iterator variable.
 }
 ```
 
+### while
+
+Repeats a block while the condition is true. The condition is evaluated before entering and at the end of each iteration.
+
+```qd
+0 -> i
+i 5 < while {
+	i print nl
+	i 1 + -> i
+	i 5 <          // condition for next iteration
+}
+```
+
 ### loop
 
 Repeats a block indefinitely until break is called.
@@ -181,7 +194,7 @@ x switch {
 }
 ```
 
-### _
+### _ {#wildcard}
 
 Provides a fallback block when no switch case matches.
 
