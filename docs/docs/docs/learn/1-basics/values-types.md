@@ -91,7 +91,7 @@ Any non-zero value is considered true in conditionals.
 When you write functions, you specify types:
 
 ```qd
-fn add(a:i64 b:i64 -- sum:i64) {
+fn sum(a:i64 b:i64 -- result:i64) {
 	+
 }
 
@@ -101,10 +101,10 @@ fn greet(name:str -- ) {
 }
 ```
 
-The signature `(a:i64 b:i64 -- sum:i64)` means:
+The signature `(a:i64 b:i64 -- result:i64)` means:
 
 - Two inputs: integers `a` and `b`
-- One output: integer `sum`
+- One output: integer `result`
 
 ## What's next?
 

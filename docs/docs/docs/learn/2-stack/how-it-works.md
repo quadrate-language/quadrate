@@ -62,7 +62,7 @@ Examples:
 Function signatures declare stack effects with `(inputs -- outputs)`:
 
 ```qd
-fn add(a:i64 b:i64 -- sum:i64) {
+fn sum(a:i64 b:i64 -- result:i64) {
 	+
 }
 ```
@@ -70,7 +70,7 @@ fn add(a:i64 b:i64 -- sum:i64) {
 This means:
 
 - **Before**: Stack has `[..., a, b]`
-- **After**: Stack has `[..., sum]`
+- **After**: Stack has `[..., result]`
 
 The `--` separates inputs from outputs.
 

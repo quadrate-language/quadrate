@@ -38,7 +38,7 @@ The signature `(x:i64 -- result:i64)` means:
 The `--` separates inputs from outputs:
 
 ```qd
-fn add(a:i64 b:i64 -- sum:i64) {
+fn sum(a:i64 b:i64 -- result:i64) {
 	+
 }
 
