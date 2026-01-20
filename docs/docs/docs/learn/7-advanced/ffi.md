@@ -74,7 +74,7 @@ All FFI functions must have this signature:
 qd_exec_result function_name(qd_context* ctx)
 ```
 
-The function name in C must match the name declared in the Quadrate import block. The compiler generates a wrapper with the `usr_<module>_<function>` naming convention.
+The function name in C must match the name declared in the Quadrate import block.
 
 ## Required header
 
@@ -282,8 +282,6 @@ mylib = static_library('mylib', 'mylib.c',
 4. **Use descriptive error messages** - they help debugging
 5. **Keep functions small** - easier to test and maintain
 
-## See also
+## What's next?
 
-- [Memory Management](memory.md) - Understanding Quadrate's memory model
-- [Function Pointers](function-pointers.md) - Passing functions as values
-- [examples/ffi](https://git.sr.ht/~klahr/quadrate/tree/master/item/examples/ffi) - Complete working example
+Continue to [File Processing Examples](../8-examples/file-processing.md) to see complete programs using these concepts.

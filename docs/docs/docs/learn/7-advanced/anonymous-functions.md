@@ -197,22 +197,6 @@ fn main() {
 }
 ```
 
-## Parameter names
-
-Parameter names in the signature are for documentation only. Inside the body, values come from the stack:
-
-```qd
-fn main() {
-	// 'x' and 'r' are just documentation
-	// The body works with stack values
-	fn (x:i64 -- r:i64) {
-		dup +  // doubles the top of stack
-	} -> double
-
-	5 double call print nl  // 10
-}
-```
-
 ## Comparison with function pointers
 
 Anonymous functions and function pointers both use `call`:
@@ -234,44 +218,6 @@ fn main() {
 
 The difference is that anonymous functions are defined inline, while function pointers reference separately defined functions.
 
-## Use cases
-
-### Quick transformations
-
-```qd
-fn main() {
-	// Square a number inline
-	7 fn (x:i64 -- r:i64) { dup * } call print nl  // 49
-}
-```
-
-### Deferred actions
-
-```qd
-fn main() {
-	fn () {
-		"Cleanup complete" print nl
-	} -> cleanup
-
-	"Doing work..." print nl
-	// ... work happens ...
-	cleanup call
-}
-```
-
-### Configurable behavior
-
-```qd
-fn process(value:i64 transform:ptr -- result:i64) {
-	call
-}
-
-fn main() {
-	10 fn (x:i64 -- r:i64) { 2 * } process print nl  // 20
-	10 fn (x:i64 -- r:i64) { 5 + } process print nl  // 15
-}
-```
-
 ## What's next?
 
-Learn about [Memory Management](memory.md) for manual memory control.
+Learn about [Higher-Order Functions](higher-order-functions.md) for passing functions as arguments.

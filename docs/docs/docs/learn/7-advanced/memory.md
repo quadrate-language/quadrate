@@ -19,30 +19,15 @@ use mem
 
 fn main() {
 	1024 mem::alloc! -> buf  // Allocate 1024 bytes
-	// Use buffer...
-	buf mem::free  // Free when done
-}
-```
-
-Always pair `alloc` with `free`.
-
-## Using defer for cleanup
-
-Ensure memory is freed with `defer`:
-
-```qd
-use mem
-
-fn process() {
-	4096 mem::alloc! -> buf
 	defer {
-		buf mem::free
+		buf mem::free  // Free when function exits
 	}
 
 	// Use buffer...
-	// Memory freed automatically when function exits
 }
 ```
+
+Always pair `alloc` with `free`. Use `defer` to ensure cleanup.
 
 ## Reading and writing memory
 

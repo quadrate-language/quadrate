@@ -2,12 +2,6 @@
 
 Higher-order functions (HOF) are functions that take other functions as arguments. The `hof` module provides **combinators**—functions that combine or apply other functions in useful patterns.
 
-!!! note "External Package"
-    The `hof` module is an external package. Install it first:
-    ```bash
-    quadpm install hof
-    ```
-
 ## Why combinators?
 
 In stack-based programming, you often need to:
@@ -19,11 +13,13 @@ In stack-based programming, you often need to:
 Without combinators, you need temporary variables:
 
 ```qd
-// Without combinators: Is n both positive AND even?
-6 -> n
-n 0 > -> is_positive
-n 2 % 0 == -> is_even
-is_positive is_even and
+fn main() {
+	// Without combinators: Is n both positive AND even?
+	6 -> n
+	n 0 > -> is_positive
+	n 2 % 0 == -> is_even
+	is_positive is_even and print nl  // 1
+}
 ```
 
 With combinators, it's one line:
@@ -31,7 +27,9 @@ With combinators, it's one line:
 ```qd
 use hof
 
-6 fn (x:i64 -- r:i64) { 0 > } fn (x:i64 -- r:i64) { 2 % 0 == } hof::bi and
+fn main() {
+	6 fn (x:i64 -- r:i64) { 0 > } fn (x:i64 -- r:i64) { 2 % 0 == } hof::bi and print nl  // 1
+}
 ```
 
 ## Available combinators
@@ -43,8 +41,9 @@ Apply a single function to a value.
 ```qd
 use hof
 
-5 fn (x:i64 -- r:i64) { 2 * } hof::apply
-// Stack: 10
+fn main() {
+	5 fn (x:i64 -- r:i64) { 2 * } hof::apply print nl  // 10
+}
 ```
 
 ### bi
@@ -54,16 +53,10 @@ Apply **two** functions to the **same** value.
 ```qd
 use hof
 
-5 fn (x:i64 -- r:i64) { 2 * } fn (x:i64 -- r:i64) { 3 + } hof::bi
-// Stack: 10 8
-// (5*2=10, 5+3=8)
-```
-
-**Use case**: Check multiple conditions on the same value.
-
-```qd
-// Is age valid (positive) AND adult (>= 18)?
-age fn (x:i64 -- r:i64) { 0 > } fn (x:i64 -- r:i64) { 18 >= } hof::bi and
+fn main() {
+	5 fn (x:i64 -- r:i64) { 2 * } fn (x:i64 -- r:i64) { 3 + } hof::bi
+	print nl print nl  // 8 then 10 (5+3=8, 5*2=10)
+}
 ```
 
 ### tri
@@ -73,9 +66,10 @@ Apply **three** functions to the **same** value.
 ```qd
 use hof
 
-5 fn (x:i64 -- r:i64) { 1 + } fn (x:i64 -- r:i64) { 2 * } fn (x:i64 -- r:i64) { dup * } hof::tri
-// Stack: 6 10 25
-// (5+1=6, 5*2=10, 5*5=25)
+fn main() {
+	5 fn (x:i64 -- r:i64) { 1 + } fn (x:i64 -- r:i64) { 2 * } fn (x:i64 -- r:i64) { dup * } hof::tri
+	print nl print nl print nl  // 25 then 10 then 6 (5*5=25, 5*2=10, 5+1=6)
+}
 ```
 
 ### keep
@@ -85,17 +79,10 @@ Apply a function but **preserve the original** value.
 ```qd
 use hof
 
-5 fn (x:i64 -- r:i64) { 2 * } hof::keep
-// Stack: 10 5
-// (result=10, original=5 preserved)
-```
-
-**Use case**: Process a value while keeping it for later.
-
-```qd
-// Print the value, then continue using it
-value fn (x:i64 -- r:i64) { dup print nl } hof::keep drop
-// Printed value, stack unchanged
+fn main() {
+	5 fn (x:i64 -- r:i64) { 2 * } hof::keep
+	print nl print nl  // 5 then 10 (original=5 preserved, result=10)
+}
 ```
 
 ### dip
@@ -105,12 +92,11 @@ Apply a function to the **second** element, preserving the **top**.
 ```qd
 use hof
 
-10 20 fn (x:i64 -- r:i64) { 2 * } hof::dip
-// Stack: 20 20
-// (doubled 10 to 20, kept 20 on top)
+fn main() {
+	10 20 fn (x:i64 -- r:i64) { 2 * } hof::dip
+	print nl print nl  // 20 then 20 (kept 20 on top, doubled 10 to 20)
+}
 ```
-
-**Use case**: Process something "underneath" while holding onto a value.
 
 ### both
 
@@ -119,9 +105,10 @@ Apply the **same** function to **two** values.
 ```qd
 use hof
 
-3 4 fn (x:i64 -- r:i64) { dup * } hof::both
-// Stack: 9 16
-// (3*3=9, 4*4=16)
+fn main() {
+	3 4 fn (x:i64 -- r:i64) { dup * } hof::both
+	print nl print nl  // 16 then 9 (4*4=16, 3*3=9)
+}
 ```
 
 ### bi_star
@@ -131,9 +118,10 @@ Apply **different** functions to **two** values.
 ```qd
 use hof
 
-3 4 fn (x:i64 -- r:i64) { 1 + } fn (x:i64 -- r:i64) { 2 * } hof::bi_star
-// Stack: 4 8
-// (3+1=4, 4*2=8)
+fn main() {
+	3 4 fn (x:i64 -- r:i64) { 1 + } fn (x:i64 -- r:i64) { 2 * } hof::bi_star
+	print nl print nl  // 8 then 4 (4*2=8, 3+1=4)
+}
 ```
 
 ### when
@@ -143,15 +131,10 @@ Apply function **only if** condition is **true**.
 ```qd
 use hof
 
-5 1 fn (x:i64 -- r:i64) { 2 * } hof::when   // 10 (condition true)
-5 0 fn (x:i64 -- r:i64) { 2 * } hof::when   // 5  (condition false, unchanged)
-```
-
-**Use case**: Conditional transformation.
-
-```qd
-// Double negative numbers to make them "more negative"
-value value 0 < fn (x:i64 -- r:i64) { 2 * } hof::when
+fn main() {
+	5 1 fn (x:i64 -- r:i64) { 2 * } hof::when print nl  // 10 (condition true)
+	5 0 fn (x:i64 -- r:i64) { 2 * } hof::when print nl  // 5  (condition false, unchanged)
+}
 ```
 
 ### unless
@@ -161,8 +144,10 @@ Apply function **only if** condition is **false** (opposite of `when`).
 ```qd
 use hof
 
-5 0 fn (x:i64 -- r:i64) { 2 * } hof::unless  // 10 (condition false)
-5 1 fn (x:i64 -- r:i64) { 2 * } hof::unless  // 5  (condition true, unchanged)
+fn main() {
+	5 0 fn (x:i64 -- r:i64) { 2 * } hof::unless print nl  // 10 (condition false)
+	5 1 fn (x:i64 -- r:i64) { 2 * } hof::unless print nl  // 5  (condition true, unchanged)
+}
 ```
 
 ### times
@@ -172,13 +157,11 @@ Apply a function **n times** to an initial value.
 ```qd
 use hof
 
-1 5 fn (x:i64 -- r:i64) { 2 * } hof::times
-// Stack: 32
-// (1 * 2 * 2 * 2 * 2 * 2 = 32)
+fn main() {
+	1 5 fn (x:i64 -- r:i64) { 2 * } hof::times print nl  // 32 (1*2*2*2*2*2)
 
-2 3 fn (x:i64 -- r:i64) { dup * } hof::times
-// Stack: 256
-// (2^2=4, 4^2=16, 16^2=256)
+	2 3 fn (x:i64 -- r:i64) { dup * } hof::times print nl  // 256 (2^2=4, 4^2=16, 16^2=256)
+}
 ```
 
 ## Practical examples
@@ -217,7 +200,7 @@ fn stats( n:i64 -- doubled:i64 squared:i64 incremented:i64 ) {
 
 fn main() {
 	5 stats
-	// Stack: 10 25 6
+	print nl print nl print nl  // 6 then 25 then 10
 }
 ```
 
