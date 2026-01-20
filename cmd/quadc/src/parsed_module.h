@@ -16,6 +16,7 @@ struct ParsedModule {
 	std::unique_ptr<Qd::Ast> ast;
 	Qd::IAstNode* root;
 	std::vector<std::string> importedModules;
+	bool hasFFIImports = false; // True if module uses FFI (import statement)
 };
 
 #endif

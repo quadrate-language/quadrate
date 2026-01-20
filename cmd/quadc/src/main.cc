@@ -158,6 +158,7 @@ int main(int argc, char** argv) {
 			module.root = root;
 			module.ast = std::move(ast);
 			module.importedModules = collectImportedModules(root);
+			module.hasFFIImports = !validator.importedLibraries().empty();
 
 			parsedModules.push_back(std::move(module));
 		}
@@ -221,6 +222,7 @@ int main(int argc, char** argv) {
 			module.root = root;
 			module.ast = std::move(ast);
 			module.importedModules = collectImportedModules(root);
+			module.hasFFIImports = !validator.importedLibraries().empty();
 
 			parsedModules.push_back(std::move(module));
 		}
@@ -565,6 +567,19 @@ int main(int argc, char** argv) {
 		// Use JIT for -r mode when not cross-compiling and --no-jit not specified
 		// JIT is faster because it skips disk I/O and the external linker
 		bool useJIT = opts.run && !opts.noJIT && opts.targetTriple.empty() && opts.runArgs.empty() && !opts.testMode;
+
+		// Check if any module uses FFI imports - JIT doesn't support FFI
+		if (useJIT) {
+			for (const auto& mod : parsedModules) {
+				if (mod.hasFFIImports) {
+					useJIT = false;
+					if (opts.verbose) {
+						std::cout << "note: using disk compilation (FFI imports detected)" << std::endl;
+					}
+					break;
+				}
+			}
+		}
 
 		if (useJIT) {
 			// JIT execution - compile and run in memory

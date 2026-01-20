@@ -259,4 +259,4 @@ fn main() {
 
 ## What's next?
 
-Continue to [File Processing Examples](../8-examples/file-processing.md) to see these concepts in real programs.
+Learn about [FFI (C Interop)](ffi.md) to call C functions from Quadrate.

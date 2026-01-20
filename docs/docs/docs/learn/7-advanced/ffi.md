@@ -51,7 +51,7 @@ import "libgreet.a" as "greet" {
 }
 
 fn main() {
-	"World" greet::hello
+	"Seb" greet::hello
 }
 ```
 
@@ -63,7 +63,7 @@ quad run main.qd
 
 Output:
 ```
-Hello, World!
+Hello, Seb!
 ```
 
 ## Function signature

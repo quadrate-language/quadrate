@@ -105,6 +105,11 @@ namespace Qd {
 			return mModuleImportedFunctions;
 		}
 
+		// Get the imported FFI libraries map (namespace -> library path)
+		const std::unordered_map<std::string, std::string>& importedLibraries() const {
+			return mImportedLibraries;
+		}
+
 		// Enable error storage for LSP (instead of printing to stderr)
 		void setStoreErrors(bool store) {
 			mStoreErrors = store;
