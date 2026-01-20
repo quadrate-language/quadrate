@@ -32,29 +32,6 @@ fn main() {
 }
 ```
 
-## Nested conditionals
-
-```qd
-fn classify(n:i64 -- ) {
-	-> n  // bind parameter
-	n 0 < if {
-		"negative" print nl
-	} else {
-		n 0 == if {
-			"zero" print nl
-		} else {
-			"positive" print nl
-		}
-	}
-}
-
-fn main() {
-	-5 classify  // negative
-	0 classify   // zero
-	7 classify   // positive
-}
-```
-
 ## Conditional expressions
 
 `if` can leave values on the stack:
@@ -173,4 +150,4 @@ fn main() {
 
 ## What's next?
 
-Learn about [Loops](loops.md) to repeat operations.
+Learn about [Loops](loops.md) to repeat operations, or [Switch](switch.md) for multi-way branching.
