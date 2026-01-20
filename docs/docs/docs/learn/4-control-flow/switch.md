@@ -165,25 +165,13 @@ fn next_state(current:i64 input:i64 -- next:i64) {
 	-> input -> current
 	current switch {
 		0 {
-			input 'a' == if {
-				1
-			} else {
-				0
-			}
+			input 97 == if { 1 } else { 0 }  // 'a'
 		}
 		1 {
-			input 'b' == if {
-				2
-			} else {
-				0
-			}
+			input 98 == if { 2 } else { 0 }  // 'b'
 		}
 		2 {
-			input 'c' == if {
-				3
-			} else {
-				0
-			}
+			input 99 == if { 3 } else { 0 }  // 'c'
 		}
 		_ {
 			0

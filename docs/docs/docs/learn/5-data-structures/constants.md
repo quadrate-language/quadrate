@@ -199,30 +199,11 @@ pub const MaxUsers = 1000
 
 ```qd
 // main.qd
-use config
+use config.qd
 
 fn main() {
 	"Version: " print config::AppVersion print nl
 }
-```
-
-## Best practices
-
-1. **Name clearly**: `MaxConnections` not `MC`
-2. **Group related constants**: Keep HTTP status codes together
-3. **Document purpose**: Add comments for non-obvious values
-4. **Use for repeated values**: If you use a value more than once
-
-```qd
-// HTTP Status Codes
-const HttpOk = 200
-const HttpNotFound = 404
-const HttpServerError = 500
-
-// Timeouts (in seconds)
-const ConnectTimeout = 30
-const ReadTimeout = 60
-const WriteTimeout = 60
 ```
 
 ## What's next?

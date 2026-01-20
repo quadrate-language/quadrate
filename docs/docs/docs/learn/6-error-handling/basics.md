@@ -49,7 +49,7 @@ fn main() {
 }
 ```
 
-The compiler enforces this - you cannot ignore errors.
+The compiler enforces this - you must either handle the error with `if`/`else`, or use `!` to abort on error (see below).
 
 ## How it works
 

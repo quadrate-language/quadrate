@@ -95,8 +95,8 @@ struct Point {
 }
 
 struct Line {
-	start:ptr
-	end:ptr
+	start:Point
+	end:Point
 }
 
 fn main() {
