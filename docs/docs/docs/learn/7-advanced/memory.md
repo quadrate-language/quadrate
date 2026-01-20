@@ -257,34 +257,6 @@ fn main() {
 }
 ```
 
-## Safety guidelines
-
-1. **Always free allocated memory** - Use defer to ensure cleanup
-2. **Don't use freed memory** - Null pointers after freeing
-3. **Don't double-free** - Track ownership carefully
-4. **Check allocation success** - alloc can fail
-5. **Don't overflow buffers** - Respect allocated sizes
-
-```qd
-use mem
-
-fn safe_example() {
-	1024 mem::alloc! -> buf
-	buf 0 == if {
-		"Allocation failed!" print nl
-		// Handle error
-	}
-	defer {
-		buf mem::free
-	}
-
-	// Safe: limited to allocated size
-	0 1024 1 for i {
-		0 buf i mem::set_byte
-	}
-}
-```
-
 ## What's next?
 
 Continue to [File Processing Examples](../8-examples/file-processing.md) to see these concepts in real programs.
