@@ -15,88 +15,88 @@ markdown_extensions:
   - fenced_code
 nav:
   - Home: index.md
-  - Getting Started: docs/getting-started.md
+  - Getting Started: getting-started.md
   - Learn:
-      - 1. Hello World: docs/learn/1-basics/hello-world.md
+      - 1. Hello World: learn/1-basics/hello-world.md
       - 2. The Stack:
-          - How it Works: docs/learn/2-stack/how-it-works.md
-          - Stack Manipulation: docs/learn/2-stack/manipulation.md
-          - Local Variables: docs/learn/2-stack/local-variables.md
+          - How it Works: learn/2-stack/how-it-works.md
+          - Stack Manipulation: learn/2-stack/manipulation.md
+          - Local Variables: learn/2-stack/local-variables.md
       - 3. Basics:
-          - Values and Types: docs/learn/1-basics/values-types.md
-          - Operators: docs/learn/1-basics/operators.md
+          - Values and Types: learn/1-basics/values-types.md
+          - Operators: learn/1-basics/operators.md
       - 4. Functions:
-          - Defining Functions: docs/learn/3-functions/defining.md
-          - Calling Functions: docs/learn/3-functions/calling.md
-          - Modules: docs/learn/3-functions/modules.md
+          - Defining Functions: learn/3-functions/defining.md
+          - Calling Functions: learn/3-functions/calling.md
+          - Modules: learn/3-functions/modules.md
       - 5. Control Flow:
-          - Conditionals: docs/learn/4-control-flow/conditionals.md
-          - Loops: docs/learn/4-control-flow/loops.md
-          - Switch: docs/learn/4-control-flow/switch.md
+          - Conditionals: learn/4-control-flow/conditionals.md
+          - Loops: learn/4-control-flow/loops.md
+          - Switch: learn/4-control-flow/switch.md
       - 6. Data Structures:
-          - Arrays: docs/learn/5-data-structures/arrays.md
-          - Structs: docs/learn/5-data-structures/structs.md
-          - Constants: docs/learn/5-data-structures/constants.md
+          - Arrays: learn/5-data-structures/arrays.md
+          - Structs: learn/5-data-structures/structs.md
+          - Constants: learn/5-data-structures/constants.md
       - 7. Error Handling:
-          - Basics: docs/learn/6-error-handling/basics.md
-          - Patterns: docs/learn/6-error-handling/patterns.md
+          - Basics: learn/6-error-handling/basics.md
+          - Patterns: learn/6-error-handling/patterns.md
       - 8. Advanced Topics:
-          - Defer: docs/learn/7-advanced/defer.md
-          - Context: docs/learn/7-advanced/context.md
-          - Function Pointers: docs/learn/7-advanced/function-pointers.md
-          - Anonymous Functions: docs/learn/7-advanced/anonymous-functions.md
-          - Higher-Order Functions: docs/learn/7-advanced/higher-order-functions.md
-          - Memory Management: docs/learn/7-advanced/memory.md
-          - FFI (C Interop): docs/learn/7-advanced/ffi.md
+          - Defer: learn/7-advanced/defer.md
+          - Context: learn/7-advanced/context.md
+          - Function Pointers: learn/7-advanced/function-pointers.md
+          - Anonymous Functions: learn/7-advanced/anonymous-functions.md
+          - Higher-Order Functions: learn/7-advanced/higher-order-functions.md
+          - Memory Management: learn/7-advanced/memory.md
+          - FFI (C Interop): learn/7-advanced/ffi.md
       - 9. Examples:
-          - File Processing: docs/learn/8-examples/file-processing.md
+          - File Processing: learn/8-examples/file-processing.md
   - Reference:
-      - Overview: docs/reference/index.md
-      - Keywords: docs/reference/keywords.md
-      - Stack Operations: docs/reference/stack.md
-      - Arithmetic: docs/reference/arithmetic.md
-      - Comparison: docs/reference/comparison.md
-      - Bitwise: docs/reference/bitwise.md
-      - Arrays: docs/reference/arrays.md
-      - Generics: docs/reference/generics.md
-      - Type Casting: docs/reference/types.md
-      - Input/Output: docs/reference/io.md
-      - Error Handling: docs/reference/errors.md
-      - Threading: docs/reference/threading.md
-      - Miscellaneous: docs/reference/misc.md
+      - Overview: reference/index.md
+      - Keywords: reference/keywords.md
+      - Stack Operations: reference/stack.md
+      - Arithmetic: reference/arithmetic.md
+      - Comparison: reference/comparison.md
+      - Bitwise: reference/bitwise.md
+      - Arrays: reference/arrays.md
+      - Generics: reference/generics.md
+      - Type Casting: reference/types.md
+      - Input/Output: reference/io.md
+      - Error Handling: reference/errors.md
+      - Threading: reference/threading.md
+      - Miscellaneous: reference/misc.md
   - Standard Library:
-      - Overview: docs/stdlib/index.md
+      - Overview: stdlib/index.md
       - Text & Strings:
-          - str: docs/stdlib/str.md
-          - strconv: docs/stdlib/strconv.md
-          - fmt: docs/stdlib/fmt.md
-          - sb: docs/stdlib/sb.md
-          - unicode: docs/stdlib/unicode.md
+          - str: stdlib/str.md
+          - strconv: stdlib/strconv.md
+          - fmt: stdlib/fmt.md
+          - sb: stdlib/sb.md
+          - unicode: stdlib/unicode.md
       - Data:
-          - bytes: docs/stdlib/bytes.md
+          - bytes: stdlib/bytes.md
       - Math & Numbers:
-          - math: docs/stdlib/math.md
-          - limits: docs/stdlib/limits.md
-          - bits: docs/stdlib/bits.md
-          - rand: docs/stdlib/rand.md
+          - math: stdlib/math.md
+          - limits: stdlib/limits.md
+          - bits: stdlib/bits.md
+          - rand: stdlib/rand.md
       - I/O & System:
-          - io: docs/stdlib/io.md
-          - os: docs/stdlib/os.md
-          - path: docs/stdlib/path.md
+          - io: stdlib/io.md
+          - os: stdlib/os.md
+          - path: stdlib/path.md
       - Time:
-          - time: docs/stdlib/time.md
+          - time: stdlib/time.md
       - Concurrency:
-          - thread: docs/stdlib/thread.md
+          - thread: stdlib/thread.md
       - Utilities:
-          - mem: docs/stdlib/mem.md
-          - flag: docs/stdlib/flag.md
-          - testing: docs/stdlib/testing.md
+          - mem: stdlib/mem.md
+          - flag: stdlib/flag.md
+          - testing: stdlib/testing.md
       - Terminal:
-          - term: docs/stdlib/term.md
+          - term: stdlib/term.md
       - Signal Handling:
-          - signal: docs/stdlib/signal.md
-  - Language Specification: docs/specification.md
-  - Toolchain: docs/toolchain.md
-  - Embedding Guide: docs/embedding.md
-  - External Packages: docs/external-packages.md
+          - signal: stdlib/signal.md
+  - Language Specification: specification.md
+  - Toolchain: toolchain.md
+  - Embedding Guide: embedding.md
+  - External Packages: external-packages.md
   - About: about.md

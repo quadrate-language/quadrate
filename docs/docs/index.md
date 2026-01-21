@@ -54,11 +54,11 @@ quad run factorial.qd
 
 New to Quadrate? Start here:
 
-1. **[Install Quadrate](docs/getting-started.md)** - Get the toolchain running
-2. **[Hello World](docs/learn/1-basics/hello-world.md)** - Write your first program
-3. **[Learn the Stack](docs/learn/2-stack/how-it-works.md)** - Understand stack-based evaluation
+1. **[Install Quadrate](getting-started.md)** - Get the toolchain running
+2. **[Hello World](learn/1-basics/hello-world.md)** - Write your first program
+3. **[Learn the Stack](learn/2-stack/how-it-works.md)** - Understand stack-based evaluation
 
-Or dive into the **[Learn section](docs/learn/1-basics/hello-world.md)** for a complete tutorial from basics to advanced topics.
+Or dive into the **[Learn section](learn/1-basics/hello-world.md)** for a complete tutorial from basics to advanced topics.
 
 ## The toolchain
 
@@ -98,8 +98,8 @@ quad run greet.qd -- Millie
 
 ## Learn more
 
-- **[Standard Library](docs/stdlib/index.md)** - Strings, I/O, math, threading, and more
-- **[Language Reference](docs/reference/index.md)** - All keywords and built-in operations
+- **[Standard Library](stdlib/index.md)** - Strings, I/O, math, threading, and more
+- **[Language Reference](reference/index.md)** - All keywords and built-in operations
 - **[About Quadrate](about.md)** - Design philosophy and links
 
 ## License
