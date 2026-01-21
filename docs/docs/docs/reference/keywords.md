@@ -21,7 +21,6 @@ Language keywords for declarations, control flow, and more.
 | [`return`](#return) | Exit function |
 | [`defer`](#defer) | Schedule cleanup code |
 | [`switch`](#switch) | Multi-way branching |
-| [`_`](#wildcard) | Wildcard/default case in switch |
 | [`ctx`](#ctx) | Context variable access |
 | [`->`](#arrow) | Variable binding |
 | [`true`](#true) | Boolean true (1) |
@@ -76,6 +75,10 @@ Imports a module, making its functions available with `module::function` syntax.
 
 ```qd
 use str
+
+fn main() {
+	"hello" str::len print nl  // 5
+}
 ```
 
 ---
@@ -178,10 +181,10 @@ fn early() {
 
 ### switch
 
-Branches based on matching the top of stack against case values.
+Branches based on matching the top of stack against case values. Use `_` as the default case when no other case matches.
 
 ```qd
-x switch {
+switch {
 	1 {
 		"one"
 	}
@@ -191,16 +194,6 @@ x switch {
 	_ {
 		"other"
 	}
-}
-```
-
-### _ {#wildcard}
-
-Provides a fallback block when no switch case matches.
-
-```qd
-_ {
-	"no match" print
 }
 ```
 

@@ -39,16 +39,20 @@ Quadrate is a **stack-based programming language** that compiles to native code 
 - **Reference counting**: Automatic memory management for heap objects
 - **Module system**: Code organization with public/private visibility
 
-### 1.2 Execution Model
+### 1.2 Terminology
 
-A Quadrate program consists of:
+The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT", "SHOULD", "SHOULD NOT", "RECOMMENDED", "MAY", and "OPTIONAL" in this document are to be interpreted as described in [RFC 2119](https://datatracker.ietf.org/doc/html/rfc2119).
+
+### 1.3 Execution Model
+
+A Quadrate program MUST consist of:
 1. Module imports (`use` statements)
 2. Constant declarations
 3. Struct declarations
 4. Function declarations
 5. A `main` function (entry point)
 
-Execution begins at `main`, which operates on a shared runtime stack.
+Execution MUST begin at `main`, which operates on a shared runtime stack.
 
 ---
 
@@ -56,7 +60,7 @@ Execution begins at `main`, which operates on a shared runtime stack.
 
 ### 2.1 Character Set
 
-Quadrate source files are UTF-8 encoded. Identifiers may contain ASCII letters, digits, and underscores.
+Quadrate source files MUST be UTF-8 encoded. Identifiers MUST contain only ASCII letters, digits, and underscores.
 
 ### 2.2 Comments
 
@@ -82,7 +86,7 @@ const     test      ctx       as
 
 #### 2.3.2 Predefined Constants
 
-These identifiers are reserved and evaluate to integer literals:
+These identifiers are reserved and MUST evaluate to integer literals:
 
 | Constant | Value | Description |
 |----------|-------|-------------|
@@ -101,7 +105,7 @@ letter     := 'a'..'z' | 'A'..'Z'
 digit      := '0'..'9'
 ```
 
-Naming conventions:
+Naming conventions (RECOMMENDED):
 - **Structs**: `PascalCase` (e.g., `Point`, `HttpRequest`)
 - **Constants**: `PascalCase` (e.g., `MaxSize`, `DefaultTimeout`)
 - **Functions**: `snake_case` (e.g., `get_value`, `parse_input`)
@@ -174,11 +178,11 @@ Examples: `"hello"`, `"line1\nline2"`
 [ ]   Array literals
 ```
 
-**Note**: Bitwise operators use named forms: `and`, `or`, `xor`, `not`, `shl`, `shr`.
+**Note**: Bitwise operators MUST use named forms: `and`, `or`, `xor`, `not`, `shl`, `shr`.
 
 ### 2.4 Whitespace
 
-Whitespace (spaces, tabs, newlines) separates tokens but is otherwise insignificant. Indentation is not syntactically meaningful.
+Whitespace (spaces, tabs, newlines) separates tokens but is otherwise insignificant. Indentation MUST NOT be syntactically meaningful.
 
 ---
 
@@ -186,7 +190,7 @@ Whitespace (spaces, tabs, newlines) separates tokens but is otherwise insignific
 
 ### 3.1 Primitive Types
 
-Quadrate has four primitive types:
+Implementations MUST support these four primitive types:
 
 | Type  | Description | Size |
 |-------|-------------|------|
@@ -195,7 +199,7 @@ Quadrate has four primitive types:
 | `str` | Immutable UTF-8 string | pointer |
 | `ptr` | Generic pointer | 8 bytes |
 
-**Note**: Quadrate uses only 64-bit integers and floats. There are no 8/16/32-bit types in the language itself.
+**Note**: Quadrate MUST use only 64-bit integers and floats. There MUST NOT be 8/16/32-bit types in the language itself.
 
 ### 3.2 Composite Types
 
@@ -215,11 +219,11 @@ struct Person {
 }
 ```
 
-Structs are represented as `ptr` on the stack (pointer to heap or stack allocated data).
+Structs MUST be represented as `ptr` on the stack (pointer to heap or stack allocated data).
 
 #### 3.2.2 Arrays
 
-Dynamic arrays created via array literals or `make<T>` instruction:
+Dynamic arrays are created via array literals or `make<T>` instruction:
 
 ```quadrate
 [1 2 3 4 5]           // Integer array
@@ -228,7 +232,7 @@ Dynamic arrays created via array literals or `make<T>` instruction:
 [[1 2] [3 4]]         // Nested array
 ```
 
-Arrays are represented as `ptr` on the stack.
+Arrays MUST be represented as `ptr` on the stack.
 
 ### 3.3 Generic Types
 
@@ -250,11 +254,11 @@ struct Pair<A, B> {
 }
 ```
 
-Type parameters are single uppercase letters or short uppercase names.
+Type parameters SHOULD be single uppercase letters or short uppercase names.
 
 ### 3.4 Function Types
 
-Function pointers are represented as `ptr`:
+Function pointers MUST be represented as `ptr`:
 
 ```quadrate
 fn apply(x:i64 f:ptr -- result:i64) {
@@ -286,7 +290,7 @@ Explicit casting via `cast<Type>`:
 "42" cast<i64>    // String to int (parse)
 ```
 
-**Implicit coercion**: None. All type conversions must be explicit.
+**Implicit coercion**: Implementations MUST NOT perform implicit type coercion. All type conversions MUST be explicit.
 
 ---
 
@@ -294,7 +298,7 @@ Explicit casting via `cast<Type>`:
 
 ### 4.1 Runtime Stack
 
-The Quadrate runtime maintains a single data stack shared across all function calls.
+The Quadrate runtime MUST maintain a single data stack shared across all function calls.
 
 **Stack element structure:**
 ```c
@@ -313,7 +317,7 @@ struct qd_stack_element {
 
 ### 4.2 Stack Operations
 
-All operations are postfix. Arguments are popped from the stack, results are pushed.
+All operations MUST be postfix. Arguments MUST be popped from the stack, and results MUST be pushed.
 
 **Duplication:**
 
@@ -386,14 +390,14 @@ fn example(x:i64 y:i64 -- result:i64) {
 }
 ```
 
-Variables are stored in function-local allocas and can be referenced multiple times.
+Variables MUST be stored in function-local allocas and MAY be referenced multiple times.
 
 **Binding multiple values:**
 ```quadrate
 10 20 30 -> z -> y -> x    // Each -> binds one value: z=30, y=20, x=10
 ```
 
-**Note**: Each `->` binds exactly one value. Multiple values require multiple `->` operators.
+**Note**: Each `->` MUST bind exactly one value. Multiple values require multiple `->` operators.
 
 ---
 
@@ -475,7 +479,7 @@ test "test name" {
 
 ### 6.1 If-Else
 
-Condition is popped from stack; non-zero is truthy:
+Condition MUST be popped from stack; non-zero MUST be treated as truthy:
 
 ```quadrate
 condition if {
@@ -506,7 +510,7 @@ start end step for iterator {
 }
 ```
 
-**Stack**: Pops `step`, `end`, `start` from stack.
+**Stack**: MUST pop `step`, `end`, `start` from stack.
 
 ```quadrate
 0 10 1 for i {
@@ -528,7 +532,7 @@ condition while {
 }
 ```
 
-The initial condition is on the stack before `while`. The block executes if the condition is true (non-zero). The block's last expression becomes the condition for the next iteration.
+The initial condition MUST be on the stack before `while`. The block MUST execute if the condition is true (non-zero). The block's last expression MUST become the condition for the next iteration.
 
 **Example:**
 ```quadrate
@@ -575,7 +579,7 @@ continue   // Skip to next iteration
 
 ### 6.7 Defer
 
-Execute code when scope exits (LIFO order):
+Deferred code MUST execute when scope exits in LIFO order:
 
 ```quadrate
 fn process() {
@@ -663,7 +667,7 @@ vec length
 fn (params -- returns) { body }
 ```
 
-**Implicit capture**: Variables from the enclosing scope are automatically captured when referenced inside the closure body. No explicit capture list is needed.
+**Implicit capture**: Variables from the enclosing scope MUST be automatically captured when referenced inside the closure body. An explicit capture list MUST NOT be required.
 
 **Example:**
 ```quadrate
@@ -785,7 +789,7 @@ When `use modulename` is encountered, search order:
 
 ### 9.3 Public and Private
 
-By default, declarations are private to their module.
+By default, declarations MUST be private to their module.
 
 ```quadrate
 pub fn public_function() { }    // Accessible from other modules
@@ -853,7 +857,7 @@ fn helper_function() { }
 
 ### 10.1 Fallible Functions
 
-Functions that can fail are marked with `!`:
+Functions that can fail MUST be marked with `!`:
 
 ```quadrate
 fn divide(a:i64 b:i64 -- result:i64)! {
@@ -963,7 +967,7 @@ err    // Stack effect: ( -- msg:str code:i64 )
 
 ### 11.2 Reference Counting
 
-Heap objects use atomic reference counting:
+Heap objects MUST use atomic reference counting:
 
 ```c
 struct qd_refcounted {
@@ -978,7 +982,7 @@ struct qd_refcounted {
 
 ### 11.3 String Memory
 
-Strings are reference-counted and immutable:
+Strings MUST be reference-counted and immutable:
 
 ```c
 struct qd_string {
@@ -1032,7 +1036,7 @@ struct qd_array {
 
 ### 11.6 Closure Captures
 
-Variables referenced inside a closure are automatically detected and captured (implicit capture). Captured variables are heap-allocated with reference counting:
+Variables referenced inside a closure MUST be automatically detected and captured (implicit capture). Captured variables MUST be heap-allocated with reference counting:
 
 ```c
 struct captured_var {
@@ -1255,7 +1259,7 @@ Low-level memory.
 
 ### 14.1 Context Structure
 
-The runtime must maintain an execution context:
+The runtime MUST maintain an execution context:
 
 ```c
 typedef struct {
@@ -1284,6 +1288,8 @@ typedef struct {
 ```
 
 ### 14.3 Required Runtime Functions
+
+Implementations MUST provide the following runtime functions:
 
 **Context:**
 - `qd_create_context(capacity)` - Create new context
