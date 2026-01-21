@@ -178,7 +178,7 @@ Examples: `"hello"`, `"line1\nline2"`
 [ ]   Array literals
 ```
 
-**Note**: Bitwise operators MUST use named forms: `and`, `or`, `xor`, `not`, `shl`, `shr`.
+**Note**: Bitwise operators `and`, `or`, `xor`, `not` MUST use named forms (no symbolic equivalents). Shift operators support both symbolic (`<<`, `>>`) and named (`shl`, `shr`) forms.
 
 ### 2.4 Whitespace
 
