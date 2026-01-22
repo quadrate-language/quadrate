@@ -33,7 +33,7 @@ LIBS_WITH_HEADERS := qdrt qd qdfmt qdio qdmath qdmem qdos qdstr qdstrconv qdtime
 # Note: Some modules moved to external repos: http, sqlite, json, regex, ct, crypto
 STDLIB_MODULES := $(shell find lib/qd*/qd -maxdepth 1 -mindepth 1 -type d -exec basename {} \; 2>/dev/null | sort -u)
 
-.PHONY: all debug release tests tests-failed tests-clear valgrind asan fuzz examples format install uninstall clean docs quadmcp
+.PHONY: all debug release docker-x64 docker-arm64 docker-all tests tests-failed tests-clear valgrind asan fuzz examples format install uninstall clean docs quadmcp
 
 all: debug
 
@@ -85,6 +85,29 @@ release:
 	done
 	@strip dist/lib/*.so 2>/dev/null || true
 	@echo "Release binaries stripped"
+
+# Docker-based builds (for ARM64 and reproducible builds)
+# Requires: docker with buildx and QEMU for cross-platform builds
+#
+# Setup QEMU (once): docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
+#
+docker-x64:
+	@echo "Building x86_64 binaries in Docker..."
+	docker build --platform linux/amd64 -f docker/Dockerfile.build -t quadrate-build-x64 .
+	@mkdir -p dist/bin
+	docker run --rm --platform linux/amd64 -v $(PWD)/dist/bin:/out quadrate-build-x64
+	@echo "x86_64 build complete: dist/bin/"
+
+docker-arm64:
+	@echo "Building ARM64 binaries in Docker (this may take a while with QEMU)..."
+	docker build --platform linux/arm64 -f docker/Dockerfile.build -t quadrate-build-arm64 .
+	@mkdir -p dist/bin-arm64
+	docker run --rm --platform linux/arm64 -v $(PWD)/dist/bin-arm64:/out quadrate-build-arm64
+	@echo "ARM64 build complete: dist/bin-arm64/"
+
+docker-all: docker-x64 docker-arm64
+	@echo "All Docker builds complete"
+	@ls -lh dist/bin/ dist/bin-arm64/
 
 tests: debug
 	@$(MAKE) examples --no-print-directory

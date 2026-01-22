@@ -1,0 +1,24 @@
+# Build artifacts
+build/
+dist/
+
+# Git
+.git/
+.gitignore
+
+# Development files
+*.o
+*.a
+*.so
+*.pyc
+__pycache__/
+
+# Editor files
+*.swp
+*.swo
+*~
+.vscode/
+.idea/
+
+# Documentation build
+docs/site/

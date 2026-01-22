@@ -1,0 +1,37 @@
+# Quadrate build container
+# Supports both x86_64 and ARM64 via platform flag
+#
+# Usage:
+#   docker build -f docker/Dockerfile.build -t quadrate-build .
+#   docker run --rm -v $PWD/dist:/out quadrate-build
+
+FROM debian:testing-slim
+
+# Install build dependencies
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+        build-essential \
+        clang \
+        llvm-dev \
+        libclang-dev \
+        meson \
+        ninja-build \
+        libreadline-dev \
+        pkg-config \
+        upx-ucl \
+        git \
+        ca-certificates && \
+    apt-get clean && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /build
+
+# Copy source
+COPY . .
+
+# Clean any existing build artifacts and build from scratch
+RUN rm -rf build dist && \
+    make release && \
+    for f in dist/bin/*; do upx --best "$f" 2>/dev/null || true; done
+
+# Output stage - copy binaries to /out if mounted
+CMD cp -r dist/bin/* /out/ 2>/dev/null && ls -lh /out/ || echo "Mount /out to extract binaries: -v \$PWD/dist:/out"
