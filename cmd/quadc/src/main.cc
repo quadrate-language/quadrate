@@ -22,6 +22,22 @@
 #include <unordered_set>
 #include <vector>
 
+// Stdlib modules that have native code and require linking
+// JIT execution doesn't support these - must fall back to disk compilation
+static const std::unordered_set<std::string> nativeStdlibModules = {
+		"bits", "bytes", "flag", "fmt", "io", "limits", "math", "mem", "os", "path", "rand", "sb", "signal", "str",
+		"strconv", "term", "testing", "thread", "time", "unicode"};
+
+// Check if any of the imported modules are stdlib modules with native code
+static bool hasNativeStdlibImports(const std::vector<std::string>& importedModules) {
+	for (const auto& mod : importedModules) {
+		if (nativeStdlibModules.count(mod) > 0) {
+			return true;
+		}
+	}
+	return false;
+}
+
 int main(int argc, char** argv) {
 	// Timing helper - only active when QUADC_TIMING is set
 	static bool timing = std::getenv("QUADC_TIMING") != nullptr;
@@ -159,6 +175,7 @@ int main(int argc, char** argv) {
 			module.ast = std::move(ast);
 			module.importedModules = collectImportedModules(root);
 			module.hasFFIImports = !validator.importedLibraries().empty();
+			module.hasNativeStdlibModules = hasNativeStdlibImports(module.importedModules);
 
 			parsedModules.push_back(std::move(module));
 		}
@@ -223,6 +240,7 @@ int main(int argc, char** argv) {
 			module.ast = std::move(ast);
 			module.importedModules = collectImportedModules(root);
 			module.hasFFIImports = !validator.importedLibraries().empty();
+			module.hasNativeStdlibModules = hasNativeStdlibImports(module.importedModules);
 
 			parsedModules.push_back(std::move(module));
 		}
@@ -568,13 +586,21 @@ int main(int argc, char** argv) {
 		// JIT is faster because it skips disk I/O and the external linker
 		bool useJIT = opts.run && !opts.noJIT && opts.targetTriple.empty() && opts.runArgs.empty() && !opts.testMode;
 
-		// Check if any module uses FFI imports - JIT doesn't support FFI
+		// Check if any module uses FFI imports or native stdlib modules - JIT doesn't support these
 		if (useJIT) {
 			for (const auto& mod : parsedModules) {
 				if (mod.hasFFIImports) {
 					useJIT = false;
 					if (opts.verbose) {
 						std::cout << "note: using disk compilation (FFI imports detected)" << std::endl;
+					}
+					break;
+				}
+				if (mod.hasNativeStdlibModules) {
+					useJIT = false;
+					if (opts.verbose) {
+						std::cout << "note: using disk compilation (stdlib modules with native code detected)"
+								  << std::endl;
 					}
 					break;
 				}
