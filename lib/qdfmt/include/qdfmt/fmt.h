@@ -44,7 +44,7 @@ extern "C" {
  * @note Format string must be at the bottom of the stack (pushed first),
  * followed by arguments in left-to-right order (last argument on top).
  */
-qd_exec_result usr_fmt_printf(qd_context* ctx);
+int usr_fmt_printf(qd_context* ctx);
 
 /**
  * @brief Formatted string function
@@ -74,7 +74,7 @@ qd_exec_result usr_fmt_printf(qd_context* ctx);
  * @note Format string must be on top of the stack (pushed last),
  * with arguments below it in left-to-right order (first argument deepest).
  */
-qd_exec_result usr_fmt_sprintf(qd_context* ctx);
+int usr_fmt_sprintf(qd_context* ctx);
 
 #ifdef __cplusplus
 }

@@ -44,7 +44,7 @@ static int errno_to_os_error(int err) {
 	}
 }
 
-qd_exec_result usr_os_exit(qd_context* ctx) {
+int usr_os_exit(qd_context* ctx) {
 
 	size_t stack_size = qd_stack_size(ctx->st);
 	if (stack_size < 1) {
@@ -73,10 +73,10 @@ qd_exec_result usr_os_exit(qd_context* ctx) {
 	exit((int)elem.value.i);
 
 	// This line is never reached, but needed for compiler
-	return (qd_exec_result){OS_ERR_OK};
+	return (int){OS_ERR_OK};
 }
 
-qd_exec_result usr_os_system(qd_context* ctx) {
+int usr_os_system(qd_context* ctx) {
 
 	size_t stack_size = qd_stack_size(ctx->st);
 	if (stack_size < 1) {
@@ -115,10 +115,10 @@ qd_exec_result usr_os_system(qd_context* ctx) {
 		abort();
 	}
 
-	return (qd_exec_result){OS_ERR_OK};
+	return (int){OS_ERR_OK};
 }
 
-qd_exec_result usr_os_getenv(qd_context* ctx) {
+int usr_os_getenv(qd_context* ctx) {
 	size_t stack_size = qd_stack_size(ctx->st);
 	if (stack_size < 1) {
 		fprintf(stderr, "Fatal error in os::getenv: Stack underflow (required 1 element, have %zu)\n", stack_size);
@@ -152,10 +152,10 @@ qd_exec_result usr_os_getenv(qd_context* ctx) {
 		abort();
 	}
 
-	return (qd_exec_result){OS_ERR_OK};
+	return (int){OS_ERR_OK};
 }
 
-qd_exec_result usr_os_exists(qd_context* ctx) {
+int usr_os_exists(qd_context* ctx) {
 	size_t stack_size = qd_stack_size(ctx->st);
 	if (stack_size < 1) {
 		fprintf(stderr, "Fatal error in os::exists: Stack underflow (required 1 element, have %zu)\n", stack_size);
@@ -188,10 +188,10 @@ qd_exec_result usr_os_exists(qd_context* ctx) {
 		abort();
 	}
 
-	return (qd_exec_result){OS_ERR_OK};
+	return (int){OS_ERR_OK};
 }
 
-qd_exec_result usr_os_delete(qd_context* ctx) {
+int usr_os_delete(qd_context* ctx) {
 	size_t stack_size = qd_stack_size(ctx->st);
 	if (stack_size < 1) {
 		fprintf(stderr, "Fatal error in os::delete: Stack underflow (required 1 element, have %zu)\n", stack_size);
@@ -227,10 +227,10 @@ qd_exec_result usr_os_delete(qd_context* ctx) {
 	}
 
 	// Return error code
-	return (qd_exec_result){error_code};
+	return (int){error_code};
 }
 
-qd_exec_result usr_os_rename(qd_context* ctx) {
+int usr_os_rename(qd_context* ctx) {
 	size_t stack_size = qd_stack_size(ctx->st);
 	if (stack_size < 2) {
 		fprintf(stderr, "Fatal error in os::rename: Stack underflow (required 2 elements, have %zu)\n", stack_size);
@@ -281,10 +281,10 @@ qd_exec_result usr_os_rename(qd_context* ctx) {
 	}
 
 	// Return error code
-	return (qd_exec_result){error_code};
+	return (int){error_code};
 }
 
-qd_exec_result usr_os_copy(qd_context* ctx) {
+int usr_os_copy(qd_context* ctx) {
 	size_t stack_size = qd_stack_size(ctx->st);
 	if (stack_size < 2) {
 		fprintf(stderr, "Fatal error in os::copy: Stack underflow (required 2 elements, have %zu)\n", stack_size);
@@ -356,10 +356,10 @@ qd_exec_result usr_os_copy(qd_context* ctx) {
 	}
 
 	// Return error code
-	return (qd_exec_result){error_code};
+	return (int){error_code};
 }
 
-qd_exec_result usr_os_mkdir(qd_context* ctx) {
+int usr_os_mkdir(qd_context* ctx) {
 	size_t stack_size = qd_stack_size(ctx->st);
 	if (stack_size < 1) {
 		fprintf(stderr, "Fatal error in os::mkdir: Stack underflow (required 1 element, have %zu)\n", stack_size);
@@ -396,10 +396,10 @@ qd_exec_result usr_os_mkdir(qd_context* ctx) {
 	}
 
 	// Return error code
-	return (qd_exec_result){error_code};
+	return (int){error_code};
 }
 
-qd_exec_result usr_os_setenv(qd_context* ctx) {
+int usr_os_setenv(qd_context* ctx) {
 	size_t stack_size = qd_stack_size(ctx->st);
 	if (stack_size < 2) {
 		fprintf(stderr, "Fatal error in os::setenv: Stack underflow (required 2 elements, have %zu)\n", stack_size);
@@ -441,13 +441,13 @@ qd_exec_result usr_os_setenv(qd_context* ctx) {
 	qd_string_release(value_elem.value.s);
 
 	if (result != 0) {
-		return (qd_exec_result){errno};
+		return (int){errno};
 	}
 
-	return (qd_exec_result){OS_ERR_OK};
+	return (int){OS_ERR_OK};
 }
 
-qd_exec_result usr_os_popen(qd_context* ctx) {
+int usr_os_popen(qd_context* ctx) {
 	size_t stack_size = qd_stack_size(ctx->st);
 	if (stack_size < 2) {
 		fprintf(stderr, "Fatal error in os::popen: Stack underflow (required 2 elements, have %zu)\n", stack_size);
@@ -490,7 +490,7 @@ qd_exec_result usr_os_popen(qd_context* ctx) {
 	if (pipe == NULL) {
 		// Push exit code -1 to indicate failure
 		qd_stack_push_int(ctx->st, -1);
-		return (qd_exec_result){OS_ERR_IO};
+		return (int){OS_ERR_IO};
 	}
 
 	// Read output line by line and call callback for each
@@ -526,8 +526,8 @@ qd_exec_result usr_os_popen(qd_context* ctx) {
 		}
 
 		// Call the callback
-		qd_exec_result call_result = qd_call(ctx);
-		if (call_result.code != 0) {
+		int call_result = qd_call(ctx);
+		if (call_result != 0) {
 			// Callback returned an error
 			free(line);
 			pclose(pipe);
@@ -557,11 +557,11 @@ qd_exec_result usr_os_popen(qd_context* ctx) {
 		abort();
 	}
 
-	return (qd_exec_result){0};  // 0 = success
+	return (int){0};  // 0 = success
 }
 
 // os::exec - execute command and capture output: (cmd:str -- stdout:str exitcode:i64)!
-qd_exec_result usr_os_exec(qd_context* ctx) {
+int usr_os_exec(qd_context* ctx) {
 	size_t stack_size = qd_stack_size(ctx->st);
 	if (stack_size < 1) {
 		fprintf(stderr, "Fatal error in os::exec: Stack underflow (required 1 element, have %zu)\n", stack_size);
@@ -593,7 +593,7 @@ qd_exec_result usr_os_exec(qd_context* ctx) {
 		ctx->error_code = error_code;
 		qd_set_error_msg(ctx, "os::exec: failed to execute command");
 		qd_stack_push_int(ctx->st, (int64_t)error_code);
-		return (qd_exec_result){error_code};
+		return (int){error_code};
 	}
 
 	// Read all output into a buffer
@@ -605,7 +605,7 @@ qd_exec_result usr_os_exec(qd_context* ctx) {
 		ctx->error_code = OS_ERR_OUT_OF_MEMORY;
 		qd_set_error_msg(ctx, "os::exec: out of memory");
 		qd_stack_push_int(ctx->st, (int64_t)OS_ERR_OUT_OF_MEMORY);
-		return (qd_exec_result){OS_ERR_OUT_OF_MEMORY};
+		return (int){OS_ERR_OUT_OF_MEMORY};
 	}
 
 	char chunk[1024];
@@ -621,7 +621,7 @@ qd_exec_result usr_os_exec(qd_context* ctx) {
 				ctx->error_code = OS_ERR_OUT_OF_MEMORY;
 				qd_set_error_msg(ctx, "os::exec: out of memory");
 				qd_stack_push_int(ctx->st, (int64_t)OS_ERR_OUT_OF_MEMORY);
-				return (qd_exec_result){OS_ERR_OUT_OF_MEMORY};
+				return (int){OS_ERR_OUT_OF_MEMORY};
 			}
 			buf = new_buf;
 		}
@@ -654,10 +654,10 @@ qd_exec_result usr_os_exec(qd_context* ctx) {
 		abort();
 	}
 
-	return (qd_exec_result){0};
+	return (int){0};
 }
 
-qd_exec_result usr_os_list(qd_context* ctx) {
+int usr_os_list(qd_context* ctx) {
 	size_t stack_size = qd_stack_size(ctx->st);
 	if (stack_size < 1) {
 		fprintf(stderr, "Fatal error in os::list: Stack underflow (required 1 element, have %zu)\n", stack_size);
@@ -702,7 +702,7 @@ qd_exec_result usr_os_list(qd_context* ctx) {
 		// Push error code (not found / not a directory)
 		qd_stack_push_int(ctx->st, OS_ERR_NOT_FOUND);
 		// Return error since listing failed
-		return (qd_exec_result){OS_ERR_NOT_FOUND};
+		return (int){OS_ERR_NOT_FOUND};
 	}
 
 	qd_string_release(elem.value.s);
@@ -729,10 +729,10 @@ qd_exec_result usr_os_list(qd_context* ctx) {
 
 	// Push error code (OS_ERR_OK for success)
 	qd_stack_push_int(ctx->st, OS_ERR_OK);
-	return (qd_exec_result){OS_ERR_OK};
+	return (int){OS_ERR_OK};
 }
 
-qd_exec_result usr_os_getpid(qd_context* ctx) {
+int usr_os_getpid(qd_context* ctx) {
 	// Get process ID
 	pid_t pid = getpid();
 
@@ -744,10 +744,10 @@ qd_exec_result usr_os_getpid(qd_context* ctx) {
 		abort();
 	}
 
-	return (qd_exec_result){0};
+	return (int){0};
 }
 
-qd_exec_result usr_os_is_dir(qd_context* ctx) {
+int usr_os_is_dir(qd_context* ctx) {
 	size_t stack_size = qd_stack_size(ctx->st);
 	if (stack_size < 1) {
 		fprintf(stderr, "Fatal error in os::is_dir: Stack underflow\n");
@@ -767,10 +767,10 @@ qd_exec_result usr_os_is_dir(qd_context* ctx) {
 	qd_string_release(elem.value.s);
 
 	qd_stack_push_int(ctx->st, (int64_t)is_dir);
-	return (qd_exec_result){OS_ERR_OK};
+	return (int){OS_ERR_OK};
 }
 
-qd_exec_result usr_os_is_file(qd_context* ctx) {
+int usr_os_is_file(qd_context* ctx) {
 	size_t stack_size = qd_stack_size(ctx->st);
 	if (stack_size < 1) {
 		fprintf(stderr, "Fatal error in os::is_file: Stack underflow\n");
@@ -790,10 +790,10 @@ qd_exec_result usr_os_is_file(qd_context* ctx) {
 	qd_string_release(elem.value.s);
 
 	qd_stack_push_int(ctx->st, (int64_t)is_file);
-	return (qd_exec_result){OS_ERR_OK};
+	return (int){OS_ERR_OK};
 }
 
-qd_exec_result usr_os_rmdir(qd_context* ctx) {
+int usr_os_rmdir(qd_context* ctx) {
 	size_t stack_size = qd_stack_size(ctx->st);
 	if (stack_size < 1) {
 		fprintf(stderr, "Fatal error in os::rmdir: Stack underflow\n");
@@ -815,7 +815,7 @@ qd_exec_result usr_os_rmdir(qd_context* ctx) {
 	qd_string_release(elem.value.s);
 
 	qd_stack_push_int(ctx->st, (int64_t)error_code);
-	return (qd_exec_result){error_code};
+	return (int){error_code};
 }
 
 // Walk callback context for passing to C++ code
@@ -836,12 +836,12 @@ static int walk_c_callback(const char* path, int is_dir, int depth, void* user_d
 
 	// Push callback and call it
 	qd_stack_push_ptr(ctx->st, wctx->callback_ptr);
-	qd_exec_result result = qd_call(ctx);
+	int result = qd_call(ctx);
 
-	return (result.code != 0) ? 1 : 0;
+	return (result != 0) ? 1 : 0;
 }
 
-qd_exec_result usr_os_walk(qd_context* ctx) {
+int usr_os_walk(qd_context* ctx) {
 	size_t stack_size = qd_stack_size(ctx->st);
 	if (stack_size < 2) {
 		fprintf(stderr, "Fatal error in os::walk: Stack underflow\n");
@@ -869,10 +869,10 @@ qd_exec_result usr_os_walk(qd_context* ctx) {
 	qd_string_release(path_elem.value.s);
 
 	qd_stack_push_int(ctx->st, (int64_t)error_code);
-	return (qd_exec_result){error_code};
+	return (int){error_code};
 }
 
-qd_exec_result usr_os_glob(qd_context* ctx) {
+int usr_os_glob(qd_context* ctx) {
 	size_t stack_size = qd_stack_size(ctx->st);
 	if (stack_size < 1) {
 		fprintf(stderr, "Fatal error in os::glob: Stack underflow\n");
@@ -897,17 +897,17 @@ qd_exec_result usr_os_glob(qd_context* ctx) {
 		qd_stack_push_ptr(ctx->st, NULL);
 		qd_stack_push_int(ctx->st, 0);
 		qd_stack_push_int(ctx->st, OS_ERR_OK);
-		return (qd_exec_result){OS_ERR_OK};
+		return (int){OS_ERR_OK};
 	}
 
 	// Push entries pointer and count
 	qd_stack_push_ptr(ctx->st, entries);
 	qd_stack_push_int(ctx->st, (int64_t)count);
 	qd_stack_push_int(ctx->st, OS_ERR_OK);
-	return (qd_exec_result){OS_ERR_OK};
+	return (int){OS_ERR_OK};
 }
 
-qd_exec_result usr_os_mktemp(qd_context* ctx) {
+int usr_os_mktemp(qd_context* ctx) {
 	// Create template for mkdtemp
 	// Use /tmp/qd_XXXXXX format
 	char template[] = "/tmp/qd_XXXXXX";
@@ -919,28 +919,28 @@ qd_exec_result usr_os_mktemp(qd_context* ctx) {
 		ctx->error_code = error_code;
 		qd_set_error_msg(ctx, "os::mktemp: failed to create temp directory");
 		qd_stack_push_int(ctx->st, (int64_t)error_code);
-		return (qd_exec_result){error_code};
+		return (int){error_code};
 	}
 
 	// Push the path and Ok
 	qd_stack_push_str(ctx->st, result);
 	qd_stack_push_int(ctx->st, OS_ERR_OK);
-	return (qd_exec_result){0};
+	return (int){0};
 }
 
-qd_exec_result usr_os_cwd(qd_context* ctx) {
+int usr_os_cwd(qd_context* ctx) {
 	char* cwd = getcwd(NULL, 0);
 	if (!cwd) {
 		int error_code = errno_to_os_error(errno);
 		ctx->error_code = error_code;
 		qd_set_error_msg(ctx, "os::cwd: failed to get current directory");
 		qd_stack_push_int(ctx->st, (int64_t)error_code);
-		return (qd_exec_result){error_code};
+		return (int){error_code};
 	}
 
 	// Push the path and Ok
 	qd_stack_push_str(ctx->st, cwd);
 	free(cwd);
 	qd_stack_push_int(ctx->st, OS_ERR_OK);
-	return (qd_exec_result){0};
+	return (int){0};
 }

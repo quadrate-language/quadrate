@@ -38,33 +38,33 @@ void qd_closure_unregister(void* ptr) {
 	}
 }
 
-qd_exec_result qd_push_i(qd_context* ctx, int64_t value) {
+int qd_push_i(qd_context* ctx, int64_t value) {
 	qd_stack_error err = qd_stack_push_int(ctx->st, value);
 	if (err != QD_STACK_OK) {
-		return (qd_exec_result){-2};
+		return (int){-2};
 	}
-	return (qd_exec_result){0};
+	return (int){0};
 }
 
-qd_exec_result qd_push_f(qd_context* ctx, double value) {
+int qd_push_f(qd_context* ctx, double value) {
 	qd_stack_error err = qd_stack_push_float(ctx->st, value);
 	if (err != QD_STACK_OK) {
-		return (qd_exec_result){-2};
+		return (int){-2};
 	}
-	return (qd_exec_result){0};
+	return (int){0};
 }
 
-qd_exec_result qd_push_s(qd_context* ctx, const char* value) {
+int qd_push_s(qd_context* ctx, const char* value) {
 	qd_stack_error err = qd_stack_push_str(ctx->st, value);
 	if (err != QD_STACK_OK) {
-		return (qd_exec_result){-2};
+		return (int){-2};
 	}
-	return (qd_exec_result){0};
+	return (int){0};
 }
 
-qd_exec_result qd_push_s_ref(qd_context* ctx, qd_string_t* value) {
+int qd_push_s_ref(qd_context* ctx, qd_string_t* value) {
 	if (value == NULL) {
-		return (qd_exec_result){-2};
+		return (int){-2};
 	}
 
 	// Retain the string (increment reference count)
@@ -73,7 +73,7 @@ qd_exec_result qd_push_s_ref(qd_context* ctx, qd_string_t* value) {
 	// Check stack capacity
 	if (qd_stack_size(ctx->st) >= ctx->st->capacity) {
 		qd_string_release(value);  // Cleanup on overflow
-		return (qd_exec_result){-2};
+		return (int){-2};
 	}
 
 	// Push directly to stack
@@ -82,23 +82,23 @@ qd_exec_result qd_push_s_ref(qd_context* ctx, qd_string_t* value) {
 	ctx->st->data[ctx->st->size].is_error_tainted = false;
 	ctx->st->size++;
 
-	return (qd_exec_result){0};
+	return (int){0};
 }
 
-qd_exec_result qd_push_p(qd_context* ctx, void* value) {
+int qd_push_p(qd_context* ctx, void* value) {
 	qd_stack_error err = qd_stack_push_ptr(ctx->st, value);
 	if (err != QD_STACK_OK) {
-		return (qd_exec_result){-2};
+		return (int){-2};
 	}
-	return (qd_exec_result){0};
+	return (int){0};
 }
 
 // Helper function to check if string contains whitespace
-qd_exec_result qd_peek(qd_context* ctx) {
+int qd_peek(qd_context* ctx) {
 	qd_stack_element_t val;
 	qd_stack_error err = qd_stack_peek(ctx->st, &val);
 	if (err != QD_STACK_OK) {
-		return (qd_exec_result){-2};
+		return (int){-2};
 	}
 	switch (val.type) {
 		case QD_STACK_TYPE_INT:
@@ -111,9 +111,9 @@ qd_exec_result qd_peek(qd_context* ctx) {
 			printf("%s\n", qd_string_data(val.value.s));
 			break;
 		default:
-			return (qd_exec_result){-3};
+			return (int){-3};
 	}
-	return (qd_exec_result){0};
+	return (int){0};
 }
 
 // Helper function to check if a stack type is numeric
@@ -148,16 +148,16 @@ static bool validate_binary_numeric_op(qd_context* ctx, const char* op_name) {
 }
 
 // Helper function to pop two values from stack for binary operations
-static qd_exec_result pop_two_values(qd_context* ctx, qd_stack_element_t* a, qd_stack_element_t* b) {
+static int pop_two_values(qd_context* ctx, qd_stack_element_t* a, qd_stack_element_t* b) {
 	qd_stack_error err = qd_stack_pop(ctx->st, b);
 	if (err != QD_STACK_OK) {
-		return (qd_exec_result){-2};
+		return (int){-2};
 	}
 	err = qd_stack_pop(ctx->st, a);
 	if (err != QD_STACK_OK) {
-		return (qd_exec_result){-2};
+		return (int){-2};
 	}
-	return (qd_exec_result){0};
+	return (int){0};
 }
 
 // Helper function to release string references if needed
@@ -227,7 +227,7 @@ typedef struct {
 } qd_closure_t;
 
 // call - invoke function pointer or closure from stack
-qd_exec_result qd_call(qd_context* ctx) {
+int qd_call(qd_context* ctx) {
 	// Pop function pointer/closure and call it
 	qd_stack_element_t val;
 	qd_stack_error err = qd_stack_pop(ctx->st, &val);
@@ -250,8 +250,8 @@ qd_exec_result qd_call(qd_context* ctx) {
 	qd_closure_t* closure = (qd_closure_t*)ptr;
 	if (closure->magic == QD_CLOSURE_MAGIC) {
 		// This is a closure - extract function pointer and environment
-		// Closure function signature: qd_exec_result (*)(qd_context*, void* env)
-		typedef qd_exec_result (*qd_closure_fn_ptr)(qd_context*, void*);
+		// Closure function signature: int (*)(qd_context*, void* env)
+		typedef int (*qd_closure_fn_ptr)(qd_context*, void*);
 		qd_closure_fn_ptr func;
 		memcpy(&func, &closure->fn_ptr, sizeof(func));
 
@@ -263,8 +263,8 @@ qd_exec_result qd_call(qd_context* ctx) {
 		return func(ctx, closure->env_ptr);
 	} else {
 		// Regular function pointer
-		// Function signature: qd_exec_result (*)(qd_context*)
-		typedef qd_exec_result (*qd_function_ptr)(qd_context*);
+		// Function signature: int (*)(qd_context*)
+		typedef int (*qd_function_ptr)(qd_context*);
 		qd_function_ptr func;
 		memcpy(&func, &ptr, sizeof(func));
 
@@ -276,7 +276,7 @@ qd_exec_result qd_call(qd_context* ctx) {
 // dec - decrement (subtract 1, preserves type)
 // inc - increment (add 1, preserves type)
 // casti - cast top stack element to integer
-qd_exec_result qd_casti(qd_context* ctx) {
+int qd_casti(qd_context* ctx) {
 	// Pop one value, convert to integer, push result
 	QDRT_CHECK_STACK(ctx, "casti", 1);
 
@@ -300,14 +300,14 @@ qd_exec_result qd_casti(qd_context* ctx) {
 
 	err = qd_stack_push_int(ctx->st, result);
 	if (err != QD_STACK_OK) {
-		return (qd_exec_result){-2};
+		return (int){-2};
 	}
 
-	return (qd_exec_result){0};
+	return (int){0};
 }
 
 // castf - cast top stack element to float
-qd_exec_result qd_castf(qd_context* ctx) {
+int qd_castf(qd_context* ctx) {
 	// Pop one value, convert to float, push result
 	size_t stack_size = qd_stack_size(ctx->st);
 	if (stack_size < 1) {
@@ -337,14 +337,14 @@ qd_exec_result qd_castf(qd_context* ctx) {
 
 	err = qd_stack_push_float(ctx->st, result);
 	if (err != QD_STACK_OK) {
-		return (qd_exec_result){-2};
+		return (int){-2};
 	}
 
-	return (qd_exec_result){0};
+	return (int){0};
 }
 
 // casts - cast top stack element to string
-qd_exec_result qd_casts(qd_context* ctx) {
+int qd_casts(qd_context* ctx) {
 	// Pop one value, convert to string, push result
 	size_t stack_size = qd_stack_size(ctx->st);
 	if (stack_size < 1) {
@@ -369,11 +369,11 @@ qd_exec_result qd_casts(qd_context* ctx) {
 		// Already a string - just push it back (retain it)
 		err = push_element(ctx->st, &elem);
 		if (err != QD_STACK_OK) {
-			return (qd_exec_result){-2};
+			return (int){-2};
 		}
 		// Release our reference from the pop
 		release_if_string(&elem);
-		return (qd_exec_result){0};
+		return (int){0};
 	} else if (elem.type == QD_STACK_TYPE_PTR) {
 		// Treat pointer as qd_string_t* - retain it and push as string
 		qd_string_t* str = (qd_string_t*)elem.value.p;
@@ -383,16 +383,16 @@ qd_exec_result qd_casts(qd_context* ctx) {
 			err = push_element(ctx->st, &str_elem);
 			if (err != QD_STACK_OK) {
 				qd_string_release(str);
-				return (qd_exec_result){-2};
+				return (int){-2};
 			}
-			return (qd_exec_result){0};
+			return (int){0};
 		} else {
 			// NULL pointer - push empty string
 			err = qd_stack_push_str(ctx->st, "");
 			if (err != QD_STACK_OK) {
-				return (qd_exec_result){-2};
+				return (int){-2};
 			}
-			return (qd_exec_result){0};
+			return (int){0};
 		}
 	} else {
 		QDRT_FATAL(ctx, "casts", "Cannot cast type to string");
@@ -400,14 +400,14 @@ qd_exec_result qd_casts(qd_context* ctx) {
 
 	err = qd_stack_push_str(ctx->st, buffer);
 	if (err != QD_STACK_OK) {
-		return (qd_exec_result){-2};
+		return (int){-2};
 	}
 
-	return (qd_exec_result){0};
+	return (int){0};
 }
 
 // castp - cast to pointer
-qd_exec_result qd_castp(qd_context* ctx) {
+int qd_castp(qd_context* ctx) {
 	size_t stack_size = qd_stack_size(ctx->st);
 	if (stack_size < 1) {
 		QDRT_FATAL(ctx, "castp", "Stack underflow (requires 1 value)");
@@ -435,10 +435,10 @@ qd_exec_result qd_castp(qd_context* ctx) {
 
 	err = qd_stack_push_ptr(ctx->st, ptr_value);
 	if (err != QD_STACK_OK) {
-		return (qd_exec_result){-2};
+		return (int){-2};
 	}
 
-	return (qd_exec_result){0};
+	return (int){0};
 }
 
 // pow - exponentiation (base^exponent)
@@ -578,7 +578,7 @@ void qd_check_stack(qd_context* ctx, size_t count, const qd_stack_type* types, c
 // drop - remove top element from stack: ( a -- )
 // drop2 - remove top 2 elements from stack: ( a b -- )
 // free - deallocate memory pointed to by pointer on stack: ( ptr -- )
-qd_exec_result qd_free(qd_context* ctx) {
+int qd_free(qd_context* ctx) {
 	size_t stack_size = qd_stack_size(ctx->st);
 	if (stack_size < 1) {
 		QDRT_FATAL(ctx, "free", "Stack underflow (required 1 element, have %zu)");
@@ -590,7 +590,7 @@ qd_exec_result qd_free(qd_context* ctx) {
 	qd_stack_element_t val;
 	qd_stack_error err = qd_stack_pop(ctx->st, &val);
 	if (err != QD_STACK_OK) {
-		return (qd_exec_result){-2};
+		return (int){-2};
 	}
 
 	// Verify it's a pointer type
@@ -610,12 +610,12 @@ qd_exec_result qd_free(qd_context* ctx) {
 		free(val.value.p);
 	}
 
-	return (qd_exec_result){0};
+	return (int){0};
 }
 
 // free_struct - release reference-counted struct from stack: ( ptr -- )
 // Uses qd_struct_release which decrements refcount and frees when it reaches 0
-qd_exec_result qd_free_struct(qd_context* ctx) {
+int qd_free_struct(qd_context* ctx) {
 	size_t stack_size = qd_stack_size(ctx->st);
 	if (stack_size < 1) {
 		QDRT_FATAL(ctx, "free", "Stack underflow (required 1 element, have %zu)");
@@ -627,7 +627,7 @@ qd_exec_result qd_free_struct(qd_context* ctx) {
 	qd_stack_element_t val;
 	qd_stack_error err = qd_stack_pop(ctx->st, &val);
 	if (err != QD_STACK_OK) {
-		return (qd_exec_result){-2};
+		return (int){-2};
 	}
 
 	// Verify it's a pointer type
@@ -638,7 +638,7 @@ qd_exec_result qd_free_struct(qd_context* ctx) {
 	// Release the struct (decrements refcount, frees when 0)
 	qd_struct_release(val.value.p);
 
-	return (qd_exec_result){0};
+	return (int){0};
 }
 
 // rot - rotate top 3 elements: ( a b c -- b c a )
@@ -670,7 +670,7 @@ static int qd_thread_wrapper(void* arg) {
 	qd_thread_info_t* info = (qd_thread_info_t*)arg;
 
 	// Call the function
-	typedef qd_exec_result (*qd_function_ptr)(qd_context*);
+	typedef int (*qd_function_ptr)(qd_context*);
 	qd_function_ptr func;
 	memcpy(&func, &info->func_ptr, sizeof(func));
 
@@ -686,7 +686,7 @@ static int qd_thread_wrapper(void* arg) {
 }
 
 // spawn - create a new thread ( fn:ptr -- thread_id:i )
-qd_exec_result qd_spawn(qd_context* ctx) {
+int qd_spawn(qd_context* ctx) {
 	// Pop function pointer
 	qd_stack_element_t val;
 	qd_stack_error err = qd_stack_pop(ctx->st, &val);
@@ -729,14 +729,14 @@ qd_exec_result qd_spawn(qd_context* ctx) {
 	// Push thread handle (as pointer cast to int64_t)
 	err = qd_stack_push_int(ctx->st, (int64_t)(uintptr_t)thread);
 	if (err != QD_STACK_OK) {
-		return (qd_exec_result){-2};
+		return (int){-2};
 	}
 
-	return (qd_exec_result){0};
+	return (int){0};
 }
 
 // detach - detach a thread ( thread_id:i -- )
-qd_exec_result qd_detach(qd_context* ctx) {
+int qd_detach(qd_context* ctx) {
 	// Pop thread ID
 	qd_stack_element_t val;
 	qd_stack_error err = qd_stack_pop(ctx->st, &val);
@@ -760,11 +760,11 @@ qd_exec_result qd_detach(qd_context* ctx) {
 		abort();
 	}
 
-	return (qd_exec_result){0};
+	return (int){0};
 }
 
 // wait - join/wait for a thread ( thread_id:i -- )
-qd_exec_result qd_wait(qd_context* ctx) {
+int qd_wait(qd_context* ctx) {
 	// Pop thread ID
 	qd_stack_element_t val;
 	qd_stack_error err = qd_stack_pop(ctx->st, &val);
@@ -788,10 +788,10 @@ qd_exec_result qd_wait(qd_context* ctx) {
 		abort();
 	}
 
-	return (qd_exec_result){0};
+	return (int){0};
 }
 
-qd_exec_result qd_err(qd_context* ctx) {
+int qd_err(qd_context* ctx) {
 	// Retrieve error information from the last failed fallible function call
 	// Stack effect: ( -- msg code )
 	// Push error message (empty string if no error)
@@ -814,10 +814,10 @@ qd_exec_result qd_err(qd_context* ctx) {
 		ctx->error_msg = NULL;
 	}
 
-	return (qd_exec_result){0};
+	return (int){0};
 }
 
-qd_exec_result qd_panic(qd_context* ctx) {
+int qd_panic(qd_context* ctx) {
 	// Pop error code and message from stack and set error state
 	// Stack notation: ( msg code -- ) means msg is pushed first, code is on top
 	// Stack after: []
@@ -865,7 +865,7 @@ qd_exec_result qd_panic(qd_context* ctx) {
 	// Release the qd_string_t
 	release_if_string(&error_msg_elem);
 
-	return (qd_exec_result){0};
+	return (int){0};
 }
 
 // Helper function to check if string is an integer
@@ -1158,7 +1158,7 @@ bool qdrt_validate_binary_numeric_op(qd_context* ctx, const char* op_name) {
 	return validate_binary_numeric_op(ctx, op_name);
 }
 
-qd_exec_result qdrt_pop_two_values(qd_context* ctx, qd_stack_element_t* a, qd_stack_element_t* b) {
+int qdrt_pop_two_values(qd_context* ctx, qd_stack_element_t* a, qd_stack_element_t* b) {
 	return pop_two_values(ctx, a, b);
 }
 
@@ -1223,20 +1223,20 @@ int qd_version_patch(void) {
 #endif
 }
 
-qd_exec_result qd_rt_version(qd_context* ctx) {
+int qd_rt_version(qd_context* ctx) {
 	return qd_push_s(ctx, qd_version());
 }
 
-qd_exec_result qd_rt_version_api(qd_context* ctx) {
+int qd_rt_version_api(qd_context* ctx) {
 	return qd_push_i(ctx, qd_version_api());
 }
 
 // User-facing functions (usr_ prefix for import mechanism)
-qd_exec_result usr_rt_version(qd_context* ctx) {
+int usr_rt_version(qd_context* ctx) {
 	return qd_push_s(ctx, qd_version());
 }
 
-qd_exec_result usr_rt_version_api(qd_context* ctx) {
+int usr_rt_version_api(qd_context* ctx) {
 	return qd_push_i(ctx, qd_version_api());
 }
 

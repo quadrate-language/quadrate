@@ -97,14 +97,14 @@ The real power of embedding comes from exposing your application's functions to 
 
 ### Basic Native Function
 
-Native functions take a `qd_context*` and return `qd_exec_result`:
+Native functions take a `qd_context*` and return `int`:
 
 ```c
 #include <qd/qd.h>
 #include <qdrt/runtime.h>
 
 // Native function: pushes current time onto stack
-qd_exec_result native_get_time(qd_context* ctx) {
+int native_get_time(qd_context* ctx) {
     time_t now = time(NULL);
     return qd_push_i(ctx, (int64_t)now);
 }
@@ -134,7 +134,7 @@ Use `qd_stack_pop` to read arguments:
 #include <qdrt/stack.h>
 
 // Native function: (a b -- sum)
-qd_exec_result native_add(qd_context* ctx) {
+int native_add(qd_context* ctx) {
     qd_stack_element_t b, a;
 
     // Pop in reverse order (b is on top)
@@ -305,12 +305,12 @@ static qd_context* script_ctx = NULL;
 // === Native functions exposed to scripts ===
 
 // Get current entity's ID ( -- id)
-qd_exec_result script_self(qd_context* ctx) {
+int script_self(qd_context* ctx) {
     return qd_push_i(ctx, g_game.current_entity);
 }
 
 // Get entity position (id -- x y)
-qd_exec_result script_get_pos(qd_context* ctx) {
+int script_get_pos(qd_context* ctx) {
     qd_stack_element_t id_elem;
     qd_stack_pop(ctx->st, &id_elem);
 
@@ -318,7 +318,7 @@ qd_exec_result script_get_pos(qd_context* ctx) {
     if (!e) {
         qd_push_f(ctx, 0.0);
         qd_push_f(ctx, 0.0);
-        return (qd_exec_result){0};
+        return (int){0};
     }
 
     qd_push_f(ctx, e->x);
@@ -326,7 +326,7 @@ qd_exec_result script_get_pos(qd_context* ctx) {
 }
 
 // Get entity health (id -- health)
-qd_exec_result script_get_health(qd_context* ctx) {
+int script_get_health(qd_context* ctx) {
     qd_stack_element_t id_elem;
     qd_stack_pop(ctx->st, &id_elem);
 
@@ -335,28 +335,28 @@ qd_exec_result script_get_health(qd_context* ctx) {
 }
 
 // Move entity (id dx dy --)
-qd_exec_result script_move(qd_context* ctx) {
+int script_move(qd_context* ctx) {
     qd_stack_element_t dy_elem, dx_elem, id_elem;
     qd_stack_pop(ctx->st, &dy_elem);
     qd_stack_pop(ctx->st, &dx_elem);
     qd_stack_pop(ctx->st, &id_elem);
 
     engine_move(id_elem.value.i, dx_elem.value.f, dy_elem.value.f);
-    return (qd_exec_result){0};
+    return (int){0};
 }
 
 // Damage entity (id amount --)
-qd_exec_result script_damage(qd_context* ctx) {
+int script_damage(qd_context* ctx) {
     qd_stack_element_t amount_elem, id_elem;
     qd_stack_pop(ctx->st, &amount_elem);
     qd_stack_pop(ctx->st, &id_elem);
 
     engine_damage(id_elem.value.i, amount_elem.value.i);
-    return (qd_exec_result){0};
+    return (int){0};
 }
 
 // Spawn new entity (x y health -- id)
-qd_exec_result script_spawn(qd_context* ctx) {
+int script_spawn(qd_context* ctx) {
     qd_stack_element_t health_elem, y_elem, x_elem;
     qd_stack_pop(ctx->st, &health_elem);
     qd_stack_pop(ctx->st, &y_elem);
@@ -368,12 +368,12 @@ qd_exec_result script_spawn(qd_context* ctx) {
 }
 
 // Get delta time ( -- dt)
-qd_exec_result script_delta_time(qd_context* ctx) {
+int script_delta_time(qd_context* ctx) {
     return qd_push_f(ctx, g_game.delta_time);
 }
 
 // Calculate distance between two points (x1 y1 x2 y2 -- dist)
-qd_exec_result script_distance(qd_context* ctx) {
+int script_distance(qd_context* ctx) {
     qd_stack_element_t y2, x2, y1, x1;
     qd_stack_pop(ctx->st, &y2);
     qd_stack_pop(ctx->st, &x2);
@@ -386,7 +386,7 @@ qd_exec_result script_distance(qd_context* ctx) {
 }
 
 // Log a message (msg --)
-qd_exec_result script_log(qd_context* ctx) {
+int script_log(qd_context* ctx) {
     qd_stack_element_t msg;
     qd_stack_pop(ctx->st, &msg);
 
@@ -394,7 +394,7 @@ qd_exec_result script_log(qd_context* ctx) {
         printf("[Script] %s\n", qd_string_data(msg.value.s));
         qd_string_release(msg.value.s);  // Release reference
     }
-    return (qd_exec_result){0};
+    return (int){0};
 }
 
 // === Script system initialization ===
@@ -685,7 +685,7 @@ switch (elem.type) {
 
 ```c
 // Native: ( -- x y z)
-qd_exec_result get_vector(qd_context* ctx) {
+int get_vector(qd_context* ctx) {
     qd_push_f(ctx, 1.0);  // x
     qd_push_f(ctx, 2.0);  // y
     return qd_push_f(ctx, 3.0);  // z
@@ -705,11 +705,11 @@ fn process() {
 ### Error Propagation
 
 ```c
-qd_exec_result native_might_fail(qd_context* ctx) {
+int native_might_fail(qd_context* ctx) {
     if (error_condition) {
         // Set error state
         ctx->error_code = 1;
-        return (qd_exec_result){.error = 1};
+        return (int){.error = 1};
     }
     return qd_push_i(ctx, result);
 }

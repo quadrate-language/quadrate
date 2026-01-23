@@ -5,7 +5,7 @@
 #include <stdlib.h>
 
 // and - bitwise/logical AND: ( a b -- a&b )
-qd_exec_result usr_bits_and(qd_context* ctx) {
+int usr_bits_and(qd_context* ctx) {
 	size_t stack_size = qd_stack_size(ctx->st);
 	if (stack_size < 2) {
 		fprintf(stderr, "Fatal error in bits::and: Stack underflow (required 2 elements, have %zu)\n", stack_size);
@@ -36,25 +36,25 @@ qd_exec_result usr_bits_and(qd_context* ctx) {
 	qd_stack_element_t b, a;
 	qd_stack_error err = qd_stack_pop(ctx->st, &b);
 	if (err != QD_STACK_OK) {
-		return (qd_exec_result){-2};
+		return (int){-2};
 	}
 	err = qd_stack_pop(ctx->st, &a);
 	if (err != QD_STACK_OK) {
-		return (qd_exec_result){-2};
+		return (int){-2};
 	}
 
 	int64_t result = a.value.i & b.value.i;
 
 	err = qd_stack_push_int(ctx->st, result);
 	if (err != QD_STACK_OK) {
-		return (qd_exec_result){-2};
+		return (int){-2};
 	}
 
-	return (qd_exec_result){0};
+	return (int){0};
 }
 
 // or - bitwise/logical OR: ( a b -- a|b )
-qd_exec_result usr_bits_or(qd_context* ctx) {
+int usr_bits_or(qd_context* ctx) {
 	size_t stack_size = qd_stack_size(ctx->st);
 	if (stack_size < 2) {
 		fprintf(stderr, "Fatal error in bits::or: Stack underflow (required 2 elements, have %zu)\n", stack_size);
@@ -85,25 +85,25 @@ qd_exec_result usr_bits_or(qd_context* ctx) {
 	qd_stack_element_t b, a;
 	qd_stack_error err = qd_stack_pop(ctx->st, &b);
 	if (err != QD_STACK_OK) {
-		return (qd_exec_result){-2};
+		return (int){-2};
 	}
 	err = qd_stack_pop(ctx->st, &a);
 	if (err != QD_STACK_OK) {
-		return (qd_exec_result){-2};
+		return (int){-2};
 	}
 
 	int64_t result = a.value.i | b.value.i;
 
 	err = qd_stack_push_int(ctx->st, result);
 	if (err != QD_STACK_OK) {
-		return (qd_exec_result){-2};
+		return (int){-2};
 	}
 
-	return (qd_exec_result){0};
+	return (int){0};
 }
 
 // xor - bitwise XOR: ( a b -- a^b )
-qd_exec_result usr_bits_xor(qd_context* ctx) {
+int usr_bits_xor(qd_context* ctx) {
 	size_t stack_size = qd_stack_size(ctx->st);
 	if (stack_size < 2) {
 		fprintf(stderr, "Fatal error in bits::xor: Stack underflow (required 2 elements, have %zu)\n", stack_size);
@@ -134,25 +134,25 @@ qd_exec_result usr_bits_xor(qd_context* ctx) {
 	qd_stack_element_t b, a;
 	qd_stack_error err = qd_stack_pop(ctx->st, &b);
 	if (err != QD_STACK_OK) {
-		return (qd_exec_result){-2};
+		return (int){-2};
 	}
 	err = qd_stack_pop(ctx->st, &a);
 	if (err != QD_STACK_OK) {
-		return (qd_exec_result){-2};
+		return (int){-2};
 	}
 
 	int64_t result = a.value.i ^ b.value.i;
 
 	err = qd_stack_push_int(ctx->st, result);
 	if (err != QD_STACK_OK) {
-		return (qd_exec_result){-2};
+		return (int){-2};
 	}
 
-	return (qd_exec_result){0};
+	return (int){0};
 }
 
 // not - bitwise/logical NOT: ( a -- ~a )
-qd_exec_result usr_bits_not(qd_context* ctx) {
+int usr_bits_not(qd_context* ctx) {
 	size_t stack_size = qd_stack_size(ctx->st);
 	if (stack_size < 1) {
 		fprintf(stderr, "Fatal error in bits::not: Stack underflow (required 1 element, have %zu)\n", stack_size);
@@ -180,21 +180,21 @@ qd_exec_result usr_bits_not(qd_context* ctx) {
 	qd_stack_element_t val;
 	qd_stack_error err = qd_stack_pop(ctx->st, &val);
 	if (err != QD_STACK_OK) {
-		return (qd_exec_result){-2};
+		return (int){-2};
 	}
 
 	int64_t result = ~val.value.i;
 
 	err = qd_stack_push_int(ctx->st, result);
 	if (err != QD_STACK_OK) {
-		return (qd_exec_result){-2};
+		return (int){-2};
 	}
 
-	return (qd_exec_result){0};
+	return (int){0};
 }
 
 // lshift - logical shift left: ( x n -- x<<n )
-qd_exec_result usr_bits_lshift(qd_context* ctx) {
+int usr_bits_lshift(qd_context* ctx) {
 	size_t stack_size = qd_stack_size(ctx->st);
 	if (stack_size < 2) {
 		fprintf(stderr, "Fatal error in bits::lshift: Stack underflow (required 2 elements, have %zu)\n", stack_size);
@@ -225,11 +225,11 @@ qd_exec_result usr_bits_lshift(qd_context* ctx) {
 	qd_stack_element_t n, x;
 	qd_stack_error err = qd_stack_pop(ctx->st, &n);
 	if (err != QD_STACK_OK) {
-		return (qd_exec_result){-2};
+		return (int){-2};
 	}
 	err = qd_stack_pop(ctx->st, &x);
 	if (err != QD_STACK_OK) {
-		return (qd_exec_result){-2};
+		return (int){-2};
 	}
 
 	// Check for negative or excessive shift counts
@@ -244,14 +244,14 @@ qd_exec_result usr_bits_lshift(qd_context* ctx) {
 
 	err = qd_stack_push_int(ctx->st, result);
 	if (err != QD_STACK_OK) {
-		return (qd_exec_result){-2};
+		return (int){-2};
 	}
 
-	return (qd_exec_result){0};
+	return (int){0};
 }
 
 // rshift - logical shift right: ( x n -- x>>n )
-qd_exec_result usr_bits_rshift(qd_context* ctx) {
+int usr_bits_rshift(qd_context* ctx) {
 	size_t stack_size = qd_stack_size(ctx->st);
 	if (stack_size < 2) {
 		fprintf(stderr, "Fatal error in bits::rshift: Stack underflow (required 2 elements, have %zu)\n", stack_size);
@@ -282,11 +282,11 @@ qd_exec_result usr_bits_rshift(qd_context* ctx) {
 	qd_stack_element_t n, x;
 	qd_stack_error err = qd_stack_pop(ctx->st, &n);
 	if (err != QD_STACK_OK) {
-		return (qd_exec_result){-2};
+		return (int){-2};
 	}
 	err = qd_stack_pop(ctx->st, &x);
 	if (err != QD_STACK_OK) {
-		return (qd_exec_result){-2};
+		return (int){-2};
 	}
 
 	// Check for negative or excessive shift counts
@@ -302,8 +302,8 @@ qd_exec_result usr_bits_rshift(qd_context* ctx) {
 
 	err = qd_stack_push_int(ctx->st, result);
 	if (err != QD_STACK_OK) {
-		return (qd_exec_result){-2};
+		return (int){-2};
 	}
 
-	return (qd_exec_result){0};
+	return (int){0};
 }

@@ -63,7 +63,7 @@ static int count_format_specifiers(const char* fmt) {
 	return count;
 }
 
-qd_exec_result usr_fmt_printf(qd_context* ctx) {
+int usr_fmt_printf(qd_context* ctx) {
 	// Stack order: ( arg1 arg2 ... argN format:s -- )
 	// Format string is on top, arguments are below it
 
@@ -275,10 +275,10 @@ qd_exec_result usr_fmt_printf(qd_context* ctx) {
 	}
 	qd_string_release(fmt_elem.value.s);
 
-	return (qd_exec_result){0};
+	return (int){0};
 }
 
-qd_exec_result usr_fmt_sprintf(qd_context* ctx) {
+int usr_fmt_sprintf(qd_context* ctx) {
 	// Stack order: ( arg1 arg2 ... argN format:s -- result:s )
 	// Format string is on top, arguments are below it
 
@@ -553,7 +553,7 @@ qd_exec_result usr_fmt_sprintf(qd_context* ctx) {
 	}
 	qd_string_release(fmt_elem.value.s);
 
-	return (qd_exec_result){0};
+	return (int){0};
 }
 
 #pragma GCC diagnostic pop

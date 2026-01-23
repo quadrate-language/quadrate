@@ -4,13 +4,13 @@
 #include <time.h>
 
 // Native C function that can be called from Quadrate
-qd_exec_result native_get_timestamp(qd_context* ctx) {
+int native_get_timestamp(qd_context* ctx) {
 	time_t now = time(nullptr);
 	return qd_push_i(ctx, static_cast<int64_t>(now));
 }
 
 // Another native function
-qd_exec_result native_random(qd_context* ctx) {
+int native_random(qd_context* ctx) {
 	int random_val = rand() % 100;
 	return qd_push_i(ctx, static_cast<int64_t>(random_val));
 }

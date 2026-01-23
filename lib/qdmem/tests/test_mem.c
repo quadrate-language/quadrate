@@ -30,8 +30,8 @@ TEST(AllocBasicTest) {
 
 	// Allocate 64 bytes
 	qd_push_i(ctx, 64);
-	qd_exec_result result = usr_mem_alloc(ctx);
-	ASSERT_EQ(result.code, 0, "alloc should succeed");
+	int result = usr_mem_alloc(ctx);
+	ASSERT_EQ(result, 0, "alloc should succeed");
 
 	// Pop Ok status first (success pushes [result, Ok])
 	qd_stack_element_t status_elem;
@@ -73,22 +73,22 @@ TEST(SetGetByteTest) {
 	qd_push_i(ctx, 0xAB);  // value
 	qd_push_p(ctx, buffer);// address
 	qd_push_i(ctx, 0);     // offset
-	qd_exec_result result = usr_mem_set_byte(ctx);
-	ASSERT_EQ(result.code, 0, "set_byte should succeed");
+	int result = usr_mem_set_byte(ctx);
+	ASSERT_EQ(result, 0, "set_byte should succeed");
 
 	// Set byte at offset 5
 	qd_push_i(ctx, 0xCD);  // value
 	qd_push_p(ctx, buffer);// address
 	qd_push_i(ctx, 5);     // offset
 	result = usr_mem_set_byte(ctx);
-	ASSERT_EQ(result.code, 0, "set_byte should succeed");
+	ASSERT_EQ(result, 0, "set_byte should succeed");
 
 	// Get byte at offset 0
 	// Pops: offset, address -> Push: address, offset
 	qd_push_p(ctx, buffer);
 	qd_push_i(ctx, 0);
 	result = usr_mem_get_byte(ctx);
-	ASSERT_EQ(result.code, 0, "get_byte should succeed");
+	ASSERT_EQ(result, 0, "get_byte should succeed");
 
 	qd_stack_element_t val_elem;
 	qd_stack_pop(ctx->st, &val_elem);
@@ -127,14 +127,14 @@ TEST(SetGetI64Test) {
 	qd_push_i(ctx, 0x123456789ABCDEF0LL);
 	qd_push_p(ctx, buffer);
 	qd_push_i(ctx, 0);
-	qd_exec_result result = usr_mem_set_i64(ctx);
-	ASSERT_EQ(result.code, 0, "set_i64 should succeed");
+	int result = usr_mem_set_i64(ctx);
+	ASSERT_EQ(result, 0, "set_i64 should succeed");
 
 	// Get i64 at offset 0
 	qd_push_p(ctx, buffer);
 	qd_push_i(ctx, 0);
 	result = usr_mem_get_i64(ctx);
-	ASSERT_EQ(result.code, 0, "get_i64 should succeed");
+	ASSERT_EQ(result, 0, "get_i64 should succeed");
 
 	qd_stack_element_t val_elem;
 	qd_stack_pop(ctx->st, &val_elem);
@@ -166,14 +166,14 @@ TEST(SetGetF64Test) {
 	qd_push_f(ctx, 3.14159);
 	qd_push_p(ctx, buffer);
 	qd_push_i(ctx, 0);
-	qd_exec_result result = usr_mem_set_f64(ctx);
-	ASSERT_EQ(result.code, 0, "set_f64 should succeed");
+	int result = usr_mem_set_f64(ctx);
+	ASSERT_EQ(result, 0, "set_f64 should succeed");
 
 	// Get f64 at offset 0
 	qd_push_p(ctx, buffer);
 	qd_push_i(ctx, 0);
 	result = usr_mem_get_f64(ctx);
-	ASSERT_EQ(result.code, 0, "get_f64 should succeed");
+	ASSERT_EQ(result, 0, "get_f64 should succeed");
 
 	qd_stack_element_t val_elem;
 	qd_stack_pop(ctx->st, &val_elem);
@@ -208,14 +208,14 @@ TEST(SetGetPtrTest) {
 	qd_push_p(ctx, test_ptr);
 	qd_push_p(ctx, buffer);
 	qd_push_i(ctx, 0);
-	qd_exec_result result = usr_mem_set_ptr(ctx);
-	ASSERT_EQ(result.code, 0, "set_ptr should succeed");
+	int result = usr_mem_set_ptr(ctx);
+	ASSERT_EQ(result, 0, "set_ptr should succeed");
 
 	// Get ptr at offset 0
 	qd_push_p(ctx, buffer);
 	qd_push_i(ctx, 0);
 	result = usr_mem_get_ptr(ctx);
-	ASSERT_EQ(result.code, 0, "get_ptr should succeed");
+	ASSERT_EQ(result, 0, "get_ptr should succeed");
 
 	qd_stack_element_t val_elem;
 	qd_stack_pop(ctx->st, &val_elem);
@@ -238,8 +238,8 @@ TEST(ZeroTest) {
 	// Pops: bytes, address -> Push: address, bytes
 	qd_push_p(ctx, buffer);
 	qd_push_i(ctx, 8);
-	qd_exec_result result = usr_mem_zero(ctx);
-	ASSERT_EQ(result.code, 0, "zero should succeed");
+	int result = usr_mem_zero(ctx);
+	ASSERT_EQ(result, 0, "zero should succeed");
 
 	// Verify first 8 bytes are zero
 	for (int i = 0; i < 8; i++) {
@@ -268,8 +268,8 @@ TEST(FillTest) {
 	qd_push_i(ctx, 0xAB);  // value
 	qd_push_p(ctx, buffer);// address
 	qd_push_i(ctx, 10);    // bytes
-	qd_exec_result result = usr_mem_fill(ctx);
-	ASSERT_EQ(result.code, 0, "fill should succeed");
+	int result = usr_mem_fill(ctx);
+	ASSERT_EQ(result, 0, "fill should succeed");
 
 	// Verify first 10 bytes are 0xAB
 	for (int i = 0; i < 10; i++) {
@@ -304,8 +304,8 @@ TEST(CopyTest) {
 	qd_push_p(ctx, dst);
 	qd_push_p(ctx, src);
 	qd_push_i(ctx, 8);
-	qd_exec_result result = usr_mem_copy(ctx);
-	ASSERT_EQ(result.code, 0, "copy should succeed");
+	int result = usr_mem_copy(ctx);
+	ASSERT_EQ(result, 0, "copy should succeed");
 
 	// Verify first 8 bytes were copied
 	for (int i = 0; i < 8; i++) {
@@ -334,8 +334,8 @@ TEST(ToStringTest) {
 	// Pops: length, buffer -> Push: buffer, length
 	qd_push_p(ctx, buffer);
 	qd_push_i(ctx, 5);
-	qd_exec_result result = usr_mem_to_string(ctx);
-	ASSERT_EQ(result.code, 0, "to_string should succeed");
+	int result = usr_mem_to_string(ctx);
+	ASSERT_EQ(result, 0, "to_string should succeed");
 
 	// Get result
 	qd_stack_element_t str_elem;
@@ -353,8 +353,8 @@ TEST(FromStringTest) {
 
 	// Push string
 	qd_push_s(ctx, "Test");
-	qd_exec_result result = usr_mem_from_string(ctx);
-	ASSERT_EQ(result.code, 0, "from_string should succeed");
+	int result = usr_mem_from_string(ctx);
+	ASSERT_EQ(result, 0, "from_string should succeed");
 
 	// Get length
 	qd_stack_element_t len_elem;

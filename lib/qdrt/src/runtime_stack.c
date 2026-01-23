@@ -9,7 +9,7 @@
 #include <stdlib.h>
 #include "runtime_internal.h"
 
-qd_exec_result qd_dup(qd_context* ctx) {
+int qd_dup(qd_context* ctx) {
 	// Duplicate the top element of the stack
 	qd_stack* st = ctx->st;
 
@@ -20,12 +20,12 @@ qd_exec_result qd_dup(qd_context* ctx) {
 		if (top->type == QD_STACK_TYPE_INT) {
 			// Fast integer dup - most common case
 			QD_STACK_PUSH_INT_FAST(st, top->value.i);
-			return (qd_exec_result){0};
+			return (int){0};
 		}
 		if (top->type == QD_STACK_TYPE_FLOAT) {
 			// Fast float dup
 			QD_STACK_PUSH_FLOAT_FAST(st, top->value.f);
-			return (qd_exec_result){0};
+			return (int){0};
 		}
 		if (top->type == QD_STACK_TYPE_STR) {
 			// String dup - retain and copy
@@ -34,7 +34,7 @@ qd_exec_result qd_dup(qd_context* ctx) {
 			st->data[st->size].type = QD_STACK_TYPE_STR;
 			st->data[st->size].is_error_tainted = top->is_error_tainted;
 			st->size++;
-			return (qd_exec_result){0};
+			return (int){0};
 		}
 	}
 
@@ -50,13 +50,13 @@ qd_exec_result qd_dup(qd_context* ctx) {
 	// Push a copy of the top element (strings are retained, not copied)
 	err = qdrt_push_element(st, &top);
 	if (err != QD_STACK_OK) {
-		return (qd_exec_result){-2};
+		return (int){-2};
 	}
 
-	return (qd_exec_result){0};
+	return (int){0};
 }
 
-qd_exec_result qd_dupd(qd_context* ctx) {
+int qd_dupd(qd_context* ctx) {
 	// Duplicate the second element of the stack: ( a b -- a a b )
 	QDRT_CHECK_STACK(ctx, "dupd", 2);
 
@@ -101,10 +101,10 @@ qd_exec_result qd_dupd(qd_context* ctx) {
 	// Release our reference to 'b' (push_element retained it)
 	qdrt_release_if_string(&b);
 
-	return (qd_exec_result){0};
+	return (int){0};
 }
 
-qd_exec_result qd_dup2(qd_context* ctx) {
+int qd_dup2(qd_context* ctx) {
 	// Duplicate the top two elements of the stack: ( a b -- a b a b )
 	QDRT_CHECK_STACK(ctx, "dup2", 2);
 	size_t stack_size = qd_stack_size(ctx->st);
@@ -126,19 +126,19 @@ qd_exec_result qd_dup2(qd_context* ctx) {
 	// Push a copy of the second element (strings are retained, not copied)
 	err = qdrt_push_element(ctx->st, &second);
 	if (err != QD_STACK_OK) {
-		return (qd_exec_result){-2};
+		return (int){-2};
 	}
 
 	// Push a copy of the top element
 	err = qdrt_push_element(ctx->st, &top);
 	if (err != QD_STACK_OK) {
-		return (qd_exec_result){-2};
+		return (int){-2};
 	}
 
-	return (qd_exec_result){0};
+	return (int){0};
 }
 
-qd_exec_result qd_swap(qd_context* ctx) {
+int qd_swap(qd_context* ctx) {
 	// Swap the top two elements of the stack
 	qd_stack* st = ctx->st;
 
@@ -152,7 +152,7 @@ qd_exec_result qd_swap(qd_context* ctx) {
 			qd_stack_element_t tmp = *top;
 			*top = *second;
 			*second = tmp;
-			return (qd_exec_result){0};
+			return (int){0};
 		}
 	}
 
@@ -163,11 +163,11 @@ qd_exec_result qd_swap(qd_context* ctx) {
 	qd_stack_element_t a, b;
 	qd_stack_error err = qd_stack_pop(st, &b);  // b is top
 	if (err != QD_STACK_OK) {
-		return (qd_exec_result){-2};
+		return (int){-2};
 	}
 	err = qd_stack_pop(st, &a);  // a is second
 	if (err != QD_STACK_OK) {
-		return (qd_exec_result){-2};
+		return (int){-2};
 	}
 
 	// Push them back in swapped order (b first, then a, strings are retained not copied)
@@ -175,24 +175,24 @@ qd_exec_result qd_swap(qd_context* ctx) {
 	if (err != QD_STACK_OK) {
 		qdrt_release_if_string(&a);
 		qdrt_release_if_string(&b);
-		return (qd_exec_result){-2};
+		return (int){-2};
 	}
 
 	err = qdrt_push_element(st, &a);
 	if (err != QD_STACK_OK) {
 		qdrt_release_if_string(&a);
 		qdrt_release_if_string(&b);
-		return (qd_exec_result){-2};
+		return (int){-2};
 	}
 
 	// Release our original references (push_element retained them)
 	qdrt_release_if_string(&a);
 	qdrt_release_if_string(&b);
 
-	return (qd_exec_result){0};
+	return (int){0};
 }
 
-qd_exec_result qd_swapd(qd_context* ctx) {
+int qd_swapd(qd_context* ctx) {
 	// Swap second and third elements: ( a b c -- b a c )
 	QDRT_CHECK_STACK(ctx, "swapd", 3);
 
@@ -241,35 +241,35 @@ qd_exec_result qd_swapd(qd_context* ctx) {
 	qdrt_release_if_string(&b);
 	qdrt_release_if_string(&c);
 
-	return (qd_exec_result){0};
+	return (int){0};
 }
 
-qd_exec_result qd_swap2(qd_context* ctx) {
+int qd_swap2(qd_context* ctx) {
 	QDRT_CHECK_STACK(ctx, "swap2", 4);
 
 	// Pop d, c, b, a
 	qd_stack_element_t d, c, b, a;
 	qd_stack_error err = qd_stack_pop(ctx->st, &d);
 	if (err != QD_STACK_OK) {
-		return (qd_exec_result){-2};
+		return (int){-2};
 	}
 	err = qd_stack_pop(ctx->st, &c);
 	if (err != QD_STACK_OK) {
 		qdrt_release_if_string(&d);
-		return (qd_exec_result){-2};
+		return (int){-2};
 	}
 	err = qd_stack_pop(ctx->st, &b);
 	if (err != QD_STACK_OK) {
 		qdrt_release_if_string(&d);
 		qdrt_release_if_string(&c);
-		return (qd_exec_result){-2};
+		return (int){-2};
 	}
 	err = qd_stack_pop(ctx->st, &a);
 	if (err != QD_STACK_OK) {
 		qdrt_release_if_string(&d);
 		qdrt_release_if_string(&c);
 		qdrt_release_if_string(&b);
-		return (qd_exec_result){-2};
+		return (int){-2};
 	}
 
 	// Push in order: c, d, a, b (strings are retained, not copied)
@@ -279,7 +279,7 @@ qd_exec_result qd_swap2(qd_context* ctx) {
 		qdrt_release_if_string(&b);
 		qdrt_release_if_string(&c);
 		qdrt_release_if_string(&d);
-		return (qd_exec_result){-2};
+		return (int){-2};
 	}
 
 	err = qdrt_push_element(ctx->st, &d);
@@ -288,7 +288,7 @@ qd_exec_result qd_swap2(qd_context* ctx) {
 		qdrt_release_if_string(&b);
 		qdrt_release_if_string(&c);
 		qdrt_release_if_string(&d);
-		return (qd_exec_result){-2};
+		return (int){-2};
 	}
 
 	err = qdrt_push_element(ctx->st, &a);
@@ -297,7 +297,7 @@ qd_exec_result qd_swap2(qd_context* ctx) {
 		qdrt_release_if_string(&b);
 		qdrt_release_if_string(&c);
 		qdrt_release_if_string(&d);
-		return (qd_exec_result){-2};
+		return (int){-2};
 	}
 
 	err = qdrt_push_element(ctx->st, &b);
@@ -306,7 +306,7 @@ qd_exec_result qd_swap2(qd_context* ctx) {
 		qdrt_release_if_string(&b);
 		qdrt_release_if_string(&c);
 		qdrt_release_if_string(&d);
-		return (qd_exec_result){-2};
+		return (int){-2};
 	}
 
 	// Release our original references (push_element retained them)
@@ -315,10 +315,10 @@ qd_exec_result qd_swap2(qd_context* ctx) {
 	qdrt_release_if_string(&c);
 	qdrt_release_if_string(&d);
 
-	return (qd_exec_result){0};
+	return (int){0};
 }
 
-qd_exec_result qd_over(qd_context* ctx) {
+int qd_over(qd_context* ctx) {
 	// Copy the second element to the top: ( a b -- a b a )
 	QDRT_CHECK_STACK(ctx, "over", 2);
 	size_t stack_size = qd_stack_size(ctx->st);
@@ -334,13 +334,13 @@ qd_exec_result qd_over(qd_context* ctx) {
 	err = qdrt_push_element(ctx->st, &second);
 
 	if (err != QD_STACK_OK) {
-		return (qd_exec_result){-2};
+		return (int){-2};
 	}
 
-	return (qd_exec_result){0};
+	return (int){0};
 }
 
-qd_exec_result qd_overd(qd_context* ctx) {
+int qd_overd(qd_context* ctx) {
 	// Copy third element between second and top: ( a b c -- a b a c )
 	QDRT_CHECK_STACK(ctx, "overd", 3);
 	size_t stack_size = qd_stack_size(ctx->st);
@@ -374,10 +374,10 @@ qd_exec_result qd_overd(qd_context* ctx) {
 	// Release our original reference (push_element retained it)
 	qdrt_release_if_string(&top);
 
-	return (qd_exec_result){0};
+	return (int){0};
 }
 
-qd_exec_result qd_over2(qd_context* ctx) {
+int qd_over2(qd_context* ctx) {
 	QDRT_CHECK_STACK(ctx, "over2", 4);
 	size_t stack_size = qd_stack_size(ctx->st);
 
@@ -395,18 +395,18 @@ qd_exec_result qd_over2(qd_context* ctx) {
 	// Push copies of elem_a and elem_b
 	err = qdrt_push_element(ctx->st, &elem_a);
 	if (err != QD_STACK_OK) {
-		return (qd_exec_result){-2};
+		return (int){-2};
 	}
 
 	err = qdrt_push_element(ctx->st, &elem_b);
 	if (err != QD_STACK_OK) {
-		return (qd_exec_result){-2};
+		return (int){-2};
 	}
 
-	return (qd_exec_result){0};
+	return (int){0};
 }
 
-qd_exec_result qd_nip(qd_context* ctx) {
+int qd_nip(qd_context* ctx) {
 	// Remove the second element: ( a b -- b )
 	QDRT_CHECK_STACK(ctx, "nip", 2);
 
@@ -414,14 +414,14 @@ qd_exec_result qd_nip(qd_context* ctx) {
 	qd_stack_element_t top;
 	qd_stack_error err = qd_stack_pop(ctx->st, &top);
 	if (err != QD_STACK_OK) {
-		return (qd_exec_result){-2};
+		return (int){-2};
 	}
 
 	// Pop the second element (which we want to discard)
 	qd_stack_element_t second;
 	err = qd_stack_pop(ctx->st, &second);
 	if (err != QD_STACK_OK) {
-		return (qd_exec_result){-2};
+		return (int){-2};
 	}
 
 	// Release string reference if necessary
@@ -433,7 +433,7 @@ qd_exec_result qd_nip(qd_context* ctx) {
 	err = qdrt_push_element(ctx->st, &top);
 
 	if (err != QD_STACK_OK) {
-		return (qd_exec_result){-2};
+		return (int){-2};
 	}
 
 	// Release our reference to top (push_element retained it)
@@ -441,10 +441,10 @@ qd_exec_result qd_nip(qd_context* ctx) {
 		qd_string_release(top.value.s);
 	}
 
-	return (qd_exec_result){0};
+	return (int){0};
 }
 
-qd_exec_result qd_nipd(qd_context* ctx) {
+int qd_nipd(qd_context* ctx) {
 	// Remove second element: ( a b c -- a c )
 	QDRT_CHECK_STACK(ctx, "nipd", 3);
 
@@ -470,16 +470,16 @@ qd_exec_result qd_nipd(qd_context* ctx) {
 		QDRT_FATAL(ctx, "nipd", "Failed to push top element");
 	}
 
-	return (qd_exec_result){0};
+	return (int){0};
 }
 
-qd_exec_result qd_drop(qd_context* ctx) {
+int qd_drop(qd_context* ctx) {
 	QDRT_CHECK_STACK(ctx, "drop", 1);
 
 	qd_stack_element_t val;
 	qd_stack_error err = qd_stack_pop(ctx->st, &val);
 	if (err != QD_STACK_OK) {
-		return (qd_exec_result){-2};
+		return (int){-2};
 	}
 
 	// Release string reference if needed
@@ -487,17 +487,17 @@ qd_exec_result qd_drop(qd_context* ctx) {
 		qd_string_release(val.value.s);
 	}
 
-	return (qd_exec_result){0};
+	return (int){0};
 }
 
-qd_exec_result qd_drop2(qd_context* ctx) {
+int qd_drop2(qd_context* ctx) {
 	QDRT_CHECK_STACK(ctx, "drop2", 2);
 
 	qd_stack_element_t val;
 	// Drop first element
 	qd_stack_error err = qd_stack_pop(ctx->st, &val);
 	if (err != QD_STACK_OK) {
-		return (qd_exec_result){-2};
+		return (int){-2};
 	}
 	if (val.type == QD_STACK_TYPE_STR) {
 		qd_string_release(val.value.s);
@@ -506,50 +506,50 @@ qd_exec_result qd_drop2(qd_context* ctx) {
 	// Drop second element
 	err = qd_stack_pop(ctx->st, &val);
 	if (err != QD_STACK_OK) {
-		return (qd_exec_result){-2};
+		return (int){-2};
 	}
 	if (val.type == QD_STACK_TYPE_STR) {
 		qd_string_release(val.value.s);
 	}
 
-	return (qd_exec_result){0};
+	return (int){0};
 }
 
-qd_exec_result qd_rot(qd_context* ctx) {
+int qd_rot(qd_context* ctx) {
 	QDRT_CHECK_STACK(ctx, "rot", 3);
 
 	// Pop c, b, a
 	qd_stack_element_t c, b, a;
 	qd_stack_error err = qd_stack_pop(ctx->st, &c);
 	if (err != QD_STACK_OK) {
-		return (qd_exec_result){-2};
+		return (int){-2};
 	}
 	err = qd_stack_pop(ctx->st, &b);
 	if (err != QD_STACK_OK) {
-		return (qd_exec_result){-2};
+		return (int){-2};
 	}
 	err = qd_stack_pop(ctx->st, &a);
 	if (err != QD_STACK_OK) {
-		return (qd_exec_result){-2};
+		return (int){-2};
 	}
 
 	// Push in order: b, c, a
 	// Push b
 	err = qdrt_push_element(ctx->st, &b);
 	if (err != QD_STACK_OK) {
-		return (qd_exec_result){-2};
+		return (int){-2};
 	}
 
 	// Push c
 	err = qdrt_push_element(ctx->st, &c);
 	if (err != QD_STACK_OK) {
-		return (qd_exec_result){-2};
+		return (int){-2};
 	}
 
 	// Push a
 	err = qdrt_push_element(ctx->st, &a);
 	if (err != QD_STACK_OK) {
-		return (qd_exec_result){-2};
+		return (int){-2};
 	}
 
 	// Release our original references (push_element retained them)
@@ -563,21 +563,21 @@ qd_exec_result qd_rot(qd_context* ctx) {
 		qd_string_release(c.value.s);
 	}
 
-	return (qd_exec_result){0};
+	return (int){0};
 }
 
-qd_exec_result qd_tuck(qd_context* ctx) {
+int qd_tuck(qd_context* ctx) {
 	QDRT_CHECK_STACK(ctx, "tuck", 2);
 
 	// Pop b and a
 	qd_stack_element_t b, a;
 	qd_stack_error err = qd_stack_pop(ctx->st, &b);
 	if (err != QD_STACK_OK) {
-		return (qd_exec_result){-2};
+		return (int){-2};
 	}
 	err = qd_stack_pop(ctx->st, &a);
 	if (err != QD_STACK_OK) {
-		return (qd_exec_result){-2};
+		return (int){-2};
 	}
 
 	// Push in order: b, a, b
@@ -586,7 +586,7 @@ qd_exec_result qd_tuck(qd_context* ctx) {
 	if (err != QD_STACK_OK) {
 		qdrt_release_if_string(&b);
 		qdrt_release_if_string(&a);
-		return (qd_exec_result){-2};
+		return (int){-2};
 	}
 
 	// Push a (strings are retained, not copied)
@@ -594,7 +594,7 @@ qd_exec_result qd_tuck(qd_context* ctx) {
 	if (err != QD_STACK_OK) {
 		qdrt_release_if_string(&a);
 		qdrt_release_if_string(&b);
-		return (qd_exec_result){-2};
+		return (int){-2};
 	}
 
 	// Push b (second copy, strings are retained)
@@ -602,7 +602,7 @@ qd_exec_result qd_tuck(qd_context* ctx) {
 	if (err != QD_STACK_OK) {
 		qdrt_release_if_string(&a);
 		qdrt_release_if_string(&b);
-		return (qd_exec_result){-2};
+		return (int){-2};
 	}
 
 	// Release our original references (push_element retained them twice for b)
@@ -618,16 +618,16 @@ qd_exec_result qd_tuck(qd_context* ctx) {
 			break;
 		default:
 			qdrt_release_if_string(&b);
-			return (qd_exec_result){-3};
+			return (int){-3};
 	}
 	if (err != QD_STACK_OK) {
-		return (qd_exec_result){-2};
+		return (int){-2};
 	}
 
-	return (qd_exec_result){0};
+	return (int){0};
 }
 
-qd_exec_result qd_pick(qd_context* ctx) {
+int qd_pick(qd_context* ctx) {
 	size_t stack_size = qd_stack_size(ctx->st);
 	if (stack_size < 1) {
 		QDRT_FATAL(ctx, "pick", "Stack underflow (need at least the index)");
@@ -637,7 +637,7 @@ qd_exec_result qd_pick(qd_context* ctx) {
 	qd_stack_element_t idx_elem;
 	qd_stack_error err = qd_stack_pop(ctx->st, &idx_elem);
 	if (err != QD_STACK_OK) {
-		return (qd_exec_result){-2};
+		return (int){-2};
 	}
 
 	if (idx_elem.type != QD_STACK_TYPE_INT) {
@@ -665,13 +665,13 @@ qd_exec_result qd_pick(qd_context* ctx) {
 	err = qdrt_push_element(ctx->st, &elem);
 
 	if (err != QD_STACK_OK) {
-		return (qd_exec_result){-2};
+		return (int){-2};
 	}
 
-	return (qd_exec_result){0};
+	return (int){0};
 }
 
-qd_exec_result qd_roll(qd_context* ctx) {
+int qd_roll(qd_context* ctx) {
 	size_t stack_size = qd_stack_size(ctx->st);
 	if (stack_size < 1) {
 		QDRT_FATAL(ctx, "roll", "Stack underflow (need at least the count)");
@@ -681,7 +681,7 @@ qd_exec_result qd_roll(qd_context* ctx) {
 	qd_stack_element_t count_elem;
 	qd_stack_error err = qd_stack_pop(ctx->st, &count_elem);
 	if (err != QD_STACK_OK) {
-		return (qd_exec_result){-2};
+		return (int){-2};
 	}
 
 	if (count_elem.type != QD_STACK_TYPE_INT) {
@@ -694,7 +694,7 @@ qd_exec_result qd_roll(qd_context* ctx) {
 	}
 
 	if (n == 0) {
-		return (qd_exec_result){0};  // Nothing to do
+		return (int){0};  // Nothing to do
 	}
 
 	stack_size = qd_stack_size(ctx->st);  // Update after popping count
@@ -713,7 +713,7 @@ qd_exec_result qd_roll(qd_context* ctx) {
 		err = qd_stack_pop(ctx->st, &temp[n - 1 - i]);
 		if (err != QD_STACK_OK) {
 			free(temp);
-			return (qd_exec_result){-2};
+			return (int){-2};
 		}
 	}
 
@@ -729,7 +729,7 @@ qd_exec_result qd_roll(qd_context* ctx) {
 			}
 			qdrt_release_if_string(&temp[0]);
 			free(temp);
-			return (qd_exec_result){-2};
+			return (int){-2};
 		}
 		// Release our reference (push_element retained it)
 		qdrt_release_if_string(&temp[i]);
@@ -740,17 +740,17 @@ qd_exec_result qd_roll(qd_context* ctx) {
 	if (err != QD_STACK_OK) {
 		qdrt_release_if_string(&temp[0]);
 		free(temp);
-		return (qd_exec_result){-2};
+		return (int){-2};
 	}
 	// Release our reference (push_element retained it)
 	qdrt_release_if_string(&temp[0]);
 
 	free(temp);
 
-	return (qd_exec_result){0};
+	return (int){0};
 }
 
-qd_exec_result qd_clear(qd_context* ctx) {
+int qd_clear(qd_context* ctx) {
 	// Pop all elements from the stack until empty
 	qd_stack_element_t elem;
 	while (!qd_stack_is_empty(ctx->st)) {
@@ -764,18 +764,18 @@ qd_exec_result qd_clear(qd_context* ctx) {
 		}
 	}
 
-	return (qd_exec_result){0};
+	return (int){0};
 }
 
-qd_exec_result qd_depth(qd_context* ctx) {
+int qd_depth(qd_context* ctx) {
 	// Get current stack size and push it as an integer
 	size_t stack_size = qd_stack_size(ctx->st);
 
 	qd_stack_error err = qd_stack_push_int(ctx->st, (int64_t)stack_size);
 	if (err != QD_STACK_OK) {
-		return (qd_exec_result){-2};
+		return (int){-2};
 	}
 
-	return (qd_exec_result){0};
+	return (int){0};
 }
 

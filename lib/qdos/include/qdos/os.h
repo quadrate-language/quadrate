@@ -50,7 +50,7 @@ extern "C" {
  * 1 os::exit  // Exit with error code
  * @endcode
  */
-qd_exec_result usr_os_exit(qd_context* ctx);
+int usr_os_exit(qd_context* ctx);
 
 /**
  * @brief Execute a shell command and return the exit code
@@ -68,7 +68,7 @@ qd_exec_result usr_os_exit(qd_context* ctx);
  * "echo hello" os::system drop  // Execute echo and discard exit code
  * @endcode
  */
-qd_exec_result usr_os_system(qd_context* ctx);
+int usr_os_system(qd_context* ctx);
 
 /**
  * @brief Get an environment variable
@@ -86,7 +86,7 @@ qd_exec_result usr_os_system(qd_context* ctx);
  * "HOME" os::getenv print  // Print home directory
  * @endcode
  */
-qd_exec_result usr_os_getenv(qd_context* ctx);
+int usr_os_getenv(qd_context* ctx);
 
 /**
  * @brief Set an environment variable
@@ -104,7 +104,7 @@ qd_exec_result usr_os_getenv(qd_context* ctx);
  * "MY_VAR" "hello" os::setenv  // Set MY_VAR to "hello"
  * @endcode
  */
-qd_exec_result usr_os_setenv(qd_context* ctx);
+int usr_os_setenv(qd_context* ctx);
 
 /**
  * @brief Check if a file or directory exists
@@ -121,7 +121,7 @@ qd_exec_result usr_os_setenv(qd_context* ctx);
  * "/tmp/test.txt" os::exists print  // Check if file exists
  * @endcode
  */
-qd_exec_result usr_os_exists(qd_context* ctx);
+int usr_os_exists(qd_context* ctx);
 
 /**
  * @brief Delete a file
@@ -138,7 +138,7 @@ qd_exec_result usr_os_exists(qd_context* ctx);
  * "/tmp/test.txt" os::delete drop  // Delete file
  * @endcode
  */
-qd_exec_result usr_os_delete(qd_context* ctx);
+int usr_os_delete(qd_context* ctx);
 
 /**
  * @brief Rename or move a file
@@ -156,7 +156,7 @@ qd_exec_result usr_os_delete(qd_context* ctx);
  * "/tmp/old.txt" "/tmp/new.txt" os::rename drop
  * @endcode
  */
-qd_exec_result usr_os_rename(qd_context* ctx);
+int usr_os_rename(qd_context* ctx);
 
 /**
  * @brief Copy a file
@@ -174,7 +174,7 @@ qd_exec_result usr_os_rename(qd_context* ctx);
  * "/tmp/src.txt" "/tmp/dst.txt" os::copy drop
  * @endcode
  */
-qd_exec_result usr_os_copy(qd_context* ctx);
+int usr_os_copy(qd_context* ctx);
 
 /**
  * @brief Create a directory and all parent directories
@@ -192,7 +192,7 @@ qd_exec_result usr_os_copy(qd_context* ctx);
  * "/tmp/a/b/c" os::mkdir drop  // Creates /tmp/a, /tmp/a/b, /tmp/a/b/c
  * @endcode
  */
-qd_exec_result usr_os_mkdir(qd_context* ctx);
+int usr_os_mkdir(qd_context* ctx);
 
 /**
  * @brief List directory contents
@@ -213,7 +213,7 @@ qd_exec_result usr_os_mkdir(qd_context* ctx);
  * entries mem::free
  * @endcode
  */
-qd_exec_result usr_os_list(qd_context* ctx);
+int usr_os_list(qd_context* ctx);
 
 /**
  * @brief Execute a command and stream output to callback
@@ -232,7 +232,7 @@ qd_exec_result usr_os_list(qd_context* ctx);
  * "ls -la" fn (line:str -- ) { line . nl } os::popen! -> exitcode
  * @endcode
  */
-qd_exec_result usr_os_popen(qd_context* ctx);
+int usr_os_popen(qd_context* ctx);
 
 /**
  * @brief Execute command and capture all output
@@ -249,7 +249,7 @@ qd_exec_result usr_os_popen(qd_context* ctx);
  * "echo hello" os::exec! -> exitcode -> stdout
  * @endcode
  */
-qd_exec_result usr_os_exec(qd_context* ctx);
+int usr_os_exec(qd_context* ctx);
 
 /**
  * @brief Get the current process ID
@@ -266,7 +266,7 @@ qd_exec_result usr_os_exec(qd_context* ctx);
  * os::getpid print  // Print current PID
  * @endcode
  */
-qd_exec_result usr_os_getpid(qd_context* ctx);
+int usr_os_getpid(qd_context* ctx);
 
 /**
  * @brief Check if path is a directory
@@ -278,7 +278,7 @@ qd_exec_result usr_os_getpid(qd_context* ctx);
  * @param ctx Execution context
  * @return Execution result
  */
-qd_exec_result usr_os_is_dir(qd_context* ctx);
+int usr_os_is_dir(qd_context* ctx);
 
 /**
  * @brief Check if path is a regular file
@@ -290,7 +290,7 @@ qd_exec_result usr_os_is_dir(qd_context* ctx);
  * @param ctx Execution context
  * @return Execution result
  */
-qd_exec_result usr_os_is_file(qd_context* ctx);
+int usr_os_is_file(qd_context* ctx);
 
 /**
  * @brief Remove directory and all contents recursively
@@ -302,7 +302,7 @@ qd_exec_result usr_os_is_file(qd_context* ctx);
  * @param ctx Execution context
  * @return Execution result
  */
-qd_exec_result usr_os_rmdir(qd_context* ctx);
+int usr_os_rmdir(qd_context* ctx);
 
 /**
  * @brief Walk a directory tree recursively
@@ -315,7 +315,7 @@ qd_exec_result usr_os_rmdir(qd_context* ctx);
  * @param ctx Execution context
  * @return Execution result
  */
-qd_exec_result usr_os_walk(qd_context* ctx);
+int usr_os_walk(qd_context* ctx);
 
 /**
  * @brief Match files using glob pattern
@@ -328,7 +328,7 @@ qd_exec_result usr_os_walk(qd_context* ctx);
  * @param ctx Execution context
  * @return Execution result
  */
-qd_exec_result usr_os_glob(qd_context* ctx);
+int usr_os_glob(qd_context* ctx);
 
 /**
  * @brief Create a unique temporary directory
@@ -349,7 +349,7 @@ qd_exec_result usr_os_glob(qd_context* ctx);
  * tmpdir os::rmdir!  // Clean up when done
  * @endcode
  */
-qd_exec_result usr_os_mktemp(qd_context* ctx);
+int usr_os_mktemp(qd_context* ctx);
 
 /**
  * @brief Get current working directory
@@ -367,7 +367,7 @@ qd_exec_result usr_os_mktemp(qd_context* ctx);
  * dir print nl
  * @endcode
  */
-qd_exec_result usr_os_cwd(qd_context* ctx);
+int usr_os_cwd(qd_context* ctx);
 
 #ifdef __cplusplus
 }

@@ -6,7 +6,7 @@
 #include "platform/time_platform.h"
 
 // unix - get current Unix timestamp in seconds ( -- timestamp:i64 )
-qd_exec_result usr_time_unix(qd_context* ctx) {
+int usr_time_unix(qd_context* ctx) {
 	int64_t timestamp = time_platform_unix();
 
 	qd_stack_error err = qd_stack_push_int(ctx->st, timestamp);
@@ -15,11 +15,11 @@ qd_exec_result usr_time_unix(qd_context* ctx) {
 		abort();
 	}
 
-	return (qd_exec_result){0};
+	return (int){0};
 }
 
 // now - get current time in nanoseconds since epoch ( -- nanoseconds:i64 )
-qd_exec_result usr_time_now(qd_context* ctx) {
+int usr_time_now(qd_context* ctx) {
 	int64_t nanoseconds = time_platform_now_ns();
 
 	qd_stack_error err = qd_stack_push_int(ctx->st, nanoseconds);
@@ -28,11 +28,11 @@ qd_exec_result usr_time_now(qd_context* ctx) {
 		abort();
 	}
 
-	return (qd_exec_result){0};
+	return (int){0};
 }
 
 // sleep - sleep for N nanoseconds ( nanoseconds:i -- )
-qd_exec_result usr_time_sleep(qd_context* ctx) {
+int usr_time_sleep(qd_context* ctx) {
 	qd_stack_element_t val;
 	qd_stack_error err = qd_stack_pop(ctx->st, &val);
 
@@ -53,5 +53,5 @@ qd_exec_result usr_time_sleep(qd_context* ctx) {
 
 	time_platform_sleep_ns(val.value.i);
 
-	return (qd_exec_result){0};
+	return (int){0};
 }

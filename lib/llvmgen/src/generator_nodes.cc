@@ -517,8 +517,8 @@ namespace Qd {
 		heapCapturePointers.clear();
 
 		// Create the function type
-		// For closures: takes (context, env_ptr), returns exec_result
-		// For non-closures: takes (context), returns exec_result
+		// For closures: takes (context, env_ptr), returns int
+		// For non-closures: takes (context), returns int
 		llvm::FunctionType* fnTy;
 		if (hasClosure) {
 			fnTy = llvm::FunctionType::get(execResultTy, {contextPtrTy, ptrTy}, false);
@@ -587,8 +587,7 @@ namespace Qd {
 
 		// Generate return block
 		builder->SetInsertPoint(returnBB);
-		auto successResult = builder->CreateInsertValue(llvm::UndefValue::get(execResultTy), builder->getInt32(0), {0});
-		builder->CreateRet(successResult);
+		builder->CreateRet(builder->getInt32(0));
 
 		// Restore state
 		localVariables = savedLocalVars;
@@ -835,10 +834,9 @@ namespace Qd {
 
 		// If in test mode, track any errors from the function call
 		if (testErrorAlloca) {
-			auto errorCode = builder->CreateExtractValue(callResult, {0}, "err_code");
-			auto hasError = builder->CreateICmpNE(errorCode, builder->getInt32(0), "has_err");
+			auto hasError = builder->CreateICmpNE(callResult, builder->getInt32(0), "has_err");
 			auto currentError = builder->CreateLoad(int32Ty, testErrorAlloca, "cur_err");
-			auto newError = builder->CreateSelect(hasError, errorCode, currentError, "new_err");
+			auto newError = builder->CreateSelect(hasError, callResult, currentError, "new_err");
 			builder->CreateStore(newError, testErrorAlloca);
 		}
 

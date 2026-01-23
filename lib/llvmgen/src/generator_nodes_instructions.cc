@@ -487,7 +487,7 @@ namespace Qd {
 			// Check if function already exists
 			llvm::Function* runtimeFn = module->getFunction(fnName);
 			if (!runtimeFn) {
-				// Declare it: qd_exec_result fn(qd_context*)
+				// Declare it: int fn(qd_context*)
 				auto fnTy = llvm::FunctionType::get(execResultTy, {contextPtrTy}, false);
 				runtimeFn = llvm::Function::Create(fnTy, llvm::Function::ExternalLinkage, fnName, *module);
 			}

@@ -27,7 +27,7 @@ extern "C" {
  *   103 16 -> "67"   (hex)
  *   103 2  -> "1100111" (binary)
  */
-qd_exec_result usr_strconv_format_int(qd_context* ctx);
+int usr_strconv_format_int(qd_context* ctx);
 
 /**
  * @brief Parse integer from string in given base
@@ -42,7 +42,7 @@ qd_exec_result usr_strconv_format_int(qd_context* ctx);
  *   "67" 16  -> 103
  *   "1100111" 2 -> 103
  */
-qd_exec_result usr_strconv_parse_int(qd_context* ctx);
+int usr_strconv_parse_int(qd_context* ctx);
 
 /**
  * @brief Convert integer to string (base 10)
@@ -52,7 +52,7 @@ qd_exec_result usr_strconv_parse_int(qd_context* ctx);
  *
  * Equivalent to format_int with base 10.
  */
-qd_exec_result usr_strconv_itoa(qd_context* ctx);
+int usr_strconv_itoa(qd_context* ctx);
 
 /**
  * @brief Convert string to integer (base 10)
@@ -62,7 +62,7 @@ qd_exec_result usr_strconv_itoa(qd_context* ctx);
  *
  * Equivalent to parse_int with base 10.
  */
-qd_exec_result usr_strconv_atoi(qd_context* ctx);
+int usr_strconv_atoi(qd_context* ctx);
 
 #ifdef __cplusplus
 }

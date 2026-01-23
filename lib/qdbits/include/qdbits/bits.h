@@ -26,7 +26,7 @@ extern "C" {
  * 0b1100 0b1010 bits::and  // Result: 0b1000 (8)
  * @endcode
  */
-qd_exec_result usr_bits_and(qd_context* ctx);
+int usr_bits_and(qd_context* ctx);
 
 /**
  * @brief Bitwise OR operation
@@ -39,7 +39,7 @@ qd_exec_result usr_bits_and(qd_context* ctx);
  * 0b1100 0b1010 bits::or  // Result: 0b1110 (14)
  * @endcode
  */
-qd_exec_result usr_bits_or(qd_context* ctx);
+int usr_bits_or(qd_context* ctx);
 
 /**
  * @brief Bitwise XOR operation
@@ -52,7 +52,7 @@ qd_exec_result usr_bits_or(qd_context* ctx);
  * 0b1100 0b1010 bits::xor  // Result: 0b0110 (6)
  * @endcode
  */
-qd_exec_result usr_bits_xor(qd_context* ctx);
+int usr_bits_xor(qd_context* ctx);
 
 /**
  * @brief Bitwise NOT operation
@@ -65,7 +65,7 @@ qd_exec_result usr_bits_xor(qd_context* ctx);
  * 0b1100 bits::not  // Result: ~0b1100
  * @endcode
  */
-qd_exec_result usr_bits_not(qd_context* ctx);
+int usr_bits_not(qd_context* ctx);
 
 /**
  * @brief Left shift operation
@@ -78,7 +78,7 @@ qd_exec_result usr_bits_not(qd_context* ctx);
  * 5 2 bits::lshift  // Result: 20 (5 << 2)
  * @endcode
  */
-qd_exec_result usr_bits_lshift(qd_context* ctx);
+int usr_bits_lshift(qd_context* ctx);
 
 /**
  * @brief Right shift operation
@@ -91,7 +91,7 @@ qd_exec_result usr_bits_lshift(qd_context* ctx);
  * 20 2 bits::rshift  // Result: 5 (20 >> 2)
  * @endcode
  */
-qd_exec_result usr_bits_rshift(qd_context* ctx);
+int usr_bits_rshift(qd_context* ctx);
 
 #ifdef __cplusplus
 }

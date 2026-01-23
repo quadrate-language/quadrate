@@ -34,7 +34,7 @@ extern "C" {
  * signal::SIGINT signal::trap  // Catch Ctrl+C
  * @endcode
  */
-qd_exec_result usr_signal_trap(qd_context* ctx);
+int usr_signal_trap(qd_context* ctx);
 
 /**
  * @brief Ignore the specified signal
@@ -51,7 +51,7 @@ qd_exec_result usr_signal_trap(qd_context* ctx);
  * signal::SIGPIPE signal::ignore  // Ignore broken pipe
  * @endcode
  */
-qd_exec_result usr_signal_ignore(qd_context* ctx);
+int usr_signal_ignore(qd_context* ctx);
 
 /**
  * @brief Reset signal to default behavior
@@ -68,7 +68,7 @@ qd_exec_result usr_signal_ignore(qd_context* ctx);
  * signal::SIGINT signal::reset  // Ctrl+C terminates again
  * @endcode
  */
-qd_exec_result usr_signal_reset(qd_context* ctx);
+int usr_signal_reset(qd_context* ctx);
 
 /**
  * @brief Check if a signal is pending
@@ -88,7 +88,7 @@ qd_exec_result usr_signal_reset(qd_context* ctx);
  * }
  * @endcode
  */
-qd_exec_result usr_signal_pending(qd_context* ctx);
+int usr_signal_pending(qd_context* ctx);
 
 /**
  * @brief Clear the pending flag for a signal
@@ -106,7 +106,7 @@ qd_exec_result usr_signal_pending(qd_context* ctx);
  * signal::SIGINT signal::clear
  * @endcode
  */
-qd_exec_result usr_signal_clear(qd_context* ctx);
+int usr_signal_clear(qd_context* ctx);
 
 /**
  * @brief Block until any trapped signal is received
@@ -125,7 +125,7 @@ qd_exec_result usr_signal_clear(qd_context* ctx);
  * "Received signal " . sig . nl
  * @endcode
  */
-qd_exec_result usr_signal_wait(qd_context* ctx);
+int usr_signal_wait(qd_context* ctx);
 
 #ifdef __cplusplus
 }

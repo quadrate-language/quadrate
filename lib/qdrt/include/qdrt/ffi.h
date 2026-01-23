@@ -9,11 +9,11 @@
  * @code
  * #include <qdrt/ffi.h>
  *
- * qd_exec_result my_function(qd_context* ctx) {
+ * int my_function(qd_context* ctx) {
  *     qd_stack_element_t elem;
  *     qd_stack_pop(ctx->st, &elem);
  *     // ... process elem ...
- *     return (qd_exec_result){0};
+ *     return (int){0};
  * }
  * @endcode
  */

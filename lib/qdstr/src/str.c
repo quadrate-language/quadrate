@@ -15,7 +15,7 @@
 #define STR_ERR_INVALID_ARG 4   // Invalid argument
 
 // len - get string length ( str:s -- len:i )
-qd_exec_result usr_str_len(qd_context* ctx) {
+int usr_str_len(qd_context* ctx) {
 	qd_stack_element_t val;
 	qd_stack_error err = qd_stack_pop(ctx->st, &val);
 
@@ -33,11 +33,11 @@ qd_exec_result usr_str_len(qd_context* ctx) {
 	qd_string_release(val.value.s);
 
 	qd_push_i(ctx, (int64_t)len);
-	return (qd_exec_result){0};
+	return (int){0};
 }
 
 // concat - concatenate two strings ( str1:s str2:s -- result:s )
-qd_exec_result usr_str_concat(qd_context* ctx) {
+int usr_str_concat(qd_context* ctx) {
 	qd_stack_element_t str2, str1;
 	qd_stack_error err = qd_stack_pop(ctx->st, &str2);
 	if (err != QD_STACK_OK) {
@@ -78,11 +78,11 @@ qd_exec_result usr_str_concat(qd_context* ctx) {
 	qd_push_s(ctx, result);
 	free(result);
 
-	return (qd_exec_result){0};
+	return (int){0};
 }
 
 // contains - check if string contains substring ( str:s needle:s -- contains:i )
-qd_exec_result usr_str_contains(qd_context* ctx) {
+int usr_str_contains(qd_context* ctx) {
 	qd_stack_element_t needle, haystack;
 	qd_stack_error err = qd_stack_pop(ctx->st, &needle);
 	if (err != QD_STACK_OK) {
@@ -109,11 +109,11 @@ qd_exec_result usr_str_contains(qd_context* ctx) {
 	qd_string_release(needle.value.s);
 
 	qd_push_i(ctx, result);
-	return (qd_exec_result){0};
+	return (int){0};
 }
 
 // starts_with - check if string starts with prefix ( str:s prefix:s -- result:i )
-qd_exec_result usr_str_starts_with(qd_context* ctx) {
+int usr_str_starts_with(qd_context* ctx) {
 	qd_stack_element_t prefix, str;
 	qd_stack_error err = qd_stack_pop(ctx->st, &prefix);
 	if (err != QD_STACK_OK) {
@@ -146,11 +146,11 @@ qd_exec_result usr_str_starts_with(qd_context* ctx) {
 	qd_string_release(prefix.value.s);
 
 	qd_push_i(ctx, result);
-	return (qd_exec_result){0};
+	return (int){0};
 }
 
 // ends_with - check if string ends with suffix ( str:s suffix:s -- result:i )
-qd_exec_result usr_str_ends_with(qd_context* ctx) {
+int usr_str_ends_with(qd_context* ctx) {
 	qd_stack_element_t suffix, str;
 	qd_stack_error err = qd_stack_pop(ctx->st, &suffix);
 	if (err != QD_STACK_OK) {
@@ -184,11 +184,11 @@ qd_exec_result usr_str_ends_with(qd_context* ctx) {
 	qd_string_release(suffix.value.s);
 
 	qd_push_i(ctx, result);
-	return (qd_exec_result){0};
+	return (int){0};
 }
 
 // upper - convert string to uppercase ( str:s -- result:s )
-qd_exec_result usr_str_upper(qd_context* ctx) {
+int usr_str_upper(qd_context* ctx) {
 	qd_stack_element_t val;
 	qd_stack_error err = qd_stack_pop(ctx->st, &val);
 
@@ -219,11 +219,11 @@ qd_exec_result usr_str_upper(qd_context* ctx) {
 	qd_push_s(ctx, result);
 	free(result);
 
-	return (qd_exec_result){0};
+	return (int){0};
 }
 
 // lower - convert string to lowercase ( str:s -- result:s )
-qd_exec_result usr_str_lower(qd_context* ctx) {
+int usr_str_lower(qd_context* ctx) {
 	qd_stack_element_t val;
 	qd_stack_error err = qd_stack_pop(ctx->st, &val);
 
@@ -254,11 +254,11 @@ qd_exec_result usr_str_lower(qd_context* ctx) {
 	qd_push_s(ctx, result);
 	free(result);
 
-	return (qd_exec_result){0};
+	return (int){0};
 }
 
 // trim - remove leading and trailing whitespace ( str:s -- result:s )
-qd_exec_result usr_str_trim(qd_context* ctx) {
+int usr_str_trim(qd_context* ctx) {
 	qd_stack_element_t val;
 	qd_stack_error err = qd_stack_pop(ctx->st, &val);
 
@@ -314,11 +314,11 @@ qd_exec_result usr_str_trim(qd_context* ctx) {
 	qd_push_s(ctx, result);
 	free(result);
 
-	return (qd_exec_result){0};
+	return (int){0};
 }
 
 // substring - extract substring ( str:s start:i length:i -- result:s )!
-qd_exec_result usr_str_substring(qd_context* ctx) {
+int usr_str_substring(qd_context* ctx) {
 	qd_stack_element_t len_elem, start_elem, str_elem;
 	qd_stack_error err = qd_stack_pop(ctx->st, &len_elem);
 	if (err != QD_STACK_OK) {
@@ -384,12 +384,12 @@ qd_exec_result usr_str_substring(qd_context* ctx) {
 	free(result);
 	qd_push_i(ctx, STR_ERR_OK);  // Success status for fallible function
 
-	return (qd_exec_result){STR_ERR_OK};
+	return (int){STR_ERR_OK};
 }
 
 // split - split string by delimiter ( str:s delim:s -- parts:p count:i )
 // Returns pointer to array of qd_string* and count
-qd_exec_result usr_str_split(qd_context* ctx) {
+int usr_str_split(qd_context* ctx) {
 	qd_stack_element_t delim_elem, str_elem;
 	qd_stack_error err = qd_stack_pop(ctx->st, &delim_elem);
 	if (err != QD_STACK_OK) {
@@ -477,11 +477,11 @@ qd_exec_result usr_str_split(qd_context* ctx) {
 	qd_push_i(ctx, (int64_t)count);
 	qd_push_i(ctx, STR_ERR_OK);  // Success status for fallible function
 
-	return (qd_exec_result){STR_ERR_OK};
+	return (int){STR_ERR_OK};
 }
 
 // replace - replace all occurrences ( str:s old:s new:s -- result:s )
-qd_exec_result usr_str_replace(qd_context* ctx) {
+int usr_str_replace(qd_context* ctx) {
 	qd_stack_element_t new_elem, old_elem, str_elem;
 	qd_stack_error err = qd_stack_pop(ctx->st, &new_elem);
 	if (err != QD_STACK_OK) {
@@ -523,7 +523,7 @@ qd_exec_result usr_str_replace(qd_context* ctx) {
 		qd_push_s(ctx, qd_string_data(str_elem.value.s));
 		qd_string_release(str_elem.value.s);
 		qd_push_i(ctx, STR_ERR_OK);  // Success status for fallible function
-		return (qd_exec_result){STR_ERR_OK};
+		return (int){STR_ERR_OK};
 	}
 
 	// Count occurrences
@@ -579,12 +579,12 @@ qd_exec_result usr_str_replace(qd_context* ctx) {
 	free(result);
 	qd_push_i(ctx, STR_ERR_OK);  // Success status for fallible function
 
-	return (qd_exec_result){STR_ERR_OK};
+	return (int){STR_ERR_OK};
 }
 
 // compare - compare two strings ( str1:s str2:s -- result:i )
 // Returns: -1 if str1 < str2, 0 if equal, 1 if str1 > str2
-qd_exec_result usr_str_compare(qd_context* ctx) {
+int usr_str_compare(qd_context* ctx) {
 	qd_stack_element_t str2_elem, str1_elem;
 	qd_stack_error err = qd_stack_pop(ctx->st, &str2_elem);
 	if (err != QD_STACK_OK) {
@@ -612,32 +612,32 @@ qd_exec_result usr_str_compare(qd_context* ctx) {
 	qd_string_release(str2_elem.value.s);
 
 	qd_push_i(ctx, result);
-	return (qd_exec_result){0};
+	return (int){0};
 }
 
 // char_at - get character code at index ( str:s index:i -- char_code:i )!
-qd_exec_result usr_str_char_at(qd_context* ctx) {
+int usr_str_char_at(qd_context* ctx) {
 	qd_stack_element_t index_elem, str_elem;
 	qd_stack_error err = qd_stack_pop(ctx->st, &index_elem);
 	if (err != QD_STACK_OK) {
 		qd_push_i(ctx, STR_ERR_INVALID_ARG);
-		return (qd_exec_result){STR_ERR_INVALID_ARG};
+		return (int){STR_ERR_INVALID_ARG};
 	}
 	err = qd_stack_pop(ctx->st, &str_elem);
 	if (err != QD_STACK_OK) {
 		qd_push_i(ctx, STR_ERR_INVALID_ARG);
-		return (qd_exec_result){STR_ERR_INVALID_ARG};
+		return (int){STR_ERR_INVALID_ARG};
 	}
 
 	if (str_elem.type != QD_STACK_TYPE_STR) {
 		qd_push_i(ctx, STR_ERR_INVALID_ARG);
-		return (qd_exec_result){STR_ERR_INVALID_ARG};
+		return (int){STR_ERR_INVALID_ARG};
 	}
 
 	if (index_elem.type != QD_STACK_TYPE_INT) {
 		qd_string_release(str_elem.value.s);
 		qd_push_i(ctx, STR_ERR_INVALID_ARG);
-		return (qd_exec_result){STR_ERR_INVALID_ARG};
+		return (int){STR_ERR_INVALID_ARG};
 	}
 
 	int64_t index = index_elem.value.i;
@@ -648,7 +648,7 @@ qd_exec_result usr_str_char_at(qd_context* ctx) {
 		ctx->error_code = STR_ERR_OUT_OF_BOUNDS;
 		qd_set_error_msg(ctx, "index out of bounds");
 		qd_push_i(ctx, STR_ERR_OUT_OF_BOUNDS);
-		return (qd_exec_result){STR_ERR_OUT_OF_BOUNDS};
+		return (int){STR_ERR_OUT_OF_BOUNDS};
 	}
 
 	int64_t char_code = (unsigned char)qd_string_data(str_elem.value.s)[index];
@@ -658,11 +658,11 @@ qd_exec_result usr_str_char_at(qd_context* ctx) {
 	// Push result then Ok
 	qd_push_i(ctx, char_code);
 	qd_push_i(ctx, STR_ERR_OK);
-	return (qd_exec_result){0};
+	return (int){0};
 }
 
 // index_of - find index of substring ( haystack:s needle:s -- index:i )
-qd_exec_result usr_str_index_of(qd_context* ctx) {
+int usr_str_index_of(qd_context* ctx) {
 	qd_stack_element_t needle_elem, haystack_elem;
 	qd_stack_error err = qd_stack_pop(ctx->st, &needle_elem);
 	if (err != QD_STACK_OK) {
@@ -693,11 +693,11 @@ qd_exec_result usr_str_index_of(qd_context* ctx) {
 	qd_string_release(needle_elem.value.s);
 
 	qd_push_i(ctx, result);
-	return (qd_exec_result){0};
+	return (int){0};
 }
 
 // index_of_from - find index of substring starting from position ( haystack:s needle:s start:i -- index:i )
-qd_exec_result usr_str_index_of_from(qd_context* ctx) {
+int usr_str_index_of_from(qd_context* ctx) {
 	qd_stack_element_t start_elem, needle_elem, haystack_elem;
 	qd_stack_error err = qd_stack_pop(ctx->st, &start_elem);
 	if (err != QD_STACK_OK) {
@@ -747,11 +747,11 @@ qd_exec_result usr_str_index_of_from(qd_context* ctx) {
 	qd_string_release(needle_elem.value.s);
 
 	qd_push_i(ctx, result);
-	return (qd_exec_result){0};
+	return (int){0};
 }
 
 // from_char - create string from character code ( char_code:i -- str:s )
-qd_exec_result usr_str_from_char(qd_context* ctx) {
+int usr_str_from_char(qd_context* ctx) {
 	qd_stack_element_t code_elem;
 
 	qd_stack_error err = qd_stack_pop(ctx->st, &code_elem);
@@ -782,11 +782,11 @@ qd_exec_result usr_str_from_char(qd_context* ctx) {
 		qd_push_s(ctx, result);
 	}
 
-	return (qd_exec_result){0};
+	return (int){0};
 }
 
 // from_ptr - convert C string pointer to Quadrate string ( ptr:p -- str:s )
-qd_exec_result usr_str_from_ptr(qd_context* ctx) {
+int usr_str_from_ptr(qd_context* ctx) {
 	qd_stack_element_t ptr_elem;
 
 	qd_stack_error err = qd_stack_pop(ctx->st, &ptr_elem);
@@ -807,7 +807,7 @@ qd_exec_result usr_str_from_ptr(qd_context* ctx) {
 		qd_push_s(ctx, c_str);
 	}
 
-	return (qd_exec_result){0};
+	return (int){0};
 }
 
 // Comparison function for qsort (ascending)
@@ -825,7 +825,7 @@ static int str_cmp_desc(const void* a, const void* b) {
 }
 
 // sort - sort array of strings in ascending order ( arr:p count:i -- )
-qd_exec_result usr_str_sort(qd_context* ctx) {
+int usr_str_sort(qd_context* ctx) {
 	qd_stack_element_t count_elem, arr_elem;
 	qd_stack_error err = qd_stack_pop(ctx->st, &count_elem);
 	if (err != QD_STACK_OK || count_elem.type != QD_STACK_TYPE_INT) {
@@ -847,11 +847,11 @@ qd_exec_result usr_str_sort(qd_context* ctx) {
 		qsort(arr, (size_t)count, sizeof(char*), str_cmp_asc);
 	}
 
-	return (qd_exec_result){0};
+	return (int){0};
 }
 
 // sort_desc - sort array of strings in descending order ( arr:p count:i -- )
-qd_exec_result usr_str_sort_desc(qd_context* ctx) {
+int usr_str_sort_desc(qd_context* ctx) {
 	qd_stack_element_t count_elem, arr_elem;
 	qd_stack_error err = qd_stack_pop(ctx->st, &count_elem);
 	if (err != QD_STACK_OK || count_elem.type != QD_STACK_TYPE_INT) {
@@ -873,11 +873,11 @@ qd_exec_result usr_str_sort_desc(qd_context* ctx) {
 		qsort(arr, (size_t)count, sizeof(char*), str_cmp_desc);
 	}
 
-	return (qd_exec_result){0};
+	return (int){0};
 }
 
 // repeat - repeat string n times ( str:s n:i -- result:s )
-qd_exec_result usr_str_repeat(qd_context* ctx) {
+int usr_str_repeat(qd_context* ctx) {
 	qd_stack_element_t n_elem, str_elem;
 	qd_stack_error err = qd_stack_pop(ctx->st, &n_elem);
 	if (err != QD_STACK_OK || n_elem.type != QD_STACK_TYPE_INT) {
@@ -916,11 +916,11 @@ qd_exec_result usr_str_repeat(qd_context* ctx) {
 	qd_push_s(ctx, result);
 	free(result);
 
-	return (qd_exec_result){0};
+	return (int){0};
 }
 
 // reverse - reverse a string ( str:s -- result:s )
-qd_exec_result usr_str_reverse(qd_context* ctx) {
+int usr_str_reverse(qd_context* ctx) {
 	qd_stack_element_t str_elem;
 	qd_stack_error err = qd_stack_pop(ctx->st, &str_elem);
 	if (err != QD_STACK_OK || str_elem.type != QD_STACK_TYPE_STR) {
@@ -946,11 +946,11 @@ qd_exec_result usr_str_reverse(qd_context* ctx) {
 	qd_push_s(ctx, result);
 	free(result);
 
-	return (qd_exec_result){0};
+	return (int){0};
 }
 
 // trim_left - remove leading whitespace ( str:s -- result:s )
-qd_exec_result usr_str_trim_left(qd_context* ctx) {
+int usr_str_trim_left(qd_context* ctx) {
 	qd_stack_element_t str_elem;
 	qd_stack_error err = qd_stack_pop(ctx->st, &str_elem);
 	if (err != QD_STACK_OK || str_elem.type != QD_STACK_TYPE_STR) {
@@ -966,11 +966,11 @@ qd_exec_result usr_str_trim_left(qd_context* ctx) {
 	qd_string_release(str_elem.value.s);
 	qd_push_s(ctx, start);
 
-	return (qd_exec_result){0};
+	return (int){0};
 }
 
 // trim_right - remove trailing whitespace ( str:s -- result:s )
-qd_exec_result usr_str_trim_right(qd_context* ctx) {
+int usr_str_trim_right(qd_context* ctx) {
 	qd_stack_element_t str_elem;
 	qd_stack_error err = qd_stack_pop(ctx->st, &str_elem);
 	if (err != QD_STACK_OK || str_elem.type != QD_STACK_TYPE_STR) {
@@ -999,11 +999,11 @@ qd_exec_result usr_str_trim_right(qd_context* ctx) {
 	qd_push_s(ctx, result);
 	free(result);
 
-	return (qd_exec_result){0};
+	return (int){0};
 }
 
 // count - count occurrences of substring ( haystack:s needle:s -- count:i )
-qd_exec_result usr_str_count(qd_context* ctx) {
+int usr_str_count(qd_context* ctx) {
 	qd_stack_element_t needle_elem, haystack_elem;
 	qd_stack_error err = qd_stack_pop(ctx->st, &needle_elem);
 	if (err != QD_STACK_OK || needle_elem.type != QD_STACK_TYPE_STR) {
@@ -1034,11 +1034,11 @@ qd_exec_result usr_str_count(qd_context* ctx) {
 	qd_string_release(needle_elem.value.s);
 
 	qd_push_i(ctx, count);
-	return (qd_exec_result){0};
+	return (int){0};
 }
 
 // last_index_of - find last occurrence of substring ( haystack:s needle:s -- index:i )
-qd_exec_result usr_str_last_index_of(qd_context* ctx) {
+int usr_str_last_index_of(qd_context* ctx) {
 	qd_stack_element_t needle_elem, haystack_elem;
 	qd_stack_error err = qd_stack_pop(ctx->st, &needle_elem);
 	if (err != QD_STACK_OK || needle_elem.type != QD_STACK_TYPE_STR) {
@@ -1072,11 +1072,11 @@ qd_exec_result usr_str_last_index_of(qd_context* ctx) {
 	qd_string_release(needle_elem.value.s);
 
 	qd_push_i(ctx, result);
-	return (qd_exec_result){0};
+	return (int){0};
 }
 
 // join - join array of strings with delimiter ( parts:p count:i delim:s -- result:s )
-qd_exec_result usr_str_join(qd_context* ctx) {
+int usr_str_join(qd_context* ctx) {
 	qd_stack_element_t delim_elem, count_elem, parts_elem;
 	qd_stack_error err = qd_stack_pop(ctx->st, &delim_elem);
 	if (err != QD_STACK_OK || delim_elem.type != QD_STACK_TYPE_STR) {
@@ -1108,7 +1108,7 @@ qd_exec_result usr_str_join(qd_context* ctx) {
 		qd_string_release(delim_elem.value.s);
 		qd_push_s(ctx, "");
 		qd_push_i(ctx, STR_ERR_OK);
-		return (qd_exec_result){0};
+		return (int){0};
 	}
 
 	// Calculate total length
@@ -1129,7 +1129,7 @@ qd_exec_result usr_str_join(qd_context* ctx) {
 		ctx->error_code = STR_ERR_ALLOC;
 		qd_set_error_msg(ctx, "str::join: allocation failed");
 		qd_push_i(ctx, STR_ERR_ALLOC);
-		return (qd_exec_result){STR_ERR_ALLOC};
+		return (int){STR_ERR_ALLOC};
 	}
 
 	// Build result
@@ -1153,5 +1153,5 @@ qd_exec_result usr_str_join(qd_context* ctx) {
 	free(result);
 	qd_push_i(ctx, STR_ERR_OK);
 
-	return (qd_exec_result){0};
+	return (int){0};
 }

@@ -10,7 +10,7 @@
 #include <string.h>
 #include "runtime_internal.h"
 
-qd_exec_result qd_add(qd_context* ctx) {
+int qd_add(qd_context* ctx) {
 	qd_stack* st = ctx->st;
 
 	// Fast path: check stack has 2 elements and both are integers
@@ -23,7 +23,7 @@ qd_exec_result qd_add(qd_context* ctx) {
 			int64_t result = second->value.i + top->value.i;
 			st->size -= 2;
 			QD_STACK_PUSH_INT_FAST(st, result);
-			return (qd_exec_result){0};
+			return (int){0};
 		}
 		// Fast float path
 		if (qdrt_is_numeric_type(top->type) && qdrt_is_numeric_type(second->type)) {
@@ -31,7 +31,7 @@ qd_exec_result qd_add(qd_context* ctx) {
 			double b_val = (top->type == QD_STACK_TYPE_INT) ? (double)top->value.i : top->value.f;
 			st->size -= 2;
 			QD_STACK_PUSH_FLOAT_FAST(st, a_val + b_val);
-			return (qd_exec_result){0};
+			return (int){0};
 		}
 	}
 
@@ -39,8 +39,8 @@ qd_exec_result qd_add(qd_context* ctx) {
 	qdrt_validate_binary_numeric_op(ctx, "add");
 
 	qd_stack_element_t a, b;
-	qd_exec_result pop_result = qdrt_pop_two_values(ctx, &a, &b);
-	if (pop_result.code != 0) {
+	int pop_result = qdrt_pop_two_values(ctx, &a, &b);
+	if (pop_result != 0) {
 		return pop_result;
 	}
 
@@ -48,23 +48,23 @@ qd_exec_result qd_add(qd_context* ctx) {
 		int64_t result = a.value.i + b.value.i;
 		qd_stack_error err = qd_stack_push_int(st, result);
 		if (err != QD_STACK_OK) {
-			return (qd_exec_result){-2};
+			return (int){-2};
 		}
 	} else if (qdrt_is_numeric_type(a.type) && qdrt_is_numeric_type(b.type)) {
 		double result = qdrt_to_double(&a) + qdrt_to_double(&b);
 		qd_stack_error err = qd_stack_push_float(st, result);
 		if (err != QD_STACK_OK) {
-			return (qd_exec_result){-2};
+			return (int){-2};
 		}
 	} else {
 		qdrt_release_if_string(&b);
 		qdrt_release_if_string(&a);
-		return (qd_exec_result){-5};
+		return (int){-5};
 	}
-	return (qd_exec_result){0};
+	return (int){0};
 }
 
-qd_exec_result qd_sub(qd_context* ctx) {
+int qd_sub(qd_context* ctx) {
 	qd_stack* st = ctx->st;
 
 	// Fast path: check stack has 2 elements and both are integers
@@ -77,7 +77,7 @@ qd_exec_result qd_sub(qd_context* ctx) {
 			int64_t result = second->value.i - top->value.i;
 			st->size -= 2;
 			QD_STACK_PUSH_INT_FAST(st, result);
-			return (qd_exec_result){0};
+			return (int){0};
 		}
 		// Fast float path
 		if (qdrt_is_numeric_type(top->type) && qdrt_is_numeric_type(second->type)) {
@@ -85,7 +85,7 @@ qd_exec_result qd_sub(qd_context* ctx) {
 			double b_val = (top->type == QD_STACK_TYPE_INT) ? (double)top->value.i : top->value.f;
 			st->size -= 2;
 			QD_STACK_PUSH_FLOAT_FAST(st, a_val - b_val);
-			return (qd_exec_result){0};
+			return (int){0};
 		}
 	}
 
@@ -93,8 +93,8 @@ qd_exec_result qd_sub(qd_context* ctx) {
 	qdrt_validate_binary_numeric_op(ctx, "sub");
 
 	qd_stack_element_t a, b;
-	qd_exec_result pop_result = qdrt_pop_two_values(ctx, &a, &b);
-	if (pop_result.code != 0) {
+	int pop_result = qdrt_pop_two_values(ctx, &a, &b);
+	if (pop_result != 0) {
 		return pop_result;
 	}
 
@@ -102,28 +102,28 @@ qd_exec_result qd_sub(qd_context* ctx) {
 		int64_t result = a.value.i - b.value.i;
 		qd_stack_error err = qd_stack_push_int(st, result);
 		if (err != QD_STACK_OK) {
-			return (qd_exec_result){-2};
+			return (int){-2};
 		}
 	} else if (qdrt_is_numeric_type(a.type) && qdrt_is_numeric_type(b.type)) {
 		double result = qdrt_to_double(&a) - qdrt_to_double(&b);
 		qd_stack_error err = qd_stack_push_float(st, result);
 		if (err != QD_STACK_OK) {
-			return (qd_exec_result){-2};
+			return (int){-2};
 		}
 	} else {
 		qdrt_release_if_string(&b);
 		qdrt_release_if_string(&a);
-		return (qd_exec_result){-5};
+		return (int){-5};
 	}
-	return (qd_exec_result){0};
+	return (int){0};
 }
 
-qd_exec_result qd_mul(qd_context* ctx) {
+int qd_mul(qd_context* ctx) {
 	qdrt_validate_binary_numeric_op(ctx, "mul");
 
 	qd_stack_element_t a, b;
-	qd_exec_result pop_result = qdrt_pop_two_values(ctx, &a, &b);
-	if (pop_result.code != 0) {
+	int pop_result = qdrt_pop_two_values(ctx, &a, &b);
+	if (pop_result != 0) {
 		return pop_result;
 	}
 
@@ -131,28 +131,28 @@ qd_exec_result qd_mul(qd_context* ctx) {
 		int64_t result = a.value.i * b.value.i;
 		qd_stack_error err = qd_stack_push_int(ctx->st, result);
 		if (err != QD_STACK_OK) {
-			return (qd_exec_result){-2};
+			return (int){-2};
 		}
 	} else if (qdrt_is_numeric_type(a.type) && qdrt_is_numeric_type(b.type)) {
 		double result = qdrt_to_double(&a) * qdrt_to_double(&b);
 		qd_stack_error err = qd_stack_push_float(ctx->st, result);
 		if (err != QD_STACK_OK) {
-			return (qd_exec_result){-2};
+			return (int){-2};
 		}
 	} else {
 		qdrt_release_if_string(&b);
 		qdrt_release_if_string(&a);
-		return (qd_exec_result){-5};
+		return (int){-5};
 	}
-	return (qd_exec_result){0};
+	return (int){0};
 }
 
-qd_exec_result qd_div(qd_context* ctx) {
+int qd_div(qd_context* ctx) {
 	qdrt_validate_binary_numeric_op(ctx, "div");
 
 	qd_stack_element_t a, b;
-	qd_exec_result pop_result = qdrt_pop_two_values(ctx, &a, &b);
-	if (pop_result.code != 0) {
+	int pop_result = qdrt_pop_two_values(ctx, &a, &b);
+	if (pop_result != 0) {
 		return pop_result;
 	}
 
@@ -166,7 +166,7 @@ qd_exec_result qd_div(qd_context* ctx) {
 		int64_t result = a.value.i / b.value.i;
 		qd_stack_error err = qd_stack_push_int(ctx->st, result);
 		if (err != QD_STACK_OK) {
-			return (qd_exec_result){-2};
+			return (int){-2};
 		}
 	} else if (qdrt_is_numeric_type(a.type) && qdrt_is_numeric_type(b.type)) {
 		double af = qdrt_to_double(&a);
@@ -180,17 +180,17 @@ qd_exec_result qd_div(qd_context* ctx) {
 		double result = af / bf;
 		qd_stack_error err = qd_stack_push_float(ctx->st, result);
 		if (err != QD_STACK_OK) {
-			return (qd_exec_result){-2};
+			return (int){-2};
 		}
 	} else {
 		qdrt_release_if_string(&b);
 		qdrt_release_if_string(&a);
-		return (qd_exec_result){-5};
+		return (int){-5};
 	}
-	return (qd_exec_result){0};
+	return (int){0};
 }
 
-qd_exec_result qd_mod(qd_context* ctx) {
+int qd_mod(qd_context* ctx) {
 	size_t stack_size = qd_stack_size(ctx->st);
 	if (stack_size < 2) {
 		fprintf(stderr, "Fatal error in mod: Stack underflow (required 2 elements, have %zu)\n", stack_size);
@@ -222,11 +222,11 @@ qd_exec_result qd_mod(qd_context* ctx) {
 	qd_stack_element_t b, a;
 	qd_stack_error err = qd_stack_pop(ctx->st, &b);
 	if (err != QD_STACK_OK) {
-		return (qd_exec_result){-2};
+		return (int){-2};
 	}
 	err = qd_stack_pop(ctx->st, &a);
 	if (err != QD_STACK_OK) {
-		return (qd_exec_result){-2};
+		return (int){-2};
 	}
 
 	if (b.value.i == 0) {
@@ -240,13 +240,13 @@ qd_exec_result qd_mod(qd_context* ctx) {
 
 	err = qd_stack_push_int(ctx->st, result);
 	if (err != QD_STACK_OK) {
-		return (qd_exec_result){-2};
+		return (int){-2};
 	}
 
-	return (qd_exec_result){0};
+	return (int){0};
 }
 
-qd_exec_result qd_inc(qd_context* ctx) {
+int qd_inc(qd_context* ctx) {
 	// Pop one numeric value, add 1, push result with same type
 	size_t stack_size = qd_stack_size(ctx->st);
 	if (stack_size < 1) {
@@ -279,13 +279,13 @@ qd_exec_result qd_inc(qd_context* ctx) {
 	}
 
 	if (err != QD_STACK_OK) {
-		return (qd_exec_result){-2};
+		return (int){-2};
 	}
 
-	return (qd_exec_result){0};
+	return (int){0};
 }
 
-qd_exec_result qd_dec(qd_context* ctx) {
+int qd_dec(qd_context* ctx) {
 	// Pop one numeric value, subtract 1, push result with same type
 	size_t stack_size = qd_stack_size(ctx->st);
 	if (stack_size < 1) {
@@ -318,13 +318,13 @@ qd_exec_result qd_dec(qd_context* ctx) {
 	}
 
 	if (err != QD_STACK_OK) {
-		return (qd_exec_result){-2};
+		return (int){-2};
 	}
 
-	return (qd_exec_result){0};
+	return (int){0};
 }
 
-qd_exec_result qd_neg(qd_context* ctx) {
+int qd_neg(qd_context* ctx) {
 	size_t stack_size = qd_stack_size(ctx->st);
 	if (stack_size < 1) {
 		fprintf(stderr, "Fatal error in neg: Stack underflow (required 1 element, have %zu)\n", stack_size);
@@ -352,7 +352,7 @@ qd_exec_result qd_neg(qd_context* ctx) {
 	qd_stack_element_t val;
 	qd_stack_error err = qd_stack_pop(ctx->st, &val);
 	if (err != QD_STACK_OK) {
-		return (qd_exec_result){-2};
+		return (int){-2};
 	}
 
 	if (val.type == QD_STACK_TYPE_INT) {
@@ -364,13 +364,13 @@ qd_exec_result qd_neg(qd_context* ctx) {
 	}
 
 	if (err != QD_STACK_OK) {
-		return (qd_exec_result){-2};
+		return (int){-2};
 	}
 
-	return (qd_exec_result){0};
+	return (int){0};
 }
 
-qd_exec_result qd_eq(qd_context* ctx) {
+int qd_eq(qd_context* ctx) {
 	// Check we have at least 2 elements
 	size_t stack_size = qd_stack_size(ctx->st);
 	if (stack_size < 2) {
@@ -411,12 +411,12 @@ qd_exec_result qd_eq(qd_context* ctx) {
 	qd_stack_element_t b;
 	qd_stack_error err = qd_stack_pop(ctx->st, &b);
 	if (err != QD_STACK_OK) {
-		return (qd_exec_result){-2};
+		return (int){-2};
 	}
 	qd_stack_element_t a;
 	err = qd_stack_pop(ctx->st, &a);
 	if (err != QD_STACK_OK) {
-		return (qd_exec_result){-2};
+		return (int){-2};
 	}
 
 	int64_t result;
@@ -440,13 +440,13 @@ qd_exec_result qd_eq(qd_context* ctx) {
 	}
 	err = qd_stack_push_int(ctx->st, result);
 	if (err != QD_STACK_OK) {
-		return (qd_exec_result){-2};
+		return (int){-2};
 	}
 
-	return (qd_exec_result){0};
+	return (int){0};
 }
 
-qd_exec_result qd_neq(qd_context* ctx) {
+int qd_neq(qd_context* ctx) {
 	// Check we have at least 2 elements
 	size_t stack_size = qd_stack_size(ctx->st);
 	if (stack_size < 2) {
@@ -487,12 +487,12 @@ qd_exec_result qd_neq(qd_context* ctx) {
 	qd_stack_element_t b;
 	qd_stack_error err = qd_stack_pop(ctx->st, &b);
 	if (err != QD_STACK_OK) {
-		return (qd_exec_result){-2};
+		return (int){-2};
 	}
 	qd_stack_element_t a;
 	err = qd_stack_pop(ctx->st, &a);
 	if (err != QD_STACK_OK) {
-		return (qd_exec_result){-2};
+		return (int){-2};
 	}
 
 	int64_t result;
@@ -516,13 +516,13 @@ qd_exec_result qd_neq(qd_context* ctx) {
 	}
 	err = qd_stack_push_int(ctx->st, result);
 	if (err != QD_STACK_OK) {
-		return (qd_exec_result){-2};
+		return (int){-2};
 	}
 
-	return (qd_exec_result){0};
+	return (int){0};
 }
 
-qd_exec_result qd_lt(qd_context* ctx) {
+int qd_lt(qd_context* ctx) {
 	// Check we have at least 2 elements
 	size_t stack_size = qd_stack_size(ctx->st);
 	if (stack_size < 2) {
@@ -556,12 +556,12 @@ qd_exec_result qd_lt(qd_context* ctx) {
 	qd_stack_element_t b;
 	qd_stack_error err = qd_stack_pop(ctx->st, &b);
 	if (err != QD_STACK_OK) {
-		return (qd_exec_result){-2};
+		return (int){-2};
 	}
 	qd_stack_element_t a;
 	err = qd_stack_pop(ctx->st, &a);
 	if (err != QD_STACK_OK) {
-		return (qd_exec_result){-2};
+		return (int){-2};
 	}
 
 	// Convert to double for comparison
@@ -571,13 +571,13 @@ qd_exec_result qd_lt(qd_context* ctx) {
 	int64_t result = (af < bf) ? 1 : 0;
 	err = qd_stack_push_int(ctx->st, result);
 	if (err != QD_STACK_OK) {
-		return (qd_exec_result){-2};
+		return (int){-2};
 	}
 
-	return (qd_exec_result){0};
+	return (int){0};
 }
 
-qd_exec_result qd_gt(qd_context* ctx) {
+int qd_gt(qd_context* ctx) {
 	// Check we have at least 2 elements
 	size_t stack_size = qd_stack_size(ctx->st);
 	if (stack_size < 2) {
@@ -611,12 +611,12 @@ qd_exec_result qd_gt(qd_context* ctx) {
 	qd_stack_element_t b;
 	qd_stack_error err = qd_stack_pop(ctx->st, &b);
 	if (err != QD_STACK_OK) {
-		return (qd_exec_result){-2};
+		return (int){-2};
 	}
 	qd_stack_element_t a;
 	err = qd_stack_pop(ctx->st, &a);
 	if (err != QD_STACK_OK) {
-		return (qd_exec_result){-2};
+		return (int){-2};
 	}
 
 	// Convert to double for comparison
@@ -626,13 +626,13 @@ qd_exec_result qd_gt(qd_context* ctx) {
 	int64_t result = (af > bf) ? 1 : 0;
 	err = qd_stack_push_int(ctx->st, result);
 	if (err != QD_STACK_OK) {
-		return (qd_exec_result){-2};
+		return (int){-2};
 	}
 
-	return (qd_exec_result){0};
+	return (int){0};
 }
 
-qd_exec_result qd_lte(qd_context* ctx) {
+int qd_lte(qd_context* ctx) {
 	// Check we have at least 2 elements
 	size_t stack_size = qd_stack_size(ctx->st);
 	if (stack_size < 2) {
@@ -666,12 +666,12 @@ qd_exec_result qd_lte(qd_context* ctx) {
 	qd_stack_element_t b;
 	qd_stack_error err = qd_stack_pop(ctx->st, &b);
 	if (err != QD_STACK_OK) {
-		return (qd_exec_result){-2};
+		return (int){-2};
 	}
 	qd_stack_element_t a;
 	err = qd_stack_pop(ctx->st, &a);
 	if (err != QD_STACK_OK) {
-		return (qd_exec_result){-2};
+		return (int){-2};
 	}
 
 	// Convert to double for comparison
@@ -681,13 +681,13 @@ qd_exec_result qd_lte(qd_context* ctx) {
 	int64_t result = (af <= bf) ? 1 : 0;
 	err = qd_stack_push_int(ctx->st, result);
 	if (err != QD_STACK_OK) {
-		return (qd_exec_result){-2};
+		return (int){-2};
 	}
 
-	return (qd_exec_result){0};
+	return (int){0};
 }
 
-qd_exec_result qd_gte(qd_context* ctx) {
+int qd_gte(qd_context* ctx) {
 	qd_stack* st = ctx->st;
 
 	// Fast path: check stack has 2 elements and both are integers
@@ -701,7 +701,7 @@ qd_exec_result qd_gte(qd_context* ctx) {
 			int64_t a = second->value.i;
 			st->size -= 2;
 			QD_STACK_PUSH_INT_FAST(st, (a >= b) ? 1 : 0);
-			return (qd_exec_result){0};
+			return (int){0};
 		}
 
 		if ((top->type == QD_STACK_TYPE_INT || top->type == QD_STACK_TYPE_FLOAT) &&
@@ -711,7 +711,7 @@ qd_exec_result qd_gte(qd_context* ctx) {
 			double af = (second->type == QD_STACK_TYPE_INT) ? (double)second->value.i : second->value.f;
 			st->size -= 2;
 			QD_STACK_PUSH_INT_FAST(st, (af >= bf) ? 1 : 0);
-			return (qd_exec_result){0};
+			return (int){0};
 		}
 
 		// Type error
@@ -728,7 +728,7 @@ qd_exec_result qd_gte(qd_context* ctx) {
 	abort();
 }
 
-qd_exec_result qd_within(qd_context* ctx) {
+int qd_within(qd_context* ctx) {
 	// Check we have at least 3 elements
 	size_t stack_size = qd_stack_size(ctx->st);
 	if (stack_size < 3) {
@@ -767,15 +767,15 @@ qd_exec_result qd_within(qd_context* ctx) {
 	qd_stack_element_t max, min, value;
 	qd_stack_error err = qd_stack_pop(ctx->st, &max);
 	if (err != QD_STACK_OK) {
-		return (qd_exec_result){-2};
+		return (int){-2};
 	}
 	err = qd_stack_pop(ctx->st, &min);
 	if (err != QD_STACK_OK) {
-		return (qd_exec_result){-2};
+		return (int){-2};
 	}
 	err = qd_stack_pop(ctx->st, &value);
 	if (err != QD_STACK_OK) {
-		return (qd_exec_result){-2};
+		return (int){-2};
 	}
 
 	// Convert to double for comparison
@@ -787,13 +787,13 @@ qd_exec_result qd_within(qd_context* ctx) {
 	int64_t result = (value_f >= min_f && value_f <= max_f) ? 1 : 0;
 	err = qd_stack_push_int(ctx->st, result);
 	if (err != QD_STACK_OK) {
-		return (qd_exec_result){-2};
+		return (int){-2};
 	}
 
-	return (qd_exec_result){0};
+	return (int){0};
 }
 
-qd_exec_result qd_and(qd_context* ctx) {
+int qd_and(qd_context* ctx) {
 	qd_stack* st = ctx->st;
 	if (st->size < 2) {
 		fprintf(stderr, "Fatal error in and: Stack underflow (required 2 elements, have %zu)\n", st->size);
@@ -815,10 +815,10 @@ qd_exec_result qd_and(qd_context* ctx) {
 	int64_t result = second->value.i & top->value.i;
 	st->size -= 2;
 	QD_STACK_PUSH_INT_FAST(st, result);
-	return (qd_exec_result){0};
+	return (int){0};
 }
 
-qd_exec_result qd_or(qd_context* ctx) {
+int qd_or(qd_context* ctx) {
 	qd_stack* st = ctx->st;
 	if (st->size < 2) {
 		fprintf(stderr, "Fatal error in or: Stack underflow (required 2 elements, have %zu)\n", st->size);
@@ -840,10 +840,10 @@ qd_exec_result qd_or(qd_context* ctx) {
 	int64_t result = second->value.i | top->value.i;
 	st->size -= 2;
 	QD_STACK_PUSH_INT_FAST(st, result);
-	return (qd_exec_result){0};
+	return (int){0};
 }
 
-qd_exec_result qd_xor(qd_context* ctx) {
+int qd_xor(qd_context* ctx) {
 	qd_stack* st = ctx->st;
 	if (st->size < 2) {
 		fprintf(stderr, "Fatal error in xor: Stack underflow (required 2 elements, have %zu)\n", st->size);
@@ -865,10 +865,10 @@ qd_exec_result qd_xor(qd_context* ctx) {
 	int64_t result = second->value.i ^ top->value.i;
 	st->size -= 2;
 	QD_STACK_PUSH_INT_FAST(st, result);
-	return (qd_exec_result){0};
+	return (int){0};
 }
 
-qd_exec_result qd_not(qd_context* ctx) {
+int qd_not(qd_context* ctx) {
 	qd_stack* st = ctx->st;
 	if (st->size < 1) {
 		fprintf(stderr, "Fatal error in not: Stack underflow (required 1 element, have %zu)\n", st->size);
@@ -887,10 +887,10 @@ qd_exec_result qd_not(qd_context* ctx) {
 	}
 
 	top->value.i = ~top->value.i;
-	return (qd_exec_result){0};
+	return (int){0};
 }
 
-qd_exec_result qd_shl(qd_context* ctx) {
+int qd_shl(qd_context* ctx) {
 	qd_stack* st = ctx->st;
 	if (st->size < 2) {
 		fprintf(stderr, "Fatal error in shl: Stack underflow (required 2 elements, have %zu)\n", st->size);
@@ -919,10 +919,10 @@ qd_exec_result qd_shl(qd_context* ctx) {
 	int64_t result = second->value.i << top->value.i;
 	st->size -= 2;
 	QD_STACK_PUSH_INT_FAST(st, result);
-	return (qd_exec_result){0};
+	return (int){0};
 }
 
-qd_exec_result qd_shr(qd_context* ctx) {
+int qd_shr(qd_context* ctx) {
 	qd_stack* st = ctx->st;
 	if (st->size < 2) {
 		fprintf(stderr, "Fatal error in shr: Stack underflow (required 2 elements, have %zu)\n", st->size);
@@ -952,6 +952,6 @@ qd_exec_result qd_shr(qd_context* ctx) {
 	int64_t result = (int64_t)((uint64_t)second->value.i >> top->value.i);
 	st->size -= 2;
 	QD_STACK_PUSH_INT_FAST(st, result);
-	return (qd_exec_result){0};
+	return (int){0};
 }
 

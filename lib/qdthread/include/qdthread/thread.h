@@ -30,11 +30,11 @@ typedef struct qd_thread {
 } qd_thread;
 
 // Thread functions exposed to Quadrate (raw_ prefix to avoid collision with Quadrate wrappers)
-qd_exec_result usr_thread_raw_spawn(qd_context* ctx);	 // (fn -- thread:ptr)!
-qd_exec_result usr_thread_raw_join(qd_context* ctx);	 // (thread:ptr -- )!
-qd_exec_result usr_thread_raw_detach(qd_context* ctx);	 // (thread:ptr -- )!
-qd_exec_result usr_thread_raw_is_alive(qd_context* ctx); // (thread:ptr -- alive:i64)
-qd_exec_result usr_thread_raw_sleep(qd_context* ctx);	 // (ms:i64 -- )
+int usr_thread_raw_spawn(qd_context* ctx);	 // (fn -- thread:ptr)!
+int usr_thread_raw_join(qd_context* ctx);	 // (thread:ptr -- )!
+int usr_thread_raw_detach(qd_context* ctx);	 // (thread:ptr -- )!
+int usr_thread_raw_is_alive(qd_context* ctx); // (thread:ptr -- alive:i64)
+int usr_thread_raw_sleep(qd_context* ctx);	 // (ms:i64 -- )
 
 typedef struct qd_mutex {
 	mtx_t handle;
@@ -42,11 +42,11 @@ typedef struct qd_mutex {
 } qd_mutex;
 
 // Mutex functions exposed to Quadrate (raw_ prefix to avoid collision with Quadrate wrappers)
-qd_exec_result usr_thread_raw_mutex_new(qd_context* ctx);	   // ( -- mutex:ptr)!
-qd_exec_result usr_thread_raw_mutex_lock(qd_context* ctx);	   // (mutex:ptr -- )!
-qd_exec_result usr_thread_raw_mutex_unlock(qd_context* ctx);   // (mutex:ptr -- )!
-qd_exec_result usr_thread_raw_mutex_try_lock(qd_context* ctx); // (mutex:ptr -- success:i64)
-qd_exec_result usr_thread_raw_mutex_free(qd_context* ctx);	   // (mutex:ptr -- )
+int usr_thread_raw_mutex_new(qd_context* ctx);	   // ( -- mutex:ptr)!
+int usr_thread_raw_mutex_lock(qd_context* ctx);	   // (mutex:ptr -- )!
+int usr_thread_raw_mutex_unlock(qd_context* ctx);   // (mutex:ptr -- )!
+int usr_thread_raw_mutex_try_lock(qd_context* ctx); // (mutex:ptr -- success:i64)
+int usr_thread_raw_mutex_free(qd_context* ctx);	   // (mutex:ptr -- )
 
 typedef struct qd_channel {
 	mtx_t mutex;
@@ -62,17 +62,17 @@ typedef struct qd_channel {
 } qd_channel;
 
 // Channel functions exposed to Quadrate (raw_ prefix to avoid collision with Quadrate wrappers)
-qd_exec_result usr_thread_raw_chan_new(qd_context* ctx);	   // ( -- ch:ptr)!
-qd_exec_result usr_thread_raw_chan_buffered(qd_context* ctx);  // (capacity:i64 -- ch:ptr)!
-qd_exec_result usr_thread_raw_chan_send(qd_context* ctx);	   // (val ch:ptr -- )!
-qd_exec_result usr_thread_raw_chan_recv(qd_context* ctx);	   // (ch:ptr -- val)!
-qd_exec_result usr_thread_raw_chan_try_send(qd_context* ctx);  // (val ch:ptr -- success:i64)
-qd_exec_result usr_thread_raw_chan_try_recv(qd_context* ctx);  // (ch:ptr -- val success:i64)
-qd_exec_result usr_thread_raw_chan_close(qd_context* ctx);	   // (ch:ptr -- )
-qd_exec_result usr_thread_raw_chan_is_closed(qd_context* ctx); // (ch:ptr -- closed:i64)
-qd_exec_result usr_thread_raw_chan_len(qd_context* ctx);	   // (ch:ptr -- len:i64)
-qd_exec_result usr_thread_raw_chan_cap(qd_context* ctx);	   // (ch:ptr -- cap:i64)
-qd_exec_result usr_thread_raw_chan_free(qd_context* ctx);	   // (ch:ptr -- )
+int usr_thread_raw_chan_new(qd_context* ctx);	   // ( -- ch:ptr)!
+int usr_thread_raw_chan_buffered(qd_context* ctx);  // (capacity:i64 -- ch:ptr)!
+int usr_thread_raw_chan_send(qd_context* ctx);	   // (val ch:ptr -- )!
+int usr_thread_raw_chan_recv(qd_context* ctx);	   // (ch:ptr -- val)!
+int usr_thread_raw_chan_try_send(qd_context* ctx);  // (val ch:ptr -- success:i64)
+int usr_thread_raw_chan_try_recv(qd_context* ctx);  // (ch:ptr -- val success:i64)
+int usr_thread_raw_chan_close(qd_context* ctx);	   // (ch:ptr -- )
+int usr_thread_raw_chan_is_closed(qd_context* ctx); // (ch:ptr -- closed:i64)
+int usr_thread_raw_chan_len(qd_context* ctx);	   // (ch:ptr -- len:i64)
+int usr_thread_raw_chan_cap(qd_context* ctx);	   // (ch:ptr -- cap:i64)
+int usr_thread_raw_chan_free(qd_context* ctx);	   // (ch:ptr -- )
 
 typedef struct qd_waitgroup {
 	mtx_t mutex;
@@ -81,11 +81,11 @@ typedef struct qd_waitgroup {
 } qd_waitgroup;
 
 // WaitGroup functions exposed to Quadrate (raw_ prefix to avoid collision with Quadrate wrappers)
-qd_exec_result usr_thread_raw_wg_new(qd_context* ctx);	// ( -- wg:ptr)!
-qd_exec_result usr_thread_raw_wg_add(qd_context* ctx);	// (n:i64 wg:ptr -- )
-qd_exec_result usr_thread_raw_wg_done(qd_context* ctx); // (wg:ptr -- )
-qd_exec_result usr_thread_raw_wg_wait(qd_context* ctx); // (wg:ptr -- )!
-qd_exec_result usr_thread_raw_wg_free(qd_context* ctx); // (wg:ptr -- )
+int usr_thread_raw_wg_new(qd_context* ctx);	// ( -- wg:ptr)!
+int usr_thread_raw_wg_add(qd_context* ctx);	// (n:i64 wg:ptr -- )
+int usr_thread_raw_wg_done(qd_context* ctx); // (wg:ptr -- )
+int usr_thread_raw_wg_wait(qd_context* ctx); // (wg:ptr -- )!
+int usr_thread_raw_wg_free(qd_context* ctx); // (wg:ptr -- )
 
 #ifdef __cplusplus
 }

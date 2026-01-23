@@ -112,12 +112,12 @@ static char* remove_quotes(const char* str) {
 	return strdup(str);
 }
 
-qd_exec_result qd_print(qd_context* ctx) {
+int qd_print(qd_context* ctx) {
 	// Pop and print the top element
 	qd_stack_element_t val;
 	qd_stack_error err = qd_stack_pop(ctx->st, &val);
 	if (err != QD_STACK_OK) {
-		return (qd_exec_result){-2};
+		return (int){-2};
 	}
 
 	switch (val.type) {
@@ -132,19 +132,19 @@ qd_exec_result qd_print(qd_context* ctx) {
 			qd_string_release(val.value.s);  // Release the string reference after printing
 			break;
 		default:
-			return (qd_exec_result){-3};
+			return (int){-3};
 	}
 
-	return (qd_exec_result){0};
+	return (int){0};
 }
 
-qd_exec_result qd_nl(qd_context* ctx) {
+int qd_nl(qd_context* ctx) {
 	(void)ctx;  // Unused parameter
 	printf("\n");
-	return (qd_exec_result){0};
+	return (int){0};
 }
 
-qd_exec_result qd_prints(qd_context* ctx) {
+int qd_prints(qd_context* ctx) {
 	// Print entire stack (non-destructive) - output only values for piping
 	const size_t stack_size = qd_stack_size(ctx->st);
 
@@ -153,7 +153,7 @@ qd_exec_result qd_prints(qd_context* ctx) {
 		qd_stack_element_t val;
 		qd_stack_error err = qd_stack_element(ctx->st, i, &val);
 		if (err != QD_STACK_OK) {
-			return (qd_exec_result){-2};
+			return (int){-2};
 		}
 
 		if (i > 0) {
@@ -178,7 +178,7 @@ qd_exec_result qd_prints(qd_context* ctx) {
 				break;
 			}
 			default:
-				return (qd_exec_result){-3};
+				return (int){-3};
 		}
 	}
 
@@ -186,15 +186,15 @@ qd_exec_result qd_prints(qd_context* ctx) {
 		printf("\n");
 	}
 
-	return (qd_exec_result){0};
+	return (int){0};
 }
 
-qd_exec_result qd_printv(qd_context* ctx) {
+int qd_printv(qd_context* ctx) {
 	// Forth-style verbose: pop and print the top element with type info
 	qd_stack_element_t val;
 	qd_stack_error err = qd_stack_pop(ctx->st, &val);
 	if (err != QD_STACK_OK) {
-		return (qd_exec_result){-2};
+		return (int){-2};
 	}
 
 	switch (val.type) {
@@ -219,13 +219,13 @@ qd_exec_result qd_printv(qd_context* ctx) {
 			printf("ptr:%p\n", val.value.p);
 			break;
 		default:
-			return (qd_exec_result){-3};
+			return (int){-3};
 	}
 
-	return (qd_exec_result){0};
+	return (int){0};
 }
 
-qd_exec_result qd_printsv(qd_context* ctx) {
+int qd_printsv(qd_context* ctx) {
 	// Print entire stack with type info (non-destructive)
 	const size_t stack_size = qd_stack_size(ctx->st);
 
@@ -234,7 +234,7 @@ qd_exec_result qd_printsv(qd_context* ctx) {
 		qd_stack_element_t val;
 		qd_stack_error err = qd_stack_element(ctx->st, i, &val);
 		if (err != QD_STACK_OK) {
-			return (qd_exec_result){-2};
+			return (int){-2};
 		}
 
 		if (i > 0) {
@@ -262,7 +262,7 @@ qd_exec_result qd_printsv(qd_context* ctx) {
 				printf("ptr:%p", val.value.p);
 				break;
 			default:
-				return (qd_exec_result){-3};
+				return (int){-3};
 		}
 	}
 
@@ -270,10 +270,10 @@ qd_exec_result qd_printsv(qd_context* ctx) {
 		printf("\n");
 	}
 
-	return (qd_exec_result){0};
+	return (int){0};
 }
 
-qd_exec_result qd_read(qd_context* ctx) {
+int qd_read(qd_context* ctx) {
 	// Read command-line arguments and push onto stack with type inference
 	// argv[0] (program name) is saved to ctx->program_name, not pushed to stack
 	// Stack before: (empty or anything)
@@ -282,7 +282,7 @@ qd_exec_result qd_read(qd_context* ctx) {
 	if (ctx->argc == 0 || ctx->argv == NULL) {
 		// No arguments, just push 0
 		qd_push_i(ctx, 0);
-		return (qd_exec_result){0};
+		return (int){0};
 	}
 
 	// Save program name (argv[0]) to context
@@ -325,6 +325,6 @@ qd_exec_result qd_read(qd_context* ctx) {
 	// Finally push argument count (argc - 1, excluding program name)
 	qd_push_i(ctx, ctx->argc - 1);
 
-	return (qd_exec_result){0};
+	return (int){0};
 }
 

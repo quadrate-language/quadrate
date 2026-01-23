@@ -36,7 +36,7 @@ extern "C" {
  * @param value Integer value to push
  * @return Execution result (0 on success)
  */
-qd_exec_result qd_push_i(qd_context* ctx, int64_t value);
+int qd_push_i(qd_context* ctx, int64_t value);
 
 /**
  * @brief Push a double-precision float onto the stack
@@ -45,7 +45,7 @@ qd_exec_result qd_push_i(qd_context* ctx, int64_t value);
  * @param value Float value to push
  * @return Execution result (0 on success)
  */
-qd_exec_result qd_push_f(qd_context* ctx, double value);
+int qd_push_f(qd_context* ctx, double value);
 
 /**
  * @brief Push a string onto the stack
@@ -56,7 +56,7 @@ qd_exec_result qd_push_f(qd_context* ctx, double value);
  *
  * @note The string is copied; caller retains ownership of the original
  */
-qd_exec_result qd_push_s(qd_context* ctx, const char* value);
+int qd_push_s(qd_context* ctx, const char* value);
 
 /**
  * @brief Push a reference-counted string onto the stack
@@ -67,7 +67,7 @@ qd_exec_result qd_push_s(qd_context* ctx, const char* value);
  *
  * @note The string reference count is incremented; string is shared, not copied
  */
-qd_exec_result qd_push_s_ref(qd_context* ctx, qd_string_t* value);
+int qd_push_s_ref(qd_context* ctx, qd_string_t* value);
 
 /**
  * @brief Push a pointer onto the stack
@@ -78,7 +78,7 @@ qd_exec_result qd_push_s_ref(qd_context* ctx, qd_string_t* value);
  *
  * @note The pointer is stored as-is; no ownership transfer occurs
  */
-qd_exec_result qd_push_p(qd_context* ctx, void* value);
+int qd_push_p(qd_context* ctx, void* value);
 
 /** @} */ // end of StackPush group
 
@@ -97,7 +97,7 @@ qd_exec_result qd_push_p(qd_context* ctx, void* value);
  * @param ctx Execution context
  * @return Execution result (0 on success)
  */
-qd_exec_result qd_print(qd_context* ctx);
+int qd_print(qd_context* ctx);
 
 /**
  * @brief Print top stack value with verbose format
@@ -107,7 +107,7 @@ qd_exec_result qd_print(qd_context* ctx);
  * @param ctx Execution context
  * @return Execution result (0 on success)
  */
-qd_exec_result qd_printv(qd_context* ctx);
+int qd_printv(qd_context* ctx);
 
 /**
  * @brief Print all stack values
@@ -117,7 +117,7 @@ qd_exec_result qd_printv(qd_context* ctx);
  * @param ctx Execution context
  * @return Execution result (0 on success)
  */
-qd_exec_result qd_prints(qd_context* ctx);
+int qd_prints(qd_context* ctx);
 
 /**
  * @brief Print all stack values with verbose format
@@ -127,7 +127,7 @@ qd_exec_result qd_prints(qd_context* ctx);
  * @param ctx Execution context
  * @return Execution result (0 on success)
  */
-qd_exec_result qd_printsv(qd_context* ctx);
+int qd_printsv(qd_context* ctx);
 
 /**
  * @brief Print a newline
@@ -135,7 +135,7 @@ qd_exec_result qd_printsv(qd_context* ctx);
  * @param ctx Execution context
  * @return Execution result (0 on success)
  */
-qd_exec_result qd_nl(qd_context* ctx);
+int qd_nl(qd_context* ctx);
 
 /**
  * @brief Read input (implementation-specific)
@@ -143,7 +143,7 @@ qd_exec_result qd_nl(qd_context* ctx);
  * @param ctx Execution context
  * @return Execution result (0 on success)
  */
-qd_exec_result qd_read(qd_context* ctx);
+int qd_read(qd_context* ctx);
 
 /** @} */ // end of IO group
 
@@ -161,7 +161,7 @@ qd_exec_result qd_read(qd_context* ctx);
  * @param ctx Execution context
  * @return Execution result (0 on success)
  */
-qd_exec_result qd_peek(qd_context* ctx);
+int qd_peek(qd_context* ctx);
 
 /**
  * @brief Duplicate top element ( a -- a a )
@@ -169,7 +169,7 @@ qd_exec_result qd_peek(qd_context* ctx);
  * @param ctx Execution context
  * @return Execution result (0 on success)
  */
-qd_exec_result qd_dup(qd_context* ctx);
+int qd_dup(qd_context* ctx);
 
 /**
  * @brief Duplicate second element ( a b -- a b a )
@@ -177,7 +177,7 @@ qd_exec_result qd_dup(qd_context* ctx);
  * @param ctx Execution context
  * @return Execution result (0 on success)
  */
-qd_exec_result qd_dupd(qd_context* ctx);
+int qd_dupd(qd_context* ctx);
 
 /**
  * @brief Duplicate top two elements ( a b -- a b a b )
@@ -185,7 +185,7 @@ qd_exec_result qd_dupd(qd_context* ctx);
  * @param ctx Execution context
  * @return Execution result (0 on success)
  */
-qd_exec_result qd_dup2(qd_context* ctx);
+int qd_dup2(qd_context* ctx);
 
 /**
  * @brief Swap top two elements ( a b -- b a )
@@ -193,7 +193,7 @@ qd_exec_result qd_dup2(qd_context* ctx);
  * @param ctx Execution context
  * @return Execution result (0 on success)
  */
-qd_exec_result qd_swap(qd_context* ctx);
+int qd_swap(qd_context* ctx);
 
 /**
  * @brief Swap second pair of elements ( a b c -- b a c )
@@ -201,7 +201,7 @@ qd_exec_result qd_swap(qd_context* ctx);
  * @param ctx Execution context
  * @return Execution result (0 on success)
  */
-qd_exec_result qd_swapd(qd_context* ctx);
+int qd_swapd(qd_context* ctx);
 
 /**
  * @brief Swap two pairs ( a b c d -- c d a b )
@@ -209,7 +209,7 @@ qd_exec_result qd_swapd(qd_context* ctx);
  * @param ctx Execution context
  * @return Execution result (0 on success)
  */
-qd_exec_result qd_swap2(qd_context* ctx);
+int qd_swap2(qd_context* ctx);
 
 /**
  * @brief Copy second element to top ( a b -- a b a )
@@ -217,7 +217,7 @@ qd_exec_result qd_swap2(qd_context* ctx);
  * @param ctx Execution context
  * @return Execution result (0 on success)
  */
-qd_exec_result qd_over(qd_context* ctx);
+int qd_over(qd_context* ctx);
 
 /**
  * @brief Copy second element below top ( a b c -- a b c a )
@@ -225,7 +225,7 @@ qd_exec_result qd_over(qd_context* ctx);
  * @param ctx Execution context
  * @return Execution result (0 on success)
  */
-qd_exec_result qd_overd(qd_context* ctx);
+int qd_overd(qd_context* ctx);
 
 /**
  * @brief Copy second pair to top ( a b c d -- a b c d a b )
@@ -233,7 +233,7 @@ qd_exec_result qd_overd(qd_context* ctx);
  * @param ctx Execution context
  * @return Execution result (0 on success)
  */
-qd_exec_result qd_over2(qd_context* ctx);
+int qd_over2(qd_context* ctx);
 
 /**
  * @brief Remove second element ( a b -- b )
@@ -241,7 +241,7 @@ qd_exec_result qd_over2(qd_context* ctx);
  * @param ctx Execution context
  * @return Execution result (0 on success)
  */
-qd_exec_result qd_nip(qd_context* ctx);
+int qd_nip(qd_context* ctx);
 
 /**
  * @brief Remove second element below top ( a b c -- a c )
@@ -249,7 +249,7 @@ qd_exec_result qd_nip(qd_context* ctx);
  * @param ctx Execution context
  * @return Execution result (0 on success)
  */
-qd_exec_result qd_nipd(qd_context* ctx);
+int qd_nipd(qd_context* ctx);
 
 /**
  * @brief Drop top element ( a -- )
@@ -257,7 +257,7 @@ qd_exec_result qd_nipd(qd_context* ctx);
  * @param ctx Execution context
  * @return Execution result (0 on success)
  */
-qd_exec_result qd_drop(qd_context* ctx);
+int qd_drop(qd_context* ctx);
 
 /**
  * @brief Drop top two elements ( a b -- )
@@ -265,7 +265,7 @@ qd_exec_result qd_drop(qd_context* ctx);
  * @param ctx Execution context
  * @return Execution result (0 on success)
  */
-qd_exec_result qd_drop2(qd_context* ctx);
+int qd_drop2(qd_context* ctx);
 
 /**
  * @brief Free memory pointed to by pointer on stack ( ptr -- )
@@ -273,7 +273,7 @@ qd_exec_result qd_drop2(qd_context* ctx);
  * @param ctx Execution context
  * @return Execution result (0 on success)
  */
-qd_exec_result qd_free(qd_context* ctx);
+int qd_free(qd_context* ctx);
 
 /**
  * @brief Release a reference-counted struct from the stack ( ptr -- )
@@ -284,7 +284,7 @@ qd_exec_result qd_free(qd_context* ctx);
  * @param ctx Execution context
  * @return Execution result (0 on success)
  */
-qd_exec_result qd_free_struct(qd_context* ctx);
+int qd_free_struct(qd_context* ctx);
 
 /**
  * @brief Rotate three elements ( a b c -- b c a )
@@ -292,7 +292,7 @@ qd_exec_result qd_free_struct(qd_context* ctx);
  * @param ctx Execution context
  * @return Execution result (0 on success)
  */
-qd_exec_result qd_rot(qd_context* ctx);
+int qd_rot(qd_context* ctx);
 
 /**
  * @brief Tuck: copy top below second ( a b -- b a b )
@@ -300,7 +300,7 @@ qd_exec_result qd_rot(qd_context* ctx);
  * @param ctx Execution context
  * @return Execution result (0 on success)
  */
-qd_exec_result qd_tuck(qd_context* ctx);
+int qd_tuck(qd_context* ctx);
 
 /**
  * @brief Pick: copy nth element to top ( ... n -- ... n x )
@@ -308,7 +308,7 @@ qd_exec_result qd_tuck(qd_context* ctx);
  * @param ctx Execution context
  * @return Execution result (0 on success)
  */
-qd_exec_result qd_pick(qd_context* ctx);
+int qd_pick(qd_context* ctx);
 
 /**
  * @brief Roll: move nth element to top ( ... n -- ... x )
@@ -316,7 +316,7 @@ qd_exec_result qd_pick(qd_context* ctx);
  * @param ctx Execution context
  * @return Execution result (0 on success)
  */
-qd_exec_result qd_roll(qd_context* ctx);
+int qd_roll(qd_context* ctx);
 
 /**
  * @brief Push stack depth ( -- n )
@@ -324,7 +324,7 @@ qd_exec_result qd_roll(qd_context* ctx);
  * @param ctx Execution context
  * @return Execution result (0 on success)
  */
-qd_exec_result qd_depth(qd_context* ctx);
+int qd_depth(qd_context* ctx);
 
 /**
  * @brief Clear the entire stack
@@ -332,7 +332,7 @@ qd_exec_result qd_depth(qd_context* ctx);
  * @param ctx Execution context
  * @return Execution result (0 on success)
  */
-qd_exec_result qd_clear(qd_context* ctx);
+int qd_clear(qd_context* ctx);
 
 /** @} */ // end of StackManip group
 
@@ -348,7 +348,7 @@ qd_exec_result qd_clear(qd_context* ctx);
  * @param ctx Execution context
  * @return Execution result (0 on success)
  */
-qd_exec_result qd_add(qd_context* ctx);
+int qd_add(qd_context* ctx);
 
 /**
  * @brief Subtract top from second ( a b -- a-b )
@@ -356,7 +356,7 @@ qd_exec_result qd_add(qd_context* ctx);
  * @param ctx Execution context
  * @return Execution result (0 on success)
  */
-qd_exec_result qd_sub(qd_context* ctx);
+int qd_sub(qd_context* ctx);
 
 /**
  * @brief Multiply top two elements ( a b -- a*b )
@@ -364,7 +364,7 @@ qd_exec_result qd_sub(qd_context* ctx);
  * @param ctx Execution context
  * @return Execution result (0 on success)
  */
-qd_exec_result qd_mul(qd_context* ctx);
+int qd_mul(qd_context* ctx);
 
 /**
  * @brief Divide second by top ( a b -- a/b )
@@ -372,7 +372,7 @@ qd_exec_result qd_mul(qd_context* ctx);
  * @param ctx Execution context
  * @return Execution result (0 on success)
  */
-qd_exec_result qd_div(qd_context* ctx);
+int qd_div(qd_context* ctx);
 
 /**
  * @brief Modulo: remainder of division ( a b -- a%b )
@@ -380,7 +380,7 @@ qd_exec_result qd_div(qd_context* ctx);
  * @param ctx Execution context
  * @return Execution result (0 on success)
  */
-qd_exec_result qd_mod(qd_context* ctx);
+int qd_mod(qd_context* ctx);
 
 /**
  * @brief Negate top element ( a -- -a )
@@ -388,7 +388,7 @@ qd_exec_result qd_mod(qd_context* ctx);
  * @param ctx Execution context
  * @return Execution result (0 on success)
  */
-qd_exec_result qd_neg(qd_context* ctx);
+int qd_neg(qd_context* ctx);
 
 /**
  * @brief Increment top element ( a -- a+1 )
@@ -396,7 +396,7 @@ qd_exec_result qd_neg(qd_context* ctx);
  * @param ctx Execution context
  * @return Execution result (0 on success)
  */
-qd_exec_result qd_inc(qd_context* ctx);
+int qd_inc(qd_context* ctx);
 
 /**
  * @brief Decrement top element ( a -- a-1 )
@@ -404,7 +404,7 @@ qd_exec_result qd_inc(qd_context* ctx);
  * @param ctx Execution context
  * @return Execution result (0 on success)
  */
-qd_exec_result qd_dec(qd_context* ctx);
+int qd_dec(qd_context* ctx);
 
 /** @} */ // end of Arithmetic group
 
@@ -420,7 +420,7 @@ qd_exec_result qd_dec(qd_context* ctx);
  * @param ctx Execution context
  * @return Execution result (0 on success)
  */
-qd_exec_result qd_and(qd_context* ctx);
+int qd_and(qd_context* ctx);
 
 /**
  * @brief Bitwise OR ( a b -- a|b )
@@ -428,7 +428,7 @@ qd_exec_result qd_and(qd_context* ctx);
  * @param ctx Execution context
  * @return Execution result (0 on success)
  */
-qd_exec_result qd_or(qd_context* ctx);
+int qd_or(qd_context* ctx);
 
 /**
  * @brief Bitwise XOR ( a b -- a^b )
@@ -436,7 +436,7 @@ qd_exec_result qd_or(qd_context* ctx);
  * @param ctx Execution context
  * @return Execution result (0 on success)
  */
-qd_exec_result qd_xor(qd_context* ctx);
+int qd_xor(qd_context* ctx);
 
 /**
  * @brief Bitwise NOT ( a -- ~a )
@@ -444,7 +444,7 @@ qd_exec_result qd_xor(qd_context* ctx);
  * @param ctx Execution context
  * @return Execution result (0 on success)
  */
-qd_exec_result qd_not(qd_context* ctx);
+int qd_not(qd_context* ctx);
 
 /**
  * @brief Shift left ( a n -- a<<n )
@@ -452,7 +452,7 @@ qd_exec_result qd_not(qd_context* ctx);
  * @param ctx Execution context
  * @return Execution result (0 on success)
  */
-qd_exec_result qd_shl(qd_context* ctx);
+int qd_shl(qd_context* ctx);
 
 /**
  * @brief Shift right logical ( a n -- a>>n )
@@ -460,7 +460,7 @@ qd_exec_result qd_shl(qd_context* ctx);
  * @param ctx Execution context
  * @return Execution result (0 on success)
  */
-qd_exec_result qd_shr(qd_context* ctx);
+int qd_shr(qd_context* ctx);
 
 /** @} */ // end of Bitwise group
 
@@ -476,7 +476,7 @@ qd_exec_result qd_shr(qd_context* ctx);
  * @param ctx Execution context
  * @return Execution result (0 on success)
  */
-qd_exec_result qd_eq(qd_context* ctx);
+int qd_eq(qd_context* ctx);
 
 /**
  * @brief Test inequality ( a b -- bool )
@@ -484,7 +484,7 @@ qd_exec_result qd_eq(qd_context* ctx);
  * @param ctx Execution context
  * @return Execution result (0 on success)
  */
-qd_exec_result qd_neq(qd_context* ctx);
+int qd_neq(qd_context* ctx);
 
 /**
  * @brief Test less than ( a b -- bool )
@@ -492,7 +492,7 @@ qd_exec_result qd_neq(qd_context* ctx);
  * @param ctx Execution context
  * @return Execution result (0 on success)
  */
-qd_exec_result qd_lt(qd_context* ctx);
+int qd_lt(qd_context* ctx);
 
 /**
  * @brief Test greater than ( a b -- bool )
@@ -500,7 +500,7 @@ qd_exec_result qd_lt(qd_context* ctx);
  * @param ctx Execution context
  * @return Execution result (0 on success)
  */
-qd_exec_result qd_gt(qd_context* ctx);
+int qd_gt(qd_context* ctx);
 
 /**
  * @brief Test less than or equal ( a b -- bool )
@@ -508,7 +508,7 @@ qd_exec_result qd_gt(qd_context* ctx);
  * @param ctx Execution context
  * @return Execution result (0 on success)
  */
-qd_exec_result qd_lte(qd_context* ctx);
+int qd_lte(qd_context* ctx);
 
 /**
  * @brief Test greater than or equal ( a b -- bool )
@@ -516,7 +516,7 @@ qd_exec_result qd_lte(qd_context* ctx);
  * @param ctx Execution context
  * @return Execution result (0 on success)
  */
-qd_exec_result qd_gte(qd_context* ctx);
+int qd_gte(qd_context* ctx);
 
 /**
  * @brief Test if value is within range ( val min max -- bool )
@@ -524,7 +524,7 @@ qd_exec_result qd_gte(qd_context* ctx);
  * @param ctx Execution context
  * @return Execution result (0 on success)
  */
-qd_exec_result qd_within(qd_context* ctx);
+int qd_within(qd_context* ctx);
 
 /** @} */ // end of Comparison group
 
@@ -540,7 +540,7 @@ qd_exec_result qd_within(qd_context* ctx);
  * @param ctx Execution context
  * @return Execution result (0 on success)
  */
-qd_exec_result qd_casti(qd_context* ctx);
+int qd_casti(qd_context* ctx);
 
 /**
  * @brief Cast top element to float
@@ -548,7 +548,7 @@ qd_exec_result qd_casti(qd_context* ctx);
  * @param ctx Execution context
  * @return Execution result (0 on success)
  */
-qd_exec_result qd_castf(qd_context* ctx);
+int qd_castf(qd_context* ctx);
 
 /**
  * @brief Cast top element to string
@@ -556,7 +556,7 @@ qd_exec_result qd_castf(qd_context* ctx);
  * @param ctx Execution context
  * @return Execution result (0 on success)
  */
-qd_exec_result qd_casts(qd_context* ctx);
+int qd_casts(qd_context* ctx);
 
 /**
  * @brief Cast top of stack to pointer
@@ -566,7 +566,7 @@ qd_exec_result qd_casts(qd_context* ctx);
  * @param ctx Execution context
  * @return Execution result (0 on success)
  */
-qd_exec_result qd_castp(qd_context* ctx);
+int qd_castp(qd_context* ctx);
 
 /** @} */ // end of TypeCast group
 
@@ -582,7 +582,7 @@ qd_exec_result qd_castp(qd_context* ctx);
  * @param ctx Execution context
  * @return Execution result (0 on success)
  */
-qd_exec_result qd_spawn(qd_context* ctx);
+int qd_spawn(qd_context* ctx);
 
 /**
  * @brief Detach a thread
@@ -590,7 +590,7 @@ qd_exec_result qd_spawn(qd_context* ctx);
  * @param ctx Execution context
  * @return Execution result (0 on success)
  */
-qd_exec_result qd_detach(qd_context* ctx);
+int qd_detach(qd_context* ctx);
 
 /**
  * @brief Wait for a thread to complete
@@ -598,7 +598,7 @@ qd_exec_result qd_detach(qd_context* ctx);
  * @param ctx Execution context
  * @return Execution result (0 on success)
  */
-qd_exec_result qd_wait(qd_context* ctx);
+int qd_wait(qd_context* ctx);
 
 /** @} */ // end of Threading group
 
@@ -614,7 +614,7 @@ qd_exec_result qd_wait(qd_context* ctx);
  * @param ctx Execution context
  * @return Execution result (0 on success)
  */
-qd_exec_result qd_call(qd_context* ctx);
+int qd_call(qd_context* ctx);
 
 /**
  * @brief Get the current error code
@@ -622,7 +622,7 @@ qd_exec_result qd_call(qd_context* ctx);
  * @param ctx Execution context
  * @return Execution result (0 on success)
  */
-qd_exec_result qd_err(qd_context* ctx);
+int qd_err(qd_context* ctx);
 
 /**
  * @brief Trigger a panic (error in fallible function)
@@ -630,7 +630,7 @@ qd_exec_result qd_err(qd_context* ctx);
  * @param ctx Execution context
  * @return Execution result (non-zero indicating error)
  */
-qd_exec_result qd_panic(qd_context* ctx);
+int qd_panic(qd_context* ctx);
 
 /** @} */ // end of ErrorHandling group
 
@@ -822,7 +822,7 @@ void qd_set_error_msg(qd_context* ctx, const char* msg);
  * @param ctx Execution context
  * @return Execution result (0 on success)
  */
-qd_exec_result qd_mem_alloc(qd_context* ctx);
+int qd_mem_alloc(qd_context* ctx);
 
 /**
  * @brief Free memory
@@ -833,7 +833,7 @@ qd_exec_result qd_mem_alloc(qd_context* ctx);
  * @param ctx Execution context
  * @return Execution result (0 on success)
  */
-qd_exec_result qd_mem_free(qd_context* ctx);
+int qd_mem_free(qd_context* ctx);
 
 /**
  * @brief Reallocate memory
@@ -844,7 +844,7 @@ qd_exec_result qd_mem_free(qd_context* ctx);
  * @param ctx Execution context
  * @return Execution result (0 on success)
  */
-qd_exec_result qd_mem_realloc(qd_context* ctx);
+int qd_mem_realloc(qd_context* ctx);
 
 /**
  * @brief Set byte at address
@@ -855,7 +855,7 @@ qd_exec_result qd_mem_realloc(qd_context* ctx);
  * @param ctx Execution context
  * @return Execution result (0 on success, -1 on null pointer)
  */
-qd_exec_result qd_mem_set_byte(qd_context* ctx);
+int qd_mem_set_byte(qd_context* ctx);
 
 /**
  * @brief Get byte from address
@@ -866,7 +866,7 @@ qd_exec_result qd_mem_set_byte(qd_context* ctx);
  * @param ctx Execution context
  * @return Execution result (0 on success, -1 on null pointer)
  */
-qd_exec_result qd_mem_get_byte(qd_context* ctx);
+int qd_mem_get_byte(qd_context* ctx);
 
 /**
  * @brief Set 64-bit integer at address
@@ -876,7 +876,7 @@ qd_exec_result qd_mem_get_byte(qd_context* ctx);
  * @param ctx Execution context
  * @return Execution result (0 on success, -1 on null pointer)
  */
-qd_exec_result qd_mem_set(qd_context* ctx);
+int qd_mem_set(qd_context* ctx);
 
 /**
  * @brief Get 64-bit integer from address
@@ -886,7 +886,7 @@ qd_exec_result qd_mem_set(qd_context* ctx);
  * @param ctx Execution context
  * @return Execution result (0 on success, -1 on null pointer)
  */
-qd_exec_result qd_mem_get(qd_context* ctx);
+int qd_mem_get(qd_context* ctx);
 
 /**
  * @brief Set float at address
@@ -896,7 +896,7 @@ qd_exec_result qd_mem_get(qd_context* ctx);
  * @param ctx Execution context
  * @return Execution result (0 on success, -1 on null pointer)
  */
-qd_exec_result qd_mem_set_float(qd_context* ctx);
+int qd_mem_set_float(qd_context* ctx);
 
 /**
  * @brief Get float from address
@@ -906,7 +906,7 @@ qd_exec_result qd_mem_set_float(qd_context* ctx);
  * @param ctx Execution context
  * @return Execution result (0 on success, -1 on null pointer)
  */
-qd_exec_result qd_mem_get_float(qd_context* ctx);
+int qd_mem_get_float(qd_context* ctx);
 
 /**
  * @brief Set pointer at address
@@ -916,7 +916,7 @@ qd_exec_result qd_mem_get_float(qd_context* ctx);
  * @param ctx Execution context
  * @return Execution result (0 on success, -1 on null pointer)
  */
-qd_exec_result qd_mem_set_ptr(qd_context* ctx);
+int qd_mem_set_ptr(qd_context* ctx);
 
 /**
  * @brief Get pointer from address
@@ -926,7 +926,7 @@ qd_exec_result qd_mem_set_ptr(qd_context* ctx);
  * @param ctx Execution context
  * @return Execution result (0 on success, -1 on null pointer)
  */
-qd_exec_result qd_mem_get_ptr(qd_context* ctx);
+int qd_mem_get_ptr(qd_context* ctx);
 
 /**
  * @brief Copy memory
@@ -936,7 +936,7 @@ qd_exec_result qd_mem_get_ptr(qd_context* ctx);
  * @param ctx Execution context
  * @return Execution result (0 on success, -1 on null pointer)
  */
-qd_exec_result qd_mem_copy(qd_context* ctx);
+int qd_mem_copy(qd_context* ctx);
 
 /**
  * @brief Zero memory
@@ -946,7 +946,7 @@ qd_exec_result qd_mem_copy(qd_context* ctx);
  * @param ctx Execution context
  * @return Execution result (0 on success, -1 on null pointer)
  */
-qd_exec_result qd_mem_zero(qd_context* ctx);
+int qd_mem_zero(qd_context* ctx);
 
 /**
  * @brief Fill memory with byte value
@@ -956,7 +956,7 @@ qd_exec_result qd_mem_zero(qd_context* ctx);
  * @param ctx Execution context
  * @return Execution result (0 on success, -1 on null pointer)
  */
-qd_exec_result qd_mem_fill(qd_context* ctx);
+int qd_mem_fill(qd_context* ctx);
 
 /** @} */ // end of Memory group
 
@@ -1077,7 +1077,7 @@ int qd_version_patch(void);
  * @param ctx Execution context
  * @return Execution result (0 on success)
  */
-qd_exec_result qd_rt_version(qd_context* ctx);
+int qd_rt_version(qd_context* ctx);
 
 /**
  * @brief Push API version number onto stack
@@ -1087,7 +1087,7 @@ qd_exec_result qd_rt_version(qd_context* ctx);
  * @param ctx Execution context
  * @return Execution result (0 on success)
  */
-qd_exec_result qd_rt_version_api(qd_context* ctx);
+int qd_rt_version_api(qd_context* ctx);
 
 /** @} */ // end of Version group
 

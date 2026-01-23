@@ -645,8 +645,8 @@ void qd_execute(qd_context* ctx, const char* code) {
 				symbol_name = "usr_" + module_name + "_" + func_name;
 			}
 
-			// Function signature: qd_exec_result (*)(qd_context*)
-			typedef qd_exec_result (*qd_func_t)(qd_context*);
+			// Function signature: int (*)(qd_context*)
+			typedef int (*qd_func_t)(qd_context*);
 
 			void* sym = dynlib_platform_symbol(mod->dl_handle, symbol_name.c_str());
 			qd_func_t func = reinterpret_cast<qd_func_t>(sym);
@@ -665,10 +665,10 @@ void qd_execute(qd_context* ctx, const char* code) {
 			}
 
 			// Call the function
-			qd_exec_result result = func(ctx);
-			if (result.code != 0) {
+			int result = func(ctx);
+			if (result != 0) {
 				fprintf(stderr, "qd_execute: Function '%s::%s' returned error code %d\n", module_name.c_str(),
-						func_name.c_str(), result.code);
+						func_name.c_str(), result);
 			}
 		} else {
 			fprintf(stderr, "qd_execute: Unknown token '%s'\n", token.c_str());

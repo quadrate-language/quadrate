@@ -212,7 +212,7 @@ int qd_array_push_ptr(qd_array_t* arr, void* value);
  * @param ctx Execution context
  * @return Execution result (0 on success)
  */
-qd_exec_result qd_len(qd_context* ctx);
+int qd_len(qd_context* ctx);
 
 /**
  * @brief Get element at index from array
@@ -222,7 +222,7 @@ qd_exec_result qd_len(qd_context* ctx);
  * @param ctx Execution context
  * @return Execution result (0 on success)
  */
-qd_exec_result qd_nth(qd_context* ctx);
+int qd_nth(qd_context* ctx);
 
 /**
  * @brief Create a new integer array
@@ -234,7 +234,7 @@ qd_exec_result qd_nth(qd_context* ctx);
  * @param ctx Execution context
  * @return Execution result (0 on success)
  */
-qd_exec_result qd_makei(qd_context* ctx);
+int qd_makei(qd_context* ctx);
 
 /**
  * @brief Create a new float array
@@ -246,7 +246,7 @@ qd_exec_result qd_makei(qd_context* ctx);
  * @param ctx Execution context
  * @return Execution result (0 on success)
  */
-qd_exec_result qd_makef(qd_context* ctx);
+int qd_makef(qd_context* ctx);
 
 /**
  * @brief Create a new string array
@@ -258,7 +258,7 @@ qd_exec_result qd_makef(qd_context* ctx);
  * @param ctx Execution context
  * @return Execution result (0 on success)
  */
-qd_exec_result qd_makes(qd_context* ctx);
+int qd_makes(qd_context* ctx);
 
 /**
  * @brief Create a new pointer array
@@ -270,7 +270,7 @@ qd_exec_result qd_makes(qd_context* ctx);
  * @param ctx Execution context
  * @return Execution result (0 on success)
  */
-qd_exec_result qd_makep(qd_context* ctx);
+int qd_makep(qd_context* ctx);
 
 /**
  * @brief Append element to array
@@ -283,7 +283,7 @@ qd_exec_result qd_makep(qd_context* ctx);
  * @param ctx Execution context
  * @return Execution result (0 on success)
  */
-qd_exec_result qd_append(qd_context* ctx);
+int qd_append(qd_context* ctx);
 
 /**
  * @brief Set element at index in array
@@ -295,7 +295,7 @@ qd_exec_result qd_append(qd_context* ctx);
  * @param ctx Execution context
  * @return Execution result (0 on success)
  */
-qd_exec_result qd_set(qd_context* ctx);
+int qd_set(qd_context* ctx);
 
 /** @} */ // end of ArrayStackOps group
 

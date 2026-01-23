@@ -8,24 +8,24 @@
 #include <stdio.h>
 
 // FFI functions must follow this signature:
-//   qd_exec_result <function>(qd_context* ctx)
+//   int <function>(qd_context* ctx)
 //
 // The function name matches what you declare in the Quadrate import block.
 // The compiler generates a wrapper usr_<module>_<function> that calls this.
 
-qd_exec_result hello(qd_context* ctx) {
+int hello(qd_context* ctx) {
     // Pop the string argument from the stack
     qd_stack_element_t elem;
     qd_stack_error err = qd_stack_pop(ctx->st, &elem);
     if (err != QD_STACK_OK) {
         fprintf(stderr, "greet::hello: stack underflow\n");
-        return (qd_exec_result){1};
+        return 1;
     }
 
     // Verify it's a string
     if (elem.type != QD_STACK_TYPE_STR) {
         fprintf(stderr, "greet::hello: expected string, got type %d\n", elem.type);
-        return (qd_exec_result){1};
+        return 1;
     }
 
     // Print the greeting
@@ -35,5 +35,5 @@ qd_exec_result hello(qd_context* ctx) {
     qd_string_release(elem.value.s);
 
     // Return success (0 = no error)
-    return (qd_exec_result){0};
+    return 0;
 }

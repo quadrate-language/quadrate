@@ -39,8 +39,8 @@ namespace Qd {
 		auto i32t = builder->getInt32Ty();
 		auto i64t = builder->getInt64Ty();
 
-		// exec_result is a struct with one i32 field
-		execResultTy = llvm::StructType::create(*context, {i32t}, "qd_exec_result");
+		// exec_result is just an i32 (0 = success, non-zero = error)
+		execResultTy = i32t;
 
 		// qd_stack_element_t layout: { union(i64, double, ptr, ptr), i32 type, i8 is_error_tainted }
 		stackElementTy = llvm::StructType::create(*context, {i64t, i32t, builder->getInt8Ty()}, "qd_stack_element_t");
@@ -608,8 +608,8 @@ namespace Qd {
 				debugScopeStack.pop_back();
 			}
 		} else {
-			// User-defined function: qd_exec_result usr_<prefix>_<name>(qd_context* ctx)
-			// For methods: qd_exec_result usr_<prefix>_<ReceiverType>_<name>(qd_context* ctx)
+			// User-defined function: int usr_<prefix>_<name>(qd_context* ctx)
+			// For methods: int usr_<prefix>_<ReceiverType>_<name>(qd_context* ctx)
 			std::string fnName;
 			if (funcNode->hasReceiver()) {
 				fnName = "usr_" + namePrefix + "_" + funcNode->receiverType() + "_" + funcNode->name();
@@ -903,8 +903,7 @@ namespace Qd {
 			}
 
 			// Return success
-			auto result = llvm::ConstantStruct::get(llvm::cast<llvm::StructType>(execResultTy), {builder->getInt32(0)});
-			builder->CreateRet(result);
+			builder->CreateRet(builder->getInt32(0));
 
 			// Pop debug scope for user function
 			if (debugInfoEnabled && !debugScopeStack.empty()) {
@@ -935,7 +934,7 @@ namespace Qd {
 		}
 		std::string funcName = "test_" + namePrefix + "_" + sanitizedName;
 
-		// Create function type: qd_exec_result function(qd_context*)
+		// Create function type: int function(qd_context*)
 		auto fnTy = llvm::FunctionType::get(execResultTy, {contextPtrTy}, false);
 		auto fn = llvm::Function::Create(fnTy, llvm::Function::InternalLinkage, funcName, *module);
 
@@ -1001,8 +1000,7 @@ namespace Qd {
 
 		// Return the accumulated error status
 		auto finalError = builder->CreateLoad(int32Ty, testErrorAlloca, "final_error");
-		auto result = builder->CreateInsertValue(llvm::UndefValue::get(execResultTy), finalError, {0}, "test_result");
-		builder->CreateRet(result);
+		builder->CreateRet(finalError);
 
 		currentFunctionReturnBlock = nullptr;
 		testErrorAlloca = nullptr; // Clear test context
@@ -1056,10 +1054,7 @@ namespace Qd {
 			}
 
 			// Call the test function
-			auto result = builder->CreateCall(testFn, {ctx}, "test_result");
-
-			// Extract the error code (first field of qd_exec_result)
-			auto errorCode = builder->CreateExtractValue(result, {0}, "error_code");
+			auto errorCode = builder->CreateCall(testFn, {ctx}, "error_code");
 
 			// Check if test passed (0 = non-fallible success, 1 = fallible success/Ok)
 			auto isSuccess = builder->CreateICmpULE(errorCode, builder->getInt32(1), "is_success");
@@ -1184,7 +1179,7 @@ namespace Qd {
 						// Check if function already exists
 						llvm::Function* fn = module->getFunction(mangledName);
 						if (!fn) {
-							// Create function type: qd_exec_result function(qd_context*)
+							// Create function type: int function(qd_context*)
 							auto fnTy = llvm::FunctionType::get(execResultTy, {contextPtrTy}, false);
 							fn = llvm::Function::Create(fnTy, llvm::Function::ExternalLinkage, mangledName, *module);
 						}

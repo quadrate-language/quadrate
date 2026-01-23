@@ -66,23 +66,23 @@ static int elements_equal(qd_stack_element_t* a, qd_stack_element_t* b) {
 }
 
 // assert_eq - Assert two values are equal: ( a b -- )
-qd_exec_result usr_testing_assert_eq(qd_context* ctx) {
+int usr_testing_assert_eq(qd_context* ctx) {
 	size_t stack_size = qd_stack_size(ctx->st);
 	if (stack_size < 2) {
 		fprintf(stderr, "Assertion error: assert_eq requires 2 values on stack, have %zu\n", stack_size);
 		qd_print_stack_trace(ctx);
-		return (qd_exec_result){1};
+		return (int){1};
 	}
 
 	qd_stack_element_t b, a;
 	qd_stack_error err = qd_stack_pop(ctx->st, &b);
 	if (err != QD_STACK_OK) {
-		return (qd_exec_result){-2};
+		return (int){-2};
 	}
 	err = qd_stack_pop(ctx->st, &a);
 	if (err != QD_STACK_OK) {
 		release_element(&b);
-		return (qd_exec_result){-2};
+		return (int){-2};
 	}
 
 	int equal = elements_equal(&a, &b);
@@ -98,32 +98,32 @@ qd_exec_result usr_testing_assert_eq(qd_context* ctx) {
 		qd_print_stack_trace(ctx);
 		release_element(&a);
 		release_element(&b);
-		return (qd_exec_result){1};
+		return (int){1};
 	}
 
 	release_element(&a);
 	release_element(&b);
-	return (qd_exec_result){0};
+	return (int){0};
 }
 
 // assert_ne - Assert two values are not equal: ( a b -- )
-qd_exec_result usr_testing_assert_ne(qd_context* ctx) {
+int usr_testing_assert_ne(qd_context* ctx) {
 	size_t stack_size = qd_stack_size(ctx->st);
 	if (stack_size < 2) {
 		fprintf(stderr, "Assertion error: assert_ne requires 2 values on stack, have %zu\n", stack_size);
 		qd_print_stack_trace(ctx);
-		return (qd_exec_result){1};
+		return (int){1};
 	}
 
 	qd_stack_element_t b, a;
 	qd_stack_error err = qd_stack_pop(ctx->st, &b);
 	if (err != QD_STACK_OK) {
-		return (qd_exec_result){-2};
+		return (int){-2};
 	}
 	err = qd_stack_pop(ctx->st, &a);
 	if (err != QD_STACK_OK) {
 		release_element(&b);
-		return (qd_exec_result){-2};
+		return (int){-2};
 	}
 
 	int equal = elements_equal(&a, &b);
@@ -136,27 +136,27 @@ qd_exec_result usr_testing_assert_ne(qd_context* ctx) {
 		qd_print_stack_trace(ctx);
 		release_element(&a);
 		release_element(&b);
-		return (qd_exec_result){1};
+		return (int){1};
 	}
 
 	release_element(&a);
 	release_element(&b);
-	return (qd_exec_result){0};
+	return (int){0};
 }
 
 // assert_true - Assert value is truthy: ( v -- )
-qd_exec_result usr_testing_assert_true(qd_context* ctx) {
+int usr_testing_assert_true(qd_context* ctx) {
 	size_t stack_size = qd_stack_size(ctx->st);
 	if (stack_size < 1) {
 		fprintf(stderr, "Assertion error: assert_true requires 1 value on stack, have %zu\n", stack_size);
 		qd_print_stack_trace(ctx);
-		return (qd_exec_result){1};
+		return (int){1};
 	}
 
 	qd_stack_element_t v;
 	qd_stack_error err = qd_stack_pop(ctx->st, &v);
 	if (err != QD_STACK_OK) {
-		return (qd_exec_result){-2};
+		return (int){-2};
 	}
 
 	int truthy = 0;
@@ -185,26 +185,26 @@ qd_exec_result usr_testing_assert_true(qd_context* ctx) {
 		fprintf(stderr, " (%s) is not truthy\n", get_type_name(v.type));
 		qd_print_stack_trace(ctx);
 		release_element(&v);
-		return (qd_exec_result){1};
+		return (int){1};
 	}
 
 	release_element(&v);
-	return (qd_exec_result){0};
+	return (int){0};
 }
 
 // assert_false - Assert value is falsy: ( v -- )
-qd_exec_result usr_testing_assert_false(qd_context* ctx) {
+int usr_testing_assert_false(qd_context* ctx) {
 	size_t stack_size = qd_stack_size(ctx->st);
 	if (stack_size < 1) {
 		fprintf(stderr, "Assertion error: assert_false requires 1 value on stack, have %zu\n", stack_size);
 		qd_print_stack_trace(ctx);
-		return (qd_exec_result){1};
+		return (int){1};
 	}
 
 	qd_stack_element_t v;
 	qd_stack_error err = qd_stack_pop(ctx->st, &v);
 	if (err != QD_STACK_OK) {
-		return (qd_exec_result){-2};
+		return (int){-2};
 	}
 
 	int falsy = 0;
@@ -233,20 +233,20 @@ qd_exec_result usr_testing_assert_false(qd_context* ctx) {
 		fprintf(stderr, " (%s) is not falsy\n", get_type_name(v.type));
 		qd_print_stack_trace(ctx);
 		release_element(&v);
-		return (qd_exec_result){1};
+		return (int){1};
 	}
 
 	release_element(&v);
-	return (qd_exec_result){0};
+	return (int){0};
 }
 
 // fail - Unconditionally fail a test: ( msg -- )
-qd_exec_result usr_testing_fail(qd_context* ctx) {
+int usr_testing_fail(qd_context* ctx) {
 	size_t stack_size = qd_stack_size(ctx->st);
 	if (stack_size < 1) {
 		fprintf(stderr, "Test failed (no message provided)\n");
 		qd_print_stack_trace(ctx);
-		return (qd_exec_result){1};
+		return (int){1};
 	}
 
 	qd_stack_element_t msg;
@@ -254,7 +254,7 @@ qd_exec_result usr_testing_fail(qd_context* ctx) {
 	if (err != QD_STACK_OK) {
 		fprintf(stderr, "Test failed (error reading message)\n");
 		qd_print_stack_trace(ctx);
-		return (qd_exec_result){1};
+		return (int){1};
 	}
 
 	if (msg.type == QD_STACK_TYPE_STR) {
@@ -267,5 +267,5 @@ qd_exec_result usr_testing_fail(qd_context* ctx) {
 	qd_print_stack_trace(ctx);
 
 	release_element(&msg);
-	return (qd_exec_result){1};
+	return (int){1};
 }

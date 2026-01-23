@@ -308,30 +308,30 @@ int qd_array_push_ptr(qd_array_t* arr, void* value) {
 
 // Stack-based array operations
 
-qd_exec_result qd_len(qd_context* ctx) {
-	qd_exec_result result = {0};
+int qd_len(qd_context* ctx) {
+	int result = {0};
 	if (!ctx || !ctx->st) {
-		result.code = -1;
+		result = -1;
 		return result;
 	}
 
 	qd_stack_element_t elem;
 	if (qd_stack_pop(ctx->st, &elem) != QD_STACK_OK) {
 		fprintf(stderr, "len: stack underflow\n");
-		result.code = -1;
+		result = -1;
 		return result;
 	}
 
 	if (elem.type != QD_STACK_TYPE_PTR) {
 		fprintf(stderr, "len: expected array (ptr), got %d\n", elem.type);
-		result.code = -1;
+		result = -1;
 		return result;
 	}
 
 	qd_array_t* arr = (qd_array_t*)elem.value.p;
 	if (!arr) {
 		fprintf(stderr, "len: null array\n");
-		result.code = -1;
+		result = -1;
 		return result;
 	}
 
@@ -341,10 +341,10 @@ qd_exec_result qd_len(qd_context* ctx) {
 	return result;
 }
 
-qd_exec_result qd_nth(qd_context* ctx) {
-	qd_exec_result result = {0};
+int qd_nth(qd_context* ctx) {
+	int result = {0};
 	if (!ctx || !ctx->st) {
-		result.code = -1;
+		result = -1;
 		return result;
 	}
 
@@ -352,13 +352,13 @@ qd_exec_result qd_nth(qd_context* ctx) {
 	qd_stack_element_t indexElem;
 	if (qd_stack_pop(ctx->st, &indexElem) != QD_STACK_OK) {
 		fprintf(stderr, "nth: stack underflow (index)\n");
-		result.code = -1;
+		result = -1;
 		return result;
 	}
 
 	if (indexElem.type != QD_STACK_TYPE_INT) {
 		fprintf(stderr, "nth: expected integer index, got %d\n", indexElem.type);
-		result.code = -1;
+		result = -1;
 		return result;
 	}
 
@@ -368,27 +368,27 @@ qd_exec_result qd_nth(qd_context* ctx) {
 	qd_stack_element_t arrElem;
 	if (qd_stack_pop(ctx->st, &arrElem) != QD_STACK_OK) {
 		fprintf(stderr, "nth: stack underflow (array)\n");
-		result.code = -1;
+		result = -1;
 		return result;
 	}
 
 	if (arrElem.type != QD_STACK_TYPE_PTR) {
 		fprintf(stderr, "nth: expected array (ptr), got %d\n", arrElem.type);
-		result.code = -1;
+		result = -1;
 		return result;
 	}
 
 	qd_array_t* arr = (qd_array_t*)arrElem.value.p;
 	if (!arr) {
 		fprintf(stderr, "nth: null array\n");
-		result.code = -1;
+		result = -1;
 		return result;
 	}
 
 	if (index < 0 || (size_t)index >= arr->length) {
 		fprintf(stderr, "nth: index %ld out of bounds (length %zu)\n", index, arr->length);
 		qd_array_release(arr); // Release before error return
-		result.code = -1;
+		result = -1;
 		return result;
 	}
 
@@ -415,7 +415,7 @@ qd_exec_result qd_nth(qd_context* ctx) {
 				fprintf(stderr, "nth: stack overflow\n");
 				qd_string_release(str);
 				qd_array_release(arr); // Release before error return
-				result.code = -1;
+				result = -1;
 				return result;
 			}
 			ctx->st->data[ctx->st->size++] = strElem;
@@ -441,7 +441,7 @@ qd_exec_result qd_nth(qd_context* ctx) {
 	default:
 		fprintf(stderr, "nth: unknown array type %d\n", arr->elemType);
 		qd_array_release(arr); // Release before error return
-		result.code = -1;
+		result = -1;
 		return result;
 	}
 
@@ -449,37 +449,37 @@ qd_exec_result qd_nth(qd_context* ctx) {
 	return result;
 }
 
-qd_exec_result qd_makei(qd_context* ctx) {
-	qd_exec_result result = {0};
+int qd_makei(qd_context* ctx) {
+	int result = {0};
 	if (!ctx || !ctx->st) {
-		result.code = -1;
+		result = -1;
 		return result;
 	}
 
 	qd_stack_element_t sizeElem;
 	if (qd_stack_pop(ctx->st, &sizeElem) != QD_STACK_OK) {
 		fprintf(stderr, "makei: stack underflow\n");
-		result.code = -1;
+		result = -1;
 		return result;
 	}
 
 	if (sizeElem.type != QD_STACK_TYPE_INT) {
 		fprintf(stderr, "makei: expected integer size, got %d\n", sizeElem.type);
-		result.code = -1;
+		result = -1;
 		return result;
 	}
 
 	int64_t size = sizeElem.value.i;
 	if (size < 0) {
 		fprintf(stderr, "makei: negative size %ld\n", size);
-		result.code = -1;
+		result = -1;
 		return result;
 	}
 
 	qd_array_t* arr = qd_array_create((size_t)size, QD_ARRAY_TYPE_INT);
 	if (!arr) {
 		fprintf(stderr, "makei: allocation failed\n");
-		result.code = -1;
+		result = -1;
 		return result;
 	}
 
@@ -493,37 +493,37 @@ qd_exec_result qd_makei(qd_context* ctx) {
 	return result;
 }
 
-qd_exec_result qd_makef(qd_context* ctx) {
-	qd_exec_result result = {0};
+int qd_makef(qd_context* ctx) {
+	int result = {0};
 	if (!ctx || !ctx->st) {
-		result.code = -1;
+		result = -1;
 		return result;
 	}
 
 	qd_stack_element_t sizeElem;
 	if (qd_stack_pop(ctx->st, &sizeElem) != QD_STACK_OK) {
 		fprintf(stderr, "makef: stack underflow\n");
-		result.code = -1;
+		result = -1;
 		return result;
 	}
 
 	if (sizeElem.type != QD_STACK_TYPE_INT) {
 		fprintf(stderr, "makef: expected integer size, got %d\n", sizeElem.type);
-		result.code = -1;
+		result = -1;
 		return result;
 	}
 
 	int64_t size = sizeElem.value.i;
 	if (size < 0) {
 		fprintf(stderr, "makef: negative size %ld\n", size);
-		result.code = -1;
+		result = -1;
 		return result;
 	}
 
 	qd_array_t* arr = qd_array_create((size_t)size, QD_ARRAY_TYPE_FLOAT);
 	if (!arr) {
 		fprintf(stderr, "makef: allocation failed\n");
-		result.code = -1;
+		result = -1;
 		return result;
 	}
 
@@ -537,37 +537,37 @@ qd_exec_result qd_makef(qd_context* ctx) {
 	return result;
 }
 
-qd_exec_result qd_makes(qd_context* ctx) {
-	qd_exec_result result = {0};
+int qd_makes(qd_context* ctx) {
+	int result = {0};
 	if (!ctx || !ctx->st) {
-		result.code = -1;
+		result = -1;
 		return result;
 	}
 
 	qd_stack_element_t sizeElem;
 	if (qd_stack_pop(ctx->st, &sizeElem) != QD_STACK_OK) {
 		fprintf(stderr, "makes: stack underflow\n");
-		result.code = -1;
+		result = -1;
 		return result;
 	}
 
 	if (sizeElem.type != QD_STACK_TYPE_INT) {
 		fprintf(stderr, "makes: expected integer size, got %d\n", sizeElem.type);
-		result.code = -1;
+		result = -1;
 		return result;
 	}
 
 	int64_t size = sizeElem.value.i;
 	if (size < 0) {
 		fprintf(stderr, "makes: negative size %ld\n", size);
-		result.code = -1;
+		result = -1;
 		return result;
 	}
 
 	qd_array_t* arr = qd_array_create((size_t)size, QD_ARRAY_TYPE_STR);
 	if (!arr) {
 		fprintf(stderr, "makes: allocation failed\n");
-		result.code = -1;
+		result = -1;
 		return result;
 	}
 
@@ -581,37 +581,37 @@ qd_exec_result qd_makes(qd_context* ctx) {
 	return result;
 }
 
-qd_exec_result qd_makep(qd_context* ctx) {
-	qd_exec_result result = {0};
+int qd_makep(qd_context* ctx) {
+	int result = {0};
 	if (!ctx || !ctx->st) {
-		result.code = -1;
+		result = -1;
 		return result;
 	}
 
 	qd_stack_element_t sizeElem;
 	if (qd_stack_pop(ctx->st, &sizeElem) != QD_STACK_OK) {
 		fprintf(stderr, "makep: stack underflow\n");
-		result.code = -1;
+		result = -1;
 		return result;
 	}
 
 	if (sizeElem.type != QD_STACK_TYPE_INT) {
 		fprintf(stderr, "makep: expected integer size, got %d\n", sizeElem.type);
-		result.code = -1;
+		result = -1;
 		return result;
 	}
 
 	int64_t size = sizeElem.value.i;
 	if (size < 0) {
 		fprintf(stderr, "makep: negative size %ld\n", size);
-		result.code = -1;
+		result = -1;
 		return result;
 	}
 
 	qd_array_t* arr = qd_array_create((size_t)size, QD_ARRAY_TYPE_PTR);
 	if (!arr) {
 		fprintf(stderr, "makep: allocation failed\n");
-		result.code = -1;
+		result = -1;
 		return result;
 	}
 
@@ -622,10 +622,10 @@ qd_exec_result qd_makep(qd_context* ctx) {
 	return result;
 }
 
-qd_exec_result qd_append(qd_context* ctx) {
-	qd_exec_result result = {0};
+int qd_append(qd_context* ctx) {
+	int result = {0};
 	if (!ctx || !ctx->st) {
-		result.code = -1;
+		result = -1;
 		return result;
 	}
 
@@ -633,7 +633,7 @@ qd_exec_result qd_append(qd_context* ctx) {
 	qd_stack_element_t valueElem;
 	if (qd_stack_pop(ctx->st, &valueElem) != QD_STACK_OK) {
 		fprintf(stderr, "append: stack underflow (value)\n");
-		result.code = -1;
+		result = -1;
 		return result;
 	}
 
@@ -645,7 +645,7 @@ qd_exec_result qd_append(qd_context* ctx) {
 		if (valueElem.type == QD_STACK_TYPE_STR) {
 			qd_string_release(valueElem.value.s);
 		}
-		result.code = -1;
+		result = -1;
 		return result;
 	}
 
@@ -654,7 +654,7 @@ qd_exec_result qd_append(qd_context* ctx) {
 		if (valueElem.type == QD_STACK_TYPE_STR) {
 			qd_string_release(valueElem.value.s);
 		}
-		result.code = -1;
+		result = -1;
 		return result;
 	}
 
@@ -664,7 +664,7 @@ qd_exec_result qd_append(qd_context* ctx) {
 		if (valueElem.type == QD_STACK_TYPE_STR) {
 			qd_string_release(valueElem.value.s);
 		}
-		result.code = -1;
+		result = -1;
 		return result;
 	}
 
@@ -715,7 +715,7 @@ qd_exec_result qd_append(qd_context* ctx) {
 
 	if (appendResult != 0) {
 		qd_array_release(arr);
-		result.code = -1;
+		result = -1;
 		return result;
 	}
 
@@ -724,10 +724,10 @@ qd_exec_result qd_append(qd_context* ctx) {
 	return result;
 }
 
-qd_exec_result qd_set(qd_context* ctx) {
-	qd_exec_result result = {0};
+int qd_set(qd_context* ctx) {
+	int result = {0};
 	if (!ctx || !ctx->st) {
-		result.code = -1;
+		result = -1;
 		return result;
 	}
 
@@ -735,7 +735,7 @@ qd_exec_result qd_set(qd_context* ctx) {
 	qd_stack_element_t valueElem;
 	if (qd_stack_pop(ctx->st, &valueElem) != QD_STACK_OK) {
 		fprintf(stderr, "set: stack underflow (value)\n");
-		result.code = -1;
+		result = -1;
 		return result;
 	}
 
@@ -746,7 +746,7 @@ qd_exec_result qd_set(qd_context* ctx) {
 		if (valueElem.type == QD_STACK_TYPE_STR) {
 			qd_string_release(valueElem.value.s);
 		}
-		result.code = -1;
+		result = -1;
 		return result;
 	}
 
@@ -755,7 +755,7 @@ qd_exec_result qd_set(qd_context* ctx) {
 		if (valueElem.type == QD_STACK_TYPE_STR) {
 			qd_string_release(valueElem.value.s);
 		}
-		result.code = -1;
+		result = -1;
 		return result;
 	}
 
@@ -766,7 +766,7 @@ qd_exec_result qd_set(qd_context* ctx) {
 		if (valueElem.type == QD_STACK_TYPE_STR) {
 			qd_string_release(valueElem.value.s);
 		}
-		result.code = -1;
+		result = -1;
 		return result;
 	}
 
@@ -775,7 +775,7 @@ qd_exec_result qd_set(qd_context* ctx) {
 		if (valueElem.type == QD_STACK_TYPE_STR) {
 			qd_string_release(valueElem.value.s);
 		}
-		result.code = -1;
+		result = -1;
 		return result;
 	}
 
@@ -785,7 +785,7 @@ qd_exec_result qd_set(qd_context* ctx) {
 		if (valueElem.type == QD_STACK_TYPE_STR) {
 			qd_string_release(valueElem.value.s);
 		}
-		result.code = -1;
+		result = -1;
 		return result;
 	}
 
@@ -796,7 +796,7 @@ qd_exec_result qd_set(qd_context* ctx) {
 			qd_string_release(valueElem.value.s);
 		}
 		qd_array_release(arr);
-		result.code = -1;
+		result = -1;
 		return result;
 	}
 
@@ -851,7 +851,7 @@ qd_exec_result qd_set(qd_context* ctx) {
 	qd_array_release(arr);
 
 	if (setResult != 0) {
-		result.code = -1;
+		result = -1;
 		return result;
 	}
 

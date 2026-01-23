@@ -53,7 +53,7 @@ static inline bool qdrt_is_numeric_type(qd_stack_type type) {
 bool qdrt_validate_binary_numeric_op(qd_context* ctx, const char* op_name);
 
 // Pop two values from stack for binary operations
-qd_exec_result qdrt_pop_two_values(qd_context* ctx, qd_stack_element_t* a, qd_stack_element_t* b);
+int qdrt_pop_two_values(qd_context* ctx, qd_stack_element_t* a, qd_stack_element_t* b);
 
 // Convert stack element to double
 static inline double qdrt_to_double(const qd_stack_element_t* elem) {

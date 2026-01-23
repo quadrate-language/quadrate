@@ -60,7 +60,7 @@ void qd_add_script(qd_module* mod, const char* script);
  *
  * Registers a C function that can be called from Quadrate code.
  * The function must follow Quadrate calling conventions (taking qd_context*
- * and returning qd_exec_result).
+ * and returning int).
  *
  * @param mod Target module
  * @param name Function name as it appears in Quadrate code

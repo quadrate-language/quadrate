@@ -82,7 +82,7 @@ static int is_valid_file_handle(FILE* fp, qd_context* ctx, const char* op_name) 
     return 1;
 }
 
-qd_exec_result usr_io_open(qd_context* ctx) {
+int usr_io_open(qd_context* ctx) {
     size_t stack_size = qd_stack_size(ctx->st);
     if (stack_size < 2) {
         fprintf(stderr, "Fatal error in io::open: Stack underflow (need 2, have %zu)\n", stack_size);
@@ -121,7 +121,7 @@ qd_exec_result usr_io_open(qd_context* ctx) {
         ctx->error_code = IO_ERR_INVALID_ARG;
         qd_set_error_msg(ctx, "io::open: null path or mode string");
         qd_push_i(ctx, IO_ERR_INVALID_ARG);
-        return (qd_exec_result){IO_ERR_INVALID_ARG};
+        return (int){IO_ERR_INVALID_ARG};
     }
 
     FILE* fp = fopen(path, mode);
@@ -134,24 +134,24 @@ qd_exec_result usr_io_open(qd_context* ctx) {
         snprintf(err_buf, sizeof(err_buf), "%s", strerror(errno));
         qd_set_error_msg(ctx, err_buf);
         qd_push_i(ctx, IO_ERR_NOT_FOUND);
-        return (qd_exec_result){IO_ERR_NOT_FOUND};
+        return (int){IO_ERR_NOT_FOUND};
     }
 
     // Register the file handle for tracking
     file_registry_add(fp);
 
-    qd_exec_result push_result = qd_push_p(ctx, fp);
-    if (push_result.code != 0) {
+    int push_result = qd_push_p(ctx, fp);
+    if (push_result != 0) {
         file_registry_remove(fp);
         fclose(fp);
         fprintf(stderr, "Fatal error in io::open: Failed to push pointer to stack\n");
         abort();
     }
     qd_push_i(ctx, IO_ERR_OK);
-    return (qd_exec_result){0};
+    return (int){0};
 }
 
-qd_exec_result usr_io_close(qd_context* ctx) {
+int usr_io_close(qd_context* ctx) {
     size_t stack_size = qd_stack_size(ctx->st);
     if (stack_size < 1) {
         fprintf(stderr, "Fatal error in io::close: Stack underflow\n");
@@ -174,17 +174,17 @@ qd_exec_result usr_io_close(qd_context* ctx) {
     if (!is_valid_file_handle(fp, ctx, "io::close")) {
         // Still return success - closing an invalid handle is a no-op
         // but we've set the error message for debugging
-        return (qd_exec_result){0};
+        return (int){0};
     }
 
     // Remove from registry before closing
     file_registry_remove(fp);
     fclose(fp);
 
-    return (qd_exec_result){0};
+    return (int){0};
 }
 
-qd_exec_result usr_io_read_string(qd_context* ctx) {
+int usr_io_read_string(qd_context* ctx) {
     size_t stack_size = qd_stack_size(ctx->st);
     if (stack_size < 2) {
         fprintf(stderr, "Fatal error in io::read: Stack underflow (need 2, have %zu)\n", stack_size);
@@ -220,7 +220,7 @@ qd_exec_result usr_io_read_string(qd_context* ctx) {
     // Validate file handle using registry
     if (!is_valid_file_handle(fp, ctx, "io::read_string")) {
         qd_push_i(ctx, ctx->error_code);
-        return (qd_exec_result){IO_ERR_INVALID_HANDLE};
+        return (int){IO_ERR_INVALID_HANDLE};
     }
 
     // Validate count is within reasonable bounds (max 1GB to prevent DoS)
@@ -229,14 +229,14 @@ qd_exec_result usr_io_read_string(qd_context* ctx) {
         ctx->error_code = IO_ERR_INVALID_ARG;
         qd_set_error_msg(ctx, "io::read_string: invalid count (max 1GB)");
         qd_push_i(ctx, ctx->error_code);
-        return (qd_exec_result){IO_ERR_INVALID_ARG};
+        return (int){IO_ERR_INVALID_ARG};
     }
 
     if (count == 0) {
         qd_push_s(ctx, "");
         qd_push_i(ctx, 0);
         qd_push_i(ctx, IO_ERR_OK);
-        return (qd_exec_result){0};
+        return (int){0};
     }
 
     char* buffer = malloc((size_t)count + 1);
@@ -244,7 +244,7 @@ qd_exec_result usr_io_read_string(qd_context* ctx) {
         ctx->error_code = IO_ERR_READ;
         qd_set_error_msg(ctx, "io::read_string: allocation failed");
         qd_push_i(ctx, ctx->error_code);
-        return (qd_exec_result){IO_ERR_READ};
+        return (int){IO_ERR_READ};
     }
 
     size_t bytes_read = fread(buffer, 1, (size_t)count, fp);
@@ -257,7 +257,7 @@ qd_exec_result usr_io_read_string(qd_context* ctx) {
         qd_set_error_msg(ctx, err_buf);
         free(buffer);
         qd_push_i(ctx, ctx->error_code);
-        return (qd_exec_result){IO_ERR_READ};
+        return (int){IO_ERR_READ};
     }
 
     qd_push_s(ctx, buffer);
@@ -266,10 +266,10 @@ qd_exec_result usr_io_read_string(qd_context* ctx) {
 
     free(buffer);
 
-    return (qd_exec_result){0};
+    return (int){0};
 }
 
-qd_exec_result usr_io_write_string(qd_context* ctx) {
+int usr_io_write_string(qd_context* ctx) {
     size_t stack_size = qd_stack_size(ctx->st);
     if (stack_size < 2) {
         fprintf(stderr, "Fatal error in io::write: Stack underflow (need 2, have %zu)\n", stack_size);
@@ -306,14 +306,14 @@ qd_exec_result usr_io_write_string(qd_context* ctx) {
         ctx->error_code = IO_ERR_INVALID_ARG;
         qd_set_error_msg(ctx, "io::write_string: null data string");
         qd_push_i(ctx, ctx->error_code);
-        return (qd_exec_result){IO_ERR_INVALID_ARG};
+        return (int){IO_ERR_INVALID_ARG};
     }
     size_t len = strlen(data);
 
     if (!is_valid_file_handle(fp, ctx, "io::write_string")) {
         qd_string_release(data_elem.value.s);
         qd_push_i(ctx, ctx->error_code);
-        return (qd_exec_result){IO_ERR_INVALID_HANDLE};
+        return (int){IO_ERR_INVALID_HANDLE};
     }
 
     size_t written = fwrite(data, 1, len, fp);
@@ -325,15 +325,15 @@ qd_exec_result usr_io_write_string(qd_context* ctx) {
         snprintf(err_buf, sizeof(err_buf), "%s", strerror(errno));
         qd_set_error_msg(ctx, err_buf);
         qd_push_i(ctx, ctx->error_code);
-        return (qd_exec_result){IO_ERR_WRITE};
+        return (int){IO_ERR_WRITE};
     }
 
     qd_push_i(ctx, (int64_t)written);
     qd_push_i(ctx, IO_ERR_OK);
-    return (qd_exec_result){0};
+    return (int){0};
 }
 
-qd_exec_result usr_io_seekg(qd_context* ctx) {
+int usr_io_seekg(qd_context* ctx) {
     size_t stack_size = qd_stack_size(ctx->st);
     if (stack_size < 3) {
         fprintf(stderr, "Fatal error in io::seekg: Stack underflow (need 3, have %zu)\n", stack_size);
@@ -377,7 +377,7 @@ qd_exec_result usr_io_seekg(qd_context* ctx) {
 
     if (!is_valid_file_handle(fp, ctx, "io::seek")) {
         qd_push_i(ctx, ctx->error_code);
-        return (qd_exec_result){IO_ERR_INVALID_HANDLE};
+        return (int){IO_ERR_INVALID_HANDLE};
     }
 
     // Map whence values: 0=SEEK_SET, 1=SEEK_CUR, 2=SEEK_END
@@ -390,7 +390,7 @@ qd_exec_result usr_io_seekg(qd_context* ctx) {
             ctx->error_code = IO_ERR_INVALID_ARG;
             qd_set_error_msg(ctx, "io::seek: invalid whence value");
             qd_push_i(ctx, ctx->error_code);
-            return (qd_exec_result){IO_ERR_INVALID_ARG};
+            return (int){IO_ERR_INVALID_ARG};
     }
 
     if (fseek(fp, offset, seek_whence) != 0) {
@@ -399,7 +399,7 @@ qd_exec_result usr_io_seekg(qd_context* ctx) {
         snprintf(err_buf, sizeof(err_buf), "%s", strerror(errno));
         qd_set_error_msg(ctx, err_buf);
         qd_push_i(ctx, ctx->error_code);
-        return (qd_exec_result){IO_ERR_SEEK};
+        return (int){IO_ERR_SEEK};
     }
 
     int64_t position = ftell(fp);
@@ -409,16 +409,16 @@ qd_exec_result usr_io_seekg(qd_context* ctx) {
         snprintf(err_buf, sizeof(err_buf), "%s", strerror(errno));
         qd_set_error_msg(ctx, err_buf);
         qd_push_i(ctx, ctx->error_code);
-        return (qd_exec_result){IO_ERR_SEEK};
+        return (int){IO_ERR_SEEK};
     }
 
     qd_push_i(ctx, position);
     qd_push_i(ctx, IO_ERR_OK);
 
-    return (qd_exec_result){0};
+    return (int){0};
 }
 
-qd_exec_result usr_io_eof(qd_context* ctx) {
+int usr_io_eof(qd_context* ctx) {
     size_t stack_size = qd_stack_size(ctx->st);
     if (stack_size < 1) {
         fprintf(stderr, "Fatal error in io::eof: Stack underflow\n");
@@ -446,15 +446,15 @@ qd_exec_result usr_io_eof(qd_context* ctx) {
 
     qd_push_i(ctx, is_eof);
 
-    return (qd_exec_result){0};
+    return (int){0};
 }
 
 // New unified API names
-qd_exec_result usr_io_seek(qd_context* ctx) {
+int usr_io_seek(qd_context* ctx) {
     return usr_io_seekg(ctx);  // Just call the existing implementation
 }
 
-qd_exec_result usr_io_tell(qd_context* ctx) {
+int usr_io_tell(qd_context* ctx) {
     size_t stack_size = qd_stack_size(ctx->st);
     if (stack_size < 1) {
         fprintf(stderr, "Fatal error in io::tell: Stack underflow\n");
@@ -477,7 +477,7 @@ qd_exec_result usr_io_tell(qd_context* ctx) {
     FILE* fp = (FILE*)elem.value.p;
     if (!is_valid_file_handle(fp, ctx, "io::tell")) {
         qd_push_i(ctx, ctx->error_code);
-        return (qd_exec_result){IO_ERR_INVALID_HANDLE};
+        return (int){IO_ERR_INVALID_HANDLE};
     }
 
     int64_t position = ftell(fp);
@@ -487,17 +487,17 @@ qd_exec_result usr_io_tell(qd_context* ctx) {
         snprintf(err_buf, sizeof(err_buf), "%s", strerror(errno));
         qd_set_error_msg(ctx, err_buf);
         qd_push_i(ctx, ctx->error_code);
-        return (qd_exec_result){IO_ERR_SEEK};
+        return (int){IO_ERR_SEEK};
     }
 
     qd_push_i(ctx, position);
     qd_push_i(ctx, IO_ERR_OK);
 
-    return (qd_exec_result){0};
+    return (int){0};
 }
 
 // Unified buffer-based read (new primary API)
-qd_exec_result usr_io_read(qd_context* ctx) {
+int usr_io_read(qd_context* ctx) {
     size_t stack_size = qd_stack_size(ctx->st);
     if (stack_size < 3) {
         fprintf(stderr, "Fatal error in io::read_bytes: Stack underflow (need 3, have %zu)\n", stack_size);
@@ -541,20 +541,20 @@ qd_exec_result usr_io_read(qd_context* ctx) {
 
     if (!is_valid_file_handle(fp, ctx, "io::read")) {
         qd_push_i(ctx, ctx->error_code);
-        return (qd_exec_result){IO_ERR_INVALID_HANDLE};
+        return (int){IO_ERR_INVALID_HANDLE};
     }
 
     if (!buffer || count < 0) {
         ctx->error_code = IO_ERR_INVALID_ARG;
         qd_set_error_msg(ctx, "io::read: invalid buffer or count");
         qd_push_i(ctx, ctx->error_code);
-        return (qd_exec_result){IO_ERR_INVALID_ARG};
+        return (int){IO_ERR_INVALID_ARG};
     }
 
     if (count == 0) {
         qd_push_i(ctx, 0);
         qd_push_i(ctx, IO_ERR_OK);
-        return (qd_exec_result){0};
+        return (int){0};
     }
 
     size_t bytes_read = fread(buffer, 1, (size_t)count, fp);
@@ -565,17 +565,17 @@ qd_exec_result usr_io_read(qd_context* ctx) {
         snprintf(err_buf, sizeof(err_buf), "%s", strerror(errno));
         qd_set_error_msg(ctx, err_buf);
         qd_push_i(ctx, ctx->error_code);
-        return (qd_exec_result){IO_ERR_READ};
+        return (int){IO_ERR_READ};
     }
 
     qd_push_i(ctx, (int64_t)bytes_read);
     qd_push_i(ctx, IO_ERR_OK);
 
-    return (qd_exec_result){0};
+    return (int){0};
 }
 
 // Read a line from stdin
-qd_exec_result usr_io_readline(qd_context* ctx) {
+int usr_io_readline(qd_context* ctx) {
     char* line = NULL;
     size_t len = 0;
     ssize_t nread = getline(&line, &len, stdin);
@@ -585,7 +585,7 @@ qd_exec_result usr_io_readline(qd_context* ctx) {
         qd_set_error_msg(ctx, "io::readline: read error or EOF");
         free(line);
         qd_push_i(ctx, IO_ERR_EOF);
-        return (qd_exec_result){IO_ERR_EOF};
+        return (int){IO_ERR_EOF};
     }
 
     if (nread > 0 && line[nread - 1] == '\n') {
@@ -597,11 +597,11 @@ qd_exec_result usr_io_readline(qd_context* ctx) {
     qd_push_i(ctx, IO_ERR_OK);
     free(line);
 
-    return (qd_exec_result){0};
+    return (int){0};
 }
 
 // Unified buffer-based write (new primary API)
-qd_exec_result usr_io_write(qd_context* ctx) {
+int usr_io_write(qd_context* ctx) {
     size_t stack_size = qd_stack_size(ctx->st);
     if (stack_size < 3) {
         fprintf(stderr, "Fatal error in io::write_bytes: Stack underflow (need 3, have %zu)\n", stack_size);
@@ -645,20 +645,20 @@ qd_exec_result usr_io_write(qd_context* ctx) {
 
     if (!is_valid_file_handle(fp, ctx, "io::write")) {
         qd_push_i(ctx, ctx->error_code);
-        return (qd_exec_result){IO_ERR_INVALID_HANDLE};
+        return (int){IO_ERR_INVALID_HANDLE};
     }
 
     if (!buffer || count < 0) {
         ctx->error_code = IO_ERR_INVALID_ARG;
         qd_set_error_msg(ctx, "io::write: invalid buffer or count");
         qd_push_i(ctx, ctx->error_code);
-        return (qd_exec_result){IO_ERR_INVALID_ARG};
+        return (int){IO_ERR_INVALID_ARG};
     }
 
     if (count == 0) {
         qd_push_i(ctx, 0);
         qd_push_i(ctx, IO_ERR_OK);
-        return (qd_exec_result){0};
+        return (int){0};
     }
 
     size_t bytes_written = fwrite(buffer, 1, (size_t)count, fp);
@@ -669,16 +669,16 @@ qd_exec_result usr_io_write(qd_context* ctx) {
         snprintf(err_buf, sizeof(err_buf), "%s", strerror(errno));
         qd_set_error_msg(ctx, err_buf);
         qd_push_i(ctx, ctx->error_code);
-        return (qd_exec_result){IO_ERR_WRITE};
+        return (int){IO_ERR_WRITE};
     }
 
     qd_push_i(ctx, (int64_t)bytes_written);
     qd_push_i(ctx, IO_ERR_OK);
 
-    return (qd_exec_result){0};
+    return (int){0};
 }
 
-qd_exec_result usr_io_read_file(qd_context* ctx) {
+int usr_io_read_file(qd_context* ctx) {
     size_t stack_size = qd_stack_size(ctx->st);
     if (stack_size < 1) {
         fprintf(stderr, "Fatal error in io::read_file: Stack underflow (need 1, have %zu)\n", stack_size);
@@ -702,7 +702,7 @@ qd_exec_result usr_io_read_file(qd_context* ctx) {
         ctx->error_code = IO_ERR_INVALID_ARG;
         qd_set_error_msg(ctx, "io::read_file: null path string");
         qd_push_i(ctx, IO_ERR_INVALID_ARG);
-        return (qd_exec_result){IO_ERR_INVALID_ARG};
+        return (int){IO_ERR_INVALID_ARG};
     }
 
     FILE* fp = fopen(path, "rb");
@@ -714,7 +714,7 @@ qd_exec_result usr_io_read_file(qd_context* ctx) {
         snprintf(err_buf, sizeof(err_buf), "%s", strerror(saved_errno));
         qd_set_error_msg(ctx, err_buf);
         qd_push_i(ctx, IO_ERR_NOT_FOUND);
-        return (qd_exec_result){IO_ERR_NOT_FOUND};
+        return (int){IO_ERR_NOT_FOUND};
     }
 
     if (fseek(fp, 0, SEEK_END) != 0) {
@@ -726,7 +726,7 @@ qd_exec_result usr_io_read_file(qd_context* ctx) {
         snprintf(err_buf, sizeof(err_buf), "%s", strerror(saved_errno));
         qd_set_error_msg(ctx, err_buf);
         qd_push_i(ctx, IO_ERR_SEEK);
-        return (qd_exec_result){IO_ERR_SEEK};
+        return (int){IO_ERR_SEEK};
     }
 
     long file_size = ftell(fp);
@@ -739,7 +739,7 @@ qd_exec_result usr_io_read_file(qd_context* ctx) {
         snprintf(err_buf, sizeof(err_buf), "%s", strerror(saved_errno));
         qd_set_error_msg(ctx, err_buf);
         qd_push_i(ctx, IO_ERR_SEEK);
-        return (qd_exec_result){IO_ERR_SEEK};
+        return (int){IO_ERR_SEEK};
     }
 
     if (fseek(fp, 0, SEEK_SET) != 0) {
@@ -751,7 +751,7 @@ qd_exec_result usr_io_read_file(qd_context* ctx) {
         snprintf(err_buf, sizeof(err_buf), "%s", strerror(saved_errno));
         qd_set_error_msg(ctx, err_buf);
         qd_push_i(ctx, IO_ERR_SEEK);
-        return (qd_exec_result){IO_ERR_SEEK};
+        return (int){IO_ERR_SEEK};
     }
 
     char* buffer = malloc((size_t)file_size + 1);
@@ -761,7 +761,7 @@ qd_exec_result usr_io_read_file(qd_context* ctx) {
         ctx->error_code = IO_ERR_READ;
         qd_set_error_msg(ctx, "io::read_file: allocation failed");
         qd_push_i(ctx, IO_ERR_READ);
-        return (qd_exec_result){IO_ERR_READ};
+        return (int){IO_ERR_READ};
     }
 
     size_t bytes_read = fread(buffer, 1, (size_t)file_size, fp);
@@ -780,7 +780,7 @@ qd_exec_result usr_io_read_file(qd_context* ctx) {
         snprintf(err_buf, sizeof(err_buf), "%s", strerror(saved_errno));
         qd_set_error_msg(ctx, err_buf);
         qd_push_i(ctx, IO_ERR_READ);
-        return (qd_exec_result){IO_ERR_READ};
+        return (int){IO_ERR_READ};
     }
 
     qd_push_s(ctx, buffer);
@@ -788,10 +788,10 @@ qd_exec_result usr_io_read_file(qd_context* ctx) {
 
     free(buffer);
 
-    return (qd_exec_result){0};
+    return (int){0};
 }
 
-qd_exec_result usr_io_write_file(qd_context* ctx) {
+int usr_io_write_file(qd_context* ctx) {
     size_t stack_size = qd_stack_size(ctx->st);
     if (stack_size < 2) {
         fprintf(stderr, "Fatal error in io::write_file: Stack underflow (need 2, have %zu)\n", stack_size);
@@ -829,7 +829,7 @@ qd_exec_result usr_io_write_file(qd_context* ctx) {
         ctx->error_code = IO_ERR_INVALID_ARG;
         qd_set_error_msg(ctx, "io::write_file: null path or contents string");
         qd_push_i(ctx, IO_ERR_INVALID_ARG);
-        return (qd_exec_result){IO_ERR_INVALID_ARG};
+        return (int){IO_ERR_INVALID_ARG};
     }
     size_t len = strlen(contents);
 
@@ -844,7 +844,7 @@ qd_exec_result usr_io_write_file(qd_context* ctx) {
         snprintf(err_buf, sizeof(err_buf), "%s", strerror(saved_errno));
         qd_set_error_msg(ctx, err_buf);
         qd_push_i(ctx, IO_ERR_PERMISSION);
-        return (qd_exec_result){IO_ERR_PERMISSION};
+        return (int){IO_ERR_PERMISSION};
     }
 
     size_t written = fwrite(contents, 1, len, fp);
@@ -860,9 +860,9 @@ qd_exec_result usr_io_write_file(qd_context* ctx) {
         snprintf(err_buf, sizeof(err_buf), "%s", strerror(saved_errno));
         qd_set_error_msg(ctx, err_buf);
         qd_push_i(ctx, IO_ERR_WRITE);
-        return (qd_exec_result){IO_ERR_WRITE};
+        return (int){IO_ERR_WRITE};
     }
 
     qd_push_i(ctx, IO_ERR_OK);
-    return (qd_exec_result){0};
+    return (int){0};
 }

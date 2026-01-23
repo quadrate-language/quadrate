@@ -19,7 +19,7 @@ Create `greet.c`:
 #include <qdrt/ffi.h>
 #include <stdio.h>
 
-qd_exec_result hello(qd_context* ctx) {
+int hello(qd_context* ctx) {
 	// Pop a string from the stack
 	qd_stack_element_t elem;
 	qd_stack_pop(ctx->st, &elem);
@@ -30,7 +30,7 @@ qd_exec_result hello(qd_context* ctx) {
 	// Release the string (required for memory management)
 	qd_string_release(elem.value.s);
 
-	return (qd_exec_result){0};  // 0 = success
+	return (int){0};  // 0 = success
 }
 ```
 
@@ -71,7 +71,7 @@ Hello, Seb!
 All FFI functions must have this signature:
 
 ```c
-qd_exec_result function_name(qd_context* ctx)
+int function_name(qd_context* ctx)
 ```
 
 The function name in C must match the name declared in the Quadrate import block.
@@ -92,7 +92,7 @@ qd_stack_error err = qd_stack_pop(ctx->st, &elem);
 
 if (err != QD_STACK_OK) {
 	// Handle stack underflow
-	return (qd_exec_result){1};
+	return (int){1};
 }
 
 // Check the type
@@ -150,7 +150,7 @@ Here's a more complete example with multiple functions and return values.
 #include <math.h>
 
 // Calculate hypotenuse: ( a:f64 b:f64 -- c:f64 )
-qd_exec_result hypot(qd_context* ctx) {
+int hypot(qd_context* ctx) {
 	qd_stack_element_t b, a;
 	qd_stack_pop(ctx->st, &b);  // Pop b (top)
 	qd_stack_pop(ctx->st, &a);  // Pop a (below b)
@@ -158,11 +158,11 @@ qd_exec_result hypot(qd_context* ctx) {
 	double result = sqrt(a.value.f * a.value.f + b.value.f * b.value.f);
 	qd_stack_push_float(ctx->st, result);
 
-	return (qd_exec_result){0};
+	return (int){0};
 }
 
 // Factorial: ( n:i64 -- result:i64 )
-qd_exec_result factorial(qd_context* ctx) {
+int factorial(qd_context* ctx) {
 	qd_stack_element_t elem;
 	qd_stack_pop(ctx->st, &elem);
 
@@ -173,7 +173,7 @@ qd_exec_result factorial(qd_context* ctx) {
 	}
 
 	qd_stack_push_int(ctx->st, result);
-	return (qd_exec_result){0};
+	return (int){0};
 }
 ```
 
@@ -201,23 +201,23 @@ fn main() {
 Return a non-zero error code to indicate failure:
 
 ```c
-qd_exec_result my_function(qd_context* ctx) {
+int my_function(qd_context* ctx) {
 	qd_stack_element_t elem;
 	qd_stack_error err = qd_stack_pop(ctx->st, &elem);
 
 	if (err != QD_STACK_OK) {
 		fprintf(stderr, "my_function: stack underflow\n");
-		return (qd_exec_result){1};  // Error code 1
+		return (int){1};  // Error code 1
 	}
 
 	if (elem.type != QD_STACK_TYPE_INT) {
 		fprintf(stderr, "my_function: expected integer\n");
-		return (qd_exec_result){2};  // Error code 2
+		return (int){2};  // Error code 2
 	}
 
 	// ... do work ...
 
-	return (qd_exec_result){0};  // Success
+	return (int){0};  // Success
 }
 ```
 

@@ -30,7 +30,7 @@ static int char_to_digit(char c) {
 }
 
 // format_int - format integer in given base ( value:i base:i -- str:s )
-qd_exec_result usr_strconv_format_int(qd_context* ctx) {
+int usr_strconv_format_int(qd_context* ctx) {
 	qd_stack_element_t base_elem, value_elem;
 
 	// Pop base
@@ -63,7 +63,7 @@ qd_exec_result usr_strconv_format_int(qd_context* ctx) {
 	// Handle zero specially
 	if (value == 0) {
 		qd_push_s(ctx, "0");
-		return (qd_exec_result){0};
+		return (int){0};
 	}
 
 	// Buffer for result (64 bits = max 64 binary digits + sign + null)
@@ -95,11 +95,11 @@ qd_exec_result usr_strconv_format_int(qd_context* ctx) {
 	}
 
 	qd_push_s(ctx, ptr);
-	return (qd_exec_result){0};
+	return (int){0};
 }
 
 // parse_int - parse integer from string in given base ( str:s base:i -- value:i )
-qd_exec_result usr_strconv_parse_int(qd_context* ctx) {
+int usr_strconv_parse_int(qd_context* ctx) {
 	qd_stack_element_t base_elem, str_elem;
 
 	// Pop base
@@ -177,11 +177,11 @@ qd_exec_result usr_strconv_parse_int(qd_context* ctx) {
 
 	qd_string_release(str_elem.value.s);
 	qd_push_i(ctx, result);
-	return (qd_exec_result){0};
+	return (int){0};
 }
 
 // itoa - convert integer to string (base 10) ( value:i -- str:s )
-qd_exec_result usr_strconv_itoa(qd_context* ctx) {
+int usr_strconv_itoa(qd_context* ctx) {
 	qd_stack_element_t value_elem;
 
 	qd_stack_error err = qd_stack_pop(ctx->st, &value_elem);
@@ -199,11 +199,11 @@ qd_exec_result usr_strconv_itoa(qd_context* ctx) {
 	snprintf(buffer, sizeof(buffer), "%ld", value_elem.value.i);
 	qd_push_s(ctx, buffer);
 
-	return (qd_exec_result){0};
+	return (int){0};
 }
 
 // atoi - convert string to integer (base 10) ( str:s -- value:i )
-qd_exec_result usr_strconv_atoi(qd_context* ctx) {
+int usr_strconv_atoi(qd_context* ctx) {
 	qd_stack_element_t str_elem;
 
 	qd_stack_error err = qd_stack_pop(ctx->st, &str_elem);
@@ -231,5 +231,5 @@ qd_exec_result usr_strconv_atoi(qd_context* ctx) {
 	qd_string_release(str_elem.value.s);
 	qd_push_i(ctx, result);
 
-	return (qd_exec_result){0};
+	return (int){0};
 }

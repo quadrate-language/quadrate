@@ -9,7 +9,7 @@
 		if ((ptr) == NULL) { \
 			(ctx)->error_code = -1; \
 			(ctx)->error_msg = "Null pointer in mem::" op_name; \
-			return (qd_exec_result){-1}; \
+			return (int){-1}; \
 		} \
 	} while (0)
 
@@ -56,10 +56,10 @@ static qd_stack_error pop_ptr(qd_context* ctx, void** value) {
 }
 
 /* Memory allocation */
-qd_exec_result qd_mem_alloc(qd_context* ctx) {
+int qd_mem_alloc(qd_context* ctx) {
 	int64_t bytes;
 	if (pop_int(ctx, &bytes) != QD_STACK_OK) {
-		return (qd_exec_result){-1};
+		return (int){-1};
 	}
 
 	if (bytes < 0) {
@@ -71,27 +71,27 @@ qd_exec_result qd_mem_alloc(qd_context* ctx) {
 }
 
 /* Free memory */
-qd_exec_result qd_mem_free(qd_context* ctx) {
+int qd_mem_free(qd_context* ctx) {
 	void* ptr;
 	if (pop_ptr(ctx, &ptr) != QD_STACK_OK) {
-		return (qd_exec_result){-1};
+		return (int){-1};
 	}
 
 	free(ptr);
-	return (qd_exec_result){0};
+	return (int){0};
 }
 
 /* Reallocate memory */
-qd_exec_result qd_mem_realloc(qd_context* ctx) {
+int qd_mem_realloc(qd_context* ctx) {
 	int64_t new_bytes;
 	void* ptr;
 
 	if (pop_int(ctx, &new_bytes) != QD_STACK_OK) {
-		return (qd_exec_result){-1};
+		return (int){-1};
 	}
 
 	if (pop_ptr(ctx, &ptr) != QD_STACK_OK) {
-		return (qd_exec_result){-1};
+		return (int){-1};
 	}
 
 	if (new_bytes < 0) {
@@ -103,30 +103,30 @@ qd_exec_result qd_mem_realloc(qd_context* ctx) {
 }
 
 /* Set byte at address */
-qd_exec_result qd_mem_set_byte(qd_context* ctx) {
+int qd_mem_set_byte(qd_context* ctx) {
 	int64_t value, offset;
 	void* address;
 
 	if (pop_int(ctx, &value) != QD_STACK_OK ||
 			pop_int(ctx, &offset) != QD_STACK_OK ||
 			pop_ptr(ctx, &address) != QD_STACK_OK) {
-		return (qd_exec_result){-1};
+		return (int){-1};
 	}
 
 	CHECK_NULL(ctx, address, "set_byte");
 
 	*((uint8_t*)((char*)address + offset)) = (uint8_t)(value & 0xFF);
-	return (qd_exec_result){0};
+	return (int){0};
 }
 
 /* Get byte from address */
-qd_exec_result qd_mem_get_byte(qd_context* ctx) {
+int qd_mem_get_byte(qd_context* ctx) {
 	int64_t offset;
 	void* address;
 
 	if (pop_int(ctx, &offset) != QD_STACK_OK ||
 			pop_ptr(ctx, &address) != QD_STACK_OK) {
-		return (qd_exec_result){-1};
+		return (int){-1};
 	}
 
 	CHECK_NULL(ctx, address, "get_byte");
@@ -136,30 +136,30 @@ qd_exec_result qd_mem_get_byte(qd_context* ctx) {
 }
 
 /* Set 64-bit integer at address */
-qd_exec_result qd_mem_set(qd_context* ctx) {
+int qd_mem_set(qd_context* ctx) {
 	int64_t value, offset;
 	void* address;
 
 	if (pop_int(ctx, &value) != QD_STACK_OK ||
 			pop_int(ctx, &offset) != QD_STACK_OK ||
 			pop_ptr(ctx, &address) != QD_STACK_OK) {
-		return (qd_exec_result){-1};
+		return (int){-1};
 	}
 
 	CHECK_NULL(ctx, address, "set");
 
 	memcpy((char*)address + offset, &value, sizeof(int64_t));
-	return (qd_exec_result){0};
+	return (int){0};
 }
 
 /* Get 64-bit integer from address */
-qd_exec_result qd_mem_get(qd_context* ctx) {
+int qd_mem_get(qd_context* ctx) {
 	int64_t offset;
 	void* address;
 
 	if (pop_int(ctx, &offset) != QD_STACK_OK ||
 			pop_ptr(ctx, &address) != QD_STACK_OK) {
-		return (qd_exec_result){-1};
+		return (int){-1};
 	}
 
 	CHECK_NULL(ctx, address, "get");
@@ -170,7 +170,7 @@ qd_exec_result qd_mem_get(qd_context* ctx) {
 }
 
 /* Set float at address */
-qd_exec_result qd_mem_set_float(qd_context* ctx) {
+int qd_mem_set_float(qd_context* ctx) {
 	double value;
 	int64_t offset;
 	void* address;
@@ -178,23 +178,23 @@ qd_exec_result qd_mem_set_float(qd_context* ctx) {
 	if (pop_float(ctx, &value) != QD_STACK_OK ||
 			pop_int(ctx, &offset) != QD_STACK_OK ||
 			pop_ptr(ctx, &address) != QD_STACK_OK) {
-		return (qd_exec_result){-1};
+		return (int){-1};
 	}
 
 	CHECK_NULL(ctx, address, "set_float");
 
 	memcpy((char*)address + offset, &value, sizeof(double));
-	return (qd_exec_result){0};
+	return (int){0};
 }
 
 /* Get float from address */
-qd_exec_result qd_mem_get_float(qd_context* ctx) {
+int qd_mem_get_float(qd_context* ctx) {
 	int64_t offset;
 	void* address;
 
 	if (pop_int(ctx, &offset) != QD_STACK_OK ||
 			pop_ptr(ctx, &address) != QD_STACK_OK) {
-		return (qd_exec_result){-1};
+		return (int){-1};
 	}
 
 	CHECK_NULL(ctx, address, "get_float");
@@ -205,30 +205,30 @@ qd_exec_result qd_mem_get_float(qd_context* ctx) {
 }
 
 /* Set pointer at address */
-qd_exec_result qd_mem_set_ptr(qd_context* ctx) {
+int qd_mem_set_ptr(qd_context* ctx) {
 	void *value, *address;
 	int64_t offset;
 
 	if (pop_ptr(ctx, &value) != QD_STACK_OK ||
 			pop_int(ctx, &offset) != QD_STACK_OK ||
 			pop_ptr(ctx, &address) != QD_STACK_OK) {
-		return (qd_exec_result){-1};
+		return (int){-1};
 	}
 
 	CHECK_NULL(ctx, address, "set_ptr");
 
 	memcpy((char*)address + offset, &value, sizeof(void*));
-	return (qd_exec_result){0};
+	return (int){0};
 }
 
 /* Get pointer from address */
-qd_exec_result qd_mem_get_ptr(qd_context* ctx) {
+int qd_mem_get_ptr(qd_context* ctx) {
 	int64_t offset;
 	void* address;
 
 	if (pop_int(ctx, &offset) != QD_STACK_OK ||
 			pop_ptr(ctx, &address) != QD_STACK_OK) {
-		return (qd_exec_result){-1};
+		return (int){-1};
 	}
 
 	CHECK_NULL(ctx, address, "get_ptr");
@@ -239,14 +239,14 @@ qd_exec_result qd_mem_get_ptr(qd_context* ctx) {
 }
 
 /* Copy memory */
-qd_exec_result qd_mem_copy(qd_context* ctx) {
+int qd_mem_copy(qd_context* ctx) {
 	int64_t bytes;
 	void *dst, *src;
 
 	if (pop_int(ctx, &bytes) != QD_STACK_OK ||
 			pop_ptr(ctx, &dst) != QD_STACK_OK ||
 			pop_ptr(ctx, &src) != QD_STACK_OK) {
-		return (qd_exec_result){-1};
+		return (int){-1};
 	}
 
 	CHECK_NULL(ctx, src, "copy");
@@ -255,21 +255,21 @@ qd_exec_result qd_mem_copy(qd_context* ctx) {
 	if (bytes < 0) {
 		ctx->error_code = -1;
 		ctx->error_msg = "Negative size in mem::copy";
-		return (qd_exec_result){-1};
+		return (int){-1};
 	}
 
 	memcpy(dst, src, (size_t)bytes);
-	return (qd_exec_result){0};
+	return (int){0};
 }
 
 /* Zero memory */
-qd_exec_result qd_mem_zero(qd_context* ctx) {
+int qd_mem_zero(qd_context* ctx) {
 	int64_t bytes;
 	void* address;
 
 	if (pop_int(ctx, &bytes) != QD_STACK_OK ||
 			pop_ptr(ctx, &address) != QD_STACK_OK) {
-		return (qd_exec_result){-1};
+		return (int){-1};
 	}
 
 	CHECK_NULL(ctx, address, "zero");
@@ -277,22 +277,22 @@ qd_exec_result qd_mem_zero(qd_context* ctx) {
 	if (bytes < 0) {
 		ctx->error_code = -1;
 		ctx->error_msg = "Negative size in mem::zero";
-		return (qd_exec_result){-1};
+		return (int){-1};
 	}
 
 	memset(address, 0, (size_t)bytes);
-	return (qd_exec_result){0};
+	return (int){0};
 }
 
 /* Fill memory with byte value */
-qd_exec_result qd_mem_fill(qd_context* ctx) {
+int qd_mem_fill(qd_context* ctx) {
 	int64_t value, bytes;
 	void* address;
 
 	if (pop_int(ctx, &value) != QD_STACK_OK ||
 			pop_int(ctx, &bytes) != QD_STACK_OK ||
 			pop_ptr(ctx, &address) != QD_STACK_OK) {
-		return (qd_exec_result){-1};
+		return (int){-1};
 	}
 
 	CHECK_NULL(ctx, address, "fill");
@@ -300,9 +300,9 @@ qd_exec_result qd_mem_fill(qd_context* ctx) {
 	if (bytes < 0) {
 		ctx->error_code = -1;
 		ctx->error_msg = "Negative size in mem::fill";
-		return (qd_exec_result){-1};
+		return (int){-1};
 	}
 
 	memset(address, (int)(value & 0xFF), (size_t)bytes);
-	return (qd_exec_result){0};
+	return (int){0};
 }

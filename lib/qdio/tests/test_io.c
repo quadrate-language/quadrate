@@ -47,8 +47,8 @@ TEST(IoOpenReadTest) {
 	// Open for reading
 	qd_push_s(ctx, path);
 	qd_push_s(ctx, "r");
-	qd_exec_result result = usr_io_open(ctx);
-	ASSERT_EQ(result.code, 0, "io_open should succeed");
+	int result = usr_io_open(ctx);
+	ASSERT_EQ(result, 0, "io_open should succeed");
 
 	// Pop status (should be Ok=1)
 	qd_stack_element_t status_elem;
@@ -76,8 +76,8 @@ TEST(IoOpenWriteTest) {
 	// Open for writing (creates file)
 	qd_push_s(ctx, path);
 	qd_push_s(ctx, "w");
-	qd_exec_result result = usr_io_open(ctx);
-	ASSERT_EQ(result.code, 0, "io_open write should succeed");
+	int result = usr_io_open(ctx);
+	ASSERT_EQ(result, 0, "io_open write should succeed");
 
 	// Pop status and handle
 	qd_stack_element_t status_elem;
@@ -102,8 +102,8 @@ TEST(IoOpenNotFoundTest) {
 	// Try to open non-existent file for reading
 	qd_push_s(ctx, "/nonexistent/path/file.txt");
 	qd_push_s(ctx, "r");
-	qd_exec_result result = usr_io_open(ctx);
-	ASSERT(result.code != 0, "io_open should fail for missing file");
+	int result = usr_io_open(ctx);
+	ASSERT(result != 0, "io_open should fail for missing file");
 
 	// Pop error code
 	qd_stack_element_t err_elem;
@@ -118,8 +118,8 @@ TEST(IoCloseNullTest) {
 
 	// Close NULL handle (should be safe no-op)
 	qd_push_p(ctx, NULL);
-	qd_exec_result result = usr_io_close(ctx);
-	ASSERT_EQ(result.code, 0, "closing NULL should succeed");
+	int result = usr_io_close(ctx);
+	ASSERT_EQ(result, 0, "closing NULL should succeed");
 
 	destroy_test_context(ctx);
 }
@@ -142,8 +142,8 @@ TEST(IoWriteReadStringTest) {
 	// Write data
 	qd_push_p(ctx, write_handle.value.p);
 	qd_push_s(ctx, test_data);
-	qd_exec_result result = usr_io_write_string(ctx);
-	ASSERT_EQ(result.code, 0, "write should succeed");
+	int result = usr_io_write_string(ctx);
+	ASSERT_EQ(result, 0, "write should succeed");
 
 	// Pop write status and bytes_written
 	qd_stack_pop(ctx->st, &status);
@@ -168,7 +168,7 @@ TEST(IoWriteReadStringTest) {
 	qd_push_p(ctx, read_handle.value.p);
 	qd_push_i(ctx, 100);
 	result = usr_io_read_string(ctx);
-	ASSERT_EQ(result.code, 0, "read should succeed");
+	ASSERT_EQ(result, 0, "read should succeed");
 
 	// Pop status, bytes_read, data
 	qd_stack_pop(ctx->st, &status);
@@ -277,8 +277,8 @@ TEST(IoSeekTellTest) {
 	qd_push_p(ctx, handle.value.p);
 	qd_push_i(ctx, 5);
 	qd_push_i(ctx, 0);
-	qd_exec_result result = usr_io_seek(ctx);
-	ASSERT_EQ(result.code, 0, "seek should succeed");
+	int result = usr_io_seek(ctx);
+	ASSERT_EQ(result, 0, "seek should succeed");
 
 	qd_stack_pop(ctx->st, &status);
 	ASSERT_EQ((int)status.value.i, 1, "seek status should be Ok");
@@ -418,8 +418,8 @@ TEST(IoReadFileTest) {
 
 	// Read entire file
 	qd_push_s(ctx, path);
-	qd_exec_result result = usr_io_read_file(ctx);
-	ASSERT_EQ(result.code, 0, "read_file should succeed");
+	int result = usr_io_read_file(ctx);
+	ASSERT_EQ(result, 0, "read_file should succeed");
 
 	qd_stack_element_t status;
 	qd_stack_pop(ctx->st, &status);
@@ -443,8 +443,8 @@ TEST(IoWriteFileTest) {
 	// Write file
 	qd_push_s(ctx, path);
 	qd_push_s(ctx, content);
-	qd_exec_result result = usr_io_write_file(ctx);
-	ASSERT_EQ(result.code, 0, "write_file should succeed");
+	int result = usr_io_write_file(ctx);
+	ASSERT_EQ(result, 0, "write_file should succeed");
 
 	qd_stack_element_t status;
 	qd_stack_pop(ctx->st, &status);
@@ -468,8 +468,8 @@ TEST(IoReadFileNotFoundTest) {
 
 	// Try to read non-existent file
 	qd_push_s(ctx, "/nonexistent/path/file.txt");
-	qd_exec_result result = usr_io_read_file(ctx);
-	ASSERT(result.code != 0, "read_file should fail for missing file");
+	int result = usr_io_read_file(ctx);
+	ASSERT(result != 0, "read_file should fail for missing file");
 
 	qd_stack_element_t err;
 	qd_stack_pop(ctx->st, &err);

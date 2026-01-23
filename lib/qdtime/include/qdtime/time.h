@@ -25,7 +25,7 @@ extern "C" {
  * @param ctx Execution context
  * @return Execution result
  */
-qd_exec_result usr_time_unix(qd_context* ctx);
+int usr_time_unix(qd_context* ctx);
 
 /**
  * @brief Get current time in nanoseconds since epoch
@@ -37,7 +37,7 @@ qd_exec_result usr_time_unix(qd_context* ctx);
  * @param ctx Execution context
  * @return Execution result
  */
-qd_exec_result usr_time_now(qd_context* ctx);
+int usr_time_now(qd_context* ctx);
 
 /**
  * @brief Sleep for a specified duration in nanoseconds
@@ -58,7 +58,7 @@ qd_exec_result usr_time_now(qd_context* ctx);
  *
  * @note Time constants (Second, Millisecond, etc.) are defined in the time module
  */
-qd_exec_result usr_time_sleep(qd_context* ctx);
+int usr_time_sleep(qd_context* ctx);
 
 #ifdef __cplusplus
 }

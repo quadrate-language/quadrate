@@ -26,7 +26,7 @@ static void signal_handler(int signum) {
 	}
 }
 
-qd_exec_result usr_signal_trap(qd_context* ctx) {
+int usr_signal_trap(qd_context* ctx) {
 	size_t stack_size = qd_stack_size(ctx->st);
 	if (stack_size < 1) {
 		fprintf(stderr, "Fatal error in signal::trap: Stack underflow (required 1 element, have %zu)\n", stack_size);
@@ -77,10 +77,10 @@ qd_exec_result usr_signal_trap(qd_context* ctx) {
 	trapped[signum] = 1;
 	pending_signals[signum] = 0;  // Clear any pending state
 
-	return (qd_exec_result){0};
+	return (int){0};
 }
 
-qd_exec_result usr_signal_ignore(qd_context* ctx) {
+int usr_signal_ignore(qd_context* ctx) {
 	size_t stack_size = qd_stack_size(ctx->st);
 	if (stack_size < 1) {
 		fprintf(stderr, "Fatal error in signal::ignore: Stack underflow (required 1 element, have %zu)\n", stack_size);
@@ -123,10 +123,10 @@ qd_exec_result usr_signal_ignore(qd_context* ctx) {
 	trapped[signum] = 0;
 	pending_signals[signum] = 0;
 
-	return (qd_exec_result){0};
+	return (int){0};
 }
 
-qd_exec_result usr_signal_reset(qd_context* ctx) {
+int usr_signal_reset(qd_context* ctx) {
 	size_t stack_size = qd_stack_size(ctx->st);
 	if (stack_size < 1) {
 		fprintf(stderr, "Fatal error in signal::reset: Stack underflow (required 1 element, have %zu)\n", stack_size);
@@ -170,10 +170,10 @@ qd_exec_result usr_signal_reset(qd_context* ctx) {
 	trapped[signum] = 0;
 	pending_signals[signum] = 0;
 
-	return (qd_exec_result){0};
+	return (int){0};
 }
 
-qd_exec_result usr_signal_pending(qd_context* ctx) {
+int usr_signal_pending(qd_context* ctx) {
 	size_t stack_size = qd_stack_size(ctx->st);
 	if (stack_size < 1) {
 		fprintf(stderr, "Fatal error in signal::pending: Stack underflow (required 1 element, have %zu)\n", stack_size);
@@ -211,10 +211,10 @@ qd_exec_result usr_signal_pending(qd_context* ctx) {
 		abort();
 	}
 
-	return (qd_exec_result){0};
+	return (int){0};
 }
 
-qd_exec_result usr_signal_clear(qd_context* ctx) {
+int usr_signal_clear(qd_context* ctx) {
 	size_t stack_size = qd_stack_size(ctx->st);
 	if (stack_size < 1) {
 		fprintf(stderr, "Fatal error in signal::clear: Stack underflow (required 1 element, have %zu)\n", stack_size);
@@ -245,10 +245,10 @@ qd_exec_result usr_signal_clear(qd_context* ctx) {
 
 	pending_signals[signum] = 0;
 
-	return (qd_exec_result){0};
+	return (int){0};
 }
 
-qd_exec_result usr_signal_wait(qd_context* ctx) {
+int usr_signal_wait(qd_context* ctx) {
 	// Wait for any trapped signal using pause()
 	// pause() returns when a signal is caught
 
@@ -261,7 +261,7 @@ qd_exec_result usr_signal_wait(qd_context* ctx) {
 				qd_print_stack_trace(ctx);
 				abort();
 			}
-			return (qd_exec_result){0};
+			return (int){0};
 		}
 	}
 
@@ -278,12 +278,12 @@ qd_exec_result usr_signal_wait(qd_context* ctx) {
 					qd_print_stack_trace(ctx);
 					abort();
 				}
-				return (qd_exec_result){0};
+				return (int){0};
 			}
 		}
 		// If we get here, it was a signal we're not tracking, keep waiting
 	}
 
 	// Never reached
-	return (qd_exec_result){0};
+	return (int){0};
 }

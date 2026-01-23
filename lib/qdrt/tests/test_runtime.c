@@ -32,8 +32,8 @@ TEST(MulIntegersTest) {
 	qd_push_i(ctx, 7);
 
 	// Multiply
-	qd_exec_result result = qd_mul(ctx);
-	ASSERT_EQ(result.code, 0, "mul should succeed");
+	int result = qd_mul(ctx);
+	ASSERT_EQ(result, 0, "mul should succeed");
 
 	// Check result
 	qd_stack_element_t elem;
@@ -53,8 +53,8 @@ TEST(MulFloatsTest) {
 	qd_push_f(ctx, 4.0);
 
 	// Multiply
-	qd_exec_result result = qd_mul(ctx);
-	ASSERT_EQ(result.code, 0, "mul should succeed");
+	int result = qd_mul(ctx);
+	ASSERT_EQ(result, 0, "mul should succeed");
 
 	// Check result
 	qd_stack_element_t elem;
@@ -74,8 +74,8 @@ TEST(MulMixedTypesTest) {
 	qd_push_f(ctx, 2.0);
 
 	// Multiply
-	qd_exec_result result = qd_mul(ctx);
-	ASSERT_EQ(result.code, 0, "mul should succeed");
+	int result = qd_mul(ctx);
+	ASSERT_EQ(result, 0, "mul should succeed");
 
 	// Check result (should be float)
 	qd_stack_element_t elem;
@@ -95,8 +95,8 @@ TEST(MulZeroTest) {
 	qd_push_i(ctx, 0);
 
 	// Multiply
-	qd_exec_result result = qd_mul(ctx);
-	ASSERT_EQ(result.code, 0, "mul should succeed");
+	int result = qd_mul(ctx);
+	ASSERT_EQ(result, 0, "mul should succeed");
 
 	// Check result
 	qd_stack_element_t elem;
@@ -116,8 +116,8 @@ TEST(MulNegativeTest) {
 	qd_push_i(ctx, 7);
 
 	// Multiply
-	qd_exec_result result = qd_mul(ctx);
-	ASSERT_EQ(result.code, 0, "mul should succeed");
+	int result = qd_mul(ctx);
+	ASSERT_EQ(result, 0, "mul should succeed");
 
 	// Check result
 	qd_stack_element_t elem;
@@ -138,8 +138,8 @@ TEST(AddIntegersTest) {
 	qd_push_i(ctx, 22);
 
 	// Add
-	qd_exec_result result = qd_add(ctx);
-	ASSERT_EQ(result.code, 0, "add should succeed");
+	int result = qd_add(ctx);
+	ASSERT_EQ(result, 0, "add should succeed");
 
 	// Check result
 	qd_stack_element_t elem;
@@ -159,8 +159,8 @@ TEST(AddFloatsTest) {
 	qd_push_f(ctx, 2.5);
 
 	// Add
-	qd_exec_result result = qd_add(ctx);
-	ASSERT_EQ(result.code, 0, "add should succeed");
+	int result = qd_add(ctx);
+	ASSERT_EQ(result, 0, "add should succeed");
 
 	// Check result
 	qd_stack_element_t elem;
@@ -180,8 +180,8 @@ TEST(AddMixedTypesTest) {
 	qd_push_f(ctx, 3.0);
 
 	// Add
-	qd_exec_result result = qd_add(ctx);
-	ASSERT_EQ(result.code, 0, "add should succeed");
+	int result = qd_add(ctx);
+	ASSERT_EQ(result, 0, "add should succeed");
 
 	// Check result (should be float)
 	qd_stack_element_t elem;
@@ -201,8 +201,8 @@ TEST(AddNegativeTest) {
 	qd_push_i(ctx, -8);
 
 	// Add
-	qd_exec_result result = qd_add(ctx);
-	ASSERT_EQ(result.code, 0, "add should succeed");
+	int result = qd_add(ctx);
+	ASSERT_EQ(result, 0, "add should succeed");
 
 	// Check result
 	qd_stack_element_t elem;
@@ -222,8 +222,8 @@ TEST(AddZeroTest) {
 	qd_push_i(ctx, 0);
 
 	// Add
-	qd_exec_result result = qd_add(ctx);
-	ASSERT_EQ(result.code, 0, "add should succeed");
+	int result = qd_add(ctx);
+	ASSERT_EQ(result, 0, "add should succeed");
 
 	// Check result
 	qd_stack_element_t elem;
@@ -244,8 +244,8 @@ TEST(SubIntegersTest) {
 	qd_push_i(ctx, 8);
 
 	// Subtract
-	qd_exec_result result = qd_sub(ctx);
-	ASSERT_EQ(result.code, 0, "sub should succeed");
+	int result = qd_sub(ctx);
+	ASSERT_EQ(result, 0, "sub should succeed");
 
 	// Check result
 	qd_stack_element_t elem;
@@ -265,8 +265,8 @@ TEST(SubFloatsTest) {
 	qd_push_f(ctx, 3.5);
 
 	// Subtract
-	qd_exec_result result = qd_sub(ctx);
-	ASSERT_EQ(result.code, 0, "sub should succeed");
+	int result = qd_sub(ctx);
+	ASSERT_EQ(result, 0, "sub should succeed");
 
 	// Check result
 	qd_stack_element_t elem;
@@ -286,8 +286,8 @@ TEST(SubMixedTypesTest) {
 	qd_push_f(ctx, 0.5);
 
 	// Subtract
-	qd_exec_result result = qd_sub(ctx);
-	ASSERT_EQ(result.code, 0, "sub should succeed");
+	int result = qd_sub(ctx);
+	ASSERT_EQ(result, 0, "sub should succeed");
 
 	// Check result (should be float)
 	qd_stack_element_t elem;
@@ -307,8 +307,8 @@ TEST(SubNegativeResultTest) {
 	qd_push_i(ctx, 52);
 
 	// Subtract
-	qd_exec_result result = qd_sub(ctx);
-	ASSERT_EQ(result.code, 0, "sub should succeed");
+	int result = qd_sub(ctx);
+	ASSERT_EQ(result, 0, "sub should succeed");
 
 	// Check result
 	qd_stack_element_t elem;
@@ -328,8 +328,8 @@ TEST(SubZeroTest) {
 	qd_push_i(ctx, 0);
 
 	// Subtract
-	qd_exec_result result = qd_sub(ctx);
-	ASSERT_EQ(result.code, 0, "sub should succeed");
+	int result = qd_sub(ctx);
+	ASSERT_EQ(result, 0, "sub should succeed");
 
 	// Check result
 	qd_stack_element_t elem;
@@ -397,8 +397,8 @@ TEST(PrintPopsStackTest) {
 	ASSERT_EQ((int)qd_stack_size(ctx->st), 3, "Stack should have 3 elements");
 
 	// Print (pop) the top element
-	qd_exec_result result = qd_print(ctx);
-	ASSERT_EQ(result.code, 0, "print should succeed");
+	int result = qd_print(ctx);
+	ASSERT_EQ(result, 0, "print should succeed");
 
 	// Stack should now have 2 elements
 	ASSERT_EQ((int)qd_stack_size(ctx->st), 2, "Stack should have 2 elements after print");
@@ -416,8 +416,8 @@ TEST(PrintEmptyStackTest) {
 	qd_context* ctx = create_test_context();
 
 	// Try to print from empty stack
-	qd_exec_result result = qd_print(ctx);
-	ASSERT(result.code != 0, "print on empty stack should fail");
+	int result = qd_print(ctx);
+	ASSERT(result != 0, "print on empty stack should fail");
 
 	destroy_test_context(ctx);
 }
@@ -426,9 +426,9 @@ TEST(PrintIntegerTest) {
 	qd_context* ctx = create_test_context();
 
 	qd_push_i(ctx, 42);
-	qd_exec_result result = qd_print(ctx);
+	int result = qd_print(ctx);
 
-	ASSERT_EQ(result.code, 0, "print should succeed");
+	ASSERT_EQ(result, 0, "print should succeed");
 	ASSERT_EQ((int)qd_stack_size(ctx->st), 0, "Stack should be empty after print");
 
 	destroy_test_context(ctx);
@@ -438,9 +438,9 @@ TEST(PrintFloatTest) {
 	qd_context* ctx = create_test_context();
 
 	qd_push_f(ctx, 3.14);
-	qd_exec_result result = qd_print(ctx);
+	int result = qd_print(ctx);
 
-	ASSERT_EQ(result.code, 0, "print should succeed");
+	ASSERT_EQ(result, 0, "print should succeed");
 	ASSERT_EQ((int)qd_stack_size(ctx->st), 0, "Stack should be empty after print");
 
 	destroy_test_context(ctx);
@@ -450,9 +450,9 @@ TEST(PrintStringTest) {
 	qd_context* ctx = create_test_context();
 
 	qd_push_s(ctx, "hello");
-	qd_exec_result result = qd_print(ctx);
+	int result = qd_print(ctx);
 
-	ASSERT_EQ(result.code, 0, "print should succeed");
+	ASSERT_EQ(result, 0, "print should succeed");
 	ASSERT_EQ((int)qd_stack_size(ctx->st), 0, "Stack should be empty after print");
 
 	destroy_test_context(ctx);
@@ -470,8 +470,8 @@ TEST(PrintvPopsStackTest) {
 	ASSERT_EQ((int)qd_stack_size(ctx->st), 3, "Stack should have 3 elements");
 
 	// Printv (pop) the top element
-	qd_exec_result result = qd_printv(ctx);
-	ASSERT_EQ(result.code, 0, "printv should succeed");
+	int result = qd_printv(ctx);
+	ASSERT_EQ(result, 0, "printv should succeed");
 
 	// Stack should now have 2 elements
 	ASSERT_EQ((int)qd_stack_size(ctx->st), 2, "Stack should have 2 elements after printv");
@@ -489,9 +489,9 @@ TEST(PrintvIntegerTest) {
 	qd_context* ctx = create_test_context();
 
 	qd_push_i(ctx, 42);
-	qd_exec_result result = qd_printv(ctx);
+	int result = qd_printv(ctx);
 
-	ASSERT_EQ(result.code, 0, "printv should succeed");
+	ASSERT_EQ(result, 0, "printv should succeed");
 	ASSERT_EQ((int)qd_stack_size(ctx->st), 0, "Stack should be empty after printv");
 
 	destroy_test_context(ctx);
@@ -501,9 +501,9 @@ TEST(PrintvFloatTest) {
 	qd_context* ctx = create_test_context();
 
 	qd_push_f(ctx, 3.14);
-	qd_exec_result result = qd_printv(ctx);
+	int result = qd_printv(ctx);
 
-	ASSERT_EQ(result.code, 0, "printv should succeed");
+	ASSERT_EQ(result, 0, "printv should succeed");
 	ASSERT_EQ((int)qd_stack_size(ctx->st), 0, "Stack should be empty after printv");
 
 	destroy_test_context(ctx);
@@ -521,8 +521,8 @@ TEST(PrintsNonDestructiveTest) {
 	ASSERT_EQ((int)qd_stack_size(ctx->st), 3, "Stack should have 3 elements");
 
 	// Prints (non-destructive)
-	qd_exec_result result = qd_prints(ctx);
-	ASSERT_EQ(result.code, 0, "prints should succeed");
+	int result = qd_prints(ctx);
+	ASSERT_EQ(result, 0, "prints should succeed");
 
 	// Stack should still have 3 elements (non-destructive)
 	ASSERT_EQ((int)qd_stack_size(ctx->st), 3, "Stack should still have 3 elements after prints");
@@ -534,8 +534,8 @@ TEST(PrintsEmptyStackTest) {
 	qd_context* ctx = create_test_context();
 
 	// Prints on empty stack should succeed but output nothing
-	qd_exec_result result = qd_prints(ctx);
-	ASSERT_EQ(result.code, 0, "prints on empty stack should succeed");
+	int result = qd_prints(ctx);
+	ASSERT_EQ(result, 0, "prints on empty stack should succeed");
 
 	destroy_test_context(ctx);
 }
@@ -547,8 +547,8 @@ TEST(PrintsMixedTypesTest) {
 	qd_push_f(ctx, 3.14);
 	qd_push_s(ctx, "hello");
 
-	qd_exec_result result = qd_prints(ctx);
-	ASSERT_EQ(result.code, 0, "prints should succeed with mixed types");
+	int result = qd_prints(ctx);
+	ASSERT_EQ(result, 0, "prints should succeed with mixed types");
 	ASSERT_EQ((int)qd_stack_size(ctx->st), 3, "Stack should still have 3 elements");
 
 	destroy_test_context(ctx);
@@ -566,8 +566,8 @@ TEST(PrintsvNonDestructiveTest) {
 	ASSERT_EQ((int)qd_stack_size(ctx->st), 3, "Stack should have 3 elements");
 
 	// Printsv (non-destructive with types)
-	qd_exec_result result = qd_printsv(ctx);
-	ASSERT_EQ(result.code, 0, "printsv should succeed");
+	int result = qd_printsv(ctx);
+	ASSERT_EQ(result, 0, "printsv should succeed");
 
 	// Stack should still have 3 elements (non-destructive)
 	ASSERT_EQ((int)qd_stack_size(ctx->st), 3, "Stack should still have 3 elements after printsv");
@@ -579,8 +579,8 @@ TEST(PrintsvEmptyStackTest) {
 	qd_context* ctx = create_test_context();
 
 	// Printsv on empty stack should succeed but output nothing
-	qd_exec_result result = qd_printsv(ctx);
-	ASSERT_EQ(result.code, 0, "printsv on empty stack should succeed");
+	int result = qd_printsv(ctx);
+	ASSERT_EQ(result, 0, "printsv on empty stack should succeed");
 
 	destroy_test_context(ctx);
 }
@@ -592,8 +592,8 @@ TEST(PrintsvMixedTypesTest) {
 	qd_push_f(ctx, 3.14);
 	qd_push_s(ctx, "hello");
 
-	qd_exec_result result = qd_printsv(ctx);
-	ASSERT_EQ(result.code, 0, "printsv should succeed with mixed types");
+	int result = qd_printsv(ctx);
+	ASSERT_EQ(result, 0, "printsv should succeed with mixed types");
 	ASSERT_EQ((int)qd_stack_size(ctx->st), 3, "Stack should still have 3 elements");
 
 	destroy_test_context(ctx);
@@ -604,9 +604,9 @@ TEST(DupIntegerTest) {
 	qd_context* ctx = create_test_context();
 
 	qd_push_i(ctx, 42);
-	qd_exec_result result = qd_dup(ctx);
+	int result = qd_dup(ctx);
 
-	ASSERT_EQ(result.code, 0, "dup should succeed");
+	ASSERT_EQ(result, 0, "dup should succeed");
 	ASSERT_EQ((int)qd_stack_size(ctx->st), 2, "Stack should have 2 elements after dup");
 
 	qd_stack_element_t elem1, elem2;
@@ -627,9 +627,9 @@ TEST(DupFloatTest) {
 	qd_context* ctx = create_test_context();
 
 	qd_push_f(ctx, 3.14);
-	qd_exec_result result = qd_dup(ctx);
+	int result = qd_dup(ctx);
 
-	ASSERT_EQ(result.code, 0, "dup should succeed");
+	ASSERT_EQ(result, 0, "dup should succeed");
 	ASSERT_EQ((int)qd_stack_size(ctx->st), 2, "Stack should have 2 elements after dup");
 
 	qd_stack_element_t elem1, elem2;
@@ -650,9 +650,9 @@ TEST(DupStringTest) {
 	qd_context* ctx = create_test_context();
 
 	qd_push_s(ctx, "hello");
-	qd_exec_result result = qd_dup(ctx);
+	int result = qd_dup(ctx);
 
-	ASSERT_EQ(result.code, 0, "dup should succeed");
+	ASSERT_EQ(result, 0, "dup should succeed");
 	ASSERT_EQ((int)qd_stack_size(ctx->st), 2, "Stack should have 2 elements after dup");
 
 	qd_stack_element_t elem1, elem2;
@@ -680,8 +680,8 @@ TEST(DupNonDestructiveTest) {
 	qd_push_i(ctx, 30);
 
 	// Dup the top element
-	qd_exec_result result = qd_dup(ctx);
-	ASSERT_EQ(result.code, 0, "dup should succeed");
+	int result = qd_dup(ctx);
+	ASSERT_EQ(result, 0, "dup should succeed");
 	ASSERT_EQ((int)qd_stack_size(ctx->st), 4, "Stack should have 4 elements after dup");
 
 	// Top two should be 30, 30
@@ -712,9 +712,9 @@ TEST(SwapIntegersTest) {
 
 	qd_push_i(ctx, 10);
 	qd_push_i(ctx, 20);
-	qd_exec_result result = qd_swap(ctx);
+	int result = qd_swap(ctx);
 
-	ASSERT_EQ(result.code, 0, "swap should succeed");
+	ASSERT_EQ(result, 0, "swap should succeed");
 	ASSERT_EQ((int)qd_stack_size(ctx->st), 2, "Stack should have 2 elements after swap");
 
 	qd_stack_element_t elem1, elem2;
@@ -736,9 +736,9 @@ TEST(SwapMixedTypesTest) {
 
 	qd_push_i(ctx, 42);
 	qd_push_f(ctx, 3.14);
-	qd_exec_result result = qd_swap(ctx);
+	int result = qd_swap(ctx);
 
-	ASSERT_EQ(result.code, 0, "swap should succeed with mixed types");
+	ASSERT_EQ(result, 0, "swap should succeed with mixed types");
 	ASSERT_EQ((int)qd_stack_size(ctx->st), 2, "Stack should have 2 elements after swap");
 
 	qd_stack_element_t elem1, elem2;
@@ -760,9 +760,9 @@ TEST(SwapStringsTest) {
 
 	qd_push_s(ctx, "hello");
 	qd_push_s(ctx, "world");
-	qd_exec_result result = qd_swap(ctx);
+	int result = qd_swap(ctx);
 
-	ASSERT_EQ(result.code, 0, "swap should succeed with strings");
+	ASSERT_EQ(result, 0, "swap should succeed with strings");
 	ASSERT_EQ((int)qd_stack_size(ctx->st), 2, "Stack should have 2 elements after swap");
 
 	qd_stack_element_t elem1, elem2;
@@ -791,8 +791,8 @@ TEST(SwapDoesNotAffectRestOfStackTest) {
 	qd_push_i(ctx, 4);
 
 	// Swap top two (3 and 4)
-	qd_exec_result result = qd_swap(ctx);
-	ASSERT_EQ(result.code, 0, "swap should succeed");
+	int result = qd_swap(ctx);
+	ASSERT_EQ(result, 0, "swap should succeed");
 	ASSERT_EQ((int)qd_stack_size(ctx->st), 4, "Stack should still have 4 elements");
 
 	// Check order: should be 1, 2, 4, 3 (from bottom to top)
@@ -822,9 +822,9 @@ TEST(OverIntegersTest) {
 
 	qd_push_i(ctx, 10);
 	qd_push_i(ctx, 20);
-	qd_exec_result result = qd_over(ctx);
+	int result = qd_over(ctx);
 
-	ASSERT_EQ(result.code, 0, "over should succeed");
+	ASSERT_EQ(result, 0, "over should succeed");
 	ASSERT_EQ((int)qd_stack_size(ctx->st), 3, "Stack should have 3 elements after over");
 
 	// Stack should be: 10, 20, 10 (from bottom to top)
@@ -852,9 +852,9 @@ TEST(OverMixedTypesTest) {
 
 	qd_push_i(ctx, 42);
 	qd_push_f(ctx, 3.14);
-	qd_exec_result result = qd_over(ctx);
+	int result = qd_over(ctx);
 
-	ASSERT_EQ(result.code, 0, "over should succeed with mixed types");
+	ASSERT_EQ(result, 0, "over should succeed with mixed types");
 	ASSERT_EQ((int)qd_stack_size(ctx->st), 3, "Stack should have 3 elements after over");
 
 	// Stack should be: 42, 3.14, 42
@@ -882,9 +882,9 @@ TEST(OverStringsTest) {
 
 	qd_push_s(ctx, "hello");
 	qd_push_s(ctx, "world");
-	qd_exec_result result = qd_over(ctx);
+	int result = qd_over(ctx);
 
-	ASSERT_EQ(result.code, 0, "over should succeed with strings");
+	ASSERT_EQ(result, 0, "over should succeed with strings");
 	ASSERT_EQ((int)qd_stack_size(ctx->st), 3, "Stack should have 3 elements after over");
 
 	// Stack should be: "hello", "world", "hello"
@@ -920,8 +920,8 @@ TEST(OverPreservesRestOfStackTest) {
 	qd_push_i(ctx, 4);
 
 	// Over copies the second element (3) to the top
-	qd_exec_result result = qd_over(ctx);
-	ASSERT_EQ(result.code, 0, "over should succeed");
+	int result = qd_over(ctx);
+	ASSERT_EQ(result, 0, "over should succeed");
 	ASSERT_EQ((int)qd_stack_size(ctx->st), 5, "Stack should have 5 elements");
 
 	// Check order: should be 1, 2, 3, 4, 3 (from bottom to top)
@@ -955,9 +955,9 @@ TEST(NipIntegersTest) {
 
 	qd_push_i(ctx, 10);
 	qd_push_i(ctx, 20);
-	qd_exec_result result = qd_nip(ctx);
+	int result = qd_nip(ctx);
 
-	ASSERT_EQ(result.code, 0, "nip should succeed");
+	ASSERT_EQ(result, 0, "nip should succeed");
 	ASSERT_EQ((int)qd_stack_size(ctx->st), 1, "Stack should have 1 element after nip");
 
 	// Stack should be: 20
@@ -975,9 +975,9 @@ TEST(NipMixedTypesTest) {
 
 	qd_push_f(ctx, 3.14);
 	qd_push_i(ctx, 42);
-	qd_exec_result result = qd_nip(ctx);
+	int result = qd_nip(ctx);
 
-	ASSERT_EQ(result.code, 0, "nip should succeed with mixed types");
+	ASSERT_EQ(result, 0, "nip should succeed with mixed types");
 	ASSERT_EQ((int)qd_stack_size(ctx->st), 1, "Stack should have 1 element after nip");
 
 	// Stack should be: 42
@@ -995,9 +995,9 @@ TEST(NipStringsTest) {
 
 	qd_push_s(ctx, "hello");
 	qd_push_s(ctx, "world");
-	qd_exec_result result = qd_nip(ctx);
+	int result = qd_nip(ctx);
 
-	ASSERT_EQ(result.code, 0, "nip should succeed with strings");
+	ASSERT_EQ(result, 0, "nip should succeed with strings");
 	ASSERT_EQ((int)qd_stack_size(ctx->st), 1, "Stack should have 1 element after nip");
 
 	// Stack should be: "world"
@@ -1021,8 +1021,8 @@ TEST(NipPreservesRestOfStackTest) {
 	qd_push_i(ctx, 4);
 
 	// Nip removes the second element (3), leaving 4 on top
-	qd_exec_result result = qd_nip(ctx);
-	ASSERT_EQ(result.code, 0, "nip should succeed");
+	int result = qd_nip(ctx);
+	ASSERT_EQ(result, 0, "nip should succeed");
 	ASSERT_EQ((int)qd_stack_size(ctx->st), 3, "Stack should have 3 elements");
 
 	// Check order: should be 1, 2, 4 (from bottom to top)
@@ -1462,9 +1462,9 @@ TEST(EqIntegersEqualTest) {
 	// Test 5 == 5 (should return 1)
 	qd_push_i(ctx, 5);
 	qd_push_i(ctx, 5);
-	qd_exec_result result = qd_eq(ctx);
+	int result = qd_eq(ctx);
 
-	ASSERT_EQ(result.code, 0, "eq should succeed");
+	ASSERT_EQ(result, 0, "eq should succeed");
 	ASSERT_EQ((int)qd_stack_size(ctx->st), 1, "Stack should have 1 element");
 
 	qd_stack_element_t elem;
@@ -1482,9 +1482,9 @@ TEST(EqIntegersNotEqualTest) {
 	// Test 5 == 3 (should return 0)
 	qd_push_i(ctx, 5);
 	qd_push_i(ctx, 3);
-	qd_exec_result result = qd_eq(ctx);
+	int result = qd_eq(ctx);
 
-	ASSERT_EQ(result.code, 0, "eq should succeed");
+	ASSERT_EQ(result, 0, "eq should succeed");
 	ASSERT_EQ((int)qd_stack_size(ctx->st), 1, "Stack should have 1 element");
 
 	qd_stack_element_t elem;
@@ -1502,9 +1502,9 @@ TEST(EqFloatsEqualTest) {
 	// Test 3.14 == 3.14 (should return 1)
 	qd_push_f(ctx, 3.14);
 	qd_push_f(ctx, 3.14);
-	qd_exec_result result = qd_eq(ctx);
+	int result = qd_eq(ctx);
 
-	ASSERT_EQ(result.code, 0, "eq should succeed");
+	ASSERT_EQ(result, 0, "eq should succeed");
 	ASSERT_EQ((int)qd_stack_size(ctx->st), 1, "Stack should have 1 element");
 
 	qd_stack_element_t elem;
@@ -1522,9 +1522,9 @@ TEST(EqMixedTypesEqualTest) {
 	// Test 5 (int) == 5.0 (float) (should return 1)
 	qd_push_i(ctx, 5);
 	qd_push_f(ctx, 5.0);
-	qd_exec_result result = qd_eq(ctx);
+	int result = qd_eq(ctx);
 
-	ASSERT_EQ(result.code, 0, "eq should succeed");
+	ASSERT_EQ(result, 0, "eq should succeed");
 	ASSERT_EQ((int)qd_stack_size(ctx->st), 1, "Stack should have 1 element");
 
 	qd_stack_element_t elem;
@@ -1542,9 +1542,9 @@ TEST(EqNegativeNumbersTest) {
 	// Test -5 == -5 (should return 1)
 	qd_push_i(ctx, -5);
 	qd_push_i(ctx, -5);
-	qd_exec_result result = qd_eq(ctx);
+	int result = qd_eq(ctx);
 
-	ASSERT_EQ(result.code, 0, "eq should succeed");
+	ASSERT_EQ(result, 0, "eq should succeed");
 
 	qd_stack_element_t elem;
 	qd_stack_pop(ctx->st, &elem);
@@ -1559,9 +1559,9 @@ TEST(EqZeroTest) {
 	// Test 0 == 0 (should return 1)
 	qd_push_i(ctx, 0);
 	qd_push_i(ctx, 0);
-	qd_exec_result result = qd_eq(ctx);
+	int result = qd_eq(ctx);
 
-	ASSERT_EQ(result.code, 0, "eq should succeed");
+	ASSERT_EQ(result, 0, "eq should succeed");
 
 	qd_stack_element_t elem;
 	qd_stack_pop(ctx->st, &elem);
@@ -1577,9 +1577,9 @@ TEST(NeqIntegersNotEqualTest) {
 	// Test 5 != 3 (should return 1)
 	qd_push_i(ctx, 5);
 	qd_push_i(ctx, 3);
-	qd_exec_result result = qd_neq(ctx);
+	int result = qd_neq(ctx);
 
-	ASSERT_EQ(result.code, 0, "neq should succeed");
+	ASSERT_EQ(result, 0, "neq should succeed");
 	ASSERT_EQ((int)qd_stack_size(ctx->st), 1, "Stack should have 1 element");
 
 	qd_stack_element_t elem;
@@ -1597,9 +1597,9 @@ TEST(NeqIntegersEqualTest) {
 	// Test 5 != 5 (should return 0)
 	qd_push_i(ctx, 5);
 	qd_push_i(ctx, 5);
-	qd_exec_result result = qd_neq(ctx);
+	int result = qd_neq(ctx);
 
-	ASSERT_EQ(result.code, 0, "neq should succeed");
+	ASSERT_EQ(result, 0, "neq should succeed");
 
 	qd_stack_element_t elem;
 	qd_stack_pop(ctx->st, &elem);
@@ -1614,9 +1614,9 @@ TEST(NeqFloatsNotEqualTest) {
 	// Test 3.14 != 2.71 (should return 1)
 	qd_push_f(ctx, 3.14);
 	qd_push_f(ctx, 2.71);
-	qd_exec_result result = qd_neq(ctx);
+	int result = qd_neq(ctx);
 
-	ASSERT_EQ(result.code, 0, "neq should succeed");
+	ASSERT_EQ(result, 0, "neq should succeed");
 
 	qd_stack_element_t elem;
 	qd_stack_pop(ctx->st, &elem);
@@ -1631,9 +1631,9 @@ TEST(NeqMixedTypesTest) {
 	// Test 5 (int) != 5.5 (float) (should return 1)
 	qd_push_i(ctx, 5);
 	qd_push_f(ctx, 5.5);
-	qd_exec_result result = qd_neq(ctx);
+	int result = qd_neq(ctx);
 
-	ASSERT_EQ(result.code, 0, "neq should succeed");
+	ASSERT_EQ(result, 0, "neq should succeed");
 
 	qd_stack_element_t elem;
 	qd_stack_pop(ctx->st, &elem);
@@ -1649,9 +1649,9 @@ TEST(LtIntegersLessThanTest) {
 	// Test 3 < 5 (should return 1)
 	qd_push_i(ctx, 3);
 	qd_push_i(ctx, 5);
-	qd_exec_result result = qd_lt(ctx);
+	int result = qd_lt(ctx);
 
-	ASSERT_EQ(result.code, 0, "lt should succeed");
+	ASSERT_EQ(result, 0, "lt should succeed");
 	ASSERT_EQ((int)qd_stack_size(ctx->st), 1, "Stack should have 1 element");
 
 	qd_stack_element_t elem;
@@ -1669,9 +1669,9 @@ TEST(LtIntegersGreaterThanTest) {
 	// Test 5 < 3 (should return 0)
 	qd_push_i(ctx, 5);
 	qd_push_i(ctx, 3);
-	qd_exec_result result = qd_lt(ctx);
+	int result = qd_lt(ctx);
 
-	ASSERT_EQ(result.code, 0, "lt should succeed");
+	ASSERT_EQ(result, 0, "lt should succeed");
 
 	qd_stack_element_t elem;
 	qd_stack_pop(ctx->st, &elem);
@@ -1686,9 +1686,9 @@ TEST(LtIntegersEqualTest) {
 	// Test 5 < 5 (should return 0)
 	qd_push_i(ctx, 5);
 	qd_push_i(ctx, 5);
-	qd_exec_result result = qd_lt(ctx);
+	int result = qd_lt(ctx);
 
-	ASSERT_EQ(result.code, 0, "lt should succeed");
+	ASSERT_EQ(result, 0, "lt should succeed");
 
 	qd_stack_element_t elem;
 	qd_stack_pop(ctx->st, &elem);
@@ -1703,9 +1703,9 @@ TEST(LtFloatsTest) {
 	// Test 2.5 < 3.7 (should return 1)
 	qd_push_f(ctx, 2.5);
 	qd_push_f(ctx, 3.7);
-	qd_exec_result result = qd_lt(ctx);
+	int result = qd_lt(ctx);
 
-	ASSERT_EQ(result.code, 0, "lt should succeed");
+	ASSERT_EQ(result, 0, "lt should succeed");
 
 	qd_stack_element_t elem;
 	qd_stack_pop(ctx->st, &elem);
@@ -1720,9 +1720,9 @@ TEST(LtMixedTypesTest) {
 	// Test 3 (int) < 5.5 (float) (should return 1)
 	qd_push_i(ctx, 3);
 	qd_push_f(ctx, 5.5);
-	qd_exec_result result = qd_lt(ctx);
+	int result = qd_lt(ctx);
 
-	ASSERT_EQ(result.code, 0, "lt should succeed");
+	ASSERT_EQ(result, 0, "lt should succeed");
 
 	qd_stack_element_t elem;
 	qd_stack_pop(ctx->st, &elem);
@@ -1737,9 +1737,9 @@ TEST(LtNegativeNumbersTest) {
 	// Test -5 < -3 (should return 1)
 	qd_push_i(ctx, -5);
 	qd_push_i(ctx, -3);
-	qd_exec_result result = qd_lt(ctx);
+	int result = qd_lt(ctx);
 
-	ASSERT_EQ(result.code, 0, "lt should succeed");
+	ASSERT_EQ(result, 0, "lt should succeed");
 
 	qd_stack_element_t elem;
 	qd_stack_pop(ctx->st, &elem);
@@ -1755,9 +1755,9 @@ TEST(GtIntegersGreaterThanTest) {
 	// Test 5 > 3 (should return 1)
 	qd_push_i(ctx, 5);
 	qd_push_i(ctx, 3);
-	qd_exec_result result = qd_gt(ctx);
+	int result = qd_gt(ctx);
 
-	ASSERT_EQ(result.code, 0, "gt should succeed");
+	ASSERT_EQ(result, 0, "gt should succeed");
 	ASSERT_EQ((int)qd_stack_size(ctx->st), 1, "Stack should have 1 element");
 
 	qd_stack_element_t elem;
@@ -1775,9 +1775,9 @@ TEST(GtIntegersLessThanTest) {
 	// Test 3 > 5 (should return 0)
 	qd_push_i(ctx, 3);
 	qd_push_i(ctx, 5);
-	qd_exec_result result = qd_gt(ctx);
+	int result = qd_gt(ctx);
 
-	ASSERT_EQ(result.code, 0, "gt should succeed");
+	ASSERT_EQ(result, 0, "gt should succeed");
 
 	qd_stack_element_t elem;
 	qd_stack_pop(ctx->st, &elem);
@@ -1792,9 +1792,9 @@ TEST(GtIntegersEqualTest) {
 	// Test 5 > 5 (should return 0)
 	qd_push_i(ctx, 5);
 	qd_push_i(ctx, 5);
-	qd_exec_result result = qd_gt(ctx);
+	int result = qd_gt(ctx);
 
-	ASSERT_EQ(result.code, 0, "gt should succeed");
+	ASSERT_EQ(result, 0, "gt should succeed");
 
 	qd_stack_element_t elem;
 	qd_stack_pop(ctx->st, &elem);
@@ -1809,9 +1809,9 @@ TEST(GtFloatsTest) {
 	// Test 5.2 > 3.1 (should return 1)
 	qd_push_f(ctx, 5.2);
 	qd_push_f(ctx, 3.1);
-	qd_exec_result result = qd_gt(ctx);
+	int result = qd_gt(ctx);
 
-	ASSERT_EQ(result.code, 0, "gt should succeed");
+	ASSERT_EQ(result, 0, "gt should succeed");
 
 	qd_stack_element_t elem;
 	qd_stack_pop(ctx->st, &elem);
@@ -1826,9 +1826,9 @@ TEST(GtMixedTypesTest) {
 	// Test 5.5 (float) > 3 (int) (should return 1)
 	qd_push_f(ctx, 5.5);
 	qd_push_i(ctx, 3);
-	qd_exec_result result = qd_gt(ctx);
+	int result = qd_gt(ctx);
 
-	ASSERT_EQ(result.code, 0, "gt should succeed");
+	ASSERT_EQ(result, 0, "gt should succeed");
 
 	qd_stack_element_t elem;
 	qd_stack_pop(ctx->st, &elem);
@@ -1843,9 +1843,9 @@ TEST(GtNegativeNumbersTest) {
 	// Test -3 > -5 (should return 1)
 	qd_push_i(ctx, -3);
 	qd_push_i(ctx, -5);
-	qd_exec_result result = qd_gt(ctx);
+	int result = qd_gt(ctx);
 
-	ASSERT_EQ(result.code, 0, "gt should succeed");
+	ASSERT_EQ(result, 0, "gt should succeed");
 
 	qd_stack_element_t elem;
 	qd_stack_pop(ctx->st, &elem);
@@ -1861,9 +1861,9 @@ TEST(LteIntegersLessThanTest) {
 	// Test 3 <= 5 (should return 1)
 	qd_push_i(ctx, 3);
 	qd_push_i(ctx, 5);
-	qd_exec_result result = qd_lte(ctx);
+	int result = qd_lte(ctx);
 
-	ASSERT_EQ(result.code, 0, "lte should succeed");
+	ASSERT_EQ(result, 0, "lte should succeed");
 	ASSERT_EQ((int)qd_stack_size(ctx->st), 1, "Stack should have 1 element");
 
 	qd_stack_element_t elem;
@@ -1881,9 +1881,9 @@ TEST(LteIntegersEqualTest) {
 	// Test 5 <= 5 (should return 1)
 	qd_push_i(ctx, 5);
 	qd_push_i(ctx, 5);
-	qd_exec_result result = qd_lte(ctx);
+	int result = qd_lte(ctx);
 
-	ASSERT_EQ(result.code, 0, "lte should succeed");
+	ASSERT_EQ(result, 0, "lte should succeed");
 
 	qd_stack_element_t elem;
 	qd_stack_pop(ctx->st, &elem);
@@ -1898,9 +1898,9 @@ TEST(LteIntegersGreaterThanTest) {
 	// Test 5 <= 3 (should return 0)
 	qd_push_i(ctx, 5);
 	qd_push_i(ctx, 3);
-	qd_exec_result result = qd_lte(ctx);
+	int result = qd_lte(ctx);
 
-	ASSERT_EQ(result.code, 0, "lte should succeed");
+	ASSERT_EQ(result, 0, "lte should succeed");
 
 	qd_stack_element_t elem;
 	qd_stack_pop(ctx->st, &elem);
@@ -1915,9 +1915,9 @@ TEST(LteFloatsTest) {
 	// Test 2.5 <= 2.5 (should return 1)
 	qd_push_f(ctx, 2.5);
 	qd_push_f(ctx, 2.5);
-	qd_exec_result result = qd_lte(ctx);
+	int result = qd_lte(ctx);
 
-	ASSERT_EQ(result.code, 0, "lte should succeed");
+	ASSERT_EQ(result, 0, "lte should succeed");
 
 	qd_stack_element_t elem;
 	qd_stack_pop(ctx->st, &elem);
@@ -1932,9 +1932,9 @@ TEST(LteMixedTypesTest) {
 	// Test 3 (int) <= 5.0 (float) (should return 1)
 	qd_push_i(ctx, 3);
 	qd_push_f(ctx, 5.0);
-	qd_exec_result result = qd_lte(ctx);
+	int result = qd_lte(ctx);
 
-	ASSERT_EQ(result.code, 0, "lte should succeed");
+	ASSERT_EQ(result, 0, "lte should succeed");
 
 	qd_stack_element_t elem;
 	qd_stack_pop(ctx->st, &elem);
@@ -1950,9 +1950,9 @@ TEST(GteIntegersGreaterThanTest) {
 	// Test 5 >= 3 (should return 1)
 	qd_push_i(ctx, 5);
 	qd_push_i(ctx, 3);
-	qd_exec_result result = qd_gte(ctx);
+	int result = qd_gte(ctx);
 
-	ASSERT_EQ(result.code, 0, "gte should succeed");
+	ASSERT_EQ(result, 0, "gte should succeed");
 	ASSERT_EQ((int)qd_stack_size(ctx->st), 1, "Stack should have 1 element");
 
 	qd_stack_element_t elem;
@@ -1970,9 +1970,9 @@ TEST(GteIntegersEqualTest) {
 	// Test 5 >= 5 (should return 1)
 	qd_push_i(ctx, 5);
 	qd_push_i(ctx, 5);
-	qd_exec_result result = qd_gte(ctx);
+	int result = qd_gte(ctx);
 
-	ASSERT_EQ(result.code, 0, "gte should succeed");
+	ASSERT_EQ(result, 0, "gte should succeed");
 
 	qd_stack_element_t elem;
 	qd_stack_pop(ctx->st, &elem);
@@ -1987,9 +1987,9 @@ TEST(GteIntegersLessThanTest) {
 	// Test 3 >= 5 (should return 0)
 	qd_push_i(ctx, 3);
 	qd_push_i(ctx, 5);
-	qd_exec_result result = qd_gte(ctx);
+	int result = qd_gte(ctx);
 
-	ASSERT_EQ(result.code, 0, "gte should succeed");
+	ASSERT_EQ(result, 0, "gte should succeed");
 
 	qd_stack_element_t elem;
 	qd_stack_pop(ctx->st, &elem);
@@ -2004,9 +2004,9 @@ TEST(GteFloatsTest) {
 	// Test 5.2 >= 5.2 (should return 1)
 	qd_push_f(ctx, 5.2);
 	qd_push_f(ctx, 5.2);
-	qd_exec_result result = qd_gte(ctx);
+	int result = qd_gte(ctx);
 
-	ASSERT_EQ(result.code, 0, "gte should succeed");
+	ASSERT_EQ(result, 0, "gte should succeed");
 
 	qd_stack_element_t elem;
 	qd_stack_pop(ctx->st, &elem);
@@ -2021,9 +2021,9 @@ TEST(GteMixedTypesTest) {
 	// Test 5.0 (float) >= 3 (int) (should return 1)
 	qd_push_f(ctx, 5.0);
 	qd_push_i(ctx, 3);
-	qd_exec_result result = qd_gte(ctx);
+	int result = qd_gte(ctx);
 
-	ASSERT_EQ(result.code, 0, "gte should succeed");
+	ASSERT_EQ(result, 0, "gte should succeed");
 
 	qd_stack_element_t elem;
 	qd_stack_pop(ctx->st, &elem);
@@ -2084,9 +2084,9 @@ TEST(WithinValueInRangeIntegersTest) {
 	qd_push_i(ctx, 5);
 	qd_push_i(ctx, 3);
 	qd_push_i(ctx, 10);
-	qd_exec_result result = qd_within(ctx);
+	int result = qd_within(ctx);
 
-	ASSERT_EQ(result.code, 0, "within should succeed");
+	ASSERT_EQ(result, 0, "within should succeed");
 	ASSERT_EQ((int)qd_stack_size(ctx->st), 1, "Stack should have 1 element");
 
 	qd_stack_element_t elem;
@@ -2104,9 +2104,9 @@ TEST(WithinValueBelowRangeTest) {
 	qd_push_i(ctx, 2);
 	qd_push_i(ctx, 3);
 	qd_push_i(ctx, 10);
-	qd_exec_result result = qd_within(ctx);
+	int result = qd_within(ctx);
 
-	ASSERT_EQ(result.code, 0, "within should succeed");
+	ASSERT_EQ(result, 0, "within should succeed");
 
 	qd_stack_element_t elem;
 	qd_stack_pop(ctx->st, &elem);
@@ -2122,9 +2122,9 @@ TEST(WithinValueAboveRangeTest) {
 	qd_push_i(ctx, 15);
 	qd_push_i(ctx, 3);
 	qd_push_i(ctx, 10);
-	qd_exec_result result = qd_within(ctx);
+	int result = qd_within(ctx);
 
-	ASSERT_EQ(result.code, 0, "within should succeed");
+	ASSERT_EQ(result, 0, "within should succeed");
 
 	qd_stack_element_t elem;
 	qd_stack_pop(ctx->st, &elem);
@@ -2140,9 +2140,9 @@ TEST(WithinValueEqualsMinBoundaryTest) {
 	qd_push_i(ctx, 3);
 	qd_push_i(ctx, 3);
 	qd_push_i(ctx, 10);
-	qd_exec_result result = qd_within(ctx);
+	int result = qd_within(ctx);
 
-	ASSERT_EQ(result.code, 0, "within should succeed");
+	ASSERT_EQ(result, 0, "within should succeed");
 
 	qd_stack_element_t elem;
 	qd_stack_pop(ctx->st, &elem);
@@ -2158,9 +2158,9 @@ TEST(WithinValueEqualsMaxBoundaryTest) {
 	qd_push_i(ctx, 10);
 	qd_push_i(ctx, 3);
 	qd_push_i(ctx, 10);
-	qd_exec_result result = qd_within(ctx);
+	int result = qd_within(ctx);
 
-	ASSERT_EQ(result.code, 0, "within should succeed");
+	ASSERT_EQ(result, 0, "within should succeed");
 
 	qd_stack_element_t elem;
 	qd_stack_pop(ctx->st, &elem);
@@ -2176,9 +2176,9 @@ TEST(WithinFloatsInRangeTest) {
 	qd_push_f(ctx, 5.5);
 	qd_push_f(ctx, 3.2);
 	qd_push_f(ctx, 10.8);
-	qd_exec_result result = qd_within(ctx);
+	int result = qd_within(ctx);
 
-	ASSERT_EQ(result.code, 0, "within should succeed");
+	ASSERT_EQ(result, 0, "within should succeed");
 
 	qd_stack_element_t elem;
 	qd_stack_pop(ctx->st, &elem);
@@ -2194,9 +2194,9 @@ TEST(WithinFloatsOutOfRangeTest) {
 	qd_push_f(ctx, 2.5);
 	qd_push_f(ctx, 3.0);
 	qd_push_f(ctx, 10.0);
-	qd_exec_result result = qd_within(ctx);
+	int result = qd_within(ctx);
 
-	ASSERT_EQ(result.code, 0, "within should succeed");
+	ASSERT_EQ(result, 0, "within should succeed");
 
 	qd_stack_element_t elem;
 	qd_stack_pop(ctx->st, &elem);
@@ -2212,9 +2212,9 @@ TEST(WithinMixedTypesTest) {
 	qd_push_f(ctx, 5.5);
 	qd_push_i(ctx, 3);
 	qd_push_i(ctx, 10);
-	qd_exec_result result = qd_within(ctx);
+	int result = qd_within(ctx);
 
-	ASSERT_EQ(result.code, 0, "within should succeed with mixed types");
+	ASSERT_EQ(result, 0, "within should succeed with mixed types");
 
 	qd_stack_element_t elem;
 	qd_stack_pop(ctx->st, &elem);
@@ -2230,9 +2230,9 @@ TEST(WithinMixedTypesOutOfRangeTest) {
 	qd_push_f(ctx, 2.5);
 	qd_push_i(ctx, 3);
 	qd_push_i(ctx, 10);
-	qd_exec_result result = qd_within(ctx);
+	int result = qd_within(ctx);
 
-	ASSERT_EQ(result.code, 0, "within should succeed with mixed types");
+	ASSERT_EQ(result, 0, "within should succeed with mixed types");
 
 	qd_stack_element_t elem;
 	qd_stack_pop(ctx->st, &elem);
@@ -2248,9 +2248,9 @@ TEST(WithinNegativeRangeTest) {
 	qd_push_i(ctx, -5);
 	qd_push_i(ctx, -10);
 	qd_push_i(ctx, -3);
-	qd_exec_result result = qd_within(ctx);
+	int result = qd_within(ctx);
 
-	ASSERT_EQ(result.code, 0, "within should succeed");
+	ASSERT_EQ(result, 0, "within should succeed");
 
 	qd_stack_element_t elem;
 	qd_stack_pop(ctx->st, &elem);
@@ -2266,9 +2266,9 @@ TEST(WithinNegativeOutOfRangeTest) {
 	qd_push_i(ctx, -15);
 	qd_push_i(ctx, -10);
 	qd_push_i(ctx, -3);
-	qd_exec_result result = qd_within(ctx);
+	int result = qd_within(ctx);
 
-	ASSERT_EQ(result.code, 0, "within should succeed");
+	ASSERT_EQ(result, 0, "within should succeed");
 
 	qd_stack_element_t elem;
 	qd_stack_pop(ctx->st, &elem);
@@ -2284,9 +2284,9 @@ TEST(WithinSinglePointRangeTest) {
 	qd_push_i(ctx, 5);
 	qd_push_i(ctx, 5);
 	qd_push_i(ctx, 5);
-	qd_exec_result result = qd_within(ctx);
+	int result = qd_within(ctx);
 
-	ASSERT_EQ(result.code, 0, "within should succeed");
+	ASSERT_EQ(result, 0, "within should succeed");
 
 	qd_stack_element_t elem;
 	qd_stack_pop(ctx->st, &elem);
@@ -2302,9 +2302,9 @@ TEST(WithinSinglePointRangeOutsideTest) {
 	qd_push_i(ctx, 6);
 	qd_push_i(ctx, 5);
 	qd_push_i(ctx, 5);
-	qd_exec_result result = qd_within(ctx);
+	int result = qd_within(ctx);
 
-	ASSERT_EQ(result.code, 0, "within should succeed");
+	ASSERT_EQ(result, 0, "within should succeed");
 
 	qd_stack_element_t elem;
 	qd_stack_pop(ctx->st, &elem);
@@ -2320,9 +2320,9 @@ TEST(WithinZeroInRangeTest) {
 	qd_push_i(ctx, 0);
 	qd_push_i(ctx, -5);
 	qd_push_i(ctx, 5);
-	qd_exec_result result = qd_within(ctx);
+	int result = qd_within(ctx);
 
-	ASSERT_EQ(result.code, 0, "within should succeed");
+	ASSERT_EQ(result, 0, "within should succeed");
 
 	qd_stack_element_t elem;
 	qd_stack_pop(ctx->st, &elem);
@@ -2338,9 +2338,9 @@ TEST(WithinLargeRangeTest) {
 	qd_push_i(ctx, 500);
 	qd_push_i(ctx, 100);
 	qd_push_i(ctx, 1000);
-	qd_exec_result result = qd_within(ctx);
+	int result = qd_within(ctx);
 
-	ASSERT_EQ(result.code, 0, "within should succeed");
+	ASSERT_EQ(result, 0, "within should succeed");
 
 	qd_stack_element_t elem;
 	qd_stack_pop(ctx->st, &elem);
@@ -2356,9 +2356,9 @@ TEST(WithinFloatBoundaryTest) {
 	qd_push_f(ctx, 3.0);
 	qd_push_f(ctx, 3.0);
 	qd_push_f(ctx, 10.0);
-	qd_exec_result result = qd_within(ctx);
+	int result = qd_within(ctx);
 
-	ASSERT_EQ(result.code, 0, "within should succeed");
+	ASSERT_EQ(result, 0, "within should succeed");
 
 	qd_stack_element_t elem;
 	qd_stack_pop(ctx->st, &elem);
@@ -2419,9 +2419,9 @@ TEST(WithinInvertedRangeTest) {
 	qd_push_i(ctx, 5);
 	qd_push_i(ctx, 10);
 	qd_push_i(ctx, 3);
-	qd_exec_result result = qd_within(ctx);
+	int result = qd_within(ctx);
 
-	ASSERT_EQ(result.code, 0, "within should succeed");
+	ASSERT_EQ(result, 0, "within should succeed");
 
 	qd_stack_element_t elem;
 	qd_stack_pop(ctx->st, &elem);
@@ -2440,8 +2440,8 @@ TEST(DropIntegerTest) {
 	qd_push_i(ctx, 30);
 
 	// Drop top element (30)
-	qd_exec_result result = qd_drop(ctx);
-	ASSERT_EQ(result.code, 0, "drop should succeed");
+	int result = qd_drop(ctx);
+	ASSERT_EQ(result, 0, "drop should succeed");
 
 	// Stack should have 10, 20
 	ASSERT_EQ((int)qd_stack_size(ctx->st), 2, "stack should have 2 elements");
@@ -2460,8 +2460,8 @@ TEST(DropStringTest) {
 	qd_push_s(ctx, "test string");
 
 	// Drop it (should free the string)
-	qd_exec_result result = qd_drop(ctx);
-	ASSERT_EQ(result.code, 0, "drop should succeed");
+	int result = qd_drop(ctx);
+	ASSERT_EQ(result, 0, "drop should succeed");
 	ASSERT_EQ((int)qd_stack_size(ctx->st), 0, "stack should be empty");
 
 	destroy_test_context(ctx);
@@ -2496,8 +2496,8 @@ TEST(Drop2Test) {
 	qd_push_i(ctx, 40);
 
 	// Drop top 2 elements (40, 30)
-	qd_exec_result result = qd_drop2(ctx);
-	ASSERT_EQ(result.code, 0, "drop2 should succeed");
+	int result = qd_drop2(ctx);
+	ASSERT_EQ(result, 0, "drop2 should succeed");
 
 	// Stack should have 10, 20
 	ASSERT_EQ((int)qd_stack_size(ctx->st), 2, "stack should have 2 elements");
@@ -2517,8 +2517,8 @@ TEST(Drop2StringsTest) {
 	qd_push_s(ctx, "second");
 
 	// Drop both (should free both strings)
-	qd_exec_result result = qd_drop2(ctx);
-	ASSERT_EQ(result.code, 0, "drop2 should succeed");
+	int result = qd_drop2(ctx);
+	ASSERT_EQ(result, 0, "drop2 should succeed");
 	ASSERT_EQ((int)qd_stack_size(ctx->st), 0, "stack should be empty");
 
 	destroy_test_context(ctx);
@@ -2534,8 +2534,8 @@ TEST(RotTest) {
 	qd_push_i(ctx, 30);
 
 	// Rotate: (10 20 30) -> (20 30 10)
-	qd_exec_result result = qd_rot(ctx);
-	ASSERT_EQ(result.code, 0, "rot should succeed");
+	int result = qd_rot(ctx);
+	ASSERT_EQ(result, 0, "rot should succeed");
 
 	// Check order: top should be 10, then 30, then 20
 	qd_stack_element_t elem;
@@ -2587,8 +2587,8 @@ TEST(ModPositiveTest) {
 	qd_push_i(ctx, 17);
 	qd_push_i(ctx, 5);
 
-	qd_exec_result result = qd_mod(ctx);
-	ASSERT_EQ(result.code, 0, "mod should succeed");
+	int result = qd_mod(ctx);
+	ASSERT_EQ(result, 0, "mod should succeed");
 
 	qd_stack_element_t elem;
 	qd_stack_pop(ctx->st, &elem);
@@ -2634,8 +2634,8 @@ TEST(NegIntegerTest) {
 	qd_context* ctx = create_test_context();
 
 	qd_push_i(ctx, 42);
-	qd_exec_result result = qd_neg(ctx);
-	ASSERT_EQ(result.code, 0, "neg should succeed");
+	int result = qd_neg(ctx);
+	ASSERT_EQ(result, 0, "neg should succeed");
 
 	qd_stack_element_t elem;
 	qd_stack_pop(ctx->st, &elem);

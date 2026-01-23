@@ -47,7 +47,7 @@
  * @param ctx Execution context
  * @return Execution result
  */
-qd_exec_result usr_io_open(qd_context* ctx);
+int usr_io_open(qd_context* ctx);
 
 /**
  * @brief Close a file handle
@@ -61,7 +61,7 @@ qd_exec_result usr_io_open(qd_context* ctx);
  * @param ctx Execution context
  * @return Execution result
  */
-qd_exec_result usr_io_close(qd_context* ctx);
+int usr_io_close(qd_context* ctx);
 
 /**
  * @brief Read bytes from a file into a buffer (unified buffer-based API)
@@ -76,7 +76,7 @@ qd_exec_result usr_io_close(qd_context* ctx);
  * @param ctx Execution context
  * @return Execution result
  */
-qd_exec_result usr_io_read(qd_context* ctx);
+int usr_io_read(qd_context* ctx);
 
 /**
  * @brief Write bytes from a buffer to a file (unified buffer-based API)
@@ -90,7 +90,7 @@ qd_exec_result usr_io_read(qd_context* ctx);
  * @param ctx Execution context
  * @return Execution result
  */
-qd_exec_result usr_io_write(qd_context* ctx);
+int usr_io_write(qd_context* ctx);
 
 /**
  * @brief Read bytes from a file (legacy string-based API)
@@ -105,7 +105,7 @@ qd_exec_result usr_io_write(qd_context* ctx);
  * @param ctx Execution context
  * @return Execution result
  */
-qd_exec_result usr_io_read_string(qd_context* ctx);
+int usr_io_read_string(qd_context* ctx);
 
 /**
  * @brief Write bytes to a file (legacy string-based API)
@@ -119,7 +119,7 @@ qd_exec_result usr_io_read_string(qd_context* ctx);
  * @param ctx Execution context
  * @return Execution result
  */
-qd_exec_result usr_io_write_string(qd_context* ctx);
+int usr_io_write_string(qd_context* ctx);
 
 /**
  * @brief Seek to a position in a file
@@ -139,7 +139,7 @@ qd_exec_result usr_io_write_string(qd_context* ctx);
  * @param ctx Execution context
  * @return Execution result
  */
-qd_exec_result usr_io_seek(qd_context* ctx);
+int usr_io_seek(qd_context* ctx);
 
 /**
  * @brief Get current position in a file
@@ -152,10 +152,10 @@ qd_exec_result usr_io_seek(qd_context* ctx);
  * @param ctx Execution context
  * @return Execution result
  */
-qd_exec_result usr_io_tell(qd_context* ctx);
+int usr_io_tell(qd_context* ctx);
 
 // Legacy name for backwards compatibility
-qd_exec_result usr_io_seekg(qd_context* ctx);
+int usr_io_seekg(qd_context* ctx);
 
 /**
  * @brief Check if end-of-file has been reached
@@ -168,7 +168,7 @@ qd_exec_result usr_io_seekg(qd_context* ctx);
  * @param ctx Execution context
  * @return Execution result
  */
-qd_exec_result usr_io_eof(qd_context* ctx);
+int usr_io_eof(qd_context* ctx);
 
 /**
  * @brief Read a line from stdin
@@ -181,7 +181,7 @@ qd_exec_result usr_io_eof(qd_context* ctx);
  * @param ctx Execution context
  * @return Execution result
  */
-qd_exec_result usr_io_readline(qd_context* ctx);
+int usr_io_readline(qd_context* ctx);
 
 /**
  * @brief Read entire file contents
@@ -194,7 +194,7 @@ qd_exec_result usr_io_readline(qd_context* ctx);
  * @param ctx Execution context
  * @return Execution result
  */
-qd_exec_result usr_io_read_file(qd_context* ctx);
+int usr_io_read_file(qd_context* ctx);
 
 /**
  * @brief Write string contents to file
@@ -207,6 +207,6 @@ qd_exec_result usr_io_read_file(qd_context* ctx);
  * @param ctx Execution context
  * @return Execution result
  */
-qd_exec_result usr_io_write_file(qd_context* ctx);
+int usr_io_write_file(qd_context* ctx);
 
 #endif // STDIOQD_IO_H
