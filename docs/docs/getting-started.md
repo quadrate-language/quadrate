@@ -44,8 +44,6 @@ make release
 make install
 ```
 
-This installs:
-
 ### From floppy disk
 
 Get Quadrate on a real 1.44 MB floppy disk:
