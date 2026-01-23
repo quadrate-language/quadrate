@@ -23,7 +23,8 @@
         {"name": "pick", "signature": "(... n -- ... x)", "description": "Copy nth element to top (0 = top)"},
         {"name": "roll", "signature": "(... n -- ... x)", "description": "Move nth element to top"},
         {"name": "depth", "signature": "(-- n)", "description": "Push current stack depth"},
-        {"name": "clear", "signature": "(... --)", "description": "Clear entire stack"}
+        {"name": "clear", "signature": "(... --)", "description": "Clear entire stack"},
+        {"name": "call", "signature": "(fn --)", "description": "Call a function pointer"}
       ]
     },
     {
@@ -35,8 +36,8 @@
         {"name": "div", "signature": "(a b -- a/b)", "description": "Divide second by top", "alias": "/"},
         {"name": "mod", "signature": "(a b -- a%b)", "description": "Modulo (remainder)", "alias": "%"},
         {"name": "neg", "signature": "(a -- -a)", "description": "Negate top element"},
-        {"name": "inc", "signature": "(a -- a+1)", "description": "Increment by 1"},
-        {"name": "dec", "signature": "(a -- a-1)", "description": "Decrement by 1"}
+        {"name": "inc", "signature": "(a -- a+1)", "description": "Increment by 1", "alias": "++"},
+        {"name": "dec", "signature": "(a -- a-1)", "description": "Decrement by 1", "alias": "--"}
       ]
     },
     {
@@ -72,6 +73,7 @@
     {
       "name": "Arrays",
       "instructions": [
+        {"name": "make", "signature": "(n -- arr)", "description": "Create array of n elements (generic)"},
         {"name": "makei", "signature": "(n -- arr)", "description": "Create array of n integers"},
         {"name": "makef", "signature": "(n -- arr)", "description": "Create array of n floats"},
         {"name": "makes", "signature": "(n -- arr)", "description": "Create array of n strings"},
@@ -85,11 +87,11 @@
     {
       "name": "I/O",
       "instructions": [
-        {"name": ".", "signature": "(a --)", "description": "Print top value (no newline)"},
-        {"name": ".v", "signature": "(a --)", "description": "Print top value with type info"},
-        {"name": ".s", "signature": "(... -- ...)", "description": "Print entire stack"},
-        {"name": ".sv", "signature": "(... -- ...)", "description": "Print entire stack with types"},
-        {"name": "nl", "signature": "()", "description": "Print newline"},
+        {"name": "print", "signature": "(a --)", "description": "Print top value (no newline)"},
+        {"name": "prints", "signature": "(... -- ...)", "description": "Print entire stack"},
+        {"name": "printv", "signature": "(a --)", "description": "Print top value with type info"},
+        {"name": "printsv", "signature": "(... -- ...)", "description": "Print entire stack with types"},
+        {"name": "nl", "signature": "(--)", "description": "Print newline"},
         {"name": "read", "signature": "(-- argc arg1 arg2 ...)", "description": "Read command-line arguments"}
       ]
     },
@@ -100,30 +102,10 @@
       ]
     },
     {
-      "name": "Control Flow",
-      "instructions": [
-        {"name": "if", "signature": "(bool --)", "description": "Conditional execution: bool if { ... } else { ... }"},
-        {"name": "for", "signature": "(start end step --)", "description": "Loop: start end step for var { ... }"},
-        {"name": "loop", "signature": "()", "description": "Infinite loop: loop { ... break }"},
-        {"name": "break", "signature": "()", "description": "Exit current loop"},
-        {"name": "continue", "signature": "()", "description": "Skip to next iteration"},
-        {"name": "switch", "signature": "(val --)", "description": "Switch statement: val switch { case X { ... } default { ... } }"},
-        {"name": "defer", "signature": "()", "description": "Execute block at function exit: defer { ... }"}
-      ]
-    },
-    {
-      "name": "Variables",
-      "instructions": [
-        {"name": "->", "signature": "(a --)", "description": "Store to local variable: val -> name"},
-        {"name": "@", "signature": "(ptr -- val)", "description": "Load struct field: ptr @field"}
-      ]
-    },
-    {
       "name": "Error Handling",
       "instructions": [
         {"name": "panic", "signature": "(msg code --)", "description": "Raise an error and return from current fallible function"},
-        {"name": "err", "signature": "(-- msg code)", "description": "Get last error message and code after a fallible function fails. Use in the error branch of switch."},
-        {"name": "!", "signature": "()", "description": "Call fallible function with auto-panic: fn! will abort on error"}
+        {"name": "err", "signature": "(-- msg code)", "description": "Get last error message and code after a fallible function fails"}
       ]
     },
     {

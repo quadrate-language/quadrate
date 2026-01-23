@@ -182,6 +182,9 @@ install: release
 	@for mod in $(STDLIB_MODULES); do cp -r lib/qd*/qd/$$mod $(DESTDIR)$(DATADIR)/quadrate/ 2>/dev/null || true; done
 	@find $(DESTDIR)$(DATADIR)/quadrate -type f -exec chmod 644 {} +
 	@find $(DESTDIR)$(DATADIR)/quadrate -type d -exec chmod 755 {} +
+	@echo "Installing API documentation to $(DESTDIR)$(DATADIR)/quadrate/docs/api/"
+	install -d $(DESTDIR)$(DATADIR)/quadrate/docs/api
+	@for json in docs/api/*.json; do install -m 644 "$$json" $(DESTDIR)$(DATADIR)/quadrate/docs/api/; done
 	@echo "Installing bash completions to $(DESTDIR)$(DATADIR)/bash-completion/completions/"
 	install -d $(DESTDIR)$(DATADIR)/bash-completion/completions
 	install -m 644 completions/quad.bash $(DESTDIR)$(DATADIR)/bash-completion/completions/quad

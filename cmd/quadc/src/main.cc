@@ -24,9 +24,9 @@
 
 // Stdlib modules that have native code and require linking
 // JIT execution doesn't support these - must fall back to disk compilation
-static const std::unordered_set<std::string> nativeStdlibModules = {
-		"bits", "bytes", "flag", "fmt", "io", "limits", "math", "mem", "os", "path", "rand", "sb", "signal", "str",
-		"strconv", "term", "testing", "thread", "time", "unicode"};
+static const std::unordered_set<std::string> nativeStdlibModules = {"bits", "bytes", "flag", "fmt", "io", "limits",
+		"math", "mem", "os", "path", "rand", "sb", "signal", "str", "strconv", "term", "testing", "thread", "time",
+		"unicode"};
 
 // Check if any of the imported modules are stdlib modules with native code
 static bool hasNativeStdlibImports(const std::vector<std::string>& importedModules) {
