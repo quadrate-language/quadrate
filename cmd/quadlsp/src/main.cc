@@ -969,49 +969,81 @@ std::string QuadrateLSP::findLatestPackageVersion(const std::string& moduleName)
 	return latestPath;
 }
 
+// Helper: Find the first .qd file in a directory (excluding *_test.qd files)
+static std::string findFirstQdFile(const std::string& directory) {
+	try {
+		if (!std::filesystem::exists(directory) || !std::filesystem::is_directory(directory)) {
+			return "";
+		}
+
+		for (const auto& entry : std::filesystem::directory_iterator(directory)) {
+			if (entry.is_regular_file()) {
+				std::string filename = entry.path().filename().string();
+				if (filename.size() > 3 && filename.substr(filename.size() - 3) == ".qd") {
+					// Exclude test files (*_test.qd)
+					if (filename.size() > 8 && filename.substr(filename.size() - 8) == "_test.qd") {
+						continue;
+					}
+					return entry.path().string();
+				}
+			}
+		}
+	} catch (...) {
+		// Ignore filesystem errors
+	}
+	return "";
+}
+
 std::string QuadrateLSP::resolveModulePath(const std::string& moduleName, const std::string& sourceDir) {
+	std::string result;
+
 	// Try 1: Local path (relative to source file)
-	std::string localPath = sourceDir + "/" + moduleName + "/module.qd";
-	if (std::filesystem::exists(localPath)) {
-		return localPath;
+	result = findFirstQdFile(sourceDir + "/" + moduleName);
+	if (!result.empty()) {
+		return result;
 	}
 
 	// Try 2: Third-party packages directory (installed via quadpm)
 	std::string packagePath = findLatestPackageVersion(moduleName);
 	if (!packagePath.empty()) {
-		std::string moduleFile = packagePath + "/module.qd";
-		if (std::filesystem::exists(moduleFile)) {
-			return moduleFile;
+		result = findFirstQdFile(packagePath);
+		if (!result.empty()) {
+			return result;
 		}
 	}
 
 	// Try 3: QUADRATE_ROOT environment variable
 	const char* quadrateRoot = getenv("QUADRATE_ROOT");
 	if (quadrateRoot) {
-		std::string rootPath = std::string(quadrateRoot) + "/" + moduleName + "/module.qd";
-		if (std::filesystem::exists(rootPath)) {
-			return rootPath;
+		result = findFirstQdFile(std::string(quadrateRoot) + "/" + moduleName);
+		if (!result.empty()) {
+			return result;
 		}
 	}
 
-	// Try 4: Installed standard library (/usr/share/quadrate/)
-	std::string installedPath = "/usr/share/quadrate/" + moduleName + "/module.qd";
-	if (std::filesystem::exists(installedPath)) {
-		return installedPath;
+	// Try 4: Installed standard library (/usr/share/quadrate/ on Linux, /boot/system/data/quadrate/ on Haiku)
+#ifdef __HAIKU__
+	result = findFirstQdFile("/boot/system/data/quadrate/" + moduleName);
+#else
+	result = findFirstQdFile("/usr/share/quadrate/" + moduleName);
+#endif
+	if (!result.empty()) {
+		return result;
 	}
 
 	// Try 5: Standard library directories relative to current directory (for development)
-	std::string stdLibPath = "lib/std" + moduleName + "qd/qd/" + moduleName + "/module.qd";
-	if (std::filesystem::exists(stdLibPath)) {
-		return stdLibPath;
+	// Pattern: lib/qd{moduleName}/qd/{moduleName}/
+	result = findFirstQdFile("lib/qd" + moduleName + "/qd/" + moduleName);
+	if (!result.empty()) {
+		return result;
 	}
 
 	// Try 6: $HOME/quadrate directory
 	const char* home = getenv("HOME");
 	if (home) {
-		std::string homePath = std::string(home) + "/quadrate/" + moduleName + "/module.qd";
-		if (std::filesystem::exists(homePath)) {
-			return homePath;
+		result = findFirstQdFile(std::string(home) + "/quadrate/" + moduleName);
+		if (!result.empty()) {
+			return result;
 		}
 	}
 
