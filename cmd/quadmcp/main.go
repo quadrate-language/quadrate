@@ -49,20 +49,26 @@ type Struct struct {
 
 // Function represents a module function
 type Function struct {
-	Name        string   `json:"name"`
-	Signature   string   `json:"signature"`
-	Failable    bool     `json:"failable"`
-	Description string   `json:"description"`
-	Params      []Param  `json:"params"`
-	Returns     []Param  `json:"returns"`
-	Errors      []string `json:"errors"`
-	Examples    []string `json:"examples"`
+	Name        string      `json:"name"`
+	Signature   string      `json:"signature"`
+	Failable    bool        `json:"failable"`
+	Description string      `json:"description"`
+	Params      []Param     `json:"params"`
+	Returns     []Param     `json:"returns"`
+	Errors      []ErrorInfo `json:"errors"`
+	Examples    []string    `json:"examples"`
 }
 
 // Param represents a function parameter or return value
 type Param struct {
 	Name        string `json:"name"`
 	Type        string `json:"type"`
+	Description string `json:"description"`
+}
+
+// ErrorInfo represents an error that a function can return
+type ErrorInfo struct {
+	Code        string `json:"code"`
 	Description string `json:"description"`
 }
 
@@ -87,10 +93,54 @@ type Builtins struct {
 	Categories  []Category `json:"categories"`
 }
 
+// LanguageRef represents the language syntax reference
+type LanguageRef struct {
+	Name           string          `json:"name"`
+	Description    string          `json:"description"`
+	Types          []TypeInfo      `json:"types"`
+	Keywords       []Keyword       `json:"keywords"`
+	Operators      []Operator      `json:"operators"`
+	SyntaxPatterns []SyntaxPattern `json:"syntax_patterns"`
+}
+
+// TypeInfo represents a Quadrate type
+type TypeInfo struct {
+	Name        string   `json:"name"`
+	Description string   `json:"description"`
+	Examples    []string `json:"examples"`
+}
+
+// Keyword represents a language keyword
+type Keyword struct {
+	Name        string   `json:"name"`
+	Category    string   `json:"category"`
+	Description string   `json:"description"`
+	Syntax      string   `json:"syntax"`
+	Examples    []string `json:"examples"`
+}
+
+// Operator represents a language operator
+type Operator struct {
+	Name        string  `json:"name"`
+	Category    string  `json:"category"`
+	Signature   string  `json:"signature"`
+	Description string  `json:"description"`
+	Alias       *string `json:"alias"`
+}
+
+// SyntaxPattern represents a common syntax pattern
+type SyntaxPattern struct {
+	Name        string   `json:"name"`
+	Pattern     string   `json:"pattern"`
+	Description string   `json:"description"`
+	Examples    []string `json:"examples"`
+}
+
 // DocStore holds all loaded module documentation
 type DocStore struct {
 	modules  map[string]*Module
 	builtins *Builtins
+	language *LanguageRef
 }
 
 // NewDocStore creates a new documentation store
@@ -127,6 +177,15 @@ func (ds *DocStore) LoadFromDir(dir string) error {
 			continue
 		}
 
+		// Handle language.json separately
+		if entry.Name() == "language.json" {
+			var lang LanguageRef
+			if err := json.Unmarshal(data, &lang); err == nil {
+				ds.language = &lang
+			}
+			continue
+		}
+
 		var mod Module
 		if err := json.Unmarshal(data, &mod); err != nil {
 			continue
@@ -141,6 +200,51 @@ func (ds *DocStore) LoadFromDir(dir string) error {
 // GetBuiltins returns the builtins documentation
 func (ds *DocStore) GetBuiltins() *Builtins {
 	return ds.builtins
+}
+
+// GetLanguage returns the language reference
+func (ds *DocStore) GetLanguage() *LanguageRef {
+	return ds.language
+}
+
+// GetKeyword returns a specific keyword by name
+func (ds *DocStore) GetKeyword(name string) *Keyword {
+	if ds.language == nil {
+		return nil
+	}
+	for _, kw := range ds.language.Keywords {
+		if kw.Name == name {
+			return &kw
+		}
+	}
+	return nil
+}
+
+// GetOperator returns a specific operator by name or alias
+func (ds *DocStore) GetOperator(name string) *Operator {
+	if ds.language == nil {
+		return nil
+	}
+	for _, op := range ds.language.Operators {
+		if op.Name == name || (op.Alias != nil && *op.Alias == name) {
+			return &op
+		}
+	}
+	return nil
+}
+
+// GetSyntaxPattern returns a specific syntax pattern by name
+func (ds *DocStore) GetSyntaxPattern(name string) *SyntaxPattern {
+	if ds.language == nil {
+		return nil
+	}
+	name = strings.ToLower(name)
+	for _, sp := range ds.language.SyntaxPatterns {
+		if strings.ToLower(sp.Name) == name || strings.Contains(strings.ToLower(sp.Name), name) {
+			return &sp
+		}
+	}
+	return nil
 }
 
 // GetBuiltin returns a specific builtin instruction by name
@@ -416,6 +520,33 @@ func (s *StdioServer) processRequest(req *MCPRequest) MCPResponse {
 					Required: []string{"name"},
 				},
 			},
+			{
+				Name:        "quadrate_get_syntax",
+				Description: "Get Quadrate language syntax reference including types, keywords, operators, and common patterns",
+				InputSchema: InputSchema{Type: "object"},
+			},
+			{
+				Name:        "quadrate_get_keyword",
+				Description: "Get documentation for a specific Quadrate keyword (fn, if, for, while, struct, etc.)",
+				InputSchema: InputSchema{
+					Type: "object",
+					Properties: map[string]Property{
+						"name": {Type: "string", Description: "Keyword name (e.g., 'fn', 'if', 'for', 'struct', 'use')"},
+					},
+					Required: []string{"name"},
+				},
+			},
+			{
+				Name:        "quadrate_get_operator",
+				Description: "Get documentation for a specific Quadrate operator (+, -, ==, etc.)",
+				InputSchema: InputSchema{
+					Type: "object",
+					Properties: map[string]Property{
+						"name": {Type: "string", Description: "Operator symbol or alias (e.g., '+', 'add', '==', 'eq')"},
+					},
+					Required: []string{"name"},
+				},
+			},
 		}
 		return MCPResponse{
 			JSONRPC: "2.0",
@@ -524,6 +655,38 @@ func (s *StdioServer) handleToolCall(req *MCPRequest) MCPResponse {
 			errMsg = fmt.Sprintf("Builtin instruction '%s' not found", args.Name)
 		} else {
 			result = instr
+		}
+
+	case "quadrate_get_syntax":
+		lang := s.docs.GetLanguage()
+		if lang == nil {
+			errMsg = "Language reference not available"
+		} else {
+			result = lang
+		}
+
+	case "quadrate_get_keyword":
+		var args struct {
+			Name string `json:"name"`
+		}
+		json.Unmarshal(params.Arguments, &args)
+		kw := s.docs.GetKeyword(args.Name)
+		if kw == nil {
+			errMsg = fmt.Sprintf("Keyword '%s' not found", args.Name)
+		} else {
+			result = kw
+		}
+
+	case "quadrate_get_operator":
+		var args struct {
+			Name string `json:"name"`
+		}
+		json.Unmarshal(params.Arguments, &args)
+		op := s.docs.GetOperator(args.Name)
+		if op == nil {
+			errMsg = fmt.Sprintf("Operator '%s' not found", args.Name)
+		} else {
+			result = op
 		}
 
 	default:

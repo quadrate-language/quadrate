@@ -1,0 +1,486 @@
+{
+  "name": "language",
+  "description": "Quadrate language syntax and keywords reference",
+  "types": [
+    {
+      "name": "i64",
+      "description": "64-bit signed integer",
+      "examples": ["42", "-17", "0xFF"]
+    },
+    {
+      "name": "f64",
+      "description": "64-bit floating point number",
+      "examples": ["3.14", "-0.5", "1e10"]
+    },
+    {
+      "name": "str",
+      "description": "String (UTF-8 encoded)",
+      "examples": ["\"hello\"", "\"line1\\nline2\""]
+    },
+    {
+      "name": "ptr",
+      "description": "Raw pointer to memory",
+      "examples": ["buffer", "handle"]
+    },
+    {
+      "name": "bool",
+      "description": "Boolean value (true=1, false=0)",
+      "examples": ["true", "false", "5 3 >"]
+    }
+  ],
+  "keywords": [
+    {
+      "name": "fn",
+      "category": "Declaration",
+      "description": "Declares a function with a stack signature",
+      "syntax": "fn name(inputs -- outputs) { body }",
+      "examples": [
+        "fn add(a:i64 b:i64 -- sum:i64) { + }",
+        "fn greet() { \"Hello\" print nl }",
+        "fn square(x:f64 -- result:f64) { dup * }"
+      ]
+    },
+    {
+      "name": "pub",
+      "category": "Declaration",
+      "description": "Makes a function, constant, or struct visible to other modules",
+      "syntax": "pub fn/const/struct ...",
+      "examples": [
+        "pub fn greet() { \"Hello\" print nl }",
+        "pub const PI = 3.14159",
+        "pub struct Point { x:f64 y:f64 }"
+      ]
+    },
+    {
+      "name": "const",
+      "category": "Declaration",
+      "description": "Declares a compile-time constant value",
+      "syntax": "const NAME = value",
+      "examples": [
+        "const PI = 3.14159",
+        "const MAX_SIZE = 1024",
+        "const GREETING = \"Hello\""
+      ]
+    },
+    {
+      "name": "struct",
+      "category": "Declaration",
+      "description": "Declares a structured data type with named fields",
+      "syntax": "struct Name { field1:type1 field2:type2 }",
+      "examples": [
+        "struct Point { x:f64 y:f64 }",
+        "struct Person { name:str age:i64 }",
+        "struct Node<T> { value:T next:ptr }"
+      ]
+    },
+    {
+      "name": "use",
+      "category": "Import",
+      "description": "Imports a module, making its functions available with module::function syntax",
+      "syntax": "use module_name",
+      "examples": [
+        "use math",
+        "use str",
+        "use io"
+      ]
+    },
+    {
+      "name": "import",
+      "category": "Import",
+      "description": "Imports a C library, declaring its functions with Quadrate signatures",
+      "syntax": "import \"library\" as \"namespace\" { function declarations }",
+      "examples": [
+        "import \"libm.so\" as \"m\" { pub fn sin(x:f64 -- y:f64) }",
+        "import \"mylib.a\" as \"my\" { pub fn process(data:ptr len:i64 -- result:i64) }"
+      ]
+    },
+    {
+      "name": "if",
+      "category": "Control Flow",
+      "description": "Executes a block if the top of stack is true (non-zero)",
+      "syntax": "condition if { then-block }",
+      "examples": [
+        "5 3 > if { \"yes\" print nl }",
+        "x 0 == if { \"zero\" print }",
+        "valid if { process }"
+      ]
+    },
+    {
+      "name": "else",
+      "category": "Control Flow",
+      "description": "Provides an alternative block when the if condition is false",
+      "syntax": "condition if { then-block } else { else-block }",
+      "examples": [
+        "x 0 > if { \"positive\" } else { \"non-positive\" }",
+        "found if { value } else { -1 }"
+      ]
+    },
+    {
+      "name": "for",
+      "category": "Control Flow",
+      "description": "Iterates from start to end with a step, binding the iterator variable",
+      "syntax": "start end step for var { body }",
+      "examples": [
+        "0 10 1 for i { i print nl }",
+        "10 0 -1 for i { i print nl }",
+        "0 100 2 for even { even print \" \" print }"
+      ]
+    },
+    {
+      "name": "loop",
+      "category": "Control Flow",
+      "description": "Repeats a block indefinitely until break is called",
+      "syntax": "loop { body }",
+      "examples": [
+        "loop { input process done if { break } }",
+        "0 -> count loop { count inc -> count count 10 > if { break } }"
+      ]
+    },
+    {
+      "name": "while",
+      "category": "Control Flow",
+      "description": "Repeats a block while the condition on the stack is true",
+      "syntax": "condition while { body condition }",
+      "examples": [
+        "1 -> x x 10 < while { x print nl x 1 + -> x x 10 < }",
+        "has_more while { process_next has_more }"
+      ]
+    },
+    {
+      "name": "break",
+      "category": "Control Flow",
+      "description": "Exits the innermost loop immediately",
+      "syntax": "break",
+      "examples": [
+        "loop { x 10 > if { break } }",
+        "0 100 1 for i { i found if { break } }"
+      ]
+    },
+    {
+      "name": "continue",
+      "category": "Control Flow",
+      "description": "Skips to the next iteration of the innermost loop",
+      "syntax": "continue",
+      "examples": [
+        "0 10 1 for i { i 5 == if { continue } i print nl }",
+        "loop { skip_this if { continue } process }"
+      ]
+    },
+    {
+      "name": "return",
+      "category": "Control Flow",
+      "description": "Exits the current function immediately",
+      "syntax": "return",
+      "examples": [
+        "fn early() { true if { return } \"not reached\" print }",
+        "fn find(x:i64 -- found:bool) { check if { true return } false }"
+      ]
+    },
+    {
+      "name": "defer",
+      "category": "Control Flow",
+      "description": "Schedules a block to run when the function exits, in LIFO order",
+      "syntax": "defer { cleanup-block }",
+      "examples": [
+        "defer { file io::close }",
+        "defer { \"cleanup\" print nl }",
+        "defer { mem::free }"
+      ]
+    },
+    {
+      "name": "switch",
+      "category": "Control Flow",
+      "description": "Branches based on matching the top of stack against case values",
+      "syntax": "value switch { case1 { block1 } case2 { block2 } _ { default } }",
+      "examples": [
+        "x switch { 1 { \"one\" } 2 { \"two\" } _ { \"other\" } }",
+        "op switch { \"+\" { add } \"-\" { sub } \"*\" { mul } _ { \"unknown\" } }"
+      ]
+    },
+    {
+      "name": "_",
+      "category": "Control Flow",
+      "description": "Wildcard/default case in switch statements",
+      "syntax": "_ { default-block }",
+      "examples": [
+        "x switch { 1 { \"one\" } _ { \"not one\" } }"
+      ]
+    },
+    {
+      "name": "ctx",
+      "category": "Stack",
+      "description": "Creates an isolated stack context; results are appended to parent stack",
+      "syntax": "ctx { isolated-body }",
+      "examples": [
+        "1 2 3 ctx { + + } // Stack: [1, 2, 3, 6]",
+        "ctx { 10 20 + } // Computes 30 in isolation"
+      ]
+    },
+    {
+      "name": "->",
+      "category": "Variables",
+      "description": "Pops a value from the stack and binds it to a local variable",
+      "syntax": "value -> varname",
+      "examples": [
+        "42 -> x",
+        "\"hello\" -> greeting",
+        "compute_result -> result"
+      ]
+    },
+    {
+      "name": "true",
+      "category": "Literals",
+      "description": "Boolean true literal (pushes 1 onto the stack)",
+      "syntax": "true",
+      "examples": [
+        "true if { \"yes\" print }",
+        "true -> flag"
+      ]
+    },
+    {
+      "name": "false",
+      "category": "Literals",
+      "description": "Boolean false literal (pushes 0 onto the stack)",
+      "syntax": "false",
+      "examples": [
+        "false if { } else { \"no\" print }",
+        "false -> done"
+      ]
+    }
+  ],
+  "operators": [
+    {
+      "name": "+",
+      "category": "Arithmetic",
+      "signature": "( a b -- sum )",
+      "description": "Adds two numbers",
+      "alias": "add"
+    },
+    {
+      "name": "-",
+      "category": "Arithmetic",
+      "signature": "( a b -- diff )",
+      "description": "Subtracts b from a",
+      "alias": "sub"
+    },
+    {
+      "name": "*",
+      "category": "Arithmetic",
+      "signature": "( a b -- product )",
+      "description": "Multiplies two numbers",
+      "alias": "mul"
+    },
+    {
+      "name": "/",
+      "category": "Arithmetic",
+      "signature": "( a b -- quotient )",
+      "description": "Divides a by b",
+      "alias": "div"
+    },
+    {
+      "name": "%",
+      "category": "Arithmetic",
+      "signature": "( a b -- remainder )",
+      "description": "Computes a modulo b",
+      "alias": "mod"
+    },
+    {
+      "name": "==",
+      "category": "Comparison",
+      "signature": "( a b -- bool )",
+      "description": "Returns 1 if a equals b, 0 otherwise",
+      "alias": "eq"
+    },
+    {
+      "name": "!=",
+      "category": "Comparison",
+      "signature": "( a b -- bool )",
+      "description": "Returns 1 if a does not equal b",
+      "alias": "neq"
+    },
+    {
+      "name": "<",
+      "category": "Comparison",
+      "signature": "( a b -- bool )",
+      "description": "Returns 1 if a is less than b",
+      "alias": "lt"
+    },
+    {
+      "name": "<=",
+      "category": "Comparison",
+      "signature": "( a b -- bool )",
+      "description": "Returns 1 if a is less than or equal to b",
+      "alias": "lte"
+    },
+    {
+      "name": ">",
+      "category": "Comparison",
+      "signature": "( a b -- bool )",
+      "description": "Returns 1 if a is greater than b",
+      "alias": "gt"
+    },
+    {
+      "name": ">=",
+      "category": "Comparison",
+      "signature": "( a b -- bool )",
+      "description": "Returns 1 if a is greater than or equal to b",
+      "alias": "gte"
+    },
+    {
+      "name": "&&",
+      "category": "Logical",
+      "signature": "( a b -- bool )",
+      "description": "Logical AND",
+      "alias": "and"
+    },
+    {
+      "name": "||",
+      "category": "Logical",
+      "signature": "( a b -- bool )",
+      "description": "Logical OR",
+      "alias": "or"
+    },
+    {
+      "name": "!",
+      "category": "Logical",
+      "signature": "( a -- bool )",
+      "description": "Logical NOT",
+      "alias": "not"
+    },
+    {
+      "name": "&",
+      "category": "Bitwise",
+      "signature": "( a b -- result )",
+      "description": "Bitwise AND",
+      "alias": "band"
+    },
+    {
+      "name": "|",
+      "category": "Bitwise",
+      "signature": "( a b -- result )",
+      "description": "Bitwise OR",
+      "alias": "bor"
+    },
+    {
+      "name": "^",
+      "category": "Bitwise",
+      "signature": "( a b -- result )",
+      "description": "Bitwise XOR",
+      "alias": "bxor"
+    },
+    {
+      "name": "~",
+      "category": "Bitwise",
+      "signature": "( a -- result )",
+      "description": "Bitwise NOT",
+      "alias": "bnot"
+    },
+    {
+      "name": "<<",
+      "category": "Bitwise",
+      "signature": "( a n -- result )",
+      "description": "Left shift a by n bits",
+      "alias": "shl"
+    },
+    {
+      "name": ">>",
+      "category": "Bitwise",
+      "signature": "( a n -- result )",
+      "description": "Right shift a by n bits",
+      "alias": "shr"
+    },
+    {
+      "name": "@",
+      "category": "Field Access",
+      "signature": "( struct -- value )",
+      "description": "Accesses a struct field (e.g., point@x)",
+      "alias": null
+    }
+  ],
+  "syntax_patterns": [
+    {
+      "name": "Function Definition",
+      "pattern": "fn name(param:type ... -- result:type ...) { body }",
+      "description": "Parameters before -- are inputs (popped from stack), after -- are outputs (pushed to stack)",
+      "examples": [
+        "fn add(a:i64 b:i64 -- sum:i64) { + }",
+        "fn greet(name:str --) { \"Hello, \" print name print nl }",
+        "fn pi(-- value:f64) { 3.14159 }"
+      ]
+    },
+    {
+      "name": "Generic Function",
+      "pattern": "fn name<T>(param:T -- result:T) { body }",
+      "description": "Generic functions work with multiple types",
+      "examples": [
+        "fn identity<T>(x:T -- x:T) { }",
+        "fn swap_pair<T>(a:T b:T -- b:T a:T) { swap }"
+      ]
+    },
+    {
+      "name": "Method Definition",
+      "pattern": "fn (self:Type) method(params -- results) { body }",
+      "description": "Methods operate on a struct instance",
+      "examples": [
+        "fn (self:Point) magnitude(-- m:f64) { self@x sq self@y sq + sqrt }",
+        "fn (self:Counter) increment(--) { self@value 1 + self !value }"
+      ]
+    },
+    {
+      "name": "String Interpolation",
+      "pattern": "\"text {expression} more text\"",
+      "description": "Embed expressions in strings with curly braces",
+      "examples": [
+        "\"Hello, {name}!\"",
+        "\"Result: {x y +}\"",
+        "\"Count: {count}\""
+      ]
+    },
+    {
+      "name": "Array Literal",
+      "pattern": "[ element1 element2 ... ]",
+      "description": "Creates an array with the given elements",
+      "examples": [
+        "[ 1 2 3 4 5 ]",
+        "[ \"a\" \"b\" \"c\" ]",
+        "[ ]"
+      ]
+    },
+    {
+      "name": "Struct Instantiation",
+      "pattern": "StructName { field1: value1 field2: value2 }",
+      "description": "Creates a new struct instance",
+      "examples": [
+        "Point { x: 10.0 y: 20.0 }",
+        "Person { name: \"Alice\" age: 30 }"
+      ]
+    },
+    {
+      "name": "Field Assignment",
+      "pattern": "value struct !field",
+      "description": "Assigns a value to a struct field",
+      "examples": [
+        "42 point !x",
+        "\"Bob\" person !name"
+      ]
+    },
+    {
+      "name": "Module Function Call",
+      "pattern": "module::function",
+      "description": "Calls a function from an imported module",
+      "examples": [
+        "3.14 math::sin",
+        "\"hello\" str::len",
+        "\"file.txt\" io::read_file"
+      ]
+    },
+    {
+      "name": "Error Handling",
+      "pattern": "failable_call result !? { error_block } ok_block",
+      "description": "Handle errors from failable functions",
+      "examples": [
+        "\"file.txt\" io::read_file !? { \"Error\" print nl return } -> content"
+      ]
+    }
+  ]
+}
