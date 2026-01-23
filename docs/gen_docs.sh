@@ -9,7 +9,7 @@
 #
 # Usage:
 #     ./docs/gen_docs.sh                           # Generate all docs
-#     ./docs/gen_docs.sh lib/qdmath/qd/math/module.qd  # Single file
+#     ./docs/gen_docs.sh lib/qdmath/qd/math/math.qd  # Single file
 #
 
 set -euo pipefail
@@ -24,33 +24,36 @@ JSON_DIR="$PROJECT_ROOT/docs/api"
 
 # Standard library modules (core modules only - external packages are not included)
 declare -A STDLIB_MODULES=(
-    ["bits"]="lib/qdbits/qd/bits/module.qd"
-    ["bytes"]="lib/qdbytes/qd/bytes/module.qd"
-    ["flag"]="lib/qdflag/qd/flag/module.qd"
-    ["fmt"]="lib/qdfmt/qd/fmt/module.qd"
-    ["io"]="lib/qdio/qd/io/module.qd"
-    ["limits"]="lib/qdlimits/qd/limits/module.qd"
-    ["math"]="lib/qdmath/qd/math/module.qd"
-    ["mem"]="lib/qdmem/qd/mem/module.qd"
-    ["os"]="lib/qdos/qd/os/module.qd"
-    ["path"]="lib/qdpath/qd/path/module.qd"
-    ["rand"]="lib/qdrand/qd/rand/module.qd"
-    ["sb"]="lib/qdsb/qd/sb/module.qd"
-    ["signal"]="lib/qdsignal/qd/signal/module.qd"
-    ["str"]="lib/qdstr/qd/str/module.qd"
-    ["strconv"]="lib/qdstrconv/qd/strconv/module.qd"
-    ["term"]="lib/qdterm/qd/term/module.qd"
-    ["testing"]="lib/qdtesting/qd/testing/module.qd"
-    ["thread"]="lib/qdthread/qd/thread/module.qd"
-    ["time"]="lib/qdtime/qd/time/module.qd"
-    ["unicode"]="lib/qdunicode/qd/unicode/module.qd"
+    ["bits"]="lib/qdbits/qd/bits/bits.qd"
+    ["bytes"]="lib/qdbytes/qd/bytes/bytes.qd"
+    ["flag"]="lib/qdflag/qd/flag/flag.qd"
+    ["fmt"]="lib/qdfmt/qd/fmt/fmt.qd"
+    ["io"]="lib/qdio/qd/io/io.qd"
+    ["limits"]="lib/qdlimits/qd/limits/limits.qd"
+    ["math"]="lib/qdmath/qd/math/math.qd"
+    ["mem"]="lib/qdmem/qd/mem/mem.qd"
+    ["os"]="lib/qdos/qd/os/os.qd"
+    ["path"]="lib/qdpath/qd/path/path.qd"
+    ["rand"]="lib/qdrand/qd/rand/rand.qd"
+    ["sb"]="lib/qdsb/qd/sb/sb.qd"
+    ["signal"]="lib/qdsignal/qd/signal/signal.qd"
+    ["str"]="lib/qdstr/qd/str/str.qd"
+    ["strconv"]="lib/qdstrconv/qd/strconv/strconv.qd"
+    ["term"]="lib/qdterm/qd/term/term.qd"
+    ["testing"]="lib/qdtesting/qd/testing/testing.qd"
+    ["thread"]="lib/qdthread/qd/thread/thread.qd"
+    ["time"]="lib/qdtime/qd/time/time.qd"
+    ["unicode"]="lib/qdunicode/qd/unicode/unicode.qd"
 )
 
 # Get module name from file path
 get_module_name() {
     local filepath="$1"
-    # Extract module name from path like lib/qdmath/qd/math/module.qd -> math
-    echo "$filepath" | sed -n 's|.*/qd/\([^/]*\)/module\.qd|\1|p'
+    # Extract module name from path like lib/qdmath/qd/math/math.qd -> math
+    # or lib/qdmath/qd/math/module.qd -> math (backwards compat)
+    local name
+    name=$(echo "$filepath" | sed -n 's|.*/qd/\([^/]*\)/[^/]*\.qd|\1|p')
+    echo "$name"
 }
 
 # Escape special characters for JSON

@@ -34,31 +34,56 @@ static constexpr const char* DATA_DIR_NAME = "share";
 
 namespace fs = std::filesystem;
 
+// Helper: Find the first .qd file in a directory (excluding *_test.qd files)
+static std::string findFirstQdFile(const std::string& directory) {
+	try {
+		if (!fs::exists(directory) || !fs::is_directory(directory)) {
+			return "";
+		}
+
+		for (const auto& entry : fs::directory_iterator(directory)) {
+			if (entry.is_regular_file()) {
+				std::string filename = entry.path().filename().string();
+				if (filename.size() > 3 && filename.substr(filename.size() - 3) == ".qd") {
+					// Exclude test files (*_test.qd)
+					if (filename.size() > 8 && filename.substr(filename.size() - 8) == "_test.qd") {
+						continue;
+					}
+					return entry.path().string();
+				}
+			}
+		}
+	} catch (...) {
+		// Ignore filesystem errors
+	}
+	return "";
+}
+
 // Helper to find module file in standard locations
 static std::string findModuleFile(const std::string& moduleName) {
+	std::string result;
+
 	// Try 1: QUADRATE_ROOT environment variable
 	const char* quadrateRoot = getenv("QUADRATE_ROOT");
 	if (quadrateRoot) {
-		std::string rootPath = std::string(quadrateRoot) + "/" + moduleName + "/module.qd";
-		if (fs::exists(rootPath)) {
-			return rootPath;
+		result = findFirstQdFile(std::string(quadrateRoot) + "/" + moduleName);
+		if (!result.empty()) {
+			return result;
 		}
 	}
 
 	// Try 2: QUADRATE_LIBDIR (for development/testing)
 	const char* libDir = getenv("QUADRATE_LIBDIR");
 	if (libDir) {
-		// Standard library modules are in lib/qd<name>/qd/<name>/module.qd relative to QUADRATE_LIBDIR
-		// But the installed structure is different - try both
-		std::string devPath = std::string(libDir) + "/../lib/qd" + moduleName + "/qd/" + moduleName + "/module.qd";
-		if (fs::exists(devPath)) {
-			return devPath;
+		// Standard library modules are in lib/qd<name>/qd/<name>/ relative to QUADRATE_LIBDIR
+		result = findFirstQdFile(std::string(libDir) + "/../lib/qd" + moduleName + "/qd/" + moduleName);
+		if (!result.empty()) {
+			return result;
 		}
 		// Also try installed structure
-		std::string installPath =
-				std::string(libDir) + "/../" + DATA_DIR_NAME + "/quadrate/" + moduleName + "/module.qd";
-		if (fs::exists(installPath)) {
-			return installPath;
+		result = findFirstQdFile(std::string(libDir) + "/../" + DATA_DIR_NAME + "/quadrate/" + moduleName);
+		if (!result.empty()) {
+			return result;
 		}
 	}
 
@@ -71,9 +96,10 @@ static std::string findModuleFile(const std::string& moduleName) {
 			try {
 				fs::path exePath = fs::canonical(exePathBuf);
 				fs::path exeDir = exePath.parent_path();
-				fs::path sharePath = exeDir / ".." / DATA_DIR_NAME / "quadrate" / moduleName / "module.qd";
-				if (fs::exists(sharePath)) {
-					return sharePath.string();
+				fs::path sharePath = exeDir / ".." / DATA_DIR_NAME / "quadrate" / moduleName;
+				result = findFirstQdFile(sharePath.string());
+				if (!result.empty()) {
+					return result;
 				}
 			} catch (...) {
 				// Ignore errors resolving path
@@ -84,19 +110,18 @@ static std::string findModuleFile(const std::string& moduleName) {
 	// Try 4: $HOME/quadrate directory
 	const char* home = getenv("HOME");
 	if (home) {
-		std::string homePath = std::string(home) + "/quadrate/" + moduleName + "/module.qd";
-		if (fs::exists(homePath)) {
-			return homePath;
+		result = findFirstQdFile(std::string(home) + "/quadrate/" + moduleName);
+		if (!result.empty()) {
+			return result;
 		}
 	}
 
 	// Try 5: Local development paths (relative to build directory, debug builds only)
 	if (MESON_BUILD_ROOT[0] != '\0') {
 		fs::path buildRoot = fs::path(MESON_BUILD_ROOT).parent_path().parent_path();
-		std::string devPath =
-				(buildRoot / "lib" / ("std" + moduleName + "qd") / "qd" / moduleName / "module.qd").string();
-		if (fs::exists(devPath)) {
-			return devPath;
+		result = findFirstQdFile((buildRoot / "lib" / ("qd" + moduleName) / "qd" / moduleName).string());
+		if (!result.empty()) {
+			return result;
 		}
 	}
 

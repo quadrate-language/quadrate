@@ -754,11 +754,13 @@ namespace Qd {
 					errorMsg += moduleName;
 					errorMsg += "' directory found at '";
 					errorMsg += directoryPath;
-					errorMsg += "', but it does not contain a 'module.qd' file.\n";
-					errorMsg += "Module directories must have a 'module.qd' file as the entry point.\n";
+					errorMsg += "', but it does not contain any .qd files.\n";
+					errorMsg += "Module directories must contain at least one .qd file.\n";
 					errorMsg += "Either create '";
 					errorMsg += directoryPath;
-					errorMsg += "/module.qd' or use a direct file import like: use \"";
+					errorMsg += "/";
+					errorMsg += moduleName;
+					errorMsg += ".qd' or use a direct file import like: use \"";
 					errorMsg += moduleName;
 					errorMsg += "/filename.qd\"";
 				} else {
