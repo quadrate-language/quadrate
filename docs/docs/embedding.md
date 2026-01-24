@@ -318,7 +318,7 @@ int script_get_pos(qd_context* ctx) {
     if (!e) {
         qd_push_f(ctx, 0.0);
         qd_push_f(ctx, 0.0);
-        return (int){0};
+        return QD_OK;
     }
 
     qd_push_f(ctx, e->x);
@@ -342,7 +342,7 @@ int script_move(qd_context* ctx) {
     qd_stack_pop(ctx->st, &id_elem);
 
     engine_move(id_elem.value.i, dx_elem.value.f, dy_elem.value.f);
-    return (int){0};
+    return QD_OK;
 }
 
 // Damage entity (id amount --)
@@ -352,7 +352,7 @@ int script_damage(qd_context* ctx) {
     qd_stack_pop(ctx->st, &id_elem);
 
     engine_damage(id_elem.value.i, amount_elem.value.i);
-    return (int){0};
+    return QD_OK;
 }
 
 // Spawn new entity (x y health -- id)
@@ -394,7 +394,7 @@ int script_log(qd_context* ctx) {
         printf("[Script] %s\n", qd_string_data(msg.value.s));
         qd_string_release(msg.value.s);  // Release reference
     }
-    return (int){0};
+    return QD_OK;
 }
 
 // === Script system initialization ===
@@ -709,7 +709,7 @@ int native_might_fail(qd_context* ctx) {
     if (error_condition) {
         // Set error state
         ctx->error_code = 1;
-        return (int){.error = 1};
+        return -1;
     }
     return qd_push_i(ctx, result);
 }

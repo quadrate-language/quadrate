@@ -30,7 +30,7 @@ int hello(qd_context* ctx) {
 	// Release the string (required for memory management)
 	qd_string_release(elem.value.s);
 
-	return (int){0};  // 0 = success
+	return QD_OK;
 }
 ```
 
@@ -92,7 +92,7 @@ qd_stack_error err = qd_stack_pop(ctx->st, &elem);
 
 if (err != QD_STACK_OK) {
 	// Handle stack underflow
-	return (int){1};
+	return -1;
 }
 
 // Check the type
@@ -158,7 +158,7 @@ int hypot(qd_context* ctx) {
 	double result = sqrt(a.value.f * a.value.f + b.value.f * b.value.f);
 	qd_stack_push_float(ctx->st, result);
 
-	return (int){0};
+	return QD_OK;
 }
 
 // Factorial: ( n:i64 -- result:i64 )
@@ -173,7 +173,7 @@ int factorial(qd_context* ctx) {
 	}
 
 	qd_stack_push_int(ctx->st, result);
-	return (int){0};
+	return QD_OK;
 }
 ```
 
@@ -207,17 +207,17 @@ int my_function(qd_context* ctx) {
 
 	if (err != QD_STACK_OK) {
 		fprintf(stderr, "my_function: stack underflow\n");
-		return (int){1};  // Error code 1
+		return QD_ERR_STACK_OVERFLOW;
 	}
 
 	if (elem.type != QD_STACK_TYPE_INT) {
 		fprintf(stderr, "my_function: expected integer\n");
-		return (int){2};  // Error code 2
+		return QD_ERR_TYPE_MISMATCH;
 	}
 
 	// ... do work ...
 
-	return (int){0};  // Success
+	return QD_OK;
 }
 ```
 
