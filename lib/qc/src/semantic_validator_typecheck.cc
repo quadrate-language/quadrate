@@ -889,6 +889,10 @@ namespace Qd {
 						std::string structType = structTypeStack.back();
 						structTypeStack.pop_back();
 						mLocalVariableStructTypes[varName] = structType;
+						static bool debug = std::getenv("QUADC_DEBUG_MERGE") != nullptr;
+						if (debug) {
+							std::cerr << "[DEBUG TC] Store -> " << varName << " with struct type: " << structType << std::endl;
+						}
 
 						// If there's a pending function signature, store it with this variable
 						if (mPendingFnSignature.has_value()) {
@@ -1217,8 +1221,16 @@ namespace Qd {
 						auto structTypeIt = mLocalVariableStructTypes.find(name);
 						if (structTypeIt != mLocalVariableStructTypes.end()) {
 							structTypeStack.push_back(structTypeIt->second);
+							static bool debug = std::getenv("QUADC_DEBUG_MERGE") != nullptr;
+							if (debug) {
+								std::cerr << "[DEBUG TC] Local var '" << name << "' pushed struct type: " << structTypeIt->second << std::endl;
+							}
 						} else {
 							structTypeStack.push_back(""); // Unknown struct type
+							static bool debug = std::getenv("QUADC_DEBUG_MERGE") != nullptr;
+							if (debug) {
+								std::cerr << "[DEBUG TC] Local var '" << name << "' has no struct type in mLocalVariableStructTypes" << std::endl;
+							}
 						}
 
 						// If the variable has a known function signature, set it as pending
@@ -1494,6 +1506,18 @@ namespace Qd {
 				std::string registeredStructType;
 				size_t receiverStackIdx = 0;
 
+				{
+					static bool debug = std::getenv("QUADC_DEBUG_MERGE") != nullptr;
+					if (debug) {
+						std::cerr << "[DEBUG TC] Checking for method call '" << name << "' - structTypeStack: [";
+						for (size_t k = 0; k < structTypeStack.size(); k++) {
+							if (k > 0) std::cerr << ", ";
+							std::cerr << "'" << structTypeStack[k] << "'";
+						}
+						std::cerr << "]" << std::endl;
+					}
+				}
+
 				// First pass: find any struct on the stack that has this method
 				// to determine the method signature and expected parameter count
 				size_t searchLimit = std::min(structTypeStack.size(), typeStack.size());
@@ -1658,6 +1682,12 @@ namespace Qd {
 
 						// Mark identifier as a method call for code generation
 						// Use registeredStructType (the generic type) for proper function name lookup
+						{
+							static bool debug = std::getenv("QUADC_DEBUG_MERGE") != nullptr;
+							if (debug) {
+								std::cerr << "[DEBUG TC] Marking '" << name << "' as method call on " << registeredStructType << std::endl;
+							}
+						}
 						ident->setIsMethodCall(true);
 						ident->setReceiverType(registeredStructType);
 						ident->setMethodInputParamCount(additionalParams);
@@ -1915,7 +1945,8 @@ namespace Qd {
 						if (paramIdx < consumedStructTypes.size()) {
 							const std::string& actualStruct = consumedStructTypes[paramIdx];
 
-							if (!actualStruct.empty() && actualStruct != expectedStruct) {
+							if (!actualStruct.empty() &&
+									!structTypesMatch(actualStruct, expectedStruct, mMergedModules)) {
 								std::string errorMsg = "Type error in function '";
 								errorMsg += name;
 								errorMsg += "': Parameter ";
@@ -2236,7 +2267,23 @@ namespace Qd {
 
 				// Push the field type onto the stack
 				typeStack.push_back(fieldType);
-				structTypeStack.push_back(""); // Field values are not struct pointers
+
+				// If this field is a struct-typed field, push its struct type for chaining
+				std::string fieldStructType = "";
+				if (fieldType == StackValueType::PTR && !structType.empty()) {
+					auto fieldStructIt = mStructFieldStructTypes.find(structType);
+					if (fieldStructIt != mStructFieldStructTypes.end()) {
+						auto structNameIt = fieldStructIt->second.find(fieldName);
+						if (structNameIt != fieldStructIt->second.end()) {
+							fieldStructType = structNameIt->second;
+						}
+					}
+				}
+				structTypeStack.push_back(fieldStructType);
+				static bool debug = std::getenv("QUADC_DEBUG_MERGE") != nullptr;
+				if (debug) {
+					std::cerr << "[DEBUG TC] Field access " << varName << " @" << fieldName << " -> struct type: " << fieldStructType << " (var struct type was: " << structType << ")" << std::endl;
+				}
 				break;
 			}
 

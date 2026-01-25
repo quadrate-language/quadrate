@@ -211,10 +211,14 @@ int main(int argc, char** argv) {
 				std::cout << std::endl;
 			}
 
+			// Directory-based namespace: collect sibling files before validation
+			std::vector<std::string> siblingFiles = getSiblingQdFiles(file);
+
 			// Semantic validation - catch errors before LLVM generation
 			Qd::SemanticValidator validator;
 			validator.setIncludePaths(opts.includePaths);
 			validator.setSource(buffer.c_str());
+			validator.setSiblingFiles(siblingFiles);
 			size_t errorCount = validator.validate(root, file.c_str(), false, opts.werror);
 			printTiming("semantic");
 			if (errorCount > 0) {
@@ -242,6 +246,14 @@ int main(int argc, char** argv) {
 			module.hasFFIImports = !validator.importedLibraries().empty();
 			module.hasNativeStdlibModules = hasNativeStdlibImports(module.importedModules);
 
+			// Directory-based namespace: add sibling files to importedModules for code generator
+			// (siblingFiles was already collected above for the semantic validator)
+			for (const auto& sibling : siblingFiles) {
+				// Add sibling as an "imported module" that will be merged into main
+				// Use the full path as the module name (like use "file.qd" does)
+				module.importedModules.push_back(sibling);
+			}
+
 			parsedModules.push_back(std::move(module));
 		}
 
@@ -251,6 +263,7 @@ int main(int argc, char** argv) {
 		std::unordered_set<std::string> processedModules;
 		std::unordered_map<std::string, std::string> moduleToPackage;	// moduleName -> packageName
 		std::unordered_map<std::string, std::string> moduleToSourceDir; // moduleName -> sourceDirectory
+		std::unordered_set<std::string> modulesToMergeIntoMain;			// modules that should merge into main
 		std::string sourceDirectory;
 		for (const auto& module : parsedModules) {
 			for (const auto& importedModule : module.importedModules) {
@@ -275,7 +288,10 @@ int main(int argc, char** argv) {
 					} else {
 						// Top-level import: derive package from imported filename
 						// e.g., main.qd imports calculator.qd → calculator functions are calculator::*
-						moduleToPackage[importedModule] = getPackageFromModuleName(importedModule);
+						std::string derivedPackage = getPackageFromModuleName(importedModule);
+						moduleToPackage[importedModule] = derivedPackage;
+						// Mark this module to be merged into main namespace (by package name)
+						modulesToMergeIntoMain.insert(derivedPackage);
 					}
 					moduleToSourceDir[importedModule] = module.sourceDirectory;
 				} else {
@@ -412,6 +428,8 @@ int main(int argc, char** argv) {
 				parsedMod.root = root;
 				// Note: parsedMod.ast is nullptr - AST ownership is held by the global cache
 				parsedMod.importedModules = collectImportedModules(root);
+				// Check if this module should be merged into main namespace (by package name)
+				parsedMod.mergeIntoMain = modulesToMergeIntoMain.count(packageName) > 0;
 
 				// Add any modules imported by this module to the set
 				for (const auto& transitiveModule : parsedMod.importedModules) {
@@ -431,7 +449,13 @@ int main(int argc, char** argv) {
 								moduleToPackage[transitiveModule] = packageName;
 							} else {
 								// Top-level import: derive package from filename
-								moduleToPackage[transitiveModule] = getPackageFromModuleName(transitiveModule);
+								std::string derivedPackage = getPackageFromModuleName(transitiveModule);
+								moduleToPackage[transitiveModule] = derivedPackage;
+								// If the importing module is merged, also merge this transitive import
+								// This allows nested .qd file imports to be accessible without module prefix
+								if (parsedMod.mergeIntoMain) {
+									modulesToMergeIntoMain.insert(derivedPackage);
+								}
 							}
 							// File imports use the importing module's source directory
 							moduleToSourceDir[transitiveModule] = moduleFileSourceDir;
@@ -500,7 +524,7 @@ int main(int argc, char** argv) {
 		// but we need to generate them depth-first (deep dependencies first, then their dependents)
 		for (auto it = parsedModules.rbegin(); it != parsedModules.rend(); ++it) {
 			if (it->package != "main") {
-				generator.addModuleAST(it->package, it->root, it->name);
+				generator.addModuleAST(it->package, it->root, it->name, it->mergeIntoMain);
 			}
 		}
 

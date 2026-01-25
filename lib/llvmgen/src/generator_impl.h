@@ -225,6 +225,10 @@ namespace Qd {
 		// Module ASTs
 		std::vector<std::pair<std::string, IAstNode*>> moduleASTs;
 
+		// Modules that should be merged into main namespace
+		// Functions from these modules are also registered with unqualified names
+		std::set<std::string> mergedModules;
+
 		// Module source files for debug info
 		std::map<std::string, std::string> moduleSourceFiles;
 
@@ -346,6 +350,11 @@ namespace Qd {
 		void createForwardingWrapperBody(llvm::Function* wrapperFn, llvm::Function* targetFn);
 		bool generateProgram(IAstNode* root);
 		bool generateFunction(
+				AstNodeFunctionDeclaration* funcNode, bool isMain, const std::string& namePrefix = "main");
+		// Declare a function (create LLVM function and register in userFunctions, but don't generate body)
+		bool declareFunction(AstNodeFunctionDeclaration* funcNode, const std::string& namePrefix);
+		// Generate function body (assumes function is already declared)
+		bool generateFunctionBody(
 				AstNodeFunctionDeclaration* funcNode, bool isMain, const std::string& namePrefix = "main");
 		bool generateTest(AstNodeTest* testNode, const std::string& namePrefix = "main");
 		bool generateTestRunner(const std::vector<std::pair<std::string, std::string>>& testNamesWithDisplay);

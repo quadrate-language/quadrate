@@ -36,7 +36,7 @@ namespace Qd {
 			return 4;
 		} else if (typeName == "str" || typeName.find('*') != std::string::npos) {
 			return 8; // Pointer size
-		} else if (!typeName.empty() && std::isupper(typeName[0]) && isKnownStruct(typeName)) {
+		} else if (looksLikeStructType(typeName) && isKnownStruct(typeName)) {
 			// Struct-typed field - stored as pointer, not inline
 			return 8; // Pointer size
 		}
@@ -136,7 +136,7 @@ namespace Qd {
 		// First, recursively cleanup nested struct fields
 		for (const auto& field : layout.fields) {
 			// Check if field is a known struct type (not a type parameter like T)
-			if (!field.typeName.empty() && std::isupper(field.typeName[0]) && isKnownStruct(field.typeName)) {
+			if (looksLikeStructType(field.typeName) && isKnownStruct(field.typeName)) {
 				// Load the nested struct pointer from this field
 				auto fieldOffset = builder->getInt64(field.offset);
 				auto fieldBytePtr =
@@ -178,8 +178,7 @@ namespace Qd {
 				if (!baseTypeName.empty() && baseTypeName[0] == '*') {
 					baseTypeName = baseTypeName.substr(1);
 				}
-				if (field.typeName == "str" ||
-						(!baseTypeName.empty() && std::isupper(baseTypeName[0]) && isKnownStruct(baseTypeName))) {
+				if (field.typeName == "str" || (looksLikeStructType(baseTypeName) && isKnownStruct(baseTypeName))) {
 					needsDestructor = true;
 					break;
 				}
@@ -213,7 +212,7 @@ namespace Qd {
 				if (!baseTypeName.empty() && baseTypeName[0] == '*') {
 					baseTypeName = baseTypeName.substr(1);
 				}
-				if (!baseTypeName.empty() && std::isupper(baseTypeName[0]) && isKnownStruct(baseTypeName)) {
+				if (looksLikeStructType(baseTypeName) && isKnownStruct(baseTypeName)) {
 					// Nested struct field
 					auto fieldOffset = builder->getInt64(field.offset);
 					auto fieldBytePtr =
@@ -319,7 +318,7 @@ namespace Qd {
 				builder->CreateStore(truncValue, bytePtr);
 			} else if (field.typeName == "ptr" || field.typeName == "str" ||
 					   field.typeName.find('*') != std::string::npos ||
-					   (!field.typeName.empty() && std::isupper(field.typeName[0]) && isKnownStruct(field.typeName))) {
+					   (looksLikeStructType(field.typeName) && isKnownStruct(field.typeName))) {
 				// Pointer type (including ptr, str, raw pointers, and struct-typed fields)
 				llvm::Value* ptrValue = builder->CreateLoad(ptrTy, valuePtr, "ptr_val");
 				// NOTE: We do NOT retain nested struct fields here.
@@ -571,8 +570,7 @@ namespace Qd {
 			builder->CreateCall(qdPtrRetainFn, {ptrValue});
 			builder->CreateCall(pushPtrFn, {ctx, ptrValue});
 			lastFieldAccessResultType.clear(); // Raw pointer, not a known struct type
-		} else if (!matchingField->typeName.empty() && std::isupper(matchingField->typeName[0]) &&
-				   isKnownStruct(matchingField->typeName)) {
+		} else if (looksLikeStructType(matchingField->typeName) && isKnownStruct(matchingField->typeName)) {
 			// Struct-typed field - stored as pointer, push as PTR
 			llvm::Value* fieldPtr = bytePtr;
 			llvm::Value* ptrValue = builder->CreateLoad(ptrTy, fieldPtr, "field_value");
@@ -718,8 +716,7 @@ namespace Qd {
 			builder->CreateStore(truncValue, bytePtr);
 		} else if (matchingField->typeName == "ptr" || matchingField->typeName == "str" ||
 				   matchingField->typeName.find('*') != std::string::npos ||
-				   (!matchingField->typeName.empty() && std::isupper(matchingField->typeName[0]) &&
-						   isKnownStruct(matchingField->typeName))) {
+				   (looksLikeStructType(matchingField->typeName) && isKnownStruct(matchingField->typeName))) {
 			// Pointer type (including ptr, str, raw pointers, and struct-typed fields)
 			llvm::Value* ptrValue = builder->CreateLoad(ptrTy, valuePtr, "ptr_val");
 			builder->CreateStore(ptrValue, bytePtr);

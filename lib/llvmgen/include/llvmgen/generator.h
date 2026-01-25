@@ -91,10 +91,14 @@ namespace Qd {
 		 * @param moduleName Name of the module
 		 * @param moduleRoot Root node of the module's AST
 		 * @param sourceFileName Source file path for debug info (optional)
+		 * @param mergeIntoMain If true, functions from this module are also registered
+		 *                      with their unqualified names, making them accessible without
+		 *                      the module prefix. Used for local file imports (use "file.qd").
 		 *
 		 * @note Must be called after generate() but before write operations
 		 */
-		void addModuleAST(const std::string& moduleName, IAstNode* moduleRoot, const std::string& sourceFileName = "");
+		void addModuleAST(const std::string& moduleName, IAstNode* moduleRoot, const std::string& sourceFileName = "",
+				bool mergeIntoMain = false);
 
 		/**
 		 * @brief Write LLVM IR to a text file

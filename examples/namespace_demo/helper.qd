@@ -1,0 +1,22 @@
+// Helper module - no main(), will be auto-merged
+
+fn double(x:i64 -- r:i64) {
+	x 2 *
+}
+
+fn greet( -- ) {
+	"Hello from helper!" print nl
+}
+
+struct Point {
+	x:f64
+	y:f64
+}
+
+fn add_points(a:Point b:Point -- c:Point) {
+	-> b -> a
+	Point {
+		x = a @x b @x +,
+		y = a @y b @y +
+	}
+}

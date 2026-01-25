@@ -1,0 +1,10 @@
+// Helper functions for local import testing
+const MAGIC = 42
+
+fn triple(x:i64 -- y:i64) {
+	3 *
+}
+
+fn add_magic(x:i64 -- y:i64) {
+	MAGIC +
+}

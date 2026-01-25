@@ -1,0 +1,6 @@
+// String helper functions
+pub const GREETING = "Hello"
+
+pub fn say_hello( -- ) {
+	GREETING print nl
+}

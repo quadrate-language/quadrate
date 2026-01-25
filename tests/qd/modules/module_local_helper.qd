@@ -1,0 +1,17 @@
+// Test that module's local file imports stay in module namespace
+use local_helper
+
+fn main() {
+	// Functions from local helpers are in module namespace
+	5 local_helper::process print nl
+
+	// Direct access to helper functions via module prefix
+	3 local_helper::double_it print nl
+	7 local_helper::add_ten print nl
+
+	// Access constants via module prefix
+	local_helper::TEN print nl
+
+	// Call string helper function
+	local_helper::say_hello
+}

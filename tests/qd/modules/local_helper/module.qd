@@ -1,0 +1,10 @@
+// Module that imports local helper files
+// Functions from helpers should be in module's namespace
+use "math_helpers.qd"
+use "string_helpers.qd"
+
+pub fn process(x:i64 -- y:i64) {
+	// Use functions from local helpers (no prefix needed inside module)
+	double_it
+	add_ten
+}

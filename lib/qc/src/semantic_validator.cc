@@ -481,6 +481,143 @@ namespace Qd {
 			mCurrentPackage = "main";
 		}
 
+		// Directory-based namespace: load sibling files as merged modules
+		// This makes symbols from sibling files available without explicit imports
+		//
+		// Two-pass approach to handle dependencies between sibling files:
+		// Pass 1: Parse all siblings and collect definitions (structs, functions)
+		// Pass 2: Validate function signatures (requires all types to be known)
+		static bool debugSibling = std::getenv("QUADC_DEBUG_SIBLING") != nullptr;
+		if (debugSibling && !mSiblingFiles.empty()) {
+			std::cerr << "[DEBUG SIBLING] Loading " << mSiblingFiles.size() << " sibling files (pass 1: collect definitions)" << std::endl;
+		}
+
+		// Pass 1: Parse all siblings and collect definitions first
+		// Sort so files with likely struct definitions (shorter names) come first
+		std::vector<std::string> sortedSiblings = mSiblingFiles;
+		std::sort(sortedSiblings.begin(), sortedSiblings.end(), [](const std::string& a, const std::string& b) {
+			// Prefer files named after types (shorter, common patterns)
+			std::filesystem::path pa(a), pb(b);
+			return pa.stem().string() < pb.stem().string();
+		});
+
+		std::vector<std::pair<std::string, IAstNode*>> siblingAsts;
+		for (const auto& siblingFile : sortedSiblings) {
+			std::filesystem::path p(siblingFile);
+			std::string moduleName = p.stem().string();
+
+			if (debugSibling) {
+				std::cerr << "[DEBUG SIBLING]   Pass 1: " << siblingFile << " as " << moduleName << std::endl;
+			}
+
+			std::ifstream ifs(siblingFile);
+			if (ifs) {
+				std::string source((std::istreambuf_iterator<char>(ifs)), std::istreambuf_iterator<char>());
+
+				// Parse and collect definitions only (no signature analysis yet)
+				auto moduleAst = std::make_unique<Ast>();
+				IAstNode* moduleAstRoot = moduleAst->generate(source.c_str(), false, siblingFile.c_str());
+				if (!moduleAstRoot) {
+					continue;
+				}
+
+				// Track this module as merged
+				mMergedModules.insert(moduleName);
+
+				// Process USE statements from sibling files to load imported modules
+				// This ensures modules like 'math' are available when analyzing sibling code
+				for (auto* child : moduleAstRoot->children()) {
+					if (child && child->type() == IAstNode::Type::USE_STATEMENT) {
+						AstNodeUse* use = static_cast<AstNodeUse*>(child);
+						if (debugSibling) {
+							std::cerr << "[DEBUG SIBLING]     Processing use: " << use->module() << std::endl;
+						}
+						// Load the module if not already loaded
+						if (mImportedModules.find(use->module()) == mImportedModules.end()) {
+							loadModuleDefinitions(use->module(), moduleName, false);
+						}
+					}
+				}
+
+				// Collect struct definitions first
+				std::unordered_map<std::string, bool> moduleStructs;
+				collectModuleStructs(moduleAstRoot, moduleStructs);
+				if (mModuleStructs.find(moduleName) != mModuleStructs.end()) {
+					for (const auto& s : moduleStructs) {
+						mModuleStructs[moduleName][s.first] = s.second;
+					}
+				} else {
+					mModuleStructs[moduleName] = moduleStructs;
+				}
+				for (const auto& s : moduleStructs) {
+					mDefinedStructs.insert(s.first);
+				}
+
+				// Collect struct field types
+				collectModuleStructFieldTypes(moduleAstRoot, moduleName, true);
+
+				// Collect constants
+				std::unordered_map<std::string, bool> moduleConstants;
+				collectModuleConstants(moduleAstRoot, moduleConstants);
+				if (mModuleConstants.find(moduleName) != mModuleConstants.end()) {
+					for (const auto& c : moduleConstants) {
+						mModuleConstants[moduleName][c.first] = c.second;
+					}
+				} else {
+					mModuleConstants[moduleName] = moduleConstants;
+				}
+				for (const auto& c : moduleConstants) {
+					mDefinedConstants.insert(c.first);
+				}
+				collectModuleConstantValues(moduleAstRoot, moduleName, true);
+
+				// Collect function definitions
+				std::unordered_map<std::string, bool> moduleFunctions;
+				collectModuleFunctions(moduleAstRoot, moduleFunctions);
+				if (mModuleFunctions.find(moduleName) != mModuleFunctions.end()) {
+					for (const auto& f : moduleFunctions) {
+						mModuleFunctions[moduleName][f.first] = f.second;
+					}
+				} else {
+					mModuleFunctions[moduleName] = moduleFunctions;
+				}
+				for (const auto& f : moduleFunctions) {
+					mDefinedFunctions.insert(f.first);
+				}
+
+				// Collect methods
+				collectModuleMethods(moduleAstRoot, moduleName);
+
+				// Cache the AST and source for pass 2 and type checking in pass 3c
+				ParsedModuleAst cached;
+				cached.ast = std::move(moduleAst);
+				cached.root = moduleAstRoot;
+				cached.source = source;
+				cached.filePath = siblingFile;
+				mParsedModuleAsts[siblingFile] = std::move(cached);
+				// Add to parse order so type checking happens in Pass 3c
+				mParsedModuleOrder.push_back(siblingFile);
+
+				siblingAsts.push_back({moduleName, moduleAstRoot});
+			}
+		}
+
+		if (debugSibling && !mSiblingFiles.empty()) {
+			std::cerr << "[DEBUG SIBLING] After pass 1, mDefinedStructs: ";
+			for (const auto& s : mDefinedStructs) {
+				std::cerr << s << " ";
+			}
+			std::cerr << std::endl;
+		}
+
+		// Pass 2: Now analyze function signatures (all types are known)
+		if (debugSibling && !siblingAsts.empty()) {
+			std::cerr << "[DEBUG SIBLING] Pass 2: analyze function signatures" << std::endl;
+		}
+		for (const auto& [moduleName, moduleAstRoot] : siblingAsts) {
+			analyzeModuleFunctionSignatures(moduleAstRoot, moduleName, true);
+		}
+
 		// Pass 1: Collect all function definitions
 		collectDefinitions(program);
 		printTiming("collectDefinitions");
@@ -536,6 +673,65 @@ namespace Qd {
 
 		// Pass 3b: Type check using function signatures
 		typeCheckFunction(program);
+
+		// Pass 3c: Type check merged module functions
+		// Merged modules (local file imports that merge into main namespace) need
+		// full type checking so that method calls get properly marked for the code generator.
+		// We iterate in parsing order (stored in mParsedModuleOrder) which is dependency-aware:
+		// modules that define structs are parsed before modules that use them.
+		static bool debug = std::getenv("QUADC_DEBUG_MERGE") != nullptr;
+		for (const auto& filePath : mParsedModuleOrder) {
+			// Skip standard library modules (they're in share/quadrate or dist/share/quadrate)
+			if (filePath.find("share/quadrate/") != std::string::npos) {
+				continue;
+			}
+
+			// Extract module name from filepath for checking against mMergedModules
+			// E.g., "/path/to/physics.qd" -> "physics"
+			std::string moduleName;
+			size_t lastSlash = filePath.find_last_of('/');
+			size_t nameStart = (lastSlash != std::string::npos) ? lastSlash + 1 : 0;
+			if (filePath.size() > nameStart + 3 &&
+					filePath.substr(filePath.size() - 3) == ".qd") {
+				moduleName = filePath.substr(nameStart, filePath.size() - nameStart - 3);
+			}
+
+			// Only type-check modules that are merged into main namespace
+			if (!moduleName.empty() && mMergedModules.count(moduleName) > 0) {
+				if (debug) {
+					std::cerr << "[DEBUG] Type checking merged module: " << moduleName << " (" << filePath << ")"
+							  << std::endl;
+					// Dump relevant state for debugging
+					std::cerr << "[DEBUG]   mDefinedStructs: ";
+					for (const auto& s : mDefinedStructs) {
+						std::cerr << s << " ";
+					}
+					std::cerr << std::endl;
+					std::cerr << "[DEBUG]   mStructFieldTypes keys: ";
+					for (const auto& p : mStructFieldTypes) {
+						std::cerr << p.first << " ";
+					}
+					std::cerr << std::endl;
+					std::cerr << "[DEBUG]   mStructFieldStructTypes keys: ";
+					for (const auto& p : mStructFieldStructTypes) {
+						std::cerr << p.first << "[";
+						for (const auto& f : p.second) {
+							std::cerr << f.first << ":" << f.second << " ";
+						}
+						std::cerr << "] ";
+					}
+					std::cerr << std::endl;
+					std::cerr << "[DEBUG]   isStructTypeName(MyState): " << (isStructTypeName("MyState") ? "true" : "false") << std::endl;
+					std::cerr << "[DEBUG]   isStructTypeName(math::Vec3): " << (isStructTypeName("math::Vec3") ? "true" : "false") << std::endl;
+				}
+
+				// Type check this merged module's AST
+				auto astIt = mParsedModuleAsts.find(filePath);
+				if (astIt != mParsedModuleAsts.end() && astIt->second.root) {
+					typeCheckFunction(astIt->second.root);
+				}
+			}
+		}
 		printTiming("typeCheck");
 
 		return mErrorCount;

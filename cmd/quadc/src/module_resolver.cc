@@ -433,3 +433,132 @@ std::vector<std::string> loadDependenciesFromManifest(const std::string& manifes
 	json_decref(root);
 	return includePaths;
 }
+
+std::vector<std::string> getSiblingQdFiles(const std::string& filePath) {
+	std::vector<std::string> siblings;
+
+	try {
+		std::filesystem::path path(filePath);
+		std::filesystem::path dir = path.parent_path();
+		if (dir.empty()) {
+			dir = ".";
+		}
+
+		// Get canonical path of the input file for comparison
+		std::string canonicalInput = std::filesystem::canonical(filePath).string();
+
+		// Don't auto-merge siblings in test directories
+		// Test files are meant to be standalone
+		// Exception: tests/qd/namespaces/ is for testing directory namespace feature
+		if (canonicalInput.find("/tests/") != std::string::npos &&
+				canonicalInput.find("/tests/qd/namespaces/") == std::string::npos) {
+			return siblings;
+		}
+
+		// Don't auto-merge for stdlib module directories
+		// These use explicit `use module` imports
+		if (canonicalInput.find("/lib/qd") != std::string::npos) {
+			return siblings;
+		}
+
+		// Helper: check if a file has a main() function (quick text search)
+		auto hasMainFunction = [](const std::string& filePath) -> bool {
+			std::ifstream ifs(filePath);
+			if (!ifs) {
+				return false;
+			}
+			std::string line;
+			while (std::getline(ifs, line)) {
+				// Look for "fn main(" at the start of a line (possibly with leading whitespace)
+				size_t pos = line.find("fn main(");
+				if (pos != std::string::npos) {
+					// Check if it's at the start of line (ignoring whitespace)
+					bool isStart = true;
+					for (size_t i = 0; i < pos; i++) {
+						if (line[i] != ' ' && line[i] != '\t') {
+							isStart = false;
+							break;
+						}
+					}
+					if (isStart) {
+						return true;
+					}
+				}
+			}
+			return false;
+		};
+
+		// Collect all .qd files in the directory except the input file
+		for (const auto& entry : std::filesystem::directory_iterator(dir)) {
+			if (!entry.is_regular_file()) {
+				continue;
+			}
+
+			std::string filename = entry.path().filename().string();
+
+			// Must end in .qd
+			if (filename.size() < 4 || filename.substr(filename.size() - 3) != ".qd") {
+				continue;
+			}
+
+			// Exclude test files
+			if (filename.size() > 8 && filename.substr(filename.size() - 8) == "_test.qd") {
+				continue;
+			}
+
+			// Exclude the input file itself
+			std::string canonicalEntry = std::filesystem::canonical(entry.path()).string();
+			if (canonicalEntry == canonicalInput) {
+				continue;
+			}
+
+			// Exclude files that have their own main() function
+			// These are standalone programs, not helper modules
+			if (hasMainFunction(canonicalEntry)) {
+				continue;
+			}
+
+			siblings.push_back(canonicalEntry);
+		}
+
+		// Sort for deterministic order
+		std::sort(siblings.begin(), siblings.end());
+	} catch (...) {
+		// Ignore filesystem errors
+	}
+
+	return siblings;
+}
+
+std::vector<std::string> findNamespaceFiles(const std::string& namespaceName, const std::string& sourceDir) {
+	// Namespace directory import - similar to findModuleFiles but for external namespaces
+	std::vector<std::string> result;
+
+	// Try 1: Local path (relative to source file)
+	result = tryGetModuleFilesFromDir(sourceDir + "/" + namespaceName);
+	if (!result.empty()) {
+		return result;
+	}
+
+	// Try 2: Include paths from -I flags
+	for (const auto& includePath : g_moduleIncludePaths) {
+		std::string expandedPath = expandTilde(includePath);
+
+		// Check for namespace as subdirectory of include path
+		result = tryGetModuleFilesFromDir(expandedPath + "/" + namespaceName);
+		if (!result.empty()) {
+			return result;
+		}
+	}
+
+	// Try 3: Third-party packages directory
+	std::string packagePath = findLatestPackageVersion(namespaceName);
+	if (!packagePath.empty()) {
+		result = tryGetModuleFilesFromDir(packagePath);
+		if (!result.empty()) {
+			return result;
+		}
+	}
+
+	return {}; // Not found
+}

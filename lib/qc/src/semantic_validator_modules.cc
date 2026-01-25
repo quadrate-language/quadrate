@@ -268,16 +268,32 @@ namespace Qd {
 		bool isDirectFile = moduleName.size() >= 3 && moduleName.substr(moduleName.size() - 3) == ".qd";
 
 		std::string effectiveModuleName;
+		// Track if this is a local file import that should merge into main namespace
+		bool mergeIntoMain = false;
 		if (isDirectFile) {
 			// For .qd file imports from top-level files, derive package name from filename
 			// For intra-module imports (inside a module's USE statements), use the current package name
-			// We detect intra-module imports by checking if we're in a module dependency chain
-			// (i.e., processing nested imports from a module.qd file)
-			bool isIntraModuleImport = !mModuleDependencyChain.empty();
-			if (!mIsModuleFile && !isIntraModuleImport) {
+			// We detect intra-module imports by checking:
+			//   - mIsModuleFile: we're compiling a module.qd directly
+			//   - mModuleDependencyChain not empty: we're processing nested imports from within a module
+			//     (the chain contains module names, not just directory-derived package names)
+			// Note: currentPackage alone is not sufficient because it's also set from directory names
+			// The dependency chain already includes the current module (added by guard above),
+			// so we check if size > 1 to see if there's a parent module context
+			bool isIntraModuleImport = mIsModuleFile || mModuleDependencyChain.size() > 1;
+			if (!isIntraModuleImport) {
 				effectiveModuleName = getPackageFromModuleName(moduleName);
+				mergeIntoMain = true; // Mark for merging into main namespace
 			} else {
-				effectiveModuleName = currentPackage;
+				// Check if the importing module was itself merged - if so, propagate merge status
+				// This allows transitive .qd file imports from merged modules to also be merged
+				if (mMergedModules.count(currentPackage) > 0) {
+					effectiveModuleName = getPackageFromModuleName(moduleName);
+					mergeIntoMain = true; // Transitive merge
+				} else {
+					// Regular intra-module import - use the current package name
+					effectiveModuleName = currentPackage;
+				}
 			}
 		} else {
 			effectiveModuleName = moduleName;
@@ -301,7 +317,7 @@ namespace Qd {
 					std::string source = buffer.str();
 					file.close();
 					// Parse and add to effective module namespace
-					parseModuleAndCollectFunctions(effectiveModuleName, source, expandedModuleName);
+					parseModuleAndCollectFunctions(effectiveModuleName, source, expandedModuleName, mergeIntoMain);
 					return;
 				}
 				file.close();
@@ -323,7 +339,7 @@ namespace Qd {
 					std::string source = buffer.str();
 					file.close();
 					// Parse and add to effective module namespace
-					parseModuleAndCollectFunctions(effectiveModuleName, source, modulePath);
+					parseModuleAndCollectFunctions(effectiveModuleName, source, modulePath, mergeIntoMain);
 					return;
 				}
 				file.close();
@@ -367,7 +383,7 @@ namespace Qd {
 								buffer << file.rdbuf();
 								std::string source = buffer.str();
 								file.close();
-								parseModuleAndCollectFunctions(effectiveModuleName, source, modulePath);
+								parseModuleAndCollectFunctions(effectiveModuleName, source, modulePath, mergeIntoMain);
 								return;
 							}
 							file.close();
@@ -389,7 +405,7 @@ namespace Qd {
 					buffer << file.rdbuf();
 					std::string source = buffer.str();
 					file.close();
-					parseModuleAndCollectFunctions(effectiveModuleName, source, modulePath);
+					parseModuleAndCollectFunctions(effectiveModuleName, source, modulePath, mergeIntoMain);
 					return;
 				}
 				file.close();
@@ -405,7 +421,7 @@ namespace Qd {
 					buffer << file.rdbuf();
 					std::string source = buffer.str();
 					file.close();
-					parseModuleAndCollectFunctions(effectiveModuleName, source, modulePath);
+					parseModuleAndCollectFunctions(effectiveModuleName, source, modulePath, mergeIntoMain);
 					return;
 				}
 				file.close();
@@ -774,7 +790,7 @@ namespace Qd {
 	}
 
 	void SemanticValidator::parseModuleAndCollectFunctions(
-			const std::string& moduleName, const std::string& source, const std::string& filePath) {
+			const std::string& moduleName, const std::string& source, const std::string& filePath, bool mergeIntoMain) {
 		// Timing helper - only active when QUADC_TIMING is set
 		static bool timing = std::getenv("QUADC_TIMING") != nullptr;
 		auto timeLast = std::chrono::steady_clock::now();
@@ -805,8 +821,16 @@ namespace Qd {
 			cached.source = source;
 			cached.filePath = filePath;
 			mParsedModuleAsts[filePath] = std::move(cached);
+			// Track parsing order for dependency-aware type checking
+			mParsedModuleOrder.push_back(filePath);
 			// Update moduleAst to point to the cached version (we moved from it)
 			moduleAst.reset();
+		}
+
+		// Track this module as merged BEFORE processing nested imports
+		// This allows nested .qd file imports to check if their importer was merged
+		if (mergeIntoMain) {
+			mMergedModules.insert(moduleName);
 		}
 
 		// Process USE statements in the module first (to load .qd file imports)
@@ -836,6 +860,14 @@ namespace Qd {
 			mModuleFunctions[moduleName] = moduleFunctions;
 		}
 
+		// For local file imports that merge into main namespace, also register in direct lookup maps
+		// This allows unqualified access to definitions from included files
+		if (mergeIntoMain) {
+			for (const auto& func : moduleFunctions) {
+				mDefinedFunctions.insert(func.first);
+			}
+		}
+
 		// Collect constant definitions from the module
 		std::unordered_map<std::string, bool> moduleConstants;
 		collectModuleConstants(moduleAstRoot, moduleConstants);
@@ -851,8 +883,15 @@ namespace Qd {
 			mModuleConstants[moduleName] = moduleConstants;
 		}
 
+		// For local file imports that merge into main namespace, also register constants in direct lookup maps
+		if (mergeIntoMain) {
+			for (const auto& constant : moduleConstants) {
+				mDefinedConstants.insert(constant.first);
+			}
+		}
+
 		// Also collect constant values
-		collectModuleConstantValues(moduleAstRoot, moduleName);
+		collectModuleConstantValues(moduleAstRoot, moduleName, mergeIntoMain);
 
 		// Collect struct definitions from the module
 		std::unordered_map<std::string, bool> moduleStructs;
@@ -869,8 +908,17 @@ namespace Qd {
 			mModuleStructs[moduleName] = moduleStructs;
 		}
 
+		// For local file imports that merge into main namespace, also register structs in direct lookup maps
+		if (mergeIntoMain) {
+			for (const auto& structEntry : moduleStructs) {
+				mDefinedStructs.insert(structEntry.first);
+			}
+			// Track this module as merged for struct type equivalence checking
+			mMergedModules.insert(moduleName);
+		}
+
 		// Also collect struct field types so field access validation works
-		collectModuleStructFieldTypes(moduleAstRoot, moduleName);
+		collectModuleStructFieldTypes(moduleAstRoot, moduleName, mergeIntoMain);
 
 		// Collect struct methods from the module
 		collectModuleMethods(moduleAstRoot, moduleName);
@@ -892,7 +940,7 @@ namespace Qd {
 
 		// Analyze function signatures for module functions
 		// We use a simplified analysis since we don't need iterative convergence for modules
-		analyzeModuleFunctionSignatures(moduleAstRoot, moduleName);
+		analyzeModuleFunctionSignatures(moduleAstRoot, moduleName, mergeIntoMain);
 	}
 
 	void SemanticValidator::collectModuleFunctions(IAstNode* node, std::unordered_map<std::string, bool>& functions) {
@@ -989,7 +1037,8 @@ namespace Qd {
 		}
 	}
 
-	void SemanticValidator::collectModuleStructFieldTypes(IAstNode* node, const std::string& moduleName) {
+	void SemanticValidator::collectModuleStructFieldTypes(
+			IAstNode* node, const std::string& moduleName, bool mergeIntoMain) {
 		if (!node) {
 			return;
 		}
@@ -999,7 +1048,14 @@ namespace Qd {
 			AstNodeStructDeclaration* structDecl = static_cast<AstNodeStructDeclaration*>(node);
 			// Use qualified key for module structs (e.g., "vec2::Vec2")
 			std::string qualifiedName = moduleName + "::" + structDecl->name();
+			std::string unqualifiedName = structDecl->name();
 			mModuleStructDeclarations[qualifiedName] = structDecl;
+			// For local file imports that merge into main namespace, also register with unqualified name
+			if (mergeIntoMain) {
+				mModuleStructDeclarations[unqualifiedName] = structDecl;
+				// Also register in mStructDeclarations for direct unqualified lookup
+				mStructDeclarations[unqualifiedName] = structDecl;
+			}
 			std::unordered_map<std::string, StackValueType> fieldTypes;
 			std::vector<std::string> fieldOrder;
 			std::unordered_set<std::string> seenFieldNames;
@@ -1025,25 +1081,38 @@ namespace Qd {
 					fieldType = StackValueType::STRING;
 				} else if (typeName == "ptr" || typeName.find('*') != std::string::npos) {
 					fieldType = StackValueType::PTR;
-				} else if (!typeName.empty() && std::isupper(typeName[0])) {
+				} else if (looksLikeStructType(typeName)) {
 					// Struct type - treat as PTR and record the struct type name
 					fieldType = StackValueType::PTR;
 					mStructFieldStructTypes[qualifiedName][field->name()] = typeName;
+					// For local file imports that merge into main namespace, also register with unqualified name
+					if (mergeIntoMain) {
+						mStructFieldStructTypes[unqualifiedName][field->name()] = typeName;
+					}
 				}
 				fieldTypes[field->name()] = fieldType;
 
 				// Track fields with default values
 				if (field->hasDefaultValue()) {
 					mStructFieldsWithDefaults[qualifiedName].insert(field->name());
+					// For local file imports that merge into main namespace, also register with unqualified name
+					if (mergeIntoMain) {
+						mStructFieldsWithDefaults[unqualifiedName].insert(field->name());
+					}
 				}
 			}
 			mStructFieldTypes[qualifiedName] = fieldTypes;
 			mStructFieldOrder[qualifiedName] = fieldOrder;
+			// For local file imports that merge into main namespace, also register with unqualified name
+			if (mergeIntoMain) {
+				mStructFieldTypes[unqualifiedName] = fieldTypes;
+				mStructFieldOrder[unqualifiedName] = fieldOrder;
+			}
 		}
 
 		// Recursively process children
 		for (auto* child : node->children()) {
-			collectModuleStructFieldTypes(child, moduleName);
+			collectModuleStructFieldTypes(child, moduleName, mergeIntoMain);
 		}
 	}
 
@@ -1077,7 +1146,8 @@ namespace Qd {
 		}
 	}
 
-	void SemanticValidator::collectModuleConstantValues(IAstNode* node, const std::string& moduleName) {
+	void SemanticValidator::collectModuleConstantValues(
+			IAstNode* node, const std::string& moduleName, bool mergeIntoMain) {
 		if (!node) {
 			return;
 		}
@@ -1087,15 +1157,22 @@ namespace Qd {
 			AstNodeConstant* constNode = static_cast<AstNodeConstant*>(node);
 			std::string qualifiedName = moduleName + "::" + constNode->name();
 			mModuleConstantValues[qualifiedName] = constNode->value();
+			// For local file imports that merge into main namespace, also register with unqualified name
+			if (mergeIntoMain) {
+				mModuleConstantValues[constNode->name()] = constNode->value();
+				// Also register in mConstantValues for direct unqualified lookup
+				mConstantValues[constNode->name()] = constNode->value();
+			}
 		}
 
 		// Recursively process children
 		for (auto* child : node->children()) {
-			collectModuleConstantValues(child, moduleName);
+			collectModuleConstantValues(child, moduleName, mergeIntoMain);
 		}
 	}
 
-	void SemanticValidator::analyzeModuleFunctionSignatures(IAstNode* node, const std::string& moduleName) {
+	void SemanticValidator::analyzeModuleFunctionSignatures(
+			IAstNode* node, const std::string& moduleName, bool mergeIntoMain) {
 		if (!node) {
 			return;
 		}
@@ -1170,8 +1247,13 @@ namespace Qd {
 					// Struct type - treat as PTR but track the struct type
 					sig.consumes.push_back(StackValueType::PTR);
 					// Qualify struct type with module name if not already qualified
+					// For "main" namespace or merged modules, keep unqualified to match local struct definitions
 					if (typeStr.find("::") == std::string::npos) {
-						sig.parameterStructTypes[i] = moduleName + "::" + typeStr;
+						if (moduleName == "main" || mergeIntoMain) {
+							sig.parameterStructTypes[i] = typeStr;
+						} else {
+							sig.parameterStructTypes[i] = moduleName + "::" + typeStr;
+						}
 					} else {
 						sig.parameterStructTypes[i] = typeStr;
 					}
@@ -1199,8 +1281,13 @@ namespace Qd {
 					} else if (isStructTypeName(typeStr)) {
 						sig.produces.push_back(StackValueType::PTR);
 						// Qualify struct type with module name if not already qualified
+						// For "main" namespace or merged modules, keep unqualified to match local struct definitions
 						if (typeStr.find("::") == std::string::npos) {
-							sig.producesStructTypes[i] = moduleName + "::" + typeStr;
+							if (moduleName == "main" || mergeIntoMain) {
+								sig.producesStructTypes[i] = typeStr;
+							} else {
+								sig.producesStructTypes[i] = moduleName + "::" + typeStr;
+							}
 						} else {
 							sig.producesStructTypes[i] = typeStr;
 						}
@@ -1225,7 +1312,12 @@ namespace Qd {
 				}
 				std::string receiverType = func->receiverType();
 				if (receiverType.find("::") == std::string::npos) {
-					newParamStructTypes[0] = moduleName + "::" + receiverType;
+					// For "main" namespace or merged modules, keep unqualified
+					if (moduleName == "main" || mergeIntoMain) {
+						newParamStructTypes[0] = receiverType;
+					} else {
+						newParamStructTypes[0] = moduleName + "::" + receiverType;
+					}
 				} else {
 					newParamStructTypes[0] = receiverType;
 				}
@@ -1285,8 +1377,13 @@ namespace Qd {
 						// Struct type - treat as PTR but track the struct type
 						sig.consumes.push_back(StackValueType::PTR);
 						// Qualify struct type with module name if not already qualified
+						// For merged modules, keep unqualified to match local struct definitions
 						if (typeStr.find("::") == std::string::npos) {
-							sig.parameterStructTypes[i] = moduleName + "::" + typeStr;
+							if (mergeIntoMain) {
+								sig.parameterStructTypes[i] = typeStr;
+							} else {
+								sig.parameterStructTypes[i] = moduleName + "::" + typeStr;
+							}
 						} else {
 							sig.parameterStructTypes[i] = typeStr;
 						}
@@ -1319,8 +1416,13 @@ namespace Qd {
 					} else if (isStructTypeName(typeStr)) {
 						sig.produces.push_back(StackValueType::PTR);
 						// Qualify struct type with module name if not already qualified
+						// For merged modules, keep unqualified to match local struct definitions
 						if (typeStr.find("::") == std::string::npos) {
-							sig.producesStructTypes[i] = moduleName + "::" + typeStr;
+							if (mergeIntoMain) {
+								sig.producesStructTypes[i] = typeStr;
+							} else {
+								sig.producesStructTypes[i] = moduleName + "::" + typeStr;
+							}
 						} else {
 							sig.producesStructTypes[i] = typeStr;
 						}
@@ -1340,7 +1442,7 @@ namespace Qd {
 
 		// Recursively process children
 		for (auto* child : node->children()) {
-			analyzeModuleFunctionSignatures(child, moduleName);
+			analyzeModuleFunctionSignatures(child, moduleName, mergeIntoMain);
 		}
 	}
 

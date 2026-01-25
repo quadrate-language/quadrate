@@ -18,6 +18,7 @@ struct ParsedModule {
 	std::vector<std::string> importedModules;
 	bool hasFFIImports = false;			 // True if module uses FFI (import statement)
 	bool hasNativeStdlibModules = false; // True if module uses stdlib modules with native code
+	bool mergeIntoMain = false;			 // True if this is a local file import that should merge into main namespace
 };
 
 #endif

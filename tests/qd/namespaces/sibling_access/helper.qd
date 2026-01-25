@@ -1,0 +1,17 @@
+// Helper file - no pub needed for same-namespace access
+
+fn helper_add(a:i64 b:i64 -- c:i64) {
+	a b +
+}
+
+const MAGIC_NUMBER = 42
+
+struct Point {
+	x:i64
+	y:i64
+}
+
+fn point_sum(p:Point -- sum:i64) {
+	-> p
+	p @x p @y +
+}

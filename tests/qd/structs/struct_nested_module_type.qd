@@ -1,0 +1,29 @@
+// Test struct with nested struct from imported module
+// This tests that field offsets are correct when the nested type
+// comes from a different module (like math::Vec3)
+use math
+
+struct Container {
+	v:math::Vec3
+	scalar:f64
+}
+
+fn main() {
+	// Create a Vec3 and container
+	math::Vec3 { x = 1.0, y = 2.0, z = 3.0 } -> vec
+	Container { v = vec, scalar = 42.0 } -> c
+
+	// Access scalar field (should be 42)
+	c @scalar print nl
+
+	// Access nested Vec3 fields
+	c @v -> vptr
+	vptr @x print nl
+	vptr @y print nl
+	vptr @z print nl
+
+	// Verify via chained access
+	c @v @x print nl
+	c @v @y print nl
+	c @v @z print nl
+}

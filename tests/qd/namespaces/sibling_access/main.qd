@@ -1,0 +1,18 @@
+// Test directory-based namespace: sibling files share namespace
+// No explicit imports needed for files in same directory
+
+fn main() {
+	// Call function from sibling file
+	3 4 helper_add print nl
+
+	// Access constant from sibling file
+	MAGIC_NUMBER print nl
+
+	// Create struct from sibling file
+	Point { x = 10, y = 20 } -> p
+	p point_sum print nl
+
+	// Direct field access
+	p @x print nl
+	p @y print nl
+}

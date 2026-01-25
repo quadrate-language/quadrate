@@ -664,6 +664,13 @@ namespace Qd {
 				}
 			} else {
 				registerName = (namePrefix == "main") ? funcNode->name() : (namePrefix + "::" + funcNode->name());
+
+				// For merged modules (local file imports), also register with unqualified name
+				// This allows calling functions without the module prefix
+				if (namePrefix != "main" && mergedModules.count(namePrefix) > 0) {
+					userFunctions[funcNode->name()] = fn;
+					fallibleFunctions[funcNode->name()] = funcNode->throws();
+				}
 			}
 			userFunctions[registerName] = fn;
 			fallibleFunctions[registerName] = funcNode->throws();
@@ -912,6 +919,63 @@ namespace Qd {
 		}
 
 		return true;
+	}
+
+	bool LlvmGenerator::Impl::declareFunction(AstNodeFunctionDeclaration* funcNode, const std::string& namePrefix) {
+		// Create LLVM function declaration and register in userFunctions
+		// This is a pre-pass to ensure all functions are known before generating bodies
+
+		std::string fnName;
+		if (funcNode->hasReceiver()) {
+			fnName = "usr_" + namePrefix + "_" + funcNode->receiverType() + "_" + funcNode->name();
+		} else {
+			fnName = "usr_" + namePrefix + "_" + funcNode->name();
+		}
+
+		// Check if function was already declared
+		llvm::Function* fn = module->getFunction(fnName);
+		if (!fn) {
+			auto fnTy = llvm::FunctionType::get(execResultTy, {contextPtrTy}, false);
+			auto linkage = exportMode ? llvm::Function::ExternalLinkage : llvm::Function::InternalLinkage;
+			fn = llvm::Function::Create(fnTy, linkage, fnName, *module);
+		}
+
+		// Register the function with appropriate scope
+		std::string registerName;
+		if (funcNode->hasReceiver()) {
+			std::string qualifiedReceiverType = funcNode->receiverType();
+			if (namePrefix != "main" && qualifiedReceiverType.find("::") == std::string::npos) {
+				qualifiedReceiverType = namePrefix + "::" + qualifiedReceiverType;
+			}
+			registerName = qualifiedReceiverType + "::" + funcNode->name();
+
+			// Also register with unqualified struct type for intra-module method calls
+			std::string unqualifiedRegisterName = funcNode->receiverType() + "::" + funcNode->name();
+			if (unqualifiedRegisterName != registerName) {
+				userFunctions[unqualifiedRegisterName] = fn;
+				fallibleFunctions[unqualifiedRegisterName] = funcNode->throws();
+			}
+		} else {
+			registerName = (namePrefix == "main") ? funcNode->name() : (namePrefix + "::" + funcNode->name());
+
+			// For merged modules (local file imports), also register with unqualified name
+			// This allows calling functions without the module prefix
+			if (namePrefix != "main" && mergedModules.count(namePrefix) > 0) {
+				userFunctions[funcNode->name()] = fn;
+				fallibleFunctions[funcNode->name()] = funcNode->throws();
+			}
+		}
+		userFunctions[registerName] = fn;
+		fallibleFunctions[registerName] = funcNode->throws();
+
+		return true;
+	}
+
+	bool LlvmGenerator::Impl::generateFunctionBody(
+			AstNodeFunctionDeclaration* funcNode, bool isMain, const std::string& namePrefix) {
+		// Generate the function body - function should already be declared in pre-pass
+		// This just delegates to generateFunction, which will find the already-declared function
+		return generateFunction(funcNode, isMain, namePrefix);
 	}
 
 	bool LlvmGenerator::Impl::generateTest(AstNodeTest* testNode, const std::string& namePrefix) {
@@ -1440,16 +1504,15 @@ namespace Qd {
 		}
 		printTiming("computeReachability");
 
-		// First pass: generate functions from all loaded modules (in dependency order)
+		// First pass: DECLARE all functions from all loaded modules
+		// This ensures all functions are registered in userFunctions before any bodies are generated.
+		// This is crucial for merged modules where cross-module calls need to resolve correctly.
 		for (const auto& modulePair : moduleASTs) {
 			const std::string& moduleName = modulePair.first;
 			IAstNode* moduleRoot = modulePair.second;
 			if (!moduleRoot) {
 				continue;
 			}
-
-			// Set current module name for struct lookups during code generation
-			currentModuleName = moduleName;
 
 			for (auto* child : moduleRoot->children()) {
 				if (auto funcNode = dynamic_cast<AstNodeFunctionDeclaration*>(child)) {
@@ -1481,19 +1544,59 @@ namespace Qd {
 						}
 					}
 
-					// Skip generating IR for unreachable functions (saves significant time)
+					// Skip declaring unreachable functions
 					if (useReachabilityAnalysis) {
 						bool isReachable =
 								reachableFunctions.count(qualifiedName) || reachableFunctions.count(funcNode->name()) ||
 								(funcNode->hasReceiver() &&
 										reachableFunctions.count(funcNode->receiverType() + "::" + funcNode->name()));
 						if (!isReachable) {
-							continue; // Skip this function - not reachable from main
+							continue;
 						}
 					}
 
-					// Generate module function with module name as prefix
-					if (!generateFunction(funcNode, false, moduleName)) {
+					// Declare the function (creates LLVM function and registers in userFunctions)
+					if (!declareFunction(funcNode, moduleName)) {
+						return false;
+					}
+				}
+			}
+		}
+		printTiming("declareModuleFunctions");
+
+		// Second pass: GENERATE function bodies from all loaded modules
+		for (const auto& modulePair : moduleASTs) {
+			const std::string& moduleName = modulePair.first;
+			IAstNode* moduleRoot = modulePair.second;
+			if (!moduleRoot) {
+				continue;
+			}
+
+			// Set current module name for struct lookups during code generation
+			currentModuleName = moduleName;
+
+			for (auto* child : moduleRoot->children()) {
+				if (auto funcNode = dynamic_cast<AstNodeFunctionDeclaration*>(child)) {
+					std::string qualifiedName;
+					if (funcNode->hasReceiver()) {
+						qualifiedName = moduleName + "::" + funcNode->receiverType() + "::" + funcNode->name();
+					} else {
+						qualifiedName = moduleName + "::" + funcNode->name();
+					}
+
+					// Skip generating bodies for unreachable functions
+					if (useReachabilityAnalysis) {
+						bool isReachable =
+								reachableFunctions.count(qualifiedName) || reachableFunctions.count(funcNode->name()) ||
+								(funcNode->hasReceiver() &&
+										reachableFunctions.count(funcNode->receiverType() + "::" + funcNode->name()));
+						if (!isReachable) {
+							continue;
+						}
+					}
+
+					// Generate module function body with module name as prefix
+					if (!generateFunctionBody(funcNode, false, moduleName)) {
 						currentModuleName = ""; // Reset on error
 						return false;
 					}
@@ -1708,14 +1811,17 @@ namespace Qd {
 		return mImpl->generateProgram(root);
 	}
 
-	void LlvmGenerator::addModuleAST(
-			const std::string& moduleName, IAstNode* moduleRoot, const std::string& sourceFileName) {
+	void LlvmGenerator::addModuleAST(const std::string& moduleName, IAstNode* moduleRoot,
+			const std::string& sourceFileName, bool mergeIntoMain) {
 		if (!mImpl) {
 			mImpl = std::make_unique<Impl>("quadrate_module");
 		}
 		mImpl->moduleASTs.push_back({moduleName, moduleRoot});
 		if (!sourceFileName.empty()) {
 			mImpl->moduleSourceFiles[moduleName] = sourceFileName;
+		}
+		if (mergeIntoMain) {
+			mImpl->mergedModules.insert(moduleName);
 		}
 	}
 

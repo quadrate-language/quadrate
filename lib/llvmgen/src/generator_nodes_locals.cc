@@ -336,6 +336,10 @@ namespace Qd {
 		if (!lastStructConstructed.empty()) {
 			localVariableStructTypes[name] = lastStructConstructed;
 			lastStructConstructed.clear();
+		} else if (!lastFieldAccessResultType.empty()) {
+			// Also track struct type from field access results (e.g., c @v -> vptr where v is Vec3)
+			localVariableStructTypes[name] = lastFieldAccessResultType;
+			lastFieldAccessResultType.clear();
 		}
 		// NOTE: We do NOT retain when storing to a local.
 		// Refcount management is handled by retaining when PUSHING a local to pass to a function,

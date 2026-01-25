@@ -21,9 +21,17 @@ Qd::IAstNode* AstCache::getOrParse(
 		const std::string& filePath, Qd::Ast** outAst, std::string* outSource, bool* outFromCache) {
 	std::string canonicalPath = canonicalize(filePath);
 
+	static bool debug = std::getenv("QUADC_DEBUG_MERGE") != nullptr;
+	if (debug) {
+		std::cerr << "[DEBUG CACHE] getOrParse: " << filePath << " -> canonical: " << canonicalPath << std::endl;
+	}
+
 	// Check cache for successful parse
 	auto it = mCache.find(canonicalPath);
 	if (it != mCache.end()) {
+		if (debug) {
+			std::cerr << "[DEBUG CACHE]   HIT - using cached AST" << std::endl;
+		}
 		if (outAst) {
 			*outAst = it->second.ast.get();
 		}
@@ -34,6 +42,9 @@ Qd::IAstNode* AstCache::getOrParse(
 			*outFromCache = true;
 		}
 		return it->second.root;
+	}
+	if (debug) {
+		std::cerr << "[DEBUG CACHE]   MISS - will parse fresh" << std::endl;
 	}
 
 	if (outFromCache) {
@@ -86,16 +97,28 @@ Qd::IAstNode* AstCache::getOrParse(
 }
 
 void AstCache::importFromValidator(Qd::SemanticValidator& validator) {
+	static bool debug = std::getenv("QUADC_DEBUG_MERGE") != nullptr;
 	for (auto& [path, cached] : validator.getParsedModuleAsts()) {
 		std::string canonicalPath = canonicalize(path);
 
+		if (debug) {
+			std::cerr << "[DEBUG CACHE] importFromValidator: " << path << " -> canonical: " << canonicalPath << std::endl;
+		}
+
 		// Only import if not already cached
 		if (mCache.find(canonicalPath) == mCache.end()) {
+			if (debug) {
+				std::cerr << "[DEBUG CACHE]   Importing AST to cache" << std::endl;
+			}
 			CachedAst entry;
 			entry.ast = std::move(cached.ast);
 			entry.root = cached.root;
 			entry.source = std::move(cached.source);
 			mCache[canonicalPath] = std::move(entry);
+		} else {
+			if (debug) {
+				std::cerr << "[DEBUG CACHE]   Already cached, skipping" << std::endl;
+			}
 		}
 	}
 }

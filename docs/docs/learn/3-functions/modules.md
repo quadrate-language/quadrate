@@ -30,6 +30,43 @@ fn main() {
 }
 ```
 
+## Directory-based namespaces
+
+Files in the same directory automatically share a namespace. This means you can split your code across multiple files without explicit imports:
+
+```
+myproject/
+  main.qd      // Entry point
+  helpers.qd   // Helper functions
+  types.qd     // Struct definitions
+```
+
+```qd
+// types.qd
+struct Point {
+	x:f64
+	y:f64
+}
+
+fn point_add(a:Point b:Point -- c:Point) {
+	-> b -> a
+	Point { x = a @x b @x +, y = a @y b @y + }
+}
+```
+
+```qd
+// main.qd
+fn main() {
+	// Point and point_add are automatically available
+	Point { x = 1.0, y = 2.0 } -> p1
+	Point { x = 3.0, y = 4.0 } -> p2
+	p1 p2 point_add -> p3
+	p3 @x print nl  // 4.0
+}
+```
+
+No `use` statement is needed for files in the same directory.
+
 ## Standard library modules
 
 Quadrate includes many built-in modules:
@@ -85,24 +122,28 @@ fn main() {
 
 ## Creating your own modules
 
-A module is a folder containing `.qd` files. All `.qd` files in the folder are included as part of the module. Functions marked with `pub` are accessible from outside.
+A module is a folder containing `.qd` files. All `.qd` files in the folder share the same namespace. Functions marked with `pub` are accessible from outside the module.
 
 Create a folder `mymath/` with source files inside:
 
 ```qd
-// mymath/math.qd
+// mymath/helpers.qd
+
+// Private helper (no pub keyword) - only visible within mymath/
+fn square_internal(x:i64 -- result:i64) {
+	dup *
+}
+```
+
+```qd
+// mymath/api.qd
 
 pub fn square(x:i64 -- result:i64) {
-	dup *
+	square_internal  // Can call functions from helpers.qd
 }
 
 pub fn cube(x:i64 -- result:i64) {
-	dup dup * *
-}
-
-// Private helper (no pub keyword)
-fn helper(x:i64 -- y:i64) {
-	1 +
+	dup square_internal *
 }
 ```
 
@@ -117,30 +158,9 @@ fn main() {
 }
 ```
 
-## Including single files
-
-You can also include a single `.qd` file directly:
-
-```qd
-// utils.qd
-pub fn double(x:i64 -- result:i64) {
-	2 *
-}
-```
-
-```qd
-use utils.qd
-
-fn main() {
-	5 utils::double print nl  // 10
-}
-```
-
-Note the `.qd` extension in the `use` statement.
-
 ## Public vs private
 
-Use `pub` to mark functions that can be called from outside the module:
+Use `pub` to mark symbols that can be accessed from outside the module:
 
 ```qd
 // mymodule/mymodule.qd
@@ -149,17 +169,36 @@ pub fn public_function(x:i64 -- result:i64) {
 	helper 2 *
 }
 
-// No pub - only callable within this module
+pub const PUBLIC_VALUE = 42
+
+pub struct PublicStruct {
+	data:i64
+}
+
+// No pub - only accessible within this module's directory
 fn helper(x:i64 -- y:i64) {
 	1 +
 }
+
+const PRIVATE_VALUE = 99
+
+struct PrivateStruct {
+	secret:i64
+}
+```
+
+Trying to access private symbols from outside the module will result in a compile error:
+
+```
+error: Function 'helper' in module 'mymodule' is private and cannot be accessed
+       from outside the module. Mark it as 'pub fn' to export it.
 ```
 
 ## Module structure
 
 A typical module contains:
 
-1. **Imports** at the top
+1. **Imports** at the top (for external modules like `math`)
 2. **Constants** and **structs**
 3. **Public functions** (marked with `pub`)
 4. **Private helper functions**

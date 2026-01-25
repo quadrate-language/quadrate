@@ -56,6 +56,25 @@ inline std::string getPackageFromModuleName(const std::string& moduleName) {
 	return moduleName;
 }
 
+// Check if a type name looks like a struct type
+// Supports both unqualified (Point) and qualified (math::Vec3) names
+inline bool looksLikeStructType(const std::string& typeName) {
+	if (typeName.empty()) {
+		return false;
+	}
+	// Check for qualified name (module::StructName)
+	size_t colonPos = typeName.find("::");
+	if (colonPos != std::string::npos) {
+		// Check the character after ::
+		if (colonPos + 2 < typeName.size()) {
+			return std::isupper(typeName[colonPos + 2]);
+		}
+		return false;
+	}
+	// Unqualified name - check first character
+	return std::isupper(typeName[0]);
+}
+
 // Check if a name is a reserved keyword
 inline bool isReservedKeyword(const std::string& name) {
 	static const std::unordered_set<std::string> KEYWORDS = {"if", "else", "for", "while", "loop", "switch", "case",
@@ -213,6 +232,39 @@ inline std::string findSimilarFunctionName(
 	}
 	// Then check builtins
 	return findSimilarNameInArray(name, BUILTIN_INSTRUCTIONS, BUILTIN_INSTRUCTION_COUNT);
+}
+
+// Check if two struct types are equivalent, considering merged modules
+// For merged modules, "module::Struct" and "Struct" are equivalent
+inline bool structTypesMatch(const std::string& actual, const std::string& expected,
+		const std::unordered_set<std::string>& mergedModules) {
+	// Direct match
+	if (actual == expected) {
+		return true;
+	}
+
+	// Check if expected is "module::Struct" and actual is "Struct" (or vice versa)
+	size_t colonPos = expected.find("::");
+	if (colonPos != std::string::npos) {
+		std::string moduleName = expected.substr(0, colonPos);
+		std::string structName = expected.substr(colonPos + 2);
+		// If the module is merged and actual matches the unqualified struct name
+		if (mergedModules.count(moduleName) > 0 && actual == structName) {
+			return true;
+		}
+	}
+
+	// Check the reverse: actual is "module::Struct", expected is "Struct"
+	colonPos = actual.find("::");
+	if (colonPos != std::string::npos) {
+		std::string moduleName = actual.substr(0, colonPos);
+		std::string structName = actual.substr(colonPos + 2);
+		if (mergedModules.count(moduleName) > 0 && expected == structName) {
+			return true;
+		}
+	}
+
+	return false;
 }
 
 // Get all .qd files in a directory, sorted alphabetically

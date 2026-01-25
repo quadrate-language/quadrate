@@ -137,6 +137,13 @@ namespace Qd {
 			mSource = source;
 		}
 
+		// Set sibling files for directory-based namespace system
+		// These files are in the same directory as the main file and will be
+		// automatically merged into the main namespace without explicit imports
+		void setSiblingFiles(const std::vector<std::string>& files) {
+			mSiblingFiles = files;
+		}
+
 		// Get cached parsed module ASTs (populated during validation)
 		// Key: file path, Value: ParsedModuleAst with AST ownership
 		std::unordered_map<std::string, ParsedModuleAst>& getParsedModuleAsts() {
@@ -155,14 +162,14 @@ namespace Qd {
 		// Helper: Try to load a module from a directory (module.qd or glob *.qd)
 		bool tryLoadModuleFromDirectory(const std::string& moduleDir, const std::string& moduleName);
 
-		void parseModuleAndCollectFunctions(
-				const std::string& moduleName, const std::string& source, const std::string& filePath);
+		void parseModuleAndCollectFunctions(const std::string& moduleName, const std::string& source,
+				const std::string& filePath, bool mergeIntoMain = false);
 
 		void collectModuleFunctions(IAstNode* node, std::unordered_map<std::string, bool>& functions);
 		void collectModuleConstants(IAstNode* node, std::unordered_map<std::string, bool>& constants);
-		void collectModuleConstantValues(IAstNode* node, const std::string& moduleName);
+		void collectModuleConstantValues(IAstNode* node, const std::string& moduleName, bool mergeIntoMain = false);
 		void collectModuleStructs(IAstNode* node, std::unordered_map<std::string, bool>& structs);
-		void collectModuleStructFieldTypes(IAstNode* node, const std::string& moduleName);
+		void collectModuleStructFieldTypes(IAstNode* node, const std::string& moduleName, bool mergeIntoMain = false);
 		void collectModuleMethods(IAstNode* node, const std::string& moduleName);
 
 		// Helper: Look up struct field types, handling both qualified and unqualified names
@@ -171,7 +178,7 @@ namespace Qd {
 		void collectModuleImportedFunctions(IAstNode* node, const std::string& moduleName,
 				std::unordered_map<std::string, ImportedFunctionInfo>& imports);
 
-		void analyzeModuleFunctionSignatures(IAstNode* node, const std::string& moduleName);
+		void analyzeModuleFunctionSignatures(IAstNode* node, const std::string& moduleName, bool mergeIntoMain = false);
 
 		// Pass 2: Validate all function calls and references
 		void validateReferences(IAstNode* node);
@@ -331,6 +338,10 @@ namespace Qd {
 		// Module directories: maps module name -> directory path where module was found
 		std::unordered_map<std::string, std::string> mModuleDirectories;
 
+		// Modules merged into main namespace (local file imports)
+		// For these modules, "Module::Struct" and "Struct" are equivalent types
+		std::unordered_set<std::string> mMergedModules;
+
 		// Function signatures: stack effect of each function
 		std::unordered_map<std::string, FunctionSignature> mFunctionSignatures;
 
@@ -393,6 +404,12 @@ namespace Qd {
 		// Cached parsed module ASTs - populated during validation for reuse by callers
 		// Key: file path, Value: ParsedModuleAst with AST ownership
 		std::unordered_map<std::string, ParsedModuleAst> mParsedModuleAsts;
+		// Order in which modules were parsed (for dependency-aware processing)
+		std::vector<std::string> mParsedModuleOrder;
+
+		// Sibling files for directory-based namespace system
+		// These are automatically merged into the main namespace
+		std::vector<std::string> mSiblingFiles;
 	};
 
 } // namespace Qd

@@ -1,0 +1,14 @@
+// Test local file import from top-level file
+// Functions and constants should be merged into main namespace
+use "helper.qd"
+
+fn main() {
+	// Access constant without prefix
+	MAGIC print nl
+
+	// Access functions without prefix
+	10 triple print nl
+
+	// Chain functions
+	5 triple add_magic print nl
+}

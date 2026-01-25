@@ -605,8 +605,22 @@ namespace Qd {
 				auto moduleIt = mModuleStructs.find(moduleName);
 				if (moduleIt != mModuleStructs.end()) {
 					const auto& structs = moduleIt->second;
-					if (structs.find(unqualifiedName) != structs.end() && structs.at(unqualifiedName)) {
-						validStruct = true;
+					auto structIt = structs.find(unqualifiedName);
+					if (structIt != structs.end()) {
+						if (structIt->second) {
+							// Struct is public - valid
+							validStruct = true;
+						} else {
+							// Struct exists but is private - report visibility error
+							std::string errorMsg = "Struct '";
+							errorMsg += unqualifiedName;
+							errorMsg += "' in module '";
+							errorMsg += moduleName;
+							errorMsg += "' is private and cannot be accessed from outside the module. Mark it as "
+										"'pub struct' to export it.";
+							reportError(construct, errorMsg.c_str());
+							return;
+						}
 					}
 				}
 			} else {
