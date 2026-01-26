@@ -1544,6 +1544,15 @@ namespace Qd {
 						}
 					}
 
+					// For merged modules, also register return struct type with unqualified name
+					// This allows sibling function calls to properly track struct return types
+					if (!funcNode->hasReceiver() && mergedModules.count(moduleName) > 0) {
+						auto retIt = functionReturnStructType.find(qualifiedName);
+						if (retIt != functionReturnStructType.end()) {
+							functionReturnStructType[funcNode->name()] = retIt->second;
+						}
+					}
+
 					// Skip declaring unreachable functions
 					if (useReachabilityAnalysis) {
 						bool isReachable =

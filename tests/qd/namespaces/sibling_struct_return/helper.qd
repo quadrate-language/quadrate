@@ -1,0 +1,13 @@
+// Test struct returns from sibling function calls work correctly
+use math
+
+struct State {
+	pos:math::Vec3
+}
+
+// Function that returns a struct from a method call
+fn normalize_pos(s:State -- n:math::Vec3) {
+	-> s
+	s @pos -> p
+	p normalize
+}

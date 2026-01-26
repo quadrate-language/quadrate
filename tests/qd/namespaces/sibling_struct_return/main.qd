@@ -1,0 +1,20 @@
+// Test struct returns from sibling functions work correctly
+use math
+use fmt
+
+fn main() {
+	math::Vec3 { x = 3.0, y = 4.0, z = 0.0 } -> pos
+	State { pos = pos } -> s
+
+	// Direct normalize works
+	pos normalize -> n1
+	n1 @x "Direct: %.2f " fmt::printf
+	n1 @y "%.2f " fmt::printf
+	n1 @z "%.2f\n" fmt::printf
+
+	// Through sibling function - should produce same result
+	s normalize_pos -> n2
+	n2 @x "Sibling: %.2f " fmt::printf
+	n2 @y "%.2f " fmt::printf
+	n2 @z "%.2f\n" fmt::printf
+}
