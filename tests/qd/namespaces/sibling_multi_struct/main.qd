@@ -1,0 +1,21 @@
+// Test: sibling defines multiple structs all referencing main's type
+
+struct Point2D {
+	x:f64
+	y:f64
+}
+
+fn main() {
+	Point2D { x = 1.0, y = 2.0 } -> v
+
+	// Create Line (two Point2D endpoints)
+	v Point2D { x = 4.0, y = 6.0 } make_line -> line
+	line line_length print nl
+
+	// Create Triangle (three Point2D vertices)
+	Point2D { x = 0.0, y = 0.0 } -> a
+	Point2D { x = 3.0, y = 0.0 } -> b
+	Point2D { x = 0.0, y = 4.0 } -> c
+	a b c make_triangle -> tri
+	tri triangle_perimeter print nl
+}

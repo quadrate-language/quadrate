@@ -1,0 +1,12 @@
+// types.qd - defines Item struct that uses Config from main
+
+struct Item {
+	config:Config
+	value:i64
+}
+
+fn create_item(cfg:Config val:i64 -- item:Item) {
+	-> val -> cfg
+	// Apply config's multiplier to value
+	Item { config = cfg, value = val cfg @multiplier * }
+}

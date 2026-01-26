@@ -484,10 +484,52 @@ namespace Qd {
 		// Directory-based namespace: load sibling files as merged modules
 		// This makes symbols from sibling files available without explicit imports
 		//
-		// Two-pass approach to handle dependencies between sibling files:
+		// Three-pass approach to handle dependencies between sibling files:
+		// Pass 0: Collect definitions from main file first (so siblings can reference main file types)
 		// Pass 1: Parse all siblings and collect definitions (structs, functions)
 		// Pass 2: Validate function signatures (requires all types to be known)
 		static bool debugSibling = std::getenv("QUADC_DEBUG_SIBLING") != nullptr;
+
+		// Pass 0: Pre-collect main file's definitions so siblings can reference them
+		// This is crucial for directory-based namespaces where any file can reference types from any other
+		if (!mSiblingFiles.empty()) {
+			if (debugSibling) {
+				std::cerr << "[DEBUG SIBLING] Pass 0: Pre-collecting main file definitions" << std::endl;
+			}
+
+			// Collect structs from main file
+			std::unordered_map<std::string, bool> mainStructs;
+			collectModuleStructs(program, mainStructs);
+			for (const auto& s : mainStructs) {
+				mDefinedStructs.insert(s.first);
+				mPreCollectedStructs.insert(s.first); // Track for duplicate check bypass
+			}
+
+			// Collect struct field types and declarations
+			collectModuleStructFieldTypes(program, "main", true);
+
+			// Collect constants from main file
+			std::unordered_map<std::string, bool> mainConstants;
+			collectModuleConstants(program, mainConstants);
+			for (const auto& c : mainConstants) {
+				mDefinedConstants.insert(c.first);
+				mPreCollectedConstants.insert(c.first); // Track for duplicate check bypass
+			}
+			collectModuleConstantValues(program, "main", true);
+
+			// Note: We don't collect functions in pass 0 because collectDefinitions()
+			// will add them later and includes duplicate checking. Functions are not needed
+			// for type resolution in sibling files - only structs and constants are.
+
+			if (debugSibling) {
+				std::cerr << "[DEBUG SIBLING] After pass 0, mDefinedStructs: ";
+				for (const auto& s : mDefinedStructs) {
+					std::cerr << s << " ";
+				}
+				std::cerr << std::endl;
+			}
+		}
+
 		if (debugSibling && !mSiblingFiles.empty()) {
 			std::cerr << "[DEBUG SIBLING] Loading " << mSiblingFiles.size()
 					  << " sibling files (pass 1: collect definitions)" << std::endl;

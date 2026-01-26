@@ -1,0 +1,22 @@
+// Test: sibling file can reference struct defined in main file
+// This tests the fix where main file's definitions are collected
+// before sibling files are validated
+
+struct State {
+	value:i64
+	name:str
+}
+
+fn main() {
+	// Create a State struct (defined in this file)
+	State { value = 42, name = "test" } -> s
+
+	// Call helper function that takes State (helper.qd references our struct)
+	s process_state -> result
+	result print nl
+
+	// Call another helper that returns State
+	100 "created" create_state -> s2
+	s2 @value print nl
+	s2 @name print nl
+}

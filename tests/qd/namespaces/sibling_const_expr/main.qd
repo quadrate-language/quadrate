@@ -1,0 +1,14 @@
+// Test: sibling uses constants from main in expressions
+
+const BASE = 100
+const SCALE = 10
+const OFFSET = 5
+
+fn main() {
+	// Use function from sibling that uses our constants
+	3 compute print nl
+	7 compute print nl
+
+	// Use another function that combines constants
+	2 scaled_offset print nl
+}

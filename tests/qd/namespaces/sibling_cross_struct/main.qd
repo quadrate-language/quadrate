@@ -1,0 +1,21 @@
+// Test: cross-referencing structs between main and sibling
+// Main defines Parent, sibling defines Child that uses Parent in function signatures
+
+struct Parent {
+	name:str
+	value:i64
+}
+
+fn main() {
+	// Create Parent
+	Parent { name = "root", value = 42 } -> p
+
+	// Use function from sibling that takes Parent
+	p get_parent_value print nl
+	p get_parent_name print nl
+
+	// Create a Wrapper (from sibling) that contains Parent
+	p "wrapped" make_wrapper -> w
+	w @parent @value print nl
+	w @label print nl
+}

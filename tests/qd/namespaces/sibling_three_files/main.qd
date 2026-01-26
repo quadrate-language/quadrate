@@ -1,0 +1,24 @@
+// Test: three-file dependency chain
+// main defines Config, types.qd defines Item using Config, utils.qd uses both
+
+struct Config {
+	multiplier:i64
+	prefix:str
+}
+
+const DEFAULT_MULT = 2
+
+fn main() {
+	Config { multiplier = 3, prefix = "val:" } -> cfg
+
+	// Create Item (from types.qd) which uses Config
+	cfg 100 create_item -> item
+
+	// Use utils function that operates on Item
+	item format_item print nl
+
+	// Test with default multiplier
+	Config { multiplier = DEFAULT_MULT, prefix = "x" } -> cfg2
+	cfg2 50 create_item -> item2
+	item2 format_item print nl
+}

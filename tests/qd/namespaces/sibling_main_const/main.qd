@@ -1,0 +1,10 @@
+// Test: sibling file can reference constants defined in main file
+
+const MULTIPLIER = 10
+const PREFIX = "value: "
+
+fn main() {
+	// Call helper that uses our constants
+	5 compute print nl
+	7 format_value print nl
+}

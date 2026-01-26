@@ -1,0 +1,22 @@
+// Test: sibling struct has nested struct field from main
+
+struct Point {
+	x:f64
+	y:f64
+}
+
+fn main() {
+	// Create a Point
+	Point { x = 3.0, y = 4.0 } -> p
+
+	// Create a Circle (defined in sibling) with our Point
+	p 5.0 make_circle -> c
+
+	// Access nested struct
+	c @center @x print nl
+	c @center @y print nl
+	c @radius print nl
+
+	// Use helper function
+	c circle_area print nl
+}
