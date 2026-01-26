@@ -489,7 +489,8 @@ namespace Qd {
 		// Pass 2: Validate function signatures (requires all types to be known)
 		static bool debugSibling = std::getenv("QUADC_DEBUG_SIBLING") != nullptr;
 		if (debugSibling && !mSiblingFiles.empty()) {
-			std::cerr << "[DEBUG SIBLING] Loading " << mSiblingFiles.size() << " sibling files (pass 1: collect definitions)" << std::endl;
+			std::cerr << "[DEBUG SIBLING] Loading " << mSiblingFiles.size()
+					  << " sibling files (pass 1: collect definitions)" << std::endl;
 		}
 
 		// Pass 1: Parse all siblings and collect definitions first
@@ -691,8 +692,7 @@ namespace Qd {
 			std::string moduleName;
 			size_t lastSlash = filePath.find_last_of('/');
 			size_t nameStart = (lastSlash != std::string::npos) ? lastSlash + 1 : 0;
-			if (filePath.size() > nameStart + 3 &&
-					filePath.substr(filePath.size() - 3) == ".qd") {
+			if (filePath.size() > nameStart + 3 && filePath.substr(filePath.size() - 3) == ".qd") {
 				moduleName = filePath.substr(nameStart, filePath.size() - nameStart - 3);
 			}
 
@@ -721,8 +721,10 @@ namespace Qd {
 						std::cerr << "] ";
 					}
 					std::cerr << std::endl;
-					std::cerr << "[DEBUG]   isStructTypeName(MyState): " << (isStructTypeName("MyState") ? "true" : "false") << std::endl;
-					std::cerr << "[DEBUG]   isStructTypeName(math::Vec3): " << (isStructTypeName("math::Vec3") ? "true" : "false") << std::endl;
+					std::cerr << "[DEBUG]   isStructTypeName(MyState): "
+							  << (isStructTypeName("MyState") ? "true" : "false") << std::endl;
+					std::cerr << "[DEBUG]   isStructTypeName(math::Vec3): "
+							  << (isStructTypeName("math::Vec3") ? "true" : "false") << std::endl;
 				}
 
 				// Type check this merged module's AST

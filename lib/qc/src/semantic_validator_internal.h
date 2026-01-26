@@ -236,8 +236,8 @@ inline std::string findSimilarFunctionName(
 
 // Check if two struct types are equivalent, considering merged modules
 // For merged modules, "module::Struct" and "Struct" are equivalent
-inline bool structTypesMatch(const std::string& actual, const std::string& expected,
-		const std::unordered_set<std::string>& mergedModules) {
+inline bool structTypesMatch(
+		const std::string& actual, const std::string& expected, const std::unordered_set<std::string>& mergedModules) {
 	// Direct match
 	if (actual == expected) {
 		return true;

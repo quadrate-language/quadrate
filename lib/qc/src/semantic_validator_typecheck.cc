@@ -891,7 +891,8 @@ namespace Qd {
 						mLocalVariableStructTypes[varName] = structType;
 						static bool debug = std::getenv("QUADC_DEBUG_MERGE") != nullptr;
 						if (debug) {
-							std::cerr << "[DEBUG TC] Store -> " << varName << " with struct type: " << structType << std::endl;
+							std::cerr << "[DEBUG TC] Store -> " << varName << " with struct type: " << structType
+									  << std::endl;
 						}
 
 						// If there's a pending function signature, store it with this variable
@@ -1223,13 +1224,15 @@ namespace Qd {
 							structTypeStack.push_back(structTypeIt->second);
 							static bool debug = std::getenv("QUADC_DEBUG_MERGE") != nullptr;
 							if (debug) {
-								std::cerr << "[DEBUG TC] Local var '" << name << "' pushed struct type: " << structTypeIt->second << std::endl;
+								std::cerr << "[DEBUG TC] Local var '" << name
+										  << "' pushed struct type: " << structTypeIt->second << std::endl;
 							}
 						} else {
 							structTypeStack.push_back(""); // Unknown struct type
 							static bool debug = std::getenv("QUADC_DEBUG_MERGE") != nullptr;
 							if (debug) {
-								std::cerr << "[DEBUG TC] Local var '" << name << "' has no struct type in mLocalVariableStructTypes" << std::endl;
+								std::cerr << "[DEBUG TC] Local var '" << name
+										  << "' has no struct type in mLocalVariableStructTypes" << std::endl;
 							}
 						}
 
@@ -1511,7 +1514,9 @@ namespace Qd {
 					if (debug) {
 						std::cerr << "[DEBUG TC] Checking for method call '" << name << "' - structTypeStack: [";
 						for (size_t k = 0; k < structTypeStack.size(); k++) {
-							if (k > 0) std::cerr << ", ";
+							if (k > 0) {
+								std::cerr << ", ";
+							}
 							std::cerr << "'" << structTypeStack[k] << "'";
 						}
 						std::cerr << "]" << std::endl;
@@ -1685,7 +1690,8 @@ namespace Qd {
 						{
 							static bool debug = std::getenv("QUADC_DEBUG_MERGE") != nullptr;
 							if (debug) {
-								std::cerr << "[DEBUG TC] Marking '" << name << "' as method call on " << registeredStructType << std::endl;
+								std::cerr << "[DEBUG TC] Marking '" << name << "' as method call on "
+										  << registeredStructType << std::endl;
 							}
 						}
 						ident->setIsMethodCall(true);
@@ -2282,7 +2288,9 @@ namespace Qd {
 				structTypeStack.push_back(fieldStructType);
 				static bool debug = std::getenv("QUADC_DEBUG_MERGE") != nullptr;
 				if (debug) {
-					std::cerr << "[DEBUG TC] Field access " << varName << " @" << fieldName << " -> struct type: " << fieldStructType << " (var struct type was: " << structType << ")" << std::endl;
+					std::cerr << "[DEBUG TC] Field access " << varName << " @" << fieldName
+							  << " -> struct type: " << fieldStructType << " (var struct type was: " << structType
+							  << ")" << std::endl;
 				}
 				break;
 			}
