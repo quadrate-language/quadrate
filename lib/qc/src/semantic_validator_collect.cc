@@ -147,7 +147,7 @@ namespace Qd {
 			// Check for duplicate constant name
 			// Skip this check if the constant was pre-collected from main file (for sibling namespace support)
 			if (mDefinedConstants.find(constant->name()) != mDefinedConstants.end() &&
-				mPreCollectedConstants.find(constant->name()) == mPreCollectedConstants.end()) {
+					mPreCollectedConstants.find(constant->name()) == mPreCollectedConstants.end()) {
 				std::string errorMsg = "Duplicate constant definition: '" + constant->name() + "'";
 				reportError(constant, errorMsg.c_str());
 				return;
@@ -186,7 +186,7 @@ namespace Qd {
 			// Check for duplicate struct name
 			// Skip this check if the struct was pre-collected from main file (for sibling namespace support)
 			if (mDefinedStructs.find(structDecl->name()) != mDefinedStructs.end() &&
-				mPreCollectedStructs.find(structDecl->name()) == mPreCollectedStructs.end()) {
+					mPreCollectedStructs.find(structDecl->name()) == mPreCollectedStructs.end()) {
 				std::string errorMsg = "Duplicate struct definition: '" + structDecl->name() + "'";
 				reportError(structDecl, errorMsg.c_str());
 				return;

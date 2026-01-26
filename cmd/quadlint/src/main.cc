@@ -208,8 +208,8 @@ void collectLocalBindings(IAstNode* node, std::unordered_map<std::string, IAstNo
 
 // Recursively collect all variable usages
 // Takes the set of known local variable names to detect instruction nodes that shadow them
-void collectVariableUsages(IAstNode* node, std::unordered_set<std::string>& usages,
-		const std::unordered_set<std::string>& localNames) {
+void collectVariableUsages(
+		IAstNode* node, std::unordered_set<std::string>& usages, const std::unordered_set<std::string>& localNames) {
 	if (!node) {
 		return;
 	}
