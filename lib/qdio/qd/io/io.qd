@@ -130,4 +130,10 @@ import "libqdio.a" as "io" {
 	/// @error ErrWrite Write operation failed
 	/// @example "/tmp/test.txt" "Hello, world!\n" io::write_file!
 	pub fn write_file(path:str contents:str -- )!
+
+	/// Flush stdout buffer.
+	/// Ensures all pending output is written immediately.
+	/// Useful for progress indicators that don't use newlines.
+	/// @example "Loading..." print io::flush
+	pub fn flush( -- )
 }

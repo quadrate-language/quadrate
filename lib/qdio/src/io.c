@@ -866,3 +866,9 @@ int usr_io_write_file(qd_context* ctx) {
     qd_push_i(ctx, IO_ERR_OK);
     return (int){0};
 }
+
+int usr_io_flush(qd_context* ctx) {
+    (void)ctx;
+    fflush(stdout);
+    return (int){0};
+}

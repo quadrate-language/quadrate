@@ -209,4 +209,17 @@ int usr_io_read_file(qd_context* ctx);
  */
 int usr_io_write_file(qd_context* ctx);
 
+/**
+ * @brief Flush stdout
+ *
+ * Stack effect: ( -- )
+ *
+ * Flushes the stdout buffer, ensuring all pending output is written.
+ * Useful for progress indicators or animations that don't use newlines.
+ *
+ * @param ctx Execution context
+ * @return Execution result
+ */
+int usr_io_flush(qd_context* ctx);
+
 #endif // STDIOQD_IO_H
