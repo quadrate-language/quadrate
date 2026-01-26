@@ -1,0 +1,35 @@
+// Engine and Stage definitions
+
+struct Engine {
+	thrust:f64
+	isp_vac:f64
+	isp_sl:f64
+	mass:f64
+}
+
+struct Stage {
+	dry_mass:f64
+	fuel_mass:f64
+	eng:Engine
+	eng_count:f64
+	diameter:f64
+	cd:f64
+}
+
+fn stage_thrust(s:Stage -- t:f64) {
+	-> s
+	s @eng -> e
+	e @thrust s @eng_count *
+}
+
+fn stage_wet(s:Stage -- m:f64) {
+	-> s
+	s @eng -> e
+	s @dry_mass e @mass s @eng_count * + s @fuel_mass +
+}
+
+fn stage_dry(s:Stage -- m:f64) {
+	-> s
+	s @eng -> e
+	s @dry_mass e @mass s @eng_count * +
+}

@@ -1,0 +1,31 @@
+// Simulation state with 3D vectors
+// (uses directory-based namespace - no explicit local imports needed)
+
+use math
+
+struct State {
+	t:f64
+	pos:math::Vec3
+	vel:math::Vec3
+	mass:f64
+	fuel:f64
+	pitch:f64
+}
+
+fn altitude(state:State -- alt:f64) {
+	-> state
+	state @pos -> p
+	p length EARTH_RADIUS -
+}
+
+fn speed(state:State -- spd:f64) {
+	-> state
+	state @vel -> v
+	v length
+}
+
+fn pos_magnitude(state:State -- r:f64) {
+	-> state
+	state @pos -> p
+	p length
+}

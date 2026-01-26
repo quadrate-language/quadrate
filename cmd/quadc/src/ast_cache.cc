@@ -102,7 +102,8 @@ void AstCache::importFromValidator(Qd::SemanticValidator& validator) {
 		std::string canonicalPath = canonicalize(path);
 
 		if (debug) {
-			std::cerr << "[DEBUG CACHE] importFromValidator: " << path << " -> canonical: " << canonicalPath << std::endl;
+			std::cerr << "[DEBUG CACHE] importFromValidator: " << path << " -> canonical: " << canonicalPath
+					  << std::endl;
 		}
 
 		// Only import if not already cached

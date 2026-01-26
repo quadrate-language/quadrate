@@ -1,0 +1,100 @@
+// Physics: atmosphere and derivatives
+// (uses directory-based namespace - no explicit local imports needed)
+
+use math
+
+fn atm_density(alt:f64 -- rho:f64) {
+	-> alt
+	alt 0.0 < if {
+		ATM_RHO0
+	} else {
+		alt ATM_HEIGHT >= if {
+			0.0
+		} else {
+			alt ATM_SCALE / -1.0 * math::exp ATM_RHO0 *
+		}
+	}
+}
+
+struct Deriv {
+	dp:math::Vec3
+	dv:math::Vec3
+	dm:f64
+}
+
+fn compute_deriv(stage:Stage state:State -- d:Deriv) {
+	-> state -> stage
+
+	state @pos -> pos
+	state @vel -> vel
+	state @mass -> mass
+	state @fuel -> fuel
+	state @pitch -> pitch
+
+	state altitude -> alt
+	vel length -> vmag
+	pos length -> r
+
+	// Gravity: g = -mu/r³ * pos
+	MU_EARTH r r * r * / -1.0 * -> g_scalar
+	pos g_scalar scale -> g_accel
+
+	// Up vector (normalized position)
+	pos normalize -> up
+
+	// Radial velocity component
+	up vel dot -> v_rad
+
+	// Horizontal velocity (perpendicular to radial)
+	up v_rad scale -> up_scaled
+	vel up_scaled subtract -> v_horiz
+	v_horiz length -> h_mag
+
+	// Thrust direction
+	math::vec3_zero -> thrust_dir
+	h_mag 0.001 > if {
+		// East unit vector (horizontal direction)
+		v_horiz normalize -> east
+		// thrust = sin(pitch)*up + cos(pitch)*east
+		pitch math::sin -> sp
+		pitch math::cos -> cp
+		up sp scale -> t_up
+		east cp scale -> t_east
+		t_up t_east add -> t_sum
+		t_sum normalize -> thrust_dir
+	} else {
+		up -> thrust_dir
+	}
+
+	// Thrust acceleration
+	math::vec3_zero -> thrust_accel
+	fuel 0.0 > if {
+		stage stage_thrust mass / -> a_thrust
+		thrust_dir a_thrust scale -> thrust_accel
+	}
+
+	// Drag
+	math::vec3_zero -> drag_accel
+	alt atm_density -> rho
+	vmag 0.001 > rho 0.0 > and if {
+		stage @diameter 2.0 / -> rad
+		PI rad rad * * -> area
+		0.5 rho * vmag vmag * * stage @cd * area * -> drag_mag
+		vel normalize -> vel_unit
+		vel_unit neg -> drag_dir
+		drag_dir drag_mag mass / scale -> drag_accel
+	}
+
+	// Total acceleration
+	g_accel thrust_accel add -> sum1
+	sum1 drag_accel add -> accel
+
+	// Mass flow
+	0.0 -> dm
+	fuel 0.0 > if {
+		stage @eng -> e
+		stage stage_thrust e @isp_vac G0 * / -1.0 * -> dm
+	}
+
+	Deriv { dp = vel, dv = accel, dm = dm }
+}

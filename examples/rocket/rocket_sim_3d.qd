@@ -1,0 +1,528 @@
+// Rocket Physics Simulation - 3D Version
+// Earth-Centered Inertial (ECI) coordinate system
+// Uses math::Vec3 for position and velocity vectors
+
+use math
+use fmt
+
+// ============================================================================
+// Constants
+// ============================================================================
+
+const G0 = 9.80665
+const EARTH_RADIUS = 6.371e6
+const ATM_RHO0 = 1.225
+const ATM_SCALE = 8500.0
+const ATM_HEIGHT = 100000.0
+const PI = 3.14159265359
+const EARTH_ROT_VEL = 465.1
+const MU_EARTH = 3.986004418e14
+
+// ============================================================================
+// Engine & Stage
+// ============================================================================
+
+struct Engine {
+    thrust:f64
+    isp_vac:f64
+    isp_sl:f64
+    mass:f64
+}
+
+struct Stage {
+    dry_mass:f64
+    fuel_mass:f64
+    eng:Engine
+    eng_count:f64
+    diameter:f64
+    cd:f64
+}
+
+fn stage_thrust(s:Stage -- t:f64) {
+    -> s
+    s @eng -> e
+    e @thrust s @eng_count *
+}
+
+fn stage_wet(s:Stage -- m:f64) {
+    -> s
+    s @eng -> e
+    s @dry_mass e @mass s @eng_count * + s @fuel_mass +
+}
+
+fn stage_dry(s:Stage -- m:f64) {
+    -> s
+    s @eng -> e
+    s @dry_mass e @mass s @eng_count * +
+}
+
+// ============================================================================
+// 3D State with nested Vec3
+// ============================================================================
+
+struct State {
+    t:f64
+    pos:math::Vec3
+    vel:math::Vec3
+    mass:f64
+    fuel:f64
+    pitch:f64
+}
+
+fn altitude(state:State -- alt:f64) {
+    -> state
+    state @pos -> p
+    p length EARTH_RADIUS -
+}
+
+fn speed(state:State -- spd:f64) {
+    -> state
+    state @vel -> v
+    v length
+}
+
+fn pos_magnitude(state:State -- r:f64) {
+    -> state
+    state @pos -> p
+    p length
+}
+
+// ============================================================================
+// Physics
+// ============================================================================
+
+fn atm_density(alt:f64 -- rho:f64) {
+    -> alt
+    alt 0.0 < if {
+        ATM_RHO0
+    } else {
+        alt ATM_HEIGHT >= if {
+            0.0
+        } else {
+            alt ATM_SCALE / -1.0 * math::exp ATM_RHO0 *
+        }
+    }
+}
+
+struct Deriv {
+    dp:math::Vec3
+    dv:math::Vec3
+    dm:f64
+}
+
+fn compute_deriv(stage:Stage state:State -- d:Deriv) {
+    -> state -> stage
+
+    state @pos -> pos
+    state @vel -> vel
+    state @mass -> mass
+    state @fuel -> fuel
+    state @pitch -> pitch
+
+    state altitude -> alt
+    vel length -> vmag
+    pos length -> r
+
+    // Gravity: g = -mu/r³ * pos
+    MU_EARTH r r * r * / -1.0 * -> g_scalar
+    pos g_scalar scale -> g_accel
+
+    // Up vector (normalized position)
+    pos normalize -> up
+
+    // Radial velocity component
+    up vel dot -> v_rad
+
+    // Horizontal velocity (perpendicular to radial)
+    up v_rad scale -> up_scaled
+    vel up_scaled subtract -> v_horiz
+    v_horiz length -> h_mag
+
+    // Thrust direction
+    math::vec3_zero -> thrust_dir
+    h_mag 0.001 > if {
+        // East unit vector (horizontal direction)
+        v_horiz normalize -> east
+        // thrust = sin(pitch)*up + cos(pitch)*east
+        pitch math::sin -> sp
+        pitch math::cos -> cp
+        up sp scale -> t_up
+        east cp scale -> t_east
+        t_up t_east add -> t_sum
+        t_sum normalize -> thrust_dir
+    } else {
+        up -> thrust_dir
+    }
+
+    // Thrust acceleration
+    math::vec3_zero -> thrust_accel
+    fuel 0.0 > if {
+        stage stage_thrust mass / -> a_thrust
+        thrust_dir a_thrust scale -> thrust_accel
+    }
+
+    // Drag
+    math::vec3_zero -> drag_accel
+    alt atm_density -> rho
+    vmag 0.001 > rho 0.0 > and if {
+        stage @diameter 2.0 / -> rad
+        PI rad rad * * -> area
+        0.5 rho * vmag vmag * * stage @cd * area * -> drag_mag
+        vel normalize -> vel_unit
+        vel_unit neg -> drag_dir
+        drag_dir drag_mag mass / scale -> drag_accel
+    }
+
+    // Total acceleration
+    g_accel thrust_accel add -> sum1
+    sum1 drag_accel add -> accel
+
+    // Mass flow
+    0.0 -> dm
+    fuel 0.0 > if {
+        stage @eng -> e
+        stage stage_thrust e @isp_vac G0 * / -1.0 * -> dm
+    }
+
+    Deriv { dp = vel, dv = accel, dm = dm }
+}
+
+// ============================================================================
+// Simulation
+// ============================================================================
+
+fn step(stage:Stage state:State dt:f64 -- new:State) {
+    -> dt -> state -> stage
+
+    stage state compute_deriv -> d
+
+    // Update position: pos + dp * dt
+    d @dp -> dp
+    dp dt scale -> dp_scaled
+    state @pos -> old_pos
+    old_pos dp_scaled add -> new_pos
+
+    // Update velocity: vel + dv * dt
+    d @dv -> dv
+    dv dt scale -> dv_scaled
+    state @vel -> old_vel
+    old_vel dv_scaled add -> new_vel
+
+    // Update mass and fuel
+    state @mass d @dm dt * + -> new_mass
+    state @fuel d @dm dt * + -> new_fuel
+    new_fuel 0.0 < if { 0.0 -> new_fuel }
+
+    State {
+        t = state @t dt +,
+        pos = new_pos,
+        vel = new_vel,
+        mass = new_mass,
+        fuel = new_fuel,
+        pitch = state @pitch
+    }
+}
+
+fn deg_to_rad(deg:f64 -- rad:f64) {
+    -> deg
+    deg PI * 180.0 /
+}
+
+fn rad_to_deg(rad:f64 -- deg:f64) {
+    -> rad
+    rad 180.0 * PI /
+}
+
+// ============================================================================
+// Orbital Mechanics
+// ============================================================================
+
+fn orbital_energy(state:State -- energy:f64) {
+    -> state
+    state @vel -> v
+    state @pos -> p
+    v length -> vmag
+    p length -> r
+    vmag vmag * 2.0 / MU_EARTH r / -
+}
+
+fn eccentricity(state:State -- ecc:f64) {
+    -> state
+    state @vel -> v
+    state @pos -> r
+    r length -> rmag
+
+    // h = r × v
+    r v cross -> h
+
+    // e = (v × h) / μ - r / |r|
+    v h cross -> vh
+    vh 1.0 MU_EARTH / scale -> term1
+    r normalize -> term2
+    term1 term2 subtract -> e_vec
+    e_vec length
+}
+
+fn semi_major(state:State -- a:f64) {
+    -> state
+    state orbital_energy -> energy
+    energy 0.0 >= if {
+        -1.0
+    } else {
+        MU_EARTH energy -2.0 * /
+    }
+}
+
+fn apoapsis(state:State -- alt:f64) {
+    -> state
+    state eccentricity -> ecc
+    ecc 1.0 >= if {
+        -1.0
+    } else {
+        state semi_major -> a
+        a 1.0 ecc + * EARTH_RADIUS -
+    }
+}
+
+fn periapsis(state:State -- alt:f64) {
+    -> state
+    state eccentricity -> ecc
+    state semi_major -> a
+    a 0.0 < if {
+        -1.0
+    } else {
+        a 1.0 ecc - * EARTH_RADIUS -
+    }
+}
+
+fn inclination(state:State -- inc:f64) {
+    -> state
+    state @pos -> p
+    state @vel -> v
+    p v cross -> h
+    h length -> hmag
+    h @z hmag / math::acos
+}
+
+// ============================================================================
+// Main
+// ============================================================================
+
+fn main() {
+    "=== Falcon 9 3D Simulation ===" print nl
+    "Earth-Centered Inertial coordinates" print nl
+    "Using math::Vec3 for vectors" print nl
+    nl
+
+    // Stage 1: Merlin 1D engines
+    Engine { thrust = 845000.0, isp_vac = 311.0, isp_sl = 282.0, mass = 470.0 } -> m1d
+    Stage { dry_mass = 22200.0, fuel_mass = 395700.0, eng = m1d, eng_count = 9.0, diameter = 3.7, cd = 0.3 } -> stage1
+
+    // Stage 2: Merlin Vacuum
+    Engine { thrust = 981000.0, isp_vac = 348.0, isp_sl = 200.0, mass = 490.0 } -> mvac
+    Stage { dry_mass = 4000.0, fuel_mass = 107500.0, eng = mvac, eng_count = 1.0, diameter = 3.7, cd = 0.3 } -> stage2
+
+    15000.0 -> payload
+
+    stage1 stage_thrust 1000.0 / "Stage 1 Thrust: %.0f kN\n" fmt::printf
+    stage2 stage_thrust 1000.0 / "Stage 2 Thrust: %.0f kN\n" fmt::printf
+    nl
+
+    stage1 stage_wet stage2 stage_wet + payload + -> init_mass
+
+    EARTH_ROT_VEL "Earth rotation boost: %.1f m/s\n" fmt::printf
+    init_mass 1000.0 / "Total mass: %.1f tons\n" fmt::printf
+    nl
+
+    // Initial: on equator at +X, velocity in +Y (prograde)
+    math::Vec3 { x = EARTH_RADIUS, y = 0.0, z = 0.0 } -> init_pos
+    math::Vec3 { x = 0.0, y = EARTH_ROT_VEL, z = 0.0 } -> init_vel
+
+    State {
+        t = 0.0,
+        pos = init_pos,
+        vel = init_vel,
+        mass = init_mass,
+        fuel = stage1 @fuel_mass,
+        pitch = 90.0 deg_to_rad
+    } -> state
+
+    "=== Stage 1 Ignition ===" print nl
+
+    0.1 -> dt
+    0.0 -> last_print
+
+    // Stage 1 burn
+    loop {
+        state @fuel 0.0 <= state @t 300.0 > or if { break }
+
+        state altitude -> alt
+
+        // Gravity turn profile - more aggressive pitchover
+        alt 1000.0 > if {
+            alt 1000.0 - 60000.0 / 80.0 * 90.0 swap - -> target_deg
+            target_deg 10.0 < if { 10.0 -> target_deg }
+            target_deg deg_to_rad -> new_pitch
+
+            state @pos -> p_copy
+            state @vel -> v_copy
+
+            State {
+                t = state @t,
+                pos = p_copy,
+                vel = v_copy,
+                mass = state @mass,
+                fuel = state @fuel,
+                pitch = new_pitch
+            } -> state
+        }
+
+        stage1 state dt step -> state
+
+        state @t last_print - 20.0 >= if {
+            state altitude -> pa
+            state speed -> pv
+            state @t pa 1000.0 / pv state @fuel 1000.0 /
+            "T+%.0fs [S1] Alt: %.1f km  Vel: %.0f m/s  Fuel: %.1f t\n" fmt::printf
+            state @t -> last_print
+        }
+    }
+
+    nl
+    state @t state altitude 1000.0 / state speed
+    "T+%.0fs  === MECO === Alt: %.1f km  Vel: %.0f m/s\n" fmt::printf
+
+    // Stage separation
+    nl
+    "=== Stage Separation ===" print nl
+    state @mass stage1 stage_dry - -> sep_mass
+
+    state @pos -> p_sep
+    state @vel -> v_sep
+
+    State {
+        t = state @t,
+        pos = p_sep,
+        vel = v_sep,
+        mass = sep_mass,
+        fuel = stage2 @fuel_mass,
+        pitch = state @pitch
+    } -> state
+
+    nl
+    "=== Stage 2 Ignition ===" print nl
+    nl
+
+    // Stage 2 burn with guidance
+    loop {
+        state @fuel 0.0 <= state @t 700.0 > or if { break }
+
+        state altitude -> alt
+
+        alt 80000.0 > if {
+            // Compute radial velocity
+            state @pos -> p_now
+            p_now length -> r_now
+            p_now normalize -> up_now
+            state @vel -> v_now
+            up_now v_now dot -> v_rad
+
+            state @fuel -> fuel_now
+            state @mass -> mass_now
+
+            stage2 @eng -> eng2
+            eng2 @thrust eng2 @isp_vac G0 * / -> mdot
+            fuel_now mdot / -> t_rem
+            t_rem 10.0 < if { 10.0 -> t_rem }
+
+            eng2 @thrust mass_now / -> accel
+            MU_EARTH r_now r_now * / -> g_now
+
+            // Target vertical acceleration to zero radial velocity at burnout
+            v_rad -1.0 * t_rem / g_now + -> a_vert
+            a_vert accel > if { accel -> a_vert }
+            a_vert accel -1.0 * < if { accel -1.0 * -> a_vert }
+
+            a_vert accel / -> sin_p
+            sin_p 1.0 > if { 1.0 -> sin_p }
+            sin_p -1.0 < if { -1.0 -> sin_p }
+            sin_p math::asin -> target_pitch
+
+            target_pitch 5.0 deg_to_rad < if { 5.0 deg_to_rad -> target_pitch }
+            target_pitch 45.0 deg_to_rad > if { 45.0 deg_to_rad -> target_pitch }
+
+            state @pos -> p_g
+            state @vel -> v_g
+
+            State {
+                t = state @t,
+                pos = p_g,
+                vel = v_g,
+                mass = state @mass,
+                fuel = state @fuel,
+                pitch = target_pitch
+            } -> state
+        }
+
+        stage2 state dt step -> state
+
+        state @t last_print - 20.0 >= if {
+            state altitude -> pa
+            state speed -> pv
+            state @t pa 1000.0 / pv state @fuel 1000.0 /
+            "T+%.0fs [S2] Alt: %.1f km  Vel: %.0f m/s  Fuel: %.1f t\n" fmt::printf
+            state @t -> last_print
+        }
+    }
+
+    nl
+    "=== SECO ===" print nl
+    state @t state altitude 1000.0 / state speed
+    "T+%.0fs  Alt: %.1f km  Vel: %.0f m/s\n" fmt::printf
+    nl
+
+    "Orbit Analysis (3D):" print nl
+
+    // Final velocity components
+    state @pos -> p_f
+    p_f length -> r_f
+    p_f normalize -> up_f
+    state @vel -> v_f
+    up_f v_f dot -> v_rad_f
+    v_f length -> v_tot
+    v_tot v_tot * v_rad_f v_rad_f * - math::sqrt -> v_hor_f
+
+    v_hor_f "  Horizontal vel: %.0f m/s\n" fmt::printf
+    v_rad_f "  Radial vel: %.0f m/s\n" fmt::printf
+    nl
+
+    state eccentricity -> ecc
+    ecc "  Eccentricity: %.4f\n" fmt::printf
+
+    state inclination rad_to_deg -> inc
+    inc "  Inclination: %.2f deg\n" fmt::printf
+
+    state apoapsis -> apo
+    state periapsis -> peri
+
+    apo 0.0 < if {
+        "  ESCAPE trajectory" print nl
+    } else {
+        apo 1000.0 / "  Apoapsis: %.1f km\n" fmt::printf
+        peri 1000.0 / "  Periapsis: %.1f km\n" fmt::printf
+
+        peri 100000.0 > if {
+            nl
+            "*** STABLE ORBIT ACHIEVED! ***" print nl
+            apo 1000.0 / peri 1000.0 / inc "Orbit: %.0f x %.0f km @ %.1f deg\n" fmt::printf
+        } else {
+            peri 0.0 > if {
+                nl
+                "WARNING: Periapsis in atmosphere" print nl
+            } else {
+                nl
+                "WARNING: Suborbital trajectory!" print nl
+            }
+        }
+    }
+}
