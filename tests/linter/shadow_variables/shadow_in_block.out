@@ -1,3 +1,3 @@
-[1mtests/linter/shadow_variables/shadow_in_block.qd:5:6:[0m [1m[1;35mwarning:[0m [1mVariable 'x' shadows variable from outer scope[0m
+[1mtests/linter/shadow_variables/shadow_in_block.qd:4:14:[0m [1m[1;35mwarning:[0m [1mVariable 'x' shadows variable from outer scope[0m
 
 1 issue found

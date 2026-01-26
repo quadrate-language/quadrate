@@ -791,6 +791,11 @@ namespace Qd {
 
 	void SemanticValidator::parseModuleAndCollectFunctions(
 			const std::string& moduleName, const std::string& source, const std::string& filePath, bool mergeIntoMain) {
+		// Skip if already cached (prevents double-parsing of sibling files)
+		if (!filePath.empty() && mParsedModuleAsts.find(filePath) != mParsedModuleAsts.end()) {
+			return;
+		}
+
 		// Timing helper - only active when QUADC_TIMING is set
 		static bool timing = std::getenv("QUADC_TIMING") != nullptr;
 		auto timeLast = std::chrono::steady_clock::now();

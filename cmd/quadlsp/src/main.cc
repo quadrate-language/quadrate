@@ -36,6 +36,47 @@ std::string expandTilde(const std::string& path) {
 	return path;
 }
 
+// Get sibling .qd files in the same directory (for directory-based namespaces)
+std::vector<std::string> getSiblingQdFiles(const std::string& filePath) {
+	std::vector<std::string> siblings;
+
+	try {
+		std::filesystem::path p(filePath);
+		std::filesystem::path dir = p.parent_path();
+		std::string filename = p.filename().string();
+
+		if (dir.empty() || !std::filesystem::exists(dir)) {
+			return siblings;
+		}
+
+		for (const auto& entry : std::filesystem::directory_iterator(dir)) {
+			if (!entry.is_regular_file()) {
+				continue;
+			}
+			std::string name = entry.path().filename().string();
+			// Skip the file itself
+			if (name == filename) {
+				continue;
+			}
+			// Only .qd files
+			if (name.size() > 3 && name.substr(name.size() - 3) == ".qd") {
+				// Exclude test files
+				if (name.size() > 8 && name.substr(name.size() - 8) == "_test.qd") {
+					continue;
+				}
+				siblings.push_back(entry.path().string());
+			}
+		}
+
+		// Sort for consistent ordering
+		std::sort(siblings.begin(), siblings.end());
+	} catch (...) {
+		// Ignore errors
+	}
+
+	return siblings;
+}
+
 // Load dependencies from qd.json and return include paths
 std::vector<std::string> loadDependenciesFromManifest(const std::string& manifestDir) {
 	std::vector<std::string> includePaths;
@@ -726,6 +767,12 @@ void QuadrateLSP::publishDiagnostics(const std::string& uri, const std::string& 
 			validator.setIncludePaths(manifestPaths);
 		}
 
+		// Directory-based namespace: load sibling .qd files
+		std::vector<std::string> siblingFiles = getSiblingQdFiles(filePath);
+		if (!siblingFiles.empty()) {
+			validator.setSiblingFiles(siblingFiles);
+		}
+
 		validator.validate(root, filePath.c_str(), false, false);
 
 		if (validator.errorCount() > 0) {
@@ -1021,7 +1068,33 @@ std::string QuadrateLSP::resolveModulePath(const std::string& moduleName, const 
 		}
 	}
 
-	// Try 4: Installed standard library (/usr/share/quadrate/ on Linux, /boot/system/data/quadrate/ on Haiku)
+	// Try 4: Standard library relative to executable (for dist/ or installed builds)
+	// This allows the LSP to find stdlib when run as dist/bin/quadlsp
+	try {
+#ifdef __linux__
+		std::filesystem::path exePath = std::filesystem::read_symlink("/proc/self/exe");
+#elif defined(__HAIKU__)
+		std::filesystem::path exePath = std::filesystem::canonical("/proc/self/exe");
+#else
+		std::filesystem::path exePath; // Unsupported platform
+#endif
+		if (!exePath.empty()) {
+			std::filesystem::path exeDir = exePath.parent_path();
+#ifdef __HAIKU__
+			std::filesystem::path shareDir = exeDir / ".." / "data" / "quadrate" / moduleName;
+#else
+			std::filesystem::path shareDir = exeDir / ".." / "share" / "quadrate" / moduleName;
+#endif
+			result = findFirstQdFile(shareDir.string());
+			if (!result.empty()) {
+				return result;
+			}
+		}
+	} catch (...) {
+		// Ignore errors resolving executable path
+	}
+
+	// Try 5: Installed standard library (/usr/share/quadrate/ on Linux, /boot/system/data/quadrate/ on Haiku)
 #ifdef __HAIKU__
 	result = findFirstQdFile("/boot/system/data/quadrate/" + moduleName);
 #else
@@ -1031,14 +1104,14 @@ std::string QuadrateLSP::resolveModulePath(const std::string& moduleName, const 
 		return result;
 	}
 
-	// Try 5: Standard library directories relative to current directory (for development)
+	// Try 6: Standard library directories relative to current directory (for development)
 	// Pattern: lib/qd{moduleName}/qd/{moduleName}/
 	result = findFirstQdFile("lib/qd" + moduleName + "/qd/" + moduleName);
 	if (!result.empty()) {
 		return result;
 	}
 
-	// Try 6: $HOME/quadrate directory
+	// Try 7: $HOME/quadrate directory
 	const char* home = getenv("HOME");
 	if (home) {
 		result = findFirstQdFile(std::string(home) + "/quadrate/" + moduleName);

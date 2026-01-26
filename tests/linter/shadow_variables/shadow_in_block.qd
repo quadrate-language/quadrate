@@ -1,8 +1,7 @@
-// Test shadow variable detection
+// Test shadow variable detection - for-loop iterator shadowing
 fn main() {
 	5 -> x
-	x 0 > if {
-		10 -> x  // shadows outer x
+	0 3 1 for x {
 		x print nl
 	}
 	x print nl

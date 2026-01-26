@@ -103,8 +103,18 @@ namespace Qd {
 
 			case IAstNode::Type::INSTRUCTION: {
 				AstNodeInstruction* instr = static_cast<AstNodeInstruction*>(child);
+				const std::string& instrName = instr->name();
+
+				// Check if instruction name shadows a local variable - if so, treat as variable reference
+				auto localIt = localVarTypes.find(instrName);
+				if (localIt != localVarTypes.end()) {
+					// Push the local variable's type onto the stack
+					typeStack.push_back(localIt->second);
+					break;
+				}
+
 				// During signature analysis, don't report errors - just simulate the stack
-				typeCheckInstructionInternal(child, instr->name().c_str(), typeStack, structTypeStack, false);
+				typeCheckInstructionInternal(child, instrName.c_str(), typeStack, structTypeStack, false);
 				break;
 			}
 

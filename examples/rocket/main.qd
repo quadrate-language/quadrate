@@ -59,7 +59,7 @@ fn print_telemetry(stage_name:str t:f64 alt:f64 vel:f64 fuel:f64 max_fuel:f64 pi
 	pitch math::rad_to_deg -> pitch_deg
 
 	// Move cursor up 2 lines if not first print
-	first 0 = if {
+	first 0 == if {
 		CursorUp2 print
 	}
 
@@ -367,7 +367,6 @@ fn main() {
 
 	// Final velocity components
 	state @pos -> p_f
-	p_f length -> r_f
 	p_f normalize -> up_f
 	state @vel -> v_f
 	up_f v_f dot -> v_rad_f

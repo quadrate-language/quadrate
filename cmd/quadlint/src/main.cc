@@ -3,9 +3,11 @@
 #include <functional>
 #include <iostream>
 #include <qc/ast.h>
+#include <qc/ast_node_for.h>
 #include <qc/ast_node_function.h>
 #include <qc/ast_node_function_pointer.h>
 #include <qc/ast_node_identifier.h>
+#include <qc/ast_node_instruction.h>
 #include <qc/ast_node_literal.h>
 #include <qc/ast_node_local.h>
 #include <qc/ast_node_struct.h>
@@ -205,7 +207,9 @@ void collectLocalBindings(IAstNode* node, std::unordered_map<std::string, IAstNo
 }
 
 // Recursively collect all variable usages
-void collectVariableUsages(IAstNode* node, std::unordered_set<std::string>& usages) {
+// Takes the set of known local variable names to detect instruction nodes that shadow them
+void collectVariableUsages(IAstNode* node, std::unordered_set<std::string>& usages,
+		const std::unordered_set<std::string>& localNames) {
 	if (!node) {
 		return;
 	}
@@ -221,10 +225,20 @@ void collectVariableUsages(IAstNode* node, std::unordered_set<std::string>& usag
 		usages.insert(fieldAccess->varName());
 	}
 
+	// Check instruction nodes - if the name matches a local variable, it's a variable reference
+	// (variable names can shadow builtin instruction names like 'inc', 'dec', 'add', etc.)
+	if (node->type() == IAstNode::Type::INSTRUCTION) {
+		AstNodeInstruction* instr = static_cast<AstNodeInstruction*>(node);
+		const std::string& name = instr->name();
+		if (localNames.find(name) != localNames.end()) {
+			usages.insert(name);
+		}
+	}
+
 	// Don't traverse into LOCAL nodes themselves (the binding), only their children
 	if (node->type() != IAstNode::Type::LOCAL) {
 		for (size_t i = 0; i < node->childCount(); i++) {
-			collectVariableUsages(node->child(i), usages);
+			collectVariableUsages(node->child(i), usages, localNames);
 		}
 	}
 }
@@ -359,43 +373,74 @@ void detectMissingDefer(IAstNode* node, const std::string& filename, std::vector
 	}
 }
 
+// Check if a variable exists in any scope
+bool variableExistsInAnyScope(const std::string& name, const std::vector<std::unordered_set<std::string>>& scopeStack) {
+	for (const auto& scope : scopeStack) {
+		if (scope.find(name) != scope.end()) {
+			return true;
+		}
+	}
+	return false;
+}
+
 // Detect shadow variables (inner scope variable shadows outer scope)
+// Quadrate uses function-level scoping for local variables (-> x), so blocks don't create new scopes.
+// Only for-loop iterators create a new scoped variable that can shadow.
 void detectShadowVariables(IAstNode* node, const std::string& filename, std::vector<LintIssue>& issues,
 		std::vector<std::unordered_set<std::string>>& scopeStack) {
 	if (!node) {
 		return;
 	}
 
-	// Enter new scope for functions and blocks
+	// Enter new scope only for functions (not blocks - Quadrate has function-level scoping)
 	bool newScope = false;
-	if (node->type() == IAstNode::Type::FUNCTION_DECLARATION || node->type() == IAstNode::Type::BLOCK) {
+	if (node->type() == IAstNode::Type::FUNCTION_DECLARATION) {
 		scopeStack.emplace_back();
 		newScope = true;
 	}
 
-	// Check for local variable declarations
+	// For-loop iterators create a block-scoped variable that can shadow outer variables
+	if (node->type() == IAstNode::Type::FOR_STATEMENT) {
+		AstNodeForStatement* forStmt = static_cast<AstNodeForStatement*>(node);
+		const std::string& iterName = forStmt->iteratorName();
+
+		// Check if iterator shadows an outer variable
+		if (variableExistsInAnyScope(iterName, scopeStack)) {
+			LintIssue issue;
+			issue.filename = filename;
+			issue.line = node->line();
+			issue.column = node->column();
+			issue.message = "Variable '" + iterName + "' shadows variable from outer scope";
+			issue.level = "warning";
+			issues.push_back(issue);
+		}
+
+		// Create a temporary scope for the for-loop body with the iterator
+		scopeStack.emplace_back();
+		scopeStack.back().insert(iterName);
+
+		// Process body with the iterator in scope
+		if (forStmt->body()) {
+			detectShadowVariables(forStmt->body(), filename, issues, scopeStack);
+		}
+
+		scopeStack.pop_back();
+		return; // Already processed children
+	}
+
+	// Check for local variable declarations (-> x)
+	// In Quadrate, -> x either declares a new variable or reassigns an existing one.
+	// It's only "shadowing" if we're declaring a new variable with the same name as an outer one,
+	// but since Quadrate has function-level scoping, this can't happen with regular -> assignments.
 	if (node->type() == IAstNode::Type::LOCAL) {
 		AstNodeLocal* local = static_cast<AstNodeLocal*>(node);
 		std::string varName = local->name();
 
-		// Check if this variable shadows one in an outer scope
-		for (size_t i = 0; i < scopeStack.size() - 1; i++) {
-			if (scopeStack[i].find(varName) != scopeStack[i].end()) {
-				LintIssue issue;
-				issue.filename = filename;
-				issue.line = node->line();
-				issue.column = node->column();
-				issue.message = "Variable '" + varName + "' shadows variable from outer scope";
-				issue.level = "warning";
-				issues.push_back(issue);
-				break;
-			}
-		}
-
-		// Add to current scope
-		if (!scopeStack.empty()) {
+		// Only add to scope if it's a new variable (first declaration in this function)
+		if (!variableExistsInAnyScope(varName, scopeStack) && !scopeStack.empty()) {
 			scopeStack.back().insert(varName);
 		}
+		// No shadowing warning for -> x (it's either new declaration or reassignment)
 	}
 
 	// Recursively check children
@@ -724,7 +769,14 @@ std::vector<LintIssue> lintFile(const std::string& filename, const Options& opts
 
 					// Collect locals and usages only within this function
 					collectLocalBindings(child, locals);
-					collectVariableUsages(child, usages);
+
+					// Build set of local variable names for instruction shadowing detection
+					std::unordered_set<std::string> localNames;
+					for (const auto& pair : locals) {
+						localNames.insert(pair.first);
+					}
+
+					collectVariableUsages(child, usages, localNames);
 
 					for (const auto& pair : locals) {
 						const std::string& varName = pair.first;

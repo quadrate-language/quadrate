@@ -1,6 +1,6 @@
 // Euler integrator for simulation stepping
 // (uses directory-based namespace - no explicit imports needed)
-fn step(stage:Stage state:State dt:f64 -- new:State) {
+pub fn step(stage:Stage state:State dt:f64 -- new:State) {
 	-> dt -> state -> stage
 
 	stage state compute_deriv -> d

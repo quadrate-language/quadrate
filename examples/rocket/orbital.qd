@@ -15,7 +15,6 @@ fn eccentricity(state:State -- ecc:f64) {
 	-> state
 	state @vel -> v
 	state @pos -> r
-	r length -> rmag
 
 	// h = r × v
 	r v cross -> h
@@ -38,7 +37,7 @@ fn semi_major(state:State -- a:f64) {
 	}
 }
 
-fn apoapsis(state:State -- alt:f64) {
+pub fn apoapsis(state:State -- alt:f64) {
 	-> state
 	state eccentricity -> ecc
 	ecc 1.0 >= if {
@@ -49,7 +48,7 @@ fn apoapsis(state:State -- alt:f64) {
 	}
 }
 
-fn periapsis(state:State -- alt:f64) {
+pub fn periapsis(state:State -- alt:f64) {
 	-> state
 	state eccentricity -> ecc
 	state semi_major -> a
@@ -60,7 +59,7 @@ fn periapsis(state:State -- alt:f64) {
 	}
 }
 
-fn inclination(state:State -- inc:f64) {
+pub fn inclination(state:State -- inc:f64) {
 	-> state
 	state @pos -> p
 	state @vel -> v

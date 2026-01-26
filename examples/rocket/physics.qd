@@ -21,7 +21,7 @@ struct Deriv {
 	dm:f64
 }
 
-fn compute_deriv(stage:Stage state:State -- d:Deriv) {
+pub fn compute_deriv(stage:Stage state:State -- d:Deriv) {
 	-> state -> stage
 
 	state @pos -> pos

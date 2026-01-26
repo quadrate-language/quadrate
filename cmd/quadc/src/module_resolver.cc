@@ -462,8 +462,8 @@ std::vector<std::string> getSiblingQdFiles(const std::string& filePath) {
 		}
 
 		// Helper: check if a file has a main() function (quick text search)
-		auto hasMainFunction = [](const std::string& filePath) -> bool {
-			std::ifstream ifs(filePath);
+		auto hasMainFunction = [](const std::string& file) -> bool {
+			std::ifstream ifs(file);
 			if (!ifs) {
 				return false;
 			}
