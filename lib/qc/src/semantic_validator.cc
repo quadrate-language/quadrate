@@ -808,7 +808,7 @@ namespace Qd {
 		}
 	}
 
-	StackValueType SemanticValidator::stringToStackValueType(const std::string& typeStr) {
+	StackValueType SemanticValidator::stringToStackValueType(const std::string& typeStr) const {
 		if (typeStr == "i64") {
 			return StackValueType::INT;
 		}
@@ -835,7 +835,7 @@ namespace Qd {
 	}
 
 	std::string SemanticValidator::findStructTypeByFields(
-			const std::unordered_map<std::string, StackValueType>& accessedFields) {
+			const std::unordered_map<std::string, StackValueType>& accessedFields) const {
 		if (accessedFields.empty()) {
 			return "";
 		}

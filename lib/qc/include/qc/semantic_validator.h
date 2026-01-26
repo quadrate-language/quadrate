@@ -223,9 +223,9 @@ namespace Qd {
 
 		const char* typeToString(StackValueType type) const;
 
-		std::string findStructTypeByFields(const std::unordered_map<std::string, StackValueType>& accessedFields);
+		std::string findStructTypeByFields(const std::unordered_map<std::string, StackValueType>& accessedFields) const;
 
-		StackValueType stringToStackValueType(const std::string& typeStr);
+		StackValueType stringToStackValueType(const std::string& typeStr) const;
 
 		bool isValidTypeName(const std::string& typeStr) const;
 
