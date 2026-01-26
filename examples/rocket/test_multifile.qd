@@ -1,13 +1,14 @@
 // Simple test for multi-file local imports
 use "constants.qd"
+use math
 
 fn main() {
-	"PI = " print
-	PI print nl
+	"Pi = " print
+	math::Pi print nl
 
-	"testing deg_to_rad:" print nl
+	"testing math::deg_to_rad:" print nl
 	45.0 -> input
 	"  input = " print input print nl
-	input deg_to_rad -> result
+	input math::deg_to_rad -> result
 	"  result = " print result print nl
 }

@@ -1,5 +1,4 @@
 // Engine and Stage definitions
-
 struct Engine {
 	thrust:f64
 	isp_vac:f64

@@ -1,20 +1,9 @@
 // Physical constants for rocket simulation
-
+// Note: Pi, deg_to_rad, rad_to_deg are in the math module
 const G0 = 9.80665
-const EARTH_RADIUS = 6.371e6
-const ATM_RHO0 = 1.225
-const ATM_SCALE = 8500.0
-const ATM_HEIGHT = 100000.0
-const PI = 3.14159265359
-const EARTH_ROT_VEL = 465.1
-const MU_EARTH = 3.986004418e14
-
-fn deg_to_rad(deg:f64 -- rad:f64) {
-	-> deg
-	deg PI * 180.0 /
-}
-
-fn rad_to_deg(rad:f64 -- deg:f64) {
-	-> rad
-	rad 180.0 * PI /
-}
+const EarthRadius = 6.371e6
+const AtmRho0 = 1.225
+const AtmScale = 8500.0
+const AtmHeight = 100000.0
+const EarthRotVel = 465.1
+const MuEarth = 3.986004418e14

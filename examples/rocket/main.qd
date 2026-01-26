@@ -3,16 +3,14 @@
 //
 // Uses directory-based namespace: all .qd files in this directory
 // are automatically merged (no explicit imports needed)
-
-use math
 use fmt
-use time
+use math
 use str
 use term
+use time
 
 // Simulation speed: real milliseconds per simulated second
 const MsPerSimSec = 50
-
 // Update interval in simulated seconds
 const PrintInterval = 10
 const PrintIntervalF = 10.0
@@ -20,18 +18,26 @@ const PrintIntervalF = 10.0
 fn progress_bar(pct:f64 width:f64 -- bar:str) {
 	-> width -> pct
 	pct width * 100.0 / math::floor -> filled
-	filled 0.0 < if { 0.0 -> filled }
-	filled width > if { width -> filled }
+	filled 0.0 < if {
+		0.0 -> filled
+	}
+	filled width > if {
+		width -> filled
+	}
 
 	"[" -> bar
 	0.0 -> i
 	loop {
-		i filled >= if { break }
+		i filled >= if {
+			break
+		}
 		bar "#" str::concat -> bar
 		i 1.0 + -> i
 	}
 	loop {
-		i width >= if { break }
+		i width >= if {
+			break
+		}
 		bar "-" str::concat -> bar
 		i 1.0 + -> i
 	}
@@ -45,7 +51,7 @@ fn print_telemetry(stage_name:str t:f64 alt:f64 vel:f64 fuel:f64 max_fuel:f64 pi
 	alt 1000.0 / -> alt_km
 	fuel max_fuel / 100.0 * -> fuel_pct
 	fuel 1000.0 / -> fuel_t
-	pitch rad_to_deg -> pitch_deg
+	pitch math::rad_to_deg -> pitch_deg
 
 	// Line 1: Stage, time, altitude, velocity
 	term::Bold print term::Cyan print
@@ -55,8 +61,12 @@ fn print_telemetry(stage_name:str t:f64 alt:f64 vel:f64 fuel:f64 max_fuel:f64 pi
 	t "  T+%5.0fs" fmt::sprintf print
 
 	" | Alt: " print
-	alt_km 100.0 < if { term::Yellow print }
-	alt_km 100.0 >= if { term::Green print }
+	alt_km 100.0 < if {
+		term::Yellow print
+	}
+	alt_km 100.0 >= if {
+		term::Green print
+	}
 	alt_km "%6.1f km" fmt::sprintf print
 	term::Reset print
 
@@ -72,9 +82,15 @@ fn print_telemetry(stage_name:str t:f64 alt:f64 vel:f64 fuel:f64 max_fuel:f64 pi
 	// Line 2: Fuel bar
 	fuel_pct 20.0 progress_bar -> bar
 	"       Fuel: " print
-	fuel_pct 20.0 < if { term::Red print }
-	fuel_pct 20.0 >= fuel_pct 50.0 < and if { term::Yellow print }
-	fuel_pct 50.0 >= if { term::Green print }
+	fuel_pct 20.0 < if {
+		term::Red print
+	}
+	fuel_pct 20.0 >= fuel_pct 50.0 < and if {
+		term::Yellow print
+	}
+	fuel_pct 50.0 >= if {
+		term::Green print
+	}
 	bar print
 	term::Reset print
 	fuel_pct fuel_t " %5.1f%% (%5.1f t)\n" fmt::printf
@@ -98,12 +114,36 @@ fn main() {
 	term::Reset print nl nl
 
 	// Stage 1: Merlin 1D engines
-	Engine { thrust = 845000.0, isp_vac = 311.0, isp_sl = 282.0, mass = 470.0 } -> m1d
-	Stage { dry_mass = 22200.0, fuel_mass = 395700.0, eng = m1d, eng_count = 9.0, diameter = 3.7, cd = 0.3 } -> stage1
+	Engine {
+		thrust = 845000.0,
+		isp_vac = 311.0,
+		isp_sl = 282.0,
+		mass = 470.0
+	} -> m1d
+	Stage {
+		dry_mass = 22200.0,
+		fuel_mass = 395700.0,
+		eng = m1d,
+		eng_count = 9.0,
+		diameter = 3.7,
+		cd = 0.3
+	} -> stage1
 
 	// Stage 2: Merlin Vacuum
-	Engine { thrust = 981000.0, isp_vac = 348.0, isp_sl = 200.0, mass = 490.0 } -> mvac
-	Stage { dry_mass = 4000.0, fuel_mass = 107500.0, eng = mvac, eng_count = 1.0, diameter = 3.7, cd = 0.3 } -> stage2
+	Engine {
+		thrust = 981000.0,
+		isp_vac = 348.0,
+		isp_sl = 200.0,
+		mass = 490.0
+	} -> mvac
+	Stage {
+		dry_mass = 4000.0,
+		fuel_mass = 107500.0,
+		eng = mvac,
+		eng_count = 1.0,
+		diameter = 3.7,
+		cd = 0.3
+	} -> stage2
 
 	15000.0 -> payload
 
@@ -114,11 +154,17 @@ fn main() {
 	stage1 stage_wet stage2 stage_wet + payload + -> init_mass
 
 	init_mass 1000.0 / "Launch mass: %.1f tons" fmt::sprintf print nl
-	EARTH_ROT_VEL "Earth rotation boost: %.1f m/s" fmt::sprintf print nl
-	
+	EarthRotVel "Earth rotation boost: %.1f m/s" fmt::sprintf print nl
+
 	// Initial: on equator at +X, velocity in +Y (prograde)
-	math::Vec3 { x = EARTH_RADIUS, y = 0.0, z = 0.0 } -> init_pos
-	math::Vec3 { x = 0.0, y = EARTH_ROT_VEL, z = 0.0 } -> init_vel
+	math::Vec3 {
+		x = EarthRadius, y = 0.0, z = 0.0
+	}
+	-> init_pos
+	math::Vec3 {
+		x = 0.0, y = EarthRotVel, z = 0.0
+	}
+	-> init_vel
 
 	State {
 		t = 0.0,
@@ -126,7 +172,7 @@ fn main() {
 		vel = init_vel,
 		mass = init_mass,
 		fuel = stage1 @fuel_mass,
-		pitch = 90.0 deg_to_rad
+		pitch = 90.0 math::deg_to_rad
 	} -> state
 
 	"STAGE 1 IGNITION" print_header
@@ -137,15 +183,19 @@ fn main() {
 
 	// Stage 1 burn
 	loop {
-		state @fuel 0.0 <= state @t 300.0 > or if { break }
+		state @fuel 0.0 <= state @t 300.0 > or if {
+			break
+		}
 
 		state altitude -> alt
 
 		// Gravity turn profile
 		alt 1000.0 > if {
 			alt 1000.0 - 60000.0 / 80.0 * 90.0 swap - -> target_deg
-			target_deg 10.0 < if { 10.0 -> target_deg }
-			target_deg deg_to_rad -> new_pitch
+			target_deg 10.0 < if {
+				10.0 -> target_deg
+			}
+			target_deg math::deg_to_rad -> new_pitch
 
 			state @pos -> p_copy
 			state @vel -> v_copy
@@ -178,7 +228,7 @@ fn main() {
 	state @t state altitude 1000.0 / state speed
 	"T+%.0fs  === MECO ===  Alt: %.1f km  Vel: %.0f m/s" fmt::sprintf print
 	term::Reset print nl
-	
+
 	time::Second 2 * time::sleep
 
 	// Stage separation
@@ -206,7 +256,9 @@ fn main() {
 
 	// Stage 2 burn with guidance
 	loop {
-		state @fuel 0.0 <= state @t 700.0 > or if { break }
+		state @fuel 0.0 <= state @t 700.0 > or if {
+			break
+		}
 
 		state altitude -> alt
 
@@ -224,23 +276,37 @@ fn main() {
 			stage2 @eng -> eng2
 			eng2 @thrust eng2 @isp_vac G0 * / -> mdot
 			fuel_now mdot / -> t_rem
-			t_rem 10.0 < if { 10.0 -> t_rem }
+			t_rem 10.0 < if {
+				10.0 -> t_rem
+			}
 
 			eng2 @thrust mass_now / -> accel
-			MU_EARTH r_now r_now * / -> g_now
+			MuEarth r_now r_now * / -> g_now
 
 			// Target vertical acceleration to zero radial velocity at burnout
 			v_rad -1.0 * t_rem / g_now + -> a_vert
-			a_vert accel > if { accel -> a_vert }
-			a_vert accel -1.0 * < if { accel -1.0 * -> a_vert }
+			a_vert accel > if {
+				accel -> a_vert
+			}
+			a_vert accel -1.0 * < if {
+				accel -1.0 * -> a_vert
+			}
 
 			a_vert accel / -> sin_p
-			sin_p 1.0 > if { 1.0 -> sin_p }
-			sin_p -1.0 < if { -1.0 -> sin_p }
+			sin_p 1.0 > if {
+				1.0 -> sin_p
+			}
+			sin_p -1.0 < if {
+				-1.0 -> sin_p
+			}
 			sin_p math::asin -> target_pitch
 
-			target_pitch 5.0 deg_to_rad < if { 5.0 deg_to_rad -> target_pitch }
-			target_pitch 45.0 deg_to_rad > if { 45.0 deg_to_rad -> target_pitch }
+			target_pitch 5.0 math::deg_to_rad < if {
+				5.0 math::deg_to_rad -> target_pitch
+			}
+			target_pitch 45.0 math::deg_to_rad > if {
+				45.0 math::deg_to_rad -> target_pitch
+			}
 
 			state @pos -> p_g
 			state @vel -> v_g
@@ -273,7 +339,7 @@ fn main() {
 	state @t state altitude 1000.0 / state speed
 	"T+%.0fs  === SECO ===  Alt: %.1f km  Vel: %.0f m/s" fmt::sprintf print
 	term::Reset print nl
-	
+
 	time::Second 2 * time::sleep
 
 	// Orbit Analysis
@@ -298,7 +364,7 @@ fn main() {
 	nl
 
 	state eccentricity -> ecc
-	state inclination rad_to_deg -> inc
+	state inclination math::rad_to_deg -> inc
 	state apoapsis -> apo
 	state periapsis -> peri
 

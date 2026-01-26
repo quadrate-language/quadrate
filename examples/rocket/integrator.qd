@@ -1,6 +1,5 @@
 // Euler integrator for simulation stepping
 // (uses directory-based namespace - no explicit imports needed)
-
 fn step(stage:Stage state:State dt:f64 -- new:State) {
 	-> dt -> state -> stage
 
@@ -21,7 +20,9 @@ fn step(stage:Stage state:State dt:f64 -- new:State) {
 	// Update mass and fuel
 	state @mass d @dm dt * + -> new_mass
 	state @fuel d @dm dt * + -> new_fuel
-	new_fuel 0.0 < if { 0.0 -> new_fuel }
+	new_fuel 0.0 < if {
+		0.0 -> new_fuel
+	}
 
 	State {
 		t = state @t dt +,

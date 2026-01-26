@@ -1,6 +1,5 @@
 // Simulation state with 3D vectors
 // (uses directory-based namespace - no explicit local imports needed)
-
 use math
 
 struct State {
@@ -15,7 +14,7 @@ struct State {
 fn altitude(state:State -- alt:f64) {
 	-> state
 	state @pos -> p
-	p length EARTH_RADIUS -
+	p length EarthRadius -
 }
 
 fn speed(state:State -- spd:f64) {

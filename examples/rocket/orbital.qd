@@ -1,6 +1,5 @@
 // Orbital mechanics analysis
 // (uses directory-based namespace - no explicit local imports needed)
-
 use math
 
 fn orbital_energy(state:State -- energy:f64) {
@@ -9,7 +8,7 @@ fn orbital_energy(state:State -- energy:f64) {
 	state @pos -> p
 	v length -> vmag
 	p length -> r
-	vmag vmag * 2.0 / MU_EARTH r / -
+	vmag vmag * 2.0 / MuEarth r / -
 }
 
 fn eccentricity(state:State -- ecc:f64) {
@@ -23,7 +22,7 @@ fn eccentricity(state:State -- ecc:f64) {
 
 	// e = (v × h) / μ - r / |r|
 	v h cross -> vh
-	vh 1.0 MU_EARTH / scale -> term1
+	vh 1.0 MuEarth / scale -> term1
 	r normalize -> term2
 	term1 term2 subtract -> e_vec
 	e_vec length
@@ -35,7 +34,7 @@ fn semi_major(state:State -- a:f64) {
 	energy 0.0 >= if {
 		-1.0
 	} else {
-		MU_EARTH energy -2.0 * /
+		MuEarth energy -2.0 * /
 	}
 }
 
@@ -46,7 +45,7 @@ fn apoapsis(state:State -- alt:f64) {
 		-1.0
 	} else {
 		state semi_major -> a
-		a 1.0 ecc + * EARTH_RADIUS -
+		a 1.0 ecc + * EarthRadius -
 	}
 }
 
@@ -57,7 +56,7 @@ fn periapsis(state:State -- alt:f64) {
 	a 0.0 < if {
 		-1.0
 	} else {
-		a 1.0 ecc - * EARTH_RADIUS -
+		a 1.0 ecc - * EarthRadius -
 	}
 }
 

@@ -1,17 +1,16 @@
 // Physics: atmosphere and derivatives
 // (uses directory-based namespace - no explicit local imports needed)
-
 use math
 
 fn atm_density(alt:f64 -- rho:f64) {
 	-> alt
 	alt 0.0 < if {
-		ATM_RHO0
+		AtmRho0
 	} else {
-		alt ATM_HEIGHT >= if {
+		alt AtmHeight >= if {
 			0.0
 		} else {
-			alt ATM_SCALE / -1.0 * math::exp ATM_RHO0 *
+			alt AtmScale / -1.0 * math::exp AtmRho0 *
 		}
 	}
 }
@@ -36,7 +35,7 @@ fn compute_deriv(stage:Stage state:State -- d:Deriv) {
 	pos length -> r
 
 	// Gravity: g = -mu/r³ * pos
-	MU_EARTH r r * r * / -1.0 * -> g_scalar
+	MuEarth r r * r * / -1.0 * -> g_scalar
 	pos g_scalar scale -> g_accel
 
 	// Up vector (normalized position)
@@ -78,7 +77,7 @@ fn compute_deriv(stage:Stage state:State -- d:Deriv) {
 	alt atm_density -> rho
 	vmag 0.001 > rho 0.0 > and if {
 		stage @diameter 2.0 / -> rad
-		PI rad rad * * -> area
+		math::Pi rad rad * * -> area
 		0.5 rho * vmag vmag * * stage @cd * area * -> drag_mag
 		vel normalize -> vel_unit
 		vel_unit neg -> drag_dir
@@ -96,5 +95,9 @@ fn compute_deriv(stage:Stage state:State -- d:Deriv) {
 		stage stage_thrust e @isp_vac G0 * / -1.0 * -> dm
 	}
 
-	Deriv { dp = vel, dv = accel, dm = dm }
+	Deriv {
+		dp = vel,
+		dv = accel,
+		dm = dm
+	}
 }
