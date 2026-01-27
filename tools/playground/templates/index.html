@@ -482,7 +482,7 @@ fn main() {
             output.classList.remove('error');
 
             try {
-                const resp = await fetch('/run', {
+                const resp = await fetch('run', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({code})
