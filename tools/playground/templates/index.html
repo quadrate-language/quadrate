@@ -252,8 +252,8 @@
                 <h2>Code</h2>
                 <div class="examples">
                     <button onclick="loadExample('hello')">Hello World</button>
-                    <button onclick="loadExample('cowsay')">Cowsay</button>
-                    <button onclick="loadExample('math')">Math</button>
+                    <button onclick="loadExample('fibonacci')">Fibonacci</button>
+                    <button onclick="loadExample('factorial')">Factorial</button>
                 </div>
             </div>
             <div class="editor-wrapper">
@@ -422,36 +422,26 @@
             hello: `fn main() {
     "Hello, World!" print nl
 }`,
-            cowsay: `fn say(msg:str -- ) {
-    -> msg
-    " " print msg print nl
-    nl
-    "        \\\\   ^__^" print nl
-    "         \\\\  (oo)\\\\_______" print nl
-    "            (__)\\\\       )\\\\/\\\\" print nl
-    "                ||----w |" print nl
-    "                ||     ||" print nl
+            fibonacci: `// Stack-based Fibonacci
+fn main() {
+    0 1   // seed values
+    0 10 1 for it {
+        over print " " print
+        swap over +
+    }
+    drop drop nl
+}`,
+            factorial: `// Factorial using the stack
+fn factorial(n:i64 -- result:i64) {
+    1 swap
+    1 swap 1 + 1 for it { it * }
 }
 
 fn main() {
-    "Moo! I'm written in Quadrate!" say
-}`,
-            math: `use math
-
-fn main() {
-    "=== Math Constants ===" print nl
-    "Pi    = " print math::Pi print nl
-    "E     = " print math::E print nl
-    "Phi   = " print math::Phi print nl
-    nl
-    "=== Circle (radius=5) ===" print nl
-    5.0 dup * math::Pi * -> area
-    "Area  = " print area print nl
-    nl
-    "=== Trigonometry ===" print nl
-    math::Pi 4.0 / -> angle
-    "sin(π/4) = " print angle math::sin print nl
-    "cos(π/4) = " print angle math::cos print nl
+    0 8 1 for n {
+        n print "! = " print
+        n factorial print nl
+    }
 }`,
         };
 
