@@ -176,10 +176,10 @@ int handleBuild(const std::vector<std::string>& args) {
 		return 1;
 	}
 
-	std::vector<std::string> toolArgs = args;
+	std::vector<std::string> toolArgs;
 
 	// If no files specified, look for .qd files in current directory
-	if (toolArgs.empty()) {
+	if (args.empty()) {
 		auto files = findQdFiles();
 		if (files.empty()) {
 			std::cerr << "quad: no .qd files found in current directory\n";
@@ -192,6 +192,21 @@ int handleBuild(const std::vector<std::string>& args) {
 			toolArgs.push_back(*it);
 		} else {
 			toolArgs = files;
+		}
+	} else {
+		for (const auto& arg : args) {
+			// If argument is a directory, look for main.qd inside it
+			if (fs::is_directory(arg)) {
+				fs::path mainQd = fs::path(arg) / "main.qd";
+				if (fs::exists(mainQd)) {
+					toolArgs.push_back(mainQd.string());
+				} else {
+					std::cerr << "quad: no main.qd found in directory '" << arg << "'\n";
+					return 1;
+				}
+			} else {
+				toolArgs.push_back(arg);
+			}
 		}
 	}
 
@@ -223,7 +238,18 @@ int handleRun(const std::vector<std::string>& args) {
 		}
 	} else {
 		for (const auto& arg : args) {
-			toolArgs.push_back(arg);
+			// If argument is a directory, look for main.qd inside it
+			if (fs::is_directory(arg)) {
+				fs::path mainQd = fs::path(arg) / "main.qd";
+				if (fs::exists(mainQd)) {
+					toolArgs.push_back(mainQd.string());
+				} else {
+					std::cerr << "quad: no main.qd found in directory '" << arg << "'\n";
+					return 1;
+				}
+			} else {
+				toolArgs.push_back(arg);
+			}
 		}
 	}
 

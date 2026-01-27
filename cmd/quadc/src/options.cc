@@ -1,8 +1,11 @@
 #include "options.h"
 #include "version.h"
 #include <cstdio>
+#include <filesystem>
 #include <iostream>
 #include <unistd.h>
+
+namespace fs = std::filesystem;
 
 void printHelp() {
 	std::cout << "quadc - Quadrate compiler\n\n";
@@ -156,7 +159,19 @@ bool parseArgs(int argc, char* argv[], Options& opts) {
 			std::cerr << "Try 'quadc --help' for more information.\n";
 			return false;
 		} else {
-			opts.files.push_back(arg);
+			// If argument is a directory, look for main.qd inside it
+			if (fs::is_directory(arg)) {
+				fs::path mainQd = fs::path(arg) / "main.qd";
+				if (fs::exists(mainQd)) {
+					opts.files.push_back(mainQd.string());
+				} else {
+					std::cerr << "quadc: no main.qd found in directory '" << arg << "'\n";
+					std::cerr << "Try 'quadc --help' for more information.\n";
+					return false;
+				}
+			} else {
+				opts.files.push_back(arg);
+			}
 		}
 	}
 
