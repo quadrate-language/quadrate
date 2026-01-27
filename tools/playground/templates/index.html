@@ -239,6 +239,50 @@
             color: #666;
             margin-left: 0.5rem;
         }
+        footer {
+            background: #16213e;
+            border-top: 1px solid #0f3460;
+            padding: 1.5rem 2rem;
+            margin-top: auto;
+        }
+        .footer-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 2rem;
+            flex-wrap: wrap;
+        }
+        .footer-about {
+            flex: 1;
+            min-width: 250px;
+        }
+        .footer-about h3 {
+            margin: 0 0 0.5rem 0;
+            font-size: 0.9rem;
+            color: #7ec8e3;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        .footer-about p {
+            margin: 0;
+            font-size: 0.85rem;
+            color: #888;
+            line-height: 1.5;
+        }
+        .footer-links {
+            display: flex;
+            gap: 2rem;
+        }
+        .footer-links a {
+            color: #7ec8e3;
+            text-decoration: none;
+            font-size: 0.85rem;
+        }
+        .footer-links a:hover {
+            text-decoration: underline;
+        }
     </style>
 </head>
 <body>
@@ -278,6 +322,19 @@
             <div id="output"></div>
         </div>
     </main>
+
+    <footer>
+        <div class="footer-content">
+            <div class="footer-about">
+                <h3>About Quadrate</h3>
+                <p>A stack-based programming language that compiles to native code via LLVM. Designed for simplicity and expressiveness.</p>
+            </div>
+            <div class="footer-links">
+                <a href="https://quad.r8.rs" target="_blank">Documentation</a>
+                <a href="https://git.sr.ht/~klahr/quadrate" target="_blank">Source Code</a>
+            </div>
+        </div>
+    </footer>
 
     <script>
         const editor = document.getElementById('editor');
@@ -425,7 +482,7 @@
             fibonacci: `// Stack-based Fibonacci
 fn main() {
     0 1   // seed values
-    0 10 1 for it {
+    0 20 1 for it {
         over print " " print
         swap over +
     }
@@ -434,7 +491,9 @@ fn main() {
             factorial: `// Factorial using the stack
 fn factorial(n:i64 -- result:i64) {
     1 swap
-    1 swap 1 + 1 for it { it * }
+    1 swap ++ 1 for it {
+        it *
+    }
 }
 
 fn main() {
