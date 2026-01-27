@@ -698,11 +698,10 @@ TEST(WhileLoop) {
 	const char* src = R"(
 		fn main() {
 			0 -> i
-			{
-				i 5 lt
-			} while {
+			i 5 lt while {
 				i print
 				i 1 + -> i
+				i 5 lt
 			}
 		}
 	)";
