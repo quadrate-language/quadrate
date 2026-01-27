@@ -8,9 +8,11 @@ Thank you for your interest in contributing to Quadrate! We welcome contribution
 - Meson 0.55 or higher
 - C++20 compatible compiler (GCC 10+, Clang 10+)
 - Make
-- u8t library (tokenizer/scanner - must be installed system-wide)
+- LLVM 14+ (for code generation)
 - clang-format (for code formatting)
 - valgrind (optional, for memory leak testing)
+
+Note: The u8t tokenizer library is fetched automatically via meson subprojects.
 
 ### Build commands
 
