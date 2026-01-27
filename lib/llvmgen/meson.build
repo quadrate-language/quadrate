@@ -29,11 +29,12 @@ if llvm_dep.found()
 
 	llvmgen_inc = include_directories('include')
 
-	# Static library
+	# Static library (with precompiled headers for LLVM)
 	llvmgen_lib = static_library('llvmgen',
 		llvmgen_sources,
 		include_directories: [llvmgen_inc, qc_inc, qdrt_src_inc],
 		dependencies: [llvm_dep, qc_dep],
+		cpp_pch: 'src/generator_impl.h',
 		cpp_args: llvm_cxxflags,
 		link_args: llvm_ldflags + llvm_libs,
 		install: false
