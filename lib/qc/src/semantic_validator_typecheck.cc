@@ -767,20 +767,11 @@ namespace Qd {
 				// This is necessary because loop bodies can have complex stack effects that are hard to analyze
 				bool wasInLoopBody = mInLoopBody;
 				mInLoopBody = true;
-				size_t stackSizeBefore = loopStack.size();
 				if (forStmt->body()) {
 					typeCheckBlock(forStmt->body(), loopStack, loopVars, loopStructStack);
 				}
 				mInLoopBody = wasInLoopBody;
 
-				// Note: Loop stack neutrality checking disabled for now - causes false positives
-				// when module function signatures aren't fully tracked. The if/else branch
-				// mismatch check is more reliable. Re-enable when signature tracking is complete.
-				// int loopEffect = static_cast<int>(loopStack.size()) - static_cast<int>(stackSizeBefore);
-				// if (loopEffect != 0) {
-				//     reportWarning(child, "for loop body may not be stack-neutral");
-				// }
-				(void)stackSizeBefore; // Suppress unused variable warning
 				// Don't modify parent stack - loops don't have consistent stack effects
 				break;
 			}
@@ -802,24 +793,12 @@ namespace Qd {
 
 				bool wasInLoopBody = mInLoopBody;
 				mInLoopBody = true;
-				size_t stackSizeBefore = loopStack.size();
 				AstNodeWhileStatement* whileStmt = static_cast<AstNodeWhileStatement*>(child);
 				if (whileStmt->body()) {
 					typeCheckBlock(whileStmt->body(), loopStack, loopVars, loopStructStack);
 				}
 				mInLoopBody = wasInLoopBody;
 
-				// Note: While loop stack effect checking disabled for now - causes false positives
-				// when module function signatures aren't fully tracked. Re-enable when signature
-				// tracking is complete.
-				// While body must leave exactly 1 value (the condition for next iteration)
-				// int loopEffect = static_cast<int>(loopStack.size()) - static_cast<int>(stackSizeBefore);
-				// if (loopEffect != 1) {
-				//     std::string errorMsg = "Stack effect error in 'while' loop: body must leave exactly 1 value
-				//     (condition), but changes stack by "; errorMsg += std::to_string(loopEffect); reportError(child,
-				//     errorMsg.c_str());
-				// }
-				(void)stackSizeBefore; // Suppress unused variable warning
 				// Don't modify parent stack
 				break;
 			}
@@ -832,23 +811,12 @@ namespace Qd {
 
 				bool wasInLoopBody = mInLoopBody;
 				mInLoopBody = true;
-				size_t stackSizeBefore = loopStack.size();
 				AstNodeLoopStatement* loopStmt = static_cast<AstNodeLoopStatement*>(child);
 				if (loopStmt->body()) {
 					typeCheckBlock(loopStmt->body(), loopStack, loopVars, loopStructStack);
 				}
 				mInLoopBody = wasInLoopBody;
 
-				// Note: Loop stack effect checking disabled for now - causes false positives
-				// when module function signatures aren't fully tracked. Re-enable when signature
-				// tracking is complete.
-				// Check for non-neutral stack effect
-				// int loopEffect = static_cast<int>(loopStack.size()) - static_cast<int>(stackSizeBefore);
-				// if (loopEffect != 0) {
-				//     std::string errorMsg = "Stack effect error in 'loop': body must be stack-neutral, but changes
-				//     stack by "; errorMsg += std::to_string(loopEffect); reportError(child, errorMsg.c_str());
-				// }
-				(void)stackSizeBefore; // Suppress unused variable warning
 				// Don't modify parent stack
 				break;
 			}
