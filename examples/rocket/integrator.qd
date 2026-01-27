@@ -6,16 +6,10 @@ pub fn step(stage:Stage state:State dt:f64 -- new:State) {
 	stage state compute_deriv -> d
 
 	// Update position: pos + dp * dt
-	d @dp -> dp
-	dp dt scale -> dp_scaled
-	state @pos -> old_pos
-	old_pos dp_scaled add -> new_pos
+	state @pos d @dp dt scale add -> new_pos
 
 	// Update velocity: vel + dv * dt
-	d @dv -> dv
-	dv dt scale -> dv_scaled
-	state @vel -> old_vel
-	old_vel dv_scaled add -> new_vel
+	state @vel d @dv dt scale add -> new_vel
 
 	// Update mass and fuel
 	state @mass d @dm dt * + -> new_mass

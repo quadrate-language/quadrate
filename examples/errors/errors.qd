@@ -5,7 +5,7 @@ fn division(a:i64 b:i64 -- result:i64)! {
 		0
 		"division by zero" -1 panic
 	}
-	div
+	/
 }
 
 fn main() {

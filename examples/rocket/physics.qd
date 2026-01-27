@@ -35,8 +35,7 @@ pub fn compute_deriv(stage:Stage state:State -- d:Deriv) {
 	pos length -> r
 
 	// Gravity: g = -mu/r³ * pos
-	MuEarth r r * r * / -1.0 * -> g_scalar
-	pos g_scalar scale -> g_accel
+	pos MuEarth r r * r * / -1.0 * scale -> g_accel
 
 	// Up vector (normalized position)
 	pos normalize -> up
@@ -45,8 +44,7 @@ pub fn compute_deriv(stage:Stage state:State -- d:Deriv) {
 	up vel dot -> v_rad
 
 	// Horizontal velocity (perpendicular to radial)
-	up v_rad scale -> up_scaled
-	vel up_scaled subtract -> v_horiz
+	vel up v_rad scale subtract -> v_horiz
 	v_horiz length -> h_mag
 
 	// Thrust direction
@@ -55,12 +53,9 @@ pub fn compute_deriv(stage:Stage state:State -- d:Deriv) {
 		// East unit vector (horizontal direction)
 		v_horiz normalize -> east
 		// thrust = sin(pitch)*up + cos(pitch)*east
-		pitch math::sin -> sp
-		pitch math::cos -> cp
-		up sp scale -> t_up
-		east cp scale -> t_east
-		t_up t_east add -> t_sum
-		t_sum normalize -> thrust_dir
+		up pitch math::sin scale
+		east pitch math::cos scale
+		add normalize -> thrust_dir
 	} else {
 		up -> thrust_dir
 	}
@@ -68,8 +63,7 @@ pub fn compute_deriv(stage:Stage state:State -- d:Deriv) {
 	// Thrust acceleration
 	math::vec3_zero -> thrust_accel
 	fuel 0.0 > if {
-		stage stage_thrust mass / -> a_thrust
-		thrust_dir a_thrust scale -> thrust_accel
+		thrust_dir stage stage_thrust mass / scale -> thrust_accel
 	}
 
 	// Drag
@@ -85,8 +79,7 @@ pub fn compute_deriv(stage:Stage state:State -- d:Deriv) {
 	}
 
 	// Total acceleration
-	g_accel thrust_accel add -> sum1
-	sum1 drag_accel add -> accel
+	g_accel thrust_accel add drag_accel add -> accel
 
 	// Mass flow
 	0.0 -> dm

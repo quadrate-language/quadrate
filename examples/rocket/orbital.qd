@@ -4,10 +4,8 @@ use math
 
 fn orbital_energy(state:State -- energy:f64) {
 	-> state
-	state @vel -> v
-	state @pos -> p
-	v length -> vmag
-	p length -> r
+	state @vel length -> vmag
+	state @pos length -> r
 	vmag vmag * 2.0 / MuEarth r / -
 }
 
@@ -61,9 +59,6 @@ pub fn periapsis(state:State -- alt:f64) {
 
 pub fn inclination(state:State -- inc:f64) {
 	-> state
-	state @pos -> p
-	state @vel -> v
-	p v cross -> h
-	h length -> hmag
-	h @z hmag / math::acos
+	state @pos state @vel cross -> h
+	h @z h length / math::acos
 }

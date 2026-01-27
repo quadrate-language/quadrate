@@ -187,7 +187,7 @@ fn process_token(s:ptr tok:str -- ) {
 		tok 0 str::char_at! -> first
 		first unicode::underscore == if {
 			tok 1 tok str::len 1 - str::substring! cast<f64> -> val
-			s 0.0 val sub stack_push
+			s 0.0 val - stack_push
 		} else {
 			tok cast<f64> -> val
 			s val stack_push
@@ -214,21 +214,21 @@ fn process_operator(s:ptr op:str -- ) {
 			s 2 stack_check if {
 				s stack_pop -> b
 				s stack_pop -> a
-				s a b add stack_push
+				s a b + stack_push
 			}
 		}
 		unicode::minus {
 			s 2 stack_check if {
 				s stack_pop -> b
 				s stack_pop -> a
-				s a b sub stack_push
+				s a b - stack_push
 			}
 		}
 		unicode::asterisk {
 			s 2 stack_check if {
 				s stack_pop -> b
 				s stack_pop -> a
-				s a b mul stack_push
+				s a b * stack_push
 			}
 		}
 		unicode::slash {
@@ -236,7 +236,7 @@ fn process_operator(s:ptr op:str -- ) {
 				s stack_peek "dc: divide by zero" check_nonzero if {
 					s stack_pop -> b
 					s stack_pop -> a
-					s a b div stack_push
+					s a b / stack_push
 				}
 			}
 		}
@@ -246,7 +246,7 @@ fn process_operator(s:ptr op:str -- ) {
 					s stack_pop -> b
 					s stack_pop -> a
 					// Remainder for floats: a - floor(a/b)*b
-					a a b div math::floor b mul sub -> r
+					a a b / math::floor b * - -> r
 					s r stack_push
 				}
 			}
@@ -301,9 +301,9 @@ fn process_operator(s:ptr op:str -- ) {
 				s stack_peek "dc: divide by zero" check_nonzero if {
 					s stack_pop -> b
 					s stack_pop -> a
-					a b div math::floor -> q
+					a b / math::floor -> q
 					// Remainder = a - q*b
-					a q b mul sub -> r
+					a q b * - -> r
 					s q stack_push
 					s r stack_push
 				}
