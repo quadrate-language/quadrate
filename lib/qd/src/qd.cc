@@ -23,14 +23,7 @@ extern "C" {
 #include "src/platform/dynlib_platform.h"
 #include "src/platform/exe_path_platform.h"
 }
-
-// Platform-specific data directory name
-// Haiku uses "data" instead of "share" for data files
-#ifdef __HAIKU__
-static constexpr const char* DATA_DIR_NAME = "data";
-#else
-static constexpr const char* DATA_DIR_NAME = "share";
-#endif
+#include "src/platform/platform_paths.h"
 
 namespace fs = std::filesystem;
 

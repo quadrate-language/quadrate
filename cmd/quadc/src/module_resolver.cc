@@ -11,14 +11,7 @@
 extern "C" {
 #include "src/platform/exe_path_platform.h"
 }
-
-// Platform-specific data directory name
-// Haiku uses "data" instead of "share" for data files
-#ifdef __HAIKU__
-static constexpr const char* DATA_DIR_NAME = "data";
-#else
-static constexpr const char* DATA_DIR_NAME = "share";
-#endif
+#include "src/platform/platform_paths.h"
 
 // Global module version pins (set from command-line -l flags)
 static std::unordered_map<std::string, std::string> g_moduleVersionPins;
