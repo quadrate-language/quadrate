@@ -16,8 +16,15 @@ else
 endif
 
 # Use clang by default for better LLVM integration
-export CC  := clang
-export CXX := clang++
+# Use ccache if available for faster rebuilds
+CCACHE := $(shell command -v ccache 2>/dev/null)
+ifdef CCACHE
+    export CC  := ccache clang
+    export CXX := ccache clang++
+else
+    export CC  := clang
+    export CXX := clang++
+endif
 
 # Commands to copy
 CMDS := quad quadc quadfmt quadlint quadlsp quadpm quaduses
