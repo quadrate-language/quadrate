@@ -3769,14 +3769,21 @@ namespace Qd {
 						testDecl->setParent(program);
 						program->addChild(testDecl);
 					}
+				} else {
+					std::string msg = "Unexpected identifier '" + std::string(text) +
+							"' at top level. Expected 'fn', 'struct', 'const', 'use', or 'test'";
+					errorReporter.reportError(&scanner, msg.c_str());
 				}
 				break;
 			}
 			case U8T_INTEGER:
+				errorReporter.reportError(&scanner, "Unexpected integer literal at top level");
 				break;
 			case U8T_STRING:
+				errorReporter.reportError(&scanner, "Unexpected string literal at top level");
 				break;
 			case U8T_FLOAT:
+				errorReporter.reportError(&scanner, "Unexpected float literal at top level");
 				break;
 			default:
 				break;
