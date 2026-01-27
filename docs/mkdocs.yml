@@ -2,6 +2,7 @@ site_name: Quadrate
 site_description: A stack-based programming language that compiles to native code via LLVM
 theme:
   name: readthedocs
+  custom_dir: overrides
   logo: assets/logo-1024x512.png
   favicon: assets/favicon.ico
   hljs_languages:
