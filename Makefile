@@ -40,7 +40,7 @@ LIBS_WITH_HEADERS := qdrt qd qdfmt qdio qdmath qdmem qdos qdstr qdstrconv qdtime
 # Note: Some modules moved to external repos: http, sqlite, json, regex, ct, crypto
 STDLIB_MODULES := $(shell find lib/qd*/qd -maxdepth 1 -mindepth 1 -type d -exec basename {} \; 2>/dev/null | sort -u)
 
-.PHONY: all debug release docker-x64 docker-arm64 docker-all tests tests-failed tests-clear valgrind asan fuzz examples format install uninstall clean docs quadmcp
+.PHONY: all debug release docker-x64 docker-arm64 docker-all tests tests-failed tests-clear valgrind asan fuzz examples format install uninstall clean docs quadmcp playground
 
 all: debug
 
@@ -169,6 +169,16 @@ quadmcp:
 	else \
 		echo "Note: Go not found, skipping quadmcp build"; \
 	fi
+
+# Build playground (web-based REPL) - requires Go and Docker
+playground: release
+	@if ! command -v go >/dev/null 2>&1; then echo "Error: Go required for playground"; exit 1; fi
+	@if ! command -v docker >/dev/null 2>&1; then echo "Error: Docker required for playground"; exit 1; fi
+	@echo "Building playground sandbox image..."
+	@tools/playground/build-sandbox.sh
+	@echo "Building playground server..."
+	@cd tools/playground && go build -o ../../dist/bin/playground .
+	@echo "Playground built: dist/bin/playground"
 
 install: release
 	install -d $(DESTDIR)$(PREFIX)/bin

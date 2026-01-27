@@ -1,0 +1,32 @@
+# Sandbox image for running Quadrate code safely
+FROM ubuntu:24.04
+
+# Install clang for compilation
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    clang \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create sandbox user
+RUN useradd -r -s /bin/false sandbox
+
+# Copy quadc and runtime libraries
+COPY dist/bin/quadc /usr/local/bin/
+COPY dist/lib/*.so /usr/local/lib/
+COPY dist/lib/*.a /usr/local/lib/
+COPY dist/share/quadrate /usr/local/share/quadrate
+
+# Copy all shared library dependencies
+COPY libs/* /usr/local/lib/
+
+# Update library cache
+RUN ldconfig
+
+# Create working directory
+WORKDIR /sandbox
+RUN chown sandbox:sandbox /sandbox
+
+# Run as unprivileged user
+USER sandbox
+
+# Default command
+ENTRYPOINT ["quadc"]
