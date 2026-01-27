@@ -2,7 +2,7 @@
 
 A stack-based language that compiles to native code via LLVM.
 
-**Documentation**: https://quad.r8.rs
+**Documentation**: https://quad.r8.rs | **Playground**: https://quad.r8.rs/play/
 
 ## What is Quadrate?
 

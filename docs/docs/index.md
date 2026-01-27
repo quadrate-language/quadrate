@@ -54,9 +54,10 @@ quad run factorial.qd
 
 New to Quadrate? Start here:
 
-1. **[Install Quadrate](getting-started.md)** - Get the toolchain running
-2. **[Hello World](learn/1-basics/hello-world.md)** - Write your first program
-3. **[Learn the Stack](learn/2-stack/how-it-works.md)** - Understand stack-based evaluation
+1. **[Try it Online](https://quad.r8.rs/play/)** - Experiment in the playground
+2. **[Install Quadrate](getting-started.md)** - Get the toolchain running
+3. **[Hello World](learn/1-basics/hello-world.md)** - Write your first program
+4. **[Learn the Stack](learn/2-stack/how-it-works.md)** - Understand stack-based evaluation
 
 Or dive into the **[Learn section](learn/1-basics/hello-world.md)** for a complete tutorial from basics to advanced topics.
 
