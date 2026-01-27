@@ -123,10 +123,15 @@ func runCode(code string) (string, error) {
 
 	log.Printf("Running code from %s", srcFile)
 
+	// Verify file exists
+	if _, err := os.Stat(srcFile); err != nil {
+		log.Printf("ERROR: source file does not exist: %v", err)
+	}
+
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 
-	cmd := exec.CommandContext(ctx, "docker", "run",
+	args := []string{"run",
 		"--rm",
 		"--network", "none",
 		"--read-only",
@@ -136,11 +141,14 @@ func runCode(code string) (string, error) {
 		"--pids-limit", "32",
 		"--security-opt", "no-new-privileges",
 		"--cap-drop", "ALL",
-		"-v", tmpDir+":/sandbox:ro",
+		"-v", tmpDir + ":/sandbox:ro",
 		"-e", "NO_COLOR=1",
 		sandboxImage,
 		"-r", "/sandbox/main.qd",
-	)
+	}
+	log.Printf("Docker command: docker %v", args)
+
+	cmd := exec.CommandContext(ctx, "docker", args...)
 
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout
