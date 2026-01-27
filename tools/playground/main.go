@@ -107,7 +107,7 @@ func handleRun(w http.ResponseWriter, r *http.Request) {
 }
 
 func runCode(code string) (string, error) {
-	tmpDir, err := os.MkdirTemp("", "quadplay-*")
+	tmpDir, err := os.MkdirTemp("/var/lib/playground", "run-*")
 	if err != nil {
 		return "", fmt.Errorf("failed to create temp directory: %v", err)
 	}
