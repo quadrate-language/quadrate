@@ -121,6 +121,8 @@ func runCode(code string) (string, error) {
 	os.Chmod(srcFile, 0644)
 	os.Chmod(tmpDir, 0755)
 
+	log.Printf("Running code from %s", srcFile)
+
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 
