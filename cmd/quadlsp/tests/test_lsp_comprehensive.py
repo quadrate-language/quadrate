@@ -204,6 +204,10 @@ class LSPComprehensiveTester:
         else:
             self.failed += 1
             print(f"    FAIL: {test_name}")
+            # Track failed test names for summary
+            if not hasattr(self, 'failed_tests'):
+                self.failed_tests = []
+            self.failed_tests.append(test_name)
             # Write to stderr so CI shows it immediately
             _sys.stderr.write(f"ASSERTION FAILED: {test_name}\n")
             _sys.stderr.flush()
@@ -870,6 +874,14 @@ fn main() {
             return 0
         else:
             print(f"\n{self.failed} test(s) failed")
+            # Print summary of failed tests at the end so it's visible even with truncation
+            failed_list = getattr(self, 'failed_tests', [])
+            if failed_list:
+                _sys.stderr.write("\n=== FAILED TESTS SUMMARY ===\n")
+                for ft in failed_list:
+                    _sys.stderr.write(f"FAIL: {ft}\n")
+                _sys.stderr.write("=== END FAILED TESTS ===\n")
+                _sys.stderr.flush()
             return 1
 
 
