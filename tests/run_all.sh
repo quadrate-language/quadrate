@@ -373,7 +373,7 @@ run_cpp_tests() {
         if [[ $USE_VALGRIND -eq 1 ]]; then
             valgrind_opt="--setup=valgrind"
         fi
-        output=$(meson test -C "$PROJECT_ROOT/$BUILD_DIR" $valgrind_opt "$test" 2>&1)
+        output=$(meson test -C "$PROJECT_ROOT/$BUILD_DIR" $valgrind_opt --print-errorlogs "$test" 2>&1)
         exit_code=$?
 
         if [[ $exit_code -eq 0 ]]; then
@@ -426,7 +426,7 @@ run_lsp_tests() {
         if [[ $USE_VALGRIND -eq 1 ]]; then
             valgrind_opt="--setup=valgrind"
         fi
-        output=$(meson test -C "$PROJECT_ROOT/$BUILD_DIR" $valgrind_opt "$test" 2>&1)
+        output=$(meson test -C "$PROJECT_ROOT/$BUILD_DIR" $valgrind_opt --print-errorlogs "$test" 2>&1)
         exit_code=$?
 
         if [[ $exit_code -eq 0 ]]; then
