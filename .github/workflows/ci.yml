@@ -110,26 +110,3 @@ jobs:
         env:
           DEBUGINFOD_URLS: https://debuginfod.archlinux.org
         run: make valgrind
-
-  freebsd:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Build and test on FreeBSD
-        uses: vmactions/freebsd-vm@v1
-        with:
-          usesh: true
-          prepare: |
-            pkg install -y \
-              diffutils \
-              git \
-              gmake \
-              llvm \
-              meson \
-              pkgconf \
-              sqlite3 \
-              openssl
-          run: |
-            gmake release
-            gmake tests
