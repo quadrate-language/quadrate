@@ -1,0 +1,131 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+jobs:
+  debian:
+    runs-on: ubuntu-latest
+    container:
+      image: debian:testing
+    steps:
+      - name: Install dependencies
+        run: |
+          apt-get update
+          apt-get install -y \
+            clang \
+            git \
+            libclang-rt-dev \
+            libsqlite3-dev \
+            libssl-dev \
+            llvm-dev \
+            meson \
+            nodejs \
+            npm \
+            pkg-config \
+            valgrind \
+            zlib1g-dev
+
+      - name: Install tree-sitter
+        run: npm install -g tree-sitter-cli
+
+      - uses: actions/checkout@v4
+
+      - name: Clone library repos
+        run: |
+          cd ..
+          git clone --depth 1 https://github.com/quadrate-language/hof
+          git clone --depth 1 https://github.com/quadrate-language/log
+          git clone --depth 1 https://github.com/quadrate-language/compress
+          git clone --depth 1 https://github.com/quadrate-language/net
+          git clone --depth 1 https://github.com/quadrate-language/tls
+          git clone --depth 1 https://github.com/quadrate-language/http
+          git clone --depth 1 https://github.com/quadrate-language/sqlite
+          git clone --depth 1 https://github.com/quadrate-language/json
+          git clone --depth 1 https://github.com/quadrate-language/regex
+          git clone --depth 1 https://github.com/quadrate-language/ct
+          git clone --depth 1 https://github.com/quadrate-language/crypto
+
+      - name: Build
+        run: make release
+
+      - name: Test
+        run: make tests
+
+      - name: Valgrind
+        run: make valgrind
+
+  archlinux:
+    runs-on: ubuntu-latest
+    container:
+      image: archlinux:latest
+    steps:
+      - name: Install dependencies
+        run: |
+          pacman -Syu --noconfirm \
+            clang \
+            git \
+            llvm \
+            meson \
+            nodejs \
+            openssl \
+            pkgconf \
+            sqlite \
+            tree-sitter-cli \
+            valgrind \
+            zlib
+
+      - uses: actions/checkout@v4
+
+      - name: Clone library repos
+        run: |
+          cd ..
+          git clone --depth 1 https://github.com/quadrate-language/hof
+          git clone --depth 1 https://github.com/quadrate-language/log
+          git clone --depth 1 https://github.com/quadrate-language/compress
+          git clone --depth 1 https://github.com/quadrate-language/net
+          git clone --depth 1 https://github.com/quadrate-language/tls
+          git clone --depth 1 https://github.com/quadrate-language/http
+          git clone --depth 1 https://github.com/quadrate-language/sqlite
+          git clone --depth 1 https://github.com/quadrate-language/json
+          git clone --depth 1 https://github.com/quadrate-language/regex
+          git clone --depth 1 https://github.com/quadrate-language/ct
+          git clone --depth 1 https://github.com/quadrate-language/crypto
+
+      - name: Build
+        run: make release
+
+      - name: Test
+        run: make tests
+
+      - name: Valgrind
+        env:
+          DEBUGINFOD_URLS: https://debuginfod.archlinux.org
+        run: make valgrind
+
+  freebsd:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build and test on FreeBSD
+        uses: vmactions/freebsd-vm@v1
+        with:
+          usesh: true
+          prepare: |
+            pkg install -y \
+              git \
+              llvm \
+              meson \
+              node \
+              npm \
+              pkgconf \
+              sqlite3 \
+              openssl
+            npm install -g tree-sitter-cli
+          run: |
+            make release
+            make tests
