@@ -150,26 +150,34 @@ class LSPComprehensiveTester:
 
     def setup(self):
         """Set up the test session"""
+        import sys as _sys
         self.session = LSPSession(self.lsp_path)
-        print(f"Starting LSP server: {self.lsp_path}", flush=True)
+        _sys.stderr.write(f"Starting LSP server: {self.lsp_path}\n")
+        _sys.stderr.flush()
         if not self.session.start():
-            print("FAIL: Could not start LSP process", flush=True)
+            _sys.stderr.write("FAIL: Could not start LSP process\n")
+            _sys.stderr.flush()
             return False
-        print("LSP process started, sending initialize...", flush=True)
+        _sys.stderr.write("LSP process started, sending initialize...\n")
+        _sys.stderr.flush()
         self.capabilities = self.session.initialize()
         if self.capabilities is None:
-            print("FAIL: LSP initialize returned None", flush=True)
+            _sys.stderr.write("FAIL: LSP initialize returned None\n")
+            _sys.stderr.flush()
             # Try to get stderr for debugging
             if self.session.proc and self.session.proc.stderr:
                 try:
                     import select as sel
                     if sel.select([self.session.proc.stderr], [], [], 0.1)[0]:
                         stderr = self.session.proc.stderr.read(4096)
-                        print(f"LSP stderr: {stderr.decode('utf-8', errors='replace')}", flush=True)
+                        _sys.stderr.write(f"LSP stderr: {stderr.decode('utf-8', errors='replace')}\n")
+                        _sys.stderr.flush()
                 except Exception as e:
-                    print(f"Could not read stderr: {e}", flush=True)
+                    _sys.stderr.write(f"Could not read stderr: {e}\n")
+                    _sys.stderr.flush()
             return False
-        print("LSP initialized successfully", flush=True)
+        _sys.stderr.write("LSP initialized successfully\n")
+        _sys.stderr.flush()
         return True
 
     def teardown(self):
@@ -180,6 +188,7 @@ class LSPComprehensiveTester:
 
     def assert_test(self, condition, test_name):
         """Assert a test condition"""
+        import sys as _sys
         self.test_count += 1
         if condition:
             self.passed += 1
@@ -188,6 +197,9 @@ class LSPComprehensiveTester:
         else:
             self.failed += 1
             print(f"    FAIL: {test_name}")
+            # Write to stderr so CI shows it immediately
+            _sys.stderr.write(f"ASSERTION FAILED: {test_name}\n")
+            _sys.stderr.flush()
             return False
 
     # ==========================================================================
@@ -792,11 +804,17 @@ fn main() {
 
     def run_all_tests(self):
         """Run all comprehensive tests"""
+        import sys as _sys
+        _sys.stderr.write("run_all_tests() starting\n")
+        _sys.stderr.flush()
+
         print("=" * 70)
         print("Quadrate LSP Comprehensive Test Suite")
         print("=" * 70)
 
         if not self.setup():
+            _sys.stderr.write("FAIL: Could not initialize LSP session\n")
+            _sys.stderr.flush()
             print("FAIL: Could not initialize LSP session")
             return 1
 
@@ -833,6 +851,11 @@ fn main() {
         print(f"Passed:       {self.passed}")
         print(f"Failed:       {self.failed}")
         print("=" * 70)
+
+        # Also write to stderr so meson shows it with --print-errorlogs
+        import sys as _sys
+        _sys.stderr.write(f"\nFINAL RESULT: {self.test_count} tests, {self.passed} passed, {self.failed} failed\n")
+        _sys.stderr.flush()
 
         if self.failed == 0:
             print("\nAll comprehensive tests passed!")
@@ -899,13 +922,18 @@ def main():
 
 
 if __name__ == "__main__":
-    print("test_lsp_comprehensive.py starting...", flush=True)
+    # Use stderr for diagnostics since meson may only show stderr with --print-errorlogs
+    import sys as _sys
+    _sys.stderr.write("test_lsp_comprehensive.py starting...\n")
+    _sys.stderr.flush()
     try:
         result = main()
-        print(f"test_lsp_comprehensive.py finished with exit code {result}", flush=True)
+        _sys.stderr.write(f"test_lsp_comprehensive.py finished with exit code {result}\n")
+        _sys.stderr.flush()
         sys.exit(result)
     except Exception as e:
         import traceback
-        print(f"FATAL ERROR: {e}", flush=True)
+        _sys.stderr.write(f"FATAL ERROR: {e}\n")
+        _sys.stderr.flush()
         traceback.print_exc()
         sys.exit(1)
