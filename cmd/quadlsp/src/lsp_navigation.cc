@@ -8,6 +8,7 @@
 #include <qc/ast.h>
 #include <qc/ast_node_constant.h>
 #include <qc/ast_node_field_access.h>
+#include <qc/ast_node_field_set.h>
 #include <qc/ast_node_function.h>
 #include <qc/ast_node_identifier.h>
 #include <qc/ast_node_import.h>
@@ -15,6 +16,8 @@
 #include <qc/ast_node_parameter.h>
 #include <qc/ast_node_scoped.h>
 #include <qc/ast_node_struct.h>
+#include <qc/ast_node_struct_construction.h>
+#include <qc/ast_node_use.h>
 #include <sstream>
 
 void QuadrateLSP::findIdentifiersInNode(
@@ -252,6 +255,60 @@ json_t* QuadrateLSP::findDefinitionInModule(
 	return json_null();
 }
 
+json_t* QuadrateLSP::findMethodInModule(const std::string& modulePath, const std::string& methodName) {
+	// Read the module file
+	std::ifstream file(modulePath);
+	if (!file.good()) {
+		return json_null();
+	}
+
+	std::stringstream buffer;
+	buffer << file.rdbuf();
+	std::string moduleText = buffer.str();
+
+	// Parse the module file
+	Qd::Ast ast;
+	Qd::IAstNode* root = ast.generate(moduleText.c_str(), false, nullptr);
+
+	if (!root || ast.hasErrors() || root->type() != Qd::IAstNode::Type::PROGRAM) {
+		return json_null();
+	}
+
+	// Search for method definitions (functions with a receiver)
+	for (size_t i = 0; i < root->childCount(); i++) {
+		Qd::IAstNode* child = root->child(i);
+
+		if (child && child->type() == Qd::IAstNode::Type::FUNCTION_DECLARATION) {
+			Qd::AstNodeFunctionDeclaration* funcNode = static_cast<Qd::AstNodeFunctionDeclaration*>(child);
+
+			// Check if this is a method (has a receiver) with the matching name
+			if (funcNode->hasReceiver() && funcNode->name() == methodName) {
+				// Found the method definition
+				json_t* location = json_object();
+				std::string moduleUri = "file://" + modulePath;
+				json_object_set_new(location, "uri", json_string(moduleUri.c_str()));
+
+				json_t* range = json_object();
+				json_t* start = json_object();
+				size_t lspLine = (funcNode->line() > 0) ? funcNode->line() - 1 : 0;
+				json_object_set_new(start, "line", json_integer(static_cast<json_int_t>(lspLine)));
+				json_object_set_new(start, "character", json_integer(0));
+				json_object_set_new(range, "start", start);
+
+				json_t* end = json_object();
+				json_object_set_new(end, "line", json_integer(static_cast<json_int_t>(lspLine)));
+				json_object_set_new(end, "character", json_integer(static_cast<json_int_t>(funcNode->name().length())));
+				json_object_set_new(range, "end", end);
+
+				json_object_set_new(location, "range", range);
+				return location;
+			}
+		}
+	}
+
+	return json_null();
+}
+
 std::string QuadrateLSP::findStructTypeOfVariable(Qd::IAstNode* root, const std::string& varName, size_t requestLine) {
 	// Find the function containing the requested line
 	Qd::AstNodeFunctionDeclaration* functionNode = nullptr;
@@ -279,6 +336,27 @@ std::string QuadrateLSP::findStructTypeOfVariable(Qd::IAstNode* root, const std:
 
 	if (!functionNode) {
 		return "";
+	}
+
+	// First, check if the variable is a function parameter
+	for (auto* paramNode : functionNode->inputParameters()) {
+		if (paramNode) {
+			Qd::AstNodeParameter* param = static_cast<Qd::AstNodeParameter*>(paramNode);
+			if (param->name() == varName) {
+				std::string paramType = param->typeString();
+				if (!paramType.empty()) {
+					return paramType;
+				}
+			}
+		}
+	}
+
+	// Also check method receiver if this is a method
+	if (functionNode->hasReceiver() && functionNode->receiverName() == varName) {
+		std::string receiverType = functionNode->receiverType();
+		if (!receiverType.empty()) {
+			return receiverType;
+		}
 	}
 
 	// Find the local declaration and look for a preceding struct constructor
@@ -315,8 +393,15 @@ std::string QuadrateLSP::findStructTypeOfVariable(Qd::IAstNode* root, const std:
 						if (i > 0) {
 							Qd::IAstNode* prevSibling = node->child(i - 1);
 							if (prevSibling) {
+								// Check if it's a struct construction (e.g., math::Vec3{x: 1.0, y: 2.0})
+								if (prevSibling->type() == Qd::IAstNode::Type::STRUCT_CONSTRUCTION) {
+									Qd::AstNodeStructConstruction* constNode =
+											static_cast<Qd::AstNodeStructConstruction*>(prevSibling);
+									structType = constNode->structName();
+									return;
+								}
 								// Check if it's a scoped identifier (module::Struct)
-								if (prevSibling->type() == Qd::IAstNode::Type::SCOPED_IDENTIFIER) {
+								else if (prevSibling->type() == Qd::IAstNode::Type::SCOPED_IDENTIFIER) {
 									Qd::AstNodeScopedIdentifier* scopedNode =
 											static_cast<Qd::AstNodeScopedIdentifier*>(prevSibling);
 									structType = scopedNode->scope() + "::" + scopedNode->name();
@@ -330,7 +415,7 @@ std::string QuadrateLSP::findStructTypeOfVariable(Qd::IAstNode* root, const std:
 								}
 							}
 						}
-						return;
+						// Continue searching other declarations
 					}
 				}
 			}
@@ -348,42 +433,55 @@ std::string QuadrateLSP::findStructTypeOfVariable(Qd::IAstNode* root, const std:
 
 json_t* QuadrateLSP::handleFieldAccessDefinition(
 		Qd::IAstNode* root, const std::string& uri, size_t line, bool cursorOnVariable) {
-	// Find the field access node at the target line
-	Qd::AstNodeFieldAccess* fieldAccessNode = nullptr;
-	std::function<void(Qd::IAstNode*)> searchFieldAccess = [&](Qd::IAstNode* node) {
-		if (!node) {
+	// Find the field access or field set node at the target line
+	// Both @field (FIELD_ACCESS) and .field (FIELD_SET) should navigate to field definition
+	std::string foundVarName;
+	std::string foundFieldName;
+	Qd::IAstNode* foundNode = nullptr;
+
+	std::function<void(Qd::IAstNode*)> searchFieldNode = [&](Qd::IAstNode* node) {
+		if (!node || foundNode) {
 			return;
 		}
 
 		if (node->type() == Qd::IAstNode::Type::FIELD_ACCESS) {
 			Qd::AstNodeFieldAccess* faNode = static_cast<Qd::AstNodeFieldAccess*>(node);
-			// Check if this field access is on the target line
 			size_t nodeLine = (faNode->line() > 0) ? faNode->line() - 1 : 0;
 			if (nodeLine == line) {
-				fieldAccessNode = faNode;
+				foundVarName = faNode->varName();
+				foundFieldName = faNode->fieldName();
+				foundNode = node;
+				return;
+			}
+		} else if (node->type() == Qd::IAstNode::Type::FIELD_SET) {
+			Qd::AstNodeFieldSet* fsNode = static_cast<Qd::AstNodeFieldSet*>(node);
+			size_t nodeLine = (fsNode->line() > 0) ? fsNode->line() - 1 : 0;
+			if (nodeLine == line) {
+				foundVarName = fsNode->varName();
+				foundFieldName = fsNode->fieldName();
+				foundNode = node;
 				return;
 			}
 		}
 
 		// Recursively search children
 		for (size_t i = 0; i < node->childCount(); i++) {
-			searchFieldAccess(node->child(i));
-			if (fieldAccessNode) {
+			searchFieldNode(node->child(i));
+			if (foundNode) {
 				return;
 			}
 		}
 	};
 
-	searchFieldAccess(root);
+	searchFieldNode(root);
 
-	if (!fieldAccessNode) {
+	if (!foundNode) {
 		return json_null();
 	}
 
 	if (cursorOnVariable) {
 		// User clicked on the variable name - find the local variable declaration
-		std::string varName = fieldAccessNode->varName();
-		Qd::AstNodeLocal* localNode = findLocalDeclaration(fieldAccessNode, varName, line);
+		Qd::AstNodeLocal* localNode = findLocalDeclaration(foundNode, foundVarName, line);
 
 		if (localNode) {
 			// Found the local variable declaration
@@ -407,11 +505,8 @@ json_t* QuadrateLSP::handleFieldAccessDefinition(
 		}
 	} else {
 		// User clicked on the field name - find the struct field definition
-		std::string varName = fieldAccessNode->varName();
-		std::string fieldName = fieldAccessNode->fieldName();
-
 		// Find the struct type of this variable
-		std::string structType = findStructTypeOfVariable(root, varName, line);
+		std::string structType = findStructTypeOfVariable(root, foundVarName, line);
 		if (structType.empty()) {
 			return json_null();
 		}
@@ -458,7 +553,7 @@ json_t* QuadrateLSP::handleFieldAccessDefinition(
 									// Found the struct - now find the field
 									const auto& fields = structNode->fields();
 									for (const auto* field : fields) {
-										if (field->name() == fieldName) {
+										if (field->name() == foundFieldName) {
 											// Found the field!
 											json_t* location = json_object();
 											std::string moduleUri = "file://" + modulePath;
@@ -490,38 +585,92 @@ json_t* QuadrateLSP::handleFieldAccessDefinition(
 				}
 			}
 		} else {
-			// This is a local struct in the same file
-			for (size_t i = 0; i < root->childCount(); i++) {
-				Qd::IAstNode* child = root->child(i);
-				if (child && child->type() == Qd::IAstNode::Type::STRUCT_DECLARATION) {
-					Qd::AstNodeStructDeclaration* structNode = static_cast<Qd::AstNodeStructDeclaration*>(child);
-					if (structNode->name() == structType) {
-						// Found the struct - now find the field
-						const auto& fields = structNode->fields();
-						for (const auto* field : fields) {
-							if (field->name() == fieldName) {
-								// Found the field!
-								json_t* location = json_object();
-								json_object_set_new(location, "uri", json_string(uri.c_str()));
+			// This is a local struct - search in current file first, then same directory
+			// (directory-based namespace)
 
-								json_t* range = json_object();
-								json_t* start_json = json_object();
-								size_t lspLine = (field->line() > 0) ? field->line() - 1 : 0;
-								json_object_set_new(start_json, "line", json_integer(static_cast<json_int_t>(lspLine)));
-								json_object_set_new(start_json, "character", json_integer(0));
-								json_object_set_new(range, "start", start_json);
+			// Helper lambda to search for struct field in an AST
+			auto searchStructField = [&](Qd::IAstNode* searchRoot, const std::string& targetUri) -> json_t* {
+				for (size_t i = 0; i < searchRoot->childCount(); i++) {
+					Qd::IAstNode* child = searchRoot->child(i);
+					if (child && child->type() == Qd::IAstNode::Type::STRUCT_DECLARATION) {
+						Qd::AstNodeStructDeclaration* structNode = static_cast<Qd::AstNodeStructDeclaration*>(child);
+						if (structNode->name() == structType) {
+							// Found the struct - now find the field
+							const auto& fields = structNode->fields();
+							for (const auto* field : fields) {
+								if (field->name() == foundFieldName) {
+									// Found the field!
+									json_t* location = json_object();
+									json_object_set_new(location, "uri", json_string(targetUri.c_str()));
 
-								json_t* end = json_object();
-								json_object_set_new(end, "line", json_integer(static_cast<json_int_t>(lspLine)));
-								json_object_set_new(end, "character",
-										json_integer(static_cast<json_int_t>(field->name().length())));
-								json_object_set_new(range, "end", end);
+									json_t* range = json_object();
+									json_t* start_json = json_object();
+									size_t lspLine = (field->line() > 0) ? field->line() - 1 : 0;
+									json_object_set_new(
+											start_json, "line", json_integer(static_cast<json_int_t>(lspLine)));
+									json_object_set_new(start_json, "character", json_integer(0));
+									json_object_set_new(range, "start", start_json);
 
-								json_object_set_new(location, "range", range);
-								return location;
+									json_t* end = json_object();
+									json_object_set_new(end, "line", json_integer(static_cast<json_int_t>(lspLine)));
+									json_object_set_new(end, "character",
+											json_integer(static_cast<json_int_t>(field->name().length())));
+									json_object_set_new(range, "end", end);
+
+									json_object_set_new(location, "range", range);
+									return location;
+								}
 							}
 						}
 					}
+				}
+				return nullptr;
+			};
+
+			// First, search in current file
+			json_t* result = searchStructField(root, uri);
+			if (result) {
+				return result;
+			}
+
+			// If not found, search other .qd files in the same directory
+			// (directory-based namespace)
+			std::string sourceDir;
+			if (uri.substr(0, 7) == "file://") {
+				std::string filePath = uri.substr(7);
+				size_t lastSlash = filePath.find_last_of('/');
+				if (lastSlash != std::string::npos) {
+					sourceDir = filePath.substr(0, lastSlash);
+				}
+			}
+
+			if (!sourceDir.empty()) {
+				try {
+					for (const auto& entry : std::filesystem::directory_iterator(sourceDir)) {
+						if (entry.path().extension() == ".qd" &&
+								entry.path().string() != uri.substr(7)) { // Skip current file
+							// Parse the file
+							std::ifstream file(entry.path());
+							if (file.good()) {
+								std::stringstream buffer;
+								buffer << file.rdbuf();
+								std::string fileContent = buffer.str();
+
+								Qd::Ast fileAst;
+								Qd::IAstNode* fileRoot = fileAst.generate(fileContent.c_str(), false, nullptr);
+
+								if (fileRoot && !fileAst.hasErrors()) {
+									std::string fileUri = "file://" + entry.path().string();
+									result = searchStructField(fileRoot, fileUri);
+									if (result) {
+										return result;
+									}
+								}
+							}
+						}
+					}
+				} catch (...) {
+					// Ignore filesystem errors
 				}
 			}
 		}
@@ -621,7 +770,9 @@ void QuadrateLSP::handleDefinition(const std::string& id, const std::string& uri
 			Qd::Ast ast;
 			Qd::IAstNode* root = ast.generate(documentText.c_str(), false, nullptr);
 
-			if (root && !ast.hasErrors() && root->type() == Qd::IAstNode::Type::PROGRAM) {
+			// Note: We proceed even with AST errors for some lookups (like imported module methods)
+			// because imports may still be parseable even if other parts have errors
+			if (root && root->type() == Qd::IAstNode::Type::PROGRAM) {
 				// Check if we're in a field access expression (v@x)
 				// Find the character at the cursor position to see if @ is nearby
 				std::vector<std::string> lines;
@@ -633,11 +784,11 @@ void QuadrateLSP::handleDefinition(const std::string& id, const std::string& uri
 
 				if (line < lines.size()) {
 					const std::string& targetLine = lines[line];
-					// Look for @ before or after the cursor
+					// Look for @ or . (field access/set) before or after the cursor
 					bool inFieldAccess = false;
 					bool cursorOnVariable = false;
 
-					// Search for @ near the cursor
+					// Search for @ (field read) or . (field set) near the cursor
 					for (size_t i = 0; i < targetLine.length(); i++) {
 						if (targetLine[i] == '@') {
 							// Check if cursor is near this @
@@ -654,6 +805,34 @@ void QuadrateLSP::handleDefinition(const std::string& id, const std::string& uri
 									inFieldAccess = true;
 									cursorOnVariable = false;
 									break;
+								}
+							}
+						} else if (targetLine[i] == '.') {
+							// Check if this looks like field set syntax (varname.fieldname)
+							// Need to verify it's not a floating point number
+							bool isFloat = false;
+							if (i > 0 && std::isdigit(targetLine[i - 1])) {
+								// Could be a float like 1.0 - check if there's a digit after
+								if (i + 1 < targetLine.length() && std::isdigit(targetLine[i + 1])) {
+									isFloat = true;
+								}
+							}
+							if (!isFloat) {
+								// Check if cursor is near this .
+								if (i >= character) {
+									// . is at or after cursor - cursor might be on variable
+									if (i - character <= word.length()) {
+										inFieldAccess = true;
+										cursorOnVariable = true;
+										break;
+									}
+								} else {
+									// . is before cursor - cursor might be on field name
+									if (character - i <= word.length() + 1) {
+										inFieldAccess = true;
+										cursorOnVariable = false;
+										break;
+									}
 								}
 							}
 						}
@@ -802,6 +981,35 @@ void QuadrateLSP::handleDefinition(const std::string& id, const std::string& uri
 
 							json_object_set_new(location, "range", range);
 							result = location;
+						}
+					}
+				}
+
+				// If still not found, search imported modules for methods
+				if (json_is_null(result) && word.find("::") == std::string::npos) {
+					// Collect imported modules from USE_STATEMENT nodes (use <module>)
+					std::vector<std::string> importedModules;
+					for (size_t i = 0; i < root->childCount(); i++) {
+						Qd::IAstNode* child = root->child(i);
+						if (child && child->type() == Qd::IAstNode::Type::USE_STATEMENT) {
+							Qd::AstNodeUse* useNode = static_cast<Qd::AstNodeUse*>(child);
+							importedModules.push_back(useNode->module());
+						}
+					}
+
+					// Get source directory from URI
+					std::string filePath = uri.substr(7);
+					std::string sourceDir = std::filesystem::path(filePath).parent_path().string();
+
+					// Search each imported module for a method with this name
+					for (const auto& moduleName : importedModules) {
+						std::string modulePath = resolveModulePath(moduleName, sourceDir);
+						if (!modulePath.empty()) {
+							// Look for method definitions in the module
+							result = findMethodInModule(modulePath, word);
+							if (!json_is_null(result)) {
+								break;
+							}
 						}
 					}
 				}

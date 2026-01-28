@@ -18,6 +18,7 @@ struct FunctionInfo {
 	std::vector<std::string> outputParams; // "name:type" format
 	std::string signature;				   // Full signature string
 	std::string snippet;				   // LSP snippet with placeholders
+	size_t line = 0;					   // Line number where function is defined
 
 	// Generic type support
 	std::vector<std::string> typeParams; // Type parameters: "T", "U", etc.

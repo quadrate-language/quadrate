@@ -22,6 +22,7 @@
 #include <qc/ast_node_test.h>
 #include <qc/error_reporter.h>
 #include <qc/semantic_validator.h>
+#include <set>
 #include <sstream>
 #include <unistd.h>
 
@@ -309,6 +310,72 @@ void QuadrateLSP::handleMessage(const std::string& message) {
 				handleFormatting(id, uri);
 			}
 		}
+	} else if (method == "textDocument/rangeFormatting") {
+		json_t* params = getJsonObject(root, "params");
+		if (params) {
+			json_t* textDoc = getJsonObject(params, "textDocument");
+			std::string uri = getJsonString(textDoc, "uri");
+			json_t* range = getJsonObject(params, "range");
+			json_t* rangeStart = getJsonObject(range, "start");
+			json_t* rangeEnd = getJsonObject(range, "end");
+			size_t startLine = static_cast<size_t>(json_integer_value(json_object_get(rangeStart, "line")));
+			size_t startChar = static_cast<size_t>(json_integer_value(json_object_get(rangeStart, "character")));
+			size_t endLine = static_cast<size_t>(json_integer_value(json_object_get(rangeEnd, "line")));
+			size_t endChar = static_cast<size_t>(json_integer_value(json_object_get(rangeEnd, "character")));
+			handleRangeFormatting(id, uri, startLine, startChar, endLine, endChar);
+		}
+	} else if (method == "textDocument/codeLens") {
+		json_t* params = getJsonObject(root, "params");
+		if (params) {
+			json_t* textDoc = getJsonObject(params, "textDocument");
+			std::string uri = getJsonString(textDoc, "uri");
+			handleCodeLens(id, uri);
+		}
+	} else if (method == "textDocument/prepareTypeHierarchy") {
+		json_t* params = getJsonObject(root, "params");
+		if (params) {
+			json_t* textDocument = getJsonObject(params, "textDocument");
+			std::string uri = getJsonString(textDocument, "uri");
+			json_t* position = getJsonObject(params, "position");
+			size_t line = static_cast<size_t>(json_integer_value(json_object_get(position, "line")));
+			size_t character = static_cast<size_t>(json_integer_value(json_object_get(position, "character")));
+			handlePrepareTypeHierarchy(id, uri, line, character);
+		}
+	} else if (method == "typeHierarchy/supertypes") {
+		json_t* params = getJsonObject(root, "params");
+		if (params) {
+			json_t* item = getJsonObject(params, "item");
+			std::string itemData = getJsonString(item, "data");
+			handleSupertypes(id, itemData);
+		}
+	} else if (method == "typeHierarchy/subtypes") {
+		json_t* params = getJsonObject(root, "params");
+		if (params) {
+			json_t* item = getJsonObject(params, "item");
+			std::string itemData = getJsonString(item, "data");
+			handleSubtypes(id, itemData);
+		}
+	} else if (method == "textDocument/onTypeFormatting") {
+		json_t* params = getJsonObject(root, "params");
+		if (params) {
+			json_t* textDoc = getJsonObject(params, "textDocument");
+			std::string uri = getJsonString(textDoc, "uri");
+			json_t* position = getJsonObject(params, "position");
+			size_t line = static_cast<size_t>(json_integer_value(json_object_get(position, "line")));
+			size_t character = static_cast<size_t>(json_integer_value(json_object_get(position, "character")));
+			std::string ch = getJsonString(params, "ch");
+			handleOnTypeFormatting(id, uri, line, character, ch);
+		}
+	} else if (method == "textDocument/linkedEditingRange") {
+		json_t* params = getJsonObject(root, "params");
+		if (params) {
+			json_t* textDoc = getJsonObject(params, "textDocument");
+			std::string uri = getJsonString(textDoc, "uri");
+			json_t* position = getJsonObject(params, "position");
+			size_t line = static_cast<size_t>(json_integer_value(json_object_get(position, "line")));
+			size_t character = static_cast<size_t>(json_integer_value(json_object_get(position, "character")));
+			handleLinkedEditingRange(id, uri, line, character);
+		}
 	} else if (method == "textDocument/completion") {
 		json_t* params = getJsonObject(root, "params");
 		if (params) {
@@ -456,6 +523,62 @@ void QuadrateLSP::handleMessage(const std::string& message) {
 		size_t endLine = static_cast<size_t>(json_integer_value(json_object_get(rangeEnd, "line")));
 
 		handleInlayHints(id, uri, startLine, endLine);
+	} else if (method == "textDocument/semanticTokens/full") {
+		json_t* params = getJsonObject(root, "params");
+		if (params) {
+			json_t* textDocument = getJsonObject(params, "textDocument");
+			std::string uri = getJsonString(textDocument, "uri");
+			handleSemanticTokens(id, uri);
+		}
+	} else if (method == "textDocument/documentLink") {
+		json_t* params = getJsonObject(root, "params");
+		if (params) {
+			json_t* textDocument = getJsonObject(params, "textDocument");
+			std::string uri = getJsonString(textDocument, "uri");
+			handleDocumentLinks(id, uri);
+		}
+	} else if (method == "textDocument/prepareCallHierarchy") {
+		json_t* params = getJsonObject(root, "params");
+		if (params) {
+			json_t* textDocument = getJsonObject(params, "textDocument");
+			std::string uri = getJsonString(textDocument, "uri");
+			json_t* position = getJsonObject(params, "position");
+			size_t line = static_cast<size_t>(json_integer_value(json_object_get(position, "line")));
+			size_t character = static_cast<size_t>(json_integer_value(json_object_get(position, "character")));
+			handlePrepareCallHierarchy(id, uri, line, character);
+		}
+	} else if (method == "callHierarchy/incomingCalls") {
+		json_t* params = getJsonObject(root, "params");
+		if (params) {
+			json_t* item = getJsonObject(params, "item");
+			std::string itemData = getJsonString(item, "data");
+			handleIncomingCalls(id, itemData);
+		}
+	} else if (method == "callHierarchy/outgoingCalls") {
+		json_t* params = getJsonObject(root, "params");
+		if (params) {
+			json_t* item = getJsonObject(params, "item");
+			std::string itemData = getJsonString(item, "data");
+			handleOutgoingCalls(id, itemData);
+		}
+	} else if (method == "textDocument/selectionRange") {
+		json_t* params = getJsonObject(root, "params");
+		if (params) {
+			json_t* textDocument = getJsonObject(params, "textDocument");
+			std::string uri = getJsonString(textDocument, "uri");
+			json_t* positions = json_object_get(params, "positions");
+			std::vector<std::pair<size_t, size_t>> posVec;
+			if (positions && json_is_array(positions)) {
+				size_t posCount = json_array_size(positions);
+				for (size_t i = 0; i < posCount; i++) {
+					json_t* pos = json_array_get(positions, i);
+					size_t posLine = static_cast<size_t>(json_integer_value(json_object_get(pos, "line")));
+					size_t posChar = static_cast<size_t>(json_integer_value(json_object_get(pos, "character")));
+					posVec.push_back({posLine, posChar});
+				}
+			}
+			handleSelectionRange(id, uri, posVec);
+		}
 	} else if (method == "textDocument/rename") {
 		json_t* params = getJsonObject(root, "params");
 		if (params) {
@@ -558,6 +681,92 @@ void QuadrateLSP::handleInitialize(const std::string& id, json_t* initOptions) {
 	json_t* inlayHintProvider = json_object();
 	json_object_set_new(inlayHintProvider, "resolveProvider", json_false());
 	json_object_set_new(capabilities, "inlayHintProvider", inlayHintProvider);
+
+	// Semantic tokens (rich syntax highlighting)
+	json_t* semanticTokensProvider = json_object();
+	json_t* legend = json_object();
+
+	// Token types: indices match the order here
+	// 0=namespace, 1=type, 2=class, 3=enum, 4=interface, 5=struct,
+	// 6=typeParameter, 7=parameter, 8=variable, 9=property, 10=enumMember,
+	// 11=event, 12=function, 13=method, 14=macro, 15=keyword, 16=modifier,
+	// 17=comment, 18=string, 19=number, 20=regexp, 21=operator
+	json_t* tokenTypes = json_array();
+	json_array_append_new(tokenTypes, json_string("namespace"));
+	json_array_append_new(tokenTypes, json_string("type"));
+	json_array_append_new(tokenTypes, json_string("class"));
+	json_array_append_new(tokenTypes, json_string("enum"));
+	json_array_append_new(tokenTypes, json_string("interface"));
+	json_array_append_new(tokenTypes, json_string("struct"));
+	json_array_append_new(tokenTypes, json_string("typeParameter"));
+	json_array_append_new(tokenTypes, json_string("parameter"));
+	json_array_append_new(tokenTypes, json_string("variable"));
+	json_array_append_new(tokenTypes, json_string("property"));
+	json_array_append_new(tokenTypes, json_string("enumMember"));
+	json_array_append_new(tokenTypes, json_string("event"));
+	json_array_append_new(tokenTypes, json_string("function"));
+	json_array_append_new(tokenTypes, json_string("method"));
+	json_array_append_new(tokenTypes, json_string("macro"));
+	json_array_append_new(tokenTypes, json_string("keyword"));
+	json_array_append_new(tokenTypes, json_string("modifier"));
+	json_array_append_new(tokenTypes, json_string("comment"));
+	json_array_append_new(tokenTypes, json_string("string"));
+	json_array_append_new(tokenTypes, json_string("number"));
+	json_array_append_new(tokenTypes, json_string("regexp"));
+	json_array_append_new(tokenTypes, json_string("operator"));
+	json_object_set_new(legend, "tokenTypes", tokenTypes);
+
+	// Token modifiers (bitmask)
+	json_t* tokenModifiers = json_array();
+	json_array_append_new(tokenModifiers, json_string("declaration"));
+	json_array_append_new(tokenModifiers, json_string("definition"));
+	json_array_append_new(tokenModifiers, json_string("readonly"));
+	json_array_append_new(tokenModifiers, json_string("static"));
+	json_array_append_new(tokenModifiers, json_string("deprecated"));
+	json_array_append_new(tokenModifiers, json_string("abstract"));
+	json_array_append_new(tokenModifiers, json_string("async"));
+	json_array_append_new(tokenModifiers, json_string("modification"));
+	json_array_append_new(tokenModifiers, json_string("documentation"));
+	json_array_append_new(tokenModifiers, json_string("defaultLibrary"));
+	json_object_set_new(legend, "tokenModifiers", tokenModifiers);
+
+	json_object_set_new(semanticTokensProvider, "legend", legend);
+	json_object_set_new(semanticTokensProvider, "full", json_true());
+	json_object_set_new(capabilities, "semanticTokensProvider", semanticTokensProvider);
+
+	// Document links (clickable imports)
+	json_t* documentLinkProvider = json_object();
+	json_object_set_new(documentLinkProvider, "resolveProvider", json_false());
+	json_object_set_new(capabilities, "documentLinkProvider", documentLinkProvider);
+
+	// Call hierarchy
+	json_object_set_new(capabilities, "callHierarchyProvider", json_true());
+
+	// Selection range (smart selection expand/shrink)
+	json_object_set_new(capabilities, "selectionRangeProvider", json_true());
+
+	// Range formatting (format selection)
+	json_object_set_new(capabilities, "documentRangeFormattingProvider", json_true());
+
+	// Code lens (inline info above functions)
+	json_t* codeLensProvider = json_object();
+	json_object_set_new(codeLensProvider, "resolveProvider", json_false());
+	json_object_set_new(capabilities, "codeLensProvider", codeLensProvider);
+
+	// Type hierarchy (struct relationships)
+	json_object_set_new(capabilities, "typeHierarchyProvider", json_true());
+
+	// On type formatting (auto-indent)
+	json_t* onTypeFormattingProvider = json_object();
+	json_object_set_new(onTypeFormattingProvider, "firstTriggerCharacter", json_string("\n"));
+	json_t* moreTriggers = json_array();
+	json_array_append_new(moreTriggers, json_string("}"));
+	json_array_append_new(moreTriggers, json_string("{"));
+	json_object_set_new(onTypeFormattingProvider, "moreTriggerCharacter", moreTriggers);
+	json_object_set_new(capabilities, "documentOnTypeFormattingProvider", onTypeFormattingProvider);
+
+	// Linked editing ranges (edit multiple occurrences simultaneously)
+	json_object_set_new(capabilities, "linkedEditingRangeProvider", json_true());
 
 	json_object_set_new(result, "capabilities", capabilities);
 
@@ -859,13 +1068,101 @@ void QuadrateLSP::publishDiagnostics(const std::string& uri, const std::string& 
 }
 
 void QuadrateLSP::handleFormatting(const std::string& id, const std::string& uri) {
-	(void)uri; // Not used yet
-
 	json_t* response = json_object();
 	json_object_set_new(response, "jsonrpc", json_string("2.0"));
 	json_object_set_new(response, "id", json_integer(std::stoi(id)));
-	json_object_set_new(response, "result", json_array()); // Empty array for now
 
+	// Get document content
+	auto it = documents_.find(uri);
+	if (it == documents_.end()) {
+		json_object_set_new(response, "result", json_array());
+		sendMessage(response);
+		json_decref(response);
+		return;
+	}
+
+	const std::string& source = it->second;
+
+	// Write source to temp file
+	std::string tempPath = "/tmp/quadlsp_fmt_" + std::to_string(getpid()) + ".qd";
+	{
+		std::ofstream tempFile(tempPath);
+		if (!tempFile.good()) {
+			json_object_set_new(response, "result", json_array());
+			sendMessage(response);
+			json_decref(response);
+			return;
+		}
+		tempFile << source;
+	}
+
+	// Run quadfmt
+	std::string command = "quadfmt \"" + tempPath + "\" 2>/dev/null";
+	FILE* pipe = popen(command.c_str(), "r");
+	if (!pipe) {
+		std::remove(tempPath.c_str());
+		json_object_set_new(response, "result", json_array());
+		sendMessage(response);
+		json_decref(response);
+		return;
+	}
+
+	// Read formatted output
+	std::string formatted;
+	char buffer[4096];
+	while (fgets(buffer, sizeof(buffer), pipe) != nullptr) {
+		formatted += buffer;
+	}
+	int exitCode = pclose(pipe);
+	std::remove(tempPath.c_str());
+
+	// If quadfmt failed or output is empty, return no edits
+	if (exitCode != 0 || formatted.empty()) {
+		json_object_set_new(response, "result", json_array());
+		sendMessage(response);
+		json_decref(response);
+		return;
+	}
+
+	// If no changes needed, return empty array
+	if (formatted == source) {
+		json_object_set_new(response, "result", json_array());
+		sendMessage(response);
+		json_decref(response);
+		return;
+	}
+
+	// Count lines in original document
+	size_t lineCount = 0;
+	size_t lastLineLength = 0;
+	size_t lineStart = 0;
+	for (size_t i = 0; i < source.size(); i++) {
+		if (source[i] == '\n') {
+			lineCount++;
+			lineStart = i + 1;
+		}
+	}
+	lastLineLength = source.size() - lineStart;
+
+	// Create a single edit replacing the entire document
+	json_t* edits = json_array();
+	json_t* edit = json_object();
+
+	json_t* range = json_object();
+	json_t* start = json_object();
+	json_object_set_new(start, "line", json_integer(0));
+	json_object_set_new(start, "character", json_integer(0));
+	json_t* end = json_object();
+	json_object_set_new(end, "line", json_integer(static_cast<json_int_t>(lineCount)));
+	json_object_set_new(end, "character", json_integer(static_cast<json_int_t>(lastLineLength)));
+	json_object_set_new(range, "start", start);
+	json_object_set_new(range, "end", end);
+
+	json_object_set_new(edit, "range", range);
+	json_object_set_new(edit, "newText", json_string(formatted.c_str()));
+	json_array_append_new(edits, edit);
+
+	json_object_set_new(response, "result", edits);
 	sendMessage(response);
 	json_decref(response);
 }
@@ -1385,6 +1682,1667 @@ void QuadrateLSP::handleInlayHints(const std::string& id, const std::string& uri
 	}
 
 	json_object_set_new(response, "result", hints);
+	sendMessage(response);
+	json_decref(response);
+}
+
+// Semantic token type indices (must match the order in handleInitialize)
+enum SemanticTokenType {
+	TOKEN_NAMESPACE = 0,
+	TOKEN_TYPE = 1,
+	TOKEN_CLASS = 2,
+	TOKEN_ENUM = 3,
+	TOKEN_INTERFACE = 4,
+	TOKEN_STRUCT = 5,
+	TOKEN_TYPE_PARAMETER = 6,
+	TOKEN_PARAMETER = 7,
+	TOKEN_VARIABLE = 8,
+	TOKEN_PROPERTY = 9,
+	TOKEN_ENUM_MEMBER = 10,
+	TOKEN_EVENT = 11,
+	TOKEN_FUNCTION = 12,
+	TOKEN_METHOD = 13,
+	TOKEN_MACRO = 14,
+	TOKEN_KEYWORD = 15,
+	TOKEN_MODIFIER = 16,
+	TOKEN_COMMENT = 17,
+	TOKEN_STRING = 18,
+	TOKEN_NUMBER = 19,
+	TOKEN_REGEXP = 20,
+	TOKEN_OPERATOR = 21
+};
+
+// Semantic token modifier flags (bitmask)
+enum SemanticTokenModifier {
+	MOD_DECLARATION = 1 << 0,
+	MOD_DEFINITION = 1 << 1,
+	MOD_READONLY = 1 << 2,
+	MOD_STATIC = 1 << 3,
+	MOD_DEPRECATED = 1 << 4,
+	MOD_ABSTRACT = 1 << 5,
+	MOD_ASYNC = 1 << 6,
+	MOD_MODIFICATION = 1 << 7,
+	MOD_DOCUMENTATION = 1 << 8,
+	MOD_DEFAULT_LIBRARY = 1 << 9
+};
+
+// Helper to check if a word is a Quadrate keyword
+static bool isKeyword(const std::string& word) {
+	static const std::set<std::string> keywords = {"fn", "if", "else", "while", "for", "use", "struct", "const",
+			"return", "break", "continue", "defer", "switch", "case", "default", "true", "false", "nil", "and", "or",
+			"not", "in", "as", "test", "pub"};
+	return keywords.count(word) > 0;
+}
+
+// Helper to check if a word is a built-in stack operation
+static bool isBuiltinOp(const std::string& word) {
+	static const std::set<std::string> builtins = {// Stack manipulation
+			"dup", "drop", "swap", "over", "rot", "nip", "tuck", "pick", "roll",
+			// Arithmetic
+			"++", "--",
+			// Comparison
+			"lt", "gt", "le", "ge", "eq", "ne",
+			// I/O
+			"print", "nl", "read", "readln",
+			// Type operations
+			"typeof", "sizeof",
+			// Memory
+			"alloc", "free", "realloc",
+			// Other
+			"assert", "panic", "exit"};
+	return builtins.count(word) > 0;
+}
+
+// Helper to check if a word is a type name
+static bool isTypeName(const std::string& word) {
+	static const std::set<std::string> types = {
+			"i8", "i16", "i32", "i64", "u8", "u16", "u32", "u64", "f32", "f64", "bool", "str", "ptr", "void", "any"};
+	return types.count(word) > 0;
+}
+
+void QuadrateLSP::handleSemanticTokens(const std::string& id, const std::string& uri) {
+	json_t* response = json_object();
+	json_object_set_new(response, "jsonrpc", json_string("2.0"));
+	json_object_set_new(response, "id", json_integer(std::stoi(id)));
+
+	std::vector<int> data; // Encoded token data
+
+	// Get document text
+	std::string documentText;
+	auto docIter = documents_.find(uri);
+	if (docIter != documents_.end()) {
+		documentText = docIter->second;
+	}
+
+	if (!documentText.empty()) {
+		// Track position for delta encoding
+		size_t prevLine = 0;
+		size_t prevChar = 0;
+
+		// Simple tokenizer that produces semantic tokens
+		size_t line = 0;
+		size_t col = 0;
+		size_t i = 0;
+
+		auto addToken = [&](size_t tokenLine, size_t tokenCol, size_t length, int tokenType, int modifiers) {
+			int deltaLine = static_cast<int>(tokenLine - prevLine);
+			int deltaChar = (deltaLine == 0) ? static_cast<int>(tokenCol - prevChar) : static_cast<int>(tokenCol);
+			data.push_back(deltaLine);
+			data.push_back(deltaChar);
+			data.push_back(static_cast<int>(length));
+			data.push_back(tokenType);
+			data.push_back(modifiers);
+			prevLine = tokenLine;
+			prevChar = tokenCol;
+		};
+
+		while (i < documentText.size()) {
+			char c = documentText[i];
+
+			// Track line/column
+			if (c == '\n') {
+				line++;
+				col = 0;
+				i++;
+				continue;
+			}
+
+			// Skip whitespace
+			if (std::isspace(c)) {
+				col++;
+				i++;
+				continue;
+			}
+
+			// Single-line comment
+			if (c == '/' && i + 1 < documentText.size() && documentText[i + 1] == '/') {
+				size_t startCol = col;
+				size_t startI = i;
+				while (i < documentText.size() && documentText[i] != '\n') {
+					i++;
+					col++;
+				}
+				addToken(line, startCol, i - startI, TOKEN_COMMENT, 0);
+				continue;
+			}
+
+			// Multi-line comment
+			if (c == '/' && i + 1 < documentText.size() && documentText[i + 1] == '*') {
+				size_t startLine = line;
+				size_t startCol = col;
+				size_t length = 0;
+				i += 2;
+				col += 2;
+				length += 2;
+				while (i < documentText.size()) {
+					if (documentText[i] == '*' && i + 1 < documentText.size() && documentText[i + 1] == '/') {
+						i += 2;
+						col += 2;
+						length += 2;
+						break;
+					}
+					if (documentText[i] == '\n') {
+						// For multi-line comments, just emit token for first line
+						// (Editors typically handle multi-line comments differently)
+						break;
+					}
+					i++;
+					col++;
+					length++;
+				}
+				addToken(startLine, startCol, length, TOKEN_COMMENT, 0);
+				continue;
+			}
+
+			// String literal
+			if (c == '"') {
+				size_t startCol = col;
+				size_t startI = i;
+				i++;
+				col++;
+				while (i < documentText.size() && documentText[i] != '"' && documentText[i] != '\n') {
+					if (documentText[i] == '\\' && i + 1 < documentText.size()) {
+						i += 2;
+						col += 2;
+					} else {
+						i++;
+						col++;
+					}
+				}
+				if (i < documentText.size() && documentText[i] == '"') {
+					i++;
+					col++;
+				}
+				addToken(line, startCol, i - startI, TOKEN_STRING, 0);
+				continue;
+			}
+
+			// Character literal
+			if (c == '\'') {
+				size_t startCol = col;
+				size_t startI = i;
+				i++;
+				col++;
+				while (i < documentText.size() && documentText[i] != '\'' && documentText[i] != '\n') {
+					if (documentText[i] == '\\' && i + 1 < documentText.size()) {
+						i += 2;
+						col += 2;
+					} else {
+						i++;
+						col++;
+					}
+				}
+				if (i < documentText.size() && documentText[i] == '\'') {
+					i++;
+					col++;
+				}
+				addToken(line, startCol, i - startI, TOKEN_STRING, 0);
+				continue;
+			}
+
+			// Number literal
+			if (std::isdigit(c) || (c == '-' && i + 1 < documentText.size() && std::isdigit(documentText[i + 1]))) {
+				size_t startCol = col;
+				size_t startI = i;
+				if (c == '-') {
+					i++;
+					col++;
+				}
+				// Handle hex (0x), binary (0b), octal (0o)
+				if (i < documentText.size() && documentText[i] == '0' && i + 1 < documentText.size()) {
+					char next = documentText[i + 1];
+					if (next == 'x' || next == 'X' || next == 'b' || next == 'B' || next == 'o' || next == 'O') {
+						i += 2;
+						col += 2;
+					}
+				}
+				while (i < documentText.size() &&
+						(std::isxdigit(documentText[i]) || documentText[i] == '.' || documentText[i] == '_' ||
+								documentText[i] == 'e' || documentText[i] == 'E')) {
+					i++;
+					col++;
+				}
+				addToken(line, startCol, i - startI, TOKEN_NUMBER, 0);
+				continue;
+			}
+
+			// Identifier or keyword
+			if (std::isalpha(c) || c == '_') {
+				size_t startCol = col;
+				size_t startI = i;
+				while (i < documentText.size() && (std::isalnum(documentText[i]) || documentText[i] == '_')) {
+					i++;
+					col++;
+				}
+				std::string word = documentText.substr(startI, i - startI);
+
+				// Determine token type
+				int tokenType = TOKEN_VARIABLE;
+				int modifiers = 0;
+
+				if (isKeyword(word)) {
+					tokenType = TOKEN_KEYWORD;
+					// Check if this is 'fn' followed by a function name
+					if (word == "fn") {
+						modifiers = MOD_DECLARATION;
+					}
+				} else if (isTypeName(word)) {
+					tokenType = TOKEN_TYPE;
+				} else if (isBuiltinOp(word)) {
+					tokenType = TOKEN_MACRO;
+					modifiers = MOD_DEFAULT_LIBRARY;
+				} else {
+					// Check context: is this a function definition?
+					// Look back to see if preceded by 'fn'
+					size_t lookback = startI;
+					while (lookback > 0 && std::isspace(documentText[lookback - 1])) {
+						lookback--;
+					}
+					if (lookback >= 2 && documentText.substr(lookback - 2, 2) == "fn") {
+						tokenType = TOKEN_FUNCTION;
+						modifiers = MOD_DEFINITION;
+					}
+					// Check if followed by :: (namespace)
+					else if (i < documentText.size() && documentText[i] == ':' && i + 1 < documentText.size() &&
+							 documentText[i + 1] == ':') {
+						tokenType = TOKEN_NAMESPACE;
+					}
+					// Check if preceded by :: (function call from module)
+					else if (startI >= 2 && documentText[startI - 1] == ':' && documentText[startI - 2] == ':') {
+						tokenType = TOKEN_FUNCTION;
+					}
+					// Check if preceded by -> (local variable assignment)
+					else if (startI >= 2) {
+						size_t arrowCheck = startI - 1;
+						while (arrowCheck > 0 && std::isspace(documentText[arrowCheck])) {
+							arrowCheck--;
+						}
+						if (arrowCheck >= 1 && documentText[arrowCheck] == '>' && arrowCheck >= 1 &&
+								documentText[arrowCheck - 1] == '-') {
+							tokenType = TOKEN_VARIABLE;
+							modifiers = MOD_DECLARATION;
+						}
+					}
+					// Check if this is a struct field access (after @)
+					else if (startI > 0 && documentText[startI - 1] == '@') {
+						tokenType = TOKEN_PROPERTY;
+					}
+				}
+
+				addToken(line, startCol, i - startI, tokenType, modifiers);
+				continue;
+			}
+
+			// Operators and punctuation
+			if (c == '-' && i + 1 < documentText.size() && documentText[i + 1] == '>') {
+				// Arrow operator
+				addToken(line, col, 2, TOKEN_OPERATOR, 0);
+				i += 2;
+				col += 2;
+				continue;
+			}
+
+			if (c == ':' && i + 1 < documentText.size() && documentText[i + 1] == ':') {
+				// Namespace separator
+				addToken(line, col, 2, TOKEN_OPERATOR, 0);
+				i += 2;
+				col += 2;
+				continue;
+			}
+
+			if (c == '-' && i + 1 < documentText.size() && documentText[i + 1] == '-') {
+				// Decrement or separator
+				addToken(line, col, 2, TOKEN_OPERATOR, 0);
+				i += 2;
+				col += 2;
+				continue;
+			}
+
+			if (c == '+' && i + 1 < documentText.size() && documentText[i + 1] == '+') {
+				// Increment
+				addToken(line, col, 2, TOKEN_MACRO, MOD_DEFAULT_LIBRARY);
+				i += 2;
+				col += 2;
+				continue;
+			}
+
+			// Single character operators
+			if (c == '+' || c == '-' || c == '*' || c == '/' || c == '%' || c == '=' || c == '<' || c == '>' ||
+					c == '!' || c == '&' || c == '|' || c == '^' || c == '~' || c == '@') {
+				addToken(line, col, 1, TOKEN_OPERATOR, 0);
+				i++;
+				col++;
+				continue;
+			}
+
+			// Skip other characters (braces, parens, etc.)
+			i++;
+			col++;
+		}
+	}
+
+	// Build result
+	json_t* result = json_object();
+	json_t* dataArray = json_array();
+	for (int val : data) {
+		json_array_append_new(dataArray, json_integer(val));
+	}
+	json_object_set_new(result, "data", dataArray);
+
+	json_object_set_new(response, "result", result);
+	sendMessage(response);
+	json_decref(response);
+}
+
+void QuadrateLSP::handleDocumentLinks(const std::string& id, const std::string& uri) {
+	json_t* response = json_object();
+	json_object_set_new(response, "jsonrpc", json_string("2.0"));
+	json_object_set_new(response, "id", json_integer(std::stoi(id)));
+
+	json_t* links = json_array();
+
+	// Get document text
+	std::string documentText;
+	auto docIter = documents_.find(uri);
+	if (docIter != documents_.end()) {
+		documentText = docIter->second;
+	}
+
+	// Get source directory for module resolution
+	std::string sourceDir;
+	if (uri.substr(0, 7) == "file://") {
+		std::string filePath = uri.substr(7);
+		size_t lastSlash = filePath.rfind('/');
+		if (lastSlash != std::string::npos) {
+			sourceDir = filePath.substr(0, lastSlash);
+		}
+	}
+
+	if (!documentText.empty()) {
+		// Parse line by line looking for 'use' statements
+		std::istringstream iss(documentText);
+		std::string line;
+		size_t lineNum = 0;
+
+		while (std::getline(iss, line)) {
+			// Look for 'use' at the start of the line (with optional whitespace)
+			size_t usePos = line.find("use");
+			if (usePos != std::string::npos) {
+				// Check that 'use' is preceded only by whitespace
+				bool validUse = true;
+				for (size_t i = 0; i < usePos; i++) {
+					if (!std::isspace(static_cast<unsigned char>(line[i]))) {
+						validUse = false;
+						break;
+					}
+				}
+
+				// Check that 'use' is followed by whitespace
+				if (validUse && usePos + 3 < line.size() &&
+						!std::isspace(static_cast<unsigned char>(line[usePos + 3]))) {
+					validUse = false;
+				}
+
+				if (validUse) {
+					// Find the module name after 'use'
+					size_t moduleStart = usePos + 3;
+					while (moduleStart < line.size() && std::isspace(static_cast<unsigned char>(line[moduleStart]))) {
+						moduleStart++;
+					}
+
+					if (moduleStart < line.size()) {
+						size_t moduleEnd = moduleStart;
+						// Module names can contain alphanumeric, underscore, slash (for paths), and colons
+						while (moduleEnd < line.size() &&
+								(std::isalnum(static_cast<unsigned char>(line[moduleEnd])) || line[moduleEnd] == '_' ||
+										line[moduleEnd] == '/' || line[moduleEnd] == ':' || line[moduleEnd] == '-')) {
+							moduleEnd++;
+						}
+
+						if (moduleEnd > moduleStart) {
+							std::string moduleName = line.substr(moduleStart, moduleEnd - moduleStart);
+
+							// Resolve the module path
+							std::string modulePath = resolveModulePath(moduleName, sourceDir);
+
+							if (!modulePath.empty() && std::filesystem::exists(modulePath)) {
+								// Create document link
+								json_t* link = json_object();
+
+								// Range covers the module name
+								json_t* range = json_object();
+								json_t* start = json_object();
+								json_object_set_new(start, "line", json_integer(static_cast<json_int_t>(lineNum)));
+								json_object_set_new(
+										start, "character", json_integer(static_cast<json_int_t>(moduleStart)));
+								json_t* end = json_object();
+								json_object_set_new(end, "line", json_integer(static_cast<json_int_t>(lineNum)));
+								json_object_set_new(end, "character", json_integer(static_cast<json_int_t>(moduleEnd)));
+								json_object_set_new(range, "start", start);
+								json_object_set_new(range, "end", end);
+								json_object_set_new(link, "range", range);
+
+								// Target is the file URI
+								std::string targetUri = "file://" + modulePath;
+								json_object_set_new(link, "target", json_string(targetUri.c_str()));
+
+								// Tooltip
+								std::string tooltip = "Open module: " + moduleName;
+								json_object_set_new(link, "tooltip", json_string(tooltip.c_str()));
+
+								json_array_append_new(links, link);
+							}
+						}
+					}
+				}
+			}
+			lineNum++;
+		}
+	}
+
+	json_object_set_new(response, "result", links);
+	sendMessage(response);
+	json_decref(response);
+}
+
+void QuadrateLSP::handlePrepareCallHierarchy(
+		const std::string& id, const std::string& uri, size_t line, size_t character) {
+	json_t* response = json_object();
+	json_object_set_new(response, "jsonrpc", json_string("2.0"));
+	json_object_set_new(response, "id", json_integer(std::stoi(id)));
+
+	json_t* items = json_array();
+
+	// Get document text
+	std::string documentText;
+	auto docIter = documents_.find(uri);
+	if (docIter != documents_.end()) {
+		documentText = docIter->second;
+	}
+
+	if (!documentText.empty()) {
+		// Get the word at the cursor position
+		std::string word = getWordAtPosition(documentText, line, character);
+
+		if (!word.empty()) {
+			// Extract functions from the document
+			std::vector<FunctionInfo> functions = extractFunctions(documentText);
+
+			// Check if the word is a function name
+			for (const auto& func : functions) {
+				if (func.name == word) {
+					// Create a CallHierarchyItem
+					json_t* item = json_object();
+					json_object_set_new(item, "name", json_string(func.name.c_str()));
+					json_object_set_new(item, "kind", json_integer(12)); // Function
+
+					// Build detail string from signature
+					std::string detail = "(";
+					for (size_t i = 0; i < func.inputParams.size(); i++) {
+						if (i > 0) {
+							detail += ", ";
+						}
+						detail += func.inputParams[i];
+					}
+					detail += " -- ";
+					for (size_t i = 0; i < func.outputParams.size(); i++) {
+						if (i > 0) {
+							detail += ", ";
+						}
+						detail += func.outputParams[i];
+					}
+					detail += ")";
+					json_object_set_new(item, "detail", json_string(detail.c_str()));
+
+					json_object_set_new(item, "uri", json_string(uri.c_str()));
+
+					// Range is the function definition
+					json_t* range = json_object();
+					json_t* start = json_object();
+					json_object_set_new(start, "line", json_integer(static_cast<json_int_t>(func.line)));
+					json_object_set_new(start, "character", json_integer(0));
+					json_t* end = json_object();
+					json_object_set_new(end, "line", json_integer(static_cast<json_int_t>(func.line)));
+					json_object_set_new(end, "character", json_integer(static_cast<json_int_t>(func.name.size() + 3)));
+					json_object_set_new(range, "start", start);
+					json_object_set_new(range, "end", end);
+					json_object_set_new(item, "range", range);
+
+					// Selection range is just the function name
+					json_t* selRange = json_object();
+					json_t* selStart = json_object();
+					json_object_set_new(selStart, "line", json_integer(static_cast<json_int_t>(func.line)));
+					json_object_set_new(selStart, "character", json_integer(3)); // After "fn "
+					json_t* selEnd = json_object();
+					json_object_set_new(selEnd, "line", json_integer(static_cast<json_int_t>(func.line)));
+					json_object_set_new(
+							selEnd, "character", json_integer(static_cast<json_int_t>(3 + func.name.size())));
+					json_object_set_new(selRange, "start", selStart);
+					json_object_set_new(selRange, "end", selEnd);
+					json_object_set_new(item, "selectionRange", selRange);
+
+					// Store data for incoming/outgoing calls
+					// Format: "uri|funcname|line"
+					std::string data = uri + "|" + func.name + "|" + std::to_string(func.line);
+					json_object_set_new(item, "data", json_string(data.c_str()));
+
+					json_array_append_new(items, item);
+					break;
+				}
+			}
+		}
+	}
+
+	json_object_set_new(response, "result", items);
+	sendMessage(response);
+	json_decref(response);
+}
+
+void QuadrateLSP::handleIncomingCalls(const std::string& id, const std::string& itemData) {
+	json_t* response = json_object();
+	json_object_set_new(response, "jsonrpc", json_string("2.0"));
+	json_object_set_new(response, "id", json_integer(std::stoi(id)));
+
+	json_t* calls = json_array();
+
+	// Parse itemData: "uri|funcname|line"
+	std::string targetFunc;
+	size_t firstPipe = itemData.find('|');
+	size_t secondPipe = itemData.find('|', firstPipe + 1);
+	if (firstPipe != std::string::npos && secondPipe != std::string::npos) {
+		targetFunc = itemData.substr(firstPipe + 1, secondPipe - firstPipe - 1);
+	}
+
+	if (!targetFunc.empty()) {
+		// Search all open documents for calls to this function
+		for (const auto& [docUri, docText] : documents_) {
+			std::vector<FunctionInfo> functions = extractFunctions(docText);
+
+			for (const auto& func : functions) {
+				// Skip the function itself
+				if (func.name == targetFunc) {
+					continue;
+				}
+
+				// Search the function body for calls to targetFunc
+				// Simple approach: look for the function name followed by whitespace or newline
+				std::istringstream iss(docText);
+				std::string line;
+				size_t lineNum = 0;
+				bool inFunction = false;
+
+				// Find the function's body range (rough estimate)
+				while (std::getline(iss, line)) {
+					if (lineNum == func.line) {
+						inFunction = true;
+					}
+
+					if (inFunction) {
+						// Look for closing brace to mark end of function (simple heuristic)
+						if (line.find('}') != std::string::npos && lineNum > func.line) {
+							break;
+						}
+
+						// Look for calls to targetFunc
+						size_t pos = 0;
+						while ((pos = line.find(targetFunc, pos)) != std::string::npos) {
+							// Check it's not part of a larger identifier
+							bool validStart = (pos == 0 || (!std::isalnum(static_cast<unsigned char>(line[pos - 1])) &&
+																   line[pos - 1] != '_'));
+							bool validEnd =
+									(pos + targetFunc.size() >= line.size() ||
+											(!std::isalnum(static_cast<unsigned char>(line[pos + targetFunc.size()])) &&
+													line[pos + targetFunc.size()] != '_'));
+
+							if (validStart && validEnd && lineNum > func.line) {
+								// Found a call! Create incoming call item
+								json_t* call = json_object();
+
+								// Create the "from" CallHierarchyItem
+								json_t* from = json_object();
+								json_object_set_new(from, "name", json_string(func.name.c_str()));
+								json_object_set_new(from, "kind", json_integer(12)); // Function
+								json_object_set_new(from, "uri", json_string(docUri.c_str()));
+
+								json_t* range = json_object();
+								json_t* start = json_object();
+								json_object_set_new(start, "line", json_integer(static_cast<json_int_t>(func.line)));
+								json_object_set_new(start, "character", json_integer(0));
+								json_t* end = json_object();
+								json_object_set_new(end, "line", json_integer(static_cast<json_int_t>(func.line)));
+								json_object_set_new(
+										end, "character", json_integer(static_cast<json_int_t>(func.name.size() + 3)));
+								json_object_set_new(range, "start", start);
+								json_object_set_new(range, "end", end);
+								json_object_set_new(from, "range", range);
+
+								json_t* selRange = json_object();
+								json_t* selStart = json_object();
+								json_object_set_new(selStart, "line", json_integer(static_cast<json_int_t>(func.line)));
+								json_object_set_new(selStart, "character", json_integer(3));
+								json_t* selEnd = json_object();
+								json_object_set_new(selEnd, "line", json_integer(static_cast<json_int_t>(func.line)));
+								json_object_set_new(selEnd, "character",
+										json_integer(static_cast<json_int_t>(3 + func.name.size())));
+								json_object_set_new(selRange, "start", selStart);
+								json_object_set_new(selRange, "end", selEnd);
+								json_object_set_new(from, "selectionRange", selRange);
+
+								std::string data = docUri + "|" + func.name + "|" + std::to_string(func.line);
+								json_object_set_new(from, "data", json_string(data.c_str()));
+
+								json_object_set_new(call, "from", from);
+
+								// fromRanges - where the call appears
+								json_t* fromRanges = json_array();
+								json_t* callRange = json_object();
+								json_t* callStart = json_object();
+								json_object_set_new(callStart, "line", json_integer(static_cast<json_int_t>(lineNum)));
+								json_object_set_new(callStart, "character", json_integer(static_cast<json_int_t>(pos)));
+								json_t* callEnd = json_object();
+								json_object_set_new(callEnd, "line", json_integer(static_cast<json_int_t>(lineNum)));
+								json_object_set_new(callEnd, "character",
+										json_integer(static_cast<json_int_t>(pos + targetFunc.size())));
+								json_object_set_new(callRange, "start", callStart);
+								json_object_set_new(callRange, "end", callEnd);
+								json_array_append_new(fromRanges, callRange);
+								json_object_set_new(call, "fromRanges", fromRanges);
+
+								json_array_append_new(calls, call);
+								break; // One call per function is enough
+							}
+							pos++;
+						}
+					}
+					lineNum++;
+				}
+			}
+		}
+	}
+
+	json_object_set_new(response, "result", calls);
+	sendMessage(response);
+	json_decref(response);
+}
+
+void QuadrateLSP::handleOutgoingCalls(const std::string& id, const std::string& itemData) {
+	json_t* response = json_object();
+	json_object_set_new(response, "jsonrpc", json_string("2.0"));
+	json_object_set_new(response, "id", json_integer(std::stoi(id)));
+
+	json_t* calls = json_array();
+
+	// Parse itemData: "uri|funcname|line"
+	std::string sourceUri;
+	std::string sourceFuncName;
+	size_t sourceLine = 0;
+
+	size_t firstPipe = itemData.find('|');
+	size_t secondPipe = itemData.find('|', firstPipe + 1);
+	if (firstPipe != std::string::npos && secondPipe != std::string::npos) {
+		sourceUri = itemData.substr(0, firstPipe);
+		sourceFuncName = itemData.substr(firstPipe + 1, secondPipe - firstPipe - 1);
+		sourceLine = std::stoul(itemData.substr(secondPipe + 1));
+	}
+
+	if (!sourceFuncName.empty()) {
+		// Get the source document
+		auto docIter = documents_.find(sourceUri);
+		if (docIter != documents_.end()) {
+			const std::string& docText = docIter->second;
+			std::vector<FunctionInfo> functions = extractFunctions(docText);
+
+			// Build a set of known function names for quick lookup
+			std::set<std::string> knownFuncs;
+			for (const auto& f : functions) {
+				knownFuncs.insert(f.name);
+			}
+
+			// Find the source function and scan its body
+			std::istringstream iss(docText);
+			std::string line;
+			size_t lineNum = 0;
+			bool inFunction = false;
+			int braceDepth = 0;
+
+			std::map<std::string, std::vector<std::pair<size_t, size_t>>> callSites; // funcName -> [(line, col)]
+
+			while (std::getline(iss, line)) {
+				if (lineNum == sourceLine) {
+					inFunction = true;
+				}
+
+				if (inFunction) {
+					// Track brace depth
+					for (char ch : line) {
+						if (ch == '{') {
+							braceDepth++;
+						}
+						if (ch == '}') {
+							braceDepth--;
+						}
+					}
+
+					if (braceDepth == 0 && lineNum > sourceLine) {
+						break; // End of function
+					}
+
+					// Look for function calls
+					for (const auto& funcName : knownFuncs) {
+						if (funcName == sourceFuncName) {
+							continue; // Skip self
+						}
+
+						size_t pos = 0;
+						while ((pos = line.find(funcName, pos)) != std::string::npos) {
+							bool validStart = (pos == 0 || (!std::isalnum(static_cast<unsigned char>(line[pos - 1])) &&
+																   line[pos - 1] != '_'));
+							bool validEnd = (pos + funcName.size() >= line.size() ||
+											 (!std::isalnum(static_cast<unsigned char>(line[pos + funcName.size()])) &&
+													 line[pos + funcName.size()] != '_'));
+
+							if (validStart && validEnd) {
+								callSites[funcName].push_back({lineNum, pos});
+							}
+							pos++;
+						}
+					}
+				}
+				lineNum++;
+			}
+
+			// Create outgoing call items
+			for (const auto& [calledFunc, sites] : callSites) {
+				// Find the function info
+				FunctionInfo* targetInfo = nullptr;
+				for (auto& f : functions) {
+					if (f.name == calledFunc) {
+						targetInfo = &f;
+						break;
+					}
+				}
+
+				if (targetInfo) {
+					json_t* call = json_object();
+
+					// "to" CallHierarchyItem
+					json_t* to = json_object();
+					json_object_set_new(to, "name", json_string(targetInfo->name.c_str()));
+					json_object_set_new(to, "kind", json_integer(12)); // Function
+					json_object_set_new(to, "uri", json_string(sourceUri.c_str()));
+
+					json_t* range = json_object();
+					json_t* start = json_object();
+					json_object_set_new(start, "line", json_integer(static_cast<json_int_t>(targetInfo->line)));
+					json_object_set_new(start, "character", json_integer(0));
+					json_t* end = json_object();
+					json_object_set_new(end, "line", json_integer(static_cast<json_int_t>(targetInfo->line)));
+					json_object_set_new(
+							end, "character", json_integer(static_cast<json_int_t>(targetInfo->name.size() + 3)));
+					json_object_set_new(range, "start", start);
+					json_object_set_new(range, "end", end);
+					json_object_set_new(to, "range", range);
+
+					json_t* selRange = json_object();
+					json_t* selStart = json_object();
+					json_object_set_new(selStart, "line", json_integer(static_cast<json_int_t>(targetInfo->line)));
+					json_object_set_new(selStart, "character", json_integer(3));
+					json_t* selEnd = json_object();
+					json_object_set_new(selEnd, "line", json_integer(static_cast<json_int_t>(targetInfo->line)));
+					json_object_set_new(
+							selEnd, "character", json_integer(static_cast<json_int_t>(3 + targetInfo->name.size())));
+					json_object_set_new(selRange, "start", selStart);
+					json_object_set_new(selRange, "end", selEnd);
+					json_object_set_new(to, "selectionRange", selRange);
+
+					std::string data = sourceUri + "|" + targetInfo->name + "|" + std::to_string(targetInfo->line);
+					json_object_set_new(to, "data", json_string(data.c_str()));
+
+					json_object_set_new(call, "to", to);
+
+					// fromRanges
+					json_t* fromRanges = json_array();
+					for (const auto& [callLine, callCol] : sites) {
+						json_t* callRange = json_object();
+						json_t* callStart = json_object();
+						json_object_set_new(callStart, "line", json_integer(static_cast<json_int_t>(callLine)));
+						json_object_set_new(callStart, "character", json_integer(static_cast<json_int_t>(callCol)));
+						json_t* callEnd = json_object();
+						json_object_set_new(callEnd, "line", json_integer(static_cast<json_int_t>(callLine)));
+						json_object_set_new(callEnd, "character",
+								json_integer(static_cast<json_int_t>(callCol + calledFunc.size())));
+						json_object_set_new(callRange, "start", callStart);
+						json_object_set_new(callRange, "end", callEnd);
+						json_array_append_new(fromRanges, callRange);
+					}
+					json_object_set_new(call, "fromRanges", fromRanges);
+
+					json_array_append_new(calls, call);
+				}
+			}
+		}
+	}
+
+	json_object_set_new(response, "result", calls);
+	sendMessage(response);
+	json_decref(response);
+}
+
+void QuadrateLSP::handleSelectionRange(
+		const std::string& id, const std::string& uri, const std::vector<std::pair<size_t, size_t>>& positions) {
+	json_t* response = json_object();
+	json_object_set_new(response, "jsonrpc", json_string("2.0"));
+	json_object_set_new(response, "id", json_integer(std::stoi(id)));
+
+	json_t* results = json_array();
+
+	// Get document text
+	std::string documentText;
+	auto docIter = documents_.find(uri);
+	if (docIter != documents_.end()) {
+		documentText = docIter->second;
+	}
+
+	if (!documentText.empty()) {
+		// Split into lines for easier processing
+		std::vector<std::string> lines;
+		std::istringstream iss(documentText);
+		std::string lineContent;
+		while (std::getline(iss, lineContent)) {
+			lines.push_back(lineContent);
+		}
+
+		// Find function boundaries (line -> {startLine, endLine})
+		std::vector<std::pair<size_t, size_t>> functionBounds;
+		std::vector<FunctionInfo> functions = extractFunctions(documentText);
+		for (const auto& func : functions) {
+			// Find the closing brace of this function
+			int braceDepth = 0;
+			bool foundOpen = false;
+			size_t endLine = func.line;
+			for (size_t i = func.line; i < lines.size(); i++) {
+				for (char ch : lines[i]) {
+					if (ch == '{') {
+						braceDepth++;
+						foundOpen = true;
+					} else if (ch == '}') {
+						braceDepth--;
+						if (foundOpen && braceDepth == 0) {
+							endLine = i;
+							break;
+						}
+					}
+				}
+				if (foundOpen && braceDepth == 0) {
+					break;
+				}
+			}
+			functionBounds.push_back({func.line, endLine});
+		}
+
+		// Process each requested position
+		for (const auto& [posLine, posChar] : positions) {
+			if (posLine >= lines.size()) {
+				json_array_append_new(results, json_null());
+				continue;
+			}
+
+			const std::string& line = lines[posLine];
+
+			// Build selection ranges from innermost to outermost
+			// Each range has a parent that is larger
+
+			// 1. Word range - find word boundaries at cursor
+			size_t wordStart = posChar;
+			size_t wordEnd = posChar;
+
+			if (posChar < line.size()) {
+				// Find start of word
+				while (wordStart > 0 &&
+						(std::isalnum(static_cast<unsigned char>(line[wordStart - 1])) || line[wordStart - 1] == '_')) {
+					wordStart--;
+				}
+				// Find end of word
+				while (wordEnd < line.size() &&
+						(std::isalnum(static_cast<unsigned char>(line[wordEnd])) || line[wordEnd] == '_')) {
+					wordEnd++;
+				}
+			}
+
+			// 2. Line range (excluding leading/trailing whitespace)
+			size_t lineStart = 0;
+			size_t lineEnd = line.size();
+			while (lineStart < line.size() && std::isspace(static_cast<unsigned char>(line[lineStart]))) {
+				lineStart++;
+			}
+			while (lineEnd > lineStart && std::isspace(static_cast<unsigned char>(line[lineEnd - 1]))) {
+				lineEnd--;
+			}
+
+			// 3. Block range - find enclosing braces
+			size_t blockStartLine = posLine;
+			size_t blockEndLine = posLine;
+			size_t blockStartChar = 0;
+			size_t blockEndChar = 0;
+			bool foundBlock = false;
+
+			// Search backwards for opening brace
+			int depth = 0;
+			for (size_t i = posLine + 1; i > 0; i--) {
+				const std::string& searchLine = lines[i - 1];
+				size_t startIdx = (i - 1 == posLine) ? posChar : searchLine.size();
+				for (size_t j = startIdx; j > 0; j--) {
+					char ch = searchLine[j - 1];
+					if (ch == '}') {
+						depth++;
+					} else if (ch == '{') {
+						if (depth == 0) {
+							blockStartLine = i - 1;
+							blockStartChar = j - 1;
+							foundBlock = true;
+							break;
+						}
+						depth--;
+					}
+				}
+				if (foundBlock) {
+					break;
+				}
+			}
+
+			// Search forwards for closing brace
+			if (foundBlock) {
+				depth = 1;
+				for (size_t i = blockStartLine; i < lines.size(); i++) {
+					const std::string& searchLine = lines[i];
+					size_t startIdx = (i == blockStartLine) ? blockStartChar + 1 : 0;
+					for (size_t j = startIdx; j < searchLine.size(); j++) {
+						char ch = searchLine[j];
+						if (ch == '{') {
+							depth++;
+						} else if (ch == '}') {
+							depth--;
+							if (depth == 0) {
+								blockEndLine = i;
+								blockEndChar = j + 1;
+								break;
+							}
+						}
+					}
+					if (depth == 0) {
+						break;
+					}
+				}
+			}
+
+			// 4. Function range
+			size_t funcStartLine = 0;
+			size_t funcEndLine = lines.size() > 0 ? lines.size() - 1 : 0;
+			for (const auto& [fStart, fEnd] : functionBounds) {
+				if (posLine >= fStart && posLine <= fEnd) {
+					funcStartLine = fStart;
+					funcEndLine = fEnd;
+					break;
+				}
+			}
+
+			// Build the nested SelectionRange structure (innermost first)
+			// Order: word -> line -> block -> function
+
+			// Helper to create a range object
+			auto makeRange = [](size_t sLine, size_t sChar, size_t eLine, size_t eChar) -> json_t* {
+				json_t* range = json_object();
+				json_t* start = json_object();
+				json_object_set_new(start, "line", json_integer(static_cast<json_int_t>(sLine)));
+				json_object_set_new(start, "character", json_integer(static_cast<json_int_t>(sChar)));
+				json_t* end = json_object();
+				json_object_set_new(end, "line", json_integer(static_cast<json_int_t>(eLine)));
+				json_object_set_new(end, "character", json_integer(static_cast<json_int_t>(eChar)));
+				json_object_set_new(range, "start", start);
+				json_object_set_new(range, "end", end);
+				return range;
+			};
+
+			// Function range (outermost, no parent)
+			json_t* funcRange = json_object();
+			json_object_set_new(
+					funcRange, "range", makeRange(funcStartLine, 0, funcEndLine, lines[funcEndLine].size()));
+
+			// Block range (parent is function)
+			json_t* blockRange = nullptr;
+			if (foundBlock) {
+				blockRange = json_object();
+				json_object_set_new(
+						blockRange, "range", makeRange(blockStartLine, blockStartChar, blockEndLine, blockEndChar));
+				json_object_set_new(blockRange, "parent", funcRange);
+			} else {
+				blockRange = funcRange;
+			}
+
+			// Line range (parent is block)
+			json_t* lineRange = json_object();
+			json_object_set_new(lineRange, "range", makeRange(posLine, lineStart, posLine, lineEnd));
+			json_object_set_new(lineRange, "parent", blockRange);
+
+			// Word range (parent is line) - innermost
+			json_t* wordRange = json_object();
+			json_object_set_new(wordRange, "range", makeRange(posLine, wordStart, posLine, wordEnd));
+			json_object_set_new(wordRange, "parent", lineRange);
+
+			json_array_append_new(results, wordRange);
+		}
+	}
+
+	json_object_set_new(response, "result", results);
+	sendMessage(response);
+	json_decref(response);
+}
+
+void QuadrateLSP::handleRangeFormatting(const std::string& id, const std::string& uri, size_t startLine,
+		size_t startChar, size_t endLine, size_t endChar) {
+	json_t* response = json_object();
+	json_object_set_new(response, "jsonrpc", json_string("2.0"));
+	json_object_set_new(response, "id", json_integer(std::stoi(id)));
+
+	json_t* edits = json_array();
+
+	// Get document text
+	std::string documentText;
+	auto docIter = documents_.find(uri);
+	if (docIter != documents_.end()) {
+		documentText = docIter->second;
+	}
+
+	if (!documentText.empty()) {
+		// Write to temp file
+		char tmpPath[] = "/tmp/quadlsp_fmt_XXXXXX";
+		int fd = mkstemp(tmpPath);
+		if (fd != -1) {
+			ssize_t written = write(fd, documentText.c_str(), documentText.size());
+			close(fd);
+
+			if (written == static_cast<ssize_t>(documentText.size())) {
+				// Run quadfmt
+				std::string cmd = "quadfmt " + std::string(tmpPath) + " 2>/dev/null";
+				FILE* pipe = popen(cmd.c_str(), "r");
+				if (pipe) {
+					std::string formattedText;
+					char buffer[4096];
+					while (fgets(buffer, sizeof(buffer), pipe) != nullptr) {
+						formattedText += buffer;
+					}
+					pclose(pipe);
+
+					if (!formattedText.empty()) {
+						// Split both original and formatted into lines
+						std::vector<std::string> origLines;
+						std::vector<std::string> fmtLines;
+
+						std::istringstream origIss(documentText);
+						std::string line;
+						while (std::getline(origIss, line)) {
+							origLines.push_back(line);
+						}
+
+						std::istringstream fmtIss(formattedText);
+						while (std::getline(fmtIss, line)) {
+							fmtLines.push_back(line);
+						}
+
+						// Only create edit if the range content changed
+						// Compare lines in the requested range
+						bool changed = false;
+						if (origLines.size() == fmtLines.size()) {
+							for (size_t i = startLine; i <= endLine && i < origLines.size(); i++) {
+								if (origLines[i] != fmtLines[i]) {
+									changed = true;
+									break;
+								}
+							}
+						} else {
+							changed = true;
+						}
+
+						if (changed) {
+							// Build the replacement text for the range
+							std::string rangeText;
+							for (size_t i = startLine; i <= endLine && i < fmtLines.size(); i++) {
+								if (i > startLine) {
+									rangeText += "\n";
+								}
+								rangeText += fmtLines[i];
+							}
+
+							// Adjust endChar if we're replacing full lines
+							size_t adjustedEndChar = endChar;
+							if (endLine < origLines.size()) {
+								adjustedEndChar = origLines[endLine].size();
+							}
+
+							// Create edit
+							json_t* edit = json_object();
+							json_t* range = json_object();
+							json_t* start = json_object();
+							json_object_set_new(start, "line", json_integer(static_cast<json_int_t>(startLine)));
+							json_object_set_new(start, "character", json_integer(0)); // Start of line
+							json_t* end = json_object();
+							json_object_set_new(end, "line", json_integer(static_cast<json_int_t>(endLine)));
+							json_object_set_new(
+									end, "character", json_integer(static_cast<json_int_t>(adjustedEndChar)));
+							json_object_set_new(range, "start", start);
+							json_object_set_new(range, "end", end);
+							json_object_set_new(edit, "range", range);
+							json_object_set_new(edit, "newText", json_string(rangeText.c_str()));
+							json_array_append_new(edits, edit);
+						}
+					}
+				}
+			}
+			unlink(tmpPath);
+		}
+	}
+
+	// Suppress unused parameter warnings
+	(void)startChar;
+
+	json_object_set_new(response, "result", edits);
+	sendMessage(response);
+	json_decref(response);
+}
+
+void QuadrateLSP::handleCodeLens(const std::string& id, const std::string& uri) {
+	json_t* response = json_object();
+	json_object_set_new(response, "jsonrpc", json_string("2.0"));
+	json_object_set_new(response, "id", json_integer(std::stoi(id)));
+
+	json_t* lenses = json_array();
+
+	// Get document text
+	std::string documentText;
+	auto docIter = documents_.find(uri);
+	if (docIter != documents_.end()) {
+		documentText = docIter->second;
+	}
+
+	if (!documentText.empty()) {
+		// Extract functions
+		std::vector<FunctionInfo> functions = extractFunctions(documentText);
+
+		// For each function, count references and create code lens
+		for (const auto& func : functions) {
+			// Count references to this function in all open documents
+			size_t refCount = 0;
+			for (const auto& [docUri, docText] : documents_) {
+				// Search for function name as a whole word
+				size_t pos = 0;
+				while ((pos = docText.find(func.name, pos)) != std::string::npos) {
+					// Check it's a whole word match
+					bool validStart = (pos == 0 || (!std::isalnum(static_cast<unsigned char>(docText[pos - 1])) &&
+														   docText[pos - 1] != '_'));
+					bool validEnd = (pos + func.name.size() >= docText.size() ||
+									 (!std::isalnum(static_cast<unsigned char>(docText[pos + func.name.size()])) &&
+											 docText[pos + func.name.size()] != '_'));
+
+					if (validStart && validEnd) {
+						refCount++;
+					}
+					pos++;
+				}
+			}
+
+			// Subtract 1 for the definition itself
+			if (refCount > 0) {
+				refCount--;
+			}
+
+			// Create code lens for reference count
+			json_t* lens = json_object();
+
+			// Range is above the function (on the function line)
+			json_t* range = json_object();
+			json_t* start = json_object();
+			json_object_set_new(start, "line", json_integer(static_cast<json_int_t>(func.line)));
+			json_object_set_new(start, "character", json_integer(0));
+			json_t* end = json_object();
+			json_object_set_new(end, "line", json_integer(static_cast<json_int_t>(func.line)));
+			json_object_set_new(end, "character", json_integer(0));
+			json_object_set_new(range, "start", start);
+			json_object_set_new(range, "end", end);
+			json_object_set_new(lens, "range", range);
+
+			// Command to show references
+			json_t* command = json_object();
+			std::string title;
+			if (refCount == 0) {
+				title = "0 references";
+			} else if (refCount == 1) {
+				title = "1 reference";
+			} else {
+				title = std::to_string(refCount) + " references";
+			}
+			json_object_set_new(command, "title", json_string(title.c_str()));
+			json_object_set_new(command, "command", json_string("editor.action.findReferences"));
+			json_t* args = json_array();
+			json_array_append_new(args, json_string(uri.c_str()));
+			json_t* position = json_object();
+			json_object_set_new(position, "line", json_integer(static_cast<json_int_t>(func.line)));
+			json_object_set_new(position, "character", json_integer(3)); // After "fn "
+			json_array_append_new(args, position);
+			json_object_set_new(command, "arguments", args);
+			json_object_set_new(lens, "command", command);
+
+			json_array_append_new(lenses, lens);
+
+			// Check if this is a test function (name starts with "test_")
+			bool isTest = (func.name.size() > 5 && func.name.substr(0, 5) == "test_");
+
+			if (isTest) {
+				// Add "Run test" lens
+				json_t* testLens = json_object();
+
+				json_t* testRange = json_object();
+				json_t* testStart = json_object();
+				json_object_set_new(testStart, "line", json_integer(static_cast<json_int_t>(func.line)));
+				json_object_set_new(testStart, "character", json_integer(0));
+				json_t* testEnd = json_object();
+				json_object_set_new(testEnd, "line", json_integer(static_cast<json_int_t>(func.line)));
+				json_object_set_new(testEnd, "character", json_integer(0));
+				json_object_set_new(testRange, "start", testStart);
+				json_object_set_new(testRange, "end", testEnd);
+				json_object_set_new(testLens, "range", testRange);
+
+				json_t* testCommand = json_object();
+				json_object_set_new(testCommand, "title", json_string("Run test"));
+				json_object_set_new(testCommand, "command", json_string("quadrate.runTest"));
+				json_t* testArgs = json_array();
+				json_array_append_new(testArgs, json_string(uri.c_str()));
+				json_array_append_new(testArgs, json_string(func.name.c_str()));
+				json_object_set_new(testCommand, "arguments", testArgs);
+				json_object_set_new(testLens, "command", testCommand);
+
+				json_array_append_new(lenses, testLens);
+			}
+		}
+	}
+
+	json_object_set_new(response, "result", lenses);
+	sendMessage(response);
+	json_decref(response);
+}
+
+void QuadrateLSP::handlePrepareTypeHierarchy(
+		const std::string& id, const std::string& uri, size_t line, size_t character) {
+	json_t* response = json_object();
+	json_object_set_new(response, "jsonrpc", json_string("2.0"));
+	json_object_set_new(response, "id", json_integer(std::stoi(id)));
+
+	json_t* items = json_array();
+
+	// Get document text
+	std::string documentText;
+	auto docIter = documents_.find(uri);
+	if (docIter != documents_.end()) {
+		documentText = docIter->second;
+	}
+
+	if (!documentText.empty()) {
+		// Get the word at cursor position
+		std::string word = getWordAtPosition(documentText, line, character);
+
+		if (!word.empty()) {
+			// Check if this is a struct name
+			std::vector<StructInfo> structs = extractStructs(documentText);
+
+			for (const auto& structInfo : structs) {
+				if (structInfo.name == word) {
+					// Create TypeHierarchyItem
+					json_t* item = json_object();
+					json_object_set_new(item, "name", json_string(structInfo.name.c_str()));
+					json_object_set_new(item, "kind", json_integer(23)); // Struct
+
+					// Build detail from fields
+					std::string detail = "{";
+					for (size_t i = 0; i < structInfo.fields.size(); i++) {
+						if (i > 0) {
+							detail += ", ";
+						}
+						detail += structInfo.fields[i].first + ":" + structInfo.fields[i].second;
+					}
+					detail += "}";
+					json_object_set_new(item, "detail", json_string(detail.c_str()));
+
+					json_object_set_new(item, "uri", json_string(uri.c_str()));
+
+					// Find struct line by searching for "struct <name>"
+					size_t structLine = 0;
+					std::istringstream iss(documentText);
+					std::string lineContent;
+					size_t lineNum = 0;
+					std::string searchPattern = "struct " + structInfo.name;
+					while (std::getline(iss, lineContent)) {
+						if (lineContent.find(searchPattern) != std::string::npos) {
+							structLine = lineNum;
+							break;
+						}
+						lineNum++;
+					}
+
+					// Range
+					json_t* range = json_object();
+					json_t* start = json_object();
+					json_object_set_new(start, "line", json_integer(static_cast<json_int_t>(structLine)));
+					json_object_set_new(start, "character", json_integer(0));
+					json_t* end = json_object();
+					json_object_set_new(end, "line", json_integer(static_cast<json_int_t>(structLine)));
+					json_object_set_new(end, "character", json_integer(static_cast<json_int_t>(searchPattern.size())));
+					json_object_set_new(range, "start", start);
+					json_object_set_new(range, "end", end);
+					json_object_set_new(item, "range", range);
+
+					// Selection range (just the struct name)
+					json_t* selRange = json_object();
+					json_t* selStart = json_object();
+					json_object_set_new(selStart, "line", json_integer(static_cast<json_int_t>(structLine)));
+					json_object_set_new(selStart, "character", json_integer(7)); // After "struct "
+					json_t* selEnd = json_object();
+					json_object_set_new(selEnd, "line", json_integer(static_cast<json_int_t>(structLine)));
+					json_object_set_new(
+							selEnd, "character", json_integer(static_cast<json_int_t>(7 + structInfo.name.size())));
+					json_object_set_new(selRange, "start", selStart);
+					json_object_set_new(selRange, "end", selEnd);
+					json_object_set_new(item, "selectionRange", selRange);
+
+					// Data for supertypes/subtypes
+					std::string data = uri + "|" + structInfo.name;
+					json_object_set_new(item, "data", json_string(data.c_str()));
+
+					json_array_append_new(items, item);
+					break;
+				}
+			}
+		}
+	}
+
+	json_object_set_new(response, "result", items);
+	sendMessage(response);
+	json_decref(response);
+}
+
+void QuadrateLSP::handleSupertypes(const std::string& id, const std::string& itemData) {
+	json_t* response = json_object();
+	json_object_set_new(response, "jsonrpc", json_string("2.0"));
+	json_object_set_new(response, "id", json_integer(std::stoi(id)));
+
+	// Quadrate doesn't have struct inheritance, so return empty array
+	json_t* items = json_array();
+
+	// Suppress unused parameter warning
+	(void)itemData;
+
+	json_object_set_new(response, "result", items);
+	sendMessage(response);
+	json_decref(response);
+}
+
+void QuadrateLSP::handleSubtypes(const std::string& id, const std::string& itemData) {
+	json_t* response = json_object();
+	json_object_set_new(response, "jsonrpc", json_string("2.0"));
+	json_object_set_new(response, "id", json_integer(std::stoi(id)));
+
+	// Quadrate doesn't have struct inheritance, so return empty array
+	json_t* items = json_array();
+
+	// Suppress unused parameter warning
+	(void)itemData;
+
+	json_object_set_new(response, "result", items);
+	sendMessage(response);
+	json_decref(response);
+}
+
+void QuadrateLSP::handleOnTypeFormatting(
+		const std::string& id, const std::string& uri, size_t line, size_t character, const std::string& ch) {
+	json_t* response = json_object();
+	json_object_set_new(response, "jsonrpc", json_string("2.0"));
+	json_object_set_new(response, "id", json_integer(std::stoi(id)));
+
+	json_t* edits = json_array();
+
+	// Get document text
+	std::string documentText;
+	auto docIter = documents_.find(uri);
+	if (docIter != documents_.end()) {
+		documentText = docIter->second;
+	}
+
+	if (!documentText.empty()) {
+		// Split into lines
+		std::vector<std::string> lines;
+		std::istringstream iss(documentText);
+		std::string lineContent;
+		while (std::getline(iss, lineContent)) {
+			lines.push_back(lineContent);
+		}
+
+		if (ch == "\n" && line > 0 && line <= lines.size()) {
+			// Newline was typed - auto-indent based on previous line
+			const std::string& prevLine = lines[line - 1];
+
+			// Count leading whitespace of previous line
+			size_t indent = 0;
+			while (indent < prevLine.size() && (prevLine[indent] == ' ' || prevLine[indent] == '\t')) {
+				indent++;
+			}
+
+			// Check if previous line ends with '{'
+			size_t lastNonSpace = prevLine.size();
+			while (lastNonSpace > 0 && (prevLine[lastNonSpace - 1] == ' ' || prevLine[lastNonSpace - 1] == '\t')) {
+				lastNonSpace--;
+			}
+			bool addIndent = (lastNonSpace > 0 && prevLine[lastNonSpace - 1] == '{');
+
+			// Build indentation string
+			std::string indentStr = prevLine.substr(0, indent);
+			if (addIndent) {
+				indentStr += "\t"; // Add one tab for block
+			}
+
+			// Only add edit if there's indentation to add
+			if (!indentStr.empty()) {
+				json_t* edit = json_object();
+				json_t* range = json_object();
+				json_t* start = json_object();
+				json_object_set_new(start, "line", json_integer(static_cast<json_int_t>(line)));
+				json_object_set_new(start, "character", json_integer(0));
+				json_t* end = json_object();
+				json_object_set_new(end, "line", json_integer(static_cast<json_int_t>(line)));
+				json_object_set_new(end, "character", json_integer(static_cast<json_int_t>(character)));
+				json_object_set_new(range, "start", start);
+				json_object_set_new(range, "end", end);
+				json_object_set_new(edit, "range", range);
+				json_object_set_new(edit, "newText", json_string(indentStr.c_str()));
+				json_array_append_new(edits, edit);
+			}
+		} else if (ch == "}" && line < lines.size()) {
+			// Closing brace - check if we should reduce indentation
+			const std::string& currentLine = lines[line];
+
+			// Count current leading whitespace
+			size_t currentIndent = 0;
+			while (currentIndent < currentLine.size() &&
+					(currentLine[currentIndent] == ' ' || currentLine[currentIndent] == '\t')) {
+				currentIndent++;
+			}
+
+			// If there's indentation and the } is at the start (after whitespace), reduce by one tab
+			if (currentIndent > 0 && character == currentIndent + 1) {
+				// Find matching opening brace to determine correct indentation
+				size_t targetIndent = 0;
+				if (currentIndent >= 1) {
+					// Simple approach: reduce by one tab
+					if (currentLine[currentIndent - 1] == '\t') {
+						targetIndent = currentIndent - 1;
+					} else {
+						// Handle spaces (assume 4 spaces = 1 tab)
+						targetIndent = currentIndent > 4 ? currentIndent - 4 : 0;
+					}
+				}
+
+				std::string newIndent;
+				for (size_t i = 0; i < targetIndent; i++) {
+					newIndent += currentLine[i];
+				}
+
+				json_t* edit = json_object();
+				json_t* range = json_object();
+				json_t* start = json_object();
+				json_object_set_new(start, "line", json_integer(static_cast<json_int_t>(line)));
+				json_object_set_new(start, "character", json_integer(0));
+				json_t* end = json_object();
+				json_object_set_new(end, "line", json_integer(static_cast<json_int_t>(line)));
+				json_object_set_new(end, "character", json_integer(static_cast<json_int_t>(currentIndent)));
+				json_object_set_new(range, "start", start);
+				json_object_set_new(range, "end", end);
+				json_object_set_new(edit, "range", range);
+				json_object_set_new(edit, "newText", json_string(newIndent.c_str()));
+				json_array_append_new(edits, edit);
+			}
+		}
+		// For '{', no special formatting needed
+	}
+
+	json_object_set_new(response, "result", edits);
+	sendMessage(response);
+	json_decref(response);
+}
+
+void QuadrateLSP::handleLinkedEditingRange(
+		const std::string& id, const std::string& uri, size_t line, size_t character) {
+	json_t* response = json_object();
+	json_object_set_new(response, "jsonrpc", json_string("2.0"));
+	json_object_set_new(response, "id", json_integer(std::stoi(id)));
+
+	// Get document text
+	std::string documentText;
+	auto docIter = documents_.find(uri);
+	if (docIter != documents_.end()) {
+		documentText = docIter->second;
+	}
+
+	json_t* result = nullptr;
+
+	if (!documentText.empty()) {
+		// Get the word at cursor position
+		std::string word = getWordAtPosition(documentText, line, character);
+
+		if (!word.empty() && !isKeyword(word) && !isBuiltinOp(word)) {
+			// Find the function containing this position
+			std::vector<FunctionInfo> functions = extractFunctions(documentText);
+			size_t funcStartLine = 0;
+			size_t funcEndLine = documentText.size();
+
+			// Split into lines for processing
+			std::vector<std::string> lines;
+			std::istringstream iss(documentText);
+			std::string lineContent;
+			while (std::getline(iss, lineContent)) {
+				lines.push_back(lineContent);
+			}
+
+			// Find enclosing function
+			for (const auto& func : functions) {
+				if (line >= func.line) {
+					// Find function end (closing brace)
+					int braceDepth = 0;
+					bool foundOpen = false;
+					for (size_t i = func.line; i < lines.size(); i++) {
+						for (char ch : lines[i]) {
+							if (ch == '{') {
+								braceDepth++;
+								foundOpen = true;
+							} else if (ch == '}') {
+								braceDepth--;
+								if (foundOpen && braceDepth == 0) {
+									if (line >= func.line && line <= i) {
+										funcStartLine = func.line;
+										funcEndLine = i;
+									}
+									break;
+								}
+							}
+						}
+						if (foundOpen && braceDepth == 0) {
+							break;
+						}
+					}
+				}
+			}
+
+			// Find all occurrences of the word within the function scope
+			json_t* ranges = json_array();
+			for (size_t i = funcStartLine; i <= funcEndLine && i < lines.size(); i++) {
+				const std::string& currLine = lines[i];
+				size_t pos = 0;
+				while ((pos = currLine.find(word, pos)) != std::string::npos) {
+					// Check it's a whole word match
+					bool validStart = (pos == 0 || (!std::isalnum(static_cast<unsigned char>(currLine[pos - 1])) &&
+														   currLine[pos - 1] != '_'));
+					bool validEnd = (pos + word.size() >= currLine.size() ||
+									 (!std::isalnum(static_cast<unsigned char>(currLine[pos + word.size()])) &&
+											 currLine[pos + word.size()] != '_'));
+
+					if (validStart && validEnd) {
+						json_t* range = json_object();
+						json_t* start = json_object();
+						json_object_set_new(start, "line", json_integer(static_cast<json_int_t>(i)));
+						json_object_set_new(start, "character", json_integer(static_cast<json_int_t>(pos)));
+						json_t* end = json_object();
+						json_object_set_new(end, "line", json_integer(static_cast<json_int_t>(i)));
+						json_object_set_new(end, "character", json_integer(static_cast<json_int_t>(pos + word.size())));
+						json_object_set_new(range, "start", start);
+						json_object_set_new(range, "end", end);
+						json_array_append_new(ranges, range);
+					}
+					pos++;
+				}
+			}
+
+			// Only return result if we found multiple occurrences
+			if (json_array_size(ranges) > 1) {
+				result = json_object();
+				json_object_set_new(result, "ranges", ranges);
+			} else {
+				json_decref(ranges);
+			}
+		}
+	}
+
+	if (result) {
+		json_object_set_new(response, "result", result);
+	} else {
+		json_object_set_new(response, "result", json_null());
+	}
+
 	sendMessage(response);
 	json_decref(response);
 }
@@ -2236,6 +4194,8 @@ std::vector<FunctionInfo> QuadrateLSP::extractFunctions(const std::string& text)
 
 			FunctionInfo info;
 			info.name = funcNode->name();
+			// AST uses 1-based lines, convert to 0-based for LSP
+			info.line = funcNode->line() > 0 ? funcNode->line() - 1 : 0;
 
 			// Extract generic type parameters
 			info.isGeneric = funcNode->isGeneric();

@@ -3771,7 +3771,7 @@ namespace Qd {
 					}
 				} else {
 					std::string msg = "Unexpected identifier '" + std::string(text) +
-							"' at top level. Expected 'fn', 'struct', 'const', 'use', or 'test'";
+									  "' at top level. Expected 'fn', 'struct', 'const', 'use', or 'test'";
 					errorReporter.reportError(&scanner, msg.c_str());
 				}
 				break;

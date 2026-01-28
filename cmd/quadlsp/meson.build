@@ -54,4 +54,14 @@ if get_option('build_tests')
 			timeout: 60
 		)
 	endif
+
+	# Comprehensive tests (all LSP features)
+	test_lsp_comprehensive_script = find_program('tests/test_lsp_comprehensive.py', required: false)
+	if test_lsp_comprehensive_script.found()
+		test('test_lsp_comprehensive',
+			test_lsp_comprehensive_script,
+			depends: [quadlsp_exe],
+			timeout: 180
+		)
+	endif
 endif

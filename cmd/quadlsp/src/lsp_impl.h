@@ -90,11 +90,46 @@ private:
 	// Inlay hints (inline type/parameter hints)
 	void handleInlayHints(const std::string& id, const std::string& uri, size_t startLine, size_t endLine);
 
+	// Semantic tokens (rich syntax highlighting)
+	void handleSemanticTokens(const std::string& id, const std::string& uri);
+
+	// Document links (clickable imports)
+	void handleDocumentLinks(const std::string& id, const std::string& uri);
+
+	// Call hierarchy
+	void handlePrepareCallHierarchy(const std::string& id, const std::string& uri, size_t line, size_t character);
+	void handleIncomingCalls(const std::string& id, const std::string& itemData);
+	void handleOutgoingCalls(const std::string& id, const std::string& itemData);
+
+	// Selection range (smart selection expand/shrink)
+	void handleSelectionRange(
+			const std::string& id, const std::string& uri, const std::vector<std::pair<size_t, size_t>>& positions);
+
+	// Range formatting (format selection)
+	void handleRangeFormatting(const std::string& id, const std::string& uri, size_t startLine, size_t startChar,
+			size_t endLine, size_t endChar);
+
+	// Code lens (inline info above functions)
+	void handleCodeLens(const std::string& id, const std::string& uri);
+
+	// Type hierarchy (struct relationships)
+	void handlePrepareTypeHierarchy(const std::string& id, const std::string& uri, size_t line, size_t character);
+	void handleSupertypes(const std::string& id, const std::string& itemData);
+	void handleSubtypes(const std::string& id, const std::string& itemData);
+
+	// On type formatting (auto-indent)
+	void handleOnTypeFormatting(
+			const std::string& id, const std::string& uri, size_t line, size_t character, const std::string& ch);
+
+	// Linked editing ranges (edit multiple occurrences simultaneously)
+	void handleLinkedEditingRange(const std::string& id, const std::string& uri, size_t line, size_t character);
+
 	// Navigation helpers (implemented in lsp_navigation.cc)
 	void findIdentifiersInNode(Qd::IAstNode* node, const std::string& targetName, std::vector<Qd::IAstNode*>& results);
 	Qd::AstNodeLocal* findLocalDeclaration(Qd::IAstNode* startNode, const std::string& varName, size_t requestLine);
 	json_t* findDefinitionInModule(
 			const std::string& modulePath, const std::string& symbolName, const std::string& symbolType);
+	json_t* findMethodInModule(const std::string& modulePath, const std::string& methodName);
 	std::string findStructTypeOfVariable(Qd::IAstNode* root, const std::string& varName, size_t requestLine);
 	json_t* handleFieldAccessDefinition(Qd::IAstNode* root, const std::string& uri, size_t line, bool cursorOnVariable);
 
