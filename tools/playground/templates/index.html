@@ -445,7 +445,7 @@
                     <div class="quick-ref-section">
                         <h4>Math & Comparison</h4>
                         <div class="quick-ref-example">
-                            <code>+ - * / mod</code>
+                            <code>+ - * / %</code>
                             <span class="result">arithmetic operators</span>
                         </div>
                         <div class="quick-ref-example">
@@ -566,7 +566,7 @@
                             <span class="result">square a number</span>
                         </div>
                         <div class="quick-ref-example">
-                            <code>2 mod 0 ==</code>
+                            <code>2 % 0 ==</code>
                             <span class="result">check if even</span>
                         </div>
                         <div class="quick-ref-example">
@@ -833,7 +833,7 @@ fn main() {
 	}
 
 	// If-else
-	x 2 mod 0 == if {
+	x 2 % 0 == if {
 		"x is even" print nl
 	} else {
 		"x is odd" print nl
@@ -939,7 +939,7 @@ fn main() {
 fn divmod(a:i64 b:i64 -- quot:i64 rem:i64) {
 	-> b -> a              // pop parameters
 	a b /                  // push quotient
-	a b mod                // push remainder
+	a b %                  // push remainder
 	// Stack now has 2 values: [quot rem]
 }
 
