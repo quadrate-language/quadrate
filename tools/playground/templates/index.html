@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <link rel="icon" type="image/x-icon" href="favicon.ico">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&display=swap" rel="stylesheet">
@@ -263,9 +263,15 @@
             line-height: 1.6;
             max-height: 50vh;
             overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
         }
         .quick-ref-content.open {
             display: block;
+        }
+        @media (max-width: 900px) {
+            .quick-ref-content {
+                max-height: 40vh;
+            }
         }
         .quick-ref-section {
             margin-bottom: 1.2rem;
@@ -430,7 +436,7 @@
                             <span class="result">arithmetic operators</span>
                         </div>
                         <div class="quick-ref-example">
-                            <code>eq lt gt lte gte neq</code>
+                            <code>== < > <= >= !=</code>
                             <span class="result">comparisons → true/false</span>
                         </div>
                     </div>
@@ -461,6 +467,104 @@
                             <span class="result">no inputs, no outputs</span>
                         </div>
                     </div>
+                    <div class="quick-ref-section">
+                        <h4>Strings</h4>
+                        <div class="quick-ref-example">
+                            <code>"Hello" print</code>
+                            <span class="result">print a string</span>
+                        </div>
+                        <div class="quick-ref-example">
+                            <code>"Hello" len</code>
+                            <span class="result">string length → 5</span>
+                        </div>
+                        <div class="quick-ref-example">
+                            <code>"a" "b" str::concat</code>
+                            <span class="result">concatenate → "ab"</span>
+                        </div>
+                    </div>
+                    <div class="quick-ref-section">
+                        <h4>Output</h4>
+                        <div class="quick-ref-example">
+                            <code>print</code>
+                            <span class="result">print top of stack</span>
+                        </div>
+                        <div class="quick-ref-example">
+                            <code>nl</code>
+                            <span class="result">print newline</span>
+                        </div>
+                        <div class="quick-ref-example">
+                            <code>. (dot)</code>
+                            <span class="result">print with newline</span>
+                        </div>
+                        <div class="quick-ref-example">
+                            <code>" " print</code>
+                            <span class="result">print space separator</span>
+                        </div>
+                    </div>
+                    <div class="quick-ref-section">
+                        <h4>More Loops</h4>
+                        <div class="quick-ref-example">
+                            <code>while { cond } { body }</code>
+                            <span class="result">loop while condition true</span>
+                        </div>
+                        <div class="quick-ref-example">
+                            <code>loop { ... break }</code>
+                            <span class="result">infinite loop, use break</span>
+                        </div>
+                        <div class="quick-ref-example">
+                            <code>continue</code>
+                            <span class="result">skip to next iteration</span>
+                        </div>
+                    </div>
+                    <div class="quick-ref-section">
+                        <h4>Types</h4>
+                        <div class="quick-ref-example">
+                            <code>i64</code>
+                            <span class="result">integer (64-bit)</span>
+                        </div>
+                        <div class="quick-ref-example">
+                            <code>f64</code>
+                            <span class="result">floating point</span>
+                        </div>
+                        <div class="quick-ref-example">
+                            <code>str</code>
+                            <span class="result">string</span>
+                        </div>
+                        <div class="quick-ref-example">
+                            <code>bool</code>
+                            <span class="result">true or false</span>
+                        </div>
+                    </div>
+                    <div class="quick-ref-section">
+                        <h4>Comments</h4>
+                        <div class="quick-ref-example">
+                            <code>// single line comment</code>
+                            <span class="result">ignored by compiler</span>
+                        </div>
+                        <div class="quick-ref-example">
+                            <code>/* multi-line */</code>
+                            <span class="result">block comment</span>
+                        </div>
+                    </div>
+                    <div class="quick-ref-section">
+                        <h4>Common Patterns</h4>
+                        <div class="quick-ref-example">
+                            <code>dup *</code>
+                            <span class="result">square a number</span>
+                        </div>
+                        <div class="quick-ref-example">
+                            <code>2 mod 0 ==</code>
+                            <span class="result">check if even</span>
+                        </div>
+                        <div class="quick-ref-example">
+                            <code>0 > if { ... }</code>
+                            <span class="result">if positive</span>
+                        </div>
+                        <div class="quick-ref-example">
+                            <code>swap drop</code>
+                            <span class="result">keep second, discard first</span>
+                        </div>
+                    </div>
                 </div>
             </div>
             <div class="panel-header">
@@ -479,8 +583,15 @@
                         </optgroup>
                         <optgroup label="Functions">
                             <option value="functions">Simple Functions</option>
+                            <option value="multireturn">Multiple Return Values</option>
                             <option value="factorial">Factorial</option>
                             <option value="fibonacci">Fibonacci</option>
+                        </optgroup>
+                        <optgroup label="Data Types">
+                            <option value="structs">Structs & Methods</option>
+                        </optgroup>
+                        <optgroup label="Algorithms">
+                            <option value="bubblesort">Stack Bubble Sort</option>
                         </optgroup>
                     </select>
                 </div>
@@ -662,149 +773,346 @@
 
         const examples = {
             hello: `fn main() {
-    "Hello, World!" print nl
+	"Hello, World!" print nl
 }`,
 
             arithmetic: `// Basic arithmetic in Quadrate
 // Values go on the stack, operators consume them
-
 fn main() {
-    // Addition: push 5, push 3, add
-    5 3 + print nl          // prints 8
+	// Addition: push 5, push 3, add
+	5 3 + print nl          // prints 8
 
-    // More operations
-    10 4 - print nl         // prints 6 (subtraction)
-    7 6 * print nl          // prints 42 (multiplication)
-    20 4 / print nl         // prints 5 (division)
+	// More operations
+	10 4 - print nl         // prints 6 (subtraction)
+	7 6 * print nl          // prints 42 (multiplication)
+	20 4 / print nl         // prints 5 (division)
 
-    // Chain operations
-    2 3 + 4 * print nl      // (2+3)*4 = 20
+	// Chain operations
+	2 3 + 4 * print nl      // (2+3)*4 = 20
 }`,
 
             variables: `// Variables store values from the stack
 // Use -> to store, then use the name to retrieve
-
 fn main() {
-    // Store a value
-    42 -> answer
-    "The answer is " print answer print nl
+	// Store a value
+	42 -> answer
+	"The answer is " print answer print nl
 
-    // Variables can be reused
-    10 -> x
-    x x * -> x_squared
-    "10 squared is " print x_squared print nl
+	// Variables can be reused
+	10 -> x
+	x x * -> x_squared
+	"10 squared is " print x_squared print nl
 
-    // Use in calculations
-    5 -> width
-    3 -> height
-    width height * -> area
-    "Area: " print area print nl
+	// Use in calculations
+	5 -> width
+	3 -> height
+	width height * -> area
+	"Area: " print area print nl
 }`,
 
             conditionals: `// Conditionals use if/else with comparison operators
-
 fn main() {
-    10 -> x
+	10 -> x
 
-    // Simple if
-    x 5 gt if {
-        "x is greater than 5" print nl
-    }
+	// Simple if
+	x 5 > if {
+		"x is greater than 5" print nl
+	}
 
-    // If-else
-    x 2 mod 0 eq if {
-        "x is even" print nl
-    } else {
-        "x is odd" print nl
-    }
+	// If-else
+	x 2 mod 0 == if {
+		"x is even" print nl
+	} else {
+		"x is odd" print nl
+	}
 
-    // Comparisons: eq, neq, lt, gt, lte, gte
-    3 3 eq if { "3 equals 3" print nl }
-    5 10 lt if { "5 is less than 10" print nl }
+	// Comparisons: == != < > <= >=
+	3 3 == if {
+		"3 equals 3" print nl
+	}
+	5 10 < if {
+		"5 is less than 10" print nl
+	}
 }`,
 
             loops: `// Loops: for loops and while loops
-
 fn main() {
-    // For loop: start end step for var { body }
-    "Counting: " print
-    0 5 1 for i {
-        i print " " print
-    }
-    nl
+	// For loop: start end step for var { body }
+	"Counting: " print
+	0 5 1 for i {
+		i print " " print
+	}
+	nl
 
-    // Countdown
-    "Countdown: " print
-    5 0 -1 for i {
-        i print " " print
-    }
-    nl
+	// Countdown
+	"Countdown: " print
+	5 0 -1 for i {
+		i print " " print
+	}
+	nl
 
-    // Using loop variable in calculations
-    "Squares: " print
-    1 6 1 for n {
-        n n * print " " print
-    }
-    nl
+	// Using loop variable in calculations
+	"Squares: " print
+	1 6 1 for n {
+		n n * print " " print
+	}
+	nl
 }`,
 
             functions: `// Functions take inputs and produce outputs
 // Signature: fn name(inputs -- outputs)
-
 fn double(x:i64 -- result:i64) {
-    x 2 *
+	// Parameter x is on the stack, use it directly
+	2 *
 }
 
-fn greet(name:str --) {
-    "Hello, " print name print "!" print nl
+fn greet(name:str -- ) {
+	-> name    // pop parameter into local variable
+	"Hello, " print name print "!" print nl
 }
 
 fn add(a:i64 b:i64 -- sum:i64) {
-    a b +
+	// Both a and b are on stack: [a b]
+	+    // just add them
 }
 
 fn main() {
-    5 double print nl       // prints 10
+	5 double print nl       // prints 10
 
-    "Alice" greet           // prints "Hello, Alice!"
+	"Alice" greet           // prints "Hello, Alice!"
 
-    3 4 add print nl        // prints 7
+	3 4 add print nl        // prints 7
 
-    // Chain function calls
-    10 double double print nl   // prints 40
+	// Chain function calls
+	10 double double print nl   // prints 40
 }`,
 
             fibonacci: `// Fibonacci sequence using stack operations
 // This shows how to work with the stack directly
-
 fn main() {
-    0 1     // Push initial values: F(0)=0, F(1)=1
+	0 1     // Push initial values: F(0)=0, F(1)=1
 
-    "Fibonacci: " print
-    0 15 1 for i {
-        // Stack: [a b] where a=F(n-1), b=F(n)
-        over print " " print    // print F(n-1)
-        swap over +             // [b a+b] = [F(n) F(n+1)]
-    }
-    drop drop nl   // clean up stack
+	"Fibonacci: " print
+	0 15 1 for i {
+		// Stack: [a b] where a=F(n-1), b=F(n)
+		over print " " print    // print F(n-1)
+		swap over +             // [b a+b] = [F(n) F(n+1)]
+	}
+	drop drop nl   // clean up stack
 }`,
 
             factorial: `// Factorial: n! = n * (n-1) * ... * 1
-
 fn factorial(n:i64 -- result:i64) {
-    1 -> acc                    // accumulator starts at 1
-    1 n ++ 1 for i {            // loop from 1 to n
-        acc i * -> acc          // acc = acc * i
-    }
-    acc                         // return accumulator
+	-> n                        // pop parameter into local
+	1 -> acc                    // accumulator starts at 1
+	1 n ++ 1 for i {
+		// loop from 1 to n
+		acc i * -> acc          // acc = acc * i
+	}
+	acc                         // return accumulator
 }
 
 fn main() {
-    "Factorials:" print nl
-    0 8 1 for n {
-        n print "! = " print
-        n factorial print nl
-    }
+	"Factorials:" print nl
+	0 8 1 for n {
+		n print "! = " print
+		n factorial print nl
+	}
+}`,
+
+            multireturn: `// Functions can return multiple values on the stack
+// The stack naturally supports this - no tuples needed!
+// Returns BOTH quotient AND remainder
+fn divmod(a:i64 b:i64 -- quot:i64 rem:i64) {
+	-> b -> a              // pop parameters
+	a b /                  // push quotient
+	a b mod                // push remainder
+	// Stack now has 2 values: [quot rem]
+}
+
+// Swap values using pure stack (no variables!)
+fn swap_pair(a:i64 b:i64 -- b:i64 a:i64) {
+	// Input:  [a b]
+	swap
+	// Output: [b a]
+}
+
+// Return min AND max using stack operations
+fn minmax(a:i64 b:i64 -- min:i64 max:i64) {
+	// Duplicate both values: [a b] -> [a b a b]
+	over over
+	// Compare the copies
+	< if {
+		// a < b: return [a b]
+		// already correct order
+	} else {
+		// a >= b: return [b a]
+		swap
+	}
+}
+
+fn main() {
+	"=== Multiple Return Values ===" print nl
+	nl
+
+	// divmod returns 2 values
+	"17 divided by 5:" print nl
+	17 5 divmod -> rem -> quot    // pop both
+	"  Quotient:  " print quot print nl
+	"  Remainder: " print rem print nl
+	nl
+
+	// Swap without variables - pure stack!
+	"Swap 10 and 20: " print
+	10 20 swap_pair
+	print " " print print nl
+	nl
+
+	// minmax returns both bounds
+	"Min and max of 7, 3:" print nl
+	7 3 minmax -> max -> min
+	"  Min: " print min print nl
+	"  Max: " print max print nl
+}`,
+
+            structs: `// Structs group related data together
+// Methods let you operate on struct instances
+use math
+
+// Define a Point with x,y coordinates
+struct Point {
+	x: f64
+	y: f64
+}
+
+// Method: (receiver) comes before fn name
+// Receiver is read-only; use @field to access
+fn (p:Point) show() {
+	"(" print p @x print ", " print p @y print ")" print
+}
+
+// Method using stack ops to compute distance
+fn (p:Point) magnitude( -- dist:f64) {
+	// x*x + y*y, then sqrt
+	p @x dup *    // x squared on stack
+	p @y dup *    // y squared on stack
+	+             // add them
+	math::sqrt    // square root
+}
+
+// Method with another Point as parameter
+fn (p:Point) distance_to(other:Point -- dist:f64) {
+	-> other
+	// Stack-based: (x2-x1)^2 + (y2-y1)^2, sqrt
+	other @x p @x - dup *    // dx squared
+	other @y p @y - dup *    // dy squared
+	+ math::sqrt
+}
+
+fn main() {
+	"=== Structs and Methods ===" print nl
+	nl
+
+	// Create a point using struct literal
+	Point {
+		x = 3.0
+		y = 4.0
+	} -> p
+
+	"Point p: " print p show nl
+
+	// Access individual fields with @
+	"p.x = " print p @x print nl
+	"p.y = " print p @y print nl
+	nl
+
+	// Call method - Point goes on stack first
+	"Distance from origin: " print
+	p magnitude print nl  // 5.0 (3-4-5 triangle)
+	nl
+
+	// Inline construction with method call
+	"Point(5,12) magnitude: " print
+	Point {
+		x = 5.0
+		y = 12.0
+	} magnitude print nl  // 13.0
+
+	// Distance between two points
+	nl
+	Point {
+		x = 0.0
+		y = 0.0
+	} -> origin
+	"Distance from origin to p: " print
+	p origin distance_to print nl
+}`,
+
+            bubblesort: `// Bubble Sort using pure stack operations
+// No arrays - just creative stack manipulation!
+// Shows: dup, swap, over, rot, drop
+// Compare and swap top two: ensure smaller is below larger
+// Stack: [... a b] -> [... min max] where min <= max
+fn order2(a:i64 b:i64 -- min:i64 max:i64) {
+	over over    // [a b a b]
+	> if {
+		// if a > b
+		swap     // [b a] - swapped!
+	}
+}
+
+// Sort 3 values using bubble sort passes
+// Stack: [a b c] -> [min mid max]
+fn sort3(a:i64 b:i64 c:i64 -- x:i64 y:i64 z:i64) {
+	// Bubble sort: compare adjacent pairs, repeat
+	// Pass 1: compare top two (positions 1,2)
+	order2              // [a b' c'] where b' <= c'
+
+	// Pass 2: compare bottom two (positions 0,1)
+	// Need to rotate to access them
+	rot rot             // [a b' c'] -> [b' c' a] -> [c' a b']
+	order2              // [c' a' b''] where a' <= b''
+	rot                 // [a' b'' c']
+
+	// Pass 3: compare top two again
+	order2              // [a' b''' c''] - fully sorted!
+}
+
+fn main() {
+	"=== Stack-Based Bubble Sort ===" print nl
+	"Sorting values using only stack operations!" print nl
+	nl
+
+	// Sort 2 values
+	"Sort [5, 3]: " print
+	5 3              // push onto stack
+	order2           // sort them
+	-> b -> a        // pop to print in order
+	a print " " print b print nl
+
+	// Sort 3 values
+	"Sort [7, 2, 9]: " print
+	7 2 9            // push [7 2 9] (9 is top)
+	sort3            // sort them
+	-> c -> b -> a   // pop all three
+	a print " " print b print " " print c print nl
+
+	// Reverse order
+	"Sort [9, 5, 1]: " print
+	9 5 1
+	sort3
+	-> c -> b -> a
+	a print " " print b print " " print c print nl
+
+	// Already sorted
+	"Sort [1, 2, 3]: " print
+	1 2 3
+	sort3
+	-> c -> b -> a
+	a print " " print b print " " print c print nl
+
+	nl
+	"Stack operations used: over, swap, rot" print nl
 }`,
         };
 
