@@ -48,10 +48,10 @@ make install
 
 Get Quadrate on a real 1.44 MB floppy disk:
 
-- 💾 [Linux x86_64](https://buy.stripe.com/6oU4gA6vAdoQdAldot5J602)
-- 💾 [Linux arm64](https://buy.stripe.com/4gM8wQ2fk5Wo7bX1FL5J603)
+- 💾 [Linux x86_64](https://buy.stripe.com/4gM8wQ2fk5Wo7bX1FL5J603)
+- 💾 [Linux arm64](https://buy.stripe.com/6oU4gA6vAdoQdAldot5J602)
 
-Each floppy contains the complete source code and pre-built binaries, compressed to fit on 1.44 MB.
+Each floppy contains the complete source code and pre-built binaries, compressed to fit on 1.44 MB. Shipping to Europe only.
 
 #### Default locations
 - Binaries to `/usr/bin/`
