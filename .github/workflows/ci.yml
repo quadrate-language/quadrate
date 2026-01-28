@@ -22,6 +22,7 @@ jobs:
             libsqlite3-dev \
             libssl-dev \
             llvm-dev \
+            make \
             meson \
             nodejs \
             npm \
@@ -69,6 +70,7 @@ jobs:
             clang \
             git \
             llvm \
+            make \
             meson \
             nodejs \
             openssl \
@@ -118,6 +120,7 @@ jobs:
           prepare: |
             pkg install -y \
               git \
+              gmake \
               llvm \
               meson \
               node \
@@ -127,5 +130,5 @@ jobs:
               openssl
             npm install -g tree-sitter-cli
           run: |
-            make release
-            make tests
+            gmake release
+            gmake tests
