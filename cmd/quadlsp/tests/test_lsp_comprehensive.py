@@ -1,4 +1,11 @@
 #!/usr/bin/env python3
+# Immediate output before any imports to verify Python is running
+# Note: Output must contain "Error" or "FAIL" to be shown by run_all.sh filter
+import sys as _early_sys
+_early_sys.stderr.write("Error-Diag: test_lsp_comprehensive.py Python interpreter started\n")
+_early_sys.stderr.flush()
+del _early_sys
+
 """
 Comprehensive tests for all Quadrate LSP features.
 Tests formatting, semantic tokens, document links, call hierarchy,
@@ -152,13 +159,13 @@ class LSPComprehensiveTester:
         """Set up the test session"""
         import sys as _sys
         self.session = LSPSession(self.lsp_path)
-        _sys.stderr.write(f"Starting LSP server: {self.lsp_path}\n")
+        _sys.stderr.write(f"Error-Diag: Starting LSP server: {self.lsp_path}\n")
         _sys.stderr.flush()
         if not self.session.start():
             _sys.stderr.write("FAIL: Could not start LSP process\n")
             _sys.stderr.flush()
             return False
-        _sys.stderr.write("LSP process started, sending initialize...\n")
+        _sys.stderr.write("Error-Diag: LSP process started, sending initialize...\n")
         _sys.stderr.flush()
         self.capabilities = self.session.initialize()
         if self.capabilities is None:
@@ -170,13 +177,13 @@ class LSPComprehensiveTester:
                     import select as sel
                     if sel.select([self.session.proc.stderr], [], [], 0.1)[0]:
                         stderr = self.session.proc.stderr.read(4096)
-                        _sys.stderr.write(f"LSP stderr: {stderr.decode('utf-8', errors='replace')}\n")
+                        _sys.stderr.write(f"Error-Diag: LSP stderr: {stderr.decode('utf-8', errors='replace')}\n")
                         _sys.stderr.flush()
                 except Exception as e:
-                    _sys.stderr.write(f"Could not read stderr: {e}\n")
+                    _sys.stderr.write(f"Error-Diag: Could not read stderr: {e}\n")
                     _sys.stderr.flush()
             return False
-        _sys.stderr.write("LSP initialized successfully\n")
+        _sys.stderr.write("Error-Diag: LSP initialized successfully\n")
         _sys.stderr.flush()
         return True
 
@@ -805,7 +812,7 @@ fn main() {
     def run_all_tests(self):
         """Run all comprehensive tests"""
         import sys as _sys
-        _sys.stderr.write("run_all_tests() starting\n")
+        _sys.stderr.write("Error-Diag: run_all_tests() starting\n")
         _sys.stderr.flush()
 
         print("=" * 70)
@@ -853,8 +860,9 @@ fn main() {
         print("=" * 70)
 
         # Also write to stderr so meson shows it with --print-errorlogs
+        # Note: Must contain "Error" or "FAIL" to be shown by run_all.sh filter
         import sys as _sys
-        _sys.stderr.write(f"\nFINAL RESULT: {self.test_count} tests, {self.passed} passed, {self.failed} failed\n")
+        _sys.stderr.write(f"\nError-Diag: FINAL RESULT: {self.test_count} tests, {self.passed} passed, {self.failed} failed\n")
         _sys.stderr.flush()
 
         if self.failed == 0:
@@ -923,17 +931,18 @@ def main():
 
 if __name__ == "__main__":
     # Use stderr for diagnostics since meson may only show stderr with --print-errorlogs
+    # Note: Must contain "Error" or "FAIL" to be shown by run_all.sh filter
     import sys as _sys
-    _sys.stderr.write("test_lsp_comprehensive.py starting...\n")
+    _sys.stderr.write("Error-Diag: test_lsp_comprehensive.py starting...\n")
     _sys.stderr.flush()
     try:
         result = main()
-        _sys.stderr.write(f"test_lsp_comprehensive.py finished with exit code {result}\n")
+        _sys.stderr.write(f"Error-Diag: test_lsp_comprehensive.py finished with exit code {result}\n")
         _sys.stderr.flush()
         sys.exit(result)
     except Exception as e:
         import traceback
-        _sys.stderr.write(f"FATAL ERROR: {e}\n")
+        _sys.stderr.write(f"FATAL Error: {e}\n")
         _sys.stderr.flush()
         traceback.print_exc()
         sys.exit(1)
