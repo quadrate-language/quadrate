@@ -151,10 +151,26 @@ class LSPComprehensiveTester:
     def setup(self):
         """Set up the test session"""
         self.session = LSPSession(self.lsp_path)
+        print(f"Starting LSP server: {self.lsp_path}", flush=True)
         if not self.session.start():
+            print("FAIL: Could not start LSP process", flush=True)
             return False
+        print("LSP process started, sending initialize...", flush=True)
         self.capabilities = self.session.initialize()
-        return self.capabilities is not None
+        if self.capabilities is None:
+            print("FAIL: LSP initialize returned None", flush=True)
+            # Try to get stderr for debugging
+            if self.session.proc and self.session.proc.stderr:
+                try:
+                    import select as sel
+                    if sel.select([self.session.proc.stderr], [], [], 0.1)[0]:
+                        stderr = self.session.proc.stderr.read(4096)
+                        print(f"LSP stderr: {stderr.decode('utf-8', errors='replace')}", flush=True)
+                except Exception as e:
+                    print(f"Could not read stderr: {e}", flush=True)
+            return False
+        print("LSP initialized successfully", flush=True)
+        return True
 
     def teardown(self):
         """Tear down the test session"""
@@ -301,7 +317,8 @@ fn main() {
             "documentLinkProvider capability registered"
         )
 
-        uri = "file:///home/klarre/dev/sourcehut/~klahr/quadrate/test_links.qd"
+        # Use a temp path that doesn't need to exist on disk
+        uri = "file:///tmp/test_links.qd"
         content = '''use str
 use math
 use io
@@ -828,6 +845,18 @@ fn main() {
 def main():
     # Find LSP executable
     # Various paths depending on where we're run from
+    import os
+    cwd = os.getcwd()
+
+    # Also try to find project root by looking for meson.build
+    project_root = None
+    check_dir = Path(cwd)
+    for _ in range(5):  # Go up at most 5 levels
+        if (check_dir / "meson.build").exists() and (check_dir / "lib" / "qc").exists():
+            project_root = check_dir
+            break
+        check_dir = check_dir.parent
+
     possible_paths = [
         # Running from project root
         Path("build/debug/cmd/quadlsp/quadlsp"),
@@ -840,6 +869,11 @@ def main():
         Path("../../../build/debug/cmd/quadlsp/quadlsp"),
     ]
 
+    # Also try paths relative to project root if found
+    if project_root:
+        possible_paths.insert(0, project_root / "build/debug/cmd/quadlsp/quadlsp")
+        possible_paths.insert(1, project_root / "dist/bin/quadlsp")
+
     lsp_path = None
     for path in possible_paths:
         if path.exists():
@@ -847,14 +881,31 @@ def main():
             break
 
     if not lsp_path:
-        print("LSP executable not found. Please build the project first.")
+        print(f"LSP executable not found. CWD: {cwd}", flush=True)
+        print(f"Project root: {project_root}", flush=True)
+        print("Searched paths:", flush=True)
+        for p in possible_paths:
+            print(f"  {p} -> {p.absolute()} (exists: {p.exists()})", flush=True)
         return 1
 
-    print(f"Using LSP: {lsp_path}\n")
+    print(f"Using LSP: {lsp_path}")
+    print(f"CWD: {cwd}")
+    if project_root:
+        print(f"Project root: {project_root}")
+    print()
 
     tester = LSPComprehensiveTester(str(lsp_path))
     return tester.run_all_tests()
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    print("test_lsp_comprehensive.py starting...", flush=True)
+    try:
+        result = main()
+        print(f"test_lsp_comprehensive.py finished with exit code {result}", flush=True)
+        sys.exit(result)
+    except Exception as e:
+        import traceback
+        print(f"FATAL ERROR: {e}", flush=True)
+        traceback.print_exc()
+        sys.exit(1)
