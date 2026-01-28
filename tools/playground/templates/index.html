@@ -206,19 +206,101 @@
         #clear-btn:hover {
             background: #555;
         }
-        .examples {
-            display: flex;
-            gap: 0.5rem;
-            flex-wrap: wrap;
-        }
-        .examples button {
+        .examples select {
             background: #0f3460;
             color: #7ec8e3;
-            font-size: 0.8rem;
-            padding: 0.3rem 0.6rem;
+            font-size: 0.85rem;
+            padding: 0.4rem 0.6rem;
+            border: 1px solid #1a4a7a;
+            border-radius: 4px;
+            cursor: pointer;
+            outline: none;
         }
-        .examples button:hover {
+        .examples select:hover {
             background: #1a4a7a;
+        }
+        .examples select option {
+            background: #16213e;
+        }
+        .examples select optgroup {
+            background: #0f3460;
+            color: #888;
+        }
+
+        /* Quick Reference Panel */
+        .quick-ref {
+            background: #16213e;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            overflow: hidden;
+        }
+        .quick-ref-header {
+            padding: 0.6rem 1rem;
+            background: #0f3460;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            user-select: none;
+        }
+        .quick-ref-header:hover {
+            background: #1a4a7a;
+        }
+        .quick-ref-header h3 {
+            margin: 0;
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: #7ec8e3;
+        }
+        .quick-ref-header .toggle {
+            color: #7ec8e3;
+            font-size: 0.8rem;
+        }
+        .quick-ref-content {
+            display: none;
+            padding: 1rem;
+            font-size: 0.85rem;
+            line-height: 1.6;
+            max-height: 50vh;
+            overflow-y: auto;
+        }
+        .quick-ref-content.open {
+            display: block;
+        }
+        .quick-ref-section {
+            margin-bottom: 1.2rem;
+        }
+        .quick-ref-section:last-child {
+            margin-bottom: 0;
+        }
+        .quick-ref-section h4 {
+            margin: 0 0 0.5rem 0;
+            font-size: 0.8rem;
+            color: #c678dd;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        .quick-ref-section p {
+            margin: 0 0 0.5rem 0;
+            color: #aaa;
+        }
+        .quick-ref-example {
+            background: #0f0f23;
+            padding: 0.4rem 0.6rem;
+            border-radius: 4px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8rem;
+            margin: 0.3rem 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .quick-ref-example code {
+            color: #98c379;
+        }
+        .quick-ref-example .result {
+            color: #666;
+            font-style: italic;
         }
         .spinner {
             display: inline-block;
@@ -292,12 +374,115 @@
     </header>
     <main>
         <div class="panel">
+            <div class="quick-ref">
+                <div class="quick-ref-header" onclick="toggleQuickRef()">
+                    <h3>Quick Reference</h3>
+                    <span class="toggle" id="quick-ref-toggle">Show</span>
+                </div>
+                <div class="quick-ref-content" id="quick-ref-content">
+                    <div class="quick-ref-section">
+                        <h4>The Stack</h4>
+                        <p>Quadrate is stack-based. Values are pushed onto a stack, and operations consume values from the stack.</p>
+                        <div class="quick-ref-example">
+                            <code>5 3 +</code>
+                            <span class="result">push 5, push 3, add them → 8</span>
+                        </div>
+                        <div class="quick-ref-example">
+                            <code>10 print nl</code>
+                            <span class="result">push 10, print it, newline</span>
+                        </div>
+                    </div>
+                    <div class="quick-ref-section">
+                        <h4>Variables</h4>
+                        <p>Use <code>-></code> to store a value in a variable, then use the variable name to push it back.</p>
+                        <div class="quick-ref-example">
+                            <code>42 -> x</code>
+                            <span class="result">store 42 in x</span>
+                        </div>
+                        <div class="quick-ref-example">
+                            <code>x x *</code>
+                            <span class="result">push x twice, multiply → 1764</span>
+                        </div>
+                    </div>
+                    <div class="quick-ref-section">
+                        <h4>Stack Operations</h4>
+                        <div class="quick-ref-example">
+                            <code>dup</code>
+                            <span class="result">duplicate top: [a] → [a a]</span>
+                        </div>
+                        <div class="quick-ref-example">
+                            <code>swap</code>
+                            <span class="result">swap top two: [a b] → [b a]</span>
+                        </div>
+                        <div class="quick-ref-example">
+                            <code>drop</code>
+                            <span class="result">discard top: [a b] → [a]</span>
+                        </div>
+                        <div class="quick-ref-example">
+                            <code>over</code>
+                            <span class="result">copy second: [a b] → [a b a]</span>
+                        </div>
+                    </div>
+                    <div class="quick-ref-section">
+                        <h4>Math & Comparison</h4>
+                        <div class="quick-ref-example">
+                            <code>+ - * / mod</code>
+                            <span class="result">arithmetic operators</span>
+                        </div>
+                        <div class="quick-ref-example">
+                            <code>eq lt gt lte gte neq</code>
+                            <span class="result">comparisons → true/false</span>
+                        </div>
+                    </div>
+                    <div class="quick-ref-section">
+                        <h4>Control Flow</h4>
+                        <div class="quick-ref-example">
+                            <code>condition if { ... }</code>
+                            <span class="result">run block if true</span>
+                        </div>
+                        <div class="quick-ref-example">
+                            <code>if { ... } else { ... }</code>
+                            <span class="result">if-else branch</span>
+                        </div>
+                        <div class="quick-ref-example">
+                            <code>0 10 1 for i { i print }</code>
+                            <span class="result">loop i from 0 to 9</span>
+                        </div>
+                    </div>
+                    <div class="quick-ref-section">
+                        <h4>Functions</h4>
+                        <p>Define with inputs and outputs separated by <code>--</code></p>
+                        <div class="quick-ref-example">
+                            <code>fn add(a:i64 b:i64 -- sum:i64)</code>
+                            <span class="result">takes 2 ints, returns 1</span>
+                        </div>
+                        <div class="quick-ref-example">
+                            <code>fn greet(--) { "Hi" print }</code>
+                            <span class="result">no inputs, no outputs</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
             <div class="panel-header">
                 <h2>Code</h2>
                 <div class="examples">
-                    <button onclick="loadExample('hello')">Hello World</button>
-                    <button onclick="loadExample('fibonacci')">Fibonacci</button>
-                    <button onclick="loadExample('factorial')">Factorial</button>
+                    <select id="examples-select" onchange="loadExample(this.value)">
+                        <option value="">Load example...</option>
+                        <optgroup label="Getting Started">
+                            <option value="hello">Hello World</option>
+                            <option value="arithmetic">Basic Arithmetic</option>
+                            <option value="variables">Variables</option>
+                        </optgroup>
+                        <optgroup label="Control Flow">
+                            <option value="conditionals">Conditionals</option>
+                            <option value="loops">Loops</option>
+                        </optgroup>
+                        <optgroup label="Functions">
+                            <option value="functions">Simple Functions</option>
+                            <option value="factorial">Factorial</option>
+                            <option value="fibonacci">Fibonacci</option>
+                        </optgroup>
+                    </select>
                 </div>
             </div>
             <div class="editor-wrapper">
@@ -479,23 +664,143 @@
             hello: `fn main() {
     "Hello, World!" print nl
 }`,
-            fibonacci: `// Stack-based Fibonacci
+
+            arithmetic: `// Basic arithmetic in Quadrate
+// Values go on the stack, operators consume them
+
 fn main() {
-    0 1   // seed values
-    0 20 1 for it {
-        over print " " print
-        swap over +
-    }
+    // Addition: push 5, push 3, add
+    5 3 + print nl          // prints 8
+
+    // More operations
+    10 4 - print nl         // prints 6 (subtraction)
+    7 6 * print nl          // prints 42 (multiplication)
+    20 4 / print nl         // prints 5 (division)
+
+    // Chain operations
+    2 3 + 4 * print nl      // (2+3)*4 = 20
 }`,
-            factorial: `// Factorial using the stack
-fn factorial(n:i64 -- result:i64) {
-    1 swap
-    1 swap ++ 1 for it {
-        it *
+
+            variables: `// Variables store values from the stack
+// Use -> to store, then use the name to retrieve
+
+fn main() {
+    // Store a value
+    42 -> answer
+    "The answer is " print answer print nl
+
+    // Variables can be reused
+    10 -> x
+    x x * -> x_squared
+    "10 squared is " print x_squared print nl
+
+    // Use in calculations
+    5 -> width
+    3 -> height
+    width height * -> area
+    "Area: " print area print nl
+}`,
+
+            conditionals: `// Conditionals use if/else with comparison operators
+
+fn main() {
+    10 -> x
+
+    // Simple if
+    x 5 gt if {
+        "x is greater than 5" print nl
     }
+
+    // If-else
+    x 2 mod 0 eq if {
+        "x is even" print nl
+    } else {
+        "x is odd" print nl
+    }
+
+    // Comparisons: eq, neq, lt, gt, lte, gte
+    3 3 eq if { "3 equals 3" print nl }
+    5 10 lt if { "5 is less than 10" print nl }
+}`,
+
+            loops: `// Loops: for loops and while loops
+
+fn main() {
+    // For loop: start end step for var { body }
+    "Counting: " print
+    0 5 1 for i {
+        i print " " print
+    }
+    nl
+
+    // Countdown
+    "Countdown: " print
+    5 0 -1 for i {
+        i print " " print
+    }
+    nl
+
+    // Using loop variable in calculations
+    "Squares: " print
+    1 6 1 for n {
+        n n * print " " print
+    }
+    nl
+}`,
+
+            functions: `// Functions take inputs and produce outputs
+// Signature: fn name(inputs -- outputs)
+
+fn double(x:i64 -- result:i64) {
+    x 2 *
+}
+
+fn greet(name:str --) {
+    "Hello, " print name print "!" print nl
+}
+
+fn add(a:i64 b:i64 -- sum:i64) {
+    a b +
 }
 
 fn main() {
+    5 double print nl       // prints 10
+
+    "Alice" greet           // prints "Hello, Alice!"
+
+    3 4 add print nl        // prints 7
+
+    // Chain function calls
+    10 double double print nl   // prints 40
+}`,
+
+            fibonacci: `// Fibonacci sequence using stack operations
+// This shows how to work with the stack directly
+
+fn main() {
+    0 1     // Push initial values: F(0)=0, F(1)=1
+
+    "Fibonacci: " print
+    0 15 1 for i {
+        // Stack: [a b] where a=F(n-1), b=F(n)
+        over print " " print    // print F(n-1)
+        swap over +             // [b a+b] = [F(n) F(n+1)]
+    }
+    drop drop nl   // clean up stack
+}`,
+
+            factorial: `// Factorial: n! = n * (n-1) * ... * 1
+
+fn factorial(n:i64 -- result:i64) {
+    1 -> acc                    // accumulator starts at 1
+    1 n ++ 1 for i {            // loop from 1 to n
+        acc i * -> acc          // acc = acc * i
+    }
+    acc                         // return accumulator
+}
+
+fn main() {
+    "Factorials:" print nl
     0 8 1 for n {
         n print "! = " print
         n factorial print nl
@@ -503,10 +808,20 @@ fn main() {
 }`,
         };
 
+        function toggleQuickRef() {
+            const content = document.getElementById('quick-ref-content');
+            const toggle = document.getElementById('quick-ref-toggle');
+            content.classList.toggle('open');
+            toggle.textContent = content.classList.contains('open') ? 'Hide' : 'Show';
+        }
+
         function loadExample(name) {
+            if (!name) return;
             editor.value = examples[name];
             clearErrorHighlights();
             editor.focus();
+            // Reset dropdown
+            document.getElementById('examples-select').value = '';
         }
 
         function clearOutput() {
