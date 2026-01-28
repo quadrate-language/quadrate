@@ -1,4 +1,34 @@
-This project is licensed under the GNU General Public License v3.0.
+Quadrate Compiler
+=================
+
+The Quadrate compiler (quadc) and related tools are licensed under the
+GNU General Public License v3.0.
+
 See <https://www.gnu.org/licenses/gpl-3.0.html> for the full text.
 
 SPDX-License-Identifier: GPL-3.0-or-later
+
+This includes:
+- cmd/         (compiler, tools)
+- lib/qc/      (parser, AST)
+- lib/llvmgen/ (code generator)
+- lib/qdcli/   (CLI utilities)
+
+
+Quadrate Standard Library
+=========================
+
+The Quadrate standard library is licensed under the Apache License 2.0.
+
+See LICENSE-STDLIB for the full text.
+
+SPDX-License-Identifier: Apache-2.0
+
+This includes:
+- lib/qdrt/    (runtime library)
+- lib/qd/      (embedding API)
+- lib/qd*/     (standard library modules: qdio, qdstr, qdmath, etc.)
+
+Programs compiled with Quadrate link against the standard library and
+runtime, which are permissively licensed. You may distribute your
+compiled programs under any license you choose.
