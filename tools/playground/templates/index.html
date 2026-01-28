@@ -45,9 +45,21 @@
         header a {
             color: #7ec8e3;
             text-decoration: none;
+            white-space: nowrap;
         }
         header a:hover {
             text-decoration: underline;
+        }
+        header a .short {
+            display: none;
+        }
+        @media (max-width: 480px) {
+            header a .full {
+                display: none;
+            }
+            header a .short {
+                display: inline;
+            }
         }
         main {
             display: flex;
@@ -259,6 +271,7 @@
         .quick-ref-content {
             display: none;
             padding: 1rem;
+            padding-bottom: 2rem;
             font-size: 0.85rem;
             line-height: 1.6;
             max-height: 50vh;
@@ -376,7 +389,7 @@
 <body>
     <header>
         <h1><svg class="logo" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 574 168"><path d="M 573 21 L 555 11 L 517 2 L 488 0 L 445 4 L 416 11 L 372 27 L 296 64 L 228 100 L 195 114 L 159 126 L 120 134 L 81 136 L 43 131 L 2 117 L 0 118 L 15 134 L 29 144 L 47 153 L 65 159 L 109 167 L 143 167 L 163 164 L 187 158 L 236 140 L 285 115 L 367 67 L 402 50 L 440 35 L 474 25 L 503 20 L 553 19 Z" fill="#BB9AF7"/></svg>quadrate playground</h1>
-        <a href="https://quad.r8.rs" target="_blank">Documentation</a>
+        <a href="https://quad.r8.rs" target="_blank"><span class="full">Documentation</span><span class="short">Docs</span></a>
     </header>
     <main>
         <div class="panel">
@@ -1119,8 +1132,16 @@ fn main() {
         function toggleQuickRef() {
             const content = document.getElementById('quick-ref-content');
             const toggle = document.getElementById('quick-ref-toggle');
+            const header = document.querySelector('.quick-ref-header');
             content.classList.toggle('open');
             toggle.textContent = content.classList.contains('open') ? 'Hide' : 'Show';
+
+            // On mobile, scroll the header into view when opening
+            if (content.classList.contains('open')) {
+                setTimeout(() => {
+                    header.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }, 50);
+            }
         }
 
         function loadExample(name) {
