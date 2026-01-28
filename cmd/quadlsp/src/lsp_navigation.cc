@@ -2,6 +2,7 @@
 // Split from main.cc for maintainability
 
 #include "lsp_impl.h"
+#include <cctype>
 #include <filesystem>
 #include <fstream>
 #include <functional>
