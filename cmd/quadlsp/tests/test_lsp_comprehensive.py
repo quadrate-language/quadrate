@@ -1,11 +1,4 @@
 #!/usr/bin/env python3
-# Immediate output before any imports to verify Python is running
-# Note: Output must contain "Error" or "FAIL" to be shown by run_all.sh filter
-import sys as _early_sys
-_early_sys.stderr.write("Error-Diag: test_lsp_comprehensive.py Python interpreter started\n")
-_early_sys.stderr.flush()
-del _early_sys
-
 """
 Comprehensive tests for all Quadrate LSP features.
 Tests formatting, semantic tokens, document links, call hierarchy,
@@ -157,35 +150,11 @@ class LSPComprehensiveTester:
 
     def setup(self):
         """Set up the test session"""
-        import sys as _sys
         self.session = LSPSession(self.lsp_path)
-        _sys.stderr.write(f"Error-Diag: Starting LSP server: {self.lsp_path}\n")
-        _sys.stderr.flush()
         if not self.session.start():
-            _sys.stderr.write("FAIL: Could not start LSP process\n")
-            _sys.stderr.flush()
             return False
-        _sys.stderr.write("Error-Diag: LSP process started, sending initialize...\n")
-        _sys.stderr.flush()
         self.capabilities = self.session.initialize()
-        if self.capabilities is None:
-            _sys.stderr.write("FAIL: LSP initialize returned None\n")
-            _sys.stderr.flush()
-            # Try to get stderr for debugging
-            if self.session.proc and self.session.proc.stderr:
-                try:
-                    import select as sel
-                    if sel.select([self.session.proc.stderr], [], [], 0.1)[0]:
-                        stderr = self.session.proc.stderr.read(4096)
-                        _sys.stderr.write(f"Error-Diag: LSP stderr: {stderr.decode('utf-8', errors='replace')}\n")
-                        _sys.stderr.flush()
-                except Exception as e:
-                    _sys.stderr.write(f"Error-Diag: Could not read stderr: {e}\n")
-                    _sys.stderr.flush()
-            return False
-        _sys.stderr.write("Error-Diag: LSP initialized successfully\n")
-        _sys.stderr.flush()
-        return True
+        return self.capabilities is not None
 
     def teardown(self):
         """Tear down the test session"""
@@ -195,7 +164,6 @@ class LSPComprehensiveTester:
 
     def assert_test(self, condition, test_name):
         """Assert a test condition"""
-        import sys as _sys
         self.test_count += 1
         if condition:
             self.passed += 1
@@ -208,9 +176,6 @@ class LSPComprehensiveTester:
             if not hasattr(self, 'failed_tests'):
                 self.failed_tests = []
             self.failed_tests.append(test_name)
-            # Write to stderr so CI shows it immediately
-            _sys.stderr.write(f"ASSERTION FAILED: {test_name}\n")
-            _sys.stderr.flush()
             return False
 
     # ==========================================================================
@@ -601,10 +566,6 @@ fn main() {
 
             if items:
                 item = items[0]
-                # Debug: show what we got
-                import sys as _dbg
-                _dbg.stderr.write(f"Error-Diag: Type hierarchy item: name={item.get('name')!r}, kind={item.get('kind')!r}\n")
-                _dbg.stderr.flush()
                 self.assert_test(item.get('name') == 'Point', "Correct type name")
                 self.assert_test(item.get('kind') == 23, "Correct kind (Struct)")
                 self.assert_test('detail' in item, "Has detail field")
@@ -826,22 +787,15 @@ fn main() {
 
     def run_all_tests(self):
         """Run all comprehensive tests"""
-        import sys as _sys
-        _sys.stderr.write("Error-Diag: run_all_tests() starting\n")
-        _sys.stderr.flush()
-
         print("=" * 70)
         print("Quadrate LSP Comprehensive Test Suite")
         print("=" * 70)
 
         if not self.setup():
-            _sys.stderr.write("FAIL: Could not initialize LSP session\n")
-            _sys.stderr.flush()
             print("FAIL: Could not initialize LSP session")
             return 1
 
         try:
-            import sys as _progress
             # Core formatting
             self.test_formatting()
             self.test_range_formatting()
@@ -853,57 +807,25 @@ fn main() {
             # Navigation features
             self.test_call_hierarchy()
             self.test_selection_range()
-            _progress.stderr.write("Error-Diag: Starting test_type_hierarchy\n")
-            _progress.stderr.flush()
             self.test_type_hierarchy()
-            _progress.stderr.write("Error-Diag: Finished test_type_hierarchy\n")
-            _progress.stderr.flush()
 
             # Editor features
-            _progress.stderr.write("Error-Diag: Starting test_code_lens\n")
-            _progress.stderr.flush()
             self.test_code_lens()
-            _progress.stderr.write("Error-Diag: Finished test_code_lens\n")
-            _progress.stderr.flush()
-
-            _progress.stderr.write("Error-Diag: Starting test_on_type_formatting\n")
-            _progress.stderr.flush()
             self.test_on_type_formatting()
-            _progress.stderr.write("Error-Diag: Finished test_on_type_formatting\n")
-            _progress.stderr.flush()
-
-            _progress.stderr.write("Error-Diag: Starting test_linked_editing_range\n")
-            _progress.stderr.flush()
             self.test_linked_editing_range()
-            _progress.stderr.write("Error-Diag: Finished test_linked_editing_range\n")
-            _progress.stderr.flush()
 
             # Edge cases
-            _progress.stderr.write("Error-Diag: Starting edge case tests\n")
-            _progress.stderr.flush()
             self.test_empty_document()
             self.test_malformed_code()
             self.test_unicode_content()
-            _progress.stderr.write("Error-Diag: Starting test_large_document\n")
-            _progress.stderr.flush()
             self.test_large_document()
-            _progress.stderr.write("Error-Diag: All tests completed\n")
-            _progress.stderr.flush()
 
         finally:
             self.teardown()
 
-        import sys as _sys
-
-        # Print failure summary FIRST so it appears early in output and won't be truncated
+        # Print failure summary for easy identification of what failed
         failed_list = getattr(self, 'failed_tests', [])
         if failed_list:
-            _sys.stderr.write("\n=== FAILED TESTS SUMMARY (printed early to avoid truncation) ===\n")
-            for ft in failed_list:
-                _sys.stderr.write(f"FAIL: {ft}\n")
-            _sys.stderr.write("=== END FAILED TESTS ===\n")
-            _sys.stderr.flush()
-            # Also print to stdout
             print("\n=== FAILED TESTS ===")
             for ft in failed_list:
                 print(f"  FAIL: {ft}")
@@ -915,11 +837,6 @@ fn main() {
         print(f"Failed:       {self.failed}")
         print("=" * 70)
 
-        # Also write to stderr so meson shows it with --print-errorlogs
-        # Note: Must contain "Error" or "FAIL" to be shown by run_all.sh filter
-        _sys.stderr.write(f"\nError-Diag: FINAL RESULT: {self.test_count} tests, {self.passed} passed, {self.failed} failed\n")
-        _sys.stderr.flush()
-
         if self.failed == 0:
             print("\nAll comprehensive tests passed!")
             return 0
@@ -929,33 +846,28 @@ fn main() {
 
 
 def main():
-    # Find LSP executable
-    # Various paths depending on where we're run from
+    # Find LSP executable - try various paths depending on where we're run from
     import os
-    cwd = os.getcwd()
+    cwd = Path(os.getcwd())
 
-    # Also try to find project root by looking for meson.build
+    # Try to find project root by looking for meson.build
     project_root = None
-    check_dir = Path(cwd)
-    for _ in range(5):  # Go up at most 5 levels
+    check_dir = cwd
+    for _ in range(5):
         if (check_dir / "meson.build").exists() and (check_dir / "lib" / "qc").exists():
             project_root = check_dir
             break
         check_dir = check_dir.parent
 
     possible_paths = [
-        # Running from project root
         Path("build/debug/cmd/quadlsp/quadlsp"),
         Path("build/release/cmd/quadlsp/quadlsp"),
         Path("dist/bin/quadlsp"),
-        # Running from build directory (meson test)
-        Path("cmd/quadlsp/quadlsp"),
-        # Running from test directory
+        Path("cmd/quadlsp/quadlsp"),  # Running from build directory
         Path("../quadlsp"),
         Path("../../../build/debug/cmd/quadlsp/quadlsp"),
     ]
 
-    # Also try paths relative to project root if found
     if project_root:
         possible_paths.insert(0, project_root / "build/debug/cmd/quadlsp/quadlsp")
         possible_paths.insert(1, project_root / "dist/bin/quadlsp")
@@ -967,37 +879,14 @@ def main():
             break
 
     if not lsp_path:
-        print(f"LSP executable not found. CWD: {cwd}", flush=True)
-        print(f"Project root: {project_root}", flush=True)
-        print("Searched paths:", flush=True)
-        for p in possible_paths:
-            print(f"  {p} -> {p.absolute()} (exists: {p.exists()})", flush=True)
+        print("LSP executable not found. Please build the project first.")
         return 1
 
-    print(f"Using LSP: {lsp_path}")
-    print(f"CWD: {cwd}")
-    if project_root:
-        print(f"Project root: {project_root}")
-    print()
+    print(f"Using LSP: {lsp_path}\n")
 
     tester = LSPComprehensiveTester(str(lsp_path))
     return tester.run_all_tests()
 
 
 if __name__ == "__main__":
-    # Use stderr for diagnostics since meson may only show stderr with --print-errorlogs
-    # Note: Must contain "Error" or "FAIL" to be shown by run_all.sh filter
-    import sys as _sys
-    _sys.stderr.write("Error-Diag: test_lsp_comprehensive.py starting...\n")
-    _sys.stderr.flush()
-    try:
-        result = main()
-        _sys.stderr.write(f"Error-Diag: test_lsp_comprehensive.py finished with exit code {result}\n")
-        _sys.stderr.flush()
-        sys.exit(result)
-    except Exception as e:
-        import traceback
-        _sys.stderr.write(f"FATAL Error: {e}\n")
-        _sys.stderr.flush()
-        traceback.print_exc()
-        sys.exit(1)
+    sys.exit(main())
