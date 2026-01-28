@@ -886,6 +886,22 @@ fn main() {
         finally:
             self.teardown()
 
+        import sys as _sys
+
+        # Print failure summary FIRST so it appears early in output and won't be truncated
+        failed_list = getattr(self, 'failed_tests', [])
+        if failed_list:
+            _sys.stderr.write("\n=== FAILED TESTS SUMMARY (printed early to avoid truncation) ===\n")
+            for ft in failed_list:
+                _sys.stderr.write(f"FAIL: {ft}\n")
+            _sys.stderr.write("=== END FAILED TESTS ===\n")
+            _sys.stderr.flush()
+            # Also print to stdout
+            print("\n=== FAILED TESTS ===")
+            for ft in failed_list:
+                print(f"  FAIL: {ft}")
+            print("=== END ===")
+
         print("\n" + "=" * 70)
         print(f"Tests run:    {self.test_count}")
         print(f"Passed:       {self.passed}")
@@ -894,7 +910,6 @@ fn main() {
 
         # Also write to stderr so meson shows it with --print-errorlogs
         # Note: Must contain "Error" or "FAIL" to be shown by run_all.sh filter
-        import sys as _sys
         _sys.stderr.write(f"\nError-Diag: FINAL RESULT: {self.test_count} tests, {self.passed} passed, {self.failed} failed\n")
         _sys.stderr.flush()
 
@@ -903,14 +918,6 @@ fn main() {
             return 0
         else:
             print(f"\n{self.failed} test(s) failed")
-            # Print summary of failed tests at the end so it's visible even with truncation
-            failed_list = getattr(self, 'failed_tests', [])
-            if failed_list:
-                _sys.stderr.write("\n=== FAILED TESTS SUMMARY ===\n")
-                for ft in failed_list:
-                    _sys.stderr.write(f"FAIL: {ft}\n")
-                _sys.stderr.write("=== END FAILED TESTS ===\n")
-                _sys.stderr.flush()
             return 1
 
 
