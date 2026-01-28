@@ -379,7 +379,7 @@ run_cpp_tests() {
         if [[ $exit_code -eq 0 ]]; then
             log_pass "$suite" "$test"
         else
-            local error_msg=$(echo "$output" | grep -A 50 "FAIL\|error\|Error\|valgrind" | head -20)
+            local error_msg=$(echo "$output" | grep -A 100 "FAIL\|error\|Error\|valgrind" | head -80)
             log_fail "$suite" "$test" "test failed" "$error_msg"
         fi
     done
@@ -432,7 +432,7 @@ run_lsp_tests() {
         if [[ $exit_code -eq 0 ]]; then
             log_pass "$suite" "$test"
         else
-            local error_msg=$(echo "$output" | grep -A 50 "FAIL\|error\|Error\|valgrind" | head -20)
+            local error_msg=$(echo "$output" | grep -A 100 "FAIL\|error\|Error\|valgrind" | head -80)
             log_fail "$suite" "$test" "test failed" "$error_msg"
         fi
     done
