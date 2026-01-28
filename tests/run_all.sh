@@ -272,10 +272,10 @@ log_fail() {
 
     # Show error output indented
     if [[ -n "$error_output" ]]; then
-        echo "$error_output" | head -20 | sed 's/^/        /'
+        echo "$error_output" | head -60 | sed 's/^/        /'
         local lines=$(echo "$error_output" | wc -l)
-        if [[ $lines -gt 20 ]]; then
-            echo -e "        ${DIM}... ($((lines - 20)) more lines)${NC}"
+        if [[ $lines -gt 60 ]]; then
+            echo -e "        ${DIM}... ($((lines - 60)) more lines)${NC}"
         fi
     fi
 
