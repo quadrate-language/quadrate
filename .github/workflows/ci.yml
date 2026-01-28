@@ -17,6 +17,8 @@ jobs:
           apt-get update
           apt-get install -y \
             clang \
+            diffutils \
+            gcc \
             git \
             libclang-rt-dev \
             libsqlite3-dev \
@@ -68,6 +70,7 @@ jobs:
         run: |
           pacman -Syu --noconfirm \
             clang \
+            diffutils \
             git \
             llvm \
             make \
@@ -119,16 +122,14 @@ jobs:
           usesh: true
           prepare: |
             pkg install -y \
+              diffutils \
               git \
               gmake \
               llvm \
               meson \
-              node \
-              npm \
               pkgconf \
               sqlite3 \
               openssl
-            npm install -g tree-sitter-cli
           run: |
             gmake release
             gmake tests

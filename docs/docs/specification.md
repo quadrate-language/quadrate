@@ -2,6 +2,8 @@
 
 **Version 2.0.0-alpha**
 
+<small>SPDX-License-Identifier: CC0-1.0 — This specification is released into the public domain. Anyone may implement the Quadrate language without royalty or restriction.</small>
+
 This document provides a complete specification of the Quadrate programming language, intended for implementers who wish to create their own Quadrate compiler or interpreter.
 
 ---

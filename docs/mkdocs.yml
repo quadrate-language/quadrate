@@ -16,58 +16,58 @@ markdown_extensions:
   - fenced_code
 nav:
   - Home: index.md
-  - Getting Started: getting-started.md
+  - Getting started: getting-started.md
   - Learn:
-      - 1. Hello World: learn/1-basics/hello-world.md
-      - 2. The Stack:
-          - How it Works: learn/2-stack/how-it-works.md
-          - Stack Manipulation: learn/2-stack/manipulation.md
-          - Local Variables: learn/2-stack/local-variables.md
+      - 1. Hello world: learn/1-basics/hello-world.md
+      - 2. The stack:
+          - How it works: learn/2-stack/how-it-works.md
+          - Stack manipulation: learn/2-stack/manipulation.md
+          - Local variables: learn/2-stack/local-variables.md
       - 3. Basics:
-          - Values and Types: learn/1-basics/values-types.md
+          - Values and types: learn/1-basics/values-types.md
           - Operators: learn/1-basics/operators.md
       - 4. Functions:
-          - Defining Functions: learn/3-functions/defining.md
-          - Calling Functions: learn/3-functions/calling.md
+          - Defining functions: learn/3-functions/defining.md
+          - Calling functions: learn/3-functions/calling.md
           - Modules: learn/3-functions/modules.md
-      - 5. Control Flow:
+      - 5. Control flow:
           - Conditionals: learn/4-control-flow/conditionals.md
           - Loops: learn/4-control-flow/loops.md
           - Switch: learn/4-control-flow/switch.md
-      - 6. Data Structures:
+      - 6. Data structures:
           - Arrays: learn/5-data-structures/arrays.md
           - Structs: learn/5-data-structures/structs.md
           - Constants: learn/5-data-structures/constants.md
-      - 7. Error Handling:
+      - 7. Error handling:
           - Basics: learn/6-error-handling/basics.md
           - Patterns: learn/6-error-handling/patterns.md
-      - 8. Advanced Topics:
+      - 8. Advanced topics:
           - Defer: learn/7-advanced/defer.md
           - Context: learn/7-advanced/context.md
-          - Function Pointers: learn/7-advanced/function-pointers.md
-          - Anonymous Functions: learn/7-advanced/anonymous-functions.md
-          - Higher-Order Functions: learn/7-advanced/higher-order-functions.md
-          - Memory Management: learn/7-advanced/memory.md
-          - FFI (C Interop): learn/7-advanced/ffi.md
+          - Function pointers: learn/7-advanced/function-pointers.md
+          - Anonymous functions: learn/7-advanced/anonymous-functions.md
+          - Higher-order functions: learn/7-advanced/higher-order-functions.md
+          - Memory management: learn/7-advanced/memory.md
+          - FFI (C interop): learn/7-advanced/ffi.md
       - 9. Examples:
-          - File Processing: learn/8-examples/file-processing.md
+          - File processing: learn/8-examples/file-processing.md
   - Reference:
       - Overview: reference/index.md
       - Keywords: reference/keywords.md
-      - Stack Operations: reference/stack.md
+      - Stack operations: reference/stack.md
       - Arithmetic: reference/arithmetic.md
       - Comparison: reference/comparison.md
       - Bitwise: reference/bitwise.md
       - Arrays: reference/arrays.md
       - Generics: reference/generics.md
-      - Type Casting: reference/types.md
-      - Input/Output: reference/io.md
-      - Error Handling: reference/errors.md
+      - Type casting: reference/types.md
+      - Input/output: reference/io.md
+      - Error handling: reference/errors.md
       - Threading: reference/threading.md
       - Miscellaneous: reference/misc.md
-  - Standard Library:
+  - Standard library:
       - Overview: stdlib/index.md
-      - Text & Strings:
+      - Text & strings:
           - str: stdlib/str.md
           - strconv: stdlib/strconv.md
           - fmt: stdlib/fmt.md
@@ -75,12 +75,12 @@ nav:
           - unicode: stdlib/unicode.md
       - Data:
           - bytes: stdlib/bytes.md
-      - Math & Numbers:
+      - Math & numbers:
           - math: stdlib/math.md
           - limits: stdlib/limits.md
           - bits: stdlib/bits.md
           - rand: stdlib/rand.md
-      - I/O & System:
+      - I/O & system:
           - io: stdlib/io.md
           - os: stdlib/os.md
           - path: stdlib/path.md
@@ -94,10 +94,10 @@ nav:
           - testing: stdlib/testing.md
       - Terminal:
           - term: stdlib/term.md
-      - Signal Handling:
+      - Signal handling:
           - signal: stdlib/signal.md
-  - Language Specification: specification.md
+  - Language specification: specification.md
   - Toolchain: toolchain.md
-  - Embedding Guide: embedding.md
-  - External Packages: external-packages.md
+  - Embedding guide: embedding.md
+  - External packages: external-packages.md
   - About: about.md
