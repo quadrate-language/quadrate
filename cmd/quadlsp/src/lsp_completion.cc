@@ -2,6 +2,7 @@
 // Split from main.cc for maintainability
 
 #include "lsp_impl.h"
+#include <filesystem>
 #include <fstream>
 #include <qc/ast.h>
 #include <qc/ast_node_constant.h>
@@ -10,7 +11,152 @@
 #include <qc/ast_node_parameter.h>
 #include <qc/ast_node_scoped.h>
 #include <qc/ast_node_struct.h>
+#include <qc/ast_node_use.h>
 #include <sstream>
+
+// Check if cursor is at top level (not inside a function body)
+// by counting brace depth up to the cursor position
+static bool isAtTopLevel(const std::string& text, size_t line, size_t character) {
+	int braceDepth = 0;
+	size_t currentLine = 0;
+	size_t currentCol = 0;
+	bool inString = false;
+	bool inLineComment = false;
+	bool inBlockComment = false;
+
+	for (size_t i = 0; i < text.size(); i++) {
+		char c = text[i];
+		char next = (i + 1 < text.size()) ? text[i + 1] : '\0';
+
+		// Check if we've reached the cursor position
+		if (currentLine == line && currentCol >= character) {
+			break;
+		}
+		if (currentLine > line) {
+			break;
+		}
+
+		// Handle newlines
+		if (c == '\n') {
+			currentLine++;
+			currentCol = 0;
+			inLineComment = false;
+			continue;
+		}
+
+		// Handle comments
+		if (!inString && !inBlockComment && c == '/' && next == '/') {
+			inLineComment = true;
+		}
+		if (!inString && !inLineComment && c == '/' && next == '*') {
+			inBlockComment = true;
+			i++;
+			currentCol += 2;
+			continue;
+		}
+		if (inBlockComment && c == '*' && next == '/') {
+			inBlockComment = false;
+			i++;
+			currentCol += 2;
+			continue;
+		}
+
+		if (inLineComment || inBlockComment) {
+			currentCol++;
+			continue;
+		}
+
+		// Handle strings
+		if (c == '"' && (i == 0 || text[i - 1] != '\\')) {
+			inString = !inString;
+		}
+
+		if (!inString) {
+			if (c == '{') {
+				braceDepth++;
+			} else if (c == '}') {
+				braceDepth--;
+			}
+		}
+
+		currentCol++;
+	}
+
+	return braceDepth == 0;
+}
+
+// Check if cursor is in a type position (after : in function signature, struct field, or variable declaration)
+static bool isInTypePosition(const std::string& text, size_t line, size_t character) {
+	// Split text into lines
+	std::vector<std::string> lines;
+	std::istringstream stream(text);
+	std::string currentLine;
+	while (std::getline(stream, currentLine)) {
+		lines.push_back(currentLine);
+	}
+
+	if (line >= lines.size()) {
+		return false;
+	}
+
+	const std::string& targetLine = lines[line];
+	if (character > targetLine.length()) {
+		return false;
+	}
+
+	// Look backwards from cursor to find if we're after a colon (for type annotation)
+	size_t pos = character;
+
+	// Skip back over any partial type name being typed (but NOT over colons - we need to find them)
+	while (pos > 0 && (isalnum(targetLine[pos - 1]) || targetLine[pos - 1] == '_')) {
+		pos--;
+	}
+
+	// Skip whitespace
+	while (pos > 0 && isspace(targetLine[pos - 1])) {
+		pos--;
+	}
+
+	// Check if there's a single ':' before (not ::)
+	if (pos > 0 && targetLine[pos - 1] == ':') {
+		// Make sure it's not a :: (scope operator)
+		if (pos >= 2 && targetLine[pos - 2] == ':') {
+			return false;
+		}
+
+		// Check if there's an identifier before the colon (parameter/field name pattern)
+		size_t colonPos = pos - 1;
+		size_t identEnd = colonPos;
+
+		// Skip whitespace before colon
+		while (identEnd > 0 && isspace(targetLine[identEnd - 1])) {
+			identEnd--;
+		}
+
+		// Check for identifier before colon
+		size_t identStart = identEnd;
+		while (identStart > 0 && (isalnum(targetLine[identStart - 1]) || targetLine[identStart - 1] == '_')) {
+			identStart--;
+		}
+
+		// If there's an identifier before the colon, this is a type position
+		if (identEnd > identStart) {
+			return true;
+		}
+
+		// Also check on the current line for context markers
+		for (size_t i = 0; i < pos - 1; i++) {
+			if (targetLine[i] == '(' || targetLine[i] == '{') {
+				return true;
+			}
+			if (i + 1 < pos - 1 && targetLine[i] == '-' && targetLine[i + 1] == '>') {
+				return true;
+			}
+		}
+	}
+
+	return false;
+}
 
 void QuadrateLSP::handleCompletion(const std::string& id, const std::string& uri, size_t line, size_t character) {
 	static const char* instructions[] = {"add", "sub", "mul", "div", "dup", "swap", "drop", "over", "rot", "print",
@@ -56,10 +202,87 @@ void QuadrateLSP::handleCompletion(const std::string& id, const std::string& uri
 		}
 	}
 
-	// Check if we're completing after field access (e.g., "v@")
-	std::string fieldAccessVar = getFieldAccessVariableAtPosition(documentText, line, character);
+	// Check if we're in a type position (after : in function signature, struct field, etc.)
+	if (isInTypePosition(documentText, line, character)) {
+		// Show built-in types
+		static const char* builtinTypes[] = {"i64", "f64", "str", "bool", "ptr", "any"};
+		static const char* typeDescriptions[] = {
+				"64-bit signed integer",
+				"64-bit floating point",
+				"String type",
+				"Boolean type",
+				"Pointer type",
+				"Any type (dynamic)"};
 
-	if (!fieldAccessVar.empty() && !documentText.empty()) {
+		for (size_t i = 0; i < sizeof(builtinTypes) / sizeof(builtinTypes[0]); i++) {
+			json_t* item = json_object();
+			json_object_set_new(item, "label", json_string(builtinTypes[i]));
+			json_object_set_new(item, "kind", json_integer(25)); // TypeParameter kind
+			json_object_set_new(item, "detail", json_string(typeDescriptions[i]));
+			json_array_append_new(items, item);
+		}
+
+		// Add user-defined struct types from current document
+		std::vector<StructInfo> localStructs = extractStructs(documentText);
+		for (const auto& structInfo : localStructs) {
+			json_t* item = json_object();
+			std::string label = structInfo.name;
+			if (structInfo.isGeneric) {
+				label += "<>";
+			}
+			json_object_set_new(item, "label", json_string(label.c_str()));
+			json_object_set_new(item, "kind", json_integer(22)); // Struct kind
+			json_object_set_new(item, "detail", json_string("User-defined struct"));
+			json_array_append_new(items, item);
+		}
+
+		// Add struct types from imported modules
+		if (!documentText.empty()) {
+			Qd::Ast modAst;
+			Qd::IAstNode* modRoot = modAst.generate(documentText.c_str(), false, nullptr);
+			if (modRoot && modRoot->type() == Qd::IAstNode::Type::PROGRAM) {
+				for (size_t i = 0; i < modRoot->childCount(); i++) {
+					Qd::IAstNode* child = modRoot->child(i);
+					if (child && child->type() == Qd::IAstNode::Type::USE_STATEMENT) {
+						Qd::AstNodeUse* useNode = static_cast<Qd::AstNodeUse*>(child);
+						std::string moduleName = useNode->module();
+
+						std::string modulePath = resolveModulePath(moduleName, sourceDir);
+						if (!modulePath.empty()) {
+							// Scan all .qd files in module directory
+							std::filesystem::path moduleDir = std::filesystem::path(modulePath).parent_path();
+							try {
+								for (const auto& entry : std::filesystem::directory_iterator(moduleDir)) {
+									if (entry.is_regular_file() && entry.path().extension() == ".qd") {
+										std::vector<StructInfo> moduleStructs = extractModuleStructs(entry.path().string());
+										for (const auto& structInfo : moduleStructs) {
+											json_t* item = json_object();
+											std::string label = moduleName + "::" + structInfo.name;
+											if (structInfo.isGeneric) {
+												label += "<>";
+											}
+											json_object_set_new(item, "label", json_string(label.c_str()));
+											json_object_set_new(item, "kind", json_integer(22)); // Struct kind
+
+											std::ostringstream detail;
+											detail << "Struct from " << moduleName;
+											json_object_set_new(item, "detail", json_string(detail.str().c_str()));
+											json_array_append_new(items, item);
+										}
+									}
+								}
+							} catch (...) {
+								// Ignore directory iteration errors
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+	// Check if we're completing after field access (e.g., "v@")
+	else if (std::string fieldAccessVar = getFieldAccessVariableAtPosition(documentText, line, character);
+			 !fieldAccessVar.empty() && !documentText.empty()) {
 		// Field access completion - need to find the struct type and show its fields
 		Qd::Ast ast;
 		Qd::IAstNode* root = ast.generate(documentText.c_str(), false, nullptr);
@@ -164,8 +387,33 @@ void QuadrateLSP::handleCompletion(const std::string& id, const std::string& uri
 
 		std::string modulePath = resolveModulePath(modulePrefix, sourceDir);
 		if (!foundFfiImport && !modulePath.empty()) {
+			// Scan ALL .qd files in the module directory for functions and structs
+			std::filesystem::path moduleDir = std::filesystem::path(modulePath).parent_path();
+			std::vector<FunctionInfo> functions;
+			std::vector<StructInfo> structs;
+			std::vector<ConstantInfo> constants;
+
+			try {
+				for (const auto& entry : std::filesystem::directory_iterator(moduleDir)) {
+					if (entry.is_regular_file() && entry.path().extension() == ".qd") {
+						std::vector<FunctionInfo> fileFunctions = extractModuleFunctions(entry.path().string());
+						functions.insert(functions.end(), fileFunctions.begin(), fileFunctions.end());
+
+						std::vector<StructInfo> fileStructs = extractModuleStructs(entry.path().string());
+						structs.insert(structs.end(), fileStructs.begin(), fileStructs.end());
+
+						std::vector<ConstantInfo> fileConstants = extractModuleConstants(entry.path().string());
+						constants.insert(constants.end(), fileConstants.begin(), fileConstants.end());
+					}
+				}
+			} catch (...) {
+				// Fallback to single file if directory iteration fails
+				functions = extractModuleFunctions(modulePath);
+				structs = extractModuleStructs(modulePath);
+				constants = extractModuleConstants(modulePath);
+			}
+
 			// Add functions from module
-			std::vector<FunctionInfo> functions = extractModuleFunctions(modulePath);
 
 			for (const auto& func : functions) {
 				json_t* item = json_object();
@@ -248,8 +496,7 @@ void QuadrateLSP::handleCompletion(const std::string& id, const std::string& uri
 				json_array_append_new(items, item);
 			}
 
-			// Add structs from module
-			std::vector<StructInfo> structs = extractModuleStructs(modulePath);
+			// Add structs from module (already collected from all files above)
 			for (const auto& structInfo : structs) {
 				json_t* item = json_object();
 
@@ -295,8 +542,7 @@ void QuadrateLSP::handleCompletion(const std::string& id, const std::string& uri
 				json_array_append_new(items, item);
 			}
 
-			// Add constants from module
-			std::vector<ConstantInfo> constants = extractModuleConstants(modulePath);
+			// Add constants from module (already collected from all files above)
 			for (const auto& constInfo : constants) {
 				json_t* item = json_object();
 				json_object_set_new(item, "label", json_string(constInfo.name.c_str()));
@@ -316,19 +562,41 @@ void QuadrateLSP::handleCompletion(const std::string& id, const std::string& uri
 			}
 		}
 	} else {
-		// Regular completion - show built-ins, local functions, structs
+		// Regular completion - context-aware based on position
 
-		// Add built-in instructions
-		for (size_t i = 0; i < sizeof(instructions) / sizeof(instructions[0]); i++) {
-			json_t* item = json_object();
-			json_object_set_new(item, "label", json_string(instructions[i]));
-			json_object_set_new(item, "kind", json_integer(3)); // Function
-			json_object_set_new(item, "detail", json_string("Built-in instruction"));
-			json_array_append_new(items, item);
+		bool topLevel = isAtTopLevel(documentText, line, character);
+
+		if (topLevel) {
+			// At top level - show only declaration keywords
+			static const char* topLevelKeywords[] = {"use", "fn", "test", "struct", "const", "pub"};
+			static const char* topLevelDescriptions[] = {
+					"Import a module",
+					"Declare a function",
+					"Declare a test function",
+					"Declare a struct type",
+					"Declare a constant",
+					"Make declaration public"};
+
+			for (size_t i = 0; i < sizeof(topLevelKeywords) / sizeof(topLevelKeywords[0]); i++) {
+				json_t* item = json_object();
+				json_object_set_new(item, "label", json_string(topLevelKeywords[i]));
+				json_object_set_new(item, "kind", json_integer(14)); // Keyword
+				json_object_set_new(item, "detail", json_string(topLevelDescriptions[i]));
+				json_array_append_new(items, item);
+			}
+		} else {
+			// Inside function body - show built-in instructions
+			for (size_t i = 0; i < sizeof(instructions) / sizeof(instructions[0]); i++) {
+				json_t* item = json_object();
+				json_object_set_new(item, "label", json_string(instructions[i]));
+				json_object_set_new(item, "kind", json_integer(3)); // Function
+				json_object_set_new(item, "detail", json_string("Built-in instruction"));
+				json_array_append_new(items, item);
+			}
 		}
 
-		// Add user-defined functions from the current document
-		if (!documentText.empty()) {
+		// Add user-defined functions from the current document (only inside function bodies)
+		if (!topLevel && !documentText.empty()) {
 			std::vector<FunctionInfo> functions = extractFunctions(documentText);
 
 			for (const auto& func : functions) {
@@ -412,9 +680,46 @@ void QuadrateLSP::handleCompletion(const std::string& id, const std::string& uri
 			}
 		}
 
-		// Add struct completions
-		std::vector<StructInfo> structs = extractStructs(documentText);
-		for (const auto& structInfo : structs) {
+		// Add imported modules (from use statements) - only inside function bodies
+		if (!topLevel && !documentText.empty()) {
+			Qd::Ast modAst;
+			Qd::IAstNode* modRoot = modAst.generate(documentText.c_str(), false, nullptr);
+			// Don't check hasErrors() - we want to find imports even in incomplete code
+			if (modRoot && modRoot->type() == Qd::IAstNode::Type::PROGRAM) {
+				for (size_t i = 0; i < modRoot->childCount(); i++) {
+					Qd::IAstNode* child = modRoot->child(i);
+					if (child && child->type() == Qd::IAstNode::Type::USE_STATEMENT) {
+						Qd::AstNodeUse* useNode = static_cast<Qd::AstNodeUse*>(child);
+						std::string moduleName = useNode->module();
+
+						json_t* item = json_object();
+						json_object_set_new(item, "label", json_string(moduleName.c_str()));
+						json_object_set_new(item, "kind", json_integer(9)); // Module kind
+
+						// Insert module name followed by :: for easy access to module members
+						std::string insertText = moduleName + "::";
+						json_object_set_new(item, "insertText", json_string(insertText.c_str()));
+
+						// Build documentation
+						std::ostringstream docStream;
+						docStream << "**Module:** `" << moduleName << "`\n\n";
+						docStream << "Type `" << moduleName << "::` to access functions, structs, and constants.";
+
+						json_t* documentation = json_object();
+						json_object_set_new(documentation, "kind", json_string("markdown"));
+						json_object_set_new(documentation, "value", json_string(docStream.str().c_str()));
+						json_object_set_new(item, "documentation", documentation);
+
+						json_array_append_new(items, item);
+					}
+				}
+			}
+		}
+
+		// Add struct completions (only inside function bodies for construction)
+		if (!topLevel) {
+			std::vector<StructInfo> structs = extractStructs(documentText);
+			for (const auto& structInfo : structs) {
 			json_t* item = json_object();
 
 			// Build label with generic type params if applicable
@@ -455,7 +760,8 @@ void QuadrateLSP::handleCompletion(const std::string& id, const std::string& uri
 			json_object_set_new(documentation, "value", json_string(docStream.str().c_str()));
 			json_object_set_new(item, "documentation", documentation);
 
-			json_array_append_new(items, item);
+				json_array_append_new(items, item);
+			}
 		}
 	}
 

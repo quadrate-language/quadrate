@@ -64,4 +64,14 @@ if get_option('build_tests')
 			timeout: 180
 		)
 	endif
+
+	# Completion tests (context-aware, type, module completions)
+	test_lsp_completion_script = find_program('tests/test_lsp_completion.py', required: false)
+	if test_lsp_completion_script.found()
+		test('test_lsp_completion',
+			test_lsp_completion_script,
+			depends: [quadlsp_exe],
+			timeout: 60
+		)
+	endif
 endif

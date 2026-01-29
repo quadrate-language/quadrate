@@ -273,6 +273,7 @@ class ExtendedLSPTester:
         """Test detailed completion items structure"""
         print("\n=== Testing Completion Items Structure ===")
 
+        # At top-level (line 0, char 0), we expect top-level keywords
         request = {
             "jsonrpc": "2.0",
             "id": 10,
@@ -288,7 +289,8 @@ class ExtendedLSPTester:
             result = response["result"]
             items = result.get("items", [])
 
-            self.assert_test(len(items) > 40, f"Has sufficient completions ({len(items)})")
+            # At top-level, we expect 6 keywords: use, fn, test, struct, const, pub
+            self.assert_test(len(items) >= 6, f"Has sufficient completions ({len(items)})")
             self.assert_test(result.get("isIncomplete") == False, "Completion list is complete")
 
             # Check each item has required fields
@@ -298,21 +300,18 @@ class ExtendedLSPTester:
             )
             self.assert_test(all_valid, "All items have required fields")
 
-            # Check for stack operations
+            # Check for top-level keywords
             labels = [item["label"] for item in items]
-            stack_ops = ["dup", "swap", "drop", "over", "rot"]
-            found = sum(1 for op in stack_ops if op in labels)
-            self.assert_test(found >= 4, f"Contains stack operations ({found}/5)")
+            top_level = ["use", "fn", "struct", "const", "pub"]
+            found = sum(1 for kw in top_level if kw in labels)
+            self.assert_test(found >= 5, f"Contains top-level keywords ({found}/5)")
 
-            # Check for arithmetic
-            arithmetic = ["add", "sub", "mul", "div"]
-            found = sum(1 for op in arithmetic if op in labels)
-            self.assert_test(found == 4, f"Contains arithmetic operations ({found}/4)")
+            # Check for test keyword
+            self.assert_test("test" in labels, "Contains 'test' keyword")
 
-            # Check for control flow
-            control = ["if", "for", "switch"]
-            found = sum(1 for op in control if op in labels)
-            self.assert_test(found == 3, f"Contains control flow ({found}/3)")
+            # Item kind should be Keyword (14) for top-level completions
+            keyword_items = [item for item in items if item.get("kind") == 14]
+            self.assert_test(len(keyword_items) >= 5, f"Items have Keyword kind ({len(keyword_items)})")
 
     def test_formatting_request(self):
         """Test document formatting"""

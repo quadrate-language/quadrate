@@ -173,16 +173,16 @@ class LSPTester:
             self.failed += 1
             print("✗ Completion: No items returned")
 
-        # Check for specific instructions
+        # At top-level (line 0, char 0), we expect top-level keywords, not instructions
         labels = [item.get("label") for item in items]
-        for instruction in ["add", "sub", "mul", "dup", "swap"]:
-            self.assert_contains(labels, instruction, f"Completion: Has '{instruction}'")
+        for keyword in ["use", "fn", "struct", "const", "pub"]:
+            self.assert_contains(labels, keyword, f"Completion: Has '{keyword}'")
 
         # Check item structure
         if items:
             first_item = items[0]
             self.assert_contains(first_item, "label", "Completion: Item has label")
-            self.assert_equal(first_item.get("kind"), 3, "Completion: Item kind is Function")
+            self.assert_equal(first_item.get("kind"), 14, "Completion: Item kind is Keyword")
 
     def test_diagnostics(self):
         """Test LSP diagnostics (error detection)"""

@@ -1926,9 +1926,23 @@ void QuadrateLSP::handleSemanticTokens(const std::string& id, const std::string&
 					std::string moduleName = importLine.substr(moduleStart, moduleEnd - moduleStart);
 					std::string modulePath = resolveModulePath(moduleName, sourceDir);
 					if (!modulePath.empty()) {
-						std::vector<StructInfo> moduleStructs = extractModuleStructs(modulePath);
-						for (const auto& s : moduleStructs) {
-							structTypeNames.insert(s.name);
+						// Get the module directory and scan ALL .qd files for structs
+						std::filesystem::path moduleDir = std::filesystem::path(modulePath).parent_path();
+						try {
+							for (const auto& entry : std::filesystem::directory_iterator(moduleDir)) {
+								if (entry.is_regular_file() && entry.path().extension() == ".qd") {
+									std::vector<StructInfo> moduleStructs = extractModuleStructs(entry.path().string());
+									for (const auto& s : moduleStructs) {
+										structTypeNames.insert(s.name);
+									}
+								}
+							}
+						} catch (...) {
+							// Fallback to single file if directory iteration fails
+							std::vector<StructInfo> moduleStructs = extractModuleStructs(modulePath);
+							for (const auto& s : moduleStructs) {
+								structTypeNames.insert(s.name);
+							}
 						}
 					}
 				}
@@ -2109,8 +2123,8 @@ void QuadrateLSP::handleSemanticTokens(const std::string& id, const std::string&
 				} else if (isTypeName(word)) {
 					tokenType = TOKEN_TYPE;
 				} else if (structTypeNames.count(word) > 0) {
-					// User-defined struct type
-					tokenType = TOKEN_STRUCT;
+					// User-defined struct type - use TOKEN_TYPE for consistent blue coloring
+					tokenType = TOKEN_TYPE;
 				} else if (isBuiltinOp(word)) {
 					tokenType = TOKEN_MACRO;
 					modifiers = MOD_DEFAULT_LIBRARY;
@@ -2132,9 +2146,9 @@ void QuadrateLSP::handleSemanticTokens(const std::string& id, const std::string&
 					}
 					// Check if preceded by :: (function call or struct from module)
 					else if (startI >= 2 && documentText[startI - 1] == ':' && documentText[startI - 2] == ':') {
-						// Check if this is a struct type name
+						// Check if this is a struct type name - use TOKEN_TYPE for blue coloring
 						if (structTypeNames.count(word) > 0) {
-							tokenType = TOKEN_STRUCT;
+							tokenType = TOKEN_TYPE;
 						} else {
 							tokenType = TOKEN_FUNCTION;
 						}
