@@ -6,12 +6,15 @@ Provides assertion functions for writing test cases.
 Tests are defined using the `test` keyword and assertions
 check that conditions are met.
 
-@example
+**Example:**
+
+```qd
 use testing
 
 test "addition works" {
     2 3 + 5 testing::assert_eq
 }
+```
 
 ## Functions
 
