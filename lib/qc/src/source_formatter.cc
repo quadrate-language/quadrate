@@ -658,12 +658,19 @@ namespace Qd {
 		return result;
 	}
 
-	// Check if a string looks like a struct name (starts with uppercase letter)
+	// Check if a string looks like a struct name (last component starts with uppercase letter)
+	// Handles both "Point" and "math::Vec3" (scoped identifiers)
 	static bool isStructName(const std::string& name) {
 		if (name.empty()) {
 			return false;
 		}
-		return std::isupper(static_cast<unsigned char>(name[0]));
+		// Find the last component after ::
+		size_t lastColon = name.rfind("::");
+		std::string lastComponent = (lastColon != std::string::npos) ? name.substr(lastColon + 2) : name;
+		if (lastComponent.empty()) {
+			return false;
+		}
+		return std::isupper(static_cast<unsigned char>(lastComponent[0]));
 	}
 
 	// Format struct construction with fields on separate lines
@@ -684,9 +691,9 @@ namespace Qd {
 			return "";
 		}
 
-		// Check if this looks like an identifier (alphanumeric/underscore only)
+		// Check if this looks like an identifier or scoped identifier (e.g., math::Vec3)
 		for (char c : beforeBrace) {
-			if (!std::isalnum(static_cast<unsigned char>(c)) && c != '_') {
+			if (!std::isalnum(static_cast<unsigned char>(c)) && c != '_' && c != ':') {
 				return "";
 			}
 		}
@@ -828,7 +835,13 @@ namespace Qd {
 		result << indent << "}";
 
 		if (!afterBrace.empty()) {
-			result << " " << afterBrace;
+			// Normalize -> assignment: "->var" or "-> var" becomes " -> var"
+			if (afterBrace.length() >= 2 && afterBrace.substr(0, 2) == "->") {
+				std::string varName = trim(afterBrace.substr(2));
+				result << " -> " << varName;
+			} else {
+				result << " " << afterBrace;
+			}
 		}
 
 		return result.str();
@@ -1051,9 +1064,9 @@ namespace Qd {
 			return false;
 		}
 
-		// Check it's a simple identifier
+		// Check it's a simple identifier or scoped identifier (e.g., math::Vec3)
 		for (char c : beforeBrace) {
-			if (!std::isalnum(static_cast<unsigned char>(c)) && c != '_') {
+			if (!std::isalnum(static_cast<unsigned char>(c)) && c != '_' && c != ':') {
 				return false;
 			}
 		}
@@ -1293,10 +1306,11 @@ namespace Qd {
 			if (bracePos != std::string::npos && bracePos > 0) {
 				std::string beforeBrace = trim(trimmed.substr(0, bracePos));
 				if (!beforeBrace.empty() && isStructName(beforeBrace)) {
-					// Check if it's a simple identifier
+					// Check if it's a simple identifier or scoped identifier (e.g., math::Vec3)
 					bool isIdent = true;
-					for (char c : beforeBrace) {
-						if (!std::isalnum(static_cast<unsigned char>(c)) && c != '_') {
+					for (size_t k = 0; k < beforeBrace.length(); k++) {
+						char c = beforeBrace[k];
+						if (!std::isalnum(static_cast<unsigned char>(c)) && c != '_' && c != ':') {
 							isIdent = false;
 							break;
 						}
@@ -1309,27 +1323,28 @@ namespace Qd {
 						std::string merged = trimmed;
 						size_t j = i + 1;
 						bool foundClose = false;
+						int braceDepth = unclosed; // Track nested brace depth
 
-						while (j < lines.size()) {
+						while (j < lines.size() && braceDepth > 0) {
 							std::string nextTrimmed = trim(lines[j]);
-							if (nextTrimmed == "}") {
-								merged += " }";
-								foundClose = true;
-								j++;
-								break;
-							} else if (nextTrimmed.find("} ->") == 0 || nextTrimmed.find("}->") == 0) {
-								// Closing brace with arrow assignment
+
+							// Count braces in this line
+							int lineBraces = countUnmatchedBraces(nextTrimmed);
+							braceDepth += lineBraces;
+
+							if (braceDepth == 0) {
+								// Found the matching closing brace
 								merged += " " + nextTrimmed;
 								foundClose = true;
 								j++;
 								break;
-							} else if (nextTrimmed.find('=') != std::string::npos && !isComment(nextTrimmed)) {
-								// Looks like a field line
+							} else if (!nextTrimmed.empty() && !isComment(nextTrimmed)) {
+								// Content line (field, nested struct, or closing brace of nested struct)
 								merged += " " + nextTrimmed;
 								j++;
 							} else {
-								// Not a field line, stop merging
-								break;
+								// Empty or comment line, skip but don't stop
+								j++;
 							}
 						}
 
