@@ -22,7 +22,7 @@ Language keywords for declarations, control flow, and more.
 | [`defer`](#defer) | Schedule cleanup code |
 | [`switch`](#switch) | Multi-way branching |
 | [`ctx`](#ctx) | Context variable access |
-| [`->`](#arrow) | Variable binding |
+| [`->`](#arrow-) | Variable binding |
 | [`true`](#true) | Boolean true (1) |
 | [`false`](#false) | Boolean false (0) |
 
@@ -221,7 +221,7 @@ ctx {
 }
 ```
 
-### ->
+### arrow (->)
 
 Pops a value from the stack and binds it to a local variable.
 
