@@ -1,0 +1,8 @@
+// Negative test: unknown type in struct field
+struct Container {
+	value: UnknownType
+}
+
+fn main() {
+	1
+}

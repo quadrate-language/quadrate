@@ -1,0 +1,33 @@
+// Test deeply nested scoped struct constructions
+use math
+
+struct Level1 {
+	vec: math::Vec3
+}
+
+struct Level2 {
+	inner: Level1
+}
+
+struct Level3 {
+	inner: Level2
+}
+
+fn main() {
+	Level3 {
+		inner = Level2 {
+			inner = Level1 {
+				vec = math::Vec3 {
+					x = 1.0
+					y = 2.0
+					z = 3.0
+				}
+			}
+		}
+	} -> l3
+
+	l3 @inner @inner @vec @x print nl
+	l3 @inner @inner @vec @y print nl
+	l3 @inner @inner @vec @z print nl
+	l3 free
+}

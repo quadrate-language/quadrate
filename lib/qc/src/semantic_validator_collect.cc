@@ -416,13 +416,27 @@ namespace Qd {
 			return;
 		}
 
-		// Validate struct field types (check that qualified types reference valid modules/structs)
+		// Validate struct field types (check that types reference valid structs)
 		if (node->type() == IAstNode::Type::STRUCT_DECLARATION) {
 			AstNodeStructDeclaration* structDecl = static_cast<AstNodeStructDeclaration*>(node);
+
+			// Collect generic type parameters if this is a generic struct
+			std::unordered_set<std::string> typeParams;
+			if (structDecl->isGeneric()) {
+				for (const auto& param : structDecl->typeParams()) {
+					typeParams.insert(param);
+				}
+			}
+
 			for (auto* child : structDecl->children()) {
 				if (child && child->type() == IAstNode::Type::STRUCT_FIELD) {
 					AstNodeStructField* field = static_cast<AstNodeStructField*>(child);
 					const std::string& typeName = field->typeName();
+
+					// Skip validation for generic type parameters (e.g., T in struct Box<T>)
+					if (typeParams.find(typeName) != typeParams.end()) {
+						continue;
+					}
 
 					// Check for qualified type names (e.g., vec2::Vec2)
 					size_t colonPos = typeName.find("::");
@@ -448,6 +462,44 @@ namespace Qd {
 									if (!suggestion.empty()) {
 										errorMsg += "; did you mean '" + suggestion + "'?";
 									}
+								}
+								reportError(field, errorMsg.c_str());
+							}
+						}
+					} else {
+						// Unqualified type - check if it's a primitive or a known struct
+						// Strip pointer prefix (*) if present
+						std::string baseTypeName = typeName;
+						if (!baseTypeName.empty() && baseTypeName[0] == '*') {
+							baseTypeName = baseTypeName.substr(1);
+						}
+
+						// Primitive types: f64, i64, str, ptr, bool, u8, i8, u16, i16, u32, i32, u64
+						static const std::unordered_set<std::string> primitiveTypes = {
+								"f64", "i64", "str", "ptr", "bool", "u8", "i8", "u16", "i16", "u32", "i32", "u64"};
+
+						if (primitiveTypes.find(baseTypeName) == primitiveTypes.end()) {
+							// Not a primitive - check if it's a known struct
+							// Check in local structs (mDefinedStructs)
+							bool found = mDefinedStructs.find(baseTypeName) != mDefinedStructs.end();
+
+							// Check in module structs (for sibling files)
+							if (!found) {
+								for (const auto& moduleEntry : mModuleStructs) {
+									if (moduleEntry.second.find(baseTypeName) != moduleEntry.second.end()) {
+										found = true;
+										break;
+									}
+								}
+							}
+
+							if (!found) {
+								std::string errorMsg = "Unknown type '" + typeName + "' in struct field '" +
+													   field->name() + "'";
+								// Try to find similar names
+								std::string suggestion = findSimilarName(baseTypeName, mDefinedStructs);
+								if (!suggestion.empty()) {
+									errorMsg += "; did you mean '" + suggestion + "'?";
 								}
 								reportError(field, errorMsg.c_str());
 							}

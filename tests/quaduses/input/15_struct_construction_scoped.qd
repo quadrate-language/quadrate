@@ -1,0 +1,8 @@
+// Test that quaduses detects scoped struct constructions
+fn main() {
+	math::Vec3 {
+		x = 1.0
+		y = 2.0
+		z = 3.0
+	}
+}

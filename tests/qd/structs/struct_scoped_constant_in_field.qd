@@ -1,0 +1,14 @@
+// Test scoped constants inside struct field initializers
+use math
+
+struct Config {
+	value: f64
+}
+
+fn main() {
+	Config {
+		value = math::Pi
+	} -> c
+	c @value print nl
+	c free
+}

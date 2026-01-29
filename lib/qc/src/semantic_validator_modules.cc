@@ -1082,10 +1082,19 @@ namespace Qd {
 				} else if (looksLikeStructType(typeName)) {
 					// Struct type - treat as PTR and record the struct type name
 					fieldType = StackValueType::PTR;
-					mStructFieldStructTypes[qualifiedName][field->name()] = typeName;
+					// If the type is unqualified (no ::), qualify it with the current module name
+					// This ensures "ControlPoint" in module "spline" becomes "spline::ControlPoint"
+					// so it matches when compared against fully qualified types
+					// BUT: don't qualify if merging into main (sibling files share main namespace)
+					std::string qualifiedTypeName = typeName;
+					if (typeName.find("::") == std::string::npos && !moduleName.empty() &&
+							moduleName != "main" && !mergeIntoMain) {
+						qualifiedTypeName = moduleName + "::" + typeName;
+					}
+					mStructFieldStructTypes[qualifiedName][field->name()] = qualifiedTypeName;
 					// For local file imports that merge into main namespace, also register with unqualified name
 					if (mergeIntoMain) {
-						mStructFieldStructTypes[unqualifiedName][field->name()] = typeName;
+						mStructFieldStructTypes[unqualifiedName][field->name()] = qualifiedTypeName;
 					}
 				}
 				fieldTypes[field->name()] = fieldType;

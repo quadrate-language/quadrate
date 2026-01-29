@@ -1,0 +1,26 @@
+// Test that module-qualified types match unqualified field types
+// Line.start expects "Point" but we provide "shapes::Point"
+// These should be equivalent since Point is defined in the shapes module
+use shapes
+
+fn main() {
+	// Create a Line using fully-qualified Point types
+	shapes::Line {
+		start = shapes::Point {
+			x = 0.0
+			y = 0.0
+		}
+		end = shapes::Point {
+			x = 10.0
+			y = 20.0
+		}
+	} -> line
+
+	// Verify the values
+	line @start @x print nl
+	line @start @y print nl
+	line @end @x print nl
+	line @end @y print nl
+
+	line free
+}

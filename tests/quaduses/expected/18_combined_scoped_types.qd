@@ -1,0 +1,27 @@
+// Test that quaduses detects multiple scoped types from different sources
+use math
+use os
+use str
+
+struct Container {
+	position: math::Vec3
+	name:     str
+}
+
+fn process(v: math::Vec3 -- len: f64) {
+	-> v
+	v @x dup * v @y dup * + v @z dup * + math::sqrt
+}
+
+fn main() {
+	math::Vec3 {
+		x = 1.0
+		y = 2.0
+		z = 3.0
+	}
+	process print nl
+
+	"hello" str::upper print nl
+
+	os::getcwd print nl
+}

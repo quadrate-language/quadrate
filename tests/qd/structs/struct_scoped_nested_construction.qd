@@ -1,0 +1,20 @@
+// Test scoped struct construction inside field initializers
+use math
+
+struct Container {
+	vec: math::Vec3
+}
+
+fn main() {
+	Container {
+		vec = math::Vec3 {
+			x = 1.0
+			y = 2.0
+			z = 3.0
+		}
+	} -> c
+	c @vec @x print nl
+	c @vec @y print nl
+	c @vec @z print nl
+	c free
+}

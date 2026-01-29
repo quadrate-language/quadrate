@@ -27,6 +27,97 @@ namespace Qd {
 		return trimmed.length() >= 2 && (trimmed.substr(0, 2) == "//" || trimmed.substr(0, 2) == "/*");
 	}
 
+	// Check if a line looks like a struct field definition (name: type)
+	static bool isStructFieldDefinition(const std::string& line) {
+		std::string trimmed = trim(line);
+		// Must contain a colon
+		size_t colonPos = trimmed.find(':');
+		if (colonPos == std::string::npos || colonPos == 0) {
+			return false;
+		}
+		// Must not be a comment
+		if (isComment(trimmed)) {
+			return false;
+		}
+		// Field name before colon must be a valid identifier
+		std::string fieldName = trim(trimmed.substr(0, colonPos));
+		if (fieldName.empty()) {
+			return false;
+		}
+		// First char must be letter or underscore
+		if (!std::isalpha(fieldName[0]) && fieldName[0] != '_') {
+			return false;
+		}
+		return true;
+	}
+
+	// Parse a struct field definition line into name and type
+	static std::pair<std::string, std::string> parseStructField(const std::string& line) {
+		std::string trimmed = trim(line);
+		size_t colonPos = trimmed.find(':');
+		if (colonPos == std::string::npos) {
+			return {"", trimmed};
+		}
+		std::string name = trim(trimmed.substr(0, colonPos));
+		std::string type = trim(trimmed.substr(colonPos + 1));
+		return {name, type};
+	}
+
+	// Format struct fields with aligned types (spaces for alignment, tabs for indent)
+	static std::vector<std::string> formatStructFieldsAligned(const std::vector<std::string>& fields,
+			int indentLevel) {
+		if (fields.empty()) {
+			return fields;
+		}
+
+		// Build indent string (tabs)
+		std::string indent;
+		for (int i = 0; i < indentLevel; i++) {
+			indent += '\t';
+		}
+
+		// Find maximum field name length (including colon)
+		size_t maxNameLen = 0;
+		std::vector<std::pair<std::string, std::string>> parsed;
+		for (const auto& field : fields) {
+			std::string trimmed = trim(field);
+			if (isStructFieldDefinition(trimmed)) {
+				auto [name, type] = parseStructField(trimmed);
+				parsed.push_back({name, type});
+				if (name.length() > maxNameLen) {
+					maxNameLen = name.length();
+				}
+			} else {
+				// Not a field definition (comment, blank line, etc.)
+				parsed.push_back({"", trimmed});
+			}
+		}
+
+		// Format with alignment (spaces after colon for alignment)
+		std::vector<std::string> result;
+		for (const auto& [name, type] : parsed) {
+			if (name.empty()) {
+				// Not a field - output with indent
+				if (!type.empty()) {
+					result.push_back(indent + type);
+				} else {
+					result.push_back("");
+				}
+			} else {
+				// Format: indent + name + ":" + spaces + type
+				std::string formatted = indent + name + ":";
+				// Add padding spaces after colon to align types
+				size_t padding = maxNameLen - name.length();
+				for (size_t i = 0; i < padding + 1; i++) {
+					formatted += ' ';
+				}
+				formatted += type;
+				result.push_back(formatted);
+			}
+		}
+		return result;
+	}
+
 	// Check if a line is a shebang (#!)
 	static bool isShebang(const std::string& line) {
 		std::string trimmed = trim(line);
@@ -1527,6 +1618,11 @@ namespace Qd {
 		int indentLevel = 0;
 		bool inMultilineComment = false;
 
+		// State for struct definition field alignment
+		bool inStructDef = false;
+		int structDefIndent = 0;
+		std::vector<std::string> structDefFields;
+
 		bool isFirstLine = true;
 		while (std::getline(input, line)) {
 			std::string trimmed = trim(line);
@@ -1574,6 +1670,27 @@ namespace Qd {
 			// Handle closing braces - dedent before writing
 			// Check if line starts with "}" (closing brace)
 			if (!trimmed.empty() && trimmed[0] == '}') {
+				// If we're in a struct definition, handle the closing brace specially
+				if (inStructDef && trimmed == "}") {
+					// Format and output all buffered fields with alignment
+					auto alignedFields = formatStructFieldsAligned(structDefFields, structDefIndent);
+					for (const auto& field : alignedFields) {
+						output << field << '\n';
+					}
+					// Output closing brace
+					if (indentLevel > 0) {
+						indentLevel--;
+					}
+					for (int i = 0; i < indentLevel; i++) {
+						output << '\t';
+					}
+					output << "}\n";
+					// Reset struct state
+					inStructDef = false;
+					structDefFields.clear();
+					continue;
+				}
+
 				if (indentLevel > 0) {
 					indentLevel--;
 				}
@@ -1612,10 +1729,53 @@ namespace Qd {
 				}
 			}
 
-			// Format function signatures (fn, pub fn, pub struct)
+			// Handle struct definition start
+			if (startsWithKeyword(trimmed, "struct") ||
+					(startsWithKeyword(trimmed, "pub") && trimmed.find("pub struct") != std::string::npos)) {
+				// Output the struct header line
+				for (int i = 0; i < indentLevel; i++) {
+					output << '\t';
+				}
+				output << trimmed << '\n';
+
+				if (trimmed.find('{') != std::string::npos) {
+					indentLevel++;
+					// Start buffering struct fields
+					inStructDef = true;
+					structDefIndent = indentLevel;
+					structDefFields.clear();
+				}
+				continue;
+			}
+
+			// If we're in a struct definition, buffer fields for alignment
+			if (inStructDef) {
+				// Check for closing brace
+				if (trimmed == "}") {
+					// Format and output all buffered fields with alignment
+					auto alignedFields = formatStructFieldsAligned(structDefFields, structDefIndent);
+					for (const auto& field : alignedFields) {
+						output << field << '\n';
+					}
+					// Output closing brace
+					indentLevel--;
+					for (int i = 0; i < indentLevel; i++) {
+						output << '\t';
+					}
+					output << "}\n";
+					// Reset struct state
+					inStructDef = false;
+					structDefFields.clear();
+					continue;
+				}
+				// Buffer this field line
+				structDefFields.push_back(trimmed);
+				continue;
+			}
+
+			// Format function signatures (fn, pub fn)
 			if (startsWithKeyword(trimmed, "fn") ||
-					(startsWithKeyword(trimmed, "pub") && (trimmed.find("pub fn") != std::string::npos ||
-																  trimmed.find("pub struct") != std::string::npos))) {
+					(startsWithKeyword(trimmed, "pub") && trimmed.find("pub fn") != std::string::npos)) {
 				std::string formatted = formatFunctionSignature(line);
 				// Write with current indent
 				for (int i = 0; i < indentLevel; i++) {

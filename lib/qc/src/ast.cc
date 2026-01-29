@@ -2895,6 +2895,63 @@ namespace Qd {
 					continue;
 				}
 
+				// Check for common mistake: using ':' instead of '=' for field initializers
+				// But don't trigger on '::' (scope operator like math::Vec3)
+				if (nextToken == ':') {
+					// Save identifier text BEFORE any more scanning (scanner buffer gets reused)
+					std::string identText(text);
+
+					// Peek ahead to check if it's '::' (scope operator)
+					u8t_scanner_scan(scanner); // Consume the first ':'
+					char32_t afterColon = peekNextNonWhitespace(scanner, src);
+					if (afterColon != ':') {
+						// Single ':' - this is likely the user mistake
+						size_t errPos = u8t_scanner_token_start(scanner);
+						size_t errLine, errColumn;
+						size_t errPosByte = fastCharToByteOffset(src, errPos);
+						fastLineColumn(src, errPosByte, &errLine, &errColumn);
+						std::string errorMsg = "Use '=' instead of ':' for struct field initializers. ";
+						errorMsg += "Expected '" + identText + " = value', not '" + identText + ": value'";
+						errorReporter->reportError(errLine, errColumn, errorMsg.c_str());
+
+						// Save previous field if any
+						if (!currentFieldName.empty()) {
+							structConstruct->addFieldInit(currentFieldName, std::move(currentFieldNodes));
+							currentFieldNodes.clear();
+						}
+						currentFieldName = identText;
+						continue;
+					}
+					// It's '::' - treat current identifier as scoped
+					// We already consumed first ':', now consume second ':' and continue as scoped identifier
+					u8t_scanner_scan(scanner); // Consume second ':'
+					// Now handle as scoped identifier - get the next identifier
+					char32_t scopedToken = u8t_scanner_scan(scanner);
+					if (scopedToken == U8T_IDENTIFIER) {
+						size_t scopedN;
+						const char* scopedText = u8t_scanner_token_text(scanner, &scopedN);
+						std::string fullName = identText + "::" + std::string(scopedText);
+						// Check if followed by '{' (nested struct construction)
+						char32_t afterScoped = peekNextNonWhitespace(scanner, src);
+						if (afterScoped == '{') {
+							size_t nestedPos = u8t_scanner_token_start(scanner);
+							u8t_scanner_scan(scanner); // Consume '{'
+							AstNodeStructConstruction* nested =
+									parseStructConstruction(fullName, {}, scanner, errorReporter, src, nestedPos);
+							if (nested) {
+								currentFieldNodes.push_back(nested);
+							}
+						} else {
+							// Scoped identifier (function call or constant)
+							AstNodeScopedIdentifier* scoped =
+									new AstNodeScopedIdentifier(identText.c_str(), scopedText);
+							setNodePosition(scoped, scanner, src);
+							currentFieldNodes.push_back(scoped);
+						}
+					}
+					continue;
+				}
+
 				// Not a field name, parse as expression element
 
 				// Check for anonymous error literal: error { code = X message = Y }

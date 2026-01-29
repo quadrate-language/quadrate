@@ -1,0 +1,5 @@
+// Line struct that references Point from same module (unqualified)
+pub struct Line {
+	start: Point
+	end: Point
+}

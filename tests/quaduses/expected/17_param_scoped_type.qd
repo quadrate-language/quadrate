@@ -1,0 +1,11 @@
+// Test that quaduses detects scoped types in function parameters
+use math
+
+fn process(v: math::Vec3 -- result: f64) {
+	-> v
+	v @x v @y + v @z +
+}
+
+fn main() {
+	1
+}

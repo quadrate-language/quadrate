@@ -5,8 +5,11 @@
 #include <map>
 #include <qc/ast.h>
 #include <qc/ast_node_import.h>
+#include <qc/ast_node_parameter.h>
 #include <qc/ast_node_program.h>
 #include <qc/ast_node_scoped.h>
+#include <qc/ast_node_struct_construction.h>
+#include <qc/ast_node_struct_field.h>
 #include <qc/ast_node_use.h>
 #include <qc/formatter.h>
 #include <qdcli/file_utils.h>
@@ -76,6 +79,25 @@ bool parseArgs(int argc, char* argv[], Options& opts) {
 	return true;
 }
 
+// Helper to extract module name from a scoped type like "math::Vec3" -> "math"
+// Also handles generics like "Box<math::Vec3>" -> "math"
+static void extractModulesFromType(const std::string& typeName, std::set<std::string>& scopes) {
+	// Find all occurrences of "::" which indicate scoped types
+	size_t pos = 0;
+	while ((pos = typeName.find("::", pos)) != std::string::npos) {
+		// Find the start of the module name (scan backwards for identifier start)
+		size_t start = pos;
+		while (start > 0 && (std::isalnum(typeName[start - 1]) || typeName[start - 1] == '_')) {
+			start--;
+		}
+		if (start < pos) {
+			std::string moduleName = typeName.substr(start, pos - start);
+			scopes.insert(moduleName);
+		}
+		pos += 2; // Skip past "::"
+	}
+}
+
 // Collect all scoped identifiers (namespace::function calls) from the AST
 void collectScopedIdentifiers(const IAstNode* node, std::set<std::string>& scopes) {
 	if (!node) {
@@ -85,6 +107,24 @@ void collectScopedIdentifiers(const IAstNode* node, std::set<std::string>& scope
 	if (node->type() == IAstNode::Type::SCOPED_IDENTIFIER) {
 		const AstNodeScopedIdentifier* scoped = static_cast<const AstNodeScopedIdentifier*>(node);
 		scopes.insert(scoped->scope());
+	}
+
+	// Check struct field types for scoped types like "math::Vec3"
+	if (node->type() == IAstNode::Type::STRUCT_FIELD) {
+		const AstNodeStructField* field = static_cast<const AstNodeStructField*>(node);
+		extractModulesFromType(field->typeName(), scopes);
+	}
+
+	// Check parameter types for scoped types
+	if (node->type() == IAstNode::Type::VARIABLE_DECLARATION) {
+		const AstNodeParameter* param = static_cast<const AstNodeParameter*>(node);
+		extractModulesFromType(param->typeString(), scopes);
+	}
+
+	// Check struct construction for scoped struct names like "spline::ControlPoint { }"
+	if (node->type() == IAstNode::Type::STRUCT_CONSTRUCTION) {
+		const AstNodeStructConstruction* construction = static_cast<const AstNodeStructConstruction*>(node);
+		extractModulesFromType(construction->structName(), scopes);
 	}
 
 	// Recursively visit all children
