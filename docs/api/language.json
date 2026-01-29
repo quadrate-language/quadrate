@@ -448,11 +448,11 @@
     },
     {
       "name": "Struct Instantiation",
-      "pattern": "StructName { field1: value1 field2: value2 }",
+      "pattern": "StructName { field1 = value1 field2 = value2 }",
       "description": "Creates a new struct instance",
       "examples": [
-        "Point { x: 10.0 y: 20.0 }",
-        "Person { name: \"Alice\" age: 30 }"
+        "Point { x = 10.0 y = 20.0 }",
+        "Person { name = \"Alice\" age = 30 }"
       ]
     },
     {
