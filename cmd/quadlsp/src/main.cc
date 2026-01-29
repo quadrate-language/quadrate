@@ -1341,7 +1341,68 @@ static std::string findFirstQdFile(const std::string& directory) {
 std::string QuadrateLSP::resolveModulePath(const std::string& moduleName, const std::string& sourceDir) {
 	std::string result;
 
-	// Try 1: Local path (relative to source file)
+	// Try 0: Check qd.json manifest for dependencies
+	std::string manifestPath = sourceDir + "/qd.json";
+	if (std::filesystem::exists(manifestPath)) {
+		json_error_t error;
+		json_t* root = json_load_file(manifestPath.c_str(), 0, &error);
+		if (root) {
+			json_t* dependencies = json_object_get(root, "dependencies");
+			if (dependencies && json_is_object(dependencies)) {
+				json_t* depValue = json_object_get(dependencies, moduleName.c_str());
+				if (depValue) {
+					std::string resolved;
+					if (json_is_string(depValue)) {
+						resolved = json_string_value(depValue);
+					} else if (json_is_object(depValue)) {
+						json_t* url = json_object_get(depValue, "url");
+						if (url && json_is_string(url)) {
+							resolved = json_string_value(url);
+						}
+					}
+
+					if (!resolved.empty()) {
+						// Check if it's a local path
+						bool isPath = (resolved[0] == '/' || resolved[0] == '.' ||
+								(resolved.size() > 1 && resolved[0] == '~' && resolved[1] == '/'));
+
+						if (isPath) {
+							resolved = expandTilde(resolved);
+							if (resolved[0] != '/') {
+								resolved = sourceDir + "/" + resolved;
+							}
+							try {
+								resolved = std::filesystem::weakly_canonical(resolved).string();
+							} catch (...) {
+							}
+							if (std::filesystem::exists(resolved)) {
+								// If it's a directory, find first .qd file
+								if (std::filesystem::is_directory(resolved)) {
+									result = findFirstQdFile(resolved);
+									if (!result.empty()) {
+										json_decref(root);
+										return result;
+									}
+								} else if (std::filesystem::is_regular_file(resolved)) {
+									json_decref(root);
+									return resolved;
+								}
+							}
+						}
+					}
+				}
+			}
+			json_decref(root);
+		}
+	}
+
+	// Try 1: Sibling file (moduleName.qd in the same directory)
+	std::string siblingFile = sourceDir + "/" + moduleName + ".qd";
+	if (std::filesystem::exists(siblingFile) && std::filesystem::is_regular_file(siblingFile)) {
+		return siblingFile;
+	}
+
+	// Try 2: Local path (relative to source file) - subdirectory
 	result = findFirstQdFile(sourceDir + "/" + moduleName);
 	if (!result.empty()) {
 		return result;
@@ -1775,6 +1836,72 @@ void QuadrateLSP::handleSemanticTokens(const std::string& id, const std::string&
 	}
 
 	if (!documentText.empty()) {
+		// Collect struct type names for highlighting
+		std::set<std::string> structTypeNames;
+
+		// Extract struct names from current document
+		std::vector<StructInfo> localStructs = extractStructs(documentText);
+		for (const auto& s : localStructs) {
+			structTypeNames.insert(s.name);
+		}
+
+		// Get source directory for module resolution
+		std::string sourceDir;
+		std::string filePath;
+		if (uri.substr(0, 7) == "file://") {
+			filePath = uri.substr(7);
+			std::filesystem::path p(filePath);
+			sourceDir = p.parent_path().string();
+		}
+
+		// Extract struct names from sibling files (same directory namespace)
+		if (!filePath.empty()) {
+			std::vector<std::string> siblings = getSiblingQdFiles(filePath);
+			for (const auto& siblingPath : siblings) {
+				std::ifstream file(siblingPath);
+				if (file.good()) {
+					std::stringstream buffer;
+					buffer << file.rdbuf();
+					std::string siblingText = buffer.str();
+
+					std::vector<StructInfo> siblingStructs = extractStructs(siblingText);
+					for (const auto& s : siblingStructs) {
+						structTypeNames.insert(s.name);
+					}
+				}
+			}
+		}
+
+		// Extract struct names from imported modules
+		std::istringstream importStream(documentText);
+		std::string importLine;
+		while (std::getline(importStream, importLine)) {
+			size_t usePos = importLine.find("use ");
+			if (usePos != std::string::npos) {
+				size_t moduleStart = usePos + 4;
+				while (moduleStart < importLine.size() && std::isspace(importLine[moduleStart])) {
+					moduleStart++;
+				}
+				size_t moduleEnd = moduleStart;
+				while (moduleEnd < importLine.size() &&
+						(std::isalnum(static_cast<unsigned char>(importLine[moduleEnd])) ||
+								importLine[moduleEnd] == '_' || importLine[moduleEnd] == '/' ||
+								importLine[moduleEnd] == ':' || importLine[moduleEnd] == '-')) {
+					moduleEnd++;
+				}
+				if (moduleEnd > moduleStart) {
+					std::string moduleName = importLine.substr(moduleStart, moduleEnd - moduleStart);
+					std::string modulePath = resolveModulePath(moduleName, sourceDir);
+					if (!modulePath.empty()) {
+						std::vector<StructInfo> moduleStructs = extractModuleStructs(modulePath);
+						for (const auto& s : moduleStructs) {
+							structTypeNames.insert(s.name);
+						}
+					}
+				}
+			}
+		}
+
 		// Track position for delta encoding
 		size_t prevLine = 0;
 		size_t prevChar = 0;
@@ -1948,6 +2075,9 @@ void QuadrateLSP::handleSemanticTokens(const std::string& id, const std::string&
 					}
 				} else if (isTypeName(word)) {
 					tokenType = TOKEN_TYPE;
+				} else if (structTypeNames.count(word) > 0) {
+					// User-defined struct type
+					tokenType = TOKEN_STRUCT;
 				} else if (isBuiltinOp(word)) {
 					tokenType = TOKEN_MACRO;
 					modifiers = MOD_DEFAULT_LIBRARY;
@@ -1967,9 +2097,14 @@ void QuadrateLSP::handleSemanticTokens(const std::string& id, const std::string&
 							 documentText[i + 1] == ':') {
 						tokenType = TOKEN_NAMESPACE;
 					}
-					// Check if preceded by :: (function call from module)
+					// Check if preceded by :: (function call or struct from module)
 					else if (startI >= 2 && documentText[startI - 1] == ':' && documentText[startI - 2] == ':') {
-						tokenType = TOKEN_FUNCTION;
+						// Check if this is a struct type name
+						if (structTypeNames.count(word) > 0) {
+							tokenType = TOKEN_STRUCT;
+						} else {
+							tokenType = TOKEN_FUNCTION;
+						}
 					}
 					// Check if preceded by -> (local variable assignment)
 					else if (startI >= 2) {

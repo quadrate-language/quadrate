@@ -4,6 +4,7 @@
 #include "lsp_impl.h"
 #include <cctype>
 #include <filesystem>
+#include <iostream>
 #include <fstream>
 #include <functional>
 #include <qc/ast.h>
@@ -129,113 +130,72 @@ Qd::AstNodeLocal* QuadrateLSP::findLocalDeclaration(
 
 json_t* QuadrateLSP::findDefinitionInModule(
 		const std::string& modulePath, const std::string& symbolName, const std::string& symbolType) {
-	// Read the module file
-	std::ifstream file(modulePath);
-	if (!file.good()) {
-		return json_null();
+	// Collect all .qd files to search
+	std::vector<std::string> filesToSearch;
+	filesToSearch.push_back(modulePath);
+
+	// If modulePath is a file, also search sibling files in the same directory
+	try {
+		std::filesystem::path p(modulePath);
+		if (std::filesystem::is_regular_file(p)) {
+			std::filesystem::path dir = p.parent_path();
+			for (const auto& entry : std::filesystem::directory_iterator(dir)) {
+				if (entry.is_regular_file()) {
+					std::string filename = entry.path().filename().string();
+					if (filename.size() > 3 && filename.substr(filename.size() - 3) == ".qd") {
+						if (entry.path().string() != modulePath) {
+							// Exclude test files
+							if (filename.size() <= 8 || filename.substr(filename.size() - 8) != "_test.qd") {
+								filesToSearch.push_back(entry.path().string());
+							}
+						}
+					}
+				}
+			}
+		}
+	} catch (...) {
+		// Ignore filesystem errors
 	}
 
-	std::stringstream buffer;
-	buffer << file.rdbuf();
-	std::string moduleText = buffer.str();
+	// Search all files for the symbol
+	std::cerr << "[LSP DEBUG] findDefinitionInModule: searching for " << symbolType << " '" << symbolName << "'" << std::endl;
+	std::cerr << "  Files to search: " << filesToSearch.size() << std::endl;
+	for (const auto& searchPath : filesToSearch) {
+		std::cerr << "    - " << searchPath << std::endl;
+		std::ifstream file(searchPath);
+		if (!file.good()) {
+			std::cerr << "      (failed to open)" << std::endl;
+			continue;
+		}
 
-	// Parse the module file
-	Qd::Ast ast;
-	Qd::IAstNode* root = ast.generate(moduleText.c_str(), false, nullptr);
+		std::stringstream buffer;
+		buffer << file.rdbuf();
+		std::string moduleText = buffer.str();
 
-	if (!root || ast.hasErrors() || root->type() != Qd::IAstNode::Type::PROGRAM) {
-		return json_null();
-	}
+		// Parse the module file
+		Qd::Ast ast;
+		Qd::IAstNode* root = ast.generate(moduleText.c_str(), false, nullptr);
 
-	// Search for the definition
-	for (size_t i = 0; i < root->childCount(); i++) {
-		Qd::IAstNode* child = root->child(i);
+		if (!root || ast.hasErrors() || root->type() != Qd::IAstNode::Type::PROGRAM) {
+			std::cerr << "      (parse error or invalid AST)" << std::endl;
+			continue;
+		}
 
-		if (symbolType == "function" && child && child->type() == Qd::IAstNode::Type::FUNCTION_DECLARATION) {
-			Qd::AstNodeFunctionDeclaration* funcNode = static_cast<Qd::AstNodeFunctionDeclaration*>(child);
-			if (funcNode->name() == symbolName) {
-				// Found the function definition
-				json_t* location = json_object();
-				std::string moduleUri = "file://" + modulePath;
-				json_object_set_new(location, "uri", json_string(moduleUri.c_str()));
+		// Search for the definition in this file
+		for (size_t i = 0; i < root->childCount(); i++) {
+			Qd::IAstNode* child = root->child(i);
 
-				json_t* range = json_object();
-				json_t* start = json_object();
-				size_t lspLine = (funcNode->line() > 0) ? funcNode->line() - 1 : 0;
-				json_object_set_new(start, "line", json_integer(static_cast<json_int_t>(lspLine)));
-				json_object_set_new(start, "character", json_integer(0));
-				json_object_set_new(range, "start", start);
-
-				json_t* end = json_object();
-				json_object_set_new(end, "line", json_integer(static_cast<json_int_t>(lspLine)));
-				json_object_set_new(end, "character", json_integer(static_cast<json_int_t>(funcNode->name().length())));
-				json_object_set_new(range, "end", end);
-
-				json_object_set_new(location, "range", range);
-				return location;
-			}
-		} else if (symbolType == "constant" && child && child->type() == Qd::IAstNode::Type::CONSTANT_DECLARATION) {
-			Qd::AstNodeConstant* constNode = static_cast<Qd::AstNodeConstant*>(child);
-			if (constNode->name() == symbolName) {
-				// Found the constant definition
-				json_t* location = json_object();
-				std::string moduleUri = "file://" + modulePath;
-				json_object_set_new(location, "uri", json_string(moduleUri.c_str()));
-
-				json_t* range = json_object();
-				json_t* start = json_object();
-				size_t lspLine = (constNode->line() > 0) ? constNode->line() - 1 : 0;
-				json_object_set_new(start, "line", json_integer(static_cast<json_int_t>(lspLine)));
-				json_object_set_new(start, "character", json_integer(0));
-				json_object_set_new(range, "start", start);
-
-				json_t* end = json_object();
-				json_object_set_new(end, "line", json_integer(static_cast<json_int_t>(lspLine)));
-				json_object_set_new(
-						end, "character", json_integer(static_cast<json_int_t>(constNode->name().length())));
-				json_object_set_new(range, "end", end);
-
-				json_object_set_new(location, "range", range);
-				return location;
-			}
-		} else if (symbolType == "struct" && child && child->type() == Qd::IAstNode::Type::STRUCT_DECLARATION) {
-			Qd::AstNodeStructDeclaration* structNode = static_cast<Qd::AstNodeStructDeclaration*>(child);
-			if (structNode->name() == symbolName) {
-				// Found the struct definition
-				json_t* location = json_object();
-				std::string moduleUri = "file://" + modulePath;
-				json_object_set_new(location, "uri", json_string(moduleUri.c_str()));
-
-				json_t* range = json_object();
-				json_t* start = json_object();
-				size_t lspLine = (structNode->line() > 0) ? structNode->line() - 1 : 0;
-				json_object_set_new(start, "line", json_integer(static_cast<json_int_t>(lspLine)));
-				json_object_set_new(start, "character", json_integer(0));
-				json_object_set_new(range, "start", start);
-
-				json_t* end = json_object();
-				json_object_set_new(end, "line", json_integer(static_cast<json_int_t>(lspLine)));
-				json_object_set_new(
-						end, "character", json_integer(static_cast<json_int_t>(structNode->name().length())));
-				json_object_set_new(range, "end", end);
-
-				json_object_set_new(location, "range", range);
-				return location;
-			}
-		} else if (symbolType == "function" && child && child->type() == Qd::IAstNode::Type::IMPORT_STATEMENT) {
-			// Check for imported functions (like those in stdlib modules)
-			Qd::AstNodeImport* importNode = static_cast<Qd::AstNodeImport*>(child);
-			const auto& importedFuncs = importNode->functions();
-			for (const auto* importedFunc : importedFuncs) {
-				if (importedFunc->name == symbolName) {
-					// Found the imported function declaration
+			if (symbolType == "function" && child && child->type() == Qd::IAstNode::Type::FUNCTION_DECLARATION) {
+				Qd::AstNodeFunctionDeclaration* funcNode = static_cast<Qd::AstNodeFunctionDeclaration*>(child);
+				if (funcNode->name() == symbolName) {
+					// Found the function definition
 					json_t* location = json_object();
-					std::string moduleUri = "file://" + modulePath;
+					std::string moduleUri = "file://" + searchPath;
 					json_object_set_new(location, "uri", json_string(moduleUri.c_str()));
 
 					json_t* range = json_object();
 					json_t* start = json_object();
-					size_t lspLine = (importedFunc->line > 0) ? importedFunc->line - 1 : 0;
+					size_t lspLine = (funcNode->line() > 0) ? funcNode->line() - 1 : 0;
 					json_object_set_new(start, "line", json_integer(static_cast<json_int_t>(lspLine)));
 					json_object_set_new(start, "character", json_integer(0));
 					json_object_set_new(range, "start", start);
@@ -243,15 +203,94 @@ json_t* QuadrateLSP::findDefinitionInModule(
 					json_t* end = json_object();
 					json_object_set_new(end, "line", json_integer(static_cast<json_int_t>(lspLine)));
 					json_object_set_new(
-							end, "character", json_integer(static_cast<json_int_t>(importedFunc->name.length())));
+							end, "character", json_integer(static_cast<json_int_t>(funcNode->name().length())));
 					json_object_set_new(range, "end", end);
 
 					json_object_set_new(location, "range", range);
 					return location;
 				}
+			} else if (symbolType == "constant" && child &&
+					   child->type() == Qd::IAstNode::Type::CONSTANT_DECLARATION) {
+				Qd::AstNodeConstant* constNode = static_cast<Qd::AstNodeConstant*>(child);
+				if (constNode->name() == symbolName) {
+					// Found the constant definition
+					json_t* location = json_object();
+					std::string moduleUri = "file://" + searchPath;
+					json_object_set_new(location, "uri", json_string(moduleUri.c_str()));
+
+					json_t* range = json_object();
+					json_t* start = json_object();
+					size_t lspLine = (constNode->line() > 0) ? constNode->line() - 1 : 0;
+					json_object_set_new(start, "line", json_integer(static_cast<json_int_t>(lspLine)));
+					json_object_set_new(start, "character", json_integer(0));
+					json_object_set_new(range, "start", start);
+
+					json_t* end = json_object();
+					json_object_set_new(end, "line", json_integer(static_cast<json_int_t>(lspLine)));
+					json_object_set_new(
+							end, "character", json_integer(static_cast<json_int_t>(constNode->name().length())));
+					json_object_set_new(range, "end", end);
+
+					json_object_set_new(location, "range", range);
+					return location;
+				}
+			} else if (symbolType == "struct" && child &&
+					   child->type() == Qd::IAstNode::Type::STRUCT_DECLARATION) {
+				Qd::AstNodeStructDeclaration* structNode = static_cast<Qd::AstNodeStructDeclaration*>(child);
+				if (structNode->name() == symbolName) {
+					// Found the struct definition
+					json_t* location = json_object();
+					std::string moduleUri = "file://" + searchPath;
+					json_object_set_new(location, "uri", json_string(moduleUri.c_str()));
+
+					json_t* range = json_object();
+					json_t* start = json_object();
+					size_t lspLine = (structNode->line() > 0) ? structNode->line() - 1 : 0;
+					json_object_set_new(start, "line", json_integer(static_cast<json_int_t>(lspLine)));
+					json_object_set_new(start, "character", json_integer(0));
+					json_object_set_new(range, "start", start);
+
+					json_t* end = json_object();
+					json_object_set_new(end, "line", json_integer(static_cast<json_int_t>(lspLine)));
+					json_object_set_new(
+							end, "character", json_integer(static_cast<json_int_t>(structNode->name().length())));
+					json_object_set_new(range, "end", end);
+
+					json_object_set_new(location, "range", range);
+					return location;
+				}
+			} else if (symbolType == "function" && child &&
+					   child->type() == Qd::IAstNode::Type::IMPORT_STATEMENT) {
+				// Check for imported functions (like those in stdlib modules)
+				Qd::AstNodeImport* importNode = static_cast<Qd::AstNodeImport*>(child);
+				const auto& importedFuncs = importNode->functions();
+				for (const auto* importedFunc : importedFuncs) {
+					if (importedFunc->name == symbolName) {
+						// Found the imported function declaration
+						json_t* location = json_object();
+						std::string moduleUri = "file://" + searchPath;
+						json_object_set_new(location, "uri", json_string(moduleUri.c_str()));
+
+						json_t* range = json_object();
+						json_t* start = json_object();
+						size_t lspLine = (importedFunc->line > 0) ? importedFunc->line - 1 : 0;
+						json_object_set_new(start, "line", json_integer(static_cast<json_int_t>(lspLine)));
+						json_object_set_new(start, "character", json_integer(0));
+						json_object_set_new(range, "start", start);
+
+						json_t* end = json_object();
+						json_object_set_new(end, "line", json_integer(static_cast<json_int_t>(lspLine)));
+						json_object_set_new(end, "character",
+								json_integer(static_cast<json_int_t>(importedFunc->name.length())));
+						json_object_set_new(range, "end", end);
+
+						json_object_set_new(location, "range", range);
+						return location;
+					}
+				}
 			}
 		}
-	}
+	} // End of filesToSearch loop
 
 	return json_null();
 }
@@ -1013,6 +1052,35 @@ void QuadrateLSP::handleDefinition(const std::string& id, const std::string& uri
 							}
 						}
 					}
+
+					// If still not found, search for struct definitions in imported modules
+					if (json_is_null(result)) {
+						for (const auto& moduleName : importedModules) {
+							std::string modulePath = resolveModulePath(moduleName, sourceDir);
+							if (!modulePath.empty()) {
+								result = findDefinitionInModule(modulePath, word, "struct");
+								if (!json_is_null(result)) {
+									break;
+								}
+							}
+						}
+					}
+
+					// If still not found, search sibling files for struct definitions
+					if (json_is_null(result)) {
+						std::vector<std::string> siblings = getSiblingQdFiles(filePath);
+						for (const auto& siblingPath : siblings) {
+							result = findDefinitionInModule(siblingPath, word, "struct");
+							if (!json_is_null(result)) {
+								break;
+							}
+							// Also search for functions in siblings
+							result = findDefinitionInModule(siblingPath, word, "function");
+							if (!json_is_null(result)) {
+								break;
+							}
+						}
+					}
 				}
 
 				// If still not found, try scoped identifiers (module::symbol)
@@ -1028,6 +1096,14 @@ void QuadrateLSP::handleDefinition(const std::string& id, const std::string& uri
 
 					// Resolve module path
 					std::string modulePath = resolveModulePath(moduleName, sourceDir);
+
+					// Debug logging to stderr (doesn't interfere with LSP protocol on stdout)
+					std::cerr << "[LSP DEBUG] Go-to-definition for scoped identifier:" << std::endl;
+					std::cerr << "  word: " << word << std::endl;
+					std::cerr << "  moduleName: " << moduleName << std::endl;
+					std::cerr << "  symbolName: " << symbolName << std::endl;
+					std::cerr << "  sourceDir: " << sourceDir << std::endl;
+					std::cerr << "  modulePath: " << (modulePath.empty() ? "(not found)" : modulePath) << std::endl;
 
 					if (!modulePath.empty()) {
 						// Try to find the symbol as a function first, then as a constant, then as a struct

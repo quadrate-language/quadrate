@@ -544,7 +544,7 @@ struct Rectangle {
 }
 
 fn main() {
-    Point{x: 10, y: 20} -> p
+    Point { x = 10 y = 20 } -> p
     p print nl
 }
 '''

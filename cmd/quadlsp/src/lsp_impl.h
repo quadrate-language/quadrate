@@ -19,6 +19,9 @@ std::string expandTilde(const std::string& path);
 // Load dependencies from qd.json and return include paths
 std::vector<std::string> loadDependenciesFromManifest(const std::string& manifestDir);
 
+// Get sibling .qd files in the same directory (for directory-based namespaces)
+std::vector<std::string> getSiblingQdFiles(const std::string& filePath);
+
 // LSP Server using jansson for JSON handling
 class QuadrateLSP {
 public:
