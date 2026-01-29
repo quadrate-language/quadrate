@@ -746,6 +746,127 @@ fn main() {
         })
         self.assert_test(resp is not None and 'result' in resp, "Formatting handles unicode")
 
+    def test_rename(self):
+        """Test rename functionality"""
+        import os
+        import tempfile
+        import shutil
+
+        print("\n  [Rename]")
+
+        # Check capability
+        rename_cap = self.capabilities.get('renameProvider')
+        self.assert_test(
+            rename_cap is not None,
+            "renameProvider capability registered"
+        )
+        if isinstance(rename_cap, dict):
+            self.assert_test(
+                rename_cap.get('prepareProvider'),
+                "prepareProvider enabled"
+            )
+
+        # Test 1: Basic rename in single file
+        uri = "file:///tmp/rename_test.qd"
+        content = '''fn helper(x:i64 -- result:i64) {
+    x 2 *
+}
+
+fn main() {
+    5 helper print nl
+    10 helper print nl
+}
+'''
+        self.session.open_document(uri, content)
+
+        # Test prepareRename first (this is what editors call before rename)
+        resp = self.session.send_request("textDocument/prepareRename", {
+            "textDocument": {"uri": uri},
+            "position": {"line": 0, "character": 3}  # On 'helper'
+        })
+        self.assert_test(resp is not None, "prepareRename returns response")
+        self.assert_test('result' in resp and resp['result'] is not None, "prepareRename has result")
+        if resp and 'result' in resp and resp['result']:
+            result = resp['result']
+            self.assert_test('range' in result, "prepareRename has range")
+            self.assert_test('placeholder' in result, "prepareRename has placeholder")
+            if 'placeholder' in result:
+                self.assert_test(result['placeholder'] == 'helper', "prepareRename placeholder is correct")
+
+        # Rename 'helper' to 'double'
+        resp = self.session.send_request("textDocument/rename", {
+            "textDocument": {"uri": uri},
+            "position": {"line": 0, "character": 3},  # On 'helper'
+            "newName": "double"
+        })
+
+        self.assert_test(resp is not None, "Rename request returns response")
+        self.assert_test('result' in resp, "Rename response has result")
+
+        if resp and 'result' in resp:
+            result = resp['result']
+            changes = result.get('changes', {})
+            self.assert_test(uri in changes, "Rename includes current file")
+
+            if uri in changes:
+                edits = changes[uri]
+                # Should have 3 occurrences: definition + 2 calls
+                self.assert_test(len(edits) >= 3, f"Found all occurrences (got {len(edits)}, expected 3)")
+
+        # Test 2: Rename across sibling files
+        # Create temporary directory with sibling files
+        tmpdir = tempfile.mkdtemp(prefix="lsp_rename_test_")
+        try:
+            # Create main.qd
+            main_path = os.path.join(tmpdir, "main.qd")
+            with open(main_path, 'w') as f:
+                f.write('''fn main() {
+    5 compute print nl
+}
+''')
+
+            # Create helper.qd with shared function
+            helper_path = os.path.join(tmpdir, "helper.qd")
+            with open(helper_path, 'w') as f:
+                f.write('''fn compute(x:i64 -- result:i64) {
+    x 10 *
+}
+''')
+
+            main_uri = "file://" + main_path
+            helper_uri = "file://" + helper_path
+
+            # Open both documents
+            with open(main_path, 'r') as f:
+                self.session.open_document(main_uri, f.read())
+            with open(helper_path, 'r') as f:
+                self.session.open_document(helper_uri, f.read())
+
+            # Rename 'compute' from main.qd (where it's used)
+            resp = self.session.send_request("textDocument/rename", {
+                "textDocument": {"uri": main_uri},
+                "position": {"line": 1, "character": 6},  # On 'compute'
+                "newName": "multiply"
+            })
+
+            self.assert_test(resp is not None, "Cross-file rename returns response")
+
+            if resp and 'result' in resp:
+                result = resp['result']
+                changes = result.get('changes', {})
+
+                self.assert_test(main_uri in changes, "Cross-file rename includes main file")
+                self.assert_test(helper_uri in changes, "Cross-file rename includes sibling file")
+
+                if main_uri in changes and helper_uri in changes:
+                    main_edits = changes[main_uri]
+                    helper_edits = changes[helper_uri]
+                    self.assert_test(len(main_edits) >= 1, "Found usage in main file")
+                    self.assert_test(len(helper_edits) >= 1, "Found definition in helper file")
+
+        finally:
+            shutil.rmtree(tmpdir, ignore_errors=True)
+
     def test_large_document(self):
         """Test features on large document"""
         print("\n  [Large Document]")
@@ -813,6 +934,9 @@ fn main() {
             self.test_code_lens()
             self.test_on_type_formatting()
             self.test_linked_editing_range()
+
+            # Rename
+            self.test_rename()
 
             # Edge cases
             self.test_empty_document()

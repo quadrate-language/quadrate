@@ -82,6 +82,7 @@ private:
 	void handleReferences(const std::string& id, const std::string& uri, size_t line, size_t character);
 	void handleRename(
 			const std::string& id, const std::string& uri, size_t line, size_t character, const std::string& newName);
+	void handlePrepareRename(const std::string& id, const std::string& uri, size_t line, size_t character);
 
 	// Code actions (quick fixes)
 	void handleCodeAction(const std::string& id, const std::string& uri, size_t startLine, size_t startChar,

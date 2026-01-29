@@ -579,6 +579,22 @@ void QuadrateLSP::handleMessage(const std::string& message) {
 			}
 			handleSelectionRange(id, uri, posVec);
 		}
+	} else if (method == "textDocument/prepareRename") {
+		json_t* params = getJsonObject(root, "params");
+		if (params) {
+			json_t* textDoc = getJsonObject(params, "textDocument");
+			json_t* position = getJsonObject(params, "position");
+			if (textDoc && position) {
+				std::string uri = getJsonString(textDoc, "uri");
+				json_t* lineJson = json_object_get(position, "line");
+				json_t* charJson = json_object_get(position, "character");
+				if (lineJson && charJson && json_is_integer(lineJson) && json_is_integer(charJson)) {
+					size_t line = static_cast<size_t>(json_integer_value(lineJson));
+					size_t character = static_cast<size_t>(json_integer_value(charJson));
+					handlePrepareRename(id, uri, line, character);
+				}
+			}
+		}
 	} else if (method == "textDocument/rename") {
 		json_t* params = getJsonObject(root, "params");
 		if (params) {
@@ -642,7 +658,9 @@ void QuadrateLSP::handleInitialize(const std::string& id, json_t* initOptions) {
 	json_object_set_new(capabilities, "documentSymbolProvider", json_true());
 	json_object_set_new(capabilities, "definitionProvider", json_true());
 	json_object_set_new(capabilities, "referencesProvider", json_true());
-	json_object_set_new(capabilities, "renameProvider", json_true());
+	json_t* renameOptions = json_object();
+	json_object_set_new(renameOptions, "prepareProvider", json_true());
+	json_object_set_new(capabilities, "renameProvider", renameOptions);
 
 	// Enable snippet support in completions
 	json_t* completionProvider = json_object();
@@ -1248,15 +1266,30 @@ std::string QuadrateLSP::getWordAtPosition(const std::string& text, size_t line,
 	size_t end = character;
 
 	// Move start backward to beginning of word
-	while (start > 0 &&
-			(isalnum(targetLine[start - 1]) || targetLine[start - 1] == '_' || targetLine[start - 1] == ':')) {
-		start--;
+	// Include :: for scoped identifiers, but not single : (type annotations)
+	while (start > 0) {
+		char c = targetLine[start - 1];
+		if (isalnum(c) || c == '_') {
+			start--;
+		} else if (c == ':' && start >= 2 && targetLine[start - 2] == ':') {
+			// Include :: for scoped identifiers
+			start -= 2;
+		} else {
+			break;
+		}
 	}
 
 	// Move end forward to end of word
-	while (end < targetLine.length() &&
-			(isalnum(targetLine[end]) || targetLine[end] == '_' || targetLine[end] == ':')) {
-		end++;
+	while (end < targetLine.length()) {
+		char c = targetLine[end];
+		if (isalnum(c) || c == '_') {
+			end++;
+		} else if (c == ':' && end + 1 < targetLine.length() && targetLine[end + 1] == ':') {
+			// Include :: for scoped identifiers
+			end += 2;
+		} else {
+			break;
+		}
 	}
 
 	if (end > start) {
