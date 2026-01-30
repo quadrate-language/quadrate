@@ -213,6 +213,55 @@ TEST(IfElseEmpty) {
 	ASSERT(errors == 0, "if-else leaving value should succeed");
 }
 
+TEST(IfElseBalancedStackEffect) {
+	// Both branches push one value - balanced
+	const char* src = "fn main() { 1 if { 10 } else { 20 } drop }";
+	size_t errors = validateCode(src);
+	ASSERT(errors == 0, "balanced if-else should succeed");
+}
+
+TEST(IfElseBalancedNoEffect) {
+	// Both branches have no stack effect - balanced
+	const char* src = "fn main() { 1 if { 5 drop } else { 10 drop } }";
+	size_t errors = validateCode(src);
+	ASSERT(errors == 0, "if-else with no stack effect should succeed");
+}
+
+TEST(IfElseStackEffectMismatch) {
+	// if branch pushes 2 values, else branch pushes 1 - mismatch
+	const char* src = "fn main() { 1 if { 1 2 } else { 3 } }";
+	size_t errors = validateCode(src);
+	ASSERT(errors >= 1, "stack effect mismatch should error");
+}
+
+TEST(IfElseStackEffectMismatchPushVsDrop) {
+	// if branch pushes 1, else branch pops 1 - mismatch
+	const char* src = "fn main() { 5 1 if { 10 } else { drop } }";
+	size_t errors = validateCode(src);
+	ASSERT(errors >= 1, "push vs drop mismatch should error");
+}
+
+TEST(IfElseStackEffectMismatchEmpty) {
+	// if branch pushes 1, else branch does nothing - mismatch
+	const char* src = "fn main() { 1 if { 42 } else { } }";
+	size_t errors = validateCode(src);
+	ASSERT(errors >= 1, "push vs empty mismatch should error");
+}
+
+TEST(NestedIfElseBalanced) {
+	// Nested if-else with balanced effects
+	const char* src = "fn main() { 1 if { 1 if { 10 } else { 20 } } else { 30 } drop }";
+	size_t errors = validateCode(src);
+	ASSERT(errors == 0, "nested balanced if-else should succeed");
+}
+
+TEST(NestedIfElseMismatch) {
+	// Outer if-else has mismatch due to inner
+	const char* src = "fn main() { 1 if { 1 if { 10 20 } else { 30 } } else { 40 } }";
+	size_t errors = validateCode(src);
+	ASSERT(errors >= 1, "nested mismatch should error");
+}
+
 TEST(BreakOutsideLoop) {
 	const char* src = "fn main() { break }";
 	size_t errors = validateCode(src);

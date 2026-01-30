@@ -65,6 +65,28 @@ namespace Qd {
 		}
 	}
 
+	// Helper: Check if a block ends with a diverging instruction (like `panic`)
+	// Diverging instructions never return, so stack effects don't need to balance
+	static bool blockEndsDiverging(IAstNode* block) {
+		if (!block || block->childCount() == 0) {
+			return false;
+		}
+		IAstNode* lastChild = block->child(block->childCount() - 1);
+		if (!lastChild) {
+			return false;
+		}
+		// Check if the last instruction is `panic`
+		if (lastChild->type() == IAstNode::Type::INSTRUCTION) {
+			AstNodeInstruction* instr = static_cast<AstNodeInstruction*>(lastChild);
+			return instr->name() == "panic";
+		}
+		// Recursively check nested blocks (e.g., if the last child is another block)
+		if (lastChild->type() == IAstNode::Type::BLOCK) {
+			return blockEndsDiverging(lastChild);
+		}
+		return false;
+	}
+
 	// Check if a type string is a known struct name (local or imported)
 	// Supports both unqualified names (Response) and qualified names (http::Response)
 
@@ -611,7 +633,8 @@ namespace Qd {
 					std::vector<std::string> thenStructStack = structTypeStack;
 					typeCheckBlock(thenBody, thenStack, thenVars, thenStructStack);
 
-					// Analyze else branch
+					// Analyze else branch (same starting stack - both branches receive
+					// result values from fallible calls, though error values are undefined)
 					std::vector<StackValueType> elseStack = typeStack;
 					std::unordered_map<std::string, StackValueType> elseVars = localVariables;
 					std::vector<std::string> elseStructStack = structTypeStack;
@@ -620,28 +643,43 @@ namespace Qd {
 					int thenEffect = static_cast<int>(thenStack.size()) - static_cast<int>(typeStack.size());
 					int elseEffect = static_cast<int>(elseStack.size()) - static_cast<int>(typeStack.size());
 
-					// For fallible functions, both branches receive the result values on the stack.
-					// The if branch (success) and else branch (error) should both handle the result
-					// (either use it or drop it), so they should have the same stack effect.
-					// For non-fallible if/else, branches should also be balanced.
-					// Only warn when the effects are actually different.
-					if (thenEffect != elseEffect) {
+					// Check if either branch diverges (e.g., ends with `panic`)
+					// Diverging branches never return, so stack effects don't need to balance
+					bool thenDiverges = blockEndsDiverging(thenBody);
+					bool elseDiverges = blockEndsDiverging(elseBody);
+
+					// Both branches should have the same stack effect (balanced).
+					// Stack effect mismatch is an error because it leaves the stack in an
+					// unpredictable state, making subsequent code incorrect.
+					// Exception: if one branch diverges, it never returns, so no mismatch.
+					if (thenEffect != elseEffect && !thenDiverges && !elseDiverges) {
 						std::string errorMsg = "Stack effect mismatch: 'if' branch changes stack by ";
 						errorMsg += std::to_string(thenEffect);
 						errorMsg += ", but 'else' branch changes stack by ";
 						errorMsg += std::to_string(elseEffect);
 						reportWarning(child, errorMsg.c_str());
+					} else if (thenDiverges && !elseDiverges) {
+						// Only else branch returns, apply its effects
+						typeStack = elseStack;
+						structTypeStack = elseStructStack;
+					} else if (elseDiverges && !thenDiverges) {
+						// Only then branch returns, apply its effects
+						typeStack = thenStack;
+						structTypeStack = thenStructStack;
 					} else if (thenEffect > 0) {
 						// Both branches have the same positive effect, apply it
 						for (size_t k = typeStack.size(); k < thenStack.size(); k++) {
 							typeStack.push_back(thenStack[k]);
-							// Also sync structTypeStack to keep method resolution working
 							if (k < thenStructStack.size()) {
 								structTypeStack.push_back(thenStructStack[k]);
 							} else {
 								structTypeStack.push_back("");
 							}
 						}
+					} else if (thenEffect < 0) {
+						// Both branches consume values, set to final state
+						typeStack = thenStack;
+						structTypeStack = thenStructStack;
 					}
 				} else if (thenBody) {
 					// Only then branch - analyze with a copy since branch might not execute
