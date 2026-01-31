@@ -1,12 +1,12 @@
 fn main() {
 	1 21 1 for it {
-		it -> row
-		1 41 1 for it {
-			it row % 0 eq if {
-				"*" print
+		1 41 1 for jt {
+			jt it % 0 == if {
+				"*"
 			} else {
-				" " print
+				" "
 			}
+			print
 		}
 		nl
 	}
