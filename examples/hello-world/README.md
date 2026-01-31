@@ -5,7 +5,7 @@ Basic "Hello, World!" example.
 ## Run
 
 ```bash
-quadc -r hello-world.qd
+quad run hello-world.qd
 ```
 
 ## Features

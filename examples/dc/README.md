@@ -5,7 +5,7 @@ Desk calculator clone - a reverse-polish notation calculator.
 ## Run
 
 ```bash
-quadc -r dc.qd
+quad run dc.qd
 ```
 
 ## Usage

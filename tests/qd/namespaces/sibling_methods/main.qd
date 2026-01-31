@@ -4,13 +4,13 @@ use fmt
 
 fn main() {
 	// Create state with Vec3
-	math::Vec3 { x = 3.0, y = 4.0, z = 0.0 } -> pos
+	math::Vec3 { x = 3.0 y = 4.0 z = 0.0 } -> pos
 	State { pos = pos } -> s
 
 	// Call sibling function that uses Vec3.length method
 	s get_magnitude "Magnitude: %.1f\n" fmt::printf
 
 	// Call sibling function that uses Vec3.dot method
-	math::Vec3 { x = 1.0, y = 0.0, z = 0.0 } -> xunit
+	math::Vec3 { x = 1.0 y = 0.0 z = 0.0 } -> xunit
 	s xunit get_dot "Dot with X: %.1f\n" fmt::printf
 }

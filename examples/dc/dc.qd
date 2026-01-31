@@ -17,15 +17,19 @@ use unicode
 
 // Calculator stack - using an explicit array
 pub struct Stack {
-	data: ptr
-	size: i64
+	data:     ptr
+	size:     i64
 	capacity: i64
 }
 
 fn stack_new( -- s:ptr) {
 	1024 -> cap
 	cap 8 * mem::alloc! -> data
-	Stack { data = data, size = 0, capacity = cap }
+	Stack {
+		data = data
+		size = 0
+		capacity = cap
+	}
 }
 
 fn stack_free(s:ptr -- ) {
@@ -380,18 +384,12 @@ fn run_file(s:ptr path:str -- ) {
 
 	path io::Read io::open switch {
 		Ok {
-			-> file
-			file buf 65536 io::read switch {
+			-> file file buf 65536 io::read switch {
 				Ok {
-					-> bytes_read
-					file io::close
-					buf bytes_read mem::to_string -> content
+					-> bytes_read file io::close buf bytes_read mem::to_string -> content
 				}
 				_ {
-					file io::close
-					"dc: could not read file: " print path print nl
-					buf mem::free
-					1 os::exit
+					file io::close "dc: could not read file: " print path print nl buf mem::free 1 os::exit
 				}
 			}
 		}
@@ -430,9 +428,7 @@ fn repl(s:ptr -- ) {
 	loop {
 		io::readline switch {
 			Ok {
-				-> input
-				s input process_line
-				input drop
+				-> input s input process_line input drop
 			}
 			_ {
 				// EOF or error - exit

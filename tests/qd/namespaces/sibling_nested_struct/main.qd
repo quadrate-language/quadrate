@@ -7,7 +7,7 @@ struct Point {
 
 fn main() {
 	// Create a Point
-	Point { x = 3.0, y = 4.0 } -> p
+	Point { x = 3.0 y = 4.0 } -> p
 
 	// Create a Circle (defined in sibling) with our Point
 	p 5.0 make_circle -> c

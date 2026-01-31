@@ -5,8 +5,8 @@
 // Multiple defers execute in LIFO order (last-in, first-out).
 // A simple resource struct
 struct Resource {
-	id:i64
-	value:i64
+	id:    i64
+	value: i64
 }
 
 fn create_resource(id:i64 -- r:ptr) {

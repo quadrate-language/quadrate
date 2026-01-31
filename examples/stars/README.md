@@ -5,7 +5,7 @@ Prints a star pattern.
 ## Run
 
 ```bash
-quadc -r stars.qd
+quad run stars.qd
 ```
 
 ## Features

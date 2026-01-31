@@ -8,7 +8,7 @@ struct Parent {
 
 fn main() {
 	// Create Parent
-	Parent { name = "root", value = 42 } -> p
+	Parent { name = "root" value = 42 } -> p
 
 	// Use function from sibling that takes Parent
 	p get_parent_value print nl

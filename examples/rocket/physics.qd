@@ -16,9 +16,9 @@ fn atm_density(alt:f64 -- rho:f64) {
 }
 
 struct Deriv {
-	dp:math::Vec3
-	dv:math::Vec3
-	dm:f64
+	dp: math::Vec3
+	dv: math::Vec3
+	dm: f64
 }
 
 pub fn compute_deriv(stage:Stage state:State -- d:Deriv) {
@@ -89,8 +89,8 @@ pub fn compute_deriv(stage:Stage state:State -- d:Deriv) {
 	}
 
 	Deriv {
-		dp = vel,
-		dv = accel,
+		dp = vel
+		dv = accel
 		dm = dm
 	}
 }

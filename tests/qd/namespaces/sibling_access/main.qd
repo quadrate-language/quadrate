@@ -9,7 +9,7 @@ fn main() {
 	MAGIC_NUMBER print nl
 
 	// Create struct from sibling file
-	Point { x = 10, y = 20 } -> p
+	Point { x = 10 y = 20 } -> p
 	p point_sum print nl
 
 	// Direct field access

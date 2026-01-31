@@ -5,7 +5,7 @@ Prints a Sierpinski triangle pattern.
 ## Run
 
 ```bash
-quadc -r sierpinski.qd
+quad run sierpinski.qd
 ```
 
 ## Features

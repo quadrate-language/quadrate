@@ -5,7 +5,7 @@ Demonstrates the module system.
 ## Run
 
 ```bash
-quadc -r main.qd
+quad run main.qd
 ```
 
 ## Structure

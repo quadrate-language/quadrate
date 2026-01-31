@@ -10,8 +10,8 @@ struct Container {
 
 fn main() {
 	// Create a Vec3 and container
-	math::Vec3 { x = 1.0, y = 2.0, z = 3.0 } -> vec
-	Container { v = vec, scalar = 42.0 } -> c
+	math::Vec3 { x = 1.0 y = 2.0 z = 3.0 } -> vec
+	Container { v = vec scalar = 42.0 } -> c
 
 	// Access scalar field (should be 42)
 	c @scalar print nl

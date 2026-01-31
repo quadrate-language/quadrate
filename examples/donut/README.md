@@ -5,7 +5,7 @@ Spinning ASCII donut animation.
 ## Run
 
 ```bash
-quadc -r donut.qd
+quad run donut.qd
 ```
 
 Press Ctrl-C to stop.

@@ -5,7 +5,7 @@ Demonstrates multi-threading.
 ## Run
 
 ```bash
-quadc -r threading.qd
+quad run threading.qd
 ```
 
 ## Features

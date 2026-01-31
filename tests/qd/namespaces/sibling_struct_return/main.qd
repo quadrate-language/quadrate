@@ -3,7 +3,7 @@ use math
 use fmt
 
 fn main() {
-	math::Vec3 { x = 3.0, y = 4.0, z = 0.0 } -> pos
+	math::Vec3 { x = 3.0 y = 4.0 z = 0.0 } -> pos
 	State { pos = pos } -> s
 
 	// Direct normalize works

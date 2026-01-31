@@ -3108,6 +3108,15 @@ namespace Qd {
 					currentFieldNodes.push_back(node);
 				}
 				// If not followed by identifier, silently ignore (error will be caught by semantic validator)
+			} else if (token == ',') {
+				// Commas are not part of struct instantiation syntax
+				size_t errPos = u8t_scanner_token_start(scanner);
+				size_t errLine, errColumn;
+				size_t errPosByte = fastCharToByteOffset(src, errPos);
+				fastLineColumn(src, errPosByte, &errLine, &errColumn);
+				errorReporter->reportError(errLine, errColumn,
+						"Commas are not used in struct instantiation. "
+						"Use whitespace or newlines to separate field initializers.");
 			} else {
 				// Handle operators
 				IAstNode* opNode = tryParseOperatorAlias(token, scanner, src);

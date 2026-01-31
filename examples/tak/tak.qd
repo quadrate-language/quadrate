@@ -1,0 +1,15 @@
+fn tak(x:i64 y:i64 z:i64 -- result:i64) {
+	-> z -> y -> x
+	y x < if {
+		x -- y z tak
+		y -- z x tak
+		z -- x y tak
+		tak
+	} else {
+		z
+	}
+}
+
+fn main() {
+	8 4 7 tak print nl
+}

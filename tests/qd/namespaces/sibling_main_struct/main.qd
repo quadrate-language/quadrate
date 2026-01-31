@@ -9,7 +9,7 @@ struct State {
 
 fn main() {
 	// Create a State struct (defined in this file)
-	State { value = 42, name = "test" } -> s
+	State { value = 42 name = "test" } -> s
 
 	// Call helper function that takes State (helper.qd references our struct)
 	s process_state -> result

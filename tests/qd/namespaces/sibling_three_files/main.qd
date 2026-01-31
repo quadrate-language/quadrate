@@ -9,7 +9,7 @@ struct Config {
 const DEFAULT_MULT = 2
 
 fn main() {
-	Config { multiplier = 3, prefix = "val:" } -> cfg
+	Config { multiplier = 3 prefix = "val:" } -> cfg
 
 	// Create Item (from types.qd) which uses Config
 	cfg 100 create_item -> item
@@ -18,7 +18,7 @@ fn main() {
 	item format_item print nl
 
 	// Test with default multiplier
-	Config { multiplier = DEFAULT_MULT, prefix = "x" } -> cfg2
+	Config { multiplier = DEFAULT_MULT prefix = "x" } -> cfg2
 	cfg2 50 create_item -> item2
 	item2 format_item print nl
 }

@@ -5,7 +5,7 @@ Demonstrates graceful signal handling with Ctrl+C.
 ## Run
 
 ```bash
-quadc -r signal-catcher.qd
+quad run signal-catcher.qd
 ```
 
 Then press Ctrl+C to trigger a graceful shutdown.

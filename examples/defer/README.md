@@ -5,7 +5,7 @@ Demonstrates `defer` for cleanup operations.
 ## Run
 
 ```bash
-quadc -r defer.qd
+quad run defer.qd
 ```
 
 ## Features

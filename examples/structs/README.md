@@ -5,7 +5,7 @@ Demonstrates structs, methods, and constants.
 ## Run
 
 ```bash
-quadc -r structs.qd
+quad run structs.qd
 ```
 
 ## Features

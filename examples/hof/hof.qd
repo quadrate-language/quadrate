@@ -2,101 +2,125 @@
 ///
 /// This example demonstrates the hof module which provides
 /// functional programming combinators for Quadrate.
-
 use hof
 
 fn main() {
-    "=== Higher-Order Function Combinators ===" print nl
-    nl
+	"=== Higher-Order Function Combinators ===" print nl
+	nl
 
-    // ----------------------------------------
-    // bi: Apply two functions to the same value
-    // ----------------------------------------
-    "bi - Apply two functions to same value:" print nl
-    "  5 doubled and plus-3: " print
-    5 fn (x:i64 -- r:i64) { 2 * } fn (x:i64 -- r:i64) { 3 + } hof::bi
-    // Stack: 10 8
-    print " and " print print nl
+	// bi: Apply two functions to the same value
+	"bi - Apply two functions to same value:" print nl
+	"  5 doubled and plus-3: " print
+	5 fn (x:i64 -- r:i64) {
+		2 *
+	}
+		fn (x:i64 -- r:i64) {
+		3 +
+	}
+	hof::bi
+	print " and " print print nl
 
-    // Practical: check if a number is both positive AND even
-    "  Is 6 positive AND even? " print
-    6 fn (x:i64 -- r:i64) { 0 > } fn (x:i64 -- r:i64) { 2 % 0 == } hof::bi
-    and if { "yes" } else { "no" } print nl
-    nl
+	// Practical: check if a number is both positive AND even
+	"  Is 6 positive AND even? " print
+	6 fn (x:i64 -- r:i64) {
+		0 >
+	}
+		fn (x:i64 -- r:i64) {
+		2 % 0 ==
+	}
+	hof::bi
+	and if {
+		"yes"
+	} else {
+		"no"
+	}
+	print nl
+	nl
 
-    // ----------------------------------------
-    // keep: Apply function but preserve original
-    // ----------------------------------------
-    "keep - Apply but preserve original:" print nl
-    "  5 doubled, keeping original: " print
-    5 fn (x:i64 -- r:i64) { 2 * } hof::keep
-    // Stack: 10 5 (result below, original on top)
-    -> orig -> result
-    "result=" print result print ", original=" print orig print nl
-    nl
+	// keep: Apply function but preserve original
+	"keep - Apply but preserve original:" print nl
+	"  5 doubled, keeping original: " print
+	5 fn (x:i64 -- r:i64) {
+		2 *
+	}
+	hof::keep
+	-> orig -> result
+	"result=" print result print ", original=" print orig print nl
+	nl
 
-    // ----------------------------------------
-    // dip: Apply to second element, preserve top
-    // ----------------------------------------
-    "dip - Apply to second, preserve top:" print nl
-    "  Stack [10, 20], double the 10: " print
-    10 20 fn (x:i64 -- r:i64) { 2 * } hof::dip
-    // Stack: 20 20
-    "top=" print print ", below=" print print nl
-    nl
+	// dip: Apply to second element, preserve top
+	"dip - Apply to second, preserve top:" print nl
+	"  Stack [10, 20], double the 10: " print
+	10 20 fn (x:i64 -- r:i64) {
+		2 *
+	}
+	hof::dip
+	"top=" print print ", below=" print print nl
+	nl
 
-    // ----------------------------------------
-    // both: Apply same function to two values
-    // ----------------------------------------
-    "both - Apply same function to two values:" print nl
-    "  Square both 3 and 4: " print
-    3 4 fn (x:i64 -- r:i64) { dup * } hof::both
-    // Stack: 9 16
-    print " and " print print nl
-    nl
+	// both: Apply same function to two values
+	"both - Apply same function to two values:" print nl
+	"  Square both 3 and 4: " print
+	3 4 fn (x:i64 -- r:i64) {
+		dup *
+	}
+	hof::both
+	print " and " print print nl
+	nl
 
-    // ----------------------------------------
-    // when/unless: Conditional application
-    // ----------------------------------------
-    "when/unless - Conditional application:" print nl
-    "  Double 5 when true: " print
-    5 1 fn (x:i64 -- r:i64) { 2 * } hof::when print nl
-    "  Double 5 when false: " print
-    5 0 fn (x:i64 -- r:i64) { 2 * } hof::when print nl
-    "  Double 5 unless true: " print
-    5 1 fn (x:i64 -- r:i64) { 2 * } hof::unless print nl
-    "  Double 5 unless false: " print
-    5 0 fn (x:i64 -- r:i64) { 2 * } hof::unless print nl
-    nl
+	// when/unless: Conditional application
+	"when/unless - Conditional application:" print nl
+	"  Double 5 when true: " print
+	5 1 fn (x:i64 -- r:i64) {
+		2 *
+	}
+	hof::when print nl
+	"  Double 5 when false: " print
+	5 0 fn (x:i64 -- r:i64) {
+		2 *
+	}
+	hof::when print nl
+	"  Double 5 unless true: " print
+	5 1 fn (x:i64 -- r:i64) {
+		2 *
+	}
+	hof::unless print nl
+	"  Double 5 unless false: " print
+	5 0 fn (x:i64 -- r:i64) {
+		2 *
+	}
+	hof::unless print nl
+	nl
 
-    // ----------------------------------------
-    // times: Apply function n times
-    // ----------------------------------------
-    "times - Apply function n times:" print nl
-    "  Double 1 five times (1*2*2*2*2*2 = 32): " print
-    1 5 fn (x:i64 -- r:i64) { 2 * } hof::times print nl
-    "  Square 2 three times (2^8 = 256): " print
-    2 3 fn (x:i64 -- r:i64) { dup * } hof::times print nl
-    nl
+	// times: Apply function n times
+	"times - Apply function n times:" print nl
+	"  Double 1 five times (1*2*2*2*2*2 = 32): " print
+	1 5 fn (x:i64 -- r:i64) {
+		2 *
+	}
+	hof::times print nl
+	"  Square 2 three times (2^8 = 256): " print
+	2 3 fn (x:i64 -- r:i64) {
+		dup *
+	}
+	hof::times print nl
+	nl
 
-    // ----------------------------------------
-    // Practical example: Data validation
-    // ----------------------------------------
-    "Practical: Validate user age" print nl
-    25 -> age
+	// Practical example: Data validation
+	"Practical: Validate user age" print nl
+	25 -> age
 
-    // Check: positive, at least 18, at most 120
-    age
-    fn (x:i64 -- r:i64) { 0 > }
-    fn (x:i64 -- r:i64) { 18 >= }
-    hof::bi and
-    age 120 <=
-    and if {
-        "  Age " print age print " is valid!" print nl
-    } else {
-        "  Age " print age print " is invalid!" print nl
-    }
+	age
+	fn (x:i64 -- r:i64) { 0 > }
+	fn (x:i64 -- r:i64) { 18 >= }
+	hof::bi and
+	age 120 <=
+	and if {
+		"  Age " print age print " is valid!" print nl
+	} else {
+		"  Age " print age print " is invalid!" print nl
+	}
 
-    nl
-    "=== Done ===" print nl
+	nl
+	"=== Done ===" print nl
 }

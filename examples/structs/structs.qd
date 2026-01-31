@@ -8,8 +8,8 @@ const OriginY = 0.0
 
 // Define a new Point struct with x and y coordinates
 struct Point {
-	x:f64
-	y:f64
+	x: f64
+	y: f64
 }
 
 // Method: Calculate distance from origin using Pythagorean theorem
@@ -30,7 +30,7 @@ fn (p:Point) distance_to(other:Point -- dist:f64) {
 }
 
 // Method: Print a point as (x, y)
-fn (p:Point) print_point( -- ) {
+fn (p:Point) print_point() {
 	"(" print p @x print ", " print p @y print ")" print
 }
 
@@ -88,7 +88,10 @@ fn main() {
 
 	// Methods work on inline struct construction too
 	"Inline struct method call:" print nl
-	"  Point{5,12} to origin: " print Point { x = 5.0 y = 12.0 } distance_from_origin print nl
+	"  Point{5,12} to origin: " print Point {
+		x = 5.0 y = 12.0
+	}
+	distance_from_origin print nl
 	nl
 
 	"Done!" print nl

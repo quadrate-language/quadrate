@@ -5,7 +5,7 @@ Compute SHA-256 hash of files.
 ## Run
 
 ```bash
-quadc -r sha256sum.qd <file>
+quad run sha256sum.qd <file>
 ```
 
 ## Features

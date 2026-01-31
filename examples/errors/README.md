@@ -5,7 +5,7 @@ Demonstrates fallible functions and error handling.
 ## Run
 
 ```bash
-quadc -r errors.qd
+quad run errors.qd
 ```
 
 ## Features

@@ -10,11 +10,11 @@ struct State {
 
 fn main() {
 	// Create Vec3 values
-	math::Vec3 { x = 3.0, y = 4.0, z = 0.0 } -> p
-	math::Vec3 { x = 100.0, y = 200.0, z = 300.0 } -> v
+	math::Vec3 { x = 3.0 y = 4.0 z = 0.0 } -> p
+	math::Vec3 { x = 100.0 y = 200.0 z = 300.0 } -> v
 
 	// Create state with nested Vec3
-	State { pos = p, vel = v, mass = 42.0 } -> s
+	State { pos = p vel = v mass = 42.0 } -> s
 
 	// Access scalar field
 	s @mass print nl

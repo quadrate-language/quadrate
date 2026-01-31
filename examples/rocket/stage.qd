@@ -1,18 +1,18 @@
 // Engine and Stage definitions
 struct Engine {
-	thrust:f64
-	isp_vac:f64
-	isp_sl:f64
-	mass:f64
+	thrust:  f64
+	isp_vac: f64
+	isp_sl:  f64
+	mass:    f64
 }
 
 struct Stage {
-	dry_mass:f64
-	fuel_mass:f64
-	eng:Engine
-	eng_count:f64
-	diameter:f64
-	cd:f64
+	dry_mass:  f64
+	fuel_mass: f64
+	eng:       Engine
+	eng_count: f64
+	diameter:  f64
+	cd:        f64
 }
 
 pub fn stage_thrust(s:Stage -- t:f64) {

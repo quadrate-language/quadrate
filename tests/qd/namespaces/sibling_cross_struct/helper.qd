@@ -17,5 +17,5 @@ fn get_parent_name(p:Parent -- n:str) {
 
 fn make_wrapper(p:Parent lbl:str -- w:Wrapper) {
 	-> lbl -> p
-	Wrapper { parent = p, label = lbl }
+	Wrapper { parent = p label = lbl }
 }

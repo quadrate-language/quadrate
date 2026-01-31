@@ -6,7 +6,7 @@
 /// - Different response types (JSON, plain text)
 /// - Path and query parameters
 ///
-/// Run with: quadc examples/rest-api/rest-api.qd -r
+/// Run with: quad run rest-api.qd
 ///
 /// Try these endpoints:
 ///   curl http://localhost:3000/
@@ -16,26 +16,13 @@
 ///   curl http://localhost:3000/search?q=hello
 use http
 
-// ============================================================
-// Middleware
-// ============================================================
-
-/// Global middleware - runs on every request
 fn logger_middleware(c:ptr -- ) {
 	-> c
-	// In a real app, you might log to a file
-	// For now, we just add a response header
 }
 
-/// API middleware - runs on /api/* routes
 fn api_middleware(c:ptr -- ) {
 	-> c
-	// Could check authentication, rate limiting, etc.
 }
-
-// ============================================================
-// Root Handlers
-// ============================================================
 
 fn handle_root(c:ptr -- ) {
 	-> c
@@ -47,10 +34,6 @@ fn handle_search(c:ptr -- ) {
 	c "q" http::query_param -> query
 	c http::StatusOK query http::string
 }
-
-// ============================================================
-// User Handlers
-// ============================================================
 
 fn handle_list_users(c:ptr -- ) {
 	-> c
@@ -74,10 +57,6 @@ fn handle_delete_user(c:ptr -- ) {
 	c http::StatusOK "{}" http::json
 }
 
-// ============================================================
-// Post Handlers
-// ============================================================
-
 fn handle_list_posts(c:ptr -- ) {
 	-> c
 	c http::StatusOK "[]" http::json
@@ -88,10 +67,6 @@ fn handle_get_post(c:ptr -- ) {
 	c "id" http::param -> id
 	c http::StatusOK id http::json
 }
-
-// ============================================================
-// Main
-// ============================================================
 
 fn main() {
 	"REST API Server" print nl
@@ -109,35 +84,23 @@ fn main() {
 	nl
 	"Starting on http://localhost:3000" print nl
 
-	// Create engine
 	http::engine -> e
-
-	// Add global middleware
 	e &logger_middleware http::use
 
-	// Root routes
 	e "/" &handle_root http::GET
 	e "/search" &handle_search http::GET
 
-	// Create /api group
 	e "/api" http::group -> api
-
-	// Add API middleware to group
 	api &api_middleware http::group_use
 
-	// User routes: /api/users/*
 	api "/users" &handle_list_users http::group_GET
 	api "/users/:id" &handle_get_user http::group_GET
 	api "/users" &handle_create_user http::group_POST
 	api "/users/:id" &handle_delete_user http::group_DELETE
 
-	// Post routes: /api/posts/*
 	api "/posts" &handle_list_posts http::group_GET
 	api "/posts/:id" &handle_get_post http::group_GET
 
-	// Start server
 	e ":3000" http::run!
-
-	// Cleanup
 	e http::free_engine
 }

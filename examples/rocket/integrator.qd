@@ -19,11 +19,11 @@ pub fn step(stage:Stage state:State dt:f64 -- new:State) {
 	}
 
 	State {
-		t = state @t dt +,
-		pos = new_pos,
-		vel = new_vel,
-		mass = new_mass,
-		fuel = new_fuel,
+		t = state @t dt +
+		pos = new_pos
+		vel = new_vel
+		mass = new_mass
+		fuel = new_fuel
 		pitch = state @pitch
 	}
 }

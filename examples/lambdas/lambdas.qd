@@ -1,29 +1,34 @@
 // Anonymous Functions (Lambdas) Example
 // Demonstrates first-class functions in Quadrate
-
 fn main() {
-    // Define an anonymous function and store it in a variable
-    fn (x:i64 -- r:i64) { 2 * } -> double
+	// Define an anonymous function and store it in a variable
+	fn (x:i64 -- r:i64) { 2 * } -> double
 
-    // Call it using the 'call' instruction
-    "5 doubled:" print nl
-    5 double call print nl
+	// Call it using the 'call' instruction
+	"5 doubled:" print nl
+	5 double call print nl
 
-    // Reuse the same function multiple times
-    "Doubling 1 through 5:" print nl
-    1 6 1 for i {
-        i double call print nl
-    }
+	// Reuse the same function multiple times
+	"Doubling 1 through 5:" print nl
+	1 6 1 for i {
+		i double call print nl
+	}
 
-    // Anonymous functions can be used inline without storing
-    "3 tripled inline:" print nl
-    3 fn (x:i64 -- r:i64) { 3 * } call print nl
+	// Anonymous functions can be used inline without storing
+	"3 tripled inline:" print nl
+	3 fn (x:i64 -- r:i64) {
+		3 *
+	}
+	call print nl
 
-    // Functions with multiple parameters
-    "10 + 20 (inline):" print nl
-    10 20 fn (a:i64 b:i64 -- r:i64) { + } call print nl
+	// Functions with multiple parameters
+	"10 + 20 (inline):" print nl
+	10 20 fn (a:i64 b:i64 -- r:i64) {
+		+
+	}
+	call print nl
 
-    // Side-effect functions (no return value)
-    "Greeting:" print nl
-    fn () { "Hello from lambda!" print nl } call
+	// Side-effect functions (no return value)
+	"Greeting:" print nl
+	fn () { "Hello from lambda!" print nl } call
 }

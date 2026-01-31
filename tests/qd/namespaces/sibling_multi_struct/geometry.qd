@@ -14,12 +14,12 @@ struct Triangle {
 
 fn make_line(p1:Point2D p2:Point2D -- l:Line) {
 	-> p2 -> p1
-	Line { start = p1, end = p2 }
+	Line { start = p1 end = p2 }
 }
 
 fn make_triangle(p1:Point2D p2:Point2D p3:Point2D -- t:Triangle) {
 	-> p3 -> p2 -> p1
-	Triangle { a = p1, b = p2, c = p3 }
+	Triangle { a = p1 b = p2 c = p3 }
 }
 
 fn point2d_dist(v1:Point2D v2:Point2D -- d:f64) {

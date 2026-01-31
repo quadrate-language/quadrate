@@ -5,7 +5,7 @@ Recursive Fibonacci sequence.
 ## Run
 
 ```bash
-quadc -r fibonacci.qd
+quad run fibonacci.qd
 ```
 
 ## Features

@@ -5,7 +5,7 @@ Simple HTTP server using the `net::` module.
 ## Run
 
 ```bash
-quadc -r web-server.qd
+quad run web-server.qd
 ```
 
 Then visit http://localhost:8080

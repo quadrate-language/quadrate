@@ -3,12 +3,12 @@
 use math
 
 struct State {
-	t:f64
-	pos:math::Vec3
-	vel:math::Vec3
-	mass:f64
-	fuel:f64
-	pitch:f64
+	t:     f64
+	pos:   math::Vec3
+	vel:   math::Vec3
+	mass:  f64
+	fuel:  f64
+	pitch: f64
 }
 
 pub fn altitude(state:State -- alt:f64) {

@@ -8,5 +8,5 @@ fn process_state(s:State -- result:i64) {
 
 fn create_state(val:i64 n:str -- s:State) {
 	-> n -> val
-	State { value = val, name = n }
+	State { value = val name = n }
 }
