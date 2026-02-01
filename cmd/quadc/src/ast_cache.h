@@ -52,4 +52,7 @@ private:
 // Collect all imported module names from an AST by traversing USE statements
 std::vector<std::string> collectImportedModules(Qd::IAstNode* root);
 
+// Check if an AST has FFI import statements (import "lib.a" as "name" { ... })
+bool hasFFIImportsInAST(Qd::IAstNode* root);
+
 #endif

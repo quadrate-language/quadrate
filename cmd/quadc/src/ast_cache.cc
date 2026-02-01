@@ -149,3 +149,21 @@ std::vector<std::string> collectImportedModules(Qd::IAstNode* root) {
 	collect(root);
 	return imports;
 }
+
+bool hasFFIImportsInAST(Qd::IAstNode* root) {
+	std::function<bool(Qd::IAstNode*)> check = [&](Qd::IAstNode* node) -> bool {
+		if (!node) {
+			return false;
+		}
+		if (node->type() == Qd::IAstNode::Type::IMPORT_STATEMENT) {
+			return true;
+		}
+		for (auto* child : node->children()) {
+			if (check(child)) {
+				return true;
+			}
+		}
+		return false;
+	};
+	return check(root);
+}

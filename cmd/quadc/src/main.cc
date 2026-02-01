@@ -428,6 +428,8 @@ int main(int argc, char** argv) {
 				parsedMod.root = root;
 				// Note: parsedMod.ast is nullptr - AST ownership is held by the global cache
 				parsedMod.importedModules = collectImportedModules(root);
+				parsedMod.hasFFIImports = hasFFIImportsInAST(root);
+				parsedMod.hasNativeStdlibModules = hasNativeStdlibImports(parsedMod.importedModules);
 				// Check if this module should be merged into main namespace (by package name)
 				parsedMod.mergeIntoMain = modulesToMergeIntoMain.count(packageName) > 0;
 
