@@ -44,7 +44,7 @@ static void printUsage() {
 	std::cout << "  quadpm lock\n";
 	std::cout << "  quadpm get https://git.sr.ht/~user/zlib\n";
 	std::cout << "  quadpm get https://git.sr.ht/~user/zlib@1.2.0\n";
-	std::cout << "  quadpm get https://github.com/user/http@main\n";
+	std::cout << "  quadpm get https://github.com/user/http@master\n";
 	std::cout << "  quadpm list\n\n";
 	std::cout << "qd.json format (npm-compatible):\n";
 	std::cout << "  {\n";

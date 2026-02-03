@@ -122,6 +122,12 @@ std::vector<Dependency> parseDependencies(const std::string& manifestPath);
 // Create or update a namespace symlink
 bool createNamespaceSymlink(const std::string& namespaceName, const std::string& targetPath);
 
+// Ensure namespace symlink exists for an installed module
+// Parses qd.json to determine namespace, creates symlink if needed
+// Returns true on success
+bool ensureNamespaceSymlink(const std::string& installedDir, const std::string& installedDirName,
+							const std::string& fallbackModuleName);
+
 // Get all namespaces that point to a given hostPath
 std::vector<std::string> getNamespacesForPackage(const std::string& hostPathWithRef);
 

@@ -148,7 +148,7 @@ std::vector<Dependency> parseDependencies(const std::string& manifestPath) {
 					// Check if URL has inline version (@tag)
 					GitRef gitRef = parseGitUrl(urlStr);
 					dep.url = gitRef.url;
-					if (gitRef.ref != "main") {
+					if (gitRef.ref != "master") {
 						dep.version = gitRef.ref;
 					}
 					dep.isPath = (dep.url.size() > 0 &&
