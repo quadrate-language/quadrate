@@ -1,0 +1,8 @@
+{
+  "name": "quadrate-store",
+  "version": "1.0.0",
+  "description": "Quadrate diskette store",
+  "dependencies": {
+    "http": "https://github.com/quadrate-language/http"
+  }
+}
