@@ -10,6 +10,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
+#include <sys/stat.h>
 
 #define FILE_REGISTRY_SIZE 256
 
@@ -870,5 +871,214 @@ int usr_io_write_file(qd_context* ctx) {
 int usr_io_flush(qd_context* ctx) {
     (void)ctx;
     fflush(stdout);
+    return (int){0};
+}
+
+int usr_io_stat_size(qd_context* ctx) {
+    size_t stack_size = qd_stack_size(ctx->st);
+    if (stack_size < 1) {
+        fprintf(stderr, "Fatal error in io::stat_size: Stack underflow (need 1, have %zu)\n", stack_size);
+        qd_print_stack_trace(ctx);
+        abort();
+    }
+
+    qd_stack_element_t path_elem;
+    qd_stack_error err = qd_stack_pop(ctx->st, &path_elem);
+    if (err != QD_STACK_OK) {
+        fprintf(stderr, "Fatal error in io::stat_size: Failed to pop path\n");
+        abort();
+    }
+    if (path_elem.type != QD_STACK_TYPE_STR) {
+        fprintf(stderr, "Fatal error in io::stat_size: Expected string for path, got %d\n", path_elem.type);
+        abort();
+    }
+
+    const char* path = qd_string_data(path_elem.value.s);
+    if (!path) {
+        qd_string_release(path_elem.value.s);
+        ctx->error_code = IO_ERR_INVALID_ARG;
+        qd_set_error_msg(ctx, "io::stat_size: null path string");
+        qd_push_i(ctx, IO_ERR_INVALID_ARG);
+        return (int){IO_ERR_INVALID_ARG};
+    }
+
+    struct stat st;
+    if (stat(path, &st) != 0) {
+        int saved_errno = errno;
+        qd_string_release(path_elem.value.s);
+        if (saved_errno == ENOENT) {
+            ctx->error_code = IO_ERR_NOT_FOUND;
+        } else if (saved_errno == EACCES) {
+            ctx->error_code = IO_ERR_PERMISSION;
+        } else {
+            ctx->error_code = IO_ERR_STAT;
+        }
+        char err_buf[256];
+        snprintf(err_buf, sizeof(err_buf), "%s", strerror(saved_errno));
+        qd_set_error_msg(ctx, err_buf);
+        qd_push_i(ctx, ctx->error_code);
+        return (int)ctx->error_code;
+    }
+
+    qd_string_release(path_elem.value.s);
+    qd_push_i(ctx, (int64_t)st.st_size);
+    qd_push_i(ctx, IO_ERR_OK);
+    return (int){0};
+}
+
+int usr_io_stat_mtime(qd_context* ctx) {
+    size_t stack_size = qd_stack_size(ctx->st);
+    if (stack_size < 1) {
+        fprintf(stderr, "Fatal error in io::stat_mtime: Stack underflow (need 1, have %zu)\n", stack_size);
+        qd_print_stack_trace(ctx);
+        abort();
+    }
+
+    qd_stack_element_t path_elem;
+    qd_stack_error err = qd_stack_pop(ctx->st, &path_elem);
+    if (err != QD_STACK_OK) {
+        fprintf(stderr, "Fatal error in io::stat_mtime: Failed to pop path\n");
+        abort();
+    }
+    if (path_elem.type != QD_STACK_TYPE_STR) {
+        fprintf(stderr, "Fatal error in io::stat_mtime: Expected string for path, got %d\n", path_elem.type);
+        abort();
+    }
+
+    const char* path = qd_string_data(path_elem.value.s);
+    if (!path) {
+        qd_string_release(path_elem.value.s);
+        ctx->error_code = IO_ERR_INVALID_ARG;
+        qd_set_error_msg(ctx, "io::stat_mtime: null path string");
+        qd_push_i(ctx, IO_ERR_INVALID_ARG);
+        return (int){IO_ERR_INVALID_ARG};
+    }
+
+    struct stat st;
+    if (stat(path, &st) != 0) {
+        int saved_errno = errno;
+        qd_string_release(path_elem.value.s);
+        if (saved_errno == ENOENT) {
+            ctx->error_code = IO_ERR_NOT_FOUND;
+        } else if (saved_errno == EACCES) {
+            ctx->error_code = IO_ERR_PERMISSION;
+        } else {
+            ctx->error_code = IO_ERR_STAT;
+        }
+        char err_buf[256];
+        snprintf(err_buf, sizeof(err_buf), "%s", strerror(saved_errno));
+        qd_set_error_msg(ctx, err_buf);
+        qd_push_i(ctx, ctx->error_code);
+        return (int)ctx->error_code;
+    }
+
+    qd_string_release(path_elem.value.s);
+    qd_push_i(ctx, (int64_t)st.st_mtime);
+    qd_push_i(ctx, IO_ERR_OK);
+    return (int){0};
+}
+
+int usr_io_stat_atime(qd_context* ctx) {
+    size_t stack_size = qd_stack_size(ctx->st);
+    if (stack_size < 1) {
+        fprintf(stderr, "Fatal error in io::stat_atime: Stack underflow (need 1, have %zu)\n", stack_size);
+        qd_print_stack_trace(ctx);
+        abort();
+    }
+
+    qd_stack_element_t path_elem;
+    qd_stack_error err = qd_stack_pop(ctx->st, &path_elem);
+    if (err != QD_STACK_OK) {
+        fprintf(stderr, "Fatal error in io::stat_atime: Failed to pop path\n");
+        abort();
+    }
+    if (path_elem.type != QD_STACK_TYPE_STR) {
+        fprintf(stderr, "Fatal error in io::stat_atime: Expected string for path, got %d\n", path_elem.type);
+        abort();
+    }
+
+    const char* path = qd_string_data(path_elem.value.s);
+    if (!path) {
+        qd_string_release(path_elem.value.s);
+        ctx->error_code = IO_ERR_INVALID_ARG;
+        qd_set_error_msg(ctx, "io::stat_atime: null path string");
+        qd_push_i(ctx, IO_ERR_INVALID_ARG);
+        return (int){IO_ERR_INVALID_ARG};
+    }
+
+    struct stat st;
+    if (stat(path, &st) != 0) {
+        int saved_errno = errno;
+        qd_string_release(path_elem.value.s);
+        if (saved_errno == ENOENT) {
+            ctx->error_code = IO_ERR_NOT_FOUND;
+        } else if (saved_errno == EACCES) {
+            ctx->error_code = IO_ERR_PERMISSION;
+        } else {
+            ctx->error_code = IO_ERR_STAT;
+        }
+        char err_buf[256];
+        snprintf(err_buf, sizeof(err_buf), "%s", strerror(saved_errno));
+        qd_set_error_msg(ctx, err_buf);
+        qd_push_i(ctx, ctx->error_code);
+        return (int)ctx->error_code;
+    }
+
+    qd_string_release(path_elem.value.s);
+    qd_push_i(ctx, (int64_t)st.st_atime);
+    qd_push_i(ctx, IO_ERR_OK);
+    return (int){0};
+}
+
+int usr_io_stat_mode(qd_context* ctx) {
+    size_t stack_size = qd_stack_size(ctx->st);
+    if (stack_size < 1) {
+        fprintf(stderr, "Fatal error in io::stat_mode: Stack underflow (need 1, have %zu)\n", stack_size);
+        qd_print_stack_trace(ctx);
+        abort();
+    }
+
+    qd_stack_element_t path_elem;
+    qd_stack_error err = qd_stack_pop(ctx->st, &path_elem);
+    if (err != QD_STACK_OK) {
+        fprintf(stderr, "Fatal error in io::stat_mode: Failed to pop path\n");
+        abort();
+    }
+    if (path_elem.type != QD_STACK_TYPE_STR) {
+        fprintf(stderr, "Fatal error in io::stat_mode: Expected string for path, got %d\n", path_elem.type);
+        abort();
+    }
+
+    const char* path = qd_string_data(path_elem.value.s);
+    if (!path) {
+        qd_string_release(path_elem.value.s);
+        ctx->error_code = IO_ERR_INVALID_ARG;
+        qd_set_error_msg(ctx, "io::stat_mode: null path string");
+        qd_push_i(ctx, IO_ERR_INVALID_ARG);
+        return (int){IO_ERR_INVALID_ARG};
+    }
+
+    struct stat st;
+    if (stat(path, &st) != 0) {
+        int saved_errno = errno;
+        qd_string_release(path_elem.value.s);
+        if (saved_errno == ENOENT) {
+            ctx->error_code = IO_ERR_NOT_FOUND;
+        } else if (saved_errno == EACCES) {
+            ctx->error_code = IO_ERR_PERMISSION;
+        } else {
+            ctx->error_code = IO_ERR_STAT;
+        }
+        char err_buf[256];
+        snprintf(err_buf, sizeof(err_buf), "%s", strerror(saved_errno));
+        qd_set_error_msg(ctx, err_buf);
+        qd_push_i(ctx, ctx->error_code);
+        return (int)ctx->error_code;
+    }
+
+    qd_string_release(path_elem.value.s);
+    // Return just the permission bits (lower 12 bits of mode)
+    qd_push_i(ctx, (int64_t)(st.st_mode & 07777));
+    qd_push_i(ctx, IO_ERR_OK);
     return (int){0};
 }

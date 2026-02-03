@@ -64,3 +64,141 @@ pub const BgMagenta = "\x1b[45m"
 pub const BgCyan = "\x1b[46m"
 /// White background.
 pub const BgWhite = "\x1b[47m"
+
+// ============================================================================
+// Cursor and Screen Control
+// ============================================================================
+
+/// Clear entire screen.
+pub const Clear = "\x1b[2J"
+/// Clear from cursor to end of screen.
+pub const ClearToEnd = "\x1b[0J"
+/// Clear from cursor to beginning of screen.
+pub const ClearToBegin = "\x1b[1J"
+/// Clear entire line.
+pub const ClearLine = "\x1b[2K"
+/// Clear from cursor to end of line.
+pub const ClearLineToEnd = "\x1b[0K"
+/// Clear from cursor to beginning of line.
+pub const ClearLineToBegin = "\x1b[1K"
+
+/// Move cursor to home position (1, 1).
+pub const Home = "\x1b[H"
+/// Save cursor position.
+pub const SaveCursor = "\x1b[s"
+/// Restore cursor position.
+pub const RestoreCursor = "\x1b[u"
+/// Hide cursor.
+pub const HideCursor = "\x1b[?25l"
+/// Show cursor.
+pub const ShowCursor = "\x1b[?25h"
+
+/// Move cursor up one line.
+pub const CursorUp = "\x1b[1A"
+/// Move cursor down one line.
+pub const CursorDown = "\x1b[1B"
+/// Move cursor right one column.
+pub const CursorRight = "\x1b[1C"
+/// Move cursor left one column.
+pub const CursorLeft = "\x1b[1D"
+
+/// Scroll up one line.
+pub const ScrollUp = "\x1b[1S"
+/// Scroll down one line.
+pub const ScrollDown = "\x1b[1T"
+
+/// Enter alternate screen buffer.
+pub const AltScreen = "\x1b[?1049h"
+/// Exit alternate screen buffer.
+pub const MainScreen = "\x1b[?1049l"
+
+// ============================================================================
+// 256-Color Support (requires terminal with 256-color support)
+// ============================================================================
+
+use fmt
+
+/// Set foreground to 256-color palette value (0-255).
+/// @param n i64 Color index (0-255)
+/// @return s str ANSI escape sequence
+/// @example 196 term::fg256 print "Red" print term::Reset print nl
+pub fn fg256(n:i64 -- s:str) {
+	n "\x1b[38;5;%dm" fmt::sprintf
+}
+
+/// Set background to 256-color palette value (0-255).
+/// @param n i64 Color index (0-255)
+/// @return s str ANSI escape sequence
+/// @example 21 term::bg256 print "Blue BG" print term::Reset print nl
+pub fn bg256(n:i64 -- s:str) {
+	n "\x1b[48;5;%dm" fmt::sprintf
+}
+
+// ============================================================================
+// True Color (24-bit RGB) Support
+// ============================================================================
+
+/// Set foreground to RGB color.
+/// @param r i64 Red component (0-255)
+/// @param g i64 Green component (0-255)
+/// @param b i64 Blue component (0-255)
+/// @return s str ANSI escape sequence
+/// @example 255 128 0 term::rgb print "Orange" print term::Reset print nl
+pub fn rgb(r:i64 g:i64 b:i64 -- s:str) {
+	r g b "\x1b[38;2;%d;%d;%dm" fmt::sprintf
+}
+
+/// Set background to RGB color.
+/// @param r i64 Red component (0-255)
+/// @param g i64 Green component (0-255)
+/// @param b i64 Blue component (0-255)
+/// @return s str ANSI escape sequence
+/// @example 0 0 128 term::bg_rgb print "Navy BG" print term::Reset print nl
+pub fn bg_rgb(r:i64 g:i64 b:i64 -- s:str) {
+	r g b "\x1b[48;2;%d;%d;%dm" fmt::sprintf
+}
+
+// ============================================================================
+// Cursor Positioning
+// ============================================================================
+
+/// Move cursor to specific position (1-indexed).
+/// @param row i64 Row number (1-based)
+/// @param col i64 Column number (1-based)
+/// @return s str ANSI escape sequence
+/// @example 10 5 term::goto print
+pub fn goto(row:i64 col:i64 -- s:str) {
+	row col "\x1b[%d;%dH" fmt::sprintf
+}
+
+/// Move cursor up by n lines.
+/// @param n i64 Number of lines
+/// @return s str ANSI escape sequence
+/// @example 5 term::up print
+pub fn up(n:i64 -- s:str) {
+	n "\x1b[%dA" fmt::sprintf
+}
+
+/// Move cursor down by n lines.
+/// @param n i64 Number of lines
+/// @return s str ANSI escape sequence
+/// @example 5 term::down print
+pub fn down(n:i64 -- s:str) {
+	n "\x1b[%dB" fmt::sprintf
+}
+
+/// Move cursor right by n columns.
+/// @param n i64 Number of columns
+/// @return s str ANSI escape sequence
+/// @example 10 term::right print
+pub fn right(n:i64 -- s:str) {
+	n "\x1b[%dC" fmt::sprintf
+}
+
+/// Move cursor left by n columns.
+/// @param n i64 Number of columns
+/// @return s str ANSI escape sequence
+/// @example 10 term::left print
+pub fn left(n:i64 -- s:str) {
+	n "\x1b[%dD" fmt::sprintf
+}

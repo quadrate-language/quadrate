@@ -64,8 +64,7 @@ namespace Qd {
 	}
 
 	// Format struct fields with aligned types (spaces for alignment, tabs for indent)
-	static std::vector<std::string> formatStructFieldsAligned(const std::vector<std::string>& fields,
-			int indentLevel) {
+	static std::vector<std::string> formatStructFieldsAligned(const std::vector<std::string>& fields, int indentLevel) {
 		if (fields.empty()) {
 			return fields;
 		}

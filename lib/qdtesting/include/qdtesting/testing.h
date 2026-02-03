@@ -32,6 +32,11 @@ int usr_testing_assert_false(qd_context* ctx);
 /// @return Execution result (always non-zero)
 int usr_testing_fail(qd_context* ctx);
 
+/// Assert that two floats are approximately equal within epsilon
+/// @param ctx Quadrate context
+/// @return Execution result (0 for success, non-zero for failure)
+int usr_testing_assert_approx_eq(qd_context* ctx);
+
 #ifdef __cplusplus
 }
 #endif

@@ -279,3 +279,201 @@ pub fn to_upper(c:i64 -- result:i64) {
 		c
 	}
 }
+
+/// Check if character is a hexadecimal digit (0-9, A-F, a-f).
+/// @param c i64 Character code
+/// @return result i64 1 if hex digit, 0 otherwise
+/// @example 65 unicode::is_hex_digit print  // 1 (A)
+pub fn is_hex_digit(c:i64 -- result:i64) {
+	-> c
+	c is_digit
+	c A >= c F <= and or
+	c a >= c f <= and or
+}
+
+/// Check if character is printable (space through tilde, ASCII 32-126).
+/// @param c i64 Character code
+/// @return result i64 1 if printable, 0 otherwise
+/// @example 65 unicode::is_print print  // 1
+pub fn is_print(c:i64 -- result:i64) {
+	-> c
+	c space >= c tilde <= and
+}
+
+/// Check if character is a control character (ASCII 0-31 and 127).
+/// @param c i64 Character code
+/// @return result i64 1 if control character, 0 otherwise
+/// @example 10 unicode::is_control print  // 1 (newline)
+pub fn is_control(c:i64 -- result:i64) {
+	-> c
+	c 0 >= c 31 <= and
+	c 127 == or
+}
+
+/// Check if character is punctuation (printable but not alphanumeric or space).
+/// @param c i64 Character code
+/// @return result i64 1 if punctuation, 0 otherwise
+/// @example 33 unicode::is_punct print  // 1 (!)
+pub fn is_punct(c:i64 -- result:i64) {
+	-> c
+	c is_print
+	c is_alnum 0 == and
+	c space != and
+}
+
+/// Check if character is a valid identifier start (letter or underscore).
+/// @param c i64 Character code
+/// @return result i64 1 if valid identifier start, 0 otherwise
+/// @example 95 unicode::is_ident_start print  // 1 (_)
+pub fn is_ident_start(c:i64 -- result:i64) {
+	-> c
+	c is_alpha c underscore == or
+}
+
+/// Check if character is a valid identifier continuation (letter, digit, or underscore).
+/// @param c i64 Character code
+/// @return result i64 1 if valid identifier continuation, 0 otherwise
+/// @example 95 unicode::is_ident_cont print  // 1 (_)
+pub fn is_ident_cont(c:i64 -- result:i64) {
+	-> c
+	c is_alnum c underscore == or
+}
+
+/// Check if character is ASCII (0-127).
+/// @param c i64 Character code
+/// @return result i64 1 if ASCII, 0 otherwise
+/// @example 65 unicode::is_ascii print  // 1
+pub fn is_ascii(c:i64 -- result:i64) {
+	-> c
+	c 0 >= c 127 <= and
+}
+
+/// Convert digit character to its numeric value.
+/// @param c i64 Character code (must be a digit)
+/// @return result i64 Numeric value (0-9), or -1 if not a digit
+/// @example 53 unicode::digit_value print  // 5
+pub fn digit_value(c:i64 -- result:i64) {
+	-> c
+	c is_digit if {
+		c digit0 -
+	} else {
+		-1
+	}
+}
+
+/// Convert hex digit character to its numeric value.
+/// @param c i64 Character code (must be a hex digit)
+/// @return result i64 Numeric value (0-15), or -1 if not a hex digit
+/// @example 65 unicode::hex_digit_value print  // 10 (A)
+pub fn hex_digit_value(c:i64 -- result:i64) {
+	-> c
+	c is_digit if {
+		c digit0 -
+	} else {
+		c A >= c F <= and if {
+			c A - 10 +
+		} else {
+			c a >= c f <= and if {
+				c a - 10 +
+			} else {
+				-1
+			}
+		}
+	}
+}
+
+// ============================================================
+// UTF-8 Utilities
+// ============================================================
+
+/// Check if byte is a UTF-8 continuation byte (10xxxxxx).
+/// @param b i64 Byte value
+/// @return result i64 1 if continuation byte, 0 otherwise
+/// @example 0x80 unicode::is_utf8_cont print  // 1
+pub fn is_utf8_cont(b:i64 -- result:i64) {
+	-> b
+	b 0xC0 and 0x80 ==
+}
+
+/// Check if byte is the start of a UTF-8 sequence.
+/// @param b i64 Byte value
+/// @return result i64 1 if start byte, 0 otherwise
+/// @example 0xC2 unicode::is_utf8_start print  // 1
+pub fn is_utf8_start(b:i64 -- result:i64) {
+	-> b
+	b is_utf8_cont 0 ==
+}
+
+/// Get the number of bytes in a UTF-8 sequence based on the first byte.
+/// Returns 1 for ASCII, 2-4 for multi-byte sequences, 0 for invalid.
+/// @param b i64 First byte of UTF-8 sequence
+/// @return len i64 Number of bytes (1-4), or 0 if invalid
+/// @example 0xC2 unicode::utf8_seq_len print  // 2
+pub fn utf8_seq_len(b:i64 -- len:i64) {
+	-> b
+	b 0 < b 255 > or if {
+		0
+	} else {
+		b 0x80 < if {
+			1  // ASCII
+		} else {
+			b 0xC0 < if {
+				0  // Invalid (continuation byte)
+			} else {
+				b 0xE0 < if {
+					2  // 110xxxxx
+				} else {
+					b 0xF0 < if {
+						3  // 1110xxxx
+					} else {
+						b 0xF8 < if {
+							4  // 11110xxx
+						} else {
+							0  // Invalid
+						}
+					}
+				}
+			}
+		}
+	}
+}
+
+/// Get the number of UTF-8 bytes needed to encode a codepoint.
+/// @param cp i64 Unicode codepoint
+/// @return len i64 Number of bytes needed (1-4), or 0 if invalid
+/// @example 0x00E9 unicode::utf8_encode_len print  // 2 (é)
+pub fn utf8_encode_len(cp:i64 -- len:i64) {
+	-> cp
+	cp 0 < if {
+		0
+	} else {
+		cp 0x80 < if {
+			1
+		} else {
+			cp 0x800 < if {
+				2
+			} else {
+				cp 0x10000 < if {
+					3
+				} else {
+					cp 0x110000 < if {
+						4
+					} else {
+						0  // Invalid (beyond Unicode range)
+					}
+				}
+			}
+		}
+	}
+}
+
+/// Check if a codepoint is valid Unicode.
+/// @param cp i64 Codepoint to check
+/// @return valid i64 1 if valid, 0 otherwise
+/// @example 0x1F600 unicode::is_valid_codepoint print  // 1 (😀)
+pub fn is_valid_codepoint(cp:i64 -- valid:i64) {
+	-> cp
+	cp 0 >= cp 0x10FFFF <= and
+	// Also exclude surrogates (0xD800-0xDFFF)
+	cp 0xD800 < cp 0xDFFF > or and
+}

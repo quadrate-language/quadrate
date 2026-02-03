@@ -8,11 +8,188 @@ test "flag error constants" {
 	flag::ErrInvalidValue 4 testing::assert_eq
 }
 
-test "flag::parse creates struct" {
-	// Test that parse works with no args
-	// We can't easily mock argv, but we can test the structure exists
-	// and the error handling paths
-	flag::ErrNotFound 0 > testing::assert_true
-	flag::ErrNoValue flag::ErrNotFound > testing::assert_true
-	flag::ErrInvalidValue flag::ErrNoValue > testing::assert_true
+test "flag::boolean finds flag" {
+	flag::Flag {
+		argc = 3
+		argv = "\n--verbose\n--debug\n--help\n"
+	} -> f
+
+	f "--verbose" flag::boolean 1 testing::assert_eq
+	f "--debug" flag::boolean 1 testing::assert_eq
+	f "--help" flag::boolean 1 testing::assert_eq
+}
+
+test "flag::boolean not found" {
+	flag::Flag {
+		argc = 2
+		argv = "\n--verbose\n--debug\n"
+	} -> f
+
+	f "--quiet" flag::boolean 0 testing::assert_eq
+	f "--help" flag::boolean 0 testing::assert_eq
+}
+
+test "flag::boolean with empty args" {
+	flag::Flag {
+		argc = 0
+		argv = "\n"
+	} -> f
+
+	f "--verbose" flag::boolean 0 testing::assert_eq
+}
+
+test "flag::boolean partial match should not match" {
+	flag::Flag {
+		argc = 1
+		argv = "\n--verbose-mode\n"
+	} -> f
+
+	f "--verbose" flag::boolean 0 testing::assert_eq
+	f "--verbose-mode" flag::boolean 1 testing::assert_eq
+}
+
+test "flag::string gets value" {
+	flag::Flag {
+		argc = 2
+		argv = "\n--name\nJohn\n"
+	} -> f
+
+	f "--name" flag::string! "John" testing::assert_eq
+}
+
+test "flag::string multiple flags" {
+	flag::Flag {
+		argc = 4
+		argv = "\n--first\nAlice\n--last\nSmith\n"
+	} -> f
+
+	f "--first" flag::string! "Alice" testing::assert_eq
+	f "--last" flag::string! "Smith" testing::assert_eq
+}
+
+test "flag::string with numbers" {
+	flag::Flag {
+		argc = 2
+		argv = "\n--port\n8080\n"
+	} -> f
+
+	f "--port" flag::string! "8080" testing::assert_eq
+}
+
+test "flag::int gets value" {
+	flag::Flag {
+		argc = 2
+		argv = "\n--count\n42\n"
+	} -> f
+
+	f "--count" flag::int! 42 testing::assert_eq
+}
+
+test "flag::int negative value" {
+	flag::Flag {
+		argc = 2
+		argv = "\n--offset\n-10\n"
+	} -> f
+
+	f "--offset" flag::int! -10 testing::assert_eq
+}
+
+test "flag::int zero" {
+	flag::Flag {
+		argc = 2
+		argv = "\n--level\n0\n"
+	} -> f
+
+	f "--level" flag::int! 0 testing::assert_eq
+}
+
+test "flag::int large value" {
+	flag::Flag {
+		argc = 2
+		argv = "\n--size\n1000000\n"
+	} -> f
+
+	f "--size" flag::int! 1000000 testing::assert_eq
+}
+
+test "flag::float gets value" {
+	flag::Flag {
+		argc = 2
+		argv = "\n--rate\n3.14\n"
+	} -> f
+
+	f "--rate" flag::float! -> val
+	val 3.13 > testing::assert_true
+	val 3.15 < testing::assert_true
+}
+
+test "flag::float negative value" {
+	flag::Flag {
+		argc = 2
+		argv = "\n--temp\n-5.5\n"
+	} -> f
+
+	f "--temp" flag::float! -> val
+	val -5.6 > testing::assert_true
+	val -5.4 < testing::assert_true
+}
+
+test "flag::float whole number" {
+	flag::Flag {
+		argc = 2
+		argv = "\n--factor\n2.0\n"
+	} -> f
+
+	f "--factor" flag::float! -> val
+	val 1.9 > testing::assert_true
+	val 2.1 < testing::assert_true
+}
+
+test "flag::boolean single character flag" {
+	flag::Flag {
+		argc = 1
+		argv = "\n-v\n"
+	} -> f
+
+	f "-v" flag::boolean 1 testing::assert_eq
+}
+
+test "flag::string with path value" {
+	flag::Flag {
+		argc = 2
+		argv = "\n--output\n/tmp/out.txt\n"
+	} -> f
+
+	f "--output" flag::string! "/tmp/out.txt" testing::assert_eq
+}
+
+test "flag::mixed boolean and value flags" {
+	flag::Flag {
+		argc = 4
+		argv = "\n--verbose\n--name\nAlice\n--debug\n"
+	} -> f
+
+	f "--verbose" flag::boolean 1 testing::assert_eq
+	f "--debug" flag::boolean 1 testing::assert_eq
+	f "--name" flag::string! "Alice" testing::assert_eq
+}
+
+test "flag::int with leading zeros" {
+	flag::Flag {
+		argc = 2
+		argv = "\n--code\n007\n"
+	} -> f
+
+	f "--code" flag::int! 7 testing::assert_eq
+}
+
+test "flag::float small decimal" {
+	flag::Flag {
+		argc = 2
+		argv = "\n--epsilon\n0.001\n"
+	} -> f
+
+	f "--epsilon" flag::float! -> val
+	val 0.0009 > testing::assert_true
+	val 0.0011 < testing::assert_true
 }

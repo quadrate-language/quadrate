@@ -124,3 +124,108 @@ pub fn clear_bit(value:i64 bit_pos:i64 -- result:i64) {
 pub fn toggle_bit(value:i64 bit_pos:i64 -- result:i64) {
 	1 swap shl xor
 }
+
+/// Count leading zeros (from MSB).
+/// @param value i64 Value to count
+/// @return count i64 Number of leading zero bits (0-64)
+/// @example 0x0F00000000000000 bits::clz print  // 4
+pub fn clz(value:i64 -- count:i64) {
+	-> v
+	v 0 == if {
+		64
+	} else {
+		0 -> n
+		loop {
+			v 63 shr 0 == not if { break }
+			n 1 + -> n
+			v 1 shl -> v
+		}
+		n
+	}
+}
+
+/// Count trailing zeros (from LSB).
+/// @param value i64 Value to count
+/// @return count i64 Number of trailing zero bits (0-64)
+/// @example 0x100 bits::ctz print  // 8
+pub fn ctz(value:i64 -- count:i64) {
+	-> v
+	v 0 == if {
+		64
+	} else {
+		0 -> n
+		loop {
+			v 1 and 0 == not if { break }
+			n 1 + -> n
+			v 1 shr -> v
+		}
+		n
+	}
+}
+
+/// Check if value is a power of two.
+/// @param value i64 Value to check
+/// @return flag i64 1 if power of two, 0 otherwise
+/// @example 8 bits::is_power_of_two print  // 1
+/// @example 7 bits::is_power_of_two print  // 0
+pub fn is_power_of_two(value:i64 -- flag:i64) {
+	-> v
+	v 0 > v v 1 - and 0 == and
+}
+
+/// Find the next power of two greater than or equal to value.
+/// @param value i64 Input value
+/// @return result i64 Next power of two
+/// @example 5 bits::next_power_of_two print  // 8
+/// @example 8 bits::next_power_of_two print  // 8
+pub fn next_power_of_two(value:i64 -- result:i64) {
+	-> v
+	v 1 <= if {
+		1
+	} else {
+		v 1 - -> v
+		v v 1 shr or -> v
+		v v 2 shr or -> v
+		v v 4 shr or -> v
+		v v 8 shr or -> v
+		v v 16 shr or -> v
+		v v 32 shr or -> v
+		v 1 +
+	}
+}
+
+/// Integer log base 2 (position of highest set bit).
+/// @param value i64 Value (must be > 0)
+/// @return result i64 Floor of log2(value)
+/// @example 8 bits::log2 print  // 3
+/// @example 15 bits::log2 print  // 3
+pub fn log2(value:i64 -- result:i64) {
+	-> v
+	v 0 <= if {
+		-1
+	} else {
+		63 v clz -
+	}
+}
+
+/// Get the highest set bit as a value (isolate highest bit).
+/// @param value i64 Input value
+/// @return result i64 Highest set bit as power of two, 0 if input is 0
+/// @example 0b1010 bits::highest_bit print  // 8 (0b1000)
+pub fn highest_bit(value:i64 -- result:i64) {
+	-> v
+	v 0 == if {
+		0
+	} else {
+		1 63 v clz - shl
+	}
+}
+
+/// Get the lowest set bit as a value (isolate lowest bit).
+/// @param value i64 Input value
+/// @return result i64 Lowest set bit as power of two, 0 if input is 0
+/// @example 0b1010 bits::lowest_bit print  // 2 (0b0010)
+pub fn lowest_bit(value:i64 -- result:i64) {
+	-> v
+	v v neg and
+}

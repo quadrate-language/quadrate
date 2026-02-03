@@ -1688,3 +1688,215 @@ pub fn sign(x:f64 -- result:f64) {
 		}
 	}
 }
+
+// ============================================================================
+// Interpolation and Spline Functions
+// ============================================================================
+
+/// Smooth step interpolation (cubic Hermite, zero derivatives at edges).
+/// @param edge0 f64 Lower edge
+/// @param edge1 f64 Upper edge
+/// @param x f64 Value to interpolate
+/// @return result f64 Smoothly interpolated value [0, 1]
+/// @example 0.0 1.0 0.5 math::smoothstep print  // 0.5
+pub fn smoothstep(edge0:f64 edge1:f64 x:f64 -- result:f64) {
+	-> x_v
+	-> edge1
+	-> edge0
+	// Clamp t to [0, 1]
+	x_v edge0 - edge1 edge0 - / -> t
+	t 0.0 lt if { 0.0 -> t }
+	t 1.0 gt if { 1.0 -> t }
+	// Hermite polynomial: 3t² - 2t³
+	t t * 3.0 2.0 t * - *
+}
+
+/// Smoother step interpolation (quintic, zero first and second derivatives at edges).
+/// @param edge0 f64 Lower edge
+/// @param edge1 f64 Upper edge
+/// @param x f64 Value to interpolate
+/// @return result f64 Smoothly interpolated value [0, 1]
+/// @example 0.0 1.0 0.5 math::smootherstep print  // 0.5
+pub fn smootherstep(edge0:f64 edge1:f64 x:f64 -- result:f64) {
+	-> x_v
+	-> edge1
+	-> edge0
+	// Clamp t to [0, 1]
+	x_v edge0 - edge1 edge0 - / -> t
+	t 0.0 lt if { 0.0 -> t }
+	t 1.0 gt if { 1.0 -> t }
+	// Quintic polynomial: 6t⁵ - 15t⁴ + 10t³
+	t t * t * t 6.0 * 15.0 - t * 10.0 + *
+}
+
+/// Cubic Hermite spline interpolation.
+/// Interpolates between p1 and p2 using tangents m1 and m2.
+/// @param p0 f64 Point before p1 (used to compute tangent)
+/// @param p1 f64 Start point
+/// @param p2 f64 End point
+/// @param p3 f64 Point after p2 (used to compute tangent)
+/// @param t f64 Interpolation factor [0, 1]
+/// @return result f64 Interpolated value
+/// @example 0.0 1.0 4.0 5.0 0.5 math::cubic_hermite print
+pub fn cubic_hermite(p0:f64 p1:f64 p2:f64 p3:f64 t:f64 -- result:f64) {
+	-> t
+	-> p3
+	-> p2
+	-> p1
+	-> p0
+	// Catmull-Rom tangents
+	p2 p0 - 0.5 * -> m1
+	p3 p1 - 0.5 * -> m2
+	// Hermite basis functions
+	t t * -> t2
+	t2 t * -> t3
+	2.0 t3 * 3.0 t2 * - 1.0 + -> h00
+	t3 2.0 t2 * - t + -> h10
+	3.0 t2 * 2.0 t3 * - -> h01
+	t3 t2 - -> h11
+	// Interpolate
+	h00 p1 * h10 m1 * + h01 p2 * + h11 m2 * +
+}
+
+/// Evaluate quadratic Bezier curve.
+/// @param p0 f64 Start point
+/// @param p1 f64 Control point
+/// @param p2 f64 End point
+/// @param t f64 Parameter [0, 1]
+/// @return result f64 Point on curve
+/// @example 0.0 1.0 2.0 0.5 math::bezier2 print  // 1.0
+pub fn bezier2(p0:f64 p1:f64 p2:f64 t:f64 -- result:f64) {
+	-> t
+	-> p2
+	-> p1
+	-> p0
+	1.0 t - -> u
+	// B(t) = (1-t)²p0 + 2(1-t)tp1 + t²p2
+	u u * p0 * 2.0 u * t * p1 * + t t * p2 * +
+}
+
+/// Evaluate cubic Bezier curve.
+/// @param p0 f64 Start point
+/// @param p1 f64 First control point
+/// @param p2 f64 Second control point
+/// @param p3 f64 End point
+/// @param t f64 Parameter [0, 1]
+/// @return result f64 Point on curve
+/// @example 0.0 0.5 0.5 1.0 0.5 math::bezier3 print
+pub fn bezier3(p0:f64 p1:f64 p2:f64 p3:f64 t:f64 -- result:f64) {
+	-> t
+	-> p3
+	-> p2
+	-> p1
+	-> p0
+	1.0 t - -> u
+	u u * -> u2
+	t t * -> t2
+	// B(t) = (1-t)³p0 + 3(1-t)²tp1 + 3(1-t)t²p2 + t³p3
+	u2 u * p0 * 3.0 u2 * t * p1 * + 3.0 u * t2 * p2 * + t2 t * p3 * +
+}
+
+/// Evaluate quadratic Bezier curve for Vec2.
+/// @param p0 Vec2 Start point
+/// @param p1 Vec2 Control point
+/// @param p2 Vec2 End point
+/// @param t f64 Parameter [0, 1]
+/// @return result Vec2 Point on curve
+pub fn bezier2_vec2(p0:Vec2 p1:Vec2 p2:Vec2 t:f64 -- result:Vec2) {
+	-> t
+	-> p2
+	-> p1
+	-> p0
+	1.0 t - -> u
+	u u * -> u2
+	t t * -> t2
+	Vec2 {
+		x = u2 p0 @x * 2.0 u * t * p1 @x * + t2 p2 @x * +
+		y = u2 p0 @y * 2.0 u * t * p1 @y * + t2 p2 @y * +
+	}
+}
+
+/// Evaluate cubic Bezier curve for Vec2.
+/// @param p0 Vec2 Start point
+/// @param p1 Vec2 First control point
+/// @param p2 Vec2 Second control point
+/// @param p3 Vec2 End point
+/// @param t f64 Parameter [0, 1]
+/// @return result Vec2 Point on curve
+pub fn bezier3_vec2(p0:Vec2 p1:Vec2 p2:Vec2 p3:Vec2 t:f64 -- result:Vec2) {
+	-> t
+	-> p3
+	-> p2
+	-> p1
+	-> p0
+	1.0 t - -> u
+	u u * -> u2
+	t t * -> t2
+	u2 u * -> u3
+	t2 t * -> t3
+	Vec2 {
+		x = u3 p0 @x * 3.0 u2 * t * p1 @x * + 3.0 u * t2 * p2 @x * + t3 p3 @x * +
+		y = u3 p0 @y * 3.0 u2 * t * p1 @y * + 3.0 u * t2 * p2 @y * + t3 p3 @y * +
+	}
+}
+
+/// Evaluate cubic Bezier curve for Vec3.
+/// @param p0 Vec3 Start point
+/// @param p1 Vec3 First control point
+/// @param p2 Vec3 Second control point
+/// @param p3 Vec3 End point
+/// @param t f64 Parameter [0, 1]
+/// @return result Vec3 Point on curve
+pub fn bezier3_vec3(p0:Vec3 p1:Vec3 p2:Vec3 p3:Vec3 t:f64 -- result:Vec3) {
+	-> t
+	-> p3
+	-> p2
+	-> p1
+	-> p0
+	1.0 t - -> u
+	u u * -> u2
+	t t * -> t2
+	u2 u * -> u3
+	t2 t * -> t3
+	Vec3 {
+		x = u3 p0 @x * 3.0 u2 * t * p1 @x * + 3.0 u * t2 * p2 @x * + t3 p3 @x * +
+		y = u3 p0 @y * 3.0 u2 * t * p1 @y * + 3.0 u * t2 * p2 @y * + t3 p3 @y * +
+		z = u3 p0 @z * 3.0 u2 * t * p1 @z * + 3.0 u * t2 * p2 @z * + t3 p3 @z * +
+	}
+}
+
+/// Inverse lerp - find t given a value between a and b.
+/// @param a f64 Start value
+/// @param b f64 End value
+/// @param v f64 Value to find t for
+/// @return result f64 Interpolation factor t where lerp(a, b, t) = v
+/// @example 0.0 10.0 5.0 math::inverse_lerp print  // 0.5
+pub fn inverse_lerp(a:f64 b:f64 v:f64 -- result:f64) {
+	-> v
+	-> b
+	-> a
+	b a - -> diff
+	diff math::abs 0.000001 lt if {
+		0.0
+	} else {
+		v a - diff /
+	}
+}
+
+/// Remap a value from one range to another.
+/// @param in_min f64 Input range minimum
+/// @param in_max f64 Input range maximum
+/// @param out_min f64 Output range minimum
+/// @param out_max f64 Output range maximum
+/// @param v f64 Value to remap
+/// @return result f64 Remapped value
+/// @example 0.0 10.0 0.0 100.0 5.0 math::remap print  // 50.0
+pub fn remap(in_min:f64 in_max:f64 out_min:f64 out_max:f64 v:f64 -- result:f64) {
+	-> v
+	-> out_max
+	-> out_min
+	-> in_max
+	-> in_min
+	v in_min - in_max in_min - / -> t
+	out_min out_max out_min - t * +
+}

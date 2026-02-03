@@ -48,3 +48,76 @@ test "signal::ignore" {
 	// Reset to default
 	signal::SigPipe signal::reset
 }
+
+test "signal::clear" {
+	// Trap a signal and test clear
+	signal::SigUsr2 signal::trap
+	signal::SigUsr2 signal::pending testing::assert_false
+	signal::SigUsr2 signal::clear  // Clear should be safe even if not pending
+	signal::SigUsr2 signal::pending testing::assert_false
+	signal::SigUsr2 signal::reset
+}
+
+test "signal::trap multiple signals" {
+	// Can trap multiple signals
+	signal::SigUsr1 signal::trap
+	signal::SigUsr2 signal::trap
+
+	signal::SigUsr1 signal::pending testing::assert_false
+	signal::SigUsr2 signal::pending testing::assert_false
+
+	signal::SigUsr1 signal::reset
+	signal::SigUsr2 signal::reset
+}
+
+test "signal::reset after trap" {
+	// Trap then reset
+	signal::SigUsr1 signal::trap
+	signal::SigUsr1 signal::reset
+
+	// Can trap again after reset
+	signal::SigUsr1 signal::trap
+	signal::SigUsr1 signal::reset
+}
+
+test "signal::ignore then reset" {
+	// Ignore then reset
+	signal::SigUsr1 signal::ignore
+	signal::SigUsr1 signal::reset
+
+	// Can trap after ignoring
+	signal::SigUsr1 signal::trap
+	signal::SigUsr1 signal::reset
+}
+
+test "signal constants are positive" {
+	signal::SigHup 0 > testing::assert_true
+	signal::SigInt 0 > testing::assert_true
+	signal::SigTerm 0 > testing::assert_true
+	signal::SigKill 0 > testing::assert_true
+}
+
+test "signal constants are unique" {
+	signal::SigHup signal::SigInt != testing::assert_true
+	signal::SigInt signal::SigTerm != testing::assert_true
+	signal::SigUsr1 signal::SigUsr2 != testing::assert_true
+}
+
+test "signal::raise to self" {
+	// Trap SIGUSR1
+	signal::SigUsr1 signal::trap
+
+	// Initially not pending
+	signal::SigUsr1 signal::pending 0 testing::assert_eq
+
+	// Raise the signal to ourselves
+	signal::SigUsr1 signal::raise -> result
+	result 0 testing::assert_eq
+
+	// Now it should be pending
+	signal::SigUsr1 signal::pending 1 testing::assert_eq
+
+	// Clear and reset
+	signal::SigUsr1 signal::clear
+	signal::SigUsr1 signal::reset
+}

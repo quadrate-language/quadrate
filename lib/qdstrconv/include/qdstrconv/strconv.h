@@ -64,6 +64,49 @@ int usr_strconv_itoa(qd_context* ctx);
  */
 int usr_strconv_atoi(qd_context* ctx);
 
+/**
+ * @brief Format float to string
+ * @par Stack Effect: ( value:f -- str:s )
+ * @param ctx Execution context
+ * @return Execution result
+ *
+ * Converts a floating-point number to its string representation.
+ * Uses %g format for compact output.
+ */
+int usr_strconv_format_float(qd_context* ctx);
+
+/**
+ * @brief Parse string to float
+ * @par Stack Effect: ( str:s -- value:f )
+ * @param ctx Execution context
+ * @return Execution result
+ *
+ * Parses a string as a floating-point number.
+ * Aborts on invalid input.
+ */
+int usr_strconv_parse_float(qd_context* ctx);
+
+/**
+ * @brief Format boolean to string
+ * @par Stack Effect: ( value:i -- str:s )
+ * @param ctx Execution context
+ * @return Execution result
+ *
+ * Converts an integer to "true" (non-zero) or "false" (zero).
+ */
+int usr_strconv_format_bool(qd_context* ctx);
+
+/**
+ * @brief Parse string to boolean
+ * @par Stack Effect: ( str:s -- value:i )
+ * @param ctx Execution context
+ * @return Execution result
+ *
+ * Parses "true"/"1" as 1, "false"/"0" as 0.
+ * Case-insensitive. Aborts on invalid input.
+ */
+int usr_strconv_parse_bool(qd_context* ctx);
+
 #ifdef __cplusplus
 }
 #endif

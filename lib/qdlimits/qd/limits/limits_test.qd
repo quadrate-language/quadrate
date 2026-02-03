@@ -36,3 +36,78 @@ test "limits::unsigned bounds" {
 	limits::U16Max 65535 testing::assert_eq
 	limits::U32Max 4294967295 testing::assert_eq
 }
+
+test "limits::size constants" {
+	limits::PtrSize 8 testing::assert_eq
+	limits::I64Size 8 testing::assert_eq
+	limits::F64Size 8 testing::assert_eq
+}
+
+test "limits::fits_i8" {
+	0 limits::fits_i8 testing::assert_true
+	127 limits::fits_i8 testing::assert_true
+	-128 limits::fits_i8 testing::assert_true
+	128 limits::fits_i8 testing::assert_false
+	-129 limits::fits_i8 testing::assert_false
+}
+
+test "limits::fits_i16" {
+	0 limits::fits_i16 testing::assert_true
+	32767 limits::fits_i16 testing::assert_true
+	-32768 limits::fits_i16 testing::assert_true
+	32768 limits::fits_i16 testing::assert_false
+	-32769 limits::fits_i16 testing::assert_false
+}
+
+test "limits::fits_i32" {
+	0 limits::fits_i32 testing::assert_true
+	2147483647 limits::fits_i32 testing::assert_true
+	-2147483648 limits::fits_i32 testing::assert_true
+	2147483648 limits::fits_i32 testing::assert_false
+	-2147483649 limits::fits_i32 testing::assert_false
+}
+
+test "limits::fits_u8" {
+	0 limits::fits_u8 testing::assert_true
+	255 limits::fits_u8 testing::assert_true
+	256 limits::fits_u8 testing::assert_false
+	-1 limits::fits_u8 testing::assert_false
+}
+
+test "limits::fits_u16" {
+	0 limits::fits_u16 testing::assert_true
+	65535 limits::fits_u16 testing::assert_true
+	65536 limits::fits_u16 testing::assert_false
+	-1 limits::fits_u16 testing::assert_false
+}
+
+test "limits::fits_u32" {
+	0 limits::fits_u32 testing::assert_true
+	4294967295 limits::fits_u32 testing::assert_true
+	4294967296 limits::fits_u32 testing::assert_false
+	-1 limits::fits_u32 testing::assert_false
+}
+
+test "limits::clamp_i8" {
+	50 limits::clamp_i8 50 testing::assert_eq
+	200 limits::clamp_i8 127 testing::assert_eq
+	-200 limits::clamp_i8 -128 testing::assert_eq
+}
+
+test "limits::clamp_i16" {
+	1000 limits::clamp_i16 1000 testing::assert_eq
+	50000 limits::clamp_i16 32767 testing::assert_eq
+	-50000 limits::clamp_i16 -32768 testing::assert_eq
+}
+
+test "limits::clamp_u8" {
+	100 limits::clamp_u8 100 testing::assert_eq
+	300 limits::clamp_u8 255 testing::assert_eq
+	-10 limits::clamp_u8 0 testing::assert_eq
+}
+
+test "limits::clamp_u16" {
+	1000 limits::clamp_u16 1000 testing::assert_eq
+	70000 limits::clamp_u16 65535 testing::assert_eq
+	-10 limits::clamp_u16 0 testing::assert_eq
+}

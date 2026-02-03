@@ -9,3 +9,99 @@ test "fmt::sprintf with string" {
 test "fmt::sprintf with newline" {
 	"test" "%s\n" fmt::sprintf "test\n" testing::assert_eq
 }
+
+test "fmt::sprintf multiple strings" {
+	"Hello" "world" "%s %s" fmt::sprintf "Hello world" testing::assert_eq
+}
+
+test "fmt::sprintf empty string" {
+	"" "test %s end" fmt::sprintf "test  end" testing::assert_eq
+}
+
+test "fmt::sprintf with integer" {
+	42 "%d" fmt::sprintf "42" testing::assert_eq
+}
+
+test "fmt::sprintf negative integer" {
+	-123 "%d" fmt::sprintf "-123" testing::assert_eq
+}
+
+test "fmt::sprintf zero" {
+	0 "%d" fmt::sprintf "0" testing::assert_eq
+}
+
+test "fmt::sprintf multiple integers" {
+	1 2 "%d + %d" fmt::sprintf "1 + 2" testing::assert_eq
+}
+
+test "fmt::sprintf hex lowercase" {
+	255 "%x" fmt::sprintf "ff" testing::assert_eq
+}
+
+test "fmt::sprintf hex uppercase" {
+	255 "%X" fmt::sprintf "FF" testing::assert_eq
+}
+
+test "fmt::sprintf octal" {
+	64 "%o" fmt::sprintf "100" testing::assert_eq
+}
+
+test "fmt::sprintf with float" {
+	3.14159 "%f" fmt::sprintf "3.141590" testing::assert_eq
+}
+
+test "fmt::sprintf float precision" {
+	3.14159 "%.2f" fmt::sprintf "3.14" testing::assert_eq
+}
+
+test "fmt::sprintf negative float" {
+	-2.5 "%f" fmt::sprintf "-2.500000" testing::assert_eq
+}
+
+test "fmt::sprintf float %g" {
+	0.00123 "%g" fmt::sprintf "0.00123" testing::assert_eq
+}
+
+test "fmt::sprintf float %e" {
+	1234.5 "%e" fmt::sprintf "1.234500e+03" testing::assert_eq
+}
+
+test "fmt::sprintf with char" {
+	65 "%c" fmt::sprintf "A" testing::assert_eq
+}
+
+test "fmt::sprintf char newline" {
+	10 "%c" fmt::sprintf "\n" testing::assert_eq
+}
+
+test "fmt::sprintf string and int" {
+	"value" 42 "%s = %d" fmt::sprintf "value = 42" testing::assert_eq
+}
+
+test "fmt::sprintf int and float" {
+	42 3.14 "int=%d float=%.2f" fmt::sprintf "int=42 float=3.14" testing::assert_eq
+}
+
+test "fmt::sprintf all types" {
+	"test" 42 3.14 "%s %d %.2f" fmt::sprintf "test 42 3.14" testing::assert_eq
+}
+
+test "fmt::sprintf literal percent" {
+	"100%% complete" fmt::sprintf "100% complete" testing::assert_eq
+}
+
+test "fmt::sprintf no specifiers" {
+	"Hello world" fmt::sprintf "Hello world" testing::assert_eq
+}
+
+test "fmt::sprintf width specifier" {
+	42 "%5d" fmt::sprintf "   42" testing::assert_eq
+}
+
+test "fmt::sprintf left align" {
+	42 "%-5d" fmt::sprintf "42   " testing::assert_eq
+}
+
+test "fmt::sprintf zero padding" {
+	42 "%05d" fmt::sprintf "00042" testing::assert_eq
+}

@@ -53,6 +53,11 @@ import "libqdos.a" as "os" {
 	/// @example "MY_VAR" "hello" os::setenv
 	pub fn setenv(name:str value:str -- )
 
+	/// Unset environment variable.
+	/// @param name str Variable name to remove
+	/// @example "MY_VAR" os::unsetenv
+	pub fn unsetenv(name:str -- )
+
 	/// Check if path exists.
 	/// @param path str File or directory path
 	/// @return exists i64 1 if exists, 0 otherwise
@@ -171,4 +176,62 @@ import "libqdos.a" as "os" {
 	/// @error ErrIo Failed to get directory
 	/// @example os::cwd! -> dir
 	pub fn cwd( -- path:str)!
+
+	/// Create a symbolic link.
+	/// @param target str Path that the link points to
+	/// @param linkpath str Path where the link will be created
+	/// @error ErrExists Link path already exists
+	/// @error ErrPermission Permission denied
+	/// @example "/usr/bin/python3" "/tmp/python" os::symlink!
+	pub fn symlink(target:str linkpath:str -- )!
+
+	/// Read the target of a symbolic link.
+	/// @param path str Path to the symbolic link
+	/// @return target str Path that the link points to
+	/// @error ErrNotFound Link not found
+	/// @error ErrInvalidArg Path is not a symbolic link
+	/// @example "/tmp/mylink" os::readlink! -> target
+	pub fn readlink(path:str -- target:str)!
+
+	/// Check if path is a symbolic link.
+	/// Does not follow the link to check if the target exists.
+	/// @param path str Path to check
+	/// @return is_symlink i64 1 if symbolic link, 0 otherwise
+	/// @example "/tmp/mylink" os::is_symlink print
+	pub fn is_symlink(path:str -- is_symlink:i64)
+
+	/// Change file permissions.
+	/// Mode is specified as Unix permission bits (e.g., 0o644, 0o755).
+	/// @param path str File or directory path
+	/// @param mode i64 Permission mode (e.g., 420 for 0o644)
+	/// @error ErrNotFound File not found
+	/// @error ErrPermission Permission denied
+	/// @example "/tmp/script.sh" 0o755 os::chmod!
+	pub fn chmod(path:str mode:i64 -- )!
+
+	/// Change file owner and group.
+	/// Use -1 for uid or gid to leave unchanged.
+	/// @param path str File or directory path
+	/// @param uid i64 User ID (-1 to not change)
+	/// @param gid i64 Group ID (-1 to not change)
+	/// @error ErrNotFound File not found
+	/// @error ErrPermission Permission denied (usually requires root)
+	/// @example "/tmp/myfile" 1000 1000 os::chown!
+	pub fn chown(path:str uid:i64 gid:i64 -- )!
+
+	/// Get the current user ID.
+	/// @return uid i64 Real user ID of the calling process
+	/// @example os::getuid print
+	pub fn getuid( -- uid:i64)
+
+	/// Get the current group ID.
+	/// @return gid i64 Real group ID of the calling process
+	/// @example os::getgid print
+	pub fn getgid( -- gid:i64)
+
+	/// Get the system hostname.
+	/// @return hostname str Hostname of the current system
+	/// @error ErrIo Failed to get hostname
+	/// @example os::hostname! print
+	pub fn hostname( -- hostname:str)!
 }

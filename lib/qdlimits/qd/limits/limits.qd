@@ -52,3 +52,118 @@ pub const U16Max = 65535
 
 /// Maximum value for 32-bit unsigned integer (C: uint32_t).
 pub const U32Max = 4294967295
+
+// ============================================================
+// Size Constants
+// ============================================================
+
+/// Size of a pointer in bytes (64-bit platform).
+pub const PtrSize = 8
+
+/// Size of i64 in bytes.
+pub const I64Size = 8
+
+/// Size of f64 in bytes.
+pub const F64Size = 8
+
+// ============================================================
+// Range Check Functions
+// ============================================================
+
+/// Check if value fits in i8 range.
+/// @param v i64 Value to check
+/// @return fits i64 1 if in range, 0 otherwise
+/// @example 100 limits::fits_i8 print  // 1
+pub fn fits_i8(v:i64 -- fits:i64) {
+	-> v
+	v I8Min >= v I8Max <= and
+}
+
+/// Check if value fits in i16 range.
+/// @param v i64 Value to check
+/// @return fits i64 1 if in range, 0 otherwise
+/// @example 30000 limits::fits_i16 print  // 1
+pub fn fits_i16(v:i64 -- fits:i64) {
+	-> v
+	v I16Min >= v I16Max <= and
+}
+
+/// Check if value fits in i32 range.
+/// @param v i64 Value to check
+/// @return fits i64 1 if in range, 0 otherwise
+/// @example 2000000000 limits::fits_i32 print  // 1
+pub fn fits_i32(v:i64 -- fits:i64) {
+	-> v
+	v I32Min >= v I32Max <= and
+}
+
+/// Check if value fits in u8 range.
+/// @param v i64 Value to check
+/// @return fits i64 1 if in range, 0 otherwise
+/// @example 200 limits::fits_u8 print  // 1
+pub fn fits_u8(v:i64 -- fits:i64) {
+	-> v
+	v 0 >= v U8Max <= and
+}
+
+/// Check if value fits in u16 range.
+/// @param v i64 Value to check
+/// @return fits i64 1 if in range, 0 otherwise
+/// @example 50000 limits::fits_u16 print  // 1
+pub fn fits_u16(v:i64 -- fits:i64) {
+	-> v
+	v 0 >= v U16Max <= and
+}
+
+/// Check if value fits in u32 range.
+/// @param v i64 Value to check
+/// @return fits i64 1 if in range, 0 otherwise
+/// @example 3000000000 limits::fits_u32 print  // 1
+pub fn fits_u32(v:i64 -- fits:i64) {
+	-> v
+	v 0 >= v U32Max <= and
+}
+
+/// Clamp value to i8 range.
+/// @param v i64 Value to clamp
+/// @return clamped i64 Value clamped to [-128, 127]
+/// @example 200 limits::clamp_i8 print  // 127
+pub fn clamp_i8(v:i64 -- clamped:i64) {
+	-> v
+	v I8Min < if { I8Min } else {
+		v I8Max > if { I8Max } else { v }
+	}
+}
+
+/// Clamp value to i16 range.
+/// @param v i64 Value to clamp
+/// @return clamped i64 Value clamped to [-32768, 32767]
+/// @example 50000 limits::clamp_i16 print  // 32767
+pub fn clamp_i16(v:i64 -- clamped:i64) {
+	-> v
+	v I16Min < if { I16Min } else {
+		v I16Max > if { I16Max } else { v }
+	}
+}
+
+/// Clamp value to u8 range.
+/// @param v i64 Value to clamp
+/// @return clamped i64 Value clamped to [0, 255]
+/// @example 300 limits::clamp_u8 print  // 255
+pub fn clamp_u8(v:i64 -- clamped:i64) {
+	-> v
+	v 0 < if { 0 } else {
+		v U8Max > if { U8Max } else { v }
+	}
+}
+
+/// Clamp value to u16 range.
+/// @param v i64 Value to clamp
+/// @return clamped i64 Value clamped to [0, 65535]
+/// @example 70000 limits::clamp_u16 print  // 65535
+pub fn clamp_u16(v:i64 -- clamped:i64) {
+	-> v
+	v 0 < if { 0 } else {
+		v U16Max > if { U16Max } else { v }
+	}
+}

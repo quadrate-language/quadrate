@@ -127,6 +127,42 @@ int usr_signal_clear(qd_context* ctx);
  */
 int usr_signal_wait(qd_context* ctx);
 
+/**
+ * @brief Send a signal to the current process
+ *
+ * @par Stack Effect: ( signum:i -- result:i )
+ *
+ * Sends the specified signal to the current process.
+ * Returns 0 on success, -1 on error.
+ *
+ * @param ctx Execution context
+ * @return Execution result
+ *
+ * @par Example:
+ * @code
+ * signal::SIGALRM signal::raise drop  // Send alarm signal to self
+ * @endcode
+ */
+int usr_signal_raise(qd_context* ctx);
+
+/**
+ * @brief Send a signal to another process
+ *
+ * @par Stack Effect: ( pid:i signum:i -- result:i )
+ *
+ * Sends the specified signal to the process with the given PID.
+ * Returns 0 on success, -1 on error.
+ *
+ * @param ctx Execution context
+ * @return Execution result
+ *
+ * @par Example:
+ * @code
+ * 1234 signal::SIGTERM signal::kill drop  // Send SIGTERM to process 1234
+ * @endcode
+ */
+int usr_signal_kill(qd_context* ctx);
+
 #ifdef __cplusplus
 }
 #endif

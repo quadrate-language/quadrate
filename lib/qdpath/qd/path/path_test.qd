@@ -70,3 +70,43 @@ test "path::parent" {
 	"/file.txt" path::parent "/" testing::assert_eq
 	"file.txt" path::parent "." testing::assert_eq
 }
+
+test "path::is_relative" {
+	"home/user" path::is_relative testing::assert_true
+	"." path::is_relative testing::assert_true
+	"file.txt" path::is_relative testing::assert_true
+	"/home/user" path::is_relative testing::assert_false
+	"/" path::is_relative testing::assert_false
+}
+
+test "path::has_extension" {
+	"file.txt" "txt" path::has_extension testing::assert_true
+	"file.txt" ".txt" path::has_extension testing::assert_true
+	"file.txt" "md" path::has_extension testing::assert_false
+	"file" "txt" path::has_extension testing::assert_false
+	"/home/user/file.txt" "txt" path::has_extension testing::assert_true
+}
+
+test "path::depth" {
+	"/home/user/file.txt" path::depth 3 testing::assert_eq
+	"/home/user" path::depth 2 testing::assert_eq
+	"/file.txt" path::depth 1 testing::assert_eq
+	"file.txt" path::depth 1 testing::assert_eq
+	"/" path::depth 0 testing::assert_eq
+	"" path::depth 0 testing::assert_eq
+}
+
+test "path::starts_with" {
+	"/home/user/file.txt" "/home" path::starts_with testing::assert_true
+	"/home/user/file.txt" "/home/user" path::starts_with testing::assert_true
+	"/home/user" "/home/user" path::starts_with testing::assert_true
+	"/home/user" "/home/other" path::starts_with testing::assert_false
+	"/home/user" "/etc" path::starts_with testing::assert_false
+}
+
+test "path::strip_prefix" {
+	"/home/user/file.txt" "/home" path::strip_prefix "user/file.txt" testing::assert_eq
+	"/home/user/file.txt" "/home/user" path::strip_prefix "file.txt" testing::assert_eq
+	"/home/user" "/home/user" path::strip_prefix "" testing::assert_eq
+	"/home/user" "/etc" path::strip_prefix "/home/user" testing::assert_eq
+}

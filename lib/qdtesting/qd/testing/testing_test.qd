@@ -1,0 +1,63 @@
+// Unit tests for the testing module utility functions
+use testing
+
+test "testing::assert_gt" {
+	5 3 testing::assert_gt
+	10 -5 testing::assert_gt
+	0 -1 testing::assert_gt
+}
+
+test "testing::assert_lt" {
+	3 5 testing::assert_lt
+	-5 10 testing::assert_lt
+	-1 0 testing::assert_lt
+}
+
+test "testing::assert_ge" {
+	5 5 testing::assert_ge
+	5 3 testing::assert_ge
+	0 0 testing::assert_ge
+}
+
+test "testing::assert_le" {
+	5 5 testing::assert_le
+	3 5 testing::assert_le
+	0 0 testing::assert_le
+}
+
+test "testing::assert_in_range" {
+	5 0 10 testing::assert_in_range
+	0 0 10 testing::assert_in_range
+	10 0 10 testing::assert_in_range
+	-5 -10 0 testing::assert_in_range
+}
+
+test "testing::assert_gt_f" {
+	5.5 3.3 testing::assert_gt_f
+	0.001 0.0001 testing::assert_gt_f
+}
+
+test "testing::assert_lt_f" {
+	3.3 5.5 testing::assert_lt_f
+	0.0001 0.001 testing::assert_lt_f
+}
+
+test "testing::assert_positive" {
+	1 testing::assert_positive
+	100 testing::assert_positive
+}
+
+test "testing::assert_negative" {
+	-1 testing::assert_negative
+	-100 testing::assert_negative
+}
+
+test "testing::assert_zero" {
+	0 testing::assert_zero
+}
+
+test "testing::assert_nonzero" {
+	1 testing::assert_nonzero
+	-1 testing::assert_nonzero
+	100 testing::assert_nonzero
+}

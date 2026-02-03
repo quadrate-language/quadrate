@@ -26,9 +26,9 @@ test "sb::append multiple strings" {
 
 test "sb::append_char" {
 	sb::new -> builder
-	builder 65 sb::append_char -> builder  // 'A'
-	builder 66 sb::append_char -> builder  // 'B'
-	builder 67 sb::append_char -> builder  // 'C'
+	builder 65 sb::append_char -> builder
+	builder 66 sb::append_char -> builder
+	builder 67 sb::append_char -> builder
 	builder sb::build "ABC" testing::assert_eq
 	builder sb::free
 }
@@ -84,4 +84,36 @@ test "sb mixed append" {
 	builder 100 sb::append_int -> builder
 	builder sb::finish -> result
 	result "count: 100" testing::assert_eq
+}
+
+test "sb::capacity" {
+	1024 sb::with_capacity -> builder
+	builder sb::capacity 1024 testing::assert_eq
+	builder sb::free
+}
+
+test "sb::is_empty" {
+	sb::new -> builder
+	builder sb::is_empty testing::assert_true
+	builder "x" sb::append -> builder
+	builder sb::is_empty testing::assert_false
+	builder sb::free
+}
+
+test "sb::newline" {
+	sb::new -> builder
+	builder "line1" sb::append -> builder
+	builder sb::newline -> builder
+	builder "line2" sb::append -> builder
+	builder sb::finish -> result
+	result "line1\nline2" testing::assert_eq
+}
+
+test "sb::space" {
+	sb::new -> builder
+	builder "hello" sb::append -> builder
+	builder sb::space -> builder
+	builder "world" sb::append -> builder
+	builder sb::finish -> result
+	result "hello world" testing::assert_eq
 }

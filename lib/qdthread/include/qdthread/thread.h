@@ -87,6 +87,59 @@ int usr_thread_raw_wg_done(qd_context* ctx); // (wg:ptr -- )
 int usr_thread_raw_wg_wait(qd_context* ctx); // (wg:ptr -- )!
 int usr_thread_raw_wg_free(qd_context* ctx); // (wg:ptr -- )
 
+typedef struct qd_once {
+	once_flag flag;
+	void (*func)(void);
+	bool completed;
+} qd_once;
+
+// Once functions - run initialization code exactly once
+int usr_thread_raw_once_new(qd_context* ctx);  // ( -- once:ptr)!
+int usr_thread_raw_once_do(qd_context* ctx);   // (func:ptr once:ptr -- )
+int usr_thread_raw_once_done(qd_context* ctx); // (once:ptr -- done:i64)
+int usr_thread_raw_once_free(qd_context* ctx); // (once:ptr -- )
+
+typedef struct qd_barrier {
+	mtx_t mutex;
+	cnd_t cond;
+	int threshold;
+	int count;
+	int generation;
+} qd_barrier;
+
+// Barrier functions - synchronize threads at a point
+int usr_thread_raw_barrier_new(qd_context* ctx);  // (n:i64 -- barrier:ptr)!
+int usr_thread_raw_barrier_wait(qd_context* ctx); // (barrier:ptr -- is_serial:i64)
+int usr_thread_raw_barrier_free(qd_context* ctx); // (barrier:ptr -- )
+
+typedef struct qd_rwlock {
+	mtx_t mutex;
+	cnd_t read_cond;
+	cnd_t write_cond;
+	int readers;
+	int writers_waiting;
+	bool writer_active;
+} qd_rwlock;
+
+// RwLock functions - read-write lock
+int usr_thread_raw_rwlock_new(qd_context* ctx);			 // ( -- rwlock:ptr)!
+int usr_thread_raw_rwlock_read_lock(qd_context* ctx);	 // (rwlock:ptr -- )!
+int usr_thread_raw_rwlock_read_unlock(qd_context* ctx);	 // (rwlock:ptr -- )!
+int usr_thread_raw_rwlock_write_lock(qd_context* ctx);	 // (rwlock:ptr -- )!
+int usr_thread_raw_rwlock_write_unlock(qd_context* ctx); // (rwlock:ptr -- )!
+int usr_thread_raw_rwlock_try_read(qd_context* ctx);	 // (rwlock:ptr -- success:i64)
+int usr_thread_raw_rwlock_try_write(qd_context* ctx);	 // (rwlock:ptr -- success:i64)
+int usr_thread_raw_rwlock_free(qd_context* ctx);		 // (rwlock:ptr -- )
+
+// Get current thread ID
+int usr_thread_raw_self(qd_context* ctx); // ( -- id:i64)
+
+// Yield CPU to other threads
+int usr_thread_raw_yield(qd_context* ctx); // ( -- )
+
+// Get number of CPUs/cores
+int usr_thread_raw_cpu_count(qd_context* ctx); // ( -- count:i64)
+
 #ifdef __cplusplus
 }
 #endif

@@ -26,12 +26,12 @@ test "unicode punctuation constants" {
 }
 
 test "unicode::is_digit" {
-	48 unicode::is_digit testing::assert_true    // '0'
-	49 unicode::is_digit testing::assert_true    // '1'
-	57 unicode::is_digit testing::assert_true    // '9'
-	47 unicode::is_digit testing::assert_false   // '/' (before '0')
-	58 unicode::is_digit testing::assert_false   // ':' (after '9')
-	65 unicode::is_digit testing::assert_false   // 'A'
+	48 unicode::is_digit testing::assert_true
+	49 unicode::is_digit testing::assert_true
+	57 unicode::is_digit testing::assert_true
+	47 unicode::is_digit testing::assert_false
+	58 unicode::is_digit testing::assert_false
+	65 unicode::is_digit testing::assert_false
 }
 
 test "unicode control characters" {
@@ -41,58 +41,194 @@ test "unicode control characters" {
 }
 
 test "unicode::is_upper" {
-	65 unicode::is_upper testing::assert_true    // 'A'
-	90 unicode::is_upper testing::assert_true    // 'Z'
-	77 unicode::is_upper testing::assert_true    // 'M'
-	97 unicode::is_upper testing::assert_false   // 'a'
-	48 unicode::is_upper testing::assert_false   // '0'
+	65 unicode::is_upper testing::assert_true
+	90 unicode::is_upper testing::assert_true
+	77 unicode::is_upper testing::assert_true
+	97 unicode::is_upper testing::assert_false
+	48 unicode::is_upper testing::assert_false
 }
 
 test "unicode::is_lower" {
-	97 unicode::is_lower testing::assert_true    // 'a'
-	122 unicode::is_lower testing::assert_true   // 'z'
-	109 unicode::is_lower testing::assert_true   // 'm'
-	65 unicode::is_lower testing::assert_false   // 'A'
-	48 unicode::is_lower testing::assert_false   // '0'
+	97 unicode::is_lower testing::assert_true
+	122 unicode::is_lower testing::assert_true
+	109 unicode::is_lower testing::assert_true
+	65 unicode::is_lower testing::assert_false
+	48 unicode::is_lower testing::assert_false
 }
 
 test "unicode::is_alpha" {
-	65 unicode::is_alpha testing::assert_true    // 'A'
-	97 unicode::is_alpha testing::assert_true    // 'a'
-	90 unicode::is_alpha testing::assert_true    // 'Z'
-	122 unicode::is_alpha testing::assert_true   // 'z'
-	48 unicode::is_alpha testing::assert_false   // '0'
-	32 unicode::is_alpha testing::assert_false   // space
+	65 unicode::is_alpha testing::assert_true
+	97 unicode::is_alpha testing::assert_true
+	90 unicode::is_alpha testing::assert_true
+	122 unicode::is_alpha testing::assert_true
+	48 unicode::is_alpha testing::assert_false
+	32 unicode::is_alpha testing::assert_false
 }
 
 test "unicode::is_alnum" {
-	65 unicode::is_alnum testing::assert_true    // 'A'
-	97 unicode::is_alnum testing::assert_true    // 'a'
-	48 unicode::is_alnum testing::assert_true    // '0'
-	57 unicode::is_alnum testing::assert_true    // '9'
-	32 unicode::is_alnum testing::assert_false   // space
-	33 unicode::is_alnum testing::assert_false   // '!'
+	65 unicode::is_alnum testing::assert_true
+	97 unicode::is_alnum testing::assert_true
+	48 unicode::is_alnum testing::assert_true
+	57 unicode::is_alnum testing::assert_true
+	32 unicode::is_alnum testing::assert_false
+	33 unicode::is_alnum testing::assert_false
 }
 
 test "unicode::is_space" {
-	32 unicode::is_space testing::assert_true    // space
-	9 unicode::is_space testing::assert_true     // tab
-	10 unicode::is_space testing::assert_true    // newline
-	13 unicode::is_space testing::assert_true    // carriage return
-	65 unicode::is_space testing::assert_false   // 'A'
-	48 unicode::is_space testing::assert_false   // '0'
+	32 unicode::is_space testing::assert_true
+	9 unicode::is_space testing::assert_true
+	10 unicode::is_space testing::assert_true
+	13 unicode::is_space testing::assert_true
+	65 unicode::is_space testing::assert_false
+	48 unicode::is_space testing::assert_false
 }
 
 test "unicode::to_lower" {
-	65 unicode::to_lower 97 testing::assert_eq   // 'A' -> 'a'
-	90 unicode::to_lower 122 testing::assert_eq  // 'Z' -> 'z'
-	97 unicode::to_lower 97 testing::assert_eq   // 'a' unchanged
-	48 unicode::to_lower 48 testing::assert_eq   // '0' unchanged
+	65 unicode::to_lower 97 testing::assert_eq
+	90 unicode::to_lower 122 testing::assert_eq
+	97 unicode::to_lower 97 testing::assert_eq
+	48 unicode::to_lower 48 testing::assert_eq
 }
 
 test "unicode::to_upper" {
-	97 unicode::to_upper 65 testing::assert_eq   // 'a' -> 'A'
-	122 unicode::to_upper 90 testing::assert_eq  // 'z' -> 'Z'
-	65 unicode::to_upper 65 testing::assert_eq   // 'A' unchanged
-	48 unicode::to_upper 48 testing::assert_eq   // '0' unchanged
+	97 unicode::to_upper 65 testing::assert_eq
+	122 unicode::to_upper 90 testing::assert_eq
+	65 unicode::to_upper 65 testing::assert_eq
+	48 unicode::to_upper 48 testing::assert_eq
+}
+
+test "unicode::is_hex_digit" {
+	48 unicode::is_hex_digit testing::assert_true
+	57 unicode::is_hex_digit testing::assert_true
+	65 unicode::is_hex_digit testing::assert_true
+	70 unicode::is_hex_digit testing::assert_true
+	97 unicode::is_hex_digit testing::assert_true
+	102 unicode::is_hex_digit testing::assert_true
+	71 unicode::is_hex_digit testing::assert_false
+	103 unicode::is_hex_digit testing::assert_false
+	32 unicode::is_hex_digit testing::assert_false
+}
+
+test "unicode::is_print" {
+	32 unicode::is_print testing::assert_true
+	65 unicode::is_print testing::assert_true
+	126 unicode::is_print testing::assert_true
+	31 unicode::is_print testing::assert_false
+	127 unicode::is_print testing::assert_false
+	0 unicode::is_print testing::assert_false
+}
+
+test "unicode::is_control" {
+	0 unicode::is_control testing::assert_true
+	9 unicode::is_control testing::assert_true
+	10 unicode::is_control testing::assert_true
+	31 unicode::is_control testing::assert_true
+	127 unicode::is_control testing::assert_true
+	32 unicode::is_control testing::assert_false
+	65 unicode::is_control testing::assert_false
+}
+
+test "unicode::is_punct" {
+	33 unicode::is_punct testing::assert_true
+	46 unicode::is_punct testing::assert_true
+	64 unicode::is_punct testing::assert_true
+	91 unicode::is_punct testing::assert_true
+	65 unicode::is_punct testing::assert_false
+	48 unicode::is_punct testing::assert_false
+	32 unicode::is_punct testing::assert_false
+}
+
+test "unicode::is_ident_start" {
+	65 unicode::is_ident_start testing::assert_true
+	97 unicode::is_ident_start testing::assert_true
+	95 unicode::is_ident_start testing::assert_true
+	48 unicode::is_ident_start testing::assert_false
+	36 unicode::is_ident_start testing::assert_false
+}
+
+test "unicode::is_ident_cont" {
+	65 unicode::is_ident_cont testing::assert_true
+	97 unicode::is_ident_cont testing::assert_true
+	95 unicode::is_ident_cont testing::assert_true
+	48 unicode::is_ident_cont testing::assert_true
+	36 unicode::is_ident_cont testing::assert_false
+}
+
+test "unicode::is_ascii" {
+	0 unicode::is_ascii testing::assert_true
+	65 unicode::is_ascii testing::assert_true
+	127 unicode::is_ascii testing::assert_true
+	128 unicode::is_ascii testing::assert_false
+	255 unicode::is_ascii testing::assert_false
+	-1 unicode::is_ascii testing::assert_false
+}
+
+test "unicode::digit_value" {
+	48 unicode::digit_value 0 testing::assert_eq
+	49 unicode::digit_value 1 testing::assert_eq
+	57 unicode::digit_value 9 testing::assert_eq
+	65 unicode::digit_value -1 testing::assert_eq
+}
+
+test "unicode::hex_digit_value" {
+	48 unicode::hex_digit_value 0 testing::assert_eq
+	57 unicode::hex_digit_value 9 testing::assert_eq
+	65 unicode::hex_digit_value 10 testing::assert_eq
+	70 unicode::hex_digit_value 15 testing::assert_eq
+	97 unicode::hex_digit_value 10 testing::assert_eq
+	102 unicode::hex_digit_value 15 testing::assert_eq
+	71 unicode::hex_digit_value -1 testing::assert_eq
+}
+
+test "unicode::is_utf8_cont" {
+	0x80 unicode::is_utf8_cont testing::assert_true
+	0xBF unicode::is_utf8_cont testing::assert_true
+	0x00 unicode::is_utf8_cont testing::assert_false
+	0x7F unicode::is_utf8_cont testing::assert_false
+	0xC0 unicode::is_utf8_cont testing::assert_false
+	0xE0 unicode::is_utf8_cont testing::assert_false
+}
+
+test "unicode::is_utf8_start" {
+	0x00 unicode::is_utf8_start testing::assert_true
+	0x7F unicode::is_utf8_start testing::assert_true
+	0xC2 unicode::is_utf8_start testing::assert_true
+	0xE0 unicode::is_utf8_start testing::assert_true
+	0xF0 unicode::is_utf8_start testing::assert_true
+	0x80 unicode::is_utf8_start testing::assert_false
+	0xBF unicode::is_utf8_start testing::assert_false
+}
+
+test "unicode::utf8_seq_len" {
+	0x00 unicode::utf8_seq_len 1 testing::assert_eq
+	0x7F unicode::utf8_seq_len 1 testing::assert_eq
+	0xC2 unicode::utf8_seq_len 2 testing::assert_eq
+	0xDF unicode::utf8_seq_len 2 testing::assert_eq
+	0xE0 unicode::utf8_seq_len 3 testing::assert_eq
+	0xEF unicode::utf8_seq_len 3 testing::assert_eq
+	0xF0 unicode::utf8_seq_len 4 testing::assert_eq
+	0xF4 unicode::utf8_seq_len 4 testing::assert_eq
+	0x80 unicode::utf8_seq_len 0 testing::assert_eq
+}
+
+test "unicode::utf8_encode_len" {
+	0x00 unicode::utf8_encode_len 1 testing::assert_eq
+	0x7F unicode::utf8_encode_len 1 testing::assert_eq
+	0x80 unicode::utf8_encode_len 2 testing::assert_eq
+	0x7FF unicode::utf8_encode_len 2 testing::assert_eq
+	0x800 unicode::utf8_encode_len 3 testing::assert_eq
+	0xFFFF unicode::utf8_encode_len 3 testing::assert_eq
+	0x10000 unicode::utf8_encode_len 4 testing::assert_eq
+	0x10FFFF unicode::utf8_encode_len 4 testing::assert_eq
+	-1 unicode::utf8_encode_len 0 testing::assert_eq
+}
+
+test "unicode::is_valid_codepoint" {
+	0x00 unicode::is_valid_codepoint testing::assert_true
+	0x41 unicode::is_valid_codepoint testing::assert_true
+	0x1F600 unicode::is_valid_codepoint testing::assert_true
+	0x10FFFF unicode::is_valid_codepoint testing::assert_true
+	0xD800 unicode::is_valid_codepoint testing::assert_false
+	0xDFFF unicode::is_valid_codepoint testing::assert_false
+	-1 unicode::is_valid_codepoint testing::assert_false
 }

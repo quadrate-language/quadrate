@@ -36,6 +36,11 @@ pub const September = 9
 pub const October = 10
 pub const November = 11
 pub const December = 12
+/// Error: Format operation failed.
+pub const ErrFormat = 2
+/// Error: Parse operation failed.
+pub const ErrParse = 3
+
 import "libqdtime.a" as "time" {
 	/// Get Unix timestamp in seconds.
 	/// @return timestamp i64 Seconds since 1970-01-01 00:00:00 UTC
@@ -51,6 +56,27 @@ import "libqdtime.a" as "time" {
 	/// @param duration i64 Duration to sleep (use time constants)
 	/// @example time::Second time::sleep
 	pub fn sleep(duration:i64 -- )
+
+	/// Format timestamp using strftime format string.
+	/// Common format specifiers:
+	/// - %Y: 4-digit year, %m: month (01-12), %d: day (01-31)
+	/// - %H: hour (00-23), %M: minute (00-59), %S: second (00-59)
+	/// - %F: date (YYYY-MM-DD), %T: time (HH:MM:SS)
+	/// - %A: weekday name, %B: month name
+	/// @param timestamp i64 Unix timestamp in seconds
+	/// @param format str strftime format string
+	/// @return result str Formatted time string
+	/// @error ErrFormat Format error or invalid timestamp
+	/// @example time::unix "%Y-%m-%d %H:%M:%S" time::format! print
+	pub fn format(timestamp:i64 format:str -- result:str)!
+
+	/// Parse string to timestamp using strptime format string.
+	/// @param input str String to parse
+	/// @param format str strptime format string
+	/// @return timestamp i64 Unix timestamp in seconds
+	/// @error ErrParse Parse failed or invalid format
+	/// @example "2024-01-15" "%Y-%m-%d" time::parse! -> ts
+	pub fn parse(input:str format:str -- timestamp:i64)!
 }
 
 // ============================================================
@@ -494,4 +520,148 @@ pub fn after(ts1:i64 ts2:i64 -- after:i64) {
 pub fn sub(ts1:i64 ts2:i64 -- diff:i64) {
 	-> ts2 -> ts1
 	ts1 ts2 -
+}
+
+/// Check if weekday is a weekend day (Saturday or Sunday).
+/// @param wd i64 Weekday (0=Sunday, 6=Saturday)
+/// @return is_wknd i64 1 if weekend, 0 otherwise
+/// @example time::unix time::weekday time::is_weekend .
+pub fn is_weekend(wd:i64 -- is_wknd:i64) {
+	-> wd
+	wd Sunday == wd Saturday == or
+}
+
+/// Check if weekday is a weekday (Monday-Friday).
+/// @param wd i64 Weekday (0=Sunday, 6=Saturday)
+/// @return is_wkday i64 1 if weekday, 0 otherwise
+/// @example time::unix time::weekday time::is_weekday .
+pub fn is_weekday(wd:i64 -- is_wkday:i64) {
+	is_weekend 0 ==
+}
+
+/// Get number of days in a year.
+/// @param yr i64 Year
+/// @return days i64 365 or 366 for leap year
+/// @example 2024 time::days_in_year .  // 366
+pub fn days_in_year(yr:i64 -- days:i64) {
+	is_leap_year if { 366 } else { 365 }
+}
+
+/// Add days to a timestamp.
+/// @param ts i64 Unix timestamp in seconds
+/// @param days i64 Number of days to add
+/// @return new_ts i64 New timestamp
+/// @example time::unix 7 time::add_days .
+pub fn add_days(ts:i64 days:i64 -- new_ts:i64) {
+	-> days -> ts
+	ts days 86400 * +
+}
+
+/// Add hours to a timestamp.
+/// @param ts i64 Unix timestamp in seconds
+/// @param hours i64 Number of hours to add
+/// @return new_ts i64 New timestamp
+/// @example time::unix 2 time::add_hours .
+pub fn add_hours(ts:i64 hours:i64 -- new_ts:i64) {
+	-> hours -> ts
+	ts hours 3600 * +
+}
+
+/// Add minutes to a timestamp.
+/// @param ts i64 Unix timestamp in seconds
+/// @param mins i64 Number of minutes to add
+/// @return new_ts i64 New timestamp
+/// @example time::unix 30 time::add_minutes .
+pub fn add_minutes(ts:i64 mins:i64 -- new_ts:i64) {
+	-> mins -> ts
+	ts mins 60 * +
+}
+
+/// Get number of full days between two timestamps.
+/// @param ts1 i64 First timestamp in seconds
+/// @param ts2 i64 Second timestamp in seconds
+/// @return days i64 Number of full days between timestamps (absolute)
+/// @example end_ts start_ts time::days_between .
+pub fn days_between(ts1:i64 ts2:i64 -- days:i64) {
+	-> ts2 -> ts1
+	ts1 ts2 - -> diff
+	diff 0 < if { 0 diff - -> diff }
+	diff 86400 /
+}
+
+/// Get number of full hours between two timestamps.
+/// @param ts1 i64 First timestamp in seconds
+/// @param ts2 i64 Second timestamp in seconds
+/// @return hours i64 Number of full hours between timestamps (absolute)
+/// @example end_ts start_ts time::hours_between .
+pub fn hours_between(ts1:i64 ts2:i64 -- hours:i64) {
+	-> ts2 -> ts1
+	ts1 ts2 - -> diff
+	diff 0 < if { 0 diff - -> diff }
+	diff 3600 /
+}
+
+/// Get start of day (midnight) for a timestamp.
+/// @param ts i64 Unix timestamp in seconds
+/// @return midnight_ts i64 Timestamp at midnight of same day
+/// @example time::unix time::start_of_day .
+pub fn start_of_day(ts:i64 -- midnight_ts:i64) {
+	-> ts
+	ts year -> yr
+	ts month -> mon
+	ts day -> d
+	yr mon d 0 0 0 date
+}
+
+/// Get end of day (23:59:59) for a timestamp.
+/// @param ts i64 Unix timestamp in seconds
+/// @return end_ts i64 Timestamp at 23:59:59 of same day
+/// @example time::unix time::end_of_day .
+pub fn end_of_day(ts:i64 -- end_ts:i64) {
+	-> ts
+	ts year -> yr
+	ts month -> mon
+	ts day -> d
+	yr mon d 23 59 59 date
+}
+
+/// Get ISO week number (1-53).
+/// @param ts i64 Unix timestamp in seconds
+/// @return week i64 ISO week number
+/// @example time::unix time::iso_week .
+pub fn iso_week(ts:i64 -- week:i64) {
+	-> ts
+	ts year_day -> yd
+	ts weekday -> wd
+	// Adjust weekday so Monday=1, Sunday=7
+	wd 0 == if { 7 -> wd }
+	// ISO week starts Monday, week 1 contains first Thursday
+	yd wd - 10 + 7 / -> week
+	week 0 < if { 1 -> week }
+	week 53 > if { 53 -> week }
+	week
+}
+
+/// Check if two timestamps are on the same day.
+/// @param ts1 i64 First timestamp
+/// @param ts2 i64 Second timestamp
+/// @return same i64 1 if same day, 0 otherwise
+/// @example ts1 ts2 time::same_day .
+pub fn same_day(ts1:i64 ts2:i64 -- same:i64) {
+	-> ts2 -> ts1
+	ts1 year ts2 year == ts1 month ts2 month == and ts1 day ts2 day == and
+}
+
+/// Get current time in milliseconds since epoch.
+/// @return milliseconds i64 Milliseconds since 1970-01-01 00:00:00 UTC
+/// @example time::millis -> ms
+pub fn millis( -- milliseconds:i64) {
+	time::now time::Millisecond /
+}
+
+/// Get current time in microseconds since epoch.
+/// @return microseconds i64 Microseconds since 1970-01-01 00:00:00 UTC
+/// @example time::micros -> us
+pub fn micros( -- microseconds:i64) {
+	time::now time::Microsecond /
 }

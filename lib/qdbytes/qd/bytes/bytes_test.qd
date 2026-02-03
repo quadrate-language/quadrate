@@ -21,7 +21,6 @@ test "bytes::swap64" {
 	0x0102030405060708 bytes::swap64 0x0807060504030201 testing::assert_eq
 }
 
-// Helper for read/write tests
 fn test_read_write_u16_be( -- result:i64) {
 	16 mem::alloc! -> buf
 	buf 0 0x1234 bytes::write_u16_be
@@ -70,7 +69,6 @@ test "bytes::read_write_u32_le roundtrip" {
 	test_read_write_u32_le testing::assert_true
 }
 
-// Helper for fill and compare
 fn test_bytes_fill( -- result:i64) {
 	16 mem::alloc! -> buf
 	0xAB buf 0 16 bytes::fill
@@ -112,4 +110,155 @@ test "bytes::compare equal" {
 
 test "bytes::compare different" {
 	test_bytes_compare_different testing::assert_true
+}
+
+fn test_bytes_equals_true( -- result:i64) {
+	16 mem::alloc! -> buf1
+	16 mem::alloc! -> buf2
+	0x42 buf1 0 16 bytes::fill
+	0x42 buf2 0 16 bytes::fill
+	buf1 0 buf2 0 16 bytes::equals -> eq
+	buf1 mem::free
+	buf2 mem::free
+	eq
+}
+
+fn test_bytes_equals_false( -- result:i64) {
+	16 mem::alloc! -> buf1
+	16 mem::alloc! -> buf2
+	0x41 buf1 0 16 bytes::fill
+	0x42 buf2 0 16 bytes::fill
+	buf1 0 buf2 0 16 bytes::equals -> eq
+	buf1 mem::free
+	buf2 mem::free
+	eq 0 ==
+}
+
+test "bytes::equals true" {
+	test_bytes_equals_true testing::assert_true
+}
+
+test "bytes::equals false" {
+	test_bytes_equals_false testing::assert_true
+}
+
+fn test_bytes_find_found( -- result:i64) {
+	16 mem::alloc! -> buf
+	0x00 buf 0 16 bytes::fill
+	0x42 buf 5 mem::set_byte
+	buf 0 16 0x42 bytes::find -> idx
+	buf mem::free
+	idx 5 ==
+}
+
+fn test_bytes_find_not_found( -- result:i64) {
+	16 mem::alloc! -> buf
+	0x00 buf 0 16 bytes::fill
+	buf 0 16 0x42 bytes::find -> idx
+	buf mem::free
+	idx -1 ==
+}
+
+test "bytes::find found" {
+	test_bytes_find_found testing::assert_true
+}
+
+test "bytes::find not found" {
+	test_bytes_find_not_found testing::assert_true
+}
+
+fn test_bytes_contains_true( -- result:i64) {
+	16 mem::alloc! -> buf
+	0x00 buf 0 16 bytes::fill
+	0x42 buf 5 mem::set_byte
+	buf 0 16 0x42 bytes::contains -> found
+	buf mem::free
+	found
+}
+
+fn test_bytes_contains_false( -- result:i64) {
+	16 mem::alloc! -> buf
+	0x00 buf 0 16 bytes::fill
+	buf 0 16 0x42 bytes::contains -> found
+	buf mem::free
+	found 0 ==
+}
+
+test "bytes::contains true" {
+	test_bytes_contains_true testing::assert_true
+}
+
+test "bytes::contains false" {
+	test_bytes_contains_false testing::assert_true
+}
+
+fn test_bytes_reverse( -- result:i64) {
+	4 mem::alloc! -> buf
+	0x01 buf 0 mem::set_byte
+	0x02 buf 1 mem::set_byte
+	0x03 buf 2 mem::set_byte
+	0x04 buf 3 mem::set_byte
+	buf 0 4 bytes::reverse
+	buf 0 mem::get_byte -> b0
+	buf 1 mem::get_byte -> b1
+	buf 2 mem::get_byte -> b2
+	buf 3 mem::get_byte -> b3
+	buf mem::free
+	b0 0x04 == b1 0x03 == and b2 0x02 == and b3 0x01 == and
+}
+
+test "bytes::reverse" {
+	test_bytes_reverse testing::assert_true
+}
+
+fn test_bytes_xor( -- result:i64) {
+	4 mem::alloc! -> buf1
+	4 mem::alloc! -> buf2
+	0xFF buf1 0 mem::set_byte
+	0xAA buf1 1 mem::set_byte
+	0x55 buf1 2 mem::set_byte
+	0x00 buf1 3 mem::set_byte
+	0xFF buf2 0 mem::set_byte
+	0xFF buf2 1 mem::set_byte
+	0xFF buf2 2 mem::set_byte
+	0xFF buf2 3 mem::set_byte
+	buf1 0 buf2 0 4 bytes::xor
+	buf1 0 mem::get_byte -> b0
+	buf1 1 mem::get_byte -> b1
+	buf1 2 mem::get_byte -> b2
+	buf1 3 mem::get_byte -> b3
+	buf1 mem::free
+	buf2 mem::free
+	b0 0x00 == b1 0x55 == and b2 0xAA == and b3 0xFF == and
+}
+
+test "bytes::xor" {
+	test_bytes_xor testing::assert_true
+}
+
+fn test_bytes_count( -- result:i64) {
+	16 mem::alloc! -> buf
+	0x00 buf 0 16 bytes::fill
+	0x42 buf 2 mem::set_byte
+	0x42 buf 5 mem::set_byte
+	0x42 buf 10 mem::set_byte
+	buf 0 16 0x42 bytes::count -> n
+	buf mem::free
+	n 3 ==
+}
+
+fn test_bytes_count_zero( -- result:i64) {
+	16 mem::alloc! -> buf
+	0x00 buf 0 16 bytes::fill
+	buf 0 16 0x42 bytes::count -> n
+	buf mem::free
+	n 0 ==
+}
+
+test "bytes::count" {
+	test_bytes_count testing::assert_true
+}
+
+test "bytes::count zero" {
+	test_bytes_count_zero testing::assert_true
 }

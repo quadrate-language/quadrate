@@ -1,0 +1,474 @@
+// Unit tests for the thread module
+use thread
+use mem
+use testing
+
+fn empty_worker() { }
+
+fn sleeping_worker() {
+	5 thread::sleep
+}
+
+test "thread::spawn and join basic" {
+	&empty_worker thread::spawn! -> t
+	t join!
+	1 1 testing::assert_eq
+}
+
+test "thread::sleep" {
+	1 thread::sleep
+	1 1 testing::assert_eq
+}
+
+test "thread::detach" {
+	&sleeping_worker thread::spawn! -> t
+	t detach!
+	20 thread::sleep
+	1 1 testing::assert_eq
+}
+
+test "mutex::new and free" {
+	thread::mutex_new! -> m
+	m free
+	1 1 testing::assert_eq
+}
+
+test "mutex::lock and unlock" {
+	thread::mutex_new! -> m
+	m lock!
+	m unlock!
+	m free
+	1 1 testing::assert_eq
+}
+
+test "mutex::try_lock success" {
+	thread::mutex_new! -> m
+	m try_lock -> got
+	got 1 testing::assert_eq
+	m unlock!
+	m free
+}
+
+test "mutex::multiple lock unlock cycles" {
+	thread::mutex_new! -> m
+	m lock!
+	m unlock!
+	m lock!
+	m unlock!
+	m lock!
+	m unlock!
+	m free
+	1 1 testing::assert_eq
+}
+
+test "channel::buffered create and free" {
+	10 thread::chan_buffered! -> ch
+	ch free
+	1 1 testing::assert_eq
+}
+
+test "channel::buffered cap" {
+	10 thread::chan_buffered! -> ch
+	ch cap 10 testing::assert_eq
+	ch free
+}
+
+test "channel::buffered send and recv" {
+	5 thread::chan_buffered! -> ch
+	ch 42 send!
+	ch recv! -> val
+	val 42 testing::assert_eq
+	ch free
+}
+
+test "channel::buffered multiple values" {
+	3 thread::chan_buffered! -> ch
+	ch 1 send!
+	ch 2 send!
+	ch 3 send!
+
+	ch len 3 testing::assert_eq
+
+	ch recv! -> v1
+	ch recv! -> v2
+	ch recv! -> v3
+
+	v1 1 testing::assert_eq
+	v2 2 testing::assert_eq
+	v3 3 testing::assert_eq
+	ch free
+}
+
+test "channel::buffered try_send success" {
+	2 thread::chan_buffered! -> ch
+	ch 42 try_send -> sent
+	sent 1 testing::assert_eq
+	ch recv! drop
+	ch free
+}
+
+test "channel::buffered try_send full" {
+	1 thread::chan_buffered! -> ch
+	ch 1 send!
+	ch 2 try_send -> sent
+	sent 0 testing::assert_eq
+	ch recv! drop
+	ch free
+}
+
+test "channel::buffered try_recv success" {
+	2 thread::chan_buffered! -> ch
+	ch 42 send!
+	ch try_recv -> success -> val
+	success 1 testing::assert_eq
+	val 42 testing::assert_eq
+	ch free
+}
+
+test "channel::buffered try_recv empty" {
+	2 thread::chan_buffered! -> ch
+	ch try_recv -> success -> val
+	success 0 testing::assert_eq
+	ch free
+}
+
+test "channel::buffered len" {
+	5 thread::chan_buffered! -> ch
+	ch len 0 testing::assert_eq
+	ch 1 send!
+	ch len 1 testing::assert_eq
+	ch 2 send!
+	ch len 2 testing::assert_eq
+	ch recv! drop
+	ch len 1 testing::assert_eq
+	ch free
+}
+
+test "channel::buffered close" {
+	2 thread::chan_buffered! -> ch
+	ch is_closed 0 testing::assert_eq
+	ch close
+	ch is_closed 1 testing::assert_eq
+	ch free
+}
+
+test "channel::buffered recv after close with data" {
+	2 thread::chan_buffered! -> ch
+	ch 42 send!
+	ch close
+	ch recv! -> val
+	val 42 testing::assert_eq
+	ch free
+}
+
+test "channel::buffered FIFO order" {
+	5 thread::chan_buffered! -> ch
+	ch 10 send!
+	ch 20 send!
+	ch 30 send!
+	ch recv! 10 testing::assert_eq
+	ch recv! 20 testing::assert_eq
+	ch recv! 30 testing::assert_eq
+	ch free
+}
+
+test "channel::unbuffered cap is zero" {
+	thread::chan_new! -> ch
+	ch cap 0 testing::assert_eq
+	ch free
+}
+
+test "channel::unbuffered len is zero" {
+	thread::chan_new! -> ch
+	ch len 0 testing::assert_eq
+	ch free
+}
+
+test "waitgroup::new and free" {
+	thread::wg_new! -> wg
+	wg free
+	1 1 testing::assert_eq
+}
+
+test "waitgroup::add and done single" {
+	thread::wg_new! -> wg
+	wg 1 add
+	wg done
+	wg wait!
+	wg free
+	1 1 testing::assert_eq
+}
+
+test "waitgroup::add and done multiple" {
+	thread::wg_new! -> wg
+	wg 3 add
+	wg done
+	wg done
+	wg done
+	wg wait!
+	wg free
+	1 1 testing::assert_eq
+}
+
+test "waitgroup::add multiple times" {
+	thread::wg_new! -> wg
+	wg 1 add
+	wg 1 add
+	wg 1 add
+	wg done
+	wg done
+	wg done
+	wg wait!
+	wg free
+	1 1 testing::assert_eq
+}
+
+test "thread with channel communication" {
+	100 thread::chan_buffered! -> ch
+	ch 100 send!
+	ch 200 send!
+	ch 300 send!
+	ch recv! -> v1
+	ch recv! -> v2
+	ch recv! -> v3
+	v1 100 testing::assert_eq
+	v2 200 testing::assert_eq
+	v3 300 testing::assert_eq
+	ch free
+}
+
+test "mutex protects shared memory" {
+	8 mem::alloc! -> counter
+	0 counter 0 mem::set_i64
+	thread::mutex_new! -> m
+	m lock!
+	counter 0 mem::get_i64 -> val
+	val 1 + counter 0 mem::set_i64
+	m unlock!
+	m lock!
+	counter 0 mem::get_i64 -> val2
+	val2 1 + counter 0 mem::set_i64
+	m unlock!
+	counter 0 mem::get_i64 2 testing::assert_eq
+	counter mem::free
+	m free
+}
+
+test "channel::buffered capacity 1" {
+	1 thread::chan_buffered! -> ch
+	ch cap 1 testing::assert_eq
+	ch 42 send!
+	ch len 1 testing::assert_eq
+	ch recv! 42 testing::assert_eq
+	ch len 0 testing::assert_eq
+	ch free
+}
+
+test "channel::buffered large capacity" {
+	1000 thread::chan_buffered! -> ch
+	ch cap 1000 testing::assert_eq
+	ch free
+}
+
+test "waitgroup::wait with zero count" {
+	thread::wg_new! -> wg
+	wg wait!
+	wg free
+	1 1 testing::assert_eq
+}
+
+test "channel::close twice is safe" {
+	2 thread::chan_buffered! -> ch
+	ch close
+	ch close
+	ch is_closed 1 testing::assert_eq
+	ch free
+}
+
+test "channel::try operations on closed" {
+	2 thread::chan_buffered! -> ch
+	ch close
+	ch 42 try_send -> sent
+	sent 0 testing::assert_eq
+	ch try_recv -> success -> val
+	success 0 testing::assert_eq
+	ch free
+}
+
+test "multiple channels" {
+	5 thread::chan_buffered! -> ch1
+	5 thread::chan_buffered! -> ch2
+	ch1 1 send!
+	ch2 2 send!
+	ch1 recv! 1 testing::assert_eq
+	ch2 recv! 2 testing::assert_eq
+	ch1 free
+	ch2 free
+}
+
+test "multiple mutexes" {
+	thread::mutex_new! -> m1
+	thread::mutex_new! -> m2
+	m1 lock!
+	m2 lock!
+	m1 unlock!
+	m2 unlock!
+	m1 free
+	m2 free
+}
+
+test "channel send recv loop" {
+	10 thread::chan_buffered! -> ch
+	0 5 1 for i {
+		ch i send!
+	}
+	0 -> sum
+	0 5 1 for i {
+		ch recv! -> val
+		sum val + -> sum
+	}
+	sum 10 testing::assert_eq
+	ch free
+}
+
+fn init_counter() { }
+
+test "once::new and free" {
+	thread::once_new! -> o
+	o free
+	1 1 testing::assert_eq
+}
+
+test "once::do runs function" {
+	thread::once_new! -> o
+	o &init_counter do
+	o is_done 1 testing::assert_eq
+	o free
+}
+
+test "once::do runs only once" {
+	thread::once_new! -> o
+	o &init_counter do
+	o &init_counter do
+	o &init_counter do
+	o is_done 1 testing::assert_eq
+	o free
+}
+
+test "once::is_done before call" {
+	thread::once_new! -> o
+	o is_done 0 testing::assert_eq
+	o free
+}
+
+test "thread::self returns non-zero" {
+	thread::self -> id
+	id 0 != testing::assert_true
+}
+
+test "thread::self is consistent" {
+	thread::self -> id1
+	thread::self -> id2
+	id1 id2 testing::assert_eq
+}
+
+test "thread::yield does not crash" {
+	thread::yield
+	thread::yield
+	thread::yield
+	1 1 testing::assert_eq
+}
+
+test "thread::cpu_count returns positive" {
+	thread::cpu_count -> n
+	n 0 > testing::assert_true
+}
+
+test "barrier::new and free" {
+	3 thread::barrier_new! -> b
+	b free
+	1 1 testing::assert_eq
+}
+
+test "barrier::wait single thread" {
+	1 thread::barrier_new! -> b
+	b wait -> serial
+	serial 1 testing::assert_eq
+	b free
+}
+
+test "barrier::multiple waits single thread" {
+	1 thread::barrier_new! -> b
+	b wait drop
+	b wait drop
+	b wait drop
+	b free
+	1 1 testing::assert_eq
+}
+
+test "rwlock::new and free" {
+	thread::rwlock_new! -> rw
+	rw free
+	1 1 testing::assert_eq
+}
+
+test "rwlock::read lock and unlock" {
+	thread::rwlock_new! -> rw
+	rw read_lock!
+	rw read_unlock!
+	rw free
+	1 1 testing::assert_eq
+}
+
+test "rwlock::write lock and unlock" {
+	thread::rwlock_new! -> rw
+	rw write_lock!
+	rw write_unlock!
+	rw free
+	1 1 testing::assert_eq
+}
+
+test "rwlock::multiple read locks single thread" {
+	thread::rwlock_new! -> rw
+	rw read_lock!
+	rw read_unlock!
+	rw free
+	1 1 testing::assert_eq
+}
+
+test "rwlock::try_read success" {
+	thread::rwlock_new! -> rw
+	rw try_read -> got
+	got 1 testing::assert_eq
+	rw read_unlock!
+	rw free
+}
+
+test "rwlock::try_write success" {
+	thread::rwlock_new! -> rw
+	rw try_write -> got
+	got 1 testing::assert_eq
+	rw write_unlock!
+	rw free
+}
+
+test "rwlock::try_write fails when read held" {
+	thread::rwlock_new! -> rw
+	rw read_lock!
+	rw try_write -> got
+	got 0 testing::assert_eq
+	rw read_unlock!
+	rw free
+}
+
+test "rwlock::read write cycle" {
+	thread::rwlock_new! -> rw
+	rw read_lock!
+	rw read_unlock!
+	rw write_lock!
+	rw write_unlock!
+	rw read_lock!
+	rw read_unlock!
+	rw free
+	1 1 testing::assert_eq
+}

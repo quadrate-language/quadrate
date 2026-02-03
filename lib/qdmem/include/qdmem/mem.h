@@ -11,6 +11,7 @@ extern "C" {
 // Named with usr_ prefix for import mechanism
 int usr_mem_alloc(qd_context* ctx);
 int usr_mem_realloc(qd_context* ctx);
+int usr_mem_alloc_aligned(qd_context* ctx);
 
 // Byte operations
 int usr_mem_set_byte(qd_context* ctx);

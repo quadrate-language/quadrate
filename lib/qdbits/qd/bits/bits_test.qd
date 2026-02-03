@@ -3,69 +3,135 @@ use bits
 use testing
 
 test "bits::mask" {
-	255 4 bits::mask 15 testing::assert_eq       // 0xFF masked to 4 bits = 0xF
-	255 8 bits::mask 255 testing::assert_eq      // 0xFF masked to 8 bits = 0xFF
-	1023 5 bits::mask 31 testing::assert_eq      // keep bottom 5 bits
+	255 4 bits::mask 15 testing::assert_eq
+	255 8 bits::mask 255 testing::assert_eq
+	1023 5 bits::mask 31 testing::assert_eq
 	0 4 bits::mask 0 testing::assert_eq
 }
 
 test "bits::has_bit" {
-	10 1 bits::has_bit testing::assert_true      // 0b1010, bit 1 = 1
-	10 0 bits::has_bit testing::assert_false     // 0b1010, bit 0 = 0
-	10 3 bits::has_bit testing::assert_true      // 0b1010, bit 3 = 1
-	10 2 bits::has_bit testing::assert_false     // 0b1010, bit 2 = 0
+	10 1 bits::has_bit testing::assert_true
+	10 0 bits::has_bit testing::assert_false
+	10 3 bits::has_bit testing::assert_true
+	10 2 bits::has_bit testing::assert_false
 }
 
 test "bits::set_bit" {
-	0 0 bits::set_bit 1 testing::assert_eq       // 0b0000 -> 0b0001
-	0 3 bits::set_bit 8 testing::assert_eq       // 0b0000 -> 0b1000
-	8 1 bits::set_bit 10 testing::assert_eq      // 0b1000 -> 0b1010
-	10 1 bits::set_bit 10 testing::assert_eq     // already set
+	0 0 bits::set_bit 1 testing::assert_eq
+	0 3 bits::set_bit 8 testing::assert_eq
+	8 1 bits::set_bit 10 testing::assert_eq
+	10 1 bits::set_bit 10 testing::assert_eq
 }
 
 test "bits::clear_bit" {
-	10 1 bits::clear_bit 8 testing::assert_eq    // 0b1010 -> 0b1000
-	10 3 bits::clear_bit 2 testing::assert_eq    // 0b1010 -> 0b0010
-	8 1 bits::clear_bit 8 testing::assert_eq     // already clear
+	10 1 bits::clear_bit 8 testing::assert_eq
+	10 3 bits::clear_bit 2 testing::assert_eq
+	8 1 bits::clear_bit 8 testing::assert_eq
 }
 
 test "bits::toggle_bit" {
-	10 0 bits::toggle_bit 11 testing::assert_eq  // 0b1010 -> 0b1011
-	10 1 bits::toggle_bit 8 testing::assert_eq   // 0b1010 -> 0b1000
+	10 0 bits::toggle_bit 11 testing::assert_eq
+	10 1 bits::toggle_bit 8 testing::assert_eq
 }
 
 test "bits::popcount" {
 	0 bits::popcount 0 testing::assert_eq
 	1 bits::popcount 1 testing::assert_eq
-	255 bits::popcount 8 testing::assert_eq      // 0xFF = 8 bits set
-	170 bits::popcount 4 testing::assert_eq      // 0b10101010 = 4 bits
-	15 bits::popcount 4 testing::assert_eq       // 0b1111 = 4 bits
+	255 bits::popcount 8 testing::assert_eq
+	170 bits::popcount 4 testing::assert_eq
+	15 bits::popcount 4 testing::assert_eq
 }
 
 test "bits::extract" {
-	214 2 3 bits::extract 5 testing::assert_eq   // 0b11010110, extract 3 bits from pos 2
-	255 0 4 bits::extract 15 testing::assert_eq  // extract bottom 4 bits
-	255 4 4 bits::extract 15 testing::assert_eq  // extract bits 4-7
+	214 2 3 bits::extract 5 testing::assert_eq
+	255 0 4 bits::extract 15 testing::assert_eq
+	255 4 4 bits::extract 15 testing::assert_eq
 }
 
 test "bits::set_bits" {
-	0 5 2 3 bits::set_bits 20 testing::assert_eq  // set 0b101 at position 2 = 0b10100
-	255 0 4 4 bits::set_bits 15 testing::assert_eq  // clear bits 4-7, keep bits 0-3
+	0 5 2 3 bits::set_bits 20 testing::assert_eq
+	255 0 4 4 bits::set_bits 15 testing::assert_eq
 }
 
 test "bits::rotate_left" {
-	3 1 4 bits::rotate_left 6 testing::assert_eq    // 0b0011 -> 0b0110
-	6 1 4 bits::rotate_left 12 testing::assert_eq   // 0b0110 -> 0b1100
-	12 1 4 bits::rotate_left 9 testing::assert_eq   // 0b1100 -> 0b1001 (wraps)
+	3 1 4 bits::rotate_left 6 testing::assert_eq
+	6 1 4 bits::rotate_left 12 testing::assert_eq
+	12 1 4 bits::rotate_left 9 testing::assert_eq
 }
 
 test "bits::rotate_right" {
-	6 1 4 bits::rotate_right 3 testing::assert_eq   // 0b0110 -> 0b0011
-	3 1 4 bits::rotate_right 9 testing::assert_eq   // 0b0011 -> 0b1001 (wraps)
+	6 1 4 bits::rotate_right 3 testing::assert_eq
+	3 1 4 bits::rotate_right 9 testing::assert_eq
 }
 
 test "bits::reverse_bits" {
-	11 4 bits::reverse_bits 13 testing::assert_eq   // 0b1011 -> 0b1101
-	1 4 bits::reverse_bits 8 testing::assert_eq     // 0b0001 -> 0b1000
-	15 4 bits::reverse_bits 15 testing::assert_eq   // 0b1111 -> 0b1111
+	11 4 bits::reverse_bits 13 testing::assert_eq
+	1 4 bits::reverse_bits 8 testing::assert_eq
+	15 4 bits::reverse_bits 15 testing::assert_eq
+}
+
+test "bits::clz" {
+	0 bits::clz 64 testing::assert_eq
+	1 bits::clz 63 testing::assert_eq
+	0x0100000000000000 bits::clz 7 testing::assert_eq
+	256 bits::clz 55 testing::assert_eq
+	0x4000000000000000 bits::clz 1 testing::assert_eq
+}
+
+test "bits::ctz" {
+	0 bits::ctz 64 testing::assert_eq
+	1 bits::ctz 0 testing::assert_eq
+	256 bits::ctz 8 testing::assert_eq
+	0x4000000000000000 bits::ctz 62 testing::assert_eq
+	12 bits::ctz 2 testing::assert_eq
+}
+
+test "bits::is_power_of_two" {
+	1 bits::is_power_of_two testing::assert_true
+	2 bits::is_power_of_two testing::assert_true
+	4 bits::is_power_of_two testing::assert_true
+	8 bits::is_power_of_two testing::assert_true
+	16 bits::is_power_of_two testing::assert_true
+	0 bits::is_power_of_two testing::assert_false
+	3 bits::is_power_of_two testing::assert_false
+	7 bits::is_power_of_two testing::assert_false
+	15 bits::is_power_of_two testing::assert_false
+}
+
+test "bits::next_power_of_two" {
+	0 bits::next_power_of_two 1 testing::assert_eq
+	1 bits::next_power_of_two 1 testing::assert_eq
+	2 bits::next_power_of_two 2 testing::assert_eq
+	3 bits::next_power_of_two 4 testing::assert_eq
+	5 bits::next_power_of_two 8 testing::assert_eq
+	8 bits::next_power_of_two 8 testing::assert_eq
+	9 bits::next_power_of_two 16 testing::assert_eq
+	100 bits::next_power_of_two 128 testing::assert_eq
+}
+
+test "bits::log2" {
+	1 bits::log2 0 testing::assert_eq
+	2 bits::log2 1 testing::assert_eq
+	4 bits::log2 2 testing::assert_eq
+	8 bits::log2 3 testing::assert_eq
+	15 bits::log2 3 testing::assert_eq
+	16 bits::log2 4 testing::assert_eq
+	255 bits::log2 7 testing::assert_eq
+	256 bits::log2 8 testing::assert_eq
+}
+
+test "bits::highest_bit" {
+	0 bits::highest_bit 0 testing::assert_eq
+	1 bits::highest_bit 1 testing::assert_eq
+	10 bits::highest_bit 8 testing::assert_eq
+	15 bits::highest_bit 8 testing::assert_eq
+	255 bits::highest_bit 128 testing::assert_eq
+}
+
+test "bits::lowest_bit" {
+	0 bits::lowest_bit 0 testing::assert_eq
+	1 bits::lowest_bit 1 testing::assert_eq
+	10 bits::lowest_bit 2 testing::assert_eq
+	12 bits::lowest_bit 4 testing::assert_eq
+	128 bits::lowest_bit 128 testing::assert_eq
 }

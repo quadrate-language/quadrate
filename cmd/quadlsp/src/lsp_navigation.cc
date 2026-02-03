@@ -4,9 +4,9 @@
 #include "lsp_impl.h"
 #include <cctype>
 #include <filesystem>
-#include <iostream>
 #include <fstream>
 #include <functional>
+#include <iostream>
 #include <qc/ast.h>
 #include <qc/ast_node_constant.h>
 #include <qc/ast_node_field_access.h>
@@ -251,8 +251,7 @@ json_t* QuadrateLSP::findDefinitionInModule(
 					json_object_set_new(location, "range", range);
 					return location;
 				}
-			} else if (symbolType == "constant" && child &&
-					   child->type() == Qd::IAstNode::Type::CONSTANT_DECLARATION) {
+			} else if (symbolType == "constant" && child && child->type() == Qd::IAstNode::Type::CONSTANT_DECLARATION) {
 				Qd::AstNodeConstant* constNode = static_cast<Qd::AstNodeConstant*>(child);
 				if (constNode->name() == symbolName) {
 					// Found the constant definition
@@ -276,8 +275,7 @@ json_t* QuadrateLSP::findDefinitionInModule(
 					json_object_set_new(location, "range", range);
 					return location;
 				}
-			} else if (symbolType == "struct" && child &&
-					   child->type() == Qd::IAstNode::Type::STRUCT_DECLARATION) {
+			} else if (symbolType == "struct" && child && child->type() == Qd::IAstNode::Type::STRUCT_DECLARATION) {
 				Qd::AstNodeStructDeclaration* structNode = static_cast<Qd::AstNodeStructDeclaration*>(child);
 				if (structNode->name() == symbolName) {
 					// Found the struct definition
@@ -301,8 +299,7 @@ json_t* QuadrateLSP::findDefinitionInModule(
 					json_object_set_new(location, "range", range);
 					return location;
 				}
-			} else if (symbolType == "function" && child &&
-					   child->type() == Qd::IAstNode::Type::IMPORT_STATEMENT) {
+			} else if (symbolType == "function" && child && child->type() == Qd::IAstNode::Type::IMPORT_STATEMENT) {
 				// Check for imported functions (like those in stdlib modules)
 				Qd::AstNodeImport* importNode = static_cast<Qd::AstNodeImport*>(child);
 				const auto& importedFuncs = importNode->functions();
@@ -322,8 +319,8 @@ json_t* QuadrateLSP::findDefinitionInModule(
 
 						json_t* end = json_object();
 						json_object_set_new(end, "line", json_integer(static_cast<json_int_t>(lspLine)));
-						json_object_set_new(end, "character",
-								json_integer(static_cast<json_int_t>(importedFunc->name.length())));
+						json_object_set_new(
+								end, "character", json_integer(static_cast<json_int_t>(importedFunc->name.length())));
 						json_object_set_new(range, "end", end);
 
 						json_object_set_new(location, "range", range);
@@ -1480,8 +1477,7 @@ void QuadrateLSP::handleReferences(const std::string& id, const std::string& uri
 	json_decref(response);
 }
 
-void QuadrateLSP::handlePrepareRename(
-		const std::string& id, const std::string& uri, size_t line, size_t character) {
+void QuadrateLSP::handlePrepareRename(const std::string& id, const std::string& uri, size_t line, size_t character) {
 	json_t* response = json_object();
 	json_object_set_new(response, "jsonrpc", json_string("2.0"));
 	json_object_set_new(response, "id", json_integer(std::stoi(id)));
@@ -1872,7 +1868,8 @@ void QuadrateLSP::handleRename(
 							}
 							// For struct constructions
 							else if (ref->type() == Qd::IAstNode::Type::STRUCT_CONSTRUCTION) {
-								Qd::AstNodeStructConstruction* construction = static_cast<Qd::AstNodeStructConstruction*>(ref);
+								Qd::AstNodeStructConstruction* construction =
+										static_cast<Qd::AstNodeStructConstruction*>(ref);
 								std::istringstream lineStream(siblingText);
 								std::string lineText;
 								for (size_t i = 0; i <= lspLine; i++) {

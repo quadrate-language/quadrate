@@ -156,8 +156,6 @@ test "str::last_index_of" {
 	"hello" "hello" str::last_index_of 0 testing::assert_eq
 }
 
-// === New function tests ===
-
 test "str::is_empty" {
 	"" str::is_empty testing::assert_true
 	"hello" str::is_empty testing::assert_false

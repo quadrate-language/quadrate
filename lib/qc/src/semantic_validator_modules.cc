@@ -1087,8 +1087,8 @@ namespace Qd {
 					// so it matches when compared against fully qualified types
 					// BUT: don't qualify if merging into main (sibling files share main namespace)
 					std::string qualifiedTypeName = typeName;
-					if (typeName.find("::") == std::string::npos && !moduleName.empty() &&
-							moduleName != "main" && !mergeIntoMain) {
+					if (typeName.find("::") == std::string::npos && !moduleName.empty() && moduleName != "main" &&
+							!mergeIntoMain) {
 						qualifiedTypeName = moduleName + "::" + typeName;
 					}
 					mStructFieldStructTypes[qualifiedName][field->name()] = qualifiedTypeName;

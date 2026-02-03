@@ -494,8 +494,8 @@ namespace Qd {
 							}
 
 							if (!found) {
-								std::string errorMsg = "Unknown type '" + typeName + "' in struct field '" +
-													   field->name() + "'";
+								std::string errorMsg =
+										"Unknown type '" + typeName + "' in struct field '" + field->name() + "'";
 								// Try to find similar names
 								std::string suggestion = findSimilarName(baseTypeName, mDefinedStructs);
 								if (!suggestion.empty()) {

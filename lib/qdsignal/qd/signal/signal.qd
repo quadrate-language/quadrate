@@ -92,4 +92,17 @@ import "libqdsignal.a" as "signal" {
 	/// @return signum i64 The signal that was received
 	/// @example signal::wait -> sig
 	pub fn wait( -- signum:i64)
+
+	/// Send a signal to the current process.
+	/// @param signum i64 Signal number to send
+	/// @return result i64 0 on success, -1 on error
+	/// @example signal::SigUsr1 signal::raise drop
+	pub fn raise(signum:i64 -- result:i64)
+
+	/// Send a signal to another process.
+	/// @param pid i64 Process ID to signal
+	/// @param signum i64 Signal number to send
+	/// @return result i64 0 on success, -1 on error
+	/// @example 1234 signal::SigTerm signal::kill drop
+	pub fn kill(pid:i64 signum:i64 -- result:i64)
 }

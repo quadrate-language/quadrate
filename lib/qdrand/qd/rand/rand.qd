@@ -1,6 +1,7 @@
 /// Random number generation using xorshift64* algorithm.
 /// Fast, high-quality PRNG suitable for most applications.
 use time
+use math
 
 /// Random number generator state.
 /// @field state i64 Internal RNG state
@@ -65,17 +66,22 @@ pub fn next(rng:ptr -- rng:ptr n:i64) {
 pub fn int(rng:ptr max:i64 -- rng:ptr n:i64) {
 	-> max
 	-> rng
-	rng next -> raw -> newrng
-	// Make positive and mod
-	raw 0 < if {
-		0 raw -
+
+	// Handle edge case: max <= 0 returns 0
+	max 1 < if {
+		rng 0
 	} else {
-		raw
+		rng next -> raw -> newrng
+		// Make positive and mod
+		raw 0 < if {
+			0 raw -
+		} else {
+			raw
+		}
+		-> pos
+		pos max mod -> result
+		newrng result
 	}
-	-> pos
-	pos max mod -> result
-	newrng
-	result
 }
 
 /// Generate random i64 in range [min, max).
@@ -104,4 +110,229 @@ pub fn range(rng:ptr min:i64 max:i64 -- rng:ptr n:i64) {
 pub fn boolean(rng:ptr -- rng:ptr b:i64) {
 	-> rng
 	rng 2 int
+}
+
+/// Generate random f64 in range [0.0, 1.0).
+/// @param rng ptr RNG state
+/// @return rng ptr Updated RNG state
+/// @return f f64 Random float in [0.0, 1.0)
+/// @example rng rand::float -> rng f
+pub fn float(rng:ptr -- rng:ptr f:f64) {
+	-> rng
+	rng next -> raw -> newrng
+	// Make positive
+	raw 0 < if {
+		0 raw -
+	} else {
+		raw
+	}
+	-> pos
+	// Divide by max i64 to get [0, 1)
+	pos cast<f64> 9223372036854775807.0 / -> result
+	newrng
+	result
+}
+
+/// Generate random f64 in range [min, max).
+/// @param rng ptr RNG state
+/// @param min f64 Lower bound (inclusive)
+/// @param max f64 Upper bound (exclusive)
+/// @return rng ptr Updated RNG state
+/// @return f f64 Random float in [min, max)
+/// @example rng 0.0 10.0 rand::float_range -> rng f
+pub fn float_range(rng:ptr min:f64 max:f64 -- rng:ptr f:f64) {
+	-> max
+	-> min
+	-> rng
+	rng float -> f -> newrng
+	max min - f * min + -> result
+	newrng
+	result
+}
+
+/// Shuffle array in place using Fisher-Yates algorithm.
+/// @param rng ptr RNG state
+/// @param arr ptr Array of i64 values
+/// @param len i64 Array length
+/// @return rng ptr Updated RNG state
+/// @example rng arr len rand::shuffle -> rng
+pub fn shuffle(rng:ptr arr:ptr len:i64 -- rng:ptr) {
+	use mem
+
+	-> len
+	-> arr
+	-> rng
+
+	len 1 > if {
+		len 1 - -> i
+		loop {
+			i 0 <= if { break }
+
+			// Pick random index from 0 to i (inclusive)
+			rng i 1 + int -> j -> rng
+
+			// Swap arr[i] and arr[j]
+			arr i 8 * mem::get_i64 -> tmp
+			arr j 8 * mem::get_i64 arr i 8 * mem::set_i64
+			tmp arr j 8 * mem::set_i64
+
+			i 1 - -> i
+		}
+	}
+
+	rng
+}
+
+/// Pick a random element from array.
+/// @param rng ptr RNG state
+/// @param arr ptr Array of i64 values
+/// @param len i64 Array length
+/// @return rng ptr Updated RNG state
+/// @return val i64 Random element from array
+/// @example rng arr len rand::choice -> rng val
+pub fn choice(rng:ptr arr:ptr len:i64 -- rng:ptr val:i64) {
+	use mem
+
+	-> len
+	-> arr
+	-> rng
+
+	rng len int -> idx -> newrng
+	arr idx 8 * mem::get_i64 -> result
+
+	newrng
+	result
+}
+
+/// Generate random f64 from standard normal distribution (mean=0, stddev=1).
+/// Uses Box-Muller transform.
+/// @param rng ptr RNG state
+/// @return rng ptr Updated RNG state
+/// @return n f64 Random value from N(0,1)
+/// @example rng rand::normal -> rng n
+pub fn normal(rng:ptr -- rng:ptr n:f64) {
+	-> rng
+
+	// Box-Muller transform: generate two uniform randoms, produce one normal
+	rng float -> u1 -> rng
+	rng float -> u2 -> rng
+
+	// Avoid log(0) by ensuring u1 > 0
+	u1 0.0000001 < if {
+		0.0000001 -> u1
+	}
+
+	// Box-Muller formula: sqrt(-2*ln(u1)) * cos(2*pi*u2)
+	// Note: -2*ln(u1) = 2*ln(1/u1) but we use -2*ln(u1) directly
+	u1 math::ln -2.0 * math::sqrt -> r
+	u2 6.283185307179586 * math::cos -> theta
+	r theta * -> result
+
+	rng
+	result
+}
+
+/// Generate random f64 from normal distribution with given mean and stddev.
+/// @param rng ptr RNG state
+/// @param mean f64 Distribution mean
+/// @param stddev f64 Distribution standard deviation
+/// @return rng ptr Updated RNG state
+/// @return n f64 Random value from N(mean, stddev)
+/// @example rng 100.0 15.0 rand::normal_params -> rng n
+pub fn normal_params(rng:ptr mean:f64 stddev:f64 -- rng:ptr n:f64) {
+	-> stddev
+	-> mean
+	-> rng
+
+	rng normal -> z -> rng
+	z stddev * mean + -> result
+
+	rng
+	result
+}
+
+/// Generate random f64 from exponential distribution.
+/// @param rng ptr RNG state
+/// @param lambda f64 Rate parameter (1/mean)
+/// @return rng ptr Updated RNG state
+/// @return n f64 Random value from Exp(lambda)
+/// @example rng 1.0 rand::exponential -> rng n
+pub fn exponential(rng:ptr lambda:f64 -- rng:ptr n:f64) {
+	-> lambda
+	-> rng
+
+	rng float -> u -> rng
+
+	// Avoid log(0)
+	u 0.0000001 < if {
+		0.0000001 -> u
+	}
+
+	// Inverse transform: -ln(u) / lambda
+	// ln(u) is negative for u in (0,1), so -ln(u) is positive
+	u math::ln -1.0 * lambda / -> result
+
+	rng
+	result
+}
+
+/// Pick n random elements from array without replacement.
+/// Uses partial Fisher-Yates algorithm. Output array must have space for n elements.
+/// @param rng ptr RNG state
+/// @param src ptr Source array of i64 values
+/// @param src_len i64 Source array length
+/// @param dst ptr Destination array (must have space for n i64 values)
+/// @param n i64 Number of elements to pick
+/// @return rng ptr Updated RNG state
+/// @example rng src 10 dst 3 rand::sample -> rng
+pub fn sample(rng:ptr src:ptr src_len:i64 dst:ptr n:i64 -- rng:ptr) {
+	use mem
+
+	-> n
+	-> dst
+	-> src_len
+	-> src
+	-> rng
+
+	// Handle edge cases
+	n 0 <= if { rng } else {
+		// Clamp n to src_len
+		n src_len > if {
+			src_len -> n
+		}
+
+		// Copy source to temp array for shuffling (we don't modify original)
+		src_len 8 * mem::alloc! -> temp
+
+		// Copy all elements to temp
+		0 -> i
+		loop {
+			i src_len >= if { break }
+			src i 8 * mem::get_i64 temp i 8 * mem::set_i64
+			i 1 + -> i
+		}
+
+		// Partial Fisher-Yates: shuffle first n elements
+		0 -> i
+		loop {
+			i n >= if { break }
+			// Pick random index from i to src_len-1
+			rng src_len i - int -> j -> rng
+			j i + -> j
+
+			// Swap temp[i] and temp[j]
+			temp i 8 * mem::get_i64 -> tmp_i
+			temp j 8 * mem::get_i64 -> tmp_j
+			tmp_j temp i 8 * mem::set_i64
+			tmp_i temp j 8 * mem::set_i64
+
+			// Copy to destination
+			tmp_j dst i 8 * mem::set_i64
+
+			i 1 + -> i
+		}
+
+		temp mem::free
+		rng
+	}
 }

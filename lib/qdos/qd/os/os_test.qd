@@ -1,0 +1,357 @@
+// Unit tests for the os module
+use os
+use str
+use testing
+
+test "os::getenv existing variable" {
+	"PATH" os::getenv -> path
+	path str::len 0 > testing::assert_true
+}
+
+test "os::getenv non-existing variable" {
+	"QUADRATE_TEST_NONEXISTENT_VAR_12345" os::getenv -> val
+	val str::len 0 testing::assert_eq
+}
+
+test "os::setenv and getenv" {
+	"QUADRATE_TEST_VAR" "test_value_123" os::setenv
+	"QUADRATE_TEST_VAR" os::getenv -> val
+	val "test_value_123" testing::assert_eq
+}
+
+test "os::setenv overwrite" {
+	"QUADRATE_TEST_VAR2" "first" os::setenv
+	"QUADRATE_TEST_VAR2" os::getenv "first" testing::assert_eq
+	"QUADRATE_TEST_VAR2" "second" os::setenv
+	"QUADRATE_TEST_VAR2" os::getenv "second" testing::assert_eq
+}
+
+test "os::unsetenv removes variable" {
+	"QUADRATE_UNSET_TEST" "testvalue" os::setenv
+	"QUADRATE_UNSET_TEST" os::getenv "testvalue" testing::assert_eq
+	"QUADRATE_UNSET_TEST" os::unsetenv
+	"QUADRATE_UNSET_TEST" os::getenv str::len 0 testing::assert_eq
+}
+
+test "os::unsetenv nonexistent is safe" {
+	"QUADRATE_NEVER_SET_VAR_12345" os::unsetenv
+	"QUADRATE_NEVER_SET_VAR_12345" os::getenv str::len 0 testing::assert_eq
+}
+
+test "os::exists for existing directory" {
+	"/tmp" os::exists 1 testing::assert_eq
+}
+
+test "os::exists for non-existing path" {
+	"/nonexistent/path/12345" os::exists 0 testing::assert_eq
+}
+
+test "os::is_dir for directory" {
+	"/tmp" os::is_dir 1 testing::assert_eq
+}
+
+test "os::is_dir for file" {
+	"/etc/passwd" os::is_dir 0 testing::assert_eq
+}
+
+test "os::is_file for file" {
+	"/etc/passwd" os::is_file 1 testing::assert_eq
+}
+
+test "os::is_file for directory" {
+	"/tmp" os::is_file 0 testing::assert_eq
+}
+
+test "os::is_file for non-existing" {
+	"/nonexistent/file/12345" os::is_file 0 testing::assert_eq
+}
+
+test "os::is_dir for non-existing" {
+	"/nonexistent/dir/12345" os::is_dir 0 testing::assert_eq
+}
+
+test "os::cwd returns non-empty" {
+	os::cwd! -> dir
+	dir str::len 0 > testing::assert_true
+}
+
+test "os::cwd returns existing directory" {
+	os::cwd! -> dir
+	dir os::exists 1 testing::assert_eq
+	dir os::is_dir 1 testing::assert_eq
+}
+
+test "os::getpid returns positive" {
+	os::getpid -> pid
+	pid 0 > testing::assert_true
+}
+
+test "os::mktemp creates directory" {
+	os::mktemp! -> tmpdir
+	tmpdir os::exists 1 testing::assert_eq
+	tmpdir os::is_dir 1 testing::assert_eq
+	tmpdir os::rmdir!
+	tmpdir os::exists 0 testing::assert_eq
+}
+
+test "os::mktemp creates unique directories" {
+	os::mktemp! -> tmp1
+	os::mktemp! -> tmp2
+	tmp1 tmp2 str::compare 0 != testing::assert_true
+	tmp1 os::rmdir!
+	tmp2 os::rmdir!
+}
+
+test "os::mkdir creates directory" {
+	os::mktemp! -> tmpdir
+	tmpdir "/subdir" str::concat -> subdir
+	subdir os::mkdir!
+	subdir os::exists 1 testing::assert_eq
+	subdir os::is_dir 1 testing::assert_eq
+	tmpdir os::rmdir!
+}
+
+test "os::mkdir creates nested directories" {
+	os::mktemp! -> tmpdir
+	tmpdir "/a/b/c" str::concat -> nested
+	nested os::mkdir!
+	nested os::exists 1 testing::assert_eq
+	nested os::is_dir 1 testing::assert_eq
+	tmpdir os::rmdir!
+}
+
+test "os::list directory" {
+	os::mktemp! -> tmpdir
+	tmpdir "/sub1" str::concat -> sub1
+	tmpdir "/sub2" str::concat -> sub2
+	sub1 os::mkdir!
+	sub2 os::mkdir!
+	tmpdir os::list! -> count -> entries
+	count 2 testing::assert_eq
+	tmpdir os::rmdir!
+}
+
+test "os::list empty directory" {
+	os::mktemp! -> tmpdir
+	tmpdir os::list! -> count -> entries
+	count 0 testing::assert_eq
+	tmpdir os::rmdir!
+}
+
+test "os::system returns exit code" {
+	"true" os::system -> code
+	code 0 testing::assert_eq
+}
+
+test "os::system failure returns non-zero" {
+	"false" os::system -> code
+	code 0 != testing::assert_true
+}
+
+test "os::exec captures output" {
+	"echo hello" os::exec! -> exitcode -> stdout
+	exitcode 0 testing::assert_eq
+	stdout str::trim "hello" testing::assert_eq
+}
+
+test "os::exec exit code" {
+	"exit 42" os::exec! -> exitcode -> stdout
+	exitcode 42 testing::assert_eq
+}
+
+test "os::popen line by line" {
+	0 -> count
+	"echo -e 'line1\nline2\nline3'" fn (line:str -- ) {
+		count 1 + -> count
+	} os::popen! -> exitcode
+	exitcode 0 testing::assert_eq
+	count 3 testing::assert_eq
+}
+
+test "os::copy and delete" {
+	os::mktemp! -> tmpdir
+	tmpdir "/src.txt" str::concat -> src
+	tmpdir "/dst.txt" str::concat -> dst
+
+	"echo test > " src str::concat os::system drop
+
+	src os::exists 1 testing::assert_eq
+	src dst os::copy!
+	dst os::exists 1 testing::assert_eq
+
+	src os::delete!
+	dst os::delete!
+	src os::exists 0 testing::assert_eq
+	dst os::exists 0 testing::assert_eq
+
+	tmpdir os::rmdir!
+}
+
+test "os::rename file" {
+	os::mktemp! -> tmpdir
+	tmpdir "/old.txt" str::concat -> oldpath
+	tmpdir "/new.txt" str::concat -> newpath
+
+	"echo test > " oldpath str::concat os::system drop
+
+	oldpath os::exists 1 testing::assert_eq
+	oldpath newpath os::rename!
+	oldpath os::exists 0 testing::assert_eq
+	newpath os::exists 1 testing::assert_eq
+
+	newpath os::delete!
+	tmpdir os::rmdir!
+}
+
+test "os::walk visits all entries" {
+	os::mktemp! -> tmpdir
+	tmpdir "/sub1" str::concat -> sub1
+	tmpdir "/sub2" str::concat -> sub2
+	sub1 os::mkdir!
+	sub2 os::mkdir!
+
+	0 -> visited
+	tmpdir fn (path:str is_dir:i64 depth:i64 -- ) {
+		visited 1 + -> visited
+	} os::walk!
+
+	visited 2 >= testing::assert_true
+
+	tmpdir os::rmdir!
+}
+
+test "os::glob matches files" {
+	os::mktemp! -> tmpdir
+	tmpdir "/test1.txt" str::concat -> f1
+	tmpdir "/test2.txt" str::concat -> f2
+	tmpdir "/other.dat" str::concat -> f3
+
+	"touch " f1 str::concat os::system drop
+	"touch " f2 str::concat os::system drop
+	"touch " f3 str::concat os::system drop
+
+	tmpdir "/*.txt" str::concat os::glob! -> count -> entries
+	count 2 testing::assert_eq
+
+	tmpdir os::rmdir!
+}
+
+test "os::exists empty path" {
+	"" os::exists 0 testing::assert_eq
+}
+
+test "os::is_dir empty path" {
+	"" os::is_dir 0 testing::assert_eq
+}
+
+test "os::is_file empty path" {
+	"" os::is_file 0 testing::assert_eq
+}
+
+test "os::getenv empty name" {
+	"" os::getenv -> val
+	val str::len 0 testing::assert_eq
+}
+
+test "os::symlink and readlink" {
+	os::mktemp! -> tmpdir
+	tmpdir "/target.txt" str::concat -> target
+	tmpdir "/link.txt" str::concat -> linkpath
+
+	"touch " target str::concat os::system drop
+
+	target linkpath os::symlink!
+
+	linkpath os::readlink! -> read_target
+	read_target target testing::assert_eq
+
+	linkpath os::delete!
+	target os::delete!
+	tmpdir os::rmdir!
+}
+
+test "os::is_symlink true" {
+	os::mktemp! -> tmpdir
+	tmpdir "/target.txt" str::concat -> target
+	tmpdir "/link.txt" str::concat -> linkpath
+
+	"touch " target str::concat os::system drop
+	target linkpath os::symlink!
+
+	linkpath os::is_symlink 1 testing::assert_eq
+
+	linkpath os::delete!
+	target os::delete!
+	tmpdir os::rmdir!
+}
+
+test "os::is_symlink false for regular file" {
+	os::mktemp! -> tmpdir
+	tmpdir "/regular.txt" str::concat -> path
+
+	"touch " path str::concat os::system drop
+
+	path os::is_symlink 0 testing::assert_eq
+
+	path os::delete!
+	tmpdir os::rmdir!
+}
+
+test "os::is_symlink false for directory" {
+	os::mktemp! -> tmpdir
+	tmpdir "/subdir" str::concat -> path
+
+	path os::mkdir!
+
+	path os::is_symlink 0 testing::assert_eq
+
+	path os::rmdir!
+	tmpdir os::rmdir!
+}
+
+test "os::is_symlink false for nonexistent" {
+	"/nonexistent/path/12345" os::is_symlink 0 testing::assert_eq
+}
+
+test "os::chmod basic" {
+	os::mktemp! -> tmpdir
+	tmpdir "/chmod_test.txt" str::concat -> path
+
+	"touch " path str::concat os::system drop
+
+	path 420 os::chmod!
+
+	path os::exists 1 testing::assert_eq
+
+	path os::delete!
+	tmpdir os::rmdir!
+}
+
+test "os::chmod executable" {
+	os::mktemp! -> tmpdir
+	tmpdir "/script.sh" str::concat -> path
+
+	"touch " path str::concat os::system drop
+
+	path 493 os::chmod!
+
+	path os::exists 1 testing::assert_eq
+
+	path os::delete!
+	tmpdir os::rmdir!
+}
+
+test "os::getuid returns non-negative" {
+	os::getuid -> uid
+	uid 0 >= testing::assert_true
+}
+
+test "os::getgid returns non-negative" {
+	os::getgid -> gid
+	gid 0 >= testing::assert_true
+}
+
+test "os::hostname returns non-empty" {
+	os::hostname! -> name
+	name str::len 0 > testing::assert_true
+}

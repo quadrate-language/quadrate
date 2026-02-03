@@ -132,8 +132,8 @@ std::string gitClone(const GitRef& gitRef) {
 // Ensure namespace symlink exists for an installed module
 // Parses qd.json to determine namespace, creates symlink if needed
 // Returns true on success
-bool ensureNamespaceSymlink(const std::string& installedDir, const std::string& installedDirName,
-							const std::string& fallbackModuleName) {
+bool ensureNamespaceSymlink(
+		const std::string& installedDir, const std::string& installedDirName, const std::string& fallbackModuleName) {
 	// Parse namespace from qd.json
 	std::string manifestPath = installedDir + "/qd.json";
 	std::string manifestModuleName = parseModuleName(manifestPath);

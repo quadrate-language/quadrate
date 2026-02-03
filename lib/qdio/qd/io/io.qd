@@ -17,6 +17,8 @@ pub const ErrSeek = 7
 pub const ErrEof = 8
 /// Error: Invalid argument.
 pub const ErrInvalidArg = 9
+/// Error: Stat operation failed.
+pub const ErrStat = 10
 
 /// Open mode: read only.
 pub const Read = "r"
@@ -136,4 +138,40 @@ import "libqdio.a" as "io" {
 	/// Useful for progress indicators that don't use newlines.
 	/// @example "Loading..." print io::flush
 	pub fn flush( -- )
+
+	/// Get file size in bytes.
+	/// @param path str File path
+	/// @return size i64 File size in bytes
+	/// @error ErrNotFound File not found
+	/// @error ErrPermission Permission denied
+	/// @error ErrStat Stat operation failed
+	/// @example "/etc/hostname" io::stat_size! -> size
+	pub fn stat_size(path:str -- size:i64)!
+
+	/// Get file modification time.
+	/// @param path str File path
+	/// @return mtime i64 Last modification time as Unix timestamp
+	/// @error ErrNotFound File not found
+	/// @error ErrPermission Permission denied
+	/// @error ErrStat Stat operation failed
+	/// @example "/etc/hostname" io::stat_mtime! -> mtime
+	pub fn stat_mtime(path:str -- mtime:i64)!
+
+	/// Get file access time.
+	/// @param path str File path
+	/// @return atime i64 Last access time as Unix timestamp
+	/// @error ErrNotFound File not found
+	/// @error ErrPermission Permission denied
+	/// @error ErrStat Stat operation failed
+	/// @example "/etc/hostname" io::stat_atime! -> atime
+	pub fn stat_atime(path:str -- atime:i64)!
+
+	/// Get file permissions (Unix mode).
+	/// @param path str File path
+	/// @return mode i64 Unix permission mode (e.g., 0644)
+	/// @error ErrNotFound File not found
+	/// @error ErrPermission Permission denied
+	/// @error ErrStat Stat operation failed
+	/// @example "/etc/hostname" io::stat_mode! -> mode
+	pub fn stat_mode(path:str -- mode:i64)!
 }

@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
+#include <sys/stat.h>
 #include <sys/wait.h>
 #include <unistd.h>
 #include "os_fs.h"
@@ -443,6 +444,34 @@ int usr_os_setenv(qd_context* ctx) {
 	if (result != 0) {
 		return (int){errno};
 	}
+
+	return (int){OS_ERR_OK};
+}
+
+int usr_os_unsetenv(qd_context* ctx) {
+	size_t stack_size = qd_stack_size(ctx->st);
+	if (stack_size < 1) {
+		fprintf(stderr, "Fatal error in os::unsetenv: Stack underflow (required 1 element, have %zu)\n", stack_size);
+		qd_print_stack_trace(ctx);
+		abort();
+	}
+
+	qd_stack_element_t name_elem;
+	qd_stack_error err = qd_stack_pop(ctx->st, &name_elem);
+	if (err != QD_STACK_OK) {
+		fprintf(stderr, "Fatal error in os::unsetenv: Failed to pop name\n");
+		qd_print_stack_trace(ctx);
+		abort();
+	}
+
+	if (name_elem.type != QD_STACK_TYPE_STR) {
+		fprintf(stderr, "Fatal error in os::unsetenv: Expected string name, got type %d\n", name_elem.type);
+		qd_print_stack_trace(ctx);
+		abort();
+	}
+
+	unsetenv(qd_string_data(name_elem.value.s));
+	qd_string_release(name_elem.value.s);
 
 	return (int){OS_ERR_OK};
 }
@@ -941,6 +970,318 @@ int usr_os_cwd(qd_context* ctx) {
 	// Push the path and Ok
 	qd_stack_push_str(ctx->st, cwd);
 	free(cwd);
+	qd_stack_push_int(ctx->st, OS_ERR_OK);
+	return (int){0};
+}
+
+int usr_os_symlink(qd_context* ctx) {
+	size_t stack_size = qd_stack_size(ctx->st);
+	if (stack_size < 2) {
+		fprintf(stderr, "Fatal error in os::symlink: Stack underflow (need 2, have %zu)\n", stack_size);
+		qd_print_stack_trace(ctx);
+		abort();
+	}
+
+	// Pop linkpath (the path where the link will be created)
+	qd_stack_element_t linkpath_elem;
+	qd_stack_error err = qd_stack_pop(ctx->st, &linkpath_elem);
+	if (err != QD_STACK_OK) {
+		fprintf(stderr, "Fatal error in os::symlink: Failed to pop linkpath\n");
+		abort();
+	}
+	if (linkpath_elem.type != QD_STACK_TYPE_STR) {
+		fprintf(stderr, "Fatal error in os::symlink: Expected string for linkpath, got %d\n", linkpath_elem.type);
+		abort();
+	}
+
+	// Pop target (what the link points to)
+	qd_stack_element_t target_elem;
+	err = qd_stack_pop(ctx->st, &target_elem);
+	if (err != QD_STACK_OK) {
+		qd_string_release(linkpath_elem.value.s);
+		fprintf(stderr, "Fatal error in os::symlink: Failed to pop target\n");
+		abort();
+	}
+	if (target_elem.type != QD_STACK_TYPE_STR) {
+		qd_string_release(linkpath_elem.value.s);
+		fprintf(stderr, "Fatal error in os::symlink: Expected string for target, got %d\n", target_elem.type);
+		abort();
+	}
+
+	const char* target = qd_string_data(target_elem.value.s);
+	const char* linkpath = qd_string_data(linkpath_elem.value.s);
+
+	if (!target || !linkpath) {
+		qd_string_release(target_elem.value.s);
+		qd_string_release(linkpath_elem.value.s);
+		ctx->error_code = OS_ERR_INVALID_ARG;
+		qd_set_error_msg(ctx, "os::symlink: null path string");
+		qd_stack_push_int(ctx->st, (int64_t)OS_ERR_INVALID_ARG);
+		return (int){OS_ERR_INVALID_ARG};
+	}
+
+	if (symlink(target, linkpath) != 0) {
+		int error_code = errno_to_os_error(errno);
+		qd_string_release(target_elem.value.s);
+		qd_string_release(linkpath_elem.value.s);
+		ctx->error_code = error_code;
+		char err_buf[256];
+		snprintf(err_buf, sizeof(err_buf), "os::symlink: %s", strerror(errno));
+		qd_set_error_msg(ctx, err_buf);
+		qd_stack_push_int(ctx->st, (int64_t)error_code);
+		return (int){error_code};
+	}
+
+	qd_string_release(target_elem.value.s);
+	qd_string_release(linkpath_elem.value.s);
+	qd_stack_push_int(ctx->st, OS_ERR_OK);
+	return (int){0};
+}
+
+int usr_os_readlink(qd_context* ctx) {
+	size_t stack_size = qd_stack_size(ctx->st);
+	if (stack_size < 1) {
+		fprintf(stderr, "Fatal error in os::readlink: Stack underflow (need 1, have %zu)\n", stack_size);
+		qd_print_stack_trace(ctx);
+		abort();
+	}
+
+	qd_stack_element_t path_elem;
+	qd_stack_error err = qd_stack_pop(ctx->st, &path_elem);
+	if (err != QD_STACK_OK) {
+		fprintf(stderr, "Fatal error in os::readlink: Failed to pop path\n");
+		abort();
+	}
+	if (path_elem.type != QD_STACK_TYPE_STR) {
+		fprintf(stderr, "Fatal error in os::readlink: Expected string for path, got %d\n", path_elem.type);
+		abort();
+	}
+
+	const char* path = qd_string_data(path_elem.value.s);
+	if (!path) {
+		qd_string_release(path_elem.value.s);
+		ctx->error_code = OS_ERR_INVALID_ARG;
+		qd_set_error_msg(ctx, "os::readlink: null path string");
+		qd_stack_push_int(ctx->st, (int64_t)OS_ERR_INVALID_ARG);
+		return (int){OS_ERR_INVALID_ARG};
+	}
+
+	// Use a buffer to read the link target
+	char buf[4096];
+	ssize_t len = readlink(path, buf, sizeof(buf) - 1);
+	if (len < 0) {
+		int error_code = errno_to_os_error(errno);
+		qd_string_release(path_elem.value.s);
+		ctx->error_code = error_code;
+		char err_buf[256];
+		snprintf(err_buf, sizeof(err_buf), "os::readlink: %s", strerror(errno));
+		qd_set_error_msg(ctx, err_buf);
+		qd_stack_push_int(ctx->st, (int64_t)error_code);
+		return (int){error_code};
+	}
+
+	buf[len] = '\0';
+	qd_string_release(path_elem.value.s);
+	qd_stack_push_str(ctx->st, buf);
+	qd_stack_push_int(ctx->st, OS_ERR_OK);
+	return (int){0};
+}
+
+int usr_os_is_symlink(qd_context* ctx) {
+	size_t stack_size = qd_stack_size(ctx->st);
+	if (stack_size < 1) {
+		fprintf(stderr, "Fatal error in os::is_symlink: Stack underflow (need 1, have %zu)\n", stack_size);
+		qd_print_stack_trace(ctx);
+		abort();
+	}
+
+	qd_stack_element_t path_elem;
+	qd_stack_error err = qd_stack_pop(ctx->st, &path_elem);
+	if (err != QD_STACK_OK) {
+		fprintf(stderr, "Fatal error in os::is_symlink: Failed to pop path\n");
+		abort();
+	}
+	if (path_elem.type != QD_STACK_TYPE_STR) {
+		fprintf(stderr, "Fatal error in os::is_symlink: Expected string for path, got %d\n", path_elem.type);
+		abort();
+	}
+
+	const char* path = qd_string_data(path_elem.value.s);
+	if (!path) {
+		qd_string_release(path_elem.value.s);
+		qd_stack_push_int(ctx->st, 0);
+		return (int){0};
+	}
+
+	// Use lstat to not follow the link
+	struct stat st;
+	int result = 0;
+	if (lstat(path, &st) == 0 && S_ISLNK(st.st_mode)) {
+		result = 1;
+	}
+
+	qd_string_release(path_elem.value.s);
+	qd_stack_push_int(ctx->st, (int64_t)result);
+	return (int){0};
+}
+
+int usr_os_chmod(qd_context* ctx) {
+	size_t stack_size = qd_stack_size(ctx->st);
+	if (stack_size < 2) {
+		fprintf(stderr, "Fatal error in os::chmod: Stack underflow (need 2, have %zu)\n", stack_size);
+		qd_print_stack_trace(ctx);
+		abort();
+	}
+
+	// Pop mode
+	qd_stack_element_t mode_elem;
+	qd_stack_error err = qd_stack_pop(ctx->st, &mode_elem);
+	if (err != QD_STACK_OK) {
+		fprintf(stderr, "Fatal error in os::chmod: Failed to pop mode\n");
+		abort();
+	}
+	if (mode_elem.type != QD_STACK_TYPE_INT) {
+		fprintf(stderr, "Fatal error in os::chmod: Expected integer for mode, got %d\n", mode_elem.type);
+		abort();
+	}
+
+	// Pop path
+	qd_stack_element_t path_elem;
+	err = qd_stack_pop(ctx->st, &path_elem);
+	if (err != QD_STACK_OK) {
+		fprintf(stderr, "Fatal error in os::chmod: Failed to pop path\n");
+		abort();
+	}
+	if (path_elem.type != QD_STACK_TYPE_STR) {
+		fprintf(stderr, "Fatal error in os::chmod: Expected string for path, got %d\n", path_elem.type);
+		abort();
+	}
+
+	const char* path = qd_string_data(path_elem.value.s);
+	if (!path) {
+		qd_string_release(path_elem.value.s);
+		ctx->error_code = OS_ERR_INVALID_ARG;
+		qd_set_error_msg(ctx, "os::chmod: null path string");
+		qd_stack_push_int(ctx->st, (int64_t)OS_ERR_INVALID_ARG);
+		return (int){OS_ERR_INVALID_ARG};
+	}
+
+	mode_t mode = (mode_t)(mode_elem.value.i & 07777);
+	if (chmod(path, mode) != 0) {
+		int error_code = errno_to_os_error(errno);
+		qd_string_release(path_elem.value.s);
+		ctx->error_code = error_code;
+		char err_buf[256];
+		snprintf(err_buf, sizeof(err_buf), "os::chmod: %s", strerror(errno));
+		qd_set_error_msg(ctx, err_buf);
+		qd_stack_push_int(ctx->st, (int64_t)error_code);
+		return (int){error_code};
+	}
+
+	qd_string_release(path_elem.value.s);
+	qd_stack_push_int(ctx->st, OS_ERR_OK);
+	return (int){0};
+}
+
+int usr_os_chown(qd_context* ctx) {
+	size_t stack_size = qd_stack_size(ctx->st);
+	if (stack_size < 3) {
+		fprintf(stderr, "Fatal error in os::chown: Stack underflow (need 3, have %zu)\n", stack_size);
+		qd_print_stack_trace(ctx);
+		abort();
+	}
+
+	// Pop gid
+	qd_stack_element_t gid_elem;
+	qd_stack_error err = qd_stack_pop(ctx->st, &gid_elem);
+	if (err != QD_STACK_OK) {
+		fprintf(stderr, "Fatal error in os::chown: Failed to pop gid\n");
+		abort();
+	}
+	if (gid_elem.type != QD_STACK_TYPE_INT) {
+		fprintf(stderr, "Fatal error in os::chown: Expected integer for gid, got %d\n", gid_elem.type);
+		abort();
+	}
+
+	// Pop uid
+	qd_stack_element_t uid_elem;
+	err = qd_stack_pop(ctx->st, &uid_elem);
+	if (err != QD_STACK_OK) {
+		fprintf(stderr, "Fatal error in os::chown: Failed to pop uid\n");
+		abort();
+	}
+	if (uid_elem.type != QD_STACK_TYPE_INT) {
+		fprintf(stderr, "Fatal error in os::chown: Expected integer for uid, got %d\n", uid_elem.type);
+		abort();
+	}
+
+	// Pop path
+	qd_stack_element_t path_elem;
+	err = qd_stack_pop(ctx->st, &path_elem);
+	if (err != QD_STACK_OK) {
+		fprintf(stderr, "Fatal error in os::chown: Failed to pop path\n");
+		abort();
+	}
+	if (path_elem.type != QD_STACK_TYPE_STR) {
+		fprintf(stderr, "Fatal error in os::chown: Expected string for path, got %d\n", path_elem.type);
+		abort();
+	}
+
+	const char* path = qd_string_data(path_elem.value.s);
+	if (!path) {
+		qd_string_release(path_elem.value.s);
+		ctx->error_code = OS_ERR_INVALID_ARG;
+		qd_set_error_msg(ctx, "os::chown: null path string");
+		qd_stack_push_int(ctx->st, (int64_t)OS_ERR_INVALID_ARG);
+		return (int){OS_ERR_INVALID_ARG};
+	}
+
+	uid_t uid = (uid_t)uid_elem.value.i;
+	gid_t gid = (gid_t)gid_elem.value.i;
+
+	// Allow -1 to mean "don't change"
+	if (uid_elem.value.i == -1) uid = (uid_t)-1;
+	if (gid_elem.value.i == -1) gid = (gid_t)-1;
+
+	if (chown(path, uid, gid) != 0) {
+		int error_code = errno_to_os_error(errno);
+		qd_string_release(path_elem.value.s);
+		ctx->error_code = error_code;
+		char err_buf[256];
+		snprintf(err_buf, sizeof(err_buf), "os::chown: %s", strerror(errno));
+		qd_set_error_msg(ctx, err_buf);
+		qd_stack_push_int(ctx->st, (int64_t)error_code);
+		return (int){error_code};
+	}
+
+	qd_string_release(path_elem.value.s);
+	qd_stack_push_int(ctx->st, OS_ERR_OK);
+	return (int){0};
+}
+
+int usr_os_getuid(qd_context* ctx) {
+	uid_t uid = getuid();
+	qd_stack_push_int(ctx->st, (int64_t)uid);
+	return (int){0};
+}
+
+int usr_os_getgid(qd_context* ctx) {
+	gid_t gid = getgid();
+	qd_stack_push_int(ctx->st, (int64_t)gid);
+	return (int){0};
+}
+
+int usr_os_hostname(qd_context* ctx) {
+	char hostname[256];
+	if (gethostname(hostname, sizeof(hostname)) != 0) {
+		int error_code = errno_to_os_error(errno);
+		ctx->error_code = error_code;
+		qd_set_error_msg(ctx, "os::hostname: failed to get hostname");
+		qd_stack_push_int(ctx->st, (int64_t)error_code);
+		return (int){error_code};
+	}
+	hostname[sizeof(hostname) - 1] = '\0';  // Ensure null-termination
+	qd_stack_push_str(ctx->st, hostname);
 	qd_stack_push_int(ctx->st, OS_ERR_OK);
 	return (int){0};
 }

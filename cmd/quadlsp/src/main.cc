@@ -1397,7 +1397,7 @@ std::string QuadrateLSP::resolveModulePath(const std::string& moduleName, const 
 					if (!resolved.empty()) {
 						// Check if it's a local path
 						bool isPath = (resolved[0] == '/' || resolved[0] == '.' ||
-								(resolved.size() > 1 && resolved[0] == '~' && resolved[1] == '/'));
+									   (resolved.size() > 1 && resolved[0] == '~' && resolved[1] == '/'));
 
 						if (isPath) {
 							resolved = expandTilde(resolved);

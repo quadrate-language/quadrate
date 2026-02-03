@@ -1,13 +1,26 @@
 // Unit tests for the io module
 use io
+use os
+use mem
+use str
 use testing
 
-test "io constants" {
+test "io constants - modes" {
 	io::Read "r" testing::assert_eq
 	io::Write "w" testing::assert_eq
 	io::Append "a" testing::assert_eq
 	io::ReadBinary "rb" testing::assert_eq
 	io::WriteBinary "wb" testing::assert_eq
+	io::AppendBinary "ab" testing::assert_eq
+	io::ReadWrite "r+" testing::assert_eq
+	io::ReadWriteBinary "rb+" testing::assert_eq
+	io::WriteRead "w+" testing::assert_eq
+	io::WriteReadBinary "wb+" testing::assert_eq
+	io::AppendRead "a+" testing::assert_eq
+	io::AppendReadBinary "ab+" testing::assert_eq
+}
+
+test "io constants - seek" {
 	io::SeekSet 0 testing::assert_eq
 	io::SeekCur 1 testing::assert_eq
 	io::SeekEnd 2 testing::assert_eq
@@ -21,15 +34,360 @@ test "io error constants" {
 	io::ErrWrite 6 testing::assert_eq
 	io::ErrSeek 7 testing::assert_eq
 	io::ErrEof 8 testing::assert_eq
-}
-
-// Helper function for write/read file test
-fn test_write_read_file( -- result:i64) {
-	"/tmp/quadrate_io_test.txt" "Hello, World!" io::write_file!
-	"/tmp/quadrate_io_test.txt" io::read_file! -> contents
-	contents "Hello, World!" eq
+	io::ErrInvalidArg 9 testing::assert_eq
 }
 
 test "io::write_file and read_file" {
-	test_write_read_file testing::assert_true
+	os::mktemp! -> tmpdir
+	tmpdir "/test.txt" str::concat -> path
+	path "Hello, World!" io::write_file!
+	path io::read_file! -> contents
+	contents "Hello, World!" testing::assert_eq
+	path os::delete!
+	tmpdir os::rmdir!
+}
+
+test "io::write_file overwrites" {
+	os::mktemp! -> tmpdir
+	tmpdir "/overwrite.txt" str::concat -> path
+	path "first" io::write_file!
+	path "second" io::write_file!
+	path io::read_file! -> contents
+	contents "second" testing::assert_eq
+	path os::delete!
+	tmpdir os::rmdir!
+}
+
+test "io::read_file empty file" {
+	os::mktemp! -> tmpdir
+	tmpdir "/empty.txt" str::concat -> path
+	path "" io::write_file!
+	path io::read_file! -> contents
+	contents str::len 0 testing::assert_eq
+	path os::delete!
+	tmpdir os::rmdir!
+}
+
+test "io::write_file multiline" {
+	os::mktemp! -> tmpdir
+	tmpdir "/multi.txt" str::concat -> path
+	path "line1\nline2\nline3" io::write_file!
+	path io::read_file! -> contents
+	contents "line1" str::contains testing::assert_true
+	contents "line2" str::contains testing::assert_true
+	contents "line3" str::contains testing::assert_true
+	path os::delete!
+	tmpdir os::rmdir!
+}
+
+test "io::open and close write mode" {
+	os::mktemp! -> tmpdir
+	tmpdir "/open_test.txt" str::concat -> path
+	path io::Write io::open! -> f
+	f io::close
+	path os::exists 1 testing::assert_eq
+	path os::delete!
+	tmpdir os::rmdir!
+}
+
+test "io::open read existing file" {
+	os::mktemp! -> tmpdir
+	tmpdir "/readable.txt" str::concat -> path
+	path "test content" io::write_file!
+	path io::Read io::open! -> f
+	f io::close
+	path os::delete!
+	tmpdir os::rmdir!
+}
+
+test "io::seek and tell" {
+	os::mktemp! -> tmpdir
+	tmpdir "/seek_test.txt" str::concat -> path
+	path "0123456789" io::write_file!
+
+	path io::Read io::open! -> f
+	f io::tell! 0 testing::assert_eq
+
+	f 5 io::SeekSet io::seek! -> pos
+	pos 5 testing::assert_eq
+	f io::tell! 5 testing::assert_eq
+
+	f io::close
+	path os::delete!
+	tmpdir os::rmdir!
+}
+
+test "io::seek from current" {
+	os::mktemp! -> tmpdir
+	tmpdir "/seek_cur.txt" str::concat -> path
+	path "0123456789" io::write_file!
+
+	path io::Read io::open! -> f
+	f 3 io::SeekSet io::seek! drop
+	f 2 io::SeekCur io::seek! -> pos
+	pos 5 testing::assert_eq
+
+	f io::close
+	path os::delete!
+	tmpdir os::rmdir!
+}
+
+test "io::seek from end" {
+	os::mktemp! -> tmpdir
+	tmpdir "/seek_end.txt" str::concat -> path
+	path "0123456789" io::write_file!
+
+	path io::Read io::open! -> f
+	f -3 io::SeekEnd io::seek! -> pos
+	pos 7 testing::assert_eq
+
+	f io::close
+	path os::delete!
+	tmpdir os::rmdir!
+}
+
+test "io::write and read with buffers" {
+	os::mktemp! -> tmpdir
+	tmpdir "/buffer_test.txt" str::concat -> path
+
+	path io::Write io::open! -> f
+	"Hello" mem::from_string -> len -> buf
+	f buf len io::write! -> written
+	written 5 testing::assert_eq
+	f io::close
+	buf mem::free
+
+	path io::read_file! -> contents
+	contents "Hello" testing::assert_eq
+
+	path os::delete!
+	tmpdir os::rmdir!
+}
+
+test "io::read partial" {
+	os::mktemp! -> tmpdir
+	tmpdir "/partial.txt" str::concat -> path
+	path "ABCDEFGHIJ" io::write_file!
+
+	path io::Read io::open! -> f
+	10 mem::alloc! -> buf
+	f buf 3 io::read! -> n
+	n 3 testing::assert_eq
+	buf 3 mem::to_string "ABC" testing::assert_eq
+
+	buf mem::free
+	f io::close
+	path os::delete!
+	tmpdir os::rmdir!
+}
+
+test "io::eof at start" {
+	os::mktemp! -> tmpdir
+	tmpdir "/eof_test.txt" str::concat -> path
+	path "content" io::write_file!
+
+	path io::Read io::open! -> f
+	f io::eof -> at_eof -> f2
+	at_eof 0 testing::assert_eq
+
+	f2 io::close
+	path os::delete!
+	tmpdir os::rmdir!
+}
+
+test "io::eof after reading all" {
+	os::mktemp! -> tmpdir
+	tmpdir "/eof_end.txt" str::concat -> path
+	path "AB" io::write_file!
+
+	path io::Read io::open! -> f
+	10 mem::alloc! -> buf
+
+	f buf 10 io::read! -> n
+	n 2 testing::assert_eq
+
+	f buf 10 io::read! -> n2
+	n2 0 testing::assert_eq
+
+	f io::eof -> at_eof -> f2
+	at_eof 1 testing::assert_eq
+
+	buf mem::free
+	f2 io::close
+	path os::delete!
+	tmpdir os::rmdir!
+}
+
+test "io::open append mode" {
+	os::mktemp! -> tmpdir
+	tmpdir "/append.txt" str::concat -> path
+	path "first" io::write_file!
+
+	path io::Append io::open! -> f
+	"second" mem::from_string -> len -> buf
+	f buf len io::write! drop
+	buf mem::free
+	f io::close
+
+	path io::read_file! -> contents
+	contents "firstsecond" testing::assert_eq
+
+	path os::delete!
+	tmpdir os::rmdir!
+}
+
+test "io::binary write and read" {
+	os::mktemp! -> tmpdir
+	tmpdir "/binary.bin" str::concat -> path
+
+	path io::WriteBinary io::open! -> f
+	4 mem::alloc! -> buf
+	0x41 buf 0 mem::set_byte
+	0x00 buf 1 mem::set_byte
+	0x42 buf 2 mem::set_byte
+	0x43 buf 3 mem::set_byte
+	f buf 4 io::write! -> written
+	written 4 testing::assert_eq
+	f io::close
+	buf mem::free
+
+	path io::ReadBinary io::open! -> f2
+	4 mem::alloc! -> buf2
+	f2 buf2 4 io::read! -> n
+	n 4 testing::assert_eq
+	buf2 0 mem::get_byte 0x41 testing::assert_eq
+	buf2 1 mem::get_byte 0x00 testing::assert_eq
+	buf2 2 mem::get_byte 0x42 testing::assert_eq
+	buf2 3 mem::get_byte 0x43 testing::assert_eq
+	buf2 mem::free
+	f2 io::close
+
+	path os::delete!
+	tmpdir os::rmdir!
+}
+
+test "io::open read-write mode" {
+	os::mktemp! -> tmpdir
+	tmpdir "/readwrite.txt" str::concat -> path
+	path "AAAA" io::write_file!
+
+	path io::ReadWrite io::open! -> f
+
+	f 1 io::SeekSet io::seek! drop
+	"BB" mem::from_string -> len -> buf
+	f buf len io::write! drop
+	buf mem::free
+	f io::close
+
+	path io::read_file! -> contents
+	contents "ABBA" testing::assert_eq
+
+	path os::delete!
+	tmpdir os::rmdir!
+}
+
+test "io::read_file large content" {
+	os::mktemp! -> tmpdir
+	tmpdir "/large.txt" str::concat -> path
+
+	"x" 1000 str::repeat -> content
+	path content io::write_file!
+	path io::read_file! -> read_content
+	read_content str::len 1000 testing::assert_eq
+
+	path os::delete!
+	tmpdir os::rmdir!
+}
+
+test "io::seek to start after writing" {
+	os::mktemp! -> tmpdir
+	tmpdir "/rewind.txt" str::concat -> path
+
+	path io::WriteRead io::open! -> f
+	"Hello" mem::from_string -> len -> buf
+	f buf len io::write! drop
+	buf mem::free
+
+	f 0 io::SeekSet io::seek! drop
+
+	10 mem::alloc! -> buf2
+	f buf2 5 io::read! -> n
+	n 5 testing::assert_eq
+	buf2 5 mem::to_string "Hello" testing::assert_eq
+	buf2 mem::free
+
+	f io::close
+	path os::delete!
+	tmpdir os::rmdir!
+}
+
+test "io::flush does not crash" {
+	io::flush
+	1 1 testing::assert_eq
+}
+
+test "io::ErrStat constant" {
+	io::ErrStat 10 testing::assert_eq
+}
+
+test "io::stat_size" {
+	os::mktemp! -> tmpdir
+	tmpdir "/stat_size.txt" str::concat -> path
+	path "Hello" io::write_file!
+	path io::stat_size! -> size
+	size 5 testing::assert_eq
+	path os::delete!
+	tmpdir os::rmdir!
+}
+
+test "io::stat_size empty file" {
+	os::mktemp! -> tmpdir
+	tmpdir "/stat_empty.txt" str::concat -> path
+	path "" io::write_file!
+	path io::stat_size! -> size
+	size 0 testing::assert_eq
+	path os::delete!
+	tmpdir os::rmdir!
+}
+
+test "io::stat_size larger file" {
+	os::mktemp! -> tmpdir
+	tmpdir "/stat_large.txt" str::concat -> path
+	"x" 1000 str::repeat -> content
+	path content io::write_file!
+	path io::stat_size! -> size
+	size 1000 testing::assert_eq
+	path os::delete!
+	tmpdir os::rmdir!
+}
+
+test "io::stat_mtime recent file" {
+	os::mktemp! -> tmpdir
+	tmpdir "/stat_mtime.txt" str::concat -> path
+	path "test" io::write_file!
+	path io::stat_mtime! -> mtime
+	mtime 1577836800 > testing::assert_true
+	path os::delete!
+	tmpdir os::rmdir!
+}
+
+test "io::stat_atime recent file" {
+	os::mktemp! -> tmpdir
+	tmpdir "/stat_atime.txt" str::concat -> path
+	path "test" io::write_file!
+	path io::stat_atime! -> atime
+	atime 1577836800 > testing::assert_true
+	path os::delete!
+	tmpdir os::rmdir!
+}
+
+test "io::stat_mode regular file" {
+	os::mktemp! -> tmpdir
+	tmpdir "/stat_mode.txt" str::concat -> path
+	path "test" io::write_file!
+	path io::stat_mode! -> mode
+	mode 0 >= testing::assert_true
+	mode 512 < testing::assert_true
+	path os::delete!
+	tmpdir os::rmdir!
 }

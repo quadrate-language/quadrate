@@ -111,6 +111,56 @@ int usr_mem_realloc(qd_context* ctx) {
 	return (int){0};
 }
 
+/* Allocate aligned memory */
+int usr_mem_alloc_aligned(qd_context* ctx) {
+	int64_t bytes;
+	int64_t alignment;
+
+	if (pop_int(ctx, &bytes) != QD_STACK_OK) {
+		qd_push_i(ctx, MEM_ERR_INVALID_ARG);
+		return (int){MEM_ERR_INVALID_ARG};
+	}
+
+	if (pop_int(ctx, &alignment) != QD_STACK_OK) {
+		qd_push_i(ctx, MEM_ERR_INVALID_ARG);
+		return (int){MEM_ERR_INVALID_ARG};
+	}
+
+	if (bytes < 0 || alignment < 1) {
+		qd_push_i(ctx, MEM_ERR_INVALID_ARG);
+		return (int){MEM_ERR_INVALID_ARG};
+	}
+
+	// Alignment must be a power of 2
+	if ((alignment & (alignment - 1)) != 0) {
+		qd_push_i(ctx, MEM_ERR_INVALID_ARG);
+		return (int){MEM_ERR_INVALID_ARG};
+	}
+
+	// Use aligned_alloc (C11) - alignment must also be a multiple of sizeof(void*)
+	// and size must be a multiple of alignment
+	size_t align = (size_t)alignment;
+	if (align < sizeof(void*)) {
+		align = sizeof(void*);
+	}
+	size_t size = (size_t)bytes;
+	// Round size up to multiple of alignment
+	if (size % align != 0) {
+		size = ((size / align) + 1) * align;
+	}
+
+	void* ptr = aligned_alloc(align, size);
+	if (ptr == NULL && bytes > 0) {
+		qd_push_i(ctx, MEM_ERR_ALLOC);
+		return (int){MEM_ERR_ALLOC};
+	}
+
+	// Push result then Ok
+	qd_push_p(ctx, ptr);
+	qd_push_i(ctx, MEM_ERR_OK);
+	return (int){0};
+}
+
 /* Set byte at address */
 int usr_mem_set_byte(qd_context* ctx) {
 	int64_t value, offset;

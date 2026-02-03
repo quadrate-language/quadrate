@@ -1,41 +1,36 @@
 // Unit tests for the rand module
 use rand
+use mem
 use testing
 
-// Helper function to test deterministic seeds
 fn test_seed_determinism( -- result:i64) {
 	12345 rand::with_seed -> rng1
 	12345 rand::with_seed -> rng2
 
-	// rand::next returns (rng:ptr, n:i64) - n is on top of stack
 	rng1 rand::next -> n1 -> rng1
 	rng2 rand::next -> n2 -> rng2
 
 	n1 n2 eq
 }
 
-// Helper to test int range
 fn test_int_range( -- result:i64) {
 	42 rand::with_seed -> rng
 	rng 100 rand::int -> val -> rng
 	val 0 >= val 100 < and
 }
 
-// Helper to test range bounds
 fn test_range_bounds( -- result:i64) {
 	42 rand::with_seed -> rng
 	rng 10 20 rand::range -> val -> rng
 	val 10 >= val 20 < and
 }
 
-// Helper to test boolean bounds
 fn test_boolean_bounds( -- result:i64) {
 	42 rand::with_seed -> rng
 	rng rand::boolean -> val -> rng
 	val 0 >= val 2 < and
 }
 
-// Helper to test different values
 fn test_different_values( -- result:i64) {
 	42 rand::with_seed -> rng
 	rng rand::next -> n1 -> rng
@@ -61,4 +56,303 @@ test "rand::boolean produces 0 or 1" {
 
 test "rand::next produces different values" {
 	test_different_values testing::assert_true
+}
+
+test "rand::float in range [0, 1)" {
+	42 rand::with_seed -> rng
+	rng rand::float -> f -> rng
+	f 0.0 >= testing::assert_true
+	f 1.0 < testing::assert_true
+}
+
+test "rand::float deterministic" {
+	12345 rand::with_seed -> rng1
+	12345 rand::with_seed -> rng2
+	rng1 rand::float -> f1 -> rng1
+	rng2 rand::float -> f2 -> rng2
+	f1 f2 - -> diff
+	diff 0.0 < if { 0.0 diff - -> diff }
+	diff 0.0001 < testing::assert_true
+}
+
+test "rand::float_range" {
+	42 rand::with_seed -> rng
+	rng 10.0 20.0 rand::float_range -> f -> rng
+	f 10.0 >= testing::assert_true
+	f 20.0 < testing::assert_true
+}
+
+test "rand::float_range negative" {
+	42 rand::with_seed -> rng
+	rng -100.0 -50.0 rand::float_range -> f -> rng
+	f -100.0 >= testing::assert_true
+	f -50.0 < testing::assert_true
+}
+
+test "rand::choice from array" {
+	40 mem::alloc! -> arr
+	10 arr 0 mem::set_i64
+	20 arr 8 mem::set_i64
+	30 arr 16 mem::set_i64
+	40 arr 24 mem::set_i64
+	50 arr 32 mem::set_i64
+
+	42 rand::with_seed -> rng
+	rng arr 5 rand::choice -> val -> rng
+
+	val 10 == val 20 == or val 30 == or val 40 == or val 50 == or testing::assert_true
+
+	arr mem::free
+}
+
+test "rand::shuffle changes array" {
+	80 mem::alloc! -> arr
+	1 arr 0 mem::set_i64
+	2 arr 8 mem::set_i64
+	3 arr 16 mem::set_i64
+	4 arr 24 mem::set_i64
+	5 arr 32 mem::set_i64
+	6 arr 40 mem::set_i64
+	7 arr 48 mem::set_i64
+	8 arr 56 mem::set_i64
+	9 arr 64 mem::set_i64
+	10 arr 72 mem::set_i64
+
+	42 rand::with_seed -> rng
+	rng arr 10 rand::shuffle -> rng
+
+	arr 0 mem::get_i64 -> v0
+	arr 8 mem::get_i64 -> v1
+	arr 16 mem::get_i64 -> v2
+
+	v0 1 >= v0 10 <= and testing::assert_true
+	v1 1 >= v1 10 <= and testing::assert_true
+	v2 1 >= v2 10 <= and testing::assert_true
+
+	arr mem::free
+}
+
+test "rand::shuffle preserves elements" {
+	24 mem::alloc! -> arr
+	1 arr 0 mem::set_i64
+	2 arr 8 mem::set_i64
+	3 arr 16 mem::set_i64
+
+	42 rand::with_seed -> rng
+	rng arr 3 rand::shuffle -> rng
+
+	arr 0 mem::get_i64 arr 8 mem::get_i64 + arr 16 mem::get_i64 + -> sum
+	sum 6 testing::assert_eq
+
+	arr mem::free
+}
+
+test "rand::new creates working rng" {
+	rand::new -> rng
+	rng 100 rand::int -> val -> rng
+	val 0 >= testing::assert_true
+	val 100 < testing::assert_true
+}
+
+test "rand::int zero handling" {
+	42 rand::with_seed -> rng
+	rng 1 rand::int -> val -> rng
+	val 0 testing::assert_eq
+}
+
+test "rand::range with equal bounds" {
+	42 rand::with_seed -> rng
+	rng 5 5 rand::range -> val -> rng
+	val 5 testing::assert_eq
+}
+
+test "rand::int with max 0 returns 0" {
+	42 rand::with_seed -> rng
+	rng 0 rand::int -> val -> rng
+	val 0 testing::assert_eq
+}
+
+test "rand::multiple calls advance state" {
+	42 rand::with_seed -> rng
+	rng rand::next -> n1 -> rng
+	rng rand::next -> n2 -> rng
+	rng rand::next -> n3 -> rng
+	n1 n2 != testing::assert_true
+	n2 n3 != testing::assert_true
+	n1 n3 != testing::assert_true
+}
+
+test "rand::normal returns value" {
+	42 rand::with_seed -> rng
+	rng rand::normal -> n -> rng
+	n n == testing::assert_true
+}
+
+test "rand::normal deterministic" {
+	12345 rand::with_seed -> rng1
+	12345 rand::with_seed -> rng2
+	rng1 rand::normal -> n1 -> rng1
+	rng2 rand::normal -> n2 -> rng2
+	n1 n2 0.0001 testing::assert_approx_eq
+}
+
+test "rand::normal distribution roughly centered" {
+	42 rand::with_seed -> rng
+	0.0 -> sum
+	0 -> i
+	loop {
+		i 100 >= if { break }
+		rng rand::normal -> n -> rng
+		sum n + -> sum
+		i 1 + -> i
+	}
+	sum 100.0 / -> mean
+	mean 0.0 - -> diff
+	diff 0.0 < if { 0.0 diff - -> diff }
+	diff 0.5 < testing::assert_true
+}
+
+test "rand::normal_params shifts mean" {
+	42 rand::with_seed -> rng
+	0.0 -> sum
+	0 -> i
+	loop {
+		i 100 >= if { break }
+		rng 100.0 10.0 rand::normal_params -> n -> rng
+		sum n + -> sum
+		i 1 + -> i
+	}
+	sum 100.0 / -> mean
+	mean 100.0 - -> diff
+	diff 0.0 < if { 0.0 diff - -> diff }
+	diff 5.0 < testing::assert_true
+}
+
+test "rand::exponential positive" {
+	42 rand::with_seed -> rng
+	rng 1.0 rand::exponential -> n -> rng
+	n 0.0 > testing::assert_true
+}
+
+test "rand::exponential deterministic" {
+	12345 rand::with_seed -> rng1
+	12345 rand::with_seed -> rng2
+	rng1 1.0 rand::exponential -> n1 -> rng1
+	rng2 1.0 rand::exponential -> n2 -> rng2
+	n1 n2 0.0001 testing::assert_approx_eq
+}
+
+test "rand::exponential mean roughly 1/lambda" {
+	42 rand::with_seed -> rng
+	0.0 -> sum
+	0 -> i
+	loop {
+		i 100 >= if { break }
+		rng 2.0 rand::exponential -> n -> rng
+		sum n + -> sum
+		i 1 + -> i
+	}
+	sum 100.0 / -> mean
+	mean 0.5 - -> diff
+	diff 0.0 < if { 0.0 diff - -> diff }
+	diff 0.2 < testing::assert_true
+}
+
+test "rand::sample basic" {
+	40 mem::alloc! -> src
+	10 src 0 mem::set_i64
+	20 src 8 mem::set_i64
+	30 src 16 mem::set_i64
+	40 src 24 mem::set_i64
+	50 src 32 mem::set_i64
+
+	24 mem::alloc! -> dst
+
+	42 rand::with_seed -> rng
+	rng src 5 dst 3 rand::sample -> rng
+
+	dst 0 mem::get_i64 -> v0
+	dst 8 mem::get_i64 -> v1
+	dst 16 mem::get_i64 -> v2
+
+	v0 10 == v0 20 == or v0 30 == or v0 40 == or v0 50 == or testing::assert_true
+	v1 10 == v1 20 == or v1 30 == or v1 40 == or v1 50 == or testing::assert_true
+	v2 10 == v2 20 == or v2 30 == or v2 40 == or v2 50 == or testing::assert_true
+
+	src mem::free
+	dst mem::free
+}
+
+test "rand::sample no duplicates" {
+	40 mem::alloc! -> src
+	1 src 0 mem::set_i64
+	2 src 8 mem::set_i64
+	3 src 16 mem::set_i64
+	4 src 24 mem::set_i64
+	5 src 32 mem::set_i64
+
+	40 mem::alloc! -> dst
+
+	42 rand::with_seed -> rng
+	rng src 5 dst 5 rand::sample -> rng
+
+	dst 0 mem::get_i64 dst 8 mem::get_i64 + dst 16 mem::get_i64 +
+	dst 24 mem::get_i64 + dst 32 mem::get_i64 + -> sum
+	sum 15 testing::assert_eq
+
+	src mem::free
+	dst mem::free
+}
+
+test "rand::sample deterministic" {
+	24 mem::alloc! -> src
+	1 src 0 mem::set_i64
+	2 src 8 mem::set_i64
+	3 src 16 mem::set_i64
+
+	16 mem::alloc! -> dst1
+	16 mem::alloc! -> dst2
+
+	12345 rand::with_seed -> rng1
+	12345 rand::with_seed -> rng2
+
+	rng1 src 3 dst1 2 rand::sample -> rng1
+	rng2 src 3 dst2 2 rand::sample -> rng2
+
+	dst1 0 mem::get_i64 dst2 0 mem::get_i64 testing::assert_eq
+	dst1 8 mem::get_i64 dst2 8 mem::get_i64 testing::assert_eq
+
+	src mem::free
+	dst1 mem::free
+	dst2 mem::free
+}
+
+test "rand::sample n=0 returns empty" {
+	16 mem::alloc! -> src
+	1 src 0 mem::set_i64
+	2 src 8 mem::set_i64
+
+	42 rand::with_seed -> rng
+	rng src 2 src 0 rand::sample -> rng
+
+	1 1 testing::assert_eq
+
+	src mem::free
+}
+
+test "rand::sample n > len clamps to len" {
+	16 mem::alloc! -> src
+	10 src 0 mem::set_i64
+	20 src 8 mem::set_i64
+
+	40 mem::alloc! -> dst
+
+	42 rand::with_seed -> rng
+	rng src 2 dst 5 rand::sample -> rng
+
+	dst 0 mem::get_i64 dst 8 mem::get_i64 + -> sum
+	sum 30 testing::assert_eq
+
+	src mem::free
+	dst mem::free
 }

@@ -27,6 +27,7 @@
 #define IO_ERR_SEEK 7			/**< Seek operation failed */
 #define IO_ERR_EOF 8			/**< End of file reached */
 #define IO_ERR_INVALID_ARG 9	/**< Invalid argument */
+#define IO_ERR_STAT 10			/**< Stat operation failed */
 
 /**
  * @brief Open a file for reading, writing, or both
@@ -221,5 +222,57 @@ int usr_io_write_file(qd_context* ctx);
  * @return Execution result
  */
 int usr_io_flush(qd_context* ctx);
+
+/**
+ * @brief Get file size in bytes
+ *
+ * Stack effect: ( path:s -- size:i )!
+ *
+ * Returns the size of the file at the given path in bytes.
+ * Throws error if file doesn't exist or permission denied.
+ *
+ * @param ctx Execution context
+ * @return Execution result
+ */
+int usr_io_stat_size(qd_context* ctx);
+
+/**
+ * @brief Get file modification time
+ *
+ * Stack effect: ( path:s -- mtime:i )!
+ *
+ * Returns the last modification time of the file as a Unix timestamp.
+ * Throws error if file doesn't exist or permission denied.
+ *
+ * @param ctx Execution context
+ * @return Execution result
+ */
+int usr_io_stat_mtime(qd_context* ctx);
+
+/**
+ * @brief Get file access time
+ *
+ * Stack effect: ( path:s -- atime:i )!
+ *
+ * Returns the last access time of the file as a Unix timestamp.
+ * Throws error if file doesn't exist or permission denied.
+ *
+ * @param ctx Execution context
+ * @return Execution result
+ */
+int usr_io_stat_atime(qd_context* ctx);
+
+/**
+ * @brief Get file permissions (Unix mode)
+ *
+ * Stack effect: ( path:s -- mode:i )!
+ *
+ * Returns the Unix permission mode (e.g., 0644, 0755).
+ * Throws error if file doesn't exist or permission denied.
+ *
+ * @param ctx Execution context
+ * @return Execution result
+ */
+int usr_io_stat_mode(qd_context* ctx);
 
 #endif // STDIOQD_IO_H

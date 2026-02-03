@@ -287,3 +287,90 @@ int usr_signal_wait(qd_context* ctx) {
 	// Never reached
 	return (int){0};
 }
+
+int usr_signal_raise(qd_context* ctx) {
+	size_t stack_size = qd_stack_size(ctx->st);
+	if (stack_size < 1) {
+		fprintf(stderr, "Fatal error in signal::raise: Stack underflow (required 1 element, have %zu)\n", stack_size);
+		qd_print_stack_trace(ctx);
+		abort();
+	}
+
+	qd_stack_element_t elem;
+	qd_stack_error err = qd_stack_pop(ctx->st, &elem);
+	if (err != QD_STACK_OK) {
+		fprintf(stderr, "Fatal error in signal::raise: Failed to pop signal number\n");
+		qd_print_stack_trace(ctx);
+		abort();
+	}
+
+	if (elem.type != QD_STACK_TYPE_INT) {
+		fprintf(stderr, "Fatal error in signal::raise: Expected integer signal number, got type %d\n", elem.type);
+		qd_print_stack_trace(ctx);
+		abort();
+	}
+
+	int signum = (int)elem.value.i;
+	int result = raise(signum);
+
+	err = qd_stack_push_int(ctx->st, (int64_t)result);
+	if (err != QD_STACK_OK) {
+		fprintf(stderr, "Fatal error in signal::raise: Failed to push result\n");
+		qd_print_stack_trace(ctx);
+		abort();
+	}
+
+	return (int){0};
+}
+
+int usr_signal_kill(qd_context* ctx) {
+	size_t stack_size = qd_stack_size(ctx->st);
+	if (stack_size < 2) {
+		fprintf(stderr, "Fatal error in signal::kill: Stack underflow (required 2 elements, have %zu)\n", stack_size);
+		qd_print_stack_trace(ctx);
+		abort();
+	}
+
+	// Pop signal number
+	qd_stack_element_t sig_elem;
+	qd_stack_error err = qd_stack_pop(ctx->st, &sig_elem);
+	if (err != QD_STACK_OK) {
+		fprintf(stderr, "Fatal error in signal::kill: Failed to pop signal number\n");
+		qd_print_stack_trace(ctx);
+		abort();
+	}
+
+	if (sig_elem.type != QD_STACK_TYPE_INT) {
+		fprintf(stderr, "Fatal error in signal::kill: Expected integer signal number, got type %d\n", sig_elem.type);
+		qd_print_stack_trace(ctx);
+		abort();
+	}
+
+	// Pop PID
+	qd_stack_element_t pid_elem;
+	err = qd_stack_pop(ctx->st, &pid_elem);
+	if (err != QD_STACK_OK) {
+		fprintf(stderr, "Fatal error in signal::kill: Failed to pop PID\n");
+		qd_print_stack_trace(ctx);
+		abort();
+	}
+
+	if (pid_elem.type != QD_STACK_TYPE_INT) {
+		fprintf(stderr, "Fatal error in signal::kill: Expected integer PID, got type %d\n", pid_elem.type);
+		qd_print_stack_trace(ctx);
+		abort();
+	}
+
+	pid_t pid = (pid_t)pid_elem.value.i;
+	int signum = (int)sig_elem.value.i;
+	int result = kill(pid, signum);
+
+	err = qd_stack_push_int(ctx->st, (int64_t)result);
+	if (err != QD_STACK_OK) {
+		fprintf(stderr, "Fatal error in signal::kill: Failed to push result\n");
+		qd_print_stack_trace(ctx);
+		abort();
+	}
+
+	return (int){0};
+}

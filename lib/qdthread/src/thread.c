@@ -6,6 +6,7 @@
 #include <qdrt/stack.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>  // for sysconf
 
 // Helper to push a stack element based on its type
 static void push_element(qd_context* ctx, qd_stack_element_t elem) {
@@ -849,6 +850,508 @@ int usr_thread_raw_wg_free(qd_context* ctx) {
 	cnd_destroy(&wg->done);
 	mtx_destroy(&wg->mutex);
 	free(wg);
+
+	return (int){0};
+}
+
+
+// ============================================================================
+// Once - run initialization code exactly once
+// ============================================================================
+
+// new( -- once:ptr)!
+int usr_thread_raw_once_new(qd_context* ctx) {
+	qd_once* once = malloc(sizeof(qd_once));
+	if (!once) {
+		qd_set_error_msg(ctx, "once::new: failed to allocate");
+		ctx->error_code = THREAD_ERR_CREATE;
+		return (int){THREAD_ERR_CREATE};
+	}
+
+	// Initialize the once_flag to ONCE_FLAG_INIT
+	once_flag init = ONCE_FLAG_INIT;
+	once->flag = init;
+	once->func = NULL;
+	once->completed = false;
+
+	qd_push_p(ctx, once);
+	qd_push_i(ctx, THREAD_OK);
+	return (int){0};
+}
+
+// Thread-local storage for the function to call during call_once
+static _Thread_local qd_context* tls_ctx = NULL;
+static _Thread_local qd_stack_element_t tls_func;
+
+static void once_callback(void) {
+	if (tls_ctx && tls_func.type == QD_STACK_TYPE_PTR) {
+		typedef int (*qd_function_ptr)(qd_context*);
+		qd_function_ptr func;
+		memcpy(&func, &tls_func.value.p, sizeof(func));
+		if (func) {
+			func(tls_ctx);
+		}
+	}
+}
+
+// do(func:ptr once:ptr -- )
+int usr_thread_raw_once_do(qd_context* ctx) {
+	qd_stack_element_t once_elem, func_elem;
+	qd_stack_error err;
+
+	err = qd_stack_pop(ctx->st, &once_elem);
+	if (err != QD_STACK_OK || once_elem.type != QD_STACK_TYPE_PTR) {
+		return (int){0};
+	}
+
+	err = qd_stack_pop(ctx->st, &func_elem);
+	if (err != QD_STACK_OK || func_elem.type != QD_STACK_TYPE_PTR) {
+		return (int){0};
+	}
+
+	qd_once* once = (qd_once*)once_elem.value.p;
+	if (!once) return (int){0};
+
+	// Set up thread-local storage for the callback
+	tls_ctx = ctx;
+	tls_func = func_elem;
+
+	// call_once ensures the function runs exactly once
+	call_once(&once->flag, once_callback);
+	once->completed = true;
+
+	return (int){0};
+}
+
+// done(once:ptr -- done:i64)
+int usr_thread_raw_once_done(qd_context* ctx) {
+	qd_stack_element_t elem;
+	qd_stack_error err = qd_stack_pop(ctx->st, &elem);
+
+	if (err != QD_STACK_OK || elem.type != QD_STACK_TYPE_PTR) {
+		qd_push_i(ctx, 0);
+		return (int){0};
+	}
+
+	qd_once* once = (qd_once*)elem.value.p;
+	if (!once) {
+		qd_push_i(ctx, 0);
+		return (int){0};
+	}
+
+	qd_push_i(ctx, once->completed ? 1 : 0);
+	return (int){0};
+}
+
+// free(once:ptr -- )
+int usr_thread_raw_once_free(qd_context* ctx) {
+	qd_stack_element_t elem;
+	qd_stack_error err = qd_stack_pop(ctx->st, &elem);
+
+	if (err != QD_STACK_OK || elem.type != QD_STACK_TYPE_PTR) {
+		return (int){0};
+	}
+
+	qd_once* once = (qd_once*)elem.value.p;
+	free(once);
+
+	return (int){0};
+}
+
+
+// ============================================================================
+// Thread utilities
+// ============================================================================
+
+// self( -- id:i64)
+int usr_thread_raw_self(qd_context* ctx) {
+	thrd_t self = thrd_current();
+	// Cast thread ID to int64 - this is implementation-defined but works for comparison
+	qd_push_i(ctx, (int64_t)(uintptr_t)self);
+	return (int){0};
+}
+
+// yield( -- )
+int usr_thread_raw_yield(qd_context* ctx) {
+	(void)ctx;
+	thrd_yield();
+	return (int){0};
+}
+
+// cpu_count( -- count:i64)
+int usr_thread_raw_cpu_count(qd_context* ctx) {
+	long count = sysconf(_SC_NPROCESSORS_ONLN);
+	if (count < 1) count = 1;
+	qd_push_i(ctx, (int64_t)count);
+	return (int){0};
+}
+
+
+// ============================================================================
+// Barrier - synchronize threads at a point
+// ============================================================================
+
+// new(n:i64 -- barrier:ptr)!
+int usr_thread_raw_barrier_new(qd_context* ctx) {
+	qd_stack_element_t elem;
+	qd_stack_error err = qd_stack_pop(ctx->st, &elem);
+
+	if (err != QD_STACK_OK || elem.type != QD_STACK_TYPE_INT) {
+		qd_set_error_msg(ctx, "barrier::new: expected count");
+		ctx->error_code = THREAD_ERR_CREATE;
+		return (int){THREAD_ERR_CREATE};
+	}
+
+	int64_t n = elem.value.i;
+	if (n < 1) n = 1;
+
+	qd_barrier* barrier = malloc(sizeof(qd_barrier));
+	if (!barrier) {
+		qd_set_error_msg(ctx, "barrier::new: failed to allocate");
+		ctx->error_code = THREAD_ERR_CREATE;
+		return (int){THREAD_ERR_CREATE};
+	}
+
+	if (mtx_init(&barrier->mutex, mtx_plain) != thrd_success) {
+		free(barrier);
+		qd_set_error_msg(ctx, "barrier::new: failed to init mutex");
+		ctx->error_code = THREAD_ERR_CREATE;
+		return (int){THREAD_ERR_CREATE};
+	}
+
+	if (cnd_init(&barrier->cond) != thrd_success) {
+		mtx_destroy(&barrier->mutex);
+		free(barrier);
+		qd_set_error_msg(ctx, "barrier::new: failed to init condvar");
+		ctx->error_code = THREAD_ERR_CREATE;
+		return (int){THREAD_ERR_CREATE};
+	}
+
+	barrier->threshold = (int)n;
+	barrier->count = 0;
+	barrier->generation = 0;
+
+	qd_push_p(ctx, barrier);
+	qd_push_i(ctx, THREAD_OK);
+	return (int){0};
+}
+
+// wait(barrier:ptr -- is_serial:i64)
+int usr_thread_raw_barrier_wait(qd_context* ctx) {
+	qd_stack_element_t elem;
+	qd_stack_error err = qd_stack_pop(ctx->st, &elem);
+
+	if (err != QD_STACK_OK || elem.type != QD_STACK_TYPE_PTR) {
+		qd_push_i(ctx, 0);
+		return (int){0};
+	}
+
+	qd_barrier* barrier = (qd_barrier*)elem.value.p;
+	if (!barrier) {
+		qd_push_i(ctx, 0);
+		return (int){0};
+	}
+
+	mtx_lock(&barrier->mutex);
+
+	int my_generation = barrier->generation;
+	barrier->count++;
+
+	if (barrier->count >= barrier->threshold) {
+		// Last thread to arrive - wake everyone and return 1 (serial thread)
+		barrier->generation++;
+		barrier->count = 0;
+		cnd_broadcast(&barrier->cond);
+		mtx_unlock(&barrier->mutex);
+		qd_push_i(ctx, 1);  // This is the serial thread
+		return (int){0};
+	}
+
+	// Wait for barrier to trip
+	while (my_generation == barrier->generation) {
+		cnd_wait(&barrier->cond, &barrier->mutex);
+	}
+
+	mtx_unlock(&barrier->mutex);
+	qd_push_i(ctx, 0);  // Not the serial thread
+	return (int){0};
+}
+
+// free(barrier:ptr -- )
+int usr_thread_raw_barrier_free(qd_context* ctx) {
+	qd_stack_element_t elem;
+	qd_stack_error err = qd_stack_pop(ctx->st, &elem);
+
+	if (err != QD_STACK_OK || elem.type != QD_STACK_TYPE_PTR) {
+		return (int){0};
+	}
+
+	qd_barrier* barrier = (qd_barrier*)elem.value.p;
+	if (!barrier) return (int){0};
+
+	cnd_destroy(&barrier->cond);
+	mtx_destroy(&barrier->mutex);
+	free(barrier);
+
+	return (int){0};
+}
+
+
+// ============================================================================
+// RwLock - read-write lock (multiple readers, single writer)
+// ============================================================================
+
+// new( -- rwlock:ptr)!
+int usr_thread_raw_rwlock_new(qd_context* ctx) {
+	qd_rwlock* rw = malloc(sizeof(qd_rwlock));
+	if (!rw) {
+		qd_set_error_msg(ctx, "rwlock::new: failed to allocate");
+		ctx->error_code = THREAD_ERR_CREATE;
+		return (int){THREAD_ERR_CREATE};
+	}
+
+	if (mtx_init(&rw->mutex, mtx_plain) != thrd_success) {
+		free(rw);
+		qd_set_error_msg(ctx, "rwlock::new: failed to init mutex");
+		ctx->error_code = THREAD_ERR_CREATE;
+		return (int){THREAD_ERR_CREATE};
+	}
+
+	if (cnd_init(&rw->read_cond) != thrd_success) {
+		mtx_destroy(&rw->mutex);
+		free(rw);
+		qd_set_error_msg(ctx, "rwlock::new: failed to init read condvar");
+		ctx->error_code = THREAD_ERR_CREATE;
+		return (int){THREAD_ERR_CREATE};
+	}
+
+	if (cnd_init(&rw->write_cond) != thrd_success) {
+		cnd_destroy(&rw->read_cond);
+		mtx_destroy(&rw->mutex);
+		free(rw);
+		qd_set_error_msg(ctx, "rwlock::new: failed to init write condvar");
+		ctx->error_code = THREAD_ERR_CREATE;
+		return (int){THREAD_ERR_CREATE};
+	}
+
+	rw->readers = 0;
+	rw->writers_waiting = 0;
+	rw->writer_active = false;
+
+	qd_push_p(ctx, rw);
+	qd_push_i(ctx, THREAD_OK);
+	return (int){0};
+}
+
+// read_lock(rwlock:ptr -- )!
+int usr_thread_raw_rwlock_read_lock(qd_context* ctx) {
+	qd_stack_element_t elem;
+	qd_stack_error err = qd_stack_pop(ctx->st, &elem);
+
+	if (err != QD_STACK_OK || elem.type != QD_STACK_TYPE_PTR) {
+		qd_set_error_msg(ctx, "rwlock::read_lock: expected rwlock pointer");
+		ctx->error_code = THREAD_ERR_MUTEX;
+		return (int){THREAD_ERR_MUTEX};
+	}
+
+	qd_rwlock* rw = (qd_rwlock*)elem.value.p;
+	if (!rw) {
+		qd_set_error_msg(ctx, "rwlock::read_lock: invalid rwlock");
+		ctx->error_code = THREAD_ERR_MUTEX;
+		return (int){THREAD_ERR_MUTEX};
+	}
+
+	mtx_lock(&rw->mutex);
+
+	// Wait while a writer is active or writers are waiting (prefer writers)
+	while (rw->writer_active || rw->writers_waiting > 0) {
+		cnd_wait(&rw->read_cond, &rw->mutex);
+	}
+
+	rw->readers++;
+	mtx_unlock(&rw->mutex);
+
+	qd_push_i(ctx, THREAD_OK);
+	return (int){0};
+}
+
+// read_unlock(rwlock:ptr -- )!
+int usr_thread_raw_rwlock_read_unlock(qd_context* ctx) {
+	qd_stack_element_t elem;
+	qd_stack_error err = qd_stack_pop(ctx->st, &elem);
+
+	if (err != QD_STACK_OK || elem.type != QD_STACK_TYPE_PTR) {
+		qd_set_error_msg(ctx, "rwlock::read_unlock: expected rwlock pointer");
+		ctx->error_code = THREAD_ERR_MUTEX;
+		return (int){THREAD_ERR_MUTEX};
+	}
+
+	qd_rwlock* rw = (qd_rwlock*)elem.value.p;
+	if (!rw) {
+		qd_set_error_msg(ctx, "rwlock::read_unlock: invalid rwlock");
+		ctx->error_code = THREAD_ERR_MUTEX;
+		return (int){THREAD_ERR_MUTEX};
+	}
+
+	mtx_lock(&rw->mutex);
+	rw->readers--;
+
+	// If no more readers, signal waiting writers
+	if (rw->readers == 0 && rw->writers_waiting > 0) {
+		cnd_signal(&rw->write_cond);
+	}
+
+	mtx_unlock(&rw->mutex);
+
+	qd_push_i(ctx, THREAD_OK);
+	return (int){0};
+}
+
+// write_lock(rwlock:ptr -- )!
+int usr_thread_raw_rwlock_write_lock(qd_context* ctx) {
+	qd_stack_element_t elem;
+	qd_stack_error err = qd_stack_pop(ctx->st, &elem);
+
+	if (err != QD_STACK_OK || elem.type != QD_STACK_TYPE_PTR) {
+		qd_set_error_msg(ctx, "rwlock::write_lock: expected rwlock pointer");
+		ctx->error_code = THREAD_ERR_MUTEX;
+		return (int){THREAD_ERR_MUTEX};
+	}
+
+	qd_rwlock* rw = (qd_rwlock*)elem.value.p;
+	if (!rw) {
+		qd_set_error_msg(ctx, "rwlock::write_lock: invalid rwlock");
+		ctx->error_code = THREAD_ERR_MUTEX;
+		return (int){THREAD_ERR_MUTEX};
+	}
+
+	mtx_lock(&rw->mutex);
+	rw->writers_waiting++;
+
+	// Wait while readers are active or another writer is active
+	while (rw->readers > 0 || rw->writer_active) {
+		cnd_wait(&rw->write_cond, &rw->mutex);
+	}
+
+	rw->writers_waiting--;
+	rw->writer_active = true;
+	mtx_unlock(&rw->mutex);
+
+	qd_push_i(ctx, THREAD_OK);
+	return (int){0};
+}
+
+// write_unlock(rwlock:ptr -- )!
+int usr_thread_raw_rwlock_write_unlock(qd_context* ctx) {
+	qd_stack_element_t elem;
+	qd_stack_error err = qd_stack_pop(ctx->st, &elem);
+
+	if (err != QD_STACK_OK || elem.type != QD_STACK_TYPE_PTR) {
+		qd_set_error_msg(ctx, "rwlock::write_unlock: expected rwlock pointer");
+		ctx->error_code = THREAD_ERR_MUTEX;
+		return (int){THREAD_ERR_MUTEX};
+	}
+
+	qd_rwlock* rw = (qd_rwlock*)elem.value.p;
+	if (!rw) {
+		qd_set_error_msg(ctx, "rwlock::write_unlock: invalid rwlock");
+		ctx->error_code = THREAD_ERR_MUTEX;
+		return (int){THREAD_ERR_MUTEX};
+	}
+
+	mtx_lock(&rw->mutex);
+	rw->writer_active = false;
+
+	if (rw->writers_waiting > 0) {
+		// Prefer writers
+		cnd_signal(&rw->write_cond);
+	} else {
+		// Wake all readers
+		cnd_broadcast(&rw->read_cond);
+	}
+
+	mtx_unlock(&rw->mutex);
+
+	qd_push_i(ctx, THREAD_OK);
+	return (int){0};
+}
+
+// try_read(rwlock:ptr -- success:i64)
+int usr_thread_raw_rwlock_try_read(qd_context* ctx) {
+	qd_stack_element_t elem;
+	qd_stack_error err = qd_stack_pop(ctx->st, &elem);
+
+	if (err != QD_STACK_OK || elem.type != QD_STACK_TYPE_PTR) {
+		qd_push_i(ctx, 0);
+		return (int){0};
+	}
+
+	qd_rwlock* rw = (qd_rwlock*)elem.value.p;
+	if (!rw) {
+		qd_push_i(ctx, 0);
+		return (int){0};
+	}
+
+	mtx_lock(&rw->mutex);
+
+	if (rw->writer_active || rw->writers_waiting > 0) {
+		mtx_unlock(&rw->mutex);
+		qd_push_i(ctx, 0);
+		return (int){0};
+	}
+
+	rw->readers++;
+	mtx_unlock(&rw->mutex);
+	qd_push_i(ctx, 1);
+	return (int){0};
+}
+
+// try_write(rwlock:ptr -- success:i64)
+int usr_thread_raw_rwlock_try_write(qd_context* ctx) {
+	qd_stack_element_t elem;
+	qd_stack_error err = qd_stack_pop(ctx->st, &elem);
+
+	if (err != QD_STACK_OK || elem.type != QD_STACK_TYPE_PTR) {
+		qd_push_i(ctx, 0);
+		return (int){0};
+	}
+
+	qd_rwlock* rw = (qd_rwlock*)elem.value.p;
+	if (!rw) {
+		qd_push_i(ctx, 0);
+		return (int){0};
+	}
+
+	mtx_lock(&rw->mutex);
+
+	if (rw->readers > 0 || rw->writer_active) {
+		mtx_unlock(&rw->mutex);
+		qd_push_i(ctx, 0);
+		return (int){0};
+	}
+
+	rw->writer_active = true;
+	mtx_unlock(&rw->mutex);
+	qd_push_i(ctx, 1);
+	return (int){0};
+}
+
+// free(rwlock:ptr -- )
+int usr_thread_raw_rwlock_free(qd_context* ctx) {
+	qd_stack_element_t elem;
+	qd_stack_error err = qd_stack_pop(ctx->st, &elem);
+
+	if (err != QD_STACK_OK || elem.type != QD_STACK_TYPE_PTR) {
+		return (int){0};
+	}
+
+	qd_rwlock* rw = (qd_rwlock*)elem.value.p;
+	if (!rw) return (int){0};
+
+	cnd_destroy(&rw->write_cond);
+	cnd_destroy(&rw->read_cond);
+	mtx_destroy(&rw->mutex);
+	free(rw);
 
 	return (int){0};
 }

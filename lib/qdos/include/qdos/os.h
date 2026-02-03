@@ -107,6 +107,23 @@ int usr_os_getenv(qd_context* ctx);
 int usr_os_setenv(qd_context* ctx);
 
 /**
+ * @brief Unset an environment variable
+ *
+ * @par Stack Effect: ( name:s -- )
+ *
+ * Removes the specified environment variable.
+ *
+ * @param ctx Execution context
+ * @return Execution result
+ *
+ * @par Example:
+ * @code
+ * "MY_VAR" os::unsetenv  // Remove MY_VAR from environment
+ * @endcode
+ */
+int usr_os_unsetenv(qd_context* ctx);
+
+/**
  * @brief Check if a file or directory exists
  *
  * @par Stack Effect: ( path:s -- exists:i )
@@ -368,6 +385,130 @@ int usr_os_mktemp(qd_context* ctx);
  * @endcode
  */
 int usr_os_cwd(qd_context* ctx);
+
+/**
+ * @brief Create a symbolic link
+ *
+ * @par Stack Effect: ( target:s linkpath:s -- )!
+ *
+ * Creates a symbolic link at linkpath pointing to target.
+ *
+ * @param ctx Execution context
+ * @return Execution result
+ *
+ * @par Example:
+ * @code
+ * "/usr/bin/python3" "/tmp/python" os::symlink!
+ * @endcode
+ */
+int usr_os_symlink(qd_context* ctx);
+
+/**
+ * @brief Read the target of a symbolic link
+ *
+ * @par Stack Effect: ( path:s -- target:s )!
+ *
+ * Returns the target path that the symbolic link points to.
+ *
+ * @param ctx Execution context
+ * @return Execution result
+ *
+ * @par Example:
+ * @code
+ * "/tmp/mylink" os::readlink! -> target
+ * @endcode
+ */
+int usr_os_readlink(qd_context* ctx);
+
+/**
+ * @brief Check if path is a symbolic link
+ *
+ * @par Stack Effect: ( path:s -- is_symlink:i )
+ *
+ * Returns 1 if path is a symbolic link, 0 otherwise.
+ * Does not follow the link to check if the target exists.
+ *
+ * @param ctx Execution context
+ * @return Execution result
+ *
+ * @par Example:
+ * @code
+ * "/tmp/mylink" os::is_symlink print
+ * @endcode
+ */
+int usr_os_is_symlink(qd_context* ctx);
+
+/**
+ * @brief Change file permissions
+ *
+ * @par Stack Effect: ( path:s mode:i -- )!
+ *
+ * Changes the permissions of a file or directory.
+ * Mode is specified as an octal value (e.g., 0644, 0755).
+ *
+ * @param ctx Execution context
+ * @return Execution result
+ *
+ * @par Example:
+ * @code
+ * "/tmp/myfile" 0o644 os::chmod!
+ * @endcode
+ */
+int usr_os_chmod(qd_context* ctx);
+
+/**
+ * @brief Change file owner and group
+ *
+ * @par Stack Effect: ( path:s uid:i gid:i -- )!
+ *
+ * Changes the owner (uid) and group (gid) of a file or directory.
+ * Use -1 for uid or gid to leave unchanged.
+ *
+ * @param ctx Execution context
+ * @return Execution result
+ *
+ * @par Example:
+ * @code
+ * "/tmp/myfile" 1000 1000 os::chown!
+ * @endcode
+ */
+int usr_os_chown(qd_context* ctx);
+
+/**
+ * @brief Get the current user ID
+ *
+ * @par Stack Effect: ( -- uid:i )
+ *
+ * Returns the real user ID of the calling process.
+ *
+ * @param ctx Execution context
+ * @return Execution result
+ */
+int usr_os_getuid(qd_context* ctx);
+
+/**
+ * @brief Get the current group ID
+ *
+ * @par Stack Effect: ( -- gid:i )
+ *
+ * Returns the real group ID of the calling process.
+ *
+ * @param ctx Execution context
+ * @return Execution result
+ */
+int usr_os_getgid(qd_context* ctx);
+
+/**
+ * @brief Get the hostname
+ *
+ * @par Stack Effect: ( -- hostname:s )!
+ *
+ * Returns the hostname of the current system.
+ *
+ * @param ctx Execution context
+ * @return Execution result
+ */
+int usr_os_hostname(qd_context* ctx);
 
 #ifdef __cplusplus
 }

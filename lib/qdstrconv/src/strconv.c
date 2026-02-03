@@ -6,6 +6,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <ctype.h>
+#include <string.h>
+#include <strings.h>
 
 // Helper to convert digit value to character
 static char digit_to_char(int digit) {
@@ -224,6 +226,114 @@ int usr_strconv_atoi(qd_context* ctx) {
 	// Check if any valid digits were parsed
 	if (endptr == str) {
 		fprintf(stderr, "Fatal error in strconv::atoi: Invalid number format: \"%s\"\n", str);
+		qd_string_release(str_elem.value.s);
+		abort();
+	}
+
+	qd_string_release(str_elem.value.s);
+	qd_push_i(ctx, result);
+
+	return (int){0};
+}
+
+// format_float - format float to string ( value:f -- str:s )
+int usr_strconv_format_float(qd_context* ctx) {
+	qd_stack_element_t value_elem;
+
+	qd_stack_error err = qd_stack_pop(ctx->st, &value_elem);
+	if (err != QD_STACK_OK) {
+		fprintf(stderr, "Fatal error in strconv::format_float: Stack underflow\n");
+		abort();
+	}
+
+	if (value_elem.type != QD_STACK_TYPE_FLOAT) {
+		fprintf(stderr, "Fatal error in strconv::format_float: Expected float\n");
+		abort();
+	}
+
+	char buffer[64];
+	snprintf(buffer, sizeof(buffer), "%g", value_elem.value.f);
+	qd_push_s(ctx, buffer);
+
+	return (int){0};
+}
+
+// parse_float - parse string to float ( str:s -- value:f )
+int usr_strconv_parse_float(qd_context* ctx) {
+	qd_stack_element_t str_elem;
+
+	qd_stack_error err = qd_stack_pop(ctx->st, &str_elem);
+	if (err != QD_STACK_OK) {
+		fprintf(stderr, "Fatal error in strconv::parse_float: Stack underflow\n");
+		abort();
+	}
+
+	if (str_elem.type != QD_STACK_TYPE_STR) {
+		fprintf(stderr, "Fatal error in strconv::parse_float: Expected string\n");
+		abort();
+	}
+
+	const char* str = qd_string_data(str_elem.value.s);
+	char* endptr;
+	double result = strtod(str, &endptr);
+
+	// Check if any valid digits were parsed
+	if (endptr == str) {
+		fprintf(stderr, "Fatal error in strconv::parse_float: Invalid number format: \"%s\"\n", str);
+		qd_string_release(str_elem.value.s);
+		abort();
+	}
+
+	qd_string_release(str_elem.value.s);
+	qd_push_f(ctx, result);
+
+	return (int){0};
+}
+
+// format_bool - format boolean to string ( value:i -- str:s )
+int usr_strconv_format_bool(qd_context* ctx) {
+	qd_stack_element_t value_elem;
+
+	qd_stack_error err = qd_stack_pop(ctx->st, &value_elem);
+	if (err != QD_STACK_OK) {
+		fprintf(stderr, "Fatal error in strconv::format_bool: Stack underflow\n");
+		abort();
+	}
+
+	if (value_elem.type != QD_STACK_TYPE_INT) {
+		fprintf(stderr, "Fatal error in strconv::format_bool: Expected integer\n");
+		abort();
+	}
+
+	qd_push_s(ctx, value_elem.value.i != 0 ? "true" : "false");
+
+	return (int){0};
+}
+
+// parse_bool - parse string to boolean ( str:s -- value:i )
+int usr_strconv_parse_bool(qd_context* ctx) {
+	qd_stack_element_t str_elem;
+
+	qd_stack_error err = qd_stack_pop(ctx->st, &str_elem);
+	if (err != QD_STACK_OK) {
+		fprintf(stderr, "Fatal error in strconv::parse_bool: Stack underflow\n");
+		abort();
+	}
+
+	if (str_elem.type != QD_STACK_TYPE_STR) {
+		fprintf(stderr, "Fatal error in strconv::parse_bool: Expected string\n");
+		abort();
+	}
+
+	const char* str = qd_string_data(str_elem.value.s);
+
+	int64_t result;
+	if (strcasecmp(str, "true") == 0 || strcmp(str, "1") == 0) {
+		result = 1;
+	} else if (strcasecmp(str, "false") == 0 || strcmp(str, "0") == 0) {
+		result = 0;
+	} else {
+		fprintf(stderr, "Fatal error in strconv::parse_bool: Invalid boolean format: \"%s\"\n", str);
 		qd_string_release(str_elem.value.s);
 		abort();
 	}

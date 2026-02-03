@@ -223,3 +223,37 @@ pub fn finish(sb:ptr -- s:str) {
 	sb @buf mem::free
 	result
 }
+
+/// Get the current capacity of the builder.
+/// @param sb ptr Builder to check
+/// @return cap i64 Current buffer capacity
+/// @example builder sb::capacity -> cap
+pub fn capacity(sb:ptr -- cap:i64) {
+	-> sb
+	sb @cap
+}
+
+/// Check if the builder is empty.
+/// @param sb ptr Builder to check
+/// @return empty i64 1 if empty, 0 otherwise
+/// @example builder sb::is_empty -> empty
+pub fn is_empty(sb:ptr -- empty:i64) {
+	-> sb
+	sb @len 0 ==
+}
+
+/// Append a newline character.
+/// @param sb ptr Builder to append to
+/// @return sb ptr Updated builder
+/// @example builder sb::newline -> builder
+pub fn newline(sb:ptr -- sb:ptr) {
+	unicode::newline append_char
+}
+
+/// Append a space character.
+/// @param sb ptr Builder to append to
+/// @return sb ptr Updated builder
+/// @example builder sb::space -> builder
+pub fn space(sb:ptr -- sb:ptr) {
+	unicode::space append_char
+}

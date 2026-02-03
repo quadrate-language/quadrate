@@ -218,3 +218,106 @@ pub fn has_ext(path:str -- result:i64) {
 pub fn parent(path:str -- parent:str) {
 	dirname
 }
+
+/// Check if path is relative (not absolute).
+/// @param path str File path
+/// @return result i64 1 if relative, 0 otherwise
+/// @example "home/user" path::is_relative -> 1
+pub fn is_relative(path:str -- result:i64) {
+	is_absolute not
+}
+
+/// Check if a path matches a simple extension filter.
+/// @param path str File path
+/// @param extension str Extension to match (with or without dot)
+/// @return result i64 1 if matches, 0 otherwise
+/// @example "file.txt" "txt" path::has_extension -> 1
+pub fn has_extension(path:str extension:str -- result:i64) {
+	-> extension -> path
+	// Normalize extension to include dot
+	extension str::len 0 > if {
+		extension 0 str::char_at! 46 != if {
+			"." extension str::concat -> extension
+		}
+	}
+	path ext extension str::compare 0 ==
+}
+
+/// Get the depth of a path (number of components).
+/// @param path str File path
+/// @return depth i64 Number of path components
+/// @example "/home/user/file.txt" path::depth -> 3
+pub fn depth(path:str -- depth:i64) {
+	-> path
+	path str::len -> plen
+	plen 0 == if {
+		0
+	} else {
+		0 -> count
+		0 -> i
+		0 -> in_component
+		loop {
+			i plen >= if { break }
+			path i str::char_at! -> ch
+			ch 47 == if {
+				in_component 1 == if {
+					0 -> in_component
+				}
+			} else {
+				in_component 0 == if {
+					count 1 + -> count
+					1 -> in_component
+				}
+			}
+			i 1 + -> i
+		}
+		count
+	}
+}
+
+/// Check if path starts with a given prefix path.
+/// @param path str File path to check
+/// @param prefix str Prefix path
+/// @return result i64 1 if starts with prefix, 0 otherwise
+/// @example "/home/user/file.txt" "/home" path::starts_with -> 1
+pub fn starts_with(path:str prefix:str -- result:i64) {
+	-> prefix -> path
+	path prefix str::starts_with -> result
+	// Also check it's at a path boundary
+	result if {
+		prefix str::len -> plen
+		path str::len -> pathlen
+		plen pathlen == if {
+			1 -> result
+		} else {
+			pathlen plen > if {
+				path plen str::char_at! 47 == -> result
+			}
+		}
+	}
+	result
+}
+
+/// Remove a prefix from a path if it exists.
+/// @param path str File path
+/// @param prefix str Prefix to remove
+/// @return result str Path without prefix
+/// @example "/home/user/file.txt" "/home" path::strip_prefix -> "user/file.txt"
+pub fn strip_prefix(path:str prefix:str -- result:str) {
+	-> prefix -> path
+	path prefix starts_with if {
+		prefix str::len -> plen
+		path str::len -> pathlen
+		plen pathlen < if {
+			// Skip the prefix and any leading slash
+			path plen str::char_at! 47 == if {
+				plen 1 + -> plen
+			}
+			path plen pathlen plen - str::substring!
+		} else {
+			""
+		}
+	} else {
+		path
+	}
+}

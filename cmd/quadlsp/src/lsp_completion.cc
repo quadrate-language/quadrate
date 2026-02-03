@@ -206,13 +206,8 @@ void QuadrateLSP::handleCompletion(const std::string& id, const std::string& uri
 	if (isInTypePosition(documentText, line, character)) {
 		// Show built-in types
 		static const char* builtinTypes[] = {"i64", "f64", "str", "bool", "ptr", "any"};
-		static const char* typeDescriptions[] = {
-				"64-bit signed integer",
-				"64-bit floating point",
-				"String type",
-				"Boolean type",
-				"Pointer type",
-				"Any type (dynamic)"};
+		static const char* typeDescriptions[] = {"64-bit signed integer", "64-bit floating point", "String type",
+				"Boolean type", "Pointer type", "Any type (dynamic)"};
 
 		for (size_t i = 0; i < sizeof(builtinTypes) / sizeof(builtinTypes[0]); i++) {
 			json_t* item = json_object();
@@ -254,7 +249,8 @@ void QuadrateLSP::handleCompletion(const std::string& id, const std::string& uri
 							try {
 								for (const auto& entry : std::filesystem::directory_iterator(moduleDir)) {
 									if (entry.is_regular_file() && entry.path().extension() == ".qd") {
-										std::vector<StructInfo> moduleStructs = extractModuleStructs(entry.path().string());
+										std::vector<StructInfo> moduleStructs =
+												extractModuleStructs(entry.path().string());
 										for (const auto& structInfo : moduleStructs) {
 											json_t* item = json_object();
 											std::string label = moduleName + "::" + structInfo.name;
@@ -282,7 +278,7 @@ void QuadrateLSP::handleCompletion(const std::string& id, const std::string& uri
 	}
 	// Check if we're completing after field access (e.g., "v@")
 	else if (std::string fieldAccessVar = getFieldAccessVariableAtPosition(documentText, line, character);
-			 !fieldAccessVar.empty() && !documentText.empty()) {
+			!fieldAccessVar.empty() && !documentText.empty()) {
 		// Field access completion - need to find the struct type and show its fields
 		Qd::Ast ast;
 		Qd::IAstNode* root = ast.generate(documentText.c_str(), false, nullptr);
@@ -569,12 +565,8 @@ void QuadrateLSP::handleCompletion(const std::string& id, const std::string& uri
 		if (topLevel) {
 			// At top level - show only declaration keywords
 			static const char* topLevelKeywords[] = {"use", "fn", "test", "struct", "const", "pub"};
-			static const char* topLevelDescriptions[] = {
-					"Import a module",
-					"Declare a function",
-					"Declare a test function",
-					"Declare a struct type",
-					"Declare a constant",
+			static const char* topLevelDescriptions[] = {"Import a module", "Declare a function",
+					"Declare a test function", "Declare a struct type", "Declare a constant",
 					"Make declaration public"};
 
 			for (size_t i = 0; i < sizeof(topLevelKeywords) / sizeof(topLevelKeywords[0]); i++) {
@@ -720,45 +712,45 @@ void QuadrateLSP::handleCompletion(const std::string& id, const std::string& uri
 		if (!topLevel) {
 			std::vector<StructInfo> structs = extractStructs(documentText);
 			for (const auto& structInfo : structs) {
-			json_t* item = json_object();
+				json_t* item = json_object();
 
-			// Build label with generic type params if applicable
-			std::string structLabel = structInfo.name;
-			if (structInfo.isGeneric) {
-				structLabel += "<";
-				for (size_t i = 0; i < structInfo.typeParams.size(); i++) {
-					if (i > 0) {
-						structLabel += ", ";
+				// Build label with generic type params if applicable
+				std::string structLabel = structInfo.name;
+				if (structInfo.isGeneric) {
+					structLabel += "<";
+					for (size_t i = 0; i < structInfo.typeParams.size(); i++) {
+						if (i > 0) {
+							structLabel += ", ";
+						}
+						structLabel += structInfo.typeParams[i];
 					}
-					structLabel += structInfo.typeParams[i];
+					structLabel += ">";
 				}
-				structLabel += ">";
-			}
-			json_object_set_new(item, "label", json_string(structLabel.c_str()));
-			json_object_set_new(item, "kind", json_integer(22)); // Struct kind
+				json_object_set_new(item, "label", json_string(structLabel.c_str()));
+				json_object_set_new(item, "kind", json_integer(22)); // Struct kind
 
-			// Build documentation showing struct fields
-			std::ostringstream docStream;
-			docStream << "**Struct:** `" << structLabel << "`\n\n";
-			if (structInfo.isGeneric) {
-				docStream << "**Type parameters:** `<";
-				for (size_t i = 0; i < structInfo.typeParams.size(); i++) {
-					if (i > 0) {
-						docStream << ", ";
+				// Build documentation showing struct fields
+				std::ostringstream docStream;
+				docStream << "**Struct:** `" << structLabel << "`\n\n";
+				if (structInfo.isGeneric) {
+					docStream << "**Type parameters:** `<";
+					for (size_t i = 0; i < structInfo.typeParams.size(); i++) {
+						if (i > 0) {
+							docStream << ", ";
+						}
+						docStream << structInfo.typeParams[i];
 					}
-					docStream << structInfo.typeParams[i];
+					docStream << ">`\n\n";
 				}
-				docStream << ">`\n\n";
-			}
-			docStream << "**Fields:**\n";
-			for (const auto& field : structInfo.fields) {
-				docStream << "- `" << field.first << ": " << field.second << "`\n";
-			}
+				docStream << "**Fields:**\n";
+				for (const auto& field : structInfo.fields) {
+					docStream << "- `" << field.first << ": " << field.second << "`\n";
+				}
 
-			json_t* documentation = json_object();
-			json_object_set_new(documentation, "kind", json_string("markdown"));
-			json_object_set_new(documentation, "value", json_string(docStream.str().c_str()));
-			json_object_set_new(item, "documentation", documentation);
+				json_t* documentation = json_object();
+				json_object_set_new(documentation, "kind", json_string("markdown"));
+				json_object_set_new(documentation, "value", json_string(docStream.str().c_str()));
+				json_object_set_new(item, "documentation", documentation);
 
 				json_array_append_new(items, item);
 			}

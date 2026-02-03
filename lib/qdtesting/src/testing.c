@@ -269,3 +269,66 @@ int usr_testing_fail(qd_context* ctx) {
 	release_element(&msg);
 	return (int){1};
 }
+
+// assert_approx_eq - Assert two floats are approximately equal: ( a b epsilon -- )
+int usr_testing_assert_approx_eq(qd_context* ctx) {
+	size_t stack_size = qd_stack_size(ctx->st);
+	if (stack_size < 3) {
+		fprintf(stderr, "Assertion error: assert_approx_eq requires 3 values on stack (a b epsilon), have %zu\n", stack_size);
+		qd_print_stack_trace(ctx);
+		return (int){1};
+	}
+
+	qd_stack_element_t epsilon, b, a;
+	qd_stack_error err = qd_stack_pop(ctx->st, &epsilon);
+	if (err != QD_STACK_OK) {
+		return (int){-2};
+	}
+	err = qd_stack_pop(ctx->st, &b);
+	if (err != QD_STACK_OK) {
+		release_element(&epsilon);
+		return (int){-2};
+	}
+	err = qd_stack_pop(ctx->st, &a);
+	if (err != QD_STACK_OK) {
+		release_element(&epsilon);
+		release_element(&b);
+		return (int){-2};
+	}
+
+	// All three must be floats
+	if (a.type != QD_STACK_TYPE_FLOAT || b.type != QD_STACK_TYPE_FLOAT || epsilon.type != QD_STACK_TYPE_FLOAT) {
+		fprintf(stderr, "Assertion error: assert_approx_eq requires 3 floats\n");
+		fprintf(stderr, "  got: %s, %s, %s\n", get_type_name(a.type), get_type_name(b.type), get_type_name(epsilon.type));
+		qd_print_stack_trace(ctx);
+		release_element(&a);
+		release_element(&b);
+		release_element(&epsilon);
+		return (int){1};
+	}
+
+	double diff = a.value.f - b.value.f;
+	if (diff < 0) {
+		diff = -diff;
+	}
+
+	int approx_equal = diff <= epsilon.value.f;
+
+	if (!approx_equal) {
+		fprintf(stderr, "Assertion failed: assert_approx_eq\n");
+		fprintf(stderr, "  expected: %g\n", a.value.f);
+		fprintf(stderr, "       got: %g\n", b.value.f);
+		fprintf(stderr, "      diff: %g\n", diff);
+		fprintf(stderr, "   epsilon: %g\n", epsilon.value.f);
+		qd_print_stack_trace(ctx);
+		release_element(&a);
+		release_element(&b);
+		release_element(&epsilon);
+		return (int){1};
+	}
+
+	release_element(&a);
+	release_element(&b);
+	release_element(&epsilon);
+	return (int){0};
+}

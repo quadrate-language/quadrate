@@ -47,3 +47,154 @@ test "term::background colors" {
 	term::BgCyan str::len 0 > testing::assert_true
 	term::BgWhite str::len 0 > testing::assert_true
 }
+
+test "term::styles exact codes" {
+	term::Bold "\x1b[1m" testing::assert_eq
+	term::Dim "\x1b[2m" testing::assert_eq
+	term::Italic "\x1b[3m" testing::assert_eq
+	term::Underline "\x1b[4m" testing::assert_eq
+}
+
+test "term::foreground exact codes" {
+	term::Black "\x1b[30m" testing::assert_eq
+	term::Red "\x1b[31m" testing::assert_eq
+	term::Green "\x1b[32m" testing::assert_eq
+	term::Yellow "\x1b[33m" testing::assert_eq
+	term::Blue "\x1b[34m" testing::assert_eq
+	term::Magenta "\x1b[35m" testing::assert_eq
+	term::Cyan "\x1b[36m" testing::assert_eq
+	term::White "\x1b[37m" testing::assert_eq
+}
+
+test "term::bright foreground exact codes" {
+	term::BrightBlack "\x1b[90m" testing::assert_eq
+	term::BrightRed "\x1b[91m" testing::assert_eq
+	term::BrightGreen "\x1b[92m" testing::assert_eq
+	term::BrightYellow "\x1b[93m" testing::assert_eq
+	term::BrightBlue "\x1b[94m" testing::assert_eq
+	term::BrightMagenta "\x1b[95m" testing::assert_eq
+	term::BrightCyan "\x1b[96m" testing::assert_eq
+	term::BrightWhite "\x1b[97m" testing::assert_eq
+}
+
+test "term::background exact codes" {
+	term::BgBlack "\x1b[40m" testing::assert_eq
+	term::BgRed "\x1b[41m" testing::assert_eq
+	term::BgGreen "\x1b[42m" testing::assert_eq
+	term::BgYellow "\x1b[43m" testing::assert_eq
+	term::BgBlue "\x1b[44m" testing::assert_eq
+	term::BgMagenta "\x1b[45m" testing::assert_eq
+	term::BgCyan "\x1b[46m" testing::assert_eq
+	term::BgWhite "\x1b[47m" testing::assert_eq
+}
+
+test "term::concatenation works" {
+	term::Bold term::Red str::concat -> styled
+	styled str::len term::Bold str::len term::Red str::len + testing::assert_eq
+}
+
+test "term::all codes start with escape" {
+	term::Reset "\x1b[" str::starts_with testing::assert_true
+	term::Bold "\x1b[" str::starts_with testing::assert_true
+	term::Red "\x1b[" str::starts_with testing::assert_true
+	term::BgBlue "\x1b[" str::starts_with testing::assert_true
+}
+
+test "term::clear screen codes" {
+	term::Clear "\x1b[2J" testing::assert_eq
+	term::ClearToEnd "\x1b[0J" testing::assert_eq
+	term::ClearToBegin "\x1b[1J" testing::assert_eq
+}
+
+test "term::clear line codes" {
+	term::ClearLine "\x1b[2K" testing::assert_eq
+	term::ClearLineToEnd "\x1b[0K" testing::assert_eq
+	term::ClearLineToBegin "\x1b[1K" testing::assert_eq
+}
+
+test "term::cursor position codes" {
+	term::Home "\x1b[H" testing::assert_eq
+	term::SaveCursor "\x1b[s" testing::assert_eq
+	term::RestoreCursor "\x1b[u" testing::assert_eq
+}
+
+test "term::cursor visibility codes" {
+	term::HideCursor "\x1b[?25l" testing::assert_eq
+	term::ShowCursor "\x1b[?25h" testing::assert_eq
+}
+
+test "term::cursor movement codes" {
+	term::CursorUp "\x1b[1A" testing::assert_eq
+	term::CursorDown "\x1b[1B" testing::assert_eq
+	term::CursorRight "\x1b[1C" testing::assert_eq
+	term::CursorLeft "\x1b[1D" testing::assert_eq
+}
+
+test "term::scroll codes" {
+	term::ScrollUp "\x1b[1S" testing::assert_eq
+	term::ScrollDown "\x1b[1T" testing::assert_eq
+}
+
+test "term::alternate screen codes" {
+	term::AltScreen "\x1b[?1049h" testing::assert_eq
+	term::MainScreen "\x1b[?1049l" testing::assert_eq
+}
+
+test "term::all cursor codes start with escape" {
+	term::Clear "\x1b[" str::starts_with testing::assert_true
+	term::Home "\x1b[" str::starts_with testing::assert_true
+	term::CursorUp "\x1b[" str::starts_with testing::assert_true
+	term::AltScreen "\x1b[" str::starts_with testing::assert_true
+}
+
+test "term::fg256 format" {
+	196 term::fg256 "\x1b[38;5;196m" testing::assert_eq
+	0 term::fg256 "\x1b[38;5;0m" testing::assert_eq
+	255 term::fg256 "\x1b[38;5;255m" testing::assert_eq
+}
+
+test "term::bg256 format" {
+	21 term::bg256 "\x1b[48;5;21m" testing::assert_eq
+	0 term::bg256 "\x1b[48;5;0m" testing::assert_eq
+	255 term::bg256 "\x1b[48;5;255m" testing::assert_eq
+}
+
+test "term::rgb format" {
+	255 128 0 term::rgb "\x1b[38;2;255;128;0m" testing::assert_eq
+	0 0 0 term::rgb "\x1b[38;2;0;0;0m" testing::assert_eq
+	255 255 255 term::rgb "\x1b[38;2;255;255;255m" testing::assert_eq
+}
+
+test "term::bg_rgb format" {
+	0 0 128 term::bg_rgb "\x1b[48;2;0;0;128m" testing::assert_eq
+	255 0 0 term::bg_rgb "\x1b[48;2;255;0;0m" testing::assert_eq
+}
+
+test "term::goto format" {
+	10 5 term::goto "\x1b[10;5H" testing::assert_eq
+	1 1 term::goto "\x1b[1;1H" testing::assert_eq
+}
+
+test "term::up format" {
+	5 term::up "\x1b[5A" testing::assert_eq
+	1 term::up "\x1b[1A" testing::assert_eq
+}
+
+test "term::down format" {
+	3 term::down "\x1b[3B" testing::assert_eq
+}
+
+test "term::right format" {
+	10 term::right "\x1b[10C" testing::assert_eq
+}
+
+test "term::left format" {
+	7 term::left "\x1b[7D" testing::assert_eq
+}
+
+test "term::all color functions start with escape" {
+	196 term::fg256 "\x1b[" str::starts_with testing::assert_true
+	21 term::bg256 "\x1b[" str::starts_with testing::assert_true
+	255 0 0 term::rgb "\x1b[" str::starts_with testing::assert_true
+	0 0 255 term::bg_rgb "\x1b[" str::starts_with testing::assert_true
+}

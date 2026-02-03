@@ -325,3 +325,127 @@ pub fn compare(a:ptr a_off:i64 b:ptr b_off:i64 count:i64 -- result:i64) {
 	}
 	result
 }
+
+/// Check if two byte buffers are equal.
+/// @param a ptr First buffer
+/// @param a_off i64 First buffer offset
+/// @param b ptr Second buffer
+/// @param b_off i64 Second buffer offset
+/// @param count i64 Number of bytes to compare
+/// @return result i64 1 if equal, 0 otherwise
+/// @example buf1 0 buf2 0 10 bytes::equals -> result
+pub fn equals(a:ptr a_off:i64 b:ptr b_off:i64 count:i64 -- result:i64) {
+	compare 0 ==
+}
+
+/// Find the first occurrence of a byte value in a buffer.
+/// @param buf ptr Buffer to search
+/// @param offset i64 Starting offset
+/// @param count i64 Number of bytes to search
+/// @param value i64 Byte value to find
+/// @return result i64 Index of first occurrence, or -1 if not found
+/// @example buf 0 10 0x41 bytes::find -> idx
+pub fn find(buf:ptr offset:i64 count:i64 value:i64 -- result:i64) {
+	-> value
+	-> count
+	-> offset
+	-> buf
+	-1 -> result
+	0 -> i
+	loop {
+		i count >= result -1 != or if {
+			break
+		}
+		buf offset i + mem::get_byte value == if {
+			i -> result
+		}
+		i 1 + -> i
+	}
+	result
+}
+
+/// Check if a byte value exists in a buffer.
+/// @param buf ptr Buffer to search
+/// @param offset i64 Starting offset
+/// @param count i64 Number of bytes to search
+/// @param value i64 Byte value to find
+/// @return result i64 1 if found, 0 otherwise
+/// @example buf 0 10 0x41 bytes::contains -> found
+pub fn contains(buf:ptr offset:i64 count:i64 value:i64 -- result:i64) {
+	find -1 !=
+}
+
+/// Reverse the byte order in a buffer region.
+/// @param buf ptr Buffer to reverse
+/// @param offset i64 Starting offset
+/// @param count i64 Number of bytes to reverse
+/// @example buf 0 10 bytes::reverse
+pub fn reverse(buf:ptr offset:i64 count:i64 -- ) {
+	-> count
+	-> offset
+	-> buf
+	0 -> i
+	count 1 - -> j
+	loop {
+		i j >= if {
+			break
+		}
+		buf offset i + mem::get_byte -> tmp
+		buf offset j + mem::get_byte buf offset i + mem::set_byte
+		tmp buf offset j + mem::set_byte
+		i 1 + -> i
+		j 1 - -> j
+	}
+}
+
+/// XOR two byte buffers, storing result in first buffer.
+/// @param dst ptr Destination buffer (also first operand)
+/// @param dst_off i64 Destination offset
+/// @param src ptr Source buffer (second operand)
+/// @param src_off i64 Source offset
+/// @param count i64 Number of bytes to XOR
+/// @example dst 0 src 0 10 bytes::xor
+pub fn xor(dst:ptr dst_off:i64 src:ptr src_off:i64 count:i64 -- ) {
+	-> count
+	-> src_off
+	-> src
+	-> dst_off
+	-> dst
+	0 -> i
+	loop {
+		i count >= if {
+			break
+		}
+		dst dst_off i + mem::get_byte -> a
+		src src_off i + mem::get_byte -> b
+		a b ^ -> result
+		result dst dst_off i + mem::set_byte
+		i 1 + -> i
+	}
+}
+
+/// Count occurrences of a byte value in a buffer.
+/// @param buf ptr Buffer to search
+/// @param offset i64 Starting offset
+/// @param count i64 Number of bytes to search
+/// @param value i64 Byte value to count
+/// @return result i64 Number of occurrences
+/// @example buf 0 10 0x41 bytes::count -> n
+pub fn count(buf:ptr offset:i64 len:i64 value:i64 -- result:i64) {
+	-> value
+	-> len
+	-> offset
+	-> buf
+	0 -> result
+	0 -> i
+	loop {
+		i len >= if {
+			break
+		}
+		buf offset i + mem::get_byte value == if {
+			result 1 + -> result
+		}
+		i 1 + -> i
+	}
+	result
+}
