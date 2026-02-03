@@ -731,7 +731,7 @@ InstallResult installSingleDependency(const Dependency& dep, const std::string& 
 	// Determine the version to use
 	std::string versionSpec = dep.version;
 	if (versionSpec.empty()) {
-		versionSpec = "main";
+		versionSpec = "master";
 	}
 
 	// Check if we have a locked version to use
@@ -1177,7 +1177,7 @@ std::vector<VersionConflict> detectVersionConflicts(
 		} else {
 			GitRef gitRef = parseGitUrl(dep.url);
 			std::string installedDirName =
-					getInstalledDirName(gitRef.hostPath, dep.version.empty() ? "main" : dep.version);
+					getInstalledDirName(gitRef.hostPath, dep.version.empty() ? "master" : dep.version);
 			modulePath = modulesDir + "/" + installedDirName;
 		}
 
