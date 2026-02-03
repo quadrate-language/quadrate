@@ -1,6 +1,8 @@
 #define _POSIX_C_SOURCE 200809L
+#define _DEFAULT_SOURCE
 
 #include <qdstr/str.h>
+#include <strings.h>
 #include <qdrt/stack.h>
 #include <qdrt/runtime.h>
 #include <stdio.h>
@@ -1153,5 +1155,786 @@ int usr_str_join(qd_context* ctx) {
 	free(result);
 	qd_push_i(ctx, STR_ERR_OK);
 
+	return (int){0};
+}
+
+// is_empty - check if string is empty ( str:s -- result:i )
+int usr_str_is_empty(qd_context* ctx) {
+	qd_stack_element_t str_elem;
+	qd_stack_error err = qd_stack_pop(ctx->st, &str_elem);
+	if (err != QD_STACK_OK || str_elem.type != QD_STACK_TYPE_STR) {
+		fprintf(stderr, "Fatal error in str::is_empty: Expected string\n");
+		abort();
+	}
+
+	int result = (strlen(qd_string_data(str_elem.value.s)) == 0) ? 1 : 0;
+	qd_string_release(str_elem.value.s);
+	qd_push_i(ctx, result);
+	return (int){0};
+}
+
+// is_blank - check if string is empty or only whitespace ( str:s -- result:i )
+int usr_str_is_blank(qd_context* ctx) {
+	qd_stack_element_t str_elem;
+	qd_stack_error err = qd_stack_pop(ctx->st, &str_elem);
+	if (err != QD_STACK_OK || str_elem.type != QD_STACK_TYPE_STR) {
+		fprintf(stderr, "Fatal error in str::is_blank: Expected string\n");
+		abort();
+	}
+
+	const char* s = qd_string_data(str_elem.value.s);
+	int result = 1;
+	while (*s) {
+		if (!isspace((unsigned char)*s)) {
+			result = 0;
+			break;
+		}
+		s++;
+	}
+	qd_string_release(str_elem.value.s);
+	qd_push_i(ctx, result);
+	return (int){0};
+}
+
+// equals_ignore_case - case-insensitive comparison ( a:s b:s -- result:i )
+int usr_str_equals_ignore_case(qd_context* ctx) {
+	qd_stack_element_t b_elem, a_elem;
+	qd_stack_error err = qd_stack_pop(ctx->st, &b_elem);
+	if (err != QD_STACK_OK) abort();
+	err = qd_stack_pop(ctx->st, &a_elem);
+	if (err != QD_STACK_OK) {
+		if (b_elem.type == QD_STACK_TYPE_STR) qd_string_release(b_elem.value.s);
+		abort();
+	}
+
+	if (a_elem.type != QD_STACK_TYPE_STR || b_elem.type != QD_STACK_TYPE_STR) {
+		if (a_elem.type == QD_STACK_TYPE_STR) qd_string_release(a_elem.value.s);
+		if (b_elem.type == QD_STACK_TYPE_STR) qd_string_release(b_elem.value.s);
+		abort();
+	}
+
+	int result = (strcasecmp(qd_string_data(a_elem.value.s), qd_string_data(b_elem.value.s)) == 0) ? 1 : 0;
+	qd_string_release(a_elem.value.s);
+	qd_string_release(b_elem.value.s);
+	qd_push_i(ctx, result);
+	return (int){0};
+}
+
+// pad_left - left-pad string to length ( str:s len:i ch:s -- result:s )
+int usr_str_pad_left(qd_context* ctx) {
+	qd_stack_element_t ch_elem, len_elem, str_elem;
+	qd_stack_pop(ctx->st, &ch_elem);
+	qd_stack_pop(ctx->st, &len_elem);
+	qd_stack_pop(ctx->st, &str_elem);
+
+	const char* str = qd_string_data(str_elem.value.s);
+	int64_t target_len = len_elem.value.i;
+	const char* pad_ch = qd_string_data(ch_elem.value.s);
+	size_t str_len = strlen(str);
+
+	if ((int64_t)str_len >= target_len || strlen(pad_ch) == 0) {
+		qd_push_s(ctx, str);
+		qd_string_release(str_elem.value.s);
+		qd_string_release(ch_elem.value.s);
+		return (int){0};
+	}
+
+	size_t pad_count = (size_t)target_len - str_len;
+	char* result = malloc((size_t)target_len + 1);
+	if (!result) abort();
+
+	for (size_t i = 0; i < pad_count; i++) {
+		result[i] = pad_ch[0];
+	}
+	memcpy(result + pad_count, str, str_len + 1);
+
+	qd_string_release(str_elem.value.s);
+	qd_string_release(ch_elem.value.s);
+	qd_push_s(ctx, result);
+	free(result);
+	return (int){0};
+}
+
+// pad_right - right-pad string to length ( str:s len:i ch:s -- result:s )
+int usr_str_pad_right(qd_context* ctx) {
+	qd_stack_element_t ch_elem, len_elem, str_elem;
+	qd_stack_pop(ctx->st, &ch_elem);
+	qd_stack_pop(ctx->st, &len_elem);
+	qd_stack_pop(ctx->st, &str_elem);
+
+	const char* str = qd_string_data(str_elem.value.s);
+	int64_t target_len = len_elem.value.i;
+	const char* pad_ch = qd_string_data(ch_elem.value.s);
+	size_t str_len = strlen(str);
+
+	if ((int64_t)str_len >= target_len || strlen(pad_ch) == 0) {
+		qd_push_s(ctx, str);
+		qd_string_release(str_elem.value.s);
+		qd_string_release(ch_elem.value.s);
+		return (int){0};
+	}
+
+	size_t pad_count = (size_t)target_len - str_len;
+	char* result = malloc((size_t)target_len + 1);
+	if (!result) abort();
+
+	memcpy(result, str, str_len);
+	for (size_t i = 0; i < pad_count; i++) {
+		result[str_len + i] = pad_ch[0];
+	}
+	result[target_len] = '\0';
+
+	qd_string_release(str_elem.value.s);
+	qd_string_release(ch_elem.value.s);
+	qd_push_s(ctx, result);
+	free(result);
+	return (int){0};
+}
+
+// center - center string with padding ( str:s len:i ch:s -- result:s )
+int usr_str_center(qd_context* ctx) {
+	qd_stack_element_t ch_elem, len_elem, str_elem;
+	qd_stack_pop(ctx->st, &ch_elem);
+	qd_stack_pop(ctx->st, &len_elem);
+	qd_stack_pop(ctx->st, &str_elem);
+
+	const char* str = qd_string_data(str_elem.value.s);
+	int64_t target_len = len_elem.value.i;
+	const char* pad_ch = qd_string_data(ch_elem.value.s);
+	size_t str_len = strlen(str);
+
+	if ((int64_t)str_len >= target_len || strlen(pad_ch) == 0) {
+		qd_push_s(ctx, str);
+		qd_string_release(str_elem.value.s);
+		qd_string_release(ch_elem.value.s);
+		return (int){0};
+	}
+
+	size_t total_pad = (size_t)target_len - str_len;
+	size_t left_pad = total_pad / 2;
+	size_t right_pad = total_pad - left_pad;
+
+	char* result = malloc((size_t)target_len + 1);
+	if (!result) abort();
+
+	for (size_t i = 0; i < left_pad; i++) result[i] = pad_ch[0];
+	memcpy(result + left_pad, str, str_len);
+	for (size_t i = 0; i < right_pad; i++) result[left_pad + str_len + i] = pad_ch[0];
+	result[target_len] = '\0';
+
+	qd_string_release(str_elem.value.s);
+	qd_string_release(ch_elem.value.s);
+	qd_push_s(ctx, result);
+	free(result);
+	return (int){0};
+}
+
+// capitalize - uppercase first char ( str:s -- result:s )
+int usr_str_capitalize(qd_context* ctx) {
+	qd_stack_element_t str_elem;
+	qd_stack_pop(ctx->st, &str_elem);
+
+	const char* str = qd_string_data(str_elem.value.s);
+	size_t len = strlen(str);
+
+	char* result = malloc(len + 1);
+	if (!result) abort();
+
+	if (len > 0) {
+		result[0] = (char)toupper((unsigned char)str[0]);
+		for (size_t i = 1; i < len; i++) {
+			result[i] = (char)tolower((unsigned char)str[i]);
+		}
+	}
+	result[len] = '\0';
+
+	qd_string_release(str_elem.value.s);
+	qd_push_s(ctx, result);
+	free(result);
+	return (int){0};
+}
+
+// title - title case ( str:s -- result:s )
+int usr_str_title(qd_context* ctx) {
+	qd_stack_element_t str_elem;
+	qd_stack_pop(ctx->st, &str_elem);
+
+	const char* str = qd_string_data(str_elem.value.s);
+	size_t len = strlen(str);
+
+	char* result = malloc(len + 1);
+	if (!result) abort();
+
+	int capitalize_next = 1;
+	for (size_t i = 0; i < len; i++) {
+		if (isspace((unsigned char)str[i])) {
+			result[i] = str[i];
+			capitalize_next = 1;
+		} else if (capitalize_next) {
+			result[i] = (char)toupper((unsigned char)str[i]);
+			capitalize_next = 0;
+		} else {
+			result[i] = (char)tolower((unsigned char)str[i]);
+		}
+	}
+	result[len] = '\0';
+
+	qd_string_release(str_elem.value.s);
+	qd_push_s(ctx, result);
+	free(result);
+	return (int){0};
+}
+
+// trim_prefix - remove prefix if present ( str:s prefix:s -- result:s )
+int usr_str_trim_prefix(qd_context* ctx) {
+	qd_stack_element_t prefix_elem, str_elem;
+	qd_stack_pop(ctx->st, &prefix_elem);
+	qd_stack_pop(ctx->st, &str_elem);
+
+	const char* str = qd_string_data(str_elem.value.s);
+	const char* prefix = qd_string_data(prefix_elem.value.s);
+	size_t str_len = strlen(str);
+	size_t prefix_len = strlen(prefix);
+
+	if (prefix_len <= str_len && strncmp(str, prefix, prefix_len) == 0) {
+		qd_push_s(ctx, str + prefix_len);
+	} else {
+		qd_push_s(ctx, str);
+	}
+
+	qd_string_release(str_elem.value.s);
+	qd_string_release(prefix_elem.value.s);
+	return (int){0};
+}
+
+// trim_suffix - remove suffix if present ( str:s suffix:s -- result:s )
+int usr_str_trim_suffix(qd_context* ctx) {
+	qd_stack_element_t suffix_elem, str_elem;
+	qd_stack_pop(ctx->st, &suffix_elem);
+	qd_stack_pop(ctx->st, &str_elem);
+
+	const char* str = qd_string_data(str_elem.value.s);
+	const char* suffix = qd_string_data(suffix_elem.value.s);
+	size_t str_len = strlen(str);
+	size_t suffix_len = strlen(suffix);
+
+	if (suffix_len <= str_len && strcmp(str + str_len - suffix_len, suffix) == 0) {
+		char* result = malloc(str_len - suffix_len + 1);
+		if (!result) abort();
+		memcpy(result, str, str_len - suffix_len);
+		result[str_len - suffix_len] = '\0';
+		qd_push_s(ctx, result);
+		free(result);
+	} else {
+		qd_push_s(ctx, str);
+	}
+
+	qd_string_release(str_elem.value.s);
+	qd_string_release(suffix_elem.value.s);
+	return (int){0};
+}
+
+// replace_first - replace first occurrence only ( str:s old:s new:s -- result:s )
+int usr_str_replace_first(qd_context* ctx) {
+	qd_stack_element_t new_elem, old_elem, str_elem;
+	qd_stack_pop(ctx->st, &new_elem);
+	qd_stack_pop(ctx->st, &old_elem);
+	qd_stack_pop(ctx->st, &str_elem);
+
+	const char* str = qd_string_data(str_elem.value.s);
+	const char* old = qd_string_data(old_elem.value.s);
+	const char* new = qd_string_data(new_elem.value.s);
+	size_t old_len = strlen(old);
+	size_t new_len = strlen(new);
+
+	const char* pos = strstr(str, old);
+	if (pos == NULL || old_len == 0) {
+		qd_push_s(ctx, str);
+	} else {
+		size_t str_len = strlen(str);
+		size_t result_len = str_len - old_len + new_len;
+		char* result = malloc(result_len + 1);
+		if (!result) abort();
+
+		size_t prefix_len = (size_t)(pos - str);
+		memcpy(result, str, prefix_len);
+		memcpy(result + prefix_len, new, new_len);
+		strcpy(result + prefix_len + new_len, pos + old_len);
+
+		qd_push_s(ctx, result);
+		free(result);
+	}
+
+	qd_string_release(str_elem.value.s);
+	qd_string_release(old_elem.value.s);
+	qd_string_release(new_elem.value.s);
+	return (int){0};
+}
+
+// insert - insert string at position ( str:s pos:i ins:s -- result:s )
+int usr_str_insert(qd_context* ctx) {
+	qd_stack_element_t ins_elem, pos_elem, str_elem;
+	qd_stack_pop(ctx->st, &ins_elem);
+	qd_stack_pop(ctx->st, &pos_elem);
+	qd_stack_pop(ctx->st, &str_elem);
+
+	const char* str = qd_string_data(str_elem.value.s);
+	int64_t pos = pos_elem.value.i;
+	const char* ins = qd_string_data(ins_elem.value.s);
+	size_t str_len = strlen(str);
+	size_t ins_len = strlen(ins);
+
+	if (pos < 0) pos = 0;
+	if ((size_t)pos > str_len) pos = (int64_t)str_len;
+
+	char* result = malloc(str_len + ins_len + 1);
+	if (!result) abort();
+
+	memcpy(result, str, (size_t)pos);
+	memcpy(result + pos, ins, ins_len);
+	strcpy(result + pos + ins_len, str + pos);
+
+	qd_string_release(str_elem.value.s);
+	qd_string_release(ins_elem.value.s);
+	qd_push_s(ctx, result);
+	free(result);
+	return (int){0};
+}
+
+// remove_range - remove range from string ( str:s start:i len:i -- result:s )
+int usr_str_remove_range(qd_context* ctx) {
+	qd_stack_element_t len_elem, start_elem, str_elem;
+	qd_stack_pop(ctx->st, &len_elem);
+	qd_stack_pop(ctx->st, &start_elem);
+	qd_stack_pop(ctx->st, &str_elem);
+
+	const char* str = qd_string_data(str_elem.value.s);
+	int64_t start = start_elem.value.i;
+	int64_t remove_len = len_elem.value.i;
+	size_t str_len = strlen(str);
+
+	if (start < 0) start = 0;
+	if ((size_t)start >= str_len || remove_len <= 0) {
+		qd_push_s(ctx, str);
+		qd_string_release(str_elem.value.s);
+		return (int){0};
+	}
+	if ((size_t)(start + remove_len) > str_len) {
+		remove_len = (int64_t)str_len - start;
+	}
+
+	size_t result_len = str_len - (size_t)remove_len;
+	char* result = malloc(result_len + 1);
+	if (!result) abort();
+
+	memcpy(result, str, (size_t)start);
+	strcpy(result + start, str + start + remove_len);
+
+	qd_string_release(str_elem.value.s);
+	qd_push_s(ctx, result);
+	free(result);
+	return (int){0};
+}
+
+// truncate - truncate to max length with optional suffix ( str:s max:i suffix:s -- result:s )
+int usr_str_truncate(qd_context* ctx) {
+	qd_stack_element_t suffix_elem, max_elem, str_elem;
+	qd_stack_pop(ctx->st, &suffix_elem);
+	qd_stack_pop(ctx->st, &max_elem);
+	qd_stack_pop(ctx->st, &str_elem);
+
+	const char* str = qd_string_data(str_elem.value.s);
+	int64_t max_len = max_elem.value.i;
+	const char* suffix = qd_string_data(suffix_elem.value.s);
+	size_t str_len = strlen(str);
+	size_t suffix_len = strlen(suffix);
+
+	if ((int64_t)str_len <= max_len || max_len < 0) {
+		qd_push_s(ctx, str);
+	} else {
+		size_t trunc_len = (size_t)max_len;
+		if (suffix_len > 0 && trunc_len > suffix_len) {
+			trunc_len -= suffix_len;
+		}
+		char* result = malloc((size_t)max_len + 1);
+		if (!result) abort();
+
+		memcpy(result, str, trunc_len);
+		if (suffix_len > 0) {
+			memcpy(result + trunc_len, suffix, suffix_len);
+		}
+		result[trunc_len + suffix_len] = '\0';
+
+		qd_push_s(ctx, result);
+		free(result);
+	}
+
+	qd_string_release(str_elem.value.s);
+	qd_string_release(suffix_elem.value.s);
+	return (int){0};
+}
+
+// lines - split by newlines ( str:s -- arr:p count:i )!
+int usr_str_lines(qd_context* ctx) {
+	qd_stack_element_t str_elem;
+	qd_stack_pop(ctx->st, &str_elem);
+
+	const char* str = qd_string_data(str_elem.value.s);
+
+	// Count lines
+	size_t count = 1;
+	for (const char* p = str; *p; p++) {
+		if (*p == '\n') count++;
+	}
+
+	qd_string_t** parts = malloc(count * sizeof(qd_string_t*));
+	if (!parts) abort();
+
+	size_t idx = 0;
+	const char* start = str;
+	for (const char* p = str; ; p++) {
+		if (*p == '\n' || *p == '\0') {
+			size_t len = (size_t)(p - start);
+			// Strip \r if present
+			if (len > 0 && start[len - 1] == '\r') len--;
+			parts[idx++] = qd_string_create_with_length(start, len);
+			start = p + 1;
+			if (*p == '\0') break;
+		}
+	}
+
+	qd_string_release(str_elem.value.s);
+	qd_push_p(ctx, parts);
+	qd_push_i(ctx, (int64_t)idx);
+	qd_push_i(ctx, STR_ERR_OK);
+	return (int){0};
+}
+
+// words - split by whitespace ( str:s -- arr:p count:i )!
+int usr_str_words(qd_context* ctx) {
+	qd_stack_element_t str_elem;
+	qd_stack_pop(ctx->st, &str_elem);
+
+	const char* str = qd_string_data(str_elem.value.s);
+
+	// Count words
+	size_t count = 0;
+	int in_word = 0;
+	for (const char* p = str; *p; p++) {
+		if (isspace((unsigned char)*p)) {
+			in_word = 0;
+		} else if (!in_word) {
+			in_word = 1;
+			count++;
+		}
+	}
+
+	if (count == 0) {
+		qd_string_release(str_elem.value.s);
+		qd_push_p(ctx, NULL);
+		qd_push_i(ctx, 0);
+		qd_push_i(ctx, STR_ERR_OK);
+		return (int){0};
+	}
+
+	qd_string_t** parts = malloc(count * sizeof(qd_string_t*));
+	if (!parts) abort();
+
+	size_t idx = 0;
+	const char* start = NULL;
+	for (const char* p = str; ; p++) {
+		if (*p == '\0' || isspace((unsigned char)*p)) {
+			if (start != NULL) {
+				size_t len = (size_t)(p - start);
+				parts[idx++] = qd_string_create_with_length(start, len);
+				start = NULL;
+			}
+			if (*p == '\0') break;
+		} else if (start == NULL) {
+			start = p;
+		}
+	}
+
+	qd_string_release(str_elem.value.s);
+	qd_push_p(ctx, parts);
+	qd_push_i(ctx, (int64_t)idx);
+	qd_push_i(ctx, STR_ERR_OK);
+	return (int){0};
+}
+
+// split_n - split into at most n parts ( str:s delim:s n:i -- parts:p count:i )!
+int usr_str_split_n(qd_context* ctx) {
+	qd_stack_element_t n_elem, delim_elem, str_elem;
+	qd_stack_pop(ctx->st, &n_elem);
+	qd_stack_pop(ctx->st, &delim_elem);
+	qd_stack_pop(ctx->st, &str_elem);
+
+	const char* str = qd_string_data(str_elem.value.s);
+	const char* delim = qd_string_data(delim_elem.value.s);
+	int64_t max_parts = n_elem.value.i;
+	size_t delim_len = strlen(delim);
+
+	if (max_parts <= 0 || delim_len == 0) {
+		qd_string_t** parts = malloc(sizeof(qd_string_t*));
+		if (!parts) abort();
+		parts[0] = qd_string_create(str);
+		qd_string_release(str_elem.value.s);
+		qd_string_release(delim_elem.value.s);
+		qd_push_p(ctx, parts);
+		qd_push_i(ctx, 1);
+		qd_push_i(ctx, STR_ERR_OK);
+		return (int){0};
+	}
+
+	// Count parts (up to max)
+	size_t count = 1;
+	const char* pos = str;
+	while (count < (size_t)max_parts && (pos = strstr(pos, delim)) != NULL) {
+		count++;
+		pos += delim_len;
+	}
+
+	qd_string_t** parts = malloc(count * sizeof(qd_string_t*));
+	if (!parts) abort();
+
+	size_t idx = 0;
+	const char* start = str;
+	pos = str;
+
+	while (idx < count - 1 && (pos = strstr(pos, delim)) != NULL) {
+		size_t part_len = (size_t)(pos - start);
+		parts[idx++] = qd_string_create_with_length(start, part_len);
+		pos += delim_len;
+		start = pos;
+	}
+	// Last part (remainder)
+	parts[idx] = qd_string_create(start);
+
+	qd_string_release(str_elem.value.s);
+	qd_string_release(delim_elem.value.s);
+	qd_push_p(ctx, parts);
+	qd_push_i(ctx, (int64_t)count);
+	qd_push_i(ctx, STR_ERR_OK);
+	return (int){0};
+}
+
+// is_numeric - check if all digits ( str:s -- result:i )
+int usr_str_is_numeric(qd_context* ctx) {
+	qd_stack_element_t str_elem;
+	qd_stack_pop(ctx->st, &str_elem);
+
+	const char* str = qd_string_data(str_elem.value.s);
+	int result = (*str != '\0') ? 1 : 0;
+	for (const char* p = str; *p && result; p++) {
+		if (!isdigit((unsigned char)*p)) result = 0;
+	}
+
+	qd_string_release(str_elem.value.s);
+	qd_push_i(ctx, result);
+	return (int){0};
+}
+
+// is_alpha - check if all alphabetic ( str:s -- result:i )
+int usr_str_is_alpha(qd_context* ctx) {
+	qd_stack_element_t str_elem;
+	qd_stack_pop(ctx->st, &str_elem);
+
+	const char* str = qd_string_data(str_elem.value.s);
+	int result = (*str != '\0') ? 1 : 0;
+	for (const char* p = str; *p && result; p++) {
+		if (!isalpha((unsigned char)*p)) result = 0;
+	}
+
+	qd_string_release(str_elem.value.s);
+	qd_push_i(ctx, result);
+	return (int){0};
+}
+
+// is_alphanumeric - check if all alphanumeric ( str:s -- result:i )
+int usr_str_is_alphanumeric(qd_context* ctx) {
+	qd_stack_element_t str_elem;
+	qd_stack_pop(ctx->st, &str_elem);
+
+	const char* str = qd_string_data(str_elem.value.s);
+	int result = (*str != '\0') ? 1 : 0;
+	for (const char* p = str; *p && result; p++) {
+		if (!isalnum((unsigned char)*p)) result = 0;
+	}
+
+	qd_string_release(str_elem.value.s);
+	qd_push_i(ctx, result);
+	return (int){0};
+}
+
+// is_ascii - check if all ASCII (0-127) ( str:s -- result:i )
+int usr_str_is_ascii(qd_context* ctx) {
+	qd_stack_element_t str_elem;
+	qd_stack_pop(ctx->st, &str_elem);
+
+	const char* str = qd_string_data(str_elem.value.s);
+	int result = 1;
+	for (const char* p = str; *p && result; p++) {
+		if ((unsigned char)*p > 127) result = 0;
+	}
+
+	qd_string_release(str_elem.value.s);
+	qd_push_i(ctx, result);
+	return (int){0};
+}
+
+// is_lowercase - check if all lowercase ( str:s -- result:i )
+int usr_str_is_lowercase(qd_context* ctx) {
+	qd_stack_element_t str_elem;
+	qd_stack_pop(ctx->st, &str_elem);
+
+	const char* str = qd_string_data(str_elem.value.s);
+	int has_letters = 0;
+	int result = 1;
+	for (const char* p = str; *p && result; p++) {
+		if (isupper((unsigned char)*p)) result = 0;
+		if (isalpha((unsigned char)*p)) has_letters = 1;
+	}
+
+	qd_string_release(str_elem.value.s);
+	qd_push_i(ctx, result && has_letters);
+	return (int){0};
+}
+
+// is_uppercase - check if all uppercase ( str:s -- result:i )
+int usr_str_is_uppercase(qd_context* ctx) {
+	qd_stack_element_t str_elem;
+	qd_stack_pop(ctx->st, &str_elem);
+
+	const char* str = qd_string_data(str_elem.value.s);
+	int has_letters = 0;
+	int result = 1;
+	for (const char* p = str; *p && result; p++) {
+		if (islower((unsigned char)*p)) result = 0;
+		if (isalpha((unsigned char)*p)) has_letters = 1;
+	}
+
+	qd_string_release(str_elem.value.s);
+	qd_push_i(ctx, result && has_letters);
+	return (int){0};
+}
+
+// char_count - count UTF-8 codepoints ( str:s -- count:i )
+int usr_str_char_count(qd_context* ctx) {
+	qd_stack_element_t str_elem;
+	qd_stack_pop(ctx->st, &str_elem);
+
+	const char* str = qd_string_data(str_elem.value.s);
+	int64_t count = 0;
+
+	for (const unsigned char* p = (const unsigned char*)str; *p; p++) {
+		// Count only leading bytes (not continuation bytes 10xxxxxx)
+		if ((*p & 0xC0) != 0x80) count++;
+	}
+
+	qd_string_release(str_elem.value.s);
+	qd_push_i(ctx, count);
+	return (int){0};
+}
+
+// slice - substring with negative index support ( str:s start:i end:i -- result:s )
+int usr_str_slice(qd_context* ctx) {
+	qd_stack_element_t end_elem, start_elem, str_elem;
+	qd_stack_pop(ctx->st, &end_elem);
+	qd_stack_pop(ctx->st, &start_elem);
+	qd_stack_pop(ctx->st, &str_elem);
+
+	const char* str = qd_string_data(str_elem.value.s);
+	int64_t start = start_elem.value.i;
+	int64_t end = end_elem.value.i;
+	int64_t str_len = (int64_t)strlen(str);
+
+	// Handle negative indices
+	if (start < 0) start = str_len + start;
+	if (end < 0) end = str_len + end;
+
+	// Clamp to valid range
+	if (start < 0) start = 0;
+	if (end > str_len) end = str_len;
+	if (start > str_len) start = str_len;
+
+	if (end <= start) {
+		qd_push_s(ctx, "");
+	} else {
+		size_t result_len = (size_t)(end - start);
+		char* result = malloc(result_len + 1);
+		if (!result) abort();
+		memcpy(result, str + start, result_len);
+		result[result_len] = '\0';
+		qd_push_s(ctx, result);
+		free(result);
+	}
+
+	qd_string_release(str_elem.value.s);
+	return (int){0};
+}
+
+// column - format strings into columns ( arr:p count:i widths:p num_cols:i -- result:s )
+int usr_str_column(qd_context* ctx) {
+	qd_stack_element_t num_cols_elem, widths_elem, count_elem, arr_elem;
+	qd_stack_pop(ctx->st, &num_cols_elem);
+	qd_stack_pop(ctx->st, &widths_elem);
+	qd_stack_pop(ctx->st, &count_elem);
+	qd_stack_pop(ctx->st, &arr_elem);
+
+	char** arr = (char**)arr_elem.value.p;
+	int64_t count = count_elem.value.i;
+	int64_t* widths = (int64_t*)widths_elem.value.p;
+	int64_t num_cols = num_cols_elem.value.i;
+
+	if (count <= 0 || num_cols <= 0 || arr == NULL || widths == NULL) {
+		qd_push_s(ctx, "");
+		return (int){0};
+	}
+
+	// Calculate total width per row (sum of widths + spaces between)
+	size_t row_width = 0;
+	for (int64_t c = 0; c < num_cols; c++) {
+		row_width += (size_t)widths[c];
+		if (c < num_cols - 1) row_width += 1;  // space between columns
+	}
+	row_width += 1;  // newline
+
+	int64_t num_rows = (count + num_cols - 1) / num_cols;
+	size_t result_size = row_width * (size_t)num_rows + 1;
+
+	char* result = malloc(result_size);
+	if (!result) abort();
+
+	char* dest = result;
+	int64_t idx = 0;
+
+	for (int64_t row = 0; row < num_rows; row++) {
+		for (int64_t col = 0; col < num_cols; col++) {
+			int64_t width = widths[col];
+			const char* cell = (idx < count && arr[idx]) ? arr[idx] : "";
+			size_t cell_len = strlen(cell);
+
+			// Copy cell content (truncate if needed)
+			size_t copy_len = (cell_len < (size_t)width) ? cell_len : (size_t)width;
+			memcpy(dest, cell, copy_len);
+			dest += copy_len;
+
+			// Pad with spaces
+			for (size_t p = copy_len; p < (size_t)width; p++) {
+				*dest++ = ' ';
+			}
+
+			// Space between columns (except last)
+			if (col < num_cols - 1) *dest++ = ' ';
+			idx++;
+		}
+		*dest++ = '\n';
+	}
+	// Remove trailing newline
+	if (dest > result) dest--;
+	*dest = '\0';
+
+	qd_push_s(ctx, result);
+	free(result);
 	return (int){0};
 }
