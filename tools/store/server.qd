@@ -12,7 +12,7 @@ fn handle_image(c:ptr -- ) {
 
 fn main() {
 	"Quadrate Store" print nl
-	"http://localhost:8080/" print nl
+	"http://localhost:8081/" print nl
 
 	http::engine -> e
 	defer {
@@ -22,5 +22,5 @@ fn main() {
 	e "/" &handle_index http::GET
 	e "/DISKETTE.png" &handle_image http::GET
 
-	e ":8080" http::run!
+	e ":8081" http::run!
 }
