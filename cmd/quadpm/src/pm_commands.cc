@@ -129,6 +129,33 @@ std::string gitClone(const GitRef& gitRef) {
 	return actualModuleName;
 }
 
+// Ensure namespace symlink exists for an installed module
+// Parses qd.json to determine namespace, creates symlink if needed
+// Returns true on success
+bool ensureNamespaceSymlink(const std::string& installedDir, const std::string& installedDirName,
+							const std::string& fallbackModuleName) {
+	// Parse namespace from qd.json
+	std::string manifestPath = installedDir + "/qd.json";
+	std::string manifestModuleName = parseModuleName(manifestPath);
+	std::string manifestNamespace = parseNamespace(manifestPath);
+
+	// Determine the namespace: explicit namespace > module name > fallback
+	std::string namespaceName;
+	if (!manifestNamespace.empty()) {
+		namespaceName = manifestNamespace;
+	} else if (!manifestModuleName.empty()) {
+		namespaceName = manifestModuleName;
+	} else {
+		namespaceName = fallbackModuleName;
+	}
+
+	// Create namespace symlink
+	// Relative path from _namespaces/ to the package directory
+	std::string relativeTarget = "../" + installedDirName;
+
+	return createNamespaceSymlink(namespaceName, relativeTarget);
+}
+
 // Check if C source files use Quadrate name mangling convention (usr_* functions)
 // Returns true if any function matching pattern "usr_<moduleName>_" is found
 bool usesQuadrateNaming(const std::vector<std::string>& cFiles, const std::string& moduleName) {
@@ -782,6 +809,9 @@ InstallResult installSingleDependency(const Dependency& dep, const std::string& 
 			std::cout << " (" << currentCommit.substr(0, 8) << ")";
 		}
 		std::cout << "\n";
+
+		// Ensure namespace symlink exists (may have been missing)
+		ensureNamespaceSymlink(installedDir, installedDirName, gitRef.moduleName);
 
 		result.modulePath = installedDir;
 		result.commitHash = currentCommit;
