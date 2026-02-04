@@ -388,35 +388,44 @@ int main(int argc, char** argv) {
 
 				// Detect if this module is from a third-party package
 				// Package paths look like: /path/to/packages/modulename@version/module.qd
+				// Or via symlinks: /path/to/packages/_namespaces/name/module.qd
 				std::string packageDir;
-				std::string packagesDir = getPackagesDir();
-				if (!packagesDir.empty()) {
-					std::string normalizedModulePath = std::filesystem::absolute(moduleFilePath).string();
-					std::string normalizedPackagesDir = std::filesystem::absolute(packagesDir).string();
 
-					// Check if module path starts with packages directory
-					if (normalizedModulePath.size() > normalizedPackagesDir.size() &&
-							normalizedModulePath.substr(0, normalizedPackagesDir.size()) == normalizedPackagesDir) {
-						// Extract the package directory (e.g., /path/to/packages/color@master)
-						std::string relativePath = normalizedModulePath.substr(normalizedPackagesDir.size());
-						if (!relativePath.empty() && relativePath[0] == '/') {
-							relativePath = relativePath.substr(1);
-						}
-						// Get the first path component (modulename@version)
-						size_t slashPos = relativePath.find('/');
-						if (slashPos != std::string::npos) {
-							std::string packageDirName = relativePath.substr(0, slashPos);
-							packageDir = normalizedPackagesDir + "/" + packageDirName;
-						}
-					}
-				}
-
-				// Also check for native modules from include paths (e.g., -I /path/to/modules)
-				// If the module's source directory has a lib/ subdirectory, treat it as a package
-				if (packageDir.empty()) {
+				// First check: If the module's source directory has a lib/ subdirectory, use it
+				// This handles symlinks (like _namespaces/http) which resolve to the actual package
+				{
 					std::string libDir = moduleFileSourceDir + "/lib";
 					if (std::filesystem::exists(libDir) && std::filesystem::is_directory(libDir)) {
 						packageDir = moduleFileSourceDir;
+					}
+				}
+
+				// Fallback: Extract package directory from path structure
+				if (packageDir.empty()) {
+					std::string packagesDir = getPackagesDir();
+					if (!packagesDir.empty()) {
+						std::string normalizedModulePath = std::filesystem::absolute(moduleFilePath).string();
+						std::string normalizedPackagesDir = std::filesystem::absolute(packagesDir).string();
+
+						// Check if module path starts with packages directory
+						if (normalizedModulePath.size() > normalizedPackagesDir.size() &&
+								normalizedModulePath.substr(0, normalizedPackagesDir.size()) == normalizedPackagesDir) {
+							// Extract the package directory (e.g., /path/to/packages/color@master)
+							std::string relativePath = normalizedModulePath.substr(normalizedPackagesDir.size());
+							if (!relativePath.empty() && relativePath[0] == '/') {
+								relativePath = relativePath.substr(1);
+							}
+							// Get the first path component (modulename@version)
+							size_t slashPos = relativePath.find('/');
+							if (slashPos != std::string::npos) {
+								std::string packageDirName = relativePath.substr(0, slashPos);
+								std::string candidateDir = normalizedPackagesDir + "/" + packageDirName;
+								// Only use if it has a lib/ subdirectory
+								if (std::filesystem::exists(candidateDir + "/lib")) {
+									packageDir = candidateDir;
+								}
+							}
+						}
 					}
 				}
 
