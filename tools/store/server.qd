@@ -1,11 +1,7 @@
 use http
 
-fn handle_index(c:ptr -- ) {
-	"./index.html" http::static_file
-}
-
-fn handle_image(c:ptr -- ) {
-	"./DISKETTE.png" http::static_file
+fn handle_static(c:ptr -- ) {
+	"/" "./" http::static
 }
 
 fn main() {
@@ -17,8 +13,7 @@ fn main() {
 		e http::free_engine
 	}
 
-	e "/" &handle_index http::GET
-	e "/DISKETTE.png" &handle_image http::GET
+	e "/*" &handle_static http::GET
 
 	e ":8081" http::run!
 }
