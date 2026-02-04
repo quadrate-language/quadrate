@@ -290,6 +290,15 @@ std::vector<std::string> findModuleFiles(const std::string& moduleName, const st
 		}
 	}
 
+	// Try 3b: Check _namespaces directory in QUADRATE_PATH (symlinks to installed modules)
+	std::string packagesDir = getPackagesDir();
+	if (!packagesDir.empty()) {
+		result = tryGetModuleFilesFromDir(packagesDir + "/_namespaces/" + moduleName);
+		if (!result.empty()) {
+			return result;
+		}
+	}
+
 	// Try 4: QUADRATE_ROOT environment variable
 	const char* quadrateRoot = getenv("QUADRATE_ROOT");
 	if (quadrateRoot) {
