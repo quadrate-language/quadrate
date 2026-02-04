@@ -256,8 +256,36 @@ namespace Qd {
 	}
 
 	void LlvmGenerator::Impl::generateInlineDrop(llvm::Value* ctx) {
-		// Inline drop: remove top stack element
+		// Inline drop: remove top stack element, releasing string memory if needed
 		auto sa = getStackAccess(ctx);
+
+		// Get pointer to top element
+		llvm::Value* topIdx = builder->CreateSub(sa.size, builder->getInt64(1), "drop_top_idx");
+		llvm::Value* topElemPtr = builder->CreateGEP(stackElementTy, sa.data, topIdx, "drop_top_elem");
+
+		// Load the type field (offset 1 in stack element struct)
+		llvm::Value* typePtr = builder->CreateStructGEP(stackElementTy, topElemPtr, 1, "drop_type_ptr");
+		llvm::Value* elemType = builder->CreateLoad(int32Ty, typePtr, "drop_elem_type");
+
+		// Check if it's a string (type == 3)
+		llvm::Value* isString = builder->CreateICmpEQ(elemType, builder->getInt32(3), "drop_is_str");
+
+		// Create blocks for conditional release
+		llvm::Function* currentFn = builder->GetInsertBlock()->getParent();
+		llvm::BasicBlock* releaseBlock = llvm::BasicBlock::Create(*context, "drop_release_str", currentFn);
+		llvm::BasicBlock* afterBlock = llvm::BasicBlock::Create(*context, "drop_after", currentFn);
+
+		builder->CreateCondBr(isString, releaseBlock, afterBlock);
+
+		// Release string block
+		builder->SetInsertPoint(releaseBlock);
+		llvm::Value* valuePtr = builder->CreateStructGEP(stackElementTy, topElemPtr, 0, "drop_value_ptr");
+		llvm::Value* strPtr = builder->CreateLoad(ptrTy, valuePtr, "drop_str_ptr");
+		builder->CreateCall(qdStringReleaseFn, {strPtr});
+		builder->CreateBr(afterBlock);
+
+		// After block - decrement size
+		builder->SetInsertPoint(afterBlock);
 		llvm::Value* newSize = builder->CreateSub(sa.size, builder->getInt64(1), "new_size");
 		builder->CreateStore(newSize, sa.sizePtr);
 	}
