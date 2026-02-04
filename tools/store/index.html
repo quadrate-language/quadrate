@@ -43,6 +43,36 @@
 
 <p>Ships to Europe only.</p>
 
+<p><tt>════════════════════════════════════════════════════════</tt></p>
+
+<h2>[Source Code]</h2>
+
+<p>This page served by <tt>server.qd</tt>:</p>
+
+<pre style="background:#000; color:#0f0; padding:12px; font-family:monospace; border:2px solid #0f0;">
+<b>$ cat server.qd</b>
+
+use http
+
+fn handle_static(c:ptr -- ) {
+        "/" "./" http::static
+}
+
+fn main() {
+        "Quadrate Store" print nl
+        "http://localhost:8081/" print nl
+
+        http::engine -> e
+        defer {
+                e http::free_engine
+        }
+
+        e "/*" &handle_static http::GET
+
+        e ":8081" http::run!
+}
+</pre>
+
 <p><tt>────────────────────────────────────────────────────────</tt></p>
 
 <address>
