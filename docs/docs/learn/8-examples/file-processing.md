@@ -4,34 +4,30 @@ Working with files in Quadrate.
 
 ## Reading a file
 
-The simplest way to read a file is with `io::read_file!`:
+The simplest way to read a file is with `io::read_file`:
 
 ```qd
 use io
 
 fn main() {
-	"/etc/hostname" io::read_file if {
-		-> content
-		"Hostname: " print content print
-	} else {
-		drop
-		"Could not read file" print nl
+	"/etc/hostname" io::read_file switch {
+		Ok { -> content "Hostname: " print content print }
+		_ { err drop drop "Could not read file" print nl }
 	}
 }
 ```
 
 ## Writing a file
 
-Use `io::write_file!` to write string contents:
+Use `io::write_file` to write string contents:
 
 ```qd
 use io
 
 fn main() {
-	"/tmp/hello.txt" "Hello, World!\n" io::write_file if {
-		"File written successfully" print nl
-	} else {
-		"Failed to write file" print nl
+	"/tmp/hello.txt" "Hello, World!\n" io::write_file switch {
+		Ok { "File written successfully" print nl }
+		_ { err drop drop "Failed to write file" print nl }
 	}
 }
 ```
@@ -60,13 +56,9 @@ fn read_file(path:str -- content:str)! {
 }
 
 fn main() {
-	"test.txt" read_file if {
-		-> content
-		"File contents:" print nl
-		content print nl
-	} else {
-		drop
-		"Could not read file" print nl
+	"test.txt" read_file switch {
+		Ok { -> content "File contents:" print nl content print nl }
+		_ { err drop drop "Could not read file" print nl }
 	}
 }
 ```
@@ -89,10 +81,9 @@ fn write_file(path:str content:str -- )! {
 }
 
 fn main() {
-	"output.txt" "Hello, World!\n" write_file if {
-		"File written successfully" print nl
-	} else {
-		"Failed to write file" print nl
+	"output.txt" "Hello, World!\n" write_file switch {
+		Ok { "File written successfully" print nl }
+		_ { err drop drop "Failed to write file" print nl }
 	}
 }
 ```
@@ -110,16 +101,16 @@ fn process_line(num:i64 line:str -- ) {
 }
 
 fn main() {
-	"data.txt" io::read_file if {
-		-> content
-		content str::lines! -> count -> lines
-		0 count 1 for i {
-			i 1 + lines i 8 * mem::get_ptr cast<str> process_line
+	"data.txt" io::read_file switch {
+		Ok {
+			-> content
+			content str::lines! -> count -> lines
+			0 count 1 for i {
+				i 1 + lines i 8 * mem::get_ptr cast<str> process_line
+			}
+			lines mem::free
 		}
-		lines mem::free
-	} else {
-		drop
-		"Could not read file" print nl
+		_ { err drop drop "Could not read file" print nl }
 	}
 }
 ```
@@ -154,14 +145,14 @@ fn count_words(path:str -- words:i64 lines:i64 chars:i64)! {
 }
 
 fn main() {
-	"document.txt" count_words if {
-		-> chars -> lines -> words
-		"Words: " print words print nl
-		"Lines: " print lines print nl
-		"Chars: " print chars print nl
-	} else {
-		drop drop drop
-		"Could not count" print nl
+	"document.txt" count_words switch {
+		Ok {
+			-> chars -> lines -> words
+			"Words: " print words print nl
+			"Lines: " print lines print nl
+			"Chars: " print chars print nl
+		}
+		_ { err drop drop "Could not count" print nl }
 	}
 }
 ```
@@ -203,22 +194,20 @@ fn copy_file(src:str dst:str -- total:i64)! {
 }
 
 fn main() {
-	"input.txt" "output.txt" copy_file if {
-		-> total
-		"Copied " print total print " bytes" print nl
-	} else {
-		drop
-		"Copy failed" print nl
+	"input.txt" "output.txt" copy_file switch {
+		Ok { -> total "Copied " print total print " bytes" print nl }
+		_ { err drop drop "Copy failed" print nl }
 	}
 }
 ```
 
 ## Key concepts
 
-1. **Fallible functions** - Mark with `!` to propagate errors automatically
-2. **defer for cleanup** - Files and buffers always cleaned up
-3. **Error handling** - Use `if`/`else` at call site to handle failures
-4. **High-level vs low-level** - Use `io::read_file!`/`io::write_file!` for simple cases
+1. **Fallible functions** - Mark with `!` suffix, use `switch { Ok { } _ { err panic } }` to propagate errors
+2. **defer for cleanup** - Files and buffers always cleaned up, even on error
+3. **Error handling** - Use `switch { Ok { } _ { } }` to handle success/failure
+4. **Error propagation** - Use `err panic` to re-throw errors to caller
+5. **High-level vs low-level** - Use `io::read_file`/`io::write_file` for simple cases
 
 ## What's next?
 
