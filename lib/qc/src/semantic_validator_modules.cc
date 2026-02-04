@@ -567,18 +567,9 @@ namespace Qd {
 						// Resolve symlink to get package directory
 						std::string targetPath = resolveSymlink(nsSymlink);
 						if (!targetPath.empty()) {
-							modulePath = targetPath + "/module.qd";
-							file.open(modulePath);
-							if (file.good()) {
-								mModuleDirectories[moduleName] = targetPath;
-								std::stringstream buffer;
-								buffer << file.rdbuf();
-								std::string source = buffer.str();
-								file.close();
-								parseModuleAndCollectFunctions(moduleName, source, modulePath);
+							if (tryLoadModuleFromDirectory(targetPath, moduleName)) {
 								return;
 							}
-							file.close();
 						}
 					}
 
@@ -593,18 +584,9 @@ namespace Qd {
 								std::string prefix = moduleName + "@";
 								if (dirName.size() > prefix.size() && dirName.substr(0, prefix.size()) == prefix) {
 									// Found a matching package
-									modulePath = entry.path().string() + "/module.qd";
-									file.open(modulePath);
-									if (file.good()) {
-										mModuleDirectories[moduleName] = entry.path().string();
-										std::stringstream buffer;
-										buffer << file.rdbuf();
-										std::string source = buffer.str();
-										file.close();
-										parseModuleAndCollectFunctions(moduleName, source, modulePath);
+									if (tryLoadModuleFromDirectory(entry.path().string(), moduleName)) {
 										return;
 									}
-									file.close();
 									break; // Only try first matching version
 								}
 							}

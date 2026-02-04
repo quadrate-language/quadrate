@@ -9,11 +9,11 @@
       "url": "https://github.com/quadrate-language/http"
     },
     {
-      "integrity": "04f01cdc1456e2661103c861eee777a740909306",
+      "integrity": "01decd42d70743cc507cbd3f9d0770dd778c106e",
       "isPath": false,
       "name": "json",
       "ref": "master",
-      "resolved": "04f01cdc1456e2661103c861eee777a740909306",
+      "resolved": "01decd42d70743cc507cbd3f9d0770dd778c106e",
       "url": "https://github.com/quadrate-language/json"
     },
     {

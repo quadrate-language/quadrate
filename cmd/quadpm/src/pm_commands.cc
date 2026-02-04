@@ -231,6 +231,14 @@ bool compileCsources(const std::string& moduleDir, const std::string& moduleName
 	if (fs::exists("dist/include/qdrt")) {
 		includePaths.push_back("-Idist/include");
 	}
+	const char* root_env = std::getenv("QUADRATE_ROOT");
+	if (root_env) {
+		fs::path rootPath(root_env);
+		fs::path includePath = rootPath / "dist" / "include";
+		if (fs::exists(includePath / "qdrt")) {
+			includePaths.push_back("-I" + includePath.string());
+		}
+	}
 	const char* libDir_env = std::getenv("QUADRATE_LIBDIR");
 	if (libDir_env) {
 		fs::path libPath(libDir_env);

@@ -84,17 +84,19 @@ endef
 debug:
 	$(call do_build,$(BUILD_DIR_DEBUG),debug,Debug build complete - static libraries ready)
 	@echo "Building quadmcp..."
-	cd cmd/quadmcp && QUADRATE_ROOT=$(CURDIR) $(CURDIR)/dist/bin/quadpm install
+	@mkdir -p $(BUILD_DIR_DEBUG)/modules
+	cd cmd/quadmcp && QUADRATE_PATH=$(CURDIR)/$(BUILD_DIR_DEBUG)/modules QUADRATE_ROOT=$(CURDIR) $(CURDIR)/dist/bin/quadpm install
 	@mkdir -p $(BUILD_DIR_DEBUG)/cmd/quadmcp
-	cd cmd/quadmcp && QUADRATE_ROOT=$(CURDIR) $(CURDIR)/dist/bin/quad build quadmcp.qd -o $(CURDIR)/$(BUILD_DIR_DEBUG)/cmd/quadmcp/quadmcp
+	cd cmd/quadmcp && QUADRATE_PATH=$(CURDIR)/$(BUILD_DIR_DEBUG)/modules QUADRATE_ROOT=$(CURDIR) $(CURDIR)/dist/bin/quad build quadmcp.qd -o $(CURDIR)/$(BUILD_DIR_DEBUG)/cmd/quadmcp/quadmcp
 	cp $(BUILD_DIR_DEBUG)/cmd/quadmcp/quadmcp dist/bin/
 
 release:
 	$(call do_build,$(BUILD_DIR_RELEASE),release,Release build complete - static libraries ready)
 	@echo "Building quadmcp..."
-	cd cmd/quadmcp && QUADRATE_ROOT=$(CURDIR) $(CURDIR)/dist/bin/quadpm install
+	@mkdir -p $(BUILD_DIR_RELEASE)/modules
+	cd cmd/quadmcp && QUADRATE_PATH=$(CURDIR)/$(BUILD_DIR_RELEASE)/modules QUADRATE_ROOT=$(CURDIR) $(CURDIR)/dist/bin/quadpm install
 	@mkdir -p $(BUILD_DIR_RELEASE)/cmd/quadmcp
-	cd cmd/quadmcp && QUADRATE_ROOT=$(CURDIR) $(CURDIR)/dist/bin/quad build -O3 quadmcp.qd -o $(CURDIR)/$(BUILD_DIR_RELEASE)/cmd/quadmcp/quadmcp
+	cd cmd/quadmcp && QUADRATE_PATH=$(CURDIR)/$(BUILD_DIR_RELEASE)/modules QUADRATE_ROOT=$(CURDIR) $(CURDIR)/dist/bin/quad build -O3 quadmcp.qd -o $(CURDIR)/$(BUILD_DIR_RELEASE)/cmd/quadmcp/quadmcp
 	cp $(BUILD_DIR_RELEASE)/cmd/quadmcp/quadmcp dist/bin/
 	@echo "Stripping binaries..."
 	@for cmd in $(CMDS) quadrepl quadmcp; do \
@@ -173,9 +175,10 @@ format:
 # Build quadmcp (MCP server for AI assistants)
 quadmcp: debug
 	@echo "Building quadmcp (MCP server)..."
-	cd cmd/quadmcp && QUADRATE_ROOT=$(CURDIR) $(CURDIR)/dist/bin/quadpm install
+	@mkdir -p $(BUILD_DIR_DEBUG)/modules
+	cd cmd/quadmcp && QUADRATE_PATH=$(CURDIR)/$(BUILD_DIR_DEBUG)/modules QUADRATE_ROOT=$(CURDIR) $(CURDIR)/dist/bin/quadpm install
 	@mkdir -p $(BUILD_DIR_DEBUG)/cmd/quadmcp
-	cd cmd/quadmcp && QUADRATE_ROOT=$(CURDIR) $(CURDIR)/dist/bin/quad build -O3 quadmcp.qd -o $(CURDIR)/$(BUILD_DIR_DEBUG)/cmd/quadmcp/quadmcp
+	cd cmd/quadmcp && QUADRATE_PATH=$(CURDIR)/$(BUILD_DIR_DEBUG)/modules QUADRATE_ROOT=$(CURDIR) $(CURDIR)/dist/bin/quad build -O3 quadmcp.qd -o $(CURDIR)/$(BUILD_DIR_DEBUG)/cmd/quadmcp/quadmcp
 	cp $(BUILD_DIR_DEBUG)/cmd/quadmcp/quadmcp dist/bin/
 	@echo "  quadmcp built successfully"
 
@@ -189,7 +192,8 @@ playground: release
 	@cd tools/playground && go build -o ../../dist/bin/playground .
 	@echo "Playground built: dist/bin/playground"
 
-install: release
+install:
+	@if [ ! -f dist/bin/quadc ]; then echo "Error: Run 'make release' first"; exit 1; fi
 	install -d $(DESTDIR)$(PREFIX)/bin
 	install -d $(DESTDIR)$(PREFIX)/lib
 	install -d $(DESTDIR)$(INCLUDEDIR)
