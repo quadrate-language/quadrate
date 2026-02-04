@@ -1,13 +1,11 @@
 use http
 
 fn handle_index(c:ptr -- ) {
-	-> c
-	c "./index.html" http::static_file
+	"./index.html" http::static_file
 }
 
 fn handle_image(c:ptr -- ) {
-	-> c
-	c "./DISKETTE.png" http::static_file
+	"./DISKETTE.png" http::static_file
 }
 
 fn main() {
