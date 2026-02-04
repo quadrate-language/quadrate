@@ -11,6 +11,11 @@ void setModuleVersionPins(const std::unordered_map<std::string, std::string>& pi
 // Set additional module search paths from command-line -I flags
 void setModuleIncludePaths(const std::vector<std::string>& paths);
 
+// Check if a string ends with .qd (is a direct file import)
+inline bool isQdFile(const std::string& name) {
+	return name.size() >= 3 && name.substr(name.size() - 3) == ".qd";
+}
+
 // Expand tilde (~) in file paths
 std::string expandTilde(const std::string& path);
 

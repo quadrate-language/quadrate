@@ -134,7 +134,7 @@ static std::vector<std::string> globQdFiles(const std::string& directory) {
 		for (const auto& entry : std::filesystem::directory_iterator(directory)) {
 			if (entry.is_regular_file()) {
 				std::string filename = entry.path().filename().string();
-				if (filename.size() > 3 && filename.substr(filename.size() - 3) == ".qd") {
+				if (isQdFile(filename)) {
 					// Exclude test files (*_test.qd) from module loading
 					if (filename.size() > 8 && filename.substr(filename.size() - 8) == "_test.qd") {
 						continue;
@@ -160,16 +160,13 @@ static std::vector<std::string> tryGetModuleFilesFromDir(const std::string& modu
 }
 
 std::string getPackageFromModuleName(const std::string& moduleName) {
-	// Check if this is a file path (ends with .qd)
-	bool isFilePath = moduleName.size() >= 3 && moduleName.substr(moduleName.size() - 3) == ".qd";
-
-	if (isFilePath) {
+	if (isQdFile(moduleName)) {
 		// Extract filename from path
 		size_t lastSlash = moduleName.find_last_of('/');
 		std::string filename = (lastSlash != std::string::npos) ? moduleName.substr(lastSlash + 1) : moduleName;
 
 		// Remove .qd extension
-		if (filename.size() >= 3 && filename.substr(filename.size() - 3) == ".qd") {
+		if (isQdFile(filename)) {
 			filename = filename.substr(0, filename.size() - 3);
 		}
 
@@ -182,7 +179,7 @@ std::string getPackageFromModuleName(const std::string& moduleName) {
 
 std::string findModuleFile(const std::string& moduleName, const std::string& sourceDir) {
 	// Check if this is a direct file import (ends with .qd)
-	bool isDirectFile = moduleName.size() >= 3 && moduleName.substr(moduleName.size() - 3) == ".qd";
+	bool isDirectFile = isQdFile(moduleName);
 
 	if (isDirectFile) {
 		// Expand tilde in the path
@@ -230,7 +227,7 @@ std::string findModuleFile(const std::string& moduleName, const std::string& sou
 
 std::vector<std::string> findModuleFiles(const std::string& moduleName, const std::string& sourceDir) {
 	// Check if this is a direct file import (ends with .qd)
-	bool isDirectFile = moduleName.size() >= 3 && moduleName.substr(moduleName.size() - 3) == ".qd";
+	bool isDirectFile = isQdFile(moduleName);
 
 	if (isDirectFile) {
 		// For direct file imports, just return the single file
@@ -499,7 +496,7 @@ std::vector<std::string> getSiblingQdFiles(const std::string& filePath) {
 			std::string filename = entry.path().filename().string();
 
 			// Must end in .qd
-			if (filename.size() < 4 || filename.substr(filename.size() - 3) != ".qd") {
+			if (!isQdFile(filename)) {
 				continue;
 			}
 
