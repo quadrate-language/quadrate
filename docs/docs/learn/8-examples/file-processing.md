@@ -4,45 +4,63 @@ Working with files in Quadrate.
 
 ## Reading a file
 
+The simplest way to read a file is with `io::read_file!`:
+
+```qd
+use io
+
+fn main() {
+	"/etc/hostname" io::read_file if {
+		-> content
+		"Hostname: " print content print
+	} else {
+		drop
+		"Could not read file" print nl
+	}
+}
+```
+
+## Writing a file
+
+Use `io::write_file!` to write string contents:
+
+```qd
+use io
+
+fn main() {
+	"/tmp/hello.txt" "Hello, World!\n" io::write_file if {
+		"File written successfully" print nl
+	} else {
+		"Failed to write file" print nl
+	}
+}
+```
+
+## Reading with low-level API
+
+For more control, use `io::open!`, `io::read!`, etc:
+
 ```qd
 use io
 use mem
 
-fn read_entire_file(path:str -- content:str ok:i64) {
-	-> path  // bind parameter
+fn read_file(path:str -- content:str)! {
+	-> path
+	path io::Read io::open! -> file
+	defer { file io::close }
 
-	path io::Read io::open if {
-		-> file  // bind file handle
-		defer { file io::close }
+	file 0 io::SeekEnd io::seek! -> size
+	file 0 io::SeekSet io::seek! drop
 
-		// Get file size by seeking to end
-		file 0 io::SeekEnd io::seek if {
-			-> size  // bind file size
-			file 0 io::SeekSet io::seek if {
-				drop
+	size mem::alloc! -> buf
+	defer { buf mem::free }
 
-				size mem::alloc! -> buf
-				defer { buf mem::free }
-
-				file buf size io::read if {
-					-> bytes_read  // bind read count
-					buf bytes_read mem::to_string 1
-				} else {
-					"" 0
-				}
-			} else {
-				"" 0
-			}
-		} else {
-			"" 0
-		}
-	} else {
-		"" 0
-	}
+	file buf size io::read! -> bytes_read
+	buf bytes_read mem::to_string
 }
 
 fn main() {
-	"test.txt" read_entire_file if {
+	"test.txt" read_file if {
 		-> content
 		"File contents:" print nl
 		content print nl
@@ -53,33 +71,21 @@ fn main() {
 }
 ```
 
-## Writing a file
+## Writing with low-level API
 
 ```qd
 use io
 use mem
 
-fn write_file(path:str content:str -- ok:i64) {
-	-> content -> path  // bind parameters
+fn write_file(path:str content:str -- )! {
+	-> content -> path
+	path io::Write io::open! -> file
+	defer { file io::close }
 
-	path io::Write io::open if {
-		-> file  // bind file handle
+	content mem::from_string -> size -> buf
+	defer { buf mem::free }
 
-		content mem::from_string -> size -> buf
-
-		file buf size io::write if {
-			drop
-			buf mem::free
-			file io::close
-			1
-		} else {
-			buf mem::free
-			file io::close
-			0
-		}
-	} else {
-		0
-	}
+	file buf size io::write! drop
 }
 
 fn main() {
@@ -98,46 +104,23 @@ use io
 use mem
 use str
 
-fn read_entire_file(path:str -- content:str)! {
-	-> path  // bind parameter
-
-	path io::Read io::open! -> file
-	defer { file io::close }
-
-	file 0 io::SeekEnd io::seek! -> size
-	file 0 io::SeekSet io::seek! drop
-
-	size mem::alloc! -> buf
-	defer { buf mem::free }
-
-	file buf size io::read! -> bytes_read
-	buf bytes_read mem::to_string
-}
-
-fn process_lines(path:str -- ) {
-	-> path  // bind parameter
-
-	path read_entire_file if {
-		-> content  // bind file content
-		content "\n" str::split if {
-			-> count -> lines  // bind split results
-
-			0 count 1 for i {
-				i 1 + lines i 8 * mem::get_ptr cast<str> process_line
-			}
-		}
-	} else {
-		"Could not read file" print nl
-	}
-}
-
 fn process_line(num:i64 line:str -- ) {
-	-> line -> num  // bind parameters
+	-> line -> num
 	num print ": " print line print nl
 }
 
 fn main() {
-	"data.txt" process_lines
+	"data.txt" io::read_file if {
+		-> content
+		content str::lines! -> count -> lines
+		0 count 1 for i {
+			i 1 + lines i 8 * mem::get_ptr cast<str> process_line
+		}
+		lines mem::free
+	} else {
+		drop
+		"Could not read file" print nl
+	}
 }
 ```
 
@@ -148,40 +131,24 @@ use io
 use mem
 use str
 
-fn read_entire_file(path:str -- content:str)! {
-	-> path  // bind parameter
-
-	path io::Read io::open! -> file
-	defer { file io::close }
-
-	file 0 io::SeekEnd io::seek! -> size
-	file 0 io::SeekSet io::seek! drop
-
-	size mem::alloc! -> buf
-	defer { buf mem::free }
-
-	file buf size io::read! -> bytes_read
-	buf bytes_read mem::to_string
-}
-
 fn count_words(path:str -- words:i64 lines:i64 chars:i64)! {
-	-> path  // bind parameter
-
-	path read_entire_file! -> content
+	-> path
+	path io::read_file! -> content
 
 	content str::len -> chars
-
-	content "\n" str::split! -> line_count -> line_parts
-	line_count 1 - -> lines
+	content str::lines! -> line_count -> line_array
+	line_count -> lines
 
 	0 -> words
 	0 line_count 1 for i {
-		line_parts i 8 * mem::get_ptr cast<str> -> line  // get current line
+		line_array i 8 * mem::get_ptr cast<str> -> line
 		line str::len 0 > if {
-			line " " str::split! -> word_count drop
+			line str::words! -> word_count -> word_arr
 			words word_count + -> words
+			word_arr mem::free
 		}
 	}
+	line_array mem::free
 
 	words lines chars
 }
@@ -193,6 +160,7 @@ fn main() {
 		"Lines: " print lines print nl
 		"Chars: " print chars print nl
 	} else {
+		drop drop drop
 		"Could not count" print nl
 	}
 }
@@ -208,21 +176,14 @@ const BufferSize = 4096
 
 fn copy_file(src:str dst:str -- total:i64)! {
 	-> dst -> src
-
 	src io::ReadBinary io::open! -> src_file
-	defer {
-		src_file io::close
-	}
+	defer { src_file io::close }
 
 	dst io::WriteBinary io::open! -> dst_file
-	defer {
-		dst_file io::close
-	}
+	defer { dst_file io::close }
 
 	BufferSize mem::alloc! -> buf
-	defer {
-		buf mem::free
-	}
+	defer { buf mem::free }
 
 	0 -> total_copied
 	1 -> copying
@@ -246,6 +207,7 @@ fn main() {
 		-> total
 		"Copied " print total print " bytes" print nl
 	} else {
+		drop
 		"Copy failed" print nl
 	}
 }
@@ -253,10 +215,10 @@ fn main() {
 
 ## Key concepts
 
-1. **defer for cleanup** - Files and buffers always cleaned up
-2. **Error handling** - Every I/O operation can fail
-3. **Buffer management** - Read in chunks for efficiency
-4. **String operations** - Split, parse, transform
+1. **Fallible functions** - Mark with `!` to propagate errors automatically
+2. **defer for cleanup** - Files and buffers always cleaned up
+3. **Error handling** - Use `if`/`else` at call site to handle failures
+4. **High-level vs low-level** - Use `io::read_file!`/`io::write_file!` for simple cases
 
 ## What's next?
 

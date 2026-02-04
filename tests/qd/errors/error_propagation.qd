@@ -1,0 +1,24 @@
+fn bar(x:i64 -- result:i64)! {
+	-> x
+	x 0 < if { "bar: negative" 1 panic }
+	x 10 +
+}
+
+fn foo(x:i64 -- result:i64)! {
+	-> x
+	x bar switch {
+		Ok { }
+		_ { err panic }
+	}
+}
+
+fn main() {
+	5 foo switch {
+		Ok { -> r "5 -> " print r print nl }
+		_ { err -> c -> m "error: " print m print nl }
+	}
+	-5 foo switch {
+		Ok { -> r "-5 -> " print r print nl }
+		_ { err -> c -> m "error: " print m print nl }
+	}
+}

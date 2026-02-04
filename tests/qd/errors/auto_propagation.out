@@ -1,0 +1,5 @@
+=== Error propagation ===
+5 -> 30
+-5 caught (validate)
+95 caught (transform)
+done

@@ -408,6 +408,20 @@ namespace Qd {
 			}
 			break;
 		}
+		case IAstNode::Type::INSTRUCTION: {
+			auto* inst = static_cast<AstNodeInstruction*>(node);
+			const std::string& name = inst->name();
+			// The 'err' instruction pushes a string (error message), so functions
+			// using it are not integer-only
+			if (name == "err") {
+				return false;
+			}
+			// Other instructions that produce strings
+			if (name == "read" || name == "getenv") {
+				return false;
+			}
+			break;
+		}
 		case IAstNode::Type::SCOPED_IDENTIFIER:
 			// Module calls (like str::len) might return non-integers
 			// Be conservative and reject
