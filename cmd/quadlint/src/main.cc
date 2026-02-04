@@ -198,7 +198,10 @@ void collectLocalBindings(IAstNode* node, std::unordered_map<std::string, IAstNo
 
 	if (node->type() == IAstNode::Type::LOCAL) {
 		AstNodeLocal* local = static_cast<AstNodeLocal*>(node);
-		locals[local->name()] = node;
+		// Skip "_" which is the discard operator (intentionally unused)
+		if (local->name() != "_") {
+			locals[local->name()] = node;
+		}
 	}
 
 	for (size_t i = 0; i < node->childCount(); i++) {

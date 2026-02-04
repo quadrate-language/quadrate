@@ -1,0 +1,17 @@
+// Test discard inside conditional blocks
+fn main() {
+	1 -> cond
+
+	cond if {
+		10 20 -> _
+		print nl  // prints 10
+	}
+
+	0 -> cond
+	cond if {
+		99 -> _  // not executed
+	} else {
+		30 40 -> _ -> x
+		x print nl  // prints 30
+	}
+}

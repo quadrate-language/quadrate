@@ -113,6 +113,107 @@ void QuadrateLSP::findIdentifiersInNode(
 	}
 }
 
+// Find the function declaration that contains the given line/column position
+Qd::AstNodeFunctionDeclaration* QuadrateLSP::findContainingFunction(Qd::IAstNode* root, size_t line, size_t /*column*/) {
+	if (!root) {
+		return nullptr;
+	}
+
+	// Recursively search for a function that contains the position
+	std::function<Qd::AstNodeFunctionDeclaration*(Qd::IAstNode*)> search = [&](Qd::IAstNode* node)
+			-> Qd::AstNodeFunctionDeclaration* {
+		if (!node) {
+			return nullptr;
+		}
+
+		if (node->type() == Qd::IAstNode::Type::FUNCTION_DECLARATION) {
+			Qd::AstNodeFunctionDeclaration* funcDecl = static_cast<Qd::AstNodeFunctionDeclaration*>(node);
+			// Check if the position is within this function
+			// Functions contain all their children, so we check if any child contains our position
+			// or if the function itself starts at/before our line
+			if (funcDecl->line() <= line) {
+				// Check children for more specific containment
+				for (size_t i = 0; i < funcDecl->childCount(); i++) {
+					auto* result = search(funcDecl->child(i));
+					if (result) {
+						return result; // Found a nested function containing the position
+					}
+				}
+				// If the body exists, check if this function likely contains the position
+				if (funcDecl->body()) {
+					return funcDecl;
+				}
+			}
+		}
+
+		// Search children
+		for (size_t i = 0; i < node->childCount(); i++) {
+			auto* result = search(node->child(i));
+			if (result) {
+				return result;
+			}
+		}
+
+		return nullptr;
+	};
+
+	return search(root);
+}
+
+// Check if a name is a local variable or parameter within a function
+bool QuadrateLSP::isLocalVariableOrParameter(Qd::IAstNode* funcNode, const std::string& name) {
+	if (!funcNode || funcNode->type() != Qd::IAstNode::Type::FUNCTION_DECLARATION) {
+		return false;
+	}
+
+	Qd::AstNodeFunctionDeclaration* func = static_cast<Qd::AstNodeFunctionDeclaration*>(funcNode);
+
+	// Check input parameters
+	for (const auto* param : func->inputParameters()) {
+		if (param->type() == Qd::IAstNode::Type::VARIABLE_DECLARATION) {
+			const Qd::AstNodeParameter* p = static_cast<const Qd::AstNodeParameter*>(param);
+			if (p->name() == name) {
+				return true;
+			}
+		}
+	}
+
+	// Check output parameters
+	for (const auto* param : func->outputParameters()) {
+		if (param->type() == Qd::IAstNode::Type::VARIABLE_DECLARATION) {
+			const Qd::AstNodeParameter* p = static_cast<const Qd::AstNodeParameter*>(param);
+			if (p->name() == name) {
+				return true;
+			}
+		}
+	}
+
+	// Check for local variable declarations (-> varname) within the function body
+	std::function<bool(Qd::IAstNode*)> searchLocals = [&](Qd::IAstNode* node) -> bool {
+		if (!node) {
+			return false;
+		}
+
+		if (node->type() == Qd::IAstNode::Type::LOCAL) {
+			Qd::AstNodeLocal* local = static_cast<Qd::AstNodeLocal*>(node);
+			for (const std::string& localName : local->names()) {
+				if (localName == name) {
+					return true;
+				}
+			}
+		}
+
+		for (size_t i = 0; i < node->childCount(); i++) {
+			if (searchLocals(node->child(i))) {
+				return true;
+			}
+		}
+		return false;
+	};
+
+	return searchLocals(func->body());
+}
+
 Qd::AstNodeLocal* QuadrateLSP::findLocalDeclaration(
 		Qd::IAstNode* startNode, const std::string& varName, size_t requestLine) {
 	if (!startNode) {
@@ -1338,7 +1439,17 @@ void QuadrateLSP::handleDocumentHighlight(
 			if (root && !ast.hasErrors()) {
 				// Find all references to this identifier
 				std::vector<Qd::IAstNode*> references;
-				findIdentifiersInNode(root, word, references);
+
+				// Check if we're highlighting a local variable or parameter
+				// If so, limit the search to the containing function's scope
+				Qd::AstNodeFunctionDeclaration* containingFunc = findContainingFunction(root, line + 1, character + 1);
+				if (containingFunc && isLocalVariableOrParameter(containingFunc, word)) {
+					// Scope-aware search: only search within the containing function
+					findIdentifiersInNode(containingFunc, word, references);
+				} else {
+					// Global search for function names, struct names, etc.
+					findIdentifiersInNode(root, word, references);
+				}
 
 				for (Qd::IAstNode* ref : references) {
 					json_t* highlight = json_object();
@@ -1428,7 +1539,17 @@ void QuadrateLSP::handleReferences(const std::string& id, const std::string& uri
 			if (root && !ast.hasErrors()) {
 				// Find all references to this identifier
 				std::vector<Qd::IAstNode*> references;
-				findIdentifiersInNode(root, word, references);
+
+				// Check if we're searching for a local variable or parameter
+				// If so, limit the search to the containing function's scope
+				Qd::AstNodeFunctionDeclaration* containingFunc = findContainingFunction(root, line + 1, character + 1);
+				if (containingFunc && isLocalVariableOrParameter(containingFunc, word)) {
+					// Scope-aware search: only search within the containing function
+					findIdentifiersInNode(containingFunc, word, references);
+				} else {
+					// Global search for function names, struct names, etc.
+					findIdentifiersInNode(root, word, references);
+				}
 
 				for (Qd::IAstNode* ref : references) {
 					json_t* location = json_object();
@@ -1582,7 +1703,17 @@ void QuadrateLSP::handleRename(
 			if (root && !ast.hasErrors()) {
 				// Find all references to this identifier
 				std::vector<Qd::IAstNode*> references;
-				findIdentifiersInNode(root, word, references);
+
+				// Check if we're renaming a local variable or parameter
+				// If so, limit the search to the containing function's scope
+				Qd::AstNodeFunctionDeclaration* containingFunc = findContainingFunction(root, line + 1, character + 1);
+				if (containingFunc && isLocalVariableOrParameter(containingFunc, word)) {
+					// Scope-aware search: only search within the containing function
+					findIdentifiersInNode(containingFunc, word, references);
+				} else {
+					// Global search for function names, struct names, etc.
+					findIdentifiersInNode(root, word, references);
+				}
 
 				json_t* edits = json_array();
 

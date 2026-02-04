@@ -329,12 +329,16 @@ namespace Qd {
 			case IAstNode::Type::LOCAL: {
 				// Local variable binding: pop value(s) from stack and store type(s)
 				// Supports multiple assignment: -> a b c
+				// Special case: -> _ discards the value (like drop)
 				AstNodeLocal* local = static_cast<AstNodeLocal*>(child);
 				for (const std::string& varName : local->names()) {
 					if (!typeStack.empty()) {
 						StackValueType varType = typeStack.back();
 						typeStack.pop_back();
-						localVarTypes[varName] = varType;
+						// Don't store _ as a variable - it's a discard
+						if (varName != "_") {
+							localVarTypes[varName] = varType;
+						}
 					}
 				}
 				break;
@@ -872,11 +876,27 @@ namespace Qd {
 			case IAstNode::Type::LOCAL: {
 				// Handle local variable declaration: pop value from stack and store
 				// Supports multiple assignment: -> a b c pops 3 values
+				// Special case: -> _ discards the value (like drop)
 				AstNodeLocal* local = static_cast<AstNodeLocal*>(child);
 				const std::vector<std::string>& varNames = local->names();
 
 				// Process each variable name (in order: first name gets top of stack)
 				for (const std::string& varName : varNames) {
+					// Special case: _ is discard (drop), not a variable
+					if (varName == "_") {
+						// Check if stack is empty
+						if (typeStack.empty()) {
+							reportError(local, "Type error in discard '-> _': Stack underflow (no value to discard)");
+							continue;
+						}
+						// Pop the value type from the stack but don't store it
+						typeStack.pop_back();
+						if (!structTypeStack.empty()) {
+							structTypeStack.pop_back();
+						}
+						continue;
+					}
+
 					// Check if variable name shadows a function
 					if (mDefinedFunctions.find(varName) != mDefinedFunctions.end()) {
 						std::string errorMsg = "Local variable '";

@@ -8,14 +8,20 @@
 namespace Qd {
 
 	/**
-	 * @brief AST node representing local variable declaration(s)
+	 * @brief AST node representing local variable declaration(s) or discard
 	 *
 	 * Syntax: -> variableName
 	 *         -> var1 var2 var3  (multiple assignment)
+	 *         -> _               (discard/drop - pops and discards value)
 	 *
 	 * Single assignment pops the top value from the stack and stores it in a named local variable.
 	 * Multiple assignment pops multiple values: -> a b c pops 3 values, assigns top to a, next to b, etc.
 	 * References to the variable name later will push a copy of the value to the stack.
+	 *
+	 * Special case: When the variable name is "_", the value is discarded (equivalent to drop).
+	 * This is useful for ignoring return values:
+	 *   json::get_string -> _ -> value   // discard found flag, keep value
+	 *   get_triple -> _ -> mid -> _      // keep only middle return value
 	 */
 	class AstNodeLocal : public AstNodeBase<IAstNode::Type::LOCAL> {
 	public:

@@ -1,0 +1,16 @@
+// Test mixing discard with variable assignment
+// Common pattern for ignoring some return values
+fn main() {
+	// Keep middle value: 10 20 30 -> discard 30, keep 20, discard 10
+	10 20 30 -> _ -> x -> _
+	x print nl  // prints 20
+
+	// Keep first and last: 1 2 3 -> keep 3, discard 2, keep 1
+	1 2 3 -> a -> _ -> b
+	a print nl  // prints 3
+	b print nl  // prints 1
+
+	// Selective extraction from function returns
+	100 200 -> _ -> val
+	val print nl  // prints 100
+}

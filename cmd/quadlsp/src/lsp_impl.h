@@ -5,6 +5,7 @@
 #include <jansson.h>
 #include <map>
 #include <qc/ast_node.h>
+#include <qc/ast_node_function.h>
 #include <qc/ast_node_local.h>
 #include <string>
 #include <utility>
@@ -130,6 +131,8 @@ private:
 
 	// Navigation helpers (implemented in lsp_navigation.cc)
 	void findIdentifiersInNode(Qd::IAstNode* node, const std::string& targetName, std::vector<Qd::IAstNode*>& results);
+	Qd::AstNodeFunctionDeclaration* findContainingFunction(Qd::IAstNode* root, size_t line, size_t column);
+	bool isLocalVariableOrParameter(Qd::IAstNode* funcNode, const std::string& name);
 	Qd::AstNodeLocal* findLocalDeclaration(Qd::IAstNode* startNode, const std::string& varName, size_t requestLine);
 	json_t* findDefinitionInModule(
 			const std::string& modulePath, const std::string& symbolName, const std::string& symbolType);

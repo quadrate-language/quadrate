@@ -160,15 +160,12 @@ examples: debug
 format:
 	find cmd lib examples -type f \( -name '*.cc' -o -name '*.h' \) -exec clang-format -i {} +
 
-# Build quadmcp (MCP server for AI assistants) - requires Go
-quadmcp:
-	@if command -v go >/dev/null 2>&1; then \
-		echo "Building quadmcp (MCP server)..."; \
-		cd cmd/quadmcp && go build -o quadmcp . && cp quadmcp ../../dist/bin/; \
-		echo "  quadmcp built successfully"; \
-	else \
-		echo "Note: Go not found, skipping quadmcp build"; \
-	fi
+# Build quadmcp (MCP server for AI assistants)
+quadmcp: debug
+	@echo "Building quadmcp (MCP server)..."
+	@cd cmd/quadmcp && QUADRATE_ROOT=$(PWD) ../../dist/bin/quad build -O3 quadmcp.qd -o quadmcp
+	@cp cmd/quadmcp/quadmcp dist/bin/
+	@echo "  quadmcp built successfully"
 
 # Build playground (web-based REPL) - requires Go and Docker
 playground: release

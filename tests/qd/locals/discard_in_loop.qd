@@ -1,0 +1,14 @@
+// Test discard inside loops
+// Verifies -> _ works correctly with repeated execution
+fn main() {
+	0 -> i
+	loop {
+		i 3 >= if { break }
+
+		// Push two values, discard one
+		i i 10 * -> _
+		print nl  // prints i
+
+		i 1 + -> i
+	}
+}

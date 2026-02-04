@@ -1,0 +1,664 @@
+/// quadmcp - MCP (Model Context Protocol) server in Quadrate
+///
+/// A Quadrate language documentation server implementing the Model Context Protocol.
+/// Provides tools to query standard library documentation, builtins, and language syntax.
+///
+/// Usage:
+///   quad run quadmcp.qd         # Stdio mode (default, for MCP clients)
+///   quad run quadmcp.qd --http  # HTTP mode on port 3000
+///
+/// Test stdio:
+///   echo '{"jsonrpc":"2.0","method":"initialize","id":1}' | quad run quadmcp.qd
+///
+/// Test HTTP:
+///   curl -X POST http://localhost:3000/mcp -d '{"jsonrpc":"2.0","method":"initialize","id":1}'
+use flag
+use http
+use io
+use json
+use os
+use str
+use strconv
+
+const PROTOCOL_VERSION = "2024-11-05"
+const SERVER_NAME = "quadmcp"
+const SERVER_VERSION = "0.1.0"
+
+struct DocStore {
+	docs_dir: str
+	builtins: str
+	language: str
+}
+
+fn find_docs_dir( -- dir:str) {
+	"QUADRATE_ROOT" os::getenv -> root
+	root str::len 0 > if {
+		root "/docs/api" str::concat -> candidate
+		candidate os::exists if {
+			candidate
+		} else {
+			os::cwd! "/docs/api" str::concat -> candidate
+			candidate os::exists if {
+				candidate
+			} else {
+				"/usr/share/quadrate/docs/api" os::exists if {
+					"/usr/share/quadrate/docs/api"
+				} else {
+					"docs/api"
+				}
+			}
+		}
+	} else {
+		os::cwd! "/docs/api" str::concat -> candidate
+		candidate os::exists if {
+			candidate
+		} else {
+			"/usr/share/quadrate/docs/api" os::exists if {
+				"/usr/share/quadrate/docs/api"
+			} else {
+				"docs/api"
+			}
+		}
+	}
+}
+
+fn load_docs( -- ds:ptr) {
+	find_docs_dir -> docs_dir
+	"" -> builtins
+	"" -> language
+
+	docs_dir "/builtins.json" str::concat io::read_file switch {
+		Ok {
+			-> builtins
+		}
+		_ {
+			"{}" -> builtins
+		}
+	}
+
+	docs_dir "/language.json" str::concat io::read_file switch {
+		Ok {
+			-> language
+		}
+		_ {
+			"{}" -> language
+		}
+	}
+
+	DocStore {
+		docs_dir = docs_dir
+		builtins = builtins
+		language = language
+	}
+}
+
+fn load_module(ds:ptr name:str -- content:str) {
+	-> name -> ds
+	ds @docs_dir "/" str::concat name str::concat ".json" str::concat -> path
+	path io::read_file switch {
+		Ok {
+		}
+		_ {
+			"{}"
+		}
+	}
+}
+
+fn rpc_result(id:str result:str -- response:str) {
+	-> result -> id
+	"jsonrpc" "2.0" json::kv
+	"id" id json::kv_raw json::join
+	"result" result json::kv_raw json::join
+	json::obj
+}
+
+fn rpc_error(id:str code:str msg:str -- response:str) {
+	-> msg -> code -> id
+	"code" code json::kv_raw
+	"message" msg json::kv json::join
+	json::obj
+
+	"jsonrpc" "2.0" json::kv
+	"id" id json::kv_raw json::join
+	"error" rot json::kv_raw json::join
+	json::obj
+}
+
+fn tool_text_result(text:str -- result:str) {
+	-> text
+	"type" "text" json::kv
+	"text" text json::kv json::join
+	json::obj json::arr
+	"content" swap json::kv_raw json::obj
+}
+
+fn tool_error_result(msg:str -- result:str) {
+	-> msg
+	"type" "text" json::kv
+	"text" msg json::kv json::join
+	json::obj json::arr
+	"content" swap json::kv_raw
+	"isError" "true" json::kv_raw json::join
+	json::obj
+}
+
+fn mcp_initialize(id:str -- response:str) {
+	-> id
+	"tools" json::empty_obj json::kv_raw json::obj -> caps
+
+	"name" SERVER_NAME json::kv
+	"version" SERVER_VERSION json::kv json::join
+	json::obj -> info
+
+	"protocolVersion" PROTOCOL_VERSION json::kv
+	"capabilities" caps json::kv_raw json::join
+	"serverInfo" info json::kv_raw json::join
+	json::obj -> result
+
+	id result rpc_result
+}
+
+fn build_tool(name:str desc:str props:str required:str -- tool:str) {
+	-> required -> props -> desc -> name
+
+	"type" "object" json::kv
+	props str::len 0 > if {
+		"properties" props json::kv_raw json::join
+	}
+	required str::len 0 > if {
+		"required" required json::kv_raw json::join
+	}
+	json::obj -> schema
+
+	"name" name json::kv
+	"description" desc json::kv json::join
+	"inputSchema" schema json::kv_raw json::join
+	json::obj
+}
+
+fn build_string_prop(desc:str -- prop:str) {
+	-> desc
+	"type" "string" json::kv
+	"description" desc json::kv json::join
+	json::obj
+}
+
+fn mcp_tools_list(id:str -- response:str) {
+	-> id
+
+	"quadrate_list_modules"
+	"List all available Quadrate standard library modules (returns JSON with name, description, function count)"
+	"" "" build_tool -> tool1
+
+	"name" "Module name (e.g., 'math', 'str', 'io')" build_string_prop json::kv_raw json::obj -> props
+	"name" json::encode json::arr -> req
+	"quadrate_get_module"
+	"Get full documentation for a specific Quadrate module including all functions, constants, and structs"
+	props req build_tool -> tool2
+
+	"module" "Module name" build_string_prop json::kv_raw
+	"function" "Function name" build_string_prop json::kv_raw json::join
+	json::obj -> props
+	"module" json::encode "function" json::encode json::join json::arr -> req
+	"quadrate_get_function"
+	"Get detailed documentation for a specific Quadrate function (searches module JSON for function)"
+	props req build_tool -> tool3
+
+	"query" "Search query (case-insensitive)" build_string_prop json::kv_raw json::obj -> props
+	"query" json::encode json::arr -> req
+	"quadrate_search"
+	"Search Quadrate documentation. Returns builtins.json, then module files containing the query."
+	props req build_tool -> tool4
+
+	"quadrate_get_builtins"
+	"Get all Quadrate builtin instructions organized by category (stack ops, arithmetic, comparison, etc.)"
+	"" "" build_tool -> tool5
+
+	"name" "Instruction name or alias (e.g., 'dup', 'swap', 'add', '+', '==')" build_string_prop json::kv_raw json::obj -> props
+	"name" json::encode json::arr -> req
+	"quadrate_get_builtin"
+	"Get documentation for a specific builtin instruction. Search the builtins JSON for the name."
+	props req build_tool -> tool6
+
+	"quadrate_get_syntax"
+	"Get Quadrate language syntax reference: types, keywords, operators, and common patterns"
+	"" "" build_tool -> tool7
+
+	"name" "Keyword name (e.g., 'fn', 'if', 'for', 'struct', 'use', 'loop')" build_string_prop json::kv_raw json::obj -> props
+	"name" json::encode json::arr -> req
+	"quadrate_get_keyword"
+	"Get documentation for a specific Quadrate keyword. Search language.json keywords array."
+	props req build_tool -> tool8
+
+	"name" "Operator symbol or alias (e.g., '+', 'add', '==', 'eq', '->')" build_string_prop json::kv_raw json::obj -> props
+	"name" json::encode json::arr -> req
+	"quadrate_get_operator"
+	"Get documentation for a specific Quadrate operator. Search language.json operators array."
+	props req build_tool -> tool9
+
+	tool1
+	tool2 json::join
+	tool3 json::join
+	tool4 json::join
+	tool5 json::join
+	tool6 json::join
+	tool7 json::join
+	tool8 json::join
+	tool9 json::join
+	json::arr -> tools_arr
+
+	"tools" tools_arr json::kv_raw json::obj -> result
+	id result rpc_result
+}
+
+const MODULE_LIST = "bits,bytes,flag,fmt,io,limits,math,mem,os,path,rand,sb,signal,str,strconv,term,testing,thread,time,unicode"
+
+fn module_entry(ds:ptr name:str -- entry:str) {
+	-> name -> ds
+	ds name load_module -> m
+
+	m "description" json::get_string -> _ -> desc
+
+	m "functions" json::get_array -> found -> funcs
+	found if { funcs json::array_len } else { 0 } -> func_count
+
+	m "constants" json::get_array -> found -> consts
+	found if { consts json::array_len } else { 0 } -> const_count
+
+	"name" name json::kv
+	"description" desc json::kv json::join
+	"functions" func_count json::kv_int json::join
+	"constants" const_count json::kv_int json::join
+	json::obj
+}
+
+fn tool_list_modules(ds:ptr -- result:str) {
+	-> ds
+	ds "bits" module_entry
+	ds "bytes" module_entry json::join
+	ds "flag" module_entry json::join
+	ds "fmt" module_entry json::join
+	ds "io" module_entry json::join
+	ds "limits" module_entry json::join
+	ds "math" module_entry json::join
+	ds "mem" module_entry json::join
+	ds "os" module_entry json::join
+	ds "path" module_entry json::join
+	ds "rand" module_entry json::join
+	ds "sb" module_entry json::join
+	ds "signal" module_entry json::join
+	ds "str" module_entry json::join
+	ds "strconv" module_entry json::join
+	ds "term" module_entry json::join
+	ds "testing" module_entry json::join
+	ds "thread" module_entry json::join
+	ds "time" module_entry json::join
+	ds "unicode" module_entry json::join
+	json::arr tool_text_result
+}
+
+fn tool_get_module(ds:ptr args:str -- result:str) {
+	-> args -> ds
+	args "name" json::get_string -> found -> mod_name
+	found 0 == if {
+		"Missing required parameter: name" tool_error_result
+	} else {
+		ds mod_name load_module -> mod_json
+		mod_json "name" json::get_string -> found -> _
+		found 0 == if {
+			"Module '" mod_name str::concat "' not found. Available: " str::concat MODULE_LIST str::concat tool_error_result
+		} else {
+			mod_json tool_text_result
+		}
+	}
+}
+
+fn tool_get_function(ds:ptr args:str -- result:str) {
+	-> args -> ds
+	args "module" json::get_string -> found -> mod_name
+	found 0 == if {
+		"Missing required parameter: module" tool_error_result
+	} else {
+		args "function" json::get_string -> found -> fn_name
+		found 0 == if {
+			"Missing required parameter: function" tool_error_result
+		} else {
+			ds mod_name load_module -> mod_json
+			mod_json "functions" json::get_array -> found -> funcs
+			found 0 == if {
+				"Module '" mod_name str::concat "' not found" str::concat tool_error_result
+			} else {
+				"Module: " mod_name str::concat "\nFunction to find: " str::concat fn_name str::concat "\n\nFunctions in module:\n" str::concat funcs str::concat tool_text_result
+			}
+		}
+	}
+}
+
+fn tool_search(ds:ptr args:str -- result:str) {
+	-> args -> ds
+	args "query" json::get_string -> found -> query
+	found 0 == if {
+		"Missing required parameter: query" tool_error_result
+	} else {
+		query str::lower -> query_lower
+
+		"Search results for: " query str::concat "\n\n" str::concat -> result_text
+
+		ds @builtins query_lower str::contains if {
+			result_text "=== Builtins (matching) ===\n" str::concat ds @builtins str::concat "\n\n" str::concat -> result_text
+		}
+
+		ds "math" load_module -> m
+		m query_lower str::contains if {
+			result_text "=== math module ===\n" str::concat m str::concat "\n\n" str::concat -> result_text
+		}
+
+		ds "str" load_module -> m
+		m query_lower str::contains if {
+			result_text "=== str module ===\n" str::concat m str::concat "\n\n" str::concat -> result_text
+		}
+
+		ds "io" load_module -> m
+		m query_lower str::contains if {
+			result_text "=== io module ===\n" str::concat m str::concat "\n\n" str::concat -> result_text
+		}
+
+		ds "os" load_module -> m
+		m query_lower str::contains if {
+			result_text "=== os module ===\n" str::concat m str::concat "\n\n" str::concat -> result_text
+		}
+
+		ds "mem" load_module -> m
+		m query_lower str::contains if {
+			result_text "=== mem module ===\n" str::concat m str::concat "\n\n" str::concat -> result_text
+		}
+
+		ds "time" load_module -> m
+		m query_lower str::contains if {
+			result_text "=== time module ===\n" str::concat m str::concat "\n\n" str::concat -> result_text
+		}
+
+		ds "fmt" load_module -> m
+		m query_lower str::contains if {
+			result_text "=== fmt module ===\n" str::concat m str::concat "\n\n" str::concat -> result_text
+		}
+
+		result_text tool_text_result
+	}
+}
+
+fn tool_get_builtins(ds:ptr -- result:str) {
+	-> ds
+	ds @builtins dup str::len 2 > if {
+		tool_text_result
+	} else {
+		drop "Builtins documentation not available" tool_error_result
+	}
+}
+
+fn tool_get_builtin(ds:ptr args:str -- result:str) {
+	-> args -> ds
+	args "name" json::get_string -> found -> name
+	found 0 == if {
+		"Missing required parameter: name" tool_error_result
+	} else {
+		"Looking for builtin: " name str::concat "\n\nAll builtins (search for your instruction):\n" str::concat ds @builtins str::concat tool_text_result
+	}
+}
+
+fn tool_get_syntax(ds:ptr -- result:str) {
+	-> ds
+	ds @language dup str::len 2 > if {
+		tool_text_result
+	} else {
+		drop "Language reference not available" tool_error_result
+	}
+}
+
+fn tool_get_keyword(ds:ptr args:str -- result:str) {
+	-> args -> ds
+	args "name" json::get_string -> found -> name
+	found 0 == if {
+		"Missing required parameter: name" tool_error_result
+	} else {
+		ds @language "keywords" json::get_array -> found -> keywords
+		found 0 == if {
+			"Language reference not available" tool_error_result
+		} else {
+			"Looking for keyword: " name str::concat "\n\nKeywords:\n" str::concat keywords str::concat tool_text_result
+		}
+	}
+}
+
+fn tool_get_operator(ds:ptr args:str -- result:str) {
+	-> args -> ds
+	args "name" json::get_string -> found -> name
+	found 0 == if {
+		"Missing required parameter: name" tool_error_result
+	} else {
+		ds @language "operators" json::get_array -> found -> operators
+		found 0 == if {
+			"Language reference not available" tool_error_result
+		} else {
+			"Looking for operator: " name str::concat "\n\nOperators:\n" str::concat operators str::concat tool_text_result
+		}
+	}
+}
+
+fn mcp_tools_call(ds:ptr id:str body:str -- response:str) {
+	-> body -> id -> ds
+	body "params" json::get_object -> found -> params
+	params "name" json::get_string -> found -> tool_name
+	params "arguments" json::get_object -> found -> args
+	found 0 == if {
+		"{}" -> args
+	}
+
+	tool_name "quadrate_list_modules" str::compare 0 == if {
+		ds tool_list_modules -> result
+		id result rpc_result
+	} else {
+		tool_name "quadrate_get_module" str::compare 0 == if {
+			ds args tool_get_module -> result
+			id result rpc_result
+		} else {
+			tool_name "quadrate_get_function" str::compare 0 == if {
+				ds args tool_get_function -> result
+				id result rpc_result
+			} else {
+				tool_name "quadrate_search" str::compare 0 == if {
+					ds args tool_search -> result
+					id result rpc_result
+				} else {
+					tool_name "quadrate_get_builtins" str::compare 0 == if {
+						ds tool_get_builtins -> result
+						id result rpc_result
+					} else {
+						tool_name "quadrate_get_builtin" str::compare 0 == if {
+							ds args tool_get_builtin -> result
+							id result rpc_result
+						} else {
+							tool_name "quadrate_get_syntax" str::compare 0 == if {
+								ds tool_get_syntax -> result
+								id result rpc_result
+							} else {
+								tool_name "quadrate_get_keyword" str::compare 0 == if {
+									ds args tool_get_keyword -> result
+									id result rpc_result
+								} else {
+									tool_name "quadrate_get_operator" str::compare 0 == if {
+										ds args tool_get_operator -> result
+										id result rpc_result
+									} else {
+										id "-32602" "Unknown tool" rpc_error
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+}
+
+fn mcp_resources_list(id:str -- response:str) {
+	-> id
+	id "resources" json::empty_arr json::kv_raw json::obj rpc_result
+}
+
+fn mcp_prompts_list(id:str -- response:str) {
+	-> id
+	id "prompts" json::empty_arr json::kv_raw json::obj rpc_result
+}
+
+fn mcp_ping(id:str -- response:str) {
+	-> id
+	id json::empty_obj rpc_result
+}
+
+fn is_notification(method:str -- is_notif:i64) {
+	-> method
+	method str::len 14 >= if {
+		method 0 14 str::substring! "notifications/" str::compare 0 ==
+	} else {
+		0
+	}
+}
+
+fn dispatch(ds:ptr method:str id:str body:str -- response:str) {
+	-> body -> id -> method -> ds
+
+	method is_notification if {
+		""
+	} else {
+		method "initialize" str::compare 0 == if {
+			id mcp_initialize
+		} else {
+			method "tools/list" str::compare 0 == if {
+				id mcp_tools_list
+			} else {
+				method "tools/call" str::compare 0 == if {
+					ds id body mcp_tools_call
+				} else {
+					method "resources/list" str::compare 0 == if {
+						id mcp_resources_list
+					} else {
+						method "prompts/list" str::compare 0 == if {
+							id mcp_prompts_list
+						} else {
+							method "ping" str::compare 0 == if {
+								id mcp_ping
+							} else {
+								id "-32601" "Method not found" rpc_error
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+}
+
+fn extract_id(body:str -- id:str) {
+	-> body
+	body "id" json::get_int -> found -> id_int
+	found if {
+		id_int strconv::itoa
+	} else {
+		"null"
+	}
+}
+
+fn run_stdio(ds:ptr -- ) {
+	-> ds
+	1 -> running
+	running while {
+		io::readline switch {
+			Ok { -> line line str::len 0 > if { line "method" json::get_string -> found -> method found 0 == if { "null" "-32600" "Invalid request: missing method" rpc_error print nl io::flush } else { line extract_id -> id ds method id line dispatch -> response response str::len 0 > if { response print nl io::flush } } } }
+			_ {
+				0 -> running
+			}
+		}
+		running
+	}
+}
+
+fn handle_mcp(c:ptr -- ) {
+	-> c
+	load_docs -> ds
+	defer {
+		ds free
+	}
+
+	c @body -> body
+	body "method" json::get_string -> _ -> method
+
+	body extract_id -> id
+
+	method str::len 0 == if {
+		c http::StatusBadRequest id "-32600" "Invalid request" rpc_error http::json
+	} else {
+		ds method id body dispatch -> response
+		response str::len 0 > if {
+			c http::StatusOK response http::json
+		} else {
+			c 204 "" http::string
+		}
+	}
+}
+
+fn handle_sse(c:ptr -- ) {
+	-> c
+	c http::sse_start
+	c "endpoint" "/mcp" http::sse_event
+	c http::sse_end
+}
+
+fn handle_root(c:ptr -- ) {
+	-> c
+	c http::StatusOK
+	"name" SERVER_NAME json::kv
+	"version" SERVER_VERSION json::kv json::join
+	"protocol" PROTOCOL_VERSION json::kv json::join
+	json::obj http::json
+}
+
+fn run_http(ds:ptr port:str -- ) {
+	-> port -> ds
+	"quadmcp v" print SERVER_VERSION print " (HTTP mode)" print nl
+	"Protocol: " print PROTOCOL_VERSION print nl
+	"Docs: " print ds @docs_dir print nl
+	"http://localhost" print port print nl
+
+	http::engine -> e
+	defer {
+		e http::free_engine
+	}
+
+	e "/" &handle_root http::GET
+	e "/mcp" &handle_mcp http::POST
+	e "/mcp/sse" &handle_sse http::GET
+
+	e port http::run!
+}
+
+fn main() {
+	load_docs -> ds
+	defer {
+		ds free
+	}
+
+	read flag::parse -> f
+	defer {
+		f flag::destroy
+	}
+
+	f "--http" flag::boolean -> use_http
+
+	use_http if {
+		ds ":3000" run_http
+	} else {
+		ds run_stdio
+	}
+}

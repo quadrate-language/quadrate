@@ -1,0 +1,9 @@
+{
+	"name": "quadmcp",
+	"version": "0.1.0",
+	"description": "MCP (Model Context Protocol) server in Quadrate",
+	"dependencies": {
+		"http": "https://github.com/quadrate-language/http",
+		"json": "https://github.com/quadrate-language/json"
+	}
+}

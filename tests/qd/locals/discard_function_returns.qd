@@ -1,0 +1,27 @@
+// Test discard with multi-value function returns
+// Common use case: ignoring status/found flags
+
+/// Returns value and a success flag
+fn get_value( -- value:i64 found:i64) {
+	42 1  // value=42, found=1
+}
+
+/// Returns three values
+fn get_triple( -- a:i64 b:i64 c:i64) {
+	100 200 300
+}
+
+fn main() {
+	// Ignore the found flag
+	get_value -> _ -> val
+	val print nl  // prints 42
+
+	// Keep only middle value from triple
+	get_triple -> _ -> mid -> _
+	mid print nl  // prints 200
+
+	// Keep first and last
+	get_triple -> last -> _ -> first
+	first print nl  // prints 100
+	last print nl   // prints 300
+}

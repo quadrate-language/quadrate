@@ -1122,8 +1122,15 @@ int updateModules(const std::string& targetModuleName) {
 	bool found = false;
 	int failures = 0;
 
-	for (const auto& entry : fs::directory_iterator(modulesDir)) {
+	// Recursively traverse to find all git repositories
+	for (const auto& entry : fs::recursive_directory_iterator(modulesDir)) {
 		if (!entry.is_directory()) {
+			continue;
+		}
+
+		// Check if this directory is a git repository
+		std::string gitDir = entry.path().string() + "/.git";
+		if (!fs::exists(gitDir)) {
 			continue;
 		}
 
@@ -1138,13 +1145,6 @@ int updateModules(const std::string& targetModuleName) {
 			if (name != targetModuleName && moduleName != targetModuleName) {
 				continue;
 			}
-		}
-
-		// Check if it's a git repository
-		std::string gitDir = entry.path().string() + "/.git";
-		if (!fs::exists(gitDir)) {
-			std::cout << COLOR_YELLOW << "Skipping " << name << " (not a git repository)" << COLOR_RESET << "\n";
-			continue;
 		}
 
 		found = true;

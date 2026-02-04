@@ -1,0 +1,11 @@
+// Test multiple consecutive discards: -> _ -> _
+// Useful for discarding multiple return values
+fn main() {
+	// Discard two values
+	1 2 3 -> _ -> _
+	print nl  // prints 1
+
+	// Discard all but one
+	100 200 300 400 -> _ -> _ -> _
+	print nl  // prints 100
+}

@@ -1,0 +1,37 @@
+{
+  "packages": [
+    {
+      "integrity": "068a1a935d9ab08cb02456790a9cd2611bf2a291",
+      "isPath": false,
+      "name": "http",
+      "ref": "master",
+      "resolved": "068a1a935d9ab08cb02456790a9cd2611bf2a291",
+      "url": "https://github.com/quadrate-language/http"
+    },
+    {
+      "integrity": "7b41771b5ac5587d131d61c0323ae65e768f379e",
+      "isPath": false,
+      "name": "json",
+      "ref": "master",
+      "resolved": "7b41771b5ac5587d131d61c0323ae65e768f379e",
+      "url": "https://github.com/quadrate-language/json"
+    },
+    {
+      "integrity": "59edab06712346dc7c754b5acecdfa771c7b2601",
+      "isPath": false,
+      "name": "net",
+      "ref": "master",
+      "resolved": "59edab06712346dc7c754b5acecdfa771c7b2601",
+      "url": "https://github.com/quadrate-language/net"
+    },
+    {
+      "integrity": "2c41d73612a1ebe4a49cc1e9fb92874e3c682c0f",
+      "isPath": false,
+      "name": "tls",
+      "ref": "master",
+      "resolved": "2c41d73612a1ebe4a49cc1e9fb92874e3c682c0f",
+      "url": "https://github.com/quadrate-language/tls"
+    }
+  ],
+  "version": 1
+}

@@ -1,0 +1,12 @@
+// Test basic discard syntax: -> _
+// The underscore discards a value from the stack (equivalent to drop)
+fn main() {
+	// Discard single value, print what remains
+	1 2 -> _
+	print nl  // prints 1
+
+	// Discard top value from a sequence
+	10 20 30 -> _
+	print nl  // prints 20
+	print nl  // prints 10
+}

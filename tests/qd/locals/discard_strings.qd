@@ -1,0 +1,11 @@
+// Test discard with string values
+// Verifies memory is handled correctly when discarding strings
+fn main() {
+	// Discard a string
+	"hello" "world" -> _
+	print nl  // prints hello
+
+	// Keep one string, discard another
+	"first" "second" "third" -> _ -> s -> _
+	s print nl  // prints second
+}

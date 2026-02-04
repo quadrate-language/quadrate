@@ -14,6 +14,15 @@ namespace Qd {
 	}
 
 	void LlvmGenerator::Impl::generateLocalOne(const std::string& name, size_t lineNum, llvm::Value* ctx) {
+		// Special case: -> _ means discard (drop) the value without storing it
+		// This is useful for ignoring return values from functions:
+		//   json::get_string -> _ -> value   // discard found flag, keep value
+		//   get_triple -> _ -> mid -> _      // keep only middle value
+		if (name == "_") {
+			generateInlineDrop(ctx);
+			return;
+		}
+
 		// First check if this is a captured variable reference (inside closure body)
 		// If so, we should store to the captured location, not create a new local
 		auto capIt = capturedVariableRefs.find(name);
