@@ -1,19 +1,19 @@
 {
   "packages": [
     {
-      "integrity": "068a1a935d9ab08cb02456790a9cd2611bf2a291",
+      "integrity": "3332abd07246fd9bb715dab46571bec2dca77871",
       "isPath": false,
       "name": "http",
       "ref": "master",
-      "resolved": "068a1a935d9ab08cb02456790a9cd2611bf2a291",
+      "resolved": "3332abd07246fd9bb715dab46571bec2dca77871",
       "url": "https://github.com/quadrate-language/http"
     },
     {
-      "integrity": "7b41771b5ac5587d131d61c0323ae65e768f379e",
+      "integrity": "04f01cdc1456e2661103c861eee777a740909306",
       "isPath": false,
       "name": "json",
       "ref": "master",
-      "resolved": "7b41771b5ac5587d131d61c0323ae65e768f379e",
+      "resolved": "04f01cdc1456e2661103c861eee777a740909306",
       "url": "https://github.com/quadrate-language/json"
     },
     {

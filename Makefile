@@ -83,11 +83,21 @@ endef
 
 debug:
 	$(call do_build,$(BUILD_DIR_DEBUG),debug,Debug build complete - static libraries ready)
+	@echo "Building quadmcp..."
+	cd cmd/quadmcp && QUADRATE_ROOT=$(CURDIR) $(CURDIR)/dist/bin/quadpm install
+	@mkdir -p $(BUILD_DIR_DEBUG)/cmd/quadmcp
+	cd cmd/quadmcp && QUADRATE_ROOT=$(CURDIR) $(CURDIR)/dist/bin/quad build quadmcp.qd -o $(CURDIR)/$(BUILD_DIR_DEBUG)/cmd/quadmcp/quadmcp
+	cp $(BUILD_DIR_DEBUG)/cmd/quadmcp/quadmcp dist/bin/
 
 release:
 	$(call do_build,$(BUILD_DIR_RELEASE),release,Release build complete - static libraries ready)
+	@echo "Building quadmcp..."
+	cd cmd/quadmcp && QUADRATE_ROOT=$(CURDIR) $(CURDIR)/dist/bin/quadpm install
+	@mkdir -p $(BUILD_DIR_RELEASE)/cmd/quadmcp
+	cd cmd/quadmcp && QUADRATE_ROOT=$(CURDIR) $(CURDIR)/dist/bin/quad build -O3 quadmcp.qd -o $(CURDIR)/$(BUILD_DIR_RELEASE)/cmd/quadmcp/quadmcp
+	cp $(BUILD_DIR_RELEASE)/cmd/quadmcp/quadmcp dist/bin/
 	@echo "Stripping binaries..."
-	@for cmd in $(CMDS) quadrepl; do \
+	@for cmd in $(CMDS) quadrepl quadmcp; do \
 		if [ -f dist/bin/$$cmd ]; then strip dist/bin/$$cmd && echo "  $$cmd"; fi; \
 	done
 	@strip dist/lib/*.so 2>/dev/null || true
@@ -163,8 +173,10 @@ format:
 # Build quadmcp (MCP server for AI assistants)
 quadmcp: debug
 	@echo "Building quadmcp (MCP server)..."
-	@cd cmd/quadmcp && QUADRATE_ROOT=$(PWD) ../../dist/bin/quad build -O3 quadmcp.qd -o quadmcp
-	@cp cmd/quadmcp/quadmcp dist/bin/
+	cd cmd/quadmcp && QUADRATE_ROOT=$(CURDIR) $(CURDIR)/dist/bin/quadpm install
+	@mkdir -p $(BUILD_DIR_DEBUG)/cmd/quadmcp
+	cd cmd/quadmcp && QUADRATE_ROOT=$(CURDIR) $(CURDIR)/dist/bin/quad build -O3 quadmcp.qd -o $(CURDIR)/$(BUILD_DIR_DEBUG)/cmd/quadmcp/quadmcp
+	cp $(BUILD_DIR_DEBUG)/cmd/quadmcp/quadmcp dist/bin/
 	@echo "  quadmcp built successfully"
 
 # Build playground (web-based REPL) - requires Go and Docker
