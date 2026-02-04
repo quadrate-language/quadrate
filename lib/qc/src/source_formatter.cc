@@ -21,6 +21,23 @@ namespace Qd {
 		return str.substr(start, end - start);
 	}
 
+	// Find position of substring outside of string literals
+	// Returns std::string::npos if not found outside strings
+	static size_t findOutsideStrings(const std::string& s, const std::string& needle) {
+		bool inString = false;
+		for (size_t i = 0; i < s.length(); i++) {
+			if (s[i] == '"' && (i == 0 || s[i - 1] != '\\')) {
+				inString = !inString;
+			}
+			if (!inString && i + needle.length() <= s.length()) {
+				if (s.substr(i, needle.length()) == needle) {
+					return i;
+				}
+			}
+		}
+		return std::string::npos;
+	}
+
 	// Check if a line is a comment (single-line or starts a block comment)
 	static bool isComment(const std::string& line) {
 		std::string trimmed = trim(line);
@@ -1087,7 +1104,8 @@ namespace Qd {
 
 		// Don't process comments or lines containing block comment markers
 		// (they may be inside multi-line comments)
-		if (isComment(trimmed) || trimmed.find("*/") != std::string::npos || trimmed.find("/*") != std::string::npos) {
+		if (isComment(trimmed) || findOutsideStrings(trimmed, "*/") != std::string::npos ||
+				findOutsideStrings(trimmed, "/*") != std::string::npos) {
 			return line;
 		}
 
@@ -1234,9 +1252,9 @@ namespace Qd {
 			// Track block comment state across lines
 			std::string trimmed = trim(line);
 
-			// Check if we enter or exit a block comment
-			size_t openPos = trimmed.find("/*");
-			size_t closePos = trimmed.find("*/");
+			// Check if we enter or exit a block comment (only outside string literals)
+			size_t openPos = findOutsideStrings(trimmed, "/*");
+			size_t closePos = findOutsideStrings(trimmed, "*/");
 
 			if (inBlockComment) {
 				// We're inside a block comment, don't process
@@ -1476,9 +1494,9 @@ namespace Qd {
 			// Track block comment state and brace depth
 			// Skip brace counting when inside block comments
 			if (!inBlockComment) {
-				// Check if this line starts a block comment
-				size_t openPos = trimmed.find("/*");
-				size_t closePos = trimmed.find("*/");
+				// Check if this line starts a block comment (only outside string literals)
+				size_t openPos = findOutsideStrings(trimmed, "/*");
+				size_t closePos = findOutsideStrings(trimmed, "*/");
 				if (openPos != std::string::npos) {
 					if (closePos == std::string::npos || closePos < openPos) {
 						// Block comment starts but doesn't end on this line
@@ -1500,7 +1518,7 @@ namespace Qd {
 				}
 			} else {
 				// We're inside a block comment, check if it ends
-				if (trimmed.find("*/") != std::string::npos) {
+				if (findOutsideStrings(trimmed, "*/") != std::string::npos) {
 					inBlockComment = false;
 				}
 			}
@@ -1658,8 +1676,8 @@ namespace Qd {
 				continue;
 			}
 
-			// Handle multi-line comments
-			if (!inMultilineComment && trimmed.find("/*") != std::string::npos) {
+			// Handle multi-line comments (only if /* is outside string literals)
+			if (!inMultilineComment && findOutsideStrings(trimmed, "/*") != std::string::npos) {
 				inMultilineComment = true;
 			}
 
@@ -1669,7 +1687,7 @@ namespace Qd {
 					output << '\t';
 				}
 				output << trimmed << '\n';
-				if (trimmed.find("*/") != std::string::npos) {
+				if (findOutsideStrings(trimmed, "*/") != std::string::npos) {
 					inMultilineComment = false;
 				}
 				continue;
