@@ -2,6 +2,7 @@
 #include <cstring>
 #include <functional>
 #include <iostream>
+#include <jansson.h>
 #include <qc/ast.h>
 #include <qc/ast_node_for.h>
 #include <qc/ast_node_function.h>
@@ -41,6 +42,9 @@ struct Options {
 	bool checkNamingConventions = false;
 	int maxNestingDepth = 4;
 	int maxFunctionLines = 50;
+	// Output options
+	bool jsonOutput = false;
+	bool quiet = false;
 };
 
 struct LintIssue {
@@ -58,6 +62,8 @@ void printHelp() {
 	std::cout << "Options:\n";
 	std::cout << "  -h, --help                Show this help message\n";
 	std::cout << "  -v, --version             Show version information\n";
+	std::cout << "  --json                    Output results in JSON format\n";
+	std::cout << "  -q, --quiet               Only show summary (no individual issues)\n";
 	std::cout << "  --no-unused-functions     Disable unused function warnings\n";
 	std::cout << "  --no-unused-variables     Disable unused variable warnings\n";
 	std::cout << "  --no-dead-code            Disable dead code warnings\n";
@@ -72,10 +78,11 @@ void printHelp() {
 	std::cout << "  --check-long-functions    Enable long function detection\n";
 	std::cout << "  --check-naming            Enable naming convention checks\n";
 	std::cout << "  --max-function-lines <N>  Maximum function lines (default: 50)\n";
-	std::cout << "\n";
-	std::cout << "Examples:\n";
+	std::cout << "\nExamples:\n";
 	std::cout << "  quadlint file.qd          Lint a single file\n";
 	std::cout << "  quadlint *.qd             Lint multiple files\n";
+	std::cout << "  quadlint --json file.qd   Output results in JSON format for IDEs\n";
+	std::cout << "  quadlint -q *.qd          Only show summary\n";
 }
 
 void printVersion() {
@@ -114,6 +121,10 @@ bool parseArgs(int argc, char* argv[], Options& opts) {
 			opts.checkLongFunctions = true;
 		} else if (arg == "--check-naming") {
 			opts.checkNamingConventions = true;
+		} else if (arg == "--json") {
+			opts.jsonOutput = true;
+		} else if (arg == "-q" || arg == "--quiet") {
+			opts.quiet = true;
 		} else if (arg == "--max-nesting") {
 			if (i + 1 >= argc) {
 				std::cerr << "quadlint: --max-nesting requires an argument\n";
@@ -868,6 +879,27 @@ void printIssues(const std::vector<LintIssue>& issues) {
 	}
 }
 
+void printIssuesJson(const std::vector<LintIssue>& issues) {
+	json_t* array = json_array();
+
+	for (const auto& issue : issues) {
+		json_t* obj = json_object();
+		json_object_set_new(obj, "file", json_string(issue.filename.c_str()));
+		json_object_set_new(obj, "line", json_integer(static_cast<json_int_t>(issue.line)));
+		json_object_set_new(obj, "column", json_integer(static_cast<json_int_t>(issue.column)));
+		json_object_set_new(obj, "level", json_string(issue.level.c_str()));
+		json_object_set_new(obj, "message", json_string(issue.message.c_str()));
+		json_array_append_new(array, obj);
+	}
+
+	char* jsonStr = json_dumps(array, JSON_INDENT(2));
+	if (jsonStr) {
+		std::cout << jsonStr << "\n";
+		free(jsonStr);
+	}
+	json_decref(array);
+}
+
 int main(int argc, char* argv[]) {
 	Options opts;
 
@@ -885,15 +917,23 @@ int main(int argc, char* argv[]) {
 		return 0;
 	}
 
-	size_t totalIssues = 0;
+	std::vector<LintIssue> allIssues;
 	for (const auto& file : opts.files) {
 		std::vector<LintIssue> issues = lintFile(file, opts);
-		printIssues(issues);
-		totalIssues += issues.size();
+		allIssues.insert(allIssues.end(), issues.begin(), issues.end());
 	}
 
+	if (opts.jsonOutput) {
+		printIssuesJson(allIssues);
+	} else if (!opts.quiet) {
+		printIssues(allIssues);
+	}
+
+	size_t totalIssues = allIssues.size();
 	if (totalIssues > 0) {
-		std::cerr << "\n" << totalIssues << " issue" << (totalIssues == 1 ? "" : "s") << " found\n";
+		if (!opts.jsonOutput) {
+			std::cerr << "\n" << totalIssues << " issue" << (totalIssues == 1 ? "" : "s") << " found\n";
+		}
 		return 1;
 	}
 

@@ -26,6 +26,8 @@ using namespace Qd;
 struct Options {
 	std::vector<std::string> paths;
 	bool inPlace = false;
+	bool check = false;
+	bool dryRun = false;
 	bool help = false;
 	bool version = false;
 };
@@ -38,11 +40,15 @@ void printHelp() {
 	std::cout << "  -h, --help       Show this help message\n";
 	std::cout << "  -v, --version    Show version information\n";
 	std::cout << "  -w, --write      Update file in-place\n";
+	std::cout << "  -c, --check      Check if files need changes (exit 1 if so)\n";
+	std::cout << "  -n, --dry-run    Show what would change without modifying\n";
 	std::cout << "\n";
 	std::cout << "Examples:\n";
 	std::cout << "  quaduses file.qd             Show updated file with use statements\n";
 	std::cout << "  quaduses -w file.qd          Update use statements in-place\n";
 	std::cout << "  quaduses -w src/             Update all .qd files in directory recursively\n";
+	std::cout << "  quaduses -c src/             Check if any files need updating (for CI)\n";
+	std::cout << "  quaduses -n file.qd          Show changes that would be made\n";
 }
 
 void printVersion() {
@@ -61,6 +67,10 @@ bool parseArgs(int argc, char* argv[], Options& opts) {
 			return true;
 		} else if (arg == "-w" || arg == "--write") {
 			opts.inPlace = true;
+		} else if (arg == "-c" || arg == "--check") {
+			opts.check = true;
+		} else if (arg == "-n" || arg == "--dry-run") {
+			opts.dryRun = true;
 		} else if (arg[0] == '-') {
 			std::cerr << "quaduses: unknown option: " << arg << "\n";
 			std::cerr << "Try 'quaduses --help' for more information.\n";
@@ -73,6 +83,13 @@ bool parseArgs(int argc, char* argv[], Options& opts) {
 	if (opts.paths.empty() && !opts.help && !opts.version) {
 		std::cerr << "quaduses: no input files\n";
 		std::cerr << "Try 'quaduses --help' for more information.\n";
+		return false;
+	}
+
+	// Check for conflicting options
+	int modeCount = (opts.inPlace ? 1 : 0) + (opts.check ? 1 : 0) + (opts.dryRun ? 1 : 0);
+	if (modeCount > 1) {
+		std::cerr << "quaduses: options -w, -c, and -n are mutually exclusive\n";
 		return false;
 	}
 
@@ -351,7 +368,61 @@ std::string generateWithUseStatements(const std::string& source, const std::set<
 	return output.str();
 }
 
-bool processFile(const std::string& filename, const Options& opts) {
+// Extract use statements from source
+std::set<std::string> extractUseStatements(const std::string& source) {
+	std::set<std::string> uses;
+	std::istringstream stream(source);
+	std::string line;
+	while (std::getline(stream, line)) {
+		// Trim leading whitespace
+		size_t start = 0;
+		while (start < line.length() && std::isspace(static_cast<unsigned char>(line[start]))) {
+			start++;
+		}
+		std::string trimmed = line.substr(start);
+		if (trimmed.rfind("use ", 0) == 0) {
+			uses.insert(trimmed);
+		}
+	}
+	return uses;
+}
+
+// Show what use statements would change
+void printUseDiff(const std::string& filename, const std::string& original, const std::string& modified) {
+	std::set<std::string> origUses = extractUseStatements(original);
+	std::set<std::string> modUses = extractUseStatements(modified);
+
+	// Find removed uses
+	std::vector<std::string> removed;
+	for (const auto& u : origUses) {
+		if (modUses.find(u) == modUses.end()) {
+			removed.push_back(u);
+		}
+	}
+
+	// Find added uses
+	std::vector<std::string> added;
+	for (const auto& u : modUses) {
+		if (origUses.find(u) == origUses.end()) {
+			added.push_back(u);
+		}
+	}
+
+	if (removed.empty() && added.empty()) {
+		std::cout << filename << ": no changes to use statements\n";
+		return;
+	}
+
+	std::cout << filename << ":\n";
+	for (const auto& u : removed) {
+		std::cout << "  - " << u << "\n";
+	}
+	for (const auto& u : added) {
+		std::cout << "  + " << u << "\n";
+	}
+}
+
+bool processFile(const std::string& filename, const Options& opts, bool& needsChanges) {
 	try {
 		// Read source file
 		std::string source = qdcli::readFile(filename);
@@ -418,10 +489,32 @@ bool processFile(const std::string& filename, const Options& opts) {
 		// Format the result to ensure proper formatting
 		result = formatSource(result);
 
-		if (opts.inPlace) {
+		// Check if file changed
+		bool changed = (source != result);
+
+		if (opts.check) {
+			// Check mode: report if changes needed
+			if (changed) {
+				std::cout << filename << ": needs updating\n";
+				needsChanges = true;
+			}
+			return true;
+		} else if (opts.dryRun) {
+			// Dry-run mode: show what use statements would change
+			if (changed) {
+				printUseDiff(filename, source, result);
+			} else {
+				std::cout << filename << ": no changes needed\n";
+			}
+			return true;
+		} else if (opts.inPlace) {
 			// In-place mode: write back to file
-			qdcli::writeFile(filename, result);
-			std::cout << filename << ": updated use statements\n";
+			if (changed) {
+				qdcli::writeFile(filename, result);
+				std::cout << filename << ": updated\n";
+			} else {
+				std::cout << filename << ": no changes needed\n";
+			}
 			return true;
 		} else {
 			// Stdout mode: write to stdout
@@ -459,10 +552,17 @@ int main(int argc, char* argv[]) {
 	}
 
 	bool allSuccess = true;
+	bool needsChanges = false;
+
 	for (const auto& file : allFiles) {
-		if (!processFile(file, opts)) {
+		if (!processFile(file, opts, needsChanges)) {
 			allSuccess = false;
 		}
+	}
+
+	// In check mode, exit 1 if any files need changes
+	if (opts.check && needsChanges) {
+		return 1;
 	}
 
 	return allSuccess ? 0 : 1;

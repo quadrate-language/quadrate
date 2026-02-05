@@ -151,11 +151,15 @@ private:
 	std::vector<FunctionInfo> extractFunctions(const std::string& text);
 	std::vector<StructInfo> extractStructs(const std::string& text);
 
+	// Helper to collect .qd files in workspace
+	std::vector<std::string> collectWorkspaceFiles(const std::string& dir, int maxDepth = 5);
+
 	// Member variables
 	std::map<std::string, std::string> documents_;
 	[[maybe_unused]] int messageId_;
 	bool lintEnabled_ = true;
 	std::string quadlintPath_ = "quadlint";
+	std::string workspaceRoot_;
 };
 
 #endif // QUADLSP_LSP_IMPL_H

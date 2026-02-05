@@ -22,8 +22,10 @@
 #include <qc/ast_node_test.h>
 #include <qc/error_reporter.h>
 #include <qc/semantic_validator.h>
+#include <dirent.h>
 #include <set>
 #include <sstream>
+#include <sys/stat.h>
 #include <unistd.h>
 
 // Expand tilde (~) in file paths
@@ -231,6 +233,13 @@ void QuadrateLSP::handleMessage(const std::string& message) {
 
 	if (method == "initialize") {
 		json_t* params = getJsonObject(root, "params");
+		// Capture workspace root URI
+		if (params) {
+			std::string rootUri = getJsonString(params, "rootUri");
+			if (!rootUri.empty() && rootUri.substr(0, 7) == "file://") {
+				workspaceRoot_ = rootUri.substr(7);
+			}
+		}
 		json_t* initOptions = params ? getJsonObject(params, "initializationOptions") : nullptr;
 		handleInitialize(id, initOptions);
 	} else if (method == "initialized") {
@@ -3531,15 +3540,63 @@ void QuadrateLSP::handleLinkedEditingRange(
 	json_decref(response);
 }
 
+// Collect .qd files in a directory recursively
+std::vector<std::string> QuadrateLSP::collectWorkspaceFiles(const std::string& dir, int maxDepth) {
+	std::vector<std::string> files;
+	if (maxDepth <= 0 || dir.empty()) {
+		return files;
+	}
+
+	DIR* d = opendir(dir.c_str());
+	if (!d) {
+		return files;
+	}
+
+	struct dirent* entry;
+	while ((entry = readdir(d)) != nullptr) {
+		std::string name = entry->d_name;
+		if (name == "." || name == "..") {
+			continue;
+		}
+
+		std::string fullPath = dir + "/" + name;
+
+		// Skip hidden directories and common non-source directories
+		if (name[0] == '.' || name == "node_modules" || name == "build" || name == "dist" || name == "target") {
+			continue;
+		}
+
+		struct stat st;
+		if (stat(fullPath.c_str(), &st) == 0) {
+			if (S_ISDIR(st.st_mode)) {
+				// Recursively collect from subdirectory
+				auto subFiles = collectWorkspaceFiles(fullPath, maxDepth - 1);
+				files.insert(files.end(), subFiles.begin(), subFiles.end());
+			} else if (S_ISREG(st.st_mode)) {
+				// Check if it's a .qd file
+				if (name.length() > 3 && name.substr(name.length() - 3) == ".qd") {
+					files.push_back(fullPath);
+				}
+			}
+		}
+	}
+
+	closedir(d);
+	return files;
+}
+
 void QuadrateLSP::handleWorkspaceSymbols(const std::string& id, const std::string& query) {
 	json_t* response = json_object();
 	json_object_set_new(response, "jsonrpc", json_string("2.0"));
 	json_object_set_new(response, "id", json_integer(std::stoi(id)));
 
 	json_t* symbols = json_array();
+	std::set<std::string> processedFiles;
 
-	// Search through all open documents
-	for (const auto& [docUri, docText] : documents_) {
+	// Helper lambda to add symbols from a file
+	auto processFile = [&](const std::string& filePath, const std::string& docText) {
+		std::string uri = "file://" + filePath;
+
 		// Extract functions
 		std::vector<FunctionInfo> functions = extractFunctions(docText);
 		for (const auto& func : functions) {
@@ -3555,13 +3612,13 @@ void QuadrateLSP::handleWorkspaceSymbols(const std::string& id, const std::strin
 				json_object_set_new(symbol, "kind", json_integer(12)); // Function
 
 				json_t* location = json_object();
-				json_object_set_new(location, "uri", json_string(docUri.c_str()));
+				json_object_set_new(location, "uri", json_string(uri.c_str()));
 				json_t* symRange = json_object();
 				json_t* symStart = json_object();
-				json_object_set_new(symStart, "line", json_integer(0));
+				json_object_set_new(symStart, "line", json_integer(static_cast<json_int_t>(func.line)));
 				json_object_set_new(symStart, "character", json_integer(0));
 				json_t* symEnd = json_object();
-				json_object_set_new(symEnd, "line", json_integer(0));
+				json_object_set_new(symEnd, "line", json_integer(static_cast<json_int_t>(func.line)));
 				json_object_set_new(symEnd, "character", json_integer(0));
 				json_object_set_new(symRange, "start", symStart);
 				json_object_set_new(symRange, "end", symEnd);
@@ -3586,13 +3643,13 @@ void QuadrateLSP::handleWorkspaceSymbols(const std::string& id, const std::strin
 				json_object_set_new(symbol, "kind", json_integer(23)); // Struct
 
 				json_t* location = json_object();
-				json_object_set_new(location, "uri", json_string(docUri.c_str()));
+				json_object_set_new(location, "uri", json_string(uri.c_str()));
 				json_t* symRange = json_object();
 				json_t* symStart = json_object();
-				json_object_set_new(symStart, "line", json_integer(0));
+				json_object_set_new(symStart, "line", json_integer(static_cast<json_int_t>(st.line)));
 				json_object_set_new(symStart, "character", json_integer(0));
 				json_t* symEnd = json_object();
-				json_object_set_new(symEnd, "line", json_integer(0));
+				json_object_set_new(symEnd, "line", json_integer(static_cast<json_int_t>(st.line)));
 				json_object_set_new(symEnd, "character", json_integer(0));
 				json_object_set_new(symRange, "start", symStart);
 				json_object_set_new(symRange, "end", symEnd);
@@ -3600,6 +3657,35 @@ void QuadrateLSP::handleWorkspaceSymbols(const std::string& id, const std::strin
 				json_object_set_new(symbol, "location", location);
 
 				json_array_append_new(symbols, symbol);
+			}
+		}
+	};
+
+	// First, search through all open documents (they have the latest content)
+	for (const auto& [docUri, docText] : documents_) {
+		std::string filePath = docUri;
+		if (filePath.substr(0, 7) == "file://") {
+			filePath = filePath.substr(7);
+		}
+		processedFiles.insert(filePath);
+		processFile(filePath, docText);
+	}
+
+	// Then search through workspace files that aren't already open
+	if (!workspaceRoot_.empty()) {
+		std::vector<std::string> workspaceFiles = collectWorkspaceFiles(workspaceRoot_);
+		for (const auto& filePath : workspaceFiles) {
+			if (processedFiles.find(filePath) != processedFiles.end()) {
+				continue; // Already processed as open document
+			}
+
+			// Read file from disk
+			std::ifstream file(filePath);
+			if (file.good()) {
+				std::stringstream buffer;
+				buffer << file.rdbuf();
+				std::string content = buffer.str();
+				processFile(filePath, content);
 			}
 		}
 	}
@@ -4590,6 +4676,7 @@ std::vector<StructInfo> QuadrateLSP::extractStructs(const std::string& text) {
 
 			StructInfo info;
 			info.name = structNode->name();
+			info.line = structNode->line();
 
 			// Extract generic type parameters
 			info.isGeneric = structNode->isGeneric();

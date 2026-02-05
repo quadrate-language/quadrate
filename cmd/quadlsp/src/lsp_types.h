@@ -36,6 +36,7 @@ struct StructInfo {
 	std::string name;
 	std::vector<std::pair<std::string, std::string>> fields; // field name -> type
 	std::string signature;									 // Full struct declaration
+	size_t line = 0;										 // Line number where struct is defined
 
 	// Generic type support
 	std::vector<std::string> typeParams; // Type parameters: "T", "U", etc.

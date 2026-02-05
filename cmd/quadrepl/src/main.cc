@@ -49,11 +49,62 @@ static const char* g_modules[] = {
 		"math::", "str::", "io::", "fmt::", "os::", "mem::", "time::", "thread::", "flag::", "path::", "rand::",
 		"unicode::", "strconv::", "bytes::", "bits::", "signal::", "term::", "limits::", "testing::", "sb::", nullptr};
 
+// Module function completions (module::function format)
+static const char* g_moduleFunctions[] = {
+		// math module
+		"math::abs", "math::sqrt", "math::sin", "math::cos", "math::tan", "math::asin", "math::acos", "math::atan",
+		"math::atan2", "math::exp", "math::log", "math::log10", "math::log2", "math::pow", "math::floor", "math::ceil",
+		"math::round", "math::trunc", "math::min", "math::max", "math::clamp", "math::lerp", "math::sq", "math::hypot",
+		"math::PI", "math::E", "math::TAU",
+		// str module
+		"str::len", "str::concat", "str::substr", "str::index", "str::contains", "str::starts_with", "str::ends_with",
+		"str::trim", "str::ltrim", "str::rtrim", "str::upper", "str::lower", "str::replace", "str::split", "str::join",
+		"str::repeat", "str::reverse", "str::compare", "str::char_at", "str::from_char",
+		// io module
+		"io::open", "io::close", "io::read", "io::write", "io::read_line", "io::read_file", "io::write_file",
+		"io::append_file", "io::exists", "io::remove", "io::rename", "io::mkdir", "io::rmdir", "io::ReadOnly",
+		"io::WriteOnly", "io::ReadWrite", "io::Append", "io::Create", "io::Truncate",
+		// fmt module
+		"fmt::sprintf", "fmt::printf", "fmt::pad_left", "fmt::pad_right",
+		// os module
+		"os::args", "os::getenv", "os::setenv", "os::exit", "os::exec", "os::system", "os::getcwd", "os::chdir",
+		"os::hostname", "os::username", "os::pid", "os::ppid",
+		// mem module
+		"mem::alloc", "mem::realloc", "mem::free", "mem::copy", "mem::set", "mem::zero",
+		// time module
+		"time::now", "time::sleep", "time::since", "time::format", "time::parse", "time::year", "time::month",
+		"time::day", "time::hour", "time::minute", "time::second", "time::weekday",
+		// thread module
+		"thread::spawn", "thread::join", "thread::sleep", "thread::yield", "thread::id",
+		"thread::mutex_create", "thread::mutex_lock", "thread::mutex_unlock", "thread::mutex_destroy",
+		// path module
+		"path::join", "path::dir", "path::base", "path::ext", "path::abs", "path::rel", "path::clean",
+		"path::is_abs", "path::split", "path::match",
+		// rand module
+		"rand::int", "rand::float", "rand::range", "rand::bytes", "rand::shuffle", "rand::choice", "rand::seed",
+		// strconv module
+		"strconv::atoi", "strconv::atof", "strconv::itoa", "strconv::ftoa", "strconv::parse_int", "strconv::parse_float",
+		// bytes module
+		"bytes::from_str", "bytes::to_str", "bytes::len", "bytes::get", "bytes::set", "bytes::slice",
+		// bits module
+		"bits::set", "bits::clear", "bits::toggle", "bits::test", "bits::count", "bits::reverse",
+		// signal module
+		"signal::handle", "signal::ignore", "signal::reset", "signal::raise",
+		// term module
+		"term::width", "term::height", "term::clear", "term::move", "term::color", "term::reset",
+		"term::is_tty", "term::raw", "term::cooked",
+		// limits module
+		"limits::I8_MIN", "limits::I8_MAX", "limits::I16_MIN", "limits::I16_MAX", "limits::I32_MIN", "limits::I32_MAX",
+		"limits::I64_MIN", "limits::I64_MAX", "limits::F32_MIN", "limits::F32_MAX", "limits::F64_MIN", "limits::F64_MAX",
+		// sb (string builder) module
+		"sb::new", "sb::write", "sb::writeln", "sb::string", "sb::len", "sb::clear", "sb::free",
+		nullptr};
+
 // Generator function for readline completion
 static char* completionGenerator(const char* text, int state) {
 	static int listIndex;
 	static size_t len;
-	static int phase; // 0=keywords, 1=builtins, 2=modules
+	static int phase; // 0=keywords, 1=builtins, 2=modules, 3=module functions
 	const char* name;
 
 	if (!state) {
@@ -62,7 +113,7 @@ static char* completionGenerator(const char* text, int state) {
 		len = strlen(text);
 	}
 
-	while (phase < 3) {
+	while (phase < 4) {
 		const char** list;
 		switch (phase) {
 		case 0:
@@ -73,6 +124,9 @@ static char* completionGenerator(const char* text, int state) {
 			break;
 		case 2:
 			list = g_modules;
+			break;
+		case 3:
+			list = g_moduleFunctions;
 			break;
 		default:
 			return nullptr;
@@ -266,6 +320,9 @@ public:
 				continue;
 			} else if (completeInput == "stack" || completeInput == ":stack") {
 				showStack();
+				continue;
+			} else if (completeInput == "type" || completeInput == ":type" || completeInput == ":types") {
+				showTypes();
 				continue;
 			} else if (completeInput == "reset" || completeInput == ":reset") {
 				reset();
@@ -680,8 +737,10 @@ private:
 				COLOR_RESET);
 		printf("  %sexit%s, %squit%s, %s:q%s  Exit the REPL\n", COLOR_GREEN, COLOR_RESET, COLOR_GREEN, COLOR_RESET,
 				COLOR_GREEN, COLOR_RESET);
-		printf("  %sstack%s, %s:stack%s   Show current stack state\n", COLOR_GREEN, COLOR_RESET, COLOR_GREEN,
+		printf("  %sstack%s, %s:stack%s   Show current stack values\n", COLOR_GREEN, COLOR_RESET, COLOR_GREEN,
 				COLOR_RESET);
+		printf("  %stype%s, %s:type%s    Show stack types (i64, f64, str, ptr)\n", COLOR_GREEN, COLOR_RESET,
+				COLOR_GREEN, COLOR_RESET);
 		printf("  %sclear%s, %s:clear%s   Clear the stack\n", COLOR_GREEN, COLOR_RESET, COLOR_GREEN, COLOR_RESET);
 		printf("  %sreset%s, %s:reset%s   Reset REPL (clear everything)\n", COLOR_GREEN, COLOR_RESET, COLOR_GREEN,
 				COLOR_RESET);
@@ -689,7 +748,7 @@ private:
 		printf("  %s.load <file>%s    Load and execute commands from file\n", COLOR_GREEN, COLOR_RESET);
 		printf("\n");
 		printf("%sKey Bindings:%s\n", COLOR_BOLD, COLOR_RESET);
-		printf("  %sTab%s           Auto-complete keywords, builtins, modules\n", COLOR_GREEN, COLOR_RESET);
+		printf("  %sTab%s           Auto-complete keywords, builtins, module functions\n", COLOR_GREEN, COLOR_RESET);
 		printf("  %sUp/Down Arrow%s  Navigate command history\n", COLOR_GREEN, COLOR_RESET);
 		printf("  %sCtrl+R%s        Search command history\n", COLOR_GREEN, COLOR_RESET);
 		printf("  %sCtrl+D%s        Exit REPL (EOF)\n", COLOR_GREEN, COLOR_RESET);
@@ -738,6 +797,39 @@ private:
 				break;
 			default:
 				printf("?\n");
+				break;
+			}
+		}
+	}
+
+	void showTypes() {
+		size_t depth = getStackDepth();
+		if (depth == 0) {
+			printf("%sStack is empty%s\n", COLOR_DIM, COLOR_RESET);
+			return;
+		}
+
+		printf("%sStack types (%zu items):%s\n", COLOR_BOLD, depth, COLOR_RESET);
+		for (size_t i = 0; i < depth; i++) {
+			qd_stack_element_t elem;
+			qd_stack_element(ctx->st, i, &elem);
+			printf("  [%zu] ", i);
+
+			switch (elem.type) {
+			case QD_STACK_TYPE_INT:
+				printf("%si64%s\n", COLOR_BLUE, COLOR_RESET);
+				break;
+			case QD_STACK_TYPE_FLOAT:
+				printf("%sf64%s\n", COLOR_YELLOW, COLOR_RESET);
+				break;
+			case QD_STACK_TYPE_STR:
+				printf("%sstr%s\n", COLOR_GREEN, COLOR_RESET);
+				break;
+			case QD_STACK_TYPE_PTR:
+				printf("%sptr%s\n", COLOR_MAGENTA, COLOR_RESET);
+				break;
+			default:
+				printf("%s?%s\n", COLOR_RED, COLOR_RESET);
 				break;
 			}
 		}

@@ -506,6 +506,100 @@ class LSPFeatureTester:
         response = self.send_request(request)
         self.assert_test(response is not None, "Special characters don't crash")
 
+    def test_workspace_symbols_with_root_uri(self):
+        """Test workspace symbols with rootUri set during initialization"""
+        print("\n=== Testing Workspace Symbols with Root URI ===")
+
+        import tempfile
+        import os
+
+        # Create a temp directory with some .qd files
+        with tempfile.TemporaryDirectory() as tmpdir:
+            # Create a test file
+            test_file = os.path.join(tmpdir, "test_module.qd")
+            with open(test_file, "w") as f:
+                f.write("fn workspace_test_func(x:i64 -- y:i64) { x 2 * }\n")
+                f.write("struct WorkspaceTestStruct { field:i64 }\n")
+
+            # Initialize with rootUri - this tests that the server accepts rootUri
+            init_request = {
+                "jsonrpc": "2.0",
+                "id": 1,
+                "method": "initialize",
+                "params": {
+                    "capabilities": {},
+                    "rootUri": f"file://{tmpdir}"
+                }
+            }
+
+            response = self.send_request(init_request)
+            self.assert_test(response is not None, "Initialize with rootUri succeeds")
+            if response:
+                self.assert_test("result" in response, "Response has result field")
+                result = response.get("result", {})
+                self.assert_test("capabilities" in result, "Server returns capabilities")
+
+    def test_workspace_symbols_empty_query_response_format(self):
+        """Test that workspace symbols response has correct format"""
+        print("\n=== Testing Workspace Symbols Response Format ===")
+
+        request = {
+            "jsonrpc": "2.0",
+            "id": 84,
+            "method": "workspace/symbol",
+            "params": {
+                "query": ""
+            }
+        }
+
+        response = self.send_request(request)
+        self.assert_test(response is not None, "Empty query returns response")
+        if response:
+            self.assert_test("result" in response, "Response has result field")
+            result = response.get("result", [])
+            self.assert_test(isinstance(result, list), "Result is a list")
+            # With no open documents in fresh process, result should be empty
+            self.assert_test(len(result) == 0, "Empty result with no documents open")
+
+    def test_workspace_symbols_partial_match(self):
+        """Test that workspace symbols supports partial matching"""
+        print("\n=== Testing Workspace Symbols Partial Match ===")
+
+        # Test partial query - server should handle it gracefully
+        request = {
+            "jsonrpc": "2.0",
+            "id": 85,
+            "method": "workspace/symbol",
+            "params": {
+                "query": "ma"  # Partial match for "main" etc
+            }
+        }
+
+        response = self.send_request(request)
+        self.assert_test(response is not None, "Partial query returns response")
+        if response:
+            self.assert_test("result" in response, "Response has result field")
+            # Result should be valid (empty list since no docs open)
+            self.assert_test("error" not in response, "No error in response")
+
+    def test_workspace_symbols_unicode_query(self):
+        """Test workspace symbols with unicode characters in query"""
+        print("\n=== Testing Workspace Symbols Unicode Query ===")
+
+        request = {
+            "jsonrpc": "2.0",
+            "id": 86,
+            "method": "workspace/symbol",
+            "params": {
+                "query": "test_日本語"
+            }
+        }
+
+        response = self.send_request(request)
+        self.assert_test(response is not None, "Unicode query doesn't crash")
+        if response:
+            self.assert_test("result" in response or "error" not in response, "Server handles unicode gracefully")
+
     # ============================================================================
     # Inlay hints tests
     # ============================================================================
@@ -639,6 +733,10 @@ class LSPFeatureTester:
         self.test_workspace_symbols_with_query()
         self.test_workspace_symbols_no_match()
         self.test_workspace_symbols_special_chars()
+        self.test_workspace_symbols_with_root_uri()
+        self.test_workspace_symbols_empty_query_response_format()
+        self.test_workspace_symbols_partial_match()
+        self.test_workspace_symbols_unicode_query()
 
         # Inlay hints tests
         self.test_inlay_hints_basic()
