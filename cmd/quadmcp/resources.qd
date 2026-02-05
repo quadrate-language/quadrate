@@ -402,44 +402,33 @@ fn get_cheatsheet_content( -- content:str) {
 	s
 }
 
-fn get_snippet_content(uri:str -- content:str) {
+fn resource_uri_to_index(uri:str -- idx:i64) {
 	-> uri
-	uri "quadrate://snippets/hello-world" str::compare 0 == if {
-		"// Hello World\nfn main() {\n\t42 print nl\n}"
-	} else {
-		uri "quadrate://snippets/file-io" str::compare 0 == if {
-			"// File I/O\nuse io\n\nfn read_example() {\n\tpath io::read_file switch {\n\t\tOk { -> content content print nl }\n\t\t_ { 1 os::exit }\n\t}\n}\n\nfn write_example() {\n\tpath data io::write_file!\n}"
-		} else {
-			uri "quadrate://snippets/error-handling" str::compare 0 == if {
-				"// Error Handling\n\n// Method 1: ! suffix panics on error\npath io::read_file! -> content\n\n// Method 2: switch handles error\npath io::read_file switch {\n\tOk { -> content }\n\tErr { err -> code -> msg }\n}"
-			} else {
-				uri "quadrate://snippets/structs" str::compare 0 == if {
-					"// Structs\n\nstruct Point {\n\tx: f64\n\ty: f64\n}\n\nfn main() {\n\tPoint { x = 10.0 y = 20.0 } -> p\n\tp @x print nl  // 10.0\n\tp 30.0 #x -> p2 // update x\n}"
-				} else {
-					uri "quadrate://snippets/loops" str::compare 0 == if {
-						"// Loops\n\n// For loop\n0 10 1 for i { i print nl }\n\n// While loop\n0 -> x\nx 5 < while { x print nl  x 1 + -> x  x 5 < }\n\n// Loop with break\nloop { cond if { break } }"
-					} else {
-						uri "quadrate://snippets/stack-ops" str::compare 0 == if {
-							"// Stack Operations\n\n5 dup      // 5 5 (duplicate)\n1 2 swap   // 2 1 (swap top two)\n1 2 drop   // 1 (remove top)\n1 2 over   // 1 2 1 (copy second)\n1 2 3 rot  // 2 3 1 (rotate)\n1 2 nip    // 2 (remove second)\n42 -> x    // bind to variable"
-						} else {
-							uri "quadrate://guides/common-mistakes" str::compare 0 == if {
-								get_common_mistakes_content
-							} else {
-								uri "quadrate://guides/best-practices" str::compare 0 == if {
-									get_best_practices_content
-								} else {
-									uri "quadrate://guides/cheatsheet" str::compare 0 == if {
-										get_cheatsheet_content
-									} else {
-										"Resource not found"
-									}
-								}
-							}
-						}
-					}
-				}
-			}
-		}
+	0 -> idx
+	uri "quadrate://snippets/hello-world" str::compare 0 == if { 1 -> idx }
+	idx 0 == uri "quadrate://snippets/file-io" str::compare 0 == and if { 2 -> idx }
+	idx 0 == uri "quadrate://snippets/error-handling" str::compare 0 == and if { 3 -> idx }
+	idx 0 == uri "quadrate://snippets/structs" str::compare 0 == and if { 4 -> idx }
+	idx 0 == uri "quadrate://snippets/loops" str::compare 0 == and if { 5 -> idx }
+	idx 0 == uri "quadrate://snippets/stack-ops" str::compare 0 == and if { 6 -> idx }
+	idx 0 == uri "quadrate://guides/common-mistakes" str::compare 0 == and if { 7 -> idx }
+	idx 0 == uri "quadrate://guides/best-practices" str::compare 0 == and if { 8 -> idx }
+	idx 0 == uri "quadrate://guides/cheatsheet" str::compare 0 == and if { 9 -> idx }
+	idx
+}
+
+fn get_snippet_content(uri:str -- content:str) {
+	resource_uri_to_index switch {
+		1 { "// Hello World\nfn main() {\n\t42 print nl\n}" }
+		2 { "// File I/O\nuse io\n\nfn read_example() {\n\tpath io::read_file switch {\n\t\tOk { -> content content print nl }\n\t\t_ { 1 os::exit }\n\t}\n}\n\nfn write_example() {\n\tpath data io::write_file!\n}" }
+		3 { "// Error Handling\n\n// Method 1: ! suffix panics on error\npath io::read_file! -> content\n\n// Method 2: switch handles error\npath io::read_file switch {\n\tOk { -> content }\n\tErr { err -> code -> msg }\n}" }
+		4 { "// Structs\n\nstruct Point {\n\tx: f64\n\ty: f64\n}\n\nfn main() {\n\tPoint { x = 10.0 y = 20.0 } -> p\n\tp @x print nl  // 10.0\n\tp 30.0 #x -> p2 // update x\n}" }
+		5 { "// Loops\n\n// For loop\n0 10 1 for i { i print nl }\n\n// While loop\n0 -> x\nx 5 < while { x print nl  x 1 + -> x  x 5 < }\n\n// Loop with break\nloop { cond if { break } }" }
+		6 { "// Stack Operations\n\n5 dup      // 5 5 (duplicate)\n1 2 swap   // 2 1 (swap top two)\n1 2 drop   // 1 (remove top)\n1 2 over   // 1 2 1 (copy second)\n1 2 3 rot  // 2 3 1 (rotate)\n1 2 nip    // 2 (remove second)\n42 -> x    // bind to variable" }
+		7 { get_common_mistakes_content }
+		8 { get_best_practices_content }
+		9 { get_cheatsheet_content }
+		_ { "Resource not found" }
 	}
 }
 
