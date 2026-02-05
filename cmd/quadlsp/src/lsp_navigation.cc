@@ -114,14 +114,15 @@ void QuadrateLSP::findIdentifiersInNode(
 }
 
 // Find the function declaration that contains the given line/column position
-Qd::AstNodeFunctionDeclaration* QuadrateLSP::findContainingFunction(Qd::IAstNode* root, size_t line, size_t /*column*/) {
+Qd::AstNodeFunctionDeclaration* QuadrateLSP::findContainingFunction(
+		Qd::IAstNode* root, size_t line, size_t /*column*/) {
 	if (!root) {
 		return nullptr;
 	}
 
 	// Recursively search for a function that contains the position
-	std::function<Qd::AstNodeFunctionDeclaration*(Qd::IAstNode*)> search = [&](Qd::IAstNode* node)
-			-> Qd::AstNodeFunctionDeclaration* {
+	std::function<Qd::AstNodeFunctionDeclaration*(Qd::IAstNode*)> search =
+			[&](Qd::IAstNode* node) -> Qd::AstNodeFunctionDeclaration* {
 		if (!node) {
 			return nullptr;
 		}

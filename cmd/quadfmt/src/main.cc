@@ -1,23 +1,19 @@
+#include <cstring>
 #include <iostream>
 #include <qc/ast.h>
 #include <qc/colors.h>
 #include <qc/error_reporter.h>
 #include <qc/formatter.h>
+#include <qdcli/cli.h>
 #include <qdcli/file_utils.h>
 #include <vector>
 
-#include "version.h"
-
 using namespace Qd;
 
-struct Options {
-	std::vector<std::string> paths;
+struct FmtOptions {
 	bool check = false;
-	bool help = false;
-	bool version = false;
 	bool inPlace = false;
-	int lineWidth = -1;        // -1 means use default or config file
-	bool sortImports = true;   // default on
+	int lineWidth = -1; // -1 means use default or config file
 	bool noSortImports = false;
 };
 
@@ -49,51 +45,7 @@ void printHelp() {
 	std::cout << "  quadfmt --line-width 80 f.qd Format with 80 char line width\n";
 }
 
-void printVersion() {
-	std::cout << quadrate_version_string("quadfmt") << "\n";
-}
-
-bool parseArgs(int argc, char* argv[], Options& opts) {
-	for (int i = 1; i < argc; i++) {
-		std::string arg = argv[i];
-
-		if (arg == "-h" || arg == "--help") {
-			opts.help = true;
-			return true;
-		} else if (arg == "-v" || arg == "--version") {
-			opts.version = true;
-			return true;
-		} else if (arg == "-c" || arg == "--check") {
-			opts.check = true;
-		} else if (arg == "-w" || arg == "--write") {
-			opts.inPlace = true;
-		} else if (arg == "--line-width") {
-			if (i + 1 >= argc) {
-				std::cerr << "quadfmt: --line-width requires a value\n";
-				return false;
-			}
-			opts.lineWidth = std::stoi(argv[++i]);
-		} else if (arg == "--no-sort-imports") {
-			opts.noSortImports = true;
-		} else if (arg[0] == '-') {
-			std::cerr << "quadfmt: unknown option: " << arg << "\n";
-			std::cerr << "Try 'quadfmt --help' for more information.\n";
-			return false;
-		} else {
-			opts.paths.push_back(arg);
-		}
-	}
-
-	if (opts.paths.empty() && !opts.help && !opts.version) {
-		std::cerr << "quadfmt: no input files\n";
-		std::cerr << "Try 'quadfmt --help' for more information.\n";
-		return false;
-	}
-
-	return true;
-}
-
-bool formatFile(const std::string& filename, const Options& opts, const FormatOptions& fmtOpts) {
+bool formatFile(const std::string& filename, const FmtOptions& opts, const FormatOptions& fmtOpts) {
 	try {
 		// Read source file
 		std::string source = qdcli::readFile(filename);
@@ -125,19 +77,13 @@ bool formatFile(const std::string& filename, const Options& opts, const FormatOp
 			return false;
 		}
 
-		// Note: Token count validation was removed because the re-parsing validation
-		// above is a stronger correctness check. The formatter intentionally
-		// normalizes certain constructs (e.g., "( -- )" -> "()" for empty signatures)
-		// which changes token counts but maintains semantic equivalence.
-
 		if (opts.check) {
 			// Check mode: compare with original
 			if (source != formatted) {
 				std::cout << filename << ": not formatted\n";
 				return false;
-			} else {
-				return true;
 			}
+			return true;
 		} else if (opts.inPlace) {
 			// In-place mode: write back to file
 			qdcli::writeFile(filename, formatted);
@@ -155,25 +101,54 @@ bool formatFile(const std::string& filename, const Options& opts, const FormatOp
 }
 
 int main(int argc, char* argv[]) {
-	Options opts;
+	qdcli::BaseOptions base;
+	FmtOptions opts;
 
-	if (!parseArgs(argc, argv, opts)) {
+	auto handler = [&opts](const char* arg, int& i, int argc, char* argv[]) -> bool {
+		if (strcmp(arg, "-c") == 0 || strcmp(arg, "--check") == 0) {
+			opts.check = true;
+			return true;
+		}
+		if (strcmp(arg, "-w") == 0 || strcmp(arg, "--write") == 0) {
+			opts.inPlace = true;
+			return true;
+		}
+		if (strcmp(arg, "--line-width") == 0) {
+			if (i + 1 >= argc) {
+				std::cerr << "quadfmt: --line-width requires a value\n";
+				return false;
+			}
+			opts.lineWidth = std::stoi(argv[++i]);
+			return true;
+		}
+		if (strcmp(arg, "--no-sort-imports") == 0) {
+			opts.noSortImports = true;
+			return true;
+		}
+		return false;
+	};
+
+	if (!qdcli::parseArgs(argc, argv, base, "quadfmt", handler)) {
 		return 1;
 	}
 
-	if (opts.help) {
+	if (base.help) {
 		printHelp();
 		return 0;
 	}
 
-	if (opts.version) {
-		printVersion();
+	if (base.version) {
+		qdcli::printVersion("quadfmt");
 		return 0;
+	}
+
+	if (qdcli::checkNoInputFiles(base, "quadfmt")) {
+		return 1;
 	}
 
 	// Collect all files from paths
 	std::vector<std::string> allFiles;
-	for (const auto& path : opts.paths) {
+	for (const auto& path : base.paths) {
 		auto files = qdcli::collectFiles(path);
 		allFiles.insert(allFiles.end(), files.begin(), files.end());
 	}

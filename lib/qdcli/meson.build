@@ -2,13 +2,14 @@
 
 qdcli_sources = files(
 	'src/file_utils.cc',
+	'src/cli.cc',
 )
 
 qdcli_inc = include_directories('include')
 
 qdcli_lib = static_library('qdcli',
 	qdcli_sources,
-	include_directories: qdcli_inc,
+	include_directories: [qdcli_inc, version_inc],
 	install: false,
 )
 

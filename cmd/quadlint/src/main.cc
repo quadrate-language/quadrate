@@ -13,6 +13,7 @@
 #include <qc/ast_node_local.h>
 #include <qc/ast_node_struct.h>
 #include <qc/colors.h>
+#include <qdcli/cli.h>
 #include <qdcli/file_utils.h>
 #include <set>
 #include <string>
@@ -20,14 +21,9 @@
 #include <unordered_set>
 #include <vector>
 
-#include "version.h"
-
 using namespace Qd;
 
-struct Options {
-	std::vector<std::string> files;
-	bool help = false;
-	bool version = false;
+struct LintOptions {
 	bool noUnusedFunctions = false;
 	bool noUnusedVariables = false;
 	bool noDeadCode = false;
@@ -58,7 +54,7 @@ struct LintIssue {
 void printHelp() {
 	std::cout << "quadlint - Quadrate code linter\n\n";
 	std::cout << "Checks Quadrate source files for code quality issues.\n\n";
-	std::cout << "Usage: quadlint [options] <file>...\n\n";
+	std::cout << "Usage: quadlint [options] <file|directory>...\n\n";
 	std::cout << "Options:\n";
 	std::cout << "  -h, --help                Show this help message\n";
 	std::cout << "  -v, --version             Show version information\n";
@@ -80,87 +76,9 @@ void printHelp() {
 	std::cout << "  --max-function-lines <N>  Maximum function lines (default: 50)\n";
 	std::cout << "\nExamples:\n";
 	std::cout << "  quadlint file.qd          Lint a single file\n";
-	std::cout << "  quadlint *.qd             Lint multiple files\n";
+	std::cout << "  quadlint src/             Lint all .qd files in directory recursively\n";
 	std::cout << "  quadlint --json file.qd   Output results in JSON format for IDEs\n";
 	std::cout << "  quadlint -q *.qd          Only show summary\n";
-}
-
-void printVersion() {
-	std::cout << quadrate_version_string("quadlint") << "\n";
-}
-
-bool parseArgs(int argc, char* argv[], Options& opts) {
-	for (int i = 1; i < argc; i++) {
-		std::string arg = argv[i];
-
-		if (arg == "-h" || arg == "--help") {
-			opts.help = true;
-			return true;
-		} else if (arg == "-v" || arg == "--version") {
-			opts.version = true;
-			return true;
-		} else if (arg == "--no-unused-functions") {
-			opts.noUnusedFunctions = true;
-		} else if (arg == "--no-unused-variables") {
-			opts.noUnusedVariables = true;
-		} else if (arg == "--no-dead-code") {
-			opts.noDeadCode = true;
-		} else if (arg == "--no-deep-nesting") {
-			opts.noDeepNesting = true;
-		} else if (arg == "--no-missing-defer") {
-			opts.noMissingDefer = true;
-		} else if (arg == "--no-shadow-variables") {
-			opts.noShadowVariables = true;
-		} else if (arg == "--no-empty-blocks") {
-			opts.noEmptyBlocks = true;
-		} else if (arg == "--no-constant-conditions") {
-			opts.noConstantConditions = true;
-		} else if (arg == "--check-magic-numbers") {
-			opts.checkMagicNumbers = true;
-		} else if (arg == "--check-long-functions") {
-			opts.checkLongFunctions = true;
-		} else if (arg == "--check-naming") {
-			opts.checkNamingConventions = true;
-		} else if (arg == "--json") {
-			opts.jsonOutput = true;
-		} else if (arg == "-q" || arg == "--quiet") {
-			opts.quiet = true;
-		} else if (arg == "--max-nesting") {
-			if (i + 1 >= argc) {
-				std::cerr << "quadlint: --max-nesting requires an argument\n";
-				return false;
-			}
-			opts.maxNestingDepth = std::atoi(argv[++i]);
-			if (opts.maxNestingDepth < 1) {
-				std::cerr << "quadlint: --max-nesting must be at least 1\n";
-				return false;
-			}
-		} else if (arg == "--max-function-lines") {
-			if (i + 1 >= argc) {
-				std::cerr << "quadlint: --max-function-lines requires an argument\n";
-				return false;
-			}
-			opts.maxFunctionLines = std::atoi(argv[++i]);
-			if (opts.maxFunctionLines < 1) {
-				std::cerr << "quadlint: --max-function-lines must be at least 1\n";
-				return false;
-			}
-		} else if (arg[0] == '-') {
-			std::cerr << "quadlint: unknown option: " << arg << "\n";
-			std::cerr << "Try 'quadlint --help' for more information.\n";
-			return false;
-		} else {
-			opts.files.push_back(arg);
-		}
-	}
-
-	if (opts.files.empty() && !opts.help && !opts.version) {
-		std::cerr << "quadlint: no input files\n";
-		std::cerr << "Try 'quadlint --help' for more information.\n";
-		return false;
-	}
-
-	return true;
 }
 
 // Recursively collect all function definitions
@@ -722,7 +640,7 @@ void detectNamingConventions(IAstNode* node, const std::string& filename, std::v
 	}
 }
 
-std::vector<LintIssue> lintFile(const std::string& filename, const Options& opts) {
+std::vector<LintIssue> lintFile(const std::string& filename, const LintOptions& opts) {
 	std::vector<LintIssue> issues;
 
 	try {
@@ -901,24 +819,116 @@ void printIssuesJson(const std::vector<LintIssue>& issues) {
 }
 
 int main(int argc, char* argv[]) {
-	Options opts;
+	qdcli::BaseOptions base;
+	LintOptions opts;
 
-	if (!parseArgs(argc, argv, opts)) {
+	auto handler = [&opts](const char* arg, int& i, int argc, char* argv[]) -> bool {
+		if (strcmp(arg, "--no-unused-functions") == 0) {
+			opts.noUnusedFunctions = true;
+			return true;
+		}
+		if (strcmp(arg, "--no-unused-variables") == 0) {
+			opts.noUnusedVariables = true;
+			return true;
+		}
+		if (strcmp(arg, "--no-dead-code") == 0) {
+			opts.noDeadCode = true;
+			return true;
+		}
+		if (strcmp(arg, "--no-deep-nesting") == 0) {
+			opts.noDeepNesting = true;
+			return true;
+		}
+		if (strcmp(arg, "--no-missing-defer") == 0) {
+			opts.noMissingDefer = true;
+			return true;
+		}
+		if (strcmp(arg, "--no-shadow-variables") == 0) {
+			opts.noShadowVariables = true;
+			return true;
+		}
+		if (strcmp(arg, "--no-empty-blocks") == 0) {
+			opts.noEmptyBlocks = true;
+			return true;
+		}
+		if (strcmp(arg, "--no-constant-conditions") == 0) {
+			opts.noConstantConditions = true;
+			return true;
+		}
+		if (strcmp(arg, "--check-magic-numbers") == 0) {
+			opts.checkMagicNumbers = true;
+			return true;
+		}
+		if (strcmp(arg, "--check-long-functions") == 0) {
+			opts.checkLongFunctions = true;
+			return true;
+		}
+		if (strcmp(arg, "--check-naming") == 0) {
+			opts.checkNamingConventions = true;
+			return true;
+		}
+		if (strcmp(arg, "--json") == 0) {
+			opts.jsonOutput = true;
+			return true;
+		}
+		if (strcmp(arg, "-q") == 0 || strcmp(arg, "--quiet") == 0) {
+			opts.quiet = true;
+			return true;
+		}
+		if (strcmp(arg, "--max-nesting") == 0) {
+			if (i + 1 >= argc) {
+				std::cerr << "quadlint: --max-nesting requires an argument\n";
+				return false;
+			}
+			opts.maxNestingDepth = std::atoi(argv[++i]);
+			if (opts.maxNestingDepth < 1) {
+				std::cerr << "quadlint: --max-nesting must be at least 1\n";
+				return false;
+			}
+			return true;
+		}
+		if (strcmp(arg, "--max-function-lines") == 0) {
+			if (i + 1 >= argc) {
+				std::cerr << "quadlint: --max-function-lines requires an argument\n";
+				return false;
+			}
+			opts.maxFunctionLines = std::atoi(argv[++i]);
+			if (opts.maxFunctionLines < 1) {
+				std::cerr << "quadlint: --max-function-lines must be at least 1\n";
+				return false;
+			}
+			return true;
+		}
+		return false;
+	};
+
+	if (!qdcli::parseArgs(argc, argv, base, "quadlint", handler)) {
 		return 1;
 	}
 
-	if (opts.help) {
+	if (base.help) {
 		printHelp();
 		return 0;
 	}
 
-	if (opts.version) {
-		printVersion();
+	if (base.version) {
+		qdcli::printVersion("quadlint");
 		return 0;
 	}
 
+	if (qdcli::checkNoInputFiles(base, "quadlint")) {
+		return 1;
+	}
+
+	// Collect all files from paths (now supports directories)
+	std::vector<std::string> allFiles;
+	for (const auto& path : base.paths) {
+		auto files = qdcli::collectFiles(path);
+		allFiles.insert(allFiles.end(), files.begin(), files.end());
+	}
+
 	std::vector<LintIssue> allIssues;
-	for (const auto& file : opts.files) {
+	for (const auto& file : allFiles) {
 		std::vector<LintIssue> issues = lintFile(file, opts);
 		allIssues.insert(allIssues.end(), issues.begin(), issues.end());
 	}

@@ -75,15 +75,16 @@ static const char* g_moduleFunctions[] = {
 		"time::now", "time::sleep", "time::since", "time::format", "time::parse", "time::year", "time::month",
 		"time::day", "time::hour", "time::minute", "time::second", "time::weekday",
 		// thread module
-		"thread::spawn", "thread::join", "thread::sleep", "thread::yield", "thread::id",
-		"thread::mutex_create", "thread::mutex_lock", "thread::mutex_unlock", "thread::mutex_destroy",
+		"thread::spawn", "thread::join", "thread::sleep", "thread::yield", "thread::id", "thread::mutex_create",
+		"thread::mutex_lock", "thread::mutex_unlock", "thread::mutex_destroy",
 		// path module
-		"path::join", "path::dir", "path::base", "path::ext", "path::abs", "path::rel", "path::clean",
-		"path::is_abs", "path::split", "path::match",
+		"path::join", "path::dir", "path::base", "path::ext", "path::abs", "path::rel", "path::clean", "path::is_abs",
+		"path::split", "path::match",
 		// rand module
 		"rand::int", "rand::float", "rand::range", "rand::bytes", "rand::shuffle", "rand::choice", "rand::seed",
 		// strconv module
-		"strconv::atoi", "strconv::atof", "strconv::itoa", "strconv::ftoa", "strconv::parse_int", "strconv::parse_float",
+		"strconv::atoi", "strconv::atof", "strconv::itoa", "strconv::ftoa", "strconv::parse_int",
+		"strconv::parse_float",
 		// bytes module
 		"bytes::from_str", "bytes::to_str", "bytes::len", "bytes::get", "bytes::set", "bytes::slice",
 		// bits module
@@ -91,14 +92,14 @@ static const char* g_moduleFunctions[] = {
 		// signal module
 		"signal::handle", "signal::ignore", "signal::reset", "signal::raise",
 		// term module
-		"term::width", "term::height", "term::clear", "term::move", "term::color", "term::reset",
-		"term::is_tty", "term::raw", "term::cooked",
+		"term::width", "term::height", "term::clear", "term::move", "term::color", "term::reset", "term::is_tty",
+		"term::raw", "term::cooked",
 		// limits module
 		"limits::I8_MIN", "limits::I8_MAX", "limits::I16_MIN", "limits::I16_MAX", "limits::I32_MIN", "limits::I32_MAX",
-		"limits::I64_MIN", "limits::I64_MAX", "limits::F32_MIN", "limits::F32_MAX", "limits::F64_MIN", "limits::F64_MAX",
+		"limits::I64_MIN", "limits::I64_MAX", "limits::F32_MIN", "limits::F32_MAX", "limits::F64_MIN",
+		"limits::F64_MAX",
 		// sb (string builder) module
-		"sb::new", "sb::write", "sb::writeln", "sb::string", "sb::len", "sb::clear", "sb::free",
-		nullptr};
+		"sb::new", "sb::write", "sb::writeln", "sb::string", "sb::len", "sb::clear", "sb::free", nullptr};
 
 // Generator function for readline completion
 static char* completionGenerator(const char* text, int state) {

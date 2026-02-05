@@ -2,6 +2,7 @@
 // Main file containing core LSP class implementation
 
 #include "lsp_impl.h"
+#include "src/platform/process_platform.h"
 #include "version.h"
 #include <algorithm>
 #include <cctype>
@@ -24,7 +25,6 @@
 #include <qc/semantic_validator.h>
 #include <set>
 #include <sstream>
-#include "src/platform/process_platform.h"
 
 // Expand tilde (~) in file paths
 std::string expandTilde(const std::string& path) {

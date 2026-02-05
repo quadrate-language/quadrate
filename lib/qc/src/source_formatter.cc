@@ -56,7 +56,7 @@ namespace Qd {
 			return opts;
 		}
 
-	// Simple manual JSON parsing for basic options
+		// Simple manual JSON parsing for basic options
 		std::ifstream f(configPath);
 		std::string content((std::istreambuf_iterator<char>(f)), std::istreambuf_iterator<char>());
 
@@ -66,7 +66,9 @@ namespace Qd {
 			pos = content.find(':', pos);
 			if (pos != std::string::npos) {
 				pos++;
-				while (pos < content.length() && std::isspace(content[pos])) pos++;
+				while (pos < content.length() && std::isspace(content[pos])) {
+					pos++;
+				}
 				int val = 0;
 				while (pos < content.length() && std::isdigit(content[pos])) {
 					val = val * 10 + (content[pos] - '0');
@@ -175,7 +177,6 @@ namespace Qd {
 
 		return true;
 	}
-
 
 	// Helper to trim whitespace from start and end
 	static std::string trim(const std::string& str) {
@@ -1345,8 +1346,9 @@ namespace Qd {
 							inStr = !inStr;
 						}
 						if (!inStr) {
-							if (trimmed[j] == '{') depth++;
-							else if (trimmed[j] == '}') {
+							if (trimmed[j] == '{') {
+								depth++;
+							} else if (trimmed[j] == '}') {
 								depth--;
 								if (depth == 0) {
 									closingBrace = j;
@@ -1417,8 +1419,9 @@ namespace Qd {
 											inStr = !inStr;
 										}
 										if (!inStr) {
-											if (trimmed[j] == '{') depth++;
-											else if (trimmed[j] == '}') {
+											if (trimmed[j] == '{') {
+												depth++;
+											} else if (trimmed[j] == '}') {
 												depth--;
 												if (depth == 0) {
 													elseClosingBrace = j;
@@ -1429,7 +1432,8 @@ namespace Qd {
 									}
 
 									if (elseClosingBrace != std::string::npos) {
-										std::string elseContent = trimmed.substr(afterBrace, elseClosingBrace - afterBrace);
+										std::string elseContent =
+												trimmed.substr(afterBrace, elseClosingBrace - afterBrace);
 										if (isSingleStatement(elseContent)) {
 											// Else is also single statement, keep on one line
 											singleStatementBlockDepth++;
@@ -1495,8 +1499,9 @@ namespace Qd {
 											inStr = !inStr;
 										}
 										if (!inStr) {
-											if (trimmed[j] == '{') depth++;
-											else if (trimmed[j] == '}') {
+											if (trimmed[j] == '{') {
+												depth++;
+											} else if (trimmed[j] == '}') {
 												depth--;
 												if (depth == 0) {
 													elseClosingBrace = j;
@@ -1507,7 +1512,8 @@ namespace Qd {
 									}
 
 									if (elseClosingBrace != std::string::npos) {
-										std::string elseContent = trimmed.substr(afterBrace, elseClosingBrace - afterBrace);
+										std::string elseContent =
+												trimmed.substr(afterBrace, elseClosingBrace - afterBrace);
 										if (isSingleStatement(elseContent)) {
 											// Else is single statement, keep on one line
 											singleStatementBlockDepth++;

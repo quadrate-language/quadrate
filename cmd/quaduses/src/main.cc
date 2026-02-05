@@ -12,6 +12,7 @@
 #include <qc/ast_node_struct_field.h>
 #include <qc/ast_node_use.h>
 #include <qc/formatter.h>
+#include <qdcli/cli.h>
 #include <qdcli/file_utils.h>
 #include <set>
 #include <sstream>
@@ -19,17 +20,12 @@
 #include <u8t/scanner.h>
 #include <vector>
 
-#include "version.h"
-
 using namespace Qd;
 
-struct Options {
-	std::vector<std::string> paths;
+struct UsesOptions {
 	bool inPlace = false;
 	bool check = false;
 	bool dryRun = false;
-	bool help = false;
-	bool version = false;
 };
 
 void printHelp() {
@@ -49,51 +45,6 @@ void printHelp() {
 	std::cout << "  quaduses -w src/             Update all .qd files in directory recursively\n";
 	std::cout << "  quaduses -c src/             Check if any files need updating (for CI)\n";
 	std::cout << "  quaduses -n file.qd          Show changes that would be made\n";
-}
-
-void printVersion() {
-	std::cout << quadrate_version_string("quaduses") << "\n";
-}
-
-bool parseArgs(int argc, char* argv[], Options& opts) {
-	for (int i = 1; i < argc; i++) {
-		std::string arg = argv[i];
-
-		if (arg == "-h" || arg == "--help") {
-			opts.help = true;
-			return true;
-		} else if (arg == "-v" || arg == "--version") {
-			opts.version = true;
-			return true;
-		} else if (arg == "-w" || arg == "--write") {
-			opts.inPlace = true;
-		} else if (arg == "-c" || arg == "--check") {
-			opts.check = true;
-		} else if (arg == "-n" || arg == "--dry-run") {
-			opts.dryRun = true;
-		} else if (arg[0] == '-') {
-			std::cerr << "quaduses: unknown option: " << arg << "\n";
-			std::cerr << "Try 'quaduses --help' for more information.\n";
-			return false;
-		} else {
-			opts.paths.push_back(arg);
-		}
-	}
-
-	if (opts.paths.empty() && !opts.help && !opts.version) {
-		std::cerr << "quaduses: no input files\n";
-		std::cerr << "Try 'quaduses --help' for more information.\n";
-		return false;
-	}
-
-	// Check for conflicting options
-	int modeCount = (opts.inPlace ? 1 : 0) + (opts.check ? 1 : 0) + (opts.dryRun ? 1 : 0);
-	if (modeCount > 1) {
-		std::cerr << "quaduses: options -w, -c, and -n are mutually exclusive\n";
-		return false;
-	}
-
-	return true;
 }
 
 // Helper to extract module name from a scoped type like "math::Vec3" -> "math"
@@ -422,7 +373,7 @@ void printUseDiff(const std::string& filename, const std::string& original, cons
 	}
 }
 
-bool processFile(const std::string& filename, const Options& opts, bool& needsChanges) {
+bool processFile(const std::string& filename, const UsesOptions& opts, bool& needsChanges) {
 	try {
 		// Read source file
 		std::string source = qdcli::readFile(filename);
@@ -528,25 +479,56 @@ bool processFile(const std::string& filename, const Options& opts, bool& needsCh
 }
 
 int main(int argc, char* argv[]) {
-	Options opts;
+	qdcli::BaseOptions base;
+	UsesOptions opts;
 
-	if (!parseArgs(argc, argv, opts)) {
+	auto handler = [&opts](const char* arg, int& i, int argc, char* argv[]) -> bool {
+		(void)i;
+		(void)argc;
+		(void)argv;
+		if (strcmp(arg, "-w") == 0 || strcmp(arg, "--write") == 0) {
+			opts.inPlace = true;
+			return true;
+		}
+		if (strcmp(arg, "-c") == 0 || strcmp(arg, "--check") == 0) {
+			opts.check = true;
+			return true;
+		}
+		if (strcmp(arg, "-n") == 0 || strcmp(arg, "--dry-run") == 0) {
+			opts.dryRun = true;
+			return true;
+		}
+		return false;
+	};
+
+	if (!qdcli::parseArgs(argc, argv, base, "quaduses", handler)) {
 		return 1;
 	}
 
-	if (opts.help) {
+	if (base.help) {
 		printHelp();
 		return 0;
 	}
 
-	if (opts.version) {
-		printVersion();
+	if (base.version) {
+		qdcli::printVersion("quaduses");
 		return 0;
+	}
+
+	if (qdcli::checkNoInputFiles(base, "quaduses")) {
+		return 1;
+	}
+
+	// Check for conflicting options
+	int modeCount = (opts.inPlace ? 1 : 0) + (opts.check ? 1 : 0) + (opts.dryRun ? 1 : 0);
+	if (modeCount > 1) {
+		std::cerr << "quaduses: options -w, -c, and -n are mutually exclusive\n";
+		return 1;
 	}
 
 	// Collect all files from paths
 	std::vector<std::string> allFiles;
-	for (const auto& path : opts.paths) {
+	for (const auto& path : base.paths) {
 		auto files = qdcli::collectFiles(path);
 		allFiles.insert(allFiles.end(), files.begin(), files.end());
 	}
