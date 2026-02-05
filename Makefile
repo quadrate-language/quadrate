@@ -87,7 +87,8 @@ debug:
 	@mkdir -p $(BUILD_DIR_DEBUG)/modules
 	cd cmd/quadmcp && QUADRATE_PATH=$(CURDIR)/$(BUILD_DIR_DEBUG)/modules QUADRATE_ROOT=$(CURDIR) $(CURDIR)/dist/bin/quadpm install
 	@mkdir -p $(BUILD_DIR_DEBUG)/cmd/quadmcp
-	cd cmd/quadmcp && QUADRATE_PATH=$(CURDIR)/$(BUILD_DIR_DEBUG)/modules QUADRATE_ROOT=$(CURDIR) $(CURDIR)/dist/bin/quad build quadmcp.qd -o $(CURDIR)/$(BUILD_DIR_DEBUG)/cmd/quadmcp/quadmcp
+	@cat cmd/quadmcp/core.qd cmd/quadmcp/tools.qd cmd/quadmcp/resources.qd cmd/quadmcp/server.qd > $(BUILD_DIR_DEBUG)/cmd/quadmcp/quadmcp.qd
+	cd cmd/quadmcp && QUADRATE_PATH=$(CURDIR)/$(BUILD_DIR_DEBUG)/modules QUADRATE_ROOT=$(CURDIR) $(CURDIR)/dist/bin/quad build $(CURDIR)/$(BUILD_DIR_DEBUG)/cmd/quadmcp/quadmcp.qd -o $(CURDIR)/$(BUILD_DIR_DEBUG)/cmd/quadmcp/quadmcp
 	cp $(BUILD_DIR_DEBUG)/cmd/quadmcp/quadmcp dist/bin/
 
 release:
@@ -96,7 +97,8 @@ release:
 	@mkdir -p $(BUILD_DIR_RELEASE)/modules
 	cd cmd/quadmcp && QUADRATE_PATH=$(CURDIR)/$(BUILD_DIR_RELEASE)/modules QUADRATE_ROOT=$(CURDIR) $(CURDIR)/dist/bin/quadpm install
 	@mkdir -p $(BUILD_DIR_RELEASE)/cmd/quadmcp
-	cd cmd/quadmcp && QUADRATE_PATH=$(CURDIR)/$(BUILD_DIR_RELEASE)/modules QUADRATE_ROOT=$(CURDIR) $(CURDIR)/dist/bin/quad build -O3 quadmcp.qd -o $(CURDIR)/$(BUILD_DIR_RELEASE)/cmd/quadmcp/quadmcp
+	@cat cmd/quadmcp/core.qd cmd/quadmcp/tools.qd cmd/quadmcp/resources.qd cmd/quadmcp/server.qd > $(BUILD_DIR_RELEASE)/cmd/quadmcp/quadmcp.qd
+	cd cmd/quadmcp && QUADRATE_PATH=$(CURDIR)/$(BUILD_DIR_RELEASE)/modules QUADRATE_ROOT=$(CURDIR) $(CURDIR)/dist/bin/quad build -O3 $(CURDIR)/$(BUILD_DIR_RELEASE)/cmd/quadmcp/quadmcp.qd -o $(CURDIR)/$(BUILD_DIR_RELEASE)/cmd/quadmcp/quadmcp
 	cp $(BUILD_DIR_RELEASE)/cmd/quadmcp/quadmcp dist/bin/
 	@echo "Stripping binaries..."
 	@for cmd in $(CMDS) quadrepl quadmcp; do \
@@ -178,7 +180,8 @@ quadmcp: debug
 	@mkdir -p $(BUILD_DIR_DEBUG)/modules
 	cd cmd/quadmcp && QUADRATE_PATH=$(CURDIR)/$(BUILD_DIR_DEBUG)/modules QUADRATE_ROOT=$(CURDIR) $(CURDIR)/dist/bin/quadpm install
 	@mkdir -p $(BUILD_DIR_DEBUG)/cmd/quadmcp
-	cd cmd/quadmcp && QUADRATE_PATH=$(CURDIR)/$(BUILD_DIR_DEBUG)/modules QUADRATE_ROOT=$(CURDIR) $(CURDIR)/dist/bin/quad build -O3 quadmcp.qd -o $(CURDIR)/$(BUILD_DIR_DEBUG)/cmd/quadmcp/quadmcp
+	@cat cmd/quadmcp/core.qd cmd/quadmcp/tools.qd cmd/quadmcp/resources.qd cmd/quadmcp/server.qd > $(BUILD_DIR_DEBUG)/cmd/quadmcp/quadmcp.qd
+	cd cmd/quadmcp && QUADRATE_PATH=$(CURDIR)/$(BUILD_DIR_DEBUG)/modules QUADRATE_ROOT=$(CURDIR) $(CURDIR)/dist/bin/quad build -O3 $(CURDIR)/$(BUILD_DIR_DEBUG)/cmd/quadmcp/quadmcp.qd -o $(CURDIR)/$(BUILD_DIR_DEBUG)/cmd/quadmcp/quadmcp
 	cp $(BUILD_DIR_DEBUG)/cmd/quadmcp/quadmcp dist/bin/
 	@echo "  quadmcp built successfully"
 
