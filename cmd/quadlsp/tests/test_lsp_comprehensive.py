@@ -993,8 +993,8 @@ def main():
     ]
 
     if project_root:
-        possible_paths.insert(0, project_root / "build/debug/cmd/quadlsp/quadlsp")
-        possible_paths.insert(1, project_root / "dist/bin/quadlsp")
+        possible_paths.insert(0, project_root / "dist/bin/quadlsp")
+        possible_paths.insert(1, project_root / "build/debug/cmd/quadlsp/quadlsp")
 
     lsp_path = None
     for path in possible_paths:

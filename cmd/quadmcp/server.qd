@@ -1,0 +1,195 @@
+fn mcp_prompts_list(id:str -- response:str) {
+	-> id
+
+	"code" "Quadrate code to explain" "The code snippet to analyze" 1 build_prompt_arg json::arr -> args1
+	"explain_code" "Explain Quadrate code step by step, including stack effects" args1 build_prompt -> p1
+
+	"code" "Quadrate code to improve" "The code to convert to idiomatic style" 1 build_prompt_arg json::arr -> args2
+	"convert_to_idiomatic" "Convert Quadrate code to more idiomatic style using stack operations" args2 build_prompt -> p2
+
+	"code" "Quadrate code with stack issue" "The code experiencing stack problems" 1 build_prompt_arg
+	"error" "Error message or description" "The error or unexpected behavior" 0 build_prompt_arg json::join json::arr -> args3
+	"debug_stack" "Help debug stack-related issues in Quadrate code" args3 build_prompt -> p3
+
+	p1 p2 json::join p3 json::join json::arr -> prompts_arr
+
+	"prompts" prompts_arr json::kv_raw json::obj -> result
+	id result rpc_result
+}
+
+fn mcp_prompts_get(id:str body:str -- response:str) {
+	-> body -> id
+	body "params" json::get_object -> _ -> params
+	params "name" json::get_string -> found -> name
+	params "arguments" json::get_object -> _ -> args
+
+	found 0 == if {
+		id "-32602" "Missing required parameter: name" rpc_error
+	} else {
+		name "explain_code" str::compare 0 == if {
+			args "code" json::get_string -> _ -> code
+			"role" "user" json::kv
+			"content" "Please explain this Quadrate code step by step. For each line, describe:\n1. What values are pushed/popped from the stack\n2. What the operation does\n3. The stack state after the operation\n\nCode:\n```quadrate\n" code str::concat "\n```\n\nQuadrate is a stack-based language where:\n- Values are pushed onto a stack\n- Operations consume values from the stack and push results\n- -> binds stack top to a variable\n- @ accesses struct fields\n- Functions have signatures like (inputs -- outputs)" str::concat json::kv json::join
+			json::obj json::arr -> messages
+
+			"messages" messages json::kv_raw json::obj -> result
+			id result rpc_result
+		} else {
+			name "convert_to_idiomatic" str::compare 0 == if {
+				args "code" json::get_string -> _ -> code
+				"role" "user" json::kv
+				"content" "Please convert this Quadrate code to more idiomatic style:\n\n```quadrate\n" code str::concat "\n```\n\nConsider:\n1. Using stack operations (dup, swap, over, rot) instead of temporary variables\n2. Using -> _ to discard unused values\n3. Combining operations where possible\n4. Using appropriate built-in functions\n5. Proper error handling with switch" str::concat json::kv json::join
+				json::obj json::arr -> messages
+
+				"messages" messages json::kv_raw json::obj -> result
+				id result rpc_result
+			} else {
+				name "debug_stack" str::compare 0 == if {
+					args "code" json::get_string -> _ -> code
+					args "error" json::get_string -> _ -> error
+					"role" "user" json::kv
+					"content" "Please help debug this Quadrate code that has a stack issue:\n\n```quadrate\n" code str::concat "\n```\n\nError/Issue: " str::concat error str::concat "\n\nPlease:\n1. Trace the stack state through each operation\n2. Identify where the stack becomes incorrect\n3. Suggest a fix\n4. Common issues: stack underflow, wrong order, forgetting to drop" str::concat json::kv json::join
+					json::obj json::arr -> messages
+
+					"messages" messages json::kv_raw json::obj -> result
+					id result rpc_result
+				} else {
+					id "-32602" "Unknown prompt" rpc_error
+				}
+			}
+		}
+	}
+}
+
+fn mcp_ping(id:str -- response:str) {
+	-> id
+	id "{}" rpc_result
+}
+
+fn is_notification(method:str -- is_notif:i64) {
+	-> method
+	method str::len 14 >= if {
+		method 0 14 str::substring! "notifications/" str::compare 0 ==
+	} else {
+		0
+	}
+}
+
+fn dispatch(ds:ptr method:str id:str body:str -- response:str) {
+	-> body -> id -> method -> ds
+
+	method is_notification if {
+		""
+	} else {
+		method switch {
+			"initialize"     { id mcp_initialize }
+			"tools/list"     { id mcp_tools_list }
+			"tools/call"     { ds id body mcp_tools_call }
+			"resources/list" { id mcp_resources_list }
+			"resources/read" { id body mcp_resources_read }
+			"prompts/list"   { id mcp_prompts_list }
+			"prompts/get"    { id body mcp_prompts_get }
+			"ping"           { id mcp_ping }
+			_                { id "-32601" "Method not found" rpc_error }
+		}
+	}
+}
+
+fn extract_id(body:str -- id:str) {
+	-> body
+	body "id" json::get_int -> found -> id_int
+	found if {
+		id_int strconv::itoa
+	} else {
+		"null"
+	}
+}
+
+fn run_stdio(ds:ptr -- ) {
+	-> ds
+	loop {
+		io::readline switch {
+			Ok { -> line line str::len 0 > if { line "method" json::get_string -> found -> method found 0 == if { "null" "-32600" "Invalid request: missing method" rpc_error print nl io::flush } else { line extract_id -> id ds method id line dispatch -> response response str::len 0 > if { response print nl io::flush } } } }
+			_ { break }
+		}
+	}
+}
+
+fn handle_mcp(c:ptr -- ) {
+	-> c
+	load_docs -> ds
+	defer {
+		ds free
+	}
+
+	c @body -> body
+	body "method" json::get_string -> _ -> method
+
+	body extract_id -> id
+
+	method str::len 0 == if {
+		c http::StatusBadRequest id "-32600" "Invalid request" rpc_error http::json
+	} else {
+		ds method id body dispatch -> response
+		response str::len 0 > if {
+			c http::StatusOK response http::json
+		} else {
+			c 204 "" http::string
+		}
+	}
+}
+
+fn handle_sse(c:ptr -- ) {
+	-> c
+	c http::sse_start
+	c "endpoint" "/mcp" http::sse_event
+	c http::sse_end
+}
+
+fn handle_root(c:ptr -- ) {
+	-> c
+	c http::StatusOK
+	"name" SERVER_NAME json::kv
+	"version" SERVER_VERSION json::kv json::join
+	"protocol" PROTOCOL_VERSION json::kv json::join
+	json::obj http::json
+}
+
+fn run_http(ds:ptr port:str -- ) {
+	-> port -> ds
+	"quadmcp v" print SERVER_VERSION print " (HTTP mode)" print nl
+	"Protocol: " print PROTOCOL_VERSION print nl
+	"Docs: " print ds @docs_dir print nl
+	"http://localhost" print port print nl
+
+	http::engine -> e
+	defer {
+		e http::free_engine
+	}
+
+	e "/" &handle_root http::GET
+	e "/mcp" &handle_mcp http::POST
+	e "/mcp/sse" &handle_sse http::GET
+
+	e port http::run!
+}
+
+fn main() {
+	load_docs -> ds
+	defer {
+		ds free
+	}
+
+	read flag::parse -> f
+	defer {
+		f flag::destroy
+	}
+
+	f "--http" flag::boolean -> use_http
+
+	use_http if {
+		ds ":3000" run_http
+	} else {
+		ds run_stdio
+	}
+}

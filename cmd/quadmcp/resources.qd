@@ -1,0 +1,464 @@
+fn mcp_resources_list(id:str -- response:str) {
+	-> id
+
+	"quadrate://snippets/hello-world" "Hello World" "Basic Quadrate hello world example" "text/plain" build_resource -> r1
+	"quadrate://snippets/file-io" "File I/O" "Reading and writing files in Quadrate" "text/plain" build_resource -> r2
+	"quadrate://snippets/error-handling" "Error Handling" "Failable functions and switch pattern" "text/plain" build_resource -> r3
+	"quadrate://snippets/structs" "Structs" "Defining and using structs" "text/plain" build_resource -> r4
+	"quadrate://snippets/loops" "Loops" "Loop patterns: for, while, loop" "text/plain" build_resource -> r5
+	"quadrate://snippets/stack-ops" "Stack Operations" "Common stack manipulation patterns" "text/plain" build_resource -> r6
+	"quadrate://guides/common-mistakes" "Common Mistakes" "Frequent errors and how to fix them" "text/plain" build_resource -> r7
+	"quadrate://guides/best-practices" "Best Practices" "Idiomatic Quadrate patterns and style" "text/plain" build_resource -> r8
+	"quadrate://guides/cheatsheet" "Function Cheatsheet" "Functions organized by task category" "text/plain" build_resource -> r9
+
+	r1 r2 json::join r3 json::join r4 json::join r5 json::join r6 json::join r7 json::join r8 json::join r9 json::join json::arr -> resources_arr
+
+	"resources" resources_arr json::kv_raw json::obj -> result
+	id result rpc_result
+}
+
+fn get_common_mistakes_content( -- content:str) {
+	"COMMON MISTAKES IN QUADRATE\n" -> s
+	s "===========================\n\n" str::concat -> s
+
+	s "1. STACK UNDERFLOW\n" str::concat -> s
+	s "-------------------\n" str::concat -> s
+	s "Problem: Using operations when stack is empty or has too few values.\n\n" str::concat -> s
+	s "WRONG:\n" str::concat -> s
+	s "  1 +        // ERROR: + needs 2 values, only 1 on stack\n" str::concat -> s
+	s "  swap       // ERROR: swap needs 2 values, stack is empty\n\n" str::concat -> s
+	s "RIGHT:\n" str::concat -> s
+	s "  1 2 +      // OK: 2 values for +\n" str::concat -> s
+	s "  1 2 swap   // OK: 2 values for swap\n\n" str::concat -> s
+
+	s "2. WRONG ARGUMENT ORDER\n" str::concat -> s
+	s "------------------------\n" str::concat -> s
+	s "Problem: Stack is LIFO - last pushed is first used.\n\n" str::concat -> s
+	s "WRONG:\n" str::concat -> s
+	s "  10 3 /     // Computes 10/3, not 3/10\n" str::concat -> s
+	s "  a b -      // Computes a-b, if you wanted b-a use: b a -\n\n" str::concat -> s
+	s "RIGHT:\n" str::concat -> s
+	s "  // To compute 3/10:\n" str::concat -> s
+	s "  3 10 /     // OR\n" str::concat -> s
+	s "  10 3 swap /\n\n" str::concat -> s
+
+	s "3. FORGETTING TO DROP UNUSED VALUES\n" str::concat -> s
+	s "------------------------------------\n" str::concat -> s
+	s "Problem: Functions may return values you dont need.\n\n" str::concat -> s
+	s "WRONG:\n" str::concat -> s
+	s "  json::get_string -> found -> val  // found flag left unused\n" str::concat -> s
+	s "  // Stack now has extra value!\n\n" str::concat -> s
+	s "RIGHT:\n" str::concat -> s
+	s "  json::get_string -> _ -> val   // Discard found flag with -> _\n" str::concat -> s
+	s "  // OR\n" str::concat -> s
+	s "  json::get_string drop -> val   // Explicit drop\n\n" str::concat -> s
+
+	s "4. NOT HANDLING FAILABLE FUNCTIONS\n" str::concat -> s
+	s "-----------------------------------\n" str::concat -> s
+	s "Problem: Functions ending conceptually in ? must be handled.\n\n" str::concat -> s
+	s "WRONG:\n" str::concat -> s
+	s "  path io::read_file -> content  // ERROR: must handle failure\n\n" str::concat -> s
+	s "RIGHT:\n" str::concat -> s
+	s "  path io::read_file! -> content  // Use ! to panic on error\n" str::concat -> s
+	s "  // OR use switch:\n" str::concat -> s
+	s "  path io::read_file switch {\n" str::concat -> s
+	s "    Ok { -> content }\n" str::concat -> s
+	s "    Err { -> code -> msg }\n" str::concat -> s
+	s "  }\n\n" str::concat -> s
+
+	s "5. TYPE MISMATCHES\n" str::concat -> s
+	s "-------------------\n" str::concat -> s
+	s "Problem: Operations expect specific types.\n\n" str::concat -> s
+	s "WRONG:\n" str::concat -> s
+	s "  42 str::len      // ERROR: str::len expects str, got i64\n" str::concat -> s
+	s "  arr 0 nth        // ERROR: if arr is i64, not ptr\n\n" str::concat -> s
+	s "RIGHT:\n" str::concat -> s
+	s "  42 strconv::itoa str::len  // Convert to string first\n" str::concat -> s
+	s "  arr 0 nth                  // arr must be ptr (array)\n\n" str::concat -> s
+
+	s "6. FORGETTING IMPORTS\n" str::concat -> s
+	s "----------------------\n" str::concat -> s
+	s "Problem: Module functions require 'use' statement.\n\n" str::concat -> s
+	s "WRONG:\n" str::concat -> s
+	s "  fn main() {\n" str::concat -> s
+	s "    io::read_file!  // ERROR: io not imported\n" str::concat -> s
+	s "  }\n\n" str::concat -> s
+	s "RIGHT:\n" str::concat -> s
+	s "  use io\n" str::concat -> s
+	s "  fn main() {\n" str::concat -> s
+	s "    path io::read_file!\n" str::concat -> s
+	s "  }\n\n" str::concat -> s
+
+	s "7. MISMATCHED IF/ELSE STACK EFFECTS\n" str::concat -> s
+	s "------------------------------------\n" str::concat -> s
+	s "Problem: Both branches must leave stack in same state.\n\n" str::concat -> s
+	s "WRONG:\n" str::concat -> s
+	s "  x 0 > if { 1 2 } else { 3 }  // if: +2, else: +1\n\n" str::concat -> s
+	s "RIGHT:\n" str::concat -> s
+	s "  x 0 > if { 1 } else { 2 }    // Both branches: +1\n" str::concat -> s
+	s "  // OR if you need different values:\n" str::concat -> s
+	s "  x 0 > if { 1 2 } else { 3 4 }  // Both: +2\n\n" str::concat -> s
+
+	s "8. TRYING TO USE 'return'\n" str::concat -> s
+	s "--------------------------\n" str::concat -> s
+	s "Problem: Quadrate has no return keyword.\n\n" str::concat -> s
+	s "WRONG:\n" str::concat -> s
+	s "  fn foo(x:i64 -- r:i64) {\n" str::concat -> s
+	s "    x 0 < if { return 0 }  // ERROR: no return\n" str::concat -> s
+	s "    x 2 *\n" str::concat -> s
+	s "  }\n\n" str::concat -> s
+	s "RIGHT:\n" str::concat -> s
+	s "  fn foo(x:i64 -- r:i64) {\n" str::concat -> s
+	s "    x 0 < if { 0 } else { x 2 * }\n" str::concat -> s
+	s "  }\n\n" str::concat -> s
+
+	s "9. VARIABLE BINDING DIRECTION\n" str::concat -> s
+	s "------------------------------\n" str::concat -> s
+	s "Problem: -> pops from stack and binds. No <- exists.\n\n" str::concat -> s
+	s "WRONG:\n" str::concat -> s
+	s "  x <- 42    // ERROR: <- doesnt exist\n\n" str::concat -> s
+	s "RIGHT:\n" str::concat -> s
+	s "  42 -> x    // Push 42, then bind to x\n" str::concat -> s
+	s "  x          // Later: push value of x\n\n" str::concat -> s
+
+	s "10. ARRAY INDEX ORDER\n" str::concat -> s
+	s "----------------------\n" str::concat -> s
+	s "Problem: nth takes array first, then index.\n\n" str::concat -> s
+	s "WRONG:\n" str::concat -> s
+	s "  0 arr nth   // ERROR: wrong order\n\n" str::concat -> s
+	s "RIGHT:\n" str::concat -> s
+	s "  arr 0 nth   // array index nth -> element\n" str::concat -> s
+
+	s
+}
+
+fn get_best_practices_content( -- content:str) {
+	"BEST PRACTICES FOR QUADRATE\n" -> s
+	s "===========================\n\n" str::concat -> s
+
+	s "1. STACK OPS VS VARIABLES\n" str::concat -> s
+	s "--------------------------\n" str::concat -> s
+	s "Use stack operations for simple, short-lived values.\n" str::concat -> s
+	s "Use variables for values needed multiple times or for clarity.\n\n" str::concat -> s
+	s "GOOD - Stack ops for simple transforms:\n" str::concat -> s
+	s "  a b dup2 < if { drop } else { nip }  // min of two\n" str::concat -> s
+	s "  x dup *                               // square\n\n" str::concat -> s
+	s "GOOD - Variables for clarity:\n" str::concat -> s
+	s "  calculate_total -> total\n" str::concat -> s
+	s "  total 0 > if { total process_payment }\n\n" str::concat -> s
+	s "AVOID - Excessive variables for trivial ops:\n" str::concat -> s
+	s "  1 -> a  2 -> b  a b +  // Just use: 1 2 +\n\n" str::concat -> s
+
+	s "2. DISCARD UNUSED VALUES WITH -> _\n" str::concat -> s
+	s "-----------------------------------\n" str::concat -> s
+	s "Use -> _ instead of drop for intentional discards.\n" str::concat -> s
+	s "It documents that the value is deliberately ignored.\n\n" str::concat -> s
+	s "GOOD:\n" str::concat -> s
+	s "  json::get_string -> _ -> value   // Ignore 'found' flag\n" str::concat -> s
+	s "  get_pair -> _ -> second          // Only need second\n\n" str::concat -> s
+	s "ALSO GOOD for multiple discards:\n" str::concat -> s
+	s "  get_triple -> _ -> middle -> _   // Only need middle\n\n" str::concat -> s
+
+	s "3. ERROR HANDLING PATTERNS\n" str::concat -> s
+	s "---------------------------\n" str::concat -> s
+	s "Use ! for operations that should never fail.\n" str::concat -> s
+	s "Use switch for operations where failure is expected.\n\n" str::concat -> s
+	s "GOOD - Use ! for critical operations:\n" str::concat -> s
+	s "  config_path io::read_file! -> config  // Fail fast\n\n" str::concat -> s
+	s "GOOD - Use switch for user input:\n" str::concat -> s
+	s "  user_file io::read_file switch {\n" str::concat -> s
+	s "    Ok { -> content  content process }\n" str::concat -> s
+	s "    Err { -> _ -> msg  msg log_error  default_value }\n" str::concat -> s
+	s "  }\n\n" str::concat -> s
+
+	s "4. CLEAR FUNCTION SIGNATURES\n" str::concat -> s
+	s "-----------------------------\n" str::concat -> s
+	s "Name parameters descriptively. Order: context first, data second.\n\n" str::concat -> s
+	s "GOOD:\n" str::concat -> s
+	s "  fn write_to_file(path:str content:str -- success:i64)\n" str::concat -> s
+	s "  fn calculate_tax(amount:f64 rate:f64 -- tax:f64)\n\n" str::concat -> s
+	s "AVOID:\n" str::concat -> s
+	s "  fn f(a:str b:str -- r:i64)  // Unclear names\n\n" str::concat -> s
+
+	s "5. STRUCT FIELD ACCESS\n" str::concat -> s
+	s "-----------------------\n" str::concat -> s
+	s "Use @ to read fields, # to update (creates new struct).\n\n" str::concat -> s
+	s "GOOD:\n" str::concat -> s
+	s "  point @x @y +              // Read x and y, add them\n" str::concat -> s
+	s "  point new_x #x -> point2   // Update x field\n\n" str::concat -> s
+	s "PATTERN - Chained updates:\n" str::concat -> s
+	s "  point 10.0 #x 20.0 #y -> updated_point\n\n" str::concat -> s
+
+	s "6. CHOOSING THE RIGHT LOOP\n" str::concat -> s
+	s "---------------------------\n" str::concat -> s
+	s "for: Known iteration count\n" str::concat -> s
+	s "while: Condition checked each iteration\n" str::concat -> s
+	s "loop: Manual control with break/continue\n\n" str::concat -> s
+	s "GOOD - for with range:\n" str::concat -> s
+	s "  0 arr len 1 for i { arr i nth process }\n\n" str::concat -> s
+	s "GOOD - while for conditions:\n" str::concat -> s
+	s "  has_more while { get_next process has_more }\n\n" str::concat -> s
+	s "GOOD - loop for complex control:\n" str::concat -> s
+	s "  loop {\n" str::concat -> s
+	s "    get_input -> inp\n" str::concat -> s
+	s "    inp valid? not if { continue }\n" str::concat -> s
+	s "    inp done? if { break }\n" str::concat -> s
+	s "    inp process\n" str::concat -> s
+	s "  }\n\n" str::concat -> s
+
+	s "7. STRING BUILDING\n" str::concat -> s
+	s "-------------------\n" str::concat -> s
+	s "Use sb (string builder) for multiple concatenations.\n\n" str::concat -> s
+	s "AVOID - Repeated concat (slow):\n" str::concat -> s
+	s "  a b str::concat c str::concat d str::concat\n\n" str::concat -> s
+	s "GOOD - String builder:\n" str::concat -> s
+	s "  sb::new -> builder\n" str::concat -> s
+	s "  builder a sb::append b sb::append c sb::append\n" str::concat -> s
+	s "  sb::to_string\n\n" str::concat -> s
+
+	s "8. VALIDATE EARLY\n" str::concat -> s
+	s "------------------\n" str::concat -> s
+	s "Check preconditions at function start.\n\n" str::concat -> s
+	s "GOOD:\n" str::concat -> s
+	s "  fn process_items(items:ptr -- result:i64) {\n" str::concat -> s
+	s "    items len 0 == if { 0 } else {\n" str::concat -> s
+	s "      // Process non-empty array\n" str::concat -> s
+	s "      items do_processing\n" str::concat -> s
+	s "    }\n" str::concat -> s
+	s "  }\n\n" str::concat -> s
+
+	s "9. NAMING CONVENTIONS\n" str::concat -> s
+	s "----------------------\n" str::concat -> s
+	s "Functions: snake_case verbs (get_user, calculate_total)\n" str::concat -> s
+	s "Variables: snake_case nouns (user_count, total_amount)\n" str::concat -> s
+	s "Structs: PascalCase (UserProfile, HttpRequest)\n" str::concat -> s
+	s "Constants: UPPER_SNAKE (MAX_SIZE, DEFAULT_PORT)\n" str::concat -> s
+	s "Predicates: end with ? (is_valid?, has_items?)\n\n" str::concat -> s
+
+	s "10. SMALL, FOCUSED FUNCTIONS\n" str::concat -> s
+	s "-----------------------------\n" str::concat -> s
+	s "Each function should do one thing well.\n\n" str::concat -> s
+	s "GOOD - Separate concerns:\n" str::concat -> s
+	s "  fn read_config(path:str -- config:ptr) { ... }\n" str::concat -> s
+	s "  fn validate_config(config:ptr -- valid:i64) { ... }\n" str::concat -> s
+	s "  fn apply_config(config:ptr -- ) { ... }\n\n" str::concat -> s
+	s "AVOID - Monolithic functions doing everything\n\n" str::concat -> s
+
+	s "11. USE DEFER FOR CLEANUP\n" str::concat -> s
+	s "--------------------------\n" str::concat -> s
+	s "defer ensures cleanup runs even if errors occur.\n\n" str::concat -> s
+	s "GOOD:\n" str::concat -> s
+	s "  resource acquire -> handle\n" str::concat -> s
+	s "  defer { handle release }\n" str::concat -> s
+	s "  handle use_resource  // cleanup runs after this\n\n" str::concat -> s
+
+	s "12. CONSISTENT STACK EFFECTS\n" str::concat -> s
+	s "-----------------------------\n" str::concat -> s
+	s "All code paths should have same stack effect.\n\n" str::concat -> s
+	s "GOOD:\n" str::concat -> s
+	s "  cond if { a } else { b }      // Both paths: +1\n" str::concat -> s
+	s "  cond if { a b } else { c d }  // Both paths: +2\n\n" str::concat -> s
+	s "AVOID:\n" str::concat -> s
+	s "  cond if { a } else { b c }    // Mismatched: +1 vs +2\n" str::concat -> s
+
+	s
+}
+
+fn get_cheatsheet_content( -- content:str) {
+	"QUADRATE FUNCTION CHEATSHEET\n" -> s
+	s "============================\n\n" str::concat -> s
+
+	s "FILE I/O (use io)\n" str::concat -> s
+	s "-----------------\n" str::concat -> s
+	s "io::read_file      path -- content        Read entire file\n" str::concat -> s
+	s "io::write_file     path content --        Write string to file\n" str::concat -> s
+	s "io::append_file    path content --        Append to file\n" str::concat -> s
+	s "io::file_exists    path -- exists         Check if file exists\n" str::concat -> s
+	s "io::delete_file    path --                Delete file\n" str::concat -> s
+	s "io::read_lines     path -- lines          Read file as line array\n" str::concat -> s
+	s "io::readline       -- line                Read line from stdin\n\n" str::concat -> s
+
+	s "STRINGS (use str)\n" str::concat -> s
+	s "-----------------\n" str::concat -> s
+	s "str::len           s -- length            String length\n" str::concat -> s
+	s "str::concat        a b -- ab              Concatenate strings\n" str::concat -> s
+	s "str::split         s delim -- arr         Split by delimiter\n" str::concat -> s
+	s "str::join          arr delim -- s         Join array with delimiter\n" str::concat -> s
+	s "str::contains      s sub -- bool          Check substring\n" str::concat -> s
+	s "str::starts_with   s pre -- bool          Check prefix\n" str::concat -> s
+	s "str::ends_with     s suf -- bool          Check suffix\n" str::concat -> s
+	s "str::substring     s start len -- sub     Extract substring\n" str::concat -> s
+	s "str::replace       s old new -- result    Replace occurrences\n" str::concat -> s
+	s "str::trim          s -- trimmed           Remove whitespace\n" str::concat -> s
+	s "str::upper         s -- upper             Uppercase\n" str::concat -> s
+	s "str::lower         s -- lower             Lowercase\n" str::concat -> s
+	s "str::char_at       s idx -- char          Get char code at index\n" str::concat -> s
+	s "str::compare       a b -- cmp             Compare (-1, 0, 1)\n\n" str::concat -> s
+
+	s "MATH (use math)\n" str::concat -> s
+	s "---------------\n" str::concat -> s
+	s "math::sin          x -- sin(x)            Sine\n" str::concat -> s
+	s "math::cos          x -- cos(x)            Cosine\n" str::concat -> s
+	s "math::tan          x -- tan(x)            Tangent\n" str::concat -> s
+	s "math::sqrt         x -- sqrt(x)           Square root\n" str::concat -> s
+	s "math::pow          base exp -- result     Power\n" str::concat -> s
+	s "math::abs          x -- abs(x)            Absolute value\n" str::concat -> s
+	s "math::floor        x -- floor(x)          Round down\n" str::concat -> s
+	s "math::ceil         x -- ceil(x)           Round up\n" str::concat -> s
+	s "math::log          x -- log(x)            Natural log\n" str::concat -> s
+	s "math::exp          x -- exp(x)            e^x\n" str::concat -> s
+	s "math::min          a b -- min             Minimum\n" str::concat -> s
+	s "math::max          a b -- max             Maximum\n\n" str::concat -> s
+
+	s "ARRAYS (builtins)\n" str::concat -> s
+	s "-----------------\n" str::concat -> s
+	s "makes              n -- arr               Create array of size n\n" str::concat -> s
+	s "makei              n -- arr               Create int array of size n\n" str::concat -> s
+	s "makef              n -- arr               Create float array of size n\n" str::concat -> s
+	s "len                arr -- length          Array length\n" str::concat -> s
+	s "nth                arr idx -- elem        Get element at index\n" str::concat -> s
+	s "set                arr idx val -- arr     Set element (returns new arr)\n" str::concat -> s
+	s "push               arr val -- arr         Append element\n" str::concat -> s
+	s "pop                arr -- arr val         Remove and return last\n\n" str::concat -> s
+
+	s "MEMORY (use mem)\n" str::concat -> s
+	s "----------------\n" str::concat -> s
+	s "mem::alloc         size -- ptr            Allocate bytes\n" str::concat -> s
+	s "mem::free          ptr --                 Free memory\n" str::concat -> s
+	s "mem::copy          dest src len --        Copy memory\n" str::concat -> s
+	s "mem::set_i64       ptr offset val --      Write i64 at offset\n" str::concat -> s
+	s "mem::get_i64       ptr offset -- val      Read i64 at offset\n" str::concat -> s
+	s "mem::set_f64       ptr offset val --      Write f64 at offset\n" str::concat -> s
+	s "mem::get_f64       ptr offset -- val      Read f64 at offset\n\n" str::concat -> s
+
+	s "CONVERSION (use strconv)\n" str::concat -> s
+	s "------------------------\n" str::concat -> s
+	s "strconv::itoa      i -- s                 Int to string\n" str::concat -> s
+	s "strconv::ftoa      f -- s                 Float to string\n" str::concat -> s
+	s "strconv::atoi      s -- i                 String to int\n" str::concat -> s
+	s "strconv::atof      s -- f                 String to float\n" str::concat -> s
+	s "cast<i64>          f -- i                 Float to int (builtin)\n" str::concat -> s
+	s "cast<f64>          i -- f                 Int to float (builtin)\n\n" str::concat -> s
+
+	s "TIME (use time)\n" str::concat -> s
+	s "---------------\n" str::concat -> s
+	s "time::now          -- timestamp           Current Unix timestamp\n" str::concat -> s
+	s "time::sleep        ms --                  Sleep milliseconds\n" str::concat -> s
+	s "time::format       ts fmt -- s            Format timestamp\n" str::concat -> s
+	s "time::parse        s fmt -- ts            Parse time string\n\n" str::concat -> s
+
+	s "OS (use os)\n" str::concat -> s
+	s "-----------\n" str::concat -> s
+	s "os::getenv         name -- value          Get env variable\n" str::concat -> s
+	s "os::setenv         name value --          Set env variable\n" str::concat -> s
+	s "os::getcwd         -- path                Current directory\n" str::concat -> s
+	s "os::chdir          path --                Change directory\n" str::concat -> s
+	s "os::exit           code --                Exit program\n" str::concat -> s
+	s "os::args           -- arr                 Command line args\n\n" str::concat -> s
+
+	s "PATH (use path)\n" str::concat -> s
+	s "---------------\n" str::concat -> s
+	s "path::join         a b -- path            Join path components\n" str::concat -> s
+	s "path::dirname      p -- dir               Directory part\n" str::concat -> s
+	s "path::basename     p -- name              Filename part\n" str::concat -> s
+	s "path::extension    p -- ext               File extension\n" str::concat -> s
+	s "path::is_absolute  p -- bool              Check if absolute\n\n" str::concat -> s
+
+	s "RANDOM (use rand)\n" str::concat -> s
+	s "-----------------\n" str::concat -> s
+	s "rand::int          -- i                   Random integer\n" str::concat -> s
+	s "rand::float        -- f                   Random float 0.0-1.0\n" str::concat -> s
+	s "rand::range        min max -- i           Random in range\n" str::concat -> s
+	s "rand::seed         s --                   Set random seed\n\n" str::concat -> s
+
+	s "STRING BUILDER (use sb)\n" str::concat -> s
+	s "-----------------------\n" str::concat -> s
+	s "sb::new            -- builder             Create builder\n" str::concat -> s
+	s "sb::append         b s -- b               Append string\n" str::concat -> s
+	s "sb::append_char    b c -- b               Append char code\n" str::concat -> s
+	s "sb::to_string      b -- s                 Get result string\n" str::concat -> s
+	s "sb::clear          b -- b                 Clear builder\n" str::concat -> s
+	s "sb::len            b -- len               Current length\n\n" str::concat -> s
+
+	s "OUTPUT (builtins)\n" str::concat -> s
+	s "-----------------\n" str::concat -> s
+	s "print              val --                 Print value (no newline)\n" str::concat -> s
+	s "nl                 --                     Print newline\n" str::concat -> s
+	s ". (dot)            val --                 Same as print\n\n" str::concat -> s
+
+	s "STACK OPERATIONS (builtins)\n" str::concat -> s
+	s "---------------------------\n" str::concat -> s
+	s "dup                a -- a a               Duplicate top\n" str::concat -> s
+	s "dup2               a b -- a b a b         Duplicate top two\n" str::concat -> s
+	s "drop               a --                   Remove top\n" str::concat -> s
+	s "swap               a b -- b a             Swap top two\n" str::concat -> s
+	s "over               a b -- a b a           Copy second to top\n" str::concat -> s
+	s "rot                a b c -- b c a         Rotate top three\n" str::concat -> s
+	s "nip                a b -- b               Remove second\n" str::concat -> s
+	s "tuck               a b -- b a b           Copy top under second\n" str::concat -> s
+	s "-> var             a --                   Bind to variable\n" str::concat -> s
+	s "-> _               a --                   Discard value\n" str::concat -> s
+
+	s
+}
+
+fn get_snippet_content(uri:str -- content:str) {
+	-> uri
+	uri "quadrate://snippets/hello-world" str::compare 0 == if {
+		"// Hello World\nfn main() {\n\t42 print nl\n}"
+	} else {
+		uri "quadrate://snippets/file-io" str::compare 0 == if {
+			"// File I/O\nuse io\n\nfn read_example() {\n\tpath io::read_file switch {\n\t\tOk { -> content content print nl }\n\t\t_ { 1 os::exit }\n\t}\n}\n\nfn write_example() {\n\tpath data io::write_file!\n}"
+		} else {
+			uri "quadrate://snippets/error-handling" str::compare 0 == if {
+				"// Error Handling\n\n// Method 1: ! suffix panics on error\npath io::read_file! -> content\n\n// Method 2: switch handles error\npath io::read_file switch {\n\tOk { -> content }\n\tErr { err -> code -> msg }\n}"
+			} else {
+				uri "quadrate://snippets/structs" str::compare 0 == if {
+					"// Structs\n\nstruct Point {\n\tx: f64\n\ty: f64\n}\n\nfn main() {\n\tPoint { x = 10.0 y = 20.0 } -> p\n\tp @x print nl  // 10.0\n\tp 30.0 #x -> p2 // update x\n}"
+				} else {
+					uri "quadrate://snippets/loops" str::compare 0 == if {
+						"// Loops\n\n// For loop\n0 10 1 for i { i print nl }\n\n// While loop\n0 -> x\nx 5 < while { x print nl  x 1 + -> x  x 5 < }\n\n// Loop with break\nloop { cond if { break } }"
+					} else {
+						uri "quadrate://snippets/stack-ops" str::compare 0 == if {
+							"// Stack Operations\n\n5 dup      // 5 5 (duplicate)\n1 2 swap   // 2 1 (swap top two)\n1 2 drop   // 1 (remove top)\n1 2 over   // 1 2 1 (copy second)\n1 2 3 rot  // 2 3 1 (rotate)\n1 2 nip    // 2 (remove second)\n42 -> x    // bind to variable"
+						} else {
+							uri "quadrate://guides/common-mistakes" str::compare 0 == if {
+								get_common_mistakes_content
+							} else {
+								uri "quadrate://guides/best-practices" str::compare 0 == if {
+									get_best_practices_content
+								} else {
+									uri "quadrate://guides/cheatsheet" str::compare 0 == if {
+										get_cheatsheet_content
+									} else {
+										"Resource not found"
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+}
+
+fn mcp_resources_read(id:str body:str -- response:str) {
+	-> body -> id
+	body "params" json::get_object -> _ -> params
+	params "uri" json::get_string -> found -> uri
+
+	found 0 == if {
+		id "-32602" "Missing required parameter: uri" rpc_error
+	} else {
+		uri get_snippet_content -> content
+
+		"uri" uri json::kv
+		"mimeType" "text/plain" json::kv json::join
+		"text" content json::kv json::join
+		json::obj json::arr -> contents
+
+		"contents" contents json::kv_raw json::obj -> result
+		id result rpc_result
+	}
+}
