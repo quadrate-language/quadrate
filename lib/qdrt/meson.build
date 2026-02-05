@@ -11,8 +11,13 @@ qdrt_sources = files(
 		'src/array.c',
 		'src/platform/thread.c',
 		'src/platform/mutex.c',
-		'src/platform/posix/process_posix.c',
-		'src/platform/posix/dynlib_posix.c',
+)
+
+# Platform-specific implementations
+# TODO: Add Windows implementations when porting to Windows
+qdrt_sources += files(
+    'src/platform/posix/process_posix.c',
+    'src/platform/posix/dynlib_posix.c',
 )
 
 # Platform-specific exe_path implementation

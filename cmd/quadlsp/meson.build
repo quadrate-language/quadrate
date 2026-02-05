@@ -5,11 +5,13 @@ quadlsp_sources = files(
 )
 
 # jansson_dep is declared in root meson.build
+# Include qdrt source directory for platform headers
+qdrt_src_inc = include_directories('../../lib/qdrt')
 
 quadlsp_exe = executable('quadlsp',
 	quadlsp_sources,
-	include_directories: [version_inc],
-	dependencies: [qc_dep, jansson_dep],
+	include_directories: [version_inc, qdrt_src_inc],
+	dependencies: [qc_dep, jansson_dep, qdrt_dep],
 	install: true
 )
 

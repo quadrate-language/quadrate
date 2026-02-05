@@ -22,11 +22,9 @@
 #include <qc/ast_node_test.h>
 #include <qc/error_reporter.h>
 #include <qc/semantic_validator.h>
-#include <dirent.h>
 #include <set>
 #include <sstream>
-#include <sys/stat.h>
-#include <unistd.h>
+#include "src/platform/process_platform.h"
 
 // Expand tilde (~) in file paths
 std::string expandTilde(const std::string& path) {
@@ -854,7 +852,7 @@ std::vector<QuadrateLSP::LintWarning> QuadrateLSP::runQuadlint(const std::string
 	std::vector<LintWarning> warnings;
 
 	// Write source to temp file so quadlint sees current editor content
-	std::string tempPath = "/tmp/quadlsp_lint_" + std::to_string(getpid()) + ".qd";
+	std::string tempPath = "/tmp/quadlsp_lint_" + std::to_string(process_platform_getpid()) + ".qd";
 	{
 		std::ofstream tempFile(tempPath);
 		if (!tempFile.good()) {
@@ -866,17 +864,13 @@ std::vector<QuadrateLSP::LintWarning> QuadrateLSP::runQuadlint(const std::string
 	// Build command
 	std::string command = quadlintPath_ + " \"" + tempPath + "\" 2>&1";
 
-	FILE* pipe = popen(command.c_str(), "r");
-	if (!pipe) {
+	// Execute command and capture output
+	char outputBuffer[65536];
+	int result = process_platform_exec_capture(command.c_str(), outputBuffer, sizeof(outputBuffer));
+	if (result < 0) {
 		return warnings;
 	}
-
-	char buffer[512];
-	std::string output;
-	while (fgets(buffer, sizeof(buffer), pipe) != nullptr) {
-		output += buffer;
-	}
-	pclose(pipe);
+	std::string output(outputBuffer);
 
 	// Parse output - format: "filepath:line:column: warning: message"
 	std::istringstream stream(output);
@@ -1111,7 +1105,7 @@ void QuadrateLSP::handleFormatting(const std::string& id, const std::string& uri
 	const std::string& source = it->second;
 
 	// Write source to temp file
-	std::string tempPath = "/tmp/quadlsp_fmt_" + std::to_string(getpid()) + ".qd";
+	std::string tempPath = "/tmp/quadlsp_fmt_" + std::to_string(process_platform_getpid()) + ".qd";
 	{
 		std::ofstream tempFile(tempPath);
 		if (!tempFile.good()) {
@@ -1125,22 +1119,9 @@ void QuadrateLSP::handleFormatting(const std::string& id, const std::string& uri
 
 	// Run quadfmt
 	std::string command = "quadfmt \"" + tempPath + "\" 2>/dev/null";
-	FILE* pipe = popen(command.c_str(), "r");
-	if (!pipe) {
-		std::remove(tempPath.c_str());
-		json_object_set_new(response, "result", json_array());
-		sendMessage(response);
-		json_decref(response);
-		return;
-	}
-
-	// Read formatted output
-	std::string formatted;
-	char buffer[4096];
-	while (fgets(buffer, sizeof(buffer), pipe) != nullptr) {
-		formatted += buffer;
-	}
-	int exitCode = pclose(pipe);
+	char outputBuffer[262144]; // 256KB for formatted output
+	int exitCode = process_platform_exec_capture(command.c_str(), outputBuffer, sizeof(outputBuffer));
+	std::string formatted(outputBuffer);
 	std::remove(tempPath.c_str());
 
 	// If quadfmt failed or output is empty, return no edits
@@ -2977,14 +2958,10 @@ void QuadrateLSP::handleRangeFormatting(const std::string& id, const std::string
 			if (written == static_cast<ssize_t>(documentText.size())) {
 				// Run quadfmt
 				std::string cmd = "quadfmt " + std::string(tmpPath) + " 2>/dev/null";
-				FILE* pipe = popen(cmd.c_str(), "r");
-				if (pipe) {
-					std::string formattedText;
-					char buffer[4096];
-					while (fgets(buffer, sizeof(buffer), pipe) != nullptr) {
-						formattedText += buffer;
-					}
-					pclose(pipe);
+				char outputBuffer[262144]; // 256KB for formatted output
+				int exitCode = process_platform_exec_capture(cmd.c_str(), outputBuffer, sizeof(outputBuffer));
+				if (exitCode == 0) {
+					std::string formattedText(outputBuffer);
 
 					if (!formattedText.empty()) {
 						// Split both original and formatted into lines
@@ -3540,48 +3517,42 @@ void QuadrateLSP::handleLinkedEditingRange(
 	json_decref(response);
 }
 
-// Collect .qd files in a directory recursively
+// Collect .qd files in a directory recursively using std::filesystem
 std::vector<std::string> QuadrateLSP::collectWorkspaceFiles(const std::string& dir, int maxDepth) {
 	std::vector<std::string> files;
 	if (maxDepth <= 0 || dir.empty()) {
 		return files;
 	}
 
-	DIR* d = opendir(dir.c_str());
-	if (!d) {
-		return files;
-	}
-
-	struct dirent* entry;
-	while ((entry = readdir(d)) != nullptr) {
-		std::string name = entry->d_name;
-		if (name == "." || name == "..") {
-			continue;
+	try {
+		std::filesystem::path dirPath(dir);
+		if (!std::filesystem::exists(dirPath) || !std::filesystem::is_directory(dirPath)) {
+			return files;
 		}
 
-		std::string fullPath = dir + "/" + name;
+		for (const auto& entry : std::filesystem::directory_iterator(dirPath)) {
+			std::string name = entry.path().filename().string();
 
-		// Skip hidden directories and common non-source directories
-		if (name[0] == '.' || name == "node_modules" || name == "build" || name == "dist" || name == "target") {
-			continue;
-		}
+			// Skip hidden directories and common non-source directories
+			if (name[0] == '.' || name == "node_modules" || name == "build" || name == "dist" || name == "target") {
+				continue;
+			}
 
-		struct stat st;
-		if (stat(fullPath.c_str(), &st) == 0) {
-			if (S_ISDIR(st.st_mode)) {
+			if (entry.is_directory()) {
 				// Recursively collect from subdirectory
-				auto subFiles = collectWorkspaceFiles(fullPath, maxDepth - 1);
+				auto subFiles = collectWorkspaceFiles(entry.path().string(), maxDepth - 1);
 				files.insert(files.end(), subFiles.begin(), subFiles.end());
-			} else if (S_ISREG(st.st_mode)) {
+			} else if (entry.is_regular_file()) {
 				// Check if it's a .qd file
-				if (name.length() > 3 && name.substr(name.length() - 3) == ".qd") {
-					files.push_back(fullPath);
+				if (entry.path().extension() == ".qd") {
+					files.push_back(entry.path().string());
 				}
 			}
 		}
+	} catch (const std::filesystem::filesystem_error&) {
+		// Silently ignore filesystem errors (permission denied, etc.)
 	}
 
-	closedir(d);
 	return files;
 }
 
