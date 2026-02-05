@@ -67,7 +67,7 @@ define do_build
 	@echo "Creating static libraries..."
 	@(cd $(1)/lib/qdrt && ar rcs libqdrt.a $$(ar -t libqdrt_static.a) && cp libqdrt.a ../../../../dist/lib/) && echo "  libqdrt.a"
 	@(cd $(1)/lib/qd && ar rcs libqd.a $$(ar -t libqd_static.a) && cp libqd.a ../../../../dist/lib/) && echo "  libqd.a"
-	@for lib in qdfmt qdio qdmath qdmem qdos qdsignal qdstr qdstrconv qdtime qdthread qdtesting; do \
+	@for lib in qdfmt qdio qdmath qdmem qdos qdsignal qdstr qdstrconv qdtime qdthread qdtesting qdtty; do \
 		(cd $(1)/lib/$$lib && ar rcs lib$${lib}_regular.a $$(ar -t lib$$lib.a) && cp lib$${lib}_regular.a ../../../../dist/lib/lib$$lib.a) && echo "  lib$$lib.a"; \
 	done
 	@for lib in qdthread; do \

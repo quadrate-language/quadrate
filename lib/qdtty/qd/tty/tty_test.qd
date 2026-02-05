@@ -1,0 +1,194 @@
+use testing
+use tty
+
+// Basic functionality tests
+
+test "is_stdout returns 0 or 1" {
+	tty::is_stdout -> result
+	result 0 >= testing::assert_true
+	result 1 <= testing::assert_true
+}
+
+test "is_stderr returns 0 or 1" {
+	tty::is_stderr -> result
+	result 0 >= testing::assert_true
+	result 1 <= testing::assert_true
+}
+
+test "is_stdin returns 0 or 1" {
+	tty::is_stdin -> result
+	result 0 >= testing::assert_true
+	result 1 <= testing::assert_true
+}
+
+test "size returns non-negative values" {
+	tty::size -> cols -> rows
+	rows 0 >= testing::assert_true
+	cols 0 >= testing::assert_true
+}
+
+test "width returns non-negative value" {
+	tty::width -> cols
+	cols 0 >= testing::assert_true
+}
+
+test "height returns non-negative value" {
+	tty::height -> rows
+	rows 0 >= testing::assert_true
+}
+
+// Consistency tests
+
+test "is_stdout returns exact boolean" {
+	tty::is_stdout -> result
+	result 0 == result 1 == or testing::assert_true
+}
+
+test "is_stderr returns exact boolean" {
+	tty::is_stderr -> result
+	result 0 == result 1 == or testing::assert_true
+}
+
+test "is_stdin returns exact boolean" {
+	tty::is_stdin -> result
+	result 0 == result 1 == or testing::assert_true
+}
+
+test "width matches size cols" {
+	tty::size -> cols -> rows
+	tty::width -> width
+	width cols testing::assert_eq
+}
+
+test "height matches size rows" {
+	tty::size -> cols -> rows
+	tty::height -> height
+	height rows testing::assert_eq
+}
+
+test "size is consistent across calls" {
+	tty::size -> cols1 -> rows1
+	tty::size -> cols2 -> rows2
+	rows1 rows2 testing::assert_eq
+	cols1 cols2 testing::assert_eq
+}
+
+test "width is consistent across calls" {
+	tty::width -> w1
+	tty::width -> w2
+	w1 w2 testing::assert_eq
+}
+
+test "height is consistent across calls" {
+	tty::height -> h1
+	tty::height -> h2
+	h1 h2 testing::assert_eq
+}
+
+test "is_stdout is consistent across calls" {
+	tty::is_stdout -> r1
+	tty::is_stdout -> r2
+	r1 r2 testing::assert_eq
+}
+
+test "is_stderr is consistent across calls" {
+	tty::is_stderr -> r1
+	tty::is_stderr -> r2
+	r1 r2 testing::assert_eq
+}
+
+test "is_stdin is consistent across calls" {
+	tty::is_stdin -> r1
+	tty::is_stdin -> r2
+	r1 r2 testing::assert_eq
+}
+
+// Boundary and sanity tests
+
+test "terminal dimensions are reasonable if tty" {
+	// If stdout is a tty, dimensions should be reasonable (1-10000)
+	tty::is_stdout if {
+		tty::size -> cols -> rows
+		rows 1 >= testing::assert_true
+		rows 10000 <= testing::assert_true
+		cols 1 >= testing::assert_true
+		cols 10000 <= testing::assert_true
+	}
+}
+
+test "width is reasonable if tty" {
+	tty::is_stdout if {
+		tty::width -> cols
+		cols 1 >= testing::assert_true
+		cols 10000 <= testing::assert_true
+	}
+}
+
+test "height is reasonable if tty" {
+	tty::is_stdout if {
+		tty::height -> rows
+		rows 1 >= testing::assert_true
+		rows 10000 <= testing::assert_true
+	}
+}
+
+// Multiple calls in sequence
+
+test "multiple size calls return same values" {
+	tty::size -> c1 -> r1
+	tty::size -> c2 -> r2
+	tty::size -> c3 -> r3
+	r1 r2 testing::assert_eq
+	r2 r3 testing::assert_eq
+	c1 c2 testing::assert_eq
+	c2 c3 testing::assert_eq
+}
+
+test "interleaved calls are consistent" {
+	tty::width -> w1
+	tty::height -> h1
+	tty::size -> cols -> rows
+	tty::width -> w2
+	tty::height -> h2
+
+	w1 cols testing::assert_eq
+	w2 cols testing::assert_eq
+	h1 rows testing::assert_eq
+	h2 rows testing::assert_eq
+}
+
+// Test all three streams in one test
+
+test "all stream detections work" {
+	tty::is_stdout -> out
+	tty::is_stderr -> err
+	tty::is_stdin -> in
+
+	// All should be valid booleans
+	out 0 >= testing::assert_true
+	out 1 <= testing::assert_true
+	err 0 >= testing::assert_true
+	err 1 <= testing::assert_true
+	in 0 >= testing::assert_true
+	in 1 <= testing::assert_true
+}
+
+// Non-negative dimension tests with different approaches
+
+test "size rows is not negative" {
+	tty::size -> cols -> rows
+	rows -1 > testing::assert_true
+}
+
+test "size cols is not negative" {
+	tty::size -> cols -> rows
+	cols -1 > testing::assert_true
+}
+
+test "width is not negative" {
+	tty::width -1 > testing::assert_true
+}
+
+test "height is not negative" {
+	tty::height -1 > testing::assert_true
+}

@@ -162,6 +162,7 @@ fn tool_list_modules(ds:ptr -- result:str) {
 	ds "testing" module_entry json::join
 	ds "thread" module_entry json::join
 	ds "time" module_entry json::join
+	ds "tty" module_entry json::join
 	ds "unicode" module_entry json::join
 	json::arr tool_text_result
 }
@@ -308,6 +309,7 @@ fn tool_search(ds:ptr args:str -- result:str) {
 		ds "testing" query r search_module -> r
 		ds "thread" query r search_module -> r
 		ds "time" query r search_module -> r
+		ds "tty" query r search_module -> r
 		ds "unicode" query r search_module -> r
 
 		r tool_text_result
@@ -527,6 +529,7 @@ fn tool_find_function(ds:ptr args:str -- result:str) {
 			ds "testing" query r count fuzzy_find_in_module -> count -> r
 			ds "thread" query r count fuzzy_find_in_module -> count -> r
 			ds "time" query r count fuzzy_find_in_module -> count -> r
+			ds "tty" query r count fuzzy_find_in_module -> count -> r
 			ds "unicode" query r count fuzzy_find_in_module -> count -> r
 		}
 
@@ -606,6 +609,7 @@ fn tool_search_by_signature(ds:ptr args:str -- result:str) {
 		ds "testing" pattern r count search_by_sig_in_module -> count -> r
 		ds "thread" pattern r count search_by_sig_in_module -> count -> r
 		ds "time" pattern r count search_by_sig_in_module -> count -> r
+		ds "tty" pattern r count search_by_sig_in_module -> count -> r
 		ds "unicode" pattern r count search_by_sig_in_module -> count -> r
 
 		count 0 == if {

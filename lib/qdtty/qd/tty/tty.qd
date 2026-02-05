@@ -1,0 +1,47 @@
+/// Terminal detection and information.
+/// Provides functions to check if file descriptors are connected to terminals
+/// and to get terminal dimensions.
+///
+/// @example
+/// tty::is_stdout if {
+///     term::Green print "Success" print term::Reset print nl
+/// } else {
+///     "Success" print nl
+/// }
+
+import "libqdtty.a" as "tty" {
+	/// Check if stdout is connected to a terminal.
+	/// @return is_tty i64 1 if terminal, 0 otherwise
+	/// @example tty::is_stdout if { "Colors enabled" print nl }
+	pub fn is_stdout( -- is_tty:i64)
+
+	/// Check if stderr is connected to a terminal.
+	/// @return is_tty i64 1 if terminal, 0 otherwise
+	/// @example tty::is_stderr if { "Error output to terminal" print nl }
+	pub fn is_stderr( -- is_tty:i64)
+
+	/// Check if stdin is connected to a terminal.
+	/// Useful for detecting if input is piped.
+	/// @return is_tty i64 1 if terminal, 0 otherwise
+	/// @example tty::is_stdin 0 == if { "Reading from pipe" print nl }
+	pub fn is_stdin( -- is_tty:i64)
+
+	/// Get terminal dimensions.
+	/// Returns 0, 0 if not a terminal.
+	/// @return rows i64 Terminal height in rows
+	/// @return cols i64 Terminal width in columns
+	/// @example tty::size -> cols -> rows
+	pub fn size( -- rows:i64 cols:i64)
+
+	/// Get terminal width in columns.
+	/// Returns 0 if not a terminal.
+	/// @return cols i64 Terminal width
+	/// @example tty::width -> cols
+	pub fn width( -- cols:i64)
+
+	/// Get terminal height in rows.
+	/// Returns 0 if not a terminal.
+	/// @return rows i64 Terminal height
+	/// @example tty::height -> rows
+	pub fn height( -- rows:i64)
+}
