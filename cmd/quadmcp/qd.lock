@@ -1,6 +1,14 @@
 {
   "packages": [
     {
+      "integrity": "5ab2d7bf57bfe72e7dfc28a475a1e210c32e5274",
+      "isPath": false,
+      "name": "fuzzy",
+      "ref": "master",
+      "resolved": "5ab2d7bf57bfe72e7dfc28a475a1e210c32e5274",
+      "url": "https://github.com/quadrate-language/fuzzy"
+    },
+    {
       "integrity": "3332abd07246fd9bb715dab46571bec2dca77871",
       "isPath": false,
       "name": "http",

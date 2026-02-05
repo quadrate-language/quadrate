@@ -13,6 +13,7 @@
 /// Test HTTP:
 ///   curl -X POST http://localhost:3000/mcp -d '{"jsonrpc":"2.0","method":"initialize","id":1}'
 use flag
+use fuzzy
 use http
 use io
 use json
@@ -68,18 +69,14 @@ fn load_docs( -- ds:ptr) {
 	"" -> language
 
 	docs_dir "/builtins.json" str::concat io::read_file switch {
-		Ok {
-			-> builtins
-		}
+		Ok { -> builtins }
 		_ {
 			"{}" -> builtins
 		}
 	}
 
 	docs_dir "/language.json" str::concat io::read_file switch {
-		Ok {
-			-> language
-		}
+		Ok { -> language }
 		_ {
 			"{}" -> language
 		}
@@ -313,6 +310,27 @@ fn tool_get_module(ds:ptr args:str -- result:str) {
 	}
 }
 
+fn find_in_array(arr:str name:str -- item:str found:i64) {
+	-> name -> arr
+	arr json::array_len -> len
+	0 -> i
+	"" -> result
+	0 -> found
+	i len < found 0 == * while {
+		arr i json::array_get_object -> ok -> obj
+		ok if {
+			obj "name" json::get_string -> ok -> obj_name
+			ok obj_name name str::compare 0 == * if {
+				obj -> result
+				1 -> found
+			}
+		}
+		i 1 + -> i
+		i len < found 0 == *
+	}
+	result found
+}
+
 fn tool_get_function(ds:ptr args:str -- result:str) {
 	-> args -> ds
 	args "module" json::get_string -> found -> mod_name
@@ -328,9 +346,24 @@ fn tool_get_function(ds:ptr args:str -- result:str) {
 			found 0 == if {
 				"Module '" mod_name str::concat "' not found" str::concat tool_error_result
 			} else {
-				"Module: " mod_name str::concat "\nFunction to find: " str::concat fn_name str::concat "\n\nFunctions in module:\n" str::concat funcs str::concat tool_text_result
+				funcs fn_name find_in_array -> found -> func_obj
+				found if {
+					func_obj tool_text_result
+				} else {
+					"Function '" fn_name str::concat "' not found in module '" str::concat mod_name str::concat "'" str::concat tool_error_result
+				}
 			}
 		}
+	}
+}
+
+fn search_module(ds:ptr name:str query:str result:str -- new_result:str) {
+	-> result -> query -> name -> ds
+	ds name load_module -> m
+	m query fuzzy::contains_ci if {
+		result "=== " str::concat name str::concat " module ===\n" str::concat m str::concat "\n\n" str::concat
+	} else {
+		result
 	}
 }
 
@@ -340,50 +373,38 @@ fn tool_search(ds:ptr args:str -- result:str) {
 	found 0 == if {
 		"Missing required parameter: query" tool_error_result
 	} else {
-		query str::lower -> query_lower
+		"Search results for: " query str::concat "\n\n" str::concat -> r
 
-		"Search results for: " query str::concat "\n\n" str::concat -> result_text
-
-		ds @builtins query_lower str::contains if {
-			result_text "=== Builtins (matching) ===\n" str::concat ds @builtins str::concat "\n\n" str::concat -> result_text
+		ds @builtins query fuzzy::contains_ci if {
+			r "=== Builtins ===\n" str::concat ds @builtins str::concat "\n\n" str::concat -> r
 		}
 
-		ds "math" load_module -> m
-		m query_lower str::contains if {
-			result_text "=== math module ===\n" str::concat m str::concat "\n\n" str::concat -> result_text
+		ds @language query fuzzy::contains_ci if {
+			r "=== Language Reference ===\n" str::concat ds @language str::concat "\n\n" str::concat -> r
 		}
 
-		ds "str" load_module -> m
-		m query_lower str::contains if {
-			result_text "=== str module ===\n" str::concat m str::concat "\n\n" str::concat -> result_text
-		}
+		ds "bits" query r search_module -> r
+		ds "bytes" query r search_module -> r
+		ds "flag" query r search_module -> r
+		ds "fmt" query r search_module -> r
+		ds "io" query r search_module -> r
+		ds "limits" query r search_module -> r
+		ds "math" query r search_module -> r
+		ds "mem" query r search_module -> r
+		ds "os" query r search_module -> r
+		ds "path" query r search_module -> r
+		ds "rand" query r search_module -> r
+		ds "sb" query r search_module -> r
+		ds "signal" query r search_module -> r
+		ds "str" query r search_module -> r
+		ds "strconv" query r search_module -> r
+		ds "term" query r search_module -> r
+		ds "testing" query r search_module -> r
+		ds "thread" query r search_module -> r
+		ds "time" query r search_module -> r
+		ds "unicode" query r search_module -> r
 
-		ds "io" load_module -> m
-		m query_lower str::contains if {
-			result_text "=== io module ===\n" str::concat m str::concat "\n\n" str::concat -> result_text
-		}
-
-		ds "os" load_module -> m
-		m query_lower str::contains if {
-			result_text "=== os module ===\n" str::concat m str::concat "\n\n" str::concat -> result_text
-		}
-
-		ds "mem" load_module -> m
-		m query_lower str::contains if {
-			result_text "=== mem module ===\n" str::concat m str::concat "\n\n" str::concat -> result_text
-		}
-
-		ds "time" load_module -> m
-		m query_lower str::contains if {
-			result_text "=== time module ===\n" str::concat m str::concat "\n\n" str::concat -> result_text
-		}
-
-		ds "fmt" load_module -> m
-		m query_lower str::contains if {
-			result_text "=== fmt module ===\n" str::concat m str::concat "\n\n" str::concat -> result_text
-		}
-
-		result_text tool_text_result
+		r tool_text_result
 	}
 }
 
@@ -396,13 +417,62 @@ fn tool_get_builtins(ds:ptr -- result:str) {
 	}
 }
 
+fn find_builtin(builtins:str name:str -- item:str found:i64) {
+	-> name -> builtins
+	builtins "categories" json::get_array -> ok -> cats
+	ok 0 == if {
+		"" 0
+	} else {
+		cats json::array_len -> num_cats
+		0 -> i
+		"" -> result
+		0 -> found
+		i num_cats < found 0 == * while {
+			cats i json::array_get_object -> ok -> cat
+			ok if {
+				cat "instructions" json::get_array -> ok -> instrs
+				ok if {
+					instrs json::array_len -> num_instrs
+					0 -> j
+					j num_instrs < found 0 == * while {
+						instrs j json::array_get_object -> ok -> instr
+						ok if {
+							instr "name" json::get_string -> ok -> instr_name
+							ok instr_name name str::compare 0 == * if {
+								instr -> result
+								1 -> found
+							} else {
+								instr "alias" json::get_string -> ok -> alias
+								ok alias name str::compare 0 == * if {
+									instr -> result
+									1 -> found
+								}
+							}
+						}
+						j 1 + -> j
+						j num_instrs < found 0 == *
+					}
+				}
+			}
+			i 1 + -> i
+			i num_cats < found 0 == *
+		}
+		result found
+	}
+}
+
 fn tool_get_builtin(ds:ptr args:str -- result:str) {
 	-> args -> ds
 	args "name" json::get_string -> found -> name
 	found 0 == if {
 		"Missing required parameter: name" tool_error_result
 	} else {
-		"Looking for builtin: " name str::concat "\n\nAll builtins (search for your instruction):\n" str::concat ds @builtins str::concat tool_text_result
+		ds @builtins name find_builtin -> found -> builtin_obj
+		found if {
+			builtin_obj tool_text_result
+		} else {
+			"Builtin '" name str::concat "' not found. Try: dup, swap, add, +, ==, etc." str::concat tool_error_result
+		}
 	}
 }
 
@@ -425,9 +495,41 @@ fn tool_get_keyword(ds:ptr args:str -- result:str) {
 		found 0 == if {
 			"Language reference not available" tool_error_result
 		} else {
-			"Looking for keyword: " name str::concat "\n\nKeywords:\n" str::concat keywords str::concat tool_text_result
+			keywords name find_in_array -> found -> kw_obj
+			found if {
+				kw_obj tool_text_result
+			} else {
+				"Keyword '" name str::concat "' not found. Try: fn, if, else, loop, while, for, struct, use, const, pub" str::concat tool_error_result
+			}
 		}
 	}
+}
+
+fn find_with_alias(arr:str name:str -- item:str found:i64) {
+	-> name -> arr
+	arr json::array_len -> len
+	0 -> i
+	"" -> result
+	0 -> found
+	i len < found 0 == * while {
+		arr i json::array_get_object -> ok -> obj
+		ok if {
+			obj "name" json::get_string -> ok -> obj_name
+			ok obj_name name str::compare 0 == * if {
+				obj -> result
+				1 -> found
+			} else {
+				obj "alias" json::get_string -> ok -> alias
+				ok alias name str::compare 0 == * if {
+					obj -> result
+					1 -> found
+				}
+			}
+		}
+		i 1 + -> i
+		i len < found 0 == *
+	}
+	result found
 }
 
 fn tool_get_operator(ds:ptr args:str -- result:str) {
@@ -440,7 +542,12 @@ fn tool_get_operator(ds:ptr args:str -- result:str) {
 		found 0 == if {
 			"Language reference not available" tool_error_result
 		} else {
-			"Looking for operator: " name str::concat "\n\nOperators:\n" str::concat operators str::concat tool_text_result
+			operators name find_with_alias -> found -> op_obj
+			found if {
+				op_obj tool_text_result
+			} else {
+				"Operator '" name str::concat "' not found. Try: +, -, *, /, %, ==, !=, <, >, ->" str::concat tool_error_result
+			}
 		}
 	}
 }
@@ -572,15 +679,11 @@ fn extract_id(body:str -- id:str) {
 
 fn run_stdio(ds:ptr -- ) {
 	-> ds
-	1 -> running
-	running while {
+	loop {
 		io::readline switch {
 			Ok { -> line line str::len 0 > if { line "method" json::get_string -> found -> method found 0 == if { "null" "-32600" "Invalid request: missing method" rpc_error print nl io::flush } else { line extract_id -> id ds method id line dispatch -> response response str::len 0 > if { response print nl io::flush } } } }
-			_ {
-				0 -> running
-			}
+			_ { break }
 		}
-		running
 	}
 }
 

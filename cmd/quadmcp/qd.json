@@ -3,6 +3,7 @@
 	"version": "0.1.0",
 	"description": "MCP (Model Context Protocol) server in Quadrate",
 	"dependencies": {
+		"fuzzy": "https://github.com/quadrate-language/fuzzy",
 		"http": "https://github.com/quadrate-language/http",
 		"json": "https://github.com/quadrate-language/json"
 	}
