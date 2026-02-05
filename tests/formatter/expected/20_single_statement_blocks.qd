@@ -1,0 +1,8 @@
+fn test() {
+	defer { file close }
+	true if { "yes" print }
+	false if { "no" print } else { "yes" print }
+	x switch {
+		Ok { -> val } _ { 0 }
+	}
+}

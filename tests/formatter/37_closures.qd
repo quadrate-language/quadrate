@@ -1,0 +1,9 @@
+fn main() {
+	fn(x:i64 -- r:i64) { 2 * } -> double
+	fn(a:i64 b:i64 -- r:i64) { + } -> add
+	fn() { "hello" print nl } -> greet
+
+	5 double call print nl
+	3 4 add call print nl
+	greet call
+}

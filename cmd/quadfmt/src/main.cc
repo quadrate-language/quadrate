@@ -16,6 +16,9 @@ struct Options {
 	bool help = false;
 	bool version = false;
 	bool inPlace = false;
+	int lineWidth = -1;        // -1 means use default or config file
+	bool sortImports = true;   // default on
+	bool noSortImports = false;
 };
 
 void printHelp() {
@@ -23,16 +26,27 @@ void printHelp() {
 	std::cout << "Formats Quadrate source files with consistent style.\n\n";
 	std::cout << "Usage: quadfmt [options] <file|directory>...\n\n";
 	std::cout << "Options:\n";
-	std::cout << "  -h, --help       Show this help message\n";
-	std::cout << "  -v, --version    Show version information\n";
-	std::cout << "  -c, --check      Check if files are formatted (exit 1 if not)\n";
-	std::cout << "  -w, --write      Format files in-place\n";
+	std::cout << "  -h, --help           Show this help message\n";
+	std::cout << "  -v, --version        Show version information\n";
+	std::cout << "  -c, --check          Check if files are formatted (exit 1 if not)\n";
+	std::cout << "  -w, --write          Format files in-place\n";
+	std::cout << "  --line-width <N>     Max line width (default: 100)\n";
+	std::cout << "  --no-sort-imports    Don't sort use statements\n";
+	std::cout << "\n";
+	std::cout << "Configuration:\n";
+	std::cout << "  Options can be set in .quadfmt.json (searches current dir and parents):\n";
+	std::cout << "  {\n";
+	std::cout << "    \"lineWidth\": 100,\n";
+	std::cout << "    \"sortImports\": true,\n";
+	std::cout << "    \"alignStructFields\": true\n";
+	std::cout << "  }\n";
 	std::cout << "\n";
 	std::cout << "Examples:\n";
 	std::cout << "  quadfmt file.qd              Format to stdout\n";
 	std::cout << "  quadfmt -w file.qd           Format in-place\n";
 	std::cout << "  quadfmt -w src/              Format all .qd files in directory recursively\n";
 	std::cout << "  quadfmt -c *.qd              Check if files need formatting\n";
+	std::cout << "  quadfmt --line-width 80 f.qd Format with 80 char line width\n";
 }
 
 void printVersion() {
@@ -53,6 +67,14 @@ bool parseArgs(int argc, char* argv[], Options& opts) {
 			opts.check = true;
 		} else if (arg == "-w" || arg == "--write") {
 			opts.inPlace = true;
+		} else if (arg == "--line-width") {
+			if (i + 1 >= argc) {
+				std::cerr << "quadfmt: --line-width requires a value\n";
+				return false;
+			}
+			opts.lineWidth = std::stoi(argv[++i]);
+		} else if (arg == "--no-sort-imports") {
+			opts.noSortImports = true;
 		} else if (arg[0] == '-') {
 			std::cerr << "quadfmt: unknown option: " << arg << "\n";
 			std::cerr << "Try 'quadfmt --help' for more information.\n";
@@ -71,7 +93,7 @@ bool parseArgs(int argc, char* argv[], Options& opts) {
 	return true;
 }
 
-bool formatFile(const std::string& filename, const Options& opts) {
+bool formatFile(const std::string& filename, const Options& opts, const FormatOptions& fmtOpts) {
 	try {
 		// Read source file
 		std::string source = qdcli::readFile(filename);
@@ -91,8 +113,8 @@ bool formatFile(const std::string& filename, const Options& opts) {
 			return false;
 		}
 
-		// Format using source-based formatter
-		std::string formatted = formatSource(source);
+		// Format using source-based formatter with options
+		std::string formatted = formatSource(source, fmtOpts);
 
 		// Validate formatted output by parsing it again
 		Ast validationAst;
@@ -156,9 +178,20 @@ int main(int argc, char* argv[]) {
 		allFiles.insert(allFiles.end(), files.begin(), files.end());
 	}
 
+	// Build format options from config file and command-line
+	FormatOptions fmtOpts = FormatOptions::loadFromFile(".");
+
+	// Command-line options override config file
+	if (opts.lineWidth > 0) {
+		fmtOpts.lineWidth = opts.lineWidth;
+	}
+	if (opts.noSortImports) {
+		fmtOpts.sortImports = false;
+	}
+
 	bool allSuccess = true;
 	for (const auto& file : allFiles) {
-		if (!formatFile(file, opts)) {
+		if (!formatFile(file, opts, fmtOpts)) {
 			allSuccess = false;
 		}
 	}

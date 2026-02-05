@@ -1,0 +1,21 @@
+fn helper() {
+	1 print nl
+}
+
+fn process(x:i64 -- y:i64) {
+	x 2 *
+}
+
+fn complex_fn(a:i64 b:i64 c:i64 -- result:i64)! {
+	a 0 < if { "negative a" 1 panic }
+	a b + c *
+}
+
+fn main() {
+	helper
+	5 process print nl
+	1 2 3 complex_fn switch {
+		Ok { -> r r print nl }
+		_ { err drop drop "error" print nl }
+	}
+}

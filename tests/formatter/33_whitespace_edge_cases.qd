@@ -1,0 +1,7 @@
+fn test() {
+	1     2        +   print   nl
+}
+
+fn test2() {
+	1 print nl
+}

@@ -1,10 +1,181 @@
 #include <algorithm>
 #include <cctype>
+#include <cstdlib>
+#include <fstream>
 #include <qc/formatter.h>
 #include <sstream>
+#include <unistd.h>
 #include <vector>
 
+// Use simple manual JSON parsing to avoid jansson dependency in libqc
+#define HAS_JANSSON 0
+
 namespace Qd {
+
+	// ============================================================
+	// FormatOptions implementation
+	// ============================================================
+
+	static std::string findConfigFile(const std::string& startDir) {
+		std::string dir = startDir;
+		if (dir.empty()) {
+			char* cwd = getcwd(nullptr, 0);
+			if (cwd) {
+				dir = cwd;
+				free(cwd);
+			} else {
+				return "";
+			}
+		}
+
+		// Walk up directory tree looking for .quadfmt.json
+		while (!dir.empty() && dir != "/") {
+			std::string configPath = dir + "/.quadfmt.json";
+			std::ifstream f(configPath);
+			if (f.good()) {
+				return configPath;
+			}
+			// Go to parent directory
+			size_t lastSlash = dir.rfind('/');
+			if (lastSlash == std::string::npos) {
+				break;
+			}
+			dir = dir.substr(0, lastSlash);
+		}
+		return "";
+	}
+
+	bool FormatOptions::configExists(const std::string& startDir) {
+		return !findConfigFile(startDir).empty();
+	}
+
+	FormatOptions FormatOptions::loadFromFile(const std::string& startDir) {
+		FormatOptions opts;
+		std::string configPath = findConfigFile(startDir);
+		if (configPath.empty()) {
+			return opts;
+		}
+
+	// Simple manual JSON parsing for basic options
+		std::ifstream f(configPath);
+		std::string content((std::istreambuf_iterator<char>(f)), std::istreambuf_iterator<char>());
+
+		// Look for "lineWidth": <number>
+		size_t pos = content.find("\"lineWidth\"");
+		if (pos != std::string::npos) {
+			pos = content.find(':', pos);
+			if (pos != std::string::npos) {
+				pos++;
+				while (pos < content.length() && std::isspace(content[pos])) pos++;
+				int val = 0;
+				while (pos < content.length() && std::isdigit(content[pos])) {
+					val = val * 10 + (content[pos] - '0');
+					pos++;
+				}
+				if (val > 0) {
+					opts.lineWidth = val;
+				}
+			}
+		}
+
+		// Look for "sortImports": true/false
+		pos = content.find("\"sortImports\"");
+		if (pos != std::string::npos) {
+			pos = content.find(':', pos);
+			if (pos != std::string::npos) {
+				if (content.find("false", pos) < content.find(',', pos) &&
+						content.find("false", pos) < content.find('}', pos)) {
+					opts.sortImports = false;
+				}
+			}
+		}
+
+		// Look for "alignStructFields": true/false
+		pos = content.find("\"alignStructFields\"");
+		if (pos != std::string::npos) {
+			pos = content.find(':', pos);
+			if (pos != std::string::npos) {
+				if (content.find("false", pos) < content.find(',', pos) &&
+						content.find("false", pos) < content.find('}', pos)) {
+					opts.alignStructFields = false;
+				}
+			}
+		}
+
+		return opts;
+	}
+
+	// ============================================================
+	// Block analysis helpers
+	// ============================================================
+
+	// Check if a block body represents a single statement
+	// Single statement = should stay on one line
+	// Rules:
+	// - Empty block: single
+	// - Single -> at end: single (e.g., "x 1 + -> x")
+	// - Single action chain with no ->: single (e.g., "err panic", "print nl")
+	// - Multiple -> or -> not at end: multiple statements
+	static bool isSingleStatement(const std::string& body) {
+		std::string trimmed = body;
+		// Trim whitespace
+		size_t start = 0;
+		while (start < trimmed.length() && std::isspace(static_cast<unsigned char>(trimmed[start]))) {
+			start++;
+		}
+		size_t end = trimmed.length();
+		while (end > start && std::isspace(static_cast<unsigned char>(trimmed[end - 1]))) {
+			end--;
+		}
+		trimmed = trimmed.substr(start, end - start);
+
+		if (trimmed.empty()) {
+			return true; // Empty block
+		}
+
+		// Count -> occurrences (outside strings)
+		int arrowCount = 0;
+		size_t lastArrowPos = std::string::npos;
+		bool inString = false;
+		for (size_t i = 0; i < trimmed.length(); i++) {
+			if (trimmed[i] == '"' && (i == 0 || trimmed[i - 1] != '\\')) {
+				inString = !inString;
+			}
+			if (!inString && i + 1 < trimmed.length() && trimmed[i] == '-' && trimmed[i + 1] == '>') {
+				arrowCount++;
+				lastArrowPos = i;
+			}
+		}
+
+		// Multiple -> means multiple statements
+		if (arrowCount > 1) {
+			return false;
+		}
+
+		// Single -> must be "at the end" (only identifiers after it)
+		if (arrowCount == 1 && lastArrowPos != std::string::npos) {
+			// Check what comes after the ->
+			std::string afterArrow = trimmed.substr(lastArrowPos + 2);
+			// Trim leading space
+			size_t s = 0;
+			while (s < afterArrow.length() && std::isspace(static_cast<unsigned char>(afterArrow[s]))) {
+				s++;
+			}
+			afterArrow = afterArrow.substr(s);
+
+			// After -> should be just identifier(s) - no more operations
+			// If there's anything other than identifiers/spaces, it's multiple statements
+			for (size_t i = 0; i < afterArrow.length(); i++) {
+				char c = afterArrow[i];
+				if (!std::isalnum(c) && c != '_' && !std::isspace(static_cast<unsigned char>(c))) {
+					return false; // Has operators or other stuff after ->
+				}
+			}
+		}
+
+		return true;
+	}
+
 
 	// Helper to trim whitespace from start and end
 	static std::string trim(const std::string& str) {
@@ -1128,6 +1299,7 @@ namespace Qd {
 		bool inString = false;
 		bool inBlockComment = false;
 		std::string current;
+		int singleStatementBlockDepth = 0; // Track nested single-statement blocks
 
 		for (size_t i = 0; i < trimmed.length(); i++) {
 			char c = trimmed[i];
@@ -1163,63 +1335,207 @@ namespace Qd {
 					next++;
 				}
 				if (next < trimmed.length() && trimmed[next] != '}') {
-					// There's content after {, split here
-					result << trim(current) << '\n';
-					current.clear();
-					i = next - 1; // Will be incremented by loop
+					// There's content after {, check if block is single statement
+					// Find the matching closing brace
+					size_t closingBrace = std::string::npos;
+					int depth = 1;
+					bool inStr = false;
+					for (size_t j = next; j < trimmed.length(); j++) {
+						if (trimmed[j] == '"' && (j == 0 || trimmed[j - 1] != '\\')) {
+							inStr = !inStr;
+						}
+						if (!inStr) {
+							if (trimmed[j] == '{') depth++;
+							else if (trimmed[j] == '}') {
+								depth--;
+								if (depth == 0) {
+									closingBrace = j;
+									break;
+								}
+							}
+						}
+					}
+
+					// If we found matching brace, check if content is single statement
+					if (closingBrace != std::string::npos) {
+						std::string blockContent = trimmed.substr(next, closingBrace - next);
+						if (isSingleStatement(blockContent)) {
+							// Single statement - don't split, continue processing
+							// (the whole block stays on one line)
+							singleStatementBlockDepth++;
+						} else {
+							// Multiple statements - split here
+							result << trim(current) << '\n';
+							current.clear();
+							i = next - 1; // Will be incremented by loop
+						}
+					} else {
+						// No matching brace found (multi-line block), split here
+						result << trim(current) << '\n';
+						current.clear();
+						i = next - 1; // Will be incremented by loop
+					}
 				}
 			} else if (c == '}') {
-				// Check if there's non-whitespace content before the brace
-				std::string beforeBrace = trim(current);
-				if (!beforeBrace.empty()) {
-					// There's content before }, put it on its own line
-					result << beforeBrace << '\n';
-					current.clear();
-				}
-				current += c;
+				// Check if we're closing a single-statement block
+				if (singleStatementBlockDepth > 0) {
+					// Don't split - keep everything on one line
+					singleStatementBlockDepth--;
+					current += c;
 
-				// Check what comes after }
-				size_t next = i + 1;
-				while (next < trimmed.length() && std::isspace(trimmed[next])) {
-					next++;
-				}
+					// Still need to check what comes after } (else block, etc.)
+					size_t next = i + 1;
+					while (next < trimmed.length() && std::isspace(trimmed[next])) {
+						next++;
+					}
 
-				if (next < trimmed.length()) {
-					// Check if it's "else {" pattern
-					std::string remaining = trimmed.substr(next);
-					if (remaining.length() >= 4 && remaining.substr(0, 4) == "else") {
-						// Find the opening brace after else
-						size_t elseEnd = next + 4;
-						while (elseEnd < trimmed.length() && std::isspace(trimmed[elseEnd])) {
-							elseEnd++;
-						}
-						if (elseEnd < trimmed.length() && trimmed[elseEnd] == '{') {
-							// It's "} else {" - emit as one line
-							current = "} else {";
-							i = elseEnd; // Skip to after the {
-
-							// Check if there's content after this {
-							size_t afterBrace = elseEnd + 1;
-							while (afterBrace < trimmed.length() && std::isspace(trimmed[afterBrace])) {
-								afterBrace++;
+					if (next < trimmed.length()) {
+						std::string remaining = trimmed.substr(next);
+						if (remaining.length() >= 4 && remaining.substr(0, 4) == "else") {
+							// Find the opening brace after else
+							size_t elseEnd = next + 4;
+							while (elseEnd < trimmed.length() && std::isspace(trimmed[elseEnd])) {
+								elseEnd++;
 							}
-							if (afterBrace < trimmed.length() && trimmed[afterBrace] != '}') {
-								// There's content after {, split here
-								result << current << '\n';
+							if (elseEnd < trimmed.length() && trimmed[elseEnd] == '{') {
+								// It's "} else {" - keep building
+								current += " else {";
+								i = elseEnd; // Skip to after the {
+
+								// Check if else block is also single-statement
+								size_t afterBrace = elseEnd + 1;
+								while (afterBrace < trimmed.length() && std::isspace(trimmed[afterBrace])) {
+									afterBrace++;
+								}
+								if (afterBrace < trimmed.length() && trimmed[afterBrace] != '}') {
+									// Find closing brace for else block
+									size_t elseClosingBrace = std::string::npos;
+									int depth = 1;
+									bool inStr = false;
+									for (size_t j = afterBrace; j < trimmed.length(); j++) {
+										if (trimmed[j] == '"' && (j == 0 || trimmed[j - 1] != '\\')) {
+											inStr = !inStr;
+										}
+										if (!inStr) {
+											if (trimmed[j] == '{') depth++;
+											else if (trimmed[j] == '}') {
+												depth--;
+												if (depth == 0) {
+													elseClosingBrace = j;
+													break;
+												}
+											}
+										}
+									}
+
+									if (elseClosingBrace != std::string::npos) {
+										std::string elseContent = trimmed.substr(afterBrace, elseClosingBrace - afterBrace);
+										if (isSingleStatement(elseContent)) {
+											// Else is also single statement, keep on one line
+											singleStatementBlockDepth++;
+										} else {
+											// Else has multiple statements, split
+											result << trim(current) << '\n';
+											current.clear();
+											i = afterBrace - 1;
+										}
+									} else {
+										// No closing brace, split
+										result << trim(current) << '\n';
+										current.clear();
+										i = afterBrace - 1;
+									}
+								}
+							}
+						}
+						// For other content after }, let normal processing handle it
+					}
+				} else {
+					// Check if there's non-whitespace content before the brace
+					std::string beforeBrace = trim(current);
+					if (!beforeBrace.empty()) {
+						// There's content before }, put it on its own line
+						result << beforeBrace << '\n';
+						current.clear();
+					}
+					current += c;
+
+					// Check what comes after }
+					size_t next = i + 1;
+					while (next < trimmed.length() && std::isspace(trimmed[next])) {
+						next++;
+					}
+
+					if (next < trimmed.length()) {
+						// Check if it's "else {" pattern
+						std::string remaining = trimmed.substr(next);
+						if (remaining.length() >= 4 && remaining.substr(0, 4) == "else") {
+							// Find the opening brace after else
+							size_t elseEnd = next + 4;
+							while (elseEnd < trimmed.length() && std::isspace(trimmed[elseEnd])) {
+								elseEnd++;
+							}
+							if (elseEnd < trimmed.length() && trimmed[elseEnd] == '{') {
+								// It's "} else {" - emit as one line
+								current = "} else {";
+								i = elseEnd; // Skip to after the {
+
+								// Check if there's content after this {
+								size_t afterBrace = elseEnd + 1;
+								while (afterBrace < trimmed.length() && std::isspace(trimmed[afterBrace])) {
+									afterBrace++;
+								}
+								if (afterBrace < trimmed.length() && trimmed[afterBrace] != '}') {
+									// Check if else block is single statement
+									size_t elseClosingBrace = std::string::npos;
+									int depth = 1;
+									bool inStr = false;
+									for (size_t j = afterBrace; j < trimmed.length(); j++) {
+										if (trimmed[j] == '"' && (j == 0 || trimmed[j - 1] != '\\')) {
+											inStr = !inStr;
+										}
+										if (!inStr) {
+											if (trimmed[j] == '{') depth++;
+											else if (trimmed[j] == '}') {
+												depth--;
+												if (depth == 0) {
+													elseClosingBrace = j;
+													break;
+												}
+											}
+										}
+									}
+
+									if (elseClosingBrace != std::string::npos) {
+										std::string elseContent = trimmed.substr(afterBrace, elseClosingBrace - afterBrace);
+										if (isSingleStatement(elseContent)) {
+											// Else is single statement, keep on one line
+											singleStatementBlockDepth++;
+										} else {
+											// Split
+											result << current << '\n';
+											current.clear();
+											i = afterBrace - 1;
+										}
+									} else {
+										// Split
+										result << current << '\n';
+										current.clear();
+										i = afterBrace - 1;
+									}
+								}
+							} else {
+								// "else" without { - just output } and continue
+								result << trim(current) << '\n';
 								current.clear();
-								i = afterBrace - 1;
+								i = next - 1;
 							}
 						} else {
-							// "else" without { - just output } and continue
+							// There's other content after }, split here
 							result << trim(current) << '\n';
 							current.clear();
 							i = next - 1;
 						}
-					} else {
-						// There's other content after }, split here
-						result << trim(current) << '\n';
-						current.clear();
-						i = next - 1;
 					}
 				}
 			} else {
@@ -1417,8 +1733,8 @@ namespace Qd {
 		return output.str();
 	}
 
-	// Normalize spacing between top-level declarations and sort use statements
-	static std::string normalizeTopLevelSpacing(const std::string& source) {
+	// Normalize spacing between top-level declarations and optionally sort use statements
+	static std::string normalizeTopLevelSpacing(const std::string& source, const FormatOptions& opts) {
 		std::istringstream input(source);
 		std::vector<std::string> lines;
 		std::string line;
@@ -1437,12 +1753,15 @@ namespace Qd {
 
 		auto flushUseStatements = [&]() {
 			if (!useStatements.empty()) {
-				// Normalize and sort use statements alphabetically
+				// Normalize use statements
 				std::vector<std::string> normalizedUses;
 				for (const auto& useStmt : useStatements) {
 					normalizedUses.push_back(normalizeUseStatement(useStmt));
 				}
-				std::sort(normalizedUses.begin(), normalizedUses.end());
+				// Sort alphabetically if enabled
+				if (opts.sortImports) {
+					std::sort(normalizedUses.begin(), normalizedUses.end());
+				}
 				for (const auto& useStmt : normalizedUses) {
 					output << useStmt << '\n';
 				}
@@ -1635,8 +1954,8 @@ namespace Qd {
 		return output.str();
 	}
 
-	// Main formatting function that works on source text
-	std::string formatSource(const std::string& source) {
+	// Main formatting function that works on source text with options
+	std::string formatSource(const std::string& source, const FormatOptions& opts) {
 		// First, merge multi-line struct constructions back to single lines
 		std::string mergedStructs = mergeStructConstructions(source);
 		// Then split inline braces onto separate lines (but not struct constructions)
@@ -1915,7 +2234,12 @@ namespace Qd {
 		}
 
 		// Apply top-level spacing normalization as final step
-		return normalizeTopLevelSpacing(output.str());
+		return normalizeTopLevelSpacing(output.str(), opts);
+	}
+
+	// Main formatting function that works on source text (uses default options)
+	std::string formatSource(const std::string& source) {
+		return formatSource(source, FormatOptions{});
 	}
 
 }

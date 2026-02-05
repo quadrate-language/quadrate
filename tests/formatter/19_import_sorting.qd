@@ -1,0 +1,9 @@
+use time
+use str
+use io
+use math
+use fmt
+
+fn main() {
+	42 print nl
+}

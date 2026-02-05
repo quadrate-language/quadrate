@@ -1,0 +1,6 @@
+fn test() {
+	true if {
+		false if { "nested" print nl }
+	}
+	x 0 > if { y 0 > if { "both positive" print nl } }
+}

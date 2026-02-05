@@ -1,0 +1,15 @@
+fn test_switch(val:i64) {
+	val switch {
+		0 { "zero" print nl }
+		1 { "one" print nl }
+		2 { "two" print nl }
+		_ { "other" print nl }
+	}
+}
+
+fn test_result() {
+	do_something switch {
+		Ok { -> x x process }
+		Err { err -> code -> msg "Error: " print msg print nl }
+	}
+}

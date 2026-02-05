@@ -1,0 +1,18 @@
+fn test_loops() {
+	0 10 1 for i {
+		i print nl
+	}
+
+	10 -> x
+	x 0 > while {
+		x print nl
+		x 1 - -> x
+		x 0 >
+	}
+
+	0 -> count
+	loop {
+		count 1 + -> count
+		count 5 >= if { break }
+	}
+}

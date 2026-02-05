@@ -1,0 +1,9 @@
+use "another_local.qd"
+use "local_module.qd"
+use io
+use str
+use time
+
+fn main() {
+	"test" print nl
+}

@@ -1,0 +1,7 @@
+// 日本語コメント
+// Emoji: 🎉 ✨ 🚀
+fn greet() {
+	"Hello, 世界!" print nl
+	"Привет мир" print nl
+	"مرحبا بالعالم" print nl
+}

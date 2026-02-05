@@ -1,0 +1,11 @@
+fn deeply_nested() {
+true if {
+false if {
+1 2 > if {
+"deep" print nl
+} else {
+"deeper" print nl
+}
+}
+}
+}

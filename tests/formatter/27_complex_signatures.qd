@@ -1,0 +1,20 @@
+fn no_args() {
+	42 print nl
+}
+
+fn inputs_only(a:i64 b:i64 c:i64) {
+	a b c + + print nl
+}
+
+fn outputs_only(-- x:i64 y:i64) {
+	1 2
+}
+
+fn full_signature(a:f64 b:f64 -- sum:f64 diff:f64) {
+	a b + a b -
+}
+
+fn fallible_fn(x:i64 -- result:i64)! {
+	x 0 < if { "negative" 1 panic }
+	x
+}

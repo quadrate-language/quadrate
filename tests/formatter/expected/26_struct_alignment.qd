@@ -1,0 +1,11 @@
+struct Point {
+	x: f64
+	y: f64
+}
+
+struct Person {
+	name:      str
+	age:       i64
+	height:    f64
+	is_active: bool
+}

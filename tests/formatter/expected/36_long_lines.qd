@@ -1,0 +1,11 @@
+fn short() {
+	1 2 3 + + print nl
+}
+
+fn medium_length_function_name(first_param:i64 second_param:i64 -- result:i64) {
+	first_param second_param +
+}
+
+fn has_long_body() {
+	"This is a somewhat longer string that contains multiple words and spans quite a bit" print nl
+}

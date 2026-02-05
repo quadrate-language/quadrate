@@ -13,6 +13,21 @@
 namespace Qd {
 
 	/**
+	 * @brief Formatting options for the Quadrate formatter
+	 */
+	struct FormatOptions {
+		int lineWidth = 100;        // Max line width before expanding blocks
+		bool sortImports = true;    // Sort and group use statements
+		bool alignStructFields = true; // Align struct field types
+
+		// Load options from .quadfmt.json in given directory or parents
+		static FormatOptions loadFromFile(const std::string& startDir);
+
+		// Check if a config file exists
+		static bool configExists(const std::string& startDir);
+	};
+
+	/**
 	 * @brief Format Quadrate source code with consistent style
 	 *
 	 * This formatter works directly on source text without building an AST.
@@ -42,6 +57,15 @@ namespace Qd {
 	 * @endcode
 	 */
 	std::string formatSource(const std::string& source);
+
+	/**
+	 * @brief Format Quadrate source code with custom options
+	 *
+	 * @param source The source code to format
+	 * @param options Formatting options
+	 * @return Formatted source code as a string
+	 */
+	std::string formatSource(const std::string& source, const FormatOptions& options);
 
 } // namespace Qd
 

@@ -1,0 +1,19 @@
+use io
+use str
+
+const MAX_SIZE = 1024
+
+struct Config {
+	name:   str
+	value:  i64
+	active: bool
+}
+
+fn process(cfg:Config -- result:i64) {
+	cfg.active if { cfg.value 2 * } else { 0 }
+}
+
+fn main() {
+	"test" 42 true Config -> cfg
+	cfg process print nl
+}

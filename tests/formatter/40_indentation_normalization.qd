@@ -1,0 +1,5 @@
+fn test() {
+    1 print nl
+        2 print nl
+	3 print nl
+}
