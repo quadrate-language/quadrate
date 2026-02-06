@@ -19,11 +19,16 @@ TMPDIR=$(mktemp -d)
 trap "rm -rf $TMPDIR" EXIT
 
 echo "Preparing build context..."
-mkdir -p "$TMPDIR/dist/bin" "$TMPDIR/dist/lib" "$TMPDIR/dist/share" "$TMPDIR/libs"
+if [ "$(uname -s)" = "Haiku" ]; then
+    DIST_DATADIR="dist/data"
+else
+    DIST_DATADIR="dist/share"
+fi
+mkdir -p "$TMPDIR/dist/bin" "$TMPDIR/dist/lib" "$TMPDIR/$DIST_DATADIR" "$TMPDIR/libs"
 cp dist/bin/quadc "$TMPDIR/dist/bin/"
 cp dist/lib/*.so "$TMPDIR/dist/lib/" 2>/dev/null || true
 cp dist/lib/*.a "$TMPDIR/dist/lib/" 2>/dev/null || true
-cp -r dist/share/quadrate "$TMPDIR/dist/share/"
+cp -r "$DIST_DATADIR/quadrate" "$TMPDIR/$DIST_DATADIR/"
 
 # Copy shared library dependencies that quadc needs
 # Exclude core system libraries that come from the base image

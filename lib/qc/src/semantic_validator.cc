@@ -682,8 +682,9 @@ namespace Qd {
 		// modules that define structs are parsed before modules that use them.
 		static bool debug = std::getenv("QUADC_DEBUG_MERGE") != nullptr;
 		for (const auto& filePath : mParsedModuleOrder) {
-			// Skip standard library modules (they're in share/quadrate or dist/share/quadrate)
-			if (filePath.find("share/quadrate/") != std::string::npos) {
+			// Skip standard library modules (they're in share/quadrate, dist/share/quadrate, or data/quadrate on Haiku)
+			if (filePath.find("share/quadrate/") != std::string::npos ||
+			    filePath.find("data/quadrate/") != std::string::npos) {
 				continue;
 			}
 

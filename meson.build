@@ -35,6 +35,13 @@ add_project_arguments(cpp_args, language: 'cpp')
 # Common dependencies (used by multiple cmd tools)
 jansson_dep = dependency('jansson', version: '>=2.14', required: true, fallback: ['jansson', 'jansson_dep'])
 
+# Platform-aware data directory (Haiku uses 'data' instead of 'share')
+if host_machine.system() == 'haiku'
+    dist_datadir = 'dist/data'
+else
+    dist_datadir = 'dist/share'
+endif
+
 # Subdirectories
 subdir('lib')
 subdir('cmd')

@@ -9,10 +9,12 @@ ifeq ($(UNAME_S),Haiku)
     PREFIX ?= $(HOME)/config/non-packaged
     DATADIR = $(PREFIX)/data
     INCLUDEDIR = $(PREFIX)/develop/headers
+    DIST_DATADIR = dist/data
 else
     PREFIX ?= /usr
     DATADIR = $(PREFIX)/share
     INCLUDEDIR = $(PREFIX)/include
+    DIST_DATADIR = dist/share
 endif
 
 # Use clang by default for better LLVM integration
@@ -74,10 +76,10 @@ define do_build
 		if [ -f lib/$$lib/lib$$lib.deps ]; then cp lib/$$lib/lib$$lib.deps dist/lib/; fi; \
 	done
 	@for lib in $(LIBS_WITH_HEADERS); do cp -rf lib/$$lib/include/$$lib dist/include/; done
-	@mkdir -p dist/share/quadrate
-	@for mod in $(STDLIB_MODULES); do cp -r lib/qd*/qd/$$mod dist/share/quadrate/ 2>/dev/null || true; done
-	@mkdir -p dist/share/bash-completion/completions
-	@cp -f completions/quad.bash dist/share/bash-completion/completions/quad
+	@mkdir -p $(DIST_DATADIR)/quadrate
+	@for mod in $(STDLIB_MODULES); do cp -r lib/qd*/qd/$$mod $(DIST_DATADIR)/quadrate/ 2>/dev/null || true; done
+	@mkdir -p $(DIST_DATADIR)/bash-completion/completions
+	@cp -f completions/quad.bash $(DIST_DATADIR)/bash-completion/completions/quad
 	@echo "$(3)"
 endef
 

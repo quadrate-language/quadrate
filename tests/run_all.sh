@@ -19,7 +19,12 @@ PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 BUILD_DIR="${BUILD_DIR:-build/debug}"
 QUADC="${QUADC:-$PROJECT_ROOT/$BUILD_DIR/cmd/quadc/quadc}"
 QUADFMT="${QUADFMT:-$PROJECT_ROOT/dist/bin/quadfmt}"
-QUADRATE_ROOT_DEFAULT="$PROJECT_ROOT/dist/share/quadrate"
+if [ "$(uname -s)" = "Haiku" ]; then
+    DIST_DATADIR="dist/data"
+else
+    DIST_DATADIR="dist/share"
+fi
+QUADRATE_ROOT_DEFAULT="$PROJECT_ROOT/$DIST_DATADIR/quadrate"
 QUADRATE_LIBDIR_DEFAULT="$PROJECT_ROOT/dist/lib"
 FAILED_TESTS_FILE="$PROJECT_ROOT/.failed_tests"
 TEMP_DIR="/tmp/quadrate_tests_$$"

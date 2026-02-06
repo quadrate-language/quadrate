@@ -22,7 +22,7 @@ if can_build
   custom_target('sha256sum',
     input: 'sha256sum.qd',
     output: 'sha256sum',
-    command: ['sh', '-c', 'cd ' + meson.project_source_root() + ' && QUADRATE_ROOT=dist/share/quadrate QUADRATE_LIBDIR=dist/lib ' + quadc.full_path() + ' ' + include_flag + ' ' + meson.current_source_dir() / 'sha256sum.qd' + ' -o ' + meson.project_source_root() / 'dist/examples/@BASENAME@'],
+    command: ['sh', '-c', 'cd ' + meson.project_source_root() + ' && QUADRATE_ROOT=' + dist_datadir + '/quadrate QUADRATE_LIBDIR=dist/lib ' + quadc.full_path() + ' ' + include_flag + ' ' + meson.current_source_dir() / 'sha256sum.qd' + ' -o ' + meson.project_source_root() / 'dist/examples/@BASENAME@'],
     depends: quadc,
     build_by_default: false
   )

@@ -13,7 +13,7 @@ custom_target('ffi',
 		' && ar rcs ' + meson.project_source_root() / 'dist/lib/libgreet.a ' + meson.current_build_dir() / 'greet.o' +
 		# Compile Quadrate program (run from project root so ./dist/lib is found)
 		' && cd ' + meson.project_source_root() +
-		' && QUADRATE_ROOT=dist/share/quadrate' +
+		' && QUADRATE_ROOT=' + dist_datadir + '/quadrate' +
 		' ' + quadc.full_path() + ' examples/ffi/main.qd -o dist/examples/ffi'
 	],
 	depends: quadc,
