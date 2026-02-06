@@ -163,6 +163,26 @@ int usr_signal_raise(qd_context* ctx);
  */
 int usr_signal_kill(qd_context* ctx);
 
+int usr_signal_SigHup(qd_context* ctx);
+int usr_signal_SigInt(qd_context* ctx);
+int usr_signal_SigQuit(qd_context* ctx);
+int usr_signal_SigIll(qd_context* ctx);
+int usr_signal_SigAbrt(qd_context* ctx);
+int usr_signal_SigFpe(qd_context* ctx);
+int usr_signal_SigKill(qd_context* ctx);
+int usr_signal_SigSegv(qd_context* ctx);
+int usr_signal_SigPipe(qd_context* ctx);
+int usr_signal_SigAlrm(qd_context* ctx);
+int usr_signal_SigTerm(qd_context* ctx);
+int usr_signal_SigUsr1(qd_context* ctx);
+int usr_signal_SigUsr2(qd_context* ctx);
+int usr_signal_SigChld(qd_context* ctx);
+int usr_signal_SigCont(qd_context* ctx);
+int usr_signal_SigStop(qd_context* ctx);
+int usr_signal_SigTstp(qd_context* ctx);
+int usr_signal_SigTtin(qd_context* ctx);
+int usr_signal_SigTtou(qd_context* ctx);
+
 #ifdef __cplusplus
 }
 #endif

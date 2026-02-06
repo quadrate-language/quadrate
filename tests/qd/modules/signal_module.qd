@@ -3,13 +3,13 @@ use signal
 
 fn main() {
 	"=== Signal constants ===" print nl
-	signal::SigHup print nl
-	signal::SigInt print nl
-	signal::SigQuit print nl
-	signal::SigKill print nl
-	signal::SigTerm print nl
-	signal::SigUsr1 print nl
-	signal::SigUsr2 print nl
+	signal::SigHup 0 > print nl
+	signal::SigInt 0 > print nl
+	signal::SigQuit 0 > print nl
+	signal::SigKill 0 > print nl
+	signal::SigTerm 0 > print nl
+	signal::SigUsr1 0 > print nl
+	signal::SigUsr2 0 > print nl
 
 	"=== trap and pending ===" print nl
 	signal::SigUsr1 signal::trap

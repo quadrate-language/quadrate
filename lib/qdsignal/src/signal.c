@@ -323,6 +323,101 @@ int usr_signal_raise(qd_context* ctx) {
 	return (int){0};
 }
 
+int usr_signal_SigHup(qd_context* ctx) {
+	qd_stack_push_int(ctx->st, (int64_t)SIGHUP);
+	return 0;
+}
+
+int usr_signal_SigInt(qd_context* ctx) {
+	qd_stack_push_int(ctx->st, (int64_t)SIGINT);
+	return 0;
+}
+
+int usr_signal_SigQuit(qd_context* ctx) {
+	qd_stack_push_int(ctx->st, (int64_t)SIGQUIT);
+	return 0;
+}
+
+int usr_signal_SigIll(qd_context* ctx) {
+	qd_stack_push_int(ctx->st, (int64_t)SIGILL);
+	return 0;
+}
+
+int usr_signal_SigAbrt(qd_context* ctx) {
+	qd_stack_push_int(ctx->st, (int64_t)SIGABRT);
+	return 0;
+}
+
+int usr_signal_SigFpe(qd_context* ctx) {
+	qd_stack_push_int(ctx->st, (int64_t)SIGFPE);
+	return 0;
+}
+
+int usr_signal_SigKill(qd_context* ctx) {
+	qd_stack_push_int(ctx->st, (int64_t)SIGKILL);
+	return 0;
+}
+
+int usr_signal_SigSegv(qd_context* ctx) {
+	qd_stack_push_int(ctx->st, (int64_t)SIGSEGV);
+	return 0;
+}
+
+int usr_signal_SigPipe(qd_context* ctx) {
+	qd_stack_push_int(ctx->st, (int64_t)SIGPIPE);
+	return 0;
+}
+
+int usr_signal_SigAlrm(qd_context* ctx) {
+	qd_stack_push_int(ctx->st, (int64_t)SIGALRM);
+	return 0;
+}
+
+int usr_signal_SigTerm(qd_context* ctx) {
+	qd_stack_push_int(ctx->st, (int64_t)SIGTERM);
+	return 0;
+}
+
+int usr_signal_SigUsr1(qd_context* ctx) {
+	qd_stack_push_int(ctx->st, (int64_t)SIGUSR1);
+	return 0;
+}
+
+int usr_signal_SigUsr2(qd_context* ctx) {
+	qd_stack_push_int(ctx->st, (int64_t)SIGUSR2);
+	return 0;
+}
+
+int usr_signal_SigChld(qd_context* ctx) {
+	qd_stack_push_int(ctx->st, (int64_t)SIGCHLD);
+	return 0;
+}
+
+int usr_signal_SigCont(qd_context* ctx) {
+	qd_stack_push_int(ctx->st, (int64_t)SIGCONT);
+	return 0;
+}
+
+int usr_signal_SigStop(qd_context* ctx) {
+	qd_stack_push_int(ctx->st, (int64_t)SIGSTOP);
+	return 0;
+}
+
+int usr_signal_SigTstp(qd_context* ctx) {
+	qd_stack_push_int(ctx->st, (int64_t)SIGTSTP);
+	return 0;
+}
+
+int usr_signal_SigTtin(qd_context* ctx) {
+	qd_stack_push_int(ctx->st, (int64_t)SIGTTIN);
+	return 0;
+}
+
+int usr_signal_SigTtou(qd_context* ctx) {
+	qd_stack_push_int(ctx->st, (int64_t)SIGTTOU);
+	return 0;
+}
+
 int usr_signal_kill(qd_context* ctx) {
 	size_t stack_size = qd_stack_size(ctx->st);
 	if (stack_size < 2) {
