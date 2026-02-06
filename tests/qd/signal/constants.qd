@@ -4,26 +4,26 @@ use signal
 fn main() {
 	// Common signals
 	"=== Common signals ===" print nl
-	"SigInt: " print signal::SigInt print nl
-	"SigTerm: " print signal::SigTerm print nl
-	"SigKill: " print signal::SigKill print nl
-	"SigHup: " print signal::SigHup print nl
+	"SigInt: " print signal::SigInt 0 > print nl
+	"SigTerm: " print signal::SigTerm 0 > print nl
+	"SigKill: " print signal::SigKill 0 > print nl
+	"SigHup: " print signal::SigHup 0 > print nl
 
 	// User signals
 	"=== User signals ===" print nl
-	"SigUsr1: " print signal::SigUsr1 print nl
-	"SigUsr2: " print signal::SigUsr2 print nl
+	"SigUsr1: " print signal::SigUsr1 0 > print nl
+	"SigUsr2: " print signal::SigUsr2 0 > print nl
 
 	// Job control
 	"=== Job control ===" print nl
-	"SigStop: " print signal::SigStop print nl
-	"SigCont: " print signal::SigCont print nl
-	"SigTstp: " print signal::SigTstp print nl
+	"SigStop: " print signal::SigStop 0 > print nl
+	"SigCont: " print signal::SigCont 0 > print nl
+	"SigTstp: " print signal::SigTstp 0 > print nl
 
 	// Error signals
 	"=== Error signals ===" print nl
-	"SigSegv: " print signal::SigSegv print nl
-	"SigFpe: " print signal::SigFpe print nl
-	"SigIll: " print signal::SigIll print nl
-	"SigAbrt: " print signal::SigAbrt print nl
+	"SigSegv: " print signal::SigSegv 0 > print nl
+	"SigFpe: " print signal::SigFpe 0 > print nl
+	"SigIll: " print signal::SigIll 0 > print nl
+	"SigAbrt: " print signal::SigAbrt 0 > print nl
 }

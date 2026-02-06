@@ -1,17 +1,17 @@
 === Common signals ===
-SigInt: 2
-SigTerm: 15
-SigKill: 9
+SigInt: 1
+SigTerm: 1
+SigKill: 1
 SigHup: 1
 === User signals ===
-SigUsr1: 10
-SigUsr2: 12
+SigUsr1: 1
+SigUsr2: 1
 === Job control ===
-SigStop: 19
-SigCont: 18
-SigTstp: 20
+SigStop: 1
+SigCont: 1
+SigTstp: 1
 === Error signals ===
-SigSegv: 11
-SigFpe: 8
-SigIll: 4
-SigAbrt: 6
+SigSegv: 1
+SigFpe: 1
+SigIll: 1
+SigAbrt: 1
