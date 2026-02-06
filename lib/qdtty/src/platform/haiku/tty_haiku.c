@@ -1,5 +1,5 @@
 #include "../tty_platform.h"
-#include <sys/ioctl.h>
+#include <unistd.h>
 #include <termios.h>
 
 int tty_platform_winsize(int fd, int* rows, int* cols) {
