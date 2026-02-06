@@ -11,7 +11,7 @@ namespace Qd {
 		auto errorMsg = builder->CreateGlobalString(message);
 		builder->CreateCall(writeFn, {builder->getInt32(2), errorMsg, builder->getInt64(strlen(message))});
 		builder->CreateCall(printStackTraceFn, {ctx});
-		builder->CreateCall(abortFn, {});
+		builder->CreateCall(exitFn, {builder->getInt32(1)});
 		builder->CreateUnreachable();
 	}
 

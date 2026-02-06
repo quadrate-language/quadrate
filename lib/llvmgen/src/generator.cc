@@ -127,9 +127,11 @@ namespace Qd {
 		qdPtrRetainFn = declareFn(ptrToPtrTy, "qd_ptr_retain");
 
 		// Error handling functions
-		auto noargToVoidTy = llvm::FunctionType::get(builder->getVoidTy(), false);
 		auto ptrPtrToVoidTy = llvm::FunctionType::get(builder->getVoidTy(), {ptrTy, ptrTy}, false);
-		abortFn = declareFn(noargToVoidTy, "abort");
+		// Use _exit(1) instead of abort() — abort() raises SIGABRT which
+		// triggers Haiku's debug_server, hanging or interfering with output.
+		auto i32ToVoidTy = llvm::FunctionType::get(builder->getVoidTy(), {int32Ty}, false);
+		exitFn = declareFn(i32ToVoidTy, "_exit");
 		printStackTraceFn = declareFn(ctxToVoidTy, "qd_print_stack_trace");
 		printErrorMsgFn = declareFn(ptrPtrToVoidTy, "qd_print_error_msg");
 

@@ -193,7 +193,7 @@ namespace Qd {
 		llvm::Function* notFn = nullptr;
 		llvm::Function* shlFn = nullptr;
 		llvm::Function* shrFn = nullptr;
-		llvm::Function* abortFn = nullptr;
+		llvm::Function* exitFn = nullptr;
 		llvm::Function* printStackTraceFn = nullptr;
 		llvm::Function* printErrorMsgFn = nullptr;
 
@@ -413,7 +413,7 @@ namespace Qd {
 
 		StackAccess getStackAccess(llvm::Value* ctx);
 
-		// Fatal error helper - emits fprintf(stderr, msg), qd_print_stack_trace(ctx), abort(), unreachable
+		// Fatal error helper - emits write(2, msg, len), qd_print_stack_trace(ctx), _exit(1), unreachable
 		void emitFatalError(llvm::Value* ctx, const char* message);
 
 		// Inline stack operation helpers

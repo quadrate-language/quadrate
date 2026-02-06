@@ -436,7 +436,7 @@ namespace Qd {
 					auto funcNameStr = builder->CreateGlobalString(name);
 					builder->CreateCall(printErrorMsgFn, {ctx, funcNameStr});
 					builder->CreateCall(printStackTraceFn, {ctx});
-					builder->CreateCall(abortFn, {});
+					builder->CreateCall(exitFn, {builder->getInt32(1)});
 					builder->CreateUnreachable();
 
 					// Continue block - user-defined functions don't push success status
@@ -748,7 +748,7 @@ namespace Qd {
 						auto funcNameStr = builder->CreateGlobalString(name);
 						builder->CreateCall(printErrorMsgFn, {ctx, funcNameStr});
 						builder->CreateCall(printStackTraceFn, {ctx});
-						builder->CreateCall(abortFn, {});
+						builder->CreateCall(exitFn, {builder->getInt32(1)});
 						builder->CreateUnreachable();
 
 						// Continue - user-defined methods don't push success status
@@ -864,7 +864,7 @@ namespace Qd {
 				auto funcNameStr = builder->CreateGlobalString(name);
 				builder->CreateCall(printErrorMsgFn, {ctx, funcNameStr});
 				builder->CreateCall(printStackTraceFn, {ctx});
-				builder->CreateCall(abortFn, {});
+				builder->CreateCall(exitFn, {builder->getInt32(1)});
 				builder->CreateUnreachable();
 
 				// Continue block
