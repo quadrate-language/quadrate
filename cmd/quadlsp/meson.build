@@ -11,7 +11,7 @@ qdrt_src_inc = include_directories('../../lib/qdrt')
 quadlsp_exe = executable('quadlsp',
 	quadlsp_sources,
 	include_directories: [version_inc, qdrt_src_inc],
-	dependencies: [qc_dep, jansson_dep, qdrt_dep],
+	dependencies: [qc_dep, jansson_dep, qdrt_dep, qdplatform_dep],
 	install: true
 )
 

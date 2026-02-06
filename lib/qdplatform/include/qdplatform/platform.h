@@ -80,6 +80,13 @@
 #define QD_EXPORT __attribute__((visibility("default")))
 #endif
 
+// Shell stderr suppression suffix
+#if defined(QD_PLATFORM_WINDOWS)
+#define QD_SHELL_STDERR_SUPPRESS " 2>NUL"
+#else
+#define QD_SHELL_STDERR_SUPPRESS " 2>/dev/null"
+#endif
+
 // Unused parameter macro
 #define QD_UNUSED(x) (void)(x)
 

@@ -4,6 +4,7 @@
 #include "lsp_impl.h"
 #include "src/platform/process_platform.h"
 #include "version.h"
+#include <qdplatform/platform.h>
 #include <algorithm>
 #include <cctype>
 #include <cstdio>
@@ -1118,7 +1119,7 @@ void QuadrateLSP::handleFormatting(const std::string& id, const std::string& uri
 	}
 
 	// Run quadfmt
-	std::string command = "quadfmt \"" + tempPath + "\" 2>/dev/null";
+	std::string command = "quadfmt \"" + tempPath + "\"" + QD_SHELL_STDERR_SUPPRESS;
 	char outputBuffer[262144]; // 256KB for formatted output
 	int exitCode = process_platform_exec_capture(command.c_str(), outputBuffer, sizeof(outputBuffer));
 	std::string formatted(outputBuffer);
@@ -2949,86 +2950,88 @@ void QuadrateLSP::handleRangeFormatting(const std::string& id, const std::string
 
 	if (!documentText.empty()) {
 		// Write to temp file
-		char tmpPath[] = "/tmp/quadlsp_fmt_XXXXXX";
-		int fd = mkstemp(tmpPath);
-		if (fd != -1) {
-			ssize_t written = write(fd, documentText.c_str(), documentText.size());
-			close(fd);
+		std::string tmpPathStr = (std::filesystem::temp_directory_path() / "quadlsp_fmt.qd").string();
+		bool writeOk = false;
+		{
+			std::ofstream ofs(tmpPathStr, std::ios::binary);
+			if (ofs) {
+				ofs.write(documentText.c_str(), static_cast<std::streamsize>(documentText.size()));
+				writeOk = ofs.good();
+			}
+		}
+		if (writeOk) {
+			// Run quadfmt
+			std::string cmd = "quadfmt " + tmpPathStr + QD_SHELL_STDERR_SUPPRESS;
+			char outputBuffer[262144]; // 256KB for formatted output
+			int exitCode = process_platform_exec_capture(cmd.c_str(), outputBuffer, sizeof(outputBuffer));
+			if (exitCode == 0) {
+				std::string formattedText(outputBuffer);
 
-			if (written == static_cast<ssize_t>(documentText.size())) {
-				// Run quadfmt
-				std::string cmd = "quadfmt " + std::string(tmpPath) + " 2>/dev/null";
-				char outputBuffer[262144]; // 256KB for formatted output
-				int exitCode = process_platform_exec_capture(cmd.c_str(), outputBuffer, sizeof(outputBuffer));
-				if (exitCode == 0) {
-					std::string formattedText(outputBuffer);
+				if (!formattedText.empty()) {
+					// Split both original and formatted into lines
+					std::vector<std::string> origLines;
+					std::vector<std::string> fmtLines;
 
-					if (!formattedText.empty()) {
-						// Split both original and formatted into lines
-						std::vector<std::string> origLines;
-						std::vector<std::string> fmtLines;
+					std::istringstream origIss(documentText);
+					std::string line;
+					while (std::getline(origIss, line)) {
+						origLines.push_back(line);
+					}
 
-						std::istringstream origIss(documentText);
-						std::string line;
-						while (std::getline(origIss, line)) {
-							origLines.push_back(line);
-						}
+					std::istringstream fmtIss(formattedText);
+					while (std::getline(fmtIss, line)) {
+						fmtLines.push_back(line);
+					}
 
-						std::istringstream fmtIss(formattedText);
-						while (std::getline(fmtIss, line)) {
-							fmtLines.push_back(line);
-						}
-
-						// Only create edit if the range content changed
-						// Compare lines in the requested range
-						bool changed = false;
-						if (origLines.size() == fmtLines.size()) {
-							for (size_t i = startLine; i <= endLine && i < origLines.size(); i++) {
-								if (origLines[i] != fmtLines[i]) {
-									changed = true;
-									break;
-								}
+					// Only create edit if the range content changed
+					// Compare lines in the requested range
+					bool changed = false;
+					if (origLines.size() == fmtLines.size()) {
+						for (size_t i = startLine; i <= endLine && i < origLines.size(); i++) {
+							if (origLines[i] != fmtLines[i]) {
+								changed = true;
+								break;
 							}
-						} else {
-							changed = true;
+						}
+					} else {
+						changed = true;
+					}
+
+					if (changed) {
+						// Build the replacement text for the range
+						std::string rangeText;
+						for (size_t i = startLine; i <= endLine && i < fmtLines.size(); i++) {
+							if (i > startLine) {
+								rangeText += "\n";
+							}
+							rangeText += fmtLines[i];
 						}
 
-						if (changed) {
-							// Build the replacement text for the range
-							std::string rangeText;
-							for (size_t i = startLine; i <= endLine && i < fmtLines.size(); i++) {
-								if (i > startLine) {
-									rangeText += "\n";
-								}
-								rangeText += fmtLines[i];
-							}
-
-							// Adjust endChar if we're replacing full lines
-							size_t adjustedEndChar = endChar;
-							if (endLine < origLines.size()) {
-								adjustedEndChar = origLines[endLine].size();
-							}
-
-							// Create edit
-							json_t* edit = json_object();
-							json_t* range = json_object();
-							json_t* start = json_object();
-							json_object_set_new(start, "line", json_integer(static_cast<json_int_t>(startLine)));
-							json_object_set_new(start, "character", json_integer(0)); // Start of line
-							json_t* end = json_object();
-							json_object_set_new(end, "line", json_integer(static_cast<json_int_t>(endLine)));
-							json_object_set_new(
-									end, "character", json_integer(static_cast<json_int_t>(adjustedEndChar)));
-							json_object_set_new(range, "start", start);
-							json_object_set_new(range, "end", end);
-							json_object_set_new(edit, "range", range);
-							json_object_set_new(edit, "newText", json_string(rangeText.c_str()));
-							json_array_append_new(edits, edit);
+						// Adjust endChar if we're replacing full lines
+						size_t adjustedEndChar = endChar;
+						if (endLine < origLines.size()) {
+							adjustedEndChar = origLines[endLine].size();
 						}
+
+						// Create edit
+						json_t* edit = json_object();
+						json_t* range = json_object();
+						json_t* start = json_object();
+						json_object_set_new(start, "line", json_integer(static_cast<json_int_t>(startLine)));
+						json_object_set_new(start, "character", json_integer(0)); // Start of line
+						json_t* end = json_object();
+						json_object_set_new(end, "line", json_integer(static_cast<json_int_t>(endLine)));
+						json_object_set_new(
+								end, "character", json_integer(static_cast<json_int_t>(adjustedEndChar)));
+						json_object_set_new(range, "start", start);
+						json_object_set_new(range, "end", end);
+						json_object_set_new(edit, "range", range);
+						json_object_set_new(edit, "newText", json_string(rangeText.c_str()));
+						json_array_append_new(edits, edit);
 					}
 				}
 			}
-			unlink(tmpPath);
+			std::filesystem::remove(tmpPathStr);
 		}
 	}
 
