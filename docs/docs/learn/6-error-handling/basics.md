@@ -134,24 +134,18 @@ fn main() {
 Many standard library functions are fallible:
 
 ```qd
-use str
 use io
 
 fn main() {
-	// String operations
-	"hello" 1 3 str::substring if {
-		print nl  // "ell"
-	} else {
-		"substring failed" print nl
-	}
-
-	// File operations
-	"test.txt" io::Read io::open if {
-		-> file
-		"File opened" print nl
-		file io::close
-	} else {
-		"Could not open file" print nl
+	"test.txt" io::Read io::open switch {
+		Ok {
+			-> file
+			"File opened" print nl
+			file io::close
+		}
+		_ {
+			"Could not open file" print nl
+		}
 	}
 }
 ```
@@ -231,16 +225,7 @@ fn main() {
 }
 ```
 
-`Ok` is a literal `1` (success) and `Err` is a literal `0` (failure). After a fallible call, the top of stack is `1` on success or `0` on failure, so `switch` matches against these values.
-
-You can use `Err` explicitly instead of `_`:
-
-```qd
-"data.txt" io::read_file switch {
-	Ok { -> content content print nl }
-	Err { "Failed to read file" print nl }
-}
-```
+`Ok` is a literal `1` (success). After a fallible call, the top of stack is `1` on success. Use `_` as the default case to catch all error values.
 
 To inspect the error details, use `err` in the error branch:
 
@@ -257,7 +242,7 @@ To inspect the error details, use `err` in the error branch:
 }
 ```
 
-The `switch` pattern is equivalent to `if`/`else` - use whichever is clearer for your code.
+For standard library functions, prefer `switch { Ok { } _ { } }` over `if`/`else`.
 
 ## Key rules
 

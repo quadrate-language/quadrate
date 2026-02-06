@@ -98,13 +98,16 @@ fn main() {
 	"test.txt" io::read_file
 }
 
-// RIGHT - handle with if/else
+// RIGHT - handle with switch
 fn main() {
-	"test.txt" io::read_file if {
-		-> content
-		content print
-	} else {
-		"Could not read file" print nl
+	"test.txt" io::read_file switch {
+		Ok {
+			-> content
+			content print
+		}
+		_ {
+			"Could not read file" print nl
+		}
 	}
 }
 

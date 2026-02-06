@@ -9,19 +9,19 @@
       "url": "https://github.com/quadrate-language/fuzzy"
     },
     {
-      "integrity": "3332abd07246fd9bb715dab46571bec2dca77871",
+      "integrity": "778aded7d51d2239d2bdf40b9eca5e02034618ec",
       "isPath": false,
       "name": "http",
       "ref": "master",
-      "resolved": "3332abd07246fd9bb715dab46571bec2dca77871",
+      "resolved": "778aded7d51d2239d2bdf40b9eca5e02034618ec",
       "url": "https://github.com/quadrate-language/http"
     },
     {
-      "integrity": "01decd42d70743cc507cbd3f9d0770dd778c106e",
+      "integrity": "881663eba1332d7d19a9ae7d6769b612f0bd146f",
       "isPath": false,
       "name": "json",
       "ref": "master",
-      "resolved": "01decd42d70743cc507cbd3f9d0770dd778c106e",
+      "resolved": "881663eba1332d7d19a9ae7d6769b612f0bd146f",
       "url": "https://github.com/quadrate-language/json"
     },
     {

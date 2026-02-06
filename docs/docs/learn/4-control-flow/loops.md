@@ -201,7 +201,7 @@ fn sum_array(arr:ptr -- total:i64) {
 	-> arr  // bind parameter
 	0 -> total
 	0 arr len 1 for i {
-		total arr i nth + -> total
+		total arr i nth cast<i64> + -> total
 	}
 	total
 }

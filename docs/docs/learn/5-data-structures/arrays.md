@@ -109,7 +109,7 @@ fn sum(arr:ptr -- total:i64) {
 	-> arr  // bind parameter
 	0 -> total
 	0 arr len 1 for i {
-		total arr i nth + -> total
+		total arr i nth cast<i64> + -> total
 	}
 	total
 }
@@ -285,7 +285,7 @@ fn main() {
 	0 result len 1 for i {
 		result i nth print " " print
 	}
-	print nl
+	nl
 }
 ```
 

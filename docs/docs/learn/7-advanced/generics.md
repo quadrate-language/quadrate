@@ -50,25 +50,11 @@ struct Box<T> {
 fn main() {
 	Box<i64> { value = 42 } -> b
 	b @value print nl  // 42
-
-	Box<str> { value = "hello" } -> s
-	s @value print nl  // hello
 }
 ```
 
-With multiple type parameters:
-
-```qd
-struct Pair<A, B> {
-	first:A
-	second:B
-}
-
-fn main() {
-	Pair<str, i64> { first = "age" second = 30 } -> p
-	p @first print ": " print p @second print nl  // age: 30
-}
-```
+!!! note
+    Generic structs currently work best with integer types. For structs with mixed types, prefer non-generic structs with explicit field types.
 
 ## Built-in generic operations
 

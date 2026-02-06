@@ -84,17 +84,16 @@ fn main() {
 
 	argc 0 == if {
 		"No arguments provided" print nl
-		return
-	}
-
-	"Arguments:" print nl
-	argc 0 > if {
-		-> arg1
-		"  1: " print arg1 print nl
-	}
-	argc 1 > if {
-		-> arg2
-		"  2: " print arg2 print nl
+	} else {
+		"Arguments:" print nl
+		argc 0 > if {
+			-> arg1
+			"  1: " print arg1 print nl
+		}
+		argc 1 > if {
+			-> arg2
+			"  2: " print arg2 print nl
+		}
 	}
 }
 ```
