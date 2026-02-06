@@ -3,11 +3,13 @@
 namespace Qd {
 
 	void LlvmGenerator::Impl::emitFatalError(llvm::Value* ctx, const char* message) {
-		auto fprintfFn = module->getOrInsertFunction("fprintf", llvm::FunctionType::get(int32Ty, {ptrTy, ptrTy}, true));
-		auto stderrGlobal = module->getOrInsertGlobal("stderr", ptrTy);
-		auto stderrVal = builder->CreateLoad(ptrTy, stderrGlobal, "stderr");
+		// Use write(2, msg, len) instead of fprintf(stderr, ...) because the
+		// stderr symbol is not a portable global — on Haiku, musl, macOS, etc.
+		// it is a macro, not a linker symbol, so loading it would crash.
+		auto writeFn =
+			module->getOrInsertFunction("write", llvm::FunctionType::get(int64Ty, {int32Ty, ptrTy, int64Ty}, false));
 		auto errorMsg = builder->CreateGlobalString(message);
-		builder->CreateCall(fprintfFn, {stderrVal, errorMsg});
+		builder->CreateCall(writeFn, {builder->getInt32(2), errorMsg, builder->getInt64(strlen(message))});
 		builder->CreateCall(printStackTraceFn, {ctx});
 		builder->CreateCall(abortFn, {});
 		builder->CreateUnreachable();

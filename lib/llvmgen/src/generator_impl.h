@@ -79,6 +79,7 @@
 
 #include <algorithm>
 #include <charconv>
+#include <cstring>
 #include <filesystem>
 #include <fstream>
 #include <functional>
