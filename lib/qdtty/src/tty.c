@@ -7,10 +7,8 @@
 #include <qdrt/runtime.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include <sys/ioctl.h>
-#ifdef __HAIKU__
-#include <termios.h>
-#endif
+
+#include "platform/tty_platform.h"
 
 int usr_tty_is_stdout(qd_context* ctx) {
 	int64_t result = isatty(STDOUT_FILENO) ? 1 : 0;
@@ -31,30 +29,12 @@ int usr_tty_is_stdin(qd_context* ctx) {
 }
 
 static void get_terminal_size(int* rows, int* cols) {
-	struct winsize ws;
 	*rows = 0;
 	*cols = 0;
 
-	// Try stdout first
-	if (ioctl(STDOUT_FILENO, TIOCGWINSZ, &ws) == 0) {
-		*rows = ws.ws_row;
-		*cols = ws.ws_col;
-		return;
-	}
-
-	// Try stderr
-	if (ioctl(STDERR_FILENO, TIOCGWINSZ, &ws) == 0) {
-		*rows = ws.ws_row;
-		*cols = ws.ws_col;
-		return;
-	}
-
-	// Try stdin
-	if (ioctl(STDIN_FILENO, TIOCGWINSZ, &ws) == 0) {
-		*rows = ws.ws_row;
-		*cols = ws.ws_col;
-		return;
-	}
+	if (tty_platform_winsize(STDOUT_FILENO, rows, cols) == 0) return;
+	if (tty_platform_winsize(STDERR_FILENO, rows, cols) == 0) return;
+	if (tty_platform_winsize(STDIN_FILENO, rows, cols) == 0) return;
 
 	// Fall back to environment variables
 	const char* lines_env = getenv("LINES");

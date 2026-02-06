@@ -4,6 +4,12 @@ qdtty_sources = files(
 	'src/tty.c',
 )
 
+if host_machine.system() == 'haiku'
+	qdtty_sources += files('src/platform/haiku/tty_haiku.c')
+else
+	qdtty_sources += files('src/platform/posix/tty_posix.c')
+endif
+
 qdtty_inc = include_directories('include')
 
 # Static library only
