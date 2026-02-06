@@ -684,7 +684,7 @@ namespace Qd {
 		for (const auto& filePath : mParsedModuleOrder) {
 			// Skip standard library modules (they're in share/quadrate, dist/share/quadrate, or data/quadrate on Haiku)
 			if (filePath.find("share/quadrate/") != std::string::npos ||
-			    filePath.find("data/quadrate/") != std::string::npos) {
+					filePath.find("data/quadrate/") != std::string::npos) {
 				continue;
 			}
 

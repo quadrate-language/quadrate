@@ -23,6 +23,11 @@ Language keywords for declarations, control flow, and more.
 | [`switch`](#switch) | Multi-way branching |
 | [`ctx`](#ctx) | Context variable access |
 | [`->`](#arrow-) | Variable binding |
+| [`test`](#test) | Declares a test block |
+| [`import`](#import) | Imports a native C library |
+| [`as`](#as) | Specifies module name in import |
+| [`Ok`](#ok) | Success literal (1) for switch matching |
+| [`Err`](#err) | Error literal (0) for switch matching |
 | [`true`](#true) | Boolean true (1) |
 | [`false`](#false) | Boolean false (0) |
 
@@ -213,11 +218,59 @@ defer {
 
 ### ctx
 
-Creates a new isolated stack context with a copy of the parent stack, not allowing access to parent stack values.
+Creates a new isolated stack context. The child starts with a copy of the parent stack but cannot modify parent variables.
 
 ```qd
 ctx {
 	// child context
+}
+```
+
+### test
+
+Declares a test block. Tests are run with `quad test` or `quadc --test`.
+
+```qd
+use testing
+
+test "addition works" {
+	1 2 + 3 testing::assert_eq
+}
+```
+
+### import
+
+Imports a native C library for use in a module. Used with `as` to specify the module namespace.
+
+```qd
+import "libqdmath.a" as "math" {
+	pub fn sqrt(x:f64 -- result:f64)
+}
+```
+
+### as
+
+Specifies the module namespace in an `import` statement. See [import](#import).
+
+### Ok
+
+Literal `1` (same as `true`). Used in `switch` to match the success case after a fallible function call.
+
+```qd
+"test.txt" io::read_file switch {
+	Ok { -> content content print }
+	_ { "error" print nl }
+}
+```
+
+### Err
+
+Literal `0` (same as `false`). Used in `switch` to match the error case after a fallible function call.
+
+```qd
+"test.txt" io::read_file switch {
+	Ok { -> content content print }
+	Err { "error reading file" print nl }
 }
 ```
 

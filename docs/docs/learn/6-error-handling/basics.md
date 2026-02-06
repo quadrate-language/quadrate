@@ -210,6 +210,55 @@ fn main() {
 }
 ```
 
+## Using switch for error handling
+
+Instead of `if`/`else`, you can use `switch` with `Ok` and `Err` to handle fallible calls:
+
+```qd
+use io
+
+fn main() {
+	"test.txt" io::Read io::open switch {
+		Ok {
+			-> file
+			"File opened" print nl
+			file io::close
+		}
+		_ {
+			"Could not open file" print nl
+		}
+	}
+}
+```
+
+`Ok` is a literal `1` (success) and `Err` is a literal `0` (failure). After a fallible call, the top of stack is `1` on success or `0` on failure, so `switch` matches against these values.
+
+You can use `Err` explicitly instead of `_`:
+
+```qd
+"data.txt" io::read_file switch {
+	Ok { -> content content print nl }
+	Err { "Failed to read file" print nl }
+}
+```
+
+To inspect the error details, use `err` in the error branch:
+
+```qd
+"missing.txt" io::read_file switch {
+	Ok {
+		-> content
+		content print nl
+	}
+	_ {
+		err -> code -> msg
+		"Error: " print msg print " (code " print code print ")" print nl
+	}
+}
+```
+
+The `switch` pattern is equivalent to `if`/`else` - use whichever is clearer for your code.
+
 ## Key rules
 
 1. Mark fallible functions with `!` after the signature

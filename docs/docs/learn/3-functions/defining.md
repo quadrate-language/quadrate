@@ -61,7 +61,7 @@ fn push_two( -- a:i64 b:i64) {
 
 ## Parameter names
 
-Parameter names document the values but don't create variables automatically:
+Parameter names document the values but don't create variables automatically. You must use `->` to bind them:
 
 ```qd
 use math
@@ -72,6 +72,29 @@ fn distance(x1:f64 y1:f64 x2:f64 y2:f64 -- d:f64) {
 	y2 y1 - dup *  // (y2-y1)^2
 	+ math::sqrt
 }
+```
+
+!!! warning "Common mistake"
+    Parameter names like `a` and `b` in `fn add(a:i64 b:i64 -- sum:i64)` are only for documentation. They do **not** create variables you can use in the body. This won't work:
+
+    ```qd
+    fn add(a:i64 b:i64 -- sum:i64) {
+    	a b +  // ERROR: 'a' and 'b' are not defined
+    }
+    ```
+
+    Instead, either use stack operations or bind with `->`:
+
+    ```qd
+    fn add(a:i64 b:i64 -- sum:i64) {
+    	+  // Works: operates directly on the stack
+    }
+
+    fn add(a:i64 b:i64 -- sum:i64) {
+    	-> b -> a  // Works: bind to variables first
+    	a b +
+    }
+    ```
 ```
 
 ## Multiple outputs

@@ -192,14 +192,14 @@ fn main() {
 Constants can be accessed from other modules:
 
 ```qd
-// config.qd
+// config/config.qd
 pub const AppVersion = "2.0.0"
 pub const MaxUsers = 1000
 ```
 
 ```qd
 // main.qd
-use config.qd
+use config
 
 fn main() {
 	"Version: " print config::AppVersion print nl

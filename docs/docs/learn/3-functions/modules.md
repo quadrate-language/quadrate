@@ -69,36 +69,88 @@ No `use` statement is needed for files in the same directory.
 
 ## Standard library modules
 
-Quadrate includes many built-in modules:
+These modules ship with Quadrate and are always available:
 
 | Module | Purpose |
 |--------|---------|
-| `base64` | Base64 encoding/decoding |
 | `bits` | Bit manipulation |
 | `bytes` | Byte buffer operations |
-| `crc32` | CRC32 checksums |
 | `flag` | Command-line flag parsing |
 | `fmt` | Formatted output |
-| `hex` | Hexadecimal encoding/decoding |
 | `io` | Input/output operations |
-| `json` | JSON parsing |
+| `limits` | Numeric limits |
 | `math` | Mathematical functions |
 | `mem` | Memory management |
-| `net` | Networking |
 | `os` | Operating system interaction |
 | `path` | File path operations |
 | `rand` | Random numbers |
-| `regex` | Regular expressions |
 | `sb` | String builder |
-| `sha256` | SHA-256 hashing |
-| `sort` | Sorting functions |
+| `signal` | Unix signal handling |
 | `str` | String manipulation |
 | `strconv` | String conversion |
+| `term` | Terminal colors and formatting |
 | `testing` | Testing framework |
+| `thread` | Threading primitives |
 | `time` | Date and time |
+| `tty` | Terminal detection and dimensions |
 | `unicode` | Unicode utilities |
-| `uri` | URI parsing and building |
-| `uuid` | UUID generation |
+
+## External packages
+
+!!! note "Module not found?"
+    If you get an error like "unknown module" when using `use json`, `use http`, etc., you need to install the package first. See below.
+
+Additional modules are available as separate packages via `quadpm`. Install them with `quadpm get`:
+
+```bash
+quadpm get https://github.com/quadrate-language/json
+```
+
+After installing, use them like any standard library module:
+
+```qd
+use json
+
+fn main() {
+	"{\"name\": \"Alice\"}" json::parse! -> obj
+	obj "name" json::get_string print nl
+}
+```
+
+For projects with multiple dependencies, list them in a `qd.json` file and run `quadpm install`:
+
+```json
+{
+	"name": "myproject",
+	"dependencies": {
+		"json": "https://github.com/quadrate-language/json",
+		"http": "https://github.com/quadrate-language/http"
+	}
+}
+```
+
+```bash
+quadpm install
+```
+
+| Package | Install |
+|---------|---------|
+| `base64` | `quadpm get https://github.com/quadrate-language/base64` |
+| `compress` | `quadpm get https://github.com/quadrate-language/compress` |
+| `crypto` | `quadpm get https://github.com/quadrate-language/crypto` |
+| `hex` | `quadpm get https://github.com/quadrate-language/hex` |
+| `hof` | `quadpm get https://github.com/quadrate-language/hof` |
+| `http` | `quadpm get https://github.com/quadrate-language/http` |
+| `json` | `quadpm get https://github.com/quadrate-language/json` |
+| `net` | `quadpm get https://github.com/quadrate-language/net` |
+| `regex` | `quadpm get https://github.com/quadrate-language/regex` |
+| `sort` | `quadpm get https://github.com/quadrate-language/sort` |
+| `sqlite` | `quadpm get https://github.com/quadrate-language/sqlite` |
+| `tls` | `quadpm get https://github.com/quadrate-language/tls` |
+| `uri` | `quadpm get https://github.com/quadrate-language/uri` |
+| `uuid` | `quadpm get https://github.com/quadrate-language/uuid` |
+
+See [External Packages](../../external-packages.md) for full documentation and examples.
 
 ## Example: using multiple modules
 

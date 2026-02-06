@@ -14,6 +14,24 @@ fn main() {
 }
 ```
 
+### Numeric literals
+
+Integers can be written in decimal, hexadecimal, or binary:
+
+```qd
+fn main() {
+	255 print nl       // decimal
+	0xFF print nl      // hexadecimal (255)
+	0b11111111 print nl  // binary (255)
+}
+```
+
+| Prefix | Base | Example |
+|--------|------|---------|
+| (none) | Decimal | `42`, `-17` |
+| `0x` | Hexadecimal | `0xFF`, `0x1A` |
+| `0b` | Binary | `0b1010`, `0b11110000` |
+
 ## Float (f64)
 
 64-bit floating-point numbers:

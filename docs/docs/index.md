@@ -54,7 +54,7 @@ quad run factorial.qd
 
 New to Quadrate? Start here:
 
-1. **[Try it Online](https://quad.r8.rs/play/)** - Experiment in the playground
+1. **[Try it Online](https://quad.r8.rs/play/)** - Write and run code in the browser (includes examples and quick reference)
 2. **[Install Quadrate](getting-started.md)** - Get the toolchain running
 3. **[Hello World](learn/1-basics/hello-world.md)** - Write your first program
 4. **[Learn the Stack](learn/2-stack/how-it-works.md)** - Understand stack-based evaluation
@@ -74,28 +74,6 @@ Quadrate comes with everything you need:
 | `quadlsp` | Language server - IDE integration |
 | `quadrepl` | REPL - experiment interactively |
 | `quadpm` | Package manager - manage dependencies |
-
-## Command-line arguments
-
-Reading command-line arguments:
-
-```qd
-use str
-
-fn main() {
-	read -> argc
-
-	argc 0 == if {
-		"Usage: greet <name>" print nl
-	} else {
-		-> name
-		"Hello, " name str::concat "!" str::concat print nl
-	}
-}
-```
-```bash
-quad run greet.qd -- Millie
-```
 
 ## Learn more
 

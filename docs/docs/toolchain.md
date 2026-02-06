@@ -19,6 +19,29 @@ quad clean             # Remove build artifacts
 
 For most development tasks, `quad` is all you need.
 
+### quad init
+
+Creates a new Quadrate project in the current directory:
+
+```bash
+quad init           # Create project named "myproject"
+quad init myapp     # Create project with custom name
+```
+
+This creates three files:
+
+| File | Description |
+|------|-------------|
+| `qd.json` | Package manifest with name, version, and dependencies |
+| `main.qd` | Main source file with a Hello World program |
+| `.gitignore` | Ignores build output and editor files |
+
+After initializing, run your project with:
+
+```bash
+quad run
+```
+
 ## quadc
 
 The Quadrate compiler. Compiles `.qd` source files to native executables via LLVM.

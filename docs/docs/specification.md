@@ -649,12 +649,12 @@ Type parameters are inferred from arguments at call sites.
 
 ### 7.4 Methods
 
-Methods are functions where the first parameter is a struct receiver:
+Methods are functions with a receiver parameter in parentheses before the function name:
 
 ```quadrate
 struct Vec2 { x:f64 y:f64 }
 
-fn length(v:Vec2 -- len:f64) {
+fn (v:Vec2) length( -- len:f64) {
     -> v
     v @x v @x * v @y v @y * + math::sqrt
 }
@@ -1435,7 +1435,6 @@ instruction     = "dup" | "swap" | "drop" | "over" | "rot" | "nip" | "tuck"
 | `.` | Field set (write) |
 | `&` | Get function pointer |
 | `!` | Abort on error (after fallible call) |
-| `?` | Check error (after fallible call) |
 
 ---
 

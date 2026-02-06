@@ -67,6 +67,25 @@ fn main() {
 }
 ```
 
+## Appending elements
+
+Use `append` to add elements to an array:
+
+```qd
+fn main() {
+	0 make<i64> -> arr    // Start with empty array
+	arr 10 append -> arr  // Append 10
+	arr 20 append -> arr  // Append 20
+	arr 30 append -> arr  // Append 30
+
+	arr len print nl      // 3
+	arr 0 nth print nl    // 10
+	arr 2 nth print nl    // 30
+}
+```
+
+`append` returns the modified array, so you can chain appends or reassign with `->`.
+
 ## Iterating arrays
 
 ### With for loop

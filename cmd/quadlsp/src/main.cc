@@ -4,7 +4,6 @@
 #include "lsp_impl.h"
 #include "src/platform/process_platform.h"
 #include "version.h"
-#include <qdplatform/platform.h>
 #include <algorithm>
 #include <cctype>
 #include <cstdio>
@@ -24,6 +23,7 @@
 #include <qc/ast_node_test.h>
 #include <qc/error_reporter.h>
 #include <qc/semantic_validator.h>
+#include <qdplatform/platform.h>
 #include <set>
 #include <sstream>
 
@@ -3021,8 +3021,7 @@ void QuadrateLSP::handleRangeFormatting(const std::string& id, const std::string
 						json_object_set_new(start, "character", json_integer(0)); // Start of line
 						json_t* end = json_object();
 						json_object_set_new(end, "line", json_integer(static_cast<json_int_t>(endLine)));
-						json_object_set_new(
-								end, "character", json_integer(static_cast<json_int_t>(adjustedEndChar)));
+						json_object_set_new(end, "character", json_integer(static_cast<json_int_t>(adjustedEndChar)));
 						json_object_set_new(range, "start", start);
 						json_object_set_new(range, "end", end);
 						json_object_set_new(edit, "range", range);

@@ -109,6 +109,8 @@ fn main() {
 
 ### Guard clauses
 
+Use `return` to exit a function early. This is useful for handling edge cases at the top of a function:
+
 ```qd
 fn process(x:i64 -- result:i64) {
 	-> x  // bind parameter

@@ -14,15 +14,15 @@ Quadrate requires the following build tools:
 
 > **Note:** [Arch Linux](https://archlinux.org/), [Debian](https://www.debian.org/) and [Haiku](https://haiku-os.org/) are currently the only tested and supported platforms. Other platforms may work but are untested.
 
-<img src="https://archlinux.org/static/logos/archlinux-logo-dark-scalable.svg" alt="https://archlinux.org/" style="height: 40px">
+#### <img src="https://archlinux.org/static/logos/archlinux-logo-dark-scalable.svg" alt="https://archlinux.org/" style="height: 40px"> Arch Linux
 
 ```bash
 pacman -S meson clang ninja llvm readline
 ```
 
-#### <img src="https://www.debian.org/logos/openlogo-nd.svg" alt="https://www.debian.org/" style="height: 32px"> Debian
+#### <img src="https://www.debian.org/logos/openlogo-nd.svg" alt="https://www.debian.org/" style="height: 32px"> Debian / Ubuntu
 ```bash
-apt install meson clang libreadline-dev
+apt install meson ninja-build clang llvm-dev libreadline-dev
 ```
 
 <img src="https://raw.githubusercontent.com/haiku/haiku/b31ff5b650da52911640cd5514a08887732f3342/data/artwork/HAIKU%20logo%20-%20black.svg" alt="https://www.haiku-os.org/" style="height: 32px">
@@ -101,6 +101,28 @@ Tree-sitter grammar and LSP support: [quadrate.nvim](https://git.sr.ht/~klahr/qu
 ### Visual Studio Code / Code - OSS
 
 Syntax highlighting and LSP support: [quadrate-vscode](https://git.sr.ht/~klahr/quadrate-vscode)
+
+## Troubleshooting
+
+### LLVM version errors
+
+If you see errors about LLVM not being found, ensure you have LLVM 14 or higher installed. On Debian/Ubuntu, install `llvm-dev` (or a specific version like `llvm-18-dev`).
+
+### Ninja not found
+
+Make sure `ninja` (or `ninja-build` on Debian/Ubuntu) is installed. Meson requires Ninja as its build backend.
+
+### C++20 compilation errors
+
+Quadrate requires a compiler with C++20 support. Use GCC 10+ or Clang 10+. If your system's default compiler is older, set `CXX` before building:
+
+```bash
+CXX=clang++-18 make release
+```
+
+### Permission denied on install
+
+On Linux, use `sudo make install` to install to system directories. On Haiku, `make install` works without sudo.
 
 ## Next steps
 
