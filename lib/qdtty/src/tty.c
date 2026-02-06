@@ -8,6 +8,9 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <sys/ioctl.h>
+#ifdef __HAIKU__
+#include <termios.h>
+#endif
 
 int usr_tty_is_stdout(qd_context* ctx) {
 	int64_t result = isatty(STDOUT_FILENO) ? 1 : 0;
