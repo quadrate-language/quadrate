@@ -513,8 +513,8 @@
                     <div class="quick-ref-section">
                         <h4>More Loops</h4>
                         <div class="quick-ref-example">
-                            <code>while { cond } { body }</code>
-                            <span class="result">loop while condition true</span>
+                            <code>cond while { body; cond }</code>
+                            <span class="result">body must re-push condition</span>
                         </div>
                         <div class="quick-ref-example">
                             <code>loop { ... break }</code>
