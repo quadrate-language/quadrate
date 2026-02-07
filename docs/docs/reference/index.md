@@ -10,6 +10,7 @@ This section documents all Quadrate keywords and built-in instructions.
 - [Comparison](comparison.md) - `==`, `!=`, `<`, `>`, `<=`, `>=`
 - [Bitwise](bitwise.md) - `and`, `or`, `xor`, `not`, `shl`, `shr`
 - [Arrays](arrays.md) - Array creation and manipulation
+- [Structs](structs.md) - Struct definition, field access, methods
 - [Generics](generics.md) - Generic functions with `<T>`
 - [Type Casting](types.md) - `cast<T>`
 - [Input/Output](io.md) - `print`, `nl`, `read`
@@ -53,8 +54,8 @@ Call with `if-else` to handle errors:
 
 ```qd
 10 2 divide if {
-	// success
+	// success: result is on stack
 } else {
-	drop2  // error
+	// error: stack is clean (inputs consumed, no outputs)
 }
 ```

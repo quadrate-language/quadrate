@@ -603,12 +603,19 @@ namespace Qd {
 			}
 
 			// Not found - report error with suggestion
-			std::string errorMsg = "Undefined function '";
+			std::string errorMsg = "Undefined identifier '";
 			errorMsg += name;
 			errorMsg += "'";
-			std::string suggestion = findSimilarFunctionName(name, mDefinedFunctions);
+			// Check local variables for similar names first
+			std::string suggestion = findSimilarName(name, localVariables);
+			if (suggestion.empty()) {
+				suggestion = findSimilarFunctionName(name, mDefinedFunctions);
+			}
 			if (!suggestion.empty()) {
 				errorMsg += "; did you mean '" + suggestion + "'?";
+			} else {
+				errorMsg += "; to declare a variable, use: value -> ";
+				errorMsg += name;
 			}
 			reportError(ident, errorMsg.c_str());
 		}

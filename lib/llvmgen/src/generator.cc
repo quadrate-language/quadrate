@@ -1136,8 +1136,8 @@ namespace Qd {
 			// Call the test function
 			auto errorCode = builder->CreateCall(testFn, {ctx}, "error_code");
 
-			// Check if test passed (0 = non-fallible success, 1 = fallible success/Ok)
-			auto isSuccess = builder->CreateICmpULE(errorCode, builder->getInt32(1), "is_success");
+			// Check if test passed (only 0 = success)
+			auto isSuccess = builder->CreateICmpULT(errorCode, builder->getInt32(1), "is_success");
 
 			auto successBB = llvm::BasicBlock::Create(*context, "test_success", mainFn);
 			auto failBB = llvm::BasicBlock::Create(*context, "test_fail", mainFn);

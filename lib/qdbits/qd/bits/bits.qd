@@ -136,7 +136,7 @@ pub fn clz(value:i64 -- count:i64) {
 	} else {
 		0 -> n
 		loop {
-			v 63 shr 0 == not if { break }
+			v 63 shr 0 != if { break }
 			n 1 + -> n
 			v 1 shl -> v
 		}
@@ -155,7 +155,7 @@ pub fn ctz(value:i64 -- count:i64) {
 	} else {
 		0 -> n
 		loop {
-			v 1 and 0 == not if { break }
+			v 1 and 0 != if { break }
 			n 1 + -> n
 			v 1 shr -> v
 		}

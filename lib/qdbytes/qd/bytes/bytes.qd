@@ -418,7 +418,7 @@ pub fn xor(dst:ptr dst_off:i64 src:ptr src_off:i64 count:i64 -- ) {
 		}
 		dst dst_off i + mem::get_byte -> a
 		src src_off i + mem::get_byte -> b
-		a b ^ -> result
+		a b xor -> result
 		result dst dst_off i + mem::set_byte
 		i 1 + -> i
 	}

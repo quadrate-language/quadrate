@@ -1,4 +1,3 @@
-#define _XOPEN_SOURCE 700
 #include <qdtime/time.h>
 #include <qdrt/stack.h>
 #include <qdrt/runtime.h>
@@ -109,7 +108,7 @@ int usr_time_format(qd_context* ctx) {
 
 	time_t timestamp = (time_t)ts_elem.value.i;
 	struct tm tm_info;
-	if (localtime_r(&timestamp, &tm_info) == NULL) {
+	if (gmtime_r(&timestamp, &tm_info) == NULL) {
 		qd_string_release(format_elem.value.s);
 		ctx->error_code = TIME_ERR_FORMAT;
 		qd_set_error_msg(ctx, "time::format: invalid timestamp");
@@ -196,7 +195,7 @@ int usr_time_parse(qd_context* ctx) {
 		return (int){TIME_ERR_PARSE};
 	}
 
-	time_t timestamp = mktime(&tm_info);
+	time_t timestamp = timegm(&tm_info);
 	if (timestamp == (time_t)-1) {
 		qd_string_release(format_elem.value.s);
 		qd_string_release(str_elem.value.s);

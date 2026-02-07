@@ -270,6 +270,120 @@ int usr_testing_fail(qd_context* ctx) {
 	return (int){1};
 }
 
+// Helper to pop two strings: ( haystack needle -- )
+// Returns 0 on success, non-zero on failure
+static int pop_two_strings(qd_context* ctx, const char* func_name,
+                           qd_stack_element_t* haystack, qd_stack_element_t* needle) {
+	size_t stack_size = qd_stack_size(ctx->st);
+	if (stack_size < 2) {
+		fprintf(stderr, "Assertion error: %s requires 2 strings on stack, have %zu\n", func_name, stack_size);
+		qd_print_stack_trace(ctx);
+		return 1;
+	}
+
+	qd_stack_error err = qd_stack_pop(ctx->st, needle);
+	if (err != QD_STACK_OK) {
+		return -2;
+	}
+	err = qd_stack_pop(ctx->st, haystack);
+	if (err != QD_STACK_OK) {
+		release_element(needle);
+		return -2;
+	}
+
+	if (haystack->type != QD_STACK_TYPE_STR || needle->type != QD_STACK_TYPE_STR) {
+		fprintf(stderr, "Assertion error: %s requires 2 strings, got %s and %s\n",
+				func_name, get_type_name(haystack->type), get_type_name(needle->type));
+		qd_print_stack_trace(ctx);
+		release_element(haystack);
+		release_element(needle);
+		return 1;
+	}
+
+	return 0;
+}
+
+// assert_contains - Assert string contains substring: ( haystack needle -- )
+int usr_testing_assert_contains(qd_context* ctx) {
+	qd_stack_element_t haystack, needle;
+	int rc = pop_two_strings(ctx, "assert_contains", &haystack, &needle);
+	if (rc != 0) {
+		return rc;
+	}
+
+	const char* h = qd_string_data(haystack.value.s);
+	const char* n = qd_string_data(needle.value.s);
+
+	if (strstr(h, n) == NULL) {
+		fprintf(stderr, "Assertion failed: assert_contains\n");
+		fprintf(stderr, "  string: \"%s\"\n", h);
+		fprintf(stderr, "  does not contain: \"%s\"\n", n);
+		qd_print_stack_trace(ctx);
+		release_element(&haystack);
+		release_element(&needle);
+		return (int){1};
+	}
+
+	release_element(&haystack);
+	release_element(&needle);
+	return (int){0};
+}
+
+// assert_starts_with - Assert string starts with prefix: ( str prefix -- )
+int usr_testing_assert_starts_with(qd_context* ctx) {
+	qd_stack_element_t haystack, needle;
+	int rc = pop_two_strings(ctx, "assert_starts_with", &haystack, &needle);
+	if (rc != 0) {
+		return rc;
+	}
+
+	const char* h = qd_string_data(haystack.value.s);
+	const char* n = qd_string_data(needle.value.s);
+	size_t nlen = strlen(n);
+
+	if (strncmp(h, n, nlen) != 0) {
+		fprintf(stderr, "Assertion failed: assert_starts_with\n");
+		fprintf(stderr, "  string: \"%s\"\n", h);
+		fprintf(stderr, "  does not start with: \"%s\"\n", n);
+		qd_print_stack_trace(ctx);
+		release_element(&haystack);
+		release_element(&needle);
+		return (int){1};
+	}
+
+	release_element(&haystack);
+	release_element(&needle);
+	return (int){0};
+}
+
+// assert_ends_with - Assert string ends with suffix: ( str suffix -- )
+int usr_testing_assert_ends_with(qd_context* ctx) {
+	qd_stack_element_t haystack, needle;
+	int rc = pop_two_strings(ctx, "assert_ends_with", &haystack, &needle);
+	if (rc != 0) {
+		return rc;
+	}
+
+	const char* h = qd_string_data(haystack.value.s);
+	const char* n = qd_string_data(needle.value.s);
+	size_t hlen = strlen(h);
+	size_t nlen = strlen(n);
+
+	if (nlen > hlen || strcmp(h + hlen - nlen, n) != 0) {
+		fprintf(stderr, "Assertion failed: assert_ends_with\n");
+		fprintf(stderr, "  string: \"%s\"\n", h);
+		fprintf(stderr, "  does not end with: \"%s\"\n", n);
+		qd_print_stack_trace(ctx);
+		release_element(&haystack);
+		release_element(&needle);
+		return (int){1};
+	}
+
+	release_element(&haystack);
+	release_element(&needle);
+	return (int){0};
+}
+
 // assert_approx_eq - Assert two floats are approximately equal: ( a b epsilon -- )
 int usr_testing_assert_approx_eq(qd_context* ctx) {
 	size_t stack_size = qd_stack_size(ctx->st);

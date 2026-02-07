@@ -54,6 +54,24 @@ import "libqdtesting.a" as "testing" {
 	/// @param epsilon f64 Maximum allowed difference
 	/// @example 3.14159 3.14160 0.0001 testing::assert_approx_eq  // passes
 	pub fn assert_approx_eq(a:f64 b:f64 epsilon:f64 -- )
+
+	/// Assert that a string contains a substring.
+	/// @param haystack str String to search in
+	/// @param needle str Substring to search for
+	/// @example "hello world" "world" testing::assert_contains  // passes
+	pub fn assert_contains(haystack:str needle:str -- )
+
+	/// Assert that a string starts with a prefix.
+	/// @param s str String to check
+	/// @param prefix str Expected prefix
+	/// @example "hello world" "hello" testing::assert_starts_with  // passes
+	pub fn assert_starts_with(s:str prefix:str -- )
+
+	/// Assert that a string ends with a suffix.
+	/// @param s str String to check
+	/// @param suffix str Expected suffix
+	/// @example "hello world" "world" testing::assert_ends_with  // passes
+	pub fn assert_ends_with(s:str suffix:str -- )
 }
 
 /// Assert that a is greater than b.

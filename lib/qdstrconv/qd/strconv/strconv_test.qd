@@ -9,11 +9,11 @@ test "strconv::itoa" {
 	1000000 strconv::itoa "1000000" testing::assert_eq
 }
 
-test "strconv::atoi" {
-	"42" strconv::atoi 42 testing::assert_eq
-	"0" strconv::atoi 0 testing::assert_eq
-	"-123" strconv::atoi -123 testing::assert_eq
-	"1000000" strconv::atoi 1000000 testing::assert_eq
+test "strconv::atoi!" {
+	"42" strconv::atoi! 42 testing::assert_eq
+	"0" strconv::atoi! 0 testing::assert_eq
+	"-123" strconv::atoi! -123 testing::assert_eq
+	"1000000" strconv::atoi! 1000000 testing::assert_eq
 }
 
 test "strconv::format_int base 16" {
@@ -36,29 +36,29 @@ test "strconv::format_int base 8" {
 	7 8 strconv::format_int "7" testing::assert_eq
 }
 
-test "strconv::parse_int base 16" {
-	"ff" 16 strconv::parse_int 255 testing::assert_eq
-	"10" 16 strconv::parse_int 16 testing::assert_eq
-	"0" 16 strconv::parse_int 0 testing::assert_eq
-	"100" 16 strconv::parse_int 256 testing::assert_eq
+test "strconv::parse_int! base 16" {
+	"ff" 16 strconv::parse_int! 255 testing::assert_eq
+	"10" 16 strconv::parse_int! 16 testing::assert_eq
+	"0" 16 strconv::parse_int! 0 testing::assert_eq
+	"100" 16 strconv::parse_int! 256 testing::assert_eq
 }
 
-test "strconv::parse_int base 2" {
-	"101" 2 strconv::parse_int 5 testing::assert_eq
-	"1000" 2 strconv::parse_int 8 testing::assert_eq
-	"0" 2 strconv::parse_int 0 testing::assert_eq
-	"1111" 2 strconv::parse_int 15 testing::assert_eq
+test "strconv::parse_int! base 2" {
+	"101" 2 strconv::parse_int! 5 testing::assert_eq
+	"1000" 2 strconv::parse_int! 8 testing::assert_eq
+	"0" 2 strconv::parse_int! 0 testing::assert_eq
+	"1111" 2 strconv::parse_int! 15 testing::assert_eq
 }
 
-test "strconv::parse_int base 8" {
-	"10" 8 strconv::parse_int 8 testing::assert_eq
-	"100" 8 strconv::parse_int 64 testing::assert_eq
-	"7" 8 strconv::parse_int 7 testing::assert_eq
+test "strconv::parse_int! base 8" {
+	"10" 8 strconv::parse_int! 8 testing::assert_eq
+	"100" 8 strconv::parse_int! 64 testing::assert_eq
+	"7" 8 strconv::parse_int! 7 testing::assert_eq
 }
 
 test "strconv roundtrip" {
-	12345 strconv::itoa strconv::atoi 12345 testing::assert_eq
-	255 16 strconv::format_int 16 strconv::parse_int 255 testing::assert_eq
+	12345 strconv::itoa strconv::atoi! 12345 testing::assert_eq
+	255 16 strconv::format_int 16 strconv::parse_int! 255 testing::assert_eq
 }
 
 test "strconv::format_float basic" {
@@ -77,25 +77,25 @@ test "strconv::format_float scientific" {
 	0.0000000001 strconv::format_float "1e-10" testing::assert_eq
 }
 
-test "strconv::parse_float basic" {
-	"3.14159" strconv::parse_float 3.14159 0.00001 testing::assert_approx_eq
-	"0.0" strconv::parse_float 0.0 0.00001 testing::assert_approx_eq
-	"-1.5" strconv::parse_float -1.5 0.00001 testing::assert_approx_eq
+test "strconv::parse_float! basic" {
+	"3.14159" strconv::parse_float! 3.14159 0.00001 testing::assert_approx_eq
+	"0.0" strconv::parse_float! 0.0 0.00001 testing::assert_approx_eq
+	"-1.5" strconv::parse_float! -1.5 0.00001 testing::assert_approx_eq
 }
 
-test "strconv::parse_float integers" {
-	"42" strconv::parse_float 42.0 0.00001 testing::assert_approx_eq
-	"-100" strconv::parse_float -100.0 0.00001 testing::assert_approx_eq
+test "strconv::parse_float! integers" {
+	"42" strconv::parse_float! 42.0 0.00001 testing::assert_approx_eq
+	"-100" strconv::parse_float! -100.0 0.00001 testing::assert_approx_eq
 }
 
-test "strconv::parse_float scientific" {
-	"1e10" strconv::parse_float 10000000000.0 1.0 testing::assert_approx_eq
-	"1e-10" strconv::parse_float 0.0000000001 0.0000000000001 testing::assert_approx_eq
+test "strconv::parse_float! scientific" {
+	"1e10" strconv::parse_float! 10000000000.0 1.0 testing::assert_approx_eq
+	"1e-10" strconv::parse_float! 0.0000000001 0.0000000000001 testing::assert_approx_eq
 }
 
 test "strconv::float roundtrip" {
-	3.14159 strconv::format_float strconv::parse_float 3.14159 0.00001 testing::assert_approx_eq
-	-42.5 strconv::format_float strconv::parse_float -42.5 0.00001 testing::assert_approx_eq
+	3.14159 strconv::format_float strconv::parse_float! 3.14159 0.00001 testing::assert_approx_eq
+	-42.5 strconv::format_float strconv::parse_float! -42.5 0.00001 testing::assert_approx_eq
 }
 
 test "strconv::format_bool" {
@@ -105,23 +105,23 @@ test "strconv::format_bool" {
 	-1 strconv::format_bool "true" testing::assert_eq
 }
 
-test "strconv::parse_bool true values" {
-	"true" strconv::parse_bool 1 testing::assert_eq
-	"True" strconv::parse_bool 1 testing::assert_eq
-	"TRUE" strconv::parse_bool 1 testing::assert_eq
-	"1" strconv::parse_bool 1 testing::assert_eq
+test "strconv::parse_bool! true values" {
+	"true" strconv::parse_bool! 1 testing::assert_eq
+	"True" strconv::parse_bool! 1 testing::assert_eq
+	"TRUE" strconv::parse_bool! 1 testing::assert_eq
+	"1" strconv::parse_bool! 1 testing::assert_eq
 }
 
-test "strconv::parse_bool false values" {
-	"false" strconv::parse_bool 0 testing::assert_eq
-	"False" strconv::parse_bool 0 testing::assert_eq
-	"FALSE" strconv::parse_bool 0 testing::assert_eq
-	"0" strconv::parse_bool 0 testing::assert_eq
+test "strconv::parse_bool! false values" {
+	"false" strconv::parse_bool! 0 testing::assert_eq
+	"False" strconv::parse_bool! 0 testing::assert_eq
+	"FALSE" strconv::parse_bool! 0 testing::assert_eq
+	"0" strconv::parse_bool! 0 testing::assert_eq
 }
 
 test "strconv::bool roundtrip" {
-	1 strconv::format_bool strconv::parse_bool 1 testing::assert_eq
-	0 strconv::format_bool strconv::parse_bool 0 testing::assert_eq
+	1 strconv::format_bool strconv::parse_bool! 1 testing::assert_eq
+	0 strconv::format_bool strconv::parse_bool! 0 testing::assert_eq
 }
 
 test "strconv::format_int negative" {
@@ -129,11 +129,11 @@ test "strconv::format_int negative" {
 	-8 2 strconv::format_int "-1000" testing::assert_eq
 }
 
-test "strconv::parse_int with plus sign" {
-	"+42" 10 strconv::parse_int 42 testing::assert_eq
-	"+ff" 16 strconv::parse_int 255 testing::assert_eq
+test "strconv::parse_int! with plus sign" {
+	"+42" 10 strconv::parse_int! 42 testing::assert_eq
+	"+ff" 16 strconv::parse_int! 255 testing::assert_eq
 }
 
-test "strconv::parse_int with whitespace" {
-	"  42" 10 strconv::parse_int 42 testing::assert_eq
+test "strconv::parse_int! with whitespace" {
+	"  42" 10 strconv::parse_int! 42 testing::assert_eq
 }

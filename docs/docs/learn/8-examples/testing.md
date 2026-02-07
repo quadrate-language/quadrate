@@ -187,3 +187,7 @@ test "str::contains finds substrings" {
 3. **`quad test`** - Run all tests in the project
 4. **`*_test.qd`** - Naming convention for test files
 5. **No `main` needed** - Test files don't require a main function
+
+## What's next?
+
+Learn about [Debugging](debugging.md) techniques for finding and fixing issues.

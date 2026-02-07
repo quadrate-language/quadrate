@@ -130,8 +130,10 @@ pub fn fits_u32(v:i64 -- fits:i64) {
 /// @example 200 limits::clamp_i8 print  // 127
 pub fn clamp_i8(v:i64 -- clamped:i64) {
 	-> v
-	v I8Min < if { I8Min } else {
-		v I8Max > if { I8Max } else { v }
+	I8Min -> lo
+	I8Max -> hi
+	v lo < if { lo } else {
+		v hi > if { hi } else { v }
 	}
 }
 
@@ -141,8 +143,10 @@ pub fn clamp_i8(v:i64 -- clamped:i64) {
 /// @example 50000 limits::clamp_i16 print  // 32767
 pub fn clamp_i16(v:i64 -- clamped:i64) {
 	-> v
-	v I16Min < if { I16Min } else {
-		v I16Max > if { I16Max } else { v }
+	I16Min -> lo
+	I16Max -> hi
+	v lo < if { lo } else {
+		v hi > if { hi } else { v }
 	}
 }
 

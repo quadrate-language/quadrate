@@ -174,4 +174,13 @@ import "libqdio.a" as "io" {
 	/// @error ErrStat Stat operation failed
 	/// @example "/etc/hostname" io::stat_mode! -> mode
 	pub fn stat_mode(path:str -- mode:i64)!
+
+	/// Append string contents to a file.
+	/// Creates the file if it doesn't exist.
+	/// @param path str File path
+	/// @param contents str String to append
+	/// @error ErrPermission Permission denied or cannot open file
+	/// @error ErrWrite Write operation failed
+	/// @example "/tmp/log.txt" "New line\n" io::append_file!
+	pub fn append_file(path:str contents:str -- )!
 }

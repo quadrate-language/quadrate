@@ -1082,3 +1082,78 @@ int usr_io_stat_mode(qd_context* ctx) {
     qd_push_i(ctx, IO_ERR_OK);
     return (int){0};
 }
+
+int usr_io_append_file(qd_context* ctx) {
+    size_t stack_size = qd_stack_size(ctx->st);
+    if (stack_size < 2) {
+        fprintf(stderr, "Fatal error in io::append_file: Stack underflow (need 2, have %zu)\n", stack_size);
+        qd_print_stack_trace(ctx);
+        abort();
+    }
+    qd_stack_element_t contents_elem;
+    qd_stack_error err = qd_stack_pop(ctx->st, &contents_elem);
+    if (err != QD_STACK_OK) {
+        fprintf(stderr, "Fatal error in io::append_file: Failed to pop contents\n");
+        abort();
+    }
+    if (contents_elem.type != QD_STACK_TYPE_STR) {
+        fprintf(stderr, "Fatal error in io::append_file: Expected string for contents, got %d\n", contents_elem.type);
+        abort();
+    }
+    qd_stack_element_t path_elem;
+    err = qd_stack_pop(ctx->st, &path_elem);
+    if (err != QD_STACK_OK) {
+        qd_string_release(contents_elem.value.s);
+        fprintf(stderr, "Fatal error in io::append_file: Failed to pop path\n");
+        abort();
+    }
+    if (path_elem.type != QD_STACK_TYPE_STR) {
+        qd_string_release(contents_elem.value.s);
+        fprintf(stderr, "Fatal error in io::append_file: Expected string for path, got %d\n", path_elem.type);
+        abort();
+    }
+
+    const char* path = qd_string_data(path_elem.value.s);
+    const char* contents = qd_string_data(contents_elem.value.s);
+    if (!path || !contents) {
+        qd_string_release(path_elem.value.s);
+        qd_string_release(contents_elem.value.s);
+        ctx->error_code = IO_ERR_INVALID_ARG;
+        qd_set_error_msg(ctx, "io::append_file: null path or contents string");
+        qd_push_i(ctx, IO_ERR_INVALID_ARG);
+        return (int){IO_ERR_INVALID_ARG};
+    }
+    size_t len = strlen(contents);
+
+    FILE* fp = fopen(path, "ab");
+    if (!fp) {
+        int saved_errno = errno;
+        qd_string_release(path_elem.value.s);
+        qd_string_release(contents_elem.value.s);
+        ctx->error_code = IO_ERR_PERMISSION;
+        char err_buf[256];
+        snprintf(err_buf, sizeof(err_buf), "%s", strerror(saved_errno));
+        qd_set_error_msg(ctx, err_buf);
+        qd_push_i(ctx, IO_ERR_PERMISSION);
+        return (int){IO_ERR_PERMISSION};
+    }
+
+    size_t written = fwrite(contents, 1, len, fp);
+    int saved_errno = errno;
+    fclose(fp);
+
+    qd_string_release(path_elem.value.s);
+    qd_string_release(contents_elem.value.s);
+
+    if (written < len) {
+        ctx->error_code = IO_ERR_WRITE;
+        char err_buf[256];
+        snprintf(err_buf, sizeof(err_buf), "%s", strerror(saved_errno));
+        qd_set_error_msg(ctx, err_buf);
+        qd_push_i(ctx, IO_ERR_WRITE);
+        return (int){IO_ERR_WRITE};
+    }
+
+    qd_push_i(ctx, IO_ERR_OK);
+    return (int){0};
+}

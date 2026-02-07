@@ -1,0 +1,6 @@
+fn main() {
+	"Hello \"World\"" print nl
+	"He said \"Hi\"" print nl
+	"Empty quotes: \"\"" print nl
+	"Backslash before quote: \\\"end" print nl
+}

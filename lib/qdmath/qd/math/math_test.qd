@@ -292,7 +292,7 @@ test "math::Vec2 add" {
 test "math::Vec2 subtract" {
 	math::Vec2 { x = 5.0 y = 7.0 } -> a
 	math::Vec2 { x = 2.0 y = 3.0 } -> b
-	b a subtract -> c
+	a b subtract -> c
 	c @x 3.0 testing::assert_eq
 	c @y 4.0 testing::assert_eq
 }
@@ -359,7 +359,7 @@ test "math::Vec3 dot" {
 test "math::Vec3 cross" {
 	math::Vec3 { x = 1.0 y = 0.0 z = 0.0 } -> a
 	math::Vec3 { x = 0.0 y = 1.0 z = 0.0 } -> b
-	b a cross -> c
+	a b cross -> c
 	c @x 0.0 testing::assert_eq
 	c @y 0.0 testing::assert_eq
 	c @z 1.0 testing::assert_eq

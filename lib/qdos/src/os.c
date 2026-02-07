@@ -1285,3 +1285,42 @@ int usr_os_hostname(qd_context* ctx) {
 	qd_stack_push_int(ctx->st, OS_ERR_OK);
 	return (int){0};
 }
+
+int usr_os_chdir(qd_context* ctx) {
+	size_t stack_size = qd_stack_size(ctx->st);
+	if (stack_size < 1) {
+		fprintf(stderr, "Fatal error in os::chdir: Stack underflow (need 1, have %zu)\n", stack_size);
+		qd_print_stack_trace(ctx);
+		abort();
+	}
+
+	qd_stack_element_t elem;
+	qd_stack_error err = qd_stack_pop(ctx->st, &elem);
+	if (err != QD_STACK_OK) {
+		fprintf(stderr, "Fatal error in os::chdir: Failed to pop path\n");
+		qd_print_stack_trace(ctx);
+		abort();
+	}
+
+	if (elem.type != QD_STACK_TYPE_STR) {
+		fprintf(stderr, "Fatal error in os::chdir: Expected string path, got type %d\n", elem.type);
+		qd_print_stack_trace(ctx);
+		abort();
+	}
+
+	const char* path = qd_string_data(elem.value.s);
+	int result = chdir(path);
+
+	if (result != 0) {
+		int error_code = errno_to_os_error(errno);
+		ctx->error_code = error_code;
+		qd_set_error_msg(ctx, "os::chdir: failed to change directory");
+		qd_string_release(elem.value.s);
+		qd_stack_push_int(ctx->st, (int64_t)error_code);
+		return (int){error_code};
+	}
+
+	qd_string_release(elem.value.s);
+	qd_stack_push_int(ctx->st, OS_ERR_OK);
+	return (int){0};
+}

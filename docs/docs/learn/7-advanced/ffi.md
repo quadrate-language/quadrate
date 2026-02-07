@@ -284,4 +284,4 @@ mylib = static_library('mylib', 'mylib.c',
 
 ## What's next?
 
-Continue to [File Processing Examples](../8-examples/file-processing.md) to see complete programs using these concepts.
+Check out [Common Mistakes](../common-mistakes.md) to avoid common gotchas, then explore [Examples](../8-examples/file-processing.md) to see complete programs.

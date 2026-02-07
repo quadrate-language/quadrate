@@ -63,6 +63,7 @@ fn main() {
 | Escape | Meaning |
 |--------|---------|
 | `\n` | Newline |
+| `\r` | Carriage return |
 | `\t` | Tab |
 | `\\` | Backslash |
 | `\"` | Double quote |

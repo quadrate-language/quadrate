@@ -9,10 +9,10 @@ fn main() {
 	999999 strconv::itoa print nl
 
 	"=== atoi ===" print nl
-	"42" strconv::atoi print nl
-	"0" strconv::atoi print nl
-	"-123" strconv::atoi print nl
-	"999999" strconv::atoi print nl
+	"42" strconv::atoi! print nl
+	"0" strconv::atoi! print nl
+	"-123" strconv::atoi! print nl
+	"999999" strconv::atoi! print nl
 
 	"=== format_int base 16 (hex) ===" print nl
 	255 16 strconv::format_int print nl
@@ -30,23 +30,23 @@ fn main() {
 	255 8 strconv::format_int print nl
 
 	"=== parse_int base 16 ===" print nl
-	"ff" 16 strconv::parse_int print nl
-	"FF" 16 strconv::parse_int print nl
-	"10" 16 strconv::parse_int print nl
-	"1000" 16 strconv::parse_int print nl
+	"ff" 16 strconv::parse_int! print nl
+	"FF" 16 strconv::parse_int! print nl
+	"10" 16 strconv::parse_int! print nl
+	"1000" 16 strconv::parse_int! print nl
 
 	"=== parse_int base 2 ===" print nl
-	"1000" 2 strconv::parse_int print nl
-	"11111111" 2 strconv::parse_int print nl
-	"0" 2 strconv::parse_int print nl
+	"1000" 2 strconv::parse_int! print nl
+	"11111111" 2 strconv::parse_int! print nl
+	"0" 2 strconv::parse_int! print nl
 
 	"=== parse_int base 8 ===" print nl
-	"100" 8 strconv::parse_int print nl
-	"377" 8 strconv::parse_int print nl
+	"100" 8 strconv::parse_int! print nl
+	"377" 8 strconv::parse_int! print nl
 
 	"=== roundtrip ===" print nl
-	12345 strconv::itoa strconv::atoi print nl
-	255 16 strconv::format_int 16 strconv::parse_int print nl
+	12345 strconv::itoa strconv::atoi! print nl
+	255 16 strconv::format_int 16 strconv::parse_int! print nl
 
 	"done" print nl
 }

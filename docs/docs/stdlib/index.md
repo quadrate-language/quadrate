@@ -47,7 +47,7 @@ fn main() {
 | [signal](signal.md) | Signal handling |
 | [str](str.md) | String operations |
 | [strconv](strconv.md) | String conversion utilities |
-| [term](term.md) | Terminal operations |
+| [term](tty.md#use-term) | Terminal colors and formatting |
 | [testing](testing.md) | Testing framework |
 | [thread](thread.md) | Threading primitives |
 | [time](time.md) | Time and date operations |

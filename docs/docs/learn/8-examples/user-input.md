@@ -129,3 +129,7 @@ fn main() {
 	}
 }
 ```
+
+## What's next?
+
+Learn about [Writing Tests](testing.md) to ensure your code works correctly.

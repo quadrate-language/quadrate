@@ -64,6 +64,7 @@ nav:
       - Comparison: reference/comparison.md
       - Bitwise: reference/bitwise.md
       - Arrays: reference/arrays.md
+      - Structs: reference/structs.md
       - Generics: reference/generics.md
       - Type casting: reference/types.md
       - Input/output: reference/io.md

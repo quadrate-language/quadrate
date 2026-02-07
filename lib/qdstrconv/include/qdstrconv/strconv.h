@@ -36,7 +36,7 @@ int usr_strconv_format_int(qd_context* ctx);
  * @return Execution result
  *
  * Parses a string as an integer in the specified base (2-36).
- * Aborts on invalid input.
+ * Returns error code on invalid input (fallible).
  * Examples:
  *   "147" 8  -> 103
  *   "67" 16  -> 103
@@ -82,7 +82,7 @@ int usr_strconv_format_float(qd_context* ctx);
  * @return Execution result
  *
  * Parses a string as a floating-point number.
- * Aborts on invalid input.
+ * Returns error code on invalid input (fallible).
  */
 int usr_strconv_parse_float(qd_context* ctx);
 
@@ -103,7 +103,7 @@ int usr_strconv_format_bool(qd_context* ctx);
  * @return Execution result
  *
  * Parses "true"/"1" as 1, "false"/"0" as 0.
- * Case-insensitive. Aborts on invalid input.
+ * Case-insensitive. Returns error code on invalid input (fallible).
  */
 int usr_strconv_parse_bool(qd_context* ctx);
 

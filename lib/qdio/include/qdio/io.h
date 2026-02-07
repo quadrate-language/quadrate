@@ -275,4 +275,16 @@ int usr_io_stat_atime(qd_context* ctx);
  */
 int usr_io_stat_mode(qd_context* ctx);
 
+/**
+ * @brief Append string contents to a file
+ *
+ * Stack effect: ( path:s contents:s -- )!
+ *
+ * Appends the given string to the file. Creates the file if it doesn't exist.
+ *
+ * @param ctx Execution context
+ * @return Execution result
+ */
+int usr_io_append_file(qd_context* ctx);
+
 #endif // STDIOQD_IO_H

@@ -61,3 +61,25 @@ test "testing::assert_nonzero" {
 	-1 testing::assert_nonzero
 	100 testing::assert_nonzero
 }
+
+test "testing::assert_contains" {
+	"hello world" "world" testing::assert_contains
+	"hello world" "hello" testing::assert_contains
+	"hello world" "lo wo" testing::assert_contains
+	"hello" "hello" testing::assert_contains
+	"hello" "" testing::assert_contains
+}
+
+test "testing::assert_starts_with" {
+	"hello world" "hello" testing::assert_starts_with
+	"hello" "hello" testing::assert_starts_with
+	"hello" "" testing::assert_starts_with
+	"hello world" "h" testing::assert_starts_with
+}
+
+test "testing::assert_ends_with" {
+	"hello world" "world" testing::assert_ends_with
+	"hello" "hello" testing::assert_ends_with
+	"hello" "" testing::assert_ends_with
+	"hello world" "d" testing::assert_ends_with
+}

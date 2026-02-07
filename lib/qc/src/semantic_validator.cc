@@ -681,6 +681,8 @@ namespace Qd {
 		// We iterate in parsing order (stored in mParsedModuleOrder) which is dependency-aware:
 		// modules that define structs are parsed before modules that use them.
 		static bool debug = std::getenv("QUADC_DEBUG_MERGE") != nullptr;
+		const char* savedFilename = mFilename;
+		const char* savedSource = mSource;
 		for (const auto& filePath : mParsedModuleOrder) {
 			// Skip standard library modules (they're in share/quadrate, dist/share/quadrate, or data/quadrate on Haiku)
 			if (filePath.find("share/quadrate/") != std::string::npos ||
@@ -731,10 +733,15 @@ namespace Qd {
 				// Type check this merged module's AST
 				auto astIt = mParsedModuleAsts.find(filePath);
 				if (astIt != mParsedModuleAsts.end() && astIt->second.root) {
+					// Set filename/source context so errors point to the sibling file
+					mFilename = astIt->second.filePath.c_str();
+					mSource = astIt->second.source.c_str();
 					typeCheckFunction(astIt->second.root);
 				}
 			}
 		}
+		mFilename = savedFilename;
+		mSource = savedSource;
 		printTiming("typeCheck");
 
 		return mErrorCount;

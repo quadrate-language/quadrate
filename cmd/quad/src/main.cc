@@ -36,6 +36,7 @@ static const Command commands[] = {
 		{"lsp", "quadlsp", "Start language server"},
 		{"init", nullptr, "Initialize a new Quadrate project"},
 		{"clean", nullptr, "Remove build artifacts"},
+		{"version", nullptr, "Show version information"},
 };
 
 static const size_t NUM_COMMANDS = sizeof(commands) / sizeof(commands[0]);
@@ -654,6 +655,11 @@ int handleHelp(const std::vector<std::string>& args) {
 	const Command* command = findCommand(cmd);
 
 	if (command) {
+		if (!command->tool) {
+			std::cout << "quad " << command->name << " - " << command->description << "\n\n";
+			std::cout << "Usage: quad " << command->name << "\n";
+			return 0;
+		}
 		std::string toolPath = findTool(command->tool);
 		if (!toolPath.empty()) {
 			return execTool(toolPath, {"--help"});

@@ -119,8 +119,10 @@ Naming conventions (RECOMMENDED):
 **Integer literals:**
 ```
 integer := digit+
+         | '0x' hex_digit+
+         | '0b' bin_digit+
 ```
-Examples: `42`, `0`, `1000`
+Examples: `42`, `0`, `1000`, `0xFF`, `0b1010`
 
 **Float literals:**
 ```
@@ -1130,11 +1132,11 @@ See [Section 4.2](#42-stack-operations) for complete list.
 | Instruction | Stack Effect | Description |
 |-------------|--------------|-------------|
 | `print` | `(x -- )` | Print value |
-| `printv` | `(x -- x)` | Print value, keep on stack |
+| `printv` | `(x -- )` | Print value with type info |
 | `prints` | `( -- )` | Print entire stack contents (debug) |
 | `printsv` | `( -- )` | Print entire stack with type info (debug) |
 | `nl` | `( -- )` | Print newline |
-| `read` | `( -- s)` | Read line from stdin |
+| `read` | `( -- ... n)` | Read command-line arguments (pushes args with type inference, then count) |
 
 ### 12.8 Error Handling
 

@@ -7,6 +7,27 @@ Other built-in operations.
 | Instruction | Signature | Description |
 |-------------|-----------|-------------|
 | `call` | `(fn -- ...)` | Call a function pointer |
+| `sizeof<T>` | `( -- n:i64)` | Size of type T in bytes (compile-time) |
+
+---
+
+## sizeof
+
+Get the size of a type in bytes at compile time.
+
+**Signature:** `( -- n:i64)`
+
+```qd
+struct Point { x:i64 y:i64 }
+
+fn main() {
+	sizeof<i64> print nl    // 8
+	sizeof<f64> print nl    // 8
+	sizeof<Point> print nl  // 16
+}
+```
+
+Works with primitive types (`i64`, `f64`, `str`, `ptr`) and struct types. Useful for memory allocation with `mem::alloc`.
 
 ---
 

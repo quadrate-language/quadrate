@@ -832,8 +832,8 @@ namespace Qd {
 			lastStructConstructed = returnTypeIt->second;
 		}
 
-		// If in test mode, track any errors from the function call
-		if (testErrorAlloca) {
+		// If in test mode, track errors from testing:: assertion functions only
+		if (testErrorAlloca && scope == "testing") {
 			auto hasError = builder->CreateICmpNE(callResult, builder->getInt32(0), "has_err");
 			auto currentError = builder->CreateLoad(int32Ty, testErrorAlloca, "cur_err");
 			auto newError = builder->CreateSelect(hasError, callResult, currentError, "new_err");

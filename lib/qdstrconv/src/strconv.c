@@ -9,6 +9,9 @@
 #include <string.h>
 #include <strings.h>
 
+#define STRCONV_ERR_OK 1
+#define STRCONV_ERR_INVALID 2
+
 // Helper to convert digit value to character
 static char digit_to_char(int digit) {
 	if (digit < 10) {
@@ -168,9 +171,11 @@ int usr_strconv_parse_int(qd_context* ctx) {
 	}
 
 	if (digits_parsed == 0) {
-		fprintf(stderr, "Fatal error in strconv::parse_int: Invalid number format: \"%s\"\n", str);
 		qd_string_release(str_elem.value.s);
-		abort();
+		ctx->error_code = STRCONV_ERR_INVALID;
+		qd_set_error_msg(ctx, "strconv::parse_int: invalid number format");
+		qd_stack_push_int(ctx->st, (int64_t)STRCONV_ERR_INVALID);
+		return (int){STRCONV_ERR_INVALID};
 	}
 
 	if (negative) {
@@ -179,6 +184,7 @@ int usr_strconv_parse_int(qd_context* ctx) {
 
 	qd_string_release(str_elem.value.s);
 	qd_push_i(ctx, result);
+	qd_stack_push_int(ctx->st, STRCONV_ERR_OK);
 	return (int){0};
 }
 
@@ -225,14 +231,16 @@ int usr_strconv_atoi(qd_context* ctx) {
 
 	// Check if any valid digits were parsed
 	if (endptr == str) {
-		fprintf(stderr, "Fatal error in strconv::atoi: Invalid number format: \"%s\"\n", str);
 		qd_string_release(str_elem.value.s);
-		abort();
+		ctx->error_code = STRCONV_ERR_INVALID;
+		qd_set_error_msg(ctx, "strconv::atoi: invalid number format");
+		qd_stack_push_int(ctx->st, (int64_t)STRCONV_ERR_INVALID);
+		return (int){STRCONV_ERR_INVALID};
 	}
 
 	qd_string_release(str_elem.value.s);
 	qd_push_i(ctx, result);
-
+	qd_stack_push_int(ctx->st, STRCONV_ERR_OK);
 	return (int){0};
 }
 
@@ -279,14 +287,16 @@ int usr_strconv_parse_float(qd_context* ctx) {
 
 	// Check if any valid digits were parsed
 	if (endptr == str) {
-		fprintf(stderr, "Fatal error in strconv::parse_float: Invalid number format: \"%s\"\n", str);
 		qd_string_release(str_elem.value.s);
-		abort();
+		ctx->error_code = STRCONV_ERR_INVALID;
+		qd_set_error_msg(ctx, "strconv::parse_float: invalid number format");
+		qd_stack_push_int(ctx->st, (int64_t)STRCONV_ERR_INVALID);
+		return (int){STRCONV_ERR_INVALID};
 	}
 
 	qd_string_release(str_elem.value.s);
 	qd_push_f(ctx, result);
-
+	qd_stack_push_int(ctx->st, STRCONV_ERR_OK);
 	return (int){0};
 }
 
@@ -333,13 +343,15 @@ int usr_strconv_parse_bool(qd_context* ctx) {
 	} else if (strcasecmp(str, "false") == 0 || strcmp(str, "0") == 0) {
 		result = 0;
 	} else {
-		fprintf(stderr, "Fatal error in strconv::parse_bool: Invalid boolean format: \"%s\"\n", str);
 		qd_string_release(str_elem.value.s);
-		abort();
+		ctx->error_code = STRCONV_ERR_INVALID;
+		qd_set_error_msg(ctx, "strconv::parse_bool: invalid boolean format");
+		qd_stack_push_int(ctx->st, (int64_t)STRCONV_ERR_INVALID);
+		return (int){STRCONV_ERR_INVALID};
 	}
 
 	qd_string_release(str_elem.value.s);
 	qd_push_i(ctx, result);
-
+	qd_stack_push_int(ctx->st, STRCONV_ERR_OK);
 	return (int){0};
 }

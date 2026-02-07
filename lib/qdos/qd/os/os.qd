@@ -234,4 +234,12 @@ import "libqdos.a" as "os" {
 	/// @error ErrIo Failed to get hostname
 	/// @example os::hostname! print
 	pub fn hostname( -- hostname:str)!
+
+	/// Change the current working directory.
+	/// @param path str Directory path
+	/// @error ErrNotFound Directory not found
+	/// @error ErrPermission Permission denied
+	/// @error ErrNotDirectory Path is not a directory
+	/// @example "/tmp" os::chdir!
+	pub fn chdir(path:str -- )!
 }

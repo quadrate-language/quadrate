@@ -166,7 +166,9 @@ Always specify types for parameters:
 | `f64` | 64-bit float |
 | `str` | String |
 | `ptr` | Pointer |
-| `bool` | Boolean (alias for i64) |
+| `any` | Any type |
+
+Booleans are represented as `i64` (0 = false, non-zero = true).
 
 ```qd
 fn format_price(price:f64 currency:str -- formatted:str) {

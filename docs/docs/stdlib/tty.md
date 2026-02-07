@@ -171,3 +171,196 @@ term::Green print "PASS" print term::Reset print nl
 | `Underline` | `"\x1b[4m"` | Underline text. |
 | `White` | `"\x1b[37m"` | White foreground. |
 | `Yellow` | `"\x1b[33m"` | Yellow foreground. |
+| `Clear` | `"\x1b[2J"` | Clear entire screen. |
+| `ClearToEnd` | `"\x1b[0J"` | Clear from cursor to end of screen. |
+| `ClearToBegin` | `"\x1b[1J"` | Clear from cursor to beginning of screen. |
+| `ClearLine` | `"\x1b[2K"` | Clear entire line. |
+| `ClearLineToEnd` | `"\x1b[0K"` | Clear from cursor to end of line. |
+| `ClearLineToBegin` | `"\x1b[1K"` | Clear from cursor to beginning of line. |
+| `Home` | `"\x1b[H"` | Move cursor to home position (1, 1). |
+| `SaveCursor` | `"\x1b[s"` | Save cursor position. |
+| `RestoreCursor` | `"\x1b[u"` | Restore cursor position. |
+| `HideCursor` | `"\x1b[?25l"` | Hide cursor. |
+| `ShowCursor` | `"\x1b[?25h"` | Show cursor. |
+| `CursorUp` | `"\x1b[1A"` | Move cursor up one line. |
+| `CursorDown` | `"\x1b[1B"` | Move cursor down one line. |
+| `CursorRight` | `"\x1b[1C"` | Move cursor right one column. |
+| `CursorLeft` | `"\x1b[1D"` | Move cursor left one column. |
+| `ScrollUp` | `"\x1b[1S"` | Scroll up one line. |
+| `ScrollDown` | `"\x1b[1T"` | Scroll down one line. |
+| `AltScreen` | `"\x1b[?1049h"` | Enter alternate screen buffer. |
+| `MainScreen` | `"\x1b[?1049l"` | Exit alternate screen buffer. |
+
+### Functions
+
+#### `fn` fg256
+
+Set foreground to 256-color palette value (0-255).
+
+**Signature:** `(n:i64 -- s:str)`
+
+| Input | Type | Description |
+|-------|------|-------------|
+| `n` | `i64` | Color index (0-255) |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `s` | `str` | ANSI escape sequence |
+
+**Example:**
+
+```qd
+196 term::fg256 print "Red" print term::Reset print nl
+```
+---
+
+#### `fn` bg256
+
+Set background to 256-color palette value (0-255).
+
+**Signature:** `(n:i64 -- s:str)`
+
+| Input | Type | Description |
+|-------|------|-------------|
+| `n` | `i64` | Color index (0-255) |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `s` | `str` | ANSI escape sequence |
+
+**Example:**
+
+```qd
+21 term::bg256 print "Blue BG" print term::Reset print nl
+```
+---
+
+#### `fn` rgb
+
+Set foreground to RGB color.
+
+**Signature:** `(r:i64 g:i64 b:i64 -- s:str)`
+
+| Input | Type | Description |
+|-------|------|-------------|
+| `r` | `i64` | Red component (0-255) |
+| `g` | `i64` | Green component (0-255) |
+| `b` | `i64` | Blue component (0-255) |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `s` | `str` | ANSI escape sequence |
+
+**Example:**
+
+```qd
+255 128 0 term::rgb print "Orange" print term::Reset print nl
+```
+---
+
+#### `fn` bg_rgb
+
+Set background to RGB color.
+
+**Signature:** `(r:i64 g:i64 b:i64 -- s:str)`
+
+| Input | Type | Description |
+|-------|------|-------------|
+| `r` | `i64` | Red component (0-255) |
+| `g` | `i64` | Green component (0-255) |
+| `b` | `i64` | Blue component (0-255) |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `s` | `str` | ANSI escape sequence |
+
+**Example:**
+
+```qd
+0 0 128 term::bg_rgb print "Navy BG" print term::Reset print nl
+```
+---
+
+#### `fn` goto
+
+Move cursor to specific position (1-indexed).
+
+**Signature:** `(row:i64 col:i64 -- s:str)`
+
+| Input | Type | Description |
+|-------|------|-------------|
+| `row` | `i64` | Row number (1-based) |
+| `col` | `i64` | Column number (1-based) |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `s` | `str` | ANSI escape sequence |
+
+**Example:**
+
+```qd
+10 5 term::goto print
+```
+---
+
+#### `fn` up
+
+Move cursor up by n lines.
+
+**Signature:** `(n:i64 -- s:str)`
+
+| Input | Type | Description |
+|-------|------|-------------|
+| `n` | `i64` | Number of lines |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `s` | `str` | ANSI escape sequence |
+
+---
+
+#### `fn` down
+
+Move cursor down by n lines.
+
+**Signature:** `(n:i64 -- s:str)`
+
+| Input | Type | Description |
+|-------|------|-------------|
+| `n` | `i64` | Number of lines |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `s` | `str` | ANSI escape sequence |
+
+---
+
+#### `fn` right
+
+Move cursor right by n columns.
+
+**Signature:** `(n:i64 -- s:str)`
+
+| Input | Type | Description |
+|-------|------|-------------|
+| `n` | `i64` | Number of columns |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `s` | `str` | ANSI escape sequence |
+
+---
+
+#### `fn` left
+
+Move cursor left by n columns.
+
+**Signature:** `(n:i64 -- s:str)`
+
+| Input | Type | Description |
+|-------|------|-------------|
+| `n` | `i64` | Number of columns |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `s` | `str` | ANSI escape sequence |

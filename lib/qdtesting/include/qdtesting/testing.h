@@ -37,6 +37,21 @@ int usr_testing_fail(qd_context* ctx);
 /// @return Execution result (0 for success, non-zero for failure)
 int usr_testing_assert_approx_eq(qd_context* ctx);
 
+/// Assert that a string contains a substring
+/// @param ctx Quadrate context
+/// @return Execution result (0 for success, non-zero for failure)
+int usr_testing_assert_contains(qd_context* ctx);
+
+/// Assert that a string starts with a prefix
+/// @param ctx Quadrate context
+/// @return Execution result (0 for success, non-zero for failure)
+int usr_testing_assert_starts_with(qd_context* ctx);
+
+/// Assert that a string ends with a suffix
+/// @param ctx Quadrate context
+/// @return Execution result (0 for success, non-zero for failure)
+int usr_testing_assert_ends_with(qd_context* ctx);
+
 #ifdef __cplusplus
 }
 #endif

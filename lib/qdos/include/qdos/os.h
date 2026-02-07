@@ -510,6 +510,23 @@ int usr_os_getgid(qd_context* ctx);
  */
 int usr_os_hostname(qd_context* ctx);
 
+/**
+ * @brief Change the current working directory
+ *
+ * @par Stack Effect: ( path:s -- )!
+ *
+ * Changes the current working directory to the specified path.
+ *
+ * @param ctx Execution context
+ * @return Execution result
+ *
+ * @par Example:
+ * @code
+ * "/tmp" os::chdir!
+ * @endcode
+ */
+int usr_os_chdir(qd_context* ctx);
+
 #ifdef __cplusplus
 }
 #endif
